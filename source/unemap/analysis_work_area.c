@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : analysis_work_area.c
 
-LAST MODIFIED : 1 November 2000
+LAST MODIFIED : 19 November 2000
 
 DESCRIPTION :
 ???DB.  Have yet to tie event objective and preprocessor into the event times
@@ -1885,9 +1885,10 @@ Sets the objective for the detection algorithm to negative slope.
 	LEAVE;
 } /* set_objective_value */
 
-static int analysis_write_signal_file(char *file_name,void *analysis_work_area)
+static int file_analysis_write_signal_file(char *file_name,
+	void *analysis_work_area)
 /*******************************************************************************
-LAST MODIFIED : 15 October 2000
+LAST MODIFIED : 19 November 2000
 
 DESCRIPTION :
 This function writes the rig configuration and interval of signal data to the
@@ -1895,246 +1896,84 @@ named file.
 ==============================================================================*/
 {
 	char *temp_string;
-	FILE *output_file;
-	float signal_maximum,signal_minimum;
-	int buffer_end,buffer_start,event_number,event_time,i,new_datum,
-		new_end_search_interval,new_potential_time,new_start_search_interval,
-		number_of_events,return_code,temp_int;
+	int return_code;
 	struct Analysis_work_area *analysis;
-	struct Device **device;
-	struct Event *event,*start_event;
-	struct Rig *rig;
-	struct Signal_buffer *buffer;
 	XmString new_dialog_title,old_dialog_title;
 
-	ENTER(analysis_write_signal_file);
+	ENTER(file_analysis_write_signal_file);
+	return_code=0;
 	/* check the arguments */
-	if ((analysis=(struct Analysis_work_area *)analysis_work_area)&&
-		(rig=analysis->rig))
+	if (analysis=(struct Analysis_work_area *)analysis_work_area)
 	{
-		/* open the output file */
-		if (output_file=fopen(file_name,"wb"))
+		if (return_code=analysis_write_signal_file(analysis->rig->signal_file_name,
+			analysis->rig,analysis->datum,analysis->potential_time,
+			analysis->start_search_interval,analysis->end_search_interval,
+			analysis->calculate_events,analysis->detection,analysis->event_number,
+			analysis->number_of_events,analysis->minimum_separation,
+			analysis->threshold,analysis->datum_type,analysis->edit_order,
+			analysis->signal_order,analysis->level,analysis->average_width))
 		{
-			if (return_code=write_signal_file(output_file,rig))
+			if (!(analysis->rig->signal_file_name)||
+				strcmp(analysis->rig->signal_file_name,file_name))
 			{
-				if ((device=rig->devices)&&(*device)&&((i=rig->number_of_devices)>0)&&
-					(buffer=get_Device_signal_buffer(*device)))
+				XtVaGetValues(analysis->window->window,
+					XmNdialogTitle,&old_dialog_title,
+					NULL);
+				/* assign the signal file name */
+				if (ALLOCATE(temp_string,char,strlen(file_name)+1))
 				{
-					buffer_end=buffer->end;
-					buffer_start=buffer->start;
-					/* write the event detection settings */
-					new_datum=(analysis->datum)-buffer_start;
-					new_potential_time=(analysis->potential_time)-buffer_start;
-					new_start_search_interval=
-						(analysis->start_search_interval)-buffer_start;
-					new_end_search_interval=(analysis->end_search_interval)-buffer_start;
-					if ((1==BINARY_FILE_WRITE((char *)&(new_datum),sizeof(int),1,
-						output_file))&&
-						(1==BINARY_FILE_WRITE((char *)&(analysis->calculate_events),
-						sizeof(char),1,output_file))&&
-						(1==BINARY_FILE_WRITE((char *)&(analysis->detection),
-						sizeof(enum Event_detection_algorithm),1,output_file))&&
-						(1==BINARY_FILE_WRITE((char *)&(analysis->event_number),sizeof(int),
-						1,output_file))&&
-						(1==BINARY_FILE_WRITE((char *)&(analysis->number_of_events),
-						sizeof(int),1,output_file))&&
-						(1==BINARY_FILE_WRITE((char *)&(new_potential_time),sizeof(int),1,
-						output_file))&&
-						(1==BINARY_FILE_WRITE((char *)&(analysis->minimum_separation),
-						sizeof(int),1,output_file))&&
-						(1==BINARY_FILE_WRITE((char *)&(analysis->threshold),sizeof(int),1,
-						output_file))&&
-						(1==BINARY_FILE_WRITE((char *)&(analysis->datum_type),
-						sizeof(enum Datum_type),1,output_file))&&
-						(1==BINARY_FILE_WRITE((char *)&(analysis->edit_order),
-						sizeof(enum Edit_order),1,output_file))&&
-						(1==BINARY_FILE_WRITE((char *)&(analysis->signal_order),
-						sizeof(enum Signal_order),1,output_file))&&
-						(1==BINARY_FILE_WRITE((char *)&(new_start_search_interval),
-						sizeof(int),1,output_file))&&
-						(1==BINARY_FILE_WRITE((char *)&(new_end_search_interval),
-						sizeof(int),1,output_file)))
-					{
-						if (EDA_LEVEL==analysis->detection)
-						{
-							/*???DB.  In case need to change the format later */
-							temp_int=1;
-							if (!((1==BINARY_FILE_WRITE((char *)&temp_int,sizeof(int),1,
-								output_file))&&(1==BINARY_FILE_WRITE((char *)&(analysis->level),
-								sizeof(float),1,output_file))&&(1==BINARY_FILE_WRITE(
-								(char *)&(analysis->average_width),sizeof(int),1,output_file))))
-							{
-								return_code=0;
-								display_message(ERROR_MESSAGE,
-							"analysis_write_signal_file.  Error writing EDA_LEVEL settings");
-							}
-						}
-						/* for each signal write the status, range and events */
-						while (return_code&&(i>0))
-						{
-							/* write the status and range */
-							/*???DB.  Originally the unscaled maximum and minimum were
-								stored.  This has to be maintained for backward compatability */
-							/* if no (*device)->channel, a linear comb auxiliary device.  Do
-								nothing */
-							if (((*device)->channel)&&((*device)->signal))
-							{
-								signal_minimum=(*device)->signal_minimum;
-								signal_maximum=(*device)->signal_maximum;
-								if (0!=((*device)->channel)->gain)
-								{
-									signal_minimum=(((*device)->channel)->offset)+
-										signal_minimum/(((*device)->channel)->gain);
-									signal_maximum=(((*device)->channel)->offset)+
-										signal_maximum/(((*device)->channel)->gain);
-
-								}
-								if ((1==BINARY_FILE_WRITE((char *)&((*device)->signal->status),
-									sizeof(enum Event_signal_status),1,output_file))&&
-									(1==BINARY_FILE_WRITE((char *)&signal_minimum,
-										sizeof(float),1,output_file))&&
-									(1==BINARY_FILE_WRITE((char *)&signal_maximum,
-										sizeof(float),1,output_file)))
-								{
-									/* write the events */
-									start_event=(*device)->signal->first_event;
-									while (start_event&&(start_event->time<buffer_start))
-									{
-										start_event=start_event->next;
-									}
-									event=start_event;
-									number_of_events=0;
-									while (event&&(event->time<=buffer_end))
-									{
-										number_of_events++;
-										event=event->next;
-									}
-									if (1==BINARY_FILE_WRITE((char *)&number_of_events,sizeof(int),
-										1,output_file))
-									{
-										event=start_event;
-										while (return_code&&event&&(event->time<=buffer_end))
-										{
-											event_number=(event->number)-(start_event->number)+1;
-											event_time=(event->time)-buffer_start;
-											if ((1==BINARY_FILE_WRITE((char *)&(event_time),sizeof(int),
-												1,output_file))&&
-												(1==BINARY_FILE_WRITE((char *)&(event_number),sizeof(int),
-													1,output_file))&&
-												(1==BINARY_FILE_WRITE((char *)&(event->status),
-													sizeof(enum Event_signal_status),1,output_file)))
-											{
-												event=event->next;
-											}
-											else
-											{
-												return_code=0;
-												display_message(ERROR_MESSAGE,
-													"analysis_write_signal_file.  Error writing event");
-											}
-										}
-									}
-									else
-									{
-										return_code=0;
-										display_message(ERROR_MESSAGE,
-								"analysis_write_signal_file.  Error writing number of events");
-									}
-								}
-								else
-								{
-									return_code=0;
-									display_message(ERROR_MESSAGE,
-										"analysis_write_signal_file.  Error writing signal range");
-								}
-							}
-							device++;
-							i--;
-						}
-					}
-					else
-					{
-						return_code=0;
-						display_message(ERROR_MESSAGE,
-							"analysis_write_signal_file.  Error writing analysis settings");
-					}
+					DEALLOCATE(analysis->rig->signal_file_name);
+					analysis->rig->signal_file_name=temp_string;
+					strcpy(temp_string,file_name);
+					/* unghost the write interval button */
+					XtSetSensitive(analysis->window->file_menu.save_interval_button,
+						True);
+					/* unghost the overlay signals button */
+					XtSetSensitive(analysis->window->file_menu.overlay_signals_button,
+						True);
 				}
-			}
-			fclose(output_file);
-			if (return_code)
-			{
-				if (!(analysis->rig->signal_file_name)||
-					strcmp(analysis->rig->signal_file_name,file_name))
+				else
 				{
-					XtVaGetValues(analysis->window->window,
-						XmNdialogTitle,&old_dialog_title,
-						NULL);
-					/* assign the signal file name */
-					if (ALLOCATE(temp_string,char,strlen(file_name)+1))
-					{
-						DEALLOCATE(analysis->rig->signal_file_name);
-						analysis->rig->signal_file_name=temp_string;
-						strcpy(temp_string,file_name);
-						/* unghost the write interval button */
-						XtSetSensitive(analysis->window->file_menu.save_interval_button,
-							True);
-						/* unghost the overlay signals button */
-						XtSetSensitive(analysis->window->file_menu.overlay_signals_button,
-							True);
-					}
-					else
-					{
-						return_code=0;
-						display_message(ERROR_MESSAGE,
-"analysis_write_signal_file.  Could not allocate memory for signal file name");
-					}
-					/* set the analysis window title */
-					if (ALLOCATE(temp_string,char,strlen(file_name)+12))
-					{
-						strcpy(temp_string,"Analysing: ");
-						strcat(temp_string,file_name);
-						new_dialog_title=XmStringCreateSimple(temp_string);
-						DEALLOCATE(temp_string);
-					}
-					else
-					{
-						new_dialog_title=XmStringCreateSimple("Analysis");
-						display_message(ERROR_MESSAGE,
-		"analysis_write_signal_file.  Could not allocate memory for window title");
-					}
-					XtVaSetValues(analysis->window->window,
-						XmNdialogTitle,new_dialog_title,
-						NULL);
-					XmStringFree(old_dialog_title);
+					return_code=0;
+					display_message(ERROR_MESSAGE,
+"file_analysis_write_signal_file.  Could not allocate memory for signal file name");
 				}
+				/* set the analysis window title */
+				if (ALLOCATE(temp_string,char,strlen(file_name)+12))
+				{
+					strcpy(temp_string,"Analysing: ");
+					strcat(temp_string,file_name);
+					new_dialog_title=XmStringCreateSimple(temp_string);
+					DEALLOCATE(temp_string);
+				}
+				else
+				{
+					new_dialog_title=XmStringCreateSimple("Analysis");
+					display_message(ERROR_MESSAGE,
+"file_analysis_write_signal_file.  Could not allocate memory for window title");
+				}
+				XtVaSetValues(analysis->window->window,
+					XmNdialogTitle,new_dialog_title,
+					NULL);
+				XmStringFree(old_dialog_title);
 			}
-			else
-			{
-				remove(file_name);
-			}
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"analysis_write_signal_file.  Invalid file: %s",file_name);
-			return_code=0;
 		}
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"analysis_write_signal_file.  Missing analysis_work_area");
+			"file_analysis_write_signal_file.  Missing analysis_work_area");
 		return_code=0;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* analysis_write_signal_file */
+} /* file_analysis_write_signal_file */
 
 static void analysis_write_interval(Widget widget,XtPointer analysis_work_area,
 	XtPointer call_data)
 /*******************************************************************************
-LAST MODIFIED : 27 January 2000
+LAST MODIFIED : 19 November 2000
 
 DESCRIPTION :
 Called when the "Save interval" button is clicked.
@@ -2166,7 +2005,7 @@ Called when the "Save interval" button is clicked.
 		}
 		if (write_file)
 		{
-			analysis_write_signal_file(analysis->rig->signal_file_name,
+			file_analysis_write_signal_file(analysis->rig->signal_file_name,
 				(void *)analysis);
 		}
 	}
@@ -16270,7 +16109,7 @@ Creates the windows associated with the analysis work area.
 					(XtPointer)analysis,0,user_interface);
 				identifier_list[7].value=(XtPointer)create_File_open_data(
 					signal_file_extension_write,REGULAR,
-					analysis_write_signal_file,(XtPointer)analysis,0,user_interface);
+					file_analysis_write_signal_file,(XtPointer)analysis,0,user_interface);
 				identifier_list[8].value=(XtPointer)create_File_open_data(
 					signal_file_extension_read,REGULAR,analysis_overlay_signal_file,
 					(void *)analysis,0,user_interface);

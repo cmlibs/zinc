@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : analysis.c
 
-LAST MODIFIED : 22 June 2000
+LAST MODIFIED : 19 November 2000
 
 DESCRIPTION :
 ==============================================================================*/
@@ -11,6 +11,7 @@ DESCRIPTION :
 #include <string.h>
 #include "general/debug.h"
 #include "general/postscript.h"
+#include "general/myio.h"
 #include "general/mystring.h"
 #include "general/value.h"
 #include "unemap/analysis.h"
@@ -2521,3 +2522,202 @@ DESCRIPTION :
 
 	return (return_code);
 } /* destroy_Signal_drawing_information */
+
+int analysis_write_signal_file(char *file_name,struct Rig *rig,int datum,
+	int potential_time,int start_search_interval,int end_search_interval,
+	char calculate_events,enum Event_detection_algorithm detection,
+	int analysis_event_number,int analysis_number_of_events,
+	int minimum_separation,int threshold,enum Datum_type datum_type,
+	enum Edit_order edit_order,enum Signal_order signal_order,float level,
+	int average_width)
+/*******************************************************************************
+LAST MODIFIED : 19 November 2000
+
+DESCRIPTION :
+This function writes the rig configuration and interval of signal data to the
+named file.
+==============================================================================*/
+{
+	FILE *output_file;
+	float signal_maximum,signal_minimum;
+	int buffer_end,buffer_start,event_number,event_time,i,new_datum,
+		new_end_search_interval,new_potential_time,new_start_search_interval,
+		number_of_events,return_code,temp_int;
+	struct Device **device;
+	struct Event *event,*start_event;
+	struct Signal_buffer *buffer;
+
+	ENTER(analysis_write_signal_file);
+	/* check the arguments */
+	if (rig)
+	{
+		/* open the output file */
+		if (output_file=fopen(file_name,"wb"))
+		{
+			if (return_code=write_signal_file(output_file,rig))
+			{
+				if ((device=rig->devices)&&(*device)&&((i=rig->number_of_devices)>0)&&
+					(buffer=get_Device_signal_buffer(*device)))
+				{
+					buffer_end=buffer->end;
+					buffer_start=buffer->start;
+					/* write the event detection settings */
+					new_datum=datum-buffer_start;
+					new_potential_time=potential_time-buffer_start;
+					new_start_search_interval=start_search_interval-buffer_start;
+					new_end_search_interval=end_search_interval-buffer_start;
+					if ((1==BINARY_FILE_WRITE((char *)&(new_datum),sizeof(int),1,
+						output_file))&&
+						(1==BINARY_FILE_WRITE((char *)&calculate_events,sizeof(char),1,
+						output_file))&&
+						(1==BINARY_FILE_WRITE((char *)&detection,
+						sizeof(enum Event_detection_algorithm),1,output_file))&&
+						(1==BINARY_FILE_WRITE((char *)&analysis_event_number,sizeof(int),1,
+						output_file))&&
+						(1==BINARY_FILE_WRITE((char *)&analysis_number_of_events,
+						sizeof(int),1,output_file))&&
+						(1==BINARY_FILE_WRITE((char *)&new_potential_time,sizeof(int),1,
+						output_file))&&
+						(1==BINARY_FILE_WRITE((char *)&minimum_separation,sizeof(int),1,
+						output_file))&&
+						(1==BINARY_FILE_WRITE((char *)&threshold,sizeof(int),1,
+						output_file))&&
+						(1==BINARY_FILE_WRITE((char *)&datum_type,sizeof(enum Datum_type),1,
+						output_file))&&
+						(1==BINARY_FILE_WRITE((char *)&edit_order,sizeof(enum Edit_order),1,
+						output_file))&&
+						(1==BINARY_FILE_WRITE((char *)&signal_order,
+						sizeof(enum Signal_order),1,output_file))&&
+						(1==BINARY_FILE_WRITE((char *)&(new_start_search_interval),
+						sizeof(int),1,output_file))&&
+						(1==BINARY_FILE_WRITE((char *)&(new_end_search_interval),
+						sizeof(int),1,output_file)))
+					{
+						if (EDA_LEVEL==detection)
+						{
+							/*???DB.  In case need to change the format later */
+							temp_int=1;
+							if (!((1==BINARY_FILE_WRITE((char *)&temp_int,sizeof(int),1,
+								output_file))&&(1==BINARY_FILE_WRITE((char *)&level,
+								sizeof(float),1,output_file))&&(1==BINARY_FILE_WRITE(
+								(char *)&average_width,sizeof(int),1,output_file))))
+							{
+								return_code=0;
+								display_message(ERROR_MESSAGE,
+							"analysis_write_signal_file.  Error writing EDA_LEVEL settings");
+							}
+						}
+						/* for each signal write the status, range and events */
+						while (return_code&&(i>0))
+						{
+							/* write the status and range */
+							/*???DB.  Originally the unscaled maximum and minimum were
+								stored.  This has to be maintained for backward compatability */
+							/* if no (*device)->channel, a linear comb auxiliary device.  Do
+								nothing */
+							if (((*device)->channel)&&((*device)->signal))
+							{
+								signal_minimum=(*device)->signal_minimum;
+								signal_maximum=(*device)->signal_maximum;
+								if (0!=((*device)->channel)->gain)
+								{
+									signal_minimum=(((*device)->channel)->offset)+
+										signal_minimum/(((*device)->channel)->gain);
+									signal_maximum=(((*device)->channel)->offset)+
+										signal_maximum/(((*device)->channel)->gain);
+
+								}
+								if ((1==BINARY_FILE_WRITE((char *)&((*device)->signal->status),
+									sizeof(enum Event_signal_status),1,output_file))&&
+									(1==BINARY_FILE_WRITE((char *)&signal_minimum,
+										sizeof(float),1,output_file))&&
+									(1==BINARY_FILE_WRITE((char *)&signal_maximum,
+										sizeof(float),1,output_file)))
+								{
+									/* write the events */
+									start_event=(*device)->signal->first_event;
+									while (start_event&&(start_event->time<buffer_start))
+									{
+										start_event=start_event->next;
+									}
+									event=start_event;
+									number_of_events=0;
+									while (event&&(event->time<=buffer_end))
+									{
+										number_of_events++;
+										event=event->next;
+									}
+									if (1==BINARY_FILE_WRITE((char *)&number_of_events,sizeof(int),
+										1,output_file))
+									{
+										event=start_event;
+										while (return_code&&event&&(event->time<=buffer_end))
+										{
+											event_number=(event->number)-(start_event->number)+1;
+											event_time=(event->time)-buffer_start;
+											if ((1==BINARY_FILE_WRITE((char *)&(event_time),sizeof(int),
+												1,output_file))&&
+												(1==BINARY_FILE_WRITE((char *)&(event_number),sizeof(int),
+													1,output_file))&&
+												(1==BINARY_FILE_WRITE((char *)&(event->status),
+													sizeof(enum Event_signal_status),1,output_file)))
+											{
+												event=event->next;
+											}
+											else
+											{
+												return_code=0;
+												display_message(ERROR_MESSAGE,
+													"analysis_write_signal_file.  Error writing event");
+											}
+										}
+									}
+									else
+									{
+										return_code=0;
+										display_message(ERROR_MESSAGE,
+								"analysis_write_signal_file.  Error writing number of events");
+									}
+								}
+								else
+								{
+									return_code=0;
+									display_message(ERROR_MESSAGE,
+										"analysis_write_signal_file.  Error writing signal range");
+								}
+							}
+							device++;
+							i--;
+						}
+					}
+					else
+					{
+						return_code=0;
+						display_message(ERROR_MESSAGE,
+							"analysis_write_signal_file.  Error writing analysis settings");
+					}
+				}
+			}
+			fclose(output_file);
+			if (!return_code)
+			{
+				remove(file_name);
+			}
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,
+				"analysis_write_signal_file.  Invalid file: %s",file_name);
+			return_code=0;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"analysis_write_signal_file.  Missing analysis_work_area");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* analysis_write_signal_file */

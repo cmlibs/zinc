@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : analysis_window.h
 
-LAST MODIFIED : 11 February 2000
+LAST MODIFIED : 19 November 2000
 
 DESCRIPTION :
 ==============================================================================*/
@@ -29,18 +29,6 @@ DESCRIPTION :
 Global Types
 ------------
 */
-enum Signal_order
-/*******************************************************************************
-LAST MODIFIED : 13 June 1992
-
-DESCRIPTION :
-The order in which the signals are drawn and edited.
-==============================================================================*/
-{
-	EVENT_ORDER,
-	CHANNEL_ORDER
-}; /* enum Signal_order */
-
 struct Analysis_map_menu
 /*******************************************************************************
 LAST MODIFIED : 19 June 1998

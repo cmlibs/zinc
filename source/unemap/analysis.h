@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : analysis.h
 
-LAST MODIFIED : 25 April 2000
+LAST MODIFIED : 19 November 2000
 
 DESCRIPTION :
 ==============================================================================*/
@@ -103,6 +103,30 @@ AUTOMATIC = calculated by the system as the first event
 	AUTOMATIC_DATUM,
 	FIXED_DATUM
 }; /* enum Datum_type */
+
+enum Edit_order
+/*******************************************************************************
+LAST MODIFIED : 13 June 1992
+
+DESCRIPTION :
+The order in which the events are traversed while editing.
+==============================================================================*/
+{
+	DEVICE_ORDER,
+	BEAT_ORDER
+}; /* enum Edit_order */
+
+enum Signal_order
+/*******************************************************************************
+LAST MODIFIED : 13 June 1992
+
+DESCRIPTION :
+The order in which the signals are drawn and edited.
+==============================================================================*/
+{
+	EVENT_ORDER,
+	CHANNEL_ORDER
+}; /* enum Signal_order */
 
 struct Signal_drawing_information
 /*******************************************************************************
@@ -267,4 +291,18 @@ LAST MODIFIED : 26 December 1996
 
 DESCRIPTION :
 ==============================================================================*/
-#endif
+
+int analysis_write_signal_file(char *file_name,struct Rig *rig,int datum,
+	int potential_time,int start_search_interval,int end_search_interval,
+	char calculate_events,enum Event_detection_algorithm detection,
+	int event_number,int number_of_events,int minimum_separation,int threshold,
+	enum Datum_type datum_type,enum Edit_order edit_order,
+	enum Signal_order signal_order,float level,int average_width);
+/*******************************************************************************
+LAST MODIFIED : 19 November 2000
+
+DESCRIPTION :
+This function writes the rig configuration and interval of signal data to the
+named file.
+==============================================================================*/
+#endif /* !defined (ANALYSIS_H) */

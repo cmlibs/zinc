@@ -40,18 +40,6 @@ The type of signal analysis being performed.
 	BEAT_AVERAGING
 }; /* enum Signal_analysis_mode */
 
-enum Edit_order
-/*******************************************************************************
-LAST MODIFIED : 13 June 1992
-
-DESCRIPTION :
-The order in which the events are traversed while editing.
-==============================================================================*/
-{
-	DEVICE_ORDER,
-	BEAT_ORDER
-}; /* enum Edit_order */
-
 struct Enlarge_area
 /*******************************************************************************
 LAST MODIFIED : 25 April 2000
