@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : activation_summary.c
 
-LAST MODIFIED : 13 November 2002
+LAST MODIFIED : 17 December 2002
 
 DESCRIPTION :
 Writes out a summary of the activation in a signal file.
@@ -28,8 +28,8 @@ int main(int argc,char *argv[])
 	float activation_width,frequency,level;
 	int analysis_information,arg_number,average_width,datum,end_search_interval,
 		event_number,i,j,k,minimum_separation,number_of_devices,number_of_events,
-		number_of_regions,number_of_samples,number_of_signals,potential_time,
-		return_code,start_search_interval,*summary_time,threshold,*time;
+		number_of_regions,number_of_samples,potential_time,return_code,
+		start_search_interval,*summary_time,threshold,*time;
 	short int *short_value;
 	struct Device **device;
 	struct Event *event;
@@ -62,7 +62,6 @@ int main(int argc,char *argv[])
 				number_of_regions=signal_rig->number_of_regions;
 				frequency=buffer->frequency;
 				number_of_devices=signal_rig->number_of_devices;
-				number_of_signals=buffer->number_of_signals;
 				number_of_samples=buffer->number_of_samples;
 				/* create the summary rig */
 				if ((summary_buffer=create_Signal_buffer(SHORT_INT_VALUE,
