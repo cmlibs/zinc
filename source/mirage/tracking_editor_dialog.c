@@ -3738,6 +3738,7 @@ Sets tracking or other process running if in one of these modes.
 	struct Mirage_movie *movie;
 	struct Tracking_editor_dialog *track_ed;
 	struct LIST(Node_status) *good_node_list;
+	unsigned long ip_address;
 
 	ENTER(tracking_editor_process_cb);
 	USE_PARAMETER(widget);
@@ -3907,11 +3908,12 @@ Sets tracking or other process running if in one of these modes.
 								}
 								else
 								{
+									ip_address = ntohl(socketDescriptor.sin_addr.s_addr);
 									sprintf(track_ed->remote_host,"%d.%d.%d.%d",
-										(socketDescriptor.sin_addr.s_addr & 0xff000000) >> 24,
-										(socketDescriptor.sin_addr.s_addr & 0x00ff0000) >> 16,
-										(socketDescriptor.sin_addr.s_addr & 0x0000ff00) >> 8,
-										(socketDescriptor.sin_addr.s_addr & 0x000000ff));
+										(ip_address & 0xff000000) >> 24,
+										(ip_address & 0x00ff0000) >> 16,
+										(ip_address & 0x0000ff00) >> 8,
+										(ip_address & 0x000000ff));
 									printf("SocketInitialize() : host at IP address %s has connected...\n",
 										track_ed->remote_host);
 
