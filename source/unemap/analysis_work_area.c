@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : analysis_work_area.c
 
-LAST MODIFIED : 1 November 2001
+LAST MODIFIED : 20 November 2001
 
 DESCRIPTION :
 ???DB.  Have yet to tie event objective and preprocessor into the event times
@@ -207,7 +207,7 @@ Module functions
 static enum Projection_type ensure_projection_type_matches_region_type(
 	struct Analysis_work_area *analysis)
 /*******************************************************************************
-LAST MODIFIED : 11 September 2001
+LAST MODIFIED : 20 September 2001
 
 DESCRIPTION : Ensure that the map->projection_type and the 
 rig->current_region->type are compatible.
@@ -215,80 +215,23 @@ rig->current_region->type are compatible.
 {	
 	enum Projection_type projection_type;
 
-	ENTER(ensure_projection_type_matches_region_type);
-	/* the default */
 	projection_type=HAMMER_PROJECTION;
 	if(analysis)
 	{
-		if(analysis->rig)
-		{		
-			/*get the exisitng  projection_type, if any */
-			if(analysis->mapping_window&&analysis->mapping_window->map)
-			{
-				projection_type=analysis->mapping_window->map->projection_type;
-			}
-#if defined (UNEMAP_USE_3D)
-			/*THREED_PROJECTION always valid */
-			if(projection_type!=THREED_PROJECTION)
-			{
-#endif /* defined (UNEMAP_USE_3D) */
-				/*possibly change the projection_type*/
-				if(!analysis->rig->current_region)
-				{
-					/*no current_region, so mutli region */
-					projection_type=HAMMER_PROJECTION;
-				}
-				else
-				{
-					switch(analysis->rig->current_region->type)
-					{			
-						case SOCK:
-						{
-							if(projection_type==CYLINDRICAL_PROJECTION)
-							{
-								projection_type=HAMMER_PROJECTION;
-							}
-						}break;
-						case PATCH:
-						{	
-							if((projection_type==HAMMER_PROJECTION)||
-								(projection_type==POLAR_PROJECTION))
-							{
-								projection_type=CYLINDRICAL_PROJECTION;
-							}
-						}break;
-						case TORSO:
-						{
-							if((projection_type==HAMMER_PROJECTION)||
-								(projection_type==POLAR_PROJECTION))
-							{
-								projection_type=CYLINDRICAL_PROJECTION;
-							}
-						}break;	
-						default:
-						{
-							projection_type=HAMMER_PROJECTION;
-						}break;
-					}
-				}		
-#if defined (UNEMAP_USE_3D)
-			}
-#endif /* defined (UNEMAP_USE_3D) */
-			/*set the projection type*/
-			if(analysis->mapping_window&&analysis->mapping_window->map)
-			{
-				analysis->mapping_window->map->projection_type=projection_type;
-			}
-		} /* if(analysis->rig) */
-	}/* if(analysis) */
-	else
+		if((analysis->mapping_window)&&(analysis->mapping_window->map))
+		{
+			ensure_map_projection_type_matches_region_type(
+				analysis->mapping_window->map);
+		}
+	}
+	else/* if(analysis) */
 	{		
 		display_message(ERROR_MESSAGE,
 			"ensure_projection_type_matches_region_type. Invalid argument");
 	}
 	return(projection_type);
 	LEAVE;
-}/* ensure_projection_type_matches_region_type*/ 
+}
 
 static void display_map(Widget widget,XtPointer analysis_work_area,
 	XtPointer call_data)
@@ -354,6 +297,7 @@ DESCRIPTION :
 			maintain_aspect_ratio=0;
 		}
 		/*ensure projection_type matches region type */
+		
 		projection_type=ensure_projection_type_matches_region_type(analysis);		
 		/*???should create mapping window and map if not present */
 		if (open_mapping_window(&(analysis->mapping_window),
@@ -2377,6 +2321,11 @@ Sets up the analysis work area for analysing a set of signals.
 			XtSetSensitive(analysis->mapping_window->animate_button,False);
 			if (map=analysis->mapping_window->map)
 			{
+				if(map->triangle_electrode_indices)
+				{
+					DEALLOCATE(map->triangle_electrode_indices);
+				}
+				map->number_of_2d_triangles=0;
 				map->activation_front= -1;
 				map->colour_option=HIDE_COLOUR;
 				map->contours_option=HIDE_CONTOURS;
@@ -4706,6 +4655,11 @@ for analysing the signals.
 				XtSetSensitive(analysis->mapping_window->animate_button,False);
 				if (map=analysis->mapping_window->map)
 				{
+					if(map->triangle_electrode_indices)
+					{
+						DEALLOCATE(map->triangle_electrode_indices);
+					}
+					map->number_of_2d_triangles=0;
 					map->activation_front= -1;
 					map->colour_option=HIDE_COLOUR;
 					map->contours_option=HIDE_CONTOURS;
@@ -12527,7 +12481,7 @@ Reads in a signals file and adds the signals to the devices in the current rig.
 static void analysis_accept_signal(Widget widget,
 	XtPointer analysis_work_area,XtPointer call_data)
 /*******************************************************************************
-LAST MODIFIED : 6 December 2000
+LAST MODIFIED : 8 November 2000
 
 DESCRIPTION : accept the analysis signal.
 ==============================================================================*/
@@ -12786,6 +12740,11 @@ DESCRIPTION : accept the analysis signal.
 #else /* defined(UNEMAP_USE_3D) */
 				if (mapping&&mapping->map)
 				{
+					if(mapping->map->drawing_information)
+					{
+						set_map_drawing_information_electrodes_accepted_or_rejected
+							(mapping->map->drawing_information,1);
+					}	
 					update_mapping_drawing_area(mapping,0);
 				}
 #endif /* defined(UNEMAP_USE_3D) */				
@@ -12803,7 +12762,7 @@ DESCRIPTION : accept the analysis signal.
 static void analysis_reject_signal(Widget widget,
 	XtPointer analysis_work_area,XtPointer call_data)
 /*******************************************************************************
-LAST MODIFIED : 6 December 2000
+LAST MODIFIED : 8 November 2001
 
 DESCRIPTION : reject the analysis signal
 ==============================================================================*/
@@ -12979,6 +12938,11 @@ DESCRIPTION : reject the analysis signal
 #else/* defined(UNEMAP_USE_3D) */
 				if (mapping&&mapping->map)
 				{
+					if(mapping->map->drawing_information)
+					{
+						set_map_drawing_information_electrodes_accepted_or_rejected
+							(mapping->map->drawing_information,1);
+					}	
 					update_mapping_drawing_area(mapping,0);
 				}
 #endif /* defined(UNEMAP_USE_3D) */

@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : mapping.h
 
-LAST MODIFIED : 1 November 2001
+LAST MODIFIED : 20 November 2001
 
 DESCRIPTION :
 ==============================================================================*/
@@ -60,23 +60,6 @@ DESCRIPTION :
 	BILINEAR_INTERPOLATION,
 	DIRECT_INTERPOLATION /* for torso gouraud */
 }; /* enum Interpolation_type */
-
-#if defined (OLD_CODE)
-/*???DB.  Replaced by Projection_type in general/geometry.h */
-enum Projection
-/*******************************************************************************
-LAST MODIFIED : 24 June 1995
-
-DESCRIPTION :
-???DB.  There will be different types of CYLINDRICAL, depending on where the
-cut is and if the projection should overlap (3/2 times round).
-==============================================================================*/
-{
-	CYLINDRICAL,
-	HAMMER,
-	POLAR
-}; /* enum Projection */
-#endif /* defined (OLD_CODE) */
 
 enum Colour_option
 /*******************************************************************************
@@ -211,7 +194,7 @@ map_drawing_information.
 
 struct Map_drawing_information
 /*******************************************************************************
-LAST MODIFIED : 17 July 2000
+LAST MODIFIED : 8 November 2001
 
 DESCRIPTION :
 Information needed for drawing a map.  Windowing system dependent
@@ -247,12 +230,12 @@ from here.
 	XColor *spectrum_rgb;
 	XFontStruct *font;
 #endif /* defined (MOTIF) */
+	/* Flag to record if have recently accpected or rejected electrodes */
+	int electrodes_accepted_or_rejected;
 #if defined (UNEMAP_USE_3D)
 	/* These are for the map 3d graphics */
 	/* Flag to record if done "view all" on scene*/
 	int viewed_scene;
-	/* Flag to record if have recently accpected or rejected electrodes */
-	int electrodes_accepted_or_rejected;
 	struct Colour *background_colour;
 	struct Colour *electrode_colour;
 	struct Colour *no_interpolation_colour;
@@ -319,7 +302,7 @@ Data unique to each sub map, passed from calculate step to show step.
 
 struct Map
 /*******************************************************************************
-LAST MODIFIED : 25 July 2001
+LAST MODIFIED : 8 November 2001
 
 DESCRIPTION : The Map.
 ==============================================================================*/
@@ -350,6 +333,9 @@ DESCRIPTION : The Map.
 	struct Rig **rig_pointer;
 	int number_of_electrodes;
 	struct Device **electrodes;
+	int number_of_2d_triangles;
+	/* an array of 3 x number_of_2d_triangles. Conts are indices into map->electrodes*/
+	int *triangle_electrode_indices;
 	int number_of_auxiliary;
 	char *electrode_drawn;
 	int *draw_region_number,number_of_drawn_regions;
@@ -515,6 +501,26 @@ int destroy_Map_drawing_information(
 LAST MODIFIED : 21 June 1997
 
 DESCRIPTION :
+==============================================================================*/
+
+int get_map_drawing_information_electrodes_accepted_or_rejected(
+	struct Map_drawing_information *map_drawing_information);
+/*******************************************************************************
+LAST MODIFIED : 13 December 2000
+
+DESCRIPTION :
+gets the electrodes_accepted_or_rejected flag of the <map_drawing_information>
+==============================================================================*/
+
+int set_map_drawing_information_electrodes_accepted_or_rejected(
+struct Map_drawing_information *map_drawing_information,int accep_rej);
+/*******************************************************************************
+LAST MODIFIED : 13 December 2000
+
+DESCRIPTION :
+sets the electrodes_accepted_or_rejected flag of the <map_drawing_information>
+ to 1 if <accep_rej> >0,
+0 if <accep_rej> = 0.
 ==============================================================================*/
 
 #if defined (UNEMAP_USE_3D)
@@ -932,26 +938,6 @@ Sets the torso_arm_labels  for map_drawing_information
 ??JW perhaps should maintain a list of GT_objects, cf CMGUI
 ==============================================================================*/
 
-int get_map_drawing_information_electrodes_accepted_or_rejected(
-	struct Map_drawing_information *map_drawing_information);
-/*******************************************************************************
-LAST MODIFIED : 13 December 2000
-
-DESCRIPTION :
-gets the electrodes_accepted_or_rejected flag of the <map_drawing_information>
-==============================================================================*/
-
-int set_map_drawing_information_electrodes_accepted_or_rejected(
-struct Map_drawing_information *map_drawing_information,int accep_rej);
-/*******************************************************************************
-LAST MODIFIED : 13 December 2000
-
-DESCRIPTION :
-sets the electrodes_accepted_or_rejected flag of the <map_drawing_information>
- to 1 if <accep_rej> >0,
-0 if <accep_rej> = 0.
-==============================================================================*/
-
 struct Colour *get_map_drawing_information_background_colour(
 	struct Map_drawing_information *map_drawing_information);
 /*******************************************************************************
@@ -1255,5 +1241,14 @@ DESCRIPTION :
 creates a 1 component  <field_name>
 ==============================================================================*/
 #endif /* defined (UNEMAP_USE_3D)*/
+
+enum Projection_type ensure_map_projection_type_matches_region_type(
+	struct Map *map);
+/*******************************************************************************
+LAST MODIFIED : 20 September 2001
+
+DESCRIPTION : Ensure that the map->projection_type and the 
+rig->current_region->type are compatible.
+==============================================================================*/
 
 #endif /* !defined (MAPPING_H) */

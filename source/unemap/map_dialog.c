@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : map_dialog.c
 
-LAST MODIFIED : 1 November 2001
+LAST MODIFIED : 20 November 2001
 
 DESCRIPTION :
 ==============================================================================*/
@@ -2062,26 +2062,18 @@ Opens the <map_dialog>.
 	char value_string[20];
 	enum Spectrum_simple_type spectrum_type;
 	int return_code;
-	struct Map *map;
+	struct Map *map;	
+	struct Rig *rig;
 	Widget option_widget;
 
 	ENTER(open_map_dialog);
+	rig =(struct Rig *)NULL;
+	map=(struct Map *)NULL;
 	if (map_dialog)
 	{
 		if ((map_dialog->map)&&(map= *(map_dialog->map)))
 		{
 			/* configure the dialog box to be consistent with the map */
-#if defined (OLD_CODE)
-			if (map->colour_option==SHOW_COLOUR)
-			{
-				XmToggleButtonGadgetSetState(map_dialog->show_colour_toggle,True,False);
-			}
-			else
-			{
-				XmToggleButtonGadgetSetState(map_dialog->show_colour_toggle,False,
-					False);
-			}
-#endif /* defined (OLD_CODE) */
 			if(map->colour_electrodes_with_signal)
 			/* colour_electrodes_with_signal can be changed in the code (draw_map_2d), as well  */
 			/* from the GUI, so ensure in synce here. cf update_map_from_dialog*/
@@ -2144,35 +2136,20 @@ Opens the <map_dialog>.
 			XtVaSetValues(map_dialog->spectrum.type_option_menu,
 				XmNmenuHistory,option_widget,
 				NULL);
-
-			if(map->projection_type==THREED_PROJECTION)
-			/* can only have DIRECT_INTERPOLATION for 3D projection */	
+			if((map->rig_pointer)&&(rig=*(map->rig_pointer))&&(rig->current_region)&&
+				(rig->current_region->type==TORSO)&&(*(map->type)==POTENTIAL))
+			/* can only have DIRECT_INTERPOLATION for TORSO,POTENTIAL */	
 			{
-				struct Rig *rig =(struct Rig *)NULL;
-				if((map->rig_pointer)&&(rig=*(map->rig_pointer))&&(rig->current_region)&&
-					(rig->current_region->type==TORSO))
-					/* can only have DIRECT_INTERPOLATION for TORSO */	
-				{
-					XtSetSensitive(map_dialog->interpolation.option.direct,True);
-				}
-				else
-				{
-					XtSetSensitive(map_dialog->interpolation.option.direct,False);
-					if(map->interpolation_type==DIRECT_INTERPOLATION)
-					{
-						map->interpolation_type=BICUBIC_INTERPOLATION;
-					}
-				}
+				XtSetSensitive(map_dialog->interpolation.option.direct,True);
 			}
 			else
-			/* not THREED_PROJECTION */	
 			{
 				XtSetSensitive(map_dialog->interpolation.option.direct,False);
 				if(map->interpolation_type==DIRECT_INTERPOLATION)
 				{
 					map->interpolation_type=BICUBIC_INTERPOLATION;
 				}
-			}					
+			}			
 			switch (map->interpolation_type)
 			{
 				case NO_INTERPOLATION:

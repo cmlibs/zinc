@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : mapping_window.c
 
-LAST MODIFIED : 31 November 2001
+LAST MODIFIED : 20 November 2001
 
 DESCRIPTION :
 ???DB.  Missing settings ?
@@ -451,6 +451,7 @@ necessary.
 			{
 				map_settings_changed=1;
 				map->contours_option=HIDE_CONTOURS;
+				recalculate=2;
 			}
 		}
 		else
@@ -931,7 +932,8 @@ necessary.
 					(ELECTRICAL_IMAGING==*map->analysis_mode))
 			{
 				recalculate=2;
-			}			
+			}	
+			ensure_map_projection_type_matches_region_type(map);
 			update_mapping_drawing_area(mapping,recalculate);
 			update_mapping_colour_or_auxili(mapping);
 			mapping_window_update_time_limits(mapping);

@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : mapping.c
 
-LAST MODIFIED :1 November 2001
+LAST MODIFIED : 20 November 2001
 
 DESCRIPTION :
 ==============================================================================*/
@@ -31,6 +31,7 @@ DESCRIPTION :
 #endif /* defined (UNEMAP_USE_3D) */
 #include "graphics/spectrum.h"
 #include "unemap/drawing_2d.h"
+#include "unemap/delauney.h"
 #include "unemap/interpolate.h"
 #include "unemap/mapping.h"
 #include "unemap/rig.h"
@@ -6311,7 +6312,7 @@ struct Map *create_Map(enum Map_type *map_type,enum Colour_option colour_option,
 	struct Electrical_imaging_event **eimaging_event_list,
 	enum Signal_analysis_mode *analysis_mode)
 /*******************************************************************************
-LAST MODIFIED :4 July 2001
+LAST MODIFIED :8 November 2001
 
 DESCRIPTION :
 This function allocates memory for a map and initializes the fields to the
@@ -6486,6 +6487,8 @@ NULL if not successful.
 			map->contour_y_spacing=0;
 			map->number_of_region_rows=1;
 			map->number_of_region_columns=1;
+			map->number_of_2d_triangles=0;
+			map->triangle_electrode_indices=(int *)NULL;
 			/* assign fields */		
 			map->analysis_mode=analysis_mode;
 			map->first_eimaging_event=eimaging_event_list;
@@ -6611,7 +6614,7 @@ NULL if not successful.
 
 int destroy_Map(struct Map **map)
 /*******************************************************************************
-LAST MODIFIED : 19 June 1998
+LAST MODIFIED : 8 November 2001
 
 DESCRIPTION :
 This function deallocates the memory asociated with fields of <**map> (except
@@ -6624,6 +6627,7 @@ deallocates the memory for <**map> and sets <*map> to NULL.
 	return_code=1;
 	if (map&&(*map))
 	{
+		DEALLOCATE((*map)->triangle_electrode_indices);
 		DEALLOCATE((*map)->electrodes);
 		DEALLOCATE((*map)->electrode_drawn);
 		DEALLOCATE((*map)->auxiliary);
@@ -9677,6 +9681,70 @@ DESCRIPTION :  Draw the electrode in 2D, and write it's name.
   return(return_code);
 }/* draw_2d_electrode */
 
+int draw_2d_show_delauney_lines(struct Map *map,int sub_map_number,
+  struct Drawing_2d *drawing)
+/*******************************************************************************
+LAST MODIFIED : 9 November 2001
+
+DESCRIPTION :
+Draws lines of delauney triangles. 
+Really a debugging function.
+Could be more efficient, as most lines as shared and will be drawn twice.
+Must call map_2d_delauney first.
+*******************************************************************************/
+{	
+  Display *display;
+  GC graphics_context;
+  int *electrode_x,*electrode_y,k,return_code,v0_index,v1_index,v2_index,x0,x1,y0,y1;
+  struct Map_drawing_information *drawing_information;
+  struct Sub_map *sub_map;
+
+  ENTER(draw_2d_show_delauney_lines);
+  display=(Display *)NULL;
+  sub_map=(struct Sub_map *)NULL;
+  if (map&&(sub_map_number>-1)&&(sub_map_number<map->number_of_sub_maps)&&
+	  (sub_map=map->sub_map[sub_map_number])&&drawing&&
+	(drawing_information=map->drawing_information)&&(drawing->user_interface))
+  {
+    return_code=1;
+    display=drawing->user_interface->display;
+	  graphics_context=(drawing_information->graphics_context).highlighted_colour;
+	  electrode_x=sub_map->electrode_x;
+	  electrode_y=sub_map->electrode_y;
+	  for (k=0;k<map->number_of_2d_triangles*3;k+=3)
+	  {
+		  v0_index=map->triangle_electrode_indices[k];
+      v1_index=map->triangle_electrode_indices[k+1];
+			v2_index=map->triangle_electrode_indices[k+2];
+			/*first line*/
+			x0=electrode_x[v0_index];
+			y0=electrode_y[v0_index];
+			x1=electrode_x[v1_index];
+			y1=electrode_y[v1_index];
+			XPSDrawLine(display,drawing->pixel_map,graphics_context,x0,y0,x1,y1);
+			/*second line*/
+			x0=electrode_x[v1_index];
+			y0=electrode_y[v1_index];
+			x1=electrode_x[v2_index];
+			y1=electrode_y[v2_index];
+			XPSDrawLine(display,drawing->pixel_map,graphics_context,x0,y0,x1,y1);	
+			/*third line*/
+			x0=electrode_x[v2_index];
+			y0=electrode_y[v2_index];
+			x1=electrode_x[v0_index];
+			y1=electrode_y[v0_index];
+			XPSDrawLine(display,drawing->pixel_map,graphics_context,x0,y0,x1,y1);
+		}/* (k=0;k<map->number_of_2d_triangles;k++) */
+	}
+	else
+	{
+    display_message(ERROR_MESSAGE,"draw_2d_show_delauney_lines. invalid arguments");
+    return_code=0;
+  }
+  LEAVE;
+  return(return_code);
+}/* draw_2d_show_delauney_lines */
+
 static int draw_2d_show_map(struct Map *map,int sub_map_number,
   struct Drawing_2d *drawing)
 /*******************************************************************************
@@ -9846,6 +9914,9 @@ Actually draw the map from the calculated data.
 			electrode_drawn++;
 			electrode_value++;
 		}/* for (;number_of_electrodes>0;number_of_electrodes--) */
+#if defined (DEBUG)
+		draw_2d_show_delauney_lines(map,sub_map_number,drawing);
+#endif /* defined (DEBUG)*/
 	}
 	else
 	{
@@ -10288,21 +10359,23 @@ Calculate electrode value for 2d <map>'s <electrode>, returns in <f_value>
 }/* draw_2d_calculate_electrode_value */
 
 static int draw_2d_calculate_u_and_v(struct Map *map,
-	struct Region *current_region,float x_screen,float y_screen,float pi_over_2,
-	float pi,float two_pi,float *u,float *v,char *valid_u_and_v)
+	struct Region *current_region,float x_screen,float y_screen,
+	float *u,float *v,char *valid_u_and_v)
 /*******************************************************************************
-LAST MODIFIED : 19 July 2001
+LAST MODIFIED : 9 November 2001
 
 DESCRIPTION :
 calculate the element coordinates for the 2d map.
 *******************************************************************************/
 {	
-	float a,b,c,d,mu,theta;
+	float a,b,c,d,mu,pi_over_2,two_pi,theta;
 	int return_code;
 
 	ENTER(draw_2d_calculate_u_and_v );
 	if (map&&current_region)
-	{		
+	{				
+		pi_over_2=PI/2.0;
+		two_pi=2*PI;
 		return_code=1;																	
 		/* calculate the element coordinates */
 		switch (current_region->type)
@@ -10325,7 +10398,7 @@ calculate the element coordinates for the 2d map.
 								d=y_screen*sqrt(c);
 								if (d>=1)
 								{
-									mu=pi;
+									mu=PI;
 								}
 								else
 								{
@@ -10347,7 +10420,7 @@ calculate the element coordinates for the 2d map.
 									}
 									else
 									{
-										theta=pi-2*asin(d);
+										theta=PI-2*asin(d);
 									}
 								}
 								else
@@ -10358,7 +10431,7 @@ calculate the element coordinates for the 2d map.
 									}
 									else
 									{
-										theta=pi+2*asin(d);
+										theta=PI+2*asin(d);
 									}
 								}
 								*u=theta;
@@ -10395,7 +10468,7 @@ calculate the element coordinates for the 2d map.
 							}
 							else
 							{
-								theta=pi-asin(y_screen/mu);
+								theta=PI-asin(y_screen/mu);
 							}
 						}
 						else
@@ -10433,232 +10506,6 @@ calculate the element coordinates for the 2d map.
 	return(return_code);
 }/* draw_2d_calculate_u_and_v */
 
-/* #define one of these but not both. Or none, the usual case. */
-/*
-#define GOURAUD_FROM_MESH 1
-#define GOURAUD_FROM_PIXEL_VALUE 1
-*/
-#if defined(GOURAUD_FROM_PIXEL_VALUE)
-static int set_just_map_pixel_value(float *just_map_pixel_value,int *num_pixels,
-	float f_approx,int x_pixel,int y_pixel,int *min_x_pixel,int *max_x_pixel,
-		int *min_y_pixel,int *max_y_pixel)
-/*******************************************************************************
-LAST MODIFIED : 17 July 2001
-
-DESCRIPTION :
-Sets the value of the array  <just_map_pixel_value> at index <num_pixels>
-with <f_approx>. Increments <num_pixels> . Checks/sets  <min_x_pixel> 
-<max_x_pixel> <min_y_pixel> <max_y_pixel> vs <x_pixel> <y_pixel>.
-Used in calculation of GOURAUD_FROM_PIXEL_VALUE
-An experimental function. Only works for Torso maps?
-*******************************************************************************/
-{
-	int return_code;
-
-	ENTER(set_just_map_pixel_value);
-	if (just_map_pixel_value&&num_pixels&&min_x_pixel&&max_x_pixel&&min_y_pixel&&
-		max_y_pixel)
-	{
-		return_code=1;
-		/* record actual (minus border)
-			 drawing width via min and max */
-		/* fill in the
-			 pixels-without-border-array */
-		just_map_pixel_value[*num_pixels]=f_approx;
-		(*num_pixels)++;
-		if (*min_x_pixel>x_pixel)
-		{
-			*min_x_pixel=x_pixel;
-		}
-		if (*min_y_pixel>y_pixel)
-		{
-			*min_y_pixel=y_pixel;
-		}
-		if (*max_x_pixel<x_pixel)
-		{
-			*max_x_pixel=x_pixel;
-		}
-		if (*max_y_pixel<y_pixel)
-		{
-			*max_y_pixel=y_pixel;
-		}
-	}
-	else
-	{ 
-		display_message(ERROR_MESSAGE,"set_just_map_pixel_value invalid arguments");
-		return_code=0;
-	}
-	LEAVE;
-	return(return_code);
-}/* set_just_map_pixel_value*/
-
-static int gouraud_from_pixel_value(struct Map *map,float *just_map_pixel_value,
-	int min_x_pixel,int max_x_pixel,int min_y_pixel,int max_y_pixel,
-	int number_of_mesh_columns,int number_of_mesh_rows,int num_pixels,
-	float *min_f,float *max_f,int map_height,int map_width,float *pixel_value)
-/*******************************************************************************
-LAST MODIFIED : 17 July 2001
-DESCRIPTION :
-Used in calculation of GOURAUD_FROM_PIXEL_VALUE
-An experimental function. Only works for Torso maps?
-*******************************************************************************/
-{
-	int return_code;	
-	int Ax,Ay,Bx,By,Cx,Cy,Dx,Dy,Ai,Bi,Ci,Di,act_height,act_width,col,
-		discretisation,i,index,j,new_i,new_j,new_pixel_index,pixel_index,px,py,rw;
-	float c,fl_act_height,fl_act_width,fl_q_col_width,fl_q_row_height,left_y,right_y,
-		*new_pixel_value,pu,pv;
-	ENTER(gouraud_from_pixel_value);
-	if (map&&just_map_pixel_value&&min_f&&max_f&&pixel_value)
-	{
-		return_code=1;
-		/* Gouraud shading from pixel_value (f_approx) values */
-		act_width=max_x_pixel-min_x_pixel;
-		act_height=max_y_pixel-min_y_pixel;
-		/*use electrodes_marker_size so can change easily, without adding another widget*/
-		discretisation=map->electrodes_marker_size;	
-		fl_act_width=act_width;
-		fl_act_height=act_height;
-		fl_q_col_width=(float)(fl_act_width/(float)(number_of_mesh_columns))/
-			(float)(discretisation);
-		fl_q_row_height=(float)(fl_act_height/(float)(number_of_mesh_rows))/
-			(float)(discretisation);
-		/* now need to do gouraud shading, from just_map_pixel_value to new_pixel_value */
-		if (!(ALLOCATE(new_pixel_value,float,num_pixels)))
-		{	
-			display_message(ERROR_MESSAGE,
-				"gouraud_from_pixel_value. ALLOCATE new_pixel_value failed");
-		}
-		/* reset the min and max */
-		*min_f=100;
-		*max_f=-100;
-		for(py=0;py<act_height+1;py++)
-		{
-			for(px=0;px<act_width+1;px++)
-			{
-				index=py*(act_width+1)+px;
-				rw=(float)(px)/fl_q_col_width;
-				if (rw==number_of_mesh_columns*discretisation) 
-				{
-					rw-=1;
-				}
-				col=(float)(py)/fl_q_row_height;
-				if (c==number_of_mesh_rows*discretisation) 
-				{
-					col-=1;
-				}
-				/* A,B,C,D are corners of Gouraud rectangle */															
-				Ax=fl_q_col_width*rw;
-				Ay=(col+1)*fl_q_row_height;
-				Ai=Ay*(act_width+1)+Ax;	
-				Bx=fl_q_col_width*rw;
-				By=col*fl_q_row_height;
-				Bi=By*(act_width+1)+Bx;	
-				Cx=fl_q_col_width*(rw+1);
-				Cy=col*fl_q_row_height;
-				Ci=Cy*(act_width+1)+Cx;	
-				Dx=fl_q_col_width*(rw+1);
-				Dy=(col+1)*fl_q_row_height;
-				Di=Dy*(act_width+1)+Dx;	
-				pu=((float)px-(float)Bx)/((float)Cx-(float)Bx);
-				pv=((float)py-(float)By)/((float)Ay-(float)By);
-				/* do this, or below. Result is same.
-					 top_x=just_map_pixel_value[Bi]-(just_map_pixel_value[Bi]-
-					 just_map_pixel_value[Ci])*pu;
-					 bot_x=just_map_pixel_value[Ai]-(just_map_pixel_value[Ai]-
-					 just_map_pixel_value[Di])*pu;
-					 new_pixel_value[index]=(1-pv)*top_x+(pv)*bot_x;
-				*/
-				/* calc Gouraud value */
-				left_y=just_map_pixel_value[Bi]-(just_map_pixel_value[Bi]-
-					just_map_pixel_value[Ai])*(pv);
-				right_y=just_map_pixel_value[Ci]-(just_map_pixel_value[Ci]-
-					just_map_pixel_value[Di])*(pv);	
-				new_pixel_value[index]=(1-pu)*left_y+(pu)*right_y;
-				/* recalc min,max*/
-				if (new_pixel_value[index]>*max_f ) 
-				{
-					*max_f=new_pixel_value[index];
-				}
-				if (new_pixel_value[index]<*min_f )
-				{
-					*min_f=new_pixel_value[index];
-				}
-			}
-		}
-		/* dots at Gouraud corners. Have to loop again now have f_min,f_ max */
-		index=0;															
-		for(rw=0;rw<number_of_mesh_rows*discretisation+1;rw++)
-		{																
-			for(col=0;col<number_of_mesh_columns*discretisation+1;col++)
-			{																		
-				index=(fl_q_col_width*col)+(int)(fl_q_row_height*rw)*(act_width+1);
-				new_pixel_value[index]=*max_f;
-			}
-		}
-		/* this copies new_pixel values to the correct place in pixel_value*/
-		for(j=0;j<map_height;j++)
-		{
-			for(i=0;i<map_width;i++)
-			{
-				pixel_index=j*map_width+i;
-				if ((j>=min_y_pixel)&&(j<=(min_y_pixel+act_height))&&(i>=min_x_pixel)&&
-					(i<=(min_x_pixel+act_width)))
-				{
-					new_i=i-min_x_pixel;
-					new_j=j-min_y_pixel;
-					new_pixel_index=new_j*act_width+new_i+new_j;
-					pixel_value[pixel_index]=new_pixel_value[new_pixel_index];
-				}
-			}															
-		}
-	}
-	else
-	{ 
-		display_message(ERROR_MESSAGE,"gouraud_from_pixel_value invalid arguments");
-		return_code=0;
-	}
-	LEAVE;
-	return(return_code);
-}/* gouraud_from_pixel_value*/
-#endif /* defined(GOURAUD_FROM_PIXEL_VALUE) */
-
-#if defined(GOURAUD_FROM_MESH)
-static int gouraud_from_mesh(float *top_x,float *bot_x,float *left_y,
-	float *right_y,float *f_approx,float *f,float u,float v,int i_jm1,int i_j,
-	int im1_jm1,int im1_j)
-/*******************************************************************************
-LAST MODIFIED : 17 July 2001
-DESCRIPTION :
-Used in calculation of GOURAUD_FROM_MESH
-An experimental function. Only works for Torso maps?
-*******************************************************************************/
-{
-	int return_code;
-	ENTER(gouraud_from_mesh);
-	if (top_x&&bot_x&&left_y&&right_y&&f_approx&&f)
-	{
-		return_code=1;
-		/* this does Gourand shading, using the mesh row and column corners */
-		*top_x=f[i_jm1]-(f[i_jm1]-f[i_j])*u;
-		*bot_x=f[im1_jm1]-(f[im1_jm1]-f[im1_j])*u;
-		*left_y=f[i_jm1]-(f[i_jm1]-f[im1_jm1])*(1-v);
-		*right_y=f[i_j]-(f[i_j]-f[im1_j])*(1-v);
-		/* or f_approx=(1-u)*left_y+(u)*
-			 right_y;*/
-		/* (left_y,right_y redundant)*/
-		*f_approx=(v)*(*top_x)+(1-v)*(*bot_x);
-	}
-	else
-	{ 
-		display_message(ERROR_MESSAGE,"gouraud_from_mesh invalid arguments");
-		return_code=0;
-	}
-	LEAVE;
-	return(return_code);
-}/* gouraud_from_mesh*/
-#endif /* defined(GOURAUD_FROM_MESH) */
-
 static int draw_2d_calculate_f_approx(struct Interpolation_function *function,
 	float *f_approx,int column,int row,float u,float v)
 /*******************************************************************************
@@ -10674,9 +10521,6 @@ Set <f_approx> from <function>
 		f_im1_j,f_im1_jm1,height,h01_u,h01_v,h02_u,h02_v,
 		h11_u,h11_v,h12_u,h12_v,width,*x_mesh,*y_mesh;
 	int i_j,i_jm1,im1_j,im1_jm1,number_of_mesh_columns,return_code;
-#if defined(GOURAUD_FROM_MESH)
-	float top_x,bot_x,left_y,right_y;
-#endif /* defined(GOURAUD_FROM_MESH) */
 
 	ENTER(draw_2d_calculate_f_approx);
 	if (f_approx)
@@ -10740,12 +10584,6 @@ Set <f_approx> from <function>
 		/* (i-1,j) node (bottom right
 			 corner) */
 		im1_j=(row-1)*(number_of_mesh_columns+1)+column;
-#if defined(GOURAUD_FROM_MESH)
-		gouraud_from_mesh(&top_x,&bot_x,&left_y,
-			&right_y,f_approx,f,u,v,i_jm1,i_j,
-			im1_jm1,im1_j);
-#else
-		/* <THIS> is the Normal case*/
 		*f_approx=
 			f[im1_jm1]*f_im1_jm1+
 			f[i_jm1]*f_i_jm1+
@@ -10763,7 +10601,6 @@ Set <f_approx> from <function>
 			d2fdxdy[i_jm1]*d2fdxdy_i_jm1+
 			d2fdxdy[i_j]*d2fdxdy_i_j+
 			d2fdxdy[im1_j]*d2fdxdy_im1_j;
-#endif /* defined(GOURAUD_FROM_MESH) */
 	}
 	else
 	{
@@ -10831,15 +10668,15 @@ DESCRIPTION : (possibly) draw map boundary
 } /* draw_2d_map_boundary */
 
 static int draw_2d_set_min_x_max_x(struct Map *map,struct Sub_map *sub_map,
-	float *a,float pi,enum Projection_type map_projection_type)
+	float *a,enum Projection_type map_projection_type)
 /*******************************************************************************
-LAST MODIFIED : 20 July 2001
+LAST MODIFIED : 9 November 2001
 
 DESCRIPTION :
 sets <sub_map>'s min_x, max_x min_y max_y
 *******************************************************************************/
 {
-	float *min_x,*max_x,*min_y,*max_y;
+	float *min_x,*max_x,*min_y,*max_y,pi;
 	int *draw_region_number,region_number,return_code,temp_region_number,
 		number_of_regions;
 	struct Region_list_item *region_item;
@@ -10853,6 +10690,7 @@ sets <sub_map>'s min_x, max_x min_y max_y
 		(0<(number_of_regions=rig->number_of_regions)))
 	{
 		return_code=1;
+		pi=4*atan(1);
 		draw_region_number=map->draw_region_number;
 		min_x=sub_map->min_x;
 		min_y=sub_map->min_y;
@@ -11012,86 +10850,420 @@ Calculate the screen to map transform for the 2d Map.
 	return(return_code); 
 }/* draw_2d_calc_map_to_screen_transform */
 
-static int draw_2d_construct_image_map(struct Map *map,struct Sub_map *sub_map,
-	struct Drawing_2d *drawing,int recalculate,
-	char undecided_accepted,float pi_over_2,float pi,float two_pi,
-	int screen_region_height,int screen_region_width)
+static int triangle_rc_to_cp_vertex(int triangle_vertex_index,float *vertices,
+	float *r,float *theta,float *z_cp)
 /*******************************************************************************
-LAST MODIFIED :17 September 2001
+LAST MODIFIED :7 November 2001
+
+DESCRIPTION :
+Given a triangle's vertex given by the offset <triangle_vertex_index> into the
+array of rectangular cartesian vertices <vertices>, converts this x,y,z into
+<r> <theta> <z_cp> and returns it.
+See cylinder_delauney for definition of <triangle_vertex_index>, <vertices>
+*******************************************************************************/
+{
+	float x,y,z_rc;
+	int return_code,index;
+
+	ENTER(triangle_rc_to_cp_vertex);
+	if(vertices&&r&&theta&&z_cp)
+	{
+		return_code=1;
+		/*each vertex has 3 dimesions*/
+		index=triangle_vertex_index*3;		
+		x=vertices[index];
+		y=vertices[index+1];
+		z_rc=vertices[index+2];
+		cartesian_to_cylindrical_polar(x,y,z_rc,r,theta,z_cp,(float *)NULL);		
+	}
+	else
+	{	
+		display_message(ERROR_MESSAGE,
+			"triangle_rc_to_cp_vertex Invalid arguments");
+		return_code=0;
+	}
+	LEAVE;
+	return(return_code);
+}/* triangle_rc_to_cp_vertex */
+
+int triangle_cut_by_angle(int vertex0_index,int vertex1_index,
+	int vertex2_index,float *vertices,float angle)
+/*******************************************************************************
+LAST MODIFIED :8 November 2001
+
+DESCRIPTION :
+Given the triangle defined by <vertex0_index> <vertex1_index>,<vertex2_index>, 
+<vertices>, converts this triangle from rectangular cartesian to cylindrical 
+polar coords, and determines if it's min and max theta are either side of 
+<angle>. Takes the minimum angle btwn the two points, i.e PI/2 not 3PI/2.
+Assume all angles from -PI to PI.
+See cylinder_delauney for definition of <vertex0_index> <vertex1_index>
+<vertex2_index>,<*vertices>.
+Would be possible to generalise for any polygon, but this would be slower, 
+and I don't see a need.
+*******************************************************************************/
+{
+	float r[3],theta[3],z_cp[3],min_theta,max_theta;
+	int i,return_code;
+
+	ENTER(triangle_cut_by_angle);
+	return_code=0;
+	if(vertices)
+	{
+		triangle_rc_to_cp_vertex(vertex0_index,vertices,&r[0],&theta[0],&z_cp[0]);
+		triangle_rc_to_cp_vertex(vertex1_index,vertices,&r[1],&theta[1],&z_cp[1]);
+		triangle_rc_to_cp_vertex(vertex2_index,vertices,&r[2],&theta[2],&z_cp[2]);		
+		/*find min and max theta of triangle*/
+		min_theta=theta[0];
+		max_theta=theta[0];
+		for(i=0;i<3;i++)
+		{
+			if(theta[i]>max_theta)
+			{
+				max_theta=theta[i];
+			}
+			if(theta[i]<min_theta)
+			{
+				min_theta=theta[i];
+			}
+		}
+		/*determine if angle btwin min and max theta*/
+		if(fabs(max_theta-min_theta)<PI)
+			/*subtended angle is the smallest; are we inside it?*/
+		{
+			if((angle>min_theta)&&(angle<max_theta))
+			{
+				return_code=1;			
+			}
+		}
+		else
+		{
+			/*subtended angle is the largest; are we outside it?, i.e inside the smallest*/
+			if(!((angle>min_theta)&&(angle<max_theta)))
+			{
+				return_code=1;			
+			}
+		}
+#if defined (DEBUG)
+		if(return_code)
+		{			
+			printf("min_theta %f Angle %f max_theta %f \n",min_theta,angle,max_theta);fflush(NULL);
+		}
+#endif /* defined (DEBUG) */	
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"triangle_cut_by_angle Invalid arguments");
+	}
+	LEAVE;
+	return(return_code);
+}/*triangle_cut_by_angle*/
+
+static int map_2d_delauney(struct Map *map)
+/*******************************************************************************
+LAST MODIFIED : 19 November 2001
+
+DESCRIPTION :
+given <map>, do a delauney triangluarisation of map->electrodes.
+Assumes the map is of type TORSO, and hence is cylindrical, and centred about 
+the z axis. 
+The results are stored as map->number_of_2d_triangles, the number of delauney 
+triagles formed by the electrodes, and map->triangle_electrode_indices,
+and array of length 3*number_of_2d_triangles containing indices into 
+map->electrodes of pointing to the triangle's electrodes.
+No cutting of the cylinder for 2d projection is done. This happens after 2d 
+projection is performed, in  draw_2d_construct_2d_gouraud_image_map
+*******************************************************************************/
+{
+	char undecided_accepted;
+	float *vertex,*vertices;
+	int found,i,index,j,*map_electrode_triangles,number_of_electrodes,
+		number_of_triangles,number_of_accepted_triangles,number_of_vertices,
+		return_code,*triangles,*triangle_vertex,triangle_v0_index,
+		triangle_v1_index,triangle_v2_index;
+	struct Device **accepted_triangle_electrodes,**electrode,**triangle_electrodes,
+		**triangle_electrode,*device;
+	struct Device_description *description;	
+
+	ENTER(map_2d_delauney);
+	device=(struct Device *)NULL;
+	electrode=(struct Device **)NULL;
+	accepted_triangle_electrodes=(struct Device **)NULL;
+	triangle_electrodes=(struct Device **)NULL;
+	triangle_electrode=(struct Device **)NULL;
+	description=(struct Device_description *)NULL;
+	vertices=(float *)NULL;
+	vertex=(float *)NULL;
+	triangles =(int *)NULL;	
+	triangle_vertex =(int *)NULL;
+	if(map)
+	{
+		undecided_accepted=map->undecided_accepted;
+		/* clear out any old stuff */
+		map->number_of_2d_triangles=0;
+		if(map->triangle_electrode_indices)
+		{
+			DEALLOCATE(map->triangle_electrode_indices);
+		}
+		return_code=1;		
+		number_of_vertices=0;
+		electrode=map->electrodes;
+		number_of_electrodes=0;
+		/*count the number of vertices = number of unrejected electrodes in map */
+		while(number_of_electrodes<map->number_of_electrodes)
+		{
+			/*if we've got an unrejected electrode */ 			
+			if (((*electrode)->signal->status==ACCEPTED)||
+				(((*electrode)->signal->status==UNDECIDED)&&undecided_accepted))
+			{						 
+				number_of_vertices++;
+			}					
+			electrode++;
+			number_of_electrodes++;
+		}/*while(number_of_devices<rig->number_of_devices)*/
+		/*allocate space for x,y,z vertices and the triangle_electrodes */
+		if(ALLOCATE(vertices,float,number_of_vertices*3)&&
+			ALLOCATE(triangle_electrodes,struct Device *,number_of_vertices))
+		{
+			/*for unrejected electrodes,store the vertex values & electrode/device*/
+			electrode=map->electrodes;
+			number_of_electrodes=0;
+			vertex=vertices;
+			triangle_electrode=triangle_electrodes;
+			while(number_of_electrodes<map->number_of_electrodes)
+			{
+				description=(*electrode)->description;
+				/*if we've got an unrejected electrode */				
+				if (((*electrode)->signal->status==ACCEPTED)||
+					(((*electrode)->signal->status==UNDECIDED)&&undecided_accepted))
+				{					
+					*vertex=(description->properties).electrode.position.x;
+					vertex++;
+					*vertex=(description->properties).electrode.position.y;
+					vertex++;
+					*vertex=(description->properties).electrode.position.z;
+					vertex++;
+					*triangle_electrode=*electrode;
+					triangle_electrode++;
+				}
+				electrode++;
+				number_of_electrodes++;
+			}/*while(number_of_devices<rig->number_of_devices)*/
+			/*perform deluaney triangularization */
+			if(return_code=cylinder_delauney(number_of_vertices,vertices,
+				&number_of_triangles,&triangles))								
+			{
+				/*accepted_triangles contains the Device's of the vertices triangles */
+				if(ALLOCATE(accepted_triangle_electrodes,struct Device *,
+					number_of_triangles*3))
+				{									
+					triangle_vertex=triangles;				
+					number_of_accepted_triangles=0;
+					for(i=0;i<number_of_triangles;i++)
+					{
+						triangle_v0_index=*triangle_vertex;
+						triangle_vertex++;
+						triangle_v1_index=*triangle_vertex;
+						triangle_vertex++;
+						triangle_v2_index=*triangle_vertex;
+						triangle_vertex++;
+						/*store Device's triangle electrodes*/
+						number_of_accepted_triangles++;																	
+						index=(number_of_accepted_triangles-1)*3;
+						/*vertex 0,1,2*/
+						accepted_triangle_electrodes[index]=
+							triangle_electrodes[triangle_v0_index];
+						accepted_triangle_electrodes[index+1]=
+							triangle_electrodes[triangle_v1_index];
+						accepted_triangle_electrodes[index+2]=
+							triangle_electrodes[triangle_v2_index];						
+					}										
+					/*map_electrode_triangles contains index in map->electrodes array of */
+					/*triangle's vertices/electrodes */
+					if(ALLOCATE(map_electrode_triangles,int,number_of_triangles*3))
+					{
+						return_code=1;
+						/*match device->number to position in map->electrodes array */
+						i=0;
+						while((i<number_of_accepted_triangles*3)&&(return_code))
+						{
+							device=accepted_triangle_electrodes[i];
+							j=0;
+							found=0;
+							electrode=map->electrodes;
+							while((j<map->number_of_electrodes)&&(!found))
+							{
+								if((*electrode)==device)
+								{
+									map_electrode_triangles[i]=j;
+									found=1;									
+								}
+								else
+								{
+									j++;
+									electrode++;
+								}
+							}/* while((j<map->number_of_electrodes)&&(!found)) */
+							if(!found)
+							{
+								display_message(ERROR_MESSAGE,
+									"map_2d_delauney. unmatched triangle vertex");
+								return_code=0;
+							}
+							i++;
+						}/* while((i<number_of_accepted_triangles*3)&&(return_code)) */
+						if(return_code)
+						{
+							map->number_of_2d_triangles=number_of_accepted_triangles;
+							map->triangle_electrode_indices=map_electrode_triangles;
+						}
+					}
+					else
+					{
+						display_message(ERROR_MESSAGE,
+							"map_2d_delauney. Out of memory for map_electrode_triangles");
+						return_code=0;
+					}
+				}
+				else
+				{
+					display_message(ERROR_MESSAGE,
+						"map_2d_delauney. Out of memory for accepted_triangles");
+					return_code=0;
+				}
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE,
+					"map_2d_delauney. cylinder_delauney failed");
+				return_code=0;
+			}
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,
+				"map_2d_delauney. Out of memory for vertices/electrode_numbers");
+			return_code=0;
+		}	
+		DEALLOCATE(vertices);
+		DEALLOCATE(triangle_electrodes);
+		DEALLOCATE(triangles);
+		DEALLOCATE(accepted_triangle_electrodes);		
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"map_2d_delauney. Invalid arguments");
+		return_code=0;
+	}
+	LEAVE;
+	return(return_code);
+}/* map_2d_delauney */
+
+static int draw_2d_get_min_max(float value,float *min_value,float *max_value,
+	struct Region **maximum_region,struct Region **minimum_region,
+	struct Region *region,int *minimum_x,int *minimum_y,int *maximum_x,
+	int *maximum_y,int x,int y)
+/*******************************************************************************
+LAST MODIFIED 9 November 2001
+
+DESCRIPTION :
+Sets <min_value> <max_value> based on <value>,
+	<maximum_region> <minimum_region> based on <region>
+	<minimum_x> <minimum_y> <maximum_x> <maximum_y> based on <x> ,<y>.
+*******************************************************************************/
+{
+	int return_code;
+
+	ENTER(draw_2d_get_min_max);
+	if(min_value&&max_value&&maximum_region&&minimum_region&&region&&minimum_x
+		&&minimum_y&&maximum_x&&maximum_y)
+	{
+		return_code=1;
+		if (*max_value<*min_value)
+		{
+			*min_value=value;
+			*max_value=value;
+			*maximum_region=region;
+			*minimum_region=region;
+			*maximum_x=x;
+			*maximum_y=y;
+			*minimum_x=x;
+			*minimum_y=y;
+		}/* if (max_value<min_value) */
+		else
+		{
+			if (value<*min_value)
+			{
+				*min_value=value;
+				*minimum_region=region;
+				*minimum_x=x;
+				*minimum_y=y;
+			}
+			else
+			{
+				if (value>*max_value)
+				{
+					*max_value=value;
+					*maximum_region=region;
+					*maximum_x=x;
+					*maximum_y=y;
+				}
+			}
+		}/* if (max_value<min_value) */
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"draw_2d_get_min_max. Invalid arguments");
+		return_code=0;
+	}
+	LEAVE;
+	return(return_code);
+}/* draw_2d_get_min_max*/
+
+static int draw_2d_construct_interpolated_image_map(struct Map *map,
+	struct Sub_map *sub_map,int region_number,struct Region *the_region,
+	struct Region **maximum_region,struct Region **minimum_region,
+	int screen_region_height,int screen_region_width,
+	int *minimum_x,int *minimum_y,int *maximum_x,int *maximum_y,
+	float *max_f,float *min_f,char *background_map_boundary_base)
+/*******************************************************************************
+LAST MODIFIED 9 November 2001
 
 DESCRIPTION :
 Construct a colour map image for colour map or contours or  values  in the
-<sub_map> frame.
+<sub_map> frame, using interpolation.
 *******************************************************************************/
 {
-	char *background_map_boundary,*background_map_boundary_base,*temp_char,
-		valid_u_and_v;
-	Display *display;	
 	enum Map_type map_type;
-	float background_pixel_value,boundary_pixel_value,f_approx,
-		frame_time,max_f,min_f,*min_x,*min_y,*pixel_value,
-		*stretch_x,*stretch_y,u,v,*x_mesh,*y_mesh,x_screen,x_screen_left,
-		x_screen_step,y_screen,y_screen_top,y_screen_step;
-	int bit_map_pad,bit_map_unit,column,contour_areas_in_x,contour_areas_in_y,
-		*draw_region_number,i,j,map_width,map_height,maximum_x,maximum_y,
-		minimum_x,minimum_y,number_of_contour_areas,number_of_regions,
-		number_of_mesh_rows,number_of_mesh_columns,number_of_spectrum_colours,
-		pixel_left,pixel_top,region_number,return_code,row,scan_line_bytes,*start_x,
-		*start_y,temp_region_number,x_pixel,y_pixel;
-	short int *contour_x,*contour_y;
-	struct Interpolation_function *function;
-	struct Map_drawing_information *drawing_information;
+	char valid_u_and_v;
+	float frame_time,f_approx,*min_x,*min_y,*pixel_value,*stretch_x,*stretch_y,u,v,
+		*x_mesh,*y_mesh,x_screen,x_screen_left,x_screen_step,y_screen,y_screen_top,
+		y_screen_step;
+	int column,i,j,map_width,map_height,number_of_mesh_rows,number_of_mesh_columns,
+		pixel_left,pixel_top,return_code,row,*start_x,*start_y,x_pixel,y_pixel;
+	struct Interpolation_function *function;	
 	struct Map_frame *frame;
-	struct Region	*maximum_region,*minimum_region,*current_region;
-	struct Region_list_item *region_item;
 	struct Rig *rig;
-#if defined(GOURAUD_FROM_PIXEL_VALUE)  
-	int num_pixels,min_x_pixel,min_y_pixel,max_x_pixel,max_y_pixel;
-	float *just_map_pixel_value,*new_pixel_value;
-	min_x_pixel=10000;
-	min_y_pixel=10000;
-	max_x_pixel=0;max_y_pixel=0;
-	num_pixels=0;
-	new_pixel_value=(float *)NULL;
-	just_map_pixel_value=(float *)NULL;
-#endif /* defined(GOURAUD_FROM_PIXEL_VALUE) */
 
-	ENTER(draw_2d_construct_image_map);
-	x_mesh=(float *)NULL;
-	y_mesh=(float *)NULL;
-	function=(struct Interpolation_function *)NULL;
-	maximum_region=(struct Region *)NULL;
-	minimum_region=(struct Region *)NULL;
-	current_region=(struct Region *)NULL;
-	region_item=(struct Region_list_item *)NULL;
-	rig=(struct Rig *)NULL;
-	display=(Display *)NULL;
-	pixel_value=(float *)NULL;
-	frame=(struct Map_frame *)NULL;
-	drawing_information=(struct Map_drawing_information *)NULL;
-	contour_x=(short int *)NULL;
-	contour_y=(short int *)NULL;
-	temp_char=(char *)NULL;
-	background_map_boundary=(char *)NULL;
-	background_map_boundary_base=(char *)NULL;
+	ENTER(draw_2d_construct_interpolated_image_map);	
 	stretch_y=(float *)NULL;
 	stretch_x=(float *)NULL;
+	function=(struct Interpolation_function *)NULL;
+	rig=(struct Rig *)NULL;
+	x_mesh=(float *)NULL;
+	y_mesh=(float *)NULL;
 	min_x=(float *)NULL;
-	min_y=(float *)NULL;
+	min_y=(float *)NULL;	
 	start_x=(int *)NULL;
 	start_y=(int *)NULL;
-	if (map&&sub_map&&drawing&&(drawing_information=map->drawing_information))
-	{
-		return_code=1;		
+	pixel_value=(float *)NULL;
+	frame=(struct Map_frame *)NULL;
+	if(map&&sub_map&&the_region&&maximum_region&&minimum_region&&minimum_x&&
+		minimum_y&&maximum_x&&maximum_y&&max_f&&min_f&&background_map_boundary_base)
+	{		
 		map_width=sub_map->width;
 		map_height=sub_map->height;
-		frame_time=sub_map->frame_time;
-		draw_region_number=map->draw_region_number;
-		rig= *(map->rig_pointer);
-		number_of_regions=rig->number_of_regions;
-		number_of_spectrum_colours=drawing_information->number_of_spectrum_colours;	
-		display=drawing->user_interface->display;
-		frame=&(sub_map->frame);
 		stretch_x=sub_map->stretch_x;
 		stretch_y=sub_map->stretch_y;
 		min_x=sub_map->min_x;
@@ -11106,6 +11278,625 @@ Construct a colour map image for colour map or contours or  values  in the
 		{
 			map_type=NO_MAP_FIELD;
 		}	
+		rig= *(map->rig_pointer);
+		frame_time=sub_map->frame_time;	
+		frame=&(sub_map->frame);						
+		pixel_value=frame->pixel_values;
+		/* interpolate data */
+		if ((0!=stretch_x[region_number])&&
+			(0!=stretch_y[region_number])&&
+			(function=calculate_interpolation_functio(
+				map_type,rig,the_region,map->event_number,
+				frame_time,map->datum,
+				map->start_search_interval,
+				map->end_search_interval,map->undecided_accepted,
+				map->finite_element_mesh_rows,
+				map->finite_element_mesh_columns,
+				map->membrane_smoothing,
+				map->plate_bending_smoothing)))
+		{																															
+			number_of_mesh_columns=
+				function->number_of_columns;
+			number_of_mesh_rows=
+				function->number_of_rows;
+			y_mesh=function->y_mesh;
+			x_mesh=function->x_mesh;
+			/* calculate pixel values */
+			pixel_left=((region_number/map->number_of_region_rows)*
+				map_width)/map->number_of_region_columns;
+			pixel_top=((region_number%map->number_of_region_rows)*
+				map_height)/map->number_of_region_rows;
+			x_screen_step=1/stretch_x[region_number];
+			y_screen_step= -1/stretch_y[region_number];
+			x_screen_left=min_x[region_number]+
+				(pixel_left-start_x[region_number])*
+				x_screen_step;
+			y_screen_top=min_y[region_number]+
+				(pixel_top-start_y[region_number])*
+				y_screen_step;
+			y_screen=y_screen_top;
+			y_pixel=pixel_top;
+			for (j=0;j<screen_region_height;j++)
+			{
+				x_screen=x_screen_left;
+				x_pixel=pixel_left;
+				for (i=0;i<screen_region_width;i++)
+				{
+					/* calculate the u and v  */
+					draw_2d_calculate_u_and_v(map,the_region,x_screen,y_screen,&u,&v,
+						&valid_u_and_v);
+					/* calculate the element coordinates */
+					if (valid_u_and_v)
+					{																		
+						/* determine which element the point is
+							 in */
+						column=0;
+						while ((column<number_of_mesh_columns)&&
+							(u>=x_mesh[column]))
+						{
+							column++;
+						}
+						if ((column>0)&&(u<=x_mesh[column]))
+						{
+							row=0;
+							while ((row<number_of_mesh_rows)&&
+								(v>=y_mesh[row]))
+							{
+								row++;
+							}
+							if ((row>0)&&(v<=y_mesh[row]))
+							{	
+								draw_2d_calculate_f_approx(function,
+									&f_approx,column,row,u,v);
+								draw_2d_get_min_max(f_approx,min_f,max_f,maximum_region,
+									minimum_region,the_region,minimum_x,minimum_y,maximum_x,
+									maximum_y,i,j);
+								pixel_value[y_pixel*map_width+x_pixel]=f_approx;
+								background_map_boundary_base[
+									y_pixel*map_width+x_pixel]=1;
+							}/* if ((row>0)&&(v<=y_mesh[row])) */
+						}/* if ((column>0)&&(u<=x_mesh[column])) */
+					}/* if (valid_u_and_v) */
+					x_screen += x_screen_step;
+					x_pixel++;																
+				}/* for (i=0;i<screen_region_width;i++) */
+				y_screen += y_screen_step;
+				y_pixel++;															
+			}/* for (j=0;j<screen_region_height;j++) */
+			destroy_Interpolation_function(&function);
+		}/* if ((0!=stretch_x[region_number])&& */
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"draw_2d_construct_interpolated_image_map. Invalid arguments");
+		return_code=0;
+	}
+	LEAVE;
+	return(return_code);
+}/* draw_2d_construct_interpolated_image_map*/
+
+static int get_triangle_line_end_vertex_num_from_start_num(int start_vertex_num)
+/*******************************************************************************
+LAST MODIFIED 14 November 2001
+
+DESCRIPTION :
+Given <start_vertex_num>, the start vertex number of an edge of a triangle,
+returns end_vertex_num, the corresponding end vertex number of the same edge.
+<start_vertex_num> most be from 0->2. 
+Sets end_vertex_num according to:
+start_vertex_num 0 : end_vertex_num 1 (triangle edge 0)
+start_vertex_num 1 end_vertex_num 2 (triangle edge 1)
+start_vertex_num 2 end_vertex_num 0 (triangle edge 2)
+Returns -1 on error.
+A helper function for get_triangle_scan_line_intersection,
+ draw_2d_construct_2d_gouraud_image_map.
+*******************************************************************************/
+{
+	int end_vertex_num;
+
+	ENTER(get_triangle_line_end_vertex_num_from_start_num);
+	if((start_vertex_num>-1)&&(start_vertex_num<3))
+	{
+		if(start_vertex_num<2)
+		{
+			end_vertex_num=start_vertex_num+1;
+		}
+		else
+		{
+			end_vertex_num=0;
+		}	
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"get_triangle_line_end_vertex_num_from_start_num. Invalid arguments");
+		end_vertex_num=-1;
+	}
+	return(end_vertex_num);
+	LEAVE;
+}/*get_triangle_line_end_vertex_num_from_start_num */
+
+static int get_triangle_scan_line_intersection(int triangle_egde_number,
+	 int scan_line_y,int *vertex_x,int *vertex_y,float *gradient,
+	float *inv_edge_y_length,float *vertex_value,int *x_intersection,float *value)
+/*******************************************************************************
+LAST MODIFIED 13 November 2001
+
+DESCRIPTION :
+Given <triangle_egde_number> (from 0-2) and scan_line_y, the y value of the 
+intersecting "scan line" and
+<vertex_x> <vertex_y> <vertex_value> arrays of length 3 of the x,y value at 
+the triangle's vertices and	
+<gradient> an array of length 3 of the gradients of the triangle's edges, 
+and <inv_edge_y_length> an array of length 3 of the 1/(triangle's edges y length)
+returns <x_intersection>, the x value of the intersection 
+of the triangle edge with the "scan line" and <value>, the interpolated value
+at this point (x_intersection,y).
+Returns an error if scan_line_y isn't btwn the y's of the triangle edge's ends,
+or if the y's of the triangle edge's end are the same, i.e you're supposed to
+check for these conditions before calling this function.
+This function is a quite specific (i.e. non-generic) helper function, called by 
+draw_2d_construct_2d_gouraud_image_map.
+*******************************************************************************/
+{
+	float grad,inverse_y_length,value_0,value_1;
+	int a_x,b_x,a_y,b_y,end_vertex_num,return_code,start_vertex_num;
+
+	ENTER(get_triangle_scan_line_intersection);
+	if((triangle_egde_number>-1)&&(triangle_egde_number<3)&&vertex_x&&vertex_y&&
+		gradient&&inv_edge_y_length&&vertex_value&&x_intersection&&value)
+	{
+		return_code=1;
+		start_vertex_num=triangle_egde_number;
+		end_vertex_num=
+			get_triangle_line_end_vertex_num_from_start_num(start_vertex_num);		
+		a_x=vertex_x[start_vertex_num];
+		a_y=vertex_y[start_vertex_num];	
+		b_x=vertex_x[end_vertex_num];
+		b_y=vertex_y[end_vertex_num];	
+		if(a_y!=b_y)
+		{
+			if(((scan_line_y>=a_y)&&(scan_line_y<=b_y))||
+				((scan_line_y>=b_y)&&(scan_line_y<=a_y)))
+			{
+				grad=gradient[triangle_egde_number];
+				inverse_y_length=inv_edge_y_length[triangle_egde_number];
+				/*line_start_x or	line_end_x	*/
+				if(a_x==b_x)
+				{
+					/*infinite gradient*/
+					*x_intersection=a_x;
+				}
+				else
+				{
+					*x_intersection=(((float)scan_line_y-(float)a_y)/grad)+a_x;
+				}
+				/*value at start of triangle edge*/
+				value_0=vertex_value[start_vertex_num];
+				/*value at end of triangle edge*/						
+				value_1=vertex_value[end_vertex_num];			
+				/* inverse_y_length= 1/(b_y-ay), but we cached it earlier	*/
+				*value=value_1*(((float)scan_line_y-(float)a_y)*inverse_y_length)+
+					value_0*(((float)b_y-(float)scan_line_y)*inverse_y_length);			
+			}
+			else
+			{	
+				display_message(ERROR_MESSAGE,
+					"get_triangle_scan_line_intersection. scan_line_y not btwn a_y and b_y ");
+				return_code=0;			
+			}	
+		}/* if(a_y!=b_y) */
+		else
+		{	
+			display_message(ERROR_MESSAGE,
+			"get_triangle_scan_line_intersection. ay==by ");
+			return_code=0;			
+		}		
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"get_triangle_scan_line_intersection. Invalid arguments");
+		return_code=0;	
+	}
+	if(return_code==0)
+	{
+		*value=0;
+		*x_intersection=0;
+	}
+	LEAVE;
+	return(return_code);
+}/* get_triangle_scan_line_intersection */
+
+static int draw_2d_construct_2d_gouraud_image_map(struct Map *map,
+	struct Sub_map *sub_map,int region_number,struct Region *the_region,
+	struct Region **maximum_region,struct Region **minimum_region,
+	int *minimum_x,int *minimum_y,int *maximum_x,int *maximum_y,float *max_f,
+	float *min_f,char *background_map_boundary_base)
+/*******************************************************************************
+LAST MODIFIED 19 November 2001
+
+DESCRIPTION :
+Construct a colour map image for colour map or contours or  values  in the
+<sub_map> frame, using gouraud shading btwn the electrodes.
+Only works for TORSOs, requires that the  electrodes are approximately a 
+cylinder with z axis  up centre.
+*******************************************************************************/
+{
+	enum Map_type map_type;	
+	float delta_value,delta_y,end_value,*electrode_value,gradient[3],
+		inv_edge_y_length[3],*pixel_value,start_value,*stretch_x,*stretch_y,value,
+		vertex_value[3];
+	int adjusted_x,*electrode_x,*electrode_y,end_vertex_num,found,i,index,
+		intersected_edges[3],k,line_start_x,line_end_x,map_width,
+		number_of_intersected_edges,return_code,start_vertex_num,
+		triangle_egde_number,tri_min_x,tri_min_y,tri_max_x,
+		tri_max_y,tri_width,vertex_x[3],vertex_y[3],x,x_offset,y;
+	struct Map_frame *frame;
+#if defined (DEBUG)
+	int edge_flag;
+#endif 	/*  defined (DEBUG)	*/
+
+	ENTER(draw_2d_construct_2d_gouraud_image_map);	
+	stretch_y=(float *)NULL;
+	stretch_x=(float *)NULL;	
+	electrode_value=(float *)NULL;
+	electrode_x=(int *)NULL;
+	electrode_y=(int *)NULL;
+	pixel_value=(float *)NULL;
+	frame=(struct Map_frame *)NULL;
+	if(map&&sub_map&&the_region&&maximum_region&&minimum_region&&minimum_x&&
+		minimum_y&&maximum_x&&maximum_y&&max_f&&min_f&&background_map_boundary_base&&		
+		(the_region->type==TORSO))
+	{		
+		/*if necessary, do triangulation */
+		if(get_map_drawing_information_electrodes_accepted_or_rejected
+			(map->drawing_information)||(!map->triangle_electrode_indices))
+		{					
+			map_2d_delauney(map);
+			set_map_drawing_information_electrodes_accepted_or_rejected
+				(map->drawing_information,0);
+		}
+		map_width=sub_map->width;		
+		stretch_x=sub_map->stretch_x;
+		stretch_y=sub_map->stretch_y;			
+		if (map->type)
+		{
+			map_type= *(map->type);
+		}
+		else
+		{
+			map_type=NO_MAP_FIELD;
+		}				
+		if(	map_type==POTENTIAL)
+		{
+			frame=&(sub_map->frame);						
+			pixel_value=frame->pixel_values;
+			/* x_offset is the offset into the window of the image */
+			x_offset=sub_map->start_x[region_number];
+			/* interpolate data */
+			if ((0!=stretch_x[region_number])&&(0!=stretch_y[region_number]))
+			{																																	
+				/* calculate pixel values */												
+				electrode_x=sub_map->electrode_x;
+				electrode_y=sub_map->electrode_y;
+				electrode_value=sub_map->electrode_value;
+				k=0;		
+				while(k<map->number_of_2d_triangles*3)
+				{						
+					/* for each triangle vertex*/
+					for(i=0;i<3;i++)
+					{
+						index=map->triangle_electrode_indices[k];
+						vertex_x[i]=electrode_x[index];
+						vertex_y[i]=electrode_y[index];
+						/*electrodes are in screen coords, but vertices independent of it */
+						/* so remove their offset*/
+						vertex_x[i]-=sub_map->x_offset; 
+						vertex_y[i]-=sub_map->y_offset;
+						vertex_value[i]=electrode_value[index];											
+						/*get min and max x and y of triangle*/
+						if(i==0)
+						{
+							tri_min_x=tri_max_x=vertex_x[0];
+							tri_min_y=tri_max_y=vertex_y[0];
+						}
+						if(vertex_x[i]>tri_max_x)
+						{
+							tri_max_x=vertex_x[i];
+						}
+						if(vertex_x[i]<tri_min_x)
+						{
+							tri_min_x=vertex_x[i];
+						}
+						if(vertex_y[i]>tri_max_y)
+						{
+							tri_max_y=vertex_y[i];
+						}
+						if(vertex_y[i]<tri_min_y)
+						{
+							tri_min_y=vertex_y[i];
+						}					
+						/*draw_2d_get_min_max only needs to be called for the vertices*/
+						draw_2d_get_min_max(vertex_value[i],min_f,max_f,maximum_region,
+							minimum_region,the_region,minimum_x,minimum_y,maximum_x,
+							maximum_y,vertex_x[i],vertex_y[i]);
+						k++;					
+					}/* for(i=0;i<3;i++)*/
+					/*wide  triangles have wrapped around the back and in cp coords, crossed*/
+					/*PI/-PI. Extend these wrapped triangles in rc x, so that they'll be drawn */
+					/*at the edge of the map, not behind it.*/
+					tri_width=abs(tri_max_x-tri_min_x);
+					if(tri_width>(map_width/2))
+					{			
+						for(i=0;i<3;i++)
+						{						
+							if(vertex_x[i]<(map_width/2))
+							{							
+								vertex_x[i]+=map_width-2*x_offset;
+							}
+						}				
+					}			
+					/*determine and cache the gradient and inverse of the y_length of the*/
+					/* triangle's edges*/
+					for(i=0;i<3;i++)
+					{
+						start_vertex_num=i;
+						end_vertex_num=
+							get_triangle_line_end_vertex_num_from_start_num(start_vertex_num);
+						delta_y=(float)vertex_y[end_vertex_num]-(float)vertex_y[start_vertex_num];
+						if(vertex_x[start_vertex_num]==vertex_x[end_vertex_num])
+						{
+							/*infinite gradient. Put in a large number! Anyway, we check for*/
+							/* start_x=end_x when consume gradient[] in */
+							/*get_triangle_scan_line_intersection, so never use */
+							gradient[i]=1000000.0;					
+						}
+						else
+						{						
+							gradient[i]=delta_y/
+								((float)vertex_x[end_vertex_num]-(float)vertex_x[start_vertex_num]);
+						}
+						if(delta_y==0.0)
+						{
+							/* zero length. Put in a large number for 1/length. This is never used*/
+							inv_edge_y_length[i]=1000000.0;					
+						}
+						else
+						{
+							inv_edge_y_length[i]=1.0/(delta_y);
+						}
+					}/* for(i=0;i<3;i++) */							
+					/*for each constant y "scan line"*/				
+					for(y=tri_min_y;y<=tri_max_y;y++)
+					{
+						number_of_intersected_edges=0;
+						/*check and store which of the triangle's edges  are intersected*/
+						/*by the constant y "scan line". There should be 2 or 3 edges */
+						/*intersected. 2 edges, including the case of a single vertex,or 3 */
+						/*if one of the edges is the "scan line", gradient==0 or if a vertex and */
+						/*an edge are intersected. */
+						if((y>=vertex_y[0]&&y<=vertex_y[1])||(y>=vertex_y[1]&&y<=vertex_y[0]))
+						{
+							/*intersects 1st triangle edge, from vertex 0 to 1*/
+							intersected_edges[number_of_intersected_edges]=0;
+							number_of_intersected_edges++;
+						}
+						if((y>=vertex_y[1]&&y<=vertex_y[2])||(y>=vertex_y[2]&&y<=vertex_y[1]))
+						{
+							/*intersects 2nd triangle edge from vertex 1 to 2*/
+							intersected_edges[number_of_intersected_edges]=1;
+							number_of_intersected_edges++;
+						}	
+						if((y>=vertex_y[2]&&y<=vertex_y[0])||(y>=vertex_y[0]&&y<=vertex_y[2]))
+						{
+							/*intersects 3rd triangle edgefrom  vertex 2 to 0 */
+							intersected_edges[number_of_intersected_edges]=2;
+							number_of_intersected_edges++;
+						}																				
+						/*find line across triangle*/
+						if(number_of_intersected_edges==3)
+						{
+							/*If one of triangle edges has gradient==0,This is our line across triangle*/
+							i=0;
+							found=0;
+							while((i<3)&&(!found))
+							{
+								if(gradient[i]==0)
+								{
+									found=1;
+								}
+								else
+								{
+									i++;
+								}
+							}
+							if(found)
+							{									
+								start_vertex_num=i;
+								end_vertex_num=
+									get_triangle_line_end_vertex_num_from_start_num(start_vertex_num);
+								line_start_x=vertex_x[start_vertex_num];
+								line_end_x=vertex_x[end_vertex_num];
+								start_value=vertex_value[start_vertex_num];
+								end_value=vertex_value[end_vertex_num];								
+							}/* if(found) */
+							else
+							{
+								/*2 of the intersections will at a common vertex, the third in the middle*/
+								/* of an edge (including the degenerate case, where this middle edge is a*/
+								/* point, and the triangle is a line*) */
+								for(i=0;i<3;i++)
+								{
+									triangle_egde_number=intersected_edges[i];
+									start_vertex_num=triangle_egde_number;
+									end_vertex_num=
+										get_triangle_line_end_vertex_num_from_start_num(start_vertex_num);
+									if(vertex_y[start_vertex_num]==y)
+									{
+										/*start intersection at a vertex */
+										line_start_x=vertex_x[start_vertex_num];
+										start_value=vertex_value[start_vertex_num];
+
+										if(vertex_y[end_vertex_num]==y)
+										{
+											/*end intersection at a vertex */
+											line_end_x=vertex_x[end_vertex_num];
+											end_value=vertex_value[end_vertex_num];
+										}
+									}													
+									else if(vertex_y[end_vertex_num]!=y)
+									{	
+										/*end intersection n the middle of an edge */
+										return_code=get_triangle_scan_line_intersection(intersected_edges[i],
+											y,vertex_x,vertex_y,gradient,inv_edge_y_length,vertex_value,
+											&line_end_x,&end_value);
+									}														
+								}/* for(i=0;i<3;i++)*/
+							} /* if(found) */
+						}
+						else if(number_of_intersected_edges==2)
+						{
+							/*both of the intersections in the middle of an edge */						
+							return_code=(get_triangle_scan_line_intersection(intersected_edges[0],
+							  y,vertex_x,vertex_y,gradient,inv_edge_y_length,vertex_value,
+								&line_start_x,&start_value)&&
+								get_triangle_scan_line_intersection(intersected_edges[1],
+									y,vertex_x,vertex_y,gradient,inv_edge_y_length,vertex_value,
+									&line_end_x,&end_value));						
+						}
+						else
+						{
+							display_message(ERROR_MESSAGE,
+								"draw_2d_construct_2d_gouraud_image_map. Wrong number of intersections");
+							return_code=0;
+						}	
+						if(return_code)
+						{
+							if(line_end_x==line_start_x)
+							{
+								delta_value=0;
+							}
+							else
+							{
+								delta_value=(end_value-start_value)/(line_end_x-line_start_x);
+							}
+							/*ensure line_start_x>line_end_x*/
+							if(line_start_x>line_end_x)
+							{
+								x=line_start_x;
+								line_start_x=line_end_x;
+								line_end_x=x;						
+								value=start_value;
+								start_value=end_value;
+								end_value=value;
+							}																	
+							/*do line of pixels across the triangle*/
+							value=start_value;
+							for(x=line_start_x;x<=line_end_x;x++)
+							{		
+#if defined (DEBUG)
+								/*flag pixels at the triangle's edges*/
+								if((x==line_start_x)||(x==line_end_x))
+								{
+									edge_flag=1;
+								}
+								else
+								{
+									edge_flag=0;
+								}	
+#endif /* defined (DEBUG)*/
+								/*ensure the pixels of (wrapped) triangles at RH edge wrap to LH edge*/	
+								if(x>(map_width-x_offset))
+								{
+									adjusted_x=x-map_width+2*x_offset;
+								}
+								else
+								{
+									adjusted_x=x;
+								}															
+#if defined (DEBUG)
+								/* draw pixels at triangle's edges dark, so can see easily*/
+								if(edge_flag)
+								{
+									pixel_value[y*map_width+adjusted_x]=(*max_f);
+								}
+								else
+#endif /* defined (DEBUG)*/
+								{
+									pixel_value[y*map_width+adjusted_x]=value;
+								}
+								background_map_boundary_base[y*map_width+adjusted_x]=1;
+								value+=delta_value;							
+							}	/* for(x=line_start_x;x<=line_end_x;x++) */
+						}/* if(return_code)*/
+					}/* for(y=tri_min_y;y<=tri_max_y;y++) */					
+				}/* (k=0;k<map->number_of_2d_triangles;k++) */						
+			}/* if ((0!=stretch_x[region_number])&& */
+		}/* if(	map_type==POTENTIAL)*/
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"draw_2d_construct_2d_gouraud_image_map. Invalid arguments");
+		return_code=0;
+	}
+	LEAVE;
+	return(return_code);
+}/* draw_2d_construct_2d_gouraud_image_map*/
+
+static int draw_2d_construct_image_map(struct Map *map,struct Sub_map *sub_map,
+	struct Drawing_2d *drawing,int recalculate,int screen_region_height,
+	int screen_region_width)
+/*******************************************************************************
+LAST MODIFIED : 19 November 2001
+
+DESCRIPTION :
+Construct a colour map image for colour map or contours or  values  in the
+<sub_map> frame.
+*******************************************************************************/
+{
+	char *background_map_boundary,*background_map_boundary_base,*temp_char;
+	Display *display;		
+	float background_pixel_value,boundary_pixel_value,max_f,min_f,*pixel_value;
+	int bit_map_pad,bit_map_unit,contour_areas_in_x,contour_areas_in_y,
+		*draw_region_number,i,map_width,map_height,maximum_x,maximum_y,minimum_x,
+		minimum_y,number_of_contour_areas,number_of_regions,number_of_spectrum_colours,
+		region_number,return_code,scan_line_bytes,temp_region_number;
+	short int *contour_x,*contour_y;
+	struct Map_drawing_information *drawing_information;
+	struct Map_frame *frame;
+	struct Region	*maximum_region,*minimum_region,*the_region;
+	struct Region_list_item *region_item;
+	struct Rig *rig;
+
+	ENTER(draw_2d_construct_image_map);
+	maximum_region=(struct Region *)NULL;
+	minimum_region=(struct Region *)NULL;
+	the_region=(struct Region *)NULL;
+	region_item=(struct Region_list_item *)NULL;
+	rig=(struct Rig *)NULL;
+	display=(Display *)NULL;
+	pixel_value=(float *)NULL;
+	frame=(struct Map_frame *)NULL;
+	drawing_information=(struct Map_drawing_information *)NULL;
+	contour_x=(short int *)NULL;
+	contour_y=(short int *)NULL;
+	temp_char=(char *)NULL;
+	background_map_boundary=(char *)NULL;
+	background_map_boundary_base=(char *)NULL;
+	if (map&&sub_map&&drawing&&(drawing_information=map->drawing_information))
+	{
+		return_code=1;		
+		map_width=sub_map->width;
+		map_height=sub_map->height;		
+		draw_region_number=map->draw_region_number;
+		rig= *(map->rig_pointer);	
+		number_of_regions=rig->number_of_regions;
+		number_of_spectrum_colours=drawing_information->number_of_spectrum_colours;	
+		display=drawing->user_interface->display;
+		frame=&(sub_map->frame);			
 		if (recalculate||!(frame->pixel_values))
 		{
 			busy_cursor_on((Widget)NULL,
@@ -11297,8 +12088,7 @@ Construct a colour map image for colour map or contours or  values  in the
 					if (ALLOCATE(background_map_boundary_base,char,map_width*map_height))
 					{
 						/*???DB.  Put the frame loop on the inside ? */
-						frame=&(sub_map->frame);
-						frame_time=sub_map->frame_time;
+						frame=&(sub_map->frame);				
 						pixel_value=frame->pixel_values;
 						/* clear the image */
 						background_map_boundary=background_map_boundary_base;
@@ -11321,147 +12111,25 @@ Construct a colour map image for colour map or contours or  values  in the
 								draw_region_number[temp_region_number];
 							if (0<=region_number)
 							{
-								current_region=get_Region_list_item_region(
-									region_item);
-								/* interpolate data */
-								if ((0!=stretch_x[region_number])&&
-									(0!=stretch_y[region_number])&&
-									(function=calculate_interpolation_functio(
-										map_type,rig,current_region,map->event_number,
-										frame_time,map->datum,
-										map->start_search_interval,
-										map->end_search_interval,undecided_accepted,
-										map->finite_element_mesh_rows,
-										map->finite_element_mesh_columns,
-										map->membrane_smoothing,
-										map->plate_bending_smoothing)))
-								{																															
-									number_of_mesh_columns=
-										function->number_of_columns;
-									number_of_mesh_rows=
-										function->number_of_rows;
-									y_mesh=function->y_mesh;
-									x_mesh=function->x_mesh;
-									/* calculate pixel values */
-									pixel_left=((region_number/map->number_of_region_rows)*
-										map_width)/map->number_of_region_columns;
-									pixel_top=((region_number%map->number_of_region_rows)*
-										map_height)/map->number_of_region_rows;
-									x_screen_step=1/stretch_x[region_number];
-									y_screen_step= -1/stretch_y[region_number];
-									x_screen_left=min_x[region_number]+
-										(pixel_left-start_x[region_number])*
-										x_screen_step;
-									y_screen_top=min_y[region_number]+
-										(pixel_top-start_y[region_number])*
-										y_screen_step;
-									y_screen=y_screen_top;
-									y_pixel=pixel_top;
-#if defined(GOURAUD_FROM_PIXEL_VALUE) 
-									/* Allocate space for
-										 pixel-array-without-border.  This will be a
-										 bit too big, but don't know exact size yet */
-									if (!(ALLOCATE(just_map_pixel_value,float,
-										map_width*map_height)))
-									{	
-										display_message(ERROR_MESSAGE,
-											"draw_2d_construct_image_map. ALLOCATE just_map_pixel_value failed");
-										return_code=0;
-									}														
-#endif /* defined(GOURAUD_FROM_PIXEL_VALUE) */
-									for (j=0;j<screen_region_height;j++)
-									{
-										x_screen=x_screen_left;
-										x_pixel=pixel_left;
-										for (i=0;i<screen_region_width;i++)
-										{
-											/* calculate the u and v  */
-											draw_2d_calculate_u_and_v(map,
-												current_region,x_screen,y_screen,pi_over_2,
-												pi,two_pi,&u,&v,&valid_u_and_v);
-											/* calculate the element coordinates */
-											if (valid_u_and_v)
-											{																		
-												/* determine which element the point is
-													 in */
-												column=0;
-												while ((column<number_of_mesh_columns)&&
-													(u>=x_mesh[column]))
-												{
-													column++;
-												}
-												if ((column>0)&&(u<=x_mesh[column]))
-												{
-													row=0;
-													while ((row<number_of_mesh_rows)&&
-														(v>=y_mesh[row]))
-													{
-														row++;
-													}
-													if ((row>0)&&(v<=y_mesh[row]))
-													{	
-														draw_2d_calculate_f_approx(function,
-															&f_approx,column,row,u,v);
-														if (max_f<min_f)
-														{
-															min_f=f_approx;
-															max_f=f_approx;
-															maximum_region=current_region;
-															minimum_region=current_region;
-															maximum_x=i;
-															maximum_y=j;
-															minimum_x=i;
-															minimum_y=j;
-														}/* if (max_f<min_f) */
-														else
-														{
-															if (f_approx<min_f)
-															{
-																min_f=f_approx;
-																minimum_region=current_region;
-																minimum_x=i;
-																minimum_y=j;
-															}
-															else
-															{
-																if (f_approx>max_f)
-																{
-																	max_f=f_approx;
-																	maximum_region=current_region;
-																	maximum_x=i;
-																	maximum_y=j;
-																}
-															}
-														}/* if (max_f<min_f) */
-														pixel_value[y_pixel*map_width+x_pixel]=f_approx;
-														background_map_boundary_base[
-															y_pixel*map_width+x_pixel]=1;
-#if defined(GOURAUD_FROM_PIXEL_VALUE)																				
-														set_just_map_pixel_value(
-															just_map_pixel_value,&num_pixels,
-															f_approx,x_pixel,y_pixel,&min_x_pixel,
-															&max_x_pixel,&min_y_pixel,&max_y_pixel);
-#endif /* defined(GOURAUD_FROM_PIXEL_VALUE) */
-													}/* if ((row>0)&&(v<=y_mesh[row])) */
-												}/* if ((column>0)&&(u<=x_mesh[column])) */
-											}/* if (valid_u_and_v) */
-											x_screen += x_screen_step;
-											x_pixel++;																
-										}/* for (i=0;i<screen_region_width;i++) */
-										y_screen += y_screen_step;
-										y_pixel++;															
-									}/* for (j=0;j<screen_region_height;j++) */
-									destroy_Interpolation_function(&function);
-#if defined(GOURAUD_FROM_PIXEL_VALUE)
-									gouraud_from_pixel_value(map,just_map_pixel_value,
-										min_x_pixel,max_x_pixel,min_y_pixel,max_y_pixel,
-										number_of_mesh_columns,number_of_mesh_rows,
-										num_pixels,&min_f,&max_f,map_height,map_width,
-										pixel_value);
-									DEALLOCATE(just_map_pixel_value);
-									DEALLOCATE(new_pixel_value);
-#endif /* defined(GOURAUD_FROM_PIXEL_VALUE) */
-								}/* if ((0!=stretch_x[region_number])&& */
+								the_region=get_Region_list_item_region(
+									region_item);							
+								if ((map->projection_type==CYLINDRICAL_PROJECTION)&&
+									(map->interpolation_type==DIRECT_INTERPOLATION)&&
+									(*(map->type)==POTENTIAL)&&
+									the_region&&(the_region->type==TORSO))
+								{
+									draw_2d_construct_2d_gouraud_image_map(map,sub_map,region_number,
+										the_region,&maximum_region,&minimum_region,
+										&minimum_x,&minimum_y,&maximum_x,&maximum_y,&max_f,&min_f,
+										background_map_boundary_base);
+								}
+								else
+								{
+									draw_2d_construct_interpolated_image_map(map,sub_map,region_number,
+										the_region,&maximum_region,&minimum_region,
+										screen_region_height,screen_region_width,&minimum_x,&minimum_y,
+										&maximum_x,&maximum_y,&max_f,&min_f,background_map_boundary_base);
+								}
 							}/* if (0<=region_number) */
 							region_item=get_Region_list_item_next(region_item);
 						}/* for (temp_region_number=0; */
@@ -11497,8 +12165,7 @@ Construct a colour map image for colour map or contours or  values  in the
 					}
 				}/*	if (recalculate>1) */	
 			} /* if (return_code) */
-			busy_cursor_off((Widget)NULL,
-				drawing_information->user_interface);
+			busy_cursor_off((Widget)NULL,drawing_information->user_interface);
 		}
 	}
 	else
@@ -11515,7 +12182,7 @@ static int draw_2d_make_map(struct Map *map,int recalculate,
 	struct Drawing_2d *drawing,int map_width,int map_height,int map_x_offset,
 	int map_y_offset,float frame_time,int use_potential_time)
 /*******************************************************************************
-LAST MODIFIED :30 October 2001
+LAST MODIFIED : 19 November 2001
 
 DESCRIPTION :
 This function draws the <map> in the <drawing>, with <map_width>, <map_height> 
@@ -11529,17 +12196,13 @@ If <recalculate> is >2 then the <map> is resized to match the <drawing>.
 involved I'll put a PostScript switch into this routine so that it either draws
 to the drawing or writes to a postscript file.
 ???DB.  Use XDrawSegments for contours ?
-??JW added options for Gouraund shading, selected using the defines
-GOURAUD_FROM_MESH or GOURAUD_FROM_PIXEL_VALUE. A test thing really, for
-comparison with 3D maps.
 ==============================================================================*/
 {
-	char undecided_accepted;
 	char *electrode_drawn=(char *)NULL;
 	char *first=(char *)NULL;
 	Display *display=(Display *)NULL;
 	enum Map_type map_type;
-	float a,f_value,pi,pi_over_2,two_pi;
+	float a,f_value;
 	float *electrode_value=(float *)NULL;		
 	float *min_x,*min_y=(float *)NULL;
 	float *stretch_y=(float *)NULL;
@@ -11598,8 +12261,7 @@ comparison with 3D maps.
 		switch (map_type)
 		{
 			case SINGLE_ACTIVATION:
-			{
-				undecided_accepted=map->undecided_accepted;
+			{				
 				if (!map->event_number)
 				{
 					display_message(ERROR_MESSAGE,"draw_2d_make_map.  Missing event_number");
@@ -11610,16 +12272,14 @@ comparison with 3D maps.
 				}			
 			} break;
 			case MULTIPLE_ACTIVATION:
-			{
-				undecided_accepted=map->undecided_accepted;
+			{				
 				if (!map->datum)
 				{
 					display_message(ERROR_MESSAGE,"draw_2d_make_map.  Missing datum");
 				}
 			} break;
 			case INTEGRAL:
-			{
-				undecided_accepted=map->undecided_accepted;
+			{				
 				if (!map->start_search_interval)
 				{
 					display_message(ERROR_MESSAGE,
@@ -11634,17 +12294,14 @@ comparison with 3D maps.
 			} break;
 			case POTENTIAL:
 			{
-				undecided_accepted=map->undecided_accepted;
+				;
 			} break;
 		}/* switch (map_type) */
 		if (map->rig_pointer)
 		{
 			if ((rig= *(map->rig_pointer))&&
 				(0<(number_of_regions=rig->number_of_regions)))
-			{
-				pi_over_2=2*atan(1);
-				pi=2*pi_over_2;
-				two_pi=2*pi;
+			{				
 				DEALLOCATE(map->draw_region_number);				
 				if (ALLOCATE(draw_region_number,int,number_of_regions))
 				{	
@@ -11654,6 +12311,7 @@ comparison with 3D maps.
 					}
 					current_region=get_Rig_current_region(rig);			
 					/* determine the number of regions to draw and count the electrodes */
+					/*include rejected electrodes, as want to draw these under some circumstances*/
 					number_of_electrodes=0;
 					device=rig->devices;
 					number_of_devices=rig->number_of_devices;
@@ -11694,7 +12352,7 @@ comparison with 3D maps.
 							ALLOCATE(y,float,number_of_electrodes)&&
 							ALLOCATE(first,char,number_of_drawn_regions))
 						{
-							map->electrodes=electrode;
+ 							map->electrodes=electrode;
 							map->electrode_drawn=electrode_drawn;															
 							if ((sub_map=create_Sub_map(number_of_drawn_regions,
 								number_of_electrodes,map_x_offset,map_y_offset,map_height,
@@ -11781,7 +12439,7 @@ comparison with 3D maps.
 									device++;
 									number_of_devices--;
 								}/* while (number_of_devices>0) */			
-								draw_2d_set_min_x_max_x(map,sub_map,&a,pi,map->projection_type);
+								draw_2d_set_min_x_max_x(map,sub_map,&a,map->projection_type);
 								map->number_of_region_columns=(int)(0.5+sqrt((double)number_of_drawn_regions));
 								if (map->number_of_region_columns<1)
 								{
@@ -11838,8 +12496,7 @@ comparison with 3D maps.
 									if (NO_INTERPOLATION!=map->interpolation_type)
 									{
 										draw_2d_construct_image_map(map,sub_map,drawing,recalculate,
-											undecided_accepted,pi_over_2,pi,two_pi,screen_region_height,
-											screen_region_width);
+											screen_region_height,screen_region_width);
 									}/* (NO_INTERPOLATION!=map->interpolation_type) */
 									else
 									{
@@ -12011,7 +12668,7 @@ See draw_2d_make_map for meanings of recalculate.
 	ENTER(draw_map_2d);
 	return_code=0;
 	if (map&&drawing)
-	{
+	{		
 		return_code=1;	
 		if ((*map->first_eimaging_event)&&
 			(ELECTRICAL_IMAGING==*map->analysis_mode)&&(*(map->type)==POTENTIAL))
@@ -12093,6 +12750,126 @@ See draw_2d_make_map for meanings of recalculate.
 	return (return_code);
 } /* draw_map_2d */
 
+enum Projection_type ensure_map_projection_type_matches_region_type(
+	struct Map *map)
+/*******************************************************************************
+LAST MODIFIED : 20 September 2001
+
+DESCRIPTION : Ensure that the map->projection_type and the 
+rig->current_region->type are compatible.
+==============================================================================*/
+{	
+	enum Projection_type projection_type;
+	struct Rig *rig;
+
+	ENTER(ensure_projection_type_matches_region_type);
+	/* the default */
+	projection_type=HAMMER_PROJECTION;
+	if(map)
+	{
+		if(rig=*(map->rig_pointer))
+		{					
+			projection_type=map->projection_type;			
+#if defined (UNEMAP_USE_3D)
+			/*THREED_PROJECTION always valid */
+			if(projection_type!=THREED_PROJECTION)
+			{
+#endif /* defined (UNEMAP_USE_3D) */
+				/*possibly change the projection_type*/
+				if(!rig->current_region)
+				{
+					/*no current_region, so mutli region */
+					projection_type=HAMMER_PROJECTION;
+				}
+				else
+				{
+					switch(rig->current_region->type)
+					{			
+						case SOCK:
+						{
+							if(projection_type==CYLINDRICAL_PROJECTION)
+							{
+								projection_type=HAMMER_PROJECTION;
+							}
+						}break;
+						case PATCH:
+						{	
+							if((projection_type==HAMMER_PROJECTION)||
+								(projection_type==POLAR_PROJECTION))
+							{
+								projection_type=CYLINDRICAL_PROJECTION;
+							}
+						}break;
+						case TORSO:
+						{
+							if((projection_type==HAMMER_PROJECTION)||
+								(projection_type==POLAR_PROJECTION))
+							{
+								projection_type=CYLINDRICAL_PROJECTION;
+							}
+						}break;	
+						default:
+						{
+							projection_type=HAMMER_PROJECTION;
+						}break;
+					}
+				}		
+#if defined (UNEMAP_USE_3D)
+			}
+#endif /* defined (UNEMAP_USE_3D) */
+			/*set the projection type*/		
+			map->projection_type=projection_type;			
+		} /* if(rig=*(map->rig_pointer)) */
+	}/* if(map) */
+	else
+	{		
+		display_message(ERROR_MESSAGE,
+			"ensure_map_projection_type_matches_region_type. Invalid argument");
+	}
+	return(projection_type);
+	LEAVE;
+}/* ensure_projection_type_matches_region_type*/ 
+
+static enum Interpolation_type ensure_interpolation_type_matches_region_type(
+	struct Map *map)
+/*******************************************************************************
+LAST MODIFIED : 20 November 2001
+
+DESCRIPTION:
+Ensures the map->interpolation_type and rig->current_region match.
+Also calls ensure_map_projection_type_matches_region_type if they don't
+==============================================================================*/
+{
+	struct Rig *rig;
+	enum Interpolation_type type;
+
+	ENTER(ensure_interpolation_type_matches_region_type);
+	/*make no interpolation the default*/
+	type=NO_INTERPOLATION;
+	if(map)
+	{
+		rig=(struct Rig *)NULL;
+		/*only currently a problem for DIRECT_INTERPOLATION*/
+		if(map->interpolation_type==DIRECT_INTERPOLATION)
+		{					
+			rig=*(map->rig_pointer);					
+			if(!((rig->current_region)&&(rig->current_region->type==TORSO)))
+			{
+				map->interpolation_type=BICUBIC_INTERPOLATION;
+				ensure_map_projection_type_matches_region_type(map);
+			}										
+		}/* if(map->interpolation_type==DIRECT_INTERPOLATION) */
+		type=map->interpolation_type;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"ensure_interpolation_type_matches_region_type. Invalid argument");
+	}
+	LEAVE;
+	return(type);
+}/* ensure_interpolation_type_matches_region_type */
+
 int draw_map(struct Map *map,int recalculate,struct Drawing_2d *drawing)
 /*******************************************************************************
 LAST MODIFIED : 17 October 2001
@@ -12108,6 +12885,7 @@ Call draw_map_2d or draw_map_3d depending upon <map>->projection_type.
 	{
 		if ((map->rig_pointer)&&(*(map->rig_pointer)))
 		{
+			ensure_interpolation_type_matches_region_type(map);		 
 #if defined (UNEMAP_USE_3D) 
 			/* 3d map for 3d projection */
 			if (map->projection_type==THREED_PROJECTION)
@@ -12531,7 +13309,7 @@ struct Map_drawing_information *create_Map_drawing_information(
 #endif /* defined (UNEMAP_USE_3D) */
       )
 /*******************************************************************************
-LAST MODIFIED : 5 March 2001
+LAST MODIFIED : 8 November  2001
 
 DESCRIPTION :
 ==============================================================================*/
@@ -12721,7 +13499,8 @@ visual=default_visual;
 			map_drawing_information->data_selection=data_selection;
       /* for the cmgui graphics window */
       map_drawing_information->viewed_scene=0;
-      map_drawing_information->electrodes_accepted_or_rejected=0;
+      /*set to 1 so that will initially regenerate */
+      map_drawing_information->electrodes_accepted_or_rejected=1; 
 			map_drawing_information->no_interpolation_colour=create_Colour(0.65,0.65,0.65);
 			map_drawing_information->background_colour=create_Colour(0,0,0);
 			map_drawing_information->light=(struct Light *)NULL;			
@@ -13046,6 +13825,69 @@ DESCRIPTION :
 
 	return (return_code);
 } /* destroy_Map_drawing_information */
+
+int get_map_drawing_information_electrodes_accepted_or_rejected(
+	struct Map_drawing_information *map_drawing_information)
+/*******************************************************************************
+LAST MODIFIED :13 December  2000
+
+DESCRIPTION :
+gets the electrodes_accepted_or_rejected flag of the <map_drawing_information>
+==============================================================================*/
+{
+	int electrodes_accepted_or_rejected;
+
+	ENTER(get_map_drawing_information_electrodes_accepted_or_rejected)
+	if (map_drawing_information)
+	{
+		electrodes_accepted_or_rejected=map_drawing_information->electrodes_accepted_or_rejected;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"get_map_drawing_information_electrodes_accepted_or_rejected. invalid arguments");
+		electrodes_accepted_or_rejected=0;
+	}
+	LEAVE;
+	return(electrodes_accepted_or_rejected);
+}/* get_map_drawing_information_electrodes_accepted_or_rejected */
+
+int set_map_drawing_information_electrodes_accepted_or_rejected(
+struct Map_drawing_information *map_drawing_information,int accep_rej)
+/*******************************************************************************
+LAST MODIFIED :  13 December 2000
+
+DESCRIPTION :
+sets the electrodes_accepted_or_rejected flag of the <map_drawing_information>
+ to 1 if <accep_rej> >0,
+0 if <accep_rej> = 0.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(set_map_drawing_information_electrodes_accepted_or_rejected)
+	if (map_drawing_information&&(accep_rej>-1))
+	{
+		if (accep_rej)
+		{
+			/* scene has been viewed */
+			map_drawing_information->electrodes_accepted_or_rejected=1;
+		}
+		else
+		{
+			/* scene hasn't been viewed */
+			map_drawing_information->electrodes_accepted_or_rejected=0;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"set_map_drawing_information_electrodes_accepted_or_rejected."
+			" invalid arguments");
+		return_code=0;
+	}
+	LEAVE;
+	return (return_code);
+}/* set_map_drawing_information_electrodes_accepted_or_rejected */
 
 #if defined (UNEMAP_USE_3D)
 DECLARE_OBJECT_FUNCTIONS(Map_3d_package)
@@ -14457,69 +15299,6 @@ Sets the torso_arm_labels  for map_drawing_information
 	return (return_code);
 } /* set_map_drawing_information_torso_arm_labels */
 
-int get_map_drawing_information_electrodes_accepted_or_rejected(
-	struct Map_drawing_information *map_drawing_information)
-/*******************************************************************************
-LAST MODIFIED :13 December  2000
-
-DESCRIPTION :
-gets the electrodes_accepted_or_rejected flag of the <map_drawing_information>
-==============================================================================*/
-{
-	int electrodes_accepted_or_rejected;
-
-	ENTER(get_map_drawing_information_electrodes_accepted_or_rejected)
-	if (map_drawing_information)
-	{
-		electrodes_accepted_or_rejected=map_drawing_information->electrodes_accepted_or_rejected;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,"get_map_drawing_information_electrodes_accepted_or_rejected."
-			" invalid arguments");
-		electrodes_accepted_or_rejected=0;
-	}
-	LEAVE;
-	return(electrodes_accepted_or_rejected);
-}/* get_map_drawing_information_electrodes_accepted_or_rejected */
-
-int set_map_drawing_information_electrodes_accepted_or_rejected(
-struct Map_drawing_information *map_drawing_information,int accep_rej)
-/*******************************************************************************
-LAST MODIFIED :  13 December 2000
-
-DESCRIPTION :
-sets the electrodes_accepted_or_rejected flag of the <map_drawing_information>
- to 1 if <accep_rej> >0,
-0 if <accep_rej> = 0.
-==============================================================================*/
-{
-	int return_code;
-
-	ENTER(set_map_drawing_information_electrodes_accepted_or_rejected)
-	if (map_drawing_information&&(accep_rej>-1))
-	{
-		if (accep_rej)
-		{
-			/* scene has been viewed */
-			map_drawing_information->electrodes_accepted_or_rejected=1;
-		}
-		else
-		{
-			/* scene hasn't been viewed */
-			map_drawing_information->electrodes_accepted_or_rejected=0;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,"set_map_drawing_information_electrodes_accepted_or_rejected."
-			" invalid arguments");
-		return_code=0;
-	}
-	LEAVE;
-	return (return_code);
-}/* set_map_drawing_information_electrodes_accepted_or_rejected */
-
 struct Colour *get_map_drawing_information_background_colour(
 	struct Map_drawing_information *map_drawing_information)
 /*******************************************************************************
@@ -15562,3 +16341,5 @@ creates a 1 component  <field_name>
 	return(map_fit_field);
 }/* create_mapping_type_fe_field */
 #endif /* defined (UNEMAP_USE_3D) */
+
+
