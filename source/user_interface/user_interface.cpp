@@ -914,6 +914,7 @@ Open the <user_interface>.
 	/* check arguments */
 	if (user_interface)
 	{
+		user_interface->continue_interface = 1;
 		user_interface->shell_list=(struct Shell_list_item *)NULL;
 		user_interface->active_shell_stack=(struct Shell_stack_item *)NULL;
 #if defined (MOTIF)
@@ -1114,8 +1115,11 @@ DESCRIPTION :
 			XFreePixmap(user_interface->display,user_interface->no_cascade_pixmap);
 			user_interface->no_cascade_pixmap=XmUNSPECIFIED_PIXMAP;
 		}
+		user_interface->continue_interface = 0;
+#if defined (OLD_CODE)
 /*???DB.  Bad ! */
 		exit(0);
+#endif /* defined (OLD_CODE) */
 #endif /* defined (MOTIF) */
 		return_code=1;
 	}
@@ -1193,7 +1197,7 @@ DESCRIPTION :
 #if defined (MOTIF)
 		/* infinite loop */
 			/*???DB.  This should not be an infinite loop.  Set exit ? */
-		while (1)
+		while (user_interface->continue_interface)
 		{
 			application_main_step(user_interface);
 		}

@@ -49,6 +49,7 @@ application/window manager.
 ???DB.  Used to be globals.
 ==============================================================================*/
 {
+	int continue_interface;
 #if defined (MOTIF)
 	char *application_name,**argv,*class_name;
 	Cursor busy_cursor;
