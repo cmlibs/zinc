@@ -1,7 +1,7 @@
 //******************************************************************************
 // FILE : function_variable_matrix_implementation.cpp
 //
-// LAST MODIFIED : 1 September 2004
+// LAST MODIFIED : 3 September 2004
 //
 // DESCRIPTION :
 //==============================================================================
@@ -349,6 +349,215 @@ string_handle Function_variable_matrix<Value_type>::get_string_representation()
 	}
 
 	return (return_string);
+}
+
+EXPORT template<typename Value_type>
+Function_handle Function_variable_matrix<Value_type>::evaluate()
+//******************************************************************************
+// LAST MODIFIED : 3 September 2004
+//
+// DESCRIPTION :
+//==============================================================================
+{
+	Function_handle function_local,result(0);
+
+	if (function_local=function())
+	{
+		if (0<row_private)
+		{
+			if (0<column_private)
+			{
+				ublas::matrix<Value_type,ublas::column_major> temp_matrix(1,1);
+
+				if ((function_local->evaluate)(Function_variable_handle(this))&&
+					get_entry(temp_matrix(0,0)))
+				{
+					result=Function_handle(new Function_matrix<Value_type>(temp_matrix));
+				}
+			}
+			else
+			{
+				bool valid;
+				boost::intrusive_ptr< Function_variable_matrix<Value_type> >
+					temp_variable;
+				Function_size_type j,number_of_columns=this->number_of_columns();
+				ublas::matrix<Value_type,ublas::column_major>
+					temp_matrix(1,number_of_columns);
+
+				valid=true;
+				j=0;
+				while (valid&&(j<number_of_columns))
+				{
+					valid=((temp_variable=(*this)(row_private,j+1))&&
+						(function_local->evaluate)(temp_variable)&&
+						(temp_variable->get_entry(temp_matrix(0,j))));
+					j++;
+				}
+				if (valid)
+				{
+					result=Function_handle(new Function_matrix<Value_type>(temp_matrix));
+				}
+			}
+		}
+		else
+		{
+			if (0<column_private)
+			{
+				bool valid;
+				boost::intrusive_ptr< Function_variable_matrix<Value_type> >
+					temp_variable;
+				Function_size_type i,number_of_rows=this->number_of_rows();
+				ublas::matrix<Value_type,ublas::column_major>
+					temp_matrix(number_of_rows,1);
+
+				valid=true;
+				i=0;
+				while (valid&&(i<number_of_rows))
+				{
+					valid=((temp_variable=(*this)(i+1,column_private))&&
+						(function_local->evaluate)(temp_variable)&&
+						(temp_variable->get_entry(temp_matrix(i,0))));
+					i++;
+				}
+				if (valid)
+				{
+					result=Function_handle(new Function_matrix<Value_type>(temp_matrix));
+				}
+			}
+			else
+			{
+				bool valid;
+				boost::intrusive_ptr< Function_variable_matrix<Value_type> >
+					temp_variable;
+				Function_size_type i,j,number_of_columns=this->number_of_columns(),
+					number_of_rows=this->number_of_rows();
+				ublas::matrix<Value_type,ublas::column_major>
+					temp_matrix(number_of_rows,number_of_columns);
+
+				valid=true;
+				i=0;
+				while (valid&&(i<number_of_rows))
+				{
+					j=0;
+					while (valid&&(j<number_of_columns))
+					{
+						valid=((temp_variable=(*this)(i+1,j+1))&&
+							(function_local->evaluate)(temp_variable)&&
+							(temp_variable->get_entry(temp_matrix(i,j))));
+						j++;
+					}
+					i++;
+				}
+				if (valid)
+				{
+					result=Function_handle(new Function_matrix<Value_type>(temp_matrix));
+				}
+			}
+		}
+	}
+
+	return (result);
+}
+
+EXPORT template<typename Value_type>
+Function_handle Function_variable_matrix<Value_type>::get_value()
+//******************************************************************************
+// LAST MODIFIED : 3 September 2004
+//
+// DESCRIPTION :
+//==============================================================================
+{
+	Function_handle result(0);
+
+	if (0<row_private)
+	{
+		if (0<column_private)
+		{
+			ublas::matrix<Value_type,ublas::column_major> temp_matrix(1,1);
+
+			if (get_entry(temp_matrix(0,0)))
+			{
+				result=Function_handle(new Function_matrix<Value_type>(temp_matrix));
+			}
+		}
+		else
+		{
+			bool valid;
+			boost::intrusive_ptr< Function_variable_matrix<Value_type> >
+				temp_variable;
+			Function_size_type j,number_of_columns=this->number_of_columns();
+			ublas::matrix<Value_type,ublas::column_major>
+				temp_matrix(1,number_of_columns);
+
+			valid=true;
+			j=0;
+			while (valid&&(j<number_of_columns))
+			{
+				valid=((temp_variable=(*this)(row_private,j+1))&&
+					(temp_variable->get_entry(temp_matrix(0,j))));
+				j++;
+			}
+			if (valid)
+			{
+				result=Function_handle(new Function_matrix<Value_type>(temp_matrix));
+			}
+		}
+	}
+	else
+	{
+		if (0<column_private)
+		{
+			bool valid;
+			boost::intrusive_ptr< Function_variable_matrix<Value_type> >
+				temp_variable;
+			Function_size_type i,number_of_rows=this->number_of_rows();
+			ublas::matrix<Value_type,ublas::column_major>
+				temp_matrix(number_of_rows,1);
+
+			valid=true;
+			i=0;
+			while (valid&&(i<number_of_rows))
+			{
+				valid=((temp_variable=(*this)(i+1,column_private))&&
+					(temp_variable->get_entry(temp_matrix(i,0))));
+				i++;
+			}
+			if (valid)
+			{
+				result=Function_handle(new Function_matrix<Value_type>(temp_matrix));
+			}
+		}
+		else
+		{
+			bool valid;
+			boost::intrusive_ptr< Function_variable_matrix<Value_type> >
+				temp_variable;
+			Function_size_type i,j,number_of_columns=this->number_of_columns(),
+				number_of_rows=this->number_of_rows();
+			ublas::matrix<Value_type,ublas::column_major>
+				temp_matrix(number_of_rows,number_of_columns);
+
+			valid=true;
+			i=0;
+			while (valid&&(i<number_of_rows))
+			{
+				j=0;
+				while (valid&&(j<number_of_columns))
+				{
+					valid=((temp_variable=(*this)(i+1,j+1))&&
+						(temp_variable->get_entry(temp_matrix(i,j))));
+					j++;
+				}
+				i++;
+			}
+			if (valid)
+			{
+				result=Function_handle(new Function_matrix<Value_type>(temp_matrix));
+			}
+		}
+	}
+
+	return (result);
 }
 
 EXPORT template<typename Value_type>

@@ -1,7 +1,7 @@
 //******************************************************************************
 // FILE : function_variable_matrix.hpp
 //
-// LAST MODIFIED : 1 September 2004
+// LAST MODIFIED : 2 September 2004
 //
 // DESCRIPTION :
 // A variable that is a matrix.
@@ -19,7 +19,7 @@ EXPORT template<typename Value_type>
 EXPORT template<typename Value_type>
 class Function_variable_matrix : public Function_variable
 //******************************************************************************
-// LAST MODIFIED : 1 September 2004
+// LAST MODIFIED : 2 September 2004
 //
 // DESCRIPTION :
 // An identifier for a matrix.
@@ -41,6 +41,8 @@ class Function_variable_matrix : public Function_variable
 	public:
 		virtual Function_variable_handle clone() const;
 		virtual string_handle get_string_representation();
+		virtual Function_handle evaluate();
+		virtual Function_handle get_value();
 		virtual Function_variable_iterator begin_atomic() const;
 		virtual Function_variable_iterator end_atomic() const;
 		virtual std::reverse_iterator<Function_variable_iterator> rbegin_atomic()
