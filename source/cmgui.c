@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : cmgui.c
 
-LAST MODIFIED : 6 August 2002
+LAST MODIFIED : 12 November 2002
 
 DESCRIPTION :
 ???DB.  Prototype main program for an application that uses the "cmgui tools".
@@ -572,6 +572,103 @@ Main program
 ------------
 */
 
+struct Startup_material_definition
+{
+	char *name;
+	MATERIAL_PRECISION ambient[3];
+	MATERIAL_PRECISION diffuse[3];
+	MATERIAL_PRECISION emission[3];
+	MATERIAL_PRECISION specular[3];
+	MATERIAL_PRECISION alpha;
+	MATERIAL_PRECISION shininess;
+};
+
+#define NUMBER_OF_STARTUP_MATERIALS 11
+
+/* only the default material is not in this list because its colour changes
+	 to contrast with the background; colours are R G B */
+struct Startup_material_definition
+	startup_materials[NUMBER_OF_STARTUP_MATERIALS] =
+{
+	{"black",
+	 /*ambient*/ { 0.00, 0.00, 0.00},
+	 /*diffuse*/ { 0.00, 0.00, 0.00},
+	 /*emission*/{ 0.00, 0.00, 0.00},
+	 /*specular*/{ 0.30, 0.30, 0.30},
+	 /*alpha*/1.0,
+	 /*shininess*/0.2},
+	{"blue",
+	 /*ambient*/ { 0.00, 0.00, 0.50},
+	 /*diffuse*/ { 0.00, 0.00, 1.00},
+	 /*emission*/{ 0.00, 0.00, 0.00},
+	 /*specular*/{ 0.20, 0.20, 0.20},
+	 /*alpha*/1.0,
+	 /*shininess*/0.2},
+	{"bone",
+	 /*ambient*/ { 0.70, 0.70, 0.60},
+	 /*diffuse*/ { 0.90, 0.90, 0.70},
+	 /*emission*/{ 0.00, 0.00, 0.00},
+	 /*specular*/{ 0.10, 0.10, 0.10},
+	 /*alpha*/1.0,
+	 /*shininess*/0.2},
+	{"default_selected",
+	 /*ambient*/ { 1.00, 0.20, 0.00},
+	 /*diffuse*/ { 1.00, 0.20, 0.00},
+	 /*emission*/{ 0.00, 0.00, 0.00},
+	 /*specular*/{ 0.00, 0.00, 0.00},
+	 /*alpha*/1.0,
+	 /*shininess*/0.0},
+	{"gold",
+	 /*ambient*/ { 1.00, 0.40, 0.00},
+	 /*diffuse*/ { 1.00, 0.70, 0.00},
+	 /*emission*/{ 0.00, 0.00, 0.00},
+	 /*specular*/{ 0.50, 0.50, 0.50},
+	 /*alpha*/1.0,
+	 /*shininess*/0.3},
+	{"green",
+	 /*ambient*/ { 0.00, 0.50, 0.00},
+	 /*diffuse*/ { 0.00, 1.00, 0.00},
+	 /*emission*/{ 0.00, 0.00, 0.00},
+	 /*specular*/{ 0.20, 0.20, 0.20},
+	 /*alpha*/1.0,
+	 /*shininess*/0.1},
+	{"muscle",
+	 /*ambient*/ { 0.40, 0.14, 0.11},
+	 /*diffuse*/ { 0.50, 0.12, 0.10},
+	 /*emission*/{ 0.00, 0.00, 0.00},
+	 /*specular*/{ 0.30, 0.50, 0.50},
+	 /*alpha*/1.0,
+	 /*shininess*/0.2},
+	{"red",
+	 /*ambient*/ { 0.50, 0.00, 0.00},
+	 /*diffuse*/ { 1.00, 0.00, 0.00},
+	 /*emission*/{ 0.00, 0.00, 0.00},
+	 /*specular*/{ 0.20, 0.20, 0.20},
+	 /*alpha*/1.0,
+	 /*shininess*/0.2},
+	{"silver",
+	 /*ambient*/ { 0.40, 0.40, 0.40},
+	 /*diffuse*/ { 0.70, 0.70, 0.70},
+	 /*emission*/{ 0.00, 0.00, 0.00},
+	 /*specular*/{ 0.50, 0.50, 0.50},
+	 /*alpha*/1.0,
+	 /*shininess*/0.3},
+	{"tissue",
+	 /*ambient*/ { 0.90, 0.70, 0.50},
+	 /*diffuse*/ { 0.90, 0.70, 0.50},
+	 /*emission*/{ 0.00, 0.00, 0.00},
+	 /*specular*/{ 0.20, 0.20, 0.30},
+	 /*alpha*/1.0,
+	 /*shininess*/0.2},
+	{"white",
+	 /*ambient*/ { 1.00, 1.00, 1.00},
+	 /*diffuse*/ { 1.00, 1.00, 1.00},
+	 /*emission*/{ 0.00, 0.00, 0.00},
+	 /*specular*/{ 0.00, 0.00, 0.00},
+	 /*alpha*/1.0,
+	 /*shininess*/0.0}
+};
+
 #if !defined (WIN32_USER_INTERFACE)
 int main(int argc,char *argv[])
 #else /* !defined (WIN32_USER_INTERFACE) */
@@ -585,7 +682,7 @@ int WINAPI WinMain(HINSTANCE current_instance,HINSTANCE previous_instance,
 	/*???DB. Win32 SDK says that don't have to call it WinMain */
 #endif /* !defined (WIN32_USER_INTERFACE) */
 /*******************************************************************************
-LAST MODIFIED : 1 August 2002
+LAST MODIFIED : 12 November 2002
 
 DESCRIPTION :
 Main program for the CMISS Graphical User Interface
@@ -595,7 +692,7 @@ Main program for the CMISS Graphical User Interface
 		*example_id,*examples_directory,*execute_string,*version_command_id,
 		version_id_string[100],*version_ptr,version_temp[20];
 	float default_light_direction[3]={0.0,-0.5,-1.0};
-	int return_code;
+	int i, return_code;
 	int batch_mode, console_mode, command_list, no_display, non_random,
 		start_cm, start_mycm, visual_id, write_help;
 #if defined (F90_INTERPRETER) || defined (PERL_INTERPRETER)
@@ -686,7 +783,7 @@ Main program for the CMISS Graphical User Interface
 	struct Cmgui_command_line_options command_line_options;
 #endif /* !defined (WIN32_USER_INTERFACE) */
 	struct Cmiss_command_data command_data;
-	struct Colour ambient_colour,default_colour;
+	struct Colour ambient_colour, colour, default_colour;
 	struct Computed_field *computed_field;
 	struct Computed_field_finite_element_package
 		*computed_field_finite_element_package;
@@ -696,7 +793,7 @@ Main program for the CMISS Graphical User Interface
 	struct Coordinate_system rect_coord_system,temp_coordinate_system;
 	struct Execute_command *execute_command, *set_command;
 	struct FE_field *fe_field;
-	struct Graphical_material *default_selected_material;
+	struct Graphical_material *default_selected_material, *material;
 	struct MANAGER(Computed_field) *computed_field_manager;
 	struct Modifier_entry set_file_name_option_table[]=
 	{
@@ -1100,6 +1197,9 @@ Main program for the CMISS Graphical User Interface
 	/* volume texture manager */
 	command_data.volume_texture_manager=CREATE(MANAGER(VT_volume_texture))();
 	/* graphical material manager */
+	command_data.graphical_material_manager =
+		CREATE(MANAGER(Graphical_material))();
+	/* establish the CMGUI default materials */
 	if (command_data.graphical_material_manager=
 		CREATE(MANAGER(Graphical_material))())
 	{
@@ -1124,26 +1224,43 @@ Main program for the CMISS Graphical User Interface
 					&(command_data.default_graphical_material));
 			}
 		}
-		/* create material "default_selected" to be bright red for highlighting
-			 selected graphics */
-		if (default_selected_material=CREATE(Graphical_material)(
-			"default_selected"))
+	}
+	for (i = 0; i < NUMBER_OF_STARTUP_MATERIALS; i++)
+	{
+		if (material = CREATE(Graphical_material)(startup_materials[i].name))
 		{
-			struct Colour colour;
-
-			colour.red = 1.0;
-			colour.green = 0.0;
-			colour.blue = 0.0;
-			Graphical_material_set_ambient(default_selected_material,&colour);
-			Graphical_material_set_diffuse(default_selected_material,&colour);
-			/* ACCESS so can never be destroyed */
-			ACCESS(Graphical_material)(default_selected_material);
-			if (!ADD_OBJECT_TO_MANAGER(Graphical_material)(default_selected_material,
+			colour.red   = startup_materials[i].ambient[0];
+			colour.green = startup_materials[i].ambient[1];
+			colour.blue  = startup_materials[i].ambient[2];
+			Graphical_material_set_ambient(material, &colour);
+			colour.red   = startup_materials[i].diffuse[0];
+			colour.green = startup_materials[i].diffuse[1];
+			colour.blue  = startup_materials[i].diffuse[2];
+			Graphical_material_set_diffuse(material, &colour);
+			colour.red   = startup_materials[i].emission[0];
+			colour.green = startup_materials[i].emission[1];
+			colour.blue  = startup_materials[i].emission[2];
+			Graphical_material_set_emission(material, &colour);
+			colour.red   = startup_materials[i].specular[0];
+			colour.green = startup_materials[i].specular[1];
+			colour.blue  = startup_materials[i].specular[2];
+			Graphical_material_set_specular(material, &colour);
+			Graphical_material_set_alpha(material, startup_materials[i].alpha);
+			Graphical_material_set_shininess(material,
+				startup_materials[i].shininess);
+			if (!ADD_OBJECT_TO_MANAGER(Graphical_material)(material,
 				command_data.graphical_material_manager))
 			{
-				DEACCESS(Graphical_material)(&default_selected_material);
+				DESTROY(Graphical_material)(&material);
 			}
-		}	
+		}
+	}
+	if (default_selected_material =
+		FIND_BY_IDENTIFIER_IN_MANAGER(Graphical_material,name)("default_selected",
+			command_data.graphical_material_manager))
+	{
+		/* ACCESS so can never be destroyed */
+		ACCESS(Graphical_material)(default_selected_material);
 	}
 	/* spectrum manager */
 	if (command_data.spectrum_manager=CREATE(MANAGER(Spectrum))())
