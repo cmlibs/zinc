@@ -1,32 +1,62 @@
 /*******************************************************************************
-FILE : graphical_element_creator.c
+FILE : element_creator.c
 
-LAST MODIFIED : 22 March 2000
+LAST MODIFIED : 9 May 2000
 
 DESCRIPTION :
-Mouse controlled element creator/creator.
+Dialog for choosing the type of element constructed in response to node
+selections. Elements are created in this way while dialog is open.
 ==============================================================================*/
-/*#include <math.h>*/
+#include <Xm/Protocols.h>
+#include <Xm/MwmUtil.h>
 #include "general/debug.h"
-#include "graphics/graphical_element.h"
-#include "graphics/graphics_object.h"
-#include "graphics/scene.h"
-#include "element/graphical_element_creator.h"
+#include "element/element_creator.h"
+#if defined (TEMPORARY)
+#include "element/element_creator.uidh"
+#endif /* defined (TEMPORARY) */
 #include "finite_element/finite_element.h"
+#include "user_interface/gui_dialog_macros.h"
 #include "user_interface/message.h"
 #include "user_interface/user_interface.h"
+
+/*
+Module variables
+----------------
+*/
+
+#if defined (MOTIF)
+static int element_creator_hierarchy_open=0;
+static MrmHierarchy element_creator_hierarchy;
+#endif /* defined (MOTIF) */
 
 /*
 Module types
 ------------
 */
-struct Graphical_element_creator
+
+enum Mesh_editor_create_mode
 /*******************************************************************************
-LAST MODIFIED : 22 March 2000
+LAST MODIFIED : 1 May 2000
+
+DESCRIPTION :
+Kill this.
+==============================================================================*/
+{
+	MESH_EDITOR_CREATE_ELEMENTS,
+	MESH_EDITOR_CREATE_ONLY_NODES,
+	MESH_EDITOR_CREATE_NODES_AND_ELEMENTS
+};
+
+struct Element_creator
+/*******************************************************************************
+LAST MODIFIED : 9 May 2000
 
 DESCRIPTION :
 ==============================================================================*/
 {
+	struct Element_creator **element_creator_address;
+
+	char *tool_title;
 	enum Mesh_editor_create_mode mesh_editor_create_mode;
 
 	struct FE_field *coordinate_field;
@@ -43,6 +73,7 @@ DESCRIPTION :
 	struct FE_basis *element_basis;
 	/* maintain template element for creating new elements */
 	struct FE_element *template_element;
+	struct User_interface *user_interface;
 
 	/* the element being created */
 	struct FE_element *element;
@@ -59,160 +90,17 @@ DESCRIPTION :
 	struct MANAGER(FE_node) *node_manager;
 	struct FE_element_selection *element_selection;
 	struct FE_node_selection *node_selection;
-	/* scene only accessed while element_creator gets scene input callbacks */
-	struct Scene *scene;
-	/* put current scene input callback in stored_input_callback while
-		 element_creator gets scene input callbacks - restore once element made */
-	struct Scene_input_callback stored_input_callback;
-}; /* struct Graphical_element_creator */
+
+	Widget widget,window_shell;
+}; /* struct Element_creator */
 
 /*
 Module functions
 ----------------
 */
 
-char *Mesh_editor_create_mode_string(
-	enum Mesh_editor_create_mode mesh_editor_create_mode)
-/*******************************************************************************
-LAST MODIFIED : 20 January 2000
-
-DESCRIPTION :
-Returns a pointer to a static string describing the mesh_editor_create_mode, eg.
-MESH_EDITOR_CREATE_ELEMENTS = "create_elements".
-This string should match the command used to create that mode.
-The returned string must not be DEALLOCATEd!
-==============================================================================*/
-{
-	char *return_string;
-
-	ENTER(Mesh_editor_create_mode_string);
-	switch (mesh_editor_create_mode)
-	{
-		case MESH_EDITOR_CREATE_ELEMENTS:
-		{
-			return_string="create_elements";
-		} break;
-		case MESH_EDITOR_CREATE_ONLY_NODES:
-		{
-			return_string="create_only_nodes";
-		} break;
-		case MESH_EDITOR_CREATE_NODES_AND_ELEMENTS:
-		{
-			return_string="create_nodes_and_elements";
-		} break;
-		case MESH_EDITOR_NO_CREATE:
-		{
-			return_string="no_create";
-		} break;
-		default:
-		{
-			display_message(ERROR_MESSAGE,
-				"Mesh_editor_create_mode_string.  Unknown mode");
-			return_string=(char *)NULL;
-		} break;
-	}
-	LEAVE;
-
-	return (return_string);
-} /* Mesh_editor_create_mode_string */
-
-char **Mesh_editor_create_mode_get_valid_strings(int *number_of_valid_strings)
-/*******************************************************************************
-LAST MODIFIED : 20 January 2000
-
-DESCRIPTION :
-Returns and allocated array of pointers to all static strings for valid
-Mesh_editor_create_modes - obtained from function
-Mesh_editor_create_mode_string.
-Up to calling function to deallocate returned array - but not the strings in it!
-==============================================================================*/
-{
-	char **valid_strings;
-	enum Mesh_editor_create_mode mesh_editor_create_mode;
-	int i;
-
-	ENTER(Mesh_editor_create_mode_get_valid_strings);
-	if (number_of_valid_strings)
-	{
-		*number_of_valid_strings=0;
-		mesh_editor_create_mode=MESH_EDITOR_CREATE_MODE_BEFORE_FIRST;
-		mesh_editor_create_mode++;
-		while (mesh_editor_create_mode<MESH_EDITOR_CREATE_MODE_AFTER_LAST)
-		{
-			(*number_of_valid_strings)++;
-			mesh_editor_create_mode++;
-		}
-		if (ALLOCATE(valid_strings,char *,*number_of_valid_strings))
-		{
-			mesh_editor_create_mode=MESH_EDITOR_CREATE_MODE_BEFORE_FIRST;
-			mesh_editor_create_mode++;
-			i=0;
-			while (mesh_editor_create_mode<MESH_EDITOR_CREATE_MODE_AFTER_LAST)
-			{
-				valid_strings[i]=
-					Mesh_editor_create_mode_string(mesh_editor_create_mode);
-				i++;
-				mesh_editor_create_mode++;
-			}
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"Mesh_editor_create_mode_get_valid_strings.  Not enough memory");
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Mesh_editor_create_mode_get_valid_strings.  Invalid argument");
-		valid_strings=(char **)NULL;
-	}
-	LEAVE;
-
-	return (valid_strings);
-} /* Mesh_editor_create_mode_get_valid_strings */
-
-enum Mesh_editor_create_mode Mesh_editor_create_mode_from_string(
-	char *mesh_editor_create_mode_string)
-/*******************************************************************************
-LAST MODIFIED : 20 January 2000
-
-DESCRIPTION :
-Returns the <Mesh_editor_create_mode> described by
-<mesh_editor_create_mode_string>.
-==============================================================================*/
-{
-	enum Mesh_editor_create_mode mesh_editor_create_mode;
-
-	ENTER(Mesh_editor_create_mode_from_string);
-	if (mesh_editor_create_mode_string)
-	{
-		mesh_editor_create_mode=MESH_EDITOR_CREATE_MODE_BEFORE_FIRST;
-		mesh_editor_create_mode++;
-		while ((mesh_editor_create_mode<MESH_EDITOR_CREATE_MODE_AFTER_LAST)&&
-			(!fuzzy_string_compare_same_length(mesh_editor_create_mode_string,
-				Mesh_editor_create_mode_string(mesh_editor_create_mode))))
-		{
-			mesh_editor_create_mode++;
-		}
-		if (MESH_EDITOR_CREATE_MODE_AFTER_LAST==mesh_editor_create_mode)
-		{
-			mesh_editor_create_mode=MESH_EDITOR_CREATE_MODE_INVALID;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Mesh_editor_create_mode_from_string.  Invalid argument");
-		mesh_editor_create_mode=MESH_EDITOR_CREATE_MODE_INVALID;
-	}
-	LEAVE;
-
-	return (mesh_editor_create_mode);
-} /* Mesh_editor_create_mode_from_string */
-
-int Graphical_element_creator_make_template_node(
-	struct Graphical_element_creator *element_creator)
+int Element_creator_make_template_node(
+	struct Element_creator *element_creator)
 /*******************************************************************************
 LAST MODIFIED : 20 January 2000
 
@@ -234,7 +122,7 @@ DESCRIPTION :
 	struct CM_field_information field_info;
 	struct Coordinate_system rect_cart_coords;
 
-	ENTER(Graphical_element_creator_make_template_node);
+	ENTER(Element_creator_make_template_node);
 	if (element_creator)
 	{
 		return_code=1;
@@ -283,22 +171,22 @@ DESCRIPTION :
 		if (0==return_code)
 		{
 			display_message(ERROR_MESSAGE,
-				"Graphical_element_creator_make_template_node.  Failed");
+				"Element_creator_make_template_node.  Failed");
 		}
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Graphical_element_creator_make_template_node.  Invalid argument(s)");
+			"Element_creator_make_template_node.  Invalid argument(s)");
 		return_code=0;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* Graphical_element_creator_make_template_node */
+} /* Element_creator_make_template_node */
 
-int Graphical_element_creator_make_template_element(
-	struct Graphical_element_creator *element_creator)
+int Element_creator_make_template_element(
+	struct Element_creator *element_creator)
 /*******************************************************************************
 LAST MODIFIED : 20 January 2000
 
@@ -314,7 +202,7 @@ generating 2-D bilinear elements.
 	struct FE_element_field_component *component,**components;
 	struct Standard_node_to_element_map **standard_node_map;
 
-	ENTER(Graphical_element_creator_make_template_element);
+	ENTER(Element_creator_make_template_element);
 	if (element_creator)
 	{
 		/* clear up the existing template information if dimension changed */
@@ -342,7 +230,7 @@ generating 2-D bilinear elements.
 		return_code=1;
 		if (!element_creator->template_node)
 		{
-			return_code=Graphical_element_creator_make_template_node(element_creator);
+			return_code=Element_creator_make_template_node(element_creator);
 		}
 
 		if (return_code&&!(element_creator->element_shape))
@@ -366,7 +254,7 @@ generating 2-D bilinear elements.
 					CREATE(FE_element_shape)(element_dimension,type)))
 				{
 					display_message(ERROR_MESSAGE,
-						"Graphical_element_creator_make_template_element.  "
+						"Element_creator_make_template_element.  "
 						"Error creating shape");
 					return_code=0;
 				}
@@ -495,7 +383,7 @@ generating 2-D bilinear elements.
 							else
 							{
 								display_message(ERROR_MESSAGE,
-									"Graphical_element_creator_make_template_element.  "
+									"Element_creator_make_template_element.  "
 									"Could not define coordinate field at template_element");
 								DESTROY(FE_element)(&(element_creator->template_element));
 							}
@@ -503,7 +391,7 @@ generating 2-D bilinear elements.
 						else
 						{
 							display_message(ERROR_MESSAGE,
-								"Graphical_element_creator_make_template_element.  "
+								"Element_creator_make_template_element.  "
 								"Could not create components");
 							DESTROY(FE_element)(&(element_creator->template_element));
 						}
@@ -516,7 +404,7 @@ generating 2-D bilinear elements.
 					else
 					{
 						display_message(ERROR_MESSAGE,
-							"Graphical_element_creator_make_template_element.  "
+							"Element_creator_make_template_element.  "
 							"Could not allocate components");
 						DESTROY(FE_element)(&(element_creator->template_element));
 					}
@@ -524,7 +412,7 @@ generating 2-D bilinear elements.
 				else
 				{
 					display_message(ERROR_MESSAGE,
-						"Graphical_element_creator_make_template_element.  "
+						"Element_creator_make_template_element.  "
 						"Could not set element shape and field info");
 					DESTROY(FE_element)(&(element_creator->template_element));
 				}
@@ -532,29 +420,29 @@ generating 2-D bilinear elements.
 			else
 			{
 				display_message(ERROR_MESSAGE,
-					"Graphical_element_creator_make_template_element.  "
+					"Element_creator_make_template_element.  "
 					"Could not create template element");
 			}
 		}			
 		if (0==return_code)
 		{
 			display_message(ERROR_MESSAGE,
-				"Graphical_element_creator_make_template_element.  Failed");
+				"Element_creator_make_template_element.  Failed");
 		}
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Graphical_element_creator_make_template_element.  Invalid argument(s)");
+			"Element_creator_make_template_element.  Invalid argument(s)");
 		return_code=0;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* Graphical_element_creator_make_template_element */
+} /* Element_creator_make_template_element */
 
-static int Graphical_element_creator_add_element(
-	struct Graphical_element_creator *element_creator)
+static int Element_creator_add_element(
+	struct Element_creator *element_creator)
 /*******************************************************************************
 LAST MODIFIED : 12 October 1999
 
@@ -562,13 +450,13 @@ DESCRIPTION :
 Adds the just created element to the manager and group, adding faces to these
 as necessary.
 Note: It is up to the calling function to call
-Graphical_element_creator_release_input.
+Element_creator_release_input.
 ==============================================================================*/
 {
 	int return_code;
 	struct Add_FE_element_and_faces_to_manager_data *add_element_data;
 
-	ENTER(Graphical_element_creator_add_element);
+	ENTER(Element_creator_add_element);
 	if (element_creator&&element_creator->element&&
 		(element_creator->number_of_clicked_nodes ==
 			element_creator->element->information->number_of_nodes))
@@ -595,7 +483,7 @@ Graphical_element_creator_release_input.
 			else
 			{
 				display_message(ERROR_MESSAGE,
-					"Graphical_element_creator_add_element.  "
+					"Element_creator_add_element.  "
 					"Error adding element to element_manager or element_group");
 				if (FIND_BY_IDENTIFIER_IN_MANAGER(FE_element,identifier)(
 					element_creator->element->identifier,
@@ -627,287 +515,19 @@ Graphical_element_creator_release_input.
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Graphical_element_creator_add_element.  Invalid argument(s)");
+			"Element_creator_add_element.  Invalid argument(s)");
 		return_code=0;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* Graphical_element_creator_add_element */
+} /* Element_creator_add_element */
 
-static void Graphical_element_creator_scene_input_callback(struct Scene *scene,
-	void *graphical_element_creator_void,
-	struct Scene_input_callback_data *scene_input_callback_data)
-/*******************************************************************************
-LAST MODIFIED : 22 March 2000
-
-DESCRIPTION :
-Receives mouse button press, motion and release events from <scene>, and
-creates nodes and elements from the entered positions.
-==============================================================================*/
-{
-	FE_value node_coordinates[3];
-	int i,node_number,return_code,shift_pressed;
-	struct FE_field_component field_component;
-	struct FE_node *node;
-	struct Graphical_element_creator *element_creator;
-
-	ENTER(Graphical_element_creator_scene_input_callback);
-	if (scene&&(element_creator=(struct Graphical_element_creator *)
-		graphical_element_creator_void)&&scene_input_callback_data)
-	{
-		shift_pressed=
-			SCENE_INPUT_MODIFY_SHIFT & scene_input_callback_data->input_modifier;
-		switch (scene_input_callback_data->input_type)
-		{
-			case SCENE_BUTTON_PRESS:
-			{
-				return_code=
-					Graphical_element_creator_make_template_node(element_creator);
-				if (return_code)
-				{
-					/*???RC must create node on button press because currently only
-						perform picking then */
-#if defined (DEBUG)
-					/*???debug */
-					printf("Graphical_element_creator: button press!\n");
-					/*???debug end */
-#endif /* defined (DEBUG) */
-					/* get picked node nearest to the near plane, if any */
-					node=Scene_picked_object_list_get_nearest_node(
-						scene_input_callback_data->picked_object_list,
-						element_creator->node_manager,element_creator->node_group,
-						(struct Scene_picked_object **)NULL,
-						(struct GT_element_group **)NULL,
-						(struct GT_element_settings **)NULL);
-					if (!node)
-					{
-						if (MESH_EDITOR_CREATE_ELEMENTS !=
-							element_creator->mesh_editor_create_mode)
-						{
-							/* create a new node, based on the template node */
-							if (element_creator->coordinate_field)
-							{
-								node_coordinates[0]=0.5*(scene_input_callback_data->nearx+
-									scene_input_callback_data->farx);
-								node_coordinates[1]=0.5*(scene_input_callback_data->neary+
-									scene_input_callback_data->fary);
-								node_coordinates[2]=0.5*(scene_input_callback_data->nearz+
-									scene_input_callback_data->farz);
-								/*???RC get_next_FE_node_number is pretty inefficient */
-								node_number=
-									get_next_FE_node_number(element_creator->node_manager,1);
-								if (node=CREATE(FE_node)(node_number,
-									element_creator->template_node))
-								{
-									/* fill the field with coordinates half way between point on
-										 near and far plane */
-									field_component.field=element_creator->coordinate_field;
-									for (i=0;i</*coordinate_dimension*/3;i++)
-									{
-										field_component.number=i;								
-										if (!set_FE_nodal_FE_value_value(node,&field_component,
-											/*version*/0,FE_NODAL_VALUE,node_coordinates[i]))
-										{
-											return_code=0;
-										}
-									}
-									/* add new node to manager and node_group */
-									if (!(return_code&&ADD_OBJECT_TO_MANAGER(FE_node)(node,
-										element_creator->node_manager)&&
-										((!element_creator->node_group)||
-											ADD_OBJECT_TO_GROUP(FE_node)(
-												node,element_creator->node_group))))
-									{
-										REMOVE_OBJECT_FROM_MANAGER(FE_node)(node,
-											element_creator->node_manager);
-										DESTROY(FE_node)(&node);
-									}
-								}
-							}
-							if (!node)
-							{
-								display_message(ERROR_MESSAGE,
-									"Graphical_element_creator_scene_input_callback.  "
-									"Could not create node");
-								return_code=0;
-							}
-						}
-						else
-						{
-							display_message(WARNING_MESSAGE,
-								"Make element: You did not click on a node");
-						}
-					}
-					if (!shift_pressed)
-					{
-						FE_node_selection_begin_cache(element_creator->node_selection);
-						FE_node_selection_clear(element_creator->node_selection);
-					}
-					if (node)
-					{
-						/* select the node just added */
-						FE_node_selection_select_node(element_creator->node_selection,node);
-					}
-					if (!shift_pressed)
-					{
-						FE_node_selection_end_cache(element_creator->node_selection);
-					}
-					if (!return_code)
-					{
-						display_message(WARNING_MESSAGE,
-							"Graphical_element_creator_scene_input_callback.  "
-							"Aborting element creation");
-						DEACCESS(FE_element)(&(element_creator->element));
-					}
-				}
-			} break;
-			case SCENE_MOTION_NOTIFY:
-			{
-#if defined (DEBUG)
-				/*???debug */
-				/*printf("Graphical_element_creator: motion notify!\n");*/
-				/*???debug end */
-#endif /* defined (DEBUG) */
-			} break;
-			case SCENE_BUTTON_RELEASE:
-			{
-#if defined (DEBUG)
-				/*???debug */
-				printf("Graphical_element_creator: button release!\n");
-				/*???debug end */
-#endif /* defined (DEBUG) */
-			} break;
-			default:
-			{
-				display_message(ERROR_MESSAGE,
-					"Graphical_element_creator_scene_input_callback.  "
-					"Invalid input_type");
-			} break;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Graphical_element_creator_scene_input_callback.  Invalid argument(s)");
-	}
-	LEAVE;
-} /* Graphical_element_creator_scene_input_callback */
-
-static int Graphical_element_creator_has_input(
-	struct Graphical_element_creator *element_creator)
-/*******************************************************************************
-LAST MODIFIED : 20 January 2000
-
-DESCRIPTION :
-==============================================================================*/
-{
-	int return_code;
-
-	ENTER(Graphical_element_creator_has_input);
-	if (element_creator)
-	{
-		return_code=((struct Scene *)NULL != element_creator->scene);
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Graphical_element_creator_has_input.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Graphical_element_creator_has_input */
-
-static int Graphical_element_creator_grab_input(
-	struct Graphical_element_creator *element_creator,struct Scene *scene)
-/*******************************************************************************
-LAST MODIFIED : 20 January 2000
-
-DESCRIPTION :
-Stores current scene input callback for <scene> then diverts it to the
-<element_creator>. 
-==============================================================================*/
-{
-	int return_code;
-	struct Scene_input_callback scene_input_callback;
-
-	ENTER(Graphical_element_creator_grab_input);
-	return_code=0;
-	if (element_creator&&scene)
-	{
-		if (Graphical_element_creator_has_input(element_creator))
-		{
-			display_message(ERROR_MESSAGE,
-				"Graphical_element_creator_grab_input.  Editor already has input");
-		}
-		else
-		{
-			REACCESS(Scene)(&(element_creator->scene),scene);
-			/* save current input callback for scene so it can be restored later */
-			Scene_get_input_callback(scene,
-				&(element_creator->stored_input_callback));
-			/* establish new scene input callback for defining nodes and element */
-			scene_input_callback.procedure=
-				Graphical_element_creator_scene_input_callback;
-			scene_input_callback.data=(void *)element_creator;
-			Scene_set_input_callback(scene,&scene_input_callback);
-			return_code=1;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Graphical_element_creator_grab_input.  Invalid argument(s)");
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Graphical_element_creator_grab_input */
-
-static int Graphical_element_creator_release_input(
-	struct Graphical_element_creator *element_creator)
-/*******************************************************************************
-LAST MODIFIED : 20 January 2000
-
-DESCRIPTION :
-Whether an element has just been successfully created, or creation is being
-aborted early, call this function to restore previous scene input callbacks and
-clean up the nodes array.
-==============================================================================*/
-{
-	int return_code;
-
-	ENTER(Graphical_element_creator_release_input);
-	if (element_creator)
-	{
-		if (element_creator->scene)
-		{
-			element_creator->number_of_clicked_nodes=0;
-			/* restore the stored_input_callback since scene may have changed */
-			Scene_set_input_callback(element_creator->scene,
-				&(element_creator->stored_input_callback));
-			DEACCESS(Scene)(&(element_creator->scene));
-		}
-		return_code=1;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Graphical_element_creator_release_input.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Graphical_element_creator_release_input */
-
-static void Graphical_element_creator_node_selection_change(
+static void Element_creator_node_selection_change(
 	struct FE_node_selection *node_selection,
 	struct FE_node_selection_changes *changes,void *element_creator_void)
 /*******************************************************************************
-LAST MODIFIED : 22 March 2000
+LAST MODIFIED : 9 May 2000
 
 DESCRIPTION :
 Callback for change in the global node selection.
@@ -915,11 +535,11 @@ Callback for change in the global node selection.
 {
 	struct CM_element_information element_identifier;
 	struct FE_node *node;
-	struct Graphical_element_creator *element_creator;
+	struct Element_creator *element_creator;
 
-	ENTER(Graphical_element_creator_node_selection_change);
-	if (node_selection&&changes&&
-		(element_creator=(struct Graphical_element_creator *)element_creator_void))
+	ENTER(Element_creator_node_selection_change);
+	if (node_selection&&changes&&(element_creator=
+		(struct Element_creator *)element_creator_void))
 	{
 		/* if exactly 1 node selected, add it to element */
 		if (1==NUMBER_IN_LIST(FE_node)(changes->newly_selected_node_list))
@@ -944,7 +564,7 @@ Callback for change in the global node selection.
 						{
 							element_identifier.number++;
 						}
-						if (Graphical_element_creator_make_template_element(
+						if (Element_creator_make_template_element(
 							element_creator)&&
 							(element_creator->element=CREATE(FE_element)(&element_identifier,
 								element_creator->template_element)))
@@ -962,20 +582,20 @@ Callback for change in the global node selection.
 							if (element_creator->number_of_clicked_nodes ==
 								element_creator->element->information->number_of_nodes)
 							{
-								Graphical_element_creator_add_element(element_creator);
+								Element_creator_add_element(element_creator);
 							}
 						}
 						else
 						{
 							display_message(ERROR_MESSAGE,
-								"Graphical_element_creator_scene_input_callback.  "
+								"Element_creator_scene_input_callback.  "
 								"Could not set node");
 						}
 					}
 					else
 					{
 						display_message(ERROR_MESSAGE,
-							"Graphical_element_creator_scene_input_callback.  "
+							"Element_creator_scene_input_callback.  "
 							"Could not create element");
 					}
 				}
@@ -990,40 +610,81 @@ Callback for change in the global node selection.
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Graphical_element_creator_node_selection_change.  Invalid argument(s)");
+			"Element_creator_node_selection_change.  Invalid argument(s)");
 	}
 	LEAVE;
-} /* Graphical_element_creator_node_selection_change */
+} /* Element_creator_node_selection_change */
+
+static void Element_creator_close_CB(Widget widget,
+	void *element_creator_void,void *call_data)
+/*******************************************************************************
+LAST MODIFIED : 9 May 2000
+
+DESCRIPTION :
+Callback when "close" is selected from the window menu, or it is double
+clicked. How this is made to occur is as follows. The dialog has its
+XmNdeleteResponse == XmDO_NOTHING, and a window manager protocol callback for
+WM_DELETE_WINDOW has been set up with XmAddWMProtocolCallback to call this
+function in response to the close command. See CREATE for more details.
+==============================================================================*/
+{
+	struct Element_creator *element_creator;
+
+	ENTER(Element_creator_close_CB);
+	USE_PARAMETER(widget);
+	USE_PARAMETER(call_data);
+	if (element_creator=
+		(struct Element_creator *)element_creator_void)
+	{
+		DESTROY(Element_creator)(
+			element_creator->element_creator_address);
+	}
+	else
+	{
+		display_message(WARNING_MESSAGE,
+			"Element_creator_close_CB.  Invalid argument(s)");
+	}
+	LEAVE;
+} /* Element_creator_close_CB */
 
 /*
 Global functions
 ----------------
 */
-struct Graphical_element_creator *CREATE(Graphical_element_creator)(
+
+struct Element_creator *CREATE(Element_creator)(
+	struct Element_creator **element_creator_address,
 	struct MANAGER(FE_basis) *basis_manager,
 	struct MANAGER(FE_element) *element_manager,
 	struct MANAGER(FE_field) *fe_field_manager,
 	struct MANAGER(FE_node) *node_manager,
 	struct FE_element_selection *element_selection,
-	struct FE_node_selection *node_selection)
+	struct FE_node_selection *node_selection,
+	struct User_interface *user_interface)
 /*******************************************************************************
-LAST MODIFIED : 22 March 2000
+LAST MODIFIED : 9 May 2000
 
 DESCRIPTION :
-Creates a Graphical_element_creator, giving it the element_manager to put new
+Creates a Element_creator, giving it the element_manager to put new
 elements in, and the node_manager for new nodes, and the fe_field_manager to
 enable the creation of a coordinate field.
 ==============================================================================*/
 {
-	struct Graphical_element_creator *element_creator;
+	Atom WM_DELETE_WINDOW;
+	struct Element_creator *element_creator;
 
-	ENTER(CREATE(Graphical_element_creator));
-	if (basis_manager&&element_manager&&fe_field_manager&&node_manager&&
-		element_selection&&node_selection)
+	ENTER(CREATE(Element_creator));
+	if (element_creator_address&&basis_manager&&element_manager&&
+		fe_field_manager&&node_manager&&element_selection&&node_selection&&
+		user_interface)
 	{
-		if (ALLOCATE(element_creator,struct Graphical_element_creator,1))
+		if (ALLOCATE(element_creator,struct Element_creator,1))
 		{
-			element_creator->mesh_editor_create_mode=MESH_EDITOR_NO_CREATE;
+			element_creator->element_creator_address=
+				element_creator_address;
+			element_creator->mesh_editor_create_mode=
+				MESH_EDITOR_CREATE_NODES_AND_ELEMENTS;
+			element_creator->user_interface=user_interface;
 			element_creator->coordinate_field=(struct FE_field *)NULL;
 			element_creator->template_node=(struct FE_node *)NULL;
 			/* by default create 2-D elements */
@@ -1043,186 +704,215 @@ enable the creation of a coordinate field.
 			element_creator->node_manager=node_manager;
 			element_creator->element_selection=element_selection;
 			element_creator->node_selection=node_selection;
-			/* request callbacks from the global node_selection */
-			FE_node_selection_add_callback(node_selection,
-				Graphical_element_creator_node_selection_change,
-				(void *)element_creator);
-			element_creator->scene=(struct Scene *)NULL;
-			element_creator->stored_input_callback.procedure=
-				(Scene_input_callback_procedure *)NULL;
-			element_creator->stored_input_callback.data=(void *)NULL;
+			/* initialise widgets */
+			element_creator->widget=(Widget)NULL;
+			element_creator->window_shell=(Widget)NULL;
+			/* make the dialog shell */
+			if (element_creator->window_shell=
+				XtVaCreatePopupShell("Element Creator",
+					topLevelShellWidgetClass,
+					user_interface->application_shell,
+					XmNdeleteResponse,XmDO_NOTHING,
+					XmNmwmDecorations,MWM_DECOR_ALL,
+					XmNmwmFunctions,MWM_FUNC_ALL,
+					/*XmNtransient,FALSE,*/
+					XmNallowShellResize,False,
+					XmNtitle,"Element Creator",
+					NULL))
+			{
+				/* Set up window manager callback for close window message */
+				WM_DELETE_WINDOW=
+					XmInternAtom(XtDisplay(element_creator->window_shell),
+						"WM_DELETE_WINDOW",False);
+				XmAddWMProtocolCallback(element_creator->window_shell,
+					WM_DELETE_WINDOW,Element_creator_close_CB,
+					element_creator);
+				/* Register the shell with the busy signal list */
+				create_Shell_list_item(&(element_creator->window_shell),
+					user_interface);
+				/* request callbacks from the global node_selection */
+				FE_node_selection_add_callback(node_selection,
+					Element_creator_node_selection_change,
+					(void *)element_creator);
+				XtRealizeWidget(element_creator->window_shell);
+				XtPopup(element_creator->window_shell,XtGrabNone);
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE,
+					"CREATE(Element_creator).  Could not create Shell");
+				DESTROY(Element_creator)(&element_creator);
+			}
 		}
 		else
 		{
-			DEALLOCATE(element_creator);
 			display_message(ERROR_MESSAGE,
-				"CREATE(Graphical_element_creator).  Not enough memory");
+				"CREATE(Element_creator).  Not enough memory");
+			DEALLOCATE(element_creator);
 		}
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"CREATE(Graphical_element_creator).  Invalid argument(s)");
-		element_creator=(struct Graphical_element_creator *)NULL;
+			"CREATE(Element_creator).  Invalid argument(s)");
+		element_creator=(struct Element_creator *)NULL;
+	}
+	if (element_creator_address)
+	{
+		*element_creator_address=element_creator;
 	}
 	LEAVE;
 
 	return (element_creator);
-} /* CREATE(Graphical_element_creator) */
+} /* CREATE(Element_creator) */
 
-int DESTROY(Graphical_element_creator)(
-	struct Graphical_element_creator **element_creator_address)
+int DESTROY(Element_creator)(
+	struct Element_creator **element_creator_address)
 /*******************************************************************************
-LAST MODIFIED : 12 October 1999
+LAST MODIFIED : 9 May 2000
 
 DESCRIPTION :
-Deaccesses objects and frees memory used by the Graphical_element_creator at
+Deaccesses objects and frees memory used by the Element_creator at
 <*element_creator_address>.
 ==============================================================================*/
 {
-	struct Graphical_element_creator *element_creator;
+	struct Element_creator *element_creator;
 	int return_code;
 
-	ENTER(DESTROY(Graphical_element_creator));
-	if (element_creator_address)
+	ENTER(DESTROY(Element_creator));
+	if (element_creator_address&&
+		(element_creator= *element_creator_address))
 	{
-		if (element_creator= *element_creator_address)
+		if (element_creator->coordinate_field)
 		{
-			if (element_creator->coordinate_field)
-			{
-				DEACCESS(FE_field)(&(element_creator->coordinate_field));
-			}
-
-			if (element_creator->template_node)
-			{
-				DEACCESS(FE_node)(&(element_creator->template_node));
-			}
-
-			if (element_creator->element_shape)
-			{
-				DEACCESS(FE_element_shape)(&(element_creator->element_shape));
-			}
-			if (element_creator->element_basis)
-			{
-				DEACCESS(FE_basis)(&(element_creator->element_basis));
-			}
-			if (element_creator->template_element)
-			{
-				DEACCESS(FE_element)(&(element_creator->template_element));
-			}
-
-			if (element_creator->element_group)
-			{
-				DEACCESS(GROUP(FE_element))(&(element_creator->element_group));
-			}
-			if (element_creator->node_group)
-			{
-				DEACCESS(GROUP(FE_node))(&(element_creator->node_group));
-			}
-			/* remove callbacks from the global node_selection */
-			FE_node_selection_remove_callback(element_creator->node_selection,
-				Graphical_element_creator_node_selection_change,
-				(void *)element_creator);
-
-			if (element_creator->scene)
-			{
-				DEACCESS(Scene)(&(element_creator->scene));
-			}
-			DEALLOCATE(*element_creator_address);
+			DEACCESS(FE_field)(&(element_creator->coordinate_field));
 		}
-		return_code=1;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"DESTROY(Graphical_element_creator).  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* DESTROY(Graphical_element_creator) */
-
-int Graphical_element_creator_get_mesh_editor_create_mode(
-	struct Graphical_element_creator *element_creator,
-	enum Mesh_editor_create_mode *mesh_editor_create_mode)
-/*******************************************************************************
-LAST MODIFIED : 20 January 2000
-
-DESCRIPTION :
-==============================================================================*/
-{
-	int return_code;
-
-	ENTER(Graphical_element_creator_get_mesh_editor_create_mode);
-	if (element_creator&&mesh_editor_create_mode)
-	{
-		*mesh_editor_create_mode = element_creator->mesh_editor_create_mode;
-		return_code=1;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Graphical_element_creator_get_mesh_editor_create_mode.  "
-			"Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Graphical_element_creator_get_mesh_editor_create_mode */
-
-int Graphical_element_creator_set_mesh_editor_create_mode(
-	struct Graphical_element_creator *element_creator,
-	enum Mesh_editor_create_mode mesh_editor_create_mode,
-	struct Scene *scene)
-/*******************************************************************************
-LAST MODIFIED : 21 February 2000
-
-DESCRIPTION :
-==============================================================================*/
-{
-	int return_code;
-
-	ENTER(Graphical_element_creator_set_mesh_editor_create_mode);
-	if (element_creator&&scene)
-	{
-		return_code=1;
-		if (mesh_editor_create_mode != element_creator->mesh_editor_create_mode)
+		if (element_creator->template_node)
 		{
-			if (element_creator->element)
+			DEACCESS(FE_node)(&(element_creator->template_node));
+		}
+		if (element_creator->element_shape)
+		{
+			DEACCESS(FE_element_shape)(&(element_creator->element_shape));
+		}
+		if (element_creator->element_basis)
+		{
+			DEACCESS(FE_basis)(&(element_creator->element_basis));
+		}
+		if (element_creator->template_element)
+		{
+			DEACCESS(FE_element)(&(element_creator->template_element));
+		}
+		if (element_creator->element_group)
+		{
+			DEACCESS(GROUP(FE_element))(&(element_creator->element_group));
+		}
+		if (element_creator->node_group)
+		{
+			DEACCESS(GROUP(FE_node))(&(element_creator->node_group));
+		}
+		/* remove callbacks from the global node_selection */
+		FE_node_selection_remove_callback(element_creator->node_selection,
+			Element_creator_node_selection_change,
+			(void *)element_creator);
+		if (element_creator->window_shell)
+		{
+			destroy_Shell_list_item_from_shell(
+				&(element_creator->window_shell),
+				element_creator->user_interface);
+			XtDestroyWidget(element_creator->window_shell);
+		}
+		DEALLOCATE(*element_creator_address);
+		return_code=1;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"DESTROY(Element_creator).  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* DESTROY(Element_creator) */
+
+struct FE_field *Element_creator_get_coordinate_field(struct Element_creator *element_creator)
+/*******************************************************************************
+LAST MODIFIED : 11 May 2000
+
+DESCRIPTION :
+Sets the coordinate field of nodes created by <element_creator>.
+==============================================================================*/
+{
+	struct FE_field *coordinate_field;
+
+	ENTER(Element_creator_get_coordinate_field);
+	if (element_creator)
+	{
+		coordinate_field=element_creator->coordinate_field;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Element_creator_get_coordinate_field.  Invalid argument(s)");
+		coordinate_field=(struct FE_field *)NULL;
+	}
+	LEAVE;
+
+	return (coordinate_field);
+} /* Element_creator_get_coordinate_field */
+
+#if defined (NEW_CODE)
+int Element_creator_set_coordinate_field(struct Element_creator *element_creator,
+	struct FE_field *coordinate_field)
+/*******************************************************************************
+LAST MODIFIED : 11 May 2000
+
+DESCRIPTION :
+Sets the coordinate field of nodes created by <element_creator>.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(Element_creator_set_coordinate_field);
+	if (element_creator)
+	{
+		return_code=1;
+		if (coordinate_field != element_creator->coordinate_field)
+		{
+			if (coordinate_field)
 			{
-				display_message(WARNING_MESSAGE,"Aborting current element creation");
-				DEACCESS(FE_element)(&(element_creator->element));
-			}
-			if (MESH_EDITOR_NO_CREATE==mesh_editor_create_mode)
-			{
-				Graphical_element_creator_release_input(element_creator);
-			}
-			else
-			{
-				if (!Graphical_element_creator_has_input(element_creator))
+				if ((3<get_FE_field_number_of_components(coordinate_field))||
+					(FE_VALUE_VALUE != get_FE_field_value_type(coordinate_field)))
 				{
-					Graphical_element_creator_grab_input(element_creator,scene);
+					display_message(ERROR_MESSAGE,
+						"Element_creator_set_coordinate_field.  Invalid argument(s)");
+					return_code=0;
 				}
 			}
-			element_creator->mesh_editor_create_mode = mesh_editor_create_mode;
+			if (return_code)
+			{
+				REACCESS(FE_field)(&(element_creator->coordinate_field),coordinate_field);
+				/* lose the current template element, if any */
+				REACCESS(FE_node)(&(element_creator->template_node),
+					(struct FE_node *)NULL);
+			}
 		}
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Graphical_element_creator_set_mesh_editor_create_mode.  "
-			"Invalid argument(s)");
+			"Element_creator_set_coordinate_field.  Invalid argument(s)");
 		return_code=0;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* Graphical_element_creator_set_mesh_editor_create_mode */
+} /* Element_creator_set_coordinate_field */
+#endif /* defined (NEW_CODE) */
 
-int Graphical_element_creator_get_element_dimension(
-	struct Graphical_element_creator *element_creator)
+int Element_creator_get_element_dimension(
+	struct Element_creator *element_creator)
 /*******************************************************************************
 LAST MODIFIED : 21 October 1999
 
@@ -1232,7 +922,7 @@ Returns the dimension of elements to be created by the <element_creator>.
 {
 	int element_dimension;
 
-	ENTER(Graphical_element_creator_get_element_dimension);
+	ENTER(Element_creator_get_element_dimension);
 	if (element_creator)
 	{
 		element_dimension=element_creator->element_dimension;
@@ -1240,16 +930,16 @@ Returns the dimension of elements to be created by the <element_creator>.
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Graphical_element_creator_get_element_dimension.  Invalid argument(s)");
+			"Element_creator_get_element_dimension.  Invalid argument(s)");
 		element_dimension=0;
 	}
 	LEAVE;
 
 	return (element_dimension);
-} /* Graphical_element_creator_get_element_dimension */
+} /* Element_creator_get_element_dimension */
 
-int Graphical_element_creator_set_element_dimension(
-	struct Graphical_element_creator *element_creator,int element_dimension)
+int Element_creator_set_element_dimension(
+	struct Element_creator *element_creator,int element_dimension)
 /*******************************************************************************
 LAST MODIFIED : 21 October 1999
 
@@ -1259,7 +949,7 @@ Sets the <element_dimension> of elements to be created by <element_creator>.
 {
 	int return_code;
 
-	ENTER(Graphical_element_creator_set_element_dimension);
+	ENTER(Element_creator_set_element_dimension);
 	if (element_creator&&(0<element_dimension)&&(element_dimension<=3))
 	{
 		if (element_creator->element_dimension != element_dimension)
@@ -1273,7 +963,7 @@ Sets the <element_dimension> of elements to be created by <element_creator>.
 			else
 			{
 				display_message(ERROR_MESSAGE,
-					"Graphical_element_creator_set_element_dimension.  "
+					"Element_creator_set_element_dimension.  "
 					"May not change dimension while element is being made");
 				return_code=0;
 			}
@@ -1286,16 +976,16 @@ Sets the <element_dimension> of elements to be created by <element_creator>.
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Graphical_element_creator_set_element_dimension.  Invalid argument(s)");
+			"Element_creator_set_element_dimension.  Invalid argument(s)");
 		return_code=0;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* Graphical_element_creator_set_element_dimension */
+} /* Element_creator_set_element_dimension */
 
-int Graphical_element_creator_get_groups(
-	struct Graphical_element_creator *element_creator,
+int Element_creator_get_groups(
+	struct Element_creator *element_creator,
 	struct GROUP(FE_element) **element_group,struct GROUP(FE_node) **node_group)
 /*******************************************************************************
 LAST MODIFIED : 25 March 1999
@@ -1308,7 +998,7 @@ created by the <element_creator> are placed.
 {
 	int return_code;
 
-	ENTER(Graphical_element_creator_get_groups);
+	ENTER(Element_creator_get_groups);
 	if (element_creator&&element_group&&node_group)
 	{
 		*element_group=element_creator->element_group;
@@ -1318,16 +1008,16 @@ created by the <element_creator> are placed.
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Graphical_element_creator_get_groups.  Invalid argument(s)");
+			"Element_creator_get_groups.  Invalid argument(s)");
 		return_code=0;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* Graphical_element_creator_get_groups */
+} /* Element_creator_get_groups */
 
-int Graphical_element_creator_set_groups(
-	struct Graphical_element_creator *element_creator,
+int Element_creator_set_groups(
+	struct Element_creator *element_creator,
 	struct GROUP(FE_element) *element_group,struct GROUP(FE_node) *node_group)
 /*******************************************************************************
 LAST MODIFIED : 20 January 2000
@@ -1344,7 +1034,7 @@ enables the user to export the nodes/elements as a group.
 {
 	int return_code;
 
-	ENTER(Graphical_element_creator_set_groups);
+	ENTER(Element_creator_set_groups);
 	if (element_creator)
 	{
 		REACCESS(GROUP(FE_element))(&(element_creator->element_group),
@@ -1355,11 +1045,41 @@ enables the user to export the nodes/elements as a group.
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Graphical_element_creator_set_groups.  Invalid argument(s)");
+			"Element_creator_set_groups.  Invalid argument(s)");
 		return_code=0;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* Graphical_element_creator_set_groups */
+} /* Element_creator_set_groups */
+
+int Element_creator_bring_window_to_front(
+	struct Element_creator *element_creator)
+/*******************************************************************************
+LAST MODIFIED : 9 May 2000
+
+DESCRIPTION :
+Pops the window for <element_creator> to the front of those visible.
+??? De-iconify as well?
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(Element_creator_bring_window_to_front);
+	if (element_creator)
+	{
+		XtPopup(element_creator->window_shell,XtGrabNone);
+		XtVaSetValues(element_creator->window_shell,XmNiconic,False,NULL);
+		return_code=1;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Element_creator_bring_window_to_front.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Element_creator_bring_window_to_front */
 
