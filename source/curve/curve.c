@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : control_curve.c
 
-LAST MODIFIED : 21 December 2000
+LAST MODIFIED : 30 August 2001
 
 DESCRIPTION :
 Definition of struct Control_curve used to describe time-value or x-y functions.
@@ -1208,7 +1208,7 @@ Returns the <Control_curve_extend_mode> described by <extend_mode_string>.
 struct Control_curve *CREATE(Control_curve)(char *name,
 	enum FE_basis_type fe_basis_type,int number_of_components)
 /*******************************************************************************
-LAST MODIFIED : 26 November 1999
+LAST MODIFIED : 30 August 2001
 
 DESCRIPTION :
 Allocates memory and assigns fields for a struct Control_curve using the given
@@ -1257,7 +1257,7 @@ value will be zero in its initial state.
 				/* create the parameter field = real, 1 component */
 				if (!((curve->parameter_field=ACCESS(FE_field)(CREATE(FE_field)()))&&
 					set_FE_field_name(curve->parameter_field,"parameter")&&
-					set_FE_field_CM_field_type(curve->parameter_field,CM_FIELD)&&
+					set_FE_field_CM_field_type(curve->parameter_field,CM_GENERAL_FIELD)&&
 					set_FE_field_value_type(curve->parameter_field,FE_VALUE_VALUE)&&
 					set_FE_field_coordinate_system(curve->parameter_field,
 						&coordinate_system)&&

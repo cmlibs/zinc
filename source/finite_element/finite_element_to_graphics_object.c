@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : finite_element_to_graphics_object.c
 
-LAST MODIFIED : 13 August 2001
+LAST MODIFIED : 30 August 2001
 
 DESCRIPTION :
 The functions for creating graphical objects from finite elements.
@@ -1643,8 +1643,8 @@ Notes:
 					jacobian[5]=
 						derivative_xi[0]*jacobian[1]-derivative_xi[1]*jacobian[0];
 					/* make normal into a unit vector */
-					if (0.0<(length=sqrt(jacobian[3]*jacobian[3]+
-						jacobian[4]*jacobian[4]+jacobian[5]*jacobian[5])))
+					if (0.0<(length=(float)sqrt((double)(jacobian[3]*jacobian[3]+
+						jacobian[4]*jacobian[4]+jacobian[5]*jacobian[5]))))
 					{
 						jacobian[3] /= length;
 						jacobian[4] /= length;
@@ -6548,7 +6548,7 @@ int create_surface_data_points_from_GT_voltex(struct GT_voltex *voltex,
 	struct Computed_field *data_density_field,
 	struct Computed_field *data_coordinate_field)
 /*******************************************************************************
-LAST MODIFIED : 7 May 2001
+LAST MODIFIED : 30 August 2001
 
 DESCRIPTION :
 This function takes a <voltex> and the corresponding <vtexture> and creates
@@ -6565,7 +6565,6 @@ the position of the point, with appropriate coordinate conversion.
 		density_data[4], expected_number, position[3], xi1, xi2, xi[3];
 	int aaa, *adjacency_table, bbb, ccc,i, j, k, m, node_number, n_iso_polys, 
 		number_of_elements, n_xi[3], number_of_points, return_code, *triangle_list2;
-	struct CM_field_information field_info;
 	struct Computed_field *rc_data_coordinate_field;
 	struct Coordinate_system rect_cart_coords;
 	struct FE_element **element_block,**element_block_ptr,*local_element;
@@ -6819,18 +6818,18 @@ the position of the point, with appropriate coordinate conversion.
 								if (!template_node)
 								{
 									/* create or find the element_xi field */
-									set_CM_field_information(&field_info,CM_COORDINATE_FIELD,(int *)NULL);
 									rect_cart_coords.type=RECTANGULAR_CARTESIAN;
 									if (fe_element_xi_field = get_FE_field_manager_matched_field(
 										fe_field_manager,"element_xi",
 										GENERAL_FE_FIELD,/*indexer_field*/(struct FE_field *)NULL,
-										/*number_of_indexed_values*/0,&field_info,
+										/*number_of_indexed_values*/0,CM_COORDINATE_FIELD,
 										&rect_cart_coords,ELEMENT_XI_VALUE,
 										/*number_of_components*/1,element_xi_component_names,
 										/*number_of_times*/0,/*time_value_type*/UNKNOWN_VALUE))
 									{
 										/* create the node */
-										if ((template_node=CREATE(FE_node)(0,(struct FE_node *)NULL)) &&
+										if ((template_node=CREATE(FE_node)(0,
+											(struct FE_node *)NULL)) &&
 											((!fe_coordinate_field) ||
 												define_FE_field_at_node(template_node,
 													fe_coordinate_field,

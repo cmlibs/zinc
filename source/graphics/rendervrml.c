@@ -983,7 +983,11 @@ points  given by the positions in <point_list> and oriented and scaled by
 							j2 = (1.0 - cos(a_angle)) * a2 * a2 + cos(a_angle);
 							j3 = (1.0 - cos(a_angle)) * a2 * a3;
 							b_angle = clamped_acos(j1*bx1 + j2*bx2 + j3*bx3);
-							if (0.0 != b_angle)
+							/*???DB.  Lose accuracy fairly badly here.  Need to have
+								tolerance so that not different numbers of lines for ndiff */
+#define ZERO_ROTATION_TOLERANCE 0.001
+/*							if (0.0 != b_angle)*/
+							if (ZERO_ROTATION_TOLERANCE < fabs(b_angle))
 							{
 								/* get c = j1 (x) bx and normalise it */
 								c1 = j2*bx3 - j3*bx2;
@@ -1004,9 +1008,6 @@ points  given by the positions in <point_list> and oriented and scaled by
 							fprintf(vrml_file,"Transform {\n");
 							fprintf(vrml_file,"  translation %f %f %f\n", x,y,z);
 							/* if possible, try to avoid having two Transform nodes */
-							/*???DB.  Lose accuracy fairly badly here.  Need to have
-								tolerance so that not different numbers of lines for ndiff */
-#define ZERO_ROTATION_TOLERANCE 0.001
 /*							if ((0.0 != a_angle)&&(0.0 != b_angle))*/
 							if ((ZERO_ROTATION_TOLERANCE < fabs(a_angle))&&
 								(ZERO_ROTATION_TOLERANCE < fabs(b_angle)))

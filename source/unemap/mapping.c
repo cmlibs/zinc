@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : mapping.c
 
-LAST MODIFIED : 30 July 2001
+LAST MODIFIED : 30 August 2001
 
 DESCRIPTION :
 ==============================================================================*/
@@ -687,7 +687,7 @@ sets a node's values storage with the coordinate system component versions and v
 		coords_comp_2)
 	{
 		return_code=1;
-		switch(region_type)
+		switch (region_type)
 		{
 			case SOCK:/*lambda,mu,theta */ 
 			case TORSO:/*theta,r , z */		
@@ -723,7 +723,7 @@ sets a node's values storage with the coordinate system component versions and v
 					return_code=(return_code&&set_FE_nodal_FE_value_value(node,&component,i,
 						FE_NODAL_VALUE,coords_comp_2[i])); /*theta,z,z */
 				}					
-			}break;
+			} break;
 			case PATCH: /* x,y */
 			{					
 				/* 1st field contains coords, possibly more than one version */
@@ -741,14 +741,14 @@ sets a node's values storage with the coordinate system component versions and v
 						FE_NODAL_VALUE,coords_comp_1[i])); /*y*/
 				}				
 				component.number = 2;							
-			}break;
+			} break;
 			default:
 			{					
 				display_message(ERROR_MESSAGE,"set_mapping_FE_node_coord_values."
 					"  Invalid region_type");
 				node=(struct FE_node *)NULL;
-			}break;				
-		}	/* switch() */
+			} break;				
+		}	/* switch () */
 	}
 	else
 	{
@@ -867,7 +867,7 @@ and the field_order_info.
 static struct FE_field_order_info *create_mapping_fields(enum Region_type 
 	region_type,FE_value focus,struct Unemap_package *package)
 /*******************************************************************************
-LAST MODIFIED : 26 August 1999
+LAST MODIFIED : 30 August 2001
 
 DESCRIPTION :
 Creates the mapping fields, returns them in a FE_field_order_info.
@@ -880,7 +880,6 @@ Creates the mapping fields, returns them in a FE_field_order_info.
 		(struct FE_field_order_info *)NULL;
 	int success,field_number,string_length;
 	char *fit_point_name,*map_type_str;
-	struct CM_field_information field_info;
 	struct Coordinate_system coordinate_system;	
 	struct FE_field *position_field,*potential_field;
 
@@ -907,26 +906,26 @@ Creates the mapping fields, returns them in a FE_field_order_info.
 		fit_point_name = (char *)NULL;
 		field_number=0;
 		fe_field_manager=get_unemap_package_FE_field_manager(package);
-		switch(region_type)
+		switch (region_type)
 		{
 			case SOCK:
 			{	
 				map_type_str = sock_str;
-			}break;
+			} break;
 			case TORSO:
 			{
 				map_type_str = torso_str;
-			}break;
+			} break;
 			case PATCH:
 			{
 				map_type_str = patch_str;
-			}break;	
+			} break;	
 			default:
 			{
 				display_message(ERROR_MESSAGE,
 					"create_mapping_fields. Bad region type");
 				success=0;
-			}break;	
+			} break;	
 		}
 
 		string_length = strlen(map_type_str);
@@ -937,7 +936,7 @@ Creates the mapping fields, returns them in a FE_field_order_info.
 			strcpy(fit_point_name,map_type_str);
 			strcat(fit_point_name,position_str);
 			/* create the FE_field_order_info for all the fields */	
-			switch(region_type)
+			switch (region_type)
 			{
 				case SOCK:
 				{	
@@ -945,14 +944,14 @@ Creates the mapping fields, returns them in a FE_field_order_info.
 						CREATE(FE_field_order_info)(NUM_MAPPING_FIELDS))
 					{					
 						/* set up the info needed to create the  fit point position field */
-						set_CM_field_information(&field_info,CM_COORDINATE_FIELD,(int *)NULL);	
 						coordinate_system.type=PROLATE_SPHEROIDAL;								
 						coordinate_system.parameters.focus = focus;								
-						/* create the fit point position field, add it to the node and create */
+						/* create the fit point position field, add it to the node and
+							create */
 						if (!(position_field=get_FE_field_manager_matched_field(
 							fe_field_manager,fit_point_name,
 							GENERAL_FE_FIELD,/*indexer_field*/(struct FE_field *)NULL,
-							/*number_of_indexed_values*/0,&field_info,
+							/*number_of_indexed_values*/0,CM_COORDINATE_FIELD,
 							&coordinate_system,FE_VALUE_VALUE,
 							/*number_of_components*/3,sock_fit_point_component_names,
 							/*number_of_times*/0,/*time_value_type*/UNKNOWN_VALUE)))
@@ -970,20 +969,19 @@ Creates the mapping fields, returns them in a FE_field_order_info.
 							" position field");
 						success=0;	
 					}								
-				}break;			
+				} break;			
 				case TORSO:
 				{		
 					if (the_field_order_info=
 						CREATE(FE_field_order_info)(NUM_MAPPING_FIELDS))
 					{				 								
 						/* set up the info needed to create the  fit point position field */
-						set_CM_field_information(&field_info,CM_COORDINATE_FIELD,(int *)NULL);	
-						coordinate_system.type=CYLINDRICAL_POLAR;																			
+						coordinate_system.type=CYLINDRICAL_POLAR;
 						/* create the fit point position field, add it to the node */
 						if (!(position_field=get_FE_field_manager_matched_field(
 							fe_field_manager,fit_point_name,
 							GENERAL_FE_FIELD,/*indexer_field*/(struct FE_field *)NULL,
-							/*number_of_indexed_values*/0,&field_info,
+							/*number_of_indexed_values*/0,CM_COORDINATE_FIELD,
 							&coordinate_system,FE_VALUE_VALUE,
 							/*number_of_components*/3,torso_fit_point_component_names,
 							/*number_of_times*/0,/*time_value_type*/UNKNOWN_VALUE)))				
@@ -1001,20 +999,19 @@ Creates the mapping fields, returns them in a FE_field_order_info.
 							" position field");
 						success=0;	
 					}	
-				}break;		
+				} break;		
 				case PATCH:
 				{	
 					if (the_field_order_info=
 						CREATE(FE_field_order_info)(NUM_MAPPING_FIELDS))
 					{								
 						/* set up the info needed to create the  fit point position field */
-						set_CM_field_information(&field_info,CM_COORDINATE_FIELD,(int *)NULL);	
-						coordinate_system.type=RECTANGULAR_CARTESIAN;																			
+						coordinate_system.type=RECTANGULAR_CARTESIAN;
 						/* create the fit point position field, add it to the node */
 						if (!(position_field=get_FE_field_manager_matched_field(
 							fe_field_manager,fit_point_name,
 							GENERAL_FE_FIELD,/*indexer_field*/(struct FE_field *)NULL,
-							/*number_of_indexed_values*/0,&field_info,
+							/*number_of_indexed_values*/0,CM_COORDINATE_FIELD,
 							&coordinate_system,FE_VALUE_VALUE,
 							/*number_of_components*/2,patch_fit_point_component_names,
 							/*number_of_times*/0,/*time_value_type*/UNKNOWN_VALUE)))				
@@ -1032,13 +1029,13 @@ Creates the mapping fields, returns them in a FE_field_order_info.
 							" position field");
 						success=0;	
 					}	
-				}break;		
+				} break;		
 				default:
 				{
 					display_message(ERROR_MESSAGE,
 						"create_mapping_fields. Bad region type");
 					success=0;
-				}break;			
+				} break;			
 			} /* switch */		
 			if (success)
 			{
@@ -1111,25 +1108,25 @@ Creates and returns a mapping template node for interpolation_function_to_node_g
 	if (package)
 	{			
 		/* *ptr_fit_components = fit_components_nodal_value_types; */
-		switch(region_type)
+		switch (region_type)
 		{
 			case PATCH:
 			{
 				patch_fit_point_components_number_of_versions[0] = coords_comp_0_num_versions;
 				patch_fit_point_components_number_of_versions[1] = coords_comp_1_num_versions;
-			}break;
+			} break;
 			case TORSO:
 			{
 				torso_fit_point_components_number_of_versions[0] = coords_comp_0_num_versions;
 				torso_fit_point_components_number_of_versions[1] = coords_comp_1_num_versions;
 				torso_fit_point_components_number_of_versions[2] = coords_comp_2_num_versions;
-			}break;
+			} break;
 			default:
 			{
 				fit_point_components_number_of_versions[0] = coords_comp_0_num_versions;
 				fit_point_components_number_of_versions[1] = coords_comp_1_num_versions;
 				fit_point_components_number_of_versions[2] = coords_comp_2_num_versions;
-			}break;
+			} break;
 		}
 		success = 1;			
 		/* create the node */		
@@ -1137,7 +1134,7 @@ Creates and returns a mapping template node for interpolation_function_to_node_g
 		{										 
 			/* first field in field_order_info is fit_point_position_field */
 			position_field=get_FE_field_order_info_field(field_order_info,0);
-			switch(region_type)
+			switch (region_type)
 			{	
 				case PATCH:
 				{
@@ -1148,7 +1145,7 @@ Creates and returns a mapping template node for interpolation_function_to_node_g
 						patch_fit_point_components_number_of_derivatives,
 						patch_fit_point_components_number_of_versions,
 						components_value_types);
-				}break;	
+				} break;	
 				case TORSO:
 				{
 					components_value_types[0]=fit_bicubic_component;
@@ -1158,7 +1155,7 @@ Creates and returns a mapping template node for interpolation_function_to_node_g
 						torso_fit_point_components_number_of_derivatives,
 						torso_fit_point_components_number_of_versions,
 						components_value_types);
-				}break;
+				} break;
 				default:
 				{
 					components_value_types[0]=linear_component;
@@ -1168,7 +1165,7 @@ Creates and returns a mapping template node for interpolation_function_to_node_g
 						fit_point_components_number_of_derivatives,
 						fit_point_components_number_of_versions,
 						components_value_types);
-				}break;
+				} break;
 			}
 			if (success)
 			{		
@@ -1284,25 +1281,25 @@ i.e sock is a hemisphere, torso is a cylinder.
 			data_group_manager,name);	
 		MANAGED_GROUP_BEGIN_CACHE(FE_node)(interpolation_node_group);
 		/* create the node_order_info */
-		switch(region_type)
+		switch (region_type)
 		{
 			case SOCK:
 			{
 				number_of_nodes = (number_of_rows*number_of_columns)+1;
-			}break;
+			} break;
 			case TORSO:
 			{
 				number_of_nodes = (number_of_rows+1)*number_of_columns;		
-			}break;
+			} break;
 			case PATCH:
 			{
 				number_of_nodes = (number_of_rows+1)*(number_of_columns+1);
-			}break;
+			} break;
 		}					
 		if (node_order_info=CREATE(FE_node_order_info)(number_of_nodes))
 		{								
 			/* create the template node, based upon the region_type */			
-			switch(region_type)
+			switch (region_type)
 			{
 				case SOCK:
 				{				
@@ -1420,7 +1417,7 @@ i.e sock is a hemisphere, torso is a cylinder.
 							} /* for(j= */
 						} /* for(i= */
 					} /* while(count */
-				}break;
+				} break;
 				case TORSO:
 				{
 					count=0;
@@ -1552,7 +1549,7 @@ i.e sock is a hemisphere, torso is a cylinder.
 							} /* for(j= */
 						} /* for(i= */
 					} /* while(count */
-				}break;
+				} break;
 				case PATCH:
 				{				
 					count=0;
@@ -1618,8 +1615,8 @@ i.e sock is a hemisphere, torso is a cylinder.
 							} /* for(j= */
 						} /* for(i= */
 					} /* while(count */
-				}break; /* case PATCH:*/
-			} /* switch(region_type) */		
+				} break; /* case PATCH:*/
+			} /* switch (region_type) */		
 			/* 1st field is map position*/
 			map_position_field=get_FE_field_order_info_field(field_order_info,0);
 			/* 2nd field is map fit*/
@@ -2287,7 +2284,7 @@ nodes in <node_order_info>, and fills them in with values from <function>.
 				(name,element_group_manager)))
 		{
 			MANAGER_BEGIN_CACHE(FE_node)(node_manager);
-			switch(region_type)
+			switch (region_type)
 			{
 				case SOCK:
 				{										
@@ -2378,7 +2375,7 @@ nodes in <node_order_info>, and fills them in with values from <function>.
 							} /* for(j= */
 						} /* for(i= */
 					} /* while(count */
-				}break;
+				} break;
 				case TORSO:
 				{
 					count=0;			
@@ -2431,7 +2428,7 @@ nodes in <node_order_info>, and fills them in with values from <function>.
 							} /* for(j= */
 						} /* for(i= */
 					} /* while(count */
-				}break;
+				} break;
 				case PATCH:
 				{				
 					count=0;			
@@ -2483,8 +2480,8 @@ nodes in <node_order_info>, and fills them in with values from <function>.
 							} /* for(j= */
 						} /* for(i= */
 					} /* while(count */
-				}break; /* case PATCH:*/
-			} /* switch(region_type) */
+				} break; /* case PATCH:*/
+			} /* switch (region_type) */
 			MANAGER_END_CACHE(FE_node)(node_manager);
 		}
 		else
@@ -3119,20 +3116,20 @@ Constructs the fit name from the region.
 		string_length = strlen(name);
 		string_length += strlen(fit_str);
 		string_length++;
-		switch(region->type)
+		switch (region->type)
 		{
 			case PATCH:
 			{
 				type_str=patch_str;
-			}break;	
+			} break;	
 			case SOCK:
 			{
 				type_str=sock_str;
-			}break;
+			} break;
 			case TORSO:
 			{
 				type_str=torso_str;
-			}break;
+			} break;
 		}
 		string_length += strlen(type_str);
 		string_length++;
@@ -3789,7 +3786,7 @@ static int make_and_add_map_electrode_position_field(
 	struct Unemap_package *unemap_package,
 	struct GROUP(FE_node) *rig_node_group,struct Region *region,int delauney_map)
 /*******************************************************************************
-LAST MODIFIED : 4 July 2000
+LAST MODIFIED : 30 August 2001
 
 DESCRIPTION :
 if  necessaty makes maps electrode position field, and adds to the nodes in the 
@@ -3807,9 +3804,9 @@ map_electode_position field
 	char *position_str = "_electrode_position";
 	char *sock_str = "map_sock";
 	char *torso_str = "map_torso";
-	int i,number_of_components,number_of_indexed_values,number_of_times,return_code,
-		string_length;
-	struct CM_field_information field_info;	
+	enum CM_field_type cm_field_type;
+	int i,number_of_components,number_of_indexed_values,number_of_times,
+		return_code,string_length;
 	struct Coordinate_system *coordinate_system=(struct Coordinate_system *)NULL;
 	struct FE_field *map_electrode_position_field=(struct FE_field *)NULL;
 	struct FE_field *map_position_field=(struct FE_field *)NULL;
@@ -3833,26 +3830,26 @@ map_electode_position field
 			return_code=1;
 			region_type=region->type;
 			/* compose the field name*/
-			switch(region_type)
+			switch (region_type)
 			{
 				case SOCK:
 				{	
 					region_type_str = sock_str;
-				}break;
+				} break;
 				case TORSO:
 				{
 					region_type_str = torso_str;
-				}break;
+				} break;
 				case PATCH:
 				{
 					region_type_str = patch_str;
-				}break;	
+				} break;	
 				default:
 				{
 					display_message(ERROR_MESSAGE,
 						"make_and_add_map_electrode_position_fields. Bad region type");
 					return_code=0;
-				}break;	
+				} break;	
 			}
 			if (return_code)
 			{
@@ -3869,10 +3866,10 @@ map_electode_position field
 					field_manager=get_unemap_package_FE_field_manager(unemap_package);	
 					/* assemble all info for get_FE_field_manager_matched_field */
 					/* ??JW what if map_position_field hasn't been created?  */
-					if ((get_FE_field_CM_field_information(map_position_field,&field_info))&&
-						(coordinate_system=get_FE_field_coordinate_system(map_position_field))&&
-						(number_of_components=
-							get_FE_field_number_of_components(map_position_field))&&
+					cm_field_type=get_FE_field_CM_field_type(map_position_field);
+					if ((coordinate_system=get_FE_field_coordinate_system(
+						map_position_field))&&(number_of_components=
+						get_FE_field_number_of_components(map_position_field))&&
 						(ALLOCATE(component_names,char *,number_of_components)))
 					{	
 						number_of_times=get_FE_field_number_of_times(map_position_field);
@@ -3896,10 +3893,10 @@ map_electode_position field
 							number_of_indexed_values=0;
 						}											
 						/* find or create the new field in the fe_field_manager */
-						if ((map_electrode_position_field=get_FE_field_manager_matched_field(
-							field_manager,field_name,field_type,indexer_field,
-							number_of_indexed_values,&field_info,coordinate_system,
-							value_type,number_of_components,component_names,
+						if ((map_electrode_position_field=
+							get_FE_field_manager_matched_field(field_manager,field_name,
+							field_type,indexer_field,number_of_indexed_values,cm_field_type,
+							coordinate_system,value_type,number_of_components,component_names,
 							number_of_times,time_value_type)))
 						{
 							struct FE_field *old_map_electrode_position_field;
@@ -3981,32 +3978,32 @@ Also sets the glyph in the <map_3d_package>
 	{
 		/* match the names to the marker types. Maybe store the marker types ??JW*/
 		/* see also map_update_map_electrodes */					
-		switch(electrodes_marker_type)
+		switch (electrodes_marker_type)
 		{
 			case CIRCLE_ELECTRODE_MARKER:
 			{	
 				glyph=FIND_BY_IDENTIFIER_IN_LIST(GT_object,name)("sphere",
 					get_map_drawing_information_glyph_list(drawing_information));
-			}break;
+			} break;
 			case PLUS_ELECTRODE_MARKER:
 			{	
 				glyph=FIND_BY_IDENTIFIER_IN_LIST(GT_object,name)("cross",
 					get_map_drawing_information_glyph_list(drawing_information));
-			}break;
+			} break;
 			case SQUARE_ELECTRODE_MARKER:
 			{
 				glyph=FIND_BY_IDENTIFIER_IN_LIST(GT_object,name)("diamond",
 					get_map_drawing_information_glyph_list(drawing_information));
-			}break;
+			} break;
 			case HIDE_ELECTRODE_MARKER:
 			{
 				glyph=(struct GT_object *)NULL;
-			}break;
+			} break;
 			default:
 			{
 				display_message(ERROR_MESSAGE,"map_get_map_electrodes_glyph.\n "
 					"invalide glyph type ");glyph=(struct GT_object *)NULL;
-			}break;
+			} break;
 		}	
 		if (glyph)
 		{		
@@ -4327,13 +4324,13 @@ Construct the settings and build the graphics objects for the glyphs.
 						map_set_electrode_colour_from_time(package,map->drawing_information->spectrum,
 							unselected_settings,time);
 					}				
-					switch(map->electrodes_option)
+					switch (map->electrodes_option)
 					{
 						case SHOW_ELECTRODE_VALUES:
 						{												
 							label_field=get_unemap_package_scaled_offset_signal_value_at_time_field
 								(package);
-						}break;
+						} break;
 						case SHOW_ELECTRODE_NAMES:
 						{							
 							field=get_unemap_package_device_name_field(package);
@@ -4347,7 +4344,7 @@ Construct the settings and build the graphics objects for the glyphs.
 									label_field=computed_field;
 								}
 							}
-						}break;
+						} break;
 						case SHOW_CHANNEL_NUMBERS:
 						{
 							field=get_unemap_package_channel_number_field(package);
@@ -4361,12 +4358,12 @@ Construct the settings and build the graphics objects for the glyphs.
 									label_field=computed_field;
 								}
 							}
-						}break;
+						} break;
 						case HIDE_ELECTRODES:
 						{
 							label_field=(struct Computed_field *)NULL;
-						}break;
-					}/* switch(electrodes_option) */
+						} break;
+					}/* switch (electrodes_option) */
 					GT_element_settings_set_label_field(unselected_settings,label_field);
 					GT_element_settings_set_label_field(selected_settings,label_field);
 					/* add the settings to the group */
@@ -5880,26 +5877,26 @@ cf map_set_electrode_colour_from_time
 			value_type=get_FE_field_value_type(signal_field);
 			component.number=0;
 			component.field=signal_field;		
-			switch(value_type)
+			switch (value_type)
 			{
 				case FE_VALUE_ARRAY_VALUE:
 				{
 					return_code=get_FE_nodal_FE_value_array_value_at_FE_value_time(node,
 						&component,0,FE_NODAL_VALUE,time,&fe_value);
-				}break;
+				} break;
 				case SHORT_ARRAY_VALUE:
 				{
 					return_code=get_FE_nodal_short_array_value_at_FE_value_time(node,
 						&component,0,FE_NODAL_VALUE,time,&short_value);
 					fe_value=short_value;
-				}break;
+				} break;
 				default :
 				{
 					display_message(ERROR_MESSAGE,
 						"iterative_set_delauney_signal_nodal_value. "
 						" Incorrect signal field value type");
 					return_code=0;
-				}break;
+				} break;
 			}
 			if (return_code)
 			{	
@@ -7352,10 +7349,10 @@ drawing) and map_rows, map_cols, the number of map rows and columns.
 	int return_code;
 
 	ENTER(get_number_of_maps_x_step_y_step_rows_cols);
-	if(map&&drawing)
+	if (map&&drawing)
 	{
 		return_code=1;
-		if(*map->first_eimaging_event)
+		if (*map->first_eimaging_event)
 		{
 			*number_of_maps=count_Electrical_imaging_events(*map->first_eimaging_event);
 		}
@@ -7422,7 +7419,7 @@ Call draw_map_2d or draw_map_3d depending upon <map>->projection_type.
 				struct Rig *rig;
 				struct Device *device;			
 		
-				if((event=*map->first_eimaging_event)&&
+				if ((event=*map->first_eimaging_event)&&
 					(ELECTRICAL_IMAGING==*map->analysis_mode)&&(*(map->type)==POTENTIAL))
 				{					
 					rig= *(map->rig_pointer);
@@ -7459,7 +7456,7 @@ Call draw_map_2d or draw_map_3d depending upon <map>->projection_type.
 						map_x_offset+=x_step;						
 						count++;
 						j++;
-						if(j>rows)
+						if (j>rows)
 						{
 							j=1;
 							map_x_offset=0;
@@ -7515,7 +7512,7 @@ Limits the string position given by <x_string> <y_string>, <bounds> <ascent>,
 	int return_code;
 
 	ENTER(confine_text_to_map);
-	if(x_string&&y_string&&bounds)
+	if (x_string&&y_string&&bounds)
 	{
 		return_code=1;
 		if (*x_string-(*bounds).lbearing<(0+map_x_offset))
@@ -7578,7 +7575,7 @@ Write the title,using the map->potential_time
 	font=(XFontStruct *)NULL;
 	drawing_information=(struct Map_drawing_information *)NULL;
 	display=(Display *)NULL;
-	if(drawing&&(drawing->user_interface)&&(display=drawing->user_interface->display)
+	if (drawing&&(drawing->user_interface)&&(display=drawing->user_interface->display)
 		&&map&&(map->electrodes)&&(device=*map->electrodes)&&(signal=device->signal)&&
 		(buffer=signal->buffer)&&(drawing_information=map->drawing_information))
 	{
@@ -7636,7 +7633,7 @@ a static string of length 11.
 	
   ENTER(set_electrode_2d_name_and_colour);
   spectrum_pixels=(Pixel *)NULL;
-  if(map&&(drawing_information=map->drawing_information)&&graphics_context&&
+  if (map&&(drawing_information=map->drawing_information)&&graphics_context&&
 	  electrode&&electrode_drawn&&(display=drawing->user_interface->display))
   {
     return_code=1;
@@ -7667,7 +7664,7 @@ a static string of length 11.
 					*graphics_context=(drawing_information->graphics_context).
 						unhighlighted_colour;
 				};
-			}break;										
+			} break;										
 			case SHOW_ELECTRODE_NAMES:
 			case SHOW_CHANNEL_NUMBERS:
 			{	
@@ -7701,7 +7698,7 @@ a static string of length 11.
 					 sprintf(name,"%s","");
 				}
 
-			}break;								
+			} break;								
 			default:
 			{
 				*electrode_drawn=0;
@@ -7831,7 +7828,7 @@ DESCRIPTION :  Draw the electrode in 2D, and write it's name.
   ENTER(draw_2d_electrode);
   display=(Display *)NULL;
   drawing_information=(struct Map_drawing_information *)NULL;
-  if(drawing&&(drawing->user_interface)&&(display=drawing->user_interface->display)
+  if (drawing&&(drawing->user_interface)&&(display=drawing->user_interface->display)
 		 &&(drawing->pixel_map)&&electrode&&(drawing_information=map->drawing_information))
   { 
 		return_code=1;
@@ -7950,7 +7947,7 @@ draw the extrema
   display=(Display *)NULL;
   region_item=(struct Region_list_item *)NULL;
   drawing_information=(struct Map_drawing_information *)NULL;
-  if(map&&drawing&&(drawing->user_interface)&&(display=drawing->user_interface->display)
+  if (map&&drawing&&(drawing->user_interface)&&(display=drawing->user_interface->display)
 		 &&(drawing->pixel_map)&&(drawing_information=map->drawing_information)
 		 &&(rig=*(map->rig_pointer))&&draw_region_number)
   {
@@ -8116,7 +8113,7 @@ draw the landmarks
 	landmark_point=(float *)NULL;
   region_item=(struct Region_list_item *)NULL;
   drawing_information=(struct Map_drawing_information *)NULL;
-  if(map&&drawing&&(drawing->user_interface)&&(display=drawing->user_interface->display)
+  if (map&&drawing&&(drawing->user_interface)&&(display=drawing->user_interface->display)
 		 &&(drawing->pixel_map)&&(drawing_information=map->drawing_information)
 		 &&(rig=*(map->rig_pointer))&&draw_region_number&&start_x&&start_y&&min_x&&min_y&&
 		 stretch_x&&stretch_y&&max_x&&max_y)
@@ -8270,7 +8267,7 @@ Draw the fibres
   display=(Display *)NULL;	
   region_item=(struct Region_list_item *)NULL;
   drawing_information=(struct Map_drawing_information *)NULL;
-  if(map&&drawing&&(drawing->user_interface)&&(display=drawing->user_interface->display)
+  if (map&&drawing&&(drawing->user_interface)&&(display=drawing->user_interface->display)
 		 &&(drawing->pixel_map)&&(drawing_information=map->drawing_information)
 		 &&(rig=*(map->rig_pointer))&&draw_region_number&&start_x&&start_y&&min_x&&min_y&&
 		 stretch_x&&stretch_y)
@@ -8706,7 +8703,7 @@ Write the values of the contours.
   display=(Display *)NULL;
 	frame=(struct Map_frame *)NULL;	
   drawing_information=(struct Map_drawing_information *)NULL;
-  if(map&&drawing&&(drawing->user_interface)&&(display=drawing->user_interface->display)
+  if (map&&drawing&&(drawing->user_interface)&&(display=drawing->user_interface->display)
 		 &&(drawing->pixel_map)&&(drawing_information=map->drawing_information))
   {	
 		return_code=1;
@@ -8867,7 +8864,7 @@ draw the constant thickness contours
 
 	ENTER(draw_2d_constant_thickness_contours);
 	display=(Display *)NULL;
-	if(frame&&map&&drawing&&(drawing_information=map->drawing_information)&&
+	if (frame&&map&&drawing&&(drawing_information=map->drawing_information)&&
 		pixel_value)
 	{
 		return_code=1;
@@ -9217,7 +9214,7 @@ based upon the map's frame's min and max.
 	struct Map_frame *frame;
 
 	ENTER(set_map_2d_map_min_max);
-	if(map)
+	if (map)
 	{
 		return_code=1;
 		number_of_frames=map->number_of_frames;
@@ -9278,7 +9275,7 @@ DESCRIPTION :
 	int return_code;
 
 	ENTER(set_map_2d_fram_min_max);
-	if(frame)
+	if (frame)
 	{
 		return_code=1;
 		if (max_f<min_f)
@@ -9337,7 +9334,7 @@ for the case map->interpolation_type==NO_INTERPOLATION.
 	screen_x=(int *)NULL;
 	screen_y=(int *)NULL;
 	electrode_value=(float *)NULL;
-	if(map)
+	if (map)
 	{
 		return_code=1;
 		rig=*(map->rig_pointer);
@@ -9457,7 +9454,7 @@ Fill in the 2D map pixel image.
 	contour_x=(short int *)NULL;
 	contour_y=(short int *)NULL;
 	drawing_information=(struct Map_drawing_information *)NULL;
-	if(map&&(drawing_information=map->drawing_information))
+	if (map&&(drawing_information=map->drawing_information))
 	{
 		return_code=1;		
 		background_pixel=drawing_information->background_drawing_colour;	
@@ -9567,7 +9564,7 @@ Perform projection and update ranges for 2d map
 
 	ENTER(draw_2d_perform_projection_update_ranges);
 	position=(struct Position *)NULL;
-	if(map&&description&&draw_region_number&&first&&max_x)
+	if (map&&description&&draw_region_number&&first&&max_x)
 	{
 		return_code=1;
 		/* perform projection and update ranges */
@@ -9991,7 +9988,7 @@ calculate the element coordinates for the 2d map.
 	int return_code;
 
 	ENTER(draw_2d_calculate_u_and_v );
-	if(map&&current_region)
+	if (map&&current_region)
 	{		
 		return_code=1;																	
 		/* calculate the element coordinates */
@@ -10141,7 +10138,7 @@ Set <f_approx> from <function>
 		return_code;
 
 	ENTER(draw_2d_calculate_f_approx);
-	if(f_approx)
+	if (f_approx)
 	{
 		f=function->f;
 		dfdx=function->dfdx;
@@ -10252,7 +10249,7 @@ DESCRIPTION : (possibly) draw map boundary
 	ENTER(draw_2d_map_boundary);
 	background_map_boundary=(char *)NULL;
 
-	if(background_map_boundary_base&&pixel_value)
+	if (background_map_boundary_base&&pixel_value)
 	{
 		return_code=1;
 		background_map_boundary=background_map_boundary_base;
@@ -10309,7 +10306,7 @@ sets <min_x>, <max_x> <min_y> <max_y>.
 	ENTER(draw_2d_set_min_x_max_x);
 	region_item=(struct Region_list_item *)NULL;
 	region=(struct Region *)NULL;
-	if((rig)&&(0<(number_of_regions=rig->number_of_regions)))
+	if ((rig)&&(0<(number_of_regions=rig->number_of_regions)))
 	{
 		return_code=1;
 		/* divide the drawing area into regions */
@@ -10380,7 +10377,7 @@ Calculate the screen to map transform for the 2d Map.
 	int i,return_code;
 	
 	ENTER(draw_2d_calc_map_to_screen_transform);
-	if(map&&display)
+	if (map&&display)
 	{
 		return_code=1;						
 		/* calculate the transformation from map coordinates to screen coordinates */
@@ -10492,7 +10489,7 @@ Actually draw the map from the calculated data.
 	electrode=(struct Device **)NULL;
 	electrode_drawn=(char *)NULL;
 	electrode_value=(float *)NULL;
-	if(map&&drawing&&(drawing_information=map->drawing_information)&&
+	if (map&&drawing&&(drawing_information=map->drawing_information)&&
 		(drawing->user_interface)&&draw_region_number&&start_x&&start_y&&min_x&&min_y
 		&&max_x&&max_y&&stretch_x&&stretch_y)
 	{
@@ -10507,7 +10504,7 @@ Actually draw the map from the calculated data.
 		{						
 			if (NO_INTERPOLATION!=map->interpolation_type)
 			{
-				if(recalculate)
+				if (recalculate)
 				{
 					draw_2d_fill_in_image(map,map_height,map_width,
 						contour_x_spacing,contour_y_spacing,spectrum_pixels);
@@ -10619,7 +10616,7 @@ Actually draw the map from the calculated data.
 			draw_2d_extrema(map,drawing,map_x_offset,map_y_offset,map_width,
 				map_height,draw_region_number);
 		}									
-		if(map_type==POTENTIAL)
+		if (map_type==POTENTIAL)
 		{							
 			write_map_title(map,map_width,map_height,map_x_offset,
 				map_y_offset,drawing);
@@ -10692,7 +10689,7 @@ An experimental function. Only works for Torso maps?
 {
 	int return_code;
 	ENTER(set_just_map_pixel_value);
-	if(just_map_pixel_value&&num_pixels&&min_x_pixel&&max_x_pixel&&min_y_pixel&&
+	if (just_map_pixel_value&&num_pixels&&min_x_pixel&&max_x_pixel&&min_y_pixel&&
 		max_y_pixel)
 	{
 		return_code=1;
@@ -10747,7 +10744,7 @@ An experimental function. Only works for Torso maps?
 	float c,fl_act_height,fl_act_width,fl_q_col_width,fl_q_row_height,left_y,right_y,
 		*new_pixel_value,pu,pv;
 	ENTER(gouraud_from_pixel_value);
-	if(map&&just_map_pixel_value&&min_f&&max_f&&pixel_value)
+	if (map&&just_map_pixel_value&&min_f&&max_f&&pixel_value)
 	{
 		return_code=1;
 		/* Gouraud shading from pixel_value (f_approx) values */
@@ -10875,7 +10872,7 @@ An experimental function. Only works for Torso maps?
 {
 	int return_code;
 	ENTER(gouraud_from_mesh);
-	if(top_x&&bot_x&&left_y&&right_y&&f_approx&&f)
+	if (top_x&&bot_x&&left_y&&right_y&&f_approx&&f)
 	{
 		return_code=1;
 		/* this does Gourand shading, using the mesh row and column corners */
@@ -15114,14 +15111,13 @@ for these elements defines <fit_field> at the element, and it's nodes.
 struct FE_field *create_mapping_type_fe_field(char *field_name,
 	struct MANAGER(FE_field) *fe_field_manager)
 /*******************************************************************************
-LAST MODIFIED : 6 October 2000
+LAST MODIFIED : 30 August 2001
 
 DESCRIPTION :
 creates a 1 component  <field_name>
 ==============================================================================*/
 {	
 	struct FE_field *map_fit_field;
-	struct CM_field_information field_info;
 	struct Coordinate_system coordinate_system;
 
 	ENTER(create_mapping_type_fe_field);
@@ -15129,18 +15125,17 @@ creates a 1 component  <field_name>
 	if (field_name&&fe_field_manager)
 	{
 		/* set up the info needed to create the potential field */			
-		set_CM_field_information(&field_info,CM_FIELD,(int *)NULL);		
 		coordinate_system.type=NOT_APPLICABLE;				
 		/* create the potential  field, add it to the node */			
-		if (!(map_fit_field=get_FE_field_manager_matched_field(fe_field_manager,field_name,
-			GENERAL_FE_FIELD,/*indexer_field*/(struct FE_field *)NULL,
-			/*number_of_indexed_values*/0,&field_info,
+		if (!(map_fit_field=get_FE_field_manager_matched_field(fe_field_manager,
+			field_name,GENERAL_FE_FIELD,/*indexer_field*/(struct FE_field *)NULL,
+			/*number_of_indexed_values*/0,CM_GENERAL_FIELD,
 			&coordinate_system,FE_VALUE_VALUE,
 			/*number_of_components*/1,fit_comp_name,
 			/*number_of_times*/0,/*time_value_type*/UNKNOWN_VALUE)))
 		{
-			display_message(ERROR_MESSAGE,
-				"create_mapping_type_fe_field. Could not retrieve potential_value field");
+			display_message(ERROR_MESSAGE,"create_mapping_type_fe_field.  "
+				"Could not retrieve potential_value field");
 		}
 	}
 	else

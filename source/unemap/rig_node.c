@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : rig_node.c
 
-LAST MODIFIED : 18 July 2001
+LAST MODIFIED : 30 August 2001
 
 DESCRIPTION :
 Essentially the same functionality as rig.c, but using nodes and fields to store
@@ -125,20 +125,20 @@ static struct FE_node *create_config_template_node(enum Config_node_type
 	config_node_type,FE_value focus,struct FE_field_order_info **field_order_info,
 	struct Unemap_package *package,struct FE_field **electrode_position_field)
 /*******************************************************************************
-LAST MODIFIED : 24 July 2000
+LAST MODIFIED : 30 August 2001
 
 DESCRIPTION :
 Creates and returns a configuration template node for read_text_config_FE_node
-and read_binary_config_FE_node.
-The type of the configuration template node is determined by Config_node_type.
-Cannot create a template node of type MIXED_TYPE, this doesn't make sense.
-focus is relevant only for config_node_type=SOCK_ELECTRODE_TYPE, for other
-types,focus is ignored. Creates, fills in and returns and returns  field_order_info,
-containing the nodes fields. Therefore, field_order_info should be an unassigned 
-pointer when passed to this function, and must be freed by the calling function.
-The fields of the field_order_info are named using the node_type, therefore
-beware of name clashes if loading multiple rigs of the same node_type.
-Also returns the created electrode_position_field.
+and read_binary_config_FE_node.  The type of the configuration template node is
+determined by Config_node_type.  Cannot create a template node of type
+MIXED_TYPE, this doesn't make sense.  focus is relevant only for
+config_node_type=SOCK_ELECTRODE_TYPE, for other types, focus is ignored.
+Creates, fills in and returns and returns field_order_info, containing the
+node fields.  Therefore, field_order_info should be an unassigned pointer when
+passed to this function, and must be freed by the calling function.  The fields
+of the field_order_info are named using the node_type, therefore beware of name
+clashes if loading multiple rigs of the same node_type.  Also returns the
+created electrode_position_field.
 ==============================================================================*/
 {	
 #if defined (UNEMAP_USE_NODES)	
@@ -167,7 +167,6 @@ Also returns the created electrode_position_field.
 	char *electrode_name;
 	char *rig_type_str;
 	int field_number,number_of_fields,success,string_length;
-	struct CM_field_information field_info;	
 	struct Coordinate_system coordinate_system;	
 	struct FE_field *channel_number_field;
 	struct FE_field *device_name_field;
@@ -272,7 +271,7 @@ Also returns the created electrode_position_field.
 	
 
 	ENTER(create_config_template_node);
-	if(package)
+	if (package)
 	{		
 		electrode_name =(char *)NULL;
 		rig_type_str =(char *)NULL;	
@@ -296,7 +295,7 @@ Also returns the created electrode_position_field.
 		if (node=CREATE(FE_node)(0,(struct FE_node *)NULL))
 		{		
 			/* create the FE_field_order_info for all the fields */
-			switch(config_node_type)
+			switch (config_node_type)
 			{
 				case SOCK_ELECTRODE_TYPE:
 				{	
@@ -304,85 +303,87 @@ Also returns the created electrode_position_field.
 						CREATE(FE_field_order_info)(SOCK_NUM_CONFIG_FIELDS);
 					number_of_fields = SOCK_NUM_CONFIG_FIELDS; 
 					rig_type_str = (char *)sock_electrode_position_str;
-				}break;
+				} break;
 				case PATCH_ELECTRODE_TYPE:
 				{		
 					the_field_order_info=
 						CREATE(FE_field_order_info)(PATCH_NUM_CONFIG_FIELDS);	
 					number_of_fields = PATCH_NUM_CONFIG_FIELDS;				
 					rig_type_str = (char *)patch_electrode_position_str;
-				}break;
+				} break;
 				case TORSO_ELECTRODE_TYPE:
 				{	
 					the_field_order_info=
 						CREATE(FE_field_order_info)(TORSO_NUM_CONFIG_FIELDS);
 					number_of_fields = TORSO_NUM_CONFIG_FIELDS;
 					rig_type_str = (char *)torso_electrode_position_str;
-				}break;
+				} break;
 				case AUXILIARY_TYPE:
 				{						
 					the_field_order_info=
 						CREATE(FE_field_order_info)(AUXILIARY_NUM_CONFIG_FIELDS);
 					number_of_fields = AUXILIARY_NUM_CONFIG_FIELDS;
 					rig_type_str = (char *)auxiliary_str;
-				}break;
+				} break;
 			}
-			if(!the_field_order_info)
+			if (!the_field_order_info)
 			{
 				display_message(ERROR_MESSAGE,
 					"create_config_template_node. Could not create field_order_info");
 				success=0;
 			}
 			/* create the fields which depend on template types. */		
-			if(success)
+			if (success)
 			{
 				string_length = strlen(rig_type_str);				
 				string_length++;
-				if(ALLOCATE(electrode_name,char,string_length))
+				if (ALLOCATE(electrode_name,char,string_length))
 				{	
 					strcpy(electrode_name,rig_type_str);				
-					switch(config_node_type)
+					switch (config_node_type)
 					{
 						case SOCK_ELECTRODE_TYPE:
 						{										
-							/* set up the info needed to create the  electrode position field */
-							set_CM_field_information(&field_info,CM_COORDINATE_FIELD,(int *)NULL);	
+							/* set up the info needed to create the electrode position
+								field */
 							coordinate_system.type=PROLATE_SPHEROIDAL;								
 							coordinate_system.parameters.focus = focus;								
-							/* create the electrode position field, add it to the node and create */
-							/* the FE_field_order_info with enough fields */
-							if ((the_electrode_position_field=get_FE_field_manager_matched_field(
-								fe_field_manager,electrode_name,
-								GENERAL_FE_FIELD,/*indexer_field*/(struct FE_field *)NULL,
-								/*number_of_indexed_values*/0,&field_info,
+							/* create the electrode position field, add it to the node and
+								create the FE_field_order_info with enough fields */
+							if ((the_electrode_position_field=
+								get_FE_field_manager_matched_field(fe_field_manager,
+								electrode_name,GENERAL_FE_FIELD,
+								/*indexer_field*/(struct FE_field *)NULL,
+								/*number_of_indexed_values*/0,CM_COORDINATE_FIELD,
 								&coordinate_system,FE_VALUE_VALUE,
 								/*number_of_components*/3,sock_electrode_component_names,
 								/*number_of_times*/0,/*time_value_type*/UNKNOWN_VALUE)))
 							{						
 								success =define_node_field_and_field_order_info(node,
 									the_electrode_position_field,
-									electrode_components_number_of_derivatives
-									,electrode_components_number_of_versions,&field_number,
+									electrode_components_number_of_derivatives,
+									electrode_components_number_of_versions,&field_number,
 									number_of_fields,electrode_components_nodal_value_types,
 									the_field_order_info);															 				
 							}
 							else
 							{
 								display_message(ERROR_MESSAGE,
-									"create_config_template_node.Could not retrieve sock electrode"
-									" position field");
+									"create_config_template_node.  "
+									"Could not retrieve sock electrode position field");
 								success=0;			
 							}
-						}break;			
+						} break;			
 						case TORSO_ELECTRODE_TYPE:
 						{				
-							/* set up the info needed to create the  electrode position field */
-							set_CM_field_information(&field_info,CM_COORDINATE_FIELD,(int *)NULL);	
-							coordinate_system.type=RECTANGULAR_CARTESIAN;																			
-							if ((the_electrode_position_field=get_FE_field_manager_matched_field(
-								fe_field_manager,electrode_name,
-								GENERAL_FE_FIELD,/*indexer_field*/(struct FE_field *)NULL,
-								/*number_of_indexed_values*/0,&field_info,
+							/* set up the info needed to create the electrode position
+								field */
+							coordinate_system.type=RECTANGULAR_CARTESIAN;
+							if ((the_electrode_position_field=
+								get_FE_field_manager_matched_field(fe_field_manager,
+								electrode_name,GENERAL_FE_FIELD,
+								/*indexer_field*/(struct FE_field *)NULL,
+								/*number_of_indexed_values*/0,CM_COORDINATE_FIELD,
 								&coordinate_system,FE_VALUE_VALUE,
 								/*number_of_components*/3,electrode_component_names,
 								/*number_of_times*/0,/*time_value_type*/UNKNOWN_VALUE)))
@@ -397,39 +398,41 @@ Also returns the created electrode_position_field.
 							else
 							{
 								display_message(ERROR_MESSAGE,
-									"create_config_template_node. Could not torso retrieve electrode"
-									" position field");
+									"create_config_template_node.  "
+									"Could not torso retrieve electrode position field");
 								success=0;			
 							}
-						}break;		
+						} break;		
 						case PATCH_ELECTRODE_TYPE:
 						{
-							/* set up the info needed to create the  electrode position field */
-							set_CM_field_information(&field_info,CM_COORDINATE_FIELD,(int *)NULL);	
+							/* set up the info needed to create the electrode position
+								field */
 							coordinate_system.type=RECTANGULAR_CARTESIAN;						
 							/* create the electrode position field, add it to the node */
-							if ((the_electrode_position_field=get_FE_field_manager_matched_field(
-								fe_field_manager,electrode_name,
-								GENERAL_FE_FIELD,/*indexer_field*/(struct FE_field *)NULL,
-								/*number_of_indexed_values*/0,&field_info,
+							if ((the_electrode_position_field=
+								get_FE_field_manager_matched_field(fe_field_manager,
+								electrode_name,GENERAL_FE_FIELD,
+								/*indexer_field*/(struct FE_field *)NULL,
+								/*number_of_indexed_values*/0,CM_COORDINATE_FIELD,
 								&coordinate_system,FE_VALUE_VALUE,
 								/*number_of_components*/2,electrode_component_names,
 								/*number_of_times*/0,/*time_value_type*/UNKNOWN_VALUE)))
 							{
-								success =define_node_field_and_field_order_info(node,
-									the_electrode_position_field,electrode_components_number_of_derivatives
-									,electrode_components_number_of_versions,&field_number,
+								success=define_node_field_and_field_order_info(node,
+									the_electrode_position_field,
+									electrode_components_number_of_derivatives,
+									electrode_components_number_of_versions,&field_number,
 									number_of_fields,electrode_components_nodal_value_types,
 									the_field_order_info);
 							}
 							else
 							{
 								display_message(ERROR_MESSAGE,
-									"create_config_template_node. Could not retrieve patch "
-									"electrode position field");
+									"create_config_template_node.  "
+									"Could not retrieve patch electrode position field");
 								success=0;			
 							}
-						}break;				
+						} break;				
 					} /* switch */
 				}
 				else
@@ -439,49 +442,48 @@ Also returns the created electrode_position_field.
 						"electrode_name");
 					success =0;
 				}
-			} /* if(success) */
+			} /* if (success) */
 			DEALLOCATE(electrode_name);		
 			/* create fields common to all node */
-			if(success)
+			if (success)
 			{							
 				/* set up the info needed to create the device name field */			
-				set_CM_field_information(&field_info,CM_FIELD,(int *)NULL);		
 				coordinate_system.type=NOT_APPLICABLE;				
 				/* create the device name field, add it to the node */			
 				if (device_name_field=get_FE_field_manager_matched_field(
 					fe_field_manager,"device_name",
 					GENERAL_FE_FIELD,/*indexer_field*/(struct FE_field *)NULL,
-					/*number_of_indexed_values*/0,&field_info,
+					/*number_of_indexed_values*/0,CM_GENERAL_FIELD,
 					&coordinate_system,STRING_VALUE,
 					/*number_of_components*/1,device_name_component_names,
 					/*number_of_times*/0,/*time_value_type*/UNKNOWN_VALUE))
 				{ 
-					set_unemap_package_device_name_field(package,device_name_field);				
+					set_unemap_package_device_name_field(package,device_name_field);
 					success =define_node_field_and_field_order_info(node,
-						device_name_field,device_name_components_number_of_derivatives
-						,device_name_components_number_of_versions,&field_number,
+						device_name_field,device_name_components_number_of_derivatives,
+						device_name_components_number_of_versions,&field_number,
 						number_of_fields,device_name_components_nodal_value_types,
 						the_field_order_info); 
 				}
 				else
 				{
 					display_message(ERROR_MESSAGE,
-						"create_config_template_node. Could not retrieve device name field");
+						"create_config_template_node.  "
+						"Could not retrieve device name field");
 					success=0;
 				}				
 				/* set up the info needed to create the device type field */			
-				set_CM_field_information(&field_info,CM_FIELD,(int *)NULL);		
 				coordinate_system.type=NOT_APPLICABLE;				
 				/* create the device type field, add it to the node */			
 				if (device_type_field=get_FE_field_manager_matched_field(
 					fe_field_manager,"device_type",
 					GENERAL_FE_FIELD,/*indexer_field*/(struct FE_field *)NULL,
-					/*number_of_indexed_values*/0,&field_info,
+					/*number_of_indexed_values*/0,CM_GENERAL_FIELD,
 					&coordinate_system,STRING_VALUE,
 					/*number_of_components*/1,device_type_component_names,
 					/*number_of_times*/0,/*time_value_type*/UNKNOWN_VALUE))
 				{ 
-					set_unemap_package_device_type_field(package,device_type_field);				
+					set_unemap_package_device_type_field(package,device_type_field);
 					success =define_node_field_and_field_order_info(node,
 						device_type_field,device_type_components_number_of_derivatives
 						,device_type_components_number_of_versions,&field_number,
@@ -490,23 +492,22 @@ Also returns the created electrode_position_field.
 				}
 				else
 				{
-					display_message(ERROR_MESSAGE,
-						"create_config_template_node. Could not retrieve  device type field");
+					display_message(ERROR_MESSAGE,"create_config_template_node.  "
+						"Could not retrieve device type field");
 					success=0;
 				}					
 				/* set up the info needed to create the channel number field */			
-				set_CM_field_information(&field_info,CM_FIELD,(int *)NULL);		
 				coordinate_system.type=NOT_APPLICABLE;				
 				/* create the channel number field, add it to the node */			
 				if (channel_number_field=get_FE_field_manager_matched_field(
 					fe_field_manager,"channel_number",
 					GENERAL_FE_FIELD,/*indexer_field*/(struct FE_field *)NULL,
-					/*number_of_indexed_values*/0,&field_info,
+					/*number_of_indexed_values*/0,CM_GENERAL_FIELD,
 					&coordinate_system,INT_VALUE,
 					/*number_of_components*/1,channel_number_component_names,
 					/*number_of_times*/0,/*time_value_type*/UNKNOWN_VALUE))
 				{	
-					set_unemap_package_channel_number_field(package,channel_number_field);					
+					set_unemap_package_channel_number_field(package,channel_number_field);
 					success =define_node_field_and_field_order_info(node,
 						channel_number_field,channel_number_components_number_of_derivatives
 						,channel_number_components_number_of_versions,&field_number,
@@ -515,23 +516,22 @@ Also returns the created electrode_position_field.
 				}
 				else
 				{
-					display_message(ERROR_MESSAGE,
-						"create_config_template_node. Could not retrieve channel number field");
+					display_message(ERROR_MESSAGE,"create_config_template_node.  "
+						"Could not retrieve channel number field");
 					success=0;
 				}
 				/* set up the info needed to create the read_order field */			
-				set_CM_field_information(&field_info,CM_FIELD,(int *)NULL);		
 				coordinate_system.type=NOT_APPLICABLE;				
 				/* create the channel number field, add it to the node */			
 				if (read_order_field=get_FE_field_manager_matched_field(
 					fe_field_manager,"read_order",
 					GENERAL_FE_FIELD,/*indexer_field*/(struct FE_field *)NULL,
-					/*number_of_indexed_values*/0,&field_info,
+					/*number_of_indexed_values*/0,CM_GENERAL_FIELD,
 					&coordinate_system,INT_VALUE,
 					/*number_of_components*/1,read_order_component_names,
 					/*number_of_times*/0,/*time_value_type*/UNKNOWN_VALUE))
 				{	
-					set_unemap_package_read_order_field(package,read_order_field);					
+					set_unemap_package_read_order_field(package,read_order_field);
 					success =define_node_field_and_field_order_info(node,
 						read_order_field,read_order_components_number_of_derivatives
 						,read_order_components_number_of_versions,&field_number,
@@ -540,19 +540,18 @@ Also returns the created electrode_position_field.
 				}
 				else
 				{
-					display_message(ERROR_MESSAGE,
-						"create_config_template_node. Could not retrieve read order field");
+					display_message(ERROR_MESSAGE,"create_config_template_node.  "
+						"Could not retrieve read order field");
 					success=0;
 				}
-#if  defined (UNEMAP_USE_NODES)	
+#if defined (UNEMAP_USE_NODES)	
 				/* set up the info needed to create the highlight field */			
-				set_CM_field_information(&field_info,CM_FIELD,(int *)NULL);		
 				coordinate_system.type=NOT_APPLICABLE;				
 				/* create the channel number field, add it to the node */			
 				if (highlight_field=get_FE_field_manager_matched_field(
 					fe_field_manager,"highlight",
 					GENERAL_FE_FIELD,/*indexer_field*/(struct FE_field *)NULL,
-					/*number_of_indexed_values*/0,&field_info,
+					/*number_of_indexed_values*/0,CM_GENERAL_FIELD,
 					&coordinate_system,INT_VALUE,
 					/*number_of_components*/1,highlight_component_names,
 					/*number_of_times*/0,/*time_value_type*/UNKNOWN_VALUE))
@@ -571,7 +570,7 @@ Also returns the created electrode_position_field.
 					success=0;
 				}			
 #endif /*  defined (UNEMAP_USE_NODES) */
-			} /* if(success) */		
+			} /* if (success) */		
 		}	
 		else
 		{
@@ -581,7 +580,7 @@ Also returns the created electrode_position_field.
 		}			
 		*field_order_info = the_field_order_info;
 		*electrode_position_field = the_electrode_position_field;
-		if(!success)
+		if (!success)
 		{
 			DESTROY(FE_node)(&node);
 			node = (struct FE_node *)NULL;			
@@ -630,7 +629,7 @@ create_config_template_node, and the field_order_info.
 		if (node=CREATE(FE_node)(node_number,template_node))
 		{								
 			/*	set up the type dependent values	*/
-			switch(config_node_type)
+			switch (config_node_type)
 			{
 				case SOCK_ELECTRODE_TYPE:
 				{	
@@ -825,7 +824,7 @@ create_config_template_node, and the field_order_info.
 						FE_NODAL_VALUE,highlight);
 #endif /*  defined (UNEMAP_USE_NODES)	*/
 				} break;
-			}	/* switch() */
+			}	/* switch () */
 			if (FIND_BY_IDENTIFIER_IN_MANAGER(FE_node,
 				cm_node_identifier)(node_number,node_manager))
 			{									
@@ -1251,7 +1250,7 @@ The caching must be ended by the calling function.
 	int success;
 
 	ENTER(get_config_node_group);
-	if(node_group_manager&&node_manager&&element_group_manager&&data_group_manager&&
+	if (node_group_manager&&node_manager&&element_group_manager&&data_group_manager&&
 		 group_name)
 	{
 		node_group = (struct GROUP(FE_node) *)NULL;
@@ -1279,7 +1278,7 @@ The caching must be ended by the calling function.
 			/* if we don't,sucess!, do MANAGED_GROUP_BEGIN_CACHE(FE_node)(node_group) */
 			same_name_data_group=
 				FIND_BY_IDENTIFIER_IN_MANAGER(GROUP(FE_node),name)(group_name,data_group_manager);
-			if((same_name_data_group)&&!(NUMBER_IN_GROUP(FE_node)(same_name_data_group)))
+			if ((same_name_data_group)&&!(NUMBER_IN_GROUP(FE_node)(same_name_data_group)))
 			{					
 				success = 1;										
 			}
@@ -1289,7 +1288,7 @@ The caching must be ended by the calling function.
 			}				
 			same_name_element_group=
 				FIND_BY_IDENTIFIER_IN_MANAGER(GROUP(FE_element),name)(group_name,element_group_manager);
-			if((same_name_element_group)&&!(NUMBER_IN_GROUP(FE_element)(same_name_element_group)))
+			if ((same_name_element_group)&&!(NUMBER_IN_GROUP(FE_element)(same_name_element_group)))
 			{					
 				success = 1;										
 			}
@@ -1297,7 +1296,7 @@ The caching must be ended by the calling function.
 			{
 				success = 0;
 			}
-			if(success)
+			if (success)
 			{	
 				MANAGED_GROUP_BEGIN_CACHE(FE_node)(node_group);
 			}	
@@ -1395,7 +1394,7 @@ in rig.c
 	all_devices_node_order_info =(struct FE_node_order_info *)NULL;	
 	element_manager= (struct MANAGER(FE_element) *)NULL;
 	device_count =0;
-	if(input_file&&package) 
+	if (input_file&&package) 
 	{			
 		element_group_manager=get_unemap_package_element_group_manager(package);
 		node_manager=get_unemap_package_node_manager(package);
@@ -1405,7 +1404,7 @@ in rig.c
 		/* we've read in the rig type, now read in the rig name */
 		/* read the rig name */
 		BINARY_FILE_READ((char *)&string_length,sizeof(int),1,input_file);
-		if(ALLOCATE(rig_name,char,string_length))
+		if (ALLOCATE(rig_name,char,string_length))
 		{
 			if (string_length>0)
 			{
@@ -1422,21 +1421,21 @@ in rig.c
 					/* do nothing for mixed case, need to read in more info to */
 					/*decide node_type*/
 					;
-				}break;
+				} break;
 				case SOCK:
 				{			
 					/* read in focus */
 					BINARY_FILE_READ((char *)&focus,sizeof(float),1,input_file);
 					config_node_type = SOCK_ELECTRODE_TYPE;
-				}break;
+				} break;
 				case PATCH:
 				{
 					config_node_type = PATCH_ELECTRODE_TYPE;
-				}break;
+				} break;
 				case TORSO:	
 				{
 					config_node_type = TORSO_ELECTRODE_TYPE;
-				}break;
+				} break;
 			}		
 			MANAGER_BEGIN_CACHE(FE_node)(node_manager);	
 			all_devices_node_group	= make_node_and_element_and_data_groups(
@@ -1448,11 +1447,11 @@ in rig.c
 			/* read the number of regions */
 			BINARY_FILE_READ((char *)&number_of_regions,sizeof(int),1,input_file);			
 			region_number=0;			
-			if(region_item=get_Rig_region_list(rig))
+			if (region_item=get_Rig_region_list(rig))
 			{
 				while((region_number<number_of_regions)&&return_code)
 				{
-					if(!(region=get_Region_list_item_region(region_item)))
+					if (!(region=get_Region_list_item_region(region_item)))
 					{
 						display_message(ERROR_MESSAGE,"read_binary_config_FE_node_group. "
 							"region_item->region is NULL ");
@@ -1489,7 +1488,7 @@ in rig.c
 									/* create the template node */								
 									DESTROY(FE_node)(&template_node);
 									DESTROY(FE_field_order_info)(&field_order_info);	
-									if(node_group) /* stop caching the current group,(if any) */
+									if (node_group) /* stop caching the current group,(if any) */
 									{
 										MANAGED_GROUP_END_CACHE(FE_node)(node_group);
 									}			
@@ -1509,7 +1508,7 @@ in rig.c
 									/*create the template node */								
 									DESTROY(FE_node)(&template_node);
 									DESTROY(FE_field_order_info)(&field_order_info);
-									if(node_group) /* stop caching the current group,(if any) */
+									if (node_group) /* stop caching the current group,(if any) */
 									{
 										MANAGED_GROUP_END_CACHE(FE_node)(node_group);
 									}	
@@ -1529,7 +1528,7 @@ in rig.c
 									/* create the template node */								
 									DESTROY(FE_node)(&template_node);
 									DESTROY(FE_field_order_info)(&field_order_info);	
-									if(node_group) /* stop caching the current group,(if any) */
+									if (node_group) /* stop caching the current group,(if any) */
 									{
 										MANAGED_GROUP_END_CACHE(FE_node)(node_group);
 									}		
@@ -1541,12 +1540,12 @@ in rig.c
 									MANAGED_GROUP_BEGIN_CACHE(FE_node)(node_group);
 									set_Region_electrode_position_field(region,electrode_position_field);
 									set_Region_rig_node_group(region,node_group);
-								}break;
+								} break;
 							}/*	switch (region_type) */	
 						}	/*	if (MIXED==rig_type)  */
 						else
 						{						
-							if(node_group) /* stop caching the current group,(if any) */
+							if (node_group) /* stop caching the current group,(if any) */
 							{
 								MANAGED_GROUP_END_CACHE(FE_node)(node_group);
 							}								
@@ -1559,7 +1558,7 @@ in rig.c
 							/* create the template node,(but may change it to auxiliary later*/							
 							DESTROY(FE_node)(&template_node);
 							DESTROY(FE_field_order_info)(&field_order_info);
-							switch(config_node_type)
+							switch (config_node_type)
 							{							
 								case SOCK_ELECTRODE_TYPE:
 								{
@@ -1567,35 +1566,35 @@ in rig.c
 										SOCK_ELECTRODE_TYPE,focus,&field_order_info,package,
 										&electrode_position_field);
 									set_Region_electrode_position_field(region,electrode_position_field);
-								}break;
+								} break;
 								case TORSO_ELECTRODE_TYPE:
 								{
 									template_node = create_config_template_node(
 										TORSO_ELECTRODE_TYPE,0,&field_order_info,package,
 										&electrode_position_field);
 									set_Region_electrode_position_field(region,electrode_position_field);
-								}break;
+								} break;
 								case PATCH_ELECTRODE_TYPE:
 								{
 									template_node = create_config_template_node(
 										PATCH_ELECTRODE_TYPE,0,&field_order_info,package,
 										&electrode_position_field);
 									set_Region_electrode_position_field(region,electrode_position_field);
-								}break;
-							}	/* switch(config_node_type) */
+								} break;
+							}	/* switch (config_node_type) */
 						}			
 						/* read the devices for the region */
 						/* read the number of inputs */
 						BINARY_FILE_READ((char *)&region_number_of_devices,
 							sizeof(int),1,input_file);	
 						/* create or reallocate the all_devices_node_order_info */
-						if(!all_devices_node_order_info)
+						if (!all_devices_node_order_info)
 						{
 							all_devices_node_order_info =CREATE(FE_node_order_info)
 								(region_number_of_devices);
 
 							*the_node_order_info = all_devices_node_order_info;
-							if(!all_devices_node_order_info)
+							if (!all_devices_node_order_info)
 							{
 								display_message(ERROR_MESSAGE,"read_binary_config_FE_node_group."
 									"CREATE(FE_node_order_info) failed ");
@@ -1606,7 +1605,7 @@ in rig.c
 						}
 						else
 						{ 
-							if(!(return_code =add_nodes_FE_node_order_info(
+							if (!(return_code =add_nodes_FE_node_order_info(
 								region_number_of_devices,all_devices_node_order_info)))
 							{							
 								DESTROY_GROUP(FE_node)(&node_group);
@@ -1648,15 +1647,15 @@ in rig.c
 											node_manager,config_node_type,node_number,read_order_number,
 											field_order_info);
 										last_node_number = node_number;										
-									}break;
+									} break;
 								}	/* switch (device_type) */
-								if(node)
+								if (node)
 								{ 
-									if(ADD_OBJECT_TO_MANAGER(FE_node)(node,node_manager))
+									if (ADD_OBJECT_TO_MANAGER(FE_node)(node,node_manager))
 									{						
-										if(ADD_OBJECT_TO_GROUP(FE_node)(node,node_group))
+										if (ADD_OBJECT_TO_GROUP(FE_node)(node,node_group))
 										{
-											if(ADD_OBJECT_TO_GROUP(FE_node)(node,
+											if (ADD_OBJECT_TO_GROUP(FE_node)(node,
 												all_devices_node_group))
 											{
 												/* add the node to the node_order_info*/
@@ -1686,7 +1685,7 @@ in rig.c
 											node=(struct FE_node *)NULL;
 											return_code=0;
 										}							
-									}/* if(!ADD_OBJECT_TO_MANAGER(FE_node) */
+									}/* if (!ADD_OBJECT_TO_MANAGER(FE_node) */
 									else
 									{
 										display_message(ERROR_MESSAGE,
@@ -1696,8 +1695,8 @@ in rig.c
 										node=(struct FE_node *)NULL;
 										return_code=0;
 									}
-								}/*	if(node) */		
-								if(device_name)
+								}/*	if (node) */		
+								if (device_name)
 								{
 									DEALLOCATE(device_name);
 								}
@@ -1724,7 +1723,7 @@ in rig.c
 						region_number++;				
 					}
 					region_item=get_Region_list_item_next(region_item);
-					if(region_name)
+					if (region_name)
 					{
 						DEALLOCATE(region_name);
 					}				
@@ -1766,7 +1765,7 @@ in rig.c
 							"read_binary_config_FE_node_group.  Could not create page name");
 						return_code = 0;
 					}			 
-					if(page_name)
+					if (page_name)
 					{
 						DEALLOCATE(page_name);
 					}
@@ -1786,11 +1785,11 @@ in rig.c
 			DESTROY(FE_node)(&template_node);
 		}			
 		MANAGER_END_CACHE(FE_node)(node_manager);
-		if(node_group)
+		if (node_group)
 		{
 			MANAGED_GROUP_END_CACHE(FE_node)(node_group);
 		}		
-		if(all_devices_node_group)
+		if (all_devices_node_group)
 		{
 			MANAGED_GROUP_END_CACHE(FE_node)(all_devices_node_group);
 		}	
@@ -1798,20 +1797,20 @@ in rig.c
 		{
 			DESTROY(FE_field_order_info)(&field_order_info);
 		}			
-		if(rig_name)
+		if (rig_name)
 		{
 			DEALLOCATE(rig_name);
 		}		
-		if(region_name)
+		if (region_name)
 		{
 			DEALLOCATE(region_name);
 		}
-		if(device_name)
+		if (device_name)
 		{
 			DEALLOCATE(device_name);
 
 		}		
-		if(page_name)
+		if (page_name)
 		{
 			DEALLOCATE(device_name);
 		}	
@@ -1926,11 +1925,11 @@ files, and there are no text signal files.
 			last_node_number=1;	 
 			fscanf(input_file," ");				
 			finished=0;
-			if(region_item=get_Rig_region_list(rig))
+			if (region_item=get_Rig_region_list(rig))
 			{
 				while ((!feof(input_file))&&(!finished)&&return_code)
 				{
-					if(region_item)
+					if (region_item)
 					/* not an error if it isn't set*/
 					{
 						region=get_Region_list_item_region(region_item);
@@ -2020,7 +2019,7 @@ files, and there are no text signal files.
 						/* new group, new rig, so reset device number */
 						device_number=0;
 					}
-					else if((!strcmp("sock ",input_str))&&(region_type==MIXED))
+					else if ((!strcmp("sock ",input_str))&&(region_type==MIXED))
 					{
 						/* shorten string, 'sock' only 4 chars long*/
 						input_str[4]='\0';
@@ -2067,7 +2066,7 @@ files, and there are no text signal files.
 						/* new group, new rig, so reset device number */
 						device_number=0;
 					}				
-					else if(!strcmp("regio",input_str))
+					else if (!strcmp("regio",input_str))
 					{
 						/* line is "region" */
 						fscanf(input_file,"n : "); 
@@ -2110,12 +2109,12 @@ files, and there are no text signal files.
 								template_node=create_config_template_node(PATCH_ELECTRODE_TYPE,0,
 									&field_order_info,package,&electrode_position_field);
 								set_Region_electrode_position_field(region,electrode_position_field);
-							}break;
+							} break;
 						}
 						/* new group, new rig, so reset device number */
 						device_number=0;
 					}				
-					else if((is_electrode = !strcmp("elect",input_str))||
+					else if ((is_electrode = !strcmp("elect",input_str))||
 						(is_auxiliary=!strcmp("auxil",input_str)))
 					{
 						/* node, line is "electrode" or "auxiliary" */
@@ -2173,7 +2172,7 @@ files, and there are no text signal files.
 									node=(struct FE_node *)NULL;
 									return_code=0;
 								}							
-							} /* if(!ADD_OBJECT_TO_MANAGER(FE_node) */
+							} /* if (!ADD_OBJECT_TO_MANAGER(FE_node) */
 							else
 							{
 								display_message(ERROR_MESSAGE,"read_text_config_FE_node_group."
@@ -2190,7 +2189,7 @@ files, and there are no text signal files.
 					}
 					fscanf(input_file," ");
 					DEALLOCATE(dummy_str); 
-					if(region_item)
+					if (region_item)
 					/* not an error if it isn't set*/
 					{
 						/* move to the next region */
@@ -2374,13 +2373,13 @@ static int read_signal_FE_node_group(FILE *input_file,
 	struct Unemap_package *package,
 	struct FE_node_order_info *node_order_info)
 /*******************************************************************************
-LAST MODIFIED : 13 September 2000
+LAST MODIFIED : 30 August 2001
 
 DESCRIPTION :
 Reads signals from a signal file, stores them in a node group, via 
-FE_node_order_info.
-Performs the same loading functions as read_signal_file, but using the rig_node group
-Doesn't load in auxilliary devices that are linear combinations of other channels.
+FE_node_order_info.  Performs the same loading functions as read_signal_file,
+but using the rig_node group.  Doesn't load in auxilliary devices that are
+linear combinations of other channels.
 ==============================================================================*/
 {
 	char
@@ -2502,7 +2501,6 @@ Doesn't load in auxilliary devices that are linear combinations of other channel
 		signal_status_components_number_of_derivatives[1]={0},
 	  signal_status_components_number_of_versions[1]={1};
 		short int *buffer_signals_short,*node_signals_short;
-	struct CM_field_information field_info;	
 	struct Coordinate_system coordinate_system;		
 	struct FE_field *channel_gain_field,*channel_offset_field,
 #if defined (UNEMAP_USE_NODES)
@@ -2544,9 +2542,8 @@ Doesn't load in auxilliary devices that are linear combinations of other channel
 		node_manager = get_unemap_package_node_manager(package);			
 		number_of_devices = get_FE_node_order_info_number_of_nodes(
 			node_order_info);
-		set_CM_field_information(&field_info,CM_FIELD,(int *)NULL);		
 		coordinate_system.type=NOT_APPLICABLE;
-		if(ALLOCATE(channel_gains,float,number_of_devices)&&
+		if (ALLOCATE(channel_gains,float,number_of_devices)&&
 			ALLOCATE(channel_offsets,float,number_of_devices))
 		{
 			/* read the number of signals */
@@ -2571,7 +2568,7 @@ Doesn't load in auxilliary devices that are linear combinations of other channel
 						input_file))
 					{																		
 						/* read the sample times */
-						if(ALLOCATE(buffer_times,int,number_of_samples))
+						if (ALLOCATE(buffer_times,int,number_of_samples))
 						{
 							if (number_of_samples==(int)BINARY_FILE_READ((char *)buffer_times,
 								sizeof(int),number_of_samples,input_file))
@@ -2581,7 +2578,7 @@ Doesn't load in auxilliary devices that are linear combinations of other channel
 								{
 									case SHORT_INT_VALUE:
 									{
-										if(ALLOCATE(buffer_signals_short,short int,number_of_samples*
+										if (ALLOCATE(buffer_signals_short,short int,number_of_samples*
 											number_of_signals))
 										{
 											fread_result=BINARY_FILE_READ((char *)buffer_signals_short,
@@ -2596,7 +2593,7 @@ Doesn't load in auxilliary devices that are linear combinations of other channel
 									} break;
 									case FLOAT_VALUE:
 									{
-										if(ALLOCATE(buffer_signals_float,float,number_of_samples*
+										if (ALLOCATE(buffer_signals_float,float,number_of_samples*
 											number_of_signals))
 										{
 											fread_result=BINARY_FILE_READ((char *)buffer_signals_float,
@@ -2606,7 +2603,7 @@ Doesn't load in auxilliary devices that are linear combinations of other channel
 											for(i=0;i<number_of_samples*number_of_signals;i++)
 											{	
 												/* check if data is valid finite() checks inf and nan*/
-												if(!finite( (double)(*buffer_value)  ))
+												if (!finite( (double)(*buffer_value)  ))
 												{
 													*buffer_value=0.0;
 													display_message(ERROR_MESSAGE,
@@ -2694,11 +2691,11 @@ Doesn't load in auxilliary devices that are linear combinations of other channel
 										return_code=0;
 									}
 									/* Do node stuff here */
-									if(return_code)
+									if (return_code)
 									{	
 										period = 1/frequency;									
 										/* allocate memory for times, and fill in */
-										if(ALLOCATE(times,FE_value,number_of_samples))
+										if (ALLOCATE(times,FE_value,number_of_samples))
 										{								
 											for(j=0;j<number_of_samples;j++)
 											{
@@ -2722,12 +2719,12 @@ Doesn't load in auxilliary devices that are linear combinations of other channel
 										{
 											case SHORT_INT_VALUE:
 											{
-												if(ALLOCATE(node_signals_short,short int,number_of_samples))
+												if (ALLOCATE(node_signals_short,short int,number_of_samples))
 												{
 													if (!(signal_field=get_FE_field_manager_matched_field(
 														fe_field_manager,"signal",
 														GENERAL_FE_FIELD,/*indexer_field*/(struct FE_field *)NULL,
-														/*number_of_indexed_values*/0,&field_info,
+														/*number_of_indexed_values*/0,CM_GENERAL_FIELD,
 														&coordinate_system,SHORT_ARRAY_VALUE,
 														/*number_of_components*/1,signal_component_names,
 														/*number_of_times*/number_of_samples,/*time_value_type*/
@@ -2747,12 +2744,12 @@ Doesn't load in auxilliary devices that are linear combinations of other channel
 											} break;
 											case FLOAT_VALUE:
 											{
-												if(ALLOCATE(node_signals_fe_value,float,number_of_samples))
+												if (ALLOCATE(node_signals_fe_value,float,number_of_samples))
 												{
 													if (!(signal_field=get_FE_field_manager_matched_field(
 														fe_field_manager,"signal",
 														GENERAL_FE_FIELD,/*indexer_field*/(struct FE_field *)NULL,
-														/*number_of_indexed_values*/0,&field_info,
+														/*number_of_indexed_values*/0,CM_GENERAL_FIELD,
 														&coordinate_system,FE_VALUE_ARRAY_VALUE,
 														/*number_of_components*/1,signal_component_names,
 														number_of_samples,/*time_value_type*/FE_VALUE_VALUE)))
@@ -2772,7 +2769,7 @@ Doesn't load in auxilliary devices that are linear combinations of other channel
 											} break;
 										}	/* switch (signal_value_type) */									
 										/* fill in field based time values*/
-										if(signal_field)
+										if (signal_field)
 										{
 											for(j=0;j<number_of_samples;j++)
 											{
@@ -2780,7 +2777,7 @@ Doesn't load in auxilliary devices that are linear combinations of other channel
 											}
 										}
 									}							
-									if(return_code)
+									if (return_code)
 									{		
 										number_of_nodes=get_FE_node_order_info_number_of_nodes(
 											node_order_info);
@@ -2818,12 +2815,12 @@ Doesn't load in auxilliary devices that are linear combinations of other channel
 												if (channel_gain_field=get_FE_field_manager_matched_field(
 													fe_field_manager,"channel_gain",
 													GENERAL_FE_FIELD,/*indexer_field*/(struct FE_field *)NULL,
-													/*number_of_indexed_values*/0,&field_info,
+													/*number_of_indexed_values*/0,CM_GENERAL_FIELD,
 													&coordinate_system,FE_VALUE_VALUE,
 													/*number_of_components*/1,channel_gain_component_names,
 													/*number_of_times*/0,/*time_value_type*/UNKNOWN_VALUE))
 												{
-													if(define_FE_field_at_node(node,channel_gain_field,
+													if (define_FE_field_at_node(node,channel_gain_field,
 														channel_gain_components_number_of_derivatives
 														,channel_gain_components_number_of_versions,
 														channel_gain_components_nodal_value_types))
@@ -2850,15 +2847,15 @@ Doesn't load in auxilliary devices that are linear combinations of other channel
 														"error getting  channel_gain_field");	
 													return_code =0;
 												}	
-												if(channel_offset_field=get_FE_field_manager_matched_field(
+												if (channel_offset_field=get_FE_field_manager_matched_field(
 													fe_field_manager,"channel_offset",
 													GENERAL_FE_FIELD,/*indexer_field*/(struct FE_field *)NULL,
-													/*number_of_indexed_values*/0,&field_info,
+													/*number_of_indexed_values*/0,CM_GENERAL_FIELD,
 													&coordinate_system,FE_VALUE_VALUE,
 													/*number_of_components*/1,channel_offset_component_names,
 													/*number_of_times*/0,/*time_value_type*/UNKNOWN_VALUE))
 												{ 
-													if(define_FE_field_at_node(node,channel_offset_field,
+													if (define_FE_field_at_node(node,channel_offset_field,
 														channel_offset_components_number_of_derivatives
 														,channel_offset_components_number_of_versions,
 														channel_offset_components_nodal_value_types))
@@ -2890,12 +2887,12 @@ Doesn't load in auxilliary devices that are linear combinations of other channel
 												if (signal_minimum_field=get_FE_field_manager_matched_field(
 													fe_field_manager,"signal_minimum",
 													GENERAL_FE_FIELD,/*indexer_field*/(struct FE_field *)NULL,
-													/*number_of_indexed_values*/0,&field_info,
+													/*number_of_indexed_values*/0,CM_GENERAL_FIELD,
 													&coordinate_system,FE_VALUE_VALUE,
 													/*number_of_components*/1,signal_minimum_component_names,
 													/*number_of_times*/0,/*time_value_type*/UNKNOWN_VALUE))
 												{
-													if(define_FE_field_at_node(node,signal_minimum_field,
+													if (define_FE_field_at_node(node,signal_minimum_field,
 														signal_minimum_components_number_of_derivatives
 														,signal_minimum_components_number_of_versions,
 														signal_minimum_components_nodal_value_types))
@@ -2927,12 +2924,12 @@ Doesn't load in auxilliary devices that are linear combinations of other channel
 												if (signal_maximum_field=get_FE_field_manager_matched_field(
 													fe_field_manager,"signal_maximum",
 													GENERAL_FE_FIELD,/*indexer_field*/(struct FE_field *)NULL,
-													/*number_of_indexed_values*/0,&field_info,
+													/*number_of_indexed_values*/0,CM_GENERAL_FIELD,
 													&coordinate_system,FE_VALUE_VALUE,
 													/*number_of_components*/1,signal_maximum_component_names,
 													/*number_of_times*/0,/*time_value_type*/UNKNOWN_VALUE))
 												{
-													if(define_FE_field_at_node(node,signal_maximum_field,
+													if (define_FE_field_at_node(node,signal_maximum_field,
 														signal_maximum_components_number_of_derivatives
 														,signal_maximum_components_number_of_versions,
 														signal_maximum_components_nodal_value_types))
@@ -2964,12 +2961,12 @@ Doesn't load in auxilliary devices that are linear combinations of other channel
 												if (signal_status_field=get_FE_field_manager_matched_field(
 													fe_field_manager,"signal_status",
 													GENERAL_FE_FIELD,/*indexer_field*/(struct FE_field *)NULL,
-													/*number_of_indexed_values*/0,&field_info,
+													/*number_of_indexed_values*/0,CM_GENERAL_FIELD,
 													&coordinate_system,STRING_VALUE,
 													/*number_of_components*/1,signal_status_component_names,
 													/*number_of_times*/0,/*time_value_type*/UNKNOWN_VALUE))
 												{ 
-													if(define_FE_field_at_node(node,signal_status_field,
+													if (define_FE_field_at_node(node,signal_status_field,
 														signal_status_components_number_of_derivatives
 														,signal_status_components_number_of_versions,
 														signal_status_components_nodal_value_types))
@@ -2982,7 +2979,7 @@ Doesn't load in auxilliary devices that are linear combinations of other channel
 														get_FE_nodal_string_value(node,
 															get_unemap_package_device_type_field(package),
 															0,0,FE_NODAL_VALUE,&device_type_string);
-														if(strcmp(device_type_string,"ELECTRODE"))
+														if (strcmp(device_type_string,"ELECTRODE"))
 														{
 															set_FE_nodal_string_value(node,signal_status_field,0,0,
 																FE_NODAL_VALUE,
@@ -3010,7 +3007,7 @@ Doesn't load in auxilliary devices that are linear combinations of other channel
 													return_code =0;
 												}				
 												/* add signal field to the node */
-												if(define_FE_field_at_node(node,signal_field,
+												if (define_FE_field_at_node(node,signal_field,
 													signal_components_number_of_derivatives
 													,signal_components_number_of_versions,
 													signal_components_nodal_value_types))
@@ -3047,12 +3044,12 @@ Doesn't load in auxilliary devices that are linear combinations of other channel
 												if (display_start_time_field=get_FE_field_manager_matched_field(
 													fe_field_manager,"display_start_time",
 													CONSTANT_FE_FIELD,/*indexer_field*/(struct FE_field *)NULL,
-													/*number_of_indexed_values*/0,&field_info,
+													/*number_of_indexed_values*/0,CM_GENERAL_FIELD,
 													&coordinate_system,FE_VALUE_VALUE,
 													/*number_of_components*/1,display_start_time_component_names,
 													/*number_of_times*/0,/*time_value_type*/UNKNOWN_VALUE))
 												{
-													if(define_FE_field_at_node(node,display_start_time_field,
+													if (define_FE_field_at_node(node,display_start_time_field,
 														display_start_time_components_number_of_derivatives
 														,display_start_time_components_number_of_versions,
 														display_start_time_components_nodal_value_types))
@@ -3080,12 +3077,12 @@ Doesn't load in auxilliary devices that are linear combinations of other channel
 												if (display_end_time_field=get_FE_field_manager_matched_field(
 													fe_field_manager,"display_end_time",
 													CONSTANT_FE_FIELD,/*indexer_field*/(struct FE_field *)NULL,
-													/*number_of_indexed_values*/0,&field_info,
+													/*number_of_indexed_values*/0,CM_GENERAL_FIELD,
 													&coordinate_system,FE_VALUE_VALUE,
 													/*number_of_components*/1,display_end_time_component_names,
 													/*number_of_times*/0,/*time_value_type*/UNKNOWN_VALUE))
 												{
-													if(define_FE_field_at_node(node,display_end_time_field,
+													if (define_FE_field_at_node(node,display_end_time_field,
 														display_end_time_components_number_of_derivatives
 														,display_end_time_components_number_of_versions,
 														display_end_time_components_nodal_value_types))
@@ -3235,7 +3232,7 @@ Must call after read_signal_FE_node_group
 	signal_maximum_field=(struct FE_field *)NULL;
 	signal_minimum_field=(struct FE_field *)NULL;
 	signal_status_field=(struct FE_field *)NULL;
-	if(input_file&&package&&node_order_info)
+	if (input_file&&package&&node_order_info)
 	{
 		return_code=1;
 		if ((1==BINARY_FILE_READ((char *)&datum,sizeof(int),1,input_file))&&
@@ -3265,7 +3262,7 @@ Must call after read_signal_FE_node_group
 			number_of_devices = 
 				get_FE_node_order_info_number_of_nodes(node_order_info);
 			/* for each signal read the status, range and events */
-			if(((number_of_devices)>0)&&node_manager&&signal_maximum_field&&
+			if (((number_of_devices)>0)&&node_manager&&signal_maximum_field&&
 				signal_minimum_field&&signal_status_field)
 			{
 				i=0;
@@ -3328,30 +3325,30 @@ Must call after read_signal_FE_node_group
 							component.field=signal_maximum_field;
 							set_FE_nodal_FE_value_value(node,&component,0,FE_NODAL_VALUE,
 								signal_maximum);
-							switch(signal_status)
+							switch (signal_status)
 							{
 								case ACCEPTED:
 								{
 									set_FE_nodal_string_value(node,signal_status_field,0,0,FE_NODAL_VALUE,
 										"ACCEPTED");
-								}break;	
+								} break;	
 								case REJECTED:
 								{
 									set_FE_nodal_string_value(node,signal_status_field,0,0,FE_NODAL_VALUE,
 										"REJECTED");
-								}break;	
+								} break;	
 								case UNDECIDED:						
 								{
 									set_FE_nodal_string_value(node,signal_status_field,0,0,FE_NODAL_VALUE,
 										"UNDECIDED");
-								}break;		
+								} break;		
 								default:	
 								{								
 									display_message(ERROR_MESSAGE,
 										"read_event_settings_and_signal_status_FE_node_group."
 										"  incorrect signal_status");
 									return_code=0;							
-								}break;					
+								} break;					
 							}
 							/* copy node back into the manager */
 							MANAGER_MODIFY_NOT_IDENTIFIER(FE_node,cm_node_identifier)
@@ -3412,11 +3409,11 @@ in the <node>.
 	return_code=1;
 	ENTER(get_node_position_min_max);
 	source_coordinate_system=(struct Coordinate_system *)NULL;
-	if((node)&&(position_min_max_iterator_void))
+	if ((node)&&(position_min_max_iterator_void))
 	{
 		position_min_max_iterator=(struct Position_min_max_iterator *)
 			position_min_max_iterator_void;	
-		if(position_min_max_iterator&&position_min_max_iterator->position_field)
+		if (position_min_max_iterator&&position_min_max_iterator->position_field)
 		{													 
 			component.field=position_min_max_iterator->position_field;
 			component.number=0;
@@ -3436,39 +3433,39 @@ in the <node>.
 			y_value=dest_coordinates[1];
 			z_value=dest_coordinates[2];
 
-			if(x_value>position_min_max_iterator->max_x)
+			if (x_value>position_min_max_iterator->max_x)
 			{
 				position_min_max_iterator->max_x=x_value;
 			}
-			if(x_value<position_min_max_iterator->min_x)
+			if (x_value<position_min_max_iterator->min_x)
 			{
 				position_min_max_iterator->min_x=x_value;
 			}									
-			if(y_value>position_min_max_iterator->max_y)
+			if (y_value>position_min_max_iterator->max_y)
 			{
 				position_min_max_iterator->max_y=y_value;
 			}
-			if(y_value<position_min_max_iterator->min_y)
+			if (y_value<position_min_max_iterator->min_y)
 			{
 				position_min_max_iterator->min_y=y_value;
 			}			
-			if(z_value>position_min_max_iterator->max_z)
+			if (z_value>position_min_max_iterator->max_z)
 			{
 				position_min_max_iterator->max_z=z_value;
 			}
-			if(z_value<position_min_max_iterator->min_z)
+			if (z_value<position_min_max_iterator->min_z)
 			{
 				position_min_max_iterator->min_z=z_value;
 			}			
 			position_min_max_iterator->count++;
-		}	/* if(min_max_iterator */
+		}	/* if (min_max_iterator */
 		else
 		{
 			display_message(ERROR_MESSAGE,"get_node_position_min_max."
 				" min_max_iterator NULL ");
 			return_code=0;
 		}	
-	}/* if((node)&&(position_min_max_iterator_void)) */
+	}/* if ((node)&&(position_min_max_iterator_void)) */
 	else
 	{
 		display_message(ERROR_MESSAGE,"get_node_position_min_max."
@@ -3505,43 +3502,43 @@ Does nothing with REJECTED signals.
 	
 	return_code=1;
 	ENTER(iterative_get_rig_node_signal_min_max_at_time);
-	if((node)&&(min_max_iterator_void))
+	if ((node)&&(min_max_iterator_void))
 	{
 		min_max_iterator=(struct Min_max_iterator *)min_max_iterator_void;	
-		if(min_max_iterator&&min_max_iterator->signal_component&&
+		if (min_max_iterator&&min_max_iterator->signal_component&&
 			min_max_iterator->signal_status_field&&min_max_iterator->channel_gain_field
 			&&min_max_iterator->channel_offset_field)
 		{
 			/* need to check if signal is accepted/rejected/undecided */	
-			if(get_FE_nodal_string_value(node,min_max_iterator->signal_status_field,0,0,
+			if (get_FE_nodal_string_value(node,min_max_iterator->signal_status_field,0,0,
 				FE_NODAL_VALUE,&signal_status_string))
 			{
 				/* do nothing if signal is rejected */
-				if(strcmp(signal_status_string,"REJECTED")) /* strcmp rets 0 for match*/
+				if (strcmp(signal_status_string,"REJECTED")) /* strcmp rets 0 for match*/
 				{
 					value_type=get_FE_field_value_type(min_max_iterator->signal_component->field);
-					switch(value_type)
+					switch (value_type)
 					{
 						case FE_VALUE_ARRAY_VALUE:
 						{
 							return_code=get_FE_nodal_FE_value_array_value_at_FE_value_time(node,
 								min_max_iterator->signal_component,0,
 								FE_NODAL_VALUE,min_max_iterator->time,&fe_value);
-						}break;
+						} break;
 						case SHORT_ARRAY_VALUE:
 						{
 							return_code=get_FE_nodal_short_array_value_at_FE_value_time(node,
 								min_max_iterator->signal_component,0,FE_NODAL_VALUE,
 								min_max_iterator->time,&short_value);
 							fe_value=short_value;
-						}break;
+						} break;
 						default :
 						{
 							display_message(ERROR_MESSAGE,
 								"iterative_get_rig_node_signal_min_max_at_time."
 								" Incorrect signal field value type");
 							return_code=0;
-						}break;
+						} break;
 					}
 					/*get the channel gain and offset */
 					component.number=0;
@@ -3552,35 +3549,35 @@ Does nothing with REJECTED signals.
 					get_FE_nodal_FE_value_value(node,&component,0,FE_NODAL_VALUE,
 						&channel_offset);
 					fe_value=channel_gain*(fe_value-channel_offset);
-					if(return_code)
+					if (return_code)
 					{
 						min_max_iterator->count++;
-						if(fe_value>min_max_iterator->max)
+						if (fe_value>min_max_iterator->max)
 						{
 							min_max_iterator->max=fe_value;
 						}
-						if(fe_value<min_max_iterator->min)
+						if (fe_value<min_max_iterator->min)
 						{
 							min_max_iterator->min=fe_value;
 						}			
-					}/* if(return_code) */
-				} /* if(strcmp(signal_status_string,*/
+					}/* if (return_code) */
+				} /* if (strcmp(signal_status_string,*/
 				DEALLOCATE(signal_status_string);
-			}	/* if(get_FE_nodal_string_value */
+			}	/* if (get_FE_nodal_string_value */
 			else
 			{
 				display_message(ERROR_MESSAGE,"iterative_get_rig_node_signal_min_max_at_time."
 					"Failed to get signal_status");
 				return_code=0;	
 			}				
-		}	/* if(min_max_iterator */
+		}	/* if (min_max_iterator */
 		else
 		{
 			display_message(ERROR_MESSAGE,"iterative_get_rig_node_signal_min_max_at_time."
 			" min_max_iterator NULL ");
 			return_code=0;
 		}	
-	}/* if((node)&&(min_max_iterator_void)) */
+	}/* if ((node)&&(min_max_iterator_void)) */
 	else
 	{
 		display_message(ERROR_MESSAGE,"iterative_get_rig_node_signal_min_max_at_time."
@@ -3621,11 +3618,11 @@ rig_node_group_set_map_electrode_position_lambda_r
 	ENTER(iterative_rig_node_set_map_electrode_position_lambda_r);
 	return_code=1;
 	node_unmanaged=(struct FE_node *)NULL;
-	if((node)&&(set_map_electrode_position_info_void))
+	if ((node)&&(set_map_electrode_position_info_void))
 	{
 		set_map_electrode_position_info=
 			(struct Set_map_electrode_position_info *)set_map_electrode_position_info_void;
-		if(set_map_electrode_position_info&&(field_manager=
+		if (set_map_electrode_position_info&&(field_manager=
 			set_map_electrode_position_info->field_manager)&&
 			(node_manager=set_map_electrode_position_info->node_manager)&&
 			(map_electrode_position_field=
@@ -3647,7 +3644,7 @@ rig_node_group_set_map_electrode_position_lambda_r
 				if (MANAGER_COPY_WITH_IDENTIFIER(FE_node,cm_node_identifier)
 					(node_unmanaged,node))
 				{												
-					switch(set_map_electrode_position_info->region_type)
+					switch (set_map_electrode_position_info->region_type)
 					{
 						case SOCK:
 						{	
@@ -3675,7 +3672,7 @@ rig_node_group_set_map_electrode_position_lambda_r
 							component.number=2;/* theta */
 							set_FE_nodal_FE_value_value(node_unmanaged,&component,0,
 								FE_NODAL_VALUE,theta);							
-						}break;	
+						} break;	
 						case TORSO:
 						{				
 							/* Note that the torso map is in cp coords, but the torso */
@@ -3723,7 +3720,7 @@ rig_node_group_set_map_electrode_position_lambda_r
 							component.number=2;/* z_cp */	
 							set_FE_nodal_FE_value_value(node_unmanaged,&component,0,
 								FE_NODAL_VALUE,z_cp);							
-						}break;
+						} break;
 						case PATCH:
 						{		
 							/* Data to copy, but none to change */
@@ -3743,14 +3740,14 @@ rig_node_group_set_map_electrode_position_lambda_r
 							component.number=1;/* y */
 							set_FE_nodal_FE_value_value(node_unmanaged,&component,0,
 								FE_NODAL_VALUE,y);															
-						}break;
+						} break;
 						default:
 						{
 							display_message(ERROR_MESSAGE,
 								"iterative_rig_node_set_map_electrode_position_lambda_r"
 								"  invalid region_type");
 							return_code=0;
-						}break;
+						} break;
 					}
 					/* copy node back into the manager */
 					MANAGER_MODIFY_NOT_IDENTIFIER(FE_node,cm_node_identifier)
@@ -3765,14 +3762,14 @@ rig_node_group_set_map_electrode_position_lambda_r
 				}
 				DESTROY(FE_node)(&node_unmanaged);
 			}
-		}	/* if(set_map_electrode_position_info */
+		}	/* if (set_map_electrode_position_info */
 		else
 		{
 			display_message(ERROR_MESSAGE,"iterative_rig_node_set_map_electrode_position_lambda_r"
 				" set_map_electrode_position_info NULL ");
 			return_code=0;
 		}	
-	}/* if((node)&&(set_map_electrode_position_info_void)) */
+	}/* if ((node)&&(set_map_electrode_position_info_void)) */
 	else
 	{
 		display_message(ERROR_MESSAGE,"iterative_rig_node_set_map_electrode_position_lambda_r"
@@ -3823,11 +3820,11 @@ Called by rig_node_group_add_map_electrode_position_field
 	map_electrode_position_field=(struct FE_field *)NULL;	
 	node_manager=(struct MANAGER(FE_node) *)NULL;
 	field_manager=(struct MANAGER(FE_field) *)NULL;
-	if((node)&&(add_map_electrode_position_info_void))
+	if ((node)&&(add_map_electrode_position_info_void))
 	{
 		add_map_electrode_position_info=
 			(struct Add_map_electrode_position_info *)add_map_electrode_position_info_void;
-		if(add_map_electrode_position_info&&(map_electrode_position_field=
+		if (add_map_electrode_position_info&&(map_electrode_position_field=
 			add_map_electrode_position_info->map_electrode_position_field)&&
 			(node_manager=add_map_electrode_position_info->node_manager)&&		
 			(field_manager=add_map_electrode_position_info->field_manager))
@@ -3845,13 +3842,13 @@ Called by rig_node_group_add_map_electrode_position_field
 				field_manager))&&(FE_field_is_defined_at_node(electrode_position_field,node)))
 			{	
 				/* if its already deined, have nothing to do */
-				if(!FE_field_is_defined_at_node(map_electrode_position_field,node))
+				if (!FE_field_is_defined_at_node(map_electrode_position_field,node))
 				{
 					node_unmanaged=CREATE(FE_node)(0,(struct FE_node *)NULL);
 					if (MANAGER_COPY_WITH_IDENTIFIER(FE_node,cm_node_identifier)
 						(node_unmanaged,node))
 					{						
-						if(!define_FE_field_at_node(node_unmanaged,map_electrode_position_field,
+						if (!define_FE_field_at_node(node_unmanaged,map_electrode_position_field,
 							map_electrode_components_number_of_derivatives
 							,map_electrode_components_number_of_versions,
 							map_electrode_components_nodal_value_types))					
@@ -3874,14 +3871,14 @@ Called by rig_node_group_add_map_electrode_position_field
 					DESTROY(FE_node)(&node_unmanaged);
 				}
 			}/* if ((electrode_position_field= */
-		}	/* if(add_map_electrode_position_info */
+		}	/* if (add_map_electrode_position_info */
 		else
 		{
 			display_message(ERROR_MESSAGE,"rig_node_add_map_electrode_position_field"
 				" add_map_electrode_position_info NULL ");
 			return_code=0;
 		}	
-	}/* if((node)&&(add_map_electrode_position_info_void)) */
+	}/* if ((node)&&(add_map_electrode_position_info_void)) */
 	else
 	{
 		display_message(ERROR_MESSAGE,"rig_node_add_map_electrode_position_field"
@@ -3979,7 +3976,7 @@ gets the started of Min_max_iterato
 {
 	int return_code;
 
-	if(min_max_iterator&&started)
+	if (min_max_iterator&&started)
 	{
 		return_code=1;
 		*started=min_max_iterator->started;
@@ -4006,7 +4003,7 @@ Sets the started of Min_max_iterato
 {
 	int return_code;
 
-	if(min_max_iterator)
+	if (min_max_iterator)
 	{
 		return_code=1;
 		min_max_iterator->started=started;
@@ -4034,7 +4031,7 @@ gets the count of Min_max_iterato
 {
 	int return_code;
 
-	if(min_max_iterator&&count)
+	if (min_max_iterator&&count)
 	{
 		return_code=1;
 		*count=min_max_iterator->count;
@@ -4061,7 +4058,7 @@ Sets the count of Min_max_iterato
 {
 	int return_code;
 
-	if(min_max_iterator)
+	if (min_max_iterator)
 	{
 		return_code=1;
 		min_max_iterator->count=count;
@@ -4089,7 +4086,7 @@ gets the time of Min_max_iterato
 {
 	int return_code;
 
-	if(min_max_iterator&&time)
+	if (min_max_iterator&&time)
 	{
 		return_code=1;
 		*time=min_max_iterator->time;
@@ -4116,7 +4113,7 @@ Sets the time of Min_max_iterato
 {
 	int return_code;
 
-	if(min_max_iterator)
+	if (min_max_iterator)
 	{
 		return_code=1;
 		min_max_iterator->time=time;
@@ -4144,7 +4141,7 @@ gets the min of Min_max_iterato
 {
 	int return_code;
 
-	if(min_max_iterator&&min)
+	if (min_max_iterator&&min)
 	{
 		return_code=1;
 		*min=min_max_iterator->min;
@@ -4171,7 +4168,7 @@ Sets the min of Min_max_iterato
 {
 	int return_code;
 
-	if(min_max_iterator)
+	if (min_max_iterator)
 	{
 		return_code=1;
 		min_max_iterator->min=min;
@@ -4197,7 +4194,7 @@ gets the max of Min_max_iterato
 {
 	int return_code;
 
-	if(min_max_iterator&&max)
+	if (min_max_iterator&&max)
 	{
 		return_code=1;
 		*max=min_max_iterator->max;
@@ -4224,7 +4221,7 @@ Sets the max of Min_max_iterato
 {
 	int return_code;
 
-	if(min_max_iterator)
+	if (min_max_iterator)
 	{
 		return_code=1;
 		min_max_iterator->max=max;
@@ -4252,7 +4249,7 @@ gets the channel_gain_field of Min_max_iterato
 {
 	int return_code;
 
-	if(min_max_iterator&&channel_gain_field)
+	if (min_max_iterator&&channel_gain_field)
 	{
 		return_code=1;
 		channel_gain_field=min_max_iterator->channel_gain_field;
@@ -4280,7 +4277,7 @@ Sets the channel_gain_field of Min_max_iterato
 {
 	int return_code;
 
-	if(min_max_iterator)
+	if (min_max_iterator)
 	{
 		return_code=1;
 		min_max_iterator->channel_gain_field=channel_gain_field;
@@ -4306,7 +4303,7 @@ gets the channel_offset_field of Min_max_iterato
 {
 	int return_code;
 
-	if(min_max_iterator&&channel_offset_field)
+	if (min_max_iterator&&channel_offset_field)
 	{
 		return_code=1;
 		channel_offset_field=min_max_iterator->channel_offset_field;
@@ -4334,7 +4331,7 @@ Sets the channel_offset_field of Min_max_iterato
 {
 	int return_code;
 
-	if(min_max_iterator)
+	if (min_max_iterator)
 	{
 		return_code=1;
 		min_max_iterator->channel_offset_field=channel_offset_field;
@@ -4362,7 +4359,7 @@ gets the display_start_time_field of Min_max_iterato
 {
 	int return_code;
 
-	if(min_max_iterator&&display_start_time_field)
+	if (min_max_iterator&&display_start_time_field)
 	{
 		return_code=1;
 		display_start_time_field=min_max_iterator->display_start_time_field;
@@ -4390,7 +4387,7 @@ Sets the display_start_time_field of Min_max_iterato
 {
 	int return_code;
 
-	if(min_max_iterator)
+	if (min_max_iterator)
 	{
 		return_code=1;
 		min_max_iterator->display_start_time_field=display_start_time_field;
@@ -4418,7 +4415,7 @@ gets the display_end_time_field of Min_max_iterato
 {
 	int return_code;
 
-	if(min_max_iterator&&display_end_time_field)
+	if (min_max_iterator&&display_end_time_field)
 	{
 		return_code=1;
 		display_end_time_field=min_max_iterator->display_end_time_field;
@@ -4446,7 +4443,7 @@ Sets the display_end_time_field of Min_max_iterato
 {
 	int return_code;
 
-	if(min_max_iterator)
+	if (min_max_iterator)
 	{
 		return_code=1;
 		min_max_iterator->display_end_time_field=display_end_time_field;
@@ -4474,7 +4471,7 @@ gets the signal_minimum_field of Min_max_iterato
 {
 	int return_code;
 
-	if(min_max_iterator&&signal_minimum_field)
+	if (min_max_iterator&&signal_minimum_field)
 	{
 		return_code=1;
 		signal_minimum_field=min_max_iterator->signal_minimum_field;
@@ -4502,7 +4499,7 @@ Sets the signal_minimum_field of Min_max_iterato
 {
 	int return_code;
 
-	if(min_max_iterator)
+	if (min_max_iterator)
 	{
 		return_code=1;
 		min_max_iterator->signal_minimum_field=signal_minimum_field;
@@ -4530,7 +4527,7 @@ gets the signal_maximum_field of Min_max_iterato
 {
 	int return_code;
 
-	if(min_max_iterator&&signal_maximum_field)
+	if (min_max_iterator&&signal_maximum_field)
 	{
 		return_code=1;
 		signal_maximum_field=min_max_iterator->signal_maximum_field;
@@ -4558,7 +4555,7 @@ Sets the signal_maximum_field of Min_max_iterato
 {
 	int return_code;
 
-	if(min_max_iterator)
+	if (min_max_iterator)
 	{
 		return_code=1;
 		min_max_iterator->signal_maximum_field=signal_maximum_field;
@@ -4586,7 +4583,7 @@ gets the signal_status_field of Min_max_iterato
 {
 	int return_code;
 
-	if(min_max_iterator&&signal_status_field)
+	if (min_max_iterator&&signal_status_field)
 	{
 		return_code=1;
 		signal_status_field=min_max_iterator->signal_status_field;
@@ -4614,7 +4611,7 @@ Sets the signal_status_field of Min_max_iterato
 {
 	int return_code;
 
-	if(min_max_iterator)
+	if (min_max_iterator)
 	{
 		return_code=1;
 		min_max_iterator->signal_status_field=signal_status_field;
@@ -4642,7 +4639,7 @@ gets the signal_component of Min_max_iterato
 {
 	int return_code;
 
-	if(min_max_iterator&&signal_component)
+	if (min_max_iterator&&signal_component)
 	{
 		return_code=1;
 		signal_component=min_max_iterator->signal_component;
@@ -4670,7 +4667,7 @@ Sets the signal_component of Min_max_iterato
 {
 	int return_code;
 
-	if(min_max_iterator)
+	if (min_max_iterator)
 	{
 		return_code=1;
 		min_max_iterator->signal_component=signal_component;
@@ -5567,19 +5564,19 @@ manager.
 	ENTER(make_unrejected_node_group);
 	unrejected_node_group=(struct GROUP(FE_node) *)NULL;
 	group_name=(char *)NULL;
-	if(rig_node_group&&signal_status_field&&node_manager&&node_group_manager)
+	if (rig_node_group&&signal_status_field&&node_manager&&node_group_manager)
 	{
 		/* construct the unrejected group name */
 		GET_NAME(GROUP(FE_node))(rig_node_group,&group_name);
 		string_length = strlen(group_name);
 		string_length += strlen(unrejected_str);
 		string_length++;
-		if(ALLOCATE(unrejected_name,char,string_length))
+		if (ALLOCATE(unrejected_name,char,string_length))
 		{
 			strcpy(unrejected_name,group_name);
 			strcat(unrejected_name,unrejected_str);
 			/* make the group */
-			if(unrejected_node_group=	make_node_and_element_and_data_groups(
+			if (unrejected_node_group=	make_node_and_element_and_data_groups(
 				node_group_manager,node_manager,element_manager,
 				element_group_manager,data_group_manager,unrejected_name))
 			{				
@@ -6113,7 +6110,7 @@ The extraction arguments are:
 							get_Signal_drawing_package_display_end_time_field(signal_drawing_package);
 			signal_field=
 							get_Signal_drawing_package_signal_field(signal_drawing_package);					
-			if((number_of_nodal_values>0)&&(value_type!=UNKNOWN_VALUE)&&
+			if ((number_of_nodal_values>0)&&(value_type!=UNKNOWN_VALUE)&&
 				display_start_time_field&&display_end_time_field&&signal_field)
 			{
 				/*get the display start time, end time*/
@@ -6329,15 +6326,15 @@ The extraction arguments are:
 										signal_drawing_package->signal_status_field,/*component_number*/0,
 										/*version*/0,FE_NODAL_VALUE,&signal_status_str))
 									{
-										if(!(strcmp("ACCEPTED",signal_status_str)))
+										if (!(strcmp("ACCEPTED",signal_status_str)))
 										{
 											signals_status[i]=ACCEPTED;										
 										}
-										else if(!(strcmp("REJECTED",signal_status_str)))
+										else if (!(strcmp("REJECTED",signal_status_str)))
 										{
 											signals_status[i]=REJECTED;											
 										}
-										else if(!(strcmp("UNDECIDED",signal_status_str)))
+										else if (!(strcmp("UNDECIDED",signal_status_str)))
 										{
 											signals_status[i]=UNDECIDED;										
 										}
@@ -6522,7 +6519,7 @@ configuration info.
 						if (return_code=read_signal_FE_node_group(input_file,unemap_package,
 							node_order_info))
 						{
-							if(!read_event_settings_and_signal_status_FE_node_group
+							if (!read_event_settings_and_signal_status_FE_node_group
 								(input_file,unemap_package,node_order_info))
 							{	
 								display_message(ERROR_MESSAGE,
@@ -6536,7 +6533,7 @@ configuration info.
 							{	
 								region=get_Region_list_item_region(region_item);
 								rig_node_group=get_Region_rig_node_group(region);
-								if((signal_status_field=
+								if ((signal_status_field=
 									get_unemap_package_signal_status_field(unemap_package))&&
 									(node_manager=get_unemap_package_node_manager(unemap_package))&&
 									(element_manager=get_unemap_package_element_manager(unemap_package))&&
@@ -6695,8 +6692,8 @@ cf file_read_FE_node_group() in import_finite_element.c
 					fclose(input_file);
 					input_file=(FILE *)NULL;
 				}
-			} /* if(input_file=fopen(file_name,"r")) */
-		} /* if(!input_file) */
+			} /* if (input_file=fopen(file_name,"r")) */
+		} /* if (!input_file) */
 		if (input_file&&return_code)
 		{		
 			return_code=read_config_FE_node_group(input_file,unemap_package,
@@ -6753,7 +6750,7 @@ in the <node_group>. Note: Not necessarily rectangular catresian coords!
 		position_min_max_iterator.position_field=position_field;	
 		component.number=0;
 		component.field=position_field;
-		if(node=FIRST_OBJECT_IN_GROUP_THAT(FE_node)(
+		if (node=FIRST_OBJECT_IN_GROUP_THAT(FE_node)(
 			(GROUP_CONDITIONAL_FUNCTION(FE_node) *)NULL, NULL, node_group))
 		{
 			source_coordinates[0]=0;
@@ -6801,7 +6798,7 @@ in the <node_group>. Note: Not necessarily rectangular catresian coords!
 			" Invalid argument");
 		return_code=0;
 	}
-	if(return_code==0)
+	if (return_code==0)
 	{
 		*min_x= 0;
 		*max_x= 0;
@@ -6836,17 +6833,17 @@ This function is called iteratively by anal_set_range_all_accep_undec
 
 	return_code=1;
 	ENTER(iterative_get_rig_node_accepted_undecided_signal_min_max);
-	if(node&&min_max_iterator_void)
+	if (node&&min_max_iterator_void)
 	{
 		min_max_iterator=(struct Min_max_iterator *)min_max_iterator_void;	
-		if(min_max_iterator&&min_max_iterator->display_start_time_field
+		if (min_max_iterator&&min_max_iterator->display_start_time_field
 			&&min_max_iterator->display_end_time_field
 			&&min_max_iterator->channel_gain_field
 			&&min_max_iterator->channel_offset_field
 			&&min_max_iterator->signal_status_field&&min_max_iterator->signal_component
 			 &&(signal_field=min_max_iterator->signal_component->field))
 		{
-			if(FE_field_is_defined_at_node(min_max_iterator->display_start_time_field,node)
+			if (FE_field_is_defined_at_node(min_max_iterator->display_start_time_field,node)
 				&&FE_field_is_defined_at_node(min_max_iterator->display_end_time_field,node)
 				&&FE_field_is_defined_at_node(min_max_iterator->signal_status_field,node)
 				&&FE_field_is_defined_at_node(signal_field,node))
@@ -6861,9 +6858,9 @@ This function is called iteratively by anal_set_range_all_accep_undec
 					min_max_iterator->channel_offset_field,
 					&min,&max,&status,1/* time_range*/);
 				/* do nothing with rejected signals*/
-				if((status==ACCEPTED)||(status==UNDECIDED))
+				if ((status==ACCEPTED)||(status==UNDECIDED))
 				{
-					if(!min_max_iterator->started)
+					if (!min_max_iterator->started)
 					{
 						/*initialise the min_max_iterator->min,min_max_iterator->max*/
 						min_max_iterator->min=min;
@@ -6873,19 +6870,19 @@ This function is called iteratively by anal_set_range_all_accep_undec
 					else
 					{
 						/*check/set min/max*/
-						if(max>min_max_iterator->max)
+						if (max>min_max_iterator->max)
 						{
 							min_max_iterator->max=max;
 						}
-						if(min<min_max_iterator->min)
+						if (min<min_max_iterator->min)
 						{
 							min_max_iterator->min=min;			
 						}
 					}		
 					min_max_iterator->count++; /* don't really use, but may as well count*/
 				}						
-			}/* if(FE_field_is_defined_at_node*/
-		}	/* if(min_max_iterator */
+			}/* if (FE_field_is_defined_at_node*/
+		}	/* if (min_max_iterator */
 		else
 		{
 			display_message(ERROR_MESSAGE,
@@ -6893,7 +6890,7 @@ This function is called iteratively by anal_set_range_all_accep_undec
 				" min_max_iterator NULL ");
 			return_code=0;
 		}	
-	}/* if((node)&&(min_max_iterator_void)) */
+	}/* if ((node)&&(min_max_iterator_void)) */
 	else
 	{
 		display_message(ERROR_MESSAGE,
@@ -6936,25 +6933,25 @@ Event_signal_status in <status>
 	fe_value_array=(FE_value *)NULL;
 	short_array=(short *)NULL;
 	signal_status_string=(char *)NULL;	
-	if(node&&signal_field&&channel_gain_field&&channel_offset_field&&min&&max&&
+	if (node&&signal_field&&channel_gain_field&&channel_offset_field&&min&&max&&
 		((time_range&&display_start_time_field&&display_end_time_field)||
 			(!time_range))&&((signal_status_field&&status)||(!signal_status_field&&!status)))
 	{	
-		if(signal_status_field)
+		if (signal_status_field)
 		{				
 			/* need to check if signal is accepted/rejected/undecided */
-			if(get_FE_nodal_string_value(node,signal_status_field,0,0,
+			if (get_FE_nodal_string_value(node,signal_status_field,0,0,
 				FE_NODAL_VALUE,&signal_status_string))
 			{			
-				if(!strcmp(signal_status_string,"REJECTED")) /* strcmp rets 0 for match*/
+				if (!strcmp(signal_status_string,"REJECTED")) /* strcmp rets 0 for match*/
 				{
 					*status=REJECTED;
 				}
-				if(!strcmp(signal_status_string,"ACCEPTED")) 
+				if (!strcmp(signal_status_string,"ACCEPTED")) 
 				{
 					*status=ACCEPTED;
 				}
-				if(!strcmp(signal_status_string,"UNDECIDED")) 
+				if (!strcmp(signal_status_string,"UNDECIDED")) 
 				{
 					*status=UNDECIDED;
 				}
@@ -6966,14 +6963,14 @@ Event_signal_status in <status>
 					"Failed to get signal_status");
 				return_code=0;	
 			}	
-		}	/* if(signal_status_field) */
+		}	/* if (signal_status_field) */
 		component.field =signal_field;
 		component.number = 0;		
 		number_of_array_values=get_FE_nodal_array_number_of_elements(node,
 			&component,0,FE_NODAL_VALUE);
 		*min=0;
 		*max=0;
-		if(time_range)
+		if (time_range)
 		{
 			/*get the display start time, end time*/
 			return_code=get_FE_field_FE_value_value(display_start_time_field,0,
@@ -6993,83 +6990,83 @@ Event_signal_status in <status>
 			start_index=0;
 			end_index=number_of_array_values;
 		}		
-		if(number_of_array_values>0)
+		if (number_of_array_values>0)
 		{
 			value_type=get_FE_field_value_type(signal_field);
-			switch(value_type)
+			switch (value_type)
 			{
 				case FE_VALUE_ARRAY_VALUE:
 				{
-					if(ALLOCATE(fe_value_array,FE_value,number_of_array_values))
+					if (ALLOCATE(fe_value_array,FE_value,number_of_array_values))
 					{
-						if(return_code=get_FE_nodal_FE_value_array(node,&component,0,FE_NODAL_VALUE,
+						if (return_code=get_FE_nodal_FE_value_array(node,&component,0,FE_NODAL_VALUE,
 							fe_value_array,number_of_array_values))
 						{
 							fe_value_minimum=fe_value_array[0];
 							fe_value_maximum=fe_value_minimum;
 							for(count=start_index;count<end_index;count++)
 							{
-								if(fe_value_array[count]>fe_value_maximum)
+								if (fe_value_array[count]>fe_value_maximum)
 								{
 									fe_value_maximum=fe_value_array[count];
 								}	
-								if(fe_value_array[count]<fe_value_minimum)
+								if (fe_value_array[count]<fe_value_minimum)
 								{
 									fe_value_minimum=fe_value_array[count];
 								}
 							}/* for(count= */						
 							*min=fe_value_minimum;
 							*max=fe_value_maximum;
-						}/*if(return_code=ge*/
+						}/*if (return_code=ge*/
 						DEALLOCATE(fe_value_array);
-					}/* if(ALLOCATE( */
+					}/* if (ALLOCATE( */
 					else
 					{
 						display_message(ERROR_MESSAGE,"get_rig_node_signal_min_max."
 						"out of memory");
 						return_code=0;
 					}
-				}break;
+				} break;
 				case SHORT_ARRAY_VALUE:
 				{
-					if(ALLOCATE(short_array,short,number_of_array_values))
+					if (ALLOCATE(short_array,short,number_of_array_values))
 					{
-						if(return_code=get_FE_nodal_short_array(node,&component,0,FE_NODAL_VALUE,
+						if (return_code=get_FE_nodal_short_array(node,&component,0,FE_NODAL_VALUE,
 							short_array,number_of_array_values))
 						{
 							short_minimum=short_array[0];
 							short_maximum=short_minimum;
 							for(count=start_index;count<end_index;count++)
 							{
-								if(short_array[count]>short_maximum)
+								if (short_array[count]>short_maximum)
 								{
 									short_maximum=short_array[count];
 								}	
-								if(short_array[count]<short_minimum)
+								if (short_array[count]<short_minimum)
 								{
 									short_minimum=short_array[count];
 								}
 							}	/* for(count=star */					
 							*min=(FE_value)(short_minimum);
 							*max=(FE_value)(short_maximum);
-						}/* if(return_code=g */
+						}/* if (return_code=g */
 						DEALLOCATE(short_array);
-					}/* if(ALLOCATE(sho */
+					}/* if (ALLOCATE(sho */
 					else
 					{	
 						display_message(ERROR_MESSAGE,"get_rig_node_signal_min_max."
 						"out of memory");
 						return_code=0;
 					}
-				}break;
+				} break;
 				default :
 				{
 					display_message(ERROR_MESSAGE,"get_rig_node_signal_min_max."
 						" Incorrect signal field value type");
 					return_code=0;
-				}break;
+				} break;
 			}/* switch */
-			if(return_code)
+			if (return_code)
 			{
 				/*get the channel gain and offset */
 				component.number=0;
@@ -7118,15 +7115,15 @@ This function is called iteratively by analysis_unrange_all
 
 	return_code=1;
 	ENTER(iterative_unrange_rig_node_signal);
-	if(node&&min_max_iterator_void)
+	if (node&&min_max_iterator_void)
 	{
 		min_max_iterator=(struct Min_max_iterator *)min_max_iterator_void;	
-		if(min_max_iterator&&min_max_iterator->channel_gain_field
+		if (min_max_iterator&&min_max_iterator->channel_gain_field
 			&&min_max_iterator->channel_offset_field&&min_max_iterator->signal_minimum_field
 			&&min_max_iterator->signal_maximum_field&&min_max_iterator->display_start_time_field
 			&&min_max_iterator->display_end_time_field)
 		{
-			if(FE_field_is_defined_at_node(min_max_iterator->channel_gain_field,node)
+			if (FE_field_is_defined_at_node(min_max_iterator->channel_gain_field,node)
 				&&FE_field_is_defined_at_node(min_max_iterator->channel_offset_field,node)
 				&&FE_field_is_defined_at_node(min_max_iterator->signal_minimum_field,node)
 				&&FE_field_is_defined_at_node(min_max_iterator->signal_maximum_field,node)
@@ -7149,15 +7146,15 @@ This function is called iteratively by analysis_unrange_all
 				component.field = min_max_iterator->signal_maximum_field;
 				set_FE_nodal_FE_value_value(node,&component,0,FE_NODAL_VALUE,signal_maximum);			
 				min_max_iterator->count++; /* don't really use,but  may as well count*/
-			}/* if(FE_field_is_defined_at_node*/
-		}	/* if(min_max_iterator */
+			}/* if (FE_field_is_defined_at_node*/
+		}	/* if (min_max_iterator */
 		else
 		{
 			display_message(ERROR_MESSAGE,"iterative_unrange_rig_node_signal."
 				" min_max_iterator NULL ");
 			return_code=0;
 		}	
-	}/* if((node)&&(min_max_iterator_void)) */
+	}/* if ((node)&&(min_max_iterator_void)) */
 	else
 	{
 		display_message(ERROR_MESSAGE,"iterative_unrange_rig_node_signal."
@@ -7187,13 +7184,13 @@ This function is called iteratively by anal_set_range_all_accep_undec
 
 	return_code=1;
 	ENTER(iterative_set_rig_node_signal_min_max);
-	if(node&&min_max_iterator_void)
+	if (node&&min_max_iterator_void)
 	{
 		min_max_iterator=(struct Min_max_iterator *)min_max_iterator_void;	
-		if(min_max_iterator&&min_max_iterator->signal_minimum_field
+		if (min_max_iterator&&min_max_iterator->signal_minimum_field
 			&&min_max_iterator->signal_maximum_field)
 		{
-			if(FE_field_is_defined_at_node(min_max_iterator->signal_minimum_field,node)
+			if (FE_field_is_defined_at_node(min_max_iterator->signal_minimum_field,node)
 				&&FE_field_is_defined_at_node(min_max_iterator->signal_maximum_field,node))
 				/* nothing to do, but NOT an error if no signal at node*/			
 			{
@@ -7207,15 +7204,15 @@ This function is called iteratively by anal_set_range_all_accep_undec
 				component.field = min_max_iterator->signal_maximum_field;
 				set_FE_nodal_FE_value_value(node,&component,0,FE_NODAL_VALUE,signal_maximum);
 				min_max_iterator->count++; /* don't really use,but  may as well count*/
-			}/* if(FE_field_is_defined_at_node*/
-		}	/* if(min_max_iterator */
+			}/* if (FE_field_is_defined_at_node*/
+		}	/* if (min_max_iterator */
 		else
 		{
 			display_message(ERROR_MESSAGE,"iterative_set_rig_node_signal_min_max."
 				" min_max_iterator NULL ");
 			return_code=0;
 		}	
-	}/* if((node)&&(min_max_iterator_void)) */
+	}/* if ((node)&&(min_max_iterator_void)) */
 	else
 	{
 		display_message(ERROR_MESSAGE,"set_rig_node_signal_min_max."
@@ -7251,7 +7248,7 @@ Returns the <min> and <max>  signal values at the rig nodes in the rig_node_grou
 	ENTER(get_rig_node_group_signal_min_max_at_time);
 	if (node_group&&min&&max&&signal_field&&channel_gain_field&&channel_offset_field)
 	{		
-		if(min_max_iterator=CREATE(Min_max_iterator)())
+		if (min_max_iterator=CREATE(Min_max_iterator)())
 		{	
 			set_Min_max_iterator_count(min_max_iterator,0);
 			set_Min_max_iterator_time(min_max_iterator,time);	
@@ -7267,27 +7264,27 @@ Returns the <min> and <max>  signal values at the rig nodes in the rig_node_grou
 			get_FE_nodal_FE_value_value(node,&component,0,FE_NODAL_VALUE,
 				&offset);
 			component.field=signal_field;
-			switch(value_type)
+			switch (value_type)
 			{
 				case FE_VALUE_ARRAY_VALUE:
 				{
 					return_code=get_FE_nodal_FE_value_array_value_at_FE_value_time(node,
 						&component,0,FE_NODAL_VALUE,time,&fe_value);
-				}break;
+				} break;
 				case SHORT_ARRAY_VALUE:
 				{
 					return_code=get_FE_nodal_short_array_value_at_FE_value_time(node,
 						&component,0,FE_NODAL_VALUE,time,&short_value);
 					fe_value=short_value;
-				}break;
+				} break;
 				default :
 				{
 					display_message(ERROR_MESSAGE,"get_rig_node_group_signal_min_max_at_time."
 						" Incorrect signal field value type");
 					return_code=0;
-				}break;
+				} break;
 			}
-			if(return_code)
+			if (return_code)
 			{
 				fe_value=gain*(fe_value-offset);
 				set_Min_max_iterator_min(min_max_iterator,fe_value);
@@ -7360,38 +7357,40 @@ and changes the <rig_node_group>'s map_electrode_postions lambda or r values to
 	if (package&&rig_node_group)
 	{
 		region_type=region->type;
-		switch(region_type)
+		switch (region_type)
 		{
 			case SOCK:
 			{
 				value1=sock_lambda;
 				value2=0;/* not used*/
-			}break;																												
+			} break;																												
 			case TORSO:	
 			{
 				value1=torso_major_r;
 				value2=torso_minor_r;
-			}break;
+			} break;
 			case PATCH:
 			{									
 				value1=0;/* not used*/
 				value2=0;/* not used*/
-			}break;	
+			} break;	
 			case MIXED:	
 			{
-				display_message(ERROR_MESSAGE,"rig_node_group_set_map_electrode_position_lambda_r."
-					" MIXED region type");
+				display_message(ERROR_MESSAGE,
+					"rig_node_group_set_map_electrode_position_lambda_r.  "
+					"MIXED region type");
 				return_code=0;
-			}break;
+			} break;
 			case UNKNOWN:	
 			default:	
 			{
-				display_message(ERROR_MESSAGE,"rig_node_group_set_map_electrode_position_lambda_r"
+				display_message(ERROR_MESSAGE,
+					"rig_node_group_set_map_electrode_position_lambda_r.  "
 					"UNKNOWN region type");
 				return_code=0;	
-			}break;
-		}/* switch(current_region->type) */	
-		if(return_code)
+			} break;
+		}/* switch (current_region->type) */	
+		if (return_code)
 		{
 			map_electrode_position_field=
 			  get_Region_map_electrode_position_field(region);
@@ -7413,8 +7412,9 @@ and changes the <rig_node_group>'s map_electrode_postions lambda or r values to
 	}
 	else
 	{
-		display_message(ERROR_MESSAGE,"rig_node_group_set_map_electrode_position_lambda_r."
-			" Invalid argument");
+		display_message(ERROR_MESSAGE,
+			"rig_node_group_set_map_electrode_position_lambda_r.  "
+			"Invalid argument");
 		return_code=0;
 	}
 	LEAVE;
@@ -7561,7 +7561,7 @@ If they're not, you'll get the first match.
 	rig_node=(struct FE_node *)NULL;
 	name=(char *)NULL;
 	description=(struct Device_description *)NULL;
-	if(device_name_field&&rig_node_group&&device&&(description=
+	if (device_name_field&&rig_node_group&&device&&(description=
 		get_Device_description(device))&&(name=get_Device_description_name(description)))
 	{
 		field_and_string_data.fe_field=device_name_field;
@@ -7605,18 +7605,18 @@ If they're not, you'll get the first match.
 	devices=(struct Device **)NULL;
 	description=(struct Device_description *)NULL;
 	success=0;
-	if(device_name_field&&rig&&rig->devices)
+	if (device_name_field&&rig&&rig->devices)
 	{	
 		if (FE_field_is_defined_at_node(device_name_field,node))
 		{
 			success=get_FE_nodal_string_value(node,device_name_field,0,0,FE_NODAL_VALUE,&nodal_name);
-			if(!success)
+			if (!success)
 			{
 				display_message(WARNING_MESSAGE,"find_rig_node_given_device. " 
 					"field not defined at node");							
 			}
 		}
-		if(success)
+		if (success)
 		{	
 			device=*(rig->devices);
 			devices=rig->devices;
@@ -7628,7 +7628,7 @@ If they're not, you'll get the first match.
 				device=*devices;			
 				description=get_Device_description(device);
 				device_name=get_Device_description_name(description);
-				if(!strcmp(device_name,nodal_name))
+				if (!strcmp(device_name,nodal_name))
 				{
 					success=1;
 				}
@@ -7636,13 +7636,13 @@ If they're not, you'll get the first match.
 				{
 					devices++;
 					i++;
-				} /* if(!strcmp(required_stri */
+				} /* if (!strcmp(required_stri */
 			}/* while(!success)&&(i<number_of_devices)*/ 
-			if(!success)
+			if (!success)
 			{
 				device=(struct Device *)NULL;
 			}
-		}/* if(success) */
+		}/* if (success) */
 	}
 	else
 	{
@@ -7672,10 +7672,10 @@ Returns 1 if the <signal_status_field> at the <node> does NOT return the string
 	return_code=0;
 	if (node&&(signal_status_field=(struct FE_field *)signal_status_field_void))
 	{
-		if (get_FE_nodal_string_value(node,signal_status_field,/*component_number*/0,
-			/*version*/0,FE_NODAL_VALUE,&signal_status_string))
+		if (get_FE_nodal_string_value(node,signal_status_field,
+			/*component_number*/0,/*version*/0,FE_NODAL_VALUE,&signal_status_string))
 		{
-			if(!strcmp(signal_status_string,"REJECTED")) /* strcmp rets 0 for match*/
+			if (!strcmp(signal_status_string,"REJECTED")) /* strcmp rets 0 for match*/
 			{
 				return_code=0;
 			}

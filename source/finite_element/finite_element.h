@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : finite_element.h
 
-LAST MODIFIED : 30 July 2001
+LAST MODIFIED : 30 August 2001
 
 DESCRIPTION :
 The data structures used for representing finite elements in the graphical
@@ -25,7 +25,6 @@ interface to CMISS.
 Global types
 ------------
 */
-
 enum FE_nodal_value_type
 /*******************************************************************************
 LAST MODIFIED : 27 January 1998
@@ -735,49 +734,31 @@ passing to add_FE_element_and_faces_to_manager.
 
 enum CM_field_type
 /*******************************************************************************
-LAST MODIFIED : 19 March 2001
+LAST MODIFIED : 30 August 2001
 
 DESCRIPTION :
-CMISS field types.  Values specified to correspond to CMISS.
-Must add new enumerators and keep values in sync with CM_field_type functions
-ENUMERATOR_STRING, ENUMERATOR_GET_VALID_STRINGS and STRING_TO_ENUMERATOR.
-Note these functions expect the first enumerator to be number 1, and all
-subsequent enumerators to be sequential, unlike the default behaviour which
-starts at 0.
+Information about what the field represents physically.
+
+It is derived from how fields are used in cm, but does not correspond to a
+field type in cm or identify fields in cm.
+
+Note: the first value will be 0 by the ANSI standard, with each subsequent entry
+incremented by 1. This pattern is expected by the ENUMERATOR macros.  Must
+ensure the ENUMERATOR_STRING function returns a string for each value here.
 ==============================================================================*/
 {
-	CM_ANATOMICAL_FIELD = 1,
-	CM_COORDINATE_FIELD = 2,
-	CM_FIELD = 3,
-	CM_DEPENDENT_FIELD = 4,
-	CM_UNKNOWN_FIELD = 5
+	CM_ANATOMICAL_FIELD,
+	CM_COORDINATE_FIELD,
+	CM_GENERAL_FIELD
 }; /* enum CM_field_type */
 
-struct CM_field_information
+struct CM_field_information;
 /*******************************************************************************
-LAST MODIFIED : 2 February 1999
+LAST MODIFIED : 30 August 2001
 
 DESCRIPTION :
-Field information needed by CM.
-???DB.  What about grids (element based fields) ?
-???DB.  Should this be hidden in the name as at present ?  This is how it would
-  have to be done for any other application communicating with cmgui.  User
-  data ?
+Private structure containing field information needed by cm.
 ==============================================================================*/
-{
-  enum CM_field_type type;
-  union
-  {
-		struct
-    {
-      int nc,niy,nr,nxc,nxt;
-    } dependent;
-		struct
-    {
-      int nr;
-    } independent;
-  } indices;
-}; /* struct CM_field_information */
 
 DECLARE_LIST_TYPES(FE_field);
 
@@ -3216,14 +3197,13 @@ creates a 1 component fe_value field, the name <field_name>
 ==============================================================================*/
 
 int FE_field_matches_description(struct FE_field *field,char *name,
-	enum FE_field_type fe_field_type,
-	struct FE_field *indexer_field,int number_of_indexed_values,
-	struct CM_field_information *cm_field_information,
+	enum FE_field_type fe_field_type,struct FE_field *indexer_field,
+	int number_of_indexed_values,enum CM_field_type cm_field_type,
 	struct Coordinate_system *coordinate_system,enum Value_type value_type,
 	int number_of_components,char **component_names,
 	int number_of_times,enum Value_type time_value_type);
 /*******************************************************************************
-LAST MODIFIED : 1 September 1999
+LAST MODIFIED : 30 August 2001
 
 DESCRIPTION :
 Returns true if <field> has exactly the same <name>, <field_info>... etc. as
@@ -3241,14 +3221,13 @@ FE_field_matches_description for <field1> with the description for <field2>.
 
 struct FE_field *get_FE_field_manager_matched_field(
 	struct MANAGER(FE_field) *fe_field_manager,char *name,
-	enum FE_field_type fe_field_type,
-	struct FE_field *indexer_field,int number_of_indexed_values,
-	struct CM_field_information *cm_field_information,
+	enum FE_field_type fe_field_type,struct FE_field *indexer_field,
+	int number_of_indexed_values,enum CM_field_type cm_field_type,
 	struct Coordinate_system *coordinate_system,enum Value_type value_type,
 	int number_of_components,char **component_names,
 	int number_of_times,enum Value_type time_value_type);
 /*******************************************************************************
-LAST MODIFIED : 1 September 1999
+LAST MODIFIED : 30 August 2001
 
 DESCRIPTION :
 Using searches the <fe_field_manager> for a field, if one is found it is
@@ -3694,6 +3673,8 @@ Sets the name of the <field>.
 Should only call this function for unmanaged fields.
 ==============================================================================*/
 
+#if defined (REDO_CM_field_information)
+/*???DB.  Being redone */
 int get_FE_field_CM_field_information(struct FE_field *field,
 	struct CM_field_information *cm_field_information);
 /*******************************************************************************
@@ -3712,6 +3693,7 @@ DESCRIPTION :
 Sets the <cm_field_information> of the <field>.
 Should only call this function for unmanaged fields.
 ==============================================================================*/
+#endif /* defined (REDO_CM_field_information) */
 
 PROTOTYPE_GET_OBJECT_NAME_FUNCTION(FE_field_component);
 
@@ -4393,6 +4375,8 @@ DESCRIPTION :
 ???DB.  Came from command.c .  Knows too much about nodes/elements to stay there
 ==============================================================================*/
 
+#if defined (REDO_CM_field_information)
+/*???DB.  Being redone */
 PROTOTYPE_COPY_OBJECT_FUNCTION(CM_field_information);
 
 enum CM_field_type get_CM_field_information_type(
@@ -4422,6 +4406,7 @@ LAST MODIFIED: 4 February 1999
 DESCRIPTION:
 Compares the CM_Field_information structures, field_info1 and field_info2.
 ==============================================================================*/
+#endif /* defined (REDO_CM_field_information) */
 
 int FE_element_field_is_type_CM_coordinate(
 	struct FE_element_field *element_field, void *dummy);

@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : sync_2d_3d.c
 
-LAST MODIFIED : 1 September 1999
+LAST MODIFIED : 30 August 2001
 
 DESCRIPTION :
 ==============================================================================*/
@@ -686,7 +686,7 @@ upon its name.
 
 static int add_node_to_group(struct FE_node *node,void *user_data)
 /*******************************************************************************
-LAST MODIFIED : 30 August 1999
+LAST MODIFIED : 30 August 2001
 
 DESCRIPTION :
 Adds the node to the group specified by user_data.
@@ -721,7 +721,6 @@ to the node in addition to its current one.
 		components_number_of_versions[3]={1,1,1};
 	struct FE_field *coordinate_field,*digitised_field;
 	struct Coordinate_system rect_cart_coords;
-	struct CM_field_information field_info;
 
 	rect_cart_coords.type =  RECTANGULAR_CARTESIAN;
 
@@ -731,18 +730,17 @@ to the node in addition to its current one.
 	{
 		/* if we are 2d, then we have been added, so promote to 3d with correct */
 		/* depth */
-		set_CM_field_information(&field_info,CM_COORDINATE_FIELD,(int *)NULL);
 		if ((digitised_field=get_FE_field_manager_matched_field(
 			temp_data->fe_field_manager,COORDINATES_2D_FIELD_NAME,
 			GENERAL_FE_FIELD,/*indexer_field*/(struct FE_field *)NULL,
-			/*number_of_indexed_values*/0,&field_info,
+			/*number_of_indexed_values*/0,CM_COORDINATE_FIELD,
 			/*number_of_components*/&rect_cart_coords,FE_VALUE_VALUE,
 			2,component_names,
 			/*number_of_times*/0,/*time_value_type*/UNKNOWN_VALUE))&&
 			(coordinate_field=get_FE_field_manager_matched_field(
 			temp_data->fe_field_manager,COORDINATES_3D_FIELD_NAME,
 			GENERAL_FE_FIELD,/*indexer_field*/(struct FE_field *)NULL,
-			/*number_of_indexed_values*/0,&field_info,
+			/*number_of_indexed_values*/0,CM_COORDINATE_FIELD,
 			/*number_of_components*/&rect_cart_coords,FE_VALUE_VALUE,
 			3,component_names,
 			/*number_of_times*/0,/*time_value_type*/UNKNOWN_VALUE)))
@@ -964,7 +962,7 @@ any changes made).
 
 static int restrict_nodes(struct FE_node *node,void *user_data)
 /*******************************************************************************
-LAST MODIFIED : 30 August 1999
+LAST MODIFIED : 30 August 2001
 
 DESCRIPTION :
 Adds the node to the group specified by user_data.
@@ -994,7 +992,6 @@ Adds the node to the group specified by user_data.
 		components_number_of_versions[3]={1,1,1};
 	struct FE_field *digitised_field,*coordinate_field;
 	struct Coordinate_system rect_cart_coords;
-	struct CM_field_information field_info;
 
 	rect_cart_coords.type =  RECTANGULAR_CARTESIAN;
 
@@ -1002,18 +999,17 @@ Adds the node to the group specified by user_data.
 	return_code=0;
 	if (node&&(temp_data=(struct DIALOG_DATA_STRUCT(Sync_2d_3d) *)user_data))
 	{
-		set_CM_field_information(&field_info,CM_COORDINATE_FIELD,(int *)NULL);
 		if ((digitised_field=get_FE_field_manager_matched_field(
 			temp_data->fe_field_manager,COORDINATES_2D_FIELD_NAME,
 			GENERAL_FE_FIELD,/*indexer_field*/(struct FE_field *)NULL,
-			/*number_of_indexed_values*/0,&field_info,
+			/*number_of_indexed_values*/0,CM_COORDINATE_FIELD,
 			&rect_cart_coords,FE_VALUE_VALUE,
 			/*number_of_components*/2,component_names,
 			/*number_of_times*/0,/*time_value_type*/UNKNOWN_VALUE))&&
 			(coordinate_field=get_FE_field_manager_matched_field(
 			temp_data->fe_field_manager,COORDINATES_3D_FIELD_NAME,
 			GENERAL_FE_FIELD,/*indexer_field*/(struct FE_field *)NULL,
-			/*number_of_indexed_values*/0,&field_info,
+			/*number_of_indexed_values*/0,CM_COORDINATE_FIELD,
 			&rect_cart_coords,FE_VALUE_VALUE,
 			/*number_of_components*/3,component_names,
 			/*number_of_times*/0,/*time_value_type*/UNKNOWN_VALUE)))

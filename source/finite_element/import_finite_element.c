@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : import_finite_element.c
 
-LAST MODIFIED : 21 May 2001
+LAST MODIFIED : 30 August 2001
 
 DESCRIPTION :
 The function for importing finite element data, from a file or CMISS (via a
@@ -373,7 +373,7 @@ string.
 static struct FE_field *read_FE_field(FILE *input_file,
 	struct MANAGER(FE_field) *fe_field_manager)
 /*******************************************************************************
-LAST MODIFIED : 10 May 2000
+LAST MODIFIED : 30 August 2001
 
 DESCRIPTION :
 Reads a field from its descriptor in <input_file>. Note that the same format is
@@ -389,7 +389,6 @@ not have any component names; these must be set by the calling function.
 	enum Value_type value_type;
 	float focus;
 	int i,number_of_components,number_of_indexed_values,return_code;
-	struct CM_field_information cm_field_information;
 	struct Coordinate_system coordinate_system;
 	struct FE_field *field,*indexer_field;
 
@@ -435,15 +434,10 @@ not have any component names; these must be set by the calling function.
 			return_code=read_string(input_file,"[^,]",&next_block);
 			fscanf(input_file,", ");
 		}
-		/* read the CM_field_information */
+		/* read the CM_field_type */
 		if (return_code && next_block)
 		{
-			if (STRING_TO_ENUMERATOR(CM_field_type)(next_block, &cm_field_type))
-			{
-				set_CM_field_information(&cm_field_information,cm_field_type,
-					(int *)NULL);
-			}
-			else
+			if (!STRING_TO_ENUMERATOR(CM_field_type)(next_block, &cm_field_type))
 			{
 				display_message(ERROR_MESSAGE,"read_FE_field.  "
 					"Field '%s' has unknown CM field type '%s'.  Line %d",field_name,
@@ -635,7 +629,7 @@ not have any component names; these must be set by the calling function.
 					set_FE_field_type_general(field))&&
 				((INDEXED_FE_FIELD != fe_field_type)||set_FE_field_type_indexed(field,
 					indexer_field,number_of_indexed_values))&&
-				set_FE_field_CM_field_information(field,&cm_field_information)&&
+				set_FE_field_CM_field_type(field,cm_field_type)&&
 				set_FE_field_coordinate_system(field,&coordinate_system)))
 			{
 				display_message(ERROR_MESSAGE,

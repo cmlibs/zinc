@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : data_grabber_dialog.c
 
-LAST MODIFIED : 18 April 2000
+LAST MODIFIED : 30 August 2001
 
 DESCRIPTION :
 Brings up a window which holds a data_grabber.  Allows the user to change what
@@ -41,7 +41,7 @@ Module functions
 */
 static void dg_dialog_update(struct DG_dialog_struct *data_grabber_dialog)
 /*******************************************************************************
-LAST MODIFIED : 30 August 1999
+LAST MODIFIED : 30 August 2001
 
 DESCRIPTION :
 Tells CMGUI about the current values. Returns a pointer to the material.
@@ -81,7 +81,6 @@ Tells CMGUI about the current values. Returns a pointer to the material.
 	struct FE_node *node,*template_node;
 	struct MANAGER(FE_node) *manager;
 	struct Coordinate_system rect_cart_coords;
-	struct CM_field_information field_info;
 
 	rect_cart_coords.type =  RECTANGULAR_CARTESIAN;
 
@@ -184,11 +183,10 @@ Tells CMGUI about the current values. Returns a pointer to the material.
 		temp_values[temp_index++] = current_data->position.data[2];
 		node_number=get_next_FE_node_number(manager, 1);
 
-		set_CM_field_information(&field_info,CM_COORDINATE_FIELD,(int *)NULL);
 		if (coordinate_field=get_FE_field_manager_matched_field(
 			data_grabber_dialog->fe_field_manager,COORDINATES_3D_FIELD_NAME,
 			GENERAL_FE_FIELD,/*indexer_field*/(struct FE_field *)NULL,
-			/*number_of_indexed_values*/0,&field_info,
+			/*number_of_indexed_values*/0,CM_COORDINATE_FIELD,
 			&rect_cart_coords,FE_VALUE_VALUE,
 			/*number_of_components*/3,component_names,
 			/*number_of_times*/0,/*time_value_type*/UNKNOWN_VALUE))
@@ -204,11 +202,10 @@ Tells CMGUI about the current values. Returns a pointer to the material.
 					{
 						case 0:
 						{
-							set_CM_field_information(&field_info,CM_FIELD,(int *)NULL);
 							if (tangent_field=get_FE_field_manager_matched_field(
 								data_grabber_dialog->fe_field_manager,"tangent",
 								GENERAL_FE_FIELD,/*indexer_field*/(struct FE_field *)NULL,
-								/*number_of_indexed_values*/0,&field_info,
+								/*number_of_indexed_values*/0,CM_GENERAL_FIELD,
 								&rect_cart_coords,FE_VALUE_VALUE,
 								/*number_of_components*/3,component_names,
 								/*number_of_times*/0,/*time_value_type*/UNKNOWN_VALUE))
@@ -236,12 +233,10 @@ Tells CMGUI about the current values. Returns a pointer to the material.
 						case 1:
 						{
 							/* fibre angle calculated above */
-							set_CM_field_information(&field_info,CM_ANATOMICAL_FIELD,
-								(int *)NULL);
 							if (tangent_field=get_FE_field_manager_matched_field(
 								data_grabber_dialog->fe_field_manager,"fibre angle",
 								GENERAL_FE_FIELD,/*indexer_field*/(struct FE_field *)NULL,
-								/*number_of_indexed_values*/0,&field_info,
+								/*number_of_indexed_values*/0,CM_ANATOMICAL_FIELD,
 								&rect_cart_coords,FE_VALUE_VALUE,
 								/*number_of_components*/1,fibre_component_name,
 								/*number_of_times*/0,/*time_value_type*/UNKNOWN_VALUE))
@@ -251,11 +246,12 @@ Tells CMGUI about the current values. Returns a pointer to the material.
 									components_number_of_versions,components_nodal_value_types))
 								{
 									/* find the magnitude of the projection on the xy plane */
-									xy_proj=
-										sqrt(current_data->tangent.data[0]*current_data->tangent.data[0]+
-											current_data->tangent.data[1]*current_data->tangent.data[1]);
+									xy_proj=sqrt(current_data->tangent.data[0]*
+										current_data->tangent.data[0]+current_data->tangent.data[1]*
+										current_data->tangent.data[1]);
 									/* angle is tan-1 (z/proj) */
-									fibre_angle=atan2(current_data->tangent.data[2],xy_proj)/PI_180;
+									fibre_angle=atan2(current_data->tangent.data[2],xy_proj)/
+										PI_180;
 									temp_values[temp_index++] = fibre_angle;
 								}
 								else
@@ -279,11 +275,10 @@ Tells CMGUI about the current values. Returns a pointer to the material.
 				}
 				if (data_grabber_dialog->current_mode&DATA_GRABBER_NORMAL)
 				{
-					set_CM_field_information(&field_info,CM_FIELD,(int *)NULL);
 					if (normal_field=get_FE_field_manager_matched_field(
 						data_grabber_dialog->fe_field_manager,"normal",
 						GENERAL_FE_FIELD,/*indexer_field*/(struct FE_field *)NULL,
-						/*number_of_indexed_values*/0,&field_info,
+						/*number_of_indexed_values*/0,CM_GENERAL_FIELD,
 						&rect_cart_coords,FE_VALUE_VALUE,
 						/*number_of_components*/3,component_names,
 						/*number_of_times*/0,/*time_value_type*/UNKNOWN_VALUE))

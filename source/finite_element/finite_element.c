@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : finite_element.c
 
-LAST MODIFIED : 6 August 2001
+LAST MODIFIED : 30 August 2001
 
 DESCRIPTION :
 Functions for manipulating finite element structures.
@@ -295,9 +295,34 @@ against.
 DECLARE_LIST_TYPES(FE_element_type_node_sequence);
 FULL_DECLARE_INDEXED_LIST_TYPE(FE_element_type_node_sequence);
 
+struct CM_field_information
+/*******************************************************************************
+LAST MODIFIED : 2 February 1999
+
+DESCRIPTION :
+Private structure containing field information needed by cm.
+???DB.  What about grids (element based fields) ?
+???DB.  Should this be hidden in the name as at present ?  This is how it would
+  have to be done for any other application communicating with cmgui.  User
+  data ?
+==============================================================================*/
+{
+  union
+  {
+		struct
+    {
+      int nc,niy,nr,nxc,nxt;
+    } dependent;
+		struct
+    {
+      int nr;
+    } independent;
+  } indices;
+}; /* struct CM_field_information */
+
 struct FE_field
 /*******************************************************************************
-LAST MODIFIED : 1 September 1999
+LAST MODIFIED : 30 August 2001
 
 DESCRIPTION :
 Stores the information for calculating the value of a field at a point.  The
@@ -308,8 +333,8 @@ the point and the Xi coordinates of the point within the element.
 	/* the name of the field */
 	char *name;
 	/* CMISS field type and number */
-	struct CM_field_information cm;
-/*???DB.  CMISS number ? */
+	enum CM_field_type cm_field_type;
+	struct CM_field_information *cm;
 	enum FE_field_type fe_field_type;
 	/* following two for INDEXED_FE_FIELD only */
 	struct FE_field *indexer_field;
@@ -544,7 +569,7 @@ the array values.
 	int size;
 
 	ENTER(get_Value_storage_size);
-	switch(value_type)
+	switch (value_type)
 	{
 		case DOUBLE_VALUE:
 		{
@@ -623,7 +648,7 @@ the array values.
 	}
 	LEAVE;
 
-	return(size);	
+	return (size);	
 } /* get_Value_storage_size */
 
 static int free_value_storage_array(Value_storage *values_storage,
@@ -769,10 +794,10 @@ in memory. If pointers weren't DWORD aligned get bus errors on SGIs.
  
 	
 	ENTER(allocate_and_copy_values_storage_array);	
-	if(source)
+	if (source)
 	{	
 		return_code = 1;
-		switch(value_type)
+		switch (value_type)
 		{				
 			case DOUBLE_ARRAY_VALUE:			
 			{
@@ -786,7 +811,7 @@ in memory. If pointers weren't DWORD aligned get bus errors on SGIs.
 					source_array = *array_address;
 					array_size = (sizeof(double))*(number_of_array_values);
 					/* allocate the dest array */
-					if(ALLOCATE(dest_array,double,number_of_array_values))
+					if (ALLOCATE(dest_array,double,number_of_array_values))
 					{
 						/* copy values into the dest array */
 						memcpy(dest_array,source_array,array_size);
@@ -818,14 +843,14 @@ in memory. If pointers weren't DWORD aligned get bus errors on SGIs.
 				FE_value *dest_array,*source_array,**array_address;				
 				/* get number of array values from source */		 
 				number_of_array_values = *((int *)source);
-				if(number_of_array_values) /* no array values, source array is NULL*/
+				if (number_of_array_values) /* no array values, source array is NULL*/
 				{
 					/* get address of array from source */			
 					array_address = (FE_value **)(source+sizeof(int));
 					source_array = *array_address;
 					array_size = (sizeof(FE_value))*(number_of_array_values);
 					/* allocate the dest array */
-					if(ALLOCATE(dest_array,FE_value,number_of_array_values))
+					if (ALLOCATE(dest_array,FE_value,number_of_array_values))
 					{
 						/* copy values into the dest array */
 						memcpy(dest_array,source_array,array_size);
@@ -856,14 +881,14 @@ in memory. If pointers weren't DWORD aligned get bus errors on SGIs.
 				float *dest_array,*source_array,**array_address;				
 				/* get number of array values from source */		 
 				number_of_array_values = *((int *)source);
-				if(number_of_array_values) /* no array values, source array is NULL*/
+				if (number_of_array_values) /* no array values, source array is NULL*/
 				{
 					/* get address of array from source */			
 					array_address = (float **)(source+sizeof(int));
 					source_array = *array_address;
 					array_size = (sizeof(float))*(number_of_array_values);
 					/* allocate the dest array */
-					if(ALLOCATE(dest_array,float,number_of_array_values))
+					if (ALLOCATE(dest_array,float,number_of_array_values))
 					{
 						/* copy values into the dest array */
 						memcpy(dest_array,source_array,array_size);
@@ -894,14 +919,14 @@ in memory. If pointers weren't DWORD aligned get bus errors on SGIs.
 				short *dest_array,*source_array,**array_address;				
 				/* get number of array values from source */		 
 				number_of_array_values = *((int *)source);
-				if(number_of_array_values) /* no array values, source array is NULL*/
+				if (number_of_array_values) /* no array values, source array is NULL*/
 				{
 					/* get address of array from source */			
 					array_address = (short **)(source+sizeof(int));
 					source_array = *array_address;
 					array_size = (sizeof(short))*(number_of_array_values);
 					/* allocate the dest array */
-					if(ALLOCATE(dest_array,short,number_of_array_values))
+					if (ALLOCATE(dest_array,short,number_of_array_values))
 					{
 						/* copy values into the dest array */
 						memcpy(dest_array,source_array,array_size);
@@ -932,14 +957,14 @@ in memory. If pointers weren't DWORD aligned get bus errors on SGIs.
 				int *dest_array,*source_array,**array_address;				
 				/* get number of array values from source */		 
 				number_of_array_values = *((int *)source);
-				if(number_of_array_values) /* no array values, source array is NULL*/
+				if (number_of_array_values) /* no array values, source array is NULL*/
 				{
 					/* get address of array from source */			
 					array_address = (int **)(source+sizeof(int));
 					source_array = *array_address;
 					array_size = (sizeof(int))*(number_of_array_values);
 					/* allocate the dest array */
-					if(ALLOCATE(dest_array,int,number_of_array_values))
+					if (ALLOCATE(dest_array,int,number_of_array_values))
 					{
 						/* copy values into the dest array */
 						memcpy(dest_array,source_array,array_size);
@@ -970,14 +995,14 @@ in memory. If pointers weren't DWORD aligned get bus errors on SGIs.
 				unsigned *dest_array,*source_array,**array_address;				
 				/* get number of array values from source */		 
 				number_of_array_values = *((int *)source);
-				if(number_of_array_values) /* no array values, source array is NULL*/
+				if (number_of_array_values) /* no array values, source array is NULL*/
 				{
 					/* get address of array from source */			
 					array_address = (unsigned **)(source+sizeof(int));
 					source_array = *array_address;
 					array_size = (sizeof(unsigned))*(number_of_array_values);
 					/* allocate the dest array */
-					if(ALLOCATE(dest_array,unsigned,number_of_array_values))
+					if (ALLOCATE(dest_array,unsigned,number_of_array_values))
 					{
 						/* copy values into the dest array */
 						memcpy(dest_array,source_array,array_size);
@@ -1008,12 +1033,12 @@ in memory. If pointers weren't DWORD aligned get bus errors on SGIs.
 				char *dest_array,*source_array,**array_address;			
 				/* get address of array from source */				
 				array_address = (char **)(source);
-				if(*array_address)/* if we have a source array*/
+				if (*array_address)/* if we have a source array*/
 				{
 					source_array = *array_address;
 					array_size = strlen(source_array)+1; /* +1 for null termination */
 					/* allocate the dest array */
-					if(ALLOCATE(dest_array,char,array_size))
+					if (ALLOCATE(dest_array,char,array_size))
 					{
 						/* copy values into the dest array */
 						memcpy(dest_array,source_array,array_size);				
@@ -1040,7 +1065,7 @@ in memory. If pointers weren't DWORD aligned get bus errors on SGIs.
 					"allocate_and_copy_values_storage_array. Invalis type");
 				return_code = 0;
 			} break;
-		} /*switch(the_value_type) */
+		} /*switch (the_value_type) */
 	}
 	else
 	{
@@ -1049,7 +1074,7 @@ in memory. If pointers weren't DWORD aligned get bus errors on SGIs.
 		return_code = 0;
 	}
 	LEAVE;
-	return(return_code);
+	return (return_code);
 } /* allocate_and_copy_values_storage_array */
 
 static int copy_value_storage_array(Value_storage *destination,
@@ -1220,7 +1245,7 @@ contain such values.
 	}
 	LEAVE;
 
-	return(return_code);
+	return (return_code);
 } /* copy_value_storage_array */
 
 static Value_storage *make_value_storage_array(enum Value_type value_type,
@@ -1383,14 +1408,14 @@ A debug function to print a node's value storage (to stdout)
 	int return_code,limit,i;
 	FE_value *values;
 	ENTER(show_FE_nodal_FE_values);
-	if(node)
+	if (node)
 	{
-		if(node->values_storage)
+		if (node->values_storage)
 		{
 			limit = get_FE_node_number_of_values(node);
 			return_code = 1;
 			values = (FE_value*)(node->values_storage);
-			for(i=0;i<limit;i++)
+			for (i=0;i<limit;i++)
 			{
 				printf("Nodal value[%d], = %f \n",i,*values);
 				values++;	
@@ -1408,7 +1433,7 @@ A debug function to print a node's value storage (to stdout)
 		return_code = 0;
 	}
 	LEAVE;
-	return(return_code);
+	return (return_code);
 } /* show_FE_nodal_field_FE_values */
 
 static int show_node_field(struct FE_node_field *node_field,void *count)
@@ -1427,16 +1452,16 @@ A debug function to print a node fields (to stdout)
 	ENTER(show_node_field);		
 	the_count = (int *)count;
 	printf("count = %d\n",*the_count);
-	if(node_field)
+	if (node_field)
 	{	
 		printf("node_field = %x \n",node_field);
-		if(node_field->field)
+		if (node_field->field)
 		{	
 			printf("   node_field->field = %x \n",node_field->field);
 			printf("   name = %s \n",node_field->field->name);
 			printf("   number of values = %d \n",node_field->field->number_of_values);
 			printf("   number of components = %d \n",node_field->field->number_of_components);		
-			for(i=0;i<node_field->field->number_of_components;i++)
+			for (i=0;i<node_field->field->number_of_components;i++)
 			{	
 				printf("      component %d: \n",i);
 				component = &(node_field->components[i]);
@@ -1458,7 +1483,7 @@ A debug function to print a node fields (to stdout)
 	(*the_count)++;	
 	printf("\n");
 	LEAVE;
-	return(return_code);
+	return (return_code);
 }
 
 int show_FE_nodal_node_fields(struct FE_node *node)
@@ -1472,9 +1497,9 @@ A debug function to print all a node's node fields (to stdout)
 	int return_code,count;
 	FE_value *values;
 	ENTER(show_FE_nodal_node_fields);
-	if(node)
+	if (node)
 	{
-		if(node->fields)
+		if (node->fields)
 		{
 			count =0;
 			FOR_EACH_OBJECT_IN_LIST(FE_node_field)
@@ -1492,7 +1517,7 @@ A debug function to print all a node's node fields (to stdout)
 		return_code = 0;
 	}
 	LEAVE;
-	return(return_code);
+	return (return_code);
 } /* show_FE_nodal_node_fields */
 #endif /* defined (DEBUG) */
 
@@ -1613,7 +1638,7 @@ Assumes values_storage has already been allocated.
 	}
 	LEAVE;
 
-	return(return_code);
+	return (return_code);
 } /* FE_node_field_copy_value_storage */
 
 struct FE_node_value_data
@@ -1672,7 +1697,7 @@ node_value_data.values_storage.
 		return_code = 0;
 	}
 	LEAVE;
-	return(return_code);
+	return (return_code);
 } /* iterative_FE_node_field_copy_values_storage */
 
 static int copy_FE_node_value_storage(struct FE_node *node, 
@@ -1702,7 +1727,7 @@ are not allocated and copied.
 	struct FE_node_value_data data;
 
 	ENTER(copy_FE_node_value_storage);
-	if(node)
+	if (node)
 	{
 		return_code = 1;
 		data.source_node = node;
@@ -1710,7 +1735,7 @@ are not allocated and copied.
 		data.exclusion_field_list = exclusion_field_list;
 		/* data will be set and arrays allocated within */
 		/* iterative_FE_node_field_copy_values_storage */
-		if((node->fields)&&(values_storage))
+		if ((node->fields)&&(values_storage))
 		{					
 			FOR_EACH_OBJECT_IN_LIST(FE_node_field)
 				(iterative_FE_node_field_copy_values_storage,
@@ -1732,7 +1757,7 @@ are not allocated and copied.
 	}
 	LEAVE;
 
-	return(return_code);
+	return (return_code);
 } /* copy_FE_node_value_storage */
 
 static int get_FE_node_field_list_values_storage_size(
@@ -1787,7 +1812,7 @@ and any arrays in values_storage.
 	Value_storage *dest_values_storage;
 
 	ENTER(allocate_and_copy_FE_node_value_storage);
-	if(node)
+	if (node)
 	{
 		return_code = 1;
 	
@@ -1877,13 +1902,13 @@ Only certain value types, eg. arrays, strings, element_xi require this.
 	}
 	LEAVE;
 
-	return(return_code);
+	return (return_code);
 } /* FE_node_field_free_values_storage_arrays */
 
 static int FE_node_field_is_coordinate_field(struct FE_node_field 
 	*node_field,void *dummy)
 /*******************************************************************************
-LAST MODIFIED: 5 December 2000
+LAST MODIFIED: 29 August 2001
 
 DESCRIPTION:
 Returns true if <node_field> has a field of type CM_coordinate, returns
@@ -1897,9 +1922,7 @@ FE_values and has up to 3 components.
 	USE_PARAMETER(dummy);
 	if (node_field && (field = node_field->field))
 	{
-		return_code = (field->cm.type == CM_COORDINATE_FIELD) &&
-			(FE_VALUE_VALUE == field->value_type) &&
-			(3 >= field->number_of_components);
+		return_code=FE_field_is_coordinate_field(field,dummy);
 	}
 	else
 	{
@@ -1909,7 +1932,7 @@ FE_values and has up to 3 components.
 	}
 	LEAVE;
 
-	return(return_code);
+	return (return_code);
 }/* FE_node_field_is_coordinate_field */
 
 static int FE_node_field_has_time(struct FE_node_field *node_field,void *dummy)
@@ -1923,7 +1946,7 @@ returns true if <node_field> has time information defined
 	int return_code;
 	ENTER(FE_node_field_has_time);
 
-	if(node_field&&!dummy)
+	if (node_field&&!dummy)
 	{
 		return_code = (node_field->field->number_of_times > 0); 	
 	}
@@ -1934,7 +1957,7 @@ returns true if <node_field> has time information defined
 		return_code = 0;
 	}
 	LEAVE;
-	return(return_code);
+	return (return_code);
 }/* FE_node_field_has_time */
 
 static int assign_FE_node_field_component(
@@ -2795,18 +2818,18 @@ cmiss_2.
 	ENTER(compare_CM_element_information);
 	if (cmiss_1&&cmiss_2)
 	{		
-		if(cmiss_1->type==cmiss_2->type )
+		if (cmiss_1->type==cmiss_2->type )
 		{		
-			if(cmiss_1->number==cmiss_2->number)
+			if (cmiss_1->number==cmiss_2->number)
 				return_code=0;
-			else if(cmiss_1->number < cmiss_2->number)
+			else if (cmiss_1->number < cmiss_2->number)
 				return_code=-1;
 			else					 
 				return_code =1;		
 		}
 		else
 		{
-			if(cmiss_1->type<cmiss_2->type )
+			if (cmiss_1->type<cmiss_2->type )
 				return_code=-1;
 			else					 
 				return_code =1;		
@@ -5046,7 +5069,7 @@ the pointer to the array.
 					for (j=(component->number_of_versions)*
 						(1+component->number_of_derivatives);j>0;j--)
 					{
-						switch(field->value_type)
+						switch (field->value_type)
 						{
 							case DOUBLE_VALUE:
 							{
@@ -5064,7 +5087,7 @@ the pointer to the array.
 									*((struct FE_element **)(value_source));
 								value_source += sizeof(struct FE_element *);
 								value_destination += sizeof(struct FE_element *);
-								for(k = 0 ; k < MAXIMUM_ELEMENT_XI_DIMENSIONS ; k++)
+								for (k = 0 ; k < MAXIMUM_ELEMENT_XI_DIMENSIONS ; k++)
 								{
 									*((FE_value *)value_destination) =
 										*((FE_value *)value_source);
@@ -5651,13 +5674,13 @@ Checks if the <field_info> matchs the <element_field_lists>.
 static int list_FE_element_field(struct FE_element_field *element_field,
 	void *dummy_user_data)
 /*******************************************************************************
-LAST MODIFIED : 7 April 1999
+LAST MODIFIED : 30 August 2001
 
 DESCRIPTION :
 Outputs the information contained by the element field.
 ==============================================================================*/
 {
-	char line[81], *component_name;
+	char *component_name,line[81],*type_string;
 	int *basis_type,i,j,k,line_length,*nodal_value_index,*number_in_xi,
 		number_of_characters,number_of_components,number_of_nodal_values,
 		number_of_xi_coordinates,return_code,*scale_factor_index;
@@ -5673,63 +5696,26 @@ Outputs the information contained by the element field.
 			return_code=1;
 			display_message(INFORMATION_MESSAGE,"  ");
 			display_message(INFORMATION_MESSAGE,field->name);
-			switch (field->cm.type)
+			if (type_string=ENUMERATOR_STRING(CM_field_type)(field->cm_field_type))
 			{
-				case CM_COORDINATE_FIELD:
-				{
-					display_message(INFORMATION_MESSAGE,", coordinate");
-				} break;
-				case CM_ANATOMICAL_FIELD:
-				{
-					display_message(INFORMATION_MESSAGE,", anatomical");
-				} break;
-				case CM_FIELD:
-				{
-					display_message(INFORMATION_MESSAGE,", field");
-				} break;
-				default:
-				{
-					display_message(ERROR_MESSAGE,
-						"list_FE_element_field.  Invalid field type");
-					return_code=0;
-				} break;
+				display_message(INFORMATION_MESSAGE,", %s");
 			}
-			switch (field->coordinate_system.type)
+			else
 			{
-				case RECTANGULAR_CARTESIAN:
-				{
-					display_message(INFORMATION_MESSAGE,", rectangular cartesian");
-				} break;
-				case CYLINDRICAL_POLAR:
-				{
-					display_message(INFORMATION_MESSAGE,", cylindrical polar");
-				} break;
-				case SPHERICAL_POLAR:
-				{
-					display_message(INFORMATION_MESSAGE,", spherical polar");
-				} break;
-				case PROLATE_SPHEROIDAL:
-				{
-					display_message(INFORMATION_MESSAGE,", prolate spheroidal");
-				} break;	
-				case NOT_APPLICABLE:
-				{
-					display_message(INFORMATION_MESSAGE,", no coordinate system");
-				} break;
-				case OBLATE_SPHEROIDAL:
-				{
-					display_message(INFORMATION_MESSAGE,", oblate spheroidal");
-				} break;
-				case FIBRE:
-				{
-					display_message(INFORMATION_MESSAGE,", fibre");
-				} break;
-				default:
-				{
-					display_message(ERROR_MESSAGE,
-						"list_FE_element_field.  Invalid field coordinate system");
-					return_code=0;
-				} break;
+				display_message(ERROR_MESSAGE,
+					"list_FE_element_field.  Invalid CM field type");
+				return_code=0;
+			}
+			if (type_string=Coordinate_system_type_to_string(
+				field->coordinate_system.type))
+			{
+				display_message(INFORMATION_MESSAGE,", %s");
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE,
+					"list_FE_element_field.  Invalid field coordinate system");
+				return_code=0;
 			}
 			number_of_components=field->number_of_components;
 			sprintf(line," #Components=%d\n",number_of_components);
@@ -5918,21 +5904,22 @@ Outputs the information contained by the element field.
 #endif /* !defined (WINDOWS_DEV_FLAG) */
 
 #if !defined (WINDOWS_DEV_FLAG)
-static int list_FE_node_field (struct FE_node_field *node_field,void *node_void)
+static int list_FE_node_field(struct FE_node_field *node_field,void *node_void)
 /*******************************************************************************
-LAST MODIFIED : 31 July 2000
+LAST MODIFIED : 30 August 2001
 
 DESCRIPTION :
 Outputs the information contained by the node field.
 ==============================================================================*/
 {
-	char *component_name;
+	char *component_name,*type_string;
 	enum FE_nodal_value_type *type;
-	Value_storage *values_storage, *value;
-	int i,j,k,number_of_components,number_of_versions,return_code,xi_dimension,xi_index;
+	int i,j,k,number_of_components,number_of_versions,return_code,xi_dimension,
+		xi_index;
 	struct FE_field *field;
 	struct FE_node *node;
 	struct FE_node_field_component *node_field_component;
+	Value_storage *values_storage, *value;
 
 	ENTER(list_FE_node_field);
 	if (node_field&&(node=(struct FE_node *)node_void))
@@ -5942,63 +5929,26 @@ Outputs the information contained by the node field.
 		{	 
 			return_code=1;
 			display_message(INFORMATION_MESSAGE,"  %s",field->name);
-			switch (field->cm.type)
+			if (type_string=ENUMERATOR_STRING(CM_field_type)(field->cm_field_type))
 			{
-				case CM_COORDINATE_FIELD:
-				{
-					display_message(INFORMATION_MESSAGE,", coordinate");
-				} break;
-				case CM_ANATOMICAL_FIELD:
-				{
-					display_message(INFORMATION_MESSAGE,", anatomical");
-				} break;
-				case CM_FIELD:
-				{
-					display_message(INFORMATION_MESSAGE,", field");
-				} break;
-				default:
-				{
-					display_message(ERROR_MESSAGE,
-						"list_FE_node_field.  Invalid field type");
-					return_code=0;
-				} break;
+				display_message(INFORMATION_MESSAGE,", %s");
 			}
-			switch (field->coordinate_system.type)
+			else
 			{
-				case RECTANGULAR_CARTESIAN:
-				{
-					display_message(INFORMATION_MESSAGE,", rectangular cartesian");
-				} break;
-				case CYLINDRICAL_POLAR:
-				{
-					display_message(INFORMATION_MESSAGE,", cylindrical polar");
-				} break;
-				case SPHERICAL_POLAR:
-				{
-					display_message(INFORMATION_MESSAGE,", spherical polar");
-				} break;
-				case PROLATE_SPHEROIDAL:
-				{
-					display_message(INFORMATION_MESSAGE,", prolate spheroidal");
-				} break;
-				case OBLATE_SPHEROIDAL:
-				{
-					display_message(INFORMATION_MESSAGE,", oblate spheroidal");
-				} break;
-				case FIBRE:
-				{
-					display_message(INFORMATION_MESSAGE,", fibre");
-				} break;
-				case NOT_APPLICABLE:
-				{
-					display_message(INFORMATION_MESSAGE,", no coordinate system");
-				} break;
-				default:
-				{
-					display_message(ERROR_MESSAGE,
-						"list_FE_node_field.  Invalid field coordinate system");
-					return_code=0;
-				} break;
+				display_message(ERROR_MESSAGE,
+					"list_FE_node_field.  Invalid CM field type");
+				return_code=0;
+			}
+			if (type_string=Coordinate_system_type_to_string(
+				field->coordinate_system.type))
+			{
+				display_message(INFORMATION_MESSAGE,", %s");
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE,
+					"list_FE_node_field.  Invalid field coordinate system");
+				return_code=0;
 			}
 			number_of_components=field->number_of_components;
 			display_message(INFORMATION_MESSAGE,", #Components=%d\n",
@@ -6022,12 +5972,12 @@ Outputs the information contained by the node field.
 					display_message(INFORMATION_MESSAGE,".  ");
 				}			
 				/* display field based information*/
-				if(field->number_of_values)
+				if (field->number_of_values)
 				{	
 					int count;
 
-					display_message(INFORMATION_MESSAGE,"field based values: ");							
-					switch(field->value_type)
+					display_message(INFORMATION_MESSAGE,"field based values: ");
+					switch (field->value_type)
 					{
 						case FE_VALUE_VALUE:
 						{
@@ -6052,7 +6002,7 @@ Outputs the information contained by the node field.
 							display_message(INFORMATION_MESSAGE,"list_FE_node_field: "
 								"Can't display that field value_type yet. Write the code!");
 						} break;
-					}	/* switch() */							
+					}	/* switch () */							
 				}
 				/* display node based information*/
 				if ((values_storage=node->values_storage)&&(type=node_field_component->
@@ -6075,18 +6025,18 @@ Outputs the information contained by the node field.
 								ENUMERATOR_STRING(FE_nodal_value_type)(*type));
 #if defined (NEW_CODE) /* not sure how we're going to display these yet */
 							/* display field time information*/
-							if(field->number_of_times)
+							if (field->number_of_times)
 							{
 								int count;
 
 								display_message(INFORMATION_MESSAGE,"times: ");							
-								switch(field->time_value_type)
+								switch (field->time_value_type)
 								{
 									case FE_VALUE_VALUE:
 									{
 										display_message(INFORMATION_MESSAGE,"\n");
 										/* output in columns if FE_VALUE_MAX_OUTPUT_COLUMNS > 0 */
-										for(count=0;count<field->number_of_times;count++)
+										for (count=0;count<field->number_of_times;count++)
 										{
 											display_message(INFORMATION_MESSAGE," %"FE_VALUE_STRING,
 												*((FE_value*)(field->times + count*sizeof(FE_value)) ));
@@ -6102,11 +6052,11 @@ Outputs the information contained by the node field.
 										display_message(INFORMATION_MESSAGE,"list_FE_node_field: "
 											"Can't display that time_value_type yet. Write the code!");
 									} break;
-								}	/* switch() */							
+								}	/* switch () */							
 							}
 #endif /* defined (NEW_CODE) */				
 							/* display node based field information*/
-							if(field->number_of_times)
+							if (field->number_of_times)
 							{
 								/* for the moment don't display the (generally massive) time based*/
 								/* field information */
@@ -6114,7 +6064,7 @@ Outputs the information contained by the node field.
 							}
 							else
 							{							
-								switch(field->value_type)
+								switch (field->value_type)
 								{
 									case FE_VALUE_VALUE:
 									{
@@ -6167,9 +6117,9 @@ Outputs the information contained by the node field.
 										component.number = 0;
 										number_of_values=get_FE_nodal_array_number_of_elements(node,
 											&component,0,FE_NODAL_VALUE);
-										if(number_of_values>0)
+										if (number_of_values>0)
 										{									
-											if(ALLOCATE(array,double,number_of_values))
+											if (ALLOCATE(array,double,number_of_values))
 											{
 												get_FE_nodal_double_array_value(node,&component,0,
 													FE_NODAL_VALUE,array,number_of_values);
@@ -6211,9 +6161,9 @@ Outputs the information contained by the node field.
 										component.number = 0;	
 										number_of_values=get_FE_nodal_array_number_of_elements(node,&component,
 											0,FE_NODAL_VALUE);
-										if(number_of_values>0)
+										if (number_of_values>0)
 										{																			
-											if(ALLOCATE(array,FE_value,number_of_values))
+											if (ALLOCATE(array,FE_value,number_of_values))
 											{
 												get_FE_nodal_FE_value_array(node,&component,0,
 													FE_NODAL_VALUE,array,number_of_values);	
@@ -6254,9 +6204,9 @@ Outputs the information contained by the node field.
 										component.number = 0;
 										number_of_values=get_FE_nodal_array_number_of_elements(node,&component,
 											0,FE_NODAL_VALUE);
-										if(number_of_values>0)
+										if (number_of_values>0)
 										{								
-											if(ALLOCATE(array,short,number_of_values))
+											if (ALLOCATE(array,short,number_of_values))
 											{
 												get_FE_nodal_short_array(node,&component,0,
 													FE_NODAL_VALUE,array,number_of_values);
@@ -6292,7 +6242,7 @@ Outputs the information contained by the node field.
 											"Can't display that Value_type yet. Write the code!");
 									} break;
 								}/* switch*/
-							} /* if(field->number_of_times) */
+							} /* if (field->number_of_times) */
 							values_storage += get_Value_storage_size(field->value_type); 
 							type++;
 							k--;
@@ -6307,7 +6257,7 @@ Outputs the information contained by the node field.
 				else
 				{
 					/*Missing nodal values only an error if no field based values either */
-					if(!(field->number_of_values))
+					if (!(field->number_of_values))
 					{
 						display_message(ERROR_MESSAGE,
 							"list_FE_node_field.  Missing nodal values");
@@ -11821,7 +11771,7 @@ Frees the memory for the node, sets <*node_address> to NULL.
 		if (0==node->access_count)
 		{
 			/* free the node values_storage */
-			if(node->fields)
+			if (node->fields)
 			{
 				FOR_EACH_OBJECT_IN_LIST(FE_node_field)(
 					FE_node_field_free_values_storage_arrays,
@@ -11868,7 +11818,7 @@ Creates an EXACT copy of the node.
 	{
 		DEACCESS(FE_node_field_info)(&(destination->fields));
 		/* free the node values_storage */
-		if(destination->fields)
+		if (destination->fields)
 		{			
 			FOR_EACH_OBJECT_IN_LIST(FE_node_field)(
 				FE_node_field_free_values_storage_arrays,
@@ -11878,7 +11828,7 @@ Creates an EXACT copy of the node.
 
 		/* copy the new */
 		node_field_info=source->fields;
-		if( allocate_and_copy_FE_node_value_storage(source,&(destination->values_storage)))
+		if ( allocate_and_copy_FE_node_value_storage(source,&(destination->values_storage)))
 		{			
 			destination->fields=ACCESS(FE_node_field_info)(node_field_info);
 			destination->cm_node_identifier=source->cm_node_identifier;
@@ -12473,7 +12423,7 @@ Defines a field at a node (does not assign values)
 										for (i=number_of_values-
 											(existing_node_field_info->number_of_values);i>0;i--)
 										{
-											switch(value_type)
+											switch (value_type)
 											{
 												case ELEMENT_XI_VALUE:
 												{											
@@ -12820,7 +12770,7 @@ Returns true if <node_field> has a field with values_storage.
 	}
 	LEAVE;
 
-	return(return_code);
+	return (return_code);
 } /* FE_node_field_has_FE_field_values */
 
 int FE_node_has_FE_field_values(struct FE_node *node)
@@ -13690,7 +13640,7 @@ Gets a particular element_xi_value (<version>, <type>) for the field <component>
 		{
 			*element = *((struct FE_element **)values_storage);
 			values_storage += sizeof(struct FE_element *);
-			for(i = 0 ; i < MAXIMUM_ELEMENT_XI_DIMENSIONS ; i++)
+			for (i = 0 ; i < MAXIMUM_ELEMENT_XI_DIMENSIONS ; i++)
 			{
 				xi[i] = *((FE_value *)values_storage);
 				values_storage += sizeof(FE_value);
@@ -14399,9 +14349,9 @@ Otherwise returns false (0)
 		required_string=field_and_string_data->string;
 		if (FE_field_is_defined_at_node(fe_field,node))
 		{
-			if(get_FE_nodal_string_value(node,fe_field,0,0,FE_NODAL_VALUE,&field_string))
+			if (get_FE_nodal_string_value(node,fe_field,0,0,FE_NODAL_VALUE,&field_string))
 			{
-				if(!strcmp(required_string,field_string))
+				if (!strcmp(required_string,field_string))
 				{
 					return_code=1;
 				}
@@ -14561,7 +14511,7 @@ Give an error if field->values_storage isn't storing array types.
 			{
 				/* get the value type*/
 				*value_type	= node_field->field->value_type;
-				switch(node_field->field->value_type)
+				switch (node_field->field->value_type)
 				{
 					case DOUBLE_ARRAY_VALUE:
 					case FE_VALUE_ARRAY_VALUE:
@@ -14586,7 +14536,7 @@ Give an error if field->values_storage isn't storing array types.
 								/* get the offset into nodal values_storage*/
 								values_storage = node->values_storage+(node_field_component->value)+
 									((version*length+i)*size);
-								if(node_field->field->value_type!=STRING_VALUE)
+								if (node_field->field->value_type!=STRING_VALUE)
 								{
 								/*copy in the number_of_array_values  */							
 								*number_of_array_values = *((int *)(values_storage));
@@ -14695,7 +14645,7 @@ Give an error if field->values_storage isn't storing array types.
 			if ((node_field_component=node_field->components)&&
 				(nodal_value_type=node_field_component->nodal_value_types))
 			{			
-				switch(node_field->field->value_type)
+				switch (node_field->field->value_type)
 				{
 					case DOUBLE_ARRAY_VALUE:
 					case FE_VALUE_ARRAY_VALUE:
@@ -14720,7 +14670,7 @@ Give an error if field->values_storage isn't storing array types.
 								/* get the offset into nodal values_storage*/
 								values_storage = node->values_storage+(node_field_component->value)+
 									((version*length+i)*size);
-								if(node_field->field->value_type!=STRING_VALUE)
+								if (node_field->field->value_type!=STRING_VALUE)
 								{
 								/*copy in the number_of_array_values  */							
 								number_of_array_elements = *((int *)(values_storage));
@@ -14789,11 +14739,11 @@ if need to locally and repetatively get many arrays.
 		(component->number<component->field->number_of_components)&&(0<=version)&&
 		array)
 	{
-		if(find_FE_nodal_values_storage_dest(node,component,version,type,DOUBLE_ARRAY_VALUE,
+		if (find_FE_nodal_values_storage_dest(node,component,version,type,DOUBLE_ARRAY_VALUE,
 			&values_storage))
 		{					
 			the_array_number_of_values = *((int *)values_storage);
-			if(number_of_array_values>the_array_number_of_values)
+			if (number_of_array_values>the_array_number_of_values)
 			{
 				number_of_array_values=the_array_number_of_values;
 			}
@@ -14857,13 +14807,13 @@ define_FE_field_at_node.
 		(component->number<component->field->number_of_components)&&(0<=version))
 	{
 		/* get the values storage */
-		if(find_FE_nodal_values_storage_dest(node,component,version,type,DOUBLE_ARRAY_VALUE,
+		if (find_FE_nodal_values_storage_dest(node,component,version,type,DOUBLE_ARRAY_VALUE,
 			&values_storage))
 		{				
 			/* get the pointer to stored the array, free any existing one */
 			array_address = (double **)(values_storage+sizeof(int));
 			pointer = *array_address;		
-			if(pointer!=NULL)
+			if (pointer!=NULL)
 			{				
 				DEALLOCATE(pointer);		
 			}
@@ -14871,7 +14821,7 @@ define_FE_field_at_node.
 			*((int *)values_storage) = number_of_array_values;
 			/* Allocate the space for the array, and copy the data in */
 			array_size = number_of_array_values*sizeof(double);
-			if(ALLOCATE(the_array,double,array_size))
+			if (ALLOCATE(the_array,double,array_size))
 			{
 				memcpy(the_array,array,array_size);
 				/*copy the pointer to the array into field->values_storage  */
@@ -14934,11 +14884,11 @@ if need to locally and repetatively get many arrays.
 		(component->number<component->field->number_of_components)&&(0<=version)&&
 		array)
 	{
-		if(find_FE_nodal_values_storage_dest(node,component,version,type,SHORT_ARRAY_VALUE,
+		if (find_FE_nodal_values_storage_dest(node,component,version,type,SHORT_ARRAY_VALUE,
 			&values_storage))
 		{					
 			the_array_number_of_values = *((int *)values_storage);
-			if(number_of_array_values>the_array_number_of_values)
+			if (number_of_array_values>the_array_number_of_values)
 			{
 				number_of_array_values=the_array_number_of_values;
 			}
@@ -15002,13 +14952,13 @@ define_FE_field_at_node.
 		(component->number<component->field->number_of_components)&&(0<=version))
 	{
 		/* get the values storage */
-		if(find_FE_nodal_values_storage_dest(node,component,version,type,SHORT_ARRAY_VALUE,
+		if (find_FE_nodal_values_storage_dest(node,component,version,type,SHORT_ARRAY_VALUE,
 			&values_storage))
 		{				
 			/* get the pointer to stored the array, free any existing one */
 			array_address = (short **)(values_storage+sizeof(int));
 			pointer = *array_address;		
-			if(pointer!=NULL)
+			if (pointer!=NULL)
 			{				
 				DEALLOCATE(pointer);		
 			}
@@ -15016,7 +14966,7 @@ define_FE_field_at_node.
 			*((int *)values_storage) = number_of_array_values;
 			/* Allocate the space for the array, and copy the data in */
 			array_size = number_of_array_values*sizeof(short);
-			if(ALLOCATE(the_array,short,array_size))
+			if (ALLOCATE(the_array,short,array_size))
 			{
 				memcpy(the_array,array,array_size);
 				/*copy the pointer to the array into field->values_storage  */
@@ -15079,11 +15029,11 @@ if need to locally and repetatively get many arrays.
 		(component->number<component->field->number_of_components)&&(0<=version)&&
 		array)
 	{
-		if(find_FE_nodal_values_storage_dest(node,component,version,type,FE_VALUE_ARRAY_VALUE,
+		if (find_FE_nodal_values_storage_dest(node,component,version,type,FE_VALUE_ARRAY_VALUE,
 			&values_storage))
 		{					
 			the_array_number_of_values = *((int *)values_storage);
-			if(number_of_array_values>the_array_number_of_values)
+			if (number_of_array_values>the_array_number_of_values)
 			{
 				number_of_array_values=the_array_number_of_values;
 			}
@@ -15148,13 +15098,13 @@ define_FE_field_at_node.
 		(component->number<component->field->number_of_components)&&(0<=version))
 	{
 		/* get the values storage */
-		if(find_FE_nodal_values_storage_dest(node,component,version,type,FE_VALUE_ARRAY_VALUE,
+		if (find_FE_nodal_values_storage_dest(node,component,version,type,FE_VALUE_ARRAY_VALUE,
 			&values_storage))
 		{				
 			/* get the pointer to stored the array, free any existing one */
 			array_address = (FE_value **)(values_storage+sizeof(int));
 			pointer = *array_address;		
-			if(pointer!=NULL)
+			if (pointer!=NULL)
 			{				
 				DEALLOCATE(pointer);		
 			}
@@ -15162,9 +15112,9 @@ define_FE_field_at_node.
 			*((int *)values_storage) = number_of_array_values;
 			/* Allocate the space for the array, and copy the data in */
 			array_size = number_of_array_values*sizeof(FE_value);
-			if(array_size)
+			if (array_size)
 			{
-				if(ALLOCATE(the_array,FE_value,array_size))
+				if (ALLOCATE(the_array,FE_value,array_size))
 				{
 					memcpy(the_array,array,array_size);
 					/*copy the pointer to the array into field->values_storage  */
@@ -15229,11 +15179,11 @@ at the <node>.
 		(component->number<component->field->number_of_components)&&(0<=version)&&
 		(element_number>-1))
 	{
-		if(find_FE_nodal_values_storage_dest(node,component,version,type,FE_VALUE_ARRAY_VALUE,
+		if (find_FE_nodal_values_storage_dest(node,component,version,type,FE_VALUE_ARRAY_VALUE,
 			&values_storage))
 		{					
 			the_array_number_of_values = *((int *)values_storage);
-			if(element_number<the_array_number_of_values)
+			if (element_number<the_array_number_of_values)
 			{
 				/* get the address to copy from*/		
 				array_address = (FE_value **)(values_storage+sizeof(int));
@@ -15288,11 +15238,11 @@ value=<proportion>*value_low+(1-<proportion>)*value_high;
 		(component->number<component->field->number_of_components)&&(0<=version)&&
 		(element_number>-1))
 	{
-		if(find_FE_nodal_values_storage_dest(node,component,version,type,FE_VALUE_ARRAY_VALUE,
+		if (find_FE_nodal_values_storage_dest(node,component,version,type,FE_VALUE_ARRAY_VALUE,
 			&values_storage))
 		{					
 			the_array_number_of_values = *((int *)values_storage);
-			if(element_number<the_array_number_of_values)
+			if (element_number<the_array_number_of_values)
 			{
 				/* get the address to copy from*/		
 				array_address = (FE_value **)(values_storage+sizeof(int));
@@ -15300,7 +15250,7 @@ value=<proportion>*value_low+(1-<proportion>)*value_high;
 				/* interpolate between adjacent values */
 				value_low=the_array[element_number];
 				/* can't go off the end of the array */
-				if(element_number==(the_array_number_of_values-1))
+				if (element_number==(the_array_number_of_values-1))
 				{
 					value=value_low;
 				}
@@ -15357,11 +15307,11 @@ at the <node>.
 		(component->number<component->field->number_of_components)&&(0<=version)&&
 		(element_number>-1))
 	{
-		if(find_FE_nodal_values_storage_dest(node,component,version,type,FE_VALUE_ARRAY_VALUE,
+		if (find_FE_nodal_values_storage_dest(node,component,version,type,FE_VALUE_ARRAY_VALUE,
 			&values_storage))
 		{					
 			the_array_number_of_values = *((int *)values_storage);
-			if(element_number<the_array_number_of_values)
+			if (element_number<the_array_number_of_values)
 			{
 				/* get the address to copy from*/		
 				array_address = (FE_value **)(values_storage+sizeof(int));
@@ -15416,11 +15366,11 @@ at the <node>.
 		(component->number<component->field->number_of_components)&&(0<=version)&&
 		(element_number>-1))
 	{
-		if(find_FE_nodal_values_storage_dest(node,component,version,type,SHORT_ARRAY_VALUE,
+		if (find_FE_nodal_values_storage_dest(node,component,version,type,SHORT_ARRAY_VALUE,
 			&values_storage))
 		{					
 			the_array_number_of_values = *((int *)values_storage);
-			if(element_number<the_array_number_of_values)
+			if (element_number<the_array_number_of_values)
 			{
 				/* get the address to copy from*/		
 				array_address = (short **)(values_storage+sizeof(int));
@@ -15475,11 +15425,11 @@ value=<proportion>*value_low+(1-<proportion>)*value_high;
 		(component->number<component->field->number_of_components)&&(0<=version)&&
 		(element_number>-1))
 	{
-		if(find_FE_nodal_values_storage_dest(node,component,version,type,SHORT_ARRAY_VALUE,
+		if (find_FE_nodal_values_storage_dest(node,component,version,type,SHORT_ARRAY_VALUE,
 			&values_storage))
 		{					
 			the_array_number_of_values = *((int *)values_storage);
-			if(element_number<the_array_number_of_values)
+			if (element_number<the_array_number_of_values)
 			{
 				/* get the address to copy from*/		
 				array_address = (short **)(values_storage+sizeof(int));
@@ -15487,7 +15437,7 @@ value=<proportion>*value_low+(1-<proportion>)*value_high;
 				/* interpolate between adjacent values */
 				value_low=the_array[element_number];
 				/* can't go off the end of the array */
-				if(element_number==(the_array_number_of_values-1))
+				if (element_number==(the_array_number_of_values-1))
 				{
 					value=value_low;
 				}
@@ -15544,11 +15494,11 @@ at the <node>.
 		(component->number<component->field->number_of_components)&&(0<=version)&&
 		(element_number>-1))
 	{
-		if(find_FE_nodal_values_storage_dest(node,component,version,type,FE_VALUE_ARRAY_VALUE,
+		if (find_FE_nodal_values_storage_dest(node,component,version,type,FE_VALUE_ARRAY_VALUE,
 			&values_storage))
 		{					
 			the_array_number_of_values = *((int *)values_storage);
-			if(element_number<the_array_number_of_values)
+			if (element_number<the_array_number_of_values)
 			{
 				/* get the address to copy from*/		
 				array_address = (short **)(values_storage+sizeof(int));
@@ -15602,7 +15552,7 @@ perform interpolation, etc.
 	ENTER(get_FE_field_time_array_index_at_FE_value_time);
 	return_code=0;
 	/* check arguments */
-	if(field&&the_time_high&&the_time_low&&the_array_index&&the_index_high&&
+	if (field&&the_time_high&&the_time_low&&the_array_index&&the_index_high&&
 		the_index_low&&(number_of_times=get_FE_field_number_of_times(field)))
 	{		
 		get_FE_field_time_FE_value(field,0,&first_time);
@@ -15622,17 +15572,17 @@ perform interpolation, etc.
 		/* rounding error. This avoids unnecessarily long search from end of array */
 		while(!done)
 		{	
-			if(get_FE_field_time_FE_value(field,array_index,&this_time))
+			if (get_FE_field_time_FE_value(field,array_index,&this_time))
 			{
-				if(this_time>=time)
+				if (this_time>=time)
 				{ 
 					index_high=array_index;					
-					if(array_index>0)
+					if (array_index>0)
 					{
 						/* get adjacent array element*/
 						get_FE_field_time_FE_value(field,array_index-1,&time_low);
 						/* are we between elements?*/
-						if(time_low<time)
+						if (time_low<time)
 						{			
 							index_low=array_index-1;
 							return_code=1;
@@ -15655,12 +15605,12 @@ perform interpolation, etc.
 				else /* (this_time<time) */
 				{
 					index_low=array_index;
-					if(array_index<(number_of_times-1))
+					if (array_index<(number_of_times-1))
 					{
 						/* get adjacent array element*/
 						get_FE_field_time_FE_value(field,array_index+1,&time_high);	
 						/* are we between elements?*/
-						if(time_high>time)
+						if (time_high>time)
 						{		
 							index_high=array_index+1;
 							return_code=1;
@@ -15681,11 +15631,11 @@ perform interpolation, etc.
 						done=1;
 					}
 				}	
-				if(!done)
+				if (!done)
 				{	
 					step=(index_high-index_low)/2;	
 					/* No exact match, can't subdivide further, must do interpolation.*/
-					if(step==0)												
+					if (step==0)												
 					{	
 						done=1;	
 						return_code=1;														
@@ -15695,7 +15645,7 @@ perform interpolation, etc.
 						array_index=index_low+step;
 					}
 						
-				}/* if(!done)	*/
+				}/* if (!done)	*/
 			}
 			else
 			{
@@ -15704,11 +15654,11 @@ perform interpolation, etc.
 			}
 		}	/* while(!done)	*/
 		/* index_low and index_high should now be adjacent */
-		if(!time_low)
+		if (!time_low)
 		{
 			get_FE_field_time_FE_value(field,index_low,&time_low);
 		}
-		if(!time_high)
+		if (!time_high)
 		{
 			get_FE_field_time_FE_value(field,index_high,&time_high);
 		}
@@ -15755,12 +15705,12 @@ range, but doesn't correspond exactly to an array element, interpolates to deter
 	if (node&&component&&(field=component->field)&&(0<=component->number)&&
 		(component->number<component->field->number_of_components)&&(0<=version))
 	{
-		if((get_FE_field_time_value_type(field)==FE_VALUE_VALUE)
+		if ((get_FE_field_time_value_type(field)==FE_VALUE_VALUE)
 			&&(number_of_times=get_FE_field_number_of_times(field)))
 		{	
 			array_number_of_values = get_FE_nodal_array_number_of_elements(node,
 				component,version,type);									
-			if(number_of_times==array_number_of_values)
+			if (number_of_times==array_number_of_values)
 			{
 				/* field has the right time values, and is defined at node. We're OK*/
 				/*get the field's time array index of <time>*/
@@ -15823,12 +15773,12 @@ range, but doesn't correspond exactly to an array element, interpolates to deter
 	if (node&&component&&(field=component->field)&&(0<=component->number)&&
 		(component->number<component->field->number_of_components)&&(0<=version))
 	{
-		if((get_FE_field_time_value_type(field)==FE_VALUE_VALUE)
+		if ((get_FE_field_time_value_type(field)==FE_VALUE_VALUE)
 			&&(number_of_times=get_FE_field_number_of_times(field)))
 		{	
 			array_number_of_values = get_FE_nodal_array_number_of_elements(node,
 				component,version,type);									
-			if(number_of_times==array_number_of_values)
+			if (number_of_times==array_number_of_values)
 			{			
 				/* field has the right time values, and is defined at node. We're OK*/
 				/*get the field's time array index of <time>*/
@@ -15886,7 +15836,7 @@ Gets a the minimum and maximum values for the FE_value_array
 	if (node&&component&&(component->field)&&(0<=component->number)&&
 		(component->number<component->field->number_of_components)&&(0<=version))
 	{
-		if(find_FE_nodal_values_storage_dest(node,component,version,type,FE_VALUE_ARRAY_VALUE,
+		if (find_FE_nodal_values_storage_dest(node,component,version,type,FE_VALUE_ARRAY_VALUE,
 			&values_storage))
 		{							
 			array_number_of_values = *((int *)values_storage);		
@@ -15895,13 +15845,13 @@ Gets a the minimum and maximum values for the FE_value_array
 			array = *array_address;	
 			min=array[0];
 			max=array[0];
-			for(count=0;count<array_number_of_values;count++)
+			for (count=0;count<array_number_of_values;count++)
 			{
-				if(array[count]>max)
+				if (array[count]>max)
 				{
 					max=array[count];
 				}
-				if(array[count]<min)
+				if (array[count]<min)
 				{
 					min=array[count];
 				}
@@ -15949,7 +15899,7 @@ Gets a the minimum and maximum values for the _value_array
 	if (node&&component&&(component->field)&&(0<=component->number)&&
 		(component->number<component->field->number_of_components)&&(0<=version))
 	{
-		if(find_FE_nodal_values_storage_dest(node,component,version,type,SHORT_ARRAY_VALUE,
+		if (find_FE_nodal_values_storage_dest(node,component,version,type,SHORT_ARRAY_VALUE,
 			&values_storage))
 		{							
 			array_number_of_values = *((int *)values_storage);		
@@ -15958,13 +15908,13 @@ Gets a the minimum and maximum values for the _value_array
 			array = *array_address;	
 			min=array[0];
 			max=array[0];
-			for(count=0;count<array_number_of_values;count++)
+			for (count=0;count<array_number_of_values;count++)
 			{
-				if(array[count]>max)
+				if (array[count]>max)
 				{
 					max=array[count];
 				}
-				if(array[count]<min)
+				if (array[count]<min)
 				{
 					min=array[count];
 				}
@@ -16372,7 +16322,7 @@ It is up to the calling function to DEALLOCATE the returned array.
 	}
 	LEAVE;
 
-	return(return_code);
+	return (return_code);
 } /* get_FE_nodal_field_FE_value_values */
 
 int set_FE_nodal_field_FE_value_values(struct FE_field *field,
@@ -16447,7 +16397,7 @@ place the values.
 	}
 	LEAVE;
 
-	return(return_code);
+	return (return_code);
 } /* set_FE_nodal_field_FE_value_values */
 
 int set_FE_nodal_field_float_values(struct FE_field *field,
@@ -16522,7 +16472,7 @@ place the values.
 	}
 	LEAVE;
 
-	return(return_code);
+	return (return_code);
 } /* set_FE_nodal_field_float_values */
 
 int get_FE_nodal_field_int_values(struct FE_field *field,
@@ -16596,7 +16546,7 @@ It is up to the calling function to DEALLOCATE the returned array.
 	}
 	LEAVE;
 
-	return(return_code);
+	return (return_code);
 } /* get_FE_nodal_field_int_values */
 
 int set_FE_nodal_field_int_values(struct FE_field *field,
@@ -16671,7 +16621,7 @@ place the values.
 	}
 	LEAVE;
 
-	return(return_code);
+	return (return_code);
 } /* set_FE_nodal_field_int_values */
 
 int get_FE_node_number_of_values(struct FE_node *node)
@@ -17049,7 +16999,7 @@ usage these will actually be the values most recently read in.
 							number_of_values=merge_data.number_of_values;							
 							values_size = merge_data.values_size;
 
-							if((ALLOCATE(new_value,Value_storage,values_size))&&
+							if ((ALLOCATE(new_value,Value_storage,values_size))&&
 								(copy_FE_node_value_storage(source,&new_value,
 									destination_info->node_field_list)))
 							{
@@ -17333,7 +17283,7 @@ Creates an EXACT copy of the node (without the identifier).
 	{
 		/* make local copy of source values storage */
 		temp_values_storage=(Value_storage *)NULL;
-		if(allocate_and_copy_FE_node_value_storage(source,&temp_values_storage))
+		if (allocate_and_copy_FE_node_value_storage(source,&temp_values_storage))
 		{
 			if (destination->fields)
 			{
@@ -17448,7 +17398,7 @@ Overwrites without merging.
 		temp_values_storage=(Value_storage *)NULL;		
 		if (0<source->fields->number_of_values)
 		{		
-			if(allocate_and_copy_FE_node_value_storage(source,&temp_values_storage))
+			if (allocate_and_copy_FE_node_value_storage(source,&temp_values_storage))
 			{
 				if (destination->fields)
 				{
@@ -19060,7 +19010,7 @@ and adds it to the manager.
 	struct FE_basis *basis;
 
 	ENTER(make_FE_basis);
-	if(basis_manager)
+	if (basis_manager)
 	{
 		if (!(basis=FIND_BY_IDENTIFIER_IN_MANAGER(FE_basis,type)
 			(basis_type,basis_manager)))
@@ -19090,7 +19040,7 @@ and adds it to the manager.
 	}
 	LEAVE;
 
-	return(basis);
+	return (basis);
 } /* make_FE_basis */
 
 DECLARE_OBJECT_FUNCTIONS(FE_basis)
@@ -23799,7 +23749,7 @@ int calculate_FE_element_anatomical(
 	FE_value *xi_coordinates,FE_value *x,FE_value *y,FE_value *z,FE_value a[3],
 	FE_value b[3],FE_value c[3],FE_value *dx_dxi)
 /*******************************************************************************
-LAST MODIFIED : 28 January 2001
+LAST MODIFIED : 30 August 2001
 
 DESCRIPTION :
 Calculates the cartesian coordinates (<x>, <y> and <z>), and the fibre (<a>),
@@ -23825,9 +23775,11 @@ nine values returned, regardless of the element dimension.
 	/* check the arguments */
 	if (coordinate_element_field_values&&anatomical_element_field_values&&
 		xi_coordinates&&x&&y&&z&&a&&b&&c&&(coordinate_element_field_values->field)&&
-		(CM_COORDINATE_FIELD==coordinate_element_field_values->field->cm.type)&&
+		(CM_COORDINATE_FIELD==
+		coordinate_element_field_values->field->cm_field_type)&&
 		(anatomical_element_field_values->field)&&
-		(CM_ANATOMICAL_FIELD==anatomical_element_field_values->field->cm.type)&&
+		(CM_ANATOMICAL_FIELD==
+		anatomical_element_field_values->field->cm_field_type)&&
 		(FIBRE==anatomical_element_field_values->field->coordinate_system.type)&&
 		(3>=anatomical_element_field_values->field->number_of_components)&&
 		(element=coordinate_element_field_values->element)&&
@@ -23837,11 +23789,8 @@ nine values returned, regardless of the element dimension.
 		(element->shape->dimension<=
 		coordinate_element_field_values->field->number_of_components))
 	{
-
 		coordinate_system = get_FE_field_coordinate_system(
 			 coordinate_element_field_values->field);
-
-
 #if defined (OLD_CODE)
 		/* set up storage for the basis function values */
 		basis_function_values=preallocated_basis_function_values;
@@ -24512,7 +24461,7 @@ been allocated but is uninitialised.
 	}
 	LEAVE;
 
-	return(return_code);
+	return (return_code);
 } /* copy_element_grid_map_values_storage */
 
 struct FE_element_node_scale_field_info
@@ -24716,7 +24665,7 @@ in them. Only certain value types, eg. arrays, strings, element_xi require this.
 	}
 	LEAVE;
 
-	return(return_code);
+	return (return_code);
 } /* free_element_grid_map_values_storage */
 
 int DESTROY(FE_element_node_scale_field_info)(
@@ -27769,7 +27718,7 @@ Returns true if <element_field> has a field with values_storage.
 	}
 	LEAVE;
 
-	return(return_code);
+	return (return_code);
 } /* FE_element_field_has_FE_field_values */
 
 int FE_element_has_FE_field_values(struct FE_element *element)
@@ -29143,21 +29092,25 @@ values - like in the .exelem files.
 											((create_absolute_element_field_list_data->node)
 											[node_index])->fields))
 										{
+#if defined (OLD_CODE)
+/*???DB.  Changed so that can't be anything else */
 											switch (field->cm.type)
 											{											
-												case CM_FIELD: 
 												case CM_COORDINATE_FIELD: 
 												case CM_ANATOMICAL_FIELD: 
+												case CM_GENERAL_FIELD: 
 												{
 													node_field=FIND_BY_IDENTIFIER_IN_LIST(FE_node_field,
-														field)(field,
-														node_field_info->node_field_list);
+														field)(field,node_field_info->node_field_list);
 												} break;
 												default:
 												{
 													node_field=(struct FE_node_field *)NULL;
 												} break;
 											}
+#endif /* defined (OLD_CODE) */
+											node_field=FIND_BY_IDENTIFIER_IN_LIST(FE_node_field,
+												field)(field,node_field_info->node_field_list);
 											if (node_field&&(node_field->components))
 											{
 												node_component= &((node_field->components)[i]);
@@ -32868,17 +32821,9 @@ PROTOTYPE_ENUMERATOR_STRING_FUNCTION(CM_field_type)
 		{
 			enumerator_string = "coordinate";
 		} break;
-		case CM_FIELD:
+		case CM_GENERAL_FIELD:
 		{
 			enumerator_string = "field";
-		} break;
-		case CM_DEPENDENT_FIELD:
-		{
-			enumerator_string = "dependent";
-		} break;
-		case CM_UNKNOWN_FIELD:
-		{
-			enumerator_string = "unknown";
 		} break;
 		default:
 		{
@@ -32890,6 +32835,9 @@ PROTOTYPE_ENUMERATOR_STRING_FUNCTION(CM_field_type)
 	return (enumerator_string);
 } /* ENUMERATOR_STRING(CM_field_type) */
 
+#if defined (OLD_CODE)
+/*???DB.  Used before separated CM_field_type from cm so that CM_field_type can
+	start from 0.  See comment for enum CM_field_type in finite_element.h */
 PROTOTYPE_ENUMERATOR_GET_VALID_STRINGS_FUNCTION(CM_field_type)
 /*******************************************************************************
 LAST MODIFIED : 19 March 2001
@@ -33000,10 +32948,13 @@ This version assumes all valid enumerator values are sequential from 1.
 
 	return (return_code);
 } /* STRING_TO_ENUMERATOR(CM_field_type) */
+#endif /* defined (OLD_CODE) */
+
+DEFINE_DEFAULT_ENUMERATOR_FUNCTIONS(CM_field_type)
 
 struct FE_field *CREATE(FE_field)(void)
 /*******************************************************************************
-LAST MODIFIED : 21 June 2000
+LAST MODIFIED : 30 August 2001
 
 DESCRIPTION :
 Creates and returns a struct FE_field. The new field defaults to 1 component, 
@@ -33020,7 +32971,8 @@ no name, and the single component is named "1".
 		field->fe_field_type=GENERAL_FE_FIELD;
 		field->indexer_field=(struct FE_field *)NULL;
 		field->number_of_indexed_values=0;
-		set_CM_field_information(&field->cm,CM_FIELD,(int *)NULL);
+		field->cm_field_type=CM_GENERAL_FIELD;
+		field->cm=(struct CM_field_information *)NULL;
 		field->number_of_components=1;
 		/* don't allocate component names until we have custom names */
 		field->component_names=(char **)NULL;
@@ -33110,13 +33062,13 @@ Frees the memory for the field and sets <*field_address> to NULL.
 
 int list_FE_field(struct FE_field *field,void *dummy)
 /*******************************************************************************
-LAST MODIFIED : 29 February 2000
+LAST MODIFIED : 30 August 2001
 
 DESCRIPTION :
 Outputs the information contained in <field>.
 ==============================================================================*/
 {
-	char *component_name, line[91];
+	char *component_name,line[91],*type_string;
 	int i, number_of_components, return_code;
 
 	ENTER(list_FE_field);
@@ -33129,64 +33081,26 @@ Outputs the information contained in <field>.
 		display_message(INFORMATION_MESSAGE,line);
 		sprintf(line,"  access count=%d\n",field->access_count);
 		display_message(INFORMATION_MESSAGE,line);
-
-		switch (field->cm.type)
+		if (type_string=ENUMERATOR_STRING(CM_field_type)(field->cm_field_type))
 		{
-			case CM_COORDINATE_FIELD:
-			{
-				display_message(INFORMATION_MESSAGE,", coordinate");
-			} break;
-			case CM_ANATOMICAL_FIELD:
-			{
-				display_message(INFORMATION_MESSAGE,", anatomical");
-			} break;
-			case CM_FIELD:
-			{
-				display_message(INFORMATION_MESSAGE,", field");
-			} break;
-			default:
-			{
-				display_message(ERROR_MESSAGE,
-					"list_FE_node_field.  Invalid field type");
-				return_code=0;
-			} break;
+			display_message(INFORMATION_MESSAGE,", %s");
 		}
-		switch (field->coordinate_system.type)
+		else
 		{
-			case RECTANGULAR_CARTESIAN:
-			{
-				display_message(INFORMATION_MESSAGE,", rectangular cartesian");
-			} break;
-			case CYLINDRICAL_POLAR:
-			{
-				display_message(INFORMATION_MESSAGE,", cylindrical polar");
-			} break;
-			case SPHERICAL_POLAR:
-			{
-				display_message(INFORMATION_MESSAGE,", spherical polar");
-			} break;
-			case PROLATE_SPHEROIDAL:
-			{
-				display_message(INFORMATION_MESSAGE,", prolate spheroidal");
-			} break;
-			case OBLATE_SPHEROIDAL:
-			{
-				display_message(INFORMATION_MESSAGE,", oblate spheroidal");
-			} break;
-			case FIBRE:
-			{
-				display_message(INFORMATION_MESSAGE,", fibre");
-			} break;
-			case NOT_APPLICABLE:
-			{
-				display_message(INFORMATION_MESSAGE,", no coordinate system");
-			} break;
-			default:
-			{
-				display_message(ERROR_MESSAGE,
-					"list_FE_node_field.  Invalid field coordinate system");
-				return_code=0;
-			} break;
+			display_message(ERROR_MESSAGE,
+				"list_FE_field.  Invalid CM field type");
+			return_code=0;
+		}
+		if (type_string=Coordinate_system_type_to_string(
+			field->coordinate_system.type))
+		{
+			display_message(INFORMATION_MESSAGE,", %s");
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,
+				"list_FE_field.  Invalid field coordinate system");
+			return_code=0;
 		}
 		number_of_components=field->number_of_components;
 		display_message(INFORMATION_MESSAGE,", #Components=%d\n",
@@ -33200,12 +33114,12 @@ Outputs the information contained in <field>.
 				DEALLOCATE(component_name);
 			}
 			/* display field based information*/
-			if(field->number_of_values)
+			if (field->number_of_values)
 			{	
 				int count;
 
-				display_message(INFORMATION_MESSAGE,"field based values: ");							
-				switch(field->value_type)
+				display_message(INFORMATION_MESSAGE,"field based values: ");
+				switch (field->value_type)
 				{
 					case FE_VALUE_VALUE:
 					{
@@ -33214,7 +33128,7 @@ Outputs the information contained in <field>.
 						for (count=0;count<field->number_of_values;count++)
 						{
 							display_message(INFORMATION_MESSAGE," %"FE_VALUE_STRING,
-								*((FE_value*)(field->values_storage + count*sizeof(FE_value)) ));
+								*((FE_value*)(field->values_storage + count*sizeof(FE_value))));
 							if ((0<FE_VALUE_MAX_OUTPUT_COLUMNS)&&
 								(0==((count+1) % DOUBLE_VALUE_MAX_OUTPUT_COLUMNS)))
 							{
@@ -33227,7 +33141,7 @@ Outputs the information contained in <field>.
 						display_message(INFORMATION_MESSAGE,"list_FE_node_field: "
 							"Can't display that field value_type yet. Write the code!");
 					} break;
-				}	/* switch() */							
+				}	/* switch () */							
 			}
 			display_message(INFORMATION_MESSAGE,"\n");
 			i++;
@@ -33317,7 +33231,7 @@ PROTOTYPE_MANAGER_COPY_WITH_IDENTIFIER_FUNCTION(FE_field,name)
 
 PROTOTYPE_MANAGER_COPY_WITHOUT_IDENTIFIER_FUNCTION(FE_field,name)
 /*******************************************************************************
-LAST MODIFIED : 15 September 1999
+LAST MODIFIED : 30 August 2001
 
 DESCRIPTION :
 If the <destination> has an access_count > 1 then it is deemed to be in use. In
@@ -33397,7 +33311,11 @@ if any other <source> and <destination> parameters do not match.
 			{
 				if (!matching_fields)
 				{
+					destination->cm_field_type=source->cm_field_type;
+#if defined (REDO_CM_field_information)
+/*???DB.  Being redone */
 					COPY(CM_field_information)(&(destination->cm),&(source->cm));
+#endif /* defined (REDO_CM_field_information) */
 					destination->fe_field_type=source->fe_field_type;
 					REACCESS(FE_field)(&(destination->indexer_field),
 						source->indexer_field);
@@ -33564,7 +33482,7 @@ storage for the <value> should have been allocated outside the function.
 				if (node_field=FIND_BY_IDENTIFIER_IN_LIST(FE_node_field,field)(
 					field,node_field_info->node_field_list))
 				{
-					if(field->value_type == FE_VALUE_VALUE)
+					if (field->value_type == FE_VALUE_VALUE)
 					{
 						if (((i=field->number_of_components)>0)&&
 							(node_field_component=node_field->components))
@@ -33593,7 +33511,7 @@ storage for the <value> should have been allocated outside the function.
 								"calculate_FE_field.  Missing node field components");
 							return_code=0;
 						}
-					}/* if(field->value_type == FE_VALUE_VALUE) */
+					}/* if (field->value_type == FE_VALUE_VALUE) */
 					else
 					{
 						display_message(ERROR_MESSAGE,
@@ -33649,14 +33567,13 @@ storage for the <value> should have been allocated outside the function.
 } /* calculate_FE_field */
 
 int FE_field_matches_description(struct FE_field *field,char *name,
-	enum FE_field_type fe_field_type,
-	struct FE_field *indexer_field,int number_of_indexed_values,
-	struct CM_field_information *cm_field_information,
+	enum FE_field_type fe_field_type,struct FE_field *indexer_field,
+	int number_of_indexed_values,enum CM_field_type cm_field_type,
 	struct Coordinate_system *coordinate_system,enum Value_type value_type,
 	int number_of_components,char **component_names,
 	int number_of_times,enum Value_type time_value_type)
 /*******************************************************************************
-LAST MODIFIED : 10 May 2000
+LAST MODIFIED : 30 August 2001
 
 DESCRIPTION :
 Returns true if <field> has exactly the same <name>, <field_info>... etc. as
@@ -33669,15 +33586,14 @@ those given in the parameters.
 	ENTER(FE_field_matches_description);
 	/* does not match until proven so */
 	return_code=0;
-	if (field&&name&&cm_field_information&&coordinate_system&&
-		(0<=number_of_times))
+	if (field&&name&&coordinate_system&&(0<=number_of_times))
 	{
 		if (field->name&&(0==strcmp(field->name,name))&&
 			(fe_field_type==field->fe_field_type)&&
 			((INDEXED_FE_FIELD != fe_field_type)||
 				((indexer_field==field->indexer_field)&&
 					(number_of_indexed_values==field->number_of_indexed_values)))&&
-			(cm_field_information->type==field->cm.type)&&
+			(cm_field_type==field->cm_field_type)&&
 			Coordinate_systems_match(&(field->coordinate_system),coordinate_system)&&
 			(value_type == field->value_type)&&
 			(number_of_components==field->number_of_components)&&
@@ -33721,7 +33637,7 @@ those given in the parameters.
 
 int FE_fields_match(struct FE_field *field1,struct FE_field *field2)
 /*******************************************************************************
-LAST MODIFIED : 25 August 1999
+LAST MODIFIED : 30 August 2001
 
 DESCRIPTION :
 Returns true if <field1> and <field2> are equivalent. Does this by calling
@@ -33735,7 +33651,7 @@ FE_field_matches_description for <field1> with the description for <field2>.
 	{
 		return_code=FE_field_matches_description(field1,field2->name,
 			field2->fe_field_type,field2->indexer_field,
-			field2->number_of_indexed_values,&(field2->cm),
+			field2->number_of_indexed_values,field2->cm_field_type,
 			&(field2->coordinate_system),field2->value_type,
 			field2->number_of_components,field2->component_names,
 			field2->number_of_times,field2->time_value_type);
@@ -33752,14 +33668,13 @@ FE_field_matches_description for <field1> with the description for <field2>.
 
 struct FE_field *get_FE_field_manager_matched_field(
 	struct MANAGER(FE_field) *fe_field_manager,char *name,
-	enum FE_field_type fe_field_type,
-	struct FE_field *indexer_field,int number_of_indexed_values,
-	struct CM_field_information *cm_field_information,
+	enum FE_field_type fe_field_type,struct FE_field *indexer_field,
+	int number_of_indexed_values,enum CM_field_type cm_field_type,
 	struct Coordinate_system *coordinate_system,enum Value_type value_type,
 	int number_of_components,char **component_names,
 	int number_of_times,enum Value_type time_value_type)
 /*******************************************************************************
-LAST MODIFIED : 29 November 1999
+LAST MODIFIED : 30 August 2001
 
 DESCRIPTION :
 Using searches the <fe_field_manager> for a field, if one is found it is
@@ -33776,8 +33691,7 @@ The field is returned, or NULL in case of inconsistency.
 
 	ENTER(get_FE_field_manager_matched_field);
 	field=(struct FE_field *)NULL;
-	if (fe_field_manager&&name&&cm_field_information&&coordinate_system&&
-		(0<number_of_components))
+	if (fe_field_manager&&name&&coordinate_system&&(0<number_of_components))
 	{
 		/* search the manager for a field of that name */
 		if (field=
@@ -33785,7 +33699,7 @@ The field is returned, or NULL in case of inconsistency.
 		{
 			/* make sure the field matches in every way */
 			if (!FE_field_matches_description(field,name,fe_field_type,
-				indexer_field,number_of_indexed_values,cm_field_information,
+				indexer_field,number_of_indexed_values,cm_field_type,
 				coordinate_system,value_type,number_of_components,component_names,
 				number_of_times,time_value_type))
 			{
@@ -33799,7 +33713,7 @@ The field is returned, or NULL in case of inconsistency.
 		{
 #if defined (DEBUG)
 			/*???debug */
-			printf("create field : /%s/ %d %d\n",name,cm_field_information->type,
+			printf("create field : /%s/ %d %d\n",name,cm_field_type,
 				coordinate_system->type);
 #endif /* defined (DEBUG) */
 			if ((field=CREATE(FE_field)())&&
@@ -33812,7 +33726,7 @@ The field is returned, or NULL in case of inconsistency.
 					set_FE_field_type_general(field))&&
 				((INDEXED_FE_FIELD != fe_field_type)||set_FE_field_type_indexed(field,
 					indexer_field,number_of_indexed_values))&&
-				set_FE_field_CM_field_information(field,cm_field_information)&&
+				set_FE_field_CM_field_type(field,cm_field_type)&&
 				set_FE_field_coordinate_system(field,coordinate_system)&&
 				set_FE_field_time_value_type(field,time_value_type)&&
 				set_FE_field_number_of_times(field,number_of_times))
@@ -33873,9 +33787,9 @@ Find the first time based field at a node
 	ENTER(find_first_time_field_at_FE_node);
 	time_field = (struct FE_field *)NULL;
 	time_node_field = (struct FE_node_field *)NULL;
-	if(node)
+	if (node)
 	{
-		if(time_node_field=FIRST_OBJECT_IN_LIST_THAT(FE_node_field)(
+		if (time_node_field=FIRST_OBJECT_IN_LIST_THAT(FE_node_field)(
 			FE_node_field_has_time,(void *)(NULL),
 			node->fields->node_field_list))
 		{			
@@ -33893,7 +33807,7 @@ Find the first time based field at a node
 				" Invalid arguments");
 	}
 	LEAVE;
-	return(time_field);
+	return (time_field);
 } /* find_first_time_field_at_FE_node */
 
 int FE_field_can_be_destroyed(struct FE_field *field)
@@ -34020,7 +33934,7 @@ the VALUE_TYPE of the <field>.
 	ENTER(get_FE_field_value_type);
 	if (field)
 	{
-		if(((enum Value_type)user_data_value_type)==field->value_type)
+		if (((enum Value_type)user_data_value_type)==field->value_type)
 		{
 			return_code = 1;
 		}
@@ -34532,18 +34446,18 @@ Should only call this function for unmanaged fields.
 	if (field&&(0<=number_of_times))
 	{					
 		return_code=1;
-		if(number_of_times != 0)
+		if (number_of_times != 0)
 		{	
 			field->number_of_times=number_of_times;			
 			size = get_Value_storage_size(field->time_value_type);		
 
-			if(REALLOCATE(times,field->times,Value_storage,
+			if (REALLOCATE(times,field->times,Value_storage,
 				size*number_of_times))	
 			{		
 				field->times = times;		 	
 				for (i=0;i<number_of_times;i++)
 				{
-					switch(field->time_value_type) 
+					switch (field->time_value_type) 
 					{
 						/* set values to zero*/
 						case DOUBLE_VALUE: 
@@ -34640,10 +34554,10 @@ Should only call this function for unmanaged fields.
 								" UNKNOWN_VALUE");
 							return_code =0;
 						} break;
-					}	/*	switch(field->time_value_type) */				
+					}	/*	switch (field->time_value_type) */				
 					times += size;	
 				}/* (i=0;i<number_of_times;i++) */
-			}/* if(REALLOCATE */
+			}/* if (REALLOCATE */
 			else
 			{
 				display_message(ERROR_MESSAGE,"set_FE_field_number_of_times."
@@ -34665,7 +34579,7 @@ Should only call this function for unmanaged fields.
 
 enum CM_field_type get_FE_field_CM_field_type(struct FE_field *field)
 /*******************************************************************************
-LAST MODIFIED : 31 August 1999
+LAST MODIFIED : 30 August 2001
 
 DESCRIPTION :
 Returns the CM_field_type for the <field>.
@@ -34676,13 +34590,13 @@ Returns the CM_field_type for the <field>.
 	ENTER(get_FE_field_CM_field_type);
 	if (field)
 	{
-		type=field->cm.type;
+		type=field->cm_field_type;
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
 			"get_FE_field_CM_field_type.  Invalid field");
-		type=CM_UNKNOWN_FIELD;
+		type=CM_GENERAL_FIELD;
 	}
 	LEAVE;
 
@@ -34692,7 +34606,7 @@ Returns the CM_field_type for the <field>.
 int set_FE_field_CM_field_type(struct FE_field *field,
 	enum CM_field_type cm_field_type)
 /*******************************************************************************
-LAST MODIFIED : 31 August 1999
+LAST MODIFIED : 30 August 2001
 
 DESCRIPTION :
 Sets the CM_field_type of the <field>.
@@ -34704,7 +34618,7 @@ Should only call this function for unmanaged fields.
 	ENTER(set_FE_field_CM_field_type);
 	if (field)
 	{
-		field->cm.type=cm_field_type;
+		field->cm_field_type=cm_field_type;
 		return_code=1;
 	}
 	else
@@ -35094,11 +35008,11 @@ max_number_of_array_values. Return the field value_type.
 	ENTER(get_FE_field_max_array_size);
 	if (field)
 	{
-		if(field->number_of_values)
+		if (field->number_of_values)
 		{
 			return_code=1;
 			*value_type = field->value_type;
-			switch(field->value_type)
+			switch (field->value_type)
 			{
 				case DOUBLE_ARRAY_VALUE:
 				case FE_VALUE_ARRAY_VALUE:
@@ -35111,16 +35025,16 @@ max_number_of_array_values. Return the field value_type.
 					*max_number_of_array_values = 0;
 					size = get_Value_storage_size(*value_type);
 					values_storage = field->values_storage;
-					for(i=0;i<field->number_of_values;i++)
+					for (i=0;i<field->number_of_values;i++)
 					{		
-						if(field->value_type == STRING_VALUE)
+						if (field->value_type == STRING_VALUE)
 						{
 							char *the_string,**str_address;										
 							/* get the string's length*/					
 							str_address = (char **)(values_storage);
 							the_string = *str_address;
 							number_of_array_values = strlen(the_string)+1;/* +1 for null termination*/
-							if(number_of_array_values > *max_number_of_array_values)
+							if (number_of_array_values > *max_number_of_array_values)
 							{
 								*max_number_of_array_values = number_of_array_values;
 							}
@@ -35129,7 +35043,7 @@ max_number_of_array_values. Return the field value_type.
 						{	
 							/* get the number of array values  for the specified array in vaules_storage */
 							number_of_array_values = *((int *)values_storage);
-							if(number_of_array_values > *max_number_of_array_values)
+							if (number_of_array_values > *max_number_of_array_values)
 							{
 								*max_number_of_array_values = number_of_array_values;
 							}
@@ -35180,11 +35094,11 @@ Give an error if field->values_storage isn't storing array types.
 	ENTER(get_FE_field_array_attributes);
 	if (field&&(0<=value_number)&&(value_number<=field->number_of_values))
 	{
-		if(field->number_of_values)
+		if (field->number_of_values)
 		{
 			return_code=1;
 			*value_type = field->value_type;
-			switch(field->value_type)
+			switch (field->value_type)
 			{
 				case DOUBLE_ARRAY_VALUE:
 				case FE_VALUE_ARRAY_VALUE:
@@ -35258,7 +35172,7 @@ to get the size of an array.
 	ENTER(get_FE_field_double_array_value);
 	if (field&&array&&(0<=value_number)&&(value_number<=field->number_of_values))
 	{
-		if(field->number_of_values)
+		if (field->number_of_values)
 		{
 			return_code=1;	 			 
 			size = get_Value_storage_size(DOUBLE_ARRAY_VALUE);
@@ -35266,7 +35180,7 @@ to get the size of an array.
 			values_storage = field->values_storage+(value_number*size);
 			/* get the number of array values  for the specified array in vaules_storage */	
 			the_array_number_of_values = *((int *)values_storage);
-			if(number_of_array_values>the_array_number_of_values)
+			if (number_of_array_values>the_array_number_of_values)
 			{
 				number_of_array_values=the_array_number_of_values;
 			}
@@ -35324,7 +35238,7 @@ The <field> must be of the correct FE_field_type to have such values and
 	{
 		return_code=1;	 
 	
-		if(field->value_type!=DOUBLE_ARRAY_VALUE)
+		if (field->value_type!=DOUBLE_ARRAY_VALUE)
 		{
 			display_message(ERROR_MESSAGE,"set_FE_field_double_array_value. "
 				" value type doesn't match");
@@ -35338,13 +35252,13 @@ The <field> must be of the correct FE_field_type to have such values and
 		/* get the pointer to stored the array, free any existing one */	
 		array_address = (double **)(values_storage+sizeof(int));
 		pointer = *array_address;
-		if(pointer!=NULL)
+		if (pointer!=NULL)
 			DEALLOCATE(pointer);		
 		/* copy the number of array values into field->values_storage*/	
 		*((int *)values_storage) = number_of_array_values; 
 		/* Allocate the space for the array, and copy the data in */
 		array_size = number_of_array_values*sizeof(double);
-		if(ALLOCATE(the_array,double,array_size))
+		if (ALLOCATE(the_array,double,array_size))
 		{
 			memcpy(the_array,array,array_size);
 			/*copy the pointer to the array into field->values_storage  */		
@@ -35489,7 +35403,7 @@ Gets the specified global value for the <field>.
 	if (field&&(0<=number)&&(number<field->number_of_values)
 		&&(field->value_type==ELEMENT_XI_VALUE))
 	{
-		if(field->number_of_values)
+		if (field->number_of_values)
 		{
 			return_code=1;
 
@@ -35501,10 +35415,10 @@ Gets the specified global value for the <field>.
 			*element = *((struct FE_element **)values_storage);
 			values_storage += sizeof(struct FE_element *);
 			number_of_xi_dimensions = (*element)->shape->dimension;
-			if(number_of_xi_dimensions <= MAXIMUM_ELEMENT_XI_DIMENSIONS)
+			if (number_of_xi_dimensions <= MAXIMUM_ELEMENT_XI_DIMENSIONS)
 			{
 				/* Extract the xi values */
-				for(i = 0 ; i < number_of_xi_dimensions ; i++)
+				for (i = 0 ; i < number_of_xi_dimensions ; i++)
 				{
 					xi[i] = *((FE_value *)values_storage);
 					values_storage += sizeof(FE_value);
@@ -35727,7 +35641,7 @@ Gets the specified global time value for the <field>.
 	ENTER(get_FE_field_time_FE_value);
 	if (field&&(0<=number)&&(number<field->number_of_times))
 	{
-		if(field->number_of_times)
+		if (field->number_of_times)
 		{
 			return_code=1;
 			/* get the correct offset*/
@@ -35770,7 +35684,7 @@ The field value MUST have been previously allocated with set_FE_field_number_of_
 	if (field&&(0<=number)&&(number<=field->number_of_times))
 	{
 		return_code=1;	 	
-		if(field->time_value_type!=FE_VALUE_VALUE)
+		if (field->time_value_type!=FE_VALUE_VALUE)
 		{
 			display_message(ERROR_MESSAGE," set_FE_field_time_FE_value. "
 				" value type doesn't match");
@@ -35814,7 +35728,7 @@ Should only call this function for unmanaged fields.
 	}
 	LEAVE;
 
-	return(name);
+	return (name);
 }/*get_FE_field_name */
 
 int set_FE_field_name(struct FE_field *field, char *name)
@@ -35852,6 +35766,8 @@ Should only call this function for unmanaged fields.
 	return (return_code);
 } /* set_FE_field_name */
 
+#if defined (REDO_CM_field_information)
+/*???DB.  Being redone */
 int get_FE_field_CM_field_information(struct FE_field *field,
 	struct CM_field_information *cm_field_information)
 /*******************************************************************************
@@ -35906,6 +35822,7 @@ Should only call this function for unmanaged fields.
 
 	return (return_code);
 } /* set_FE_field_CM_field_information */
+#endif /* defined (REDO_CM_field_information) */
 
 PROTOTYPE_GET_OBJECT_NAME_FUNCTION(FE_field_component)
 /*****************************************************************************
@@ -38515,7 +38432,7 @@ field it actually calculated.
 						}
 					} break;
 				} /* switch */
-			} /* if(coordinate_field->value_type==FE_VALUE_VALUE) */
+			} /* if (coordinate_field->value_type==FE_VALUE_VALUE) */
 			else
 			{
 				display_message(ERROR_MESSAGE,"FE_node_get_position_cartesian.  "
@@ -38655,7 +38572,7 @@ for the coordinate_field used.
 						}
 					}
 				}
-			} /* if(coordinate_field->value_type==FE_VALUE_VALUE) */
+			} /* if (coordinate_field->value_type==FE_VALUE_VALUE) */
 			else
 			{
 				display_message(ERROR_MESSAGE,"FE_node_set_position_cartesian.  "
@@ -38713,7 +38630,7 @@ This type of field is used for storing eg. grid_point_number.
 
 int FE_field_is_coordinate_field(struct FE_field *field,void *dummy_void)
 /*******************************************************************************
-LAST MODIFIED : 18 May 2000
+LAST MODIFIED : 30 August 2001
 
 DESCRIPTION :
 Conditional function returning true if the <field> is a coordinate field, as
@@ -38728,7 +38645,7 @@ and from 1 to 3 components.
 	if (field)
 	{
 		return_code=
-			(CM_COORDINATE_FIELD==field->cm.type)&&
+			(CM_COORDINATE_FIELD==field->cm_field_type)&&
 			(FE_VALUE_VALUE==field->value_type)&&
 			(1<=field->number_of_components)&&
 			(3>=field->number_of_components);
@@ -38746,7 +38663,7 @@ and from 1 to 3 components.
 
 int FE_field_is_anatomical_fibre_field(struct FE_field *field, void *dummy_void)
 /*******************************************************************************
-LAST MODIFIED : 22 January 1999
+LAST MODIFIED : 30 August 2001
 
 DESCRIPTION :
 Returns true if the field is of type ANATOMICAL and it has a FIBRE coordinate
@@ -38759,7 +38676,7 @@ that may be defined over a group of elements.
 	ENTER(FE_field_is_anatomical_fibre_field);
 	if (field&&!dummy_void)
 	{
-		return_code=(CM_ANATOMICAL_FIELD==field->cm.type)&&
+		return_code=(CM_ANATOMICAL_FIELD==field->cm_field_type)&&
 			(FIBRE==field->coordinate_system.type);		
 	}
 	else
@@ -39642,7 +39559,7 @@ DESCRIPTION :
 
 		if (node_field)
 		{
-			if(node_field->field->value_type==FE_VALUE_VALUE)
+			if (node_field->field->value_type==FE_VALUE_VALUE)
 			{	
 				node_copy=CREATE(FE_node)(0,(struct FE_node *)NULL);
 				if (node_copy&&MANAGER_COPY_WITH_IDENTIFIER(FE_node,cm_node_identifier)(
@@ -40420,6 +40337,8 @@ DESCRIPTION :
 	return (return_code);
 } /* smooth_field_over_element */
 
+#if defined (REDO_CM_field_information)
+/*???DB.  Being redone */
 PROTOTYPE_COPY_OBJECT_FUNCTION(CM_field_information)
 /*******************************************************************************
 LAST MODIFIED: 4 February 1999
@@ -40430,10 +40349,10 @@ Copies the CM_Field_information from source to destination
 {
 	int return_code;
 	ENTER(COPY(CM_field_information));
-	if(destination&&source)
+	if (destination&&source)
 	{
 		destination->type = source->type;
-		switch(source->type)
+		switch (source->type)
 		{
 			case CM_DEPENDENT_FIELD:
 			{
@@ -40456,13 +40375,14 @@ Copies the CM_Field_information from source to destination
 		return_code = 0;
 	}
 	LEAVE;
-	return(return_code);
+	return (return_code);
 
 }/* PROTOTYPE_COPY_OBJECT_FUNCTION(CM_field_information) */
 
-enum CM_field_type get_CM_field_information_type(struct CM_field_information *field_info)
+enum CM_field_type get_CM_field_information_type(
+	struct CM_field_information *field_info)
 /*******************************************************************************
-LAST MODIFIED : 4 February 1999
+LAST MODIFIED : 30 August 2001
 
 DESCRIPTION :
 gets the name type and indice of field_info.
@@ -40479,7 +40399,7 @@ gets the name type and indice of field_info.
 	{
 		display_message(ERROR_MESSAGE,
 			"get_CM_field_information_type.  Invalid CM_field_information ");
-		cm_field_type = CM_UNKNOWN_FIELD;	
+		cm_field_type = CM_GENERAL_FIELD;	
 	}
 	LEAVE;
 
@@ -40503,11 +40423,11 @@ pointer to an array.
 	{
 		field_info->type = type;
 
-		switch(type)
+		switch (type)
 		{
 			case CM_DEPENDENT_FIELD:
 			{
-				if(indices)/* have some data */
+				if (indices)/* have some data */
 				{
 					field_info->indices.dependent.nc = *indices;
 					indices++;
@@ -40530,7 +40450,7 @@ pointer to an array.
 			} break;
 			default: /* everything else is independent*/
 			{
-				if(indices)/* have some data */
+				if (indices)/* have some data */
 				{
 					field_info->indices.independent.nr = *indices;
 				}
@@ -40561,22 +40481,24 @@ LAST MODIFIED: 4 February 1999
 
 DESCRIPTION:
 Compares the CM_Field_information structures, field_info1 and field_info2.
+???DB.  To be done
 =======================================================================*/
 {
 	int return_code;
 	ENTER(compare_CM_field_information);
 
-	if(field_info1&&field_info2)
+	if (field_info1&&field_info2)
 	{
-		if(field_info1->type != field_info2->type )/* do the types match? */
+		if (field_info1->type != field_info2->type )/* do the types match? */
 			return_code =0;
 		else
 		{
-			if(field_info1->type == CM_UNKNOWN_FIELD)
+			/*???DB.  To be done */
+			if (field_info1->type == CM_UNKNOWN_FIELD)
 				return_code = 1; /*if both CM_UNKNOWN_FIELD don't have to match anything else */
 			else /* do the indices match?*/
 				{
-					switch(field_info1->type)
+					switch (field_info1->type)
 					{
 						case CM_DEPENDENT_FIELD:
 						{
@@ -40608,13 +40530,14 @@ Compares the CM_Field_information structures, field_info1 and field_info2.
 		return_code = 0;
 	}
 	LEAVE;
-	return(return_code);
+	return (return_code);
 }/*compare_CM_field_information */
+#endif /* defined (REDO_CM_field_information) */
 
 int FE_element_field_is_type_CM_coordinate(
 	struct FE_element_field *element_field, void *dummy)
 /*******************************************************************************
-LAST MODIFIED: 11 February 1999
+LAST MODIFIED: 30 August 2001
 
 DESCRIPTION:
 returns true if <element_field> has a field of type CM_coordinate
@@ -40622,11 +40545,11 @@ Not static as used in command/cmiss.c
 ==============================================================================*/
 {
 	int return_code;
-	ENTER(FE_element_field_is_type_CM_coordinate);
 
-	if(element_field&&!dummy)
+	ENTER(FE_element_field_is_type_CM_coordinate);
+	if (element_field&&!dummy)
 	{
-		return_code = (element_field->field->cm.type == CM_COORDINATE_FIELD); 	
+		return_code=(CM_COORDINATE_FIELD==element_field->field->cm_field_type); 	
 	}
 	else
 	{
@@ -40635,13 +40558,14 @@ Not static as used in command/cmiss.c
 		return_code = 0;
 	}
 	LEAVE;
-	return(return_code);
+
+	return (return_code);
 }/* FE_node_element_is_type_CM_coordinate */
 
 int FE_element_field_is_type_CM_anatomical(
 	struct FE_element_field *element_field, void *dummy)
 /*******************************************************************************
-LAST MODIFIED: 11 February 1999
+LAST MODIFIED: 30 August 2001
 
 DESCRIPTION:
 returns true if <element_field> has a field of type CM_anatomical
@@ -40649,11 +40573,11 @@ Not static as used in projection/projection.c
 ==============================================================================*/
 {
 	int return_code;
-	ENTER(FE_element_field_is_type_CM_anatomical);
 
-	if(element_field&&!dummy)
+	ENTER(FE_element_field_is_type_CM_anatomical);
+	if (element_field&&!dummy)
 	{
-		return_code = (element_field->field->cm.type == CM_ANATOMICAL_FIELD); 	
+		return_code = (CM_ANATOMICAL_FIELD==element_field->field->cm_field_type); 	
 	}
 	else
 	{
@@ -40662,7 +40586,8 @@ Not static as used in projection/projection.c
 		return_code = 0;
 	}
 	LEAVE;
-	return(return_code);
+
+	return (return_code);
 }/* FE_node_element_is_type_CM_anatomical */
 
 int FE_element_shape_find_face_number_for_xi(struct FE_element_shape *shape, 
@@ -40749,17 +40674,17 @@ The node group is returned.
 	int success;
 
 	ENTER(make_node_and_element_and_data_groups);
-	if(node_group_manager&&node_manager&&element_group_manager&&data_group_manager&&
+	if (node_group_manager&&node_manager&&element_group_manager&&data_group_manager&&
 		group_name)
 	{
 		node_group = (struct GROUP(FE_node) *)NULL;
 		success = 1;
 		existing_group=FIND_BY_IDENTIFIER_IN_MANAGER(GROUP(FE_node),name)(
 			group_name,node_group_manager);	
-		if(existing_group)	
+		if (existing_group)	
 		{
 			node_group = existing_group;
-			if(!(NUMBER_IN_GROUP(FE_node)(node_group)))
+			if (!(NUMBER_IN_GROUP(FE_node)(node_group)))
 			{							
 				success = 1;/* group exists and is empty */						
 			}
@@ -40778,7 +40703,7 @@ The node group is returned.
 					}					
 				}	/* while(success */
 			}/* else */
-		}/* if(existing_group) */
+		}/* if (existing_group) */
 		else
 		{
 			/* create the group*/
@@ -40794,9 +40719,9 @@ The node group is returned.
 		same_name_data_group=
 			FIND_BY_IDENTIFIER_IN_MANAGER(GROUP(FE_node),name)(group_name,data_group_manager);
 		/* do we have a same_name_data_group? */	
-		if(same_name_data_group&&success)
+		if (same_name_data_group&&success)
 		{
-			if(!(NUMBER_IN_GROUP(FE_node)(same_name_data_group)))
+			if (!(NUMBER_IN_GROUP(FE_node)(same_name_data_group)))
 			{							
 				success = 1;/* group exists and is empty */							
 			}
@@ -40815,7 +40740,7 @@ The node group is returned.
 					}					
 				}	/* while */
 			} /* else */
-		}/* if(same_name_data_group&&success) */
+		}/* if (same_name_data_group&&success) */
 		else
 		{
 			/* create the group,add it to the manager*/
@@ -40830,9 +40755,9 @@ The node group is returned.
 		same_name_element_group=
 			FIND_BY_IDENTIFIER_IN_MANAGER(GROUP(FE_element),name)(group_name,element_group_manager);
 		/* do we have a same_name_element_group? */	
-		if(same_name_element_group&&success)
+		if (same_name_element_group&&success)
 		{
-			if(!(NUMBER_IN_GROUP(FE_element)(same_name_element_group)))
+			if (!(NUMBER_IN_GROUP(FE_element)(same_name_element_group)))
 			{								
 				success = 1; /* group exists and is empty */	
 			}
@@ -40850,7 +40775,7 @@ The node group is returned.
 					}					
 				}	/* while */			
 			}/* else */
-		}/* if(same_name_element_group&&success) */
+		}/* if (same_name_element_group&&success) */
 		else
 		{
 			/* create the group,add it to the manager*/
@@ -40862,7 +40787,7 @@ The node group is returned.
 				success = 0;
 			}
 		}
-		if(!success)		
+		if (!success)		
 		{	
 			display_message(ERROR_MESSAGE,"make_node_and_element_and_data_groups."
 				" Failed to create or free groups");
@@ -41059,7 +40984,7 @@ Assumes the node is managed, copys the node out the manager to modify.
 	node_copy=(struct FE_node *)NULL;
 	define_FE_field_at_node_data=(struct Define_FE_field_at_node_data  *)NULL;
 	node_manager=(struct MANAGER(FE_node) *)NULL;
-	if(node&&define_FE_field_at_node_data_void&&(define_FE_field_at_node_data=
+	if (node&&define_FE_field_at_node_data_void&&(define_FE_field_at_node_data=
 		(struct Define_FE_field_at_node_data  *)define_FE_field_at_node_data_void))
 	{	
 		field=define_FE_field_at_node_data->field;
@@ -41067,14 +40992,14 @@ Assumes the node is managed, copys the node out the manager to modify.
 		number_of_versions=define_FE_field_at_node_data->number_of_versions;
 		nodal_value_types=define_FE_field_at_node_data->nodal_value_types;
 		node_manager=define_FE_field_at_node_data->node_manager;
-		if(!FE_field_is_defined_at_node(field,node))
+		if (!FE_field_is_defined_at_node(field,node))
 		{	
 			/* create a node to work with */
 			node_copy=CREATE(FE_node)(0,(struct FE_node *)NULL);
 			if (MANAGER_COPY_WITH_IDENTIFIER(FE_node,cm_node_identifier)
 				(node_copy,node))
 			{
-				if(!(return_code=define_FE_field_at_node(node_copy,field,number_of_derivatives,
+				if (!(return_code=define_FE_field_at_node(node_copy,field,number_of_derivatives,
 					number_of_versions,nodal_value_types)))
 				{
 					display_message(ERROR_MESSAGE,
@@ -41105,7 +41030,7 @@ Assumes the node is managed, copys the node out the manager to modify.
 		return_code=0;
 	}
 	LEAVE;
-	return(return_code);
+	return (return_code);
 } /*iterative_define_FE_field_at_node */
 
 int get_FE_field_order_info_number_of_fields(
@@ -41160,7 +41085,7 @@ Gets the <field_order_info> field at the specified field_number
 	}
 	LEAVE;
 
-	return(field);
+	return (field);
 } /* get_FE_node_field_order_field */
 
 int set_FE_field_order_info_field(
@@ -41177,7 +41102,7 @@ Sets the <field_order_info> field at the specified field_number
 
 	ENTER(set_FE_field_order_info_field);
 	return_code=0;
-	if((field_order_info)&&
+	if ((field_order_info)&&
 		(field_number<=field_order_info->number_of_fields)&&(field))
 	{		
 		REACCESS(FE_field)(&(field_order_info->fields[field_number]),field);
@@ -41303,7 +41228,7 @@ Makes an exacy copy of the FE_node_order_info
 	if (source&&destination)
 	{
 		/* free any existing the destination things */
-		if(destination->number_of_nodes)
+		if (destination->number_of_nodes)
 		{
 			for (i=0;i<destination->number_of_nodes;i++)
 			{				
@@ -41496,7 +41421,7 @@ Gets the <node_order_info> node at the current_node_number
 	ENTER(get_FE_node_order_info_current_node);
 	if (node_order_info)
 	{		
-		if(node_order_info->number_of_nodes)
+		if (node_order_info->number_of_nodes)
 		{
 			node=node_order_info->nodes[node_order_info->current_node_number];
 		}
@@ -41531,7 +41456,7 @@ and returning the new current node. If at the end of the array, return null.
 	ENTER(get_FE_node_order_info_next_node);
 	if (node_order_info)
 	{		
-		if((node_order_info->number_of_nodes)&&
+		if ((node_order_info->number_of_nodes)&&
 			(node_order_info->current_node_number<(node_order_info->number_of_nodes-1)))
 		{			
 			node_order_info->current_node_number++;
@@ -41568,7 +41493,7 @@ and returning the new current node. If at the start of the array, return null.
 	ENTER(get_FE_node_order_info_prev_node);
 	if (node_order_info)
 	{		
-		if((node_order_info->number_of_nodes)&&
+		if ((node_order_info->number_of_nodes)&&
 			(node_order_info->current_node_number>0))
 		{			
 			node_order_info->current_node_number--;
@@ -41614,7 +41539,7 @@ FE_node_order_info.  Use set_FE_node_order_info to set up the nodes.
 		{
 			node_order_info->nodes=nodes;
 			/*set the new nodes to null*/
-			for(i=old_number_of_nodes;i<node_order_info->number_of_nodes;i++)
+			for (i=old_number_of_nodes;i<node_order_info->number_of_nodes;i++)
 			{
 				node_order_info->nodes[i]=(struct FE_node *)NULL;
 			}
@@ -41791,7 +41716,7 @@ Makes an exacy copy of the FE_element_order_info
 	if (source&&destination)
 	{
 		/* free any existing the destination things */
-		if(destination->number_of_elements)
+		if (destination->number_of_elements)
 		{
 			for (i=0;i<destination->number_of_elements;i++)
 			{				
@@ -41984,7 +41909,7 @@ Gets the <element_order_info> element at the current_element_number
 	ENTER(get_FE_element_order_info_current_element);
 	if (element_order_info)
 	{		
-		if(element_order_info->number_of_elements)
+		if (element_order_info->number_of_elements)
 		{
 			element=element_order_info->elements[element_order_info->current_element_number];
 		}
@@ -42019,7 +41944,7 @@ and returning the new current element. If at the end of the array, return null.
 	ENTER(get_FE_element_order_info_next_element);
 	if (element_order_info)
 	{		
-		if((element_order_info->number_of_elements)&&
+		if ((element_order_info->number_of_elements)&&
 			(element_order_info->current_element_number<(element_order_info->number_of_elements-1)))
 		{			
 			element_order_info->current_element_number++;
@@ -42056,7 +41981,7 @@ and returning the new current element. If at the start of the array, return null
 	ENTER(get_FE_element_order_info_prev_element);
 	if (element_order_info)
 	{		
-		if((element_order_info->number_of_elements)&&
+		if ((element_order_info->number_of_elements)&&
 			(element_order_info->current_element_number>0))
 		{			
 			element_order_info->current_element_number--;
@@ -42102,7 +42027,8 @@ FE_element_order_info.  Use set_FE_element_order_info to set up the elements.
 		{
 			element_order_info->elements=elements;
 			/*set the new elements to null*/
-			for(i=old_number_of_elements;i<element_order_info->number_of_elements;i++)
+			for (i=old_number_of_elements;i<element_order_info->number_of_elements;
+				i++)
 			{
 				element_order_info->elements[i]=(struct FE_element *)NULL;
 			}
@@ -42177,7 +42103,7 @@ DESCRIPTION :Debug function. May be naughty.
 ==============================================================================*/
 {
 	int access_count;
-	if(node_group)
+	if (node_group)
 	{
 		access_count=node_group->access_count;
 	}
@@ -42185,7 +42111,7 @@ DESCRIPTION :Debug function. May be naughty.
 	{
 		access_count=-1;
 	}
-	return(access_count);
+	return (access_count);
 }
 
 int get_FE_field_access_count(struct FE_field *field)
@@ -42196,7 +42122,7 @@ DESCRIPTION :Debug function. May be naughty.
 ==============================================================================*/
 {
 	int access_count;
-	if(field)
+	if (field)
 	{
 		access_count=field->access_count;
 	}
@@ -42204,7 +42130,7 @@ DESCRIPTION :Debug function. May be naughty.
 	{
 		access_count=-1;
 	}
-	return(access_count);
+	return (access_count);
 }
 
 int free_node_and_element_and_data_groups(struct GROUP(FE_node) **a_node_group,
@@ -42233,7 +42159,7 @@ Deaccesses the <node_group> and attempts to remove it from the manager.
 	struct FE_element *element_to_destroy=(struct FE_element *)NULL;
 
 	ENTER(free_node_and_element_and_data_groups);
-	if(node_group=*a_node_group)
+	if (node_group=*a_node_group)
 	{
 		MANAGER_BEGIN_CACHE(FE_element)(element_manager);
 		MANAGER_BEGIN_CACHE(FE_node)(node_manager);
@@ -42257,7 +42183,7 @@ Deaccesses the <node_group> and attempts to remove it from the manager.
 				}				
 			}
 			MANAGED_GROUP_END_CACHE(FE_element)(element_group);	
-			if(MANAGED_GROUP_CAN_BE_DESTROYED(FE_element)(element_group))
+			if (MANAGED_GROUP_CAN_BE_DESTROYED(FE_element)(element_group))
 			{
 			REMOVE_OBJECT_FROM_MANAGER(GROUP(FE_element))(element_group,
 				element_group_manager);	
@@ -42280,7 +42206,7 @@ Deaccesses the <node_group> and attempts to remove it from the manager.
 				}					
 			}	
 			MANAGED_GROUP_END_CACHE(FE_node)(data_group);	
-			if(MANAGED_GROUP_CAN_BE_DESTROYED(FE_node)(data_group))
+			if (MANAGED_GROUP_CAN_BE_DESTROYED(FE_node)(data_group))
 			{
 				REMOVE_OBJECT_FROM_MANAGER(GROUP(FE_node))(data_group,
 					data_group_manager);
@@ -42299,7 +42225,7 @@ Deaccesses the <node_group> and attempts to remove it from the manager.
 			}					
 		}
 		MANAGED_GROUP_END_CACHE(FE_node)(node_group);		
-		if(!return_code)
+		if (!return_code)
 		{
 			display_message(ERROR_MESSAGE,"free_node_and_element_and_data_groups."
 			" Failed to free groups");
@@ -42308,9 +42234,9 @@ Deaccesses the <node_group> and attempts to remove it from the manager.
 		temp_node_group=node_group;
 		DEACCESS(GROUP(FE_node))(&temp_node_group);
 		
-		if(MANAGED_GROUP_CAN_BE_DESTROYED(FE_node)(node_group))
+		if (MANAGED_GROUP_CAN_BE_DESTROYED(FE_node)(node_group))
 		{
-			if(REMOVE_OBJECT_FROM_MANAGER(GROUP(FE_node))(node_group,
+			if (REMOVE_OBJECT_FROM_MANAGER(GROUP(FE_node))(node_group,
 				node_group_manager))
 			{
 				node_group=(struct GROUP(FE_node) *)NULL;
@@ -42336,7 +42262,7 @@ Deaccesses the <node_group> and attempts to remove it from the manager.
 		return_code =0;		
 	}
 	LEAVE;
-	return(return_code);
+	return (return_code);
 } /* free_node_and_element_and_data_groups */
 
 
@@ -42707,11 +42633,11 @@ FE_node_order_info, FE_element_order_info
 	node=(struct FE_node *)NULL;
 	element=(struct FE_element *)NULL;
 	element_order_info=(struct FE_element_order_info *)NULL;
-	if(name)
+	if (name)
 	{
 		return_code=1;
 		/* shift the nodes and elements */
-		if((node_group=FIND_BY_IDENTIFIER_IN_MANAGER(GROUP(FE_node),name)
+		if ((node_group=FIND_BY_IDENTIFIER_IN_MANAGER(GROUP(FE_node),name)
 			(name,node_group_manager))&&				
 			(number_of_nodes=NUMBER_IN_GROUP(FE_node)(node_group))&&
 			(element_group=FIND_BY_IDENTIFIER_IN_MANAGER(GROUP(FE_element),name)
@@ -42720,7 +42646,7 @@ FE_node_order_info, FE_element_order_info
 		{						
 			/* offset the nodes and elements to 
 				 last_identifier-max(number_of_nodes,number_of_elements)*/			
-			if(number_of_nodes>=number_of_elements)
+			if (number_of_nodes>=number_of_elements)
 			{
 				offset=number_of_nodes;
 			}
@@ -42824,6 +42750,7 @@ FE_node_order_info, FE_element_order_info
 			" invalid arguments");
 	}
 	LEAVE;
-	return(return_code);
+	
+	return (return_code);
 }/* offset_FE_node_and_element_identifiers_in_group*/
 

@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : cmgui.c
 
-LAST MODIFIED : 18 June 2001
+LAST MODIFIED : 30 August 2001
 
 DESCRIPTION :
 ???DB.  Prototype main program for an application that uses the "cmgui tools".
@@ -410,7 +410,7 @@ int WINAPI WinMain(HINSTANCE current_instance,HINSTANCE previous_instance,
 	/*???DB. Win32 SDK says that don't have to call it WinMain */
 #endif /* defined (WINDOWS) */
 /*******************************************************************************
-LAST MODIFIED : 21 May 2001
+LAST MODIFIED : 30 August 2001
 
 DESCRIPTION :
 Main program for the CMISS Graphical User Interface
@@ -618,11 +618,11 @@ Main program for the CMISS Graphical User Interface
 	};
 #endif /* defined (OLD_CODE) */
 #endif /* defined (MOTIF) */
-	struct CM_field_information cm_field_information;
 	struct Cmiss_command_data command_data;
 	struct Colour ambient_colour,default_colour;
 	struct Computed_field *computed_field;
-	struct Computed_field_finite_element_package *computed_field_finite_element_package;
+	struct Computed_field_finite_element_package
+		*computed_field_finite_element_package;
 	struct Command_window *command_window;
 	struct Coordinate_system rect_coord_system,temp_coordinate_system;
 	struct Execute_command *execute_command, *set_command;
@@ -1158,8 +1158,7 @@ Main program for the CMISS Graphical User Interface
 				set_FE_field_value_type(fe_field,INT_VALUE)&&
 				set_FE_field_number_of_components(fe_field,1)&&
 				set_FE_field_type_general(fe_field)&&
-				set_CM_field_information(&cm_field_information,CM_FIELD,(int *)NULL)&&
-				set_FE_field_CM_field_information(fe_field,&cm_field_information)&&
+				set_FE_field_CM_field_type(fe_field,CM_GENERAL_FIELD)&&
 				set_FE_field_coordinate_system(fe_field,&temp_coordinate_system)&&
 				set_FE_field_component_name(fe_field,0,"grid_point_number")&&
 				ADD_OBJECT_TO_MANAGER(FE_field)(fe_field,

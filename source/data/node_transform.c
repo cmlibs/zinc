@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : node_transform.c
 
-LAST MODIFIED : 1 September 1999
+LAST MODIFIED : 30 August 2001
 
 DESCRIPTION :
 ???DB.  Conditions need tidying up, generalizing and put in their own module
@@ -765,7 +765,7 @@ Transforms a given node to 3d.
 static int transform_nodes_2d_to_3d_sub_sub(struct FE_node *node,
 	void *user_data)
 /*******************************************************************************
-LAST MODIFIED : 30 August 1999
+LAST MODIFIED : 30 August 2001
 
 DESCRIPTION :
 Transforms a given node to 3d.
@@ -795,7 +795,6 @@ Transforms a given node to 3d.
 	struct FE_node *new_node,*template_node;
 	struct Transform_nodes_2d_to_3d_sub_sub *temp_data;
 	struct Coordinate_system rect_cart_coords;
-	struct CM_field_information field_info;
 
 	rect_cart_coords.type =  RECTANGULAR_CARTESIAN;
 
@@ -823,7 +822,7 @@ Transforms a given node to 3d.
 			if (new_field=get_FE_field_manager_matched_field(
 				temp_data->fe_field_manager,COORDINATES_3D_FIELD_NAME,
 				GENERAL_FE_FIELD,/*indexer_field*/(struct FE_field *)NULL,
-				/*number_of_indexed_values*/0,&field_info,
+				/*number_of_indexed_values*/0,CM_COORDINATE_FIELD,
 				&rect_cart_coords,FE_VALUE_VALUE,
 				/*number_of_components*/3,component_names,
 				/*number_of_times*/0,/*time_value_type*/UNKNOWN_VALUE))
@@ -1109,7 +1108,7 @@ Executes a GFX TRANSFORM NODE 2D_TO_3D command.  This command transforms nodes
 static int transform_nodes_2d_scale_sub_sub(struct FE_node *node,
 	void *user_data)
 /*******************************************************************************
-LAST MODIFIED : 30 August 1999
+LAST MODIFIED : 30 August 2001
 
 DESCRIPTION :
 Transforms a given node in 2d space - adds an origin and scales the pixel
@@ -1137,12 +1136,10 @@ coordinates.
 	struct FE_node *new_node,*template_node;
 	struct Transform_nodes_2d_scale_sub_sub *temp_data;
 	struct Coordinate_system rect_cart_coords;
-	struct CM_field_information field_info;
-
-	rect_cart_coords.type =  RECTANGULAR_CARTESIAN;
 
 	ENTER(transform_nodes_2d_scale_sub_sub);
 	return_code=0;
+	rect_cart_coords.type=RECTANGULAR_CARTESIAN;
 	if (node&&(temp_data=(struct Transform_nodes_2d_scale_sub_sub *)user_data))
 	{
 		if (FE_node_get_position_cartesian(node,(struct FE_field *)NULL,
@@ -1156,11 +1153,10 @@ coordinates.
 			node_number=get_next_FE_node_number(temp_data->node_manager,
 				temp_data->base_number);
 			temp_data->base_number=node_number+1;
-			set_CM_field_information(&field_info,CM_COORDINATE_FIELD,(int *)NULL);
 			if (new_field=get_FE_field_manager_matched_field(
 				temp_data->fe_field_manager,COORDINATES_2D_FIELD_NAME,
 				GENERAL_FE_FIELD,/*indexer_field*/(struct FE_field *)NULL,
-				/*number_of_indexed_values*/0,&field_info,
+				/*number_of_indexed_values*/0,CM_COORDINATE_FIELD,
 				&rect_cart_coords,FE_VALUE_VALUE,
 				/*number_of_components*/2,component_names,
 				/*number_of_times*/0,/*time_value_type*/UNKNOWN_VALUE))

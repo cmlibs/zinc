@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : data_2d.c
 
-LAST MODIFIED : 23 May 2001
+LAST MODIFIED : 30 August 2001
 
 DESCRIPTION :
 ==============================================================================*/
@@ -1096,7 +1096,7 @@ Returns a pointer to a data item of the input widget.
 int data_2d_selection(Widget data_2d_widget,DATA_2D_PRECISION *data,
 	int button_down,int single)
 /*******************************************************************************
-LAST MODIFIED : 30 August 1999
+LAST MODIFIED : 30 August 2001
 
 DESCRIPTION :
 Notifies the grabber about the selection process.
@@ -1135,7 +1135,6 @@ Notifies the grabber about the selection process.
 		components_number_of_versions[3]={1,1,1};
 	static int last_node_number = 1;
 	struct Coordinate_system rect_cart_coords;
-	struct CM_field_information field_info;
 
 	rect_cart_coords.type =  RECTANGULAR_CARTESIAN;
 
@@ -1204,13 +1203,10 @@ Notifies the grabber about the selection process.
 								0,(FE_value *)NULL,RECTANGULAR_CARTESIAN,
 								temp_data_2d->dimension,component_names))
 #endif /* defined (OLD_CODE) */
-							/*???DB.  So that the back-end knows the field type.
-								Temporary ? */
-							set_CM_field_information(&field_info,CM_COORDINATE_FIELD,(int *)NULL);
 							if (data_2d_field=get_FE_field_manager_matched_field(
 								temp_data_2d->fe_field_manager,COORDINATES_2D_FIELD_NAME,
 								GENERAL_FE_FIELD,/*indexer_field*/(struct FE_field *)NULL,
-								/*number_of_indexed_values*/0,&field_info,
+								/*number_of_indexed_values*/0,CM_COORDINATE_FIELD,
 								&rect_cart_coords,FE_VALUE_VALUE,
 								/*number_of_components*/temp_data_2d->dimension,component_names,
 								/*number_of_times*/0,/*time_value_type*/UNKNOWN_VALUE))

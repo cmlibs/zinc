@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : cmiss.c
 
-LAST MODIFIED : 30 May 2001
+LAST MODIFIED : 30 August 2001
 
 DESCRIPTION :
 See cmiss.h for interface details.
@@ -175,7 +175,7 @@ Convert fortran-style strings to C-style printf strings.
 #define NUM_COMPONENT_DATA 3
 int CMISS_connection_get_data(struct CMISS_connection *connection)
 /*******************************************************************************
-LAST MODIFIED : 30 August 1999
+LAST MODIFIED : 30 August 2001
 
 DESCRIPTION :
 Receives any data from the output data wormhole.
@@ -183,15 +183,15 @@ Receives any data from the output data wormhole.
 {
 	char **component_names,*field_name,*group_name,region_name[]="region_xxxxx";
 	double *temp_field_values;
-	struct Coordinate_system coordinate_system;
-	struct CM_field_information field_info;
 	enum FE_nodal_value_type **components_nodal_value_types;
+	enum CM_field_type cm_field_type;
 	FE_value *field_values;
 	int component_data[NUM_COMPONENT_DATA],*components_number_of_derivatives,
 		*components_number_of_versions,field_num,i,j,
 		node_field_info_data[NUM_NODE_FIELD_INFO_DATA],number_of_components,
 		number_of_fields,number_of_field_values,number_of_values,primary_id,
 		return_code,secondary_id;
+	struct Coordinate_system coordinate_system;
 	struct FE_field *field;
 	struct FE_node *node,*old_node,*template_node;
 	struct GROUP(FE_node) *old_node_group;
@@ -310,27 +310,31 @@ Receives any data from the output data wormhole.
 							/* get miscellaneous information */
 							wh_output_get_int(connection->data_output,
 								NUM_NODE_FIELD_INFO_DATA,node_field_info_data);
-							/* get the field type */
-							set_CM_field_information(&field_info,
-								(enum CM_field_type)node_field_info_data[0],(int *)NULL);
-
-							switch (get_CM_field_information_type(&field_info))
+							/* convert CM field type */
+							switch (node_field_info_data[0])
 							{
-								case CM_ANATOMICAL_FIELD:
-								case CM_COORDINATE_FIELD:
-								case CM_FIELD:
+								case 1:
 								{
-									/* do nothing */
+									cm_field_type=CM_ANATOMICAL_FIELD;
+								} break;
+								case 2:
+								{
+									cm_field_type=CM_COORDINATE_FIELD;
+								} break;
+								case 3:
+								{
+									cm_field_type=CM_GENERAL_FIELD;
 								} break;
 								default:
 								{
 									display_message(WARNING_MESSAGE,
 										"CMISS_connection_get_data.  %s",
-										"state: node field info.  Invalid field type");
+										"state: node field info.  Invalid CM field type");
 								} break;
 							}
 							/* get the coordinate system */
-							coordinate_system.type=(enum Coordinate_system_type)node_field_info_data[1];
+							coordinate_system.type=
+								(enum Coordinate_system_type)node_field_info_data[1];
 							switch (get_coordinate_system_type(&coordinate_system))
 							{
 								case RECTANGULAR_CARTESIAN:
@@ -421,7 +425,7 @@ Receives any data from the output data wormhole.
 									if (field=get_FE_field_manager_matched_field(
 										connection->fe_field_manager,field_name,
 										GENERAL_FE_FIELD,/*indexer_field*/(struct FE_field *)NULL,
-										/*number_of_indexed_values*/0,&field_info,
+										/*number_of_indexed_values*/0,cm_field_type,
 										&coordinate_system,FE_VALUE_VALUE,
 										number_of_components,component_names,
 										/*number_of_times*/0,/*time_value_type*/UNKNOWN_VALUE))
