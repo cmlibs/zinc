@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : graphics_object.h
 
-LAST MODIFIED : 16 November 2000
+LAST MODIFIED : 7 June 2001
 
 DESCRIPTION :
 Graphical object data structures.
@@ -43,6 +43,7 @@ Used to be gtypes.h
 #include "graphics/graphics_library.h"
 #include "graphics/material.h"
 #include "graphics/selected_graphic.h"
+#include "graphics/spectrum.h"
 #include "graphics/volume_texture.h"
 
 /*
@@ -250,7 +251,7 @@ DESCRIPTION :
 
 struct GT_glyph_set
 /*******************************************************************************
-LAST MODIFIED : 16 November 2000
+LAST MODIFIED : 7 June 2001
 
 DESCRIPTION :
 Graphics primitive for positioning and scaling a glyph - a graphics object with
@@ -278,6 +279,11 @@ the glyph_set to be identified in picking for node position/vector editing.
 	GTDATA *data;
 	/* store integer object_name eg. element number from which this object came */
 	int object_name;
+	/* have auxiliary_object_name for marking glyph_set for editing purposes; this
+		 is necessary since for some element_point types we put the
+		 top_level_element in the object_name; the graphics name of the actual
+		 face/line/element in use should go here: */
+	int auxiliary_object_name;
 	/* names recorded per point in the set, eg. node or grid point numbers */
 	int *names;
 	struct GT_glyph_set *ptrnext;
@@ -1010,6 +1016,30 @@ External modules that change a GT_object should call this routine so that
 objects interested in this GT_object will be notified that is has changed.
 ==============================================================================*/
 
+int GT_object_Graphical_material_change(struct GT_object *graphics_object,
+	struct LIST(Graphical_material) *changed_material_list);
+/*******************************************************************************
+LAST MODIFIED : 7 June 2001
+
+DESCRIPTION :
+Parent uses this function to tell <graphics_object> about the
+<changed_material_list>.
+If materials in use have changed, informs clients of the need to redraw.
+If a spectrum is in use, also clears display_list_current.
+==============================================================================*/
+
+int GT_object_Spectrum_change(struct GT_object *graphics_object,
+	struct LIST(Spectrum) *changed_spectrum_list);
+/*******************************************************************************
+LAST MODIFIED : 7 June 2001
+
+DESCRIPTION :
+Parent uses this function to tell <graphics_object> about the
+<changed_material_list>.
+If materials in use have changed, informs clients of the need to redraw.
+If a spectrum is in use, also clears display_list_current.
+==============================================================================*/
+
 int GT_object_add_callback(struct GT_object *graphics_object, 
 	Graphics_object_callback callback, void *user_data);
 /*******************************************************************************
@@ -1188,6 +1218,30 @@ PROTOTYPE_GT_OBJECT_REMOVE_PRIMITIVES_WITH_OBJECT_NAME_FUNCTION(GT_glyph_set);
 PROTOTYPE_GT_OBJECT_REMOVE_PRIMITIVES_WITH_OBJECT_NAME_FUNCTION(GT_polyline);
 PROTOTYPE_GT_OBJECT_REMOVE_PRIMITIVES_WITH_OBJECT_NAME_FUNCTION(GT_surface);
 PROTOTYPE_GT_OBJECT_REMOVE_PRIMITIVES_WITH_OBJECT_NAME_FUNCTION(GT_voltex);
+
+#if defined (FULL_NAMES)
+#define GT_OBJECT_REMOVE_PRIMITIVES_WITH_AUXILIARY_OBJECT_NAME_(primitive_type) \
+	GT_object_remove_primitives_with_auxiliary_object_name_ ## primitive_type
+#else
+#define GT_OBJECT_REMOVE_PRIMITIVES_WITH_AUXILIARY_OBJECT_NAME_(primitive_type) \
+	gorpwaon_ ## primitive_type
+#endif
+#define GT_OBJECT_REMOVE_PRIMITIVES_WITH_AUXILIARY_OBJECT_NAME(primitive_type) \
+	GT_OBJECT_REMOVE_PRIMITIVES_WITH_AUXILIARY_OBJECT_NAME_(primitive_type)
+
+#define PROTOTYPE_GT_OBJECT_REMOVE_PRIMITIVES_WITH_AUXILIARY_OBJECT_NAME_FUNCTION( primitive_type ) \
+int GT_OBJECT_REMOVE_PRIMITIVES_WITH_AUXILIARY_OBJECT_NAME(primitive_type)( \
+	struct GT_object *graphics_object, float time, int auxiliary_object_name) \
+/***************************************************************************** \
+LAST MODIFIED : 7 June 2001 \
+\
+DESCRIPTION : \
+Removes all primitives from <graphics_object> at <time> for which the \
+auxiliary_object_name member matches the given <auxiliary_object_name>. \
+============================================================================*/
+
+PROTOTYPE_GT_OBJECT_REMOVE_PRIMITIVES_WITH_AUXILIARY_OBJECT_NAME_FUNCTION( \
+	GT_glyph_set);
 
 enum Graphics_select_mode GT_object_get_select_mode(
 	struct GT_object *graphics_object);

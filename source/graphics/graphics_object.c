@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : graphics_object.c
 
-LAST MODIFIED : 19 March 2001
+LAST MODIFIED : 7 June 2001
 
 DESCRIPTION :
 gtObject/gtWindow management routines.
@@ -1863,6 +1863,7 @@ and are deallocated by its DESTROY function.
 			glyph_set->n_data_components = n_data_components;
 			glyph_set->data = data;
 			glyph_set->object_name = object_name;
+			glyph_set->auxiliary_object_name = 0;
 			glyph_set->names = names;
 			glyph_set->ptrnext = (struct GT_glyph_set *)NULL;
 		}
@@ -3141,9 +3142,43 @@ graphics object, starting at zero for the first
 	return (return_code);
 } /* execute_GT_object */
 
+static int GT_object_inform_clients(struct GT_object *graphics_object)
+/*******************************************************************************
+LAST MODIFIED : 7 June 2001
+
+DESCRIPTION :
+Sends a callback to all registered clients indicating the GT_object_has changed.
+==============================================================================*/
+{
+	int return_code;
+	struct Graphics_object_callback_data *callback_data;
+
+	ENTER(GT_object_inform_clients);
+	if (graphics_object)
+	{
+		callback_data = graphics_object->update_callback_list;
+		while(callback_data)
+		{
+			(callback_data->callback)(graphics_object,
+				callback_data->callback_user_data);
+			callback_data = callback_data->next;
+		}
+		return_code = 1;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"GT_object_inform_clients.  Invalid graphics object");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* GT_object_inform_clients */
+
 int GT_object_changed(struct GT_object *graphics_object)
 /*******************************************************************************
-LAST MODIFIED : 19 October 1998
+LAST MODIFIED : 7 June 2001
 
 DESCRIPTION :
 External modules that change a GT_object should call this routine so that
@@ -3158,25 +3193,105 @@ objects interested in this GT_object will be notified that is has changed.
 	if (graphics_object)
 	{
 		graphics_object->display_list_current = 0;
-		callback_data = graphics_object->update_callback_list;
-		while(callback_data)
+		return_code = GT_object_inform_clients(graphics_object);
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"GT_object_changed.  Invalid graphics object");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* GT_object_changed */
+
+int GT_object_Graphical_material_change(struct GT_object *graphics_object,
+	struct LIST(Graphical_material) *changed_material_list)
+/*******************************************************************************
+LAST MODIFIED : 7 June 2001
+
+DESCRIPTION :
+Parent uses this function to tell <graphics_object> about the
+<changed_material_list>.
+If materials in use have changed, informs clients of the need to redraw.
+If a spectrum is in use, also clears display_list_current.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(GT_object_Graphical_material_change);
+	if (graphics_object && changed_material_list)
+	{
+		while (graphics_object)
 		{
-			(callback_data->callback)(graphics_object,
-				callback_data->callback_user_data);
-			callback_data = callback_data->next;
+			if ((graphics_object->default_material &&
+				IS_OBJECT_IN_LIST(Graphical_material)(
+					graphics_object->default_material, changed_material_list)) ||
+				(graphics_object->selected_material &&
+					IS_OBJECT_IN_LIST(Graphical_material)(
+						graphics_object->selected_material, changed_material_list)))
+			{
+				if (graphics_object->spectrum)
+				{
+					/* need to rebuild display list when spectrum in use */
+					graphics_object->display_list_current = 0;
+				}
+				GT_object_inform_clients(graphics_object);
+			}
+			graphics_object = graphics_object->nextobject;
 		}
 		return_code = 1;
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"GT_object_changed. Invalid graphics object");
-		return_code=0;
+			"GT_object_Graphical_material_change. Invalid graphics object");
+		return_code = 0;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* GT_object_changed */
+} /* GT_object_Graphical_material_change */
+
+int GT_object_Spectrum_change(struct GT_object *graphics_object,
+	struct LIST(Spectrum) *changed_spectrum_list)
+/*******************************************************************************
+LAST MODIFIED : 7 June 2001
+
+DESCRIPTION :
+Parent uses this function to tell <graphics_object> about the
+<changed_material_list>.
+If materials in use have changed, informs clients of the need to redraw.
+If a spectrum is in use, also clears display_list_current.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(GT_object_Spectrum_change);
+	if (graphics_object && changed_spectrum_list)
+	{
+		while (graphics_object)
+		{
+			if (graphics_object->spectrum && IS_OBJECT_IN_LIST(Spectrum)(
+				graphics_object->spectrum, changed_spectrum_list))
+			{
+				GT_object_changed(graphics_object);
+			}
+			graphics_object = graphics_object->nextobject;
+		}
+		return_code = 1;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"GT_object_Spectrum_change. Invalid graphics object");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* GT_object_Spectrum_change */
 
 int GT_object_add_callback(struct GT_object *graphics_object, 
 	Graphics_object_callback callback, void *user_data)
@@ -4627,6 +4742,82 @@ DECLARE_GT_OBJECT_REMOVE_PRIMITIVES_WITH_OBJECT_NAME_FUNCTION(GT_nurbs, \
 	g_NURBS,gt_nurbs,DESTROY(GT_nurbs))
 DECLARE_GT_OBJECT_REMOVE_PRIMITIVES_WITH_OBJECT_NAME_FUNCTION(GT_voltex, \
 	g_VOLTEX,gt_voltex,DESTROY(GT_voltex))
+
+#define DECLARE_GT_OBJECT_REMOVE_PRIMITIVES_WITH_AUXILIARY_OBJECT_NAME_FUNCTION( \
+	primitive_type,gt_object_type,primitive_var,primitive_destroy_function) \
+PROTOTYPE_GT_OBJECT_REMOVE_PRIMITIVES_WITH_AUXILIARY_OBJECT_NAME_FUNCTION(primitive_type)\
+/***************************************************************************** \
+LAST MODIFIED : 7 June 2001 \
+\
+DESCRIPTION : \
+Removes all primitives from <graphics_object> at <time> for which the \
+auxiliary_object_name member matches the given <auxiliary_object_name>. \
+============================================================================*/ \
+{ \
+	struct primitive_type *primitive,**primitive_ptr; \
+	int return_code,time_no; \
+\
+	ENTER(GT_OBJECT_REMOVE_PRIMITIVES_WITH_AUXILIARY_OBJECT_NAME(primitive_type)); \
+	if (graphics_object&&(gt_object_type==graphics_object->object_type))\
+	{ \
+		if (0<(time_no=GT_object_get_time_number(graphics_object,time))) \
+		{ \
+			if (primitive_ptr=graphics_object->gu.primitive_var) \
+			{ \
+				primitive_ptr += time_no-1; \
+				/* Remove primitives with auxiliary_object_name at this time */ \
+				while (primitive= *primitive_ptr) \
+				{ \
+					if ((primitive->auxiliary_object_name)==auxiliary_object_name) \
+					{ \
+						*primitive_ptr=primitive->ptrnext; \
+						primitive_destroy_function(&primitive); \
+					} \
+					else \
+					{ \
+						primitive_ptr=&(primitive->ptrnext); \
+					} \
+				} \
+				/* must remove time if no primitives left there */ \
+				/*???RC.  Not needed now that empty times are allowed? */ \
+				if ((struct primitive_type *)NULL == \
+					graphics_object->gu.primitive_var[time_no-1]) \
+				{ \
+					return_code=GT_OBJECT_DELETE_TIME_NUMBER(primitive_type)( \
+						graphics_object,time_no); \
+				} \
+				else \
+				{ \
+					return_code=1; \
+				} \
+			} \
+			else \
+			{ \
+				display_message(ERROR_MESSAGE, \
+					"GT_OBJECT_REMOVE_PRIMITIVES_WITH_AUXILIARY_OBJECT_NAME(" \
+					#primitive_type ").  Invalid primitives array"); \
+				return_code=0; \
+			} \
+		} \
+		else \
+		{ \
+			return_code=1; \
+		} \
+	} \
+	else \
+	{ \
+		display_message(ERROR_MESSAGE, \
+			"GT_OBJECT_REMOVE_PRIMITIVES_WITH_AUXILIARY_OBJECT_NAME(" \
+			#primitive_type ").  Invalid arguments"); \
+		return_code=0; \
+	} \
+	LEAVE; \
+\
+	return (return_code); \
+} /* GT_OBJECT_REMOVE_PRIMITIVES_WITH_AUXILIARY_OBJECT_NAME(primitive_type) */
+
+DECLARE_GT_OBJECT_REMOVE_PRIMITIVES_WITH_AUXILIARY_OBJECT_NAME_FUNCTION( \
+	GT_glyph_set, g_GLYPH_SET, gt_glyph_set, DESTROY(GT_glyph_set))
 
 enum Graphics_select_mode GT_object_get_select_mode(
 	struct GT_object *graphics_object)
