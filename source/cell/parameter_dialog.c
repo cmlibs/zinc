@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : parameter_dialog.c
 
-LAST MODIFIED : 29 November 1999
+LAST MODIFIED : 28 August 2000
 
 DESCRIPTION :
 Functions and structures for using the parameter dialog boxes.
@@ -188,7 +188,7 @@ values
       {
         for (i=0;i<current->number_of_parameters;i++)
         {
-          sprintf(buf,"%g\0",current->parameters[i]->value);
+          sprintf(buf,"%g",current->parameters[i]->value);
           XtVaSetValues(current->dialog->values[i],
             XmNvalue,buf,
             NULL);
@@ -796,7 +796,7 @@ NOTE - need to keep the parameter widgets separate from the Cell_parameter
       XtAddCallback(dialog->control_curve_buttons[parameter_position],
         XmNactivateCallback,control_curve_button_callback,(XtPointer)parameter);
       /* create the text field for the value of the variable */
-      sprintf(buf,"%g\0",parameter->value);
+      sprintf(buf,"%g",parameter->value);
       dialog->values[parameter_position] =
         XtVaCreateManagedWidget("cell_parameter_text",
           xmTextFieldWidgetClass,form,
@@ -1309,8 +1309,28 @@ It the component's dialog exists, bring it up, else create a new dialog.
     return_code = 0;
   }
   LEAVE;
+
   return(return_code);
 } /* END bring_up_parameter_dialog() */
+
+int bring_up_parameter_dialog_iterator(struct Cell_component *component,
+	void *dummy_void)
+/*******************************************************************************
+LAST MODIFIED : 28 August 2000
+
+DESCRIPTION :
+List iterator function for bringing up parameter dialogs for a cell component.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(bring_up_parameter_dialog_iterator);
+	USE_PARAMETER(dummy_void);
+	return_code=bring_up_parameter_dialog(component);
+	LEAVE;
+
+	return (return_code);
+} /* bring_up_parameter_dialog_iterator */
 
 void close_parameter_dialog(struct Cell_component *component)
 /*******************************************************************************

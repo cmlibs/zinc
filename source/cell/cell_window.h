@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : cell_window.h
 
-LAST MODIFIED : 14 June 2000
+LAST MODIFIED : 28 August 2000
 
 DESCRIPTION :
 Functions for using the Cell structure.
@@ -14,6 +14,8 @@ Functions for using the Cell structure.
 #endif /* if defined (MOTIF) */
 #include "xml.h"
 #include "general/debug.h"
+#include "interaction/interactive_tool.h"
+#include "selection/any_object_selection.h"
 #include "user_interface/message.h"
 #include "unemap/analysis_work_area.h"
 
@@ -61,7 +63,7 @@ Stores the user settings for the Cell window.
 
 struct Cell_window
 /*******************************************************************************
-LAST MODIFIED : 29 November 1999
+LAST MODIFIED : 28 August 2000
 
 DESCRIPTION :
 Main structure containing all CELL data.
@@ -96,7 +98,7 @@ Main structure containing all CELL data.
     int width;
     int height;
   } image_map;
-  struct /* UnEMAP stuf */
+  struct /* UnEMAP stuff */
   {
     int number_of_saved_buffers;
     struct Analysis_work_area analysis;
@@ -117,7 +119,10 @@ Main structure containing all CELL data.
   } control_curve;
   struct /* Cell 3d stuff */
   {
-    Widget form;
+		struct Any_object_selection *any_object_selection;
+		struct MANAGER(Interactive_tool) *interactive_tool_manager;
+		struct Interactive_tool *interactive_tool,*select_tool,*transform_tool;
+    Widget form,toolbar_form,toolbar_widget;
     struct Scene_viewer *scene_viewer;
     struct Colour *background_colour;
     struct MANAGER(Light) *light_manager;
@@ -185,6 +190,8 @@ Global functions
 struct Cell_window *create_Cell_window(struct User_interface *user_interface,
   char *filename,struct MANAGER(Control_curve) *control_curve_manager,
   struct Unemap_package *package,
+	struct Any_object_selection *any_object_selection,
+	struct MANAGER(Interactive_tool) *interactive_tool_manager,
   struct Colour *background_colour,struct MANAGER(Light) *light_manager,
   struct Light *default_light,struct MANAGER(Light_model) *light_model_manager,
   struct Light_model *default_light_model,struct MANAGER(Scene) *scene_manager,
@@ -203,7 +210,7 @@ struct Cell_window *create_Cell_window(struct User_interface *user_interface,
 	struct Element_point_ranges_selection *element_point_ranges_selection,
   struct Execute_command *execute_command);
 /*******************************************************************************
-LAST MODIFIED : 08 June 2000
+LAST MODIFIED : 28 August 2000
 
 DESCRIPTION :
 Create the structures and retrieve the cell window from the uil file. <filename>

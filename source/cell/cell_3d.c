@@ -1,14 +1,16 @@
 /*******************************************************************************
 FILE : cell_3d.c
 
-LAST MODIFIED : 11 July 2000
+LAST MODIFIED : 28 August 2000
 
 DESCRIPTION :
 Functions for Cell 3d.
 ==============================================================================*/
+#include <string.h>
 #include "cell/cell_3d.h"
 #include "cell/cell_component.h"
 #include "cell/parameter_dialog.h"
+#include "general/any_object.h"
 #include "graphics/material.h"
 #include "graphics/colour.h"
 #include "graphics/import_graphics_object.h"
@@ -21,7 +23,7 @@ Local types
 */
 struct Scene_picked_cell_object
 /*******************************************************************************
-LAST MODIFIED : 16 September 1999
+LAST MODIFIED : 18 August 2000
 
 DESCRIPTION :
 Used to find the nearest cell object when a mouse button is pressed in the
@@ -29,16 +31,17 @@ cell scene
 ==============================================================================*/
 {
   struct Scene_object *scene_object;
-  int nearest;
+  double nearest;
 }; /* Scene_picked_cell_object */
 
 /*
 Local functions
 ===============
 */
+
 struct Cell_graphic *create_cell_graphic(char *type)
 /*******************************************************************************
-LAST MODIFIED : 08 September 1999
+LAST MODIFIED : 28 August 2000
 
 DESCRIPTION :
 Create a Cell_graphic with the given <type>.
@@ -51,7 +54,7 @@ Create a Cell_graphic with the given <type>.
   {
     if (ALLOCATE(graphic->type,char,strlen(type)+1))
     {
-      sprintf(graphic->type,"%s\0",type);
+			strcpy(graphic->type,type);
       graphic->graphics_object = (struct GT_object *)NULL;
       graphic->graphical_material = (struct Graphical_material *)NULL;
       graphic->next = (struct Cell_graphic *)NULL;
@@ -140,47 +143,6 @@ If can't find a graphic of the given <type>, creates it.
   LEAVE;
   return(graphic);
 } /* END assign_cell_graphic() */
-
-static int cell_3d_pick_nearest_object(
-  struct Scene_picked_object *scene_picked_object,void *picked_cell_object_void)
-/*******************************************************************************
-LAST MODIFIED : 19 August 1999
-
-DESCRIPTION :
-If the <scene_picked_object> refers to a node, the "nearest" value is compared
-with that for the currently picked_node in the <picked_node_data>. I there was
-no currently picked_node or the new node is nearer, it becomes the picked node
-and its "nearest" value is stored in the picked_node_data.
-==============================================================================*/
-{
-  int return_code = 0;
-  struct Scene_picked_cell_object *picked_cell_object;
-  
-  ENTER(cell_3d_pick_nearest_object);
-  if (scene_picked_object &&
-    (picked_cell_object = (struct Scene_picked_cell_object *)
-      picked_cell_object_void))
-  {
-    if ((picked_cell_object->scene_object == (struct Scene_object *)NULL) ||
-      (Scene_picked_object_get_nearest(scene_picked_object) <
-        picked_cell_object->nearest))
-    {
-      picked_cell_object->scene_object = Scene_picked_object_get_Scene_object(
-        scene_picked_object,0);
-      picked_cell_object->nearest = Scene_picked_object_get_nearest(
-        scene_picked_object);
-    }
-    return_code = 1;
-  }
-  else
-  {
-    display_message(ERROR_MESSAGE,"cell_3d_pick_nearest_object. "
-      "Invalid arguments");
-    return_code = 0;
-  }
-  LEAVE;
-  return(return_code);
-} /* END cell_3d_pick_nearest_object() */
 
 /*
 Global functions
@@ -448,7 +410,7 @@ properties. If <filename> is NULL, then a simple arrow is used.
 
 int draw_cell_3d(struct Cell_window *cell)
 /*******************************************************************************
-LAST MODIFIED : 11 July 2000
+LAST MODIFIED : 25 August 2000
 
 DESCRIPTION :
 Draws all defined components into the Cell 3D scene and adds the manager
@@ -498,6 +460,9 @@ callbacks.
           /* apply the transformation */
           return_code = Scene_object_set_transformation(scene_object,
             &transformation);
+					/* make the scene_object represent the cell component */
+					Scene_object_set_represented_object(scene_object,
+						CREATE(ANY_OBJECT(Cell_component))(component));
         }
       }
       component = component->next;
@@ -531,83 +496,30 @@ Destroys the <component>'s cell graphic, if it has one.
   LEAVE;
 } /* END destroy_cell_graphic() */
 
-void cell_3d_picking_callback(struct Scene *scene,void *cell_window,
-  struct Scene_input_callback_data *scene_input_callback_data)
+void cell_3d_component_selection_change(
+	struct Any_object_selection *any_object_selection,
+	struct Any_object_selection_changes *changes,
+	void *cell_window_void)
 /*******************************************************************************
-LAST MODIFIED : 16 September 1999
+LAST MODIFIED : 28 August 2000
 
 DESCRIPTION :
-Receives mouse button press, motion and release events from <scene>, and
-processes them to bring up the appropriate dialog box.
+Callback for change in the global selection of Any_objects - from which
+Cell_component selections are interpreted.
 ==============================================================================*/
 {
-  struct Cell_window *cell = (struct Cell_window *)NULL;
-  struct Cell_component *component = (struct Cell_component *)NULL;
-  /*struct Scene_object *scene_object;*/
-  /*struct Scene_picked_object *scene_picked_object;*/
-  struct Scene_picked_cell_object picked_cell_object;
-  char *name;
-  int found;
-  
-  ENTER(cell_3d_picking_callback);
-  if (scene && (cell = (struct Cell_window *)cell_window) &&
-    scene_input_callback_data)
-  {
-    switch (scene_input_callback_data->input_type)
-    {
-      case SCENE_BUTTON_PRESS:
-      {
-        /* only the button press has picking info */
-        picked_cell_object.scene_object = (struct Scene_object *)NULL;
-        picked_cell_object.nearest = 0;
-        /* get the nearest picked object */
-        FOR_EACH_OBJECT_IN_LIST(Scene_picked_object)(
-					cell_3d_pick_nearest_object,(void *)&picked_cell_object,
-					scene_input_callback_data->picked_object_list);
-        if (picked_cell_object.scene_object != (struct Scene_object *)NULL)
-        {
-          if (GET_NAME(Scene_object)(picked_cell_object.scene_object,&name))
-          {
-            /* loop through all components until find one with the
-            same name */
-            component = cell->components;
-            found = 0;
-            while (!found && (component != (struct Cell_component *)NULL))
-            {
-              if (!strcmp(component->name,name))
-              {
-                found = 1;
-              }
-              else
-              {
-                component = component->next;
-              }
-            } /*while (!found && component)*/
-            if (!bring_up_parameter_dialog(component))
-            {
-              display_message(ERROR_MESSAGE,"cell_3d_picking_callback. "
-                "Unable to bring up the parameter dialog");
-            }
-          }
-          else
-          {
-            display_message(ERROR_MESSAGE,"cell_3d_picking_callback. "
-              "Unable to get the scene object name");
-          }
-        }
-      } break;
-      case SCENE_MOTION_NOTIFY:
-      case SCENE_BUTTON_RELEASE:
-      default:
-      {
-        /* do nothing */
-      } break;
-    } /* switch (scene_input_callback_data->input_type) */
-  }
-  else
-  {
-    display_message(ERROR_MESSAGE,"cell_3d_picking_callback. "
-      "Invalid arguments");
-  }
-  LEAVE;
-} /* END cell_3d_picking_callback() */
+	ENTER(cell_3d_component_selection_change);
+	if (any_object_selection&&changes&&cell_window_void)
+	{
+		FOR_EACH_OBJECT_IN_LIST(ANY_OBJECT(Cell_component))(
+			bring_up_parameter_dialog_iterator,cell_window_void,
+			changes->newly_selected_any_object_list);
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"cell_3d_component_selection_change.  Invalid argument(s)");
+	}
+	LEAVE;
+} /* cell_3d_component_selection_change */
+

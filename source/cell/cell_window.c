@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : cell_window.c
 
-LAST MODIFIED : 15 June 2000
+LAST MODIFIED : 28 August 2000
 
 DESCRIPTION :
 Functions for using the Cell_window structure.
@@ -34,14 +34,15 @@ Functions for using the Cell_window structure.
 #include "choose/choose_computed_field.h"
 #include "command/command.h"
 #include "computed_field/computed_field_finite_element.h"
-#include "unemap/unemap_package.h"
-#include "user_interface/user_interface.h"
-#include "user_interface/filedir.h"
 #include "graphics/scene_viewer.h"
 #include "graphics/scene.h"
 #include "graphics/colour.h"
 #include "graphics/import_graphics_object.h"
 #include "finite_element/import_finite_element.h"
+#include "interaction/interactive_toolbar_widget.h"
+#include "unemap/unemap_package.h"
+#include "user_interface/user_interface.h"
+#include "user_interface/filedir.h"
 
 /*
 Module types
@@ -62,14 +63,16 @@ static MrmHierarchy cell_window_hierarchy;
 Module functions
 ================
 */
+
 #if defined (OLD_CODE)
 static void destroy_Cell_window(Widget widget,XtPointer cell_window,
   XtPointer call_data)
 /*******************************************************************************
-LAST MODIFIED : 01 February 1999
+LAST MODIFIED : 28 August 2000
 
 DESCRIPTION :
-Destroy the cell_window structure and remove the window
+Destroy the cell_window structure and remove the window.
+???RC So when is this going to be resurrected?
 ==============================================================================*/
 {
   struct Cell_window *cell;
@@ -79,6 +82,14 @@ Destroy the cell_window structure and remove the window
 	USE_PARAMETER(call_data);
   if (cell = (struct Cell_window *)cell_window)
   {
+		if (cell->select_tool)
+		{
+			DEACCESS(Interactive_tool)(&cell->select_tool);
+		}
+		if (cell->transform_tool)
+		{
+			DEACCESS(Interactive_tool)(&cell->tranform_tool);
+		}
     if (cell->output_file)
     {
       fclose(cell->output_file);
@@ -475,6 +486,30 @@ Stores the id of the form which will contain the Cell 3D scene viewer.
   LEAVE;
 } /* END identify_cell_3d_form() */
 
+static void identify_toolbar_form(Widget widget,XtPointer cell_window,
+  XtPointer call_data)
+/*******************************************************************************
+LAST MODIFIED : 28 August 2000
+
+DESCRIPTION :
+Stores the id of the form which will contain the Cell 3D scene viewer.
+==============================================================================*/
+{
+  struct Cell_window *cell;
+  
+  ENTER(identify_toolbar_form);
+	USE_PARAMETER(call_data);
+  if (cell = (struct Cell_window *)cell_window)
+  {
+    (cell->cell_3d).toolbar_form = widget;
+  }
+  else
+  {
+    display_message(ERROR_MESSAGE,"identify_toolbar_form.  Missing Cell window");
+  }
+  LEAVE;
+} /* END identify_toolbar_form() */
+
 static void save_toggle_changed_callback(Widget widget,XtPointer cell_window,
   XtPointer call_data)
 /*******************************************************************************
@@ -546,7 +581,7 @@ Callback for change of node from text_choose_fe_node.
 				{
 					sprintf(description,"Currently editing node %s, which has a "
 						"cell type "
-						"%d\0",name,cell_type);
+						"%d",name,cell_type);
 					DEALLOCATE(name);
 				}
 				else
@@ -612,7 +647,7 @@ currently selected.
         field,comp_no,element,xi,top_level_element))
       {
         sprintf(description,"Currently editing a grid point with cell type: "
-          "%s\0",value_string);
+          "%s",value_string);
         DEALLOCATE(value_string);
       }
     }
@@ -753,68 +788,85 @@ group to the node chooser in Cell.
 } /* END cell_node_group_change() */
 #endif /* defined (CELL_USE_NODES) */
 
-static void input_mode_callback(Widget widget,XtPointer cell_window,
-  XtPointer call_data)
+static int Cell_window_set_interactive_tool(struct Cell_window *cell,
+	struct Interactive_tool *interactive_tool)
 /*******************************************************************************
-LAST MODIFIED : 06 September 1999
+LAST MODIFIED : 28 August 2000
 
 DESCRIPTION :
-Callback for when the state of the input mode button is activated - used to
-set the scene viewer input mode for Cell 3D.
+Sets the <interactive_tool> in use in the <cell>. Updates the
+toolbar to match the selection.
 ==============================================================================*/
 {
-  struct Cell_window *cell = (struct Cell_window *)NULL;
-  enum Scene_viewer_input_mode input_mode;
-  XmString str;
-  
-  ENTER(input_mode_callback);
-  USE_PARAMETER(call_data);
-  if (cell = (struct Cell_window *)cell_window)
-  {
-    input_mode = Scene_viewer_get_input_mode((cell->cell_3d).scene_viewer);
-    switch (input_mode)
-    {
-      case SCENE_VIEWER_SELECT:
-      {
-        if (!Scene_viewer_set_input_mode((cell->cell_3d).scene_viewer,
-          SCENE_VIEWER_TRANSFORM))
-        {
-          display_message(ERROR_MESSAGE,"input_mode_callback. "
-            "Unable to set the input mode");
-        }
-        else
-        {
-          str = XmStringCreateSimple("Transform");
-          XtVaSetValues(widget,
-            XmNlabelString,str,
-            NULL);
-        }
-      } break;
-      case SCENE_VIEWER_TRANSFORM:
-      {
-        if (!Scene_viewer_set_input_mode((cell->cell_3d).scene_viewer,
-          SCENE_VIEWER_SELECT))
-        {
-          display_message(ERROR_MESSAGE,"input_mode_callback. "
-            "Unable to set the input mode");
-        }
-        else
-        {
-          str = XmStringCreateSimple("Select");
-          XtVaSetValues(widget,
-            XmNlabelString,str,
-            NULL);
-        }
-      } break;
-    }
-  }
-  else
-  {
-    display_message(ERROR_MESSAGE,"input_mode_callback. "
-      "Missing Cell window");
-  }
-  LEAVE;
-} /* END input_mode_callback() */
+	int return_code;
+
+	ENTER(Cell_window_set_interactive_tool);
+	if (cell)
+	{
+		if (interactive_toolbar_widget_set_current_interactive_tool(
+			(cell->cell_3d).toolbar_widget,interactive_tool))
+		{
+			(cell->cell_3d).interactive_tool=interactive_tool;
+			if (interactive_tool == (cell->cell_3d).transform_tool)
+			{
+				Scene_viewer_set_input_mode((cell->cell_3d).scene_viewer,
+					SCENE_VIEWER_TRANSFORM);
+				/* transform_tool is just a placeholder for transform mode so pass
+					 NULL to the scene_viewers */
+				interactive_tool=(struct Interactive_tool *)NULL;
+			}
+			else
+			{
+				Scene_viewer_set_input_mode((cell->cell_3d).scene_viewer,
+					SCENE_VIEWER_SELECT);
+			}
+			Scene_viewer_set_interactive_tool((cell->cell_3d).scene_viewer,
+				interactive_tool);
+			return_code=1;
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,
+				"Cell_window_set_interactive_tool.  Could not update toolbar");
+			return_code=0;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Cell_window_set_interactive_tool.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Cell_window_set_interactive_tool */
+
+static void Cell_window_update_interactive_tool(Widget widget,
+	void *cell_void,void *interactive_tool_void)
+/*******************************************************************************
+LAST MODIFIED : 28 August 2000
+
+DESCRIPTION :
+Called when a new tool is chosen in the toolbar_widget.
+==============================================================================*/
+{
+	struct Cell_window *cell;
+
+	ENTER(Cell_window_update_interactive_tool);
+	USE_PARAMETER(widget);
+	if (cell=(struct Cell_window *)cell_void)
+	{
+		Cell_window_set_interactive_tool(cell,
+			(struct Interactive_tool *)interactive_tool_void);
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Cell_window_update_interactive_tool.  Invalid argument(s)");
+	}
+	LEAVE;
+} /* Cell_window_update_interactive_tool */
 
 static void debug_toggle_changed_callback(Widget widget,XtPointer cell_window,
   XtPointer call_data)
@@ -911,7 +963,7 @@ Callback for the "Write->CMISS" choice in the "File" menu.
 static void calculate_button_callback(Widget widget,XtPointer cell_window,
   XtPointer call_data)
 /*******************************************************************************
-LAST MODIFIED : 24 November 1999
+LAST MODIFIED : 25 August 2000
 
 DESCRIPTION :
 Callback for the "Calculate" button in the menu bar.
@@ -952,7 +1004,7 @@ Callback for the "Calculate" button in the menu bar.
   ENTER(calculate_button_callback);
   USE_PARAMETER(widget);
   USE_PARAMETER(call_data);
-  if (cell = (struct Cell_window *)cell_window)
+  if ((cell = (struct Cell_window *)cell_window)&&cell->current_model)
   {
 		/* turn on the busy cursor */
 		busy_cursor_on((Widget)NULL,cell->user_interface);
@@ -1000,7 +1052,7 @@ Callback for the "Calculate" button in the menu bar.
 		/* open the history file - for now only use the potential, but eventually
 			 want to write out all variables ?? */
 		sprintf(command,"fem open history;cell_tmp write variables yq niqlist 1 "
-			"binary\0");
+			"binary");
 		return_code = Execute_command_execute_string(cell->execute_command,
 			command);
 		if (!return_code)
@@ -1058,7 +1110,7 @@ Callback for the "Calculate" button in the menu bar.
   else
   {
     display_message(ERROR_MESSAGE,"calculate_button_callback. "
-      "Missing Cell window");
+      "Invalid argument(s)");
   }
   LEAVE;
 } /* END calculate_button_callback() */
@@ -1573,7 +1625,7 @@ Set-up the scene viewer for Cell 3D.
   obj_data->time = 0.0;
   obj_data->graphics_object_name = "membrane";
   obj_data->render_type = RENDER_TYPE_SHADED;
-  sprintf(file_name,"/usr/people/nickerso/3d_cell/membrane.obj\0");
+  sprintf(file_name,"/usr/people/nickerso/3d_cell/membrane.obj");
   file_read_voltex_graphics_object_from_obj(file_name,(void *)obj_data);
   DEALLOCATE(obj_data);
   /* grab the graphics object */
@@ -1595,7 +1647,7 @@ Set-up the scene viewer for Cell 3D.
   node_data->node_manager=(cell->cell_3d).node_manager;
   node_data->node_group_manager=(cell->cell_3d).node_group_manager;
   node_data->data_group_manager=(cell->cell_3d).data_group_manager;
-  sprintf(file_name,"/usr/people/nickerso/3d_cell/membrane.exnode\0");
+  sprintf(file_name,"/usr/people/nickerso/3d_cell/membrane.exnode");
   file_read_FE_node_group(file_name,(void *)node_data);
   DEALLOCATE(node_data);
   
@@ -1621,14 +1673,13 @@ Set-up the scene viewer for Cell 3D.
     -0.824591,44.3154,-0.0387581,-0.824591,-2.43508,-0.0387581,1,0,0);
   Scene_viewer_set_view_simple((cell->cell_3d).scene_viewer,
     0,0,0,15,43.412,100);
-  Scene_viewer_set_input_mode((cell->cell_3d).scene_viewer,SCENE_VIEWER_SELECT);
   LEAVE;
 } /* END set_up_cell_3d_scene() */
 #endif /* defined (OLD_CODE) */
 
 static void initialise_cell_3d_scene(struct Cell_window *cell)
 /*******************************************************************************
-LAST MODIFIED : 08 September 1999
+LAST MODIFIED : 28 August 2000
 
 DESCRIPTION :
 Initialise the scene viewer for Cell 3D.
@@ -1649,7 +1700,8 @@ Initialise the scene viewer for Cell 3D.
     0.371067,8.52279,-63.3145,-0.884569,0.135409,0.298719,1,0,0);
   Scene_viewer_set_view_simple((cell->cell_3d).scene_viewer,
     0,0,0,15,43.412,100);
-  Scene_viewer_set_input_mode((cell->cell_3d).scene_viewer,SCENE_VIEWER_SELECT);
+	/* make sure the select_tool is initially set */
+	Cell_window_set_interactive_tool(cell,(cell->cell_3d).select_tool);
   /* turn off the axis */
   Scene_set_axis_visibility((cell->cell_3d).scene,g_INVISIBLE);
   LEAVE;
@@ -2420,6 +2472,8 @@ Global functions
 struct Cell_window *create_Cell_window(struct User_interface *user_interface,
   char *filename,struct MANAGER(Control_curve) *control_curve_manager,
   struct Unemap_package *package,
+	struct Any_object_selection *any_object_selection,
+	struct MANAGER(Interactive_tool) *interactive_tool_manager,
   struct Colour *background_colour,struct MANAGER(Light) *light_manager,
   struct Light *default_light,struct MANAGER(Light_model) *light_model_manager,
   struct Light_model *default_light_model,struct MANAGER(Scene) *scene_manager,
@@ -2438,7 +2492,7 @@ struct Cell_window *create_Cell_window(struct User_interface *user_interface,
 	struct Element_point_ranges_selection *element_point_ranges_selection,
   struct Execute_command *execute_command)
 /*******************************************************************************
-LAST MODIFIED : 9 June 2000
+LAST MODIFIED : 28 August 2000
 
 DESCRIPTION :
 Create the structures and retrieve the cell window from the uil file. <filename>
@@ -2452,7 +2506,6 @@ specifies a file to print messages to, if non-NULL.
   struct File_open_data *model_file_write_data,*cmiss_file_write_data;
   Atom WM_DELETE_WINDOW;
 	struct Callback_data callback;
-  struct Scene_input_callback scene_input_callback;
   int init_widgets = 0;
 	MrmType cell_window_class;
   static MrmRegisterArg callback_list[] = {
@@ -2478,9 +2531,9 @@ specifies a file to print messages to, if non-NULL.
     {"save_toggle_changed_callback",(XtPointer)save_toggle_changed_callback},
     {"edit_dist_changed_callback",(XtPointer)edit_dist_changed_callback},
     {"debug_toggle_changed_callback",(XtPointer)debug_toggle_changed_callback},
-    {"input_mode_callback",(XtPointer)input_mode_callback},
     {"identify_drawing_area",(XtPointer)identify_drawing_area},
     {"identify_cell_3d_form",(XtPointer)identify_cell_3d_form},
+    {"identify_toolbar_form",(XtPointer)identify_toolbar_form},
     {"file_open_and_read",(XtPointer)open_file_and_read},
     {"file_open_and_write",(XtPointer)open_file_and_write},
     {"open_model_callback",(XtPointer)open_model_callback},
@@ -2682,8 +2735,7 @@ specifies a file to print messages to, if non-NULL.
   int i,number_of_faces,start,stop;
   
   ENTER(create_Cell_window);
-  USE_PARAMETER(init_widgets);
-  if (user_interface)
+  if (user_interface&&any_object_selection&&interactive_tool_manager)
   {
 #if defined (MOTIF)
     if (MrmOpenHierarchy_base64_string(cell_window_uidh,&cell_window_hierarchy,
@@ -2757,7 +2809,18 @@ specifies a file to print messages to, if non-NULL.
         (cell->control_curve).control_curve_manager = control_curve_manager;
         (cell->control_curve).control_curve_editor_dialog = (Widget)NULL;
         /* initialise Cell 3D */
+				(cell->cell_3d).any_object_selection=any_object_selection;
+				(cell->cell_3d).interactive_tool_manager=interactive_tool_manager;
+				(cell->cell_3d).transform_tool=ACCESS(Interactive_tool)(
+					FIND_BY_IDENTIFIER_IN_MANAGER(Interactive_tool,name)(
+						"transform_tool",interactive_tool_manager));
+				(cell->cell_3d).select_tool=ACCESS(Interactive_tool)(
+					FIND_BY_IDENTIFIER_IN_MANAGER(Interactive_tool,name)(
+						"select_tool",interactive_tool_manager));
+				(cell->cell_3d).interactive_tool=(cell->cell_3d).select_tool;
         (cell->cell_3d).form = (Widget)NULL;
+        (cell->cell_3d).toolbar_form = (Widget)NULL;
+        (cell->cell_3d).toolbar_widget = (Widget)NULL;
         (cell->cell_3d).node_group_callback_id=(void *)NULL;
         (cell->cell_3d).background_colour=background_colour;
         (cell->cell_3d).light_manager=light_manager;
@@ -2962,6 +3025,29 @@ specifies a file to print messages to, if non-NULL.
                 "cell_window",cell->shell,&(cell->window),&cell_window_class))
               {
                 init_widgets=1;
+								/* interactive toolbar */
+								if ((cell->cell_3d).toolbar_widget=
+									create_interactive_toolbar_widget(
+										(cell->cell_3d).toolbar_form,interactive_tool_manager,
+										INTERACTIVE_TOOLBAR_HORIZONTAL))
+								{
+									if ((cell->cell_3d).transform_tool)
+									{
+										add_interactive_tool_to_interactive_toolbar_widget(
+											(cell->cell_3d).transform_tool,
+											(void *)(cell->cell_3d).toolbar_widget);
+									}
+									if ((cell->cell_3d).select_tool)
+									{
+										add_interactive_tool_to_interactive_toolbar_widget(
+											(cell->cell_3d).select_tool,
+											(void *)(cell->cell_3d).toolbar_widget);
+									}
+								}
+								else
+								{
+									init_widgets=0;
+								}
 #if defined (CELL_USE_NODES)
                 if ((cell->distributed).node_chooser_widget=
                   CREATE_TEXT_CHOOSE_OBJECT_WIDGET(FE_node)(
@@ -3155,24 +3241,28 @@ specifies a file to print messages to, if non-NULL.
                   {
                     /* set-up the scene */
                     initialise_cell_3d_scene(cell);
+										/* make sure the select_tool is initially set */
+										Cell_window_set_interactive_tool(cell,
+											(cell->cell_3d).select_tool);
+										/* get callbacks from interactive toolbar */
+										callback.data=(void *)cell;
+										callback.procedure=Cell_window_update_interactive_tool;
+										interactive_toolbar_widget_set_callback(
+											(cell->cell_3d).toolbar_widget,&callback);
 #if defined (CELL_USE_NODES)
                     /* ?? add the callback for the node groups ?? */
                     (cell->cell_3d).node_group_callback_id=
                       MANAGER_REGISTER(GROUP(FE_node))(cell_node_group_change,
                         (void *)cell,(cell->cell_3d).node_group_manager);
 #endif /* defined (CELL_USE_NODES) */
-                    /* add the callback for the object picking */
-                    scene_input_callback.procedure = cell_3d_picking_callback;
-                    scene_input_callback.data = (void *)cell;
-                    Scene_set_input_callback((cell->cell_3d).scene,
-                      &scene_input_callback);
+                    /* add the callback for the Cell_component selection */
+										Any_object_selection_add_callback(any_object_selection,
+											cell_3d_component_selection_change,(void *)cell);
 #if defined (NEW_CODE)
                     /* if I ever destroy the cell window need to remove the
-                       callback */
-                    scene_input_callback.procedure =
-                      (Scene_input_callback_procedure *)NULL;
-                    scene_input_callback.data = (void *)NULL;
-                    Scene_set_input_callback(scene,&scene_input_callback);
+                       callback from any_object_selection */
+										Any_object_selection_remove_callback(any_object_selection,
+											cell_3d_component_selection_change,(void *)cell);
 #endif /* defined (NEW_CODE) */
                     XtManageChild(cell->window);
                     XtRealizeWidget(cell->shell);

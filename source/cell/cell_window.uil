@@ -1,7 +1,7 @@
 !*******************************************************************************
 ! FILE : cell_window.uil
 !
-! LAST MODIFIED : 15 June 2000
+! LAST MODIFIED : 28 August 2000
 !
 ! DESCRIPTION :
 ! The widgets/gadgets for the Cell window.
@@ -26,10 +26,10 @@ procedure
 	identify_description_label;
 	identify_apply_button;
 	identify_reset_button;
+	identify_toolbar_form;
 	identify_output_pane;
 	edit_dist_changed_callback;
 	save_toggle_changed_callback;
-	input_mode_callback;
 	debug_toggle_changed_callback;
 	identify_drawing_area;
 	identify_cell_3d_form;
@@ -807,7 +807,7 @@ object
 			{
 			XmToggleButton save_toggle;
 			XmToggleButton debug_toggle;
-			XmPushButtonGadget input_mode_button;
+			XmForm toolbar_form;
 			};
 		};
 	save_toggle: XmToggleButton
@@ -841,20 +841,12 @@ object
 				};
 			};
 		};
-	input_mode_button: XmPushButtonGadget
+	toolbar_form: XmForm
 		{
-		arguments
-			{
-			XmNshadowThickness = 0;
-			XmNhighlightThickness = 0;
-			XmNlabelString = compound_string("Select");
-			};
 		callbacks
 			{
-			XmNactivateCallback = procedures
-				{
-				input_mode_callback(cell_window_structure);
-				};
+			MrmNcreateCallback = procedure
+				identify_toolbar_form(cell_window_structure);
 			};
 		};
 	help_menu_bar: XmMenuBar

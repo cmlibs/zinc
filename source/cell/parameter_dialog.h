@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : parameter_dialog.h
 
-LAST MODIFIED : 15 September 1999
+LAST MODIFIED : 28 August 2000
 
 DESCRIPTION :
 Functions and structures for using the parameter dialog boxes.
@@ -50,6 +50,16 @@ LAST MODIFIED : 18 February 1999
 DESCRIPTION :
 It the component's dialog exists, bring it up, else create a new dialog.
 ==============================================================================*/
+
+int bring_up_parameter_dialog_iterator(struct Cell_component *component,
+	void *dummy_void);
+/*******************************************************************************
+LAST MODIFIED : 28 August 2000
+
+DESCRIPTION :
+List iterator function for bringing up parameter dialogs for a cell component.
+==============================================================================*/
+
 void close_parameter_dialog(struct Cell_component *component);
 /*******************************************************************************
 LAST MODIFIED : 07 February 1999
@@ -58,6 +68,7 @@ DESCRIPTION :
 If the <component> has a parameter dialog, destroy it. Used when
 parameters are read from file to force the dialog to be re-created.
 ==============================================================================*/
+
 void update_parameter_dialog_boxes(struct Cell_window *cell);
 /*******************************************************************************
 LAST MODIFIED : 15 September 1999
