@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : managed_group_private.h
 
-LAST MODIFIED : 22 June 2000
+LAST MODIFIED : 11 June 2001
 
 DESCRIPTION :
 Special version of group_private.h for groups that are managed. These groups

@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : manager_private.h
 
-LAST MODIFIED : 5 June 2001
+LAST MODIFIED : 11 June 2001
 
 DESCRIPTION :
 Managers oversee the creation, deletion and modification of global objects -
@@ -211,7 +211,7 @@ cache, used eg. in REMOVE_ALL_OBJECTS_FROM_MANAGER. \
 static void MANAGER_END_CHANGE(object_type)( \
 	struct MANAGER(object_type) *manager) \
 /***************************************************************************** \
-LAST MODIFIED : 18 May 2001 \
+LAST MODIFIED : 11 June 2001 \
 \
 DESCRIPTION : \
 This function should be called after modifying an object, adding or removing \
@@ -1374,18 +1374,9 @@ PROTOTYPE_MANAGER_BEGIN_CACHE_FUNCTION(object_type) \
 	ENTER(MANAGER_BEGIN_CACHE(object_type)); \
 	if (manager) \
 	{ \
-		if (manager->cache) \
-		{ \
-			display_message(ERROR_MESSAGE, \
-				"MANAGER_BEGIN_CACHE(" #object_type ").  Caching already enabled."); \
-			return_code = 0; \
-		} \
-		else \
-		{ \
-			return_code = 1; \
-		} \
 		/* increment cache so we can safely nest caching */ \
 		(manager->cache)++; \
+		return_code = 1; \
 	} \
 	else \
 	{ \
