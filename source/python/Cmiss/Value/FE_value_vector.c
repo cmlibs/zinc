@@ -1,5 +1,6 @@
 #include <Python.h>
 #include "computed_variable/computed_value.h"
+#include "computed_variable/computed_value_fe_value.h"
 
 PyTypeObject CmissValueFEvaluevectorType;
 
@@ -94,7 +95,7 @@ CmissValueFEvaluevector_new(PyObject* self, PyObject* args)
 		 }
 		 else
 		 {
-			 if (!Cmiss_value_element_values_set_type(cmiss_value->value, 0, (FE_value *)NULL))
+			 if (!Cmiss_value_FE_value_vector_set_type(cmiss_value->value, 0, (FE_value *)NULL))
 			 {
 				 DEACCESS(Cmiss_value)(&cmiss_value->value);
 			 }

@@ -100,6 +100,7 @@ CmissVariableNodalvalue_new(PyObject* self, PyObject* args)
 		fe_variable_ptr = PyCObject_AsVoidPtr(variable_cpointer);
 		
 		value_type_valid=0;
+		value_type=FE_NODAL_UNKNOWN;
 		if (!strcmp("all",type))
 		{
 			value_type=FE_NODAL_UNKNOWN;
@@ -151,7 +152,7 @@ CmissVariableNodalvalue_new(PyObject* self, PyObject* args)
 					 value_type,version))
 			{
 				DEACCESS(Cmiss_variable)(&cmiss_variable->variable);
-				PyDECREF(cmiss_variable);
+				Py_DECREF(cmiss_variable);
 				cmiss_variable = (CmissVariableNodalvalueObject *)NULL;
 			}
 		}
@@ -159,7 +160,7 @@ CmissVariableNodalvalue_new(PyObject* self, PyObject* args)
 		{
 			PyErr_SetString(PyExc_AttributeError, "Invalid nodal value type.");
 			DEACCESS(Cmiss_variable)(&cmiss_variable->variable);
-			PyDECREF(cmiss_variable);
+			Py_DECREF(cmiss_variable);
 			cmiss_variable = (CmissVariableNodalvalueObject *)NULL;
 		}
 	}

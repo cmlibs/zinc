@@ -106,18 +106,18 @@ CmissFEelement_wrap(PyObject* self, PyObject* args)
 static PyObject *
 CmissFEelement_repr(PyObject* self)
 {
-	char *name;
 	CmissFEelementObject *cmiss_fe_element;
 	PyObject *string;
+	struct CM_element_information identifier;
 
 	string = (PyObject *)NULL;
  	if (_CmissFEelement_check(self))
 	{		
 		cmiss_fe_element = (CmissFEelementObject *)self;
-		if (GET_NAME(FE_element)(cmiss_fe_element->fe_element, &name))
+		if (get_FE_element_identifier(cmiss_fe_element->fe_element,
+			&identifier))
 		{
-			string = PyString_FromString(name);
-			free(name);
+			string = PyString_FromFormat("%d",identifier.number);
 		}
 	}
 	else

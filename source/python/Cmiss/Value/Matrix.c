@@ -78,7 +78,7 @@ CmissValueMatrix_sub_matrix(PyObject* self, PyObject* args, PyObject *keywds)
 static struct PyMethodDef CmissValueMatrix_methods[] =
 	{
 		{"get_matrix_cpointer", CmissValueMatrix_get_matrix_cpointer, METH_VARARGS},
-		{"sub_matrix", CmissValueMatrix_sub_matrix, METH_VARARGS|METH_KEYWORDS},
+		{"sub_matrix", (PyCFunction)CmissValueMatrix_sub_matrix, METH_VARARGS|METH_KEYWORDS},
 		{NULL, NULL, 0}
 	};
 
@@ -299,86 +299,85 @@ CmissValueMatrix_str(PyObject* self)
 							}
 						}
 					}
-				
-				}
-				else
-				{
-					for (i=0;i<max_rows/2;i++)
+					else
 					{
-						PyString_Concat(&string, PyObject_Str(PyFloat_FromDouble(values[i])));
-						if (number_of_columns<max_columns)
+						for (i=0;i<max_rows/2;i++)
 						{
-							for (j=1;j<number_of_columns;j++)
+							PyString_Concat(&string, PyObject_Str(PyFloat_FromDouble(values[i])));
+							if (number_of_columns<max_columns)
 							{
-								PyString_Concat(&string, PyString_FromFormat(","));
-								PyString_Concat(&string, PyObject_Str(PyFloat_FromDouble(
-								   values[i+j*number_of_rows])));
+								for (j=1;j<number_of_columns;j++)
+								{
+									PyString_Concat(&string, PyString_FromFormat(","));
+									PyString_Concat(&string, PyObject_Str(PyFloat_FromDouble(
+																						  values[i+j*number_of_rows])));
+								}
 							}
-						}
-						else
-						{
-							for (j=1;j<max_columns/2;j++)
+							else
 							{
-								PyString_Concat(&string, PyString_FromFormat(","));
-								PyString_Concat(&string, PyObject_Str(PyFloat_FromDouble(
-								   values[i+j*number_of_rows])));
+								for (j=1;j<max_columns/2;j++)
+								{
+									PyString_Concat(&string, PyString_FromFormat(","));
+									PyString_Concat(&string, PyObject_Str(PyFloat_FromDouble(
+																						  values[i+j*number_of_rows])));
+								}
+								PyString_Concat(&string, PyString_FromString(",..."));
+								for (j=number_of_columns-max_columns/2;j<number_of_columns;
+									  j++)
+								{
+									PyString_Concat(&string, PyString_FromFormat(","));
+									PyString_Concat(&string, PyObject_Str(PyFloat_FromDouble(
+																						  values[i+j*number_of_rows])));
+								}
 							}
-							PyString_Concat(&string, PyString_FromString(",..."));
-							for (j=number_of_columns-max_columns/2;j<number_of_columns;
-								  j++)
-							{
-								PyString_Concat(&string, PyString_FromFormat(","));
-								PyString_Concat(&string, PyObject_Str(PyFloat_FromDouble(
-								   values[i+j*number_of_rows])));
-							}
-						}
-						PyString_Concat(&string, PyString_FromString("\n"));
-					}
-					PyString_Concat(&string, PyString_FromString("...\n"));
-					for (i=number_of_rows-max_rows/2;i<number_of_rows;i++)
-					{
-						PyString_Concat(&string, PyObject_Str(PyFloat_FromDouble(values[i])));
-						if (number_of_columns<max_columns)
-						{
-							for (j=1;j<number_of_columns;j++)
-							{
-								PyString_Concat(&string, PyString_FromFormat(","));
-								PyString_Concat(&string, PyObject_Str(PyFloat_FromDouble(
-								   values[i+j*number_of_rows])));
-							}
-						}
-						else
-						{
-							for (j=1;j<max_columns/2;j++)
-							{
-								PyString_Concat(&string, PyString_FromFormat(","));
-								PyString_Concat(&string, PyObject_Str(PyFloat_FromDouble(
-								   values[i+j*number_of_rows])));
-							}
-							PyString_Concat(&string, PyString_FromString(",..."));
-							for (j=number_of_columns-max_columns/2;j<number_of_columns;
-								  j++)
-							{
-								PyString_Concat(&string, PyString_FromFormat(","));
-								PyString_Concat(&string, PyObject_Str(PyFloat_FromDouble(
-								   values[i+j*number_of_rows])));
-							}
-						}
-						if (i+1<number_of_rows)
-						{
 							PyString_Concat(&string, PyString_FromString("\n"));
 						}
+						PyString_Concat(&string, PyString_FromString("...\n"));
+						for (i=number_of_rows-max_rows/2;i<number_of_rows;i++)
+						{
+							PyString_Concat(&string, PyObject_Str(PyFloat_FromDouble(values[i])));
+							if (number_of_columns<max_columns)
+							{
+								for (j=1;j<number_of_columns;j++)
+								{
+									PyString_Concat(&string, PyString_FromFormat(","));
+									PyString_Concat(&string, PyObject_Str(PyFloat_FromDouble(
+																						  values[i+j*number_of_rows])));
+								}
+							}
+							else
+							{
+								for (j=1;j<max_columns/2;j++)
+								{
+									PyString_Concat(&string, PyString_FromFormat(","));
+									PyString_Concat(&string, PyObject_Str(PyFloat_FromDouble(
+																						  values[i+j*number_of_rows])));
+								}
+								PyString_Concat(&string, PyString_FromString(",..."));
+								for (j=number_of_columns-max_columns/2;j<number_of_columns;
+									  j++)
+								{
+									PyString_Concat(&string, PyString_FromFormat(","));
+									PyString_Concat(&string, PyObject_Str(PyFloat_FromDouble(
+																						  values[i+j*number_of_rows])));
+								}
+							}
+							if (i+1<number_of_rows)
+							{
+								PyString_Concat(&string, PyString_FromString("\n"));
+							}
+						}
 					}
+				}
+				if (values)
+				{
+					free(values);
 				}
 			}
 			else
 			{
 				Py_DECREF(string);
 				string = (PyObject *)NULL;
-			}
-			if (values)
-			{
-				free(values);
 			}
 		}
 		if (string)

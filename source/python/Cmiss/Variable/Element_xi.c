@@ -1,5 +1,6 @@
 #include <Python.h>
 #include "computed_variable/computed_variable.h"
+#include "computed_variable/computed_variable_finite_element.h"
 
 staticforward PyTypeObject CmissVariableElementxiType;
 
@@ -45,8 +46,10 @@ CmissVariableElementxi_new(PyObject* self, PyObject* args)
 {
 	char *name;
 	CmissVariableElementxiObject *cmiss_variable;
+	int dimension;
 
-	if (!PyArg_ParseTuple(args,"s:new", &name)) 
+	dimension = 0;
+	if (!PyArg_ParseTuple(args,"s|d:new", &name, &dimension)) 
 		return NULL;
 
 	cmiss_variable = PyObject_New(CmissVariableElementxiObject, &CmissVariableElementxiType);
@@ -54,10 +57,10 @@ CmissVariableElementxi_new(PyObject* self, PyObject* args)
 		name))
 	{
 		ACCESS(Cmiss_variable)(cmiss_variable->variable);
-		if (!Cmiss_variable_element_xi_set_type(cmiss_variable->variable))
+		if (!Cmiss_variable_element_xi_set_type(cmiss_variable->variable, dimension))
 		{
 			DEACCESS(Cmiss_variable)(&cmiss_variable->variable);
-			PyDECREF(cmiss_variable);
+			Py_DECREF(cmiss_variable);
 			cmiss_variable = (CmissVariableElementxiObject *)NULL;
 		}
 	}
@@ -155,7 +158,7 @@ CmissVariableElementxi_repr(PyObject* self)
 static PyTypeObject CmissVariableElementxiType = {
     PyObject_HEAD_INIT(NULL)
     0,
-    "Element_xi",
+    "Cmiss.Variable.Element_xi",
     sizeof(CmissVariableElementxiObject),
     0,
     CmissVariableElementxi_dealloc, /*tp_dealloc*/

@@ -1,6 +1,6 @@
 #include <Python.h>
 #include "computed_variable/computed_value.h"
-#include "computed_variable/computed_variable.h"
+#include "computed_variable/computed_value_derivative_matrix.h"
 #include "python/Cmiss/Value/Value.h"
 #include "python/Cmiss/Value/Matrix.h"
 #include "python/Cmiss/Variable/Variable.h"
@@ -304,7 +304,7 @@ CmissValueDerivativematrix_repr(PyObject* self)
 		cmiss_value = (CmissValueDerivativematrixObject *)self;
 		if (Cmiss_value_derivative_matrix_get_type(cmiss_value->value,
 			&dependent_variable_ptr,&order,&independent_variables,&matrices)&&
-			dependent_variable&&(0<order)&&independent_variables)
+			dependent_variable_ptr&&(0<order)&&independent_variables)
 		{
 			/* SAB Should we create new wrappers for all these objects? */
 			string = PyString_FromString("Cmiss.Value.Derivative_matrix.new(");
@@ -365,7 +365,7 @@ CmissValueDerivativematrix_str(PyObject* self)
 		cmiss_value = (CmissValueDerivativematrixObject *)self;
 		if (Cmiss_value_derivative_matrix_get_type(cmiss_value->value,
 			&dependent_variable_ptr,&order,&independent_variables,&matrices)&&
-			dependent_variable&&(0<order)&&independent_variables)
+			dependent_variable_ptr&&(0<order)&&independent_variables)
 		{
 			number_of_matrices = 0;
 			/* SAB Should we create new wrappers for all these objects? */

@@ -65,9 +65,39 @@ CmissCmguicommanddata_execute_command(PyObject* self, PyObject* args)
 	return (return_code);
 }
 
+static PyObject*
+CmissCmguicommanddata_get_cmiss_root_region(PyObject* self, PyObject* args)
+{
+	char *name;
+	PyObject *cmiss_region, *region_module;
+	CmissCmguicommanddataObject *cmgui_command_data;
+
+	if (!(region_module = PyImport_ImportModule("Cmiss.Region.Region")))
+	{
+		PyErr_SetString(PyExc_ImportError, "Unable to import Cmiss.Region module");
+		return NULL;
+	}
+
+	if (_CmissCmguicommanddata_check(self))
+	{
+		cmgui_command_data = (CmissCmguicommanddataObject *)self;
+
+		cmiss_region = PyObject_CallMethod(region_module, "wrap", "O",
+			PyCObject_FromVoidPtr(Cmiss_command_data_get_root_region(
+			cmgui_command_data->command_data), NULL));
+	}
+	else
+	{
+		cmiss_region = PyInt_FromLong(0);
+	}
+
+	return cmiss_region;
+}
+
 static struct PyMethodDef CmissCmguicommanddata_methods[] =
 	{
 		{"get_cmgui_command_data_cpointer", CmissCmguicommanddata_get_cmgui_command_data_cpointer, 1},
+		{"get_cmiss_root_region", CmissCmguicommanddata_get_cmiss_root_region, 1},
 		{"execute_command", CmissCmguicommanddata_execute_command, 1},
 		{NULL, NULL, 0}
 	};
@@ -77,7 +107,7 @@ static struct PyMethodDef CmissCmguicommanddata_methods[] =
 static PyObject*
 CmissCmguicommanddata_new(PyObject* self, PyObject* args)
 {
-	char *argv[] = {"python"};
+	char *argv[] = {"python","-console"};
 	int argc;
 	CmissCmguicommanddataObject *cmgui_command_data;
 

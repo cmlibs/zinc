@@ -1,5 +1,10 @@
 #include <Python.h>
+#include "api/cmiss_value.h"
+#include "api/cmiss_value_element_xi.h"
 #include "computed_variable/computed_value.h"
+#include "computed_variable/computed_value_finite_element.h"
+#include "computed_variable/computed_value_matrix.h"
+#include "finite_element/finite_element.h"
 
 PyTypeObject CmissValueElementxiType;
 
@@ -34,8 +39,8 @@ CmissValueElementxi_get_value_cpointer(PyObject* self, PyObject* args)
 
 static struct PyMethodDef CmissValueElementxi_methods[] =
 	{
-		{"get_value_cpointer", CmissValueElementxi_get_value_cpointer, 1},
-		{NULL, NULL, 0}
+		{"get_value_cpointer", CmissValueElementxi_get_value_cpointer, 1, NULL},
+		{NULL, NULL, 0, NULL}
 	};
 
 /* Type Methods */
@@ -98,7 +103,7 @@ CmissValueElementxi_new(PyObject* self, PyObject* args)
 					 xi[i] = (FE_value)PyFloat_AsDouble(float_item);
 					 Py_DECREF(float_item);
 				 }
-				 if (!Cmiss_value_element_xi_set_type(cmiss_value->value, element_ptr, xi))
+				 if (!Cmiss_value_element_xi_set_type(cmiss_value->value, number_of_xi, element_ptr, xi))
 				 {
 					 free(xi);
 					 DEACCESS(Cmiss_value)(&cmiss_value->value);
@@ -112,7 +117,7 @@ CmissValueElementxi_new(PyObject* self, PyObject* args)
 		 }
 		 else
 		 {
-			 if (!Cmiss_value_element_xi_set_type(cmiss_value->value, element_ptr, (FE_value *)NULL))
+			 if (!Cmiss_value_element_xi_set_type(cmiss_value->value, 0, element_ptr, (FE_value *)NULL))
 			 {
 				 DEACCESS(Cmiss_value)(&cmiss_value->value);
 			 }
@@ -188,7 +193,7 @@ CmissValueElementxi_str(PyObject* self)
 {
 	char *element_name;
 	CmissValueElementxiObject *cmiss_value;
-	int i, number_of_xi;
+	int dimension, i, number_of_xi;
 	FE_value *xi;
 	struct FE_element *element;
 	PyObject *string;
@@ -198,10 +203,10 @@ CmissValueElementxi_str(PyObject* self)
  	if (_CmissValueElementxi_check(self))
 	{		
 		cmiss_value = (CmissValueElementxiObject *)self;
-		if (Cmiss_value_matrix_get_type(cmiss_value->value, &element, &xi)&&
+		if (Cmiss_value_element_xi_get_type(cmiss_value->value, &dimension, &element, &xi)&&
 			FE_element_to_any_element_string(element, &element_name))
 		{
-			string = PyString_FromFormat("[%s, xi=[", element_name);
+			string = PyString_FromFormat("[dimension = %d, element=%s, xi=[", dimension, element_name);
 			if (0<(number_of_xi=get_FE_element_dimension(element)))
 			{
 				for (i = 0 ; i < number_of_xi ; i++)

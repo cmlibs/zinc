@@ -1,6 +1,7 @@
 #include <Python.h>
+#include "api/cmiss_variable.h"
+#include "api/cmiss_variable_derivative.h"
 #include "computed_variable/computed_variable.h"
-#include "computed_variable/computed_variable_finite_element.h"
 
 staticforward PyTypeObject CmissVariableDerivativeType;
 
@@ -102,38 +103,27 @@ CmissVariableDerivative_new(PyObject* self, PyObject* args)
 	}
 
 	cmiss_variable = PyObject_New(CmissVariableDerivativeObject, &CmissVariableDerivativeType);
-	if (cmiss_variable->variable = CREATE(Cmiss_variable)((struct Cmiss_variable_package *)NULL, name))
-	{
-		ACCESS(Cmiss_variable)(cmiss_variable->variable);
-		if (dependent_variable&&independent_variables_array&&
+	if (dependent_variable&&independent_variables_array&&
 			(0<(order=PyList_Size(independent_variables_array))))
+	{
+		if (independent_variable_ptrs=(Cmiss_variable_id *)malloc(order*
+				 sizeof(Cmiss_variable_id)))
 		{
-			if (independent_variable_ptrs=(Cmiss_variable_id *)malloc(order*
-					 sizeof(Cmiss_variable_id)))
+			i=0;
+			while ((i<order)&&(variable_cpointer = PyObject_CallMethod(
+										 PySequence_GetItem(independent_variables_array, i),
+										 "get_variable_cpointer", (char *)NULL)) &&
+				PyCObject_Check(variable_cpointer))
 			{
-				i=0;
-				while ((i<order)&&(variable_cpointer = PyObject_CallMethod(
-					 PySequence_GetItem(independent_variables_array, i),
-					 "get_variable_cpointer", (char *)NULL)) &&
-					PyCObject_Check(variable_cpointer))
+				independent_variable_ptrs[i] = (Cmiss_variable_id)PyCObject_AsVoidPtr(variable_cpointer);
+				i++;
+			}
+			if (i >= order)
+			{
+				cmiss_variable = PyObject_New(CmissVariableDerivativeObject, &CmissVariableDerivativeType);
+				if (!(cmiss_variable->variable = CREATE(Cmiss_variable_derivative)(
+					name,dependent_variable_ptr, order, independent_variable_ptrs)))
 				{
-					independent_variable_ptrs[i] = (Cmiss_variable_id)PyCObject_AsVoidPtr(variable_cpointer);
-					i++;
-				}
-				if (i >= order)
-				{
-					if (!Cmiss_variable_derivative_set_type(cmiss_variable->variable,
-								dependent_variable_ptr, order, independent_variable_ptrs))
-					{
-						free(independent_variable_ptrs);
-						DEACCESS(Cmiss_variable)(&cmiss_variable->variable);
-						Py_DECREF(cmiss_variable);
-						cmiss_variable = (CmissVariableDerivativeObject *)NULL;
-					}
-				}
-				else
-				{
-					PyErr_SetString(PyExc_AttributeError, "Unable to extract variable pointer from at one of the values in the independent_variable array.");
 					free(independent_variable_ptrs);
 					DEACCESS(Cmiss_variable)(&cmiss_variable->variable);
 					Py_DECREF(cmiss_variable);
@@ -142,23 +132,14 @@ CmissVariableDerivative_new(PyObject* self, PyObject* args)
 			}
 			else
 			{
-				DEACCESS(Cmiss_variable)(&cmiss_variable->variable);
-				Py_DECREF(cmiss_variable);
+				PyErr_SetString(PyExc_AttributeError, "Unable to extract variable pointer from at one of the values in the independent_variable array.");
+				free(independent_variable_ptrs);
 				cmiss_variable = (CmissVariableDerivativeObject *)NULL;
 			}
 		}
 		else
 		{
-			DEACCESS(Cmiss_variable)(&cmiss_variable->variable);
-			Py_DECREF(cmiss_variable);
 			cmiss_variable = (CmissVariableDerivativeObject *)NULL;
-		}
-	}
-	else
-	{
-		if (name)
-		{
-			free(name);
 		}
 	}
 

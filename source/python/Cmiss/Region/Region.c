@@ -390,11 +390,8 @@ CmissRegion_repr(PyObject* self)
  	if (_CmissRegion_check(self))
 	{		
 		cmiss_region = (CmissRegionObject *)self;
-		if (get_name_Cmiss_region(cmiss_region->region, &name))
-		{
-			string = PyString_FromString(name);
-			free(name);
-		}
+		/* Regions do not have their own unique name */
+		string = PyString_FromString("Region");
 	}
 	else
 	{
@@ -402,53 +399,6 @@ CmissRegion_repr(PyObject* self)
 	}
 	return (string);
 }
-
-static PyObject*
-CmissRegion_command_data_get_root_region(PyObject* self, PyObject* args)
-{
-	char *name;
-	CmissRegionObject *cmiss_region;
-	PyObject *cmiss_region_cpointer, *cmgui_command_data_module, *cmgui_command_data,
-		*cmgui_command_data_cpointer;
-	struct Cmiss_command_data *cmgui_command_data_ptr;
-
-	if (!(PyArg_ParseTuple(args,"O:wrap", &cmgui_command_data)))
-	{
-		PyErr_SetString(PyExc_AttributeError, "Incorrect argument for wrap function.");
-		return NULL;			 
-	}
-
-	if (!(cmgui_command_data_module = PyImport_ImportModule("Cmiss.Cmgui_command_data")))
-	{
-		PyErr_SetString(PyExc_ImportError, "Unable to import Cmiss.cmgui_command_data module");
-		return NULL;
-	}
-
-	if (!(PyObject_IsTrue(PyObject_CallMethod(cmgui_command_data_module, "check", "O", cmgui_command_data))))
-	{
-		PyErr_SetString(PyExc_AttributeError, "First argument must be a Cmiss.cmgui_command_data");
-		return NULL;
-	}
-
-	if (!((cmgui_command_data_cpointer = PyObject_CallMethod(cmgui_command_data, "get_cmgui_command_data_cpointer", (char *)NULL)) &&
-			 PyCObject_Check(cmgui_command_data_cpointer)))
-	{
-		PyErr_SetString(PyExc_AttributeError, "Unable to extract cmgui_command_data pointer from cmgui_command_data.");
-		return NULL;			 
-	}
-	cmgui_command_data_ptr = (struct Cmiss_command_data *)PyCObject_AsVoidPtr(cmgui_command_data_cpointer);
-
-	cmiss_region = PyObject_New(CmissRegionObject, &CmissRegionType);
-	if (!(cmiss_region->region = ACCESS(Cmiss_region)(
-		Cmiss_command_data_get_root_region(cmgui_command_data_ptr))))
-	{
-		PyErr_SetString(PyExc_AttributeError, "Unable to extract Cmiss.Region pointer.");
-		return NULL;			 
-	}
-
-	return (PyObject*)cmiss_region;
-}
-
 
 static PyTypeObject CmissRegionType = {
     PyObject_HEAD_INIT(NULL)
@@ -475,8 +425,6 @@ static PyMethodDef CmissRegionType_methods[] = {
      "Check if object is of type Cmiss Region object."},
     {"wrap", CmissRegion_wrap, METH_VARARGS,
      "Wrap a C CmissRegion in a python Cmiss Region object."},
-    {"command_data_get_root_region", CmissRegion_command_data_get_root_region, METH_VARARGS,
-     "Returns a Python CmissRegion object containing the root region from the cmgui_command_data."},
     {NULL, NULL, 0, NULL}
 };
 
