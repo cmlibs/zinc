@@ -1,10 +1,12 @@
 //******************************************************************************
 // FILE : function_composite.cpp
 //
-// LAST MODIFIED : 15 March 2004
+// LAST MODIFIED : 11 April 2004
 //
 // DESCRIPTION :
 //==============================================================================
+
+#include <sstream>
 
 #include "computed_variable/function_composite.hpp"
 #include "computed_variable/function_variable_composite.hpp"

@@ -1,10 +1,12 @@
 //******************************************************************************
 // FILE : function_derivative_matrix.cpp
 //
-// LAST MODIFIED : 17 March 2004
+// LAST MODIFIED : 11 April 2004
 //
 // DESCRIPTION :
 //==============================================================================
+
+#include <sstream>
 
 #include "computed_variable/function_derivative_matrix.hpp"
 #include "computed_variable/function_matrix.hpp"

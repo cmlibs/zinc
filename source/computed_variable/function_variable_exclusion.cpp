@@ -1,7 +1,7 @@
 //******************************************************************************
 // FILE : function_variable_exclusion.cpp
 //
-// LAST MODIFIED : 19 March 2004
+// LAST MODIFIED : 11 April 2004
 //
 // DESCRIPTION :
 //==============================================================================
@@ -10,6 +10,7 @@
 #include <iterator>
 #include <typeinfo>
 #include <iostream>
+#include <sstream>
 
 #include "computed_variable/function_variable_exclusion.hpp"
 

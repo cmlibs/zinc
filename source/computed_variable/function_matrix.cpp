@@ -1,11 +1,13 @@
 //******************************************************************************
 // FILE : function_matrix.cpp
 //
-// LAST MODIFIED : 17 March 2004
+// LAST MODIFIED : 11 April 2004
 //
 // DESCRIPTION :
 //???DB.  Should be template?
 //==============================================================================
+
+#include <sstream>
 
 // to use lapack with ublas
 #include <boost/numeric/bindings/traits/ublas_matrix.hpp>
