@@ -473,7 +473,7 @@ Perform MIL analysis on the image cache.
 		result_depth = 1;
 		for (i = 0; i < results.number_of_tokens; i++)
 		{
-			if (results.tokens[i].string == "mil")
+			if (strcmp(results.tokens[i].string,"mil") == 0)
 			{
 			        result_depth *= 12;
 			}
@@ -603,16 +603,16 @@ Perform MIL analysis on the image cache.
 						tbsp = (1.0/tbn) - tbth;	/* Tb.Sp, [mm] */
 						for (i = 0; i < results.number_of_tokens; i++)
 						{
-						        if (results.tokens[i].string == "euler")
+						        if (strcmp(results.tokens[i].string, "euler") == 0)
 							{
 							        Spatial_Euler_number(pixsize, h, &euler_number);
 							}
-							else if (results.tokens[i].string == "smi")
+							else if (strcmp(results.tokens[i].string, "smi") == 0)
 							{
 							        Spatial_mean_curvature(pixsize,h, &mean_curvature);
 								SMI = 2.025 * 12.0 * mean_curvature *vf / (sd * sd) ;
 							}
-							else if (results.tokens[i].string == "mil" && (number_of_dirs > 0))
+							else if ((strcmp(results.tokens[i].string, "mil") == 0) && (number_of_dirs > 0))
 							{
 							        tintrsctn = 0;
 								num_tlines = 0;
@@ -641,42 +641,42 @@ Perform MIL analysis on the image cache.
 						}
 						for (i = 0; i < results.number_of_tokens; i++)
 						{
-						        if (results.tokens[i].string == "bvtv")
+						        if (strcmp(results.tokens[i].string, "bvtv") == 0)
 							{
 							        *result_index = vf;
 								result_index++;
 							}
-							else if (results.tokens[i].string == "bsbv")
+							else if (strcmp(results.tokens[i].string, "bsbv") == 0)
 							{
 							        *result_index = bsbv;
 								result_index++;
 							}
-							else if (results.tokens[i].string == "tbth")
+							else if (strcmp(results.tokens[i].string, "tbth") == 0)
 							{
 							        *result_index = tbth;
 								result_index++;
 							}
-							else if (results.tokens[i].string == "tbsp")
+							else if (strcmp(results.tokens[i].string, "tbsp") == 0)
 							{
 							        *result_index = tbsp;
 								result_index++;
 							}
-							else if (results.tokens[i].string == "tbn")
+							else if (strcmp(results.tokens[i].string, "tbn") == 0)
 							{
 							        *result_index = tbn;
 								result_index++;
 							}
-							else if (results.tokens[i].string == "euler")
+							else if (strcmp(results.tokens[i].string, "euler") == 0)
 							{
 							        *result_index = euler_number;
 								result_index++;
 							}
-							else if (results.tokens[i].string == "smi")
+							else if (strcmp(results.tokens[i].string, "smi") == 0)
 							{
 							        *result_index = SMI;
 								result_index++;
 							}
-							else if (results.tokens[i].string == "mil")
+							else if (strcmp(results.tokens[i].string, "mil") == 0)
 							{
 							        *result_index = eigvecs[0];
 								result_index++;
