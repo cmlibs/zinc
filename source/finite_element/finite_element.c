@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : finite_element.c
 
-LAST MODIFIED : 16 November 2001
+LAST MODIFIED : 18 January 2002
 
 DESCRIPTION :
 Functions for manipulating finite element structures.
@@ -15365,32 +15365,6 @@ Creates and returns a list containing all the nodes that are in both
 	return (intersection_list);
 } /* FE_node_group_list_intersection */
 
-int FE_node_can_be_destroyed(struct FE_node *node)
-/*******************************************************************************
-LAST MODIFIED : 16 April 1999
-
-DESCRIPTION :
-Returns true if the <node> is only accessed once (assumed to be by the manager).
-==============================================================================*/
-{
-	int return_code;
-
-	ENTER(FE_node_can_be_destroyed);
-	if (node)
-	{
-		return_code=(1==node->access_count);
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"FE_node_can_be_destroyed.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* FE_node_can_be_destroyed */
-
 int FE_node_is_embedded_in_changed_element(struct FE_node *node,
 	void *data_void)
 /*******************************************************************************
@@ -18605,6 +18579,8 @@ PROTOTYPE_MANAGER_COPY_IDENTIFIER_FUNCTION(FE_node,cm_node_identifier,int)
 
 DECLARE_MANAGER_FUNCTIONS(FE_node)
 
+DECLARE_DEFAULT_MANAGED_OBJECT_NOT_IN_USE_FUNCTION(FE_node)
+
 DECLARE_MANAGER_IDENTIFIER_FUNCTIONS(FE_node,cm_node_identifier,int)
 
 int overwrite_FE_node_with_cm_node_identifier(struct FE_node *destination,
@@ -18730,31 +18706,6 @@ DECLARE_MANAGED_GROUP_FUNCTIONS(FE_node)
 
 DECLARE_FIND_BY_IDENTIFIER_IN_GROUP_FUNCTION(FE_node,cm_node_identifier,int,
 	compare_int)
-
-#if defined (OLD_CODE)
-/* indexed list and manager module functions included with MANAGED_GROUP */
-DECLARE_GROUP_FUNCTIONS(FE_node)
-
-DECLARE_FIND_BY_IDENTIFIER_IN_GROUP_FUNCTION(FE_node,cm_node_identifier,int,
-	compare_int)
-
-#if !defined (FINITE_ELEMENT_USE_SAFE_LIST)
-DECLARE_INDEXED_LIST_FUNCTIONS(GROUP(FE_node))
-
-DECLARE_FIND_BY_IDENTIFIER_IN_INDEXED_LIST_FUNCTION(GROUP(FE_node),name, \
-	char *,strcmp)
-#else /* FINITE_ELEMENT_USE_SAFE_LIST */
-DECLARE_LIST_FUNCTIONS(GROUP(FE_node))
-DECLARE_FIND_BY_IDENTIFIER_IN_LIST_FUNCTION(GROUP(FE_node),name, \
-	char *,strcmp)
-#endif /* FINITE_ELEMENT_USE_SAFE_LIST */
-
-DECLARE_GROUP_MANAGER_COPY_FUNCTIONS(FE_node)
-
-DECLARE_MANAGER_FUNCTIONS(GROUP(FE_node))
-
-DECLARE_MANAGER_IDENTIFIER_FUNCTIONS(GROUP(FE_node),name,char *)
-#endif /* defined (OLD_CODE) */
 
 int set_FE_node_group(struct Parse_state *state,void *node_group_address_void,
 	void *node_group_manager_void)
@@ -20560,6 +20511,8 @@ PROTOTYPE_MANAGER_COPY_WITH_IDENTIFIER_FUNCTION(FE_basis,type)
 } /* MANAGER_COPY_WITH_IDENTIFIER(FE_basis,type) */
 
 DECLARE_MANAGER_FUNCTIONS(FE_basis)
+
+DECLARE_DEFAULT_MANAGED_OBJECT_NOT_IN_USE_FUNCTION(FE_basis)
 
 DECLARE_MANAGER_IDENTIFIER_FUNCTIONS(FE_basis,type,int *)
 
@@ -25565,6 +25518,7 @@ the memory for the information and sets <*field_info_address> to NULL.
 } /* DESTROY(FE_element_field_info) */
 
 DECLARE_ACCESS_OBJECT_FUNCTION(FE_element_field_info)
+
 PROTOTYPE_DEACCESS_OBJECT_FUNCTION(FE_element_field_info)
 { 
 	int return_code; 
@@ -27107,8 +27061,8 @@ sets <*element_shape_address> to NULL.
 	return (return_code);
 } /* DESTROY(FE_element_shape) */
 
-
 DECLARE_ACCESS_OBJECT_FUNCTION(FE_element_shape)
+
 PROTOTYPE_DEACCESS_OBJECT_FUNCTION(FE_element_shape)
 { 
 	int return_code; 
@@ -30107,11 +30061,11 @@ Function is recursive for some <remove_element_mode>s.
 static int FE_element_parent_has_other_parent(
 	struct FE_element_parent *element_parent,void *first_parent_void)
 /*******************************************************************************
-LAST MODIFIED : 4 July 2000
+LAST MODIFIED : 18 January 2002
 
 DESCRIPTION :
-Returns true if the parent element referred to by the <element_parent> is
-of the same CM_element_type as first_parent_void yet not the same.
+Returns true if the parent element referred to by the <element_parent> had
+any ancestor of the same CM_element_type as <first_parent> but not the same.
 ==============================================================================*/
 {
 	int return_code;
@@ -30137,155 +30091,116 @@ of the same CM_element_type as first_parent_void yet not the same.
 	return (return_code);
 } /* FE_element_parent_has_other_parent */
 
-int FE_element_has_other_parent_or_can_be_destroyed(struct FE_element *element,
-	struct FE_element *first_parent)
+int FE_element_is_managed_with_other_parent_or_not_in_use(
+	struct FE_element *element, struct FE_element *first_parent,
+	struct MANAGER(FE_element) *element_manager)
 /*******************************************************************************
-LAST MODIFIED : 4 July 2000
+LAST MODIFIED : 18 January 2002
 
 DESCRIPTION :
 Returns true if a different parent of the same CM_element_type as <first_parent>
 can be found for <element>, or <element> itself can be destroyed.
 Notes:
 - Faces do not access their parents - see CREATE(FE_element_parent).
-- Called by FE_element_can_be_destroyed to ensure that all faces and lines in
-  it can either be destroyed with it or left on there own due to the presence
-  of other parent elements.
+- Called by FE_element manager function MANAGED_OBJECT_NOT_IN_USE to ensure that
+  all faces and lines in it can either be destroyed with it or left on their own
+	due to the presence of other parent elements.
 - This function is recursive.
 ==============================================================================*/
 {
-	int i,parent_access_count,return_code;
+	int i, manager_access_count, parent_access_count, return_code;
 	struct FE_element **face;
 
-	ENTER(FE_element_has_other_parent_or_can_be_destroyed);
-	if (element&&element->shape)
+	ENTER(FE_element_is_managed_with_other_parent_or_not_in_use);
+	return_code = 0;
+	if (element && first_parent && element_manager)
 	{
-		if (FIRST_OBJECT_IN_LIST_THAT(FE_element_parent)(
-			FE_element_parent_has_other_parent,(void *)first_parent,
-			element->parent_list))
+		if (IS_OBJECT_IN_LIST(FE_element)(element, element_manager->object_list))
 		{
-			return_code=1;
-		}
-		else
-		{
-			/* valid access count is 1 from manager and 1 from each parent */
-			parent_access_count=
-				NUMBER_IN_LIST(FE_element_parent)(element->parent_list);
-			if ((1+parent_access_count)==element->access_count)
+			if ((element != first_parent) &&
+				((struct FE_element_parent *)NULL !=
+					FIRST_OBJECT_IN_LIST_THAT(FE_element_parent)(
+						FE_element_parent_has_other_parent,(void *)first_parent,
+						element->parent_list)))
 			{
-				/* ensure all faces (and their faces) satisfy this function too */
-				return_code=1;
-				if (face=element->faces)
-				{
-					for (i=element->shape->number_of_faces;(0<i)&&return_code;i--)
-					{
-						if (*face)
-						{
-							return_code=FE_element_has_other_parent_or_can_be_destroyed(
-								*face,first_parent);
-						}
-					}
-					face++;
-				}
+				return_code = 1;
 			}
 			else
 			{
-				if (parent_access_count >= element->access_count)
+				/* manager changed_object_list may also access object */
+				manager_access_count = 1;
+				if (IS_OBJECT_IN_LIST(FE_element)(element,
+					element_manager->message->changed_object_list))
 				{
-					display_message(ERROR_MESSAGE,
-						"FE_element_has_other_parent_or_can_be_destroyed.  "
-						"Access count of %d is less sum of manager(1) and parents(%d)",
-						element->access_count,parent_access_count);
+					manager_access_count++;
 				}
-				return_code=0;
-			}
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"FE_element_has_other_parent_or_can_be_destroyed.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* FE_element_has_other_parent_or_can_be_destroyed */
-
-int FE_element_can_be_destroyed(struct FE_element *element)
-/*******************************************************************************
-LAST MODIFIED : 4 July 2000
-
-DESCRIPTION :
-Returns true if the <element> is only accessed by its manager (ie. starting
-access count of 1) and its parents, and that either all its faces have other
-parents or can themselves be destroyed.
-Notes:
-- Faces do not access their parents - see CREATE(FE_element_parent).
-- Ensure this function returns true before passing the element to
-  remove_FE_element_and_faces_from_manager.
-- This function is recursive.
-==============================================================================*/
-{
-	int i,parent_access_count,return_code;
-	struct FE_element **face;
-
-	ENTER(FE_element_can_be_destroyed);
-	if (element&&element->shape)
-	{
-		/* valid access count is 1 from manager and 1 from each parent */
-		parent_access_count=NUMBER_IN_LIST(FE_element_parent)(element->parent_list);
-		if ((1+parent_access_count)==element->access_count)
-		{
-			/* ensure all faces (and their faces) either have another parent to
-				 hang around with, or can be destroyed with this element */
-			return_code=1;
-			if (face=element->faces)
-			{
-				for (i=element->shape->number_of_faces;(0<i)&&return_code;i--)
+				/* each parent element accesses the element once */
+				parent_access_count =
+					NUMBER_IN_LIST(FE_element_parent)(element->parent_list);
+				if ((manager_access_count + parent_access_count) ==
+					element->access_count)
 				{
-					if (*face)
+					/* ensure all faces (and their faces) satisfy this function too */
+					return_code = 1;
+					if (face = element->faces)
 					{
-						return_code=
-							FE_element_has_other_parent_or_can_be_destroyed(*face,element);
+						for (i = element->shape->number_of_faces; (0<i) && return_code; i--)
+						{
+							if (*face)
+							{
+								return_code =
+									FE_element_is_managed_with_other_parent_or_not_in_use(
+										*face, first_parent, element_manager);
+							}
+						}
+						face++;
 					}
-					face++;
+				}
+				else
+				{
+					if ((manager_access_count + parent_access_count) >
+						element->access_count)
+					{
+						display_message(ERROR_MESSAGE,
+							"FE_element_is_managed_with_other_parent_or_not_in_use.  "
+							"Access count of %d is less sum of manager(%d) and parents(%d)",
+							element->access_count, manager_access_count, parent_access_count);
+					}
+					return_code=0;
 				}
 			}
 		}
 		else
 		{
-			if (parent_access_count >= element->access_count)
-			{
-				display_message(ERROR_MESSAGE,"FE_element_can_be_destroyed.  "
-					"Access count of %d is less sum of manager(1) and parents(%d)",
-					element->access_count,parent_access_count);
-			}
-			return_code=0;
+			display_message(ERROR_MESSAGE,
+				"FE_element_is_managed_with_other_parent_or_not_in_use.  "
+				"Element is not in manager");
 		}
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"FE_element_can_be_destroyed.  Invalid argument(s)");
+			"FE_element_is_managed_with_other_parent_or_not_in_use.  "
+			"Invalid argument(s)");
 		return_code=0;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* FE_element_can_be_destroyed */
+} /* FE_element_is_managed_with_other_parent_or_not_in_use */
 
 int remove_FE_element_and_faces_from_manager(struct FE_element *element,
 	struct MANAGER(FE_element) *element_manager)
 /*******************************************************************************
-LAST MODIFIED : 4 July 2000
+LAST MODIFIED : 18 January 2002
 
 DESCRIPTION :
 Removes <element> and all its faces that are not shared with other elements in
 the manager from <element_manager>. The <element> is only removed from the
 <element_manager> if its access_count becomes 1 after removing parent/face
 connections. Before removing an element from the manager with this function,
-make sure you get a true result from function FE_element_can_be_destroyed.
-Only top-level elements should be passed to this function.
+make sure you get a true result from FE_element manager function 
+MANAGED_OBJECT_NOT_IN_USE.
 Notes:
 - function assumes the element and all its faces etc. are in the
 	element_manager, so NUMEROUS errors will be reported if this is
@@ -31396,6 +31311,49 @@ PROTOTYPE_MANAGER_COPY_IDENTIFIER_FUNCTION(FE_element,identifier,
 
 DECLARE_MANAGER_FUNCTIONS(FE_element)
 
+PROTOTYPE_MANAGED_OBJECT_NOT_IN_USE_FUNCTION(FE_element)
+/*******************************************************************************
+LAST MODIFIED : 18 January 2002
+
+DESCRIPTION :
+FE_element requires a special version of this function to handle parent/face
+accesses.
+Returns true if the <element> is only accessed by its manager, its parents, and
+if either all its faces have other parents or can themselves be destroyed.
+Notes:
+- Faces do not access their parents - see CREATE(FE_element_parent).
+- Ensure this function returns true before passing the element to
+  remove_FE_element_and_faces_from_manager.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(MANAGED_OBJECT_NOT_IN_USE(FE_element));
+	if (manager && object)
+	{
+		if (!(manager->locked))
+		{
+			return_code = FE_element_is_managed_with_other_parent_or_not_in_use(
+				object, /*first_parent*/object, manager);
+		}
+		else
+		{
+			display_message(WARNING_MESSAGE,
+				"MANAGED_OBJECT_NOT_IN_USE(FE_element).  Manager is locked");
+			return_code = 0;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"MANAGED_OBJECT_NOT_IN_USE(FE_element).  Invalid argument(s)");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* MANAGED_OBJECT_NOT_IN_USE(FE_element) */
+
 DECLARE_MANAGER_IDENTIFIER_FUNCTIONS(FE_element,identifier, \
 	struct CM_element_information *)
 
@@ -31403,31 +31361,6 @@ DECLARE_MANAGED_GROUP_FUNCTIONS(FE_element)
 
 DECLARE_FIND_BY_IDENTIFIER_IN_GROUP_FUNCTION(FE_element,identifier, \
 	struct CM_element_information *,compare_CM_element_information)
-
-#if defined (OLD_CODE)
-/* indexed list and manager module functions included with MANAGED_GROUP */
-DECLARE_GROUP_FUNCTIONS(FE_element)
-
-DECLARE_FIND_BY_IDENTIFIER_IN_GROUP_FUNCTION(FE_element,identifier, \
-	struct CM_element_information *,compare_CM_element_information)
-
-#if !defined (FINITE_ELEMENT_USE_SAFE_LIST)
-DECLARE_INDEXED_LIST_FUNCTIONS(GROUP(FE_element))
-
-DECLARE_FIND_BY_IDENTIFIER_IN_INDEXED_LIST_FUNCTION(GROUP(FE_element),name, \
-	char *,strcmp)
-#else /* FINITE_ELEMENT_USE_SAFE_LIST */
-DECLARE_LIST_FUNCTIONS(GROUP(FE_element))
-DECLARE_FIND_BY_IDENTIFIER_IN_LIST_FUNCTION(GROUP(FE_element),name, \
-	char *,strcmp)
-#endif /* FINITE_ELEMENT_USE_SAFE_LIST */
-
-DECLARE_GROUP_MANAGER_COPY_FUNCTIONS(FE_element)
-
-DECLARE_MANAGER_FUNCTIONS(GROUP(FE_element))
-
-DECLARE_MANAGER_IDENTIFIER_FUNCTIONS(GROUP(FE_element),name,char *)
-#endif /* defined (OLD_CODE) */
 
 int set_FE_element_group(struct Parse_state *state,
 	void *element_group_address_void,void *element_group_manager_void)
@@ -34686,7 +34619,7 @@ PROTOTYPE_MANAGER_COPY_WITH_IDENTIFIER_FUNCTION(FE_field,name)
 
 PROTOTYPE_MANAGER_COPY_WITHOUT_IDENTIFIER_FUNCTION(FE_field,name)
 /*******************************************************************************
-LAST MODIFIED : 2 September 2001
+LAST MODIFIED : 21 January 2002
 
 DESCRIPTION :
 If the <destination> has an access_count > 1 then it is deemed to be in use. In
@@ -34695,7 +34628,7 @@ if any other <source> and <destination> parameters do not match.
 ==============================================================================*/
 {
 	char **component_names;
-	int i,matching_fields,return_code;
+	int i, matching_fields, return_code;
 	Value_storage *times,*values_storage;
 
 	ENTER(MANAGER_COPY_WITHOUT_IDENTIFIER(FE_field,name));
@@ -34705,143 +34638,144 @@ if any other <source> and <destination> parameters do not match.
 		component_names=(char **)NULL;
 		values_storage=(Value_storage *)NULL;
 		times=(Value_storage *)NULL;
-		matching_fields=FE_fields_match(destination,source);
-		if ((1 >= destination->access_count)||matching_fields)
+		matching_fields = FE_fields_match(destination,source);
+		/* try to avoid copying matching information */
+		if (!matching_fields)
 		{
-			/* try to avoid copying matching information */
-			if (!matching_fields)
+			if (source->component_names)
 			{
-				if (source->component_names)
+				if (ALLOCATE(component_names,char *,source->number_of_components))
 				{
-					if (ALLOCATE(component_names,char *,source->number_of_components))
+					for (i=0;i<source->number_of_components;i++)
 					{
-						for (i=0;i<source->number_of_components;i++)
+						component_names[i]=(char *)NULL;
+					}
+					/* copy the old names, clear any new ones */
+					for (i=0;i<(source->number_of_components)&&return_code;i++)
+					{
+						if (source->component_names[i])
 						{
-							component_names[i]=(char *)NULL;
-						}
-						/* copy the old names, clear any new ones */
-						for (i=0;i<(source->number_of_components)&&return_code;i++)
-						{
-							if (source->component_names[i])
+							if (ALLOCATE(component_names[i],char,
+								strlen(source->component_names[i])+1))
 							{
-								if (ALLOCATE(component_names[i],char,
-									strlen(source->component_names[i])+1))
-								{
-									strcpy(component_names[i],source->component_names[i]);
-								}
-								else
-								{
-									return_code=0;
-								}
+								strcpy(component_names[i],source->component_names[i]);
+							}
+							else
+							{
+								return_code=0;
 							}
 						}
 					}
-					else
-					{
-						return_code=0;
-					}
+				}
+				else
+				{
+					return_code=0;
 				}
 			}
-			if (0<source->number_of_values)
-			{
-				if (!((values_storage=make_value_storage_array(source->value_type,
-					(struct FE_time_version *)NULL,source->number_of_values))&&
-					copy_value_storage_array(values_storage,source->value_type,
+		}
+		if (0<source->number_of_values)
+		{
+			if (!((values_storage=make_value_storage_array(source->value_type,
+				(struct FE_time_version *)NULL,source->number_of_values))&&
+				copy_value_storage_array(values_storage,source->value_type,
 					(struct FE_time_version *)NULL,(struct FE_time_version *)NULL,
 					source->number_of_values,source->values_storage)))
-				{
-					return_code=0;
-				}
-			}
-			if (0<source->number_of_times)
 			{
-				if (!((times=make_value_storage_array(source->time_value_type,
-					(struct FE_time_version *)NULL,source->number_of_times))&&
-					copy_value_storage_array(times,source->time_value_type,
+				return_code=0;
+			}
+		}
+		if (0<source->number_of_times)
+		{
+			if (!((times=make_value_storage_array(source->time_value_type,
+				(struct FE_time_version *)NULL,source->number_of_times))&&
+				copy_value_storage_array(times,source->time_value_type,
 					(struct FE_time_version *)NULL,(struct FE_time_version *)NULL,
 					source->number_of_times,source->times)))
-				{
-					return_code=0;
-				}
-			}
-			if (return_code)
 			{
-				if (!matching_fields)
+				return_code=0;
+			}
+		}
+		if (return_code)
+		{
+			if (!matching_fields)
+			{
+				destination->cm_field_type=source->cm_field_type;
+				if (destination->external)
 				{
-					destination->cm_field_type=source->cm_field_type;
-					if (destination->external)
+					if (destination->external->destroy)
 					{
-						if (destination->external->destroy)
+						(destination->external->destroy)(&(destination->external));
+					}
+					else
+					{
+						display_message(ERROR_MESSAGE,
+							"MANAGER_COPY_WITHOUT_IDENTIFIER(FE_field,name).  "
+							"Invalid destination->external");
+					}
+				}
+				if (source->external)
+				{
+					if (source->external->duplicate)
+					{
+						destination->external=(source->external->duplicate)(
+							source->external);
+					}
+					else
+					{
+						display_message(ERROR_MESSAGE,
+							"MANAGER_COPY_WITHOUT_IDENTIFIER(FE_field,name).  "
+							"Invalid source->external");
+					}
+				}
+				destination->fe_field_type=source->fe_field_type;
+				REACCESS(FE_field)(&(destination->indexer_field),
+					source->indexer_field);
+				destination->number_of_indexed_values=
+					source->number_of_indexed_values;
+				if (destination->component_names)
+				{
+					for (i = 0; i < destination->number_of_components; i++)
+					{
+						if (destination->component_names[i])
 						{
-							(destination->external->destroy)(&(destination->external));
-						}
-						else
-						{
-							display_message(ERROR_MESSAGE,
-								"MANAGER_COPY_WITHOUT_IDENTIFIER(FE_field,name).  "
-								"Invalid destination->external");
+							DEALLOCATE(destination->component_names[i]);
 						}
 					}
-					if (source->external)
-					{
-						if (source->external->duplicate)
-						{
-							destination->external=(source->external->duplicate)(
-								source->external);
-						}
-						else
-						{
-							display_message(ERROR_MESSAGE,
-								"MANAGER_COPY_WITHOUT_IDENTIFIER(FE_field,name).  "
-								"Invalid source->external");
-						}
-					}
-					destination->fe_field_type=source->fe_field_type;
-					REACCESS(FE_field)(&(destination->indexer_field),
-						source->indexer_field);
-					destination->number_of_indexed_values=
-						source->number_of_indexed_values;
-					destination->number_of_components=source->number_of_components;
-					destination->component_names=component_names;
-					COPY(Coordinate_system)(&(destination->coordinate_system),
-						&(source->coordinate_system));
-					destination->value_type=source->value_type;
-					destination->time_value_type=source->time_value_type;
+					DEALLOCATE(destination->component_names);
 				}
-				/* replace old values_storage with new */
-				if (0<destination->number_of_values)
-				{
-					free_value_storage_array(destination->values_storage,
-						destination->value_type,(struct FE_time_version *)NULL,
-						destination->number_of_values);
-					DEALLOCATE(destination->values_storage);
-				}
-				destination->number_of_values=source->number_of_values;
-				destination->values_storage=values_storage;
-				/* replace old times with new */
-				if (0<destination->number_of_times)
-				{
-					free_value_storage_array(destination->times,
-						destination->time_value_type,(struct FE_time_version *)NULL,
-						destination->number_of_times);
-					DEALLOCATE(destination->times);
-				}
-				destination->number_of_times=source->number_of_times;
-				destination->times=times;
+				destination->number_of_components=source->number_of_components;
+				destination->component_names=component_names;
+				COPY(Coordinate_system)(&(destination->coordinate_system),
+					&(source->coordinate_system));
+				destination->value_type=source->value_type;
+				destination->time_value_type=source->time_value_type;
 			}
-			else
+			/* replace old values_storage with new */
+			if (0<destination->number_of_values)
 			{
-				display_message(ERROR_MESSAGE,
-					"MANAGER_COPY_WITHOUT_IDENTIFIER(FE_field,name).  "
-					"Could not copy dynamic contents");
+				free_value_storage_array(destination->values_storage,
+					destination->value_type,(struct FE_time_version *)NULL,
+					destination->number_of_values);
+				DEALLOCATE(destination->values_storage);
 			}
+			destination->number_of_values=source->number_of_values;
+			destination->values_storage=values_storage;
+			/* replace old times with new */
+			if (0<destination->number_of_times)
+			{
+				free_value_storage_array(destination->times,
+					destination->time_value_type,(struct FE_time_version *)NULL,
+					destination->number_of_times);
+				DEALLOCATE(destination->times);
+			}
+			destination->number_of_times=source->number_of_times;
+			destination->times=times;
 		}
 		else
 		{
 			display_message(ERROR_MESSAGE,
 				"MANAGER_COPY_WITHOUT_IDENTIFIER(FE_field,name).  "
-				"Cannot change major field properties while it is in use");
-			return_code=0;
+				"Could not copy dynamic contents");
 		}
 		if (!return_code)
 		{
@@ -34928,7 +34862,195 @@ PROTOTYPE_MANAGER_COPY_IDENTIFIER_FUNCTION(FE_field,name,char *)
 
 DECLARE_MANAGER_FUNCTIONS(FE_field)
 
-DECLARE_MANAGER_IDENTIFIER_FUNCTIONS(FE_field,name,char *)
+DECLARE_DEFAULT_MANAGED_OBJECT_NOT_IN_USE_FUNCTION(FE_field)
+
+DECLARE_ADD_OBJECT_TO_MANAGER_FUNCTION(FE_field, name)
+
+PROTOTYPE_MANAGER_MODIFY_FUNCTION(FE_field, name)
+/*******************************************************************************
+LAST MODIFIED : 21 January 2002
+
+DESCRIPTION :
+FE_field type needs a special versions of MANAGER_MODIFY
+since changes to many major field parameters are not permitted unless it is
+NOT_IN_USE.
+==============================================================================*/
+{
+	int return_code;
+	struct LIST_IDENTIFIER_CHANGE_DATA(FE_field,name) *identifier_change_data;
+	struct FE_field *tmp_object;
+
+	ENTER(MANAGER_MODIFY(FE_field,name));
+	if (manager && object && new_data)
+	{
+		if (!(manager->locked))
+		{
+			if (IS_OBJECT_IN_LIST(FE_field)(object, manager->object_list))
+			{
+				/* check either NOT_IN_USE or no change in major parameters */
+				if (FE_fields_match(new_data, object) ||
+					MANAGED_OBJECT_NOT_IN_USE(FE_field)(object, manager))
+				{
+					if (tmp_object =
+						FIND_BY_IDENTIFIER_IN_LIST(FE_field, name)(
+							new_data->name, manager->object_list))
+					{
+						if (tmp_object == object)
+						{
+							/* don't need to copy object over itself */
+							return_code = 1;
+						}
+						else
+						{
+							display_message(ERROR_MESSAGE, "MANAGER_MODIFY(FE_field,name).  "
+								"Source object is also in manager");
+							return_code = 0;
+						}
+					}
+					else
+					{
+						/* must perform IDENTIFIER_CHANGE stuff between BEGIN_CHANGE and
+							 END_CHANGE calls; manager message must not be sent while object
+							 is part changed and/or temporarily out of the manager! */
+						MANAGER_BEGIN_CHANGE(FE_field)(manager,
+							MANAGER_CHANGE_OBJECT(FE_field), object);
+						if (identifier_change_data =
+							LIST_BEGIN_IDENTIFIER_CHANGE(FE_field,
+								name)(object))
+						{
+							if (!(return_code = MANAGER_COPY_WITH_IDENTIFIER(FE_field,
+								name)(object, new_data)))
+							{
+								display_message(ERROR_MESSAGE,
+									"MANAGER_MODIFY(FE_field,name).  Could not copy object");
+							}
+							if (!LIST_END_IDENTIFIER_CHANGE(FE_field,
+								name)(&identifier_change_data))
+							{
+								display_message(ERROR_MESSAGE,
+									"MANAGER_MODIFY(FE_field,name).  "
+									"Could not restore object to all indexed lists");
+							}
+						}
+						else
+						{
+							display_message(ERROR_MESSAGE,
+								"MANAGER_MODIFY(FE_field,name).  "
+								"Could not safely change identifier in indexed lists");
+							return_code = 0;
+						}
+						MANAGER_END_CHANGE(FE_field)(manager);
+					}
+				}
+				else
+				{
+					display_message(ERROR_MESSAGE,
+						"MANAGER_MODIFY(FE_field,name).  "
+						"Cannot change major field properties while it is in use");
+					return_code = 0;
+				}
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE,
+					"MANAGER_MODIFY(FE_field,name).  Object is not managed");
+				return_code = 0;
+			}
+		}
+		else
+		{
+			display_message(WARNING_MESSAGE,
+				"MANAGER_MODIFY(FE_field,name).  Manager locked");
+			return_code = 0;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"MANAGER_MODIFY(FE_field,name).  Invalid argument(s)");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* MANAGER_MODIFY(FE_field,name) */
+
+PROTOTYPE_MANAGER_MODIFY_NOT_IDENTIFIER_FUNCTION(FE_field, name)
+/*******************************************************************************
+LAST MODIFIED : 21 January 2002
+
+DESCRIPTION :
+FE_field type needs a special versions of MANAGER_MODIFY_NOT_IDENTIFIER
+since changes to many major field parameters are not permitted unless it is
+NOT_IN_USE.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(MANAGER_MODIFY_NOT_IDENTIFIER(FE_field,name));
+	if (manager && object && new_data)
+	{
+		if (!(manager->locked))
+		{
+			if (IS_OBJECT_IN_LIST(FE_field)(object,manager->object_list))
+			{
+				/* check either NOT_IN_USE or no change in major parameters */
+				if (FE_fields_match(new_data, object) ||
+					MANAGED_OBJECT_NOT_IN_USE(FE_field)(object, manager))
+				{
+					MANAGER_BEGIN_CHANGE(FE_field)(manager,
+						MANAGER_CHANGE_OBJECT_NOT_IDENTIFIER(FE_field), object);
+					if (MANAGER_COPY_WITHOUT_IDENTIFIER(FE_field,
+						name)(object, new_data))
+					{
+						return_code = 1;
+					}
+					else 
+					{
+						display_message(ERROR_MESSAGE,
+							"MANAGER_MODIFY_NOT_IDENTIFIER(FE_field,name).  "
+							"Could not copy object");
+						return_code = 0;
+					}
+					MANAGER_END_CHANGE(FE_field)(manager);
+				}
+				else
+				{
+					display_message(ERROR_MESSAGE,
+						"MANAGER_MODIFY_NOT_IDENTIFIER(FE_field,name).  "
+						"Cannot change major field properties while it is in use");
+					return_code = 0;
+				}
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE,
+					"MANAGER_MODIFY_NOT_IDENTIFIER(FE_field,name).  "
+					"Object is not managed");
+				return_code = 0;
+			}
+		}
+		else
+		{
+			display_message(WARNING_MESSAGE,
+				"MANAGER_MODIFY_NOT_IDENTIFIER(FE_field,name).  Manager is locked");
+			return_code = 0;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"MANAGER_MODIFY_NOT_IDENTIFIER(FE_field,name).  Invalid argument(s)");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* MANAGER_MODIFY_NOT_IDENTIFIER(FE_field,name) */
+
+DECLARE_MANAGER_MODIFY_IDENTIFIER_FUNCTION(FE_field, name, char *)
+
+DECLARE_FIND_BY_IDENTIFIER_IN_MANAGER_FUNCTION(FE_field, name, char *)
 
 int calculate_FE_field(struct FE_field *field,int component_number,
 	struct FE_node *node,struct FE_element *element,FE_value *xi_coordinates,
@@ -35324,32 +35446,6 @@ Find the first time based field at a node
 	LEAVE;
 	return (time_field);
 } /* find_first_time_field_at_FE_node */
-
-int FE_field_can_be_destroyed(struct FE_field *field)
-/*******************************************************************************
-LAST MODIFIED : 19 August 1999
-
-DESCRIPTION :
-Returns true if the <field> is only accessed once (assumed to be by the manager).
-==============================================================================*/
-{
-	int return_code;
-
-	ENTER(FE_field_can_be_destroyed);
-	if (field)
-	{
-		return_code=(1==field->access_count);
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"FE_field_can_be_destroyed.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* FE_field_can_be_destroyed */
 
 int set_FE_field(struct Parse_state *state,void *field_address_void,
 	void *fe_field_manager_void)
@@ -35771,7 +35867,7 @@ Returns the number of components for the <field>.
 int set_FE_field_number_of_components(struct FE_field *field,
 	int number_of_components)
 /*******************************************************************************
-LAST MODIFIED : 1 September 1999
+LAST MODIFIED : 16 January 2002
 
 DESCRIPTION :
 Sets the number of components in the <field>. Automatically assumes names for
@@ -35847,7 +35943,18 @@ Should only call this function for unmanaged fields.
 			if (return_code)
 			{
 				/* 2. free current number_of_components-specific data */
-				DEALLOCATE(field->component_names);
+				if (field->component_names)
+				{
+					/* free component_names no longer used */
+					for (i = number_of_components; i < field->number_of_components; i++)
+					{
+						if (field->component_names[i])
+						{
+							DEALLOCATE(field->component_names[i]);
+						}
+					}
+					DEALLOCATE(field->component_names);
+				}
 				if (field->values_storage)
 				{
 					free_value_storage_array(field->values_storage,field->value_type,
@@ -40287,7 +40394,7 @@ Returns true if the <field> is defined for the <element>.
 
 int FE_field_has_multiple_times(struct FE_field *field)
 /*******************************************************************************
-LAST MODIFIED : 22 November 2001
+LAST MODIFIED : 18 January 2002
 
 DESCRIPTION :
 Returns true if any node_fields corresponding to <field> have time_versions.
@@ -40301,11 +40408,18 @@ list we will be looking at will not be global but will belong to the region.
 	return_code=0;
 	if (field)
 	{
-		if (FIRST_OBJECT_IN_LIST_THAT(FE_node_field_info)(
-			FE_node_field_info_contains_field_with_multiple_times,
-			(void *)field, all_FE_node_field_info))
+		/* all_FE_node_field_info is created with the first FE_node_field_info;
+			 situations exist when this is called before the list is created, mainly
+			 when an empty group is created to put new nodes/elements in - the 
+			 GT_element_group for it calls this function */
+		if (all_FE_node_field_info)
 		{
-			return_code=1;
+			if (FIRST_OBJECT_IN_LIST_THAT(FE_node_field_info)(
+				FE_node_field_info_contains_field_with_multiple_times,
+				(void *)field, all_FE_node_field_info))
+			{
+				return_code=1;
+			}
 		}
 	}
 	else
@@ -42008,7 +42122,7 @@ The node group is returned.
 				{
 					success = REMOVE_OBJECT_FROM_GROUP(FE_node)(
 						node_to_destroy, node_group);				
-					if (FE_node_can_be_destroyed(node_to_destroy))
+					if (MANAGED_OBJECT_NOT_IN_USE(FE_node)(node_to_destroy, node_manager))
 					{				
 						success = REMOVE_OBJECT_FROM_MANAGER(FE_node)(node_to_destroy,
 							node_manager);					
@@ -42045,7 +42159,7 @@ The node group is returned.
 				{
 					success = REMOVE_OBJECT_FROM_GROUP(FE_node)(
 						node_to_destroy, same_name_data_group);				
-					if (FE_node_can_be_destroyed(node_to_destroy))
+					if (MANAGED_OBJECT_NOT_IN_USE(FE_node)(node_to_destroy, node_manager))
 					{				
 						success = REMOVE_OBJECT_FROM_MANAGER(FE_node)(node_to_destroy,
 							node_manager);					
@@ -42080,8 +42194,9 @@ The node group is returned.
 				{
 					success = REMOVE_OBJECT_FROM_GROUP(FE_element)(
 						element_to_destroy, same_name_element_group);				
-					if (FE_element_can_be_destroyed(element_to_destroy))
-					{				
+					if (MANAGED_OBJECT_NOT_IN_USE(FE_element)(element_to_destroy,
+						element_manager))
+					{
 						success = REMOVE_OBJECT_FROM_MANAGER(FE_element)(element_to_destroy,
 							element_manager);					
 					}					
@@ -43638,17 +43753,19 @@ Deaccesses the <node_group> and attempts to remove it from the manager.
 			{					
 				return_code = REMOVE_OBJECT_FROM_GROUP(FE_element)(
 					element_to_destroy,element_group);				
-				if (FE_element_can_be_destroyed(element_to_destroy))
-				{				
-					return_code = REMOVE_OBJECT_FROM_MANAGER(FE_element)(element_to_destroy,
-						element_manager);					
+				if (MANAGED_OBJECT_NOT_IN_USE(FE_element)(element_to_destroy,
+					element_manager))
+				{
+					return_code = REMOVE_OBJECT_FROM_MANAGER(FE_element)(
+						element_to_destroy, element_manager);					
 				}				
 			}
 			MANAGED_GROUP_END_CACHE(FE_element)(element_group);	
-			if (MANAGED_GROUP_CAN_BE_DESTROYED(FE_element)(element_group))
+			if (MANAGED_OBJECT_NOT_IN_USE(GROUP(FE_element))(element_group,
+				element_group_manager))
 			{
-			REMOVE_OBJECT_FROM_MANAGER(GROUP(FE_element))(element_group,
-				element_group_manager);	
+				REMOVE_OBJECT_FROM_MANAGER(GROUP(FE_element))(element_group,
+					element_group_manager);	
 			}
 		}	
 	
@@ -43661,14 +43778,15 @@ Deaccesses the <node_group> and attempts to remove it from the manager.
 			{
 				return_code = REMOVE_OBJECT_FROM_GROUP(FE_node)(
 					node_to_destroy,data_group);				
-				if (FE_node_can_be_destroyed(node_to_destroy))
+				if (MANAGED_OBJECT_NOT_IN_USE(FE_node)(node_to_destroy, data_manager))
 				{				
 					return_code = REMOVE_OBJECT_FROM_MANAGER(FE_node)(node_to_destroy,
 						data_manager);					
 				}					
 			}	
 			MANAGED_GROUP_END_CACHE(FE_node)(data_group);	
-			if (MANAGED_GROUP_CAN_BE_DESTROYED(FE_node)(data_group))
+			if (MANAGED_OBJECT_NOT_IN_USE(GROUP(FE_node))(data_group,
+				data_group_manager))
 			{
 				REMOVE_OBJECT_FROM_MANAGER(GROUP(FE_node))(data_group,
 					data_group_manager);
@@ -43680,8 +43798,8 @@ Deaccesses the <node_group> and attempts to remove it from the manager.
 		{
 			return_code = REMOVE_OBJECT_FROM_GROUP(FE_node)(
 				node_to_destroy,node_group);				
-			if (FE_node_can_be_destroyed(node_to_destroy))
-			{				
+			if (MANAGED_OBJECT_NOT_IN_USE(FE_node)(node_to_destroy, node_manager))
+			{
 				return_code = REMOVE_OBJECT_FROM_MANAGER(FE_node)(node_to_destroy,
 					node_manager);					
 			}					
@@ -43696,7 +43814,8 @@ Deaccesses the <node_group> and attempts to remove it from the manager.
 		temp_node_group=node_group;
 		DEACCESS(GROUP(FE_node))(&temp_node_group);
 		
-		if (MANAGED_GROUP_CAN_BE_DESTROYED(FE_node)(node_group))
+		if (MANAGED_OBJECT_NOT_IN_USE(GROUP(FE_node))(node_group,
+			node_group_manager))
 		{
 			if (REMOVE_OBJECT_FROM_MANAGER(GROUP(FE_node))(node_group,
 				node_group_manager))

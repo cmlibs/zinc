@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : finite_element.h
 
-LAST MODIFIED : 10 September 2001
+LAST MODIFIED : 18 January 2002
 
 DESCRIPTION :
 The data structures used for representing finite elements in the graphical
@@ -1509,14 +1509,6 @@ LAST MODIFIED : 24 May 2001
 DESCRIPTION :
 Creates and returns a list containing all the nodes that are in both
 <node_list> and <node_group>.
-==============================================================================*/
-
-int FE_node_can_be_destroyed(struct FE_node *node);
-/*******************************************************************************
-LAST MODIFIED : 16 April 1999
-
-DESCRIPTION :
-Returns true if the <node> is only accessed once (assumed to be by the manager).
 ==============================================================================*/
 
 int FE_node_is_embedded_in_changed_element(struct FE_node *node,
@@ -3082,32 +3074,18 @@ Function returns without error if <element> is already not in <element_group>.
 Function is recursive for some <remove_element_mode>s.
 ==============================================================================*/
 
-int FE_element_can_be_destroyed(struct FE_element *element);
-/*******************************************************************************
-LAST MODIFIED : 23 April 1999
-
-DESCRIPTION :
-Returns true if the <element> is only accessed by its manager (ie. starting
-access count of 1) and its parents, and that the same is true for its faces.
-Notes:
-- Faces do not access their parents - see CREATE(FE_element_parent).
-- Ensure this function returns true before passing the element to
-  remove_FE_element_and_faces_from_manager.
-- This function is recursive.
-==============================================================================*/
-
 int remove_FE_element_and_faces_from_manager(struct FE_element *element,
 	struct MANAGER(FE_element) *element_manager);
 /*******************************************************************************
-LAST MODIFIED : 16 April 1999
+LAST MODIFIED : 18 January 2002
 
 DESCRIPTION :
 Removes <element> and all its faces that are not shared with other elements in
 the manager from <element_manager>. The <element> is only removed from the
 <element_manager> if its access_count becomes 1 after removing parent/face
 connections. Before removing an element from the manager with this function,
-make sure you get a true result from function FE_element_can_be_destroyed.
-Only top-level elements should be passed to this function.
+make sure you get a true result from FE_element manager function 
+MANAGED_OBJECT_NOT_IN_USE.
 Notes:
 - function assumes the element and all its faces etc. are in the
 	element_manager, so NUMEROUS errors will be reported if this is
@@ -3403,14 +3381,6 @@ struct FE_field *find_first_time_field_at_FE_node(struct FE_node *node);
 LAST MODIFIED : 9 June 1999
 
 Find the first time based field at a node
-==============================================================================*/
-
-int FE_field_can_be_destroyed(struct FE_field *field);
-/*******************************************************************************
-LAST MODIFIED : 19 August 1999
-
-DESCRIPTION :
-Returns true if the <field> is only accessed once (assumed to be by the manager).
 ==============================================================================*/
 
 int set_FE_field(struct Parse_state *state,void *field_address_void,
