@@ -1,7 +1,7 @@
 # **************************************************************************
 # FILE : unemap.Makefile
 #
-# LAST MODIFIED : 5 August 2003
+# LAST MODIFIED : 13 August 2003
 #
 # DESCRIPTION :
 #
@@ -392,10 +392,13 @@ ifeq ($(USER_INTERFACE),GTK_USER_INTERFACE)
 endif # $(USER_INTERFACE) == GTK_USER_INTERFACE
 
 ifeq ($(SYSNAME:IRIX%=),)
-MATRIX_LIB = -lscs
+	MATRIX_LIB = -lscs
 else # ($(SYSNAME:IRIX%=),)
-MATRIX_LIB = -L$(CMISS_ROOT)/linear_solvers/lib/$(LIB_ARCH_DIR) -llapack-debug -lblas-debug
+	MATRIX_LIB = -L$(CMISS_ROOT)/linear_solvers/lib/$(LIB_ARCH_DIR) -llapack-debug -lblas-debug
 endif # ($(SYSNAME:IRIX%=),)
+ifeq ($(SYSNAME),AIX)
+   MATRIX_LIB += -lxlf90
+endif # SYSNAME == AIX
 
 
 ifeq ($(SYSNAME:IRIX%=),)
