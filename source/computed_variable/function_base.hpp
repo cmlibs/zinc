@@ -17,7 +17,7 @@
 #include <stdexcept>
 
 //#define EXPORT_IMPLEMENTED
-#define ONE_TEMPLATE_DEFINITION_IMPLEMENTED
+//#define ONE_TEMPLATE_DEFINITION_IMPLEMENTED
 
 #if defined (EXPORT_IMPLEMENTED)
 #define EXPORT export
