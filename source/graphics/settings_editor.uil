@@ -1,7 +1,7 @@
 !*******************************************************************************
 ! FILE : settings_editor.uil
 !
-! LAST MODIFIED : 22 February 2000
+! LAST MODIFIED : 7 June 2000
 !
 ! DESCRIPTION :
 ! The widgets for the settings editor widget.
@@ -237,15 +237,15 @@ object
       XmForm seted_exterior_face_entry;
       XmRowColumn seted_radius_entry;
       XmRowColumn seted_iso_surface_entry;
+      XmForm seted_volume_texture_entry;
+      XmRowColumn seted_streamline_entry;
+      XmForm seted_seed_element_entry;
+      XmRowColumn seted_xi_disc_mode_entry;
       XmForm seted_discretization_entry;
       XmRowColumn seted_native_disc_entry;
-      XmRowColumn seted_xi_disc_mode_entry;
+      XmRowColumn seted_seed_xi_entry;
       XmRowColumn seted_glyph_group_entry;
       XmRowColumn seted_label_field_entry;
-      XmForm seted_volume_texture_entry;
-      XmForm seted_seed_element_entry;
-      XmRowColumn seted_seed_xi_entry;
-      XmRowColumn seted_streamline_entry;
       XmRowColumn seted_select_mode_entry;
       };
     };
@@ -1392,7 +1392,7 @@ object
     {
     arguments
       {
-      XmNlabelString = compound_string("Seed xi:");
+      XmNlabelString = compound_string("Xi:");
       XmNalignment = XmALIGNMENT_BEGINNING;
       XmNfontList = button_font;
       };

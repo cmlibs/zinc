@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : settings_editor.c
 
-LAST MODIFIED : 8 May 2000
+LAST MODIFIED : 7 June 2000
 
 DESCRIPTION :
 Provides the widgets to manipulate element group settings.
@@ -193,7 +193,7 @@ Sets the current face_number on the option menu and button.
 static int settings_editor_display_dimension_specific(
 	struct Settings_editor *settings_editor)
 /*******************************************************************************
-LAST MODIFIED : 22 December 1999
+LAST MODIFIED : 9 June 2000
 
 DESCRIPTION :
 Sets and manages the dimension buttons (0-D/1-D/2-D/3-D) and sets and manages
@@ -202,7 +202,7 @@ If there is no current_settings object or these widgets are not relevant to it,
 both widget entries are unmanaged.
 ==============================================================================*/
 {
-	int dimension,return_code;
+	int dimension,dimension1,dimension2,return_code;
 	struct GT_element_settings *settings;
 
 	ENTER(settings_editor_display_dimension_specific);
@@ -210,12 +210,17 @@ both widget entries are unmanaged.
 	{
 		if (settings=settings_editor->current_settings)
 		{
-			dimension=GT_element_settings_get_dimension(settings);
-			if ((1==dimension)||(2==dimension))
+			dimension1=1;
+			dimension2=2;
+			if (GT_element_settings_uses_dimension(settings,&dimension1)||
+				GT_element_settings_uses_dimension(settings,&dimension2))
 			{
 				XtVaSetValues(settings_editor->exterior_button,
 					XmNset,GT_element_settings_get_exterior(settings),NULL);
 				settings_editor_set_face_number(settings_editor);
+				dimension=GT_element_settings_get_dimension(settings);
+				XtSetSensitive(settings_editor->exterior_face_entry,
+					(1==dimension)||(2==dimension));
 				XtManageChild(settings_editor->exterior_face_entry);
 			}
 			else
@@ -1079,22 +1084,30 @@ Callback for change of native_discretization_field.
 static void settings_editor_update_xi_discretization_mode(Widget widget,
 	void *settings_editor_void,void *xi_discretization_mode_string_void)
 /*******************************************************************************
-LAST MODIFIED : 22 December 1999
+LAST MODIFIED : 7 June 2000
 
 DESCRIPTION :
 Callback for change of xi_discretization_mode.
 ==============================================================================*/
 {
+	enum Xi_discretization_mode xi_discretization_mode;
 	struct Settings_editor *settings_editor;
 
 	ENTER(settings_editor_update_xi_discretization_mode);
 	USE_PARAMETER(widget);
 	if (settings_editor=(struct Settings_editor *)settings_editor_void)
 	{
+		xi_discretization_mode=Xi_discretization_mode_from_string(
+			(char *)xi_discretization_mode_string_void);
 		if (GT_element_settings_set_xi_discretization_mode(
-			settings_editor->current_settings,Xi_discretization_mode_from_string(
-				(char *)xi_discretization_mode_string_void)))
+			settings_editor->current_settings,xi_discretization_mode))
 		{
+			XtSetSensitive(settings_editor->discretization_entry,
+				XI_DISCRETIZATION_EXACT_XI != xi_discretization_mode);
+			XtSetSensitive(settings_editor->native_discretization_entry,
+				XI_DISCRETIZATION_EXACT_XI != xi_discretization_mode);
+			XtSetSensitive(settings_editor->seed_xi_entry,
+				XI_DISCRETIZATION_EXACT_XI == xi_discretization_mode);
 			/* inform the client of the change */
 			settings_editor_update(settings_editor);
 		}
@@ -2382,7 +2395,7 @@ Widget create_settings_editor_widget(Widget *settings_editor_widget,
 	struct MANAGER(VT_volume_texture) *volume_texture_manager,
 	struct User_interface *user_interface)
 /*******************************************************************************
-LAST MODIFIED : 8 May 2000
+LAST MODIFIED : 9 June 2000
 
 DESCRIPTION :
 Creates a settings_editor widget.
@@ -2797,7 +2810,8 @@ Creates a settings_editor widget.
 								CREATE_TEXT_CHOOSE_OBJECT_WIDGET(FE_element)(
 								settings_editor->seed_element_form,
 								(struct FE_element *)NULL,element_manager,
-								FE_element_is_dimension_3,FE_element_to_element_string,
+								FE_element_is_dimension_3,(void *)NULL,
+								FE_element_to_element_string,
 								element_string_to_FE_element)))
 							{
 								init_widgets=0;
@@ -3087,7 +3101,7 @@ Returns the currently chosen settings.
 int settings_editor_set_settings(Widget settings_editor_widget,
 	struct GT_element_settings *new_settings)
 /*******************************************************************************
-LAST MODIFIED : 23 February 2000
+LAST MODIFIED : 7 June 2000
 
 DESCRIPTION :
 Changes the currently chosen settings.
@@ -3099,6 +3113,7 @@ Changes the currently chosen settings.
 	enum GT_element_settings_type settings_type;
 	enum Streamline_type streamline_type;
 	enum Streamline_data_type streamline_data_type;
+	enum Xi_discretization_mode xi_discretization_mode;
 	float constant_radius,scale_factor,streamline_length,
 		streamline_width;
 	int field_set,return_code,reverse_track;
@@ -3363,12 +3378,21 @@ Changes the currently chosen settings.
 							/* element_points */
 							if (GT_ELEMENT_SETTINGS_ELEMENT_POINTS==settings_type)
 							{
+								xi_discretization_mode=
+									GT_element_settings_get_xi_discretization_mode(new_settings);
+								choose_enumerator_set_string(
+									settings_editor->xi_discretization_mode_widget,
+									Xi_discretization_mode_string(xi_discretization_mode));
+								XtManageChild(settings_editor->xi_discretization_mode_entry);
+
 								GT_element_settings_get_discretization(new_settings,
 									&discretization);
 								sprintf(temp_string,"%d*%d*%d",discretization.number_in_xi1,
 									discretization.number_in_xi2,discretization.number_in_xi3);
 								XtVaSetValues(settings_editor->discretization_text,
 									XmNvalue,temp_string,NULL);
+								XtSetSensitive(settings_editor->discretization_entry,
+									XI_DISCRETIZATION_EXACT_XI != xi_discretization_mode);
 								XtManageChild(settings_editor->discretization_entry);
 
 								native_discretization_field=
@@ -3387,13 +3411,10 @@ Changes the currently chosen settings.
 								}
 								XtSetSensitive(settings_editor->
 									native_discretization_field_widget,field_set);
+								XtSetSensitive(settings_editor->native_discretization_entry,
+									XI_DISCRETIZATION_EXACT_XI != xi_discretization_mode);
 								XtManageChild(settings_editor->native_discretization_entry);
-								choose_enumerator_set_string(
-									settings_editor->xi_discretization_mode_widget,
-									Xi_discretization_mode_string(
-										GT_element_settings_get_xi_discretization_mode(
-											new_settings)));
-								XtManageChild(settings_editor->xi_discretization_mode_entry);
+
 								/* turn on callbacks */
 								callback.data=(void *)settings_editor;
 								callback.procedure=
@@ -3476,7 +3497,8 @@ Changes the currently chosen settings.
 							}
 
 							/* seed xi */
-							if (GT_ELEMENT_SETTINGS_STREAMLINES==settings_type)
+							if ((GT_ELEMENT_SETTINGS_ELEMENT_POINTS==settings_type)||
+								(GT_ELEMENT_SETTINGS_STREAMLINES==settings_type))
 							{
 								GT_element_settings_get_seed_xi(new_settings,seed_xi);
 								sprintf(temp_string,"%g,%g,%g",
@@ -3484,11 +3506,21 @@ Changes the currently chosen settings.
 								XtVaSetValues(settings_editor->seed_xi_text,XmNvalue,
 									temp_string,NULL);
 								XtManageChild(settings_editor->seed_xi_entry);
+								if (GT_ELEMENT_SETTINGS_ELEMENT_POINTS==settings_type)
+								{
+									XtSetSensitive(settings_editor->seed_xi_entry,
+										XI_DISCRETIZATION_EXACT_XI == xi_discretization_mode);
+								}
+								else
+								{
+									XtSetSensitive(settings_editor->seed_xi_entry,True);
+								}
 							}
 							else
 							{
 								XtUnmanageChild(settings_editor->seed_xi_entry);
 							}
+
 							/* streamlines */
 							if (GT_ELEMENT_SETTINGS_STREAMLINES==settings_type)
 							{
