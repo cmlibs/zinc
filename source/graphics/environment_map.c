@@ -61,8 +61,8 @@ Set the <environment_map> to face materials.
 					face_no=0;
 					while (return_code&&(face_no<6)&&
 						((environment_map->face_material)[face_no]=
-						FIND_BY_IDENTIFIER_IN_MANAGER(Graphical_material,name)(
-						state->current_token,graphical_material_manager))&&
+						ACCESS(Graphical_material)(FIND_BY_IDENTIFIER_IN_MANAGER(Graphical_material,name)(
+						state->current_token,graphical_material_manager)))&&
 						shift_Parse_state(state,1))
 					{
 						face_no++;
@@ -592,7 +592,8 @@ PROTOTYPE_MANAGER_COPY_WITHOUT_IDENTIFIER_FUNCTION(Environment_map,name)
 		/* copy values */
 		for (i=0;i<6;i++)
 		{
-			destination->face_material[i]=source->face_material[i];
+			REACCESS(Graphical_material)(&(destination->face_material[i]),
+				source->face_material[i]);
 		}
 		return_code=1;
 	}
