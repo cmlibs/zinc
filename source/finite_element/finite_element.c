@@ -5285,7 +5285,7 @@ DESCRIPTION :
 Outputs the information contained by the element field.
 ==============================================================================*/
 {
-	char line[81];
+	char line[81], *component_name;
 	int *basis_type,i,j,k,line_length,*nodal_value_index,*number_in_xi,
 		number_of_characters,number_of_components,number_of_nodal_values,
 		number_of_xi_coordinates,return_code,*scale_factor_index;
@@ -5367,7 +5367,11 @@ Outputs the information contained by the element field.
 			while (return_code&&(i<number_of_components))
 			{
 				display_message(INFORMATION_MESSAGE,"    ");
-				display_message(INFORMATION_MESSAGE,(field->component_names)[i]);
+				if (component_name = get_FE_field_component_name(field, i))
+				{
+					display_message(INFORMATION_MESSAGE,component_name);
+					DEALLOCATE(component_name);
+				}
 				if (*element_field_component)
 				{
 					display_message(INFORMATION_MESSAGE,".  ");
@@ -5550,6 +5554,7 @@ DESCRIPTION :
 Outputs the information contained by the node field.
 ==============================================================================*/
 {
+	char *component_name;
 	enum FE_nodal_value_type *type;
 	Value_storage *values_storage, *value;
 	int i,j,k,number_of_components,number_of_versions,return_code,xi_dimension,xi_index;
@@ -5629,8 +5634,11 @@ Outputs the information contained by the node field.
 			i=0;
 			while (return_code&&(i<number_of_components))
 			{
-				display_message(INFORMATION_MESSAGE,"    %s",
-					(field->component_names)[i]);
+				if (component_name = get_FE_field_component_name(field, i))
+				{
+					display_message(INFORMATION_MESSAGE,"    %s", component_name);
+					DEALLOCATE(component_name);
+				}
 				number_of_versions=node_field_component->number_of_versions;
 				if (1<number_of_versions)
 				{
@@ -28314,7 +28322,7 @@ DESCRIPTION :
 Outputs the information contained in <field>.
 ==============================================================================*/
 {
-	char line[91];
+	char *component_name, line[91];
 	int i, number_of_components, return_code;
 
 	ENTER(list_FE_field);
@@ -28392,8 +28400,11 @@ Outputs the information contained in <field>.
 		i=0;
 		while (return_code&&(i<number_of_components))
 		{
-			display_message(INFORMATION_MESSAGE,"    %s",
-				(field->component_names)[i]);
+			if (component_name = get_FE_field_component_name(field, i))
+			{
+				display_message(INFORMATION_MESSAGE,"    %s", component_name);
+				DEALLOCATE(component_name);
+			}
 			/* display field based information*/
 			if(field->number_of_values)
 			{	
