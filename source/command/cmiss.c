@@ -24968,3 +24968,27 @@ executing cmiss commands from C.
 
 	return (execute_command);
 } /* Cmiss_command_data_get_execute_command */
+
+struct MANAGER(Computed_field) *Cmiss_command_data_get_computed_field_manager(
+	struct Cmiss_command_data *command_data)
+/*******************************************************************************
+LAST MODIFIED : 18 April 2003
+
+DESCRIPTION :
+Returns the root region from the <command_data>.
+==============================================================================*/
+{
+	struct MANAGER(Computed_field) *computed_field_manager;
+
+	ENTER(Cmiss_command_data_get_computed_field_manager);
+	computed_field_manager=(struct MANAGER(Computed_field) *)NULL;
+	if (command_data)
+	{
+		computed_field_manager = Computed_field_package_get_computed_field_manager(
+			command_data->computed_field_package);
+	}
+	LEAVE;
+
+	return (computed_field_manager);
+} /* Cmiss_command_data_get_computed_field_manager */
+

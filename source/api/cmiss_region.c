@@ -224,3 +224,31 @@ Returns element with <name> in sub_region <path> of <region> if it exists.
 
 	return (return_node);
 } /* Cmiss_region_get_node */
+
+int Cmiss_region_for_each_node_in_region(struct Cmiss_region *region,
+	char *path, Cmiss_node_iterator_function iterator_function, void *user_data)
+/*******************************************************************************
+LAST MODIFIED : 31 March 2004
+
+DESCRIPTION :
+Iterates over each node in the subregion specified by <region> and <path>.
+==============================================================================*/
+{
+	int return_code;
+	struct Cmiss_region *sub_region;
+	struct FE_region *fe_region;
+
+	ENTER(Cmiss_region_for_each_node_in_region);
+	return_code = 0;
+	if (region && path && iterator_function)
+	{
+		if (Cmiss_region_get_region_from_path(region, path, &sub_region) &&
+			sub_region && (fe_region = Cmiss_region_get_FE_region(sub_region)))
+		{
+			return_code = FE_region_for_each_FE_node(fe_region, iterator_function, user_data);
+		}
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Cmiss_region_for_each_node_in_region */

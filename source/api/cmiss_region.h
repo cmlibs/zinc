@@ -80,4 +80,13 @@ LAST MODIFIED : 19 August 2002
 DESCRIPTION :
 Returns element with <name> in sub_region <path> of <region> if it exists.
 ==============================================================================*/
+
+int Cmiss_region_for_each_node_in_region(struct Cmiss_region *region,
+	char *path, Cmiss_node_iterator_function iterator_function, void *user_data);
+/*******************************************************************************
+LAST MODIFIED : 31 March 2004
+
+DESCRIPTION :
+Iterates over each node in the subregion specified by <region> and <path>.
+==============================================================================*/
 #endif /* __CMISS_REGION_H__ */

@@ -44,6 +44,8 @@ LAST MODIFIED : 14 August 2002
 DESCRIPTION :
 ==============================================================================*/
 
+typedef int (*Cmiss_node_iterator_function)(struct Cmiss_node *node, void *user_data);
+
 /* SAB Temporary until we decide how to fix things up internally instead of externally.*/
 enum FE_nodal_value_type
 /*******************************************************************************

@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : cmiss_command.h
 
-LAST MODIFIED : 13 August 2003
+LAST MODIFIED : 31 March 2004
 
 DESCRIPTION :
 The public interface to the some of the internal functions of cmiss.
@@ -9,6 +9,7 @@ The public interface to the some of the internal functions of cmiss.
 #ifndef __CMISS_COMMAND_H__
 #define __CMISS_COMMAND_H__
 
+#include "api/cmiss_computed_field.h"
 /* If this is going to be in the API then it needs to have an interface there */
 #include "general/object.h"
 
@@ -63,5 +64,14 @@ LAST MODIFIED : 18 April 2003
 
 DESCRIPTION :
 Returns the root region from the <command_data>.
+==============================================================================*/
+
+struct Cmiss_computed_field_manager *Cmiss_command_data_get_computed_field_manager(
+	struct Cmiss_command_data *command_data);
+/*******************************************************************************
+LAST MODIFIED : 31 March 2004
+
+DESCRIPTION :
+Returns the computed_field manager from the <command_data>.
 ==============================================================================*/
 #endif /* __CMISS_COMMAND_H__ */
