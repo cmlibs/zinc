@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : computed_field_composite.c
 
-LAST MODIFIED : 14 December 2001
+LAST MODIFIED : 19 December 2001
 
 DESCRIPTION :
 Implements a "composite" computed_field which converts fields, field components
@@ -1427,17 +1427,6 @@ already) and allows its contents to be modified.
 			{
 				shift_Parse_state(state,3);
 			}
-			/*???RC swallow up old "number_of_values # values" tokens used by old
-				constant field command for backward compatibility */
-			else if (((state->current_index+2) < state->number_of_tokens) &&
-				(fuzzy_string_compare(state->tokens[state->current_index],
-					"number_of_values")) &&
-				(0<atoi(state->tokens[state->current_index+1])) &&
-				(fuzzy_string_compare(state->tokens[state->current_index+2],
-					"values")))
-			{
-				shift_Parse_state(state,3);
-			}
 			/*???RC end temporary code */
 
 			option_table = CREATE(Option_table)();
@@ -1567,6 +1556,140 @@ source_values.
 
 	return (return_code);
 } /* Computed_field_is_constant */
+
+static int define_Computed_field_type_constant(struct Parse_state *state,
+	void *field_void, void *computed_field_composite_package_void)
+/*******************************************************************************
+LAST MODIFIED : 19 December 2001
+
+DESCRIPTION :
+Converts <field> into type COMPUTED_FIELD_CONSTANT (if it is not already)
+and allows its contents to be modified.
+==============================================================================*/
+{
+	char *current_token;
+	FE_value *values, *temp_values;
+	int i, number_of_values, previous_number_of_values, return_code;
+	struct Computed_field *field;
+	struct Option_table *option_table;
+
+	ENTER(define_Computed_field_type_constant);
+	USE_PARAMETER(computed_field_composite_package_void);
+	if (state && (field = (struct Computed_field *)field_void))
+	{
+		return_code = 1;
+		previous_number_of_values = 0;
+		values = (FE_value *)NULL;
+		if (Computed_field_is_constant(field))
+		{
+			previous_number_of_values = field->number_of_source_values;
+			if (ALLOCATE(values, FE_value, previous_number_of_values))
+			{
+				for (i = 0; i < previous_number_of_values; i++)
+				{
+					values[i] = field->source_values[i];
+				}
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE,
+					"define_Computed_field_type_constant.  Could not allocate values");
+				return_code = 0;
+			}
+		}
+		if (return_code)
+		{
+			/*???RC begin temporary code */
+			/*???RC swallow up old "number_of_values # values" tokens used by old
+				constant field command for backward compatibility */
+			if (((state->current_index + 2) < state->number_of_tokens) &&
+				(fuzzy_string_compare(state->tokens[state->current_index],
+					"number_of_values")) &&
+				(0<atoi(state->tokens[state->current_index+1])) &&
+				(fuzzy_string_compare(state->tokens[state->current_index+2],
+					"values")))
+			{
+				shift_Parse_state(state,3);
+			}
+			/*???RC swallow up old "value N" tokens used by old constant field if
+				default number_of_values=1 used ... for backward compatibility */
+			else if (((state->current_index + 2) == state->number_of_tokens) &&
+				fuzzy_string_compare(state->tokens[state->current_index], "values"))
+			{
+				shift_Parse_state(state, 1);
+			}
+			/*???RC end temporary code */
+
+			if ((current_token = state->current_token) &&
+				(!(strcmp(PARSER_HELP_STRING, current_token) &&
+					strcmp(PARSER_RECURSIVE_HELP_STRING, current_token))))
+			{
+				number_of_values = previous_number_of_values;
+			}
+			else if (0 < (number_of_values =
+				state->number_of_tokens - state->current_index))
+			{
+				if (REALLOCATE(temp_values, values, FE_value, number_of_values))
+				{
+					values = temp_values;
+					/* clear new values to 0.0 */
+					for (i = previous_number_of_values; i < number_of_values; i++)
+					{
+						values[i] = 0.0;
+					}
+				}
+				else
+				{
+					display_message(ERROR_MESSAGE,
+						"define_Computed_field_type_constant.  "
+						"Could not reallocate values");
+					return_code = 0;
+				}
+			}
+			else
+			{
+				number_of_values = 0;
+			}
+			if (return_code)
+			{
+				option_table = CREATE(Option_table)();
+				/* default option: composite field definition */
+				Option_table_add_entry(option_table, (char *)NULL, values,
+					&number_of_values, set_FE_value_array);
+				if (return_code = Option_table_multi_parse(option_table, state))
+				{
+					return_code =
+						Computed_field_set_type_constant(field, number_of_values, values);
+				}
+				DESTROY(Option_table)(&option_table);
+			}
+			if (!return_code)
+			{
+				if ((!state->current_token) ||
+					(strcmp(PARSER_HELP_STRING,state->current_token) &&
+						strcmp(PARSER_RECURSIVE_HELP_STRING,state->current_token)))
+				{
+					/* error */
+					display_message(ERROR_MESSAGE,
+						"define_Computed_field_type_constant.  Failed");
+				}
+			}
+		}
+		if (values)
+		{
+			DEALLOCATE(values);
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"define_Computed_field_type_constant.  Invalid argument(s)");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* define_Computed_field_type_constant */
 
 int Computed_field_set_type_component(struct Computed_field *field,
 	struct Computed_field *source_field, int component_number)
@@ -1713,7 +1836,7 @@ tries to find one in the manager that does this, otherwise makes one of name
 int Computed_field_register_types_composite(
 	struct Computed_field_package *computed_field_package)
 /*******************************************************************************
-LAST MODIFIED : 13 December 2001
+LAST MODIFIED : 19 December 2001
 
 DESCRIPTION :
 ==============================================================================*/
@@ -1733,7 +1856,7 @@ DESCRIPTION :
 			&computed_field_composite_package);
 		/* "constant" = alias for composite included for backward compatibility */
 		return_code = Computed_field_package_add_type(computed_field_package,
-			"constant", define_Computed_field_type_composite,
+			"constant", define_Computed_field_type_constant,
 			&computed_field_composite_package);
 		/* "component" = alias for composite included for backward compatibility */
 		return_code = Computed_field_package_add_type(computed_field_package,
