@@ -407,9 +407,9 @@ Returns true if a valid element xi is found.
 						}
 						else
 						{
-							display_message(ERROR_MESSAGE,
-								"Computed_field_iterative_element_conditional.  "
-								"Singular derivative matrix; cannot evaluate xi");
+							/* Probably singular matrix, no longer report error
+								as a collapsed element gets reported on every
+							   pixel making it unusable.*/
 							return_code = 0;
 						}
 					}
@@ -543,6 +543,10 @@ Stores cache data for the Computed_field_find_element_xi_special routine.
 
 			glColor3f(red, green, blue);
 		  
+#if defined (DEBUG)
+			printf ( "%d %lf %lf %lf\n",  element->cm.number, red, green, blue);
+#endif /* defined (DEBUG) */
+
 			xi[0] = 0.0;
 			xi[1] = 0.0;
 			Computed_field_evaluate_in_element(data->field, element, xi,
@@ -641,7 +645,7 @@ sequential element_xi lookup should now be performed.
 	if (hint_minimums && hint_maximums && hint_resolution && 
 		((2 == Computed_field_get_number_of_components(field)) ||
 		((3 == Computed_field_get_number_of_components(field)) &&
-		(hint_resolution[2] == 0.0))) && user_interface && search_element_group
+		(hint_resolution[2] == 1.0f))) && user_interface && search_element_group
 		&& (5 < NUMBER_IN_GROUP(FE_element)(search_element_group)) /*&&
 			(Computed_field_is_find_element_xi_capable(field,NULL))*/)
 	{
@@ -795,6 +799,9 @@ sequential element_xi lookup should now be performed.
 						identifier)(&cm, search_element_group))
 					{
 						first_element = *element;
+#if defined (DEBUG)
+						printf("First element %d\n", first_element->cm.number);
+#endif /* defined (DEBUG) */
 						find_element_xi_data.tolerance = 1e-06;
 						if (Computed_field_iterative_element_conditional(
 							*element, (void *)&find_element_xi_data))
@@ -919,6 +926,13 @@ sequential element_xi lookup should now be performed.
 								}
 							}
 						}
+#if defined (DEBUG)
+						if (*element)
+						{
+							printf("Final found element %d  %f %f %f\n", (*element)->cm.number,
+								xi[0], xi[1], xi[2]);
+						}
+#endif /* defined (DEBUG) */
 					}
 				}
 				else

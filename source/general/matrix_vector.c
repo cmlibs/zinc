@@ -652,7 +652,10 @@ Adapted from "Numerical Recipes in C".
 			}
 			else
 			{
+#if defined (OLD_CODE)				
+				/* Allow the calling routine to decide what to do now */
 				display_message(ERROR_MESSAGE,"LU_decompose.  Singular matrix");
+#endif /* defined (OLD_CODE) */
 			}
 			DEALLOCATE(vv);
 		}
