@@ -155,8 +155,7 @@ DESCRIPTION:
 	gtk_cmiss_scene_viewer->cmiss_scene_viewer = create_Cmiss_scene_viewer_gtk(
 		GTK_CONTAINER(gtk_cmiss_scene_viewer), CMISS_SCENE_VIEWER_DOUBLE_BUFFERING,
 		CMISS_SCENE_VIEWER_MONO, /*minimum_colour_buffer_depth*/0, 
-		/*minimum_depth_buffer_depth*/8, /*minimum_accumulation_buffer_depth*/8,
-		/*specified_visual_id*/0);
+		/*minimum_depth_buffer_depth*/8, /*minimum_accumulation_buffer_depth*/8);
 
 	LEAVE;
 

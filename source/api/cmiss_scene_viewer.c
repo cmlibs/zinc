@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : cmiss_scene_viewer.c
 
-LAST MODIFIED : 10 September 2002
+LAST MODIFIED : 2 June 2004
 
 DESCRIPTION :
 The public interface to the Cmiss_scene_viewer object for rendering cmiss
@@ -26,12 +26,13 @@ Module types
 
 struct Cmiss_scene_viewer_data
 /*******************************************************************************
-LAST MODIFIED : 9 September 2002
+LAST MODIFIED : 2 June 2004
 
 DESCRIPTION:
 The default data used to create Cmiss_scene_viewers.
 ==============================================================================*/
 {
+	struct Graphics_buffer_package *graphics_buffer_package;
 	struct Colour *background_colour;
 	struct MANAGER(Interactive_tool) *interactive_tool_manager;
 	struct Interactive_tool *default_interactive_tool;
@@ -89,7 +90,9 @@ Frees all the data used to scene viewer objects.
 	return (return_code);
 } /* Cmiss_scene_viewer_free_data */
 
-int Cmiss_scene_viewer_set_data(struct Colour *background_colour,
+int Cmiss_scene_viewer_set_data(
+	struct Graphics_buffer_package *graphics_buffer_package,
+	struct Colour *background_colour,
 	struct MANAGER(Interactive_tool) *interactive_tool_manager,
 	struct Interactive_tool *default_interactive_tool,
 	struct MANAGER(Light) *light_manager,struct Light *default_light,
@@ -108,7 +111,7 @@ Initialises all the data used to scene viewer objects.
 	int return_code;
 
 	ENTER(Cmiss_scene_viewer_set_data);
-	if (background_colour && light_manager && default_light &&
+	if (graphics_buffer_package && background_colour && light_manager && default_light &&
 		light_model_manager && default_light_model && scene_manager
 		&& scene && texture_manager && user_interface)
 	{
@@ -119,6 +122,7 @@ Initialises all the data used to scene viewer objects.
 		}
 		if (ALLOCATE(cmiss_scene_viewer_data, struct Cmiss_scene_viewer_data, 1))
 		{
+			cmiss_scene_viewer_data->graphics_buffer_package = graphics_buffer_package;
 			cmiss_scene_viewer_data->background_colour = background_colour;
 			cmiss_scene_viewer_data->interactive_tool_manager = interactive_tool_manager;
 			cmiss_scene_viewer_data->default_interactive_tool = ACCESS(Interactive_tool)
@@ -157,7 +161,7 @@ Cmiss_scene_viewer_id create_Cmiss_scene_viewer_gtk(
 	enum Cmiss_scene_viewer_buffering_mode buffer_mode,
 	enum Cmiss_scene_viewer_stereo_mode stereo_mode,
 	int minimum_colour_buffer_depth, int minimum_depth_buffer_depth,
-	int minimum_accumulation_buffer_depth, int specified_visual_id)
+	int minimum_accumulation_buffer_depth)
 /*******************************************************************************
 LAST MODIFIED : 19 September 2002
 
@@ -169,9 +173,6 @@ If <minimum_colour_buffer_depth>, <minimum_depth_buffer_depth> or
 out the possible visuals selected for graphics_buffers.  If they are zero then 
 the accumulation_buffer_depth are not tested and the maximum colour buffer depth is
 chosen.
-If <specified_visual_id> is nonzero then this overrides all other visual
-selection mechanisms and this visual will be used if possible or the create will
-fail.
 ==============================================================================*/
 {
 	enum Graphics_buffer_buffering_mode graphics_buffer_buffering_mode;
@@ -184,7 +185,6 @@ fail.
 	USE_PARAMETER(minimum_colour_buffer_depth);
 	USE_PARAMETER(minimum_accumulation_buffer_depth);
 	USE_PARAMETER(minimum_depth_buffer_depth);
-	USE_PARAMETER(specified_visual_id);
 	if (cmiss_scene_viewer_data)
 	{
 		if (CMISS_SCENE_VIEWER_ANY_BUFFERING_MODE==buffer_mode)
@@ -211,10 +211,11 @@ fail.
 		{
 			graphics_buffer_stereo_mode = GRAPHICS_BUFFER_MONO;
 		}
-		graphics_buffer = create_Graphics_buffer_gtkgl(scene_viewer_widget,
+		graphics_buffer = create_Graphics_buffer_gtkgl(
+			cmiss_scene_viewer_data->graphics_buffer_package, scene_viewer_widget,
 			graphics_buffer_buffering_mode, graphics_buffer_stereo_mode,
 			minimum_colour_buffer_depth, minimum_depth_buffer_depth,
-			minimum_accumulation_buffer_depth, specified_visual_id);
+			minimum_accumulation_buffer_depth);
 		scene_viewer = CREATE(Scene_viewer)(graphics_buffer,
 			cmiss_scene_viewer_data->background_colour,
 			cmiss_scene_viewer_data->light_manager,

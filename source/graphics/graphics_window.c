@@ -2591,7 +2591,7 @@ it.
 		(GRAPHICS_WINDOW_STEREO==stereo_mode))&&background_colour&&
 		light_manager&&light_model_manager&&default_light_model&&
 		scene_manager&&scene&&texture_manager&&interactive_tool_manager&&
-		user_interface)
+		graphics_buffer_package&&user_interface)
 	{
 		/* Try to allocate space for the window structure */
 		if (ALLOCATE(window,struct Graphics_window,1)&&
@@ -3019,10 +3019,11 @@ it.
 				gtk_window_set_title(GTK_WINDOW(window->shell_window),
 					window_title);
 				if (graphics_buffer = create_Graphics_buffer_gtkgl(
+					graphics_buffer_package,
 					GTK_CONTAINER(window->shell_window),
 					graphics_buffer_buffering_mode, graphics_buffer_stereo_mode,
 					minimum_colour_buffer_depth, minimum_depth_buffer_depth,
-					minimum_accumulation_buffer_depth, specified_visual_id))
+					minimum_accumulation_buffer_depth))
 				{
 					/* create one Scene_viewers */
 					window->number_of_scene_viewers = 1;
@@ -3046,20 +3047,20 @@ it.
 							Scene_viewer_add_sync_callback(
 								window->scene_viewer_array[pane_no],
 								Graphics_window_Scene_viewer_view_changed,
-								graphics_window);
+								window);
 							Scene_viewer_set_transform_rate(
 								window->scene_viewer_array[pane_no],2.0,1.5,2.0);
 
 
 							/* set the initial layout */
-							Graphics_window_set_layout_mode(graphics_window,
+							Graphics_window_set_layout_mode(window,
 								GRAPHICS_WINDOW_LAYOUT_SIMPLE);
 							/* give the window its default size */
-							Graphics_window_set_viewing_area_size(graphics_window,
+							Graphics_window_set_viewing_area_size(window,
 								window->default_viewing_width,
 								window->default_viewing_height);
 							/* initial view is of all of the current scene */
-							Graphics_window_view_all(graphics_window);
+							Graphics_window_view_all(window);
 
 							gtk_widget_show_all(window->shell_window);
 							return_code = 1;
@@ -3069,8 +3070,8 @@ it.
 							display_message(ERROR_MESSAGE,
 								"CREATE(Graphics_window).  "
 								"Could not create graphics buffer.");
-							DESTROY(Graphics_window)(&graphics_window);
-							graphics_window = (struct Graphics_window *)NULL;
+							DESTROY(Graphics_window)(&window);
+							window = (struct Graphics_window *)NULL;
 						}
 					}
 					else
@@ -3078,8 +3079,8 @@ it.
 						display_message(ERROR_MESSAGE,
 							"CREATE(Graphics_window).  "
 							"Could not allocate memory for scene viewer array.");
-						DESTROY(Graphics_window)(&graphics_window);
-						graphics_window = (struct Graphics_window *)NULL;
+						DESTROY(Graphics_window)(&window);
+						window = (struct Graphics_window *)NULL;
 					}
 				}
 				else
@@ -3087,15 +3088,15 @@ it.
 					display_message(ERROR_MESSAGE,
 						"CREATE(Graphics_window).  "
 						"Could not create graphics buffer.");
-					DESTROY(Graphics_window)(&graphics_window);
-					graphics_window = (struct Graphics_window *)NULL;
+					DESTROY(Graphics_window)(&window);
+					window = (struct Graphics_window *)NULL;
 				}
 			}
 			else
 			{
 				display_message(ERROR_MESSAGE,
 					"CREATE(Graphics_window).  Unable to get main window.");
-				graphics_window = (struct Graphics_window *)NULL;
+				window = (struct Graphics_window *)NULL;
 			}
 #endif /* switch (USER_INTERFACE) */
 		}
@@ -3580,14 +3581,19 @@ DESCRIPTION :
 Sets the layout mode in effect on the <window>.
 ==============================================================================*/
 {
-	double bottom,clip_factor,eye[3],eye_distance,far_plane,front[3],left,
-		lookat[3],near_plane,radius,right,top,up[3],view[3];
+#if defined (MOTIF)
+	double bottom,clip_factor,far_plane,left,
+		near_plane,radius,right,top;
+#endif /* defined (MOTIF) */
+	double eye[3],eye_distance,front[3],lookat[3],up[3],view[3];
 	enum Scene_viewer_projection_mode projection_mode;
 	int new_layout,new_number_of_panes,pane_no,return_code;
+#if defined (MOTIF)
 	struct Colour background_colour;
 	struct Graphics_buffer *graphics_buffer;
 	struct Scene_viewer *first_scene_viewer;
 	Widget viewing_area;
+#endif /* defined (MOTIF) */
 
 	ENTER(Graphics_window_set_layout_mode);
 	if (window)
@@ -3597,6 +3603,7 @@ Sets the layout mode in effect on the <window>.
 			Graphics_window_layout_mode_get_number_of_panes(layout_mode);
 		if (new_number_of_panes > window->number_of_scene_viewers)
 		{
+#if defined (MOTIF)
 			first_scene_viewer = window->scene_viewer_array[0];
 			Scene_viewer_get_lookat_parameters(first_scene_viewer,
 				&(eye[0]),&(eye[1]),&(eye[2]),
@@ -3682,6 +3689,12 @@ Sets the layout mode in effect on the <window>.
 			{
 				return_code = 0;
 			}
+#else /* defined (MOTIF) */
+			display_message(ERROR_MESSAGE,
+				"Graphics_window_set_layout_mode.  "
+				"More than one scene viewer in the graphics window not implemented for this version.");
+			return_code=0;
+#endif /* defined (MOTIF) */
 		}
 		if (return_code)
 		{

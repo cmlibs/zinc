@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : cmiss_scene_viewer.h
 
-LAST MODIFIED : 9 September 2002
+LAST MODIFIED : 2 June 2004
 
 DESCRIPTION :
 The public interface to the Cmiss_scene_viewer object for rendering cmiss
@@ -26,7 +26,9 @@ DESCRIPTION:
 Frees all the data used to scene viewer objects.
 ==============================================================================*/
 
-int Cmiss_scene_viewer_set_data(struct Colour *background_colour,
+int Cmiss_scene_viewer_set_data(
+	struct Graphics_buffer_package *graphics_buffer_package,
+	struct Colour *background_colour,
 	struct MANAGER(Interactive_tool) *interactive_tool_manager,
 	struct Interactive_tool *default_interactive_tool,
 	struct MANAGER(Light) *light_manager,struct Light *default_light,
@@ -36,7 +38,7 @@ int Cmiss_scene_viewer_set_data(struct Colour *background_colour,
 	struct MANAGER(Texture) *texture_manager,
 	struct User_interface *user_interface);
 /*******************************************************************************
-LAST MODIFIED : 9 September 2002
+LAST MODIFIED : 2 June 2004
 
 DESCRIPTION:
 Initialises all the data used to create scene viewer objects.

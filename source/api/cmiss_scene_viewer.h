@@ -111,7 +111,7 @@ Cmiss_scene_viewer_id create_Cmiss_scene_viewer_gtk(
 	enum Cmiss_scene_viewer_buffering_mode buffer_mode,
 	enum Cmiss_scene_viewer_stereo_mode stereo_mode,
 	int minimum_colour_buffer_depth, int minimum_depth_buffer_depth,
-	int minimum_accumulation_buffer_depth, int specified_visual_id);
+	int minimum_accumulation_buffer_depth);
 /*******************************************************************************
 LAST MODIFIED : 19 September 2002
 
@@ -123,9 +123,6 @@ If <minimum_colour_buffer_depth>, <minimum_depth_buffer_depth> or
 out the possible visuals selected for graphics_buffers.  If they are zero then 
 the accumulation_buffer_depth are not tested and the maximum colour buffer depth is
 chosen.
-If <specified_visual_id> is nonzero then this overrides all other visual
-selection mechanisms and this visual will be used if possible or the create will
-fail.
 ==============================================================================*/
 #endif /* defined (GTK_USER_INTERFACE) */
 

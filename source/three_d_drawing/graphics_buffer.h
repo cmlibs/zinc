@@ -190,9 +190,9 @@ struct Graphics_buffer *create_Graphics_buffer_gtkgl(
 	enum Graphics_buffer_buffering_mode buffering_mode,
 	enum Graphics_buffer_stereo_mode stereo_mode,
 	int minimum_colour_buffer_depth, int minimum_depth_buffer_depth, 
-	int minimum_accumulation_buffer_depth, int specified_visual_id);
+	int minimum_accumulation_buffer_depth);
 /*******************************************************************************
-LAST MODIFIED : 19 September 2002
+LAST MODIFIED : 2 June 2004
 
 DESCRIPTION :
 ==============================================================================*/

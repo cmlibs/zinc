@@ -24437,7 +24437,9 @@ Initialise all the subcomponents of cmgui and create the Cmiss_command_data
 
 		if (command_data->user_interface)
 		{
-			Cmiss_scene_viewer_set_data(&command_data->background_colour,
+			Cmiss_scene_viewer_set_data(
+				command_data->graphics_buffer_package,
+				&command_data->background_colour,
 				command_data->interactive_tool_manager, command_data->transform_tool,
 				command_data->light_manager, command_data->default_light,
 				command_data->light_model_manager, command_data->default_light_model,

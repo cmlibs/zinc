@@ -1915,9 +1915,9 @@ if there are no more initialise events pending.
 	{
 #if ! defined (GTK_USE_GTKGLAREA)
 		graphics_buffer->glcontext = gtk_widget_get_gl_context(graphics_buffer->glarea);
-		if (!share_glcontext)
+		if (!graphics_buffer->package->share_glcontext)
 		{
-			share_glcontext = graphics_buffer->glcontext;
+			graphics_buffer->package->share_glcontext = graphics_buffer->glcontext;
 		}
 		graphics_buffer->gldrawable = gtk_widget_get_gl_drawable(graphics_buffer->glarea);
 #endif /* defined (GTK_USER_INTERFACE) */
@@ -2255,6 +2255,9 @@ it to share graphics contexts.
 
 	ENTER(CREATE(Graphics_buffer_package));
 
+#if ! defined (MOTIF)
+	USE_PARAMETER(user_interface);
+#endif /* ! defined (MOTIF) */
 	if (ALLOCATE(package, struct Graphics_buffer_package, 1))
 	{
 		package->override_visual_id = 0;
@@ -2298,12 +2301,22 @@ Closes the Graphics buffer package
 	{
 		return_code=1;
 
+#if defined (MOTIF)
 		/* Destroy the shared_glx_context as we did not destroy it when closing
 			it's buffer */
 		if (package->shared_glx_context)
 		{
 			glXDestroyContext(package->display, package->shared_glx_context);
 		}
+#endif /* defined (MOTIF) */
+#if defined (GTK_USER_INTERFACE)
+#  if ! defined (GTK_USE_GTKGLAREA)
+		if (package->share_glcontext)
+		{
+			gdk_gl_context_destroy(package->share_glcontext);
+		}
+#  endif /* ! defined (GTK_USE_GTKGLAREA) */
+#endif /* defined (GTK_USER_INTERFACE) */
 
 		DEALLOCATE(*package_ptr);
 		*package_ptr = (struct Graphics_buffer_package *)NULL;
@@ -2371,16 +2384,26 @@ DESCRIPTION :
 
 	if (buffer = CREATE(Graphics_buffer)(graphics_buffer_package))
 	{
+#if defined (MOTIF)
 		Graphics_buffer_create_buffer_glx(buffer, graphics_buffer_package, 
 			GRAPHICS_BUFFER_OFFSCREEN_CLASS, (Widget)NULL, width, height,
 			buffering_mode, stereo_mode, minimum_colour_buffer_depth, 
 			minimum_depth_buffer_depth, /*minimum_alpha_buffer_depth*/0,
 			minimum_accumulation_buffer_depth,
 			/*buffer_to_match*/(struct Graphics_buffer *)NULL);
+#else /* defined (MOTIF) */
+		USE_PARAMETER(width);
+		USE_PARAMETER(height);
+		USE_PARAMETER(buffering_mode);
+		USE_PARAMETER(stereo_mode);
+		USE_PARAMETER(minimum_colour_buffer_depth);
+		USE_PARAMETER(minimum_depth_buffer_depth);
+		USE_PARAMETER(minimum_accumulation_buffer_depth);
+#endif /* defined (MOTIF) */
 		if (buffer->type == GRAPHICS_BUFFER_INVALID_TYPE)
 		{
 			display_message(ERROR_MESSAGE,"create_Graphics_buffer_X3d.  "
-				"Unable to create X3d graphics buffer.");				
+				"Unable to create offscreen graphics buffer.");				
 			buffer = (struct Graphics_buffer *)NULL;
 		}
 	}
@@ -2411,12 +2434,18 @@ DESCRIPTION :
 
 	if (buffer = CREATE(Graphics_buffer)(buffer_to_match->package))
 	{
+#if defined (MOTIF)
 		Graphics_buffer_create_buffer_glx(buffer, buffer_to_match->package, 
 			GRAPHICS_BUFFER_OFFSCREEN_SHARED_CLASS, (Widget)NULL, width, height,
 			GRAPHICS_BUFFER_ANY_BUFFERING_MODE, GRAPHICS_BUFFER_ANY_STEREO_MODE,
 			/*minimum_colour_buffer_depth*/0, /*minimum_depth_buffer_depth */0,
 			/*minimum_alpha_buffer_depth*/0, /*minimum_accumulation_buffer_depth*/0,
 			buffer_to_match);
+#else /* defined (MOTIF) */
+		USE_PARAMETER(width);
+		USE_PARAMETER(height);
+		USE_PARAMETER(buffer_to_match);
+#endif /* defined (MOTIF) */
 		if (buffer->type == GRAPHICS_BUFFER_INVALID_TYPE)
 		{
 			display_message(ERROR_MESSAGE,"create_Graphics_buffer_X3d.  "
@@ -2530,9 +2559,9 @@ struct Graphics_buffer *create_Graphics_buffer_gtkgl(
 	enum Graphics_buffer_buffering_mode buffering_mode,
 	enum Graphics_buffer_stereo_mode stereo_mode,
 	int minimum_colour_buffer_depth, int minimum_depth_buffer_depth, 
-	int minimum_accumulation_buffer_depth, int specified_visual_id)
+	int minimum_accumulation_buffer_depth)
 /*******************************************************************************
-LAST MODIFIED : 10 July 2002
+LAST MODIFIED : 2 June 2004
 
 DESCRIPTION :
 ==============================================================================*/
@@ -2606,11 +2635,6 @@ DESCRIPTION :
 				attribute_ptr++;
 				*attribute_ptr = accumulation_colour_size;
 				attribute_ptr++;
-			}
-			if (specified_visual_id)
-			{
-				display_message(ERROR_MESSAGE,"create_Graphics_buffer_gtkgl.  "
-					"Specified visual id is not implemented for gtkglext.");
 			}
 			*attribute_ptr = GDK_GL_NONE;
 			attribute_ptr++;
@@ -2722,9 +2746,9 @@ struct Graphics_buffer *create_Graphics_buffer_gtkgl(
 	enum Graphics_buffer_buffering_mode buffering_mode,
 	enum Graphics_buffer_stereo_mode stereo_mode,
 	int minimum_colour_buffer_depth, int minimum_depth_buffer_depth, 
-	int minimum_accumulation_buffer_depth, int specified_visual_id)
+	int minimum_accumulation_buffer_depth)
 /*******************************************************************************
-LAST MODIFIED : 5 May 2004
+LAST MODIFIED : 2 June 2004
 
 DESCRIPTION :
 ==============================================================================*/
@@ -2797,15 +2821,11 @@ DESCRIPTION :
 					*attribute_ptr = accumulation_colour_size;
 					attribute_ptr++;
 				}
-				if (specified_visual_id)
-				{
-					display_message(ERROR_MESSAGE,"create_Graphics_buffer_gtkgl.  "
-						"Specified visual id is not implemented for gtkglext.");
-				}
 				*attribute_ptr = GDK_GL_ATTRIB_LIST_NONE;
 				attribute_ptr++;
 				if ((glconfig = gdk_gl_config_new(attribute_list)) &&
-					gtk_widget_set_gl_capability(glarea, glconfig, share_glcontext,
+					gtk_widget_set_gl_capability(glarea, glconfig,
+						graphics_buffer_package->share_glcontext,
 						TRUE, GDK_GL_RGBA_TYPE))
 				{
 					buffer->glarea = glarea;
@@ -3131,7 +3151,10 @@ DESCRIPTION :
 Returns the depth of the accumulation buffer used by the graphics buffer.
 ==============================================================================*/
 {
-	int colour_size, return_code;
+#if defined (MOTIF)
+	int colour_size;
+#endif /* defined (MOTIF) */
+	int return_code;
 
 	ENTER(Graphics_buffer_get_accumulation_buffer_depth);
 	if (buffer)
