@@ -1,7 +1,7 @@
 XCOMM **************************************************************************
 XCOMM FILE : cmgui.imake
 XCOMM
-XCOMM LAST MODIFIED : 2 May 2002
+XCOMM LAST MODIFIED : 24 May 2002
 XCOMM
 XCOMM DESCRIPTION :
 XCOMM
@@ -1166,8 +1166,67 @@ cmgui.ObjSuffix : cmgui.c $(OBJECT_PATH)/version.ObjSuffix.h $(INTERPRETER_LIB)
 		cat $(OBJECT_PATH)/version.ObjSuffix.h $(PRODUCT_SOURCE_PATH)/$*.c > $(OBJECT_PATH)/$*.ObjSuffix.c ; \
 	fi
 	$(CC) -o $(OBJECT_PATH)/$*.ObjSuffix $(ALL_FLAGS) $(OBJECT_PATH)/$*.ObjSuffix.c;
+		
+/* We want to limit the dynamic symbols in the final executable so that
+   dlopen routines can't access symbols we don't want them to */
+#if defined (IRIX) /* switch OperatingSystem */
+EXPORTS_FILE = cmgui.exports
+EXPORTS_LINK_FLAGS = -Wl,-exports_file,$(EXPORTS_FILE)
+$(OBJECT_PATH)/$(EXPORTS_FILE) :	$(EXPORTS_FILE)
+	cp $(EXPORTS_FILE) $(OBJECT_PATH)/$(EXPORTS_FILE)
+#elif defined(LINUX) /* switch OperatingSystem */
+#if defined (EXPORT_EVERYTHING)
+/* The original way was to export everything.  I implement
+	that here so that I can easily compare behaviour */
+EXPORTS_FILE = cmgui.dummy
+SRC_EXPORTS_FILE = cmgui.exports
+EXPORTS_LINK_FLAGS = -Wl,-E
+$(OBJECT_PATH)/$(EXPORTS_FILE) :	$(SRC_EXPORTS_FILE)
+	echo > $(OBJECT_PATH)/$(EXPORTS_FILE)
+#else /* defined (EXPORT_EVERYTHING) */
+#if defined (NEW_BINUTILS)
+/* In Linux this requires an ld from binutils 2.12 or later 
+   but is much better code so hopefully what I do here will
+   replace the alternative when this version is ubiquitous */
+/* Use a version script to reduce all variables not listed to
+	local scope, this version script would allow regexp but
+   the irix file does not yet */
+EXPORTS_FILE = cmgui_ld_version.script
+SRC_EXPORTS_FILE = cmgui.exports
+EXPORTS_LINK_FLAGS = -Wl,-export-dynamic,--version-script,$(EXPORTS_FILE)
+$(OBJECT_PATH)/$(EXPORTS_FILE) :	$(SRC_EXPORTS_FILE)
+	echo > $(OBJECT_PATH)/$(EXPORTS_FILE)	"CMISS_EXP_1.0 {"
+	echo >> $(OBJECT_PATH)/$(EXPORTS_FILE)	"global:"
+	sed -n -e 's/\([^ ]*\)/  \1;/p' < $(SRC_EXPORTS_FILE) >> $(OBJECT_PATH)/$(EXPORTS_FILE)
+	echo >> $(OBJECT_PATH)/$(EXPORTS_FILE)	"local:"
+	echo >> $(OBJECT_PATH)/$(EXPORTS_FILE)	"  *;"
+	echo >> $(OBJECT_PATH)/$(EXPORTS_FILE)	"};"
+#else /* defined (NEW_BINUTILS) */
+/* So this is the nastier fix which works until ld is fixed,
+	basically I create a shared object which requires the 
+	symbols we want to export and link against that, then
+   to remove the dependency on the shared object we just
+	linked against, we declare that the executable has the
+	soname of the library, pretty sneaky */
+EXPORTS_FILE = cmgui_symbols.so
+EXPORTS_SONAME = cmgui.so /* If we are going to put this in the executable lets give it a generic name */
+SRC_EXPORTS_FILE = cmgui.exports
+EXPORTS_LINK_FLAGS = $(EXPORTS_FILE) -Wl,-soname,$(EXPORTS_SONAME)
+$(OBJECT_PATH)/$(EXPORTS_FILE) :	$(SRC_EXPORTS_FILE)
+	echo > $(OBJECT_PATH)/$(EXPORTS_FILE).c	"#define lt_preloaded_symbols some_other_symbol"
+	echo >> $(OBJECT_PATH)/$(EXPORTS_FILE).c	"#define dynamic_ptr void *"
+	sed -n -e 's/\([^ ]*\)/extern char \1;/p' < $(SRC_EXPORTS_FILE) >> $(OBJECT_PATH)/$(EXPORTS_FILE).c
+	echo >> $(OBJECT_PATH)/$(EXPORTS_FILE).c	"#undef lt_preloaded_symbols"
+	echo >> $(OBJECT_PATH)/$(EXPORTS_FILE).c	"const struct { const char *name; dynamic_ptr address; }"
+	echo >> $(OBJECT_PATH)/$(EXPORTS_FILE).c	"lt_preloaded_symbols[] = {"
+	sed -n -e 's/\([^ ]*\)/  {\"\1\", (dynamic_ptr) \&\1},/p' < $(SRC_EXPORTS_FILE) >> $(OBJECT_PATH)/$(EXPORTS_FILE).c
+	echo >> $(OBJECT_PATH)/$(EXPORTS_FILE).c	"{0, (dynamic_ptr) 0} };"
+	$(LINK) -shared -o $(OBJECT_PATH)/$(EXPORTS_FILE) -Wl,-soname,$(EXPORTS_SONAME) $(OBJECT_PATH)/$(EXPORTS_FILE).c
+#endif /* defined (NEW_BINUTILS) */
+#endif /* defined (EXPORT_EVERYTHING) */
+#endif /* switch OperatingSystem */
 
-Target : $(OBJS) cmgui.ObjSuffix
+Target : $(OBJS) cmgui.ObjSuffix $(OBJECT_PATH)/$(EXPORTS_FILE)
 	if [ ! -d $(BIN_PATH) ]; then \
 		mkdir -p $(BIN_PATH); \
 	fi
@@ -1179,7 +1238,8 @@ Target : $(OBJS) cmgui.ObjSuffix
 	cd $(OBJECT_PATH) ; \
 	rm -f product_object ; \
 	ln -s $(PRODUCT_OBJECT_PATH) product_object ; \
-	$(LINK) -o $(BIN_PATH)/Target $(ALL_FLAGS) `cat object.list` $(ALL_LIB)
+	$(LINK) -o /tmp/Target $(ALL_FLAGS) `cat object.list` $(ALL_LIB) $(EXPORTS_LINK_FLAGS)
+	cp /tmp/Target $(BIN_PATH)/Target
 
 CmguiFiltLibrary : $(LIB_FILT_OBJS) $(FILT_OBJ) Makefile libCmguiFiltExports
 	cd $(OBJECT_PATH)
