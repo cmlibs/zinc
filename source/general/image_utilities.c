@@ -748,7 +748,7 @@ functions, ie. at the start of the program.
 	if (program_name)
 	{
 #if defined (IMAGEMAGICK)
-		MagickIncarnate(program_name);
+		InitializeMagick(program_name);
 #endif /* defined (IMAGEMAGICK) */
 		return_code = 1;
 	}
@@ -6004,8 +6004,8 @@ Extracts parameters from <magick_image> that matter for a Cmgui_image
 	if (magick_image && width && height && number_of_components &&
 		number_of_bytes_per_component)
 	{
-		*width = magick_image->columns;
-		*height = magick_image->rows;
+		*width = (int)magick_image->columns;
+		*height = (int)magick_image->rows;
 		if (magick_image->matte)
 		{
 			if (magick_image->colorspace == GRAYColorspace)
@@ -6374,20 +6374,20 @@ right in each row. Pixel colours are interleaved, eg. RGBARGBARGBA...
 							{
 								for (x = 0; x < width; x++)
 								{
-									q->red = UpScale(*p++);
+									q->red = Upscale(*p++);
 									if (GRAYColorspace == magick_image->colorspace)
 									{
 										q->blue = q->green = q->red;
 									}
 									else
 									{
-										q->green = UpScale(*p++);
-										q->blue = UpScale(*p++);
+										q->green = Upscale(*p++);
+										q->blue = Upscale(*p++);
 									}
 									if (magick_image->matte)
 									{
 										/* reverse alpha/opacity */
-										q->opacity = UpScale(0xFF - (*p++));
+										q->opacity = Upscale(0xFF - (*p++));
 									}
 									q++;
 								}
@@ -6567,6 +6567,7 @@ equal to the number_of_components.
 	unsigned char *destination;
 #if defined (IMAGEMAGICK)
 	char *magick_image_storage;
+	ExceptionInfo magick_exception;
 	Image *magick_image;
 	int image_height_minus_1, reverse_alpha;
 	StorageType magick_storage_type;
@@ -6602,6 +6603,7 @@ equal to the number_of_components.
 			padding_bytes = 0;
 		}
 #if defined (IMAGEMAGICK)
+		GetExceptionInfo(&magick_exception);
 		/* get the magick_image for this <image_number> */
 		magick_image = cmgui_image->magick_image;
 		for (i = 0; (i < image_number) && magick_image; i++)
@@ -6675,7 +6677,7 @@ equal to the number_of_components.
 				/* y is 0 in the top scanline of ImageMagick images, hence reverse */
 				DispatchImage(magick_image, left, image_height_minus_1 - y,
 					width, 1, magick_image_storage, magick_storage_type,
-					(void *)destination);
+					(void *)destination, &magick_exception);
 				if (reverse_alpha)
 				{
 					temp_dest = destination +

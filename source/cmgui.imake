@@ -295,21 +295,23 @@ IMAGEMAGICK_PATH = $(CMISS_ROOT)/image_utils
 #else /* defined (CMISS_ROOT_DEFINED) */
 IMAGEMAGICK_PATH = $(CMGUI_DEV_ROOT)/image_utils
 #endif /* defined (CMISS_ROOT_DEFINED) */
-IMAGEMAGICK_INC = -I$(IMAGEMAGICK_PATH)/include/
 #if defined (IRIX) /* switch OperatingSystem */
 IMAGEMAGICK_SWITCH = -DIMAGEMAGICK
 #if defined (O64)
-IMAGEMAGICK_LIB = $(IMAGEMAGICK_PATH)/lib64/libMagick.a $(IMAGEMAGICK_PATH)/lib64/libtiff.a $(IMAGEMAGICK_PATH)/lib64/libjpeg.a $(IMAGEMAGICK_PATH)/lib64/libz.a
+IMAGEMAGICK_INC = -I$(IMAGEMAGICK_PATH)/include64/
+IMAGEMAGICK_LIB = $(IMAGEMAGICK_PATH)/lib64/libMagick.a $(IMAGEMAGICK_PATH)/lib64/libtiff.a $(IMAGEMAGICK_PATH)/lib64/libpng.a $(IMAGEMAGICK_PATH)/lib64/libjpeg.a $(IMAGEMAGICK_PATH)/lib64/libz.a
 #else /* defined (O64) */
+IMAGEMAGICK_INC = -I$(IMAGEMAGICK_PATH)/include32/
 #if defined (OPTIMISED)
-IMAGEMAGICK_LIB = $(IMAGEMAGICK_PATH)/lib32/libMagick.a $(IMAGEMAGICK_PATH)/lib32/libtiff.a $(IMAGEMAGICK_PATH)/lib32/libjpeg.a $(IMAGEMAGICK_PATH)/lib32/libz.a
+IMAGEMAGICK_LIB = $(IMAGEMAGICK_PATH)/lib32/libMagick.a $(IMAGEMAGICK_PATH)/lib32/libtiff.a $(IMAGEMAGICK_PATH)/lib32/libpng.a $(IMAGEMAGICK_PATH)/lib32/libjpeg.a $(IMAGEMAGICK_PATH)/lib32/libz.a
 #else /* defined (OPTIMISED) */
-IMAGEMAGICK_LIB = $(IMAGEMAGICK_PATH)/lib32/libMagick.a $(IMAGEMAGICK_PATH)/lib32/libtiff.a $(IMAGEMAGICK_PATH)/lib32/libjpeg.a $(IMAGEMAGICK_PATH)/lib32/libz.a
+IMAGEMAGICK_LIB = $(IMAGEMAGICK_PATH)/lib32/libMagick.a $(IMAGEMAGICK_PATH)/lib32/libtiff.a $(IMAGEMAGICK_PATH)/lib32/libpng.a $(IMAGEMAGICK_PATH)/lib32/libjpeg.a $(IMAGEMAGICK_PATH)/lib32/libz.a
 #endif /* defined (OPTIMISED) */
 #endif /* defined (O64) */
 #elif defined(LINUX) /* switch OperatingSystem */
 IMAGEMAGICK_SWITCH = -DIMAGEMAGICK -D_FILE_OFFSET_BITS=64
-IMAGEMAGICK_LIB = $(IMAGEMAGICK_PATH)/liblinux/libMagick.a $(IMAGEMAGICK_PATH)/liblinux/libtiff.a $(IMAGEMAGICK_PATH)/liblinux/libjpeg.a $(IMAGEMAGICK_PATH)/liblinux/libz.a
+IMAGEMAGICK_INC = -I$(IMAGEMAGICK_PATH)/includelinux/
+IMAGEMAGICK_LIB = $(IMAGEMAGICK_PATH)/liblinux/libMagick.a $(IMAGEMAGICK_PATH)/liblinux/libtiff.a $(IMAGEMAGICK_PATH)/liblinux/libpng.a $(IMAGEMAGICK_PATH)/liblinux/libjpeg.a $(IMAGEMAGICK_PATH)/liblinux/libz.a
 #endif /* switch OperatingSystem */
 #endif /* !defined (IMAGEMAGICK) */
 
