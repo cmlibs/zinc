@@ -610,7 +610,7 @@ int local_frequency_wiener2d(FE_value *data_index, FE_value *result_index, doubl
     DESCRIPTION: Implement Wiener-like filtering
 =========================================================================*/
 {
-        FE_value *re, *im, *kernel, *nothing;
+        FE_value *re, *im, *kernel, *nothing, mean_value;
 	int x,y,nx,ny,adr;
 	/* FE_value cx,cy; */
 	int storage_size;
@@ -627,9 +627,16 @@ int local_frequency_wiener2d(FE_value *data_index, FE_value *result_index, doubl
 	        return_code = 1;
 		nx = xsize;
 		ny = ysize;
+		mean_value = 0.0;
 		for (i = 0; i < storage_size; i++)
 		{
 		        nothing[i] = 0.0;
+			mean_value += data_index[i];
+		}
+		mean_value /= (FE_value)storage_size;
+		for (i = 0; i < storage_size; i++)
+		{
+		        data_index[i] -= mean_value;
 		}
 
 		local_frequency_fft2d(data_index, nothing, re, im, (char *)0, nx, ny);
@@ -644,11 +651,15 @@ int local_frequency_wiener2d(FE_value *data_index, FE_value *result_index, doubl
 		        for (y=-ny/2;y<ny/2;y++)
 			{
 			        adr = (y<0?ny+y:y)*nx+(x<0?nx+x:x);
-				re[adr] *= kernel[adr]*8.0;
-				im[adr] *= kernel[adr]*8.0;
+				re[adr] *= kernel[adr];
+				im[adr] *= kernel[adr];
 			}	
 		}
 		local_frequency_fft2d(re, im, result_index, nothing, (char *)1, nx,ny);
+		for (i = 0; i < storage_size; i++)
+		{
+		        result_index[i] += mean_value;
+		}
 		DEALLOCATE(re);
 		DEALLOCATE(im);
 		DEALLOCATE(nothing);
