@@ -406,7 +406,7 @@ DESCRIPTION : Implement image thinning extracting.
 				{
 				        stop *= x_index[i];
 				}
-				if (stop = 0.0)
+				if (stop == 0.0)
 				{
 				        break;
 				}
@@ -1587,12 +1587,10 @@ DESCRIPTION :
 ==============================================================================*/
 {
 	int return_code;
-	struct Computed_field_morphology_thinning_type_specific_data *data;
+	/* struct Computed_field_morphology_thinning_type_specific_data *data;*/
 
 	ENTER(List_Computed_field_morphology_thinning);
-	if (field && (field->type_string==computed_field_morphology_thinning_type_string)
-		&& (data = (struct Computed_field_morphology_thinning_type_specific_data *)
-		field->type_specific_data))
+	if (field && (field->type_string==computed_field_morphology_thinning_type_string))
 	{
 		display_message(INFORMATION_MESSAGE,
 			"    source field : %s\n",field->source_fields[0]->name);
