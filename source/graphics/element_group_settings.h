@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : element_group_settings.h
 
-LAST MODIFIED : 7 June 2000
+LAST MODIFIED : 5 July 2000
 
 DESCRIPTION :
 GT_element_settings structure and routines for describing and manipulating the
@@ -832,6 +832,15 @@ DESCRIPTION :
 Iterator function returning true if the settings uses nodes/elements of the
 given <dimension>. The special value of -1 denotes all dimensions and always
 returns true.
+==============================================================================*/
+
+int GT_element_settings_selects_elements(struct GT_element_settings *settings);
+/*******************************************************************************
+LAST MODIFIED : 5 July 2000
+
+DESCRIPTION :
+Returns true if the graphics for <settings> are output with names that identify
+the elements they are calculated from.
 ==============================================================================*/
 
 enum GT_element_settings_type GT_element_settings_get_settings_type(
