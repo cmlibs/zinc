@@ -130,9 +130,6 @@ DESCRIPTION :
 	/* for COMPUTED_FIELD_CURVE_LOOKUP only */
 	struct Control_curve *curve;
 
-	/* for COMPUTED_FIELD_PROJECTION only */
-	double *projection_matrix;
-
 	/* for COMPUTED_FIELD_NEW_TYPES */
 	/* Soon this will be the only way it is done. */
 	Computed_field_clear_type_specific_function

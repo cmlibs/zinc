@@ -697,12 +697,6 @@ Calls Computed_field_clear_cache before clearing the type.
 			DEACCESS(Control_curve)(&(field->curve));
 		}
 
-		/* for COMPUTED_FIELD_PROJECTION only */
-		if (field->projection_matrix)
-		{
-			DEALLOCATE(field->projection_matrix);
-		}
-
 		/* for COMPUTED_FIELD_NEW_TYPES */
 		if (field->type_specific_data)
 		{
@@ -935,9 +929,6 @@ COMPUTED_FIELD_CONSTANT with 1 component, returning a value of zero.
 			/* for COMPUTED_FIELD_CURVE_LOOKUP only */
 			field->curve=(struct Control_curve *)NULL;
 
-			/* for COMPUTED_FIELD_PROJECTION only */
-			field->projection_matrix= (double *)NULL;
-
 			/* for COMPUTED_FIELD_NEW_TYPES */
 			/* Soon this will be the only way it is done. */
 			field->computed_field_clear_type_specific_function = 
@@ -1130,7 +1121,7 @@ functions to check if read_only flag is set.
 {
 	char **component_names;
 	FE_value *source_values;
-	int i,number_of_projection_values,return_code;
+	int i,return_code;
 	struct Computed_field **source_fields;
 	struct LIST(Computed_field_element_texture_mapping) *texture_mapping;
 	void *type_specific_data;
@@ -1242,20 +1233,6 @@ functions to check if read_only flag is set.
 						if (source->curve)
 						{
 							destination->curve=ACCESS(Control_curve)(source->curve);
-						}
-
-						/* for COMPUTED_FIELD_PROJECTION only */
-						if (source->projection_matrix)
-						{
-							number_of_projection_values = (source->source_fields[0]->number_of_components + 1)
-								* (source->number_of_components + 1);
-							if (ALLOCATE(destination->projection_matrix, double, number_of_projection_values))
-							{
-								for (i=0;i<number_of_projection_values;i++)
-								{
-									destination->projection_matrix[i]=source->projection_matrix[i];
-								}
-							}
 						}
 
 						/* for COMPUTED_FIELD_NEW_TYPES */
@@ -1865,7 +1842,6 @@ any other fields, this function is recursively called for them.
 				case COMPUTED_FIELD_RC_COORDINATE:
 				case COMPUTED_FIELD_RC_VECTOR:
 				case COMPUTED_FIELD_MAGNITUDE:
-				case COMPUTED_FIELD_PROJECTION:
 				case COMPUTED_FIELD_SUM_COMPONENTS:
 				{
 					return_code=1;
@@ -2359,117 +2335,6 @@ sheet,-fibre,normal.
 
 	return (return_code);
 } /* Computed_field_evaluate_fibre_axes */
-
-static int Computed_field_evaluate_projection_matrix(struct Computed_field *field,
-	int element_dimension, int calculate_derivatives)
-/*******************************************************************************
-LAST MODIFIED : 8 May 2000
-
-DESCRIPTION :
-Function called by Computed_field_evaluate_in_element to compute a field
-transformed by a projection matrix.
-NOTE: Assumes that values and derivatives arrays are already allocated in
-<field>, and that its source_fields are already computed (incl. derivatives)
-for the same element, with the given <element_dimension> = number of Xi coords.
-==============================================================================*/
-{
-	double dhdxi, dh1dxi, perspective;
-	int coordinate_components, i, j, k,return_code;
-	
-	ENTER(Computed_field_evaluate_projection_matrix);
-	if (field&&(COMPUTED_FIELD_PROJECTION==field->type))
-	{
-		if (calculate_derivatives)
-		{
-			field->derivatives_valid=1;
-		}
-		else
-		{
-			field->derivatives_valid=0;
-		}
-
-		/* Calculate the transformed coordinates */
-		coordinate_components=field->source_fields[0]->number_of_components;
-		for (i = 0 ; i < field->number_of_components ; i++)
-		{
-			field->values[i] = 0.0;
-			for (j = 0 ; j < coordinate_components ; j++)
-			{
-				field->values[i] += field->projection_matrix[i * (coordinate_components + 1) + j]
-					* field->source_fields[0]->values[j];
-			}
-			/* The last source value is fixed at 1 */
-			field->values[i] += 
-				field->projection_matrix[i * (coordinate_components + 1) + coordinate_components];
-		}
-
-		/* The last calculated value is the perspective value which divides through
-			all the other components */
-		perspective = 0.0;
-		for (j = 0 ; j < coordinate_components ; j++)
-		{
-			perspective += field->projection_matrix[field->number_of_components
-				* (coordinate_components + 1) + j] * field->source_fields[0]->values[j];
-		}
-		perspective += field->projection_matrix[field->number_of_components 
-			* (coordinate_components + 1) + coordinate_components];
-		
-		if (calculate_derivatives)
-		{
-			for (k=0;k<element_dimension;k++)
-			{
-				/* Calculate the coordinate derivatives without perspective */
-				for (i = 0 ; i < field->number_of_components ; i++)
-				{
-					field->derivatives[i * element_dimension + k] = 0.0;
-					for (j = 0 ; j < coordinate_components ; j++)
-					{
-						field->derivatives[i * element_dimension + k] += 
-							field->projection_matrix[i * (coordinate_components + 1) + j]
-							* field->source_fields[0]->derivatives[j * element_dimension + k];
-					}
-				}
-
-				/* Calculate the perspective derivative */
-				dhdxi = 0.0;
-				for (j = 0 ; j < coordinate_components ; j++)
-				{
-					dhdxi += field->projection_matrix[field->number_of_components 
-						* (coordinate_components + 1) + j]
-						* field->source_fields[0]->derivatives[j *element_dimension + k];
-				}
-
-				/* Calculate the perspective reciprocal derivative using chaing rule */
-				dh1dxi = (-1.0) / (perspective * perspective) * dhdxi;
-
-				/* Calculate the derivatives of the perspective scaled transformed coordinates,
-					which is ultimately what we want */
-				for (i = 0 ; i < field->number_of_components ; i++)
-				{
-					field->derivatives[i * element_dimension + k] = 
-						field->derivatives[i * element_dimension + k] / perspective
-						+ field->values[i] * dh1dxi;
-				}
-			}
-		}
-
-		/* Now apply the perspective scaling to the non derivative transformed coordinates */
-		for (i = 0 ; i < field->number_of_components ; i++)
-		{
-			field->values[i] /= perspective;
-		}
-
-		return_code = 1;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_evaluate_projection_matrix.  Invalid argument(s)");
-		return_code=0;
-	}
-
-	return (return_code);
-} /* Computed_field_evaluate_projection_matrix */
 
 static int Computed_field_evaluate_rc_vector(struct Computed_field *field)
 /*******************************************************************************
@@ -3061,11 +2926,6 @@ is avoided.
 									temp++;
 								}
 								field->values[0]=sqrt(field->values[0]);
-							} break;
-							case COMPUTED_FIELD_PROJECTION:
-							{
-								return_code=Computed_field_evaluate_projection_matrix(field,
-									element_dimension, calculate_derivatives);
 							} break;
 							case COMPUTED_FIELD_RC_VECTOR:
 							{
@@ -3837,11 +3697,6 @@ fields with the name 'coordinates' are quite pervasive.
 									temp++;
 								}
 								field->values[0]=sqrt(field->values[0]);
-							} break;
-							case COMPUTED_FIELD_PROJECTION:
-							{
-								return_code=Computed_field_evaluate_projection_matrix(field,
-									/*element_dimension*/0, /*calculate_derivatives*/0);
 							} break;
 							case COMPUTED_FIELD_RC_VECTOR:
 							{
@@ -5324,7 +5179,6 @@ Computed_field_set_values_in_[managed_]element.
 					/* note: only find out if first field of composite grid based! */
 				case COMPUTED_FIELD_EDIT_MASK:
 				case COMPUTED_FIELD_MAGNITUDE:
-				case COMPUTED_FIELD_PROJECTION:
 				case COMPUTED_FIELD_RC_COORDINATE:
 				case COMPUTED_FIELD_RC_VECTOR:
 				{
@@ -5632,10 +5486,6 @@ The calling function must not deallocate the returned string.
 		case COMPUTED_FIELD_NEW_TYPES:
 		{
 			field_type_string=field->type_string;
-		} break;
-		case COMPUTED_FIELD_PROJECTION:
-		{
-			field_type_string="projection";
 		} break;
 		case COMPUTED_FIELD_RC_COORDINATE:
 		{
@@ -7435,127 +7285,6 @@ although its cache may be lost.
 
 	return (return_code);
 } /* Computed_field_set_type_magnitude */
-
-int Computed_field_get_type_projection(struct Computed_field *field,
-	struct Computed_field **source_field, int *number_of_components,
-	double **projection_matrix)
-/*******************************************************************************
-LAST MODIFIED : 5 May 2000
-
-DESCRIPTION :
-If the field is of type COMPUTED_FIELD_PROJECTION, the source_field and
-projection matrix used by it are returned. Since the number of projections is
-equal to the number of components in the source_field (and you don't know this
-yet), this function returns in *projection_matrix a pointer to an allocated 
-array containing the values.
-It is up to the calling function to DEALLOCATE the returned <*projection_matrix>.
-Use function Computed_field_get_type to determine the field type.
-==============================================================================*/
-{
-	int coordinate_components,i,j,return_code;
-
-	ENTER(Computed_field_get_type_projection);
-	if (field&&(COMPUTED_FIELD_PROJECTION==field->type)&&source_field&&
-		number_of_components && projection_matrix)
-	{
-		if (ALLOCATE(*projection_matrix,double,
-			(field->source_fields[0]->number_of_components + 1) *
-			(field->number_of_components + 1)))
-		{
-			coordinate_components = field->source_fields[0]->number_of_components;
-			*number_of_components = field->number_of_components;
-			*source_field=field->source_fields[0];
-			for (i=0;i<field->number_of_components + 1;i++)
-			{
-				for (j=0;j<coordinate_components + 1;j++)
-				{
-					(*projection_matrix)[i * (coordinate_components + 1) + j]
-						= field->projection_matrix[i * (coordinate_components + 1) + j];
-				}
-			}
-			return_code=1;
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"Computed_field_get_type_projection.  Not enough memory");
-			return_code=0;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_get_type_projection.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Computed_field_get_type_projection */
-
-int Computed_field_set_type_projection(struct Computed_field *field,
-	struct Computed_field *source_field, int number_of_components, 
-	double *projection_matrix)
-/*******************************************************************************
-LAST MODIFIED : 5 May 2000
-
-DESCRIPTION :
-Converts <field> to type COMPUTED_FIELD_PROJECTION, returning the <source_field>
-with each component multiplied by the perspective <projection_matrix>.
-The <projection_matrix> array must be of size
-(source_field->number_of_components + 1) * (field->number_of_components + 1).
-The source vector is appended with a 1 to make source_field->number_of_components + 1
-components.  The extra calculated value is a perspective value which divides
-through each of the other components.
-If function fails, field is guaranteed to be unchanged from its original state,
-although its cache may be lost.
-==============================================================================*/
-{
-	double *new_projection_matrix;
-	int i,number_of_projection_values,number_of_source_fields,return_code;
-	struct Computed_field **source_fields;
-
-	ENTER(Computed_field_set_type_projection);
-	if (field&&source_field&&projection_matrix)
-	{
-		return_code=1;
-		/* 1. make dynamic allocations for any new type-specific data */
-		number_of_projection_values = (source_field->number_of_components + 1)
-			* (number_of_components + 1);
-		number_of_source_fields=1;
-		if (ALLOCATE(new_projection_matrix,double,number_of_projection_values)&&
-			ALLOCATE(source_fields,struct Computed_field *,number_of_source_fields))
-		{
-			/* 2. free current type-specific data */
-			Computed_field_clear_type(field);
-			/* 3. establish the new type */
-			field->type=COMPUTED_FIELD_PROJECTION;
-			field->number_of_components=number_of_components;
-			source_fields[0]=ACCESS(Computed_field)(source_field);
-			field->source_fields=source_fields;
-			field->number_of_source_fields=number_of_source_fields;\
-			for (i = 0 ; i < number_of_projection_values ; i++)
-			{
-				new_projection_matrix[i] = projection_matrix[i];
-			}
-			field->projection_matrix = new_projection_matrix;
-		}
-		else
-		{
-			DEALLOCATE(projection_matrix);
-			return_code=0;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_set_type_projection.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Computed_field_set_type_projection */
 
 int Computed_field_get_type_rc_coordinate(struct Computed_field *field,
 	struct Computed_field **coordinate_field)
@@ -10452,192 +10181,6 @@ and allows its contents to be modified.
 	return (return_code);
 } /* define_Computed_field_type_magnitude */
 
-static int define_Computed_field_type_projection(struct Parse_state *state,
-	void *field_void,void *computed_field_package_void)
-/*******************************************************************************
-LAST MODIFIED : 5 May 2000
-
-DESCRIPTION :
-Converts <field> into type COMPUTED_FIELD_PROJECTION (if it is not already)
-and allows its contents to be modified.
-==============================================================================*/
-{
-	char *current_token;
-	double *projection_matrix,*temp_projection_matrix;
-	int i,number_of_components,number_of_projection_values,return_code,
-		temp_number_of_projection_values;
-	static struct Modifier_entry 
-		field_option_table[]=
-		{
-			{"field",NULL,NULL,set_Computed_field_conditional},
-			{NULL,NULL,NULL,NULL}
-		},
-		number_of_components_option_table[]=
-		{
-			{"number_of_components",NULL,NULL,set_int_positive},
-			{NULL,NULL,NULL,NULL}
-		},
-		projection_matrix_option_table[]=
-		{
-			{"projection_matrix",NULL,NULL,set_double_vector},
-			{NULL,NULL,NULL,NULL}
-		},
-		help_option_table[]=
-		{
-			{"field",NULL,NULL,set_Computed_field_conditional},
-			{"number_of_components",NULL,NULL,set_int_positive},
-			{"projection_matrix",NULL,NULL,set_FE_value_array},
-			{NULL,NULL,NULL,NULL}
-		};
-	struct Computed_field *field,*source_field;
-	struct Computed_field_package *computed_field_package;
-	struct Set_Computed_field_conditional_data set_field_data;
-
-	ENTER(define_Computed_field_type_projection);
-	if (state&&(field=(struct Computed_field *)field_void)&&
-		(computed_field_package=
-			(struct Computed_field_package *)computed_field_package_void))
-	{
-		return_code=1;
-		set_field_data.conditional_function=
-			(MANAGER_CONDITIONAL_FUNCTION(Computed_field) *)NULL;
-		set_field_data.conditional_function_user_data=(void *)NULL;
-		set_field_data.computed_field_manager=
-			computed_field_package->computed_field_manager;
-		/* get valid parameters for projection field */
-		source_field=(struct Computed_field *)NULL;
-		projection_matrix=(double *)NULL;
-		if (COMPUTED_FIELD_PROJECTION==Computed_field_get_type(field))
-		{
-			return_code=Computed_field_get_type_projection(field,
-				&source_field,&number_of_components,&projection_matrix);
-			number_of_projection_values = (source_field->number_of_components + 1)
-				* (number_of_components + 1);
-		}
-		else
-		{
-			/* ALLOCATE and fill array of projection_matrix - with zeroes */
-			number_of_components = 0;
-			number_of_projection_values = 1;
-			if (ALLOCATE(projection_matrix,double,1))
-			{
-				projection_matrix[0]=0.0;
-			}
-			else
-			{
-				display_message(ERROR_MESSAGE,
-					"define_Computed_field_type_projection.  Not enough memory");
-				return_code=0;
-			}
-		}
-		if (return_code)
-		{
-			/* try to handle help first */
-			if (current_token=state->current_token)
-			{
-				if (!(strcmp(PARSER_HELP_STRING,current_token)&&
-					strcmp(PARSER_RECURSIVE_HELP_STRING,current_token)))
-				{
-					(help_option_table[0]).to_be_modified= &source_field;
-					(help_option_table[0]).user_data= &set_field_data;
-					(help_option_table[1]).to_be_modified= &number_of_projection_values;
-					(help_option_table[2]).to_be_modified= projection_matrix;
-					(help_option_table[2]).user_data= &number_of_projection_values;
-					return_code=process_multiple_options(state,help_option_table);
-				}
-			}
-			/* keep the number_of_projection_values to maintain any current ones */
-			temp_number_of_projection_values = number_of_projection_values;
-			/* parse the field... */
-			if (return_code&&(current_token=state->current_token))
-			{
-				/* ... only if the "field" token is next */
-				if (fuzzy_string_compare(current_token,"field"))
-				{
-					(field_option_table[0]).to_be_modified= &source_field;
-					(field_option_table[0]).user_data= &set_field_data;
-					return_code=process_option(state,field_option_table);
-				}
-				if (! source_field)
-				{
-					display_message(ERROR_MESSAGE,
-						"define_Computed_field_type_projection.  Invalid field");
-					return_code=0;
-				}
-			}
-			/* parse the number_of_components... */
-			if (return_code&&(current_token=state->current_token))
-			{
-				/* ... only if the "number_of_components" token is next */
-				if (fuzzy_string_compare(current_token,"number_of_components"))
-				{
-					(number_of_components_option_table[0]).to_be_modified=
-						&number_of_components;
-					return_code=process_option(state,number_of_components_option_table);
-				}
-			}
-			if (return_code)
-			{
-				number_of_projection_values = (source_field->number_of_components + 1)
-					* (number_of_components + 1);
-				if (temp_number_of_projection_values != number_of_projection_values)
-				{
-					if (REALLOCATE(temp_projection_matrix,projection_matrix,double,
-						number_of_projection_values))
-					{
-						projection_matrix=temp_projection_matrix;
-						/* clear any new projection_matrix to zero */
-						for (i=temp_number_of_projection_values;i<number_of_projection_values;i++)
-						{
-							projection_matrix[i]=0.0;
-						}
-					}
-					else
-					{
-						display_message(ERROR_MESSAGE,
-							"define_Computed_field_type_projection.  Not enough memory");
-						return_code=0;
-					}
-				}
-			}
-			/* parse the projection_matrix */
-			if (return_code&&state->current_token)
-			{
-				(projection_matrix_option_table[0]).to_be_modified= projection_matrix;
-				(projection_matrix_option_table[0]).user_data= &number_of_projection_values;
-				return_code=process_multiple_options(state,projection_matrix_option_table);
-			}
-			if (return_code)
-			{
-				return_code=
-					Computed_field_set_type_projection(field,source_field,number_of_components,projection_matrix);
-			}
-			if (!return_code)
-			{
-				if ((!state->current_token)||
-					(strcmp(PARSER_HELP_STRING,state->current_token)&&
-					strcmp(PARSER_RECURSIVE_HELP_STRING,state->current_token)))
-				{
-					/* error */
-					display_message(ERROR_MESSAGE,
-						"define_Computed_field_type_projection.  Failed");
-				}
-			}
-			/* clean up the projection_matrix array */
-			DEALLOCATE(projection_matrix);
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"define_Computed_field_type_projection.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* define_Computed_field_type_projection */
-
 static int define_Computed_field_type_rc_coordinate(struct Parse_state *state,
 	void *field_void,void *computed_field_package_void)
 /*******************************************************************************
@@ -11139,9 +10682,6 @@ and its parameter fields and values.
 			/* magnitude */
 			Option_table_add_entry(option_table,"magnitude",field_void,
 				computed_field_package_void,define_Computed_field_type_magnitude);
-			/* projection */
-			Option_table_add_entry(option_table,"projection",field_void,
-				computed_field_package_void,define_Computed_field_type_projection);
 			/* rc_coordinate */
 			Option_table_add_entry(option_table,"rc_coordinate",field_void,
 				computed_field_package_void,define_Computed_field_type_rc_coordinate);
@@ -11679,20 +11219,6 @@ Writes the properties of the <field> to the command window.
 					display_message(INFORMATION_MESSAGE,
 						"    field : %s\n",field->source_fields[0]->name);
 				} break;
-				case COMPUTED_FIELD_PROJECTION:
-				{
-					display_message(INFORMATION_MESSAGE,"    field : %s\n",
-						field->source_fields[0]->name);
-					display_message(INFORMATION_MESSAGE,"    number_of_components : %d\n",
-						field->number_of_components);
-					display_message(INFORMATION_MESSAGE,"    projection_matrix : ");
-					for (i=0;i<((field->number_of_components + 1) * 
-						(field->source_fields[0]->number_of_components + 1));i++)
-					{
-						display_message(INFORMATION_MESSAGE," %g",field->projection_matrix[i]);
-					}
-					display_message(INFORMATION_MESSAGE,"\n");
-				} break;		
 				case COMPUTED_FIELD_RC_COORDINATE:
 				{
 					display_message(INFORMATION_MESSAGE,
@@ -11926,17 +11452,6 @@ are created automatically by the program.
 						display_message(INFORMATION_MESSAGE,
 							" field %s",field->source_fields[0]->name);
 					} break;
-					case COMPUTED_FIELD_PROJECTION:
-					{
-						display_message(INFORMATION_MESSAGE," field %s number_of_components %d",
-							field->source_fields[0]->name, field->number_of_components);
-						display_message(INFORMATION_MESSAGE," projection_matrix");
-						for (i=0;i<((field->number_of_components + 1) * 
-							(field->source_fields[0]->number_of_components + 1));i++)
-						{
-							display_message(INFORMATION_MESSAGE," %g",field->projection_matrix[i]);
-						}
-					} break;		
 					case COMPUTED_FIELD_RC_COORDINATE:
 					{
 						display_message(INFORMATION_MESSAGE,
@@ -12065,7 +11580,7 @@ Iterator/conditional function returning true if contents of <field> other than
 its name matches the contents of the <other_computed_field_void>.
 ==============================================================================*/
 {
-	int i, number_of_projection_values, return_code;
+	int i, return_code;
 	struct Computed_field *other_computed_field;
 
 	ENTER(Computed_field_contents_match);
@@ -12095,24 +11610,6 @@ its name matches the contents of the <other_computed_field_void>.
 				{
 					return_code = (field->source_values[i]==
 						other_computed_field->source_values[i]);				
-				}
-			}
-			if (return_code && (field->type == COMPUTED_FIELD_PROJECTION))
-			{
-				if (field->projection_matrix && other_computed_field->projection_matrix
-					 && (field->number_of_source_fields == 1) && field->source_fields[0])
-				{
-					number_of_projection_values = (field->number_of_components + 1) *
-						(field->source_fields[0]->number_of_components + 1);
-					for(i = 0 ; return_code && (i < number_of_projection_values) ; i++)
-					{
-						return_code = (field->projection_matrix[i] == 
-							other_computed_field->projection_matrix[i]);
-					}
-				}
-				else
-				{
-					return_code = 0;
 				}
 			}
 			if (return_code && (field->type == COMPUTED_FIELD_NEW_TYPES))

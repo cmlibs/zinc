@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : cmiss.c
 
-LAST MODIFIED : 21 September 2000
+LAST MODIFIED : 27 September 2000
 
 DESCRIPTION :
 Functions for executing cmiss commands.
@@ -31,6 +31,7 @@ Functions for executing cmiss commands.
 #include "computed_field/computed_field.h"
 #include "computed_field/computed_field_find_xi.h"
 #include "computed_field/computed_field_finite_element.h"
+#include "computed_field/computed_field_matrix_operations.h"
 #include "data/data_grabber_dialog.h"
 #include "data/node_transform.h"
 #include "data/sync_2d_3d.h"
