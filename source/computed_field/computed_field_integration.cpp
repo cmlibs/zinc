@@ -965,6 +965,7 @@ Evaluate the fields cache at the node.
 								}
 								temp++;
 							}
+							field->derivatives_valid = 1;
 						}
 					}
 				}
@@ -987,6 +988,10 @@ Evaluate the fields cache at the node.
 							}
 							temp++;
 						}
+					}
+					if (calculate_derivatives)
+					{
+						field->derivatives_valid = 1;
 					}
 				}
 			}
