@@ -2746,6 +2746,7 @@ texture, and must be given a value.
 	int destination_row_width_bytes, dimension, i, image_height, image_width,
 		number_of_components;
 	long int texture_height,texture_width;
+	struct Dm_buffer *dmbuffer;
 #endif /* defined (SGI_MOVIE_FILE) */
 
 	ENTER(Texture_set_movie);
@@ -2794,12 +2795,13 @@ texture, and must be given a value.
 		{
 			DEACCESS(Dm_buffer)(&(texture->dmbuffer));
 		}
-		if((texture->dmbuffer = ACCESS(Dm_buffer)(
-			CREATE(Dm_buffer)(texture_width, texture_height, /*depth_buffer_flag*/0,
-			  /*shared_display_buffer*/1, user_interface)))
+		dmbuffer = CREATE(Dm_buffer)(texture_width, texture_height, /*depth_buffer_flag*/0,
+			/*shared_display_buffer*/1, user_interface);
+		if(dmbuffer && (ACCESS(Dm_buffer)(dmbuffer))
 			&& (DM_BUFFER_INVALID_TYPE != (dm_buffer_type = 
-			Dm_buffer_get_type(texture->dmbuffer))))
+			Dm_buffer_get_type(dmbuffer))))
 		{
+			texture->dmbuffer = dmbuffer;
 			DEALLOCATE(texture->image);
 			texture->image = (void *)NULL;
 
@@ -2874,7 +2876,7 @@ texture, and must be given a value.
 						image_width, image_height, texture_width - image_width);
 
 					memset((void *)texture_image,0x00,
-						4*destination_row_width_bytes*texture_height);
+						destination_row_width_bytes*texture_height);
 					X3d_movie_render_to_image_buffer(movie, texture_image, 
 						image_width, image_height, texture_width - image_width,
 						0, 15);
