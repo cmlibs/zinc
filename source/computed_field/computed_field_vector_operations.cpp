@@ -1,0 +1,1527 @@
+/*******************************************************************************
+FILE : computed_field_vector_operations.c
+
+LAST MODIFIED : 11 July 2000
+
+DESCRIPTION :
+Implements a number of basic vector operations on computed fields.
+==============================================================================*/
+#include <math.h>
+#include "computed_field/computed_field.h"
+#include "computed_field/computed_field_private.h"
+#include "general/debug.h"
+#include "general/matrix_vector.h"
+#include "user_interface/message.h"
+#include "computed_field/computed_field_vector_operations.h"
+
+struct Computed_field_vector_operations_package 
+{
+	struct MANAGER(Computed_field) *computed_field_manager;
+};
+
+struct Computed_field_vector_operations_type_specific_data
+{
+	struct Computed_field_vector_operations_package *package;
+};
+
+static char computed_field_normalise_type_string[] = "normalise";
+
+char *Computed_field_normalise_type_string(void)
+/*******************************************************************************
+LAST MODIFIED : 11 July 2000
+
+DESCRIPTION :
+Return the static type string which identifies this type.
+==============================================================================*/
+{
+
+	ENTER(Computed_field_normalise_type_string);
+	LEAVE;
+
+	return (computed_field_normalise_type_string);
+} /* Computed_field_normalise_type_string */
+
+static int Computed_field_normalise_clear_type_specific(
+	struct Computed_field *field)
+/*******************************************************************************
+LAST MODIFIED : 11 July 2000
+
+DESCRIPTION :
+Clear the type specific data used by this type.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(Computed_field_normalise_clear_type_specific);
+	if (field)
+	{
+		DEALLOCATE(field->type_specific_data);
+		return_code = 1;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Computed_field_normalise_clear_type_specific.  "
+			"Invalid arguments.");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Computed_field_normalise_clear_type_specific */
+
+static void *Computed_field_normalise_copy_type_specific(
+	struct Computed_field *field)
+/*******************************************************************************
+LAST MODIFIED : 11 July 2000
+
+DESCRIPTION :
+Copy the type specific data used by this type.
+==============================================================================*/
+{
+	struct Computed_field_vector_operations_type_specific_data *destination,
+		*source;
+
+	ENTER(Computed_field_normalise_copy_type_specific);
+	if (field && (source = 
+		(struct Computed_field_vector_operations_type_specific_data *)
+		field->type_specific_data))
+	{
+		if (ALLOCATE(destination,
+			struct Computed_field_vector_operations_type_specific_data, 1))
+		{
+			destination->package = source->package;
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,
+				"Computed_field_normalise_copy_type_specific.  "
+				"Unable to allocate memory.");
+			destination = NULL;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Computed_field_normalise_copy_type_specific.  "
+			"Invalid arguments.");
+		destination = NULL;
+	}
+	LEAVE;
+
+	return (destination);
+} /* Computed_field_normalise_copy_type_specific */
+
+#define Computed_field_normalise_clear_cache_type_specific \
+   (Computed_field_clear_cache_type_specific_function)NULL
+/*******************************************************************************
+LAST MODIFIED : 11 July 2000
+
+DESCRIPTION :
+This function is not needed for this type.
+==============================================================================*/
+
+static int Computed_field_normalise_type_specific_contents_match(
+	struct Computed_field *field, struct Computed_field *other_computed_field)
+/*******************************************************************************
+LAST MODIFIED : 11 July 2000
+
+DESCRIPTION :
+Compare the type specific data
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(Computed_field_vector_operations_type_specific_contents_match);
+	if (field && other_computed_field)
+	{
+		return_code = 1;
+	}
+	else
+	{
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Computed_field_vector_operations_type_specific_contents_match */
+
+#define Computed_field_normalise_is_defined_in_element \
+	Computed_field_default_is_defined_in_element
+/*******************************************************************************
+LAST MODIFIED : 11 July 2000
+
+DESCRIPTION :
+Check the source fields using the default.
+==============================================================================*/
+
+#define Computed_field_normalise_is_defined_at_node \
+	Computed_field_default_is_defined_at_node
+/*******************************************************************************
+LAST MODIFIED : 11 July 2000
+
+DESCRIPTION :
+Check the source fields using the default.
+==============================================================================*/
+
+#define Computed_field_normalise_has_numerical_components \
+	Computed_field_default_has_numerical_components
+/*******************************************************************************
+LAST MODIFIED : 11 July 2000
+
+DESCRIPTION :
+Window projection does have numerical components.
+==============================================================================*/
+
+static int Computed_field_normalise_evaluate_cache_at_node(
+	struct Computed_field *field, struct FE_node *node)
+/*******************************************************************************
+LAST MODIFIED : 11 July 2000
+
+DESCRIPTION :
+Evaluate the fields cache at the node.
+==============================================================================*/
+{
+	double size;
+	int i, return_code;
+
+	ENTER(Computed_field_normalise_evaluate_cache_at_node);
+	if (field && node && (field->number_of_source_fields > 0) && 
+		(field->number_of_components == field->source_fields[0]->number_of_components))
+	{
+		/* 1. Precalculate any source fields that this field depends on */
+		if (return_code = 
+			Computed_field_evaluate_source_fields_cache_at_node(field, node))
+		{
+			/* 2. Calculate the field */
+			size = 0.0;
+			for (i = 0 ; i < field->number_of_components ; i++)
+			{
+				size += field->source_fields[0]->values[i] *
+					field->source_fields[0]->values[i];
+			}
+			size = sqrt(size);
+			for (i = 0 ; i < field->number_of_components ; i++)
+			{
+				field->values[i] = field->source_fields[0]->values[i] / size;
+			}			
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Computed_field_normalise_evaluate_cache_at_node.  "
+			"Invalid arguments.");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Computed_field_normalise_evaluate_cache_at_node */
+
+static int Computed_field_normalise_evaluate_cache_in_element(
+	struct Computed_field *field, struct FE_element *element, FE_value *xi,
+	struct FE_element *top_level_element,int calculate_derivatives)
+/*******************************************************************************
+LAST MODIFIED : 11 July 2000
+
+DESCRIPTION :
+Evaluate the fields cache at the node.
+==============================================================================*/
+{
+	double size;
+	FE_value *derivative, *source_derivative;
+	int i, number_of_xi, return_code;
+
+	ENTER(Computed_field_normalise_evaluate_cache_in_element);
+	if (field && element && xi && (field->number_of_source_fields > 0) && 
+		(field->number_of_components == field->source_fields[0]->number_of_components))
+	{
+		/* 1. Precalculate any source fields that this field depends on */
+		if (return_code = 
+			Computed_field_evaluate_source_fields_cache_in_element(field, element,
+				xi, top_level_element, calculate_derivatives))
+		{
+			/* 2. Calculate the field */
+			number_of_xi = get_FE_element_dimension(element);
+			size = 0.0;
+			for (i = 0 ; i < field->number_of_components ; i++)
+			{
+				size += field->source_fields[0]->values[i] *
+					field->source_fields[0]->values[i];
+			}
+			size = sqrt(size);
+			for (i = 0 ; i < field->number_of_components ; i++)
+			{
+				field->values[i] = field->source_fields[0]->values[i] / size;
+			}
+			if (calculate_derivatives && field->source_fields[0]->derivatives_valid)
+			{
+				derivative = field->derivatives;
+				source_derivative = field->source_fields[0]->derivatives;
+				for (i = 0 ; i < field->number_of_components * number_of_xi ; i++)
+				{
+					*derivative = *source_derivative / size;
+					derivative++;
+					source_derivative++;
+				}
+				field->derivatives_valid = 1;
+			}
+			else
+			{
+				field->derivatives_valid = 0;
+			}
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Computed_field_normalise_evaluate_cache_in_element.  "
+			"Invalid arguments.");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Computed_field_normalise_evaluate_cache_in_element */
+
+#define Computed_field_normalise_evaluate_as_string_at_node \
+	Computed_field_default_evaluate_as_string_at_node
+/*******************************************************************************
+LAST MODIFIED : 11 July 2000
+
+DESCRIPTION :
+Print the values calculated in the cache.
+==============================================================================*/
+
+#define Computed_field_normalise_evaluate_as_string_in_element \
+	Computed_field_default_evaluate_as_string_in_element
+/*******************************************************************************
+LAST MODIFIED : 11 July 2000
+
+DESCRIPTION :
+Print the values calculated in the cache.
+==============================================================================*/
+
+#define Computed_field_normalise_set_values_at_node \
+   (Computed_field_set_values_at_node_function)NULL
+/*******************************************************************************
+LAST MODIFIED : 11 July 2000
+
+DESCRIPTION :
+Not implemented yet.
+==============================================================================*/
+
+#define Computed_field_normalise_set_values_in_element \
+   (Computed_field_set_values_in_element_function)NULL
+/*******************************************************************************
+LAST MODIFIED : 11 July 2000
+
+DESCRIPTION :
+Not implemented yet.
+==============================================================================*/
+
+#define Computed_field_normalise_get_native_discretization_in_element \
+	Computed_field_default_get_native_discretization_in_element
+/*******************************************************************************
+LAST MODIFIED : 11 July 2000
+
+DESCRIPTION :
+Inherit result from first source field.
+==============================================================================*/
+
+#define Computed_field_normalise_find_element_xi \
+   (Computed_field_find_element_xi_function)NULL
+/*******************************************************************************
+LAST MODIFIED : 11 July 2000
+
+DESCRIPTION :
+Not implemented yet.
+==============================================================================*/
+
+static int list_Computed_field_normalise(
+	struct Computed_field *field)
+/*******************************************************************************
+LAST MODIFIED : 11 July 2000
+
+DESCRIPTION :
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(List_Computed_field_normalise);
+	if (field)
+	{
+		display_message(INFORMATION_MESSAGE,
+			"    source field : %s\n",field->source_fields[0]->name);
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"list_Computed_field_normalise.  Invalid arguments.");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* list_Computed_field_normalise */
+
+static int list_Computed_field_normalise_commands(
+	struct Computed_field *field)
+/*******************************************************************************
+LAST MODIFIED : 11 July 2000
+
+DESCRIPTION :
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(list_Computed_field_normalise_commands);
+	if (field)
+	{
+		display_message(INFORMATION_MESSAGE,
+			" field %s",field->source_fields[0]->name);
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"list_Computed_field_normalise_commands.  "
+			"Invalid arguments.");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* list_Computed_field_normalise_commands */
+
+int Computed_field_set_type_normalise(struct Computed_field *field,
+	struct Computed_field *source_field,
+	struct Computed_field_vector_operations_package *package)
+/*******************************************************************************
+LAST MODIFIED : 11 July 2000
+
+DESCRIPTION :
+Converts <field> to type COMPUTED_FIELD_NORMALISE with the supplied
+<source_field>.  Sets the number of components equal to the <source_field>.
+If function fails, field is guaranteed to be unchanged from its original state,
+although its cache may be lost.
+==============================================================================*/
+{
+	int number_of_source_fields,return_code;
+	struct Computed_field **source_fields;
+	struct Computed_field_vector_operations_type_specific_data *data;
+
+	ENTER(Computed_field_set_type_normalise);
+	if (field&&source_field&&package)
+	{
+		return_code=1;
+		/* 1. make dynamic allocations for any new type-specific data */
+		number_of_source_fields=1;
+		if (ALLOCATE(source_fields,struct Computed_field *,number_of_source_fields)&&
+			ALLOCATE(data,struct Computed_field_vector_operations_type_specific_data, 1))
+		{
+			/* 2. free current type-specific data */
+			Computed_field_clear_type(field);
+			/* 3. establish the new type */
+			field->type=COMPUTED_FIELD_NEW_TYPES;
+			field->type_string = Computed_field_normalise_type_string();
+			field->number_of_components = source_field->number_of_components;
+			source_fields[0]=ACCESS(Computed_field)(source_field);
+			field->source_fields=source_fields;
+			field->number_of_source_fields=number_of_source_fields;			
+			field->type_specific_data = (void *)data;
+			data->package = package;
+
+			/* Set all the methods */
+			field->computed_field_clear_type_specific_function =
+				Computed_field_normalise_clear_type_specific;
+			field->computed_field_copy_type_specific_function =
+				Computed_field_normalise_copy_type_specific;
+			field->computed_field_clear_cache_type_specific_function =
+				Computed_field_normalise_clear_cache_type_specific;
+			field->computed_field_type_specific_contents_match_function =
+				Computed_field_normalise_type_specific_contents_match;
+			field->computed_field_is_defined_in_element_function =
+				Computed_field_normalise_is_defined_in_element;
+			field->computed_field_is_defined_at_node_function =
+				Computed_field_normalise_is_defined_at_node;
+			field->computed_field_has_numerical_components_function =
+				Computed_field_normalise_has_numerical_components;
+			field->computed_field_evaluate_cache_at_node_function =
+				Computed_field_normalise_evaluate_cache_at_node;
+			field->computed_field_evaluate_cache_in_element_function =
+				Computed_field_normalise_evaluate_cache_in_element;
+			field->computed_field_evaluate_as_string_at_node_function =
+				Computed_field_normalise_evaluate_as_string_at_node;
+			field->computed_field_evaluate_as_string_in_element_function =
+				Computed_field_normalise_evaluate_as_string_in_element;
+			field->computed_field_set_values_at_node_function =
+				Computed_field_normalise_set_values_at_node;
+			field->computed_field_set_values_in_element_function =
+				Computed_field_normalise_set_values_in_element;
+			field->computed_field_get_native_discretization_in_element_function =
+				Computed_field_normalise_get_native_discretization_in_element;
+			field->computed_field_find_element_xi_function =
+				Computed_field_normalise_find_element_xi;
+			field->list_Computed_field_function = 
+				list_Computed_field_normalise;
+			field->list_Computed_field_commands_function = 
+				list_Computed_field_normalise_commands;
+		}
+		else
+		{
+			DEALLOCATE(source_fields);
+			return_code=0;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Computed_field_set_type_normalise.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Computed_field_set_type_normalise */
+
+int Computed_field_get_type_normalise(struct Computed_field *field,
+	struct Computed_field **source_field)
+/*******************************************************************************
+LAST MODIFIED : 11 July 2000
+
+DESCRIPTION :
+If the field is of type COMPUTED_FIELD_NORMALISE, the 
+<source_field> used by it is returned.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(Computed_field_get_type_normalise);
+	if (field&&(COMPUTED_FIELD_NEW_TYPES==field->type)&&
+		(field->type_string==Computed_field_normalise_type_string()))
+	{
+		*source_field = field->source_fields[0];
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Computed_field_get_type_normalise.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Computed_field_get_type_normalise */
+
+static int define_Computed_field_type_normalise(struct Parse_state *state,
+	void *field_void,void *computed_field_vector_operations_package_void)
+/*******************************************************************************
+LAST MODIFIED : 11 July 2000
+
+DESCRIPTION :
+Converts <field> into type COMPUTED_FIELD_NORMALISE (if it is not 
+already) and allows its contents to be modified.
+==============================================================================*/
+{
+	int return_code;
+	struct Computed_field *field,*source_field;
+	struct Computed_field_vector_operations_package 
+		*computed_field_vector_operations_package;
+	struct Option_table *option_table;
+	struct Set_Computed_field_conditional_data set_source_field_data;
+
+	ENTER(define_Computed_field_type_normalise);
+	if (state&&(field=(struct Computed_field *)field_void)&&
+		(computed_field_vector_operations_package=
+		(struct Computed_field_vector_operations_package *)
+		computed_field_vector_operations_package_void))
+	{
+		return_code=1;
+		/* get valid parameters for projection field */
+		source_field = (struct Computed_field *)NULL;
+		if (computed_field_normalise_type_string ==
+			Computed_field_get_type_string(field))
+		{
+			return_code=Computed_field_get_type_normalise(field, &source_field);
+		}
+		else
+		{
+			if (!((source_field=
+				FIRST_OBJECT_IN_MANAGER_THAT(Computed_field)(
+				Computed_field_has_numerical_components,(void *)NULL,
+				computed_field_vector_operations_package->computed_field_manager))))
+			{
+				if (strcmp(PARSER_HELP_STRING,state->current_token)&&
+					strcmp(PARSER_RECURSIVE_HELP_STRING,state->current_token))
+				{
+					/* This is only a failure if we aren't asking for help */
+					display_message(ERROR_MESSAGE,
+						"At least one field with numerical components must exist for a normalise field.");
+					return_code = 0;
+				}
+			}
+		}
+		if (return_code)
+		{
+			/* must access objects for set functions */
+			if (source_field)
+			{
+				ACCESS(Computed_field)(source_field);
+			}
+
+			option_table = CREATE(Option_table)();
+			/* field */
+			set_source_field_data.computed_field_manager=
+				computed_field_vector_operations_package->computed_field_manager;
+			set_source_field_data.conditional_function=Computed_field_has_numerical_components;
+			set_source_field_data.conditional_function_user_data=(void *)NULL;
+			Option_table_add_entry(option_table,"field",&source_field,
+				&set_source_field_data,set_Computed_field_conditional);
+			return_code=Option_table_multi_parse(option_table,state);
+			/* no errors,not asking for help */
+			if (return_code)
+			{
+				return_code = Computed_field_set_type_normalise(field,
+					source_field, computed_field_vector_operations_package);
+			}
+			if (!return_code)
+			{
+				if ((!state->current_token)||
+					(strcmp(PARSER_HELP_STRING,state->current_token)&&
+					strcmp(PARSER_RECURSIVE_HELP_STRING,state->current_token)))
+				{
+					/* error */
+					display_message(ERROR_MESSAGE,
+						"define_Computed_field_type_normalise.  Failed");
+				}
+			}
+			if (source_field)
+			{
+				DEACCESS(Computed_field)(&source_field);
+			}
+			DESTROY(Option_table)(&option_table);
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"define_Computed_field_type_normalise.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* define_Computed_field_type_normalise */
+
+static char computed_field_cross_product_type_string[] = "cross_product";
+
+char *Computed_field_cross_product_type_string(void)
+/*******************************************************************************
+LAST MODIFIED : 11 July 2000
+
+DESCRIPTION :
+Return the static type string which identifies this type.
+==============================================================================*/
+{
+
+	ENTER(Computed_field_cross_product_type_string);
+	LEAVE;
+
+	return (computed_field_cross_product_type_string);
+} /* Computed_field_cross_product_type_string */
+
+static int Computed_field_cross_product_clear_type_specific(
+	struct Computed_field *field)
+/*******************************************************************************
+LAST MODIFIED : 11 July 2000
+
+DESCRIPTION :
+Clear the type specific data used by this type.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(Computed_field_cross_product_clear_type_specific);
+	if (field)
+	{
+		DEALLOCATE(field->type_specific_data);
+		return_code = 1;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Computed_field_cross_product_clear_type_specific.  "
+			"Invalid arguments.");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Computed_field_cross_product_clear_type_specific */
+
+static void *Computed_field_cross_product_copy_type_specific(
+	struct Computed_field *field)
+/*******************************************************************************
+LAST MODIFIED : 11 July 2000
+
+DESCRIPTION :
+Copy the type specific data used by this type.
+==============================================================================*/
+{
+	struct Computed_field_vector_operations_type_specific_data *destination,
+		*source;
+
+	ENTER(Computed_field_cross_product_copy_type_specific);
+	if (field && (source = 
+		(struct Computed_field_vector_operations_type_specific_data *)
+		field->type_specific_data))
+	{
+		if (ALLOCATE(destination,
+			struct Computed_field_vector_operations_type_specific_data, 1))
+		{
+			destination->package = source->package;
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,
+				"Computed_field_cross_product_copy_type_specific.  "
+				"Unable to allocate memory.");
+			destination = NULL;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Computed_field_cross_product_copy_type_specific.  "
+			"Invalid arguments.");
+		destination = NULL;
+	}
+	LEAVE;
+
+	return (destination);
+} /* Computed_field_cross_product_copy_type_specific */
+
+#define Computed_field_cross_product_clear_cache_type_specific \
+   (Computed_field_clear_cache_type_specific_function)NULL
+/*******************************************************************************
+LAST MODIFIED : 11 July 2000
+
+DESCRIPTION :
+This function is not needed for this type.
+==============================================================================*/
+
+static int Computed_field_cross_product_type_specific_contents_match(
+	struct Computed_field *field, struct Computed_field *other_computed_field)
+/*******************************************************************************
+LAST MODIFIED : 11 July 2000
+
+DESCRIPTION :
+Compare the type specific data
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(Computed_field_vector_operations_type_specific_contents_match);
+	if (field && other_computed_field)
+	{
+		return_code = 1;
+	}
+	else
+	{
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Computed_field_vector_operations_type_specific_contents_match */
+
+#define Computed_field_cross_product_is_defined_in_element \
+	Computed_field_default_is_defined_in_element
+/*******************************************************************************
+LAST MODIFIED : 11 July 2000
+
+DESCRIPTION :
+Check the source fields using the default.
+==============================================================================*/
+
+#define Computed_field_cross_product_is_defined_at_node \
+	Computed_field_default_is_defined_at_node
+/*******************************************************************************
+LAST MODIFIED : 11 July 2000
+
+DESCRIPTION :
+Check the source fields using the default.
+==============================================================================*/
+
+#define Computed_field_cross_product_has_numerical_components \
+	Computed_field_default_has_numerical_components
+/*******************************************************************************
+LAST MODIFIED : 11 July 2000
+
+DESCRIPTION :
+Window projection does have numerical components.
+==============================================================================*/
+
+static int Computed_field_cross_product_evaluate_cache_at_node(
+	struct Computed_field *field, struct FE_node *node)
+/*******************************************************************************
+LAST MODIFIED : 11 July 2000
+
+DESCRIPTION :
+Evaluate the fields cache at the node.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(Computed_field_cross_product_evaluate_cache_at_node);
+	if (field && node && 
+		(field->number_of_source_fields == field->number_of_components - 1))
+	{
+		/* 1. Precalculate any source fields that this field depends on */
+		if (return_code = 
+			Computed_field_evaluate_source_fields_cache_at_node(field, node))
+		{
+			/* 2. Calculate the field */
+			switch (field->number_of_components)
+			{
+				case 1:
+				{
+					field->values = 0;
+				} break;
+				case 2:
+				{
+					field->values[0] = -field->source_fields[0]->values[1];
+					field->values[1] = field->source_fields[0]->values[0];
+				} break;
+				case 3:
+				{
+					cross_product_FE_value_vector3(field->source_fields[0]->values,
+						field->source_fields[1]->values, field->values);
+				} break;
+				case 4:
+				{
+					cross_product_FE_value_vector4(field->source_fields[0]->values,
+						field->source_fields[1]->values, 
+						field->source_fields[2]->values, field->values);
+				} break;
+				default:
+				{
+					display_message(ERROR_MESSAGE,
+						"Computed_field_cross_product_evaluate_cache_at_node.  "
+						"Unsupported number of components.");
+					return_code = 0;
+				} break;
+			}
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Computed_field_cross_product_evaluate_cache_at_node.  "
+			"Invalid arguments.");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Computed_field_cross_product_evaluate_cache_at_node */
+
+static int Computed_field_cross_product_evaluate_cache_in_element(
+	struct Computed_field *field, struct FE_element *element, FE_value *xi,
+	struct FE_element *top_level_element,int calculate_derivatives)
+/*******************************************************************************
+LAST MODIFIED : 11 July 2000
+
+DESCRIPTION :
+Evaluate the fields cache in the element.
+==============================================================================*/
+{
+	FE_value *derivative, *source_derivative, *temp_vector;
+	int i, j, number_of_xi, return_code;
+
+	ENTER(Computed_field_cross_product_evaluate_cache_in_element);
+	if (field && element && xi &&
+		(field->number_of_source_fields == field->number_of_components - 1))
+	{
+		/* 1. Precalculate any source fields that this field depends on */
+		if (return_code = 
+			Computed_field_evaluate_source_fields_cache_in_element(field, element,
+				xi, top_level_element, calculate_derivatives))
+		{
+			/* 2. Calculate the field */
+			switch (field->number_of_components)
+			{
+				case 1:
+				{
+					field->values = 0;
+				} break;
+				case 2:
+				{
+					field->values[0] = -field->source_fields[0]->values[1];
+					field->values[1] = field->source_fields[0]->values[0];
+				} break;
+				case 3:
+				{
+					cross_product_FE_value_vector3(field->source_fields[0]->values,
+						field->source_fields[1]->values, field->values);
+				} break;
+				case 4:
+				{
+					cross_product_FE_value_vector4(field->source_fields[0]->values,
+						field->source_fields[1]->values, 
+						field->source_fields[2]->values, field->values);
+				} break;
+				default:
+				{
+					display_message(ERROR_MESSAGE,
+						"Computed_field_cross_product_evaluate_cache_at_node.  "
+						"Unsupported number of components.");
+					return_code = 0;
+				} break;
+			}
+			if (calculate_derivatives)
+			{
+				if (ALLOCATE(temp_vector, FE_value, field->number_of_components *
+					field->number_of_components))
+				{
+					number_of_xi = get_FE_element_dimension(element);
+					switch (field->number_of_components)
+					{
+						case 1:
+						{
+							derivative = field->derivatives;
+							for (i = 0 ; i < number_of_xi ; i++)
+							{
+								*derivative = 0;
+								derivative++;
+							}
+						} break;
+						case 2:
+						{
+							derivative = field->derivatives;
+							source_derivative = field->derivatives + number_of_xi;
+							for (i = 0 ; i < number_of_xi ; i++)
+							{
+								*derivative = -*source_derivative;
+								derivative++;
+								source_derivative++;
+							}
+							source_derivative = field->derivatives + number_of_xi;
+							for (i = 0 ; i < number_of_xi ; i++)
+							{
+								*derivative = *source_derivative;
+								derivative++;
+								source_derivative++;
+							}
+						} break;
+						case 3:
+						{
+							for (j = 0 ; j < number_of_xi ; j++)
+							{
+								for (i = 0 ; i < 3 ; i++)
+								{
+									temp_vector[i] = field->source_fields[0]->
+										derivatives[i * number_of_xi + j];
+									temp_vector[i + 3] = field->source_fields[1]->
+										derivatives[i * number_of_xi + j];
+								}
+								cross_product_FE_value_vector3(temp_vector,
+									field->source_fields[1]->values, temp_vector + 6);
+								for (i = 0 ; i < 3 ; i++)
+								{
+									field->derivatives[i * number_of_xi + j] = 
+										temp_vector[i + 6];
+								}
+								cross_product_FE_value_vector3(
+									field->source_fields[0]->values,
+									temp_vector + 3, temp_vector + 6);
+								for (i = 0 ; i < 3 ; i++)
+								{
+									field->derivatives[i * number_of_xi + j] += 
+										temp_vector[i + 6];
+								}
+							}
+						} break;
+						case 4:
+						{
+							for (j = 0 ; j < number_of_xi ; j++)
+							{
+								for (i = 0 ; i < 4 ; i++)
+								{
+									temp_vector[i] = field->source_fields[0]->
+										derivatives[i * number_of_xi + j];
+									temp_vector[i + 4] = field->source_fields[1]->
+										derivatives[i * number_of_xi + j];
+									temp_vector[i + 8] = field->source_fields[2]->
+										derivatives[i * number_of_xi + j];
+								}
+								cross_product_FE_value_vector4(temp_vector,
+									field->source_fields[1]->values, 
+									field->source_fields[2]->values, temp_vector + 12);
+								for (i = 0 ; i < 4 ; i++)
+								{
+									field->derivatives[i * number_of_xi + j] = 
+										temp_vector[i + 12];
+								}
+								cross_product_FE_value_vector4(
+									field->source_fields[0]->values, temp_vector + 4,
+									field->source_fields[2]->values, temp_vector + 12);
+								for (i = 0 ; i < 4 ; i++)
+								{
+									field->derivatives[i * number_of_xi + j] += 
+										temp_vector[i + 12];
+								}
+								cross_product_FE_value_vector4(
+									field->source_fields[0]->values, 
+									field->source_fields[1]->values, 
+									temp_vector + 8, temp_vector + 12);
+								for (i = 0 ; i < 4 ; i++)
+								{
+									field->derivatives[i * number_of_xi + j] += 
+										temp_vector[i + 12];
+								}
+							}
+						} break;
+						default:
+						{
+							display_message(ERROR_MESSAGE,
+								"Computed_field_cross_product_evaluate_cache_at_node.  "
+								"Unsupported number of components.");
+							field->derivatives_valid = 0;
+							return_code = 0;
+						} break;
+					}
+					DEALLOCATE(temp_vector);
+				}
+				else
+				{
+					display_message(ERROR_MESSAGE,
+						"Computed_field_cross_product_evaluate_cache_at_node.  "
+						"Unable to allocate temporary vector.");
+					field->derivatives_valid = 0;
+					return_code = 0;
+				}
+			}
+			else
+			{
+				field->derivatives_valid = 0;
+			}
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Computed_field_cross_product_evaluate_cache_in_element.  "
+			"Invalid arguments.");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Computed_field_cross_product_evaluate_cache_in_element */
+
+#define Computed_field_cross_product_evaluate_as_string_at_node \
+	Computed_field_default_evaluate_as_string_at_node
+/*******************************************************************************
+LAST MODIFIED : 11 July 2000
+
+DESCRIPTION :
+Print the values calculated in the cache.
+==============================================================================*/
+
+#define Computed_field_cross_product_evaluate_as_string_in_element \
+	Computed_field_default_evaluate_as_string_in_element
+/*******************************************************************************
+LAST MODIFIED : 11 July 2000
+
+DESCRIPTION :
+Print the values calculated in the cache.
+==============================================================================*/
+
+#define Computed_field_cross_product_set_values_at_node \
+   (Computed_field_set_values_at_node_function)NULL
+/*******************************************************************************
+LAST MODIFIED : 11 July 2000
+
+DESCRIPTION :
+Not implemented yet.
+==============================================================================*/
+
+#define Computed_field_cross_product_set_values_in_element \
+   (Computed_field_set_values_in_element_function)NULL
+/*******************************************************************************
+LAST MODIFIED : 11 July 2000
+
+DESCRIPTION :
+Not implemented yet.
+==============================================================================*/
+
+#define Computed_field_cross_product_get_native_discretization_in_element \
+	Computed_field_default_get_native_discretization_in_element
+/*******************************************************************************
+LAST MODIFIED : 11 July 2000
+
+DESCRIPTION :
+Inherit result from first source field.
+==============================================================================*/
+
+#define Computed_field_cross_product_find_element_xi \
+   (Computed_field_find_element_xi_function)NULL
+/*******************************************************************************
+LAST MODIFIED : 11 July 2000
+
+DESCRIPTION :
+Not implemented yet.
+==============================================================================*/
+
+static int list_Computed_field_cross_product(
+	struct Computed_field *field)
+/*******************************************************************************
+LAST MODIFIED : 11 July 2000
+
+DESCRIPTION :
+==============================================================================*/
+{
+	int i, return_code;
+
+	ENTER(List_Computed_field_cross_product);
+	if (field)
+	{
+		display_message(INFORMATION_MESSAGE,
+			"    dimension : %d\n",field->number_of_components);
+		display_message(INFORMATION_MESSAGE,"    source fields :");
+		for (i = 0 ; i < field->number_of_components - 1 ; i++)
+		{
+			display_message(INFORMATION_MESSAGE," %s",
+				field->source_fields[i]->name);
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"list_Computed_field_cross_product.  Invalid arguments.");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* list_Computed_field_cross_product */
+
+static int list_Computed_field_cross_product_commands(
+	struct Computed_field *field)
+/*******************************************************************************
+LAST MODIFIED : 11 July 2000
+
+DESCRIPTION :
+==============================================================================*/
+{
+	int i, return_code;
+
+	ENTER(list_Computed_field_cross_product_commands);
+	if (field)
+	{
+		display_message(INFORMATION_MESSAGE,
+			" dimension %d\n",field->number_of_components);
+		display_message(INFORMATION_MESSAGE," fields");
+		for (i = 0 ; i < field->number_of_components - 1 ; i++)
+		{
+			display_message(INFORMATION_MESSAGE," %s",
+				field->source_fields[i]->name);
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"list_Computed_field_cross_product_commands.  "
+			"Invalid arguments.");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* list_Computed_field_cross_product_commands */
+
+int Computed_field_set_type_cross_product(struct Computed_field *field,
+	int dimension,	struct Computed_field **source_fields,
+	struct Computed_field_vector_operations_package *package)
+/*******************************************************************************
+LAST MODIFIED : 11 July 2000
+
+DESCRIPTION :
+Converts <field> to type COMPUTED_FIELD_CROSS_PRODUCT with the supplied
+<dimension> and the corresponding (dimension-1) <source_fields>.
+If function fails, field is guaranteed to be unchanged from its original state,
+although its cache may be lost.
+==============================================================================*/
+{
+	int i, number_of_source_fields,return_code;
+	struct Computed_field **temp_source_fields;
+	struct Computed_field_vector_operations_type_specific_data *data;
+
+	ENTER(Computed_field_set_type_cross_product);
+	if (field&&Computed_field_has_up_to_4_numerical_components(field, NULL)&&
+		source_fields&&package)
+	{
+		return_code=1;
+		for (i = 0 ; return_code && (i < dimension - 1) ; i++)
+		{
+			if (!source_fields[i] || 
+				(source_fields[i]->number_of_components != dimension))
+			{
+				display_message(ERROR_MESSAGE,
+					"Computed_field_set_type_cross_product.  "
+					"The number of components of the %s field does not match the dimension",
+					source_fields[i]->name);
+				return_code = 0;
+			}
+		}
+		/* 1. make dynamic allocations for any new type-specific data */
+		number_of_source_fields=dimension - 1;
+		if (return_code &&
+			ALLOCATE(temp_source_fields,struct Computed_field *,number_of_source_fields)&&
+			ALLOCATE(data,struct Computed_field_vector_operations_type_specific_data, 1))
+		{
+			/* 2. free current type-specific data */
+			Computed_field_clear_type(field);
+			/* 3. establish the new type */
+			field->type=COMPUTED_FIELD_NEW_TYPES;
+			field->type_string = Computed_field_cross_product_type_string();
+			field->number_of_components = dimension;
+			for (i = 0 ; i < number_of_source_fields ; i++)
+			{
+				temp_source_fields[i]=ACCESS(Computed_field)(source_fields[i]);
+			}
+			field->source_fields=temp_source_fields;
+			field->number_of_source_fields=number_of_source_fields;			
+			field->type_specific_data = (void *)data;
+			data->package = package;
+
+			/* Set all the methods */
+			field->computed_field_clear_type_specific_function =
+				Computed_field_cross_product_clear_type_specific;
+			field->computed_field_copy_type_specific_function =
+				Computed_field_cross_product_copy_type_specific;
+			field->computed_field_clear_cache_type_specific_function =
+				Computed_field_cross_product_clear_cache_type_specific;
+			field->computed_field_type_specific_contents_match_function =
+				Computed_field_cross_product_type_specific_contents_match;
+			field->computed_field_is_defined_in_element_function =
+				Computed_field_cross_product_is_defined_in_element;
+			field->computed_field_is_defined_at_node_function =
+				Computed_field_cross_product_is_defined_at_node;
+			field->computed_field_has_numerical_components_function =
+				Computed_field_cross_product_has_numerical_components;
+			field->computed_field_evaluate_cache_at_node_function =
+				Computed_field_cross_product_evaluate_cache_at_node;
+			field->computed_field_evaluate_cache_in_element_function =
+				Computed_field_cross_product_evaluate_cache_in_element;
+			field->computed_field_evaluate_as_string_at_node_function =
+				Computed_field_cross_product_evaluate_as_string_at_node;
+			field->computed_field_evaluate_as_string_in_element_function =
+				Computed_field_cross_product_evaluate_as_string_in_element;
+			field->computed_field_set_values_at_node_function =
+				Computed_field_cross_product_set_values_at_node;
+			field->computed_field_set_values_in_element_function =
+				Computed_field_cross_product_set_values_in_element;
+			field->computed_field_get_native_discretization_in_element_function =
+				Computed_field_cross_product_get_native_discretization_in_element;
+			field->computed_field_find_element_xi_function =
+				Computed_field_cross_product_find_element_xi;
+			field->list_Computed_field_function = 
+				list_Computed_field_cross_product;
+			field->list_Computed_field_commands_function = 
+				list_Computed_field_cross_product_commands;
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,
+				"Computed_field_set_type_cross_product.  Unable to allocate memory");
+			DEALLOCATE(source_fields);
+			return_code=0;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Computed_field_set_type_cross_product.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Computed_field_set_type_cross_product */
+
+int Computed_field_get_type_cross_product(struct Computed_field *field,
+	int *dimension, struct Computed_field ***source_fields)
+/*******************************************************************************
+LAST MODIFIED : 11 July 2000
+
+DESCRIPTION :
+If the field is of type COMPUTED_FIELD_CROSS_PRODUCT, the 
+<dimension> and <source_fields> used by it are returned.
+==============================================================================*/
+{
+	int i, return_code;
+
+	ENTER(Computed_field_get_type_cross_product);
+	if (field&&(COMPUTED_FIELD_NEW_TYPES==field->type)&&
+		(field->type_string==Computed_field_cross_product_type_string())
+		&&source_fields)
+	{
+		*dimension = field->number_of_components;
+		if (ALLOCATE(*source_fields,struct Computed_field *,
+			field->number_of_source_fields))
+		{
+			for (i=0;i<field->number_of_source_fields;i++)
+			{
+				(*source_fields)[i]=field->source_fields[i];
+			}
+			return_code=1;
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,
+				"Computed_field_get_type_cross_product.  Not enough memory");
+			return_code=0;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Computed_field_get_type_cross_product.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Computed_field_get_type_cross_product */
+
+static int define_Computed_field_type_cross_product(struct Parse_state *state,
+	void *field_void,void *computed_field_vector_operations_package_void)
+/*******************************************************************************
+LAST MODIFIED : 11 July 2000
+
+DESCRIPTION :
+Converts <field> into type COMPUTED_FIELD_CROSS_PRODUCT (if it is not 
+already) and allows its contents to be modified.
+==============================================================================*/
+{
+	char *current_token;
+	int dimension, i, number_of_source_fields, return_code,
+		temp_number_of_source_fields;
+	struct Computed_field *field,**source_fields,*temp_field, **temp_source_fields;
+	struct Computed_field_vector_operations_package 
+		*computed_field_vector_operations_package;
+	struct Option_table *option_table;
+	struct Set_Computed_field_array_data set_field_array_data;
+	struct Set_Computed_field_conditional_data set_field_data;
+
+	ENTER(define_Computed_field_type_cross_product);
+	if (state&&(field=(struct Computed_field *)field_void)&&
+		(computed_field_vector_operations_package=
+		(struct Computed_field_vector_operations_package *)
+		computed_field_vector_operations_package_void))
+	{
+		return_code=1;
+		/* get valid parameters for projection field */
+		source_fields = (struct Computed_field **)NULL;
+		if (computed_field_cross_product_type_string ==
+			Computed_field_get_type_string(field))
+		{
+			return_code=Computed_field_get_type_cross_product(field, &dimension,
+				&source_fields);
+			number_of_source_fields = dimension - 1;
+		}
+		else
+		{
+			dimension = 3;
+			temp_field=FIRST_OBJECT_IN_MANAGER_THAT(Computed_field)(
+				Computed_field_has_3_components,(void *)NULL,
+				computed_field_vector_operations_package->computed_field_manager);
+			number_of_source_fields = dimension - 1;
+			if (ALLOCATE(source_fields,struct Computed_field *,number_of_source_fields))
+			{
+				for (i=0;i<number_of_source_fields;i++)
+				{
+					source_fields[i]=temp_field;
+				}
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE,
+					"define_Computed_field_type_cross_product.  Not enough memory");
+				return_code=0;
+			}
+		}
+		if (return_code)
+		{
+			/* try to handle help first */
+			if (current_token=state->current_token)
+			{
+				if (!(strcmp(PARSER_HELP_STRING,current_token)&&
+					strcmp(PARSER_RECURSIVE_HELP_STRING,current_token)))
+				{
+					option_table = CREATE(Option_table)();
+					Option_table_add_entry(option_table,"dimension",&dimension,
+						NULL,set_int_positive);
+					set_field_data.conditional_function=
+						Computed_field_has_n_components;
+					set_field_data.conditional_function_user_data=
+						(void *)&dimension;
+					set_field_data.computed_field_manager=
+						computed_field_vector_operations_package->computed_field_manager;
+					set_field_array_data.number_of_fields=number_of_source_fields;
+					set_field_array_data.conditional_data= &set_field_data;
+					Option_table_add_entry(option_table,"fields",source_fields,
+						&set_field_array_data,set_Computed_field_array);
+					return_code=Option_table_multi_parse(option_table,state);
+					DESTROY(Option_table)(&option_table);
+				}
+				else
+				{
+					/* ... only if the "dimension" token is next */
+					if (fuzzy_string_compare(current_token,"dimension"))
+					{
+						option_table = CREATE(Option_table)();
+						/* dimension */
+						Option_table_add_entry(option_table,"dimension",&dimension,
+							NULL,set_int_positive);
+						return_code = Option_table_parse(option_table,state);
+						DESTROY(Option_table)(&option_table);
+						if (number_of_source_fields != dimension - 1)
+						{
+							temp_number_of_source_fields = dimension - 1;
+							if (ALLOCATE(temp_source_fields,struct Computed_field *,
+								temp_number_of_source_fields))
+							{
+								for (i=0;i<temp_number_of_source_fields;i++)
+								{
+									if (i<number_of_source_fields)
+									{
+										temp_field=source_fields[i];
+									}
+									/* new array members access last original scalar field */
+									temp_source_fields[i]=temp_field;
+								}
+								DEALLOCATE(source_fields);
+								source_fields=temp_source_fields;
+								number_of_source_fields=temp_number_of_source_fields;
+							}
+							else
+							{
+								display_message(ERROR_MESSAGE,
+									"define_Computed_field_type_cross_product.  Not enough memory");
+								return_code=0;
+							}
+						}
+						if (dimension > 4)
+						{
+							display_message(ERROR_MESSAGE,
+								"Maximum supported dimension is 4.");
+							return_code=0;							
+						}
+					}
+					if (return_code)
+					{
+						/* ACCESS the source fields for set_Computed_field_array */
+						for (i=0;i<number_of_source_fields;i++)
+						{
+							if (source_fields[i])
+							{
+								ACCESS(Computed_field)(source_fields[i]);
+							}
+						}
+						option_table = CREATE(Option_table)();
+						set_field_data.conditional_function=
+							Computed_field_has_n_components;
+						set_field_data.conditional_function_user_data=
+							(void *)&dimension;
+						set_field_data.computed_field_manager=
+							computed_field_vector_operations_package->computed_field_manager;
+						set_field_array_data.number_of_fields=number_of_source_fields;
+						set_field_array_data.conditional_data= &set_field_data;
+						Option_table_add_entry(option_table,"fields",source_fields,
+							&set_field_array_data,set_Computed_field_array);
+						if (return_code=Option_table_multi_parse(option_table,state))
+						{
+							return_code = Computed_field_set_type_cross_product(field,
+								dimension, source_fields, 
+								computed_field_vector_operations_package);
+						}
+						for (i=0;i<number_of_source_fields;i++)
+						{
+							if (source_fields[i])
+							{
+								DEACCESS(Computed_field)(&source_fields[i]);
+							}
+						}
+						DESTROY(Option_table)(&option_table);
+					}
+					if (!return_code)
+					{
+						/* error */
+						display_message(ERROR_MESSAGE,
+							"define_Computed_field_type_cross_product.  Failed");
+					}
+				}
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE, "Missing command options.");
+			}
+		}
+		if (source_fields)
+		{
+			DEALLOCATE(source_fields);
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"define_Computed_field_type_cross_product.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* define_Computed_field_type_cross_product */
+
+int Computed_field_register_types_vector_operations(
+	struct Computed_field_package *computed_field_package)
+/*******************************************************************************
+LAST MODIFIED : 11 July 2000
+
+DESCRIPTION :
+==============================================================================*/
+{
+	int return_code;
+	static struct Computed_field_vector_operations_package 
+		computed_field_vector_operations_package;
+
+	ENTER(Computed_field_register_types_vector_operations);
+	if (computed_field_package)
+	{
+		computed_field_vector_operations_package.computed_field_manager =
+			Computed_field_package_get_computed_field_manager(
+				computed_field_package);
+		return_code = Computed_field_package_add_type(computed_field_package,
+			Computed_field_normalise_type_string(), 
+			define_Computed_field_type_normalise,
+			&computed_field_vector_operations_package);
+		return_code = Computed_field_package_add_type(computed_field_package,
+			Computed_field_cross_product_type_string(), 
+			define_Computed_field_type_cross_product,
+			&computed_field_vector_operations_package);
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Computed_field_register_types_vector_operations.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Computed_field_register_types_vector_operations */
+
