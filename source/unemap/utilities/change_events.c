@@ -64,8 +64,6 @@ int main()
 	FILE *input_file,*output_file,*translation_table_file;
 	int i,new_electrode,*new_electrodes,number_of_characters,number_of_electrodes,
 		old_electrode,*old_electrodes, return_code;
-	struct Device **device;
-	struct Rig *rig;
 
 	/* zero is a successful return */
 	return_code = 0;
