@@ -822,7 +822,7 @@ the <field>. These parameters will be used in image processing.
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Computed_field_median_filter_get_native_resolution.  Missing field");
+			"Computed_field_haar_wavelet_reconstruct_get_native_resolution.  Missing field");
 		return_code=0;
 	}
 

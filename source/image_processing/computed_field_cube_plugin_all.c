@@ -404,7 +404,9 @@ Perform morphologic parameters extraction on the image cache.
 
         /*  Variables required to generate random numbers  */
 	#if defined(UNIX)
-        static long state1[32] = {
+	#define STATE_ARRAY_SIZE 256
+	static long state1[STATE_ARRAY_SIZE];
+        /*static long state1[32] = {
         	3,
         	0x9a319039, 0x32d9c024, 0x9b663182, 0x5da1f342,
         	0x7449e56b, 0xbeb1dbb0, 0xab5c5918, 0x946554fd,
@@ -414,8 +416,8 @@ Perform morphologic parameters extraction on the image cache.
         	0xde3b81e0, 0xdf0a6fb5, 0xf103bc02, 0x48f340fb,
         	0x36413f93, 0xc622c298, 0xf5a42ab8, 0x8a88d77b,
         	0xf5ad9d0e, 0x8999220b, 0x27fb47b9
-        	};
-	int	n;				/* for random number gen.	*/
+        	}; */
+	/*int	n;*/				/* for random number gen.	*/
 	#endif
 
         int	xsize, ysize, zsize;	        /* size of data_index1			*/
@@ -537,8 +539,8 @@ Perform morphologic parameters extraction on the image cache.
                         /*   Generate the random rotations */
 			#if defined(UNIX)
                 	seed = 1;
-                	n = 256;
-                	initstate(seed, (char *) state1, n);
+                	/*n = 256;*/
+                	initstate(seed, (char *) state1, STATE_ARRAY_SIZE);
                 	setstate((char *) state1);
 
 	                for(irot=0;irot < number_of_dirs;irot++)
@@ -1234,7 +1236,7 @@ the <field>. These parameters will be used in image processing.
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Computed_field_median_filter_get_native_resolution.  Missing field");
+			"Computed_field_cube_plugin_all_get_native_resolution.  Missing field");
 		return_code=0;
 	}
 
