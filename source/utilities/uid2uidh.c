@@ -13,9 +13,9 @@ int main(int argc, char *argv[])
 {
 	char buffer, *char_data, out_data[6], string_name[100], *dot_ptr,
 		*string_ptr;
-   FILE *infile, *infile64bit, *outfile;
+   FILE *infile, *outfile;
 	long byte_data, data;
-	int byte_count, i, index, j;
+	int byte_count, i, index;
 
 	if(argc != 3 && argc != 5)
 	{
@@ -24,7 +24,6 @@ int main(int argc, char *argv[])
 	else
 	{
 		index = 1;
-		infile64bit = (FILE *)NULL;
 		if(infile = fopen( argv[index], "r"))
 		{
 			index++;
