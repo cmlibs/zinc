@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : cmiss.c
 
-LAST MODIFIED : 20 June 2001
+LAST MODIFIED : 18 September 2001
 
 DESCRIPTION :
 Functions for executing cmiss commands.
@@ -11192,7 +11192,6 @@ Executes a GFX DESTROY ELEMENTS command.
 	return (return_code);
 } /* gfx_destroy_elements */
 
-#if !defined (WINDOWS_DEV_FLAG)
 static int gfx_destroy_Computed_field(struct Parse_state *state,
 	void *dummy_to_be_modified,void *command_data_void)
 /*******************************************************************************
@@ -11284,9 +11283,7 @@ Executes a GFX DESTROY FIELD command.
 
 	return (return_code);
 } /* gfx_destroy_Computed_field */
-#endif /* !defined (WINDOWS_DEV_FLAG) */
 
-#if !defined (WINDOWS_DEV_FLAG)
 static int Scene_remove_graphics_object_iterator(struct Scene *scene,
 	void *graphics_object_void)
 /*******************************************************************************
@@ -11376,14 +11373,6 @@ Executes a GFX DESTROY GRAPHICS_OBJECT command.
 			{
 				display_message(ERROR_MESSAGE,"Missing graphics object name");
 				return_code=0;
-#if defined (OLD_CODE)
-				/* destroy all objects in list */
-				return_code=FOR_EACH_OBJECT_IN_LIST(GT_object)(
-					remove_graphics_object_from_all_windows,(void *)NULL,list);
-				REMOVE_ALL_OBJECTS_FROM_LIST(GT_object)(list);
-					/*???DB.  Assuming that don't need destroy because of access_count */
-				return_code=1;
-#endif /* defined (OLD_CODE) */
 			}
 		}
 		else
@@ -11403,7 +11392,6 @@ Executes a GFX DESTROY GRAPHICS_OBJECT command.
 
 	return (return_code);
 } /* gfx_destroy_graphics_object */
-#endif /* !defined (WINDOWS_DEV_FLAG) */
 
 #if !defined (WINDOWS_DEV_FLAG)
 static int gfx_destroy_node_group(struct Parse_state *state,
@@ -11598,7 +11586,6 @@ use node_manager and node_selection.
 	return (return_code);
 } /* gfx_destroy_nodes */
 
-#if !defined (WINDOWS_DEV_FLAG)
 static int gfx_destroy_vtextures(struct Parse_state *state,
 	void *dummy_to_be_modified,void *volume_texture_manager_void)
 /*******************************************************************************
@@ -11672,94 +11659,81 @@ Executes a GFX DESTROY VTEXTURES command.
 	return (return_code);
 } /* gfx_destroy_vtextures */
 
-#if defined (OLD_CODE)
-static int gfx_destroy_vtextures(struct Parse_state *state,
-	void *dummy_to_be_modified,void *volume_texture_manager_void)
+static int gfx_destroy_Graphics_window(struct Parse_state *state,
+	void *dummy_to_be_modified, void *graphics_window_manager_void)
 /*******************************************************************************
-LAST MODIFIED : 27 September 1996
+LAST MODIFIED : 18 September 2001
 
 DESCRIPTION :
-Executes a GFX DESTROY VTEXTURES command.
-???DB.  Could merge with destroy_graphics_objects if graphics_objects used the
-	new list structures.
+Executes a GFX DESTROY WINDOW command.
 ==============================================================================*/
 {
-	char *name;
+	char *current_token;
+	struct Graphics_window *graphics_window;
 	int return_code;
-	struct MANAGER(VT_volume_texture) *volume_texture_manager;
-	struct Modifier_entry option_table[]=
-	{
-		{"name",NULL,(void *)1,set_name},
-		{NULL,NULL,NULL,NULL}
-	};
-	struct VT_volume_texture *volume_texture;
+	struct MANAGER(Graphics_window) *graphics_window_manager;
 
-	ENTER(gfx_destroy_vtextures);
+	ENTER(gfx_destroy_Graphics_window);
 	USE_PARAMETER(dummy_to_be_modified);
-	if (state)
+	if (state && (graphics_window_manager =
+		(struct MANAGER(Graphics_window) *)graphics_window_manager_void))
 	{
-		if (volume_texture_manager=
-			(struct MANAGER(VT_volume_texture) *)volume_texture_manager_void)
+		if (current_token = state->current_token)
 		{
-			/* initialize defaults */
-			name=(char *)NULL;
-			(option_table[0]).to_be_modified = &name;
-			return_code=process_multiple_options(state,option_table);
-			/* no errors, not asking for help */
-			if (return_code)
+			if (strcmp(PARSER_HELP_STRING, current_token) &&
+				strcmp(PARSER_RECURSIVE_HELP_STRING, current_token))
 			{
-				if (name)
+				if (graphics_window =
+					FIND_BY_IDENTIFIER_IN_MANAGER(Graphics_window, name)(
+						current_token, graphics_window_manager))
 				{
-					if (volume_texture=FIND_BY_IDENTIFIER_IN_MANAGER(VT_volume_texture,
-						name)(name,volume_texture_manager))
+					if (REMOVE_OBJECT_FROM_MANAGER(Graphics_window)(graphics_window,
+						graphics_window_manager))
 					{
-						/* remove object from list (destroys automatically) */
-						return_code=REMOVE_OBJECT_FROM_MANAGER(VT_volume_texture)(
-							volume_texture,volume_texture_manager);
+						return_code = 1;
 					}
 					else
 					{
-						display_message(ERROR_MESSAGE,"Volume texture does not exist: %s",
-							name);
-						display_parse_state_location(state);
-						return_code=0;
+						display_message(ERROR_MESSAGE,
+							"Could not remove graphics window %s from manager",
+							current_token);
+						return_code = 0;
 					}
 				}
 				else
 				{
-					/* destroy all objects in list */
-					return_code=REMOVE_ALL_OBJECTS_FROM_MANAGER(VT_volume_texture)(
-						volume_texture_manager);
+					display_message(ERROR_MESSAGE,
+						"Unknown graphics window: %s", current_token);
+					return_code = 0;
 				}
-			} /* parse error,help */
-			if (name)
+			}
+			else
 			{
-				DEALLOCATE(name);
+				display_message(INFORMATION_MESSAGE, " GRAPHICS_WINDOW_NAME");
+				return_code = 1;
 			}
 		}
 		else
 		{
-			display_message(ERROR_MESSAGE,
-				"gfx_destroy_vtextures.  Missing volume texture manager");
-			return_code=0;
+			display_message(ERROR_MESSAGE, "Missing graphics window name");
+			return_code = 0;
 		}
 	}
 	else
 	{
-		display_message(ERROR_MESSAGE,"gfx_destroy_vtextures.  Missing state");
-		return_code=0;
+		display_message(ERROR_MESSAGE,
+			"gfx_destroy_Graphics_window.  Invalid argument(s)");
+		return_code = 0;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* gfx_destroy_vtextures */
-#endif /* defined (OLD_CODE) */
-#endif /* !defined (WINDOWS_DEV_FLAG) */
+} /* gfx_destroy_Graphics_window */
 
 static int execute_command_gfx_destroy(struct Parse_state *state,
 	void *dummy_to_be_modified, void *command_data_void)
 /*******************************************************************************
-LAST MODIFIED : 1 March 2001
+LAST MODIFIED : 18 September 2001
 
 DESCRIPTION :
 Executes a GFX DESTROY command.
@@ -11820,6 +11794,9 @@ Executes a GFX DESTROY command.
 				/* vtextures */
 				Option_table_add_entry(option_table, "vtextures", NULL,
 					command_data->volume_texture_manager, gfx_destroy_vtextures);
+				/* window */
+				Option_table_add_entry(option_table, "window", NULL,
+					command_data->graphics_window_manager, gfx_destroy_Graphics_window);
 				return_code = Option_table_parse(option_table, state);
 				DESTROY(Option_table)(&option_table);
 			}
