@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : cmgui.c
 
-LAST MODIFIED : 12 June 2000
+LAST MODIFIED : 15 June 2000
 
 DESCRIPTION :
 ???DB.  Prototype main program for an application that uses the "cmgui tools".
@@ -381,7 +381,7 @@ int WINAPI WinMain(HINSTANCE current_instance,HINSTANCE previous_instance,
 	/*???DB. Win32 SDK says that don't have to call it WinMain */
 #endif /* defined (WINDOWS) */
 /*******************************************************************************
-LAST MODIFIED : 16 May 2000
+LAST MODIFIED : 15 June 2000
 
 DESCRIPTION :
 Main program for the CMISS Graphical User Interface
@@ -397,6 +397,9 @@ Main program for the CMISS Graphical User Interface
 #endif /* defined (WINDOWS) */
 		return_code;
 	int batch_mode, command_list,no_display,non_random,start_cm,start_mycm;
+#if defined (F90_INTERPRETER) || defined (PERL_INTERPRETER)
+	int status;
+#endif /* defined (F90_INTERPRETER) || defined (PERL_INTERPRETER) */
 #if defined (MOTIF)
 	char *arg;
 	int i;
