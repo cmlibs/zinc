@@ -228,13 +228,13 @@ DESCRIPTION :
 Updates the mapping region menu to be consistent with the current rig.
 ==============================================================================*/
 
-int update_map_from_maunal_time_update(struct Mapping_window *mapping);
+int update_map_from_manual_time_update(struct Mapping_window *mapping);
 /*******************************************************************************
 LAST MODIFIED : 23 November 2001
 
 DESCRIPTION :
 Sets recalculate and map->interpolation_type from 
-map->draw_map_on_maunal_time_update, and update the map.
+map->draw_map_on_manual_time_update, and update the map.
 Reset map->interpolation_type to it's initial value.
 ==============================================================================*/
 
