@@ -385,14 +385,16 @@ ifeq ($(USER_INTERFACE),GTK_USER_INTERFACE)
    endif # $(SYSNAME) != win32
 endif # $(USER_INTERFACE) == GTK_USER_INTERFACE
 
-ifeq ($(SYSNAME:IRIX%=),)
-	MATRIX_LIB = -lscs
-else # ($(SYSNAME:IRIX%=),)
-	MATRIX_LIB = -L$(CMISS_ROOT)/linear_solvers/lib/$(LIB_ARCH_DIR) -llapack-debug -lblas-debug
-endif # ($(SYSNAME:IRIX%=),)
-ifeq ($(SYSNAME),AIX)
-   MATRIX_LIB += -lxlf90
-endif # SYSNAME == AIX
+ifdef USE_UNEMAP_3D
+   ifeq ($(SYSNAME:IRIX%=),)
+	   MATRIX_LIB = -lscs
+   else # ($(SYSNAME:IRIX%=),)
+      MATRIX_LIB = -L$(CMISS_ROOT)/linear_solvers/lib/$(LIB_ARCH_DIR) -llapack-debug -lblas-debug
+   endif # ($(SYSNAME:IRIX%=),)
+   ifeq ($(SYSNAME),AIX)
+      MATRIX_LIB += -lxlf90
+   endif # SYSNAME == AIX
+endif # USE_UNEMAP_3D
 
 
 ifeq ($(SYSNAME:IRIX%=),)
@@ -402,9 +404,13 @@ ifeq ($(SYSNAME),Linux)
    ifneq ($(STATIC_LINK),true)
       #For the dynamic link we really need to statically link the c++ as this
       #seems to be particularly variable between distributions.
-      LIB = -lg2c -lm -ldl -lc -lpthread /usr/lib/libcrypt.a -lstdc++
+      ifdef USE_UNEMAP_3D
+         LIB = -lg2c -lm -ldl -lc -lpthread /usr/lib/libcrypt.a -lstdc+
+      else # USE_UNEMAP_3D
+         LIB = -lm -ldl -lc -lpthread /usr/lib/libcrypt.a 
+      endif # USE_UNEMAP_3D
    else # $(STATIC_LINK) != true
-      LIB = -lg2c -lm -ldl -lpthread -lcrypt -lstdc++
+      LIB = -lm -ldl -lpthread -lcrypt -lstdc++
    endif # $(STATIC_LINK) != true
 endif # SYSNAME == Linux
 ifeq ($(SYSNAME),AIX)
