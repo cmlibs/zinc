@@ -24,6 +24,7 @@ Interactive tool for selecting elements with mouse and other devices.
 #include "interaction/interaction_graphics.h"
 #include "interaction/interaction_volume.h"
 #include "interaction/interactive_event.h"
+#include "motif/image_utilities.h"
 #include "user_interface/gui_dialog_macros.h"
 #include "user_interface/message.h"
 
@@ -75,6 +76,9 @@ Object storing all the parameters for interactively selecting elements.
 	struct Interaction_volume *last_interaction_volume;
 	struct GT_object *rubber_band;
 
+#if defined (MOTIF)
+	Display *display;
+#endif /* defined (MOTIF) */
 	Widget select_elements_button,select_faces_button,select_lines_button,
 		url_field_button,url_field_form,url_field_widget;
 	Widget widget,window_shell;
@@ -588,52 +592,61 @@ format for passing to an Interactive_toolbar.
 	return (return_code);
 } /* Element_tool_bring_up_interactive_tool_dialog */
 
-static Widget Element_tool_make_interactive_tool_button(
-	void *element_tool_void,Widget parent)
+static struct Cmgui_image *Element_tool_get_icon(struct Colour *foreground, 
+	struct Colour *background, void *element_tool_void)
 /*******************************************************************************
-LAST MODIFIED : 20 July 2000
+LAST MODIFIED : 5 July 2002
 
 DESCRIPTION :
 Fetches a ToggleButton with an appropriate icon for the interactive tool
 and as a child of <parent>.
 ==============================================================================*/
 {
-	MrmType element_tool_dialog_class;
+	Display *display;
+	Pixel background_pixel, foreground_pixel;
+	Pixmap pixmap;
+	struct Cmgui_image *image;
 	struct Element_tool *element_tool;
-	Widget widget;
 
-	ENTER(Element_tool_make_interactive_tool_button);
-	widget=(Widget)NULL;
-	if ((element_tool=(struct Element_tool *)element_tool_void)&&parent)
+	ENTER(Element_tool_get_icon);
+	if ((element_tool=(struct Element_tool *)element_tool_void))
 	{
-		if (element_tool_hierarchy_open)
+		if (MrmOpenHierarchy_base64_string(element_tool_uidh,
+			&element_tool_hierarchy,&element_tool_hierarchy_open))
 		{
-			if (MrmSUCCESS == MrmFetchWidget(element_tool_hierarchy,
-				"element_tool_button",parent,&widget,&element_tool_dialog_class))
-			{
-				XtVaSetValues(widget,XmNuserData,element_tool->interactive_tool,NULL);
+			display = element_tool->display;
+			convert_Colour_to_Pixel(display, foreground, &foreground_pixel);
+			convert_Colour_to_Pixel(display, background, &background_pixel);
+			if (MrmSUCCESS == MrmFetchIconLiteral(element_tool_hierarchy,
+				"element_tool_icon",DefaultScreenOfDisplay(display),display,
+				foreground_pixel, background_pixel, &pixmap))
+			{ 
+				image = create_Cmgui_image_from_Pixmap(display, pixmap);
 			}
 			else
 			{
-				display_message(ERROR_MESSAGE,
-					"Element_tool_make_interactive_tool_button.  Could not fetch widget");
-			}
+				display_message(WARNING_MESSAGE, "Element_tool_get_icon.  "
+					"Could not fetch widget");
+				image = (struct Cmgui_image *)NULL;
+			}			
 		}
 		else
 		{
-			display_message(ERROR_MESSAGE,
-				"Element_tool_make_interactive_tool_button.  Heirarchy not open");
+			display_message(WARNING_MESSAGE, "Element_tool_get_icon.  "
+				"Could not open heirarchy");
+			image = (struct Cmgui_image *)NULL;
 		}
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Element_tool_make_interactive_tool_button.  Invalid argument(s)");
+			"Element_tool_get_icon.  Invalid argument(s)");
+		image = (struct Cmgui_image *)NULL;
 	}
 	LEAVE;
 
-	return (widget);
-} /* Element_tool_make_interactive_tool_button */
+	return (image);
+} /* Element_tool_get_icon */
 
 /*
 Global functions
@@ -705,6 +718,7 @@ Selects elements in <element_selection> in response to interactive_events.
 		{
 			if (ALLOCATE(element_tool,struct Element_tool,1))
 			{
+				element_tool->display = User_interface_get_display(user_interface);
 				element_tool->execute_command=execute_command;
 				element_tool->interactive_tool_manager=interactive_tool_manager;
 				element_tool->element_manager=element_manager;
@@ -731,7 +745,7 @@ Selects elements in <element_selection> in response to interactive_events.
 					"element_tool","Element tool",
 					Interactive_tool_element_type_string,
 					Element_tool_interactive_event_handler,
-					Element_tool_make_interactive_tool_button,
+					Element_tool_get_icon,
 					Element_tool_bring_up_interactive_tool_dialog,
 					(Interactive_tool_destroy_tool_data_function *)NULL,
 					(void *)element_tool);

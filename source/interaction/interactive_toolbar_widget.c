@@ -10,8 +10,10 @@ series of icons presented as radio buttons.
 #include <Xm/LabelG.h>
 #include <Xm/RowColumn.h>
 #include <Xm/ToggleB.h>
+#include <stdlib.h>
 #include "general/debug.h"
 #include "interaction/interactive_toolbar_widget.h"
+#include "motif/image_utilities.h"
 #include "user_interface/message.h"
 
 /*
@@ -567,8 +569,14 @@ with the tool's icon on it. If this is the first tool added to the toolbar then
 it is automatically chosen as the current tool.
 ==============================================================================*/
 {
-	int return_code;
+	Arg args[8];
+	Display *display;
+	int depth, return_code;
+	struct Cmgui_image *image;
 	struct Interactive_toolbar_widget_struct *interactive_toolbar;
+	Pixel pixel;
+	Pixmap pixmap;
+	struct Colour background, foreground;
 	Widget widget;
 
 	ENTER(interactive_toolbar_widget_add_interactive_tool);
@@ -590,26 +598,59 @@ it is automatically chosen as the current tool.
 			}
 			else
 			{
-				if (widget=Interactive_tool_make_button(interactive_tool,
-					interactive_toolbar->widget))
+				display = XtDisplay(interactive_toolbar_widget);
+				XtVaGetValues(interactive_toolbar_widget, XmNforeground,
+					&pixel, NULL);
+				convert_Pixel_to_Colour(display, pixel, &foreground);
+				XtVaGetValues(interactive_toolbar_widget, XmNbackground,
+					&pixel, NULL);
+				convert_Pixel_to_Colour(display, pixel, &background);
+				XtVaGetValues(interactive_toolbar_widget, XmNdepth,
+					&depth, NULL);
+				if (image=Interactive_tool_get_icon(&foreground,
+					&background, interactive_tool))
 				{
-					/* work-around since there is an open motif bug that makes
-						 toggle buttons unreleasable with XmONE_OF_MANY */
-					XtVaSetValues(widget, XmNindicatorType, XmN_OF_MANY, NULL);
-					if (!(interactive_toolbar->current_interactive_tool))
+					if (pixmap = create_Pixmap_from_Cmgui_image(display, image,
+						depth))
 					{
-						XmToggleButtonSetState(widget,True,False);
-						interactive_toolbar->current_interactive_tool=interactive_tool;
-						interactive_toolbar_widget_update(interactive_toolbar);
+						XtSetArg(args[0], XmNlabelType, XmPIXMAP);
+						XtSetArg(args[1], XmNlabelPixmap, pixmap);
+						XtSetArg(args[2], XmNindicatorOn, False);
+						XtSetArg(args[3], XmNhighlightThickness, 0);
+						XtSetArg(args[4], XmNset, False);
+						XtSetArg(args[5], XmNspacing, 0);
+						XtSetArg(args[6], XmNshadowThickness, 2);
+						XtSetArg(args[7], XmNuserData, (void *)interactive_tool);
+						if (widget=XmCreateToggleButton(interactive_toolbar_widget,
+							"interactive_button",args, 8))
+						{
+							/* work-around since there is an open motif bug that makes
+								toggle buttons unreleasable with XmONE_OF_MANY */
+							XtVaSetValues(widget, XmNindicatorType, XmN_OF_MANY, NULL);
+							if (!(interactive_toolbar->current_interactive_tool))
+							{
+								XmToggleButtonSetState(widget,True,False);
+								interactive_toolbar->current_interactive_tool=interactive_tool;
+								interactive_toolbar_widget_update(interactive_toolbar);
+							}
+							XtManageChild(widget);
+						}
+						return_code=1;
 					}
-					XtManageChild(widget);
-					return_code=1;
+					else
+					{
+						display_message(ERROR_MESSAGE,
+							"interactive_toolbar_widget_add_interactive_tool.  "
+							"Could not create pixmap from Cmgui_image.");
+						return_code=0;
+					}
+					DESTROY(Cmgui_image)(&image);
 				}
 				else
 				{
 					display_message(ERROR_MESSAGE,
 						"interactive_toolbar_widget_add_interactive_tool.  "
-						"Could not add button");
+						"Could not get icon for interactive tool.");
 					return_code=0;
 				}
 			}

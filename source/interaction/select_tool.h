@@ -35,9 +35,10 @@ Global functions
 struct Select_tool *CREATE(Select_tool)(
 	struct MANAGER(Interactive_tool) *interactive_tool_manager,
 	struct Any_object_selection *any_object_selection,
-	struct Graphical_material *rubber_band_material);
+	struct Graphical_material *rubber_band_material,
+	struct User_interface *user_interface);
 /*******************************************************************************
-LAST MODIFIED : 24 August 2000
+LAST MODIFIED : 5 July 2002
 
 DESCRIPTION :
 Creates an Select_tool with Interactive_tool in

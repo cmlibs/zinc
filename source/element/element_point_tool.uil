@@ -47,7 +47,7 @@ value
 		foreground color='.',
 		background color=' ');
 
-	element_point_tool_icon: icon(color_table=interactive_tool_colour_table,
+	element_point_tool_icon: exported icon(color_table=interactive_tool_colour_table,
 			'                                ',
 			'                                ',
 			'                                ',
@@ -140,20 +140,6 @@ object
 			{
 			MrmNcreateCallback = procedure
 				elem_pnt_tool_id_url_field_form(elem_pnt_tool_structure);
-			};
-		};
-!*******************************************************************************
-	element_point_tool_button: XmToggleButton
-		{
-		arguments
-			{
-			XmNlabelType = XmPIXMAP;
-			XmNlabelPixmap = element_point_tool_icon;
-			XmNindicatorOn = false;
-			XmNhighlightThickness = 0;
-			XmNset = false;
-			XmNspacing = 0;
-			XmNshadowThickness = 2;
 			};
 		};
 end module;

@@ -38,7 +38,7 @@ ACCESS this object for as long as you need to keep it; it is not modifiable.
 	/* This points to the static string which identifies the tool type */
 	char *tool_type_name;
 	Interactive_event_handler *interactive_event_handler;
-	Interactive_tool_make_button_function *make_button_function;
+	Interactive_tool_get_icon_function *get_icon_function;
 	Interactive_tool_bring_up_dialog_function *bring_up_dialog_function;
    Interactive_tool_destroy_tool_data_function *destroy_tool_data_function;
 	/* data for the actual tool receiving the events */
@@ -64,7 +64,7 @@ Global functions
 struct Interactive_tool *CREATE(Interactive_tool)(char *name,char *display_name,
 	char *tool_type_name,
 	Interactive_event_handler *interactive_event_handler,
-	Interactive_tool_make_button_function *make_button_function,
+	Interactive_tool_get_icon_function *get_icon_function,
 	Interactive_tool_bring_up_dialog_function *bring_up_dialog_function,
    Interactive_tool_destroy_tool_data_function *destroy_tool_data_function,
 	void *tool_data)
@@ -83,7 +83,7 @@ type.
 	struct Interactive_tool *interactive_tool;
 
 	ENTER(CREATE(Interactive_tool));
-	if (name&&display_name&&make_button_function)
+	if (name&&display_name&&get_icon_function)
 	{
 		if (ALLOCATE(interactive_tool,struct Interactive_tool,1)&&
 			(interactive_tool->name=duplicate_string(name))&&
@@ -92,7 +92,7 @@ type.
 			/* We don't duplicate this string as it is the pointer to the 
 				string which identifies its type */
 			interactive_tool->tool_type_name=tool_type_name;
-			interactive_tool->make_button_function=make_button_function;
+			interactive_tool->get_icon_function=get_icon_function;
 			interactive_tool->bring_up_dialog_function=bring_up_dialog_function;
 			interactive_tool->interactive_event_handler=interactive_event_handler;
 			interactive_tool->destroy_tool_data_function=destroy_tool_data_function;
@@ -431,35 +431,33 @@ Passes the <interactive_event> from <device_id> to the tool wrapped by the
 	return (return_code);
 } /* Interactive_tool_handle_interactive_event */
 
-Widget Interactive_tool_make_button(struct Interactive_tool *interactive_tool,
-	Widget parent)
+struct Cmgui_image *Interactive_tool_get_icon(struct Colour *foreground,
+	struct Colour *background, struct Interactive_tool *interactive_tool)
 /*******************************************************************************
-LAST MODIFIED : 8 April 2000
+LAST MODIFIED : 5 July 2002
 
 DESCRIPTION :
-Makes and returns a toggle_button widget representing <interactive_tool> as a
-child of <parent>. <parent> is expected to be a RowColumn widget with an entry
-callback receiving value changes from the toggle_button.
+Returns the icon which a user_interface can use to represent the tool.
 ==============================================================================*/
 {
-	Widget widget;
+   struct Cmgui_image *image;
 
-	ENTER(Interactive_tool_make_button);
+	ENTER(Interactive_tool_get_icon);
 	if (interactive_tool)
 	{
-		widget=(interactive_tool->make_button_function)(
-			interactive_tool->tool_data,parent);
+		image=(interactive_tool->get_icon_function)(foreground,
+			background, interactive_tool->tool_data);
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Interactive_tool_make_button.  Invalid argument(s)");
-		widget=(Widget)NULL;
+			"Interactive_tool_get_icon.  Invalid argument(s)");
+		image=(struct Cmgui_image *)NULL;
 	}
 	LEAVE;
 
-	return (widget);
-} /* Interactive_tool_make_button */
+	return (image);
+} /* Interactive_tool_get_icon */
 
 int Interactive_tool_bring_up_dialog(struct Interactive_tool *interactive_tool)
 /*******************************************************************************

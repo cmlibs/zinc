@@ -8,6 +8,7 @@ Icon/tool representing the transform function on a graphics window.
 Eventually use to store parameters for the transform function.
 ==============================================================================*/
 #include "general/debug.h"
+#include "motif/image_utilities.h"
 #include "interaction/interaction_volume.h"
 #include "interaction/interactive_event.h"
 #include "interaction/interactive_tool.h"
@@ -42,6 +43,9 @@ DESCRIPTION :
 {
 	struct Interactive_tool *interactive_tool;
 	int free_spin_flag;
+#if defined (MOTIF)
+	Display *display;
+#endif /* defined (MOTIF) */
 }; /* struct Transform_tool */
 
 struct Transform_tool_defaults
@@ -54,55 +58,60 @@ Module functions
 ----------------
 */
 
-static Widget Transform_tool_make_interactive_tool_button(
-	void *transform_tool_void,Widget parent)
+static struct Cmgui_image *Transform_tool_get_icon(struct Colour *foreground, 
+	struct Colour *background, void *transform_tool_void)
 /*******************************************************************************
-LAST MODIFIED : 12 June 2000
+LAST MODIFIED : 5 July 2002
 
 DESCRIPTION :
-Fetches a ToggleButton with an appropriate icon for the interactive tool
-and as a child of <parent>.
+Fetches the appropriate icon for the interactive tool.
 ==============================================================================*/
 {
-	MrmType transform_tool_dialog_class;
+	Display *display;
+	Pixel background_pixel, foreground_pixel;
+	Pixmap pixmap;
+	struct Cmgui_image *image;
 	struct Transform_tool *transform_tool;
-	Widget widget;
 
-	ENTER(Transform_tool_make_interactive_tool_button);
-	widget=(Widget)NULL;
-	if ((transform_tool=(struct Transform_tool *)transform_tool_void)&&parent)
+	ENTER(Transform_tool_get_icon);
+	if ((transform_tool=(struct Transform_tool *)transform_tool_void))
 	{
 		if (MrmOpenHierarchy_base64_string(transform_tool_uidh,
 			&transform_tool_hierarchy,&transform_tool_hierarchy_open))
 		{
-			if (MrmSUCCESS == MrmFetchWidget(transform_tool_hierarchy,
-				"transform_tool_button",parent,&widget,&transform_tool_dialog_class))
-			{
-				XtVaSetValues(widget,XmNuserData,transform_tool->interactive_tool,NULL);
+			display = transform_tool->display;
+			convert_Colour_to_Pixel(display, foreground, &foreground_pixel);
+			convert_Colour_to_Pixel(display, background, &background_pixel);
+			if (MrmSUCCESS == MrmFetchIconLiteral(transform_tool_hierarchy,
+				"transform_tool_icon",DefaultScreenOfDisplay(display),display,
+				foreground_pixel, background_pixel, &pixmap))
+			{ 
+				image = create_Cmgui_image_from_Pixmap(display, pixmap);
 			}
 			else
 			{
-				display_message(WARNING_MESSAGE,
-					"Transform_tool_make_interactive_tool_button.  "
+				display_message(WARNING_MESSAGE, "Transform_tool_get_icon.  "
 					"Could not fetch widget");
-			}
+				image = (struct Cmgui_image *)NULL;
+			}			
 		}
 		else
 		{
-			display_message(WARNING_MESSAGE,
-				"Transform_tool_make_interactive_tool_button.  "
+			display_message(WARNING_MESSAGE, "Transform_tool_get_icon.  "
 				"Could not open heirarchy");
+			image = (struct Cmgui_image *)NULL;
 		}
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Transform_tool_make_interactive_tool_button.  Invalid argument(s)");
+			"Transform_tool_get_icon.  Invalid argument(s)");
+		image = (struct Cmgui_image *)NULL;
 	}
 	LEAVE;
 
-	return (widget);
-} /* Transform_tool_make_interactive_tool_button */
+	return (image);
+} /* Transform_tool_get_icon */
 
 static int destroy_Interactive_tool_transform_tool_data(
 	void **interactive_tool_data_address)
@@ -261,6 +270,7 @@ scene_viewers.
 			transform_tool_defaults.free_spin = False;
 			XtVaGetApplicationResources(User_interface_get_application_shell(user_interface),
 				&transform_tool_defaults,resources,XtNumber(resources),NULL);
+			transform_tool->display = User_interface_get_display(user_interface);
 			if (transform_tool_defaults.free_spin)
 			{
 				transform_tool->free_spin_flag = 1;
@@ -273,7 +283,7 @@ scene_viewers.
 				"transform_tool","Transform tool",
 				Interactive_tool_transform_type_string,
 				(Interactive_event_handler *)NULL,
-				Transform_tool_make_interactive_tool_button,
+				Transform_tool_get_icon,
 				(Interactive_tool_bring_up_dialog_function *)NULL,
 				destroy_Interactive_tool_transform_tool_data,
 				(void *)transform_tool);

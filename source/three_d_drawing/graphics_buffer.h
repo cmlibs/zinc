@@ -90,6 +90,13 @@ LAST MODIFIED : 1 July 2002
 DESCRIPTION :
 ==============================================================================*/
 
+int Graphics_buffer_swap_buffers(struct Graphics_buffer *buffer);
+/*******************************************************************************
+LAST MODIFIED : 2 July 2002
+
+DESCRIPTION :
+==============================================================================*/
+
 int Graphics_buffer_make_read_current(struct Graphics_buffer *buffer);
 /*******************************************************************************
 LAST MODIFIED : 1 July 2002

@@ -30,6 +30,7 @@ Scene input.
 #include "node/node_operations.h"
 #include "node/node_tool.h"
 #include "node/node_tool.uidh"
+#include "motif/image_utilities.h"
 #include "user_interface/gui_dialog_macros.h"
 #include "user_interface/message.h"
 
@@ -101,6 +102,9 @@ changes in node position and derivatives etc.
 	struct Interaction_volume *last_interaction_volume;
 	struct GT_object *rubber_band;
 
+#if defined (MOTIF)
+	Display *display;
+#endif /* defined (MOTIF) */
 	Widget coordinate_field_form,coordinate_field_widget,create_button,
 		define_button,edit_button,motion_update_button,node_group_form,
 		node_group_widget,select_button,streaming_create_button,
@@ -1965,61 +1969,69 @@ for passing to an Interactive_toolbar.
 	return (return_code);
 } /* Node_tool_bring_up_interactive_tool_dialog */
 
-static Widget Node_tool_make_interactive_tool_button(
-	void *node_tool_void,Widget parent)
+static struct Cmgui_image *Node_tool_get_icon(struct Colour *foreground, 
+	struct Colour *background, void *node_tool_void)
 /*******************************************************************************
-LAST MODIFIED : 20 July 2000
+LAST MODIFIED : 5 July 2002
 
 DESCRIPTION :
-Fetches a ToggleButton with an appropriate icon for the interactive tool
-and as a child of <parent>.
+Fetches the appropriate icon for the interactive tool.
 ==============================================================================*/
 {
-	char *widget_name;
-	MrmType node_tool_dialog_class;
+	char *icon_name;
+	Display *display;
+	Pixel background_pixel, foreground_pixel;
+	Pixmap pixmap;
+	struct Cmgui_image *image;
 	struct Node_tool *node_tool;
-	Widget widget;
 
-	ENTER(Node_tool_make_interactive_tool_button);
-	widget=(Widget)NULL;
-	if ((node_tool=(struct Node_tool *)node_tool_void)&&parent)
+	ENTER(node_tool_get_icon);
+	if ((node_tool=(struct Node_tool *)node_tool_void))
 	{
-		if (node_tool_hierarchy_open)
+		if (MrmOpenHierarchy_base64_string(node_tool_uidh,
+			&node_tool_hierarchy,&node_tool_hierarchy_open))
 		{
 			if (node_tool->use_data)
 			{
-				widget_name="data_tool_button";
+				icon_name="data_tool_icon";
 			}
 			else
 			{
-				widget_name="node_tool_button";
+				icon_name="node_tool_icon";
 			}
-			if (MrmSUCCESS == MrmFetchWidget(node_tool_hierarchy,
-				widget_name,parent,&widget,&node_tool_dialog_class))
-			{
-				XtVaSetValues(widget,XmNuserData,node_tool->interactive_tool,NULL);
+			display = node_tool->display;
+			convert_Colour_to_Pixel(display, foreground, &foreground_pixel);
+			convert_Colour_to_Pixel(display, background, &background_pixel);
+			if (MrmSUCCESS == MrmFetchIconLiteral(node_tool_hierarchy,
+				icon_name,DefaultScreenOfDisplay(display),display,
+				foreground_pixel, background_pixel, &pixmap))
+			{ 
+				image = create_Cmgui_image_from_Pixmap(display, pixmap);
 			}
 			else
 			{
-				display_message(ERROR_MESSAGE,
-					"Node_tool_make_interactive_tool_button.  Could not fetch widget");
-			}
+				display_message(WARNING_MESSAGE, "Node_tool_get_icon.  "
+					"Could not fetch widget");
+				image = (struct Cmgui_image *)NULL;
+			}			
 		}
 		else
 		{
-			display_message(ERROR_MESSAGE,
-				"Node_tool_make_interactive_tool_button.  Heirarchy not open");
+			display_message(WARNING_MESSAGE, "Node_tool_get_icon.  "
+				"Could not open heirarchy");
+			image = (struct Cmgui_image *)NULL;
 		}
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Node_tool_make_interactive_tool_button.  Invalid argument(s)");
+			"Node_tool_get_icon.  Invalid argument(s)");
+		image = (struct Cmgui_image *)NULL;
 	}
 	LEAVE;
 
-	return (widget);
-} /* Node_tool_make_interactive_tool_button */
+	return (image);
+} /* Node_tool_get_icon */
 
 /*
 Global functions
@@ -2162,7 +2174,7 @@ used to represent them. <element_manager> should be NULL if <use_data> is true.
 					tool_name,tool_display_name,
 					Interactive_tool_node_type_string,
 					Node_tool_interactive_event_handler,
-					Node_tool_make_interactive_tool_button,
+					Node_tool_get_icon,
 					Node_tool_bring_up_interactive_tool_dialog,
 					(Interactive_tool_destroy_tool_data_function *)NULL,
 					(void *)node_tool);
@@ -2180,6 +2192,7 @@ used to represent them. <element_manager> should be NULL if <use_data> is true.
 				node_tool->coordinate_field_widget=(Widget)NULL;
 				node_tool->create_button=(Widget)NULL;
 				node_tool->define_button=(Widget)NULL;
+				node_tool->display = User_interface_get_display(user_interface);
 				node_tool->edit_button=(Widget)NULL;
 				node_tool->motion_update_button=(Widget)NULL;
 				node_tool->node_group_form=(Widget)NULL;

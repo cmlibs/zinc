@@ -15,6 +15,7 @@ mouse and other devices.
 #include "interaction/interaction_graphics.h"
 #include "interaction/interaction_volume.h"
 #include "interaction/interactive_event.h"
+#include "motif/image_utilities.h"
 #include "user_interface/message.h"
 
 /*
@@ -52,6 +53,9 @@ Object storing all the parameters for interactively selecting Any_objects.
 	struct Any_object *last_picked_any_object;
 	struct Interaction_volume *last_interaction_volume;
 	struct GT_object *rubber_band;
+#if defined (MOTIF)
+	Display *display;
+#endif /* defined (MOTIF) */
 }; /* struct Select_tool */
 
 /*
@@ -242,56 +246,61 @@ release.
 	LEAVE;
 } /* Select_tool_interactive_event_handler */
 
-static Widget Select_tool_make_interactive_tool_button(
-	void *select_tool_void,Widget parent)
+static struct Cmgui_image *Select_tool_get_icon(struct Colour *foreground, 
+	struct Colour *background, void *select_tool_void)
 /*******************************************************************************
-LAST MODIFIED : 24 August 2000
+LAST MODIFIED : 20 July 2000
 
 DESCRIPTION :
 Fetches a ToggleButton with an appropriate icon for the interactive tool
 and as a child of <parent>.
 ==============================================================================*/
 {
-	MrmType select_tool_dialog_class;
+	Display *display;
+	Pixel background_pixel, foreground_pixel;
+	Pixmap pixmap;
+	struct Cmgui_image *image;
 	struct Select_tool *select_tool;
-	Widget widget;
 
-	ENTER(Select_tool_make_interactive_tool_button);
-	widget=(Widget)NULL;
-	if ((select_tool=(struct Select_tool *)select_tool_void)&&parent)
+	ENTER(Select_tool_get_icon);
+	if ((select_tool=(struct Select_tool *)select_tool_void))
 	{
 		if (MrmOpenHierarchy_base64_string(select_tool_uidh,
 			&select_tool_hierarchy,&select_tool_hierarchy_open))
 		{
-			if (MrmSUCCESS == MrmFetchWidget(select_tool_hierarchy,
-				"select_tool_button",parent,&widget,&select_tool_dialog_class))
-			{
-				XtVaSetValues(widget,
-					XmNuserData,select_tool->interactive_tool,NULL);
+			display = select_tool->display;
+			convert_Colour_to_Pixel(display, foreground, &foreground_pixel);
+			convert_Colour_to_Pixel(display, background, &background_pixel);
+			if (MrmSUCCESS == MrmFetchIconLiteral(select_tool_hierarchy,
+				"select_tool_icon",DefaultScreenOfDisplay(display),display,
+				foreground_pixel, background_pixel, &pixmap))
+			{ 
+				image = create_Cmgui_image_from_Pixmap(display, pixmap);
 			}
 			else
 			{
-				display_message(ERROR_MESSAGE,
-					"Select_tool_make_interactive_tool_button.  "
+				display_message(WARNING_MESSAGE, "Select_tool_get_icon.  "
 					"Could not fetch widget");
-			}
+				image = (struct Cmgui_image *)NULL;
+			}			
 		}
 		else
 		{
-			display_message(ERROR_MESSAGE,
-				"Select_tool_make_interactive_tool_button.  "
+			display_message(WARNING_MESSAGE, "Select_tool_get_icon.  "
 				"Could not open heirarchy");
+			image = (struct Cmgui_image *)NULL;
 		}
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Select_tool_make_interactive_tool_button.  Invalid argument(s)");
+			"Select_tool_get_icon.  Invalid argument_point(s)");
+		image = (struct Cmgui_image *)NULL;
 	}
 	LEAVE;
 
-	return (widget);
-} /* Select_tool_make_interactive_tool_button */
+	return (image);
+} /* Select_tool_get_icon */
 
 /*
 Global functions
@@ -301,9 +310,10 @@ Global functions
 struct Select_tool *CREATE(Select_tool)(
 	struct MANAGER(Interactive_tool) *interactive_tool_manager,
 	struct Any_object_selection *any_object_selection,
-	struct Graphical_material *rubber_band_material)
+	struct Graphical_material *rubber_band_material,
+	struct User_interface *user_interface)
 /*******************************************************************************
-LAST MODIFIED : 24 August 2000
+LAST MODIFIED : 5 July 2002
 
 DESCRIPTION :
 Creates an Select_tool with Interactive_tool in
@@ -319,6 +329,7 @@ Creates an Select_tool with Interactive_tool in
 	{
 		if (ALLOCATE(select_tool,struct Select_tool,1))
 		{
+			select_tool->display = User_interface_get_display(user_interface);
 			select_tool->interactive_tool_manager=interactive_tool_manager;
 			select_tool->any_object_selection=any_object_selection;
 			select_tool->rubber_band_material=
@@ -327,7 +338,7 @@ Creates an Select_tool with Interactive_tool in
 				"select_tool","Select tool",
 				Interactive_tool_select_type_string,
 				Select_tool_interactive_event_handler,
-				Select_tool_make_interactive_tool_button,
+				Select_tool_get_icon,
 				(Interactive_tool_bring_up_dialog_function *)NULL,
 				(Interactive_tool_destroy_tool_data_function *)NULL,
 				(void *)select_tool);

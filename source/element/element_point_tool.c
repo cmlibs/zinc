@@ -23,6 +23,7 @@ Interactive tool for selecting element/grid points with mouse and other devices.
 #include "interaction/interaction_graphics.h"
 #include "interaction/interaction_volume.h"
 #include "interaction/interactive_event.h"
+#include "motif/image_utilities.h"
 #include "user_interface/gui_dialog_macros.h"
 #include "user_interface/message.h"
 
@@ -66,6 +67,9 @@ Object storing all the parameters for interactively selecting element points.
 	struct Element_point_ranges *last_picked_element_point;
 	struct Interaction_volume *last_interaction_volume;
 	struct GT_object *rubber_band;
+#if defined (MOTIF)
+	Display *display;
+#endif /* defined (MOTIF) */
 
 	Widget url_field_button, url_field_form, url_field_widget;
 	Widget widget, window_shell;
@@ -457,58 +461,60 @@ format for passing to an Interactive_toolbar.
 	return (return_code);
 } /* Element_point_tool_bring_up_interactive_tool_dialog */
 
-static Widget Element_point_tool_make_interactive_tool_button(
-	void *element_point_tool_void,Widget parent)
+static struct Cmgui_image *Element_point_tool_get_icon(struct Colour *foreground, 
+	struct Colour *background, void *element_point_tool_void)
 /*******************************************************************************
-LAST MODIFIED : 16 May 2000
+LAST MODIFIED : 5 July 2002
 
 DESCRIPTION :
-Fetches a ToggleButton with an appropriate icon for the interactive tool
-and as a child of <parent>.
+Fetches an icon for the Element_point tool.
 ==============================================================================*/
 {
-	MrmType element_point_tool_dialog_class;
+	Display *display;
+	Pixel background_pixel, foreground_pixel;
+	Pixmap pixmap;
+	struct Cmgui_image *image;
 	struct Element_point_tool *element_point_tool;
-	Widget widget;
 
-	ENTER(Element_point_tool_make_interactive_tool_button);
-	widget=(Widget)NULL;
-	if ((element_point_tool=
-		(struct Element_point_tool *)element_point_tool_void)&&parent)
+	ENTER(Element_point_tool_get_icon);
+	if ((element_point_tool=(struct Element_point_tool *)element_point_tool_void))
 	{
 		if (MrmOpenHierarchy_base64_string(element_point_tool_uidh,
 			&element_point_tool_hierarchy,&element_point_tool_hierarchy_open))
 		{
-			if (MrmSUCCESS == MrmFetchWidget(element_point_tool_hierarchy,
-				"element_point_tool_button",parent,&widget,
-				&element_point_tool_dialog_class))
-			{
-				XtVaSetValues(widget,
-					XmNuserData,element_point_tool->interactive_tool,NULL);
+			display = element_point_tool->display;
+			convert_Colour_to_Pixel(display, foreground, &foreground_pixel);
+			convert_Colour_to_Pixel(display, background, &background_pixel);
+			if (MrmSUCCESS == MrmFetchIconLiteral(element_point_tool_hierarchy,
+				"element_point_tool_icon",DefaultScreenOfDisplay(display),display,
+				foreground_pixel, background_pixel, &pixmap))
+			{ 
+				image = create_Cmgui_image_from_Pixmap(display, pixmap);
 			}
 			else
 			{
-				display_message(ERROR_MESSAGE,
-					"Element_point_tool_make_interactive_tool_button.  "
+				display_message(WARNING_MESSAGE, "Element_point_tool_get_icon.  "
 					"Could not fetch widget");
-			}
+				image = (struct Cmgui_image *)NULL;
+			}			
 		}
 		else
 		{
-			display_message(ERROR_MESSAGE,
-				"Element_point_tool_make_interactive_tool_button.  "
+			display_message(WARNING_MESSAGE, "Element_point_tool_get_icon.  "
 				"Could not open heirarchy");
+			image = (struct Cmgui_image *)NULL;
 		}
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Element_point_tool_make_interactive_tool_button.  Invalid argument(s)");
+			"Element_point_tool_get_icon.  Invalid argument_point(s)");
+		image = (struct Cmgui_image *)NULL;
 	}
 	LEAVE;
 
-	return (widget);
-} /* Element_point_tool_make_interactive_tool_button */
+	return (image);
+} /* Element_point_tool_get_icon */
 
 /*
 Global functions
@@ -564,6 +570,8 @@ Creates an Element_point_tool with Interactive_tool in
 			if (ALLOCATE(element_point_tool,struct Element_point_tool,1))
 			{
 				element_point_tool->execute_command=execute_command;
+				element_point_tool->display = User_interface_get_display
+				   (user_interface);
 				element_point_tool->interactive_tool_manager=interactive_tool_manager;
 				element_point_tool->element_point_ranges_selection=
 					element_point_ranges_selection;
@@ -582,7 +590,7 @@ Creates an Element_point_tool with Interactive_tool in
 					"element_point_tool","Element point tool",
 					Interactive_tool_element_point_type_string,
 					Element_point_tool_interactive_event_handler,
-					Element_point_tool_make_interactive_tool_button,
+					Element_point_tool_get_icon,
 					Element_point_tool_bring_up_interactive_tool_dialog,
 					(Interactive_tool_destroy_tool_data_function *)NULL,
 					(void *)element_point_tool);

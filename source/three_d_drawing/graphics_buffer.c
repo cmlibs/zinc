@@ -505,6 +505,47 @@ DESCRIPTION :
 	return (return_code);
 } /* Graphics_buffer_make_current */
 
+int Graphics_buffer_swap_buffers(struct Graphics_buffer *buffer)
+/*******************************************************************************
+LAST MODIFIED : 2 July 2002
+
+DESCRIPTION :
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(Graphics_buffer_swap_buffers);
+
+	if (buffer)
+	{
+		switch (buffer->type)
+		{
+#if defined (MOTIF)
+			case GRAPHICS_BUFFER_X3D_TYPE:
+			{
+				X3dThreeDDrawingSwapBuffers();
+				return_code = 1;
+			} break;
+#endif /* defined (MOTIF) */
+			default:
+			{
+				display_message(ERROR_MESSAGE,"Graphics_buffer_swap_buffers.  "
+					"Graphics_bufffer type unknown or not supported.");				
+				return_code = 0;
+			} break;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"Graphics_buffer_swap_buffers.  "
+			"Graphics_bufffer missing.");				
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Graphics_buffer_swap_buffers */
+
 int Graphics_buffer_make_read_current(struct Graphics_buffer *buffer)
 /*******************************************************************************
 LAST MODIFIED : 2 July 2002

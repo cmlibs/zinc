@@ -1493,7 +1493,7 @@ Updates the scene_viewer.
 		Scene_viewer_render_scene(scene_viewer);
 		if (scene_viewer->swap_buffers)
 		{
-			X3dThreeDDrawingSwapBuffers();
+			Graphics_buffer_swap_buffers(scene_viewer->graphics_buffer);
 		}
 		if (scene_viewer->tumble_active)
 		{
@@ -5598,7 +5598,7 @@ Requests a full redraw immediately.
 		return_code=Scene_viewer_render_scene(scene_viewer);
 		if (scene_viewer->swap_buffers)
 		{
-			X3dThreeDDrawingSwapBuffers();
+			Graphics_buffer_swap_buffers(scene_viewer->graphics_buffer);
 		}
 	}
 	else

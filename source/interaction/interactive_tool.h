@@ -14,10 +14,11 @@ content of the global selections and objects with text input.
 #if !defined (INTERACTIVE_TOOL_H)
 #define INTERACTIVE_TOOL_H
 
-#include <Xm/Xm.h>
+#include "general/image_utilities.h"
 #include "general/list.h"
 #include "general/manager.h"
 #include "general/object.h"
+#include "graphics/colour.h"
 #include "interaction/interactive_event.h"
 
 /*
@@ -28,8 +29,8 @@ Global types
 typedef void Interactive_event_handler(void *device_id,
 	struct Interactive_event *event,void *user_data);
 typedef int Interactive_tool_bring_up_dialog_function(void *user_data);
-typedef Widget Interactive_tool_make_button_function(void *user_data,
-	Widget parent);
+typedef struct Cmgui_image *Interactive_tool_get_icon_function(
+	struct Colour *foreground, struct Colour *background, void *user_data);
 typedef int Interactive_tool_destroy_tool_data_function(
    void **interactive_tool_data_address);
 
@@ -54,7 +55,7 @@ Global functions
 struct Interactive_tool *CREATE(Interactive_tool)(char *name,char *display_name,
 	char *tool_type_name,
 	Interactive_event_handler *interactive_event_handler,
-	Interactive_tool_make_button_function *make_button_function,
+	Interactive_tool_get_icon_function *get_icon_function,
 	Interactive_tool_bring_up_dialog_function *bring_up_dialog_function,
    Interactive_tool_destroy_tool_data_function *destroy_tool_data_function,
 	void *tool_data);
@@ -119,15 +120,13 @@ Passes the <interactive_event> from <device_id> to the tool wrapped by the
 <interactive_tool> object.
 ==============================================================================*/
 
-Widget Interactive_tool_make_button(struct Interactive_tool *interactive_tool,
-	Widget parent);
+struct Cmgui_image *Interactive_tool_get_icon(struct Colour *foreground, 
+	struct Colour *background, struct Interactive_tool *interactive_tool);
 /*******************************************************************************
-LAST MODIFIED : 8 April 2000
+LAST MODIFIED : 5 July 2002
 
 DESCRIPTION :
-Makes and returns a toggle_button widget representing <interactive_tool> as a
-child of <parent>. <parent> is expected to be a RowColumn widget with an entry
-callback receiving value changes from the toggle_button.
+Returns the icon which a user_interface can use to represent the tool.
 ==============================================================================*/
 
 int Interactive_tool_bring_up_dialog(struct Interactive_tool *interactive_tool);

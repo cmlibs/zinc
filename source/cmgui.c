@@ -1466,7 +1466,8 @@ Main program for the CMISS Graphical User Interface
 				command_data.select_tool=CREATE(Select_tool)(
 					command_data.interactive_tool_manager,
 					command_data.any_object_selection,
-					command_data.default_graphical_material);
+					command_data.default_graphical_material,
+					command_data.user_interface);
 			}
 #endif /* defined (MOTIF) */
 

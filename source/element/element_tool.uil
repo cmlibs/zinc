@@ -54,7 +54,7 @@ value
 		foreground color='.',
 		background color=' ');
 
-	elem_tool_icon: icon(color_table=interactive_tool_colour_table,
+	element_tool_icon: exported icon(color_table=interactive_tool_colour_table,
 			'              ...               ',
 			'              ...               ',
 			'            . ... .             ',
@@ -251,20 +251,6 @@ object
       {
 			XmNactivateCallback = procedure
 				elem_tool_destroy_selected_CB(elem_tool_structure);
-			};
-		};
-!*******************************************************************************
-	element_tool_button: XmToggleButton
-		{
-		arguments
-			{
-			XmNlabelType = XmPIXMAP;
-			XmNlabelPixmap = elem_tool_icon;
-			XmNindicatorOn = false;
-			XmNhighlightThickness = 0;
-			XmNset = false;
-			XmNspacing = 0;
-			XmNshadowThickness = 2;
 			};
 		};
 !*******************************************************************************

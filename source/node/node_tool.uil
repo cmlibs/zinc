@@ -63,7 +63,7 @@ value
 		foreground color='.',
 		background color=' ');
 
-	data_tool_icon: icon(color_table=interactive_tool_colour_table,
+	data_tool_icon: exported icon(color_table=interactive_tool_colour_table,
 			'                                ',
 			'                                ',
 			'   .   .                        ',
@@ -97,7 +97,7 @@ value
 			'       ....  .. . .  .. .       ',
 			'                                ');
 
-	node_tool_icon: icon(color_table=interactive_tool_colour_table,
+	node_tool_icon: exported icon(color_table=interactive_tool_colour_table,
 			'              ...               ',
 			'              ...               ',
 			'            . ... .             ',
@@ -464,33 +464,6 @@ object
       {
 			XmNactivateCallback = procedure
 				node_tool_undefine_selected_CB(node_tool_structure);
-			};
-		};
-!*******************************************************************************
-	data_tool_button: XmToggleButton
-		{
-		arguments
-			{
-			XmNlabelType = XmPIXMAP;
-			XmNlabelPixmap = data_tool_icon;
-			XmNindicatorOn = false;
-			XmNhighlightThickness = 0;
-			XmNset = false;
-			XmNspacing = 0;
-			XmNshadowThickness = 2;
-			};
-		};
-	node_tool_button: XmToggleButton
-		{
-		arguments
-			{
-			XmNlabelType = XmPIXMAP;
-			XmNlabelPixmap = node_tool_icon;
-			XmNindicatorOn = false;
-			XmNhighlightThickness = 0;
-			XmNset = false;
-			XmNspacing = 0;
-			XmNshadowThickness = 2;
 			};
 		};
 !*******************************************************************************

@@ -30,7 +30,7 @@ value
 		foreground color='.',
 		background color=' ');
 
-	transform_tool_icon: icon(color_table=interactive_tool_colour_table,
+	transform_tool_icon: exported icon(color_table=interactive_tool_colour_table,
 			'               .                ',
 			'              .W.               ',
 			'             .WWW.              ',
@@ -64,20 +64,5 @@ value
 			'     .  .   .. ..  . ..   . .   ',
 			'                                ');
 
-!*******************************************************************************
-object
-	transform_tool_button: XmToggleButton
-		{
-		arguments
-			{
-			XmNlabelType = XmPIXMAP;
-			XmNlabelPixmap = transform_tool_icon;
-			XmNindicatorOn = false;
-			XmNhighlightThickness = 0;
-			XmNset = false;
-			XmNspacing = 0;
-			XmNshadowThickness = 2;
-			};
-		};
 !*******************************************************************************
 end module;
