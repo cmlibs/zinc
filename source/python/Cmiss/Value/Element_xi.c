@@ -12,20 +12,19 @@ typedef struct {
 } CmissValueElementxiObject;
 
 /* Object Methods */
-#if defined (OLD_CODE)
 static PyObject*
-CmissValueElementxi_get_matrix_cpointer(PyObject* self, PyObject* args)
+CmissValueElementxi_get_value_cpointer(PyObject* self, PyObject* args)
 {
-	CmissValueElementxiObject *cmiss_value_matrix;
-	PyObject *object, *return_code;
-	struct Elementxi *matrix;
+	CmissValueElementxiObject *cmiss_value_elementxi;
+	PyObject *return_code;
+	struct Elementxi *value;
 
-	printf("CmissValueElementxi_get_value_matrix_cpointer\n");
+	printf("CmissValueElementxi_get_value_cpointer\n");
 
 	if (_CmissValueElementxi_check(self))
 	{
-		cmiss_value_matrix = (CmissValueElementxiObject *)self;
-		return_code = PyCObject_FromVoidPtr(cmiss_value_matrix->value, NULL);	
+		cmiss_value_elementxi = (CmissValueElementxiObject *)self;
+		return_code = PyCObject_FromVoidPtr(cmiss_value_elementxi->value, NULL);	
 	}
 	else
 	{
@@ -34,13 +33,10 @@ CmissValueElementxi_get_matrix_cpointer(PyObject* self, PyObject* args)
 
 	return(return_code);
 }
-#endif /* defined (OLD_CODE) */
 
 static struct PyMethodDef CmissValueElementxi_methods[] =
 	{
-#if defined (OLD_CODE)
-		{"get_matrix_cpointer", CmissValueElementxi_get_matrix_cpointer, 1},
-#endif /* defined (OLD_CODE) */
+		{"get_value_cpointer", CmissValueElementxi_get_value_cpointer, 1},
 		{NULL, NULL, 0}
 	};
 
@@ -80,7 +76,7 @@ CmissValueElementxi_new(PyObject* self, PyObject* args)
 	 if (cmiss_value->value = CREATE(Cmiss_value)())
 	 {
 		 ACCESS(Cmiss_value)(cmiss_value->value);
-		 if (!((element_cpointer = PyObject_CallMethod(element, "get_element_cpointer", (char *)NULL)) &&
+		 if (!((element_cpointer = PyObject_CallMethod(element, "get_fe_element_cpointer", (char *)NULL)) &&
 			 PyCObject_Check(element_cpointer)))
 		 {
 			 PyErr_SetString(PyExc_AttributeError, "Unable to extract element pointer from element.");
@@ -89,7 +85,7 @@ CmissValueElementxi_new(PyObject* self, PyObject* args)
 		 element_ptr = (struct FE_element *)PyCObject_AsVoidPtr(element_cpointer);
 
 		 if (xi_array && (0<(number_of_xi=PyList_Size(xi_array))) &&
-			 (get_FE_element_dimension(element)==number_of_xi))
+			 (get_FE_element_dimension(element_ptr)==number_of_xi))
 		 {
 			 if (xi=(FE_value *)malloc(number_of_xi*sizeof(FE_value)))
 			 {
