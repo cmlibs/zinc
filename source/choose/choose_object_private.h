@@ -165,6 +165,7 @@ DESCRIPTION : \
 Callback for the choose_object dialog - tidies up all memory allocation. \
 ============================================================================*/ \
 { \
+   int i; \
 	struct CHOOSE_OBJECT(object_type) *choose_object; \
 \
 	ENTER(CHOOSE_OBJECT_DESTROY_CB(object_type)); \
@@ -185,6 +186,10 @@ Callback for the choose_object dialog - tidies up all memory allocation. \
       } \
       if (choose_object->item_names) \
       { \
+			for (i=0;i<choose_object->number_of_items;i++) \
+			{ \
+				DEALLOCATE(choose_object->item_names[i]); \
+			} \
 		   DEALLOCATE(choose_object->item_names); \
       } \
 		DEALLOCATE(choose_object); \
@@ -362,6 +367,10 @@ Updates the arrays of all the choosable objects and their names. \
          } \
          if (choose_object->item_names) \
          { \
+				for (i=0;i<choose_object->number_of_items;i++) \
+				{ \
+					DEALLOCATE(choose_object->item_names[i]); \
+				} \
 			   DEALLOCATE(choose_object->item_names); \
          } \
 			choose_object->number_of_items = add_to_list_data.number_of_items; \
