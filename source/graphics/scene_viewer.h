@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : scene_viewer.h
 
-LAST MODIFIED : 13 June 2000
+LAST MODIFIED : 14 July 2000
 
 DESCRIPTION :
 Three_D_drawing derivative for viewing a Scene from an arbitrary position.
@@ -833,7 +833,7 @@ all the dimensions are zero).
 
 int Scene_viewer_redraw(struct Scene_viewer *scene_viewer);
 /*******************************************************************************
-LAST MODIFIED : 21 November 1997
+LAST MODIFIED : 14 July 2000
 
 DESCRIPTION :
 Call this after changing viewing parameters or display lists to have the
@@ -842,16 +842,17 @@ Scene_viewer redraw the image. Does this by putting a WorkProc on the queue
 next idle moment. If the scene_viewer is changed again before it is updated,
 a new WorkProc will not be put in the queue, but the old one will update the
 window to the new state.
-???RC Why not draw it directly?
+Forces a full redraw rather than a fast_changing update.
 ==============================================================================*/
 
 int Scene_viewer_redraw_now(struct Scene_viewer *scene_viewer);
 /*******************************************************************************
-LAST MODIFIED : 19 January 1998
+LAST MODIFIED : 14 July 2000
 
 DESCRIPTION :
 Forces a redraw of the given scene viewer to take place immediately - ie.
 not just at the next idle moment as Scene_viewer_redraw does.
+Forces a full redraw rather than a fast_changing update.
 ==============================================================================*/
 
 int Scene_viewer_redraw_now_without_swapbuffers(

@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : scene_viewer.c
 
-LAST MODIFIED : 12 July 2000
+LAST MODIFIED : 14 July 2000
 
 DESCRIPTION :
 Three_D_drawing derivative for viewing a Scene from an arbitrary position.
@@ -64,7 +64,7 @@ FULL_DECLARE_CALLBACK_TYPES(Scene_viewer_transform, \
 
 struct Scene_viewer
 /*******************************************************************************
-LAST MODIFIED : 11 April 2000
+LAST MODIFIED : 12 July 2000
 
 DESCRIPTION :
 ==============================================================================*/
@@ -170,6 +170,15 @@ DESCRIPTION :
 	void *pixel_data;
 	int antialias;
 	int perturb_lines;
+	/* set between fast changing operations since the first fast-change will
+		 copy from the front buffer to the back; subsequent changes will copy
+		 saved buffer from back to front. */
+	int first_fast_change;
+	/* flag is cleared as soon as a change to the scene is not fast_changing */
+	int fast_changing;
+	/* flag indicating that the viewer should swap buffers at the next
+		 appropriate point */
+	int swap_buffers;
 	/* Flag that indicates the update includes a change of the projection matrices */
 	int transform_flag;
 	struct User_interface *user_interface;
@@ -615,9 +624,9 @@ modes, so push/pop them if you want them preserved.
 } /* Scene_viewer_calculate_transformation */
 
 static int Scene_viewer_render_scene_private(struct Scene_viewer *scene_viewer,
-	int picking_on, int left, int bottom, int right, int top)
+	int picking_on,int left, int bottom, int right, int top)
 /*******************************************************************************
-LAST MODIFIED : 12 July 2000
+LAST MODIFIED : 14 July 2000
 
 DESCRIPTION :
 Called to redraw the Scene_viewer scene after changes in the display lists or
@@ -636,7 +645,7 @@ access this function.
 	GLboolean valid_raster;
 	static GLint viewport[4]={0,0,1,1};
 	GLint stencil_bits;
-	GLdouble model_matrix[16],obj_x,obj_y,obj_z,projection_matrix[16],
+	GLdouble modelview_matrix[16],obj_x,obj_y,obj_z,projection_matrix[16],
 		temp_matrix[16];
 	int accumulation_count,antialias,do_render,i,j,layer,layers,
 		return_code,scene_redraws,viewport_height,viewport_width;
@@ -708,11 +717,11 @@ access this function.
 						(scene_viewer->background_colour).blue,0.);
 					glClearDepth(1.0);
 					glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT);
-					glGetDoublev(GL_MODELVIEW_MATRIX,model_matrix);
+					glGetDoublev(GL_MODELVIEW_MATRIX,modelview_matrix);
 					glGetDoublev(GL_PROJECTION_MATRIX,projection_matrix);
 					/*				glGetIntegerv(GL_VIEWPORT,viewport);*/
 					/* for OpenGL window z coordinates, 0.0=near, 1.0=far */
-					if (GL_TRUE==gluUnProject(0.0001,0.0001,0.1,model_matrix,
+					if (GL_TRUE==gluUnProject(0.0001,0.0001,0.1,modelview_matrix,
 						projection_matrix,viewport,&obj_x,&obj_y,&obj_z))
 					{
 						glRasterPos3d(obj_x,obj_y,obj_z);
@@ -742,11 +751,30 @@ access this function.
 				}
 				else
 				{
+					return_code=1;
 					/* in picking mode the transformations are left unchanged */
+					Scene_viewer_calculate_transformation(scene_viewer,
+						viewport_width,viewport_height);
+					/* transpose to get GL projection and modelview matrices */
+					for (i=0;i<4;i++)
+					{
+						for (j=0;j<4;j++)
+						{
+							projection_matrix[j*4+i]=
+								(GLdouble)(scene_viewer->window_projection_matrix)[i*4+j];
+						}
+					}
+					for (i=0;i<4;i++)
+					{
+						for (j=0;j<4;j++)
+						{
+							modelview_matrix[j*4+i]=
+								(GLdouble)scene_viewer->modelview_matrix[i*4+j];
+						}
+					}
+
 					if (!picking_on)
 					{
-						Scene_viewer_calculate_transformation(scene_viewer,
-							viewport_width,viewport_height);
 						/* Send the transform callback if the flag is set */
 						if (scene_viewer->transform_flag)
 						{
@@ -770,77 +798,88 @@ access this function.
 							glDisable(GL_POLYGON_OFFSET_EXT);
 						}
 					}
-					if (compile_Scene(scene_viewer->scene)&&
-						((!scene_viewer->overlay_scene)||
-							compile_Scene(scene_viewer->overlay_scene)))
+					compile_Scene(scene_viewer->scene);
+					if (scene_viewer->overlay_scene)
 					{
-						if (scene_viewer->overlay_scene)
-						{
-							/*???RC property functions should be obtained once, elsewhere */
-							glGetIntegerv(GL_STENCIL_BITS,&stencil_bits);
-						}
-						else
-						{
-							stencil_bits=0;
-						}
-						/*???RC. Is this the best place to set line width and point size? */
-						glLineWidth((GLfloat)global_line_width);
-						glPointSize((GLfloat)global_point_size);
-						/*???RC temporary: turn on point and line antialiasing */
-						/*glEnable(GL_POINT_SMOOTH);
-							glEnable(GL_LINE_SMOOTH);*/
-						/*???RC test */
-						glPolygonMode(GL_FRONT_AND_BACK,GL_FILL);
-						/* depth tests are against a normalised z coordinate (i.e. [0..1])
-							 so the following sets this up and turns on the test */
-						glDepthRange((GLclampd)0,(GLclampd)1);
-						glEnable(GL_DEPTH_TEST);
-						/* glDepthFunc(GL_LESS); */
-						/* Get size of alpha [blending] buffer. */
-						/* glGetIntegerv(GL_ALPHA_BITS,&alpha_bits); */
-						/* turn on alpha */
-						glEnable(GL_BLEND);
-						glBlendFunc(GL_SRC_ALPHA,GL_ONE_MINUS_SRC_ALPHA);
-						glViewport((GLint)left, (GLint)bottom,
-							(GLint)viewport_width, (GLint)viewport_height);
-						glScissor((GLint)left, (GLint)bottom,
-							(GLint)viewport_width, (GLint)viewport_height);
-						glEnable(GL_SCISSOR_TEST);
-						/* glPushAttrib(GL_VIEWPORT_BIT); */
-						reset_Lights();
+						compile_Scene(scene_viewer->overlay_scene);
+					}
 
-						/* light model */
-						compile_Light_model(scene_viewer->light_model);
-						execute_Light_model(scene_viewer->light_model);
+					if (scene_viewer->overlay_scene)
+					{
+						/*???RC property functions should be obtained once, elsewhere */
+						glGetIntegerv(GL_STENCIL_BITS,&stencil_bits);
+					}
+					else
+					{
+						stencil_bits=0;
+					}
+					/*???RC. Is this the best place to set line width and point size? */
+					glRenderMode(GL_RENDER);
+					glLineWidth((GLfloat)global_line_width);
+					glPointSize((GLfloat)global_point_size);
+					/*???RC temporary: turn on point and line antialiasing */
+					/*glEnable(GL_POINT_SMOOTH);
+						glEnable(GL_LINE_SMOOTH);*/
+					/*???RC test */
+					glPolygonMode(GL_FRONT_AND_BACK,GL_FILL);
+					/* depth tests are against a normalised z coordinate (i.e. [0..1])
+						 so the following sets this up and turns on the test */
+					if (SCENE_VIEWER_DOUBLE_BUFFER==scene_viewer->buffer_mode)
+					{
+						glDrawBuffer(GL_BACK);
+					}
+					glDepthRange((GLclampd)0,(GLclampd)1);
+					glDepthMask(GL_TRUE);
+					glEnable(GL_DEPTH_TEST);
+					glDepthFunc(GL_LESS);
+					/* Get size of alpha [blending] buffer. */
+					/* glGetIntegerv(GL_ALPHA_BITS,&alpha_bits); */
+					/* turn on alpha */
+					glEnable(GL_BLEND);
+					glBlendFunc(GL_SRC_ALPHA,GL_ONE_MINUS_SRC_ALPHA);
+					glViewport((GLint)left, (GLint)bottom,
+						(GLint)viewport_width, (GLint)viewport_height);
+					glScissor((GLint)left, (GLint)bottom,
+						(GLint)viewport_width, (GLint)viewport_height);
+					glEnable(GL_SCISSOR_TEST);
+					/* glPushAttrib(GL_VIEWPORT_BIT); */
+					reset_Lights();
+					
+					/* light model */
+					compile_Light_model(scene_viewer->light_model);
+					execute_Light_model(scene_viewer->light_model);
 
-						pixel_offset_x=0;
-						pixel_offset_y=0;
+					pixel_offset_x=0;
+					pixel_offset_y=0;
 
-						/* no antialiasing while picking */
-						if (!picking_on)
-						{
-							antialias = scene_viewer->antialias;
-						}
-						else
-						{
-							antialias = 0;
-						}
-						if (antialias>1)
-						{
-							scene_redraws=antialias;
-						}
-						else
-						{
-							scene_redraws=1;
-						}
-						/* compile the viewer lights */
-						FOR_EACH_OBJECT_IN_LIST(Light)(compile_Light,(void *)NULL,
-							scene_viewer->list_of_lights);
-						if (0<stencil_bits)
-						{
-							/* enable stencil buffer */
-							glEnable(GL_STENCIL_TEST);
-						}
+					/* no antialiasing while picking */
+					if (!picking_on)
+					{
+						antialias = scene_viewer->antialias;
+					}
+					else
+					{
+						antialias = 0;
+					}
+					if (antialias>1)
+					{
+						scene_redraws=antialias;
+					}
+					else
+					{
+						scene_redraws=1;
+					}
+					/* compile the viewer lights */
+					FOR_EACH_OBJECT_IN_LIST(Light)(compile_Light,(void *)NULL,
+						scene_viewer->list_of_lights);
+					if (0<stencil_bits)
+					{
+						/* enable stencil buffer */
+						glEnable(GL_STENCIL_TEST);
+					}
+					if ((SCENE_VIEWER_DOUBLE_BUFFER!=scene_viewer->buffer_mode) ||
+						(!scene_viewer->fast_changing) || picking_on)
+					{
 						for (accumulation_count=0;accumulation_count<scene_redraws;
 								 accumulation_count++)
 						{
@@ -1023,16 +1062,7 @@ access this function.
 							{
 								glMultMatrixd(temp_matrix);
 							}
-							/* multiply by saved window_projection_matrix */
-							for (i=0;i<4;i++)
-							{
-								for (j=0;j<4;j++)
-								{
-									temp_matrix[j*4+i]=
-										(GLdouble)(scene_viewer->window_projection_matrix)[i*4+j];
-								}
-							}
-							glMultMatrixd(temp_matrix);
+							glMultMatrixd(projection_matrix);
 							
 							/* ModelView matrix */
 							glMatrixMode(GL_MODELVIEW);
@@ -1043,16 +1073,7 @@ access this function.
 							FOR_EACH_OBJECT_IN_LIST(Light)(execute_Light,(void *)NULL,
 								scene_viewer->list_of_lights);
 							
-							/* multiply by saved modelview_matrix */
-							for (i=0;i<4;i++)
-							{
-								for (j=0;j<4;j++)
-								{
-									temp_matrix[j*4+i]=
-										(GLdouble)scene_viewer->modelview_matrix[i*4+j];
-								}
-							}
-							glMultMatrixd(temp_matrix);
+							glMultMatrixd(modelview_matrix);
 							/* turn on lights that are part of the Scene and fixed relative
 								 to it. Note the scene will have compiled them already. */
 							for_each_Light_in_Scene(scene_viewer->scene,execute_Light,
@@ -1077,7 +1098,7 @@ access this function.
 									default:
 									{
 										glAlphaFunc(GL_GREATER,0.0);
-										execute_Scene(scene_viewer->scene);
+										execute_Scene_non_fast_changing(scene_viewer->scene);
 									} break;
 									case SCENE_VIEWER_SLOW_TRANSPARENCY:
 									{
@@ -1085,12 +1106,12 @@ access this function.
 										/* render only fragments with alpha=1.0 & write depth */
 										glDepthMask(GL_TRUE);
 										glAlphaFunc(GL_EQUAL,1.0);
-										execute_Scene(scene_viewer->scene);
+										execute_Scene_non_fast_changing(scene_viewer->scene);
 										/* render only fragments with alpha != 1.0; do not write
 											 into depth buffer */
 										glDepthMask(GL_FALSE);
 										glAlphaFunc(GL_NOTEQUAL,1.0);
-										execute_Scene(scene_viewer->scene);
+										execute_Scene_non_fast_changing(scene_viewer->scene);
 										glDepthMask(GL_TRUE);
 										glDisable(GL_ALPHA_TEST);
 									} break;
@@ -1111,7 +1132,7 @@ access this function.
 											glDepthRange(
 												(double)(layers - layer - 1) / (double)layers,
 												(double)(layers - layer) / (double)layers);
-											execute_Scene(scene_viewer->scene);
+											execute_Scene_non_fast_changing(scene_viewer->scene);
 										}
 									} break;
 								}
@@ -1133,12 +1154,60 @@ access this function.
 							glAccum(GL_RETURN,1.0f);
 							glFlush();
 						}
-						if (0<stencil_bits)
+					}
+					if (scene_viewer->fast_changing ||
+						Scene_has_fast_changing_objects(scene_viewer->scene))
+					{
+						scene_viewer->swap_buffers=0;
+						/* Set up projection */
+						glMatrixMode(GL_PROJECTION);
+						glLoadMatrixd(projection_matrix);
+						glMatrixMode(GL_MODELVIEW);
+						glLoadMatrixd(modelview_matrix);
+						glViewport((GLint)left, (GLint)bottom,
+							(GLint)viewport_width, (GLint)viewport_height);
+						/* do not write into the depth buffer */
+						glDepthMask(GL_FALSE);
+
+						if ((SCENE_VIEWER_DOUBLE_BUFFER==scene_viewer->buffer_mode) &&
+							!picking_on)
 						{
-							/* disable stencil buffer */
-							glDisable(GL_STENCIL_TEST);
+							/* for OpenGL window z coordinates, 0.0=near, 1.0=far */
+							if (GL_TRUE==gluUnProject(0.00001,0.00001,0.00001,
+								modelview_matrix,projection_matrix,viewport,
+								&obj_x,&obj_y,&obj_z))
+							{
+								if (scene_viewer->first_fast_change &&
+									scene_viewer->fast_changing)
+								{
+									/* copy front buffer to the back buffer */
+									glReadBuffer(GL_FRONT);
+									glDrawBuffer(GL_BACK);
+								}
+								else
+								{
+									/* copy back buffer to the front buffer */
+									glReadBuffer(GL_BACK);
+									glDrawBuffer(GL_FRONT);
+								}
+								glRasterPos3d(obj_x,obj_y,obj_z);
+								glCopyPixels(0,0,viewport_width,viewport_height,GL_COLOR);
+							}
+							glDrawBuffer(GL_FRONT);
 						}
-						return_code=1;
+						execute_Scene_fast_changing(scene_viewer->scene);
+						scene_viewer->first_fast_change=0;
+					}
+					else
+					{
+						scene_viewer->swap_buffers=
+							(SCENE_VIEWER_DOUBLE_BUFFER == scene_viewer->buffer_mode);
+						scene_viewer->first_fast_change=1;
+					}
+					if (0<stencil_bits)
+					{
+						/* disable stencil buffer */
+						glDisable(GL_STENCIL_TEST);
 					}
 					if (SCENE_VIEWER_PIXEL_BUFFER==scene_viewer->buffer_mode)
 					{
@@ -1176,6 +1245,7 @@ access this function.
 			}
 #endif /* defined (REPORT_GL_ERRORS) */
 		}
+		scene_viewer->fast_changing=1;
 	}
 	else
 	{
@@ -1190,7 +1260,7 @@ access this function.
 
 int Scene_viewer_render_scene(struct Scene_viewer *scene_viewer)
 /*******************************************************************************
-LAST MODIFIED : 1 September 1999
+LAST MODIFIED : 12 July 2000
 
 DESCRIPTION :
 Called to redraw the Scene_viewer scene after changes in the display lists or
@@ -1276,7 +1346,7 @@ all the dimensions are zero).
 
 static Boolean Scene_viewer_idle_update(XtPointer scene_viewer_void)
 /*******************************************************************************
-LAST MODIFIED : 25 July 1998
+LAST MODIFIED : 14 July 2000
 
 DESCRIPTION :
 A WorkProc that updates the scene_viewer, and then returns TRUE so that it is
@@ -1288,11 +1358,14 @@ removed from WorkProc queue.
 	ENTER(Scene_viewer_idle_update);
 	if (scene_viewer=(struct Scene_viewer *)scene_viewer_void)
 	{
-		X3dThreeDDrawingMakeCurrent(scene_viewer->drawing_widget);
-		Scene_viewer_render_scene(scene_viewer);
-		X3dThreeDDrawingSwapBuffers();
 		/* set workproc no longer pending */
 		scene_viewer->idle_update_proc=(XtWorkProcId)NULL;
+		X3dThreeDDrawingMakeCurrent(scene_viewer->drawing_widget);
+		Scene_viewer_render_scene(scene_viewer);
+		if (scene_viewer->swap_buffers)
+		{
+			X3dThreeDDrawingSwapBuffers();
+		}
 	}
 	else
 	{
@@ -1303,6 +1376,42 @@ removed from WorkProc queue.
 
 	return (TRUE); /* so workproc finished */
 } /* Scene_viewer_idle_update */
+
+static int Scene_viewer_redraw_in_idle_time(struct Scene_viewer *scene_viewer)
+/*******************************************************************************
+LAST MODIFIED : 14 July 2000
+
+DESCRIPTION :
+Sets up a callback to Scene_viewer_idle_update for an update in idle time.
+Does this by putting a WorkProc on the queue - if not already done for this
+Scene_viewer - which will force a redraw at the next idle moment. If the
+scene_viewer is changed again before it is updated, a new WorkProc will not be
+put in the queue, but the old one will update the window to the new state.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(Scene_viewer_redraw_in_idle_time);
+	if (scene_viewer)
+	{
+		if (!scene_viewer->idle_update_proc)
+		{
+			scene_viewer->idle_update_proc=XtAppAddWorkProc(
+				scene_viewer->user_interface->application_context,
+				Scene_viewer_idle_update,scene_viewer);
+		}
+		return_code=1;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Scene_viewer_redraw_in_idle_time.  Missing scene_viewer");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Scene_viewer_redraw_in_idle_time */
 
 static void Scene_viewer_initialize_callback(Widget scene_viewer_widget,
 	XtPointer scene_viewer_structure,XtPointer call_data)
@@ -1367,7 +1476,7 @@ callbacks interested in the scene_viewers transformations.
 static void Scene_viewer_expose_callback(Widget scene_viewer_widget,
 	XtPointer scene_viewer_structure,XtPointer call_data)
 /*******************************************************************************
-LAST MODIFIED : 25 July 1998
+LAST MODIFIED : 13 July 2000
 
 DESCRIPTION :
 Called when part of the Scene_viewer window is exposed. Does not attempt to
@@ -1389,7 +1498,7 @@ if there are no more expose events pending.
 		/* if no more expose events in series */
 		if (0==expose_event->count)
 		{
-			Scene_viewer_render_scene(scene_viewer);
+			Scene_viewer_redraw(scene_viewer);
 		}
 	}
 	else
@@ -1404,7 +1513,7 @@ static int Scene_viewer_unproject(int pointer_x,int pointer_y,
 	double *near_x,double *near_y,double *near_z,
 	double *far_x,double *far_y,double *far_z)
 /*******************************************************************************
-LAST MODIFIED : 28 February 1998
+LAST MODIFIED : 13 July 2000
 
 DESCRIPTION :
 Converts the pointer location into locations on the near and far planes in
@@ -1412,13 +1521,14 @@ world space.
 ==============================================================================*/
 {
 	int return_code;
-	GLdouble model_matrix[16],projection_matrix[16],obj_x,obj_y,obj_z,win_x,win_y;
+	GLdouble modelview_matrix[16],projection_matrix[16],obj_x,obj_y,obj_z,
+		win_x,win_y;
 	GLint viewport[4];
 
 	ENTER(Scene_viewer_unproject);
 	if (near_x&&near_y&&near_z&&far_x&&far_y&&far_z)
 	{
-		glGetDoublev(GL_MODELVIEW_MATRIX,model_matrix);
+		glGetDoublev(GL_MODELVIEW_MATRIX,modelview_matrix);
 		glGetDoublev(GL_PROJECTION_MATRIX,projection_matrix);
 		glGetIntegerv(GL_VIEWPORT,viewport);
 		return_code=0;
@@ -1426,13 +1536,13 @@ world space.
 		win_y=(GLdouble)(viewport[3]-pointer_y);
 		/* for OpenGL window z coordinates, 0.0=near, 1.0=far */
 		if (GL_TRUE==gluUnProject(win_x,win_y,0.0,
-			model_matrix,projection_matrix,viewport,&obj_x,&obj_y,&obj_z))
+			modelview_matrix,projection_matrix,viewport,&obj_x,&obj_y,&obj_z))
 		{
 			*near_x=(double)obj_x;
 			*near_y=(double)obj_y;
 			*near_z=(double)obj_z;
 			if (GL_TRUE==gluUnProject(win_x,win_y,1.0,
-				model_matrix,projection_matrix,viewport,&obj_x,&obj_y,&obj_z))
+				modelview_matrix,projection_matrix,viewport,&obj_x,&obj_y,&obj_z))
 			{
 				*far_x=(double)obj_x;
 				*far_y=(double)obj_y;
@@ -2191,7 +2301,7 @@ transformations.
 						scene_viewer->viewport_left -= dx;
 						scene_viewer->viewport_top -= dy;
 						scene_viewer->transform_flag = 1;
-						Scene_viewer_redraw(scene_viewer);
+						Scene_viewer_redraw_now(scene_viewer);
 					} break;
 					case SV_DRAG_ZOOM:
 					{
@@ -2209,7 +2319,7 @@ transformations.
 							i++;
 						}
 						Scene_viewer_viewport_zoom(scene_viewer,zoom_ratio);
-						Scene_viewer_redraw(scene_viewer);
+						Scene_viewer_redraw_now(scene_viewer);
 					} break;
 					default:
 					{
@@ -2574,7 +2684,7 @@ light_model is used in the scene_viewer, then redraw.
 static void Scene_viewer_scene_change(
 	struct MANAGER_MESSAGE(Scene) *message,void *scene_viewer_void)
 /*******************************************************************************
-LAST MODIFIED : 18 November 1998
+LAST MODIFIED : 14 July 2000
 
 DESCRIPTION :
 Something has changed globally in the scene manager. If the contents of the
@@ -2589,16 +2699,21 @@ scene or overlay_scene in this scene_viewer are modified, then redraw.
 		switch (message->change)
 		{
 			case MANAGER_CHANGE_ALL(Scene):
-			{
-				Scene_viewer_redraw(scene_viewer);
-			} break;
 			case MANAGER_CHANGE_OBJECT(Scene):
 			case MANAGER_CHANGE_OBJECT_NOT_IDENTIFIER(Scene):
 			{
-				if ((message->object_changed==scene_viewer->scene)||
+				if ((!message->object_changed) ||
+					(message->object_changed==scene_viewer->scene) ||
 					(message->object_changed==scene_viewer->overlay_scene))
 				{
-					Scene_viewer_redraw(scene_viewer);
+					if (SCENE_FAST_CHANGE==Scene_get_change_status(scene_viewer->scene))
+					{
+						Scene_viewer_redraw_in_idle_time(scene_viewer);
+					}
+					else
+					{
+						Scene_viewer_redraw(scene_viewer);
+					}
 				}
 			} break;
 			case MANAGER_CHANGE_ADD(Scene):
@@ -2678,7 +2793,7 @@ struct Scene_viewer *CREATE(Scene_viewer)(Widget parent,
 	struct MANAGER(Texture) *texture_manager,
 	struct User_interface *user_interface)
 /*******************************************************************************
-LAST MODIFIED : 11 April 2000
+LAST MODIFIED : 12 July 2000
 
 DESCRIPTION :
 Creates a Scene_viewer in the widget <parent> to display <scene>.
@@ -2778,6 +2893,9 @@ performed in idle time so that multiple redraws are avoided.
 					scene_viewer->antialias=0;
 					scene_viewer->perturb_lines=0;
 					scene_viewer->transform_flag=0;
+					scene_viewer->first_fast_change=1;
+					scene_viewer->fast_changing=0;
+					scene_viewer->swap_buffers=0;
 					if (default_light)
 					{
 						ADD_OBJECT_TO_LIST(Light)(default_light,
@@ -5030,17 +5148,10 @@ The most common task will to list the lights in the scene with show_Light.
 
 int Scene_viewer_redraw(struct Scene_viewer *scene_viewer)
 /*******************************************************************************
-LAST MODIFIED : 16 October 1998
+LAST MODIFIED : 14 July 2000
 
 DESCRIPTION :
-Call this after changing viewing parameters or display lists to have the
-Scene_viewer redraw the image. Does this by putting a WorkProc on the queue
-(if not already done for this Scene_viewer) which will force a redraw at the
-next idle moment. If the scene_viewer is changed again before it is updated,
-a new WorkProc will not be put in the queue, but the old one will update the
-window to the new state.
-???RC Why not draw it directly?
-???RC Maybe have a direct redraw and an idle redraw.
+Requests a full redraw in idle time.
 ==============================================================================*/
 {
 	int return_code;
@@ -5048,12 +5159,8 @@ window to the new state.
 	ENTER(Scene_viewer_redraw);
 	if (scene_viewer)
 	{
-		if (!scene_viewer->idle_update_proc)
-		{
-			scene_viewer->idle_update_proc=XtAppAddWorkProc(
-				scene_viewer->user_interface->application_context,
-				Scene_viewer_idle_update,scene_viewer);
-		}
+		scene_viewer->fast_changing=0;
+		Scene_viewer_redraw_in_idle_time(scene_viewer);
 		return_code=1;
 	}
 	else
@@ -5069,11 +5176,10 @@ window to the new state.
 
 int Scene_viewer_redraw_now(struct Scene_viewer *scene_viewer)
 /*******************************************************************************
-LAST MODIFIED : 16 October 1998
+LAST MODIFIED : 14 July 2000
 
 DESCRIPTION :
-Forces a redraw of the given scene viewer to take place immediately - ie.
-not just at the next idle moment as Scene_viewer_redraw does.
+Requests a full redraw immediately.
 ==============================================================================*/
 {
 	int return_code;
@@ -5088,8 +5194,13 @@ not just at the next idle moment as Scene_viewer_redraw does.
 			scene_viewer->idle_update_proc=(XtWorkProcId)NULL;
 		}
 		X3dThreeDDrawingMakeCurrent(scene_viewer->drawing_widget);
+		/* always do a full redraw */
+		scene_viewer->fast_changing=0;
 		return_code=Scene_viewer_render_scene(scene_viewer);
-		X3dThreeDDrawingSwapBuffers();
+		if (scene_viewer->swap_buffers)
+		{
+			X3dThreeDDrawingSwapBuffers();
+		}
 	}
 	else
 	{
@@ -5110,7 +5221,7 @@ LAST MODIFIED : 25 July 1998
 DESCRIPTION :
 Forces a redraw of the given scene viewer to take place immediately but does
 not swap the back and front buffers so that utilities such as the movie
-extensions can get the undated frame from the backbuffer.
+extensions can get the updated frame from the backbuffer.
 ==============================================================================*/
 {
 	int return_code;
@@ -5119,6 +5230,8 @@ extensions can get the undated frame from the backbuffer.
 	if (scene_viewer)
 	{
 		X3dThreeDDrawingMakeCurrent(scene_viewer->drawing_widget);
+		/* always do a full redraw */
+		scene_viewer->fast_changing=0;
 		return_code=Scene_viewer_render_scene(scene_viewer);
 	}
 	else
