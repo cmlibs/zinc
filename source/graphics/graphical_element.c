@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : graphical_element.c
 
-LAST MODIFIED : 7 June 2001
+LAST MODIFIED : 13 November 2001
 
 DESCRIPTION :
 ==============================================================================*/
@@ -1340,6 +1340,70 @@ Frees the memory for <**gt_element_group> and sets <*gt_element_group> to NULL.
 	return (return_code);
 } /* DESTROY(GT_element_group) */
 
+int GT_element_groups_match(struct GT_element_group *gt_element_group1,
+	struct GT_element_group *gt_element_group2)
+/*******************************************************************************
+LAST MODIFIED : 14 November 2001
+
+DESCRIPTION :
+Returns true if <gt_element_group1> and <gt_element_group2> match in
+main attributes of element group, settings etc. such that they would produce
+the same graphics.
+==============================================================================*/
+{
+	int i, number_of_settings, return_code;
+	struct GT_element_settings *settings1, *settings2;
+
+	ENTER(GT_element_groups_match);
+	if (gt_element_group1 && gt_element_group2)
+	{
+		if ((gt_element_group1->element_group ==
+			gt_element_group2->element_group) &&
+			(gt_element_group1->node_group == gt_element_group2->node_group) &&
+			(gt_element_group1->data_group == gt_element_group2->data_group) &&
+			(gt_element_group1->element_discretization.number_in_xi1 ==
+				gt_element_group2->element_discretization.number_in_xi1) &&
+			(gt_element_group1->element_discretization.number_in_xi2 ==
+				gt_element_group2->element_discretization.number_in_xi2) &&
+			(gt_element_group1->element_discretization.number_in_xi3 ==
+				gt_element_group2->element_discretization.number_in_xi3) &&
+			(gt_element_group1->circle_discretization ==
+				gt_element_group2->circle_discretization) &&
+			(gt_element_group1->default_coordinate_field ==
+				gt_element_group2->default_coordinate_field) &&
+			(gt_element_group1->native_discretization_field ==
+				gt_element_group2->native_discretization_field) &&
+			((number_of_settings = NUMBER_IN_LIST(GT_element_settings)(
+				gt_element_group1->list_of_settings)) ==
+				NUMBER_IN_LIST(GT_element_settings)(
+					gt_element_group2->list_of_settings)))
+		{
+			return_code = 1;
+			for (i = 1; return_code && (i <= number_of_settings); i++)
+			{
+				settings1 = FIND_BY_IDENTIFIER_IN_LIST(GT_element_settings, position)(
+					i, gt_element_group1->list_of_settings);
+				settings2 = FIND_BY_IDENTIFIER_IN_LIST(GT_element_settings, position)(
+					i, gt_element_group2->list_of_settings);
+				return_code = GT_element_settings_match(settings1, settings2);
+			}
+		}
+		else
+		{
+			return_code = 0;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"GT_element_groups_match.  Invalid argument(s)");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* GT_element_groups_match */
+
 int GET_NAME(GT_element_group)(struct GT_element_group *gt_element_group,
 	char **name_ptr)
 /*******************************************************************************
@@ -1666,10 +1730,11 @@ position in <gt_element_group>.
 	return (return_code);
 } /* GT_element_group_modify_settings */
 
-int GT_element_group_get_settings_position(struct GT_element_group
-	*gt_element_group,struct GT_element_settings *settings)
+int GT_element_group_get_settings_position(
+	struct GT_element_group *gt_element_group,
+	struct GT_element_settings *settings)
 /*******************************************************************************
-LAST MODIFIED : 16 June 1998
+LAST MODIFIED : 13 November 2001
 
 DESCRIPTION :
 Returns the position of <settings> in <gt_element_group>.
@@ -1693,6 +1758,34 @@ Returns the position of <settings> in <gt_element_group>.
 
 	return (position);
 } /* GT_element_group_get_settings_position */
+
+int GT_element_group_get_number_of_settings(
+	struct GT_element_group *gt_element_group)
+/*******************************************************************************
+LAST MODIFIED : 13 November 2001
+
+DESCRIPTION :
+Returns the number of settings in <gt_element_group>.
+==============================================================================*/
+{
+	int number_of_settings;
+
+	ENTER(GT_element_group_get_number_of_settings);
+	if (gt_element_group)
+	{
+		number_of_settings =
+			NUMBER_IN_LIST(GT_element_settings)(gt_element_group->list_of_settings);
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"GT_element_group_get_number_of_settings.  Invalid argument(s)");
+		number_of_settings = 0;
+	}
+	LEAVE;
+
+	return (number_of_settings);
+} /* GT_element_group_get_number_of_settings */
 
 int GT_element_group_get_circle_discretization(
 	struct GT_element_group *gt_element_group)

@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : graphical_element.h
 
-LAST MODIFIED : 31 May 2001
+LAST MODIFIED : 13 November 2001
 
 DESCRIPTION :
 Graphical element group data structure.
@@ -102,6 +102,15 @@ DESCRIPTION :
 Frees the memory for <**gt_element_group> and sets <*gt_element_group> to NULL.
 ==============================================================================*/
 
+int GT_element_groups_match(struct GT_element_group *gt_element_group1,
+	struct GT_element_group *gt_element_group2);
+/*******************************************************************************
+LAST MODIFIED : 14 November 2001
+
+DESCRIPTION :
+Returns true if <gt_element_group1> and <gt_element_group2> match in every way.
+==============================================================================*/
+
 PROTOTYPE_GET_OBJECT_NAME_FUNCTION(GT_element_group);
 
 int GT_element_group_begin_cache(struct GT_element_group *gt_element_group);
@@ -175,13 +184,23 @@ Changes the contents of <settings> to match <new_settings>, with no change in
 position in <gt_element_group>.
 ==============================================================================*/
 
-int GT_element_group_get_settings_position(struct GT_element_group
-	*gt_element_group,struct GT_element_settings *settings);
+int GT_element_group_get_settings_position(
+	struct GT_element_group *gt_element_group,
+	struct GT_element_settings *settings);
 /*******************************************************************************
-LAST MODIFIED : 16 June 1998
+LAST MODIFIED : 13 November 2001
 
 DESCRIPTION :
 Returns the position of <settings> in <gt_element_group>.
+==============================================================================*/
+
+int GT_element_group_get_number_of_settings(
+	struct GT_element_group *gt_element_group);
+/*******************************************************************************
+LAST MODIFIED : 13 November 2001
+
+DESCRIPTION :
+Returns the number of settings in <gt_element_group>.
 ==============================================================================*/
 
 int GT_element_group_get_circle_discretization(
