@@ -1258,7 +1258,7 @@ If <variable> is of type scale_factor, gets its <*fe_variable_address>,
 ==============================================================================*/
 
 /*???DB.  Where I'm up to */
-
+#if defined (OLD_CODE)
 int Computed_variable_is_read_only_with_fe_field(
 	struct Computed_variable *field,void *fe_field_void);
 /*******************************************************************************
@@ -1454,3 +1454,4 @@ LAST MODIFIED : 18 July 2000
 
 DESCRIPTION :
 ==============================================================================*/
+#endif /* defined (OLD_CODE) */
