@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : user_interface.c
 
-LAST MODIFIED : 3 October 2001
+LAST MODIFIED : 20 November 2001
 
 DESCRIPTION :
 Functions for opening and closing the user interface.
@@ -850,7 +850,7 @@ Open the <user_interface>.
 			sizeof(XFontStruct *),
 			XtOffsetOf(User_settings,normal_font),
 			XmRString,
-			"*-Helvetica-medium-R-*--*-120-*"
+			"*-helvetica-medium-r-normal--14-*-*"
 		},
 		{
 			XmNnormalNonProportionalFont,
@@ -1019,14 +1019,15 @@ XmNvisual,default_visual,
 				XtVaGetApplicationResources(user_interface->application_shell,
 					user_interface,resources,XtNumber(resources),NULL);
 				/* register identifiers in the global name table */
-				identifiers[0].value=(XtPointer)user_interface->widget_spacing;
+				user_interface->normal_fontlist = XmFontListCreate(
+					user_interface->normal_font, XmSTRING_DEFAULT_CHARSET);
+				identifiers[0].value = (XtPointer)user_interface->widget_spacing;
 					/*???DB.  widget_spacing based on screen_width ? */
-				identifiers[1].value=(XtPointer)XmFontListCreate(
+				identifiers[1].value = (XtPointer)XmFontListCreate(
 					user_interface->menu_font,XmSTRING_DEFAULT_CHARSET);
-				identifiers[2].value=(XtPointer)XmFontListCreate(
+				identifiers[2].value = (XtPointer)XmFontListCreate(
 					user_interface->heading_font,XmSTRING_DEFAULT_CHARSET);
-				identifiers[3].value=(XtPointer)XmFontListCreate(
-					user_interface->normal_font,XmSTRING_DEFAULT_CHARSET);
+				identifiers[3].value = (XtPointer)user_interface->normal_fontlist;
 				identifiers[4].value=(XtPointer)XmFontListCreate(
 					user_interface->normal_non_proportional_font,
 					XmSTRING_DEFAULT_CHARSET);
@@ -1079,7 +1080,7 @@ XmNvisual,default_visual,
 
 int close_user_interface(struct User_interface *user_interface)
 /*******************************************************************************
-LAST MODIFIED : 7 July 2000
+LAST MODIFIED : 20 November 2001
 
 DESCRIPTION :
 ==============================================================================*/
@@ -1089,6 +1090,11 @@ DESCRIPTION :
 	ENTER(close_user_interface);
 	if (user_interface)
 	{
+		if (user_interface->normal_fontlist)
+		{
+			XmFontListFree(user_interface->normal_fontlist);
+			user_interface->normal_fontlist = (XmFontList)NULL;
+		}
 #if defined (LINK_CMISS)
 		if (CMISS)
 		{

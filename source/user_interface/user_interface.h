@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : user_interface.h
 
-LAST MODIFIED : 27 December 1999
+LAST MODIFIED : 20 November 2001
 
 DESCRIPTION :
 Function definitions for the user interface.
@@ -41,7 +41,7 @@ typedef int (*Property_notify_callback)(XPropertyEvent *,void *,
 
 struct User_interface
 /*******************************************************************************
-LAST MODIFIED : 27 December 1999
+LAST MODIFIED : 20 November 2001
 
 DESCRIPTION :
 The variables that control the interaction of the application with the
@@ -67,6 +67,7 @@ application/window manager.
 	Widget application_shell;
 	XFontStruct *button_font,*heading_font,*list_font,*menu_font,*normal_font,
 		*normal_non_proportional_font,*small_font;
+	XmFontList normal_fontlist;
 	XtAppContext application_context;
 #endif /* defined (MOTIF) */
 #if defined (WINDOWS)
