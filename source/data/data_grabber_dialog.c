@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : data_grabber_dialog.c
 
-LAST MODIFIED : 1 September 1999
+LAST MODIFIED : 18 April 2000
 
 DESCRIPTION :
 Brings up a window which holds a data_grabber.  Allows the user to change what
@@ -750,7 +750,7 @@ static Widget create_data_grabber_dialog(Widget *data_grabber_dialog_widget,
 	struct MANAGER(GROUP(FE_node)) *node_group_manager,
 	struct MANAGER(GROUP(FE_node)) *data_group_manager)
 /*******************************************************************************
-LAST MODIFIED : 29 December 1999
+LAST MODIFIED : 18 April 2000
 
 DESCRIPTION :
 Brings up a data_grabber that allows the user to get three dimensional data
@@ -860,7 +860,8 @@ points.
 									CREATE_CHOOSE_OBJECT_WIDGET(GROUP(FE_node))(
 										data_grabber_dialog->node_group_form,
 										(struct GROUP(FE_node) *)NULL, node_group_manager,
-										(MANAGER_CONDITIONAL_FUNCTION(GROUP(FE_node)) *)NULL)))
+										(MANAGER_CONDITIONAL_FUNCTION(GROUP(FE_node)) *)NULL,
+										(void *)NULL)))
 								{
 									data_grabber_dialog->node_group =
 										CHOOSE_OBJECT_GET_OBJECT(GROUP(FE_node))
@@ -875,7 +876,8 @@ points.
 									CREATE_CHOOSE_OBJECT_WIDGET(GROUP(FE_node))(
 										data_grabber_dialog->node_group_form,
 										(struct GROUP(FE_node) *)NULL, data_group_manager,
-										(MANAGER_CONDITIONAL_FUNCTION(GROUP(FE_node)) *)NULL)))
+										(MANAGER_CONDITIONAL_FUNCTION(GROUP(FE_node)) *)NULL,
+										(void *)NULL)))
 								{
 									init_widgets = 0;
 								}
