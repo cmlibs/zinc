@@ -152,12 +152,12 @@ Makes the numeric value and the slider agree.
 	temp=temp_edit_var->high_limit-temp_edit_var->low_limit;
 	if (temp != 0.0)
 	{
-		temp=100.0 * (temp_edit_var->current_value-temp_edit_var->low_limit)/
+		temp=300.0 * (temp_edit_var->current_value-temp_edit_var->low_limit)/
 			temp;
 		slider_value=temp;
-		if(slider_value > 100)
+		if(slider_value > 300)
 		{
-			slider_value = 100;
+			slider_value = 300;
 		}
 		if(slider_value < 0)
 		{
@@ -243,7 +243,7 @@ has been pressed, and then exits.
 	XtVaGetValues(w,XmNuserData,&temp_edit_var,NULL);
 	/* get the string */
 	XtVaGetValues(w,XmNvalue,&temp_int,NULL);
-	temp_value=((EDIT_VAR_PRECISION)temp_int)/100.0*
+	temp_value=((EDIT_VAR_PRECISION)temp_int)/300.0*
 		(temp_edit_var->high_limit-temp_edit_var->low_limit)+
 		temp_edit_var->low_limit;
 	temp_edit_var->current_value=temp_value;

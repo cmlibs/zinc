@@ -23,9 +23,9 @@ value
 	edit_var_text_margin      : 1; ! how much gap around the text - small so the dialog is small
 
 value
-	edit_var_slider_max        : 125;
+	edit_var_slider_max        : 375;
 	edit_var_slider_min        : 0;
-	edit_var_slider_size      : 25;
+	edit_var_slider_size      : 75;
 	shadow_size                : 2;
 	edit_var_data_size          : 9;
 	edit_var_data_init          : "";
