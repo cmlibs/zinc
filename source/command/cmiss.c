@@ -10015,7 +10015,7 @@ Executes a GFX CREATE WINDOW command.
 			/* set_defaults */
 			name=Graphics_window_manager_get_new_name(
 				command_data->graphics_window_manager);
-			buffer_mode=SCENE_VIEWER_DOUBLE_BUFFER;
+			buffer_mode = GRAPHICS_WINDOW_DOUBLE_BUFFERING;
 			stereo_mode = GRAPHICS_WINDOW_MONO;
 			minimum_depth_buffer_depth=8;
 			minimum_accumulation_buffer_depth=8;

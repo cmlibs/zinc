@@ -1845,32 +1845,6 @@ made current) to be the GLX destination.
 	return (return_code);
 } /* Graphics_buffer_make_current */
 
-enum Graphics_buffer_type Graphics_buffer_get_type(struct Graphics_buffer *buffer)
-/*******************************************************************************
-LAST MODIFIED : 2 July 2002
-
-DESCRIPTION :
-Returns the type of buffer represented by <buffer>.
-==============================================================================*/
-{
-	enum Graphics_buffer_type return_code;
-
-	ENTER(Graphics_buffer_get_type);
-	if (buffer)
-	{
-		return_code = buffer->type;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Graphics_buffer_get_type.  Invalid buffer");
-		return_code=GRAPHICS_BUFFER_INVALID_TYPE;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Graphics_buffer_get_type */
-
 int Graphics_buffer_get_width(struct Graphics_buffer *buffer)
 /*******************************************************************************
 LAST MODIFIED : 1 July 2002

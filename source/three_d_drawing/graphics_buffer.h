@@ -182,15 +182,6 @@ Sets this buffer to be the source and the current ThreeDWindow (the one last
 made current) to be the destination.
 ==============================================================================*/
 
-enum Graphics_buffer_type Graphics_buffer_get_type(struct Graphics_buffer *buffer);
-/*******************************************************************************
-LAST MODIFIED : 1 July 2002
-DESCRIPTION :
-Returns information about the type of buffer that was created.  (Only the O2
-currently supports Dm_pbuffer so to operate on the Octane a different 
-mechanism needs to be supported.
-==============================================================================*/	  
-
 int Graphics_buffer_get_width(struct Graphics_buffer *buffer);
 /*******************************************************************************
 LAST MODIFIED : 1 July 2002
