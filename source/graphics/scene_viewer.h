@@ -68,6 +68,8 @@ and the functions given their public names.
 #define Scene_viewer_set_perturb_lines Cmiss_scene_viewer_set_perturb_lines
 #define Scene_viewer_view_all Cmiss_scene_viewer_view_all
 #define Scene_viewer_redraw_now Cmiss_scene_viewer_redraw_now
+#define Scene_viewer_start_freespin Cmiss_scene_viewer_start_freespin
+#define Scene_viewer_stop_animations Cmiss_scene_viewer_stop_animations
 
 #include "graphics/scene_viewer.h"
 
@@ -209,6 +211,17 @@ LAST MODIFIED : 29 September 2000
 DESCRIPTION :
 Restores manager callbacks of previously inactive scene_viewer. Must call after
 Scene_viewer_sleep to restore normal activity.
+==============================================================================*/
+
+int Scene_viewer_start_freespin(struct Scene_viewer *scene_viewer,
+	float *tumble_axis, float tumble_angle);
+/*******************************************************************************
+LAST MODIFIED : 10 September 2003
+
+DESCRIPTION :
+Sets the <scene_viewer> spinning in idle time.  The <tumble_axis> is the vector
+about which the scene is turning relative to its lookat point and the
+<tumble_angle> controls how much it turns on each redraw.
 ==============================================================================*/
 
 int Scene_viewer_stop_animations(struct Scene_viewer *scene_viewer);

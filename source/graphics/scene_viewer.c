@@ -4193,6 +4193,49 @@ Scene_viewer_sleep to restore normal activity.
 	return (return_code);
 } /* Scene_viewer_awaken */
 
+int Scene_viewer_start_freespin(struct Scene_viewer *scene_viewer,
+	float *tumble_axis, float tumble_angle)
+/*******************************************************************************
+LAST MODIFIED : 10 September 2003
+
+DESCRIPTION :
+Sets the <scene_viewer> spinning in idle time.  The <tumble_axis> is the vector
+about which the scene is turning relative to its lookat point and the
+<tumble_angle> controls how much it turns on each redraw.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(Scene_viewer_stop_animations);
+	if (scene_viewer && tumble_axis)
+	{
+		scene_viewer->tumble_active = 1;
+		scene_viewer->tumble_axis[0] = tumble_axis[0];
+		scene_viewer->tumble_axis[1] = tumble_axis[1];
+		scene_viewer->tumble_axis[2] = tumble_axis[2];
+		scene_viewer->tumble_angle = tumble_angle;
+		scene_viewer->fast_changing = 0;
+		/* Repost the idle callback */
+		if(!scene_viewer->idle_update_callback_id)
+		{
+			scene_viewer->idle_update_callback_id = Event_dispatcher_add_idle_callback(
+				User_interface_get_event_dispatcher(scene_viewer->user_interface),
+				Scene_viewer_idle_update_callback, (void *)scene_viewer,
+				EVENT_DISPATCHER_IDLE_UPDATE_SCENE_VIEWER_PRIORITY);			
+		}
+		return_code=1;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Scene_viewer_start_freespin.  Missing scene_viewer");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Scene_viewer_start_freespin */
+
 int Scene_viewer_stop_animations(struct Scene_viewer *scene_viewer)
 /*******************************************************************************
 LAST MODIFIED : 29 September 2000

@@ -636,6 +636,86 @@ matches the <scene_name> exists.
 	return (return_code);
 } /* Cmiss_scene_viewer_set_scene_by_name */
 
+int Cmiss_scene_viewer_set_overlay_scene_by_name(Cmiss_scene_viewer_id scene_viewer,
+	char *scene_name)
+/*******************************************************************************
+LAST MODIFIED : 10 September 2003
+
+DESCRIPTION :
+Sets the overlay scene rendered in the scene_viewer if one that
+matches the <scene_name> exists.
+==============================================================================*/
+{
+	struct Scene *scene;
+	int return_code;
+
+	ENTER(Cmiss_scene_viewer_set_scene_by_name);
+	if (cmiss_scene_viewer_data)
+	{
+		if (scene=FIND_BY_IDENTIFIER_IN_MANAGER(Scene,name)(
+				scene_name,cmiss_scene_viewer_data->scene_manager))
+		{
+			return_code = Scene_viewer_set_overlay_scene(scene_viewer, scene);
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,"Cmiss_scene_viewer_set_scene_by_name.  "
+				"Unable to find a scene named %s.", scene_name);
+			return_code = 0;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"Cmiss_scene_viewer_set_scene_by_name.  "
+			"The Cmiss_scene_viewer data must be initialised before using "
+			"the scene_viewer api.");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Cmiss_scene_viewer_set_scene_by_name */
+
+int Cmiss_scene_viewer_set_background_texture_by_name(Cmiss_scene_viewer_id scene_viewer,
+	char *texture_name)
+/*******************************************************************************
+LAST MODIFIED : 10 September 2003
+
+DESCRIPTION :
+Sets the background texture rendered in the scene_viewer if one that
+matches the <texture_name> exists.
+==============================================================================*/
+{
+	struct Texture *texture;
+	int return_code;
+
+	ENTER(Cmiss_scene_viewer_set_texture_by_name);
+	if (cmiss_scene_viewer_data)
+	{
+		if (texture=FIND_BY_IDENTIFIER_IN_MANAGER(Texture,name)(
+			texture_name,cmiss_scene_viewer_data->texture_manager))
+		{
+			return_code = Scene_viewer_set_background_texture(scene_viewer, texture);
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,"Cmiss_scene_viewer_set_texture_by_name.  "
+				"Unable to find a texture named %s.", texture_name);
+			return_code = 0;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"Cmiss_scene_viewer_set_texture_by_name.  "
+			"The Cmiss_scene_viewer data must be initialised before using "
+			"the scene_viewer api.");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Cmiss_scene_viewer_set_texture_by_name */
+
 int Cmiss_scene_viewer_write_image_to_file(Cmiss_scene_viewer_id scene_viewer,
 	char *file_name, int force_onscreen, int preferred_width, int preferred_height,
 	int preferred_antialias, int preferred_transparency_layers)

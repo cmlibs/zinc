@@ -361,7 +361,27 @@ int Cmiss_scene_viewer_set_scene_by_name(Cmiss_scene_viewer_id scene_viewer,
 LAST MODIFIED : 11 September 2002
 
 DESCRIPTION :
-Sets the currently scene rendered in the scene_viewer if one that
+Sets the currently rendered scene in the scene_viewer if one that
+matches the <scene_name> exists.
+==============================================================================*/
+
+int Cmiss_scene_viewer_set_overlay_scene_by_name(Cmiss_scene_viewer_id scene_viewer,
+	char *scene_name);
+/*******************************************************************************
+LAST MODIFIED : 10 September 2003
+
+DESCRIPTION :
+Sets the overlay scene rendered in the scene_viewer if one that
+matches the <scene_name> exists.
+==============================================================================*/
+
+int Cmiss_scene_viewer_set_background_texture_by_name(Cmiss_scene_viewer_id scene_viewer,
+	char *texture_name);
+/*******************************************************************************
+LAST MODIFIED : 10 September 2003
+
+DESCRIPTION :
+Sets the background texture rendered in the scene_viewer if one that
 matches the <scene_name> exists.
 ==============================================================================*/
 
@@ -382,6 +402,26 @@ LAST MODIFIED : 11 September 2002
 
 DESCRIPTION :
 Forces a redraw of the given scene viewer to take place immediately
+==============================================================================*/
+
+int Cmiss_scene_viewer_start_freespin(Cmiss_scene_viewer_id scene_viewer,
+	float *tumble_axis, float tumble_angle);
+/*******************************************************************************
+LAST MODIFIED : 10 September 2003
+
+DESCRIPTION :
+Sets the <scene_viewer> spinning in idle time.  The <tumble_axis> is the vector
+about which the scene is turning relative to its lookat point and the
+<tumble_angle> controls how much it turns on each redraw.
+==============================================================================*/
+
+int Cmiss_scene_viewer_stop_animations(Cmiss_scene_viewer_id scene_viewer);
+/*******************************************************************************
+LAST MODIFIED : 29 September 2000
+
+DESCRIPTION :
+Tells the <scene_viewer> to stop all automatic informations that it produces,
+eg. automatic tumble.
 ==============================================================================*/
 
 int Cmiss_scene_viewer_write_image_to_file(Cmiss_scene_viewer_id scene_viewer,
