@@ -299,7 +299,7 @@ ifeq ($(USER_INTERFACE),MOTIF_USER_INTERFACE)
          USER_INTERFACE_INC += -I/usr/X11R6/include
       endif # SYSNAME != IRIX%=
       ifeq ($(SYSNAME),Linux)
-         USER_INTERFACE_LIB += -lMrm -u _XEditResCheckMessages -lXmu -lXm -lXp -lXt -lX11 -lXmu -lXext -lSM -lICE
+         USER_INTERFACE_LIB += -lMrm -lXmu -lXm -lXp -lXt -lX11 -lXmu -lXext -lSM -lICE
       else # SYSNAME == Linux
          USER_INTERFACE_LIB += -lMrm -lXmu -lXm -lXt -lX11 -lXmu -lXext
          ifeq ($(SYSNAME:IRIX%=),)
