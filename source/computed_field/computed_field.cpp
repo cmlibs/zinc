@@ -3071,7 +3071,7 @@ Note that the values array will not be modified by this function.
 		
 		if (get_FE_element_identifier(element, &cm_information) &&
 			(copy_element = CREATE(FE_element)(&cm_information,
-				(struct FE_element_shape *)NULL, fe_region, element)))
+				(struct FE_element_shape *)NULL, (struct FE_region *)NULL, element)))
 		{
 			/* The element must be accessed as the use of cache on the elements
 				by get values etc. access and deaccessess the elements */
