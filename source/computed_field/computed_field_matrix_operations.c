@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : computed_field_matrix_operations.c
 
-LAST MODIFIED : 26 October 2000
+LAST MODIFIED : 7 November 2000
 
 DESCRIPTION :
 Implements a number of basic vector operations on computed fields.
@@ -11,12 +11,1315 @@ Implements a number of basic vector operations on computed fields.
 #include "computed_field/computed_field_matrix_operations.h"
 #include "computed_field/computed_field_private.h"
 #include "general/debug.h"
+#include "general/matrix_vector.h"
 #include "user_interface/message.h"
 
 struct Computed_field_matrix_operations_package 
 {
 	struct MANAGER(Computed_field) *computed_field_manager;
 };
+
+struct Computed_field_eigenvalues_type_specific_data
+/*******************************************************************************
+LAST MODIFIED : 7 November 2000
+
+DESCRIPTION :
+==============================================================================*/
+{
+	/* cache for matrix, eigenvalues and eigenvectors */
+	double *a, *d, *v;
+}; /* struct Computed_field_eigenvalues_type_specific_data */
+
+static char computed_field_eigenvalues_type_string[] = "eigenvalues";
+
+int Computed_field_is_type_eigenvalues(struct Computed_field *field)
+/*******************************************************************************
+LAST MODIFIED : 7 November 2000
+
+DESCRIPTION :
+Returns true if <field> has the appropriate static type string.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(Computed_field_is_type_eigenvalues);
+	if (field)
+	{
+		return_code =
+			(field->type_string == computed_field_eigenvalues_type_string);
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Computed_field_is_type_eigenvalues.  Missing field");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Computed_field_is_type_eigenvalues */
+
+int Computed_field_is_type_eigenvalues_conditional(struct Computed_field *field,
+	void *dummy_void)
+/*******************************************************************************
+LAST MODIFIED : 7 November 2000
+
+DESCRIPTION :
+List conditional function version of Computed_field_is_type_eigenvalues.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(Computed_field_is_type_eigenvalues_conditional);
+	USE_PARAMETER(dummy_void);
+	return_code = Computed_field_is_type_eigenvalues(field);
+	LEAVE;
+
+	return (return_code);
+} /* Computed_field_is_type_eigenvalues_conditional */
+
+static int Computed_field_eigenvalues_clear_type_specific(
+	struct Computed_field *field)
+/*******************************************************************************
+LAST MODIFIED : 7 November 2000
+
+DESCRIPTION :
+Clear the type specific data used by this type.
+==============================================================================*/
+{
+	int return_code;
+	struct Computed_field_eigenvalues_type_specific_data *data;
+
+	ENTER(Computed_field_eigenvalues_clear_type_specific);
+	if (field && (data = field->type_specific_data))
+	{
+		if (data->a)
+		{
+			DEALLOCATE(data->a);
+		}
+		if (data->d)
+		{
+			DEALLOCATE(data->d);
+		}
+		if (data->v)
+		{
+			DEALLOCATE(data->v);
+		}
+		DEALLOCATE(field->type_specific_data);
+		return_code = 1;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Computed_field_eigenvalues_clear_type_specific.  "
+			"Invalid argument(s)");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Computed_field_eigenvalues_clear_type_specific */
+
+static void *Computed_field_eigenvalues_copy_type_specific(
+	struct Computed_field *field)
+/*******************************************************************************
+LAST MODIFIED : 7 November 2000
+
+DESCRIPTION :
+Copy the type specific data used by this type.
+==============================================================================*/
+{
+	struct Computed_field_eigenvalues_type_specific_data *destination;
+
+	ENTER(Computed_field_eigenvalues_copy_type_specific);
+	if (field)
+	{
+		if (ALLOCATE(destination,
+			struct Computed_field_eigenvalues_type_specific_data, 1))
+		{
+			/* following arrays are allocated when field calculated, cleared when
+				 cache cleared */
+			destination->a = (double *)NULL;
+			destination->d = (double *)NULL;
+			destination->v = (double *)NULL;
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,
+				"Computed_field_eigenvalues_copy_type_specific.  "
+				"Unable to allocate memory");
+			destination = NULL;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Computed_field_eigenvalues_copy_type_specific.  Invalid argument(s)");
+		destination = NULL;
+	}
+	LEAVE;
+
+	return (destination);
+} /* Computed_field_eigenvalues_copy_type_specific */
+
+static int Computed_field_eigenvalues_clear_cache_type_specific(
+	struct Computed_field *field)
+/*******************************************************************************
+LAST MODIFIED : 7 November 2000
+
+DESCRIPTION :
+==============================================================================*/
+{
+	int return_code;
+	struct Computed_field_eigenvalues_type_specific_data *data;
+
+	ENTER(Computed_field_eigenvalues_clear_cache_type_specific);
+	if (field && (data = 
+		(struct Computed_field_eigenvalues_type_specific_data *)
+		field->type_specific_data))
+	{
+		if (data->a)
+		{
+			DEALLOCATE(data->a);
+		}
+		if (data->d)
+		{
+			DEALLOCATE(data->d);
+		}
+		if (data->v)
+		{
+			DEALLOCATE(data->v);
+		}
+		return_code = 1;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Computed_field_eigenvalues_clear_cache_type_specific.  "
+			"Invalid argument(s)");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Computed_field_eigenvalues_clear_cache_type_specific */
+
+static int Computed_field_eigenvalues_type_specific_contents_match(
+	struct Computed_field *field, struct Computed_field *other_computed_field)
+/*******************************************************************************
+LAST MODIFIED : 7 November 2000
+
+DESCRIPTION :
+Compare the type specific data
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(Computed_field_eigenvalues_type_specific_contents_match);
+	if (field && other_computed_field)
+	{
+		return_code = 1;
+	}
+	else
+	{
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Computed_field_eigenvalues_type_specific_contents_match */
+
+#define Computed_field_eigenvalues_is_defined_in_element \
+	Computed_field_default_is_defined_in_element
+/*******************************************************************************
+LAST MODIFIED : 7 November 2000
+
+DESCRIPTION :
+Check the source fields using the default.
+==============================================================================*/
+
+#define Computed_field_eigenvalues_is_defined_at_node \
+	Computed_field_default_is_defined_at_node
+/*******************************************************************************
+LAST MODIFIED : 7 November 2000
+
+DESCRIPTION :
+Check the source fields using the default.
+==============================================================================*/
+
+#define Computed_field_eigenvalues_has_numerical_components \
+	Computed_field_default_has_numerical_components
+/*******************************************************************************
+LAST MODIFIED : 7 November 2000
+
+DESCRIPTION :
+Window projection does have numerical components.
+==============================================================================*/
+
+#define Computed_field_eigenvalues_can_be_destroyed \
+	(Computed_field_can_be_destroyed_function)NULL
+/*******************************************************************************
+LAST MODIFIED : 7 November 2000
+
+DESCRIPTION :
+No special criteria on the destroy
+==============================================================================*/
+
+static int Computed_field_evaluate_eigenvalues(struct Computed_field *field)
+/*******************************************************************************
+LAST MODIFIED : 7 November 2000
+
+DESCRIPTION :
+Evaluates the eigenvalues and eigenvectors of the source field of <field> in
+double precision in the type_specific_data then copies the eigenvalues to the
+field->values.
+==============================================================================*/
+{
+	int i, matrix_size, n, nrot, return_code;
+	struct Computed_field *source_field;
+	struct Computed_field_eigenvalues_type_specific_data *data;
+	
+	ENTER(Computed_field_evaluate_eigenvalues);
+	if (field && (COMPUTED_FIELD_NEW_TYPES == field->type) &&
+		(field->type_string == computed_field_eigenvalues_type_string) &&
+		(data = (struct Computed_field_eigenvalues_type_specific_data *)
+			field->type_specific_data))
+	{
+		n = field->number_of_components;
+		matrix_size = n * n;
+		if ((data->a || ALLOCATE(data->a, double, matrix_size)) &&
+			(data->d || ALLOCATE(data->d, double, n)) &&
+			(data->v || ALLOCATE(data->v, double, matrix_size)))
+		{
+			source_field = field->source_fields[0];
+			for (i = 0; i < matrix_size; i++)
+			{
+				data->a[i] = (double)(source_field->values[i]);
+			}
+			if (!matrix_is_symmetric(n, data->a, 1.0E-6))
+			{
+				display_message(WARNING_MESSAGE,
+					"Eigenanalysis of field %s may be wrong as matrix not symmetric",
+					source_field->name);
+			}
+			if (Jacobi_eigenanalysis(n, data->a, data->d, data->v, &nrot))
+			{
+				/* d now contains the eigenvalues, v the eigenvectors in columns, while
+					 values of a above the main diagonal are destroyed */
+				/* copy the eigenvalues into the field->values */
+				for (i = 0; i < n; i++)
+				{
+					field->values[i] = (FE_value)(data->d[i]);
+				}
+				return_code = 1;
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE,
+					"Computed_field_evaluate_eigenvalues.  Eigenanalysis failed");
+				return_code=0;
+			}
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,
+				"Computed_field_evaluate_eigenvalues.  Could not allocate cache");
+			return_code=0;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Computed_field_evaluate_eigenvalues.  Invalid argument(s)");
+		return_code=0;
+	}
+
+	return (return_code);
+} /* Computed_field_evaluate_eigenvalues */
+
+static int Computed_field_eigenvalues_evaluate_cache_at_node(
+	struct Computed_field *field, struct FE_node *node)
+/*******************************************************************************
+LAST MODIFIED : 7 November 2000
+
+DESCRIPTION :
+Evaluate the fields cache at the node.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(Computed_field_eigenvalues_evaluate_cache_at_node);
+	if (field && node)
+	{
+		return_code =
+			Computed_field_evaluate_source_fields_cache_at_node(field, node) &&
+			Computed_field_evaluate_eigenvalues(field);
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Computed_field_eigenvalues_evaluate_cache_at_node.  "
+			"Invalid argument(s)");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Computed_field_eigenvalues_evaluate_cache_at_node */
+
+static int Computed_field_eigenvalues_evaluate_cache_in_element(
+	struct Computed_field *field, struct FE_element *element, FE_value *xi,
+	struct FE_element *top_level_element,int calculate_derivatives)
+/*******************************************************************************
+LAST MODIFIED : 7 November 2000
+
+DESCRIPTION :
+Evaluate the fields cache in the element.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(Computed_field_eigenvalues_evaluate_cache_in_element);
+	if (field && element && xi)
+	{
+		if (0 == calculate_derivatives)
+		{
+			field->derivatives_valid = 0;
+			return_code = Computed_field_evaluate_source_fields_cache_in_element(
+				field, element, xi, top_level_element, calculate_derivatives) &&
+				Computed_field_evaluate_eigenvalues(field);
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,
+				"Computed_field_eigenvalues_evaluate_cache_in_element.  "
+				"Cannot calculate derivatives of eigenvalues");
+			return_code = 0;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Computed_field_eigenvalues_evaluate_cache_in_element.  "
+			"Invalid argument(s)");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Computed_field_eigenvalues_evaluate_cache_in_element */
+
+#define Computed_field_eigenvalues_evaluate_as_string_at_node \
+	Computed_field_default_evaluate_as_string_at_node
+/*******************************************************************************
+LAST MODIFIED : 7 November 2000
+
+DESCRIPTION :
+Print the values calculated in the cache.
+==============================================================================*/
+
+#define Computed_field_eigenvalues_evaluate_as_string_in_element \
+	Computed_field_default_evaluate_as_string_in_element
+/*******************************************************************************
+LAST MODIFIED : 7 November 2000
+
+DESCRIPTION :
+Print the values calculated in the cache.
+==============================================================================*/
+
+#define Computed_field_eigenvalues_set_values_at_node \
+   (Computed_field_set_values_at_node_function)NULL
+/*******************************************************************************
+LAST MODIFIED : 7 November 2000
+
+DESCRIPTION :
+Not implemented yet.
+==============================================================================*/
+
+#define Computed_field_eigenvalues_set_values_in_element \
+   (Computed_field_set_values_in_element_function)NULL
+/*******************************************************************************
+LAST MODIFIED : 7 November 2000
+
+DESCRIPTION :
+Not implemented yet.
+==============================================================================*/
+
+#define Computed_field_eigenvalues_get_native_discretization_in_element \
+	Computed_field_default_get_native_discretization_in_element
+/*******************************************************************************
+LAST MODIFIED : 7 November 2000
+
+DESCRIPTION :
+Inherit result from first source field.
+==============================================================================*/
+
+#define Computed_field_eigenvalues_find_element_xi \
+   (Computed_field_find_element_xi_function)NULL
+/*******************************************************************************
+LAST MODIFIED : 7 November 2000
+
+DESCRIPTION :
+Not implemented yet.
+==============================================================================*/
+
+static int list_Computed_field_eigenvalues(struct Computed_field *field)
+/*******************************************************************************
+LAST MODIFIED : 7 November 2000
+
+DESCRIPTION :
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(List_Computed_field_eigenvalues);
+	if (field)
+	{
+		display_message(INFORMATION_MESSAGE,"    source field : %s\n",
+			field->source_fields[0]->name);
+		return_code = 1;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"list_Computed_field_eigenvalues.  Invalid argument(s)");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* list_Computed_field_eigenvalues */
+
+static int list_Computed_field_eigenvalues_commands(
+	struct Computed_field *field)
+/*******************************************************************************
+LAST MODIFIED : 7 November 2000
+
+DESCRIPTION :
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(list_Computed_field_eigenvalues_commands);
+	if (field)
+	{
+		display_message(INFORMATION_MESSAGE," field %s",
+			field->source_fields[0]->name);
+		return_code = 1;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"list_Computed_field_eigenvalues_commands.  Invalid argument(s)");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* list_Computed_field_eigenvalues_commands */
+
+int Computed_field_set_type_eigenvalues(struct Computed_field *field,
+	struct Computed_field *source_field)
+/*******************************************************************************
+LAST MODIFIED : 7 November 2000
+
+DESCRIPTION :
+Converts <field> to type 'eigenvalues' which performs a full eigenanalysis on
+the symmetric matrix in <source_field> and returns the n eigenvalues, where
+<source_field> must have n x n components.
+If function fails, field is guaranteed to be unchanged from its original state,
+although its cache may be lost.
+==============================================================================*/
+{
+	int matrix_size, n, number_of_source_fields, return_code;
+	struct Computed_field **source_fields;
+	struct Computed_field_eigenvalues_type_specific_data *data;
+
+	ENTER(Computed_field_set_type_eigenvalues);
+	if (field && source_field)
+	{
+		matrix_size = source_field->number_of_components;
+		n = 1;
+		while (n * n < matrix_size)
+		{
+			n++;
+		}
+		if (n * n == matrix_size)
+		{
+			/* 1. make dynamic allocations for any new type-specific data */
+			number_of_source_fields = 1;
+			if (ALLOCATE(source_fields,struct Computed_field *,
+				number_of_source_fields) && ALLOCATE(data,
+					struct Computed_field_eigenvalues_type_specific_data,1))
+			{
+				/* 2. free current type-specific data */
+				Computed_field_clear_type(field);
+				/* 3. establish the new type */
+				field->type = COMPUTED_FIELD_NEW_TYPES;
+				field->type_string = computed_field_eigenvalues_type_string;
+				field->number_of_components = n;
+				source_fields[0] = ACCESS(Computed_field)(source_field);
+				field->source_fields = source_fields;
+				field->number_of_source_fields = number_of_source_fields;
+				data->a = (double *)NULL;
+				data->d = (double *)NULL;
+				data->v = (double *)NULL;
+				field->type_specific_data = (void *)data;
+
+				/* Set all the methods */
+				field->computed_field_clear_type_specific_function =
+					Computed_field_eigenvalues_clear_type_specific;
+				field->computed_field_copy_type_specific_function =
+					Computed_field_eigenvalues_copy_type_specific;
+				field->computed_field_clear_cache_type_specific_function =
+					Computed_field_eigenvalues_clear_cache_type_specific;
+				field->computed_field_type_specific_contents_match_function =
+					Computed_field_eigenvalues_type_specific_contents_match;
+				field->computed_field_is_defined_in_element_function =
+					Computed_field_eigenvalues_is_defined_in_element;
+				field->computed_field_is_defined_at_node_function =
+					Computed_field_eigenvalues_is_defined_at_node;
+				field->computed_field_has_numerical_components_function =
+					Computed_field_eigenvalues_has_numerical_components;
+				field->computed_field_evaluate_cache_at_node_function =
+					Computed_field_eigenvalues_evaluate_cache_at_node;
+				field->computed_field_evaluate_cache_in_element_function =
+					Computed_field_eigenvalues_evaluate_cache_in_element;
+				field->computed_field_evaluate_as_string_at_node_function =
+					Computed_field_eigenvalues_evaluate_as_string_at_node;
+				field->computed_field_evaluate_as_string_in_element_function =
+					Computed_field_eigenvalues_evaluate_as_string_in_element;
+				field->computed_field_set_values_at_node_function =
+					Computed_field_eigenvalues_set_values_at_node;
+				field->computed_field_set_values_in_element_function =
+					Computed_field_eigenvalues_set_values_in_element;
+				field->computed_field_get_native_discretization_in_element_function =
+					Computed_field_eigenvalues_get_native_discretization_in_element;
+				field->computed_field_find_element_xi_function =
+					Computed_field_eigenvalues_find_element_xi;
+				field->list_Computed_field_function = 
+					list_Computed_field_eigenvalues;
+				field->list_Computed_field_commands_function = 
+					list_Computed_field_eigenvalues_commands;
+				return_code=1;
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE,
+					"Computed_field_set_type_eigenvalues.  Not enough memory");
+				DEALLOCATE(source_fields);
+				return_code=0;
+			}
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,"Computed_field_set_type_eigenvalues.  "
+				"Field %s cannot hold a square matrix",source_field->name);
+			return_code = 0;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Computed_field_set_type_eigenvalues.  Invalid argument(s)");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Computed_field_set_type_eigenvalues */
+
+int Computed_field_get_type_eigenvalues(struct Computed_field *field,
+	struct Computed_field **source_field)
+/*******************************************************************************
+LAST MODIFIED : 7 November 2000
+
+DESCRIPTION :
+If the field is of type 'eigenvalues', the <source_field> it calculates the
+eigenvalues of is returned.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(Computed_field_get_type_eigenvalues);
+	if (field && (COMPUTED_FIELD_NEW_TYPES == field->type) &&
+		(field->type_string == computed_field_eigenvalues_type_string) &&
+		source_field)
+	{
+		*source_field = field->source_fields[0];
+		return_code = 1;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Computed_field_get_type_eigenvalues.  Invalid argument(s)");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Computed_field_get_type_eigenvalues */
+
+static int define_Computed_field_type_eigenvalues(struct Parse_state *state,
+	void *field_void, void *computed_field_matrix_operations_package_void)
+/*******************************************************************************
+LAST MODIFIED : 7 November 2000
+
+DESCRIPTION :
+Converts <field> into type 'eigenvalues' (if it is not already) and allows its
+contents to be modified.
+==============================================================================*/
+{
+	int return_code;
+	struct Computed_field *field, *source_field;
+	struct Computed_field_matrix_operations_package 
+		*computed_field_matrix_operations_package;
+	struct Option_table *option_table;
+	struct Set_Computed_field_conditional_data set_source_field_data;
+
+	ENTER(define_Computed_field_type_eigenvalues);
+	if (state && (field = (struct Computed_field *)field_void) &&
+		(computed_field_matrix_operations_package=
+			(struct Computed_field_matrix_operations_package *)
+			computed_field_matrix_operations_package_void))
+	{
+		return_code=1;
+		source_field = (struct Computed_field *)NULL;
+		if (computed_field_eigenvalues_type_string ==
+			Computed_field_get_type_string(field))
+		{
+			return_code = Computed_field_get_type_eigenvalues(field, &source_field);
+		}
+		if (return_code)
+		{
+			if (source_field)
+			{
+				ACCESS(Computed_field)(source_field);
+			}
+			option_table = CREATE(Option_table)();
+			set_source_field_data.conditional_function =
+				Computed_field_has_numerical_components;
+			set_source_field_data.conditional_function_user_data = (void *)NULL;
+			set_source_field_data.computed_field_manager =
+				computed_field_matrix_operations_package->computed_field_manager;
+			Option_table_add_entry(option_table, "field", &source_field,
+				&set_source_field_data, set_Computed_field_conditional);
+			return_code = Option_table_multi_parse(option_table, state) &&
+				Computed_field_set_type_eigenvalues(field, source_field);
+			DESTROY(Option_table)(&option_table);
+			if (source_field)
+			{
+				DEACCESS(Computed_field)(&source_field);
+			}
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"define_Computed_field_type_eigenvalues.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* define_Computed_field_type_eigenvalues */
+
+static char computed_field_eigenvectors_type_string[] = "eigenvectors";
+
+int Computed_field_is_type_eigenvectors(struct Computed_field *field)
+/*******************************************************************************
+LAST MODIFIED : 7 November 2000
+
+DESCRIPTION :
+Compare the type specific data
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(Computed_field_is_type_eigenvectors);
+	if (field)
+	{
+		return_code =
+			(field->type_string == computed_field_eigenvectors_type_string);
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Computed_field_is_type_eigenvectors.  Missing field");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Computed_field_is_type_eigenvectors */
+
+static int Computed_field_eigenvectors_clear_type_specific(
+	struct Computed_field *field)
+/*******************************************************************************
+LAST MODIFIED : 7 November 2000
+
+DESCRIPTION :
+Clear the type specific data used by this type.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(Computed_field_eigenvectors_clear_type_specific);
+	if (field)
+	{
+		return_code = 1;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Computed_field_eigenvectors_clear_type_specific.  Invalid argument(s)");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Computed_field_eigenvectors_clear_type_specific */
+
+static void *Computed_field_eigenvectors_copy_type_specific(
+	struct Computed_field *field)
+/*******************************************************************************
+LAST MODIFIED : 7 November 2000
+
+DESCRIPTION :
+Copy the type specific data used by this type.
+==============================================================================*/
+{
+	void *destination;
+
+	ENTER(Computed_field_eigenvectors_copy_type_specific);
+	if (field)
+	{
+		/* Return a TRUE value */
+		destination = (void *)1;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Computed_field_eigenvectors_copy_type_specific.  Invalid argument(s)");
+		destination = NULL;
+	}
+	LEAVE;
+
+	return (destination);
+} /* Computed_field_eigenvectors_copy_type_specific */
+
+#define Computed_field_eigenvectors_clear_cache_type_specific \
+   (Computed_field_clear_cache_type_specific_function)NULL
+/*******************************************************************************
+LAST MODIFIED : 7 November 2000
+
+DESCRIPTION :
+This function is not needed for this type.
+==============================================================================*/
+
+static int Computed_field_eigenvectors_type_specific_contents_match(
+	struct Computed_field *field, struct Computed_field *other_computed_field)
+/*******************************************************************************
+LAST MODIFIED : 7 November 2000
+
+DESCRIPTION :
+Compare the type specific data
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(Computed_field_vector_operations_type_specific_contents_match);
+	if (field && other_computed_field)
+	{
+		return_code = 1;
+	}
+	else
+	{
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Computed_field_vector_operations_type_specific_contents_match */
+
+#define Computed_field_eigenvectors_is_defined_in_element \
+	Computed_field_default_is_defined_in_element
+/*******************************************************************************
+LAST MODIFIED : 7 November 2000
+
+DESCRIPTION :
+Check the source fields using the default.
+==============================================================================*/
+
+#define Computed_field_eigenvectors_is_defined_at_node \
+	Computed_field_default_is_defined_at_node
+/*******************************************************************************
+LAST MODIFIED : 7 November 2000
+
+DESCRIPTION :
+Check the source fields using the default.
+==============================================================================*/
+
+#define Computed_field_eigenvectors_has_numerical_components \
+	Computed_field_default_has_numerical_components
+/*******************************************************************************
+LAST MODIFIED : 7 November 2000
+
+DESCRIPTION :
+Window projection does have numerical components.
+==============================================================================*/
+
+#define Computed_field_eigenvectors_can_be_destroyed \
+	(Computed_field_can_be_destroyed_function)NULL
+/*******************************************************************************
+LAST MODIFIED : 17 July 2000
+
+DESCRIPTION :
+No special criteria on the destroy
+==============================================================================*/
+
+static int Computed_field_evaluate_eigenvectors(struct Computed_field *field)
+/*******************************************************************************
+LAST MODIFIED : 7 November 2000
+
+DESCRIPTION :
+Extracts the eigenvectors out of the source eigenvalues field.
+Note the source field should already have been evaluated.
+==============================================================================*/
+{
+	double *v;
+	int i, j, n, return_code;
+	struct Computed_field *source_field;
+	struct Computed_field_eigenvalues_type_specific_data *data;
+	
+	ENTER(Computed_field_evaluate_eigenvectors);
+	if (field && (COMPUTED_FIELD_NEW_TYPES == field->type) &&
+		(field->type_string == computed_field_eigenvectors_type_string))
+	{
+		source_field = field->source_fields[0];
+		if (Computed_field_is_type_eigenvalues(source_field) &&
+			(data = (struct Computed_field_eigenvalues_type_specific_data *)
+				source_field->type_specific_data))
+		{
+			if (v = data->v)
+			{
+				n = source_field->number_of_components;
+				/* return the vectors across the rows of the field values */
+				for (i = 0; i < n; i++)
+				{
+					for (j = 0; j < n; j++)
+					{
+						field->values[i*n + j] = (FE_value)(v[j*n + i]);
+					}
+				}
+				return_code = 1;
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE,
+					"Computed_field_evaluate_eigenvectors.  Missing eigenvalues cache");
+				return_code=0;
+			}
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,"Computed_field_evaluate_eigenvectors.  "
+				"Source field is not an eigenvalues field");
+			return_code=0;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Computed_field_evaluate_eigenvectors.  Invalid argument(s)");
+		return_code=0;
+	}
+
+	return (return_code);
+} /* Computed_field_evaluate_eigenvectors */
+
+static int Computed_field_eigenvectors_evaluate_cache_at_node(
+	struct Computed_field *field, struct FE_node *node)
+/*******************************************************************************
+LAST MODIFIED : 7 November 2000
+
+DESCRIPTION :
+Evaluate the fields cache at the node.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(Computed_field_eigenvectors_evaluate_cache_at_node);
+	if (field && node)
+	{
+		return_code =
+			Computed_field_evaluate_source_fields_cache_at_node(field, node) &&
+			Computed_field_evaluate_eigenvectors(field);
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Computed_field_eigenvectors_evaluate_cache_at_node.  "
+			"Invalid argument(s)");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Computed_field_eigenvectors_evaluate_cache_at_node */
+
+static int Computed_field_eigenvectors_evaluate_cache_in_element(
+	struct Computed_field *field, struct FE_element *element, FE_value *xi,
+	struct FE_element *top_level_element,int calculate_derivatives)
+/*******************************************************************************
+LAST MODIFIED : 7 November 2000
+
+DESCRIPTION :
+Evaluate the fields cache at the node.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(Computed_field_eigenvectors_evaluate_cache_in_element);
+	if (field && element && xi)
+	{
+		if (0 == calculate_derivatives)
+		{
+			field->derivatives_valid = 0;
+			return_code = 
+				Computed_field_evaluate_source_fields_cache_in_element(field, element,
+					xi, top_level_element, calculate_derivatives) &&
+				Computed_field_evaluate_eigenvectors(field);
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,
+				"Computed_field_eigenvectors_evaluate_cache_in_element.  "
+				"Cannot calculate derivatives of eigenvectors");
+			return_code = 0;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Computed_field_eigenvectors_evaluate_cache_in_element.  "
+			"Invalid argument(s)");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Computed_field_eigenvectors_evaluate_cache_in_element */
+
+#define Computed_field_eigenvectors_evaluate_as_string_at_node \
+	Computed_field_default_evaluate_as_string_at_node
+/*******************************************************************************
+LAST MODIFIED : 7 November 2000
+
+DESCRIPTION :
+Print the values calculated in the cache.
+==============================================================================*/
+
+#define Computed_field_eigenvectors_evaluate_as_string_in_element \
+	Computed_field_default_evaluate_as_string_in_element
+/*******************************************************************************
+LAST MODIFIED : 7 November 2000
+
+DESCRIPTION :
+Print the values calculated in the cache.
+==============================================================================*/
+
+#define Computed_field_eigenvectors_set_values_at_node \
+   (Computed_field_set_values_at_node_function)NULL
+/*******************************************************************************
+LAST MODIFIED : 7 November 2000
+
+DESCRIPTION :
+Not implemented yet.
+==============================================================================*/
+
+#define Computed_field_eigenvectors_set_values_in_element \
+   (Computed_field_set_values_in_element_function)NULL
+/*******************************************************************************
+LAST MODIFIED : 7 November 2000
+
+DESCRIPTION :
+Not implemented yet.
+==============================================================================*/
+
+#define Computed_field_eigenvectors_get_native_discretization_in_element \
+	Computed_field_default_get_native_discretization_in_element
+/*******************************************************************************
+LAST MODIFIED : 7 November 2000
+
+DESCRIPTION :
+Inherit result from first source field.
+==============================================================================*/
+
+#define Computed_field_eigenvectors_find_element_xi \
+   (Computed_field_find_element_xi_function)NULL
+/*******************************************************************************
+LAST MODIFIED : 7 November 2000
+
+DESCRIPTION :
+Not implemented yet.
+==============================================================================*/
+
+static int list_Computed_field_eigenvectors(
+	struct Computed_field *field)
+/*******************************************************************************
+LAST MODIFIED : 7 November 2000
+
+DESCRIPTION :
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(List_Computed_field_eigenvectors);
+	if (field)
+	{
+		display_message(INFORMATION_MESSAGE,
+			"    eigenvalues field : %s\n",field->source_fields[0]->name);
+		return_code = 1;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"list_Computed_field_eigenvectors.  Invalid argument(s)");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* list_Computed_field_eigenvectors */
+
+static int list_Computed_field_eigenvectors_commands(
+	struct Computed_field *field)
+/*******************************************************************************
+LAST MODIFIED : 7 November 2000
+
+DESCRIPTION :
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(list_Computed_field_eigenvectors_commands);
+	if (field)
+	{
+		display_message(INFORMATION_MESSAGE,
+			" eigenvalues %s",field->source_fields[0]->name);
+		return_code = 1;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"list_Computed_field_eigenvectors_commands.  Invalid argument(s)");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* list_Computed_field_eigenvectors_commands */
+
+int Computed_field_set_type_eigenvectors(struct Computed_field *field,
+	struct Computed_field *eigenvalues_field)
+/*******************************************************************************
+LAST MODIFIED : 7 November 2000
+
+DESCRIPTION :
+Converts <field> to type 'eigenvectors' extracting the eigenvectors out of the
+source <eigenvalues_field>. Sets the number of components equal to n x n, where
+n is the number of components in the <eigenvalues_field>.
+If function fails, field is guaranteed to be unchanged from its original state,
+although its cache may be lost.
+==============================================================================*/
+{
+	int n, number_of_source_fields, return_code;
+	struct Computed_field **source_fields;
+
+	ENTER(Computed_field_set_type_eigenvectors);
+	if (field && eigenvalues_field)
+	{
+		if (Computed_field_is_type_eigenvalues(eigenvalues_field))
+		{
+			/* 1. make dynamic allocations for any new type-specific data */
+			number_of_source_fields = 1;
+			if (ALLOCATE(source_fields, struct Computed_field *,
+				number_of_source_fields))
+			{
+				/* 2. free current type-specific data */
+				Computed_field_clear_type(field);
+				/* 3. establish the new type */
+				field->type = COMPUTED_FIELD_NEW_TYPES;
+				field->type_string = computed_field_eigenvectors_type_string;
+				n = eigenvalues_field->number_of_components;
+				field->number_of_components = n * n;
+				source_fields[0] = ACCESS(Computed_field)(eigenvalues_field);
+				field->source_fields = source_fields;
+				field->number_of_source_fields = number_of_source_fields;			
+				field->type_specific_data = (void *)1;
+
+				/* Set all the methods */
+				field->computed_field_clear_type_specific_function =
+					Computed_field_eigenvectors_clear_type_specific;
+				field->computed_field_copy_type_specific_function =
+					Computed_field_eigenvectors_copy_type_specific;
+				field->computed_field_clear_cache_type_specific_function =
+					Computed_field_eigenvectors_clear_cache_type_specific;
+				field->computed_field_type_specific_contents_match_function =
+					Computed_field_eigenvectors_type_specific_contents_match;
+				field->computed_field_is_defined_in_element_function =
+					Computed_field_eigenvectors_is_defined_in_element;
+				field->computed_field_is_defined_at_node_function =
+					Computed_field_eigenvectors_is_defined_at_node;
+				field->computed_field_has_numerical_components_function =
+					Computed_field_eigenvectors_has_numerical_components;
+				field->computed_field_can_be_destroyed_function =
+					Computed_field_eigenvectors_can_be_destroyed;
+				field->computed_field_evaluate_cache_at_node_function =
+					Computed_field_eigenvectors_evaluate_cache_at_node;
+				field->computed_field_evaluate_cache_in_element_function =
+					Computed_field_eigenvectors_evaluate_cache_in_element;
+				field->computed_field_evaluate_as_string_at_node_function =
+					Computed_field_eigenvectors_evaluate_as_string_at_node;
+				field->computed_field_evaluate_as_string_in_element_function =
+					Computed_field_eigenvectors_evaluate_as_string_in_element;
+				field->computed_field_set_values_at_node_function =
+					Computed_field_eigenvectors_set_values_at_node;
+				field->computed_field_set_values_in_element_function =
+					Computed_field_eigenvectors_set_values_in_element;
+				field->computed_field_get_native_discretization_in_element_function =
+					Computed_field_eigenvectors_get_native_discretization_in_element;
+				field->computed_field_find_element_xi_function =
+					Computed_field_eigenvectors_find_element_xi;
+				field->list_Computed_field_function = 
+					list_Computed_field_eigenvectors;
+				field->list_Computed_field_commands_function = 
+					list_Computed_field_eigenvectors_commands;
+				return_code = 1;
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE,
+					"Computed_field_set_type_eigenvectors.  Not enough memory");
+				return_code = 0;
+			}
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,"Computed_field_set_type_eigenvectors.  "
+				"Must be given an eigenvalues source field");
+			return_code = 0;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Computed_field_set_type_eigenvectors.  Invalid argument(s)");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Computed_field_set_type_eigenvectors */
+
+int Computed_field_get_type_eigenvectors(struct Computed_field *field,
+	struct Computed_field **eigenvalues_field)
+/*******************************************************************************
+LAST MODIFIED : 7 November 2000
+
+DESCRIPTION :
+If the field is of type 'eigenvectors', the <eigenvalues_field> used by it is
+returned.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(Computed_field_get_type_eigenvectors);
+	if (field && (COMPUTED_FIELD_NEW_TYPES==field->type) &&
+		(field->type_string == computed_field_eigenvectors_type_string) &&
+		eigenvalues_field)
+	{
+		*eigenvalues_field = field->source_fields[0];
+		return_code = 1;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Computed_field_get_type_eigenvectors.  Invalid argument(s)");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Computed_field_get_type_eigenvectors */
+
+static int define_Computed_field_type_eigenvectors(struct Parse_state *state,
+	void *field_void,void *computed_field_matrix_operations_package_void)
+/*******************************************************************************
+LAST MODIFIED : 7 November 2000
+
+DESCRIPTION :
+Converts <field> into type 'eigenvectors' (if it is not  already) and allows
+its contents to be modified.
+==============================================================================*/
+{
+	int return_code;
+	struct Computed_field *field, *source_field;
+	struct Computed_field_matrix_operations_package 
+		*computed_field_matrix_operations_package;
+	struct Option_table *option_table;
+	struct Set_Computed_field_conditional_data set_source_field_data;
+
+	ENTER(define_Computed_field_type_eigenvectors);
+	if (state&&(field=(struct Computed_field *)field_void)&&
+		(computed_field_matrix_operations_package=
+		(struct Computed_field_matrix_operations_package *)
+		computed_field_matrix_operations_package_void))
+	{
+		return_code=1;
+		/* get valid parameters for projection field */
+		source_field = (struct Computed_field *)NULL;
+		if (computed_field_eigenvectors_type_string ==
+			Computed_field_get_type_string(field))
+		{
+			return_code=Computed_field_get_type_eigenvectors(field, &source_field);
+		}
+		if (return_code)
+		{
+			/* must access objects for set functions */
+			if (source_field)
+			{
+				ACCESS(Computed_field)(source_field);
+			}
+			option_table = CREATE(Option_table)();
+			/* field */
+			set_source_field_data.computed_field_manager =
+				computed_field_matrix_operations_package->computed_field_manager;
+			set_source_field_data.conditional_function =
+				Computed_field_is_type_eigenvalues_conditional;
+			set_source_field_data.conditional_function_user_data = (void *)NULL;
+			Option_table_add_entry(option_table, "eigenvalues", &source_field,
+				&set_source_field_data, set_Computed_field_conditional);
+			return_code = Option_table_multi_parse(option_table,state) &&
+				Computed_field_set_type_eigenvectors(field, source_field);
+			if (source_field)
+			{
+				DEACCESS(Computed_field)(&source_field);
+			}
+			DESTROY(Option_table)(&option_table);
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"define_Computed_field_type_eigenvectors.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* define_Computed_field_type_eigenvectors */
 
 struct Computed_field_matrix_multiply_type_specific_data
 /*******************************************************************************
@@ -2340,7 +3643,7 @@ already) and allows its contents to be modified.
 int Computed_field_register_types_matrix_operations(
 	struct Computed_field_package *computed_field_package)
 /*******************************************************************************
-LAST MODIFIED : 26 October 2000
+LAST MODIFIED : 7 November 2000
 
 DESCRIPTION :
 ==============================================================================*/
@@ -2355,6 +3658,14 @@ DESCRIPTION :
 		computed_field_matrix_operations_package.computed_field_manager =
 			Computed_field_package_get_computed_field_manager(
 				computed_field_package);
+		return_code = Computed_field_package_add_type(computed_field_package,
+			computed_field_eigenvalues_type_string,
+			define_Computed_field_type_eigenvalues,
+			&computed_field_matrix_operations_package);
+		return_code = Computed_field_package_add_type(computed_field_package,
+			computed_field_eigenvectors_type_string,
+			define_Computed_field_type_eigenvectors,
+			&computed_field_matrix_operations_package);
 		return_code = Computed_field_package_add_type(computed_field_package,
 			computed_field_matrix_multiply_type_string,
 			define_Computed_field_type_matrix_multiply,
@@ -2378,3 +3689,4 @@ DESCRIPTION :
 
 	return (return_code);
 } /* Computed_field_register_types_matrix_operations */
+
