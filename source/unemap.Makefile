@@ -394,7 +394,7 @@ endif # $(USER_INTERFACE) == GTK_USER_INTERFACE
 ifeq ($(SYSNAME:IRIX%=),)
 MATRIX_LIB = -lscs
 else # ($(SYSNAME:IRIX%=),)
-MATRIX_INC = -L$(CMISS_ROOT)/linear_solvers/lib/$(LIB_ARCH_DIR) -llapack-debug -lblas-debug
+MATRIX_LIB = -L$(CMISS_ROOT)/linear_solvers/lib/$(LIB_ARCH_DIR) -llapack-debug -lblas-debug
 endif # ($(SYSNAME:IRIX%=),)
 
 
