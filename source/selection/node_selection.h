@@ -126,6 +126,15 @@ newly_unselected_node_list if it is currently there.
 Calls FE_node_selection_update.
 ==============================================================================*/
 
+int FE_node_select_in_FE_node_selection(struct FE_node *node,
+	void *node_selection_void);
+/*******************************************************************************
+LAST MODIFIED : 28 April 2000
+
+DESCRIPTION :
+FE_node iterator version of FE_node_selection_select_node.
+==============================================================================*/
+
 int FE_node_selection_unselect_node(struct FE_node_selection *node_selection,
 	struct FE_node *node);
 /*******************************************************************************
