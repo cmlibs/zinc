@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : computed_field_finite_element.h
 
-LAST MODIFIED : 17 July 2000
+LAST MODIFIED : 25 July 2000
 
 DESCRIPTION :
 Implements computed fields which interface to finite element fields.
@@ -9,6 +9,10 @@ Implements computed fields which interface to finite element fields.
 #if !defined (COMPUTED_FIELD_FINITE_ELEMENT_H)
 #define COMPUTED_FIELD_FINITE_ELEMENT_H
 
+/*
+Global types
+------------
+*/
 struct Computed_field_finite_element_package;
 /*******************************************************************************
 LAST MODIFIED : 18 July 2000
@@ -17,8 +21,12 @@ DESCRIPTION :
 Private package
 ==============================================================================*/
 
+/*
+Global functions
+----------------
+*/
 struct Computed_field_finite_element_package *
-Computed_field_register_types_finite_element(
+	Computed_field_register_types_finite_element(
 	struct Computed_field_package *computed_field_package,
 	struct MANAGER(FE_field) *fe_field_manager);
 /*******************************************************************************
@@ -75,11 +83,50 @@ LAST MODIFIED : 18 July 2000
 DESCRIPTION :
 ==============================================================================*/
 
+int Computed_field_set_type_default_coordinate(struct Computed_field *field,
+	struct MANAGER(Computed_field) *computed_field_manager);
+/*******************************************************************************
+LAST MODIFIED : 18 July 2000
+
+DESCRIPTION :
+Converts <field> to type COMPUTED_FIELD_DEFAULT_COORDINATE, which returns the
+values/derivatives of the first [coordinate] field defined for the element/node
+in rectangular cartesian coordinates. This type is intended to replace the
+NULL coordinate_field option in the calculate_FE_element_field_values function.
+When a field of this type is calculated at and element/node, the evaluate
+function finds the first FE_field (coordinate type) defined over it, then gets
+its Computed_field wrapper from the manager and proceeds from there.
+Consequences of this behaviour are:
+- the field allocates its source_fields to point to the computed_field for the
+actual coordinate field in the evaluate phase.
+- when the source field changes the current one's cache is cleared and it is
+deaccessed.
+- when the cache is cleared, so is any reference to the source_field.
+- always performs the conversion to RC since cannot predict the coordinate
+system used by the eventual source_field. Coordinate_system of this type of
+field need not be RC, although it usually will be.
+Sets number of components to 3.
+If function fails, field is guaranteed to be unchanged from its original state,
+although its cache may be lost.
+==============================================================================*/
+
 int Computed_field_is_type_cmiss_number(struct Computed_field *field);
 /*******************************************************************************
 LAST MODIFIED : 18 July 2000
 
 DESCRIPTION :
+==============================================================================*/
+
+int Computed_field_set_type_cmiss_number(struct Computed_field *field);
+/*******************************************************************************
+LAST MODIFIED : 20 July 2000
+
+DESCRIPTION :
+Converts <field> to type COMPUTED_FIELD_CMISS_NUMBER with the supplied
+fields, <source_field_one> and <source_field_two>.  Sets the number of 
+components equal to the source_fields.
+If function fails, field is guaranteed to be unchanged from its original state,
+although its cache may be lost.
 ==============================================================================*/
 
 int Computed_field_is_read_only_with_fe_field(
@@ -139,5 +186,34 @@ LAST MODIFIED : 17 May 2000
 
 DESCRIPTION :
 Given <fe_field>, destroys the associated computed field, and fe_field
+==============================================================================*/
+
+int Computed_field_set_type_node_array_value_at_time(
+	struct Computed_field *field,struct FE_field *fe_field,
+	enum FE_nodal_value_type nodal_value_type,int version_number,
+	struct Computed_field *time_field);
+/*******************************************************************************
+LAST MODIFIED : 20 July 2000
+
+DESCRIPTION :
+Converts <field> to type COMPUTED_FIELD_NODE_ARRAY_VALUE_AT_TIME, returning the
+values for the given <nodal_value_type> and <version_number> of <fe_field> at a
+node.  Makes the number of components the same as in the <fe_field>.  Field
+automatically takes the coordinate system of the source fe_field. See note at
+start of this file about changing use of coordinate systems.  If function fails,
+field is guaranteed to be unchanged from its original state, although its cache
+may be lost.
+==============================================================================*/
+
+int Computed_field_set_type_xi_coordinates(struct Computed_field *field);
+/*******************************************************************************
+LAST MODIFIED : 20 July 2000
+
+DESCRIPTION :
+Converts <field> to type COMPUTED_FIELD_XI_COORDINATES with the supplied
+fields, <source_field_one> and <source_field_two>.  Sets the number of 
+components equal to the source_fields.
+If function fails, field is guaranteed to be unchanged from its original state,
+although its cache may be lost.
 ==============================================================================*/
 #endif /* !defined (COMPUTED_FIELD_FINITE_ELEMENT_H) */

@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : computed_field_finite_element.c
 
-LAST MODIFIED : 20 July 2000
+LAST MODIFIED : 26 July 2000
 
 DESCRIPTION :
 Implements a number of basic component wise operations on computed fields.
@@ -16,45 +16,122 @@ Implements a number of basic component wise operations on computed fields.
 #include "user_interface/message.h"
 #include "computed_field/computed_field_finite_element.h"
 
-struct Computed_field_finite_element_package 
-{
-	struct MANAGER(Computed_field) *computed_field_manager;
-	struct MANAGER(FE_field) *fe_field_manager;
-	void *fe_field_manager_callback_id;
-};
-
-struct Computed_field_finite_element_type_specific_data
-{
-	struct FE_field *fe_field;
-	struct FE_element_field_values *fe_element_field_values;
-};
-
-static char computed_field_finite_element_type_string[] = "finite_element";
-
-int Computed_field_is_type_finite_element(struct Computed_field *field)
+/*
+Global types
+------------
+*/
+struct Computed_field_finite_element_package
 /*******************************************************************************
 LAST MODIFIED : 18 July 2000
 
 DESCRIPTION :
 ==============================================================================*/
 {
-	int return_code;
+	struct MANAGER(Computed_field) *computed_field_manager;
+	struct MANAGER(FE_field) *fe_field_manager;
+	void *fe_field_manager_callback_id;
+}; /* struct Computed_field_finite_element_package */
 
-	ENTER(Computed_field_is_type_finite_element);
-	if (field)
-	{
-		return_code = (field->type_string == computed_field_finite_element_type_string);
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_is_type_finite_element.  Missing field");
-		return_code=0;
-	}
+/*
+Module types
+------------
+*/
+struct Computed_field_finite_element_type_specific_data
+/*******************************************************************************
+LAST MODIFIED : 18 July 2000
 
-	return (return_code);
-} /* Computed_field_is_type_finite_element */
+DESCRIPTION :
+==============================================================================*/
+{
+	struct FE_field *fe_field;
+	struct FE_element_field_values *fe_element_field_values;
+}; /* struct Computed_field_finite_element_type_specific_data */
 
+struct Computed_field_default_coordinates_type_specific_data
+/*******************************************************************************
+LAST MODIFIED : 18 July 2000
+
+DESCRIPTION :
+==============================================================================*/
+{
+	struct MANAGER(Computed_field) *computed_field_manager;
+}; /* struct Computed_field_default_coordinates_type_specific_data */
+
+/*******************************************************************************
+COMPUTED_FIELD_TYPE: node_array_value_at_time
+
+LAST MODIFIED : 20 July 2000
+
+DESCRIPTION :
+Returns the values for the given <nodal_value_type> and <version_number>
+of <fe_field> at a node.
+Makes the number of components the same as in the <fe_field>.
+==============================================================================*/
+
+struct Computed_field_node_value_type_specific_data
+/*******************************************************************************
+LAST MODIFIED : 18 July 2000
+
+DESCRIPTION :
+==============================================================================*/
+{
+	struct FE_field *fe_field;
+	enum FE_nodal_value_type nodal_value_type;
+	int version_number;
+}; /* struct Computed_field_node_value_type_specific_data */
+
+/*******************************************************************************
+COMPUTED_FIELD_TYPE: node_array_value_at_time
+
+LAST MODIFIED : 20 July 2000
+
+DESCRIPTION :
+Returns the values for the given <nodal_value_type> and <version_number> 
+of <fe_field> at a node.
+Makes the number of components the same as in the <fe_field>.
+==============================================================================*/
+
+struct Computed_field_node_array_value_at_time_type_specific_data
+{
+	struct FE_field *fe_field;
+	enum FE_nodal_value_type nodal_value_type;
+	int version_number;
+};
+
+/*******************************************************************************
+COMPUTED_FIELD_TYPE: embedded
+
+LAST MODIFIED : 20 July 2000
+
+DESCRIPTION :
+Returns the values for the given <nodal_value_type> and <version_number> 
+of <fe_field> at a node.
+Makes the number of components the same as in the <fe_field>.
+==============================================================================*/
+
+struct Computed_field_embedded_type_specific_data
+{
+	struct FE_field *fe_field;
+	struct FE_element_field_values *fe_element_field_values;
+};
+
+/*
+Module constants
+----------------
+*/
+static char computed_field_finite_element_type_string[]="finite_element";
+static char computed_field_default_coordinate_type_string[]=
+	"default_coordinate";
+static char computed_field_cmiss_number_type_string[]="cmiss_number";
+static char computed_field_node_value_type_string[]="node_value";
+static char computed_field_node_array_value_at_time_type_string[]=
+	"node_array_value_at_time";
+static char computed_field_embedded_type_string[]="embedded";
+
+/*
+Module functions
+----------------
+*/
 static int Computed_field_finite_element_clear_type_specific(
 	struct Computed_field *field)
 /*******************************************************************************
@@ -143,7 +220,7 @@ Copy the type specific data used by this type.
 	return (destination);
 } /* Computed_field_finite_element_copy_type_specific */
 
-int Computed_field_finite_element_clear_cache_type_specific(
+static int Computed_field_finite_element_clear_cache_type_specific(
 	struct Computed_field *field)
 /*******************************************************************************
 LAST MODIFIED : 17 July 2000
@@ -209,7 +286,7 @@ Compare the type specific data
 	return (return_code);
 } /* Computed_field_finite_element_type_specific_contents_match */
 
-int Computed_field_finite_element_is_defined_in_element(struct Computed_field *field,
+static int Computed_field_finite_element_is_defined_in_element(struct Computed_field *field,
 	struct FE_element *element)
 /*******************************************************************************
 LAST MODIFIED : 18 July 2000
@@ -245,7 +322,7 @@ DESCRIPTION :
 	return (return_code);
 } /* Computed_field_finite_element_is_defined_in_element */
 
-int Computed_field_finite_element_is_defined_at_node(struct Computed_field *field,
+static int Computed_field_finite_element_is_defined_at_node(struct Computed_field *field,
 	struct FE_node *node)
 /*******************************************************************************
 LAST MODIFIED : 17 July 2000
@@ -276,7 +353,7 @@ Check the fe_field
 	return (return_code);
 } /* Computed_field_finite_element_is_defined_at_node */
 
-int Computed_field_finite_element_has_numerical_components(
+static int Computed_field_finite_element_has_numerical_components(
 	struct Computed_field *field)
 /*******************************************************************************
 LAST MODIFIED : 17 July 2000
@@ -305,7 +382,7 @@ DESCRIPTION :
 	return (return_code);
 } /* Computed_field_finite_element_has_numerical_components */
 
-int Computed_field_finite_element_can_be_destroyed(struct Computed_field *field)
+static int Computed_field_finite_element_can_be_destroyed(struct Computed_field *field)
 /*******************************************************************************
 LAST MODIFIED : 17 July 2000
 
@@ -613,7 +690,7 @@ Evaluate the fields cache at the node.
 	return (return_code);
 } /* Computed_field_finite_element_evaluate_cache_in_element */
 
-char *Computed_field_finite_element_evaluate_as_string_at_node(struct Computed_field *field,
+static char *Computed_field_finite_element_evaluate_as_string_at_node(struct Computed_field *field,
 	int component_number, struct FE_node *node)
 /*******************************************************************************
 LAST MODIFIED : 17 July 2000
@@ -684,7 +761,7 @@ Print the values calculated in the cache.
 	return (return_string);
 } /* Computed_field_finite_element_evaluate_as_string_at_node */
 
-char *Computed_field_finite_element_evaluate_as_string_in_element(
+static char *Computed_field_finite_element_evaluate_as_string_in_element(
 	struct Computed_field *field,int component_number,
 	struct FE_element *element,FE_value *xi,struct FE_element *top_level_element)
 /*******************************************************************************
@@ -734,7 +811,7 @@ Print the values calculated in the cache.
 	return (return_string);
 } /* Computed_field_finite_element_evaluate_as_string_in_element */
 
-int Computed_field_finite_element_set_values_at_node(struct Computed_field *field,
+static int Computed_field_finite_element_set_values_at_node(struct Computed_field *field,
 	struct FE_node *node,FE_value *values)
 /*******************************************************************************
 LAST MODIFIED : 17 July 2000
@@ -821,7 +898,7 @@ Sets the <values> of the computed <field> at <node>.
 	return (return_code);
 } /* Computed_field_finite_element_set_values_at_node */
 
-int Computed_field_finite_element_set_values_in_element(
+static int Computed_field_finite_element_set_values_in_element(
 	struct Computed_field *field, struct FE_element *element,int *number_in_xi,
 	FE_value *values)
 /*******************************************************************************
@@ -960,7 +1037,7 @@ Sets the <values> of the computed <field> over the <element>.
 	return (return_code);
 } /* Computed_field_finite_element_set_values_in_element */
 	
-int Computed_field_finite_element_get_native_discretization_in_element(
+static int Computed_field_finite_element_get_native_discretization_in_element(
 	struct Computed_field *field,struct FE_element *element,int *number_in_xi)
 /*******************************************************************************
 LAST MODIFIED : 17 July 2000
@@ -1007,7 +1084,7 @@ Returns 0 with no errors if the field is not grid-based.
 	return (return_code);
 } /* Computed_field_get_native_discretization_in_element */
 
-int Computed_field_finite_element_find_element_xi(struct Computed_field *field, 
+static int Computed_field_finite_element_find_element_xi(struct Computed_field *field, 
 	FE_value *values, int number_of_values, struct FE_element **element,
 	FE_value *xi, struct GROUP(FE_element) *search_element_group)
 /*******************************************************************************
@@ -1155,151 +1232,6 @@ DESCRIPTION :
 
 	return (return_code);
 } /* list_Computed_field_finite_element_commands */
-
-int Computed_field_set_type_finite_element(struct Computed_field *field,
-	struct FE_field *fe_field)
-/*******************************************************************************
-LAST MODIFIED : 17 July 2000
-
-DESCRIPTION :
-Converts <field> to type COMPUTED_FIELD_FINITE_ELEMENT, wrapping the given
-<fe_field>. Makes the number of components the same as in the <fe_field>.
-If function fails, field is guaranteed to be unchanged from its original state,
-although its cache may be lost.
-==============================================================================*/
-{
-	char **component_names;
-	int i, number_of_components, return_code;
-	struct Computed_field_finite_element_type_specific_data *data;
-
-	ENTER(Computed_field_set_type_finite_element);
-	if (field&&fe_field)
-	{
-		return_code=1;
-		number_of_components = get_FE_field_number_of_components(fe_field);
-		/* 1. make dynamic allocations for any new type-specific data */
-		if (ALLOCATE(component_names, char *, number_of_components))
-		{
-			for (i = 0 ; i < number_of_components; i++)
-			{
-				if (!(component_names[i]=get_FE_field_component_name(fe_field,i)))
-				{
-					return_code = 0;
-				}
-			}
-		}
-		else
-		{
-			return_code = 0;
-		}
-		if (return_code &&
-			ALLOCATE(data,struct Computed_field_finite_element_type_specific_data, 1))
-		{
-			/* 2. free current type-specific data */
-			Computed_field_clear_type(field);
-			/* 3. establish the new type */
-			field->type=COMPUTED_FIELD_NEW_TYPES;
-			field->type_string = computed_field_finite_element_type_string;
-			field->number_of_components = number_of_components;
-			field->component_names = component_names;
-			field->type_specific_data = (void *)data;
-			data->fe_field = ACCESS(FE_field)(fe_field);
-			data->fe_element_field_values = (struct FE_element_field_values *)NULL;
-
-			/* Set all the methods */
-			field->computed_field_clear_type_specific_function =
-				Computed_field_finite_element_clear_type_specific;
-			field->computed_field_copy_type_specific_function =
-				Computed_field_finite_element_copy_type_specific;
-			field->computed_field_clear_cache_type_specific_function =
-				Computed_field_finite_element_clear_cache_type_specific;
-			field->computed_field_type_specific_contents_match_function =
-				Computed_field_finite_element_type_specific_contents_match;
-			field->computed_field_is_defined_in_element_function =
-				Computed_field_finite_element_is_defined_in_element;
-			field->computed_field_is_defined_at_node_function =
-				Computed_field_finite_element_is_defined_at_node;
-			field->computed_field_has_numerical_components_function =
-				Computed_field_finite_element_has_numerical_components;
-			field->computed_field_can_be_destroyed_function =
-				Computed_field_finite_element_can_be_destroyed;
-			field->computed_field_evaluate_cache_at_node_function =
-				Computed_field_finite_element_evaluate_cache_at_node;
-			field->computed_field_evaluate_cache_in_element_function =
-				Computed_field_finite_element_evaluate_cache_in_element;
-			field->computed_field_evaluate_as_string_at_node_function =
-				Computed_field_finite_element_evaluate_as_string_at_node;
-			field->computed_field_evaluate_as_string_in_element_function =
-				Computed_field_finite_element_evaluate_as_string_in_element;
-			field->computed_field_set_values_at_node_function =
-				Computed_field_finite_element_set_values_at_node;
-			field->computed_field_set_values_in_element_function =
-				Computed_field_finite_element_set_values_in_element;
-			field->computed_field_get_native_discretization_in_element_function =
-				Computed_field_finite_element_get_native_discretization_in_element;
-			field->computed_field_find_element_xi_function =
-				Computed_field_finite_element_find_element_xi;
-			field->list_Computed_field_function = 
-				list_Computed_field_finite_element;
-			field->list_Computed_field_commands_function = 
-				list_Computed_field_finite_element_commands;
-		}
-		else
-		{
-			for (i = 0 ; i < number_of_components ; i++)
-			{
-				if (component_names[i])
-				{
-					DEALLOCATE(component_names[i]);
-				}
-			}
-			DEALLOCATE(component_names);
-			return_code=0;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_set_type_finite_element.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Computed_field_set_type_finite_element */
-
-int Computed_field_get_type_finite_element(struct Computed_field *field,
-	struct FE_field **fe_field)
-/*******************************************************************************
-LAST MODIFIED : 17 July 2000
-
-DESCRIPTION :
-If the field is of type COMPUTED_FIELD_FINITE_ELEMENT, the FE_field being
-"wrapped" by it is returned - otherwise an error is reported.
-==============================================================================*/
-{
-	int return_code;
-	struct Computed_field_finite_element_type_specific_data *data;
-
-	ENTER(Computed_field_get_type_finite_element);
-	if (field&&(COMPUTED_FIELD_NEW_TYPES==field->type)&&
-		(field->type_string==computed_field_finite_element_type_string) 
-		&& (data = (struct Computed_field_finite_element_type_specific_data *)
-		field->type_specific_data))
-	{
-		*fe_field=data->fe_field;
-		return_code=1;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_get_type_finite_element.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Computed_field_get_type_finite_element */
 
 static int define_Computed_field_type_finite_element(struct Parse_state *state,
 	void *field_void,void *computed_field_finite_element_package_void)
@@ -1604,37 +1536,6 @@ FE_field being made and/or modified.
 	return (return_code);
 } /* define_Computed_field_type_finite_element */
 
-struct Computed_field_default_coordinates_type_specific_data
-{
-	struct MANAGER(Computed_field) *computed_field_manager;
-};
-
-static char computed_field_default_coordinate_type_string[] = "default_coordinate";
-
-int Computed_field_is_type_default_coordinate(struct Computed_field *field)
-/*******************************************************************************
-LAST MODIFIED : 18 July 2000
-
-DESCRIPTION :
-==============================================================================*/
-{
-	int return_code;
-
-	ENTER(Computed_field_is_type_default_coordinate);
-	if (field)
-	{
-		return_code = (field->type_string == computed_field_default_coordinate_type_string);
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_is_type_default_coordinate.  Missing field");
-		return_code=0;
-	}
-
-	return (return_code);
-} /* Computed_field_is_type_default_coordinate */
-
 static int Computed_field_default_coordinate_clear_type_specific(
 	struct Computed_field *field)
 /*******************************************************************************
@@ -1706,7 +1607,7 @@ Copy the type specific data used by this type.
 	return (destination);
 } /* Computed_field_default_coordinate_copy_type_specific */
 
-int Computed_field_default_coordinate_clear_cache_type_specific(
+static int Computed_field_default_coordinate_clear_cache_type_specific(
 	struct Computed_field *field)
 /*******************************************************************************
 LAST MODIFIED : 19 July 2000
@@ -1770,7 +1671,7 @@ Compare the type specific data
 	return (return_code);
 } /* Computed_field_default_coordinate_type_specific_contents_match */
 
-int Computed_field_default_coordinate_is_defined_in_element(
+static int Computed_field_default_coordinate_is_defined_in_element(
 	struct Computed_field *field, struct FE_element *element)
 /*******************************************************************************
 LAST MODIFIED : 18 July 2000
@@ -1803,7 +1704,6 @@ Check the source fields using the default.
 
 	return (return_code);
 } /* Computed_field_default_coordinate_is_defined_in_element */
-
 
 static int Computed_field_default_coordinate_is_defined_at_node(
 	struct Computed_field *field, struct FE_node *node)
@@ -2072,7 +1972,7 @@ currently cached field/node are not already correct before finding a new one.
 	return (return_code);
 } /* Computed_field_get_default_coordinate_source_field_at_node */
 
-int Computed_field_default_coordinate_evaluate_cache_at_node(
+static int Computed_field_default_coordinate_evaluate_cache_at_node(
 	struct Computed_field *field,struct FE_node *node)
 /*******************************************************************************
 LAST MODIFIED : 18 July 2000
@@ -2188,7 +2088,7 @@ DESCRIPTION :
 Print the values calculated in the cache.
 ==============================================================================*/
 
-int Computed_field_default_coordinate_set_values_at_node(struct Computed_field *field,
+static int Computed_field_default_coordinate_set_values_at_node(struct Computed_field *field,
 	struct FE_node *node,FE_value *values)
 /*******************************************************************************
 LAST MODIFIED : 18 July 2000
@@ -2234,7 +2134,7 @@ DESCRIPTION :
 	return (return_code);
 } /* Computed_field_default_coordinate_set_values_at_node */
 
-int Computed_field_default_coordinate_set_values_in_element(struct Computed_field *field,
+static int Computed_field_default_coordinate_set_values_in_element(struct Computed_field *field,
 	struct FE_element *element,int *number_in_xi,FE_value *values)
 /*******************************************************************************
 LAST MODIFIED : 18 July 2000
@@ -2328,7 +2228,7 @@ DESCRIPTION :
 	return (return_code);
 } /* Computed_field_default_coordinate_set_values_in_element */
 
-int Computed_field_default_coordinate_get_native_discretization_in_element(
+static int Computed_field_default_coordinate_get_native_discretization_in_element(
 	struct Computed_field *field,struct FE_element *element,int *number_in_xi)
 /*******************************************************************************
 LAST MODIFIED : 18 July 2000
@@ -2436,107 +2336,7 @@ DESCRIPTION :
 	return (return_code);
 } /* list_Computed_field_default_coordinate_commands */
 
-int Computed_field_set_type_default_coordinate(struct Computed_field *field,
-	struct MANAGER(Computed_field) *computed_field_manager)
-/*******************************************************************************
-LAST MODIFIED : 18 July 2000
-
-DESCRIPTION :
-Converts <field> to type COMPUTED_FIELD_DEFAULT_COORDINATE, which returns the
-values/derivatives of the first [coordinate] field defined for the element/node
-in rectangular cartesian coordinates. This type is intended to replace the
-NULL coordinate_field option in the calculate_FE_element_field_values function.
-When a field of this type is calculated at and element/node, the evaluate
-function finds the first FE_field (coordinate type) defined over it, then gets
-its Computed_field wrapper from the manager and proceeds from there.
-Consequences of this behaviour are:
-- the field allocates its source_fields to point to the computed_field for the
-actual coordinate field in the evaluate phase.
-- when the source field changes the current one's cache is cleared and it is
-deaccessed.
-- when the cache is cleared, so is any reference to the source_field.
-- always performs the conversion to RC since cannot predict the coordinate
-system used by the eventual source_field. Coordinate_system of this type of
-field need not be RC, although it usually will be.
-Sets number of components to 3.
-If function fails, field is guaranteed to be unchanged from its original state,
-although its cache may be lost.
-==============================================================================*/
-{
-	int return_code;
-	struct Computed_field_default_coordinates_type_specific_data *data;
-
-	ENTER(Computed_field_set_type_default_coordinate);
-	if (field&&computed_field_manager)
-	{
-		return_code=1;
-		/* 1. make dynamic allocations for any new type-specific data */
-		if (ALLOCATE(data,struct Computed_field_default_coordinates_type_specific_data, 1))
-		{
-			/* 2. free current type-specific data */
-			Computed_field_clear_type(field);
-			/* 3. establish the new type */
-			field->type=COMPUTED_FIELD_NEW_TYPES;
-			field->type_string = computed_field_default_coordinate_type_string;
-			field->number_of_components = 3;
-			field->type_specific_data = (void *)data;
-			data->computed_field_manager = computed_field_manager;
-
-			/* Set all the methods */
-			field->computed_field_clear_type_specific_function =
-				Computed_field_default_coordinate_clear_type_specific;
-			field->computed_field_copy_type_specific_function =
-				Computed_field_default_coordinate_copy_type_specific;
-			field->computed_field_clear_cache_type_specific_function =
-				Computed_field_default_coordinate_clear_cache_type_specific;
-			field->computed_field_type_specific_contents_match_function =
-				Computed_field_default_coordinate_type_specific_contents_match;
-			field->computed_field_is_defined_in_element_function =
-				Computed_field_default_coordinate_is_defined_in_element;
-			field->computed_field_is_defined_at_node_function =
-				Computed_field_default_coordinate_is_defined_at_node;
-			field->computed_field_has_numerical_components_function =
-				Computed_field_default_coordinate_has_numerical_components;
-			field->computed_field_can_be_destroyed_function =
-				Computed_field_default_coordinate_can_be_destroyed;
-			field->computed_field_evaluate_cache_at_node_function =
-				Computed_field_default_coordinate_evaluate_cache_at_node;
-			field->computed_field_evaluate_cache_in_element_function =
-				Computed_field_default_coordinate_evaluate_cache_in_element;
-			field->computed_field_evaluate_as_string_at_node_function =
-				Computed_field_default_coordinate_evaluate_as_string_at_node;
-			field->computed_field_evaluate_as_string_in_element_function =
-				Computed_field_default_coordinate_evaluate_as_string_in_element;
-			field->computed_field_set_values_at_node_function =
-				Computed_field_default_coordinate_set_values_at_node;
-			field->computed_field_set_values_in_element_function =
-				Computed_field_default_coordinate_set_values_in_element;
-			field->computed_field_get_native_discretization_in_element_function =
-				Computed_field_default_coordinate_get_native_discretization_in_element;
-			field->computed_field_find_element_xi_function =
-				Computed_field_default_coordinate_find_element_xi;
-			field->list_Computed_field_function = 
-				list_Computed_field_default_coordinate;
-			field->list_Computed_field_commands_function = 
-				list_Computed_field_default_coordinate_commands;
-		}
-		else
-		{
-			return_code=0;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_set_type_default_coordinate.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Computed_field_set_type_default_coordinate */
-
-int Computed_field_get_type_default_coordinate(struct Computed_field *field,
+static int Computed_field_get_type_default_coordinate(struct Computed_field *field,
 	struct MANAGER(Computed_field) **computed_field_manager)
 /*******************************************************************************
 LAST MODIFIED : 18 July 2000
@@ -2618,33 +2418,6 @@ Converts <field> into type COMPUTED_FIELD_DEFAULT_COORDINATE.
 
 	return (return_code);
 } /* define_Computed_field_type_default_coordinate */
-
-static char computed_field_cmiss_number_type_string[] = "cmiss_number";
-
-int Computed_field_is_type_cmiss_number(struct Computed_field *field)
-/*******************************************************************************
-LAST MODIFIED : 18 July 2000
-
-DESCRIPTION :
-==============================================================================*/
-{
-	int return_code;
-
-	ENTER(Computed_field_is_type_cmiss_number);
-	if (field)
-	{
-		return_code = 
-		  (field->type_string == computed_field_cmiss_number_type_string);
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_is_type_cmiss_number.  Missing field");
-		return_code=0;
-	}
-
-	return (return_code);
-} /* Computed_field_is_type_cmiss_number */
 
 static int Computed_field_cmiss_number_clear_type_specific(
 	struct Computed_field *field)
@@ -2994,83 +2767,6 @@ DESCRIPTION :
 	return (return_code);
 } /* list_Computed_field_cmiss_number_commands */
 
-int Computed_field_set_type_cmiss_number(struct Computed_field *field)
-/*******************************************************************************
-LAST MODIFIED : 20 July 2000
-
-DESCRIPTION :
-Converts <field> to type COMPUTED_FIELD_CMISS_NUMBER with the supplied
-fields, <source_field_one> and <source_field_two>.  Sets the number of 
-components equal to the source_fields.
-If function fails, field is guaranteed to be unchanged from its original state,
-although its cache may be lost.
-==============================================================================*/
-{
-	int return_code;
-
-	ENTER(Computed_field_set_type_cmiss_number);
-	if (field)
-	{
-		return_code=1;
-		/* 1. make dynamic allocations for any new type-specific data */
-		/* none */
-		/* 2. free current type-specific data */
-		Computed_field_clear_type(field);
-		/* 3. establish the new type */
-		field->type=COMPUTED_FIELD_NEW_TYPES;
-		field->type_string = computed_field_cmiss_number_type_string;
-		field->number_of_components = 1;
-		field->type_specific_data = (void *)1;
-		
-		/* Set all the methods */
-		field->computed_field_clear_type_specific_function =
-			Computed_field_cmiss_number_clear_type_specific;
-		field->computed_field_copy_type_specific_function =
-			Computed_field_cmiss_number_copy_type_specific;
-		field->computed_field_clear_cache_type_specific_function =
-			Computed_field_cmiss_number_clear_cache_type_specific;
-		field->computed_field_type_specific_contents_match_function =
-			Computed_field_cmiss_number_type_specific_contents_match;
-		field->computed_field_is_defined_in_element_function =
-			Computed_field_cmiss_number_is_defined_in_element;
-		field->computed_field_is_defined_at_node_function =
-			Computed_field_cmiss_number_is_defined_at_node;
-		field->computed_field_has_numerical_components_function =
-			Computed_field_cmiss_number_has_numerical_components;
-		field->computed_field_can_be_destroyed_function =
-			Computed_field_cmiss_number_can_be_destroyed;
-		field->computed_field_evaluate_cache_at_node_function =
-			Computed_field_cmiss_number_evaluate_cache_at_node;
-		field->computed_field_evaluate_cache_in_element_function =
-			Computed_field_cmiss_number_evaluate_cache_in_element;
-		field->computed_field_evaluate_as_string_at_node_function =
-			Computed_field_cmiss_number_evaluate_as_string_at_node;
-		field->computed_field_evaluate_as_string_in_element_function =
-			Computed_field_cmiss_number_evaluate_as_string_in_element;
-		field->computed_field_set_values_at_node_function =
-			Computed_field_cmiss_number_set_values_at_node;
-		field->computed_field_set_values_in_element_function =
-			Computed_field_cmiss_number_set_values_in_element;
-		field->computed_field_get_native_discretization_in_element_function =
-			Computed_field_cmiss_number_get_native_discretization_in_element;
-		field->computed_field_find_element_xi_function =
-			Computed_field_cmiss_number_find_element_xi;
-		field->list_Computed_field_function = 
-			list_Computed_field_cmiss_number;
-		field->list_Computed_field_commands_function = 
-			list_Computed_field_cmiss_number_commands;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_set_type_cmiss_number.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Computed_field_set_type_cmiss_number */
-
 static int define_Computed_field_type_cmiss_number(struct Parse_state *state,
 	void *field_void,void *dummy_void)
 /*******************************************************************************
@@ -3116,7 +2812,7 @@ Converts <field> into type COMPUTED_FIELD_CMISS_NUMBER.
 
 static char computed_field_xi_coordinates_type_string[] = "xi_coordinates";
 
-int Computed_field_is_type_xi_coordinates(struct Computed_field *field)
+static int Computed_field_is_type_xi_coordinates(struct Computed_field *field)
 /*******************************************************************************
 LAST MODIFIED : 18 July 2000
 
@@ -3467,83 +3163,6 @@ DESCRIPTION :
 	return (return_code);
 } /* list_Computed_field_xi_coordinates_commands */
 
-int Computed_field_set_type_xi_coordinates(struct Computed_field *field)
-/*******************************************************************************
-LAST MODIFIED : 20 July 2000
-
-DESCRIPTION :
-Converts <field> to type COMPUTED_FIELD_XI_COORDINATES with the supplied
-fields, <source_field_one> and <source_field_two>.  Sets the number of 
-components equal to the source_fields.
-If function fails, field is guaranteed to be unchanged from its original state,
-although its cache may be lost.
-==============================================================================*/
-{
-	int return_code;
-
-	ENTER(Computed_field_set_type_xi_coordinates);
-	if (field)
-	{
-		return_code=1;
-		/* 1. make dynamic allocations for any new type-specific data */
-		/* none */
-		/* 2. free current type-specific data */
-		Computed_field_clear_type(field);
-		/* 3. establish the new type */
-		field->type=COMPUTED_FIELD_NEW_TYPES;
-		field->type_string = computed_field_xi_coordinates_type_string;
-		field->number_of_components = 3;
-		field->type_specific_data = (void *)1;
-		
-		/* Set all the methods */
-		field->computed_field_clear_type_specific_function =
-			Computed_field_xi_coordinates_clear_type_specific;
-		field->computed_field_copy_type_specific_function =
-			Computed_field_xi_coordinates_copy_type_specific;
-		field->computed_field_clear_cache_type_specific_function =
-			Computed_field_xi_coordinates_clear_cache_type_specific;
-		field->computed_field_type_specific_contents_match_function =
-			Computed_field_xi_coordinates_type_specific_contents_match;
-		field->computed_field_is_defined_in_element_function =
-			Computed_field_xi_coordinates_is_defined_in_element;
-		field->computed_field_is_defined_at_node_function =
-			Computed_field_xi_coordinates_is_defined_at_node;
-		field->computed_field_has_numerical_components_function =
-			Computed_field_xi_coordinates_has_numerical_components;
-		field->computed_field_can_be_destroyed_function =
-			Computed_field_xi_coordinates_can_be_destroyed;
-		field->computed_field_evaluate_cache_at_node_function =
-			Computed_field_xi_coordinates_evaluate_cache_at_node;
-		field->computed_field_evaluate_cache_in_element_function =
-			Computed_field_xi_coordinates_evaluate_cache_in_element;
-		field->computed_field_evaluate_as_string_at_node_function =
-			Computed_field_xi_coordinates_evaluate_as_string_at_node;
-		field->computed_field_evaluate_as_string_in_element_function =
-			Computed_field_xi_coordinates_evaluate_as_string_in_element;
-		field->computed_field_set_values_at_node_function =
-			Computed_field_xi_coordinates_set_values_at_node;
-		field->computed_field_set_values_in_element_function =
-			Computed_field_xi_coordinates_set_values_in_element;
-		field->computed_field_get_native_discretization_in_element_function =
-			Computed_field_xi_coordinates_get_native_discretization_in_element;
-		field->computed_field_find_element_xi_function =
-			Computed_field_xi_coordinates_find_element_xi;
-		field->list_Computed_field_function = 
-			list_Computed_field_xi_coordinates;
-		field->list_Computed_field_commands_function = 
-			list_Computed_field_xi_coordinates_commands;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_set_type_xi_coordinates.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Computed_field_set_type_xi_coordinates */
-
 static int define_Computed_field_type_xi_coordinates(struct Parse_state *state,
 	void *field_void,void *dummy_void)
 /*******************************************************************************
@@ -3587,27 +3206,7 @@ Converts <field> into type COMPUTED_FIELD_XI_COORDINATES.
 	return (return_code);
 } /* define_Computed_field_type_xi_coordinates */
 
-/*******************************************************************************
-COMPUTED_FIELD_TYPE: node_value
-
-LAST MODIFIED : 19 July 2000
-
-DESCRIPTION :
-Returns the values for the given <nodal_value_type> and <version_number> 
-of <fe_field> at a node.
-Makes the number of components the same as in the <fe_field>.
-==============================================================================*/
-
-struct Computed_field_node_value_type_specific_data
-{
-	struct FE_field *fe_field;
-	enum FE_nodal_value_type nodal_value_type;
-	int version_number;
-};
-
-static char computed_field_node_value_type_string[] = "node_value";
-
-int Computed_field_is_type_node_value(struct Computed_field *field)
+static int Computed_field_is_type_node_value(struct Computed_field *field)
 /*******************************************************************************
 LAST MODIFIED : 19 July 2000
 
@@ -3755,7 +3354,7 @@ Compare the type specific data
 	return (return_code);
 } /* Computed_field_node_value_type_specific_contents_match */
 
-int Computed_field_node_value_is_defined_in_element(struct Computed_field *field,
+static int Computed_field_node_value_is_defined_in_element(struct Computed_field *field,
 	struct FE_element *element)
 /*******************************************************************************
 LAST MODIFIED : 18 July 2000
@@ -3781,7 +3380,7 @@ DESCRIPTION :
 	return (return_code);
 } /* Computed_field_node_value_is_defined_in_element */
 
-int Computed_field_node_value_is_defined_at_node(struct Computed_field *field,
+static int Computed_field_node_value_is_defined_at_node(struct Computed_field *field,
 	struct FE_node *node)
 /*******************************************************************************
 LAST MODIFIED : 19 July 2000
@@ -3829,7 +3428,7 @@ Check the fe_field
 	return (return_code);
 } /* Computed_field_node_value_is_defined_at_node */
 
-int Computed_field_node_value_has_numerical_components(
+static int Computed_field_node_value_has_numerical_components(
 	struct Computed_field *field)
 /*******************************************************************************
 LAST MODIFIED : 19 July 2000
@@ -3992,7 +3591,7 @@ DESCRIPTION :
 Cannot evaluate node_value in elements
 ==============================================================================*/
 
-char *Computed_field_node_value_evaluate_as_string_at_node(struct Computed_field *field,
+static char *Computed_field_node_value_evaluate_as_string_at_node(struct Computed_field *field,
 	int component_number, struct FE_node *node)
 /*******************************************************************************
 LAST MODIFIED : 19 July 2000
@@ -4071,7 +3670,7 @@ LAST MODIFIED : 19 July 2000
 DESCRIPTION :
 ==============================================================================*/
 
-int Computed_field_node_value_set_values_at_node(struct Computed_field *field,
+static int Computed_field_node_value_set_values_at_node(struct Computed_field *field,
 	struct FE_node *node,FE_value *values)
 /*******************************************************************************
 LAST MODIFIED : 19 July 2000
@@ -4259,7 +3858,7 @@ DESCRIPTION :
 	return (return_code);
 } /* list_Computed_field_node_value_commands */
 
-int Computed_field_set_type_node_value(struct Computed_field *field,
+static int Computed_field_set_type_node_value(struct Computed_field *field,
 	struct FE_field *fe_field,enum FE_nodal_value_type nodal_value_type,
 	int version_number)
 /*******************************************************************************
@@ -4376,7 +3975,7 @@ although its cache may be lost.
 	return (return_code);
 } /* Computed_field_set_type_node_value */
 
-int Computed_field_get_type_node_value(struct Computed_field *field,
+static int Computed_field_get_type_node_value(struct Computed_field *field,
 	struct FE_field **fe_field,enum FE_nodal_value_type *nodal_value_type,
 	int *version_number)
 /*******************************************************************************
@@ -4615,27 +4214,7 @@ and allows its contents to be modified.
 	return (return_code);
 } /* define_Computed_field_type_node_value */
 
-/*******************************************************************************
-COMPUTED_FIELD_TYPE: node_array_value_at_time
-
-LAST MODIFIED : 20 July 2000
-
-DESCRIPTION :
-Returns the values for the given <nodal_value_type> and <version_number> 
-of <fe_field> at a node.
-Makes the number of components the same as in the <fe_field>.
-==============================================================================*/
-
-struct Computed_field_node_array_value_at_time_type_specific_data
-{
-	struct FE_field *fe_field;
-	enum FE_nodal_value_type nodal_value_type;
-	int version_number;
-};
-
-static char computed_field_node_array_value_at_time_type_string[] = "node_array_value_at_time";
-
-int Computed_field_is_type_node_array_value_at_time(struct Computed_field *field)
+static int Computed_field_is_type_node_array_value_at_time(struct Computed_field *field)
 /*******************************************************************************
 LAST MODIFIED : 20 July 2000
 
@@ -4783,7 +4362,7 @@ Compare the type specific data
 	return (return_code);
 } /* Computed_field_node_array_value_at_time_type_specific_contents_match */
 
-int Computed_field_node_array_value_at_time_is_defined_in_element(struct Computed_field *field,
+static int Computed_field_node_array_value_at_time_is_defined_in_element(struct Computed_field *field,
 	struct FE_element *element)
 /*******************************************************************************
 LAST MODIFIED : 18 July 2000
@@ -4809,7 +4388,7 @@ DESCRIPTION :
 	return (return_code);
 } /* Computed_field_node_array_value_at_time_is_defined_in_element */
 
-int Computed_field_node_array_value_at_time_is_defined_at_node(struct Computed_field *field,
+static int Computed_field_node_array_value_at_time_is_defined_at_node(struct Computed_field *field,
 	struct FE_node *node)
 /*******************************************************************************
 LAST MODIFIED : 20 July 2000
@@ -4861,7 +4440,7 @@ Check the fe_field
 	return (return_code);
 } /* Computed_field_node_array_value_at_time_is_defined_at_node */
 
-int Computed_field_node_array_value_at_time_has_numerical_components(
+static int Computed_field_node_array_value_at_time_has_numerical_components(
 	struct Computed_field *field)
 /*******************************************************************************
 LAST MODIFIED : 20 July 2000
@@ -4890,7 +4469,7 @@ DESCRIPTION :
 	return (return_code);
 } /* Computed_field_node_array_value_at_time_has_numerical_components */
 
-int Computed_field_node_array_value_at_time_can_be_destroyed(struct Computed_field *field)
+static int Computed_field_node_array_value_at_time_can_be_destroyed(struct Computed_field *field)
 /*******************************************************************************
 LAST MODIFIED : 20 July 2000
 
@@ -5047,7 +4626,7 @@ LAST MODIFIED : 20 July 2000
 DESCRIPTION :
 ==============================================================================*/
 
-int Computed_field_node_array_value_at_time_set_values_at_node(struct Computed_field *field,
+static int Computed_field_node_array_value_at_time_set_values_at_node(struct Computed_field *field,
 	struct FE_node *node,FE_value *values)
 /*******************************************************************************
 LAST MODIFIED : 20 July 2000
@@ -5184,133 +4763,7 @@ DESCRIPTION :
 	return (return_code);
 } /* list_Computed_field_node_array_value_at_time_commands */
 
-int Computed_field_set_type_node_array_value_at_time(struct Computed_field *field,
-	struct FE_field *fe_field,enum FE_nodal_value_type nodal_value_type,
-	int version_number,struct Computed_field *time_field)
-/*******************************************************************************
-LAST MODIFIED : 20 July 2000
-
-DESCRIPTION :
-Converts <field> to type COMPUTED_FIELD_NODE_ARRAY_VALUE_AT_TIME, returning the values for the
-given <nodal_value_type> and <version_number> of <fe_field> at a node.
-Makes the number of components the same as in the <fe_field>.
-Field automatically takes the coordinate system of the source fe_field. See note
-at start of this file about changing use of coordinate systems.
-If function fails, field is guaranteed to be unchanged from its original state,
-although its cache may be lost.
-==============================================================================*/
-{
-	char **component_names;
-	int i, number_of_components, number_of_source_fields, return_code;
-	struct Computed_field **source_fields;
-	struct Computed_field_node_array_value_at_time_type_specific_data *data;
-
-	ENTER(Computed_field_set_type_node_array_value_at_time);
-	if (field&&fe_field&&(FE_NODAL_UNKNOWN!=nodal_value_type)&&
-		(0<=version_number)&&time_field&&(1==time_field->number_of_components))
-	{
-		return_code=1;
-		number_of_components = get_FE_field_number_of_components(fe_field);
-		/* 1. make dynamic allocations for any new type-specific data */
-		if (ALLOCATE(component_names, char *, number_of_components))
-		{
-			for (i = 0 ; i < number_of_components; i++)
-			{
-				if (!(component_names[i]=get_FE_field_component_name(fe_field,i)))
-				{
-					return_code = 0;
-				}
-			}
-		}
-		else
-		{
-			return_code = 0;
-		}
-		number_of_source_fields=1;
-		source_fields = (struct Computed_field **)NULL;
-		if (return_code &&
-			ALLOCATE(source_fields,struct Computed_field *,number_of_source_fields) &&
-			ALLOCATE(data,struct Computed_field_node_array_value_at_time_type_specific_data, 1))
-		{
-			/* 2. free current type-specific data */
-			Computed_field_clear_type(field);
-			/* 3. establish the new type */
-			field->type=COMPUTED_FIELD_NEW_TYPES;
-			field->type_string = computed_field_node_array_value_at_time_type_string;
-			field->number_of_components = number_of_components;
-			field->component_names = component_names;
-			source_fields[0]=ACCESS(Computed_field)(time_field);
-			field->source_fields=source_fields;
-			field->number_of_source_fields=number_of_source_fields;
-			field->type_specific_data = (void *)data;
-			data->fe_field = ACCESS(FE_field)(fe_field);
-			data->nodal_value_type=nodal_value_type;
-			data->version_number=version_number;
-
-			/* Set all the methods */
-			field->computed_field_clear_type_specific_function =
-				Computed_field_node_array_value_at_time_clear_type_specific;
-			field->computed_field_copy_type_specific_function =
-				Computed_field_node_array_value_at_time_copy_type_specific;
-			field->computed_field_clear_cache_type_specific_function =
-				Computed_field_node_array_value_at_time_clear_cache_type_specific;
-			field->computed_field_type_specific_contents_match_function =
-				Computed_field_node_array_value_at_time_type_specific_contents_match;
-			field->computed_field_is_defined_in_element_function =
-				Computed_field_node_array_value_at_time_is_defined_in_element;
-			field->computed_field_is_defined_at_node_function =
-				Computed_field_node_array_value_at_time_is_defined_at_node;
-			field->computed_field_has_numerical_components_function =
-				Computed_field_node_array_value_at_time_has_numerical_components;
-			field->computed_field_can_be_destroyed_function =
-				Computed_field_node_array_value_at_time_can_be_destroyed;
-			field->computed_field_evaluate_cache_at_node_function =
-				Computed_field_node_array_value_at_time_evaluate_cache_at_node;
-			field->computed_field_evaluate_cache_in_element_function =
-				Computed_field_node_array_value_at_time_evaluate_cache_in_element;
-			field->computed_field_evaluate_as_string_at_node_function =
-				Computed_field_node_array_value_at_time_evaluate_as_string_at_node;
-			field->computed_field_evaluate_as_string_in_element_function =
-				Computed_field_node_array_value_at_time_evaluate_as_string_in_element;
-			field->computed_field_set_values_at_node_function =
-				Computed_field_node_array_value_at_time_set_values_at_node;
-			field->computed_field_set_values_in_element_function =
-				Computed_field_node_array_value_at_time_set_values_in_element;
-			field->computed_field_get_native_discretization_in_element_function =
-				Computed_field_node_array_value_at_time_get_native_discretization_in_element;
-			field->computed_field_find_element_xi_function =
-				Computed_field_node_array_value_at_time_find_element_xi;
-			field->list_Computed_field_function = 
-				list_Computed_field_node_array_value_at_time;
-			field->list_Computed_field_commands_function = 
-				list_Computed_field_node_array_value_at_time_commands;
-		}
-		else
-		{
-			for (i = 0 ; i < number_of_components ; i++)
-			{
-				if (component_names[i])
-				{
-					DEALLOCATE(component_names[i]);
-				}
-			}
-			DEALLOCATE(component_names);
-			DEALLOCATE(source_fields);
-			return_code=0;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_set_type_node_array_value_at_time.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Computed_field_set_type_node_array_value_at_time */
-
-int Computed_field_get_type_node_array_value_at_time(struct Computed_field *field,
+static int Computed_field_get_type_node_array_value_at_time(struct Computed_field *field,
 	struct FE_field **fe_field,enum FE_nodal_value_type *nodal_value_type,
 	int *version_number,struct Computed_field **time_field)
 /*******************************************************************************
@@ -5571,26 +5024,7 @@ and allows its contents to be modified.
 	return (return_code);
 } /* define_Computed_field_type_node_array_value_at_time */
 
-/*******************************************************************************
-COMPUTED_FIELD_TYPE: embedded
-
-LAST MODIFIED : 20 July 2000
-
-DESCRIPTION :
-Returns the values for the given <nodal_value_type> and <version_number> 
-of <fe_field> at a node.
-Makes the number of components the same as in the <fe_field>.
-==============================================================================*/
-
-struct Computed_field_embedded_type_specific_data
-{
-	struct FE_field *fe_field;
-	struct FE_element_field_values *fe_element_field_values;
-};
-
-static char computed_field_embedded_type_string[] = "embedded";
-
-int Computed_field_is_type_embedded(struct Computed_field *field)
+static int Computed_field_is_type_embedded(struct Computed_field *field)
 /*******************************************************************************
 LAST MODIFIED : 20 July 2000
 
@@ -5702,7 +5136,7 @@ Copy the type specific data used by this type.
 	return (destination);
 } /* Computed_field_embedded_copy_type_specific */
 
-int Computed_field_embedded_clear_cache_type_specific(
+static int Computed_field_embedded_clear_cache_type_specific(
 	struct Computed_field *field)
 /*******************************************************************************
 LAST MODIFIED : 20 July 2000
@@ -5768,7 +5202,7 @@ Compare the type specific data
 	return (return_code);
 } /* Computed_field_embedded_type_specific_contents_match */
 
-int Computed_field_embedded_is_defined_in_element(struct Computed_field *field,
+static int Computed_field_embedded_is_defined_in_element(struct Computed_field *field,
 	struct FE_element *element)
 /*******************************************************************************
 LAST MODIFIED : 18 July 2000
@@ -5794,7 +5228,7 @@ DESCRIPTION :
 	return (return_code);
 } /* Computed_field_embedded_is_defined_in_element */
 
-int Computed_field_embedded_is_defined_at_node(struct Computed_field *field,
+static int Computed_field_embedded_is_defined_at_node(struct Computed_field *field,
 	struct FE_node *node)
 /*******************************************************************************
 LAST MODIFIED : 20 July 2000
@@ -5857,7 +5291,7 @@ Check the fe_field
 	return (return_code);
 } /* Computed_field_embedded_is_defined_at_node */
 
-int Computed_field_embedded_has_numerical_components(
+static int Computed_field_embedded_has_numerical_components(
 	struct Computed_field *field)
 /*******************************************************************************
 LAST MODIFIED : 20 July 2000
@@ -5883,7 +5317,7 @@ DESCRIPTION :
 	return (return_code);
 } /* Computed_field_embedded_has_numerical_components */
 
-int Computed_field_embedded_can_be_destroyed(struct Computed_field *field)
+static int Computed_field_embedded_can_be_destroyed(struct Computed_field *field)
 /*******************************************************************************
 LAST MODIFIED : 20 July 2000
 
@@ -5996,7 +5430,7 @@ LAST MODIFIED : 20 July 2000
 DESCRIPTION :
 ==============================================================================*/
 
-int Computed_field_embedded_set_values_at_node(struct Computed_field *field,
+static int Computed_field_embedded_set_values_at_node(struct Computed_field *field,
 	struct FE_node *node,FE_value *values)
 /*******************************************************************************
 LAST MODIFIED : 20 July 2000
@@ -6127,7 +5561,7 @@ DESCRIPTION :
 	return (return_code);
 } /* list_Computed_field_embedded_commands */
 
-int Computed_field_set_type_embedded(struct Computed_field *field,
+static int Computed_field_set_type_embedded(struct Computed_field *field,
 	struct FE_field *fe_field,struct Computed_field *source_field)
 /*******************************************************************************
 LAST MODIFIED : 20 July 2000
@@ -6220,7 +5654,7 @@ although its cache may be lost.
 	return (return_code);
 } /* Computed_field_set_type_embedded */
 
-int Computed_field_get_type_embedded(struct Computed_field *field,
+static int Computed_field_get_type_embedded(struct Computed_field *field,
 	struct FE_field **fe_field, struct Computed_field **source_field)
 /*******************************************************************************
 LAST MODIFIED : 20 July 2000
@@ -6351,168 +5785,6 @@ and allows its contents to be modified.
 
 	return (return_code);
 } /* define_Computed_field_type_embedded */
-
-int Computed_field_is_read_only_with_fe_field(
-	struct Computed_field *field,void *fe_field_void)
-/*******************************************************************************
-LAST MODIFIED : 3 February 1999
-
-DESCRIPTION :
-Iterator/conditional function returning true if <field> is read only and a
-wrapper for <fe_field>.
-==============================================================================*/
-{
-	int return_code;
-	struct FE_field *fe_field;
-	struct Computed_field_finite_element_type_specific_data *data;
-
-	ENTER(Computed_field_is_read_only_with_fe_field);
-	if (field&&(fe_field=(struct FE_field *)fe_field_void))
-	{
-		return_code = 0;
-		if (field->read_only)
-		{
-			if (field->type_string == computed_field_finite_element_type_string)
-			{
-				data = (struct Computed_field_finite_element_type_specific_data *)
-					field->type_specific_data;
-				return_code=(data->fe_field==fe_field);
-			}
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_is_read_only_with_fe_field.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Computed_field_is_read_only_with_fe_field */
-
-int Computed_field_is_scalar_integer(struct Computed_field *field,
-	void *dummy_void)
-/*******************************************************************************
-LAST MODIFIED : 17 July 2000
-
-DESCRIPTION :
-Returns true if <field> is a 1 integer component FINITE_ELEMENT wrapper.
-==============================================================================*/
-{
-	int return_code;
-	struct Computed_field_finite_element_type_specific_data *data;
-
-	ENTER(Computed_field_is_scalar_integer);
-	USE_PARAMETER(dummy_void);
-	if (field)
-	{
-		if((1==field->number_of_components)&&
-			(COMPUTED_FIELD_NEW_TYPES==field->type)&&
-			(field->type_string==computed_field_finite_element_type_string) 
-			&& (data = (struct Computed_field_finite_element_type_specific_data *)
-			field->type_specific_data))
-		{
-			return_code = (INT_VALUE==get_FE_field_value_type(data->fe_field));
-		}
-		else
-		{
-			return_code = 0;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_is_scalar_integer.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Computed_field_is_scalar_integer */
-
-int Computed_field_is_scalar_integer_grid_in_element(
-	struct Computed_field *field,void *element_void)
-/*******************************************************************************
-LAST MODIFIED : 17 July 2000
-
-DESCRIPTION :
-Returns true if <field> is a 1 integer component FINITE_ELEMENT wrapper which
-is defined in <element> AND is grid-based.
-Used for choosing field suitable for identifying grid points.
-==============================================================================*/
-{
-	int return_code;
-	struct FE_element *element;
-	struct Computed_field_finite_element_type_specific_data *data;
-
-	ENTER(Computed_field_is_scalar_integer_grid_in_element);
-	if (field&&(element=(struct FE_element *)element_void))
-	{
-		if ((1==field->number_of_components)&&
-			(COMPUTED_FIELD_NEW_TYPES==field->type)&&
-			(field->type_string==computed_field_finite_element_type_string) 
-			&& (data = (struct Computed_field_finite_element_type_specific_data *)
-			field->type_specific_data))
-		{
-			return_code = (INT_VALUE==get_FE_field_value_type(data->fe_field))&&
-				Computed_field_is_defined_in_element(field,element)&&
-				FE_element_field_is_grid_based(element,data->fe_field);
-		}
-		else
-		{
-			return_code = 0;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_is_scalar_integer_grid_in_element.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Computed_field_is_scalar_integer_grid_in_element */
-
-int Computed_field_depends_on_embedded_field(struct Computed_field *field)
-/*******************************************************************************
-LAST MODIFIED : 20 July 2000
-
-DESCRIPTION :
-Returns true if the field is of an embedded type or depends on any computed
-fields which are or an embedded type.
-==============================================================================*/
-{
-	int i,return_code;
-
-	ENTER(Computed_field_depends_on_embedded_field);
-	if (field)
-	{
-		if (Computed_field_is_type_embedded(field))
-		{
-			return_code = 1;
-		}
-		else
-		{
-			return_code=0;
-			for (i=0;(i<field->number_of_source_fields)&&(!return_code);i++)
-			{
-				return_code=Computed_field_depends_on_embedded_field(
-					field->source_fields[i]);
-			}
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_depends_on_embedded_field.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Computed_field_depends_on_embedded_field */
 
 static int Computed_field_update_fe_field_in_manager(
 	struct Computed_field *computed_field, struct FE_field *fe_field,
@@ -6828,105 +6100,10 @@ Computed_field wrapper for each FE_field in the manager.
 	LEAVE;
 } /* Computed_field_FE_field_change */
 
-int destroy_computed_field_given_fe_field(
-	struct MANAGER(Computed_field) *computed_field_manager,
-	struct MANAGER(FE_field) *fe_field_manager,
-	struct FE_field *fe_field)
-/*******************************************************************************
-LAST MODIFIED : 17 May 2000
-
-DESCRIPTION :
-Given <fe_field>, destroys the associated computed field, and fe_field
-==============================================================================*/
-{
-	int return_code;
-	struct Computed_field *computed_field=(struct Computed_field *)NULL;
-
-	ENTER(destroy_computed_field_given_fe_field);
-	if(computed_field_manager&&fe_field_manager&&fe_field)
-	{
-		if(computed_field=FIRST_OBJECT_IN_MANAGER_THAT(Computed_field)
-			(Computed_field_is_read_only_with_fe_field,(void *)(fe_field),
-				computed_field_manager))
-		{
-			if (Computed_field_can_be_destroyed(computed_field))
-			{
-				/* also want to destroy (wrapped) FE_field */	
-				if (return_code=REMOVE_OBJECT_FROM_MANAGER(Computed_field)(
-					computed_field,computed_field_manager))
-				{							
-					return_code=REMOVE_OBJECT_FROM_MANAGER(FE_field)(
-						fe_field,fe_field_manager);
-				}
-				if (!return_code)
-				{
-					display_message(ERROR_MESSAGE,"destroy_computed_field_given_fe_field. "
-						" Could not destroy field");
-				}
-			}
-			else
-			{
-				display_message(WARNING_MESSAGE,
-					"destroy_computed_field_given_fe_field Cannot destroy field in use ");
-				return_code=0;
-			}
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,"destroy_computed_field_given_fe_field."
-				"Field does not exist");	
-			return_code=0;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,"destroy_computed_field_given_fe_field "
-			"invalid arguements ");
-		return_code=0;
-	}
-	LEAVE;
-	return(return_code);
-}/* destroy_computed_field_given_fe_field */
-
-int remove_computed_field_from_manager_given_FE_field(
-	struct MANAGER(Computed_field) *computed_field_manager,struct FE_field *field)
-/*******************************************************************************
-LAST MODIFIED : August 27 1999
-
-DESCRIPTION :
-Frees the computed fields from the computed field manager, given the FE_field
-==============================================================================*/
-{
-	int return_code;
-	struct Computed_field *computed_field;
-
-	ENTER(remove_computed_field_from_manager_given_FE_field);
-	if(field&&computed_field_manager)
-	{
-		return_code=1;
-		computed_field=FIRST_OBJECT_IN_MANAGER_THAT(Computed_field)(
-			Computed_field_is_read_only_with_fe_field,
-			(void *)(field),
-			computed_field_manager);
-		if(computed_field)
-		{
-			if (Computed_field_can_be_destroyed(computed_field))
-			{
-				REMOVE_OBJECT_FROM_MANAGER(Computed_field)(computed_field,
-					computed_field_manager);			
-			}
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,"remove_computed_field_from_manager_given_FE_field."
-			" invalid arguments");
-		return_code=0;
-	}
-	LEAVE;
-	return(return_code);
-}/* remove_computed_field_from_manager_given_FE_field */
-
+/*
+Global functions
+----------------
+*/
 struct Computed_field_finite_element_package *
 Computed_field_register_types_finite_element(
 	struct Computed_field_package *computed_field_package,
@@ -7032,3 +6209,862 @@ DESCRIPTION :
 	return (return_code);
 } /* Computed_field_deregister_types_finite_element */
 
+int Computed_field_is_type_finite_element(struct Computed_field *field)
+/*******************************************************************************
+LAST MODIFIED : 18 July 2000
+
+DESCRIPTION :
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(Computed_field_is_type_finite_element);
+	if (field)
+	{
+		return_code = (field->type_string == computed_field_finite_element_type_string);
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Computed_field_is_type_finite_element.  Missing field");
+		return_code=0;
+	}
+
+	return (return_code);
+} /* Computed_field_is_type_finite_element */
+
+int Computed_field_set_type_finite_element(struct Computed_field *field,
+	struct FE_field *fe_field)
+/*******************************************************************************
+LAST MODIFIED : 17 July 2000
+
+DESCRIPTION :
+Converts <field> to type COMPUTED_FIELD_FINITE_ELEMENT, wrapping the given
+<fe_field>. Makes the number of components the same as in the <fe_field>.
+If function fails, field is guaranteed to be unchanged from its original state,
+although its cache may be lost.
+==============================================================================*/
+{
+	char **component_names;
+	int i, number_of_components, return_code;
+	struct Computed_field_finite_element_type_specific_data *data;
+
+	ENTER(Computed_field_set_type_finite_element);
+	if (field&&fe_field)
+	{
+		return_code=1;
+		number_of_components = get_FE_field_number_of_components(fe_field);
+		/* 1. make dynamic allocations for any new type-specific data */
+		if (ALLOCATE(component_names, char *, number_of_components))
+		{
+			for (i = 0 ; i < number_of_components; i++)
+			{
+				if (!(component_names[i]=get_FE_field_component_name(fe_field,i)))
+				{
+					return_code = 0;
+				}
+			}
+		}
+		else
+		{
+			return_code = 0;
+		}
+		if (return_code &&
+			ALLOCATE(data,struct Computed_field_finite_element_type_specific_data, 1))
+		{
+			/* 2. free current type-specific data */
+			Computed_field_clear_type(field);
+			/* 3. establish the new type */
+			field->type=COMPUTED_FIELD_NEW_TYPES;
+			field->type_string = computed_field_finite_element_type_string;
+			field->number_of_components = number_of_components;
+			field->component_names = component_names;
+			field->type_specific_data = (void *)data;
+			data->fe_field = ACCESS(FE_field)(fe_field);
+			data->fe_element_field_values = (struct FE_element_field_values *)NULL;
+
+			/* Set all the methods */
+			field->computed_field_clear_type_specific_function =
+				Computed_field_finite_element_clear_type_specific;
+			field->computed_field_copy_type_specific_function =
+				Computed_field_finite_element_copy_type_specific;
+			field->computed_field_clear_cache_type_specific_function =
+				Computed_field_finite_element_clear_cache_type_specific;
+			field->computed_field_type_specific_contents_match_function =
+				Computed_field_finite_element_type_specific_contents_match;
+			field->computed_field_is_defined_in_element_function =
+				Computed_field_finite_element_is_defined_in_element;
+			field->computed_field_is_defined_at_node_function =
+				Computed_field_finite_element_is_defined_at_node;
+			field->computed_field_has_numerical_components_function =
+				Computed_field_finite_element_has_numerical_components;
+			field->computed_field_can_be_destroyed_function =
+				Computed_field_finite_element_can_be_destroyed;
+			field->computed_field_evaluate_cache_at_node_function =
+				Computed_field_finite_element_evaluate_cache_at_node;
+			field->computed_field_evaluate_cache_in_element_function =
+				Computed_field_finite_element_evaluate_cache_in_element;
+			field->computed_field_evaluate_as_string_at_node_function =
+				Computed_field_finite_element_evaluate_as_string_at_node;
+			field->computed_field_evaluate_as_string_in_element_function =
+				Computed_field_finite_element_evaluate_as_string_in_element;
+			field->computed_field_set_values_at_node_function =
+				Computed_field_finite_element_set_values_at_node;
+			field->computed_field_set_values_in_element_function =
+				Computed_field_finite_element_set_values_in_element;
+			field->computed_field_get_native_discretization_in_element_function =
+				Computed_field_finite_element_get_native_discretization_in_element;
+			field->computed_field_find_element_xi_function =
+				Computed_field_finite_element_find_element_xi;
+			field->list_Computed_field_function = 
+				list_Computed_field_finite_element;
+			field->list_Computed_field_commands_function = 
+				list_Computed_field_finite_element_commands;
+		}
+		else
+		{
+			for (i = 0 ; i < number_of_components ; i++)
+			{
+				if (component_names[i])
+				{
+					DEALLOCATE(component_names[i]);
+				}
+			}
+			DEALLOCATE(component_names);
+			return_code=0;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Computed_field_set_type_finite_element.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Computed_field_set_type_finite_element */
+
+int Computed_field_get_type_finite_element(struct Computed_field *field,
+	struct FE_field **fe_field)
+/*******************************************************************************
+LAST MODIFIED : 17 July 2000
+
+DESCRIPTION :
+If the field is of type COMPUTED_FIELD_FINITE_ELEMENT, the FE_field being
+"wrapped" by it is returned - otherwise an error is reported.
+==============================================================================*/
+{
+	int return_code;
+	struct Computed_field_finite_element_type_specific_data *data;
+
+	ENTER(Computed_field_get_type_finite_element);
+	if (field&&(COMPUTED_FIELD_NEW_TYPES==field->type)&&
+		(field->type_string==computed_field_finite_element_type_string) 
+		&& (data = (struct Computed_field_finite_element_type_specific_data *)
+		field->type_specific_data))
+	{
+		*fe_field=data->fe_field;
+		return_code=1;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Computed_field_get_type_finite_element.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Computed_field_get_type_finite_element */
+
+int Computed_field_is_type_default_coordinate(struct Computed_field *field)
+/*******************************************************************************
+LAST MODIFIED : 18 July 2000
+
+DESCRIPTION :
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(Computed_field_is_type_default_coordinate);
+	if (field)
+	{
+		return_code = (field->type_string == computed_field_default_coordinate_type_string);
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Computed_field_is_type_default_coordinate.  Missing field");
+		return_code=0;
+	}
+
+	return (return_code);
+} /* Computed_field_is_type_default_coordinate */
+
+int Computed_field_set_type_default_coordinate(struct Computed_field *field,
+	struct MANAGER(Computed_field) *computed_field_manager)
+/*******************************************************************************
+LAST MODIFIED : 18 July 2000
+
+DESCRIPTION :
+Converts <field> to type COMPUTED_FIELD_DEFAULT_COORDINATE, which returns the
+values/derivatives of the first [coordinate] field defined for the element/node
+in rectangular cartesian coordinates. This type is intended to replace the
+NULL coordinate_field option in the calculate_FE_element_field_values function.
+When a field of this type is calculated at and element/node, the evaluate
+function finds the first FE_field (coordinate type) defined over it, then gets
+its Computed_field wrapper from the manager and proceeds from there.
+Consequences of this behaviour are:
+- the field allocates its source_fields to point to the computed_field for the
+actual coordinate field in the evaluate phase.
+- when the source field changes the current one's cache is cleared and it is
+deaccessed.
+- when the cache is cleared, so is any reference to the source_field.
+- always performs the conversion to RC since cannot predict the coordinate
+system used by the eventual source_field. Coordinate_system of this type of
+field need not be RC, although it usually will be.
+Sets number of components to 3.
+If function fails, field is guaranteed to be unchanged from its original state,
+although its cache may be lost.
+==============================================================================*/
+{
+	int return_code;
+	struct Computed_field_default_coordinates_type_specific_data *data;
+
+	ENTER(Computed_field_set_type_default_coordinate);
+	if (field&&computed_field_manager)
+	{
+		return_code=1;
+		/* 1. make dynamic allocations for any new type-specific data */
+		if (ALLOCATE(data,struct Computed_field_default_coordinates_type_specific_data, 1))
+		{
+			/* 2. free current type-specific data */
+			Computed_field_clear_type(field);
+			/* 3. establish the new type */
+			field->type=COMPUTED_FIELD_NEW_TYPES;
+			field->type_string = computed_field_default_coordinate_type_string;
+			field->number_of_components = 3;
+			field->type_specific_data = (void *)data;
+			data->computed_field_manager = computed_field_manager;
+
+			/* Set all the methods */
+			field->computed_field_clear_type_specific_function =
+				Computed_field_default_coordinate_clear_type_specific;
+			field->computed_field_copy_type_specific_function =
+				Computed_field_default_coordinate_copy_type_specific;
+			field->computed_field_clear_cache_type_specific_function =
+				Computed_field_default_coordinate_clear_cache_type_specific;
+			field->computed_field_type_specific_contents_match_function =
+				Computed_field_default_coordinate_type_specific_contents_match;
+			field->computed_field_is_defined_in_element_function =
+				Computed_field_default_coordinate_is_defined_in_element;
+			field->computed_field_is_defined_at_node_function =
+				Computed_field_default_coordinate_is_defined_at_node;
+			field->computed_field_has_numerical_components_function =
+				Computed_field_default_coordinate_has_numerical_components;
+			field->computed_field_can_be_destroyed_function =
+				Computed_field_default_coordinate_can_be_destroyed;
+			field->computed_field_evaluate_cache_at_node_function =
+				Computed_field_default_coordinate_evaluate_cache_at_node;
+			field->computed_field_evaluate_cache_in_element_function =
+				Computed_field_default_coordinate_evaluate_cache_in_element;
+			field->computed_field_evaluate_as_string_at_node_function =
+				Computed_field_default_coordinate_evaluate_as_string_at_node;
+			field->computed_field_evaluate_as_string_in_element_function =
+				Computed_field_default_coordinate_evaluate_as_string_in_element;
+			field->computed_field_set_values_at_node_function =
+				Computed_field_default_coordinate_set_values_at_node;
+			field->computed_field_set_values_in_element_function =
+				Computed_field_default_coordinate_set_values_in_element;
+			field->computed_field_get_native_discretization_in_element_function =
+				Computed_field_default_coordinate_get_native_discretization_in_element;
+			field->computed_field_find_element_xi_function =
+				Computed_field_default_coordinate_find_element_xi;
+			field->list_Computed_field_function = 
+				list_Computed_field_default_coordinate;
+			field->list_Computed_field_commands_function = 
+				list_Computed_field_default_coordinate_commands;
+		}
+		else
+		{
+			return_code=0;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Computed_field_set_type_default_coordinate.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Computed_field_set_type_default_coordinate */
+
+int Computed_field_is_type_cmiss_number(struct Computed_field *field)
+/*******************************************************************************
+LAST MODIFIED : 18 July 2000
+
+DESCRIPTION :
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(Computed_field_is_type_cmiss_number);
+	if (field)
+	{
+		return_code = 
+		  (field->type_string == computed_field_cmiss_number_type_string);
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Computed_field_is_type_cmiss_number.  Missing field");
+		return_code=0;
+	}
+
+	return (return_code);
+} /* Computed_field_is_type_cmiss_number */
+
+int Computed_field_set_type_cmiss_number(struct Computed_field *field)
+/*******************************************************************************
+LAST MODIFIED : 20 July 2000
+
+DESCRIPTION :
+Converts <field> to type COMPUTED_FIELD_CMISS_NUMBER with the supplied
+fields, <source_field_one> and <source_field_two>.  Sets the number of 
+components equal to the source_fields.
+If function fails, field is guaranteed to be unchanged from its original state,
+although its cache may be lost.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(Computed_field_set_type_cmiss_number);
+	if (field)
+	{
+		return_code=1;
+		/* 1. make dynamic allocations for any new type-specific data */
+		/* none */
+		/* 2. free current type-specific data */
+		Computed_field_clear_type(field);
+		/* 3. establish the new type */
+		field->type=COMPUTED_FIELD_NEW_TYPES;
+		field->type_string = computed_field_cmiss_number_type_string;
+		field->number_of_components = 1;
+		field->type_specific_data = (void *)1;
+		
+		/* Set all the methods */
+		field->computed_field_clear_type_specific_function =
+			Computed_field_cmiss_number_clear_type_specific;
+		field->computed_field_copy_type_specific_function =
+			Computed_field_cmiss_number_copy_type_specific;
+		field->computed_field_clear_cache_type_specific_function =
+			Computed_field_cmiss_number_clear_cache_type_specific;
+		field->computed_field_type_specific_contents_match_function =
+			Computed_field_cmiss_number_type_specific_contents_match;
+		field->computed_field_is_defined_in_element_function =
+			Computed_field_cmiss_number_is_defined_in_element;
+		field->computed_field_is_defined_at_node_function =
+			Computed_field_cmiss_number_is_defined_at_node;
+		field->computed_field_has_numerical_components_function =
+			Computed_field_cmiss_number_has_numerical_components;
+		field->computed_field_can_be_destroyed_function =
+			Computed_field_cmiss_number_can_be_destroyed;
+		field->computed_field_evaluate_cache_at_node_function =
+			Computed_field_cmiss_number_evaluate_cache_at_node;
+		field->computed_field_evaluate_cache_in_element_function =
+			Computed_field_cmiss_number_evaluate_cache_in_element;
+		field->computed_field_evaluate_as_string_at_node_function =
+			Computed_field_cmiss_number_evaluate_as_string_at_node;
+		field->computed_field_evaluate_as_string_in_element_function =
+			Computed_field_cmiss_number_evaluate_as_string_in_element;
+		field->computed_field_set_values_at_node_function =
+			Computed_field_cmiss_number_set_values_at_node;
+		field->computed_field_set_values_in_element_function =
+			Computed_field_cmiss_number_set_values_in_element;
+		field->computed_field_get_native_discretization_in_element_function =
+			Computed_field_cmiss_number_get_native_discretization_in_element;
+		field->computed_field_find_element_xi_function =
+			Computed_field_cmiss_number_find_element_xi;
+		field->list_Computed_field_function = 
+			list_Computed_field_cmiss_number;
+		field->list_Computed_field_commands_function = 
+			list_Computed_field_cmiss_number_commands;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Computed_field_set_type_cmiss_number.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Computed_field_set_type_cmiss_number */
+
+int Computed_field_is_read_only_with_fe_field(
+	struct Computed_field *field,void *fe_field_void)
+/*******************************************************************************
+LAST MODIFIED : 3 February 1999
+
+DESCRIPTION :
+Iterator/conditional function returning true if <field> is read only and a
+wrapper for <fe_field>.
+==============================================================================*/
+{
+	int return_code;
+	struct FE_field *fe_field;
+	struct Computed_field_finite_element_type_specific_data *data;
+
+	ENTER(Computed_field_is_read_only_with_fe_field);
+	if (field&&(fe_field=(struct FE_field *)fe_field_void))
+	{
+		return_code = 0;
+		if (field->read_only)
+		{
+			if (field->type_string == computed_field_finite_element_type_string)
+			{
+				data = (struct Computed_field_finite_element_type_specific_data *)
+					field->type_specific_data;
+				return_code=(data->fe_field==fe_field);
+			}
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Computed_field_is_read_only_with_fe_field.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Computed_field_is_read_only_with_fe_field */
+
+int Computed_field_is_scalar_integer(struct Computed_field *field,
+	void *dummy_void)
+/*******************************************************************************
+LAST MODIFIED : 17 July 2000
+
+DESCRIPTION :
+Returns true if <field> is a 1 integer component FINITE_ELEMENT wrapper.
+==============================================================================*/
+{
+	int return_code;
+	struct Computed_field_finite_element_type_specific_data *data;
+
+	ENTER(Computed_field_is_scalar_integer);
+	USE_PARAMETER(dummy_void);
+	if (field)
+	{
+		if((1==field->number_of_components)&&
+			(COMPUTED_FIELD_NEW_TYPES==field->type)&&
+			(field->type_string==computed_field_finite_element_type_string) 
+			&& (data = (struct Computed_field_finite_element_type_specific_data *)
+			field->type_specific_data))
+		{
+			return_code = (INT_VALUE==get_FE_field_value_type(data->fe_field));
+		}
+		else
+		{
+			return_code = 0;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Computed_field_is_scalar_integer.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Computed_field_is_scalar_integer */
+
+int Computed_field_is_scalar_integer_grid_in_element(
+	struct Computed_field *field,void *element_void)
+/*******************************************************************************
+LAST MODIFIED : 17 July 2000
+
+DESCRIPTION :
+Returns true if <field> is a 1 integer component FINITE_ELEMENT wrapper which
+is defined in <element> AND is grid-based.
+Used for choosing field suitable for identifying grid points.
+==============================================================================*/
+{
+	int return_code;
+	struct FE_element *element;
+	struct Computed_field_finite_element_type_specific_data *data;
+
+	ENTER(Computed_field_is_scalar_integer_grid_in_element);
+	if (field&&(element=(struct FE_element *)element_void))
+	{
+		if ((1==field->number_of_components)&&
+			(COMPUTED_FIELD_NEW_TYPES==field->type)&&
+			(field->type_string==computed_field_finite_element_type_string) 
+			&& (data = (struct Computed_field_finite_element_type_specific_data *)
+			field->type_specific_data))
+		{
+			return_code = (INT_VALUE==get_FE_field_value_type(data->fe_field))&&
+				Computed_field_is_defined_in_element(field,element)&&
+				FE_element_field_is_grid_based(element,data->fe_field);
+		}
+		else
+		{
+			return_code = 0;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Computed_field_is_scalar_integer_grid_in_element.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Computed_field_is_scalar_integer_grid_in_element */
+
+int Computed_field_depends_on_embedded_field(struct Computed_field *field)
+/*******************************************************************************
+LAST MODIFIED : 20 July 2000
+
+DESCRIPTION :
+Returns true if the field is of an embedded type or depends on any computed
+fields which are or an embedded type.
+==============================================================================*/
+{
+	int i,return_code;
+
+	ENTER(Computed_field_depends_on_embedded_field);
+	if (field)
+	{
+		if (Computed_field_is_type_embedded(field))
+		{
+			return_code = 1;
+		}
+		else
+		{
+			return_code=0;
+			for (i=0;(i<field->number_of_source_fields)&&(!return_code);i++)
+			{
+				return_code=Computed_field_depends_on_embedded_field(
+					field->source_fields[i]);
+			}
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Computed_field_depends_on_embedded_field.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Computed_field_depends_on_embedded_field */
+
+int remove_computed_field_from_manager_given_FE_field(
+	struct MANAGER(Computed_field) *computed_field_manager,struct FE_field *field)
+/*******************************************************************************
+LAST MODIFIED : August 27 1999
+
+DESCRIPTION :
+Frees the computed fields from the computed field manager, given the FE_field
+==============================================================================*/
+{
+	int return_code;
+	struct Computed_field *computed_field;
+
+	ENTER(remove_computed_field_from_manager_given_FE_field);
+	if(field&&computed_field_manager)
+	{
+		return_code=1;
+		computed_field=FIRST_OBJECT_IN_MANAGER_THAT(Computed_field)(
+			Computed_field_is_read_only_with_fe_field,
+			(void *)(field),
+			computed_field_manager);
+		if(computed_field)
+		{
+			if (Computed_field_can_be_destroyed(computed_field))
+			{
+				REMOVE_OBJECT_FROM_MANAGER(Computed_field)(computed_field,
+					computed_field_manager);			
+			}
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"remove_computed_field_from_manager_given_FE_field."
+			" invalid arguments");
+		return_code=0;
+	}
+	LEAVE;
+	return(return_code);
+}/* remove_computed_field_from_manager_given_FE_field */
+
+int destroy_computed_field_given_fe_field(
+	struct MANAGER(Computed_field) *computed_field_manager,
+	struct MANAGER(FE_field) *fe_field_manager,
+	struct FE_field *fe_field)
+/*******************************************************************************
+LAST MODIFIED : 17 May 2000
+
+DESCRIPTION :
+Given <fe_field>, destroys the associated computed field, and fe_field
+==============================================================================*/
+{
+	int return_code;
+	struct Computed_field *computed_field=(struct Computed_field *)NULL;
+
+	ENTER(destroy_computed_field_given_fe_field);
+	if(computed_field_manager&&fe_field_manager&&fe_field)
+	{
+		if(computed_field=FIRST_OBJECT_IN_MANAGER_THAT(Computed_field)
+			(Computed_field_is_read_only_with_fe_field,(void *)(fe_field),
+				computed_field_manager))
+		{
+			if (Computed_field_can_be_destroyed(computed_field))
+			{
+				/* also want to destroy (wrapped) FE_field */	
+				if (return_code=REMOVE_OBJECT_FROM_MANAGER(Computed_field)(
+					computed_field,computed_field_manager))
+				{							
+					return_code=REMOVE_OBJECT_FROM_MANAGER(FE_field)(
+						fe_field,fe_field_manager);
+				}
+				if (!return_code)
+				{
+					display_message(ERROR_MESSAGE,"destroy_computed_field_given_fe_field. "
+						" Could not destroy field");
+				}
+			}
+			else
+			{
+				display_message(WARNING_MESSAGE,
+					"destroy_computed_field_given_fe_field Cannot destroy field in use ");
+				return_code=0;
+			}
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,"destroy_computed_field_given_fe_field."
+				"Field does not exist");	
+			return_code=0;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"destroy_computed_field_given_fe_field "
+			"invalid arguements ");
+		return_code=0;
+	}
+	LEAVE;
+	return(return_code);
+}/* destroy_computed_field_given_fe_field */
+
+int Computed_field_set_type_node_array_value_at_time(
+	struct Computed_field *field,struct FE_field *fe_field,
+	enum FE_nodal_value_type nodal_value_type,int version_number,
+	struct Computed_field *time_field)
+/*******************************************************************************
+LAST MODIFIED : 20 July 2000
+
+DESCRIPTION :
+Converts <field> to type COMPUTED_FIELD_NODE_ARRAY_VALUE_AT_TIME, returning the
+values for the given <nodal_value_type> and <version_number> of <fe_field> at a
+node.  Makes the number of components the same as in the <fe_field>.  Field
+automatically takes the coordinate system of the source fe_field. See note at
+start of this file about changing use of coordinate systems.  If function fails,
+field is guaranteed to be unchanged from its original state, although its cache
+may be lost.
+==============================================================================*/
+{
+	char **component_names;
+	int i, number_of_components, number_of_source_fields, return_code;
+	struct Computed_field **source_fields;
+	struct Computed_field_node_array_value_at_time_type_specific_data *data;
+
+	ENTER(Computed_field_set_type_node_array_value_at_time);
+	if (field&&fe_field&&(FE_NODAL_UNKNOWN!=nodal_value_type)&&
+		(0<=version_number)&&time_field&&(1==time_field->number_of_components))
+	{
+		return_code=1;
+		number_of_components = get_FE_field_number_of_components(fe_field);
+		/* 1. make dynamic allocations for any new type-specific data */
+		if (ALLOCATE(component_names, char *, number_of_components))
+		{
+			for (i = 0 ; i < number_of_components; i++)
+			{
+				if (!(component_names[i]=get_FE_field_component_name(fe_field,i)))
+				{
+					return_code = 0;
+				}
+			}
+		}
+		else
+		{
+			return_code = 0;
+		}
+		number_of_source_fields=1;
+		source_fields = (struct Computed_field **)NULL;
+		if (return_code &&
+			ALLOCATE(source_fields,struct Computed_field *,number_of_source_fields) &&
+			ALLOCATE(data,struct Computed_field_node_array_value_at_time_type_specific_data, 1))
+		{
+			/* 2. free current type-specific data */
+			Computed_field_clear_type(field);
+			/* 3. establish the new type */
+			field->type=COMPUTED_FIELD_NEW_TYPES;
+			field->type_string = computed_field_node_array_value_at_time_type_string;
+			field->number_of_components = number_of_components;
+			field->component_names = component_names;
+			source_fields[0]=ACCESS(Computed_field)(time_field);
+			field->source_fields=source_fields;
+			field->number_of_source_fields=number_of_source_fields;
+			field->type_specific_data = (void *)data;
+			data->fe_field = ACCESS(FE_field)(fe_field);
+			data->nodal_value_type=nodal_value_type;
+			data->version_number=version_number;
+
+			/* Set all the methods */
+			field->computed_field_clear_type_specific_function =
+				Computed_field_node_array_value_at_time_clear_type_specific;
+			field->computed_field_copy_type_specific_function =
+				Computed_field_node_array_value_at_time_copy_type_specific;
+			field->computed_field_clear_cache_type_specific_function =
+				Computed_field_node_array_value_at_time_clear_cache_type_specific;
+			field->computed_field_type_specific_contents_match_function =
+				Computed_field_node_array_value_at_time_type_specific_contents_match;
+			field->computed_field_is_defined_in_element_function =
+				Computed_field_node_array_value_at_time_is_defined_in_element;
+			field->computed_field_is_defined_at_node_function =
+				Computed_field_node_array_value_at_time_is_defined_at_node;
+			field->computed_field_has_numerical_components_function =
+				Computed_field_node_array_value_at_time_has_numerical_components;
+			field->computed_field_can_be_destroyed_function =
+				Computed_field_node_array_value_at_time_can_be_destroyed;
+			field->computed_field_evaluate_cache_at_node_function =
+				Computed_field_node_array_value_at_time_evaluate_cache_at_node;
+			field->computed_field_evaluate_cache_in_element_function =
+				Computed_field_node_array_value_at_time_evaluate_cache_in_element;
+			field->computed_field_evaluate_as_string_at_node_function =
+				Computed_field_node_array_value_at_time_evaluate_as_string_at_node;
+			field->computed_field_evaluate_as_string_in_element_function =
+				Computed_field_node_array_value_at_time_evaluate_as_string_in_element;
+			field->computed_field_set_values_at_node_function =
+				Computed_field_node_array_value_at_time_set_values_at_node;
+			field->computed_field_set_values_in_element_function =
+				Computed_field_node_array_value_at_time_set_values_in_element;
+			field->computed_field_get_native_discretization_in_element_function =
+				Computed_field_node_array_value_at_time_get_native_discretization_in_element;
+			field->computed_field_find_element_xi_function =
+				Computed_field_node_array_value_at_time_find_element_xi;
+			field->list_Computed_field_function = 
+				list_Computed_field_node_array_value_at_time;
+			field->list_Computed_field_commands_function = 
+				list_Computed_field_node_array_value_at_time_commands;
+		}
+		else
+		{
+			for (i = 0 ; i < number_of_components ; i++)
+			{
+				if (component_names[i])
+				{
+					DEALLOCATE(component_names[i]);
+				}
+			}
+			DEALLOCATE(component_names);
+			DEALLOCATE(source_fields);
+			return_code=0;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Computed_field_set_type_node_array_value_at_time.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Computed_field_set_type_node_array_value_at_time */
+
+int Computed_field_set_type_xi_coordinates(struct Computed_field *field)
+/*******************************************************************************
+LAST MODIFIED : 20 July 2000
+
+DESCRIPTION :
+Converts <field> to type COMPUTED_FIELD_XI_COORDINATES with the supplied
+fields, <source_field_one> and <source_field_two>.  Sets the number of 
+components equal to the source_fields.
+If function fails, field is guaranteed to be unchanged from its original state,
+although its cache may be lost.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(Computed_field_set_type_xi_coordinates);
+	if (field)
+	{
+		return_code=1;
+		/* 1. make dynamic allocations for any new type-specific data */
+		/* none */
+		/* 2. free current type-specific data */
+		Computed_field_clear_type(field);
+		/* 3. establish the new type */
+		field->type=COMPUTED_FIELD_NEW_TYPES;
+		field->type_string = computed_field_xi_coordinates_type_string;
+		field->number_of_components = 3;
+		field->type_specific_data = (void *)1;
+		
+		/* Set all the methods */
+		field->computed_field_clear_type_specific_function =
+			Computed_field_xi_coordinates_clear_type_specific;
+		field->computed_field_copy_type_specific_function =
+			Computed_field_xi_coordinates_copy_type_specific;
+		field->computed_field_clear_cache_type_specific_function =
+			Computed_field_xi_coordinates_clear_cache_type_specific;
+		field->computed_field_type_specific_contents_match_function =
+			Computed_field_xi_coordinates_type_specific_contents_match;
+		field->computed_field_is_defined_in_element_function =
+			Computed_field_xi_coordinates_is_defined_in_element;
+		field->computed_field_is_defined_at_node_function =
+			Computed_field_xi_coordinates_is_defined_at_node;
+		field->computed_field_has_numerical_components_function =
+			Computed_field_xi_coordinates_has_numerical_components;
+		field->computed_field_can_be_destroyed_function =
+			Computed_field_xi_coordinates_can_be_destroyed;
+		field->computed_field_evaluate_cache_at_node_function =
+			Computed_field_xi_coordinates_evaluate_cache_at_node;
+		field->computed_field_evaluate_cache_in_element_function =
+			Computed_field_xi_coordinates_evaluate_cache_in_element;
+		field->computed_field_evaluate_as_string_at_node_function =
+			Computed_field_xi_coordinates_evaluate_as_string_at_node;
+		field->computed_field_evaluate_as_string_in_element_function =
+			Computed_field_xi_coordinates_evaluate_as_string_in_element;
+		field->computed_field_set_values_at_node_function =
+			Computed_field_xi_coordinates_set_values_at_node;
+		field->computed_field_set_values_in_element_function =
+			Computed_field_xi_coordinates_set_values_in_element;
+		field->computed_field_get_native_discretization_in_element_function =
+			Computed_field_xi_coordinates_get_native_discretization_in_element;
+		field->computed_field_find_element_xi_function =
+			Computed_field_xi_coordinates_find_element_xi;
+		field->list_Computed_field_function = 
+			list_Computed_field_xi_coordinates;
+		field->list_Computed_field_commands_function = 
+			list_Computed_field_xi_coordinates_commands;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Computed_field_set_type_xi_coordinates.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Computed_field_set_type_xi_coordinates */
