@@ -32940,6 +32940,7 @@ Creates a copy of the <external_information> of the <field>.
 	int return_code;
 
 	ENTER(get_FE_field_external_information);
+	return_code=0;
 	if (field&&external_information)
 	{
 		if (field->external)
@@ -32966,7 +32967,6 @@ Creates a copy of the <external_information> of the <field>.
 		display_message(ERROR_MESSAGE,
 			"get_FE_field_external_information.  Invalid argument(s)");
 	}
-	return_code=0;
 	LEAVE;
 
 	return (return_code);

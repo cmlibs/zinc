@@ -1561,7 +1561,7 @@ while (wh_output_can_open(connection->data_output))
 static int CMISS_connection_count_node_field(struct FE_node *node,
 	struct FE_field *field,void *count_void)
 /*******************************************************************************
-LAST MODIFIED : 2 September 2001
+LAST MODIFIED : 3 September 2001
 
 DESCRIPTION :
 Increments the <count_void> if the field is a cm field.
@@ -1577,7 +1577,7 @@ Increments the <count_void> if the field is a cm field.
 	if (node&&field&&(count=(int *)count_void))
 	{
 		return_code=1;
-		if (get_FE_field_external_information(field,&external)&&
+		if (get_FE_field_external_information(field,&external)&&external&&
 			(compare_FE_field_cm_information==external->compare)&&(cm_information=
 			(struct CM_field_information *)(external->information)))
 		{
@@ -1626,117 +1626,17 @@ Send out node_field information for this node_field.
 
 	ENTER(CMISS_connection_send_node_field);
 	return_code=0;
-	if (node&&field&&get_FE_field_external_information(field,&external)&&
-		(compare_FE_field_cm_information==external->compare)&&(cm_information=
-		(struct CM_field_information *)(external->information))&&
+	if (node&&field&&
 		(send_node_struct=(struct CMISS_connection_send_node_struct *)user_data))
 	{
-		name=(char *)NULL;
-		if (GET_NAME(FE_field)((struct FE_field *)field,&name))
+		if (get_FE_field_external_information(field,&external)&&external&&
+			(compare_FE_field_cm_information==external->compare)&&(cm_information=
+			(struct CM_field_information *)(external->information))&&
+			(send_node_struct=(struct CMISS_connection_send_node_struct *)user_data))
 		{
-			wh_input_add_char(send_node_struct->connection->data_input,strlen(name),
-				name);
-			DEALLOCATE(name);
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"CMISS_connection_send_node_field.  Could not get field name");
-		}
-		int_data[0]=get_FE_field_CM_field_type(field);
-		int_data[1]=get_coordinate_system_type(
-			get_FE_field_coordinate_system(field));
-		number_of_values=get_FE_field_number_of_values(field);
-		int_data[2]=number_of_values;
-		number_of_components=get_FE_field_number_of_components(
-			(struct FE_field *)field);
-		int_data[3]=number_of_components;
-		wh_input_add_int(send_node_struct->connection->data_input,4,int_data);
-		if (0<number_of_values)
-		{
-			if (ALLOCATE(temp_field_values,double,number_of_values))
-			{
-				for (i=0;i<number_of_values;i++)
-				{
-					get_FE_field_FE_value_value((struct FE_field *)field,i,
-						(FE_value *)(temp_field_values+i));
-				}
-				wh_input_add_double(send_node_struct->connection->data_input,
-					number_of_values,temp_field_values);
-				DEALLOCATE(temp_field_values);
-			}
-			else
-			{
-				display_message(ERROR_MESSAGE,"CMISS_connection_send_node_field.  %s",
-					"Could not allocate memory");
-			}
-		}
-		/* send cm field information */
-		int_data[0]=cm_information->nr;
-		switch (cm_information->array)
-		{
-			case CM_ARRAY_FIX:
-			{
-				int_data[1]=3;
-			} break;
-			case CM_ARRAY_LD:
-			{
-				int_data[1]=3;
-			} break;
-			case CM_ARRAY_WD:
-			{
-				int_data[1]=2;
-			} break;
-			case CM_ARRAY_XID:
-			{
-				int_data[1]=3;
-			} break;
-			case CM_ARRAY_XP:
-			{
-				int_data[1]=1;
-			} break;
-			case CM_ARRAY_YP:
-			{
-				int_data[1]=2;
-			} break;
-			case CM_ARRAY_ZD:
-			{
-				int_data[1]=1;
-			} break;
-			default:
-			{
-				int_data[1]=0;
-			} break;
-		}
-		wh_input_add_int(send_node_struct->connection->data_input,2,int_data);
-		switch (cm_information->array)
-		{
-			case CM_ARRAY_FIX:
-			{
-				int_data[0]=(cm_information->indices).yp.nx;
-				int_data[1]=(cm_information->indices).yp.nhx_index;
-				int_data[2]=(cm_information->indices).yp.nc;
-				wh_input_add_int(send_node_struct->connection->data_input,3,int_data);
-			} break;
-			case CM_ARRAY_XP:
-			{
-				int_data[0]=(cm_information->indices).xp.nj_typ;
-				wh_input_add_int(send_node_struct->connection->data_input,1,int_data);
-			} break;
-			case CM_ARRAY_YP:
-			{
-				int_data[0]=(cm_information->indices).yp.nx;
-				int_data[1]=(cm_information->indices).yp.nhx_index;
-				int_data[2]=(cm_information->indices).yp.nc;
-				int_data[3]=(cm_information->indices).yp.iy;
-				wh_input_add_int(send_node_struct->connection->data_input,4,int_data);
-			} break;
-		}
-		for (component_number=0;component_number<number_of_components;
-			component_number++)
-		{
+			return_code=1;
 			name=(char *)NULL;
-			if (name=get_FE_field_component_name(field,component_number))
+			if (GET_NAME(FE_field)((struct FE_field *)field,&name))
 			{
 				wh_input_add_char(send_node_struct->connection->data_input,strlen(name),
 					name);
@@ -1744,19 +1644,123 @@ Send out node_field information for this node_field.
 			}
 			else
 			{
-				display_message(ERROR_MESSAGE,"CMISS_connection_send_node_field.  "
-					"Could not get field component name");
+				display_message(ERROR_MESSAGE,
+					"CMISS_connection_send_node_field.  Could not get field name");
 			}
-			/*???DB.  Ignore values */
-			int_data[0]=0;
-			int_data[1]=get_FE_node_field_component_number_of_derivatives(node,field,
-				component_number);
-			int_data[2]=get_FE_node_field_component_number_of_versions(node,field,
-				component_number);
-			/*???DB.  Nodal value types ? */
-			wh_input_add_int(send_node_struct->connection->data_input,3,int_data);
+			int_data[0]=get_FE_field_CM_field_type(field);
+			int_data[1]=get_coordinate_system_type(
+				get_FE_field_coordinate_system(field));
+			number_of_values=get_FE_field_number_of_values(field);
+			int_data[2]=number_of_values;
+			number_of_components=get_FE_field_number_of_components(
+				(struct FE_field *)field);
+			int_data[3]=number_of_components;
+			wh_input_add_int(send_node_struct->connection->data_input,4,int_data);
+			if (0<number_of_values)
+			{
+				if (ALLOCATE(temp_field_values,double,number_of_values))
+				{
+					for (i=0;i<number_of_values;i++)
+					{
+						get_FE_field_FE_value_value((struct FE_field *)field,i,
+							(FE_value *)(temp_field_values+i));
+					}
+					wh_input_add_double(send_node_struct->connection->data_input,
+						number_of_values,temp_field_values);
+					DEALLOCATE(temp_field_values);
+				}
+				else
+				{
+					display_message(ERROR_MESSAGE,"CMISS_connection_send_node_field.  %s",
+						"Could not allocate memory");
+				}
+			}
+			/* send cm field information */
+			int_data[0]=cm_information->nr;
+			switch (cm_information->array)
+			{
+				case CM_ARRAY_FIX:
+				{
+					int_data[1]=3;
+				} break;
+				case CM_ARRAY_LD:
+				{
+					int_data[1]=3;
+				} break;
+				case CM_ARRAY_WD:
+				{
+					int_data[1]=2;
+				} break;
+				case CM_ARRAY_XID:
+				{
+					int_data[1]=3;
+				} break;
+				case CM_ARRAY_XP:
+				{
+					int_data[1]=1;
+				} break;
+				case CM_ARRAY_YP:
+				{
+					int_data[1]=2;
+				} break;
+				case CM_ARRAY_ZD:
+				{
+					int_data[1]=1;
+				} break;
+				default:
+				{
+					int_data[1]=0;
+				} break;
+			}
+			wh_input_add_int(send_node_struct->connection->data_input,2,int_data);
+			switch (cm_information->array)
+			{
+				case CM_ARRAY_FIX:
+				{
+					int_data[0]=(cm_information->indices).yp.nx;
+					int_data[1]=(cm_information->indices).yp.nhx_index;
+					int_data[2]=(cm_information->indices).yp.nc;
+					wh_input_add_int(send_node_struct->connection->data_input,3,int_data);
+				} break;
+				case CM_ARRAY_XP:
+				{
+					int_data[0]=(cm_information->indices).xp.nj_typ;
+					wh_input_add_int(send_node_struct->connection->data_input,1,int_data);
+				} break;
+				case CM_ARRAY_YP:
+				{
+					int_data[0]=(cm_information->indices).yp.nx;
+					int_data[1]=(cm_information->indices).yp.nhx_index;
+					int_data[2]=(cm_information->indices).yp.nc;
+					int_data[3]=(cm_information->indices).yp.iy;
+					wh_input_add_int(send_node_struct->connection->data_input,4,int_data);
+				} break;
+			}
+			for (component_number=0;component_number<number_of_components;
+				component_number++)
+			{
+				name=(char *)NULL;
+				if (name=get_FE_field_component_name(field,component_number))
+				{
+					wh_input_add_char(send_node_struct->connection->data_input,
+						strlen(name),name);
+					DEALLOCATE(name);
+				}
+				else
+				{
+					display_message(ERROR_MESSAGE,"CMISS_connection_send_node_field.  "
+						"Could not get field component name");
+				}
+				/*???DB.  Ignore values */
+				int_data[0]=0;
+				int_data[1]=get_FE_node_field_component_number_of_derivatives(node,
+					field,component_number);
+				int_data[2]=get_FE_node_field_component_number_of_versions(node,field,
+					component_number);
+				/*???DB.  Nodal value types ? */
+				wh_input_add_int(send_node_struct->connection->data_input,3,int_data);
+			}
 		}
-		return_code=1;
 	}
 	else
 	{
