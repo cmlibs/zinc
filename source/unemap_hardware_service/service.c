@@ -25,6 +25,8 @@
 //  AUTHOR: Craig Link - Microsoft Developer Support
 //
 
+/*#define USE_ACPI*/
+
 /*#define TEST_SOCKETS 1*/
 
 #include <windows.h>
@@ -45,7 +47,12 @@ BOOL                    bDebug = FALSE;
 TCHAR                   szErr[256];
 
 // internal function prototypes
+#if defined (USE_ACPI)
+DWORD WINAPI service_ctrl(DWORD dwCtrlCode,DWORD dwEventType,LPVOID lpEventData,
+	LPVOID lpContext);
+#else /* defined (USE_ACPI) */
 VOID WINAPI service_ctrl(DWORD dwCtrlCode);
+#endif /* defined (USE_ACPI) */
 VOID WINAPI service_main(DWORD dwArgc, LPTSTR *lpszArgv);
 VOID CmdInstallService();
 VOID CmdRemoveService();
@@ -95,11 +102,6 @@ void _CRTAPI1 main(int argc, char **argv)
         { TEXT(SZSERVICENAME), (LPSERVICE_MAIN_FUNCTION)service_main },
         { NULL, NULL }
     };
-#if defined (UNEMAP_HARDWARE_SPECIFIC)
-	/*???DB.  unemap hardware specific start */
-	unsigned long number_of_channels;
-		/*???DB.  unemap hardware specific end */
-#endif /* defined (UNEMAP_HARDWARE_SPECIFIC) */
 
 	/*???DB.  unemap hardware specific start */
 	/* clear the error log */
@@ -114,6 +116,8 @@ void _CRTAPI1 main(int argc, char **argv)
 	/*???DB.  unemap hardware specific end */
 #if defined (UNEMAP_HARDWARE_SPECIFIC)
 #endif /* defined (UNEMAP_HARDWARE_SPECIFIC) */
+#if defined (DEBUG)
+#endif /* defined (DEBUG) */
     if ( (argc > 1) &&
          ((*argv[1] == '-') || (*argv[1] == '/')) )
     {
@@ -176,7 +180,11 @@ void WINAPI service_main(DWORD dwArgc, LPTSTR *lpszArgv)
 
     // register our service control handler:
     //
+#if defined (USE_ACPI)
+    sshStatusHandle = RegisterServiceCtrlHandlerEx( TEXT(SZSERVICENAME), service_ctrl, (LPVOID)NULL);
+#else /* defined (USE_ACPI) */
     sshStatusHandle = RegisterServiceCtrlHandler( TEXT(SZSERVICENAME), service_ctrl);
+#endif /* defined (USE_ACPI) */
 
     if (!sshStatusHandle)
         goto cleanup;
@@ -231,7 +239,12 @@ cleanup:
 //
 //  COMMENTS:
 //
+#if defined (USE_ACPI)
+DWORD WINAPI service_ctrl(DWORD dwCtrlCode,DWORD dwEventType,LPVOID lpEventData,
+	LPVOID lpContext)
+#else /* defined (USE_ACPI) */
 VOID WINAPI service_ctrl(DWORD dwCtrlCode)
+#endif /* defined (USE_ACPI) */
 {
     // Handle the requested control code.
     //
@@ -252,13 +265,23 @@ VOID WINAPI service_ctrl(DWORD dwCtrlCode)
 #endif /* defined (UNEMAP_HARDWARE_SPECIFIC) */
             ReportStatusToSCMgr(SERVICE_STOP_PENDING, NO_ERROR, 0);
             ServiceStop();
+#if defined (USE_ACPI)
+            return (NO_ERROR);
+#else /* defined (USE_ACPI) */
             return;
+#endif /* defined (USE_ACPI) */
 
         // Update the service status.
         //
         case SERVICE_CONTROL_INTERROGATE:
             break;
 
+#if defined (USE_ACPI)
+				case SERVICE_CONTROL_POWEREVENT:
+            AddToMessageLog(TEXT("SERVICE_CONTROL_POWEREVENT"));
+						ReportStatusToSCMgr(ssStatus.dwCurrentState, NO_ERROR, 0);
+						return (ERROR_CONTINUE);
+#endif /* defined (USE_ACPI) */
         // invalid control code
         //
         default:
@@ -267,6 +290,9 @@ VOID WINAPI service_ctrl(DWORD dwCtrlCode)
     }
 
     ReportStatusToSCMgr(ssStatus.dwCurrentState, NO_ERROR, 0);
+#if defined (USE_ACPI)
+		return (NO_ERROR);
+#endif /* defined (USE_ACPI) */
 }
 #endif /* !defined (TEST_SOCKETS) */
 
@@ -309,6 +335,9 @@ BOOL ReportStatusToSCMgr(DWORD dwCurrentState,
 /*???DB.  unemap hardware specific end */
 #if defined (UNEMAP_HARDWARE_SPECIFIC)
 #endif /* defined (UNEMAP_HARDWARE_SPECIFIC) */
+#if defined (USE_ACPI)
+							|SERVICE_ACCEPT_POWEREVENT
+#endif /* defined (USE_ACPI) */
 							;
 
         ssStatus.dwCurrentState = dwCurrentState;

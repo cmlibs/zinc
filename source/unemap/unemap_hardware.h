@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : unemap_hardware.h
 
-LAST MODIFIED : 16 November 2001
+LAST MODIFIED : 13 January 2002
 
 DESCRIPTION :
 Code for controlling the National Instruments (NI) data acquisition and unemap
@@ -380,11 +380,11 @@ The number of samples acquired per channel since <unemap_start_sampling> is
 assigned to <*number_of_samples>.
 ==============================================================================*/
 
-int unemap_transfer_samples_acquired(int channel_number,
+int unemap_transfer_samples_acquired(int channel_number,int number_of_samples,
 	Unemap_transfer_samples_function *transfer_samples_function,
 	void *transfer_samples_function_data,int *number_of_samples_transferred);
 /*******************************************************************************
-LAST MODIFIED : 12 November 2001
+LAST MODIFIED : 13 January 2002
 
 DESCRIPTION :
 The function fails if the hardware is not configured.
@@ -394,15 +394,21 @@ inclusive, then the <samples> for that channel are transferred.  If
 <channel_number> is 0 then the <samples> for all channels are transferred.
 Otherwise the function fails.
 
+If <number_of_samples> is not positive or greater than the number of samples
+available, then the number of samples available are transferred.  Otherwise,
+<number_of_samples> are transferred. If <number_of_samples_transferred> is not
+NULL, then it is set to the number of samples transferred.
+
 The <transfer_samples_function> is used to transfer the samples.  It is called
 with samples (short int *), number_of_samples (int) and
 <transfer_samples_function_data>.  It should return the number of samples
 transferred.
 ==============================================================================*/
 
-int unemap_write_samples_acquired(int channel_number,FILE *file);
+int unemap_write_samples_acquired(int channel_number,int number_of_samples,
+	FILE *file,int *number_of_samples_written);
 /*******************************************************************************
-LAST MODIFIED : 3 July 2000
+LAST MODIFIED : 13 January 2002
 
 DESCRIPTION :
 The function fails if the hardware is not configured.
@@ -411,11 +417,17 @@ If <channel_number> is valid (between 1 and the total number of channels
 inclusive, then the samples for that channel are written to <file>.  If
 <channel_number> is 0 then the samples for all channels are written to <file>.
 Otherwise the function fails.
+
+If <number_of_samples> is not positive or greater than the number of samples
+available, then the number of samples available are written.  Otherwise,
+<number_of_samples> are written. If <number_of_samples_written> is not NULL,
+then it is set to the number of samples written.
 ==============================================================================*/
 
-int unemap_get_samples_acquired(int channel_number,short int *samples);
+int unemap_get_samples_acquired(int channel_number,int number_of_samples,
+	short int *samples,int *number_of_samples_got);
 /*******************************************************************************
-LAST MODIFIED : 11 February 1999
+LAST MODIFIED : 13 January 2002
 
 DESCRIPTION :
 The function fails if the hardware is not configured.
@@ -424,19 +436,30 @@ If <channel_number> is valid (between 1 and the total number of channels
 inclusive, then the <samples> for that channel are returned.  If
 <channel_number> is 0 then the <samples> for all channels are returned.
 Otherwise the function fails.
+
+If <number_of_samples> is not positive or greater than the number of samples
+available, then the number of samples available are got.  Otherwise,
+<number_of_samples> are got. If <number_of_samples_got> is not NULL, then it is
+set to the number of samples got.
 ==============================================================================*/
 
 int unemap_get_samples_acquired_background(int channel_number,
-	Unemap_acquired_data_callback *callback,void *user_data);
+	int number_of_samples,Unemap_acquired_data_callback *callback,
+	void *user_data);
 /*******************************************************************************
-LAST MODIFIED : 21 July 2000
+LAST MODIFIED : 13 January 2002
 
 DESCRIPTION :
 The function fails if the hardware is not configured.
 
+If <number_of_samples> is not positive or greater than the number of samples
+available, then the number of samples available are got.  Otherwise,
+<number_of_samples> are got.
+
 The function gets the samples specified by the <channel_number> and calls the
-<callback> with the <channel_number>, the number of samples, the samples and the
-<user_data>.  The <callback> is responsible for deallocating the samples memory.
+<callback> with the <channel_number>, the number of samples got, the samples and
+the <user_data>.  The <callback> is responsible for deallocating the samples
+memory.
 
 When the function returns, it is safe to call any of the other functions
 (including unemap_start_sampling), but the <callback> may not have finished or

@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : test_unemap_hardware.c
 
-LAST MODIFIED : 3 January 2002
+LAST MODIFIED : 22 January 2002
 
 DESCRIPTION :
 For testing the unemap hardware software (client, server, standalone).
@@ -100,6 +100,7 @@ static void acquired_data_callback(const int channel_number,
 {
 	printf("unemap_get_samples_acquired_background finished.  %d %d %p %p\n",
 		channel_number,number_of_samples,samples,user_data);
+	DEALLOCATE(samples);
 	unemap_get_samples_acquired_background_finished=1;
 } /* acquired_data_callback */
 
@@ -386,38 +387,59 @@ static void process_keyboard(
 				} break;
 				case 'i':
 				{
-					int channel_number,number_of_channels;
+					int channel_number,number_of_channels,number_of_samples,
+						number_of_samples_returned;
 					short *samples;
-					unsigned long number_of_samples;
+					unsigned long number_of_samples_acquired;
 
 					printf("channel_number ? ");
 					scanf(" %d",&channel_number);
-					unemap_get_number_of_samples_acquired(&number_of_samples);
 					if (0==channel_number)
 					{
 						unemap_get_number_of_channels(&number_of_channels);
-						number_of_samples *= number_of_channels;
 					}
-					if (samples=(short *)malloc(sizeof(short)*number_of_samples))
+					else
 					{
-						return_code=unemap_get_samples_acquired(channel_number,samples);
+						number_of_channels=1;
+					}
+					printf("number_of_samples ? ");
+					scanf(" %d",&number_of_samples);
+					number_of_samples_acquired=0;
+					unemap_get_number_of_samples_acquired(&number_of_samples_acquired);
+					if ((number_of_samples<=0)||
+						(number_of_samples>(int)number_of_samples_acquired))
+					{
+						number_of_samples_returned=(int)number_of_samples_acquired;
+					}
+					else
+					{
+						number_of_samples_returned=number_of_samples;
+					}
+					if (samples=(short *)malloc(sizeof(short)*number_of_channels*
+						number_of_samples_returned))
+					{
+						return_code=unemap_get_samples_acquired(channel_number,
+							number_of_samples,samples,&number_of_samples_returned);
 						printf("return_code=%d\n",return_code);
 						free(samples);
 					}
 					else
 					{
-						printf("Could not allocate samples %lu\n",number_of_samples);
+						printf("Could not allocate samples %d %d\n",number_of_channels,
+							number_of_samples_returned);
 					}
 				} break;
 				case 'j':
 				{
-					int channel_number;
+					int channel_number,number_of_samples;
 
 					printf("channel_number ? ");
 					scanf(" %d",&channel_number);
+					printf("number_of_samples ? ");
+					scanf(" %d",&number_of_samples);
 					unemap_get_samples_acquired_background_finished=0;
 					return_code=unemap_get_samples_acquired_background(channel_number,
-						acquired_data_callback,(void *)NULL);
+						number_of_samples,acquired_data_callback,(void *)NULL);
 					printf("return_code=%d\n",return_code);
 					if (return_code)
 					{
@@ -766,15 +788,18 @@ static void process_keyboard(
 				{
 					char file_name[81];
 					FILE *out_file;
-					int channel_number;
+					int channel_number,number_of_samples,number_of_samples_returned;
 
 					printf("channel_number ? ");
 					scanf(" %d",&channel_number);
+					printf("number_of_samples ? ");
+					scanf(" %d",&number_of_samples);
 					printf("file name ? ");
 					scanf("%s",file_name);
 					if (out_file=fopen(file_name,"wb"))
 					{
-						return_code=unemap_write_samples_acquired(channel_number,out_file);
+						return_code=unemap_write_samples_acquired(channel_number,
+							number_of_samples,out_file,&number_of_samples_returned);
 						printf("return_code=%d\n",return_code);
 						fclose(out_file);
 					}

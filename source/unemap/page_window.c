@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : page_window.c
 
-LAST MODIFIED : 16 December 2001
+LAST MODIFIED : 21 January 2002
 
 DESCRIPTION :
 
@@ -90,7 +90,7 @@ DESCRIPTION :
 
 struct Page_window
 /*******************************************************************************
-LAST MODIFIED : 12 October 2001
+LAST MODIFIED : 21 January 2002
 
 DESCRIPTION :
 The page window object.
@@ -100,9 +100,8 @@ The page window object.
 	Widget activation,shell,window;
 	Widget auto_range_button,calibrate_button,close_button,experiment_checkbox,
 		full_range_button,isolate_checkbox,pacing_button,sample_checkbox,
-		save_button,scrolling_checkbox,start_all_stimulators_button,
-		stimulate_checkbox,stimulator_checkbox,stop_all_stimulators_button,
-		test_checkbox;
+		scrolling_checkbox,start_all_stimulators_button,stimulate_checkbox,
+		stimulator_checkbox,stop_all_stimulators_button,test_checkbox;
 	struct
 	{
 		Widget form,value;
@@ -123,6 +122,10 @@ The page window object.
 	{
 		Widget form,value;
 	} minimum;
+	struct
+	{
+		Widget button,form,value;
+	} save;
 	Widget scrolling_area;
 	/* graphics contexts */
 	struct
@@ -214,8 +217,11 @@ The page window object.
 	int pacing_button_height,pacing_button_width;
 	HWND sample_checkbox;
 	int sample_checkbox_height,sample_checkbox_width;
-	HWND save_button;
-	int save_button_height,save_button_width;
+	struct
+	{
+		HWND button,edit;
+		int button_height,button_width,edit_height,edit_width;
+	} save;
 	HWND scrolling_checkbox;
 	int scrolling_checkbox_height,scrolling_checkbox_width;
 	HWND start_all_stimulators_button;
@@ -329,7 +335,7 @@ The page window object.
 	struct Rig **rig_address;
 	struct Stimulator *stimulators;
 	struct User_interface *user_interface;
-	unsigned long number_of_samples;
+	unsigned long number_of_samples,number_of_samples_to_save;
 #if defined (MIRADA)
 	unsigned long number_of_channels;
 #else /* defined (MIRADA) */
@@ -891,7 +897,7 @@ Finds the id of the page sample checkbox.
 static void identify_page_save_button(Widget *widget_id,
 	XtPointer page_window_structure,XtPointer call_data)
 /*******************************************************************************
-LAST MODIFIED : 29 July 1999
+LAST MODIFIED : 21 January 2002
 
 DESCRIPTION :
 Finds the id of the page save button.
@@ -903,7 +909,7 @@ Finds the id of the page save button.
 	USE_PARAMETER(call_data);
 	if (page=(struct Page_window *)page_window_structure)
 	{
-		page->save_button= *widget_id;
+		(page->save).button= *widget_id;
 	}
 	else
 	{
@@ -912,6 +918,60 @@ Finds the id of the page save button.
 	}
 	LEAVE;
 } /* identify_page_save_button */
+#endif /* defined (MOTIF) */
+
+#if defined (MOTIF)
+static void identify_page_save_form(Widget *widget_id,
+	XtPointer page_window_structure,XtPointer call_data)
+/*******************************************************************************
+LAST MODIFIED : 21 January 2002
+
+DESCRIPTION :
+Finds the id of the page save form.
+==============================================================================*/
+{
+	struct Page_window *page;
+
+	ENTER(identify_page_save_form);
+	USE_PARAMETER(call_data);
+	if (page=(struct Page_window *)page_window_structure)
+	{
+		(page->save).form= *widget_id;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"identify_page_save_form.  page window missing");
+	}
+	LEAVE;
+} /* identify_page_save_form */
+#endif /* defined (MOTIF) */
+
+#if defined (MOTIF)
+static void identify_page_save_number_of_sa(Widget *widget_id,
+	XtPointer page_window_structure,XtPointer call_data)
+/*******************************************************************************
+LAST MODIFIED : 21 January 2002
+
+DESCRIPTION :
+Finds the id of the page save number of samples text widget.
+==============================================================================*/
+{
+	struct Page_window *page;
+
+	ENTER(identify_page_save_number_of_sa);
+	USE_PARAMETER(call_data);
+	if (page=(struct Page_window *)page_window_structure)
+	{
+		(page->save).value= *widget_id;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"identify_page_save_number_of_sa.  page window missing");
+	}
+	LEAVE;
+} /* identify_page_save_number_of_sa */
 #endif /* defined (MOTIF) */
 
 #if defined (OLD_CODE)
@@ -2043,7 +2103,7 @@ DWORD WINAPI save_write_signal_file_process(
 	LPVOID save_write_signal_file_background_data_void)
 #endif /* defined (WINDOWS) */
 /*******************************************************************************
-LAST MODIFIED : 29 July 2000
+LAST MODIFIED : 13 January 2002
 
 DESCRIPTION :
 Called by unemap_get_samples_acquired_background to actually write the data.
@@ -2194,7 +2254,6 @@ Called by unemap_get_samples_acquired_background to actually write the data.
 			number_of_samples,samples,save_write_signal_file_background_data_void);
 		return_code=0;
 	}
-	DEALLOCATE(save_write_signal_file_background_data);
 #if defined (DEBUG)
 	/*???debug */
 	printf("leave save_write_signal_file_process\n");
@@ -2284,7 +2343,7 @@ Called by unemap_get_samples_acquired_background to actually write the data.
 #if defined (BACKGROUND_SAVING)
 static int save_write_signal_file(char *file_name,void *page_window_void)
 /*******************************************************************************
-LAST MODIFIED : 29 July 2000
+LAST MODIFIED : 13 January 2002
 
 DESCRIPTION :
 This function writes the rig configuration and interval of signal data to the
@@ -2333,6 +2392,7 @@ named file.
 							temp_file_name);
 						save_write_signal_file_background_data->page_window=page_window;
 						if (unemap_get_samples_acquired_background(0,
+							page_window->number_of_samples_to_save,
 							save_write_signal_file_background,
 							(void *)save_write_signal_file_background_data))
 						{
@@ -4240,7 +4300,7 @@ static void update_filter_callback(Widget *widget_id,
 LAST MODIFIED : 29 July 1999
 
 DESCRIPTION :
-Motif wrapper for update_filter_callback.
+Motif wrapper for update_filter callback.
 ==============================================================================*/
 {
 	XmAnyCallbackStruct *text_data;
@@ -4255,6 +4315,106 @@ Motif wrapper for update_filter_callback.
 	}
 	LEAVE;
 } /* update_filter_callback */
+#endif /* defined (MOTIF) */
+
+static int update_save_number_of_samples(struct Page_window *page_window)
+/*******************************************************************************
+LAST MODIFIED : 4 June 1999
+
+DESCRIPTION :
+Reads the string in the filter field of the <page_window> and updates the
+filter.  Returns 1 if it is able to update, otherwise it returns 0
+==============================================================================*/
+{
+	char number_string[21],*working_string;
+	int return_code,temp;
+#if defined (WINDOWS)
+	int working_string_length;
+#endif /* defined (WINDOWS) */
+
+	ENTER(update_save_number_of_samples);
+	return_code=0;
+	if (page_window)
+	{
+#if defined (MOTIF)
+		working_string=(char *)NULL;
+		XtVaGetValues((page_window->save).value,XmNvalue,&working_string,NULL);
+#endif /* defined (MOTIF) */
+#if defined (WINDOWS)
+		working_string_length=
+			Edit_GetTextLength((page_window->save).edit)+1;
+			/*???DB.  GetWindowTextLength seems to give 1 less than the number of
+				characters */
+		if (ALLOCATE(working_string,char,working_string_length+1))
+		{
+			Edit_GetText((page_window->save).edit,working_string,
+				working_string_length);
+#endif /* defined (WINDOWS) */
+			if (1==sscanf(working_string,"%d",&temp))
+			{
+				if (temp<=0)
+				{
+					temp=(int)(page_window->number_of_samples);
+				}
+				else
+				{
+					if (temp>(int)(page_window->number_of_samples))
+					{
+						temp=(int)(page_window->number_of_samples);
+					}
+				}
+				page_window->number_of_samples_to_save=(unsigned long)temp;
+				sprintf(number_string,"%d",temp);
+#if defined (MOTIF)
+				XtVaSetValues((page_window->save).value,XmNvalue,number_string,
+					NULL);
+#endif /* defined (MOTIF) */
+#if defined (WINDOWS)
+				Edit_SetText((page_window->save).edit,number_string);
+#endif /* defined (WINDOWS) */
+				return_code=1;
+			}
+#if defined (WINDOWS)
+			DEALLOCATE(working_string);
+		}
+#endif /* defined (WINDOWS) */
+#if defined (MOTIF)
+		XtFree(working_string);
+#endif /* defined (MOTIF) */
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"update_save_number_of_samples.  Missing page_window");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* update_save_number_of_samples */
+
+#if defined (MOTIF)
+static void update_save_number_of_samples_c(Widget *widget_id,
+	XtPointer page_window,XtPointer call_data)
+/*******************************************************************************
+LAST MODIFIED : 21 January 2002
+
+DESCRIPTION :
+Motif wrapper for update_save_number_of_samples callback.
+==============================================================================*/
+{
+	XmAnyCallbackStruct *text_data;
+
+	ENTER(update_save_number_of_samples_c);
+	USE_PARAMETER(widget_id);
+	if ((text_data=(XmAnyCallbackStruct *)call_data)&&
+		((XmCR_ACTIVATE==text_data->reason)||
+		(XmCR_LOSING_FOCUS==text_data->reason)))
+	{
+		update_save_number_of_samples((struct Page_window *)page_window);
+	}
+	LEAVE;
+} /* update_save_number_of_samples_c */
 #endif /* defined (MOTIF) */
 
 static int read_waveform_file(char *waveform_file_name,int *constant_voltage,
@@ -4846,7 +5006,7 @@ Motif wrapper for start_stimulator and stop_stimulator.
 
 static int start_sampling(struct Page_window *page_window)
 /*******************************************************************************
-LAST MODIFIED : 9 November 2000
+LAST MODIFIED : 21 January 2002
 
 DESCRIPTION :
 Called to start sampling on the <page_window>.
@@ -4919,12 +5079,12 @@ Called to start sampling on the <page_window>.
 		{
 #if defined (MOTIF)
 			XmToggleButtonSetState(page_window->sample_checkbox,True,False);
-			XtSetSensitive(page_window->save_button,False);
+			XtSetSensitive((page_window->save).button,False);
 			XtSetSensitive(page_window->auto_range_button,True);
 #endif /* defined (MOTIF) */
 #if defined (WINDOWS)
 			CheckDlgButton(page_window->window,SAMPLE_CHECKBOX,BST_CHECKED);
-			EnableWindow(page_window->save_button,FALSE);
+			EnableWindow((page_window->save).button,FALSE);
 			EnableWindow(page_window->auto_range_button,TRUE);
 #endif /* defined (WINDOWS) */
 			unemap_start_sampling();
@@ -4974,20 +5134,20 @@ Called to stop sampling on the <page_window>.
 		{
 			page_window->data_saved=0;
 #if defined (MOTIF)
-			XtSetSensitive(page_window->save_button,True);
+			XtSetSensitive((page_window->save).button,True);
 #endif /* defined (MOTIF) */
 #if defined (WINDOWS)
-			EnableWindow(page_window->save_button,TRUE);
+			EnableWindow((page_window->save).button,TRUE);
 #endif /* defined (WINDOWS) */
 		}
 		else
 		{
 			page_window->data_saved=1;
 #if defined (MOTIF)
-			XtSetSensitive(page_window->save_button,False);
+			XtSetSensitive((page_window->save).button,False);
 #endif /* defined (MOTIF) */
 #if defined (WINDOWS)
-			EnableWindow(page_window->save_button,FALSE);
+			EnableWindow((page_window->save).button,FALSE);
 #endif /* defined (WINDOWS) */
 		}
 	}
@@ -5573,7 +5733,7 @@ Assumes that the calibration file is normalized.
 
 static int start_experiment(struct Page_window *page_window)
 /*******************************************************************************
-LAST MODIFIED : 16 December 2001
+LAST MODIFIED : 21 January 2001
 
 DESCRIPTION :
 Called to start experiment on the <page_window>.
@@ -5659,6 +5819,13 @@ Called to start experiment on the <page_window>.
 						&(page_window->sampling_frequency));
 					unemap_get_maximum_number_of_samples(
 						&(page_window->number_of_samples));
+					if ((page_window->number_of_samples_to_save<=0)||
+						(page_window->number_of_samples_to_save>
+						page_window->number_of_samples))
+					{
+						page_window->number_of_samples_to_save=
+							page_window->number_of_samples;
+					}
 					unemap_start_scrolling();
 					unemap_get_antialiasing_filter_frequency(1,&filter_frequency);
 					sprintf(working_string,"%.0f",filter_frequency);
@@ -5668,6 +5835,15 @@ Called to start experiment on the <page_window>.
 #endif /* defined (MOTIF) */
 #if defined (WINDOWS)
 					Edit_SetText((page_window->low_pass_filter).edit,working_string);
+#endif /* defined (WINDOWS) */
+					sprintf(working_string,"%d",
+						(int)(page_window->number_of_samples_to_save));
+#if defined (MOTIF)
+					XtVaSetValues((page_window->save).value,XmNvalue,working_string,
+						NULL);
+#endif /* defined (MOTIF) */
+#if defined (WINDOWS)
+					Edit_SetText((page_window->save).edit,working_string);
 #endif /* defined (WINDOWS) */
 				}
 				else
@@ -6073,7 +6249,7 @@ Called to start experiment on the <page_window>.
 							XtSetSensitive((page_window->maximum).form,True);
 							XtSetSensitive((page_window->minimum).form,True);
 							XtSetSensitive(page_window->sample_checkbox,True);
-							XtSetSensitive(page_window->save_button,False);
+							XtSetSensitive((page_window->save).button,False);
 							XtSetSensitive(page_window->scrolling_checkbox,True);
 							if (page_window->test_checkbox)
 							{
@@ -6108,7 +6284,7 @@ Called to start experiment on the <page_window>.
 							EnableWindow((page_window->minimum).edit,TRUE);
 							EnableWindow((page_window->minimum).text,TRUE);
 							EnableWindow(page_window->sample_checkbox,TRUE);
-							EnableWindow(page_window->save_button,FALSE);
+							EnableWindow((page_window->save).button,FALSE);
 							EnableWindow(page_window->scrolling_checkbox,TRUE);
 							if (page_window->test_checkbox)
 							{
@@ -6171,7 +6347,7 @@ Called to start experiment on the <page_window>.
 
 static int stop_experiment(struct Page_window *page_window)
 /*******************************************************************************
-LAST MODIFIED : 13 November 2000
+LAST MODIFIED : 21 January 2002
 
 DESCRIPTION :
 Called to stop experiment on the <page_window>.
@@ -6231,7 +6407,7 @@ Called to stop experiment on the <page_window>.
 		XtSetSensitive((page_window->maximum).form,False);
 		XtSetSensitive((page_window->minimum).form,False);
 		XtSetSensitive(page_window->sample_checkbox,False);
-		XtSetSensitive(page_window->save_button,False);
+		XtSetSensitive((page_window->save).button,False);
 		XtSetSensitive(page_window->scrolling_checkbox,False);
 		if (page_window->test_checkbox)
 		{
@@ -6273,7 +6449,7 @@ Called to stop experiment on the <page_window>.
 		EnableWindow((page_window->minimum).edit,FALSE);
 		EnableWindow((page_window->minimum).text,FALSE);
 		EnableWindow(page_window->sample_checkbox,FALSE);
-		EnableWindow(page_window->save_button,FALSE);
+		EnableWindow((page_window->save).button,FALSE);
 		EnableWindow(page_window->scrolling_checkbox,FALSE);
 		if (page_window->test_checkbox)
 		{
@@ -6596,7 +6772,7 @@ Called when calibration ends.
 		XtSetSensitive((page_window->maximum).form,True);
 		XtSetSensitive((page_window->minimum).form,True);
 		XtSetSensitive(page_window->sample_checkbox,True);
-		XtSetSensitive(page_window->save_button,False);
+		XtSetSensitive((page_window->save).button,False);
 		XtSetSensitive(page_window->scrolling_checkbox,True);
 		if (page_window->test_checkbox)
 		{
@@ -6632,7 +6808,7 @@ Called when calibration ends.
 		EnableWindow((page_window->minimum).edit,TRUE);
 		EnableWindow((page_window->minimum).text,TRUE);
 		EnableWindow(page_window->sample_checkbox,TRUE);
-		EnableWindow(page_window->save_button,FALSE);
+		EnableWindow((page_window->save).button,FALSE);
 		EnableWindow(page_window->scrolling_checkbox,TRUE);
 		if (page_window->test_checkbox)
 		{
@@ -6673,7 +6849,7 @@ static void start_calibrating(
 #endif /* defined (WINDOWS) */
 	)
 /*******************************************************************************
-LAST MODIFIED : 13 November 2000
+LAST MODIFIED : 21 January 2002
 
 DESCRIPTION :
 Called to start calibrating on the <page_window>.
@@ -6715,7 +6891,7 @@ Called to start calibrating on the <page_window>.
 		XtSetSensitive((page_window->maximum).form,False);
 		XtSetSensitive((page_window->minimum).form,False);
 		XtSetSensitive(page_window->sample_checkbox,False);
-		XtSetSensitive(page_window->save_button,False);
+		XtSetSensitive((page_window->save).button,False);
 		XtSetSensitive(page_window->scrolling_checkbox,False);
 		if (page_window->test_checkbox)
 		{
@@ -6759,7 +6935,7 @@ Called to start calibrating on the <page_window>.
 		EnableWindow((page_window->minimum).edit,FALSE);
 		EnableWindow((page_window->minimum).text,FALSE);
 		EnableWindow(page_window->sample_checkbox,FALSE);
-		EnableWindow(page_window->save_button,FALSE);
+		EnableWindow((page_window->save).button,FALSE);
 		EnableWindow(page_window->scrolling_checkbox,FALSE);
 		if (page_window->test_checkbox)
 		{
@@ -6798,7 +6974,7 @@ static void page_save_data(
 #endif /* defined (WINDOWS) */
 	)
 /*******************************************************************************
-LAST MODIFIED : 27 July 2000
+LAST MODIFIED : 13 January 2002
 
 DESCRIPTION :
 Called when the save button is pressed.
@@ -6923,68 +7099,74 @@ Called when the save button is pressed.
 			unemap_stop_sampling();
 			samples=(short int *)NULL;
 			i=rig->number_of_devices;
-#if defined (DEBUG)
-			/*???debug */
-			printf("before unemap_get_samples_acquired\n");
-#endif /* defined (DEBUG) */
-			if (unemap_get_number_of_samples_acquired(&number_of_samples)&&
-				unemap_get_number_of_channels(&number_of_channels)&&
-				ALLOCATE(samples,short int,number_of_samples*number_of_channels)&&
-				unemap_get_samples_acquired(0,samples))
+			if (unemap_get_number_of_samples_acquired(&number_of_samples)
 			{
-#if defined (DEBUG)
-				/*???debug */
-				printf("before reordering\n");
-#endif /* defined (DEBUG) */
-				while (i>0)
+				if (number_of_samples>page_window->number_of_samples_to_save)
 				{
-					if ((*device)&&((*device)->signal)&&((*device)->channel)&&
-						(signal_buffer=(*device)->signal->buffer))
-					{
-						signal_buffer->start=0;
-						signal_buffer->end=(int)(number_of_samples-1);
-						channel_number=((*device)->channel->number)-1;
-						number_of_signals=signal_buffer->number_of_signals;
-						destination=((signal_buffer->signals).short_int_values)+
-							((*device)->signal->index);
-						if ((0<=channel_number)&&(channel_number<number_of_channels))
-						{
-							source=samples+channel_number;
-							for (j=(int)number_of_samples;j>0;j--)
-							{
-								*destination= *source;
-								source += number_of_channels;
-								destination += number_of_signals;
-							}
-						}
-						else
-						{
-							for (j=(int)number_of_samples;j>0;j--)
-							{
-								*destination=0;
-								destination += number_of_signals;
-							}
-						}
-					}
-					i--;
-					device++;
+					number_of_samples=page_window->number_of_samples_to_save;
 				}
 #if defined (DEBUG)
 				/*???debug */
-				printf("after reordering\n");
+				printf("before unemap_get_samples_acquired\n");
 #endif /* defined (DEBUG) */
-				/* write out the signal file */
-				open_file_and_write(
+				if (unemap_get_number_of_channels(&number_of_channels)&&
+					ALLOCATE(samples,short int,number_of_samples*number_of_channels)&&
+					unemap_get_samples_acquired(0,number_of_samples,samples,(int *)NULL))
+				{
+#if defined (DEBUG)
+					/*???debug */
+					printf("before reordering\n");
+#endif /* defined (DEBUG) */
+					while (i>0)
+					{
+						if ((*device)&&((*device)->signal)&&((*device)->channel)&&
+							(signal_buffer=(*device)->signal->buffer))
+						{
+							signal_buffer->start=0;
+							signal_buffer->end=(int)(number_of_samples-1);
+							channel_number=((*device)->channel->number)-1;
+							number_of_signals=signal_buffer->number_of_signals;
+							destination=((signal_buffer->signals).short_int_values)+
+								((*device)->signal->index);
+							if ((0<=channel_number)&&(channel_number<number_of_channels))
+							{
+								source=samples+channel_number;
+								for (j=(int)number_of_samples;j>0;j--)
+								{
+									*destination= *source;
+									source += number_of_channels;
+									destination += number_of_signals;
+								}
+							}
+							else
+							{
+								for (j=(int)number_of_samples;j>0;j--)
+								{
+									*destination=0;
+									destination += number_of_signals;
+								}
+							}
+						}
+						i--;
+						device++;
+					}
+#if defined (DEBUG)
+					/*???debug */
+					printf("after reordering\n");
+#endif /* defined (DEBUG) */
+					/* write out the signal file */
+					open_file_and_write(
 #if defined (MOTIF)
-					(Widget)NULL,(XtPointer)(page_window->save_file_open_data),
-					(XtPointer)NULL
+						(Widget)NULL,(XtPointer)(page_window->save_file_open_data),
+						(XtPointer)NULL
 #endif /* defined (MOTIF) */
 #if defined (WINDOWS)
-					page_window->save_file_open_data
+						page_window->save_file_open_data
 #endif /* defined (WINDOWS) */
-					);
+						);
+				}
+				DEALLOCATE(samples);
 			}
-			DEALLOCATE(samples);
 #endif /* defined (BACKGROUND_SAVING) */
 #endif /* defined (MIRADA) */
 		}
@@ -7009,7 +7191,7 @@ static void page_auto_range(
 #endif /* defined (WINDOWS) */
 	)
 /*******************************************************************************
-LAST MODIFIED : 12 November 2000
+LAST MODIFIED : 13 January 2002
 
 DESCRIPTION :
 Called when the auto range button is pressed.
@@ -7048,7 +7230,7 @@ Called when the auto range button is pressed.
 				ALLOCATE(samples,short int,number_of_samples*number_of_channels)&&
 				ALLOCATE(card_maximum,float,number_of_channels/64)&&
 				ALLOCATE(card_minimum,float,number_of_channels/64)&&
-				unemap_get_samples_acquired(0,samples))
+				unemap_get_samples_acquired(0,0,samples,(int *)NULL))
 			{
 				/* calculate ranges */
 				for (card_number=0;card_number<number_of_channels/64;card_number++)
@@ -8736,12 +8918,17 @@ DESCRIPTION :
 				GetWindowRect(page_window->sample_checkbox,&rectangle);
 				page_window->sample_checkbox_width=rectangle.right-rectangle.left;
 				page_window->sample_checkbox_height=rectangle.bottom-rectangle.top;
-				/* save_button */
-				page_window->save_button=GetDlgItem(window,SAVE_BUTTON);
-				EnableWindow(page_window->save_button,FALSE);
-				GetWindowRect(page_window->save_button,&rectangle);
-				page_window->save_button_width=rectangle.right-rectangle.left;
-				page_window->save_button_height=rectangle.bottom-rectangle.top;
+				/* save */
+				(page_window->save).button=GetDlgItem(window,SAVE_BUTTON);
+				EnableWindow((page_window->save).button,FALSE);
+				GetWindowRect((page_window->save).button,&rectangle);
+				(page_window->save).button_width=rectangle.right-rectangle.left;
+				(page_window->save).button_height=rectangle.bottom-rectangle.top;
+				(page_window->save).edit=GetDlgItem(window,SAVE_NUMBER_OF_SAMPLES_EDIT);
+				EnableWindow((page_window->save).edit,FALSE);
+				GetWindowRect((page_window->save).edit,&rectangle);
+				(page_window->save).edit_width=rectangle.right-rectangle.left;
+				(page_window->save).edit_height=rectangle.bottom-rectangle.top;
 				/* scrolling_checkbox */
 				page_window->scrolling_checkbox=GetDlgItem(window,SCROLLING_CHECKBOX);
 				EnableWindow(page_window->scrolling_checkbox,FALSE);
@@ -8955,7 +9142,8 @@ DESCRIPTION :
 				page_window->control_menu_width=
 					page_window->experiment_checkbox_width+widget_spacing+
 					page_window->sample_checkbox_width+widget_spacing+
-					page_window->save_button_width+widget_spacing+
+					(page_window->save).button_width+
+					(page_window->save).edit_width+widget_spacing+
 					page_window->close_button_width;
 				if (page_window->isolate_checkbox)
 				{
@@ -9177,7 +9365,7 @@ DESCRIPTION :
 				low_pass_filter_text_width,maximum_edit_width,maximum_text_width,
 				menu_bar_height,menu_bar_width,minimum_edit_width,minimum_text_width,
 				number_of_widgets,pacing_button_width,sample_checkbox_width,
-				save_button_width,scrolling_checkbox_width,
+				save_button_width,save_edit_width,scrolling_checkbox_width,
 				start_all_stimulators_button_width,stimulate_checkbox_width,
 				stimulator_checkbox_width,stop_all_stimulators_button_width,
 				test_checkbox_width,widget_spacing;
@@ -9202,7 +9390,8 @@ DESCRIPTION :
 				}
 				sample_checkbox_width=page_window->sample_checkbox_width;
 				number_of_widgets++;
-				save_button_width=page_window->save_button_width;
+				save_button_width=(page_window->save).button_width;
+				save_edit_width=(page_window->save).edit_width;
 				number_of_widgets++;
 				if (calibrate_button=page_window->calibrate_button)
 				{
@@ -9243,6 +9432,8 @@ DESCRIPTION :
 								sample_checkbox_width)/menu_bar_width;
 							save_button_width=((rectangle.right-rectangle.left)*
 								save_button_width)/menu_bar_width;
+							save_edit_width=((rectangle.right-rectangle.left)*
+								save_edit_width)/menu_bar_width;
 							if (calibrate_button)
 							{
 								calibrate_button_width=((rectangle.right-rectangle.left)*
@@ -9290,10 +9481,14 @@ DESCRIPTION :
 						menu_bar_height+2,sample_checkbox_width,
 						page_window->sample_checkbox_height,TRUE);
 					menu_bar_width += widget_spacing+sample_checkbox_width;
-					MoveWindow(page_window->save_button,menu_bar_width,
-						menu_bar_height+2,save_button_width,page_window->save_button_height,
+					MoveWindow((page_window->save).button,menu_bar_width,
+						menu_bar_height+2,save_button_width,
+						(page_window->save_button).height,TRUE);
+					menu_bar_width += save_button_width;
+					MoveWindow((page_window->save).edit,menu_bar_width,
+						menu_bar_height+2,save_edit_width,(page_window->save).edit_height,
 						TRUE);
-					menu_bar_width += widget_spacing+save_button_width;
+					menu_bar_width += widget_spacing+save_edit_width;
 					if (calibrate_button)
 					{
 						MoveWindow(calibrate_button,menu_bar_width,
@@ -9817,7 +10012,7 @@ struct Page_window *create_Page_window(struct Page_window **address,
 	struct Mapping_window **mapping_window_address,int pointer_sensitivity,
 	char *signal_file_extension_write,struct User_interface *user_interface)
 /*******************************************************************************
-LAST MODIFIED : 11 November 2001
+LAST MODIFIED : 21 January 2002
 
 DESCRIPTION :
 This function allocates the memory for a page window and sets the fields to the
@@ -9871,6 +10066,9 @@ the created page window.  If unsuccessful, NULL is returned.
 		{"identify_page_pacing_button",(XtPointer)identify_page_pacing_button},
 		{"identify_page_sample_checkbox",(XtPointer)identify_page_sample_checkbox},
 		{"identify_page_save_button",(XtPointer)identify_page_save_button},
+		{"identify_page_save_form",(XtPointer)identify_page_save_form},
+		{"identify_page_save_number_of_sa",
+			(XtPointer)identify_page_save_number_of_sa},
 		{"identify_page_scrolling_area",(XtPointer)identify_page_scrolling_area},
 		{"identify_page_scrolling_checkbo",
 			(XtPointer)identify_page_scrolling_checkbo},
@@ -9908,6 +10106,8 @@ the created page window.  If unsuccessful, NULL is returned.
 		{"update_display_minimum_callback",
 			(XtPointer)update_display_minimum_callback},
 		{"update_filter_callback",(XtPointer)update_filter_callback},
+		{"update_save_number_of_samples_c",
+			(XtPointer)update_save_number_of_samples_c},
 		{"destroy_Page_window_callback",(XtPointer)destroy_Page_window_callback}
 	};
 	static MrmRegisterArg identifier_list[]=
@@ -10047,6 +10247,7 @@ the created page window.  If unsuccessful, NULL is returned.
 #endif /* defined (OLD_CODE) */
 				page_window->display_device=(struct Device *)NULL;
 				page_window->display_device_number= -1;
+				page_window->number_of_samples_to_save=0;
 				page_window->number_of_scrolling_devices=0;
 				page_window->number_of_scrolling_channels=0;
 				page_window->pacing_window=(struct Pacing_window *)NULL;
@@ -10187,7 +10388,9 @@ the created page window.  If unsuccessful, NULL is returned.
 				(page_window->minimum).value=(Widget)NULL;
 				page_window->pacing_button=(Widget)NULL;
 				page_window->sample_checkbox=(Widget)NULL;
-				page_window->save_button=(Widget)NULL;
+				(page_window->save).button=(Widget)NULL;
+				(page_window->save).form=(Widget)NULL;
+				(page_window->save).value=(Widget)NULL;
 				page_window->scrolling_area=(Widget)NULL;
 				page_window->scrolling_checkbox=(Widget)NULL;
 				page_window->start_all_stimulators_button=(Widget)NULL;
@@ -10218,7 +10421,8 @@ the created page window.  If unsuccessful, NULL is returned.
 				(page_window->minimum).text=(HWND)NULL;
 				page_window->pacing_button=(HWND)NULL;
 				page_window->sample_checkbox=(HWND)NULL;
-				page_window->save_button=(HWND)NULL;
+				(page_window->save).button=(HWND)NULL;
+				(page_window->save).edit=(HWND)NULL;
 				page_window->scrolling_area=(HWND)NULL;
 				page_window->scrolling_checkbox=(HWND)NULL;
 				page_window->start_all_stimulators_button=(HWND)NULL;
@@ -10487,7 +10691,7 @@ the created page window.  If unsuccessful, NULL is returned.
 							/* set ghosting for the buttons */
 							XtSetSensitive(page_window->experiment_checkbox,False);
 							XtSetSensitive(page_window->sample_checkbox,False);
-							XtSetSensitive(page_window->save_button,False);
+							XtSetSensitive((page_window->save).button,False);
 							XtSetSensitive((page_window->low_pass).form,False);
 							XtSetSensitive(page_window->close_button,True);
 							switch (page_window->unemap_hardware_version)
@@ -10501,7 +10705,7 @@ the created page window.  If unsuccessful, NULL is returned.
 									page_window->isolate_checkbox=(Widget)NULL;
 									unemap_set_isolate_record_mode(0,0);
 									XtVaSetValues((page_window->low_pass).form,
-										XmNleftWidget,page_window->save_button,NULL);
+										XmNleftWidget,(page_window->save).form,NULL);
 									XtDestroyWidget(page_window->test_checkbox);
 									page_window->test_checkbox=(Widget)NULL;
 									XtDestroyWidget(page_window->calibrate_button);

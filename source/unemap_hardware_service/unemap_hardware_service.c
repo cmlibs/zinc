@@ -1,10 +1,16 @@
 /*******************************************************************************
 FILE : unemap_hardware_service.c
 
-LAST MODIFIED : 1 January 2002
+LAST MODIFIED : 13 January 2002
 
 DESCRIPTION :
 The unemap service which runs under NT and talks to unemap via sockets.
+
+SERVICE_VERSION :
+13 January 2002.  Added so that can maintain compatability between clients and
+	servers
+1 Added the ability to specify the number_of_samples for
+	unemap_get_samples_acquired and related functions
 
 NOTES :
 1 Started out as :
@@ -71,6 +77,17 @@ TO DO :
 #include "unemap_hardware_service/unemap_hardware_service.h"
 #include "user_interface/message.h"
 
+/*
+Module constants
+----------------
+*/
+/* Used so that the client can deal with old versions */
+#define SERVICE_VERSION 1
+
+/*
+Module functions
+----------------
+*/
 int unemap_get_card_state(int channel_number,int *battA_state,
 	int *battGood_state,float *filter_frequency,int *filter_taps,
 	unsigned char shift_registers[10],int *GA0_state,int *GA1_state,
@@ -1620,7 +1637,8 @@ DESCRIPTION :
 				else
 				{
 					sprintf(error_string,
-						"unemap_get_power.  Incorrect message size %d 0",message_size);
+						"unemap_get_hardware_version.  Incorrect message size %d 0",
+						message_size);
 					AddToMessageLog(TEXT(error_string));
 				}
 			} break;
@@ -1983,7 +2001,8 @@ DESCRIPTION :
 #endif /* defined (OLD_CODE) */
 			case UNEMAP_GET_SAMPLES_ACQUIRED_CODE:
 			{
-				int channel_number,number_of_channels,number_of_samples_transferred;
+				int channel_number,number_of_channels,number_of_samples_written,
+					requested_number_of_samples,specify_number_of_samples;
 				struct Socket_send_samples_acquired_data
 					socket_send_samples_acquired_data;
 				unsigned char message_header[2+sizeof(long)+sizeof(int)+
@@ -2000,9 +2019,17 @@ DESCRIPTION :
 				AddToMessageLog(TEXT(error_string));
 #endif /* defined (DEBUG) */
 				return_code=0;
-				size=sizeof(channel_number);
-				if (size==message_size)
+				if ((sizeof(channel_number)==message_size)||(sizeof(channel_number)+
+					sizeof(requested_number_of_samples)==message_size))
 				{
+					if (sizeof(channel_number)==message_size)
+					{
+						specify_number_of_samples=0;
+					}
+					else
+					{
+						specify_number_of_samples=1;
+					}
 					retval=socket_recv(command_socket,buffer,message_size,0);
 					if (SOCKET_ERROR!=retval)
 					{
@@ -2012,6 +2039,18 @@ DESCRIPTION :
 						if (return_code=unemap_get_number_of_samples_acquired(
 							&number_of_samples))
 						{
+							if (specify_number_of_samples)
+							{
+								copy_byte_swapped((unsigned char *)&requested_number_of_samples,
+									sizeof(requested_number_of_samples),
+									buffer+sizeof(channel_number),big_endian);
+								if ((0<requested_number_of_samples)&&
+									((unsigned long)requested_number_of_samples<
+									number_of_samples))
+								{
+									number_of_samples=(unsigned long)requested_number_of_samples;
+								}
+							}
 							if (0==channel_number)
 							{
 								if (!(return_code=unemap_get_number_of_channels(
@@ -2058,17 +2097,17 @@ DESCRIPTION :
 									2+sizeof(long)+sizeof(number_of_channels)+
 									sizeof(number_of_samples),0);
 								return_code=unemap_transfer_samples_acquired(channel_number,
-									socket_send_samples_acquired,
+									(int)number_of_samples,socket_send_samples_acquired,
 									&socket_send_samples_acquired_data,
-									&number_of_samples_transferred);
+									&number_of_samples_written);
 								DEALLOCATE(socket_send_samples_acquired_data.buffer);
 							}
 							else
 							{
 								return_code=0;
-								sprintf(error_string,
-							"unemap_get_samples_acquired.  Could not allocate out_buffer %ld",
-										size);
+								sprintf(error_string,"unemap_get_samples_acquired.  "
+									"Could not allocate samples buffer %ld",
+									socket_send_samples_acquired_data.buffer_size);
 								AddToMessageLog(TEXT(error_string));
 							}
 						}
@@ -2083,8 +2122,8 @@ DESCRIPTION :
 				else
 				{
 					sprintf(error_string,
-						"unemap_get_samples_acquired.  Incorrect message size %d %d",
-						message_size,size);
+						"unemap_get_samples_acquired.  Incorrect message size %d",
+						message_size);
 					AddToMessageLog(TEXT(error_string));
 				}
 #if defined (DEBUG)
@@ -2104,7 +2143,8 @@ DESCRIPTION :
 				DWORD acquired_thread_id;
 				HANDLE acquired_thread;
 #endif /* !defined (NO_ACQUIRED_THREAD) */
-				int channel_number,number_of_channels;
+				int channel_number,number_of_channels,requested_number_of_samples,
+					specify_number_of_samples;
 				struct Acquired_samples_information *acquired_samples_information;
 				unsigned long number_of_samples;
 
@@ -2115,9 +2155,17 @@ DESCRIPTION :
 				AddToMessageLog(TEXT(error_string));
 #endif /* defined (DEBUG) */
 				return_code=0;
-				size=sizeof(channel_number);
-				if (size==message_size)
+				if ((sizeof(channel_number)==message_size)||(sizeof(channel_number)+
+					sizeof(requested_number_of_samples)==message_size))
 				{
+					if (sizeof(channel_number)==message_size)
+					{
+						specify_number_of_samples=0;
+					}
+					else
+					{
+						specify_number_of_samples=1;
+					}
 					retval=socket_recv(command_socket,buffer,message_size,0);
 					if (SOCKET_ERROR!=retval)
 					{
@@ -2127,6 +2175,18 @@ DESCRIPTION :
 						if (return_code=unemap_get_number_of_samples_acquired(
 							&number_of_samples))
 						{
+							if (specify_number_of_samples)
+							{
+								copy_byte_swapped((unsigned char *)&requested_number_of_samples,
+									sizeof(requested_number_of_samples),
+									buffer+sizeof(channel_number),big_endian);
+								if ((0<requested_number_of_samples)&&
+									((unsigned long)requested_number_of_samples<
+									number_of_samples))
+								{
+									number_of_samples=(unsigned long)requested_number_of_samples;
+								}
+							}
 							if (0==channel_number)
 							{
 								if (!(return_code=unemap_get_number_of_channels(
@@ -2161,7 +2221,7 @@ DESCRIPTION :
 										number_of_channels;
 									acquired_samples_information->big_endian=big_endian;
 									return_code=unemap_get_samples_acquired(channel_number,
-										(short int *)out_buffer);
+										number_of_samples,(short int *)out_buffer,(int *)NULL);
 									if (return_code)
 									{
 										acquired_big_endian=big_endian;
@@ -2237,7 +2297,7 @@ DESCRIPTION :
 				FILE *acquired_file;
 #endif /* defined (WINDOWS_IO) */
 #endif /* !defined (NO_ACQUIRED_THREAD) */
-				int channel_number;
+				int channel_number,number_of_samples,specify_number_of_samples;
 
 #if defined (DEBUG)
 				/*???debug */
@@ -2250,15 +2310,33 @@ DESCRIPTION :
 				AddToMessageLog(TEXT(error_string));
 #endif /* defined (DEBUG) */
 				return_code=0;
-				size=sizeof(channel_number);
-				if (size==message_size)
+				if ((sizeof(channel_number)==message_size)||(sizeof(channel_number)+
+					sizeof(number_of_samples)==message_size))
 				{
+					if (sizeof(channel_number)==message_size)
+					{
+						specify_number_of_samples=0;
+					}
+					else
+					{
+						specify_number_of_samples=1;
+					}
 					retval=socket_recv(command_socket,buffer,message_size,0);
 					if (SOCKET_ERROR!=retval)
 					{
 						unread_size -= retval;
 						copy_byte_swapped((unsigned char *)&channel_number,
 							sizeof(channel_number),buffer,big_endian);
+						if (specify_number_of_samples)
+						{
+							copy_byte_swapped((unsigned char *)&number_of_samples,
+								sizeof(number_of_samples),buffer+sizeof(channel_number),
+								big_endian);
+						}
+						else
+						{
+							number_of_samples=0;
+						}
 #if defined (WINDOWS_IO)
 						if (acquired_file=CreateFile("c:\\unemap\\bin\\save.sig",
 							(DWORD)(GENERIC_READ|GENERIC_WRITE),(DWORD)0,
@@ -2270,7 +2348,8 @@ DESCRIPTION :
 						if (acquired_file=tmpfile())
 #endif /* defined (WINDOWS_IO) */
 						{
-							if (unemap_write_samples_acquired(channel_number,acquired_file))
+							if (unemap_write_samples_acquired(channel_number,
+								number_of_samples,acquired_file,(int *)NULL))
 							{
 								acquired_big_endian=big_endian;
 #if defined (NO_ACQUIRED_THREAD)
@@ -2294,8 +2373,8 @@ DESCRIPTION :
 							}
 							else
 							{
-								sprintf(error_string,
-"unemap_get_samples_acquired_background.  unemap_write_samples_acquired failed");
+								sprintf(error_string,"unemap_get_samples_acquired_background.  "
+									"unemap_write_samples_acquired failed");
 								AddToMessageLog(TEXT(error_string));
 							}
 						}
@@ -2310,8 +2389,8 @@ DESCRIPTION :
 				else
 				{
 					sprintf(error_string,
-				"unemap_get_samples_acquired_background.  Incorrect message size %d %d",
-						message_size,size);
+						"unemap_get_samples_acquired_background.  Incorrect message size %d",
+						message_size);
 					AddToMessageLog(TEXT(error_string));
 				}
 #if defined (DEBUG)
@@ -2368,6 +2447,32 @@ DESCRIPTION :
 				{
 					sprintf(error_string,
 						"unemap_get_sampling_frequency.  Incorrect message size %d 0",
+						message_size);
+					AddToMessageLog(TEXT(error_string));
+				}
+			} break;
+			case UNEMAP_GET_SERVICE_VERSION_CODE:
+			{
+				int service_version;
+
+				return_code=0;
+				if (0==message_size)
+				{
+					service_version=(int)SERVICE_VERSION;
+					size=sizeof(service_version);
+					if (ALLOCATE(out_buffer,unsigned char,size))
+					{
+						copy_byte_swapped(out_buffer,sizeof(service_version),
+							(char *)&service_version,big_endian);
+						*out_buffer_address=out_buffer;
+						*out_buffer_size_address=size;
+						return_code=1;
+					}
+				}
+				else
+				{
+					sprintf(error_string,
+						"unemap_get_service_version.  Incorrect message size %d 0",
 						message_size);
 					AddToMessageLog(TEXT(error_string));
 				}

@@ -1,7 +1,7 @@
 !*******************************************************************************
 ! FILE : page_window.uil
 !
-! LAST MODIFIED : 11 November 2001
+! LAST MODIFIED : 21 January 2002
 !
 ! DESCRIPTION :
 ! The widgets/gadgets for a page window in the acquisition work area.
@@ -16,7 +16,7 @@
 !   experiment
 !   isolate
 !   sample
-!   save
+!   save (and number of samples to save)
 !   calibrate
 !   test
 !   low pass
@@ -63,6 +63,8 @@ procedure
 	identify_page_pacing_button;
 	identify_page_sample_checkbox;
 	identify_page_save_button;
+	identify_page_save_form;
+	identify_page_save_number_of_sa;
 	identify_page_scrolling_area;
 	identify_page_scrolling_checkbo;
 	identify_page_start_all_stimula;
@@ -89,6 +91,7 @@ procedure
 	update_display_maximum_callback;
 	update_display_minimum_callback;
 	update_filter_callback;
+	update_save_number_of_samples_c;
 
 identifier
 	identifying_colour;
@@ -169,7 +172,7 @@ object
 			XmToggleButton page_experiment_checkbox;
 			XmToggleButton page_isolate_checkbox;
 			XmToggleButton page_sample_checkbox;
-			XmPushButtonGadget page_save_button;
+			XmForm page_save_form;
 			XmPushButtonGadget page_calibrate_button;
 			XmToggleButton page_test_checkbox;
 			XmForm page_low_pass;
@@ -289,6 +292,35 @@ object
 				};
 			};
 		};
+!Controls saving samples
+	page_save_form: XmForm 
+		{
+		arguments
+			{
+			XmNborderWidth = 0;
+			XmNleftAttachment = XmATTACH_WIDGET;
+			XmNleftOffset = widget_spacing;
+			XmNleftWidget = XmToggleButton page_sample_checkbox;
+			XmNrightAttachment = XmATTACH_NONE;
+			XmNrightOffset = 0;
+			XmNtopAttachment = XmATTACH_FORM;
+			XmNtopOffset = 0;
+			XmNbottomAttachment = XmATTACH_FORM;
+			XmNbottomOffset = 0;
+			};
+		controls
+			{
+			XmPushButtonGadget page_save_button;
+			XmTextField page_save_number_of_samples_val;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedures
+				{
+				identify_page_save_form(page_window_structure);
+				};
+			};
+		};
 !Clicking this button prompts for a file to write the samples to
 	page_save_button: XmPushButtonGadget
 		{
@@ -299,11 +331,9 @@ object
 			XmNfontList = button_font;
 			XmNshadowThickness = 0;
 			XmNhighlightThickness = 0;
-			XmNleftAttachment = XmATTACH_WIDGET;
-			XmNleftOffset = widget_spacing;
-			XmNleftWidget = XmToggleButton page_sample_checkbox;
+			XmNleftAttachment = XmATTACH_FORM;
+			XmNleftOffset = 0;
 			XmNrightAttachment = XmATTACH_NONE;
-			XmNrightOffset = 0;
 			XmNtopAttachment = XmATTACH_FORM;
 			XmNtopOffset = 0;
 			XmNbottomAttachment = XmATTACH_FORM;
@@ -321,6 +351,37 @@ object
 				};
 			};
 		};
+	page_save_number_of_samples_val: XmTextField
+		{
+		arguments
+			{
+			XmNcolumns = 8;
+			XmNleftAttachment = XmATTACH_WIDGET;
+			XmNleftWidget = XmPushButtonGadget page_save_button;
+			XmNleftOffset = 0;
+			XmNrightAttachment = XmATTACH_FORM;
+			XmNrightOffset = 0;
+			XmNtopAttachment = XmATTACH_FORM;
+			XmNtopOffset = 0;
+			XmNbottomAttachment = XmATTACH_FORM;
+			XmNbottomOffset = 0;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedures
+				{
+				identify_page_save_number_of_sa(page_window_structure);
+				};
+			XmNactivateCallback = procedures
+				{
+				update_save_number_of_samples_c(page_window_structure);
+				};
+			XmNlosingFocusCallback = procedures
+				{
+				update_save_number_of_samples_c(page_window_structure);
+				};
+			};
+		};
 !Clicking this button starts calibration
 	page_calibrate_button: XmPushButtonGadget
 		{
@@ -333,7 +394,7 @@ object
 			XmNhighlightThickness = 0;
 			XmNleftAttachment = XmATTACH_WIDGET;
 			XmNleftOffset = widget_spacing;
-			XmNleftWidget = XmPushButtonGadget page_save_button;
+			XmNleftWidget = XmForm page_save_form;
 			XmNrightAttachment = XmATTACH_NONE;
 			XmNrightOffset = 0;
 			XmNtopAttachment = XmATTACH_FORM;

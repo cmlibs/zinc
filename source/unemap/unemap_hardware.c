@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : unemap_hardware.c
 
-LAST MODIFIED : 2 January 2002
+LAST MODIFIED : 13 January 2002
 
 DESCRIPTION :
 Code for controlling the National Instruments (NI) data acquisition and unemap
@@ -30,8 +30,14 @@ NOTES :
 	C         0
 	D  80118149
 	Search MSDN for IRQL_NOT_LESS_OR_EQUAL to get information
+	NB Also get the stop message
+	0x0000003F NO_MORE_SYSTEM_PTES
+	A         0
+	B       53A memory requested
+	C      133A free system memory
+	D      2D0B total system memory
 	(Also see unemap_hardware_service.c)
-1.1 Steps to reproduce problem on esp33 (PXI crate, 32MB)
+1.1 Steps to reproduce problem on esp33 (PXI crate, 32180KB, not 32MB)
 1.1.1 Have
 unemap.*.samplingFrequencyHz: 5000
 unemap.*.numberOfSamples: 100000
@@ -54,7 +60,10 @@ unemap.*.numberOfSamples: 100000
 			Config_DAQ_Event_Message and scrolling_callback_NI .  This fixes the
 			problem and suggests that, during the saving, the address of the callback
 			function or the settings for the event message are being corrupted and
-			the service jumps into protected memory
+			the service jumps into protected memory.
+			It is not the module_scrolling_callback that is being corrupted
+			(commenting everything except the updating of buffer position and size
+			out of scrolling_callback_NI doesn't fix the problem)
 1.2.2 CLEAR_DAQ_FOR_START_SAMPLING
 			Do a DAQ_Clear, and set up again the SCAN and event messages.  Does not
 			fix the problem
@@ -74,25 +83,42 @@ unemap.*.numberOfSamples: 100000
       Thought that may be something wrong with the generic file I/O (fopen,
 			etc), so swapped to the Microsoft ones.  Doesn't fix the problem
 1.2.6 Upgrade to Service Pack 6a for NT.  Doesn't fix the problem
-1.2.7 RECONFIGURE_FOR_START_SAMPLING, RECONFIGURE_FOR_START_SAMPLING_1 and
-			RECONFIGURE_FOR_START_SAMPLING_2
+1.2.7 RECONFIGURE_FOR_START_SAMPLING, RECONFIGURE_FOR_START_SAMPLING_1,
+			RECONFIGURE_FOR_START_SAMPLING_2 and RECONFIGURE_FOR_START_SAMPLING_3
 			Do a unemap_deconfigure and unemap_configure (also have set up and start
 			scrolling again) before starting sampling.  First actually called
 			unemap_deconfigure and unemap_configure.  Then copied code in.  This fixes
 			the problem.  Disadvantage is that DA has been turned off and scrolling
 			isn't general
-1.2.8 RECONFIGURE_FOR_START_SAMPLING and RECONFIGURE_FOR_START_SAMPLING_2
+1.2.8 RECONFIGURE_FOR_START_SAMPLING, RECONFIGURE_FOR_START_SAMPLING_2 and
+			RECONFIGURE_FOR_START_SAMPLING_3
 			Don't free and allocate again the buffers.  This fixes the problem.  Only
 			differences with CLEAR_DAQ_FOR_START_SAMPLING seem to be that waveform
 			generation and scrolling are stopped and scrolling is set up and started
 			again
-1.2.9 RECONFIGURE_FOR_START_SAMPLING
+1.2.9 RECONFIGURE_FOR_START_SAMPLING and RECONFIGURE_FOR_START_SAMPLING_3
 			Don't do a DAQ_Clear (clears event messages although the function
 			description gives the impression that it doesn't) or set up the event
 			message.  This fixes the problem
 1.2.10 Upgrade to version 6.6 of NI-DAQ.  Doesn't fix the problem
-1.2.11 Upgrade to version 6.9.1 of NI-DAQ.  This fixes the problem
-
+1.2.11 Upgrade to version 6.9.1 of NI-DAQ.  Seems to fix the problem, but
+			reappears when change UNEMAP_OS_MEMORY_MB to 12
+1.2.12 RECONFIGURE_FOR_START_SAMPLING
+			Don't stop waveform generation.  Doesn't fix the problem
+1.2.13 STOP_WAVEFORM_IN_START_SAMPLING
+			This fixes the problem.  If the WFM_Group_Control(CLEAR) is only done for
+			the first unemap_start_sampling, then it doesn't work.  If the
+			WFM_Group_Control(CLEAR) is done for the second, but not the first,
+			unemap_start_sampling, then it does fix the problem.  If
+			WFM_Group_Control(CLEAR) is only done for the first card, then it does not
+			fix the problem
+1.2.14 DA_INTERRUPTS_OFF
+			Doesn't fix the problem
+1.2.15 USE_ACPI
+			The NI website has DRIVER_IRQL_NOT_LESS_OR_EQUAL associated with GPIB and
+			ACPI (Advanced Power Configuration Interface).  Modified service.c to
+			respond to the power management messages.  To do this need to use
+			RegisterServiceCtrlHandlerEx which is not in NT (in 2000)
 
 ???To do
 1 Try moving pulse generation set up from unemap_start_sampling to
@@ -3761,18 +3787,18 @@ otherwise the waveform is repeated the <number_of_cycles> times or until
 									for AO0 and AO1 or if we need it */
 							status=WFM_Group_Control((module_NI_CARDS[i]).device_number,
 								/*group*/1,/*Clear*/0);
-#if defined (DEBUG)
 /*???debug */
 {
 	FILE *unemap_debug;
 
 	if (unemap_debug=fopen_UNEMAP_HARDWARE("unemap.deb","a"))
 	{
-		fprintf(unemap_debug,"  WFM_Group_Control(%d,CLEAR)=%d\n",
+		fprintf(unemap_debug,"Load_NI_DA.  1.  WFM_Group_Control(%d,CLEAR)=%d\n",
 			(module_NI_CARDS[i]).device_number,status);
 		fclose(unemap_debug);
 	}
 }
+#if defined (DEBUG)
 #endif /* defined (DEBUG) */
 #if defined (OLD_CODE)
 #if !defined (SYNCHRONOUS_STIMULATION)
@@ -3929,18 +3955,18 @@ otherwise the waveform is repeated the <number_of_cycles> times or until
 												status=WFM_Group_Control(
 													module_NI_CARDS[i].device_number,/*group*/1,
 													/*Start*/1);
-#if defined (DEBUG)
 /*???debug */
 {
 	FILE *unemap_debug;
 
 	if (unemap_debug=fopen_UNEMAP_HARDWARE("unemap.deb","a"))
 	{
-		fprintf(unemap_debug,"  WFM_Group_Control(%d,START)=%d\n",
+		fprintf(unemap_debug,"load_NI_DA.  2.  WFM_Group_Control(%d,START)=%d\n",
 			(module_NI_CARDS[i]).device_number,status);
 		fclose(unemap_debug);
 	}
 }
+#if defined (DEBUG)
 #endif /* defined (DEBUG) */
 #else /* defined (USE_WFM_LOAD) */
 												status=WFM_Op((module_NI_CARDS[i]).device_number,
@@ -4163,18 +4189,18 @@ load_NI_DA) and have not yet started.
 #if defined (USE_WFM_LOAD)
 			status=WFM_Group_Control(start_stimulation_card->device_number,/*group*/1,
 				/*Start*/1);
-#if defined (DEBUG)
 /*???debug */
 {
 	FILE *unemap_debug;
 
 	if (unemap_debug=fopen_UNEMAP_HARDWARE("unemap.deb","a"))
 	{
-		fprintf(unemap_debug,"  WFM_Group_Control(%d,START)=%d\n",
+		fprintf(unemap_debug,"start_NI_DA.  WFM_Group_Control(%d,START)=%d\n",
 			start_stimulation_card->device_number,status);
 		fclose(unemap_debug);
 	}
 }
+#if defined (DEBUG)
 #endif /* defined (DEBUG) */
 #else /* defined (USE_WFM_LOAD) */
 			Timeout_Config(start_stimulation_card->device_number,(i32)0);
@@ -4532,18 +4558,18 @@ Stops the <da_channel> for the specified NI card(s).
 						/* stop waveform generation */
 						status=WFM_Group_Control((module_NI_CARDS[i]).device_number,
 							/*group*/1,/*Clear*/0);
-#if defined (DEBUG)
 /*???debug */
 {
 	FILE *unemap_debug;
 
 	if (unemap_debug=fopen_UNEMAP_HARDWARE("unemap.deb","a"))
 	{
-		fprintf(unemap_debug,"  WFM_Group_Control(%d,CLEAR)=%d\n",
+		fprintf(unemap_debug,"stop_NI_DA.  WFM_Group_Control(%d,CLEAR)=%d\n",
 			(module_NI_CARDS[i]).device_number,status);
 		fclose(unemap_debug);
 	}
 }
+#if defined (DEBUG)
 #endif /* defined (DEBUG) */
 #if defined (DEBUG)
 /*???debug */
@@ -4843,7 +4869,6 @@ stage 4 is calculating the offset
 							/* stop waveform generation */
 							status=WFM_Group_Control(ni_card->device_number,/*group*/1,
 								/*Clear*/0);
-#if defined (DEBUG)
 /*???debug */
 {
 	FILE *unemap_debug;
@@ -4856,6 +4881,7 @@ stage 4 is calculating the offset
 		fclose(unemap_debug);
 	}
 }
+#if defined (DEBUG)
 #endif /* defined (DEBUG) */
 							/* clear start */
 							status=Select_Signal(ni_card->device_number,ND_OUT_START_TRIGGER,
@@ -6955,6 +6981,9 @@ Used in conjunction with <unemap_transfer_samples_acquired> by
 Global functions
 ----------------
 */
+/*???debug */
+static int unemap_start_sampling_count=0;
+
 int unemap_configure(float sampling_frequency_slave,
 	int number_of_samples_in_buffer,
 #if defined (WINDOWS)
@@ -7042,6 +7071,10 @@ determines whether the hardware is configured as slave (<0) or master (>0)
 		number_of_samples_in_buffer,scrolling_window,scrolling_message,
 		scrolling_callback,scrolling_callback_data,scrolling_refresh_frequency,
 		synchronization_card);
+#endif /* defined (DEBUG) */
+	/*???debug */
+	unemap_start_sampling_count=0;
+#if defined (DEBUG)
 #endif /* defined (DEBUG) */
 	return_code=0;
 	if (sampling_frequency_slave<0)
@@ -7897,7 +7930,6 @@ hardware.
 					/* stop waveform generation */
 					status=WFM_Group_Control((module_NI_CARDS[i]).device_number,
 						/*group*/1,/*Clear*/0);
-#if defined (DEBUG)
 /*???debug */
 {
 	FILE *unemap_debug;
@@ -7910,6 +7942,7 @@ hardware.
 		fclose(unemap_debug);
 	}
 }
+#if defined (DEBUG)
 #endif /* defined (DEBUG) */
 					/* set the output voltage to 0 */
 					AO_Write((module_NI_CARDS[i]).device_number,CALIBRATE_CHANNEL,
@@ -8445,8 +8478,6 @@ problem, but not on first sample) when using large sampling buffers.
 	return (return_code);
 } /* unemap_start_sampling */
 #else /* defined (CLEAR_DAQ_FOR_START_SAMPLING) */
-static int unemap_start_sampling_count=0;
-
 int unemap_start_sampling(void)
 /*******************************************************************************
 LAST MODIFIED : 29 December 2001
@@ -8536,6 +8567,7 @@ Starts the sampling.
 				status=DAQ_DB_Config((module_NI_CARDS[i]).device_number,
 					/* disable */(i16)0);
 #endif /* defined (RECONFIGURE_FOR_START_SAMPLING_2) */
+#if defined (RECONFIGURE_FOR_START_SAMPLING_3)
 				if ((PCI6031E_AD_DA==(module_NI_CARDS[i]).type)||
 					(PXI6031E_AD_DA==(module_NI_CARDS[i]).type)||
 					(PXI6071E_AD_DA==(module_NI_CARDS[i]).type))
@@ -8543,7 +8575,6 @@ Starts the sampling.
 					/* stop waveform generation */
 					status=WFM_Group_Control((module_NI_CARDS[i]).device_number,
 						/*group*/1,/*Clear*/0);
-#if defined (DEBUG)
 /*???debug */
 {
 	FILE *unemap_debug;
@@ -8551,11 +8582,12 @@ Starts the sampling.
 	if (unemap_debug=fopen_UNEMAP_HARDWARE("unemap.deb","a"))
 	{
 		fprintf(unemap_debug,
-			"unemap_deconfigure.  1.  WFM_Group_Control(%d,CLEAR)=%d\n",
+			"unemap_start_sampling.  1.  WFM_Group_Control(%d,CLEAR)=%d\n",
 			(module_NI_CARDS[i]).device_number,status);
 		fclose(unemap_debug);
 	}
 }
+#if defined (DEBUG)
 #endif /* defined (DEBUG) */
 					/* set the output voltage to 0 */
 					AO_Write((module_NI_CARDS[i]).device_number,CALIBRATE_CHANNEL,
@@ -8563,6 +8595,7 @@ Starts the sampling.
 					AO_Write((module_NI_CARDS[i]).device_number,STIMULATE_CHANNEL,
 						(i16)0);
 				}
+#endif /* defined (RECONFIGURE_FOR_START_SAMPLING_3) */
 #if defined (RECONFIGURE_FOR_START_SAMPLING_1)
 				DEALLOCATE((module_NI_CARDS[i]).da_buffer);
 #endif /* defined (RECONFIGURE_FOR_START_SAMPLING_1) */
@@ -9350,6 +9383,19 @@ Starts the sampling.
 			unemap_set_scrolling_channel(1);
 		}
 #endif /* defined (RECONFIGURE_FOR_START_SAMPLING) */
+#if defined (STOP_WAVEFORM_IN_START_SAMPLING)
+		/*???debug */
+		unemap_start_sampling_count++;
+		if (unemap_start_sampling_count>1)
+		{
+			for (i=0;i<module_number_of_NI_CARDS;i++)
+			{
+				/* stop waveform generation */
+				status=WFM_Group_Control((module_NI_CARDS[i]).device_number,
+					/*group*/1,/*Clear*/0);
+			}
+		}
+#endif /* defined (STOP_WAVEFORM_IN_START_SAMPLING) */
 		if (UnEmap_1V2==module_NI_CARDS->unemap_hardware_version)
 		{
 			/* force a reset of the filter frequency (because power may have been
@@ -10604,11 +10650,11 @@ assigned to <*number_of_samples>.
 	return (return_code);
 } /* unemap_get_number_of_samples_acquired */
 
-int unemap_transfer_samples_acquired(int channel_number,
+int unemap_transfer_samples_acquired(int channel_number,int number_of_samples,
 	Unemap_transfer_samples_function *transfer_samples_function,
 	void *transfer_samples_function_data,int *number_of_samples_transferred)
 /*******************************************************************************
-LAST MODIFIED : 12 November 2001
+LAST MODIFIED : 13 January 2002
 
 DESCRIPTION :
 The function fails if the hardware is not configured.
@@ -10617,6 +10663,11 @@ If <channel_number> is valid (between 1 and the total number of channels
 inclusive, then the <samples> for that channel are transferred.  If
 <channel_number> is 0 then the <samples> for all channels are transferred.
 Otherwise the function fails.
+
+If <number_of_samples> is not positive or greater than the number of samples
+available, then the number of samples available are transferred.  Otherwise,
+<number_of_samples> are transferred. If <number_of_samples_transferred> is not
+NULL, then it is set to the number of samples transferred.
 
 The <transfer_samples_function> is used to transfer the samples.  It is called
 with samples (short int *), number_of_samples (int) and
@@ -10629,7 +10680,7 @@ transferred.
 	int end,end2,i,j,k,number_of_channels,start,transfer_samples_function_result;
 	short int sample,samples[NUMBER_OF_CHANNELS_ON_NI_CARD],*source;
 	struct NI_card *ni_card;
-	unsigned long maximum_number_of_samples,number_of_samples;
+	unsigned long maximum_number_of_samples,local_number_of_samples;
 #endif /* defined (NI_DAQ) */
 
 	ENTER(unemap_transfer_samples_acquired);
@@ -10641,6 +10692,7 @@ transferred.
 #endif /* defined (DEBUG) */
 	return_code=0;
 	number_transferred=0;
+	number_of_channels=1;
 #if defined (NI_DAQ)
 	/* check arguments */
 	if (transfer_samples_function&&(0<=channel_number)&&
@@ -10649,7 +10701,18 @@ transferred.
 		if (module_configured&&module_NI_CARDS&&(0<module_number_of_NI_CARDS))
 		{
 			return_code=1;
-			number_of_samples=module_sample_buffer_size;
+			if (number_of_samples<=0)
+			{
+				local_number_of_samples=module_sample_buffer_size;
+			}
+			else
+			{
+				local_number_of_samples=(unsigned long)number_of_samples;
+				if (local_number_of_samples>module_sample_buffer_size)
+				{
+					local_number_of_samples=module_sample_buffer_size;
+				}
+			}
 			if (0==channel_number)
 			{
 				number_of_channels=
@@ -10664,16 +10727,16 @@ transferred.
 			if (0==channel_number)
 			{
 				start=module_starting_sample_number;
-				if (module_starting_sample_number+module_sample_buffer_size>
+				if (module_starting_sample_number+local_number_of_samples>
 					maximum_number_of_samples)
 				{
 					end=maximum_number_of_samples;
-					end2=module_starting_sample_number+module_sample_buffer_size-
+					end2=module_starting_sample_number+local_number_of_samples-
 						maximum_number_of_samples;
 				}
 				else
 				{
-					end=module_starting_sample_number+module_sample_buffer_size;
+					end=module_starting_sample_number+local_number_of_samples;
 					end2=0;
 				}
 				k=start;
@@ -10777,16 +10840,16 @@ transferred.
 			else
 			{
 				start=module_starting_sample_number;
-				if (module_starting_sample_number+module_sample_buffer_size>
+				if (module_starting_sample_number+local_number_of_samples>
 					maximum_number_of_samples)
 				{
 					end=maximum_number_of_samples;
-					end2=module_starting_sample_number+module_sample_buffer_size-
+					end2=module_starting_sample_number+local_number_of_samples-
 						maximum_number_of_samples;
 				}
 				else
 				{
-					end=module_starting_sample_number+module_sample_buffer_size;
+					end=module_starting_sample_number+local_number_of_samples;
 					end2=0;
 				}
 				ni_card=module_NI_CARDS+
@@ -10949,7 +11012,7 @@ transferred.
 #endif /* defined (NI_DAQ) */
 	if (number_of_samples_transferred)
 	{
-		*number_of_samples_transferred=number_transferred;
+		*number_of_samples_transferred=number_transferred/number_of_channels;
 	}
 #if defined (DEBUG)
 	/*???debug */
@@ -10961,9 +11024,10 @@ transferred.
 	return (return_code);
 } /* unemap_transfer_samples_acquired */
 
-int unemap_write_samples_acquired(int channel_number,FILE *file)
+int unemap_write_samples_acquired(int channel_number,int number_of_samples,
+	FILE *file,int *number_of_samples_written)
 /*******************************************************************************
-LAST MODIFIED : 15 November 2001
+LAST MODIFIED : 13 January 2002
 
 DESCRIPTION :
 The function fails if the hardware is not configured.
@@ -10972,12 +11036,17 @@ If <channel_number> is valid (between 1 and the total number of channels
 inclusive, then the samples for that channel are written to <file>.  If
 <channel_number> is 0 then the samples for all channels are written to <file>.
 Otherwise the function fails.
+
+If <number_of_samples> is not positive or greater than the number of samples
+available, then the number of samples available are written.  Otherwise,
+<number_of_samples> are written. If <number_of_samples_written> is not NULL,
+then it is set to the number of samples written.
 ==============================================================================*/
 {
 	int return_code;
 #if defined (NI_DAQ)
-	int number_of_channels,number_of_samples_transferred;
-	unsigned long number_of_samples;
+	int number_of_channels;
+	unsigned long local_number_of_samples;
 #endif /* defined (NI_DAQ) */
 #if defined (WINDOWS_IO)
 	DWORD number_of_bytes_written;
@@ -10999,7 +11068,18 @@ Otherwise the function fails.
 		if (module_configured&&module_NI_CARDS&&(0<module_number_of_NI_CARDS))
 		{
 			return_code=1;
-			number_of_samples=module_sample_buffer_size;
+			if (number_of_samples<=0)
+			{
+				local_number_of_samples=module_sample_buffer_size;
+			}
+			else
+			{
+				local_number_of_samples=(unsigned long)number_of_samples;
+				if (local_number_of_samples>module_sample_buffer_size)
+				{
+					local_number_of_samples=module_sample_buffer_size;
+				}
+			}
 			if (0==channel_number)
 			{
 				number_of_channels=
@@ -11016,17 +11096,18 @@ Otherwise the function fails.
 			WriteFile((HANDLE)file,(LPCVOID)&number_of_channels,
 				(DWORD)sizeof(number_of_channels),&number_of_bytes_written,
 				(LPOVERLAPPED)NULL);
-			WriteFile((HANDLE)file,(LPCVOID)&number_of_samples,
-				(DWORD)sizeof(number_of_samples),&number_of_bytes_written,
+			WriteFile((HANDLE)file,(LPCVOID)&local_number_of_samples,
+				(DWORD)sizeof(local_number_of_samples),&number_of_bytes_written,
 				(LPOVERLAPPED)NULL);
 #else /* defined (WINDOWS_IO) */
 			fwrite((char *)&channel_number,sizeof(channel_number),1,file);
 			fwrite((char *)&number_of_channels,sizeof(number_of_channels),1,file);
-			fwrite((char *)&number_of_samples,sizeof(number_of_samples),1,file);
+			fwrite((char *)&local_number_of_samples,sizeof(local_number_of_samples),1,
+				file);
 #endif /* defined (WINDOWS_IO) */
 			return_code=unemap_transfer_samples_acquired(channel_number,
-				file_write_samples_acquired,(void *)file,
-				&number_of_samples_transferred);
+				number_of_samples,file_write_samples_acquired,(void *)file,
+				number_of_samples_written);
 		}
 		else
 		{
@@ -11465,9 +11546,10 @@ available physical memory and limits the buffer based on this.
 } /* unemap_get_samples_acquired */
 #endif /* defined (OLD_CODE) */
 
-int unemap_get_samples_acquired(int channel_number,short int *samples)
+int unemap_get_samples_acquired(int channel_number,int number_of_samples,
+	short int *samples,int *number_of_samples_got)
 /*******************************************************************************
-LAST MODIFIED : 15 November 2001
+LAST MODIFIED : 13 January 2002
 
 DESCRIPTION :
 The function fails if the hardware is not configured.
@@ -11477,17 +11559,14 @@ inclusive), then the <samples> for that channel are returned.  If
 <channel_number> is 0 then the <samples> for all channels are returned.
 Otherwise the function fails.
 
-???DB.  When trying to read back 64 channels sampled at 1kHz for 20s, this
-function hung.  The hardware buffer would be 2.56MB for each card.  So for all
-7 cards the hardware buffers would total 17.92MB.  <samples> would also be
-17.92MB.  The NI crate had 32MB.  So I think that paging was slowing it down
-(drive light was on continuously).  Should have a function that checks on the
-available physical memory and limits the buffer based on this.
+If <number_of_samples> is not positive or greater than the number of samples
+available, then the number of samples available are got.  Otherwise,
+<number_of_samples> are got. If <number_of_samples_got> is not NULL, then it is
+set to the number of samples got.
 ==============================================================================*/
 {
 	int return_code;
 #if defined (NI_DAQ)
-	int number_of_samples_transferred;
 	short int *sample;
 #endif /* defined (NI_DAQ) */
 
@@ -11502,8 +11581,8 @@ available physical memory and limits the buffer based on this.
 	if (sample=samples)
 	{
 		return_code=unemap_transfer_samples_acquired(channel_number,
-			memory_copy_samples_acquired,(void *)&sample,
-			&number_of_samples_transferred);
+			number_of_samples,memory_copy_samples_acquired,(void *)&sample,
+			number_of_samples_got);
 	}
 	else
 	{
@@ -11522,12 +11601,17 @@ available physical memory and limits the buffer based on this.
 } /* unemap_get_samples_acquired */
 
 int unemap_get_samples_acquired_background(int channel_number,
-	Unemap_acquired_data_callback *callback,void *user_data)
+	int number_of_samples,Unemap_acquired_data_callback *callback,
+	void *user_data)
 /*******************************************************************************
-LAST MODIFIED : 13 November 2000
+LAST MODIFIED : 13 January 2002
 
 DESCRIPTION :
 The function fails if the hardware is not configured.
+
+If <number_of_samples> is not positive or greater than the number of samples
+available, then the number of samples available are got.  Otherwise,
+<number_of_samples> are got.
 
 The function gets the samples specified by the <channel_number> and calls the
 <callback> with the <channel_number>, the number of samples, the samples and the
@@ -11544,7 +11628,7 @@ For this version (hardware local), it retrieves the samples and calls the
 {
 	int return_code;
 #if defined (NI_DAQ)
-	int number_of_channels,number_of_samples;
+	int local_number_of_samples,number_of_channels,number_of_samples_got;
 	short *samples;
 #endif /* defined (NI_DAQ) */
 
@@ -11555,7 +11639,18 @@ For this version (hardware local), it retrieves the samples and calls the
 	if (callback&&(0<=channel_number)&&
 		(channel_number<=module_number_of_NI_CARDS*NUMBER_OF_CHANNELS_ON_NI_CARD))
 	{
-		number_of_samples=module_sample_buffer_size;
+		if (number_of_samples<=0)
+		{
+			local_number_of_samples=(int)module_sample_buffer_size;
+		}
+		else
+		{
+			local_number_of_samples=number_of_samples;
+			if (local_number_of_samples>(int)module_sample_buffer_size)
+			{
+				local_number_of_samples=(int)module_sample_buffer_size;
+			}
+		}
 		if (0==channel_number)
 		{
 			number_of_channels=
@@ -11565,11 +11660,12 @@ For this version (hardware local), it retrieves the samples and calls the
 		{
 			number_of_channels=1;
 		}
-		if (ALLOCATE(samples,short,number_of_channels*number_of_samples))
+		if (ALLOCATE(samples,short,number_of_channels*local_number_of_samples))
 		{
-			if (unemap_get_samples_acquired(channel_number,samples))
+			if (unemap_get_samples_acquired(channel_number,number_of_samples,samples,
+				&number_of_samples_got))
 			{
-				(*callback)(channel_number,number_of_samples,samples,user_data);
+				(*callback)(channel_number,number_of_samples_got,samples,user_data);
 				return_code=1;
 			}
 			else
