@@ -15429,9 +15429,6 @@ Responds to update callbacks from the time object.
 									{
 										map->start_time=map_potential_time;
 										map->end_time=map->start_time;
-										/*???DB.  Where I'm up to */
-										/*???DB.  -1!= means playing movie? */
-										/*???DB.  Check out update_map_from_manual_time_update */
 										if (map->activation_front==0)
 										{
 											update_mapping_drawing_area(mapping,2/*recalculate*/);
