@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : parser.h
 
-LAST MODIFIED : 22 December 2000
+LAST MODIFIED : 6 November 2001
 
 DESCRIPTION :
 Public interface for the beginnings of a simple parser (although at the moment
@@ -506,16 +506,18 @@ while <values_address_void> should point to a large enough space to store the
 number_of_components floats.
 ==============================================================================*/
 
-int set_FE_value_array(struct Parse_state *state,void *values_address_void,
+int set_FE_value_array(struct Parse_state *state, void *values_void,
 	void *number_of_components_address_void);
 /*******************************************************************************
-LAST MODIFIED : 11 March 1999
+LAST MODIFIED : 6 November 2001
 
 DESCRIPTION :
 Modifier function for reading number_of_components (>0) FE_values from <state>.
 User data consists of a pointer to an integer containing number_of_components,
-while <values_address_void> should point to a large enough space to store the
+while <values_void> should point to a large enough space to store the
 number_of_components FE_values.
+<number_of_components> can be zero and <values> can be NULL as long as only
+help mode is entered.
 Now prints current contents of the vector with help.
 ==============================================================================*/
 

@@ -3910,51 +3910,53 @@ Now prints current contents of the vector with help.
 	return (return_code);
 } /* set_float_vector */
 
-int set_FE_value_array(struct Parse_state *state,void *values_address_void,
+int set_FE_value_array(struct Parse_state *state, void *values_void,
 	void *number_of_components_address_void)
 /*******************************************************************************
-LAST MODIFIED : 11 March 1999
+LAST MODIFIED : 6 November 2001
 
 DESCRIPTION :
 Modifier function for reading number_of_components (>0) FE_values from <state>.
 User data consists of a pointer to an integer containing number_of_components,
-while <values_address_void> should point to a large enough space to store the
+while <values_void> should point to a large enough space to store the
 number_of_components FE_values.
+<number_of_components> can be zero and <values> can be NULL as long as only
+help mode is entered.
 Now prints current contents of the vector with help.
 ==============================================================================*/
 {
 	char *current_token;
-	FE_value value,*values_address;
-	int i,number_of_components,return_code;
+	FE_value value, *values;
+	int i, number_of_components, return_code;
 
 	ENTER(set_FE_value_array);
-	if (state)
+	if (state && number_of_components_address_void)
 	{
-		if ((values_address=(FE_value *)values_address_void)&&
-			number_of_components_address_void&&(0<(number_of_components=
-			*((int *)number_of_components_address_void))))
+		values = (FE_value *)values_void;
+		number_of_components = *((int *)number_of_components_address_void);
+		if (current_token = state->current_token)
 		{
-			if (current_token=state->current_token)
+			if (strcmp(PARSER_HELP_STRING,current_token)&&
+				strcmp(PARSER_RECURSIVE_HELP_STRING,current_token))
 			{
-				return_code=1;
-				if (strcmp(PARSER_HELP_STRING,current_token)&&
-					strcmp(PARSER_RECURSIVE_HELP_STRING,current_token))
+				if (values && (0 < number_of_components))
 				{
-					for (i=0;return_code&&(i<number_of_components);i++)
+					return_code = 1;
+					for (i = 0; return_code && (i < number_of_components); i++)
 					{
-						if (current_token=state->current_token)
+						if (current_token = state->current_token)
 						{
-							if (1==sscanf(current_token," %f ",&value))
+							if (1 == sscanf(current_token, " %f ", &value))
 							{
-								values_address[i]=value;
-								return_code=shift_Parse_state(state,1);
+								values[i] = value;
+								return_code = shift_Parse_state(state, 1);
 							}
 							else
 							{
-								display_message(ERROR_MESSAGE,"Invalid FE_value: %s",
+								display_message(ERROR_MESSAGE, "Invalid FE_value: %s",
 									current_token);
 								display_parse_state_location(state);
-								return_code=0;
+								return_code = 0;
 							}
 						}
 						else
@@ -3962,43 +3964,50 @@ Now prints current contents of the vector with help.
 							display_message(ERROR_MESSAGE,
 								"Missing FE_value vector component(s)");
 							display_parse_state_location(state);
-							return_code=0;
+							return_code = 0;
 						}
 					}
 				}
 				else
 				{
-					/* write help text */
-					for (i=0;i<number_of_components;i++)
-					{
-						display_message(INFORMATION_MESSAGE," #");
-					}
-					display_message(INFORMATION_MESSAGE,"[%g",values_address[0]);
-					for (i=1;i<number_of_components;i++)
-					{
-						display_message(INFORMATION_MESSAGE," %g",values_address[i]);
-					}
-					display_message(INFORMATION_MESSAGE,"]");
+					display_message(ERROR_MESSAGE,
+						"set_FE_value_array.  Invalid array or number_of_components");
+					return_code = 0;
 				}
 			}
 			else
 			{
-				display_message(ERROR_MESSAGE,
-					"Missing %d component FE_value vector",number_of_components);
-				display_parse_state_location(state);
-				return_code=0;
+				if (values && (0 < number_of_components))
+				{
+					/* write help text */
+					for (i = 0; i < number_of_components; i++)
+					{
+						display_message(INFORMATION_MESSAGE," #");
+					}
+					display_message(INFORMATION_MESSAGE, "[%g", values[0]);
+					for (i = 1; i < number_of_components; i++)
+					{
+						display_message(INFORMATION_MESSAGE, " %g", values[i]);
+					}
+					display_message(INFORMATION_MESSAGE, "]");
+				}
+				else
+				{
+					display_message(INFORMATION_MESSAGE," VALUES");
+				}
 			}
 		}
 		else
 		{
-			display_message(ERROR_MESSAGE,"set_FE_value_array.  Invalid argument(s)");
-			return_code=0;
+			display_message(ERROR_MESSAGE, "Missing values");
+			display_parse_state_location(state);
+			return_code = 0;
 		}
 	}
 	else
 	{
-		display_message(ERROR_MESSAGE,"set_FE_value_array.  Missing state");
-		return_code=0;
+		display_message(ERROR_MESSAGE, "set_FE_value_array.  Invalid argument(s)");
+		return_code = 0;
 	}
 	LEAVE;
 
