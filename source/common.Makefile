@@ -516,10 +516,7 @@ define BuildNormalTarget
 	rm -f product_object ; \
 	ln -s $(PRODUCT_OBJECT_PATH) product_object ; \
 	$(LINK) -o $(1).tmp $(ALL_FLAGS) `cat $(1).list` $(4) && \
-	if [ -f $(2)/$(1) ]; then \
-		rm $(2)/$(1) ; \
-	fi && \
-	cp $(1).tmp $(2)/$(1) ;
+	mv $(1).tmp $(2)/$(1) ;
 endef
 
 define BuildStaticLibraryTarget
@@ -535,10 +532,7 @@ define BuildStaticLibraryTarget
 	rm -f product_object ; \
 	ln -s $(PRODUCT_OBJECT_PATH) product_object ; \
 	ar $(AR_FLAGS) cr $(1).tmp `cat $(1).list` && \
-	if [ -f $(2)/$(1) ]; then \
-		rm $(2)/$(1) ; \
-	fi && \
-	cp $(1).tmp $(2)/$(1) ;
+	mv $(1).tmp $(2)/$(1) ;
 endef
 
 define BuildSharedLibraryTarget
@@ -554,8 +548,5 @@ define BuildSharedLibraryTarget
 	rm -f product_object ; \
 	ln -s $(PRODUCT_OBJECT_PATH) product_object ; \
 	$(LINK) -shared -o $(1).tmp $(ALL_FLAGS) `cat $(1).list` $(4) -Wl,-soname,$(5) && \
-	if [ -f $(2)/$(1) ]; then \
-		rm $(2)/$(1) ; \
-	fi && \
-	cp $(1).tmp $(2)/$(1) ;
+	mv $(1).tmp $(2)/$(1) ;
 endef
