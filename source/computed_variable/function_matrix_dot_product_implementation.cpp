@@ -1,7 +1,7 @@
 //******************************************************************************
 // FILE : function_matrix_dot_product_implementation.cpp
 //
-// LAST MODIFIED : 20 October 2004
+// LAST MODIFIED : 7 December 2004
 //
 // DESCRIPTION :
 //==============================================================================
@@ -25,7 +25,7 @@ EXPORT template<typename Value_type>
 class Function_variable_matrix_dot_product :
 	public Function_variable_matrix<Value_type>
 //******************************************************************************
-// LAST MODIFIED : 19 October 2004
+// LAST MODIFIED : 3 December 2004
 //
 // DESCRIPTION :
 //==============================================================================
@@ -53,6 +53,7 @@ class Function_variable_matrix_dot_product :
 			if (function_matrix_dot_product=boost::dynamic_pointer_cast<
 				Function_matrix_dot_product<Value_type>,Function>(function()))
 			{
+#if defined (BEFORE_CACHING)
 				Function_size_type number_of_columns,number_of_rows;
 				boost::intrusive_ptr< Function_matrix<Value_type> > variable_1,
 					variable_2;
@@ -83,6 +84,45 @@ class Function_variable_matrix_dot_product :
 					result=Function_handle(new Function_matrix<Value_type>(
 						function_matrix_dot_product->values));
 				}
+#else // defined (BEFORE_CACHING)
+				if (!(function_matrix_dot_product->evaluated()))
+				{
+					Function_size_type number_of_columns,number_of_rows;
+					boost::intrusive_ptr< Function_matrix<Value_type> > variable_1,
+						variable_2;
+
+					if ((variable_1=boost::dynamic_pointer_cast<Function_matrix<
+						Value_type>,Function>(function_matrix_dot_product->
+						variable_1_private->evaluate()))&&
+						(variable_2=boost::dynamic_pointer_cast<Function_matrix<Value_type>,
+						Function>(function_matrix_dot_product->variable_2_private->
+						evaluate()))&&
+						((number_of_rows=variable_1->number_of_rows())==
+						variable_2->number_of_rows())&&
+						((number_of_columns=variable_1->number_of_columns())==
+						variable_2->number_of_columns()))
+					{
+						Function_size_type i,j;
+						Value_type sum;
+
+						sum=0;
+						for (i=1;i<=number_of_rows;i++)
+						{
+							for (j=1;j<=number_of_columns;j++)
+							{
+								sum += (*variable_1)(i,j)*(*variable_2)(i,j);
+							}
+						}
+						function_matrix_dot_product->values(0,0)=sum;
+						function_matrix_dot_product->set_evaluated();
+					}
+				}
+				if (function_matrix_dot_product->evaluated())
+				{
+					result=Function_handle(new Function_matrix<Value_type>(
+						function_matrix_dot_product->values));
+				}
+#endif // defined (BEFORE_CACHING)
 			}
 
 			return (result);
@@ -133,24 +173,45 @@ Function_matrix_dot_product<Value_type>::Function_matrix_dot_product(
 	const Function_variable_handle& variable_1,
 	const Function_variable_handle& variable_2):Function_matrix<Value_type>(
 	Function_matrix_dot_product<Value_type>::constructor_values),
-	variable_1_private(variable_1),variable_2_private(variable_2){}
+	variable_1_private(variable_1),variable_2_private(variable_2)
 //******************************************************************************
-// LAST MODIFIED : 20 October 2004
+// LAST MODIFIED : 7 December 2004
 //
 // DESCRIPTION :
 // Constructor.
 //==============================================================================
+{
+	if (variable_1_private)
+	{
+		variable_1_private->add_dependent_function(this);
+	}
+	if (variable_2_private)
+	{
+		variable_2_private->add_dependent_function(this);
+	}
+}
 
 EXPORT template<typename Value_type>
 Function_matrix_dot_product<Value_type>::~Function_matrix_dot_product()
 //******************************************************************************
-// LAST MODIFIED : 19 October 2004
+// LAST MODIFIED : 7 December 2004
 //
 // DESCRIPTION :
 // Destructor.
 //==============================================================================
 {
+#if defined (CIRCULAR_SMART_POINTERS)
 	// do nothing
+#else // defined (CIRCULAR_SMART_POINTERS)
+	if (variable_1_private)
+	{
+		variable_1_private->remove_dependent_function(this);
+	}
+	if (variable_2_private)
+	{
+		variable_2_private->remove_dependent_function(this);
+	}
+#endif // defined (CIRCULAR_SMART_POINTERS)
 }
 
 EXPORT template<typename Value_type>
@@ -322,7 +383,7 @@ bool Function_matrix_dot_product<Value_type>::set_value(
 	Function_variable_handle atomic_variable,
 	Function_variable_handle atomic_value)
 //******************************************************************************
-// LAST MODIFIED : 19 October 2004
+// LAST MODIFIED : 1 December 2004
 //
 // DESCRIPTION :
 //==============================================================================
@@ -345,7 +406,11 @@ bool Function_matrix_dot_product<Value_type>::set_value(
 	{
 		result=value_type->set(values(0,0),atomic_value);
 	}
-	if (!result)
+	if (result)
+	{
+		set_not_evaluated();
+	}
+	else
 	{
 		if (function=variable_1_private->function())
 		{
@@ -409,28 +474,56 @@ Function_matrix_dot_product<Value_type>::Function_matrix_dot_product(
 	const Function_matrix_dot_product<Value_type>& function_matrix_dot_product):
 	Function_matrix<Value_type>(function_matrix_dot_product),
 	variable_1_private(function_matrix_dot_product.variable_1_private),
-	variable_2_private(function_matrix_dot_product.variable_2_private){}
+	variable_2_private(function_matrix_dot_product.variable_2_private)
 //******************************************************************************
-// LAST MODIFIED : 19 October 2004
+// LAST MODIFIED : 7 December 2004
 //
 // DESCRIPTION :
 // Copy constructor.
 //==============================================================================
+{
+	if (variable_1_private)
+	{
+		variable_1_private->add_dependent_function(this);
+	}
+	if (variable_2_private)
+	{
+		variable_2_private->add_dependent_function(this);
+	}
+}
 
 EXPORT template<typename Value_type>
 Function_matrix_dot_product<Value_type>&
 	Function_matrix_dot_product<Value_type>::operator=(
 	const Function_matrix_dot_product<Value_type>& function_matrix_dot_product)
 //******************************************************************************
-// LAST MODIFIED : 19 October 2004
+// LAST MODIFIED : 7 December 2004
 //
 // DESCRIPTION :
 // Assignment operator.
 //==============================================================================
 {
-	this->variable_1_private=function_matrix_dot_product.variable_1_private;
-	this->variable_2_private=function_matrix_dot_product.variable_2_private;
-	this->values=function_matrix_dot_product.values;
+	if (function_matrix_dot_product.variable_1_private)
+	{
+		function_matrix_dot_product.variable_1_private->add_dependent_function(
+			this);
+	}
+	if (variable_1_private)
+	{
+		variable_1_private->remove_dependent_function(this);
+	}
+	variable_1_private=function_matrix_dot_product.variable_1_private;
+	if (function_matrix_dot_product.variable_2_private)
+	{
+		function_matrix_dot_product.variable_2_private->add_dependent_function(
+			this);
+	}
+	if (variable_2_private)
+	{
+		variable_2_private->remove_dependent_function(this);
+	}
+	variable_2_private=function_matrix_dot_product.variable_2_private;
+	values=function_matrix_dot_product.values;
 
 	return (*this);
 }

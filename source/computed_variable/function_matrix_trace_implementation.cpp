@@ -1,7 +1,7 @@
 //******************************************************************************
 // FILE : function_matrix_trace_implementation.cpp
 //
-// LAST MODIFIED : 1 October 2004
+// LAST MODIFIED : 7 December 2004
 //
 // DESCRIPTION :
 //==============================================================================
@@ -24,7 +24,7 @@ EXPORT template<typename Value_type>
 class Function_variable_matrix_trace :
 	public Function_variable_matrix<Value_type>
 //******************************************************************************
-// LAST MODIFIED : 1 October 2004
+// LAST MODIFIED : 3 December 2004
 //
 // DESCRIPTION :
 //==============================================================================
@@ -52,6 +52,7 @@ class Function_variable_matrix_trace :
 			if (function_matrix_trace=boost::dynamic_pointer_cast<
 				Function_matrix_trace<Value_type>,Function>(function()))
 			{
+#if defined (BEFORE_CACHING)
 				Function_size_type number_of_rows;
 				boost::intrusive_ptr< Function_matrix<Value_type> > matrix;
 
@@ -72,6 +73,35 @@ class Function_variable_matrix_trace :
 					result=Function_handle(new Function_matrix<Value_type>(
 						function_matrix_trace->values));
 				}
+#else // defined (BEFORE_CACHING)
+				if (!(function_matrix_trace->evaluated()))
+				{
+					Function_size_type number_of_rows;
+					boost::intrusive_ptr< Function_matrix<Value_type> > matrix;
+
+					if ((matrix=boost::dynamic_pointer_cast<Function_matrix<Value_type>,
+						Function>(function_matrix_trace->matrix_private->evaluate()))&&
+						(matrix->number_of_columns()==
+						(number_of_rows=matrix->number_of_rows())))
+					{
+						Function_size_type i;
+						Value_type sum;
+
+						sum=0;
+						for (i=1;i<=number_of_rows;i++)
+						{
+							sum += (*matrix)(i,i);
+						}
+						function_matrix_trace->values(0,0)=sum;
+						function_matrix_trace->set_evaluated();
+					}
+				}
+				if (function_matrix_trace->evaluated())
+				{
+					result=Function_handle(new Function_matrix<Value_type>(
+						function_matrix_trace->values));
+				}
+#endif // defined (BEFORE_CACHING)
 			}
 
 			return (result);
@@ -122,23 +152,35 @@ Function_matrix_trace<Value_type>::Function_matrix_trace(
 	const Function_variable_handle& matrix):Function_matrix<Value_type>(
 	Function_matrix_trace<Value_type>::constructor_values),matrix_private(matrix)
 //******************************************************************************
-// LAST MODIFIED : 10 September 2004
+// LAST MODIFIED : 7 December 2004
 //
 // DESCRIPTION :
 // Constructor.
 //==============================================================================
-{}
+{
+	if (matrix_private)
+	{
+		matrix_private->add_dependent_function(this);
+	}
+}
 
 EXPORT template<typename Value_type>
 Function_matrix_trace<Value_type>::~Function_matrix_trace()
 //******************************************************************************
-// LAST MODIFIED : 10 September 2004
+// LAST MODIFIED : 7 December 2004
 //
 // DESCRIPTION :
 // Destructor.
 //==============================================================================
 {
+#if defined (CIRCULAR_SMART_POINTERS)
 	// do nothing
+#else // defined (CIRCULAR_SMART_POINTERS)
+	if (matrix_private)
+	{
+		matrix_private->remove_dependent_function(this);
+	}
+#endif // defined (CIRCULAR_SMART_POINTERS)
 }
 
 EXPORT template<typename Value_type>
@@ -330,7 +372,7 @@ bool Function_matrix_trace<Value_type>::set_value(
 	Function_variable_handle atomic_variable,
 	Function_variable_handle atomic_value)
 //******************************************************************************
-// LAST MODIFIED : 10 September 2004
+// LAST MODIFIED : 1 December 2004
 //
 // DESCRIPTION :
 //==============================================================================
@@ -353,7 +395,11 @@ bool Function_matrix_trace<Value_type>::set_value(
 	{
 		result=value_type->set(values(0,0),atomic_value);
 	}
-	if (!result)
+	if (result)
+	{
+		set_not_evaluated();
+	}
+	else
 	{
 		if (function=matrix_private->function())
 		{
@@ -402,26 +448,38 @@ EXPORT template<typename Value_type>
 Function_matrix_trace<Value_type>::Function_matrix_trace(
 	const Function_matrix_trace<Value_type>& function_matrix_trace):
 	Function_matrix<Value_type>(function_matrix_trace),
-	matrix_private(function_matrix_trace.matrix_private){}
+	matrix_private(function_matrix_trace.matrix_private)
 //******************************************************************************
-// LAST MODIFIED : 10 September 2004
+// LAST MODIFIED : 7 December 2004
 //
 // DESCRIPTION :
 // Copy constructor.
 //==============================================================================
+{
+	if (matrix_private)
+	{
+		matrix_private->add_dependent_function(this);
+	}
+}
 
 EXPORT template<typename Value_type>
 Function_matrix_trace<Value_type>& Function_matrix_trace<Value_type>::operator=(
 	const Function_matrix_trace<Value_type>& function_matrix_trace)
 //******************************************************************************
-// LAST MODIFIED : 10 September 2004
+// LAST MODIFIED : 7 December 2004
 //
 // DESCRIPTION :
 // Assignment operator.
 //==============================================================================
 {
-	this->matrix_private=function_matrix_trace.matrix_private;
-	this->values=function_matrix_trace.values;
+	if (function_matrix_trace.matrix_private)
+	{
+		function_matrix_trace.matrix_private->add_dependent_function(this);
+	}
+	if (matrix_private)
+	{
+		matrix_private->remove_dependent_function(this);
+	}
 
 	return (*this);
 }

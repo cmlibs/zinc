@@ -1,7 +1,7 @@
 //******************************************************************************
 // FILE : function_derivative_matrix.hpp
 //
-// LAST MODIFIED : 7 September 2004
+// LAST MODIFIED : 12 November 2004
 //
 // DESCRIPTION :
 //==============================================================================
@@ -20,7 +20,7 @@ typedef boost::intrusive_ptr<Function_derivative_matrix>
 
 class Function_derivative_matrix : public Function
 //******************************************************************************
-// LAST MODIFIED : 7 September 2004
+// LAST MODIFIED : 12 November 2004
 //
 // DESCRIPTION :
 //==============================================================================
@@ -37,6 +37,9 @@ class Function_derivative_matrix : public Function
 	template<class Value_type_1,class Value_type_2>
 		friend bool equivalent(boost::intrusive_ptr<Value_type_1> const &,
 		boost::intrusive_ptr<Value_type_2> const &);
+	public:
+		// for construction exception
+		class Construction_exception {};
 	// inherited
 	public:
 		string_handle get_string_representation();

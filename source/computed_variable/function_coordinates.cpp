@@ -1,7 +1,7 @@
 //******************************************************************************
 // FILE : function_coordinates.cpp
 //
-// LAST MODIFIED : 3 September 2004
+// LAST MODIFIED : 2 December 2004
 //
 // DESCRIPTION :
 //==============================================================================
@@ -34,7 +34,7 @@ typedef boost::intrusive_ptr<Function_variable_matrix_rectangular_cartesian>
 class Function_variable_matrix_rectangular_cartesian :
 	public Function_variable_matrix<Scalar>
 //******************************************************************************
-// LAST MODIFIED : 1 September 2004
+// LAST MODIFIED : 22 November 2004
 //
 // DESCRIPTION :
 //==============================================================================
@@ -91,7 +91,7 @@ class Function_variable_matrix_rectangular_cartesian :
 	public:
 		Function_variable_handle clone() const
 		{
-			return (Function_variable_matrix_rectangular_cartesian_handle(
+			return (Function_variable_handle(
 				new Function_variable_matrix_rectangular_cartesian(*this)));
 		};
 		string_handle get_string_representation()
@@ -131,7 +131,7 @@ class Function_variable_matrix_rectangular_cartesian :
 
 			return (return_string);
 		};
-		Function_handle get_value()
+		Function_handle get_value() const
 		{
 			Function_handle result(0);
 			Function_prolate_spheroidal_to_rectangular_cartesian_handle
@@ -828,7 +828,7 @@ Function_size_type Function_prolate_spheroidal_to_rectangular_cartesian::
 Function_handle Function_prolate_spheroidal_to_rectangular_cartesian::evaluate(
 	Function_variable_handle atomic_variable)
 //******************************************************************************
-// LAST MODIFIED : 3 September 2004
+// LAST MODIFIED : 2 December 2004
 //
 // DESCRIPTION :
 //==============================================================================
@@ -845,6 +845,7 @@ Function_handle Function_prolate_spheroidal_to_rectangular_cartesian::evaluate(
 		(atomic_variable_rectangular_cartesian->row_private<=
 		number_of_components()))
 	{
+#if defined (BEFORE_CACHING)
 		Matrix result_matrix(1,1);
 
 		result_matrix(0,0)=0;
@@ -872,6 +873,42 @@ Function_handle Function_prolate_spheroidal_to_rectangular_cartesian::evaluate(
 			} break;
 		}
 		result=Function_handle(new Function_matrix<Scalar>(result_matrix));
+#else // defined (BEFORE_CACHING)
+		if (!evaluated())
+		{
+			double temp_double;
+
+			x_private=(Scalar)((double)focus_private*
+				cosh((double)lambda_private)*cos((double)mu_private));
+			temp_double=(double)focus_private*
+				sinh((double)lambda_private)*sin((double)mu_private);
+			y_private=(Scalar)(temp_double*cos((double)theta_private));
+			z_private=(Scalar)(temp_double*sin((double)theta_private));
+			set_evaluated();
+		}
+		if (evaluated())
+		{
+			Matrix result_matrix(1,1);
+
+			result_matrix(0,0)=0;
+			switch (atomic_variable_rectangular_cartesian->row_private)
+			{
+				case 1:
+				{
+					result_matrix(0,0)=x_private;
+				} break;
+				case 2:
+				{
+					result_matrix(0,0)=y_private;
+				} break;
+				case 3:
+				{
+					result_matrix(0,0)=z_private;
+				} break;
+			}
+			result=Function_handle(new Function_matrix<Scalar>(result_matrix));
+		}
+#endif // defined (BEFORE_CACHING)
 	}
 	else
 	{
@@ -1409,7 +1446,7 @@ bool Function_prolate_spheroidal_to_rectangular_cartesian::set_value(
 	Function_variable_handle atomic_variable,
 	Function_variable_handle atomic_value)
 //******************************************************************************
-// LAST MODIFIED : 1 September 2004
+// LAST MODIFIED : 1 December 2004
 //
 // DESCRIPTION :
 //==============================================================================
@@ -1486,6 +1523,10 @@ bool Function_prolate_spheroidal_to_rectangular_cartesian::set_value(
 					result=value_scalar->set(z_private,atomic_value);
 				} break;
 			}
+		}
+		if (result)
+		{
+			set_not_evaluated();
 		}
 	}
 

@@ -20,7 +20,7 @@ Function_handle Function_variable_matrix_determinant<Scalar>::
 	evaluate_derivative(
 	std::list<Function_variable_handle>& independent_variables)
 //******************************************************************************
-// LAST MODIFIED : 18 October 2004
+// LAST MODIFIED : 12 November 2004
 //
 // DESCRIPTION :
 //==============================================================================
@@ -180,19 +180,29 @@ Function_handle Function_variable_matrix_determinant<Scalar>::
 						matrix_iterator++;
 					}
 				}
-				derivative_f=new Function_derivative_matrix(this,
-					intermediate_independent_variables,matrices);
-				derivative_g=new Function_derivative_matrix(
-					function_matrix_determinant->matrix_private,independent_variables);
-				if (derivative_f&&derivative_g)
+				try
 				{
-					Function_derivative_matrix_handle derivative_matrix=
-						Function_derivative_matrix_compose(this,derivative_f,derivative_g);
-
-					if (derivative_matrix)
+					derivative_f=new Function_derivative_matrix(this,
+						intermediate_independent_variables,matrices);
+					derivative_g=new Function_derivative_matrix(
+						function_matrix_determinant->matrix_private,independent_variables);
+					if (derivative_f&&derivative_g)
 					{
-						result=derivative_matrix->matrix(independent_variables);
+						Function_derivative_matrix_handle derivative_matrix=
+							Function_derivative_matrix_compose(this,derivative_f,
+							derivative_g);
+
+						if (derivative_matrix)
+						{
+							result=derivative_matrix->matrix(independent_variables);
+						}
 					}
+				}
+				catch (Function_derivative_matrix::Construction_exception)
+				{
+					// do nothing
+					//???debug
+					std::cout << "Function_variable_matrix_determinant<Scalar>::evaluate_derivative.  Failed" << std::endl;
 				}
 			}
 		}

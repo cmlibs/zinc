@@ -1,7 +1,7 @@
 //******************************************************************************
 // FILE : function_function_size_type.cpp
 //
-// LAST MODIFIED : 13 August 2004
+// LAST MODIFIED : 1 December 2004
 //
 // DESCRIPTION :
 //==============================================================================
@@ -474,7 +474,7 @@ bool Function_function_size_type::set_value(
 	Function_variable_handle atomic_variable,
 	Function_variable_handle atomic_value)
 //******************************************************************************
-// LAST MODIFIED : 13 August 2004
+// LAST MODIFIED : 1 December 2004
 //
 // DESCRIPTION :
 //==============================================================================
@@ -496,6 +496,10 @@ bool Function_function_size_type::set_value(
 		atomic_value->value())))
 	{
 		result=value_function_size_type->set(value_private,atomic_value);
+	}
+	if (result)
+	{
+		set_not_evaluated();
 	}
 
 	return (result);

@@ -1,7 +1,7 @@
 //******************************************************************************
 // FILE : function_matrix_sum_implementation.cpp
 //
-// LAST MODIFIED : 1 October 2004
+// LAST MODIFIED : 7 December 2004
 //
 // DESCRIPTION :
 //==============================================================================
@@ -24,7 +24,7 @@
 EXPORT template<typename Value_type>
 class Function_variable_matrix_sum : public Function_variable_matrix<Value_type>
 //******************************************************************************
-// LAST MODIFIED : 1 October 2004
+// LAST MODIFIED : 3 December 2004
 //
 // DESCRIPTION :
 //==============================================================================
@@ -57,6 +57,7 @@ class Function_variable_matrix_sum : public Function_variable_matrix<Value_type>
 			if (function_matrix_sum=boost::dynamic_pointer_cast<
 				Function_matrix_sum<Value_type>,Function>(function()))
 			{
+#if defined (BEFORE_CACHING)
 				Function_size_type number_of_columns,number_of_rows;
 				boost::intrusive_ptr< Function_matrix<Value_type> > summand_1,summand_2;
 
@@ -130,6 +131,44 @@ class Function_variable_matrix_sum : public Function_variable_matrix<Value_type>
 						}
 					}
 				}
+#else // defined (BEFORE_CACHING)
+				if (!(function_matrix_sum->evaluated()))
+				{
+					Function_size_type number_of_columns,number_of_rows;
+					boost::intrusive_ptr< Function_matrix<Value_type> > summand_1,
+						summand_2;
+
+					if ((summand_1=boost::dynamic_pointer_cast<Function_matrix<
+						Value_type>,Function>(function_matrix_sum->summand_1_private->
+						evaluate()))&&(summand_2=boost::dynamic_pointer_cast<
+						Function_matrix<Value_type>,Function>(function_matrix_sum->
+						summand_2_private->evaluate()))&&
+						(row_private<=(number_of_rows=summand_1->number_of_rows()))&&
+						(number_of_rows==summand_2->number_of_rows())&&
+						(column_private<=
+						(number_of_columns=summand_1->number_of_columns()))&&
+						(number_of_columns==summand_2->number_of_columns()))
+					{
+						Function_size_type i,j;
+
+						function_matrix_sum->values.resize(number_of_rows,
+							number_of_columns);
+						for (i=1;i<=number_of_rows;i++)
+						{
+							for (j=1;j<=number_of_columns;j++)
+							{
+								function_matrix_sum->values(i-1,j-1)=
+									(*summand_1)(i,j)+(*summand_2)(i,j);
+							}
+						}
+						function_matrix_sum->set_evaluated();
+					}
+				}
+				if (function_matrix_sum->evaluated())
+				{
+					result=get_value();
+				}
+#endif // defined (BEFORE_CACHING)
 			}
 
 			return (result);
@@ -180,24 +219,45 @@ Function_matrix_sum<Value_type>::Function_matrix_sum(
 	const Function_variable_handle& summand_1,
 	const Function_variable_handle& summand_2):Function_matrix<Value_type>(
 	Function_matrix_sum<Value_type>::constructor_values),
-	summand_1_private(summand_1),summand_2_private(summand_2){}
+	summand_1_private(summand_1),summand_2_private(summand_2)
 //******************************************************************************
-// LAST MODIFIED : 1 October 2004
+// LAST MODIFIED : 7 December 2004
 //
 // DESCRIPTION :
 // Constructor.
 //==============================================================================
+{
+	if (summand_1_private)
+	{
+		summand_1_private->add_dependent_function(this);
+	}
+	if (summand_2_private)
+	{
+		summand_2_private->add_dependent_function(this);
+	}
+}
 
 EXPORT template<typename Value_type>
 Function_matrix_sum<Value_type>::~Function_matrix_sum()
 //******************************************************************************
-// LAST MODIFIED : 30 August 2004
+// LAST MODIFIED : 7 December 2004
 //
 // DESCRIPTION :
 // Destructor.
 //==============================================================================
 {
+#if defined (CIRCULAR_SMART_POINTERS)
 	// do nothing
+#else // defined (CIRCULAR_SMART_POINTERS)
+	if (summand_1_private)
+	{
+		summand_1_private->remove_dependent_function(this);
+	}
+	if (summand_2_private)
+	{
+		summand_2_private->remove_dependent_function(this);
+	}
+#endif // defined (CIRCULAR_SMART_POINTERS)
 }
 
 EXPORT template<typename Value_type>
@@ -404,7 +464,7 @@ bool Function_matrix_sum<Value_type>::set_value(
 	Function_variable_handle atomic_variable,
 	Function_variable_handle atomic_value)
 //******************************************************************************
-// LAST MODIFIED : 2 September 2004
+// LAST MODIFIED : 1 December 2004
 //
 // DESCRIPTION :
 //==============================================================================
@@ -428,7 +488,11 @@ bool Function_matrix_sum<Value_type>::set_value(
 		result=value_type->set(values((atomic_matrix_variable->row())-1,
 			(atomic_matrix_variable->column())-1),atomic_value);
 	}
-	if (!result)
+	if (result)
+	{
+		set_not_evaluated();
+	}
+	else
 	{
 		if (function=summand_1_private->function())
 		{
@@ -492,27 +556,53 @@ Function_matrix_sum<Value_type>::Function_matrix_sum(
 	const Function_matrix_sum<Value_type>& function_matrix_sum):
 	Function_matrix<Value_type>(function_matrix_sum),
 	summand_1_private(function_matrix_sum.summand_1_private),
-	summand_2_private(function_matrix_sum.summand_2_private){}
+	summand_2_private(function_matrix_sum.summand_2_private)
 //******************************************************************************
-// LAST MODIFIED : 6 September 2004
+// LAST MODIFIED : 7 December 2004
 //
 // DESCRIPTION :
 // Copy constructor.
 //==============================================================================
+{
+	if (summand_1_private)
+	{
+		summand_1_private->add_dependent_function(this);
+	}
+	if (summand_2_private)
+	{
+		summand_1_private->add_dependent_function(this);
+	}
+}
 
 EXPORT template<typename Value_type>
 Function_matrix_sum<Value_type>& Function_matrix_sum<Value_type>::operator=(
 	const Function_matrix_sum<Value_type>& function_matrix_sum)
 //******************************************************************************
-// LAST MODIFIED : 6 September 2004
+// LAST MODIFIED : 7 December 2004
 //
 // DESCRIPTION :
 // Assignment operator.
 //==============================================================================
 {
-	this->summand_1_private=function_matrix_sum.summand_1_private;
-	this->summand_2_private=function_matrix_sum.summand_2_private;
-	this->values=function_matrix_sum.values;
+	if (function_matrix_sum.summand_1_private)
+	{
+		function_matrix_sum.summand_1_private->add_dependent_function(this);
+	}
+	if (summand_1_private)
+	{
+		summand_1_private->remove_dependent_function(this);
+	}
+	summand_1_private=function_matrix_sum.summand_1_private;
+	if (function_matrix_sum.summand_2_private)
+	{
+		function_matrix_sum.summand_2_private->add_dependent_function(this);
+	}
+	if (summand_2_private)
+	{
+		summand_2_private->remove_dependent_function(this);
+	}
+	summand_2_private=function_matrix_sum.summand_2_private;
+	values=function_matrix_sum.values;
 
 	return (*this);
 }

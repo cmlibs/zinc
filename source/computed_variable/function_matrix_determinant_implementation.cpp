@@ -1,7 +1,7 @@
 //******************************************************************************
 // FILE : function_matrix_determinant_implementation.cpp
 //
-// LAST MODIFIED : 6 October 2004
+// LAST MODIFIED : 7 December 2004
 //
 // DESCRIPTION :
 //==============================================================================
@@ -24,7 +24,7 @@ EXPORT template<typename Value_type>
 class Function_variable_matrix_determinant :
 	public Function_variable_matrix<Value_type>
 //******************************************************************************
-// LAST MODIFIED : 6 October 2004
+// LAST MODIFIED : 3 December 2004
 //
 // DESCRIPTION :
 //==============================================================================
@@ -52,10 +52,12 @@ class Function_variable_matrix_determinant :
 			if (function_matrix_determinant=boost::dynamic_pointer_cast<
 				Function_matrix_determinant<Value_type>,Function>(function()))
 			{
+#if defined (BEFORE_CACHING)
 				boost::intrusive_ptr< Function_matrix<Value_type> > matrix;
 
 				if ((matrix=boost::dynamic_pointer_cast<Function_matrix<Value_type>,
-					Function>(function_matrix_determinant->matrix_private->evaluate()))&&
+					Function>(function_matrix_determinant->matrix_private->
+					evaluate()))&&
 					(matrix->number_of_columns()==matrix->number_of_rows()))
 				{
 					if (matrix->determinant(function_matrix_determinant->values(0,0)))
@@ -64,6 +66,28 @@ class Function_variable_matrix_determinant :
 							function_matrix_determinant->values));
 					}
 				}
+#else // defined (BEFORE_CACHING)
+				if (!(function_matrix_determinant->evaluated()))
+				{
+					boost::intrusive_ptr< Function_matrix<Value_type> > matrix;
+
+					if ((matrix=boost::dynamic_pointer_cast<Function_matrix<Value_type>,
+						Function>(function_matrix_determinant->matrix_private->
+						evaluate()))&&
+						(matrix->number_of_columns()==matrix->number_of_rows()))
+					{
+						if (matrix->determinant(function_matrix_determinant->values(0,0)))
+						{
+							function_matrix_determinant->set_evaluated();
+						}
+					}
+				}
+				if (function_matrix_determinant->evaluated())
+				{
+					result=Function_handle(new Function_matrix<Value_type>(
+						function_matrix_determinant->values));
+				}
+#endif // defined (BEFORE_CACHING)
 			}
 
 			return (result);
@@ -115,23 +139,35 @@ Function_matrix_determinant<Value_type>::Function_matrix_determinant(
 	Function_matrix_determinant<Value_type>::constructor_values),
 	matrix_private(matrix)
 //******************************************************************************
-// LAST MODIFIED : 4 October 2004
+// LAST MODIFIED : 7 December 2004
 //
 // DESCRIPTION :
 // Constructor.
 //==============================================================================
-{}
+{
+	if (matrix_private)
+	{
+		matrix_private->add_dependent_function(this);
+	}
+}
 
 EXPORT template<typename Value_type>
 Function_matrix_determinant<Value_type>::~Function_matrix_determinant()
 //******************************************************************************
-// LAST MODIFIED : 14 September 2004
+// LAST MODIFIED : 7 December 2004
 //
 // DESCRIPTION :
 // Destructor.
 //==============================================================================
 {
+#if defined (CIRCULAR_SMART_POINTERS)
 	// do nothing
+#else // defined (CIRCULAR_SMART_POINTERS)
+	if (matrix_private)
+	{
+		matrix_private->remove_dependent_function(this);
+	}
+#endif // defined (CIRCULAR_SMART_POINTERS)
 }
 
 EXPORT template<typename Value_type>
@@ -316,7 +352,7 @@ bool Function_matrix_determinant<Value_type>::set_value(
 	Function_variable_handle atomic_variable,
 	Function_variable_handle atomic_value)
 //******************************************************************************
-// LAST MODIFIED : 14 September 2004
+// LAST MODIFIED : 1 December 2004
 //
 // DESCRIPTION :
 //==============================================================================
@@ -339,7 +375,11 @@ bool Function_matrix_determinant<Value_type>::set_value(
 	{
 		result=value_type->set(values(0,0),atomic_value);
 	}
-	if (!result)
+	if (result)
+	{
+		set_not_evaluated();
+	}
+	else
 	{
 		if (function=matrix_private->function())
 		{
@@ -388,27 +428,41 @@ EXPORT template<typename Value_type>
 Function_matrix_determinant<Value_type>::Function_matrix_determinant(
 	const Function_matrix_determinant<Value_type>& function_matrix_determinant):
 	Function_matrix<Value_type>(function_matrix_determinant),
-	matrix_private(function_matrix_determinant.matrix_private){}
+	matrix_private(function_matrix_determinant.matrix_private)
 //******************************************************************************
-// LAST MODIFIED : 14 September 2004
+// LAST MODIFIED : 7 December 2004
 //
 // DESCRIPTION :
 // Copy constructor.
 //==============================================================================
+{
+	if (matrix_private)
+	{
+		matrix_private->add_dependent_function(this);
+	}
+}
 
 EXPORT template<typename Value_type>
 Function_matrix_determinant<Value_type>&
 	Function_matrix_determinant<Value_type>::operator=(
 	const Function_matrix_determinant<Value_type>& function_matrix_determinant)
 //******************************************************************************
-// LAST MODIFIED : 14 September 2004
+// LAST MODIFIED : 7 December 2004
 //
 // DESCRIPTION :
 // Assignment operator.
 //==============================================================================
 {
-	this->matrix_private=function_matrix_determinant.matrix_private;
-	this->values=function_matrix_determinant.values;
+	if (function_matrix_determinant.matrix_private)
+	{
+		function_matrix_determinant.matrix_private->add_dependent_function(this);
+	}
+	if (matrix_private)
+	{
+		matrix_private->remove_dependent_function(this);
+	}
+	matrix_private=function_matrix_determinant.matrix_private;
+	values=function_matrix_determinant.values;
 
 	return (*this);
 }

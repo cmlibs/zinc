@@ -1,7 +1,7 @@
 //******************************************************************************
 // FILE : function_variable_wrapper.cpp
 //
-// LAST MODIFIED : 18 August 2004
+// LAST MODIFIED : 22 November 2004
 //
 // DESCRIPTION :
 //==============================================================================
@@ -185,7 +185,7 @@ class Function_variable_iterator_representation_atomic_wrapper:
 
 Function_variable_handle Function_variable_wrapper::clone() const
 //******************************************************************************
-// LAST MODIFIED : 18 August 2004
+// LAST MODIFIED : 22 November 2004
 //
 // DESCRIPTION :
 //==============================================================================
@@ -194,6 +194,7 @@ Function_variable_handle Function_variable_wrapper::clone() const
 
 	if (this&&(wrapped_variable=get_wrapped()))
 	{
+		wrapped_variable=wrapped_variable->clone();
 		result=Function_variable_handle(new Function_variable_wrapper(
 			function(),wrapped_variable));
 	}
@@ -255,7 +256,7 @@ bool Function_variable_wrapper::rset_value(Function_handle value)
 	return (result);
 }
 
-Function_handle Function_variable_wrapper::get_value()
+Function_handle Function_variable_wrapper::get_value() const
 //******************************************************************************
 // LAST MODIFIED : 18 August 2004
 //

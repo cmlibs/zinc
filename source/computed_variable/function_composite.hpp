@@ -1,7 +1,7 @@
 //******************************************************************************
 // FILE : function_composite.hpp
 //
-// LAST MODIFIED : 13 August 2004
+// LAST MODIFIED : 29 November 2004
 //
 // DESCRIPTION :
 // A list of functions whose output is the composite of the functions' outputs
@@ -16,7 +16,7 @@
 
 class Function_composite : public Function
 //******************************************************************************
-// LAST MODIFIED : 13 August 2004
+// LAST MODIFIED : 29 November 2004
 //
 // DESCRIPTION :
 // A composite of other function(s).
@@ -26,6 +26,8 @@ class Function_composite : public Function
 		friend bool equivalent(boost::intrusive_ptr<Value_type_1> const &,
 		boost::intrusive_ptr<Value_type_2> const &);
 	public:
+		// for construction exception
+		class Construction_exception {};
 		// constructor
 		Function_composite(const Function_handle& function_1,
 			const Function_handle& function_2);

@@ -42,7 +42,7 @@ class Function_variable_matrix : public Function_variable
 		virtual Function_variable_handle clone() const;
 		virtual string_handle get_string_representation();
 		virtual Function_handle evaluate();
-		virtual Function_handle get_value();
+		virtual Function_handle get_value() const;
 		virtual Function_variable_iterator begin_atomic() const;
 		virtual Function_variable_iterator end_atomic() const;
 		virtual std::reverse_iterator<Function_variable_iterator> rbegin_atomic()

@@ -1,7 +1,7 @@
 //******************************************************************************
 // FILE : function_composite.cpp
 //
-// LAST MODIFIED : 11 August 2004
+// LAST MODIFIED : 6 December 2004
 //
 // DESCRIPTION :
 //???DB.  Should make a Matrix if it can?  Changes type in constructors?
@@ -23,36 +23,87 @@
 Function_composite::Function_composite(const Function_handle& function_1,
 	const Function_handle& function_2):Function(),functions_list(0)
 //******************************************************************************
-// LAST MODIFIED : 10 March 2004
+// LAST MODIFIED : 6 December 2004
 //
 // DESCRIPTION :
 // Constructor.
 //==============================================================================
 {
-	functions_list.push_back(function_1);
-	functions_list.push_back(function_2);
+	if (function_1&&function_2)
+	{
+		functions_list.push_back(function_1);
+		function_1->add_dependent_function(this);
+		functions_list.push_back(function_2);
+		function_2->add_dependent_function(this);
+	}
+	else
+	{
+		throw Function_composite::Construction_exception();
+	}
 }
 
 Function_composite::Function_composite(
 	std::list<Function_handle>& functions_list):Function(),
 	functions_list(functions_list)
 //******************************************************************************
-// LAST MODIFIED : 10 March 2004
+// LAST MODIFIED : 6 December 2004
 //
 // DESCRIPTION :
 // Constructor.
 //==============================================================================
-{}
+{
+	bool valid;
+	Function_size_type i;
+	std::list<Function_handle>::iterator iterator;
+
+	valid=false;
+	if (0<(i=(this->functions_list).size()))
+	{
+		valid=true;
+		iterator=(this->functions_list).begin();
+		while (valid&&(i>0))
+		{
+			valid=(0!= *iterator);
+			i--;
+			iterator++;
+		}
+		if (valid)
+		{
+			iterator=(this->functions_list).begin();
+			for (i=(this->functions_list).size();i>0;i--)
+			{
+				(*iterator)->add_dependent_function(this);
+				iterator++;
+			}
+		}
+	}
+	if (!valid)
+	{
+		throw Function_composite::Construction_exception();
+	}
+}
 
 Function_composite::~Function_composite()
 //******************************************************************************
-// LAST MODIFIED : 9 March 2004
+// LAST MODIFIED : 6 December 2004
 //
 // DESCRIPTION :
 // Destructor.
 //==============================================================================
 {
+#if defined (CIRCULAR_SMART_POINTERS)
 	// do nothing
+#else // defined (CIRCULAR_SMART_POINTERS)
+	Function_size_type i;
+	std::list<Function_handle>::iterator iterator;
+	
+	iterator=functions_list.begin();
+	for (i=functions_list.size();i>0;i--)
+	{
+		(*iterator)->remove_dependent_function(this);
+		iterator++;
+	}
+#endif // defined (CIRCULAR_SMART_POINTERS)
 }
 
 string_handle Function_composite::get_string_representation()
@@ -292,24 +343,49 @@ Function_composite::Function_composite(
 	const Function_composite& function_composite):Function(),
 	functions_list(function_composite.functions_list)
 //******************************************************************************
-// LAST MODIFIED : 10 March 2004
+// LAST MODIFIED : 6 December 2004
 //
 // DESCRIPTION :
 // Copy constructor.
 //==============================================================================
 {
+	Function_size_type i;
+	std::list<Function_handle>::iterator iterator;
+
+	iterator=functions_list.begin();
+	for (i=functions_list.size();i>0;i--)
+	{
+		(*iterator)->add_dependent_function(this);
+		iterator++;
+	}
 }
 
 Function_composite& Function_composite::operator=(
 	const Function_composite& function_composite)
 //******************************************************************************
-// LAST MODIFIED : 10 March 2004
+// LAST MODIFIED : 6 December 2004
 //
 // DESCRIPTION :
 // Assignment operator.
 //==============================================================================
 {
-	this->functions_list=function_composite.functions_list;
+	Function_size_type i;
+	std::list<Function_handle>::const_iterator const_iterator;
+	std::list<Function_handle>::iterator iterator;
+
+	const_iterator=function_composite.functions_list.begin();
+	for (i=function_composite.functions_list.size();i>0;i--)
+	{
+		(*const_iterator)->add_dependent_function(this);
+		const_iterator++;
+	}
+	iterator=functions_list.begin();
+	for (i=functions_list.size();i>0;i--)
+	{
+		(*iterator)->remove_dependent_function(this);
+		iterator++;
+	}
+	functions_list=function_composite.functions_list;
 
 	return (*this);
 }

@@ -1,7 +1,7 @@
 //******************************************************************************
 // FILE : function.cpp
 //
-// LAST MODIFIED : 11 August 2004
+// LAST MODIFIED : 7 December 2004
 //
 // DESCRIPTION :
 // See function.hpp
@@ -122,26 +122,49 @@
 
 #include "computed_variable/function.hpp"
 
+#if defined (DEBUG)
+//???debug
+static Function_size_type
+	current_number_of_functions=0,
+	number_of_evaluated_true=0,
+	total_number_of_evaluated=0,
+	total_number_of_functions=0;
+#endif // defined (DEBUG)
+
 // class Function
 // --------------
 
-Function::Function():reference_count(0)
+Function::Function():evaluated_private(false),reference_count(0),
+	dependent_functions(0)
 //******************************************************************************
-// LAST MODIFIED : 11 February 2004
+// LAST MODIFIED : 25 November 2004
 //
 // DESCRIPTION :
 // Constructor.
 //==============================================================================
-{}
+{
+#if defined (DEBUG)
+	//???debug
+	total_number_of_functions++;
+	current_number_of_functions++;
+#endif // defined (DEBUG)
+}
 
-Function::Function(const Function&):reference_count(0)
+Function::Function(const Function&):evaluated_private(false),reference_count(0),
+	dependent_functions(0)
 //******************************************************************************
-// LAST MODIFIED : 25 February 2004
+// LAST MODIFIED : 25 November 2004
 //
 // DESCRIPTION :
 // Copy constructor.
 //==============================================================================
-{}
+{
+#if defined (DEBUG)
+	//???debug
+	total_number_of_functions++;
+	current_number_of_functions++;
+#endif // defined (DEBUG)
+}
 
 Function::~Function()
 //******************************************************************************
@@ -152,6 +175,16 @@ Function::~Function()
 //==============================================================================
 {
 	// do nothing
+#if defined (DEBUG)
+	//???debug
+	current_number_of_functions--;
+	if (0==current_number_of_functions)
+	{
+		std::cout << "total_number_of_functions=" << total_number_of_functions << std::endl;
+		std::cout << "total_number_of_evaluated=" << total_number_of_evaluated << std::endl;
+		std::cout << "number_of_evaluated_true=" << number_of_evaluated_true << std::endl;
+	}
+#endif // defined (DEBUG)
 }
 
 void intrusive_ptr_add_ref(Function *function)
@@ -180,6 +213,173 @@ void intrusive_ptr_release(Function *function)
 		if (function->reference_count<=0)
 		{
 			delete function;
+		}
+	}
+}
+
+bool Function::evaluated() const
+//******************************************************************************
+// LAST MODIFIED : 25 November 2004
+//
+// DESCRIPTION :
+// Returns true if the function has been evaluated and false otherwise.
+//==============================================================================
+{
+#if defined (DEBUG)
+	//???debug
+	total_number_of_evaluated++;
+	if (evaluated_private)
+	{
+		number_of_evaluated_true++;
+	}
+#endif // defined (DEBUG)
+	return (evaluated_private);
+}
+
+void Function::add_dependent_function(
+#if defined (CIRCULAR_SMART_POINTERS)
+	const Function_handle
+#else // defined (CIRCULAR_SMART_POINTERS)
+	Function*
+#endif // defined (CIRCULAR_SMART_POINTERS)
+	dependent_function)
+//******************************************************************************
+// LAST MODIFIED : 6 December 2004
+//
+// DESCRIPTION :
+// Adds <dependent_function> to the list of functions that have to be
+// re-evaluated if this function has to be re-evaluated.
+//==============================================================================
+{
+	if (dependent_function)
+	{
+#if defined (OLD_CODE)
+		Function_size_type i;
+
+		// check for repeats
+		i=dependent_functions.size();
+		if (0<i)
+		{
+			std::list<Function_handle>::iterator iterator;
+
+			iterator=dependent_functions.begin();
+			// have to use get_pointer because operator== has been made ambiguous (to
+			//   force equivalent), but here want pointer comparison
+			while ((i>0)&&(get_pointer(*iterator)!=get_pointer(dependent_function)))
+			{
+				iterator++;
+				i--;
+			}
+		}
+		if (0==i)
+		{
+			dependent_functions.push_back(dependent_function);
+		}
+		//???debug
+		else
+		{
+			std::cout << "Function::add_dependent_function.  repeat.  " << dependent_functions.size() << i << std::endl;
+		}
+#else // defined (OLD_CODE)
+		dependent_functions.push_back(dependent_function);
+#endif // defined (OLD_CODE)
+	}
+}
+
+void Function::remove_dependent_function(
+#if defined (CIRCULAR_SMART_POINTERS)
+	const Function_handle
+#else // defined (CIRCULAR_SMART_POINTERS)
+	Function*
+#endif // defined (CIRCULAR_SMART_POINTERS)
+	dependent_function)
+//******************************************************************************
+// LAST MODIFIED : 6 December 2004
+//
+// DESCRIPTION :
+// Removes <dependent_function> from the list of functions that have to be
+// re-evaluated if this function has to be re-evaluated.
+//==============================================================================
+{
+	if (dependent_function)
+	{
+		Function_size_type i;
+
+		// check for repeats
+		i=dependent_functions.size();
+		if (0<i)
+		{
+			bool found;
+			std::list<
+#if defined (CIRCULAR_SMART_POINTERS)
+				Function_handle
+#else // defined (CIRCULAR_SMART_POINTERS)
+				Function*
+#endif // defined (CIRCULAR_SMART_POINTERS)
+				>::iterator iterator;
+
+			iterator=dependent_functions.begin();
+			found=false;
+			while ((!found)&&(i>0))
+			{
+#if defined (CIRCULAR_SMART_POINTERS)
+				// have to use get_pointer because operator== has been made ambiguous
+				//   (to force equivalent), but here want pointer comparison
+				if (get_pointer(*iterator)==get_pointer(dependent_function))
+#else // defined (CIRCULAR_SMART_POINTERS)
+				if (*iterator==dependent_function)
+#endif // defined (CIRCULAR_SMART_POINTERS)
+				{
+					iterator=dependent_functions.erase(iterator);
+					found=true;
+				}
+				else
+				{
+					iterator++;
+				}
+				i--;
+			}
+		}
+	}
+}
+
+void Function::set_evaluated()
+//******************************************************************************
+// LAST MODIFIED : 25 November 2004
+//
+// DESCRIPTION :
+// Sets this function to evaluated.
+//==============================================================================
+{
+	evaluated_private=true;
+}
+
+void Function::set_not_evaluated()
+//******************************************************************************
+// LAST MODIFIED : 6 December 2004
+//
+// DESCRIPTION :
+// Sets this function and its dependent functions to not evaluated.
+//==============================================================================
+{
+	Function_size_type i;
+	std::list<
+#if defined (CIRCULAR_SMART_POINTERS)
+		Function_handle
+#else // defined (CIRCULAR_SMART_POINTERS)
+		Function*
+#endif // defined (CIRCULAR_SMART_POINTERS)
+		>::iterator iterator;
+
+	evaluated_private=false;
+	if (0<(i=dependent_functions.size()))
+	{
+		iterator=dependent_functions.begin();
+		while (i>0)
+		{
+			(*iterator)->set_not_evaluated();
+			iterator++;
+			i--;
 		}
 	}
 }

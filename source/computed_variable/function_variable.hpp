@@ -1,7 +1,7 @@
 //******************************************************************************
 // FILE : function_variable.hpp
 //
-// LAST MODIFIED : 13 August 2004
+// LAST MODIFIED : 3 December 2004
 //
 // DESCRIPTION :
 // An abstract class for specifying input/independent and output/dependent
@@ -112,7 +112,7 @@ class Function_variable_iterator:
 
 class Function_variable
 //******************************************************************************
-// LAST MODIFIED : 13 August 2004
+// LAST MODIFIED : 3 December 2004
 //
 // DESCRIPTION :
 // A specification for an input/independent and/or output/dependent variable of
@@ -152,7 +152,7 @@ class Function_variable
 		virtual bool rset_value(Function_handle value);
 		// get_value creates a new Function which is the variable's value.  The
 		//   variable's function is not evaluated
-		virtual Function_handle get_value();
+		virtual Function_handle get_value() const;
 		// returns a string the represents the variable
 		virtual string_handle get_string_representation()=0;
 		// for stepping through the atomic variables that make up the variable.
@@ -178,6 +178,26 @@ class Function_variable
 		virtual Function_variable_handle operator-=(const Function_variable&);
 		virtual Function_variable_handle operator+(const Function_variable&) const;
 		virtual Function_variable_handle operator+=(const Function_variable&);
+	public:
+		// for caching function evaluations:
+		// adds <dependent_function> to the list of functions that have to be
+		//   re-evaluated if this variable's function(s) has/have to be re-evaluated
+#if defined (CIRCULAR_SMART_POINTERS)
+		virtual void add_dependent_function(
+			const Function_handle dependent_function);
+#else // defined (CIRCULAR_SMART_POINTERS)
+		virtual void add_dependent_function(
+			Function *dependent_function);
+#endif // defined (CIRCULAR_SMART_POINTERS)
+		// removes <dependent_function> to the list of functions that have to be
+		//   re-evaluated if this variable's function(s) has/have to be re-evaluated
+#if defined (CIRCULAR_SMART_POINTERS)
+		virtual void remove_dependent_function(
+			const Function_handle dependent_function);
+#else // defined (CIRCULAR_SMART_POINTERS)
+		virtual void remove_dependent_function(
+			Function *dependent_function);
+#endif // defined (CIRCULAR_SMART_POINTERS)
 	private:
 		virtual bool equality_atomic(const Function_variable_handle&) const=0;
 		// equality operator.  To be used in equivalent

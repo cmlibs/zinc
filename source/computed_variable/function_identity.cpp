@@ -1,7 +1,7 @@
 //******************************************************************************
 // FILE : function_identity.cpp
 //
-// LAST MODIFIED : 20 August 2004
+// LAST MODIFIED : 7 December 2004
 //
 // DESCRIPTION :
 //???DB.  Need to be able to get to the variable it wraps so that can do
@@ -21,20 +21,36 @@
 // -----------------------
 
 Function_identity::Function_identity(const Function_variable_handle& variable):
-	Function(),variable_private(variable){}
+	Function(),variable_private(variable)
 //******************************************************************************
-// LAST MODIFIED : 25 June 2004
+// LAST MODIFIED : 7 December 2004
 //
 // DESCRIPTION :
 //==============================================================================
+{
+	if (variable_private)
+	{
+		variable_private->add_dependent_function(this);
+	}
+}
 
-Function_identity::~Function_identity(){}
+Function_identity::~Function_identity()
 //******************************************************************************
 // LAST MODIFIED : 25 June 2004
 //
 // DESCRIPTION :
 // Destructor.
 //==============================================================================
+{
+#if defined (CIRCULAR_SMART_POINTERS)
+	// do nothing
+#else // defined (CIRCULAR_SMART_POINTERS)
+	if (variable_private)
+	{
+		variable_private->remove_dependent_function(this);
+	}
+#endif // defined (CIRCULAR_SMART_POINTERS)a
+}
 
 string_handle Function_identity::get_string_representation()
 //******************************************************************************
@@ -213,23 +229,35 @@ Function_identity::Function_identity(
 	const Function_identity& function_identity):Function(),
 	variable_private(function_identity.variable_private)
 //******************************************************************************
-// LAST MODIFIED : 25 June 2004
+// LAST MODIFIED : 7 December 2004
 //
 // DESCRIPTION :
 // Copy constructor.
 //==============================================================================
 {
+	if (variable_private)
+	{
+		variable_private->add_dependent_function(this);
+	}
 }
 
 Function_identity& Function_identity::operator=(
 	const Function_identity& function_identity)
 //******************************************************************************
-// LAST MODIFIED : 25 June 2004
+// LAST MODIFIED : 7 December 2004
 //
 // DESCRIPTION :
 // Assignment operator.
 //==============================================================================
 {
+	if (function_identity.variable_private)
+	{
+		function_identity.variable_private->add_dependent_function(this);
+	}
+	if (variable_private)
+	{
+		variable_private->remove_dependent_function(this);
+	}
 	variable_private=function_identity.variable_private;
 
 	return (*this);

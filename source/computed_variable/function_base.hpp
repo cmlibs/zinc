@@ -1,7 +1,7 @@
 //******************************************************************************
 // FILE : function_base.hpp
 //
-// LAST MODIFIED : 13 August 2004
+// LAST MODIFIED : 11 November 2004
 //
 // DESCRIPTION :
 // Basic declarations and #defines for functions.
@@ -15,6 +15,8 @@
 #define __FUNCTION_BASE_HPP__
 
 #include <stdexcept>
+
+//#define BEFORE_CACHING
 
 //#define EXPORT_IMPLEMENTED
 //#define ONE_TEMPLATE_DEFINITION_IMPLEMENTED
@@ -91,7 +93,7 @@ bool equivalent(boost::intrusive_ptr<Value_type_1> const & first,
 	Value_type_1 *first_ptr=first.get();
 	Value_type_2 *second_ptr=second.get();
 
-	return (((0==first_ptr)&&(0==second_ptr))||
+	return (((first_ptr==second_ptr))||
 		(first_ptr&&second_ptr&&(*first_ptr== *second_ptr)));
 }
 

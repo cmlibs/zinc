@@ -1,7 +1,7 @@
 //******************************************************************************
 // FILE : function_matrix_resize.cpp
 //
-// LAST MODIFIED : 18 October 2004
+// LAST MODIFIED : 24 November 2004
 //
 // DESCRIPTION :
 //==============================================================================
@@ -17,10 +17,9 @@ template<>
 Function_handle Function_variable_matrix_resize<Scalar>::evaluate_derivative(
 	std::list<Function_variable_handle>& independent_variables)
 //******************************************************************************
-// LAST MODIFIED : 18 October 2004
+// LAST MODIFIED : 24 November 2004
 //
 // DESCRIPTION :
-// ???DB.  To be done
 //==============================================================================
 {
 	boost::intrusive_ptr< Function_matrix_resize<Scalar> >
@@ -32,13 +31,17 @@ Function_handle Function_variable_matrix_resize<Scalar>::evaluate_derivative(
 		(0<independent_variables.size()))
 	{
 		Function_size_type number_of_columns,number_of_independent_values,
-			number_of_rows;
+			number_of_rows,size;
 		boost::intrusive_ptr< Function_matrix<Scalar> > derivative,matrix;
 
 		if ((matrix=boost::dynamic_pointer_cast<Function_matrix<Scalar>,
 			Function>(function_matrix_resize->matrix_private->evaluate()))&&
-			(row_private<=(number_of_rows=matrix->number_of_rows()))&&
-			(column_private<=(number_of_columns=matrix->number_of_columns()))&&
+			(0<(size=(matrix->number_of_columns())*(matrix->number_of_rows())))&&
+			(0<(number_of_columns=
+			function_matrix_resize->number_of_columns_private))&&
+			(0==size%number_of_columns)&&
+			(row_private<=(number_of_rows=size/number_of_columns))&&
+			(column_private<=number_of_columns)&&
 			(derivative=boost::dynamic_pointer_cast<Function_matrix<Scalar>,
 			Function>(function_matrix_resize->matrix_private->
 			evaluate_derivative(independent_variables)))&&

@@ -1,7 +1,7 @@
 //******************************************************************************
 // FILE : function_matrix_transpose_implementation.cpp
 //
-// LAST MODIFIED : 7 October 2004
+// LAST MODIFIED : 7 December 2004
 //
 // DESCRIPTION :
 //==============================================================================
@@ -25,7 +25,7 @@ EXPORT template<typename Value_type>
 class Function_variable_matrix_transpose :
 	public Function_variable_matrix<Value_type>
 //******************************************************************************
-// LAST MODIFIED : 7 October 2004
+// LAST MODIFIED : 3 December 2004
 //
 // DESCRIPTION :
 //==============================================================================
@@ -58,6 +58,7 @@ class Function_variable_matrix_transpose :
 			if (function_matrix_transpose=boost::dynamic_pointer_cast<
 				Function_matrix_transpose<Value_type>,Function>(function()))
 			{
+#if defined (BEFORE_CACHING)
 				Function_size_type number_of_columns,number_of_rows;
 				boost::intrusive_ptr< Function_matrix<Value_type> > matrix;
 
@@ -125,6 +126,36 @@ class Function_variable_matrix_transpose :
 						}
 					}
 				}
+#else // defined (BEFORE_CACHING)
+				if (!(function_matrix_transpose->evaluated()))
+				{
+					Function_size_type number_of_columns,number_of_rows;
+					boost::intrusive_ptr< Function_matrix<Value_type> > matrix;
+
+					if ((matrix=boost::dynamic_pointer_cast<Function_matrix<Value_type>,
+						Function>(function_matrix_transpose->matrix_private->evaluate()))&&
+						(row_private<=(number_of_rows=matrix->number_of_columns()))&&
+						(column_private<=(number_of_columns=matrix->number_of_rows())))
+					{
+						Function_size_type i,j;
+
+						function_matrix_transpose->values.resize(number_of_rows,
+							number_of_columns);
+						for (i=1;i<=number_of_rows;i++)
+						{
+							for (j=1;j<=number_of_columns;j++)
+							{
+								function_matrix_transpose->values(i-1,j-1)=(*matrix)(j,i);
+							}
+						}
+						function_matrix_transpose->set_evaluated();
+					}
+				}
+				if (function_matrix_transpose->evaluated())
+				{
+					result=get_value();
+				}
+#endif // defined (BEFORE_CACHING)
 			}
 
 			return (result);
@@ -174,24 +205,37 @@ EXPORT template<typename Value_type>
 Function_matrix_transpose<Value_type>::Function_matrix_transpose(
 	const Function_variable_handle& matrix):Function_matrix<Value_type>(
 	Function_matrix_transpose<Value_type>::constructor_values),
-	matrix_private(matrix){}
+	matrix_private(matrix)
 //******************************************************************************
-// LAST MODIFIED : 7 October 2004
+// LAST MODIFIED : 7 December 2004
 //
 // DESCRIPTION :
 // Constructor.
 //==============================================================================
+{
+	if (matrix_private)
+	{
+		matrix_private->add_dependent_function(this);
+	}
+}
 
 EXPORT template<typename Value_type>
 Function_matrix_transpose<Value_type>::~Function_matrix_transpose()
 //******************************************************************************
-// LAST MODIFIED : 7 October 2004
+// LAST MODIFIED : 7 December 2004
 //
 // DESCRIPTION :
 // Destructor.
 //==============================================================================
 {
+#if defined (CIRCULAR_SMART_POINTERS)
 	// do nothing
+#else // defined (CIRCULAR_SMART_POINTERS)
+	if (matrix_private)
+	{
+		matrix_private->remove_dependent_function(this);
+	}
+#endif // defined (CIRCULAR_SMART_POINTERS)
 }
 
 EXPORT template<typename Value_type>
@@ -337,7 +381,7 @@ bool Function_matrix_transpose<Value_type>::set_value(
 	Function_variable_handle atomic_variable,
 	Function_variable_handle atomic_value)
 //******************************************************************************
-// LAST MODIFIED : 7 October 2004
+// LAST MODIFIED : 1 December 2004
 //
 // DESCRIPTION :
 //==============================================================================
@@ -361,7 +405,11 @@ bool Function_matrix_transpose<Value_type>::set_value(
 		result=value_type->set(values((atomic_matrix_variable->row())-1,
 			(atomic_matrix_variable->column())-1),atomic_value);
 	}
-	if (!result)
+	if (result)
+	{
+		set_not_evaluated();
+	}
+	else
 	{
 		if (function=matrix_private->function())
 		{
@@ -410,27 +458,41 @@ EXPORT template<typename Value_type>
 Function_matrix_transpose<Value_type>::Function_matrix_transpose(
 	const Function_matrix_transpose<Value_type>& function_matrix_transpose):
 	Function_matrix<Value_type>(function_matrix_transpose),
-	matrix_private(function_matrix_transpose.matrix_private){}
+	matrix_private(function_matrix_transpose.matrix_private)
 //******************************************************************************
-// LAST MODIFIED : 7 October 2004
+// LAST MODIFIED : 7 December 2004
 //
 // DESCRIPTION :
 // Copy constructor.
 //==============================================================================
+{
+	if (matrix_private)
+	{
+		matrix_private->add_dependent_function(this);
+	}
+}
 
 EXPORT template<typename Value_type>
 Function_matrix_transpose<Value_type>&
 	Function_matrix_transpose<Value_type>::operator=(
 	const Function_matrix_transpose<Value_type>& function_matrix_transpose)
 //******************************************************************************
-// LAST MODIFIED : 7 October 2004
+// LAST MODIFIED : 7 December 2004
 //
 // DESCRIPTION :
 // Assignment operator.
 //==============================================================================
 {
-	this->matrix_private=function_matrix_transpose.matrix_private;
-	this->values=function_matrix_transpose.values;
+	if (function_matrix_transpose.matrix_private)
+	{
+		function_matrix_transpose.matrix_private->add_dependent_function(this);
+	}
+	if (matrix_private)
+	{
+		matrix_private->remove_dependent_function(this);
+	}
+	matrix_private=function_matrix_transpose.matrix_private;
+	values=function_matrix_transpose.values;
 
 	return (*this);
 }

@@ -1,7 +1,7 @@
 //******************************************************************************
 // FILE : function_finite_element.cpp
 //
-// LAST MODIFIED : 4 November 2004
+// LAST MODIFIED : 8 December 2004
 //
 // DESCRIPTION :
 // Finite element types - element, element/xi and finite element field.
@@ -71,7 +71,7 @@ typedef boost::intrusive_ptr<Function_variable_matrix_components>
 class Function_variable_matrix_components :
 	public Function_variable_matrix<Scalar>
 //******************************************************************************
-// LAST MODIFIED : 1 September 2004
+// LAST MODIFIED : 22 November 2004
 //
 // DESCRIPTION :
 //==============================================================================
@@ -123,7 +123,7 @@ class Function_variable_matrix_components :
 	public:
 		Function_variable_handle clone() const
 		{
-			return (Function_variable_matrix_components_handle(
+			return (Function_variable_handle(
 				new Function_variable_matrix_components(*this)));
 		};
 		string_handle get_string_representation()
@@ -157,7 +157,7 @@ class Function_variable_matrix_components :
 
 			return (return_string);
 		};
-		Function_handle get_value()
+		Function_handle get_value() const
 		{
 			Function_handle result(0);
 			Function_finite_element_handle function_finite_element;
@@ -303,7 +303,7 @@ class Function_variable_iterator_representation_atomic_element:
 
 class Function_variable_element : public Function_variable
 //******************************************************************************
-// LAST MODIFIED : 13 August 2004
+// LAST MODIFIED : 22 November 2004
 //
 // DESCRIPTION :
 //==============================================================================
@@ -322,8 +322,7 @@ class Function_variable_element : public Function_variable
 	public:
 		Function_variable_handle clone() const
 		{
-			return (Function_variable_element_handle(
-				new Function_variable_element(*this)));
+			return (Function_variable_handle(new Function_variable_element(*this)));
 		};
 		string_handle get_string_representation()
 		{
@@ -589,7 +588,7 @@ typedef boost::intrusive_ptr<Function_variable_element_xi_element_xi>
 class Function_variable_element_xi_element_xi :
 	public Function_variable_element_xi
 //******************************************************************************
-// LAST MODIFIED : 19 July 2004
+// LAST MODIFIED : 22 November 2004
 //
 // DESCRIPTION :
 //==============================================================================
@@ -615,7 +614,7 @@ class Function_variable_element_xi_element_xi :
 	public:
 		Function_variable_handle clone() const
 		{
-			return (Function_variable_element_xi_element_xi_handle(
+			return (Function_variable_handle(
 				new Function_variable_element_xi_element_xi(*this)));
 		};
 		Function_size_type number_of_xi() const
@@ -723,7 +722,7 @@ typedef boost::intrusive_ptr<Function_variable_element_xi_finite_element>
 class Function_variable_element_xi_finite_element :
 	public Function_variable_element_xi
 //******************************************************************************
-// LAST MODIFIED : 19 July 2004
+// LAST MODIFIED : 22 November 2004
 //
 // DESCRIPTION :
 //==============================================================================
@@ -752,7 +751,7 @@ class Function_variable_element_xi_finite_element :
 	public:
 		Function_variable_handle clone() const
 		{
-			return (Function_variable_element_xi_finite_element_handle(
+			return (Function_variable_handle(
 				new Function_variable_element_xi_finite_element(*this)));
 		};
 		Function_size_type number_of_xi() const
@@ -1099,7 +1098,7 @@ the <node>.
 class Function_variable_matrix_nodal_values :
 	public Function_variable_matrix<Scalar>
 //******************************************************************************
-// LAST MODIFIED : 17 November 2004
+// LAST MODIFIED : 22 November 2004
 //
 // DESCRIPTION :
 //==============================================================================
@@ -1254,14 +1253,14 @@ class Function_variable_matrix_nodal_values :
 				if (time_sequence)
 				{
 					FE_value fe_value;
-					int i, number_of_times = FE_time_sequence_get_number_of_times(time_sequence);
-					Matrix matrix_temp(number_of_times, 1);
+					int i,number_of_times=FE_time_sequence_get_number_of_times(
+						time_sequence);
+					Matrix matrix_temp(number_of_times,1);
 					
-					for (i = 0 ; i < number_of_times ; i++)
+					for (i=0;i<number_of_times;i++)
 					{
-						FE_time_sequence_get_time_for_index(time_sequence,
-							i, &fe_value);
-						matrix_temp(i, 0) = (Scalar)fe_value;
+						FE_time_sequence_get_time_for_index(time_sequence,i,&fe_value);
+						matrix_temp(i,0) = (Scalar)fe_value;
 					}
 					out << matrix_temp;
 				}
@@ -2013,7 +2012,7 @@ void Function_variable_iterator_representation_atomic_nodal_values::increment()
 
 void Function_variable_iterator_representation_atomic_nodal_values::decrement()
 //******************************************************************************
-// LAST MODIFIED : 18 November 2004
+// LAST MODIFIED : 8 December 2004
 //
 // DESCRIPTION :
 // Decrements the iterator to the next atomic variable.  The decrementing order
@@ -2135,6 +2134,7 @@ void Function_variable_iterator_representation_atomic_nodal_values::decrement()
 											atomic_variable->component_number,atomic_variable->node)))
 									{
 										atomic_variable->value_type=value_types[value_type_index];
+										atomic_variable->version=number_of_versions;
 									}
 									else
 									{
@@ -2682,7 +2682,7 @@ bool Function_element::evaluate_derivative(Scalar&,Function_variable_handle,
 bool Function_element::set_value(Function_variable_handle atomic_variable,
 	Function_variable_handle atomic_value)
 //******************************************************************************
-// LAST MODIFIED : 13 August 2004
+// LAST MODIFIED : 1 December 2004
 //
 // DESCRIPTION :
 //==============================================================================
@@ -2708,6 +2708,10 @@ bool Function_element::set_value(Function_variable_handle atomic_variable,
 			{
 				ACCESS(FE_element)(element_private);
 			}
+		}
+		if (result)
+		{
+			set_not_evaluated();
 		}
 	}
 
@@ -3036,7 +3040,7 @@ bool Function_element_xi::evaluate_derivative(Scalar& derivative,
 bool Function_element_xi::set_value(Function_variable_handle atomic_variable,
 	Function_variable_handle atomic_value)
 //******************************************************************************
-// LAST MODIFIED : 13 August 2004
+// LAST MODIFIED : 1 December 2004
 //
 // DESCRIPTION :
 //==============================================================================
@@ -3078,6 +3082,10 @@ bool Function_element_xi::set_value(Function_variable_handle atomic_variable,
 		{
 			result=value_scalar->set(
 				xi_private[(atomic_element_xi_variable->indices)[0]-1],atomic_value);
+		}
+		if (result)
+		{
+			set_not_evaluated();
 		}
 	}
 
@@ -3755,7 +3763,7 @@ and <basis_type>.  This does not support mixed basis types in the tensor product
 Function_handle Function_finite_element::evaluate(
 	Function_variable_handle atomic_variable)
 //******************************************************************************
-// LAST MODIFIED : 3 September 2004
+// LAST MODIFIED : 3 December 2004
 //
 // DESCRIPTION :
 //==============================================================================
@@ -3766,6 +3774,7 @@ Function_handle Function_finite_element::evaluate(
 	if (atomic_variable_finite_element=boost::dynamic_pointer_cast<
 		Function_variable_matrix_components,Function_variable>(atomic_variable))
 	{
+#if defined (BEFORE_CACHING)
 		FE_value *xi_coordinates;
 		int element_dimension;
 
@@ -3801,6 +3810,57 @@ Function_handle Function_finite_element::evaluate(
 				result=Function_handle(new Function_matrix<Scalar>(result_matrix));
 			}
 		}
+		DEALLOCATE(xi_coordinates);
+#else // defined (BEFORE_CACHING)
+		if (equivalent(Function_handle(this),
+			atomic_variable_finite_element->function()))
+		{
+			if (!evaluated())
+			{
+				FE_value *component_values,*xi_coordinates;
+				Function_size_type local_number_of_components;
+				int element_dimension;
+
+				xi_coordinates=(FE_value *)NULL;
+				component_values=(FE_value *)NULL;
+				if ((0<atomic_variable_finite_element->row_private)&&field_private&&
+					(atomic_variable_finite_element->row_private<=
+					(local_number_of_components=number_of_components()))&&
+					((node_private&&!element_private)||(!node_private&&element_private&&
+					(0<(element_dimension=get_FE_element_dimension(element_private)))&&
+					((Function_size_type)element_dimension==xi_private.size())&&
+					ALLOCATE(xi_coordinates,FE_value,element_dimension)))&&
+					ALLOCATE(component_values,FE_value,local_number_of_components))
+				{
+					Function_size_type j;
+					int i;
+
+					if (xi_coordinates)
+					{
+						for (i=0;i<element_dimension;i++)
+						{
+							xi_coordinates[i]=(FE_value)(xi_private[i]);
+						}
+					}
+					if (calculate_FE_field(field_private,-1,node_private,element_private,
+						xi_coordinates,(FE_value)time_private,component_values))
+					{
+						for (j=0;j<local_number_of_components;j++)
+						{
+							components_private[j]=(Scalar)(component_values[j]);
+						}
+						set_evaluated();
+					}
+				}
+				DEALLOCATE(component_values);
+				DEALLOCATE(xi_coordinates);
+			}
+			if (evaluated())
+			{
+				result=get_value(atomic_variable);
+			}
+		}
+#endif // defined (BEFORE_CACHING)
 	}
 	else
 	{
@@ -5416,7 +5476,7 @@ bool Function_finite_element::set_value(
 	Function_variable_handle atomic_variable,
 	Function_variable_handle atomic_value)
 //******************************************************************************
-// LAST MODIFIED : 1 September 2004
+// LAST MODIFIED : 1 December 2004
 //
 // DESCRIPTION :
 //==============================================================================
@@ -5508,6 +5568,10 @@ bool Function_finite_element::set_value(
 					atomic_variable_nodal_values->version,time,temp_scalar);
 			}
 		}
+	}
+	if (result)
+	{
+		set_not_evaluated();
 	}
 
 	return (result);

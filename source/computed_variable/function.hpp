@@ -1,7 +1,7 @@
 //******************************************************************************
 // FILE : function.hpp
 //
-// LAST MODIFIED : 6 September 2004
+// LAST MODIFIED : 6 December 2004
 //
 // DESCRIPTION :
 // Functions are expressions that are constructed for:
@@ -22,7 +22,7 @@
 
 class Function
 //******************************************************************************
-// LAST MODIFIED : 6 September 2004
+// LAST MODIFIED : 6 December 2004
 //
 // DESCRIPTION :
 // A function maintains storage for all its inputs and the outputs that can be
@@ -71,6 +71,34 @@ class Function
 		//   The new Function is an identity function (outputs the same as inputs)
 		virtual Function_handle get_value(
 			Function_variable_handle atomic_variable)=0;
+	public:
+		//???DB.  Not safe - can forget to call and the function could be marked
+		//  evaluated when it still need evaluating.
+		// for caching function evaluations:
+		// returns true if the function has been evaluated and false otherwise
+		virtual bool evaluated() const;
+		// sets this function to evaluated
+		virtual void set_evaluated();
+		// sets this function and its dependent functions to not evaluated
+		virtual void set_not_evaluated();
+		// adds <dependent_function> to the list of functions that have to be
+		//   re-evaluated if this function has to be re-evaluated
+#if defined (CIRCULAR_SMART_POINTERS)
+		virtual void add_dependent_function(
+			const Function_handle dependent_function);
+#else // defined (CIRCULAR_SMART_POINTERS)
+		virtual void add_dependent_function(
+			Function *dependent_function);
+#endif // defined (CIRCULAR_SMART_POINTERS)
+		// removes <dependent_function> from the list of functions that have to be
+		//   re-evaluated if this function has to be re-evaluated
+#if defined (CIRCULAR_SMART_POINTERS)
+		virtual void remove_dependent_function(
+			const Function_handle dependent_function);
+#else // defined (CIRCULAR_SMART_POINTERS)
+		virtual void remove_dependent_function(
+			Function *dependent_function);
+#endif // defined (CIRCULAR_SMART_POINTERS)
 	protected:
 		// constructor.  Protected so that can't create "plain" Functions
 		Function();
@@ -88,7 +116,13 @@ class Function
 		// equality operator.  To be used in equivalent
 		virtual bool operator==(const Function&) const=0;
 	private:
+		bool evaluated_private;
 		int reference_count;
+#if defined (CIRCULAR_SMART_POINTERS)
+		std::list<Function_handle> dependent_functions;
+#else // defined (CIRCULAR_SMART_POINTERS)
+		std::list<Function *> dependent_functions;
+#endif // defined (CIRCULAR_SMART_POINTERS)
 		friend void intrusive_ptr_add_ref(Function *);
 		friend void intrusive_ptr_release(Function *);
 };

@@ -1,7 +1,7 @@
 //******************************************************************************
 // FILE : function_gradient.cpp
 //
-// LAST MODIFIED : 21 October 2004
+// LAST MODIFIED : 3 December 2004
 //
 // DESCRIPTION :
 // ***Not used***
@@ -87,7 +87,7 @@ class Function_variable_iterator_representation_atomic_gradient:
 
 class Function_variable_gradient : public Function_variable
 //******************************************************************************
-// LAST MODIFIED : 1 September 2004
+// LAST MODIFIED : 23 November 2004
 //
 // DESCRIPTION :
 //==============================================================================
@@ -171,8 +171,7 @@ class Function_variable_gradient : public Function_variable
 	public:
 		Function_variable_handle clone() const
 		{
-			return (Function_variable_gradient_handle(
-				new Function_variable_gradient(*this)));
+			return (Function_variable_handle(new Function_variable_gradient(*this)));
 		};
 		Function_handle evaluate()
 		{
@@ -182,6 +181,7 @@ class Function_variable_gradient : public Function_variable
 
 			if (function_gradient)
 			{
+#if defined (BEFORE_CACHING)
 				Function_variable_handle dependent_variable,independent_variable;
 
 				independent_variable=atomic_independent_variable;
@@ -270,6 +270,11 @@ class Function_variable_gradient : public Function_variable
 						result=Function_handle(new Function_matrix<Scalar>(result_matrix));
 					}
 				}
+#else // defined (BEFORE_CACHING)
+				//???DB.  To be done
+				throw std::logic_error("Function_variable_gradient::evaluate.  "
+					"Not implemented for caching");
+#endif // defined (BEFORE_CACHING)
 			}
 
 			return (result);
@@ -1024,13 +1029,19 @@ Function_gradient::Function_gradient(
 	const Function_variable_handle& dependent_variable,
 	const Function_variable_handle& independent_variable):Function(),
 	dependent_variable_private(dependent_variable),
-	independent_variable_private(independent_variable){}
+	independent_variable_private(independent_variable)
 //******************************************************************************
-// LAST MODIFIED : 25 August 2004
+// LAST MODIFIED : 3 December 2004
 //
 // DESCRIPTION :
 // Constructor.
 //==============================================================================
+{
+	if (dependent_variable_private)
+	{
+		dependent_variable_private->add_dependent_function(Function_handle(this));
+	}
+}
 
 Function_gradient::~Function_gradient(){}
 //******************************************************************************
@@ -1233,23 +1244,37 @@ Function_gradient::Function_gradient(
 	dependent_variable_private(function_gradient.dependent_variable_private),
 	independent_variable_private(function_gradient.independent_variable_private)
 //******************************************************************************
-// LAST MODIFIED : 25 August 2004
+// LAST MODIFIED : 3 December 2004
 //
 // DESCRIPTION :
 // Copy constructor.
 //==============================================================================
 {
+	if (dependent_variable_private)
+	{
+		dependent_variable_private->add_dependent_function(Function_handle(this));
+	}
 }
 
 Function_gradient& Function_gradient::operator=(
 	const Function_gradient& function_gradient)
 //******************************************************************************
-// LAST MODIFIED : 25 August 2004
+// LAST MODIFIED : 3 December 2004
 //
 // DESCRIPTION :
 // Assignment operator.
 //==============================================================================
 {
+	if (function_gradient.dependent_variable_private)
+	{
+		function_gradient.dependent_variable_private->add_dependent_function(
+			Function_handle(this));
+	}
+	if (dependent_variable_private)
+	{
+		dependent_variable_private->remove_dependent_function(
+			Function_handle(this));
+	}
 	dependent_variable_private=function_gradient.dependent_variable_private;
 	independent_variable_private=function_gradient.independent_variable_private;
 

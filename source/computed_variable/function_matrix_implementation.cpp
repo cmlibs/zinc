@@ -302,7 +302,7 @@ bool Function_matrix<Value_type>::set_value(
 	Function_variable_handle atomic_variable,
 	Function_variable_handle atomic_value)
 //******************************************************************************
-// LAST MODIFIED : 1 September 2004
+// LAST MODIFIED : 1 December 2004
 //
 // DESCRIPTION :
 //==============================================================================
@@ -323,6 +323,10 @@ bool Function_matrix<Value_type>::set_value(
 	{
 		result=value_type->set(values((atomic_matrix_variable->row())-1,
 			(atomic_matrix_variable->column())-1),atomic_value);
+	}
+	if (result)
+	{
+		set_not_evaluated();
 	}
 
 	return (result);

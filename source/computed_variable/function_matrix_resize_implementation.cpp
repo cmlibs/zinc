@@ -1,7 +1,7 @@
 //******************************************************************************
 // FILE : function_matrix_resize_implementation.cpp
 //
-// LAST MODIFIED : 7 October 2004
+// LAST MODIFIED : 7 December 2004
 //
 // DESCRIPTION :
 //==============================================================================
@@ -25,7 +25,7 @@ EXPORT template<typename Value_type>
 class Function_variable_matrix_resize :
 	public Function_variable_matrix<Value_type>
 //******************************************************************************
-// LAST MODIFIED : 7 October 2004
+// LAST MODIFIED : 3 December 2004
 //
 // DESCRIPTION :
 //==============================================================================
@@ -58,6 +58,7 @@ class Function_variable_matrix_resize :
 			if (function_matrix_resize=boost::dynamic_pointer_cast<
 				Function_matrix_resize<Value_type>,Function>(function()))
 			{
+#if defined (BEFORE_CACHING)
 				Function_size_type number_of_columns,number_of_columns_input,
 					number_of_rows,size;
 				boost::intrusive_ptr< Function_matrix<Value_type> > matrix;
@@ -133,6 +134,44 @@ class Function_variable_matrix_resize :
 						}
 					}
 				}
+#else // defined (BEFORE_CACHING)
+				if (!(function_matrix_resize->evaluated()))
+				{
+					Function_size_type number_of_columns,number_of_columns_input,
+						number_of_rows,size;
+					boost::intrusive_ptr< Function_matrix<Value_type> > matrix;
+
+					if ((matrix=boost::dynamic_pointer_cast<Function_matrix<Value_type>,
+						Function>(function_matrix_resize->matrix_private->evaluate()))&&
+						(0<(size=(number_of_columns_input=matrix->number_of_columns())*
+						(matrix->number_of_rows())))&&(0<(number_of_columns=
+						function_matrix_resize->number_of_columns_private))&&
+						(0==size%number_of_columns)&&
+						(row_private<=(number_of_rows=size/number_of_columns))&&
+						(column_private<=number_of_columns))
+					{
+						Function_size_type i,j,k;
+
+						function_matrix_resize->values.resize(number_of_rows,
+							number_of_columns);
+						k=0;
+						for (i=0;i<number_of_rows;i++)
+						{
+							for (j=0;j<number_of_columns;j++)
+							{
+								function_matrix_resize->values(i,j)=(*matrix)(
+									k/number_of_columns_input+1,k%number_of_columns_input+1);
+								k++;
+							}
+						}
+						function_matrix_resize->set_evaluated();
+					}
+				}
+				if (function_matrix_resize->evaluated())
+				{
+					result=get_value();
+				}
+#endif // defined (BEFORE_CACHING)
 			}
 
 			return (result);
@@ -183,30 +222,43 @@ Function_matrix_resize<Value_type>::Function_matrix_resize(
 	const Function_variable_handle& matrix,
 	const Function_size_type number_of_columns):Function_matrix<Value_type>(
 	Function_matrix_resize<Value_type>::constructor_values),
-	number_of_columns_private(number_of_columns),matrix_private(matrix){}
+	number_of_columns_private(number_of_columns),matrix_private(matrix)
 //******************************************************************************
-// LAST MODIFIED : 7 October 2004
+// LAST MODIFIED : 7 December 2004
 //
 // DESCRIPTION :
 // Constructor.
 //==============================================================================
+{
+	if (matrix_private)
+	{
+		matrix_private->add_dependent_function(this);
+	}
+}
 
 EXPORT template<typename Value_type>
 Function_matrix_resize<Value_type>::~Function_matrix_resize()
 //******************************************************************************
-// LAST MODIFIED : 7 October 2004
+// LAST MODIFIED : 7 December 2004
 //
 // DESCRIPTION :
 // Destructor.
 //==============================================================================
 {
+#if defined (CIRCULAR_SMART_POINTERS)
 	// do nothing
+#else // defined (CIRCULAR_SMART_POINTERS)
+	if (matrix_private)
+	{
+		matrix_private->remove_dependent_function(this);
+	}
+#endif // defined (CIRCULAR_SMART_POINTERS)
 }
 
 EXPORT template<typename Value_type>
 string_handle Function_matrix_resize<Value_type>::get_string_representation()
 //******************************************************************************
-// LAST MODIFIED : 7 October 2004
+// LAST MODIFIED : 23 November 2004
 //
 // DESCRIPTION :
 //==============================================================================
@@ -220,7 +272,7 @@ string_handle Function_matrix_resize<Value_type>::get_string_representation()
 		{
 			out << "resize(";
 			out << *(matrix_private->get_string_representation());
-			out << "n_columns=";
+			out << ",n_columns=";
 			out << number_of_columns_private;
 			out << ")";
 		}
@@ -348,7 +400,7 @@ bool Function_matrix_resize<Value_type>::set_value(
 	Function_variable_handle atomic_variable,
 	Function_variable_handle atomic_value)
 //******************************************************************************
-// LAST MODIFIED : 7 October 2004
+// LAST MODIFIED : 1 December 2004
 //
 // DESCRIPTION :
 //==============================================================================
@@ -372,7 +424,11 @@ bool Function_matrix_resize<Value_type>::set_value(
 		result=value_type->set(values((atomic_matrix_variable->row())-1,
 			(atomic_matrix_variable->column())-1),atomic_value);
 	}
-	if (!result)
+	if (result)
+	{
+		set_not_evaluated();
+	}
+	else
 	{
 		if (function=matrix_private->function())
 		{
@@ -422,29 +478,43 @@ Function_matrix_resize<Value_type>::Function_matrix_resize(
 	const Function_matrix_resize<Value_type>& function_matrix_resize):
 	Function_matrix<Value_type>(function_matrix_resize),
 	number_of_columns_private(function_matrix_resize.number_of_columns_private),
-	matrix_private(function_matrix_resize.matrix_private){}
+	matrix_private(function_matrix_resize.matrix_private)
 //******************************************************************************
-// LAST MODIFIED : 7 October 2004
+// LAST MODIFIED : 7 December 2004
 //
 // DESCRIPTION :
 // Copy constructor.
 //==============================================================================
+{
+	if (matrix_private)
+	{
+		matrix_private->add_dependent_function(Function_handle(this));
+	}
+}
 
 EXPORT template<typename Value_type>
 Function_matrix_resize<Value_type>&
 	Function_matrix_resize<Value_type>::operator=(
 	const Function_matrix_resize<Value_type>& function_matrix_resize)
 //******************************************************************************
-// LAST MODIFIED : 7 October 2004
+// LAST MODIFIED : 7 December 2004
 //
 // DESCRIPTION :
 // Assignment operator.
 //==============================================================================
 {
-	this->number_of_columns_private=
+	number_of_columns_private=
 		function_matrix_resize.number_of_columns_private;
-	this->matrix_private=function_matrix_resize.matrix_private;
-	this->values=function_matrix_resize.values;
+	if (function_matrix_determinant.matrix_private)
+	{
+		function_matrix_determinant.matrix_private->add_dependent_function(this);
+	}
+	if (matrix_private)
+	{
+		matrix_private->remove_dependent_function(this);
+	}
+	matrix_private=function_matrix_resize.matrix_private;
+	values=function_matrix_resize.values;
 
 	return (*this);
 }

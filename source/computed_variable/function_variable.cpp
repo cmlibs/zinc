@@ -1,7 +1,7 @@
 //******************************************************************************
 // FILE : function_variable.cpp
 //
-// LAST MODIFIED : 13 August 2004
+// LAST MODIFIED : 7 December 2004
 //
 // DESCRIPTION :
 // See function_variable.hpp
@@ -176,6 +176,7 @@
 //#define CHANGE_ELEMENT_DIMENSION
 
 #include "computed_variable/function_derivative_matrix.hpp"
+#include "computed_variable/function_matrix.hpp"
 #include "computed_variable/function_variable.hpp"
 #include "computed_variable/function_composite.hpp"
 
@@ -431,7 +432,7 @@ Function_variable_value_handle Function_variable::value()
 
 Function_handle Function_variable::evaluate()
 //******************************************************************************
-// LAST MODIFIED : 5 March 2004
+// LAST MODIFIED : 11 November 2004
 //
 // DESCRIPTION :
 //???DB.  Merge atomic_results functions ie. join scalars onto vectors?
@@ -441,6 +442,7 @@ Function_handle Function_variable::evaluate()
 
 	if (this)
 	{
+		Function_size_type number_of_atomic_results;
 		Function_variable_iterator atomic_iterator=begin_atomic();
 		std::list<Function_handle> atomic_results(0);
 
@@ -459,9 +461,31 @@ Function_handle Function_variable::evaluate()
 			}
 			atomic_iterator++;
 		}
-		if (0<atomic_results.size())
+		if (0<(number_of_atomic_results=atomic_results.size()))
 		{
-			result=Function_handle(new Function_composite(atomic_results));
+			boost::intrusive_ptr< Function_matrix<Scalar> > matrix_function;
+			Function_size_type i;
+			Matrix results_matrix(number_of_atomic_results,1);
+			std::list<Function_handle>::iterator results_iterator;
+
+			i=0;
+			results_iterator=atomic_results.begin();
+			while ((i<number_of_atomic_results)&&(matrix_function=
+				boost::dynamic_pointer_cast<Function_matrix<Scalar>,Function>(
+				*results_iterator)))
+			{
+				results_matrix(i,0)=(*matrix_function)(1,1);
+				i++;
+				results_iterator++;
+			}
+			if (i<number_of_atomic_results)
+			{
+				result=Function_handle(new Function_composite(atomic_results));
+			}
+			else
+			{
+				result=Function_handle(new Function_matrix<Scalar>(results_matrix));
+			}
 		}
 	}
 
@@ -512,15 +536,27 @@ Function_handle Function_variable::evaluate_derivative(
 
 	if (this)
 	{
-		//???DB.  Do what the Function_derivative_matrix constructor does for a
-		//  single matrix here.  Get rid of Function_derivative_matrix?
-		//???DB.  Have to use handle.  Using Function_derivative_matrix would mess
-		//  up the reference count
-		Function_derivative_matrix_handle derivative_matrix(
-			new Function_derivative_matrix(Function_variable_handle(this),
-			independent_variables));
+		try
+		{
+			//???DB.  Do what the Function_derivative_matrix constructor does for a
+			//  single matrix here.  Get rid of Function_derivative_matrix?
+			//???DB.  Have to use handle.  Using Function_derivative_matrix would mess
+			//  up the reference count
+			Function_derivative_matrix_handle derivative_matrix(
+				new Function_derivative_matrix(Function_variable_handle(this),
+				independent_variables));
 
-		result=derivative_matrix->matrix(independent_variables);
+			if (derivative_matrix)
+			{
+				result=derivative_matrix->matrix(independent_variables);
+			}
+		}
+		catch (Function_derivative_matrix::Construction_exception)
+		{
+			// do nothing
+			//???debug
+			std::cout << "Function_variable::evaluate_derivative.  Failed" << std::endl;
+		}
 	}
 
 	return (result);
@@ -667,9 +703,10 @@ bool Function_variable::rset_value(Function_handle value)
 	return (result);
 }
 
-Function_handle Function_variable::get_value()
+#if defined (OLD_CODE)
+Function_handle Function_variable::get_value() const
 //******************************************************************************
-// LAST MODIFIED : 22 June 2004
+// LAST MODIFIED : 11 November 2004
 //
 // DESCRIPTION :
 //???DB.  Merge atomic_results functions ie. join scalars onto vectors?
@@ -682,7 +719,7 @@ Function_handle Function_variable::get_value()
 		Function_variable_iterator atomic_iterator=begin_atomic();
 		std::list<Function_handle> atomic_results(0);
 
-		// do the local evaluate
+		// do the local get
 		while (atomic_iterator!=end_atomic())
 		{
 			Function_handle atomic_result;
@@ -705,6 +742,69 @@ Function_handle Function_variable::get_value()
 
 	return (result);
 }
+#else // defined (OLD_CODE)
+Function_handle Function_variable::get_value() const
+//******************************************************************************
+// LAST MODIFIED : 11 November 2004
+//
+// DESCRIPTION :
+//???DB.  Merge atomic_results functions ie. join scalars onto vectors?
+//==============================================================================
+{
+	Function_handle result(0);
+
+	if (this)
+	{
+		Function_size_type number_of_atomic_results;
+		Function_variable_iterator atomic_iterator=begin_atomic();
+		std::list<Function_handle> atomic_results(0);
+
+		// do the local get
+		while (atomic_iterator!=end_atomic())
+		{
+			Function_handle atomic_result;
+
+			Assert((*atomic_iterator)&&((*atomic_iterator)->function()),
+				std::logic_error(
+				"Function_variable::get_value().  Atomic variable missing function()"));
+			if (atomic_result=
+				((*atomic_iterator)->function())->get_value(*atomic_iterator))
+			{
+				atomic_results.push_back(atomic_result);
+			}
+			atomic_iterator++;
+		}
+		if (0<(number_of_atomic_results=atomic_results.size()))
+		{
+			boost::intrusive_ptr< Function_matrix<Scalar> > matrix_function;
+			Function_size_type i;
+			Matrix results_matrix(number_of_atomic_results,1);
+			std::list<Function_handle>::iterator results_iterator;
+
+			i=0;
+			results_iterator=atomic_results.begin();
+			while ((i<number_of_atomic_results)&&(matrix_function=
+				boost::dynamic_pointer_cast<Function_matrix<Scalar>,Function>(
+				*results_iterator)))
+			{
+				results_matrix(i,0)=(*matrix_function)(1,1);
+				i++;
+				results_iterator++;
+			}
+			if (i<number_of_atomic_results)
+			{
+				result=Function_handle(new Function_composite(atomic_results));
+			}
+			else
+			{
+				result=Function_handle(new Function_matrix<Scalar>(results_matrix));
+			}
+		}
+	}
+
+	return (result);
+}
+#endif // defined (OLD_CODE)
 
 class Function_variable_sum_number_differentiable_functor
 //******************************************************************************
@@ -803,10 +903,55 @@ Scalar Function_variable::norm() const
 	return ((Scalar)-1);
 }
 
+#if defined (NEW_CODE)
+Function_variable_handle Function_variable::operator-(
+	const Function_variable& second) const
+//******************************************************************************
+// LAST MODIFIED : 11 November 2004
+//
+// DESCRIPTION :
+// This is the default and returns a zero handle (failure).
+//==============================================================================
+{
+	Function_variable_handle result(0);
+	boost::intrusive_ptr< Function_matrix<Scalar> > first_matrix,second_matrix;
+
+	if (this&&(first_matrix=boost::dynamic_pointer_cast<Function_matrix<Scalar>,
+		Function>(this->get_value()))&&(second_matrix=boost::dynamic_pointer_cast<
+		Function_matrix<Scalar>,Function>(second.get_value())))
+	{
+		Function_size_type number_of_columns,number_of_rows;
+
+		number_of_rows=first_matrix->number_of_rows();
+		number_of_columns=first_matrix->number_of_columns();
+		if ((number_of_rows==second_matrix->number_of_rows())&&
+			(number_of_columns==second_matrix->number_of_columns()))
+		{
+			boost::intrusive_ptr< Function_matrix<Scalar> > temp_function;
+			Function_size_type i,j;
+			Matrix result_matrix(number_of_rows,number_of_columns);
+
+			for (i=1;i<=number_of_rows;i++)
+			{
+				for (j=1;j<=number_of_columns;j++)
+				{
+					result_matrix(i-1,j-1)=(*first_matrix)(i,j)-(*second_matrix)(i,j);
+				}
+			}
+			if (temp_function=new Function_matrix<Scalar>(result_matrix))
+			{
+				result=temp_function->output();
+			}
+		}
+	}
+
+	return (result);
+}
+#else // defined (NEW_CODE)
 Function_variable_handle Function_variable::operator-(
 	const Function_variable&) const
 //******************************************************************************
-// LAST MODIFIED : 13 February 2004
+// LAST MODIFIED : 11 November 2004
 //
 // DESCRIPTION :
 // This is the default and returns a zero handle (failure).
@@ -814,6 +959,7 @@ Function_variable_handle Function_variable::operator-(
 {
 	return (Function_variable_handle(0));
 }
+#endif // defined (NEW_CODE)
 
 Function_variable_handle Function_variable::operator-=(const Function_variable&)
 //******************************************************************************
@@ -838,6 +984,7 @@ Function_variable_handle Function_variable::operator+(
 	return (Function_variable_handle(0));
 }
 
+#if defined (OLD_CODE)
 Function_variable_handle Function_variable::operator+=(const Function_variable&)
 //******************************************************************************
 // LAST MODIFIED : 13 February 2004
@@ -847,6 +994,105 @@ Function_variable_handle Function_variable::operator+=(const Function_variable&)
 //==============================================================================
 {
 	return (Function_variable_handle(0));
+}
+#else // defined (OLD_CODE)
+Function_variable_handle Function_variable::operator+=(
+	const Function_variable& second)
+//******************************************************************************
+// LAST MODIFIED : 12 November 2004
+//
+// DESCRIPTION :
+//==============================================================================
+{
+	Function_variable_handle result(0);
+	boost::intrusive_ptr< Function_matrix<Scalar> > first_matrix,second_matrix;
+
+	if (this&&(first_matrix=boost::dynamic_pointer_cast<Function_matrix<Scalar>,
+		Function>(this->get_value()))&&(second_matrix=boost::dynamic_pointer_cast<
+		Function_matrix<Scalar>,Function>(second.get_value())))
+	{
+		Function_size_type number_of_columns,number_of_rows;
+
+		number_of_rows=first_matrix->number_of_rows();
+		number_of_columns=first_matrix->number_of_columns();
+		if ((number_of_rows==second_matrix->number_of_rows())&&
+			(number_of_columns==second_matrix->number_of_columns()))
+		{
+			boost::intrusive_ptr< Function_matrix<Scalar> > new_value;
+			Function_size_type i,j;
+			Matrix result_matrix(number_of_rows,number_of_columns);
+
+			for (i=1;i<=number_of_rows;i++)
+			{
+				for (j=1;j<=number_of_columns;j++)
+				{
+					result_matrix(i-1,j-1)=(*first_matrix)(i,j)+(*second_matrix)(i,j);
+				}
+			}
+			if (new_value=new Function_matrix<Scalar>(result_matrix))
+			{
+				if (set_value(new_value))
+				{
+					result=Function_variable_handle(this);
+				}
+			}
+		}
+	}
+
+	return (result);
+}
+#endif // defined (OLD_CODE)
+
+void Function_variable::add_dependent_function(
+#if defined (CIRCULAR_SMART_POINTERS)
+	const Function_handle
+#else // defined (CIRCULAR_SMART_POINTERS)
+	Function*
+#endif // defined (CIRCULAR_SMART_POINTERS)
+	dependent_function)
+//******************************************************************************
+// LAST MODIFIED : 7 December 2004
+//
+// DESCRIPTION :
+// Adds <dependent_function> to the list of functions that have to be
+// re-evaluated if this variable's function(s) has/have to be re-evaluated.
+//==============================================================================
+{
+	if (dependent_function)
+	{
+		Function_handle local_function;
+
+		if (local_function=function())
+		{
+			local_function->add_dependent_function(dependent_function);
+		}
+	}
+}
+
+void Function_variable::remove_dependent_function(
+#if defined (CIRCULAR_SMART_POINTERS)
+	const Function_handle
+#else // defined (CIRCULAR_SMART_POINTERS)
+	Function*
+#endif // defined (CIRCULAR_SMART_POINTERS)
+	dependent_function)
+//******************************************************************************
+// LAST MODIFIED : 7 December 2004
+//
+// DESCRIPTION :
+// Removes <dependent_function> to the list of functions that have to be
+// re-evaluated if this variable's function(s) has/have to be re-evaluated.
+//==============================================================================
+{
+	if (dependent_function)
+	{
+		Function_handle local_function;
+
+		if (local_function=function())
+		{
+			local_function->remove_dependent_function(dependent_function);
+		}
+	}
 }
 
 Function_variable::Function_variable(const Function_handle& function):

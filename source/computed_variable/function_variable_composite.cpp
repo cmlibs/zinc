@@ -1,7 +1,7 @@
 //******************************************************************************
 // FILE : function_variable_composite.cpp
 //
-// LAST MODIFIED : 13 August 2004
+// LAST MODIFIED : 7 December 2004
 //
 // DESCRIPTION :
 //==============================================================================
@@ -325,12 +325,40 @@ Function_variable_composite::Function_variable_composite(
 
 Function_variable_handle Function_variable_composite::clone() const
 //******************************************************************************
-// LAST MODIFIED : 20 February 2004
+// LAST MODIFIED : 23 November 2004
 //
 // DESCRIPTION :
 //==============================================================================
 {
-	return (Function_variable_handle(new Function_variable_composite(*this)));
+	Function_handle local_function=function();
+	Function_size_type i;
+	Function_variable_composite_handle result(0);
+	std::list<Function_variable_handle> local_variables_list;
+
+	if (0<(i=variables_list.size()))
+	{
+		std::list<Function_variable_handle>::const_iterator iterator;
+
+		iterator=variables_list.begin();
+		while (i>0)
+		{
+			if (*iterator)
+			{
+				local_variables_list.push_back((*iterator)->clone());
+			}
+			else
+			{
+				local_variables_list.push_back(Function_variable_handle(0));
+			}
+		}
+	}
+	if (result=Function_variable_composite_handle(new Function_variable_composite(
+		local_function,local_variables_list)))
+	{
+		result->value_private=value_private;
+	}
+
+	return (result);
 }
 
 string_handle Function_variable_composite::get_string_representation()
@@ -465,6 +493,50 @@ Function_size_type Function_variable_composite::number_differentiable()
 		Function_variable_composite_sum_number_differentiable_functor(sum));
 
 	return (sum);
+}
+
+void Function_variable_composite::add_dependent_function(
+#if defined (CIRCULAR_SMART_POINTERS)
+	const Function_handle
+#else // defined (CIRCULAR_SMART_POINTERS)
+	Function*
+#endif // defined (CIRCULAR_SMART_POINTERS)
+	dependent_function)
+//******************************************************************************
+// LAST MODIFIED : 7 December 2004
+//
+// DESCRIPTION :
+//==============================================================================
+{
+	std::list<Function_variable_handle>::iterator iterator,iterator_end;
+
+	iterator_end=variables_list.end();
+	for (iterator=variables_list.begin();iterator!=iterator_end;iterator++)
+	{
+		(*iterator)->add_dependent_function(dependent_function);
+	}
+}
+
+void Function_variable_composite::remove_dependent_function(
+#if defined (CIRCULAR_SMART_POINTERS)
+	const Function_handle
+#else // defined (CIRCULAR_SMART_POINTERS)
+	Function*
+#endif // defined (CIRCULAR_SMART_POINTERS)
+	dependent_function)
+//******************************************************************************
+// LAST MODIFIED : 7 December 2004
+//
+// DESCRIPTION :
+//==============================================================================
+{
+	std::list<Function_variable_handle>::iterator iterator,iterator_end;
+
+	iterator_end=variables_list.end();
+	for (iterator=variables_list.begin();iterator!=iterator_end;iterator++)
+	{
+		(*iterator)->remove_dependent_function(dependent_function);
+	}
 }
 
 bool Function_variable_composite::equality_atomic(

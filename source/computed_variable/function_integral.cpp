@@ -1,7 +1,7 @@
 //******************************************************************************
 // FILE : function_integral.cpp
 //
-// LAST MODIFIED : 5 November 2004
+// LAST MODIFIED : 7 December 2004
 //
 // DESCRIPTION :
 //???DB.  Need more memory management for Integration_scheme
@@ -236,11 +236,12 @@ struct Integrate_over_element_data
 	public:
 		// constructor
 		Integrate_over_element_data(Function_variable_handle integrand_output,
+			Function_size_type row,Function_size_type column,
 			Function_variable_handle integrand_input,
 			Function_variable_handle independent_output,
 			Function_variable_handle independent_input,
 			Quadrature_scheme *scheme,Matrix& result_matrix):first_private(true),
-			independent_input(independent_input),
+			column(column),row(row),independent_input(independent_input),
 			independent_output(independent_output),integrand_input(integrand_input),
 			integrand_output(integrand_output),scheme(scheme),
 			result_matrix_private(result_matrix){};
@@ -257,6 +258,7 @@ struct Integrate_over_element_data
 		Integrate_over_element_data& operator=(const Integrate_over_element_data&);
 	private:
 		bool first_private;
+		Function_size_type column,row;
 		Function_variable_handle independent_input,independent_output,
 			integrand_input,integrand_output;
 		Quadrature_scheme *scheme;
@@ -266,7 +268,7 @@ struct Integrate_over_element_data
 int integrate_over_element(struct FE_element *element,
 	void *integrate_over_element_data_void)
 //******************************************************************************
-// LAST MODIFIED : 3 November 2004
+// LAST MODIFIED : 10 November 2004
 //
 // DESCRIPTION :
 //==============================================================================
@@ -288,10 +290,13 @@ int integrate_over_element(struct FE_element *element,
 		(dimension==get_FE_element_dimension(element))&&(0<(number_of_points=
 		scheme->number_of_points))&&(points=scheme->points))
 	{
+		Function_size_type column,row;
 		Function_variable_handle element_xi_input(0),independent_input(0),
 			independent_output(0),jacobian_determinant_output(0);
 		Vector& weights=scheme->weights;
 
+		row=data->row;
+		column=data->column;
 		if ((independent_input=data->independent_input)&&
 			(independent_output=data->independent_output))
 		{
@@ -326,7 +331,7 @@ int integrate_over_element(struct FE_element *element,
 		if (return_code)
 		{
 			Function_element_xi_handle element_xi(0);
-			boost::intrusive_ptr< Function_matrix<Scalar> > integrand;
+			boost::intrusive_ptr< Function_matrix<Scalar> > integrand(0);
 			Function_size_type i,j,number_of_columns,number_of_rows,point_number;
 			Scalar multiplier,temp_scalar;
 			Matrix& result_matrix=data->result_matrix_private;
@@ -368,13 +373,46 @@ int integrate_over_element(struct FE_element *element,
 					}
 					if (return_code)
 					{
-						result_matrix.resize(number_of_rows,number_of_columns);
-
-						for (i=0;i<number_of_rows;i++)
+						if (0==row)
 						{
-							for (j=0;j<number_of_columns;j++)
+							if (0==column)
 							{
-								result_matrix(i,j)=multiplier*(*integrand)(i+1,j+1);
+								result_matrix.resize(number_of_rows,number_of_columns);
+
+								for (i=0;i<number_of_rows;i++)
+								{
+									for (j=0;j<number_of_columns;j++)
+									{
+										result_matrix(i,j)=multiplier*(*integrand)(i+1,j+1);
+									}
+								}
+							}
+							else
+							{
+								result_matrix.resize(number_of_rows,1);
+
+								for (i=0;i<number_of_rows;i++)
+								{
+									result_matrix(i,0)=multiplier*(*integrand)(i+1,column);
+								}
+							}
+						}
+						else
+						{
+							if (0==column)
+							{
+								result_matrix.resize(1,number_of_columns);
+
+								for (j=0;j<number_of_columns;j++)
+								{
+									result_matrix(0,j)=multiplier*(*integrand)(row,j+1);
+								}
+							}
+							else
+							{
+								result_matrix.resize(1,1);
+
+								result_matrix(0,0)=multiplier*(*integrand)(row,column);
 							}
 						}
 					}
@@ -422,11 +460,38 @@ int integrate_over_element(struct FE_element *element,
 					}
 					if (return_code)
 					{
-						for (i=0;i<number_of_rows;i++)
+						if (0==row)
 						{
-							for (j=0;j<number_of_columns;j++)
+							if (0==column)
 							{
-								result_matrix(i,j) += multiplier*(*integrand)(i+1,j+1);
+								for (i=0;i<number_of_rows;i++)
+								{
+									for (j=0;j<number_of_columns;j++)
+									{
+										result_matrix(i,j) += multiplier*(*integrand)(i+1,j+1);
+									}
+								}
+							}
+							else
+							{
+								for (i=0;i<number_of_rows;i++)
+								{
+									result_matrix(i,0) += multiplier*(*integrand)(i+1,column);
+								}
+							}
+						}
+						else
+						{
+							if (0==column)
+							{
+								for (j=0;j<number_of_columns;j++)
+								{
+									result_matrix(0,j) += multiplier*(*integrand)(row,j+1);
+								}
+							}
+							else
+							{
+								result_matrix(0,0) += multiplier*(*integrand)(row,column);
 							}
 						}
 					}
@@ -445,7 +510,7 @@ int integrate_over_element(struct FE_element *element,
 
 class Function_variable_integral : public Function_variable_matrix<Scalar>
 //******************************************************************************
-// LAST MODIFIED : 3 November 2004
+// LAST MODIFIED : 3 December 2004
 //
 // DESCRIPTION :
 //==============================================================================
@@ -477,9 +542,10 @@ class Function_variable_integral : public Function_variable_matrix<Scalar>
 			if (function_integral=boost::dynamic_pointer_cast<
 				Function_integral,Function>(function()))
 			{
+#if defined (BEFORE_CACHING)
 				struct Integrate_over_element_data integrate_over_element_data(
-					function_integral->integrand_output_private,
-					function_integral->integrand_input_private,
+					function_integral->integrand_output_private,row_private,
+					column_private,function_integral->integrand_input_private,
 					function_integral->independent_output_private,
 					function_integral->independent_input_private,
 					function_integral->scheme_private,
@@ -489,9 +555,131 @@ class Function_variable_integral : public Function_variable_matrix<Scalar>
 					integrate_over_element,&integrate_over_element_data)&&
 					!(integrate_over_element_data.first()))
 				{
-					result=Function_handle(new Function_matrix<Scalar>(
-						function_integral->values));
+					if ((0==row_private)&&(0==column_private))
+					{
+						result=Function_handle(new Function_matrix<Scalar>(
+							function_integral->values));
+					}
+					else
+					{
+						Function_size_type i,j,number_of_columns,number_of_rows;
+						Matrix &result_matrix=function_integral->values;
+						
+						if ((0<(number_of_rows=result_matrix.size1()))&&
+							(0<(number_of_columns=result_matrix.size2()))&&
+							(row_private<=number_of_rows)&&
+							(column_private<=number_of_columns))
+						{
+							if (0==row_private)
+							{
+								Matrix sub_matrix(number_of_rows,1);
+								
+								j=column_private-1;
+								for (i=0;i<number_of_rows;i++)
+								{
+									sub_matrix(i,0)=result_matrix(i,j);
+								}
+								result=Function_handle(new Function_matrix<Scalar>(sub_matrix));
+							}
+							else
+							{
+								if (0==column_private)
+								{
+									Matrix sub_matrix(1,number_of_columns);
+									
+									i=row_private-1;
+									for (j=0;j<number_of_columns;j++)
+									{
+										sub_matrix(0,j)=result_matrix(i,j);
+									}
+									result=Function_handle(new Function_matrix<Scalar>(
+										sub_matrix));
+								}
+								else
+								{
+									Matrix sub_matrix(1,1);
+									
+									sub_matrix(0,0)=result_matrix(row_private-1,column_private-1);
+									result=Function_handle(new Function_matrix<Scalar>(
+										sub_matrix));
+								}
+							}
+						}
+					}
 				}
+#else // defined (BEFORE_CACHING)
+				if (!(function_integral->evaluated()))
+				{
+					struct Integrate_over_element_data integrate_over_element_data(
+						function_integral->integrand_output_private,row_private,
+						column_private,function_integral->integrand_input_private,
+						function_integral->independent_output_private,
+						function_integral->independent_input_private,
+						function_integral->scheme_private,
+						function_integral->values);
+
+					if (FE_region_for_each_FE_element(function_integral->domain_private,
+						integrate_over_element,&integrate_over_element_data)&&
+						!(integrate_over_element_data.first()))
+					{
+						function_integral->set_evaluated();
+					}
+				}
+				if (function_integral->evaluated())
+				{
+					if ((0==row_private)&&(0==column_private))
+					{
+						result=Function_handle(new Function_matrix<Scalar>(
+							function_integral->values));
+					}
+					else
+					{
+						Function_size_type i,j,number_of_columns,number_of_rows;
+						Matrix &result_matrix=function_integral->values;
+						
+						if ((0<(number_of_rows=result_matrix.size1()))&&
+							(0<(number_of_columns=result_matrix.size2()))&&
+							(row_private<=number_of_rows)&&
+							(column_private<=number_of_columns))
+						{
+							if (0==row_private)
+							{
+								Matrix sub_matrix(number_of_rows,1);
+								
+								j=column_private-1;
+								for (i=0;i<number_of_rows;i++)
+								{
+									sub_matrix(i,0)=result_matrix(i,j);
+								}
+								result=Function_handle(new Function_matrix<Scalar>(sub_matrix));
+							}
+							else
+							{
+								if (0==column_private)
+								{
+									Matrix sub_matrix(1,number_of_columns);
+									
+									i=row_private-1;
+									for (j=0;j<number_of_columns;j++)
+									{
+										sub_matrix(0,j)=result_matrix(i,j);
+									}
+									result=Function_handle(new Function_matrix<Scalar>(
+										sub_matrix));
+								}
+								else
+								{
+									Matrix sub_matrix(1,1);
+									
+									sub_matrix(0,0)=result_matrix(row_private-1,column_private-1);
+									result=Function_handle(new Function_matrix<Scalar>(
+										sub_matrix));
+								}
+							}
+						}
+					}
+				}
+#endif // defined (BEFORE_CACHING)
 			}
 
 			return (result);
@@ -509,7 +697,8 @@ class Function_variable_integral : public Function_variable_matrix<Scalar>
 			{
 				Matrix result_matrix;
 				struct Integrate_over_element_data integrate_over_element_data(
-					function_integral->integrand_output_private,
+					integrand->output(),0,0,
+//					function_integral->integrand_output_private,0,0,
 					function_integral->integrand_input_private,
 					function_integral->independent_output_private,
 					function_integral->independent_input_private,
@@ -519,7 +708,72 @@ class Function_variable_integral : public Function_variable_matrix<Scalar>
 					integrate_over_element,&integrate_over_element_data)&&
 					!(integrate_over_element_data.first()))
 				{
-					result=Function_handle(new Function_matrix<Scalar>(result_matrix));
+					if ((0==row_private)&&(0==column_private))
+					{
+						result=Function_handle(new Function_matrix<Scalar>(result_matrix));
+					}
+					else
+					{
+						boost::intrusive_ptr< Function_matrix<Scalar> > integrand_value=
+							boost::dynamic_pointer_cast<Function_matrix<Scalar>,Function>(
+							function_integral->integrand_output_private->get_value());
+						Function_size_type number_of_columns,number_of_rows;
+
+						if (integrand_value&&
+							(0<(number_of_rows=integrand_value->number_of_rows()))&&
+							(0<(number_of_columns=integrand_value->number_of_columns())))
+						{
+							Function_size_type i,j,k,number_of_derivatives;
+
+							number_of_derivatives=result_matrix.size2();
+							if (0==row_private)
+							{
+								Matrix sub_matrix(number_of_rows,number_of_derivatives);
+
+								k=column_private-1;
+								for (i=0;i<number_of_rows;i++)
+								{
+									for (j=0;j<number_of_derivatives;j++)
+									{
+										sub_matrix(i,j)=result_matrix(k,j);
+									}
+									k += number_of_columns;
+								}
+								result=Function_handle(new Function_matrix<Scalar>(sub_matrix));
+							}
+							else
+							{
+								if (0==column_private)
+								{
+									Matrix sub_matrix(number_of_columns,number_of_derivatives);
+
+									k=(row_private-1)*number_of_columns;
+									for (i=0;i<number_of_columns;i++)
+									{
+										for (j=0;j<number_of_derivatives;j++)
+										{
+											sub_matrix(i,j)=result_matrix(k,j);
+										}
+										k++;
+									}
+									result=Function_handle(
+										new Function_matrix<Scalar>(sub_matrix));
+								}
+								else
+								{
+									Matrix sub_matrix(1,number_of_derivatives);
+
+									k=(row_private-1)*number_of_columns+column_private-1;
+									for (j=0;j<number_of_derivatives;j++)
+									{
+										sub_matrix(0,j)=result_matrix(k,j);
+									}
+									result=Function_handle(
+										new Function_matrix<Scalar>(sub_matrix));
+								}
+							}
+						}
+					}
 				}
 			}
 
@@ -606,7 +860,7 @@ Function_integral::Function_integral(
 	integrand_input_private(integrand_input),
 	integrand_output_private(integrand_output),domain_private(0),scheme_private(0)
 //******************************************************************************
-// LAST MODIFIED : 5 November 2004
+// LAST MODIFIED : 3 December 2004
 //
 // DESCRIPTION :
 //==============================================================================
@@ -618,6 +872,14 @@ Function_integral::Function_integral(
 			scheme_private=new Quadrature_scheme(domain_private,quadrature_scheme);
 			if (scheme_private)
 			{
+				if (independent_output_private)
+				{
+					independent_output_private->add_dependent_function(this);
+				}
+				if (integrand_output_private)
+				{
+					integrand_output_private->add_dependent_function(this);
+				}
 				// An object that is partially constructed will only have constructors
 				//   called for its fully constructed sub-objects.  So the ACCESS
 				//   shouldn't be done until all checks have been made, otherwise
@@ -642,7 +904,7 @@ Function_integral::Function_integral(
 
 Function_integral::~Function_integral()
 //******************************************************************************
-// LAST MODIFIED : 3 November 2004
+// LAST MODIFIED : 7 December 2004
 //
 // DESCRIPTION :
 // Destructor.
@@ -650,6 +912,17 @@ Function_integral::~Function_integral()
 {
 	delete scheme_private;
 	DEACCESS(FE_region)(&domain_private);
+#if defined (CIRCULAR_SMART_POINTERS)
+#else // defined (CIRCULAR_SMART_POINTERS)
+	if (independent_output_private)
+	{
+		independent_output_private->remove_dependent_function(this);
+	}
+	if (integrand_output_private)
+	{
+		integrand_output_private->remove_dependent_function(this);
+	}
+#endif // defined (CIRCULAR_SMART_POINTERS)
 }
 
 string_handle Function_integral::get_string_representation()
@@ -851,7 +1124,7 @@ bool Function_integral::evaluate_derivative(Scalar& derivative,
 bool Function_integral::set_value(Function_variable_handle atomic_variable,
 	Function_variable_handle atomic_value)
 //******************************************************************************
-// LAST MODIFIED : 3 November 2004
+// LAST MODIFIED : 1 December 2004
 //
 // DESCRIPTION :
 //==============================================================================
@@ -872,7 +1145,11 @@ bool Function_integral::set_value(Function_variable_handle atomic_variable,
 		result=value_type->set(values((atomic_variable_integral->row())-1,
 			(atomic_variable_integral->column())-1),atomic_value);
 	}
-	if (!result)
+	if (result)
+	{
+		set_not_evaluated();
+	}
+	else
 	{
 		if (integrand_output_private&&
 			(function=integrand_output_private->function()))
@@ -943,25 +1220,49 @@ Function_integral::Function_integral(
 	domain_private(function_integral.domain_private),
 	scheme_private(function_integral.scheme_private)
 //******************************************************************************
-// LAST MODIFIED : 3 November 2004
+// LAST MODIFIED : 7 December 2004
 //
 // DESCRIPTION :
 // Copy constructor.
 //==============================================================================
 {
+	if (independent_output_private)
+	{
+		independent_output_private->add_dependent_function(this);
+	}
+	if (integrand_output_private)
+	{
+		integrand_output_private->add_dependent_function(this);
+	}
 }
 
 Function_integral& Function_integral::operator=(
 	const Function_integral& function_integral)
 //******************************************************************************
-// LAST MODIFIED : 3 November 2004
+// LAST MODIFIED : 7 December 2004
 //
 // DESCRIPTION :
 // Assignment operator.
 //==============================================================================
 {
+	if (function_integral.integrand_output_private)
+	{
+		function_integral.integrand_output_private->add_dependent_function(this);
+	}
+	if (integrand_output_private)
+	{
+		integrand_output_private->remove_dependent_function(this);
+	}
 	integrand_output_private=function_integral.integrand_output_private;
 	integrand_input_private=function_integral.integrand_input_private;
+	if (function_integral.independent_output_private)
+	{
+		function_integral.independent_output_private->add_dependent_function(this);
+	}
+	if (independent_output_private)
+	{
+		independent_output_private->remove_dependent_function(this);
+	}
 	independent_output_private=function_integral.independent_output_private;
 	independent_input_private=function_integral.independent_input_private;
 	if (domain_private)
@@ -972,7 +1273,6 @@ Function_integral& Function_integral::operator=(
 	{
 		domain_private=ACCESS(FE_region)(function_integral.domain_private);
 	}
-	//???DB.  Need more memory management for scheme_private
 	delete scheme_private;
 	if (function_integral.scheme_private)
 	{

@@ -41,7 +41,7 @@ class Function_variable_wrapper : public Function_variable
 		virtual Function_variable_value_handle value();
 		virtual bool set_value(Function_handle value);
 		virtual bool rset_value(Function_handle value);
-		virtual Function_handle get_value();
+		virtual Function_handle get_value() const;
 		virtual string_handle get_string_representation();
 		virtual Function_variable_iterator begin_atomic() const;
 		virtual Function_variable_iterator end_atomic() const;

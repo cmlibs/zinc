@@ -1,7 +1,7 @@
 //******************************************************************************
 // FILE : function_variable_element_xi.cpp
 //
-// LAST MODIFIED : 13 August 2004
+// LAST MODIFIED : 22 November 2004
 //
 // DESCRIPTION :
 //==============================================================================
@@ -461,43 +461,13 @@ bool Function_variable_element_xi::equality_atomic(
 	return (result);
 }
 
-Function_variable_element_xi::Function_variable_element_xi(
-	const Function_handle& function,bool element,bool xi,
-	const ublas::vector<Function_size_type>& indices):Function_variable(function),
-	element_private(element),xi_private(xi),indices(indices){}
+static void remove_repeated_indices(ublas::vector<Function_size_type>& indices)
 //******************************************************************************
-// LAST MODIFIED : 1 July 2004
+// LAST MODIFIED : 22 November 2004
 //
 // DESCRIPTION :
-// Constructor.
-//==============================================================================
-
-Function_variable_element_xi::Function_variable_element_xi(
-	const Function_handle& function,Function_size_type index):
-	Function_variable(function),element_private(false),xi_private(true),indices(1)
-//******************************************************************************
-// LAST MODIFIED : 1 July 2004
-//
-// DESCRIPTION :
-// Constructor.
 //==============================================================================
 {
-	indices[0]=index;
-}
-
-Function_variable_element_xi::Function_variable_element_xi(
-	const Function_handle& function,
-	const ublas::vector<Function_size_type>& indices):
-	Function_variable(function),element_private(false),xi_private(true),
-	indices(indices)
-//******************************************************************************
-// LAST MODIFIED : 1 July 2004
-//
-// DESCRIPTION :
-// Constructor.
-//==============================================================================
-{
-	// remove repeated indices
 	Function_size_type number_of_indices=indices.size();
 	ublas::vector<Function_size_type> unique_indices(number_of_indices);
 	Function_size_type i,j,number_of_unique_indices;
@@ -518,11 +488,80 @@ Function_variable_element_xi::Function_variable_element_xi(
 	}
 	if (number_of_indices!=number_of_unique_indices)
 	{
-		(this->indices).resize(number_of_unique_indices);
+		indices.resize(number_of_unique_indices);
 		for (i=0;i<number_of_unique_indices;i++)
 		{
-			(this->indices)[i]=unique_indices[i];
+			indices[i]=unique_indices[i];
 		}
+	}
+}
+
+Function_variable_element_xi::Function_variable_element_xi(
+	const Function_handle& function,bool element,bool xi,
+	const ublas::vector<Function_size_type>& indices):Function_variable(function),
+	element_private(element),xi_private(xi),indices(indices)
+//******************************************************************************
+// LAST MODIFIED : 22 November 2004
+//
+// DESCRIPTION :
+// Constructor.
+//==============================================================================
+{
+	remove_repeated_indices(this->indices);
+	if (element_private)
+	{
+		if (!xi_private)
+		{
+			value_private=Function_variable_value_handle(
+				new Function_variable_value_element(
+				Function_variable_element_xi_set_element_function));
+		}
+	}
+	else
+	{
+		if (xi_private&&(1==(this->indices).size()))
+		{
+			value_private=Function_variable_value_handle(
+				new Function_variable_value_scalar(
+				Function_variable_element_xi_set_scalar_function));
+		}
+	}
+}
+
+Function_variable_element_xi::Function_variable_element_xi(
+	const Function_handle& function,Function_size_type index):
+	Function_variable(function),element_private(false),xi_private(true),indices(1)
+//******************************************************************************
+// LAST MODIFIED : 22 November 2004
+//
+// DESCRIPTION :
+// Constructor.
+//==============================================================================
+{
+	indices[0]=index;
+	value_private=Function_variable_value_handle(
+		new Function_variable_value_scalar(
+		Function_variable_element_xi_set_scalar_function));
+}
+
+Function_variable_element_xi::Function_variable_element_xi(
+	const Function_handle& function,
+	const ublas::vector<Function_size_type>& indices):
+	Function_variable(function),element_private(false),xi_private(true),
+	indices(indices)
+//******************************************************************************
+// LAST MODIFIED : 22 November 2004
+//
+// DESCRIPTION :
+// Constructor.
+//==============================================================================
+{
+	remove_repeated_indices(this->indices);
+	if (1==(this->indices).size())
+	{
+		value_private=Function_variable_value_handle(
+			new Function_variable_value_scalar(
+			Function_variable_element_xi_set_scalar_function));
 	}
 }
 

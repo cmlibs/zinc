@@ -1,7 +1,7 @@
 //******************************************************************************
 // FILE : function_derivative_matrix.cpp
 //
-// LAST MODIFIED : 1 September 2004
+// LAST MODIFIED : 1 December 2004
 //
 // DESCRIPTION :
 //==============================================================================
@@ -99,7 +99,7 @@ typedef boost::intrusive_ptr<Function_variable_matrix_derivative_matrix>
 class Function_variable_matrix_derivative_matrix :
 	public Function_variable_matrix<Scalar>
 //******************************************************************************
-// LAST MODIFIED : 1 September 2004
+// LAST MODIFIED : 22 November 2004
 //
 // DESCRIPTION :
 // <column> and <row> start from one when referencing a matrix entry.  Zero
@@ -209,8 +209,45 @@ class Function_variable_matrix_derivative_matrix :
 	public:
 		Function_variable_handle clone() const
 		{
-			return (Function_variable_handle(
-				new Function_variable_matrix_derivative_matrix(*this)));
+			Function_derivative_matrix_handle function_derivative_matrix=
+				boost::dynamic_pointer_cast<Function_derivative_matrix,Function>(
+				function());
+			Function_size_type i;
+			Function_variable_handle result(0);
+
+			if (function_derivative_matrix)
+			{
+				std::list<Function_variable_handle>
+					local_partial_independent_variables(0);
+				std::list<Function_variable_handle>::const_iterator iterator;
+
+				if (0<(i=partial_independent_variables.size()))
+				{
+					iterator=partial_independent_variables.begin();
+					while (i>0)
+					{
+						if (*iterator)
+						{
+							local_partial_independent_variables.push_back(
+								(*iterator)->clone());
+						}
+						else
+						{
+							local_partial_independent_variables.push_back(
+								Function_variable_handle(0));
+						}
+						iterator++;
+						i--;
+					}
+				}
+				// constructor sets value_private
+				result=Function_variable_handle(
+					new Function_variable_matrix_derivative_matrix(
+					function_derivative_matrix,local_partial_independent_variables,
+					row_private,column_private));
+			}
+
+			return (result);
 		};
 		string_handle get_string_representation()
 		{
@@ -1779,7 +1816,7 @@ bool Function_derivative_matrix::set_value(
 	Function_variable_handle atomic_variable,
 	Function_variable_handle atomic_value)
 //******************************************************************************
-// LAST MODIFIED : 1 September 2004
+// LAST MODIFIED : 1 December 2004
 //
 // DESCRIPTION :
 //==============================================================================
@@ -1805,6 +1842,10 @@ bool Function_derivative_matrix::set_value(
 				(*(atomic_derivative_matrix_variable->matrix_reverse_iterator))(
 				(atomic_derivative_matrix_variable->row_private),
 				(atomic_derivative_matrix_variable->column_private)),atomic_value);
+		}
+		if (result)
+		{
+			set_not_evaluated();
 		}
 	}
 
@@ -1861,7 +1902,7 @@ Function_derivative_matrix::Function_derivative_matrix(
 	Function(),dependent_variable(dependent_variable),
 	independent_variables(independent_variables),matrices()
 //******************************************************************************
-// LAST MODIFIED : 31 May 2004
+// LAST MODIFIED : 12 November 2004
 //
 // DESCRIPTION :
 // Constructor.
@@ -1873,6 +1914,10 @@ Function_derivative_matrix::Function_derivative_matrix(
 		independent_variable_iterator;
 	std::list< std::list<Function_variable_handle> > matrix_independent_variables;
 
+#if defined (DEBUG)
+	//???debug
+	std::cout << "enter Function_derivative_matrix::Function_derivative_matrix.  " << std::endl;
+#endif // defined (DEBUG)
 	for (independent_variable_iterator=independent_variables.begin();
 		independent_variable_iterator!=independent_variables.end();
 		independent_variable_iterator++)
@@ -1926,11 +1971,44 @@ Function_derivative_matrix::Function_derivative_matrix(
 							std::list<Function_variable_handle>
 								new_matrix_atomic_independent_variables;
 
+#if defined (DEBUG)
+							//???debug
+							std::cout << "  " << row << " " << column << std::endl;
+#endif // defined (DEBUG)
 							new_matrix_atomic_independent_variables.push_back(
 								atomic_independent_variable);
-							(atomic_dependent_variable->function())->evaluate_derivative(
-								new_matrix(row,column),atomic_dependent_variable,
-								new_matrix_atomic_independent_variables);
+							if (!((atomic_dependent_variable->function())->
+								evaluate_derivative(new_matrix(row,column),
+								atomic_dependent_variable,
+								new_matrix_atomic_independent_variables)))
+							{
+								//???debug
+								std::cout << "throw Function_derivative_matrix::Construction_exception" << std::endl;
+								std::cout << row << " " << column << std::endl;
+								std::cout << *(atomic_dependent_variable->get_string_representation()) << " ";
+								if (atomic_dependent_variable->function())
+								{
+									std::cout << *((atomic_dependent_variable->function())->get_string_representation());
+								}
+								else
+								{
+									std::cout << "no function";
+								}
+								std::cout << std::endl;
+								std::cout << new_matrix_atomic_independent_variables.size() << " " << *((new_matrix_atomic_independent_variables.front())->get_string_representation()) << " ";
+								if ((new_matrix_atomic_independent_variables.front())->function())
+								{
+									std::cout << *(((new_matrix_atomic_independent_variables.front())->function())->get_string_representation());
+								}
+								else
+								{
+									std::cout << "no function";
+								}
+								std::cout << std::endl;
+#if defined (DEBUG)
+#endif // defined (DEBUG)
+								throw Function_derivative_matrix::Construction_exception();
+							}
 							column++;
 						}
 					}
@@ -2022,10 +2100,38 @@ Function_derivative_matrix::Function_derivative_matrix(
 								new_matrix_atomic_independent_variables.push_front(
 									*(atomic_independent_variable_iterators[i]));
 							}
-							(atomic_dependent_variable->function())->evaluate_derivative(
-								new_matrix(row,column),
+							if (!((atomic_dependent_variable->function())->
+								evaluate_derivative(new_matrix(row,column),
 								atomic_dependent_variable,
-								new_matrix_atomic_independent_variables);
+								new_matrix_atomic_independent_variables)))
+							{
+								//???debug
+								std::cout << "throw Function_derivative_matrix::Construction_exception 2" << std::endl;
+								std::cout << row << " " << column << std::endl;
+								std::cout << *(atomic_dependent_variable->get_string_representation()) << " ";
+								if (atomic_dependent_variable->function())
+								{
+									std::cout << *((atomic_dependent_variable->function())->get_string_representation());
+								}
+								else
+								{
+									std::cout << "no function";
+								}
+								std::cout << std::endl;
+								std::cout << new_matrix_atomic_independent_variables.size() << " " << *((new_matrix_atomic_independent_variables.front())->get_string_representation()) << " ";
+								if ((new_matrix_atomic_independent_variables.front())->function())
+								{
+									std::cout << *(((new_matrix_atomic_independent_variables.front())->function())->get_string_representation());
+								}
+								else
+								{
+									std::cout << "no function";
+								}
+								std::cout << std::endl;
+#if defined (DEBUG)
+#endif // defined (DEBUG)
+								throw Function_derivative_matrix::Construction_exception();
+							}
 							// move to next column
 							i=new_matrix_independent_variables.size();
 							new_matrix_independent_variables_iterator=
@@ -2082,6 +2188,10 @@ Function_derivative_matrix::Function_derivative_matrix(
 			matrix_independent_variables_iterator++;
 		}
 	}
+#if defined (DEBUG)
+	//???debug
+	std::cout << "leave Function_derivative_matrix::Function_derivative_matrix.  " << std::endl;
+#endif // defined (DEBUG)
 }
 
 Function_derivative_matrix::Function_derivative_matrix(

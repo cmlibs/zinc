@@ -1,7 +1,7 @@
 //******************************************************************************
 // FILE : function_variable_exclusion.cpp
 //
-// LAST MODIFIED : 13 August 2004
+// LAST MODIFIED : 7 December 2004
 //
 // DESCRIPTION :
 //==============================================================================
@@ -219,12 +219,30 @@ Function_variable_exclusion::Function_variable_exclusion(
 
 Function_variable_handle Function_variable_exclusion::clone() const
 //******************************************************************************
-// LAST MODIFIED : 19 March 2004
+// LAST MODIFIED : 23 November 2004
 //
 // DESCRIPTION :
 //==============================================================================
 {
-	return (Function_variable_handle(new Function_variable_exclusion(*this)));
+	Function_handle local_function=function();
+	Function_variable_exclusion_handle result(0);
+	Function_variable_handle local_exclusion(0),local_universe(0);
+
+	if (exclusion)
+	{
+		local_exclusion=exclusion->clone();
+	}
+	if (universe)
+	{
+		local_universe=universe->clone();
+	}
+	if (result=Function_variable_exclusion_handle(new Function_variable_exclusion(
+		local_function,local_universe,local_exclusion)))
+	{
+		result->value_private=value_private;
+	}
+
+	return (result);
 }
 
 string_handle Function_variable_exclusion::get_string_representation()
@@ -311,6 +329,44 @@ std::reverse_iterator<Function_variable_iterator>
 		new Function_variable_iterator_representation_atomic_exclusion(true,
 		Function_variable_exclusion_handle(
 		const_cast<Function_variable_exclusion*>(this)))));
+}
+
+void Function_variable_exclusion::add_dependent_function(
+#if defined (CIRCULAR_SMART_POINTERS)
+	const Function_handle
+#else // defined (CIRCULAR_SMART_POINTERS)
+	Function*
+#endif // defined (CIRCULAR_SMART_POINTERS)
+	dependent_function)
+//******************************************************************************
+// LAST MODIFIED : y December 2004
+//
+// DESCRIPTION :
+//==============================================================================
+{
+	if (universe)
+	{
+		universe->add_dependent_function(dependent_function);
+	}
+}
+
+void Function_variable_exclusion::remove_dependent_function(
+#if defined (CIRCULAR_SMART_POINTERS)
+	const Function_handle
+#else // defined (CIRCULAR_SMART_POINTERS)
+	Function*
+#endif // defined (CIRCULAR_SMART_POINTERS)
+	dependent_function)
+//******************************************************************************
+// LAST MODIFIED : 7 December 2004
+//
+// DESCRIPTION :
+//==============================================================================
+{
+	if (universe)
+	{
+		universe->remove_dependent_function(dependent_function);
+	}
 }
 
 bool Function_variable_exclusion::equality_atomic(const

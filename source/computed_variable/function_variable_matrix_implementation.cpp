@@ -460,7 +460,7 @@ Function_handle Function_variable_matrix<Value_type>::evaluate()
 }
 
 EXPORT template<typename Value_type>
-Function_handle Function_variable_matrix<Value_type>::get_value()
+Function_handle Function_variable_matrix<Value_type>::get_value() const
 //******************************************************************************
 // LAST MODIFIED : 3 September 2004
 //

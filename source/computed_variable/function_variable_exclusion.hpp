@@ -1,7 +1,7 @@
 //******************************************************************************
 // FILE : function_variable_exclusion.hpp
 //
-// LAST MODIFIED : 13 August 2004
+// LAST MODIFIED : 7 December 2004
 //
 // DESCRIPTION :
 // One variable, A, excluding another variable, B, ie A intersect not(B).  The
@@ -14,7 +14,7 @@
 
 class Function_variable_exclusion : public Function_variable
 //******************************************************************************
-// LAST MODIFIED : 13 August 2004
+// LAST MODIFIED : 7 December 2004
 //
 // DESCRIPTION :
 // Complement with a specified "universe" ie universe intersect not(exclusion)
@@ -39,6 +39,13 @@ class Function_variable_exclusion : public Function_variable
 		Function_variable_iterator end_atomic() const;
 		std::reverse_iterator<Function_variable_iterator> rbegin_atomic() const;
 		std::reverse_iterator<Function_variable_iterator> rend_atomic() const;
+#if defined (CIRCULAR_SMART_POINTERS)
+		virtual void add_dependent_function(const Function_handle);
+		virtual void remove_dependent_function(const Function_handle);
+#else // defined (CIRCULAR_SMART_POINTERS)
+		virtual void add_dependent_function(Function*);
+		virtual void remove_dependent_function(Function*);
+#endif // defined (CIRCULAR_SMART_POINTERS)
 	private:
 		virtual bool equality_atomic(const Function_variable_handle&) const;
 	private:

@@ -1,7 +1,7 @@
 //******************************************************************************
 // FILE : function_variable_composite.hpp
 //
-// LAST MODIFIED : 13 August 2004
+// LAST MODIFIED : 7 December 2004
 //
 // DESCRIPTION :
 // A list of specifiers joined together end on end.  There can be repeats in the
@@ -16,7 +16,7 @@
 
 class Function_variable_composite : public Function_variable
 //******************************************************************************
-// LAST MODIFIED : 13 August 2004
+// LAST MODIFIED : 7 December 2004
 //
 // DESCRIPTION :
 // A composite of other variable(s).
@@ -53,6 +53,13 @@ class Function_variable_composite : public Function_variable
 		std::reverse_iterator<Function_variable_iterator> rbegin_atomic() const;
 		std::reverse_iterator<Function_variable_iterator> rend_atomic() const;
 		Function_size_type number_differentiable();
+#if defined (CIRCULAR_SMART_POINTERS)
+		virtual void add_dependent_function(const Function_handle);
+		virtual void remove_dependent_function(const Function_handle);
+#else // defined (CIRCULAR_SMART_POINTERS)
+		virtual void add_dependent_function(Function*);
+		virtual void remove_dependent_function(Function*);
+#endif // defined (CIRCULAR_SMART_POINTERS)
 	private:
 		virtual bool equality_atomic(const Function_variable_handle&) const;
 	private:

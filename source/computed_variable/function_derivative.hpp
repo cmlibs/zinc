@@ -1,7 +1,7 @@
 //******************************************************************************
 // FILE : function_derivative.hpp
 //
-// LAST MODIFIED : 13 August 2004
+// LAST MODIFIED : 2 December 2004
 //
 // DESCRIPTION :
 //==============================================================================
@@ -10,14 +10,22 @@
 
 #include <list>
 #include "computed_variable/function.hpp"
+#if defined (BEFORE_CACHING)
+#else // defined (BEFORE_CACHING)
+#include "computed_variable/function_matrix.hpp"
+#endif // defined (BEFORE_CACHING)A
 
 class Function_derivative;
 
 typedef boost::intrusive_ptr<Function_derivative> Function_derivative_handle;
 
+#if defined (BEFORE_CACHING)
 class Function_derivative : public Function
+#else // defined (BEFORE_CACHING)
+class Function_derivative : public Function_matrix<Scalar>
+#endif // defined (BEFORE_CACHING)
 //******************************************************************************
-// LAST MODIFIED : 13 August 2004
+// LAST MODIFIED : 2 December 2004
 //
 // DESCRIPTION :
 // A derivative of another function.
@@ -32,6 +40,8 @@ class Function_derivative : public Function
 		friend bool equivalent(boost::intrusive_ptr<Value_type_1> const &,
 		boost::intrusive_ptr<Value_type_2> const &);
 	public:
+		// for construction exception
+		class Construction_exception {};
 		// constructor
 		Function_derivative(const Function_variable_handle& dependent_variable,
 			std::list<Function_variable_handle>& independent_variables);
@@ -59,6 +69,10 @@ class Function_derivative : public Function
 		bool operator==(const Function&) const;
 	private:
 		Function_variable_handle dependent_variable_private;
+#if defined (BEFORE_CACHING)
+#else // defined (BEFORE_CACHING)
+		static ublas::matrix<Scalar,ublas::column_major> constructor_values;
+#endif // defined (BEFORE_CACHING)
 		std::list<Function_variable_handle> independent_variables_private;
 };
 
