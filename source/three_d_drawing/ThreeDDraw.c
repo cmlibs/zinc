@@ -842,9 +842,9 @@ because the initialize method is downward chained.
 	ThreeDDrawingWidget request,new;
 #if defined (OPENGL_API)
 	Bool direct_rendering;
-	int accum_alpha,accum_red,accum_green,accum_blue,best_buffer_size,
-		best_depth_size,buffer_size,depth_size,double_buffer,error_base,event_base,i,
-		number_of_visual_infos,opengl,rgba,stereo;
+	int accum_alpha,accum_red,accum_green,accum_blue,alpha_size,best_alpha_size,
+		best_buffer_size,best_depth_size,buffer_size,depth_size,double_buffer,
+		error_base,event_base,i,number_of_visual_infos,opengl,rgba,stereo;
 	XVisualInfo *best_visual_info,*visual_info,*visual_info_list,
 		visual_info_template;
 #endif
@@ -913,6 +913,8 @@ because the initialize method is downward chained.
 				visual_info=visual_info_list;
 				best_visual_info=(XVisualInfo *)NULL;
 				best_buffer_size=0;
+				best_depth_size=0;
+				best_alpha_size=0;
 				for (i=number_of_visual_infos;i>0;i--)
 				{
 					if ((request->three_d_drawing).normal_buffer.visual_id)
@@ -958,6 +960,8 @@ because the initialize method is downward chained.
 											&buffer_size);
 										glXGetConfig(display, visual_info, GLX_DEPTH_SIZE,
 											&depth_size);
+										glXGetConfig(display, visual_info, GLX_ALPHA_SIZE,
+											&alpha_size);
 										glXGetConfig(display, visual_info, GLX_ACCUM_RED_SIZE,
 											&accum_red);
 										glXGetConfig(display, visual_info, GLX_ACCUM_GREEN_SIZE,
@@ -977,11 +981,14 @@ because the initialize method is downward chained.
 												{
 													if ((buffer_size > best_buffer_size)
 														|| ((buffer_size == best_buffer_size)
-														&& (depth_size > best_depth_size)))
+														&& ((depth_size > best_depth_size)
+														|| ((depth_size == best_depth_size)
+														&& (alpha_size > best_alpha_size)))))
 													{
 														best_visual_info=visual_info;
 														best_buffer_size = buffer_size;
 														best_depth_size = depth_size;
+														best_alpha_size = alpha_size;
 													}
 												}
 											}
