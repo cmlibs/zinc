@@ -5561,13 +5561,13 @@ c.f analysis_set_highlight_max, analysis_set_highlight_min
 				component.field=signal_minimum_field;
 				return_code=get_FE_nodal_FE_value_value(device_rig_node,&component,
 					0,FE_NODAL_VALUE,
-					&minimum);
+					/*time*/0,&minimum);
 			}
 			if(return_code)
 			{
 				component.field=signal_maximum_field;
 				get_FE_nodal_FE_value_value(device_rig_node,&component,0,FE_NODAL_VALUE,
-					&maximum);
+					/*time*/0,&maximum);
 			}		
 #else
 			return_code=1;

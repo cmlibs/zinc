@@ -11930,10 +11930,10 @@ same as the range for the current signal.
 				component.number=0;
 				component.field=signal_minimum_field;
 				get_FE_nodal_FE_value_value(rig_node,&component,0,FE_NODAL_VALUE,
-					&minimum);
+					/*time*/0,&minimum);
 				component.field=signal_maximum_field;
 				get_FE_nodal_FE_value_value(rig_node,&component,0,FE_NODAL_VALUE,
-					&maximum);
+					/*time*/0,&maximum);
 				set_Min_max_iterator_max(min_max_iterator,maximum);
 				set_Min_max_iterator_min(min_max_iterator,minimum);
 				set_Min_max_iterator_signal_minimum_field(min_max_iterator,

@@ -2856,6 +2856,7 @@ linear combinations of other channels.
 														(struct FE_field_external_information *)NULL))
 													{
 														if (define_FE_field_at_node(node,display_start_time_field,
+															(struct FE_time_version *)NULL,
 															node_field_creator))
 														{	
 															/* add it to the unemap package */
@@ -2888,6 +2889,7 @@ linear combinations of other channels.
 														(struct FE_field_external_information *)NULL))
 													{
 														if (define_FE_field_at_node(node,display_end_time_field,
+															(struct FE_time_version *)NULL,
 															node_field_creator))
 														{	
 															/* add it to the unemap package */
@@ -6011,11 +6013,11 @@ The extraction arguments are:
 						component.field=signal_drawing_package->channel_offset_field;
 						component.number=0;	
 						if (get_FE_nodal_FE_value_value(device_node,&component,0,FE_NODAL_VALUE,
-							&channel_offset))
+							/*time*/0,&channel_offset))
 						{
 							component.field=signal_drawing_package->channel_gain_field;
 							if (get_FE_nodal_FE_value_value(device_node,&component,0,FE_NODAL_VALUE,
-								&channel_gain))
+								/*time*/0,&channel_gain))
 							{
 								if (ALLOCATE(signals_values,float,
 									number_of_signals*number_of_values))
@@ -6219,10 +6221,10 @@ The extraction arguments are:
 						&highlight);									
 					component.field=signal_drawing_package->signal_minimum_field;
 					get_FE_nodal_FE_value_value(device_node,&component,0,FE_NODAL_VALUE,
-						&signal_minimum);
+						/*time*/0,&signal_minimum);
 					component.field=signal_drawing_package->signal_maximum_field;
 					get_FE_nodal_FE_value_value(device_node,&component,0,FE_NODAL_VALUE,
-						&signal_maximum);					
+						/*time*/0,&signal_maximum);					
 				}
 			}
 		}
@@ -6887,10 +6889,10 @@ Event_signal_status in <status>
 				component.number=0;
 				component.field=channel_gain_field;
 				get_FE_nodal_FE_value_value(node,&component,0,FE_NODAL_VALUE,
-					&channel_gain);
+					/*time*/0,&channel_gain);
 				component.field=channel_offset_field;
 				get_FE_nodal_FE_value_value(node,&component,0,FE_NODAL_VALUE,
-					&channel_offset);
+					/*time*/0,&channel_offset);
 				*min=channel_gain*(*min-channel_offset);
 				*max=channel_gain*(*max-channel_offset);
 			}

@@ -23,6 +23,7 @@ Main program for unemap.  Based on cmgui.
 #if defined (NOT_ACQUISITION_ONLY)
 #if defined (UNEMAP_USE_3D)
 #include "computed_field/computed_field.h"
+#include "computed_field/computed_field_coordinate.h"
 #include "computed_field/computed_field_component_operations.h"
 #include "computed_field/computed_field_finite_element.h"
 #include "computed_field/computed_field_vector_operations.h"
