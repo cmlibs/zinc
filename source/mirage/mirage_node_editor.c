@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : mirage_node_editor.c
 
-LAST MODIFIED : 28 September 1999
+LAST MODIFIED : 20 July 2000
 
 DESCRIPTION :
 Special graphical node editor for mirage digitiser windows.
@@ -29,7 +29,7 @@ Module types
 */
 struct Mirage_node_editor
 /*******************************************************************************
-LAST MODIFIED : 19 February 1997
+LAST MODIFIED : 20 July 2000
 
 DESCRIPTION :
 ==============================================================================*/
@@ -37,7 +37,6 @@ DESCRIPTION :
 	struct Mirage_movie *movie;
 	double node_position[3],node_position_window[3],start_cursor_x,start_cursor_y;
 	enum Mirage_node_editor_mode mode;
-	struct GROUP(FE_node) *selected_nodes;
 	struct FE_node *node,*working_node;
 	struct GT_object *graphics_object;
 }; /* struct Mirage_node_editor */
@@ -1036,77 +1035,6 @@ Not used at present, but may be needed for rubber banding to remove nodes.
 } /* remove_node_from_Mirage_view_iterator */
 #endif /* defined (OLD_CODE_TO_KEEP) */
 
-struct Select_node_data
-{
-	struct GROUP(FE_node) *selected_nodes;
-	struct MANAGER(FE_node) *node_manager;
-}; /* Select_node_data */
-
-static int Scene_picked_object_select_node(
-	struct Scene_picked_object *picked_object,void *select_node_data_void)
-/*******************************************************************************
-LAST MODIFIED : 19 August 1999
-
-DESCRIPTION :
-Adds picked nodes to the selected_nodes group if they are not already there.
-==============================================================================*/
-{
-	int node_number,return_code;
-	struct FE_node *picked_node;
-	struct Scene_object *scene_object;
-	struct Select_node_data *select_node_data;
-	struct GT_element_group *gt_element_group;
-	struct GT_element_settings *settings;
-
-	ENTER(Scene_picked_object_select_node);
-	if (picked_object&&
-		(select_node_data=(struct Select_node_data *)select_node_data_void))
-	{
-		return_code=1;
-		/* is the last scene_object a Graphical_element wrapper, and does the
-			 settings for the graphic refer to node_glyphs? */
-		if ((scene_object=Scene_picked_object_get_Scene_object(picked_object,
-			Scene_picked_object_get_number_of_scene_objects(picked_object)-1))&&
-			(SCENE_OBJECT_GRAPHICAL_ELEMENT_GROUP==
-				Scene_object_get_type(scene_object))&&(gt_element_group=
-					Scene_object_get_graphical_element_group(scene_object))&&
-			(3==Scene_picked_object_get_number_of_subobjects(picked_object))&&
-			(settings=get_settings_at_position_in_GT_element_group(gt_element_group,
-				Scene_picked_object_get_subobject(picked_object,0)))&&
-			(GT_ELEMENT_SETTINGS_NODE_POINTS==
-				GT_element_settings_get_settings_type(settings)))
-		{
-			node_number=Scene_picked_object_get_subobject(picked_object,2);
-			if (picked_node=FIND_BY_IDENTIFIER_IN_MANAGER(FE_node,cm_node_identifier)(
-				node_number,select_node_data->node_manager))
-			{
-				if (!FIND_BY_IDENTIFIER_IN_GROUP(FE_node,cm_node_identifier)(
-					get_FE_node_cm_node_identifier(picked_node),
-					select_node_data->selected_nodes))
-				{
-					return_code=ADD_OBJECT_TO_GROUP(FE_node)(picked_node,
-						select_node_data->selected_nodes);
-				}
-			}
-			else
-			{
-				display_message(ERROR_MESSAGE,
-					"Scene_picked_object_select_node.  Node number not in manager");
-				return_code=0;
-			}
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Scene_picked_object_select_node.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Scene_picked_object_select_node */
-
 struct Get_nearest_projected_node_data
 {
 	double transformation43[12],pointer[2],nearest_distance;
@@ -1185,7 +1113,7 @@ static void MNE_scene_input_callback(struct Scene *scene,
 	void *mirage_node_editor_void,
 	struct Scene_input_callback_data *scene_input_data)
 /*******************************************************************************
-LAST MODIFIED : 14 June 1999
+LAST MODIFIED : 20 July 2000
 
 DESCRIPTION :
 Receives mouse button press, motion and release events from <scene>, and
@@ -1197,13 +1125,10 @@ processes them into node movements as necessary.
 	static int edit_node_index,last_edit_node_no=-1;
 	struct Mirage_node_editor *node_editor;
 	static enum MNE_scene_input_drag_mode drag_mode=MNE_DRAG_NOTHING;
-	struct Select_node_data select_node_data;
 	static struct FE_node *edit_node;
+	struct LIST(FE_node) *picked_node_list;
 	struct Mirage_movie *movie;
 	struct Mirage_view *view;
-#if defined (OLD_CODE_TO_KEEP)
-	struct Remove_node_iterator_data remove_data;
-#endif /* defined (OLD_CODE_KEEP) */
 	struct Get_nearest_projected_node_data nearest_node_data;
 
 	if (scene&&(node_editor=(struct Mirage_node_editor *)
@@ -1238,120 +1163,119 @@ processes them into node movements as necessary.
 				case SCENE_BUTTON_PRESS:
 				{
 					drag_mode=MNE_DRAG_NOTHING;
-					/*???debug *//*printf("MNE: button press!\n");*/
-					/* get list of picked nodes */
-					select_node_data.selected_nodes=node_editor->selected_nodes;
-					select_node_data.node_manager=movie->node_manager;
-					REMOVE_ALL_OBJECTS_FROM_GROUP(FE_node)(node_editor->selected_nodes);
-					FOR_EACH_OBJECT_IN_LIST(Scene_picked_object)(
-						Scene_picked_object_select_node,(void *)&select_node_data,
-						scene_input_data->picked_object_list);
 					edit_node=(struct FE_node *)NULL;
-					if (0<NUMBER_IN_GROUP(FE_node)(node_editor->selected_nodes))
+					/*???debug *//*printf("MNE: button press!\n");*/
+					if (picked_node_list=Scene_picked_object_list_get_picked_nodes(
+						scene_input_data->picked_object_list,/*use_data*/0))
 					{
-						/* get nearest picked node to edit */
-						if (point_3d_to_2d_view(view->transformation43,position,
-							nearest_node_data.pointer))
+						if (0<NUMBER_IN_LIST(FE_node)(picked_node_list))
 						{
-							for (i=0;i<12;i++)
+							/* get nearest picked node to edit */
+							if (point_3d_to_2d_view(view->transformation43,position,
+								nearest_node_data.pointer))
 							{
-								nearest_node_data.transformation43[i]=
-									view->transformation43[i];
-							}
-							nearest_node_data.nearest_distance=0.0;
-							nearest_node_data.nearest_node=(struct FE_node *)NULL;
-							/* preferentially choose the last edited node */
-							if ((nearest_node_data.nearest_node=FIND_BY_IDENTIFIER_IN_GROUP(
-								FE_node,cm_node_identifier)(last_edit_node_no,
-								node_editor->selected_nodes))||
-								FOR_EACH_OBJECT_IN_GROUP(FE_node)(get_nearest_projected_node,
-								(void *)&nearest_node_data,node_editor->selected_nodes))
-							{
-								edit_node=nearest_node_data.nearest_node;
-								last_edit_node_no=get_FE_node_cm_node_identifier(edit_node);
-								/* get edit_node_index */
-								edit_node_index= -1;
-								for (i=0;(0>edit_node_index)&&(i<view->number_of_nodes);i++)
+								for (i=0;i<12;i++)
 								{
-									if (view->node_numbers[i]==
-										get_FE_node_cm_node_identifier(edit_node))
+									nearest_node_data.transformation43[i]=
+										view->transformation43[i];
+								}
+								nearest_node_data.nearest_distance=0.0;
+								nearest_node_data.nearest_node=(struct FE_node *)NULL;
+								/* preferentially choose the last edited node */
+								if ((nearest_node_data.nearest_node=FIND_BY_IDENTIFIER_IN_LIST(
+									FE_node,cm_node_identifier)(last_edit_node_no,
+										picked_node_list))||
+									FOR_EACH_OBJECT_IN_LIST(FE_node)(get_nearest_projected_node,
+										(void *)&nearest_node_data,picked_node_list))
+								{
+									edit_node=nearest_node_data.nearest_node;
+									last_edit_node_no=get_FE_node_cm_node_identifier(edit_node);
+									/* get edit_node_index */
+									edit_node_index= -1;
+									for (i=0;(0>edit_node_index)&&(i<view->number_of_nodes);i++)
 									{
-										edit_node_index=i;
+										if (view->node_numbers[i]==
+											get_FE_node_cm_node_identifier(edit_node))
+										{
+											edit_node_index=i;
+										}
 									}
-								}
-								if (0>edit_node_index)
-								{
-									display_message(ERROR_MESSAGE,
-										"MNE_scene_input_callback.  Missing node index");
-									drag_mode=MNE_DRAG_NOTHING;
-									edit_node=(struct FE_node *)NULL;
-								}
-								else
-								{
-									if (alt_key_down)
+									if (0>edit_node_index)
 									{
-										drag_mode=MNE_DRAG_UNPLACE;
+										display_message(ERROR_MESSAGE,
+											"MNE_scene_input_callback.  Missing node index");
+										drag_mode=MNE_DRAG_NOTHING;
+										edit_node=(struct FE_node *)NULL;
 									}
 									else
 									{
-										if (shift_key_down)
+										if (alt_key_down)
 										{
-											drag_mode=MNE_DRAG_MOVE_EXACT;
-											/* turn off centre of mass */
-											view->com_radius[edit_node_index]=0;
+											drag_mode=MNE_DRAG_UNPLACE;
 										}
 										else
 										{
-											if ( control_key_down )
+											if (shift_key_down)
 											{
-												drag_mode=MNE_DRAG_SELECT_ONLY;
+												drag_mode=MNE_DRAG_MOVE_EXACT;
+												/* turn off centre of mass */
+												view->com_radius[edit_node_index]=0;
 											}
 											else
 											{
-												drag_mode=MNE_DRAG_MOVE_COM;
+												if ( control_key_down )
+												{
+													drag_mode=MNE_DRAG_SELECT_ONLY;
+												}
+												else
+												{
+													drag_mode=MNE_DRAG_MOVE_COM;
+												}
 											}
 										}
 									}
 								}
 							}
 						}
-					}
-					else
-					{
-						if (!alt_key_down && !control_key_down)
+						else
 						{
-							/* If alt_key_down don't select the node as this is delete mode
-							   if control_key_down don't select node as this is 
-								make_pending but don't move mode*/
-							/* get the next node to add to this view, if any */
-							edit_node=(struct FE_node *)NULL;
-							last_edit_node_no=-1;
-							for (i=0;!edit_node&&(i<view->number_of_nodes);i++)
+							if (!alt_key_down && !control_key_down)
 							{
-								node_no=view->node_numbers[i];
-								if (!FIND_BY_IDENTIFIER_IN_GROUP(FE_node,cm_node_identifier)(
-									node_no,view->placed_nodes))
+								/* If alt_key_down don't select the node as this is delete mode
+									 if control_key_down don't select node as this is 
+									 make_pending but don't move mode*/
+								/* get the next node to add to this view, if any */
+								edit_node=(struct FE_node *)NULL;
+								last_edit_node_no=-1;
+								for (i=0;!edit_node&&(i<view->number_of_nodes);i++)
 								{
-									edit_node=FIND_BY_IDENTIFIER_IN_MANAGER(FE_node,cm_node_identifier)(
-										node_no,movie->node_manager);
-									edit_node_index=i;
+									node_no=view->node_numbers[i];
+									if (!FIND_BY_IDENTIFIER_IN_GROUP(FE_node,cm_node_identifier)(
+										node_no,view->placed_nodes))
+									{
+										edit_node=
+											FIND_BY_IDENTIFIER_IN_MANAGER(FE_node,cm_node_identifier)(
+												node_no,movie->node_manager);
+										edit_node_index=i;
+									}
+								}
+							}
+							if (edit_node)
+							{
+								last_edit_node_no=get_FE_node_cm_node_identifier(edit_node);
+								if (shift_key_down)
+								{
+									drag_mode=MNE_DRAG_PLACE_EXACT;
+									/* turn off centre of mass */
+									view->com_radius[edit_node_index]=0;
+								}
+								else
+								{
+									drag_mode=MNE_DRAG_PLACE_COM;
 								}
 							}
 						}
-						if (edit_node)
-						{
-							last_edit_node_no=get_FE_node_cm_node_identifier(edit_node);
-							if (shift_key_down)
-							{
-								drag_mode=MNE_DRAG_PLACE_EXACT;
-								/* turn off centre of mass */
-								view->com_radius[edit_node_index]=0;
-							}
-							else
-							{
-								drag_mode=MNE_DRAG_PLACE_COM;
-							}
-						}
+						DESTROY(LIST(FE_node))(&picked_node_list);
 					}
 				} break;
 				case SCENE_MOTION_NOTIFY:
@@ -1369,14 +1293,6 @@ processes them into node movements as necessary.
 							{
 								/* remove edit node from view */
 								remove_node_from_Mirage_view(movie,view_no,edit_node);
-#if defined (OLD_CODE_TO_KEEP)
-								/* remove all selected nodes from view */
-								remove_data.movie=movie;
-								remove_data.view_no=view_no;
-								FOR_EACH_OBJECT_IN_GROUP(FE_node)(
-									remove_node_from_Mirage_view_iterator,(void *)&remove_data,
-									node_editor->selected_nodes);
-#endif /* defined (OLD_CODE_TO_KEEP) */
 							} break;
 						case MNE_DRAG_MOVE_COM:
 							{
@@ -1463,9 +1379,8 @@ for the movie, and must be destroyed before the views.
 	if (movie&&movie->views&&movie->node_manager)
 	{
 		if (ALLOCATE(mirage_node_editor,struct Mirage_node_editor,1)&&
-			(mirage_node_editor->working_node=CREATE(FE_node)(0,(struct FE_node *)NULL))&&
-			(mirage_node_editor->selected_nodes=CREATE(GROUP(FE_node))(
-			"Selected")))
+			(mirage_node_editor->working_node=
+				CREATE(FE_node)(0,(struct FE_node *)NULL)))
 		{
 			mirage_node_editor->movie=movie;
 			input_callback.procedure=MNE_scene_input_callback;
@@ -1525,7 +1440,6 @@ Cleans up space used by Mirage_node_editor structure.
 			Scene_set_input_callback((node_editor->movie->views[view_no])->scene,
 				&input_callback);
 		}
-		DESTROY(GROUP(FE_node))(&node_editor->selected_nodes);
 		DESTROY(FE_node)(&node_editor->working_node);
 		DEALLOCATE(*mirage_node_editor_address);
 		return_code=1;
