@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : cmiss_finite_element.h
 
-LAST MODIFIED : 13 August 2003
+LAST MODIFIED : 1 April 2004
 
 DESCRIPTION :
 The public interface to the Cmiss_finite_elements.
@@ -45,6 +45,14 @@ DESCRIPTION :
 ==============================================================================*/
 
 typedef int (*Cmiss_node_iterator_function)(struct Cmiss_node *node, void *user_data);
+
+int Cmiss_node_get_identifier(struct Cmiss_node *node);
+/*******************************************************************************
+LAST MODIFIED : 1 April 2004
+
+DESCRIPTION :
+Returns the integer identifier of the <node>.
+==============================================================================*/
 
 /* SAB Temporary until we decide how to fix things up internally instead of externally.*/
 enum FE_nodal_value_type

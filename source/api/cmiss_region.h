@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : cmiss_region.h
 
-LAST MODIFIED : 19 August 2003
+LAST MODIFIED : 1 April 2004
 
 DESCRIPTION :
 The public interface to the Cmiss_regions.
@@ -69,7 +69,7 @@ struct Cmiss_element *Cmiss_region_get_element(struct Cmiss_region *region,
 LAST MODIFIED : 13 August 2002
 
 DESCRIPTION :
-Returns field with <name> in sub_region <path> of <region> if it exists.
+Returns element with <name> in sub_region <path> of <region> if it exists.
 ==============================================================================*/
 
 struct Cmiss_node *Cmiss_region_get_node(struct Cmiss_region *region,
@@ -78,7 +78,16 @@ struct Cmiss_node *Cmiss_region_get_node(struct Cmiss_region *region,
 LAST MODIFIED : 19 August 2002
 
 DESCRIPTION :
-Returns element with <name> in sub_region <path> of <region> if it exists.
+Returns node with <name> in sub_region <path> of <region> if it exists.
+==============================================================================*/
+
+int Cmiss_region_get_number_of_nodes_in_region(struct Cmiss_region *region,
+	char *path);
+/*******************************************************************************
+LAST MODIFIED : 1 April 2004
+
+DESCRIPTION :
+Returns the number of nodes in sub_region <path> of <region> if it exists.
 ==============================================================================*/
 
 int Cmiss_region_for_each_node_in_region(struct Cmiss_region *region,
