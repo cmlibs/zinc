@@ -1800,14 +1800,8 @@ Main program for the CMISS Graphical User Interface
 				}
 				if(!batch_mode)
 				{
-#if defined (OLD_CODE)
-					/* Close_user_interface is called by execute_command_quit and
-						stops the main loop */
 					/* close the user interface */
 					close_user_interface(&user_interface);
-					/*???DB.  Should this actually be inside the application and be used to
-					  set a flag that terminates the main loop ? */
-#endif /* defined (OLD_CODE) */
 					DESTROY(Machine_information)(&user_interface.local_machine_info);
 					DEACCESS(Time_keeper)(&command_data.default_time_keeper);
 				}

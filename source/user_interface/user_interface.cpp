@@ -1079,17 +1079,14 @@ XmNvisual,default_visual,
 
 int close_user_interface(struct User_interface *user_interface)
 /*******************************************************************************
-LAST MODIFIED : 27 December 1999
+LAST MODIFIED : 7 July 2000
 
 DESCRIPTION :
-???DB.  What should this do ?  Should it be called from inside the main
-	application loop to terminate the main application loop ?
 ==============================================================================*/
 {
 	int return_code;
 
 	ENTER(close_user_interface);
-	return_code=0;
 	if (user_interface)
 	{
 #if defined (LINK_CMISS)
@@ -1105,22 +1102,44 @@ DESCRIPTION :
 			XFreePixmap(user_interface->display,user_interface->no_cascade_pixmap);
 			user_interface->no_cascade_pixmap=XmUNSPECIFIED_PIXMAP;
 		}
-		user_interface->continue_interface = 0;
-#if defined (OLD_CODE)
-/*???DB.  Bad ! */
-		exit(0);
-#endif /* defined (OLD_CODE) */
 #endif /* defined (MOTIF) */
 		return_code=1;
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,"close_user_interface.  Invalid argument");
+		return_code=0;
 	}
 	LEAVE;
 
 	return (return_code);
 } /* close_user_interface */
+
+int User_interface_end_application_loop(struct User_interface *user_interface)
+/*******************************************************************************
+LAST MODIFIED : 7 July 2000
+
+DESCRIPTION :
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(User_interface_end_application_loop);
+	if (user_interface)
+	{
+		user_interface->continue_interface = 0;
+		return_code=1;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"User_interface_end_application_loop.  "
+			"Invalid argument");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* User_interface_end_application_loop */
 
 int application_main_step(struct User_interface *user_interface)
 /*******************************************************************************

@@ -23503,10 +23503,7 @@ Executes a QUIT command.
 		{
 			if (command_data=(struct Cmiss_command_data *)command_data_void)
 			{
-				REMOVE_ALL_OBJECTS_FROM_MANAGER(Graphics_window)(
-					command_data->graphics_window_manager);
-				REMOVE_ALL_OBJECTS_FROM_MANAGER(Scene)(command_data->scene_manager);
-				close_user_interface(command_data->user_interface);
+				User_interface_end_application_loop(command_data->user_interface);
 				return_code=1;
 			}
 			else
