@@ -3396,11 +3396,13 @@ See also FE_region_get_ultimate_master_FE_region.
 int FE_region_get_ultimate_master_FE_region(struct FE_region *fe_region,
 	struct FE_region **master_fe_region_address)
 /*******************************************************************************
-LAST MODIFIED : 18 February 2003
+LAST MODIFIED : 22 May 2003
 
 DESCRIPTION :
 Returns the FE_region that the fields, nodes and elements of <fe_region>
 ultimately belong to. <fe_region> is returned if it has no immediate master.
+???RC Until the data_hack is removed, have to stop at the ancestor with either
+the data_hack or no master; this is the region owning the nodes/elements.
 ==============================================================================*/
 {
 	int return_code;
@@ -3410,7 +3412,7 @@ ultimately belong to. <fe_region> is returned if it has no immediate master.
 	if (fe_region && master_fe_region_address)
 	{
 		master_fe_region = fe_region;
-		while (master_fe_region->master_fe_region)
+		while (master_fe_region->master_fe_region && (!master_fe_region->data_hack))
 		{
 			master_fe_region = master_fe_region->master_fe_region;
 		}
