@@ -16,6 +16,7 @@ selected element point, or set it if entered in this dialog.
 #include "finite_element/finite_element.h"
 #include "graphics/element_point_ranges.h"
 #include "selection/element_point_ranges_selection.h"
+#include "time/time.h"
 
 /*
 Global Types
@@ -42,10 +43,10 @@ struct Element_point_viewer *CREATE(Element_point_viewer)(
 	struct MANAGER(FE_node) *node_manager,
 	struct Element_point_ranges_selection *element_point_ranges_selection,
 	struct Computed_field_package *computed_field_package,
-	struct MANAGER(FE_field) *fe_field_manager,
+	struct MANAGER(FE_field) *fe_field_manager, struct Time_object *time_object,
 	struct User_interface *user_interface);
 /*******************************************************************************
-LAST MODIFIED : 31 May 2000
+LAST MODIFIED : 3 December 2001
 
 DESCRIPTION :
 Creates a dialog for choosing element points and displaying and editing their

@@ -815,22 +815,15 @@ access this function.
 						}
 					}
 
-#if defined GL_EXT_polygon_offset
-					/* It is also possible to test the extensions at compile time
-						 by using #if defined GL_EXT_polygon_offset */
-					if (query_gl_extension("GL_EXT_polygon_offset"))
+					if (scene_viewer->perturb_lines)
 					{
-						if (scene_viewer->perturb_lines)
-						{
-							glPolygonOffsetEXT(1.5,0.000001);
-							glEnable(GL_POLYGON_OFFSET_EXT);
-						}
-						else
-						{
-							glDisable(GL_POLYGON_OFFSET_EXT);
-						}
+						glPolygonOffset(1.5,0.000001);
+						glEnable(GL_POLYGON_OFFSET_FILL);
 					}
-#endif /* defined GL_EXT_polygon_offset */
+					else
+					{
+						glDisable(GL_POLYGON_OFFSET_FILL);
+					}
 #if defined (DEBUG)
 					/*???debug*/
 					printf("Scene_viewer: build scene and redraw\n");
@@ -5469,12 +5462,11 @@ DESCRIPTION :
 int Scene_viewer_set_perturb_lines(struct Scene_viewer *scene_viewer,
 	int perturb_lines)
 /*******************************************************************************
-LAST MODIFIED : 13 June 2000
+LAST MODIFIED : 4 December 2001
 
 DESCRIPTION :
 When the line draw mode is turned on (set to one) the lines are raised in the
-z direction when the GL_EXT_polygon_offset extension is available from the X
-Server.  This means that the lines appear solid rather than interfering with a
+z direction.  This means that the lines appear solid rather than interfering with a
 surface in the same space.
 ==============================================================================*/
 {
@@ -5485,17 +5477,8 @@ surface in the same space.
 	{
 		if (perturb_lines)
 		{
-			if (query_gl_extension("GL_EXT_polygon_offset"))
-			{
-				scene_viewer->perturb_lines=1;
-				return_code=1;
-			}
-			else
-			{
-				display_message(ERROR_MESSAGE,"Scene_viewer_set_perturb_lines.  "
-					"GL_EXT_polygon_offset extension not available on this display");
-				return_code=0;
-			}
+			scene_viewer->perturb_lines=1;
+			return_code=1;
 		}
 		else
 		{

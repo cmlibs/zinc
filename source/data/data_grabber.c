@@ -239,6 +239,7 @@ DESCRIPTION :
 	LEAVE;
 } /* dg_stream_distance_CB */
 
+#if defined (EXT_INPUT)
 static void dg_update_select(struct DG_struct *data_grabber)
 /*******************************************************************************
 LAST MODIFIED : 25 September 1995
@@ -257,6 +258,7 @@ A button has been pressed, so tell any clients.
 	}
 	LEAVE;
 } /* dg_update_select */
+#endif /* defined (EXT_INPUT) */
 
 static void dg_dof3_update(Widget dof3_widget,void *user_data,
 	void *new_dof3_data)

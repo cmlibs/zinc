@@ -67,6 +67,8 @@ struct X3d_movie
 #if defined (SGI_MOVIE_FILE)
 	/* for playing movies in scene_viewer */
 	MVid movie_id,video_track_id;
+	/* Store this format as we use it when adding the track */
+	MVfileformat format;
 #endif /* defined (SGI_MOVIE_FILE) */
 	struct Dm_buffer *dmbuffer;
 	XtInputId xt_input_id;
@@ -97,7 +99,8 @@ LAST MODIFIED : 27 November 2001
 DESCRIPTION :
 ==============================================================================*/
 {
-	int return_code, frame_time;
+	int return_code;
+	int frame_time;
 	struct X3d_movie *movie;
 	struct X3d_movie_callback_data *callback_data;
 
@@ -174,6 +177,7 @@ Attempts to create a movie object.
 				movie->timebase = 15;
 				movie->speed = 15.0;
 				movie->video_track_id = (MVid)NULL;
+				movie->format = (MVfileformat)NULL;
 				movie->dmbuffer = (struct Dm_buffer *)NULL;
 				movie->image_buffer = NULL;
 				movie->image_width = 0;
@@ -195,6 +199,7 @@ Attempts to create a movie object.
 					case X3D_MOVIE_CREATE_FILE_INDEO_AVI:
 					case X3D_MOVIE_CREATE_FILE_MVC1_SGI_MOVIE3:
 					case X3D_MOVIE_CREATE_FILE_RLE24_SGI_MOVIE3:						
+					case X3D_MOVIE_CREATE_FILE_RLE24_SGI_MOVIE3_RGBA:						
 					{
 						movie->new_movie = 1;
 						return_code = 0;
@@ -205,30 +210,26 @@ Attempts to create a movie object.
 								case X3D_MOVIE_CREATE_FILE_UNCOMPRESSED_SGI_MOVIE3:
 								case X3D_MOVIE_CREATE_FILE_MVC1_SGI_MOVIE3:
 								case X3D_MOVIE_CREATE_FILE_RLE24_SGI_MOVIE3:
+								case X3D_MOVIE_CREATE_FILE_RLE24_SGI_MOVIE3_RGBA:
 								{
-									if(DM_SUCCESS==mvSetMovieDefaults(params,MV_FORMAT_SGI_3))
-									{
-										return_code = 1;
-									}
+									movie->format = MV_FORMAT_SGI_3;
 								} break;
 								case X3D_MOVIE_CREATE_FILE_APPLE_ANIMATION_QUICKTIME:
 								case X3D_MOVIE_CREATE_FILE_CINEPAK_QUICKTIME:
 								case X3D_MOVIE_CREATE_FILE_INDEO_QUICKTIME:
 								{
-									if(DM_SUCCESS==mvSetMovieDefaults(params,MV_FORMAT_QT))
-									{
-										return_code = 1;
-									}
+									movie->format = MV_FORMAT_QT;
 								} break;
 								case X3D_MOVIE_CREATE_FILE_UNCOMPRESSED_AVI:
 								case X3D_MOVIE_CREATE_FILE_CINEPAK_AVI:
 								case X3D_MOVIE_CREATE_FILE_INDEO_AVI:
 								{
-									if(DM_SUCCESS==mvSetMovieDefaults(params,MV_FORMAT_AVI))
-									{
-										return_code = 1;
-									}
+									movie->format = MV_FORMAT_AVI;
 								} break;
+							}
+							if(DM_SUCCESS==mvSetMovieDefaults(params,movie->format))
+							{
+								return_code = 1;
 							}
 						}
 						if (return_code)
@@ -1061,8 +1062,8 @@ exists a new one is created.  The frame data must be XBGR bytes.
 			{
 				/* Create a video track */
 				if ((DM_SUCCESS==dmParamsCreate(&image_params)) &&
-					(DM_SUCCESS==dmSetImageDefaults(image_params,width,height,
-					DM_PACKING_RGBX)))
+					(DM_SUCCESS==mvSetImageDefaults(image_params,width,height,
+					movie->format)))
 				{
 					switch(movie->create_option)
 					{
@@ -1075,6 +1076,13 @@ exists a new one is created.  The frame data must be XBGR bytes.
 						{
 							dmParamsSetString  (image_params, DM_IMAGE_COMPRESSION,
 								DM_IMAGE_RLE24 );
+						} break;
+						case X3D_MOVIE_CREATE_FILE_RLE24_SGI_MOVIE3_RGBA:
+						{
+						  /* dmParamsSetString  (image_params, DM_IMAGE_COMPRESSION,
+								DM_IMAGE_RLE32 ); */
+							dmParamsSetInt (image_params, DM_IMAGE_PACKING,
+								DM_IMAGE_PACKING_RGBX );
 						} break;
 						case X3D_MOVIE_CREATE_FILE_APPLE_ANIMATION_QUICKTIME:
 						{

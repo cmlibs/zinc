@@ -22,6 +22,7 @@ DESCRIPTION :
 {
 	int selected_count, success_count;
 	FE_value *values;
+	FE_value time;
 	struct Computed_field *source_field;
 	struct Computed_field *destination_field;
 	struct FE_node_selection *node_selection;
@@ -51,7 +52,7 @@ DESCRIPTION :
 				Computed_field_is_defined_at_node(data->destination_field, node))
 			{
 				if (Computed_field_evaluate_at_node(data->source_field, node,
-					data->values))
+					data->time, data->values))
 				{
 					if (Computed_field_set_values_at_managed_node(data->destination_field,
 						node, data->values, data->node_manager))
@@ -78,7 +79,7 @@ DESCRIPTION :
 int Computed_field_update_nodal_values_from_source(
 	struct Computed_field *destination_field,	struct Computed_field *source_field,
 	struct GROUP(FE_node) *node_group, struct MANAGER(FE_node) *node_manager,
-	struct FE_node_selection *node_selection)
+	struct FE_node_selection *node_selection, FE_value time)
 /*******************************************************************************
 LAST MODIFIED : 11 October 2001
 
@@ -107,6 +108,7 @@ Restricts update to nodes in <node_selection>, if supplied.
 				data.node_selection = node_selection;
 				data.selected_count = 0;
 				data.success_count = 0;
+				data.time = time;
 
 				MANAGER_BEGIN_CACHE(FE_node)(node_manager);
 				if (node_group)
@@ -169,6 +171,7 @@ DESCRIPTION :
 ==============================================================================*/
 {
 	int selected_count, success_count;
+	FE_value time;
 	struct Computed_field *source_field;
 	struct Computed_field *destination_field;
 	struct Element_point_ranges_selection *element_point_ranges_selection;
@@ -262,7 +265,7 @@ DESCRIPTION :
 					Computed_field_is_defined_in_element(data->source_field, element))
 				{
 					if (Computed_field_get_values_in_element(data->source_field, element,
-						element_point_ranges_identifier.number_in_xi, &values))
+						element_point_ranges_identifier.number_in_xi, &values, data->time))
 					{
 						/* if individual grid points to be updated, need to evaluate
 							 the current field values and overwrite the selected ones */
@@ -271,7 +274,7 @@ DESCRIPTION :
 							if (Computed_field_get_values_in_element(
 								data->destination_field, element,
 								element_point_ranges_identifier.number_in_xi,
-								&temp_values))
+								&temp_values, data->time))
 							{
 								/* make values point at the current values */
 								new_values = values;
@@ -287,7 +290,7 @@ DESCRIPTION :
 									/*coordinate_field*/(struct Computed_field *)NULL,
 									/*density_field*/(struct Computed_field *)NULL,
 									&number_of_xi_points,
-									/*xi_points_address*/(Triple **)NULL);
+									/*xi_points_address*/(Triple **)NULL, data->time);
 								number_of_components = Computed_field_get_number_of_components(
 									data->destination_field);
 								selected_ranges = 
@@ -365,9 +368,9 @@ int Computed_field_update_element_values_from_source(
 	struct GROUP(FE_element) *element_group,
 	struct MANAGER(FE_element) *element_manager,
 	struct Element_point_ranges_selection *element_point_ranges_selection,
-	struct FE_element_selection *element_selection)
+	struct FE_element_selection *element_selection, FE_value time)
 /*******************************************************************************
-LAST MODIFIED : 11 October 2001
+LAST MODIFIED : 3 December 2001
 
 DESCRIPTION :
 Set grid-based <destination_field> in all the elements in <element_group> or
@@ -395,6 +398,7 @@ Note the union of these two selections is used if both supplied.
 			data.element_selection = element_selection;
 			data.selected_count = 0;
 			data.success_count = 0;
+			data.time = time;
 			MANAGER_BEGIN_CACHE(FE_element)(element_manager);
 			if (element_group)
 			{

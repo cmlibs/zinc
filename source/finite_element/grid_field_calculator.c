@@ -433,7 +433,7 @@ Applies the
 							grid_field,source_field,(struct GROUP(FE_element) *)NULL,
 							grid_calc->element_manager,
 							(struct Element_point_ranges_selection *)NULL,
-							(struct FE_element_selection *)NULL);
+							(struct FE_element_selection *)NULL, /*time*/0);
 						DEACCESS(Computed_field)(&source_field);
 					}
 					else

@@ -346,7 +346,7 @@ a string.
         display_message(ERROR_MESSAGE,
           "Cell_variable_unemap_interface_get_value_as_string_at_position.  "
           "Invalid value type");
-        sprintf(temp,"");
+        *temp = '\0';
       } break;
     } /* switch (unemap_interface->value_type) */
     if (ALLOCATE(value,char,strlen(temp)+1))

@@ -3150,7 +3150,7 @@ Decimates triangle mesh
 						found = 1;
 						*temp_triangle_ptrs = (struct MC_triangle *)NULL;
 					}
-					*temp_triangle_ptrs++;
+					temp_triangle_ptrs++;
 					j++;
 				}
 				if ( !found )

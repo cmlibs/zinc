@@ -48,7 +48,7 @@ comments for simplex and polygons shapes for more details.
 int FE_element_get_xi_points_cell_random(struct FE_element *element,
 	enum Xi_discretization_mode xi_discretization_mode, int *number_in_xi,
 	struct Computed_field *coordinate_field, struct Computed_field *density_field,
-	int *number_of_xi_points_address, Triple **xi_points_address);
+	int *number_of_xi_points_address, Triple **xi_points_address, FE_value time);
 /*******************************************************************************
 LAST MODIFIED : 3 May 2001
 
@@ -77,7 +77,7 @@ int FE_element_get_xi_points(struct FE_element *element,
 	enum Xi_discretization_mode xi_discretization_mode,
 	int *number_in_xi, Triple exact_xi,
 	struct Computed_field *coordinate_field, struct Computed_field *density_field,
-	int *number_of_xi_points_address, Triple **xi_points_address);
+	int *number_of_xi_points_address, Triple **xi_points_address, FE_value time);
 /*******************************************************************************
 LAST MODIFIED : 20 April 2001
 
@@ -116,9 +116,9 @@ int FE_element_get_numbered_xi_point(struct FE_element *element,
 	enum Xi_discretization_mode xi_discretization_mode,
 	int *number_in_xi, Triple exact_xi,
 	struct Computed_field *coordinate_field, struct Computed_field *density_field,
-	int xi_point_number, FE_value *xi);
+	int xi_point_number, FE_value *xi, FE_value time);
 /*******************************************************************************
-LAST MODIFIED : 20 April 2001
+LAST MODIFIED : 3 December 2001
 
 DESCRIPTION :
 Returns in <xi> the location of the <xi_point_number> out of those that would

@@ -102,16 +102,20 @@ LINK = gcc -static -L/usr/X11R6/lib
 #if defined (OPTIMISED)
 OPTIMISATION_FLAGS = -O
 COMPILE_DEFINES = -DOPTIMISED
-#else /* defined (OPTIMISED) */
-OPTIMISATION_FLAGS = -g
-COMPILE_DEFINES = 
-#endif /* defined (OPTIMISED) */
 COMPILE_FLAGS = 
 STRICT_FLAGS = 
 DIGITAL_MEDIA_NON_STRICT_FLAGS = 
 DIGITAL_MEDIA_NON_STRICT_FLAGS_PATTERN = NONE /* Must specify a pattern that doesn't match */
+#else /* defined (OPTIMISED) */
+OPTIMISATION_FLAGS = -g
+COMPILE_DEFINES = -DREPORT_GL_ERRORS -DUSE_PARAMETER_ON
+COMPILE_FLAGS = 
+STRICT_FLAGS = -W -Wall -Wno-parentheses -Wno-switch -Werror
+DIGITAL_MEDIA_NON_STRICT_FLAGS = 
+DIGITAL_MEDIA_NON_STRICT_FLAGS_PATTERN = NONE /* Must specify a pattern that doesn't match */
 TARGET_TYPE_FLAGS =
 TARGET_TYPE_DEFINES =
+#endif /* defined (OPTIMISED) */
 #endif /* switch OperatingSystem */
 
 /* DSO Link command */

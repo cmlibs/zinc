@@ -1231,9 +1231,9 @@ for these elements defines <fit_field> at the element, and it's nodes.
 
 #if defined (UNEMAP_USE_3D) 
 struct FE_field *create_mapping_type_fe_field(char *field_name,
-	struct MANAGER(FE_field) *fe_field_manager);
+	struct MANAGER(FE_field) *fe_field_manager, struct FE_time *fe_time);
 /*******************************************************************************
-LAST MODIFIED : 6 October 2000
+LAST MODIFIED : 15 November 2001
 
 DESCRIPTION :
 creates a 1 component  <field_name>

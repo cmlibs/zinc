@@ -33,6 +33,7 @@ DESCRIPTION :
 #include "computed_field/computed_field.h"
 #include "computed_field/computed_field_component_operations.h"
 #include "computed_field/computed_field_composite.h"
+#include "computed_field/computed_field_coordinate.h"
 #include "computed_field/computed_field_control_curve.h"
 #include "computed_field/computed_field_deformation.h"
 #include "computed_field/computed_field_derivatives.h"
@@ -627,6 +628,7 @@ Main program for the CMISS Graphical User Interface
 	struct Coordinate_system rect_coord_system,temp_coordinate_system;
 	struct Execute_command *execute_command, *set_command;
 	struct FE_field *fe_field;
+	struct FE_time *fe_time;
 	struct Graphical_material *default_selected_material;
 	struct GT_object *glyph, *mirror_glyph;
 	struct MANAGER(Computed_field) *computed_field_manager;
@@ -737,6 +739,7 @@ Main program for the CMISS Graphical User Interface
 	command_data.scene_manager=(struct MANAGER(Scene) *)NULL;
 	command_data.unemap_package=(struct Unemap_package *)NULL;
 	command_data.command_window=(struct Command_window *)NULL;
+	command_data.fe_time = (struct FE_time *)NULL;
 #if defined (SGI_MOVIE_FILE)
 	command_data.movie_graphics_manager=(struct MANAGER(Movie_graphics) *)NULL;
 #endif /* defined (SGI_MOVIE_FILE) */
@@ -950,6 +953,8 @@ Main program for the CMISS Graphical User Interface
 #endif /* defined (OLD_CODE) */
 	rect_coord_system.type = RECTANGULAR_CARTESIAN;
 
+	command_data.fe_time = ACCESS(FE_time)(CREATE(FE_time)());
+
 	command_data.control_curve_manager=CREATE(MANAGER(Control_curve))();
 
 	command_data.basis_manager=CREATE(MANAGER(FE_basis))();
@@ -1087,6 +1092,8 @@ Main program for the CMISS Graphical User Interface
 		(struct Computed_field_finite_element_package *)NULL;
 	if (command_data.computed_field_package)
 	{
+		Computed_field_register_types_coordinate(
+			command_data.computed_field_package);
 		Computed_field_register_types_component_operations(
 			command_data.computed_field_package);
 		Computed_field_register_types_composite(
@@ -1123,12 +1130,12 @@ Main program for the CMISS Graphical User Interface
 				command_data.computed_field_package, 
 				command_data.element_manager);
 		}
-		if (command_data.fe_field_manager)
+		if (command_data.fe_field_manager && command_data.fe_time)
 		{
 			computed_field_finite_element_package =
 				Computed_field_register_types_finite_element(
 					command_data.computed_field_package,
-					command_data.fe_field_manager);
+					command_data.fe_field_manager, command_data.fe_time);
 			if (!((computed_field=CREATE(Computed_field)("cmiss_number"))&&
 				Computed_field_set_coordinate_system(computed_field,
 					&rect_coord_system)&&
@@ -1139,23 +1146,11 @@ Main program for the CMISS Graphical User Interface
 			{
 				DESTROY(Computed_field)(&computed_field);
 			}
-			if (!((computed_field=CREATE(Computed_field)("default_coordinate"))&&
-				Computed_field_set_coordinate_system(computed_field,
-					&rect_coord_system)&&
-				Computed_field_set_type_default_coordinate(computed_field,
-					computed_field_manager)&&
-				Computed_field_set_read_only(computed_field)&&
-				ADD_OBJECT_TO_MANAGER(Computed_field)(computed_field,
-					computed_field_manager)))
-			{
-				DESTROY(Computed_field)(&computed_field);
-			}
-
 			/* create the grid_point_number field and add to FE_field_manager - 
 				 wrapper Computed_field will automatically be made for it. Has special
 				 use for setting grid_points in Element_point_viewer */
 			temp_coordinate_system.type = NOT_APPLICABLE;
-			if (!((fe_field=CREATE(FE_field)())&&
+			if (!((fe_field=CREATE(FE_field)(command_data.fe_time))&&
 				set_FE_field_name(fe_field,"grid_point_number")&&
 				set_FE_field_value_type(fe_field,INT_VALUE)&&
 				set_FE_field_number_of_components(fe_field,1)&&
@@ -1279,48 +1274,6 @@ Main program for the CMISS Graphical User Interface
 			}
 		}
 	}
-	if (command_data.user_interface)
-	{
-		command_data.transform_tool=create_Interactive_tool_transform(
-			command_data.user_interface);
-		ADD_OBJECT_TO_MANAGER(Interactive_tool)(command_data.transform_tool,
-		  command_data.interactive_tool_manager);
-		command_data.node_tool=CREATE(Node_tool)(
-			command_data.interactive_tool_manager,
-			command_data.node_manager,/*use_data*/0,
-			command_data.node_group_manager,
-			command_data.element_manager,
-			command_data.node_selection,
-			command_data.computed_field_package,
-			command_data.default_graphical_material,
-			command_data.user_interface);
-		command_data.element_tool=CREATE(Element_tool)(
-			command_data.interactive_tool_manager,
-			command_data.element_manager,
-			command_data.element_group_manager,
-			command_data.element_selection,
-			command_data.element_point_ranges_selection,
-			command_data.default_graphical_material,
-			command_data.user_interface);
-		command_data.data_tool=CREATE(Node_tool)(
-			command_data.interactive_tool_manager,
-			command_data.data_manager,/*use_data*/1,
-			command_data.data_group_manager,
-			(struct MANAGER(FE_element) *)NULL,
-			command_data.data_selection,
-			command_data.computed_field_package,
-			command_data.default_graphical_material,
-			command_data.user_interface);
-		command_data.element_point_tool=CREATE(Element_point_tool)(
-			command_data.interactive_tool_manager,
-			command_data.element_point_ranges_selection,
-			command_data.default_graphical_material);
-		command_data.select_tool=CREATE(Select_tool)(
-			command_data.interactive_tool_manager,
-			command_data.any_object_selection,
-			command_data.default_graphical_material);
-	}
-
 	if (return_code)
 	{
 		/* the name of the comfile to be run on startup */
@@ -1667,6 +1620,50 @@ Main program for the CMISS Graphical User Interface
 						command_data.default_time_keeper);
 				}
 			}
+			if (command_data.user_interface)
+			{
+				command_data.transform_tool=create_Interactive_tool_transform(
+					command_data.user_interface);
+				ADD_OBJECT_TO_MANAGER(Interactive_tool)(command_data.transform_tool,
+					command_data.interactive_tool_manager);
+				command_data.node_tool=CREATE(Node_tool)(
+					command_data.interactive_tool_manager,
+					command_data.node_manager,/*use_data*/0,
+					command_data.node_group_manager,
+					command_data.element_manager,
+					command_data.node_selection,
+					command_data.computed_field_package,
+					command_data.default_graphical_material,
+					command_data.user_interface,
+					command_data.default_time_keeper);
+				command_data.element_tool=CREATE(Element_tool)(
+					command_data.interactive_tool_manager,
+					command_data.element_manager,
+					command_data.element_group_manager,
+					command_data.element_selection,
+					command_data.element_point_ranges_selection,
+					command_data.default_graphical_material,
+					command_data.user_interface);
+				command_data.data_tool=CREATE(Node_tool)(
+					command_data.interactive_tool_manager,
+					command_data.data_manager,/*use_data*/1,
+					command_data.data_group_manager,
+					(struct MANAGER(FE_element) *)NULL,
+					command_data.data_selection,
+					command_data.computed_field_package,
+					command_data.default_graphical_material,
+					command_data.user_interface,
+					command_data.default_time_keeper);
+				command_data.element_point_tool=CREATE(Element_point_tool)(
+					command_data.interactive_tool_manager,
+					command_data.element_point_ranges_selection,
+					command_data.default_graphical_material);
+				command_data.select_tool=CREATE(Select_tool)(
+					command_data.interactive_tool_manager,
+					command_data.any_object_selection,
+					command_data.default_graphical_material);
+			}
+
 			if (return_code)
 			{
 				/* initialize random number generator */
@@ -2100,6 +2097,8 @@ Main program for the CMISS Graphical User Interface
 				DESTROY(MANAGER(Light_model))(&command_data.light_model_manager);
 				DEACCESS(Light)(&(command_data.default_light));
 				DESTROY(MANAGER(Light))(&command_data.light_manager);
+
+				DEACCESS(FE_time)(&(command_data.fe_time));
 
 				if (examples_directory)
 				{

@@ -108,7 +108,7 @@ Iterator function for updating Cell variable's from a given element point
     {
       if (value_string = Computed_field_evaluate_as_string_in_element(field,
         iterator_data->comp_no,iterator_data->element,iterator_data->xi,
-        iterator_data->top_level_element))
+				 /*time*/0,iterator_data->top_level_element))
       {
         return_code = Cell_variable_set_value_from_string(cell_variable,
           value_string);
@@ -270,7 +270,7 @@ Ensures xi is correct for the currently selected element point, if any.
 				/*coordinate_field*/(struct Computed_field *)NULL,
 				/*density_field*/(struct Computed_field *)NULL,
 				interface->element_point_number,
-				interface->xi);
+				interface->xi, /*time*/0);
 		}
 		else
 		{
@@ -385,7 +385,7 @@ the field value, otherwise N/A.
 			if (value_string = Computed_field_evaluate_as_string_in_element(
 				grid_field,/*component_number*/-1, 
 				interface->element_point_identifier.element,
-				interface->xi,top_level_element))
+				interface->xi,/*time*/0,top_level_element))
 			{
 				XmTextFieldSetString(interface->dialog->grid_value_text,
 					value_string);
@@ -480,7 +480,7 @@ currently selected.
 				interface->cmgui_interface)))
     {
       if (value_string = Computed_field_evaluate_as_string_in_element(
-        field,comp_no,element,xi,top_level_element))
+				 field,comp_no,element,xi,/*time*/0,top_level_element))
       {
         sprintf(description,"Currently editing a grid point with cell type: "
           "%s",value_string);
@@ -782,7 +782,8 @@ graphics/element_point_ranges.c/Field_value_index_ranges_set_grid_values()
           else
           {
             if (return_code = Computed_field_get_values_in_element(field,
-              destination_element,number_in_xi,&destination_values))
+						 destination_element,number_in_xi,&destination_values,
+						 /*time*/0))
             {
               offset = component_number*destination_number_of_grid_values;
               for (j=0;j<destination_number_of_grid_values;j++)

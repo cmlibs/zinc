@@ -223,7 +223,7 @@ Evaluate the fields cache at the node.
 
 static int Computed_field_2d_strain_evaluate_cache_in_element(
 	struct Computed_field *field, struct FE_element *element, FE_value *xi,
-	struct FE_element *top_level_element,int calculate_derivatives)
+	FE_value time, struct FE_element *top_level_element,int calculate_derivatives)
 /*******************************************************************************
 LAST MODIFIED : 13 October 2000
 
@@ -246,11 +246,11 @@ Source fields are coordinates, undeformed_coordinates and fibre angle.
 				 Always need derivatives of deformed and undeformed coordinate fields */
 			if (return_code=
 				Computed_field_evaluate_cache_in_element(field->source_fields[0],
-					element,xi,top_level_element,1)&&
+					element,xi,time,top_level_element,1)&&
 				Computed_field_evaluate_cache_in_element(field->source_fields[1],
-					element,xi,top_level_element,1)&&
+					element,xi,time,top_level_element,1)&&
 				Computed_field_evaluate_cache_in_element(field->source_fields[2],
-					element,xi,top_level_element,0))
+					element,xi,time,top_level_element,0))
 			{
 				/* 2. Calculate the field */
 				element_dimension=get_FE_element_dimension(element);
@@ -589,6 +589,8 @@ The <coordinate_field>s must have no more than 3 components.
 				list_Computed_field_2d_strain;
 			field->list_Computed_field_commands_function = 
 				list_Computed_field_2d_strain_commands;
+			field->computed_field_has_multiple_times_function = 
+				Computed_field_default_has_multiple_times;
 			return_code=1;
 		}
 		else

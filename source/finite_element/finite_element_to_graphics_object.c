@@ -64,7 +64,7 @@ Used with iterators for building glyph sets from nodes.
 ==============================================================================*/
 {
 	char **label;
-	FE_value base_size[3], centre[3], scale_factors[3];
+	FE_value base_size[3], centre[3], scale_factors[3], time;
 	GTDATA *data;
 	int n_data_components, *name;
 	struct Computed_field *coordinate_field, *data_field, *label_field,
@@ -248,7 +248,7 @@ fields used here.
 ==============================================================================*/
 {
 	FE_value a[3], b[3], c[3], coordinates[3], orientation_scale[9], size[3],
-		variable_scale[3];
+		time, variable_scale[3];
 	struct Computed_field **current_field_address, *coordinate_field, *data_field,
 		*label_field, *orientation_scale_field, *required_fields[4],
 		*variable_scale_field;
@@ -310,6 +310,7 @@ fields used here.
 			required_fields[number_of_fields]=variable_scale_field;
 			number_of_fields++;			
 		}
+		time = node_to_glyph_set_data->time;
 		current_field_address = required_fields;		
 		/* if there's no node coordinate field, do nothing, but no error */
 		if (FE_node_computed_fields_defined(node,number_of_fields,
@@ -320,16 +321,17 @@ fields used here.
 			coordinates[1] = 0.0;
 			coordinates[2] = 0.0;
 			/* evaluate the fields at the node */
-			if (Computed_field_evaluate_at_node(coordinate_field,node,coordinates)&&
-				((!orientation_scale_field) || Computed_field_evaluate_at_node(
-					orientation_scale_field,node,orientation_scale))&&
+			if (Computed_field_evaluate_at_node(coordinate_field,node,time,
+				coordinates)&&
+		      ((!orientation_scale_field) || Computed_field_evaluate_at_node(
+					orientation_scale_field,node,time,orientation_scale))&&
 				((!variable_scale_field) || Computed_field_evaluate_at_node(
-					variable_scale_field, node, variable_scale)) &&
+					variable_scale_field, node, time, variable_scale)) &&
 				((!data_field)||Computed_field_evaluate_at_node(data_field,node,
-					node_to_glyph_set_data->data))&&
+					time, node_to_glyph_set_data->data))&&
 				((!label_field)||(*(node_to_glyph_set_data->label) =
 					Computed_field_evaluate_as_string_at_node(label_field,
-					/*component_number*/-1,node)))&&
+					/*component_number*/-1, node, time)))&&
 				make_glyph_orientation_scale_axes(
 					number_of_orientation_scale_components, orientation_scale,
 					a, b, c, size))
@@ -1056,13 +1058,13 @@ struct GT_glyph_set *create_GT_glyph_set_from_FE_node_group(
 	struct GROUP(FE_node) *node_group, struct MANAGER(FE_node) *node_manager,
 	struct Computed_field *coordinate_field, struct GT_object *glyph,
 	FE_value *base_size, FE_value *centre, FE_value *scale_factors,
-	struct Computed_field *orientation_scale_field,
+	FE_value time, struct Computed_field *orientation_scale_field,
 	struct Computed_field *variable_scale_field,
 	struct Computed_field *data_field, struct Computed_field *label_field,
 	enum Graphics_select_mode select_mode,
 	struct LIST(FE_node) *selected_node_list)
 /*******************************************************************************
-LAST MODIFIED : 16 November 2000
+LAST MODIFIED : 22 November 2001
 
 DESCRIPTION :
 Creates a GT_glyph_set displaying a <glyph> of at least <base_size>, with the
@@ -1258,6 +1260,7 @@ Notes:
 						node_to_glyph_set_data.n_data_components = n_data_components;
 						node_to_glyph_set_data.label_field = label_field;
 						node_to_glyph_set_data.name = names;
+						node_to_glyph_set_data.time = time;
 						if (node_list)
 						{
 							return_code=FOR_EACH_OBJECT_IN_LIST(FE_node)(node_to_glyph_set,
@@ -1347,9 +1350,9 @@ Notes:
 struct GT_polyline *create_GT_polyline_from_FE_element(
 	struct FE_element *element,struct Computed_field *coordinate_field,
 	struct Computed_field *data_field,int number_of_segments,
-	struct FE_element *top_level_element)
+	struct FE_element *top_level_element, FE_value time)
 /*******************************************************************************
-LAST MODIFIED : 26 June 2000
+LAST MODIFIED : 3 December 2001
 
 DESCRIPTION :
 Creates a <GT_polyline> from the <coordinate_field> for the 1-D finite <element>
@@ -1406,9 +1409,10 @@ Notes:
 				xi=((FE_value)i)/distance;
 				/* evaluate the fields */
 				if (Computed_field_evaluate_in_element(coordinate_field,element,&xi,
-					top_level_element,coordinates,(FE_value *)NULL)&&
+					time,top_level_element,coordinates,(FE_value *)NULL)&&
 					((!data_field)||Computed_field_evaluate_in_element(
-						data_field,element,&xi,top_level_element,data,(FE_value *)NULL)))
+					data_field,element,&xi,time,top_level_element,data,
+					(FE_value *)NULL)))
 				{
 					(*point)[0]=coordinates[0];
 					(*point)[1]=coordinates[1];
@@ -1458,9 +1462,9 @@ struct GT_surface *create_cylinder_from_FE_element(struct FE_element *element,
 	struct Computed_field *coordinate_field,struct Computed_field *data_field,
 	float constant_radius,float scale_factor,struct Computed_field *radius_field,
 	int number_of_segments_along,int number_of_segments_around,
-	struct FE_element *top_level_element)
+	struct FE_element *top_level_element,FE_value time)
 /*******************************************************************************
-LAST MODIFIED : 2 July 1999
+LAST MODIFIED : 3 December 2001
 
 DESCRIPTION :
 Creates a <GT_surface> from the <coordinate_field> and the radius for the 1-D
@@ -1537,11 +1541,12 @@ Notes:
 				xi=(float)i/(float)number_of_segments_along;
 				/* evaluate the fields */
 				if (Computed_field_evaluate_in_element(coordinate_field,element,&xi,
-					top_level_element,coordinates,derivative_xi)&&
+					time,top_level_element,coordinates,derivative_xi)&&
 					((!data_field)||Computed_field_evaluate_in_element(
-						data_field,element,&xi,top_level_element,data,(FE_value *)NULL))&&
-					((!radius_field)||Computed_field_evaluate_in_element(radius_field,
-						element,&xi,top_level_element,&radius_value,&radius_derivative)))
+					data_field,element,&xi,time,top_level_element,data,
+					(FE_value *)NULL))&&((!radius_field)||
+					Computed_field_evaluate_in_element(radius_field,element,&xi,
+					time,top_level_element,&radius_value,&radius_derivative)))
 				{
 					/* store the coordinates in the point */
 					(*point)[0]=coordinates[0];
@@ -1952,9 +1957,9 @@ Notes:
 struct GT_nurbs *create_GT_nurb_from_FE_element(struct FE_element *element,
 	struct Computed_field *coordinate_field,
 	struct Computed_field *texture_coordinate_field,
-	struct FE_element *top_level_element)
+	struct FE_element *top_level_element, FE_value time)
 /*******************************************************************************
-LAST MODIFIED : 25 February 2000
+LAST MODIFIED : 3 December 2001
 
 DESCRIPTION :
 The optional <top_level_element> may be provided as a clue to Computed_fields
@@ -2246,7 +2251,7 @@ to say which parent element they should be evaluated on as necessary.
 					xi[2] = 0.0;
 					
 					if (Computed_field_evaluate_in_element(coordinate_field,element,xi,
-						top_level_element,coordinates,derivative_xi))
+						time,top_level_element,coordinates,derivative_xi))
 					{
 						for (j = 0 ; j < 3 ; j++)
 						{							
@@ -2275,7 +2280,7 @@ to say which parent element they should be evaluated on as necessary.
 					if (texture_coordinate_field)
 					{
 						if (Computed_field_evaluate_in_element(texture_coordinate_field,
-							element,xi,(struct FE_element *)NULL,
+							element,xi,time,(struct FE_element *)NULL,
 							coordinates,derivative_xi))
 						{
 							for (j = 0 ; j < texture_coordinate_components ; j++)
@@ -2654,9 +2659,10 @@ struct GT_surface *create_GT_surface_from_FE_element(
 	struct Computed_field *texture_coordinate_field,
 	struct Computed_field *data_field,int number_of_segments_in_xi1_requested,
 	int number_of_segments_in_xi2_requested,char reverse_normals,
-	struct FE_element *top_level_element,enum Render_type render_type)
+	struct FE_element *top_level_element,enum Render_type render_type,
+	FE_value time)
 /*******************************************************************************
-LAST MODIFIED : 30 July 2001
+LAST MODIFIED : 3 December 2001
 
 DESCRIPTION :
 Creates a <GT_surface> from the <coordinate_field> for the 2-D finite <element>
@@ -2842,12 +2848,13 @@ normals are used.
 				xi[1]=(*normal)[1];
 				/* evaluate the fields */
 				if (Computed_field_evaluate_in_element(coordinate_field,element,xi,
-					top_level_element,coordinates,derivative_xi)&&
+					time,top_level_element,coordinates,derivative_xi)&&
 					((!data_field)||Computed_field_evaluate_in_element(
-					data_field,element,xi,top_level_element,data,(FE_value *)NULL))&&
-					((!texture_coordinate_field)||Computed_field_evaluate_in_element(
-					texture_coordinate_field,element,xi,top_level_element,
-					texture_values,(FE_value *)NULL)))
+					data_field,element,xi,time,top_level_element,data,
+					(FE_value *)NULL))&&((!texture_coordinate_field)||
+					Computed_field_evaluate_in_element(texture_coordinate_field,
+					element,xi,time,top_level_element,texture_values,
+					(FE_value *)NULL)))
 				{
 					(*point)[0]=coordinates[0];
 					(*point)[1]=coordinates[1];
@@ -3325,9 +3332,10 @@ struct GT_voltex *create_GT_voltex_from_FE_element(struct FE_element *element,
 	struct Computed_field *coordinate_field,struct Computed_field *data_field,
 	struct VT_volume_texture *vtexture, enum Render_type render_type,
 	struct Computed_field *displacement_field, int displacement_map_xi_direction,
-	struct Computed_field *blur_field, struct Computed_field *texture_coordinate_field)
+	struct Computed_field *blur_field, struct Computed_field *texture_coordinate_field,
+	FE_value time)
 /*******************************************************************************
-LAST MODIFIED : 2 July 1999
+LAST MODIFIED : 3 December 2001
 
 DESCRIPTION :
 Creates a <GT_voltex> from a 3-D finite <element> <block> and volume texture
@@ -3951,7 +3959,8 @@ faces.
 														Computed_field_evaluate_in_element(
 															displacement_field,
 															element_block[c*n_xi[0]*n_xi[1]+b*n_xi[0]+a],
-															xi,(struct FE_element *)NULL,colour_data,(FE_value *)NULL);
+															xi,time,(struct FE_element *)NULL,
+															colour_data,(FE_value *)NULL);
 														intensity1 = colour_data[0];
 														intensity2 = 0;
 														intensity3 = 0;
@@ -4003,7 +4012,7 @@ faces.
 														Computed_field_evaluate_in_element(
 															texture_coordinate_field,
 															element_block[c*n_xi[0]*n_xi[1]+b*n_xi[0]+a],
-															xi,(struct FE_element *)NULL,
+															xi,time,(struct FE_element *)NULL,
 															vertex_list[i+n_vertices*v_count].texture_coordinates,
 															(FE_value *)NULL);
 														if (tex_number_of_components < 3)
@@ -4030,7 +4039,8 @@ faces.
 															Computed_field_evaluate_in_element(
 																blur_field,
 																element_block[c*n_xi[0]*n_xi[1]+b*n_xi[0]+a],
-																xi,(struct FE_element *)NULL,colour_data,(FE_value *)NULL);
+																xi,time,(struct FE_element *)NULL,
+																colour_data,(FE_value *)NULL);
 															vertex_list[i+n_vertices*v_count].blur =
 																(unsigned char)colour_data[0];
 														}
@@ -4049,7 +4059,8 @@ faces.
 													if (Computed_field_evaluate_in_element(
 														coordinate_field,
 														element_block[c*n_xi[0]*n_xi[1]+b*n_xi[0]+a],
-														xi,(struct FE_element *)NULL,(FE_value *)(vertex_list[index].coord),
+														xi,time,(struct FE_element *)NULL,
+														(FE_value *)(vertex_list[index].coord),
 														coordinate_field_derivatives))
 													{
 														/* record original xi values of these for 2 & 3d
@@ -4114,7 +4125,8 @@ faces.
 														{
 															if (Computed_field_evaluate_in_element(data_field,
 																element_block[c*n_xi[0]*n_xi[1]+b*n_xi[0]+a],
-																xi,(struct FE_element *)NULL, data+data_index, (FE_value *)NULL))
+																xi,time,(struct FE_element *)NULL,
+																data+data_index, (FE_value *)NULL))
 															{
 																vertex_list[index].data_index = data_index;
 																data_index+=n_data_components;
@@ -4465,11 +4477,11 @@ int create_surface_data_points_from_GT_voltex(struct GT_voltex *voltex,
 	struct VT_volume_texture *vtexture,
 	struct MANAGER(FE_node) *data_manager, struct GROUP(FE_node) *data_group,
 	struct MANAGER(Computed_field) *computed_field_manager,
-	struct MANAGER(FE_field) *fe_field_manager,
+	struct MANAGER(FE_field) *fe_field_manager,struct FE_time *fe_time,
 	struct Computed_field *data_density_field,
-	struct Computed_field *data_coordinate_field)
+	struct Computed_field *data_coordinate_field, FE_value time)
 /*******************************************************************************
-LAST MODIFIED : 31 August 2001
+LAST MODIFIED : 3 December 2001
 
 DESCRIPTION :
 This function takes a <voltex> and the corresponding <vtexture> and creates
@@ -4493,32 +4505,12 @@ the position of the point, with appropriate coordinate conversion.
 	struct FE_field *fe_coordinate_field, *fe_element_xi_field;
 	struct LIST(FE_field) *fe_coordinate_field_list;
 	struct VT_iso_vertex *vertex_list;
-	enum FE_nodal_value_type *coordinate_components_nodal_value_types[3]=
-	{
-		{
-			FE_NODAL_VALUE
-		},
-		{
-			FE_NODAL_VALUE
-		},
-		{
-			FE_NODAL_VALUE
-		}
-	};
-	int coordinate_components_number_of_derivatives[3]={0,0,0},
-		coordinate_components_number_of_versions[3]={1,1,1};
+	struct FE_node_field_creator *coordinate_node_field_creator,
+		*element_xi_node_field_creator;
 	char *element_xi_component_names[1]=
 	{
 		"value"
 	};
-	enum FE_nodal_value_type *element_xi_components_nodal_value_types[1]=
-	{
-		{
-			FE_NODAL_VALUE
-		}
-	};
-	int element_xi_components_number_of_derivatives[1] = {0},
-		element_xi_components_number_of_versions[1] = {1};
 
 	ENTER(create_surface_data_points_from_GT_voltex);
 #if defined (DEBUG)
@@ -4637,7 +4629,8 @@ the position of the point, with appropriate coordinate conversion.
 
 							Computed_field_evaluate_in_element(
 								data_density_field, local_element,
-								xi,(struct FE_element *)NULL,density_data,(FE_value *)NULL);
+								xi,time,(struct FE_element *)NULL,
+								density_data,(FE_value *)NULL);
 
 #if defined (DEBUG)
 							printf("create_surface_data_points_from_GT_voltex.  colour %f\n",
@@ -4727,7 +4720,8 @@ the position of the point, with appropriate coordinate conversion.
 
 								if (!(Computed_field_evaluate_in_element(
 									coordinate_field, local_element,
-									xi,(struct FE_element *)NULL, position, (FE_value *)NULL)))
+									xi,time,(struct FE_element *)NULL, position, 
+									(FE_value *)NULL)))
 								{
 									display_message(ERROR_MESSAGE,
 										"create_surface_data_points_from_GT_voltex."
@@ -4741,29 +4735,42 @@ the position of the point, with appropriate coordinate conversion.
 									/* create or find the element_xi field */
 									rect_cart_coords.type=RECTANGULAR_CARTESIAN;
 									if (fe_element_xi_field = get_FE_field_manager_matched_field(
-										fe_field_manager,"element_xi",
-										GENERAL_FE_FIELD,/*indexer_field*/(struct FE_field *)NULL,
+										fe_field_manager,"element_xi",GENERAL_FE_FIELD,
+										fe_time,/*indexer_field*/(struct FE_field *)NULL,
 										/*number_of_indexed_values*/0,CM_COORDINATE_FIELD,
 										&rect_cart_coords,ELEMENT_XI_VALUE,
 										/*number_of_components*/1,element_xi_component_names,
 										/*number_of_times*/0,/*time_value_type*/UNKNOWN_VALUE,
 										(struct FE_field_external_information *)NULL))
 									{
-										/* create the node */
-										if ((template_node=CREATE(FE_node)(0,
-											(struct FE_node *)NULL)) &&
-											((!fe_coordinate_field) ||
-												define_FE_field_at_node(template_node,
-													fe_coordinate_field,
-													coordinate_components_number_of_derivatives,
-													coordinate_components_number_of_versions,
-													coordinate_components_nodal_value_types)) &&
-											define_FE_field_at_node(template_node,
-												fe_element_xi_field,element_xi_components_number_of_derivatives,
-												element_xi_components_number_of_versions,
-												element_xi_components_nodal_value_types))
+										if ((coordinate_node_field_creator = CREATE(
+												 FE_node_field_creator)(/*number_of_components*/3))&&
+											(element_xi_node_field_creator = CREATE(
+												FE_node_field_creator)(/*number_of_components*/1)))
 										{
-											return_code=1;	
+											/* create the node */
+											if ((template_node=CREATE(FE_node)(0,
+												(struct FE_node *)NULL)) &&
+												((!fe_coordinate_field) ||
+												define_FE_field_at_node(template_node,
+												fe_coordinate_field,
+												(struct FE_time_version *)NULL,
+												coordinate_node_field_creator)) &&
+												define_FE_field_at_node(template_node,
+												fe_element_xi_field,
+												(struct FE_time_version *)NULL,
+												element_xi_node_field_creator))
+											{
+												return_code=1;	
+											}
+											DESTROY(FE_node_field_creator)(
+												&coordinate_node_field_creator);
+											DESTROY(FE_node_field_creator)(
+												&element_xi_node_field_creator);
+										}
+										else
+										{
+											return_code = 0;
 										}
 									}
 									else
@@ -4887,9 +4894,10 @@ the position of the point, with appropriate coordinate conversion.
 
 int warp_GT_voltex_with_FE_element(struct GT_voltex *voltex1,
 	struct GT_voltex *voltex2,struct FE_element *element,
-	struct FE_field *warp_field,double ximax[3],float *warp_values,int xi_order)
+	struct FE_field *warp_field,double ximax[3],float *warp_values,int xi_order,
+	FE_value time)
 /*******************************************************************************
-LAST MODIFIED : 17 November 1998
+LAST MODIFIED : 3 December 2001
 
 DESCRIPTION :
 Replaces voltex2 vertices with voltex1 vertices warped over an element block
@@ -4987,7 +4995,7 @@ Vertices are normalized by their x, y, z range values.
 					{
 						/* determine if the coordinate field is defined over the element */
 						if (calculate_FE_element_field_values(element_ptr,warp_field,
-							0,element_warp_values_ptr,
+							time,/*calculate_derivatives*/0,element_warp_values_ptr,
 							/*top_level_element*/(struct FE_element *)NULL)&&
 							(3==element_warp_values_ptr->number_of_components))
 						{
@@ -5726,9 +5734,10 @@ DESCRIPTION :
 int warp_FE_node_group_with_FE_element(struct GROUP(FE_node) *node_group,
 	struct MANAGER(FE_node) *node_manager,struct FE_field *coordinate_field,
 	struct FE_field *to_coordinate_field,struct FE_element *element,
-	struct FE_field *warp_field,double ximax[3],float *warp_values,int xi_order)
+	struct FE_field *warp_field,double ximax[3],float *warp_values,int xi_order,
+	FE_value time)
 /*******************************************************************************
-LAST MODIFIED : 17 November 1998
+LAST MODIFIED : 3 December 2001
 
 DESCRIPTION :
 Replaces the <coordinate_field> nodal values for the nodes in the <node_group>
@@ -5833,7 +5842,7 @@ with warped values obtained using the <warp_field> over the <element> block.
 				{
 					/* determine if the coordinate field is defined over the element */
 					if (calculate_FE_element_field_values(element_ptr,warp_field,
-						0,element_warp_values_ptr,
+						time,/*calculate_derivatives*/0,element_warp_values_ptr,
 						/*top_level_element*/(struct FE_element *)NULL)&&
 						(3==element_warp_values_ptr->number_of_components))
 					{
@@ -5924,9 +5933,9 @@ struct GT_glyph_set *create_GT_glyph_set_from_FE_element(
 	struct Computed_field *variable_scale_field,
 	struct Computed_field *data_field, struct Computed_field *label_field,
 	enum Graphics_select_mode select_mode, int element_selected,
-	struct Multi_range *selected_ranges, int *point_numbers)
+	struct Multi_range *selected_ranges, int *point_numbers, FE_value time)
 /*******************************************************************************
-LAST MODIFIED : 16 November 2000
+LAST MODIFIED : 3 December 2001
 
 DESCRIPTION :
 Converts a finite element into a set of glyphs displaying information
@@ -6112,20 +6121,19 @@ Note:
 							 the coordinate_field will already be cached = more efficient. */
 						if (((!orientation_scale_field) ||
 							Computed_field_evaluate_in_element(orientation_scale_field,
-								element, xi, top_level_element, orientation_scale,
-								(FE_value *)NULL)) &&
+							element, xi, time, top_level_element, orientation_scale,
+							(FE_value *)NULL)) &&
 							((!variable_scale_field) ||
-								Computed_field_evaluate_in_element(variable_scale_field,
-									element, xi, top_level_element, variable_scale,
-									(FE_value *)NULL)) &&
+							Computed_field_evaluate_in_element(variable_scale_field,
+							element, xi, time,top_level_element, variable_scale,
+							(FE_value *)NULL)) &&
 							Computed_field_evaluate_in_element(coordinate_field,element,xi,
-								top_level_element,coordinates,(FE_value *)NULL)&&
+							time,top_level_element,coordinates,(FE_value *)NULL)&&
 							((!data_field) || Computed_field_evaluate_in_element(
-								data_field, element, xi, top_level_element, data,
-								(FE_value *)NULL)) &&
-							((!label_field) || (*label =
-								Computed_field_evaluate_as_string_in_element(label_field,
-									/*component_number*/-1, element, xi, top_level_element))) &&
+							data_field, element, xi, time, top_level_element, data,
+							(FE_value *)NULL)) && ((!label_field) || (*label =
+							Computed_field_evaluate_as_string_in_element(label_field,
+							/*component_number*/-1, element, xi, time, top_level_element))) &&
 							make_glyph_orientation_scale_axes(
 								number_of_orientation_scale_components, orientation_scale,
 								a, b, c, size))
@@ -6225,9 +6233,9 @@ Note:
 
 struct VT_vector_field *interpolate_vector_field_on_FE_element(double ximax[3],
 	struct FE_element *element,struct Computed_field *coordinate_field,
-	struct VT_vector_field *vector_field)
+	struct VT_vector_field *vector_field, FE_value time)
 /*******************************************************************************
-LAST MODIFIED : 17 November 1998
+LAST MODIFIED : 3 December 2001
 
 DESCRIPTION :
 Interpolates xi points (triples in vector field) over the finite <element>
@@ -6396,7 +6404,8 @@ Interpolates xi points (triples in vector field) over the finite <element>
 								if (Computed_field_evaluate_in_element(
 									coordinate_field,
 									element_block[c*n_xi[0]*n_xi[1]+b*n_xi[0]+a],
-									xi,(struct FE_element *)NULL, coordinate, (FE_value *)NULL))
+									xi,time,(struct FE_element *)NULL, coordinate, 
+									(FE_value *)NULL))
 								{
 									/* assign the coordinates to the point */
 									new_field->vector[3*i+0]=(double)coordinate[0];
@@ -6458,9 +6467,10 @@ struct GT_voltex *generate_clipped_GT_voltex_from_FE_element(
 	struct Computed_field *coordinate_field,struct Computed_field *data_field,
 	struct VT_volume_texture *texture, enum Render_type render_type,
 	struct Computed_field *displacement_map_field, int displacement_map_xi_direction,
-	struct Computed_field *blur_field, struct Computed_field *texture_coordinate_field)
+	struct Computed_field *blur_field, struct Computed_field *texture_coordinate_field,
+	FE_value time)
 /*******************************************************************************
-LAST MODIFIED : 5 November 2001
+LAST MODIFIED : 3 December 2001
 
 DESCRIPTION :
 Generates clipped voltex from <volume texture> and <clip_function> over
@@ -6525,7 +6535,7 @@ Generates clipped voltex from <volume texture> and <clip_function> over
 						/* calculate the clip fn over the voltex coordinate field */
 						/* calculate deformed coordinate field */
 						new_field=interpolate_vector_field_on_FE_element(texture->ximax,
-							element,coordinate_field,texture->coordinate_field);
+							element,coordinate_field,texture->coordinate_field, time);
 						if (new_field)
 						{
 #if defined (DEBUG)
@@ -6712,7 +6722,7 @@ Generates clipped voltex from <volume texture> and <clip_function> over
 							voltex=create_GT_voltex_from_FE_element(element,
 								coordinate_field,data_field,texture,render_type,
 								displacement_map_field, displacement_map_xi_direction,
-								blur_field, texture_coordinate_field);
+								blur_field, texture_coordinate_field, time);
 						}
 						else
 						{
@@ -6738,7 +6748,7 @@ Generates clipped voltex from <volume texture> and <clip_function> over
 					voltex=create_GT_voltex_from_FE_element(element,coordinate_field,
 						data_field, texture, render_type,
 						displacement_map_field, displacement_map_xi_direction,
-						blur_field, texture_coordinate_field);
+						blur_field, texture_coordinate_field, time);
 #if defined (DEBUG)
 					/*???debug */
 					printf("After create GT Voltex (2)\n");
@@ -6762,7 +6772,7 @@ Generates clipped voltex from <volume texture> and <clip_function> over
 			voltex=create_GT_voltex_from_FE_element(element,
 				coordinate_field, data_field, texture, render_type,
 				displacement_map_field, displacement_map_xi_direction,
-				blur_field, texture_coordinate_field);
+				blur_field, texture_coordinate_field, time);
 		}
 	}
 	else
@@ -6984,7 +6994,8 @@ Converts a finite element into a cylinder.
 				element_to_cylinder_data->radius_field,
 				element_to_cylinder_data->number_of_segments_along,
 				element_to_cylinder_data->number_of_segments_around,
-				/*top_level_element*/(struct FE_element *)NULL))
+				/*top_level_element*/(struct FE_element *)NULL,
+				element_to_cylinder_data->time))
 			{
 				if (!(return_code=GT_OBJECT_ADD(GT_surface)(
 					element_to_cylinder_data->graphics_object,
@@ -7038,7 +7049,8 @@ Converts a finite element into a polyline and adds it to a graphics_object.
 				element_to_polyline_data->coordinate_field,
 				element_to_polyline_data->data_field,
 				element_to_polyline_data->number_of_segments_in_xi1,
-				/*top_level_element*/(struct FE_element *)NULL))
+				/*top_level_element*/(struct FE_element *)NULL,
+				element_to_polyline_data->time))
 			{
 				if (!(return_code=GT_OBJECT_ADD(GT_polyline)(
 					element_to_polyline_data->graphics_object,
@@ -7101,7 +7113,8 @@ Converts a finite element into a surface.
 						element_to_surface_data->number_of_segments_in_xi2,
 						element_to_surface_data->reverse_normals,
 						/*top_level_element*/(struct FE_element *)NULL,
-					   element_to_surface_data->render_type))
+					   element_to_surface_data->render_type,
+						element_to_surface_data->time))
 					{
 						if (!(return_code=GT_OBJECT_ADD(GT_surface)(
 							element_to_surface_data->graphics_object,
@@ -7120,7 +7133,8 @@ Converts a finite element into a surface.
 					if (nurb=create_GT_nurb_from_FE_element(element,
 						element_to_surface_data->coordinate_field,
 						element_to_surface_data->texture_coordinate_field,
-						/*top_level_element*/(struct FE_element *)NULL))
+						/*top_level_element*/(struct FE_element *)NULL,
+						element_to_surface_data->time))
 					{
 						if (!(return_code=GT_OBJECT_ADD(GT_nurbs)(
 							element_to_surface_data->graphics_object,
@@ -7466,7 +7480,7 @@ fields defined over it.
 					element_to_glyph_set_data->exact_xi,
 					element_to_glyph_set_data->coordinate_field,
 					element_to_glyph_set_data->xi_point_density_field,
-					&number_of_xi_points, &xi_points))
+					&number_of_xi_points, &xi_points, element_to_glyph_set_data->time))
 				{
 					if (glyph_set = create_GT_glyph_set_from_FE_element(
 						element, top_level_element,
@@ -7483,7 +7497,8 @@ fields defined over it.
 						element_to_glyph_set_data->select_mode,
 						/*element_selected*/0,
 						(struct Multi_range *)NULL,
-						/*point_numbers*/(int *)NULL))
+						/*point_numbers*/(int *)NULL,
+						element_to_glyph_set_data->time))
 					{
 						if (!GT_OBJECT_ADD(GT_glyph_set)(
 							element_to_glyph_set_data->graphics_object,
@@ -7562,7 +7577,8 @@ Converts a 3-D element into a volume.
 				element_to_volume_data->displacement_map_field,
 				element_to_volume_data->displacement_map_xi_direction,
 				element_to_volume_data->blur_field,
-				element_to_volume_data->texture_coordinate_field))
+				element_to_volume_data->texture_coordinate_field,
+				element_to_volume_data->time))
 			{
 				if (return_code=GT_OBJECT_ADD(GT_voltex)(
 					element_to_volume_data->graphics_object,
@@ -7582,8 +7598,10 @@ Converts a 3-D element into a volume.
 							element_to_volume_data->surface_data_group,
 							element_to_volume_data->computed_field_manager,
 							element_to_volume_data->fe_field_manager, 
+							element_to_volume_data->fe_time, 
 							element_to_volume_data->surface_data_density_field,
-							element_to_volume_data->surface_data_coordinate_field);
+							element_to_volume_data->surface_data_coordinate_field,
+							element_to_volume_data->time);
 					}
 					else
 					{
@@ -7688,6 +7706,7 @@ Computes iso-surfaces/lines/points graphics from <element>.
 								element_to_iso_scalar_data->surface_data_group,
 								element_to_iso_scalar_data->data_manager,
 								element_to_iso_scalar_data->fe_field_manager,
+								element_to_iso_scalar_data->fe_time,
 								element_to_iso_scalar_data->computed_field_manager);
 						}
 						else
@@ -7743,7 +7762,7 @@ Computes iso-surfaces/lines/points graphics from <element>.
 } /* element_to_iso_scalar */
 
 int create_iso_surfaces_from_FE_element(struct FE_element *element,
-	double iso_value,float time,struct Clipping *clipping,
+	double iso_value,FE_value time,struct Clipping *clipping,
 	struct Computed_field *coordinate_field,
 	struct Computed_field *data_field,struct Computed_field *scalar_field,
 	struct Computed_field *surface_data_density_field,
@@ -7753,10 +7772,10 @@ int create_iso_surfaces_from_FE_element(struct FE_element *element,
 	struct GT_object *graphics_object,enum Render_type render_type,
 	struct GROUP(FE_node) *surface_data_group,
 	struct MANAGER(FE_node) *data_manager,
-	struct MANAGER(FE_field) *fe_field_manager,
+	struct MANAGER(FE_field) *fe_field_manager, struct FE_time *fe_time,
 	struct MANAGER(Computed_field) *computed_field_manager)
 /*******************************************************************************
-LAST MODIFIED : 4 December 2000
+LAST MODIFIED : 3 December 2001
 
 DESCRIPTION :
 Converts a 3-D element into an iso_surface (via a volume_texture).
@@ -7903,7 +7922,7 @@ Converts a 3-D element into an iso_surface (via a volume_texture).
 						ALLOCATE(node,struct VT_texture_node,1))
 					{
 						if (Computed_field_evaluate_in_element(scalar_field,
-							element,xi,/*top_level_element*/(struct FE_element *)NULL,
+							element,xi,time,/*top_level_element*/(struct FE_element *)NULL,
 							&scalar_value,(FE_value *)NULL))
 						{
 							node_list[i]=node;
@@ -7993,11 +8012,12 @@ Converts a 3-D element into an iso_surface (via a volume_texture).
 						volume_texture->disable_volume_functions=0;
 						if (iso_surface_voltex=generate_clipped_GT_voltex_from_FE_element(
 							clipping,element,coordinate_field,data_field,
-							volume_texture,render_type,NULL,0,NULL,texture_coordinate_field))
+							volume_texture,render_type,NULL,0,NULL,texture_coordinate_field,
+							time))
 						{
 							if (return_code=GT_OBJECT_ADD(GT_voltex)(
 								graphics_object,
-								time,iso_surface_voltex))
+								/*time*/0,iso_surface_voltex))
 							{
 								if (surface_data_density_field
 									&& surface_data_group
@@ -8011,9 +8031,9 @@ Converts a 3-D element into an iso_surface (via a volume_texture).
 										data_manager,
 										surface_data_group,
 										computed_field_manager, 
-										fe_field_manager, 
+										fe_field_manager, fe_time,
 										surface_data_density_field,
-										surface_data_coordinate_field);
+										surface_data_coordinate_field, time);
 								}
 								else
 								{

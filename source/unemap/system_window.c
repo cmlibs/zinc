@@ -561,7 +561,7 @@ Associate the mapping window with the analysis work area
 	ENTER(associate_mapping_analysis);
 	USE_PARAMETER(widget);
 	USE_PARAMETER(call_data);
-#if !defined (UNEMAP_USE_NODES)
+#if ! defined (UNEMAP_USE_NODES)
 	USE_PARAMETER(spectrum_to_be_modified_copy);
 	USE_PARAMETER(spectrum_manager);
 #endif /* !defined (UNEMAP_USE_NODES) */

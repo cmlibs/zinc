@@ -9,6 +9,7 @@ as derivatives w.r.t. Xi, gradient, curl, divergence etc.
 ==============================================================================*/
 #include "computed_field/computed_field.h"
 #include "computed_field/computed_field_private.h"
+#include "computed_field/computed_field_coordinate.h"
 #include "general/debug.h"
 #include "general/matrix_vector.h"
 #include "user_interface/message.h"
@@ -268,7 +269,7 @@ Evaluate the fields cache at the node.
 
 static int Computed_field_derivative_evaluate_cache_in_element(
 	struct Computed_field *field, struct FE_element *element, FE_value *xi,
-	struct FE_element *top_level_element, int calculate_derivatives)
+	FE_value time, struct FE_element *top_level_element, int calculate_derivatives)
 /*******************************************************************************
 LAST MODIFIED : 11 July 2000
 
@@ -293,7 +294,7 @@ Evaluate the fields cache at the node.
 		      we always want the derivatives */
 			if (return_code = 
 				Computed_field_evaluate_source_fields_cache_in_element(field, element,
-					xi, top_level_element, /*calculate_derivatives*/1))
+					xi, time, top_level_element, /*calculate_derivatives*/1))
 			{
 				/* 2. Calculate the field */
 				for (i = 0 ; i < field->number_of_components ; i++)
@@ -520,6 +521,8 @@ although its cache may be lost.
 				list_Computed_field_derivative;
 			field->list_Computed_field_commands_function = 
 				list_Computed_field_derivative_commands;
+			field->computed_field_has_multiple_times_function = 
+				Computed_field_default_has_multiple_times;
 		}
 		else
 		{
@@ -945,7 +948,7 @@ Cannot evaluate at a node.
 
 static int Computed_field_curl_evaluate_cache_in_element(
 	struct Computed_field *field, struct FE_element *element, FE_value *xi,
-	struct FE_element *top_level_element, int calculate_derivatives)
+	FE_value time, struct FE_element *top_level_element, int calculate_derivatives)
 /*******************************************************************************
 LAST MODIFIED : 26 October 2000
 
@@ -967,7 +970,7 @@ Evaluate the fields cache at the node.
 			&top_level_element, top_level_xi, &top_level_element_dimension);
 		if (return_code = 
 			Computed_field_evaluate_source_fields_cache_in_element(field, top_level_element,
-				top_level_xi, top_level_element, /*calculate_derivatives*/1))
+				top_level_xi, time, top_level_element, /*calculate_derivatives*/1))
 		{
 			/* 2. Calculate the field */
 			return_code=Computed_field_evaluate_curl(field, top_level_element_dimension);
@@ -1182,6 +1185,8 @@ element and the number of components in coordinate_field & vector_field differ.
 					list_Computed_field_curl;
 				field->list_Computed_field_commands_function = 
 					list_Computed_field_curl_commands;
+			field->computed_field_has_multiple_times_function = 
+				Computed_field_default_has_multiple_times;
 			}
 			else
 			{
@@ -1640,7 +1645,7 @@ Evaluate the fields cache at the node.
 
 static int Computed_field_divergence_evaluate_cache_in_element(
 	struct Computed_field *field, struct FE_element *element, FE_value *xi,
-	struct FE_element *top_level_element, int calculate_derivatives)
+	FE_value time, struct FE_element *top_level_element, int calculate_derivatives)
 /*******************************************************************************
 LAST MODIFIED : 26 October 2000
 
@@ -1662,7 +1667,7 @@ Evaluate the fields cache at the node.
 			&top_level_element, top_level_xi, &top_level_element_dimension);
 		if (return_code = 
 			Computed_field_evaluate_source_fields_cache_in_element(field, top_level_element,
-				top_level_xi, top_level_element, /*calculate_derivatives*/1))
+				top_level_xi, time, top_level_element, /*calculate_derivatives*/1))
 		{
 			/* 2. Calculate the field */
 			return_code=Computed_field_evaluate_divergence(field, top_level_element_dimension);
@@ -1880,6 +1885,8 @@ element and the number of components in coordinate_field & vector_field differ.
 					list_Computed_field_divergence;
 				field->list_Computed_field_commands_function = 
 					list_Computed_field_divergence_commands;
+			field->computed_field_has_multiple_times_function = 
+				Computed_field_default_has_multiple_times;
 			}
 			else
 			{
@@ -2237,7 +2244,7 @@ Evaluate the fields cache at the node.
 
 static int Computed_field_gradient_evaluate_cache_in_element(
 	struct Computed_field *field, struct FE_element *element, FE_value *xi,
-	struct FE_element *top_level_element, int calculate_derivatives)
+	FE_value time, struct FE_element *top_level_element, int calculate_derivatives)
 /*******************************************************************************
 LAST MODIFIED : 2 November 2000
 
@@ -2266,7 +2273,7 @@ Evaluate the fields cache in the element.
 				element_dimension, &top_level_element, top_level_xi,
 				&top_level_element_dimension) &&
 				Computed_field_evaluate_source_fields_cache_in_element(
-					field, top_level_element, top_level_xi, top_level_element,
+					field, top_level_element, top_level_xi, time, top_level_element,
 					/*calculate_derivatives*/1))
 			{
 				/* 2. Calculate the field. First verify we can invert the derivatives of
@@ -2551,6 +2558,8 @@ although its cache may be lost.
 				list_Computed_field_gradient;
 			field->list_Computed_field_commands_function = 
 				list_Computed_field_gradient_commands;
+			field->computed_field_has_multiple_times_function = 
+				Computed_field_default_has_multiple_times;
 		}
 		else
 		{

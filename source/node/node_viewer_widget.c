@@ -238,9 +238,10 @@ Global functions
 
 Widget create_node_viewer_widget(Widget *node_viewer_widget_address,
 	Widget parent,struct Computed_field_package *computed_field_package,
-	struct FE_node *initial_node, struct User_interface *user_interface)
+	struct FE_node *initial_node, struct Time_object *time_object,
+	struct User_interface *user_interface)
 /*******************************************************************************
-LAST MODIFIED : 21 November 2001
+LAST MODIFIED : 22 November 2001
 
 DESCRIPTION :
 Creates a widget for displaying and editing the contents of <initial_node>. Can
@@ -349,7 +350,7 @@ parent dialog to make changes global.
 							if (!(create_node_field_viewer_widget(
 								&(node_viewer->field_viewer_widget),
 								node_viewer->field_viewer_form,
-								initial_node,initial_field)))
+								initial_node,initial_field,time_object)))
 							{
 								init_widgets=0;
 							}

@@ -417,7 +417,7 @@ printf("allocated %d doubles\n", xsize*ysize*3);
 					/* 2:interpolate points (this function will do across blocks if
 						ximax > 1 */
 					if (warped_field=interpolate_vector_field_on_FE_element(ximax,element,
-						coordinate_field,&vector_field))
+							 coordinate_field,&vector_field,/*time*/0))
 					{
 						/* 3:project warped_field points onto normalized window */
 						Scene_viewer_get_modelview_matrix(scene_viewer,temp_matrix);

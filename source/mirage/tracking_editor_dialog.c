@@ -2689,8 +2689,9 @@ If there are it processes them, updating the bar chart accordingly.
 {
 	char *args=NULL;
 	static char InCom[XVG_SOCKET_COMMAND_LEN+1],cbuf[1024];
-	int poll_value,PollReadEvents,frame_no,view_no;
+	int poll_value,frame_no,view_no;
 #if defined (SGI)
+	int PollReadEvents;
 	struct pollfd pfd;
 #else /* defined (SGI) */
 	int pfd;
@@ -3943,11 +3944,11 @@ DESCRIPTION :
 ==============================================================================*/
 {
 	Arg option_menu_args[] = {
-		{XmNoptionLabel, NULL},
+		{XmNoptionLabel, (int)NULL},
 		{XmNbuttonCount, 2},
-		{XmNbuttons, NULL},
+		{XmNbuttons, (int)NULL},
 		{XmNbuttonSet, 0},
-		{XmNentryCallback, NULL},
+		{XmNentryCallback, (int)NULL},
 		{XmNleftAttachment,XmATTACH_POSITION},
 		{XmNleftOffset,0},
 		{XmNleftPosition,10},

@@ -138,7 +138,7 @@ For Control_curves, <nodal_value_type> can be FE_NODAL_VALUE or FE_NODAL_D_DS1.
 		{
 			component.number=i;
 			if (!get_FE_nodal_FE_value_value(node,&component,0,nodal_value_type,
-				value))
+				/*time*/0,value))
 			{
 				display_message(ERROR_MESSAGE,"cc_get_node_field_values.  "
 					"Field/nodal value type not defined at node");
@@ -221,7 +221,7 @@ If <derivatives> is NULL, they will not be calculated.
 	if (element&&field&&values)
 	{
 		if (calculate_FE_element_field_values(element,field,
-			((FE_value *)NULL != derivatives),&element_field_values,
+			((FE_value *)NULL != derivatives),/*time*/0,&element_field_values,
 			/*top_level_element*/(struct FE_element *)NULL))
 		{
 			return_code=calculate_FE_element_field(-1,&element_field_values,&xi,
@@ -1218,20 +1218,14 @@ value will be zero in its initial state.
 ==============================================================================*/
 {
 	struct Coordinate_system coordinate_system;
-	enum FE_nodal_value_type component_nodal_value_types[2]=
-		{FE_NODAL_VALUE,FE_NODAL_D_DS1};
 	FE_element_field_component_modify modify;
 	int number_of_scale_factor_sets,numbers_in_scale_factor_sets[1];
 	int basis_type[2],i,j,return_code,shape_type[1];
-	int parameter_number_of_derivatives,parameter_number_of_versions;
-	enum FE_nodal_value_type *parameter_nodal_value_types;
-	int *value_components_number_of_derivatives,
-		*value_components_number_of_versions;
-	enum FE_nodal_value_type **value_components_nodal_value_types;
 	struct CM_element_information element_identifier;
 	struct FE_basis *parameter_basis,*value_basis;
 	struct FE_element_shape *element_shape;
 	struct FE_element_field_component *parameter_component,**value_components;
+	struct FE_node_field_creator *node_field_creator;
 	struct Standard_node_to_element_map **standard_node_map;
 	struct Control_curve *curve;
 	void *scale_factor_set_identifiers[1];
@@ -1255,7 +1249,8 @@ value will be zero in its initial state.
 				curve->value_grid=0.1;
 				coordinate_system.type=RECTANGULAR_CARTESIAN;
 				/* create the parameter field = real, 1 component */
-				if (!((curve->parameter_field=ACCESS(FE_field)(CREATE(FE_field)()))&&
+				if (!((curve->parameter_field=ACCESS(FE_field)(
+					CREATE(FE_field)((struct FE_time *)NULL)))&&
 					set_FE_field_name(curve->parameter_field,"parameter")&&
 					set_FE_field_CM_field_type(curve->parameter_field,CM_GENERAL_FIELD)&&
 					set_FE_field_value_type(curve->parameter_field,FE_VALUE_VALUE)&&
@@ -1269,7 +1264,8 @@ value will be zero in its initial state.
 					return_code=0;
 				}
 				/* create the value field = real, number_of_components */
-				if (!((curve->value_field=ACCESS(FE_field)(CREATE(FE_field)()))&&
+				if (!((curve->value_field=ACCESS(FE_field)(
+					CREATE(FE_field)((struct FE_time *)NULL)))&&
 					set_FE_field_name(curve->value_field,"value")&&
 					set_FE_field_CM_field_type(curve->value_field,CM_COORDINATE_FIELD)&&
 					set_FE_field_value_type(curve->value_field,FE_VALUE_VALUE)&&
@@ -1284,54 +1280,38 @@ value will be zero in its initial state.
 				}
 				if (return_code)
 				{
+					node_field_creator = CREATE(FE_node_field_creator)(
+						/*number_of_components*/1);
+					FE_node_field_creator_define_derivative(node_field_creator, 
+						0, FE_NODAL_D_DS1);
 					/* curve must access template_node */
 					if (curve->template_node=
 						ACCESS(FE_node)(CREATE(FE_node)(0,(struct FE_node *)NULL)))
 					{
-						/* define parameter_field at template_node */
-						parameter_number_of_derivatives=0;
-						parameter_number_of_versions=1;
-						parameter_nodal_value_types=component_nodal_value_types;
 						if (!define_FE_field_at_node(curve->template_node,
-							curve->parameter_field,&parameter_number_of_derivatives,
-							&parameter_number_of_versions,&parameter_nodal_value_types))
+							curve->parameter_field,(struct FE_time_version *)NULL,
+							node_field_creator))
 						{
 							return_code=0;
 						}
+						DESTROY(FE_node_field_creator)(&(node_field_creator));
 						/* define value_field at template_node */
-						ALLOCATE(value_components_number_of_derivatives,int,
+						node_field_creator = CREATE(FE_node_field_creator)(
 							number_of_components);
-						ALLOCATE(value_components_number_of_versions,int,
-							number_of_components);
-						ALLOCATE(value_components_nodal_value_types,
-							enum FE_nodal_value_type *,number_of_components);
-						if (value_components_number_of_derivatives&&
-							value_components_number_of_versions&&
-							value_components_nodal_value_types)
-						{
-							for (i=0;i<number_of_components;i++)
+						for (i=0;i<number_of_components;i++)
+						{							
+							for (j=0;i<curve->value_derivatives_per_node;i++)
 							{
-								value_components_number_of_derivatives[i]=
-									curve->value_derivatives_per_node;
-								value_components_number_of_versions[i]=1;
-								value_components_nodal_value_types[i]=
-									component_nodal_value_types;
-							}
-							if (!define_FE_field_at_node(curve->template_node,
-								curve->value_field,value_components_number_of_derivatives,
-								value_components_number_of_versions,
-								value_components_nodal_value_types))
-							{
-								return_code=0;
+								FE_node_field_creator_define_derivative(
+									node_field_creator, j, FE_NODAL_D_DS1);
 							}
 						}
-						else
+						if (!define_FE_field_at_node(curve->template_node,
+							curve->value_field,(struct FE_time_version *)NULL,
+							node_field_creator))
 						{
 							return_code=0;
 						}
-						DEALLOCATE(value_components_number_of_derivatives);
-						DEALLOCATE(value_components_number_of_versions);
-						DEALLOCATE(value_components_nodal_value_types);
 						if (return_code)
 						{
 							element_identifier.type=CM_ELEMENT;
@@ -4042,7 +4022,7 @@ Used for efficiently drawing the curve in the Curve editor.
 		if (element=cc_get_element(curve,element_no))
 		{
 			if (calculate_FE_element_field_values(element,curve->value_field,
-				/*calculate_derivatives*/0,&element_field_values,
+				/*calculate_derivatives*/0,/*time*/0,&element_field_values,
 				/*top_level_element*/(struct FE_element *)NULL))
 			{
 				return_code=1;
@@ -5270,7 +5250,8 @@ appropriateness to curve usage.
 				if (node_file=fopen(file_name,"r"))
 				{
 					if (!read_FE_node_group(node_file,curve->fe_field_manager,
-						curve->node_manager,curve->element_manager,node_group_manager,
+						(struct FE_time *)NULL,curve->node_manager,
+						curve->element_manager,node_group_manager,
 						data_group_manager,element_group_manager))
 					{
 						return_code=0;
@@ -5285,7 +5266,8 @@ appropriateness to curve usage.
 				if (element_file=fopen(file_name,"r"))
 				{
 					if (!read_FE_element_group(element_file,curve->element_manager,
-						element_group_manager,curve->fe_field_manager,curve->node_manager,
+						element_group_manager,curve->fe_field_manager,
+						(struct FE_time *)NULL,curve->node_manager,
 						node_group_manager,data_group_manager,curve->basis_manager))
 					{
 						return_code=0;

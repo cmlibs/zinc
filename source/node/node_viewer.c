@@ -494,9 +494,9 @@ struct Node_viewer *CREATE(Node_viewer)(
 	struct MANAGER(FE_element) *actual_element_manager,
 	struct FE_node_selection *node_selection,
 	struct Computed_field_package *computed_field_package,
-	struct User_interface *user_interface)
+	struct Time_object *time_object, struct User_interface *user_interface)
 /*******************************************************************************
-LAST MODIFIED : 21 November 2001
+LAST MODIFIED : 22 November 2001
 
 DESCRIPTION :
 Creates a dialog for choosing nodes and displaying and editing their fields.
@@ -636,8 +636,7 @@ Since both nodes and data can depend on embedded fields, the
 									&(node_viewer->viewer_widget),
 									node_viewer->viewer_form,
 									computed_field_package,
-									node_viewer->node_copy,
-									user_interface))
+									node_viewer->node_copy, time_object, user_interface))
 								{
 									init_widgets=0;
 								}

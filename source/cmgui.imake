@@ -30,7 +30,6 @@ XCOMM ==========================================================================
 
 SHELL=/bin/sh
 
-/* Perl interpreter is now std but I don't have it for O64 yet */
 #define PERL_INTERPRETER
 
 BIN_PATH=$(CMGUI_DEV_ROOT)/bin
@@ -693,9 +692,9 @@ LIB = -lMrm -lSgm -lXm -lXt -lX11 -lXmu -lPW -lftn -lm -lC -lCio -lpthread
 #elif defined(LINUX) /* switch OperatingSystem */
 #if defined (DYNAMIC_GL_LINUX)
 X_LIB = /usr/X11R6/lib
-LIB = $(X_LIB)/libMrm.a $(X_LIB)/libXm.a $(X_LIB)/libXt.a $(X_LIB)/libX11.a $(X_LIB)/libXmu.a $(X_LIB)/libXpm.a $(X_LIB)/libXext.a $(X_LIB)/libXp.a $(X_LIB)/libSM.a $(X_LIB)/libICE.a -lg2c -lm -ldl -lc /usr/lib/libpthread.a /usr/lib/libcrypt.a /usr/lib/libstdc++-2-libc6.1-1-2.9.0.a
+LIB = $(X_LIB)/libMrm.a $(X_LIB)/libXm.a $(X_LIB)/libXt.a $(X_LIB)/libX11.a $(X_LIB)/libXmu.a $(X_LIB)/libXext.a $(X_LIB)/libXp.a $(X_LIB)/libSM.a $(X_LIB)/libICE.a -lg2c -lm -ldl -lc /usr/lib/libpthread.a /usr/lib/libcrypt.a /usr/lib/libstdc++-2-libc6.1-1-2.9.0.a
 #else /* defined (DYNAMIC_GL_LINUX) */
-LIB = -lMrm -lXm -lXt -lX11 -lXmu -lXpm -lXext -lg2c -lm -ldl -lXp -lSM -lICE -lpthread -lcrypt -lstdc++
+LIB = -lMrm -lXm -lXt -lX11 -lXmu -lXext -lg2c -lm -ldl -lXp -lSM -lICE -lpthread -lcrypt -lstdc++
 #endif /* defined (DYNAMIC_GL_LINUX) */
 #endif /* switch OperatingSystem */
 
@@ -787,12 +786,9 @@ CURVE_SRCS = \
 	curve/control_curve_editor.c \
 	curve/control_curve_editor_dialog.c
 DATA_SRCS = \
-	data/data_2d.c \
-	data/data_2d_dialog.c \
 	data/data_grabber.c \
 	data/data_grabber_dialog.c \
-	data/node_transform.c \
-	data/sync_2d_3d.c
+	data/node_transform.c
 DOF3_SRCS = \
 	dof3/dof3.c \
 	dof3/dof3_control.c \
@@ -809,6 +805,7 @@ FINITE_ELEMENT_SRCS = \
 	finite_element/finite_element.c \
 	finite_element/finite_element_adjacent_elements.c \
 	finite_element/finite_element_discretization.c \
+	finite_element/finite_element_time.c \
 	finite_element/finite_element_to_graphics_object.c \
 	finite_element/finite_element_to_iso_lines.c \
 	finite_element/finite_element_to_streamlines.c \

@@ -14,6 +14,7 @@ Note the node passed to this widget should be a non-managed local copy.
 #include "general/callback.h"
 #include "computed_field/computed_field.h"
 #include "finite_element/finite_element.h"
+#include "time/time.h"
 #include "user_interface/user_interface.h"
 
 /*
@@ -23,9 +24,10 @@ Global Functions
 
 Widget create_node_viewer_widget(Widget *node_viewer_widget_address,
 	Widget parent,struct Computed_field_package *computed_field_package,
-	struct FE_node *initial_node, struct User_interface *user_interface);
+	struct FE_node *initial_node,  struct Time_object *time_object,
+	struct User_interface *user_interface);
 /*******************************************************************************
-LAST MODIFIED : 21 November 2001
+LAST MODIFIED : 22 November 2001
 
 DESCRIPTION :
 Creates a widget for displaying and editing the contents of <initial_node>. Can

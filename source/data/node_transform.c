@@ -775,24 +775,11 @@ Transforms a given node to 3d.
 	{
 		"X","Y","Z"
 	};
-	enum FE_nodal_value_type *components_nodal_value_types[3]=
-	{
-		{
-			FE_NODAL_VALUE
-		},
-		{
-			FE_NODAL_VALUE
-		},
-		{
-			FE_NODAL_VALUE
-		}
-	};
-	int components_number_of_derivatives[3]={0,0,0},
-		components_number_of_versions[3]={1,1,1};
 	FE_value image_values[3],temp_values[3];
 	int node_number,return_code;
 	struct FE_field *new_field;
 	struct FE_node *new_node,*template_node;
+	struct FE_node_field_creator *node_field_creator;
 	struct Transform_nodes_2d_to_3d_sub_sub *temp_data;
 	struct Coordinate_system rect_cart_coords;
 
@@ -821,17 +808,19 @@ Transforms a given node to 3d.
 			temp_data->base_number=node_number+1;
 			if (new_field=get_FE_field_manager_matched_field(
 				temp_data->fe_field_manager,COORDINATES_3D_FIELD_NAME,
-				GENERAL_FE_FIELD,/*indexer_field*/(struct FE_field *)NULL,
+				GENERAL_FE_FIELD,(struct FE_time *)NULL,
+				/*indexer_field*/(struct FE_field *)NULL,
 				/*number_of_indexed_values*/0,CM_COORDINATE_FIELD,
 				&rect_cart_coords,FE_VALUE_VALUE,
 				/*number_of_components*/3,component_names,
 				/*number_of_times*/0,/*time_value_type*/UNKNOWN_VALUE,
 				(struct FE_field_external_information *)NULL))
 			{
-				if ((template_node=CREATE(FE_node)(0,(struct FE_node *)NULL))
-					&&define_FE_field_at_node(template_node,
-					new_field,components_number_of_derivatives,
-					components_number_of_versions,components_nodal_value_types))
+				if ((node_field_creator = CREATE(FE_node_field_creator)(
+					/*number_of_components*/3))&&
+					(template_node=CREATE(FE_node)(0,(struct FE_node *)NULL))
+					&&define_FE_field_at_node(template_node,new_field,
+					(struct FE_time_version *)NULL,node_field_creator))
 				{
 					if (new_node=CREATE(FE_node)(node_number,template_node))
 					{	
@@ -857,6 +846,7 @@ Transforms a given node to 3d.
 						display_message(ERROR_MESSAGE,
 							"transform_nodes_2d_to_3d_sub_sub.  Could not create FE_node");
 					}
+					DESTROY(FE_node_field_creator)(&(node_field_creator));
 					DESTROY(FE_node)(&template_node);
 				}
 				else
@@ -1120,21 +1110,11 @@ coordinates.
 	{
 		"X","Y"
 	};
-	enum FE_nodal_value_type *components_nodal_value_types[2]=
-	{
-		{
-			FE_NODAL_VALUE
-		},
-		{
-			FE_NODAL_VALUE
-		}
-	};
-	int components_number_of_derivatives[2]={0,0},
-		components_number_of_versions[2]={1,1};
 	FE_value global_values[2],image_values[3];
 	int node_number,return_code;
 	struct FE_field *new_field;
 	struct FE_node *new_node,*template_node;
+	struct FE_node_field_creator *node_field_creator;
 	struct Transform_nodes_2d_scale_sub_sub *temp_data;
 	struct Coordinate_system rect_cart_coords;
 
@@ -1156,17 +1136,19 @@ coordinates.
 			temp_data->base_number=node_number+1;
 			if (new_field=get_FE_field_manager_matched_field(
 				temp_data->fe_field_manager,COORDINATES_2D_FIELD_NAME,
-				GENERAL_FE_FIELD,/*indexer_field*/(struct FE_field *)NULL,
+				GENERAL_FE_FIELD,(struct FE_time *)NULL,
+				/*indexer_field*/(struct FE_field *)NULL,
 				/*number_of_indexed_values*/0,CM_COORDINATE_FIELD,
 				&rect_cart_coords,FE_VALUE_VALUE,
 				/*number_of_components*/2,component_names,
 				/*number_of_times*/0,/*time_value_type*/UNKNOWN_VALUE,
 				(struct FE_field_external_information *)NULL))
 			{
-				if ((template_node=CREATE(FE_node)(0,(struct FE_node *)NULL))&&
-					define_FE_field_at_node(template_node,
-					new_field,components_number_of_derivatives,
-					components_number_of_versions,components_nodal_value_types))
+				if ((node_field_creator = CREATE(FE_node_field_creator)(
+					/*number_of_components*/2))&&
+					(template_node=CREATE(FE_node)(0,(struct FE_node *)NULL))&&
+					define_FE_field_at_node(template_node,new_field,
+					(struct FE_time_version *)NULL,node_field_creator))
 				{
 					if (new_node=CREATE(FE_node)(node_number,template_node))
 					{					
@@ -1193,6 +1175,7 @@ coordinates.
 						display_message(ERROR_MESSAGE,
 							"transform_nodes_2d_scale_sub_sub.  Could not create new_node");
 					}
+					DESTROY(FE_node_field_creator)(&(node_field_creator));
 					DESTROY(FE_node)(&template_node);
 				}
 				else

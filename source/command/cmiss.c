@@ -397,7 +397,7 @@ DESCRIPTION :
 			{
 				if (!(array_data->element_values->values &&
 					Computed_field_evaluate_in_element(array_data->sort_by_field, element,
-						xi, /*top_level_element*/(struct FE_element *)NULL,
+						xi, /*time*/0,/*top_level_element*/(struct FE_element *)NULL,
 						array_data->element_values->values,
 						/*derivatives*/(FE_value *)NULL)))
 				{
@@ -706,6 +706,7 @@ are identival. Used as a compare function for qsort.
 
 struct FE_node_and_values_to_array_data
 {
+	FE_value time;
 	struct FE_node_values_number *node_values;
 	struct Computed_field *sort_by_field;
 }; /* FE_node_and_values_to_array_data */
@@ -731,7 +732,8 @@ DESCRIPTION :
 		if (array_data->sort_by_field)
 		{
 			if (!(array_data->node_values->values && Computed_field_evaluate_at_node(
-				array_data->sort_by_field, node, array_data->node_values->values)))
+				array_data->sort_by_field, node, array_data->time,
+				array_data->node_values->values)))
 			{
 				display_message(ERROR_MESSAGE, "FE_node_and_values_to_array.  "
 					"sort_by field could not be evaluated at node");
@@ -753,7 +755,7 @@ DESCRIPTION :
 
 static int FE_node_manager_change_node_group_identifiers(
 	struct MANAGER(FE_node) *node_manager, struct GROUP(FE_node) *node_group,
-	int node_offset, struct Computed_field *sort_by_field)
+	int node_offset, struct Computed_field *sort_by_field, FE_value time)
 /*******************************************************************************
 LAST MODIFIED : 16 May 2001
 
@@ -818,6 +820,7 @@ identifier changes.
 					/* make a linear array of the nodes in the group in current order */
 					array_data.node_values = node_values;
 					array_data.sort_by_field = sort_by_field;
+					array_data.time = time;
 					if (!FOR_EACH_OBJECT_IN_GROUP(FE_node)(FE_node_and_values_to_array,
 						(void *)&array_data, node_group))
 					{
@@ -962,6 +965,7 @@ DESCRIPTION :
 ==============================================================================*/
 {
 	char data_flag, element_flag, face_flag, *group_name, line_flag, node_flag;
+	FE_value time;
 	int data_offset, element_offset, face_offset, line_offset, node_offset;
 	int return_code;
 	struct Cmiss_command_data *command_data;
@@ -987,7 +991,8 @@ DESCRIPTION :
 		node_flag = 0;
 		node_offset = 0;
 		sort_by_field = (struct Computed_field *)NULL;
-
+		time = Time_keeper_get_time(command_data->default_time_keeper);
+		
 		option_table = CREATE(Option_table)();
 		/* data_offset */
 		Option_table_add_entry(option_table, "data_offset", &data_offset,
@@ -1016,6 +1021,8 @@ DESCRIPTION :
 		set_sort_by_field_data.conditional_function_user_data = (void *)NULL;
 		Option_table_add_entry(option_table, "sort_by", &sort_by_field,
 			&set_sort_by_field_data, set_Computed_field_conditional);
+		/* time */
+		Option_table_add_entry(option_table, "time", &time, NULL, set_FE_value);
 
 		if (return_code = Option_table_multi_parse(option_table,state))
 		{
@@ -1028,7 +1035,8 @@ DESCRIPTION :
 						group_name, command_data->data_group_manager);
 					MANAGER_BEGIN_CACHE(FE_node)(command_data->data_manager);
 					if (!FE_node_manager_change_node_group_identifiers(
-						command_data->data_manager, data_group, data_offset, sort_by_field))
+						command_data->data_manager, data_group, data_offset, sort_by_field,
+						time))
 					{
 						return_code = 0;
 					}
@@ -1072,7 +1080,8 @@ DESCRIPTION :
 						group_name, command_data->node_group_manager);
 					MANAGER_BEGIN_CACHE(FE_node)(command_data->node_manager);
 					if (!FE_node_manager_change_node_group_identifiers(
-						command_data->node_manager, node_group, node_offset, sort_by_field))
+						command_data->node_manager, node_group, node_offset, sort_by_field,
+						time))
 					{
 						return_code = 0;
 					}
@@ -4113,6 +4122,8 @@ Executes a GFX CREATE ISO_SURFACES command.
 						command_data->data_manager;
 					element_to_iso_scalar_data.fe_field_manager =
 						command_data->fe_field_manager;
+					element_to_iso_scalar_data.fe_time =
+						command_data->fe_time;
 					element_to_iso_scalar_data.time=time;
 					element_to_iso_scalar_data.number_in_xi[0]=
 						discretization.number_in_xi1;
@@ -4935,6 +4946,7 @@ Executes a GFX CREATE NODE_VIEWER command.
 	char *current_token;
 	int return_code;
 	struct Cmiss_command_data *command_data;
+	struct Time_object *time_object;
 
 	ENTER(gfx_create_node_viewer);
 	USE_PARAMETER(dummy_to_be_modified);
@@ -4965,23 +4977,34 @@ Executes a GFX CREATE NODE_VIEWER command.
 				}
 				else
 				{
-					if (command_data->node_viewer = CREATE(Node_viewer)(
-						&(command_data->node_viewer),
-						"Node Viewer",
-						(struct FE_node *)NULL,
-						command_data->node_manager,
-						command_data->node_manager,
-						command_data->element_manager,
-						command_data->node_selection,
-						command_data->computed_field_package,
-						command_data->user_interface))
+					if ((time_object = CREATE(Time_object)("node_viewer_time"))
+						&&(Time_object_set_time_keeper(time_object,
+						command_data->default_time_keeper)))
 					{
-						return_code=1;
+						if (command_data->node_viewer = CREATE(Node_viewer)(
+							&(command_data->node_viewer),
+							"Node Viewer",
+							(struct FE_node *)NULL,
+							command_data->node_manager,
+							command_data->node_manager,
+							command_data->element_manager,
+							command_data->node_selection,
+							command_data->computed_field_package,
+							time_object, command_data->user_interface))
+						{
+							return_code=1;
+						}
+						else
+						{
+							return_code=0;
+						}
 					}
 					else
 					{
+						display_message(ERROR_MESSAGE,
+							"gfx_create_node_viewer.  Unable to make time object.");
 						return_code=0;
-					}
+					}						
 				}
 			}
 			else
@@ -5015,6 +5038,7 @@ Executes a GFX CREATE DATA_VIEWER command.
 	char *current_token;
 	int return_code;
 	struct Cmiss_command_data *command_data;
+	struct Time_object *time_object;
 
 	ENTER(gfx_create_data_viewer);
 	USE_PARAMETER(dummy_to_be_modified);
@@ -5045,23 +5069,34 @@ Executes a GFX CREATE DATA_VIEWER command.
 				}
 				else
 				{
-					if (command_data->data_viewer = CREATE(Node_viewer)(
-						&(command_data->data_viewer),
-						"Data Viewer",
-						(struct FE_node *)NULL,
-						command_data->data_manager,
-						command_data->node_manager,
-						command_data->element_manager,
-						command_data->data_selection,
-						command_data->computed_field_package,
-						command_data->user_interface))
+					if ((time_object = CREATE(Time_object)("data_viewer_time"))
+						&&(Time_object_set_time_keeper(time_object,
+						command_data->default_time_keeper)))
 					{
-						return_code=1;
+						if (command_data->data_viewer = CREATE(Node_viewer)(
+							&(command_data->data_viewer),
+							"Data Viewer",
+							(struct FE_node *)NULL,
+							command_data->data_manager,
+							command_data->node_manager,
+							command_data->element_manager,
+							command_data->data_selection,
+							command_data->computed_field_package,
+							time_object, command_data->user_interface))
+						{
+							return_code=1;
+						}
+						else
+						{
+							return_code=0;
+						}
 					}
 					else
 					{
+						display_message(ERROR_MESSAGE,
+							"gfx_create_node_viewer.  Missing command_data");
 						return_code=0;
-					}
+					}						
 				}
 			}
 			else
@@ -5095,6 +5130,7 @@ Executes a GFX CREATE ELEMENT_POINT_VIEWER command.
 	char *current_token;
 	int return_code;
 	struct Cmiss_command_data *command_data;
+	struct Time_object *time_object;
 
 	ENTER(gfx_create_element_point_viewer);
 	USE_PARAMETER(dummy_to_be_modified);
@@ -5125,13 +5161,17 @@ Executes a GFX CREATE ELEMENT_POINT_VIEWER command.
 				}
 				else
 				{
+					if ((time_object = CREATE(Time_object)("element_point_viewer_time"))
+						&&(Time_object_set_time_keeper(time_object,
+						command_data->default_time_keeper)))
+					{
 					if (command_data->element_point_viewer=CREATE(Element_point_viewer)(
 						&(command_data->element_point_viewer),
 						command_data->element_manager,
 						command_data->node_manager,
 						command_data->element_point_ranges_selection,
 						command_data->computed_field_package,
-						command_data->fe_field_manager,
+						command_data->fe_field_manager, time_object,
 						command_data->user_interface))
 					{
 						return_code=1;
@@ -5140,6 +5180,13 @@ Executes a GFX CREATE ELEMENT_POINT_VIEWER command.
 					{
 						return_code=0;
 					}
+					}
+					else
+					{
+						display_message(ERROR_MESSAGE,
+							"gfx_create_element_point_viewer.  Unable to make time object.");
+						return_code=0;
+					}						
 				}
 			}
 			else
@@ -5172,8 +5219,7 @@ If <use_data> is set, creating data points, otherwise creating node points.
 ==============================================================================*/
 {
 	char *graphics_object_name;
-	FE_value base_size[3], centre[3], scale_factors[3];
-	float time;
+	FE_value base_size[3], centre[3], scale_factors[3], time;
 	int number_of_components, return_code;
 	struct Cmiss_command_data *command_data;
 	struct Computed_field *coordinate_field, *data_field, *label_field,
@@ -5231,7 +5277,7 @@ If <use_data> is set, creating data points, otherwise creating node points.
 		orientation_scale_field = (struct Computed_field *)NULL;
 		variable_scale_field = (struct Computed_field *)NULL;
 		spectrum = ACCESS(Spectrum)(command_data->default_spectrum);
-		time = 0.0;
+		time = Time_keeper_get_time(command_data->default_time_keeper);
 		/* final_size = size + scale_factors*magnitude */
 		glyph_scale_factors[0] = 1.0;
 		glyph_scale_factors[1] = 1.0;
@@ -5308,7 +5354,7 @@ If <use_data> is set, creating data points, otherwise creating node points.
 		Option_table_add_entry(option_table,"spectrum",
 			&spectrum,command_data->spectrum_manager,set_Spectrum);
 		/* time */
-		Option_table_add_entry(option_table,"time",&time,NULL,set_float);
+		Option_table_add_entry(option_table,"time",&time,NULL,set_FE_value);
 		/* variable_scale */
 		set_variable_scale_field_data.computed_field_manager=
 			Computed_field_package_get_computed_field_manager(
@@ -5383,7 +5429,7 @@ If <use_data> is set, creating data points, otherwise creating node points.
 				scale_factors[2] = (FE_value)glyph_scale_factors[2];
 				if (glyph_set = create_GT_glyph_set_from_FE_node_group(
 					node_group, node_manager, rc_coordinate_field,
-					glyph, base_size, centre, scale_factors,
+					glyph, base_size, centre, scale_factors, time,
 					wrapper_orientation_scale_field, variable_scale_field,
 					data_field, label_field, GRAPHICS_NO_SELECT,
 					(struct LIST(FE_node) *)NULL))
@@ -7609,8 +7655,9 @@ field are converted to "colours" by applying the <spectrum>
 							to stop the slow Computed_field_find_element_xi being called */
 						if (element)
 						{
-							if(Computed_field_evaluate_in_element(field,
-								element, xi,(struct FE_element *)NULL, data_values, (FE_value *)NULL))
+							if (Computed_field_evaluate_in_element(field,
+							   element, xi,/*time*/0,(struct FE_element *)NULL,
+							   data_values, (FE_value *)NULL))
 							{
 								if (spectrum_render_value_on_material(spectrum,
 									material, number_of_data_components, data_values))
@@ -9299,6 +9346,7 @@ Executes a GFX CREATE VOLUMES command.
 						command_data->data_manager;
 					element_to_volume_data.fe_field_manager =
 						command_data->fe_field_manager;
+					element_to_volume_data.fe_time = command_data->fe_time;
 					element_to_volume_data.blur_field= blur_field;
 					element_to_volume_data.clipping=clipping;
 					if (seed_element)
@@ -9790,7 +9838,7 @@ a time.  This implementation may be changed later.
 					&(command_data->data_grabber_dialog),
 					command_data->user_interface->application_shell,
 					command_data->execute_command,command_data->user_interface,
-					command_data->fe_field_manager,
+					command_data->fe_field_manager, command_data->fe_time,
 					command_data->node_manager, command_data->data_manager,
 					command_data->node_group_manager, command_data->data_group_manager);
 			}
@@ -9811,70 +9859,6 @@ a time.  This implementation may be changed later.
 
 	return (return_code);
 } /* gfx_create_3d_digitizer */
-#endif /* !defined (WINDOWS_DEV_FLAG) */
-
-#if !defined (WINDOWS_DEV_FLAG)
-static int gfx_create_data_sync(struct Parse_state *state,
-	void *dummy_to_be_modified,void *command_data_void)
-/*******************************************************************************
-LAST MODIFIED : 15 June 1999
-
-DESCRIPTION :
-Executes a GFX CREATE DATA_SYNC command.
-If there is a data_sync dialog in existence, then bring it to the front,
-else create a new one.  Assumes we will only ever want one data_sync at
-a time.  This implementation may be changed later.
-==============================================================================*/
-{
-	char *current_token;
-	int return_code;
-	struct Cmiss_command_data *command_data;
-
-	ENTER(gfx_create_data_sync);
-	USE_PARAMETER(dummy_to_be_modified);
-	if (state)
-	{
-		if (current_token=state->current_token)
-		{
-			if (strcmp(PARSER_HELP_STRING,current_token)&&
-				strcmp(PARSER_RECURSIVE_HELP_STRING,current_token))
-			{
-				display_message(ERROR_MESSAGE,"Unknown option: %s",current_token);
-				display_parse_state_location(state);
-				return_code=0;
-			}
-			else
-			{
-				return_code=1;
-			}
-		}
-		else
-		{
-			if (command_data=(struct Cmiss_command_data *)command_data_void)
-			{
-				return_code=bring_up_sync_2d_3d_dialog(
-					&(command_data->sync_2d_3d_dialog),
-					command_data->user_interface->application_shell,
-					command_data->execute_command,command_data->fe_field_manager,
-					command_data->data_manager,command_data->data_group_manager);
-			}
-			else
-			{
-				display_message(ERROR_MESSAGE,
-					"gfx_create_data_sync.  Missing command_data");
-				return_code=0;
-			}
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,"gfx_create_data_sync.  Missing state");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* gfx_create_data_sync */
 #endif /* !defined (WINDOWS_DEV_FLAG) */
 
 #if !defined (WINDOWS_DEV_FLAG)
@@ -10026,8 +10010,9 @@ Executes a GFX CREATE CMISS_CONNECTION command.
 					if (CMISS=CREATE(CMISS_connection)(host_name,host_type,
 						connection_number,wormhole_timeout,mycm_flag,asynchronous_commands,
 						command_data->element_manager,command_data->element_group_manager,
-						command_data->fe_field_manager,command_data->node_manager,
-						command_data->data_manager,command_data->node_group_manager,
+						command_data->fe_field_manager,command_data->fe_time,
+						command_data->node_manager,command_data->data_manager,
+						command_data->node_group_manager,
 						command_data->data_group_manager,&(command_data->prompt_window),
 						parameters_file_name,examples_directory,
 						command_data->user_interface))
@@ -10363,8 +10348,6 @@ Executes a GFX CREATE command.
 					command_data_void,gfx_create_data_viewer);
 				Option_table_add_entry(option_table,"data_points",/*use_data*/(void *)1,
 					command_data_void,gfx_create_node_points);
-				Option_table_add_entry(option_table,"data_sync",NULL,
-					command_data_void,gfx_create_data_sync);
 				Option_table_add_entry(option_table,"dgroup",NULL,
 					command_data_void,gfx_create_data_group);
 				Option_table_add_entry(option_table,"egroup",NULL,
@@ -12226,7 +12209,7 @@ Executes a GFX EDIT GRAPHICS_OBJECT command.
 						struct Apply_transformation_data data;
 						struct GT_element_group *gt_element_group;
 						struct GROUP(FE_node) *data_group, *node_group;
-						gtMatrix identity={1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1},
+						gtMatrix identity={{1,0,0,0},{0,1,0,0},{0,0,1,0},{0,0,0,1}},
 							transformation;
 
 						if (Scene_object_has_transformation(scene_object)&&
@@ -12934,7 +12917,7 @@ data.
 	{
 		{"base_number",NULL,NULL,set_int},
 		{"groups",NULL,NULL,set_FE_node_group_list},
-		{NULL,NULL,NULL}
+		{NULL,NULL,NULL,NULL}
 	};
 
 	ENTER(gfx_export_node);
@@ -13264,6 +13247,7 @@ DESCRIPTION :
 ==============================================================================*/
 {
 	char selected_flag;
+	FE_value time;
 	int return_code;
 	struct Cmiss_command_data *command_data;
 	struct Computed_field *destination_field, *source_field;
@@ -13286,7 +13270,8 @@ DESCRIPTION :
 		selected_flag = 0;
 		destination_field = (struct Computed_field *)NULL;
 		source_field = (struct Computed_field *)NULL;
-
+		time = Time_keeper_get_time(command_data->default_time_keeper);
+		
 		option_table = CREATE(Option_table)();
 		/* destination */
 		set_destination_field_data.conditional_function =
@@ -13344,20 +13329,20 @@ DESCRIPTION :
 				{
 					Computed_field_update_nodal_values_from_source(
 						destination_field, source_field,
-						data_group, command_data->data_manager, data_selection);
+						data_group, command_data->data_manager, data_selection, time);
 				}
 				else if (element_group && (!data_group) && (!node_group))
 				{
 					Computed_field_update_element_values_from_source(
 						destination_field, source_field,
 						element_group, command_data->element_manager,
-						element_point_ranges_selection, element_selection);
+						element_point_ranges_selection, element_selection, time);
 				}
 				else if (node_group && (!data_group) && (!element_group))
 				{
 					Computed_field_update_nodal_values_from_source(
 						destination_field, source_field,
-						node_group, command_data->node_manager, node_selection);
+						node_group, command_data->node_manager, node_selection, time);
 				}
 				else
 				{
@@ -15128,6 +15113,7 @@ Executes a GFX LIST VTEXTURE.
 	return (return_code);
 } /* gfx_list_volume_texture */
 
+#if defined (SGI_MOVIE_FILE)
 static int gfx_list_movie_graphics(struct Parse_state *state,
 	void *dummy_to_be_modified,void *movie_graphics_manager_void)
 /*******************************************************************************
@@ -15195,6 +15181,7 @@ Executes a GFX LIST MOVIE.
 
 	return (return_code);
 } /* gfx_list_movie_graphics */
+#endif /* defined (SGI_MOVIE_FILE) */
 
 static int gfx_list_graphics_window(struct Parse_state *state,
 	void *dummy_to_be_modified,void *graphics_window_manager_void)
@@ -16464,13 +16451,13 @@ use node_manager and node_selection.
 ==============================================================================*/
 {
 	char all_flag, selected_flag;
-	enum FE_nodal_value_type *nodal_value_types;
-	int i, number_of_components, return_code;
+	int i, j, number_of_components, return_code;
 	struct Cmiss_command_data *command_data;
 	struct FE_field *define_field, *undefine_field;
 	struct FE_node *node, *temp_node;
 	struct FE_node_field_component_derivatives_data component_derivatives_data;
 	struct FE_node_field_component_versions_data component_versions_data;
+	struct FE_node_field_creator *node_field_creator;
 	struct FE_node_selection *node_selection;
 	struct GROUP(FE_node) *node_group;
 	struct LIST(FE_node) *define_node_list, *node_list;
@@ -16500,6 +16487,7 @@ use node_manager and node_selection.
 		/* initialise defaults */
 		all_flag = 0;
 		selected_flag = 0;
+		node_field_creator = (struct FE_node_field_creator *)NULL;
 		node_group = (struct GROUP(FE_node) *)NULL;
 		node_ranges = CREATE(Multi_range)();
 		define_field = (struct FE_field *)NULL;
@@ -16558,40 +16546,92 @@ use node_manager and node_selection.
 					{
 						number_of_components =
 							get_FE_field_number_of_components(define_field);
-						if (0 == component_derivatives_data.number_of_components)
+						if (node_field_creator = CREATE(FE_node_field_creator)
+							(number_of_components))
 						{
-							if (ALLOCATE(
-								component_derivatives_data.components_number_of_derivatives,
-								int, number_of_components))
+							if (component_versions_data.number_of_components)
 							{
-								for (i = 0; i < number_of_components; i++)
+								if (number_of_components ==
+									component_versions_data.number_of_components)
 								{
-									component_derivatives_data.
-										components_number_of_derivatives[i] = 0;
-								}
-							}
-							else
-							{
-								return_code = 0;
-							}
-							if (ALLOCATE(
-								component_derivatives_data.components_nodal_value_types,
-								enum FE_nodal_value_type *, number_of_components))
-							{
-								for (i = 0; i < number_of_components; i++)
-								{
-									component_derivatives_data.components_nodal_value_types[i] =
-										(enum FE_nodal_value_type *)NULL;
-								}
-								for (i = 0; return_code && (i < number_of_components); i++)
-								{
-									if (ALLOCATE(nodal_value_types, enum FE_nodal_value_type, 1))
+									for (i = 0 ; i < number_of_components ; i++)
 									{
-										nodal_value_types[0] = FE_NODAL_VALUE;
-										component_derivatives_data.components_nodal_value_types[i]
-											= nodal_value_types;
+										FE_node_field_creator_define_versions
+											(node_field_creator, i, component_versions_data.
+											components_number_of_versions[i]);
 									}
-									else
+								}
+								else
+								{
+									display_message(WARNING_MESSAGE,
+										"gfx modify data:  The number of specified "
+										"versions must match the number of field components.");
+									return_code = 0;
+								}
+							}
+							/* else leave the default */
+
+							if (component_versions_data.number_of_components)
+							{
+								if (number_of_components ==
+									component_derivatives_data.number_of_components)
+								{
+									for (i = 0 ; i < number_of_components ; i++)
+									{
+										for (j = 0 ; j < component_derivatives_data.
+											 components_number_of_derivatives[i] ; j++)
+										{
+											FE_node_field_creator_define_derivative
+												(node_field_creator, i, component_derivatives_data.
+												components_nodal_value_types[i][j]);
+										}
+									}
+								}
+								else
+								{
+									display_message(WARNING_MESSAGE,
+										"gfx modify data:  The number of specified "
+										"derivative arrays must match the number of field components.");
+									return_code = 0;
+								}
+							}
+							/* else leave the default */
+						}
+						else
+						{
+							display_message(WARNING_MESSAGE,
+								"gfx modify data:  Unable to make node_field_creator.");
+							return_code = 0;
+						}
+						if (return_code)
+						{
+							MANAGER_BEGIN_CACHE(FE_node)(node_manager);
+							define_node_list = CREATE(LIST(FE_node))();
+							if (COPY_LIST(FE_node)(define_node_list, node_list))
+							{
+								while (return_code &&
+									(node = FIRST_OBJECT_IN_LIST_THAT(FE_node)(
+										(LIST_CONDITIONAL_FUNCTION(FE_node) *)NULL, (void *)NULL,
+										define_node_list)))
+								{
+									if (!FE_field_is_defined_at_node(define_field, node))
+									{
+										if (temp_node = CREATE(FE_node)(0, node))
+										{
+											return_code = define_FE_field_at_node(temp_node,
+												define_field, (struct FE_time_version *)NULL,
+												node_field_creator) &&
+												MANAGER_MODIFY_NOT_IDENTIFIER(FE_node,
+													cm_node_identifier)(node,	temp_node, node_manager);
+											DESTROY(FE_node)(&temp_node);
+										}
+										else
+										{
+											return_code = 0;
+										}
+									}
+									if (!REMOVE_OBJECT_FROM_LIST(FE_node)(node,
+											 define_node_list))
 									{
 										return_code = 0;
 									}
@@ -16601,90 +16641,8 @@ use node_manager and node_selection.
 							{
 								return_code = 0;
 							}
-							if (return_code)
-							{
-								component_derivatives_data.number_of_components =
-									number_of_components;
-							}
-						}
-						if (0 == component_versions_data.number_of_components)
-						{
-							if (ALLOCATE(
-								component_versions_data.components_number_of_versions,
-								int, number_of_components))
-							{
-								for (i = 0; i < number_of_components; i++)
-								{
-									component_versions_data.
-										components_number_of_versions[i] = 1;
-								}
-							}
-							else
-							{
-								return_code = 0;
-							}
-							if (return_code)
-							{
-								component_versions_data.number_of_components =
-									number_of_components;
-							}
-						}
-						if (return_code)
-						{
-							if ((number_of_components ==
-								component_derivatives_data.number_of_components) &&
-								(number_of_components ==
-									component_versions_data.number_of_components))
-							{
-								MANAGER_BEGIN_CACHE(FE_node)(node_manager);
-								define_node_list = CREATE(LIST(FE_node))();
-								if (COPY_LIST(FE_node)(define_node_list, node_list))
-								{
-									while (return_code &&
-										(node = FIRST_OBJECT_IN_LIST_THAT(FE_node)(
-											(LIST_CONDITIONAL_FUNCTION(FE_node) *)NULL, (void *)NULL,
-											define_node_list)))
-									{
-										if (!FE_field_is_defined_at_node(define_field, node))
-										{
-											if (temp_node = CREATE(FE_node)(0, node))
-											{
-												return_code = define_FE_field_at_node(temp_node,
-													define_field,
-													component_derivatives_data.
-													components_number_of_derivatives,
-													component_versions_data.components_number_of_versions,
-													component_derivatives_data.
-													components_nodal_value_types) &&
-													MANAGER_MODIFY_NOT_IDENTIFIER(FE_node,
-														cm_node_identifier)(node,	temp_node, node_manager);
-												DESTROY(FE_node)(&temp_node);
-											}
-											else
-											{
-												return_code = 0;
-											}
-										}
-										if (!REMOVE_OBJECT_FROM_LIST(FE_node)(node,
-											define_node_list))
-										{
-											return_code = 0;
-										}
-									}
-								}
-								else
-								{
-									return_code = 0;
-								}
-								DESTROY(LIST(FE_node))(&define_node_list);
-								MANAGER_END_CACHE(FE_node)(node_manager);
-							}
-							else
-							{
-								display_message(ERROR_MESSAGE, "gfx_modify_nodes.  "
-									"Derivative/version information does not match field");
-								return_code = 0;
-							}
+							DESTROY(LIST(FE_node))(&define_node_list);
+							MANAGER_END_CACHE(FE_node)(node_manager);
 						}
 						else
 						{
@@ -16715,6 +16673,10 @@ use node_manager and node_selection.
 					}
 				}
 				DESTROY(LIST(FE_node))(&node_list);
+				if (node_field_creator)
+				{
+					DESTROY(FE_node_field_creator)(&(node_field_creator));
+				}
 			}
 			else
 			{
@@ -16949,18 +16911,23 @@ DESCRIPTION :
 movie is being created.
 ==============================================================================*/
 {
+#if defined (SGI_MOVIE_FILE)
 	static char *default_movie_name="default";
 	char add_frame,avi,cinepak_avi,cinepak_quicktime,*create_file_name,end,
 		every_frame,force_onscreen,indeo_avi,indeo_quicktime,loop,*movie_name,
 		mvc1_sgi_movie3,once,*open_file_name,play,quicktime,
 		rle24_sgi_movie3,skip_frames,sgi_movie3,stop;
 	double speed;
-	int height, return_code, width;
-	struct Option_table *option_table;
+	int height, width;
+#endif /* defined (SGI_MOVIE_FILE) */
+	int return_code;
 	struct Cmiss_command_data *command_data;
+#if defined (SGI_MOVIE_FILE)
 	struct Movie_graphics *movie;
+	struct Option_table *option_table;
 	struct X3d_movie *x3d_movie;
 	struct Graphics_window *graphics_window;
+#endif /* defined (SGI_MOVIE_FILE) */
 
 	ENTER(gfx_movie);
 	USE_PARAMETER(dummy_to_be_modified);
@@ -17756,6 +17723,7 @@ otherwise the data file is read.
 				command_data->set_file_name_option_table))
 			{
 				data.fe_field_manager=command_data->fe_field_manager;
+				data.fe_time=command_data->fe_time;
 				data.element_group_manager=command_data->element_group_manager;
 				/*???RC note swapping node and data manager stuff - extends to
 				  also creating a node_group for the new data group! */
@@ -17834,6 +17802,7 @@ user, otherwise the elements file is read.
 				data.element_manager=command_data->element_manager;
 				data.element_group_manager=command_data->element_group_manager;
 				data.fe_field_manager=command_data->fe_field_manager;
+				data.fe_time=command_data->fe_time;
 				data.node_manager=command_data->node_manager;
 				data.node_group_manager=command_data->node_group_manager;
 				data.data_group_manager=command_data->data_group_manager;
@@ -17883,35 +17852,39 @@ If a nodes file is not specified a file selection box is presented to the user,
 otherwise the nodes file is read.
 ==============================================================================*/
 {
-	char *file_name;
+	char *file_name, time_set_flag;
+	double maximum, minimum;
+	FILE *input_file;
+	float time;
 	int return_code;
 	struct Cmiss_command_data *command_data;
-	struct File_read_FE_node_group_data data;
-	struct Modifier_entry *entry;
+	struct Node_time_index *node_time_index, node_time_index_data;
+	struct Option_table *option_table;
 
 	ENTER(gfx_read_nodes);
 	USE_PARAMETER(dummy_to_be_modified);
 	if (state)
 	{
-		if ((command_data=(struct Cmiss_command_data *)command_data_void)&&
-			(entry=command_data->set_file_name_option_table))
+		if (command_data=(struct Cmiss_command_data *)command_data_void)
 		{
-			file_name=(char *)NULL;
-			while (entry->option)
+			file_name = (char *)NULL;
+			time = 0;
+			time_set_flag = 0;
+			node_time_index = (struct Node_time_index *)NULL;
+			option_table=CREATE(Option_table)();
+			/* example */
+			Option_table_add_entry(option_table,CMGUI_EXAMPLE_DIRECTORY_SYMBOL,
+				&file_name, &(command_data->example_directory), set_file_name);
+			/* time */
+			Option_table_add_entry(option_table,"time",
+				&time, &time_set_flag, set_float_and_char_flag);
+			/* default */
+			Option_table_add_entry(option_table,NULL,&file_name,
+				NULL,set_file_name);
+			return_code=Option_table_multi_parse(option_table,state);
+			DESTROY(Option_table)(&option_table);
+			if (return_code)
 			{
-				entry->to_be_modified= &file_name;
-				entry++;
-			}
-			entry->to_be_modified= &file_name;
-			if (return_code=process_multiple_options(state,
-				command_data->set_file_name_option_table))
-			{
-				data.fe_field_manager=command_data->fe_field_manager;
-				data.element_group_manager=command_data->element_group_manager;
-				data.node_manager=command_data->node_manager;
-				data.element_manager=command_data->element_manager;
-				data.node_group_manager=command_data->node_group_manager;
-				data.data_group_manager=command_data->data_group_manager;
 				if (!file_name)
 				{
 					if (!(file_name = confirmation_get_read_filename(".exnode",
@@ -17920,12 +17893,55 @@ otherwise the nodes file is read.
 						return_code = 0;
 					}
 				}
+				if (time_set_flag)
+				{
+					node_time_index_data.time = time;
+					node_time_index = &node_time_index_data;
+				}
 				if (return_code)
 				{
 					/* open the file */
 					if (return_code=check_suffix(&file_name,".exnode"))
 					{
-						return_code=file_read_FE_node_group(file_name,(void *)&data);
+						if (input_file=fopen(file_name,"r"))
+						{
+							return_code=read_FE_node_group_with_order(input_file,
+								command_data->fe_field_manager, command_data->fe_time,
+								command_data->node_manager, command_data->element_manager, 
+								command_data->node_group_manager,
+								command_data->data_group_manager, 
+								command_data->element_group_manager,
+								(struct FE_node_order_info *)NULL, node_time_index);
+						}
+						else
+						{
+							display_message(ERROR_MESSAGE,"Could not open node group file: %s",
+								file_name);
+							return_code=0;
+						}
+					}
+					if (return_code && time_set_flag)
+					{
+						/* Increase the range of the default time keepeer and set the
+						   minimum and maximum if we set anything */
+						maximum = Time_keeper_get_maximum(
+							command_data->default_time_keeper);
+						minimum = Time_keeper_get_minimum(
+							command_data->default_time_keeper);
+						if (time < minimum)
+						{
+							Time_keeper_set_minimum(
+								command_data->default_time_keeper, time);
+							Time_keeper_set_maximum(
+								command_data->default_time_keeper, maximum);
+						}
+						if (time > maximum)
+						{
+							Time_keeper_set_minimum(
+								command_data->default_time_keeper, minimum);
+							Time_keeper_set_maximum(
+								command_data->default_time_keeper, time);
+						}
 					}
 				}
 			}
@@ -18050,7 +18066,7 @@ otherwise the wavefront obj file is read.
 			option_table=CREATE(Option_table)();
 			/* example */
 			Option_table_add_entry(option_table,CMGUI_EXAMPLE_DIRECTORY_SYMBOL,
-			  &file_name, NULL,set_file_name);
+			  &file_name, &(command_data->example_directory), set_file_name);
 			/* as */
 			Option_table_add_entry(option_table,"as",&graphics_object_name,
 				(void *)1,set_name);
@@ -20802,6 +20818,7 @@ Executes a GFX SMOOTH command.
 		{"egroup",NULL,NULL,set_FE_element_group},
 		{"field",NULL,NULL,set_FE_field},
 		{"smoothing",NULL,NULL,set_float_positive},
+		{"time",NULL,NULL,set_FE_value},
 		{NULL,NULL,NULL,NULL}
 	};
 	struct FE_field *field;
@@ -20826,12 +20843,15 @@ Executes a GFX SMOOTH command.
 			smooth_field_over_element_data.node_manager=command_data->node_manager;
 			smooth_field_over_element_data.element_manager=
 				command_data->element_manager;
+			smooth_field_over_element_data.time = Time_keeper_get_time(
+				command_data->default_time_keeper);
 			(option_table[0]).to_be_modified= &element_group;
 			(option_table[0]).user_data=command_data->element_group_manager;
 			(option_table[1]).to_be_modified= &(smooth_field_over_element_data.field);
 			(option_table[1]).user_data=command_data->fe_field_manager;
 			(option_table[2]).to_be_modified=
 				&(smooth_field_over_element_data.smoothing);
+			(option_table[3]).to_be_modified= &(smooth_field_over_element_data.time);
 			return_code=process_multiple_options(state,option_table);
 			if (return_code)
 			{
@@ -21241,6 +21261,7 @@ the derivatives).
 ==============================================================================*/
 {
 	double ximax[3];
+	FE_value time;
 	int return_code,xi_order;
 	static struct Modifier_entry option_table[]=
 	{
@@ -21248,6 +21269,7 @@ the derivatives).
 		{"extent",NULL,NULL,set_Element_discretization},
 		{"from",NULL,NULL,set_FE_node_group},
 		{"seed_element",NULL,NULL,set_FE_element_dimension_3},
+		{"time",NULL,NULL,set_FE_value},
 		{"to_coordinate_field",NULL,NULL,set_FE_field},
 		{"values",NULL,NULL,set_Warp_values},
 		{"warp_field",NULL,NULL,set_FE_field},
@@ -21291,12 +21313,13 @@ the derivatives).
 			(option_table[2]).user_data=command_data->node_group_manager;
 			(option_table[3]).to_be_modified= &seed_element;
 			(option_table[3]).user_data=command_data->element_manager;
-			(option_table[4]).to_be_modified= &to_coordinate_field;
-			(option_table[4]).user_data=command_data->fe_field_manager;
-			(option_table[5]).to_be_modified= &warp_values;
-			(option_table[6]).to_be_modified= &warp_field;
-			(option_table[6]).user_data=command_data->fe_field_manager;
-			(option_table[7]).to_be_modified= &xi_order;
+			(option_table[4]).to_be_modified= &time;
+			(option_table[5]).to_be_modified= &to_coordinate_field;
+			(option_table[5]).user_data=command_data->fe_field_manager;
+			(option_table[6]).to_be_modified= &warp_values;
+			(option_table[7]).to_be_modified= &warp_field;
+			(option_table[7]).user_data=command_data->fe_field_manager;
+			(option_table[8]).to_be_modified= &xi_order;
 			return_code=process_multiple_options(state,option_table);
 			/* no errors, not asking for help */
 			if (return_code)
@@ -21306,7 +21329,7 @@ the derivatives).
 				ximax[2]=extent.number_in_xi3;
 				return_code=warp_FE_node_group_with_FE_element(node_group,
 					command_data->node_manager,coordinate_field,to_coordinate_field,
-					seed_element,warp_field,ximax,warp_values.value,xi_order);
+					seed_element,warp_field,ximax,warp_values.value,xi_order,time);
 			}
 			if (node_group)
 			{
@@ -21362,6 +21385,7 @@ gtvoltex according to calculated
 {
 	char *graphics_object_name1,*graphics_object_name2;
 	double ximax[3];
+	FE_value time;
 	gtObject *graphics_object1,*graphics_object2;
 	int itime1,itime2,return_code,xi_order;
 	static struct Modifier_entry option_table[]=
@@ -21370,6 +21394,7 @@ gtvoltex according to calculated
 		{"field",NULL,NULL,set_FE_field},
 		{"from",NULL,(void *)1,set_name},
 		{"seed_element",NULL,NULL,set_FE_element_dimension_3},
+		{"time",NULL,NULL,set_FE_value},
 		{"to",NULL,(void *)1,set_name},
 		{"values",NULL,NULL,set_Warp_values},
 		{"xi_order",NULL,NULL,set_int_positive},
@@ -21401,6 +21426,7 @@ gtvoltex according to calculated
 			(warp_values.value)[3] = 0.0;
 			(warp_values.value)[4] = 0.0;
 			(warp_values.value)[5] = 0.0;
+			time = Time_keeper_get_time(command_data->default_time_keeper);
 			xi_order=123;
 			(option_table[0]).to_be_modified= &extent;
 			(option_table[0]).user_data=command_data->user_interface;
@@ -21409,9 +21435,10 @@ gtvoltex according to calculated
 			(option_table[2]).to_be_modified= &graphics_object_name1;
 			(option_table[3]).to_be_modified= &seed_element;
 			(option_table[3]).user_data=command_data->element_manager;
-			(option_table[4]).to_be_modified= &graphics_object_name2;
-			(option_table[5]).to_be_modified= &warp_values;
-			(option_table[6]).to_be_modified= &xi_order;
+			(option_table[4]).to_be_modified= &time;
+			(option_table[5]).to_be_modified= &graphics_object_name2;
+			(option_table[6]).to_be_modified= &warp_values;
+			(option_table[7]).to_be_modified= &xi_order;
 			return_code=process_multiple_options(state,option_table);
 			/* no errors, not asking for help */
 			if (return_code)
@@ -21435,7 +21462,7 @@ gtvoltex according to calculated
 							return_code=warp_GT_voltex_with_FE_element(
 								(graphics_object1->gu.gt_voltex)[itime1-1],
 								(graphics_object2->gu.gt_voltex)[itime2-1],seed_element,
-								warp_field,ximax,warp_values.value,xi_order);
+								warp_field,ximax,warp_values.value,xi_order,time);
 #if defined (DEBUG)
 							/*???debug */
 							printf("Warp called: volume1 = %s, volume2 = %s,  element = %d, coordinates = %s, extent = %d %d %d, values = %f %f,  %f %f,  %f %f xi_order = %d\n",
@@ -22779,7 +22806,8 @@ Executes a UNEMAP OPEN command.
 					computed_field_manager=Computed_field_package_get_computed_field_manager(
 						command_data->computed_field_package);
 					command_data->unemap_package = CREATE(Unemap_package)(
-						command_data->fe_field_manager,command_data->element_group_manager,
+						command_data->fe_field_manager,command_data->fe_time,
+						command_data->element_group_manager,
 						command_data->node_manager,command_data->data_manager,
 						command_data->data_group_manager,
 						command_data->node_group_manager,command_data->basis_manager,
@@ -22876,7 +22904,7 @@ Executes a UNEMAP OPEN command.
 									command_data->user_interface);								
 								/* create and store the map fit field  */
 								map_fit_field=create_mapping_type_fe_field("fit",
-									command_data->fe_field_manager);
+									command_data->fe_field_manager, command_data->fe_time);
 								set_unemap_package_map_fit_field(command_data->unemap_package,
 									map_fit_field);
 								/* get the location of the default_torso file from Xresoures*/
@@ -22889,8 +22917,9 @@ Executes a UNEMAP OPEN command.
 									/* read in the default torso node and element groups */
 									if(read_FE_node_and_elem_groups_and_return_name_given_file_name(
 										standard_torso_defaults.standard_torso_file,
-										command_data->fe_field_manager,command_data->node_manager,
-										command_data->element_manager,command_data->node_group_manager,
+										command_data->fe_field_manager,command_data->fe_time,
+										command_data->node_manager,command_data->element_manager,
+										command_data->node_group_manager,
 										command_data->data_group_manager,
 										command_data->element_group_manager,command_data->basis_manager,
 										&default_torso_group_name))

@@ -84,7 +84,7 @@ Returns true if a valid element xi is found.
 					data->xi[i] = 0.5;
 				}
 				Computed_field_evaluate_in_element(data->field, element, data->xi,
-					(struct FE_element *)NULL, values, derivatives);
+					/*time*/0, (struct FE_element *)NULL, values, derivatives);
 
 				/* Solve optimally for each number of xi */
 				switch (number_of_xi)
@@ -263,13 +263,13 @@ Stores cache data for the Computed_field_find_element_xi_special routine.
 			xi[0] = 0.0;
 			xi[1] = 0.0;
 			Computed_field_evaluate_in_element(data->field, element, xi,
-				(struct FE_element *)NULL, data->values, (FE_value *)NULL);
+				/*time*/0,(struct FE_element *)NULL, data->values, (FE_value *)NULL);
 			glVertex2fv(data->values);
 
 			xi[0] = 1.0;
 			xi[1] = 0.0;
 			Computed_field_evaluate_in_element(data->field, element, xi,
-				(struct FE_element *)NULL, data->values, (FE_value *)NULL);
+				/*time*/0,(struct FE_element *)NULL, data->values, (FE_value *)NULL);
 			glVertex2fv(data->values);
 
 			if (SIMPLEX_SHAPE== *(element->shape->type))
@@ -277,7 +277,7 @@ Stores cache data for the Computed_field_find_element_xi_special routine.
 				xi[0] = 0.0;
 				xi[1] = 1.0;
 				Computed_field_evaluate_in_element(data->field, element, xi,
-					(struct FE_element *)NULL, data->values, (FE_value *)NULL);
+					/*time*/0,(struct FE_element *)NULL, data->values, (FE_value *)NULL);
 				glVertex2fv(data->values);
 				glVertex2fv(data->values);
 			}
@@ -286,13 +286,13 @@ Stores cache data for the Computed_field_find_element_xi_special routine.
 				xi[0] = 1.0;
 				xi[1] = 1.0;
 				Computed_field_evaluate_in_element(data->field, element, xi,
-					(struct FE_element *)NULL, data->values, (FE_value *)NULL);
+					/*time*/0,(struct FE_element *)NULL, data->values, (FE_value *)NULL);
 				glVertex2fv(data->values);
 				
 				xi[0] = 0.0;
 				xi[1] = 1.0;
 				Computed_field_evaluate_in_element(data->field, element, xi,
-					(struct FE_element *)NULL, data->values, (FE_value *)NULL);
+					/*time*/0,(struct FE_element *)NULL, data->values, (FE_value *)NULL);
 				glVertex2fv(data->values);
 			}
 			return_code = 1;

@@ -108,14 +108,8 @@ Ensures there is a template node defined with the coordinate_field in the
 <element_creator> for creating new nodes as copies of.
 ==============================================================================*/
 {
-	enum FE_nodal_value_type *components_nodal_value_types[3]=
-	{
-		{FE_NODAL_VALUE},
-		{FE_NODAL_VALUE},
-		{FE_NODAL_VALUE}
-	};
-	int components_number_of_derivatives[3]={0,0,0},
-		components_number_of_versions[3]={1,1,1},return_code;
+	int return_code;
+	struct FE_node_field_creator *node_field_creator;
 
 	ENTER(Element_creator_make_template_node);
 	if (element_creator)
@@ -127,17 +121,17 @@ Ensures there is a template node defined with the coordinate_field in the
 				return_code=1;
 				if (!element_creator->template_node)
 				{
-					if (element_creator->template_node=CREATE(FE_node)(
-						/*node_number*/0,(struct FE_node *)NULL))
+					if ((node_field_creator = CREATE(FE_node_field_creator)(
+						/*number_of_components*/3))&&
+						(element_creator->template_node=CREATE(FE_node)(
+						/*node_number*/0,(struct FE_node *)NULL)))
 					{
 						/* template_node is accessed by element_creator but not managed */
 						ACCESS(FE_node)(element_creator->template_node);
 						if (!define_FE_field_at_node(
 							element_creator->template_node,
 							element_creator->coordinate_field,
-							components_number_of_derivatives,
-							components_number_of_versions,
-							components_nodal_value_types))
+							(struct FE_time_version *)NULL, node_field_creator))
 						{
 							display_message(ERROR_MESSAGE,
 								"Element_creator_make_template_node.  "
@@ -145,6 +139,7 @@ Ensures there is a template node defined with the coordinate_field in the
 							DEACCESS(FE_node)(&(element_creator->template_node));
 							return_code=0;
 						}
+						DESTROY(FE_node_field_creator)(&(node_field_creator));
 					}
 					else
 					{

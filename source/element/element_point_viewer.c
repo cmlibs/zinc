@@ -56,6 +56,7 @@ Contains all the information carried by the element_point_viewer widget.
 	struct MANAGER(FE_node) *node_manager;
 	void *node_manager_callback_id;
 	struct Element_point_ranges_selection *element_point_ranges_selection;
+	struct Time_object *time_object;
 	struct User_interface *user_interface;
 	/* information about the element point being edited; note element in
 		 identifier is not accessed */
@@ -188,7 +189,8 @@ Ensures xi is correct for the currently selected element point, if any.
 				/*coordinate_field*/(struct Computed_field *)NULL,
 				/*density_field*/(struct Computed_field *)NULL,
 				element_point_viewer->element_point_number,
-				element_point_viewer->xi);
+				element_point_viewer->xi, Time_object_get_current_time(
+				element_point_viewer->time_object));
 		}
 		else
 		{
@@ -679,6 +681,7 @@ the field value, otherwise N/A.
 ==============================================================================*/
 {
 	char *field_value_string,*value_string;
+	FE_value time;
 	int is_sensitive,return_code;
 	struct Computed_field *grid_field;
 	struct FE_element *element,*top_level_element;
@@ -698,9 +701,10 @@ the field value, otherwise N/A.
 					element_point_viewer->grid_field_widget))&&
 				Computed_field_is_defined_in_element(grid_field,element))
 			{
+				time = Time_object_get_current_time(element_point_viewer->time_object);
 				if (field_value_string=Computed_field_evaluate_as_string_in_element(
 					grid_field,/*component_number*/-1,element,
-					element_point_viewer->xi,top_level_element))
+					element_point_viewer->xi,time,top_level_element))
 				{
 					/* only set string from field if different from that shown */
 					if (strcmp(field_value_string,value_string))
@@ -1872,6 +1876,7 @@ object cause updates.
 				}
 			} break;
 			case MANAGER_CHANGE_ADD(FE_element):
+			case MANAGER_CHANGE_NONE(FE_element):
 			case MANAGER_CHANGE_REMOVE(FE_element):
 			case MANAGER_CHANGE_IDENTIFIER(FE_element):
 			{
@@ -1949,6 +1954,7 @@ currently being viewed is affected by the change, re-send to viewer.
 					}
 				} break;
 				case MANAGER_CHANGE_ADD(FE_node):
+				case MANAGER_CHANGE_NONE(FE_node):
 				case MANAGER_CHANGE_REMOVE(FE_node):
 				case MANAGER_CHANGE_IDENTIFIER(FE_node):
 				{
@@ -1977,9 +1983,10 @@ struct Element_point_viewer *CREATE(Element_point_viewer)(
 	struct Element_point_ranges_selection *element_point_ranges_selection,
 	struct Computed_field_package *computed_field_package,
 	struct MANAGER(FE_field) *fe_field_manager,
+	struct Time_object *time_object,
 	struct User_interface *user_interface)
 /*******************************************************************************
-LAST MODIFIED : 21 November 2001
+LAST MODIFIED : 3 December 2001
 
 DESCRIPTION :
 Creates a dialog for choosing element points and displaying and editing their
@@ -2077,6 +2084,8 @@ fields.
 				element_point_viewer->element_point_ranges_selection=
 					element_point_ranges_selection;
 				element_point_viewer->user_interface=user_interface;
+				element_point_viewer->time_object = ACCESS(Time_object)(
+					time_object);
 				element_point_viewer->element_point_identifier.element=
 					(struct FE_element *)NULL;
 				element_point_viewer->element_point_identifier.top_level_element=
@@ -2316,7 +2325,7 @@ fields.
 									computed_field_package,
 									element_point_viewer->modified_field_components,
 									&temp_element_point_identifier,
-									temp_element_point_number, user_interface))
+									temp_element_point_number, time_object, user_interface))
 								{
 									init_widgets=0;
 								}
@@ -2461,6 +2470,7 @@ Destroys the Element_point_viewer. See also Element_point_viewer_close_CB.
 				element_point_viewer->node_manager_callback_id,
 				element_point_viewer->node_manager);
 		}
+		DEACCESS(Time_object)(&(element_point_viewer->time_object));
 		/* end callbacks from global element_point selection */
 		Element_point_ranges_selection_remove_callback(
 			element_point_viewer->element_point_ranges_selection,

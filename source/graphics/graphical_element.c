@@ -185,12 +185,79 @@ changed.
 	return (return_code);
 } /* GT_element_group_changed */
 
+static int GT_element_group_update_default_coordinate(
+	struct GT_element_group *gt_element_group)
+/*******************************************************************************
+LAST MODIFIED : 30 November 2001
+
+DESCRIPTION :
+If the <gt_element_group> doesn't have a default coordinate yet then it 
+tries to find one, first in the element_group, then in the node_group and
+finally in the data group.
+==============================================================================*/
+{
+	int return_code;
+	struct Computed_field *computed_field;
+	struct FE_field *fe_field;
+
+	ENTER(GT_element_group_changed);
+	if (gt_element_group)
+	{
+		return_code = 1;
+		if (gt_element_group->default_coordinate_field)
+		{
+			/* Don't second guess, just keep what we have */
+		}
+		else
+		{
+			/* Try to find one */
+			fe_field = (struct FE_field *)NULL;
+			FIRST_OBJECT_IN_GROUP_THAT(FE_element)(
+				FE_element_find_default_coordinate_field_iterator,
+				(void *)&fe_field, gt_element_group->element_group);
+			if (!fe_field)
+			{
+				FIRST_OBJECT_IN_GROUP_THAT(FE_node)(
+					FE_node_find_default_coordinate_field_iterator,
+					(void *)&fe_field, gt_element_group->node_group);
+			}
+			if (!fe_field)
+			{
+				FIRST_OBJECT_IN_GROUP_THAT(FE_node)(
+					FE_node_find_default_coordinate_field_iterator,
+					(void *)&fe_field, gt_element_group->data_group);
+			}
+			if (fe_field)
+			{
+				/* Find the computed_field wrapper */
+				if (computed_field = FIRST_OBJECT_IN_MANAGER_THAT(Computed_field)(
+					Computed_field_is_read_only_with_fe_field,
+					(void *)fe_field, gt_element_group->computed_field_manager))
+				{
+					gt_element_group->default_coordinate_field = 
+						ACCESS(Computed_field)(computed_field);
+				}
+			}
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"GT_element_group_changed. Invalid GT_element_group");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* GT_element_group_changed */
+
 static int GT_element_group_build_graphics_objects(
 	struct GT_element_group *gt_element_group,
 	struct LIST(FE_element) *changed_element_list,
-	struct LIST(FE_node) *changed_node_list)
+	struct LIST(FE_node) *changed_node_list,
+	FE_value time)
 /*******************************************************************************
-LAST MODIFIED : 5 June 2001
+LAST MODIFIED : 22 November 2001
 
 DESCRIPTION :
 Builds graphics objects for all settings in <gt_element_group> that do not have
@@ -210,10 +277,16 @@ rendering.
 	ENTER(GT_element_group_build_graphics_objects);
 	if (gt_element_group)
 	{
+		/* update default coordinate field */
+		GT_element_group_update_default_coordinate(gt_element_group);
+		
 		/*???debug*//*printf("Graphical_element: build graphics objects\n");*/
-		if (settings_to_object_data.default_rc_coordinate_field=
+		settings_to_object_data.default_rc_coordinate_field = 
+			(struct Computed_field *)NULL;
+		if ((!gt_element_group->default_coordinate_field) || 
+			(settings_to_object_data.default_rc_coordinate_field=
 			Computed_field_begin_wrap_coordinate_field(
-				gt_element_group->default_coordinate_field))
+			gt_element_group->default_coordinate_field)))
 		{
 			settings_to_object_data.build_graphics = 1;
 			if (changed_node_list || changed_element_list)
@@ -272,6 +345,7 @@ rendering.
 			settings_to_object_data.element_discretization = &element_discretization;
 			settings_to_object_data.circle_discretization =
 				gt_element_group->circle_discretization;
+			settings_to_object_data.time = time;
 
 			settings_to_object_data.selected_element_point_ranges_list =
 				Element_point_ranges_selection_get_element_point_ranges_list(
@@ -287,8 +361,11 @@ rendering.
 				GT_element_settings_to_graphics_object,(void *)&settings_to_object_data,
 				gt_element_group->list_of_settings);
 			/* destroy list created above */
-			Computed_field_end_wrap(
-				&settings_to_object_data.default_rc_coordinate_field);
+			if (settings_to_object_data.default_rc_coordinate_field)
+			{
+				Computed_field_end_wrap(
+					&settings_to_object_data.default_rc_coordinate_field);
+			}
 			if (settings_to_object_data.changed_element_list)
 			{
 				DESTROY(LIST(FE_element))(
@@ -1513,7 +1590,9 @@ Invalidate any components of a GT_element group that depend on time
 		FOR_EACH_OBJECT_IN_LIST(GT_element_settings)(
 			GT_element_settings_time_change,NULL,
 			gt_element_group->list_of_settings);		
-		GT_element_group_changed(gt_element_group);
+		gt_element_group->build = 1;
+		gt_element_group->display_list_current = 0;
+		/* GT_element_group_changed(gt_element_group); */
 		return_code = 1;
 	}
 	else
@@ -2317,12 +2396,15 @@ optional <command_suffix> may describe the scene (eg. "scene default").
 				display_message(INFORMATION_MESSAGE,"general clear");
 				display_message(INFORMATION_MESSAGE," circle_discretization %d",
 					gt_element_group->circle_discretization);
-				if (GET_NAME(Computed_field)(gt_element_group->default_coordinate_field,
-					&name))
+				if (gt_element_group->default_coordinate_field)
 				{
-					make_valid_token(&name);
-					display_message(INFORMATION_MESSAGE," default_coordinate %s",name);
-					DEALLOCATE(name);
+					if (GET_NAME(Computed_field)(gt_element_group->default_coordinate_field,
+						&name))
+					{
+						make_valid_token(&name);
+						display_message(INFORMATION_MESSAGE," default_coordinate %s",name);
+						DEALLOCATE(name);
+					}
 				}
 				display_message(INFORMATION_MESSAGE,
 					" element_discretization \"%d*%d*%d\"",
@@ -2395,12 +2477,20 @@ Lists the general settings and graphics defined for <gt_element_group>.
 	{
 		display_message(INFORMATION_MESSAGE,"  circle discretization: %d\n",
 			gt_element_group->circle_discretization);
-		if (GET_NAME(Computed_field)(gt_element_group->default_coordinate_field,
-			&name))
+		if (gt_element_group->default_coordinate_field)
+		{
+			if (GET_NAME(Computed_field)(gt_element_group->default_coordinate_field,
+				&name))
+			{
+				display_message(INFORMATION_MESSAGE,
+					"  default coordinate field: %s\n",name);
+				DEALLOCATE(name);
+			}
+		}
+		else
 		{
 			display_message(INFORMATION_MESSAGE,
-				"  default coordinate field: %s\n",name);
-			DEALLOCATE(name);
+				"  default coordinate field: NONE\n",name);
 		}
 		display_message(INFORMATION_MESSAGE,"  element discretization: %d*%d*%d\n",
 			gt_element_group->element_discretization.number_in_xi1,
@@ -2555,8 +2645,9 @@ returns true if the group contains any settings using embedded fields.
 	ENTER(GT_element_group_has_embedded_field);
 	if (gt_element_group)
 	{
-		if (Computed_field_depends_on_embedded_field(
-			gt_element_group->default_coordinate_field) ||
+		if ((gt_element_group->default_coordinate_field &&
+			Computed_field_depends_on_embedded_field(
+			gt_element_group->default_coordinate_field)) ||
 			FIRST_OBJECT_IN_LIST_THAT(GT_element_settings)(
 				GT_element_settings_has_embedded_field, (void *)NULL,
 				gt_element_group->list_of_settings))
@@ -2603,7 +2694,7 @@ returns true if the group contains any settings using embedded fields.
 int GT_element_group_has_multiple_times(
 	struct GT_element_group *gt_element_group)
 /*******************************************************************************
-LAST MODIFIED : 25 October 2000
+LAST MODIFIED : 30 November 2001
 
 DESCRIPTION :
 Returns true if <gt_element_group> contains settings which depend on time.
@@ -2614,16 +2705,18 @@ Returns true if <gt_element_group> contains settings which depend on time.
 	ENTER(GT_element_group_has_multiple_times);
 	if (gt_element_group)
 	{
-		if(FIRST_OBJECT_IN_LIST_THAT(GT_element_settings)(
-			GT_element_settings_has_multiple_times,NULL,
-			gt_element_group->list_of_settings))
+		return_code = 0;
+		if (gt_element_group->default_coordinate_field)
 		{
-			return_code = 1;
+			if (Computed_field_has_multiple_times(
+				gt_element_group->default_coordinate_field))
+			{
+				return_code = 1;
+			}
 		}
-		else
-		{
-			return_code = 0;
-		}
+		FOR_EACH_OBJECT_IN_LIST(GT_element_settings)(
+			GT_element_settings_update_time_behaviour, &return_code,
+			gt_element_group->list_of_settings);
 	}
 	else
 	{
@@ -2636,9 +2729,10 @@ Returns true if <gt_element_group> contains settings which depend on time.
 	return (return_code);
 } /* GT_element_group_has_multiple_times */
 
-int build_GT_element_group(struct GT_element_group *gt_element_group)
+int build_GT_element_group(struct GT_element_group *gt_element_group,
+	FE_value time)
 /*******************************************************************************
-LAST MODIFIED : 7 June 2001
+LAST MODIFIED : 22 November 2001
 
 DESCRIPTION :
 Builds any graphics objects for settings without them in <gt_element_group>.
@@ -2745,7 +2839,7 @@ Builds any graphics objects for settings without them in <gt_element_group>.
 			}
 
 			return_code =  GT_element_group_build_graphics_objects(gt_element_group,
-				element_list, node_list);
+				element_list, node_list, time);
 
 			if (node_list)
 			{

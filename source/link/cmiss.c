@@ -125,6 +125,7 @@ Private structure representing the connection between cm and cmgui.
 	struct GROUP(FE_node) *new_node_group;
 	struct MANAGER(FE_element) *element_manager;
 	struct MANAGER(FE_field) *fe_field_manager;
+	struct FE_time *fe_time;
 	struct MANAGER(FE_node) *data_manager;
 	struct MANAGER(FE_node) *node_manager;
 	struct MANAGER(GROUP(FE_element)) *element_group_manager;
@@ -658,11 +659,9 @@ Receives any data from the output data wormhole.
 {
 	char **component_names,*field_name,*group_name,region_name[]="region_xxxxx";
 	double *temp_field_values;
-	enum FE_nodal_value_type **components_nodal_value_types;
 	enum CM_field_type cm_field_type;
 	FE_value *field_values;
-	int component_data[NUM_COMPONENT_DATA],*components_number_of_derivatives,
-		*components_number_of_versions,field_num,i,j,
+	int component_data[NUM_COMPONENT_DATA],field_num,i,j,
 		node_field_info_data[NUM_NODE_FIELD_INFO_DATA],number_of_components,
 		number_of_fields,number_of_field_values,number_of_values,primary_id,
 		return_code,secondary_id;
@@ -671,6 +670,7 @@ Receives any data from the output data wormhole.
 	struct FE_field *field,**template_node_fields;
 	struct FE_field_external_information external;
 	struct FE_node *node,*old_node,*template_node;
+	struct FE_node_field_creator *node_field_creator;
 	struct GROUP(FE_node) *old_node_group;
 	struct MANAGER(FE_node) *FE_node_manager;
 
@@ -945,14 +945,9 @@ Receives any data from the output data wormhole.
 								}
 								/* get components */
 								ALLOCATE(component_names,char *,number_of_components);
-								ALLOCATE(components_number_of_derivatives,int,
-									number_of_components);
-								ALLOCATE(components_number_of_versions,int,
-									number_of_components);
-								ALLOCATE(components_nodal_value_types,
-									enum FE_nodal_value_type *,number_of_components);
-								if (component_names&&components_number_of_derivatives&&
-									components_number_of_versions&&components_nodal_value_types)
+								node_field_creator = CREATE(FE_node_field_creator)
+									(number_of_components);
+								if (component_names&&node_field_creator)
 								{
 									for (i=0;i<number_of_components;i++)
 									{
@@ -963,13 +958,19 @@ Receives any data from the output data wormhole.
 											wh_output_get_int(connection->data_output,
 												NUM_COMPONENT_DATA,component_data);
 											/* get the number of derivatives */
-											components_number_of_derivatives[i]=component_data[0];
-											/* get the number of versions */
-											components_number_of_versions[i]=component_data[1];
-											/* value types */
+											for (j = 0 ; j < component_data[0] ; j++)
+											{
+												/* value types */
 												/*???DB.  To be done */
-											components_nodal_value_types[i]=
-												(enum FE_nodal_value_type *)NULL;
+												/* SAB.  So we just use the default now,
+												 the FE_NODAL_VALUE has been added in by
+												 default */
+												FE_node_field_creator_define_derivative(
+													node_field_creator, i, FE_NODAL_UNKNOWN);
+											}
+											/* get the number of versions */
+											FE_node_field_creator_define_versions(
+												node_field_creator, i, component_data[1]);
 										}
 										else
 										{
@@ -985,7 +986,8 @@ Receives any data from the output data wormhole.
 									{
 										if (field=get_FE_field_manager_matched_field(
 											connection->fe_field_manager,field_name,
-											GENERAL_FE_FIELD,/*indexer_field*/(struct FE_field *)NULL,
+											GENERAL_FE_FIELD, connection->fe_time,
+											/*indexer_field*/(struct FE_field *)NULL,
 											/*number_of_indexed_values*/0,cm_field_type,
 											&coordinate_system,FE_VALUE_VALUE,
 											number_of_components,component_names,
@@ -1001,9 +1003,8 @@ Receives any data from the output data wormhole.
 											}
 											/*???DB.  Check for duplicates ? */
 											if (define_FE_field_at_node(template_node,field,
-												components_number_of_derivatives,
-												components_number_of_versions,
-												components_nodal_value_types))
+												(struct FE_time_version *)NULL,
+												node_field_creator))
 											{
 												template_node_fields[field_num]=ACCESS(FE_field)(field);
 											}
@@ -1035,10 +1036,8 @@ Receives any data from the output data wormhole.
 									display_message(ERROR_MESSAGE,"CMISS_connection_get_data.  "
 										"state: node field info.  Could not allocate memory");
 								}
+								DESTROY(FE_node_field_creator)(&node_field_creator);
 								DEALLOCATE(component_names);
-								DEALLOCATE(components_number_of_derivatives);
-								DEALLOCATE(components_number_of_versions);
-								DEALLOCATE(components_nodal_value_types);
 								DEALLOCATE(field_values);
 								DEALLOCATE(field_name);
 							}
@@ -2598,7 +2597,7 @@ struct CMISS_connection *CREATE(CMISS_connection)(char *machine,
 	enum Machine_type type,int attach,double wormhole_timeout,char mycm_flag,
 	char asynchronous_commands,struct MANAGER(FE_element) *element_manager,
 	struct MANAGER(GROUP(FE_element)) *element_group_manager,
-	struct MANAGER(FE_field) *fe_field_manager,
+	struct MANAGER(FE_field) *fe_field_manager, struct FE_time *fe_time,
 	struct MANAGER(FE_node) *node_manager,struct MANAGER(FE_node) *data_manager,
 	struct MANAGER(GROUP(FE_node)) *node_group_manager,
 	struct MANAGER(GROUP(FE_node)) *data_group_manager,
@@ -2630,7 +2629,7 @@ does not wait for cm commands to complete, otherwise it does.
 #define XmCMycmExecutable "MycmExecutable"
 	static XtResource
 		cm_resource[]=
-		{
+		{{
 			XmNcmExecutable,
 			XmCCmExecutable,
 			XmRString,
@@ -2638,9 +2637,9 @@ does not wait for cm commands to complete, otherwise it does.
 			0,
 			XmRString,
 			"cm"
-		},
+		}},
 		mycm_resource[]=
-		{
+		{{
 			XmNmycmExecutable,
 			XmCMycmExecutable,
 			XmRString,
@@ -2648,7 +2647,7 @@ does not wait for cm commands to complete, otherwise it does.
 			0,
 			XmRString,
 			"mycm"
-		};
+		}};
 #endif /* defined (MOTIF) */
 
 	ENTER(CREATE(CMISS_connection));
@@ -2908,6 +2907,7 @@ does not wait for cm commands to complete, otherwise it does.
 #endif /* defined (NOT_DEBUG) */
 					return_struct->element_group_manager=element_group_manager;
 					return_struct->fe_field_manager=fe_field_manager;
+					return_struct->fe_time=fe_time;
 					return_struct->node_manager=node_manager;
 					return_struct->data_manager=data_manager;
 /*???DB.  Temporary to disable data transfer */

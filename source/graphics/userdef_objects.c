@@ -248,7 +248,7 @@ Render a hair.
 	float hairx,hairy,hairz,browx,browy,browz,hairxprev,hairyprev,hairzprev;
 #if defined (GL_API)
 	float dummynorm[3] = {0,1,0};
-#endif
+#endif /* defined (GL_API) */
 	float vec1[3],vec2[3],vec3[3];
 #endif
 
@@ -740,9 +740,9 @@ Render a hair.
 	return (return_code);
 } /* render_hair */
 
-#if defined (OLD_CODE)
+#if defined (GL_API)
 static int robot_7dof;
-#endif /* defined (OLD_CODE) */
+#endif /* defined (GL_API) */
 
 static int render_robot_7dof(void *dummy)
 /*******************************************************************************
@@ -1229,7 +1229,7 @@ newly created object is put at <*userdef_address>.
 		/* make sure the userdef is initially clear */
 		*userdef_address=(struct GT_userdef *)NULL;
 		/* read the type */
-		fscanf(file,"%d",&type);
+		fscanf(file,"%d",(int *)&type);
 		switch (type)
 		{
 			case USERDEF_HAIR:

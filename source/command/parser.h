@@ -506,6 +506,15 @@ while <values_address_void> should point to a large enough space to store the
 number_of_components floats.
 ==============================================================================*/
 
+int set_FE_value(struct Parse_state *state,void *value_address_void,
+	void *dummy_user_data);
+/*******************************************************************************
+LAST MODIFIED : 21 November 2001
+
+DESCRIPTION :
+A modifier function for setting a FE_value.
+==============================================================================*/
+
 int set_FE_value_array(struct Parse_state *state, void *values_void,
 	void *number_of_components_address_void);
 /*******************************************************************************

@@ -51,9 +51,10 @@ struct Node_tool *CREATE(Node_tool)(
 	struct FE_node_selection *node_selection,
 	struct Computed_field_package *computed_field_package,
 	struct Graphical_material *rubber_band_material,
-	struct User_interface *user_interface);
+	struct User_interface *user_interface,
+	struct Time_keeper *time_keeper);
 /*******************************************************************************
-LAST MODIFIED : 12 September 2000
+LAST MODIFIED : 22 November 2001
 
 DESCRIPTION :
 Creates a Node_tool for editing nodes/data in the <node_manager>,

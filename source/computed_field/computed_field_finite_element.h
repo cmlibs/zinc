@@ -28,9 +28,9 @@ Global functions
 struct Computed_field_finite_element_package *
 	Computed_field_register_types_finite_element(
 	struct Computed_field_package *computed_field_package,
-	struct MANAGER(FE_field) *fe_field_manager);
+	struct MANAGER(FE_field) *fe_field_manager, struct FE_time *fe_time);
 /*******************************************************************************
-LAST MODIFIED : 18 July 2000
+LAST MODIFIED : 9 November 2001
 
 DESCRIPTION :
 This function registers the finite_element related types of Computed_fields and
@@ -87,50 +87,6 @@ Returns the list of FE_fields that <field> depends on, by sorting through the
 <computed_field_manager>.
 ==============================================================================*/
 
-int Computed_field_is_type_default_coordinate(struct Computed_field *field);
-/*******************************************************************************
-LAST MODIFIED : 18 July 2000
-
-DESCRIPTION :
-==============================================================================*/
-
-int Computed_field_get_type_default_coordinate(struct Computed_field *field,
-	struct MANAGER(Computed_field) **computed_field_manager);
-/*******************************************************************************
-LAST MODIFIED : 18 July 2000
-
-DESCRIPTION :
-If the field is of type COMPUTED_FIELD_DEFAULT_COORDINATE, the 
-<source_field> and <xi_index> used by it are returned.
-==============================================================================*/
-
-int Computed_field_set_type_default_coordinate(struct Computed_field *field,
-	struct MANAGER(Computed_field) *computed_field_manager);
-/*******************************************************************************
-LAST MODIFIED : 18 July 2000
-
-DESCRIPTION :
-Converts <field> to type COMPUTED_FIELD_DEFAULT_COORDINATE, which returns the
-values/derivatives of the first [coordinate] field defined for the element/node
-in rectangular cartesian coordinates. This type is intended to replace the
-NULL coordinate_field option in the calculate_FE_element_field_values function.
-When a field of this type is calculated at and element/node, the evaluate
-function finds the first FE_field (coordinate type) defined over it, then gets
-its Computed_field wrapper from the manager and proceeds from there.
-Consequences of this behaviour are:
-- the field allocates its source_fields to point to the computed_field for the
-actual coordinate field in the evaluate phase.
-- when the source field changes the current one's cache is cleared and it is
-deaccessed.
-- when the cache is cleared, so is any reference to the source_field.
-- always performs the conversion to RC since cannot predict the coordinate
-system used by the eventual source_field. Coordinate_system of this type of
-field need not be RC, although it usually will be.
-Sets number of components to 3.
-If function fails, field is guaranteed to be unchanged from its original state,
-although its cache may be lost.
-==============================================================================*/
-
 int Computed_field_is_type_cmiss_number(struct Computed_field *field);
 /*******************************************************************************
 LAST MODIFIED : 18 July 2000
@@ -160,6 +116,16 @@ Iterator/conditional function returning true if <field> is read only and a
 wrapper for <fe_field>.
 ==============================================================================*/
 
+int Computed_field_has_coordinate_fe_field(struct Computed_field *field,
+	void *dummy);
+/*******************************************************************************
+LAST MODIFIED : 4 December 2001
+
+DESCRIPTION :
+Iterator/conditional function returning true if <field> is a wrapper for a
+coordinate type fe_field.
+==============================================================================*/
+
 int Computed_field_is_scalar_integer(struct Computed_field *field,
 	void *dummy_void);
 /*******************************************************************************
@@ -178,6 +144,13 @@ DESCRIPTION :
 Returns true if <field> is a 1 integer component FINITE_ELEMENT wrapper which
 is defined in <element> AND is grid-based.
 Used for choosing field suitable for identifying grid points.
+==============================================================================*/
+
+int Computed_field_is_type_embedded(struct Computed_field *field, void *dummy);
+/*******************************************************************************
+LAST MODIFIED : 20 July 2000
+
+DESCRIPTION :
 ==============================================================================*/
 
 int Computed_field_depends_on_embedded_field(struct Computed_field *field);

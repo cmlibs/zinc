@@ -23,9 +23,9 @@ Global types
 int Computed_field_update_nodal_values_from_source(
 	struct Computed_field *destination_field,	struct Computed_field *source_field,
 	struct GROUP(FE_node) *node_group, struct MANAGER(FE_node) *node_manager,
-	struct FE_node_selection *node_selection);
+	struct FE_node_selection *node_selection, FE_value time);
 /*******************************************************************************
-LAST MODIFIED : 11 October 2001
+LAST MODIFIED : 21 November 2001
 
 DESCRIPTION :
 Set <destination_field> in all the nodes in <node_group> or <node_manager> if
@@ -38,9 +38,9 @@ int Computed_field_update_element_values_from_source(
 	struct GROUP(FE_element) *element_group,
 	struct MANAGER(FE_element) *element_manager,
 	struct Element_point_ranges_selection *element_point_ranges_selection,
-	struct FE_element_selection *element_selection);
+	struct FE_element_selection *element_selection, FE_value time);
 /*******************************************************************************
-LAST MODIFIED : 11 October 2001
+LAST MODIFIED : 3 December 2001
 
 DESCRIPTION :
 Set grid-based <destination_field> in all the elements in <element_group> or

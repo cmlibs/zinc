@@ -451,12 +451,16 @@ DESCRIPTION :
 			list_memory_data->count_total[block->count] += block->size;
 			list_memory_data->total += block->size;
 		}
+		if (list_memory_data->show_structures)
+		{
+			if (!strcmp(block->type, "char"))
+			{
+				printf("   \"%s\"\n", (char *)block->ptr);
+			}
 #if defined (DEBUG)
 		/* This code, while useful for debugging, causes this file to be dependent
 			on parts of cmgui it shouldn't. */
-		if (list_memory_data->show_structures)
-		{
-			if (!strcmp(block->type, "struct FE_field"))
+			else if (!strcmp(block->type, "struct FE_field"))
 			{
 				list_FE_field(block->ptr, NULL);
 			}
@@ -464,8 +468,8 @@ DESCRIPTION :
 			{
 				list_FE_element(block->ptr, NULL);
 			}
-		}
 #endif /* defined (DEBUG) */
+		}
 		return_code = 1;
 	}
 	else

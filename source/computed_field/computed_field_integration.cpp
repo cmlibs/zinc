@@ -185,9 +185,9 @@ differential, xi = (0,t,0) for the second and xi = (0,0,t) for the third.
 			have the positions and weights of a gauss point scheme for integrating
 			with the number of points corresponding to the row. */
 		gauss_positions[2][2] = {{0.5, 0},
-										 0.25, 0.75},
+										 {0.25, 0.75}},
 		gauss_weights[2][2] = {{1, 0},
-									  0.5, 0.5},
+									  {0.5, 0.5}},
 		*temp, xi[3];
 	int derivative_magnitude, k, m, n, element_dimension,
 		number_of_gauss_points, return_code;
@@ -209,10 +209,10 @@ differential, xi = (0,t,0) for the second and xi = (0,0,t) for the third.
 				xi[k] = gauss_positions[number_of_gauss_points - 1][m];
 				/* Integrand elements should always be top level */
 				Computed_field_evaluate_cache_in_element(integrand,
-					mapping_item->element, xi, mapping_item->element,
+					mapping_item->element, xi, /*time*/0, mapping_item->element,
 					/*calculate_derivatives*/0);
 				Computed_field_evaluate_cache_in_element(coordinate_field,
-					mapping_item->element, xi, mapping_item->element,
+					mapping_item->element, xi, /*time*/0, mapping_item->element,
 					/*calculate_derivatives*/1);
 #if defined (DEBUG)
 				printf("Coordinate %d:  %g %g %g    %g %g %g\n", m,
@@ -276,9 +276,9 @@ upwind difference time integration.
 			have the positions and weights of a gauss point scheme for integrating
 			with the number of points corresponding to the row. */
 		gauss_positions[2][2] = {{0.5, 0},
-										 0.25, 0.75},
+										 {0.25, 0.75}},
 		gauss_weights[2][2] = {{1, 0},
-									  0.5, 0.5},
+									  {0.5, 0.5}},
 			length, flow_step, *temp, xi[3];
 	int derivative_magnitude, k, m, n, element_dimension,
 		number_of_gauss_points, return_code;
@@ -305,10 +305,10 @@ upwind difference time integration.
 				xi[k] = gauss_positions[number_of_gauss_points - 1][m];
 				/* Integrand elements should always be top level */
 				Computed_field_evaluate_cache_in_element(integrand,
-					mapping_item->element, xi, mapping_item->element,
+					mapping_item->element, xi, /*time*/0, mapping_item->element,
 					/*calculate_derivatives*/0);
 				Computed_field_evaluate_cache_in_element(coordinate_field,
-					mapping_item->element, xi, mapping_item->element,
+					mapping_item->element, xi, /*time*/0, mapping_item->element,
 					/*calculate_derivatives*/1);
 #if defined (DEBUG)
 				printf("Coordinate %d:  %g %g %g    %g %g %g\n", m,
@@ -869,7 +869,7 @@ integration are not defined at nodes.
 
 static int Computed_field_integration_evaluate_cache_in_element(
 	struct Computed_field *field, struct FE_element *element, FE_value *xi,
-	struct FE_element *top_level_element,int calculate_derivatives)
+	FE_value time,struct FE_element *top_level_element,int calculate_derivatives)
 /*******************************************************************************
 LAST MODIFIED : 26 October 2000
 
@@ -885,6 +885,7 @@ Evaluate the fields cache at the node.
 	struct Computed_field_integration_type_specific_data *data;
 
 	ENTER(Computed_field_integration_evaluate_cache_in_element);
+	USE_PARAMETER(time);
 	if (field && element && xi 
 		&& (data = (struct Computed_field_integration_type_specific_data *)
 		field->type_specific_data))
@@ -976,7 +977,7 @@ Evaluate the fields cache at the node.
 							if (calculate_derivatives)
 							{
 								*temp2 = *temp * mapping->differentials[j];
-								*temp2++;
+								temp2++;
 							}
 							temp++;
 						}
@@ -1557,6 +1558,8 @@ although its cache may be lost.
 				list_Computed_field_integration;
 			field->list_Computed_field_commands_function = 
 				list_Computed_field_integration_commands;
+			field->computed_field_has_multiple_times_function = 
+				Computed_field_default_has_multiple_times;
 		}
 	}
 	else

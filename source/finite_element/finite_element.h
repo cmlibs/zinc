@@ -13,6 +13,7 @@ interface to CMISS.
 #define FINITE_ELEMENT_H
 
 #include "command/parser.h"
+#include "finite_element/finite_element_time.h"
 #include "general/enumerator.h"
 #include "general/geometry.h"
 #include "general/managed_group.h"
@@ -48,6 +49,8 @@ starts at 0.
 	FE_NODAL_D3_DS1DS2DS3,
 	FE_NODAL_UNKNOWN
 }; /* enum FE_nodal_value_type */
+
+struct FE_node_field_creator;
 
 struct FE_node;
 
@@ -253,7 +256,7 @@ struct FE_field;
 
 typedef int (*FE_element_field_component_modify)(
 	struct FE_element_field_component *,struct FE_element *,struct FE_field *,
-	int,FE_value *);
+	FE_value,int,FE_value *);
 
 struct FE_element_field_component
 /*******************************************************************************
@@ -360,6 +363,10 @@ calculated from the element field as required and are then destroyed.
 	struct FE_element *element;
 	/* the element the field was inherited from */
 	struct FE_element *field_element;
+	/* whether or not these values depend on time */
+	int time_dependent;
+	/* if the values are time dependent, the time at which they were calculated */
+	FE_value time;
 	/* number of sub-elements in each xi-direction of element. If NULL then field
 		 is not	grid based.  Notes
 		1.  struct FE_element_field allows some components to be grid-based and
@@ -877,6 +884,7 @@ DESCRIPTION :
 Used by add_node_to_smoothed_node_lists and smooth_field_over_element.
 ==============================================================================*/
 {
+	FE_value time;
 	float smoothing;
 	int maximum_number_of_elements_per_node;
 	struct FE_field *field;
@@ -950,9 +958,9 @@ DESCRIPTION :
 struct Define_FE_field_at_node_data
 {	
 	struct FE_field *field;
-	int *number_of_derivatives,*number_of_versions;
-	enum FE_nodal_value_type **nodal_value_types;
+	struct FE_node_field_creator *node_field_creator;
 	struct MANAGER(FE_node) *node_manager;
+	struct FE_time_version *time_version;
 }; /* Define_FE_field_at_node_data */
 
 struct Node_is_in_list_data
@@ -996,6 +1004,48 @@ extern struct LIST(FE_field) *all_FE_field;
 Global functions
 ----------------
 */
+struct FE_node_field_creator *CREATE(FE_node_field_creator)(
+	int number_of_components);
+/*******************************************************************************
+LAST MODIFIED : 16 November 2001
+
+DESCRIPTION :
+An object for defining the components, number_of_versions,
+number_of_derivatives and their types at a node.
+By default each component has 1 version and no derivatives.
+==============================================================================*/
+
+int DESTROY(FE_node_field_creator)(
+	struct FE_node_field_creator **node_field_creator_address);
+/*******************************************************************************
+LAST MODIFIED : 16 November 2001
+
+DESCRIPTION :
+Frees the memory for the node field creator and sets 
+<*node_field_creator_address> to NULL.
+==============================================================================*/
+
+int FE_node_field_creator_define_derivative(
+	struct FE_node_field_creator *node_field_creator, int component_number,
+	enum FE_nodal_value_type derivative_type);
+/*******************************************************************************
+LAST MODIFIED: 16 November 2001
+
+DESCRIPTION:
+Adds the derivative of specified <derivative_type> to the <component_number>
+specified.
+==============================================================================*/
+
+int FE_node_field_creator_define_versions(
+	struct FE_node_field_creator *node_field_creator, int component_number,
+	int number_of_versions);
+/*******************************************************************************
+LAST MODIFIED: 16 November 2001
+
+DESCRIPTION:
+Specifies the <number_of_versions> for <component_number> specified.
+==============================================================================*/
+
 #if defined (DEBUG)
 int show_FE_nodal_FE_values(struct FE_node *node); 
 #endif
@@ -1025,10 +1075,10 @@ PROTOTYPE_COPY_OBJECT_FUNCTION(FE_node);
 PROTOTYPE_GET_OBJECT_NAME_FUNCTION(FE_node);
 
 int define_FE_field_at_node(struct FE_node *node,struct FE_field *field,
-	int *components_number_of_derivatives,int *components_number_of_versions,
-	enum FE_nodal_value_type **components_nodal_value_types);
+	struct FE_time_version *fe_time_version, 
+	struct FE_node_field_creator *fe_node_field_creator);
 /*******************************************************************************
-LAST MODIFIED : 28 October 1998
+LAST MODIFIED : 16 November 2001
 
 DESCRIPTION :
 Defines a field at a node (does not assign values).
@@ -1155,9 +1205,9 @@ node.
 
 int get_FE_nodal_value_as_string(struct FE_node *node,
 	struct FE_field *field,int component_number,int version,
-	enum FE_nodal_value_type type,char **string);
+	enum FE_nodal_value_type type, FE_value time, char **string);
 /*******************************************************************************
-LAST MODIFIED : 6 September 1999
+LAST MODIFIED : 22 November 2001
 
 DESCRIPTION :
 Returns as a string the value for the (<version>, <type>) for the <field>
@@ -1190,13 +1240,13 @@ the <node>.
 
 int get_FE_nodal_FE_value_value(struct FE_node *node,
 	struct FE_field_component *component,int version,
-	enum FE_nodal_value_type type,FE_value *value);
+	enum FE_nodal_value_type type, FE_value time, FE_value *value);
 /*******************************************************************************
-LAST MODIFIED : 30 August 1999
+LAST MODIFIED : 20 November 2001
 
 DESCRIPTION :
 Gets a particular FE_value value (<version>, <type>) for the field <component>
-at the <node>.
+at the <node> and <time>.
 ???DB.  May need speeding up
 ==============================================================================*/
 
@@ -1858,6 +1908,23 @@ Assumes that the nodal fields have been set up, with information to
 place the values.
 ==============================================================================*/
 
+int set_FE_nodal_field_FE_values_at_time(struct FE_field *field,
+  struct FE_node *node,FE_value *values,int *number_of_values,
+  FE_value time);
+/*******************************************************************************
+LAST MODIFIED : 15 November 2001
+
+DESCRIPTION :
+Sets The Node Field'S Values Storage (At Node->Values_Storage, Not 
+Field->Values_Storage) With The Fe_Values In Values. 
+Returns The Number Of Fe_Values Copied In Number_Of_Values.
+Assumes That Values Is Set Up With The Correct Number Of Fe_Values.
+Assumes That The Node->Values_Storage Has Been Allocated With Enough 
+Memory To Hold All The Values.
+Assumes That The Nodal Fields Have Been Set Up, With Information To 
+Place The Values.
+==============================================================================*/
+
 int set_FE_nodal_field_float_values(struct FE_field *field,
 	struct FE_node *node,float *values, int *number_of_values);
 /*******************************************************************************
@@ -1971,6 +2038,16 @@ LAST MODIFIED : 3 November 1998
 
 DESCRIPTION :
 Returns the default coordinate field of the <node>.
+==============================================================================*/
+
+int FE_node_find_default_coordinate_field_iterator(
+	struct FE_node *node, void *fe_field_ptr_void);
+/*******************************************************************************
+LAST MODIFIED : 30 November 2001
+
+DESCRIPTION :
+An FE_node iterator that returns 1 when an appropriate default_coordinate
+fe_field is found.  The fe_field found is returned as fe_field_void.
 ==============================================================================*/
 
 int merge_FE_node(struct FE_node *destination,struct FE_node *source);
@@ -2283,11 +2360,11 @@ Sets values appropriately if element_dimension = top_level_element_dimension.
 ==============================================================================*/
 
 int calculate_FE_element_field_values(struct FE_element *element,
-	struct FE_field *field,char calculate_derivatives,
+	struct FE_field *field, FE_value time, char calculate_derivatives,
 	struct FE_element_field_values *element_field_values,
 	struct FE_element *top_level_element);
 /*******************************************************************************
-LAST MODIFIED : 1 July 1999
+LAST MODIFIED : 30 November 2001
 
 DESCRIPTION :
 If <field> is NULL, element values are calculated for the coordinate field.  The
@@ -2296,16 +2373,17 @@ not allocate memory for the structure.
 The optional <top_level_element> forces inheritance from it as needed.
 ==============================================================================*/
 
-int FE_element_field_values_are_for_element(
+int FE_element_field_values_are_for_element_and_time(
 	struct FE_element_field_values *element_field_values,
-	struct FE_element *element,struct FE_element *field_element);
+	struct FE_element *element,FE_value time,struct FE_element *field_element);
 /*******************************************************************************
-LAST MODIFIED : 1 July 1999
+LAST MODIFIED : 3 December 2001
 
 DESCRIPTION :
-Returns true if the <element_field_values> originated from <element>, either
-directly or inherited from <field_element>. If <field_element> is NULL no match
-is required with the field_element in the <element_field_values>.
+Returns true if the <element_field_values> are valid for time <time> and
+originated from <element>, either directly or inherited from <field_element>.
+If <field_element> is NULL no match is required with the field_element in the
+<element_field_values>.
 ==============================================================================*/
 
 int clear_FE_element_field_values(
@@ -2810,6 +2888,16 @@ Returns the first coordinate field defined over <element>, recursively getting
 it from its first parent if it has no node scale field information.
 ==============================================================================*/
 
+int FE_element_find_default_coordinate_field_iterator(
+	struct FE_element *element, void *fe_field_void);
+/*******************************************************************************
+LAST MODIFIED : 30 November 2001
+
+DESCRIPTION :
+An FE_element iterator that returns 1 when an appropriate default_coordinate
+fe_field is found.  The fe_field found is returned as fe_field_void.
+==============================================================================*/
+
 struct CM_element_type_Multi_range_data
 /*******************************************************************************
 LAST MODIFIED : 1 March 2001
@@ -3135,10 +3223,10 @@ Returns true if <element_group> contains any elements in <element_list>.
 ==============================================================================*/
 
 int theta_increasing_in_xi1(struct FE_element_field_component *component,
-	struct FE_element *element,struct FE_field *field,int number_of_values,
-	FE_value *values);
+	struct FE_element *element,struct FE_field *field,FE_value time,
+	int number_of_values,FE_value *values);
 /*******************************************************************************
-LAST MODIFIED : 8 April 1999
+LAST MODIFIED : 3 December 2001
 
 DESCRIPTION :
 Modifies the already calculated <values>.
@@ -3148,9 +3236,9 @@ Modifies the already calculated <values>.
 
 int theta_non_decreasing_in_xi1(
 	struct FE_element_field_component *component,struct FE_element *element,
-	struct FE_field *field,int number_of_values,FE_value *values);
+	struct FE_field *field,FE_value time,int number_of_values,FE_value *values);
 /*******************************************************************************
-LAST MODIFIED : 8 April 1999
+LAST MODIFIED : 3 December 2001
 
 DESCRIPTION :
 Modifies the already calculated <values>.
@@ -3159,10 +3247,10 @@ Modifies the already calculated <values>.
 ==============================================================================*/
 
 int theta_decreasing_in_xi1(struct FE_element_field_component *component,
-	struct FE_element *element,struct FE_field *field,int number_of_values,
-	FE_value *values);
+	struct FE_element *element,struct FE_field *field,FE_value time,
+	int number_of_values,FE_value *values);
 /*******************************************************************************
-LAST MODIFIED : 8 April 1999
+LAST MODIFIED : 3 December 2001
 
 DESCRIPTION :
 Modifies the already calculated <values>.
@@ -3172,9 +3260,9 @@ Modifies the already calculated <values>.
 
 int theta_non_increasing_in_xi1(
 	struct FE_element_field_component *component,struct FE_element *element,
-	struct FE_field *field,int number_of_values,FE_value *values);
+	struct FE_field *field,FE_value time,int number_of_values,FE_value *values);
 /*******************************************************************************
-LAST MODIFIED : 8 April 1999
+LAST MODIFIED : 3 December 2001
 
 DESCRIPTION :
 Modifies the already calculated <values>.
@@ -3204,14 +3292,16 @@ Copies the <external_information> into the <field>.
 Should only call this function for unmanaged fields.
 ==============================================================================*/
 
-struct FE_field *CREATE(FE_field)(void);
+struct FE_field *CREATE(FE_field)(struct FE_time *fe_time);
 /*******************************************************************************
-LAST MODIFIED : 21 June 2000
+LAST MODIFIED : 9 November 2001
 
 DESCRIPTION :
 Creates and returns a struct FE_field. The new field defaults to 1 component, 
 field_type FIELD, NOT_APPLICABLE coordinate system, no field values, 
-no name, and the single component is named "1".
+no name, and the single component is named "1".  The <fe_time> is defined as
+the time space in which this field exists, it could be NULL in which case this
+field cannot be time dependent.
 ==============================================================================*/
 
 int DESTROY(FE_field)(struct FE_field **field_address);
@@ -3234,9 +3324,9 @@ PROTOTYPE_MANAGER_IDENTIFIER_FUNCTIONS(FE_field,name,char *);
 
 int calculate_FE_field(struct FE_field *field,int component_number,
 	struct FE_node *node,struct FE_element *element,FE_value *xi_coordinates,
-	FE_value *value);
+	FE_value time, FE_value *value);
 /*******************************************************************************
-LAST MODIFIED : 23 October 1995
+LAST MODIFIED : 3 December 2001
 
 DESCRIPTION :
 Calculates the <value> of the <field> for the specified <node> or <element> and
@@ -3278,16 +3368,26 @@ Returns true if <field1> and <field2> are equivalent. Does this by calling
 FE_field_matches_description for <field1> with the description for <field2>.
 ==============================================================================*/
 
+int FE_field_has_multiple_times(struct FE_field *field);
+/*******************************************************************************
+LAST MODIFIED : 22 November 2001
+
+DESCRIPTION :
+Returns true if any node_fields corresponding to <field> have time_versions.
+This will be improved when regionalised, so that hopefully the node field
+list we will be looking at will not be global but will belong to the region.
+==============================================================================*/
+
 struct FE_field *get_FE_field_manager_matched_field(
 	struct MANAGER(FE_field) *fe_field_manager,char *name,
-	enum FE_field_type fe_field_type,struct FE_field *indexer_field,
-	int number_of_indexed_values,enum CM_field_type cm_field_type,
-	struct Coordinate_system *coordinate_system,enum Value_type value_type,
-	int number_of_components,char **component_names,
+	enum FE_field_type fe_field_type,struct FE_time *fe_time,
+	struct FE_field *indexer_field,int number_of_indexed_values,
+	enum CM_field_type cm_field_type,struct Coordinate_system *coordinate_system,
+	enum Value_type value_type,int number_of_components,char **component_names,
 	int number_of_times,enum Value_type time_value_type,
 	struct FE_field_external_information *external);
 /*******************************************************************************
-LAST MODIFIED : 31 August 2001
+LAST MODIFIED : 9 November 2001
 
 DESCRIPTION :
 Using searches the <fe_field_manager> for a field, if one is found it is
@@ -4526,11 +4626,10 @@ may be destroyed here - ie. in the 'all' case.
 ==============================================================================*/
 
 int define_node_field_and_field_order_info(struct FE_node *node,
-	struct FE_field *field,int *number_of_derivatives,int *number_of_versions,
-	enum FE_nodal_value_type **nodal_value_types,
+	struct FE_field *field, struct FE_node_field_creator *node_field_creator,
 	struct FE_field_order_info *field_order_info);
 /*******************************************************************************
-LAST MODIFIED : 4 September 2001
+LAST MODIFIED : 16 November 2001
 
 DESCRIPTION :
 Helper function for create_config_template_node() and

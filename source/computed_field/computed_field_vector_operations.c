@@ -176,9 +176,9 @@ No special criteria on the destroy
 ==============================================================================*/
 
 static int Computed_field_normalise_evaluate_cache_at_node(
-	struct Computed_field *field, struct FE_node *node)
+	struct Computed_field *field, struct FE_node *node, FE_value time)
 /*******************************************************************************
-LAST MODIFIED : 11 July 2000
+LAST MODIFIED : 21 November 2001
 
 DESCRIPTION :
 Evaluate the fields cache at the node.
@@ -193,7 +193,7 @@ Evaluate the fields cache at the node.
 	{
 		/* 1. Precalculate any source fields that this field depends on */
 		if (return_code = 
-			Computed_field_evaluate_source_fields_cache_at_node(field, node))
+			Computed_field_evaluate_source_fields_cache_at_node(field, node, time))
 		{
 			/* 2. Calculate the field */
 			size = 0.0;
@@ -223,7 +223,7 @@ Evaluate the fields cache at the node.
 
 static int Computed_field_normalise_evaluate_cache_in_element(
 	struct Computed_field *field, struct FE_element *element, FE_value *xi,
-	struct FE_element *top_level_element,int calculate_derivatives)
+	FE_value time, struct FE_element *top_level_element,int calculate_derivatives)
 /*******************************************************************************
 LAST MODIFIED : 11 July 2000
 
@@ -242,7 +242,7 @@ Evaluate the fields cache at the node.
 		/* 1. Precalculate any source fields that this field depends on */
 		if (return_code = 
 			Computed_field_evaluate_source_fields_cache_in_element(field, element,
-				xi, top_level_element, calculate_derivatives))
+				xi, time, top_level_element, calculate_derivatives))
 		{
 			/* 2. Calculate the field */
 			number_of_xi = get_FE_element_dimension(element);
@@ -469,6 +469,8 @@ although its cache may be lost.
 				list_Computed_field_normalise;
 			field->list_Computed_field_commands_function = 
 				list_Computed_field_normalise_commands;
+			field->computed_field_has_multiple_times_function = 
+				Computed_field_default_has_multiple_times;
 		}
 		else
 		{
@@ -775,9 +777,9 @@ No special criteria on the destroy
 ==============================================================================*/
 
 static int Computed_field_cross_product_evaluate_cache_at_node(
-	struct Computed_field *field, struct FE_node *node)
+	struct Computed_field *field, struct FE_node *node, FE_value time)
 /*******************************************************************************
-LAST MODIFIED : 11 July 2000
+LAST MODIFIED : 21 November 2001
 
 DESCRIPTION :
 Evaluate the fields cache at the node.
@@ -791,7 +793,7 @@ Evaluate the fields cache at the node.
 	{
 		/* 1. Precalculate any source fields that this field depends on */
 		if (return_code = 
-			Computed_field_evaluate_source_fields_cache_at_node(field, node))
+			Computed_field_evaluate_source_fields_cache_at_node(field, node, time))
 		{
 			/* 2. Calculate the field */
 			switch (field->number_of_components)
@@ -840,7 +842,7 @@ Evaluate the fields cache at the node.
 
 static int Computed_field_cross_product_evaluate_cache_in_element(
 	struct Computed_field *field, struct FE_element *element, FE_value *xi,
-	struct FE_element *top_level_element,int calculate_derivatives)
+	FE_value time, struct FE_element *top_level_element,int calculate_derivatives)
 /*******************************************************************************
 LAST MODIFIED : 11 July 2000
 
@@ -858,7 +860,7 @@ Evaluate the fields cache in the element.
 		/* 1. Precalculate any source fields that this field depends on */
 		if (return_code = 
 			Computed_field_evaluate_source_fields_cache_in_element(field, element,
-				xi, top_level_element, calculate_derivatives))
+				xi, time, top_level_element, calculate_derivatives))
 		{
 			/* 2. Calculate the field */
 			switch (field->number_of_components)
@@ -1241,6 +1243,8 @@ although its cache may be lost.
 				list_Computed_field_cross_product;
 			field->list_Computed_field_commands_function = 
 				list_Computed_field_cross_product_commands;
+			field->computed_field_has_multiple_times_function = 
+				Computed_field_default_has_multiple_times;
 		}
 		else
 		{
@@ -1651,7 +1655,7 @@ No special criteria on the destroy
 ==============================================================================*/
 
 static int Computed_field_dot_product_evaluate_cache_at_node(
-	struct Computed_field *field, struct FE_node *node)
+	struct Computed_field *field, struct FE_node *node, FE_value time)
 /*******************************************************************************
 LAST MODIFIED : 11 July 2000
 
@@ -1667,7 +1671,7 @@ Evaluate the fields cache at the node.
 	{
 		/* 1. Precalculate any source fields that this field depends on */
 		if (return_code = 
-			Computed_field_evaluate_source_fields_cache_at_node(field, node))
+			Computed_field_evaluate_source_fields_cache_at_node(field, node, time))
 		{
 			/* 2. Calculate the field */
 			field->values[0] = 0.0;
@@ -1695,7 +1699,7 @@ Evaluate the fields cache at the node.
 
 static int Computed_field_dot_product_evaluate_cache_in_element(
 	struct Computed_field *field, struct FE_element *element, FE_value *xi,
-	struct FE_element *top_level_element,int calculate_derivatives)
+	FE_value time, struct FE_element *top_level_element,int calculate_derivatives)
 /*******************************************************************************
 LAST MODIFIED : 11 July 2000
 
@@ -1712,7 +1716,7 @@ Evaluate the fields cache in the element.
 		/* 1. Precalculate any source fields that this field depends on */
 		if (return_code = 
 			Computed_field_evaluate_source_fields_cache_in_element(field, element,
-				xi, top_level_element, calculate_derivatives))
+				xi, time, top_level_element, calculate_derivatives))
 		{
 			/* 2. Calculate the field */
 			element_dimension=get_FE_element_dimension(element);
@@ -1967,6 +1971,8 @@ although its cache may be lost.
 				list_Computed_field_dot_product;
 			field->list_Computed_field_commands_function = 
 				list_Computed_field_dot_product_commands;
+			field->computed_field_has_multiple_times_function = 
+				Computed_field_default_has_multiple_times;
 		}
 		else
 		{
@@ -2293,7 +2299,7 @@ No special criteria on the destroy
 ==============================================================================*/
 
 static int Computed_field_magnitude_evaluate_cache_at_node(
-	struct Computed_field *field, struct FE_node *node)
+	struct Computed_field *field, struct FE_node *node, FE_value time)
 /*******************************************************************************
 LAST MODIFIED : 2 October 2000
 
@@ -2309,7 +2315,7 @@ Evaluate the fields cache at the node.
 	{
 		/* 1. Precalculate any source fields that this field depends on */
 		if (return_code = 
-			Computed_field_evaluate_source_fields_cache_at_node(field, node))
+			Computed_field_evaluate_source_fields_cache_at_node(field, node, time))
 		{
 			/* 2. Calculate the field */
 			source_number_of_components =
@@ -2337,7 +2343,7 @@ Evaluate the fields cache at the node.
 
 static int Computed_field_magnitude_evaluate_cache_in_element(
 	struct Computed_field *field, struct FE_element *element, FE_value *xi,
-	struct FE_element *top_level_element,int calculate_derivatives)
+	FE_value time, struct FE_element *top_level_element,int calculate_derivatives)
 /*******************************************************************************
 LAST MODIFIED : 2 October 2000
 
@@ -2354,7 +2360,7 @@ Evaluate the fields cache at the node.
 		/* 1. Precalculate any source fields that this field depends on */
 		if (return_code = 
 			Computed_field_evaluate_source_fields_cache_in_element(field, element,
-				xi, top_level_element, calculate_derivatives))
+				xi, time, top_level_element, calculate_derivatives))
 		{
 			/* 2. Calculate the field */
 			source_number_of_components =
@@ -2434,7 +2440,7 @@ Sets the <values> of the computed <field> at <node>.
 		if (ALLOCATE(source_values,FE_value,source_number_of_components))
 		{
 			if (Computed_field_evaluate_at_node(field->source_fields[0],node,
-				source_values))
+					 /*time*/0,source_values))
 			{
 				return_code=1;
 				/* if the source field is not a zero vector, set its magnitude to
@@ -2528,7 +2534,7 @@ Sets the <values> of the computed <field> over the <element>.
 		{
 			/* need current field values to "magnify" */
 			if (Computed_field_get_values_in_element(field->source_fields[0],
-				element,number_in_xi,&source_values))
+					 element,number_in_xi,&source_values,/*time*/0))
 			{
 				source_number_of_components =
 					field->source_fields[0]->number_of_components;
@@ -2734,6 +2740,8 @@ although its cache may be lost.
 				list_Computed_field_magnitude;
 			field->list_Computed_field_commands_function = 
 				list_Computed_field_magnitude_commands;
+			field->computed_field_has_multiple_times_function = 
+				Computed_field_default_has_multiple_times;
 		}
 		else
 		{

@@ -67,6 +67,7 @@ changes in node position and derivatives etc.
 	struct FE_node_selection *node_selection;
 	struct Computed_field_package *computed_field_package;
 	struct Graphical_material *rubber_band_material;
+	struct Time_keeper *time_keeper;
 	struct User_interface *user_interface;
 	/* user-settable flags */
 	/* indicates whether node edits can occur with motion_notify events: slower */
@@ -116,6 +117,8 @@ to its position between these two planes.
 	/* the actual coordinate change calculated from the drag at the last picked
 		 node */
 	double delta1,delta2,delta3;
+	/* the current value of the time being used */
+	FE_value time;
 	/* the gesture indicated by the mouse is given by initial and final
 		 interaction volumes */
 	struct Interaction_volume *final_interaction_volume,
@@ -165,15 +168,9 @@ Defines the appropriate FE_field upon which the <coordinate_field> depends in
 <node>. The field is defined with no versions or derivatives.
 ==============================================================================*/
 {
-	enum FE_nodal_value_type *components_nodal_value_types[3] =
-	{
-		{ FE_NODAL_VALUE },
-		{ FE_NODAL_VALUE },
-		{ FE_NODAL_VALUE }
-	};
-	int components_number_of_derivatives[3]={0,0,0},
-		components_number_of_versions[3]={1,1,1},return_code;
+	int return_code;
 	struct FE_field *fe_field;
+	struct FE_node_field_creator *node_field_creator;
 	struct LIST(FE_field) *fe_field_list;
 
 	ENTER(Node_tool_define_field_at_node);
@@ -186,21 +183,31 @@ Defines the appropriate FE_field upon which the <coordinate_field> depends in
 		{
 			if ((1==NUMBER_IN_LIST(FE_field)(fe_field_list))&&
 				(fe_field=FIRST_OBJECT_IN_LIST_THAT(FE_field)(
-					(LIST_CONDITIONAL_FUNCTION(FE_field) *)NULL,(void *)NULL,
-					fe_field_list)) &&
-				(3 >= get_FE_field_number_of_components(fe_field)) &&
-				(FE_VALUE_VALUE == get_FE_field_value_type(fe_field)))
+				(LIST_CONDITIONAL_FUNCTION(FE_field) *)NULL,(void *)NULL,
+				fe_field_list)) && (3 >= get_FE_field_number_of_components(
+				fe_field)) && (FE_VALUE_VALUE == get_FE_field_value_type(fe_field)))
 			{
-				if (define_FE_field_at_node(node,fe_field,
-					components_number_of_derivatives,components_number_of_versions,
-					components_nodal_value_types))
+				if (node_field_creator = CREATE(FE_node_field_creator)(
+					/*number_of_components*/3))
 				{
-					return_code=1;
+					if (define_FE_field_at_node(node,fe_field,
+						(struct FE_time_version *)NULL,
+						node_field_creator))
+					{
+						return_code=1;
+					}
+					else
+					{
+						display_message(ERROR_MESSAGE,
+							"Node_tool_define_field_at_node.  Failed");
+						return_code=0;
+					}
+					DESTROY(FE_node_field_creator)(&node_field_creator);
 				}
 				else
 				{
 					display_message(ERROR_MESSAGE,
-						"Node_tool_define_field_at_node.  Failed");
+						"Node_tool_define_field_at_node.  Unable to make creator.");
 					return_code=0;
 				}
 			}
@@ -432,7 +439,7 @@ applied to multiple nodes.
 		coordinates[1]=0.0;
 		coordinates[2]=0.0;
 		if (Computed_field_evaluate_at_node(edit_info->rc_coordinate_field,
-			node,coordinates))
+			node,edit_info->time,coordinates))
 		{
 			initial_coordinates[0] = coordinates[0];
 			initial_coordinates[1] = coordinates[1];
@@ -473,12 +480,13 @@ applied to multiple nodes.
 				{
 					/* get delta of coordinate_field from change of rc_coordinate_field */
 					return_code=Computed_field_evaluate_at_node(
-						edit_info->coordinate_field,node,initial_coordinates)&&
+						edit_info->coordinate_field,node,edit_info->time,
+						initial_coordinates)&&
 						Computed_field_set_values_at_managed_node(
 							edit_info->rc_coordinate_field,node,coordinates,
 							edit_info->node_manager)&&
 						Computed_field_evaluate_at_node(edit_info->coordinate_field,
-							node,final_coordinates);
+							node,edit_info->time,final_coordinates);
 					edit_info->delta1 = final_coordinates[0] - initial_coordinates[0];
 					edit_info->delta2 = final_coordinates[1] - initial_coordinates[1];
 					edit_info->delta3 = final_coordinates[2] - initial_coordinates[2];
@@ -550,7 +558,7 @@ stored in the <edit_info>.
 				don't complain and just do nothing */
 			if (Computed_field_is_defined_at_node(edit_info->coordinate_field,node)&&
 				Computed_field_evaluate_at_node(edit_info->coordinate_field,
-					node,coordinates))
+					node,edit_info->time,coordinates))
 			{
 				if (return_code)
 				{
@@ -629,9 +637,10 @@ NOTE: currently does not tolerate having a variable_scale_field.
 		coordinates[1]=0.0;
 		coordinates[2]=0.0;
 		if (Computed_field_evaluate_at_node(
-			edit_info->wrapper_orientation_scale_field,node,orientation_scale)&&
+			edit_info->wrapper_orientation_scale_field,node,edit_info->time,
+			orientation_scale)&&
 			Computed_field_evaluate_at_node(edit_info->rc_coordinate_field,
-				node,coordinates)&&
+				node,edit_info->time,coordinates)&&
 			make_glyph_orientation_scale_axes(number_of_orientation_scale_components,
 				orientation_scale, a, b, c, size))
 		{
@@ -724,7 +733,8 @@ NOTE: currently does not tolerate having a variable_scale_field.
 				{
 					/* get delta values from the orientation_scale_field */
 					if (Computed_field_evaluate_at_node(
-						edit_info->orientation_scale_field,node,orientation_scale))
+						edit_info->orientation_scale_field,node,
+						edit_info->time,orientation_scale))
 					{
 						number_of_orientation_scale_components=
 							Computed_field_get_number_of_components(
@@ -819,7 +829,8 @@ stored in the <edit_info>.
 			IS_OBJECT_IN_GROUP(FE_node)(node,edit_info->node_group)))
 		{
 			if (Computed_field_evaluate_at_node(
-				edit_info->orientation_scale_field,node,orientation_scale))
+				edit_info->orientation_scale_field,node,edit_info->time,
+				orientation_scale))
 			{
 				switch (number_of_orientation_scale_components)
 				{
@@ -894,7 +905,7 @@ Defines the coordinate_field at the node using the position of the picked
 object's coordinate field.
 ==============================================================================*/
 {
-	FE_value coordinates[3];
+	FE_value coordinates[3], time;
 	int return_code;
 	struct Computed_field *coordinate_field, *picked_coordinate_field,
 		*rc_coordinate_field, *rc_picked_coordinate_field;
@@ -903,6 +914,14 @@ object's coordinate field.
 	if (node_tool&&node)
 	{
 		coordinate_field=node_tool->coordinate_field;
+		if (node_tool->time_keeper)
+		{
+			time = Time_keeper_get_time(node_tool->time_keeper);
+		}
+		else
+		{
+			time = 0;
+		}
 		if (rc_coordinate_field=
 			Computed_field_begin_wrap_coordinate_field(coordinate_field))
 		{
@@ -915,7 +934,7 @@ object's coordinate field.
 			rc_picked_coordinate_field = Computed_field_begin_wrap_coordinate_field(
 				picked_coordinate_field);
 			if (Computed_field_evaluate_at_node(rc_picked_coordinate_field,
-				node,coordinates))
+				node,time,coordinates))
 			{
 				if (Node_tool_define_field_at_node(node_tool,node)&&
 					Computed_field_set_values_at_node(rc_coordinate_field,
@@ -1598,6 +1617,8 @@ release.
 									node_tool->last_interaction_volume;
 								edit_info.final_interaction_volume=interaction_volume;
 								edit_info.node_manager=node_tool->node_manager;
+								edit_info.time=Time_keeper_get_time(
+									node_tool->time_keeper);
 								if (node_tool->use_data)
 								{
 									edit_info.node_group=GT_element_group_get_data_group(
@@ -1905,9 +1926,10 @@ struct Node_tool *CREATE(Node_tool)(
 	struct FE_node_selection *node_selection,
 	struct Computed_field_package *computed_field_package,
 	struct Graphical_material *rubber_band_material,
-	struct User_interface *user_interface)
+	struct User_interface *user_interface,
+	struct Time_keeper *time_keeper)
 /*******************************************************************************
-LAST MODIFIED : 21 November 2001
+LAST MODIFIED : 22 November 2001
 
 DESCRIPTION :
 Creates a Node_tool for editing nodes/data in the <node_manager>,
@@ -1987,6 +2009,11 @@ used to represent them. <element_manager> should be NULL if <use_data> is true.
 				node_tool->rubber_band_material=
 					ACCESS(Graphical_material)(rubber_band_material);
 				node_tool->user_interface=user_interface;
+				node_tool->time_keeper = (struct Time_keeper *)NULL;
+				if (time_keeper)
+				{
+					node_tool->time_keeper = ACCESS(Time_keeper)(time_keeper);
+				}
 				/* user-settable flags */
 				node_tool->select_enabled=1;
 				node_tool->edit_enabled=0;
@@ -2228,6 +2255,10 @@ structure itself.
 		REACCESS(GT_object)(&(node_tool->rubber_band),(struct GT_object *)NULL);
 		DEACCESS(Graphical_material)(&(node_tool->rubber_band_material));
 		REACCESS(FE_node)(&(node_tool->template_node),(struct FE_node *)NULL);
+		if (node_tool->time_keeper)
+		{
+			DEACCESS(Time_keeper)(&(node_tool->time_keeper));
+		}
 		if (node_tool->window_shell)
 		{
 			destroy_Shell_list_item_from_shell(&(node_tool->window_shell),

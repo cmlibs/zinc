@@ -63,6 +63,7 @@ deaccess it.
 	struct MANAGER(FE_field) *fe_field_manager;
 	struct MANAGER(FE_node) *data_manager, *node_manager;
 	struct MANAGER(GROUP(FE_node)) *data_group_manager, *node_group_manager;
+	struct FE_time *fe_time;
 }; /* data_grabber_dialog_struct */
 
 /*
@@ -72,7 +73,7 @@ Global Functions
 int bring_up_data_grabber_dialog(Widget *data_grabber_dialog_address,
 	Widget parent,struct Execute_command *execute_command,
 	struct User_interface *user_interface,
-	struct MANAGER(FE_field) *fe_field_manager,
+	struct MANAGER(FE_field) *fe_field_manager, struct FE_time *fe_time,
 	struct MANAGER(FE_node) *node_manager,
 	struct MANAGER(FE_node) *data_manager, 
 	struct MANAGER(GROUP(FE_node)) *node_group_manager,

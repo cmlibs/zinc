@@ -22,7 +22,9 @@ data is accepted - pos,tangent,normal.
 #include "graphics/graphics_object.h"
 #include "graphics/scene.h"
 #include "io_devices/input_module_dialog.h"
+#if defined (EXT_INPUT)
 #include "io_devices/input_module_dialog.uidh"
+#endif /* defined (EXT_INPUT) */
 #include "io_devices/input_module_widget.h"
 #include "io_devices/input_module.h"
 #include "io_devices/matrix.h"

@@ -373,7 +373,7 @@ Updates the <node> location
 							{
 								get_FE_nodal_FE_value_value(temp_node,
 									&((update_node_data->type_data->data).muscle.coefficient),0,
-									FE_NODAL_VALUE,&coefficient);
+									FE_NODAL_VALUE,/*time*/0,&coefficient);
 							}
 							r1=coefficient*((update_node_data->old_slider_value)-1);
 							r2=coefficient*((update_node_data->new_slider_value)-1);

@@ -317,7 +317,8 @@ Element_point_ranges_identifier_is_valid.
 				identifier->number_in_xi, identifier->exact_xi,
 				/*coordinate_field*/(struct Computed_field *)NULL,
 				/*density_field*/(struct Computed_field *)NULL,
-				&number_of_xi_points, /*xi_points_address*/(Triple **)NULL) &&
+				&number_of_xi_points, /*xi_points_address*/(Triple **)NULL,
+				/*time*/0) &&
 			(element_point_number < number_of_xi_points));
 	}
 	else
@@ -401,7 +402,7 @@ top_level. Assumes <identifier> has been validated.
 					identifier->number_in_xi, identifier->exact_xi,
 					/*coordinate_field*/(struct Computed_field *)NULL,
 					/*density_field*/(struct Computed_field *)NULL,
-					*element_point_number, face_xi) &&
+					*element_point_number, face_xi, /*time*/0) &&
 				(top_level_element_dimension=
 					get_FE_element_dimension(identifier->top_level_element)))
 			{
@@ -595,7 +596,8 @@ Adds the range from <start> to <stop> to the ranges in <element_point_ranges>.
 			element_point_ranges->id.exact_xi,
 			/*coordinate_field*/(struct Computed_field *)NULL,
 			/*density_field*/(struct Computed_field *)NULL,
-			&maximum_element_point_number, /*xi_points_address*/(Triple **)NULL);
+			&maximum_element_point_number, /*xi_points_address*/(Triple **)NULL,
+			/*time*/0);
 		if ((0<=start)&&(start<maximum_element_point_number)&&
 			(0<=stop)&&(stop<maximum_element_point_number))
 		{
@@ -1203,7 +1205,7 @@ returned in this location, for the calling function to use or destroy.
 									/*coordinate_field*/(struct Computed_field *)NULL,
 									/*density_field*/(struct Computed_field *)NULL,
 									&number_of_xi_points,
-									/*xi_points_address*/(Triple **)NULL)) ||
+									/*xi_points_address*/(Triple **)NULL,/*time*/0)) ||
 									(1 > number_of_xi_points))
 								{
 									display_message(WARNING_MESSAGE, "Invalid number in xi");
@@ -1767,10 +1769,11 @@ If field and element_point_ranges not identically grid-based, clear
 				{
 					if (return_code=Computed_field_get_values_in_element(field,
 						source_element,set_grid_values_data->
-						source_identifier->number_in_xi,&source_values))
+						source_identifier->number_in_xi,&source_values,/*time*/0))
 					{
 						if (return_code=Computed_field_get_values_in_element(field,
-							destination_element,number_in_xi,&destination_values))
+								 destination_element,number_in_xi,&destination_values,
+								 /*time*/0))
 						{
 							for (i=0;(i<number_of_components)&&return_code;i++)
 							{

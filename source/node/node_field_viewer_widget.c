@@ -20,6 +20,7 @@ Note the node passed to this widget should be a non-managed local copy.
 #include "general/debug.h"
 #include "general/mystring.h"
 #include "node/node_field_viewer_widget.h"
+#include "time/time.h"
 #include "user_interface/message.h"
 #include "user_interface/user_interface.h"
 
@@ -57,6 +58,9 @@ DESCRIPTION :
 	struct Callback_data update_callback;
 	struct Computed_field *current_field;
 	struct FE_node *current_node;
+	struct Time_object *time_object;
+	/* Flag to record whether the time callback is active or not */
+	int time_object_callback;
 	Widget component_rowcol,widget,*widget_address,widget_parent;
 }; /* node_field_viewer_struct */
 
@@ -92,39 +96,6 @@ Tells CMGUI about the current values. Returns a pointer to the node field.
 	LEAVE;
 } /* node_field_viewer_widget_update */
 
-static void node_field_viewer_widget_destroy_CB(Widget widget,
-	void *node_field_viewer_void,void *call_data)
-/*******************************************************************************
-LAST MODIFIED : 11 May 2000
-
-DESCRIPTION :
-Callback for when the node_field_viewer widget is destroyed. Tidies up all
-dynamic memory allocations and pointers.
-==============================================================================*/
-{
-	struct Node_field_viewer_widget_struct *node_field_viewer;
-
-	ENTER(node_field_viewer_widget_destroy_CB);
-	USE_PARAMETER(widget);
-	USE_PARAMETER(call_data);
-	if (node_field_viewer=
-		(struct Node_field_viewer_widget_struct *)node_field_viewer_void)
-	{
-		if (node_field_viewer->nodal_value_types)
-		{
-			DEALLOCATE(node_field_viewer->nodal_value_types);
-		}
-		*(node_field_viewer->widget_address)=(Widget)NULL;
-		DEALLOCATE(node_field_viewer);
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"node_field_viewer_widget_destroy_CB.  Invalid argument(s)");
-	}
-	LEAVE;
-} /* node_field_viewer_widget_destroy_CB */
-
 static void node_field_viewer_widget_update_values(
 	struct Node_field_viewer_widget_struct *node_field_viewer)
 /*******************************************************************************
@@ -136,7 +107,7 @@ Updates all widgets in the rowcol to make sure they say the correct value.
 {
 	char *cmiss_number_string, *new_value_string, *old_value_string,
 		temp_value_string[VALUE_STRING_SIZE];
-	FE_value *values;
+	FE_value *values, time;
 	int i, j, num_children, number_of_components;
 	struct Computed_field *field;
 	struct FE_field *fe_field;
@@ -153,6 +124,7 @@ Updates all widgets in the rowcol to make sure they say the correct value.
 		number_of_components = Computed_field_get_number_of_components(field);
 		fe_field = (struct FE_field *)NULL;
 		cmiss_number_string = (char *)NULL;
+		time = Time_object_get_current_time(node_field_viewer->time_object);
 		values = (FE_value *)NULL;
 		/* get children of the rowcol */
 		XtVaGetValues(node_field_viewer->component_rowcol,XmNnumChildren,
@@ -166,13 +138,13 @@ Updates all widgets in the rowcol to make sure they say the correct value.
 			if (Computed_field_is_type_cmiss_number(field))
 			{
 				cmiss_number_string = Computed_field_evaluate_as_string_at_node(field,
-					/*component_number*/-1, node);
+					/*component_number*/-1, node, time);
 			}
 			else
 			{
 				if (ALLOCATE(values, FE_value, number_of_components))
 				{
-					if (!Computed_field_evaluate_at_node(field, node, values))
+					if (!Computed_field_evaluate_at_node(field, node, time, values))
 					{
 						DEALLOCATE(values);
 					}
@@ -245,7 +217,7 @@ Updates all widgets in the rowcol to make sure they say the correct value.
 
 									get_FE_nodal_FE_value_value(node_field_viewer->current_node,
 										&fe_field_component,nodal_value_information->version,
-										nodal_value_information->type,&fe_value_value);
+										nodal_value_information->type,time,&fe_value_value);
 									sprintf(temp_value_string, FE_VALUE_INPUT_STRING,
 										fe_value_value);
 									new_value_string = duplicate_string(temp_value_string);
@@ -331,6 +303,74 @@ Updates all widgets in the rowcol to make sure they say the correct value.
 	LEAVE;
 } /* node_field_viewer_widget_update_values */
 
+static int node_field_viewer_widget_time_change_callback(
+	struct Time_object *time_object, double current_time,
+	void *node_field_viewer_void)
+/*******************************************************************************
+LAST MODIFIED : 5 December 2001
+
+DESCRIPTION :
+==============================================================================*/
+{
+	int return_code;
+	struct Node_field_viewer_widget_struct *node_field_viewer;
+
+	ENTER(node_field_viewer_widget_time_change_callback);
+	USE_PARAMETER(current_time);
+	if(time_object && (node_field_viewer = 
+			(struct Node_field_viewer_widget_struct *)node_field_viewer_void))
+	{
+		node_field_viewer_widget_update_values(node_field_viewer);
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"node_field_viewer_widget_time_change_callback.  Invalid argument(s)");
+	}
+	LEAVE;
+	return(return_code);
+} /* node_field_viewer_widget_time_change_callback */
+
+static void node_field_viewer_widget_destroy_CB(Widget widget,
+	void *node_field_viewer_void,void *call_data)
+/*******************************************************************************
+LAST MODIFIED : 11 May 2000
+
+DESCRIPTION :
+Callback for when the node_field_viewer widget is destroyed. Tidies up all
+dynamic memory allocations and pointers.
+==============================================================================*/
+{
+	struct Node_field_viewer_widget_struct *node_field_viewer;
+
+	ENTER(node_field_viewer_widget_destroy_CB);
+	USE_PARAMETER(widget);
+	USE_PARAMETER(call_data);
+	if (node_field_viewer=
+		(struct Node_field_viewer_widget_struct *)node_field_viewer_void)
+	{
+		if (node_field_viewer->nodal_value_types)
+		{
+			DEALLOCATE(node_field_viewer->nodal_value_types);
+		}
+		if (node_field_viewer->time_object_callback)
+		{
+			Time_object_remove_callback(node_field_viewer->time_object,
+				node_field_viewer_widget_time_change_callback,
+				(void *)node_field_viewer);
+		}					
+		DEACCESS(Time_object)(&(node_field_viewer->time_object));
+		*(node_field_viewer->widget_address)=(Widget)NULL;
+		DEALLOCATE(node_field_viewer);
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"node_field_viewer_widget_destroy_CB.  Invalid argument(s)");
+	}
+	LEAVE;
+} /* node_field_viewer_widget_destroy_CB */
+
 static void node_field_viewer_widget_value_destroy_CB(Widget widget,
 	void *user_data,void *call_data)
 /*******************************************************************************
@@ -362,6 +402,7 @@ data, and then changes the correct value in the array structure.
 ==============================================================================*/
 {
 	char *value_string;
+	FE_value time;
 	struct Computed_field *field;
 	struct FE_field *fe_field;
 	struct FE_field_component fe_field_component;
@@ -381,6 +422,7 @@ data, and then changes the correct value in the array structure.
 		/* check if field is the current field for the widget, since after choosing
 			 the next field in the node_viewer, focus returns to the text_field then
 			 is lost as it is destroyed, causing another callback here */
+		time = Time_object_get_current_time(node_field_viewer->time_object);
 		if (field == node_field_viewer->current_field)
 		{
 			if (value_string=XmTextFieldGetString(widget))
@@ -446,7 +488,7 @@ data, and then changes the correct value in the array structure.
 						number_of_components=Computed_field_get_number_of_components(field);
 						if (ALLOCATE(values,FE_value,number_of_components))
 						{
-							if (Computed_field_evaluate_at_node(field,node,values))
+							if (Computed_field_evaluate_at_node(field,node,time,values))
 							{
 								sscanf(value_string,FE_VALUE_INPUT_STRING,
 									&values[nodal_value_information->component_number]);
@@ -861,9 +903,10 @@ Global functions
 */
 
 Widget create_node_field_viewer_widget(Widget *node_field_viewer_widget_address,
-	Widget parent,struct FE_node *node,struct Computed_field *field)
+	Widget parent,struct FE_node *node,struct Computed_field *field,
+	struct Time_object *time_object)
 /*******************************************************************************
-LAST MODIFIED : 11 May 2000
+LAST MODIFIED : 22 November 2001
 
 DESCRIPTION :
 Widget for displaying and editing computed field components/derivatives at a
@@ -889,6 +932,8 @@ node.
 			node_field_viewer->current_field=(struct Computed_field *)NULL;
 			node_field_viewer->update_callback.procedure=(Callback_procedure *)NULL;
 			node_field_viewer->update_callback.data=NULL;
+			node_field_viewer->time_object = ACCESS(Time_object)(time_object);
+			node_field_viewer->time_object_callback = 0;
 			/* initialise widgets */
 			node_field_viewer->component_rowcol=(Widget)NULL;
 			node_field_viewer->widget=(Widget)NULL;
@@ -1080,6 +1125,29 @@ unmanaged nodes to this widget.
 			}
 			if (node&&field)
 			{
+				if (node_field_viewer->time_object)
+				{
+					if (Computed_field_has_multiple_times(field))
+					{
+						if (!node_field_viewer->time_object_callback)
+						{
+							node_field_viewer->time_object_callback = 
+								Time_object_add_callback(node_field_viewer->time_object,
+									node_field_viewer_widget_time_change_callback,
+									(void *)node_field_viewer);
+						}
+					}
+					else
+					{
+						if (node_field_viewer->time_object_callback)
+						{
+							Time_object_remove_callback(node_field_viewer->time_object,
+								node_field_viewer_widget_time_change_callback,
+								(void *)node_field_viewer);
+							node_field_viewer->time_object_callback = 0;
+						}					
+					}
+				}
 				node_field_viewer_widget_update_values(node_field_viewer);
 				XtManageChild(node_field_viewer->widget);
 			}

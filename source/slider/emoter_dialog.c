@@ -281,6 +281,7 @@ Updates the node locations for the <emoter_slider>
 						if (input_file = fopen(input_filename, "r"))
 						{
 							read_FE_node_group(input_file,shared_data->fe_field_manager,
+								(struct FE_time *)NULL,
 								shared_data->node_manager,
 								shared_data->element_manager,
 								shared_data->node_group_manager,
@@ -2655,8 +2656,13 @@ Reads stuff from a file.
 						if (read_file_marker(file_data, "sequence") &&
 							!strcmp(file_data->current_token, "2.0"))
 						{
+							/* Read \n off previous line */
+							fscanf(file_data->file, "%*[^\n]");
+							fscanf(file_data->file, "%*[\n]");
+							
 							/* Comment/title line */
-							fscanf(file_data->file, "%*[^\n]%*[\n]");
+							fscanf(file_data->file, "%*[^\n]");
+							fscanf(file_data->file, "%*[\n]");
 							
 							read_file_next_token(file_data);
 							header = 1;
@@ -2966,7 +2972,7 @@ Both or either of <sequence_filename> or <existing_mode_curve> can be NULL.
 		{
 			if ( ALLOCATE ( emoter_slider, struct Emoter_slider, 1)&&
 				ALLOCATE(emoter_slider->name, char, strlen(name) + 1) &&
-				ALLOCATE(emoter_slider->combine_sliders, struct Emoter_combine_slider *, 1),
+				ALLOCATE(emoter_slider->combine_sliders, struct Emoter_combine_slider *, 1)&&
 				ALLOCATE(emoter_slider->emoter_markers, struct Emoter_marker *, 2) &&
 				ALLOCATE(emoter_slider->timebase_curves, struct Control_curve *, 1))
 			{

@@ -508,7 +508,7 @@ Project the node position.
 		(3==get_FE_field_number_of_components(project_node_data->coordinate_field)))
 	{
 		if (calculate_FE_field(project_node_data->coordinate_field,-1,node,
-			(struct FE_element *)NULL,(FE_value *)NULL,values))
+				 (struct FE_element *)NULL,(FE_value *)NULL,/*time*/0,values))
 		{
 			return_code=project_point(project_node_data->projection_type,
 				get_coordinate_system_type(
@@ -940,14 +940,14 @@ Project the element using a "rasterization" method
 		{
 			/* determine if the field is defined over the element */
 			if (return_code=calculate_FE_element_field_values(element,
-				project_element_data->coordinate_field,1,
-				&coordinate_element_field_values,
+				project_element_data->coordinate_field,/*time*/0,1,
+				&coordinate_element_field_values, 
 				/*top_level_element*/(struct FE_element *)NULL))
 			{
 				if (data_field=project_element_data->data_field)
 				{
 					if (!(return_code=calculate_FE_element_field_values(element,
-						data_field,0,&data_element_field_values,
+						data_field,/*time*/0,0,&data_element_field_values,
 						/*top_level_element*/(struct FE_element *)NULL)))
 					{
 						display_message(ERROR_MESSAGE,
@@ -958,7 +958,7 @@ Project the element using a "rasterization" method
 				if (return_code&&(fibre_field=project_element_data->fibre_field))
 				{
 					if (return_code=calculate_FE_element_field_values(element,fibre_field,
-						0,&fibre_element_field_values,
+						/*time*/0,0,&fibre_element_field_values,
 						/*top_level_element*/(struct FE_element *)NULL))
 					{
 						number_of_fibre_components=
@@ -1923,7 +1923,7 @@ Add the <element>'s nodes to the node list if they are not already in it.
 					/* calculate value */
 					if ((draw_node_data->field)&&calculate_FE_field(draw_node_data->field,
 						draw_node_data->component_number,node,(struct FE_element *)NULL,
-						(FE_value *)NULL,&value))
+						(FE_value *)NULL,/*time*/0,&value))
 					{
 						sprintf(name,"%g",value);
 					}
@@ -2065,7 +2065,7 @@ DESCRIPTION :
 		{
 			/* determine if the field is defined over the element */
 			if (return_code=calculate_FE_element_field_values(element,
-				draw_element_data->coordinate_field,1,
+				draw_element_data->coordinate_field,/*time*/0,1,
 				&coordinate_element_field_values,
 				/*top_level_element*/(struct FE_element *)NULL))
 			{
@@ -2292,7 +2292,7 @@ DESCRIPTION :
 															{
 																sprintf(name,"%d",
 																	(element->cm).number);
-																if (return_code);
+																if (return_code)
 																{
 																	/* write name */
 																	name_length=strlen(name);

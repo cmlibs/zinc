@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : computed_field_private.h
 
-LAST MODIFIED : 26 October 2000
+LAST MODIFIED : 21 November 2001
 
 DESCRIPTION :
 ==============================================================================*/
@@ -25,15 +25,17 @@ typedef int (*Computed_field_has_numerical_components_function)(
 typedef int (*Computed_field_can_be_destroyed_function)(
 	struct Computed_field *field);
 typedef int (*Computed_field_evaluate_cache_at_node_function)(
-	struct Computed_field *field,struct FE_node *node);
+	struct Computed_field *field,struct FE_node *node,FE_value time);
 typedef int (*Computed_field_evaluate_cache_in_element_function)(
 	struct Computed_field *field,struct FE_element *element,FE_value *xi,
-	struct FE_element *top_level_element,int calculate_derivatives);
+	FE_value time,struct FE_element *top_level_element,int calculate_derivatives);
 typedef char* (*Computed_field_evaluate_as_string_at_node_function)(
-	struct Computed_field *field,int component_number,struct FE_node *node);
+	struct Computed_field *field,int component_number,struct FE_node *node,
+	FE_value time);
 typedef char* (*Computed_field_evaluate_as_string_in_element_function)(
 	struct Computed_field *field,int component_number,
-	struct FE_element *element,FE_value *xi,struct FE_element *top_level_element);
+	struct FE_element *element,FE_value *xi,FE_value time,
+	struct FE_element *top_level_element);
 typedef int (*Computed_field_set_values_at_node_function)(
 	struct Computed_field *field,struct FE_node *node,FE_value *values);
 typedef int (*Computed_field_set_values_in_element_function)(
@@ -48,6 +50,7 @@ typedef int (*Computed_field_find_element_xi_function)(
 typedef int (*List_Computed_field_function)(struct Computed_field *field);
 typedef int (*List_Computed_field_commands_function)(
 	struct Computed_field *field);
+typedef int (*Computed_field_has_multiple_times_function)(struct Computed_field *field);
 
 /* Used by the register_type_function, Computed_field_type_data and 
 	Computed_field_add_type_to_option_table*/
@@ -158,6 +161,8 @@ DESCRIPTION :
 	   computed_field_find_element_xi_function;	
 	List_Computed_field_function list_Computed_field_function;
 	List_Computed_field_commands_function list_Computed_field_commands_function;
+	Computed_field_has_multiple_times_function 
+	   computed_field_has_multiple_times_function;
 
 	void *type_specific_data;
 	/* The type string identifies the type, it should not be copied but
@@ -264,6 +269,14 @@ DESCRIPTION :
 Returns 1 if all the source fields are defined at the supplied <node>.
 ==============================================================================*/
 
+int Computed_field_default_has_multiple_times(struct Computed_field *field);
+/*******************************************************************************
+LAST MODIFIED : 22 November 2001
+
+DESCRIPTION :
+Returns 1 if any of the source fields have multiple times.
+==============================================================================*/
+
 int Computed_field_set_coordinate_system_from_sources(
 	struct Computed_field *field);
 /*******************************************************************************
@@ -281,11 +294,29 @@ DESCRIPTION :
 Most computed fields have numerical components so this function returns 1.
 ==============================================================================*/
 
+int Computed_field_evaluate_cache_at_node(
+	struct Computed_field *field,struct FE_node *node, FE_value time);
+/*******************************************************************************
+LAST MODIFIED : 21 November 2001
+
+DESCRIPTION :
+Calculates the values of <field> at <node>, if it is defined over the element.
+Upon successful return the node values of the <field> are stored in its cache.
+
+???RC Could have a separate values cache for node computations. I am thinking of
+cases where we have wrappers for calculating a coordinate field at element:xi
+taken from a field or fields at a node - for showing the projection of a data
+point during mesh fitting. At present the coordinate field of data pt. position
+may be the same as that of the element, but the position is quite different.
+Ideally, they should have distinct coordinate fields, but 3-component coordinate
+fields with the name 'coordinates' are quite pervasive.
+==============================================================================*/
+
 int Computed_field_evaluate_cache_in_element(
 	struct Computed_field *field,struct FE_element *element,FE_value *xi,
-	struct FE_element *top_level_element,int calculate_derivatives);
+	FE_value time, struct FE_element *top_level_element,int calculate_derivatives);
 /*******************************************************************************
-LAST MODIFIED : 23 May 2000
+LAST MODIFIED : 30 November 2001
 
 DESCRIPTION :
 Calculates the values and derivatives (if <calculate_derivatives> set) of
@@ -308,9 +339,9 @@ too - this should be understood when supplying source fields to such functions.
 ==============================================================================*/
 
 int Computed_field_evaluate_source_fields_cache_at_node(
-	struct Computed_field *field,struct FE_node *node);
+	struct Computed_field *field,struct FE_node *node, FE_value time);
 /*******************************************************************************
-LAST MODIFIED : 4 July 2000
+LAST MODIFIED : 21 November 2001
 
 DESCRIPTION :
 Calculates the cache values of each source field in <field> at <node>, if it 
@@ -321,9 +352,9 @@ cache.
 
 int Computed_field_evaluate_source_fields_cache_in_element(
 	struct Computed_field *field,struct FE_element *element,FE_value *xi,
-	struct FE_element *top_level_element,int calculate_derivatives);
+	FE_value time,struct FE_element *top_level_element,int calculate_derivatives);
 /*******************************************************************************
-LAST MODIFIED : 4 July 2000
+LAST MODIFIED : 30 November 2001
 
 DESCRIPTION :
 Calculates the cache values of each source field in <field> in <element>, if it 
@@ -333,9 +364,10 @@ cache.
 ==============================================================================*/
 
 char *Computed_field_default_evaluate_as_string_at_node(
-	struct Computed_field *field, int component_number, struct FE_node *node);
+	struct Computed_field *field, int component_number, struct FE_node *node,
+	FE_value time);
 /*******************************************************************************
-LAST MODIFIED : 4 July 2000
+LAST MODIFIED : 21 November 2001
 
 DESCRIPTION :
 Returns a string describing the value/s of the <field> at the <node>. A string 
@@ -350,9 +382,10 @@ It is up to the calling function to DEALLOCATE the returned string.
 
 char *Computed_field_default_evaluate_as_string_in_element(
 	struct Computed_field *field,int component_number,
-	struct FE_element *element,FE_value *xi,struct FE_element *top_level_element);
+	struct FE_element *element,FE_value *xi,FE_value time,
+	struct FE_element *top_level_element);
 /*******************************************************************************
-LAST MODIFIED : 30 June 2000
+LAST MODIFIED : 30 November 2001
 
 DESCRIPTION :
 Returns a string representing the value of <field>.<component_number> at

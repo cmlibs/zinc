@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : computed_field.c
 
-LAST MODIFIED : 12 October 2001
+LAST MODIFIED : 8 November 2001
 
 DESCRIPTION :
 A Computed_field is an abstraction of an FE_field. For each FE_field there is
@@ -39,9 +39,6 @@ simply a copy of the prolate field; the graphics functions will then plot the
 (lambda,mu,theta) as if they are (x,y,z) - to open up the heart, etc. If a
 coordinate system is not relevant to the field in question it should be left
 as rectangular cartesian so no automatic conversions are applied to it.
-
-- The COMPUTED_FIELD_RC_COORDINATE type provides the code for conversion to
-rectangular cartesian coordinates;
 
 - The COMPUTED_FIELD_DEFAULT_COORDINATE type is the new substitute for the
 NULL coordinate FE_field designation, meaning it returns values for the first
@@ -180,12 +177,8 @@ Computed_field_clear_type;
 ==============================================================================*/
 #include <math.h>
 #include "computed_field/computed_field.h"
-/* temporary until rc_coordinate is shifted there too */
-#include "computed_field/computed_field_coordinate.h"
 #include "computed_field/computed_field_find_xi.h"
 #include "computed_field/computed_field_private.h"
-/* remove following once rc_vector is new_type */
-#include "computed_field/computed_field_wrappers.h"
 #include "finite_element/finite_element.h"
 #include "general/child_process.h"
 #include "general/compare.h"
@@ -353,158 +346,6 @@ FULL_DECLARE_INDEXED_LIST_TYPE(Computed_field_type_data);
 DECLARE_INDEXED_LIST_MODULE_FUNCTIONS(Computed_field_type_data,
   name, char *, strcmp)
 DECLARE_INDEXED_LIST_FUNCTIONS(Computed_field_type_data)
-
-int Computed_field_extract_rc(struct Computed_field *field,
-	int element_dimension,FE_value *rc_coordinates,FE_value *rc_derivatives)
-/*******************************************************************************
-LAST MODIFIED : 9 February 1999
-
-DESCRIPTION :
-Takes the values in <field> and converts them from their current coordinate
-system into rectangular cartesian, returning them in the 3 component
-<rc_coordinates> array. If <rc_derivatives> is not NULL, the derivatives are
-also converted to rc and returned in that 9-component FE_value array.
-Note that odd coordinate systems, such as FIBRE are treated as if they are
-RECTANGULAR_CARTESIAN, which just causes a copy of values.
-If <element_dimension> or the number of components in <field> are less than 3,
-the missing places in the <rc_coordinates> and <rc_derivatives> arrays are
-cleared to zero.
-???RC Uses type float for in-between values x,y,z and jacobian for future
-compatibility with coordinate system transformation functions in geometry.c.
-This causes a slight drop in performance.
-
-Note the order of derivatives:
-1. All the <element_dimension> derivatives of component 1.
-2. All the <element_dimension> derivatives of component 2.
-3. All the <element_dimension> derivatives of component 3.
-==============================================================================*/
-{
-	FE_value *source;
-	float coordinates[3],derivatives[9],*destination,x,y,z,*jacobian,temp[9];
-	int field_components,i,j,return_code;
-	
-	ENTER(Computed_field_extract_rc);
-	if (field&&rc_coordinates&&(((FE_value *)NULL==rc_derivatives)||
-		((0<element_dimension)&&field->derivatives_valid)))
-	{
-		field_components=field->number_of_components;
-		/* copy coordinates, padding to 3 components */
-		for (i=0;i<3;i++)
-		{
-			if (i<field_components)
-			{
-				coordinates[i] = (float)field->values[i];
-			}
-			else
-			{
-				coordinates[i]=0.0;
-			}
-		}
-		if (rc_derivatives)
-		{
-			/* copy derivatives, padding to 3 components x 3 dimensions */
-			destination=derivatives;
-			source=field->derivatives;
-			for (i=0;i<3;i++)
-			{
-				for (j=0;j<3;j++)
-				{
-					if ((i<field_components)&&(j<element_dimension))
-					{
-						*destination = (float)(*source);
-						source++;
-					}
-					else
-					{
-						*destination = 0.0;
-					}
-					destination++;
-				}
-			}
-			/* make sure jacobian only calculated if rc_derivatives requested */
-			jacobian=temp;
-		}
-		else
-		{
-			jacobian=(float *)NULL;
-		}
-
-		switch (field->coordinate_system.type)
-		{
-			case CYLINDRICAL_POLAR:
-			{
-				cylindrical_polar_to_cartesian(
-					coordinates[0],coordinates[1],coordinates[2],&x,&y,&z,jacobian);
-			} break;
-			case SPHERICAL_POLAR:
-			{
-				spherical_polar_to_cartesian(
-					coordinates[0],coordinates[1],coordinates[2],&x,&y,&z,jacobian);
-			} break;
-			case PROLATE_SPHEROIDAL:
-			{
-				prolate_spheroidal_to_cartesian(
-					coordinates[0],coordinates[1],coordinates[2],
-					field->coordinate_system.parameters.focus,&x,&y,&z,jacobian);
-			} break;
-			case OBLATE_SPHEROIDAL:
-			{
-				oblate_spheroidal_to_cartesian(
-					coordinates[0],coordinates[1],coordinates[2],
-					field->coordinate_system.parameters.focus,&x,&y,&z,jacobian);
-			} break;
-			default:
-			{
-				/* treat all others as RECTANGULAR_CARTESIAN; copy coordinates */
-				x=coordinates[0];
-				y=coordinates[1];
-				z=coordinates[2];
-				if (rc_derivatives)
-				{
-					for (i=0;i<9;i++)
-					{
-						rc_derivatives[i]=(FE_value)(derivatives[i]);
-					}
-					/* clear jacobian to avoid derivative conversion below */
-					jacobian=(FE_value *)NULL;
-				}
-			} break;
-		}
-		rc_coordinates[0]=(FE_value)x;
-		rc_coordinates[1]=(FE_value)y;
-		rc_coordinates[2]=(FE_value)z;
-		if (jacobian)
-		{
-			for (i=0;i<3;i++)
-			{
-				/* derivative of x with respect to xi[i] */
-				rc_derivatives[i]=(FE_value)(
-					jacobian[0]*derivatives[0+i]+
-					jacobian[1]*derivatives[3+i]+
-					jacobian[2]*derivatives[6+i]);
-				/* derivative of y with respect to xi[i] */
-				rc_derivatives[3+i]=(FE_value)(
-					jacobian[3]*derivatives[0+i]+
-					jacobian[4]*derivatives[3+i]+
-					jacobian[5]*derivatives[6+i]);
-				/* derivative of z with respect to xi[i] */
-				rc_derivatives[6+i]=(FE_value)(
-					jacobian[6]*derivatives[0+i]+
-					jacobian[7]*derivatives[3+i]+
-					jacobian[8]*derivatives[6+i]);
-			}
-		}
-		return_code=1;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_extract_rc.  Invalid argument(s)");
-		return_code=0;
-	}
-
-	return (return_code);
-} /* Computed_field_extract_rc */
 
 int Computed_field_clear_type(struct Computed_field *field)
 /*******************************************************************************
@@ -824,6 +665,8 @@ COMPUTED_FIELD_CONSTANT with 1 component, returning a value of zero.
 				(List_Computed_field_function)NULL;
 			field->list_Computed_field_commands_function =
 				(List_Computed_field_commands_function)NULL;
+			field->computed_field_has_multiple_times_function =
+				(Computed_field_has_multiple_times_function)NULL;
 			
 			field->type_specific_data = NULL;
 			field->type_string = (char *)NULL;
@@ -1516,8 +1359,6 @@ any other fields, this function is recursively called for them.
 				case COMPUTED_FIELD_CUBIC_TEXTURE_COORDINATES:
 				case COMPUTED_FIELD_EDIT_MASK:
 				case COMPUTED_FIELD_EXTERNAL:
-				case COMPUTED_FIELD_RC_COORDINATE:
-				case COMPUTED_FIELD_RC_VECTOR:
 				case COMPUTED_FIELD_SUM_COMPONENTS:
 				{
 					return_code=1;
@@ -1605,6 +1446,40 @@ Returns 1 if all the source fields are defined at the supplied <node>.
 
 	return (return_code);
 } /* Computed_field_default_is_defined_at_node */
+
+int Computed_field_default_has_multiple_times(struct Computed_field *field)
+/*******************************************************************************
+LAST MODIFIED : 4 July 2000
+
+DESCRIPTION :
+Returns 1 if any of the source fields have multiple times.
+==============================================================================*/
+{
+	int i, return_code;
+
+	ENTER(Computed_field_default_has_multiple_times);
+	if (field)
+	{
+		return_code=0;
+		for (i=0;(i<field->number_of_source_fields)&&(!return_code);i++)
+		{
+			if (Computed_field_has_multiple_times(field->source_fields[i]))
+			{
+				return_code=1;
+			}
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Computed_field_default_has_multiple_times.  "
+			"Invalid arguments.");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Computed_field_default_has_multiple_times */
 
 int FE_node_has_Computed_field_defined(struct FE_node *node,void *field_void)
 /*******************************************************************************
@@ -1728,76 +1603,9 @@ Returns true if <field> depends on any field in <field_list>.
 	return (return_code);
 } /* Computed_field_depends_on_Computed_field_in_list */
 
-static int Computed_field_evaluate_rc_vector(struct Computed_field *field)
-/*******************************************************************************
-LAST MODIFIED : 27 June 1999
-
-DESCRIPTION :
-Function called by Computed_field_evaluate_cache_in_element/at_node to compute
-a vector in rectangular cartesian coordinates from one that may not be already.
-The <field> must be of type COMPUTED_FIELD_RC_VECTOR, which gives it a source
-vector field - describing 1, 2 or 3 vectors - and a coordinate field which says
-where in space the vector is being converted. The function uses the jacobian
-between the old coordinate system and the new RC one at the coordinate position
-to get the new vector. Hence, derivatives of the converted vectors are not
-available.
-==============================================================================*/
-{
-	FE_value cx[3],jacobian[9],*source,sum,x[3];
-	int coordinates_per_vector,i,j,k,number_of_vectors,return_code;
-	struct Coordinate_system rc_coordinate_system;
-
-	ENTER(Computed_field_evaluate_rc_vector);
-	if (field&&(COMPUTED_FIELD_RC_VECTOR==field->type))
-	{
-		rc_coordinate_system.type = RECTANGULAR_CARTESIAN;
-		/* extract coordinate position in RC coordinates, convert to coordinate
-			 system of vector field, and then back to RC, getting the jacobian for
-			 the final conversion */
-		if (return_code=(Computed_field_extract_rc(field->source_fields[1],
-			/*element_dimension*/0,x,/*dx_dxi*/(FE_value *)NULL)&&
-			convert_Coordinate_system(&rc_coordinate_system,x,
-				&(field->source_fields[0]->coordinate_system),cx,
-				/*jacobian*/(float *)NULL)&&
-			convert_Coordinate_system(&(field->source_fields[0]->coordinate_system),
-				cx,&rc_coordinate_system,x,jacobian)))
-		{
-			number_of_vectors=field->number_of_components/3;
-			coordinates_per_vector=
-				field->source_fields[0]->number_of_components/number_of_vectors;
-			source=field->source_fields[0]->values;
-			for (i=0;i<number_of_vectors;i++)
-			{
-				for (j=0;j<3;j++)
-				{
-					sum=0.0;
-					for (k=0;k<coordinates_per_vector;k++)
-					{
-						sum += jacobian[j*3+k]*source[i*coordinates_per_vector+k];
-					}
-					field->values[i*3+j]=sum;
-				}
-			}
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"Computed_field_evaluate_rc_vector.  Could not convert to RC");
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_evaluate_rc_vector.  Invalid argument(s)");
-		return_code=0;
-	}
-
-	return (return_code);
-} /* Computed_field_evaluate_rc_vector */
-
 int Computed_field_evaluate_cache_in_element(
 	struct Computed_field *field,struct FE_element *element,FE_value *xi,
-	struct FE_element *top_level_element,int calculate_derivatives)
+	FE_value time, struct FE_element *top_level_element,int calculate_derivatives)
 /*******************************************************************************
 LAST MODIFIED : 23 May 2000
 
@@ -1891,7 +1699,8 @@ is avoided.
 					{
 						return_code = 
 							field->computed_field_evaluate_cache_in_element_function(
-								field, element, xi, top_level_element,calculate_derivatives);
+								field, element, xi, time, top_level_element,
+								calculate_derivatives);
 					}
 					else
 					{
@@ -1914,7 +1723,8 @@ is avoided.
 								/* only calculate the first source_field at this location */
 								return_code=
 									Computed_field_evaluate_cache_in_element(
-										field->source_fields[0],element,xi,top_level_element,0);
+										field->source_fields[0],element,xi,time,
+										top_level_element,0);
 							} break;
 							default:
 							{
@@ -1923,8 +1733,8 @@ is avoided.
 								{
 									return_code=
 										Computed_field_evaluate_cache_in_element(
-											field->source_fields[i],element,xi,top_level_element,
-											calculate_derivatives);
+											field->source_fields[i],element,xi,time,
+											top_level_element,calculate_derivatives);
 								}
 							} break;
 						}
@@ -1967,7 +1777,8 @@ is avoided.
 									return_code=
 										Computed_field_evaluate_cache_in_element(
 											field->source_fields[2],compose_element,compose_xi,
-											/*top_level*/(struct FE_element *)NULL,calculate_derivatives);
+											time,/*top_level*/(struct FE_element *)NULL,
+											calculate_derivatives);
 									for (i=0;i<field->number_of_components;i++)
 									{
 										field->values[i]=field->source_fields[2]->values[i];
@@ -2031,11 +1842,6 @@ is avoided.
 									temp++;
 								}
 								field->derivatives_valid = 0;
-							} break;
-							case COMPUTED_FIELD_RC_COORDINATE:
-							{
-								return_code=Computed_field_evaluate_rc_coordinate(field,
-									element_dimension,calculate_derivatives);
 							} break;
 							case COMPUTED_FIELD_EDIT_MASK:
 							{
@@ -2144,12 +1950,6 @@ is avoided.
 										"  Unable to allocate temporary string");
 									return_code = 0;
 								}
-							} break;
-							case COMPUTED_FIELD_RC_VECTOR:
-							{
-								return_code=Computed_field_evaluate_rc_vector(field);
-								/* no derivatives for this type */
-								field->derivatives_valid=0;
 							} break;
 							case COMPUTED_FIELD_SUM_COMPONENTS:
 							{
@@ -2301,9 +2101,9 @@ is checked and the <top_level_xi> calculated.
 
 int Computed_field_evaluate_source_fields_cache_in_element(
 	struct Computed_field *field,struct FE_element *element,FE_value *xi,
-	struct FE_element *top_level_element,int calculate_derivatives)
+	FE_value time,struct FE_element *top_level_element,int calculate_derivatives)
 /*******************************************************************************
-LAST MODIFIED : 4 July 2000
+LAST MODIFIED : 30 November 2001
 
 DESCRIPTION :
 Calculates the cache values of each source field in <field> in <element>, if it 
@@ -2323,7 +2123,7 @@ cache.
 		{
 			return_code=
 				Computed_field_evaluate_cache_in_element(
-					field->source_fields[i],element,xi,top_level_element,
+					field->source_fields[i],element,xi,time,top_level_element,
 					calculate_derivatives);
 		}
 	}
@@ -2341,7 +2141,8 @@ cache.
 
 char *Computed_field_evaluate_as_string_in_element(
 	struct Computed_field *field,int component_number,
-	struct FE_element *element,FE_value *xi,struct FE_element *top_level_element)
+	struct FE_element *element,FE_value *xi,FE_value time,
+	struct FE_element *top_level_element)
 /*******************************************************************************
 LAST MODIFIED : 7 June 2001
 
@@ -2375,7 +2176,7 @@ It is up to the calling function to DEALLOCATE the returned string.
 			{
 				return_string = 
 					field->computed_field_evaluate_as_string_in_element_function(
-					field, component_number, element, xi, top_level_element);
+					field, component_number, element, xi, time, top_level_element);
 			}
 			else
 			{
@@ -2388,7 +2189,7 @@ It is up to the calling function to DEALLOCATE the returned string.
 		{
 			/* write the component value in %g format */
 			if (Computed_field_evaluate_cache_in_element(field,element,xi,
-				top_level_element,/*calculate_derivatives*/0))
+				time,top_level_element,/*calculate_derivatives*/0))
 			{
 				if (-1 == component_number)
 				{
@@ -2434,7 +2235,8 @@ It is up to the calling function to DEALLOCATE the returned string.
 
 char *Computed_field_default_evaluate_as_string_in_element(
 	struct Computed_field *field,int component_number,
-	struct FE_element *element,FE_value *xi,struct FE_element *top_level_element)
+	struct FE_element *element,FE_value *xi,FE_value time,
+	struct FE_element *top_level_element)
 /*******************************************************************************
 LAST MODIFIED : 7 June 2001
 
@@ -2461,7 +2263,7 @@ Computed_field_evaluate_cache_in_element.
 		error = 0;
 		/* write the component value in %g format */
 		if (Computed_field_evaluate_cache_in_element(field,element,xi,
-			top_level_element,/*calculate_derivatives*/0))
+			time, top_level_element,/*calculate_derivatives*/0))
 		{
 			if (-1 == component_number)
 			{
@@ -2504,8 +2306,8 @@ Computed_field_evaluate_cache_in_element.
 } /* Computed_field_default_evaluate_as_string_in_element */
 
 int Computed_field_evaluate_in_element(struct Computed_field *field,
-	struct FE_element *element,FE_value *xi,struct FE_element *top_level_element,
-	FE_value *values,FE_value *derivatives)
+	struct FE_element *element,FE_value *xi,FE_value time, 
+	struct FE_element *top_level_element,FE_value *values,FE_value *derivatives)
 /*******************************************************************************
 LAST MODIFIED : 22 July 1999
 
@@ -2540,7 +2342,7 @@ number_of_components
 	if (field&&element&&xi&&values)
 	{
 		if (return_code=Computed_field_evaluate_cache_in_element(field,element,xi,
-			top_level_element,((FE_value *)NULL != derivatives)))
+			time,top_level_element,((FE_value *)NULL != derivatives)))
 		{
 			/* copy values from cache to <values> and <derivatives> */
 			source=field->values;
@@ -2582,10 +2384,10 @@ number_of_components
 	return (return_code);
 } /* Computed_field_evaluate_in_element */
 
-static int Computed_field_evaluate_cache_at_node(
-	struct Computed_field *field,struct FE_node *node)
+int Computed_field_evaluate_cache_at_node(
+	struct Computed_field *field,struct FE_node *node, FE_value time)
 /*******************************************************************************
-LAST MODIFIED : 21 May 2001
+LAST MODIFIED : 21 November 2001
 
 DESCRIPTION :
 Calculates the values of <field> at <node>, if it is defined over the element.
@@ -2643,7 +2445,7 @@ fields with the name 'coordinates' are quite pervasive.
 					{
 						return_code = 
 							field->computed_field_evaluate_cache_at_node_function(
-								field, node);
+								field, node,time);
 					}
 					else
 					{
@@ -2663,7 +2465,7 @@ fields with the name 'coordinates' are quite pervasive.
 							/* only calculate the first source_field at this location */
 							return_code=
 								Computed_field_evaluate_cache_at_node(
-									field->source_fields[0],node);
+									field->source_fields[0],node,time);
 						} break;
 						default:
 						{
@@ -2671,7 +2473,7 @@ fields with the name 'coordinates' are quite pervasive.
 							for (i=0;(i<field->number_of_source_fields)&&return_code;i++)
 							{
 								return_code=Computed_field_evaluate_cache_at_node(
-									field->source_fields[i],node);
+									field->source_fields[i],node,time);
 							}
 						} break;
 					}
@@ -2699,7 +2501,7 @@ fields with the name 'coordinates' are quite pervasive.
 									/* calculate the third source_field at this new location */
 									return_code=
 										Computed_field_evaluate_cache_in_element(
-											field->source_fields[2],element,xi,
+											field->source_fields[2],element,xi,time,
 											/*top_level*/(struct FE_element *)NULL,0);
 									for (i=0;i<field->number_of_components;i++)
 									{
@@ -2742,11 +2544,6 @@ fields with the name 'coordinates' are quite pervasive.
 									field->values[i] = *temp / field->values[number_of_components - 1];
 									temp++;
 								}
-							} break;
-							case COMPUTED_FIELD_RC_COORDINATE:
-							{
-								return_code=Computed_field_evaluate_rc_coordinate(field,
-									/*element_dimension*/0,/*calculate_derivatives*/0);
 							} break;
 							case COMPUTED_FIELD_EDIT_MASK:
 							{
@@ -2808,10 +2605,6 @@ fields with the name 'coordinates' are quite pervasive.
 									return_code = 0;
 								}
 							} break;
-							case COMPUTED_FIELD_RC_VECTOR:
-							{
-								return_code=Computed_field_evaluate_rc_vector(field);
-							} break;
 							case COMPUTED_FIELD_SUM_COMPONENTS:
 							{
 								/* weighted sum of components */
@@ -2865,7 +2658,7 @@ fields with the name 'coordinates' are quite pervasive.
 } /* Computed_field_evaluate_cache_at_node */
 
 int Computed_field_evaluate_source_fields_cache_at_node(
-	struct Computed_field *field,struct FE_node *node)
+	struct Computed_field *field,struct FE_node *node,FE_value time)
 /*******************************************************************************
 LAST MODIFIED : 4 July 2000
 
@@ -2886,7 +2679,7 @@ cache.
 		for (i=0;(i<field->number_of_source_fields)&&return_code;i++)
 		{
 			return_code=Computed_field_evaluate_cache_at_node(
-				field->source_fields[i],node);
+				field->source_fields[i],node,time);
 		}
 	}
 	else
@@ -2902,9 +2695,9 @@ cache.
 } /* Computed_field_evaluate_source_fields_cache_at_node */
 
 char *Computed_field_evaluate_as_string_at_node(struct Computed_field *field,
-	int component_number, struct FE_node *node)
+	int component_number, struct FE_node *node, FE_value time)
 /*******************************************************************************
-LAST MODIFIED : 7 June 2001
+LAST MODIFIED : 21 November 2001
 
 DESCRIPTION :
 Returns a string describing the value/s of the <field> at the <node>. If the
@@ -2933,7 +2726,7 @@ It is up to the calling function to DEALLOCATE the returned string.
 			{
 				return_string = 
 					field->computed_field_evaluate_as_string_at_node_function(
-					field, component_number, node);
+					field, component_number, node, time);
 			}
 			else
 			{
@@ -2946,7 +2739,7 @@ It is up to the calling function to DEALLOCATE the returned string.
 		{
 			error=0;
 			/* write the component values in %g format, comma separated */
-			if (Computed_field_evaluate_cache_at_node(field,node))
+			if (Computed_field_evaluate_cache_at_node(field,node,time))
 			{
 				if (-1 == component_number)
 				{
@@ -2996,7 +2789,8 @@ It is up to the calling function to DEALLOCATE the returned string.
 } /* Computed_field_evaluate_as_string_at_node */
 
 char *Computed_field_default_evaluate_as_string_at_node(
-	struct Computed_field *field, int component_number, struct FE_node *node)
+	struct Computed_field *field, int component_number, struct FE_node *node,
+	FE_value time)
 /*******************************************************************************
 LAST MODIFIED : 7 June 2001
 
@@ -3021,7 +2815,7 @@ It is up to the calling function to DEALLOCATE the returned string.
 	{
 		error = 0;
 		/* write the component values in %g format, comma separated */
-		if (Computed_field_evaluate_cache_at_node(field,node))
+		if (Computed_field_evaluate_cache_at_node(field,node,time))
 		{
 			if (-1 == component_number)
 			{
@@ -3064,9 +2858,9 @@ It is up to the calling function to DEALLOCATE the returned string.
 } /* Computed_field_default_evaluate_as_string_at_node */
 
 int Computed_field_evaluate_at_node(struct Computed_field *field,
-	struct FE_node *node,FE_value *values)
+	struct FE_node *node, FE_value time, FE_value *values)
 /*******************************************************************************
-LAST MODIFIED : 22 July 1999
+LAST MODIFIED : 21 November 2001
 
 DESCRIPTION :
 Returns the <values> of <field> at <node> if it is defined there. Can verify
@@ -3087,7 +2881,7 @@ number_of_components.
 	ENTER(Computed_field_evaluate_at_node);
 	if (field&&node&&values)
 	{
-		if (return_code=Computed_field_evaluate_cache_at_node(field,node))
+		if (return_code=Computed_field_evaluate_cache_at_node(field,node,time))
 		{
 			/* copy values from cache to <values> */
 			for (i=0;i<field->number_of_components;i++)
@@ -3140,7 +2934,7 @@ should not be managed at the time it is modified by this function.
 ==============================================================================*/
 {
 	FE_value *source_values;
-	int i,j,k,return_code;
+	int i,return_code;
 
 	ENTER(Computed_field_set_values_at_node);
 	if (field&&node&&values)
@@ -3173,7 +2967,7 @@ should not be managed at the time it is modified by this function.
 						field->source_fields[0]->number_of_components))
 					{
 						if (Computed_field_evaluate_at_node(field->source_fields[0],node,
-							source_values))
+							/*time*/0,source_values))
 						{
 							/* set value of the component leaving other components intact */
 							source_values[field->component_no] = values[0];
@@ -3198,7 +2992,7 @@ should not be managed at the time it is modified by this function.
 						field->source_fields[0]->number_of_components))
 					{
 						if (Computed_field_evaluate_at_node(field->source_fields[0],node,
-							source_values))
+							/*time*/0,source_values))
 						{
 							/* set value of the component leaving other components intact */
 							for (i=0;i<field->number_of_components;i++)
@@ -3216,67 +3010,6 @@ should not be managed at the time it is modified by this function.
 							return_code=0;
 						}
 						DEALLOCATE(source_values);
-					}
-					else
-					{
-						return_code=0;
-					}
-				} break;
-				case COMPUTED_FIELD_RC_COORDINATE:
-				{
-					FE_value non_rc_coordinates[3];
-					struct Coordinate_system rc_coordinate_system;
-
-					/* convert RC values back into source coordinate system */
-					rc_coordinate_system.type = RECTANGULAR_CARTESIAN;
-					return_code=
-						convert_Coordinate_system(&rc_coordinate_system,values,
-							&(field->source_fields[0]->coordinate_system),non_rc_coordinates,
-							/*jacobian*/(float *)NULL)&&
-						Computed_field_set_values_at_node(field->source_fields[0],
-							node,non_rc_coordinates);
-				} break;
-				case COMPUTED_FIELD_RC_VECTOR:
-				{
-					FE_value jacobian[9],non_rc_coordinates[3],rc_coordinates[3],sum;
-					int coordinates_per_vector,number_of_vectors;
-					struct Coordinate_system rc_coordinate_system;
-
-					rc_coordinate_system.type = RECTANGULAR_CARTESIAN;
-					/* need jacobian at current coordinate position for converting to
-						coordinate system of source vector field (=source_fields[0]) */
-					if (Computed_field_evaluate_cache_at_node(field->source_fields[1],node)
-						&&Computed_field_extract_rc(field->source_fields[1],
-							/*element_dimension*/0,rc_coordinates,/*dx_dxi*/(FE_value *)NULL)&&
-						convert_Coordinate_system(&rc_coordinate_system,rc_coordinates,
-							&(field->source_fields[0]->coordinate_system),non_rc_coordinates,
-							jacobian))
-					{
-						if (ALLOCATE(source_values,FE_value,field->number_of_components))
-						{
-							number_of_vectors=field->number_of_components/3;
-							coordinates_per_vector=
-								field->source_fields[0]->number_of_components/number_of_vectors;
-							for (i=0;i<number_of_vectors;i++)
-							{
-								for (j=0;j<coordinates_per_vector;j++)
-								{
-									sum=0.0;
-									for (k=0;k<3;k++)
-									{
-										sum += jacobian[j*3+k]*values[i*3+k];
-									}
-									source_values[i*coordinates_per_vector+j]=sum;
-								}
-							}
-							return_code=Computed_field_set_values_at_node(
-								field->source_fields[0],node,source_values);
-							DEALLOCATE(source_values);
-						}
-						else
-						{
-							return_code=0;
-						}
 					}
 					else
 					{
@@ -3385,9 +3118,9 @@ Note that the values array will not be modified by this function.
 } /* Computed_field_set_values_at_managed_node */
 
 int Computed_field_get_values_in_element(struct Computed_field *field,
-	struct FE_element *element,int *number_in_xi,FE_value **values)
+	struct FE_element *element,int *number_in_xi,FE_value **values,FE_value time)
 /*******************************************************************************
-LAST MODIFIED : 28 October 1999
+LAST MODIFIED : 3 December 2001
 
 DESCRIPTION :
 Companion function to Computed_field_set_values_in_element.
@@ -3438,7 +3171,7 @@ It is up to the calling function to deallocate the returned values.
 						k /= (number_in_xi[i]+1);
 					}
 					if (Computed_field_evaluate_cache_in_element(field,element,xi,
-						/*top_level_element*/(struct FE_element *)NULL,
+						time,/*top_level_element*/(struct FE_element *)NULL,
 						/*calculate_derivatives*/0))
 					{
 						for (k=0;k<field->number_of_components;k++)
@@ -3554,7 +3287,7 @@ Note that the values array will not be modified by this function. Also,
 
 						/* need current field values to partially set */
 						if (Computed_field_get_values_in_element(field->source_fields[0],
-							element,number_in_xi,&source_values))
+								 element,number_in_xi,&source_values,/*time*/0))
 						{
 							/* insert the component values into this array */
 							offset=number_of_points*field->component_no;
@@ -3577,7 +3310,7 @@ Note that the values array will not be modified by this function. Also,
 
 						/* need current field values to partially set */
 						if (Computed_field_get_values_in_element(field->source_fields[0],
-							element,number_in_xi,&source_values))
+								 element,number_in_xi,&source_values,/*time*/0))
 						{
 							/* insert the components with mask on into this array */
 							for (k=0;k<field->number_of_components;k++)
@@ -3594,127 +3327,6 @@ Note that the values array will not be modified by this function. Also,
 							return_code=Computed_field_set_values_in_element(
 								field->source_fields[0],element,number_in_xi,source_values);
 							DEALLOCATE(source_values);
-						}
-						else
-						{
-							return_code=0;
-						}
-					} break;
-					case COMPUTED_FIELD_RC_COORDINATE:
-					{
-						FE_value non_rc_coordinates[3],rc_coordinates[3];
-						struct Coordinate_system rc_coordinate_system;
-
-						rc_coordinate_system.type = RECTANGULAR_CARTESIAN;
-						/* 3 values for non-rc coordinate system */
-						if (ALLOCATE(source_values,FE_value,number_of_points*3))
-						{
-							for (j=0;(j<number_of_points)&&return_code;j++)
-							{
-								for (k=0;k<3;k++)
-								{
-									rc_coordinates[k]=values[k*number_of_points+j];
-								}
-								/* convert RC values back into source coordinate system */
-								if (convert_Coordinate_system(&rc_coordinate_system,
-									rc_coordinates,&(field->source_fields[0]->coordinate_system),
-									non_rc_coordinates,/*jacobian*/(float *)NULL))
-								{
-									for (k=0;k<3;k++)
-									{
-										source_values[k*number_of_points+j]=non_rc_coordinates[k];
-									}
-								}
-								else
-								{
-									return_code=0;
-								}
-							}
-							if (return_code)
-							{
-								return_code=Computed_field_set_values_in_element(
-									field->source_fields[0],element,number_in_xi,source_values);
-							}
-							DEALLOCATE(source_values);
-						}
-						else
-						{
-							return_code=0;
-						}
-					} break;
-					case COMPUTED_FIELD_RC_VECTOR:
-					{
-						FE_value jacobian[9],non_rc_coordinates[3],
-							rc_coordinates[3],*rc_coordinate_values,sum;
-						int coordinates_per_vector,m,number_of_vectors;
-						struct Computed_field *rc_coordinate_field;
-						struct Coordinate_system rc_coordinate_system;
-
-						/* need current rc_coordinate positions for converting to
-							coordinate system of source vector field */
-						if (rc_coordinate_field=Computed_field_begin_wrap_coordinate_field(
-							field->source_fields[1]))
-						{
-							if (Computed_field_get_values_in_element(rc_coordinate_field,
-								element,number_in_xi,&rc_coordinate_values))
-							{
-								rc_coordinate_system.type = RECTANGULAR_CARTESIAN;
-								/* 3 values for non-rc coordinate system */
-								if (ALLOCATE(source_values,FE_value,
-									number_of_points*field->source_fields[0]->number_of_components))
-								{
-									for (j=0;(j<number_of_points)&&return_code;j++)
-									{
-										for (k=0;k<3;k++)
-										{
-											rc_coordinates[k]=
-												rc_coordinate_values[k*number_of_points+j];
-										}
-										/* need jacobian at current coordinate position for
-											converting to coordinate system of source vector field
-											(=source_fields[0]) */
-										if (convert_Coordinate_system(&rc_coordinate_system,
-											rc_coordinates,&field->source_fields[0]->coordinate_system,
-											non_rc_coordinates,jacobian))
-										{
-											number_of_vectors=field->number_of_components/3;
-											coordinates_per_vector=
-												field->source_fields[0]->number_of_components/
-												number_of_vectors;
-											for (i=0;i<number_of_vectors;i++)
-											{
-												for (m=0;m<coordinates_per_vector;m++)
-												{
-													sum=0.0;
-													for (k=0;k<3;k++)
-													{
-														sum +=
-															jacobian[m*3+k]*values[(i*3+k)*number_of_points+j];
-													}
-													source_values[(i*coordinates_per_vector+m)*
-														number_of_points+j]=sum;
-												}
-											}
-										}
-										else
-										{
-											return_code=0;
-										}
-									}
-									if (return_code)
-									{
-										return_code=Computed_field_set_values_in_element(
-											field->source_fields[0],element,number_in_xi,source_values);
-									}
-									DEALLOCATE(source_values);
-								}
-								DEALLOCATE(rc_coordinate_values);
-							}
-							else
-							{
-								return_code=0;
-							}
-							Computed_field_end_wrap(&rc_coordinate_field);
 						}
 						else
 						{
@@ -3874,8 +3486,6 @@ Computed_field_set_values_in_[managed_]element.
 			{
 				case COMPUTED_FIELD_COMPONENT:
 				case COMPUTED_FIELD_EDIT_MASK:
-				case COMPUTED_FIELD_RC_COORDINATE:
-				case COMPUTED_FIELD_RC_VECTOR:
 				{
 					return_code=Computed_field_get_native_discretization_in_element(
 						field->source_fields[0],element,number_in_xi);
@@ -4157,14 +3767,6 @@ The calling function must not deallocate the returned string.
 		case COMPUTED_FIELD_NEW_TYPES:
 		{
 			field_type_string=field->type_string;
-		} break;
-		case COMPUTED_FIELD_RC_COORDINATE:
-		{
-			field_type_string="rc_coordinate";
-		} break;
-		case COMPUTED_FIELD_RC_VECTOR:
-		{
-			field_type_string="rc_vector";
 		} break;
 		case COMPUTED_FIELD_SUM_COMPONENTS:
 		{
@@ -4449,6 +4051,77 @@ components as that specified by <components_ptr_void>.
 
 	return (return_code);
 } /* Computed_field_has_n_components */
+
+int Computed_field_has_multiple_times(struct Computed_field *field)
+/*******************************************************************************
+LAST MODIFIED : 22 November 2001
+
+DESCRIPTION :
+Conditional function returning true if <field> depends on time.
+==============================================================================*/
+{
+	int i,return_code;
+
+	ENTER(Computed_field_has_multiple_times);
+	return_code=0;
+	if (field)
+	{	
+		if (COMPUTED_FIELD_NEW_TYPES == field->type)
+		{
+			if (field->computed_field_has_multiple_times_function)
+			{
+				return_code = field->computed_field_has_multiple_times_function(
+					field);
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE,
+					"Computed_field_has_multiple_times.  "
+					"Computed_field_has_multiple_times_function for field %s is not defined.",
+					field->name);
+				return_code=0;
+			}
+		}
+		else
+		{
+			switch (field->type)
+			{
+				case COMPUTED_FIELD_COMPONENT:
+				case COMPUTED_FIELD_CONSTANT:
+				case COMPUTED_FIELD_CUBIC_TEXTURE_COORDINATES:
+				case COMPUTED_FIELD_EDIT_MASK:
+				case COMPUTED_FIELD_EXTERNAL:
+				case COMPUTED_FIELD_SUM_COMPONENTS:
+				{
+					return_code=0;
+					for (i=0;(i<field->number_of_source_fields)&&(!return_code);i++)
+					{
+						if (Computed_field_has_multiple_times(field->source_fields[i]))
+						{
+							return_code=1;
+						}
+					}
+				} break;
+				default:
+				{
+					display_message(ERROR_MESSAGE,
+						"Computed_field_has_multiple_times.  Unknown field type");
+					return_code=0;
+				} break;
+
+			} /* switch */
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Computed_field_has_multiple_times.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Computed_field_has_multiple_times */
 
 int Computed_field_is_orientation_scale_capable(struct Computed_field *field,
 	void *dummy_void)
@@ -5347,194 +5020,6 @@ although its cache may be lost.
 
 	return (return_code);
 } /* Computed_field_set_type_external */
-
-int Computed_field_get_type_rc_coordinate(struct Computed_field *field,
-	struct Computed_field **coordinate_field)
-/*******************************************************************************
-LAST MODIFIED : 19 January 1999
-
-DESCRIPTION :
-If the field is of type COMPUTED_FIELD_RC_COORDINATE, the coordinate field used
-by it is returned - otherwise an error is reported.
-Use function Computed_field_get_type to determine the field type.
-==============================================================================*/
-{
-	int return_code;
-
-	ENTER(Computed_field_get_type_rc_coordinate);
-	if (field&&(COMPUTED_FIELD_RC_COORDINATE==field->type)&&coordinate_field)
-	{
-		*coordinate_field=field->source_fields[0];
-		return_code=1;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_get_type_rc_coordinate.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Computed_field_get_type_rc_coordinate */
-
-int Computed_field_set_type_rc_coordinate(struct Computed_field *field,
-	struct Computed_field *coordinate_field)
-/*******************************************************************************
-LAST MODIFIED : 11 March 1999
-
-DESCRIPTION :
-Converts <field> to type COMPUTED_FIELD_RC_COORDINATE, which returns the values
-and derivatives of the coordinate field in rectangular cartesian coordinates.
-Coordinate_system of this type of field need not be RC, although it usually will
-be. The <coordinate_field> must have no more than 3 components.
-Sets the number of components to 3.
-If function fails, field is guaranteed to be unchanged from its original state,
-although its cache may be lost.
-==============================================================================*/
-{
-	int number_of_source_fields,return_code;
-	struct Computed_field **source_fields;
-
-	ENTER(Computed_field_set_type_rc_coordinate);
-	if (field&&coordinate_field&&(3>=coordinate_field->number_of_components))
-	{
-		/* 1. make dynamic allocations for any new type-specific data */
-		number_of_source_fields=1;
-		if (ALLOCATE(source_fields,struct Computed_field *,number_of_source_fields))
-		{
-			/* 2. free current type-specific data */
-			Computed_field_clear_type(field);
-			/* 3. establish the new type */
-			field->type=COMPUTED_FIELD_RC_COORDINATE;
-			field->number_of_components=3;
-			source_fields[0]=ACCESS(Computed_field)(coordinate_field);
-			field->source_fields=source_fields;
-			field->number_of_source_fields=number_of_source_fields;
-			return_code=1;
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"Computed_field_set_type_rc_coordinate.  Not enough memory");
-			return_code=0;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_set_type_rc_coordinate.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Computed_field_set_type_rc_coordinate */
-
-int Computed_field_get_type_rc_vector(struct Computed_field *field,
-	struct Computed_field **vector_field,struct Computed_field **coordinate_field)
-/*******************************************************************************
-LAST MODIFIED : 24 June 1999
-
-DESCRIPTION :
-If the field is of type COMPUTED_FIELD_RC_VECTOR, the vector and coordinate
-fields used by it are returned - otherwise an error is reported.
-Use function Computed_field_get_type to determine the field type.
-==============================================================================*/
-{
-	int return_code;
-
-	ENTER(Computed_field_get_type_rc_vector);
-	if (field&&(COMPUTED_FIELD_RC_VECTOR==field->type)&&vector_field&&
-		coordinate_field)
-	{
-		/* source_fields: 0=vector, 1=coordinate */
-		*vector_field=field->source_fields[0];
-		*coordinate_field=field->source_fields[1];
-		return_code=1;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_get_type_rc_vector.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Computed_field_get_type_rc_vector */
-
-int Computed_field_set_type_rc_vector(struct Computed_field *field,
-	struct Computed_field *vector_field,struct Computed_field *coordinate_field)
-/*******************************************************************************
-LAST MODIFIED : 24 June 1999
-
-DESCRIPTION :
-Converts <field> to type COMPUTED_FIELD_RC_VECTOR, combining a vector field
-supplying a single vector (1,2 or 3 components), two vectors (4 or 6 components)
-or three vectors (9 components) with a coordinate field. This field type ensures
-that each source vector is converted to RC coordinates at the position given by
-the coordinate field - as opposed to RC_COORDINATE which assumes the
-transformation is always based at the origin.
-Sets the number of components to 3 times the number of vectors expected from
-the source vector_field.
-If function fails, field is guaranteed to be unchanged from its original state,
-although its cache may be lost.
-==============================================================================*/
-{
-	int number_of_source_fields,return_code;
-	struct Computed_field **source_fields;
-
-	ENTER(Computed_field_set_type_rc_vector);
-	if (field&&vector_field&&coordinate_field&&
-		Computed_field_is_orientation_scale_capable(vector_field,(void *)NULL)&&
-		Computed_field_has_up_to_3_numerical_components(coordinate_field,
-			(void *)NULL))
-	{
-		/* 1. make dynamic allocations for any new type-specific data */
-		number_of_source_fields=2;
-		if (ALLOCATE(source_fields,struct Computed_field *,number_of_source_fields))
-		{
-			/* 2. free current type-specific data */
-			Computed_field_clear_type(field);
-			/* 3. establish the new type */
-			field->type=COMPUTED_FIELD_RC_VECTOR;
-			if (3 >= vector_field->number_of_components)
-			{
-				field->number_of_components=3;
-			}
-			else if (6 >= vector_field->number_of_components)
-			{
-				field->number_of_components=6;
-			}
-			else
-			{
-				field->number_of_components=9;
-			}
-			/* source_fields: 0=vector, 1=coordinate */
-			source_fields[0]=ACCESS(Computed_field)(vector_field);
-			source_fields[1]=ACCESS(Computed_field)(coordinate_field);
-			field->source_fields=source_fields;
-			field->number_of_source_fields=number_of_source_fields;
-			return_code=1;
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"Computed_field_set_type_rc_vector.  Not enough memory");
-			return_code=0;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_set_type_rc_vector.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Computed_field_set_type_rc_vector */
 
 int Computed_field_get_type_sum_components(struct Computed_field *field,
 	struct Computed_field **source_field,FE_value **weights)
@@ -7145,173 +6630,6 @@ and allows its contents to be modified.
 	return (return_code);
 } /* define_Computed_field_type_external */
 
-static int define_Computed_field_type_rc_coordinate(struct Parse_state *state,
-	void *field_void,void *computed_field_package_void)
-/*******************************************************************************
-LAST MODIFIED : 26 January 1999
-
-DESCRIPTION :
-Converts <field> into type COMPUTED_FIELD_RC_COORDINATE (if it is not already)
-and allows its contents to be modified.
-==============================================================================*/
-{
-	int return_code;
-	static struct Modifier_entry option_table[]=
-	{
-		{"coordinate",NULL,NULL,set_Computed_field_conditional},
-		{NULL,NULL,NULL,NULL}
-	};
-	struct Computed_field *coordinate_field,*field;
-	struct Computed_field_package *computed_field_package;
-	struct Set_Computed_field_conditional_data set_coordinate_field_data;
-
-	ENTER(define_Computed_field_type_rc_coordinate);
-	if (state&&(field=(struct Computed_field *)field_void)&&
-		(computed_field_package=
-			(struct Computed_field_package *)computed_field_package_void))
-	{
-		return_code=1;
-		coordinate_field=(struct Computed_field *)NULL;
-		if (COMPUTED_FIELD_RC_COORDINATE==Computed_field_get_type(field))
-		{
-			return_code=Computed_field_get_type_rc_coordinate(field,
-				&coordinate_field);
-		}
-		else
-		{
-			if (!((coordinate_field=FIND_BY_IDENTIFIER_IN_MANAGER(Computed_field,
-				name)("default_coordinate",
-					computed_field_package->computed_field_manager))||
-				(coordinate_field=FIRST_OBJECT_IN_MANAGER_THAT(Computed_field)(
-					Computed_field_has_up_to_3_numerical_components,(void *)NULL,
-					computed_field_package->computed_field_manager))))
-			{
-				display_message(ERROR_MESSAGE,
-					"define_Computed_field_type_rc_coordinate.  "
-					"No valid coordinate field available");
-				return_code=0;
-			}
-		}
-		if (return_code)
-		{
-			/* have ACCESS/DEACCESS because set_Computed_field does */
-			ACCESS(Computed_field)(coordinate_field);
-			set_coordinate_field_data.computed_field_manager=
-				computed_field_package->computed_field_manager;
-			set_coordinate_field_data.conditional_function=
-				Computed_field_has_up_to_3_numerical_components;
-			set_coordinate_field_data.conditional_function_user_data=(void *)NULL;
-			(option_table[0]).to_be_modified= &coordinate_field;
-			(option_table[0]).user_data= &set_coordinate_field_data;
-			return_code=process_multiple_options(state,option_table)&&
-				Computed_field_set_type_rc_coordinate(field,coordinate_field);
-			DEACCESS(Computed_field)(&coordinate_field);
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"define_Computed_field_type_rc_coordinate.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* define_Computed_field_type_rc_coordinate */
-
-static int define_Computed_field_type_rc_vector(struct Parse_state *state,
-	void *field_void,void *computed_field_package_void)
-/*******************************************************************************
-LAST MODIFIED : 24 June 1999
-
-DESCRIPTION :
-Converts <field> into type COMPUTED_FIELD_RC_VECTOR (if it is not already)
-and allows its contents to be modified.
-==============================================================================*/
-{
-	int return_code;
-	static struct Modifier_entry option_table[]=
-	{
-		{"coordinate",NULL,NULL,set_Computed_field_conditional},
-		{"vector",NULL,NULL,set_Computed_field_conditional},
-		{NULL,NULL,NULL,NULL}
-	};
-	struct Computed_field *coordinate_field,*field,*vector_field;
-	struct Computed_field_package *computed_field_package;
-	struct Set_Computed_field_conditional_data set_coordinate_field_data,
-		set_vector_field_data;
-
-	ENTER(define_Computed_field_type_rc_vector);
-	if (state&&(field=(struct Computed_field *)field_void)&&
-		(computed_field_package=
-			(struct Computed_field_package *)computed_field_package_void))
-	{
-		return_code=1;
-		coordinate_field=(struct Computed_field *)NULL;
-		vector_field=(struct Computed_field *)NULL;
-		if (COMPUTED_FIELD_RC_VECTOR==Computed_field_get_type(field))
-		{
-			return_code=Computed_field_get_type_rc_vector(field,
-				&vector_field,&coordinate_field);
-		}
-		else
-		{
-			if (!(((coordinate_field=FIND_BY_IDENTIFIER_IN_MANAGER(Computed_field,
-				name)("default_coordinate",
-					computed_field_package->computed_field_manager))||
-				(coordinate_field=FIRST_OBJECT_IN_MANAGER_THAT(Computed_field)(
-					Computed_field_has_up_to_3_numerical_components,(void *)NULL,
-					computed_field_package->computed_field_manager)))&&
-				((vector_field=FIND_BY_IDENTIFIER_IN_MANAGER(Computed_field,
-					name)("vectors",computed_field_package->computed_field_manager))||
-				(vector_field=FIRST_OBJECT_IN_MANAGER_THAT(Computed_field)(
-					Computed_field_has_up_to_3_numerical_components,(void *)NULL,
-					computed_field_package->computed_field_manager)))))
-			{
-				display_message(ERROR_MESSAGE,
-					"define_Computed_field_type_rc_vector.  "
-					"No valid coordinate and/or vector field available");
-				return_code=0;
-			}
-		}
-		if (return_code)
-		{
-			/* have ACCESS/DEACCESS because set_Computed_field does */
-			ACCESS(Computed_field)(coordinate_field);
-			ACCESS(Computed_field)(vector_field);
-			/* coordinate */
-			set_coordinate_field_data.computed_field_manager=
-				computed_field_package->computed_field_manager;
-			set_coordinate_field_data.conditional_function=
-				Computed_field_has_up_to_3_numerical_components;
-			set_coordinate_field_data.conditional_function_user_data=(void *)NULL;
-			(option_table[0]).to_be_modified= &coordinate_field;
-			(option_table[0]).user_data= &set_coordinate_field_data;
-			/* vector */
-			set_vector_field_data.computed_field_manager=
-				computed_field_package->computed_field_manager;
-			set_vector_field_data.conditional_function=
-				Computed_field_is_orientation_scale_capable;
-			set_vector_field_data.conditional_function_user_data=(void *)NULL;
-			(option_table[1]).to_be_modified= &vector_field;
-			(option_table[1]).user_data= &set_vector_field_data;
-			return_code=process_multiple_options(state,option_table)&&
-				Computed_field_set_type_rc_vector(field,vector_field,coordinate_field);
-			DEACCESS(Computed_field)(&coordinate_field);
-			DEACCESS(Computed_field)(&vector_field);
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"define_Computed_field_type_rc_vector.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* define_Computed_field_type_rc_vector */
-
 int define_Computed_field_type_sum_components(struct Parse_state *state,
 	void *field_void,void *computed_field_package_void)
 /*******************************************************************************
@@ -7576,12 +6894,6 @@ and its parameter fields and values.
 			/* external */
 			Option_table_add_entry(option_table,"external",field_void,
 				computed_field_package_void,define_Computed_field_type_external);
-			/* rc_coordinate */
-			Option_table_add_entry(option_table,"rc_coordinate",field_void,
-				computed_field_package_void,define_Computed_field_type_rc_coordinate);
-			/* rc_vector */
-			Option_table_add_entry(option_table,"rc_vector",field_void,
-				computed_field_package_void,define_Computed_field_type_rc_vector);
 			/* sum_components */
 			Option_table_add_entry(option_table,"sum_components",field_void,
 				computed_field_package_void,define_Computed_field_type_sum_components);
@@ -8011,13 +7323,6 @@ Writes the properties of the <field> to the command window.
 					display_message(INFORMATION_MESSAGE,
 						"    field : %s\n",field->source_fields[0]->name);
 				} break;
-				case COMPUTED_FIELD_RC_VECTOR:
-				{
-					display_message(INFORMATION_MESSAGE,
-						"    coordinate field : %s\n",field->source_fields[1]->name);
-					display_message(INFORMATION_MESSAGE,
-						"    vector field : %s\n",field->source_fields[0]->name);
-				} break;
 				case COMPUTED_FIELD_EDIT_MASK:
 				{
 					display_message(INFORMATION_MESSAGE,"    field : %s\n",
@@ -8059,11 +7364,6 @@ Writes the properties of the <field> to the command window.
 					}
 					display_message(INFORMATION_MESSAGE,"    timeout %d\n",
 						field->timeout);
-				} break;
-				case COMPUTED_FIELD_RC_COORDINATE:
-				{
-					display_message(INFORMATION_MESSAGE,
-						"    coordinate field : %s\n",field->source_fields[0]->name);
 				} break;
 				case COMPUTED_FIELD_SUM_COMPONENTS:
 				{
@@ -8205,12 +7505,6 @@ are created automatically by the program.
 						display_message(INFORMATION_MESSAGE,
 							" field %s",field->source_fields[0]->name);
 					} break;
-					case COMPUTED_FIELD_RC_VECTOR:
-					{
-						display_message(INFORMATION_MESSAGE,
-							" coordinate %s vector %s",field->source_fields[1]->name,
-							field->source_fields[0]->name);
-					} break;
 					case COMPUTED_FIELD_EDIT_MASK:
 					{
 						display_message(INFORMATION_MESSAGE," field %s edit_mask",
@@ -8248,11 +7542,6 @@ are created automatically by the program.
 						}
 						display_message(INFORMATION_MESSAGE," timeout %d",
 							field->timeout);
-					} break;
-					case COMPUTED_FIELD_RC_COORDINATE:
-					{
-						display_message(INFORMATION_MESSAGE,
-							" coordinate %s",field->source_fields[0]->name);
 					} break;
 					case COMPUTED_FIELD_SUM_COMPONENTS:
 					{

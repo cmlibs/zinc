@@ -219,7 +219,7 @@ No special criteria on the destroy
 ==============================================================================*/
 
 static int Computed_field_sample_texture_evaluate_cache_at_node(
-	struct Computed_field *field, struct FE_node *node)
+	struct Computed_field *field, struct FE_node *node, FE_value time)
 /*******************************************************************************
 LAST MODIFIED : 4 July 2000
 
@@ -238,7 +238,7 @@ Evaluate the fields cache at the node.
 	{
 		/* 1. Precalculate any source fields that this field depends on */
 		if (return_code = 
-			Computed_field_evaluate_source_fields_cache_at_node(field, node))
+			Computed_field_evaluate_source_fields_cache_at_node(field, node, time))
 		{
 			/* 2. Calculate the field */
 			/* Could generalise to 1D and 3D textures */
@@ -288,9 +288,9 @@ Evaluate the fields cache at the node.
 
 static int Computed_field_sample_texture_evaluate_cache_in_element(
 	struct Computed_field *field, struct FE_element *element, FE_value *xi,
-	struct FE_element *top_level_element,int calculate_derivatives)
+	FE_value time, struct FE_element *top_level_element,int calculate_derivatives)
 /*******************************************************************************
-LAST MODIFIED : 4 July 2000
+LAST MODIFIED : 3 December 2001
 
 DESCRIPTION :
 Evaluate the fields cache at the node.
@@ -308,7 +308,7 @@ Evaluate the fields cache at the node.
 		/* 1. Precalculate any source fields that this field depends on */
 		if (return_code = 
 			Computed_field_evaluate_source_fields_cache_in_element(field, element,
-				xi, top_level_element, calculate_derivatives))
+				xi, time, top_level_element, calculate_derivatives))
 		{
 			/* 2. Calculate the field */
 			/* Could generalise to 1D and 3D textures */
@@ -575,6 +575,8 @@ although its cache may be lost.
 					list_Computed_field_sample_texture;
 				field->list_Computed_field_commands_function = 
 					list_Computed_field_sample_texture_commands;
+				field->computed_field_has_multiple_times_function = 
+					Computed_field_default_has_multiple_times;
 			}
 			else
 			{

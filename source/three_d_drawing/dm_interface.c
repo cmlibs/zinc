@@ -197,6 +197,43 @@ supported on displays other than SGI will do.
 											buffer->pbuffer, imageFormat, buffer->dmbuffer))
 										{
 											/* Finished I think, hooray! */
+#if defined (DEBUG)
+											{
+												/* debug */
+												char *pixels, *pixel_pointer;
+												int bytes_per_pixel = 4, i;
+												char red = 50, green = 50, blue = 0;
+												if (glXMakeCurrent(user_interface->display, buffer->pbuffer, buffer->context))
+												{
+													if (pixels = (char *)malloc(width * height * bytes_per_pixel))
+													{
+														glClearColor((double)red/255.0, (double)green/255.0,
+															(double)blue/255.0, 1.0);
+														glClearDepth(1.0);
+														glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT);
+														glReadPixels(0, 0, width, height, GL_RGBA, GL_UNSIGNED_BYTE,
+															pixels);
+														pixel_pointer = pixels;
+														for (i = 0 ; i < width * height ; i++)
+														{
+															if (!(i % 1000))
+															{
+																printf ("%d    %d %d %d\n", i, pixel_pointer[0],
+																	pixel_pointer[1], pixel_pointer[2]);
+															}
+															if ((pixel_pointer[0] != red) || (pixel_pointer[1] != green) ||
+																(pixel_pointer[2] != blue))
+															{
+																printf ("ERROR %d   %d %d %d\n", i, pixel_pointer[0],
+																	pixel_pointer[1], pixel_pointer[2]); 
+															}
+															pixel_pointer += bytes_per_pixel;
+														}
+														free(pixels);
+													}
+												}
+											}
+#endif /* defined (DEBUG) */
 										}
 										else
 										{
@@ -714,10 +751,12 @@ x==============================================================================*
 			XFree((*buffer)->config);
 		}
 #endif /* defined (GLX_SGIX_fbconfig) */
+#if defined (DEBUG)
 		if((*buffer)->visual_info)
 		{
 			XFree((*buffer)->visual_info);
 		}
+#endif /* defined (DEBUG) */
 		if((*buffer)->glx_pixmap)
 		{
 			glXDestroyGLXPixmap((*buffer)->user_interface->display, (*buffer)->glx_pixmap);

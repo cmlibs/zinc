@@ -1076,6 +1076,7 @@ Creates the mapping fields, returns them in a FE_field_order_info.
 	char *fit_point_name,*map_type_str;
 	struct Coordinate_system coordinate_system;	
 	struct FE_field *position_field,*potential_field;
+	struct FE_time *fe_time;
 
 	char *patch_str = "patch";
 	char *sock_str = "sock";
@@ -1099,6 +1100,7 @@ Creates the mapping fields, returns them in a FE_field_order_info.
 		success = 1;				
 		fit_point_name = (char *)NULL;
 		fe_field_manager=get_unemap_package_FE_field_manager(package);
+		fe_time=get_unemap_package_FE_time(package);
 		switch (region_type)
 		{
 			case SOCK:
@@ -1142,7 +1144,7 @@ Creates the mapping fields, returns them in a FE_field_order_info.
 							create */
 						if (!(position_field=get_FE_field_manager_matched_field(
 							fe_field_manager,fit_point_name,
-							GENERAL_FE_FIELD,/*indexer_field*/(struct FE_field *)NULL,
+							GENERAL_FE_FIELD,fe_time,/*indexer_field*/(struct FE_field *)NULL,
 							/*number_of_indexed_values*/0,CM_COORDINATE_FIELD,
 							&coordinate_system,FE_VALUE_VALUE,
 							/*number_of_components*/3,sock_fit_point_component_names,
@@ -1172,7 +1174,7 @@ Creates the mapping fields, returns them in a FE_field_order_info.
 						/* create the fit point position field, add it to the node */
 						if (!(position_field=get_FE_field_manager_matched_field(
 							fe_field_manager,fit_point_name,
-							GENERAL_FE_FIELD,/*indexer_field*/(struct FE_field *)NULL,
+							GENERAL_FE_FIELD,fe_time,/*indexer_field*/(struct FE_field *)NULL,
 							/*number_of_indexed_values*/0,CM_COORDINATE_FIELD,
 							&coordinate_system,FE_VALUE_VALUE,
 							/*number_of_components*/3,torso_fit_point_component_names,
@@ -1202,7 +1204,7 @@ Creates the mapping fields, returns them in a FE_field_order_info.
 						/* create the fit point position field, add it to the node */
 						if (!(position_field=get_FE_field_manager_matched_field(
 							fe_field_manager,fit_point_name,
-							GENERAL_FE_FIELD,/*indexer_field*/(struct FE_field *)NULL,
+							GENERAL_FE_FIELD,fe_time,/*indexer_field*/(struct FE_field *)NULL,
 							/*number_of_indexed_values*/0,CM_COORDINATE_FIELD,
 							&coordinate_system,FE_VALUE_VALUE,
 							/*number_of_components*/2,patch_fit_point_component_names,
@@ -1285,40 +1287,11 @@ Creates and returns a mapping template node for interpolation_function_to_node_g
 	struct FE_node *node;
 	int success;	
 	struct FE_field *position_field,*fit_field;
-	enum FE_nodal_value_type linear_component[1]={FE_NODAL_VALUE};
-	enum FE_nodal_value_type *components_value_types[3];
-	enum FE_nodal_value_type *fit_components_value_types[1];
-	int fit_point_components_number_of_derivatives[3]={0,0,0},
-		fit_point_components_number_of_versions[3]; /* defined below*/
-	int patch_fit_point_components_number_of_derivatives[2]={0,0},
-		patch_fit_point_components_number_of_versions[2]; /* defined below*/
-	int torso_fit_point_components_number_of_derivatives[3]={3,0,0},
-		torso_fit_point_components_number_of_versions[3]; /* defined below*/
+	struct FE_node_field_creator *node_field_creator;
 
 	ENTER(create_mapping_template_node);
 	if (package)
 	{			
-		/* *ptr_fit_components = fit_components_nodal_value_types; */
-		switch (region_type)
-		{
-			case PATCH:
-			{
-				patch_fit_point_components_number_of_versions[0] = coords_comp_0_num_versions;
-				patch_fit_point_components_number_of_versions[1] = coords_comp_1_num_versions;
-			} break;
-			case TORSO:
-			{
-				torso_fit_point_components_number_of_versions[0] = coords_comp_0_num_versions;
-				torso_fit_point_components_number_of_versions[1] = coords_comp_1_num_versions;
-				torso_fit_point_components_number_of_versions[2] = coords_comp_2_num_versions;
-			} break;
-			default:
-			{
-				fit_point_components_number_of_versions[0] = coords_comp_0_num_versions;
-				fit_point_components_number_of_versions[1] = coords_comp_1_num_versions;
-				fit_point_components_number_of_versions[2] = coords_comp_2_num_versions;
-			} break;
-		}
 		success = 1;			
 		/* create the node */		
 		if (node=CREATE(FE_node)(0,(struct FE_node *)NULL))
@@ -1329,44 +1302,77 @@ Creates and returns a mapping template node for interpolation_function_to_node_g
 			{	
 				case PATCH:
 				{
-					components_value_types[0]=linear_component;
-					components_value_types[1]=linear_component;
-					components_value_types[2]=linear_component;
+					node_field_creator = CREATE(FE_node_field_creator)(
+						/* number_of_components*/2);
+					/* The default components are linear */
+					/* Define versions */
+					FE_node_field_creator_define_versions(node_field_creator,
+						/*component_number*/0, coords_comp_0_num_versions);
+					FE_node_field_creator_define_versions(node_field_creator,
+						/*component_number*/1, coords_comp_1_num_versions);
 					success=define_FE_field_at_node(node,position_field,
-						patch_fit_point_components_number_of_derivatives,
-						patch_fit_point_components_number_of_versions,
-						components_value_types);
+						(struct FE_time_version *)NULL,
+						node_field_creator);
+					DESTROY(FE_node_field_creator)(&node_field_creator);
 				} break;	
 				case TORSO:
 				{
-					components_value_types[0]=fit_bicubic_component;
-					components_value_types[1]=linear_component;
-					components_value_types[2]=linear_component;
+					node_field_creator = CREATE(FE_node_field_creator)(
+						/* number_of_components*/3);
+					/* The default components are linear, make component 0 bicubic */
+					FE_node_field_creator_define_derivative(node_field_creator,
+						/*component_number*/0, FE_NODAL_D_DS1);
+					FE_node_field_creator_define_derivative(node_field_creator,
+						/*component_number*/0, FE_NODAL_D_DS2);
+					FE_node_field_creator_define_derivative(node_field_creator,
+						/*component_number*/0, FE_NODAL_D2_DS1DS2);
+					/* Define versions */
+					FE_node_field_creator_define_versions(node_field_creator,
+						/*component_number*/0, coords_comp_0_num_versions);
+					FE_node_field_creator_define_versions(node_field_creator,
+						/*component_number*/1, coords_comp_1_num_versions);
+					FE_node_field_creator_define_versions(node_field_creator,
+						/*component_number*/2, coords_comp_2_num_versions);
 					success=define_FE_field_at_node(node,position_field,
-						torso_fit_point_components_number_of_derivatives,
-						torso_fit_point_components_number_of_versions,
-						components_value_types);
+						(struct FE_time_version *)NULL,
+						node_field_creator);
+					DESTROY(FE_node_field_creator)(&node_field_creator);
 				} break;
 				default:
 				{
-					components_value_types[0]=linear_component;
-					components_value_types[1]=linear_component;
-					components_value_types[2]=linear_component;
+					node_field_creator = CREATE(FE_node_field_creator)(
+						/* number_of_components*/3);
+					/* The default components are linear */
+					/* Define versions */
+					FE_node_field_creator_define_versions(node_field_creator,
+						/*component_number*/0, coords_comp_0_num_versions);
+					FE_node_field_creator_define_versions(node_field_creator,
+						/*component_number*/1, coords_comp_1_num_versions);
+					FE_node_field_creator_define_versions(node_field_creator,
+						/*component_number*/2, coords_comp_2_num_versions);
 					success=define_FE_field_at_node(node,position_field,
-						fit_point_components_number_of_derivatives,
-						fit_point_components_number_of_versions,
-						components_value_types);
+						(struct FE_time_version *)NULL,
+						node_field_creator);
+					DESTROY(FE_node_field_creator)(&node_field_creator);
 				} break;
 			}
 			if (success)
 			{		
 				/* 2nd field in field_order_info is fit_field */
-				fit_components_value_types[0]=fit_bicubic_component;
-				fit_field=get_FE_field_order_info_field(field_order_info,1);				
+				fit_field=get_FE_field_order_info_field(field_order_info,1);
+				node_field_creator = CREATE(FE_node_field_creator)(
+					/* number_of_components*/1);
+				/* The default components are linear, make component 0 bicubic */
+				FE_node_field_creator_define_derivative(node_field_creator,
+					/*component_number*/0, FE_NODAL_D_DS1);
+				FE_node_field_creator_define_derivative(node_field_creator,
+					/*component_number*/0, FE_NODAL_D_DS2);
+				FE_node_field_creator_define_derivative(node_field_creator,
+					/*component_number*/0, FE_NODAL_D2_DS1DS2);
 				success=define_FE_field_at_node(node,fit_field,
-					fit_components_number_of_derivatives,
-					fit_components_number_of_versions,
-				  fit_components_value_types);
+					(struct FE_time_version *)NULL,
+					node_field_creator);
+				DESTROY(FE_node_field_creator)(&node_field_creator);
 			} /* if (success)*/		
 		}	
 		else
@@ -2715,7 +2721,7 @@ Conditional function returning true if <node>  in the z range of <data_void>.
 		component.field=z_value_data->torso_position_field;
 		component.number=2;
 		get_FE_nodal_FE_value_value(torso_node,&component,0,FE_NODAL_VALUE,
-							&torso_node_z);
+			/*time*/0,&torso_node_z);
 		if ((torso_node_z>=z_value_data->map_min_z)&&
 			(torso_node_z<=z_value_data->map_max_z))
 		{
@@ -2979,13 +2985,13 @@ Defines and sets the value of the fit field at <torso_node>.
 			component.field=torso_position_field;
 			component.number=0;
 			get_FE_nodal_FE_value_value(torso_node,&component,0,FE_NODAL_VALUE,
-				&torso_node_x);
+				/*time*/0,&torso_node_x);
 			component.number=1;
 			get_FE_nodal_FE_value_value(torso_node,&component,0,FE_NODAL_VALUE,
-				&torso_node_y);		
+				/*time*/0,&torso_node_y);		
 			component.number=2;
 			get_FE_nodal_FE_value_value(torso_node,&component,0,FE_NODAL_VALUE,
-				&torso_node_z);
+				/*time*/0,&torso_node_z);
 			/*now have torso x,y,z determine map theta,z (don't need r)*/
 			/* add PI as want map_theta in range 0->2PI,atan2 returns -PI->PI */
 			map_theta=atan2(torso_node_y,torso_node_x) +PI;
@@ -3023,7 +3029,7 @@ Defines and sets the value of the fit field at <torso_node>.
 			{				
 				/* get the cylinder fit value and jacobian */				
 				if (calculate_FE_element_field_values(cylinder_element,map_fit_field,
-					/*calculate_derivatives */1,&element_field_values,
+					/*time*/0,/*calculate_derivatives */1,&element_field_values,
 					/*top_level_element*/(struct FE_element *)NULL))
 				{
 					/* calculate the value for the element field */
@@ -3037,7 +3043,7 @@ Defines and sets the value of the fit field at <torso_node>.
 				torso_xi_coords[0]=0;
 				torso_xi_coords[1]=0;
 				if (calculate_FE_element_field_values(torso_element,torso_position_field,
-					/*calculate_derivatives */1,&element_field_values,
+					/*time*/0,/*calculate_derivatives */1,&element_field_values,
 					/*top_level_element*/(struct FE_element *)NULL))
 				{
 					/* calculate the value for the element field */
@@ -4013,6 +4019,7 @@ map_electode_position field
 	struct FE_field *indexer_field=(struct FE_field *)NULL;				 
 	struct MANAGER(FE_field) *field_manager=(struct MANAGER(FE_field) *)NULL;
 	struct Map_3d_package *map_3d_package=(struct Map_3d_package *)NULL;
+	struct FE_time *fe_time;
 	component_names=(char **)NULL;
 	
 	ENTER(make_and_add_map_electrode_position_fields);
@@ -4064,6 +4071,7 @@ map_electode_position field
 					map_3d_package=get_Region_map_3d_package(region);
 					map_position_field=get_map_3d_package_position_field(map_3d_package);
 					field_manager=get_unemap_package_FE_field_manager(unemap_package);	
+					fe_time=get_unemap_package_FE_time(unemap_package);	
 					/* assemble all info for get_FE_field_manager_matched_field */
 					/* ??JW what if map_position_field hasn't been created?  */
 					cm_field_type=get_FE_field_CM_field_type(map_position_field);
@@ -4095,10 +4103,10 @@ map_electode_position field
 						/* find or create the new field in the fe_field_manager */
 						if ((map_electrode_position_field=
 							get_FE_field_manager_matched_field(field_manager,field_name,
-							field_type,indexer_field,number_of_indexed_values,cm_field_type,
-							coordinate_system,value_type,number_of_components,component_names,
-							number_of_times,time_value_type,
-							(struct FE_field_external_information *)NULL)))
+							field_type,fe_time,indexer_field,number_of_indexed_values,
+							cm_field_type,coordinate_system,value_type,
+							number_of_components,component_names,number_of_times,
+							time_value_type,(struct FE_field_external_information *)NULL)))
 						{
 							struct FE_field *old_map_electrode_position_field;
 							old_map_electrode_position_field=
@@ -5324,7 +5332,6 @@ defines the fit field in <define_fit_field_at_torso_element_nodes_data> at
 )
 ===============================================================================*/
 {
-	enum FE_nodal_value_type *fit_components_value_types[1];
 	int i,number_of_nodes,return_code;
 	struct Define_FE_field_at_node_data define_FE_field_at_node_data;	
 	struct Define_fit_field_at_torso_element_nodes_data 
@@ -5332,6 +5339,7 @@ defines the fit field in <define_fit_field_at_torso_element_nodes_data> at
 	struct FE_field *fit_field;
 	struct GROUP(FE_element) *quad_element_group;
 	struct FE_node **nodes_in_element;
+	struct FE_node_field_creator *node_field_creator;
 	struct MANAGER(FE_node) *node_manager;
 	
 	ENTER(define_fit_field_at_torso_element_nodes);	
@@ -5361,16 +5369,21 @@ defines the fit field in <define_fit_field_at_torso_element_nodes_data> at
 				/* do nothing if not 4 nodes */
 				if (4==number_of_nodes)
 				{
-					fit_components_value_types[0]=fit_bicubic_component;
+					node_field_creator = CREATE(FE_node_field_creator)(
+						/*number_of_components*/1);
+					FE_node_field_creator_define_derivative(node_field_creator,
+						/*component_number*/0, FE_NODAL_D_DS1);
+					FE_node_field_creator_define_derivative(node_field_creator,
+						/*component_number*/0, FE_NODAL_D_DS2);
+					FE_node_field_creator_define_derivative(node_field_creator,
+						/*component_number*/0, FE_NODAL_D2_DS1DS2);
 					/* define the fit field at the element's nodes*/			
 					define_FE_field_at_node_data.field=fit_field;
-					define_FE_field_at_node_data.number_of_derivatives=
-						fit_components_number_of_derivatives;
-					define_FE_field_at_node_data.number_of_versions=
-						fit_components_number_of_versions;
-					define_FE_field_at_node_data.nodal_value_types=
-						fit_components_value_types;
+					define_FE_field_at_node_data.node_field_creator=
+						node_field_creator;
 					define_FE_field_at_node_data.node_manager=node_manager;
+					define_FE_field_at_node_data.time_version=
+						(struct FE_time_version *)NULL;
 					i=0;
 					while ((i<number_of_nodes)&&
 						(return_code=iterative_define_FE_field_at_node(nodes_in_element[i],
@@ -5389,6 +5402,7 @@ defines the fit field in <define_fit_field_at_torso_element_nodes_data> at
 						DEACCESS(FE_node)(nodes_in_element+i);
 					}
 					DEALLOCATE(nodes_in_element);
+					DESTROY(FE_node_field_creator)(&node_field_creator);
 				}
 			}
 		}
@@ -5439,19 +5453,22 @@ vertices_data->vertices we've filled in.
 	{
 		component.field=position_field;
 		component.number=0;
-		return_code=get_FE_nodal_FE_value_value(node,&component,0,FE_NODAL_VALUE,&value);
+		return_code=get_FE_nodal_FE_value_value(node,&component,0,FE_NODAL_VALUE,
+			/*time*/0,&value);
 		if (return_code)
 		{
 			vertices_data->vertices[vertices_data->current_element]=(float)(value);
 			vertices_data->current_element++;
 			component.number=1;
-			return_code=get_FE_nodal_FE_value_value(node,&component,0,FE_NODAL_VALUE,&value);
+			return_code=get_FE_nodal_FE_value_value(node,&component,0,FE_NODAL_VALUE,
+				/*time*/0,&value);
 			if (return_code)
 			{
 				vertices_data->vertices[vertices_data->current_element]=(float)(value);
 				vertices_data->current_element++;
 				component.number=2;
-				return_code=get_FE_nodal_FE_value_value(node,&component,0,FE_NODAL_VALUE,&value);
+				return_code=get_FE_nodal_FE_value_value(node,&component,0,FE_NODAL_VALUE,
+					/*time*/0,&value);
 				if (return_code)
 				{
 					vertices_data->vertices[vertices_data->current_element]=(float)(value);
@@ -6103,9 +6120,11 @@ cf map_set_electrode_colour_from_time
 			{	
 				/* scale and offset */
 				component.field=channel_gain_field;			
-				get_FE_nodal_FE_value_value(node,&component,0,FE_NODAL_VALUE,&gain);
+				get_FE_nodal_FE_value_value(node,&component,0,FE_NODAL_VALUE,
+					/*time*/0,&gain);
 				component.field=channel_offset_field;
-				get_FE_nodal_FE_value_value(node,&component,0,FE_NODAL_VALUE,&offset);
+				get_FE_nodal_FE_value_value(node,&component,0,FE_NODAL_VALUE,
+					/*time*/0,&offset);
 				fe_value+=offset;
 				fe_value*=gain;
 				/* set the signal_value_at_time field from this*/
@@ -6161,12 +6180,11 @@ DESCRIPTION :
 Makes and/or sets the nodal values in the delauney node and element groups
 ==============================================================================*/
 {	
-	enum FE_nodal_value_type component[1]={FE_NODAL_VALUE};
-	enum FE_nodal_value_type *components_value_types[1];
-	int number_of_derivatives[1]={0},number_of_versions[1]={1},return_code;
+	int return_code;
 	struct Define_FE_field_at_node_data define_FE_field_at_node_data;
 	struct FE_field *electrode_postion_field,*delauney_signal_field;	
 	struct FE_node *node;
+	struct FE_node_field_creator *node_field_creator;
 	struct GROUP(FE_node) *delauney_torso_node_group,*rig_node_group,*unrejected_nodes;
 	struct MANAGER(FE_node) *node_manager;
 	struct Map_3d_package *map_3d_package;
@@ -6193,7 +6211,8 @@ Makes and/or sets the nodal values in the delauney node and element groups
 		{
 			delauney_signal_field=create_mapping_type_fe_field
 				("delauney_signal",
-					get_unemap_package_FE_field_manager(unemap_package));
+					get_unemap_package_FE_field_manager(unemap_package),
+					get_unemap_package_FE_time(unemap_package));
 			set_unemap_package_delauney_signal_field(unemap_package,
 				delauney_signal_field);
 		}		
@@ -6206,17 +6225,19 @@ Makes and/or sets the nodal values in the delauney node and element groups
 			/*is field not defined at first node, assume it's not defined at the rest*/
 			if (!FE_field_is_defined_at_node(delauney_signal_field,node))
 			{
+				node_field_creator = CREATE(FE_node_field_creator)(
+					/*number_of_components*/1);
 				/* define delauney_signal field at nodes */
-				components_value_types[0]=component;
 				define_FE_field_at_node_data.field=delauney_signal_field;
-				define_FE_field_at_node_data.number_of_derivatives=number_of_derivatives;
-				define_FE_field_at_node_data.number_of_versions=number_of_versions;
-				define_FE_field_at_node_data.nodal_value_types=components_value_types;
-				define_FE_field_at_node_data.node_manager=node_manager;									
+				define_FE_field_at_node_data.node_field_creator = node_field_creator;
+				define_FE_field_at_node_data.node_manager=node_manager;
+				define_FE_field_at_node_data.time_version=
+					(struct FE_time_version *)NULL;
 				MANAGER_BEGIN_CACHE(FE_node)(node_manager);
 				return_code=FOR_EACH_OBJECT_IN_GROUP(FE_node)(iterative_define_FE_field_at_node,
 					(void *)(&define_FE_field_at_node_data),rig_node_group);
 				MANAGER_END_CACHE(FE_node)(node_manager);
+				DESTROY(FE_node_field_creator)(&node_field_creator);
 			}
 		}
 		else
@@ -16327,9 +16348,9 @@ for these elements defines <fit_field> at the element, and it's nodes.
 
 #if defined (UNEMAP_USE_3D) 
 struct FE_field *create_mapping_type_fe_field(char *field_name,
-	struct MANAGER(FE_field) *fe_field_manager)
+	struct MANAGER(FE_field) *fe_field_manager, struct FE_time *fe_time)
 /*******************************************************************************
-LAST MODIFIED : 31 August 2001
+LAST MODIFIED : 15 November 2001
 
 DESCRIPTION :
 creates a 1 component  <field_name>
@@ -16346,7 +16367,7 @@ creates a 1 component  <field_name>
 		coordinate_system.type=NOT_APPLICABLE;				
 		/* create the potential  field, add it to the node */			
 		if (!(map_fit_field=get_FE_field_manager_matched_field(fe_field_manager,
-			field_name,GENERAL_FE_FIELD,/*indexer_field*/(struct FE_field *)NULL,
+			field_name,GENERAL_FE_FIELD,fe_time,/*indexer_field*/(struct FE_field *)NULL,
 			/*number_of_indexed_values*/0,CM_GENERAL_FIELD,
 			&coordinate_system,FE_VALUE_VALUE,
 			/*number_of_components*/1,fit_comp_name,

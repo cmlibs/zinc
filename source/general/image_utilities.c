@@ -5122,6 +5122,9 @@ be specified in the <width> and <height> arguments.
 			}
 			/* make the default depth 8 bits for raw files */
 			magick_image_info->depth = 8;
+#if defined (DEBUG)
+			magick_image_info->verbose = 1;
+#endif /* defined (DEBUG) */
 			magick_image=ReadImage(magick_image_info,&magick_exception);
 			if (magick_image)
 			{

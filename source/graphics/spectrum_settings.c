@@ -356,12 +356,10 @@ Frees the memory for the fields of <**settings_ptr>, frees the memory for
 	{
 		if (settings= *settings_ptr)
 		{
-#if defined (GL_EXT_texture_object)
 			if (settings->texture_id)
 			{
-				glDeleteTexturesEXT(1, &(settings->texture_id));
+				glDeleteTextures(1, &(settings->texture_id));
 			}
-#endif /* defined (GL_EXT_texture_object) */
 			switch (settings->settings_type)
 			{
 				case SPECTRUM_LINEAR:
@@ -907,7 +905,7 @@ included in the string. User must remember to DEALLOCATE the name afterwards.
 		}
 		else
 		{
-			sprintf(temp_string,"");
+			/* sprintf(temp_string,""); */
 		}
 		settings_string_start(&settings_string,temp_string,&error);
 
@@ -2251,14 +2249,13 @@ DESCRIPTION :
 							printf("GL ERROR 0: %s\n",gluErrorString(error));
 						}
 #endif /* defined (DEBUG) */
-#if defined (GL_EXT_texture_object)
 						if (!settings->texture_id)
 						{
-							glGenTexturesEXT(1, &(settings->texture_id));
+							glGenTextures(1, &(settings->texture_id));
 						}
 						if (settings->settings_changed)
 						{
-							glBindTextureEXT(GL_TEXTURE_1D, settings->texture_id);
+							glBindTexture(GL_TEXTURE_1D, settings->texture_id);
 							glTexImage1D(GL_TEXTURE_1D,0,3,1024,0,GL_RGB,GL_UNSIGNED_BYTE,
 								pixels);
 							glTexEnvf(GL_TEXTURE_ENV,GL_TEXTURE_ENV_MODE,GL_MODULATE);
@@ -2268,10 +2265,10 @@ DESCRIPTION :
 						}
 						else
 						{
-							glBindTextureEXT(GL_TEXTURE_1D, settings->texture_id);
+							glBindTexture(GL_TEXTURE_1D, settings->texture_id);
 						}
 						glEnable(GL_TEXTURE_1D);
-#else /* defined (GL_EXT_texture_object) */				
+#if defined (OLD_CODE) /* ! defined (GL_EXT_texture_object) */				
 						glTexImage1D(GL_TEXTURE_1D,0,3,1024,0,GL_RGB,GL_UNSIGNED_BYTE,
 							pixels);
 						glTexEnvf(GL_TEXTURE_ENV,GL_TEXTURE_ENV_MODE,GL_MODULATE);
@@ -2279,7 +2276,7 @@ DESCRIPTION :
 						glTexParameterf(GL_TEXTURE_1D,GL_TEXTURE_MAG_FILTER,GL_NEAREST);
 						glTexParameterf(GL_TEXTURE_1D,GL_TEXTURE_MIN_FILTER,GL_NEAREST);
 						glEnable(GL_TEXTURE_1D);
-#endif /* defined (GL_EXT_texture_object) */				
+#endif /* defined (OLD_CODE) */				
 #if defined (DEBUG)
 						while (error=glGetError())
 						{
@@ -2320,14 +2317,13 @@ DESCRIPTION :
 						printf("GL ERROR 0: %s\n",gluErrorString(error));
 					}
 #endif /* defined (DEBUG) */
-#if defined (GL_EXT_texture_object)
 					if (!settings->texture_id)
 					{
-						glGenTexturesEXT(1, &(settings->texture_id));
+						glGenTextures(1, &(settings->texture_id));
 					}
 					if (settings->settings_changed)
 					{
-						glBindTextureEXT(GL_TEXTURE_1D, settings->texture_id);
+						glBindTexture(GL_TEXTURE_1D, settings->texture_id);
 						glTexImage1D(GL_TEXTURE_1D,0,3,2,0,GL_RGB,GL_UNSIGNED_BYTE,pixels);
 						glTexEnvf(GL_TEXTURE_ENV,GL_TEXTURE_ENV_MODE,GL_MODULATE);
 						glTexParameterf(GL_TEXTURE_1D,GL_TEXTURE_WRAP_S,GL_CLAMP);
@@ -2336,17 +2332,17 @@ DESCRIPTION :
 					}
 					else
 					{
-						glBindTextureEXT(GL_TEXTURE_1D, settings->texture_id);
+						glBindTexture(GL_TEXTURE_1D, settings->texture_id);
 					}
 					glEnable(GL_TEXTURE_1D);
-#else /* defined (GL_EXT_texture_object) */				
+#if defined (OLD_CODE) /* ! defined (GL_EXT_texture_object) */				
 					glTexImage1D(GL_TEXTURE_1D,0,3,2,0,GL_RGB,GL_UNSIGNED_BYTE,pixels);
 					glTexEnvf(GL_TEXTURE_ENV,GL_TEXTURE_ENV_MODE,GL_MODULATE);
 					glTexParameterf(GL_TEXTURE_1D,GL_TEXTURE_WRAP_S,GL_CLAMP);
 					glTexParameterf(GL_TEXTURE_1D,GL_TEXTURE_MAG_FILTER,GL_NEAREST);
 					glTexParameterf(GL_TEXTURE_1D,GL_TEXTURE_MIN_FILTER,GL_NEAREST);
 					glEnable(GL_TEXTURE_1D);
-#endif /* defined (GL_EXT_texture_object) */				
+#endif /* defined (OLD_CODE) */				
 #if defined (DEBUG)
 					while (error=glGetError())
 					{

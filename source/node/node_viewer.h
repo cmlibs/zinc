@@ -15,6 +15,7 @@ this dialog.
 #include "computed_field/computed_field.h"
 #include "finite_element/finite_element.h"
 #include "selection/node_selection.h"
+#include "time/time.h"
 #include "user_interface/user_interface.h"
 
 /*
@@ -45,9 +46,9 @@ struct Node_viewer *CREATE(Node_viewer)(
 	struct MANAGER(FE_element) *actual_element_manager,
 	struct FE_node_selection *node_selection,
 	struct Computed_field_package *computed_field_package,
-	struct User_interface *user_interface);
+	struct Time_object *time_object,	struct User_interface *user_interface);
 /*******************************************************************************
-LAST MODIFIED : 6 June 2001
+LAST MODIFIED : 22 November 2001
 
 DESCRIPTION :
 Creates a dialog for choosing nodes and displaying and editing their fields.

@@ -120,6 +120,9 @@ finite element group rendition.
 	struct GT_object *graphics_object;
 	/* flag indicating that selected graphics have changed */
 	int selected_graphics_changed;
+	/* flag indicating that this settings needs to be regenerated when time
+		changes */
+	int time_dependent;
 
 	/* for accessing objects */
 	int access_count;
@@ -732,6 +735,7 @@ Allocates memory and assigns fields for a struct GT_element_settings.
 			/* rendering information defaults */
 			settings->graphics_object=(struct GT_object *)NULL;
 			settings->selected_graphics_changed=0;
+			settings->time_dependent = 0;
 
 			settings->access_count=0;
 		}
@@ -2852,37 +2856,108 @@ Returns 1 if the <settings> use any embedded_fields.
 	return (return_code);
 } /* GT_element_settings_has_embedded_field */
 
-int GT_element_settings_has_multiple_times(
-	struct GT_element_settings *settings,void *dummy_void)
+int GT_element_settings_update_time_behaviour(
+	struct GT_element_settings *settings, void *time_dependent_void)
 /*******************************************************************************
-LAST MODIFIED : 25 October 2000
+LAST MODIFIED : 30 November 2001
 
 DESCRIPTION :
-Returns 1 if the <settings> depends on time.
+Updates the internal flag used whenever a time callback is received by the settings
+and if the <time_dependent> flag is valid sets it if the settings depends on time.
+If the <settings> is not <time_dependent> then the flag is not touched, as it
+is used by an iterator to see if any one of the settings in a graphical element
+group are time dependent.
 ==============================================================================*/
 {
-	int return_code;
+	int return_code, time_dependent;
 	
-	ENTER(GT_element_settings_has_multiple_times);
-	USE_PARAMETER(dummy_void);
+	ENTER(GT_element_settings_update_time_behaviour);
 	if (settings)
 	{
-		return_code = 0;
+		return_code = 1;
+		time_dependent = 0;
 		if (settings->glyph && (1 < GT_object_get_number_of_times(settings->glyph)))
 		{
-			return_code = 1;
+			time_dependent = 1;
+		}
+		if (settings->coordinate_field && Computed_field_has_multiple_times(
+			settings->coordinate_field))
+		{
+			time_dependent = 1;
+		}
+		if (settings->texture_coordinate_field && Computed_field_has_multiple_times(
+			settings->texture_coordinate_field))
+		{
+			time_dependent = 1;
+		}
+		if (settings->radius_scalar_field && Computed_field_has_multiple_times(
+			settings->radius_scalar_field))
+		{
+			time_dependent = 1;
+		}
+		if (settings->iso_scalar_field && Computed_field_has_multiple_times(
+			settings->iso_scalar_field))
+		{
+			time_dependent = 1;
+		}
+		if (settings->orientation_scale_field && 
+			Computed_field_has_multiple_times(settings->orientation_scale_field))
+		{
+			time_dependent = 1;
+		}
+		if (settings->variable_scale_field && 
+			Computed_field_has_multiple_times(settings->variable_scale_field))
+		{
+			time_dependent = 1;
+		}
+		if (settings->label_field && 
+			Computed_field_has_multiple_times(settings->label_field))
+		{
+			time_dependent = 1;
+		}
+		if (settings->variable_scale_field && 
+			Computed_field_has_multiple_times(settings->variable_scale_field))
+		{
+			time_dependent = 1;
+		}
+		if (settings->displacement_map_field && 
+			Computed_field_has_multiple_times(settings->displacement_map_field))
+		{
+			time_dependent = 1;
+		}
+		if (settings->blur_field && 
+			Computed_field_has_multiple_times(settings->blur_field))
+		{
+			time_dependent = 1;
+		}
+		if (settings->stream_vector_field && 
+			Computed_field_has_multiple_times(settings->stream_vector_field))
+		{
+			time_dependent = 1;
+		}
+		if (settings->data_field && 
+			Computed_field_has_multiple_times(settings->data_field))
+		{
+			time_dependent = 1;
+		}
+		/* Or any field that is pointed to has multiple times...... */
+
+		settings->time_dependent = time_dependent;
+		if (time_dependent_void && time_dependent)
+		{
+			*((int *)time_dependent_void) = time_dependent;
 		}
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"GT_element_settings_has_multiple_times.  Invalid argument(s)");
+			"GT_element_settings_update_time_behaviour.  Invalid argument(s)");
 		return_code=0;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* GT_element_settings_has_multiple_times */
+} /* GT_element_settings_update_time_behaviour */
 
 int GT_element_settings_remove_graphics_object_if_embedded_field(
 	struct GT_element_settings *settings,void *dummy_void)
@@ -3230,6 +3305,11 @@ Notifies the <settings> that time has changed.
 		if (settings->glyph && (1 < GT_object_get_number_of_times(settings->glyph)))
 		{
 			GT_object_changed(settings->glyph);
+		}
+		if (settings->time_dependent)
+		{
+			DEACCESS(GT_object)(&(settings->graphics_object));
+			settings->graphics_object = (struct GT_object *)NULL;
 		}
 	}
 	else
@@ -3969,12 +4049,8 @@ if no coordinate field. Currently only write if we have a field.
 			{
 				sprintf(temp_string,"%i. ",settings->position);
 			}
+			append_string(&settings_string,temp_string,&error);
 		}
-		else
-		{
-			sprintf(temp_string,"");
-		}
-		append_string(&settings_string,temp_string,&error);
 
 		/* show geometry settings */
 		/* for all graphic types */
@@ -4642,7 +4718,8 @@ Converts a finite element into a graphics object with the supplied settings.
 						{
 							if (polyline = create_GT_polyline_from_FE_element(element,
 								settings_to_object_data->rc_coordinate_field,
-								settings->data_field, number_in_xi[0], top_level_element))
+								settings->data_field, number_in_xi[0], top_level_element,
+								settings_to_object_data->time))
 							{
 								if (!GT_OBJECT_ADD(GT_polyline)(
 									settings->graphics_object, time, polyline))
@@ -4672,7 +4749,7 @@ Converts a finite element into a graphics object with the supplied settings.
 								settings->data_field, settings->constant_radius,
 								settings->radius_scale_factor, settings->radius_scalar_field,
 								number_in_xi[0], settings_to_object_data->circle_discretization,
-								top_level_element))
+								top_level_element, settings_to_object_data->time))
 							{
 								if (!GT_OBJECT_ADD(GT_surface)(
 									settings->graphics_object, time, surface))
@@ -4701,7 +4778,8 @@ Converts a finite element into a graphics object with the supplied settings.
 								settings_to_object_data->rc_coordinate_field,
 								settings->texture_coordinate_field, settings->data_field,
 								number_in_xi[0], number_in_xi[1],
-								/*reverse_normals*/0, top_level_element,settings->render_type))
+								/*reverse_normals*/0, top_level_element,settings->render_type,
+								settings_to_object_data->time))
 							{
 								if (!GT_OBJECT_ADD(GT_surface)(
 									settings->graphics_object, time, surface))
@@ -4734,7 +4812,9 @@ Converts a finite element into a graphics object with the supplied settings.
 									if (draw_element)
 									{
 										return_code = create_iso_surfaces_from_FE_element(element,
-											settings->iso_value, time, (struct Clipping *)NULL,
+											settings->iso_value,
+											settings_to_object_data->time,
+											(struct Clipping *)NULL,
 											settings_to_object_data->rc_coordinate_field,
 											settings->data_field, settings->iso_scalar_field,
 											/*surface_data_density_field*/(struct Computed_field *)NULL,
@@ -4744,7 +4824,7 @@ Converts a finite element into a graphics object with the supplied settings.
 											settings->graphics_object, settings->render_type,
 											(struct GROUP(FE_node) *)NULL,
 											(struct MANAGER(FE_node) *)NULL,
-											(struct MANAGER(FE_field) *)NULL,
+											(struct MANAGER(FE_field) *)NULL,(struct FE_time *)NULL,
 											(struct MANAGER(Computed_field) *)NULL);
 									}
 								}
@@ -4771,7 +4851,8 @@ Converts a finite element into a graphics object with the supplied settings.
 											settings_to_object_data->rc_coordinate_field,
 											settings->iso_scalar_field, settings->iso_value,
 											settings->data_field, number_in_xi[0], number_in_xi[1],
-											top_level_element, settings->graphics_object,time);
+											top_level_element, settings->graphics_object,
+											settings_to_object_data->time);
 									}
 								}
 								else
@@ -4801,7 +4882,8 @@ Converts a finite element into a graphics object with the supplied settings.
 							element_point_ranges_identifier.exact_xi,
 							settings_to_object_data->rc_coordinate_field,
 							settings->xi_point_density_field,
-							&number_of_xi_points, &xi_points))
+							&number_of_xi_points, &xi_points,
+							settings_to_object_data->time))
 						{
 							element_graphics_name =
 								CM_element_information_to_graphics_name(element->identifier);
@@ -4870,7 +4952,8 @@ Converts a finite element into a graphics object with the supplied settings.
 									settings_to_object_data->wrapper_orientation_scale_field,
 									settings->variable_scale_field, settings->data_field,
 									settings->label_field, settings->select_mode,
-									element_selected, ranges, top_level_xi_point_numbers)))
+									element_selected, ranges, top_level_xi_point_numbers,
+									settings_to_object_data->time)))
 							{
 								/* set auxiliary_object_name for glyph_set to
 									 element_graphics_name so we can edit */
@@ -4912,7 +4995,8 @@ Converts a finite element into a graphics object with the supplied settings.
 								settings->volume_texture, settings->render_type,
 								settings->displacement_map_field,
 								settings->displacement_map_xi_direction,
-								settings->blur_field,settings->texture_coordinate_field))
+								settings->blur_field,settings->texture_coordinate_field,
+								settings_to_object_data->time))
 							{
 								if (!GT_OBJECT_ADD(GT_voltex)(
 									settings->graphics_object,time,voltex))
@@ -4935,7 +5019,8 @@ Converts a finite element into a graphics object with the supplied settings.
 								initial_xi, settings_to_object_data->rc_coordinate_field,
 								settings_to_object_data->wrapper_stream_vector_field,
 								settings->reverse_track, settings->streamline_length,
-								settings->streamline_data_type, settings->data_field))
+								settings->streamline_data_type, settings->data_field,
+								settings_to_object_data->time))
 							{
 								if (!GT_OBJECT_ADD(GT_polyline)(settings->graphics_object,
 									time, polyline))
@@ -4958,7 +5043,8 @@ Converts a finite element into a graphics object with the supplied settings.
 								settings_to_object_data->wrapper_stream_vector_field,
 								settings->reverse_track, settings->streamline_length,
 								settings->streamline_width, settings->streamline_type,
-								settings->streamline_data_type, settings->data_field))
+								settings->streamline_data_type, settings->data_field,
+								settings_to_object_data->time))
 							{
 								if (!GT_OBJECT_ADD(GT_surface)(settings->graphics_object,
 									time,surface))
@@ -5033,9 +5119,9 @@ The graphics object is stored with with the settings it was created from.
 	if (settings && (settings_to_object_data =
 		(struct GT_element_settings_to_graphics_object_data *)
 		settings_to_object_data_void) &&
-		(element_group = settings_to_object_data->element_group) &&
-		(coordinate_field = settings_to_object_data->default_rc_coordinate_field))
+		(element_group = settings_to_object_data->element_group))
 	{
+		coordinate_field = settings_to_object_data->default_rc_coordinate_field;
 		return_code = 1;
 		/* build only if visible... */
 		if (settings->visibility)
@@ -5067,6 +5153,8 @@ The graphics object is stored with with the settings it was created from.
 				{
 					coordinate_field = settings->coordinate_field;
 				}
+				if (coordinate_field)
+				{
 				/* RC coordinate_field to pass to FE_element_to_graphics_object */
 				if ((settings_to_object_data->rc_coordinate_field=
 					Computed_field_begin_wrap_coordinate_field(coordinate_field)) &&
@@ -5236,6 +5324,7 @@ The graphics object is stored with with the settings it was created from.
 										(struct MANAGER(FE_node) *)NULL,
 										settings_to_object_data->rc_coordinate_field,
 										settings->glyph, base_size, centre, scale_factors,
+										settings_to_object_data->time,
 										settings_to_object_data->wrapper_orientation_scale_field,
 										settings->variable_scale_field, settings->data_field,
 										settings->label_field, settings->select_mode,
@@ -5248,6 +5337,7 @@ The graphics object is stored with with the settings it was created from.
 										(struct MANAGER(FE_node) *)NULL,
 										settings_to_object_data->rc_coordinate_field,
 										settings->glyph, base_size, centre, scale_factors,
+										settings_to_object_data->time,
 										settings_to_object_data->wrapper_orientation_scale_field,
 										settings->variable_scale_field, settings->data_field,
 										settings->label_field, settings->select_mode,
@@ -5407,6 +5497,7 @@ The graphics object is stored with with the settings it was created from.
 						"GT_element_settings_to_graphics_object.  "
 						"Could not get rc_coordinate_field wrapper");
 					return_code = 0;
+				}
 				}
 			}
 			if (settings->selected_graphics_changed)

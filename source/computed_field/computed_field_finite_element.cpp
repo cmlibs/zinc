@@ -11,6 +11,7 @@ Implements a number of basic component wise operations on computed fields.
 #include "computed_field/computed_field_coordinate.h"
 #include "computed_field/computed_field_find_xi.h"
 #include "computed_field/computed_field_private.h"
+#include "finite_element/finite_element_time.h"
 #include "general/debug.h"
 #include "general/mystring.h"
 #include "user_interface/message.h"
@@ -39,6 +40,7 @@ DESCRIPTION :
 	struct MANAGER(Computed_field) *computed_field_manager;
 	struct MANAGER(FE_field) *fe_field_manager;
 	void *fe_field_manager_callback_id;
+	struct FE_time *fe_time;
 }; /* struct Computed_field_finite_element_package */
 
 /*
@@ -55,16 +57,6 @@ DESCRIPTION :
 	struct FE_field *fe_field;
 	struct FE_element_field_values *fe_element_field_values;
 }; /* struct Computed_field_finite_element_type_specific_data */
-
-struct Computed_field_default_coordinates_type_specific_data
-/*******************************************************************************
-LAST MODIFIED : 18 July 2000
-
-DESCRIPTION :
-==============================================================================*/
-{
-	struct MANAGER(Computed_field) *computed_field_manager;
-}; /* struct Computed_field_default_coordinates_type_specific_data */
 
 /*******************************************************************************
 COMPUTED_FIELD_TYPE: node_array_value_at_time
@@ -129,8 +121,6 @@ Module constants
 ----------------
 */
 static char computed_field_finite_element_type_string[]="finite_element";
-static char computed_field_default_coordinate_type_string[]=
-	"default_coordinate";
 static char computed_field_cmiss_number_type_string[]="cmiss_number";
 #if defined (COMPUTED_FIELD_ACCESS_COUNT)
 static char computed_field_access_count_type_string[]="access_count";
@@ -365,6 +355,37 @@ Check the fe_field
 	return (return_code);
 } /* Computed_field_finite_element_is_defined_at_node */
 
+static int Computed_field_finite_element_has_multiple_times(
+	struct Computed_field *field)
+/*******************************************************************************
+LAST MODIFIED : 22 November 2001
+
+DESCRIPTION :
+Check the fe_field
+==============================================================================*/
+{
+	int return_code;
+	struct Computed_field_finite_element_type_specific_data *data;
+
+	ENTER(Computed_field_finite_element_has_multiple_times);
+	if (field && (data = 
+		(struct Computed_field_finite_element_type_specific_data *)
+		field->type_specific_data))
+	{
+		return_code=FE_field_has_multiple_times(data->fe_field);
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Computed_field_finite_element_has_multiple_times.  "
+			"Invalid arguments.");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Computed_field_finite_element_has_multiple_times */
+
 static int Computed_field_finite_element_has_numerical_components(
 	struct Computed_field *field)
 /*******************************************************************************
@@ -428,9 +449,9 @@ DESCRIPTION :
 
 static int Computed_field_calculate_FE_element_field_values_for_element(
 	struct Computed_field *field,int calculate_derivatives,
-	struct FE_element *element,struct FE_element *top_level_element)
+	struct FE_element *element,FE_value time,struct FE_element *top_level_element)
 /*******************************************************************************
-LAST MODIFIED : 24 May 2000
+LAST MODIFIED : 3 December 2001
 
 DESCRIPTION :
 Establishes the FE_element_field values necessary for evaluating <field>, which
@@ -457,8 +478,8 @@ is already set up in the correct way, does nothing.
 		/* ensure we have FE_element_field_values for element, with
 			 derivatives_calculated if requested */
 		if ((!data->fe_element_field_values)||
-			(!FE_element_field_values_are_for_element(
-				data->fe_element_field_values,element,top_level_element))||
+			(!FE_element_field_values_are_for_element_and_time(
+				data->fe_element_field_values,element,time,top_level_element))||
 			(calculate_derivatives&&
 				(!data->fe_element_field_values->derivatives_calculated)))
 		{
@@ -488,7 +509,7 @@ is already set up in the correct way, does nothing.
 			{
 				/* note that FE_element_field_values accesses the element */
 				if (!calculate_FE_element_field_values(element,data->fe_field,
-					calculate_derivatives,data->fe_element_field_values,
+					time,calculate_derivatives,data->fe_element_field_values,
 					top_level_element))
 				{
 					/* clear element to indicate that values are clear */
@@ -517,9 +538,9 @@ is already set up in the correct way, does nothing.
 } /* Computed_field_calculate_FE_element_field_values_for_element */
 
 static int Computed_field_finite_element_evaluate_cache_at_node(
-	struct Computed_field *field, struct FE_node *node)
+	struct Computed_field *field, struct FE_node *node, FE_value time)
 /*******************************************************************************
-LAST MODIFIED : 17 July 2000
+LAST MODIFIED : 21 November 2001
 
 DESCRIPTION :
 Evaluate the fields cache at the node.
@@ -557,7 +578,7 @@ Evaluate the fields cache at the node.
 				{
 					return_code=get_FE_nodal_FE_value_value(node,
 						&fe_field_component,/*version_number*/0,
-						/*nodal_value_type*/FE_NODAL_VALUE,&(field->values[i]));
+						/*nodal_value_type*/FE_NODAL_VALUE,time,&(field->values[i]));
 				} break;
 				case FLT_VALUE:
 				{
@@ -602,7 +623,7 @@ Evaluate the fields cache at the node.
 
 static int Computed_field_finite_element_evaluate_cache_in_element(
 	struct Computed_field *field, struct FE_element *element, FE_value *xi,
-	struct FE_element *top_level_element,int calculate_derivatives)
+	FE_value time,struct FE_element *top_level_element,int calculate_derivatives)
 /*******************************************************************************
 LAST MODIFIED : 17 July 2000
 
@@ -624,7 +645,7 @@ Evaluate the fields cache at the node.
 			FE_element_field_values.*/
 		if (return_code=
 			Computed_field_calculate_FE_element_field_values_for_element(
-				field,calculate_derivatives,element,top_level_element))
+				field,calculate_derivatives,element,time,top_level_element))
 		{
 			/* 2. Calculate the field */
 			value_type=get_FE_field_value_type(data->fe_field);
@@ -703,7 +724,7 @@ Evaluate the fields cache at the node.
 } /* Computed_field_finite_element_evaluate_cache_in_element */
 
 static char *Computed_field_finite_element_evaluate_as_string_at_node(struct Computed_field *field,
-	int component_number, struct FE_node *node)
+	int component_number, struct FE_node *node, FE_value time)
 /*******************************************************************************
 LAST MODIFIED : 17 July 2000
 
@@ -726,7 +747,7 @@ Print the values calculated in the cache.
 			/* Then we can just use the default function and therefore use the
 				values if they are already in the cache */
 			return_string = Computed_field_default_evaluate_as_string_at_node(
-				field, component_number, node);
+				field, component_number, node, time);
 		}
 		else
 		{
@@ -734,14 +755,14 @@ Print the values calculated in the cache.
 			{
 				if (get_FE_nodal_value_as_string(node,data->fe_field,
 					/*component_number*/0,/*version_number*/0,
-					/*nodal_value_type*/FE_NODAL_VALUE,&return_string))
+					/*nodal_value_type*/FE_NODAL_VALUE, time, &return_string))
 				{
 					error=0;
 					for (i=1;i<field->number_of_components;i++)
 					{
 						if (get_FE_nodal_value_as_string(node,data->fe_field,
 							i,/*version_number*/0,/*nodal_value_type*/FE_NODAL_VALUE,
-							&temp_string))
+							time, &temp_string))
 						{
 							append_string(&return_string,",",&error);
 							append_string(&return_string,temp_string,&error);
@@ -754,7 +775,7 @@ Print the values calculated in the cache.
 			{
 				if (get_FE_nodal_value_as_string(node,data->fe_field,
 					component_number,/*version_number*/0,
-					/*nodal_value_type*/FE_NODAL_VALUE,&return_string))
+					/*nodal_value_type*/FE_NODAL_VALUE,time,&return_string))
 				{
 					error=0;
 				}
@@ -774,10 +795,10 @@ Print the values calculated in the cache.
 } /* Computed_field_finite_element_evaluate_as_string_at_node */
 
 static char *Computed_field_finite_element_evaluate_as_string_in_element(
-	struct Computed_field *field,int component_number,
-	struct FE_element *element,FE_value *xi,struct FE_element *top_level_element)
+	struct Computed_field *field,int component_number,struct FE_element *element,
+	FE_value *xi,FE_value time,struct FE_element *top_level_element)
 /*******************************************************************************
-LAST MODIFIED : 17 July 2000
+LAST MODIFIED : 3 December 2001
 
 DESCRIPTION :
 Print the values calculated in the cache.
@@ -797,14 +818,14 @@ Print the values calculated in the cache.
 			/* Then we can just use the default function and therefore use the
 				values if they are already in the cache */
 			return_string = Computed_field_default_evaluate_as_string_in_element(
-				field, component_number, element, xi, top_level_element);
+				field, component_number, element, xi, time, top_level_element);
 		}
 		else
 		{
 			/* ensure we have FE_element_field_values for element, without
 				requiring derivatives to be calculated  */
 			if (Computed_field_calculate_FE_element_field_values_for_element(
-				field,/*calculate_derivatives*/0,element,top_level_element))
+				field,/*calculate_derivatives*/0,element,time,top_level_element))
 			{
 				calculate_FE_element_field_as_string(component_number,
 					data->fe_element_field_values,xi,&return_string);
@@ -1437,7 +1458,8 @@ FE_field being made and/or modified.
 				STRING_TO_ENUMERATOR(CM_field_type)(cm_field_type_string,
 					&cm_field_type);
 				/* now make an FE_field to match the options entered */
-				if (fe_field = CREATE(FE_field)())
+				if (fe_field = CREATE(FE_field)(
+					computed_field_finite_element_package->fe_time))
 				{
 					/* get the name from the computed field */
 					return_code=set_FE_field_name(fe_field,field->name);
@@ -1553,889 +1575,6 @@ FE_field being made and/or modified.
 
 	return (return_code);
 } /* define_Computed_field_type_finite_element */
-
-static int Computed_field_default_coordinate_clear_type_specific(
-	struct Computed_field *field)
-/*******************************************************************************
-LAST MODIFIED : 18 July 2000
-
-DESCRIPTION :
-Clear the type specific data used by this type.
-==============================================================================*/
-{
-	int return_code;
-
-	ENTER(Computed_field_default_coordinate_clear_type_specific);
-	if (field)
-	{
-		DEALLOCATE(field->type_specific_data);
-		return_code = 1;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_default_coordinate_clear_type_specific.  "
-			"Invalid arguments.");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Computed_field_default_coordinate_clear_type_specific */
-
-static void *Computed_field_default_coordinate_copy_type_specific(
-	struct Computed_field *field)
-/*******************************************************************************
-LAST MODIFIED : 18 July 2000
-
-DESCRIPTION :
-Copy the type specific data used by this type.
-==============================================================================*/
-{
-	struct Computed_field_default_coordinates_type_specific_data *destination,
-		*source;
-
-	ENTER(Computed_field_default_coordinate_copy_type_specific);
-	if (field && (source = 
-		(struct Computed_field_default_coordinates_type_specific_data *)
-		field->type_specific_data))
-	{
-		if (ALLOCATE(destination,
-			struct Computed_field_default_coordinates_type_specific_data, 1))
-		{
-			destination->computed_field_manager = source->computed_field_manager;
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"Computed_field_default_coordinate_copy_type_specific.  "
-				"Unable to allocate memory.");
-			destination = NULL;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_default_coordinate_copy_type_specific.  "
-			"Invalid arguments.");
-		destination = NULL;
-	}
-	LEAVE;
-
-	return (destination);
-} /* Computed_field_default_coordinate_copy_type_specific */
-
-static int Computed_field_default_coordinate_clear_cache_type_specific(
-	struct Computed_field *field)
-/*******************************************************************************
-LAST MODIFIED : 19 July 2000
-
-DESCRIPTION :
-This function is not needed for this type.
-==============================================================================*/
-{
-	int i,return_code;
-
-	ENTER(Computed_field_clear_cache);
-	if (field)
-	{
-		if (field->source_fields)
-		{
-			/* must deaccess any source_fields, since these act as a cache for type
-				 COMPUTED_FIELD_DEFAULT_COORDINATE */
-			for (i=0;i< field->number_of_source_fields;i++)
-			{
-				Computed_field_clear_cache(field->source_fields[i]);
-				DEACCESS(Computed_field)(&(field->source_fields[i]));
-			}
-			DEALLOCATE(field->source_fields);
-			field->number_of_source_fields=0;
-		}
-		return_code = 1;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_clear_cache.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Computed_field_clear_cache */
-
-static int Computed_field_default_coordinate_type_specific_contents_match(
-	struct Computed_field *field, struct Computed_field *other_computed_field)
-/*******************************************************************************
-LAST MODIFIED : 18 July 2000
-
-DESCRIPTION :
-Compare the type specific data
-==============================================================================*/
-{
-	int return_code;
-
-	ENTER(Computed_field_default_coordinate_type_specific_contents_match);
-	if (field && other_computed_field)
-	{
-		return_code = 1;
-	}
-	else
-	{
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Computed_field_default_coordinate_type_specific_contents_match */
-
-static int Computed_field_default_coordinate_is_defined_in_element(
-	struct Computed_field *field, struct FE_element *element)
-/*******************************************************************************
-LAST MODIFIED : 18 July 2000
-
-DESCRIPTION :
-Check the source fields using the default.
-==============================================================================*/
-{
-	int return_code;
-	ENTER(Computed_field_default_coordinate_is_defined_in_element);
-	if (field && element)
-	{
-		if (get_FE_element_default_coordinate_field(element))
-		{
-			return_code=1;
-		}
-		else
-		{
-			return_code=0;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_default_coordinate_is_defined_in_element.  "
-			"Invalid arguments.");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Computed_field_default_coordinate_is_defined_in_element */
-
-static int Computed_field_default_coordinate_is_defined_at_node(
-	struct Computed_field *field, struct FE_node *node)
-/*******************************************************************************
-LAST MODIFIED : 5 December 2000
-
-DESCRIPTION :
-Check the source fields using the default.
-==============================================================================*/
-{
-	int return_code;
-
-	ENTER(Computed_field_default_coordinate_is_defined_at_node);
-	if (field && node)
-	{
-		if (get_FE_node_default_coordinate_field(node))
-		{
-			return_code=1;
-		}
-		else
-		{
-			return_code=0;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_default_coordinate_is_defined_at_node.  "
-			"Invalid arguments.");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Computed_field_default_coordinate_is_defined_at_node */
-
-#define Computed_field_default_coordinate_has_numerical_components \
-	Computed_field_default_has_numerical_components
-/*******************************************************************************
-LAST MODIFIED : 18 July 2000
-
-DESCRIPTION :
-Window projection does have numerical components.
-==============================================================================*/
-
-#define Computed_field_default_coordinate_can_be_destroyed \
-	(Computed_field_can_be_destroyed_function)NULL
-/*******************************************************************************
-LAST MODIFIED : 17 July 2000
-
-DESCRIPTION :
-No special criteria on the destroy
-==============================================================================*/
-
-static int Computed_field_get_default_coordinate_source_field_in_element(
-	struct Computed_field *field,struct FE_element *element)
-/*******************************************************************************
-LAST MODIFIED : 27 October 1999
-
-DESCRIPTION :
-For fields of type COMPUTED_FIELD_DEFAULT_COORDINATE, makes sure the <field>'s
-source_fields are allocated to contain 1 field, the finite_element wrapper for
-the first coordinate field defined at <node>. For efficiency, checks that the
-currently cached field/node are not already correct before finding a new one.
-==============================================================================*/
-{
-	int new_field, return_code;
-	struct FE_field *fe_field;
-	struct Computed_field_default_coordinates_type_specific_data *data;
-	struct Computed_field_finite_element_type_specific_data *fe_data;
-
-	ENTER(Computed_field_get_default_coordinate_source_field_in_element);
-	if (field&&element&&(field->type_string==computed_field_default_coordinate_type_string)
-		&& (data = (struct Computed_field_default_coordinates_type_specific_data *)
-		field->type_specific_data))
-	{
-		return_code=1;
-		/* get Computed_field wrapping first coordinate field of element */
-		/* if the element is still pointed to by the cache, then already ok */
-		if (element != field->element)
-		{
-			if (fe_field=get_FE_element_default_coordinate_field(element))
-			{
-				new_field = 1;
-				if (field->source_fields)
-				{
-					if (Computed_field_is_type_finite_element(field->source_fields[0]))
-					{
-						fe_data = (struct Computed_field_finite_element_type_specific_data *)
-							field->source_fields[0]->type_specific_data;
-						if (fe_field == fe_data->fe_field)
-						{
-							new_field = 0;
-						}
-					}
-				}
-				if (new_field)
-				{
-					/* finding a new field, so must clear cache of current one */
-					if (field->source_fields)
-					{
-						Computed_field_clear_cache(field->source_fields[0]);
-						DEACCESS(Computed_field)(&(field->source_fields[0]));
-					}
-					else
-					{
-						field->source_fields=
-							ALLOCATE(field->source_fields,struct Computed_field *,1);
-					}
-					if (field->source_fields)
-					{
-						if (field->source_fields[0]=
-							FIRST_OBJECT_IN_MANAGER_THAT(Computed_field)(
-								Computed_field_is_read_only_with_fe_field,
-								(void *)fe_field,data->computed_field_manager))
-						{
-							ACCESS(Computed_field)(field->source_fields[0]);
-							field->number_of_source_fields=1;
-						}
-						else
-						{
-							display_message(ERROR_MESSAGE,
-								"Computed_field_get_default_coordinate_source_field_in_element."
-								"  No computed field for default coordinate field");
-							/* don't want empty source_fields array left around */
-							DEALLOCATE(field->source_fields);
-							field->number_of_source_fields=0;
-							return_code=0;
-						}
-					}
-					else
-					{
-						display_message(ERROR_MESSAGE,
-							"Computed_field_get_default_coordinate_source_field_in_element.  "
-							"Could not allocate default coordinate source fields");
-						field->number_of_source_fields=0;
-						return_code=0;
-					}
-				}
-			}
-			else
-			{
-				display_message(ERROR_MESSAGE,
-					"Computed_field_get_default_coordinate_source_field_in_element.  "
-					"No default coordinate field");
-				return_code=0;
-			}
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_get_default_coordinate_source_field_in_element.  "
-			"Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Computed_field_get_default_coordinate_source_field_in_element */
-
-static int Computed_field_get_default_coordinate_source_field_at_node(
-	struct Computed_field *field,struct FE_node *node)
-/*******************************************************************************
-LAST MODIFIED : 7 July 1999
-
-DESCRIPTION :
-For fields of type COMPUTED_FIELD_DEFAULT_COORDINATE, makes sure the <field>'s
-source_fields are allocated to contain 1 field, the finite_element wrapper for
-the first coordinate field defined at <node>. For efficiency, checks that the
-currently cached field/node are not already correct before finding a new one.
-==============================================================================*/
-{
-	int new_field, return_code;
-	struct FE_field *fe_field;
-	struct Computed_field_default_coordinates_type_specific_data *data;
-	struct Computed_field_finite_element_type_specific_data *fe_data;
-
-	ENTER(Computed_field_get_default_coordinate_source_field_at_node);
-	if (field&&node&&(field->type_string==computed_field_default_coordinate_type_string)
-		&& (data = (struct Computed_field_default_coordinates_type_specific_data *)
-		field->type_specific_data))
-	{
-		return_code=1;
-		/* if node and field->node have equivalent fields then source field will
-			 already be correct */
-		if (!(field->node&&equivalent_FE_fields_at_nodes(node,field->node)))
-		{
-			if (fe_field=get_FE_node_default_coordinate_field(node))
-			{
-				new_field = 1;
-				if (field->source_fields)
-				{
-					if (Computed_field_is_type_finite_element(field->source_fields[0]))
-					{
-						fe_data = (struct Computed_field_finite_element_type_specific_data *)
-							field->source_fields[0]->type_specific_data;
-						if (fe_field == fe_data->fe_field)
-						{
-							new_field = 0;
-						}
-					}
-				}
-				if (new_field)
-				{
-					/* finding a new field, so must clear cache of current one */
-					if (field->source_fields)
-					{
-						Computed_field_clear_cache(field->source_fields[0]);
-						DEACCESS(Computed_field)(&(field->source_fields[0]));
-					}
-					else
-					{
-						field->source_fields=
-							ALLOCATE(field->source_fields,struct Computed_field *,1);
-					}
-					if (field->source_fields)
-					{
-						if (field->source_fields[0]=
-							FIRST_OBJECT_IN_MANAGER_THAT(Computed_field)(
-								Computed_field_is_read_only_with_fe_field,
-								(void *)fe_field,data->computed_field_manager))
-						{
-							ACCESS(Computed_field)(field->source_fields[0]);
-							field->number_of_source_fields=1;
-						}
-						else
-						{
-							display_message(ERROR_MESSAGE,
-								"Computed_field_get_default_coordinate_source_field_at_node.  "
-								"No computed field for default coordinate field");
-							/* don't want empty source_fields array left around */
-							DEALLOCATE(field->source_fields);
-							field->number_of_source_fields=0;
-							return_code=0;
-						}
-					}
-					else
-					{
-						display_message(ERROR_MESSAGE,
-							"Computed_field_get_default_coordinate_source_field_at_node.  "
-							"Could not allocate default coordinate source fields");
-						field->number_of_source_fields=0;
-						return_code=0;
-					}
-				}
-			}
-			else
-			{
-				display_message(ERROR_MESSAGE,
-					"Computed_field_get_default_coordinate_source_field_at_node.  "
-					"No default coordinate field");
-				return_code=0;
-			}
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_get_default_coordinate_source_field_at_node.  "
-			"Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Computed_field_get_default_coordinate_source_field_at_node */
-
-static int Computed_field_default_coordinate_evaluate_cache_at_node(
-	struct Computed_field *field,struct FE_node *node)
-/*******************************************************************************
-LAST MODIFIED : 18 July 2000
-
-DESCRIPTION :
-Evaluate the fields cache at the node.
-==============================================================================*/
-{
-	int return_code;
-
-	ENTER(Computed_field_default_coordinate_evaluate_cache_at_node);
-	if (field&&node)
-	{
-		return_code=1;
-		if (Computed_field_get_default_coordinate_source_field_at_node(
-			field,node))
-		{
-			/* calculate values of source_field */
-			if (return_code=Computed_field_evaluate_source_fields_cache_at_node(
-				field,node))
-			{
-				/* once the default_coordinate source field is found, its
-					calculation is the same as rc_coordinate */
-				return_code=Computed_field_evaluate_rc_coordinate(field,
-					/*element_dimension*/0,/*calculate_derivatives*/0);
-			}
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"Computed_field_default_coordinate_evaluate_cache_at_node.  "
-				"Could not get default coordinate source_field");
-			return_code=0;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_default_coordinate_evaluate_cache_at_node.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Computed_field_default_coordinate_evaluate_cache_at_node */
-
-static int Computed_field_default_coordinate_evaluate_cache_in_element(
-	struct Computed_field *field, struct FE_element *element, FE_value *xi,
-	struct FE_element *top_level_element, int calculate_derivatives)
-/*******************************************************************************
-LAST MODIFIED : 18 July 2000
-
-DESCRIPTION :
-Evaluate the fields cache at the node.
-==============================================================================*/
-{
-	int element_dimension, return_code;
-
-	ENTER(Computed_field_default_coordinate_evaluate_cache_in_element);
-	if (field && Computed_field_has_at_least_2_components(field, NULL) && 
-		element && xi)
-	{
-		element_dimension=element->shape->dimension;
-		if (Computed_field_get_default_coordinate_source_field_in_element(
-			field,element))
-		{
-			/* calculate values of source_field */
-			if(return_code=Computed_field_evaluate_source_fields_cache_in_element(
-				field,element,xi,top_level_element,
-				calculate_derivatives))
-			{
-				/* once the default_coordinate source field is found, its
-					calculation is the same as rc_coordinate */
-				return_code=Computed_field_evaluate_rc_coordinate(field,
-					element_dimension,calculate_derivatives);
-			}
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"Computed_field_evaluate_cache_in_element.  "
-				"Could not get default coordinate source_field");
-			return_code=0;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_default_coordinate_evaluate_cache_in_element.  "
-			"Invalid arguments.");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Computed_field_default_coordinate_evaluate_cache_in_element */
-
-#define Computed_field_default_coordinate_evaluate_as_string_at_node \
-	Computed_field_default_evaluate_as_string_at_node
-/*******************************************************************************
-LAST MODIFIED : 18 July 2000
-
-DESCRIPTION :
-Print the values calculated in the cache.
-==============================================================================*/
-
-#define Computed_field_default_coordinate_evaluate_as_string_in_element \
-	Computed_field_default_evaluate_as_string_in_element
-/*******************************************************************************
-LAST MODIFIED : 18 July 2000
-
-DESCRIPTION :
-Print the values calculated in the cache.
-==============================================================================*/
-
-static int Computed_field_default_coordinate_set_values_at_node(struct Computed_field *field,
-	struct FE_node *node,FE_value *values)
-/*******************************************************************************
-LAST MODIFIED : 18 July 2000
-
-DESCRIPTION :
-==============================================================================*/
-{
-	FE_value non_rc_coordinates[3];
-	int return_code;
-	struct Coordinate_system rc_coordinate_system;
-					
-	ENTER(Computed_field_set_values_at_node);
-	if (field&&node&&values)
-	{
-		if (Computed_field_get_default_coordinate_source_field_at_node(
-			field,node))
-		{
-			/* convert RC values back into source coordinate system */
-			rc_coordinate_system.type = RECTANGULAR_CARTESIAN;
-			return_code=
-				convert_Coordinate_system(&rc_coordinate_system,values,
-					&(field->source_fields[0]->coordinate_system),non_rc_coordinates,
-					/*jacobian*/(float *)NULL)&&
-				Computed_field_set_values_at_node(field->source_fields[0],
-					node,non_rc_coordinates);
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"Computed_field_default_coordinate_set_values_at_node.  "
-				"Could not get default coordinate source_field");
-			return_code=0;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_default_coordinate_set_values_at_node.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Computed_field_default_coordinate_set_values_at_node */
-
-static int Computed_field_default_coordinate_set_values_in_element(struct Computed_field *field,
-	struct FE_element *element,int *number_in_xi,FE_value *values)
-/*******************************************************************************
-LAST MODIFIED : 18 July 2000
-
-DESCRIPTION :
-==============================================================================*/
-{
-	FE_value non_rc_coordinates[3],rc_coordinates[3],*source_values;
-	int element_dimension,i,j,k,number_of_points,return_code;
-	struct Coordinate_system rc_coordinate_system;
-
-	ENTER(Computed_field_set_values_in_element);
-	if (field&&element&&element->shape&&number_in_xi&&values)
-	{
-		return_code=1;
-		element_dimension=element->shape->dimension;
-		number_of_points=1;
-		for (i=0;(i<element_dimension)&&return_code;i++)
-		{
-			if (0<number_in_xi[i])
-			{
-				number_of_points *= (number_in_xi[i]+1);
-			}
-			else
-			{
-				display_message(ERROR_MESSAGE,
-					"Computed_field_scale_set_values_in_element.  "
-					"number_in_xi must be positive");
-				return_code=0;
-			}
-		}
-		if (return_code)
-		{
-			if (Computed_field_get_default_coordinate_source_field_in_element(
-				field,element))
-			{
-				rc_coordinate_system.type = RECTANGULAR_CARTESIAN;
-				/* 3 values for non-rc coordinate system */
-				if (ALLOCATE(source_values,FE_value,number_of_points*3))
-				{
-					for (j=0;(j<number_of_points)&&return_code;j++)
-					{
-						for (k=0;k<3;k++)
-						{
-							rc_coordinates[k]=values[k*number_of_points+j];
-						}
-						/* convert RC values back into source coordinate system */
-						if (convert_Coordinate_system(&rc_coordinate_system,
-							rc_coordinates,&(field->source_fields[0]->coordinate_system),
-							non_rc_coordinates,/*jacobian*/(float *)NULL))
-						{
-							for (k=0;k<3;k++)
-							{
-								source_values[k*number_of_points+j]=non_rc_coordinates[k];
-							}
-						}
-						else
-						{
-							return_code=0;
-						}
-					}
-					if (return_code)
-					{
-						return_code=Computed_field_set_values_in_element(
-							field->source_fields[0],element,number_in_xi,source_values);
-					}
-					DEALLOCATE(source_values);
-				}
-				else
-				{
-					return_code=0;
-				}
-			}
-			else
-			{
-				display_message(ERROR_MESSAGE,
-					"Computed_field_default_coordinate_set_values_in_element.  "
-					"Could not get default coordinate source_field");
-				return_code=0;
-			}
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_default_coordinate_set_values_in_element.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Computed_field_default_coordinate_set_values_in_element */
-
-static int Computed_field_default_coordinate_get_native_discretization_in_element(
-	struct Computed_field *field,struct FE_element *element,int *number_in_xi)
-/*******************************************************************************
-LAST MODIFIED : 18 July 2000
-
-DESCRIPTION :
-==============================================================================*/
-{
-	int return_code;
-
-	ENTER(Computed_field_default_coordinate_get_native_discretization_in_element);
-	if (field&&element&&number_in_xi&&element->shape&&
-		(MAXIMUM_ELEMENT_XI_DIMENSIONS>=element->shape->dimension))
-	{
-		if (Computed_field_get_default_coordinate_source_field_in_element(
-			field,element))
-		{
-			return_code=
-				Computed_field_get_native_discretization_in_element(
-					field->source_fields[0],element,number_in_xi);
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"Computed_field_default_coordinate_get_native_discretization_in_element.  "
-				"Could not get default coordinate source_field");
-			return_code=0;
-		}
-		/* must clear the cache to remove default coordinate source field */
-		Computed_field_clear_cache(field);
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_default_coordinate_get_native_discretization_in_element.  "
-			"Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Computed_field_default_coordinate_get_native_discretization_in_element */
-
-#define Computed_field_default_coordinate_find_element_xi \
-   (Computed_field_find_element_xi_function)NULL
-/*******************************************************************************
-LAST MODIFIED : 18 July 2000
-
-DESCRIPTION :
-Not implemented yet.
-==============================================================================*/
-
-static int list_Computed_field_default_coordinate(
-	struct Computed_field *field)
-/*******************************************************************************
-LAST MODIFIED : 18 July 2000
-
-DESCRIPTION :
-==============================================================================*/
-{
-	int return_code;
-
-	ENTER(List_Computed_field_default_coordinate);
-	if (field)
-	{
-		/* no extra parameters */
-		return_code = 1;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"list_Computed_field_default_coordinate.  "
-			"Invalid arguments.");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* list_Computed_field_default_coordinate */
-
-static int list_Computed_field_default_coordinate_commands(
-	struct Computed_field *field)
-/*******************************************************************************
-LAST MODIFIED : 18 July 2000
-
-DESCRIPTION :
-==============================================================================*/
-{
-	int return_code;
-
-	ENTER(list_Computed_field_default_coordinate_commands);
-	if (field)
-	{
-		/* no extra parameters */
-		return_code = 1;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"list_Computed_field_default_coordinate_commands.  "
-			"Invalid arguments.");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* list_Computed_field_default_coordinate_commands */
-
-int Computed_field_get_type_default_coordinate(struct Computed_field *field,
-	struct MANAGER(Computed_field) **computed_field_manager)
-/*******************************************************************************
-LAST MODIFIED : 18 July 2000
-
-DESCRIPTION :
-If the field is of type COMPUTED_FIELD_DEFAULT_COORDINATE, the 
-<source_field> and <xi_index> used by it are returned.
-==============================================================================*/
-{
-	int return_code;
-	struct Computed_field_default_coordinates_type_specific_data *data;
-
-	ENTER(Computed_field_get_type_default_coordinate);
-	if (field&&(COMPUTED_FIELD_NEW_TYPES==field->type)&&
-		(field->type_string==computed_field_default_coordinate_type_string)
-		&&(data = 
-		(struct Computed_field_default_coordinates_type_specific_data *)
-		field->type_specific_data)&&computed_field_manager)
-	{
-		*computed_field_manager=data->computed_field_manager;	
-		return_code=1;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_get_type_default_coordinate.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Computed_field_get_type_default_coordinate */
-
-static int define_Computed_field_type_default_coordinate(
-	struct Parse_state *state,void *field_void,
-	void *computed_field_finite_element_package_void)
-/*******************************************************************************
-LAST MODIFIED : 18 July 2000
-
-DESCRIPTION :
-Converts <field> into type COMPUTED_FIELD_DEFAULT_COORDINATE.
-==============================================================================*/
-{
-	int return_code;
-	struct Computed_field *field;
-	struct Computed_field_finite_element_package 
-		*computed_field_finite_element_package;
-
-	ENTER(define_Computed_field_type_default_coordinate);
-	if (state&&(field=(struct Computed_field *)field_void)&&
-		(computed_field_finite_element_package=(struct 
-			Computed_field_finite_element_package *)
-			computed_field_finite_element_package_void))
-	{
-		if (!state->current_token)
-		{
-			return_code=Computed_field_set_type_default_coordinate(field,
-				computed_field_finite_element_package->computed_field_manager);
-		}
-		else
-		{
-			if (strcmp(PARSER_HELP_STRING,state->current_token)&&
-				strcmp(PARSER_RECURSIVE_HELP_STRING,state->current_token))
-			{
-				display_message(ERROR_MESSAGE,
-					"Unknown option <%s>",state->current_token);
-				display_parse_state_location(state);
-			}
-			return_code=0;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"define_Computed_field_type_default_coordinate.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* define_Computed_field_type_default_coordinate */
 
 static int Computed_field_cmiss_number_clear_type_specific(
 	struct Computed_field *field)
@@ -2564,7 +1703,7 @@ No special criteria on the destroy
 ==============================================================================*/
 
 static int Computed_field_cmiss_number_evaluate_cache_at_node(
-	struct Computed_field *field, struct FE_node *node)
+	struct Computed_field *field, struct FE_node *node, FE_value time)
 /*******************************************************************************
 LAST MODIFIED : 19 July 2000
 
@@ -2575,6 +1714,7 @@ Evaluate the fields cache at the node.
 	int return_code;
 
 	ENTER(Computed_field_cmiss_number_evaluate_cache_at_node);
+	USE_PARAMETER(time);
 	if (field && node)
 	{
 		/* simply convert the node number into an FE_value */
@@ -2595,7 +1735,7 @@ Evaluate the fields cache at the node.
 
 static int Computed_field_cmiss_number_evaluate_cache_in_element(
 	struct Computed_field *field, struct FE_element *element, FE_value *xi,
-	struct FE_element *top_level_element,int calculate_derivatives)
+	FE_value time, struct FE_element *top_level_element,int calculate_derivatives)
 /*******************************************************************************
 LAST MODIFIED : 7 November 2000
 
@@ -2606,6 +1746,7 @@ Evaluate the fields cache in the element.
 	int element_dimension, i, return_code;
 
 	ENTER(Computed_field_cmiss_number_evaluate_cache_in_element);
+	USE_PARAMETER(time);
 	USE_PARAMETER(top_level_element);
 	USE_PARAMETER(calculate_derivatives);
 	if (field && element && xi)
@@ -2634,9 +1775,10 @@ Evaluate the fields cache in the element.
 } /* Computed_field_cmiss_number_evaluate_cache_in_element */
 
 static char *Computed_field_cmiss_number_evaluate_as_string_at_node(
-	struct Computed_field *field, int component_number, struct FE_node *node)
+	struct Computed_field *field, int component_number, struct FE_node *node,
+	FE_value time)
 /*******************************************************************************
-LAST MODIFIED : 19 July 2000
+LAST MODIFIED : 21 November 2001
 
 DESCRIPTION :
 Print the values calculated in the cache.
@@ -2646,6 +1788,7 @@ Print the values calculated in the cache.
 	int error;
 
 	ENTER(Computed_field_cmiss_number_evaluate_as_string_at_node);
+	USE_PARAMETER(time);
 	return_string=(char *)NULL;
 	if (field&&node&&(component_number >= -1)&&
 		(component_number<field->number_of_components))
@@ -2667,10 +1810,10 @@ Print the values calculated in the cache.
 } /* Computed_field_cmiss_number_evaluate_as_string_at_node */
 
 static char *Computed_field_cmiss_number_evaluate_as_string_in_element(
-	struct Computed_field *field,int component_number,
-	struct FE_element *element,FE_value *xi,struct FE_element *top_level_element)
+	struct Computed_field *field,int component_number,struct FE_element *element,
+	FE_value *xi,FE_value time,struct FE_element *top_level_element)
 /*******************************************************************************
-LAST MODIFIED : 19 July 2000
+LAST MODIFIED : 3 December 2001
 
 DESCRIPTION :
 Print the values calculated in the cache.
@@ -2680,6 +1823,7 @@ Print the values calculated in the cache.
 
 	ENTER(Computed_field_cmiss_number_evaluate_as_string_in_element);
 	USE_PARAMETER(top_level_element);
+	USE_PARAMETER(time);
 	return_string=(char *)NULL;
 	if (field&&element&&xi&&(-1<=component_number)&&
 		(component_number < field->number_of_components))
@@ -2992,7 +2136,7 @@ Evaluate the fields cache at the node.
 
 static int Computed_field_access_count_evaluate_cache_in_element(
 	struct Computed_field *field, struct FE_element *element, FE_value *xi,
-	struct FE_element *top_level_element,int calculate_derivatives)
+	FE_value time, struct FE_element *top_level_element,int calculate_derivatives)
 /*******************************************************************************
 LAST MODIFIED : 19 July 2000
 
@@ -3272,6 +2416,8 @@ although its cache may be lost.
 			list_Computed_field_access_count;
 		field->list_Computed_field_commands_function = 
 			list_Computed_field_access_count_commands;
+			field->Computed_field_has_multiple_times_function = 
+				Computed_field_default_has_multiple_times_function;
 	}
 	else
 	{
@@ -3512,7 +2658,7 @@ Cannot evaluate xi at nodes
 
 static int Computed_field_xi_coordinates_evaluate_cache_in_element(
 	struct Computed_field *field, struct FE_element *element, FE_value *xi,
-	struct FE_element *top_level_element,int calculate_derivatives)
+	FE_value time, struct FE_element *top_level_element,int calculate_derivatives)
 /*******************************************************************************
 LAST MODIFIED : 19 July 2000
 
@@ -3524,6 +2670,7 @@ Evaluate the fields cache at the node.
 	int element_dimension, i, j, return_code;
 
 	ENTER(Computed_field_xi_coordinates_evaluate_cache_in_element);
+	USE_PARAMETER(time);
 	USE_PARAMETER(top_level_element);
 	USE_PARAMETER(calculate_derivatives);
 	if (field && element && xi)
@@ -3984,7 +3131,7 @@ DESCRIPTION :
 ==============================================================================*/
 
 static int Computed_field_node_value_evaluate_cache_at_node(
-	struct Computed_field *field, struct FE_node *node)
+	struct Computed_field *field, struct FE_node *node, FE_value time)
 /*******************************************************************************
 LAST MODIFIED : 19 July 2000
 
@@ -4026,7 +3173,7 @@ Evaluate the fields cache at the node.
 					{
 						return_code=get_FE_nodal_FE_value_value(node,
 							&fe_field_component,data->version_number,
-							data->nodal_value_type,&(field->values[i]));
+							data->nodal_value_type,time,&(field->values[i]));
 					} break;
 					case FLT_VALUE:
 					{
@@ -4085,8 +3232,9 @@ DESCRIPTION :
 Cannot evaluate node_value in elements
 ==============================================================================*/
 
-static char *Computed_field_node_value_evaluate_as_string_at_node(struct Computed_field *field,
-	int component_number, struct FE_node *node)
+static char *Computed_field_node_value_evaluate_as_string_at_node(
+	struct Computed_field *field, int component_number, struct FE_node *node, 
+	FE_value time)
 /*******************************************************************************
 LAST MODIFIED : 19 July 2000
 
@@ -4109,7 +3257,7 @@ Print the values calculated in the cache.
 			/* Then we can just use the default function and therefore use the
 				values if they are already in the cache */
 			return_string = Computed_field_default_evaluate_as_string_at_node(
-				field, component_number, node);
+				field, component_number, node, time);
 		}
 		else
 		{
@@ -4117,14 +3265,14 @@ Print the values calculated in the cache.
 			{
 				if (get_FE_nodal_value_as_string(node,data->fe_field,
 					/*component_number*/0,data->version_number,
-					data->nodal_value_type,&return_string))
+					data->nodal_value_type,time,&return_string))
 				{
 					error=0;
 					for (i=1;i<field->number_of_components;i++)
 					{
 						if (get_FE_nodal_value_as_string(node,data->fe_field,
 							i, data->version_number, data->nodal_value_type,
-							&temp_string))
+							time,&temp_string))
 						{
 							append_string(&return_string,",",&error);
 							append_string(&return_string,temp_string,&error);
@@ -4137,7 +3285,7 @@ Print the values calculated in the cache.
 			{
 				if (get_FE_nodal_value_as_string(node,data->fe_field,
 					component_number, data->version_number,
-					data->nodal_value_type,&return_string))
+					data->nodal_value_type,time,&return_string))
 				{
 					error=0;
 				}
@@ -4444,6 +3592,8 @@ although its cache may be lost.
 				list_Computed_field_node_value;
 			field->list_Computed_field_commands_function = 
 				list_Computed_field_node_value_commands;
+			field->computed_field_has_multiple_times_function = 
+				Computed_field_default_has_multiple_times;
 		}
 		else
 		{
@@ -4972,7 +4122,7 @@ DESCRIPTION :
 ==============================================================================*/
 
 static int Computed_field_node_array_value_at_time_evaluate_cache_at_node(
-	struct Computed_field *field, struct FE_node *node)
+	struct Computed_field *field, struct FE_node *node, FE_value time)
 /*******************************************************************************
 LAST MODIFIED : 20 July 2000
 
@@ -4993,7 +4143,7 @@ Evaluate the fields cache at the node.
 	{
 		/* 1. Precalculate any source fields that this field depends on */
 		if (return_code = 
-			Computed_field_evaluate_source_fields_cache_at_node(field, node))
+			Computed_field_evaluate_source_fields_cache_at_node(field, node, time))
 		{
 			/* 2. Calculate the field */
 			fe_field_component.field=data->fe_field;
@@ -5494,7 +4644,7 @@ and allows its contents to be modified.
 	return (return_code);
 } /* define_Computed_field_type_node_array_value_at_time */
 
-static int Computed_field_is_type_embedded(struct Computed_field *field)
+int Computed_field_is_type_embedded(struct Computed_field *field, void *dummy)
 /*******************************************************************************
 LAST MODIFIED : 20 July 2000
 
@@ -5504,6 +4654,7 @@ DESCRIPTION :
 	int return_code;
 
 	ENTER(Computed_field_is_type_embedded);
+	USE_PARAMETER(dummy);
 	if (field)
 	{
 		return_code = (field->type_string == computed_field_embedded_type_string);
@@ -5820,9 +4971,9 @@ DESCRIPTION :
 } /* Computed_field_embedded_can_be_destroyed */
 
 static int Computed_field_embedded_evaluate_cache_at_node(
-	struct Computed_field *field, struct FE_node *node)
+	struct Computed_field *field, struct FE_node *node, FE_value time)
 /*******************************************************************************
-LAST MODIFIED : 20 July 2000
+LAST MODIFIED : 21 November 2001
 
 DESCRIPTION :
 Evaluate the fields cache at the node.
@@ -5845,7 +4996,7 @@ Evaluate the fields cache at the node.
 		{
 			/* now calculate source_fields[0] */
 			if(Computed_field_evaluate_cache_in_element(
-				field->source_fields[0],element,xi,(struct FE_element *)NULL,0))
+				field->source_fields[0],element,xi,time,(struct FE_element *)NULL,0))
 			{
 				for (i=0;i<field->number_of_components;i++)
 				{
@@ -6106,6 +5257,8 @@ although its cache may be lost.
 				list_Computed_field_embedded;
 			field->list_Computed_field_commands_function = 
 				list_Computed_field_embedded_commands;
+			field->computed_field_has_multiple_times_function = 
+				Computed_field_default_has_multiple_times;
 		}
 		else
 		{
@@ -6409,13 +5562,9 @@ function.
 						{
 							ACCESS(Computed_field)(wrapper);
 							if ((default_coordinate_field =
-								FIND_BY_IDENTIFIER_IN_MANAGER(Computed_field,name)(
-									"default_coordinate",
-									field_change_data->computed_field_manager)) ||
-								(default_coordinate_field =
-									FIRST_OBJECT_IN_MANAGER_THAT(Computed_field)(
-										Computed_field_has_up_to_3_numerical_components,
-										(void *)NULL, field_change_data->computed_field_manager)))
+								FIRST_OBJECT_IN_MANAGER_THAT(Computed_field)(
+								Computed_field_has_coordinate_fe_field,
+								(void *)NULL, field_change_data->computed_field_manager)))
 							{
 								if (Computed_field_set_coordinate_system(wrapper,
 									Computed_field_get_coordinate_system(
@@ -6550,9 +5699,9 @@ Global functions
 struct Computed_field_finite_element_package *
 Computed_field_register_types_finite_element(
 	struct Computed_field_package *computed_field_package,
-	struct MANAGER(FE_field) *fe_field_manager)
+	struct MANAGER(FE_field) *fe_field_manager, struct FE_time *fe_time)
 /*******************************************************************************
-LAST MODIFIED : 21 May 2001
+LAST MODIFIED : 9 November 2001
 
 DESCRIPTION :
 This function registers the finite_element related types of Computed_fields and
@@ -6572,13 +5721,11 @@ automatically wrapped in corresponding computed_fields.
 				computed_field_package);
 		computed_field_finite_element_package.fe_field_manager =
 			fe_field_manager;
+		computed_field_finite_element_package.fe_time =
+			ACCESS(FE_time)(fe_time);
 		Computed_field_package_add_type(computed_field_package,
 			computed_field_finite_element_type_string,
 			define_Computed_field_type_finite_element,
-			&computed_field_finite_element_package);
-		Computed_field_package_add_type(computed_field_package,
-			computed_field_default_coordinate_type_string,
-			define_Computed_field_type_default_coordinate,
 			&computed_field_finite_element_package);
 		Computed_field_package_add_type(computed_field_package,
 			computed_field_cmiss_number_type_string,
@@ -6642,6 +5789,7 @@ DESCRIPTION :
 	ENTER(Computed_field_deregister_types_finite_element);
 	if (computed_field_finite_element_package)
 	{
+		DEACCESS(FE_time)(&(computed_field_finite_element_package->fe_time));
 		MANAGER_DEREGISTER(FE_field)(
 			computed_field_finite_element_package->fe_field_manager_callback_id,
 			computed_field_finite_element_package->fe_field_manager);
@@ -6769,6 +5917,8 @@ although its cache may be lost.
 				list_Computed_field_finite_element;
 			field->list_Computed_field_commands_function = 
 				list_Computed_field_finite_element_commands;
+			field->computed_field_has_multiple_times_function = 
+				 Computed_field_finite_element_has_multiple_times;
 		}
 		else
 		{
@@ -6922,130 +6072,6 @@ Returns the list of FE_fields that <field> depends on, by sorting through the
 	return (add_data.fe_field_list);
 } /* Computed_field_get_defining_FE_field_list */
 
-int Computed_field_is_type_default_coordinate(struct Computed_field *field)
-/*******************************************************************************
-LAST MODIFIED : 18 July 2000
-
-DESCRIPTION :
-==============================================================================*/
-{
-	int return_code;
-
-	ENTER(Computed_field_is_type_default_coordinate);
-	if (field)
-	{
-		return_code = (field->type_string == computed_field_default_coordinate_type_string);
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_is_type_default_coordinate.  Missing field");
-		return_code=0;
-	}
-
-	return (return_code);
-} /* Computed_field_is_type_default_coordinate */
-
-int Computed_field_set_type_default_coordinate(struct Computed_field *field,
-	struct MANAGER(Computed_field) *computed_field_manager)
-/*******************************************************************************
-LAST MODIFIED : 18 July 2000
-
-DESCRIPTION :
-Converts <field> to type COMPUTED_FIELD_DEFAULT_COORDINATE, which returns the
-values/derivatives of the first [coordinate] field defined for the element/node
-in rectangular cartesian coordinates. This type is intended to replace the
-NULL coordinate_field option in the calculate_FE_element_field_values function.
-When a field of this type is calculated at and element/node, the evaluate
-function finds the first FE_field (coordinate type) defined over it, then gets
-its Computed_field wrapper from the manager and proceeds from there.
-Consequences of this behaviour are:
-- the field allocates its source_fields to point to the computed_field for the
-actual coordinate field in the evaluate phase.
-- when the source field changes the current one's cache is cleared and it is
-deaccessed.
-- when the cache is cleared, so is any reference to the source_field.
-- always performs the conversion to RC since cannot predict the coordinate
-system used by the eventual source_field. Coordinate_system of this type of
-field need not be RC, although it usually will be.
-Sets number of components to 3.
-If function fails, field is guaranteed to be unchanged from its original state,
-although its cache may be lost.
-==============================================================================*/
-{
-	int return_code;
-	struct Computed_field_default_coordinates_type_specific_data *data;
-
-	ENTER(Computed_field_set_type_default_coordinate);
-	if (field&&computed_field_manager)
-	{
-		return_code=1;
-		/* 1. make dynamic allocations for any new type-specific data */
-		if (ALLOCATE(data,struct Computed_field_default_coordinates_type_specific_data, 1))
-		{
-			/* 2. free current type-specific data */
-			Computed_field_clear_type(field);
-			/* 3. establish the new type */
-			field->type=COMPUTED_FIELD_NEW_TYPES;
-			field->type_string = computed_field_default_coordinate_type_string;
-			field->number_of_components = 3;
-			field->type_specific_data = (void *)data;
-			data->computed_field_manager = computed_field_manager;
-
-			/* Set all the methods */
-			field->computed_field_clear_type_specific_function =
-				Computed_field_default_coordinate_clear_type_specific;
-			field->computed_field_copy_type_specific_function =
-				Computed_field_default_coordinate_copy_type_specific;
-			field->computed_field_clear_cache_type_specific_function =
-				Computed_field_default_coordinate_clear_cache_type_specific;
-			field->computed_field_type_specific_contents_match_function =
-				Computed_field_default_coordinate_type_specific_contents_match;
-			field->computed_field_is_defined_in_element_function =
-				Computed_field_default_coordinate_is_defined_in_element;
-			field->computed_field_is_defined_at_node_function =
-				Computed_field_default_coordinate_is_defined_at_node;
-			field->computed_field_has_numerical_components_function =
-				Computed_field_default_coordinate_has_numerical_components;
-			field->computed_field_can_be_destroyed_function =
-				Computed_field_default_coordinate_can_be_destroyed;
-			field->computed_field_evaluate_cache_at_node_function =
-				Computed_field_default_coordinate_evaluate_cache_at_node;
-			field->computed_field_evaluate_cache_in_element_function =
-				Computed_field_default_coordinate_evaluate_cache_in_element;
-			field->computed_field_evaluate_as_string_at_node_function =
-				Computed_field_default_coordinate_evaluate_as_string_at_node;
-			field->computed_field_evaluate_as_string_in_element_function =
-				Computed_field_default_coordinate_evaluate_as_string_in_element;
-			field->computed_field_set_values_at_node_function =
-				Computed_field_default_coordinate_set_values_at_node;
-			field->computed_field_set_values_in_element_function =
-				Computed_field_default_coordinate_set_values_in_element;
-			field->computed_field_get_native_discretization_in_element_function =
-				Computed_field_default_coordinate_get_native_discretization_in_element;
-			field->computed_field_find_element_xi_function =
-				Computed_field_default_coordinate_find_element_xi;
-			field->list_Computed_field_function = 
-				list_Computed_field_default_coordinate;
-			field->list_Computed_field_commands_function = 
-				list_Computed_field_default_coordinate_commands;
-		}
-		else
-		{
-			return_code=0;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_set_type_default_coordinate.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Computed_field_set_type_default_coordinate */
-
 int Computed_field_is_type_cmiss_number(struct Computed_field *field)
 /*******************************************************************************
 LAST MODIFIED : 18 July 2000
@@ -7136,6 +6162,8 @@ although its cache may be lost.
 			list_Computed_field_cmiss_number;
 		field->list_Computed_field_commands_function = 
 			list_Computed_field_cmiss_number_commands;
+			field->computed_field_has_multiple_times_function = 
+				Computed_field_default_has_multiple_times;
 	}
 	else
 	{
@@ -7173,6 +6201,45 @@ wrapper for <fe_field>.
 				data = (struct Computed_field_finite_element_type_specific_data *)
 					field->type_specific_data;
 				return_code=(data->fe_field==fe_field);
+			}
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Computed_field_is_read_only_with_fe_field.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Computed_field_is_read_only_with_fe_field */
+
+int Computed_field_has_coordinate_fe_field(struct Computed_field *field,
+	void *dummy)
+/*******************************************************************************
+LAST MODIFIED : 4 December 2001
+
+DESCRIPTION :
+Iterator/conditional function returning true if <field> is a wrapper for a
+coordinate type fe_field.
+==============================================================================*/
+{
+	int return_code;
+	struct Computed_field_finite_element_type_specific_data *data;
+
+	ENTER(Computed_field_is_read_only_with_fe_field);
+	USE_PARAMETER(dummy);
+	if (field)
+	{
+		return_code = 0;
+		if (field->type_string == computed_field_finite_element_type_string)
+		{
+			data = (struct Computed_field_finite_element_type_specific_data *)
+				field->type_specific_data;
+			if (data->fe_field && FE_field_is_coordinate_field(data->fe_field, NULL))
+			{
+				return_code = 1;
 			}
 		}
 	}
@@ -7285,7 +6352,7 @@ fields which are or an embedded type.
 	ENTER(Computed_field_depends_on_embedded_field);
 	if (field)
 	{
-		if (Computed_field_is_type_embedded(field))
+		if (Computed_field_is_type_embedded(field, NULL))
 		{
 			return_code = 1;
 		}
@@ -7510,6 +6577,8 @@ may be lost.
 				list_Computed_field_node_array_value_at_time;
 			field->list_Computed_field_commands_function = 
 				list_Computed_field_node_array_value_at_time_commands;
+			field->computed_field_has_multiple_times_function = 
+				Computed_field_default_has_multiple_times;
 		}
 		else
 		{
@@ -7601,6 +6670,8 @@ although its cache may be lost.
 			list_Computed_field_xi_coordinates;
 		field->list_Computed_field_commands_function = 
 			list_Computed_field_xi_coordinates_commands;
+		field->computed_field_has_multiple_times_function = 
+			Computed_field_default_has_multiple_times;
 	}
 	else
 	{

@@ -154,6 +154,7 @@ object.
 	struct Element_discretization *element_discretization;
 	struct FE_field *native_discretization_field;
 	int circle_discretization;
+	FE_value time;
 	/* objects changed which require editing of existing graphics_objects. Note
 		 either or both lists can be NULL */
 	struct LIST(FE_element) *changed_element_list;
@@ -844,13 +845,17 @@ DESCRIPTION :
 Returns 1 if the <settings> use any embedded_fields.
 ==============================================================================*/
 
-int GT_element_settings_has_multiple_times(
-	struct GT_element_settings *settings,void *dummy_void);
+int GT_element_settings_update_time_behaviour(
+	struct GT_element_settings *settings, void *time_dependent_void);
 /*******************************************************************************
-LAST MODIFIED : 25 October 2000
+LAST MODIFIED : 30 November 2001
 
 DESCRIPTION :
-Returns 1 if the <settings> depends on time.
+Updates the internal flag used whenever a time callback is received by the settings
+and if the <time_dependent> flag is valid sets it if the settings depends on time.
+If the <settings> is not <time_dependent> then the flag is not touched, as it
+is used by an iterator to see if any one of the settings in a graphical element
+group are time dependent.
 ==============================================================================*/
 
 int GT_element_settings_remove_graphics_object_if_embedded_field(

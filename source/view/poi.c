@@ -37,7 +37,7 @@ static MrmHierarchy poi_hierarchy;
 	coordinate system that the point of interest is dependant upon */
 /* ideally this should be set to NaN's to make sure it is never used */
 struct Cmgui_coordinate poi_rel_coordinate=
-	{"Relative",0,{{9999,9999,9999},{9999,9999,9999}}};
+	{"Relative",0,{{{9999,9999,9999}},{{9999,9999,9999}}}};
 struct Cmgui_coordinate *poi_rel_coordinate_ptr= &poi_rel_coordinate;
 
 /*

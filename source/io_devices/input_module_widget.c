@@ -14,7 +14,9 @@ devices are displayed on the menu.
 #include "general/callback_private.h"
 #include "general/debug.h"
 #include "io_devices/input_module_widget.h"
+#if defined (EXT_INPUT)
 #include "io_devices/input_module_widget.uidh"
+#endif /* defined (EXT_INPUT) */
 #include "user_interface/message.h"
 #include "user_interface/user_interface.h"
 
@@ -22,10 +24,10 @@ devices are displayed on the menu.
 Module variables
 ----------------
 */
-#if defined (MOTIF)
+#if defined (EXT_INPUT)
 static int input_module_widget_hierarchy_open=0;
 static MrmHierarchy input_module_widget_hierarchy;
-#endif /* defined (MOTIF) */
+#endif /* defined (EXT_INPUT) */
 
 /*
 Module types

@@ -28,12 +28,12 @@ static MrmHierarchy vector_hierarchy;
 /* initialisation data for the menu choices and their values */
 struct Dof3_data vector_values[VECTOR_NUM_CHOICES] =
 {
-	{1.0,0.0,0.0},
-	{0.0,1.0,0.0},
-	{0.0,0.0,1.0},
-	{-1.0,0.0,0.0},
-	{0.0,-1.0,0.0},
-	{0.0,0.0,-1.0}
+	{{1.0,0.0,0.0}},
+	{{0.0,1.0,0.0}},
+	{{0.0,0.0,1.0}},
+	{{-1.0,0.0,0.0}},
+	{{0.0,-1.0,0.0}},
+	{{0.0,0.0,-1.0}}
 };
 char vector_names[VECTOR_NUM_CHOICES][3] =
 {

@@ -17,6 +17,7 @@ Note the element passed to this widget should be a non-managed local copy.
 #include "computed_field/computed_field_value_index_ranges.h"
 #include "finite_element/finite_element.h"
 #include "graphics/element_point_ranges.h"
+#include "time/time.h"
 
 /*
 Global Functions
@@ -28,9 +29,10 @@ Widget create_element_point_viewer_widget(
 	Widget parent,struct Computed_field_package *computed_field_package,
 	struct LIST(Field_value_index_ranges) *modified_field_components,
 	struct Element_point_ranges_identifier *initial_element_point_identifier,
-	int initial_element_point_number, struct User_interface *user_interface);
+	int initial_element_point_number, struct Time_object *time_object,
+	struct User_interface *user_interface);
 /*******************************************************************************
-LAST MODIFIED : 21 November 2001
+LAST MODIFIED : 3 December 2001
 
 DESCRIPTION :
 Creates a widget for displaying and editing the contents of the element point

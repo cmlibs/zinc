@@ -3910,6 +3910,76 @@ Now prints current contents of the vector with help.
 	return (return_code);
 } /* set_float_vector */
 
+int set_FE_value(struct Parse_state *state,void *value_address_void,
+	void *dummy_user_data)
+/*******************************************************************************
+LAST MODIFIED : 21 June 1999
+
+DESCRIPTION :
+A modifier function for setting a float.
+==============================================================================*/
+{
+	char *current_token;
+	float value,*value_address;
+	int return_code;
+
+	ENTER(set_FE_value);
+	USE_PARAMETER(dummy_user_data);
+	if (state)
+	{
+		if (current_token=state->current_token)
+		{
+			if (strcmp(PARSER_HELP_STRING,current_token)&&
+				strcmp(PARSER_RECURSIVE_HELP_STRING,current_token))
+			{
+				if (value_address=(float *)value_address_void)
+				{
+					if (1==sscanf(current_token,FE_VALUE_INPUT_STRING,&value))
+					{
+						*value_address=value;
+						return_code=shift_Parse_state(state,1);
+					}
+					else
+					{
+						display_message(ERROR_MESSAGE,"Invalid fe value: %s",
+							current_token);
+						display_parse_state_location(state);
+						return_code=0;
+					}
+				}
+				else
+				{
+					display_message(ERROR_MESSAGE,"set_FE_value.  Missing value_address");
+					return_code=0;
+				}
+			}
+			else
+			{
+				display_message(INFORMATION_MESSAGE," #");
+				if (value_address=(float *)value_address_void)
+				{
+					display_message(INFORMATION_MESSAGE,"[%g]",*value_address);
+				}
+				return_code=1;
+			}
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,"Missing FE_value");
+			display_parse_state_location(state);
+			return_code=0;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"set_FE_value.  Missing state");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* set_FE_value */
+
 int set_FE_value_array(struct Parse_state *state, void *values_void,
 	void *number_of_components_address_void)
 /*******************************************************************************

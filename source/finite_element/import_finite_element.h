@@ -17,6 +17,19 @@ The function prototypes for importing finite element data, from a file or cmiss
 Global types
 ------------
 */
+struct Node_time_index
+/*******************************************************************************
+LAST MODIFIED : 31 October 2001
+
+DESCRIPTION :
+Points to a specific time value which the nodes represent
+==============================================================================*/
+{
+	float time;
+}; /* Node_time_index */
+
+struct FE_node_order_info;
+
 struct File_read_FE_node_group_data
 /*******************************************************************************
 LAST MODIFIED : 6 September 1999
@@ -29,6 +42,7 @@ node groups are updated to contain nodes used by elements in associated group.
 ==============================================================================*/
 {
 	struct MANAGER(FE_field) *fe_field_manager;
+	struct FE_time *fe_time;
 	struct MANAGER(GROUP(FE_element))	*element_group_manager;
 	struct MANAGER(FE_node) *node_manager;
 	struct MANAGER(GROUP(FE_node)) *data_group_manager,*node_group_manager;
@@ -49,6 +63,7 @@ node groups are updated to contain nodes used by elements in associated group.
 	struct MANAGER(FE_element) *element_manager;
 	struct MANAGER(GROUP(FE_element)) *element_group_manager;
 	struct MANAGER(FE_field) *fe_field_manager;
+	struct FE_time *fe_time;
 	struct MANAGER(FE_node) *node_manager;
 	struct MANAGER(GROUP(FE_node)) *data_group_manager,*node_group_manager;
 	struct MANAGER(FE_basis) *basis_manager;
@@ -59,15 +74,16 @@ Global functions
 ----------------
 */
 int read_FE_node_group_with_order(FILE *input_file,
-	struct MANAGER(FE_field) *fe_field_manager,
+	struct MANAGER(FE_field) *fe_field_manager, struct FE_time *fe_time,
 	struct MANAGER(FE_node) *node_manager,
 	struct MANAGER(FE_element) *element_manager,
 	struct MANAGER(GROUP(FE_node)) *node_group_manager,
 	struct MANAGER(GROUP(FE_node)) *data_group_manager,
 	struct MANAGER(GROUP(FE_element)) *element_group_manager,
-	struct FE_node_order_info *node_order_info);
+	struct FE_node_order_info *node_order_info,
+	struct Node_time_index *node_time_index);
 /*******************************************************************************
-LAST MODIFIED : 17 November 1999
+LAST MODIFIED : 31 October 2001
 
 DESCRIPTION :
 Reads node groups from an <input_file> or the socket (if <input_file> is NULL).
@@ -76,10 +92,13 @@ since groups of the same name in each manager are created simultaneously, and
 node groups are updated to contain nodes used by elements in associated group.
 If the <node_order_info> is non NULL then each node is added to this object
 in the order of the file.
+If the <node_time_index> is non NULL then the values in this read are assumed
+to belong to the specified time.  This means that the nodal values will be read
+into an array and the correct index put into the corresponding time array.
 ==============================================================================*/
 
 int read_FE_node_group(FILE *input_file,
-	struct MANAGER(FE_field) *fe_field_manager,
+	struct MANAGER(FE_field) *fe_field_manager, struct FE_time *fe_time,
 	struct MANAGER(FE_node) *node_manager,
 	struct MANAGER(FE_element) *element_manager,
 	struct MANAGER(GROUP(FE_node)) *node_group_manager,
@@ -106,7 +125,7 @@ Reads a node group from a file.
 int read_FE_element_group(FILE *input_file,
 	struct MANAGER(FE_element) *element_manager,
 	struct MANAGER(GROUP(FE_element)) *element_group_manager,
-	struct MANAGER(FE_field) *fe_field_manager,
+	struct MANAGER(FE_field) *fe_field_manager, struct FE_time *fe_time,
 	struct MANAGER(FE_node) *node_manager,
 	struct MANAGER(GROUP(FE_node)) *node_group_manager,
 	struct MANAGER(GROUP(FE_node)) *data_group_manager,
@@ -131,7 +150,7 @@ Reads an element group from a file.
 ==============================================================================*/
 
 int read_exnode_or_exelem_file_from_string(char *exnode_string,char *exelem_string,
-	char *name,struct MANAGER(FE_field) *fe_field_manager,
+	char *name,struct MANAGER(FE_field) *fe_field_manager, struct FE_time *fe_time,
 	struct MANAGER(FE_node) *node_manager,
 	struct MANAGER(FE_element) *element_manager,
 	struct MANAGER(GROUP(FE_node))*node_group_manager,
@@ -154,7 +173,7 @@ This is generally done so we can statically include an exnode or exelem file (in
 int read_exnode_and_exelem_file_from_string_and_offset(
 	char *exnode_string,char *exelem_string,
 	char *name,int offset,struct MANAGER(FE_field) *fe_field_manager,
-	struct MANAGER(FE_node) *node_manager,
+	struct FE_time *fe_time, struct MANAGER(FE_node) *node_manager,
 	struct MANAGER(FE_element) *element_manager,
 	struct MANAGER(GROUP(FE_node))*node_group_manager,
 	struct MANAGER(GROUP(FE_node))*data_group_manager,
@@ -187,7 +206,7 @@ fields .
 
 int read_FE_node_and_elem_groups_and_return_name_given_file_name(
 	char *group_file_name,
-	struct MANAGER(FE_field) *fe_field_manager,
+	struct MANAGER(FE_field) *fe_field_manager, struct FE_time *fe_time,
 	struct MANAGER(FE_node) *node_manager,
 	struct MANAGER(FE_element) *element_manager,
 	struct MANAGER(GROUP(FE_node))*node_group_manager,

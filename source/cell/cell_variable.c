@@ -637,7 +637,7 @@ Returns the value of the <cell_variable> as a string.
       default:
       {
         /* do nothing ?? */
-        sprintf(temp_string,"");
+		  *temp_string = '\0';
       } break;
     } /* switch (cell_variable->value_type) */
     if (ALLOCATE(value_string,char,strlen(temp_string)+1))

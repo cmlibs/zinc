@@ -233,7 +233,7 @@ No special criteria on the destroy
 ==============================================================================*/
 
 static int Computed_field_composite_evaluate_cache_at_node(
-	struct Computed_field *field, struct FE_node *node)
+	struct Computed_field *field, struct FE_node *node, FE_value time)
 /*******************************************************************************
 LAST MODIFIED : 19 October 2000
 
@@ -251,7 +251,7 @@ Evaluate the fields cache at the node.
 	{
 		/* 1. Precalculate any source fields that this field depends on */
 		if (return_code = 
-			Computed_field_evaluate_source_fields_cache_at_node(field, node))
+			Computed_field_evaluate_source_fields_cache_at_node(field, node, time))
 		{
 			for (i=0;i<field->number_of_components;i++)
 			{
@@ -285,7 +285,7 @@ Evaluate the fields cache at the node.
 
 static int Computed_field_composite_evaluate_cache_in_element(
 	struct Computed_field *field, struct FE_element *element, FE_value *xi,
-	struct FE_element *top_level_element,int calculate_derivatives)
+	FE_value time, struct FE_element *top_level_element,int calculate_derivatives)
 /*******************************************************************************
 LAST MODIFIED : 25 October 2000
 
@@ -306,7 +306,7 @@ Evaluate the fields cache at the node.
 		/* 1. Precalculate any source fields that this field depends on */
 		if (return_code = 
 			Computed_field_evaluate_source_fields_cache_in_element(field, element,
-				xi, top_level_element, calculate_derivatives))
+				xi, time, top_level_element, calculate_derivatives))
 		{
 			/* 2. Calculate the field */
 			element_dimension=get_FE_element_dimension(element);
@@ -413,7 +413,8 @@ value for it in <values> will be used.
 				field->source_fields[source_field_number]->number_of_components))
 			{
 				if (Computed_field_evaluate_at_node(
-					field->source_fields[source_field_number],node,source_values))
+						 field->source_fields[source_field_number],node,/*time*/0,
+						 source_values))
 				{
 					for (i=0;i<field->number_of_components;i++)
 					{
@@ -501,7 +502,7 @@ Sets the <values> of the computed <field> over the <element>.
 			{
 				if (Computed_field_get_values_in_element(
 					field->source_fields[source_field_number],element,number_in_xi,
-					&source_values))
+					&source_values, /*time*/0))
 				{
 					for (i=0;i<field->number_of_components;i++)
 					{
@@ -950,6 +951,8 @@ although its cache may be lost.
 					list_Computed_field_composite;
 				field->list_Computed_field_commands_function = 
 					list_Computed_field_composite_commands;
+				field->computed_field_has_multiple_times_function =
+					Computed_field_default_has_multiple_times;
 			}
 			else
 			{
@@ -1134,7 +1137,7 @@ ACCESSed in the initial source_data.
 					{
 						if ((1 == sscanf(current_token, FE_VALUE_INPUT_STRING "%n",
 							&value, &number_of_characters)) &&
-							(strlen(current_token) == number_of_characters))
+							((int)strlen(current_token) == number_of_characters))
 						{
 							shift_Parse_state(state,1);
 							if (REALLOCATE(temp_source_values, source_data->source_values,

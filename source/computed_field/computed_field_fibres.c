@@ -9,6 +9,7 @@ computed fields.
 ==============================================================================*/
 #include <math.h>
 #include "computed_field/computed_field.h"
+#include "computed_field/computed_field_coordinate.h"
 #include "computed_field/computed_field_fibres.h"
 #include "computed_field/computed_field_private.h"
 #include "general/debug.h"
@@ -223,7 +224,7 @@ Evaluate the fields cache at the node.
 
 static int Computed_field_fibre_axes_evaluate_cache_in_element(
 	struct Computed_field *field, struct FE_element *element, FE_value *xi,
-	struct FE_element *top_level_element,int calculate_derivatives)
+	FE_value time, struct FE_element *top_level_element,int calculate_derivatives)
 /*******************************************************************************
 LAST MODIFIED : 30 January 2001
 
@@ -264,9 +265,9 @@ Derivatives may not be computed for this type of Computed_field [yet].
 					element_dimension,&top_level_element,top_level_xi,
 					&top_level_element_dimension) &&
 				Computed_field_evaluate_cache_in_element(fibre_field,
-					element,xi,top_level_element,0) &&
+					element,xi,time,top_level_element,0) &&
 				Computed_field_evaluate_cache_in_element(coordinate_field,
-					top_level_element,top_level_xi,top_level_element,1) &&
+					top_level_element,top_level_xi,time,top_level_element,1) &&
 				Computed_field_extract_rc(coordinate_field,
 					top_level_element_dimension,x,dx_dxi))
 			{
@@ -616,6 +617,8 @@ while the field is in use. Not sure if we want that restriction.
 				list_Computed_field_fibre_axes;
 			field->list_Computed_field_commands_function = 
 				list_Computed_field_fibre_axes_commands;
+			field->computed_field_has_multiple_times_function = 
+				Computed_field_default_has_multiple_times;
 			return_code=1;
 		}
 		else

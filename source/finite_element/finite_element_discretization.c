@@ -970,9 +970,9 @@ static int FE_element_add_xi_points_1d_line_cell_random(
 	enum Xi_discretization_mode xi_discretization_mode, FE_value xi_centre,
 	FE_value delta_xi, struct Computed_field *coordinate_field,
 	struct Computed_field *density_field, int *number_of_xi_points,
-	Triple **xi_points, int *number_of_xi_points_allocated)
+	Triple **xi_points, int *number_of_xi_points_allocated, FE_value time)
 /*******************************************************************************
-LAST MODIFIED : 7 May 2001
+LAST MODIFIED : 3 December 2001
 
 DESCRIPTION :
 Adds to the <number_of_xi_points> the number of points to be added according to
@@ -1014,10 +1014,10 @@ array is enlarged if necessary and the new points added at random locations.
 				density_field &&
 				Computed_field_is_scalar(density_field, (void *)NULL) &&
 				Computed_field_evaluate_in_element(coordinate_field, element,
-					&xi_centre, /*top_level_element*/(struct FE_element	*)NULL,
+					&xi_centre, time, /*top_level_element*/(struct FE_element	*)NULL,
 					coordinates, jacobian) &&
 				Computed_field_evaluate_in_element(density_field, element, &xi_centre,
-					/*top_level_element*/(struct FE_element	*)NULL, &density,
+					time, /*top_level_element*/(struct FE_element	*)NULL, &density,
 					/*derivatives*/(FE_value *)NULL))
 			{
 				/* calculate the volume from the jacobian and dxi */
@@ -1138,9 +1138,9 @@ static int FE_element_add_xi_points_2d_square_cell_random(
 	enum Xi_discretization_mode xi_discretization_mode,
 	FE_value *centre_xi, FE_value *dxi, struct Computed_field *coordinate_field,
 	struct Computed_field *density_field, int *number_of_xi_points,
-	Triple **xi_points, int *number_of_xi_points_allocated)
+	Triple **xi_points, int *number_of_xi_points_allocated, FE_value time)
 /*******************************************************************************
-LAST MODIFIED : 7 May 2001
+LAST MODIFIED : 3 December 2001
 
 DESCRIPTION :
 Adds to the <number_of_xi_points> the number of points to be added according to
@@ -1183,10 +1183,10 @@ array is enlarged if necessary and the new points added at random locations.
 				density_field &&
 				Computed_field_is_scalar(density_field, (void *)NULL) &&
 				Computed_field_evaluate_in_element(coordinate_field, element,
-					centre_xi, /*top_level_element*/(struct FE_element	*)NULL,
+					centre_xi, time, /*top_level_element*/(struct FE_element	*)NULL,
 					coordinates, jacobian) &&
 				Computed_field_evaluate_in_element(density_field, element, centre_xi,
-					/*top_level_element*/(struct FE_element	*)NULL, &density,
+					time, /*top_level_element*/(struct FE_element	*)NULL, &density,
 					/*derivatives*/(FE_value *)NULL))
 			{
 				/* calculate the volume from the jacobian and dxi */
@@ -1304,9 +1304,9 @@ static int FE_element_add_xi_points_3d_cube_cell_random(
 	enum Xi_discretization_mode xi_discretization_mode,
 	FE_value *centre_xi, FE_value *dxi, struct Computed_field *coordinate_field,
 	struct Computed_field *density_field, int *number_of_xi_points,
-	Triple **xi_points, int *number_of_xi_points_allocated)
+	Triple **xi_points, int *number_of_xi_points_allocated, FE_value time)
 /*******************************************************************************
-LAST MODIFIED : 3 May 2001
+LAST MODIFIED : 3 December 2001
 
 DESCRIPTION :
 Adds to the <number_of_xi_points> the number of points to be added according to
@@ -1348,10 +1348,10 @@ array is enlarged if necessary and the new points added at random locations.
 				density_field &&
 				Computed_field_is_scalar(density_field, (void *)NULL) &&
 				Computed_field_evaluate_in_element(coordinate_field, element,
-					centre_xi, /*top_level_element*/(struct FE_element	*)NULL,
+					centre_xi, time, /*top_level_element*/(struct FE_element	*)NULL,
 					coordinates, jacobian) &&
 				Computed_field_evaluate_in_element(density_field, element, centre_xi,
-					/*top_level_element*/(struct FE_element	*)NULL, &density,
+					time, /*top_level_element*/(struct FE_element	*)NULL, &density,
 					/*derivatives*/(FE_value *)NULL))
 			{
 				/* calculate the volume from the jacobian and dxi */
@@ -1462,9 +1462,9 @@ array is enlarged if necessary and the new points added at random locations.
 int FE_element_get_xi_points_cell_random(struct FE_element *element,
 	enum Xi_discretization_mode xi_discretization_mode, int *number_in_xi,
 	struct Computed_field *coordinate_field, struct Computed_field *density_field,
-	int *number_of_xi_points_address, Triple **xi_points_address)
+	int *number_of_xi_points_address, Triple **xi_points_address, FE_value time)
 /*******************************************************************************
-LAST MODIFIED : 7 May 2001
+LAST MODIFIED : 3 December 2001
 
 DESCRIPTION :
 Calculates the <number_of_xi_points> to be randomly located in uniform cells
@@ -1552,7 +1552,7 @@ comments for simplex and polygons shapes for more details.
 							element, xi_discretization_mode, xi_centre, delta_xi,
 							coordinate_field, density_field,
 							&number_of_xi_points, xi_points_address,
-							&number_of_xi_points_allocated);
+							&number_of_xi_points_allocated, time);
 					}
 				} break;
 				case ELEMENT_CATEGORY_2D_SQUARE:
@@ -1569,7 +1569,7 @@ comments for simplex and polygons shapes for more details.
 								element, xi_discretization_mode, centre_xi, dxi,
 								coordinate_field, density_field,
 								&number_of_xi_points, xi_points_address,
-								&number_of_xi_points_allocated);
+								&number_of_xi_points_allocated, time);
 						}
 					}
 				} break;
@@ -1605,7 +1605,7 @@ comments for simplex and polygons shapes for more details.
 									element, xi_discretization_mode, centre_xi, dxi,
 									coordinate_field, density_field,
 									&number_of_xi_points, xi_points_address,
-									&number_of_xi_points_allocated);
+									&number_of_xi_points_allocated, time);
 							}
 						}
 					}
@@ -1689,9 +1689,9 @@ int FE_element_get_xi_points(struct FE_element *element,
 	enum Xi_discretization_mode xi_discretization_mode,
 	int *number_in_xi, Triple exact_xi,
 	struct Computed_field *coordinate_field, struct Computed_field *density_field,
-	int *number_of_xi_points_address, Triple **xi_points_address)
+	int *number_of_xi_points_address, Triple **xi_points_address, FE_value time)
 /*******************************************************************************
-LAST MODIFIED : 23 April 2001
+LAST MODIFIED : 3 December 2001
 
 DESCRIPTION :
 Calculates the <number_of_xi_points> across the <element_shape> according to
@@ -1734,7 +1734,7 @@ is trivial, it is passed and used here to provide a consistent interface.
 				CMGUI_SEED_RANDOM(element->cm.number);
 				return_code = FE_element_get_xi_points_cell_random(element,
 					xi_discretization_mode, number_in_xi,	coordinate_field, density_field,
-					number_of_xi_points_address, xi_points_address);
+					number_of_xi_points_address, xi_points_address, time);
 			} break;
 			case XI_DISCRETIZATION_EXACT_XI:
 			{
@@ -1909,9 +1909,9 @@ int FE_element_get_numbered_xi_point(struct FE_element *element,
 	enum Xi_discretization_mode xi_discretization_mode,
 	int *number_in_xi, Triple exact_xi,
 	struct Computed_field *coordinate_field, struct Computed_field *density_field,
-	int xi_point_number, FE_value *xi)
+	int xi_point_number, FE_value *xi, FE_value time)
 /*******************************************************************************
-LAST MODIFIED : 23 April 2001
+LAST MODIFIED : 3 December 2001
 
 DESCRIPTION :
 Returns in <xi> the location of the <xi_point_number> out of those that would
@@ -2105,6 +2105,7 @@ calculation is trivial.
 							xi[0] = exact_xi[0];
 							xi[1] = exact_xi[1];
 							xi[2] = exact_xi[2];
+							default_behaviour = 0;
 						}
 						else
 						{
@@ -2126,9 +2127,9 @@ calculation is trivial.
 			{
 				if (FE_element_get_xi_points(element, xi_discretization_mode,
 					number_in_xi, exact_xi, coordinate_field, density_field,
-					&number_of_xi_points, &xi_points))
+					&number_of_xi_points, &xi_points, time))
 				{
-					if ((0 < xi_point_number) &&
+					if ((0 <= xi_point_number) &&
 						(xi_point_number < number_of_xi_points))
 					{
 						xi[0] = xi_points[xi_point_number][0];
@@ -2139,7 +2140,7 @@ calculation is trivial.
 					{
 						display_message(ERROR_MESSAGE,
 							"FE_element_get_numbered_xi_point.  "
-							"xi_point_number must be 0 for exact_xi");
+							"xi_point_number is out of range");
 						return_code = 0;
 					}
 					DEALLOCATE(xi_points);

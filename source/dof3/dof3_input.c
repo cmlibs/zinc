@@ -53,7 +53,9 @@ widgets are terminated, and so the whole structure does not need to be destroyed
 #include <Xm/ToggleB.h>
 #include <Xm/ToggleBG.h>
 #include "dof3/dof3_input.h"
+#if defined (EXT_INPUT)
 #include "dof3/dof3_input.uidh"
+#endif /* defined (EXT_INPUT) */
 #include "dof3/dof3_control.h"
 #include "dof3/dof3.h"
 #include "general/debug.h"
@@ -64,8 +66,10 @@ widgets are terminated, and so the whole structure does not need to be destroyed
 Module variables
 ----------------
 */
+#if defined (EXT_INPUT)
 static int dof3_input_hierarchy_open=0;
 static MrmHierarchy dof3_input_hierarchy;
+#endif /* defined (EXT_INPUT) */
 
 /*
 Module functions

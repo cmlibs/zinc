@@ -105,6 +105,14 @@ DESCRIPTION :
 Set matrix <a> to the <n> x <n> identity.
 ==============================================================================*/
 
+int identity_matrix_float(int n, float *a);
+/*******************************************************************************
+LAST MODIFIED : 15 November 2001
+
+DESCRIPTION :
+Set matrix <a> to the <n> x <n> identity.
+==============================================================================*/
+
 int multiply_matrix(int m,int s,int n,double *a,double *b,double *c);
 /*******************************************************************************
 LAST MODIFIED : 28 January 1998

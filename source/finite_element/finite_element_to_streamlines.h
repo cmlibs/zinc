@@ -52,9 +52,9 @@ Data for converting a 3-D element into an array of streamlines.
 {
 	enum Streamline_type type;
 	enum Streamline_data_type data_type;
-	FE_value seed_xi[3];
+	FE_value seed_xi[3], time;
 	struct Computed_field *coordinate_field,*data_field,*stream_vector_field;
-	float length, width, time;
+	float length, width;
 	/* reverse_track = track -vector and store -travel_scalar */
 	int reverse_track;
 	/* graphics object must be of correct type for Streamline_type */
@@ -184,9 +184,9 @@ struct GT_polyline *create_GT_polyline_streamline_FE_element(
 	struct Computed_field *coordinate_field,
 	struct Computed_field *stream_vector_field,int reverse_track,
 	float length,enum Streamline_data_type data_type,
-	struct Computed_field *data_field);
+	struct Computed_field *data_field, FE_value time);
 /*******************************************************************************
-LAST MODIFIED : 16 March 1999
+LAST MODIFIED : 3 December 2001
 
 DESCRIPTION :
 Creates a <GT_polyline> streamline from the <coordinate_field> following
@@ -200,9 +200,10 @@ struct GT_surface *create_GT_surface_streamribbon_FE_element(
 	struct Computed_field *coordinate_field,
 	struct Computed_field *stream_vector_field,int reverse_track,
 	float length,float width,enum Streamline_type type,
-	enum Streamline_data_type data_type,struct Computed_field *data_field);
+	enum Streamline_data_type data_type,struct Computed_field *data_field,
+	FE_value time);
 /*******************************************************************************
-LAST MODIFIED : 16 March 1999
+LAST MODIFIED : 3 December 2001
 
 DESCRIPTION :
 Creates a <GT_surface> streamline from the <coordinate_field> following
@@ -212,9 +213,10 @@ stream vector is tracked, and the travel_scalar is made negative.
 ==============================================================================*/
 
 struct GT_pointset *create_interactive_streampoint(struct FE_element *element,
-	struct Computed_field *coordinate_field,float length,FE_value *xi);
+	struct Computed_field *coordinate_field,float length,FE_value *xi,
+	FE_value time);
 /*******************************************************************************
-LAST MODIFIED : 17 March 1999
+LAST MODIFIED : 3 December 2001
 
 DESCRIPTION :
 Creates a <GT_pointset> streampoint which can be manipulated with the mouse.

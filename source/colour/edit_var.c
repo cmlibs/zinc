@@ -136,7 +136,7 @@ Callback for the edit_var dialog - tidies up all memory allocation
 
 static void edit_var_update_value(struct Edit_var_struct *temp_edit_var)
 /*******************************************************************************
-LAST MODIFIED : 20 March 1994
+LAST MODIFIED : 16 March 2001
 
 DESCRIPTION :
 Makes the numeric value and the slider agree.
@@ -144,28 +144,29 @@ Makes the numeric value and the slider agree.
 {
 	char temp_str[EDIT_VAR_STRING_SIZE];
 	EDIT_VAR_PRECISION temp;
-	float t;
 	int slider_value;
 
 	ENTER(edit_var_update_value);
 	sprintf(temp_str,EDIT_VAR_NUM_FORMAT,temp_edit_var->current_value);
 	XmTextSetString(temp_edit_var->text,temp_str);
-	temp=(temp_edit_var->current_value-temp_edit_var->low_limit)/
-		(temp_edit_var->high_limit-temp_edit_var->low_limit)*100.0;
-	t=temp;
-	slider_value=t;
-	/*???GMH.  The above code is done since a direct conversion from double to
-		integer gives incorrect values for 28 and 57.  If double=57 and then we use
-		int=double then int will equal 56.  By 'leading' it through, this bug is
-		avoided, but it is shoddy programming.  Any theories?  PS Casting does not
-		help  */
-	if(slider_value > 100)
+	temp=temp_edit_var->high_limit-temp_edit_var->low_limit;
+	if (temp != 0.0)
 	{
-		slider_value = 100;
+		temp=100.0 * (temp_edit_var->current_value-temp_edit_var->low_limit)/
+			temp;
+		slider_value=temp;
+		if(slider_value > 100)
+		{
+			slider_value = 100;
+		}
+		if(slider_value < 0)
+		{
+			slider_value = 0;
+		}
 	}
-	if(slider_value < 0)
+	else
 	{
-		slider_value = 0;
+		slider_value=0;
 	}
 	XtVaSetValues(temp_edit_var->slider,XmNvalue,slider_value,NULL);
 	LEAVE;

@@ -670,7 +670,10 @@ Reads a .rdt signal file produced by ART's CardioMapp program.
 ???DB.  Could read the header field by field (BINARY_FILE_READ)
 ==============================================================================*/
 {
-	char header_buffer[1446],*swap,temp_char;
+#if !defined (__BYTE_ORDER) || (1234!=__BYTE_ORDER)
+	char *swap,temp_char;
+#endif /* !defined (__BYTE_ORDER) || (1234!=__BYTE_ORDER) */
+	char header_buffer[1446];
 	float sampling_frequency;
 	FILE *cardiomapp_file;
 	int device_offset,i,index,number_of_devices,number_of_samples,

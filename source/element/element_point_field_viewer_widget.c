@@ -21,6 +21,7 @@ Note the element_point passed to this widget should be a non-managed local copy.
 #include "finite_element/finite_element_to_graphics_object.h"
 #include "general/debug.h"
 #include "element/element_point_field_viewer_widget.h"
+#include "time/time.h"
 #include "user_interface/message.h"
 #include "user_interface/user_interface.h"
 
@@ -62,6 +63,9 @@ DESCRIPTION :
 		textfield_background_color,textfield_bottom_shadow_color,
 		textfield_foreground_color,textfield_top_shadow_color;
 	Widget component_rowcol,widget,*widget_address,widget_parent;
+	struct Time_object *time_object;
+	/* Flag to record whether the time callback is active or not */
+	int time_object_callback;
 }; /* element_point_field_viewer_struct */
 
 /*
@@ -98,36 +102,6 @@ element point cannot be represented by a single object.
 	LEAVE;
 } /* element_point_field_viewer_widget_update */
 
-static void element_point_field_viewer_widget_destroy_CB(Widget widget,
-	void *element_point_field_viewer_void,void *call_data)
-/*******************************************************************************
-LAST MODIFIED : 22 May 2000
-
-DESCRIPTION :
-Callback for when the element_point_field_viewer widget is destroyed. Tidies up
-all dynamic memory allocations and pointers.
-==============================================================================*/
-{
-	struct Element_point_field_viewer_widget_struct *element_point_field_viewer;
-
-	ENTER(element_point_field_viewer_widget_destroy_CB);
-	USE_PARAMETER(widget);
-	USE_PARAMETER(call_data);
-	if (element_point_field_viewer=
-		(struct Element_point_field_viewer_widget_struct *)
-		element_point_field_viewer_void)
-	{
-		*(element_point_field_viewer->widget_address)=(Widget)NULL;
-		DEALLOCATE(element_point_field_viewer);
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"element_point_field_viewer_widget_destroy_CB.  Invalid argument(s)");
-	}
-	LEAVE;
-} /* element_point_field_viewer_widget_destroy_CB */
-
 static void element_point_field_viewer_widget_update_values(
 	struct Element_point_field_viewer_widget_struct *element_point_field_viewer)
 /*******************************************************************************
@@ -138,7 +112,7 @@ Updates all widgets in the rowcol to make sure they say the correct value.
 ==============================================================================*/
 {
 	char *value_string;
-	FE_value *xi;
+	FE_value time, *xi;
 	int comp_no,num_children,number_of_components;
 	Pixel bottom_shadow_color,top_shadow_color;
 	struct Computed_field *field;
@@ -157,6 +131,7 @@ Updates all widgets in the rowcol to make sure they say the correct value.
 		modified_ranges=FIND_BY_IDENTIFIER_IN_LIST(Field_value_index_ranges,field)(
 			field,element_point_field_viewer->modified_field_components);
 		number_of_components=Computed_field_get_number_of_components(field);
+		time = Time_object_get_current_time(element_point_field_viewer->time_object);
 		/* get children of the rowcol */
 		child_list=(Widget *)NULL;
 		XtVaGetValues(element_point_field_viewer->component_rowcol,XmNnumChildren,
@@ -167,7 +142,7 @@ Updates all widgets in the rowcol to make sure they say the correct value.
 			{
 				widget=child_list[comp_no*2+1];
 				if (value_string=Computed_field_evaluate_as_string_in_element(
-					field,comp_no,element,xi,top_level_element))
+					field,comp_no,element,xi,time,top_level_element))
 				{
 					/* set background colour to modified or unmodified if editable */
 					XtVaGetValues(widget,XmNtopShadowColor,&top_shadow_color,NULL);
@@ -217,6 +192,73 @@ Updates all widgets in the rowcol to make sure they say the correct value.
 	LEAVE;
 } /* element_point_field_viewer_widget_update_values */
 
+static int element_point_field_viewer_widget_time_change_callback(
+	struct Time_object *time_object, double current_time,
+	void *element_point_field_viewer_void)
+/*******************************************************************************
+LAST MODIFIED : 5 December 2001
+
+DESCRIPTION :
+==============================================================================*/
+{
+	int return_code;
+	struct Element_point_field_viewer_widget_struct *element_point_field_viewer;
+
+	ENTER(element_point_field_viewer_widget_time_change_callback);
+	USE_PARAMETER(current_time);
+	if (time_object && (element_point_field_viewer = 
+		(struct Element_point_field_viewer_widget_struct *)
+		element_point_field_viewer_void))
+	{
+		element_point_field_viewer_widget_update_values(element_point_field_viewer);
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"element_point_field_viewer_widget_time_change_callback.  "
+			"Invalid argument(s)");
+	}
+	LEAVE;
+	return(return_code);
+} /* element_point_field_viewer_widget_time_change_callback */
+
+static void element_point_field_viewer_widget_destroy_CB(Widget widget,
+	void *element_point_field_viewer_void,void *call_data)
+/*******************************************************************************
+LAST MODIFIED : 5 December 2001
+
+DESCRIPTION :
+Callback for when the element_point_field_viewer widget is destroyed. Tidies up
+all dynamic memory allocations and pointers.
+==============================================================================*/
+{
+	struct Element_point_field_viewer_widget_struct *element_point_field_viewer;
+
+	ENTER(element_point_field_viewer_widget_destroy_CB);
+	USE_PARAMETER(widget);
+	USE_PARAMETER(call_data);
+	if (element_point_field_viewer=
+		(struct Element_point_field_viewer_widget_struct *)
+		element_point_field_viewer_void)
+	{
+		if (element_point_field_viewer->time_object_callback)
+		{
+			Time_object_remove_callback(element_point_field_viewer->time_object,
+				element_point_field_viewer_widget_time_change_callback,
+				(void *)element_point_field_viewer);
+		}					
+		DEACCESS(Time_object)(&(element_point_field_viewer->time_object));
+		*(element_point_field_viewer->widget_address)=(Widget)NULL;
+		DEALLOCATE(element_point_field_viewer);
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"element_point_field_viewer_widget_destroy_CB.  Invalid argument(s)");
+	}
+	LEAVE;
+} /* element_point_field_viewer_widget_destroy_CB */
+
 static void element_point_field_viewer_widget_value_CB(Widget widget,
 	void *element_point_field_viewer_void,void *call_data)
 /*******************************************************************************
@@ -228,7 +270,7 @@ data, and then changes the correct value in the array structure.
 ==============================================================================*/
 {
 	char *field_value_string,*value_string;
-	FE_value value,*values,*xi;
+	FE_value time,value,*values,*xi;
 	int component_number,dimension,element_point_number,i,int_value,*int_values,
 		number_in_xi[MAXIMUM_ELEMENT_XI_DIMENSIONS],number_of_grid_values,
 		return_code;
@@ -253,6 +295,7 @@ data, and then changes the correct value in the array structure.
 		(component_number<Computed_field_get_number_of_components(field))&&
 		(any_callback=(XmAnyCallbackStruct *)call_data))
 	{
+		time = Time_object_get_current_time(element_point_field_viewer->time_object);
 		/* get old_value_string to prevent needless updating and preserve text
 			 selections for cut-and-paste */
 		if (value_string=XmTextFieldGetString(widget))
@@ -301,7 +344,7 @@ data, and then changes the correct value in the array structure.
 							if (1==sscanf(value_string,"%g",&value))
 							{
 								if (Computed_field_get_values_in_element(field,element,
-									number_in_xi,&values))
+									number_in_xi,&values,time))
 								{
 									/* change the value for this component */
 									values[component_number*number_of_grid_values+
@@ -346,7 +389,7 @@ data, and then changes the correct value in the array structure.
 			/* redisplay the actual value for the field component */
 			if (field_value_string=
 				Computed_field_evaluate_as_string_in_element(
-					field,component_number,element,xi,top_level_element))
+					field,component_number,element,xi,time,top_level_element))
 			{
 				/* only set string from field if different from that shown */
 				if (strcmp(field_value_string,value_string))
@@ -606,9 +649,10 @@ Widget create_element_point_field_viewer_widget(
 	Widget *element_point_field_viewer_widget_address,Widget parent,
 	struct LIST(Field_value_index_ranges) *modified_field_components,
 	struct Element_point_ranges_identifier *initial_element_point_identifier,
-	int initial_element_point_number,struct Computed_field *initial_field)
+	int initial_element_point_number,struct Computed_field *initial_field,
+	struct Time_object *time_object)
 /*******************************************************************************
-LAST MODIFIED : 30 June 2000
+LAST MODIFIED : 3 December 2001
 
 DESCRIPTION :
 Widget for displaying and editing computed field components at element points.
@@ -648,6 +692,8 @@ changes global.
 			element_point_field_viewer->update_callback.procedure=
 				(Callback_procedure *)NULL;
 			element_point_field_viewer->update_callback.data=NULL;
+			element_point_field_viewer->time_object=ACCESS(Time_object)(
+				time_object);
 			/* initialise widgets */
 			element_point_field_viewer->component_rowcol=(Widget)NULL;
 			element_point_field_viewer->widget=(Widget)NULL;
@@ -868,7 +914,8 @@ pass unmanaged elements in the element_point_identifier to this widget.
 					element_point_identifier->exact_xi,
 					/*coordinate_field*/(struct Computed_field *)NULL,
 					/*density_field*/(struct Computed_field *)NULL,
-					element_point_number, element_point_field_viewer->xi);
+					element_point_number, element_point_field_viewer->xi,
+					/*time*/0);
 			}
 			else
 			{
@@ -883,6 +930,27 @@ pass unmanaged elements in the element_point_identifier to this widget.
 			}
 			if (element_point_identifier->element&&field)
 			{
+				if (Computed_field_has_multiple_times(field))
+				{
+					if (!element_point_field_viewer->time_object_callback)
+					{
+						element_point_field_viewer->time_object_callback = 
+							Time_object_add_callback(element_point_field_viewer->time_object,
+							element_point_field_viewer_widget_time_change_callback,
+							(void *)element_point_field_viewer);
+					}
+				}
+				else
+				{
+					if (element_point_field_viewer->time_object_callback)
+					{
+						Time_object_remove_callback(element_point_field_viewer->time_object,
+							element_point_field_viewer_widget_time_change_callback,
+							(void *)element_point_field_viewer);
+						element_point_field_viewer->time_object_callback = 0;
+					}					
+				}
+
 				element_point_field_viewer_widget_update_values(
 					element_point_field_viewer);
 				XtManageChild(element_point_field_viewer->widget);

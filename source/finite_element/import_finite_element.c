@@ -9,7 +9,9 @@ socket) into the graphical interface to CMISS.
 ???DB.  Not accessing and deaccessing FE_basis's properly.
 ==============================================================================*/
 #include <ctype.h>
+#include <math.h>
 #include "finite_element/finite_element.h"
+#include "finite_element/finite_element_time.h"
 #include "finite_element/import_finite_element.h"
 #include "general/debug.h"
 #include "general/multi_range.h"
@@ -371,9 +373,9 @@ string.
 } /* read_string_value */
 
 static struct FE_field *read_FE_field(FILE *input_file,
-	struct MANAGER(FE_field) *fe_field_manager)
+	struct MANAGER(FE_field) *fe_field_manager, struct FE_time *fe_time)
 /*******************************************************************************
-LAST MODIFIED : 11 October 2001
+LAST MODIFIED : 31 October 2001
 
 DESCRIPTION :
 Reads a field from its descriptor in <input_file>. Note that the same format is
@@ -619,18 +621,41 @@ not have any component names; these must be set by the calling function.
 		if (return_code)
 		{
 			/* create the field */
-			if (!((field=CREATE(FE_field)())&&
+			if (((field=CREATE(FE_field)(fe_time))&&
 				set_FE_field_name(field,field_name)&&
 				set_FE_field_value_type(field,value_type)&&
-				set_FE_field_number_of_components(field,number_of_components)&&
-				((CONSTANT_FE_FIELD != fe_field_type)||
-					set_FE_field_type_constant(field))&&
-				((GENERAL_FE_FIELD != fe_field_type)||
-					set_FE_field_type_general(field))&&
+				set_FE_field_number_of_components(field,number_of_components)))
+			{
+				/* Set the type */
+				if (((CONSTANT_FE_FIELD != fe_field_type)||set_FE_field_type_constant(field))&&
+				((GENERAL_FE_FIELD != fe_field_type)||set_FE_field_type_general(field))&&
 				((INDEXED_FE_FIELD != fe_field_type)||set_FE_field_type_indexed(field,
-					indexer_field,number_of_indexed_values))&&
-				set_FE_field_CM_field_type(field,cm_field_type)&&
-				set_FE_field_coordinate_system(field,&coordinate_system)))
+					indexer_field,number_of_indexed_values)))
+				{
+					if (set_FE_field_CM_field_type(field,cm_field_type))
+					{
+						if (!((set_FE_field_coordinate_system(field,&coordinate_system))))
+						{
+							display_message(ERROR_MESSAGE,
+								"read_FE_field.  Could not set coordinate system for field '%s'",field_name);
+							DESTROY(FE_field)(&field);
+						}
+					}
+					else
+					{
+						display_message(ERROR_MESSAGE,
+							"read_FE_field.  Could not CM field type for field '%s'",field_name);
+						DESTROY(FE_field)(&field);
+					}
+				}
+				else
+				{
+					display_message(ERROR_MESSAGE,
+						"read_FE_field.  Could not set field type for field '%s'",field_name);
+					DESTROY(FE_field)(&field);
+				}
+			}
+			else
 			{
 				display_message(ERROR_MESSAGE,
 					"read_FE_field.  Could not create field '%s'",field_name);
@@ -798,10 +823,11 @@ the <field_order_info>.
 } /* read_FE_field_values */
 
 static int read_FE_node_field(FILE *input_file,
-	struct MANAGER(FE_field) *fe_field_manager,struct FE_node *node, 
-	struct FE_field **field)
+	struct MANAGER(FE_field) *fe_field_manager,struct FE_time *fe_time,
+	struct FE_node *node, struct FE_field **field, 
+	struct Node_time_index *node_time_index)
 /*******************************************************************************
-LAST MODIFIED : 11 October 2001
+LAST MODIFIED : 31 October 2001
 
 DESCRIPTION :
 Reads a node field from an <input_file>, adding it to the fields defined at
@@ -811,18 +837,19 @@ Reads a node field from an <input_file>, adding it to the fields defined at
 	char *component_name, *derivative_type_name, *field_name,
 		*nodal_value_type_string, *rest_of_line;
 	enum FE_field_type fe_field_type;
-	enum FE_nodal_value_type **components_nodal_value_types, *derivative_type;	
-	int component_number, *components_number_of_derivatives,
-		*components_number_of_versions, end_of_names, end_of_string, i,
-		number_of_components,	return_code, temp_int;
-	struct FE_field *the_field; 
+	enum FE_nodal_value_type derivative_type;	
+	int component_number, end_of_names, end_of_string, i, number_of_components,
+		number_of_derivatives, number_of_versions, return_code, temp_int;
+	struct FE_field *the_field;
+	struct FE_node_field_creator *node_field_creator;
+	struct FE_time_version *fe_time_version;
 	
 	ENTER(read_FE_node_field);
 	*field=(struct FE_field *)NULL;
 	return_code=0;
-	if (input_file&&fe_field_manager&&node&&field)
+	if (input_file&&fe_field_manager&&node&&field&&fe_time)
 	{
-		if ((the_field=read_FE_field(input_file,fe_field_manager))&&
+		if ((the_field=read_FE_field(input_file,fe_field_manager,fe_time))&&
 			(number_of_components=get_FE_field_number_of_components(the_field))&&
 			GET_NAME(FE_field)(the_field,&field_name))
 		{
@@ -830,239 +857,196 @@ Reads a node field from an <input_file>, adding it to the fields defined at
 			return_code=1;
 			/* allocate memory for the components */
 			component_name=(char *)NULL;
-			ALLOCATE(components_number_of_derivatives,int,
-				number_of_components);
-			ALLOCATE(components_number_of_versions,int,
-				number_of_components);
-			if (ALLOCATE(components_nodal_value_types,
-				enum FE_nodal_value_type *,number_of_components))
+			node_field_creator = CREATE(FE_node_field_creator)(number_of_components);
+			/* read the components */
+			component_number=0;
+			while (return_code&&(component_number<number_of_components))
 			{
-				for (i=0;i<number_of_components;i++)
+				fscanf(input_file," ");
+				/* read the component name */
+				if (component_name)
 				{
-					components_nodal_value_types[i]=(enum FE_nodal_value_type *)NULL;
+					DEALLOCATE(component_name);
 				}
-			}
-			if (components_number_of_derivatives&&
-				components_number_of_versions&&components_nodal_value_types)
-			{
-				/* read the components */
-				component_number=0;
-				while (return_code&&(component_number<number_of_components))
+				if (read_string(input_file,"[^.]",&component_name))
 				{
-					fscanf(input_file," ");
-					/* read the component name */
-					if (component_name)
+					/* strip trailing blanks from component name */
+					i=strlen(component_name);
+					while ((0<i)&&(isspace(component_name[i-1])))
 					{
-						DEALLOCATE(component_name);
+						i--;
 					}
-					if (read_string(input_file,"[^.]",&component_name))
+					component_name[i]='\0';
+					return_code=(0<i)&&set_FE_field_component_name(the_field,
+						component_number,component_name);
+				}
+				if (return_code)
+				{
+					/* component name is sufficient for non-GENERAL_FE_FIELD */
+					if (GENERAL_FE_FIELD==fe_field_type)
 					{
-						/* strip trailing blanks from component name */
-						i=strlen(component_name);
-						while ((0<i)&&(isspace(component_name[i-1])))
+						/* ignore value index */
+						if ((2==fscanf(input_file,
+							".  Value index=%d, #Derivatives=%d",&temp_int,
+							&number_of_derivatives))&& (0<=temp_int)&&
+							(0<=number_of_derivatives))
 						{
-							i--;
-						}
-						component_name[i]='\0';
-						return_code=(0<i)&&set_FE_field_component_name(the_field,
-							component_number,component_name);
-					}
-					if (return_code)
-					{
-						/* component name is sufficient for non-GENERAL_FE_FIELD */
-						if (GENERAL_FE_FIELD==fe_field_type)
-						{
-							/* ignore value index */
-							if ((2==fscanf(input_file,
-								".  Value index=%d, #Derivatives=%d",&temp_int,
-								components_number_of_derivatives+component_number))&&
-								(0<=temp_int)&&
-								(0<=components_number_of_derivatives[component_number]))
+							/* CMISS starts from 1 */
+							temp_int--;
+							/* first number which is the value, is automatically included */
+							if (read_string(input_file, "[^\n]", &rest_of_line))
 							{
-								if (ALLOCATE(components_nodal_value_types[component_number],
-									enum FE_nodal_value_type,
-									1+components_number_of_derivatives[component_number]))
+								derivative_type_name = rest_of_line;
+								derivative_type++;
+								/* skip leading spaces */
+								while (' '== *derivative_type_name)
 								{
-									/* CMISS starts from 1 */
-									temp_int--;
-									/* first number is the value */
-									(components_nodal_value_types[component_number])[0]=
-										FE_NODAL_VALUE;
-									/* clear derivative value types to FE_NODAL_UNKNOWN */
-									for (i = 1; i <=
-										components_number_of_derivatives[component_number]; i++)
+									derivative_type_name++;
+								}
+								if (0 < number_of_derivatives)
+								{
+									i = number_of_derivatives;
+									/* optional derivative names will be in brackets */
+									if ('(' == *derivative_type_name)
 									{
-										(components_nodal_value_types[component_number])[i] =
-											FE_NODAL_UNKNOWN;
-									}
-									if (read_string(input_file, "[^\n]", &rest_of_line))
-									{
-										derivative_type_name = rest_of_line;
-										derivative_type =
-											components_nodal_value_types[component_number];
-										derivative_type++;
+										derivative_type_name++;
 										/* skip leading spaces */
-										while (' '== *derivative_type_name)
+										while (' ' == *derivative_type_name)
 										{
 											derivative_type_name++;
 										}
-										if (0 < (i =
-											components_number_of_derivatives[component_number]))
+										end_of_names = (')' == *derivative_type_name);
+										end_of_string = ('\0' == *derivative_type_name);
+										while (0 < i)
 										{
-											/* optional derivative names will be in brackets */
-											if ('(' == *derivative_type_name)
+											if (!(end_of_names || end_of_string))
 											{
-												derivative_type_name++;
-												/* skip leading spaces */
-												while (' ' == *derivative_type_name)
+												nodal_value_type_string = derivative_type_name;
+												while (('\0' != *derivative_type_name) &&
+													(',' != *derivative_type_name) &&
+													(' ' != *derivative_type_name) &&
+													(')' != *derivative_type_name))
 												{
 													derivative_type_name++;
 												}
 												end_of_names = (')' == *derivative_type_name);
 												end_of_string = ('\0' == *derivative_type_name);
-												while (0 < i)
-												{
-													if (!(end_of_names || end_of_string))
-													{
-														nodal_value_type_string = derivative_type_name;
-														while (('\0' != *derivative_type_name) &&
-															(',' != *derivative_type_name) &&
-															(' ' != *derivative_type_name) &&
-															(')' != *derivative_type_name))
-														{
-															derivative_type_name++;
-														}
-														end_of_names = (')' == *derivative_type_name);
-														end_of_string = ('\0' == *derivative_type_name);
-														*derivative_type_name = '\0';
-														if (!(end_of_names || end_of_string))
-														{
-															derivative_type_name++;
-															while ((',' == *derivative_type_name) ||
-																(' ' == *derivative_type_name))
-															{
-																derivative_type_name++;
-															}
-															end_of_names = (')' == *derivative_type_name);
-															end_of_string = ('\0' == *derivative_type_name);
-														}
-														if (!STRING_TO_ENUMERATOR(FE_nodal_value_type)(
-															nodal_value_type_string, derivative_type))
-														{
-															display_message(WARNING_MESSAGE,
-																"Unknown derivative type '%s' for field "
-																"component %s.%s .  Line %d",
-																nodal_value_type_string,field_name,
-																component_name,get_line_number(input_file));
-														}
-													}
-													else
-													{
-														display_message(WARNING_MESSAGE,
-															"Missing derivative type for field component "
-															"%s.%s .  Line %d",field_name,component_name,
-															get_line_number(input_file));
-													}
-													derivative_type++;
-													i--;
-												}
-												if (end_of_names)
+												*derivative_type_name = '\0';
+												if (!(end_of_names || end_of_string))
 												{
 													derivative_type_name++;
+													while ((',' == *derivative_type_name) ||
+														(' ' == *derivative_type_name))
+													{
+														derivative_type_name++;
+													}
+													end_of_names = (')' == *derivative_type_name);
+													end_of_string = ('\0' == *derivative_type_name);
+												}
+												if (STRING_TO_ENUMERATOR(FE_nodal_value_type)(
+														 nodal_value_type_string, &derivative_type))
+												{
+													FE_node_field_creator_define_derivative(
+														node_field_creator, component_number,
+														derivative_type);
+												}
+												else
+												{
+													FE_node_field_creator_define_derivative(
+														node_field_creator, component_number,
+														FE_NODAL_UNKNOWN);
+													display_message(WARNING_MESSAGE,
+														"Unknown derivative type '%s' for field "
+														"component %s.%s .  Line %d",
+														nodal_value_type_string,field_name,
+														component_name,get_line_number(input_file));
 												}
 											}
 											else
 											{
+												FE_node_field_creator_define_derivative(
+													node_field_creator, component_number,
+													FE_NODAL_UNKNOWN);
 												display_message(WARNING_MESSAGE,
-													"Derivative types missing for field component %s.%s"
-													" .  Line %d",field_name,component_name,
+													"Missing derivative type for field component "
+													"%s.%s .  Line %d",field_name,component_name,
 													get_line_number(input_file));
 											}
+											derivative_type++;
+											i--;
 										}
-										/* read in the number of versions (if present) */
-										if (1!=sscanf(derivative_type_name,", #Versions=%d",
-											components_number_of_versions+component_number))
+										if (end_of_names)
 										{
-											components_number_of_versions[component_number]=1;
+											derivative_type_name++;
 										}
-										DEALLOCATE(rest_of_line);
 									}
 									else
 									{
-										display_message(ERROR_MESSAGE,
-											"read_FE_node_field.  Could not read rest_of_line");
-										return_code=0;
+										display_message(WARNING_MESSAGE,
+											"Derivative types missing for field component %s.%s"
+											" .  Line %d",field_name,component_name,
+											get_line_number(input_file));
 									}
-								}
-								else
-								{
-									display_message(ERROR_MESSAGE,"read_FE_node_field.  "
-										"Could not allocate nodal_value_types array");
-									return_code=0;
-								}
-							}
-						}
-						else
-						{
-							/* non GENERAL_FE_FIELD */
-							/* check there is nothing on remainder of line */
-							if (read_string(input_file,"[^\n]",&rest_of_line))
-							{
-								if (fuzzy_string_compare(rest_of_line,"."))
-								{
-									/* set number_of_derivatives to 0, versions to 1 and single
-										 nodal value types to FE_NODAL_VALUE for all components */
-									components_number_of_derivatives[component_number]=0;
-									components_number_of_versions[component_number]=1;
-									if (ALLOCATE(components_nodal_value_types[component_number],
-										enum FE_nodal_value_type,
-										1+components_number_of_derivatives[component_number]))
+									/* Make sure we declare any derivatives that weren't 
+										given types */
+									while (0 < i)
 									{
-										/* first number is the value */
-										(components_nodal_value_types[component_number])[0]=
-											FE_NODAL_VALUE;
-									}
-									else
-									{
-										display_message(ERROR_MESSAGE,"read_FE_node_field.  "
-											"Could not allocate nodal_value_types array");
-										return_code=0;
+										FE_node_field_creator_define_derivative(
+											node_field_creator, component_number,
+											FE_NODAL_UNKNOWN);
 									}
 								}
-								else
+								/* read in the number of versions (if present) */
+								if (1==sscanf(derivative_type_name,", #Versions=%d",
+									&number_of_versions))
 								{
-									display_message(ERROR_MESSAGE,
-										"Unexpected text on field '%s' component '%s'"
-										".  Line %d: %s",field_name,component_name,
-										get_line_number(input_file),rest_of_line);
-									return_code=0;
+									FE_node_field_creator_define_versions(
+										node_field_creator, component_number,
+										number_of_versions);
 								}
 								DEALLOCATE(rest_of_line);
 							}
 							else
 							{
 								display_message(ERROR_MESSAGE,
-									"Unexpected end of field '%s' component '%s'.  Line %d",
-									field_name,component_name,get_line_number(input_file));
+									"read_FE_node_field.  Could not read rest_of_line");
 								return_code=0;
 							}
 						}
-						component_number++;
 					}
 					else
 					{
-						display_message(ERROR_MESSAGE,
-							"Error establishing component name.  Line",
-							get_line_number(input_file));
-						return_code=0;
+						/* non GENERAL_FE_FIELD */
+						/* check there is nothing on remainder of line */
+						if (read_string(input_file,"[^\n]",&rest_of_line))
+						{
+							if (!fuzzy_string_compare(rest_of_line,"."))
+							{
+								display_message(ERROR_MESSAGE,
+									"Unexpected text on field '%s' component '%s'"
+									".  Line %d: %s",field_name,component_name,
+									get_line_number(input_file),rest_of_line);
+								return_code=0;
+							}
+							DEALLOCATE(rest_of_line);
+						}
+						else
+						{
+							display_message(ERROR_MESSAGE,
+								"Unexpected end of field '%s' component '%s'.  Line %d",
+								field_name,component_name,get_line_number(input_file));
+							return_code=0;
+						}
 					}
+					component_number++;
 				}
-			}
-			else
-			{
-				display_message(ERROR_MESSAGE,
-					"read_FE_node_field.  Could not allocate component information");
-				return_code=0;
+				else
+				{
+					display_message(ERROR_MESSAGE,
+						"Error establishing component name.  Line",
+							get_line_number(input_file));
+					return_code=0;
+				}
 			}
 			if (return_code)
 			{
@@ -1098,30 +1082,35 @@ Reads a node field from an <input_file>, adding it to the fields defined at
 			DESTROY(FE_field)(&the_field);
 			if (return_code)
 			{
-				if (!define_FE_field_at_node(node,*field,
-					components_number_of_derivatives,components_number_of_versions,
-					components_nodal_value_types))
+				if (node_time_index)
 				{
-					display_message(ERROR_MESSAGE,
-						"read_FE_node_field.  Could not define field at node");
-					*field = (struct FE_field *)NULL;
-					return_code=0;
+					if (!(fe_time_version = get_FE_time_version_matching_time_series(
+						fe_time, 1, &(node_time_index->time))))
+					{
+						return_code = 0;
+					}
+				}
+				else
+				{
+					fe_time_version = (struct FE_time_version *)NULL;
+				}
+				if (return_code)
+				{
+					if (!define_FE_field_at_node(node,*field,fe_time_version,
+						node_field_creator))
+					{
+						display_message(ERROR_MESSAGE,
+							"read_FE_node_field.  Could not define field at node");
+						*field = (struct FE_field *)NULL;
+						return_code=0;
+					}
 				}
 			}
+			DESTROY(FE_node_field_creator)(&node_field_creator);
 			if (component_name)
 			{
 				DEALLOCATE(component_name);
 			}
-			if (components_nodal_value_types)
-			{
-				for (i=0;i<number_of_components;i++)
-				{
-					DEALLOCATE(components_nodal_value_types[i]);
-				}
-				DEALLOCATE(components_nodal_value_types);
-			}
-			DEALLOCATE(components_number_of_derivatives);
-			DEALLOCATE(components_number_of_versions);
 			DEALLOCATE(field_name);
 		}
 #if defined (OLD_CODE)
@@ -1144,10 +1133,11 @@ Reads a node field from an <input_file>, adding it to the fields defined at
 } /* read_FE_node_field */
 
 static struct FE_node *read_FE_node_field_info(FILE *input_file,
-	struct MANAGER(FE_field) *fe_field_manager,
-	struct FE_field_order_info **field_order_info)
+	struct MANAGER(FE_field) *fe_field_manager, struct FE_time *fe_time,
+	struct FE_field_order_info **field_order_info,
+	struct Node_time_index *node_time_index)
 /*******************************************************************************
-LAST MODIFIED : 11 October 2001
+LAST MODIFIED : 31 October 2001
 
 DESCRIPTION :
 Creates a node with the field information read from the <input_file>.
@@ -1180,7 +1170,8 @@ from a previous call to this function.
 				for (i = 0; (i < number_of_fields) && return_code; i++)
 				{
 					field = (struct FE_field *)NULL;
-					if (read_FE_node_field(input_file,fe_field_manager,node,&field))
+					if (read_FE_node_field(input_file,fe_field_manager,fe_time,node,&field,
+							 node_time_index))
 					{
 						if (!add_FE_field_order_info_field(*field_order_info, field))
 						{
@@ -1229,9 +1220,10 @@ from a previous call to this function.
 static struct FE_node *read_FE_node(FILE *input_file,
 	struct FE_node *template_node,struct MANAGER(FE_node) *node_manager,
 	struct MANAGER(FE_element) *element_manager,
-	struct FE_field_order_info *field_order_info)
+	struct FE_field_order_info *field_order_info,
+	struct Node_time_index *node_time_index)
 /*******************************************************************************
-LAST MODIFIED : 17 September 1999
+LAST MODIFIED : 31 October 2001
 
 DESCRIPTION :
 Reads in a node from an <input_file>.
@@ -1334,17 +1326,36 @@ Reads in a node from an <input_file>.
 											}
 											if (return_code)
 											{
-												if (return_code=set_FE_nodal_field_FE_value_values(
-													field,node,values,&length))
+												if (node_time_index)
 												{
-													if (length != number_of_values)
+													if (return_code=set_FE_nodal_field_FE_values_at_time(
+														field,node,values,&length,node_time_index->time))
 													{
-														display_message(ERROR_MESSAGE,
-															"node %d field '%s' took %d values from %d"
-															" expected.  Line %d",node_number,field_name,
-															length,number_of_values,
-															get_line_number(input_file));
-														return_code=0;
+														if (length != number_of_values)
+														{
+															display_message(ERROR_MESSAGE,
+																"node %d field '%s' took %d values from %d"
+																" expected.  Line %d",node_number,field_name,
+																length,number_of_values,
+																get_line_number(input_file));
+															return_code=0;
+														}
+													}
+												}
+												else
+												{
+													if (return_code=set_FE_nodal_field_FE_value_values(
+														field,node,values,&length))
+													{
+														if (length != number_of_values)
+														{
+															display_message(ERROR_MESSAGE,
+																"node %d field '%s' took %d values from %d"
+																" expected.  Line %d",node_number,field_name,
+																length,number_of_values,
+																get_line_number(input_file));
+															return_code=0;
+														}
 													}
 												}
 											}
@@ -1404,7 +1415,7 @@ Reads in a node from an <input_file>.
 
 										if (number_of_values==number_of_components)
 										{
-											for (k=0;(k<number_of_values)&&return_code;k++)
+ 											for (k=0;(k<number_of_values)&&return_code;k++)
 											{
 												if (read_string_value(input_file,&the_string))
 												{
@@ -2418,10 +2429,10 @@ printf("%d %d\n",*xi_basis_type,*(temp_basis_type-(xi_number-i)));*/
 
 static int read_FE_element_field(FILE *input_file,
 	struct FE_element_shape *shape,struct MANAGER(FE_field) *fe_field_manager,
-	struct MANAGER(FE_basis) *basis_manager,struct FE_element *element,
-	struct FE_field **field)
+	struct FE_time *fe_time, struct MANAGER(FE_basis) *basis_manager,
+	struct FE_element *element, struct FE_field **field)
 /*******************************************************************************
-LAST MODIFIED : 18 October 2001
+LAST MODIFIED : 9 November 2001
 
 DESCRIPTION :
 Reads an element field from an <input_file>, adding it to the fields defined at
@@ -2444,7 +2455,7 @@ Reads an element field from an <input_file>, adding it to the fields defined at
 	return_code=0;
 	if (input_file&&shape&&fe_field_manager&&basis_manager&&element&&field)
 	{
-		if ((the_field=read_FE_field(input_file,fe_field_manager))&&
+		if ((the_field=read_FE_field(input_file,fe_field_manager,fe_time))&&
 			(number_of_components=get_FE_field_number_of_components(the_field))&&
 			GET_NAME(FE_field)(the_field,&field_name))
 		{
@@ -2935,7 +2946,7 @@ Reads an element field from an <input_file>, adding it to the fields defined at
 
 static struct FE_element *read_FE_element_field_info(
 	FILE *input_file,struct FE_element_shape *shape,
-	struct MANAGER(FE_field) *fe_field_manager,
+	struct MANAGER(FE_field) *fe_field_manager, struct FE_time *fe_time,
 	struct MANAGER(FE_basis) *basis_manager,
 	struct FE_field_order_info **field_order_info)
 /*******************************************************************************
@@ -3069,7 +3080,7 @@ from a previous call to this function.
 						{
 							field = (struct FE_field *)NULL;
 							if (read_FE_element_field(input_file, shape, fe_field_manager,
-								basis_manager, element, &field))
+								fe_time, basis_manager, element, &field))
 							{
 								if (!add_FE_field_order_info_field(*field_order_info, field))
 								{
@@ -3531,15 +3542,16 @@ Global functions
 ----------------
 */
 int read_FE_node_group_with_order(FILE *input_file,
-	struct MANAGER(FE_field) *fe_field_manager,
+	struct MANAGER(FE_field) *fe_field_manager, struct FE_time *fe_time,
 	struct MANAGER(FE_node) *node_manager,
 	struct MANAGER(FE_element) *element_manager,
 	struct MANAGER(GROUP(FE_node)) *node_group_manager,
 	struct MANAGER(GROUP(FE_node)) *data_group_manager,
 	struct MANAGER(GROUP(FE_element)) *element_group_manager,
-	struct FE_node_order_info *node_order_info)
+	struct FE_node_order_info *node_order_info,
+	struct Node_time_index *node_time_index)
 /*******************************************************************************
-LAST MODIFIED : 3 September 2001
+LAST MODIFIED : 31 October 2001
 
 DESCRIPTION :
 Reads node groups from an <input_file> or the socket (if <input_file> is NULL).
@@ -3548,6 +3560,9 @@ since groups of the same name in each manager are created simultaneously, and
 node groups are updated to contain nodes used by elements in associated group.
 If the <node_order_info> is non NULL then each node is added to this object
 in the order of the file.
+If the <node_time_index> is non NULL then the values in this read are assumed
+to belong to the specified time.  This means that the nodal values will be read
+into an array and the correct index put into the corresponding time array.
 ==============================================================================*/
 {
 	char group_field_node_flag,*group_name,*last_character,*temp_string;
@@ -3726,7 +3741,7 @@ in the order of the file.
 						}
 						/* read new node field information and field_order_info */
 						if (template_node=read_FE_node_field_info(input_file,
-							fe_field_manager,&field_order_info))
+							fe_field_manager,fe_time,&field_order_info,node_time_index))
 						{
 							ACCESS(FE_node)(template_node);
 						}
@@ -3751,7 +3766,7 @@ in the order of the file.
 					{	
 						/* read node */
 						if (node=read_FE_node(input_file,template_node,node_manager,
-							element_manager,field_order_info))
+							element_manager,field_order_info,node_time_index))
 						{		
 							if (node_order_info)
 							{
@@ -3891,14 +3906,14 @@ in the order of the file.
 } /* read_FE_node_group_with_order */
 
 int read_FE_node_group(FILE *input_file,
-	struct MANAGER(FE_field) *fe_field_manager,
+	struct MANAGER(FE_field) *fe_field_manager, struct FE_time *fe_time,
 	struct MANAGER(FE_node) *node_manager,
 	struct MANAGER(FE_element) *element_manager,
 	struct MANAGER(GROUP(FE_node)) *node_group_manager,
 	struct MANAGER(GROUP(FE_node)) *data_group_manager,
 	struct MANAGER(GROUP(FE_element)) *element_group_manager)
 /*******************************************************************************
-LAST MODIFIED : 18 November 1999
+LAST MODIFIED : 9 November 2001
 
 DESCRIPTION :
 Reads node groups from an <input_file> or the socket (if <input_file> is NULL).
@@ -3910,9 +3925,10 @@ node groups are updated to contain nodes used by elements in associated group.
 	int return_code;
 
 	ENTER(read_FE_node_group);
-	return_code=read_FE_node_group_with_order(input_file,fe_field_manager,
+	return_code=read_FE_node_group_with_order(input_file,fe_field_manager,fe_time,
 		node_manager,element_manager,node_group_manager,data_group_manager,
-		element_group_manager,(struct FE_node_order_info *)NULL);
+		element_group_manager,(struct FE_node_order_info *)NULL,
+		(struct Node_time_index *)NULL);
 	LEAVE;
 
 	return (return_code);
@@ -3939,8 +3955,9 @@ Reads a node group from a file.
 			if (input_file=fopen(file_name,"r"))
 			{
 				return_code=read_FE_node_group(input_file,data->fe_field_manager,
-					data->node_manager,data->element_manager,data->node_group_manager,
-					data->data_group_manager,data->element_group_manager);
+					data->fe_time,data->node_manager,data->element_manager,
+					data->node_group_manager,data->data_group_manager,
+					data->element_group_manager);
 				fclose(input_file);
 			}
 			else
@@ -3970,7 +3987,7 @@ Reads a node group from a file.
 int read_FE_element_group(FILE *input_file,
 	struct MANAGER(FE_element) *element_manager,
 	struct MANAGER(GROUP(FE_element)) *element_group_manager,
-	struct MANAGER(FE_field) *fe_field_manager,
+	struct MANAGER(FE_field) *fe_field_manager, struct FE_time *fe_time,
 	struct MANAGER(FE_node) *node_manager,
 	struct MANAGER(GROUP(FE_node)) *node_group_manager,
 	struct MANAGER(GROUP(FE_node)) *data_group_manager,
@@ -4231,7 +4248,7 @@ node groups are updated to contain nodes used by elements in associated group.
 						}
 						/* read new element field information and field_order_info */
 						if (template_element=read_FE_element_field_info(input_file,
-							element_shape,fe_field_manager,basis_manager,&field_order_info))
+							element_shape,fe_field_manager,fe_time,basis_manager,&field_order_info))
 						{
 							ACCESS(FE_element)(template_element);
 						}
@@ -4470,7 +4487,7 @@ Reads an element group from a file.
 			if (input_file=fopen(file_name,"r"))
 			{
 				return_code=read_FE_element_group(input_file,data->element_manager,
-					data->element_group_manager,data->fe_field_manager,
+					data->element_group_manager,data->fe_field_manager,data->fe_time,
 					data->node_manager,data->node_group_manager,
 					data->data_group_manager,data->basis_manager);
 				fclose(input_file);
@@ -4501,7 +4518,7 @@ Reads an element group from a file.
 
 int read_exnode_or_exelem_file_from_string(char *exnode_string,
 	char *exelem_string,char *name,struct MANAGER(FE_field) *fe_field_manager,
-	struct MANAGER(FE_node) *node_manager,
+	struct FE_time *fe_time, struct MANAGER(FE_node) *node_manager,
 	struct MANAGER(FE_element) *element_manager,
 	struct MANAGER(GROUP(FE_node))*node_group_manager,
 	struct MANAGER(GROUP(FE_node))*data_group_manager,
@@ -4581,7 +4598,7 @@ statically include an exnode or exelem file (in <exnode_string>/<exelem_string>)
 						{
 							if(exnode_string)
 							{
-								return_code=read_FE_node_group(input_file,fe_field_manager,
+								return_code=read_FE_node_group(input_file,fe_field_manager,fe_time,
 									node_manager,element_manager,node_group_manager,data_group_manager,
 									element_group_manager);			
 							}
@@ -4589,7 +4606,7 @@ statically include an exnode or exelem file (in <exnode_string>/<exelem_string>)
 							/* exelem_string */
 							{
 								return_code=read_FE_element_group(input_file,element_manager,
-									element_group_manager,fe_field_manager,node_manager,
+									element_group_manager,fe_field_manager,fe_time,node_manager,
 									node_group_manager,data_group_manager,basis_manager);	
 							}
 							fclose(input_file);
@@ -4638,7 +4655,7 @@ statically include an exnode or exelem file (in <exnode_string>/<exelem_string>)
 int read_exnode_and_exelem_file_from_string_and_offset(
 	char *exnode_string,char *exelem_string,
 	char *name,int offset,
-	struct MANAGER(FE_field) *fe_field_manager,
+	struct MANAGER(FE_field) *fe_field_manager, struct FE_time *fe_time,
 	struct MANAGER(FE_node) *node_manager,
 	struct MANAGER(FE_element) *element_manager,
 	struct MANAGER(GROUP(FE_node))*node_group_manager,
@@ -4664,10 +4681,10 @@ numbers to <offset>
 		/* read in the default torso mesh nodes and elements */
 		/* (cleaned up when the program shuts down) */		
 		if((return_code=read_exnode_or_exelem_file_from_string(exnode_string,
-			(char *)NULL,name,fe_field_manager,node_manager,element_manager,
+			(char *)NULL,name,fe_field_manager,fe_time,node_manager,element_manager,
 			node_group_manager,data_group_manager,element_group_manager,basis_manager))&&
 			(return_code=read_exnode_or_exelem_file_from_string((char *)NULL,
-				exelem_string,name,fe_field_manager,node_manager,
+				exelem_string,name,fe_field_manager,fe_time,node_manager,
 				element_manager,node_group_manager,data_group_manager,element_group_manager
 				,basis_manager)))
 		{
@@ -4746,7 +4763,7 @@ fields .
 }/* get_first_group_name_from_FE_node_file*/
 
 int read_FE_node_and_elem_groups_and_return_name_given_file_name(char *group_file_name,
-	struct MANAGER(FE_field) *fe_field_manager,
+	struct MANAGER(FE_field) *fe_field_manager, struct FE_time *fe_time,
 	struct MANAGER(FE_node) *node_manager,
 	struct MANAGER(FE_element) *element_manager,
 	struct MANAGER(GROUP(FE_node))*node_group_manager,
@@ -4800,7 +4817,7 @@ It is up to the user to DEALLOCATE <group_name>.
 			{
 				if (input_file=fopen(exnode_name_str,"r"))
 				{
-					return_code=read_FE_node_group(input_file,fe_field_manager,node_manager,
+					return_code=read_FE_node_group(input_file,fe_field_manager,fe_time,node_manager,
 						element_manager,node_group_manager,data_group_manager,element_group_manager);
 				}
 				else
@@ -4822,7 +4839,7 @@ It is up to the user to DEALLOCATE <group_name>.
 				if (input_file=fopen(exelem_name_str,"r"))
 				{
 					return_code=read_FE_element_group(input_file,element_manager,
-						element_group_manager,fe_field_manager,node_manager,
+						element_group_manager,fe_field_manager,fe_time,node_manager,
 						node_group_manager,data_group_manager,basis_manager);	
 				}
 				else

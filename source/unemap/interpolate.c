@@ -5871,33 +5871,33 @@ DESCRIPTION :
 							{
 								*f_n=(float)(right_hand_side[*column_index]);
 								f_n[number_of_mesh_columns]= *f_n;
-								*column_index++;
+								column_index++;
 								f_n++;
 								*dfdx_n=(float)(right_hand_side[*column_index]);
 								dfdx_n[number_of_mesh_columns]= *dfdx_n;
-								*column_index++;
+								column_index++;
 								dfdx_n++;
 								*dfdy_n=(float)(right_hand_side[*column_index]);
 								dfdy_n[number_of_mesh_columns]= *dfdy_n;
-								*column_index++;
+								column_index++;
 								dfdy_n++;
 								*d2fdxdy_n=(float)(right_hand_side[*column_index]);
 								d2fdxdy_n[number_of_mesh_columns]= *d2fdxdy_n;
-								*column_index++;
+								column_index++;
 								d2fdxdy_n++;
 								for (j=1;j<number_of_mesh_columns;j++)
 								{
 									*f_n=(float)(right_hand_side[*column_index]);
-									*column_index++;
+									column_index++;
 									f_n++;
 									*dfdx_n=(float)(right_hand_side[*column_index]);
-									*column_index++;
+									column_index++;
 									dfdx_n++;
 									*dfdy_n=(float)(right_hand_side[*column_index]);
-									*column_index++;
+									column_index++;
 									dfdy_n++;
 									*d2fdxdy_n=(float)(right_hand_side[*column_index]);
-									*column_index++;
+									column_index++;
 									d2fdxdy_n++;
 								}
 								f_n++;
@@ -5930,19 +5930,19 @@ DESCRIPTION :
 							{
 								*f_n=(float)(right_hand_side[*column_index]);
 								f_n[number_of_mesh_columns]= *f_n;
-								*column_index++;
+								column_index++;
 								f_n++;
 								*dfdx_n=(float)(right_hand_side[*column_index]);
 								dfdx_n[number_of_mesh_columns]= *dfdx_n;
-								*column_index++;
+								column_index++;
 								dfdx_n++;
 								*dfdy_n=(float)(right_hand_side[*column_index]);
 								dfdy_n[number_of_mesh_columns]= *dfdy_n;
-								*column_index++;
+								column_index++;
 								dfdy_n++;
 								*d2fdxdy_n=(float)(right_hand_side[*column_index]);
 								d2fdxdy_n[number_of_mesh_columns]= *d2fdxdy_n;
-								*column_index++;
+								column_index++;
 								d2fdxdy_n++;
 								for (j=1;j<number_of_mesh_columns;j++)
 								{

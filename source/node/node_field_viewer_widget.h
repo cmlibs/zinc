@@ -13,6 +13,7 @@ Note the node passed to this widget should be a non-managed local copy.
 
 #include "general/callback.h"
 #include "finite_element/finite_element.h"
+#include "time/time.h"
 
 /*
 Global Functions
@@ -20,9 +21,10 @@ Global Functions
 */
 
 Widget create_node_field_viewer_widget(Widget *node_field_viewer_widget_address,
-	Widget parent,struct FE_node *node,struct Computed_field *field);
+	Widget parent,struct FE_node *node,struct Computed_field *field,
+	struct Time_object *time_object);
 /*******************************************************************************
-LAST MODIFIED : 11 May 2000
+LAST MODIFIED : 22 November 2001
 
 DESCRIPTION :
 Widget for displaying and editing computed field components/derivatives at a

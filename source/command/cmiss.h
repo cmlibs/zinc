@@ -51,6 +51,7 @@ DESCRIPTION :
 	struct LIST(GT_object) *graphics_object_list;
 	/* list of glyphs = simple graphics objects with only geometry */
 	struct LIST(GT_object) *glyph_list;
+	struct FE_time *fe_time;
 	struct Computed_field_package *computed_field_package;
 	struct MANAGER(Environment_map) *environment_map_manager;
 	struct MANAGER(FE_basis) *basis_manager;

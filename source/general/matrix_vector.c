@@ -312,6 +312,48 @@ Set matrix <a> to the <n> x <n> identity.
 	return (return_code);
 } /* identity_matrix */
 
+int identity_matrix_float(int n, float *a)
+/*******************************************************************************
+LAST MODIFIED : 15 November 2001
+
+DESCRIPTION :
+Set matrix <a> to the <n> x <n> identity.
+==============================================================================*/
+{
+	float *value;
+	int i, j, return_code;
+
+	ENTER(identity_matrix);
+	if ((0<n) && a)
+	{
+		value = a;
+		for (i = 0; i < n; i++)
+		{
+			for (j = 0; j < n; j++)
+			{
+				if (i == j)
+				{
+					*value = 1.0;
+				}
+				else
+				{
+					*value = 0.0;
+				}
+				value++;
+			}
+		}
+		return_code = 1;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE, "identity_matrix_float.  Invalid argument(s)");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* identity_matrix_float */
+
 int multiply_matrix(int m,int s,int n,double *a,double *b,double *c)
 /*******************************************************************************
 LAST MODIFIED : 28 January 1998

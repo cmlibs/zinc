@@ -29,6 +29,7 @@ November 1997. Created from Scene description part of Drawing.
 */
 #include "command/parser.h"
 #include "computed_field/computed_field.h"
+#include "computed_field/computed_field_finite_element.h"
 #include "finite_element/finite_element.h"
 #include "general/callback_private.h"
 #include "general/compare.h"
@@ -708,6 +709,7 @@ Rebuilds the display list for each uncreated or morphing graphics_object in the
 linked list contained in the scene_object.
 ==============================================================================*/
 {
+	FE_value time;
 	int return_code;
 
 	ENTER(build_Scene_object);
@@ -726,7 +728,15 @@ linked list contained in the scene_object.
 				} break;
 				case SCENE_OBJECT_GRAPHICAL_ELEMENT_GROUP:
 				{
-					build_GT_element_group(scene_object->gt_element_group);
+					if (scene_object->time_object)
+					{
+						time = Time_object_get_current_time(scene_object->time_object);
+					}
+					else
+					{
+						time = 0.0;
+					}
+					build_GT_element_group(scene_object->gt_element_group, time);
 				} break;
 				case SCENE_OBJECT_SCENE:
 				{
@@ -3583,24 +3593,37 @@ Returns the Time_object referenced by <scene_object>.
 int Scene_object_set_time_object(struct Scene_object *scene_object,
 	struct Time_object *time)
 /*******************************************************************************
-LAST MODIFIED : 23 August 2000
+LAST MODIFIED : 27 November 2001
 
 DESCRIPTION :
-Changes the Time_object referenced by <scene_object>.
+Changes the Time_object referenced by <scene_object>, if <time> is NULL it frees
+the references to the time_object.
 ==============================================================================*/
 {
 	int return_code;
 
 	ENTER(Scene_object_set_time_object);
-	if (scene_object&&time)
+	if (scene_object)
 	{
 		if ((scene_object->type == SCENE_OBJECT_GRAPHICS_OBJECT)
 			|| (scene_object->type == SCENE_OBJECT_GRAPHICAL_ELEMENT_GROUP))
 		{
-			REACCESS(Time_object)(&(scene_object->time_object),time);
-			Time_object_add_callback(time, Scene_object_time_update_callback,
-				scene_object);
+			if (scene_object->time_object != time)
+			{
+				if (scene_object->time_object)
+				{
+					Time_object_remove_callback(scene_object->time_object,
+						Scene_object_time_update_callback, scene_object);
+				}
+				REACCESS(Time_object)(&(scene_object->time_object),time);
+				if (time)
+				{
+					Time_object_add_callback(scene_object->time_object,
+						Scene_object_time_update_callback, scene_object);
+				}
+			}
 			return_code=1;
+				
 		}
 		else
 		{
@@ -7362,13 +7385,8 @@ GT_element_group and therefore have the same rendition.
 							scene->node_selection,
 							scene->data_selection))
 						{
-							/* give the new group a default coordinate field */
-							/*???RC later get this from region */
-							default_coordinate_field=FIND_BY_IDENTIFIER_IN_MANAGER(
-								Computed_field,name)("default_coordinate",
-									scene->computed_field_manager);
-							GT_element_group_set_default_coordinate_field(
-								gt_element_group, default_coordinate_field);
+							default_coordinate_field = 
+								GT_element_group_get_default_coordinate_field(gt_element_group);
 							/* set default circle and element discretization in group */
 							read_circle_discretization_defaults(&default_value,
 								&maximum_value, scene->user_interface);
@@ -7412,18 +7430,19 @@ GT_element_group and therefore have the same rendition.
 									 element_xi_coordinate field defined over them, then
 									 add data_points to the rendition */
 								element_xi_coordinate_field =
-									FIND_BY_IDENTIFIER_IN_MANAGER(Computed_field,name)(
-										"element_xi_coordinate", scene->computed_field_manager);
+									FIRST_OBJECT_IN_MANAGER_THAT(Computed_field)(
+										Computed_field_is_type_embedded, NULL,
+										scene->computed_field_manager);
 								if (FIRST_OBJECT_IN_GROUP_THAT(FE_node)(
 									(GROUP_CONDITIONAL_FUNCTION(FE_node) *)NULL,
 									(void *)NULL, data_group) &&
-									(FIRST_OBJECT_IN_GROUP_THAT(FE_node)(
-										FE_node_has_Computed_field_defined,
-										(void *)default_coordinate_field, data_group) ||
+									(default_coordinate_field && FIRST_OBJECT_IN_GROUP_THAT(
+										FE_node)(FE_node_has_Computed_field_defined,
+										(void *)default_coordinate_field, data_group)) ||
 										(element_xi_coordinate_field &&
 											FIRST_OBJECT_IN_GROUP_THAT(FE_node)(
 												FE_node_has_Computed_field_defined,
-												(void *)element_xi_coordinate_field, data_group))))
+												(void *)element_xi_coordinate_field, data_group)))
 								{
 									if (settings = CREATE(GT_element_settings)(
 										GT_ELEMENT_SETTINGS_DATA_POINTS))
@@ -7693,13 +7712,14 @@ Scene_object has a Time_object.
 	/* check arguments */
 	if (scene&&element_group)
 	{
-		/* Ensure the Scene object has a time object if the graphics
-			object has more than one time */
-		if(GT_element_group_has_multiple_times(element_group))
+		return_code = 1;
+		/* Ensure the Scene object has a time object if and only if the 
+			graphics object has more than one time */
+		if (scene_object=FIRST_OBJECT_IN_LIST_THAT(Scene_object)(
+			Scene_object_has_graphical_element_group,
+			(void *)element_group,scene->scene_object_list))
 		{
-			if (scene_object=FIRST_OBJECT_IN_LIST_THAT(Scene_object)(
-				Scene_object_has_graphical_element_group,
-				(void *)element_group,scene->scene_object_list))
+			if(GT_element_group_has_multiple_times(element_group))
 			{
 				if(!Scene_object_has_time(scene_object))
 				{
@@ -7730,11 +7750,20 @@ Scene_object has a Time_object.
 			}
 			else
 			{
-				display_message(ERROR_MESSAGE,
-					"Scene_update_time_behaviour_with_gt_element_group.  "
-					"Unable to find Scene_object for element_group");
-				return_code=0;
+				if(Scene_object_has_time(scene_object))
+				{
+					/* Remove the time object then */
+					Scene_object_set_time_object(scene_object,
+						(struct Time_object *)NULL);
+				}		
 			}
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,
+				"Scene_update_time_behaviour_with_gt_element_group.  "
+				"Unable to find Scene_object for element_group");
+			return_code=0;
 		}
 	}
 	else
@@ -9162,8 +9191,11 @@ updates graphics of settings affected by the changes (probably all).
 						circle_discretization, scene->user_interface);
 					GT_element_group_set_element_discretization(gt_element_group,
 						&element_discretization, scene->user_interface);
-					GT_element_group_set_default_coordinate_field(gt_element_group,
-						default_coordinate_field);
+					if (default_coordinate_field)
+					{
+						GT_element_group_set_default_coordinate_field(gt_element_group,
+							default_coordinate_field);
+					}
 					GT_element_group_set_native_discretization_field(gt_element_group,
 						native_discretization_field);
 					/* regenerate graphics for changed settings */

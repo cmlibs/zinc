@@ -139,9 +139,9 @@ DESCRIPTION :
 } /* parent_not_equal_to_element */
 
 static int change_element(struct FE_element **element,FE_value *xi,
-	int face_index,struct Computed_field *coordinate_field)
+	FE_value time,int face_index,struct Computed_field *coordinate_field)
 /*******************************************************************************
-LAST MODIFIED : 16 March 1999
+LAST MODIFIED : 3 December 2001
 
 DESCRIPTION :
 For changing between elements when the streamline reaches the interface. Swaps
@@ -240,7 +240,7 @@ coordinate_field for resolving problems when crossing polygon sides.
 						xi[2]=face_to_element[6]+face_to_element[7]*facexi[0]+
 							face_to_element[8]*facexi[1];
 						if (!Computed_field_evaluate_in_element(coordinate_field,
-							*element,xi,(struct FE_element *)NULL,pointA,(FE_value*)NULL))
+							*element,xi,time,(struct FE_element *)NULL,pointA,(FE_value*)NULL))
 						{
 							display_message(ERROR_MESSAGE,
 								"change_element.  Error calculating coordinate field");
@@ -265,7 +265,8 @@ coordinate_field for resolving problems when crossing polygon sides.
 							xi[2]=face_to_element[6]+face_to_element[7]*facexi[0]+
 								face_to_element[8]*facexi[1];
 							if (!Computed_field_evaluate_in_element(coordinate_field,
-								*element,xi,(struct FE_element *)NULL,pointA,(FE_value*)NULL))
+								*element,xi,time,(struct FE_element *)NULL,pointA,
+								(FE_value*)NULL))
 							{
 								display_message(ERROR_MESSAGE,
 									"change_element.  Error calculating coordinate field");
@@ -300,7 +301,8 @@ coordinate_field for resolving problems when crossing polygon sides.
 						{
 							/* if polygon, compare pointA and pointB */
 							if (!Computed_field_evaluate_in_element(coordinate_field,
-								*element,xi,(struct FE_element *)NULL,pointB,(FE_value*)NULL))
+								*element,xi,time,(struct FE_element *)NULL,pointB,
+								(FE_value*)NULL))
 							{
 								display_message(ERROR_MESSAGE,
 									"change_element.  Error calculating coordinate field");
@@ -333,7 +335,8 @@ coordinate_field for resolving problems when crossing polygon sides.
 									 ensure that xi coordinates will match, so store pointA
 									 now and compare at end */
 								if (!Computed_field_evaluate_in_element(coordinate_field,
-									*element,xi,(struct FE_element *)NULL,pointB,(FE_value*)NULL))
+									*element,xi,time,(struct FE_element *)NULL,pointB,
+									(FE_value*)NULL))
 								{
 									display_message(ERROR_MESSAGE,
 										"change_element.  Error calculating coordinate field");
@@ -385,9 +388,9 @@ coordinate_field for resolving problems when crossing polygon sides.
 } /* change_element */
 
 static int check_xi_limits(int change_xi, struct FE_element **element,
-	FE_value *xi,struct Computed_field *coordinate_field)
+	FE_value *xi,struct Computed_field *coordinate_field, FE_value time)
 /*******************************************************************************
-LAST MODIFIED : 16 March 1999
+LAST MODIFIED : 3 December 2001
 
 DESCRIPTION :
 Check the xi limits when the element reaches the interface. If on an element
@@ -418,7 +421,7 @@ called if the integration has indicated that the direction changes element.
 			{
 				face_index=0;
 			}
-			return_code=change_element(element,xi,face_index,coordinate_field);
+			return_code=change_element(element,xi,time,face_index,coordinate_field);
 		}
 	}
 	else
@@ -442,7 +445,7 @@ called if the integration has indicated that the direction changes element.
 				{
 					face_index=1;
 				}
-				return_code=change_element(element,xi,face_index,coordinate_field);
+				return_code=change_element(element,xi,time,face_index,coordinate_field);
 			}
 		}
 	}
@@ -488,7 +491,7 @@ called if the integration has indicated that the direction changes element.
 			{
 				face_index=2;
 			}
-			return_code=change_element(element,xi,face_index,coordinate_field);
+			return_code=change_element(element,xi,time,face_index,coordinate_field);
 		}
 	}
 	else
@@ -503,7 +506,7 @@ called if the integration has indicated that the direction changes element.
 					/* radial xi */
 					/* Assumes faces are stored in order of increasing xi0 */
 					face_index=(int)floor(xi[0]*(FE_value)((*element)->shape->type)[1]);
-					return_code=change_element(element,xi,face_index,coordinate_field);
+					return_code=change_element(element,xi,time,face_index,coordinate_field);
 				}
 				else
 				{
@@ -528,7 +531,7 @@ called if the integration has indicated that the direction changes element.
 				{
 					face_index=3;
 				}
-				return_code=change_element(element,xi,face_index,coordinate_field);
+				return_code=change_element(element,xi,time,face_index,coordinate_field);
 			}
 		}
 	}
@@ -558,7 +561,7 @@ called if the integration has indicated that the direction changes element.
 			{
 				face_index=4;
 			}
-			return_code=change_element(element,xi,face_index,coordinate_field);
+			return_code=change_element(element,xi,time,face_index,coordinate_field);
 		}
 	}
 	else
@@ -589,7 +592,7 @@ called if the integration has indicated that the direction changes element.
 				{
 					face_index=5;
 				}
-				return_code=change_element(element,xi,face_index,coordinate_field);
+				return_code=change_element(element,xi,time,face_index,coordinate_field);
 			}
 		}
 	}
@@ -702,10 +705,10 @@ static FE_value find_valid_portion( FE_value *xiA, FE_value *xiB, int *change_el
 
 static int update_adaptive_imp_euler(struct Computed_field *coordinate_field,
 	struct Computed_field *stream_vector_field,int reverse_track,
-	struct FE_element *element,FE_value *xi,FE_value *point,FE_value *step_size,
-	FE_value *total_stepped,int *change_element)
+	struct FE_element *element,FE_value *xi,FE_value time,FE_value *point,
+	FE_value *step_size,FE_value *total_stepped,int *change_element)
 /*******************************************************************************
-LAST MODIFIED : 30 June 1999
+LAST MODIFIED : 3 December 2001
 
 DESCRIPTION :
 Update the xi coordinates using the <stream_vector_field> with adaptive step
@@ -728,8 +731,9 @@ If <reverse_track> is true, the reverse of vector field is tracked.
 	point[2]=0.0;
 	tolerance=1.0e-4;
 	return_code=Computed_field_evaluate_in_element(coordinate_field,element,xi,
-		(struct FE_element *)NULL,point,dxdxi)&&Computed_field_evaluate_in_element(stream_vector_field,
-			element,xi,(struct FE_element *)NULL,vector,(FE_value *)NULL);
+		time,(struct FE_element *)NULL,point,dxdxi)&&
+		Computed_field_evaluate_in_element(stream_vector_field,
+		element,xi,time,(struct FE_element *)NULL,vector,(FE_value *)NULL);
 	if (reverse_track)
 	{
 		vector[0] = -vector[0];
@@ -755,8 +759,9 @@ If <reverse_track> is true, the reverse of vector field is tracked.
 		xiA[1]=xi[1]+(*step_size)*deltaxi[1];
 		xiA[2]=xi[2]+(*step_size)*deltaxi[2];
 		return_code=Computed_field_evaluate_in_element(coordinate_field,element,xiA,
-			(struct FE_element *)NULL,point,dxdxi)&&Computed_field_evaluate_in_element(stream_vector_field,
-				element,xiA,(struct FE_element *)NULL,vector,(FE_value *)NULL);
+			time,(struct FE_element *)NULL,point,dxdxi)&&
+			Computed_field_evaluate_in_element(stream_vector_field,
+			element,xiA,time,(struct FE_element *)NULL,vector,(FE_value *)NULL);
 		if (reverse_track)
 		{
 			vector[0] = -vector[0];
@@ -781,8 +786,9 @@ If <reverse_track> is true, the reverse of vector field is tracked.
 		xiC[1]=xi[1]+(*step_size)*deltaxi[1]/2.0;
 		xiC[2]=xi[2]+(*step_size)*deltaxi[2]/2.0;
 		return_code=Computed_field_evaluate_in_element(coordinate_field,element,xiC,
-			(struct FE_element *)NULL,point,dxdxi)&&Computed_field_evaluate_in_element(stream_vector_field,
-				element,xiC,(struct FE_element *)NULL,vector,(FE_value *)NULL);
+			time,(struct FE_element *)NULL,point,dxdxi)&&
+			Computed_field_evaluate_in_element(stream_vector_field,
+			element,xiC,time,(struct FE_element *)NULL,vector,(FE_value *)NULL);
 		if (reverse_track)
 		{
 			vector[0] = -vector[0];
@@ -799,8 +805,9 @@ If <reverse_track> is true, the reverse of vector field is tracked.
 			xiD[1]=xi[1]+(*step_size)*(deltaxi[1]+deltaxiC[1])/4.0;
 			xiD[2]=xi[2]+(*step_size)*(deltaxi[2]+deltaxiC[2])/4.0;
 			return_code=Computed_field_evaluate_in_element(coordinate_field,element,
-				xiD,(struct FE_element *)NULL,point,dxdxi)&&Computed_field_evaluate_in_element(
-					stream_vector_field,element,xiD,(struct FE_element *)NULL,vector,(FE_value *)NULL);
+				xiD,time,(struct FE_element *)NULL,point,dxdxi)&&
+				Computed_field_evaluate_in_element(stream_vector_field,element,
+				xiD,time,(struct FE_element *)NULL,vector,(FE_value *)NULL);
 			if (reverse_track)
 			{
 				vector[0] = -vector[0];
@@ -818,8 +825,9 @@ If <reverse_track> is true, the reverse of vector field is tracked.
 			xiE[1]=xiD[1]+(*step_size)*deltaxiD[1]/2.0;
 			xiE[2]=xiD[2]+(*step_size)*deltaxiD[2]/2.0;
 			return_code=Computed_field_evaluate_in_element(coordinate_field,element,
-				xiE,(struct FE_element *)NULL,point,dxdxi)&&Computed_field_evaluate_in_element(
-					stream_vector_field,element,xiE,(struct FE_element *)NULL,vector,(FE_value *)NULL);
+				xiE,time,(struct FE_element *)NULL,point,dxdxi)&&
+				Computed_field_evaluate_in_element(stream_vector_field,element,
+				xiE,time,(struct FE_element *)NULL,vector,(FE_value *)NULL);
 			if (reverse_track)
 			{
 				vector[0] = -vector[0];
@@ -942,9 +950,9 @@ If <reverse_track> is true, the reverse of vector field is tracked.
 
 static int update_interactive_streampoint(FE_value *point_coordinates,
 	struct FE_element **element,struct Computed_field *coordinate_field,
-	FE_value *xi, FE_value *translate)
+	FE_value *xi, FE_value time, FE_value *translate)
 /*******************************************************************************
-LAST MODIFIED : 27 November 2000
+LAST MODIFIED : 3 December 2001
 
 DESCRIPTION :
 Updates the <GT_pointset> streampoint using the xi coordinates.  If the given
@@ -968,7 +976,7 @@ accurate if small), also ensuring that the element is updated.
 		if ( translate )
 		{
 			if (Computed_field_evaluate_in_element(coordinate_field,*element,xi,
-				(struct FE_element *)NULL,point,dxdxi))
+				time, (struct FE_element *)NULL,point,dxdxi))
 			{
 				if (!(calculate_delta_xi(translate,dxdxi,deltaxi)))
 				{
@@ -1009,7 +1017,7 @@ accurate if small), also ensuring that the element is updated.
 					}
 					if (change_element)
 					{
-						if (check_xi_limits(change_element,element,xi,coordinate_field))
+						if (check_xi_limits(change_element,element,xi,coordinate_field,time))
 						{
 							return_code=1;
 						}
@@ -1050,7 +1058,7 @@ accurate if small), also ensuring that the element is updated.
 		if ( return_code )
 		{
 			if (!Computed_field_evaluate_in_element(coordinate_field,*element,xi,
-				(struct FE_element *)NULL,point_coordinates,(FE_value *)NULL))
+				time, (struct FE_element *)NULL,point_coordinates,(FE_value *)NULL))
 			{
 				display_message(ERROR_MESSAGE,
 			"update_interactive_streampoint.  Error calculating coordinate field");
@@ -1273,9 +1281,9 @@ static int track_streamline_from_FE_element(struct FE_element **element,
 	float length,enum Streamline_data_type data_type,
 	struct Computed_field *data_field,int *number_of_points,
 	Triple **stream_points,Triple **stream_vectors,Triple **stream_normals,
-	GTDATA **stream_data)
+	GTDATA **stream_data, FE_value time)
 /*******************************************************************************
-LAST MODIFIED : 24 March 2000
+LAST MODIFIED : 3 December 2001
 
 DESCRIPTION :
 Tracks the stream following <stream_vector_field> starting in the <*element> at
@@ -1369,9 +1377,10 @@ following way:
 							 for calculation of curl. Calculate coordinates first, since
 							 may be required for evaluating the stream_vector_field. */
 						keep_tracking=Computed_field_evaluate_in_element(coordinate_field,
-							*element,xi,(struct FE_element *)NULL,coordinates,dx_dxi)&&
+							*element,xi,time,(struct FE_element *)NULL,coordinates,dx_dxi)&&
 							Computed_field_evaluate_in_element(stream_vector_field,
-								*element,xi,(struct FE_element *)NULL,stream_vector_values,dv_dxi);
+							*element,xi,time,(struct FE_element *)NULL,stream_vector_values,
+							dv_dxi);
 					}
 					else
 					{
@@ -1382,9 +1391,10 @@ following way:
 							 force a calculation of the coordinate field with derivatives,
 							 thus saving the coordinates from being recalculated */
 						keep_tracking=Computed_field_evaluate_in_element(
-							stream_vector_field,*element,xi,(struct FE_element *)NULL,stream_vector_values,
-							(FE_value *)NULL)&&Computed_field_evaluate_in_element(
-								coordinate_field,*element,xi,(struct FE_element *)NULL,coordinates,(FE_value *)NULL);
+							stream_vector_field,*element,xi,time,(struct FE_element *)NULL,
+							stream_vector_values,(FE_value *)NULL)&&
+							Computed_field_evaluate_in_element(coordinate_field,*element,
+							xi,time,(struct FE_element *)NULL,coordinates,(FE_value *)NULL);
 					}
 					/* extract stream vector from stream_vector_values */
 					if (reverse_track)
@@ -1641,7 +1651,8 @@ following way:
 							case STREAM_FIELD_SCALAR:
 							{
 								if (!Computed_field_evaluate_in_element(
-									data_field,*element,xi,(struct FE_element *)NULL,&data_value,(FE_value *)NULL))
+									data_field,*element,xi,time,(struct FE_element *)NULL,
+									&data_value,(FE_value *)NULL))
 								{
 									display_message(ERROR_MESSAGE,
 										"track_streamline_from_FE_element.  "
@@ -1691,7 +1702,7 @@ following way:
 						if (total_stepped<length)
 						{
 							keep_tracking=update_adaptive_imp_euler(coordinate_field,
-								stream_vector_field,reverse_track,*element,xi,coordinates,
+								stream_vector_field,reverse_track,*element,xi,time,coordinates,
 								&step_size,&total_stepped,&change_element);
 							if (keep_tracking&&change_element)
 							{
@@ -1706,7 +1717,7 @@ following way:
 								else
 								{
 									keep_tracking=check_xi_limits(change_element,element,xi,
-										coordinate_field);
+										coordinate_field,time);
 								}
 							}
 							previous_change_element=change_element;
@@ -2334,9 +2345,9 @@ struct GT_polyline *create_GT_polyline_streamline_FE_element(
 	struct Computed_field *coordinate_field,
 	struct Computed_field *stream_vector_field,int reverse_track,
 	float length,enum Streamline_data_type data_type,
-	struct Computed_field *data_field)
+	struct Computed_field *data_field, FE_value time)
 /*******************************************************************************
-LAST MODIFIED : 16 March 1999
+LAST MODIFIED : 3 December 2001
 
 DESCRIPTION :
 Creates a <GT_polyline> streamline from the <coordinate_field> following
@@ -2365,7 +2376,7 @@ stream vector is tracked, and the travel_scalar is made negative.
 		if (track_streamline_from_FE_element(&element,start_xi,
 			coordinate_field,stream_vector_field,reverse_track,length,
 			data_type,data_field,&number_of_stream_points,&stream_points,
-			&stream_vectors,&stream_normals,&stream_data))
+			&stream_vectors,&stream_normals,&stream_data,time))
 		{
 			if (0<number_of_stream_points)
 			{
@@ -2421,9 +2432,10 @@ struct GT_surface *create_GT_surface_streamribbon_FE_element(
 	struct Computed_field *coordinate_field,
 	struct Computed_field *stream_vector_field,int reverse_track,
 	float length,float width,enum Streamline_type type,
-	enum Streamline_data_type data_type,struct Computed_field *data_field)
+	enum Streamline_data_type data_type,struct Computed_field *data_field,
+	FE_value time)
 /*******************************************************************************
-LAST MODIFIED : 16 March 1999
+LAST MODIFIED : 3 December 2001
 
 DESCRIPTION :
 Creates a <GT_surface> streamline from the <coordinate_field> following
@@ -2457,7 +2469,7 @@ stream vector is tracked, and the travel_scalar is made negative.
 		if (track_streamline_from_FE_element(&element,start_xi,
 			coordinate_field,stream_vector_field,reverse_track,length,
 			data_type,data_field,&number_of_stream_points,&stream_points,
-			&stream_vectors,&stream_normals,&stream_data))
+			&stream_vectors,&stream_normals,&stream_data,time))
 		{
 			if (0<number_of_stream_points)
 			{
@@ -2790,9 +2802,10 @@ stream vector is tracked, and the travel_scalar is made negative.
 } /* create_GT_surface_streamribbon_FE_element */
 
 struct GT_pointset *create_interactive_streampoint(struct FE_element *element,
-	struct Computed_field *coordinate_field,float length,FE_value *xi)
+	struct Computed_field *coordinate_field,float length,FE_value *xi,
+	FE_value time)
 /*******************************************************************************
-LAST MODIFIED : 30 June 1999
+LAST MODIFIED : 3 December 2001
 
 DESCRIPTION :
 Creates a <GT_pointset> streampoint which can be manipulated with the mouse.
@@ -2814,7 +2827,7 @@ Creates a <GT_pointset> streampoint which can be manipulated with the mouse.
 		coordinates[1]=0.0;
 		coordinates[2]=0.0;
 		if (Computed_field_evaluate_in_element(coordinate_field,element,xi,
-			(struct FE_element *)NULL,coordinates,(FE_value *)NULL))
+			time,(struct FE_element *)NULL,coordinates,(FE_value *)NULL))
 		{
 			if (ALLOCATE(point,Triple,1))
 			{
@@ -2886,7 +2899,7 @@ Adds a new flow particle structure to the start of the Streampoint list
 
 			return_code = update_interactive_streampoint(
 				(FE_value *)((*pointlist) + index),
-				&element, coordinate_field, xi, (FE_value *)NULL );
+				&element, coordinate_field, xi, /*time*/0, (FE_value *)NULL );
 		}
 		else
 		{
@@ -2906,9 +2919,9 @@ Adds a new flow particle structure to the start of the Streampoint list
 
 int update_flow_particle_list(struct Streampoint *point,
 	struct Computed_field *coordinate_field,
-	struct Computed_field *stream_vector_field,FE_value step,float time)
+	struct Computed_field *stream_vector_field,FE_value step, FE_value time)
 /*******************************************************************************
-LAST MODIFIED : 17 March 1999
+LAST MODIFIED : 3 December 2001
 
 DESCRIPTION :
 Uses RungeKutta integration to update the position of the given streampoints
@@ -2994,7 +3007,7 @@ created with the given timestamp.
 			}
 			return_code=update_adaptive_imp_euler(coordinate_field,
 				stream_vector_field,/*reverse_track*/0,point->element,point->xi,
-				coordinates,&step_size,&total_stepped,&change_element);
+				time,coordinates,&step_size,&total_stepped,&change_element);
 			(*((point->pointlist)[point->index]))[0]=coordinates[0];
 			(*((point->pointlist)[point->index]))[1]=coordinates[1];
 			(*((point->pointlist)[point->index]))[2]=coordinates[2];
@@ -3008,7 +3021,7 @@ created with the given timestamp.
 				else
 				{
 					return_code=check_xi_limits(change_element,&(point->element),
-						point->xi,coordinate_field);
+						point->xi,coordinate_field,time);
 				}
 			}
 			previous_change_element=change_element;
@@ -3061,7 +3074,8 @@ Converts a 3-D element into an array of streamlines.
 					element_to_streamline_data->reverse_track,
 					element_to_streamline_data->length,
 					element_to_streamline_data->data_type,
-					element_to_streamline_data->data_field))
+					element_to_streamline_data->data_field,
+					element_to_streamline_data->time))
 				{
 					if (!(return_code=GT_OBJECT_ADD(GT_polyline)(
 						element_to_streamline_data->graphics_object,
@@ -3086,7 +3100,8 @@ Converts a 3-D element into an array of streamlines.
 					element_to_streamline_data->length,element_to_streamline_data->width,
 					element_to_streamline_data->type,
 					element_to_streamline_data->data_type,
-					element_to_streamline_data->data_field))
+					element_to_streamline_data->data_field,
+					element_to_streamline_data->time))
 				{
 					if (!(return_code=GT_OBJECT_ADD(GT_surface)(
 						element_to_streamline_data->graphics_object,
@@ -3170,7 +3185,8 @@ Converts a 3-D element into an array of streamlines.
 					node_to_streamline_data->reverse_track,
 					node_to_streamline_data->length,
 					node_to_streamline_data->data_type,
-					node_to_streamline_data->data_field))
+					node_to_streamline_data->data_field,
+					node_to_streamline_data->time))
 				{
 					if (!(return_code=GT_OBJECT_ADD(GT_polyline)(
 						node_to_streamline_data->graphics_object,
@@ -3195,7 +3211,8 @@ Converts a 3-D element into an array of streamlines.
 					node_to_streamline_data->length,node_to_streamline_data->width,
 					node_to_streamline_data->type,
 					node_to_streamline_data->data_type,
-					node_to_streamline_data->data_field))
+					node_to_streamline_data->data_field,
+					node_to_streamline_data->time))
 				{
 					if (!(return_code=GT_OBJECT_ADD(GT_surface)(
 						node_to_streamline_data->graphics_object,

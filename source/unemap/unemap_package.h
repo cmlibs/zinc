@@ -35,6 +35,7 @@ element,nodes, fields when they are no longer required.
 ==============================================================================*/
 {
 	struct MANAGER(FE_field) *fe_field_manager;
+	struct FE_time *fe_time;
 	struct MANAGER(GROUP(FE_element))	*element_group_manager;
 	struct MANAGER(FE_node) *node_manager;
 	struct MANAGER(FE_node) *data_manager;
@@ -80,7 +81,7 @@ element,nodes, fields when they are no longer required.
 PROTOTYPE_OBJECT_FUNCTIONS(Unemap_package);
 
 struct Unemap_package *CREATE(Unemap_package)(
-	struct MANAGER(FE_field) *fe_field_manager,
+	struct MANAGER(FE_field) *fe_field_manager, struct FE_time *fe_time,
 	struct MANAGER(GROUP(FE_element)) *element_group_manager,
 	struct MANAGER(FE_node) *node_manager,
 	struct MANAGER(FE_node) *data_manager,
@@ -415,6 +416,17 @@ struct MANAGER(FE_field) *get_unemap_package_FE_field_manager(
 	struct Unemap_package *package);
 /*******************************************************************************
 LAST MODIFIED : July 8 1999
+
+DESCRIPTION :
+gets a manager of the unemap package.
+==============================================================================*/
+#endif /* defined (UNEMAP_USE_3D)*/
+
+#if defined (UNEMAP_USE_3D)
+struct FE_time *get_unemap_package_FE_time(
+	struct Unemap_package *package);
+/*******************************************************************************
+LAST MODIFIED : 15 November 2001
 
 DESCRIPTION :
 gets a manager of the unemap package.

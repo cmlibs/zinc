@@ -981,26 +981,58 @@ focus for prolate and oblate spheroidal systems.
 } /* Coordinate_systems_match */
 
 int convert_Coordinate_system(
-	struct Coordinate_system *source_coordinate_system,float *source_coordinates,
+	struct Coordinate_system *source_coordinate_system,
+	int number_of_source_coordinates, float *source_coordinates,
 	struct Coordinate_system *destination_coordinate_system,
-	float *destination_coordinates,float *jacobian)
+	int number_of_destination_coordinates, float *destination_coordinates,
+	float *jacobian)
 /*******************************************************************************
-LAST MODIFIED : 24 November 1999
+LAST MODIFIED : 9 November 2001
 
 DESCRIPTION :
-Convert the <source_coordinates> into the <destination_coordinates> assuming
-that they are both 3-D.  Calculate the <jacobian> if not NULL.
+Convert the <source_coordinates> into the <destination_coordinates>.
+Calculate the <jacobian> if not NULL.
 ???DB.  Should the dimension be part of struct Coordinate_system ?
 ???DB.  Can we get rid of most of io_devices/conversion ?
 ==============================================================================*/
 {
-	float *jacobian_1,*jacobian_2,temp1[9],temp2[9],x,y,z;
+	float *destination_values,local_destination_values[3],local_source_values[3],
+		*jacobian_1,*jacobian_2,*source_values,temp1[9],temp2[9],x,y,z;
 	int return_code;
 
 	ENTER(convert_Coordinate_system);
-	if (source_coordinate_system&&source_coordinates&&
-		destination_coordinate_system&&destination_coordinates)
+	if (source_coordinate_system&&(number_of_source_coordinates>0)&&
+		source_coordinates&&destination_coordinate_system&&
+		(number_of_destination_coordinates>0)&&destination_coordinates)
 	{
+		/* Either point to the actual values if they are 3D or
+			copy and point if they are less */
+		if (number_of_source_coordinates >= 3)
+		{
+			source_values = source_coordinates;
+		}
+		else
+		{
+			local_source_values[0] = source_coordinates[0];
+			if (number_of_source_coordinates >=2)
+			{
+				local_source_values[1] = source_coordinates[1];
+			}
+			else
+			{
+				local_source_values[1] = 0;
+			}
+			local_source_values[2] = 0;
+			source_values = local_source_values;
+		}
+		if (number_of_destination_coordinates >= 3)
+		{
+			destination_values = destination_coordinates;
+		}
+		else
+		{
+			destination_values = local_destination_values;
+		}
 		/* for the two stage conversion */
 		if (jacobian)
 		{
@@ -1021,24 +1053,28 @@ that they are both 3-D.  Calculate the <jacobian> if not NULL.
 				{
 					case CYLINDRICAL_POLAR:
 					{
-						return_code=cartesian_to_cylindrical_polar(source_coordinates[0],
-							source_coordinates[1],source_coordinates[2],
-							&destination_coordinates[0],&destination_coordinates[1],
-							&destination_coordinates[2],jacobian);
+						return_code=cartesian_to_cylindrical_polar(source_values[0],
+							source_values[1],source_values[2],
+							&destination_values[0],&destination_values[1],
+							&destination_values[2],jacobian);
 					} break;
 					case  PROLATE_SPHEROIDAL:
 					{
-						return_code=cartesian_to_prolate_spheroidal(source_coordinates[0],
-							source_coordinates[1],source_coordinates[2],
+						return_code=cartesian_to_prolate_spheroidal(source_values[0],
+							source_values[1],source_values[2],
 							destination_coordinate_system->parameters.focus,
-							&destination_coordinates[0],&destination_coordinates[1],
-							&destination_coordinates[2],jacobian);
+							&destination_values[0],&destination_values[1],
+							&destination_values[2],jacobian);
 					} break;
 					case RECTANGULAR_CARTESIAN:
 					{
 						/* just do a copy */
-						memcpy(destination_coordinates,source_coordinates,
-							3*sizeof(destination_coordinates));
+						memcpy(destination_values,source_values,
+							3*sizeof(destination_values));
+						if (return_code&&jacobian)
+						{
+							identity_matrix_float(3, jacobian);
+						}
 						return_code=1;
 					} break;
 					default:
@@ -1057,22 +1093,22 @@ that they are both 3-D.  Calculate the <jacobian> if not NULL.
 				{
 					case RECTANGULAR_CARTESIAN:
 					{
-						return_code=cylindrical_polar_to_cartesian(source_coordinates[0],
-							source_coordinates[1],source_coordinates[2],
-							&destination_coordinates[0],&destination_coordinates[1],
-							&destination_coordinates[2],jacobian);
+						return_code=cylindrical_polar_to_cartesian(source_values[0],
+							source_values[1],source_values[2],
+							&destination_values[0],&destination_values[1],
+							&destination_values[2],jacobian);
 					} break;
 					case PROLATE_SPHEROIDAL:
 					{
 						/* two stage conversion */
-						return_code=cylindrical_polar_to_cartesian(source_coordinates[0],
-							source_coordinates[1],source_coordinates[2],&x,&y,&z,jacobian_1);
+						return_code=cylindrical_polar_to_cartesian(source_values[0],
+							source_values[1],source_values[2],&x,&y,&z,jacobian_1);
 						if (return_code)
 						{
 							return_code=cartesian_to_prolate_spheroidal(x,y,z,
 								destination_coordinate_system->parameters.focus,
-								&destination_coordinates[0],&destination_coordinates[1],
-								&destination_coordinates[2],jacobian_2);
+								&destination_values[0],&destination_values[1],
+								&destination_values[2],jacobian_2);
 							/* if the jacobians were defined calculate the overall one */
 							if (return_code&&jacobian_1&&jacobian_2)
 							{
@@ -1098,22 +1134,22 @@ that they are both 3-D.  Calculate the <jacobian> if not NULL.
 				{
 					case RECTANGULAR_CARTESIAN:
 					{
-						return_code=spherical_polar_to_cartesian(source_coordinates[0],
-							source_coordinates[1],source_coordinates[2],
-							&destination_coordinates[0],&destination_coordinates[1],
-							&destination_coordinates[2],jacobian);
+						return_code=spherical_polar_to_cartesian(source_values[0],
+							source_values[1],source_values[2],
+							&destination_values[0],&destination_values[1],
+							&destination_values[2],jacobian);
 					} break;
 					case PROLATE_SPHEROIDAL:
 					{
 						/* two stage conversion */
-						return_code=spherical_polar_to_cartesian(source_coordinates[0],
-							source_coordinates[1],source_coordinates[2],&x,&y,&z,jacobian_1);
+						return_code=spherical_polar_to_cartesian(source_values[0],
+							source_values[1],source_values[2],&x,&y,&z,jacobian_1);
 						if (return_code)
 						{
 							return_code=cartesian_to_prolate_spheroidal(x,y,z,
 								destination_coordinate_system->parameters.focus,
-								&destination_coordinates[0],&destination_coordinates[1],
-								&destination_coordinates[2],jacobian_2);
+								&destination_values[0],&destination_values[1],
+								&destination_values[2],jacobian_2);
 							/* if the jacobians were defined calculate the overall one */
 							if (return_code&&jacobian_1&&jacobian_2)
 							{
@@ -1126,13 +1162,13 @@ that they are both 3-D.  Calculate the <jacobian> if not NULL.
 					case CYLINDRICAL_POLAR:
 					{
 						/* two stage conversion */
-						return_code=spherical_polar_to_cartesian(source_coordinates[0],
-							source_coordinates[1],source_coordinates[2],&x,&y,&z,jacobian_1);
+						return_code=spherical_polar_to_cartesian(source_values[0],
+							source_values[1],source_values[2],&x,&y,&z,jacobian_1);
 						if (return_code)
 						{
 							return_code=cartesian_to_cylindrical_polar(x,y,z,
-								&destination_coordinates[0],&destination_coordinates[1],
-								&destination_coordinates[2],jacobian_2);
+								&destination_values[0],&destination_values[1],
+								&destination_values[2],jacobian_2);
 							/* if the jacobians were defined calculate the overall one */
 							if (return_code&&jacobian_1&&jacobian_2)
 							{
@@ -1158,23 +1194,23 @@ that they are both 3-D.  Calculate the <jacobian> if not NULL.
 				{
 					case RECTANGULAR_CARTESIAN:
 					{
-						return_code=prolate_spheroidal_to_cartesian(source_coordinates[0],
-							source_coordinates[1],source_coordinates[2],
+						return_code=prolate_spheroidal_to_cartesian(source_values[0],
+							source_values[1],source_values[2],
 							source_coordinate_system->parameters.focus,
-							&destination_coordinates[0],&destination_coordinates[1],
-							&destination_coordinates[2],jacobian);
+							&destination_values[0],&destination_values[1],
+							&destination_values[2],jacobian);
 					} break;
 					case CYLINDRICAL_POLAR:
 					{
 						/* two stage conversion */
-						return_code=prolate_spheroidal_to_cartesian(source_coordinates[0],
-							source_coordinates[1],source_coordinates[2],
+						return_code=prolate_spheroidal_to_cartesian(source_values[0],
+							source_values[1],source_values[2],
 							source_coordinate_system->parameters.focus,&x,&y,&z,jacobian_1);
 						if (return_code)
 						{
 							return_code=cartesian_to_cylindrical_polar(x,y,z,
-								&destination_coordinates[0],&destination_coordinates[1],
-								&destination_coordinates[2],jacobian_2);
+								&destination_values[0],&destination_values[1],
+								&destination_values[2],jacobian_2);
 							/* if the jacobians were defined calculate the overall one */
 							if (return_code&&jacobian_1&&jacobian_2)
 							{
@@ -1212,6 +1248,14 @@ that they are both 3-D.  Calculate the <jacobian> if not NULL.
 					"convert_Coordinate_system. Invalid source coordinate system type");
 				return_code=0;
 			} break;
+		}
+		if (number_of_destination_coordinates < 3)
+		{
+			destination_coordinates[0] = local_destination_values[0];
+			if (number_of_destination_coordinates >=2)
+			{
+				destination_coordinates[1] = local_destination_values[1];
+			}
 		}
 	}
 	else

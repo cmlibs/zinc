@@ -78,7 +78,7 @@ Calculates the coordinates and length from the first node.
 		{
 			component.number = i;
 			if (!get_FE_nodal_FE_value_value(node, &component, /*version*/0,
-				FE_NODAL_VALUE, coordinates + i))
+				FE_NODAL_VALUE, /*time*/0, coordinates + i))
 			{
 				display_message(ERROR_MESSAGE,
 					"FE_node_accumulate_length.  Field component not defined at node");
@@ -238,9 +238,8 @@ and <nodal_value_types> for each component, and only 1 version.
 ???RC Function could be used in other modules; move to finite_element.c?
 ==============================================================================*/
 {
-	enum FE_nodal_value_type **components_nodal_value_types;
-	int *components_number_of_derivatives, *components_number_of_versions, n,
-		number_of_components, return_code;
+	int j, n, number_of_components, return_code;
+	struct FE_node_field_creator *node_field_creator;
 
 	ENTER(define_FE_field_at_node_simple);
 	if (node && field &&
@@ -248,22 +247,18 @@ and <nodal_value_types> for each component, and only 1 version.
 		(0 <= number_of_derivatives) && nodal_value_types)
 	{
 		return_code = 1;
-		ALLOCATE(components_nodal_value_types, enum FE_nodal_value_type *,
-			number_of_components);
-		ALLOCATE(components_number_of_derivatives, int, number_of_components);
-		ALLOCATE(components_number_of_versions, int, number_of_components);
-		if (components_nodal_value_types && components_number_of_derivatives &&
-			components_number_of_versions)
+		if(node_field_creator = CREATE(FE_node_field_creator)(number_of_components))
 		{
 			for (n = 0; n < number_of_components; n++)
 			{
-				components_nodal_value_types[n] = nodal_value_types;
-				components_number_of_derivatives[n] = number_of_derivatives;
-				components_number_of_versions[n] = 1;
+				for (j = 0 ; j < number_of_derivatives ; j++)
+				{
+					FE_node_field_creator_define_derivative(node_field_creator, 
+						/*component_number*/n, nodal_value_types[j + 1]);
+				}
 			}
-			if (!define_FE_field_at_node(node, field,
-				components_number_of_derivatives, components_number_of_versions,
-				components_nodal_value_types))
+			if (!define_FE_field_at_node(node, field, (struct FE_time_version *)NULL,
+				node_field_creator))
 			{
 				display_message(ERROR_MESSAGE, "define_FE_field_at_node_simple.  "
 					"Could not define field at node");
@@ -272,13 +267,10 @@ and <nodal_value_types> for each component, and only 1 version.
 		}
 		else
 		{
-			display_message(ERROR_MESSAGE, "define_FE_field_at_node_simple.  "
-				"Could not allocate component information");
+			display_message(ERROR_MESSAGE,
+				"define_FE_field_at_node_simple.  ");
 			return_code = 0;
 		}
-		DEALLOCATE(components_nodal_value_types);
-		DEALLOCATE(components_number_of_derivatives);
-		DEALLOCATE(components_number_of_versions);
 	}
 	else
 	{

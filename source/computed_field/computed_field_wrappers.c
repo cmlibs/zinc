@@ -10,6 +10,7 @@ wrapper rectangular Cartesian field out of a prolate coordinate field, making
 fibre_axes out of a fibre field.
 ==============================================================================*/
 #include "computed_field/computed_field.h"
+#include "computed_field/computed_field_coordinate.h"
 #include "computed_field/computed_field_fibres.h"
 #include "computed_field/computed_field_wrappers.h"
 #include "general/debug.h"
@@ -30,6 +31,7 @@ Must call Computed_field_end_wrap to clean up the returned field after use.
 ==============================================================================*/
 {
 	struct Computed_field *wrapper_field;
+	struct Coordinate_system rc_coordinate_system;
 
 	ENTER(Computed_field_begin_wrap_coordinate_field);
 	if (coordinate_field&&(3>=
@@ -43,9 +45,12 @@ Must call Computed_field_end_wrap to clean up the returned field after use.
 		else
 		{
 			/* make RC wrapper for the coordinate_field */
+			rc_coordinate_system.type = RECTANGULAR_CARTESIAN;
 			if ((wrapper_field=CREATE(Computed_field)("rc_wrapper"))&&
-				Computed_field_set_type_rc_coordinate(wrapper_field,
-					coordinate_field))
+				Computed_field_set_coordinate_system(wrapper_field,
+				&rc_coordinate_system)&&
+				Computed_field_set_type_coordinate_transformation(
+				wrapper_field,coordinate_field))
 			{
 				ACCESS(Computed_field)(wrapper_field);
 			}
@@ -124,7 +129,7 @@ Must call Computed_field_end_wrap to clean up the returned field after use.
 		{
 			/* make RC_VECTOR wrapper for the orientation_scale_field */
 			if ((wrapper_field=CREATE(Computed_field)("rc_wrapper"))&&
-				Computed_field_set_type_rc_vector(wrapper_field,
+				Computed_field_set_type_vector_coordinate_transformation(wrapper_field,
 					orientation_scale_field,coordinate_field))
 			{
 				ACCESS(Computed_field)(wrapper_field);

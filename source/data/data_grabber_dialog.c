@@ -59,31 +59,17 @@ Tells CMGUI about the current values. Returns a pointer to the material.
 	{
 		"angle"
 	};
-	enum FE_nodal_value_type *components_nodal_value_types[3]=
-	{
-		{
-			FE_NODAL_VALUE
-		},
-		{
-			FE_NODAL_VALUE
-		},
-		{
-			FE_NODAL_VALUE
-		}
-	};
-	int components_number_of_derivatives[3]={0,0,0},
-		components_number_of_versions[3]={1,1,1};
 	DATA_GRABBER_PRECISION fibre_angle,xy_proj;
 	FE_value temp_values[9];
 	int node_number, temp_index;
 	struct DG_data *current_data;
 	struct FE_field *coordinate_field, *normal_field, *tangent_field;
 	struct FE_node *node,*template_node;
+	struct FE_node_field_creator *node_field_creator;
 	struct MANAGER(FE_node) *manager;
 	struct Coordinate_system rect_cart_coords;
 
 	rect_cart_coords.type =  RECTANGULAR_CARTESIAN;
-
 	ENTER(dg_dialog_update);
 	if (data_grabber_dialog->current_mode)
 	{
@@ -185,17 +171,19 @@ Tells CMGUI about the current values. Returns a pointer to the material.
 
 		if (coordinate_field=get_FE_field_manager_matched_field(
 			data_grabber_dialog->fe_field_manager,COORDINATES_3D_FIELD_NAME,
-			GENERAL_FE_FIELD,/*indexer_field*/(struct FE_field *)NULL,
+			GENERAL_FE_FIELD,data_grabber_dialog->fe_time,
+			/*indexer_field*/(struct FE_field *)NULL,
 			/*number_of_indexed_values*/0,CM_COORDINATE_FIELD,
 			&rect_cart_coords,FE_VALUE_VALUE,
 			/*number_of_components*/3,component_names,
 			/*number_of_times*/0,/*time_value_type*/UNKNOWN_VALUE,
 			(struct FE_field_external_information *)NULL))
 		{
-			if ((template_node=CREATE(FE_node)(0,(struct FE_node *)NULL))&&
-				define_FE_field_at_node(template_node,
-				coordinate_field,components_number_of_derivatives,
-				components_number_of_versions,components_nodal_value_types))
+			if ((node_field_creator = CREATE(FE_node_field_creator)(
+				/*number_of_components*/3))&&
+			   (template_node=CREATE(FE_node)(0,(struct FE_node *)NULL))&&
+				define_FE_field_at_node(template_node,coordinate_field,
+				(struct FE_time_version *)NULL,node_field_creator))
 			{
 				if (data_grabber_dialog->current_mode&DATA_GRABBER_TANGENT)
 				{
@@ -205,7 +193,8 @@ Tells CMGUI about the current values. Returns a pointer to the material.
 						{
 							if (tangent_field=get_FE_field_manager_matched_field(
 								data_grabber_dialog->fe_field_manager,"tangent",
-								GENERAL_FE_FIELD,/*indexer_field*/(struct FE_field *)NULL,
+								GENERAL_FE_FIELD,data_grabber_dialog->fe_time,
+								/*indexer_field*/(struct FE_field *)NULL,
 								/*number_of_indexed_values*/0,CM_GENERAL_FIELD,
 								&rect_cart_coords,FE_VALUE_VALUE,
 								/*number_of_components*/3,component_names,
@@ -213,8 +202,7 @@ Tells CMGUI about the current values. Returns a pointer to the material.
 								(struct FE_field_external_information *)NULL))
 							{
 								if (define_FE_field_at_node(template_node,tangent_field,
-									components_number_of_derivatives,
-									components_number_of_versions,components_nodal_value_types))
+									(struct FE_time_version *)NULL,node_field_creator))
 								{
 									temp_values[temp_index++] = current_data->tangent.data[0];
 									temp_values[temp_index++] = current_data->tangent.data[1];
@@ -237,7 +225,8 @@ Tells CMGUI about the current values. Returns a pointer to the material.
 							/* fibre angle calculated above */
 							if (tangent_field=get_FE_field_manager_matched_field(
 								data_grabber_dialog->fe_field_manager,"fibre angle",
-								GENERAL_FE_FIELD,/*indexer_field*/(struct FE_field *)NULL,
+								GENERAL_FE_FIELD,data_grabber_dialog->fe_time,
+								/*indexer_field*/(struct FE_field *)NULL,
 								/*number_of_indexed_values*/0,CM_ANATOMICAL_FIELD,
 								&rect_cart_coords,FE_VALUE_VALUE,
 								/*number_of_components*/1,fibre_component_name,
@@ -245,8 +234,7 @@ Tells CMGUI about the current values. Returns a pointer to the material.
 								(struct FE_field_external_information *)NULL))
 							{
 								if (define_FE_field_at_node(template_node,tangent_field,
-									components_number_of_derivatives,
-									components_number_of_versions,components_nodal_value_types))
+									(struct FE_time_version *)NULL,node_field_creator))
 								{
 									/* find the magnitude of the projection on the xy plane */
 									xy_proj=sqrt(current_data->tangent.data[0]*
@@ -280,7 +268,8 @@ Tells CMGUI about the current values. Returns a pointer to the material.
 				{
 					if (normal_field=get_FE_field_manager_matched_field(
 						data_grabber_dialog->fe_field_manager,"normal",
-						GENERAL_FE_FIELD,/*indexer_field*/(struct FE_field *)NULL,
+						GENERAL_FE_FIELD,data_grabber_dialog->fe_time,
+						/*indexer_field*/(struct FE_field *)NULL,
 						/*number_of_indexed_values*/0,CM_GENERAL_FIELD,
 						&rect_cart_coords,FE_VALUE_VALUE,
 						/*number_of_components*/3,component_names,
@@ -288,8 +277,7 @@ Tells CMGUI about the current values. Returns a pointer to the material.
 						(struct FE_field_external_information *)NULL))
 					{
 						if (define_FE_field_at_node(template_node,normal_field,
-							components_number_of_derivatives,
-							components_number_of_versions,components_nodal_value_types))
+							(struct FE_time_version *)NULL,node_field_creator))
 						{
 							temp_values[temp_index++] = current_data->normal.data[0];
 							temp_values[temp_index++] = current_data->normal.data[1];
@@ -357,6 +345,7 @@ Tells CMGUI about the current values. Returns a pointer to the material.
 					display_message(ERROR_MESSAGE,
 						"dg_dialog_update.  Could not create FE_node");
 				}
+				DESTROY(FE_node_field_creator)(&(node_field_creator));
 				DESTROY(FE_node)(&template_node);
 			}
 			else
@@ -743,7 +732,7 @@ Callback for the data_grabber_dialog dialog - tidies up all details - mem etc
 static Widget create_data_grabber_dialog(Widget *data_grabber_dialog_widget,
 	Widget parent,struct Execute_command *execute_command,
 	struct User_interface *user_interface,
-	struct MANAGER(FE_field) *fe_field_manager,
+	struct MANAGER(FE_field) *fe_field_manager, struct FE_time *fe_time,
 	struct MANAGER(FE_node) *node_manager,
 	struct MANAGER(FE_node) *data_manager, 
 	struct MANAGER(GROUP(FE_node)) *node_group_manager,
@@ -819,6 +808,7 @@ points.
 				data_grabber_dialog->tangent_mode=0;
 				data_grabber_dialog->type_mode=0;
 				data_grabber_dialog->fe_field_manager = fe_field_manager;
+				data_grabber_dialog->fe_time = fe_time;
 				data_grabber_dialog->node_manager = node_manager;
 				data_grabber_dialog->data_manager = data_manager;
 				data_grabber_dialog->node_group_manager = node_group_manager;
@@ -973,7 +963,7 @@ Global Functions
 int bring_up_data_grabber_dialog(Widget *data_grabber_dialog_address,
 	Widget parent,struct Execute_command *execute_command,
 	struct User_interface *user_interface,
-	struct MANAGER(FE_field) *fe_field_manager,
+	struct MANAGER(FE_field) *fe_field_manager, struct FE_time *fe_time,
 	struct MANAGER(FE_node) *node_manager,
 	struct MANAGER(FE_node) *data_manager, 
 	struct MANAGER(GROUP(FE_node)) *node_group_manager,
@@ -999,8 +989,8 @@ else create a new one.
 		else
 		{
 			if (create_data_grabber_dialog(data_grabber_dialog_address,parent,
-				execute_command,user_interface, fe_field_manager, node_manager,
-				data_manager, node_group_manager, data_group_manager))
+				execute_command,user_interface, fe_field_manager, fe_time,
+				node_manager, data_manager, node_group_manager, data_group_manager))
 			{
 				return_code=1;
 			}

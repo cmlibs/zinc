@@ -75,7 +75,7 @@ Global functions
 DECLARE_OBJECT_FUNCTIONS(Unemap_package)
 
 struct Unemap_package *CREATE(Unemap_package)(
-	struct MANAGER(FE_field) *fe_field_manager,
+	struct MANAGER(FE_field) *fe_field_manager, struct FE_time *fe_time,
 	struct MANAGER(GROUP(FE_element)) *element_group_manager,
 	struct MANAGER(FE_node) *node_manager,
 	struct MANAGER(FE_node) *data_manager,
@@ -104,6 +104,7 @@ The fields are filed in with set_unemap_package_fields()
 		if (ALLOCATE(package,struct Unemap_package,1))
 		{
 			package->fe_field_manager=fe_field_manager;
+			package->fe_time = ACCESS(FE_time)(fe_time);
 			package->element_group_manager=element_group_manager;
 			package->node_manager=node_manager;
 			package->data_manager=data_manager;
@@ -179,6 +180,7 @@ to NULL.
 #endif /* defined(NEW_CODE) */
 	if ((package_address)&&(package= *package_address))
 	{		
+		DEACCESS(FE_time)(&(package->fe_time));
 		DEACCESS(FE_field)(&(package->device_name_field));
 		DEACCESS(FE_field)(&(package->device_type_field));
 		DEACCESS(FE_field)(&(package->channel_number_field));
@@ -1299,6 +1301,33 @@ gets a manager of the unemap package.
 	LEAVE;
 	return(fe_field_manager);
 }/* get_unemap_package_FE_field_manager */
+#endif /* defined (UNEMAP_USE_3D)*/
+
+#if defined (UNEMAP_USE_3D)
+struct FE_time *get_unemap_package_FE_time(struct Unemap_package *package)
+/*******************************************************************************
+LAST MODIFIED : 15 November 2001
+
+DESCRIPTION :
+gets a manager of the unemap package.
+==============================================================================*/
+{
+	struct FE_time *fe_time;
+
+	ENTER(get_unemap_package_FE_time);
+	if(package)
+	{
+		fe_time=package->fe_time;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"get_unemap_package_FE_time."
+			" invalid arguments");
+		fe_time = (struct FE_time *)NULL;
+	}
+	LEAVE;
+	return(fe_time);
+}/* get_unemap_package_FE_time */
 #endif /* defined (UNEMAP_USE_3D)*/
 
 #if defined (UNEMAP_USE_3D)

@@ -1308,12 +1308,10 @@ Frees the memory for the texture and sets <*texture_address> to NULL.
 				{
 					glDeleteLists(texture->display_list,1);
 				}
-#if defined (GL_EXT_texture_object)
 				if (texture->texture_id)
 				{
-					glDeleteTexturesEXT(1, &(texture->texture_id));
+					glDeleteTextures(1, &(texture->texture_id));
 				}
-#endif /* defined (GL_EXT_texture_object) */
 #endif /* defined (OPENGL_API) */
 				DEALLOCATE(texture->name);
 				DEALLOCATE(texture->image_file_name);
@@ -2111,15 +2109,15 @@ crop is performed as the image is put into the texture.
 					memcpy((void *)destination,(void *)source,copy_row_width_bytes);
 					destination += destination_row_width_bytes;
 					source += source_row_width_bytes;
-					/* fill the space on the right with white pixels */
-					memset((void *)destination_white_space,0xff,
+					/* fill the space on the right with black pixels */
+					memset((void *)destination_white_space,0x00,
 						destination_row_width_bytes-copy_row_width_bytes);
 					destination_white_space += destination_row_width_bytes;
 				}
-				/* fill the space on the top with white pixels */
+				/* fill the space on the top with black pixels */
 				for (j=final_height;j<texture_height;j++)
 				{
-					memset((void *)destination,0xff,destination_row_width_bytes);
+					memset((void *)destination,0x00,destination_row_width_bytes);
 					destination += destination_row_width_bytes;
 				}
 				if (ALLOCATE(temp_file_name,char,strlen(image_file_name)+1))
@@ -2467,7 +2465,7 @@ texture, and must be given a value.
 					X3d_movie_bind_to_image_buffer(movie, texture_image, 
 						image_width, image_height, texture_width - image_width);
 
-					memset((void *)texture_image,0xff,
+					memset((void *)texture_image,0x00,
 						4*destination_row_width_bytes*texture_height);
 					X3d_movie_render_to_image_buffer(movie, texture_image, 
 						image_width, image_height, texture_width - image_width,
@@ -3441,7 +3439,6 @@ execute_Texture should just call direct_render_Texture.
 #if defined (OPENGL_API)
 			if (texture->display_list||(texture->display_list=glGenLists(1)))
 			{
-#if defined (GL_EXT_texture_object)
 				if(/* 0 &&    SAB Digifarmers are occasionally getting 
 						            the wrong texture loaded up so can disable
 					               texture_objects here */
@@ -3529,7 +3526,7 @@ execute_Texture should just call direct_render_Texture.
 							} break;
 							default:
 							{
-								glBindTextureEXT(GL_TEXTURE_2D, texture->texture_id);
+								glBindTexture(GL_TEXTURE_2D, texture->texture_id);
 #if defined (EXT_subtexture)
 								Texture_get_type_and_format_from_storage_type(texture->storage,
 									&type, &format);
@@ -3551,12 +3548,12 @@ execute_Texture should just call direct_render_Texture.
 							correctly still, now I'm making sure the new texture_id is at
 							least recently new */
 						old_texture_id = texture->texture_id;
-						glGenTexturesEXT(1, &(texture->texture_id));
+						glGenTextures(1, &(texture->texture_id));
 						if (old_texture_id)
 						{
-							glDeleteTexturesEXT(1, &(old_texture_id));
+							glDeleteTextures(1, &(old_texture_id));
 						}
-						glBindTextureEXT(GL_TEXTURE_2D, texture->texture_id);
+						glBindTexture(GL_TEXTURE_2D, texture->texture_id);
 						if(texture->storage==TEXTURE_DMBUFFER || 
 							texture->storage==TEXTURE_PBUFFER)
 						{
@@ -3569,7 +3566,7 @@ execute_Texture should just call direct_render_Texture.
 							direct_render_Texture(texture);
 						}
 						glNewList(texture->display_list,GL_COMPILE);
-						glBindTextureEXT(GL_TEXTURE_2D, texture->texture_id);
+						glBindTexture(GL_TEXTURE_2D, texture->texture_id);
 						/* As we have bound the texture we only need the 
 							environment in the display list */
 						direct_render_Texture_environment(texture);
@@ -3583,11 +3580,11 @@ execute_Texture should just call direct_render_Texture.
 					direct_render_Texture(texture);
 					glEndList();
 				}
-#else /* defined (GL_EXT_texture_object) */
+#if defined (OLD_CODE) /* ! defined (GL_EXT_texture_object) */
 				glNewList(texture->display_list,GL_COMPILE);
 				direct_render_Texture(texture);
 				glEndList();
-#endif /* defined (GL_EXT_texture_object) */
+#endif /* defined (OLD_CODE) */
 				texture->display_list_current=1;
 				return_code=1;
 			}

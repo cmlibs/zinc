@@ -418,9 +418,10 @@ DESCRIPTION :
 Returns true if <gt_element_group> contains settings which depend on time.
 ==============================================================================*/
 
-int build_GT_element_group(struct GT_element_group *gt_element_group);
+int build_GT_element_group(struct GT_element_group *gt_element_group,
+	FE_value time);
 /*******************************************************************************
-LAST MODIFIED : 31 May 2001
+LAST MODIFIED : 22 November 2001
 
 DESCRIPTION :
 Builds any graphics objects for settings without them in <gt_element_group>.

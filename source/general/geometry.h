@@ -256,15 +256,17 @@ focus for prolate and oblate spheroidal systems.
 ==============================================================================*/
 
 int convert_Coordinate_system(
-  struct Coordinate_system *source_coordinate_system,float *source_coordinates,
+  struct Coordinate_system *source_coordinate_system,
+  int number_of_source_coordinates, float *source_coordinates,
   struct Coordinate_system *destination_coordinate_system,
-  float *destination_coordinates,float *jacobian);
+  int number_of_destinations_coordinates, float *destination_coordinates,
+  float *jacobian);
 /*******************************************************************************
-LAST MODIFIED : 29 January 1999
+LAST MODIFIED : 9 November 2001
 
 DESCRIPTION :
-Convert the <source_coordinates> into the <destination_coordinates> assuming
-that they are both 3-D.  Calculate the <jacobian> if not NULL.
+Convert the <source_coordinates> into the <destination_coordinates>.
+Calculate the <jacobian> if not NULL.
 ???DB.  Should the dimension be part of struct Coordinate_system ?
 ???DB.  Can we get rid of most of io_devices/conversion ?
 ==============================================================================*/

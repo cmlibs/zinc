@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : computed_field.h
 
-LAST MODIFIED : 12 October 2001
+LAST MODIFIED : 8 November 2001
 
 DESCRIPTION :
 A Computed_field is an abstraction of an FE_field. For each FE_field there is
@@ -58,8 +58,6 @@ DESCRIPTION :
 	COMPUTED_FIELD_CUBIC_TEXTURE_COORDINATES, /* cube projected from a centre */
 	COMPUTED_FIELD_EDIT_MASK,          /* edit particular components without affecting others */
 	COMPUTED_FIELD_EXTERNAL,           /* uses an external program to perform computation */
-	COMPUTED_FIELD_RC_COORDINATE,      /* converts from other coord systems */
-	COMPUTED_FIELD_RC_VECTOR,          /* converts non-RC vector at coordinate */
 	COMPUTED_FIELD_SUM_COMPONENTS,     /* weighted sum of field components */
 	COMPUTED_FIELD_NEW_TYPES           /* all the new types to which all will be changed */
 };
@@ -237,9 +235,10 @@ Returns true if <field> depends on any field in <field_list>.
 
 char *Computed_field_evaluate_as_string_in_element(
 	struct Computed_field *field,int component_number,
-	struct FE_element *element,FE_value *xi,struct FE_element *top_level_element);
+	struct FE_element *element,FE_value *xi,FE_value time,
+	struct FE_element *top_level_element);
 /*******************************************************************************
-LAST MODIFIED : 30 June 2000
+LAST MODIFIED : 30 November 2001
 
 DESCRIPTION :
 Returns a string representing the value of <field>.<component_number> at
@@ -259,8 +258,8 @@ It is up to the calling function to DEALLOCATE the returned string.
 ==============================================================================*/
 
 int Computed_field_evaluate_in_element(struct Computed_field *field,
-	struct FE_element *element,FE_value *xi,struct FE_element *top_level_element,
-	FE_value *values,FE_value *derivatives);
+	struct FE_element *element,FE_value *xi,FE_value time,
+	struct FE_element *top_level_element,FE_value *values,FE_value *derivatives);
 /*******************************************************************************
 LAST MODIFIED : 29 June 1999
 
@@ -289,7 +288,7 @@ number_of_components
 ==============================================================================*/
 
 char *Computed_field_evaluate_as_string_at_node(struct Computed_field *field,
-	int component_number, struct FE_node *node);
+	int component_number, struct FE_node *node, FE_value time);
 /*******************************************************************************
 LAST MODIFIED : 3 July 2000
 
@@ -307,9 +306,9 @@ It is up to the calling function to DEALLOCATE the returned string.
 ==============================================================================*/
 
 int Computed_field_evaluate_at_node(struct Computed_field *field,
-	struct FE_node *node,FE_value *values);
+	struct FE_node *node, FE_value time, FE_value *values);
 /*******************************************************************************
-LAST MODIFIED : 10 February 1999
+LAST MODIFIED : 21 November 2001
 
 DESCRIPTION :
 Returns the <values> of <field> at <node> if it is defined there. Can verify
@@ -378,9 +377,9 @@ Note that the values array will not be modified by this function.
 ==============================================================================*/
 
 int Computed_field_get_values_in_element(struct Computed_field *field,
-	struct FE_element *element,int *number_in_xi,FE_value **values);
+	struct FE_element *element,int *number_in_xi,FE_value **values,FE_value time);
 /*******************************************************************************
-LAST MODIFIED : 28 October 1999
+LAST MODIFIED : 3 December 2001
 
 DESCRIPTION :
 Companion function to Computed_field_set_values_in_element.
@@ -627,6 +626,14 @@ LAST MODIFIED : 23 May 2000
 DESCRIPTION :
 Conditional function returning true if <field> has up to 4 components and they
 are numerical - useful for selecting vector/coordinate fields.
+==============================================================================*/
+
+int Computed_field_has_multiple_times(struct Computed_field *field);
+/*******************************************************************************
+LAST MODIFIED : 22 November 2001
+
+DESCRIPTION :
+Conditional function returning true if <field> depends on time.
 ==============================================================================*/
 
 int Computed_field_is_orientation_scale_capable(struct Computed_field *field,

@@ -192,7 +192,8 @@ is a version two file as these basis files do not include information about
 the corresponding nodes.
 ==============================================================================*/
 {
-	char buff[sizeof(magic)];
+#define MAGICSIZE (13)
+	char buff[MAGICSIZE + 1];
 	char magic2[] = "em basis 2.0\n";
 	FILE *file;
 	int i,j,n_modes,n_nodes;
@@ -205,8 +206,9 @@ the corresponding nodes.
 	{
 		if (file=fopen(filename,"r"))
 		{
-			fread(buff,sizeof(buff) - 1,1,file);
-			if (0==strncmp(buff,magic,sizeof(magic)))
+			fread(buff,MAGICSIZE,1,file);
+			buff[MAGICSIZE] = 0;
+			if (0==strncmp(buff,magic,MAGICSIZE))
 			{
 				fread(buff,1,1,file); /* The string NULL termination */
 				fread(&n_nodes,sizeof(int),1,file);
@@ -228,8 +230,15 @@ the corresponding nodes.
 						"EM_read_basis.  not enough memory to allocate basis_object");
 				}
 			}
-			else if (strncmp(buff,magic2,sizeof(magic2) - 1) == 0)
+			/* SAB Don't compare the last character to support windows files */
+			else if (strncmp(buff,magic2,MAGICSIZE-1) == 0)
 			{
+				/* SAB Read one more character if the previous one was a \r to support windows files */
+				if (buff[MAGICSIZE-1] == '\r')
+				{
+					fread(buff,1,1,file);					
+				}
+
 				/* Comment/title line */
 				fscanf(file, "%*[^\n]%*[\n]");
 				 
@@ -239,9 +248,9 @@ the corresponding nodes.
 				{
 					for (i=0;i<n_modes;i++)
 					{
-						for (j=0;j<n_nodes;j++)
+						for (j=0;j<n_nodes * 3;j++)
 						{
-							fscanf(file, "%lf", ptr->u + i * n_nodes + j);
+							fscanf(file, "%lf", ptr->u + i * n_nodes * 3 + j);
 						}
 						ptr->w[i] = 1.0;
 						ptr->v[i * n_modes] = 1.0;

@@ -866,9 +866,9 @@ int create_iso_lines_from_FE_element(struct FE_element *element,
 	struct Computed_field *scalar_field,FE_value iso_value,
 	struct Computed_field *data_field,int number_of_segments_in_xi1_requested,
 	int number_of_segments_in_xi2_requested,struct FE_element *top_level_element,
-	struct GT_object *graphics_object,float time)
+	struct GT_object *graphics_object,FE_value time)
 /*******************************************************************************
-LAST MODIFIED : 30 July 2001
+LAST MODIFIED : 30 December 2001
 
 DESCRIPTION :
 Fills <graphics_object> (of type g_POLYLINE) with polyline contours of
@@ -943,11 +943,12 @@ Fills <graphics_object> (of type g_POLYLINE) with polyline contours of
 					xi[1]=(FE_value)j / distance2;
 					/* evaluate the fields */
 					if (Computed_field_evaluate_in_element(coordinate_field,element,xi,
-						top_level_element,coordinates,(FE_value *)NULL)&&
+						time,top_level_element,coordinates,(FE_value *)NULL)&&
 						Computed_field_evaluate_in_element(scalar_field,element,xi,
-							top_level_element,scalar,(FE_value *)NULL)&&
+						time,top_level_element,scalar,(FE_value *)NULL)&&
 						((!data_field)||Computed_field_evaluate_in_element(
-							data_field,element,xi,top_level_element,datum,(FE_value *)NULL)))
+						data_field,element,xi,time,top_level_element,datum,
+						(FE_value *)NULL)))
 					{
 						(*point)[0]=coordinates[0];
 						(*point)[1]=coordinates[1];
