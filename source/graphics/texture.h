@@ -24,19 +24,23 @@ Global types
 
 enum Texture_storage_type
 /*******************************************************************************
-LAST MODIFIED : 10 September 1998
+LAST MODIFIED : 29 June 2000
 
 DESCRIPTION :
 ==============================================================================*/
 {
 	TEXTURE_UNDEFINED_STORAGE,
+	TEXTURE_TYPE_BEFORE_FIRST,
 	TEXTURE_LUMINANCE,
 	TEXTURE_LUMINANCE_ALPHA,
 	TEXTURE_RGB,
 	TEXTURE_RGBA,
 	TEXTURE_ABGR,
+	/* The last two types are special and cannot be normally selected */
+	TEXTURE_TYPE_AFTER_LAST_NORMAL,
 	TEXTURE_DMBUFFER,
-	TEXTURE_PBUFFER
+	TEXTURE_PBUFFER,
+	TEXTURE_TYPE_AFTER_LAST
 }; /* enum Texture_storage_type */
 
 
@@ -124,6 +128,34 @@ PROTOTYPE_MANAGER_COPY_FUNCTIONS(Texture,name,char *);
 PROTOTYPE_MANAGER_FUNCTIONS(Texture);
 
 PROTOTYPE_MANAGER_IDENTIFIER_FUNCTIONS(Texture,name,char *);
+
+char *Texture_storage_type_string(enum Texture_storage_type texture_storage_type);
+/*******************************************************************************
+LAST MODIFIED : 29 June 2000
+
+DESCRIPTION :
+Returns a pointer to a static string describing the texture storage, eg.
+TEXTURE_STORAGE == "rgba". This string should match the command used
+to create that type of texture. The returned string must not be DEALLOCATEd!
+==============================================================================*/
+
+char **Texture_storage_type_get_valid_strings(int *number_of_valid_strings);
+/*******************************************************************************
+LAST MODIFIED : 29 June 2000
+
+DESCRIPTION :
+Returns and allocated array of pointers to all static strings for valid
+Texture_storage_types - obtained from function Texture_storage_type_string.
+Up to calling function to deallocate returned array - but not the strings in it!
+==============================================================================*/
+
+enum Texture_storage_type Texture_storage_type_from_string(char *texture_type_string);
+/*******************************************************************************
+LAST MODIFIED : 29 June 2000
+
+DESCRIPTION :
+Returns the <Texture_storage_type> described by <texture_type_string>.
+==============================================================================*/
 
 int Texture_get_number_of_components_from_storage_type(
 	enum Texture_storage_type storage);
@@ -262,6 +294,15 @@ LAST MODIFIED : 19 May 1998
 
 DESCRIPTION :
 Modifier function to set the texture image from a command.
+==============================================================================*/
+
+int set_Texture_storage(struct Parse_state *state,void *enum_storage_void_ptr,
+	void *dummy_user_data);
+/*******************************************************************************
+LAST MODIFIED : 29 June 2000
+
+DESCRIPTION :
+A modifier function to set the texture storage type.
 ==============================================================================*/
 
 int set_Texture_wrap_repeat(struct Parse_state *state,void *texture_void,

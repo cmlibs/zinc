@@ -1026,6 +1026,54 @@ Modifier function to set the texture image from a command.
 } /* set_Texture_image */
 #endif /* defined (OLD_CODE) */
 
+int set_Texture_storage(struct Parse_state *state,void *enum_storage_void_ptr,
+	void *dummy_user_data)
+/*******************************************************************************
+LAST MODIFIED : 29 June 2000
+
+DESCRIPTION :
+A modifier function to set the texture storage type.
+==============================================================================*/
+{
+	enum Texture_storage_type *storage, tmp_storage;
+	int return_code;
+
+	ENTER(set_Texture_storage);
+	if (state && state->current_token && (!dummy_user_data))
+	{
+		if (storage = (enum Texture_storage_type *)enum_storage_void_ptr)
+		{
+			if (TEXTURE_UNDEFINED_STORAGE != (tmp_storage = 
+				Texture_storage_type_from_string(state->current_token)))
+			{
+				*storage = tmp_storage;
+				return_code=shift_Parse_state(state,1);
+				return_code=1;
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE,
+					"set_Texture_storage.  Invalid storage type.");
+				return_code=0;				
+			}
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,
+				"set_Texture_storage.  Missing storage enum.");
+			return_code=0;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"set_Texture_storage.  Missing state");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* set_Texture_storage */
+
 int set_Texture_wrap_repeat(struct Parse_state *state,void *texture_void,
 	void *dummy_user_data)
 /*******************************************************************************
@@ -1863,6 +1911,162 @@ DECLARE_OBJECT_WITH_MANAGER_MANAGER_IDENTIFIER_FUNCTIONS( \
 	  /* Put the manager into scene */
 DECLARE_MANAGER_IDENTIFIER_FUNCTIONS(Texture,name,char *)
 #endif /* defined (OLD_CODE) */
+
+char *Texture_storage_type_string(enum Texture_storage_type texture_storage_type)
+/*******************************************************************************
+LAST MODIFIED : 29 June 2000
+
+DESCRIPTION :
+Returns a pointer to a static string describing the texture storage, eg.
+TEXTURE_STORAGE == "rgba". This string should match the command used
+to create that type of texture. The returned string must not be DEALLOCATEd!
+==============================================================================*/
+{
+	char *return_string;
+
+	ENTER(Texture_storage_type_string);
+	switch (texture_storage_type)
+	{
+		case TEXTURE_LUMINANCE:
+		{
+			return_string="i";
+		} break;
+		case TEXTURE_LUMINANCE_ALPHA:
+		{
+			return_string="ia";
+		} break;
+		case TEXTURE_RGB:
+		{
+			return_string="rgb";
+		} break;
+		case TEXTURE_RGBA:
+		{
+			return_string="rgba";
+		} break;
+		case TEXTURE_ABGR:
+		{
+			return_string="abgr";
+		} break;
+		case TEXTURE_DMBUFFER:
+		{
+			return_string="dmbuffer";
+		} break;
+		case TEXTURE_PBUFFER:
+		{
+			return_string="pbuffer";
+		} break;
+		default:
+		{
+			display_message(ERROR_MESSAGE,
+				"Texture_storage_type_string.  Unknown texture_type");
+			return_string=(char *)NULL;
+		} break;
+	}
+	LEAVE;
+
+	return (return_string);
+} /* Texture_storage_type_string */
+
+char **Texture_storage_type_get_valid_strings(int *number_of_valid_strings)
+/*******************************************************************************
+LAST MODIFIED : 22 March 1999
+
+DESCRIPTION :
+Returns and allocated array of pointers to all static strings for valid
+Texture_storage_types - obtained from function Texture_storage_type_string.
+Up to calling function to deallocate returned array - but not the strings in it!
+==============================================================================*/
+{
+	char **valid_strings;
+	enum Texture_storage_type texture_type;
+	int i;
+
+	ENTER(Texture_storage_type_get_valid_strings);
+	if (number_of_valid_strings)
+	{
+		*number_of_valid_strings=0;
+		texture_type=TEXTURE_TYPE_BEFORE_FIRST;
+		texture_type++;
+		while (texture_type<TEXTURE_TYPE_AFTER_LAST_NORMAL)
+		{
+			(*number_of_valid_strings)++;
+			texture_type++;
+		}
+		if (ALLOCATE(valid_strings,char *,*number_of_valid_strings))
+		{
+			texture_type=TEXTURE_TYPE_BEFORE_FIRST;
+			texture_type++;
+			i=0;
+			while (texture_type<TEXTURE_TYPE_AFTER_LAST_NORMAL)
+			{
+				valid_strings[i]=Texture_storage_type_string(texture_type);
+				i++;
+				texture_type++;
+			}
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,
+				"Texture_storage_type_get_valid_strings.  Not enough memory");
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Texture_storage_type_get_valid_strings.  Invalid argument");
+		valid_strings=(char **)NULL;
+	}
+	LEAVE;
+
+	return (valid_strings);
+} /* Texture_storage_type_get_valid_strings */
+
+enum Texture_storage_type Texture_storage_type_from_string(char *texture_type_string)
+/*******************************************************************************
+LAST MODIFIED : 22 March 1999
+
+DESCRIPTION :
+Returns the <Texture_storage_type> described by <texture_type_string>.
+==============================================================================*/
+{
+	enum Texture_storage_type texture_type;
+
+	ENTER(Texture_storage_type_from_string);
+	if (texture_type_string)
+	{
+		texture_type=TEXTURE_TYPE_BEFORE_FIRST;
+		texture_type++;
+		while ((texture_type<TEXTURE_TYPE_AFTER_LAST_NORMAL)&&
+			(!fuzzy_string_compare_same_length(texture_type_string,
+			Texture_storage_type_string(texture_type))))
+		{
+			texture_type++;
+		}
+		if (TEXTURE_TYPE_AFTER_LAST_NORMAL==texture_type)
+		{
+			texture_type++;
+			while ((texture_type<TEXTURE_TYPE_AFTER_LAST)&&
+				(!fuzzy_string_compare_same_length(texture_type_string,
+				Texture_storage_type_string(texture_type))))
+			{
+				texture_type++;
+			}
+			if (TEXTURE_TYPE_AFTER_LAST==texture_type)
+			{
+				texture_type=TEXTURE_UNDEFINED_STORAGE;
+			}
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Texture_storage_type_from_string.  Invalid argument");
+		texture_type=TEXTURE_UNDEFINED_STORAGE;
+	}
+	LEAVE;
+
+	return (texture_type);
+} /* Texture_storage_type_from_string */
 
 int Texture_get_combine_alpha(struct Texture *texture,float *alpha)
 /*******************************************************************************
@@ -3568,7 +3772,7 @@ execute_Texture should just call direct_render_Texture.
 {
 	int return_code;
 #if defined (OPENGL_API)
-	int old_texture_id;
+	unsigned int old_texture_id;
 #endif /* defined (OPENGL_API) */
 
 	ENTER(compile_Texture);
