@@ -86,6 +86,7 @@ Functions for executing cmiss commands.
 #include "image_processing/computed_field_local_mean_smooth.h"
 #include "image_processing/computed_field_local_thresholding.h"
 #include "image_processing/computed_field_median_filter.h"
+#include "image_processing/computed_field_morphology_thinning.h"
 #include "image_processing/computed_field_power_spectrum.h"
 #include "image_processing/computed_field_region_maximum.h"
 #include "image_processing/computed_field_second_order_hermite.h"
@@ -24473,6 +24474,10 @@ Initialise all the subcomponents of cmgui and create the Cmiss_command_data
 					command_data->computed_field_package,
 					command_data->root_region, command_data->graphics_buffer_package);
 				Computed_field_register_types_median_filter(
+					command_data->computed_field_package,
+					command_data->root_region, command_data->graphics_buffer_package);
+				
+				Computed_field_register_types_morphology_thinning(
 					command_data->computed_field_package,
 					command_data->root_region, command_data->graphics_buffer_package);
 
