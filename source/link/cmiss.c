@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : cmiss.c
 
-LAST MODIFIED : 3 September 2001
+LAST MODIFIED : 4 September 2001
 
 DESCRIPTION :
 See cmiss.h for interface details.
@@ -1878,7 +1878,7 @@ Something has changed globally about the objects this widget uses, so refresh.
 			}
 			send_node_struct->template_node=node;
 			send_node_struct->number_of_cm_fields=0;
-			for_each_FE_field_at_node(CMISS_connection_send_node_field,
+			for_each_FE_field_at_node(CMISS_connection_count_node_field,
 				(void *)&(send_node_struct->number_of_cm_fields),
 				send_node_struct->template_node);
 			if (0<send_node_struct->number_of_cm_fields)
