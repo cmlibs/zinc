@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : cmiss.c
 
-LAST MODIFIED : 23 April 2002
+LAST MODIFIED : 8 May 2002
 
 DESCRIPTION :
 Functions for executing cmiss commands.
@@ -11759,7 +11759,76 @@ Executes a GFX DESTROY GRAPHICS_OBJECT command.
 	return (return_code);
 } /* gfx_destroy_graphics_object */
 
-#if !defined (WINDOWS_DEV_FLAG)
+static int gfx_destroy_material(struct Parse_state *state,
+	void *dummy_to_be_modified, void *graphical_material_manager_void)
+/*******************************************************************************
+LAST MODIFIED : 8 May 2002
+
+DESCRIPTION :
+Executes a GFX DESTROY MATERIAL command.
+==============================================================================*/
+{
+	char *current_token;
+	struct Graphical_material *graphical_material;
+	int return_code;
+	struct MANAGER(Graphical_material) *graphical_material_manager;
+
+	ENTER(gfx_destroy_material);
+	USE_PARAMETER(dummy_to_be_modified);
+	if (state && (graphical_material_manager =
+		(struct MANAGER(Graphical_material) *)graphical_material_manager_void))
+	{
+		if (current_token = state->current_token)
+		{
+			if (strcmp(PARSER_HELP_STRING, current_token) &&
+				strcmp(PARSER_RECURSIVE_HELP_STRING, current_token))
+			{
+				if (graphical_material =
+					FIND_BY_IDENTIFIER_IN_MANAGER(Graphical_material, name)(
+						current_token, graphical_material_manager))
+				{
+					if (REMOVE_OBJECT_FROM_MANAGER(Graphical_material)(graphical_material,
+						graphical_material_manager))
+					{
+						return_code = 1;
+					}
+					else
+					{
+						display_message(ERROR_MESSAGE,
+							"Could not remove material %s from manager", current_token);
+						return_code = 0;
+					}
+				}
+				else
+				{
+					display_message(ERROR_MESSAGE,
+						"Unknown material: %s", current_token);
+					return_code = 0;
+				}
+			}
+			else
+			{
+				display_message(INFORMATION_MESSAGE, " MATERIAL_NAME");
+				return_code = 1;
+			}
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE, "Missing material name");
+			return_code = 0;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"gfx_destroy_material.  Invalid argument(s)");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* gfx_destroy_material */
+
 static int gfx_destroy_node_group(struct Parse_state *state,
 	void *dummy_to_be_modified,void *command_data_void)
 /*******************************************************************************
@@ -11842,7 +11911,6 @@ element groups are destroyed together.
 
 	return (return_code);
 } /* gfx_destroy_node_group */
-#endif /* !defined (WINDOWS_DEV_FLAG) */
 
 static int gfx_destroy_nodes(struct Parse_state *state,
 	void *use_data,void *command_data_void)
@@ -12016,6 +12084,74 @@ Executes a GFX DESTROY SCENE command.
 
 	return (return_code);
 } /* gfx_destroy_Scene */
+
+static int gfx_destroy_texture(struct Parse_state *state,
+	void *dummy_to_be_modified, void *texture_manager_void)
+/*******************************************************************************
+LAST MODIFIED : 8 May 2002
+
+DESCRIPTION :
+Executes a GFX DESTROY TEXTURE command.
+==============================================================================*/
+{
+	char *current_token;
+	struct Texture *texture;
+	int return_code;
+	struct MANAGER(Texture) *texture_manager;
+
+	ENTER(gfx_destroy_texture);
+	USE_PARAMETER(dummy_to_be_modified);
+	if (state && (texture_manager =
+		(struct MANAGER(Texture) *)texture_manager_void))
+	{
+		if (current_token = state->current_token)
+		{
+			if (strcmp(PARSER_HELP_STRING, current_token) &&
+				strcmp(PARSER_RECURSIVE_HELP_STRING, current_token))
+			{
+				if (texture = FIND_BY_IDENTIFIER_IN_MANAGER(Texture, name)(
+					current_token, texture_manager))
+				{
+					if (REMOVE_OBJECT_FROM_MANAGER(Texture)(texture, texture_manager))
+					{
+						return_code = 1;
+					}
+					else
+					{
+						display_message(ERROR_MESSAGE,
+							"Could not remove texture %s from manager", current_token);
+						return_code = 0;
+					}
+				}
+				else
+				{
+					display_message(ERROR_MESSAGE,
+						"Unknown texture: %s", current_token);
+					return_code = 0;
+				}
+			}
+			else
+			{
+				display_message(INFORMATION_MESSAGE, " TEXTURE_NAME");
+				return_code = 1;
+			}
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE, "Missing texture name");
+			return_code = 0;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"gfx_destroy_texture.  Invalid argument(s)");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* gfx_destroy_texture */
 
 static int gfx_destroy_vtextures(struct Parse_state *state,
 	void *dummy_to_be_modified,void *volume_texture_manager_void)
@@ -12213,6 +12349,9 @@ Executes a GFX DESTROY command.
 				/* lines */
 				Option_table_add_entry(option_table, "lines", (void *)CM_LINE,
 					command_data_void, gfx_destroy_elements);
+				/* material */
+				Option_table_add_entry(option_table, "material", NULL,
+					command_data->graphical_material_manager, gfx_destroy_material);
 				/* ngroup */
 				Option_table_add_entry(option_table, "ngroup", NULL,
 					command_data_void, gfx_destroy_node_group);
@@ -12225,6 +12364,9 @@ Executes a GFX DESTROY command.
 				/* spectrum */
 				Option_table_add_entry(option_table, "spectrum", NULL,
 					command_data->spectrum_manager, gfx_destroy_spectrum);
+				/* texture */
+				Option_table_add_entry(option_table, "texture", NULL,
+					command_data->texture_manager, gfx_destroy_texture);
 				/* vtextures */
 				Option_table_add_entry(option_table, "vtextures", NULL,
 					command_data->volume_texture_manager, gfx_destroy_vtextures);
