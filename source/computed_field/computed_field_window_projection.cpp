@@ -10,6 +10,7 @@ equivalent to the scene_viewer assigned to it.
 #include "computed_field/computed_field.h"
 #include "computed_field/computed_field_private.h"
 #include "general/debug.h"
+#include "general/matrix_vector.h"
 #include "graphics/graphics_window.h"
 #include "graphics/scene_viewer.h"
 #include "user_interface/message.h"
@@ -19,7 +20,10 @@ enum Computed_field_window_projection_type
 {
 	NDC_PROJECTION,
 	TEXTURE_PROJECTION,
-	VIEWPORT_PROJECTION
+	VIEWPORT_PROJECTION,
+	INVERSE_NDC_PROJECTION,
+	INVERSE_TEXTURE_PROJECTION,
+	INVERSE_VIEWPORT_PROJECTION
 };
 
 struct Computed_field_window_projection_package 
@@ -69,7 +73,7 @@ DESCRIPTION :
 ==============================================================================*/
 {
 	Dimension viewport_width, viewport_height;
-	double modelview_matrix[16], window_projection_matrix[16],
+	double lu_d, modelview_matrix[16], window_projection_matrix[16],
 		texture_projection_matrix[16], total_projection_matrix[16], 
 		viewport_matrix[16], viewport_left, viewport_top, 
 		viewport_pixels_per_unit_x, viewport_pixels_per_unit_y,
@@ -77,7 +81,7 @@ DESCRIPTION :
 		bk_texture_max_pixels_per_polygon;
 	float distortion_centre_x, distortion_centre_y, distortion_factor_k1,
 		texture_width, texture_height;
-	int bk_texture_undistort_on, i, j, k, return_code;
+	int bk_texture_undistort_on, i, j, k, lu_index[4], return_code;
 	struct Computed_field_window_projection_type_specific_data *data;
 	struct Scene_viewer *scene_viewer;
 	struct Texture *texture;
@@ -112,6 +116,32 @@ DESCRIPTION :
 				for (i=0;i<16;i++)
 				{
 					data->projection_matrix[i] = total_projection_matrix[i];
+				}
+			}
+			else if (data->projection_type == INVERSE_NDC_PROJECTION)
+			{
+				LU_decompose(/* dimension */4, total_projection_matrix,
+					lu_index, &lu_d);
+				for (i = 0 ; i < 4 ; i++)
+				{
+					for (j = 0 ; j < 4 ; j++)
+					{
+						data->projection_matrix[i * 4 + j] = 0.0;
+					}
+					data->projection_matrix[i * 4 + i] = 1.0;
+					LU_backsubstitute(/* dimension */4, total_projection_matrix,
+						lu_index, data->projection_matrix + i * 4);
+				}
+				/* transpose */
+				for (i = 0 ; i < 4 ; i++)
+				{
+					for (j = i + 1 ; j < 4 ; j++)
+					{
+						lu_d = data->projection_matrix[i * 4 + j];
+						data->projection_matrix[i * 4 + j] =
+							data->projection_matrix[j * 4 + i];
+						data->projection_matrix[j * 4 + i] = lu_d;
+					}
 				}
 			}
 			else
@@ -179,6 +209,32 @@ DESCRIPTION :
 					for (i=0;i<16;i++)
 					{
 						data->projection_matrix[i] = viewport_matrix[i];
+					}
+				}
+				else if (data->projection_type == INVERSE_VIEWPORT_PROJECTION)
+				{
+					LU_decompose(/* dimension */4, viewport_matrix,
+						lu_index, &lu_d);
+					for (i = 0 ; i < 4 ; i++)
+					{
+						for (j = 0 ; j < 4 ; j++)
+						{
+							data->projection_matrix[i * 4 + j] = 0.0;
+						}
+						data->projection_matrix[i * 4 + i] = 1.0;
+						LU_backsubstitute(/* dimension */4, viewport_matrix,
+							lu_index, data->projection_matrix + i * 4);
+					}
+					/* transpose */
+					for (i = 0 ; i < 4 ; i++)
+					{
+						for (j = i + 1 ; j < 4 ; j++)
+						{
+							lu_d = data->projection_matrix[i * 4 + j];
+							data->projection_matrix[i * 4 + j] =
+								data->projection_matrix[j * 4 + i];
+							data->projection_matrix[j * 4 + i] = lu_d;
+						}
 					}
 				}
 				else
@@ -266,9 +322,46 @@ DESCRIPTION :
 									}
 								}
 							}
-							for (i=0;i<16;i++)
+							if (data->projection_type)
 							{
-								data->projection_matrix[i] = texture_projection_matrix[i];
+								for (i=0;i<16;i++)
+								{
+									data->projection_matrix[i] = texture_projection_matrix[i];
+								}
+							}
+							else if (data->projection_type == INVERSE_VIEWPORT_PROJECTION)
+							{
+								LU_decompose(/* dimension */4, texture_projection_matrix,
+									lu_index, &lu_d);
+								for (i = 0 ; i < 4 ; i++)
+								{
+									for (j = 0 ; j < 4 ; j++)
+									{
+										data->projection_matrix[i * 4 + j] = 0.0;
+									}
+									data->projection_matrix[i * 4 + i] = 1.0;
+									LU_backsubstitute(/* dimension */4, 
+										texture_projection_matrix,
+										lu_index, data->projection_matrix + i * 4);
+								}
+								/* transpose */
+								for (i = 0 ; i < 4 ; i++)
+								{
+									for (j = i + 1 ; j < 4 ; j++)
+									{
+										lu_d = data->projection_matrix[i * 4 + j];
+										data->projection_matrix[i * 4 + j] =
+											data->projection_matrix[j * 4 + i];
+										data->projection_matrix[j * 4 + i] = lu_d;
+									}
+								}
+							}
+							else
+							{
+								display_message(ERROR_MESSAGE,
+									"Computed_field_window_projection_calculate_matrix.  "
+									"Unknown projection type.");
+								return_code = 0;
 							}
 						}
 					}
@@ -1074,7 +1167,10 @@ already) and allows its contents to be modified.
 	{
 	  "ndc_projection",
 	  "texture_projection",
-	  "viewport_projection"
+	  "viewport_projection",
+	  "inverse_ndc_projection",
+	  "inverse_texture_projection",
+	  "inverse_viewport_projection"	  
 	};
 
 	ENTER(define_Computed_field_type_window_projection);
@@ -1113,7 +1209,7 @@ already) and allows its contents to be modified.
 					if (!source_field)
 					{
 						display_message(ERROR_MESSAGE,
-							"At least one 3 component field must exist for a window_projeciton field.");
+							"At least one 3 component field must exist for a window_projection field.");
 					}
 					else
 					{
@@ -1174,6 +1270,18 @@ already) and allows its contents to be modified.
 				else if (projection_type_string == projection_type_strings[2])
 				{
 					projection_type = VIEWPORT_PROJECTION;
+				}
+				else if (projection_type_string == projection_type_strings[3])
+				{
+					projection_type = INVERSE_NDC_PROJECTION;
+				}
+				else if (projection_type_string == projection_type_strings[4])
+				{
+					projection_type = INVERSE_TEXTURE_PROJECTION;
+				}
+				else if (projection_type_string == projection_type_strings[5])
+				{
+					projection_type = INVERSE_VIEWPORT_PROJECTION;
 				}
 				else
 				{

@@ -215,8 +215,9 @@ Evaluate the fields cache at the node.
 	struct Computed_field_sample_texture_type_specific_data *data;
 
 	ENTER(Computed_field_sample_texture_evaluate_cache_at_node);
-	if (field && node && (data = 
-		(struct Computed_field_sample_texture_type_specific_data *)
+	if (field && Computed_field_has_at_least_2_components(field, NULL) 
+		&& node && 
+		(data = (struct Computed_field_sample_texture_type_specific_data *)
 		field->type_specific_data))
 	{
 		/* 1. Precalculate any source fields that this field depends on */
@@ -282,8 +283,9 @@ Evaluate the fields cache at the node.
 	struct Computed_field_sample_texture_type_specific_data *data;
 
 	ENTER(Computed_field_sample_texture_evaluate_cache_in_element);
-	if (field && element && xi && (data = 
-		(struct Computed_field_sample_texture_type_specific_data *)
+	if (field && Computed_field_has_at_least_2_components(field, NULL) && 
+		element && xi 
+		&& (data = (struct Computed_field_sample_texture_type_specific_data *)
 		field->type_specific_data))
 	{
 		/* 1. Precalculate any source fields that this field depends on */
@@ -644,7 +646,7 @@ already) and allows its contents to be modified.
 			maximum = 1.0;
 			if (!((texture_coordinate_field=
 				FIRST_OBJECT_IN_MANAGER_THAT(Computed_field)(
-				Computed_field_is_find_element_xi_capable,(void *)NULL,
+				Computed_field_has_at_least_2_components,(void *)NULL,
 				computed_field_sample_texture_package->computed_field_manager))))
 			{
 				if (strcmp(PARSER_HELP_STRING,state->current_token)&&
@@ -652,7 +654,7 @@ already) and allows its contents to be modified.
 				{
 					/* This is only a failure if we aren't asking for help */
 					display_message(ERROR_MESSAGE,
-						"At least one field capable of find_element_xi must exist for a window_projection field.");
+						"At least one field of 3 components must exist for a sample_texture field.");
 					return_code = 0;
 				}
 			}
@@ -673,7 +675,7 @@ already) and allows its contents to be modified.
 			/* coordinates */
 			set_source_field_data.computed_field_manager=
 				computed_field_sample_texture_package->computed_field_manager;
-			set_source_field_data.conditional_function=Computed_field_is_find_element_xi_capable;
+			set_source_field_data.conditional_function=Computed_field_has_at_least_2_components;
 			set_source_field_data.conditional_function_user_data=(void *)NULL;
 			Option_table_add_entry(option_table,"coordinates",&texture_coordinate_field,
 				&set_source_field_data,set_Computed_field_conditional);

@@ -8044,7 +8044,7 @@ int Computed_field_has_3_components(struct Computed_field *field,
 LAST MODIFIED : 8 May 2000
 
 DESCRIPTION :
-Iterator/conditional function returning true if <field> has exactly four
+Iterator/conditional function returning true if <field> has exactly three
 components - useful for selecting vector/coordinate fields.
 ==============================================================================*/
 {
