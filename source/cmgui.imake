@@ -253,10 +253,10 @@ GRAPHICS_LIB = -delay_load -lmoviefile -delay_load -ldmedia -lGL -lGLU
 #elif defined(LINUX) /* switch OperatingSystem */
 GRAPHICS_LIBRARY_SWITCH = -DOPENGL_API
 #if defined (DYNAMIC_GL_LINUX)
-GRAPHICS_LIB = -L/usr/lib -lGL -L/usr/X11R6/lib -lGLU 
+GRAPHICS_LIB = -L/usr/X11R6/lib -lGL -lGLU 
 #else /* defined (DYNAMIC_GL_LINUX) */
-/*GRAPHICS_LIB = -L/usr/local/lib -lGL -lGLU*/
-GRAPHICS_LIB = -L/home/blackett/lib -lGL -lGLU
+GRAPHICS_LIB = -L/usr/local/lib -lGL -lGLU
+/*GRAPHICS_LIB = -L/home/blackett/lib -lGL -lGLU*/
 /*GRAPHICS_LIB = -L/home/nickerso/cmiss/cmgui -lMesaGL -lMesaGLU*/
 #endif /* defined (DYNAMIC_GL_LINUX) */
 #endif /* switch OperatingSystem */
@@ -337,8 +337,7 @@ INTERPRETER_SRCS =
 INTERPRETER_LIB =
 #else /* !defined (PERL_INTERPRETER) */
 #if defined (CMISS_ROOT_DEFINED)
-INTERPRETER_PATH = /usr/people/blackett/perl_interpreter
-	/*INTERPRETER_PATH = $(CMISS_ROOT)/perl_interpreter*/
+INTERPRETER_PATH = $(CMISS_ROOT)/perl_interpreter
 #else /* defined (CMISS_ROOT_DEFINED) */
 INTERPRETER_PATH = $(CMGUI_DEV_ROOT)/perl_interpreter
 #endif /* defined (CMISS_ROOT_DEFINED) */
@@ -356,7 +355,7 @@ INTERPRETER_LIB = $(INTERPRETER_PATH)/lib/mips4-n32/libperlinterpreter-opt.a
 #endif /* defined (OPTIMISED) */
 #endif /* defined (O64) */
 #elif defined(LINUX) /* switch OperatingSystem */
-INTERPRETER_LIB = $(INTERPRETER_PATH)/lib/linux86/libperlinterpreter-debug.a
+INTERPRETER_LIB = $(INTERPRETER_PATH)/lib/linux86/libperlinterpreter-opt.a
 #endif /* switch OperatingSystem */
 #endif /* !defined (PERL_INTERPRETER) */
 
@@ -696,7 +695,7 @@ LIB = -lMrm -lSgm -lXm -lXt -lX11 -lXmu -lPW -lftn -lm -lC -lCio -lpthread
 #elif defined(LINUX) /* switch OperatingSystem */
 #if defined (DYNAMIC_GL_LINUX)
 X_LIB = /usr/X11R6/lib
-LIB = $(X_LIB)/libMrm.a $(X_LIB)/libXm.a $(X_LIB)/libXt.a $(X_LIB)/libX11.a $(X_LIB)/libXmu.a $(X_LIB)/libXext.a $(X_LIB)/libXp.a $(X_LIB)/libSM.a $(X_LIB)/libICE.a -lg2c -lm -ldl -lc /usr/lib/libpthread.a /usr/lib/libcrypt.a /usr/lib/libstdc++-libc6.2-2.a.3
+LIB = $(X_LIB)/libMrm.a $(X_LIB)/libXm.a $(X_LIB)/libXt.a $(X_LIB)/libX11.a $(X_LIB)/libXmu.a $(X_LIB)/libXext.a $(X_LIB)/libXp.a $(X_LIB)/libSM.a $(X_LIB)/libICE.a -lg2c -lm -ldl -lc /usr/lib/libpthread.a /usr/lib/libcrypt.a /usr/lib/libstdc++-2-libc6.1-1-2.9.0.a
 #else /* defined (DYNAMIC_GL_LINUX) */
 LIB = -lMrm -lXm -lXt -lX11 -lXmu -lXext -lg2c -lm -ldl -lXp -lSM -lICE -lpthread -lcrypt -lstdc++
 #endif /* defined (DYNAMIC_GL_LINUX) */
@@ -837,7 +836,6 @@ GENERAL_SRCS = \
 	general/mystring.c \
 	general/photogrammetry.c \
 	general/postscript.c \
-	general/socket.c \
 	general/statistics.c \
 	general/value.c 
 GRAPHICS_SRCS = \
@@ -946,9 +944,7 @@ TIME_SRCS = \
 	time/time_editor.c \
 	time/time_editor_dialog.c
 USER_INTERFACE_SRCS = \
-	user_interface/call_work_procedures.c \
 	user_interface/confirmation.c \
-	user_interface/event_dispatcher.c \
 	user_interface/filedir.c \
 	user_interface/message.c \
 	user_interface/printer.c \
@@ -1229,7 +1225,7 @@ $(OBJECT_PATH)/$(EXPORTS_FILE) :	$(SRC_EXPORTS_FILE)
 	$(LINK) -shared -o $(OBJECT_PATH)/$(EXPORTS_FILE) -Wl,-soname,$(EXPORTS_SONAME) $(OBJECT_PATH)/$(EXPORTS_FILE).c
 #endif /* defined (NEW_BINUTILS) */
 #endif /* defined (EXPORT_EVERYTHING) */
-#elseif /* defined (DYNAMIC_GL_LINUX) */
+#else /* defined (DYNAMIC_GL_LINUX) */
 EXPORTS_FILE = no.exports
 EXPORTS_LINK_FLAGS = 
 $(OBJECT_PATH)/$(EXPORTS_FILE) :	
@@ -1249,8 +1245,7 @@ Target : $(OBJS) cmgui.ObjSuffix $(OBJECT_PATH)/$(EXPORTS_FILE)
 	cd $(OBJECT_PATH) ; \
 	rm -f product_object ; \
 	ln -s $(PRODUCT_OBJECT_PATH) product_object ; \
-	$(LINK) -o /tmp/Target $(ALL_FLAGS) `cat object.list` $(ALL_LIB) $(EXPORTS_LINK_FLAGS)
-	cp /tmp/Target $(BIN_PATH)/Target
+	$(LINK) -o $(BIN_PATH)/Target $(ALL_FLAGS) `cat object.list` $(ALL_LIB) $(EXPORTS_LINK_FLAGS)
 
 CmguiFiltLibrary : $(LIB_FILT_OBJS) $(FILT_OBJ) Makefile libCmguiFiltExports
 	cd $(OBJECT_PATH)
