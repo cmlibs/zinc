@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : matrix.c
 
-LAST MODIFIED : 4 May 2003
+LAST MODIFIED : 20 July 2003
 
 DESCRIPTION :
 Structures and functions for a basic matrix structure. Contains a matrix struct
@@ -1130,17 +1130,19 @@ Copies the contents of sparse populate <matrix_1> into <matrix_2>.
 static struct Matrix *CREATE(Matrix_dense)(struct Matrix *matrix,
   int num_row,int num_col)
 /*******************************************************************************
-LAST MODIFIED : 8 April 2003
+LAST MODIFIED : 20 July 2003
 
 DESCRIPTION :
 Creates a dense matrix with the specified dimensions <num_row>x<num_col>.
 ==============================================================================*/
 {
   int i,n_size;
+	struct Matrix *return_matrix;
 
   ENTER(CREATE(Matrix_dense));
+	return_matrix=(struct Matrix *)NULL;
   n_size=(num_row*num_col);
-  if (ALLOCATE(matrix->value,Matrix_value,n_size))
+  if ((0<n_size)&&matrix&&ALLOCATE(matrix->value,Matrix_value,n_size))
   {
     matrix->matrix_type=DENSE;
     matrix->irow=NULL;
@@ -1153,18 +1155,21 @@ Creates a dense matrix with the specified dimensions <num_row>x<num_col>.
     {
       matrix->value[i]=0.0;
     }
+		return_matrix=matrix;
   }
   else
   {
     display_message(ERROR_MESSAGE,"CREATE(Matrix_dense).  "
-      "Could not allocate matrix->value");
-    DEALLOCATE(matrix->name);
-    DEALLOCATE(matrix);
-    matrix=NULL;
+      "Could not allocate matrix->value.  %p %d %d",matrix,num_row,num_col);
+		if (matrix)
+		{
+			DEALLOCATE(matrix->name);
+			DEALLOCATE(matrix);
+		}
   }
   LEAVE;
 
-  return (matrix);
+  return (return_matrix);
 } /* CREATE(Matrix_dense) */
 
 
@@ -1556,7 +1561,7 @@ Sets the <value> at the (<row>,<column>) location of <matrix>.
 int Matrix_get_value(struct Matrix *matrix,int row,int column,
   Matrix_value *value_address)
 /*******************************************************************************
-LAST MODIFIED : 17 March 2003
+LAST MODIFIED : 3 July 2003
 
 DESCRIPTION :
 Gets the value at the (<row>,<column>) location of <matrix> returning it in 
@@ -1566,7 +1571,7 @@ Gets the value at the (<row>,<column>) location of <matrix> returning it in
   int i,ij,ilow,ihigh,return_code;
 
   ENTER(Matrix_get_value);
-  if (matrix&&(*value_address))
+  if (matrix&&value_address)
   {
     if ((row<=(matrix->num_row))&&(row>0)&&
         (column<=(matrix->num_col))&&(column>0))
@@ -2093,7 +2098,6 @@ Sets the dimensions of <matrix> to <num_row> x <num_col>.
 
   return (return_code);
 } /* Matrix_set_dimensions */
-
 
 int Matrix_get_dimensions(struct Matrix *matrix,int *num_row_address,
   int *num_col_address)
