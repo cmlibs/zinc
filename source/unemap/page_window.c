@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : page_window.c
 
-LAST MODIFIED : 23 February 2001
+LAST MODIFIED : 15 October 2001
 
 DESCRIPTION :
 
@@ -46,6 +46,7 @@ WINDOWS - win32 acquisition only version
 #include <commctrl.h>
 #endif /* defined (WINDOWS) */
 #include "general/debug.h"
+#include "unemap/pacing_window.h"
 #include "unemap/page_window.h"
 #if defined (MOTIF)
 #include "unemap/page_window.uidh"
@@ -56,6 +57,7 @@ WINDOWS - win32 acquisition only version
 #include "unemap/rig.h"
 #include "unemap/unemap_hardware.h"
 #include "user_interface/confirmation.h"
+#include "user_interface/filedir.h"
 #include "user_interface/message.h"
 #include "user_interface/user_interface.h"
 #if defined (WINDOWS)
@@ -88,7 +90,7 @@ DESCRIPTION :
 
 struct Page_window
 /*******************************************************************************
-LAST MODIFIED : 7 January 2001
+LAST MODIFIED : 12 October 2001
 
 DESCRIPTION :
 The page window object.
@@ -97,9 +99,10 @@ The page window object.
 #if defined (MOTIF)
 	Widget activation,shell,window;
 	Widget auto_range_button,calibrate_button,close_button,experiment_checkbox,
-		full_range_button,isolate_checkbox,sample_checkbox,save_button,
-		scrolling_checkbox,start_all_stimulators_button,stimulate_checkbox,
-		stimulator_checkbox,stop_all_stimulators_button,test_checkbox;
+		full_range_button,isolate_checkbox,pacing_button,sample_checkbox,
+		save_button,scrolling_checkbox,start_all_stimulators_button,
+		stimulate_checkbox,stimulator_checkbox,stop_all_stimulators_button,
+		test_checkbox;
 	struct
 	{
 		Widget form,value;
@@ -207,6 +210,8 @@ The page window object.
 		HWND edit,text;
 		int edit_height,edit_width,text_height,text_width;
 	} minimum;
+	HWND pacing_button;
+	int pacing_button_height,pacing_button_width;
 	HWND sample_checkbox;
 	int sample_checkbox_height,sample_checkbox_width;
 	HWND save_button;
@@ -318,6 +323,7 @@ The page window object.
 	struct Device **stimulate_devices;
 #endif /* defined (OLD_CODE) */
 	struct File_open_data *save_file_open_data;
+	struct Pacing_window *pacing_window;
 	struct Page_window **address;
 	struct Mapping_window **mapping_window_address;
 	struct Rig **rig_address;
@@ -337,6 +343,7 @@ typedef struct
 	float initial_gain,sampling_frequency;
 	int number_of_samples,synchronization_card;
 #if defined (MOTIF)
+	Boolean restitution_time_pacing;
 	Pixel background_colour,foreground_colour;
 #endif /* defined (MOTIF) */
 } Page_window_settings;
@@ -795,6 +802,33 @@ Finds the id of the page minimum value text widget.
 	}
 	LEAVE;
 } /* identify_page_minimum_value */
+#endif /* defined (MOTIF) */
+
+#if defined (MOTIF)
+static void identify_page_pacing_button(Widget *widget_id,
+	XtPointer page_window_structure,XtPointer call_data)
+/*******************************************************************************
+LAST MODIFIED : 27 September 1999
+
+DESCRIPTION :
+Finds the id of the page test checkbox.
+==============================================================================*/
+{
+	struct Page_window *page;
+
+	ENTER(identify_page_pacing_button);
+	USE_PARAMETER(call_data);
+	if (page=(struct Page_window *)page_window_structure)
+	{
+		page->pacing_button= *widget_id;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"identify_page_pacing_button.  page window missing");
+	}
+	LEAVE;
+} /* identify_page_pacing_button */
 #endif /* defined (MOTIF) */
 
 #if defined (OLD_CODE)
@@ -3452,7 +3486,7 @@ Motif wrapper for update_display_minimum.
 
 static void update_stimulating_settings(struct Page_window *page_window)
 /*******************************************************************************
-LAST MODIFIED : 7 January 2001
+LAST MODIFIED : 14 October 2001
 
 DESCRIPTION :
 Updates the settings for the stimulating buttons.
@@ -5308,7 +5342,7 @@ Motif wrapper for start_testing and stop_testing.
 
 static int start_isolating(struct Page_window *page_window)
 /*******************************************************************************
-LAST MODIFIED : 13 November 2000
+LAST MODIFIED : 14 October 2001
 
 DESCRIPTION :
 Called to start isolating on the <page_window>.
@@ -5364,6 +5398,15 @@ Called to start isolating on the <page_window>.
 			EnableWindow(page_window->calibrate_button,TRUE);
 		}
 #endif /* defined (WINDOWS) */
+		if (page_window->pacing_button)
+		{
+#if defined (MOTIF)
+			XtSetSensitive(page_window->pacing_button,False);
+#endif /* defined (MOTIF) */
+#if defined (WINDOWS)
+			EnableWindow(page_window->pacing_button,FALSE);
+#endif /* defined (WINDOWS) */
+		}
 		update_stimulating_settings(page_window);
 	}
 	LEAVE;
@@ -5373,7 +5416,7 @@ Called to start isolating on the <page_window>.
 
 static int stop_isolating(struct Page_window *page_window)
 /*******************************************************************************
-LAST MODIFIED : 13 November 2000
+LAST MODIFIED : 14 October 2001
 
 DESCRIPTION :
 Called to stop isolating on the <page_window>.
@@ -5429,6 +5472,15 @@ Called to stop isolating on the <page_window>.
 			EnableWindow(page_window->calibrate_button,FALSE);
 		}
 #endif /* defined (WINDOWS) */
+		if (page_window->pacing_button)
+		{
+#if defined (MOTIF)
+			XtSetSensitive(page_window->pacing_button,True);
+#endif /* defined (MOTIF) */
+#if defined (WINDOWS)
+			EnableWindow(page_window->pacing_button,TRUE);
+#endif /* defined (WINDOWS) */
+		}
 		update_stimulating_settings(page_window);
 	}
 	LEAVE;
@@ -7602,11 +7654,42 @@ Called when the stop all stimulators button is pressed.
 	LEAVE;
 } /* page_stop_all_stimulators */
 
+static void open_Pacing_window_callback(
+#if defined (MOTIF)
+	Widget widget,XtPointer page_window_structure,XtPointer call_data
+#endif /* defined (MOTIF) */
+#if defined (WINDOWS)
+	LONG page_window_structure
+#endif /* defined (WINDOWS) */
+	)
+/*******************************************************************************
+LAST MODIFIED : 15 October 2001
+
+DESCRIPTION :
+Called when the pacing button is pressed.
+==============================================================================*/
+{
+	struct Pacing_window *pacing_window;
+	struct Page_window *page_window;
+
+	ENTER(open_Pacing_window_callback);
+#if defined (MOTIF)
+	USE_PARAMETER(widget);
+	USE_PARAMETER(call_data);
+#endif /* defined (MOTIF) */
+	if (page_window=(struct Page_window *)page_window_structure)
+	{
+		open_Pacing_window(&(page_window->pacing_window),page_window->rig_address,
+			page_window->pacing_button,page_window->user_interface);
+	}
+	LEAVE;
+} /* open_Pacing_window_callback */
+
 #if defined (WINDOWS)
 static void Page_window_WM_COMMAND_handler(HWND window,
 	int item_control_accelerator_id,HWND control_window,UINT notify_code)
 /*******************************************************************************
-LAST MODIFIED : 30 October 2000
+LAST MODIFIED : 10 October 2001
 
 DESCRIPTION :
 ==============================================================================*/
@@ -7723,6 +7806,10 @@ DESCRIPTION :
 						DLGWINDOWEXTRA));
 				} break;
 			}
+		} break;
+		case PACING_BUTTON:
+		{
+			open_Pacing_window_callback(GetWindowLong(window,DLGWINDOWEXTRA));
 		} break;
 #if defined (OLD_CODE)
 		case RESET_SCALE_BUTTON:
@@ -8339,7 +8426,7 @@ Called when the stimulator down arrow is pressed.
 static LRESULT CALLBACK Page_window_class_proc(HWND window,
 	UINT message_identifier,WPARAM first_message,LPARAM second_message)
 /*******************************************************************************
-LAST MODIFIED : 4 November 2000
+LAST MODIFIED : 7 October 2001
 
 DESCRIPTION :
 ???DB.  Should return 0 if it processes the message.
@@ -8577,6 +8664,46 @@ DESCRIPTION :
 				GetWindowRect((page_window->minimum).text,&rectangle);
 				(page_window->minimum).text_width=rectangle.right-rectangle.left;
 				(page_window->minimum).text_height=rectangle.bottom-rectangle.top;
+				/* pacing_button */
+				page_window->pacing_button=GetDlgItem(window,PACING_BUTTON);
+#if defined (MIRADA) || defined (UNEMAP_1V1)
+				DestroyWindow(page_window->pacing_button);
+				page_window->pacing_button=(HWND)NULL;
+				page_window->pacing_button_width=0;
+				page_window->pacing_button_height=0;
+#else /* defined (MIRADA) || defined (UNEMAP_1V1) */
+				switch (page_window->unemap_hardware_version)
+				{
+					case UnEmap_1V2:
+					{
+						DestroyWindow(page_window->pacing_button);
+						page_window->pacing_button=(HWND)NULL;
+						page_window->pacing_button_width=0;
+						page_window->pacing_button_height=0;
+					} break;
+					case UnEmap_2V1:
+					case UnEmap_2V2:
+					case UnEmap_2V1|UnEmap_2V2:
+					{
+						if (0<page_window->number_of_stimulators)
+						{
+							EnableWindow(page_window->pacing_button,FALSE);
+							GetWindowRect(page_window->pacing_button,&rectangle);
+							page_window->pacing_button_width=
+								rectangle.right-rectangle.left;
+							page_window->pacing_button_height=
+								rectangle.bottom-rectangle.top;
+						}
+						else
+						{
+							DestroyWindow(page_window->pacing_button);
+							page_window->pacing_button=(HWND)NULL;
+							page_window->pacing_button_width=0;
+							page_window->pacing_button_height=0;
+						}
+					} break;
+				}
+#endif /* defined (MIRADA) || defined (UNEMAP_1V1) */
 				/* sample_checkbox */
 				page_window->sample_checkbox=GetDlgItem(window,SAMPLE_CHECKBOX);
 				EnableWindow(page_window->sample_checkbox,FALSE);
@@ -8834,6 +8961,11 @@ DESCRIPTION :
 					page_window->all_devices_menu_width +=
 						page_window->stop_all_stimulators_button_width+widget_spacing;
 				}
+				if (page_window->pacing_button)
+				{
+					page_window->all_devices_menu_width +=
+						page_window->pacing_button_width+widget_spacing;
+				}
 				page_window->current_device_menu_width=
 					(page_window->electrode).text_width+
 					(page_window->electrode).arrows_width+
@@ -9005,7 +9137,7 @@ DESCRIPTION :
 		} break;
 		case WM_PAINT:
 		{
-			HWND calibrate_button,isolate_checkbox,low_pass_filter_edit,
+			HWND calibrate_button,isolate_checkbox,low_pass_filter_edit,pacing_button,
 				start_all_stimulators_button,stimulate_checkbox,stimulator_checkbox,
 				stop_all_stimulators_button,test_checkbox;
 			int auto_range_button_width,calibrate_button_width,close_button_width,
@@ -9014,10 +9146,11 @@ DESCRIPTION :
 				gain_text_width,isolate_checkbox_width,low_pass_filter_edit_width,
 				low_pass_filter_text_width,maximum_edit_width,maximum_text_width,
 				menu_bar_height,menu_bar_width,minimum_edit_width,minimum_text_width,
-				number_of_widgets,sample_checkbox_width,save_button_width,
-				scrolling_checkbox_width,start_all_stimulators_button_width,
-				stimulate_checkbox_width,stimulator_checkbox_width,
-				stop_all_stimulators_button_width,test_checkbox_width,widget_spacing;
+				number_of_widgets,pacing_button_width,sample_checkbox_width,
+				save_button_width,scrolling_checkbox_width,
+				start_all_stimulators_button_width,stimulate_checkbox_width,
+				stimulator_checkbox_width,stop_all_stimulators_button_width,
+				test_checkbox_width,widget_spacing;
 			RECT rectangle;
 			struct Page_window *page_window;
 
@@ -9183,6 +9316,11 @@ DESCRIPTION :
 						page_window->stop_all_stimulators_button_width;
 					number_of_widgets++;
 				}
+				if (pacing_button=page_window->pacing_button)
+				{
+					pacing_button_width=page_window->pacing_button_width;
+					number_of_widgets++;
+				}
 				if (0<number_of_widgets)
 				{
 					menu_bar_width=page_window->all_devices_menu_width;
@@ -9208,6 +9346,11 @@ DESCRIPTION :
 								stop_all_stimulators_button_width=
 									((rectangle.right-rectangle.left)*
 									stop_all_stimulators_button_width)/menu_bar_width;
+							}
+							if (pacing_button)
+							{
+								pacing_button_width=((rectangle.right-rectangle.left)*
+									pacing_button_width)/menu_bar_width;
 							}
 						}
 						else
@@ -9239,6 +9382,12 @@ DESCRIPTION :
 							menu_bar_height+2,stop_all_stimulators_button_width,
 							page_window->stop_all_stimulators_button_height,TRUE);
 						menu_bar_width += widget_spacing+stop_all_stimulators_button_width;
+					}
+					if (pacing_button)
+					{
+						MoveWindow(pacing_button,menu_bar_width,menu_bar_height+2,
+							pacing_button_width,page_window->pacing_button_height,TRUE);
+						menu_bar_width += widget_spacing+pacing_button_width;
 					}
 					menu_bar_height += 25;
 				}
@@ -9468,7 +9617,7 @@ Global functions
 */
 int destroy_Page_window(struct Page_window **page_window_address)
 /*******************************************************************************
-LAST MODIFIED : 7 January 2001
+LAST MODIFIED : 10 October 2001
 
 DESCRIPTION :
 If the <address> field of the page window is not NULL, <*address> is set to
@@ -9481,6 +9630,10 @@ page window and frees the memory associated with the page window.
 	struct Page_window *page_window;
 
 	ENTER(destroy_Page_window);
+#if defined (DEBUG)
+/*???debug */
+printf("enter destroy_Page_window\n");
+#endif /* defined (DEBUG) */
 	return_code=0;
 	if (page_window_address&&(page_window= *page_window_address))
 	{
@@ -9501,6 +9654,10 @@ if (INVALID_HANDLE_VALUE!=page_window->device_driver)
 		unemap_set_power(0);
 		unemap_deconfigure();
 #endif /* defined (MIRADA) */
+		if (page_window->pacing_window)
+		{
+			destroy_Pacing_window(&(page_window->pacing_window));
+		}
 		/* set the pointer to the page window to NULL */
 		if (page_window->address)
 		{
@@ -9630,7 +9787,7 @@ struct Page_window *create_Page_window(struct Page_window **address,
 	struct Mapping_window **mapping_window_address,int pointer_sensitivity,
 	char *signal_file_extension_write,struct User_interface *user_interface)
 /*******************************************************************************
-LAST MODIFIED : 7 January 2001
+LAST MODIFIED : 15 October 2001
 
 DESCRIPTION :
 This function allocates the memory for a page window and sets the fields to the
@@ -9681,6 +9838,7 @@ the created page window.  If unsuccessful, NULL is returned.
 		{"identify_page_maximum_value",(XtPointer)identify_page_maximum_value},
 		{"identify_page_minimum_form",(XtPointer)identify_page_minimum_form},
 		{"identify_page_minimum_value",(XtPointer)identify_page_minimum_value},
+		{"identify_page_pacing_button",(XtPointer)identify_page_pacing_button},
 		{"identify_page_sample_checkbox",(XtPointer)identify_page_sample_checkbox},
 		{"identify_page_save_button",(XtPointer)identify_page_save_button},
 		{"identify_page_scrolling_area",(XtPointer)identify_page_scrolling_area},
@@ -9696,6 +9854,7 @@ the created page window.  If unsuccessful, NULL is returned.
 			(XtPointer)identify_page_stop_all_stimulat},
 		{"identify_page_test_checkbox",(XtPointer)identify_page_test_checkbox},
 		{"increment_electrode",(XtPointer)increment_electrode},
+		{"open_Pacing_window_callback",(XtPointer)open_Pacing_window_callback},
 		{"page_auto_range",(XtPointer)page_auto_range},
 		{"page_full_range",(XtPointer)page_full_range},
 		{"page_save_data",(XtPointer)page_save_data},
@@ -9736,6 +9895,8 @@ the created page window.  If unsuccessful, NULL is returned.
 #define XmCInitialGain "InitialGain"
 #define XmNnumberOfSamples "numberOfSamples"
 #define XmCNumberOfSamples "NumberOfSamples"
+#define XmNrestitutionTimePacing "restitutionTimePacing"
+#define XmCRestitutionTimePacing "RestitutionTimePacing"
 #define XmNsamplingFrequencyHz "samplingFrequencyHz"
 #define XmCSamplingFrequencyHz "SamplingFrequencyHz"
 #define XmNsynchronizationCard "synchronizationCard"
@@ -9787,6 +9948,15 @@ the created page window.  If unsuccessful, NULL is returned.
 			XtOffsetOf(Page_window_settings,number_of_samples),
 			XmRString,
 			"5000"
+		},
+		{
+			XmNrestitutionTimePacing,
+			XmCRestitutionTimePacing,
+			XmRBoolean,
+			sizeof(Boolean),
+			XtOffsetOf(Page_window_settings,restitution_time_pacing),
+			XmRString,
+			"false"
 		},
 		{
 			XmNsamplingFrequencyHz,
@@ -9849,6 +10019,7 @@ the created page window.  If unsuccessful, NULL is returned.
 				page_window->display_device_number= -1;
 				page_window->number_of_scrolling_devices=0;
 				page_window->number_of_scrolling_channels=0;
+				page_window->pacing_window=(struct Pacing_window *)NULL;
 				page_window->scrolling_channels=(struct Channel **)NULL;
 				page_window->scrolling_devices=(struct Device **)NULL;
 				page_window->number_of_scrolling_channels_device=(int *)NULL;
@@ -9856,6 +10027,7 @@ the created page window.  If unsuccessful, NULL is returned.
 				page_window->scrolling_coefficients=(float *)NULL;
 				page_window->number_of_stimulators=0;
 				unemap_get_number_of_stimulators(&(page_window->number_of_stimulators));
+				page_window->unemap_hardware_version=0;
 				unemap_get_hardware_version(&(page_window->unemap_hardware_version));
 #if defined (OLD_CODE)
 				page_window->stimulator_number=0;
@@ -9959,7 +10131,8 @@ the created page window.  If unsuccessful, NULL is returned.
 				else
 				{
 					display_message(WARNING_MESSAGE,
-"Environment variable UNEMAP_HARDWARE is not defined.  Using current directory for calibrate.dat");
+						"Environment variable UNEMAP_HARDWARE is not defined.  "
+						"Using current directory for calibrate.dat");
 				}
 				page_window->hardware_initialized=0;
 #if defined (MOTIF)
@@ -9982,6 +10155,7 @@ the created page window.  If unsuccessful, NULL is returned.
 				(page_window->maximum).value=(Widget)NULL;
 				(page_window->minimum).form=(Widget)NULL;
 				(page_window->minimum).value=(Widget)NULL;
+				page_window->pacing_button=(Widget)NULL;
 				page_window->sample_checkbox=(Widget)NULL;
 				page_window->save_button=(Widget)NULL;
 				page_window->scrolling_area=(Widget)NULL;
@@ -10012,6 +10186,7 @@ the created page window.  If unsuccessful, NULL is returned.
 				(page_window->maximum).text=(HWND)NULL;
 				(page_window->minimum).edit=(HWND)NULL;
 				(page_window->minimum).text=(HWND)NULL;
+				page_window->pacing_button=(HWND)NULL;
 				page_window->sample_checkbox=(HWND)NULL;
 				page_window->save_button=(HWND)NULL;
 				page_window->scrolling_area=(HWND)NULL;
@@ -10185,19 +10360,23 @@ the created page window.  If unsuccessful, NULL is returned.
 									{
 										(*device_address)->signal_display_minimum +=
 											(auxiliary_properties->electrode_coefficients)[j]*
-											((auxiliary_properties->electrodes)[j])->signal_display_minimum;
+											((auxiliary_properties->electrodes)[j])->
+											signal_display_minimum;
 										(*device_address)->signal_display_maximum +=
 											(auxiliary_properties->electrode_coefficients)[j]*
-											((auxiliary_properties->electrodes)[j])->signal_display_maximum;
+											((auxiliary_properties->electrodes)[j])->
+											signal_display_maximum;
 									}
 									else
 									{
 										(*device_address)->signal_display_minimum +=
 											(auxiliary_properties->electrode_coefficients)[j]*
-											((auxiliary_properties->electrodes)[j])->signal_display_maximum;
+											((auxiliary_properties->electrodes)[j])->
+											signal_display_maximum;
 										(*device_address)->signal_display_maximum +=
 											(auxiliary_properties->electrode_coefficients)[j]*
-											((auxiliary_properties->electrodes)[j])->signal_display_minimum;
+											((auxiliary_properties->electrodes)[j])->
+											signal_display_minimum;
 									}
 								}
 							}
@@ -10284,18 +10463,19 @@ the created page window.  If unsuccessful, NULL is returned.
 							switch (page_window->unemap_hardware_version)
 							{
 								case UnEmap_1V2:
+								default:
 								{
+									XtVaSetValues(page_window->sample_checkbox,
+										XmNleftWidget,page_window->experiment_checkbox,NULL);
 									XtDestroyWidget(page_window->isolate_checkbox);
 									page_window->isolate_checkbox=(Widget)NULL;
 									unemap_set_isolate_record_mode(0,0);
-									XtVaSetValues(page_window->sample_checkbox,
-										XmNleftWidget,page_window->experiment_checkbox,NULL);
-									XtDestroyWidget(page_window->calibrate_button);
-									page_window->calibrate_button=(Widget)NULL;
-									XtDestroyWidget(page_window->test_checkbox);
-									page_window->test_checkbox=(Widget)NULL;
 									XtVaSetValues((page_window->low_pass).form,
 										XmNleftWidget,page_window->save_button,NULL);
+									XtDestroyWidget(page_window->test_checkbox);
+									page_window->test_checkbox=(Widget)NULL;
+									XtDestroyWidget(page_window->calibrate_button);
+									page_window->calibrate_button=(Widget)NULL;
 								} break;
 								case UnEmap_2V1:
 								case UnEmap_2V2:
@@ -10311,11 +10491,14 @@ the created page window.  If unsuccessful, NULL is returned.
 							switch (page_window->unemap_hardware_version)
 							{
 								case UnEmap_1V2:
+								default:
 								{
-									XtDestroyWidget(page_window->start_all_stimulators_button);
-									page_window->start_all_stimulators_button=(Widget)NULL;
+									XtDestroyWidget(page_window->pacing_button);
+									page_window->pacing_button=(Widget)NULL;
 									XtDestroyWidget(page_window->stop_all_stimulators_button);
 									page_window->stop_all_stimulators_button=(Widget)NULL;
+									XtDestroyWidget(page_window->start_all_stimulators_button);
+									page_window->start_all_stimulators_button=(Widget)NULL;
 								} break;
 								case UnEmap_2V1:
 								case UnEmap_2V2:
@@ -10327,13 +10510,24 @@ the created page window.  If unsuccessful, NULL is returned.
 											False);
 										XtSetSensitive(page_window->stop_all_stimulators_button,
 											False);
+										if (True==settings.restitution_time_pacing)
+										{
+											XtSetSensitive(page_window->pacing_button,False);
+										}
+										else
+										{
+											XtDestroyWidget(page_window->pacing_button);
+											page_window->pacing_button=(Widget)NULL;
+										}
 									}
 									else
 									{
-										XtDestroyWidget(page_window->start_all_stimulators_button);
-										page_window->start_all_stimulators_button=(Widget)NULL;
+										XtDestroyWidget(page_window->pacing_button);
+										page_window->pacing_button=(Widget)NULL;
 										XtDestroyWidget(page_window->stop_all_stimulators_button);
 										page_window->stop_all_stimulators_button=(Widget)NULL;
+										XtDestroyWidget(page_window->start_all_stimulators_button);
+										page_window->start_all_stimulators_button=(Widget)NULL;
 									}
 								} break;
 							}
@@ -10345,11 +10539,12 @@ the created page window.  If unsuccessful, NULL is returned.
 							switch (page_window->unemap_hardware_version)
 							{
 								case UnEmap_1V2:
+								default:
 								{
-									XtDestroyWidget(page_window->stimulate_checkbox);
-									page_window->stimulate_checkbox=(Widget)NULL;
 									XtDestroyWidget(page_window->stimulator_checkbox);
 									page_window->stimulator_checkbox=(Widget)NULL;
+									XtDestroyWidget(page_window->stimulate_checkbox);
+									page_window->stimulate_checkbox=(Widget)NULL;
 								} break;
 								case UnEmap_2V1:
 								case UnEmap_2V2:
@@ -10362,10 +10557,10 @@ the created page window.  If unsuccessful, NULL is returned.
 									}
 									else
 									{
-										XtDestroyWidget(page_window->stimulate_checkbox);
-										page_window->stimulate_checkbox=(Widget)NULL;
 										XtDestroyWidget(page_window->stimulator_checkbox);
 										page_window->stimulator_checkbox=(Widget)NULL;
+										XtDestroyWidget(page_window->stimulate_checkbox);
+										page_window->stimulate_checkbox=(Widget)NULL;
 									}
 								} break;
 							}
@@ -10510,7 +10705,8 @@ the created page window.  If unsuccessful, NULL is returned.
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"create_Page_window.  Missing user_interface");
+			"create_Page_window.  Invalid argument(s).  %p %p",rig_address,
+			user_interface);
 		page_window=(struct Page_window *)NULL;
 	}
 	LEAVE;
@@ -10582,8 +10778,10 @@ If <*address> is NULL, a page window with the specified <parent> and
 					/* manage the page window */
 					XtManageChild(page_window->window);
 #endif /* defined (OLD_CODE) */
-					/* realize the page shell */
-					XtRealizeWidget(page_window->shell);
+					/* pop up the page shell */
+/*???debug */
+printf("pop up page_window->shell\n");
+					XtPopup(page_window->shell,XtGrabNone);
 #endif /* defined (MOTIF) */
 					*address=page_window;
 					return_code=1;

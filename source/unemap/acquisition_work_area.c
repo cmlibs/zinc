@@ -258,8 +258,10 @@ Creates the windows associated with the acquisition work area.
 							/* manage the acquisition window */
 							XtManageChild(acquisition->window->window);
 #endif /* defined (OLD_CODE) */
+#if defined (OLD_CODE)
 							/* realize the acquisition shell */
 							XtRealizeWidget(acquisition->window_shell);
+#endif /* defined (OLD_CODE) */
 #endif /* defined (MOTIF) */
 						}
 						else

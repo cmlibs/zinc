@@ -10854,8 +10854,9 @@ Use <unemap_start_stimulating> to start the stimulating.
 	else
 	{
 		display_message(ERROR_MESSAGE,
-"unemap_load_voltage_stimulating.  Invalid number_of_channels (%d) or channel_numbers (%p) or number_of_voltages (%d) or voltages (%p)",
-			number_of_channels,channel_numbers,number_of_voltages,voltages);
+"unemap_load_voltage_stimulating.  Invalid number_of_channels (%d) or channel_numbers (%p) or number_of_voltages (%d) or voltages (%p) or voltages_per_second (%g) or return_code (%d)",
+			number_of_channels,channel_numbers,number_of_voltages,voltages,
+			voltages_per_second,return_code);
 	}
 #if defined (DEBUG)
 	/*???debug */

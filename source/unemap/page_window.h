@@ -1,17 +1,15 @@
 /*******************************************************************************
 FILE : page_window.h
 
-LAST MODIFIED : 16 June 1999
+LAST MODIFIED : 10 October 2001
 
 DESCRIPTION :
 ==============================================================================*/
 #if !defined (PAGE_WINDOW_H)
 #define PAGE_WINDOW_H
 
-#include <stddef.h>
 #include "unemap/mapping_window.h"
 #include "unemap/rig.h"
-#include "user_interface/filedir.h"
 #include "user_interface/user_interface.h"
 
 /*

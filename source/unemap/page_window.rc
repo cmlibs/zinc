@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : page_window.rc
 
-LAST MODIFIED : 6 November 2000
+LAST MODIFIED : 7 October 2001
 
 DESCRIPTION :
 ==============================================================================*/
@@ -28,14 +28,15 @@ Identifiers
 #define MAXIMUM_TEXT 15
 #define MINIMUM_EDIT 16
 #define MINIMUM_TEXT 17
-#define SAMPLE_CHECKBOX 18
-#define SAVE_BUTTON 19
-#define SCROLLING_CHECKBOX 20
-#define START_ALL_STIMULATORS_BUTTON 21
-#define STIMULATE_CHECKBOX 22
-#define STIMULATOR_CHECKBOX 23
-#define STOP_ALL_STIMULATORS_BUTTON 24
-#define TEST_CHECKBOX 25
+#define PACING_BUTTON 18
+#define SAMPLE_CHECKBOX 19
+#define SAVE_BUTTON 20
+#define SCROLLING_CHECKBOX 21
+#define START_ALL_STIMULATORS_BUTTON 22
+#define STIMULATE_CHECKBOX 23
+#define STIMULATOR_CHECKBOX 24
+#define STOP_ALL_STIMULATORS_BUTTON 25
+#define TEST_CHECKBOX 26
 
 #ifdef OLD_CODE
 #define CALIBRATE_BUTTON 1
@@ -110,6 +111,7 @@ CAPTION "Acquisition"
 	PUSHBUTTON "&Full range",FULL_RANGE_BUTTON,45,15,40,10,BS_LEFT
 	PUSHBUTTON "S&tart all stimulators",START_ALL_STIMULATORS_BUTTON,90,15,70,10,BS_LEFT
 	PUSHBUTTON "St&op all stimulators",STOP_ALL_STIMULATORS_BUTTON,165,15,70,10,BS_LEFT
+	PUSHBUTTON "&Pacing",PACING_BUTTON,240,15,30,10,BS_LEFT
 
 	LTEXT "Electrode:",ELECTRODE_TEXT,0,30,35,10
 	EDITTEXT ELECTRODE_EDIT,40,30,20,10

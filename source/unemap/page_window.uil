@@ -1,7 +1,7 @@
 !*******************************************************************************
 ! FILE : page_window.uil
 !
-! LAST MODIFIED : 6 November 2000
+! LAST MODIFIED : 7 October 2001
 !
 ! DESCRIPTION :
 ! The widgets/gadgets for a page window in the acquisition work area.
@@ -60,6 +60,7 @@ procedure
 	identify_page_maximum_value;
 	identify_page_minimum_form;
 	identify_page_minimum_value;
+	identify_page_pacing_button;
 	identify_page_sample_checkbox;
 	identify_page_save_button;
 	identify_page_scrolling_area;
@@ -70,6 +71,7 @@ procedure
 	identify_page_stop_all_stimulat;
 	identify_page_test_checkbox;
 	increment_electrode;
+	open_Pacing_window_callback;
 	page_auto_range;
 	page_full_range;
 	page_save_data;
@@ -509,6 +511,7 @@ object
 			XmPushButtonGadget page_full_range_button;
 			XmPushButtonGadget page_start_all_stimulators_butt;
 			XmPushButtonGadget page_stop_all_stimulators_butto;
+			XmPushButtonGadget page_pacing_button;
 			};
 		};
 !Clicking this button sets the gain and range of all devices based on the
@@ -636,6 +639,38 @@ object
 			XmNactivateCallback = procedures
 				{
 				page_stop_all_stimulators(page_window_structure);
+				};
+			};
+		};
+!Clicking this button opens the pacing dialog
+	page_pacing_button: XmPushButtonGadget
+		{
+		arguments
+			{
+			XmNlabelString = 
+			compound_string("Pacing");
+			XmNfontList = button_font;
+			XmNshadowThickness = 0;
+			XmNhighlightThickness = 0;
+			XmNleftAttachment = XmATTACH_WIDGET;
+			XmNleftOffset = widget_spacing;
+			XmNleftWidget = XmPushButtonGadget page_stop_all_stimulators_butto;
+			XmNrightAttachment = XmATTACH_NONE;
+			XmNrightOffset = 0;
+			XmNtopAttachment = XmATTACH_FORM;
+			XmNtopOffset = 0;
+			XmNbottomAttachment = XmATTACH_FORM;
+			XmNbottomOffset = 0;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedures
+				{
+				identify_page_pacing_button(page_window_structure);
+				};
+			XmNactivateCallback = procedures
+				{
+				open_Pacing_window_callback(page_window_structure);
 				};
 			};
 		};

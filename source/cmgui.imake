@@ -1,7 +1,7 @@
 XCOMM **************************************************************************
 XCOMM FILE : cmgui.imake
 XCOMM
-XCOMM LAST MODIFIED : 12 October 2001
+XCOMM LAST MODIFIED : 17 October 2001
 XCOMM
 XCOMM DESCRIPTION :
 XCOMM
@@ -394,6 +394,7 @@ UNEMAP_SRCS = \
 	unemap/mapping.c \
 	unemap/mapping_window.c \
 	unemap/neurosoft.c \
+	unemap/pacing_window.c \
 	unemap/page_window.c \
 	unemap/rig.c \
 	unemap/rig_node.c \
