@@ -435,7 +435,7 @@ ifeq ($(USER_INTERFACE),GTK_USER_INTERFACE)
          endif # $(DYNAMIC_GL_LINUX) != true
       else # $(USE_GTK2) == true
          USER_INTERFACE_INC +=  -I/usr/include/gtk-1.2 -I/usr/include/glib-1.2 -I/usr/lib/glib/include/
-         USER_INTERFACE_LIB +=  -lgtkgl -lgtk -lgdk -L/usr/X11R6/lib -lGLU -lGL
+         USER_INTERFACE_LIB +=  -lgtkgl -lgtk -lgdk -lgmodule -lglib -ldl -lXi -lXext -lX11 -L/usr/X11R6/lib -lGLU -lGL
       endif # $(USE_GTK2) == true
    else # $(SYSNAME) != win32
       # SAB It seems that ld currently requires (version 2.13.90 20021005) the 
