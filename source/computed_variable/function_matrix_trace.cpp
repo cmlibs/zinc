@@ -1,7 +1,7 @@
 //******************************************************************************
 // FILE : function_matrix_trace.cpp
 //
-// LAST MODIFIED : 1 October 2004
+// LAST MODIFIED : 18 October 2004
 //
 // DESCRIPTION :
 //==============================================================================
@@ -17,7 +17,7 @@ template<>
 Function_handle Function_variable_matrix_trace<Scalar>::evaluate_derivative(
 	std::list<Function_variable_handle>& independent_variables)
 //******************************************************************************
-// LAST MODIFIED : 1 October 2004
+// LAST MODIFIED : 18 October 2004
 //
 // DESCRIPTION :
 // ???DB.  To be done
@@ -25,14 +25,12 @@ Function_handle Function_variable_matrix_trace<Scalar>::evaluate_derivative(
 {
 	boost::intrusive_ptr< Function_matrix_trace<Scalar> > function_matrix_trace;
 	Function_handle result(0);
-	Function_size_type order;
 
 	if ((function_matrix_trace=boost::dynamic_pointer_cast<
 		Function_matrix_trace<Scalar>,Function>(function()))&&
-		(0<(order=independent_variables.size())))
+		(0<independent_variables.size()))
 	{
-		Function_size_type number_of_dependent_values,number_of_independent_values,
-			number_of_rows;
+		Function_size_type number_of_independent_values,number_of_rows;
 		boost::intrusive_ptr< Function_matrix<Scalar> > derivative,matrix;
 
 		if ((matrix=boost::dynamic_pointer_cast<Function_matrix<Scalar>,
@@ -41,7 +39,7 @@ Function_handle Function_variable_matrix_trace<Scalar>::evaluate_derivative(
 			(derivative=boost::dynamic_pointer_cast<Function_matrix<Scalar>,
 			Function>(function_matrix_trace->matrix_private->evaluate_derivative(
 			independent_variables)))&&(number_of_rows*number_of_rows==
-			(number_of_dependent_values=derivative->number_of_rows()))&&
+			derivative->number_of_rows())&&
 			(0<(number_of_independent_values=derivative->number_of_columns())))
 		{
 			Function_size_type dependent_row,i,j;
