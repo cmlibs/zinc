@@ -23267,11 +23267,10 @@ top_level_parents are in the list.
 int add_FE_element_and_faces_to_group(struct FE_element *element,
 	struct GROUP(FE_element) *element_group)
 /*******************************************************************************
-LAST MODIFIED : 14 April 1999
+LAST MODIFIED : 6 September 2000
 
 DESCRIPTION :
-Ensures <element>, its faces (and theirs etc.) are in <element_group>. Only
-top-level elements should be passed to this function.
+Ensures <element>, its faces (and theirs etc.) are in <element_group>.
 Note: this function is recursive.
 ==============================================================================*/
 {
@@ -23300,8 +23299,7 @@ Note: this function is recursive.
 		}
 		if (return_code)
 		{
-			if (!FIND_BY_IDENTIFIER_IN_GROUP(FE_element,identifier)(
-				element->identifier,element_group))
+			if (!IS_OBJECT_IN_GROUP(FE_element)(element,element_group))
 			{
 				if (!ADD_OBJECT_TO_GROUP(FE_element)(element,element_group))
 				{
