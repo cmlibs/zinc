@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : finite_element.c
 
-LAST MODIFIED : 9 November 2000
+LAST MODIFIED : 5 December 2000
 
 DESCRIPTION :
 Functions for manipulating finite element structures.
@@ -1865,31 +1865,37 @@ Only certain value types, eg. arrays, strings, element_xi require this.
 	return(return_code);
 } /* FE_node_field_free_values_storage_arrays */
 
-static int FE_node_field_is_type_CM_coordinate(struct FE_node_field 
+static int FE_node_field_is_coordinate_field(struct FE_node_field 
 	*node_field,void *dummy)
 /*******************************************************************************
-LAST MODIFIED: 10 February 1999
+LAST MODIFIED: 5 December 2000
 
 DESCRIPTION:
-returns true if <node_field> has a field of type CM_coordinate
+Returns true if <node_field> has a field of type CM_coordinate, returns
+FE_values and has up to 3 components.
 ==============================================================================*/
 {
 	int return_code;
+	struct FE_field *field;
 
-	ENTER(FE_node_field_is_type_CM_coordinate);
-	if(node_field&&!dummy)
+	ENTER(FE_node_field_is_coordinate_field);
+	USE_PARAMETER(dummy);
+	if (node_field && (field = node_field->field))
 	{
-		return_code = (node_field->field->cm.type == CM_COORDINATE_FIELD); 	
+		return_code = (field->cm.type == CM_COORDINATE_FIELD) &&
+			(FE_VALUE_VALUE == field->value_type) &&
+			(3 >= field->number_of_components);
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"FE_node_field_is_type_CM_coordinate. Invalid arguments");
+			"FE_node_field_is_coordinate_field.  Invalid arguments");
 		return_code = 0;
 	}
 	LEAVE;
+
 	return(return_code);
-}/* FE_node_field_is_type_CM_coordinate */
+}/* FE_node_field_is_coordinate_field */
 
 static int FE_node_field_has_time(struct FE_node_field *node_field,void *dummy)
 /*******************************************************************************
@@ -13433,7 +13439,7 @@ Returns the default coordinate field of the <node>.
 	if (node&&(node->fields))
 	{	
 		if (default_coordinate_node_field=FIRST_OBJECT_IN_LIST_THAT(FE_node_field)(
-			FE_node_field_is_type_CM_coordinate,(void *)NULL,
+			FE_node_field_is_coordinate_field,(void *)NULL,
 			node->fields->node_field_list))
 		{
 			default_coordinate_field=default_coordinate_node_field->field;
@@ -34007,7 +34013,7 @@ field it actually calculated.
 		else
 		{
 			coordinate_node_field=FIRST_OBJECT_IN_LIST_THAT(FE_node_field)(
-				FE_node_field_is_type_CM_coordinate,(void *)NULL,
+				FE_node_field_is_coordinate_field,(void *)NULL,
 				node_field_information->node_field_list);
 		}
 		if (coordinate_node_field)
@@ -34149,7 +34155,7 @@ for the coordinate_field used.
 		else
 		{
 			coordinate_node_field=FIRST_OBJECT_IN_LIST_THAT(FE_node_field)(
-				FE_node_field_is_type_CM_coordinate,(void *)NULL,
+				FE_node_field_is_coordinate_field,(void *)NULL,
 				node_field_information->node_field_list);
 		}
 		if (coordinate_node_field)
