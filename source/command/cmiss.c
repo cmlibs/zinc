@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : cmiss.c
 
-LAST MODIFIED : 8 May 2002
+LAST MODIFIED : 10 June 2002
 
 DESCRIPTION :
 Functions for executing cmiss commands.
@@ -12,6 +12,8 @@ Functions for executing cmiss commands.
 #include <unistd.h>
 #include <limits.h>
 #include <math.h>
+/* for IGES */
+#include <time.h>
 #if defined (MOTIF)
 #include <Xm/List.h>
 #endif /* defined (MOTIF) */
@@ -13433,6 +13435,1094 @@ Executes a GFX EXPORT ALIAS command.
 } /* gfx_export_alias */
 #endif /* !defined (WINDOWS_DEV_FLAG) */
 
+#if !defined (WINDOWS_DEV_FLAG)
+struct IGES_entity_info
+/******************************************************************************
+LAST MODIFIED : 7 June 2002
+
+DESCRIPTION :
+==============================================================================*/
+{
+	struct CM_element_information cm;
+	int directory_pointer,parameter_pointer,type;
+	struct
+	{
+		char label[9];
+		int color,form,label_display_associativity,level,line_font_pattern,
+			line_weight,parameter_line_count,subscript_number,structure,
+			transformation_matrix,view;
+		struct
+		{
+			int blank_status,entity_use_flag,hierarchy,subordinate_entity_switch;
+		} status;
+	} directory;
+	union
+	{
+		struct
+		{
+			/* composite curve entity */
+			int *directory_pointers,number_of_entities;
+		} type_102;
+		struct
+		{
+			/* line entity */
+			float end[3],start[3];
+		} type_110;
+		struct
+		{
+			/* parametric spline curve entity */
+			int degree_of_continuity,n,number_of_dimensions,spline_type;
+			/*???DB.  Assuming 1 cubic curve */
+			float tu[2],x[4],y[4],z[4];
+		} type_112;
+		struct
+		{
+			/* parametric spline surface entity */
+			int m,n,patch_type,spline_boundary_type;
+			/*???DB.  Assuming 1 bicubic surface */
+			float tu[2],tv[2],x[16],y[16],z[16];
+		} type_114;
+		struct
+		{
+			/* curve on parametric surface entity */
+			int how_curve_created,material_curve_directory_pointer,
+				preferred_representation,surface_directory_pointer,
+				world_curve_directory_pointer;
+		} type_142;
+		struct
+		{
+			/* trimmed parametric surface entity */
+			int *inner_boundary_directory_pointers,number_of_inner_boundary_curves,
+				outer_boundary_directory_pointer,outer_boundary_type,
+				surface_directory_pointer;
+		} type_144;
+	} parameter;
+	struct IGES_entity_info *next;
+}; /* struct IGES_entity_info */
+
+struct Get_iges_entity_info_data
+/******************************************************************************
+LAST MODIFIED : 6 June 2002
+
+DESCRIPTION :
+==============================================================================*/
+{
+	struct IGES_entity_info *head,*tail;
+}; /* struct Get_iges_entity_info_data */
+
+static struct IGES_entity_info *create_iges_entity_info(
+	struct FE_element *element,struct IGES_entity_info **head,
+	struct IGES_entity_info **tail)
+/******************************************************************************
+LAST MODIFIED : 6 June 2002
+
+DESCRIPTION :
+==============================================================================*/
+{
+	int directory_pointer,parameter_pointer;
+	struct IGES_entity_info *entity;
+
+	ENTER(create_iges_entity_info);
+	entity=(struct IGES_entity_info *)NULL;
+	if (element&&head&&tail)
+	{
+		if (ALLOCATE(entity,struct IGES_entity_info,1))
+		{
+			/* put into list */
+			if ((*head)&&(*tail))
+			{
+				directory_pointer=(*tail)->directory_pointer+2;
+				parameter_pointer=(*tail)->parameter_pointer+
+					((*tail)->directory).parameter_line_count;
+				(*tail)->next=entity;
+				*tail=entity;
+			}
+			else
+			{
+				directory_pointer=1;
+				parameter_pointer=1;
+				*head=entity;
+				*tail=entity;
+			}
+			entity->next=(struct IGES_entity_info *)NULL;
+			/* fill in values */
+			(entity->cm).type=(element->cm).type;
+			(entity->cm).number=(element->cm).number;
+			entity->type=0;
+			entity->directory_pointer=directory_pointer;
+			entity->parameter_pointer=parameter_pointer;
+			(entity->directory).structure=0;
+			(entity->directory).line_font_pattern=0;
+			(entity->directory).level=0;
+			(entity->directory).view=0;
+			(entity->directory).transformation_matrix=0;
+			(entity->directory).label_display_associativity=0;
+			(entity->directory).status.blank_status=0;
+			(entity->directory).status.subordinate_entity_switch=0;
+			(entity->directory).status.entity_use_flag=0;
+			(entity->directory).status.hierarchy=0;
+			(entity->directory).line_weight=0;
+			(entity->directory).color=0;
+			(entity->directory).parameter_line_count=0;
+			(entity->directory).form=0;
+			((entity->directory).label)[0]='\0';
+			(entity->directory).subscript_number=0;
+		}
+	}
+	LEAVE;
+
+	return (entity);
+} /* create_iges_entity_info */
+
+static int get_iges_entity_info(struct FE_element *element,
+	void *get_data_void)
+/******************************************************************************
+LAST MODIFIED : 7 June 2002
+
+DESCRIPTION :
+==============================================================================*/
+{
+	int clear_values,*faces,i,j,k,material_curve_directory_pointer,
+		number_of_faces,outer_boundary_directory_pointer,return_code,
+		surface_directory_pointer,world_curve_directory_pointer;
+	struct FE_element *face;
+	struct FE_field *coordinate_field;
+	struct FE_element_field_values coordinate_element_field_values;
+	struct Get_iges_entity_info_data *get_data;
+	struct IGES_entity_info *entity;
+
+	ENTER(get_iges_entity_info);
+	return_code=0;
+	/* check arguments */
+	if (element&&(element->shape)&&
+		(get_data=(struct Get_iges_entity_info_data *)get_data_void))
+	{
+		return_code=1;
+		clear_values=0;
+		if ((2==get_FE_element_dimension(element))&&
+			(1>=NUMBER_IN_LIST(FE_element_parent)(element->parent_list))&&
+			(coordinate_field=get_FE_element_default_coordinate_field(element))&&
+			(3==get_FE_field_number_of_components(coordinate_field))&&
+			(clear_values=calculate_FE_element_field_values(element,coordinate_field,
+			(FE_value)0,(char)0,&coordinate_element_field_values,
+			(struct FE_element *)NULL))&&
+			standard_basis_function_is_bicubic(
+			(coordinate_element_field_values.component_standard_basis_functions)[0],
+			((void **)(coordinate_element_field_values.
+			component_standard_basis_function_arguments))[0])&&
+			standard_basis_function_is_bicubic(
+			(coordinate_element_field_values.component_standard_basis_functions)[1],
+			((void **)(coordinate_element_field_values.
+			component_standard_basis_function_arguments))[1])&&
+			standard_basis_function_is_bicubic(
+			(coordinate_element_field_values.component_standard_basis_functions)[2],
+			((void **)(coordinate_element_field_values.
+			component_standard_basis_function_arguments))[2]))
+		{
+			if (entity=create_iges_entity_info(element,&(get_data->head),
+				&(get_data->tail)))
+			{
+				surface_directory_pointer=entity->directory_pointer;
+				/* blanked */
+				(entity->directory).status.blank_status=1;
+				/* physically dependent */
+				(entity->directory).status.subordinate_entity_switch=1;
+				/* parametric spline surface entity */
+				entity->type=114;
+				/* use one line for integer flags, one line for the breakpoints and
+					4 values per line for coefficients */
+				(entity->directory).parameter_line_count=14;
+				/* cubic */
+				(entity->parameter).type_114.spline_boundary_type=3;
+				/* cartesian product */
+				(entity->parameter).type_114.patch_type=1;
+				(entity->parameter).type_114.m=1;
+				(entity->parameter).type_114.n=1;
+				((entity->parameter).type_114.tu)[0]=0.;
+				((entity->parameter).type_114.tu)[1]=1.;
+				((entity->parameter).type_114.tv)[0]=0.;
+				((entity->parameter).type_114.tv)[1]=1.;
+				for (i=0;i<16;i++)
+				{
+					((entity->parameter).type_114.x)[i]=
+						((coordinate_element_field_values.component_values)[0])[i];
+					((entity->parameter).type_114.y)[i]=
+						((coordinate_element_field_values.component_values)[1])[i];
+					((entity->parameter).type_114.z)[i]=
+						((coordinate_element_field_values.component_values)[2])[i];
+				}
+				/* add information for edges so that can be joined together */
+				if (4==(number_of_faces=element->shape->number_of_faces))
+/*				if (0<(number_of_faces=element->shape->number_of_faces))*/
+				{
+					if (ALLOCATE(faces,int,number_of_faces))
+					{
+						i=0;
+						while (return_code&&(i<number_of_faces))
+						{
+							if (face=(element->faces)[i])
+							{
+								entity=get_data->head;
+								while (entity&&!(((face->cm).type==(entity->cm).type)&&
+									((face->cm).number==(entity->cm).number)&&
+									(112==entity->type)))
+								{
+									entity=entity->next;
+								}
+								if (entity)
+								{
+									faces[i]=entity->directory_pointer;
+								}
+								else
+								{
+									/* create an entity for the edge in material coordinates */
+									if (entity=create_iges_entity_info(face,&(get_data->head),
+										&(get_data->tail)))
+									{
+										faces[i]=entity->directory_pointer;
+										/* blanked */
+										(entity->directory).status.blank_status=1;
+										/* physically dependent */
+										(entity->directory).status.subordinate_entity_switch=1;
+										/* 2d parametric.  In xi coordinates */
+										(entity->directory).status.entity_use_flag=5;
+										/* line entity */
+										entity->type=110;
+										/* use one line for type, one line for start and one line
+											for end */
+										(entity->directory).parameter_line_count=3;
+										switch (i)
+										{
+											case 0:
+											{
+												((entity->parameter).type_110.start)[0]=0.;
+												((entity->parameter).type_110.start)[1]=0.;
+												((entity->parameter).type_110.end)[0]=1.;
+												((entity->parameter).type_110.end)[1]=0.;
+											} break;
+											case 1:
+											{
+												((entity->parameter).type_110.start)[0]=0.;
+												((entity->parameter).type_110.start)[1]=1.;
+												((entity->parameter).type_110.end)[0]=1.;
+												((entity->parameter).type_110.end)[1]=1.;
+											} break;
+											case 2:
+											{
+												((entity->parameter).type_110.start)[0]=0.;
+												((entity->parameter).type_110.start)[1]=0.;
+												((entity->parameter).type_110.end)[0]=0.;
+												((entity->parameter).type_110.end)[1]=1.;
+											} break;
+											case 3:
+											{
+												((entity->parameter).type_110.start)[0]=1.;
+												((entity->parameter).type_110.start)[1]=0.;
+												((entity->parameter).type_110.end)[0]=1.;
+												((entity->parameter).type_110.end)[1]=1.;
+											} break;
+										}
+										((entity->parameter).type_110.start)[2]=0.;
+										((entity->parameter).type_110.end)[2]=0.;
+										/* create an entity for the edge in material coordinates */
+										if (entity=create_iges_entity_info(face,&(get_data->head),
+											&(get_data->tail)))
+										{
+											/* blanked */
+											(entity->directory).status.blank_status=1;
+											/* physically dependent */
+											(entity->directory).status.subordinate_entity_switch=1;
+											/* parametric spline curve entity */
+											entity->type=112;
+											/* use one line for integer flags, one line for the
+												breakpoints and 4 values per line for coefficients */
+											(entity->directory).parameter_line_count=5;
+											/* cubic */
+											(entity->parameter).type_112.spline_type=3;
+											/* value and slope continuous at breakpoints */
+											(entity->parameter).type_112.degree_of_continuity=1;
+											(entity->parameter).type_112.number_of_dimensions=3;
+											(entity->parameter).type_112.n=1;
+											((entity->parameter).type_112.tu)[0]=0.;
+											((entity->parameter).type_112.tu)[1]=1.;
+											switch (i)
+											{
+												case 0:
+												{
+													for (j=0;j<4;j++)
+													{
+														((entity->parameter).type_112.x)[j]=
+															((coordinate_element_field_values.
+															component_values)[0])[j];
+														((entity->parameter).type_112.y)[j]=
+															((coordinate_element_field_values.
+															component_values)[1])[j];
+														((entity->parameter).type_112.z)[j]=
+															((coordinate_element_field_values.
+															component_values)[2])[j];
+													}
+												} break;
+												case 1:
+												{
+													for (j=0;j<4;j++)
+													{
+														((entity->parameter).type_112.x)[j]=
+															((coordinate_element_field_values.
+															component_values)[0])[j];
+														((entity->parameter).type_112.y)[j]=
+															((coordinate_element_field_values.
+															component_values)[1])[j];
+														((entity->parameter).type_112.z)[j]=
+															((coordinate_element_field_values.
+															component_values)[2])[j];
+														for (k=4;k<16;k += 4)
+														{
+															((entity->parameter).type_112.x)[j] +=
+																((coordinate_element_field_values.
+																component_values)[0])[j+k];
+															((entity->parameter).type_112.y)[j] +=
+																((coordinate_element_field_values.
+																component_values)[1])[j+k];
+															((entity->parameter).type_112.z)[j] +=
+																((coordinate_element_field_values.
+																component_values)[2])[j+k];
+														}
+													}
+												} break;
+												case 2:
+												{
+													for (j=0;j<4;j++)
+													{
+														((entity->parameter).type_112.x)[j]=
+															((coordinate_element_field_values.
+															component_values)[0])[4*j];
+														((entity->parameter).type_112.y)[j]=
+															((coordinate_element_field_values.
+															component_values)[1])[4*j];
+														((entity->parameter).type_112.z)[j]=
+															((coordinate_element_field_values.
+															component_values)[2])[4*j];
+													}
+												} break;
+												case 3:
+												{
+													for (j=0;j<4;j++)
+													{
+														((entity->parameter).type_112.x)[j]=
+															((coordinate_element_field_values.
+															component_values)[0])[4*j];
+														((entity->parameter).type_112.y)[j]=
+															((coordinate_element_field_values.
+															component_values)[1])[4*j];
+														((entity->parameter).type_112.z)[j]=
+															((coordinate_element_field_values.
+															component_values)[2])[4*j];
+														for (k=1;k<4;k++)
+														{
+															((entity->parameter).type_112.x)[j] +=
+																((coordinate_element_field_values.
+																component_values)[0])[4*j+k];
+															((entity->parameter).type_112.y)[j] +=
+																((coordinate_element_field_values.
+																component_values)[1])[4*j+k];
+															((entity->parameter).type_112.z)[j] +=
+																((coordinate_element_field_values.
+																component_values)[2])[4*j+k];
+														}
+													}
+												} break;
+											}
+										}
+										else
+										{
+											return_code=0;
+										}
+									}
+									else
+									{
+										return_code=0;
+									}
+								}
+							}
+							i++;
+						}
+						if (return_code)
+						{
+							/* create a composite curve entity to describe the boundary of
+								the element in material coordinates */
+							if ((entity=create_iges_entity_info(element,&(get_data->head),
+								&(get_data->tail)))&&ALLOCATE((entity->parameter).type_102.
+								directory_pointers,int,number_of_faces))
+							{
+								material_curve_directory_pointer=entity->directory_pointer;
+								/* blanked */
+								(entity->directory).status.blank_status=1;
+								/* physically dependent */
+								(entity->directory).status.subordinate_entity_switch=1;
+								/* 2d parametric.  In xi coordinates */
+								(entity->directory).status.entity_use_flag=5;
+								/* composite curve entity */
+								entity->type=102;
+								(entity->directory).parameter_line_count=1;
+								(entity->parameter).type_102.number_of_entities=number_of_faces;
+								for (j=0;j<number_of_faces;j++)
+								{
+									((entity->parameter).type_102.directory_pointers)[j]=faces[j];
+								}
+								/* create a composite curve entity to describe the boundary of
+									the element in world coordinates */
+								if ((entity=create_iges_entity_info(element,&(get_data->head),
+									&(get_data->tail)))&&ALLOCATE((entity->parameter).type_102.
+									directory_pointers,int,number_of_faces))
+								{
+									world_curve_directory_pointer=entity->directory_pointer;
+									/* blanked */
+									(entity->directory).status.blank_status=1;
+									/* physically dependent */
+									(entity->directory).status.subordinate_entity_switch=1;
+									/* composite curve entity */
+									entity->type=102;
+									(entity->directory).parameter_line_count=1;
+									(entity->parameter).type_102.number_of_entities=
+										number_of_faces;
+									for (j=0;j<number_of_faces;j++)
+									{
+										((entity->parameter).type_102.directory_pointers)[j]=
+											faces[j]+2;
+									}
+									/* combine the world and material boundary descriptions */
+									if (entity=create_iges_entity_info(element,&(get_data->head),
+										&(get_data->tail)))
+									{
+										outer_boundary_directory_pointer=entity->directory_pointer;
+										/* blanked */
+										(entity->directory).status.blank_status=1;
+										/* physically dependent */
+										(entity->directory).status.subordinate_entity_switch=1;
+										/* 2d parametric.  In xi coordinates */
+										(entity->directory).status.entity_use_flag=5;
+										/* curve on parametric surface entity */
+										entity->type=142;
+										(entity->directory).parameter_line_count=1;
+										/* projection of a given curve on the surface */
+										(entity->parameter).type_142.how_curve_created=1;
+										(entity->parameter).type_142.surface_directory_pointer=
+											surface_directory_pointer;
+										(entity->parameter).type_142.
+											material_curve_directory_pointer=
+											material_curve_directory_pointer;
+										(entity->parameter).type_142.world_curve_directory_pointer=
+											world_curve_directory_pointer;
+										/* material specification is preferred */
+										(entity->parameter).type_142.preferred_representation=1;
+										/* create the trimmed surface that can be stitched
+											together */
+										if (entity=create_iges_entity_info(element,
+											&(get_data->head),&(get_data->tail)))
+										{
+											/* trimmed parametric surface entity */
+											entity->type=144;
+											(entity->directory).parameter_line_count=1;
+											(entity->parameter).type_144.surface_directory_pointer=
+												surface_directory_pointer;
+											/* outer boundary is the one specified (not the boundary
+												of <surface_directory_pointer> */
+											(entity->parameter).type_144.outer_boundary_type=1;
+											(entity->parameter).type_144.
+												outer_boundary_directory_pointer=
+												outer_boundary_directory_pointer;
+											(entity->parameter).type_144.
+												number_of_inner_boundary_curves=0;
+											(entity->parameter).type_144.
+												inner_boundary_directory_pointers=(int *)NULL;
+										}
+										else
+										{
+											return_code=0;
+										}
+									}
+									else
+									{
+										return_code=0;
+									}
+								}
+								else
+								{
+									return_code=0;
+								}
+							}
+							else
+							{
+								return_code=0;
+							}
+						}
+						DEALLOCATE(faces);
+					}
+					else
+					{
+						return_code=0;
+					}
+				}
+			}
+			else
+			{
+				return_code=0;
+			}
+		}
+		if (clear_values)
+		{
+			clear_FE_element_field_values(&coordinate_element_field_values);
+		}
+	}
+	LEAVE;
+
+	return (return_code);
+} /* get_iges_entity_info */
+
+struct Write_iges_parameter_data_data
+{
+	FILE *iges;
+	int count;
+}; /* struct Write_iges_parameter_data_data */
+
+int export_to_iges(char *file_name,void *element_group_void)
+/******************************************************************************
+LAST MODIFIED : 10 June 2002
+
+DESCRIPTION :
+Write bicubic elements to an IGES file.
+==============================================================================*/
+{
+	char *out_string,numeric_string[20],*string_parameter,*temp_string,
+		time_string[14];
+	FILE *iges;
+	int count,i,global_count,length,out_length,parameter_pointer,return_code,
+		sub_count;
+	struct Get_iges_entity_info_data iges_entity_info_data;
+	struct GROUP(FE_element) *element_group;
+	struct IGES_entity_info *entity;
+	time_t coded_time;
+	struct tm *time_struct;
+
+	ENTER(export_to_iges);
+	return_code=0;
+	/* check arguments */
+	if (file_name&&(element_group=(struct GROUP(FE_element) *)element_group_void))
+	{
+		if (iges=fopen(file_name,"w"))
+		{
+			/* write IGES header */
+			/* start section */
+			fprintf(iges,"%-72sS      1\n","cmgui");
+			/* global section */
+			global_count=0;
+			out_string=(char *)NULL;
+			out_length=0;
+#define WRITE_STRING_PARAMETER( parameter ) \
+{ \
+	length=strlen(parameter); \
+	if (length>0) \
+	{ \
+		length += (int)ceil(log10((double)length))+2; \
+		if (REALLOCATE(temp_string,out_string,char,out_length+length+1)) \
+		{ \
+			out_string=temp_string; \
+			sprintf(out_string+out_length,"%dH",strlen(parameter)); \
+			strcat(out_string,parameter); \
+			strcat(out_string,","); \
+			out_length=strlen(out_string); \
+			while (out_length>72) \
+			{ \
+				global_count++; \
+				fprintf(iges,"%.72sG%7d\n",out_string,global_count); \
+				out_length -= 72; \
+				temp_string=out_string; \
+				for (i=0;i<=out_length;i++) \
+				{ \
+					*temp_string=temp_string[72]; \
+					temp_string++; \
+				} \
+			} \
+		} \
+	} \
+	else \
+	{ \
+		if (REALLOCATE(temp_string,out_string,char,out_length+2)) \
+		{ \
+			out_string=temp_string; \
+			strcat(out_string,","); \
+			out_length=strlen(out_string); \
+		} \
+	} \
+}
+#define WRITE_INTEGER_PARAMETER( parameter ) \
+{ \
+	sprintf(numeric_string,"%d",parameter); \
+	length=strlen(numeric_string)+1; \
+	if (REALLOCATE(temp_string,out_string,char,out_length+length+1)) \
+	{ \
+		out_string=temp_string; \
+		if (out_length+length>72) \
+		{ \
+			global_count++; \
+			fprintf(iges,"%-72sG%7d\n",out_string,global_count); \
+			out_string[0]='\0'; \
+			out_length=0; \
+		} \
+		strcat(out_string,numeric_string); \
+		strcat(out_string,","); \
+		out_length=strlen(out_string); \
+	} \
+}
+#define WRITE_REAL_PARAMETER( parameter ) \
+{ \
+	sprintf(numeric_string,"%.6e",parameter); \
+	length=strlen(numeric_string)+1; \
+	if (REALLOCATE(temp_string,out_string,char,out_length+length+1)) \
+	{ \
+		out_string=temp_string; \
+		if (out_length+length>72) \
+		{ \
+			global_count++; \
+			fprintf(iges,"%-72sG%7d\n",out_string,global_count); \
+			out_string[0]='\0'; \
+			out_length=0; \
+		} \
+		strcat(out_string,numeric_string); \
+		strcat(out_string,","); \
+		out_length=strlen(out_string); \
+	} \
+}
+			/* parameter delimiter */
+			WRITE_STRING_PARAMETER(",");
+			/* record delimiter */
+			WRITE_STRING_PARAMETER(";");
+			/* product identification from sending system */
+			if (GET_NAME(GROUP(FE_element))(element_group,&string_parameter))
+			{
+				WRITE_STRING_PARAMETER(string_parameter);
+				DEALLOCATE(string_parameter);
+			}
+			else
+			{
+				WRITE_STRING_PARAMETER("group");
+			}
+			/* file name */
+			WRITE_STRING_PARAMETER(file_name);
+			/* system ID */
+			WRITE_STRING_PARAMETER("cmgui");
+			/* version */
+			WRITE_STRING_PARAMETER("unknown");
+			/* number of binary bits for integer representation */
+			WRITE_INTEGER_PARAMETER(8*sizeof(int));
+			/* maximum power of ten representable in a single precision floating point
+				number on the sending system */
+			WRITE_INTEGER_PARAMETER(FLT_MAX_10_EXP);
+			/* number of significant digits in a single precision floating point
+				number on the sending system */
+			WRITE_INTEGER_PARAMETER(FLT_DIG);
+			/* maximum power of ten representable in a double precision floating point
+				number on the sending system */
+			WRITE_INTEGER_PARAMETER(DBL_MAX_10_EXP);
+			/* number of significant digits in a double precision floating point
+				number on the sending system */
+			WRITE_INTEGER_PARAMETER(DBL_DIG);
+			/* product identification for the receiving system */
+			if (GET_NAME(GROUP(FE_element))(element_group,&string_parameter))
+			{
+				WRITE_STRING_PARAMETER(string_parameter);
+				DEALLOCATE(string_parameter);
+			}
+			else
+			{
+				WRITE_STRING_PARAMETER("group");
+			}
+			/* model space scale (example:  .125 indicates a ratio of 1 unit model
+				space to 8 units real world) */
+			WRITE_REAL_PARAMETER(1.);
+			/* unit flag.  millimetres */
+			WRITE_INTEGER_PARAMETER(2);
+			/* units abreviation */
+			WRITE_STRING_PARAMETER("MM");
+			/* maximum number of line weight gradations */
+			WRITE_INTEGER_PARAMETER(1);
+			/* width of maximum line weight in units */
+			WRITE_REAL_PARAMETER(0.125);
+			/* date & time of exchange file generation  YYMMDD.HHNNSS */
+			time(&coded_time);
+			time_struct=localtime(&coded_time);
+			sprintf(time_string,"%02d%02d%02d.%02d%02d%02d",
+				(time_struct->tm_year)%100,time_struct->tm_mday,(time_struct->tm_mon)+1,
+				time_struct->tm_hour,time_struct->tm_min,time_struct->tm_sec);
+			WRITE_STRING_PARAMETER(time_string);
+			/* minimum user-intended resolution or granularity of the model expressed
+				in units */
+			WRITE_REAL_PARAMETER(1.e-8);
+			/* approximate maximum coordinate value occurring in the model expressed
+				in units */
+			WRITE_REAL_PARAMETER(1.e4);
+			/* name of author */
+			WRITE_STRING_PARAMETER("");
+			/* author's organization */
+			WRITE_STRING_PARAMETER("");
+			/* integer value corresponding to the version of the Specification used to
+				create this file */
+			WRITE_INTEGER_PARAMETER(5);
+			/* drafting standard in compliance to which the data encoded in this file
+				was generated */
+			WRITE_INTEGER_PARAMETER(0);
+			/* date and time the model was created or last modified, whichever
+				occurred last, YYMMDD.HHNNSS */
+			WRITE_STRING_PARAMETER("");
+			global_count++;
+			out_string[strlen(out_string)-1]=';';
+			fprintf(iges,"%-72sG%7d\n",out_string,global_count);
+			/* get entity information */
+			iges_entity_info_data.head=(struct IGES_entity_info *)NULL;
+			iges_entity_info_data.tail=(struct IGES_entity_info *)NULL;
+			FOR_EACH_OBJECT_IN_GROUP(FE_element)(get_iges_entity_info,
+				&iges_entity_info_data,element_group);
+			/* directory entry section */
+			entity=iges_entity_info_data.head;
+			while (entity)
+			{
+				fprintf(iges,"%8d%8d%8d%8d%8d%8d%8d%8d%02d%02d%02d%02dD%7d\n",
+					entity->type,entity->parameter_pointer,
+					(entity->directory).structure,(entity->directory).line_font_pattern,
+					(entity->directory).level,(entity->directory).view,
+					(entity->directory).transformation_matrix,
+					(entity->directory).label_display_associativity,
+					(entity->directory).status.blank_status,
+					(entity->directory).status.subordinate_entity_switch,
+					(entity->directory).status.entity_use_flag,
+					(entity->directory).status.hierarchy,
+					entity->directory_pointer);
+				fprintf(iges,"%8d%8d%8d%8d%8d%8s%8s%8s%8dD%7d\n",
+					entity->type,(entity->directory).line_weight,
+					(entity->directory).color,(entity->directory).parameter_line_count,
+					(entity->directory).form," "," ",(entity->directory).label,
+					(entity->directory).subscript_number,(entity->directory_pointer)+1);
+				entity=entity->next;
+			}
+			/* parameter data section */
+			entity=iges_entity_info_data.head;
+			while (entity)
+			{
+				switch (entity->type)
+				{
+					case 102:
+					{
+						/* composite curve entity */
+						parameter_pointer=entity->parameter_pointer;
+						fprintf(iges,"%d,%d%n",entity->type,
+							(entity->parameter).type_102.number_of_entities,&count);
+						count=64-count;
+						for (i=0;i<(entity->parameter).type_102.number_of_entities;i++)
+						{
+							fprintf(iges,",%d%n",
+								((entity->parameter).type_102.directory_pointers)[i],
+								&sub_count);
+							count -= sub_count;
+						}
+						fprintf(iges,";");
+						count--;
+						fprintf(iges,"%*s%8dP%7d\n",count," ",
+							entity->directory_pointer,parameter_pointer);
+						parameter_pointer++;
+					} break;
+					case 110:
+					{
+						/* line entity */
+						parameter_pointer=entity->parameter_pointer;
+						fprintf(iges,"%d,%n",entity->type,&count);
+						count=64-count;
+						fprintf(iges,"%*s%8dP%7d\n",count," ",
+							entity->directory_pointer,parameter_pointer);
+						parameter_pointer++;
+						fprintf(iges,"%.6e,%.6e,%.6e,%n",
+							((entity->parameter).type_110.start)[0],
+							((entity->parameter).type_110.start)[1],
+							((entity->parameter).type_110.start)[2],&count);
+						count=64-count;
+						fprintf(iges,"%*s%8dP%7d\n",count," ",
+							entity->directory_pointer,parameter_pointer);
+						fprintf(iges,"%.6e,%.6e,%.6e;%n",
+							((entity->parameter).type_110.end)[0],
+							((entity->parameter).type_110.end)[1],
+							((entity->parameter).type_110.end)[2],&count);
+						count=64-count;
+						fprintf(iges,"%*s%8dP%7d\n",count," ",
+							entity->directory_pointer,parameter_pointer);
+					} break;
+					case 112:
+					{
+						/* parametric spline curve entity */
+						parameter_pointer=entity->parameter_pointer;
+						fprintf(iges,"%d,%d,%d,%d,%d,%n",
+							entity->type,(entity->parameter).type_112.spline_type,
+							(entity->parameter).type_112.degree_of_continuity,
+							(entity->parameter).type_112.number_of_dimensions,
+							(entity->parameter).type_112.n,&count);
+						count=64-count;
+						fprintf(iges,"%*s%8dP%7d\n",count," ",
+							entity->directory_pointer,parameter_pointer);
+						parameter_pointer++;
+						fprintf(iges,"%.6e,%.6e,%n",
+							((entity->parameter).type_112.tu)[0],
+							((entity->parameter).type_112.tu)[1],&count);
+						count=64-count;
+						fprintf(iges,"%*s%8dP%7d\n",count," ",
+							entity->directory_pointer,parameter_pointer);
+						parameter_pointer++;
+						fprintf(iges,"%.6e,%.6e,%.6e,%.6e,%n",
+							((entity->parameter).type_112.x)[0],
+							((entity->parameter).type_112.x)[1],
+							((entity->parameter).type_112.x)[2],
+							((entity->parameter).type_112.x)[3],&count);
+						count=64-count;
+						fprintf(iges,"%*s%8dP%7d\n",count," ",
+							entity->directory_pointer,parameter_pointer);
+						parameter_pointer++;
+						fprintf(iges,"%.6e,%.6e,%.6e,%.6e,%n",
+							((entity->parameter).type_112.y)[0],
+							((entity->parameter).type_112.y)[1],
+							((entity->parameter).type_112.y)[2],
+							((entity->parameter).type_112.y)[3],&count);
+						count=64-count;
+						fprintf(iges,"%*s%8dP%7d\n",count," ",
+							entity->directory_pointer,parameter_pointer);
+						parameter_pointer++;
+						fprintf(iges,"%.6e,%.6e,%.6e,%.6e;%n",
+							((entity->parameter).type_112.z)[0],
+							((entity->parameter).type_112.z)[1],
+							((entity->parameter).type_112.z)[2],
+							((entity->parameter).type_112.z)[3],&count);
+						count=64-count;
+						fprintf(iges,"%*s%8dP%7d\n",count," ",
+							entity->directory_pointer,parameter_pointer);
+						parameter_pointer++;
+					} break;
+					case 114:
+					{
+						/* parametric spline surface entity */
+						parameter_pointer=entity->parameter_pointer;
+						fprintf(iges,"%d,%d,%d,%d,%d,%n",
+							entity->type,(entity->parameter).type_114.spline_boundary_type,
+							(entity->parameter).type_114.patch_type,
+							(entity->parameter).type_114.m,(entity->parameter).type_114.n,
+							&count);
+						count=64-count;
+						fprintf(iges,"%*s%8dP%7d\n",count," ",
+							entity->directory_pointer,parameter_pointer);
+						parameter_pointer++;
+						fprintf(iges,"%.6e,%.6e,%.6e,%.6e,%n",
+							((entity->parameter).type_114.tu)[0],
+							((entity->parameter).type_114.tu)[1],
+							((entity->parameter).type_114.tv)[0],
+							((entity->parameter).type_114.tv)[1],&count);
+						count=64-count;
+						fprintf(iges,"%*s%8dP%7d\n",count," ",
+							entity->directory_pointer,parameter_pointer);
+						parameter_pointer++;
+						for (i=0;i<16;i += 4)
+						{
+							fprintf(iges,"%.6e,%.6e,%.6e,%.6e,%n",
+								((entity->parameter).type_114.x)[i],
+								((entity->parameter).type_114.x)[i+1],
+								((entity->parameter).type_114.x)[i+2],
+								((entity->parameter).type_114.x)[i+3],&count);
+							count=64-count;
+							fprintf(iges,"%*s%8dP%7d\n",count," ",
+								entity->directory_pointer,parameter_pointer);
+							parameter_pointer++;
+						}
+						for (i=0;i<16;i += 4)
+						{
+							fprintf(iges,"%.6e,%.6e,%.6e,%.6e,%n",
+								((entity->parameter).type_114.y)[i],
+								((entity->parameter).type_114.y)[i+1],
+								((entity->parameter).type_114.y)[i+2],
+								((entity->parameter).type_114.y)[i+3],&count);
+							count=64-count;
+							fprintf(iges,"%*s%8dP%7d\n",count," ",
+								entity->directory_pointer,parameter_pointer);
+							parameter_pointer++;
+						}
+						for (i=0;i<16;i += 4)
+						{
+							fprintf(iges,"%.6e,%.6e,%.6e,%.6e%n",
+								((entity->parameter).type_114.z)[i],
+								((entity->parameter).type_114.z)[i+1],
+								((entity->parameter).type_114.z)[i+2],
+								((entity->parameter).type_114.z)[i+3],&count);
+							if (12==i)
+							{
+								fprintf(iges,";");
+							}
+							else
+							{
+								fprintf(iges,",");
+							}
+							count++;
+							count=64-count;
+							fprintf(iges,"%*s%8dP%7d\n",count," ",
+								entity->directory_pointer,parameter_pointer);
+							parameter_pointer++;
+						}
+					} break;
+					case 142:
+					{
+						/* curve on parametric surface entity */
+						parameter_pointer=entity->parameter_pointer;
+						fprintf(iges,"%d,%d,%d,%d,%d,%d;%n",entity->type,
+							(entity->parameter).type_142.how_curve_created,
+							(entity->parameter).type_142.surface_directory_pointer,
+							(entity->parameter).type_142.material_curve_directory_pointer,
+							(entity->parameter).type_142.world_curve_directory_pointer,
+							(entity->parameter).type_142.preferred_representation,&count);
+						count=64-count;
+						fprintf(iges,"%*s%8dP%7d\n",count," ",
+							entity->directory_pointer,parameter_pointer);
+						parameter_pointer++;
+					} break;
+					case 144:
+					{
+						/* trimmed parametric surface entity */
+						parameter_pointer=entity->parameter_pointer;
+						fprintf(iges,"%d,%d,%d,%d,%d%n",entity->type,
+							(entity->parameter).type_144.surface_directory_pointer,
+							(entity->parameter).type_144.outer_boundary_type,
+							(entity->parameter).type_144.number_of_inner_boundary_curves,
+							(entity->parameter).type_144.outer_boundary_directory_pointer,
+							&count);
+						count=64-count;
+						for (i=0;
+							i<(entity->parameter).type_144.number_of_inner_boundary_curves;
+							i++)
+						{
+							fprintf(iges,",%d%n",((entity->parameter).type_144.
+								inner_boundary_directory_pointers)[i],&sub_count);
+							count -= sub_count;
+						}
+						fprintf(iges,";");
+						count--;
+						fprintf(iges,"%*s%8dP%7d\n",count," ",
+							entity->directory_pointer,parameter_pointer);
+						parameter_pointer++;
+					} break;
+				}
+				entity=entity->next;
+			}
+			/* terminate section */
+			entity=iges_entity_info_data.tail;
+			if (entity)
+			{
+				fprintf(iges,"S%7dG%7dD%7dP%7d%40sT%7d\n",1,global_count,
+					(entity->directory_pointer)+1,(entity->parameter_pointer)+
+					((entity->directory).parameter_line_count)-1," ",1);
+			}
+			while (iges_entity_info_data.head)
+			{
+				entity=iges_entity_info_data.head;
+				iges_entity_info_data.head=entity->next;
+				DEALLOCATE(entity);
+			}
+			fclose(iges);
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,"gfx_export_iges.  Could not open %s",
+				file_name);
+			return_code=0;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"gfx_export_iges.  "
+			"Invalid argument(s).  %p %p",file_name,element_group_void);
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* export_to_iges */
+#endif /* !defined (WINDOWS_DEV_FLAG) */
+
+#if !defined (WINDOWS_DEV_FLAG)
+static int gfx_export_iges(struct Parse_state *state,void *dummy_to_be_modified,
+	void *command_data_void)
+/*******************************************************************************
+LAST MODIFIED : 5 June 2002
+
+DESCRIPTION :
+Executes a GFX EXPORT IGES command.
+==============================================================================*/
+{
+	char *file_name;
+	int return_code;
+	struct Cmiss_command_data *command_data;
+	struct GROUP(FE_element) *element_group;
+	struct Option_table *option_table;
+
+	ENTER(gfx_export_iges);
+	USE_PARAMETER(dummy_to_be_modified);
+	return_code=0;
+	/* check argument */
+	if (state)
+	{
+		if (command_data=(struct Cmiss_command_data *)command_data_void)
+		{
+			return_code=1;
+			/* initialize defaults */
+			element_group=(struct GROUP(FE_element) *)NULL;
+			file_name=(char *)NULL;
+			option_table=CREATE(Option_table)();
+			/* group */
+			Option_table_add_entry(option_table,"group",&element_group,
+				command_data->element_group_manager,set_FE_element_group);
+			/* default option: file name */
+			Option_table_add_entry(option_table,(char *)NULL,&file_name,NULL,
+				set_name);
+			/* no errors, not asking for help */
+			if (return_code=Option_table_multi_parse(option_table,state))
+			{
+				if (!file_name)
+				{
+					file_name=confirmation_get_write_filename(".igs",
+						command_data->user_interface);
+				}
+				if (file_name)
+				{
+					if (return_code=check_suffix(&file_name,".igs"))
+					{
+						return_code=export_to_iges(file_name,element_group);
+					}
+				}
+			} /* parse error,help */
+			DESTROY(Option_table)(&option_table);
+			if (element_group)
+			{
+				DEACCESS(GROUP(FE_element))(&element_group);
+			}				
+			DEALLOCATE(file_name);
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,"gfx_export_iges.  Invalid argument(s)");
+			return_code=0;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"gfx_export_iges.  Missing state");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* gfx_export_iges */
+#endif /* !defined (WINDOWS_DEV_FLAG) */
+
 int gfx_export_node(struct Parse_state *state,void *dummy_to_be_modified,
 	void *command_data_void)
 /*******************************************************************************
@@ -13724,7 +14814,7 @@ Executes a GFX EXPORT WAVEFRONT command.
 static int execute_command_gfx_export(struct Parse_state *state,
 	void *dummy_to_be_modified,void *command_data_void)
 /*******************************************************************************
-LAST MODIFIED : 16 June 1999
+LAST MODIFIED : 4 June 2002
 
 DESCRIPTION :
 Executes a GFX EXPORT command.
@@ -13734,6 +14824,7 @@ Executes a GFX EXPORT command.
 	static struct Modifier_entry option_table[]=
 	{
 		{"alias",NULL,NULL,gfx_export_alias},
+		{"iges",NULL,NULL,gfx_export_iges},
 		{"node",NULL,NULL,gfx_export_node},
 		{"vrml",NULL,NULL,gfx_export_vrml},
 		{"wavefront",NULL,NULL,gfx_export_wavefront},
@@ -13750,6 +14841,7 @@ Executes a GFX EXPORT command.
 			(option_table[1]).user_data=command_data_void;
 			(option_table[2]).user_data=command_data_void;
 			(option_table[3]).user_data=command_data_void;
+			(option_table[4]).user_data=command_data_void;
 			return_code=process_option(state,option_table);
 		}
 		else
