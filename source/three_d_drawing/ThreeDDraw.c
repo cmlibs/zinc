@@ -1940,7 +1940,7 @@ supplied drawable the current GL source.
 
 void X3dThreeDDrawingRemakeCurrent(void)
 /*******************************************************************************
-LAST MODIFIED : 10 September 1998
+LAST MODIFIED : 16 January 2003
 
 DESCRIPTION :
 Change the context to the last ThreeDDrawing that was made current
@@ -1956,10 +1956,6 @@ Change the context to the last ThreeDDrawing that was made current
 		glXMakeCurrent(XtDisplay(current_ThreeDDrawing),XtWindow(current_ThreeDDrawing),
 			(drawing_widget)->three_d_drawing.normal_buffer.rendering_context);
 #endif
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,"X3dThreeDDrawingRemakeCurrent.  Missing widget\n");
 	}
 } /* X3dThreeDDrawingRemakeCurrent */
 
