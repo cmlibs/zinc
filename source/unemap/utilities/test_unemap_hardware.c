@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : test_unemap_hardware.c
 
-LAST MODIFIED : 9 July 2000
+LAST MODIFIED : 21 July 2000
 
 DESCRIPTION :
 For testing the unemap hardware software (client, server, standalone).
@@ -125,27 +125,28 @@ static void print_menu(void)
 	printf("h) unemap_get_sample_range  ");
 	printf("i) unemap_get_samples_acquired\n");
 	printf("j) unemap_get_samples_acquired_background  ");
-	printf("k) unemap_get_sampling_frequency\n");
-	printf("l) unemap_get_voltage_range  ");
-	printf("m) unemap_load_current_stimulating\n");
-	printf("n) unemap_load_voltage_stimulating  ");
-	printf("o) unemap_set_antialiasing_filter_frequency\n");
-	printf("p) unemap_set_channel_stimulating  ");
-	printf("q) unemap_set_gain\n");
-	printf("r) unemap_set_isolate_record_mode  ");
-	printf("s) unemap_set_power\n");
-	printf("t) unemap_set_powerup_antialiasing_filter_frequency\n");
-	printf("u) unemap_set_scrolling_channel  ");
-	printf("v) unemap_shutdown\n");
-	printf("w) unemap_start_calibrating  ");
-	printf("x) unemap_start_sampling\n");
-	printf("y) unemap_start_scrolling  ");
-	printf("z) unemap_start_stimulating\n");
-	printf("A) unemap_stop_calibrating  ");
-	printf("B) unemap_stop_sampling  ");
-	printf("C) unemap_stop_scrolling\n");
-	printf("D) unemap_stop_stimulating  ");
-	printf("E) unemap_write_samples_acquired  ");
+	printf("k) unemap_get_sampling\n");
+	printf("l) unemap_get_sampling_frequency  ");
+	printf("m) unemap_get_voltage_range\n");
+	printf("n) unemap_load_current_stimulating  ");
+	printf("o) unemap_load_voltage_stimulating\n");
+	printf("p) unemap_set_antialiasing_filter_frequency  ");
+	printf("q) unemap_set_channel_stimulating\n");
+	printf("r) unemap_set_gain  ");
+	printf("s) unemap_set_isolate_record_mode  ");
+	printf("t) unemap_set_power\n");
+	printf("u) unemap_set_powerup_antialiasing_filter_frequency\n");
+	printf("v) unemap_set_scrolling_channel  ");
+	printf("w) unemap_shutdown\n");
+	printf("x) unemap_start_calibrating  ");
+	printf("y) unemap_start_sampling\n");
+	printf("z) unemap_start_scrolling  ");
+	printf("A) unemap_start_stimulating\n");
+	printf("B) unemap_stop_calibrating  ");
+	printf("C) unemap_stop_sampling  ");
+	printf("D) unemap_stop_scrolling\n");
+	printf("E) unemap_stop_stimulating  ");
+	printf("F) unemap_write_samples_acquired  ");
 	printf("?\n");
 } /* print_menu */
 
@@ -447,13 +448,18 @@ static void process_keyboard(
 				} break;
 				case 'k':
 				{
+					return_code=unemap_get_sampling();
+					printf("return_code=%d\n",return_code);
+				} break;
+				case 'l':
+				{
 					float frequency;
 
 					return_code=unemap_get_sampling_frequency(&frequency);
 					printf("return_code=%d\n",return_code);
 					printf("frequency=%g\n",frequency);
 				} break;
-				case 'l':
+				case 'm':
 				{
 					float maximum_voltage,minimum_voltage;
 					int channel_number;
@@ -466,7 +472,7 @@ static void process_keyboard(
 					printf("minimum_voltage=%g\n",minimum_voltage);
 					printf("maximum_voltage=%g\n",maximum_voltage);
 				} break;
-				case 'm':
+				case 'n':
 				{
 					char file_name[121];
 					float *values,values_per_second;
@@ -496,7 +502,7 @@ static void process_keyboard(
 						printf("Error reading %s\n",file_name);
 					}
 				} break;
-				case 'n':
+				case 'o':
 				{
 					char file_name[121];
 					float *values,values_per_second;
@@ -526,7 +532,7 @@ static void process_keyboard(
 						printf("Error reading %s\n",file_name);
 					}
 				} break;
-				case 'o':
+				case 'p':
 				{
 					float frequency;
 					int channel_number;
@@ -539,7 +545,7 @@ static void process_keyboard(
 						frequency);
 					printf("return_code=%d\n",return_code);
 				} break;
-				case 'p':
+				case 'q':
 				{
 					int channel_number,stimulating;
 
@@ -551,7 +557,7 @@ static void process_keyboard(
 						stimulating);
 					printf("return_code=%d\n",return_code);
 				} break;
-				case 'q':
+				case 'r':
 				{
 					float pre_filter_gain,post_filter_gain;
 					int channel_number;
@@ -566,7 +572,7 @@ static void process_keyboard(
 						post_filter_gain);
 					printf("return_code=%d\n",return_code);
 				} break;
-				case 'r':
+				case 's':
 				{
 					int channel_number,isolate;
 
@@ -577,7 +583,7 @@ static void process_keyboard(
 					return_code=unemap_set_isolate_record_mode(channel_number,isolate);
 					printf("return_code=%d\n",return_code);
 				} break;
-				case 's':
+				case 't':
 				{
 					int on;
 
@@ -586,7 +592,7 @@ static void process_keyboard(
 					return_code=unemap_set_power(on);
 					printf("return_code=%d\n",return_code);
 				} break;
-				case 't':
+				case 'u':
 				{
 					int channel_number;
 
@@ -596,7 +602,7 @@ static void process_keyboard(
 						channel_number);
 					printf("return_code=%d\n",return_code);
 				} break;
-				case 'u':
+				case 'v':
 				{
 					int channel_number;
 
@@ -605,12 +611,12 @@ static void process_keyboard(
 					return_code=unemap_set_scrolling_channel(channel_number);
 					printf("return_code=%d\n",return_code);
 				} break;
-				case 'v':
+				case 'w':
 				{
 					return_code=unemap_shutdown();
 					printf("return_code=%d\n",return_code);
 				} break;
-				case 'w':
+				case 'x':
 				{
 					char file_name[121];
 					float *values,values_per_second;
@@ -672,17 +678,17 @@ static void process_keyboard(
 					}
 				} break;
 #endif /* defined (OLD_CODE) */
-				case 'x':
+				case 'y':
 				{
 					return_code=unemap_start_sampling();
 					printf("return_code=%d\n",return_code);
 				} break;
-				case 'y':
+				case 'z':
 				{
 					return_code=unemap_start_scrolling();
 					printf("return_code=%d\n",return_code);
 				} break;
-				case 'z':
+				case 'A':
 				{
 					return_code=unemap_start_stimulating();
 					printf("return_code=%d\n",return_code);
@@ -719,7 +725,7 @@ static void process_keyboard(
 					}
 				} break;
 #endif /* defined (OLD_CODE) */
-				case 'A':
+				case 'B':
 				{
 					int channel_number;
 
@@ -728,18 +734,18 @@ static void process_keyboard(
 					return_code=unemap_stop_calibrating(channel_number);
 					printf("return_code=%d\n",return_code);
 				} break;
-				case 'B':
+				case 'C':
 				{
 					return_code=unemap_stop_sampling();
 					printf("return_code=%d\n",return_code);
 				} break;
-				case 'C':
+				case 'D':
 				{
 					return_code=unemap_stop_scrolling();
 					printf("return_code=%d\n",return_code);
 					number_of_scrolling_callbacks=0;
 				} break;
-				case 'D':
+				case 'E':
 				{
 					int channel_number;
 
@@ -748,7 +754,7 @@ static void process_keyboard(
 					return_code=unemap_stop_stimulating(channel_number);
 					printf("return_code=%d\n",return_code);
 				} break;
-				case 'E':
+				case 'F':
 				{
 					char file_name[81];
 					FILE *out_file;

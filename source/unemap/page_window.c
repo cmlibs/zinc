@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : page_window.c
 
-LAST MODIFIED : 11 July 2000
+LAST MODIFIED : 23 July 2000
 
 DESCRIPTION :
 
@@ -19,10 +19,17 @@ WINDOWS - win32 acquisition only version
 	(assumes that the parent is a shell).  Otherwise a tool and a shell are
 	created and it displayed/brought to the front/opened.
 ==============================================================================*/
+
+#define BACKGROUND_SAVING
+
 #include <stddef.h>
 #include <stdlib.h>
 #include <math.h>
 #include <limits.h>
+#if defined (BACKGROUND_SAVING)
+#include <sys/types.h>
+#include <sys/prctl.h>
+#endif /* defined (BACKGROUND_SAVING) */
 #if defined (MOTIF)
 #include <X11/Xlib.h>
 #include <X11/Intrinsic.h>
@@ -57,8 +64,6 @@ WINDOWS - win32 acquisition only version
 #include "unemap/vunemapd.h"
 #endif /* defined (MIRADA) */
 #endif /* defined (WINDOWS) */
-
-#define BACKGROUND_SAVING
 
 /*
 Module constants
@@ -219,6 +224,8 @@ typedef struct
 struct Save_write_signal_file_background_data
 {
 	FILE *output_file;
+	int all_channels,number_of_samples;
+	short *samples;
 	struct Page_window *page_window;
 }; /* struct Save_write_signal_file_background_data */
 
@@ -1287,6 +1294,203 @@ DESCRIPTION :
 } /* set_scrolling_device */
 
 #if defined (BACKGROUND_SAVING)
+static void save_write_signal_file_process(
+	void *save_write_signal_file_background_data_void)
+/*******************************************************************************
+LAST MODIFIED : 23 July 2000
+
+DESCRIPTION :
+Called by unemap_get_samples_acquired_background to actually write the data.
+==============================================================================*/
+{
+	float *gains,post_filter_gain,pre_filter_gain;
+	int channel_number,i,j,number_of_channels,number_of_samples,number_of_signals,
+		return_code;
+	short *destination,*samples,*source;
+	struct Device **device;
+	struct Page_window *page_window;
+	struct Rig *rig;
+	struct Save_write_signal_file_background_data
+		*save_write_signal_file_background_data;
+	struct Signal_buffer *signal_buffer;
+
+	ENTER(save_write_signal_file_process);
+	/*???debug */
+	printf("enter save_write_signal_file_process\n");
+#if defined (DEBUG)
+#endif /* defined (DEBUG) */
+	return_code=0;
+	/* check arguments */
+	if ((save_write_signal_file_background_data=
+		(struct Save_write_signal_file_background_data *)
+		save_write_signal_file_background_data_void)&&
+		(0==save_write_signal_file_background_data->all_channels)&&
+		(0<(number_of_samples=save_write_signal_file_background_data->
+		number_of_samples))&&
+		(samples=save_write_signal_file_background_data->samples)&&
+		(page_window=save_write_signal_file_background_data->page_window)&&
+		(page_window->rig_address)&&(rig= *(page_window->rig_address))&&
+		(save_write_signal_file_background_data->output_file))
+	{
+		if (unemap_get_number_of_channels(&number_of_channels))
+		{
+			i=rig->number_of_devices;
+			device=rig->devices;
+			while (i>0)
+			{
+				if ((*device)&&((*device)->signal)&&((*device)->channel)&&
+					(signal_buffer=(*device)->signal->buffer))
+				{
+					signal_buffer->start=0;
+					signal_buffer->end=(int)(number_of_samples-1);
+					channel_number=((*device)->channel->number)-1;
+					number_of_signals=signal_buffer->number_of_signals;
+					destination=((signal_buffer->signals).short_int_values)+
+						((*device)->signal->index);
+					if ((0<=channel_number)&&
+						((unsigned long)channel_number<number_of_channels))
+					{
+						source=(short *)samples+channel_number;
+						for (j=(int)number_of_samples;j>0;j--)
+						{
+							*destination= *source;
+							source += number_of_channels;
+							destination += number_of_signals;
+						}
+					}
+					else
+					{
+						for (j=(int)number_of_samples;j>0;j--)
+						{
+							*destination=0;
+							destination += number_of_signals;
+						}
+					}
+				}
+				i--;
+				device++;
+			}
+#if defined (DEBUG)
+			/*???debug */
+			printf("after reordering\n");
+#endif /* defined (DEBUG) */
+#if !defined (MIRADA)
+			gains=(float *)NULL;
+			i=rig->number_of_devices;
+			if (ALLOCATE(gains,float,i))
+			{
+				device=rig->devices;
+				while (i>0)
+				{
+					if ((*device)&&((*device)->signal)&&((*device)->signal->buffer)&&
+						((*device)->channel))
+					{
+						gains[i-1]=(*device)->channel->gain;
+						if (unemap_get_gain((*device)->channel->number,&pre_filter_gain,
+							&post_filter_gain))
+						{
+							(*device)->channel->gain /= pre_filter_gain*post_filter_gain;
+						}
+					}
+					i--;
+					device++;
+				}
+			}
+#endif /* !defined (MIRADA) */
+			return_code=write_signal_file(
+				save_write_signal_file_background_data->output_file,rig);
+			if (return_code)
+			{
+				page_window->data_saved=1;
+			}
+#if !defined (MIRADA)
+			if (gains)
+			{
+				i=rig->number_of_devices;
+				device=rig->devices;
+				while (i>0)
+				{
+					if ((*device)&&((*device)->signal)&&((*device)->signal->buffer))
+					{
+						(*device)->channel->gain=gains[i-1];
+					}
+					i--;
+					device++;
+				}
+				DEALLOCATE(gains);
+			}
+#endif /* !defined (MIRADA) */
+		}
+		fclose(save_write_signal_file_background_data->output_file);
+		DEALLOCATE(save_write_signal_file_background_data->samples);
+		DEALLOCATE(save_write_signal_file_background_data);
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"save_write_signal_file_process.  Invalid arguments %d %d %p %p",
+			channel_number,number_of_samples,samples,
+			save_write_signal_file_background_data_void);
+		return_code=0;
+	}
+	DEALLOCATE(save_write_signal_file_background_data);
+	/*???debug */
+	printf("leave save_write_signal_file_process\n");
+#if defined (DEBUG)
+#endif /* defined (DEBUG) */
+	LEAVE;
+} /* save_write_signal_file_process */
+
+static void save_write_signal_file_background(const int all_channels,
+	const int number_of_samples,const short *samples,
+	void *save_write_signal_file_background_data_void)
+/*******************************************************************************
+LAST MODIFIED : 23 July 2000
+
+DESCRIPTION :
+Called by unemap_get_samples_acquired_background to actually write the data.
+==============================================================================*/
+{
+	struct Save_write_signal_file_background_data
+		*save_write_signal_file_background_data;
+
+	ENTER(save_write_signal_file_background);
+	/*???debug */
+	printf("enter save_write_signal_file_background\n");
+#if defined (DEBUG)
+#endif /* defined (DEBUG) */
+	/* check arguments */
+	if (save_write_signal_file_background_data=
+		(struct Save_write_signal_file_background_data *)
+		save_write_signal_file_background_data_void)
+	{
+		save_write_signal_file_background_data->all_channels=all_channels;
+		save_write_signal_file_background_data->number_of_samples=number_of_samples;
+		save_write_signal_file_background_data->samples=(short *)samples;
+		if (-1==sproc(save_write_signal_file_process,PR_SALL,
+			save_write_signal_file_background_data_void))
+		{
+			display_message(ERROR_MESSAGE,
+				"save_write_signal_file_background.  sproc failed");
+			DEALLOCATE(save_write_signal_file_background_data);
+			DEALLOCATE(samples);
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"save_write_signal_file_background.  Invalid arguments %d %d %p %p",
+			all_channels,number_of_samples,samples,
+			save_write_signal_file_background_data_void);
+	}
+	/*???debug */
+	printf("leave save_write_signal_file_background\n");
+#if defined (DEBUG)
+#endif /* defined (DEBUG) */
+	LEAVE;
+} /* save_write_signal_file_background */
+
+#if defined (OLD_CODE)
 static void save_write_signal_file_background(const int all_channels,
 	const int number_of_samples,const short *samples,
 	void *save_write_signal_file_background_data_void)
@@ -1428,6 +1632,7 @@ Called by unemap_get_samples_acquired_background to actually write the data.
 #endif /* defined (DEBUG) */
 	LEAVE;
 } /* save_write_signal_file_background */
+#endif /* defined (OLD_CODE) */
 #endif /* defined (BACKGROUND_SAVING) */
 
 #if defined (BACKGROUND_SAVING)
@@ -1446,6 +1651,8 @@ named file.
 	struct Page_window *page_window;
 
 	ENTER(save_write_signal_file);
+	/*???debug */
+	printf("enter save_write_signal_file\n");
 	return_code=0;
 	/* check that the rig exists */
 	if ((page_window=(struct Page_window *)page_window_void)&&
@@ -1491,6 +1698,8 @@ named file.
 		display_message(ERROR_MESSAGE,"save_write_signal_file.  Missing rig");
 		return_code=0;
 	}
+	/*???debug */
+	printf("leave save_write_signal_file\n");
 	LEAVE;
 
 	return (return_code);

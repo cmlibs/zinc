@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : unemap_hardware.h
 
-LAST MODIFIED : 3 July 2000
+LAST MODIFIED : 20 July 2000
 
 DESCRIPTION :
 Code for controlling the National Instruments (NI) data acquisition and unemap
@@ -70,7 +70,7 @@ int unemap_configure(float sampling_frequency,int number_of_samples_in_buffer,
 	Unemap_hardware_callback *scrolling_callback,void *scrolling_callback_data,
 	float scrolling_refresh_frequency,int synchronization_card);
 /*******************************************************************************
-LAST MODIFIED : 9 July 2000
+LAST MODIFIED : 20 July 2000
 
 DESCRIPTION :
 Configures the hardware for sampling at the specified <sampling_frequency> and
@@ -101,7 +101,7 @@ Every <sampling_frequency>/<scrolling_refresh_frequency> samples (one sample
 		- next (number of scrolling channels)*(number of values)*sizeof(short) bytes
 			are the channel values
 		- last sizeof(void *) bytes are the user supplied callback data
-	- LPARAM is a ULONG specifying the number of bytes ing the WPARAM array
+	- LPARAM is a ULONG specifying the number of bytes in the WPARAM array
 		over the <scrolling_refresh_period>) in the array
 	- it is the responsibility of the window message handler to free the WPARAM
 		array.
@@ -109,8 +109,9 @@ Every <sampling_frequency>/<scrolling_refresh_frequency> samples (one sample
 Initially there are no scrolling channels.
 
 <synchronization_card> is the number of the NI card, starting from 1 on the
-left, for which the synchronization signal is input, via the 5-way cable, to the
-attached SCU.  All other SCUs output the synchronization signal.
+left, for which the synchronization signal is input if the crate is a slave, via
+the 5-way cable, to the attached SCU.  All other SCUs output the synchronization
+signal.
 ==============================================================================*/
 
 int unemap_configured(void);
@@ -225,6 +226,14 @@ The function fails if the hardware is not configured.
 
 Stops the sampling.  Use <unemap_get_number_of_samples_acquired> to find out how
 many samples were acquired.
+==============================================================================*/
+
+int unemap_get_sampling(void);
+/*******************************************************************************
+LAST MODIFIED : 16 July 2000
+
+DESCRIPTION :
+Returns a non-zero if unemap is sampling and zero otherwise.
 ==============================================================================*/
 
 int unemap_set_isolate_record_mode(int channel_number,int isolate);
@@ -393,14 +402,14 @@ Otherwise the function fails.
 int unemap_get_samples_acquired_background(int channel_number,
 	Acquired_data_callback *callback,void *user_data);
 /*******************************************************************************
-LAST MODIFIED : 3 July 2000
+LAST MODIFIED : 21 July 2000
 
 DESCRIPTION :
 The function fails if the hardware is not configured.
 
 The function gets the samples specified by the <channel_number> and calls the
 <callback> with the <channel_number>, the number of samples, the samples and the
-<user_data>.
+<user_data>.  The <callback> is responsible for deallocating the samples memory.
 
 When the function returns, it is safe to call any of the other functions
 (including unemap_start_sampling), but the <callback> may not have finished or

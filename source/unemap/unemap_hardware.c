@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : unemap_hardware.c
 
-LAST MODIFIED : 11 July 2000
+LAST MODIFIED : 21 July 2000
 
 DESCRIPTION :
 Code for controlling the National Instruments (NI) data acquisition and unemap
@@ -24,12 +24,9 @@ SWITCHING_TIME - for calculating gains during calibration
 4 Propagate relay_power_on_UnEmap2vx ?
 
 ???To do before Peng's system is shipped
-1 Testing multi-crate
-2 Asynchronous signal file saving
-3 Synchronous stimulation
+1 Asynchronous signal file saving.  Needs to be made thread safe for this
+2 Synchronous stimulation
 	see SYNCHRONOUS_STIMULATION
-4 BattGood
-5 Constant current stimulation
 ==============================================================================*/
 
 #if defined (SYNCHRONOUS_STIMULATION)
@@ -3337,6 +3334,7 @@ the actual values used.
 #endif /* defined (USE_WFM_LOAD) */
 
 	ENTER(load_NI_DA);
+#if defined (DEBUG)
 /*???debug */
 {
 	FILE *unemap_debug;
@@ -3371,7 +3369,6 @@ the actual values used.
 		fclose(unemap_debug);
 	}
 }
-#if defined (DEBUG)
 #endif /* defined (DEBUG) */
 	return_code=0;
 	/* check arguments */
@@ -3464,6 +3461,7 @@ the actual values used.
 							/*???DB.  Just to try out stopping.  Might use for stimulation */
 						status=WFM_Check((module_NI_CARDS[i]).device_number,da_channel,
 							&stopped,&iterations,&points);
+#if defined (DEBUG)
 /*???debug */
 {
 	FILE *unemap_debug;
@@ -3476,7 +3474,6 @@ the actual values used.
 		fclose(unemap_debug);
 	}
 }
-#if defined (DEBUG)
 #endif /* defined (DEBUG) */
 						if ((0!=status)||stopped)
 						{
@@ -3485,6 +3482,7 @@ the actual values used.
 									for AO0 and AO1 or if we need it */
 							status=WFM_Group_Control((module_NI_CARDS[i]).device_number,
 								/*group*/1,/*Clear*/0);
+#if defined (DEBUG)
 /*???debug */
 {
 	FILE *unemap_debug;
@@ -3496,7 +3494,6 @@ the actual values used.
 		fclose(unemap_debug);
 	}
 }
-#if defined (DEBUG)
 #endif /* defined (DEBUG) */
 #if !defined (SYNCHRONOUS_STIMULATION)
 #if defined (OLD_CODE)
@@ -3580,6 +3577,7 @@ the actual values used.
 												}
 											}
 										}
+#if defined (DEBUG)
 /*???debug */
 {
 	FILE *unemap_debug;
@@ -3601,7 +3599,6 @@ the actual values used.
 		fclose(unemap_debug);
 	}
 }
-#if defined (DEBUG)
 #endif /* defined (DEBUG) */
 #if defined (SYNCHRONOUS_STIMULATION)
 #if defined (USE_WFM_LOAD)
@@ -3820,6 +3817,7 @@ load_NI_DA) and have not yet started.
 			status=WFM_Group_Control(start_stimulation_card->device_number,/*group*/1,
 				/*Start*/1);
 #endif /* defined (OLD_CODE) */
+#if defined (DEBUG)
 /*???debug */
 {
 	FILE *unemap_debug;
@@ -3831,8 +3829,8 @@ load_NI_DA) and have not yet started.
 		fclose(unemap_debug);
 	}
 }
-#if defined (DEBUG)
 #endif /* defined (DEBUG) */
+#if defined (DEBUG)
 /*???debug */
 {
 	FILE *unemap_debug;
@@ -3844,7 +3842,6 @@ load_NI_DA) and have not yet started.
 		fclose(unemap_debug);
 	}
 }
-#if defined (DEBUG)
 #endif /* defined (DEBUG) */
 			start_stimulation_card=(struct NI_card *)NULL;
 			for (i=0;i<module_number_of_NI_CARDS;i++)
@@ -4101,6 +4098,7 @@ Stops the <da_channel> for the specified NI card(s).
 #endif /* defined (NI_DAQ) */
 
 	ENTER(stop_NI_DA);
+#if defined (DEBUG)
 /*???debug */
 {
 	FILE *unemap_debug;
@@ -4111,7 +4109,6 @@ Stops the <da_channel> for the specified NI card(s).
 		fclose(unemap_debug);
 	}
 }
-#if defined (DEBUG)
 #endif /* defined (DEBUG) */
 	return_code=0;
 #if defined (NI_DAQ)
@@ -4146,6 +4143,7 @@ Stops the <da_channel> for the specified NI card(s).
 						/* stop waveform generation */
 						status=WFM_Group_Control((module_NI_CARDS[i]).device_number,
 							/*group*/1,/*Clear*/0);
+#if defined (DEBUG)
 /*???debug */
 {
 	FILE *unemap_debug;
@@ -4157,8 +4155,8 @@ Stops the <da_channel> for the specified NI card(s).
 		fclose(unemap_debug);
 	}
 }
-#if defined (DEBUG)
 #endif /* defined (DEBUG) */
+#if defined (DEBUG)
 /*???debug */
 {
 	FILE *unemap_debug;
@@ -4169,7 +4167,6 @@ Stops the <da_channel> for the specified NI card(s).
 		fclose(unemap_debug);
 	}
 }
-#if defined (DEBUG)
 #endif /* defined (DEBUG) */
 						if ((UnEmap_2V1==module_NI_CARDS->unemap_hardware_version)||
 							(UnEmap_2V2==module_NI_CARDS->unemap_hardware_version))
@@ -4442,6 +4439,7 @@ stage 4 is calculating the offset
 							/* stop waveform generation */
 							status=WFM_Group_Control(ni_card->device_number,/*group*/1,
 								/*Clear*/0);
+#if defined (DEBUG)
 /*???debug */
 {
 	FILE *unemap_debug;
@@ -4454,7 +4452,6 @@ stage 4 is calculating the offset
 		fclose(unemap_debug);
 	}
 }
-#if defined (DEBUG)
 #endif /* defined (DEBUG) */
 							/* clear start */
 							status=Select_Signal(ni_card->device_number,ND_OUT_START_TRIGGER,
@@ -4589,6 +4586,7 @@ stage 4 is calculating the offset
 					number_of_settled_channels++;
 				}
 			}
+#if defined (DEBUG)
 /*???debug */
 {
 	FILE *unemap_debug;
@@ -4613,7 +4611,6 @@ stage 4 is calculating the offset
 		fclose(unemap_debug);
 	}
 }
-#if defined (DEBUG)
 #endif /* defined (DEBUG) */
 			if ((number_of_settled_channels>=number_of_channels)||
 				((number_of_settled_channels>0)&&(settling_step>=settling_step_max)))
@@ -5689,6 +5686,7 @@ stage 4 is calculating the offset
 					number_of_settled_channels++;
 				}
 			}
+#if defined (DEBUG)
 /*???debug */
 {
 	FILE *unemap_debug;
@@ -5713,7 +5711,6 @@ stage 4 is calculating the offset
 		fclose(unemap_debug);
 	}
 }
-#if defined (DEBUG)
 #endif /* defined (DEBUG) */
 			if ((number_of_settled_channels>=number_of_channels)||
 				((number_of_settled_channels>0)&&(settling_step>=settling_step_max)))
@@ -6487,7 +6484,7 @@ int unemap_configure(float sampling_frequency_slave,
 	Unemap_hardware_callback *scrolling_callback,void *scrolling_callback_data,
 	float scrolling_refresh_frequency,int synchronization_card)
 /*******************************************************************************
-LAST MODIFIED : 9 July 2000
+LAST MODIFIED : 20 July 2000
 
 DESCRIPTION :
 Configures the hardware for sampling at the specified
@@ -6518,7 +6515,7 @@ Every <sampling_frequency_slave>/<scrolling_refresh_frequency> samples (one
 		- next (number of scrolling channels)*(number of values)*sizeof(short) bytes
 			are the channel values
 		- last sizeof(void *) bytes are the user supplied callback data
-	- LPARAM is a ULONG specifying the number of bytes ing the WPARAM array
+	- LPARAM is a ULONG specifying the number of bytes in the WPARAM array
 		over the <scrolling_refresh_period>) in the array
 	- it is the responsibility of the window message handler to free the WPARAM
 		array.
@@ -6526,8 +6523,9 @@ Every <sampling_frequency_slave>/<scrolling_refresh_frequency> samples (one
 Initially there are no scrolling channels.
 
 <synchronization_card> is the number of the NI card, starting from 1 on the
-left, for which the synchronization signal is input, via the 5-way cable, to the
-attached SCU.  All other SCUs output the synchronization signal.
+left, for which the synchronization signal is input if the crate is a slave, via
+the 5-way cable, to the attached SCU.  All other SCUs output the synchronization
+signal.
 
 For this local hardware version, the sign of <sampling_frequency_slave>
 determines whether the hardware is configured as slave (<0) or master (>0)
@@ -6700,11 +6698,11 @@ determines whether the hardware is configured as slave (<0) or master (>0)
 					/* limit the total locked memory to a third of physical memory */
 					memory_status.dwLength=sizeof(MEMORYSTATUS);
 					GlobalMemoryStatus(&memory_status);
+#if defined (DEBUG)
 					/*???debug */
 					display_message(INFORMATION_MESSAGE,
 						"total physical memory=%d, available physical memory=%d\n",
 						memory_status.dwTotalPhys,memory_status.dwAvailPhys);
-#if defined (DEBUG)
 #endif /* defined (DEBUG) */
 					if ((DWORD)(3*module_number_of_NI_CARDS*hardware_buffer_size)*
 						sizeof(i16)>memory_status.dwTotalPhys)
@@ -6784,15 +6782,12 @@ determines whether the hardware is configured as slave (<0) or master (>0)
 											}
 											if (0==status)
 											{
-												if (local_synchronization_card==i)
+												if (module_slave&&(local_synchronization_card==i))
 												{
-													if (module_slave)
-													{
-														/* set to input the A/D conversion signal */
-														status=Select_Signal(
-															(module_NI_CARDS[i]).device_number,
-															ND_IN_SCAN_START,ND_PFI_7,ND_LOW_TO_HIGH);
-													}
+													/* set to input the A/D conversion signal */
+													status=Select_Signal(
+														(module_NI_CARDS[i]).device_number,
+														ND_IN_SCAN_START,ND_PFI_7,ND_LOW_TO_HIGH);
 												}
 												else
 												{
@@ -7090,6 +7085,7 @@ hardware.
 					/* stop waveform generation */
 					status=WFM_Group_Control((module_NI_CARDS[i]).device_number,
 						/*group*/1,/*Clear*/0);
+#if defined (DEBUG)
 /*???debug */
 {
 	FILE *unemap_debug;
@@ -7102,7 +7098,6 @@ hardware.
 		fclose(unemap_debug);
 	}
 }
-#if defined (DEBUG)
 #endif /* defined (DEBUG) */
 					/* set the output voltage to 0 */
 					AO_Write((module_NI_CARDS[i]).device_number,CALIBRATE_CHANNEL,
@@ -7666,6 +7661,29 @@ many samples were acquired.
 
 	return (return_code);
 } /* unemap_stop_sampling */
+
+int unemap_get_sampling(void)
+/*******************************************************************************
+LAST MODIFIED : 14 July 2000
+
+DESCRIPTION :
+Returns a non-zero if unemap is sampling and zero otherwise.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(unemap_get_sampling);
+	return_code=0;
+#if defined (NI_DAQ)
+	if (module_sampling_on)
+	{
+		return_code=1;
+	}
+#endif /* defined (NI_DAQ) */
+	LEAVE;
+
+	return (return_code);
+} /* unemap_get_sampling */
 
 int unemap_set_isolate_record_mode(int channel_number,int isolate)
 /*******************************************************************************
@@ -8604,9 +8622,11 @@ Otherwise the function fails.
 #endif /* defined (NI_DAQ) */
 
 	ENTER(unemap_write_samples_acquired);
-#if defined (DEBUG)
 	/*???debug */
-	display_message(INFORMATION_MESSAGE,"enter unemap_write_samples_acquired\n");
+	display_message(INFORMATION_MESSAGE,
+		"enter unemap_write_samples_acquired %d %d\n",
+		module_starting_sample_number,module_sample_buffer_size);
+#if defined (DEBUG)
 #endif /* defined (DEBUG) */
 #if defined (NI_DAQ)
 	/* check arguments */
@@ -9272,14 +9292,14 @@ available physical memory and limits the buffer based on this.
 int unemap_get_samples_acquired_background(int channel_number,
 	Acquired_data_callback *callback,void *user_data)
 /*******************************************************************************
-LAST MODIFIED : 4 June 2000
+LAST MODIFIED : 21 July 2000
 
 DESCRIPTION :
 The function fails if the hardware is not configured.
 
 The function gets the samples specified by the <channel_number> and calls the
 <callback> with the <channel_number>, the number of samples, the samples and the
-<user_data>.
+<user_data>.  The <callback> is responsible for deallocating the samples memory.
 
 When the function returns, it is safe to call any of the other functions
 (including unemap_start_sampling), but the <callback> may not have finished or
@@ -9321,7 +9341,6 @@ For this version (hardware local), it retrieves the samples and calls the
 				display_message(ERROR_MESSAGE,
 					"unemap_get_samples_acquired_background.  Could not get samples");
 			}
-			DEALLOCATE(samples);
 		}
 		else
 		{
@@ -9777,6 +9796,7 @@ Use <unemap_start_stimulating> to start the stimulating.
 #endif /* defined (NI_DAQ) */
 
 	ENTER(unemap_load_voltage_stimulating);
+#if defined (DEBUG)
 /*???debug */
 {
 	FILE *unemap_debug;
@@ -9789,7 +9809,6 @@ Use <unemap_start_stimulating> to start the stimulating.
 		fclose(unemap_debug);
 	}
 }
-#if defined (DEBUG)
 #endif /* defined (DEBUG) */
 	return_code=0;
 #if defined (NI_DAQ)

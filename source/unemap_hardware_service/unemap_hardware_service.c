@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : unemap_hardware_service.c
 
-LAST MODIFIED : 9 July 2000
+LAST MODIFIED : 16 July 2000
 
 DESCRIPTION :
 The unemap service which runs under NT and talks to unemap via sockets.
@@ -605,7 +605,7 @@ static int process_message(const unsigned char operation_code,
 	const long message_size,const unsigned char big_endian,
 	unsigned char **out_buffer_address,long *out_buffer_size_address)
 /*******************************************************************************
-LAST MODIFIED : 9 July 2000
+LAST MODIFIED : 16 July 2000
 
 DESCRIPTION :
 ==============================================================================*/
@@ -1492,6 +1492,20 @@ DESCRIPTION :
 					"leave UNEMAP_GET_SAMPLES_ACQUIRED_BACKGROUND_CODE");
 				AddToMessageLog(TEXT(error_string));
 #endif /* defined (DEBUG) */
+			} break;
+			case UNEMAP_GET_SAMPLING_CODE:
+			{
+				return_code=0;
+				if (0==message_size)
+				{
+					return_code=unemap_get_sampling();
+				}
+				else
+				{
+					sprintf(error_string,
+						"unemap_get_sampling.  Incorrect message size %d 0",message_size);
+					AddToMessageLog(TEXT(error_string));
+				}
 			} break;
 			case UNEMAP_GET_SAMPLING_FREQUENCY_CODE:
 			{

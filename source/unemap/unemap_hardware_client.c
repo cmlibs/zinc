@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : unemap_hardware_client.c
 
-LAST MODIFIED : 10 July 2000
+LAST MODIFIED : 23 July 2000
 
 DESCRIPTION :
 Code for talking to the unemap hardware service (running under NT).  This is an
@@ -17,10 +17,8 @@ QUESTIONS :
 				WaitForMultipleObjects for WINDOWS
 
 TO DO :
-1 Extend to multiple crates
-???DB.  Need master slave flag passed to configure?
-2 Speed up save/transfer of data
-3 Synchronize stimulating between cards and then crates
+1 Speed up save/transfer of data.  Needs to be made thread safe for this
+2 Synchronize stimulating between cards and then crates
 ==============================================================================*/
 
 #define USE_SOCKETS
@@ -28,10 +26,16 @@ TO DO :
 
 #define CACHE_CLIENT_INFORMATION
 
+/*#define BACKGROUND_SAVING*/
+
 #include <stddef.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#if defined (BACKGROUND_SAVING) && defined (MOTIF)
+#include <sys/types.h>
+#include <sys/prctl.h>
+#endif /* defined (BACKGROUND_SAVING) && defined (MOTIF) */
 #if defined (WIN32)
 /*???DB.  Assume that running on Intel machine */
 #define __BYTE_ORDER 1234
@@ -120,7 +124,7 @@ functions.
 
 struct Unemap_crate
 /*******************************************************************************
-LAST MODIFIED : 2 July 2000
+LAST MODIFIED : 23 July 2000
 
 DESCRIPTION :
 Information needed for each SCU crate/NI computer pair.
@@ -144,6 +148,7 @@ Information needed for each SCU crate/NI computer pair.
 	int scrolling_socket;
 #endif /* defined (UNIX) */
 #if defined (MOTIF)
+	XtAppContext application_context;
 	XtInputId acquired_socket_xid;
 	XtInputId calibration_socket_xid;
 	XtInputId scrolling_socket_xid;
@@ -544,7 +549,13 @@ Wrapper function for send.
 #endif /* defined (USE_SOCKETS) */
 
 #if defined (USE_SOCKETS)
-void acquired_socket_callback(
+#if defined (BACKGROUND_SAVING) && defined (MOTIF)
+static void acquired_socket_callback(XtPointer crate_void,int *source,
+	XtInputId *id);
+
+static void acquired_socket_callback_process(void *crate_void)
+#else /* defined (BACKGROUND_SAVING) && defined (MOTIF) */
+static void acquired_socket_callback(
 #if defined (WINDOWS)
 	LPVOID *crate_void
 #endif /* defined (WINDOWS) */
@@ -552,12 +563,14 @@ void acquired_socket_callback(
 	XtPointer crate_void,int *source,XtInputId *id
 #endif /* defined (MOTIF) */
 	)
+#endif /* defined (BACKGROUND_SAVING) && defined (MOTIF) */
 /*******************************************************************************
-LAST MODIFIED : 2 July 2000
+LAST MODIFIED : 23 July 2000
 
 DESCRIPTION :
 Called when there is input on the acquired socket.
-???DB.  To be done
+
+The <module_acquired_callback> is responsible for deallocating the samples.
 ==============================================================================*/
 {
 	int i,j,number_of_channels;
@@ -567,14 +580,24 @@ Called when there is input on the acquired socket.
 	unsigned char message_header[2+sizeof(long)];
 	unsigned long number_of_samples;
 
+#if defined (BACKGROUND_SAVING) && defined (MOTIF)
+	ENTER(acquired_socket_callback_process);
+#else /* defined (BACKGROUND_SAVING) && defined (MOTIF) */
 	ENTER(acquired_socket_callback);
+#endif /* defined (BACKGROUND_SAVING) && defined (MOTIF) */
+	/*???debug */
+#if defined (BACKGROUND_SAVING) && defined (MOTIF)
+	printf("enter acquired_socket_callback_process.  %p\n",crate_void);
+#else /* defined (BACKGROUND_SAVING) && defined (MOTIF) */
+	printf("enter acquired_socket_callback.  %p\n",crate_void);
+#endif /* defined (BACKGROUND_SAVING) && defined (MOTIF) */
 #if defined (DEBUG)
-	display_message(INFORMATION_MESSAGE,"acquired_socket_callback.  %p\n",
-		module_acquired_callback);
 #endif /* defined (DEBUG) */
 #if defined (MOTIF)
+#if !defined (BACKGROUND_SAVING)
 	USE_PARAMETER(source);
 	USE_PARAMETER(id);
+#endif /* !defined (BACKGROUND_SAVING) */
 #endif /* defined (MOTIF) */
 	if (crate=(struct Unemap_crate *)crate_void)
 	{
@@ -684,13 +707,64 @@ Called when there is input on the acquired socket.
 					(*module_acquired_callback)(module_acquired_channel_number,
 						(int)number_of_samples,samples,module_acquired_callback_data);
 				}
-				DEALLOCATE(samples);
 			}
 			module_acquired_callback=(Acquired_data_callback *)NULL;
 			module_acquired_callback_data=(void *)NULL;
 		}
+#if defined (BACKGROUND_SAVING) && defined (MOTIF)
+		crate->acquired_socket_xid=XtAppAddInput(crate->application_context,
+			crate->acquired_socket,(XtPointer)XtInputReadMask,
+			acquired_socket_callback,(XtPointer)crate);
+#endif /* defined (BACKGROUND_SAVING) && defined (MOTIF) */
 	}
+	/*???debug */
+#if defined (BACKGROUND_SAVING) && defined (MOTIF)
+	printf("leave acquired_socket_callback_process\n");
+#else /* defined (BACKGROUND_SAVING) && defined (MOTIF) */
+	printf("leave acquired_socket_callback\n");
+#endif /* defined (BACKGROUND_SAVING) && defined (MOTIF) */
+#if defined (DEBUG)
+#endif /* defined (DEBUG) */
 	LEAVE;
+#if defined (BACKGROUND_SAVING) && defined (MOTIF)
+} /* acquired_socket_callback_process */
+
+static void acquired_socket_callback(XtPointer crate_void,int *source,
+	XtInputId *id)
+/*******************************************************************************
+LAST MODIFIED : 23 July 2000
+
+DESCRIPTION :
+Called when there is input on the acquired socket.
+
+The <module_acquired_callback> is responsible for deallocating the samples.
+==============================================================================*/
+{
+	struct Unemap_crate *crate;
+
+	ENTER(acquired_socket_callback);
+	/*???debug */
+	printf("enter acquired_socket_callback.  %p\n",crate_void);
+#if defined (DEBUG)
+#endif /* defined (DEBUG) */
+	USE_PARAMETER(source);
+	USE_PARAMETER(id);
+	if ((crate=(struct Unemap_crate *)crate_void)&&(crate->acquired_socket_xid))
+	{
+		/* so that don't get multiple acquired_socket_callback calls */
+		XtRemoveInput(crate->acquired_socket_xid);
+		crate->acquired_socket_xid=0;
+		if (-1==sproc(acquired_socket_callback_process,PR_SALL,(void *)crate_void))
+		{
+			display_message(ERROR_MESSAGE,"acquired_socket_callback.  sproc failed");
+		}
+	}
+	/*???debug */
+	printf("leave acquired_socket_callback\n");
+#if defined (DEBUG)
+#endif /* defined (DEBUG) */
+	LEAVE;
+#endif /* defined (BACKGROUND_SAVING) && defined (MOTIF) */
 } /* acquired_socket_callback */
 #endif /* defined (USE_SOCKETS) */
 
@@ -1451,6 +1525,9 @@ See <unemap_configure> for more details.
 			(INVALID_SOCKET!=crate->command_socket))
 		{
 			(crate->scrolling).complete=SCROLLING_NO_CHANNELS_FOR_CRATE;
+#if defined (MOTIF)
+			crate->application_context=application_context;
+#endif /* defined (MOTIF) */
 #if defined (WINDOWS)
 			if (scrolling_thread=CreateThread(
 				/*no security attributes*/NULL,/*use default stack size*/0,
@@ -8630,6 +8707,80 @@ many samples were acquired.
 	return (return_code);
 } /* unemap_stop_sampling */
 
+int unemap_get_sampling(void)
+/*******************************************************************************
+LAST MODIFIED : 16 July 2000
+
+DESCRIPTION :
+Returns a non-zero if unemap is sampling and zero otherwise.
+==============================================================================*/
+{
+	int return_code,retval;
+	long buffer_size,message_size;
+	unsigned char buffer[2+sizeof(long)];
+
+	ENTER(unemap_get_sampling);
+	return_code=0;
+	/* unemap may have been started by another process, so can't just check that
+		the command_socket is valid */
+	if (initialize_connection()&&module_unemap_crates&&
+		(INVALID_SOCKET!=module_unemap_crates->command_socket)&&
+		(0<module_number_of_unemap_crates))
+	{
+		buffer[0]=UNEMAP_GET_SAMPLING_CODE;
+		buffer[1]=BIG_ENDIAN_CODE;
+		buffer_size=2+sizeof(message_size);
+		message_size=0;
+		memcpy(buffer+2,&message_size,sizeof(message_size));
+		retval=socket_send(module_unemap_crates->command_socket,buffer,buffer_size,
+			0);
+		if (SOCKET_ERROR!=retval)
+		{
+			memcpy(&message_size,buffer+2,sizeof(message_size));
+#if defined (DEBUG)
+			/*???debug */
+			display_message(INFORMATION_MESSAGE,
+				"Sent data %x %x %ld\n",buffer[0],buffer[1],message_size);
+#endif /* defined (DEBUG) */
+			/* get the header back */
+			retval=socket_recv(module_unemap_crates->command_socket,buffer,
+				2+sizeof(long),0);
+			if (SOCKET_ERROR!=retval)
+			{
+				memcpy(&buffer_size,buffer+2,sizeof(buffer_size));
+#if defined (DEBUG)
+				/*???debug */
+				display_message(INFORMATION_MESSAGE,
+					"Received %d bytes, data %x %x %ld\n",retval,buffer[0],buffer[1],
+					buffer_size);
+#endif /* defined (DEBUG) */
+				if ((2+sizeof(long)==retval)&&(0==buffer_size)&&(buffer[0]))
+				{
+					return_code=1;
+				}
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE,
+					"unemap_get_sampling.  socket_recv() failed");
+			}
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,
+				"unemap_get_sampling.  socket_send() failed");
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"unemap_get_sampling.  Could not initialize_connection");
+	}
+	LEAVE;
+
+	return (return_code);
+} /* unemap_get_sampling */
+
 int unemap_set_isolate_record_mode(int channel_number,int isolate)
 /*******************************************************************************
 LAST MODIFIED : 10 July 2000
@@ -9579,14 +9730,14 @@ Otherwise the function fails.
 int unemap_get_samples_acquired_background(int channel_number,
 	Acquired_data_callback *callback,void *user_data)
 /*******************************************************************************
-LAST MODIFIED : 10 July 2000
+LAST MODIFIED : 21 July 2000
 
 DESCRIPTION :
 The function fails if the hardware is not configured.
 
 The function gets the samples specified by the <channel_number> and calls the
 <callback> with the <channel_number>, the number of samples, the samples and the
-<user_data>.
+<user_data>.  The <callback> is responsible for deallocating the samples memory.
 
 When the function returns, it is safe to call any of the other functions
 (including unemap_start_sampling), but the <callback> may not have finished or
@@ -9607,6 +9758,10 @@ background in a client/server arrangement.
 	struct Unemap_crate *crate;
 
 	ENTER(unemap_get_samples_acquired_background);
+	/*???debug */
+	printf("enter unemap_get_samples_acquired_background\n");
+#if defined (DEBUG)
+#endif /* defined (DEBUG) */
 	return_code=0;
 	/* check arguments */
 	if (callback)
@@ -9702,6 +9857,10 @@ background in a client/server arrangement.
 		display_message(ERROR_MESSAGE,
 			"unemap_get_samples_acquired_background.  Missing callback");
 	}
+	/*???debug */
+	printf("leave unemap_get_samples_acquired_background\n");
+#if defined (DEBUG)
+#endif /* defined (DEBUG) */
 	LEAVE;
 
 	return (return_code);
@@ -9900,7 +10059,7 @@ The sampling frequency is assigned to <*frequency>.
 int unemap_set_gain(int channel_number,float pre_filter_gain,
 	float post_filter_gain)
 /*******************************************************************************
-LAST MODIFIED : 9 March 2000
+LAST MODIFIED : 16 July 2000
 
 DESCRIPTION :
 The function fails if the hardware is not configured.
@@ -9922,7 +10081,7 @@ For UNEMAP_2V1 and UNEMAP_2V2, the post filter gain can be 11, 22, 55, 110, 220,
 550 or 1100 (fixed gain of 11).
 ==============================================================================*/
 {
-	int crate_channel_number,i,return_code;
+	int crate_channel_number,i,return_code,sampling_on;
 	struct Unemap_crate *crate;
 
 	ENTER(unemap_set_gain);
@@ -9932,6 +10091,12 @@ For UNEMAP_2V1 and UNEMAP_2V2, the post filter gain can be 11, 22, 55, 110, 220,
 	if (initialize_connection()&&(crate=module_unemap_crates)&&
 		(0<module_number_of_unemap_crates))
 	{
+		/* since sampling is controlled by the first crate, have to make sure that
+			it is stopped for all crates while changing gain */
+		if (sampling_on=unemap_get_sampling())
+		{
+			unemap_stop_sampling();
+		}
 		if (0==channel_number)
 		{
 			return_code=1;
@@ -9960,6 +10125,10 @@ For UNEMAP_2V1 and UNEMAP_2V2, the post filter gain can be 11, 22, 55, 110, 220,
 				return_code=crate_set_gain(crate,crate_channel_number,pre_filter_gain,
 					post_filter_gain);
 			}
+		}
+		if (sampling_on)
+		{
+			unemap_start_sampling();
 		}
 	}
 	else

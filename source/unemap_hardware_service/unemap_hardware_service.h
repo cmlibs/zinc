@@ -1,13 +1,13 @@
 /*******************************************************************************
 FILE : unemap_hardware_service.h
 
-LAST MODIFIED : 2 July 2000
+LAST MODIFIED : 16 July 2000
 
 DESCRIPTION :
 Instruction codes for the unemap service which runs under NT and talks to unemap
 via sockets.
 
-Biggest code is 0x2d
+Biggest code is 0x2e
 ==============================================================================*/
 #if !defined (UNEMAP_HARDWARE_SERVICE)
 #define UNEMAP_HARDWARE_SERVICE
@@ -37,6 +37,7 @@ Global constants
 #define UNEMAP_GET_SAMPLE_RANGE_CODE ((unsigned char)0x11)
 #define UNEMAP_GET_SAMPLES_ACQUIRED_CODE ((unsigned char)0x12)
 #define UNEMAP_GET_SAMPLES_ACQUIRED_BACKGROUND_CODE ((unsigned char)0x2d)
+#define UNEMAP_GET_SAMPLING_CODE ((unsigned char)0x2e)
 #define UNEMAP_GET_SAMPLING_FREQUENCY_CODE ((unsigned char)0x13)
 #define UNEMAP_GET_VOLTAGE_RANGE_CODE ((unsigned char)0x14)
 #define UNEMAP_LOAD_CURRENT_STIMULATING_CODE ((unsigned char)0x2a)
