@@ -236,7 +236,7 @@ manager modify not identifier instead.
 	if (scene)
 	{
 		/* display list is assumed to be current */
-		if (scene->scene_manager&&IS_MANAGED(Scene)(scene,scene->scene_manager))
+		if (scene->scene_manager)
 		{
 			MANAGER_NOTE_CHANGE(Scene)(
 				MANAGER_CHANGE_OBJECT_NOT_IDENTIFIER(Scene),scene,scene->scene_manager);
@@ -4973,7 +4973,7 @@ PROTOTYPE_MANAGER_COPY_IDENTIFIER_FUNCTION(Scene,name,char *)
 /* NOTE: Using special ADD_OBJECT_TO_MANAGER function so that object keeps */
 /*       pointer to its manager while it is managed. */
 
-DECLARE_MANAGER_FUNCTIONS(Scene)
+DECLARE_OBJECT_WITH_MANAGER_MANAGER_FUNCTIONS(Scene,scene_manager)
 DECLARE_OBJECT_WITH_MANAGER_MANAGER_IDENTIFIER_FUNCTIONS( \
 	Scene,name,char *,scene_manager)
 
