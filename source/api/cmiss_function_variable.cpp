@@ -247,7 +247,6 @@ See the include file.
 #else // defined (NOT_DEBUG)
 #endif // defined (NOT_DEBUG)
 
-#if defined (NOT_DEBUG)
 int Cmiss_function_variable_set_value(Cmiss_function_variable_id variable,
 	Cmiss_function_id value)
 /*******************************************************************************
@@ -274,7 +273,7 @@ See the include file.
 
 	return (return_code);
 }
-#else // defined (NOT_DEBUG)
+#if defined (NOT_DEBUG)
 int Cmiss_function_variable_set_value(Cmiss_function_variable_id,
 	Cmiss_function_id)
 /*******************************************************************************
@@ -290,6 +289,7 @@ See the include file.
 
 	return (return_code);
 }
+#else // defined (NOT_DEBUG)
 #endif // defined (NOT_DEBUG)
 
 Cmiss_function_variable_list_id Cmiss_function_variable_list_create(void)
