@@ -1320,14 +1320,6 @@ Main program for the CMISS Graphical User Interface
 			command_data.default_graphical_material);
 	}
 
-#if defined (F90_INTERPRETER) || defined (PERL_INTERPRETER)
-	create_interpreter(&status);
-#endif /* defined (F90_INTERPRETER) || defined (PERL_INTERPRETER) */
-
-#if defined (IMAGEMAGICK)
-	Open_image_environment(*argv);
-#endif /* defined (IMAGEMAGICK) */
-
 	if (return_code)
 	{
 		if (command_list)
@@ -1639,6 +1631,14 @@ Main program for the CMISS Graphical User Interface
 				i++;
 			}
 #endif /* defined (MOTIF) */
+
+#if defined (F90_INTERPRETER) || defined (PERL_INTERPRETER)
+			create_interpreter(argc, argv, comfile_name, &status);
+#endif /* defined (F90_INTERPRETER) || defined (PERL_INTERPRETER) */
+
+#if defined (IMAGEMAGICK)
+			Open_image_environment(*argv);
+#endif /* defined (IMAGEMAGICK) */
 
 			if(no_display)
 			{
