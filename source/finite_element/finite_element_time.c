@@ -471,9 +471,16 @@ of the time index array.
 		last_time = fe_time_version->times[number_of_times-1];
 		/*Initial est. of the array index, assuming times evenly spaced, no gaps */	
 		/*This assumption and hence estimate is true for most signal files. */
-		fe_value_index=((time-first_time)/(last_time-first_time))*(number_of_times-1);
-		fe_value_index+=0.5;/*round float to nearest int */
-		array_index=floor(fe_value_index);
+		if (last_time>first_time)
+		{
+			fe_value_index=((time-first_time)/(last_time-first_time))*(number_of_times-1);
+			fe_value_index+=0.5;/*round float to nearest int */
+			array_index=floor(fe_value_index);
+		}
+		else
+		{
+			array_index = 0;
+		}
 		time_low=0;
 		time_high=0;
 		done=0;
