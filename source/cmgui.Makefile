@@ -1,7 +1,7 @@
 # **************************************************************************
 # FILE : cmgui.Makefile
 #
-# LAST MODIFIED : 9 September 2003
+# LAST MODIFIED : 25 November 2003
 #
 # DESCRIPTION :
 #
@@ -546,6 +546,8 @@ ifeq ($(SYSNAME),win32)
    LIB = -lg2c -lgdi32  -lwinspool -lcomdlg32 -ladvapi32 -lshell32 -lole32 -loleaut32 -lnetapi32 -luuid -lwsock32 -lmpr -lwinmm -lversion -lodbc32 -lstdc++
 endif # SYSNAME == win32
 
+BOOST_INC = -I$(CMISS_ROOT)/boost-1.30.2
+
 ALL_DEFINES = $(COMPILE_DEFINES) $(TARGET_TYPE_DEFINES) \
 	$(PLATFORM_DEFINES) $(OPERATING_SYSTEM_DEFINES) $(USER_INTERFACE_DEFINES) \
 	$(STEREO_DISPLAY_DEFINES) $(CONNECTIVITY_DEFINES) \
@@ -556,9 +558,9 @@ ALL_DEFINES = $(COMPILE_DEFINES) $(TARGET_TYPE_DEFINES) \
 	$(CELL_DEFINES) $(MOVIE_FILE_DEFINES) $(INTERPRETER_DEFINES)\
 	$(IMAGEMAGICK_DEFINES) $(XML2_DEFINES)
 
-ALL_INCLUDES = $(SOURCE_DIRECTORY_INC) $(HAPTIC_INC) $(WORMHOLE_INC) $(XML_INC) \
-	$(UIDH_INC) $(USER_INTERFACE_INC) $(INTERPRETER_INC) $(IMAGEMAGICK_INC) \
-	$(XML2_INC)
+ALL_INCLUDES = $(SOURCE_DIRECTORY_INC) $(HAPTIC_INC) $(WORMHOLE_INC) \
+	$(XML_INC) $(UIDH_INC) $(USER_INTERFACE_INC) $(INTERPRETER_INC) \
+	$(IMAGEMAGICK_INC) $(XML2_INC) $(BOOST_INC)
 
 ALL_FLAGS = $(OPTIMISATION_FLAGS) $(COMPILE_FLAGS) $(TARGET_TYPE_FLAGS) \
 	$(ALL_DEFINES) $(ALL_INCLUDES)
@@ -586,7 +588,17 @@ API_SRCS = \
 	api/cmiss_variable_finite_element.c \
 	api/cmiss_variable_identity.c \
 	api/cmiss_variable_new.cpp \
-	api/cmiss_variable_new_basic.cpp
+	api/cmiss_variable_new_composite.cpp \
+	api/cmiss_variable_new_composition.cpp \
+	api/cmiss_variable_new_coordinates.cpp \
+	api/cmiss_variable_new_derivative.cpp \
+	api/cmiss_variable_new_derivative_matrix.cpp \
+	api/cmiss_variable_new_finite_element.cpp \
+	api/cmiss_variable_new_input.cpp \
+	api/cmiss_variable_new_input_composite.cpp \
+	api/cmiss_variable_new_matrix.cpp \
+	api/cmiss_variable_new_scalar.cpp \
+	api/cmiss_variable_new_vector.cpp
 API_INTERFACE_SRCS = \
 	api/cmiss_graphics_window.c
 CHOOSE_INTERFACE_SRCS = \
@@ -658,7 +670,17 @@ COMPUTED_VARIABLE_SRCS = \
 	computed_variable/computed_variable_identity.c \
 	computed_variable/computed_variable_standard_operations.c \
 	computed_variable/variable.cpp \
-	computed_variable/variable_basic.cpp
+	computed_variable/variable_composite.cpp \
+	computed_variable/variable_composition.cpp \
+	computed_variable/variable_coordinates.cpp \
+	computed_variable/variable_derivative.cpp \
+	computed_variable/variable_derivative_matrix.cpp \
+	computed_variable/variable_finite_element.cpp \
+	computed_variable/variable_input.cpp \
+	computed_variable/variable_input_composite.cpp \
+	computed_variable/variable_matrix.cpp \
+	computed_variable/variable_scalar.cpp \
+	computed_variable/variable_vector.cpp
 CURVE_SRCS = \
 	curve/control_curve.c
 CURVE_INTERFACE_SRCS = \
@@ -1245,8 +1267,17 @@ SO_LIB_COMPUTED_VARIABLE_TARGET = lib$(SO_LIB_COMPUTED_VARIABLE)$(TARGET_SUFFIX)
 SO_LIB_COMPUTED_VARIABLE_SONAME = lib$(SO_LIB_COMPUTED_VARIABLE)$(SO_LIB_SUFFIX)
 LIB_COMPUTED_VARIABLE_SRCS = \
 	api/cmiss_variable_new.cpp \
-	api/cmiss_variable_new_basic.cpp \
-	$(filter-out %finite_element.c,$(COMPUTED_VARIABLE_SRCS)) \
+	api/cmiss_variable_new_composite.cpp \
+	api/cmiss_variable_new_composition.cpp \
+	api/cmiss_variable_new_coordinates.cpp \
+	api/cmiss_variable_new_derivative.cpp \
+	api/cmiss_variable_new_derivative_matrix.cpp \
+	api/cmiss_variable_new_input.cpp \
+	api/cmiss_variable_new_input_composite.cpp \
+	api/cmiss_variable_new_matrix.cpp \
+	api/cmiss_variable_new_scalar.cpp \
+	api/cmiss_variable_new_vector.cpp \
+	$(filter-out %finite_element.cpp,$(filter-out %finite_element.c,$(COMPUTED_VARIABLE_SRCS))) \
 	$(MATRIX_SRCS) \
 	api/cmiss_value_derivative_matrix.c \
 	api/cmiss_value_fe_value.c \
@@ -1266,8 +1297,10 @@ SO_LIB_COMPUTED_VARIABLE_FINITE_ELEMENT_TARGET = lib$(SO_LIB_COMPUTED_VARIABLE_F
 SO_LIB_COMPUTED_VARIABLE_FINITE_ELEMENT_SONAME = lib$(SO_LIB_COMPUTED_VARIABLE_FINITE_ELEMENT)$(SO_LIB_SUFFIX)
 LIB_COMPUTED_VARIABLE_FINITE_ELEMENT_SRCS = \
 	$(filter %finite_element.c,$(COMPUTED_VARIABLE_SRCS)) \
+	$(filter %finite_element.cpp,$(COMPUTED_VARIABLE_SRCS)) \
 	api/cmiss_value_element_xi.c \
-	api/cmiss_variable_finite_element.c
+	api/cmiss_variable_finite_element.c \
+	api/cmiss_variable_new_finite_element.cpp
 LIB_COMPUTED_VARIABLE_FINITE_ELEMENT_OBJS = $(addsuffix .o,$(basename $(LIB_COMPUTED_VARIABLE_FINITE_ELEMENT_SRCS)))
 $(SO_LIB_COMPUTED_VARIABLE_FINITE_ELEMENT_TARGET) : $(LIB_COMPUTED_VARIABLE_FINITE_ELEMENT_OBJS) $(SO_LIB_COMPUTED_VARIABLE_TARGET) $(SO_LIB_FINITE_ELEMENT_TARGET) $(SO_LIB_GENERAL_TARGET) cmgui.Makefile
 	$(call BuildSharedLibraryTarget,$(SO_LIB_COMPUTED_VARIABLE_FINITE_ELEMENT_TARGET),$(BIN_PATH),$(LIB_COMPUTED_VARIABLE_FINITE_ELEMENT_OBJS),$(ALL_SO_LINK_FLAGS) $(BIN_PATH)/$(SO_LIB_COMPUTED_VARIABLE_TARGET) $(BIN_PATH)/$(SO_LIB_FINITE_ELEMENT_TARGET) $(BIN_PATH)/$(SO_LIB_GENERAL_TARGET),$(SO_LIB_COMPUTED_VARIABLE_FINITE_ELEMENT_SONAME))
