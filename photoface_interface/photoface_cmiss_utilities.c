@@ -11,6 +11,7 @@ integer return code - zero is success, non-zero is failure.
 #include "stdafx.h"
 #endif
 
+#include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include "jpeglib.h"
@@ -274,7 +275,9 @@ Writes the <scene_graph_file> from the information returned by <pf_get_view>
 and <pf_get_marker_fitted_positions>.
 ==============================================================================*/
 {
+	double cross[3], eye[3], interest[3], magnitude, vector[3], translate[3];
 	FILE *file;
+	float twist_angle, rotation_angle1, rotation_angle2;
 	int return_code;
 
 	ENTER(pf_write_scene_graph);
@@ -282,19 +285,104 @@ and <pf_get_marker_fitted_positions>.
 
 	if (file = fopen(scene_graph_file_name, "w"))
 	{
-		fprintf(file, "#LifeF/X Scene Graph V1.0\n\n");
-		fprintf(file, "#Default is 0 0 100\n");
-		fprintf(file, "eyepoint %g %g %g\n",eye_point[0],eye_point[1],eye_point[2]);
-		fprintf(file, "#Default is 0 50 0\n");
-		fprintf(file, "interestpoint %g %g %g\n",interest_point[0],interest_point[1],
+#if defined (OLD_CODE)
+		/* Need to calculate a rotation angle as we can't specify the up vector */
+		magnitude = sqrt (up_vector[0] * up_vector[0] +
+				up_vector[1] * up_vector[1] + up_vector[2] * up_vector[2]);
+		angle = (float)acos(up_vector[1] / magnitude);
+		/* Work out what sign this has */
+		vector[0] = interest_point[2] - eye_point[2];
+		vector[1] = 0.0;
+		vector[2] = -(interest_point[0] - eye_point[0]);
+
+		angle2 = (float)(up_vector[0] * vector[0] + up_vector[2] * vector[2]);
+		if (angle2 > 0.0)
+		{
+			angle *= -1.0;
+		}
+#endif /* defined (OLD_CODE) */
+		vector[0] = interest_point[0] - eye_point[0];
+		vector[1] = interest_point[1] - eye_point[1];
+		vector[2] = interest_point[2] - eye_point[2];
+
+		magnitude = sqrt (vector[0] * vector[0] + vector[1] * vector[1]
+			+ vector[2] * vector[2]);
+
+		interest[0] = 0.0;
+		interest[1] = 0.0;
+		interest[2] = 0.0;
+
+		eye[0] = 0.0;
+		eye[1] = 0.0;
+		eye[2] = magnitude;
+
+		translate[0] = -interest_point[0];
+		translate[1] = -interest_point[1];
+		translate[2] = -interest_point[2];
+
+		rotation_angle1 = (float)atan2(vector[0], -vector[2]);
+		magnitude = sqrt(vector[0] * vector[0] + vector[2] * vector[2]);
+		rotation_angle2 = (float)atan2(-vector[1], magnitude);
+
+		// Calculate the default up vector and then find the angle between them
+		vector[0] = -sin(rotation_angle2) * sin(rotation_angle1);
+		vector[1] = cos(rotation_angle2);
+		vector[2] = -sin(rotation_angle2) * cos(rotation_angle1);
+#if defined (DEBUG)
+		fprintf(file, "#Rotated default up vector %g %g %g\n",
+				vector[0], vector[1], vector[2]);
+#endif /* defined (DEBUG) */
+		magnitude = sqrt (up_vector[0] * up_vector[0] +
+				up_vector[1] * up_vector[1] + up_vector[2] * up_vector[2]);
+		cross[0] = (vector[1] * up_vector[2] - vector[2] * up_vector[1]) / magnitude;
+		cross[1] = vector[2] * up_vector[0] / magnitude;
+		cross[2] = - vector[1] * up_vector[0] / magnitude;
+		// Use the cross vector to get the angle and the sign is from the sign
+		// of the dot product of this vector and the view direction.
+		vector[0] = cos(rotation_angle2) * sin(rotation_angle1);
+		vector[1] = sin(rotation_angle2);
+		vector[2] = cos(rotation_angle2) * cos(rotation_angle1);
+#if defined (DEBUG)
+		fprintf(file, "#Rotated	view vector %g %g %g\n",
+				vector[0], vector[1], vector[2]);
+		fprintf(file, "#Cross product vector %g %g %g\n",
+				cross[0], cross[1], cross[2]);
+#endif /* defined (DEBUG) */
+		twist_angle = (float)-asin(sqrt(cross[0] * cross[0] + cross[1] * cross[1] +
+			cross[2] * cross[2]));
+		if ((cross[0] * vector[0] + cross[1] * vector[1] + cross[2] * vector[2])< 0.0)
+		{
+			twist_angle = -twist_angle;
+		}
+
+		fprintf(file, "#LifeF/X Scene Graph V2.0\n\n");
+		fprintf(file, "#Eye point %g %g %g\n", eye_point[0], eye_point[1], eye_point[2]);
+		fprintf(file, "#Interest point %g %g %g\n", interest_point[0], interest_point[1],
 			interest_point[2]);
-		fprintf(file, "#Default is 18, smaller numbers is same as 'zooming' in.\n");
+		fprintf(file, "#Up vector %g %g %g\n", up_vector[0], up_vector[1],
+			up_vector[2]);
+		fprintf(file, "#View angle %g\n", view_angle);
+		fprintf(file, "\n");
+		fprintf(file, "eyepoint %g %g %g\n",eye[0],eye[1],eye[2]);
+		fprintf(file, "interestpoint %g %g %g\n",interest[0],interest[1],
+			interest[2]);
 		fprintf(file, "fieldofview %g\n", view_angle);
 		fprintf(file, "\n");
-
-		fprintf(file, "	pushmatrix \"Head Movement\"\n");
+		fprintf(file, "pushmatrix \"twist_vector\" rotate 0 0 %g\n", twist_angle);
+		fprintf(file, "pushmatrix \"view_angles\" rotate %g %g 0\n", rotation_angle2,
+			rotation_angle1);
+		fprintf(file, "pushmatrix \"translation\" translate %g %g %g\n", translate[0],
+			translate[1], translate[2]);
 		fprintf(file, "\n");
-		fprintf(file, "   pushTexture unimap_rachel_web  #set texture\n");
+
+		fprintf(file, "	pushTexture background  #set texture\n");
+		fprintf(file, "	Geoset bg_plane\n");
+		fprintf(file, "	poptexture\n");
+		fprintf(file, "\n");
+
+		fprintf(file, "  pushmatrix \"Head Movement\"\n");
+		fprintf(file, "\n");
+		fprintf(file, "   pushTexture standin  #set texture\n");
 		fprintf(file, "      Geoset face # render geoset\n");
 		fprintf(file, "\n");
 		fprintf(file, "      pushmatrix \"Left Eye\" translate %g %g %g\n",
@@ -310,10 +398,13 @@ and <pf_get_marker_fitted_positions>.
 		fprintf(file, "    poptexture\n");
 		fprintf(file, "\n");
 		fprintf(file, "\n");
-		fprintf(file, "#   pushTexture rachel_webhair\n");
-		fprintf(file, "#     Geoset hairgeometry\n");
-		fprintf(file, "#   poptexture\n");
+		fprintf(file, "   pushTexture hair\n");
+		fprintf(file, "     Geoset hairgeometry\n");
+		fprintf(file, "   poptexture\n");
 		fprintf(file, "\n");
+		fprintf(file, " popmatrix\n");
+		fprintf(file, " popmatrix\n");
+		fprintf(file, " popmatrix\n");
 		fprintf(file, "popmatrix\n");
 		fprintf(file, "\n");
 

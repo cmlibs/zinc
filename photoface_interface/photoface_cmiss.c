@@ -7,10 +7,6 @@ DESCRIPTION :
 The functions that interface Photoface to cmiss.  All functions have an integer
 return code - zero is success, non-zero is failure.
 ==============================================================================*/
-#ifdef _AFXDLL
-#include "stdafx.h"
-#endif
-
 #include <errno.h>
 #include <math.h>
 #include <stdio.h>
@@ -32,6 +28,13 @@ return code - zero is success, non-zero is failure.
 
 #define PF_LOCK_DIRNAME "pflock"
 #define PF_STRUCTURE_FILENAME "pf_job.struct"
+
+/* SAB Debug used to debug file creation problems in Boston
+#define PHOTOFACE_WIN_DEBUG 1 */
+
+#if defined (PHOTOFACE_WIN_DEBUG)
+static FILE *debuglog_file = NULL;
+#endif
 
 /*
 Macros
@@ -79,7 +82,7 @@ struct Pf_job
 	int pf_job_id;
 	char *working_path;
 	char *remote_working_path;
-	float ndc_texture_scaling, ndc_texture_offset;
+	float ndc_texture_scaling, ndc_texture_offset_x, ndc_texture_offset_y;
 }; /* struct Pf_job */
 /*
 Module variables
@@ -1508,7 +1511,8 @@ LAST MODIFIED : 15 February 2001
 DESCRIPTION :
 ==============================================================================*/
 {
-	float maximum, minimum, *ndc_index, padding_factor = 1.1f, *twod_index;
+	float maximum_x, minimum_x, maximum_y, minimum_y, *ndc_index, padding_factor = 1.2f,
+		range, *twod_index;
 	int i, return_code;
 	
 	ENTER(convert_2d_to_ndc);
@@ -1516,39 +1520,68 @@ DESCRIPTION :
 
 	/* Find the maximum value */
 	twod_index = twod_coordinates;
-	maximum = *twod_index;
-	minimum = *twod_index;
+	maximum_x = *twod_index;
+	minimum_x = *twod_index;
 	twod_index++;
-	for (i = 1 ; i < 2 * number_of_markers ; i++)
+	maximum_y = *twod_index;
+	minimum_y = *twod_index;
+	twod_index++;
+	for (i = 1 ; i < number_of_markers ; i++)
 	{
-		if (*twod_index > maximum)
+		if (*twod_index > maximum_x)
 		{
-			maximum = *twod_index;
+			maximum_x = *twod_index;
 		}
-		if (*twod_index < minimum)
+		if (*twod_index < minimum_x)
 		{
-			minimum = *twod_index;
+			minimum_x = *twod_index;
+		}
+		twod_index++;
+		if (*twod_index > maximum_y)
+		{
+			maximum_y = *twod_index;
+		}
+		if (*twod_index < minimum_y)
+		{
+			minimum_y = *twod_index;
 		}
 		twod_index++;
 	}
 
-	if (maximum != minimum)
+	range = 0.0;
+	if (maximum_x != minimum_x)
+	{
+		range = maximum_x - minimum_x;
+	}
+	if (maximum_y != minimum_y)
+	{
+		if (maximum_y - minimum_y > range)
+		{
+			range = maximum_y - minimum_y;
+		}
+	}
+	if (range > 0.0)
 	{
 		/* Store the maximum plus a bit for later */
-		pf_job->ndc_texture_scaling = 2.0f / (padding_factor * (maximum - minimum));
-		pf_job->ndc_texture_offset = minimum - (padding_factor - 1.0f) / 
+		pf_job->ndc_texture_scaling = 2.0f / (padding_factor * range);
+		pf_job->ndc_texture_offset_x = (maximum_x + minimum_x - range) / 2.0f
+			- (padding_factor - 1.0f) / 
+			(padding_factor * pf_job->ndc_texture_scaling);
+		pf_job->ndc_texture_offset_y = (maximum_y + minimum_y - range) / 2.0f
+			- (padding_factor - 1.0f) / 
 			(padding_factor * pf_job->ndc_texture_scaling);
 	}
 	else
 	{
 		pf_job->ndc_texture_scaling = 1.0f;
-		pf_job->ndc_texture_offset = minimum;
+		pf_job->ndc_texture_offset_x = minimum_x;
+		pf_job->ndc_texture_offset_y = minimum_y;
 	}
 
 #if defined (CMISS_DEBUG)	
 	printf("Minimum %f Maximum %f\n", minimum, maximum);
-	printf("Scaling %f Offset %f\n", pf_job->ndc_texture_scaling, 
-		pf_job->ndc_texture_offset);
+	printf("Scaling %f Offset x %f y %f\n", pf_job->ndc_texture_scaling, 
+		pf_job->ndc_texture_offset_x, pf_job->ndc_texture_offset_y);
 #endif /* defined (CMISS_DEBUG) */
 	
 	/* Scale all the coordinates by this maximum plus a bit */
@@ -1556,12 +1589,12 @@ DESCRIPTION :
 	ndc_index = ndc_coordinates;
 	for (i = 0 ; i < number_of_markers ; i++)
 	{
-		*ndc_index = (*twod_index - pf_job->ndc_texture_offset) * 
+		*ndc_index = (*twod_index - pf_job->ndc_texture_offset_x) * 
 			pf_job->ndc_texture_scaling - 1.0f;
 		twod_index++;
 		ndc_index++;
 		/* Y goes in the reverse direction */
-		*ndc_index = - (*twod_index - pf_job->ndc_texture_offset) * 
+		*ndc_index = - (*twod_index - pf_job->ndc_texture_offset_y) * 
 			pf_job->ndc_texture_scaling + 1.0f;
 		twod_index++;
 		ndc_index++;
@@ -1586,7 +1619,7 @@ initialising the pf_job data.  This function returns the pf_job_id if
 successful.
 ==============================================================================*/
 {
-	char *working_path;
+	char *pf_cmiss_force_job_id, *working_path;
 	FILE *pf_job_file;
 	int pf_job_id, return_code;
 
@@ -1596,43 +1629,60 @@ successful.
 	if (ALLOCATE(working_path, char, strlen(photoface_local_path) + 100))
 	{
 		/* Create a new directory */
+		if ((pf_cmiss_force_job_id=getenv("PF_CMISS_FORCE_JOB_ID")) &&
+			sscanf(pf_cmiss_force_job_id, "%d", &pf_job_id))
+		{
+			return_code = PF_SUCCESS_RC;
 #if defined (WIN32)
-		pf_job_id = rand();
-		sprintf(working_path, "%sworking/job%06d/", photoface_local_path,
-			pf_job_id);
-		while (!CreateDirectory(working_path, NULL))
-		{
-			if (ERROR_ALREADY_EXISTS == GetLastError())
-			{
-				/* Try another directory */
-				pf_job_id = rand();
-				sprintf(working_path, "%sworking/job%06d/", photoface_local_path,
-					pf_job_id);
-			}
-			else
-			{
-				return_code = PF_OPEN_FILE_FAILURE_RC;
-			}
-		}
+			sprintf(working_path, "%sworking/job%06d/", photoface_local_path,
+				pf_job_id);
+			CreateDirectory(working_path, NULL);
 #else /* defined (WIN32) */
-		pf_job_id = random() / 2386;
-		sprintf(working_path, "%sworking/job%06d/", photoface_local_path,
-			pf_job_id);
-		while (0 != mkdir(working_path, S_IRWXU))
-		{
-			if (EEXIST == errno)
-			{
-				/* Try another directory */
-				pf_job_id = random() / 2386;
-				sprintf(working_path, "%sworking/job%06d/", photoface_local_path,
-					pf_job_id);
-			}
-			else
-			{
-				return_code = PF_OPEN_FILE_FAILURE_RC;
-			}
-		}
+			sprintf(working_path, "%sworking/job%06d/", photoface_local_path,
+				pf_job_id);
+			mkdir(working_path, S_IRWXU);
 #endif /* defined (WIN32) */
+		}
+		else
+		{
+#if defined (WIN32)
+			pf_job_id = rand();
+			sprintf(working_path, "%sworking/job%06d/", photoface_local_path,
+				pf_job_id);
+			while (!CreateDirectory(working_path, NULL))
+			{
+				if (ERROR_ALREADY_EXISTS == GetLastError())
+				{
+					/* Try another directory */
+					pf_job_id = rand();
+					sprintf(working_path, "%sworking/job%06d/", photoface_local_path,
+						pf_job_id);
+				}
+				else
+				{
+					return_code = PF_OPEN_FILE_FAILURE_RC;
+				}
+			}
+#else /* defined (WIN32) */
+			pf_job_id = random() / 2386;
+			sprintf(working_path, "%sworking/job%06d/", photoface_local_path,
+				pf_job_id);
+			while (0 != mkdir(working_path, S_IRWXU))
+			{
+				if (EEXIST == errno)
+				{
+					/* Try another directory */
+					pf_job_id = random() / 2386;
+					sprintf(working_path, "%sworking/job%06d/", photoface_local_path,
+						pf_job_id);
+				}
+				else
+				{
+					return_code = PF_OPEN_FILE_FAILURE_RC;
+				}
+			}
+#endif /* defined (WIN32) */
+		}
 		if (PF_SUCCESS_RC == return_code)
 		{
 			/* Create a new pf_job data file */
@@ -1640,9 +1690,16 @@ successful.
 				photoface_local_path, pf_job_id, PF_STRUCTURE_FILENAME);
 			if (pf_job_file = fopen(working_path, "w"))
 			{
+				fprintf(pf_job_file, "%f\n", 1.0f);
 				fprintf(pf_job_file, "%f\n", 0.0f);
 				fprintf(pf_job_file, "%f\n", 0.0f);
 				fclose(pf_job_file);
+#if defined (PHOTOFACE_WIN_DEBUG)
+				sprintf(working_path, "%sworking/windows%06d.log", 
+					photoface_local_path, pf_job_id);
+				debuglog_file = fopen(working_path, "w");
+				fprintf(debuglog_file,"Created pf_structure file \"%s\"\n", working_path);
+#endif /* defined (PHOTOFACE_WIN_DEBUG) */
 
 				*pf_job_id_address = pf_job_id;
 			}
@@ -1678,8 +1735,9 @@ DESCRIPTION :
 This routine cleans up the working directory and destroys the specified job.
 ==============================================================================*/
 {
-	char *slash_ptr, *working_path, *working_path2;
-	int return_code;
+	char *pf_cmiss_keep_working_dir, *pf_cmiss_wait_delay, *slash_ptr,
+		*working_path, *working_path2;
+	int delay, return_code;
 	struct stat stat_buffer;
 
 	ENTER(delete_Pf_job);
@@ -1696,13 +1754,22 @@ This routine cleans up the working directory and destroys the specified job.
 			/* Lock it or wait */
 			strcat(working_path, "/");
 			strcat(working_path, PF_LOCK_DIRNAME);
+			if ((pf_cmiss_wait_delay = getenv("PF_CMISS_WAIT_DELAY"))
+				&& (sscanf(pf_cmiss_wait_delay, "%d", &delay)))
+			{
+				/* Do nothing */
+			}
+			else
+			{
+				delay = 2;
+			}
 #if defined (WIN32)
 			while (!CreateDirectory(working_path, NULL))
 			{
 				if (ERROR_ALREADY_EXISTS == GetLastError())
 				{
 					/* Wait */
-					Sleep(2000);
+					Sleep(delay * 1000);
 				}
 				else
 				{
@@ -1715,7 +1782,7 @@ This routine cleans up the working directory and destroys the specified job.
 				if (EEXIST == errno)
 				{
 					/* Wait */
-					sleep (2);
+					sleep (delay);
 				}
 				else
 				{
@@ -1725,32 +1792,56 @@ This routine cleans up the working directory and destroys the specified job.
 #endif /* defined (WIN32) */
 			if (PF_SUCCESS_RC == return_code)
 			{
+#if defined (PHOTOFACE_WIN_DEBUG)
+				sprintf(working_path, "%sworking/windows%06d.log", 
+					photoface_local_path, pf_job_id);
+				fprintf(debuglog_file,"Closing\n");
+				fclose(debuglog_file);
+#endif /* defined (PHOTOFACE_WIN_DEBUG) */
+
 				sprintf(working_path, "%sworking/job%06d", photoface_local_path,
 					pf_job_id);
 				sprintf(working_path2, "%sworking/job%06dx", photoface_local_path,
 					pf_job_id);
 			
-				/* Delete the directory */
-#if defined (WIN32)
-				/* Move the directory away so no other processes find it */
-				MoveFile(working_path, working_path2);
-
-				sprintf(working_path, working_path2);
-				/* As we are going to use a system command we need to reverse all the / separators */
-				slash_ptr = working_path;
-				while (slash_ptr = strchr(slash_ptr, '/'))
+				
+				if ((pf_cmiss_keep_working_dir=getenv("PF_CMISS_KEEP_WORKING_DIRECTORY")) &&
+					*pf_cmiss_keep_working_dir)
 				{
-					*slash_ptr = '\\';
-				}
-				sprintf(working_path2, "rmdir /s /q %s", working_path);
+					sprintf(working_path, "%sworking/job%06d/%s", photoface_local_path,
+						pf_job_id, PF_LOCK_DIRNAME);
+	 				/* Unlock the directory so it can be reused */
+#if defined (WIN32)
+					RemoveDirectory(working_path);
 #else /* defined (WIN32) */
-				/* Move the directory away so no other processes find it */
-				rename(working_path, working_path2);
-
-				sprintf(working_path2, "rm -r %sworking/job%06dx", photoface_local_path,
-					pf_job_id);
+					rmdir(working_path);
 #endif /* defined (WIN32) */
-				system(working_path2);
+					return_code = PF_SUCCESS_RC;
+				}
+				else
+				{
+					/* Delete the directory */
+#if defined (WIN32)
+					/* Move the directory away so no other processes find it */
+					MoveFile(working_path, working_path2);
+
+					sprintf(working_path, working_path2);
+					/* As we are going to use a system command we need to reverse all the / separators */
+					slash_ptr = working_path;
+					while (slash_ptr = strchr(slash_ptr, '/'))
+					{
+						*slash_ptr = '\\';
+					}
+					sprintf(working_path2, "rmdir /s /q %s", working_path);
+#else /* defined (WIN32) */
+					/* Move the directory away so no other processes find it */
+					rename(working_path, working_path2);
+
+					sprintf(working_path2, "rm -r %sworking/job%06dx", photoface_local_path,
+						pf_job_id);
+#endif /* defined (WIN32) */
+					system(working_path2);
+				}
 			}
 		}
 		else
@@ -1853,8 +1944,14 @@ giving this process exclusive access.
 					if (pf_job_file = fopen(working_path, "r"))
 					{
 						fscanf(pf_job_file, "%f", &(pf_job->ndc_texture_scaling));
-						fscanf(pf_job_file, "%f", &(pf_job->ndc_texture_offset));
+						fscanf(pf_job_file, "%f", &(pf_job->ndc_texture_offset_x));
+						fscanf(pf_job_file, "%f", &(pf_job->ndc_texture_offset_y));
 						fclose(pf_job_file);
+#if defined (PHOTOFACE_WIN_DEBUG)
+				fprintf(debuglog_file,"Read from pf_structure file \"%s\"\n%f %f %f\n", working_path,
+						pf_job->ndc_texture_scaling, pf_job->ndc_texture_offset_x,
+						pf_job->ndc_texture_offset_y);
+#endif /* defined (PHOTOFACE_WIN_DEBUG) */
 					}
 					else
 					{
@@ -1918,20 +2015,37 @@ the memory associated with it and unlocks the access to that job.
 	return_code = PF_SUCCESS_RC;
 	if (pf_job = *pf_job_address)
 	{
+#if defined (PHOTOFACE_WIN_DEBUG)
+		fprintf(debuglog_file,"Unlocking %x\n", pf_job);
+#endif /* defined (PHOTOFACE_WIN_DEBUG) */
 		if (ALLOCATE(working_path, char, strlen(pf_job->working_path) + 100))
 		{
 			/* Look for the correct working directory */
 			sprintf(working_path, "%s/%s", pf_job->working_path, PF_LOCK_DIRNAME);
+#if defined (PHOTOFACE_WIN_DEBUG)
+			fprintf(debuglog_file,"Directory %s\n", working_path);
+#endif /* defined (PHOTOFACE_WIN_DEBUG) */
 			if (0 == stat(working_path, &stat_buffer))
 			{
 				/* Save the data for the pf_job */
 				sprintf(working_path, "%s/%s", 
 					pf_job->working_path, PF_STRUCTURE_FILENAME);
+#if defined (PHOTOFACE_WIN_DEBUG)
+				fprintf(debuglog_file,"Before writing pf_structure file \"%s\"\n%f %f %f\n", working_path,
+						pf_job->ndc_texture_scaling, pf_job->ndc_texture_offset_x,
+						pf_job->ndc_texture_offset_y);
+#endif /* defined (PHOTOFACE_WIN_DEBUG) */
 				if (pf_job_file = fopen(working_path, "w"))
 				{
 					fprintf(pf_job_file, "%f\n", pf_job->ndc_texture_scaling);
-					fprintf(pf_job_file, "%f\n", pf_job->ndc_texture_offset);
+					fprintf(pf_job_file, "%f\n", pf_job->ndc_texture_offset_x);
+					fprintf(pf_job_file, "%f\n", pf_job->ndc_texture_offset_y);
 					fclose(pf_job_file);
+#if defined (PHOTOFACE_WIN_DEBUG)
+				fprintf(debuglog_file,"Rewrote pf_structure file \"%s\"\n%f %f %f\n", working_path,
+						pf_job->ndc_texture_scaling, pf_job->ndc_texture_offset_x,
+						pf_job->ndc_texture_offset_y);
+#endif /* defined (PHOTOFACE_WIN_DEBUG) */
 				}
 				else
 				{
@@ -1949,7 +2063,7 @@ the memory associated with it and unlocks the access to that job.
 				/* Deallocate the pf_job structure */
 				DEALLOCATE(*pf_job_address);
 
-				/* Unlock the directory */
+ 				/* Unlock the directory */
 #if defined (WIN32)
 				RemoveDirectory(working_path);
 #else /* defined (WIN32) */
@@ -2125,9 +2239,10 @@ information about the face in the image, such as "smiling", which may allow
 adjustment of the generic head.  On success, the <pf_job_id> is set.
 ==============================================================================*/
 {
-	char *model_path, *working_path;
+	char *pf_cmiss_wait_delay, *model_path, *working_path;
+	char *force_model_name = "sifit_mode0";
 	FILE *setup_comfile;
-	int length, return_code;
+	int delay, length, return_code;
 	struct Pf_job *pf_job;
 	struct stat stat_buffer;
 #if defined (WIN32)
@@ -2160,8 +2275,8 @@ adjustment of the generic head.  On success, the <pf_job_id> is set.
 #endif /* defined (WIN32) */
 			if (0 == stat(model_path, &stat_buffer))
 			{
-				sprintf(model_path,"%smodels/%s/%s.obj",photoface_local_path,model_name,
-					model_name);
+				sprintf(model_path,"%smodels/%s/%s.obj",photoface_local_path,force_model_name,
+					force_model_name);
 				if (0 == stat(model_path, &stat_buffer))
 				{
 					if (ALLOCATE(working_path,char,2*strlen(photoface_local_path)+30))
@@ -2176,22 +2291,11 @@ adjustment of the generic head.  On success, the <pf_job_id> is set.
 								sprintf(working_path, "%s/source.obj",
 									pf_job->working_path);
 								copy_file(model_path, working_path);
-								sprintf(model_path,"%smodels/%s/%s.basis",photoface_local_path,
-									model_name,model_name);
-								sprintf(working_path,"%s/source.basis",
-									pf_job->working_path);
-								copy_file(model_path, working_path);
 								sprintf(model_path,"%smodels/%s/%s.markers",
-									photoface_local_path,model_name,model_name);
+									photoface_local_path,force_model_name,force_model_name);
 								sprintf(working_path,"%s/source.markers",
 									pf_job->working_path);
 								copy_file(model_path, working_path);
-								sprintf(model_path,"%smodels/%s/%s_eyes.exnode",
-									photoface_local_path,model_name,model_name);
-								sprintf(working_path,"%s/source_eyes.exnode",
-									pf_job->working_path);
-								copy_file(model_path, working_path);
-
 
 								/* Create the startup comfile */
 								sprintf(working_path, "%s/pf_setup_main.com",
@@ -2206,11 +2310,22 @@ adjustment of the generic head.  On success, the <pf_job_id> is set.
 										photoface_remote_path);
 									fprintf(setup_comfile, "$ANTHRO_FITTING_CMISS = \"%s../anthro_fitting/cmiss\"\n",
 										photoface_remote_path);
+									fprintf(setup_comfile, "$LFX_MODELER_CMISS = \"%s../lfx_modeler/cmiss\"\n",
+										photoface_remote_path);
 									fprintf(setup_comfile, "$PHOTOFACE_MODEL = \"%s\"\n",
 										model_name);
 									fprintf(setup_comfile, "open comfile $PHOTOFACE_CMISS/pf_setup.com exec\n");
 
 									fclose(setup_comfile);
+									if ((pf_cmiss_wait_delay = getenv("PF_CMISS_WAIT_DELAY"))
+										&& (sscanf(pf_cmiss_wait_delay, "%d", &delay)))
+									{
+										/* Do nothing */
+									}
+									else
+									{
+										delay = 10;
+									}
 
 									/* Start cmgui in a forked thread and load this model */
 #if defined (WIN32)
@@ -2219,7 +2334,7 @@ adjustment of the generic head.  On success, the <pf_job_id> is set.
 										(LPVOID)NULL,/*use default creation flags*/0,
 										&start_cmgui_thread_id);
 									/* Main process comes here */
-									Sleep((DWORD)10000);
+									Sleep((DWORD)(delay * 1000));
 #else /* defined (WIN32) */
 									if (!(pid = fork()))
 									{
@@ -2231,7 +2346,7 @@ adjustment of the generic head.  On success, the <pf_job_id> is set.
 										exit(0);
 									}
 									/* Main process comes here */
-									sleep(10);
+									sleep(delay);
 #endif /* defined (WIN32) */
 									if (linux_execute("%sbin/cmgui_control 'open comfile %s/pf_setup_main.com exec'",
 										photoface_remote_path, pf_job->remote_working_path))
@@ -2531,6 +2646,61 @@ Specify <number_of_markers> using
 	{
 		if (ALLOCATE(filename,char,strlen(photoface_local_path)+100))
 		{
+/*???debug*/
+{
+FILE *file;
+
+/* write out input markers so can reproduce in test case */
+sprintf(filename, "%s/pf_specify_markers.c", pf_job->working_path);
+if (file = fopen(filename, "w"))
+{
+fprintf(file,"  /* input supplied to pf_specify_markers */\n");
+fprintf(file,"  int number_of_markers = %d;\n",number_of_markers);
+fprintf(file,"  char *marker_names[] = {\n");
+for (i = 0 ; i < number_of_markers ; i++)
+{
+if (i < (number_of_markers - 1))
+{
+fprintf(file, "    \"%s\",\n", marker_names[i]);
+}
+else
+{
+fprintf(file, "    \"%s\"};\n", marker_names[i]);
+}
+}
+fprintf(file,"  float marker_2d_positions[] = {\n");
+for (i = 0 ; i < number_of_markers ; i++)
+{
+if (i < (number_of_markers - 1))
+{
+fprintf(file, "    %g, %g, /* %s */\n",
+marker_2d_positions[i*2], marker_2d_positions[i*2 + 1],
+marker_names[i]);
+}
+else
+{
+fprintf(file, "    %g, %g /* %s */ };\n",
+marker_2d_positions[i*2], marker_2d_positions[i*2 + 1],
+marker_names[i]);
+}
+}
+fprintf(file,"  float marker_confidences[] = {\n");
+for (i = 0 ; i < number_of_markers ; i++)
+{
+if (i < (number_of_markers - 1))
+{
+fprintf(file, "    %g, /* %s */\n", marker_confidences[i],
+marker_names[i]);
+}
+else
+{
+fprintf(file, "    %g /* %s */ };\n", marker_confidences[i],
+marker_names[i]);
+}
+}
+fclose(file);
+}
+}
 			/* If we haven't already done so read the marker definition file */
 			if (!markers)
 			{
@@ -2563,8 +2733,6 @@ Specify <number_of_markers> using
 						if (j < markers->number_of_markers)
 						{
 							marker_indices[i] = markers->marker_indices[j];
-							marker_ndc_positions[2 * i] = marker_2d_positions[2 * j];
-							marker_ndc_positions[2 * i + 1] = marker_2d_positions[2 * j + 1];
 							marker_positions[3 * i] = markers->marker_positions[3 * j];
 							marker_positions[3 * i + 1] = markers->marker_positions[3 * j + 1];
 							marker_positions[3 * i + 2] = markers->marker_positions[3 * j + 2];
@@ -3023,6 +3191,9 @@ Returns the current view as an <eye_point> (3 component vector), an
 					interest_point, interest_point + 1, interest_point + 2,
 					up_vector, up_vector + 1, up_vector + 2, view_angle))
 				{
+					// Convert from diagonal to horizontal view angle
+					*view_angle = (float)(2.0 * 180.0 / 3.141592654 * atan(tan(*view_angle 
+						* 3.141592654 / (180.0 * 2.0)) / 1.414213562));
 					return_code = PF_SUCCESS_RC;
 				}
 			}
@@ -3077,6 +3248,8 @@ Sets the current view as an <eye_point> (3 component vector), an
 		get_Pf_job_from_id_and_lock(pf_job_id, &pf_job)))
 	{
 		/* Set the viewing parameters in cmgui */
+		view_angle = (float)(2.0 * 180.0 / 3.141592654 * atan(tan(view_angle 
+			* 3.141592654 / (180.0 * 2.0)) * 1.414213562));
 		if (linux_execute(
 			"%sbin/cmgui_control 'gfx modify window 1 view eye %f %f %f "
 			"interest %f %f %f up %f %f %f view_angle %f'",
@@ -3276,10 +3449,11 @@ DESCRIPTION :
 Used to specify the image to be texture mapped onto the model.
 ==============================================================================*/
 {
-	char *image_ptr, filename[200];
-	float texture_ndc_x, texture_ndc_y, texture_ndc_width, texture_ndc_height;
+	char *pf_cmiss_wait_delay, *image_ptr, filename[200];
+	float texture_ndc_x, temp_texture_ndc_y, texture_ndc_y, texture_ndc_width,
+		texture_ndc_height;
 	FILE *image_file, *image_comfile;
-	int i, image_components, return_code;
+	int delay, i, image_components, return_code;
 	struct Pf_job *pf_job;
 
 	ENTER(pf_specify_image);
@@ -3311,26 +3485,43 @@ Used to specify the image to be texture mapped onto the model.
 			fclose(image_file);
 
 			/* Calculate the texture placement coordinates in ndc space */
-			texture_ndc_x = - pf_job->ndc_texture_offset * pf_job->ndc_texture_scaling
+			texture_ndc_x = - pf_job->ndc_texture_offset_x * pf_job->ndc_texture_scaling
 				- 1.0f;
-			texture_ndc_y = pf_job->ndc_texture_offset * pf_job->ndc_texture_scaling
+			temp_texture_ndc_y = - pf_job->ndc_texture_offset_y * pf_job->ndc_texture_scaling
 				- 1.0f;
-			texture_ndc_width = ((float)width - pf_job->ndc_texture_offset) *
+			texture_ndc_y = pf_job->ndc_texture_offset_y * pf_job->ndc_texture_scaling
+				- 1.0f;
+			texture_ndc_width = ((float)width - pf_job->ndc_texture_offset_x) *
 				pf_job->ndc_texture_scaling - 1.0f - texture_ndc_x;
-			/* OK This appears to be insane, i.e. texture_ndc_x is used where you might expect texture_ndc_y but that
-				is because the y position is already mangled */
-			texture_ndc_height = ((float)height - pf_job->ndc_texture_offset)
-				* pf_job->ndc_texture_scaling - 1.0f - texture_ndc_x;
+			texture_ndc_height = ((float)height - pf_job->ndc_texture_offset_y)
+				* pf_job->ndc_texture_scaling - 1.0f - temp_texture_ndc_y;
 
 			sprintf(filename, "%s/pf_specify_image.com", pf_job->working_path);
 			if (image_comfile = fopen(filename, "w"))
 			{
+				fprintf(image_comfile, "print (\"Running pf_specify_image.com\\n\");\n");
 				fprintf(image_comfile, "gfx modify texture source_image image rgb:%s/source_image.raw specify_width %d specify_height %d raw_interleaved\n",
 					pf_job->remote_working_path, width, height);
 				fprintf(image_comfile, "gfx modify window 1 background tex_placement %f %f %f %f\n",
 					texture_ndc_x, texture_ndc_y, texture_ndc_width, texture_ndc_height);
 
 				fclose(image_comfile);
+
+				if ((pf_cmiss_wait_delay = getenv("PF_CMISS_WAIT_DELAY"))
+					&& (sscanf(pf_cmiss_wait_delay, "%d", &delay)))
+				{
+					/* Do nothing */
+				}
+				else
+				{
+					delay = 2;
+				}
+
+#if defined (WIN32)
+				Sleep((DWORD)(delay * 1000));
+#else /* defined (WIN32) */
+				sleep(delay);
+#endif /* defined (WIN32) */
 
 				if (linux_execute(
 					"%sbin/cmgui_control 'open comfile %s/pf_specify_image.com exec'",
@@ -3495,7 +3686,7 @@ Returns the current transformed generic head as
 	{
 		return_code=PF_SUCCESS_RC;
 		/* Read the fitted obj file and return all the values */
-		sprintf(filename, "%scmiss/hairgeometry.obj", photoface_local_path);
+		sprintf(filename, "%s/standin_hair_halo.obj", pf_job->working_path);
 		if(obj = read_obj(filename))
 		{
 			*number_of_vertices = obj->number_of_vertices;
@@ -3536,7 +3727,8 @@ Used to specify the image to be texture mapped onto the model.
 ==============================================================================*/
 {
 	char *image_ptr, filename[200];
-	float texture_ndc_x, texture_ndc_y, texture_ndc_width, texture_ndc_height;
+	float texture_ndc_x, temp_texture_ndc_y, texture_ndc_y, texture_ndc_width,
+		texture_ndc_height;
 	FILE *image_file, *image_comfile;
 	int i, image_components, return_code;
 	struct Pf_job *pf_job;
@@ -3570,23 +3762,27 @@ Used to specify the image to be texture mapped onto the model.
 			fclose(image_file);
 
 			/* Calculate the texture placement coordinates in ndc space */
-			texture_ndc_x = - pf_job->ndc_texture_offset * pf_job->ndc_texture_scaling
+			texture_ndc_x = - pf_job->ndc_texture_offset_x * pf_job->ndc_texture_scaling
 				- 1.0f;
-			texture_ndc_y = pf_job->ndc_texture_offset * pf_job->ndc_texture_scaling
+			temp_texture_ndc_y = - pf_job->ndc_texture_offset_y * pf_job->ndc_texture_scaling
 				- 1.0f;
-			texture_ndc_width = ((float)width - pf_job->ndc_texture_offset) *
+			texture_ndc_y = pf_job->ndc_texture_offset_y * pf_job->ndc_texture_scaling
+				- 1.0f;
+			texture_ndc_width = ((float)width - pf_job->ndc_texture_offset_x) *
 				pf_job->ndc_texture_scaling - 1.0f - texture_ndc_x;
-			/* OK This appears to be insane, i.e. texture_ndc_x is used where you might expect texture_ndc_y but that
-				is because the y position is already mangled */
-			texture_ndc_height = ((float)height - pf_job->ndc_texture_offset)
-				* pf_job->ndc_texture_scaling - 1.0f - texture_ndc_x;
+			texture_ndc_height = ((float)height - pf_job->ndc_texture_offset_y)
+				* pf_job->ndc_texture_scaling - 1.0f - temp_texture_ndc_y;
 
 			sprintf(filename, "%s/pf_specify_hair_mask.com", pf_job->working_path);
 			if (image_comfile = fopen(filename, "w"))
 			{
 				fprintf(image_comfile, "gfx create texture source_hair_mask\n");
-				fprintf(image_comfile, "gfx modify texture source_hair_mask image rgb:%s/source_hair_mask.raw specify_width %d specify_height %d raw_interleaved\n",
-					pf_job->remote_working_path, width, height);
+				fprintf(image_comfile, "system(\"$PHOTOFACE_BIN/convert -size %dx%d -blur 90 -implode -3 rgb:$PHOTOFACE_WORKING/source_hair_mask.raw sgi:$PHOTOFACE_WORKING/source_hair_mask2.rgb\");\n",
+					width, height); 
+				fprintf(image_comfile, "system(\"$PHOTOFACE_BIN/convert -blur 90 sgi:$PHOTOFACE_WORKING/source_hair_mask2.rgb sgi:$PHOTOFACE_WORKING/source_hair_mask3.rgb\");\n");
+				fprintf(image_comfile, "system(\"$PHOTOFACE_BIN/convert -blur 90 sgi:$PHOTOFACE_WORKING/source_hair_mask3.rgb sgi:$PHOTOFACE_WORKING/source_hair_mask4.rgb\");\n"); 
+				fprintf(image_comfile, "gfx modify texture source_hair_mask image sgi:%s/source_hair_mask4.rgb\n",
+					pf_job->remote_working_path);
 
 				fclose(image_comfile);
 
