@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : cmiss_region.c
 
-LAST MODIFIED : 4 November 2004
+LAST MODIFIED : 02 March 2005
 
 DESCRIPTION :
 The public interface to the Cmiss_regions.
@@ -259,7 +259,7 @@ int Cmiss_region_get_number_of_nodes_in_region(struct Cmiss_region *region)
 LAST MODIFIED : 4 November 2004
 
 DESCRIPTION :
-Returns element with <name> in <region> if it exists.
+Returns the number of nodes in the <region>.
 ==============================================================================*/
 {
 	int number_of_nodes;
@@ -277,7 +277,32 @@ Returns element with <name> in <region> if it exists.
 	LEAVE;
 
 	return (number_of_nodes);
-} /* Cmiss_region_get_node */
+} /* Cmiss_region_get_number_of_elements */
+
+int Cmiss_region_get_number_of_elements_in_region(struct Cmiss_region *region)
+/*******************************************************************************
+LAST MODIFIED : 02 March 2005
+
+DESCRIPTION :
+Returns the number of elements in the <region>.
+==============================================================================*/
+{
+	int number_of_elements;
+	struct FE_region *fe_region;
+
+	ENTER(Cmiss_region_get_number_of_elements_in_region);
+	number_of_elements = 0;
+	if (region)
+	{
+		if (fe_region = Cmiss_region_get_FE_region(region))
+		{
+			number_of_elements = FE_region_get_number_of_FE_elements(fe_region);
+		}
+	}
+	LEAVE;
+
+	return (number_of_elements);
+} /* Cmiss_region_get_number_of_elements */
 
 Cmiss_node_id Cmiss_region_merge_Cmiss_node(Cmiss_region_id region,
 	Cmiss_node_id node)
@@ -335,6 +360,33 @@ Iterates over each node in <region>.
 
 	return (return_code);
 } /* Cmiss_region_for_each_node_in_region */
+
+int Cmiss_region_for_each_element_in_region(struct Cmiss_region *region,
+	Cmiss_element_iterator_function iterator_function, void *user_data)
+/*******************************************************************************
+LAST MODIFIED : 02 March 2005
+
+DESCRIPTION :
+Iterates over each element in <region>.
+==============================================================================*/
+{
+	int return_code;
+	struct FE_region *fe_region;
+
+	ENTER(Cmiss_region_for_each_element_in_region);
+	return_code = 0;
+	if (region&&iterator_function)
+	{
+		if (fe_region=Cmiss_region_get_FE_region(region))
+		{
+			return_code=FE_region_for_each_FE_element(fe_region,iterator_function,
+				user_data);
+		}
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Cmiss_region_for_each_element_in_region */
 
 Cmiss_element_id Cmiss_region_merge_Cmiss_element(Cmiss_region_id region,
 	Cmiss_element_id element)

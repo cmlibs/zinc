@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : cmiss_region.h
 
-LAST MODIFIED : 4 November 2004
+LAST MODIFIED : 03 March 2005
 
 DESCRIPTION :
 The public interface to the Cmiss_regions.
@@ -26,9 +26,17 @@ LAST MODIFIED : 14 August 2002
 DESCRIPTION :
 ==============================================================================*/
 
-typedef int (*Cmiss_node_iterator_function)(struct Cmiss_node *node, void *user_data);
-
 typedef struct Cmiss_node * Cmiss_node_id;
+
+typedef int (*Cmiss_node_iterator_function)(Cmiss_node_id node,
+  void *user_data);
+/*******************************************************************************
+LAST MODIFIED : 03 March 2005
+
+DESCRIPTION :
+Declare a pointer to a function of type
+int function(struct Cmiss_node *node, void *user_data);
+==============================================================================*/
 
 /* SAB Temporary until we decide how to fix things up internally instead of externally.*/
 #define Cmiss_element FE_element
@@ -41,6 +49,16 @@ DESCRIPTION :
 ==============================================================================*/
 
 typedef struct Cmiss_element * Cmiss_element_id;
+
+typedef int (*Cmiss_element_iterator_function)(Cmiss_element_id element,
+  void *user_data);
+/*******************************************************************************
+LAST MODIFIED : 03 March 2005
+
+DESCRIPTION :
+Declare a pointer to a function of type
+int function(struct Cmiss_element *element, void *user_data);
+==============================================================================*/
 
 struct Cmiss_region;
 /*******************************************************************************
@@ -142,6 +160,14 @@ DESCRIPTION :
 Returns the number of nodes in <region> if it exists.
 ==============================================================================*/
 
+int Cmiss_region_get_number_of_elements_in_region(struct Cmiss_region *region);
+/*******************************************************************************
+LAST MODIFIED : 02 March 2005
+
+DESCRIPTION :
+Returns the number of elements in <region> if it exists.
+==============================================================================*/
+
 int Cmiss_region_for_each_node_in_region(struct Cmiss_region *region,
 	Cmiss_node_iterator_function iterator_function, void *user_data);
 /*******************************************************************************
@@ -149,6 +175,15 @@ LAST MODIFIED : 4 November 2004
 
 DESCRIPTION :
 Iterates over each node in <region>.
+==============================================================================*/
+
+int Cmiss_region_for_each_element_in_region(struct Cmiss_region *region,
+	Cmiss_element_iterator_function iterator_function, void *user_data);
+/*******************************************************************************
+LAST MODIFIED : 02 March 2005
+
+DESCRIPTION :
+Iterates over each element in <region>.
 ==============================================================================*/
 
 Cmiss_element_id Cmiss_region_merge_Cmiss_element(Cmiss_region_id region,
