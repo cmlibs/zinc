@@ -102,24 +102,22 @@ supported on displays other than SGI will do.
 		GLX_PRESERVED_CONTENTS_SGIX, True,
 		(int) None
 	};
-#endif /* defined (GLX_SGIX_pbuffer) || (GLX_SGIX_pbuffer) */
+#endif /* defined (GLX_SGIX_dm_pbuffer) || (GLX_SGIX_pbuffer) */
 	static int visattrsRGB_with_depth[] =
 	{
 		GLX_RGBA,
-		GLX_RED_SIZE, 8,
-		GLX_GREEN_SIZE, 8,
-		GLX_BLUE_SIZE, 8,
-		GLX_ALPHA_SIZE, 8,
-		GLX_DEPTH_SIZE, 8,
+		GLX_RED_SIZE, 5,
+		GLX_GREEN_SIZE, 5,
+		GLX_BLUE_SIZE, 5,
+		GLX_DEPTH_SIZE, 5,
 		None
 	};
 	static int visattrsRGB_no_depth[] =
 	{
 		GLX_RGBA,
-		GLX_RED_SIZE, 8,
-		GLX_GREEN_SIZE, 8,
-		GLX_BLUE_SIZE, 8,
-		GLX_ALPHA_SIZE, 8,
+		GLX_RED_SIZE, 5,
+		GLX_GREEN_SIZE, 5,
+		GLX_BLUE_SIZE, 5,
 		None
 	};
 	int *visattrs;
@@ -303,15 +301,17 @@ supported on displays other than SGI will do.
 					}
 					else
 					{
-						/* Try a pixmap buffer */
-						if(buffer->pixmap = XCreatePixmap(user_interface->display,
-							DefaultRootWindow(user_interface->display), width, height, 24))
+						if(buffer->visual_info = glXChooseVisual(user_interface->display,
+							DefaultScreen(user_interface->display), visattrs))
 						{
-							if(buffer->visual_info = glXChooseVisual(user_interface->display,
-								DefaultScreen(user_interface->display), visattrs))
+							printf("CREATE(Dm_buffer). openGL visual id = %d\n",
+								(int)buffer->visual_info->visualid);
+
+							/* Try a pixmap buffer */
+							if(buffer->pixmap = XCreatePixmap(user_interface->display,
+								DefaultRootWindow(user_interface->display), width, height, 
+								buffer->visual_info->depth))
 							{
-								printf("CREATE(Dm_buffer). openGL visual id = %d\n",
-									(int)buffer->visual_info->visualid);
 
 								if (buffer->glx_pixmap = glXCreateGLXPixmap(user_interface->display,
 									buffer->visual_info, buffer->pixmap))
@@ -329,7 +329,25 @@ supported on displays other than SGI will do.
 										buffer = (struct Dm_buffer *)NULL;
 									}
 								}
+								else
+								{
+									display_message(ERROR_MESSAGE,"CREATE(Dm_buffer). Unable to create GLX pixmap.");
+									DEALLOCATE(buffer);
+									buffer = (struct Dm_buffer *)NULL;
+								}
 							}
+							else
+							{
+								display_message(ERROR_MESSAGE,"CREATE(Dm_buffer). Unable to create pixmap.");
+								DEALLOCATE(buffer);
+								buffer = (struct Dm_buffer *)NULL;
+							}
+						}
+						else
+						{
+							display_message(ERROR_MESSAGE,"CREATE(Dm_buffer). Unable to get appropriate visual.");
+							DEALLOCATE(buffer);
+							buffer = (struct Dm_buffer *)NULL;
 						}
 					}
 #if defined (GLX_SGIX_pbuffer)
