@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : computed_variable.h
 
-LAST MODIFIED : 4 February 2003
+LAST MODIFIED : 7 February 2003
 
 DESCRIPTION :
 Computed_variable's are expressions that are constructed for:
@@ -212,9 +212,9 @@ Returns nonzero if <independent_variable> is an independent variable of
 <dependent_variable> and zero otherwise.
 ==============================================================================*/
 
-char *Computed_variable_get_type(struct Computed_variable *variable);
+char *Computed_variable_get_type_string(struct Computed_variable *variable);
 /*******************************************************************************
-LAST MODIFIED : 27 January 2003
+LAST MODIFIED : 7 February 2003
 
 DESCRIPTION :
 Returns the string which identifies the type.  The calling function must not
@@ -330,6 +330,24 @@ Frees memory/deaccess objects for Computed_variable_value at
 PROTOTYPE_OBJECT_FUNCTIONS(Computed_variable_value);
 
 PROTOTYPE_LIST_FUNCTIONS(Computed_variable_value);
+
+struct Computed_value *Computed_variable_value_get_value(
+	struct Computed_variable_value *variable_value);
+/*******************************************************************************
+LAST MODIFIED : 7 February 2003
+
+DESCRIPTION :
+Returns the value for the <variable_value>.
+==============================================================================*/
+
+struct Computed_variable *Computed_variable_value_get_variable(
+	struct Computed_variable_value *variable_value);
+/*******************************************************************************
+LAST MODIFIED : 7 February 2003
+
+DESCRIPTION :
+Returns the variable for the <variable_value>.
+==============================================================================*/
 
 int Computed_variable_is_defined(struct Computed_variable *variable,
 	struct LIST(Computed_variable_value) *values);

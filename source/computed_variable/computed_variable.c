@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : computed_variable.c
 
-LAST MODIFIED : 4 February 2003
+LAST MODIFIED : 7 February 2003
 
 DESCRIPTION :
 Computed_variable's are expressions that are constructed for:
@@ -79,12 +79,131 @@ NOTES :
 #include "user_interface/message.h"
 
 /*
+Module constants
+----------------
+*/
+static char computed_variable_derivative_type_string[]="derivative";
+
+/*
+Module methods
+--------------
+*/
+/*???DB.  Have put here because in general should not know definition of
+	struct Computed_variable (may need for special ones like derivative?) */
+
+struct Computed_variable_derivative_type_specific_data
+/*******************************************************************************
+LAST MODIFIED : 5 February 2003
+
+DESCRIPTION :
+==============================================================================*/
+{
+	/* differentiate */
+	struct Computed_variable *variable;
+	/* with respect to */
+	struct LIST(Computed_variable) *independent_variables;
+}; /* struct Computed_variable_derivative_type_specific_data */
+
+static START_COMPUTED_VARIABLE_CLEAR_TYPE_SPECIFIC_FUNCTION(derivative)
+{
+	DEACCESS(Computed_variable)(&(data->variable));
+	DESTROY_LIST(Computed_variable)(&(data->independent_variables));
+	return_code=1;
+}
+END_COMPUTED_VARIABLE_CLEAR_TYPE_SPECIFIC_FUNCTION(derivative)
+
+static START_COMPUTED_VARIABLE_DUPLICATE_DATA_TYPE_SPECIFIC_FUNCTION(derivative)
+{
+	if (destination->independent_variables=CREATE_LIST(Computed_variable)())
+	{
+		if (COPY_LIST(Computed_variable)(destination->independent_variables,
+			source->independent_variables))
+		{
+			destination->variable=ACCESS(Computed_variable)(source->variable);
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,
+				"Computed_variable_derivative_duplicate_type_specific.  "
+				"Could not copy <independent_variables> list");
+			DESTROY_LIST(Computed_variable)(&(destination->independent_variables));
+			DEALLOCATE(destination);
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Computed_variable_derivative_duplicate_type_specific.  "
+			"Could not create <independent_variables> list");
+		DEALLOCATE(destination);
+	}
+}
+END_COMPUTED_VARIABLE_DUPLICATE_DATA_TYPE_SPECIFIC_FUNCTION(derivative)
+
+static START_COMPUTED_VARIABLE_EVALUATE_TYPE_SPECIFIC_FUNCTION(derivative)
+{
+	/*???DB.  To be done */
+	USE_PARAMETER(values);
+}
+END_COMPUTED_VARIABLE_EVALUATE_TYPE_SPECIFIC_FUNCTION(derivative)
+
+static START_COMPUTED_VARIABLE_GET_INDEPENDENT_VARIABLE_VALUE_TYPE_SPECIFIC_FUNCTION(derivative)
+{
+	/*???DB.  To be done */
+}
+END_COMPUTED_VARIABLE_GET_INDEPENDENT_VARIABLE_VALUE_TYPE_SPECIFIC_FUNCTION(derivative)
+
+static START_COMPUTED_VARIABLE_GET_VALUE_TYPE_TYPE_SPECIFIC_FUNCTION(derivative)
+{
+	/*???DB.  To be done */
+}
+END_COMPUTED_VARIABLE_GET_VALUE_TYPE_TYPE_SPECIFIC_FUNCTION(derivative)
+
+static START_COMPUTED_VARIABLE_IS_DEFINED_TYPE_SPECIFIC_FUNCTION(derivative)
+{
+	/*???DB.  To be done */
+	USE_PARAMETER(values);
+}
+END_COMPUTED_VARIABLE_IS_DEFINED_TYPE_SPECIFIC_FUNCTION(derivative)
+
+static START_COMPUTED_VARIABLE_IS_INDEPENDENT_VARIABLE_OF_TYPE_SPECIFIC_FUNCTION(derivative)
+{
+	/*???DB.  To be done */
+}
+END_COMPUTED_VARIABLE_IS_INDEPENDENT_VARIABLE_OF_TYPE_SPECIFIC_FUNCTION(derivative)
+
+static START_COMPUTED_VARIABLE_NOT_IN_USE_TYPE_SPECIFIC_FUNCTION(derivative)
+{
+	/*???DB.  To be done */
+}
+END_COMPUTED_VARIABLE_NOT_IN_USE_TYPE_SPECIFIC_FUNCTION(derivative)
+
+static START_COMPUTED_VARIABLE_OVERLAP_TYPE_SPECIFIC_FUNCTION(derivative)
+{
+	/*???DB.  To be done */
+}
+END_COMPUTED_VARIABLE_OVERLAP_TYPE_SPECIFIC_FUNCTION(derivative)
+
+static START_COMPUTED_VARIABLE_SAME_VARIABLE_TYPE_SPECIFIC_FUNCTION(derivative)
+{
+	/*???DB.  To be done */
+}
+END_COMPUTED_VARIABLE_SAME_VARIABLE_TYPE_SPECIFIC_FUNCTION(derivative)
+
+static START_COMPUTED_VARIABLE_SET_INDEPENDENT_VARIABLE_VALUE_TYPE_SPECIFIC_FUNCTION(derivative)
+{
+	/*???DB.  To be done */
+}
+END_COMPUTED_VARIABLE_SET_INDEPENDENT_VARIABLE_VALUE_TYPE_SPECIFIC_FUNCTION(derivative)
+
+
+/*
 Module types
 ------------
 */
 struct Computed_variable
 /*******************************************************************************
-LAST MODIFIED : 4 February 2003
+LAST MODIFIED : 6 February 2003
 
 DESCRIPTION :
 ==============================================================================*/
@@ -95,7 +214,7 @@ DESCRIPTION :
 		is shared by all variables of the same type and should not be copied */
 	char *type_string;
 	/* information that is specific to the type */
-	void *type_specific_data;
+	Computed_variable_type_specific_data *type_specific_data;
 	/* methods.   To add a new method, add
 		- a field here in struct Computed_variable
 		- a function type declaration in computed_variable_private.h
@@ -107,8 +226,10 @@ DESCRIPTION :
 		- MANAGER_COPY_WITHOUT_IDENTIFIER(Computed_variable,name) */
 	Computed_variable_clear_type_specific_function
 		computed_variable_clear_type_specific_function;
-	Computed_variable_copy_type_specific_function
-		computed_variable_copy_type_specific_function;
+	Computed_variable_duplicate_data_type_specific_function
+		computed_variable_duplicate_data_type_specific_function;
+	Computed_variable_evaluate_type_specific_function
+		computed_variable_evaluate_type_specific_function;
 	Computed_variable_get_independent_variable_value_type_specific_function
 		computed_variable_get_independent_variable_value_type_specific_function;
 	Computed_variable_get_value_type_type_specific_function
@@ -117,8 +238,8 @@ DESCRIPTION :
 		computed_variable_is_defined_type_specific_function;
 	Computed_variable_is_independent_variable_of_type_specific_function
 		computed_variable_is_independent_variable_of_type_specific_function;
-	Computed_variable_not_in_use_function
-		computed_variable_not_in_use_function;
+	Computed_variable_not_in_use_type_specific_function
+		computed_variable_not_in_use_type_specific_function;
 	Computed_variable_overlap_type_specific_function
 		computed_variable_overlap_type_specific_function;
 	Computed_variable_same_variable_type_specific_function
@@ -133,104 +254,6 @@ DESCRIPTION :
 	struct Computed_variable **source_variables;
 
 	int access_count;
-
-#if defined (OLD_CODE)
-	/* the name/identifier of the Computed_variable */
-	char *name;
-	int number_of_components;
-	/* This is set for variables where the components have names other than
-		the defaults of 1,2...number_of_components */
-	char **component_names;
-
-	/* if the following flag is set, the variable may not be modified or destroyed
-		by the user. See Computed_variable_set_read_only function */
-	int read_only;
-	struct Coordinate_system coordinate_system;
-
-	/* Value cache: */
-	/* For all Computed_variable_types: computed values/derivatives.
-		When the variable is computed its values and derivatives are first placed
-		in these arrays. If the variable is then recomputed at element:xi, the values
-		are returned immediately. The <values> array is allocated when the variable is
-		evaluated and deallocated when the number_of_components is [re]established
-		or the variable is copied over. The values array is made large enough to store
-		the values of the variable while the derivatives fit those of the variable in an
-		element of dimension MAXIMUM_ELEMENT_XI_DIMENSIONS. */
-	/* ???RC note: separation of cache and variable probably necessary if computed
-		variables are to be efficient under multiprocessing */
-	FE_value *values,*derivatives,xi[MAXIMUM_ELEMENT_XI_DIMENSIONS];
-	/* flag saying whether derivatives were calculated */
-	int derivatives_valid;
-	/* Only one of element/node should be accessed at a time - if there is an
-		element accessed, then values are guaranteed to be valid and derivatives
-		are valid if the derivatives_valid flag is set - both at the above xi only.
-		If node is accessed, then the values are valid at that node. Either modes
-		of caching must be cleared by a call to Computed_variable_clear_cache once
-		the variable is no longer of immediate use. */
-	/* last element in which values/derivatives calculated - ACCESSed by variable */
-	struct FE_element *element;
-	/* last node at which values calculated - ACCESSed by variable */
-	struct FE_node *node;
-	/* last time at which values were calculated */
-	FE_value time;
-
-	/* cache used when doing find_xi calculations */
-	struct Computed_variable_find_element_xi_cache *find_element_xi_cache;
-
-	Computed_variable_clear_type_specific_function
-		computed_variable_clear_type_specific_function;
-	Computed_variable_copy_type_specific_function
-		computed_variable_copy_type_specific_function;
-	Computed_variable_clear_cache_type_specific_function
-		computed_variable_clear_cache_type_specific_function;
-	Computed_variable_type_specific_contents_match_function
-		computed_variable_type_specific_contents_match_function;
-	Computed_variable_is_defined_in_element_function
-		computed_variable_is_defined_in_element_function;
-	Computed_variable_is_defined_at_node_function
-		computed_variable_is_defined_at_node_function;
-	Computed_variable_has_numerical_components_function
-		computed_variable_has_numerical_components_function;
-	Computed_variable_not_in_use_function
-		computed_variable_not_in_use_function;
-	Computed_variable_evaluate_cache_at_node_function
-		computed_variable_evaluate_cache_at_node_function;
-	Computed_variable_evaluate_cache_in_element_function
-		computed_variable_evaluate_cache_in_element_function;
-	Computed_variable_evaluate_as_string_at_node_function
-		computed_variable_evaluate_as_string_at_node_function;
-	Computed_variable_evaluate_as_string_in_element_function
-		computed_variable_evaluate_as_string_in_element_function;
-	Computed_variable_set_values_at_node_function
-		computed_variable_set_values_at_node_function;
-	Computed_variable_set_values_in_element_function
-		computed_variable_set_values_in_element_function;
-	Computed_variable_get_native_discretization_in_element_function
-		computed_variable_get_native_discretization_in_element_function;
-	Computed_variable_find_element_xi_function
-		computed_variable_find_element_xi_function;
-	List_Computed_variable_function list_Computed_variable_function;
-	Computed_variable_get_command_string_function
-		computed_variable_get_command_string_function;
-	Computed_variable_has_multiple_times_function
-		computed_variable_has_multiple_times_function;
-
-	void *type_specific_data;
-	/* The type string identifies the type, it should not be copied but
-		point to the common type string for that type */
-	char *type_string;
-
-	/* for all Computed_variable_types calculated from others */
-
-	/* array of computed variables this variable is calculated from */
-	int number_of_source_variables;
-	struct Computed_variable **source_variables;
-	/* array of constant values this variable is calculated from */
-	int number_of_source_values;
-	FE_value *source_values;
-
-	int access_count;
-#endif /* defined (OLD_CODE) */
 }; /* struct Computed_variable */
 
 FULL_DECLARE_INDEXED_LIST_TYPE(Computed_variable);
@@ -290,8 +313,10 @@ Friend functions
 int Computed_variable_establish_methods(struct Computed_variable *variable,
 	Computed_variable_clear_type_specific_function
 	computed_variable_clear_type_specific_function,
-	Computed_variable_copy_type_specific_function
-	computed_variable_copy_type_specific_function,
+	Computed_variable_duplicate_data_type_specific_function
+	computed_variable_duplicate_data_type_specific_function,
+	Computed_variable_evaluate_type_specific_function
+	computed_variable_evaluate_type_specific_function,
 	Computed_variable_get_independent_variable_value_type_specific_function
 	computed_variable_get_independent_variable_value_type_specific_function,
 	Computed_variable_get_value_type_type_specific_function
@@ -300,8 +325,8 @@ int Computed_variable_establish_methods(struct Computed_variable *variable,
 	computed_variable_is_defined_type_specific_function,
 	Computed_variable_is_independent_variable_of_type_specific_function
 	computed_variable_is_independent_variable_of_type_specific_function,
-	Computed_variable_not_in_use_function
-	computed_variable_not_in_use_function,
+	Computed_variable_not_in_use_type_specific_function
+	computed_variable_not_in_use_type_specific_function,
 	Computed_variable_overlap_type_specific_function
 	computed_variable_overlap_type_specific_function,
 	Computed_variable_same_variable_type_specific_function
@@ -309,7 +334,7 @@ int Computed_variable_establish_methods(struct Computed_variable *variable,
 	Computed_variable_set_independent_variable_value_type_specific_function
 	computed_variable_set_independent_variable_value_type_specific_function)
 /*******************************************************************************
-LAST MODIFIED : 4 February 2003
+LAST MODIFIED : 5 February 2003
 
 DESCRIPTION :
 Sets the methods for the <variable>.
@@ -323,8 +348,10 @@ Sets the methods for the <variable>.
 	{
 		variable->computed_variable_clear_type_specific_function=
 			computed_variable_clear_type_specific_function;
-		variable->computed_variable_copy_type_specific_function=
-			computed_variable_copy_type_specific_function;
+		variable->computed_variable_duplicate_data_type_specific_function=
+			computed_variable_duplicate_data_type_specific_function;
+		variable->computed_variable_evaluate_type_specific_function=
+			computed_variable_evaluate_type_specific_function;
 		variable->
 			computed_variable_get_independent_variable_value_type_specific_function=
 			computed_variable_get_independent_variable_value_type_specific_function;
@@ -335,8 +362,8 @@ Sets the methods for the <variable>.
 		variable->
 			computed_variable_is_independent_variable_of_type_specific_function=
 			computed_variable_is_independent_variable_of_type_specific_function;
-		variable->computed_variable_not_in_use_function=
-			computed_variable_not_in_use_function;
+		variable->computed_variable_not_in_use_type_specific_function=
+			computed_variable_not_in_use_type_specific_function;
 		variable->computed_variable_overlap_type_specific_function=
 			computed_variable_overlap_type_specific_function;
 		variable->computed_variable_same_variable_type_specific_function=
@@ -356,9 +383,31 @@ Sets the methods for the <variable>.
 	return (return_code);
 } /* Computed_variable_establish_methods */
 
+Computed_variable_type_specific_data *Computed_variable_get_type_specific_data(
+	struct Computed_variable *variable)
+/*******************************************************************************
+LAST MODIFIED : 6 February 2003
+
+DESCRIPTION :
+Returns the type specific data for the <variable>.
+==============================================================================*/
+{
+	Computed_variable_type_specific_data *data;
+
+	ENTER(Computed_variable_get_type_specific_data);
+	data=(Computed_variable_type_specific_data *)NULL;
+	ASSERT_IF(variable,data,(Computed_variable_type_specific_data *)NULL)
+	{
+		data=variable->type_specific_data;
+	}
+	LEAVE;
+
+	return (data);
+} /* Computed_variable_get_type_specific_data */
+
 int Computed_variable_clear_type(struct Computed_variable *variable)
 /*******************************************************************************
-LAST MODIFIED : 4 February 2003
+LAST MODIFIED : 7 February 2003
 
 DESCRIPTION :
 Used internally by DESTROY and Computed_variable_set_type_*() functions to
@@ -370,13 +419,16 @@ changing the type of the Computed_variable should
 to ensure that the variable is not left in an invalid state.
 ==============================================================================*/
 {
-	int return_code;
+	int i,return_code;
+	struct Computed_variable **independent_variable_address,
+		**source_variable_address;
 
 	ENTER(Computed_variable_clear_type);
 	return_code=0;
 	/* check arguments */
 	if (variable)
 	{
+		variable->type_string=(char *)NULL;
 		if (variable->type_specific_data)
 		{
 			if (variable->computed_variable_clear_type_specific_function)
@@ -391,22 +443,38 @@ to ensure that the variable is not left in an invalid state.
 					"Type specific data but no function to clear it");
 				return_code=0;
 			}
-			variable->type_specific_data=(void *)NULL;
+			DEALLOCATE(variable->type_specific_data);
 		}
 		/* clear all methods */
 		Computed_variable_establish_methods(variable,
 			(Computed_variable_clear_type_specific_function)NULL,
-			(Computed_variable_copy_type_specific_function)NULL,
+			(Computed_variable_duplicate_data_type_specific_function)NULL,
+			(Computed_variable_evaluate_type_specific_function)NULL,
 			(Computed_variable_get_independent_variable_value_type_specific_function)
 			NULL,
 			(Computed_variable_get_value_type_type_specific_function)NULL,
 			(Computed_variable_is_defined_type_specific_function)NULL,
 			(Computed_variable_is_independent_variable_of_type_specific_function)NULL,
-			(Computed_variable_not_in_use_function)NULL,
+			(Computed_variable_not_in_use_type_specific_function)NULL,
 			(Computed_variable_overlap_type_specific_function)NULL,
 			(Computed_variable_same_variable_type_specific_function)NULL,
 			(Computed_variable_set_independent_variable_value_type_specific_function)
 			NULL);
+		/* clear all sources */
+		i=variable->number_of_source_variables;
+		independent_variable_address=variable->independent_variables;
+		source_variable_address=variable->source_variables;
+		while (i>0)
+		{
+			DEACCESS(Computed_variable)(independent_variable_address);
+			DEACCESS(Computed_variable)(source_variable_address);
+			independent_variable_address++;
+			source_variable_address++;
+			i--;
+		}
+		DEALLOCATE(variable->independent_variables);
+		DEALLOCATE(variable->source_variables);
+		variable->number_of_source_variables=0;
 	}
 	else
 	{
@@ -459,7 +527,7 @@ The calling program must not DEALLOCATE the returned structures.
 
 struct Computed_variable *CREATE(Computed_variable)(char *name)
 /*******************************************************************************
-LAST MODIFIED : 4 February 2003
+LAST MODIFIED : 5 February 2003
 
 DESCRIPTION :
 Creates an empty variable with specified <name> and no type, dependent variables
@@ -482,13 +550,14 @@ function.  The <name> is copied.
 			/* initialise methods */
 			Computed_variable_establish_methods(variable,
 				(Computed_variable_clear_type_specific_function)NULL,
-				(Computed_variable_copy_type_specific_function)NULL,
+				(Computed_variable_duplicate_data_type_specific_function)NULL,
+				(Computed_variable_evaluate_type_specific_function)NULL,
 				(Computed_variable_get_independent_variable_value_type_specific_function)NULL,
 				(Computed_variable_get_value_type_type_specific_function)NULL,
 				(Computed_variable_is_defined_type_specific_function)NULL,
 				(Computed_variable_is_independent_variable_of_type_specific_function)
 				NULL,
-				(Computed_variable_not_in_use_function)NULL,
+				(Computed_variable_not_in_use_type_specific_function)NULL,
 				(Computed_variable_overlap_type_specific_function)NULL,
 				(Computed_variable_same_variable_type_specific_function)NULL,
 				(Computed_variable_set_independent_variable_value_type_specific_function)NULL);
@@ -519,15 +588,14 @@ function.  The <name> is copied.
 
 int DESTROY(Computed_variable)(struct Computed_variable **variable_address)
 /*******************************************************************************
-LAST MODIFIED : 3 February 2003
+LAST MODIFIED : 5 February 2003
 
 DESCRIPTION :
 Frees memory/deaccess objects for Computed_variable at <*variable_address>.
 ==============================================================================*/
 {
-	int i,return_code;
-	struct Computed_variable **independent_variable_address,
-		**source_variable_address,*variable;
+	int return_code;
+	struct Computed_variable *variable;
 
 	ENTER(DESTROY(Computed_variable));
 	return_code=0;
@@ -537,19 +605,6 @@ Frees memory/deaccess objects for Computed_variable at <*variable_address>.
 		{
 			DEALLOCATE(variable->name);
 			Computed_variable_clear_type(variable);
-			i=variable->number_of_source_variables;
-			independent_variable_address=variable->independent_variables;
-			source_variable_address=variable->source_variables;
-			while (i>0)
-			{
-				DEACCESS(Computed_variable)(independent_variable_address);
-				DEACCESS(Computed_variable)(source_variable_address);
-				independent_variable_address++;
-				source_variable_address++;
-				i--;
-			}
-			DEALLOCATE(variable->independent_variables);
-			DEALLOCATE(variable->source_variables);
 			DEALLOCATE(*variable_address);
 			return_code=1;
 		}
@@ -640,7 +695,7 @@ PROTOTYPE_MANAGER_COPY_WITH_IDENTIFIER_FUNCTION(Computed_variable,name)
 
 PROTOTYPE_MANAGER_COPY_WITHOUT_IDENTIFIER_FUNCTION(Computed_variable,name)
 /*******************************************************************************
-LAST MODIFIED : 4 February 2003
+LAST MODIFIED : 6 February 2003
 
 DESCRIPTION :
 Do not allow copy if:
@@ -675,15 +730,15 @@ Do not allow copy if:
 			return_code=1;
 			if (source->type_specific_data)
 			{
-				if (source->computed_variable_copy_type_specific_function)
+				if (source->computed_variable_duplicate_data_type_specific_function)
 				{
 					if (!(type_specific_data=
-						(source->computed_variable_copy_type_specific_function)(source,
-						destination)))
+						(source->computed_variable_duplicate_data_type_specific_function)(
+						source)))
 					{
 						display_message(ERROR_MESSAGE,
 							"MANAGER_COPY_WITHOUT_IDENTIFIER(Computed_variable,name).  "
-							"Type specific copy function failed.");
+							"Type specific duplicate data function failed.");
 						return_code=0;
 					}
 				}
@@ -691,7 +746,7 @@ Do not allow copy if:
 				{
 					display_message(ERROR_MESSAGE,
 						"MANAGER_COPY_WITHOUT_IDENTIFIER(Computed_variable,name).  "
-						"Type specific data but no copy function.");
+						"Type specific data but no duplicate data function.");
 					return_code=0;
 				}
 			}
@@ -699,18 +754,6 @@ Do not allow copy if:
 			{
 				/* free current type-specific data */
 				Computed_variable_clear_type(destination);
-				/* deaccess current source variables */
-				i=destination->number_of_source_variables;
-				independent_variable_address=destination->independent_variables;
-				source_variable_address=destination->source_variables;
-				while (i>0)
-				{
-					DEACCESS(Computed_variable)(independent_variable_address);
-					DEACCESS(Computed_variable)(source_variable_address);
-					independent_variable_address++;
-					source_variable_address++;
-					i--;
-				}
 				if (0<source->number_of_source_variables)
 				{
 					if (REALLOCATE(independent_variable_address,
@@ -748,14 +791,15 @@ Do not allow copy if:
 					}
 					return_code=Computed_variable_establish_methods(destination,
 						source->computed_variable_clear_type_specific_function,
-						source->computed_variable_copy_type_specific_function,
+						source->computed_variable_duplicate_data_type_specific_function,
+						source->computed_variable_evaluate_type_specific_function,
 						source->
 						computed_variable_get_independent_variable_value_type_specific_function,
 						source->computed_variable_get_value_type_type_specific_function,
 						source->computed_variable_is_defined_type_specific_function,
 						source->
 						computed_variable_is_independent_variable_of_type_specific_function,
-						source->computed_variable_not_in_use_function,
+						source->computed_variable_not_in_use_type_specific_function,
 						source->computed_variable_overlap_type_specific_function,
 						source->computed_variable_same_variable_type_specific_function,
 						source->
@@ -834,13 +878,15 @@ DECLARE_MANAGER_FUNCTIONS(Computed_variable)
 
 PROTOTYPE_MANAGED_OBJECT_NOT_IN_USE_FUNCTION(Computed_variable)
 /*******************************************************************************
-LAST MODIFIED : 27 January 2003
+LAST MODIFIED : 7 February 2003
 
 DESCRIPTION :
 Computed_variable requires a special version of this function because it may
 use objects (eg FE_fields) that are also used.  If the computed variable is not
 itself in use, it calls the variable's optional computed_variable_not_in_use
 function and bases its result on that.
+
+???DB.  What about source fields?
 ==============================================================================*/
 {
 	int return_code;
@@ -851,16 +897,17 @@ function and bases its result on that.
 	{
 		if (!(manager->locked))
 		{
-			if (IS_OBJECT_IN_LIST(Computed_variable)(object, manager->object_list))
+			if (IS_OBJECT_IN_LIST(Computed_variable)(object,manager->object_list))
 			{
 				if ((1==object->access_count)||
 					((2==object->access_count)&&
 					IS_OBJECT_IN_LIST(Computed_variable)(object,
 					manager->message->changed_object_list)))
 				{
-					if (object->computed_variable_not_in_use_function)
+					if (object->computed_variable_not_in_use_type_specific_function)
 					{
-						return_code=(object->computed_variable_not_in_use_function)(object);
+						return_code=(object->
+							computed_variable_not_in_use_type_specific_function)(object);
 					}
 					else
 					{
@@ -1019,9 +1066,9 @@ Returns nonzero if <independent_variable> is an independent variable of
 	return (return_code);
 } /* Computed_variable_is_independent_variable_of */
 
-char *Computed_variable_get_type(struct Computed_variable *variable)
+char *Computed_variable_get_type_string(struct Computed_variable *variable)
 /*******************************************************************************
-LAST MODIFIED : 27 January 2003
+LAST MODIFIED : 7 February 2003
 
 DESCRIPTION :
 Returns the string which identifies the type.  The calling function must not
@@ -1030,7 +1077,7 @@ DEALLOCATE the returned string.
 {
 	char *return_string;
 
-	ENTER(Computed_variable_get_type);
+	ENTER(Computed_variable_get_type_string);
 	return_string=(char *)NULL;
 	if (variable)
 	{
@@ -1038,13 +1085,13 @@ DEALLOCATE the returned string.
 	}
 	else
 	{
-		display_message(ERROR_MESSAGE,"Computed_variable_get_type.  "
+		display_message(ERROR_MESSAGE,"Computed_variable_get_type_string.  "
 			"Missing variable");
 	}
 	LEAVE;
 
 	return (return_string);
-} /* Computed_variable_get_type */
+} /* Computed_variable_get_type_string */
 
 int Computed_variable_get_value_type(struct Computed_variable *variable,
 	struct Computed_value *type)
@@ -1532,11 +1579,66 @@ DECLARE_OBJECT_FUNCTIONS(Computed_variable_value)
 
 DECLARE_LIST_FUNCTIONS(Computed_variable_value)
 
-/*???DB.  Where I'm up to */
+struct Computed_value *Computed_variable_value_get_value(
+	struct Computed_variable_value *variable_value)
+/*******************************************************************************
+LAST MODIFIED : 7 February 2003
+
+DESCRIPTION :
+Returns the value for the <variable_value>.
+==============================================================================*/
+{
+	struct Computed_value *value;
+
+	ENTER(Computed_variable_value_get_value);
+	value=(struct Computed_value *)NULL;
+	/* check arguments */
+	if (variable_value)
+	{
+		value=variable_value->value;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"Computed_variable_value_get_value.  "
+			"Missing variable_value");
+	}
+	LEAVE;
+
+	return (value);
+} /* Computed_variable_value_get_value */
+
+struct Computed_variable *Computed_variable_value_get_variable(
+	struct Computed_variable_value *variable_value)
+/*******************************************************************************
+LAST MODIFIED : 7 February 2003
+
+DESCRIPTION :
+Returns the variable for the <variable_value>.
+==============================================================================*/
+{
+	struct Computed_variable *variable;
+
+	ENTER(Computed_variable_value_get_variable);
+	variable=(struct Computed_variable *)NULL;
+	/* check arguments */
+	if (variable_value)
+	{
+		variable=variable_value->variable;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"Computed_variable_value_get_variable.  "
+			"Missing variable_value");
+	}
+	LEAVE;
+
+	return (variable);
+} /* Computed_variable_value_get_variable */
+
 int Computed_variable_is_defined(struct Computed_variable *variable,
 	struct LIST(Computed_variable_value) *values)
 /*******************************************************************************
-LAST MODIFIED : 4 February 2003
+LAST MODIFIED : 5 February 2003
 
 DESCRIPTION :
 Returns true if <variable> can be calculated with the specified <values>
@@ -1546,8 +1648,11 @@ over-riding, but not setting, the current values.
 	would write error messages if it failed
 ==============================================================================*/
 {
+	int return_code;
+#if defined (OLD_CODE)
 	int i,return_code;
 	struct Computed_variable **source_variable_address;
+#endif /* defined (OLD_CODE) */
 
 	ENTER(Computed_variable_is_defined);
 	return_code=0;
@@ -1556,6 +1661,12 @@ over-riding, but not setting, the current values.
 	{
 		if (variable->computed_variable_is_defined_type_specific_function)
 		{
+			/* is defined of source variables has to be type specific because
+				different types may evaluate in different ways eg derivative type */
+			return_code=
+				(variable->computed_variable_is_defined_type_specific_function)(
+				variable,values);
+#if defined (OLD_CODE)
 			return_code=1;
 			source_variable_address=variable->source_variables;
 			i=variable->number_of_source_variables;
@@ -1572,6 +1683,7 @@ over-riding, but not setting, the current values.
 					(variable->computed_variable_is_defined_type_specific_function)(
 					variable,values);
 			}
+#endif /* defined (OLD_CODE) */
 		}
 		else
 		{
@@ -1590,26 +1702,107 @@ over-riding, but not setting, the current values.
 } /* Computed_variable_is_defined */
 
 int Computed_variable_evaluate(struct Computed_variable_value *variable_value,
-	struct LIST(Computed_variable_value) *values);
+	struct LIST(Computed_variable_value) *values)
 /*******************************************************************************
-LAST MODIFIED : 4 February 2003
+LAST MODIFIED : 5 February 2003
 
 DESCRIPTION :
 Calculates the <variable_value> with the specified <values> over-riding, but not
 setting, the current values.
 ==============================================================================*/
+{
+	int return_code;
+	struct Computed_variable *variable;
 
+	ENTER(Computed_variable_evaluate);
+	return_code=0;
+	/* checking arguments */
+	if (variable_value&&(variable=variable_value->variable))
+	{
+		if (variable->computed_variable_evaluate_type_specific_function)
+		{
+			/* evaluation of source variables has to be type specific because
+				different types may evaluate in different ways eg derivative type */
+			return_code=(variable->computed_variable_evaluate_type_specific_function)(
+				variable_value,values);
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,"Computed_variable_evaluate.  "
+				"Missing type specific function");
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"Computed_variable_evaluate.  "
+			"Missing <variable_value> to evaluate");
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Computed_variable_evaluate */
+
+/*???DB.  Where I'm up to */
 int Computed_variable_set_type_derivative(
 	struct Computed_variable *derivative,
 	struct Computed_variable *variable,
-	struct LIST(Computed_variable) *independent_variables);
+	struct LIST(Computed_variable) *independent_variables)
 /*******************************************************************************
-LAST MODIFIED : 29 January 2003
+LAST MODIFIED : 5 February 2003
 
 DESCRIPTION :
 Sets <derivative> to be the derivative of the <variable> with respect to the
 <independent_variables>.
 ==============================================================================*/
+{
+	int return_code;
+	struct Computed_variable_derivative_type_specific_data *data;
+
+	ENTER(Computed_variable_set_type_derivative);
+	return_code=0;
+	/* check arguments */
+	if (derivative&&variable&&independent_variables)
+	{
+		/* 1.  Make dynamic allocations for any new type-specific data */
+		if (ALLOCATE(data,struct Computed_variable_derivative_type_specific_data,1))
+		{
+			if ((data->independent_variables=CREATE_LIST(Computed_variable)())&&
+				COPY_LIST(Computed_variable)(data->independent_variables,
+				independent_variables))
+			{
+				/* 2.  Clear current type-specific data */
+				Computed_variable_clear_type(derivative);
+				/* 3.  Establish the new type */
+				derivative->type_string=computed_variable_derivative_type_string;
+				derivative->type_specific_data=(void *)data;
+				data->variable=ACCESS(Computed_variable)(variable);
+				/* set all the methods */
+				return_code=COMPUTED_VARIABLE_ESTABLISH_METHODS(derivative,derivative);
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE,"Computed_variable_set_type_derivative.  "
+					"Could not copy independent variables");
+				DESTROY_LIST(Computed_variable)(&(data->independent_variables));
+				DEALLOCATE(data);
+			}
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,"Computed_variable_set_type_derivative.  "
+				"Could not ALLOCATE type specific data");
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"Computed_variable_set_type_derivative.  "
+			"Invalid argument(s).  %p %p %p\n",derivative,variable,
+			independent_variables);
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Computed_variable_set_type_derivative */
 
 int Computed_variable_set_type_divergence(
 	struct Computed_variable *divergence,

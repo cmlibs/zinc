@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : computed_value.h
 
-LAST MODIFIED : 27 January 2003
+LAST MODIFIED : 7 February 2003
 
 DESCRIPTION :
 A module intended to replace general/value .  Testing and developing in
@@ -15,6 +15,27 @@ conjunction with Computed_variables.
 #include "general/list.h"
 #include "general/object.h"
 #include "general/value.h"
+
+/*
+Global macros
+-------------
+*/
+/*???DB.  Should be in general/debug.h, but while developing have here */
+/*???DB.  For optimised ASSERT_IF would be empty.  This means that there should
+	be no assignments in the ASSERT_IF expression */
+/*???DB.  Could implement __FUNCTION_NAME__ macro using ENTER and LEAVE.  Make
+	so that has call tree? */
+/*???DB.  Should there be levels of ASSERT_IF */
+/*???DB.  Still using if to check ALLOCATE */
+
+#define ASSERT_IF( expression , return_code , error_value ) \
+if (!(expression)) \
+{ \
+	display_message(ERROR_MESSAGE,"file: " __FILE__ ", line: %d.  ASSERT_IF(" \
+		#expression ") failed",__LINE__); \
+	return_code=error_value; \
+} \
+else
 
 /*
 Global types
