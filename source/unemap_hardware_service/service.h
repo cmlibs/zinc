@@ -69,6 +69,14 @@ extern "C" {
 // displayed name of the service
 #define SZSERVICEDISPLAYNAME "Unemap Hardware Service"
 // list of service dependencies - "dep1\0dep2\0\0"
+//   Added nidevldu and nipxirmu because the NI cards were being initialized
+//     by something else after the Unemap Hardware Service had initialized
+//     them via a call to unemap_get_number of channels.  NT doesn't know about
+//     them.  So leave out.
+// #define SZDEPENDENCIES       "nidevldu\0nipxirmu\0Nidaq32k\0\0"
+//    nidaq32k.sys is in winnt\system32\drivers.  nipalk.sys is also there.
+//      Tried adding, but didn't fix problem
+// #define SZDEPENDENCIES       "Nipalk\0Nidaq32k\0\0"
 #define SZDEPENDENCIES       "Nidaq32k\0\0"
 //////////////////////////////////////////////////////////////////////////////
 
