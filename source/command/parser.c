@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : parser.c
 
-LAST MODIFIED : 12 May 2000
+LAST MODIFIED : 30 August 2000
 
 DESCRIPTION :
 A module for supporting command parsing.
@@ -489,7 +489,7 @@ Global functions
 */
 int fuzzy_string_compare(char *first,char *second)
 /*******************************************************************************
-LAST MODIFIED : 21 June 1999
+LAST MODIFIED : 30 August 2000
 
 DESCRIPTION :
 This is a case insensitive compare disregarding certain characters (whitespace,
@@ -498,17 +498,17 @@ dashes and underscores).  For example, "Ambient Colour" matches the following:
 "AMBIENT_COLOUR", "ambient_colour", "ambientColour", "Ambient_Colour",
 "ambient-colour", "AmBiEnTcOlOuR", "Ambient-- Colour"
 
-and a large set of even louder versions. The strings are compared up to the
-length of the shortest of first and second.
+and a large set of even louder versions.
 
-Returns 1 if the strings match, 0 if they do not.
+Both strings are first reduced, which removes whitespace and converts to upper
+case. Returns 1 iff the reduced second string is at least as long as the
+reduced first string and starts with the characters in the first.
 ==============================================================================*/
 {
 	char *first_reduced,*second_reduced;
 	int compare_length,first_length,return_code,second_length;
 
 	ENTER(fuzzy_string_compare);
-	/* check arguments */
 	if (first&&second)
 	{
 		/*???Edouard.  Malloc()ing and free()ing space for every string compare is
@@ -527,35 +527,10 @@ Returns 1 if the strings match, 0 if they do not.
 			{
 				first_length=strlen(first_reduced);
 				second_length=strlen(second_reduced);
-				/* determine length to compare on */
-/*        if ((first_length>=minimum_length)&&
-					(second_length>=minimum_length))
-				{*/
-					if (first_length<=second_length)
-					{
-						compare_length=first_length;
-						if (strncmp(first_reduced,second_reduced,compare_length))
-						{
-							return_code=0;
-						}
-						else
-						{
-							return_code=1;
-						}
-					}
-					else
-					{
-						return_code=0;
-					}
-#if defined (OLD_CODE)
-					if (first_length<second_length)
-					{
-						compare_length=first_length;
-					}
-					else
-					{
-						compare_length=second_length;
-					}
+				/* first reduced string must not be longer than second */
+				if (first_length <= second_length)
+				{
+					compare_length=first_length;
 					if (strncmp(first_reduced,second_reduced,compare_length))
 					{
 						return_code=0;
@@ -564,12 +539,11 @@ Returns 1 if the strings match, 0 if they do not.
 					{
 						return_code=1;
 					}
-#endif /* defined (OLD_CODE) */
-/*        }
+				}
 				else
 				{
 					return_code=0;
-				}*/
+				}
 			}
 			else
 			{
