@@ -12176,23 +12176,23 @@ and allows its contents to be modified.
 		}
 		else
 		{
-			if (!((curve=FIRST_OBJECT_IN_MANAGER_THAT(Control_curve)(
+			curve=FIRST_OBJECT_IN_MANAGER_THAT(Control_curve)(
 				(MANAGER_CONDITIONAL_FUNCTION(Control_curve) *)NULL,(void *)NULL,
-				computed_field_package->control_curve_manager))&&
-				(source_field=FIRST_OBJECT_IN_MANAGER_THAT(Computed_field)(
-					Computed_field_has_1_component,(void *)NULL,
-					computed_field_package->computed_field_manager))))
-			{
-				display_message(ERROR_MESSAGE,
-					"define_Computed_field_type_curve_lookup.  "
-					"Could not get valid source field or curve");
-				return_code=0;
-			}
+				computed_field_package->control_curve_manager);
+			source_field=FIRST_OBJECT_IN_MANAGER_THAT(Computed_field)(
+				Computed_field_has_1_component,(void *)NULL,
+				computed_field_package->computed_field_manager);
 		}
 		if (return_code)
 		{
-			ACCESS(Computed_field)(source_field);
-			ACCESS(Control_curve)(curve);
+			if (source_field)
+			{
+				ACCESS(Computed_field)(source_field);
+			}
+			if (curve)
+			{
+				ACCESS(Control_curve)(curve);
+			}
 			set_source_field_data.computed_field_package=computed_field_package;
 			set_source_field_data.conditional_function=Computed_field_has_1_component;
 			set_source_field_data.conditional_function_user_data=(void *)NULL;
