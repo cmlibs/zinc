@@ -3,9 +3,9 @@ euler_
 improved_euler_
 runge_kutta_
 #endif /* defined (CELL) */
-#if defined (GTK_USER_INTERFACE) || defined (MOTIF_USER_INTERFACE)
+#if defined (GTK_USER_INTERFACE) || defined (MOTIF)
 Cmiss_graphics_window_get_scene_viewer_by_name
-#endif /* defined (GTK_USER_INTERFACE) || defined (MOTIF_USER_INTERFACE) */
+#endif /* defined (GTK_USER_INTERFACE) || defined (MOTIF) */
 Cmiss_scene_viewer_get_lookat_parameters
 Cmiss_scene_viewer_set_lookat_parameters_non_skew
 Cmiss_scene_viewer_get_projection_mode
