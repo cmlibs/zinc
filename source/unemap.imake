@@ -1,7 +1,7 @@
 XCOMM **************************************************************************
 XCOMM FILE : unemap.imake
 XCOMM
-XCOMM LAST MODIFIED : 19 June 2001
+XCOMM LAST MODIFIED : 2 October 2001
 XCOMM
 XCOMM DESCRIPTION :
 XCOMM Makefile for unemap
@@ -626,11 +626,12 @@ COMPUTED_FIELD_SRCS = \
 	computed_field/computed_field_find_xi.c \
 	computed_field/computed_field_fibres.c \
 	computed_field/computed_field_integration.c \
+	computed_field/computed_field_value_index_ranges.c \
 	computed_field/computed_field_vector_operations.c \
 	computed_field/computed_field_wrappers.c
 FINITE_ELEMENT_SRCS = \
 	finite_element/export_finite_element.c \
-	finite_element/field_value_index_ranges.c \
+	finite_element/finite_element_discretization.c \
 	finite_element/finite_element_to_graphics_object.c \
 	finite_element/finite_element_to_iso_lines.c \
 	finite_element/finite_element_to_streamlines.c \
@@ -717,6 +718,7 @@ UNEMAP_SRCS = \
 	unemap/beekeeper.c \
 	unemap/cardiomapp.c \
 	unemap/delauney.c \
+	unemap/edf.c \
 	unemap/eimaging_time_dialog.c \
 	unemap/drawing_2d.c \
 	unemap/interpolate.c \
@@ -777,6 +779,7 @@ UNEMAP_SRCS = \
 	unemap/beekeeper.c \
 	unemap/cardiomapp.c \
 	unemap/delauney.c \
+	unemap/edf.c \
 	unemap/eimaging_time_dialog.c \
 	unemap/drawing_2d.c \
 	unemap/interpolate.c \
@@ -860,7 +863,7 @@ transfer :
 	unemap/utilities/WildC unemap/utilities/WildH unemap/utilities/WildUil \
 	command/parser.c command/parser.h \
 	computed_field/computed_field.h \
-	finite_element/field_value_index_ranges.h finite_element/finite_element.h \
+	computed_field/computed_field_value_index_ranges.h finite_element/finite_element.h \
 	finite_element/finite_element_to_graphics_object.h \
 	finite_element/finite_element_to_streamlines.h \
 	general/WildC general/WildH general/WildUil \
