@@ -176,6 +176,7 @@ supported on displays other than SGI will do.
 	int config_index, nelements;
 	static int fbvisattrsRGB_with_depth[] =
 	{
+		GLX_RENDER_TYPE, GLX_RGBA_BIT,
 		GLX_RED_SIZE, 5,
 		GLX_GREEN_SIZE, 5,
 		GLX_BLUE_SIZE, 5,
@@ -185,6 +186,7 @@ supported on displays other than SGI will do.
 	};
 	static int fbvisattrsRGB_no_depth[] =
 	{
+		GLX_RENDER_TYPE, GLX_RGBA_BIT,
 		GLX_RED_SIZE, 5,
 		GLX_GREEN_SIZE, 5,
 		GLX_BLUE_SIZE, 5,
