@@ -559,6 +559,10 @@ Frees the memory for the volume texture and sets <*texture_address> to NULL.
 					{
 						number_of_scalar_fields++;
 					}
+					if (texture->hollow_mode_on)
+					{
+						number_of_scalar_fields++;
+					}
 					if (texture->clip_field)
 					{
 /*???SAB.						number_of_scalar_fields++;*/
@@ -4903,7 +4907,7 @@ Creates/Updates isosurface for basic volume_texture
 		isovalue_list[n_scalar_fields] = texture->cutting_plane[3];
 		n_scalar_fields++;
 	}
-	if (texture->hollow_mode_on)
+ 	if (texture->hollow_mode_on)
 	{
 		scalar_field_list[n_scalar_fields] = texture->clip_field2;
 		isovalue_list[n_scalar_fields] = texture->hollow_isovalue*texture->isovalue;

@@ -752,8 +752,7 @@ Add mc_triangle to mc_cell list and add new vertex if unique
 	int n, nn, ii, jj, kk, i_min, i_max, j_min, j_max, k_min, k_max, found;
 	/* pointers to vertices */
 	struct MC_vertex *v[3];
-	struct MC_triangle *triangle,**temp_triangle_ptrs,**triangle_list,
-		**temp_triangle_list;
+	struct MC_triangle *triangle,**temp_triangle_ptrs,**temp_triangle_list;
 	struct MC_cell *mc_cell;
 
 	ENTER(add_mc_triangle);
@@ -856,16 +855,11 @@ Add mc_triangle to mc_cell list and add new vertex if unique
 				triangle->texture_coord[n][ii]=triangle->iso_poly_cop[n][ii]=0;
 			}
 			/* for each vertex assign back pointers */
-			if (ALLOCATE(temp_triangle_ptrs,struct MC_triangle *,
-				v[n]->n_triangle_ptrs+1))
+			if (REALLOCATE(temp_triangle_ptrs,v[n]->triangle_ptrs,
+				struct MC_triangle *, v[n]->n_triangle_ptrs+1))
 			{
-				for (ii=0; ii < v[n]->n_triangle_ptrs;ii++)
-				{
-					temp_triangle_ptrs[ii]=v[n]->triangle_ptrs[ii];
-				}
 				temp_triangle_ptrs[v[n]->n_triangle_ptrs]=triangle;
 				v[n]->n_triangle_ptrs++;
-				DEALLOCATE(v[n]->triangle_ptrs);
 				v[n]->triangle_ptrs=temp_triangle_ptrs;
 			}
 			else
@@ -890,16 +884,10 @@ printf("ERROR: cell(%d %d %d)=NULL\n", i, j, k);
 	mc_cell=mc_iso_surface->mc_cells[i+mcnx*j+mcnx*mcny*k];
 	if (mc_cell)
 	{
-		if (ALLOCATE(temp_triangle_list,struct MC_triangle *,
-			mc_cell->n_triangles[a]+1))
+		if (REALLOCATE(temp_triangle_list,mc_cell->triangle_list[a],
+			struct MC_triangle *, mc_cell->n_triangles[a]+1))
 		{
-			triangle_list=mc_cell->triangle_list[a];
-			for (ii=0;ii<mc_cell->n_triangles[a];ii++)
-			{
-				temp_triangle_list[ii]=triangle_list[ii];
-			}
 			temp_triangle_list[mc_cell->n_triangles[a]]=triangle;
-			DEALLOCATE(triangle_list);
 			mc_cell->triangle_list[a]=temp_triangle_list;
 			mc_cell->n_triangles[a]++;
 		}
@@ -1507,6 +1495,7 @@ Creates and sets up triangle data structure, including plane eqn parameters.
 		{
 			if (debug_flag)
 				printf("** ERROR ** make_triangle : equal vectors, no cross product\n");
+			DEALLOCATE(triangle);
 			return(NULL);
 		}
 		else
@@ -1540,462 +1529,461 @@ clips the parts. If completely clipped after module global n_clipping_triangles,
 resultant triangles are stored in module global clipped_triangle_list.
 ==============================================================================*/
 {
-double cutoff=0;
-int i,j,k;
-struct Triangle *clip_triangle;
-double new_v[3][3];
-int new_m[3];
-double v1[3],v2[3],v3[3],va[3],vb[3],vc[3],q[3],sa,sb,sc;
-/* temporary vertices for splitting triangle */
-double temp_v[9][3],vertex_value[3];
-/* temp_v[9..={(t1) v1,2,3,4,5,6, (t2) v1,2,3}*/
-/* flag for whether edge clipped */
-int edge_count1,edge_count2;
-int clip_case;
-if (debug_flag)
-	printf("in recurse_clip. level=%d\n",n_clip);
-
-if (triangle==NULL)
-	{
+	double cutoff=0;
+	int i,j,k;
+	struct Triangle *clip_triangle;
+	double new_v[3][3];
+	int new_m[3];
+	double v1[3],v2[3],v3[3],va[3],vb[3],vc[3],q[3],sa,sb,sc;
+	/* temporary vertices for splitting triangle */
+	double temp_v[9][3],vertex_value[3];
+	/* temp_v[9..={(t1) v1,2,3,4,5,6, (t2) v1,2,3}*/
+	/* flag for whether edge clipped */
+	int edge_count1,edge_count2;
+	int clip_case;
 	if (debug_flag)
-		printf("recurse_clip : NULL triangle, aborting\n");
-	return;
+		printf("in recurse_clip. level=%d\n",n_clip);
+
+	if (triangle==NULL)
+	{
+		if (debug_flag)
+			printf("recurse_clip : NULL triangle, aborting\n");
+		return;
 	}
 
-/* if no more clipping planes then done */
-/* examine triangle to see if not 1D */
-for (i=0;i<3;i++)
-	vertex_value[i]=0;
+	/* if no more clipping planes then done */
+	/* examine triangle to see if not 1D */
+	for (i=0;i<3;i++)
+		vertex_value[i]=0;
 
-if (vectors_equal(triangle->v[0],triangle->v[1],AREA_ACC) || vectors_equal(triangle->v[1],triangle->v[2],AREA_ACC) ||
-	vectors_equal(triangle->v[0],triangle->v[2],AREA_ACC) )
+	if (vectors_equal(triangle->v[0],triangle->v[1],AREA_ACC) || vectors_equal(triangle->v[1],triangle->v[2],AREA_ACC) ||
+		vectors_equal(triangle->v[0],triangle->v[2],AREA_ACC) )
 	{
-	if (debug_flag)
-		printf("****** triangle has no area,aborting  ***********\n");
-	DEALLOCATE(triangle);
-	return;
+		if (debug_flag)
+			printf("****** triangle has no area,aborting  ***********\n");
+		DEALLOCATE(triangle);
+		return;
 	}
 
-if (n_clip >=n_clipping_triangles)
+	if (n_clip >=n_clipping_triangles)
 	{
-	if (debug_flag)
-		printf("n_clip=n_clipping_triangles\n");
-	if (debug_flag)
-		printf("Triangle->clip_history=%d %d \n",triangle->clip_history,triangle->clip_history2);
+		if (debug_flag)
+			printf("n_clip=n_clipping_triangles\n");
+		if (debug_flag)
+			printf("Triangle->clip_history=%d %d \n",triangle->clip_history,triangle->clip_history2);
 
 
-	if (triangle->clip_history==-1)
+		if (triangle->clip_history==-1)
 		{
-		/* means no clip or meaningful comparison has occurred*/
-		/* store triangle in out_list depending on trilinear values at vertices */
-		scalar_interpolation(triangle,&cell_fn);
-		if (cell_fn.dir*(triangle->trilinear_int[0]+triangle->trilinear_int[1]
-			+triangle->trilinear_int[2])/3.0 > cell_fn.dir*cell_fn.isovalue)
+			/* means no clip or meaningful comparison has occurred*/
+			/* store triangle in out_list depending on trilinear values at vertices */
+			scalar_interpolation(triangle,&cell_fn);
+			if (cell_fn.dir*(triangle->trilinear_int[0]+triangle->trilinear_int[1]
+					 +triangle->trilinear_int[2])/3.0 > cell_fn.dir*cell_fn.isovalue)
 			{
+				clipped_triangle_list[n_clipped_triangles]=triangle;
+				if (debug_flag)
+					printf("++ triangle stored (t_int)=#%d ++++++\n",n_clipped_triangles);
+
+				n_clipped_triangles++;
+				return;
+			}
+			else
+			{
+				DEALLOCATE(triangle);
+				return;
+			}
+		}
+
+		if (triangle->clip_history==0)
+		{
+			/* store triangle in out_list and exit */
 			clipped_triangle_list[n_clipped_triangles]=triangle;
 			if (debug_flag)
-				printf("++ triangle stored (t_int)=#%d ++++++\n",n_clipped_triangles);
+				printf("++++++ triangle stored=#%d ++++++\n",n_clipped_triangles);
+			if (debug_flag)
+			{
+				printf("vertices stored: ");
+				for (j=0;j<3;j++)
+					printf(" %f %f %f / ",triangle->v[j][0],triangle->v[j][1],triangle->v[j][2]);
+				printf("\n");
+			}
 
 			n_clipped_triangles++;
 			return;
-			}
-		else
-			{
+		}
+		else    /* it has had no intersections, but is below clipping surfaces */
+		{
+			if (debug_flag)
+				printf("not stored\n");
 			DEALLOCATE(triangle);
 			return;
-			}
-		}
-
-	if (triangle->clip_history==0)
-		{
-		/* store triangle in out_list and exit */
-		clipped_triangle_list[n_clipped_triangles]=triangle;
-		if (debug_flag)
-			printf("++++++ triangle stored=#%d ++++++\n",n_clipped_triangles);
-		if (debug_flag)
-			{
-			printf("vertices stored: ");
-			for (j=0;j<3;j++)
-				printf(" %f %f %f / ",triangle->v[j][0],triangle->v[j][1],triangle->v[j][2]);
-			printf("\n");
-			}
-
-		n_clipped_triangles++;
-		return;
-		}
-	else    /* it has had no intersections, but is below clipping surfaces */
-		{
-		if (debug_flag)
-			printf("not stored\n");
-		DEALLOCATE(triangle);
-		return;
 		}
 	}
-else
+	else
 	{
-	/* check for intersection between triangle and clip_triangle */
-	triangle->clip_history2=0;
-	clip_triangle=clip_triangles[n_clip];
+		/* check for intersection between triangle and clip_triangle */
+		triangle->clip_history2=0;
+		clip_triangle=clip_triangles[n_clip];
 
-	if (clip_triangle==NULL)
+		if (clip_triangle==NULL)
 		{
-		/* go to next one */
-		printf("CLIP_TRIANGLE=NULL\n");
-		recurse_clip(triangle,n_clipping_triangles,clip_triangles,n_clip+1);
-		return;
+			/* go to next one */
+			printf("CLIP_TRIANGLE=NULL\n");
+			recurse_clip(triangle,n_clipping_triangles,clip_triangles,n_clip+1);
+			return;
 		}
-	if (debug_flag)
-		printf("nclip=%d\n",n_clip);
-
-	for (i=0;i<3;i++)
-		{
-		for (j=0;j<3;j++)
-			{
-			temp_v[i][j]=triangle->v[i][j];
-			}
-		}
-
-	edge_count1=0; edge_count2=0;
-	/* go through edges on triangle */
-	for (i=0;i<3;i++)
-		{
-		for (j=0;j<3;j++)
-			{
-			va[j]=triangle->v[triangle_edge_list[i][0]][j];
-			vb[j]=triangle->v[triangle_edge_list[i][1]][j];
-			vc[j]=triangle->v[triangle_edge_list[i+1][1]][j];
-			}
-		if (vectors_equal(va,vb,ACC3))
-			printf("^^^^^^^^^^^^^^va=vb\n");
-
 		if (debug_flag)
-			{
-			printf("va,vb,vc=%f %f %f | %f %f %f | %f %f %f\n",va[0],va[1],va[2],vb[0],vb[1],vb[2],vc[0],vc[1],vc[2]);
-			printf("clip_triangle->d %f\n",clip_triangle->d);
-			printf("clip_trinagle->n %f %f %f \n",clip_triangle->n[0],clip_triangle->n[1],clip_triangle->n[2]);
-			printf("clip_trinagle->v : ");
+			printf("nclip=%d\n",n_clip);
+
+		for (i=0;i<3;i++)
+		{
 			for (j=0;j<3;j++)
-				printf(" %f %f %f | ",clip_triangle->v[j][0],clip_triangle->v[j][1],clip_triangle->v[j][2]);
-			printf("\n");
-			}
-
-		/* test to see if on edge of cube */
-		if ((va[0]==xc[0] && vb[0]==xc[0]) || (va[0]==xc[7] && vb[0]==xc[7])
-		|| (va[1]==yc[0] && vb[1]==yc[0]) || (va[1]==yc[7] && vb[1]==yc[7])
-		|| (va[2]==zc[0] && vb[2]==zc[0]) || (va[2]==zc[7] && vb[2]==zc[7]))
 			{
+				temp_v[i][j]=triangle->v[i][j];
+			}
+		}
+
+		edge_count1=0; edge_count2=0;
+		/* go through edges on triangle */
+		for (i=0;i<3;i++)
+		{
+			for (j=0;j<3;j++)
+			{
+				va[j]=triangle->v[triangle_edge_list[i][0]][j];
+				vb[j]=triangle->v[triangle_edge_list[i][1]][j];
+				vc[j]=triangle->v[triangle_edge_list[i+1][1]][j];
+			}
+			if (vectors_equal(va,vb,ACC3))
+				printf("^^^^^^^^^^^^^^va=vb\n");
+
 			if (debug_flag)
-				printf("<<<<<<<<<<<<<Edge on edge of cube>>>>>>>>>>>>>>>>>>\n");
-			cutoff=-INTERSECTION_ACC;
-			}
-		else
-			cutoff=INTERSECTION_ACC;
-		/* sa=ax + by + cz + d, where x,y,z are coords in triangle
-		and a,b,c,d are plane eqn values from the clipping triangle */
-		sa=   clip_triangle->n[0]*va[0] + clip_triangle->n[1]*va[1]
-			+ clip_triangle->n[2]*va[2] + clip_triangle->d;
-		sb=   clip_triangle->n[0]*vb[0] + clip_triangle->n[1]*vb[1]
-			+ clip_triangle->n[2]*vb[2] + clip_triangle->d;
-		sc=  clip_triangle->n[0]*vc[0] + clip_triangle->n[1]*vc[1]
-			+ clip_triangle->n[2]*vc[2] + clip_triangle->d;
-
-
-		/* store vertex values to decide what parts of triangle to clip */
-		vertex_value[i]=sa;
-		if (sa==0 && sb==0 && sc==0)
 			{
-			if (debug_flag)
-				printf("@@@@@@@@ sa=sb=sc=0 @@@@@@@@\n");
+				printf("va,vb,vc=%f %f %f | %f %f %f | %f %f %f\n",va[0],va[1],va[2],vb[0],vb[1],vb[2],vc[0],vc[1],vc[2]);
+				printf("clip_triangle->d %f\n",clip_triangle->d);
+				printf("clip_trinagle->n %f %f %f \n",clip_triangle->n[0],clip_triangle->n[1],clip_triangle->n[2]);
+				printf("clip_trinagle->v : ");
+				for (j=0;j<3;j++)
+					printf(" %f %f %f | ",clip_triangle->v[j][0],clip_triangle->v[j][1],clip_triangle->v[j][2]);
+				printf("\n");
 			}
-		if (debug_flag)
-					printf("sa,sb=%f %f\n",sa,sb);
-		if ((sa >=0 && sb <=0) || (sa <=0 && sb >=0)) /* edges passes through plane of clipping poly */
+
+			/* test to see if on edge of cube */
+			if ((va[0]==xc[0] && vb[0]==xc[0]) || (va[0]==xc[7] && vb[0]==xc[7])
+				|| (va[1]==yc[0] && vb[1]==yc[0]) || (va[1]==yc[7] && vb[1]==yc[7])
+				|| (va[2]==zc[0] && vb[2]==zc[0]) || (va[2]==zc[7] && vb[2]==zc[7]))
 			{
-			if (sa==0 && sb==0) /* an edge of a clipping trinagle lies along the triangle */
-				{
 				if (debug_flag)
-					printf("sa=sb=0 : treating as non_intersecting\n");
-				if (sc > 0)   /* >=?? */
-					{
-					if (debug_flag)
-						printf("sa=sb=0: above clip\n");
-					triangle->clip_history=1;
-					recurse_clip(triangle,n_clipping_triangles,clip_triangles,n_clip+1);
-					return;
-					}
-				else
-					{
-					if (debug_flag)
-						printf("sa=sb=0: above clip\n");
-					triangle->clip_history=0;
-					recurse_clip(triangle,n_clipping_triangles,clip_triangles,n_clip+1);
-					return;
-					}
-				}
-			for (j=0;j<3;j++)
+					printf("<<<<<<<<<<<<<Edge on edge of cube>>>>>>>>>>>>>>>>>>\n");
+				cutoff=-INTERSECTION_ACC;
+			}
+			else
+				cutoff=INTERSECTION_ACC;
+			/* sa=ax + by + cz + d, where x,y,z are coords in triangle
+				and a,b,c,d are plane eqn values from the clipping triangle */
+			sa=   clip_triangle->n[0]*va[0] + clip_triangle->n[1]*va[1]
+				+ clip_triangle->n[2]*va[2] + clip_triangle->d;
+			sb=   clip_triangle->n[0]*vb[0] + clip_triangle->n[1]*vb[1]
+				+ clip_triangle->n[2]*vb[2] + clip_triangle->d;
+			sc=  clip_triangle->n[0]*vc[0] + clip_triangle->n[1]*vc[1]
+				+ clip_triangle->n[2]*vc[2] + clip_triangle->d;
+
+
+			/* store vertex values to decide what parts of triangle to clip */
+			vertex_value[i]=sa;
+			if (sa==0 && sb==0 && sc==0)
+			{
+				if (debug_flag)
+					printf("@@@@@@@@ sa=sb=sc=0 @@@@@@@@\n");
+			}
+			if (debug_flag)
+				printf("sa,sb=%f %f\n",sa,sb);
+			if ((sa >=0 && sb <=0) || (sa <=0 && sb >=0)) /* edges passes through plane of clipping poly */
+			{
+				if (sa==0 && sb==0) /* an edge of a clipping trinagle lies along the triangle */
 				{
-				/* q is the point of intersection of the edge and the clipping triangle plane */
-				q[j]=va[j] + sa/(sa-sb) * (vb[j]-va[j]);
-				v1[j]=clip_triangle->v[0][j] - q[j];
-				v2[j]=clip_triangle->v[1][j] - q[j];
-				v3[j]=clip_triangle->v[2][j] - q[j];
-				/* store as intermediate vertices 3,4,5 (between 0,1,2) */
-				temp_v[i+3][j]=q[j];
+					if (debug_flag)
+						printf("sa=sb=0 : treating as non_intersecting\n");
+					if (sc > 0)   /* >=?? */
+					{
+						if (debug_flag)
+							printf("sa=sb=0: above clip\n");
+						triangle->clip_history=1;
+						recurse_clip(triangle,n_clipping_triangles,clip_triangles,n_clip+1);
+						return;
+					}
+					else
+					{
+						if (debug_flag)
+							printf("sa=sb=0: above clip\n");
+						triangle->clip_history=0;
+						recurse_clip(triangle,n_clipping_triangles,clip_triangles,n_clip+1);
+						return;
+					}
 				}
-			if (scalar_triple_product3(v1,v2,clip_triangle->n) >=cutoff /* intersection is inside triangle */
+				for (j=0;j<3;j++)
+				{
+					/* q is the point of intersection of the edge and the clipping triangle plane */
+					q[j]=va[j] + sa/(sa-sb) * (vb[j]-va[j]);
+					v1[j]=clip_triangle->v[0][j] - q[j];
+					v2[j]=clip_triangle->v[1][j] - q[j];
+					v3[j]=clip_triangle->v[2][j] - q[j];
+					/* store as intermediate vertices 3,4,5 (between 0,1,2) */
+					temp_v[i+3][j]=q[j];
+				}
+				if (scalar_triple_product3(v1,v2,clip_triangle->n) >=cutoff /* intersection is inside triangle */
 					&&  scalar_triple_product3(v2,v3,clip_triangle->n) >=cutoff
 					&&  scalar_triple_product3(v3,v1,clip_triangle->n) >=cutoff)
 				{
-				if (debug_flag)
-					printf("stp:  %f,%f,%f\n",
-						scalar_triple_product3(v1,v2,clip_triangle->n),
-								scalar_triple_product3(v2,v3,clip_triangle->n),
-								scalar_triple_product3(v3,v1,clip_triangle->n));
-						if (scalar_triple_product3(v1,v2,clip_triangle->n)==0
-							||  scalar_triple_product3(v2,v3,clip_triangle->n)==0
-							||  scalar_triple_product3(v3,v1,clip_triangle->n)==0)
-							{
-							if (debug_flag)
-								printf("one of stp=0\n");
-							}
-				/* the point of intersection has position vector q */
-				/* this is the case were the clip is on an edge of triangle,
-					so this will become a new vertex */
-				edge_count1++;
+					if (debug_flag)
+						printf("stp:  %f,%f,%f\n",
+							scalar_triple_product3(v1,v2,clip_triangle->n),
+							scalar_triple_product3(v2,v3,clip_triangle->n),
+							scalar_triple_product3(v3,v1,clip_triangle->n));
+					if (scalar_triple_product3(v1,v2,clip_triangle->n)==0
+						||  scalar_triple_product3(v2,v3,clip_triangle->n)==0
+						||  scalar_triple_product3(v3,v1,clip_triangle->n)==0)
+					{
+						if (debug_flag)
+							printf("one of stp=0\n");
+					}
+					/* the point of intersection has position vector q */
+					/* this is the case were the clip is on an edge of triangle,
+						so this will become a new vertex */
+					edge_count1++;
 				}
 			}  /* if */
 
 		}  /* i */
-	if (debug_flag)
-		printf("edge_count1=%d\n",edge_count1);
+		if (debug_flag)
+			printf("edge_count1=%d\n",edge_count1);
 
-	if (edge_count1 < 2)   /* swap triangles to find other edge which passes thru */
+		if (edge_count1 < 2)   /* swap triangles to find other edge which passes thru */
 		{ /* (there can only be 2 so inly enter if necessary) */
-		for (i=0;i<3;i++)
+			for (i=0;i<3;i++)
 			{
-			for (j=0;j<3;j++)
+				for (j=0;j<3;j++)
 				{
-				va[j]=clip_triangle->v[triangle_edge_list[i][0]][j];
-				vb[j]=clip_triangle->v[triangle_edge_list[i][1]][j];
+					va[j]=clip_triangle->v[triangle_edge_list[i][0]][j];
+					vb[j]=clip_triangle->v[triangle_edge_list[i][1]][j];
 				}
-		if ((va[0]==xc[0] && vb[0]==xc[0]) || (va[0]==xc[7] && vb[0]==xc[7])
-		|| (va[1]==yc[0] && vb[1]==yc[0]) || (va[1]==yc[7] && vb[1]==yc[7])
-		|| (va[2]==zc[0] && vb[2]==zc[0]) || (va[2]==zc[7] && vb[2]==zc[7]))
-			{
-			if (debug_flag)
-				printf("<<<<<<<<<<<<<Edge on edge of cube>>>>>>>>>>>>>>>>>>\n");
-			cutoff=-INTERSECTION_ACC;
-			}
-		else
-			cutoff=INTERSECTION_ACC;
-
-			/* sa=ax + by + cz + d, where x,y,z are coords in triangle
-			and a,b,c,d are plane eqn values from the clipping triangle */
-			sa=   triangle->n[0]*va[0] + triangle->n[1]*va[1]
-				+ triangle->n[2]*va[2] + triangle->d;
-			sb=   triangle->n[0]*vb[0] + triangle->n[1]*vb[1]
-				+ triangle->n[2]*vb[2] + triangle->d;
-
-			if ((sa >=0 && sb <=0) || (sa <=0 && sb >=0)) /* edges passes through plane of clipping poly */
+				if ((va[0]==xc[0] && vb[0]==xc[0]) || (va[0]==xc[7] && vb[0]==xc[7])
+					|| (va[1]==yc[0] && vb[1]==yc[0]) || (va[1]==yc[7] && vb[1]==yc[7])
+					|| (va[2]==zc[0] && vb[2]==zc[0]) || (va[2]==zc[7] && vb[2]==zc[7]))
 				{
-				if (debug_flag)
-					printf("clip sa,sb=%f %f\n",sa,sb);
-				if (sa==0 && sb==0) /* this means clip triangle edeg lies on normal trinagle*/
-					{
-					/*=> treat as intersecting, set edge_count2 > 0 */
 					if (debug_flag)
-						printf("clip sa=sb=0, treating as non intersecting \n");
-					/*edge_count2++;*/
-					}
+						printf("<<<<<<<<<<<<<Edge on edge of cube>>>>>>>>>>>>>>>>>>\n");
+					cutoff=-INTERSECTION_ACC;
+				}
 				else
-					{
-					for (j=0;j<3;j++)
-						{
-						q[j]=va[j] + sa/(sa-sb) * (vb[j]-va[j]);
-						v1[j]=triangle->v[0][j] - q[j];
-						v2[j]=triangle->v[1][j] - q[j];
-						v3[j]=triangle->v[2][j] - q[j];
-						}
-					if (debug_flag)
-						printf("stp: clip : %f,%f,%f\n",
-							scalar_triple_product3(v1,v2,triangle->n),
-									scalar_triple_product3(v2,v3,triangle->n),
-									scalar_triple_product3(v3,v1,triangle->n));
-					if (scalar_triple_product3(v1,v2,triangle->n) >=cutoff  /* intersection is inside triangle */
-								&& scalar_triple_product3(v2,v3,triangle->n) >=cutoff
-								&& scalar_triple_product3(v3,v1,triangle->n) >=cutoff
-								)
-						{
-						if (debug_flag)
+					cutoff=INTERSECTION_ACC;
 
-						/* the point of intersection has position vector q */
-						/* this is the case were the clip is on an edge of triangle,
-						so this will become a new vertex */
-						if (scalar_triple_product3(v1,v2,triangle->n)==0
+				/* sa=ax + by + cz + d, where x,y,z are coords in triangle
+					and a,b,c,d are plane eqn values from the clipping triangle */
+				sa=   triangle->n[0]*va[0] + triangle->n[1]*va[1]
+					+ triangle->n[2]*va[2] + triangle->d;
+				sb=   triangle->n[0]*vb[0] + triangle->n[1]*vb[1]
+					+ triangle->n[2]*vb[2] + triangle->d;
+
+				if ((sa >=0 && sb <=0) || (sa <=0 && sb >=0)) /* edges passes through plane of clipping poly */
+				{
+					if (debug_flag)
+						printf("clip sa,sb=%f %f\n",sa,sb);
+					if (sa==0 && sb==0) /* this means clip triangle edeg lies on normal trinagle*/
+					{
+						/*=> treat as intersecting, set edge_count2 > 0 */
+						if (debug_flag)
+							printf("clip sa=sb=0, treating as non intersecting \n");
+						/*edge_count2++;*/
+					}
+					else
+					{
+						for (j=0;j<3;j++)
+						{
+							q[j]=va[j] + sa/(sa-sb) * (vb[j]-va[j]);
+							v1[j]=triangle->v[0][j] - q[j];
+							v2[j]=triangle->v[1][j] - q[j];
+							v3[j]=triangle->v[2][j] - q[j];
+						}
+						if (debug_flag)
+							printf("stp: clip : %f,%f,%f\n",
+								scalar_triple_product3(v1,v2,triangle->n),
+								scalar_triple_product3(v2,v3,triangle->n),
+								scalar_triple_product3(v3,v1,triangle->n));
+						if (scalar_triple_product3(v1,v2,triangle->n) >=cutoff  /* intersection is inside triangle */
+							&& scalar_triple_product3(v2,v3,triangle->n) >=cutoff
+							&& scalar_triple_product3(v3,v1,triangle->n) >=cutoff
+							 )
+						{
+							if (debug_flag)
+
+								/* the point of intersection has position vector q */
+								/* this is the case were the clip is on an edge of triangle,
+									so this will become a new vertex */
+								if (scalar_triple_product3(v1,v2,triangle->n)==0
 									||  scalar_triple_product3(v2,v3,triangle->n)==0
 									||  scalar_triple_product3(v3,v1,triangle->n)==0)
-									{
+								{
 									if (debug_flag)
 										printf("clip: one of stp=0\n");
-									}
+								}
 
-						edge_count2++;
+							edge_count2++;
 						}
 					} /* if */
 				} /* if sa ,sb >, < 0 && || ... */
 			} /* i */
 		} /* if edge_count1 < 2 */
-	if (debug_flag)
-		printf("edge_count2=%d\n",edge_count2);
-
-
-	if (debug_flag)
-		{
-		printf("temp_v: \n");
-		for (j=0;j<6;j++)
-			{
-			for (k=0;k<3;k++)
-				{
-				printf(" %f ",temp_v[j][k]);
-				}
-			printf("\n");
-			}
-		}
-
-	/* if edge_count=0=> no intersection, but surface may be completely clipped.
-	check by comparing vertex positions to clipping planes. If clip_history > 0, means
-	no intersection has been encountered, and it lies below the clipping planes, so therefore
-	do not add it to out_list. If it is clipped by another plane, this status is removed */
-
-	if (edge_count1 + edge_count2==0 )
-		{
-		/* check a vertex to see if under or over clip plane  v >0=> above cut plane=> maybe clip it off*/
-
-		if (vertex_value[0]==0 && vertex_value[1]==0 && vertex_value[2]==0)
-			{
-			printf("!!!!!!!!! vertex values all equal zero !!!!!!!!!\n");
-			/* treat as non_intersecting*/
-			if (triangle->clip_history==-1)
-				{
-				triangle->clip_history=0;
-				}
-
-
-			recurse_clip(triangle,n_clipping_triangles,clip_triangles,n_clip+1);
-			return;
-
-			}
-		if (vertex_value[0]>=0 && vertex_value[1]>=0 && vertex_value[2] >=0)
-			{
-			if (debug_flag)
-				printf(" v.v >=0, non_intersecting (above clip plane)\n");
-
-			/* only change if unaltered by any other polygon */
-			if (triangle->clip_history==-1)
-				{
-				triangle->clip_history=1;
-				}
-			recurse_clip(triangle,n_clipping_triangles,clip_triangles,n_clip+1);
-			return;
-			}
-		else
-			{
-			if (debug_flag)
-				printf(" v.v < 0,non_intersecting (below clip plane)\n");
-
-			if (triangle->clip_history==-1)
-				{
-				triangle->clip_history=0;
-				}
-
-			recurse_clip(triangle,n_clipping_triangles,clip_triangles,n_clip+1);
-			return;
-			}
-		}
-	else
-		{
 		if (debug_flag)
-			printf("edge_count1+2 > 0 (=%d+%d)=> some kind of clip to occur\n",edge_count1,edge_count2);
-		if (edge_count1 + edge_count2 < 2)  /* if non_sensible value, get out */
-			{
-			/*recurse_clip(triangle,n_clipping_triangles,clip_triangles,n_clip+1);
-			return;*/
-			}
-		triangle->clip_history=0 ;    /* some kind of clip to occur */
+			printf("edge_count2=%d\n",edge_count2);
 
-		/* check vertex_values. If two are below clipping plane the we get one resulting
-		triangle. If one only then retriangulate resulting quadrilateral */
-		clip_case=0;
-		if (vertex_value[0] >=0)
-			clip_case +=1;
-		if (vertex_value[1] >=0)
-			clip_case +=2;
-		if (vertex_value[2] >=0)
-			clip_case +=4;
+
 		if (debug_flag)
-			printf("vertex_values (%f,%f,%f) clip_case %d\n",vertex_value[0],vertex_value[1],vertex_value[2],clip_case);
-
-		if (clip_case >6 || clip_case <1)
-			if (debug_flag)
-				printf("$$$$$$$$$$$ HEINIOUS ERROR DUDE - CLIP CASE !!!!\n");
-		if (clip_case==7)
+		{
+			printf("temp_v: \n");
+			for (j=0;j<6;j++)
 			{
-			triangle->clip_history=1;
-			recurse_clip(triangle,n_clipping_triangles,clip_triangles,n_clip+1);
-			return;
-			}
-		if (clip_case==0)
-			{
-			triangle->clip_history=0;
-			recurse_clip(triangle,n_clipping_triangles,clip_triangles,n_clip+1);
-			return;
-			}
-		for (i=0;i<retriangulation_list[clip_case][0];i++)
-			{
-			for (j=0;j<3;j++)
-				{
 				for (k=0;k<3;k++)
+				{
+					printf(" %f ",temp_v[j][k]);
+				}
+				printf("\n");
+			}
+		}
+
+		/* if edge_count=0=> no intersection, but surface may be completely clipped.
+			check by comparing vertex positions to clipping planes. If clip_history > 0, means
+			no intersection has been encountered, and it lies below the clipping planes, so therefore
+			do not add it to out_list. If it is clipped by another plane, this status is removed */
+
+		if (edge_count1 + edge_count2==0 )
+		{
+			/* check a vertex to see if under or over clip plane  v >0=> above cut plane=> maybe clip it off*/
+
+			if (vertex_value[0]==0 && vertex_value[1]==0 && vertex_value[2]==0)
+			{
+				printf("!!!!!!!!! vertex values all equal zero !!!!!!!!!\n");
+				/* treat as non_intersecting*/
+				if (triangle->clip_history==-1)
+				{
+					triangle->clip_history=0;
+				}
+
+
+				recurse_clip(triangle,n_clipping_triangles,clip_triangles,n_clip+1);
+				return;
+
+			}
+			if (vertex_value[0]>=0 && vertex_value[1]>=0 && vertex_value[2] >=0)
+			{
+				if (debug_flag)
+					printf(" v.v >=0, non_intersecting (above clip plane)\n");
+
+				/* only change if unaltered by any other polygon */
+				if (triangle->clip_history==-1)
+				{
+					triangle->clip_history=1;
+				}
+				recurse_clip(triangle,n_clipping_triangles,clip_triangles,n_clip+1);
+				return;
+			}
+			else
+			{
+				if (debug_flag)
+					printf(" v.v < 0,non_intersecting (below clip plane)\n");
+
+				if (triangle->clip_history==-1)
+				{
+					triangle->clip_history=0;
+				}
+
+				recurse_clip(triangle,n_clipping_triangles,clip_triangles,n_clip+1);
+				return;
+			}
+		}
+		else
+		{
+			if (debug_flag)
+				printf("edge_count1+2 > 0 (=%d+%d)=> some kind of clip to occur\n",edge_count1,edge_count2);
+			if (edge_count1 + edge_count2 < 2)  /* if non_sensible value, get out */
+			{
+				/*recurse_clip(triangle,n_clipping_triangles,clip_triangles,n_clip+1);
+				  return;*/
+			}
+			triangle->clip_history=0 ;    /* some kind of clip to occur */
+
+			/* check vertex_values. If two are below clipping plane the we get one resulting
+				triangle. If one only then retriangulate resulting quadrilateral */
+			clip_case=0;
+			if (vertex_value[0] >=0)
+				clip_case +=1;
+			if (vertex_value[1] >=0)
+				clip_case +=2;
+			if (vertex_value[2] >=0)
+				clip_case +=4;
+			if (debug_flag)
+				printf("vertex_values (%f,%f,%f) clip_case %d\n",vertex_value[0],vertex_value[1],vertex_value[2],clip_case);
+
+			if (clip_case >6 || clip_case <1)
+				if (debug_flag)
+					printf("$$$$$$$$$$$ HEINIOUS ERROR DUDE - CLIP CASE !!!!\n");
+			if (clip_case==7)
+			{
+				triangle->clip_history=1;
+				recurse_clip(triangle,n_clipping_triangles,clip_triangles,n_clip+1);
+				return;
+			}
+			if (clip_case==0)
+			{
+				triangle->clip_history=0;
+				recurse_clip(triangle,n_clipping_triangles,clip_triangles,n_clip+1);
+				return;
+			}
+			for (i=0;i<retriangulation_list[clip_case][0];i++)
+			{
+				for (j=0;j<3;j++)
+				{
+					for (k=0;k<3;k++)
 					{
-					new_v[j][k]=
-					temp_v[retriangulation_list[clip_case][j+1+3*i]-1][k];
-					/* +1 to avoid count bit, -1 as list has counting # indices */
+						new_v[j][k]=
+							temp_v[retriangulation_list[clip_case][j+1+3*i]-1][k];
+						/* +1 to avoid count bit, -1 as list has counting # indices */
 					}
 				}
-			if (debug_flag)
-				printf("below clip plane \n");
+				if (debug_flag)
+					printf("below clip plane \n");
 
-			recurse_clip(make_triangle(new_v,0,0),n_clipping_triangles,clip_triangles,n_clip+1);
+				recurse_clip(make_triangle(new_v,0,0),n_clipping_triangles,clip_triangles,n_clip+1);
 			} /* i*/
 
-		if (debug_flag)
-			printf("processing part above clip plane\n");
+			if (debug_flag)
+				printf("processing part above clip plane\n");
 
-		for (i=0;i<retriangulation_list[7-clip_case][0];i++)
+			for (i=0;i<retriangulation_list[7-clip_case][0];i++)
 			{
-			for (j=0;j<3;j++)
+				for (j=0;j<3;j++)
 				{
-				for (k=0;k<3;k++)
+					for (k=0;k<3;k++)
 					{
-					/* take complement */
-					new_v[j][k]=
-					temp_v[retriangulation_list[7-clip_case][j+1+3*i]-1][k];
-					/* +1 to avoid count bit, -1 as list has counting # indices */
+						/* take complement */
+						new_v[j][k]=
+							temp_v[retriangulation_list[7-clip_case][j+1+3*i]-1][k];
+						/* +1 to avoid count bit, -1 as list has counting # indices */
 					}
 				}
-			/* taint triangle as could be totally severed already */
-			if (debug_flag)
-				printf("above clip plane\n");
-			if (debug_flag)
-			printf("new_m=%d %d %d  (k=%d)\n",new_m[0],new_m[1],new_m[2],k);
+				/* taint triangle as could be totally severed already */
+				if (debug_flag)
+					printf("above clip plane\n");
+				if (debug_flag)
+					printf("new_m=%d %d %d  (k=%d)\n",new_m[0],new_m[1],new_m[2],k);
 
-			recurse_clip(make_triangle(new_v,1,1),n_clipping_triangles,clip_triangles,n_clip+1);
-
+				recurse_clip(make_triangle(new_v,1,1),n_clipping_triangles,clip_triangles,n_clip+1);
 			}
 
 
-		/* deallocate memory assoc with triangle */
-		if (triangle)
-			DEALLOCATE(triangle);
+			/* deallocate memory assoc with triangle */
+			if (triangle)
+				DEALLOCATE(triangle);
 
 		} /* if edge_count */
 	} /* if nclip */
