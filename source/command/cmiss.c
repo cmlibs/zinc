@@ -23740,7 +23740,7 @@ Initialise all the subcomponents of cmgui and create the Cmiss_command_data
 			is then able to export this when it is called from inside cmgui or
 			when called directly from perl to load the appropriate libraries to
 			create a cmgui externally. */
-	 	interpreter_set_pointer("Cmiss::cmgui_command_data", "Cmiss::cmgui_command_data",
+	 	interpreter_set_pointer("Cmiss::Cmgui_command_data", "Cmiss::Cmgui_command_data",
 			command_data, &status);
 
 #endif /* defined (F90_INTERPRETER) || defined (PERL_INTERPRETER) */
