@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : analysis_work_area.c
 
-LAST MODIFIED : 23 October 2001
+LAST MODIFIED : 27 October 2001
 
 DESCRIPTION :
 ???DB.  Have yet to tie event objective and preprocessor into the event times
@@ -447,6 +447,8 @@ DESCRIPTION :
 				map->start_time=0;
 				map->end_time=0;
 			}
+			/*we're drawing a single map*/
+			map->number_of_frames=1;
 			update_mapping_drawing_area(mapping,2);
 			update_mapping_colour_or_auxili(mapping);
 			if ((map=mapping->map)&&(map->type)&&
@@ -2566,7 +2568,7 @@ Sets up the analysis work area for analysing a set of signals.
 						if (average_width!=analysis->average_width)
 						{
 							sprintf(value_string,"%d",average_width);
-							XtVaSetValues(trace->menu.average_width,
+							XtVaSetValues(trace->menu.average_width_txt,
 								XmNvalue,value_string,
 								NULL);
 						}
@@ -3376,7 +3378,7 @@ signals.
 														{
 															sprintf(value_string,"%d",average_width);
 															XtVaSetValues(
-																analysis->trace->menu.average_width,
+																analysis->trace->menu.average_width_txt,
 																XmNvalue,value_string,
 																NULL);
 														}
@@ -6277,9 +6279,9 @@ set to automatic and reorder the devices if this is required.
 					sprintf(global_temp_string,"%g",level);
 					XtVaSetValues(analysis->trace->area_1.enlarge.level_value,
 						XmNvalue,global_temp_string,
-						NULL);
-					value_string=(char *)NULL;
-					XtVaGetValues(analysis->trace->menu.average_width,
+						NULL);					
+					value_string=(char *)NULL;					
+					XtVaGetValues(analysis->trace->menu.average_width_txt,
 						XmNvalue,&value_string,
 						NULL);
 					if (1==sscanf(value_string,"%d",&average_width))
@@ -6296,7 +6298,7 @@ set to automatic and reorder the devices if this is required.
 					analysis->average_width=average_width;
 					XtFree(value_string);
 					sprintf(global_temp_string,"%d",average_width);
-					XtVaSetValues(analysis->trace->menu.average_width,
+					XtVaSetValues(analysis->trace->menu.average_width_txt,
 						XmNvalue,global_temp_string,
 						NULL);
 				} break;
@@ -12593,7 +12595,7 @@ DESCRIPTION : accept the analysis signal.
 								XmNvalue,global_temp_string,
 								NULL);
 							value_string=(char *)NULL;
-							XtVaGetValues(analysis->trace->menu.average_width,
+							XtVaGetValues(analysis->trace->menu.average_width_txt,
 								XmNvalue,&value_string,
 								NULL);
 							if (1==sscanf(value_string,"%d",&average_width))
@@ -12610,7 +12612,7 @@ DESCRIPTION : accept the analysis signal.
 							analysis->average_width=average_width;
 							XtFree(value_string);
 							sprintf(global_temp_string,"%d",average_width);
-							XtVaSetValues(analysis->trace->menu.average_width,
+							XtVaSetValues(analysis->trace->menu.average_width_txt,
 								XmNvalue,global_temp_string,
 								NULL);
 						} break;
@@ -14199,8 +14201,8 @@ Calculates the next desired update callback from the time object.
 								{
 									next_time=map->start_time+
 										(map->end_time-map->start_time)/
-										(float)(map->number_of_movie_frames-1)*
-										floor((float)(map->number_of_movie_frames-1)*
+										(float)(map->number_of_frames-1)*
+										floor((float)(map->number_of_frames-1)*
 										((time_after-map->start_time)/
 										(map->end_time-map->start_time))+1.0);
 									time_set=1;
@@ -14209,8 +14211,8 @@ Calculates the next desired update callback from the time object.
 								{
 									next_time=map->start_time+
 										(map->end_time - map->start_time)/
-										(float)(map->number_of_movie_frames-1)*
-										ceil((float)(map->number_of_movie_frames-1)*
+										(float)(map->number_of_frames-1)*
+										ceil((float)(map->number_of_frames-1)*
 										((time_after-map->start_time)/
 										(map->end_time-map->start_time))-1.0);
 									time_set=1;
@@ -14419,7 +14421,7 @@ Responds to update callbacks from the time object.
 											/* 2d map */
 											if (map->end_time>map->start_time)
 											{
-												frame_number=(int)((float)(map->number_of_movie_frames-1)*
+												frame_number=(int)((float)(map->number_of_frames-1)*
 												((map_potential_time-map->start_time)/
 													(map->end_time-map->start_time)));
 												map->sub_map_number=frame_number;
@@ -14444,7 +14446,7 @@ Responds to update callbacks from the time object.
 										{	
 											if (map->start_time<map->end_time)
 											{
-												frame_number=(int)((float)(map->number_of_movie_frames-1)*
+												frame_number=(int)((float)(map->number_of_frames-1)*
 													((map_potential_time-map->start_time)/
 													(map->end_time-map->start_time)));
 											}
