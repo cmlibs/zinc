@@ -20081,6 +20081,7 @@ instruction to read in the mesh.
 	{
 		if (command_data = (struct Cmiss_command_data *)command_data_void)
 		{
+			file_name = (char *)NULL;
 			option_table = CREATE(Option_table)();
 			/* example */
 			Option_table_add_entry(option_table, CMGUI_EXAMPLE_DIRECTORY_SYMBOL,
