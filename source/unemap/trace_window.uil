@@ -1,7 +1,7 @@
 !*******************************************************************************
 !FILE : trace_window.uil
 !
-!LAST MODIFIED : 15 December 1999
+!LAST MODIFIED : 27 December 1999
 !
 !DESCRIPTION :
 !The widgets/gadgets for the trace window in the analysis work area.
@@ -555,7 +555,7 @@ object
 			XmNtopOffset = 0;
 			XmNbottomAttachment = XmATTACH_FORM;
 			XmNbottomOffset = 0;
-			XmNmappedWhenManaged = false;
+!			XmNmappedWhenManaged = false;
 			};
 		controls
 			{
@@ -652,7 +652,7 @@ object
 			XmNtopOffset = 0;
 			XmNbottomAttachment = XmATTACH_FORM;
 			XmNbottomOffset = 0;
-			XmNmappedWhenManaged = false;
+!			XmNmappedWhenManaged = false;
 			};
 		controls
 			{
@@ -751,7 +751,7 @@ object
 			XmNtopOffset = 0;
 			XmNbottomAttachment = XmATTACH_FORM;
 			XmNbottomOffset = 0;
-			XmNmappedWhenManaged = false;
+!			XmNmappedWhenManaged = false;
 			};
 		callbacks
 			{
@@ -778,7 +778,7 @@ object
 			XmNtopOffset = 0;
 			XmNbottomAttachment = XmATTACH_FORM;
 			XmNbottomOffset = 0;
-			XmNmappedWhenManaged = false;
+!			XmNmappedWhenManaged = false;
 			};
 		controls
 			{
@@ -854,7 +854,7 @@ object
 			XmNtopOffset = 0;
 			XmNbottomAttachment = XmATTACH_FORM;
 			XmNbottomOffset = 0;
-			XmNmappedWhenManaged = false;
+!			XmNmappedWhenManaged = false;
 			};
 		controls
 			{
@@ -964,7 +964,9 @@ object
 			XmNtopOffset = 0;
 			XmNbottomAttachment = XmATTACH_FORM;
 			XmNbottomOffset = 0;
-			XmNmappedWhenManaged = false;
+			XmNmarginHeight = 5;
+			XmNhighlightThickness = 1;
+!			XmNmappedWhenManaged = false;
 			};
 		callbacks
 			{
@@ -990,7 +992,7 @@ object
 			XmNtopOffset = 0;
 			XmNbottomAttachment = XmATTACH_FORM;
 			XmNbottomOffset = 0;
-			XmNmappedWhenManaged = false;
+!			XmNmappedWhenManaged = false;
 			};
 		callbacks
 			{
@@ -1018,7 +1020,7 @@ object
 			XmNtopOffset = 0;
 			XmNbottomAttachment = XmATTACH_FORM;
 			XmNbottomOffset = 0;
-			XmNmappedWhenManaged = false;
+!			XmNmappedWhenManaged = false;
 			};
 		callbacks
 			{
@@ -1044,7 +1046,7 @@ object
 			XmNtopOffset = 0;
 			XmNbottomAttachment = XmATTACH_FORM;
 			XmNbottomOffset = 0;
-			XmNmappedWhenManaged = false;
+!			XmNmappedWhenManaged = false;
 			};
 		callbacks
 			{
@@ -1072,7 +1074,7 @@ object
 			XmNtopOffset = 0;
 			XmNbottomAttachment = XmATTACH_FORM;
 			XmNbottomOffset = 0;
-			XmNmappedWhenManaged = false;
+!			XmNmappedWhenManaged = false;
 			};
 		callbacks
 			{
@@ -1097,7 +1099,7 @@ object
 			XmNtopOffset = 0;
 			XmNbottomAttachment = XmATTACH_FORM;
 			XmNbottomOffset = 0;
-			XmNmappedWhenManaged = false;
+!			XmNmappedWhenManaged = false;
 			};
 		controls
 			{

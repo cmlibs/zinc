@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : trace_window.c
 
-LAST MODIFIED : 6 December 1999
+LAST MODIFIED : 27 December 1999
 
 DESCRIPTION :
 ==============================================================================*/
@@ -5394,7 +5394,9 @@ the created trace window.  If unsuccessful, NULL is returned.
 											XmNleftOffset,widget_spacing-left_margin,
 											NULL);
 									}
-#if defined (OLD_CODE)
+#if defined (MAP_WIDGETS)
+/*???DB.  Use map/unmap instead of manage/unmanage */
+#else /* defined (MAP_WIDGETS) */
 									XtUnmanageChild(trace->area_1.enlarge.threshold_scroll);
 									XtUnmanageChild(trace->area_1.enlarge.threshold_label);
 									XtUnmanageChild(trace->area_1.enlarge.
@@ -5403,7 +5405,7 @@ the created trace window.  If unsuccessful, NULL is returned.
 										minimum_separation_label);
 									XtUnmanageChild(trace->area_1.enlarge.all_current_choice);
 									XtUnmanageChild(trace->area_1.enlarge.level_value);
-#endif /* defined (OLD_CODE) */
+#endif /* defined (MAP_WIDGETS) */
 								} break;
 								case EDA_LEVEL:
 								{
@@ -5958,12 +5960,15 @@ If <*trace_address> is NULL, a trace window with the specified <parent> and
 							trace->area_1.beat_averaging.number_of_beats.down_arrow);
 					}
 					*trace_address=trace;
+#if defined (MAP_WIDGETS)
+/*???DB.  Use map/unmap instead of manage/unmanage */
 					/*???DB.  Temp */
 					XtMapWidget(trace->area_1.enlarge.detection_choice);
 					XtMapWidget(trace->area_1.enlarge.objective_choice);
 					XtMapWidget(trace->area_1.enlarge.number_of_events_form);
-					XtMapWidget(trace->area_1.enlarge.calculate_button);
-					XtMapWidget(trace->area_1.enlarge.datum_choice);
+/*					XtMapWidget(trace->area_1.enlarge.calculate_button);
+					XtMapWidget(trace->area_1.enlarge.datum_choice);*/
+#endif /* defined (MAP_WIDGETS) */
 					/* pop up the trace window shell */
 					XtPopup(trace->shell,XtGrabNone);
 					trace->open=1;
