@@ -118,8 +118,8 @@ update :
 		cd $(PRODUCT_SOURCE_PATH) && \
 		chgrp -R cmgui_programmers * && \
 		cd $(PRODUCT_PATH) && \
-		$(MAKE) -f unemap.make unemap32 unemap_nodes unemap_optimised unemap_64 unemap_memorycheck; \
-		rsh 130.216.208.156 'setenv CMISS_ROOT /product/cmiss ; cd $(PRODUCT_PATH) ; $(MAKE) -f unemap.make unemap_linux' ; \
+		$(MAKE) -f unemap.make unemap32 unemap_nodes unemap_optimised unemap_64 unemap_memorycheck utilities; \
+		rsh 130.216.208.156 'setenv CMISS_ROOT /product/cmiss ; cd $(PRODUCT_PATH) ; $(MAKE) -f unemap.make unemap_linux utilities_linux' ; \
 		cd $(PRODUCT_SOURCE_PATH) && \
 		chgrp -R cmgui_programmers *; \
 	else \
@@ -164,6 +164,14 @@ utilities : $(SOURCE_PATH)/unemap_sgi.make force
 		$(MAKE) -f unemap_sgi.make utilities; \
 	else \
 		$(MAKE) -f $(PRODUCT_SOURCE_PATH)/unemap_sgi.make utilities; \
+	fi
+
+utilities_linux : $(SOURCE_PATH)/unemap_linux.make force
+	$(COMMON_MAKE_RULE) \
+	if [ -f unemap_linux.make ]; then \
+		$(MAKE) -f unemap_linux.make utilities; \
+	else \
+		$(MAKE) -f $(PRODUCT_SOURCE_PATH)/unemap_linux.make utilities; \
 	fi
 
 force :
