@@ -1451,6 +1451,11 @@ Returns the default coordinate field of the <gt_element_group>.
 	ENTER(GT_element_group_get_default_coordinate_field);
 	if (gt_element_group)
 	{
+		if (!gt_element_group->default_coordinate_field)
+		{
+			/* Try and get one now before returning nothing */
+			GT_element_group_update_default_coordinate(gt_element_group);
+		}
 		default_coordinate_field=gt_element_group->default_coordinate_field;
 	}
 	else
