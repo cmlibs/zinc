@@ -3588,6 +3588,8 @@ Sets the layout mode in effect on the <window>.
 	enum Scene_viewer_projection_mode projection_mode;
 	int new_layout,new_number_of_panes,pane_no,return_code;
 #if defined (MOTIF)
+	enum Scene_viewer_transparency_mode transparency_mode;
+	int perturb_lines, transparency_layers;
 	struct Colour background_colour;
 	struct Graphics_buffer *graphics_buffer;
 	struct Scene_viewer *first_scene_viewer;
@@ -3671,6 +3673,20 @@ Sets the layout mode in effect on the <window>.
 								window->scene_viewer_array[pane_no], 
 								lookat[0], lookat[1], lookat[2],
 								radius, window->std_view_angle, clip_factor*radius);
+							Scene_viewer_get_perturb_lines(first_scene_viewer,
+								&perturb_lines);
+							Scene_viewer_set_perturb_lines(window->scene_viewer_array[pane_no],
+								perturb_lines);
+							Scene_viewer_set_light_model(window->scene_viewer_array[pane_no],
+								Scene_viewer_get_light_model(first_scene_viewer));
+							Scene_viewer_get_transparency_layers(first_scene_viewer,
+								&transparency_layers);
+							Scene_viewer_set_transparency_layers(window->scene_viewer_array[pane_no],
+								transparency_layers);
+							Scene_viewer_get_transparency_mode(first_scene_viewer,
+								&transparency_mode);
+							Scene_viewer_set_transparency_mode(window->scene_viewer_array[pane_no],
+								transparency_mode);
 						}
 						else
 						{
