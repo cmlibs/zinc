@@ -55,35 +55,24 @@ DESCRIPTION :
 ==============================================================================*/
 {
 	COMPUTED_FIELD_INVALID,
-	COMPUTED_FIELD_ADD,                /* add fields with scale factors */
-	COMPUTED_FIELD_CLAMP_MAXIMUM,      /* limit the minimum value of each component */
-	COMPUTED_FIELD_CLAMP_MINIMUM,      /* limit the minimum value of each component */
 	COMPUTED_FIELD_CMISS_NUMBER,       /* node/element number as name string */
 	COMPUTED_FIELD_COMPONENT,          /* component of a Computed_field */
 	COMPUTED_FIELD_COMPOSE,            /* compose three Computed_fields in sequence */
 	COMPUTED_FIELD_COMPOSITE,          /* made up of #components scalar fields */
 	COMPUTED_FIELD_CONSTANT,           /* constant N-component field */
 	COMPUTED_FIELD_CUBIC_TEXTURE_COORDINATES, /* cube projected from a centre */
-	COMPUTED_FIELD_CURL,               /* curl of a vector field */
 	COMPUTED_FIELD_CURVE_LOOKUP,       /* returns values from control_curve for scalar source field */
-	COMPUTED_FIELD_DIVERGENCE,         /* divergence of a vector field */
-	COMPUTED_FIELD_DOT_PRODUCT,        /* dot product two computed fields */
-	COMPUTED_FIELD_DEFAULT_COORDINATE, /* first available coordinate field */
 	COMPUTED_FIELD_EDIT_MASK,          /* edit particular components without affecting others */
 	COMPUTED_FIELD_EMBEDDED,           /* maps through element/xi to source field */
 	COMPUTED_FIELD_EXTERNAL,           /* uses an external program to perform computation */
-	COMPUTED_FIELD_FINITE_ELEMENT,     /* wrapper for FE_field with caching */
 	COMPUTED_FIELD_FIBRE_AXES,         /* fibre axes: fibre, sheet, normal */
 	COMPUTED_FIELD_FIBRE_SHEET_AXES,   /* fibre axes: sheet,-fibre, normal */
-	COMPUTED_FIELD_GRADIENT,           /* gradient of a scalar field */
 	COMPUTED_FIELD_MAGNITUDE,          /* sqrt(sum of squared components) */
 	COMPUTED_FIELD_NODE_ARRAY_VALUE_AT_TIME,  /* extracts an array value at the given time */
 	COMPUTED_FIELD_NODE_VALUE,         /* value/deriv/version of fe_field at node */
-	COMPUTED_FIELD_OFFSET,             /* individ'ly offset components of field */
 	COMPUTED_FIELD_PROJECTION,         /* Projects coordinates through a perspective projection matrix */
 	COMPUTED_FIELD_RC_COORDINATE,      /* converts from other coord systems */
 	COMPUTED_FIELD_RC_VECTOR,          /* converts non-RC vector at coordinate */
-	COMPUTED_FIELD_SCALE,              /* individ'ly scale components of field */
 	COMPUTED_FIELD_SUM_COMPONENTS,     /* weighted sum of field components */
 	COMPUTED_FIELD_XI_COORDINATES,     /* element coordinate xi */
 	COMPUTED_FIELD_XI_TEXTURE_COORDINATES, /* continuous coordinates based on xi */
@@ -229,16 +218,6 @@ Computed_field_evaluate_in_element or Computed_field_evaluate_at_node and they
 are possibly not going to be called again for some time.
 ==============================================================================*/
 
-int Computed_field_is_read_only_with_fe_field(
-	struct Computed_field *field,void *fe_field_void);
-/*******************************************************************************
-LAST MODIFIED : 3 February 1999
-
-DESCRIPTION :
-Iterator/conditional function returning true if <field> is read only and a
-wrapper for <fe_field>.
-==============================================================================*/
-
 int Computed_field_is_defined_in_element(struct Computed_field *field,
 	struct FE_element *element);
 /*******************************************************************************
@@ -256,26 +235,6 @@ LAST MODIFIED : 23 May 2000
 
 DESCRIPTION :
 Manager conditional function version of Computed_field_is_defined_in_element.
-==============================================================================*/
-
-int Computed_field_is_scalar_integer(struct Computed_field *field,
-	void *dummy_void);
-/*******************************************************************************
-LAST MODIFIED : 20 June 2000
-
-DESCRIPTION :
-Returns true if <field> is a 1 integer component FINITE_ELEMENT wrapper.
-==============================================================================*/
-
-int Computed_field_is_scalar_integer_grid_in_element(
-	struct Computed_field *field,void *element_void);
-/*******************************************************************************
-LAST MODIFIED : 26 May 2000
-
-DESCRIPTION :
-Returns true if <field> is a 1 integer component FINITE_ELEMENT wrapper which
-is defined in <element> AND is grid-based.
-Used for choosing field suitable for identifying grid points.
 ==============================================================================*/
 
 int Computed_field_is_defined_at_node(struct Computed_field *field,
@@ -824,92 +783,6 @@ although its cache may be lost.
 The <coordinate_field>s must have no more than 3 components.
 ==============================================================================*/
 
-int Computed_field_get_type_add(struct Computed_field *field,
-	struct Computed_field **source_field1, FE_value *scale_factor1,
-	struct Computed_field **source_field2, FE_value *scale_factor2);
-/*******************************************************************************
-LAST MODIFIED : 2 August 1999
-
-DESCRIPTION :
-If the field is of type ADD, the 2 fields and scale factors it adds are returned
-- otherwise an error is reported.
-Use function Computed_field_get_type to determine the field type.
-==============================================================================*/
-
-int Computed_field_set_type_add(struct Computed_field *field,
-	struct Computed_field *source_field1, FE_value scale_factor1,
-	struct Computed_field *source_field2, FE_value scale_factor2);
-/*******************************************************************************
-LAST MODIFIED : 2 August 1999
-
-DESCRIPTION :
-Converts <field> to type COMPUTED_FIELD_ADD, which adds together the two fields,
-each multiplied by their respective scale factors, so that eg. subtract is also
-handled by it. Both source fields must have the same number of components.
-If function fails, field is guaranteed to be unchanged from its original state,
-although its cache may be lost.
-==============================================================================*/
-
-int Computed_field_get_type_clamp_maximum(struct Computed_field *field,
-	struct Computed_field **source_field,FE_value **maximums);
-/*******************************************************************************
-LAST MODIFIED : 22 June 1999
-
-DESCRIPTION :
-If the field is of type COMPUTED_FIELD_CLAMP_MAXIMUM, the source_field and
-maximums used by it are returned. Since the number of maximums is
-equal to the number of components in the source_field, 
-this function returns in *maximums a pointer to an allocated array
-containing the FE_values.
-It is up to the calling function to DEALLOCATE the returned <*maximums>.
-Use function Computed_field_get_type to determine the field type.
-==============================================================================*/
-
-int Computed_field_set_type_clamp_maximum(struct Computed_field *field,
-	struct Computed_field *source_field,FE_value *maximums);
-/*******************************************************************************
-LAST MODIFIED : 22 June 1999
-
-DESCRIPTION :
-Converts <field> to type COMPUTED_FIELD_CLAMP_MAXIMUM, returning the <source_field>
-with each component clamp_maximumd by its respective FE_value in <maximums>.
-The <maximums> array must therefore contain as many FE_values as there are
-components in <source_field>.
-Sets the number of components to the same as <source_field>.
-If function fails, field is guaranteed to be unchanged from its original state,
-although its cache may be lost.
-==============================================================================*/
-
-int Computed_field_get_type_clamp_minimum(struct Computed_field *field,
-	struct Computed_field **source_field,FE_value **minimums);
-/*******************************************************************************
-LAST MODIFIED : 24 June 1999
-
-DESCRIPTION :
-If the field is of type COMPUTED_FIELD_CLAMP_MINIMUM, the source_field and
-minimums used by it are returned. Since the number of minimums is
-equal to the number of components in the source_field, 
-this function returns in *minimums a pointer to an allocated array
-containing the FE_values.
-It is up to the calling function to DEALLOCATE the returned <*minimums>.
-Use function Computed_field_get_type to determine the field type.
-==============================================================================*/
-
-int Computed_field_set_type_clamp_minimum(struct Computed_field *field,
-	struct Computed_field *source_field,FE_value *minimums);
-/*******************************************************************************
-LAST MODIFIED : 24 June 1999
-
-DESCRIPTION :
-Converts <field> to type COMPUTED_FIELD_CLAMP_MINIMUM, returning the <source_field>
-with each component clamp_minimumd by its respective FE_value in <minimums>.
-The <minimums> array must therefore contain as many FE_values as there are
-components in <source_field>.
-Sets the number of components to the same as <source_field>.
-If function fails, field is guaranteed to be unchanged from its original state,
-although its cache may be lost.
-==============================================================================*/
-
 int Computed_field_set_type_cmiss_number(struct Computed_field *field);
 /*******************************************************************************
 LAST MODIFIED : 24 June 1999
@@ -1064,47 +937,13 @@ If function fails, field is guaranteed to be unchanged from its original state,
 although its cache may be lost.
 ==============================================================================*/
 
-int Computed_field_get_type_dot_product(struct Computed_field *field,
-	struct Computed_field **source_field1, struct Computed_field **source_field2);
+int Computed_field_set_type_embedded(struct Computed_field *field,
+  struct FE_field *fe_field, struct Computed_field *source_field);
 /*******************************************************************************
-LAST MODIFIED : 21 June 1999
+LAST MODIFIED : 23 April 1999
 
 DESCRIPTION :
-If the field is of type DOT_PRODUCT, the source fields used
-by it is returned - otherwise an error is reported.
-Use function Computed_field_get_type to determine the field type.
-==============================================================================*/
-
-int Computed_field_set_type_dot_product(struct Computed_field *field,
-	struct Computed_field *source_field1, struct Computed_field *source_field2);
-/*******************************************************************************
-LAST MODIFIED : 21 June 1999
-
-DESCRIPTION :
-Converts <field> to type COMPUTED_FIELD_DOT_PRODUCT, 
-which returns the dot product of the components of the two source fields.
-If function fails, field is guaranteed to be unchanged from its original state,
-although its cache may be lost.
-==============================================================================*/
-
-int Computed_field_get_type_finite_element(struct Computed_field *field,
-	struct FE_field **fe_field);
-/*******************************************************************************
-LAST MODIFIED : 8 February 1999
-
-DESCRIPTION :
-If the field is of type COMPUTED_FIELD_FINITE_ELEMENT, the FE_field being
-"wrapped" by it is returned - otherwise an error is reported.
-Use function Computed_field_get_type to determine the field type.
-==============================================================================*/
-
-int Computed_field_set_type_finite_element(struct Computed_field *field,
-	struct FE_field *fe_field);
-/*******************************************************************************
-LAST MODIFIED : 11 March 1999
-
-DESCRIPTION :
-Converts <field> to type COMPUTED_FIELD_FINITE_ELEMENT, wrapping the given
+Converts <field> to type COMPUTED_FIELD_EMBEDDED, wrapping the given
 <fe_field>. Makes the number of components the same as in the <fe_field>.
 If function fails, field is guaranteed to be unchanged from its original state,
 although its cache may be lost.
@@ -1175,32 +1014,6 @@ enforced.
 ???RC To enforce the fibre field to have a FIBRE coordinate_system, must make
 the MANAGER_COPY_NOT_IDENTIFIER fail if it would change the coordinate_system
 while the field is in use. Not sure if we want that restriction.
-==============================================================================*/
-
-int Computed_field_get_type_gradient(struct Computed_field *field,
-	struct Computed_field **scalar_field,
-	struct Computed_field **coordinate_field);
-/*******************************************************************************
-LAST MODIFIED : 29 December 1998
-
-DESCRIPTION :
-If the field is of type COMPUTED_FIELD_GRADIENT, the scalar and coordinate
-fields used by it are returned - otherwise an error is reported.
-Use function Computed_field_get_type to determine the field type.
-==============================================================================*/
-
-int Computed_field_set_type_gradient(struct Computed_field *field,
-	struct Computed_field *scalar_field,struct Computed_field *coordinate_field);
-/*******************************************************************************
-LAST MODIFIED : 11 March 1999
-
-DESCRIPTION :
-Converts <field> to type COMPUTED_FIELD_GRADIENT, combining a scalar and
-coordinate field to return a vector (eg. velocity from the potential scalar).
-Sets the number of components to 3.
-If function fails, field is guaranteed to be unchanged from its original state,
-although its cache may be lost.
-The <coordinate_field> must have no more than 3 components.
 ==============================================================================*/
 
 int Computed_field_get_type_magnitude(struct Computed_field *field,
@@ -1280,36 +1093,6 @@ given <nodal_value_type> and <version_number> of <fe_field> at a node.
 Makes the number of components the same as in the <fe_field>.
 Field automatically takes the coordinate system of the source fe_field. See note
 at start of this file about changing use of coordinate systems.
-If function fails, field is guaranteed to be unchanged from its original state,
-although its cache may be lost.
-==============================================================================*/
-
-int Computed_field_get_type_offset(struct Computed_field *field,
-	struct Computed_field **source_field,FE_value **offsets);
-/*******************************************************************************
-LAST MODIFIED : 11 March 1999
-
-DESCRIPTION :
-If the field is of type COMPUTED_FIELD_OFFSET, the source_field and
-offsets used by it are returned. Since the number of offsets is
-equal to the number of components in the source_field (and you don't know this
-yet), this function returns in *offsets a pointer to an allocated array
-containing the FE_values.
-It is up to the calling function to DEALLOCATE the returned <*offsets>.
-Use function Computed_field_get_type to determine the field type.
-==============================================================================*/
-
-int Computed_field_set_type_offset(struct Computed_field *field,
-	struct Computed_field *source_field,FE_value *offsets);
-/*******************************************************************************
-LAST MODIFIED : 11 March 1999
-
-DESCRIPTION :
-Converts <field> to type COMPUTED_FIELD_OFFSET, returning the <source_field>
-with each component offsetd by its respective FE_value in <offsets>.
-The <offsets> array must therefore contain as many FE_values as there are
-components in <source_field>.
-Sets the number of components to the same as <source_field>.
 If function fails, field is guaranteed to be unchanged from its original state,
 although its cache may be lost.
 ==============================================================================*/
@@ -1400,36 +1183,6 @@ the coordinate field - as opposed to RC_COORDINATE which assumes the
 transformation is always based at the origin.
 Sets the number of components to 3 times the number of vectors expected from
 the source vector_field.
-If function fails, field is guaranteed to be unchanged from its original state,
-although its cache may be lost.
-==============================================================================*/
-
-int Computed_field_get_type_scale(struct Computed_field *field,
-	struct Computed_field **source_field,FE_value **scale_factors);
-/*******************************************************************************
-LAST MODIFIED : 11 March 1999
-
-DESCRIPTION :
-If the field is of type COMPUTED_FIELD_SCALE, the source_field and
-scale_factors used by it are returned. Since the number of scale_factors is
-equal to the number of components in the source_field (and you don't know this
-yet), this function returns in *scale_factors a pointer to an allocated array
-containing the FE_values.
-It is up to the calling function to DEALLOCATE the returned <*scale_factors>.
-Use function Computed_field_get_type to determine the field type.
-==============================================================================*/
-
-int Computed_field_set_type_scale(struct Computed_field *field,
-	struct Computed_field *source_field,FE_value *scale_factors);
-/*******************************************************************************
-LAST MODIFIED : 11 March 1999
-
-DESCRIPTION :
-Converts <field> to type COMPUTED_FIELD_SCALE, returning the <source_field>
-with each component scaled by its respective FE_value in <scale_factors>.
-The <scale_factors> array must therefore contain as many FE_values as there are
-components in <source_field>.
-Sets the number of components to the same as <source_field>.
 If function fails, field is guaranteed to be unchanged from its original state,
 although its cache may be lost.
 ==============================================================================*/
@@ -1537,34 +1290,11 @@ Clears read-only status of <field>, telling the program that the user is allowed
 to modify and destroy it.
 ==============================================================================*/
 
-struct Computed_field_iterative_find_element_xi_data
-{
-	FE_value xi[MAXIMUM_ELEMENT_XI_DIMENSIONS];
-	struct Computed_field *field;
-	int number_of_values;
-	FE_value *values;
-	int found_number_of_xi;
-	FE_value *found_values;
-	FE_value *found_derivatives;
-	float tolerance;
-}; /* Computed_field_iterative_find_element_xi_data */
-
-int Computed_field_iterative_element_conditional(
-	struct FE_element *element, void *data_void);
+int Computed_field_find_element_xi(struct Computed_field *field,
+	FE_value *values, int number_of_values, struct FE_element **element, 
+	FE_value *xi, struct GROUP(FE_element) *search_element_group);
 /*******************************************************************************
-LAST MODIFIED: 16 June 2000
-
-DESCRIPTION:
-Returns true if a valid element xi is found.
-==============================================================================*/
-
-int Computed_field_find_element_xi(struct Computed_field *field, FE_value *values,
-	int number_of_values, struct FE_element **element, FE_value *xi,
-	struct GROUP(FE_element) *search_element_group, 
-	struct User_interface *user_interface,
-	float *hint_minimums, float *hint_maximums, float *hint_resolution);
-/*******************************************************************************
-LAST MODIFIED : 20 June 2000
+LAST MODIFIED : 17 July 2000
 
 DESCRIPTION :
 This function implements the reverse of some certain computed_fields
@@ -1763,26 +1493,6 @@ DESCRIPTION :
 Returns true if the <field> is only accessed once - assumed by its manager. If
 it is of type COMPUTED_FIELD_FINITE_ELEMENT further tests that its fe_field can
 be destroyed, assuming it is only accessed by this field and its manager.
-==============================================================================*/
-
-int remove_computed_field_from_manager_given_FE_field(
-	struct MANAGER(Computed_field) *computed_field_manager,struct FE_field *field);
-/*******************************************************************************
-LAST MODIFIED : August 27 1999
-
-DESCRIPTION :
-Frees the computed fields from the computed field manager, given the FE_field
-==============================================================================*/
-
-int destroy_computed_field_given_fe_field(
-	struct MANAGER(Computed_field) *computed_field_manager,
-	struct MANAGER(FE_field) *fe_field_manager,
-	struct FE_field *fe_field);
-/*******************************************************************************
-LAST MODIFIED : 17 May 2000
-
-DESCRIPTION :
-Given <fe_field>, destroys the associated computed field, and fe_field
 ==============================================================================*/
 
 #endif /* !defined (COMPUTED_FIELD_H) */

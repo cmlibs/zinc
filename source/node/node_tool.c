@@ -8,6 +8,8 @@ Functions for mouse controlled node position and vector editing based on
 Scene input.
 ==============================================================================*/
 #include <math.h>
+#include "computed_field/computed_field.h"
+#include "computed_field/computed_field_finite_element.h"
 #include "general/debug.h"
 #include "general/matrix_vector.h"
 #include "graphics/element_group_settings.h"

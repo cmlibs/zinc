@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : computed_field_vector_operations.c
 
-LAST MODIFIED : 11 July 2000
+LAST MODIFIED : 18 July 2000
 
 DESCRIPTION :
 Implements a number of basic vector operations on computed fields.
@@ -19,27 +19,34 @@ struct Computed_field_vector_operations_package
 	struct MANAGER(Computed_field) *computed_field_manager;
 };
 
-struct Computed_field_vector_operations_type_specific_data
-{
-	struct Computed_field_vector_operations_package *package;
-};
-
 static char computed_field_normalise_type_string[] = "normalise";
 
-char *Computed_field_normalise_type_string(void)
+int Computed_field_is_type_normalise(struct Computed_field *field)
 /*******************************************************************************
-LAST MODIFIED : 11 July 2000
+LAST MODIFIED : 18 July 2000
 
 DESCRIPTION :
-Return the static type string which identifies this type.
+Compare the type specific data
 ==============================================================================*/
 {
+	int return_code;
 
-	ENTER(Computed_field_normalise_type_string);
+	ENTER(Computed_field_is_type_normalise);
+	if (field)
+	{
+		return_code =
+			(field->type_string == computed_field_normalise_type_string);
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Computed_field_is_type_normalise.  Missing field.");
+		return_code = 0;
+	}
 	LEAVE;
 
-	return (computed_field_normalise_type_string);
-} /* Computed_field_normalise_type_string */
+	return (return_code);
+} /* Computed_field_is_type_normalise */
 
 static int Computed_field_normalise_clear_type_specific(
 	struct Computed_field *field)
@@ -55,7 +62,6 @@ Clear the type specific data used by this type.
 	ENTER(Computed_field_normalise_clear_type_specific);
 	if (field)
 	{
-		DEALLOCATE(field->type_specific_data);
 		return_code = 1;
 	}
 	else
@@ -79,26 +85,13 @@ DESCRIPTION :
 Copy the type specific data used by this type.
 ==============================================================================*/
 {
-	struct Computed_field_vector_operations_type_specific_data *destination,
-		*source;
+	void *destination;
 
 	ENTER(Computed_field_normalise_copy_type_specific);
-	if (field && (source = 
-		(struct Computed_field_vector_operations_type_specific_data *)
-		field->type_specific_data))
+	if (field)
 	{
-		if (ALLOCATE(destination,
-			struct Computed_field_vector_operations_type_specific_data, 1))
-		{
-			destination->package = source->package;
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"Computed_field_normalise_copy_type_specific.  "
-				"Unable to allocate memory.");
-			destination = NULL;
-		}
+		/* Return a TRUE value */
+		destination = (void *)1;
 	}
 	else
 	{
@@ -171,6 +164,15 @@ LAST MODIFIED : 11 July 2000
 
 DESCRIPTION :
 Window projection does have numerical components.
+==============================================================================*/
+
+#define Computed_field_normalise_can_be_destroyed \
+	(Computed_field_can_be_destroyed_function)NULL
+/*******************************************************************************
+LAST MODIFIED : 17 July 2000
+
+DESCRIPTION :
+No special criteria on the destroy
 ==============================================================================*/
 
 static int Computed_field_normalise_evaluate_cache_at_node(
@@ -395,8 +397,7 @@ DESCRIPTION :
 } /* list_Computed_field_normalise_commands */
 
 int Computed_field_set_type_normalise(struct Computed_field *field,
-	struct Computed_field *source_field,
-	struct Computed_field_vector_operations_package *package)
+	struct Computed_field *source_field)
 /*******************************************************************************
 LAST MODIFIED : 11 July 2000
 
@@ -409,28 +410,25 @@ although its cache may be lost.
 {
 	int number_of_source_fields,return_code;
 	struct Computed_field **source_fields;
-	struct Computed_field_vector_operations_type_specific_data *data;
 
 	ENTER(Computed_field_set_type_normalise);
-	if (field&&source_field&&package)
+	if (field&&source_field)
 	{
 		return_code=1;
 		/* 1. make dynamic allocations for any new type-specific data */
 		number_of_source_fields=1;
-		if (ALLOCATE(source_fields,struct Computed_field *,number_of_source_fields)&&
-			ALLOCATE(data,struct Computed_field_vector_operations_type_specific_data, 1))
+		if (ALLOCATE(source_fields,struct Computed_field *,number_of_source_fields))
 		{
 			/* 2. free current type-specific data */
 			Computed_field_clear_type(field);
 			/* 3. establish the new type */
 			field->type=COMPUTED_FIELD_NEW_TYPES;
-			field->type_string = Computed_field_normalise_type_string();
+			field->type_string = computed_field_normalise_type_string;
 			field->number_of_components = source_field->number_of_components;
 			source_fields[0]=ACCESS(Computed_field)(source_field);
 			field->source_fields=source_fields;
 			field->number_of_source_fields=number_of_source_fields;			
-			field->type_specific_data = (void *)data;
-			data->package = package;
+			field->type_specific_data = (void *)1;
 
 			/* Set all the methods */
 			field->computed_field_clear_type_specific_function =
@@ -447,6 +445,8 @@ although its cache may be lost.
 				Computed_field_normalise_is_defined_at_node;
 			field->computed_field_has_numerical_components_function =
 				Computed_field_normalise_has_numerical_components;
+			field->computed_field_can_be_destroyed_function =
+				Computed_field_normalise_can_be_destroyed;
 			field->computed_field_evaluate_cache_at_node_function =
 				Computed_field_normalise_evaluate_cache_at_node;
 			field->computed_field_evaluate_cache_in_element_function =
@@ -499,7 +499,7 @@ If the field is of type COMPUTED_FIELD_NORMALISE, the
 
 	ENTER(Computed_field_get_type_normalise);
 	if (field&&(COMPUTED_FIELD_NEW_TYPES==field->type)&&
-		(field->type_string==Computed_field_normalise_type_string()))
+		(field->type_string==computed_field_normalise_type_string))
 	{
 		*source_field = field->source_fields[0];
 	}
@@ -583,7 +583,7 @@ already) and allows its contents to be modified.
 			if (return_code)
 			{
 				return_code = Computed_field_set_type_normalise(field,
-					source_field, computed_field_vector_operations_package);
+					source_field);
 			}
 			if (!return_code)
 			{
@@ -616,20 +616,32 @@ already) and allows its contents to be modified.
 
 static char computed_field_cross_product_type_string[] = "cross_product";
 
-char *Computed_field_cross_product_type_string(void)
+int Computed_field_is_type_cross_product(struct Computed_field *field)
 /*******************************************************************************
-LAST MODIFIED : 11 July 2000
+LAST MODIFIED : 18 July 2000
 
 DESCRIPTION :
-Return the static type string which identifies this type.
+Compare the type specific data
 ==============================================================================*/
 {
+	int return_code;
 
-	ENTER(Computed_field_cross_product_type_string);
+	ENTER(Computed_field_is_type_cross_product);
+	if (field)
+	{
+		return_code =
+			(field->type_string == computed_field_cross_product_type_string);
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Computed_field_is_type_cross_product.  Missing field.");
+		return_code = 0;
+	}
 	LEAVE;
 
-	return (computed_field_cross_product_type_string);
-} /* Computed_field_cross_product_type_string */
+	return (return_code);
+} /* Computed_field_is_type_cross_product */
 
 static int Computed_field_cross_product_clear_type_specific(
 	struct Computed_field *field)
@@ -645,7 +657,6 @@ Clear the type specific data used by this type.
 	ENTER(Computed_field_cross_product_clear_type_specific);
 	if (field)
 	{
-		DEALLOCATE(field->type_specific_data);
 		return_code = 1;
 	}
 	else
@@ -669,26 +680,13 @@ DESCRIPTION :
 Copy the type specific data used by this type.
 ==============================================================================*/
 {
-	struct Computed_field_vector_operations_type_specific_data *destination,
-		*source;
+	void *destination;
 
 	ENTER(Computed_field_cross_product_copy_type_specific);
-	if (field && (source = 
-		(struct Computed_field_vector_operations_type_specific_data *)
-		field->type_specific_data))
+	if (field)
 	{
-		if (ALLOCATE(destination,
-			struct Computed_field_vector_operations_type_specific_data, 1))
-		{
-			destination->package = source->package;
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"Computed_field_cross_product_copy_type_specific.  "
-				"Unable to allocate memory.");
-			destination = NULL;
-		}
+		/* Return a TRUE value */
+		destination = (void *)1;
 	}
 	else
 	{
@@ -761,6 +759,15 @@ LAST MODIFIED : 11 July 2000
 
 DESCRIPTION :
 Window projection does have numerical components.
+==============================================================================*/
+
+#define Computed_field_cross_product_can_be_destroyed \
+	(Computed_field_can_be_destroyed_function)NULL
+/*******************************************************************************
+LAST MODIFIED : 17 July 2000
+
+DESCRIPTION :
+No special criteria on the destroy
 ==============================================================================*/
 
 static int Computed_field_cross_product_evaluate_cache_at_node(
@@ -1143,8 +1150,7 @@ DESCRIPTION :
 } /* list_Computed_field_cross_product_commands */
 
 int Computed_field_set_type_cross_product(struct Computed_field *field,
-	int dimension,	struct Computed_field **source_fields,
-	struct Computed_field_vector_operations_package *package)
+	int dimension,	struct Computed_field **source_fields)
 /*******************************************************************************
 LAST MODIFIED : 11 July 2000
 
@@ -1157,11 +1163,10 @@ although its cache may be lost.
 {
 	int i, number_of_source_fields,return_code;
 	struct Computed_field **temp_source_fields;
-	struct Computed_field_vector_operations_type_specific_data *data;
 
 	ENTER(Computed_field_set_type_cross_product);
 	if (field&&Computed_field_has_up_to_4_numerical_components(field, NULL)&&
-		source_fields&&package)
+		source_fields)
 	{
 		return_code=1;
 		for (i = 0 ; return_code && (i < dimension - 1) ; i++)
@@ -1179,14 +1184,13 @@ although its cache may be lost.
 		/* 1. make dynamic allocations for any new type-specific data */
 		number_of_source_fields=dimension - 1;
 		if (return_code &&
-			ALLOCATE(temp_source_fields,struct Computed_field *,number_of_source_fields)&&
-			ALLOCATE(data,struct Computed_field_vector_operations_type_specific_data, 1))
+			ALLOCATE(temp_source_fields,struct Computed_field *,number_of_source_fields))
 		{
 			/* 2. free current type-specific data */
 			Computed_field_clear_type(field);
 			/* 3. establish the new type */
 			field->type=COMPUTED_FIELD_NEW_TYPES;
-			field->type_string = Computed_field_cross_product_type_string();
+			field->type_string = computed_field_cross_product_type_string;
 			field->number_of_components = dimension;
 			for (i = 0 ; i < number_of_source_fields ; i++)
 			{
@@ -1194,8 +1198,7 @@ although its cache may be lost.
 			}
 			field->source_fields=temp_source_fields;
 			field->number_of_source_fields=number_of_source_fields;			
-			field->type_specific_data = (void *)data;
-			data->package = package;
+			field->type_specific_data = (void *)1;
 
 			/* Set all the methods */
 			field->computed_field_clear_type_specific_function =
@@ -1266,7 +1269,7 @@ If the field is of type COMPUTED_FIELD_CROSS_PRODUCT, the
 
 	ENTER(Computed_field_get_type_cross_product);
 	if (field&&(COMPUTED_FIELD_NEW_TYPES==field->type)&&
-		(field->type_string==Computed_field_cross_product_type_string())
+		(field->type_string==computed_field_cross_product_type_string)
 		&&source_fields)
 	{
 		*dimension = field->number_of_components;
@@ -1446,8 +1449,7 @@ already) and allows its contents to be modified.
 						if (return_code=Option_table_multi_parse(option_table,state))
 						{
 							return_code = Computed_field_set_type_cross_product(field,
-								dimension, source_fields, 
-								computed_field_vector_operations_package);
+								dimension, source_fields);
 						}
 						for (i=0;i<number_of_source_fields;i++)
 						{
@@ -1487,6 +1489,647 @@ already) and allows its contents to be modified.
 	return (return_code);
 } /* define_Computed_field_type_cross_product */
 
+static char computed_field_dot_product_type_string[] = "dot_product";
+
+int Computed_field_is_type_dot_product(struct Computed_field *field)
+/*******************************************************************************
+LAST MODIFIED : 18 July 2000
+
+DESCRIPTION :
+Compare the type specific data
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(Computed_field_is_type_dot_product);
+	if (field)
+	{
+		return_code =
+			(field->type_string == computed_field_dot_product_type_string);
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Computed_field_is_type_dot_product.  Missing field.");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Computed_field_is_type_dot_product */
+
+static int Computed_field_dot_product_clear_type_specific(
+	struct Computed_field *field)
+/*******************************************************************************
+LAST MODIFIED : 11 July 2000
+
+DESCRIPTION :
+Clear the type specific data used by this type.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(Computed_field_dot_product_clear_type_specific);
+	if (field)
+	{
+		return_code = 1;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Computed_field_dot_product_clear_type_specific.  "
+			"Invalid arguments.");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Computed_field_dot_product_clear_type_specific */
+
+static void *Computed_field_dot_product_copy_type_specific(
+	struct Computed_field *field)
+/*******************************************************************************
+LAST MODIFIED : 11 July 2000
+
+DESCRIPTION :
+Copy the type specific data used by this type.
+==============================================================================*/
+{
+	void *destination;
+
+	ENTER(Computed_field_dot_product_copy_type_specific);
+	if (field)
+	{
+		destination = (void *)1;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Computed_field_dot_product_copy_type_specific.  "
+			"Invalid arguments.");
+		destination = NULL;
+	}
+	LEAVE;
+
+	return (destination);
+} /* Computed_field_dot_product_copy_type_specific */
+
+#define Computed_field_dot_product_clear_cache_type_specific \
+   (Computed_field_clear_cache_type_specific_function)NULL
+/*******************************************************************************
+LAST MODIFIED : 11 July 2000
+
+DESCRIPTION :
+This function is not needed for this type.
+==============================================================================*/
+
+static int Computed_field_dot_product_type_specific_contents_match(
+	struct Computed_field *field, struct Computed_field *other_computed_field)
+/*******************************************************************************
+LAST MODIFIED : 11 July 2000
+
+DESCRIPTION :
+Compare the type specific data
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(Computed_field_vector_operations_type_specific_contents_match);
+	if (field && other_computed_field)
+	{
+		return_code = 1;
+	}
+	else
+	{
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Computed_field_vector_operations_type_specific_contents_match */
+
+#define Computed_field_dot_product_is_defined_in_element \
+	Computed_field_default_is_defined_in_element
+/*******************************************************************************
+LAST MODIFIED : 11 July 2000
+
+DESCRIPTION :
+Check the source fields using the default.
+==============================================================================*/
+
+#define Computed_field_dot_product_is_defined_at_node \
+	Computed_field_default_is_defined_at_node
+/*******************************************************************************
+LAST MODIFIED : 11 July 2000
+
+DESCRIPTION :
+Check the source fields using the default.
+==============================================================================*/
+
+#define Computed_field_dot_product_has_numerical_components \
+	Computed_field_default_has_numerical_components
+/*******************************************************************************
+LAST MODIFIED : 11 July 2000
+
+DESCRIPTION :
+Window projection does have numerical components.
+==============================================================================*/
+
+#define Computed_field_dot_product_can_be_destroyed \
+	(Computed_field_can_be_destroyed_function)NULL
+/*******************************************************************************
+LAST MODIFIED : 17 July 2000
+
+DESCRIPTION :
+No special criteria on the destroy
+==============================================================================*/
+
+static int Computed_field_dot_product_evaluate_cache_at_node(
+	struct Computed_field *field, struct FE_node *node)
+/*******************************************************************************
+LAST MODIFIED : 11 July 2000
+
+DESCRIPTION :
+Evaluate the fields cache at the node.
+==============================================================================*/
+{
+	FE_value *temp, *temp2;
+	int i, return_code;
+
+	ENTER(Computed_field_dot_product_evaluate_cache_at_node);
+	if (field && node && (field->number_of_source_fields == 2))
+	{
+		/* 1. Precalculate any source fields that this field depends on */
+		if (return_code = 
+			Computed_field_evaluate_source_fields_cache_at_node(field, node))
+		{
+			/* 2. Calculate the field */
+			field->values[0] = 0.0;
+			temp=field->source_fields[0]->values;
+			temp2=field->source_fields[1]->values;
+			for (i=0;i < field->source_fields[0]->number_of_components;i++)
+			{
+				field->values[0] += *temp * *temp2;
+				temp++;
+				temp2++;
+			}
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Computed_field_dot_product_evaluate_cache_at_node.  "
+			"Invalid arguments.");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Computed_field_dot_product_evaluate_cache_at_node */
+
+static int Computed_field_dot_product_evaluate_cache_in_element(
+	struct Computed_field *field, struct FE_element *element, FE_value *xi,
+	struct FE_element *top_level_element,int calculate_derivatives)
+/*******************************************************************************
+LAST MODIFIED : 11 July 2000
+
+DESCRIPTION :
+Evaluate the fields cache in the element.
+==============================================================================*/
+{
+	FE_value *temp, *temp2;
+	int element_dimension, i, j, return_code;
+
+	ENTER(Computed_field_dot_product_evaluate_cache_in_element);
+	if (field && element && xi && (field->number_of_source_fields == 2))
+	{
+		/* 1. Precalculate any source fields that this field depends on */
+		if (return_code = 
+			Computed_field_evaluate_source_fields_cache_in_element(field, element,
+				xi, top_level_element, calculate_derivatives))
+		{
+			/* 2. Calculate the field */
+			element_dimension=get_FE_element_dimension(element);
+			field->values[0] = 0.0;
+			if (calculate_derivatives)
+			{
+				for (j=0;j<element_dimension;j++)
+				{
+					field->derivatives[j]=0.0;
+				}
+			}
+			temp=field->source_fields[0]->values;
+			temp2=field->source_fields[1]->values;
+			for (i=0;i < field->source_fields[0]->number_of_components;i++)
+			{
+				field->values[0] += (*temp) * (*temp2);
+				temp++;
+				temp2++;
+			}
+			if (calculate_derivatives)
+			{
+				temp=field->source_fields[0]->values;
+				temp2=field->source_fields[1]->derivatives;
+				for (i=0;i < field->source_fields[0]->number_of_components;i++)
+				{
+					for (j=0;j<element_dimension;j++)
+					{
+						field->derivatives[j] += (*temp)*(*temp2);
+						temp2++;
+					}
+					temp++;
+				}
+				temp=field->source_fields[1]->values;
+				temp2=field->source_fields[0]->derivatives;
+				for (i=0;i < field->source_fields[0]->number_of_components;i++)
+				{
+					for (j=0;j<element_dimension;j++)
+					{
+						field->derivatives[j] += (*temp)*(*temp2);
+						temp2++;
+					}
+					temp++;
+				}
+				field->derivatives_valid = 1;
+			}
+			else
+			{
+				field->derivatives_valid = 0;
+			}
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Computed_field_dot_product_evaluate_cache_in_element.  "
+			"Invalid arguments.");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Computed_field_dot_product_evaluate_cache_in_element */
+
+#define Computed_field_dot_product_evaluate_as_string_at_node \
+	Computed_field_default_evaluate_as_string_at_node
+/*******************************************************************************
+LAST MODIFIED : 11 July 2000
+
+DESCRIPTION :
+Print the values calculated in the cache.
+==============================================================================*/
+
+#define Computed_field_dot_product_evaluate_as_string_in_element \
+	Computed_field_default_evaluate_as_string_in_element
+/*******************************************************************************
+LAST MODIFIED : 11 July 2000
+
+DESCRIPTION :
+Print the values calculated in the cache.
+==============================================================================*/
+
+#define Computed_field_dot_product_set_values_at_node \
+   (Computed_field_set_values_at_node_function)NULL
+/*******************************************************************************
+LAST MODIFIED : 11 July 2000
+
+DESCRIPTION :
+Not implemented yet.
+==============================================================================*/
+
+#define Computed_field_dot_product_set_values_in_element \
+   (Computed_field_set_values_in_element_function)NULL
+/*******************************************************************************
+LAST MODIFIED : 11 July 2000
+
+DESCRIPTION :
+Not implemented yet.
+==============================================================================*/
+
+#define Computed_field_dot_product_get_native_discretization_in_element \
+	Computed_field_default_get_native_discretization_in_element
+/*******************************************************************************
+LAST MODIFIED : 11 July 2000
+
+DESCRIPTION :
+Inherit result from first source field.
+==============================================================================*/
+
+#define Computed_field_dot_product_find_element_xi \
+   (Computed_field_find_element_xi_function)NULL
+/*******************************************************************************
+LAST MODIFIED : 11 July 2000
+
+DESCRIPTION :
+Not implemented yet.
+==============================================================================*/
+
+static int list_Computed_field_dot_product(
+	struct Computed_field *field)
+/*******************************************************************************
+LAST MODIFIED : 11 July 2000
+
+DESCRIPTION :
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(List_Computed_field_dot_product);
+	if (field)
+	{
+		display_message(INFORMATION_MESSAGE,
+			"    field 1 : %s\n    field 2 : %s\n",
+			field->source_fields[0]->name, field->source_fields[1]->name);
+		return_code = 1;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"list_Computed_field_dot_product.  Invalid arguments.");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* list_Computed_field_dot_product */
+
+static int list_Computed_field_dot_product_commands(
+	struct Computed_field *field)
+/*******************************************************************************
+LAST MODIFIED : 11 July 2000
+
+DESCRIPTION :
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(list_Computed_field_dot_product_commands);
+	if (field)
+	{
+		display_message(INFORMATION_MESSAGE,
+			" fields %s %s",field->source_fields[0]->name,
+			field->source_fields[1]->name);
+		return_code = 1;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"list_Computed_field_dot_product_commands.  "
+			"Invalid arguments.");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* list_Computed_field_dot_product_commands */
+
+int Computed_field_set_type_dot_product(struct Computed_field *field,
+	struct Computed_field *source_field_one,
+	struct Computed_field *source_field_two)
+/*******************************************************************************
+LAST MODIFIED : 13 July 2000
+
+DESCRIPTION :
+Converts <field> to type COMPUTED_FIELD_DOT_PRODUCT with the supplied
+fields, <source_field_one> and <source_field_two>.  Sets the number of 
+components to one.
+If function fails, field is guaranteed to be unchanged from its original state,
+although its cache may be lost.
+==============================================================================*/
+{
+	int number_of_source_fields,return_code;
+	struct Computed_field **source_fields;
+
+	ENTER(Computed_field_set_type_dot_product);
+	if (field&&source_field_one&&source_field_two&&
+		(source_field_one->number_of_components ==
+			source_field_two->number_of_components))
+	{
+		return_code=1;
+		/* 1. make dynamic allocations for any new type-specific data */
+		number_of_source_fields=2;
+		if (ALLOCATE(source_fields,struct Computed_field *,number_of_source_fields))
+		{
+			/* 2. free current type-specific data */
+			Computed_field_clear_type(field);
+			/* 3. establish the new type */
+			field->type=COMPUTED_FIELD_NEW_TYPES;
+			field->type_string = computed_field_dot_product_type_string;
+			field->number_of_components = 1;
+			source_fields[0]=ACCESS(Computed_field)(source_field_one);
+			source_fields[1]=ACCESS(Computed_field)(source_field_two);
+			field->source_fields=source_fields;
+			field->number_of_source_fields=number_of_source_fields;			
+			field->type_specific_data = (void *)1;
+
+			/* Set all the methods */
+			field->computed_field_clear_type_specific_function =
+				Computed_field_dot_product_clear_type_specific;
+			field->computed_field_copy_type_specific_function =
+				Computed_field_dot_product_copy_type_specific;
+			field->computed_field_clear_cache_type_specific_function =
+				Computed_field_dot_product_clear_cache_type_specific;
+			field->computed_field_type_specific_contents_match_function =
+				Computed_field_dot_product_type_specific_contents_match;
+			field->computed_field_is_defined_in_element_function =
+				Computed_field_dot_product_is_defined_in_element;
+			field->computed_field_is_defined_at_node_function =
+				Computed_field_dot_product_is_defined_at_node;
+			field->computed_field_has_numerical_components_function =
+				Computed_field_dot_product_has_numerical_components;
+			field->computed_field_can_be_destroyed_function =
+				Computed_field_dot_product_can_be_destroyed;
+			field->computed_field_can_be_destroyed_function =
+				Computed_field_dot_product_can_be_destroyed;
+			field->computed_field_evaluate_cache_at_node_function =
+				Computed_field_dot_product_evaluate_cache_at_node;
+			field->computed_field_evaluate_cache_in_element_function =
+				Computed_field_dot_product_evaluate_cache_in_element;
+			field->computed_field_evaluate_as_string_at_node_function =
+				Computed_field_dot_product_evaluate_as_string_at_node;
+			field->computed_field_evaluate_as_string_in_element_function =
+				Computed_field_dot_product_evaluate_as_string_in_element;
+			field->computed_field_set_values_at_node_function =
+				Computed_field_dot_product_set_values_at_node;
+			field->computed_field_set_values_in_element_function =
+				Computed_field_dot_product_set_values_in_element;
+			field->computed_field_get_native_discretization_in_element_function =
+				Computed_field_dot_product_get_native_discretization_in_element;
+			field->computed_field_find_element_xi_function =
+				Computed_field_dot_product_find_element_xi;
+			field->list_Computed_field_function = 
+				list_Computed_field_dot_product;
+			field->list_Computed_field_commands_function = 
+				list_Computed_field_dot_product_commands;
+		}
+		else
+		{
+			DEALLOCATE(source_fields);
+			return_code=0;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Computed_field_set_type_dot_product.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Computed_field_set_type_dot_product */
+
+int Computed_field_get_type_dot_product(struct Computed_field *field,
+	struct Computed_field **source_field_one,
+	struct Computed_field **source_field_two)
+/*******************************************************************************
+LAST MODIFIED : 13 July 2000
+
+DESCRIPTION :
+If the field is of type COMPUTED_FIELD_DOT_PRODUCT, the 
+<source_field_one> and <source_field_two> used by it are returned.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(Computed_field_get_type_dot_product);
+	if (field&&(COMPUTED_FIELD_NEW_TYPES==field->type)&&
+		(field->type_string==computed_field_dot_product_type_string))
+	{
+		*source_field_one = field->source_fields[0];
+		*source_field_two = field->source_fields[1];
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Computed_field_get_type_dot_product.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Computed_field_get_type_dot_product */
+
+static int define_Computed_field_type_dot_product(struct Parse_state *state,
+	void *field_void,void *computed_field_vector_operations_package_void)
+/*******************************************************************************
+LAST MODIFIED : 13 July 2000
+
+DESCRIPTION :
+Converts <field> into type COMPUTED_FIELD_DOT_PRODUCT (if it is not 
+already) and allows its contents to be modified.
+==============================================================================*/
+{
+	int return_code;
+	struct Computed_field *field,**source_fields;
+	struct Computed_field_vector_operations_package 
+		*computed_field_vector_operations_package;
+	struct Option_table *option_table;
+	struct Set_Computed_field_array_data set_source_field_array_data;
+	struct Set_Computed_field_conditional_data set_source_field_data;
+
+	ENTER(define_Computed_field_type_dot_product);
+	if (state&&(field=(struct Computed_field *)field_void)&&
+		(computed_field_vector_operations_package=
+		(struct Computed_field_vector_operations_package *)
+		computed_field_vector_operations_package_void))
+	{
+		return_code=1;
+		/* get valid parameters for projection field */
+		source_fields = (struct Computed_field **)NULL;
+		if (ALLOCATE(source_fields, struct Computed_field *, 2))
+		{
+			if (computed_field_dot_product_type_string ==
+				Computed_field_get_type_string(field))
+			{
+				return_code=Computed_field_get_type_dot_product(field, 
+					source_fields, source_fields + 1);
+			}
+			else
+			{
+				if (source_fields[0]=FIRST_OBJECT_IN_MANAGER_THAT(Computed_field)(
+					Computed_field_has_numerical_components,(void *)NULL,
+					computed_field_vector_operations_package->computed_field_manager))
+				{
+					source_fields[1] = source_fields[0];
+				}
+				else
+				{
+					display_message(ERROR_MESSAGE,
+						"define_Computed_field_type_dot_product.  No fields defined");
+					return_code=0;
+				}
+			}
+			if (return_code)
+			{
+				/* must access objects for set functions */
+				if (source_fields[0])
+				{
+					ACCESS(Computed_field)(source_fields[0]);
+				}
+				if (source_fields[1])
+				{
+					ACCESS(Computed_field)(source_fields[1]);
+				}
+
+				option_table = CREATE(Option_table)();
+				/* fields */
+				set_source_field_data.computed_field_manager=
+					computed_field_vector_operations_package->computed_field_manager;
+				set_source_field_data.conditional_function=Computed_field_has_numerical_components;
+				set_source_field_data.conditional_function_user_data=(void *)NULL;
+				set_source_field_array_data.number_of_fields=2;
+				set_source_field_array_data.conditional_data= &set_source_field_data;
+				Option_table_add_entry(option_table,"fields",source_fields,
+					&set_source_field_array_data,set_Computed_field_array);
+				return_code=Option_table_multi_parse(option_table,state);
+				/* no errors,not asking for help */
+				if (return_code)
+				{
+					return_code = Computed_field_set_type_dot_product(field,
+						source_fields[0], source_fields[1]);
+				}
+				if (!return_code)
+				{
+					if ((!state->current_token)||
+						(strcmp(PARSER_HELP_STRING,state->current_token)&&
+							strcmp(PARSER_RECURSIVE_HELP_STRING,state->current_token)))
+					{
+						/* error */
+						display_message(ERROR_MESSAGE,
+							"define_Computed_field_type_dot_product.  Failed");
+					}
+				}
+				if (source_fields[0])
+				{
+					DEACCESS(Computed_field)(&source_fields[0]);
+				}
+				if (source_fields[1])
+				{
+					DEACCESS(Computed_field)(&source_fields[1]);
+				}
+				DESTROY(Option_table)(&option_table);
+			}
+			DEALLOCATE(source_fields);
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,
+				"define_Computed_field_type_dot_product.  Not enough memory");
+			return_code=0;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"define_Computed_field_type_dot_product.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* define_Computed_field_type_dot_product */
+
 int Computed_field_register_types_vector_operations(
 	struct Computed_field_package *computed_field_package)
 /*******************************************************************************
@@ -1506,12 +2149,16 @@ DESCRIPTION :
 			Computed_field_package_get_computed_field_manager(
 				computed_field_package);
 		return_code = Computed_field_package_add_type(computed_field_package,
-			Computed_field_normalise_type_string(), 
+			computed_field_normalise_type_string,
 			define_Computed_field_type_normalise,
 			&computed_field_vector_operations_package);
 		return_code = Computed_field_package_add_type(computed_field_package,
-			Computed_field_cross_product_type_string(), 
+			computed_field_cross_product_type_string,
 			define_Computed_field_type_cross_product,
+			&computed_field_vector_operations_package);
+		return_code = Computed_field_package_add_type(computed_field_package,
+			computed_field_dot_product_type_string,
+			define_Computed_field_type_dot_product,
 			&computed_field_vector_operations_package);
 	}
 	else

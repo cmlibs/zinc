@@ -29,6 +29,8 @@ Functions for executing cmiss commands.
 #include "command/parser.h"
 #if !defined (WINDOWS_DEV_FLAG)
 #include "computed_field/computed_field.h"
+#include "computed_field/computed_field_find_xi.h"
+#include "computed_field/computed_field_finite_element.h"
 #include "data/data_grabber_dialog.h"
 #include "data/node_transform.h"
 #include "data/sync_2d_3d.h"
@@ -7386,6 +7388,7 @@ field are converted to "colours" by applying the <spectrum>
 		tex_number_of_components;
 	long unsigned *texture_image;
 	struct Colour result;
+	struct Computed_field_find_element_xi_special_cache *cache;
 	struct FE_element *element;
 	struct Graphical_material *material;
 	unsigned char *ptr;
@@ -7396,6 +7399,7 @@ field are converted to "colours" by applying the <spectrum>
 		&&(3>=(tex_number_of_components = Computed_field_get_number_of_components(texture_coordinate_field)))
 		&&Computed_field_is_find_element_xi_capable(texture_coordinate_field, /*dummy*/NULL))
 	{
+		cache = (struct Computed_field_find_element_xi_special_cache *)NULL;
 		number_of_data_components = Computed_field_get_number_of_components(field);
 		Texture_get_physical_size(texture, &texture_width, &texture_height);
 		if (ALLOCATE(texture_image,unsigned long,
@@ -7414,21 +7418,38 @@ field are converted to "colours" by applying the <spectrum>
 				for (k = 0 ; k < image_width ; k++)
 				{
 					values[0] = texture_width * ((float)k + 0.5) / (float)image_width;
-					if(Computed_field_find_element_xi(texture_coordinate_field,
-						values, tex_number_of_components, &element, xi, element_group,
-						user_interface, hint_minimums, hint_maximums, hint_resolution))
+					if(Computed_field_find_element_xi_special(texture_coordinate_field,
+						&cache, values, tex_number_of_components, &element, xi, element_group,
+						user_interface, hint_minimums, hint_maximums, hint_resolution)
+						|| Computed_field_find_element_xi(texture_coordinate_field,
+						values, tex_number_of_components, &element, xi, element_group))
 					{
-						if(Computed_field_evaluate_in_element(field,
-							element, xi,(struct FE_element *)NULL, data_values, (FE_value *)NULL))
+						/* Computed_field_find_element_xi_special returns true if it has
+							performed a valid calculation even if the element isn't found
+							to stop the slow Computed_field_find_element_xi being called */
+						if (element)
 						{
-							if (spectrum_render_value_on_material(spectrum,
-								material, number_of_data_components, data_values))
+							if(Computed_field_evaluate_in_element(field,
+								element, xi,(struct FE_element *)NULL, data_values, (FE_value *)NULL))
 							{
-								Graphical_material_get_diffuse(material, &result);
-								red = result.red;
-								green = result.green;
-								blue = result.blue;
-								Graphical_material_get_alpha(material, &alpha);
+								if (spectrum_render_value_on_material(spectrum,
+									material, number_of_data_components, data_values))
+								{
+									Graphical_material_get_diffuse(material, &result);
+									red = result.red;
+									green = result.green;
+									blue = result.blue;
+									Graphical_material_get_alpha(material, &alpha);
+								}
+								else
+								{
+									red = 0.5;
+									green = 0.5;
+									blue = 0.5;
+									alpha = 1.0;
+									display_message(ERROR_MESSAGE,
+										"set_Texture_image_from_field.  Unable to evaluate spectrum");
+								}
 							}
 							else
 							{
@@ -7437,7 +7458,7 @@ field are converted to "colours" by applying the <spectrum>
 								blue = 0.5;
 								alpha = 1.0;
 								display_message(ERROR_MESSAGE,
-									"set_Texture_image_from_field.  Unable to evaluate spectrum");
+									"set_Texture_image_from_field.  Unable to evaluate field in element");
 							}
 						}
 						else
@@ -7446,8 +7467,6 @@ field are converted to "colours" by applying the <spectrum>
 							green = 0.5;
 							blue = 0.5;
 							alpha = 1.0;
-							display_message(ERROR_MESSAGE,
-								"set_Texture_image_from_field.  Unable to evaluate field in element");
 						}
 					}
 					else
@@ -7456,10 +7475,8 @@ field are converted to "colours" by applying the <spectrum>
 						green = 0.5;
 						blue = 0.5;
 						alpha = 1.0;
-#if defined (OLD_CODE)
 						display_message(ERROR_MESSAGE,
 							"set_Texture_image_from_field.  Unable to find element_xi for values");
-#endif /* defined (OLD_CODE) */
 					}
 					switch(storage)
 					{
@@ -7523,6 +7540,10 @@ field are converted to "colours" by applying the <spectrum>
 			Computed_field_clear_cache(field);
 			Computed_field_clear_cache(texture_coordinate_field);
 			DEALLOCATE(data_values);
+			if (cache)
+			{
+				DESTROY(Computed_field_find_element_xi_special_cache)(&cache);
+			}
 		}
 		else
 		{
@@ -10664,13 +10685,10 @@ Executes a GFX DESTROY FIELD command.
 					{
 						/* also want to destroy wrapped FE_field */
 						fe_field=(struct FE_field *)NULL;
-						switch (Computed_field_get_type(computed_field))
+						if (Computed_field_is_type_finite_element(computed_field))
 						{
-							case COMPUTED_FIELD_FINITE_ELEMENT:
-							{
-								Computed_field_get_type_finite_element(computed_field,
-									&fe_field);
-							}
+							Computed_field_get_type_finite_element(computed_field,
+								&fe_field);
 						}
 						if (return_code=REMOVE_OBJECT_FROM_MANAGER(Computed_field)(
 							computed_field,computed_field_manager))

@@ -17,6 +17,7 @@ appearance of graphical finite element groups.
 #include "general/mystring.h"
 #include "general/object.h"
 #include "computed_field/computed_field.h"
+#include "computed_field/computed_field_finite_element.h"
 #include "finite_element/finite_element.h"
 #include "finite_element/finite_element_to_graphics_object.h"
 #include "finite_element/finite_element_to_iso_lines.h"
@@ -4812,8 +4813,7 @@ The graphics object is stored with with the settings it was created from.
 					/*???RC temporary - while voltex and iso_surface not completely
 					converted to Computed_field. Get fe_coordinate_field from
 					coordinate_field */
-					if (COMPUTED_FIELD_FINITE_ELEMENT==
-						Computed_field_get_type(coordinate_field))
+					if (Computed_field_is_type_finite_element(coordinate_field))
 					{
 						Computed_field_get_type_finite_element(coordinate_field,
 							&fe_coordinate_field);

@@ -23,6 +23,7 @@ Functions for talking between Cell and Cmgui.
 #include "cell/export_dialog.uidh"
 #include "choose/choose_element_group.h"
 #include "choose/choose_computed_field.h"
+#include "computed_field/computed_field_finite_element.h"
 #include "finite_element/import_finite_element.h"
 #include "user_interface/filedir.h"
 
@@ -694,8 +695,7 @@ Updates the value of all the fields at the element point.
         if ((0<=element_point_number)&&
           (element_point_number<number_of_grid_values))
         {
-          if ((COMPUTED_FIELD_FINITE_ELEMENT ==
-            Computed_field_get_type(field))&&
+          if (Computed_field_is_type_finite_element(field)&&
             Computed_field_get_type_finite_element(field,&fe_field)&&
             (INT_VALUE==get_FE_field_value_type(fe_field)))
           {
@@ -738,8 +738,7 @@ Updates the value of all the fields at the element point.
       else
       {
         /* non grid based fields, need to modify the underlying FE_field ?? */
-        if ((COMPUTED_FIELD_FINITE_ELEMENT ==
-          Computed_field_get_type(field))&&
+        if (Computed_field_is_type_finite_element(field)&&
           Computed_field_get_type_finite_element(field,&fe_field))
         {
           field_type = get_FE_field_FE_field_type(fe_field);

@@ -11,6 +11,7 @@ Contains function definitions for unemap package.
 #include <math.h>
 #include "finite_element/finite_element.h"
 #include "computed_field/computed_field.h"
+#include "computed_field/computed_field_finite_element.h"
 #include "general/debug.h"
 #include "graphics/colour.h"
 #include "graphics/graphical_element.h"
@@ -1153,13 +1154,10 @@ stored in the unemap package. Also frees any associated fe_fields
 			{
 				/* also want to destroy any wrapped FE_field */
 				fe_field=(struct FE_field *)NULL;
-				switch (Computed_field_get_type(computed_field))
+				if (Computed_field_is_type_finite_element(computed_field))
 				{
-					case COMPUTED_FIELD_FINITE_ELEMENT:
-					{
-						Computed_field_get_type_finite_element(computed_field,
-							&fe_field);
-					}
+				  Computed_field_get_type_finite_element(computed_field,
+					 &fe_field);
 				}
 				if(REMOVE_OBJECT_FROM_MANAGER(Computed_field)
 					(computed_field,computed_field_manager))
@@ -1193,13 +1191,10 @@ stored in the unemap package. Also frees any associated fe_fields
 				(computed_field))
 			{
 				fe_field=(struct FE_field *)NULL;
-				switch (Computed_field_get_type(computed_field))
+				if (Computed_field_is_type_finite_element(computed_field))
 				{
-					case COMPUTED_FIELD_FINITE_ELEMENT:
-					{
-						Computed_field_get_type_finite_element(computed_field,
-							&fe_field);
-					}
+				  Computed_field_get_type_finite_element(computed_field,
+					 &fe_field);
 				}
 				if(REMOVE_OBJECT_FROM_MANAGER(Computed_field)
 					(computed_field,computed_field_manager))

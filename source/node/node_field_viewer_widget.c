@@ -14,6 +14,7 @@ Note the node passed to this widget should be a non-managed local copy.
 #include <Xm/ScrolledW.h>
 #include <Xm/TextF.h>
 #include "computed_field/computed_field.h"
+#include "computed_field/computed_field_finite_element.h"
 #include "finite_element/finite_element.h"
 #include "general/debug.h"
 #include "node/node_field_viewer_widget.h"
@@ -154,29 +155,32 @@ Updates all widgets in the rowcol to make sure they say the correct value.
 		/* get children of the rowcol */
 		XtVaGetValues(node_field_viewer->component_rowcol,XmNnumChildren,
 			&num_children,XmNchildren,&child_list,NULL);
-		field_type=Computed_field_get_type(field);
-		switch (field_type)
+		if (Computed_field_is_type_finite_element(field))
 		{
-			case COMPUTED_FIELD_FINITE_ELEMENT:
+			Computed_field_get_type_finite_element(field,&fe_field);
+		}
+		else
+		{
+			field_type=Computed_field_get_type(field);
+			switch (field_type)
 			{
-				Computed_field_get_type_finite_element(field,&fe_field);
-			} break;
-			case COMPUTED_FIELD_CMISS_NUMBER:
-			{
-				temp_string=Computed_field_evaluate_as_string_at_node(field,
-					/*component_number*/-1,node);
-			} break;
-			default:
-			{
-				if (ALLOCATE(values,FE_value,number_of_components))
+				case COMPUTED_FIELD_CMISS_NUMBER:
 				{
-					if (!Computed_field_evaluate_at_node(field,node,values))
+					temp_string=Computed_field_evaluate_as_string_at_node(field,
+						/*component_number*/-1,node);
+				} break;
+				default:
+				{
+					if (ALLOCATE(values,FE_value,number_of_components))
 					{
-						DEALLOCATE(values);
+						if (!Computed_field_evaluate_at_node(field,node,values))
+						{
+							DEALLOCATE(values);
+						}
+						Computed_field_clear_cache(field);
 					}
-					Computed_field_clear_cache(field);
-				}
-			} break;
+				} break;
+			}
 		}
 		if (fe_field||temp_string||values)
 		{
@@ -362,78 +366,81 @@ data, and then changes the correct value in the array structure.
 		{
 			if (value_string=XmTextFieldGetString(widget))
 			{
-				field_type=Computed_field_get_type(field);
-				switch (field_type)
+				if (Computed_field_is_type_finite_element(field))
 				{
-					case COMPUTED_FIELD_FINITE_ELEMENT:
+					Computed_field_get_type_finite_element(field,&fe_field);
+					switch (get_FE_field_value_type(fe_field))
 					{
-						Computed_field_get_type_finite_element(field,&fe_field);
-						switch (get_FE_field_value_type(fe_field))
+						case ELEMENT_XI_VALUE:
 						{
-							case ELEMENT_XI_VALUE:
-							{
-								display_message(ERROR_MESSAGE,
-									"Cannot set element:xi values yet");
-							} break;
-							case FE_VALUE_VALUE:
-							{
-								FE_value fe_value_value;
-
-								sscanf(value_string,FE_VALUE_INPUT_STRING,&fe_value_value);
-								fe_field_component.field=fe_field;
-								fe_field_component.number=
-									nodal_value_information->component_number;
-								set_FE_nodal_FE_value_value(node_field_viewer->current_node,
-									&fe_field_component,nodal_value_information->version,
-									nodal_value_information->type,fe_value_value);
-							} break;
-							case INT_VALUE:
-							{
-								int int_value;
-
-								sscanf(value_string,"%d",&int_value);
-								fe_field_component.field=fe_field;
-								fe_field_component.number=
-									nodal_value_information->component_number;
-								set_FE_nodal_int_value(node_field_viewer->current_node,
-									&fe_field_component,nodal_value_information->version,
-									nodal_value_information->type,int_value);
-							} break;
-							case STRING_VALUE:
-							{
-								display_message(WARNING_MESSAGE,"Cannot set string values yet");
-							} break;
-							default:
-							{
-								display_message(ERROR_MESSAGE,
-									"node_field_viewer_widget_update_values.  "
-									"Unsupported value_type for FE_field");
-							} break;
-						}
-					} break;
-					case COMPUTED_FIELD_CMISS_NUMBER:
-					{
-						display_message(WARNING_MESSAGE,
-							"CMISS number cannot be changed here");
-					} break;
-					default:
-					{
-						FE_value *values;
-						int number_of_components;
-
-						number_of_components=Computed_field_get_number_of_components(field);
-						if (ALLOCATE(values,FE_value,number_of_components))
+							display_message(ERROR_MESSAGE,
+								"Cannot set element:xi values yet");
+						} break;
+						case FE_VALUE_VALUE:
 						{
-							if (Computed_field_evaluate_at_node(field,node,values))
+							FE_value fe_value_value;
+
+							sscanf(value_string,FE_VALUE_INPUT_STRING,&fe_value_value);
+							fe_field_component.field=fe_field;
+							fe_field_component.number=
+								nodal_value_information->component_number;
+							set_FE_nodal_FE_value_value(node_field_viewer->current_node,
+								&fe_field_component,nodal_value_information->version,
+								nodal_value_information->type,fe_value_value);
+						} break;
+						case INT_VALUE:
+						{
+							int int_value;
+
+							sscanf(value_string,"%d",&int_value);
+							fe_field_component.field=fe_field;
+							fe_field_component.number=
+								nodal_value_information->component_number;
+							set_FE_nodal_int_value(node_field_viewer->current_node,
+								&fe_field_component,nodal_value_information->version,
+								nodal_value_information->type,int_value);
+						} break;
+						case STRING_VALUE:
+						{
+							display_message(WARNING_MESSAGE,"Cannot set string values yet");
+						} break;
+						default:
+						{
+							display_message(ERROR_MESSAGE,
+								"node_field_viewer_widget_update_values.  "
+								"Unsupported value_type for FE_field");
+						} break;
+					}
+				}
+				else
+				{
+					field_type=Computed_field_get_type(field);
+					switch (field_type)
+					{
+						case COMPUTED_FIELD_CMISS_NUMBER:
+						{
+							display_message(WARNING_MESSAGE,
+								"CMISS number cannot be changed here");
+						} break;
+						default:
+						{
+							FE_value *values;
+							int number_of_components;
+
+							number_of_components=Computed_field_get_number_of_components(field);
+							if (ALLOCATE(values,FE_value,number_of_components))
 							{
-								sscanf(value_string,FE_VALUE_INPUT_STRING,
-									&values[nodal_value_information->component_number]);
-								Computed_field_set_values_at_node(field,node,values);
+								if (Computed_field_evaluate_at_node(field,node,values))
+								{
+									sscanf(value_string,FE_VALUE_INPUT_STRING,
+										&values[nodal_value_information->component_number]);
+									Computed_field_set_values_at_node(field,node,values);
+								}
+								Computed_field_clear_cache(field);
+								DEALLOCATE(values);
 							}
-							Computed_field_clear_cache(field);
-							DEALLOCATE(values);
-						}
-					} break;
+						} break;
+					}
 				}
 				XtFree(value_string);
 			}
@@ -569,7 +576,6 @@ and their labels.
 	Arg args[4];
 	char *component_name;
 	enum FE_nodal_value_type *component_nodal_value_types,nodal_value_type;
-	enum Computed_field_type field_type;
 	int col,comp_no,k,num_args,number_of_components,number_of_derivatives,
 		number_of_unknown_nodal_value_types,return_code;
 	struct Computed_field *field;
@@ -611,14 +617,13 @@ and their labels.
 				node_field_viewer->widget,"node_field_viewer_rowcol",args,4))
 			{
 				XtManageChild(node_field_viewer->component_rowcol);
-				field_type=Computed_field_get_type(field);
-				if ((COMPUTED_FIELD_FINITE_ELEMENT != field_type)||
+				if ((!Computed_field_is_type_finite_element(field))||
 					(Computed_field_get_type_finite_element(field,&fe_field)&&
 						(node_field_viewer->nodal_value_types=get_FE_node_field_value_types(
 							node,fe_field,&(node_field_viewer->number_of_nodal_value_types),
 							&number_of_unknown_nodal_value_types))))
 				{
-					if ((COMPUTED_FIELD_FINITE_ELEMENT == field_type)&&
+					if (Computed_field_is_type_finite_element(field)&&
 						(0<number_of_unknown_nodal_value_types))
 					{
 						display_message(WARNING_MESSAGE,"Unknown nodal derivative types");
@@ -628,7 +633,7 @@ and their labels.
 					{
 						if (0 < comp_no)
 						{
-							if (COMPUTED_FIELD_FINITE_ELEMENT == field_type)
+							if (Computed_field_is_type_finite_element(field))
 							{
 								number_of_derivatives=
 									get_FE_node_field_component_number_of_derivatives(
@@ -679,7 +684,7 @@ and their labels.
 								if (0 == col)
 								{
 									/* component label */
-									if (((COMPUTED_FIELD_FINITE_ELEMENT == field_type)&&
+									if ((Computed_field_is_type_finite_element(field)&&
 										(component_name=get_FE_field_component_name(fe_field,
 											comp_no-1)))||
 										(component_name=
@@ -735,7 +740,7 @@ and their labels.
 									XtSetArg(args[0],XmNuserData,nodal_value_information);
 									XtSetArg(args[1],XmNeditMode,XmSINGLE_LINE_EDIT);
 									/* string and element_xi fields should be shown wider */
-									if ((COMPUTED_FIELD_FINITE_ELEMENT == field_type)&&(
+									if (Computed_field_is_type_finite_element(field)&&(
 										(ELEMENT_XI_VALUE==get_FE_field_value_type(fe_field))||
 										(STRING_VALUE==get_FE_field_value_type(fe_field))))
 									{

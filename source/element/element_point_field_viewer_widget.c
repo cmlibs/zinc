@@ -14,6 +14,7 @@ Note the element_point passed to this widget should be a non-managed local copy.
 #include <Xm/ScrolledW.h>
 #include <Xm/TextF.h>
 #include "computed_field/computed_field.h"
+#include "computed_field/computed_field_finite_element.h"
 #include "finite_element/finite_element.h"
 #include "general/debug.h"
 #include "element/element_point_field_viewer_widget.h"
@@ -273,8 +274,7 @@ data, and then changes the correct value in the array structure.
 						(element_point_number<number_of_grid_values))
 					{
 						return_code=0;
-						if ((COMPUTED_FIELD_FINITE_ELEMENT==
-							Computed_field_get_type(field))&&
+						if (Computed_field_is_type_finite_element(field)&&
 							Computed_field_get_type_finite_element(field,&fe_field)&&
 							(INT_VALUE==get_FE_field_value_type(fe_field)))
 						{

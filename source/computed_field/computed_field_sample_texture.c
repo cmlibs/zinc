@@ -25,25 +25,33 @@ struct Computed_field_sample_texture_type_specific_data
 {
 	float minimum, maximum;
 	struct Texture *texture;
-	struct Computed_field_sample_texture_package *package;
 };
 
 static char computed_field_sample_texture_type_string[] = "sample_texture";
 
-char *Computed_field_sample_texture_type_string(void)
+int Computed_field_is_type_sample_texture(struct Computed_field *field)
 /*******************************************************************************
-LAST MODIFIED : 6 July 2000
+LAST MODIFIED : 18 July 2000
 
 DESCRIPTION :
-Return the static type string which identifies this type.
 ==============================================================================*/
 {
+	int return_code;
 
-	ENTER(Computed_field_sample_texture_type_string);
-	LEAVE;
+	ENTER(Computed_field_is_type_sample_texture);
+	if (field)
+	{
+		return_code = (field->type_string == computed_field_sample_texture_type_string);
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Computed_field_is_type_sample_texture.  Missing field");
+		return_code=0;
+	}
 
-	return (computed_field_sample_texture_type_string);
-} /* Computed_field_sample_texture_type_string */
+	return (return_code);
+} /* Computed_field_is_type_sample_texture */
 
 static int Computed_field_sample_texture_clear_type_specific(
 	struct Computed_field *field)
@@ -104,7 +112,6 @@ Copy the type specific data used by this type.
 			destination->texture = ACCESS(Texture)(source->texture);
 			destination->minimum = source->minimum;
 			destination->maximum = source->maximum;
-			destination->package = source->package;
 		}
 		else
 		{
@@ -202,6 +209,15 @@ DESCRIPTION :
 Window projection does have numerical components.
 ==============================================================================*/
 
+#define Computed_field_sample_texture_can_be_destroyed \
+	(Computed_field_can_be_destroyed_function)NULL
+/*******************************************************************************
+LAST MODIFIED : 17 July 2000
+
+DESCRIPTION :
+No special criteria on the destroy
+==============================================================================*/
+
 static int Computed_field_sample_texture_evaluate_cache_at_node(
 	struct Computed_field *field, struct FE_node *node)
 /*******************************************************************************
@@ -216,8 +232,7 @@ Evaluate the fields cache at the node.
 	struct Computed_field_sample_texture_type_specific_data *data;
 
 	ENTER(Computed_field_sample_texture_evaluate_cache_at_node);
-	if (field && Computed_field_has_at_least_2_components(field, NULL) 
-		&& node && 
+	if (field && node && 
 		(data = (struct Computed_field_sample_texture_type_specific_data *)
 		field->type_specific_data))
 	{
@@ -286,8 +301,7 @@ Evaluate the fields cache at the node.
 	struct Computed_field_sample_texture_type_specific_data *data;
 
 	ENTER(Computed_field_sample_texture_evaluate_cache_in_element);
-	if (field && Computed_field_has_at_least_2_components(field, NULL) && 
-		element && xi 
+	if (field && element && xi 
 		&& (data = (struct Computed_field_sample_texture_type_specific_data *)
 		field->type_specific_data))
 	{
@@ -478,8 +492,7 @@ DESCRIPTION :
 
 int Computed_field_set_type_sample_texture(struct Computed_field *field,
 	struct Computed_field *texture_coordinate_field, struct Texture *texture,
-	float minimum, float maximum,
-	struct Computed_field_sample_texture_package *package)
+	float minimum, float maximum)
 /*******************************************************************************
 LAST MODIFIED : 6 July 2000
 
@@ -513,7 +526,7 @@ although its cache may be lost.
 				Computed_field_clear_type(field);
 				/* 3. establish the new type */
 				field->type=COMPUTED_FIELD_NEW_TYPES;
-				field->type_string = Computed_field_sample_texture_type_string();
+				field->type_string = computed_field_sample_texture_type_string;
 				field->number_of_components = number_of_components;
 				source_fields[0]=ACCESS(Computed_field)(texture_coordinate_field);
 				field->source_fields=source_fields;
@@ -522,7 +535,6 @@ although its cache may be lost.
 				data->texture = ACCESS(Texture)(texture);
 				data->minimum = minimum;
 				data->maximum = maximum;
-				data->package = package;
 
 				/* Set all the methods */
 				field->computed_field_clear_type_specific_function =
@@ -539,6 +551,8 @@ although its cache may be lost.
 					Computed_field_sample_texture_is_defined_at_node;
 				field->computed_field_has_numerical_components_function =
 					Computed_field_sample_texture_has_numerical_components;
+				field->computed_field_can_be_destroyed_function =
+					Computed_field_sample_texture_can_be_destroyed;
 				field->computed_field_evaluate_cache_at_node_function =
 					Computed_field_sample_texture_evaluate_cache_at_node;
 				field->computed_field_evaluate_cache_in_element_function =
@@ -602,7 +616,7 @@ returned.
 
 	ENTER(Computed_field_get_type_sample_texture);
 	if (field&&(COMPUTED_FIELD_NEW_TYPES==field->type)&&
-		(field->type_string==Computed_field_sample_texture_type_string())
+		(field->type_string==computed_field_sample_texture_type_string)
 		&&(data = 
 		(struct Computed_field_sample_texture_type_specific_data *)
 		field->type_specific_data)&&texture_coordinate_field&&texture)
@@ -712,8 +726,7 @@ already) and allows its contents to be modified.
 			if (return_code)
 			{
 				return_code = Computed_field_set_type_sample_texture(field,
-					texture_coordinate_field, texture, minimum, maximum,
-					computed_field_sample_texture_package);
+					texture_coordinate_field, texture, minimum, maximum);
 			}
 			if (!return_code)
 			{
@@ -770,7 +783,7 @@ DESCRIPTION :
 		computed_field_sample_texture_package.texture_manager =
 			texture_manager;
 		return_code = Computed_field_package_add_type(computed_field_package,
-			Computed_field_sample_texture_type_string(), 
+			computed_field_sample_texture_type_string, 
 			define_Computed_field_type_sample_texture,
 			&computed_field_sample_texture_package);
 	}

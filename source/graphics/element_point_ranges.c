@@ -7,6 +7,8 @@ DESCRIPTION :
 ==============================================================================*/
 #include <stdlib.h>
 #include <stdio.h>
+#include "computed_field/computed_field.h"
+#include "computed_field/computed_field_finite_element.h"
 #include "general/debug.h"
 #include "general/indexed_list_private.h"
 #include "graphics/element_point_ranges.h"
@@ -1634,7 +1636,7 @@ If field and element_point_ranges not identically grid-based, clear
 			}
 			if (consistent_grid)
 			{
-				if ((COMPUTED_FIELD_FINITE_ELEMENT==Computed_field_get_type(field))&&
+				if (Computed_field_is_type_finite_element(field)&&
 					Computed_field_get_type_finite_element(field,&fe_field)&&
 					(INT_VALUE==get_FE_field_value_type(fe_field)))
 				{

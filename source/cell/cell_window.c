@@ -33,6 +33,7 @@ Functions for using the Cell_window structure.
 #include "choose/text_choose_fe_element.h"
 #include "choose/choose_computed_field.h"
 #include "command/command.h"
+#include "computed_field/computed_field_finite_element.h"
 #include "unemap/unemap_package.h"
 #include "user_interface/user_interface.h"
 #include "user_interface/filedir.h"

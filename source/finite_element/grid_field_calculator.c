@@ -16,6 +16,7 @@ control curve variation over coordinates - usually xi_texture_coordinates.
 #include "curve/control_curve.h"
 #include "curve/control_curve_editor_dialog.h"
 #include "computed_field/computed_field.h"
+#include "computed_field/computed_field_vector_operations.h"
 #include "finite_element/finite_element.h"
 #include "finite_element/grid_field_calculator.h"
 #include "finite_element/grid_field_calculator.uidh"

@@ -13,6 +13,8 @@ DESCRIPTION :
 #include <X11/Xlib.h>
 #endif /* defined (MOTIF) */
 #include "command/parser.h"
+#include "computed_field/computed_field.h"
+#include "computed_field/computed_field_finite_element.h"
 #include "finite_element/finite_element.h"
 	/*???DB.  For fuzzy_string_compare */
 #include "general/debug.h"

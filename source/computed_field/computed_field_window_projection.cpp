@@ -49,20 +49,29 @@ struct Computed_field_window_projection_type_specific_data
 
 static char computed_field_window_projection_type_string[] = "window_projection";
 
-char *Computed_field_window_projection_type_string(void)
+int Computed_field_is_type_window_projection(struct Computed_field *field)
 /*******************************************************************************
-LAST MODIFIED : 4 July 2000
+LAST MODIFIED : 18 July 2000
 
 DESCRIPTION :
-Return the static type string which identifies this type.
 ==============================================================================*/
 {
+	int return_code;
 
-	ENTER(Computed_field_window_projection_type_string);
-	LEAVE;
+	ENTER(Computed_field_is_type_window_projection);
+	if (field)
+	{
+		return_code = (field->type_string == computed_field_window_projection_type_string);
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Computed_field_is_type_window_projection.  Missing field");
+		return_code=0;
+	}
 
-	return (computed_field_window_projection_type_string);
-} /* Computed_field_window_projection_type_string */
+	return (return_code);
+} /* Computed_field_is_type_window_projection */
 
 static int Computed_field_window_projection_calculate_matrix(
 	struct Computed_field *field)
@@ -608,6 +617,15 @@ DESCRIPTION :
 Window projection does have numerical components.
 ==============================================================================*/
 
+#define Computed_field_window_projection_can_be_destroyed \
+	(Computed_field_can_be_destroyed_function)NULL
+/*******************************************************************************
+LAST MODIFIED : 17 July 2000
+
+DESCRIPTION :
+No special criteria on the destroy
+==============================================================================*/
+
 static int Computed_field_evaluate_projection_matrix(
 	struct Computed_field *field,
 	int element_dimension, int calculate_derivatives)
@@ -1039,7 +1057,7 @@ although its cache may be lost.
 			Computed_field_clear_type(field);
 			/* 3. establish the new type */
 			field->type=COMPUTED_FIELD_NEW_TYPES;
-			field->type_string = Computed_field_window_projection_type_string();
+			field->type_string = computed_field_window_projection_type_string;
 			field->number_of_components = 3;
 			source_fields[0]=ACCESS(Computed_field)(source_field);
 			field->source_fields=source_fields;
@@ -1068,6 +1086,8 @@ although its cache may be lost.
 				Computed_field_window_projection_is_defined_at_node;
 			field->computed_field_has_numerical_components_function =
 				Computed_field_window_projection_has_numerical_components;
+			field->computed_field_can_be_destroyed_function =
+				Computed_field_window_projection_can_be_destroyed;
 			field->computed_field_evaluate_cache_at_node_function =
 				Computed_field_window_projection_evaluate_cache_at_node;
 			field->computed_field_evaluate_cache_in_element_function =
@@ -1123,7 +1143,7 @@ Use function Computed_field_get_type to determine the field type.
 
 	ENTER(Computed_field_get_type_window_projection);
 	if (field&&(COMPUTED_FIELD_NEW_TYPES==field->type)&&
-		(field->type_string==Computed_field_window_projection_type_string())
+		(field->type_string==computed_field_window_projection_type_string)
 		&&(data = 
 		(struct Computed_field_window_projection_type_specific_data *)
 		field->type_specific_data)&&source_field&&graphics_window&&
@@ -1353,7 +1373,7 @@ DESCRIPTION :
 		computed_field_window_projection_package.graphics_window_manager =
 			graphics_window_manager;
 		return_code = Computed_field_package_add_type(computed_field_package,
-			Computed_field_window_projection_type_string(), 
+			computed_field_window_projection_type_string, 
 			define_Computed_field_type_window_projection,
 			&computed_field_window_projection_package);
 	}

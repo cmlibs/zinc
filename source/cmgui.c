@@ -33,6 +33,7 @@ DESCRIPTION :
 #include "computed_field/computed_field.h"
 #include "computed_field/computed_field_component_operations.h"
 #include "computed_field/computed_field_derivatives.h"
+#include "computed_field/computed_field_finite_element.h"
 #include "computed_field/computed_field_sample_texture.h"
 #include "computed_field/computed_field_vector_operations.h"
 #include "computed_field/computed_field_window_projection.h"
@@ -599,6 +600,7 @@ Main program for the CMISS Graphical User Interface
 	struct Cmiss_command_data command_data;
 	struct Colour ambient_colour,default_colour;
 	struct Computed_field *computed_field;
+	struct Computed_field_finite_element_package *computed_field_finite_element_package;
 	struct Command_window *command_window;
 	struct Coordinate_system rect_coord_system,temp_coordinate_system;
 	struct Execute_command *execute_command, *set_command;
@@ -1056,6 +1058,8 @@ Main program for the CMISS Graphical User Interface
 	command_data.graphics_window_manager=CREATE(MANAGER(Graphics_window))();
 
 	/* Add Computed_fields to the Computed_field_package */
+	computed_field_finite_element_package = 
+		(struct Computed_field_finite_element_package *)NULL;
 	if (command_data.computed_field_package)
 	{
 		Computed_field_register_types_derivatives(
@@ -1075,6 +1079,13 @@ Main program for the CMISS Graphical User Interface
 			Computed_field_register_type_sample_texture(
 				command_data.computed_field_package, 
 				command_data.texture_manager);
+		}
+		if (command_data.fe_field_manager)
+		{
+			computed_field_finite_element_package =
+				Computed_field_register_types_finite_element(
+					command_data.computed_field_package,
+					command_data.fe_field_manager);
 		}
 	}
 #if defined (UNEMAP)	
@@ -1850,6 +1861,11 @@ Main program for the CMISS Graphical User Interface
 
 				DESTROY(Computed_field_package)(&command_data.computed_field_package);
 
+				if (computed_field_finite_element_package)
+				{
+					Computed_field_deregister_types_finite_element(
+						computed_field_finite_element_package);
+				}
 				DESTROY(MANAGER(FE_field))(&command_data.fe_field_manager);
 
 				DESTROY(MANAGER(Control_curve))(&command_data.control_curve_manager);

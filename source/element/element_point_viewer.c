@@ -18,6 +18,7 @@ selected element point, or set it if entered in this dialog.
 #include "choose/choose_enumerator.h"
 #include "choose/text_choose_fe_element.h"
 #include "choose/choose_computed_field.h"
+#include "computed_field/computed_field_finite_element.h"
 #include "element/element_point_viewer_widget.h"
 #include "element/element_point_viewer.h"
 #include "element/element_point_viewer.uidh"

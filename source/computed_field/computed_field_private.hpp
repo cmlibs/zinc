@@ -22,6 +22,8 @@ typedef int (*Computed_field_is_defined_at_node_function)(
 	struct Computed_field *field,struct FE_node *node);
 typedef int (*Computed_field_has_numerical_components_function)(
 	struct Computed_field *field);
+typedef int (*Computed_field_can_be_destroyed_function)(
+	struct Computed_field *field);
 typedef int (*Computed_field_evaluate_cache_at_node_function)(
 	struct Computed_field *field,struct FE_node *node);
 typedef int (*Computed_field_evaluate_cache_in_element_function)(
@@ -67,6 +69,9 @@ DESCRIPTION :
 	/* the name/identifier of the Computed_field */
 	char *name;
 	int number_of_components;
+	/* This is set for fields where the components have names other than
+		the defaults of 1,2...number_of_components */
+	char **component_names;
 
 	/* if the following flag is set, the field may not be modified or destroyed
 		 by the user. See Computed_field_set_read_only function */
@@ -126,9 +131,6 @@ DESCRIPTION :
 	enum FE_nodal_value_type nodal_value_type;
 	int version_number;
 
-	/* for COMPUTED_FIELD_DEFAULT_COORDINATE only */
-	struct MANAGER(Computed_field) *computed_field_manager;
-
 	/* for COMPUTED_FIELD_XI_TEXTURE_COORDINATES only */
 	struct FE_element *seed_element;
 	struct LIST(Computed_field_element_texture_mapping) *texture_mapping;
@@ -160,6 +162,8 @@ DESCRIPTION :
 	   computed_field_is_defined_at_node_function;
 	Computed_field_has_numerical_components_function
 	   computed_field_has_numerical_components_function;
+	Computed_field_can_be_destroyed_function
+	   computed_field_can_be_destroyed_function;
 	Computed_field_evaluate_cache_at_node_function 
 	   computed_field_evaluate_cache_at_node_function;
 	Computed_field_evaluate_cache_in_element_function 
@@ -256,6 +260,16 @@ then set values - that way the field will never be left in an invalid state.
 Calls Computed_field_clear_cache before clearing the type.
 ==============================================================================*/
 
+int Computed_field_contents_match(struct Computed_field *field,
+	void *other_computed_field_void);
+/*******************************************************************************
+LAST MODIFIED : 22 January 1999
+
+DESCRIPTION :
+Iterator/conditional function returning true if contents of <field> other than
+its name matches the contents of the <other_computed_field_void>.
+==============================================================================*/
+
 int Computed_field_default_is_defined_in_element(struct Computed_field *field,
 	struct FE_element *element);
 /*******************************************************************************
@@ -349,4 +363,42 @@ LAST MODIFIED : 4 July 2000
 DESCRIPTION :
 Inherits its result from the first source field.
 ==============================================================================*/
+
+int Computed_field_extract_rc(struct Computed_field *field,
+	int element_dimension,FE_value *rc_coordinates,FE_value *rc_derivatives);
+/*******************************************************************************
+LAST MODIFIED : 9 February 1999
+
+DESCRIPTION :
+Takes the values in <field> and converts them from their current coordinate
+system into rectangular cartesian, returning them in the 3 component
+<rc_coordinates> array. If <rc_derivatives> is not NULL, the derivatives are
+also converted to rc and returned in that 9-component FE_value array.
+Note that odd coordinate systems, such as FIBRE are treated as if they are
+RECTANGULAR_CARTESIAN, which just causes a copy of values.
+If <element_dimension> or the number of components in <field> are less than 3,
+the missing places in the <rc_coordinates> and <rc_derivatives> arrays are
+cleared to zero.
+???RC Uses type float for in-between values x,y,z and jacobian for future
+compatibility with coordinate system transformation functions in geometry.c.
+This causes a slight drop in performance.
+
+Note the order of derivatives:
+1. All the <element_dimension> derivatives of component 1.
+2. All the <element_dimension> derivatives of component 2.
+3. All the <element_dimension> derivatives of component 3.
+==============================================================================*/
+
+int Computed_field_get_top_level_element_and_xi(struct FE_element *element, 
+	FE_value *xi, int element_dimension, struct FE_element *top_level_element,
+	FE_value *top_level_xi, int *top_level_element_dimension);
+/*******************************************************************************
+LAST MODIFIED : 17 July 2000
+
+DESCRIPTION :
+Finds the <top_level_element>, <top_level_xi> and <top_level_element_dimension>
+for the given <element> and <xi>.  If <top_level_element> is already set it 
+is checked and the <top_level_xi> calculated.
+==============================================================================*/
+
 #endif /* !defined (COMPUTED_FIELD_PRIVATE_H) */
