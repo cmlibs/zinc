@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : element_group_settings.c
 
-LAST MODIFIED : 7 May 2001
+LAST MODIFIED : 8 May 2001
 
 DESCRIPTION :
 GT_element_settings structure and routines for describing and manipulating the
@@ -7329,7 +7329,7 @@ parsed settings. Note that the settings are ACCESSed once on valid return.
 int gfx_modify_g_element_element_points(struct Parse_state *state,
 	void *modify_g_element_data_void,void *g_element_command_data_void)
 /*******************************************************************************
-LAST MODIFIED : 1 May 2001
+LAST MODIFIED : 8 May 2001
 
 DESCRIPTION :
 Executes a GFX MODIFY G_ELEMENT ELEMENT_POINTS command.
@@ -7390,6 +7390,7 @@ parsed settings. Note that the settings are ACCESSed once on valid return.
 					}
 					orientation_scale_field = (struct Computed_field *)NULL;
 					variable_scale_field = (struct Computed_field *)NULL;
+					xi_point_density_field = (struct Computed_field *)NULL;
 					GT_element_settings_get_xi_discretization(settings,
 						&xi_discretization_mode, &xi_point_density_field);
 					number_of_components = 3;
@@ -7436,10 +7437,10 @@ parsed settings. Note that the settings are ACCESSed once on valid return.
 					set_xi_point_density_field_data.computed_field_manager =
 						g_element_command_data->computed_field_manager;
 					set_xi_point_density_field_data.conditional_function =
-						Computed_field_has_up_to_3_numerical_components;
+						Computed_field_is_scalar;
 					set_xi_point_density_field_data.conditional_function_user_data =
 						(void *)NULL;
-					Option_table_add_entry(option_table,"density",
+					Option_table_add_entry(option_table, "density",
 						&xi_point_density_field, &set_xi_point_density_field_data,
 						set_Computed_field_conditional);
 					/* discretization */
@@ -7582,7 +7583,7 @@ parsed settings. Note that the settings are ACCESSed once on valid return.
 						else
 						{
 							display_message(ERROR_MESSAGE,
-								"No density field specified for cell_density element_points");
+								"No density field specified for cell_density|cell_poisson");
 							return_code = 0;
 						}
 						STRING_TO_ENUMERATOR(Use_element_type)(use_element_type_string,
@@ -7627,6 +7628,10 @@ parsed settings. Note that the settings are ACCESSed once on valid return.
 					if (variable_scale_field)
 					{
 						DEACCESS(Computed_field)(&variable_scale_field);
+					}
+					if (xi_point_density_field)
+					{
+						DEACCESS(Computed_field)(&xi_point_density_field);
 					}
 				}
 				else
