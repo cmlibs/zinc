@@ -5582,7 +5582,7 @@ int Cmgui_image_information_add_file_name_series(
 	char *file_name_template, char *file_number_pattern, int start_file_number,
 	int stop_file_number, int file_number_increment)
 /*******************************************************************************
-LAST MODIFIED : 4 March 2002
+LAST MODIFIED : 19 March 2002
 
 DESCRIPTION :
 Adds a series of file names based on the <file_name_template> to the
@@ -5593,9 +5593,9 @@ The number appears with leading zeros up to the length of <file_number_pattern>.
 Clears 'valid' flag if fails.
 ==============================================================================*/
 {
-	char file_number, *file_number_string, format[20], *pattern_position, *prefix,
+	char *file_number_string, format[20], *pattern_position, *prefix,
 		*temp_file_name, **temp_file_names, *suffix;
-	int error, i, new_number_of_file_names, old_number_of_file_names,
+	int error, file_number, i, new_number_of_file_names, old_number_of_file_names,
 		pattern_width, return_code;
 
 	ENTER(Cmgui_image_information_add_file_name_series);
@@ -5634,7 +5634,7 @@ Clears 'valid' flag if fails.
 			{
 				file_number = start_file_number;
 				for (i = old_number_of_file_names;
-						 (i < new_number_of_file_names) && !error; i++)
+					(i < new_number_of_file_names) && !error; i++)
 				{
 					temp_file_name = (char *)NULL;
 					if (prefix)
