@@ -1,7 +1,7 @@
 XCOMM **************************************************************************
 XCOMM FILE : unemap.imake
 XCOMM
-XCOMM LAST MODIFIED : 26 June 2000
+XCOMM LAST MODIFIED : 24 July 2000
 XCOMM
 XCOMM DESCRIPTION :
 XCOMM Makefile for unemap
@@ -393,9 +393,9 @@ LIB = -lMrm -lXm -lXt -lX11 -lPW -lm
 LIB = -lMrm -lXm -lXt -lX11 -lXpm -lm
 #endif /* defined (OLD_CODE) */
 #if defined (IRIX) /* switch OperatingSystem */
-LIB = -lMrm -lXm -lXt -lX11 -lPW -lftn -lm
+LIB = -lMrm -lXm -lXt -lX11 -lPW -lftn -lm -lpthread
 #elif defined(LINUX) /* switch OperatingSystem */
-LIB = -lMrm -lXm -lXt -lX11 -lXmu -lXpm -lXext -lg2c -lm -ldl -lXp -lSM -lICE
+LIB = -lMrm -lXm -lXt -lX11 -lXmu -lXpm -lXext -lg2c -lm -ldl -lXp -lSM -lICE -lpthread
 #endif /* switch OperatingSystem */
 
 #if defined (OLD_CODE)

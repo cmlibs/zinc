@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : unemap_hardware_client.c
 
-LAST MODIFIED : 23 July 2000
+LAST MODIFIED : 24 July 2000
 
 DESCRIPTION :
 Code for talking to the unemap hardware service (running under NT).  This is an
@@ -26,15 +26,14 @@ TO DO :
 
 #define CACHE_CLIENT_INFORMATION
 
-/*#define BACKGROUND_SAVING*/
+#define BACKGROUND_SAVING
 
 #include <stddef.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
 #if defined (BACKGROUND_SAVING) && defined (MOTIF)
-#include <sys/types.h>
-#include <sys/prctl.h>
+#include <pthread.h>
 #endif /* defined (BACKGROUND_SAVING) && defined (MOTIF) */
 #if defined (WIN32)
 /*???DB.  Assume that running on Intel machine */
@@ -553,7 +552,7 @@ Wrapper function for send.
 static void acquired_socket_callback(XtPointer crate_void,int *source,
 	XtInputId *id);
 
-static void acquired_socket_callback_process(void *crate_void)
+static void *acquired_socket_callback_process(void *crate_void)
 #else /* defined (BACKGROUND_SAVING) && defined (MOTIF) */
 static void acquired_socket_callback(
 #if defined (WINDOWS)
@@ -565,7 +564,7 @@ static void acquired_socket_callback(
 	)
 #endif /* defined (BACKGROUND_SAVING) && defined (MOTIF) */
 /*******************************************************************************
-LAST MODIFIED : 23 July 2000
+LAST MODIFIED : 24 July 2000
 
 DESCRIPTION :
 Called when there is input on the acquired socket.
@@ -714,6 +713,7 @@ The <module_acquired_callback> is responsible for deallocating the samples.
 			module_acquired_callback_data=(void *)NULL;
 		}
 #if defined (BACKGROUND_SAVING) && defined (MOTIF)
+		crate=(struct Unemap_crate *)crate_void;
 		crate->acquired_socket_xid=XtAppAddInput(crate->application_context,
 			crate->acquired_socket,(XtPointer)XtInputReadMask,
 			acquired_socket_callback,(XtPointer)crate);
@@ -731,12 +731,14 @@ The <module_acquired_callback> is responsible for deallocating the samples.
 #endif /* defined (BACKGROUND_SAVING) && defined (MOTIF) */
 	LEAVE;
 #if defined (BACKGROUND_SAVING) && defined (MOTIF)
+
+	return (NULL);
 } /* acquired_socket_callback_process */
 
 static void acquired_socket_callback(XtPointer crate_void,int *source,
 	XtInputId *id)
 /*******************************************************************************
-LAST MODIFIED : 23 July 2000
+LAST MODIFIED : 24 July 2000
 
 DESCRIPTION :
 Called when there is input on the acquired socket.
@@ -744,6 +746,7 @@ Called when there is input on the acquired socket.
 The <module_acquired_callback> is responsible for deallocating the samples.
 ==============================================================================*/
 {
+	pthread_t thread_id;
 	struct Unemap_crate *crate;
 
 	ENTER(acquired_socket_callback);
@@ -755,13 +758,28 @@ The <module_acquired_callback> is responsible for deallocating the samples.
 	USE_PARAMETER(id);
 	if ((crate=(struct Unemap_crate *)crate_void)&&(crate->acquired_socket_xid))
 	{
+		/*???debug */
+		printf("crate->acquired_socket_xid=%lx\n",crate->acquired_socket_xid);
+#if defined (DEBUG)
+#endif /* defined (DEBUG) */
 		/* so that don't get multiple acquired_socket_callback calls */
 		XtRemoveInput(crate->acquired_socket_xid);
 		crate->acquired_socket_xid=0;
-		if (-1==sproc(acquired_socket_callback_process,PR_SALL,(void *)crate_void))
+		if (pthread_create(&thread_id,(pthread_attr_t *)NULL,
+			acquired_socket_callback_process,(void *)crate_void))
 		{
-			display_message(ERROR_MESSAGE,"acquired_socket_callback.  sproc failed");
+			acquired_socket_callback_process((void *)crate_void);
+			display_message(ERROR_MESSAGE,
+				"acquired_socket_callback.  pthread_create failed");
+			/*???debug */
+			printf("acquired_socket_callback.  pthread_create failed");
 		}
+		/*???debug */
+		printf("thread_id=%x\n",thread_id);
+#if defined (DEBUG)
+#endif /* defined (DEBUG) */
+#if defined (NEW_CODE)
+#endif /* defined (NEW_CODE) */
 	}
 	/*???debug */
 	printf("leave acquired_socket_callback\n");

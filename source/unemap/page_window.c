@@ -20,15 +20,18 @@ WINDOWS - win32 acquisition only version
 	created and it displayed/brought to the front/opened.
 ==============================================================================*/
 
-/*#define BACKGROUND_SAVING*/
+#define BACKGROUND_SAVING
 
 #include <stddef.h>
 #include <stdlib.h>
 #include <math.h>
 #include <limits.h>
 #if defined (BACKGROUND_SAVING)
+#include <pthread.h>
+#if defined (OLD_CODE)
 #include <sys/types.h>
 #include <sys/prctl.h>
+#endif /* defined (OLD_CODE) */
 #endif /* defined (BACKGROUND_SAVING) */
 #if defined (MOTIF)
 #include <X11/Xlib.h>
@@ -1294,7 +1297,10 @@ DESCRIPTION :
 } /* set_scrolling_device */
 
 #if defined (BACKGROUND_SAVING)
+static void *save_write_signal_file_process(
+#if defined (OLD_CODE)
 static void save_write_signal_file_process(
+#endif /* defined (OLD_CODE) */
 	void *save_write_signal_file_background_data_void)
 /*******************************************************************************
 LAST MODIFIED : 23 July 2000
@@ -1439,6 +1445,8 @@ Called by unemap_get_samples_acquired_background to actually write the data.
 #if defined (DEBUG)
 #endif /* defined (DEBUG) */
 	LEAVE;
+
+	return (NULL);
 } /* save_write_signal_file_process */
 
 static void save_write_signal_file_background(const int all_channels,
@@ -1451,6 +1459,7 @@ DESCRIPTION :
 Called by unemap_get_samples_acquired_background to actually write the data.
 ==============================================================================*/
 {
+	pthread_t thread_id;
 	struct Save_write_signal_file_background_data
 		*save_write_signal_file_background_data;
 
@@ -1467,11 +1476,19 @@ Called by unemap_get_samples_acquired_background to actually write the data.
 		save_write_signal_file_background_data->all_channels=all_channels;
 		save_write_signal_file_background_data->number_of_samples=number_of_samples;
 		save_write_signal_file_background_data->samples=(short *)samples;
+		if (pthread_create(&thread_id,(pthread_attr_t *)NULL,
+			save_write_signal_file_process,
+			save_write_signal_file_background_data_void))
+#if defined (OLD_CODE)
 		if (-1==sproc(save_write_signal_file_process,PR_SALL,
 			save_write_signal_file_background_data_void))
+#endif /* defined (OLD_CODE) */
 		{
 			display_message(ERROR_MESSAGE,
+				"save_write_signal_file_background.  pthread_create failed");
+#if defined (OLD_CODE)
 				"save_write_signal_file_background.  sproc failed");
+#endif /* defined (OLD_CODE) */
 			DEALLOCATE(save_write_signal_file_background_data);
 			DEALLOCATE(samples);
 		}
