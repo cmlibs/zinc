@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : element_point_viewer.c
 
-LAST MODIFIED : 9 June 2000
+LAST MODIFIED : 14 June 2000
 
 DESCRIPTION :
 Dialog for selecting an element point, viewing and editing its fields and
@@ -187,14 +187,14 @@ Ensures xi is correct for the currently selected element point, if any.
 static int Element_point_viewer_set_viewer_element_point(
 	struct Element_point_viewer *element_point_viewer)
 /*******************************************************************************
-LAST MODIFIED : 8 June 2000
+LAST MODIFIED : 14 June 2000
 
 DESCRIPTION :
 Gets the current element_point, makes a copy of its element if not NULL,
 and passes it to the element_point_viewer_widget.
 ==============================================================================*/
 {
-	int temp_element_point_number,return_code;
+	int i,number_of_faces,temp_element_point_number,return_code;
 	struct Element_point_ranges_identifier temp_element_point_identifier;
 
 	ENTER(Element_point_viewer_set_viewer_element_point);
@@ -214,9 +214,20 @@ and passes it to the element_point_viewer_widget.
 					&temp_element_point_number);
 			}
 			/* copy the element - now guaranteed to be top-level */
-			element_point_viewer->element_copy=ACCESS(FE_element)(CREATE(FE_element)(
-				temp_element_point_identifier.element->identifier,
-				temp_element_point_identifier.element));
+			if (element_point_viewer->element_copy=ACCESS(FE_element)(
+				CREATE(FE_element)(temp_element_point_identifier.element->identifier,
+					temp_element_point_identifier.element)))
+			{
+				/* clear the faces of element_copy as messes up exterior calculations
+					 for graphics created from them */
+				number_of_faces=
+					element_point_viewer->element_copy->shape->number_of_faces;
+				for (i=0;i<number_of_faces;i++)
+				{
+					set_FE_element_face(element_point_viewer->element_copy,i,
+						(struct FE_element *)NULL);
+				}
+			}
 		}
 		/* pass identifier with copy_element to viewer widget */
 		temp_element_point_identifier.element=element_point_viewer->element_copy;
@@ -1364,19 +1375,30 @@ currently being viewed is affected by the change, re-send to viewer.
 static int Element_point_viewer_apply_changes(
 	struct Element_point_viewer *element_point_viewer)
 /*******************************************************************************
-LAST MODIFIED : 2 June 2000
+LAST MODIFIED : 14 June 2000
 
 DESCRIPTION :
 Makes the element_point change global.
 ==============================================================================*/
 {
-	int return_code;
+	int i,number_of_faces,return_code;
+	struct FE_element *element,*face_element;
 
 	ENTER(Element_point_viewer_apply_changes);
 	if (element_point_viewer)
 	{
-		if (element_point_viewer->element_point_identifier.element)
+		if ((element=element_point_viewer->element_point_identifier.element) &&
+			element_point_viewer->element_copy)
 		{
+			/* get faces from global element and put in element_copy so not lost */
+			number_of_faces=element->shape->number_of_faces;
+			for (i=0;i<number_of_faces;i++)
+			{
+				if (get_FE_element_face(element,i,&face_element))
+				{
+					set_FE_element_face(element_point_viewer->element_copy,i,face_element);
+				}
+			}
 			if (MANAGER_MODIFY_NOT_IDENTIFIER(FE_element,identifier)(
 				element_point_viewer->element_point_identifier.element,
 				element_point_viewer->element_copy,
@@ -1391,6 +1413,13 @@ Makes the element_point change global.
 				display_message(WARNING_MESSAGE,
 					"Element_point_viewer_apply_changes.  Failed");
 				return_code=0;
+			}
+			/* clear the faces of element_copy as messes up exterior calculations
+				 for graphics created from them */
+			for (i=0;i<number_of_faces;i++)
+			{
+				set_FE_element_face(element_point_viewer->element_copy,i,
+					(struct FE_element *)NULL);
 			}
 		}
 		else
@@ -1545,7 +1574,7 @@ struct Element_point_viewer *CREATE(Element_point_viewer)(
 	struct MANAGER(FE_field) *fe_field_manager,
 	struct User_interface *user_interface)
 /*******************************************************************************
-LAST MODIFIED : 9 June 2000
+LAST MODIFIED : 14 June 2000
 
 DESCRIPTION :
 Creates a dialog for choosing element points and displaying and editing their
@@ -1555,7 +1584,7 @@ fields.
 	Atom WM_DELETE_WINDOW;
 	char **valid_strings;
 	Colormap cmap;
-	int i,init_widgets,number_of_valid_strings,start,stop;
+	int i,init_widgets,number_of_faces,number_of_valid_strings,start,stop;
 	MANAGER_CONDITIONAL_FUNCTION(Computed_field)
 		*choose_field_conditional_function;
 	MrmType element_point_viewer_dialog_class;
@@ -1699,11 +1728,22 @@ fields.
 				Element_point_viewer_calculate_xi(element_point_viewer);
 				if (element_point_viewer->element_point_identifier.top_level_element)
 				{
-					element_point_viewer->element_copy=ACCESS(FE_element)(
+					if (element_point_viewer->element_copy=ACCESS(FE_element)(
 						CREATE(FE_element)(element_point_viewer->
 							element_point_identifier.top_level_element->identifier,
 							element_point_viewer->
-							element_point_identifier.top_level_element));
+							element_point_identifier.top_level_element)))
+					{
+						/* clear the faces of element_copy as messes up exterior calculations
+							 for graphics created from them */
+						number_of_faces=
+							element_point_viewer->element_copy->shape->number_of_faces;
+						for (i=0;i<number_of_faces;i++)
+						{
+							set_FE_element_face(element_point_viewer->element_copy,i,
+								(struct FE_element *)NULL);
+						}
+					}
 					choose_field_conditional_function=
 						Computed_field_is_scalar_integer_grid_in_element;
 				}
