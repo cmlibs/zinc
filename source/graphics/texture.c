@@ -4214,10 +4214,10 @@ Writes the properties of the <texture> to the command window.
 ==============================================================================*/
 {
 	int return_code;
-#if defined (GL_VERSION_1_2) || defined (GL_EXT_texture3D)
+#if defined (GL_ARB_texture_compression)
 	GLenum texture_target;
 	GLuint texture_size;
-#endif /* defined (GL_VERSION_1_2) || defined (GL_EXT_texture3D) */
+#endif /* defined (GL_ARB_texture_compression) */
 	
 
 	ENTER(list_Texture);
