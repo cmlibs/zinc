@@ -11,14 +11,14 @@ while ( -f $typemap_file )
 	 $typemap_file = "../$typemap_file";
   }
 
-unshift @typemap_array, "$ENV{CMGUI_DEV_SOURCE}/perl/Cmiss/scene_viewer/typemap";
+unshift @typemap_array, "$ENV{CMGUI_DEV_SOURCE}/perl/Cmiss/Scene_viewer/typemap";
 
 WriteMakefile(
-    'NAME'		=> 'Cmiss::graphics_window',
-    'VERSION_FROM'	=> 'graphics_window.pm', # finds $VERSION
+    'NAME'		=> 'Cmiss::Graphics_window',
+    'VERSION_FROM'	=> 'Graphics_window.pm', # finds $VERSION
     'PREREQ_PM'		=> {}, # e.g., Module::Name => 1.1
     ($] >= 5.005 ?    ## Add these new keywords supported since 5.005
-      (ABSTRACT_FROM => 'graphics_window.pm', # retrieve abstract from module
+      (ABSTRACT_FROM => 'Graphics_window.pm', # retrieve abstract from module
        AUTHOR     => '"Shane Blackett <s.blackett@auckland.ac.nz>"') : ()),
     'LIBS'		=> [''], # e.g., '-lm'
     'DEFINE'		=> '', # e.g., '-DHAVE_SOMETHING'
