@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : trace_window.h
 
-LAST MODIFIED : 14 June 2001
+LAST MODIFIED : 18 January 2002
 
 DESCRIPTION :
 ==============================================================================*/
@@ -752,14 +752,6 @@ LAST MODIFIED : 29 August 1993
 
 DESCRIPTION :
 Draws the <event> marker in the <trace> window.
-==============================================================================*/
-
-int trace_draw_potential_time(struct Trace_window *trace);
-/*******************************************************************************
-LAST MODIFIED : 29 August 1993
-
-DESCRIPTION :
-Draws the potential time marker in the <trace> window.
 ==============================================================================*/
 
 int trace_update_potential_time(struct Trace_window *trace, int potential_time,

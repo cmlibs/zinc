@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : trace_window.c
 
-LAST MODIFIED :  18 December 2001
+LAST MODIFIED :  18 January 2002
 
 DESCRIPTION :
 ==============================================================================*/
@@ -10319,8 +10319,11 @@ Calculates the processed device.
 					{
 						destroy_Signal(&(processed_device->signal->next));
 					}
+					processed_frequency=device->signal->buffer->frequency;
+#if defined (OLD_CODE)
 					processed_frequency=(float)number_of_samples/
 						(times[number_of_samples-1]-times[0]);
+#endif
 					if (processed_buffer=reallocate_Signal_buffer(processed_buffer,
 						FLOAT_VALUE,1,2*number_of_samples,processed_frequency))
 					{
@@ -10351,7 +10354,7 @@ Calculates the processed device.
 							start= *(trace->event_detection.start_search_interval);
 							divisions= *(trace->event_detection.search_interval_divisions);
 							end= *(trace->event_detection.end_search_interval);
-							number_of_beats= *(trace->event_detection.number_of_events);										
+							number_of_beats= *(trace->event_detection.number_of_events);
 							return_code =two_end_baseline(processed_buffer,
 								number_of_samples,average_width,number_of_beats,start,end,divisions);
 						}
@@ -10498,7 +10501,11 @@ Calculates the processed device.
 					trace->valid_processing=0;
 				}
 				DEALLOCATE(values);
-				DEALLOCATE(times);
+				DEALLOCATE(times);						
+				redraw_trace_1_drawing_area((Widget)NULL,(XtPointer)trace,
+					(XtPointer)NULL);
+				redraw_trace_3_drawing_area((Widget)NULL,(XtPointer)trace,
+					(XtPointer)NULL);				
 			} break;
 			case FREQUENCY_DOMAIN:
 			{
@@ -12895,6 +12902,13 @@ The callback for redrawing part of the drawing area in trace area 3.
 										trace_area_3->axes_top=axes_top;
 										trace_area_3->axes_width=axes_width;
 										trace_area_3->axes_height=axes_height;
+										draw_device_markers(device,*first_data_array,*last_data_array,
+											*(trace->event_detection.datum),1,
+											*(trace->event_detection.potential_time),1,EDIT_AREA_DETAIL,
+											*(trace->event_detection.event_number),axes_left,axes_top,
+											axes_width,axes_height,(Window)NULL,
+											trace_area_3->drawing->pixel_map,signal_drawing_information,
+											user_interface);
 									}
 									DEALLOCATE(first_data_array);
 									DEALLOCATE(last_data_array);
@@ -13574,94 +13588,14 @@ Draws the <event> marker in the <trace> window.
 	return (return_code);
 } /* trace_draw_event_marker */
 
-int trace_draw_potential_time(struct Trace_window *trace)
+static int trace_update_pot_time_beat_event(struct Trace_window *trace, 
+	int potential_time,int previous_potential_time,
+	enum Trace_window_update_flags *update_flags)
 /*******************************************************************************
-LAST MODIFIED : 4 August 1999
-
-DESCRIPTION :
-Draws the potential time marker in the <trace> window.
-???DB.  Beat averaging sharing with event detection
-==============================================================================*/
-{
-	int end_analysis_interval,potential_time,return_code,signal_index,
-		start_analysis_interval;
-	struct Device *highlight_device;
-	struct Signal_buffer *buffer;
-	struct Trace_window_area_1 *trace_area_1;
-	struct Trace_window_area_3 *trace_area_3;
-
-	ENTER(trace_draw_potential_time);
-	if (trace)
-	{
-		switch (*trace->analysis_mode)
-		{
-			case EVENT_DETECTION: case BEAT_AVERAGING:
-			{
-				if ((trace->event_detection.potential_time)&&(trace->highlight)&&
-					(*(trace->highlight))&&(highlight_device= **(trace->highlight))&&
-					(buffer=get_Device_signal_buffer(highlight_device)))
-				{
-					potential_time= *(trace->event_detection.potential_time);
-					start_analysis_interval=buffer->start;
-					end_analysis_interval=buffer->end;
-					trace_area_1= &(trace->area_1);
-					if (highlight_device->signal)
-					{
-						signal_index=highlight_device->signal->index;
-					}
-					else
-					{
-						signal_index= -1;
-					}
-					draw_potential_time_marker(potential_time,buffer,
-						highlight_device->channel,signal_index,ENLARGE_AREA_DETAIL,
-						start_analysis_interval,end_analysis_interval,
-						trace_area_1->axes_left,trace_area_1->axes_top,
-						trace_area_1->axes_width,trace_area_1->axes_height,
-						XtWindow(trace_area_1->drawing_area),
-						trace_area_1->drawing->pixel_map,trace->signal_drawing_information,
-						trace->user_interface);
-					trace_area_3= &(trace->area_3);
-					draw_potential_time_marker(potential_time,buffer,
-						highlight_device->channel,signal_index,EDIT_AREA_DETAIL,
-						trace_area_3->edit.first_data,trace_area_3->edit.last_data,
-						trace_area_3->axes_left,trace_area_3->axes_top,
-						trace_area_3->axes_width,trace_area_3->axes_height,
-						XtWindow(trace_area_3->drawing_area),
-						trace_area_3->drawing->pixel_map,trace->signal_drawing_information,
-						trace->user_interface);
-					return_code=1;
-				}
-				else
-				{
-					display_message(ERROR_MESSAGE,
-						"trace_draw_potential_time.  Invalid potential_time");
-					return_code=0;
-				}
-			} break;
-			default:
-			{
-				return_code=1;
-			} break;
-		}
-	}
-	else
-	{
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* trace_draw_potential_time */
-
-int trace_update_potential_time(struct Trace_window *trace, int potential_time,
-	int previous_potential_time, enum Trace_window_update_flags *update_flags)
-/*******************************************************************************
-LAST MODIFIED : 4 August 1998
+LAST MODIFIED : 16 January 2002
 
 DESCRIPTION :
 Updates the potential time marker in the <trace> window.
-???DB.  Beat averaging sharing with event detection
 ==============================================================================*/
 {
 	int end_analysis_interval,return_code,signal_index,start_analysis_interval;
@@ -13670,85 +13604,126 @@ Updates the potential time marker in the <trace> window.
 	struct Trace_window_area_1 *trace_area_1;
 	struct Trace_window_area_3 *trace_area_3;
 
+	ENTER(trace_update_pot_time_beat_event);
+	if (trace)
+	{	
+		if ((trace->event_detection.potential_time)&&(trace->highlight)&&
+			(*(trace->highlight))&&(highlight_device= **(trace->highlight))&&
+			(buffer=get_Device_signal_buffer(highlight_device)))
+		{
+			start_analysis_interval=buffer->start;
+			end_analysis_interval=buffer->end;
+			trace_area_1= &(trace->area_1);
+			if (highlight_device->signal)
+			{
+				signal_index=highlight_device->signal->index;
+			}
+			else
+			{
+				signal_index= -1;
+			}
+			if(*update_flags & TRACE_1_NO_POTENTIAL_ERASE)
+			{
+				/* Clear just that flag */
+				*update_flags &= ~TRACE_1_NO_POTENTIAL_ERASE;
+			}
+			else
+			{
+				draw_potential_time_marker(previous_potential_time,buffer,
+					highlight_device->channel,signal_index,ENLARGE_AREA_DETAIL,
+					start_analysis_interval,end_analysis_interval,
+					trace_area_1->axes_left,trace_area_1->axes_top,
+					trace_area_1->axes_width,trace_area_1->axes_height,
+					XtWindow(trace_area_1->drawing_area),
+					trace_area_1->drawing->pixel_map,
+					trace->signal_drawing_information,trace->user_interface);
+			}
+			draw_potential_time_marker(potential_time,buffer,
+				highlight_device->channel,signal_index,ENLARGE_AREA_DETAIL,
+				start_analysis_interval,end_analysis_interval,
+				trace_area_1->axes_left,trace_area_1->axes_top,
+				trace_area_1->axes_width,trace_area_1->axes_height,
+				XtWindow(trace_area_1->drawing_area),
+				trace_area_1->drawing->pixel_map,trace->signal_drawing_information,
+				trace->user_interface);
+			trace_area_3= &(trace->area_3);
+			if((*update_flags & TRACE_3_NO_POTENTIAL_ERASE))
+			{
+				/* Clear just that flag */
+				*update_flags &= ~TRACE_3_NO_POTENTIAL_ERASE;
+			}
+			else
+			{
+				draw_potential_time_marker(previous_potential_time,buffer,
+					highlight_device->channel,signal_index,EDIT_AREA_DETAIL,
+					trace_area_3->edit.first_data,trace_area_3->edit.last_data,
+					trace_area_3->axes_left,trace_area_3->axes_top,
+					trace_area_3->axes_width,trace_area_3->axes_height,
+					XtWindow(trace_area_3->drawing_area),
+					trace_area_3->drawing->pixel_map,
+					trace->signal_drawing_information,trace->user_interface);
+			}
+			draw_potential_time_marker(potential_time,buffer,
+				highlight_device->channel,signal_index,EDIT_AREA_DETAIL,
+				trace_area_3->edit.first_data,trace_area_3->edit.last_data,
+				trace_area_3->axes_left,trace_area_3->axes_top,
+				trace_area_3->axes_width,trace_area_3->axes_height,
+				XtWindow(trace_area_3->drawing_area),
+				trace_area_3->drawing->pixel_map,trace->signal_drawing_information,
+				trace->user_interface);
+			return_code=1;
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,
+				"trace_draw_potential_time.  Invalid potential_time");
+			return_code=0;
+		}		
+	}
+	else
+	{
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* trace_update_pot_time_beat_event */
+
+int trace_update_potential_time(struct Trace_window *trace, int potential_time,
+	int previous_potential_time, enum Trace_window_update_flags *update_flags)
+/*******************************************************************************
+LAST MODIFIED : 16 January 2002
+
+DESCRIPTION :
+Updates the potential time marker in the <trace> window. for 
+ Beat averaging sharing and event detection
+==============================================================================*/
+{
+	int return_code;
+
 	ENTER(trace_draw_potential_time);
 	if (trace)
 	{
 		switch (*trace->analysis_mode)
 		{
-			case EVENT_DETECTION: case BEAT_AVERAGING:
+			case EVENT_DETECTION:
 			{
-				if ((trace->event_detection.potential_time)&&(trace->highlight)&&
-					(*(trace->highlight))&&(highlight_device= **(trace->highlight))&&
-					(buffer=get_Device_signal_buffer(highlight_device)))
+				return_code=trace_update_pot_time_beat_event(trace,potential_time,
+					previous_potential_time,update_flags);
+			} break;
+			case BEAT_AVERAGING:
+			{
+				/*if we're not in beat averaging mode with toggle on, update the potential time*/
+				if(False==XmToggleButtonGadgetGetState((trace->area_3).beat_averaging.
+					beat_averaging_toggle))
 				{
-					start_analysis_interval=buffer->start;
-					end_analysis_interval=buffer->end;
-					trace_area_1= &(trace->area_1);
-					if (highlight_device->signal)
-					{
-						signal_index=highlight_device->signal->index;
-					}
-					else
-					{
-						signal_index= -1;
-					}
-					if(*update_flags & TRACE_1_NO_POTENTIAL_ERASE)
-					{
-						/* Clear just that flag */
-						*update_flags &= ~TRACE_1_NO_POTENTIAL_ERASE;
-					}
-					else
-					{
-						draw_potential_time_marker(previous_potential_time,buffer,
-							highlight_device->channel,signal_index,ENLARGE_AREA_DETAIL,
-							start_analysis_interval,end_analysis_interval,
-							trace_area_1->axes_left,trace_area_1->axes_top,
-							trace_area_1->axes_width,trace_area_1->axes_height,
-							XtWindow(trace_area_1->drawing_area),
-							trace_area_1->drawing->pixel_map,
-							trace->signal_drawing_information,trace->user_interface);
-					}
-					draw_potential_time_marker(potential_time,buffer,
-						highlight_device->channel,signal_index,ENLARGE_AREA_DETAIL,
-						start_analysis_interval,end_analysis_interval,
-						trace_area_1->axes_left,trace_area_1->axes_top,
-						trace_area_1->axes_width,trace_area_1->axes_height,
-						XtWindow(trace_area_1->drawing_area),
-						trace_area_1->drawing->pixel_map,trace->signal_drawing_information,
-						trace->user_interface);
-					trace_area_3= &(trace->area_3);
-					if((*update_flags & TRACE_3_NO_POTENTIAL_ERASE))
-					{
-						/* Clear just that flag */
-						*update_flags &= ~TRACE_3_NO_POTENTIAL_ERASE;
-					}
-					else
-					{
-						draw_potential_time_marker(previous_potential_time,buffer,
-							highlight_device->channel,signal_index,EDIT_AREA_DETAIL,
-							trace_area_3->edit.first_data,trace_area_3->edit.last_data,
-							trace_area_3->axes_left,trace_area_3->axes_top,
-							trace_area_3->axes_width,trace_area_3->axes_height,
-							XtWindow(trace_area_3->drawing_area),
-							trace_area_3->drawing->pixel_map,
-							trace->signal_drawing_information,trace->user_interface);
-					}
-					draw_potential_time_marker(potential_time,buffer,
-						highlight_device->channel,signal_index,EDIT_AREA_DETAIL,
-						trace_area_3->edit.first_data,trace_area_3->edit.last_data,
-						trace_area_3->axes_left,trace_area_3->axes_top,
-						trace_area_3->axes_width,trace_area_3->axes_height,
-						XtWindow(trace_area_3->drawing_area),
-						trace_area_3->drawing->pixel_map,trace->signal_drawing_information,
-						trace->user_interface);
-					return_code=1;
+					return_code=trace_update_pot_time_beat_event(trace,potential_time,
+						previous_potential_time,update_flags);
 				}
 				else
 				{
-					display_message(ERROR_MESSAGE,
-						"trace_draw_potential_time.  Invalid potential_time");
-					return_code=0;
-				}
+					return_code=1;
+				}			
 			} break;
 			default:
 			{
@@ -13761,7 +13736,6 @@ Updates the potential time marker in the <trace> window.
 		return_code=0;
 	}
 	LEAVE;
-
 	return (return_code);
 } /* trace_update_potential_time */
 
@@ -13769,7 +13743,7 @@ int trace_update_datum(struct Trace_window *trace,int datum,int previous_datum,
 	int event_number,int potential_time,
 	enum Trace_window_update_flags *update_flags)
 /*******************************************************************************
-LAST MODIFIED : 4 August 1999
+LAST MODIFIED : 17 January 2002
 
 DESCRIPTION :
 Updates the datum marker in the <trace> window.
@@ -13779,10 +13753,10 @@ Updates the datum marker in the <trace> window.
 	char delay_time_string[20];
 	Display *display;
 	int ascent,descent,direction,end_analysis_interval,length,return_code, 
-		start_analysis_interval,*times,x_string,y_string;
+		start_analysis_interval,*times,update_trace_area_3,x_string,y_string;
 	float frequency;
 	GC event_graphics_context, event_graphics_context_text;
-	struct Device *highlight_device;
+	struct Device *device,*highlight_device;
 	struct Event *event;
 	struct Signal_buffer *buffer;
 	struct Signal_drawing_information *signal_drawing_information;
@@ -13804,6 +13778,15 @@ Updates the datum marker in the <trace> window.
 					(buffer=get_Device_signal_buffer(highlight_device))&&
 					(times=buffer->times))
 				{
+
+					update_trace_area_3=0;
+					/*if we're not in beat averaging mode with toggle on, update trace_area_3*/
+					if(!((*trace->analysis_mode==BEAT_AVERAGING)&&
+						(True==XmToggleButtonGadgetGetState((trace->area_3).
+						beat_averaging.beat_averaging_toggle))))
+					{
+						update_trace_area_3=1;
+					}				
 					display=trace->user_interface->display;
 					start_analysis_interval=buffer->start;
 					end_analysis_interval=buffer->end;
@@ -13840,10 +13823,17 @@ Updates the datum marker in the <trace> window.
 						trace_area_1->drawing->pixel_map,
 						signal_drawing_information,
 						trace->user_interface);
-
-					if (highlight_device->signal)
+					if((BEAT_AVERAGING==*trace->analysis_mode)&&trace->valid_processing)
 					{
-						event=highlight_device->signal->first_event;
+						device=trace->processed_device;						
+					}
+					else
+					{
+						device=highlight_device;
+					}
+					if (device->signal)
+					{
+						event=device->signal->first_event;
 						while (event&&(event->number<event_number))
 						{
 							event=event->next;
@@ -13852,7 +13842,7 @@ Updates the datum marker in the <trace> window.
 					else
 					{
 						event=(struct Event *)NULL;
-					}
+					}					
 					if (event&&(event_number==event->number))
 					{
 						switch (event->status)
@@ -13901,16 +13891,87 @@ Updates the datum marker in the <trace> window.
 							} break;
 						}
 					}
+					if(update_trace_area_3)
+					{
+						trace_area_3= &(trace->area_3);
+						if(*update_flags & TRACE_3_NO_DATUM_ERASE)
+						{
+							/* Clear just that flag */
+							*update_flags &= ~TRACE_3_NO_DATUM_ERASE;
+						}
+						else
+						{
+							draw_datum_marker(previous_datum,EDIT_AREA_DETAIL,
+								trace_area_3->edit.first_data,
+								trace_area_3->edit.last_data,
+								trace_area_3->axes_left,
+								trace_area_3->axes_top,
+								trace_area_3->axes_width,
+								trace_area_3->axes_height,
+								XtWindow(trace_area_3->drawing_area),
+								trace_area_3->drawing->pixel_map,
+								signal_drawing_information,
+								trace->user_interface);
 
-					trace_area_3= &(trace->area_3);
-					if(*update_flags & TRACE_3_NO_DATUM_ERASE)
-					{
-						/* Clear just that flag */
-						*update_flags &= ~TRACE_3_NO_DATUM_ERASE;
+							/* clear the delay time */
+							if (event)
+							{
+								sprintf(delay_time_string,"%d",
+									(int)((float)(times[event->time]-
+										times[previous_datum])*1000./frequency));
+								length=strlen(delay_time_string);
+								XTextExtents(font,delay_time_string,
+									length,&direction,&ascent,&descent,
+									&bounds);
+								x_string=SCALE_X(event->time,
+									trace_area_3->edit.first_data,
+									trace_area_3->axes_left,
+									SCALE_FACTOR(trace_area_3->edit.
+										last_data-trace_area_3->edit.first_data,
+										(trace_area_3->axes_width)-1))+
+									(bounds.lbearing-bounds.rbearing+1)/2;
+								if (x_string+bounds.rbearing>=
+									trace_area_3->axes_left+
+									trace_area_3->axes_width)
+								{
+									x_string=trace_area_3->axes_left+
+										trace_area_3->axes_width-
+										bounds.rbearing;
+								}
+								if (x_string-bounds.lbearing<
+									trace_area_3->axes_left)
+								{
+									x_string=trace_area_3->axes_left+
+										bounds.lbearing;
+								}
+								y_string=trace_area_3->axes_top-descent;
+								XDrawString(display,
+									trace_area_3->drawing->pixel_map,
+									event_graphics_context_text,x_string,
+									y_string,delay_time_string,length);
+								XDrawString(display,
+									XtWindow(trace_area_3->drawing_area),
+									event_graphics_context,x_string,
+									y_string,delay_time_string,length);
+							}
+						}
 					}
-					else
+					/* draw the new markers */
+					draw_device_markers(highlight_device,
+						start_analysis_interval,
+						end_analysis_interval,datum,1,
+						potential_time,0,ENLARGE_AREA_DETAIL,
+						event_number,trace_area_1->axes_left,
+						trace_area_1->axes_top,
+						trace_area_1->axes_width,
+						trace_area_1->axes_height,
+						XtWindow(trace_area_1->drawing_area),
+						trace_area_1->drawing->pixel_map,
+						signal_drawing_information,
+						trace->user_interface);
+					if(update_trace_area_3)
 					{
-						draw_datum_marker(previous_datum,EDIT_AREA_DETAIL,
+						draw_datum_marker(datum,EDIT_AREA_DETAIL,
 							trace_area_3->edit.first_data,
 							trace_area_3->edit.last_data,
 							trace_area_3->axes_left,
@@ -13921,13 +13982,13 @@ Updates the datum marker in the <trace> window.
 							trace_area_3->drawing->pixel_map,
 							signal_drawing_information,
 							trace->user_interface);
-
-						/* clear the delay time */
+						/* write delay time */
 						if (event)
 						{
+							/* draw the new delay time */
 							sprintf(delay_time_string,"%d",
 								(int)((float)(times[event->time]-
-									times[previous_datum])*1000./frequency));
+									times[datum])*1000./frequency));
 							length=strlen(delay_time_string);
 							XTextExtents(font,delay_time_string,
 								length,&direction,&ascent,&descent,
@@ -13964,75 +14025,6 @@ Updates the datum marker in the <trace> window.
 								y_string,delay_time_string,length);
 						}
 					}
-
-					/* draw the new markers */
-					draw_device_markers(highlight_device,
-						start_analysis_interval,
-						end_analysis_interval,datum,1,
-						potential_time,0,ENLARGE_AREA_DETAIL,
-						event_number,trace_area_1->axes_left,
-						trace_area_1->axes_top,
-						trace_area_1->axes_width,
-						trace_area_1->axes_height,
-						XtWindow(trace_area_1->drawing_area),
-						trace_area_1->drawing->pixel_map,
-						signal_drawing_information,
-						trace->user_interface);
-
-					draw_datum_marker(datum,EDIT_AREA_DETAIL,
-						trace_area_3->edit.first_data,
-						trace_area_3->edit.last_data,
-						trace_area_3->axes_left,
-						trace_area_3->axes_top,
-						trace_area_3->axes_width,
-						trace_area_3->axes_height,
-						XtWindow(trace_area_3->drawing_area),
-						trace_area_3->drawing->pixel_map,
-						signal_drawing_information,
-						trace->user_interface);
-					/* write delay time */
-					if (event)
-					{
-						/* draw the new delay time */
-						sprintf(delay_time_string,"%d",
-							(int)((float)(times[event->time]-
-								times[datum])*1000./frequency));
-						length=strlen(delay_time_string);
-						XTextExtents(font,delay_time_string,
-							length,&direction,&ascent,&descent,
-							&bounds);
-						x_string=SCALE_X(event->time,
-							trace_area_3->edit.first_data,
-							trace_area_3->axes_left,
-							SCALE_FACTOR(trace_area_3->edit.
-								last_data-trace_area_3->edit.first_data,
-								(trace_area_3->axes_width)-1))+
-							(bounds.lbearing-bounds.rbearing+1)/2;
-						if (x_string+bounds.rbearing>=
-							trace_area_3->axes_left+
-							trace_area_3->axes_width)
-						{
-							x_string=trace_area_3->axes_left+
-								trace_area_3->axes_width-
-								bounds.rbearing;
-						}
-						if (x_string-bounds.lbearing<
-							trace_area_3->axes_left)
-						{
-							x_string=trace_area_3->axes_left+
-								bounds.lbearing;
-						}
-						y_string=trace_area_3->axes_top-descent;
-						XDrawString(display,
-							trace_area_3->drawing->pixel_map,
-							event_graphics_context_text,x_string,
-							y_string,delay_time_string,length);
-						XDrawString(display,
-							XtWindow(trace_area_3->drawing_area),
-							event_graphics_context,x_string,
-							y_string,delay_time_string,length);
-					}
-
 					return_code=1;
 				}
 				else

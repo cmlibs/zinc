@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : analysis_window.c
 
-LAST MODIFIED : 11 December 2001
+LAST MODIFIED : 18 January 2002
 
 DESCRIPTION :
 ===========================================================================*/
@@ -3801,17 +3801,24 @@ int analysis_window_update_interval_area_time(struct Analysis_window *analysis,
 	int potential_time, int previous_potential_time,
 	enum Analysis_window_update_flags *update_flags)
 /*******************************************************************************
-LAST MODIFIED : 4 August 1999
+LAST MODIFIED : 18 January 2002
 
 DESCRIPTION :
 Shifts the bar in the interval area part of the analysis window to represent
 the new potential time.
+
+No longer check for previous_potential_time!=potential_time, as this
+has already been done before calling (in select_analysis_interval which calls 
+Time_keeper_request_new_time which calls analysis_potential_time_update_callback
+which calls this). This check sometimes caused problems, as the checks here and 
+in select_analysis_interval were called on differetly scaled potential_times, 
+so there could be inconsistencies.
 ==============================================================================*/
 {
 	char number_string[20];
 	Display *display;
 	int ascent, axes_bottom, axes_left, axes_right, axes_top, descent,
-		 direction, length, return_code, scaled_potential_time,
+		direction, length, return_code, scaled_potential_time,
 		scaled_previous_potential_time,*times, x_string, y_string;
 	float frequency, x_scale;
 	GC potential_time_colour,potential_time_colour_text;
@@ -3830,92 +3837,46 @@ the new potential time.
 		display=analysis->user_interface->display;
 		frequency=buffer->frequency;
 		font=analysis->signal_drawing_information->font;
-		if (potential_time!=previous_potential_time)
+		interval= &(analysis->interval);
+		axes_left=interval->axes_left;
+		axes_right=axes_left+(interval->axes_width)-1;
+		axes_top=interval->axes_top;
+		axes_bottom=axes_top+(interval->axes_height)-1;
+		x_scale=
+			SCALE_FACTOR((buffer->number_of_samples)-1,axes_right-axes_left);
+		pixel_map=interval->drawing->pixel_map;
+		potential_time_colour=(analysis->signal_drawing_information->
+			graphics_context).potential_time_colour;
+		potential_time_colour_text=(analysis->signal_drawing_information->
+			graphics_context).potential_time_colour_text;
+		working_window=XtWindow(interval->drawing_area);
+		scaled_previous_potential_time=SCALE_X(previous_potential_time,0,
+			axes_left,x_scale);
+		scaled_potential_time=SCALE_X(potential_time,0,axes_left,x_scale);
+		if (*update_flags & ANALYSIS_INTERVAL_NO_POTENTIAL_ERASE)
 		{
-			interval= &(analysis->interval);
-			axes_left=interval->axes_left;
-			axes_right=axes_left+(interval->axes_width)-1;
-			axes_top=interval->axes_top;
-			axes_bottom=axes_top+(interval->axes_height)-1;
-			x_scale=
-				SCALE_FACTOR((buffer->number_of_samples)-1,axes_right-axes_left);
-			pixel_map=interval->drawing->pixel_map;
-			potential_time_colour=(analysis->signal_drawing_information->
-				graphics_context).potential_time_colour;
-			potential_time_colour_text=(analysis->signal_drawing_information->
-				graphics_context).potential_time_colour_text;
-			working_window=XtWindow(interval->drawing_area);
-			scaled_previous_potential_time=SCALE_X(previous_potential_time,0,
-				axes_left,x_scale);
-			scaled_potential_time=SCALE_X(potential_time,0,axes_left,x_scale);
-			if (*update_flags & ANALYSIS_INTERVAL_NO_POTENTIAL_ERASE)
-			{
-				/* Clear just that flag */
-				*update_flags &= ~ANALYSIS_INTERVAL_NO_POTENTIAL_ERASE;
-
-				/* draw the new marker */
-				XDrawLine(display,pixel_map,
-					potential_time_colour,
-					scaled_potential_time,axes_top,scaled_potential_time,
-					axes_bottom);
-				XDrawLine(display,working_window,
-					potential_time_colour,
-					scaled_potential_time,axes_top,scaled_potential_time,
-					axes_bottom);
-			}
-			else
-			{
-				/* clear the potential time */
-				sprintf(number_string,"%d",
-					(int)((float)(times[previous_potential_time])*1000./
-						frequency));
-				length=strlen(number_string);
-				XTextExtents(font,number_string,length,&direction,&ascent,
-					&descent,&bounds);
-				x_string=scaled_previous_potential_time+
-					(bounds.lbearing-bounds.rbearing+1)/2;
-				if (x_string+bounds.rbearing>=axes_right)
-				{
-					x_string=axes_right-bounds.rbearing;
-				}
-				if (x_string-bounds.lbearing<axes_left)
-				{
-					x_string=axes_left+bounds.lbearing;
-				}
-				y_string=axes_top-descent;
-				XDrawString(display,pixel_map,potential_time_colour_text,
-					x_string,y_string,number_string,length);
-				XDrawString(display,working_window,potential_time_colour,
-					x_string,y_string,number_string,length);
-				if (scaled_potential_time!=scaled_previous_potential_time)
-				{
-					/* clear the old marker */
-					XDrawLine(display,pixel_map,
-						potential_time_colour,
-						scaled_previous_potential_time,axes_top,
-						scaled_previous_potential_time,axes_bottom);
-					XDrawLine(display,working_window,
-						potential_time_colour,
-						scaled_previous_potential_time,axes_top,
-						scaled_previous_potential_time,axes_bottom);
-					/* draw the new marker */
-					XDrawLine(display,pixel_map,
-						potential_time_colour,
-						scaled_potential_time,axes_top,scaled_potential_time,
-						axes_bottom);
-					XDrawLine(display,working_window,
-						potential_time_colour,
-						scaled_potential_time,axes_top,scaled_potential_time,
-						axes_bottom);
-				}
-			}
-			/* write the potential time */
-			sprintf(number_string,"%d",(int)((float)(times[potential_time])*
-				1000./frequency));
+			/* Clear just that flag */
+			*update_flags &= ~ANALYSIS_INTERVAL_NO_POTENTIAL_ERASE;
+			/* draw the new marker */
+			XDrawLine(display,pixel_map,
+				potential_time_colour,
+				scaled_potential_time,axes_top,scaled_potential_time,
+				axes_bottom);
+			XDrawLine(display,working_window,
+				potential_time_colour,
+				scaled_potential_time,axes_top,scaled_potential_time,
+				axes_bottom);
+		}
+		else
+		{
+			/* clear the potential time */
+			sprintf(number_string,"%d",
+				(int)((float)(times[previous_potential_time])*1000./
+					frequency));
 			length=strlen(number_string);
-			XTextExtents(font,number_string,length,&direction,
-				&ascent,&descent,&bounds);
-			x_string=scaled_potential_time+
+			XTextExtents(font,number_string,length,&direction,&ascent,
+				&descent,&bounds);
+			x_string=scaled_previous_potential_time+
 				(bounds.lbearing-bounds.rbearing+1)/2;
 			if (x_string+bounds.rbearing>=axes_right)
 			{
@@ -3926,19 +3887,61 @@ the new potential time.
 				x_string=axes_left+bounds.lbearing;
 			}
 			y_string=axes_top-descent;
-			XDrawString(display,pixel_map,
-				potential_time_colour_text,
+			XDrawString(display,pixel_map,potential_time_colour_text,
 				x_string,y_string,number_string,length);
-			XDrawString(display,working_window,
-				potential_time_colour,
+			XDrawString(display,working_window,potential_time_colour,
 				x_string,y_string,number_string,length);
+			if (scaled_potential_time!=scaled_previous_potential_time)
+			{
+				/* clear the old marker */
+				XDrawLine(display,pixel_map,
+					potential_time_colour,
+					scaled_previous_potential_time,axes_top,
+					scaled_previous_potential_time,axes_bottom);
+				XDrawLine(display,working_window,
+					potential_time_colour,
+					scaled_previous_potential_time,axes_top,
+					scaled_previous_potential_time,axes_bottom);
+				/* draw the new marker */
+				XDrawLine(display,pixel_map,
+					potential_time_colour,
+					scaled_potential_time,axes_top,scaled_potential_time,
+					axes_bottom);
+				XDrawLine(display,working_window,
+					potential_time_colour,
+					scaled_potential_time,axes_top,scaled_potential_time,
+					axes_bottom);
+			}
 		}
+		/* write the potential time */
+		sprintf(number_string,"%d",(int)((float)(times[potential_time])*
+			1000./frequency));
+		length=strlen(number_string);
+		XTextExtents(font,number_string,length,&direction,
+			&ascent,&descent,&bounds);
+		x_string=scaled_potential_time+
+			(bounds.lbearing-bounds.rbearing+1)/2;
+		if (x_string+bounds.rbearing>=axes_right)
+		{
+			x_string=axes_right-bounds.rbearing;
+		}
+		if (x_string-bounds.lbearing<axes_left)
+		{
+			x_string=axes_left+bounds.lbearing;
+		}
+		y_string=axes_top-descent;
+		XDrawString(display,pixel_map,
+			potential_time_colour_text,
+			x_string,y_string,number_string,length);
+		XDrawString(display,working_window,
+			potential_time_colour,
+			x_string,y_string,number_string,length);		
 		return_code=1;
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-"analysis_window_update_interval_area_time.  Missing analysis_window_structure");
+			"analysis_window_update_interval_area_time.  Missing analysis_window_structure");
 		return_code = 0;
 	}
 	LEAVE;

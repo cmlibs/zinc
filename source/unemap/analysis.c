@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : analysis.c
 
-LAST MODIFIED : 23 November 2001
+LAST MODIFIED : 18 Januay 2002 
 
 DESCRIPTION :
 ==============================================================================*/
@@ -1678,7 +1678,7 @@ DESCRIPTION :
 	ENTER(draw_potential_time_marker);
 	if (user_interface&&signal_drawing_information)
 	{
-		if ((time>=first_data)&&(time<last_data))
+		if ((time>=first_data)&&(time<=last_data))
 		{
 			display=user_interface->display;
 #if defined (NO_ALIGNMENT)
@@ -1709,7 +1709,7 @@ DESCRIPTION :
 						length=strlen(number_string);
 #if defined (NO_ALIGNMENT)
 						XTextExtents(font,number_string,length,&direction,&ascent,&descent,
-							&bounds);
+							&bounds);						
 						x_string=x_marker+(bounds.lbearing-bounds.rbearing+1)/2;
 						if (x_string+bounds.rbearing>=axes_left+axes_width)
 						{
