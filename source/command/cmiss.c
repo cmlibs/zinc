@@ -17618,7 +17618,7 @@ Parameter <help_mode> should be NULL when calling this function.
 			{
 				if (!state->current_token||
 					(strcmp(PARSER_HELP_STRING,state->current_token)&&
-						strcmp(PARSER_RECURSIVE_HELP_STRING,state->current_token)))
+					strcmp(PARSER_RECURSIVE_HELP_STRING,state->current_token)))
 				{
 					/* read element group */
 					(option_table[0]).to_be_modified= (void *)(&element_group);
@@ -17773,8 +17773,9 @@ Executes a GFX MODIFY GRAPHICS_OBJECT command.
 	if (state&&(command_data=(struct Cmiss_command_data *)command_data_void))
 	{
 		graphics_object=(struct GT_object *)NULL;
-		if (strcmp(PARSER_HELP_STRING,state->current_token)&&
-					strcmp(PARSER_RECURSIVE_HELP_STRING,state->current_token))
+		if (!state->current_token||
+			(strcmp(PARSER_HELP_STRING,state->current_token)&&
+			strcmp(PARSER_RECURSIVE_HELP_STRING,state->current_token)))
 		{
 			if(graphics_object=FIND_BY_IDENTIFIER_IN_LIST(GT_object,name)
 				(state->current_token,command_data->graphics_object_list))
@@ -17822,8 +17823,15 @@ Executes a GFX MODIFY GRAPHICS_OBJECT command.
 			}
 			else
 			{
-				display_message(ERROR_MESSAGE,"Could not find object named '%s'",
-					state->current_token);
+				if (state->current_token)
+				{
+					display_message(ERROR_MESSAGE,"Could not find object named '%s'",
+						state->current_token);
+				}
+				else
+				{
+					display_message(ERROR_MESSAGE,"Missing graphics object name");
+				}
 				display_parse_state_location(state);
 				return_code=0;
 			}
