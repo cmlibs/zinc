@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : cmgui.c
 
-LAST MODIFIED : 30 November 1999
+LAST MODIFIED : 2 February 2000
 
 DESCRIPTION :
 ???DB.  Prototype main program for an application that uses the "cmgui tools".
@@ -41,6 +41,7 @@ DESCRIPTION :
 #include "graphics/light.h"
 #include "graphics/light_model.h"
 #include "graphics/material.h"
+#include "graphics/movie_graphics.h"
 #include "graphics/scene.h"
 #include "graphics/spectrum.h"
 #include "graphics/volume_texture.h"
@@ -365,7 +366,7 @@ int WINAPI WinMain(HINSTANCE current_instance,HINSTANCE previous_instance,
 	/*???DB. Win32 SDK says that don't have to call it WinMain */
 #endif /* defined (WINDOWS) */
 /*******************************************************************************
-LAST MODIFIED : 30 November 1999
+LAST MODIFIED : 2 February 2000
 
 DESCRIPTION :
 Main program for the CMISS Graphical User Interface
@@ -1024,7 +1025,7 @@ Main program for the CMISS Graphical User Interface
 	command_data.command_window=(struct Command_window *)NULL;
 #endif /* !defined (WINDOWS_DEV_FLAG) */
 #if defined (SGI_MOVIE_FILE)
-	command_data.movie=(struct Movie_graphics *)NULL;
+	command_data.movie_graphics_manager=CREATE(MANAGER(Movie_graphics))();
 #endif /* defined (SGI_MOVIE_FILE) */
 	/* parse the command line */
 		/*???DB.  Is this the right place for this ? */

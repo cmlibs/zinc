@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : emoter_dialog.c
 
-LAST MODIFIED : 17 November 1999
+LAST MODIFIED : 3 February 2000
 
 DESCRIPTION :
 This module creates a emoter_slider input device.  An emoter slider is
@@ -3795,7 +3795,7 @@ DESCRIPTION :
 static int emoter_create_movie(struct Emoter_dialog *emoter_dialog,
 	char *filename)
 /*******************************************************************************
-LAST MODIFIED : 10 September 1999
+LAST MODIFIED : 3 February 2000
 
 DESCRIPTION :
 ==============================================================================*/
@@ -3814,7 +3814,7 @@ DESCRIPTION :
 			(MANAGER_CONDITIONAL_FUNCTION(Graphics_window) *)NULL,
 			(void *)NULL,emoter_dialog->shared->graphics_window_manager))
 		{
-			if ((emoter_dialog->movie=CREATE(Movie_graphics)(filename, 
+			if ((emoter_dialog->movie=CREATE(Movie_graphics)("emoter_movie",filename, 
 				X3D_MOVIE_CREATE_FILE_RLE24_SGI_MOVIE3))&&
 				(Movie_graphics_set_Graphics_window(emoter_dialog->movie,
 					graphics_window)))

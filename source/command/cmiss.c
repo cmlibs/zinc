@@ -6698,7 +6698,7 @@ Executes a GFX CREATE SURFACES command.
 int gfx_modify_Texture(struct Parse_state *state,void *texture_void,
 	void *command_data_void)
 /*******************************************************************************
-LAST MODIFIED : 27 September 1999
+LAST MODIFIED : 3 February 2000
 
 DESCRIPTION :
 Modifies the properties of a texture.
@@ -6733,7 +6733,7 @@ Modifies the properties of a texture.
 			{"height",NULL,NULL,set_float_positive},
 			{"image",NULL,NULL,set_Texture_image},
 			{NULL,NULL,NULL,NULL},
-			{"movie",NULL,NULL,set_char_flag},
+			{"movie",NULL,NULL,set_Movie_graphics},
 			{"source_field",NULL,NULL,set_Computed_field_conditional},
 			{"source_height_texels",NULL,NULL,set_int_positive},
 			{"source_spectrum",NULL,NULL,set_Spectrum},
@@ -6748,7 +6748,7 @@ Modifies the properties of a texture.
 			{"repeat_wrap",NULL,NULL,set_Texture_wrap_repeat},
 			{NULL,NULL,NULL,NULL}
 		};
-	char *current_token, movie;
+	char *current_token;
 	double texture_distortion[3];
 	float alpha,distortion_centre_x,distortion_centre_y,distortion_factor_k1,
 		height,width;
@@ -6756,6 +6756,7 @@ Modifies the properties of a texture.
 	struct Cmiss_command_data *command_data;
 	struct Colour colour;
 	struct Computed_field *field, *texture_coordinates_field;
+	struct Movie_graphics *movie,*old_movie;
 	struct Set_Computed_field_conditional_data set_field_data,
 		set_texture_coordinates_field_data;
 	struct Spectrum *spectrum;
@@ -6763,6 +6764,7 @@ Modifies the properties of a texture.
 	/* do not make the following static as 'set' flag must start at 0 */
 	struct Set_vector_with_help_data texture_distortion_data=
 		{3," DISTORTION_CENTRE_X DISTORTION_CENTRE_Y DISTORTION_FACTOR_K1",0};
+	struct X3d_movie *x3d_movie;
 
 	ENTER(gfx_modify_Texture);
 	if (state)
@@ -6859,6 +6861,25 @@ Modifies the properties of a texture.
 				}
 				if (process)
 				{
+					if (x3d_movie=Texture_get_movie(texture_to_be_modified_copy))
+					{
+						if (movie=FIRST_OBJECT_IN_MANAGER_THAT(Movie_graphics)(
+							Movie_graphics_has_X3d_movie,(void *)x3d_movie,
+							command_data->movie_graphics_manager))
+						{
+							ACCESS(Movie_graphics)(movie);
+						}
+						else
+						{
+							display_message(ERROR_MESSAGE,
+								"gfx_modify_Texture.  Missing Movie_graphics for X3d_movie");
+						}
+					}
+					else
+					{
+						movie = (struct Movie_graphics *)NULL;
+					}
+					old_movie=movie;
 					Texture_get_combine_alpha(texture_to_be_modified_copy, &alpha);
 					Texture_get_combine_colour(texture_to_be_modified_copy, &colour);
 					Texture_get_physical_size(texture_to_be_modified_copy,&width,&height);
@@ -6910,6 +6931,7 @@ Modifies the properties of a texture.
 					i++;
 					/* movie */
 					(option_table[i]).to_be_modified=&movie;
+					(option_table[i]).user_data=command_data->movie_graphics_manager;
 					i++;
 					/* source_field */
 					set_field_data.computed_field_package=
@@ -6985,13 +7007,13 @@ Modifies the properties of a texture.
 						{
 							texture_to_be_modified=texture_to_be_modified_copy;
 						}
-						if ( movie )
+						if ( movie != old_movie )
 						{
 #if defined (SGI_MOVIE_FILE)
 							/* Movie is outside manager copy so that is updates
 								the correct texture based on movie events */
 							Texture_set_movie(texture_to_be_modified,
-								Movie_graphics_get_X3d_movie(command_data->movie),
+								Movie_graphics_get_X3d_movie(movie),
 								command_data->user_interface, "movie");
 #else /* defined (SGI_MOVIE_FILE) */
 							display_message(ERROR_MESSAGE,
@@ -7011,6 +7033,22 @@ Modifies the properties of a texture.
 						}
 #endif
 #endif /* defined (MS_22AUG96) */
+					}
+					if (movie)
+					{
+						DEACCESS(Movie_graphics)(&movie);
+					}
+					if (spectrum)
+					{
+						DEACCESS(Spectrum)(&spectrum);
+					}
+					if (field)
+					{
+						DEACCESS(Computed_field)(&field);
+					}
+					if (texture_coordinates_field)
+					{
+						DEACCESS(Computed_field)(&texture_coordinates_field);
 					}
 				}
 			}
@@ -13687,6 +13725,74 @@ Executes a GFX LIST VTEXTURE.
 } /* gfx_list_volume_texture */
 #endif /* !defined (WINDOWS_DEV_FLAG) */
 
+static int gfx_list_movie_graphics(struct Parse_state *state,
+	void *dummy_to_be_modified,void *movie_graphics_manager_void)
+/*******************************************************************************
+LAST MODIFIED : 3 February 2000
+
+DESCRIPTION :
+Executes a GFX LIST MOVIE.
+==============================================================================*/
+{
+	char *current_token;
+	int return_code;
+	struct Movie_graphics *movie;
+	struct MANAGER(Movie_graphics) *movie_graphics_manager;
+
+	ENTER(gfx_list_movie_graphics);
+	USE_PARAMETER(dummy_to_be_modified);
+	if (state)
+	{
+		if (movie_graphics_manager=
+			(struct MANAGER(Movie_graphics) *)movie_graphics_manager_void)
+		{
+			if (current_token=state->current_token)
+			{
+				if (strcmp(PARSER_HELP_STRING,current_token)&&
+					strcmp(PARSER_RECURSIVE_HELP_STRING,current_token))
+				{
+					if (movie=FIND_BY_IDENTIFIER_IN_MANAGER(Movie_graphics,name)(
+						current_token,movie_graphics_manager))
+					{
+						return_code=list_Movie_graphics(movie,(void *)NULL);
+					}
+					else
+					{
+						display_message(ERROR_MESSAGE,"Unknown volume movie: %s",
+							current_token);
+						return_code=0;
+					}
+				}
+				else
+				{
+					display_message(INFORMATION_MESSAGE," MOVIE_NAME");
+					return_code=1;
+				}
+			}
+			else
+			{
+				return_code=FOR_EACH_OBJECT_IN_MANAGER(Movie_graphics)(
+					list_Movie_graphics,(void *)NULL,movie_graphics_manager);
+			}
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,
+				"gfx_list_movie_graphics.  Missing movie_graphics_manager_void");
+			return_code=0;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"gfx_list_movie_graphics.  Missing state");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* gfx_list_movie_graphics */
+
 #if defined (OLD_CODE)
 #if !defined (WINDOWS_DEV_FLAG)
 static int gfx_list_graphics_window(struct Parse_state *state,
@@ -13878,6 +13984,7 @@ Executes a GFX LIST command.
 		{"light",NULL,NULL,gfx_list_light},
 		{"lmodel",NULL,NULL,gfx_list_light_model},
 		{"material",NULL,NULL,gfx_list_graphical_material},
+		{"movie",NULL,NULL,gfx_list_movie_graphics},
 		{"ngroup",NULL,NULL,gfx_list_group_FE_node},
 		{"node",NULL,NULL,gfx_list_FE_node},
 		{"slider",NULL,NULL,list_node_group_slider},
@@ -13943,6 +14050,9 @@ Executes a GFX LIST command.
 				i++;
 				/* material */
 				(option_table[i]).user_data=command_data->graphical_material_manager;
+				i++;
+				/* movie */
+				(option_table[i]).user_data=command_data->movie_graphics_manager;
 				i++;
 				/* ngroup */
 				(option_table[i]).user_data=command_data->node_group_manager;
@@ -15036,47 +15146,21 @@ Executes a GFX MODIFY command.
 int gfx_movie(struct Parse_state *state,void *dummy_to_be_modified,
 	void *command_data_void)
 /*******************************************************************************
-LAST MODIFIED : 16 June 1999
+LAST MODIFIED : 2 February 2000
 
 DESCRIPTION :
 ???RC Movie should ACCESS the graphics window so that it cannot be closed while
 movie is being created.
 ==============================================================================*/
 {
+	static char *default_movie_name="default";
 	char add_frame,avi,cinepak_avi,cinepak_quicktime,*create_file_name,end,
-		every_frame,force_onscreen,indeo_avi,indeo_quicktime,loop,
+		every_frame,force_onscreen,indeo_avi,indeo_quicktime,loop,*movie_name,
 		mvc1_sgi_movie3,once,*open_file_name,play,quicktime,rle24_sgi_movie3,
 		skip_frames,sgi_movie3,stop;
 	double speed;
 	int height, return_code, width;
-	static struct Modifier_entry option_table[]=
-	{
-		{"add_frame",NULL,NULL,set_char_flag},
-		{"avi",NULL,NULL,set_char_flag},
-		{"cinepak_avi",NULL,NULL,set_char_flag},
-		{"cinepak_quicktime",NULL,NULL,set_char_flag},
-		{"create",NULL,(void *)1,set_name},
-		{"end",NULL,NULL,set_char_flag},
-		{"every_frame",NULL,NULL,set_char_flag},
-		{"force_onscreen",NULL,NULL,set_char_flag},
-		{"height",NULL,NULL,set_int_non_negative},
-		{"indeo_avi",NULL,NULL,set_char_flag},
-		{"indeo_quicktime",NULL,NULL,set_char_flag},
-		{"loop",NULL,NULL,set_char_flag},
-		{"mvc1_sgi_movie3",NULL,NULL,set_char_flag},
-		{"once",NULL,NULL,set_char_flag},
-		{"open",NULL,(void *)0,set_name},
-		{"play",NULL,NULL,set_char_flag},
-		{"quicktime",NULL,NULL,set_char_flag},
-		{"rle24_sgi_movie3",NULL,NULL,set_char_flag},
-		{"sgi_movie3",NULL,NULL,set_char_flag},
-		{"skip_frames",NULL,NULL,set_char_flag},
-		{"speed",NULL,NULL,set_double},
-		{"stop",NULL,NULL,set_char_flag},
-		{"width",NULL,NULL,set_int_non_negative},
-		{"window",NULL,NULL,set_Graphics_window},
-		{NULL,NULL,NULL,NULL}
-	};
+	struct Option_table *option_table;
 	struct Cmiss_command_data *command_data;
 	struct Movie_graphics *movie;
 	struct X3d_movie *x3d_movie;
@@ -15090,6 +15174,14 @@ movie is being created.
 		{
 #if defined (SGI_MOVIE_FILE)
 			/* initialise defaults */
+			if (ALLOCATE(movie_name,char,strlen(default_movie_name)+1))
+			{
+				strcpy(movie_name,default_movie_name);
+			}
+			else
+			{
+				movie_name=(char *)NULL;
+			}
 			add_frame = 0;
 			avi = 0;
 			cinepak_avi = 0;
@@ -15115,36 +15207,92 @@ movie is being created.
 			width = 0;
 			graphics_window=(struct Graphics_window *)NULL;
 
-			(option_table[0]).to_be_modified= &add_frame;
-			(option_table[1]).to_be_modified= &avi;
-			(option_table[2]).to_be_modified= &cinepak_avi;
-			(option_table[3]).to_be_modified= &cinepak_quicktime;
-			(option_table[4]).to_be_modified= &create_file_name;
-			(option_table[5]).to_be_modified= &end;
-			(option_table[6]).to_be_modified= &every_frame;
-			(option_table[7]).to_be_modified= &force_onscreen;
-			(option_table[8]).to_be_modified= &height;
-			(option_table[9]).to_be_modified= &indeo_avi;
-			(option_table[10]).to_be_modified= &indeo_quicktime;
-			(option_table[11]).to_be_modified= &loop;
-			(option_table[12]).to_be_modified= &mvc1_sgi_movie3;
-			(option_table[13]).to_be_modified= &once;
-			(option_table[14]).to_be_modified= &open_file_name;
-			(option_table[15]).to_be_modified= &play;
-			(option_table[16]).to_be_modified= &quicktime;
-			(option_table[17]).to_be_modified= &rle24_sgi_movie3;
-			(option_table[18]).to_be_modified= &sgi_movie3;
-			(option_table[19]).to_be_modified= &skip_frames;
-			(option_table[20]).to_be_modified= &speed;
-			(option_table[21]).to_be_modified= &stop;
-			(option_table[22]).to_be_modified= &width;
-			(option_table[23]).to_be_modified= &graphics_window;
-			(option_table[23]).user_data=command_data->graphics_window_manager;
-			return_code=process_multiple_options(state,option_table);
+			option_table=CREATE(Option_table)();
+			/* add_frame */
+			Option_table_add_entry(option_table,"add_frame",&add_frame,
+				NULL,set_char_flag);
+			/* avi */
+			Option_table_add_entry(option_table,"avi",&avi,
+				NULL,set_char_flag);
+			/* cinepak_avi */
+			Option_table_add_entry(option_table,"cinepak_avi",&cinepak_avi,
+				NULL,set_char_flag);
+			/* cinepak_quicktime */
+			Option_table_add_entry(option_table,"cinepak_quicktime",
+				&cinepak_quicktime,NULL,set_char_flag);
+			/* create */
+			Option_table_add_entry(option_table,"create",&create_file_name,
+				(void *)1,set_name);
+			/* end */
+			Option_table_add_entry(option_table,"end",&end,
+				NULL,set_char_flag);
+			/* every_frame */
+			Option_table_add_entry(option_table,"every_frame",&every_frame,
+				NULL,set_char_flag);
+			/* force_onscreen */
+			Option_table_add_entry(option_table,"force_onscreen",&force_onscreen,
+				NULL,set_char_flag);
+			/* height */
+			Option_table_add_entry(option_table,"height",&height,
+				NULL,set_int_non_negative);
+			/* indeo_avi */
+			Option_table_add_entry(option_table,"indeo_avi",&indeo_avi,
+				NULL,set_char_flag);
+			/* indeo_quicktime */
+			Option_table_add_entry(option_table,"indeo_quicktime",&indeo_quicktime,
+				NULL,set_char_flag);
+			/* loop */
+			Option_table_add_entry(option_table,"loop",&loop,
+				NULL,set_char_flag);
+			/* mvc1_sgi_movie3 */
+			Option_table_add_entry(option_table,"mvc1_sgi_movie3",&mvc1_sgi_movie3,
+				NULL,set_char_flag);
+			/* name */
+			Option_table_add_entry(option_table,"name",&movie_name,
+				(void *)1,set_name);
+			/* once */
+			Option_table_add_entry(option_table,"once",&once,
+				NULL,set_char_flag);
+			/* open */
+			Option_table_add_entry(option_table,"open",&open_file_name,
+				(void *)1,set_name);
+			/* play */
+			Option_table_add_entry(option_table,"play",&play,
+				NULL,set_char_flag);
+			/* quicktime */
+			Option_table_add_entry(option_table,"quicktime",&quicktime,
+				NULL,set_char_flag);
+			/* rle24_sgi_movie3 */
+			Option_table_add_entry(option_table,"rle24_sgi_movie3",&rle24_sgi_movie3,
+				NULL,set_char_flag);
+			/* sgi_movie3 */
+			Option_table_add_entry(option_table,"sgi_movie3",&sgi_movie3,
+				NULL,set_char_flag);
+			/* skip_frames */
+			Option_table_add_entry(option_table,"skip_frames",&skip_frames,
+				NULL,set_char_flag);
+			/* speed */
+			Option_table_add_entry(option_table,"speed",&speed,
+				NULL,set_double);
+			/* stop */
+			Option_table_add_entry(option_table,"stop",&stop,
+				NULL,set_char_flag);
+			/* width */
+			Option_table_add_entry(option_table,"width",&width,
+				NULL,set_int_non_negative);
+			/* graphics_window */
+			Option_table_add_entry(option_table,"graphics_window",&graphics_window,
+				command_data->graphics_window_manager,set_Graphics_window);
+			return_code=Option_table_multi_parse(option_table,state);
 			/* no errors,not asking for help */
-			movie = (struct Movie_graphics *)NULL;
-			if(return_code)
+			if (return_code)
 			{
+				movie=(struct Movie_graphics *)NULL;
+				if (movie_name)
+				{
+					movie=FIND_BY_IDENTIFIER_IN_MANAGER(Movie_graphics,name)(
+						movie_name,command_data->movie_graphics_manager);
+				}
 				if ((avi + cinepak_avi + cinepak_quicktime + indeo_quicktime + indeo_avi + 
 					mvc1_sgi_movie3 + quicktime + rle24_sgi_movie3 + sgi_movie3) > 1)
 				{
@@ -15165,100 +15313,122 @@ movie is being created.
 			}
 			if (return_code)
 			{
-				if (command_data->movie)
+				if (movie)
 				{
 					if (open_file_name || create_file_name)
 					{
 						display_message(ERROR_MESSAGE,
-							"gfx_movie.  A movie is already open and must be ended before another opened or create");
-					}
-					else
-					{
-						movie=command_data->movie;
+							"gfx_movie.  Movie %s is already open and must be ended before "
+							"another opened or create",movie_name);
 					}
 				}
 				else
 				{
-					if (open_file_name)
+					if (movie_name)
 					{
-						if(create_file_name)
+						if (open_file_name)
 						{
-							display_message(ERROR_MESSAGE,
-								"gfx_movie.  Specify only one of open and create");
+							if (create_file_name)
+							{
+								display_message(ERROR_MESSAGE,
+									"gfx_movie.  Specify only one of open and create");
+							}
+							else
+							{
+								if (!(movie=CREATE(Movie_graphics)(movie_name,open_file_name,
+									X3D_MOVIE_OPEN_FILE)))
+								{
+									display_message(ERROR_MESSAGE,
+										"gfx_movie.  Could not create movie.");
+								}
+							}
 						}
 						else
 						{
-							command_data->movie = CREATE(Movie_graphics)(open_file_name,
-								X3D_MOVIE_OPEN_FILE);
+							if (create_file_name)
+							{
+								if(avi)
+								{
+									movie = CREATE(Movie_graphics)(movie_name,create_file_name,
+										X3D_MOVIE_CREATE_FILE_UNCOMPRESSED_AVI);
+								}
+								else if(cinepak_avi)
+								{
+									movie = CREATE(Movie_graphics)(movie_name,create_file_name,
+										X3D_MOVIE_CREATE_FILE_CINEPAK_AVI);
+								}
+								else if(cinepak_quicktime)
+								{
+									movie = CREATE(Movie_graphics)(movie_name,create_file_name,
+										X3D_MOVIE_CREATE_FILE_CINEPAK_QUICKTIME);
+								}
+								else if(indeo_avi)
+								{
+									movie = CREATE(Movie_graphics)(movie_name,create_file_name,
+										X3D_MOVIE_CREATE_FILE_INDEO_AVI);
+								}
+								else if(indeo_quicktime)
+								{
+									movie = CREATE(Movie_graphics)(movie_name,create_file_name,
+										X3D_MOVIE_CREATE_FILE_INDEO_QUICKTIME);
+								}
+								else if(quicktime)
+								{
+									movie = CREATE(Movie_graphics)(movie_name,create_file_name,
+										X3D_MOVIE_CREATE_FILE_APPLE_ANIMATION_QUICKTIME);
+								}
+								else if(rle24_sgi_movie3)
+								{
+									movie = CREATE(Movie_graphics)(movie_name,create_file_name,
+										X3D_MOVIE_CREATE_FILE_RLE24_SGI_MOVIE3);
+								}
+								else if(mvc1_sgi_movie3)
+								{
+									movie = CREATE(Movie_graphics)(movie_name,create_file_name,
+										X3D_MOVIE_CREATE_FILE_MVC1_SGI_MOVIE3);
+								}
+								else
+								{
+									/* Default to this if no format is given */
+									movie = CREATE(Movie_graphics)(movie_name,create_file_name,
+										X3D_MOVIE_CREATE_FILE_UNCOMPRESSED_SGI_MOVIE3);
+								}
+								if (!movie)
+								{
+									display_message(ERROR_MESSAGE,
+										"gfx_movie.  Could not create movie.");
+								}
+							}
+							else
+							{
+								display_message(ERROR_MESSAGE,
+									"gfx_movie.  Need to specify 'open' or 'create' FILENAME");
+							}
 						}
 					}
 					else
 					{
-						if(create_file_name)
-						{
-							if(avi)
-							{
-								command_data->movie = CREATE(Movie_graphics)(create_file_name,
-									X3D_MOVIE_CREATE_FILE_UNCOMPRESSED_AVI);
-							}
-							else if(cinepak_avi)
-							{
-								command_data->movie = CREATE(Movie_graphics)(create_file_name,
-									X3D_MOVIE_CREATE_FILE_CINEPAK_AVI);
-							}
-							else if(cinepak_quicktime)
-							{
-								command_data->movie = CREATE(Movie_graphics)(create_file_name,
-									X3D_MOVIE_CREATE_FILE_CINEPAK_QUICKTIME);
-							}
-							else if(indeo_avi)
-							{
-								command_data->movie = CREATE(Movie_graphics)(create_file_name,
-									X3D_MOVIE_CREATE_FILE_INDEO_AVI);
-							}
-							else if(indeo_quicktime)
-							{
-								command_data->movie = CREATE(Movie_graphics)(create_file_name,
-									X3D_MOVIE_CREATE_FILE_INDEO_QUICKTIME);
-							}
-							else if(quicktime)
-							{
-								command_data->movie = CREATE(Movie_graphics)(create_file_name,
-									X3D_MOVIE_CREATE_FILE_APPLE_ANIMATION_QUICKTIME);
-							}
-							else if(rle24_sgi_movie3)
-							{
-								command_data->movie = CREATE(Movie_graphics)(create_file_name,
-									X3D_MOVIE_CREATE_FILE_RLE24_SGI_MOVIE3);
-							}
-							else if(mvc1_sgi_movie3)
-							{
-								command_data->movie = CREATE(Movie_graphics)(create_file_name,
-									X3D_MOVIE_CREATE_FILE_MVC1_SGI_MOVIE3);
-							}
-							else
-							{
-								/* Default to this if no format is given */
-								command_data->movie = CREATE(Movie_graphics)(create_file_name,
-									X3D_MOVIE_CREATE_FILE_UNCOMPRESSED_SGI_MOVIE3);
-							}
-						}
-						else
+						display_message(ERROR_MESSAGE,
+							"gfx_movie.  No name given for new movie");
+					}
+					if (movie)
+					{
+						if (!ADD_OBJECT_TO_MANAGER(Movie_graphics)(movie,
+							command_data->movie_graphics_manager))
 						{
 							display_message(ERROR_MESSAGE,
-								"gfx_movie.  Need to open or create a movie first");
+								"gfx_movie.  Could not add movie to manager");
+							DESTROY(Movie_graphics)(&movie);
+							movie = (struct Movie_graphics *)NULL;
 						}
 					}
-					if (command_data->movie)
+					if (movie)
 					{
 						/* attach the time object of the new movie to the default time
 							keeper */
 						Time_object_set_time_keeper(
-							X3d_movie_get_time_object(Movie_graphics_get_X3d_movie(
-							command_data->movie)),
+							X3d_movie_get_time_object(Movie_graphics_get_X3d_movie(movie)),
 							command_data->default_time_keeper);
-						/* set the local pointer */
-						movie=command_data->movie;
 					}
 				}
 				if (movie && (x3d_movie = Movie_graphics_get_X3d_movie(movie)))
@@ -15301,8 +15471,9 @@ movie is being created.
 					}
 					if ( end )
 					{
-						return_code=DESTROY(Movie_graphics)(&(command_data->movie));
-						command_data->movie=(struct Movie_graphics *)NULL;
+						return_code=REMOVE_OBJECT_FROM_MANAGER(Movie_graphics)(movie,
+							command_data->movie_graphics_manager);
+						movie=(struct Movie_graphics *)NULL;
 					}
 				}
 				else
@@ -15312,6 +15483,7 @@ movie is being created.
 					return_code=0;
 				}
 			}
+			DESTROY(Option_table)(&option_table);
 			if (graphics_window)
 			{
 				DEACCESS(Graphics_window)(&graphics_window);

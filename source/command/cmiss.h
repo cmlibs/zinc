@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : cmiss.h
 
-LAST MODIFIED : 30 November 1999
+LAST MODIFIED : 2 February 2000
 
 DESCRIPTION :
 Functions and types for executing cmiss commands.
@@ -23,7 +23,7 @@ Global types
 */
 struct Cmiss_command_data
 /*******************************************************************************
-LAST MODIFIED : 30 November 1999
+LAST MODIFIED : 2 February 2000
 
 DESCRIPTION :
 ==============================================================================*/
@@ -70,7 +70,7 @@ DESCRIPTION :
 	struct MANAGER(Light_model) *light_model_manager;
 	struct Light_model *default_light_model;
 #if defined (SGI_MOVIE_FILE)
-	struct Movie_graphics *movie;
+	struct MANAGER(Movie_graphics) *movie_graphics_manager;
 #endif /* defined (SGI_MOVIE_FILE) */
 	struct MANAGER(Texture) *texture_manager;
 	struct MANAGER(Control_curve) *control_curve_manager;
