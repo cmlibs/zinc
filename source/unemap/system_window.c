@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : system_window.c
 
-LAST MODIFIED : 24 November 1999
+LAST MODIFIED : 6 December 1999
 
 DESCRIPTION :
 ???DB.  Have to have a proper destroy callback for the system window
@@ -918,7 +918,7 @@ struct System_window *create_System_window(Widget shell,
 	XtCallbackProc close_button_callback,struct Time_keeper *time_keeper,
 	struct User_interface *user_interface,struct Unemap_package *unemap_package)
 /*******************************************************************************
-LAST MODIFIED : 16 June 1999
+LAST MODIFIED : 6 December 1999
 
 DESCRIPTION :
 This function allocates the memory for a system window structure.  It then
@@ -961,6 +961,8 @@ pointer to the created structure if successful and NULL if unsuccessful.
 #define XmCConfigurationDirectory "ConfigurationDirectory"
 #define XmNconfigurationFileExtension "configurationFileExtension"
 #define XmCConfigurationFileExtension "ConfigurationFileExtension"
+#define XmNlevelValue "levelValue"
+#define XmCLevelValue "LevelValue"
 #define XmNpointerSensitivity "pointerSensitivity"
 #define XmCPointerSensitivity "PointerSensitivity"
 #define XmNpostscriptFileExtension "postscriptFileExtension"
@@ -969,6 +971,10 @@ pointer to the created structure if successful and NULL if unsuccessful.
 #define XmCSignalFileExtension "SignalFileExtension"
 #define XmNsignalFileExtensionSaveas "signalFileExtensionSaveas"
 #define XmCSignalFileExtensionSaveas "SignalFileExtensionSaveas"
+#define XmNthresholdMinimumSeparation "thresholdMinimumSeparation"
+#define XmCThresholdMinimumSeparation "ThresholdMinimumSeparation"
+#define XmNthresholdThreshold "thresholdThreshold"
+#define XmCThresholdThreshold "ThresholdThreshold"
 	static XtResource resources[]=
 	{
 		{
@@ -1008,6 +1014,15 @@ pointer to the created structure if successful and NULL if unsuccessful.
 			"cnfg"
 		},
 		{
+			XmNlevelValue,
+			XmCLevelValue,
+			XmRFloat,
+			sizeof(float),
+			XtOffsetOf(System_window_settings,analysis.level),
+			XmRString,
+			"0"
+		},
+		{
 			XmNpointerSensitivity,
 			XmCPointerSensitivity,
 			XmRInt,
@@ -1042,6 +1057,24 @@ pointer to the created structure if successful and NULL if unsuccessful.
 			XtOffsetOf(System_window_settings,signal_file_extension_write),
 			XmRString,
 			"signal"
+		},
+		{
+			XmNthresholdMinimumSeparation,
+			XmCThresholdMinimumSeparation,
+			XmRInt,
+			sizeof(int),
+			XtOffsetOf(System_window_settings,analysis.minimum_separation),
+			XmRString,
+			"100"
+		},
+		{
+			XmNthresholdThreshold,
+			XmCThresholdThreshold,
+			XmRInt,
+			sizeof(int),
+			XtOffsetOf(System_window_settings,analysis.threshold),
+			XmRString,
+			"90"
 		},
 	};
 	struct System_window *system;
@@ -1102,7 +1135,7 @@ pointer to the created structure if successful and NULL if unsuccessful.
 				system->analysis.highlight=(struct Device **)NULL;
 				system->analysis.datum=0;
 				system->analysis.objective=ABSOLUTE_SLOPE;
-				system->analysis.detection=INTERVAL;
+				system->analysis.detection=EDA_INTERVAL;
 				system->analysis.objective=ABSOLUTE_SLOPE;
 				system->analysis.datum_type=AUTOMATIC_DATUM;
 				system->analysis.edit_order=DEVICE_ORDER;
@@ -1112,6 +1145,7 @@ pointer to the created structure if successful and NULL if unsuccessful.
 				system->analysis.event_number=1;
 				system->analysis.threshold=90;
 				system->analysis.minimum_separation=100;
+				system->analysis.level=0;
 				system->analysis.map_type=NO_MAP_FIELD;
 				system->analysis.bard_signal_file_data=(struct File_open_data *)NULL;
 				system->analysis.cardiomapp_signal_file_data=
@@ -1126,13 +1160,13 @@ pointer to the created structure if successful and NULL if unsuccessful.
 				system->mapping.mapping_window=(struct Mapping_window *)NULL;
 				system->mapping.open=0;
 				system->mapping.associate=ACQUISITION_ASSOCIATE;
-				if(time_keeper)
+				if (time_keeper)
 				{
-					system->time_keeper = ACCESS(Time_keeper)(time_keeper);
+					system->time_keeper=ACCESS(Time_keeper)(time_keeper);
 				}
 				else
 				{
-					system->time_keeper = (struct Time_keeper *)NULL;
+					system->time_keeper=(struct Time_keeper *)NULL;
 				}
 				system->close_button=(Widget)NULL;
 				/* retrieve the settings */

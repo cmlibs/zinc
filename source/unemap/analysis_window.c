@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : analysis_window.c
 
-LAST MODIFIED : 13 October 1999
+LAST MODIFIED : 6 December 1999
 
 DESCRIPTION :
 ==============================================================================*/
@@ -67,7 +67,7 @@ Finds the id of the analysis reset button.
 	struct Analysis_window *analysis;
 
 	ENTER(identify_analysis_reset_button);
-	USE_PARAMETER(call_data);	
+	USE_PARAMETER(call_data);
 	if (analysis=(struct Analysis_window *)analysis_window)
 	{
 		analysis->interval.reset_button= *widget_id;
@@ -92,7 +92,7 @@ Finds the id of the analysis baseline button.
 	struct Analysis_window *analysis;
 
 	ENTER(identify_analysis_baseline_butt);
-	USE_PARAMETER(call_data);	
+	USE_PARAMETER(call_data);
 	if (analysis=(struct Analysis_window *)analysis_window)
 	{
 		analysis->interval.baseline_button= *widget_id;
@@ -117,7 +117,7 @@ Finds the id of the analysis range button.
 	struct Analysis_window *analysis;
 
 	ENTER(identify_analysis_range_button);
-	USE_PARAMETER(call_data);	
+	USE_PARAMETER(call_data);
 	if (analysis=(struct Analysis_window *)analysis_window)
 	{
 		analysis->interval.range_button= *widget_id;
@@ -142,7 +142,7 @@ Finds the id of the analysis previous button.
 	struct Analysis_window *analysis;
 
 	ENTER(identify_analysis_previous_butt);
-	USE_PARAMETER(call_data);	
+	USE_PARAMETER(call_data);
 	if (analysis=(struct Analysis_window *)analysis_window)
 	{
 		analysis->interval.previous_button= *widget_id;
@@ -193,7 +193,7 @@ Finds the id of the analysis next button.
 	struct Analysis_window *analysis;
 
 	ENTER(identify_analysis_next_button);
-	USE_PARAMETER(call_data);	
+	USE_PARAMETER(call_data);
 	if (analysis=(struct Analysis_window *)analysis_window)
 	{
 		analysis->interval.next_button= *widget_id;
@@ -244,7 +244,7 @@ Finds the id of the analysis accept button.
 	struct Analysis_window *analysis;
 
 	ENTER(identify_analysis_accept_button);
-	USE_PARAMETER(call_data);	
+	USE_PARAMETER(call_data);
 	if (analysis=(struct Analysis_window *)analysis_window)
 	{
 		analysis->interval.accept_button= *widget_id;
@@ -295,7 +295,7 @@ Finds the id of the analysis reject button.
 	struct Analysis_window *analysis;
 
 	ENTER(identify_analysis_reject_button);
-	USE_PARAMETER(call_data);	
+	USE_PARAMETER(call_data);
 	if (analysis=(struct Analysis_window *)analysis_window)
 	{
 		analysis->interval.reject_button= *widget_id;
@@ -346,7 +346,7 @@ Finds the id of the analysis close button.
 	struct Analysis_window *analysis;
 
 	ENTER(identify_analysis_close_button);
-	USE_PARAMETER(call_data);	
+	USE_PARAMETER(call_data);
 	if (analysis=(struct Analysis_window *)analysis_window)
 	{
 		analysis->close_button= *widget_id;
@@ -371,7 +371,7 @@ Finds the id of the analysis menu.
 	struct Analysis_window *analysis;
 
 	ENTER(identify_analysis_menu);
-	USE_PARAMETER(call_data);	
+	USE_PARAMETER(call_data);
 	if (analysis=(struct Analysis_window *)analysis_window)
 	{
 		analysis->menu= *widget_id;
@@ -396,7 +396,7 @@ Finds the id of the analysis map button.
 	struct Analysis_window *analysis;
 
 	ENTER(identify_analysis_map_button);
-	USE_PARAMETER(call_data);	
+	USE_PARAMETER(call_data);
 	if (analysis=(struct Analysis_window *)analysis_window)
 	{
 		analysis->map_button= *widget_id;
@@ -421,7 +421,7 @@ Finds the id of the analysis potential button.
 	struct Analysis_window *analysis;
 
 	ENTER(identify_analysis_map_potential);
-	USE_PARAMETER(call_data);	
+	USE_PARAMETER(call_data);
 	if (analysis=(struct Analysis_window *)analysis_window)
 	{
 		analysis->map_menu.potential_button= *widget_id;
@@ -446,7 +446,7 @@ Finds the id of the analysis integral button.
 	struct Analysis_window *analysis;
 
 	ENTER(identify_analysis_map_integral);
-	USE_PARAMETER(call_data);	
+	USE_PARAMETER(call_data);
 	if (analysis=(struct Analysis_window *)analysis_window)
 	{
 		analysis->map_menu.integral_button= *widget_id;
@@ -471,7 +471,7 @@ Finds the id of the analysis gradient button.
 	struct Analysis_window *analysis;
 
 	ENTER(identify_analysis_map_gradient);
-	USE_PARAMETER(call_data);	
+	USE_PARAMETER(call_data);
 	if (analysis=(struct Analysis_window *)analysis_window)
 	{
 		analysis->map_menu.gradient_button= *widget_id;
@@ -496,7 +496,7 @@ Finds the id of the analysis single activation button.
 	struct Analysis_window *analysis;
 
 	ENTER(id_analysis_map_single_activati);
-	USE_PARAMETER(call_data);	
+	USE_PARAMETER(call_data);
 	if (analysis=(struct Analysis_window *)analysis_window)
 	{
 		analysis->map_menu.single_activation_button= *widget_id;
@@ -521,7 +521,7 @@ Finds the id of the analysis single activation button.
 	struct Analysis_window *analysis;
 
 	ENTER(id_analysis_map_multiple_activa);
-	USE_PARAMETER(call_data);	
+	USE_PARAMETER(call_data);
 	if (analysis=(struct Analysis_window *)analysis_window)
 	{
 		analysis->map_menu.multiple_activation_button= *widget_id;
@@ -546,7 +546,7 @@ Finds the id of the analysis file button.
 	struct Analysis_window *analysis;
 
 	ENTER(identify_analysis_file_button);
-	USE_PARAMETER(call_data);	
+	USE_PARAMETER(call_data);
 	if (analysis=(struct Analysis_window *)client_data)
 	{
 		analysis->file_button= *widget_id;
@@ -571,7 +571,7 @@ Finds the id of the analysis file read signals button.
 	struct Analysis_window *analysis;
 
 	ENTER(identify_analysis_file_read_sig);
-	USE_PARAMETER(call_data);	
+	USE_PARAMETER(call_data);
 	if (analysis=(struct Analysis_window *)client_data)
 	{
 		analysis->file_menu.read_signals_button= *widget_id;
@@ -596,7 +596,7 @@ Finds the id of the analysis file overlay signals button.
 	struct Analysis_window *analysis;
 
 	ENTER(identify_analysis_file_overlay);
-	USE_PARAMETER(call_data);	
+	USE_PARAMETER(call_data);
 	if (analysis=(struct Analysis_window *)client_data)
 	{
 		analysis->file_menu.overlay_signals_button= *widget_id;
@@ -621,7 +621,7 @@ Finds the id of the analysis file save interval button.
 	struct Analysis_window *analysis;
 
 	ENTER(identify_analysis_file_save_int);
-	USE_PARAMETER(call_data);	
+	USE_PARAMETER(call_data);
 	if (analysis=(struct Analysis_window *)client_data)
 	{
 		analysis->file_menu.save_interval_button= *widget_id;
@@ -646,7 +646,7 @@ Finds the id of the analysis file save interval as button.
 	struct Analysis_window *analysis;
 
 	ENTER(id_analysis_file_save_int_as);
-	USE_PARAMETER(call_data);	
+	USE_PARAMETER(call_data);
 	if (analysis=(struct Analysis_window *)client_data)
 	{
 		analysis->file_menu.save_interval_as_button= *widget_id;
@@ -671,7 +671,7 @@ Finds the id of the analysis file save times button.
 	struct Analysis_window *analysis;
 
 	ENTER(identify_analysis_file_save_tim);
-	USE_PARAMETER(call_data);	
+	USE_PARAMETER(call_data);
 	if (analysis=(struct Analysis_window *)client_data)
 	{
 		analysis->file_menu.save_times_button= *widget_id;
@@ -687,7 +687,7 @@ Finds the id of the analysis file save times button.
 static int write_times_undecided_accepted(char *file_name,
 	void *analysis_window)
 /*******************************************************************************
-LAST MODIFIED : 4 August 1999
+LAST MODIFIED : 30 November 1999
 
 DESCRIPTION :
 ==============================================================================*/
@@ -746,7 +746,7 @@ DESCRIPTION :
 					fprintf(output_file,"detection method :");
 					switch (*(analysis->detection))
 					{
-						case INTERVAL:
+						case EDA_INTERVAL:
 						{
 							fprintf(output_file," interval\n");
 							/* write the start search and end search sample numbers and the
@@ -757,7 +757,18 @@ DESCRIPTION :
 								frequency,(float)times[*(analysis->end_search_interval)]*1000./
 								frequency,*(analysis->number_of_events));
 						} break;
-						case THRESHOLD:
+						case EDA_LEVEL:
+						{
+							fprintf(output_file," level\n");
+							/* write the start search and end search sample numbers */
+							fprintf(output_file,"search start : %.0f, search end : %.0f\n",
+								(float)times[*(analysis->start_search_interval)]*1000./
+								frequency,(float)times[*(analysis->end_search_interval)]*1000./
+								frequency);
+							/* write the level */
+							fprintf(output_file,"level : %g\n",*(analysis->level));
+						} break;
+						case EDA_THRESHOLD:
 						{
 							fprintf(output_file," threshold\n");
 							/* write the start search and end search sample numbers */
@@ -902,7 +913,7 @@ DESCRIPTION :
 static int write_times_undecided_rejected(char *file_name,
 	void *analysis_window)
 /*******************************************************************************
-LAST MODIFIED : 4 August 1999
+LAST MODIFIED : 30 November 1999
 
 DESCRIPTION :
 ==============================================================================*/
@@ -962,7 +973,7 @@ DESCRIPTION :
 					fprintf(output_file,"detection method :");
 					switch (*(analysis->detection))
 					{
-						case INTERVAL:
+						case EDA_INTERVAL:
 						{
 							fprintf(output_file," interval\n");
 							/* write the start search and end search sample numbers and the
@@ -973,7 +984,18 @@ DESCRIPTION :
 								frequency,(float)times[*(analysis->end_search_interval)]*1000./
 								frequency,*(analysis->number_of_events));
 						} break;
-						case THRESHOLD:
+						case EDA_LEVEL:
+						{
+							fprintf(output_file," level\n");
+							/* write the start search and end search sample numbers */
+							fprintf(output_file,"search start : %.0f, search end : %.0f\n",
+								(float)times[*(analysis->start_search_interval)]*1000./
+								frequency,(float)times[*(analysis->end_search_interval)]*1000./
+								frequency);
+							/* write the level */
+							fprintf(output_file,"level : %g\n",*(analysis->level));
+						} break;
+						case EDA_THRESHOLD:
 						{
 							fprintf(output_file," threshold\n");
 							/* write the start search and end search sample numbers */
@@ -1131,7 +1153,7 @@ DESCRIPTION :
 	struct Analysis_window *analysis;
 
 	ENTER(set_write_times_undecided_accepted);
-	USE_PARAMETER(call_data);	
+	USE_PARAMETER(call_data);
 	USE_PARAMETER(widget);
 	if (analysis=(struct Analysis_window *)analysis_window)
 	{
@@ -1169,7 +1191,7 @@ DESCRIPTION :
 	struct Analysis_window *analysis;
 
 	ENTER(set_write_times_undecided_rejected);
-	USE_PARAMETER(call_data);	
+	USE_PARAMETER(call_data);
 	USE_PARAMETER(widget);
 	if (analysis=(struct Analysis_window *)analysis_window)
 	{
@@ -1207,7 +1229,7 @@ DESCRIPTION :
 	Widget warning_box;
 
 	ENTER(close_write_event_times_warning);
-	USE_PARAMETER(call_data);	
+	USE_PARAMETER(call_data);
 	USE_PARAMETER(widget);
 	if (warning_box=(Widget)warning_box_widget)
 	{
@@ -2266,7 +2288,7 @@ The callback for redrawing part of an analysis drawing area.
 									attributes.width,attributes.height,NO_DRAWING_IMAGE,
 									analysis->user_interface))
 								{
-									/* draw the signals */	
+									/* draw the signals */
 #if defined (UNEMAP_USE_NODES)
 									/* use rig_node_group and draw_package */
 									draw_all_signals((struct Rig *)NULL,*(analysis->datum),
@@ -2275,7 +2297,7 @@ The callback for redrawing part of an analysis drawing area.
 										analysis->signal_overlap_spacing,
 										analysis->signal_drawing_information,
 										analysis->user_interface,*(analysis->rig_node_group),
-										*(analysis->draw_package));	
+										*(analysis->draw_package));
 #else /* defined (UNEMAP_USE_NODES) */
 									/* use rig */
 									draw_all_signals(*(analysis->rig),*(analysis->datum),
@@ -2398,7 +2420,7 @@ The callback for resizing an analysis drawing area.
 								*(analysis->potential_time),signals,signals->layout,
 								analysis->signal_aspect_ratio,analysis->signal_overlap_spacing,
 								analysis->signal_drawing_information,analysis->user_interface,
-								*(analysis->rig_node_group),*(analysis->draw_package));	
+								*(analysis->rig_node_group),*(analysis->draw_package));
 #else /* defined (UNEMAP_USE_NODES) */
 							/* use rig */
 							draw_all_signals(*(analysis->rig),*(analysis->datum),
@@ -2838,7 +2860,7 @@ Global functions
 ----------------
 */
 int analysis_window_update_interval_area_time(struct Analysis_window *analysis,
-	int potential_time, int previous_potential_time, 
+	int potential_time, int previous_potential_time,
 	enum Analysis_window_update_flags *update_flags)
 /*******************************************************************************
 LAST MODIFIED : 4 August 1999
@@ -2850,8 +2872,8 @@ the new potential time.
 {
 	char number_string[20];
 	Display *display;
-	int ascent, axes_bottom, axes_left, axes_right, axes_top, descent, 
-		 direction, length, return_code, scaled_potential_time, 
+	int ascent, axes_bottom, axes_left, axes_right, axes_top, descent,
+		 direction, length, return_code, scaled_potential_time,
 		scaled_previous_potential_time,*times, x_string, y_string;
 	float frequency, x_scale;
 	GC potential_time_colour,potential_time_colour_text;
@@ -2871,12 +2893,12 @@ the new potential time.
 		frequency=buffer->frequency;
 		font=analysis->signal_drawing_information->font;
 		if (potential_time!=previous_potential_time)
-		{			 
+		{
 			interval= &(analysis->interval);
 			axes_left=interval->axes_left;
 			axes_right=axes_left+(interval->axes_width)-1;
 			axes_top=interval->axes_top;
-			axes_bottom=axes_top+(interval->axes_height)-1;		
+			axes_bottom=axes_top+(interval->axes_height)-1;
 			x_scale=
 				SCALE_FACTOR((buffer->number_of_samples)-1,axes_right-axes_left);
 			pixel_map=interval->drawing->pixel_map;
@@ -2888,7 +2910,7 @@ the new potential time.
 			scaled_previous_potential_time=SCALE_X(previous_potential_time,0,
 				axes_left,x_scale);
 			scaled_potential_time=SCALE_X(potential_time,0,axes_left,x_scale);
-			if(*update_flags & ANALYSIS_INTERVAL_NO_POTENTIAL_ERASE)
+			if (*update_flags & ANALYSIS_INTERVAL_NO_POTENTIAL_ERASE)
 			{
 				/* Clear just that flag */
 				*update_flags &= ~ANALYSIS_INTERVAL_NO_POTENTIAL_ERASE;
@@ -3015,7 +3037,7 @@ the new potential time.
 		(user_interface=analysis->user_interface)&&
 		(signal_drawing_information=analysis->signal_drawing_information)&&
 		(buffer=get_Device_signal_buffer(highlight_device)))
-	{	
+	{
 		start_analysis_interval=buffer->start;
 		end_analysis_interval=buffer->end;
 		if ((*analysis->rig)&&(signals= &(analysis->signals)))
@@ -3128,7 +3150,7 @@ the new datum time.
 ==============================================================================*/
 {
 	int	device_number, drawing_height, drawing_width, end_analysis_interval,
-		i, j, number_of_columns, number_of_rows, return_code, 
+		i, j, number_of_columns, number_of_rows, return_code,
 		rows_divisor, scaled_datum_marker, scaled_previous_datum_marker,
 		signals_axes_height,signals_axes_left,signals_axes_top,signals_axes_width,
 		start_analysis_interval,xpos,ypos;
@@ -3146,7 +3168,7 @@ the new datum time.
 		(user_interface=analysis->user_interface)&&
 		(signal_drawing_information=analysis->signal_drawing_information)&&
 		(buffer=get_Device_signal_buffer(highlight_device)))
-	{		
+	{
 		start_analysis_interval=buffer->start;
 		end_analysis_interval=buffer->end;
 		if ((*analysis->rig)&&(signals= &(analysis->signals)))
@@ -3188,7 +3210,7 @@ the new datum time.
 				signals_axes_width-1));
 			while (device_number>0)
 			{
-				if(scaled_previous_datum_marker != scaled_datum_marker)
+				if (scaled_previous_datum_marker != scaled_datum_marker)
 				{
 					draw_datum_marker(previous_datum_marker,
 						SIGNAL_AREA_DETAIL,
@@ -3289,15 +3311,15 @@ struct Analysis_window *create_Analysis_window(
 	struct Device ***highlight,int *datum,int *event_number,
 	int *number_of_events,int *potential_time,
 	enum Event_detection_algorithm *detection,int *threshold,
-	int *minimum_separation,Pixel identifying_colour,enum Signal_order order,
-	enum Signal_layout layout,int *start_search_interval,int *end_search_interval,
-	int screen_height,
+	int *minimum_separation,float *level,Pixel identifying_colour,
+	enum Signal_order order,enum Signal_layout layout,int *start_search_interval,
+	int *end_search_interval,int screen_height,
 		/*???DB.  height of interval drawing area.  Better ? */
 	char *postscript_file_extension,char *events_file_extension,
 	struct Signal_drawing_information *signal_drawing_information,
 	struct User_interface *user_interface)
 /*******************************************************************************
-LAST MODIFIED : 13 October 1999
+LAST MODIFIED : 6 December 1999
 
 DESCRIPTION :
 This function allocates the memory for an analysis window and sets the fields
@@ -3495,6 +3517,7 @@ returned.
 				analysis->detection=detection;
 				analysis->threshold=threshold;
 				analysis->minimum_separation=minimum_separation;
+				analysis->level=level;
 				analysis->start_search_interval=start_search_interval;
 				analysis->end_search_interval=end_search_interval;
 				/* create the structure for writing event time files */
@@ -3877,7 +3900,7 @@ The callback for redrawing the analysis drawing area.
 			*(analysis->potential_time),signals,signals->layout,
 			analysis->signal_aspect_ratio,analysis->signal_overlap_spacing,
 			analysis->signal_drawing_information,analysis->user_interface,
-			*(analysis->rig_node_group),*(analysis->draw_package));	
+			*(analysis->rig_node_group),*(analysis->draw_package));
 #else /* defined (UNEMAP_USE_NODES) */
 		/* use rig */
 		draw_all_signals(*(analysis->rig),*(analysis->datum),
@@ -4058,7 +4081,7 @@ int draw_all_signals(struct Rig *rig,int datum,int potential_time,
 	struct User_interface *user_interface,struct GROUP(FE_node) *rig_node_group,
 	struct Draw_package *draw_package)
 /*******************************************************************************
-LAST MODIFIED : 4 August 1999
+LAST MODIFIED : 6 December 1999
 
 DESCRIPTION :
 This function draws all the signals for the <signal_event_list> in the <drawing>
@@ -4066,10 +4089,10 @@ using the <graphics_context>.
 
 Pass either <rig > or (<rig_node_group> and <draw_package> ).  If pass
 <rig_node_group> and <draw_package>, then we create an array of pointers to the
-nodes, in an FE_ node_order_info, so can increment through nodes similar 
-to rig->devices. This is not ideal, but is done for compatibility with the 
+nodes, in an FE_node_order_info, so can increment through nodes similar
+to rig->devices. This is not ideal, but is done for compatibility with the
 rig->devices approach. Do differently when have removed rig->devices
-Should use GROUP NEXT operator (when it's ready!) 
+Should use GROUP NEXT operator (when it's ready!)
 ==============================================================================*/
 {
 	int axes_height,axes_left,axes_top,axes_width,drawing_height,drawing_width,
@@ -4107,45 +4130,45 @@ Should use GROUP NEXT operator (when it's ready!)
 		XFillRectangle(user_interface->display,pixel_map,
 			(signal_drawing_information->graphics_context).background_drawing_colour,
 			0,0,drawing_width,drawing_height);
-		
-		/* check that rig is set XOR both the draw_package and  the rig_node_group are set, */		
+		/* check that rig is set XOR both the draw_package and  the rig_node_group
+			are set, */
 		/* OR everything is NULL */
-		if((!rig_node_group&&!draw_package)||((rig_node_group&&draw_package)&&!rig))
-		{ 
-			number_of_signals=0; 
+		if ((!rig_node_group&&!draw_package)||((rig_node_group&&draw_package)&&
+			!rig))
+		{
+			number_of_signals=0;
 			return_code=1;
-			if(rig_node_group) /* must extract info from node group */
-			{			
+			if (rig_node_group) /* must extract info from node group */
+			{
 #if defined (UNEMAP_USE_NODES)
 				/* create an array of pointers to the nodes, in node_order_info */
 				/* so can increment through nodes similar to devices. */
 				/* should use GROUP NEXT operator (when it's ready!) */
-				if(!node_order_info)
+				if (!node_order_info)
 				{
-					node_order_info=CREATE(FE_node_order_info)(0);				
+					node_order_info=CREATE(FE_node_order_info)(0);
 				}
 				if (node_order_info)
 				{
 					if (return_code=FOR_EACH_OBJECT_IN_GROUP(FE_node)(
 						fill_FE_node_order_info,(void *)node_order_info,
 						rig_node_group))
-					{					
+					{
 						node_number=0;
-						node=get_FE_node_order_info_node(node_order_info,
-							node_number);					
+						node=get_FE_node_order_info_node(node_order_info,node_number);
 						number_of_signals= get_FE_node_order_info_number_of_nodes(
-							node_order_info);											
+							node_order_info);
 						first_data=0;
 						/* time is stored at signal field.  For moment, assume only 1 signal
 							per node */
-						field=get_Draw_package_signal_field(draw_package);						
+						field=get_Draw_package_signal_field(draw_package);
 						last_data=get_FE_field_number_of_times(field)-1;
-					}						 					
-				}			
+					}
+				}
 				else
 				{
 					display_message(ERROR_MESSAGE,"draw_all_signals. "
-						"CREATE(FE_node_order_info) failed");	
+						"CREATE(FE_node_order_info) failed");
 					return_code=0;
 				}
 #endif /* defined (UNEMAP_USE_NODES) */
@@ -4156,7 +4179,7 @@ Should use GROUP NEXT operator (when it's ready!)
 				first_data=buffer->start;
 				last_data=buffer->end;
 				/* determine the number of signals */
-				if(current_region=rig->current_region)
+				if (current_region=rig->current_region)
 				{
 					number_of_signals=current_region->number_of_devices;
 				}
@@ -4164,8 +4187,8 @@ Should use GROUP NEXT operator (when it's ready!)
 				{
 					number_of_signals=rig->number_of_devices;
 				}
-			}/*if rig( */			
-			if((number_of_signals>0)&&return_code)
+			}/*if rig( */
+			if ((number_of_signals>0)&&return_code)
 			{
 				switch (layout)
 				{
@@ -4223,7 +4246,7 @@ Should use GROUP NEXT operator (when it's ready!)
 						draw_signal(*device,SIGNAL_AREA_DETAIL,first_data,last_data,
 							xpos,ypos,signal_width,signal_height,pixel_map,&axes_left,
 							&axes_top,&axes_width,&axes_height,signal_drawing_information,
-							user_interface);				
+							user_interface);
 #endif /* defined (OLD_CODE) */
 						signals->axes_left=axes_left;
 						signals->axes_top=axes_top;
@@ -4244,8 +4267,7 @@ Should use GROUP NEXT operator (when it's ready!)
 						{
 							/* for rig_node based, get next rig node */
 							node_number++;
-							node=get_FE_node_order_info_node(node_order_info,
-								node_number);
+							node=get_FE_node_order_info_node(node_order_info,node_number);
 						}
 #endif /* defined (UNEMAP_USE_NODES) */
 						number_of_signals--;
@@ -4285,11 +4307,11 @@ Should use GROUP NEXT operator (when it's ready!)
 							draw_signal(*device,SIGNAL_AREA_DETAIL,first_data,last_data,
 								xpos,ypos,signal_width,signal_height,pixel_map,&axes_left,
 								&axes_top,&axes_width,&axes_height,signal_drawing_information,
-								user_interface);				
+								user_interface);
 #endif /* defined (OLD_CODE) */
 							/*if using rig, draw_device_markers, and inc device pointer */
 							/* write code rig_node based draw_device_markers later */
-							if(rig)
+							if (rig)
 							{
 								draw_device_markers(*device,first_data,last_data,datum,1,
 									potential_time,1,SIGNAL_AREA_DETAIL,0,axes_left,axes_top,
@@ -4302,8 +4324,7 @@ Should use GROUP NEXT operator (when it's ready!)
 							{
 								/* for rig_node based, get next rig node*/
 								node_number++;
-								node=get_FE_node_order_info_node(node_order_info,
-									node_number);
+								node=get_FE_node_order_info_node(node_order_info,node_number);
 							}
 #endif /* defined (UNEMAP_USE_NODES) */
 							number_of_signals--;
@@ -4351,7 +4372,7 @@ Should use GROUP NEXT operator (when it's ready!)
 						draw_signal(*device,SIGNAL_AREA_DETAIL,first_data,last_data,
 							xpos,ypos,signal_width,signal_height,pixel_map,&axes_left,
 							&axes_top,&axes_width,&axes_height,signal_drawing_information,
-							user_interface);				
+							user_interface);
 #endif /* defined (OLD_CODE) */
 						signals->axes_left=axes_left;
 						signals->axes_top=axes_top;
@@ -4367,9 +4388,8 @@ Should use GROUP NEXT operator (when it's ready!)
 						{
 							/* for rig_node based, get next rig node*/
 							node_number++;
-							node=get_FE_node_order_info_node(node_order_info,
-								node_number);
-						}					
+							node=get_FE_node_order_info_node(node_order_info,node_number);
+						}
 #endif /* defined (UNEMAP_USE_NODES) */
 						number_of_signals--;
 						while (number_of_signals>0)
@@ -4399,7 +4419,7 @@ Should use GROUP NEXT operator (when it's ready!)
 							draw_signal(*device,SIGNAL_AREA_DETAIL,first_data,last_data,
 								xpos,ypos,signal_width,signal_height,pixel_map,&axes_left,
 								&axes_top,&axes_width,&axes_height,signal_drawing_information,
-								user_interface);				
+								user_interface);
 #endif /* defined (OLD_CODE) */
 							if (rig)
 							{
@@ -4411,9 +4431,8 @@ Should use GROUP NEXT operator (when it's ready!)
 							{
 								/* for rig_node based, get next rig node*/
 								node_number++;
-								node=get_FE_node_order_info_node(node_order_info,
-									node_number);
-							}		
+								node=get_FE_node_order_info_node(node_order_info,node_number);
+							}
 #endif /* defined (UNEMAP_USE_NODES) */
 							number_of_signals--;
 						}
@@ -4430,10 +4449,9 @@ Should use GROUP NEXT operator (when it's ready!)
 						{
 							/* for rig_node based, get next rig node*/
 							node_number=0;
-							node=get_FE_node_order_info_node(node_order_info,
-								node_number);
+							node=get_FE_node_order_info_node(node_order_info,node_number);
 							number_of_signals=get_FE_node_order_info_number_of_nodes(
-								node_order_info);	
+								node_order_info);
 						}
 #endif /* defined (UNEMAP_USE_NODES) */
 						i=0;
@@ -4444,7 +4462,7 @@ Should use GROUP NEXT operator (when it's ready!)
 						ypos=axes_top;
 						while (number_of_signals>0)
 						{
-							if(rig)
+							if (rig)
 							{
 								draw_device_markers(*device,first_data,last_data,datum,1,
 									potential_time,1,SIGNAL_AREA_DETAIL,0,xpos,ypos,axes_width,
@@ -4473,8 +4491,7 @@ Should use GROUP NEXT operator (when it's ready!)
 							{
 								/* for rig_node based, get next rig node*/
 								node_number=0;
-								node=get_FE_node_order_info_node(node_order_info,
-									node_number);
+								node=get_FE_node_order_info_node(node_order_info,node_number);
 							}
 #endif /* defined (UNEMAP_USE_NODES) */
 							number_of_signals--;
@@ -4487,10 +4504,10 @@ Should use GROUP NEXT operator (when it's ready!)
 							"draw_all_signals.  Invalid signal layout");
 					} break;
 				} /* switch */
-			}	/* if (number_of_signals>0)*/		
-		} /* if((!rig_node_group&&!draw_package)|| */
+			}	/* if (number_of_signals>0)*/
+		} /* if ((!rig_node_group&&!draw_package)|| */
 		else
-		{		
+		{
 			display_message(ERROR_MESSAGE,"draw_all_signals. Invalid arguments");
 			return_code=0;
 		}
@@ -4503,7 +4520,7 @@ Should use GROUP NEXT operator (when it's ready!)
 	}
 #if defined (UNEMAP_USE_NODES)
 	/* no longer needed */
-	DEACCESS(FE_node_order_info)(&node_order_info); 
+	DEACCESS(FE_node_order_info)(&node_order_info);
 #endif /* defined (UNEMAP_USE_NODES) */
 	LEAVE;
 	return (return_code);

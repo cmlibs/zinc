@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : analysis.h
 
-LAST MODIFIED : 16 August 1999
+LAST MODIFIED : 30 November 1999
 
 DESCRIPTION :
 ==============================================================================*/
@@ -69,19 +69,22 @@ The objective used when detecting an event.
 
 enum Event_detection_algorithm
 /*******************************************************************************
-LAST MODIFIED : 8 July 1997
+LAST MODIFIED : 30 November 1999
 
 DESCRIPTION :
 The algorithm used for detecting an event from a signal.
-INTERVAL = divide the search interval into a user specified number of 
+EDA_INTERVAL = divide the search interval into a user specified number of 
 	sub-intervals and select the maximum objective within each sub-interval
-THRESHOLD = select all times within the search interval whose objectives exceed
-	a user specified percentage of the maximum objective for the search interval,
-  subject to user specifed minimum event separation.
+EDA_LEVEL = find the first time in the search interval at which the absolute
+	value of the signal exceeds the user specified level
+EDA_THRESHOLD = select all times within the search interval whose objectives
+	exceed a user specified percentage of the maximum objective for the search
+	interval, subject to user specifed minimum event separation.
 ==============================================================================*/
 {
-	INTERVAL,
-	THRESHOLD
+	EDA_INTERVAL,
+	EDA_LEVEL,
+	EDA_THRESHOLD
 }; /* enum Event_detection_algorithm */
 
 enum Datum_type
@@ -100,24 +103,26 @@ AUTOMATIC = calculated by the system as the first event
 
 struct Signal_drawing_information
 /*******************************************************************************
-LAST MODIFIED : 26 December 1996
+LAST MODIFIED : 29 November 1999
 
 DESCRIPTION :
 Information needed for drawing a signal.  Windowing system dependent
 ==============================================================================*/
 {
+	int number_of_signal_overlay_colours;
 	Pixel accepted_colour,axis_colour,background_drawing_colour,datum_colour,
 		device_name_colour,highlighted_colour,interval_box_colour,
 		potential_time_colour,rejected_colour,scaling_signal_colour,
-		signal_accepted_colour,signal_rejected_colour,signal_undecided_colour,
-		undecided_colour,unhighlighted_colour;
+		signal_accepted_colour,*signal_overlay_colours,signal_rejected_colour,
+		signal_undecided_colour,undecided_colour,unhighlighted_colour;
 	struct
 	{
 		GC accepted_colour,axis_colour,background_drawing_colour,copy,datum_colour,
 			device_name_colour,highlighted_box_colour,highlighted_colour,
 			interval_box_colour,potential_time_colour,rejected_colour,
-			scaling_signal_colour,signal_accepted_colour,signal_rejected_colour,
-			signal_undecided_colour,spectrum,undecided_colour,unhighlighted_colour;
+			scaling_signal_colour,signal_accepted_colour,signal_overlay_colour,
+			signal_rejected_colour,signal_undecided_colour,spectrum,undecided_colour,
+			unhighlighted_colour;
 		/*???DB.  When using an RS/6000 model with the Color Graphics Display
 			Adapter (#2770), GCs stop writing text to the pixel map after they've
 			been used for drawing lines to the window.  So I duplicate them */
@@ -136,10 +141,10 @@ Global functions
 int calculate_device_event_markers(struct Device *device,int start_search,
 	int end_search,enum Event_detection_algorithm detection,
 	enum Event_detection_objective objective,int number_of_events,
-	int threshold_percentage,int minimum_separation_milliseconds,
+	int threshold_percentage,int minimum_separation_milliseconds,float level,
 	int gradient_average_width);
 /*******************************************************************************
-LAST MODIFIED : 20 August 1997
+LAST MODIFIED : 30 November 1999
 
 DESCRIPTION :
 Calculate the positions of the event markers for a signal/<device> based upon

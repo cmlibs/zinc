@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : analysis.c
 
-LAST MODIFIED : 16 August 1999
+LAST MODIFIED : 30 November 1999
 
 DESCRIPTION :
 ==============================================================================*/
@@ -66,10 +66,10 @@ Global functions
 int calculate_device_event_markers(struct Device *device,int start_search,
 	int end_search,enum Event_detection_algorithm detection,
 	enum Event_detection_objective objective,int number_of_events,
-	int threshold_percentage,int minimum_separation_milliseconds,
+	int threshold_percentage,int minimum_separation_milliseconds,float level,
 	int gradient_average_width)
 /*******************************************************************************
-LAST MODIFIED : 20 August 1997
+LAST MODIFIED : 30 November 1999
 
 DESCRIPTION :
 Calculate the positions of the event markers for a signal/<device> based upon
@@ -88,8 +88,9 @@ the the start and end times, the number of events and the search algorithm.
 		(end_search<(number_of_samples=buffer->number_of_samples))&&
 		(((SHORT_INT_VALUE==buffer->value_type)&&
 		(buffer->signals.short_int_values))||((FLOAT_VALUE==buffer->value_type)&&
-		(buffer->signals.float_values)))&&(((INTERVAL==detection)&&
-		(0<number_of_events))||((THRESHOLD==detection)&&(0<=threshold_percentage)&&
+		(buffer->signals.float_values)))&&(((EDA_INTERVAL==detection)&&
+		(0<number_of_events))||((EDA_LEVEL==detection)&&(0<=level))||
+		((EDA_THRESHOLD==detection)&&(0<=threshold_percentage)&&
 		(threshold_percentage<=100)&&(0<minimum_separation_milliseconds))))
 	{
 		/* free the previous events */
@@ -101,12 +102,13 @@ the the start and end times, the number of events and the search algorithm.
 			{
 				int average_after,average_before,maximum_slope,minimum_slope,
 					no_maximum,slope,threshold;
-				short int first_value,last_value,*signals,*value_before,*value_after;
+				short int first_value,last_value,*signals,*value,*value_after,
+					*value_before;
 
 				signals=buffer->signals.short_int_values;
 				switch (detection)
 				{
-					case INTERVAL:
+					case EDA_INTERVAL:
 					{
 						average_length=gradient_average_width;
 						if (start_search<average_length)
@@ -308,7 +310,36 @@ the the start and end times, the number of events and the search algorithm.
 							return_code=0;
 						}
 					} break;
-					case THRESHOLD:
+					case EDA_LEVEL:
+					{
+						/*???DB.  Could average signal over gradient_average_width */
+						value=signals+(start_search*number_of_signals+(signal->index));
+						average_length=gradient_average_width;
+						present=start_search;
+						while ((present<end_search)&&((float)(*value)<level)&&
+							(-(float)(*value)<level))
+						{
+							value += number_of_signals;
+							present++;
+						}
+						if (present<end_search)
+						{
+							/* found event */
+							if (event=create_Event(present,1,UNDECIDED,(struct Event *)NULL,
+								(struct Event *)NULL))
+							{
+								signal->first_event=event;
+							}
+							else
+							{
+								display_message(ERROR_MESSAGE,
+									"calculate_device_event_markers.  Could not allocate event");
+								destroy_Event_list(&(signal->first_event));
+								return_code=0;
+							}
+						}
+					} break;
+					case EDA_THRESHOLD:
 					{
 						average_length=gradient_average_width;
 						offset=average_length*number_of_signals;
@@ -795,13 +826,14 @@ the the start and end times, the number of events and the search algorithm.
 			{
 				float average_after,average_before,maximum_slope,minimum_slope,slope,
 					threshold;
-				float first_value,last_value,*signals,*value_before,*value_after;
+				float first_value,last_value,*signals,*value,*value_after,
+					*value_before;
 				int no_maximum;
 
 				signals=buffer->signals.float_values;
 				switch (detection)
 				{
-					case INTERVAL:
+					case EDA_INTERVAL:
 					{
 						average_length=gradient_average_width;
 						if (start_search<average_length)
@@ -1003,7 +1035,35 @@ the the start and end times, the number of events and the search algorithm.
 							return_code=0;
 						}
 					} break;
-					case THRESHOLD:
+					case EDA_LEVEL:
+					{
+						/*???DB.  Could average signal over gradient_average_width */
+						value=signals+(start_search*number_of_signals+(signal->index));
+						average_length=gradient_average_width;
+						present=start_search;
+						while ((present<end_search)&&(*value<level)&&(-(*value)<level))
+						{
+							value += number_of_signals;
+							present++;
+						}
+						if (present<end_search)
+						{
+							/* found event */
+							if (event=create_Event(present,1,UNDECIDED,(struct Event *)NULL,
+								(struct Event *)NULL))
+							{
+								signal->first_event=event;
+							}
+							else
+							{
+								display_message(ERROR_MESSAGE,
+									"calculate_device_event_markers.  Could not allocate event");
+								destroy_Event_list(&(signal->first_event));
+								return_code=0;
+							}
+						}
+					} break;
+					case EDA_THRESHOLD:
 					{
 						average_length=gradient_average_width;
 						offset=average_length*number_of_signals;
@@ -1507,7 +1567,7 @@ int draw_signal(struct FE_node *device_node,
 	struct Signal_drawing_information *signal_drawing_information,
 	struct User_interface *user_interface)
 /*******************************************************************************
-LAST MODIFIED : 13 August 1999
+LAST MODIFIED : 29 November 1999
 
 DESCRIPTION :
 Draws the <device> signal in the <pixel_map> at the specified position
@@ -1639,17 +1699,19 @@ Draws the <device> signal in the <pixel_map> at the specified position
 				device->signal_minimum=signal_minimum;
 			}
 #if defined (UNEMAP_USE_NODES)
-			else/* if have device_node */
+			else
 			{
 				struct FE_field_component component;
-				component.number = 0;
-				component.field = get_Draw_package_signal_minimum_field(draw_package); 
-				set_FE_nodal_FE_value_value(device_node,&component,0,FE_NODAL_VALUE,signal_minimum);
-				component.number = 0;
-				component.field = get_Draw_package_signal_maximum_field(draw_package); 
-				set_FE_nodal_FE_value_value(device_node,&component,0,FE_NODAL_VALUE,signal_maximum);
+				component.number=0;
+				component.field=get_Draw_package_signal_minimum_field(draw_package); 
+				set_FE_nodal_FE_value_value(device_node,&component,0,FE_NODAL_VALUE,
+					signal_minimum);
+				component.number=0;
+				component.field=get_Draw_package_signal_maximum_field(draw_package); 
+				set_FE_nodal_FE_value_value(device_node,&component,0,FE_NODAL_VALUE,
+					signal_maximum);
 			}
-#endif /* #if defined (UNEMAP_USE_NODES)*/
+#endif /* defined (UNEMAP_USE_NODES) */
 			/* determine the value tick marks */
 			calculate_divisions(signal_minimum,signal_maximum,5,&value_tick_width,
 				&value_tick_min,&value_tick_max);
@@ -2083,10 +2145,26 @@ Draws the <device> signal in the <pixel_map> at the specified position
 						case ACCEPTED:
 						{
 							graphics_context=(signal_drawing_information->graphics_context).
-							signal_accepted_colour;
+								signal_accepted_colour;
 						} break;
 						case REJECTED:
 						{
+							if ((j>0)&&(signal_drawing_information->
+								number_of_signal_overlay_colours>0))
+							{
+								graphics_context=(signal_drawing_information->graphics_context).
+									signal_overlay_colour;
+								XSetForeground(display,graphics_context,
+									(signal_drawing_information->signal_overlay_colours)[(j-1)%
+									(signal_drawing_information->
+									number_of_signal_overlay_colours)]);
+							}
+							else
+							{
+								graphics_context=(signal_drawing_information->graphics_context).
+									signal_rejected_colour;
+							}
+#if defined (OLD_CODE)
 							/*???DB.  For dfn.  Needs generalizing */
 							/*???DB.  Stops drawing if I use different contexts.  Why ? */
 							graphics_context=
@@ -2136,6 +2214,7 @@ Draws the <device> signal in the <pixel_map> at the specified position
 										graphics_context).accepted_colour;*/
 								} break;
 							}
+#endif /* defined (OLD_CODE) */
 						} break;
 						case UNDECIDED:
 						{
@@ -3980,13 +4059,15 @@ DESCRIPTION :
 struct Signal_drawing_information *create_Signal_drawing_information(
 	struct User_interface *user_interface)
 /*******************************************************************************
-LAST MODIFIED : 5 July 1997
+LAST MODIFIED : 30 November 1999
 
 DESCRIPTION :
 ==============================================================================*/
 {
+	char *overlay_colours_string,temp_char,*temp_string_1,*temp_string_2;
 	Display *display;
-	int depth;
+	int depth,number_of_overlay_colours;
+	Pixel *overlay_colours;
 	Pixmap depth_screen_drawable;
 	struct Signal_drawing_information *signal_drawing_information;
 #define XmNacceptedColour "acceptedColour"
@@ -4003,6 +4084,8 @@ DESCRIPTION :
 #define XmCHighlightedColour "HighlightedColour"
 #define XmNintervalBoxColour "intervalBoxColour"
 #define XmCIntervalBoxColour "IntervalBoxColour"
+#define XmNoverlaySignalColours "overlaySignalColours"
+#define XmCOverlaySignalColours "OverlaySignalColours"
 #define XmNpotentialTimeColour "potentialTimeColour"
 #define XmCPotentialTimeColour "PotentialTimeColour"
 #define XmNrejectedColour "rejectedColour"
@@ -4157,8 +4240,21 @@ DESCRIPTION :
 			"red"
 		},
 	};
+	static XtResource overlay_resources[]=
+	{
+		{
+			XmNoverlaySignalColours,
+			XmCOverlaySignalColours,
+			XmRString,
+			sizeof(String),
+			0,
+			XmRString,
+			"yellow,blue"
+		},
+	};
 	unsigned long mask;
 	XGCValues values;
+	XrmValue from,to;
 
 	ENTER(create_Signal_drawing_information);
 	/* check arguments */
@@ -4172,6 +4268,60 @@ DESCRIPTION :
 			/* retrieve_settings */
 			XtVaGetApplicationResources(user_interface->application_shell,
 				signal_drawing_information,resources,XtNumber(resources),NULL);
+			/*???DB.  Would like to make a type converter, but there isn't a pixel
+				array type */
+			overlay_colours_string=(char *)NULL;
+			XtVaGetApplicationResources(user_interface->application_shell,
+				&overlay_colours_string,overlay_resources,XtNumber(overlay_resources),
+				NULL);
+			/* NB.  XtVaGetApplicationResources does not allocate memory for
+				overlay_colours_string, so it does not need to be free'd */
+			number_of_overlay_colours=0;
+			overlay_colours=(Pixel *)NULL;
+			if (temp_string_1=overlay_colours_string)
+			{
+				while (*temp_string_1)
+				{
+					/* skip leading spaces and commas */
+					temp_string_1 += strspn(temp_string_1," ,");
+					if (*temp_string_1)
+					{
+						number_of_overlay_colours++;
+						/* find next string or comma */
+						temp_string_1 += strcspn(temp_string_1," ,");
+					}
+				}
+			}
+			if ((0<number_of_overlay_colours)&&ALLOCATE(overlay_colours,Pixel,
+				number_of_overlay_colours))
+			{
+				number_of_overlay_colours=0;
+				temp_string_1=overlay_colours_string;
+				while (*temp_string_1)
+				{
+					/* skip leading spaces and commas */
+					temp_string_1 += strspn(temp_string_1," ,");
+					if (*temp_string_1)
+					{
+						/* find next string or comma */
+						temp_string_2=temp_string_1+strcspn(temp_string_1," ,");
+						temp_char= *temp_string_2;
+						*temp_string_2='\0';
+						from.addr=temp_string_1;
+						from.size=strlen(temp_string_1);
+						to.addr=(XPointer)(overlay_colours+number_of_overlay_colours);
+						to.size=sizeof(overlay_colours[number_of_overlay_colours]);
+						XtConvertAndStore(user_interface->application_shell,XtRString,
+							&from,XtRPixel,&to);
+						*temp_string_2=temp_char;
+						temp_string_1=temp_string_2;
+						number_of_overlay_colours++;
+					}
+				}
+			}
+			signal_drawing_information->number_of_signal_overlay_colours=
+				number_of_overlay_colours;
+			signal_drawing_information->signal_overlay_colours=overlay_colours;
 			/* create the graphics contexts */
 			display=user_interface->display;
 			/* the drawable has to have the correct depth and screen */
@@ -4239,6 +4389,13 @@ DESCRIPTION :
 			values.function=GXcopy;
 			(signal_drawing_information->graphics_context).signal_rejected_colour=
 				XCreateGC(display,depth_screen_drawable,mask,&values);
+			if (signal_drawing_information->signal_overlay_colours)
+			{
+				values.foreground=
+					(signal_drawing_information->signal_overlay_colours)[0];
+			}
+			(signal_drawing_information->graphics_context).signal_overlay_colour=
+				XCreateGC(display,depth_screen_drawable,mask,&values);
 			values.foreground=signal_drawing_information->signal_undecided_colour;
 			values.function=GXcopy;
 			(signal_drawing_information->graphics_context).signal_undecided_colour=
@@ -4296,7 +4453,7 @@ DESCRIPTION :
 int destroy_Signal_drawing_information(
 	struct Signal_drawing_information **signal_drawing_information_address)
 /*******************************************************************************
-LAST MODIFIED : 26 December 1996
+LAST MODIFIED : 29 November 1999
 
 DESCRIPTION :
 ==============================================================================*/
@@ -4345,6 +4502,8 @@ DESCRIPTION :
 		XFreeGC(display,(signal_drawing_information->graphics_context).
 			signal_rejected_colour);
 		XFreeGC(display,(signal_drawing_information->graphics_context).
+			signal_overlay_colour);
+		XFreeGC(display,(signal_drawing_information->graphics_context).
 			signal_undecided_colour);
 		XFreeGC(display,(signal_drawing_information->graphics_context).spectrum);
 		XFreeGC(display,(signal_drawing_information->graphics_context).
@@ -4355,6 +4514,7 @@ DESCRIPTION :
 			unhighlighted_colour);
 		XFreeGC(display,(signal_drawing_information->graphics_context).
 			accepted_colour);
+		DEALLOCATE(signal_drawing_information->signal_overlay_colours);
 		DEALLOCATE(*signal_drawing_information_address);
 		return_code=1;
 	}

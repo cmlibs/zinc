@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : trace_window.c
 
-LAST MODIFIED : 13 October 1999
+LAST MODIFIED : 6 December 1999
 
 DESCRIPTION :
 ==============================================================================*/
@@ -1406,6 +1406,31 @@ Saves the id of the trace enlarge detection interval button.
 	LEAVE;
 } /* identify_detection_interval_but */
 
+static void identify_detection_level_button(Widget *widget_id,
+	XtPointer trace_window,XtPointer call_data)
+/*******************************************************************************
+LAST MODIFIED : 30 November 1999
+
+DESCRIPTION :
+Saves the id of the trace enlarge detection level button.
+==============================================================================*/
+{
+	struct Trace_window *trace;
+
+	ENTER(identify_detection_level_button);
+	USE_PARAMETER(call_data);
+	if (trace=(struct Trace_window *)trace_window)
+	{
+		trace->area_1.enlarge.detection.level_button= *widget_id;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"identify_detection_level_button.  Missing trace_window");
+	}
+	LEAVE;
+} /* identify_detection_level_button */
+
 static void identify_detection_threshold_bu(Widget *widget_id,
 	XtPointer trace_window,XtPointer call_data)
 /*******************************************************************************
@@ -1761,6 +1786,31 @@ Saves the id of the trace enlarge events up arrow.
 	}
 	LEAVE;
 } /* identify_trace_enlarge_events_u */
+
+static void identify_trace_enlarge_level_va(Widget *widget_id,
+	XtPointer trace_window,XtPointer call_data)
+/*******************************************************************************
+LAST MODIFIED : 30 November 1999
+
+DESCRIPTION :
+Saves the id of the trace enlarge level value.
+==============================================================================*/
+{
+	struct Trace_window *trace;
+
+	ENTER(identify_trace_enlarge_level_va);
+	USE_PARAMETER(call_data);
+	if (trace=(struct Trace_window *)trace_window)
+	{
+		trace->area_1.enlarge.level_value= *widget_id;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"identify_trace_enlarge_level_va.  Missing trace_window");
+	}
+	LEAVE;
+} /* identify_trace_enlarge_level_va */
 
 static void identify_trace_enlarge_thresh_s(Widget *widget_id,
 	XtPointer trace_window,XtPointer call_data)
@@ -4230,14 +4280,14 @@ static struct Trace_window *create_Trace_window(
 	enum Event_detection_objective *objective,enum Datum_type *datum_type,
 	enum Edit_order *edit_order,struct Device ***highlight,struct Rig **rig,
 	int *datum,int *potential_time,int *event_number,int *number_of_events,
-	int *threshold,int *minimum_separation,int *start_search_interval,
-	int *end_search_interval,
+	int *threshold,int *minimum_separation,float *level,
+	int *start_search_interval,int *end_search_interval,
 	int screen_height,
 		/*???DB.  height of interval drawing area ? */
 	struct Signal_drawing_information *signal_drawing_information,
 	struct User_interface *user_interface)
 /*******************************************************************************
-LAST MODIFIED : 11 October 1999
+LAST MODIFIED : 6 December 1999
 
 DESCRIPTION :
 This function allocates the memory for an trace window and sets the fields to
@@ -4286,6 +4336,8 @@ the created trace window.  If unsuccessful, NULL is returned.
 			(XtPointer)identify_trace_enlarge_detectio},
 		{"identify_detection_interval_but",
 			(XtPointer)identify_detection_interval_but},
+		{"identify_detection_level_button",
+			(XtPointer)identify_detection_level_button},
 		{"identify_detection_threshold_bu",
 			(XtPointer)identify_detection_threshold_bu},
 		{"identify_trace_enlarge_objectiv",
@@ -4313,6 +4365,8 @@ the created trace window.  If unsuccessful, NULL is returned.
 			(XtPointer)identify_trace_enlarge_events_l},
 		{"identify_trace_enlarge_events_u",
 			(XtPointer)identify_trace_enlarge_events_u},
+		{"identify_trace_enlarge_level_va",
+			(XtPointer)identify_trace_enlarge_level_va},
 		{"identify_trace_enlarge_thresh_s",
 			(XtPointer)identify_trace_enlarge_thresh_s},
 		{"change_threshold",(XtPointer)change_threshold},
@@ -4521,6 +4575,7 @@ the created trace window.  If unsuccessful, NULL is returned.
 				trace->area_1.enlarge.calculate_button=(Widget)NULL;
 				trace->area_1.enlarge.detection_choice=(Widget)NULL;
 				trace->area_1.enlarge.detection.interval_button=(Widget)NULL;
+				trace->area_1.enlarge.detection.level_button=(Widget)NULL;
 				trace->area_1.enlarge.detection.threshold_button=(Widget)NULL;
 				trace->area_1.enlarge.objective_choice=(Widget)NULL;
 				trace->area_1.enlarge.objective.absolute_slope_button=(Widget)NULL;
@@ -4537,6 +4592,7 @@ the created trace window.  If unsuccessful, NULL is returned.
 				trace->area_1.enlarge.threshold_label=(Widget)NULL;
 				trace->area_1.enlarge.minimum_separation_scroll=(Widget)NULL;
 				trace->area_1.enlarge.minimum_separation_label=(Widget)NULL;
+				trace->area_1.enlarge.level_value=(Widget)NULL;
 				trace->area_1.enlarge.all_current_choice=(Widget)NULL;
 				trace->area_1.enlarge.calculate_all_events=1;
 				trace->area_1.enlarge.all_current.all_button=(Widget)NULL;
@@ -4636,6 +4692,7 @@ the created trace window.  If unsuccessful, NULL is returned.
 				trace->event_detection.number_of_events=number_of_events;
 				trace->event_detection.threshold=threshold;
 				trace->event_detection.minimum_separation=minimum_separation;
+				trace->event_detection.level=level;
 				trace->event_detection.start_search_interval=start_search_interval;
 				trace->event_detection.end_search_interval=end_search_interval;
 				trace->frequency_domain.display_mode=AMPLITUDE_PHASE;
@@ -4877,11 +4934,12 @@ the created trace window.  If unsuccessful, NULL is returned.
 				/* set the edit interval */
 				switch (*detection)
 				{
-					case INTERVAL:
+					case EDA_INTERVAL:
 					{
 						trace_update_edit_interval(trace);
 					} break;
-					case THRESHOLD:
+					case EDA_LEVEL:
+					case EDA_THRESHOLD:
 					{
 						trace->area_3.edit.first_data= *start_search_interval;
 						trace->area_3.edit.last_data= *end_search_interval;
@@ -5263,6 +5321,11 @@ the created trace window.  If unsuccessful, NULL is returned.
 							XtVaSetValues(trace->area_1.enlarge.minimum_separation_scroll,
 								XmNvalue,*minimum_separation,
 								NULL);
+							/* set the level */
+							sprintf(value_string,"%g",*level);
+							XtVaSetValues(trace->area_1.enlarge.level_value,
+								XmNvalue,value_string,
+								NULL);
 							/* adjust the enlarge datum choice */
 							child_widget=
 								XmOptionLabelGadget(trace->area_1.enlarge.datum_choice);
@@ -5309,7 +5372,7 @@ the created trace window.  If unsuccessful, NULL is returned.
 							/* set the event detection algorithm */
 							switch (*detection)
 							{
-								case INTERVAL:
+								case EDA_INTERVAL:
 								{
 									XtVaSetValues(trace->area_1.enlarge.detection_choice,
 										XmNmenuHistory,
@@ -5338,8 +5401,41 @@ the created trace window.  If unsuccessful, NULL is returned.
 									XtUnmanageChild(trace->area_1.enlarge.
 										minimum_separation_label);
 									XtUnmanageChild(trace->area_1.enlarge.all_current_choice);
+									XtUnmanageChild(trace->area_1.enlarge.level_value);
 								} break;
-								case THRESHOLD:
+								case EDA_LEVEL:
+								{
+									XtVaSetValues(trace->area_1.enlarge.detection_choice,
+										XmNmenuHistory,
+										trace->area_1.enlarge.detection.level_button,NULL);
+									XtVaSetValues(trace->area_1.enlarge.calculate_button,
+										XmNleftWidget,trace->area_1.enlarge.level_value,
+										NULL);
+									if (left_margin>widget_spacing)
+									{
+										XtVaSetValues(trace->area_1.enlarge.datum_choice,
+											XmNleftWidget,trace->area_1.enlarge.calculate_button,
+											XmNleftOffset,0,
+											NULL);
+									}
+									else
+									{
+										XtVaSetValues(trace->area_1.enlarge.datum_choice,
+											XmNleftWidget,trace->area_1.enlarge.calculate_button,
+											XmNleftOffset,widget_spacing-left_margin,
+											NULL);
+									}
+									XtUnmanageChild(trace->area_1.enlarge.number_of_events_form);
+									XtUnmanageChild(trace->area_1.enlarge.threshold_scroll);
+									XtUnmanageChild(trace->area_1.enlarge.threshold_label);
+									XtUnmanageChild(trace->area_1.enlarge.
+										minimum_separation_scroll);
+									XtUnmanageChild(trace->area_1.enlarge.
+										minimum_separation_label);
+									XtUnmanageChild(trace->area_1.enlarge.all_current_choice);
+									XtUnmanageChild(trace->area_1.enlarge.objective_choice);
+								} break;
+								case EDA_THRESHOLD:
 								{
 									XtVaSetValues(trace->area_1.enlarge.detection_choice,
 										XmNmenuHistory,
@@ -5362,6 +5458,7 @@ the created trace window.  If unsuccessful, NULL is returned.
 											NULL);
 									}
 									XtUnmanageChild(trace->area_1.enlarge.number_of_events_form);
+									XtUnmanageChild(trace->area_1.enlarge.level_value);
 								} break;
 								default:
 								{
@@ -5700,7 +5797,7 @@ int draw_highlight_event_box(int left,int top,int width,int height,
 	struct Drawing_2d *drawing,
 	struct Signal_drawing_information *signal_drawing_information)
 /*******************************************************************************
-LAST MODIFIED : 1 January 1997
+LAST MODIFIED : 30 November 1999
 
 DESCRIPTION :
 ???DB.  Maybe not needed anymore ?
@@ -5720,14 +5817,15 @@ DESCRIPTION :
 			highlighted_box_colour;
 		switch (detection)
 		{
-			case INTERVAL:
+			case EDA_INTERVAL:
 			{
 				XFillRectangle(display,XtWindow(drawing_area),graphics_context,left+1,
 					top+1,width-1,height-1);
 				XFillRectangle(display,drawing->pixel_map,graphics_context,left+1,top+1,
 					width-1,height-1);
 			} break;
-			case THRESHOLD:
+			case EDA_LEVEL:
+			case EDA_THRESHOLD:
 			{
 				XFillRectangle(display,XtWindow(drawing_area),graphics_context,left,
 					top+1,width+1,height-1);
@@ -5774,7 +5872,7 @@ DESCRIPTION :
 			width,height);
 		XDrawRectangle(display,drawing->pixel_map,graphics_context,left,top,width,
 			height);
-		if (INTERVAL==detection)
+		if (EDA_INTERVAL==detection)
 		{
 			bottom=top+height-1;
 			for (i=number_of_events-1;i>0;i--)
@@ -5805,12 +5903,13 @@ int open_trace_window(struct Trace_window **trace_address,Widget parent,
 	enum Event_detection_objective *objective,enum Datum_type *datum_type,
 	enum Edit_order *edit_order,struct Device ***highlight,struct Rig **rig,
 	int *datum,int *potential_time,int *event_number,int *number_of_events,
-	int *threshold,int *minimum_separation,int *start_search_interval,
-	int *end_search_interval,int screen_width,int screen_height,
+	int *threshold,int *minimum_separation,float *level,
+	int *start_search_interval,int *end_search_interval,int screen_width,
+	int screen_height,
 	struct Signal_drawing_information *signal_drawing_information,
 	struct User_interface *user_interface)
 /*******************************************************************************
-LAST MODIFIED : 19 May 1998
+LAST MODIFIED : 30 November 1999
 
 DESCRIPTION :
 If <*trace_address> is NULL, a trace window with the specified <parent> and
@@ -5832,7 +5931,7 @@ If <*trace_address> is NULL, a trace window with the specified <parent> and
 				if (trace=create_Trace_window(trace_address,(Widget)NULL,
 					trace_window_shell,identifying_colour,analysis_mode,detection,
 					objective,datum_type,edit_order,highlight,rig,datum,potential_time,
-					event_number,number_of_events,threshold,minimum_separation,
+					event_number,number_of_events,threshold,minimum_separation,level,
 					start_search_interval,end_search_interval,screen_height,
 					signal_drawing_information,user_interface))
 				{
@@ -6062,7 +6161,7 @@ The callback for redrawing part of the drawing area in trace area 1.
 											start_analysis_interval,axes_left,x_scale);
 										switch (*(trace->event_detection.detection))
 										{
-											case INTERVAL:
+											case EDA_INTERVAL:
 											{
 												trace_area_1->enlarge.left_edit_box=
 													(trace_area_1->enlarge.left_box)+
@@ -6077,7 +6176,8 @@ The callback for redrawing part of the drawing area in trace area 1.
 													(trace_area_1->enlarge.left_box)))/
 													(*(trace->event_detection.number_of_events));
 											} break;
-											case THRESHOLD:
+											case EDA_LEVEL:
+											case EDA_THRESHOLD:
 											{
 												trace_area_1->enlarge.left_edit_box=SCALE_X(
 													trace->area_3.edit.first_data,
@@ -7654,7 +7754,7 @@ Change the signal interval displayed in the trace window.
 
 int trace_change_search_interval(struct Trace_window *trace)
 /*******************************************************************************
-LAST MODIFIED : 13 August 1997
+LAST MODIFIED : 30 November 1999
 
 DESCRIPTION :
 Change the search interval displayed in the trace window.
@@ -7675,7 +7775,7 @@ Change the search interval displayed in the trace window.
 				{
 					switch (*(trace->event_detection.detection))
 					{
-						case INTERVAL:
+						case EDA_INTERVAL:
 						{
 							trace_update_edit_interval(trace);
 							redraw_trace_3_drawing_area((Widget)NULL,(XtPointer)trace,
@@ -7690,10 +7790,13 @@ Change the search interval displayed in the trace window.
 					return_code=0;
 				}
 			} break;
+#if defined (OLD_CODE)
+/*???DB.  Shouldn't be here */
 			case THRESHOLD:
 			{
 				return_code=1;
 			} break;
+#endif /* defined (OLD_CODE) */
 			default:
 			{
 				return_code=0;
@@ -8495,7 +8598,7 @@ Draws the markers in the <trace> window.
 
 int trace_update_edit_interval(struct Trace_window *trace)
 /*******************************************************************************
-LAST MODIFIED : 4 August 1999
+LAST MODIFIED : 30 November 1999
 
 DESCRIPTION :
 ???DB.  Should be a module function.  Wait until select_trace_1_drawing_area
@@ -8511,7 +8614,7 @@ has been moved.
 	{
 		switch (*(trace->event_detection.detection))
 		{
-			case INTERVAL:
+			case EDA_INTERVAL:
 			{
 				if ((trace->event_detection.event_number)&&
 					(trace->event_detection.number_of_events)&&
@@ -8537,7 +8640,8 @@ has been moved.
 					return_code=0;
 				}
 			} break;
-			case THRESHOLD:
+			case EDA_LEVEL:
+			case EDA_THRESHOLD:
 			{
 				if ((trace->event_detection.event_number)&&(trace->highlight)&&
 					(*(trace->highlight))&&(**(trace->highlight))&&
@@ -8596,7 +8700,7 @@ has been moved.
 
 int trace_change_rig(struct Trace_window *trace)
 /*******************************************************************************
-LAST MODIFIED : 30 October 1997
+LAST MODIFIED : 30 November 1999
 
 DESCRIPTION :
 Sets both the cross correlation devices to the highlight device.  Should be
@@ -8622,11 +8726,12 @@ called when the analysis rig is changed.
 		}
 		switch (*(trace->event_detection.detection))
 		{
-			case INTERVAL:
+			case EDA_INTERVAL:
 			{
 				trace_update_edit_interval(trace);
 			} break;
-			case THRESHOLD:
+			case EDA_LEVEL:
+			case EDA_THRESHOLD:
 			{
 				trace->area_3.edit.first_data=
 					*(trace->event_detection.start_search_interval);

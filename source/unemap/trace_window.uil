@@ -1,7 +1,7 @@
 !*******************************************************************************
 !FILE : trace_window.uil
 !
-!LAST MODIFIED : 11 OCtober 1999
+!LAST MODIFIED : 1 December 1999
 !
 !DESCRIPTION :
 !The widgets/gadgets for the trace window in the analysis work area.
@@ -37,6 +37,8 @@ procedure
 	identify_trace_enlarge_detectio;
 	identify_detection_interval_but;
 	set_detection_interval;
+	identify_detection_level_button;
+	set_detection_level;
 	identify_detection_threshold_bu;
 	set_detection_threshold;
 	identify_trace_enlarge_objectiv;
@@ -59,6 +61,7 @@ procedure
 	identify_trace_enlarge_events_l;
 	identify_trace_enlarge_events_u;
 	increment_number_of_events;
+	identify_trace_enlarge_level_va;
 	identify_trace_enlarge_thresh_s;
 	change_threshold;
 	identify_trace_enlarge_thresh_l;
@@ -524,6 +527,7 @@ object
 			XmPushButtonGadget trace_enlarge_calculate_button;
 			XmOptionMenu trace_enlarge_datum_choice;
 			XmForm trace_enlarge_events_number;
+			XmTextField trace_enlarge_level_value;
 			XmScrollBar trace_enlarge_threshold_scroll;
 			XmLabelGadget trace_enlarge_threshold_label;
 			XmScrollBar trace_enlarge_separation_scroll;
@@ -579,6 +583,26 @@ object
 							XmNactivateCallback = procedures
 								{
 								set_detection_interval(analysis_work_area_structure);
+								};
+							};
+						};
+					XmPushButtonGadget
+						{
+						arguments
+							{
+							XmNlabelString =
+							compound_string("Level");
+							XmNfontList = button_font;
+							};
+						callbacks
+							{
+							MrmNcreateCallback = procedures
+								{
+								identify_detection_level_button(trace_window_structure);
+								};
+							XmNactivateCallback = procedures
+								{
+								set_detection_level(analysis_work_area_structure);
 								};
 							};
 						};
@@ -918,6 +942,29 @@ object
 			XmNactivateCallback = procedures
 				{
 				increment_number_of_events(analysis_work_area_structure);
+				};
+			};
+		};
+	trace_enlarge_level_value: XmTextField
+		{
+		arguments
+			{
+			XmNcolumns = 8;
+			XmNfontList = button_font;
+			XmNleftAttachment = XmATTACH_WIDGET;
+			XmNleftOffset = widget_spacing;
+			XmNleftWidget = XmOptionMenu trace_enlarge_detection_choice;
+			XmNrightAttachment = XmATTACH_NONE;
+			XmNtopAttachment = XmATTACH_FORM;
+			XmNtopOffset = 0;
+			XmNbottomAttachment = XmATTACH_FORM;
+			XmNbottomOffset = 0;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedures
+				{
+				identify_trace_enlarge_level_va(trace_window_structure);
 				};
 			};
 		};
