@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : cmiss.c
 
-LAST MODIFIED : 17 April 2001
+LAST MODIFIED : 8 May 2001
 
 DESCRIPTION :
 Functions for executing cmiss commands.
@@ -1765,7 +1765,7 @@ Executes a GFX CREATE ELEMENT_CREATOR command.
 static int gfx_create_element_points(struct Parse_state *state,
 	void *dummy_to_be_modified,void *command_data_void)
 /*******************************************************************************
-LAST MODIFIED : 29 March 2001
+LAST MODIFIED : 8 May 2001
 
 DESCRIPTION :
 Executes a GFX CREATE ELEMENT_POINTS command.
@@ -1779,7 +1779,7 @@ Executes a GFX CREATE ELEMENT_POINTS command.
 	int face_number,number_of_components,number_of_valid_strings,return_code;
 	struct Cmiss_command_data *command_data;
 	struct Computed_field *coordinate_field, *data_field, *label_field,
-		*orientation_scale_field, *variable_scale_field;
+		*orientation_scale_field, *variable_scale_field, *xi_point_density_field;
 	struct Element_discretization discretization;
 	struct Element_to_glyph_set_data element_to_glyph_set_data;
 	struct FE_field *native_discretization_field;
@@ -1791,7 +1791,7 @@ Executes a GFX CREATE ELEMENT_POINTS command.
 	struct Option_table *option_table;
 	struct Set_Computed_field_conditional_data set_coordinate_field_data,
 		set_data_field_data, set_label_field_data, set_orientation_scale_field_data,
-		set_variable_scale_field_data;
+		set_variable_scale_field_data, set_xi_point_density_field_data;
 	Triple exact_xi,glyph_centre,glyph_scale_factors,glyph_size;
 
 	ENTER(gfx_create_element_points);
@@ -1813,7 +1813,8 @@ Executes a GFX CREATE ELEMENT_POINTS command.
 		coordinate_field=FIND_BY_IDENTIFIER_IN_MANAGER(Computed_field,name)(
 			"default_coordinate",computed_field_manager);
 		ACCESS(Computed_field)(coordinate_field);
-		data_field=(struct Computed_field *)NULL;
+		data_field = (struct Computed_field *)NULL;
+		xi_point_density_field = (struct Computed_field *)NULL;
 		exterior_flag=0;
 		face_number=0;
 		element_group=(struct GROUP(FE_element) *)NULL;
@@ -1876,6 +1877,17 @@ Executes a GFX CREATE ELEMENT_POINTS command.
 		set_data_field_data.conditional_function_user_data=(void *)NULL;
 		Option_table_add_entry(option_table,"data",&data_field,
 			&set_data_field_data,set_Computed_field_conditional);
+		/* density */
+		set_xi_point_density_field_data.computed_field_manager =
+			Computed_field_package_get_computed_field_manager(
+				command_data->computed_field_package);
+		set_xi_point_density_field_data.conditional_function =
+			Computed_field_is_scalar;
+		set_xi_point_density_field_data.conditional_function_user_data =
+			(void *)NULL;
+		Option_table_add_entry(option_table, "density",
+			&xi_point_density_field, &set_xi_point_density_field_data,
+			set_Computed_field_conditional);
 		/* exterior */
 		Option_table_add_entry(option_table,"exterior",&exterior_flag,
 			NULL,set_char_flag);
@@ -1952,54 +1964,67 @@ Executes a GFX CREATE ELEMENT_POINTS command.
 		/* xi */
 		Option_table_add_entry(option_table,"xi",
 			exact_xi,&number_of_components,set_float_vector);
-		if (return_code=Option_table_multi_parse(option_table,state))
+		if (return_code = Option_table_multi_parse(option_table, state))
 		{
 			face_number -= 2;
-			if (graphics_object=FIND_BY_IDENTIFIER_IN_LIST(GT_object,name)(
-				graphics_object_name,command_data->graphics_object_list))
+			STRING_TO_ENUMERATOR(Xi_discretization_mode)(
+				xi_discretization_mode_string, &xi_discretization_mode);
+			if (((XI_DISCRETIZATION_CELL_DENSITY == xi_discretization_mode) ||
+				(XI_DISCRETIZATION_CELL_POISSON == xi_discretization_mode)) &&
+				((struct Computed_field *)NULL == xi_point_density_field))
 			{
-				if (g_GLYPH_SET == graphics_object->object_type)
+				display_message(ERROR_MESSAGE,
+					"No density field specified for cell_density|cell_poisson");
+				return_code = 0;
+			}
+			if (return_code)
+			{
+				if (graphics_object=FIND_BY_IDENTIFIER_IN_LIST(GT_object,name)(
+					graphics_object_name,command_data->graphics_object_list))
 				{
-					if (GT_object_has_time(graphics_object,time))
+					if (g_GLYPH_SET == graphics_object->object_type)
 					{
-						display_message(WARNING_MESSAGE,
-							"Overwriting time %g in graphics object '%s'",time,
+						if (GT_object_has_time(graphics_object,time))
+						{
+							display_message(WARNING_MESSAGE,
+								"Overwriting time %g in graphics object '%s'",time,
+								graphics_object_name);
+							return_code=GT_object_delete_time(graphics_object,time);
+						}
+					}
+					else
+					{
+						display_message(ERROR_MESSAGE,
+							"Object of different type named '%s' already exists",
 							graphics_object_name);
-						return_code=GT_object_delete_time(graphics_object,time);
+						return_code=0;
 					}
 				}
 				else
 				{
-					display_message(ERROR_MESSAGE,
-						"Object of different type named '%s' already exists",
-						graphics_object_name);
-					return_code=0;
-				}
-			}
-			else
-			{
-				if ((graphics_object=CREATE(GT_object)(graphics_object_name,
-					g_GLYPH_SET,material))&&
-					ADD_OBJECT_TO_LIST(GT_object)(graphics_object,
-						command_data->graphics_object_list))
-				{
-					return_code=1;
-				}
-				else
-				{
-					display_message(ERROR_MESSAGE,
-						"gfx_create_element_points.  Could not create graphics object");
-					DESTROY(GT_object)(&graphics_object);
-					return_code=0;
+					if ((graphics_object=CREATE(GT_object)(graphics_object_name,
+						g_GLYPH_SET,material))&&
+						ADD_OBJECT_TO_LIST(GT_object)(graphics_object,
+							command_data->graphics_object_list))
+					{
+						return_code=1;
+					}
+					else
+					{
+						display_message(ERROR_MESSAGE,
+							"gfx_create_element_points.  Could not create graphics object");
+						DESTROY(GT_object)(&graphics_object);
+						return_code=0;
+					}
 				}
 			}
 			if (return_code)
 			{
 				element_to_glyph_set_data.time=time;
-				STRING_TO_ENUMERATOR(Xi_discretization_mode)(
-					xi_discretization_mode_string, &xi_discretization_mode);
 				element_to_glyph_set_data.xi_discretization_mode =
 					xi_discretization_mode;
+				element_to_glyph_set_data.xi_point_density_field =
+					xi_point_density_field;
 				element_to_glyph_set_data.coordinate_field=
 					Computed_field_begin_wrap_coordinate_field(coordinate_field);
 				if (orientation_scale_field)
@@ -2123,6 +2148,10 @@ Executes a GFX CREATE ELEMENT_POINTS command.
 		if (element_group)
 		{
 			DEACCESS(GROUP(FE_element))(&element_group);
+		}
+		if (xi_point_density_field)
+		{
+			DEACCESS(Computed_field)(&xi_point_density_field);
 		}
 	}
 	else

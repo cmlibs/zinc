@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : finite_element_to_graphics_object.c
 
-LAST MODIFIED : 7 May 2001
+LAST MODIFIED : 8 May 2001
 
 DESCRIPTION :
 The functions for creating graphical objects from finite elements.
@@ -9381,7 +9381,7 @@ printf("Warp called: volume1 = %s, volume2 = %s,  element = %d, coordinates = %s
 int element_to_glyph_set(struct FE_element *element,
 	void *element_to_glyph_set_data_void)
 /*******************************************************************************
-LAST MODIFIED : 23 April 2001
+LAST MODIFIED : 8 May 2001
 
 DESCRIPTION :
 Converts a finite element into a set of glyphs displaying information about the
@@ -9424,8 +9424,8 @@ fields defined over it.
 				if (FE_element_get_xi_points(element,
 					element_to_glyph_set_data->xi_discretization_mode, number_in_xi,
 					element_to_glyph_set_data->exact_xi,
-					/*coordinate_field*/(struct Computed_field *)NULL,
-					/*density_field*/(struct Computed_field *)NULL,
+					element_to_glyph_set_data->coordinate_field,
+					element_to_glyph_set_data->xi_point_density_field,
 					&number_of_xi_points, &xi_points))
 				{
 					if (glyph_set = create_GT_glyph_set_from_FE_element(
