@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : unemap_command.c
 
-LAST MODIFIED : 22 July 2002
+LAST MODIFIED : 1 August 2002
 
 DESCRIPTION :
 Functions and for executing unemap commands.
@@ -341,7 +341,7 @@ struct Unemap_command_data *CREATE(Unemap_command_data)(
 #endif /* defined (NOT_ACQUISITION_ONLY) */
 	)
 /*******************************************************************************
-LAST MODIFIED : 22 July 2002
+LAST MODIFIED : 1 August 2002
 
 DESCRIPTION :
 Creates a Unemap_command_data structure containing pointers to the passed
@@ -356,12 +356,9 @@ will be destroyed with it.
 
 	ENTER(CREATE(Unemap_command_data));
 	unemap_command_data = (struct Unemap_command_data *)NULL;
-	if (event_dispatcher && execute_command &&
+	if (execute_command &&
 #if defined (NOT_ACQUISITION_ONLY)
 #if defined (UNEMAP_USE_3D)
-#if defined (MOTIF)
-		node_tool && transform_tool &&
-#endif /* defined (MOTIF) */
 		glyph_list && fe_time && computed_field_package && basis_manager &&
 		element_manager && fe_field_manager && data_manager && node_manager &&
 		graphical_material_manager && default_graphical_material &&
@@ -371,11 +368,20 @@ will be destroyed with it.
 		scene_manager && spectrum_manager && element_point_ranges_selection &&
 		element_selection && data_selection && node_selection &&
 #endif /* defined (UNEMAP_USE_3D) */
-		default_time_keeper
-#else /* defined (NOT_ACQUISITION_ONLY) */
-		page_window
 #endif /* defined (NOT_ACQUISITION_ONLY) */
-		)
+		((!user_interface) ||
+			(user_interface && event_dispatcher &&
+#if defined (NOT_ACQUISITION_ONLY)
+#if defined (UNEMAP_USE_3D)
+#if defined (MOTIF)
+				node_tool && transform_tool &&
+#endif /* defined (MOTIF) */
+#endif /* defined (UNEMAP_USE_3D) */
+				default_time_keeper
+#else /* defined (NOT_ACQUISITION_ONLY) */
+				page_window
+#endif /* defined (NOT_ACQUISITION_ONLY) */
+		)))
 	{
 		if (ALLOCATE(unemap_command_data, struct Unemap_command_data, 1))
 		{
