@@ -2199,6 +2199,7 @@ view angle, interest point etc.
 			}
 			allow_skew_flag=0;
 			absolute_viewport_flag=0;
+			distorting_relative_viewport_flag=0;
 			relative_viewport_flag=0;
 			custom_projection_flag=0;
 			parallel_projection_flag=0;
