@@ -483,7 +483,7 @@ GRAPHICS_LIB = -delay_load -lmoviefile -delay_load -ldmedia -lGL -lGLU
 #elif defined(LINUX) /* switch OperatingSystem */
 XCOMM for OpenGL without SGI movie
 GRAPHICS_LIBRARY_SWITCH = -DOPENGL_API
-GRAPHICS_LIB = -L/usr/local/lib -lMesaGL -lMesaGLU
+GRAPHICS_LIB = -L/usr/local/lib -lGL -lGLU
 #endif /* switch OperatingSystem */
 #endif /* (USE_UNEMAP_NODES) || defined (USE_UNEMAP_3D)*/
 
@@ -632,6 +632,7 @@ COMPUTED_FIELD_SRCS = \
 FINITE_ELEMENT_SRCS = \
 	finite_element/export_finite_element.c \
 	finite_element/finite_element_discretization.c \
+	finite_element/finite_element_time.c \
 	finite_element/finite_element_to_graphics_object.c \
 	finite_element/finite_element_to_iso_lines.c \
 	finite_element/finite_element_to_streamlines.c \
