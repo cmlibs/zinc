@@ -887,6 +887,7 @@ IMAGE_PROCESSING_SRCS = \
 	image_processing/computed_field_edge_detection.c \
 	image_processing/computed_field_erode_filter.c \
 	image_processing/computed_field_first_order_statistics.c \
+	image_processing/computed_field_fuzzy_clustering.c \
 	image_processing/computed_field_gabor_filter.c \
 	image_processing/computed_field_gaussian_filter.c \
 	image_processing/computed_field_haar_wavelet_decomp.c \

@@ -53,16 +53,14 @@ Functions for executing cmiss commands.
 #include "image_processing/computed_field_adjust_contrast.h"
 #include "image_processing/computed_field_adjusted_gaussian.h"
 #include "image_processing/computed_field_binomial_filter.h"
-
 #include "image_processing/computed_field_canny_filter.h"
 #include "image_processing/computed_field_color_based_segment.h"
 #include "image_processing/computed_field_cube_plugin_all.h"
-
 #include "image_processing/computed_field_dilate_filter.h"
 #include "image_processing/computed_field_edge_detection.h"
 #include "image_processing/computed_field_erode_filter.h"
-
 #include "image_processing/computed_field_first_order_statistics.h"
+#include "image_processing/computed_field_fuzzy_clustering.h"
 #include "image_processing/computed_field_gabor_filter.h"
 #include "image_processing/computed_field_gaussian_filter.h"
 #include "image_processing/computed_field_haar_wavelet_decomp.h"
@@ -80,7 +78,6 @@ Functions for executing cmiss commands.
 #include "image_processing/computed_field_image_mean_value.h"
 #include "image_processing/computed_field_image_threshold.h"
 #include "image_processing/computed_field_image_tv_restoration.h"
-
 #include "image_processing/computed_field_iteration_threshold.h"
 #include "image_processing/computed_field_k_nearest_mean.h"
 #include "image_processing/computed_field_local_histogram_features.h"
@@ -98,7 +95,6 @@ Functions for executing cmiss commands.
 #include "image_processing/computed_field_spatial_skeleton.h"
 #include "image_processing/computed_field_steerable_filter.h"
 #include "image_processing/computed_field_sterology_measures.h"
-
 #include "image_processing/computed_field_throw_away_weakest.h"
 #include "image_processing/computed_field_volterra_filter.h"
 #include "image_processing/computed_field_wavelet_decomp.h"
@@ -24400,7 +24396,6 @@ Initialise all the subcomponents of cmgui and create the Cmiss_command_data
 				Computed_field_register_types_cube_plugin_all(
 					command_data->computed_field_package,
 					command_data->root_region, command_data->graphics_buffer_package);
-
 				Computed_field_register_types_dilate_filter(
 					command_data->computed_field_package,
 					command_data->root_region, command_data->graphics_buffer_package);
@@ -24410,8 +24405,10 @@ Initialise all the subcomponents of cmgui and create the Cmiss_command_data
 				Computed_field_register_types_erode_filter(
 					command_data->computed_field_package,
 					command_data->root_region, command_data->graphics_buffer_package);
-
 				Computed_field_register_types_first_order_statistics(
+					command_data->computed_field_package,
+					command_data->root_region, command_data->graphics_buffer_package);
+				Computed_field_register_types_fuzzy_clustering(
 					command_data->computed_field_package,
 					command_data->root_region, command_data->graphics_buffer_package);
 				Computed_field_register_types_gabor_filter(
@@ -24420,7 +24417,6 @@ Initialise all the subcomponents of cmgui and create the Cmiss_command_data
 				Computed_field_register_types_gaussian_filter(
 					command_data->computed_field_package,
 					command_data->root_region, command_data->graphics_buffer_package);
-
 				Computed_field_register_types_haar_wavelet_decomp(
 					command_data->computed_field_package,
 					command_data->root_region, command_data->graphics_buffer_package);
@@ -24442,7 +24438,6 @@ Initialise all the subcomponents of cmgui and create the Cmiss_command_data
 				Computed_field_register_types_histogram_stretch(
 					command_data->computed_field_package,
 					command_data->root_region, command_data->graphics_buffer_package);
-
 				Computed_field_register_types_image_approximation(
 					command_data->computed_field_package,
 					command_data->root_region, command_data->graphics_buffer_package);
@@ -24467,18 +24462,15 @@ Initialise all the subcomponents of cmgui and create the Cmiss_command_data
 				Computed_field_register_types_image_tv_restoration(
 					command_data->computed_field_package,
 					command_data->root_region, command_data->graphics_buffer_package);
-
 				Computed_field_register_types_iteration_threshold(
 					command_data->computed_field_package,
 					command_data->root_region, command_data->graphics_buffer_package);
-
 				Computed_field_register_types_k_nearest_mean(
 					command_data->computed_field_package,
 					command_data->root_region, command_data->graphics_buffer_package);
 				Computed_field_register_types_local_histogram_features(
 					command_data->computed_field_package,
 					command_data->root_region, command_data->graphics_buffer_package);
-
 				Computed_field_register_types_local_mean_smooth(
 					command_data->computed_field_package,
 					command_data->root_region, command_data->graphics_buffer_package);
@@ -24491,11 +24483,9 @@ Initialise all the subcomponents of cmgui and create the Cmiss_command_data
 				Computed_field_register_types_median_filter(
 					command_data->computed_field_package,
 					command_data->root_region, command_data->graphics_buffer_package);
-				
 				Computed_field_register_types_morphology_thinning(
 					command_data->computed_field_package,
 					command_data->root_region, command_data->graphics_buffer_package);
-
 				Computed_field_register_types_power_spectrum(
 					command_data->computed_field_package,
 					command_data->root_region, command_data->graphics_buffer_package);
@@ -24526,7 +24516,6 @@ Initialise all the subcomponents of cmgui and create the Cmiss_command_data
 				Computed_field_register_types_throw_away_weakest(
 					command_data->computed_field_package,
 					command_data->root_region, command_data->graphics_buffer_package);
-					
 				Computed_field_register_types_volterra_filter(
 					command_data->computed_field_package,
 					command_data->root_region, command_data->graphics_buffer_package);
