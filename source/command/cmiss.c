@@ -24105,8 +24105,10 @@ Initialise all the subcomponents of cmgui and create the Cmiss_command_data
 			}
 			Computed_field_register_types_deformation(
 				command_data->computed_field_package);
-			if (command_data->root_region && command_data->user_interface)
+			if (command_data->root_region)
 			{
+				/* Image processing computed fields still work with a NULL user_interface
+					but they cannot use the find_element_xi_special 2D acceleration */
 				Computed_field_register_types_image_processing(
 					command_data->computed_field_package, 
 					command_data->root_region, command_data->user_interface);

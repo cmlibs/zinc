@@ -1244,7 +1244,7 @@ although its cache may be lost.
 	if (field && source_field && texture_coordinate_field &&
 		(depth = source_field->number_of_components) &&
 		(dimension <= texture_coordinate_field->number_of_components) &&
-		region && user_interface)
+		region /* && user_interface can be NULL, just no special find_xi */)
 	{
 		return_code=1;
 		/* 1. make dynamic allocations for any new type-specific data */
