@@ -596,12 +596,12 @@ called if the integration has indicated that the direction changes element.
 } /* check_xi_limits */
 
 static int calculate_delta_xi(FE_value *vector,FE_value *dx_dxi,
-	FE_value *deltaxi)
+	FE_value *delta_xi)
 /*******************************************************************************
 LAST MODIFIED : 15 March 1999
 
 DESCRIPTION :
-Converts a vector <vector> in world space into xi space <deltaxi> by
+Converts a vector <vector> in world space into xi space <delta_xi> by
 calculating the inverse of the Jacobian matrix <dxdxi> and multiplying.
 ==============================================================================*/
 {
@@ -609,16 +609,28 @@ calculating the inverse of the Jacobian matrix <dxdxi> and multiplying.
 	int return_code;
 
 	ENTER(calculate_delta_xi);
-	if (vector&&deltaxi&&invert_FE_value_matrix3(dx_dxi,dxi_dx))
+	if (vector && dx_dxi && delta_xi)
 	{
-		deltaxi[0]=vector[0]*dxi_dx[0]+vector[1]*dxi_dx[1]+vector[2]*dxi_dx[2];
-		deltaxi[1]=vector[0]*dxi_dx[3]+vector[1]*dxi_dx[4]+vector[2]*dxi_dx[5];
-		deltaxi[2]=vector[0]*dxi_dx[6]+vector[1]*dxi_dx[7]+vector[2]*dxi_dx[8];
-		return_code = 1;
+		if (invert_FE_value_matrix3(dx_dxi, dxi_dx))
+		{
+			delta_xi[0] =
+				vector[0]*dxi_dx[0] + vector[1]*dxi_dx[1] + vector[2]*dxi_dx[2];
+			delta_xi[1] =
+				vector[0]*dxi_dx[3] + vector[1]*dxi_dx[4] + vector[2]*dxi_dx[5];
+			delta_xi[2] =
+				vector[0]*dxi_dx[6] + vector[1]*dxi_dx[7] + vector[2]*dxi_dx[8];
+			return_code = 1;
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,
+				"calculate_delta_xi.  Could not invert dx/dxi");
+			return_code = 0;
+		}
 	}
 	else
 	{
-		display_message(ERROR_MESSAGE,"calculate_delta_xi.  Failed");
+		display_message(ERROR_MESSAGE,"calculate_delta_xi.  Invalid argument(s)");
 		return_code = 0;
 	}
 	LEAVE;
@@ -3125,15 +3137,19 @@ Converts a 3-D element into an array of streamlines.
 		/* determine if the element is required */
 		if (FE_field_is_defined_at_node(fe_field, node) &&
 			get_FE_nodal_element_xi_value(node, fe_field, 0 /* component_number */,
-			0 /*  version */, FE_NODAL_VALUE, &element, initial_xi) && element &&
+				0 /*  version */, FE_NODAL_VALUE, &element, initial_xi) && element &&
 			(element->shape)&&(3==element->shape->dimension) &&
 			((!node_to_streamline_data->seed_element)|| 
-			(element==node_to_streamline_data->seed_element)) &&
-			((!node_to_streamline_data->element_group)||IS_OBJECT_IN_GROUP(FE_element)(
-				element,node_to_streamline_data->element_group)))
+				(element==node_to_streamline_data->seed_element)) &&
+			((!node_to_streamline_data->element_group) ||
+				IS_OBJECT_IN_GROUP(FE_element)(element,
+					node_to_streamline_data->element_group)))
 		{
-			printf("node_to_streamline %p xi %f %f %f\n",
-				element, initial_xi[0], initial_xi[1], initial_xi[2]);
+#if defined (DEBUG)
+			/*???debug*/
+			printf("node_to_streamline: element %d, xi %f %f %f\n",
+				element->cm.number, initial_xi[0], initial_xi[1], initial_xi[2]);
+#endif /* defined (DEBUG) */
 			if (STREAM_LINE==node_to_streamline_data->type)
 			{
 				if (polyline=create_GT_polyline_streamline_FE_element(element,
