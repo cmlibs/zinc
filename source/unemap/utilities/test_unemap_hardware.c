@@ -13,9 +13,6 @@ For testing the unemap hardware software (client, server, standalone).
 #include "general/debug.h"
 #include "unemap/unemap_hardware.h"
 
-/* fileno is not ANSI */
-extern int fileno(FILE *);
-
 /*
 Module variables
 ----------------
