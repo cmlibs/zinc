@@ -31665,132 +31665,23 @@ Returns true if <element_group> contains any elements in <element_list>.
 	return (return_code);
 } /* FE_element_group_intersects_list */
 
-#if defined (OLD_CODE)
-int theta_increasing_in_xi1(struct FE_element_field_component *component,
-	struct FE_element *element,struct FE_field *field,int number_of_values,
-	FE_value *values)
-/*******************************************************************************
-LAST MODIFIED : 30 January 1994
-
-DESCRIPTION :
-Modifies the already calculated <values>.
-==============================================================================*/
+enum Modify_theta_in_xi1_mode
 {
-	enum FE_basis_type *basis_type;
-	FE_value *element_value,offset,start_value,value;
-	int i,j,number_of_nodes_in_xi1,number_of_xi_coordinates,return_code;
-	struct Standard_node_to_element_map **node_to_element_map;
+	MODIFY_THETA_DECREASING_IN_XI1,
+	MODIFY_THETA_INCREASING_IN_XI1,
+	MODIFY_THETA_NON_DECREASING_IN_XI1,
+	MODIFY_THETA_NON_INCREASING_IN_XI1
+};
 
-	ENTER(theta_increasing_in_xi1);
-	/* check arguments */
-	if (component&&(STANDARD_NODE_TO_ELEMENT_MAP==component->type)&&
-		(component->basis)&&(basis_type=component->basis->type)&&element&&field&&
-		(0<number_of_values)&&values)
-	{
-		basis_type++;
-		/* determine the number of nodes in the xi1 direction */
-		switch (*basis_type)
-		{
-			case LINEAR_LAGRANGE: case CUBIC_HERMITE: case LAGRANGE_HERMITE:
-				case HERMITE_LAGRANGE:
-			{
-				number_of_nodes_in_xi1=2;
-			} break;
-			case QUADRATIC_LAGRANGE:
-			{
-				number_of_nodes_in_xi1=3;
-			} break;
-			case CUBIC_LAGRANGE:
-			{
-				number_of_nodes_in_xi1=4;
-			} break;
-		}
-		/* check that the basis is a tensor product of the xi1 basis with the
-			basis for the other directions */
-		number_of_xi_coordinates=component->basis->number_of_xi_coordinates;
-		basis_type++;
-		i=2;
-		while ((i<=number_of_xi_coordinates)&&(NO_RELATION== *basis_type))
-		{
-			basis_type += i;
-			i++;
-		}
-		if ((i>number_of_xi_coordinates)&&(0==(component->map).standard_node_based.
-			number_of_nodes%number_of_nodes_in_xi1)&&(node_to_element_map=
-			(component->map).standard_node_based.node_to_element_maps))
-		{
-			element_value=values;
-			offset=0;
-			for (i=(component->map).standard_node_based.number_of_nodes/
-				number_of_nodes_in_xi1;i>0;i--)
-			{
-				start_value= *element_value;
-				for (j=number_of_nodes_in_xi1-1;j>0;j--)
-				{
-					value= *element_value;
-					element_value += (*node_to_element_map)->number_of_nodal_values;
-					*element_value += offset;
-					if (value>= *element_value)
-					{
-						*element_value += 2*PI;
-					}
-					node_to_element_map++;
-				}
-				if (i>1)
-				{
-					element_value += (*node_to_element_map)->number_of_nodal_values;
-					node_to_element_map++;
-					value= *element_value;
-					if (value>start_value+PI)
-					{
-						offset= -2*PI;
-						*element_value += offset;
-					}
-					else
-					{
-						if (value<start_value-PI)
-						{
-							offset=2*PI;
-							*element_value += offset;
-						}
-						else
-						{
-							offset=0;
-						}
-					}
-				}
-			}
-			return_code=1;
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"theta_increasing_in_xi1.  Not a tensor product basis");
-			return_code=0;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"theta_increasing_in_xi1.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* theta_increasing_in_xi1 */
-#endif /* defined (OLD_CODE) */
-
-int theta_increasing_in_xi1(struct FE_element_field_component *component,
+static int modify_theta_in_xi1(struct FE_element_field_component *component,
 	struct FE_element *element,struct FE_field *field,FE_value time,
-	int number_of_values,FE_value *values)
+	int number_of_values,FE_value *values, enum Modify_theta_in_xi1_mode mode)
 /*******************************************************************************
-LAST MODIFIED : 3 December 2001
+LAST MODIFIED : 1 February 2002
 
 DESCRIPTION :
 Modifies the already calculated <values>.
 ???DB.  Only for certain bases
-???RC.  Needs to be global to allow writing function in export_finite_element.
 ==============================================================================*/
 {
 	char all_on_axis;
@@ -31805,7 +31696,7 @@ Modifies the already calculated <values>.
 	struct Standard_node_to_element_map **node_to_element_map,
 		**node_to_element_map_2;
 
-	ENTER(theta_increasing_in_xi1);
+	ENTER(modify_theta_in_xi1);
 	/* check arguments */
 	if (component&&(STANDARD_NODE_TO_ELEMENT_MAP==component->type)&&
 		(node_to_element_map=(component->map).standard_node_based.
@@ -32056,9 +31947,9 @@ Modifies the already calculated <values>.
 						node_to_element_map_2=node_to_element_map;
 						for (i=number_of_nodes_in_xi1;i>0;i--)
 						{
+							node_to_element_map_2--;
 							element_value_2 -=
 								(*node_to_element_map_2)->number_of_nodal_values;
-							node_to_element_map_2--;
 						}
 						for (k=number_of_nodes_in_xi3;k>0;k--)
 						{
@@ -32071,16 +31962,19 @@ Modifies the already calculated <values>.
 									number_of_nodal_values;
 								node_to_element_map_2++;
 							}
-							for (j=number_of_nodes_in_xi2;j>1;j--)
+							if (k>1)
 							{
-								for (i=number_of_nodes_in_xi1;i>0;i--)
+								for (j=number_of_nodes_in_xi2;j>1;j--)
 								{
-									element_value +=
-										(*node_to_element_map)->number_of_nodal_values;
-									node_to_element_map++;
-									element_value_2 += (*node_to_element_map_2)->
-										number_of_nodal_values;
-									node_to_element_map_2++;
+									for (i=number_of_nodes_in_xi1;i>0;i--)
+									{
+										element_value +=
+											(*node_to_element_map)->number_of_nodal_values;
+										node_to_element_map++;
+										element_value_2 += (*node_to_element_map_2)->
+											number_of_nodal_values;
+										node_to_element_map_2++;
+									}
 								}
 							}
 						}
@@ -32189,9 +32083,9 @@ Modifies the already calculated <values>.
 								{
 									for (i=number_of_nodes_in_xi1;i>0;i--)
 									{
+										node_to_element_map_2--;
 										element_value_2 -= (*node_to_element_map_2)->
 											number_of_nodal_values;
-										node_to_element_map_2--;
 									}
 								}
 								for (j=number_of_nodes_in_xi2;j>0;j--)
@@ -32211,77 +32105,11 @@ Modifies the already calculated <values>.
 						}
 					}
 				}
-#if defined (OLD_CODE)
-				element_value=values;
-				element_value_2=values;
-				node_to_element_map_2=node_to_element_map;
-				for (i=number_of_nodes_in_xi1;i>0;i--)
-				{
-					element_value_2 += (*node_to_element_map_2)->number_of_nodal_values;
-					node_to_element_map_2++;
-				}
-				for (k=number_of_nodes_in_xi3;k>0;k--)
-				{
-					for (j=number_of_nodes_in_xi2;j>1;j--)
-					{
-						for (i=number_of_nodes_in_xi1;i>1;i--)
-						{
-							if (*element_value== *(element_value+((*node_to_element_map)->
-								number_of_nodal_values)))
-							{
-								*element_value= *element_value_2;
-								element_value += (*node_to_element_map)->number_of_nodal_values;
-								node_to_element_map++;
-								element_value_2 += (*node_to_element_map_2)->number_of_nodal_values;
-								node_to_element_map_2++;
-								*element_value= *element_value_2;
-							}
-							else
-							{
-								if (*element_value_2== *(element_value_2+((*node_to_element_map)->
-									number_of_nodal_values)))
-								{
-									*element_value_2= *element_value;
-									element_value += (*node_to_element_map)->number_of_nodal_values;
-									node_to_element_map++;
-									element_value_2 +=
-										(*node_to_element_map_2)->number_of_nodal_values;
-									node_to_element_map_2++;
-									*element_value_2= *element_value;
-								}
-								else
-								{
-									element_value += (*node_to_element_map)->number_of_nodal_values;
-									node_to_element_map++;
-									element_value_2 +=
-										(*node_to_element_map_2)->number_of_nodal_values;
-									node_to_element_map_2++;
-								}
-							}
-						}
-						element_value += (*node_to_element_map)->number_of_nodal_values;
-						node_to_element_map++;
-						element_value_2 += (*node_to_element_map_2)->number_of_nodal_values;
-						node_to_element_map_2++;
-					}
-					if (k>1)
-					{
-						for (i=number_of_nodes_in_xi1;i>0;i--)
-						{
-							element_value += (*node_to_element_map)->number_of_nodal_values;
-							node_to_element_map++;
-							element_value_2 += (*node_to_element_map_2)->number_of_nodal_values;
-							node_to_element_map_2++;
-						}
-					}
-				}
-#endif /* defined (OLD_CODE) */
 				element_value=values;
 				node_to_element_map=(component->map).standard_node_based.
 					node_to_element_maps;
 				offset_xi1_xi2=0;
 				offset_xi2_xi3=0;
-				/* make sure increasing in xi1 and smooth in xi2 & xi3 */
 				for (k=number_of_nodes_in_xi3;k>0;k--)
 				{
 					value_xi3= *element_value;
@@ -32295,9 +32123,40 @@ Modifies the already calculated <values>.
 							*element_value += offset_xi1_xi2+offset_xi2_xi3;
 							/*???DB.  <= needed for single prolate, but seems to cause
 								problems for heart */
-							if (value_xi1>= *element_value)
+							switch (mode)
 							{
-								*element_value += 2*PI;
+								case MODIFY_THETA_DECREASING_IN_XI1:
+								{
+									/* make sure decreasing in xi1 and smooth in xi2 & xi3 */
+									if (value_xi1 <= *element_value)
+									{
+										*element_value -= 2*PI;
+									}
+								} break;
+								case MODIFY_THETA_INCREASING_IN_XI1:
+								{
+									/* make sure increasing in xi1 and smooth in xi2 & xi3 */
+									if (value_xi1 >= *element_value)
+									{
+										*element_value += 2*PI;
+									}
+								} break;
+								case MODIFY_THETA_NON_DECREASING_IN_XI1:
+								{
+									/* make sure non-decreasing in xi1 and smooth in xi2 & xi3 */
+									if (value_xi1 > *element_value)
+									{
+										*element_value += 2*PI;
+									}
+								} break;
+								case MODIFY_THETA_NON_INCREASING_IN_XI1:
+								{
+									/* make sure non-increasing in xi1 and smooth in xi2 & xi3 */
+									if (value_xi1 < *element_value)
+									{
+										*element_value -= 2*PI;
+									}
+								} break;
 							}
 							node_to_element_map++;
 						}
@@ -32355,9 +32214,51 @@ Modifies the already calculated <values>.
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"theta_increasing_in_xi1.  Invalid argument(s)");
+			"modify_theta_in_xi1.  Invalid argument(s)");
 		return_code=0;
 	}
+	LEAVE;
+
+	return (return_code);
+} /* modify_theta_in_xi1 */
+
+int theta_decreasing_in_xi1(struct FE_element_field_component *component,
+	struct FE_element *element,struct FE_field *field,FE_value time,
+	int number_of_values,FE_value *values)
+/*******************************************************************************
+LAST MODIFIED : 1 February 2002
+
+DESCRIPTION :
+Calls modify_theta_in_xi1 with mode MODIFY_THETA_DECREASING_IN_XI1.
+???RC.  Needs to be global to allow writing function in export_finite_element.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(theta_decreasing_in_xi1);
+	return_code = modify_theta_in_xi1(component, element, field, time,
+		number_of_values, values, MODIFY_THETA_DECREASING_IN_XI1);
+	LEAVE;
+
+	return (return_code);
+} /* theta_decreasing_in_xi1 */
+
+int theta_increasing_in_xi1(struct FE_element_field_component *component,
+	struct FE_element *element,struct FE_field *field,FE_value time,
+	int number_of_values,FE_value *values)
+/*******************************************************************************
+LAST MODIFIED : 1 February 2002
+
+DESCRIPTION :
+Calls modify_theta_in_xi1 with mode MODIFY_THETA_INCREASING_IN_XI1.
+???RC.  Needs to be global to allow writing function in export_finite_element.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(theta_increasing_in_xi1);
+	return_code = modify_theta_in_xi1(component, element, field, time,
+		number_of_values, values, MODIFY_THETA_INCREASING_IN_XI1);
 	LEAVE;
 
 	return (return_code);
@@ -32367,1735 +32268,39 @@ int theta_non_decreasing_in_xi1(
 	struct FE_element_field_component *component,struct FE_element *element,
 	struct FE_field *field,FE_value time,int number_of_values,FE_value *values)
 /*******************************************************************************
-LAST MODIFIED : 3 December 2001
+LAST MODIFIED : 1 February 2002
 
 DESCRIPTION :
-Modifies the already calculated <values>.
-???DB.  Only for certain bases
+Calls modify_theta_in_xi1 with mode MODIFY_THETA_NON_DECREASING_IN_XI1.
 ???RC.  Needs to be global to allow writing function in export_finite_element.
 ==============================================================================*/
 {
-	char all_on_axis;
-	enum Coordinate_system_type coordinate_system_type;
-	FE_value *element_value,*element_value_2,offset_xi1_xi2,offset_xi2_xi3,
-		value_xi1,value_xi2,value_xi3;
-	int *basis_type,i,j,k,number_of_nodes_in_xi1,number_of_nodes_in_xi2,
-		number_of_nodes_in_xi3,return_code,xi2_basis_type;
-	struct FE_element_field *element_field;
-	struct FE_element_field_component *axis_component;
-	struct FE_node **node;
-	struct Standard_node_to_element_map **node_to_element_map,
-		**node_to_element_map_2;
+	int return_code;
 
 	ENTER(theta_non_decreasing_in_xi1);
-	/* check arguments */
-	if (component&&(STANDARD_NODE_TO_ELEMENT_MAP==component->type)&&
-		(node_to_element_map=(component->map).standard_node_based.
-		node_to_element_maps)&&(component->basis)&&
-		(basis_type=component->basis->type)&&((1== *basis_type)||
-		((2== *basis_type)&&(NO_RELATION==basis_type[2]))||
-		((3== *basis_type)&&(NO_RELATION==basis_type[2])&&
-		(NO_RELATION==basis_type[3])&&(NO_RELATION==basis_type[5])))&&
-		element&&field&&(0<number_of_values)&&values)
-	{
-		coordinate_system_type=get_coordinate_system_type(
-			get_FE_field_coordinate_system(field));
-		if ((3==get_FE_field_number_of_components(field))&&
-			((CYLINDRICAL_POLAR==coordinate_system_type)||
-			(OBLATE_SPHEROIDAL==coordinate_system_type)||
-			(PROLATE_SPHEROIDAL==coordinate_system_type)||
-			(SPHERICAL_POLAR==coordinate_system_type)))
-		{
-				
-			element_field=FIND_BY_IDENTIFIER_IN_LIST(FE_element_field,field)(
-					field,element->information->fields->element_field_list);
-		
-			if (element_field)
-			{
-				switch (coordinate_system_type)
-				{
-					case CYLINDRICAL_POLAR:
-					{
-						if (component==(element_field->components)[1])
-						{
-							axis_component=(element_field->components)[0];
-						}
-						else
-						{
-							element_field=(struct FE_element_field *)NULL;
-						}
-					} break;
-					case OBLATE_SPHEROIDAL:
-					case PROLATE_SPHEROIDAL:
-					{
-						if (component==(element_field->components)[2])
-						{
-							axis_component=(element_field->components)[1];
-						}
-						else
-						{
-							element_field=(struct FE_element_field *)NULL;
-						}
-					} break;
-					case SPHERICAL_POLAR:
-					{
-						if (component==(element_field->components)[1])
-						{
-							axis_component=(element_field->components)[2];
-						}
-						else
-						{
-							element_field=(struct FE_element_field *)NULL;
-						}
-					} break;
-				}
-			}
-			if (element_field)
-			{
-				/* determine the number of nodes in the xi1 direction */
-				switch (basis_type[1])
-				{
-					case LINEAR_LAGRANGE: case CUBIC_HERMITE: case LAGRANGE_HERMITE:
-						case HERMITE_LAGRANGE:
-					{
-						number_of_nodes_in_xi1=2;
-					} break;
-					case QUADRATIC_LAGRANGE:
-					{
-						number_of_nodes_in_xi1=3;
-					} break;
-					case CUBIC_LAGRANGE:
-					{
-						number_of_nodes_in_xi1=4;
-					} break;
-				}
-				/* determine the number of nodes in the xi2 direction */
-				if (1== *basis_type)
-				{
-					number_of_nodes_in_xi2=1;
-				}
-				else
-				{
-					if (2== *basis_type)
-					{
-						xi2_basis_type=basis_type[3];
-					}
-					else
-					{
-						xi2_basis_type=basis_type[4];
-					}
-					switch (xi2_basis_type)
-					{
-						case LINEAR_LAGRANGE: case CUBIC_HERMITE: case LAGRANGE_HERMITE:
-							case HERMITE_LAGRANGE:
-						{
-							number_of_nodes_in_xi2=2;
-						} break;
-						case QUADRATIC_LAGRANGE:
-						{
-							number_of_nodes_in_xi2=3;
-						} break;
-						case CUBIC_LAGRANGE:
-						{
-							number_of_nodes_in_xi2=4;
-						} break;
-					}
-				}
-				/* determine the number of nodes in the xi3 direction */
-				if (3== *basis_type)
-				{
-					switch (basis_type[6])
-					{
-						case LINEAR_LAGRANGE: case CUBIC_HERMITE: case LAGRANGE_HERMITE:
-							case HERMITE_LAGRANGE:
-						{
-							number_of_nodes_in_xi3=2;
-						} break;
-						case QUADRATIC_LAGRANGE:
-						{
-							number_of_nodes_in_xi3=3;
-						} break;
-						case CUBIC_LAGRANGE:
-						{
-							number_of_nodes_in_xi3=4;
-						} break;
-					}
-				}
-				else
-				{
-					number_of_nodes_in_xi3=1;
-				}
-				/* check for nodes on the z axis */
-				node=element->information->nodes;
-				/* xi2=0 face */
-				if (1<number_of_nodes_in_xi2)
-				{
-					all_on_axis=1;
-				}
-				else
-				{
-					all_on_axis=0;
-				}
-				node_to_element_map=(axis_component->map).standard_node_based.
-					node_to_element_maps;
-				k=number_of_nodes_in_xi3;
-				while (all_on_axis&&(k>0))
-				{
-					i=number_of_nodes_in_xi1;
-					while (all_on_axis&&(i>0))
-					{
-						all_on_axis=node_on_axis(node[(*node_to_element_map)->node_index],
-							field,time,coordinate_system_type);
-						node_to_element_map++;
-						i--;
-					}
-					node_to_element_map +=
-						(number_of_nodes_in_xi2-1)*number_of_nodes_in_xi1;
-					k--;
-				}
-				if (all_on_axis)
-				{
-					element_value=values;
-					node_to_element_map=(component->map).standard_node_based.
-						node_to_element_maps;
-					element_value_2=values;
-					node_to_element_map_2=node_to_element_map;
-					for (i=number_of_nodes_in_xi1;i>0;i--)
-					{
-						element_value_2 += (*node_to_element_map_2)->number_of_nodal_values;
-						node_to_element_map_2++;
-					}
-					for (k=number_of_nodes_in_xi3;k>0;k--)
-					{
-						for (i=number_of_nodes_in_xi1;i>0;i--)
-						{
-							*element_value= *element_value_2;
-							element_value += (*node_to_element_map)->number_of_nodal_values;
-							node_to_element_map++;
-							element_value_2 +=
-								(*node_to_element_map_2)->number_of_nodal_values;
-							node_to_element_map_2++;
-						}
-						if (k>1)
-						{
-							for (j=number_of_nodes_in_xi2;j>1;j--)
-							{
-								for (i=number_of_nodes_in_xi1;i>0;i--)
-								{
-									element_value +=
-										(*node_to_element_map)->number_of_nodal_values;
-									node_to_element_map++;
-									element_value_2 += (*node_to_element_map_2)->
-										number_of_nodal_values;
-									node_to_element_map_2++;
-								}
-							}
-						}
-					}
-				}
-				else
-				{
-					/* xi2=1 face */
-					if (1<number_of_nodes_in_xi2)
-					{
-						all_on_axis=1;
-					}
-					else
-					{
-						all_on_axis=0;
-					}
-					node_to_element_map=(axis_component->map).standard_node_based.
-						node_to_element_maps;
-					node_to_element_map +=
-						(number_of_nodes_in_xi2-1)*number_of_nodes_in_xi1;
-					k=number_of_nodes_in_xi3;
-					while (all_on_axis&&(k>0))
-					{
-						i=number_of_nodes_in_xi1;
-						while (all_on_axis&&(i>0))
-						{
-							all_on_axis=node_on_axis(node[(*node_to_element_map)->node_index],
-								field,time,coordinate_system_type);
-							node_to_element_map++;
-							i--;
-						}
-						node_to_element_map +=
-							(number_of_nodes_in_xi2-1)*number_of_nodes_in_xi1;
-						k--;
-					}
-					if (all_on_axis)
-					{
-						element_value=values;
-						node_to_element_map=(component->map).standard_node_based.
-							node_to_element_maps;
-						for (j=number_of_nodes_in_xi2;j>1;j--)
-						{
-							for (i=number_of_nodes_in_xi1;i>0;i--)
-							{
-								element_value += (*node_to_element_map)->number_of_nodal_values;
-								node_to_element_map++;
-							}
-						}
-						element_value_2=element_value;
-						node_to_element_map_2=node_to_element_map;
-						for (i=number_of_nodes_in_xi1;i>0;i--)
-						{
-							element_value_2 -=
-								(*node_to_element_map_2)->number_of_nodal_values;
-							node_to_element_map_2--;
-						}
-						for (k=number_of_nodes_in_xi3;k>0;k--)
-						{
-							for (i=number_of_nodes_in_xi1;i>0;i--)
-							{
-								*element_value= *element_value_2;
-								element_value += (*node_to_element_map)->number_of_nodal_values;
-								node_to_element_map++;
-								element_value_2 += (*node_to_element_map_2)->
-									number_of_nodal_values;
-								node_to_element_map_2++;
-							}
-							for (j=number_of_nodes_in_xi2;j>1;j--)
-							{
-								for (i=number_of_nodes_in_xi1;i>0;i--)
-								{
-									element_value +=
-										(*node_to_element_map)->number_of_nodal_values;
-									node_to_element_map++;
-									element_value_2 += (*node_to_element_map_2)->
-										number_of_nodal_values;
-									node_to_element_map_2++;
-								}
-							}
-						}
-					}
-					else
-					{
-						/* xi3=0 face */
-						if (1<number_of_nodes_in_xi3)
-						{
-							all_on_axis=1;
-						}
-						else
-						{
-							all_on_axis=0;
-						}
-						node_to_element_map=(axis_component->map).standard_node_based.
-							node_to_element_maps;
-						j=number_of_nodes_in_xi2;
-						while (all_on_axis&&(j>0))
-						{
-							i=number_of_nodes_in_xi1;
-							while (all_on_axis&&(i>0))
-							{
-								all_on_axis=node_on_axis(node[(*node_to_element_map)->
-									node_index],field,time,coordinate_system_type);
-								node_to_element_map++;
-								i--;
-							}
-							j--;
-						}
-						if (all_on_axis)
-						{
-							element_value=values;
-							node_to_element_map=(component->map).standard_node_based.
-								node_to_element_maps;
-							element_value_2=values;
-							node_to_element_map_2=node_to_element_map;
-							for (i=number_of_nodes_in_xi1;i>0;i--)
-							{
-								element_value_2 += (*node_to_element_map_2)->
-									number_of_nodal_values;
-								node_to_element_map_2++;
-							}
-							for (j=number_of_nodes_in_xi2;j>0;j--)
-							{
-								for (i=number_of_nodes_in_xi1;i>0;i--)
-								{
-									*element_value= *element_value_2;
-									element_value +=
-										(*node_to_element_map)->number_of_nodal_values;
-									node_to_element_map++;
-									element_value_2 += (*node_to_element_map_2)->
-										number_of_nodal_values;
-									node_to_element_map_2++;
-								}
-							}
-						}
-						else
-						{
-							/* xi3=1 face */
-							if (1<number_of_nodes_in_xi3)
-							{
-								all_on_axis=1;
-							}
-							else
-							{
-								all_on_axis=0;
-							}
-							node_to_element_map=(component->map).standard_node_based.
-								node_to_element_maps;
-							node_to_element_map += (number_of_nodes_in_xi3-1)*
-								number_of_nodes_in_xi2*number_of_nodes_in_xi1;
-							j=number_of_nodes_in_xi2;
-							while (all_on_axis&&(j>0))
-							{
-								i=number_of_nodes_in_xi1;
-								while (all_on_axis&&(i>0))
-								{
-									all_on_axis=node_on_axis(node[(*node_to_element_map)->
-										node_index],field,time,coordinate_system_type);
-									node_to_element_map++;
-									i--;
-								}
-								j--;
-							}
-							if (all_on_axis)
-							{
-								element_value=values;
-								node_to_element_map=(component->map).standard_node_based.
-									node_to_element_maps;
-								for (k=number_of_nodes_in_xi3;k>1;k--)
-								{
-									for (j=number_of_nodes_in_xi2;j>0;j--)
-									{
-										for (i=number_of_nodes_in_xi1;i>0;i--)
-										{
-											element_value +=
-												(*node_to_element_map)->number_of_nodal_values;
-											node_to_element_map++;
-										}
-									}
-								}
-								element_value_2=element_value;
-								node_to_element_map_2=node_to_element_map;
-								for (j=number_of_nodes_in_xi2;j>0;j--)
-								{
-									for (i=number_of_nodes_in_xi1;i>0;i--)
-									{
-										element_value_2 -= (*node_to_element_map_2)->
-											number_of_nodal_values;
-										node_to_element_map_2--;
-									}
-								}
-								for (j=number_of_nodes_in_xi2;j>0;j--)
-								{
-									for (i=number_of_nodes_in_xi1;i>0;i--)
-									{
-										*element_value= *element_value_2;
-										element_value += (*node_to_element_map)->
-											number_of_nodal_values;
-										node_to_element_map++;
-										element_value_2 += (*node_to_element_map_2)->
-											number_of_nodal_values;
-										node_to_element_map_2++;
-									}
-								}
-							}
-						}
-					}
-				}
-#if defined (OLD_CODE)
-		element_value=values;
-		element_value_2=values;
-		node_to_element_map_2=node_to_element_map;
-		for (i=number_of_nodes_in_xi1;i>0;i--)
-		{
-			element_value_2 += (*node_to_element_map_2)->number_of_nodal_values;
-			node_to_element_map_2++;
-		}
-		for (k=number_of_nodes_in_xi3;k>0;k--)
-		{
-			for (j=number_of_nodes_in_xi2;j>1;j--)
-			{
-				for (i=number_of_nodes_in_xi1;i>1;i--)
-				{
-					if (*element_value== *(element_value+((*node_to_element_map)->
-						number_of_nodal_values)))
-					{
-						*element_value= *element_value_2;
-						element_value += (*node_to_element_map)->number_of_nodal_values;
-						node_to_element_map++;
-						element_value_2 += (*node_to_element_map_2)->number_of_nodal_values;
-						node_to_element_map_2++;
-						*element_value= *element_value_2;
-					}
-					else
-					{
-						if (*element_value_2== *(element_value_2+((*node_to_element_map)->
-							number_of_nodal_values)))
-						{
-							*element_value_2= *element_value;
-							element_value += (*node_to_element_map)->number_of_nodal_values;
-							node_to_element_map++;
-							element_value_2 +=
-								(*node_to_element_map_2)->number_of_nodal_values;
-							node_to_element_map_2++;
-							*element_value_2= *element_value;
-						}
-						else
-						{
-							element_value += (*node_to_element_map)->number_of_nodal_values;
-							node_to_element_map++;
-							element_value_2 +=
-								(*node_to_element_map_2)->number_of_nodal_values;
-							node_to_element_map_2++;
-						}
-					}
-				}
-				element_value += (*node_to_element_map)->number_of_nodal_values;
-				node_to_element_map++;
-				element_value_2 += (*node_to_element_map_2)->number_of_nodal_values;
-				node_to_element_map_2++;
-			}
-			if (k>1)
-			{
-				for (i=number_of_nodes_in_xi1;i>0;i--)
-				{
-					element_value += (*node_to_element_map)->number_of_nodal_values;
-					node_to_element_map++;
-					element_value_2 += (*node_to_element_map_2)->number_of_nodal_values;
-					node_to_element_map_2++;
-				}
-			}
-		}
-#endif /* defined (OLD_CODE) */
-				element_value=values;
-				node_to_element_map=(component->map).standard_node_based.
-					node_to_element_maps;
-				offset_xi1_xi2=0;
-				offset_xi2_xi3=0;
-				/* make sure non-decreasing in xi1 and smooth in xi2 & xi3 */
-				for (k=number_of_nodes_in_xi3;k>0;k--)
-				{
-					value_xi3= *element_value;
-					for (j=number_of_nodes_in_xi2;j>0;j--)
-					{
-						value_xi2= *element_value;
-						for (i=number_of_nodes_in_xi1;i>1;i--)
-						{
-							value_xi1= *element_value;
-							element_value += (*node_to_element_map)->number_of_nodal_values;
-							*element_value += offset_xi1_xi2+offset_xi2_xi3;
-							/*???DB.  <= needed for single prolate, but seems to cause
-								problems for heart */
-							if (value_xi1> *element_value)
-							{
-								*element_value += 2*PI;
-							}
-							node_to_element_map++;
-						}
-						element_value += (*node_to_element_map)->number_of_nodal_values;
-						node_to_element_map++;
-						if (j>1)
-						{
-							value_xi1= *element_value;
-							if (value_xi1>value_xi2+PI)
-							{
-								offset_xi1_xi2= -2*PI;
-								*element_value += offset_xi1_xi2;
-							}
-							else
-							{
-								if (value_xi1<value_xi2-PI)
-								{
-									offset_xi1_xi2=2*PI;
-									*element_value += offset_xi1_xi2;
-								}
-								else
-								{
-									offset_xi1_xi2=0;
-								}
-							}
-						}
-					}
-					if (k>1)
-					{
-						offset_xi1_xi2=0;
-						value_xi2= *element_value;
-						if (value_xi2>value_xi3+PI)
-						{
-							offset_xi2_xi3= -2*PI;
-							*element_value += offset_xi2_xi3;
-						}
-						else
-						{
-							if (value_xi2<value_xi3-PI)
-							{
-								offset_xi2_xi3=2*PI;
-								*element_value += offset_xi2_xi3;
-							}
-							else
-							{
-								offset_xi2_xi3=0;
-							}
-						}
-					}
-				}
-			}
-		}
-		return_code=1;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"theta_non_decreasing_in_xi1.  Invalid argument(s)");
-		return_code=0;
-	}
+	return_code = modify_theta_in_xi1(component, element, field, time,
+		number_of_values, values, MODIFY_THETA_NON_DECREASING_IN_XI1);
 	LEAVE;
 
 	return (return_code);
 } /* theta_non_decreasing_in_xi1 */
 
-#if defined (OLD_CODE)
-int theta_decreasing_in_xi1(struct FE_element_field_component *component,
-	struct FE_element *element,struct FE_field *field,int number_of_values,
-	FE_value *values)
-/*******************************************************************************
-LAST MODIFIED : 30 January 1994
-
-DESCRIPTION :
-Modifies the already calculated <values>.
-==============================================================================*/
-{
-	enum FE_basis_type *basis_type;
-	FE_value *element_value,offset,start_value,value;
-	int i,j,number_of_nodes_in_xi1,number_of_xi_coordinates,return_code;
-	struct Standard_node_to_element_map **node_to_element_map;
-
-	ENTER(theta_decreasing_in_xi1);
-	/* check arguments */
-	if (component&&(STANDARD_NODE_TO_ELEMENT_MAP==component->type)&&
-		(component->basis)&&(basis_type=component->basis->type)&&element&&field&&
-		(0<number_of_values)&&values)
-	{
-		basis_type++;
-		/* determine the number of nodes in the xi1 direction */
-		switch (*(basis_type))
-		{
-			case LINEAR_LAGRANGE: case CUBIC_HERMITE: case LAGRANGE_HERMITE:
-				case HERMITE_LAGRANGE:
-			{
-				number_of_nodes_in_xi1=2;
-			} break;
-			case QUADRATIC_LAGRANGE:
-			{
-				number_of_nodes_in_xi1=3;
-			} break;
-			case CUBIC_LAGRANGE:
-			{
-				number_of_nodes_in_xi1=4;
-			} break;
-		}
-		/* check that the basis is a tensor product of the xi1 basis with the
-			basis for the other directions */
-		number_of_xi_coordinates=component->basis->number_of_xi_coordinates;
-		basis_type++;
-		i=2;
-		while ((i<=number_of_xi_coordinates)&&(NO_RELATION== *basis_type))
-		{
-			basis_type += i;
-			i++;
-		}
-		if ((i>number_of_xi_coordinates)&&(0==(component->map).standard_node_based.
-			number_of_nodes%number_of_nodes_in_xi1)&&(node_to_element_map=
-			(component->map).standard_node_based.node_to_element_maps))
-		{
-			element_value=values;
-			offset=0;
-			for (i=(component->map).standard_node_based.number_of_nodes/
-				number_of_nodes_in_xi1;i>0;i--)
-			{
-				start_value= *element_value;
-				for (j=number_of_nodes_in_xi1-1;j>0;j--)
-				{
-					value= *element_value;
-					element_value += (*node_to_element_map)->number_of_nodal_values;
-					*element_value += offset;
-					if (value<= *element_value)
-					{
-						*element_value -= 2*PI;
-					}
-					node_to_element_map++;
-				}
-				if (i>1)
-				{
-					element_value += (*node_to_element_map)->number_of_nodal_values;
-					node_to_element_map++;
-					value= *element_value;
-					if (value>start_value+PI)
-					{
-						offset= -2*PI;
-						*element_value += offset;
-					}
-					else
-					{
-						if (value<start_value-PI)
-						{
-							offset=2*PI;
-							*element_value += offset;
-						}
-						else
-						{
-							offset=0;
-						}
-					}
-				}
-			}
-			return_code=1;
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"theta_decreasing_in_xi1.  Not a tensor product basis");
-			return_code=0;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"theta_decreasing_in_xi1.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* theta_decreasing_in_xi1 */
-#endif /* defined (OLD_CODE) */
-
-int theta_decreasing_in_xi1(struct FE_element_field_component *component,
-	struct FE_element *element,struct FE_field *field,FE_value time,
-	int number_of_values,FE_value *values)
-/*******************************************************************************
-LAST MODIFIED : 3 December 2001
-
-DESCRIPTION :
-Modifies the already calculated <values>.
-???DB.  Only for certain bases
-???RC.  Needs to be global to allow writing function in export_finite_element.
-==============================================================================*/
-{
-	char all_on_axis;
-	enum Coordinate_system_type coordinate_system_type;
-	FE_value *element_value,*element_value_2,offset_xi1_xi2,offset_xi2_xi3,
-		value_xi1,value_xi2,value_xi3;
-	int *basis_type,i,j,k,number_of_nodes_in_xi1,number_of_nodes_in_xi2,
-		number_of_nodes_in_xi3,return_code,xi2_basis_type;
-	struct FE_element_field *element_field;
-	struct FE_element_field_component *axis_component;
-	struct FE_node **node;
-	struct Standard_node_to_element_map **node_to_element_map,
-		**node_to_element_map_2;
-
-	ENTER(theta_decreasing_in_xi1);
-	/* check arguments */
-	if (component&&(STANDARD_NODE_TO_ELEMENT_MAP==component->type)&&
-		(node_to_element_map=(component->map).standard_node_based.
-		node_to_element_maps)&&(component->basis)&&
-		(basis_type=component->basis->type)&&((1== *basis_type)||
-		((2== *basis_type)&&(NO_RELATION==basis_type[2]))||
-		((3== *basis_type)&&(NO_RELATION==basis_type[2])&&
-		(NO_RELATION==basis_type[3])&&(NO_RELATION==basis_type[5])))&&
-		element&&field&&(0<number_of_values)&&values)
-	{
-		coordinate_system_type=get_coordinate_system_type(
-			get_FE_field_coordinate_system(field));
-		if ((3==get_FE_field_number_of_components(field))&&
-			((CYLINDRICAL_POLAR==coordinate_system_type)||
-			(OBLATE_SPHEROIDAL==coordinate_system_type)||
-			(PROLATE_SPHEROIDAL==coordinate_system_type)||
-			(SPHERICAL_POLAR==coordinate_system_type)))
-		{
-		
-			element_field=FIND_BY_IDENTIFIER_IN_LIST(FE_element_field,field)(
-					field,element->information->fields->element_field_list);
-	
-			if (element_field)
-			{
-				switch (coordinate_system_type)
-				{
-					case CYLINDRICAL_POLAR:
-					{
-						if (component==(element_field->components)[1])
-						{
-							axis_component=(element_field->components)[0];
-						}
-						else
-						{
-							element_field=(struct FE_element_field *)NULL;
-						}
-					} break;
-					case OBLATE_SPHEROIDAL:
-					case PROLATE_SPHEROIDAL:
-					{
-						if (component==(element_field->components)[2])
-						{
-							axis_component=(element_field->components)[1];
-						}
-						else
-						{
-							element_field=(struct FE_element_field *)NULL;
-						}
-					} break;
-					case SPHERICAL_POLAR:
-					{
-						if (component==(element_field->components)[1])
-						{
-							axis_component=(element_field->components)[2];
-						}
-						else
-						{
-							element_field=(struct FE_element_field *)NULL;
-						}
-					} break;
-				}
-			}
-			if (element_field)
-			{
-				/* determine the number of nodes in the xi1 direction */
-				switch (basis_type[1])
-				{
-					case LINEAR_LAGRANGE: case CUBIC_HERMITE: case LAGRANGE_HERMITE:
-						case HERMITE_LAGRANGE:
-					{
-						number_of_nodes_in_xi1=2;
-					} break;
-					case QUADRATIC_LAGRANGE:
-					{
-						number_of_nodes_in_xi1=3;
-					} break;
-					case CUBIC_LAGRANGE:
-					{
-						number_of_nodes_in_xi1=4;
-					} break;
-				}
-				/* determine the number of nodes in the xi2 direction */
-				if (1== *basis_type)
-				{
-					number_of_nodes_in_xi2=1;
-				}
-				else
-				{
-					if (2== *basis_type)
-					{
-						xi2_basis_type=basis_type[3];
-					}
-					else
-					{
-						xi2_basis_type=basis_type[4];
-					}
-					switch (xi2_basis_type)
-					{
-						case LINEAR_LAGRANGE: case CUBIC_HERMITE: case LAGRANGE_HERMITE:
-							case HERMITE_LAGRANGE:
-						{
-							number_of_nodes_in_xi2=2;
-						} break;
-						case QUADRATIC_LAGRANGE:
-						{
-							number_of_nodes_in_xi2=3;
-						} break;
-						case CUBIC_LAGRANGE:
-						{
-							number_of_nodes_in_xi2=4;
-						} break;
-					}
-				}
-				/* determine the number of nodes in the xi3 direction */
-				if (3== *basis_type)
-				{
-					switch (basis_type[6])
-					{
-						case LINEAR_LAGRANGE: case CUBIC_HERMITE: case LAGRANGE_HERMITE:
-							case HERMITE_LAGRANGE:
-						{
-							number_of_nodes_in_xi3=2;
-						} break;
-						case QUADRATIC_LAGRANGE:
-						{
-							number_of_nodes_in_xi3=3;
-						} break;
-						case CUBIC_LAGRANGE:
-						{
-							number_of_nodes_in_xi3=4;
-						} break;
-					}
-				}
-				else
-				{
-					number_of_nodes_in_xi3=1;
-				}
-				/* check for nodes on the z axis */
-				node=element->information->nodes;
-				/* xi2=0 face */
-				if (1<number_of_nodes_in_xi2)
-				{
-					all_on_axis=1;
-				}
-				else
-				{
-					all_on_axis=0;
-				}
-				node_to_element_map=(axis_component->map).standard_node_based.
-					node_to_element_maps;
-				k=number_of_nodes_in_xi3;
-				while (all_on_axis&&(k>0))
-				{
-					i=number_of_nodes_in_xi1;
-					while (all_on_axis&&(i>0))
-					{
-						all_on_axis=node_on_axis(node[(*node_to_element_map)->node_index],
-							field,time,coordinate_system_type);
-						node_to_element_map++;
-						i--;
-					}
-					node_to_element_map +=
-						(number_of_nodes_in_xi2-1)*number_of_nodes_in_xi1;
-					k--;
-				}
-				if (all_on_axis)
-				{
-					element_value=values;
-					node_to_element_map=(component->map).standard_node_based.
-						node_to_element_maps;
-					element_value_2=values;
-					node_to_element_map_2=node_to_element_map;
-					for (i=number_of_nodes_in_xi1;i>0;i--)
-					{
-						element_value_2 += (*node_to_element_map_2)->number_of_nodal_values;
-						node_to_element_map_2++;
-					}
-					for (k=number_of_nodes_in_xi3;k>0;k--)
-					{
-						for (i=number_of_nodes_in_xi1;i>0;i--)
-						{
-							*element_value= *element_value_2;
-							element_value += (*node_to_element_map)->number_of_nodal_values;
-							node_to_element_map++;
-							element_value_2 +=
-								(*node_to_element_map_2)->number_of_nodal_values;
-							node_to_element_map_2++;
-						}
-						if (k>1)
-						{
-							for (j=number_of_nodes_in_xi2;j>1;j--)
-							{
-								for (i=number_of_nodes_in_xi1;i>0;i--)
-								{
-									element_value +=
-										(*node_to_element_map)->number_of_nodal_values;
-									node_to_element_map++;
-									element_value_2 += (*node_to_element_map_2)->
-										number_of_nodal_values;
-									node_to_element_map_2++;
-								}
-							}
-						}
-					}
-				}
-				else
-				{
-					/* xi2=1 face */
-					if (1<number_of_nodes_in_xi2)
-					{
-						all_on_axis=1;
-					}
-					else
-					{
-						all_on_axis=0;
-					}
-					node_to_element_map=(axis_component->map).standard_node_based.
-						node_to_element_maps;
-					node_to_element_map +=
-						(number_of_nodes_in_xi2-1)*number_of_nodes_in_xi1;
-					k=number_of_nodes_in_xi3;
-					while (all_on_axis&&(k>0))
-					{
-						i=number_of_nodes_in_xi1;
-						while (all_on_axis&&(i>0))
-						{
-							all_on_axis=node_on_axis(node[(*node_to_element_map)->node_index],
-								field,time,coordinate_system_type);
-							node_to_element_map++;
-							i--;
-						}
-						node_to_element_map +=
-							(number_of_nodes_in_xi2-1)*number_of_nodes_in_xi1;
-						k--;
-					}
-					if (all_on_axis)
-					{
-						element_value=values;
-						node_to_element_map=(component->map).standard_node_based.
-							node_to_element_maps;
-						for (j=number_of_nodes_in_xi2;j>1;j--)
-						{
-							for (i=number_of_nodes_in_xi1;i>0;i--)
-							{
-								element_value += (*node_to_element_map)->number_of_nodal_values;
-								node_to_element_map++;
-							}
-						}
-						element_value_2=element_value;
-						node_to_element_map_2=node_to_element_map;
-						for (i=number_of_nodes_in_xi1;i>0;i--)
-						{
-							element_value_2 -=
-								(*node_to_element_map_2)->number_of_nodal_values;
-							node_to_element_map_2--;
-						}
-						for (k=number_of_nodes_in_xi3;k>0;k--)
-						{
-							for (i=number_of_nodes_in_xi1;i>0;i--)
-							{
-								*element_value= *element_value_2;
-								element_value += (*node_to_element_map)->number_of_nodal_values;
-								node_to_element_map++;
-								element_value_2 += (*node_to_element_map_2)->
-									number_of_nodal_values;
-								node_to_element_map_2++;
-							}
-							for (j=number_of_nodes_in_xi2;j>1;j--)
-							{
-								for (i=number_of_nodes_in_xi1;i>0;i--)
-								{
-									element_value +=
-										(*node_to_element_map)->number_of_nodal_values;
-									node_to_element_map++;
-									element_value_2 += (*node_to_element_map_2)->
-										number_of_nodal_values;
-									node_to_element_map_2++;
-								}
-							}
-						}
-					}
-					else
-					{
-						/* xi3=0 face */
-						if (1<number_of_nodes_in_xi3)
-						{
-							all_on_axis=1;
-						}
-						else
-						{
-							all_on_axis=0;
-						}
-						node_to_element_map=(axis_component->map).standard_node_based.
-							node_to_element_maps;
-						j=number_of_nodes_in_xi2;
-						while (all_on_axis&&(j>0))
-						{
-							i=number_of_nodes_in_xi1;
-							while (all_on_axis&&(i>0))
-							{
-								all_on_axis=node_on_axis(node[(*node_to_element_map)->
-									node_index],field,time,coordinate_system_type);
-								node_to_element_map++;
-								i--;
-							}
-							j--;
-						}
-						if (all_on_axis)
-						{
-							element_value=values;
-							node_to_element_map=(component->map).standard_node_based.
-								node_to_element_maps;
-							element_value_2=values;
-							node_to_element_map_2=node_to_element_map;
-							for (i=number_of_nodes_in_xi1;i>0;i--)
-							{
-								element_value_2 += (*node_to_element_map_2)->
-									number_of_nodal_values;
-								node_to_element_map_2++;
-							}
-							for (j=number_of_nodes_in_xi2;j>0;j--)
-							{
-								for (i=number_of_nodes_in_xi1;i>0;i--)
-								{
-									*element_value= *element_value_2;
-									element_value +=
-										(*node_to_element_map)->number_of_nodal_values;
-									node_to_element_map++;
-									element_value_2 += (*node_to_element_map_2)->
-										number_of_nodal_values;
-									node_to_element_map_2++;
-								}
-							}
-						}
-						else
-						{
-							/* xi3=1 face */
-							if (1<number_of_nodes_in_xi3)
-							{
-								all_on_axis=1;
-							}
-							else
-							{
-								all_on_axis=0;
-							}
-							node_to_element_map=(component->map).standard_node_based.
-								node_to_element_maps;
-							node_to_element_map += (number_of_nodes_in_xi3-1)*
-								number_of_nodes_in_xi2*number_of_nodes_in_xi1;
-							j=number_of_nodes_in_xi2;
-							while (all_on_axis&&(j>0))
-							{
-								i=number_of_nodes_in_xi1;
-								while (all_on_axis&&(i>0))
-								{
-									all_on_axis=node_on_axis(node[(*node_to_element_map)->
-										node_index],field,time,coordinate_system_type);
-									node_to_element_map++;
-									i--;
-								}
-								j--;
-							}
-							if (all_on_axis)
-							{
-								element_value=values;
-								node_to_element_map=(component->map).standard_node_based.
-									node_to_element_maps;
-								for (k=number_of_nodes_in_xi3;k>1;k--)
-								{
-									for (j=number_of_nodes_in_xi2;j>0;j--)
-									{
-										for (i=number_of_nodes_in_xi1;i>0;i--)
-										{
-											element_value +=
-												(*node_to_element_map)->number_of_nodal_values;
-											node_to_element_map++;
-										}
-									}
-								}
-								element_value_2=element_value;
-								node_to_element_map_2=node_to_element_map;
-								for (j=number_of_nodes_in_xi2;j>0;j--)
-								{
-									for (i=number_of_nodes_in_xi1;i>0;i--)
-									{
-										element_value_2 -= (*node_to_element_map_2)->
-											number_of_nodal_values;
-										node_to_element_map_2--;
-									}
-								}
-								for (j=number_of_nodes_in_xi2;j>0;j--)
-								{
-									for (i=number_of_nodes_in_xi1;i>0;i--)
-									{
-										*element_value= *element_value_2;
-										element_value += (*node_to_element_map)->
-											number_of_nodal_values;
-										node_to_element_map++;
-										element_value_2 += (*node_to_element_map_2)->
-											number_of_nodal_values;
-										node_to_element_map_2++;
-									}
-								}
-							}
-						}
-					}
-				}
-				element_value=values;
-				node_to_element_map=(component->map).standard_node_based.
-					node_to_element_maps;
-				offset_xi1_xi2=0;
-				offset_xi2_xi3=0;
-				/* make sure decreasing in xi1 and smooth in xi2 & xi3 */
-				for (k=number_of_nodes_in_xi3;k>0;k--)
-				{
-					value_xi3= *element_value;
-					for (j=number_of_nodes_in_xi2;j>0;j--)
-					{
-						value_xi2= *element_value;
-						for (i=number_of_nodes_in_xi1;i>1;i--)
-						{
-							value_xi1= *element_value;
-							element_value += (*node_to_element_map)->number_of_nodal_values;
-							*element_value += offset_xi1_xi2+offset_xi2_xi3;
-							/*???DB.  <= needed for single prolate, but seems to cause
-								problems for heart */
-							if (value_xi1<= *element_value)
-							{
-								*element_value -= 2*PI;
-							}
-							node_to_element_map++;
-						}
-						element_value += (*node_to_element_map)->number_of_nodal_values;
-						node_to_element_map++;
-						if (j>1)
-						{
-							value_xi1= *element_value;
-							if (value_xi1>value_xi2+PI)
-							{
-								offset_xi1_xi2= -2*PI;
-								*element_value += offset_xi1_xi2;
-							}
-							else
-							{
-								if (value_xi1<value_xi2-PI)
-								{
-									offset_xi1_xi2=2*PI;
-									*element_value += offset_xi1_xi2;
-								}
-								else
-								{
-									offset_xi1_xi2=0;
-								}
-							}
-						}
-					}
-					if (k>1)
-					{
-						offset_xi1_xi2=0;
-						value_xi2= *element_value;
-						if (value_xi2>value_xi3+PI)
-						{
-							offset_xi2_xi3= -2*PI;
-							*element_value += offset_xi2_xi3;
-						}
-						else
-						{
-							if (value_xi2<value_xi3-PI)
-							{
-								offset_xi2_xi3=2*PI;
-								*element_value += offset_xi2_xi3;
-							}
-							else
-							{
-								offset_xi2_xi3=0;
-							}
-						}
-					}
-				}
-			}
-		}
-		return_code=1;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"theta_decreasing_in_xi1.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* theta_decreasing_in_xi1 */
-
 int theta_non_increasing_in_xi1(
 	struct FE_element_field_component *component,struct FE_element *element,
 	struct FE_field *field,FE_value time,int number_of_values,FE_value *values)
 /*******************************************************************************
-LAST MODIFIED : 3 December 2001
+LAST MODIFIED : 1 February 2002
 
 DESCRIPTION :
-Modifies the already calculated <values>.
-???DB.  Only for certain bases
+Calls modify_theta_in_xi1 with mode MODIFY_THETA_NON_INCREASING_IN_XI1.
 ???RC.  Needs to be global to allow writing function in export_finite_element.
 ==============================================================================*/
 {
-	char all_on_axis;
-	enum Coordinate_system_type coordinate_system_type;
-	FE_value *element_value,*element_value_2,offset_xi1_xi2,offset_xi2_xi3,
-		value_xi1,value_xi2,value_xi3;
-	int *basis_type,i,j,k,number_of_nodes_in_xi1,number_of_nodes_in_xi2,
-		number_of_nodes_in_xi3,return_code,xi2_basis_type;
-	struct FE_element_field *element_field;
-	struct FE_element_field_component *axis_component;
-	struct FE_node **node;
-	struct Standard_node_to_element_map **node_to_element_map,
-		**node_to_element_map_2;
+	int return_code;
 
 	ENTER(theta_non_increasing_in_xi1);
-	/* check arguments */
-	if (component&&(STANDARD_NODE_TO_ELEMENT_MAP==component->type)&&
-		(node_to_element_map=(component->map).standard_node_based.
-		node_to_element_maps)&&(component->basis)&&
-		(basis_type=component->basis->type)&&((1== *basis_type)||
-		((2== *basis_type)&&(NO_RELATION==basis_type[2]))||
-		((3== *basis_type)&&(NO_RELATION==basis_type[2])&&
-		(NO_RELATION==basis_type[3])&&(NO_RELATION==basis_type[5])))&&
-		element&&field&&(0<number_of_values)&&values)
-	{
-		coordinate_system_type=get_coordinate_system_type(
-			get_FE_field_coordinate_system(field));
-		if ((3==get_FE_field_number_of_components(field))&&
-			((CYLINDRICAL_POLAR==coordinate_system_type)||
-			(OBLATE_SPHEROIDAL==coordinate_system_type)||
-			(PROLATE_SPHEROIDAL==coordinate_system_type)||
-			(SPHERICAL_POLAR==coordinate_system_type)))
-		{
-	
-			element_field=FIND_BY_IDENTIFIER_IN_LIST(FE_element_field,field)(
-					field,element->information->fields->element_field_list);
-		
-			if (element_field)
-			{
-				switch (coordinate_system_type)
-				{
-					case CYLINDRICAL_POLAR:
-					{
-						if (component==(element_field->components)[1])
-						{
-							axis_component=(element_field->components)[0];
-						}
-						else
-						{
-							element_field=(struct FE_element_field *)NULL;
-						}
-					} break;
-					case OBLATE_SPHEROIDAL:
-					case PROLATE_SPHEROIDAL:
-					{
-						if (component==(element_field->components)[2])
-						{
-							axis_component=(element_field->components)[1];
-						}
-						else
-						{
-							element_field=(struct FE_element_field *)NULL;
-						}
-					} break;
-					case SPHERICAL_POLAR:
-					{
-						if (component==(element_field->components)[1])
-						{
-							axis_component=(element_field->components)[2];
-						}
-						else
-						{
-							element_field=(struct FE_element_field *)NULL;
-						}
-					} break;
-				}
-			}
-			if (element_field)
-			{
-				/* determine the number of nodes in the xi1 direction */
-				switch (basis_type[1])
-				{
-					case LINEAR_LAGRANGE: case CUBIC_HERMITE: case LAGRANGE_HERMITE:
-						case HERMITE_LAGRANGE:
-					{
-						number_of_nodes_in_xi1=2;
-					} break;
-					case QUADRATIC_LAGRANGE:
-					{
-						number_of_nodes_in_xi1=3;
-					} break;
-					case CUBIC_LAGRANGE:
-					{
-						number_of_nodes_in_xi1=4;
-					} break;
-				}
-				/* determine the number of nodes in the xi2 direction */
-				if (1== *basis_type)
-				{
-					number_of_nodes_in_xi2=1;
-				}
-				else
-				{
-					if (2== *basis_type)
-					{
-						xi2_basis_type=basis_type[3];
-					}
-					else
-					{
-						xi2_basis_type=basis_type[4];
-					}
-					switch (xi2_basis_type)
-					{
-						case LINEAR_LAGRANGE: case CUBIC_HERMITE: case LAGRANGE_HERMITE:
-							case HERMITE_LAGRANGE:
-						{
-							number_of_nodes_in_xi2=2;
-						} break;
-						case QUADRATIC_LAGRANGE:
-						{
-							number_of_nodes_in_xi2=3;
-						} break;
-						case CUBIC_LAGRANGE:
-						{
-							number_of_nodes_in_xi2=4;
-						} break;
-					}
-				}
-				/* determine the number of nodes in the xi3 direction */
-				if (3== *basis_type)
-				{
-					switch (basis_type[6])
-					{
-						case LINEAR_LAGRANGE: case CUBIC_HERMITE: case LAGRANGE_HERMITE:
-							case HERMITE_LAGRANGE:
-						{
-							number_of_nodes_in_xi3=2;
-						} break;
-						case QUADRATIC_LAGRANGE:
-						{
-							number_of_nodes_in_xi3=3;
-						} break;
-						case CUBIC_LAGRANGE:
-						{
-							number_of_nodes_in_xi3=4;
-						} break;
-					}
-				}
-				else
-				{
-					number_of_nodes_in_xi3=1;
-				}
-				/* check for nodes on the z axis */
-				node=element->information->nodes;
-				/* xi2=0 face */
-				if (1<number_of_nodes_in_xi2)
-				{
-					all_on_axis=1;
-				}
-				else
-				{
-					all_on_axis=0;
-				}
-				node_to_element_map=(axis_component->map).standard_node_based.
-					node_to_element_maps;
-				k=number_of_nodes_in_xi3;
-				while (all_on_axis&&(k>0))
-				{
-					i=number_of_nodes_in_xi1;
-					while (all_on_axis&&(i>0))
-					{
-						all_on_axis=node_on_axis(node[(*node_to_element_map)->node_index],
-							field,time,coordinate_system_type);
-						node_to_element_map++;
-						i--;
-					}
-					node_to_element_map +=
-						(number_of_nodes_in_xi2-1)*number_of_nodes_in_xi1;
-					k--;
-				}
-				if (all_on_axis)
-				{
-					element_value=values;
-					node_to_element_map=(component->map).standard_node_based.
-						node_to_element_maps;
-					element_value_2=values;
-					node_to_element_map_2=node_to_element_map;
-					for (i=number_of_nodes_in_xi1;i>0;i--)
-					{
-						element_value_2 += (*node_to_element_map_2)->number_of_nodal_values;
-						node_to_element_map_2++;
-					}
-					for (k=number_of_nodes_in_xi3;k>0;k--)
-					{
-						for (i=number_of_nodes_in_xi1;i>0;i--)
-						{
-							*element_value= *element_value_2;
-							element_value += (*node_to_element_map)->number_of_nodal_values;
-							node_to_element_map++;
-							element_value_2 +=
-								(*node_to_element_map_2)->number_of_nodal_values;
-							node_to_element_map_2++;
-						}
-						if (k>1)
-						{
-							for (j=number_of_nodes_in_xi2;j>1;j--)
-							{
-								for (i=number_of_nodes_in_xi1;i>0;i--)
-								{
-									element_value +=
-										(*node_to_element_map)->number_of_nodal_values;
-									node_to_element_map++;
-									element_value_2 += (*node_to_element_map_2)->
-										number_of_nodal_values;
-									node_to_element_map_2++;
-								}
-							}
-						}
-					}
-				}
-				else
-				{
-					/* xi2=1 face */
-					if (1<number_of_nodes_in_xi2)
-					{
-						all_on_axis=1;
-					}
-					else
-					{
-						all_on_axis=0;
-					}
-					node_to_element_map=(axis_component->map).standard_node_based.
-						node_to_element_maps;
-					node_to_element_map +=
-						(number_of_nodes_in_xi2-1)*number_of_nodes_in_xi1;
-					k=number_of_nodes_in_xi3;
-					while (all_on_axis&&(k>0))
-					{
-						i=number_of_nodes_in_xi1;
-						while (all_on_axis&&(i>0))
-						{
-							all_on_axis=node_on_axis(node[(*node_to_element_map)->node_index],
-								field,time,coordinate_system_type);
-							node_to_element_map++;
-							i--;
-						}
-						node_to_element_map +=
-							(number_of_nodes_in_xi2-1)*number_of_nodes_in_xi1;
-						k--;
-					}
-					if (all_on_axis)
-					{
-						element_value=values;
-						node_to_element_map=(component->map).standard_node_based.
-							node_to_element_maps;
-						for (j=number_of_nodes_in_xi2;j>1;j--)
-						{
-							for (i=number_of_nodes_in_xi1;i>0;i--)
-							{
-								element_value += (*node_to_element_map)->number_of_nodal_values;
-								node_to_element_map++;
-							}
-						}
-						element_value_2=element_value;
-						node_to_element_map_2=node_to_element_map;
-						for (i=number_of_nodes_in_xi1;i>0;i--)
-						{
-							element_value_2 -=
-								(*node_to_element_map_2)->number_of_nodal_values;
-							node_to_element_map_2--;
-						}
-						for (k=number_of_nodes_in_xi3;k>0;k--)
-						{
-							for (i=number_of_nodes_in_xi1;i>0;i--)
-							{
-								*element_value= *element_value_2;
-								element_value += (*node_to_element_map)->number_of_nodal_values;
-								node_to_element_map++;
-								element_value_2 += (*node_to_element_map_2)->
-									number_of_nodal_values;
-								node_to_element_map_2++;
-							}
-							for (j=number_of_nodes_in_xi2;j>1;j--)
-							{
-								for (i=number_of_nodes_in_xi1;i>0;i--)
-								{
-									element_value +=
-										(*node_to_element_map)->number_of_nodal_values;
-									node_to_element_map++;
-									element_value_2 += (*node_to_element_map_2)->
-										number_of_nodal_values;
-									node_to_element_map_2++;
-								}
-							}
-						}
-					}
-					else
-					{
-						/* xi3=0 face */
-						if (1<number_of_nodes_in_xi3)
-						{
-							all_on_axis=1;
-						}
-						else
-						{
-							all_on_axis=0;
-						}
-						node_to_element_map=(axis_component->map).standard_node_based.
-							node_to_element_maps;
-						j=number_of_nodes_in_xi2;
-						while (all_on_axis&&(j>0))
-						{
-							i=number_of_nodes_in_xi1;
-							while (all_on_axis&&(i>0))
-							{
-								all_on_axis=node_on_axis(node[(*node_to_element_map)->
-									node_index],field,time,coordinate_system_type);
-								node_to_element_map++;
-								i--;
-							}
-							j--;
-						}
-						if (all_on_axis)
-						{
-							element_value=values;
-							node_to_element_map=(component->map).standard_node_based.
-								node_to_element_maps;
-							element_value_2=values;
-							node_to_element_map_2=node_to_element_map;
-							for (i=number_of_nodes_in_xi1;i>0;i--)
-							{
-								element_value_2 += (*node_to_element_map_2)->
-									number_of_nodal_values;
-								node_to_element_map_2++;
-							}
-							for (j=number_of_nodes_in_xi2;j>0;j--)
-							{
-								for (i=number_of_nodes_in_xi1;i>0;i--)
-								{
-									*element_value= *element_value_2;
-									element_value +=
-										(*node_to_element_map)->number_of_nodal_values;
-									node_to_element_map++;
-									element_value_2 += (*node_to_element_map_2)->
-										number_of_nodal_values;
-									node_to_element_map_2++;
-								}
-							}
-						}
-						else
-						{
-							/* xi3=1 face */
-							if (1<number_of_nodes_in_xi3)
-							{
-								all_on_axis=1;
-							}
-							else
-							{
-								all_on_axis=0;
-							}
-							node_to_element_map=(component->map).standard_node_based.
-								node_to_element_maps;
-							node_to_element_map += (number_of_nodes_in_xi3-1)*
-								number_of_nodes_in_xi2*number_of_nodes_in_xi1;
-							j=number_of_nodes_in_xi2;
-							while (all_on_axis&&(j>0))
-							{
-								i=number_of_nodes_in_xi1;
-								while (all_on_axis&&(i>0))
-								{
-									all_on_axis=node_on_axis(node[(*node_to_element_map)->
-										node_index],field,time,coordinate_system_type);
-									node_to_element_map++;
-									i--;
-								}
-								j--;
-							}
-							if (all_on_axis)
-							{
-								element_value=values;
-								node_to_element_map=(component->map).standard_node_based.
-									node_to_element_maps;
-								for (k=number_of_nodes_in_xi3;k>1;k--)
-								{
-									for (j=number_of_nodes_in_xi2;j>0;j--)
-									{
-										for (i=number_of_nodes_in_xi1;i>0;i--)
-										{
-											element_value +=
-												(*node_to_element_map)->number_of_nodal_values;
-											node_to_element_map++;
-										}
-									}
-								}
-								element_value_2=element_value;
-								node_to_element_map_2=node_to_element_map;
-								for (j=number_of_nodes_in_xi2;j>0;j--)
-								{
-									for (i=number_of_nodes_in_xi1;i>0;i--)
-									{
-										element_value_2 -= (*node_to_element_map_2)->
-											number_of_nodal_values;
-										node_to_element_map_2--;
-									}
-								}
-								for (j=number_of_nodes_in_xi2;j>0;j--)
-								{
-									for (i=number_of_nodes_in_xi1;i>0;i--)
-									{
-										*element_value= *element_value_2;
-										element_value += (*node_to_element_map)->
-											number_of_nodal_values;
-										node_to_element_map++;
-										element_value_2 += (*node_to_element_map_2)->
-											number_of_nodal_values;
-										node_to_element_map_2++;
-									}
-								}
-							}
-						}
-					}
-				}
-				element_value=values;
-				node_to_element_map=(component->map).standard_node_based.
-					node_to_element_maps;
-				offset_xi1_xi2=0;
-				offset_xi2_xi3=0;
-				/* make sure non-increasing in xi1 and smooth in xi2 & xi3 */
-				for (k=number_of_nodes_in_xi3;k>0;k--)
-				{
-					value_xi3= *element_value;
-					for (j=number_of_nodes_in_xi2;j>0;j--)
-					{
-						value_xi2= *element_value;
-						for (i=number_of_nodes_in_xi1;i>1;i--)
-						{
-							value_xi1= *element_value;
-							element_value += (*node_to_element_map)->number_of_nodal_values;
-							*element_value += offset_xi1_xi2+offset_xi2_xi3;
-							/*???DB.  <= needed for single prolate, but seems to cause
-								problems for heart */
-							if (value_xi1< *element_value)
-							{
-								*element_value -= 2*PI;
-							}
-							node_to_element_map++;
-						}
-						element_value += (*node_to_element_map)->number_of_nodal_values;
-						node_to_element_map++;
-						if (j>1)
-						{
-							value_xi1= *element_value;
-							if (value_xi1>value_xi2+PI)
-							{
-								offset_xi1_xi2= -2*PI;
-								*element_value += offset_xi1_xi2;
-							}
-							else
-							{
-								if (value_xi1<value_xi2-PI)
-								{
-									offset_xi1_xi2=2*PI;
-									*element_value += offset_xi1_xi2;
-								}
-								else
-								{
-									offset_xi1_xi2=0;
-								}
-							}
-						}
-					}
-					if (k>1)
-					{
-						offset_xi1_xi2=0;
-						value_xi2= *element_value;
-						if (value_xi2>value_xi3+PI)
-						{
-							offset_xi2_xi3= -2*PI;
-							*element_value += offset_xi2_xi3;
-						}
-						else
-						{
-							if (value_xi2<value_xi3-PI)
-							{
-								offset_xi2_xi3=2*PI;
-								*element_value += offset_xi2_xi3;
-							}
-							else
-							{
-								offset_xi2_xi3=0;
-							}
-						}
-					}
-				}
-			}
-		}
-		return_code=1;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"theta_non_increasing_in_xi1.  Invalid argument(s)");
-		return_code=0;
-	}
+	return_code = modify_theta_in_xi1(component, element, field, time,
+		number_of_values, values, MODIFY_THETA_NON_INCREASING_IN_XI1);
 	LEAVE;
 
 	return (return_code);
