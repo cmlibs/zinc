@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : graphics_object.h
 
-LAST MODIFIED : 7 July 2000
+LAST MODIFIED : 16 November 2000
 
 DESCRIPTION :
 Graphical object data structures.
@@ -250,25 +250,28 @@ DESCRIPTION :
 
 struct GT_glyph_set
 /*******************************************************************************
-LAST MODIFIED : 13 July 1999
+LAST MODIFIED : 16 November 2000
 
 DESCRIPTION :
 Graphics primitive for positioning and scaling a glyph - a graphics object with
 no materials that merely defines geometry. Glyphs should be designed to be
 centred at 0,0,0 and oriented with the 3 primary axes 1, 2 and 3. The display
-list of the glyph is called after settings up a model transformation matrix that
+list of the glyph is called after setting up a model transformation matrix that
 shifts the centre and axes 1, 2 and 3 of the glyph to vectors specified in the
 <point_list>, <axis1_list>, <axis2_list> and <axis3_list>, respectively. Both
 scaling and rotation - not necessarily maintaining orthogonality - are supplied
-by the axis vectors. Data may also be stored with this object so that the entire
-glyph may be coloured by a spectrum. Hence, glyphs should not have any data
-themselves. An optional label may also be drawn beside each glyph.
-The optional <names> array allows individual items in the glyph_set to be
-identified in picking for node position/vector editing.
+by the axis vectors. An additional scaling is supplied by the <size> member
+which has one component per axis. Certain glyphs, eg. arrows and cones, are able
+to take advantage of negative sizes to point inwards in a given axis, eg. to
+show compressive strains as -><-, and tensile strains as <-->. Data may also be
+stored with this object so that the entire glyph may be coloured by a spectrum.
+Hence, glyphs should not have any data themselves. An optional label may also be
+drawn beside each glyph. The optional <names> array allows individual items in
+the glyph_set to be identified in picking for node position/vector editing.
 ==============================================================================*/
 {
 	int number_of_points;
-	Triple *point_list,*axis1_list,*axis2_list,*axis3_list;
+	Triple *axis1_list, *axis2_list, *axis3_list, *point_list, *scale_list;
 	char **labels;
 	struct GT_object *glyph;
 	int n_data_components;
@@ -516,6 +519,8 @@ Graphical object data structure.
 #endif /* defined (OPENGL_API) */
 	/* flag indicates whether the graphics display list is up to date */
 	int display_list_current;
+	/*???temporary*/
+	int glyph_mirror_mode;
 	int access_count;
 } gtObject;
 
@@ -715,11 +720,12 @@ PROTOTYPE_LIST_FUNCTIONS(GT_object);
 PROTOTYPE_FIND_BY_IDENTIFIER_IN_LIST_FUNCTION(GT_object,name,char *);
 
 struct GT_glyph_set *CREATE(GT_glyph_set)(int number_of_points,
-	Triple *point_list,Triple *axis1_list,Triple *axis2_list,Triple *axis3_list,
-	struct GT_object *glyph,char **labels,int n_data_components,GTDATA *data,
-	int object_name,int *names);
+	Triple *point_list, Triple *axis1_list, Triple *axis2_list,
+	Triple *axis3_list, Triple *scale_list, struct GT_object *glyph,
+	char **labels, int n_data_components, GTDATA *data,
+	int object_name, int *names);
 /*******************************************************************************
-LAST MODIFIED : 23 February 2000
+LAST MODIFIED : 16 November 2000
 
 DESCRIPTION :
 Allocates memory and assigns fields for a GT_glyph_set. The glyph set shows
@@ -727,22 +733,24 @@ the object <glyph> at the specified <number_of_points> with positions given in
 <point_list>, and principal axes in <axis1_list>, <axis2_list> and <axis3_list>.
 The magnitude of these axes control scaling of the glyph at each point, while
 their orientations - which need not be orthogonal - effect rotations and skew.
+There magnitudes also multiplied by the <scale_list> values, 1 value per axis,
+which permit certain glyphs to reverse direction with negative values.
 The optional <labels> parameter is an array of strings to be written beside each
 glyph, while the optional <data> of number <n_data_components> per glyph allows
 colouring of the glyphs by a spectrum.
 The glyph_set will be marked as coming from the <object_name>, and integer
 identifier, while the optional <names> contains an integer identifier per point.
-
-???RC All arrays passed to this routine are owned by the new GT_glyph_set
+Note: All arrays passed to this routine are owned by the new GT_glyph_set
 and are deallocated by its DESTROY function.
 ==============================================================================*/
 
-int DESTROY(GT_glyph_set)(struct GT_glyph_set **glyph_set);
+int DESTROY(GT_glyph_set)(struct GT_glyph_set **glyph_set_address);
 /*******************************************************************************
-LAST MODIFIED : 6 July 1998
+LAST MODIFIED : 16 November 2000
 
 DESCRIPTION :
-Frees the frees the memory for <**glyph_set> and sets <*glyph_set> to NULL.
+Frees the frees the memory for <**glyph_set_address> and sets
+<*glyph_set_address> to NULL.
 ==============================================================================*/
 
 struct GT_nurbs *CREATE(GT_nurbs)(void);
@@ -1199,6 +1207,25 @@ DESCRIPTION :
 Sets the select_mode of the <graphics_object>.
 ==============================================================================*/
 
+int GT_object_get_glyph_mirror_mode(struct GT_object *graphics_object);
+/*******************************************************************************
+LAST MODIFIED : 16 November 2000
+
+DESCRIPTION :
+Gets the glyph_mirror_mode of a GT_object -- true or false.
+???RC temporary until we have a separate struct Glyph.
+==============================================================================*/
+
+int GT_object_set_glyph_mirror_mode(struct GT_object *graphics_object,
+	int glyph_mirror_mode);
+/*******************************************************************************
+LAST MODIFIED : 16 November 2000
+
+DESCRIPTION :
+Sets the glyph_mirror_mode of the <graphics_object> to true or false.
+???RC temporary until we have a separate struct Glyph.
+==============================================================================*/
+
 int GT_object_clear_selected_graphic_list(struct GT_object *graphics_object);
 /*******************************************************************************
 LAST MODIFIED : 18 February 2000
@@ -1321,5 +1348,19 @@ LAST MODIFIED : 15 May 1998
 
 DESCRIPTION :
 Modifier function to set the graphics_object from a command.
+==============================================================================*/
+
+int resolve_glyph_axes(Triple point, Triple axis1, Triple axis2,
+	Triple axis3, Triple scale, int mirror, int reverse, Triple final_point,
+	Triple final_axis1, Triple final_axis2, Triple final_axis3);
+/*******************************************************************************
+LAST MODIFIED : 16 November 2000
+
+DESCRIPTION :
+Multiplies the three axes by their <scale> to give the final axes, reversing
+<final_axis3> if necessary to produce a right handed coordinate system.
+If <mirror> is true, then the axes are pointed in the opposite direction.
+If <reverse> is true, then the point is shifted to the end of each axis if the
+scale is negative for that axis.
 ==============================================================================*/
 #endif /* !defined (GRAPHICS_OBJECT_H) */

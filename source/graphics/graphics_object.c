@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : graphics_object.c
 
-LAST MODIFIED : 28 August 2000
+LAST MODIFIED : 16 November 2000
 
 DESCRIPTION :
 gtObject/gtWindow management routines.
@@ -21,6 +21,7 @@ gtObject/gtWindow management routines.
 #include "finite_element/finite_element.h"
 #include "general/debug.h"
 #include "general/indexed_list_private.h"
+#include "general/mystring.h"
 #include "general/object.h"
 #include "graphics/auxiliary_graphics_types.h"
 #include "graphics/graphics_object.h"
@@ -692,62 +693,69 @@ enumerator numbers (as text) into the new enumerator values, with a warning.
 } /* get_GT_surface_type_from_string */
 
 struct GT_glyph_set *morph_GT_glyph_set(float proportion,
-	struct GT_glyph_set *initial,struct GT_glyph_set *final)
+	struct GT_glyph_set *initial, struct GT_glyph_set *final)
 /*******************************************************************************
-LAST MODIFIED : 23 February 2000
+LAST MODIFIED : 16 November 2000
 
 DESCRIPTION :
 Creates a new GT_glyph_set which is the interpolation of two GT_glyph_sets.
 The two glyph_sets must have the same number_of_points, glyph and data_type.
 Text, if any, is copied from the <initial> glyph_set if proportion < 0.5,
 otherwise from <final>.
+???RC This could be improved by interpolating quaternions for the axes, but
+this gets tricky when done on all axes consistently.
 ==============================================================================*/
 {
 	char **labels;
 	GTDATA *data;
-	struct GT_glyph_set *glyph_set,*nearest_glyph_set;
-	int i,j,number_of_points,*names,return_code;
-	Triple *point_list,*axis1_list,*axis2_list,*axis3_list;
+	struct GT_glyph_set *glyph_set, *nearest_glyph_set;
+	int i, j, number_of_points, *names, return_code;
+	Triple *point_list, *axis1_list, *axis2_list, *axis3_list, *scale_list;
 
 	ENTER(morph_GT_glyph_set);
-	if ((initial->number_of_points==final->number_of_points)&&
-		(initial->glyph==final->glyph)&&
-		(initial->n_data_components==final->n_data_components))
+	if ((initial->number_of_points == final->number_of_points) &&
+		(initial->glyph == final->glyph) &&
+		(initial->n_data_components == final->n_data_components))
 	{
-		return_code=1;
-		number_of_points=initial->number_of_points;
-		if (proportion<0.5)
+		return_code = 1;
+		number_of_points = initial->number_of_points;
+		if (proportion < 0.5)
 		{
-			nearest_glyph_set=initial;
+			nearest_glyph_set = initial;
 		}
 		else
 		{
-			nearest_glyph_set=final;
+			nearest_glyph_set = final;
 		}
-		point_list=(Triple *)NULL;
-		axis1_list=(Triple *)NULL;
-		axis2_list=(Triple *)NULL;
-		axis3_list=(Triple *)NULL;
-		data=(GTDATA *)NULL;
-		labels=(char **)NULL;
-		names=(int *)NULL;
-		if ((0<number_of_points)&&ALLOCATE(point_list,Triple,number_of_points)&&
-			ALLOCATE(axis1_list,Triple,number_of_points)&&
-			ALLOCATE(axis2_list,Triple,number_of_points)&&
-			ALLOCATE(axis3_list,Triple,number_of_points))
+		point_list = (Triple *)NULL;
+		axis1_list = (Triple *)NULL;
+		axis2_list = (Triple *)NULL;
+		axis3_list = (Triple *)NULL;
+		scale_list = (Triple *)NULL;
+		data = (GTDATA *)NULL;
+		labels = (char **)NULL;
+		names = (int *)NULL;
+		if ((0 < number_of_points) &&
+			ALLOCATE(point_list, Triple, number_of_points) &&
+			ALLOCATE(axis1_list, Triple, number_of_points) &&
+			ALLOCATE(axis2_list, Triple, number_of_points) &&
+			ALLOCATE(axis3_list, Triple, number_of_points) &&
+			ALLOCATE(scale_list, Triple, number_of_points))
 		{
-			for (i=0;i<number_of_points;i++)
+			for (i = 0; i < number_of_points; i++)
 			{
-				for (j=0;j<3;j++)
+				for (j = 0; j < 3; j++)
 				{
-					point_list[i][j]=(1.0-proportion)*(initial->point_list)[i][j]+
+					point_list[i][j] = (1.0 - proportion)*(initial->point_list)[i][j] +
 						proportion*(final->point_list)[i][j];
-					axis1_list[i][j]=(1.0-proportion)*(initial->axis1_list)[i][j]+
+					axis1_list[i][j] = (1.0 - proportion)*(initial->axis1_list)[i][j] +
 						proportion*(final->axis1_list)[i][j];
-					axis2_list[i][j]=(1.0-proportion)*(initial->axis2_list)[i][j]+
+					axis2_list[i][j] = (1.0 - proportion)*(initial->axis2_list)[i][j] +
 						proportion*(final->axis2_list)[i][j];
-					axis3_list[i][j]=(1.0-proportion)*(initial->axis3_list)[i][j]+
+					axis3_list[i][j] = (1.0 - proportion)*(initial->axis3_list)[i][j] +
 						proportion*(final->axis3_list)[i][j];
+					scale_list[i][j] = (1.0 - proportion)*(initial->scale_list)[i][j] +
+						proportion*(final->scale_list)[i][j];
 				}
 			}
 			/* check for and allocate any data */
@@ -755,33 +763,28 @@ otherwise from <final>.
 			{
 				if (ALLOCATE(data,GTDATA,number_of_points*initial->n_data_components))
 				{
-					for (i=0;i<number_of_points*initial->n_data_components;i++)
+					for (i = 0; i < number_of_points*initial->n_data_components; i++)
 					{
-						data[i]=(1.0-proportion)*(initial->data)[i]+
+						data[i] = (1.0 - proportion)*(initial->data)[i] +
 							proportion*(final->data)[i];
 					}
 				}
 				else
 				{
-					return_code=0;
+					return_code = 0;
 				}
 			}
-			if (point_list&&nearest_glyph_set->labels)
+			if (point_list && nearest_glyph_set->labels)
 			{
-				if (ALLOCATE(labels,char *,number_of_points))
+				if (ALLOCATE(labels, char *, number_of_points))
 				{
-					for (i=0;labels&&(i<number_of_points);i++)
+					for (i = 0; labels && (i < number_of_points); i++)
 					{
 						if (nearest_glyph_set->labels[i])
 						{
-							if (ALLOCATE(labels[i],char,
-								strlen(nearest_glyph_set->labels[i])+1))
+							if (!(labels[i] = duplicate_string(nearest_glyph_set->labels[i])))
 							{
-								strcpy(labels[i],nearest_glyph_set->labels[i]);
-							}
-							else
-							{
-								for (j=0;j<i;j++)
+								for (j = 0; j < i; j++)
 								{
 									DEALLOCATE(labels[i]);
 								}
@@ -790,35 +793,35 @@ otherwise from <final>.
 						}
 						else
 						{
-							labels[i]=(char *)NULL;
+							labels[i] = (char *)NULL;
 						}
 					}
 				}
 				if (!labels)
 				{
-					return_code=0;
+					return_code = 0;
 				}
 			}
-			if (point_list&&nearest_glyph_set->names)
+			if (point_list && nearest_glyph_set->names)
 			{
-				if (ALLOCATE(names,int,number_of_points))
+				if (ALLOCATE(names, int, number_of_points))
 				{
-					for (i=0;i<number_of_points;i++)
+					for (i = 0; i < number_of_points; i++)
 					{
 						names[i] = nearest_glyph_set->names[i];
 					}
 				}
 				else
 				{
-					return_code=0;
+					return_code = 0;
 				}
 			}
 			if (return_code)
 			{
-				if (glyph_set=CREATE(GT_glyph_set)(number_of_points,point_list,
-					axis1_list,axis2_list,axis3_list,initial->glyph,labels,
-					initial->n_data_components,data,
-					nearest_glyph_set->object_name,names))
+				if (glyph_set = CREATE(GT_glyph_set)(number_of_points, point_list,
+					axis1_list, axis2_list, axis3_list, scale_list, initial->glyph,
+					labels, initial->n_data_components, data,
+					nearest_glyph_set->object_name, names))
 				{
 #if defined (OLD_CODE)
 /*???DB.  Have to be recursive on destroy_ and morph_ or neither */
@@ -835,13 +838,13 @@ otherwise from <final>.
 				}
 				else
 				{
-					return_code=0;
+					return_code = 0;
 				}
 			}
 		}
 		else
 		{
-			return_code=0;
+			return_code = 0;
 		}
 		if (!return_code)
 		{
@@ -852,24 +855,25 @@ otherwise from <final>.
 			DEALLOCATE(axis1_list);
 			DEALLOCATE(axis2_list);
 			DEALLOCATE(axis3_list);
+			DEALLOCATE(scale_list);
 			DEALLOCATE(data);
 			if (labels)
 			{
-				for (i=0;i<nearest_glyph_set->number_of_points;i++)
+				for (i = 0; i < nearest_glyph_set->number_of_points; i++)
 				{
 					DEALLOCATE(labels[i]);
 				}
 				DEALLOCATE(labels);
 			}
 			DEALLOCATE(names);
-			glyph_set=(struct GT_glyph_set *)NULL;
+			glyph_set = (struct GT_glyph_set *)NULL;
 		}
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
 			"morph_GT_glyph_set.  Inconsistent initial and final glyph_sets");
-		glyph_set=(struct GT_glyph_set *)NULL;
+		glyph_set = (struct GT_glyph_set *)NULL;
 	}
 	LEAVE;
 
@@ -1816,11 +1820,12 @@ DECLARE_FIND_BY_IDENTIFIER_IN_INDEXED_LIST_FUNCTION(GT_object,name,char *, \
 	strcmp)
 
 struct GT_glyph_set *CREATE(GT_glyph_set)(int number_of_points,
-	Triple *point_list,Triple *axis1_list,Triple *axis2_list,Triple *axis3_list,
-	struct GT_object *glyph,char **labels,int n_data_components,GTDATA *data,
-	int object_name,int *names)
+	Triple *point_list, Triple *axis1_list, Triple *axis2_list,
+	Triple *axis3_list, Triple *scale_list, struct GT_object *glyph,
+	char **labels, int n_data_components, GTDATA *data,
+	int object_name, int *names)
 /*******************************************************************************
-LAST MODIFIED : 23 February 2000
+LAST MODIFIED : 16 November 2000
 
 DESCRIPTION :
 Allocates memory and assigns fields for a GT_glyph_set. The glyph set shows
@@ -1828,99 +1833,102 @@ the object <glyph> at the specified <number_of_points> with positions given in
 <point_list>, and principal axes in <axis1_list>, <axis2_list> and <axis3_list>.
 The magnitude of these axes control scaling of the glyph at each point, while
 their orientations - which need not be orthogonal - effect rotations and skew.
+There magnitudes also multiplied by the <scale_list> values, 1 value per axis,
+which permit certain glyphs to reverse direction with negative values.
 The optional <labels> parameter is an array of strings to be written beside each
 glyph, while the optional <data> of number <n_data_components> per glyph allows
 colouring of the glyphs by a spectrum.
 The glyph_set will be marked as coming from the <object_name>, and integer
 identifier, while the optional <names> contains an integer identifier per point.
-
-???RC All arrays passed to this routine are owned by the new GT_glyph_set
+Note: All arrays passed to this routine are owned by the new GT_glyph_set
 and are deallocated by its DESTROY function.
 ==============================================================================*/
 {
 	struct GT_glyph_set *glyph_set;
 
 	ENTER(CREATE(GT_glyph_set));
-	if ((0<number_of_points)&&point_list&&axis1_list&&axis2_list&&axis3_list&&
-		glyph)
+	if ((0 < number_of_points) && point_list && axis1_list && axis2_list &&
+		axis3_list && scale_list && glyph)
 	{
 		if (ALLOCATE(glyph_set,struct GT_glyph_set,1))
 		{
-			glyph_set->number_of_points=number_of_points;
-			glyph_set->point_list=point_list;
-			glyph_set->axis1_list=axis1_list;
-			glyph_set->axis2_list=axis2_list;
-			glyph_set->axis3_list=axis3_list;
-			glyph_set->glyph=ACCESS(GT_object)(glyph);
-			glyph_set->labels=labels;
-			glyph_set->n_data_components=n_data_components;
-			glyph_set->data=data;
-			glyph_set->object_name=object_name;
-			glyph_set->names=names;
-			glyph_set->ptrnext=(struct GT_glyph_set *)NULL;
+			glyph_set->number_of_points = number_of_points;
+			glyph_set->point_list = point_list;
+			glyph_set->axis1_list = axis1_list;
+			glyph_set->axis2_list = axis2_list;
+			glyph_set->axis3_list = axis3_list;
+			glyph_set->scale_list = scale_list;
+			glyph_set->glyph = ACCESS(GT_object)(glyph);
+			glyph_set->labels = labels;
+			glyph_set->n_data_components = n_data_components;
+			glyph_set->data = data;
+			glyph_set->object_name = object_name;
+			glyph_set->names = names;
+			glyph_set->ptrnext = (struct GT_glyph_set *)NULL;
 		}
 		else
 		{
-			display_message(ERROR_MESSAGE,
-				"CREATE(GT_glyph_set).  Not enough memory");
+			display_message(ERROR_MESSAGE,"CREATE(GT_glyph_set).  Not enough memory");
 		}
 	}
 	else
 	{
-		display_message(ERROR_MESSAGE,
-			"CREATE(GT_glyph_set).  Invalid argument(s)");
-		glyph_set=(struct GT_glyph_set *)NULL;
+		display_message(ERROR_MESSAGE,"CREATE(GT_glyph_set).  Invalid argument(s)");
+		glyph_set = (struct GT_glyph_set *)NULL;
 	}
 	LEAVE;
 
 	return (glyph_set);
 } /* CREATE(GT_glyph_set) */
 
-int DESTROY(GT_glyph_set)(struct GT_glyph_set **glyph_set)
+int DESTROY(GT_glyph_set)(struct GT_glyph_set **glyph_set_address)
 /*******************************************************************************
-LAST MODIFIED : 13 July 1999
+LAST MODIFIED : 16 November 2000
 
 DESCRIPTION :
-Frees the frees the memory for <**glyph_set> and sets <*glyph_set> to NULL.
+Frees the frees the memory for <**glyph_set_address> and sets
+<*glyph_set_address> to NULL.
 ==============================================================================*/
 {
-	char *label,**labels;
-	int return_code,i;
+	char *label, **labels;
+	int return_code, i;
+	struct GT_glyph_set *glyph_set;
 
 	ENTER(DESTROY(GT_glyph_set));
-	if (glyph_set && *glyph_set)
+	if (glyph_set_address && (glyph_set = *glyph_set_address))
 	{
-		DEALLOCATE((*glyph_set)->point_list);
-		DEALLOCATE((*glyph_set)->axis1_list);
-		DEALLOCATE((*glyph_set)->axis2_list);
-		DEALLOCATE((*glyph_set)->axis3_list);
-		DEACCESS(GT_object)(&((*glyph_set)->glyph));
-		if (labels=(*glyph_set)->labels)
+		DEALLOCATE(glyph_set->point_list);
+		DEALLOCATE(glyph_set->axis1_list);
+		DEALLOCATE(glyph_set->axis2_list);
+		DEALLOCATE(glyph_set->axis3_list);
+		DEALLOCATE(glyph_set->scale_list);
+		DEACCESS(GT_object)(&(glyph_set->glyph));
+		if (labels = glyph_set->labels)
 		{
-			for (i=(*glyph_set)->number_of_points;i>0;i--)
+			for (i = glyph_set->number_of_points; 0 < i; i--)
 			{
-				label= *labels;
+				label = *labels;
 				DEALLOCATE(label);
 				labels++;
 			}
-			DEALLOCATE((*glyph_set)->labels);
+			DEALLOCATE(glyph_set->labels);
 		}
-		if ((*glyph_set)->data)
+		if (glyph_set->data)
 		{
-			DEALLOCATE((*glyph_set)->data);
+			DEALLOCATE(glyph_set->data);
 		}
-		if ((*glyph_set)->names)
+		if (glyph_set->names)
 		{
-			DEALLOCATE((*glyph_set)->names);
+			DEALLOCATE(glyph_set->names);
 		}
-		DEALLOCATE(*glyph_set);
-		return_code=1;
+		DEALLOCATE(*glyph_set_address);
+		return_code = 1;
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
 			"DESTROY(GT_glyph_set).  Invalid argument(s)");
-		return_code=0;
+		return_code = 0;
 	}
 	LEAVE;
 
@@ -2788,7 +2796,7 @@ from <graphics_object> to the iso_poly_material array in the voltex. Of course,
 struct GT_object *CREATE(GT_object)(char *name,enum GT_object_type object_type,
 	struct Graphical_material *default_material)
 /*******************************************************************************
-LAST MODIFIED : 7 July 2000
+LAST MODIFIED : 16 November 2000
 
 DESCRIPTION :
 Allocates memory and assigns fields for a graphics object.
@@ -2869,6 +2877,8 @@ Allocates memory and assigns fields for a graphics object.
 				object->nextobject=(gtObject *)NULL;
 				object->spectrum=(struct Spectrum *)NULL;
 				object->number_of_times=0;
+				/*???temporary*/
+				object->glyph_mirror_mode=0;
 			}
 			else
 			{
@@ -4677,6 +4687,62 @@ Sets the select_mode of the <graphics_object>.
 	return (return_code);
 } /* GT_object_set_select_mode */
 
+int GT_object_get_glyph_mirror_mode(struct GT_object *graphics_object)
+/*******************************************************************************
+LAST MODIFIED : 16 November 2000
+
+DESCRIPTION :
+Gets the glyph_mirror_mode of a GT_object -- true or false.
+???RC temporary until we have a separate struct Glyph.
+==============================================================================*/
+{
+	int glyph_mirror_mode;
+
+	ENTER(GT_object_get_glyph_mirror_mode);
+	if (graphics_object)
+	{
+		glyph_mirror_mode = graphics_object->glyph_mirror_mode;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"GT_object_set_glyph_mirror_mode.  Invalid argument(s)");
+		glyph_mirror_mode = 0;
+	}
+	LEAVE;
+
+	return (glyph_mirror_mode);
+} /* GT_object_get_glyph_mirror_mode */
+
+int GT_object_set_glyph_mirror_mode(struct GT_object *graphics_object,
+	int glyph_mirror_mode)
+/*******************************************************************************
+LAST MODIFIED : 16 November 2000
+
+DESCRIPTION :
+Sets the glyph_mirror_mode of the <graphics_object> to true or false.
+???RC temporary until we have a separate struct Glyph.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(GT_object_set_glyph_mirror_mode);
+	if (graphics_object)
+	{
+		graphics_object->glyph_mirror_mode = glyph_mirror_mode;
+		return_code = 1;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"GT_object_set_glyph_mirror_mode.  Invalid argument(s)");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* GT_object_set_glyph_mirror_mode */
+
 int GT_object_clear_selected_graphic_list(struct GT_object *graphics_object)
 /*******************************************************************************
 LAST MODIFIED : 18 February 2000
@@ -5239,3 +5305,77 @@ Modifier function to set the graphics_object from a command.
 
 	return (return_code);
 } /* set_Graphics_object */
+
+int resolve_glyph_axes(Triple point, Triple axis1, Triple axis2,
+	Triple axis3, Triple scale, int mirror, int reverse, Triple final_point,
+	Triple final_axis1, Triple final_axis2, Triple final_axis3)
+/*******************************************************************************
+LAST MODIFIED : 16 November 2000
+
+DESCRIPTION :
+Multiplies the three axes by their <scale> to give the final axes, reversing
+<final_axis3> if necessary to produce a right handed coordinate system.
+If <mirror> is true, then the axes are pointed in the opposite direction.
+If <reverse> is true, then the point is shifted to the end of each axis if the
+scale is negative for that axis.
+==============================================================================*/
+{
+	int j, return_code;
+
+	ENTER(resolve_glyph_axes);
+	if (point && axis1 && axis2 && axis3 && scale &&
+		final_point && final_axis1 && final_axis2 && final_axis3)
+	{
+		return_code = 1;
+		for (j = 0; j < 3; j++)
+		{
+			final_axis1[j] = axis1[j] * scale[0];
+			final_axis2[j] = axis2[j] * scale[1];
+			final_axis3[j] = axis3[j] * scale[2];
+			if (mirror)
+			{
+				final_axis1[j] = -final_axis1[j];
+				final_axis2[j] = -final_axis2[j];
+				final_axis3[j] = -final_axis3[j];
+			}
+			final_point[j] = point[j];
+			if (reverse)
+			{
+				/* shift glyph centre to end of axes if scale negative */
+				if (0.0 > scale[0])
+				{
+					final_point[j] -= final_axis1[j];
+				}
+				if (0.0 > scale[1])
+				{
+					final_point[j] -= final_axis2[j];
+				}
+				if (0.0 > scale[2])
+				{
+					final_point[j] -= final_axis3[j];
+				}
+			}
+		}
+		/* if required, reverse axis3 to maintain right-handed coordinate system */
+		if (0.0 > (
+			final_axis3[0]*(final_axis1[1]*final_axis2[2] -
+				final_axis1[2]*final_axis2[1]) +
+			final_axis3[1]*(final_axis1[2]*final_axis2[0] -
+				final_axis1[0]*final_axis2[2]) +
+			final_axis3[2]*(final_axis1[0]*final_axis2[1] -
+				final_axis1[1]*final_axis2[0])))
+		{
+			final_axis3[0] = -final_axis3[0];
+			final_axis3[1] = -final_axis3[1];
+			final_axis3[2] = -final_axis3[2];
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE, "resolve_glyph_axes. Invalid argument(s)");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* resolve_glyph_axes */
