@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : cmgui.c
 
-LAST MODIFIED : 21 February 2000
+LAST MODIFIED : 22 March 2000
 
 DESCRIPTION :
 ???DB.  Prototype main program for an application that uses the "cmgui tools".
@@ -48,6 +48,8 @@ DESCRIPTION :
 #include "io_devices/conversion.h"
 #include "node/graphical_node_editor.h"
 #endif /* !defined (WINDOWS_DEV_FLAG) */
+#include "selection/element_selection.h"
+#include "selection/node_selection.h"
 #if defined (OLD_CODE)
 #if defined (MOTIF)
 #include "socket/socket.h"
@@ -366,7 +368,7 @@ int WINAPI WinMain(HINSTANCE current_instance,HINSTANCE previous_instance,
 	/*???DB. Win32 SDK says that don't have to call it WinMain */
 #endif /* defined (WINDOWS) */
 /*******************************************************************************
-LAST MODIFIED : 2 February 2000
+LAST MODIFIED : 21 March 2000
 
 DESCRIPTION :
 Main program for the CMISS Graphical User Interface
@@ -976,6 +978,11 @@ Main program for the CMISS Graphical User Interface
 			ADD_OBJECT_TO_LIST(GT_object)(glyph,command_data.glyph_list);
 		}
 	}
+
+	/* global list of selected objects */
+	command_data.element_selection=CREATE(FE_element_selection)();
+	command_data.node_selection=CREATE(FE_node_selection)();
+
 	/* scene manager */
 		/*???RC.   LOTS of managers need to be created before this */
 	command_data.default_scene=(struct Scene *)NULL;
@@ -996,6 +1003,7 @@ Main program for the CMISS Graphical User Interface
 				command_data.element_group_manager,command_data.fe_field_manager,
 				command_data.node_manager,command_data.node_group_manager,
 				command_data.data_manager,command_data.data_group_manager,
+				command_data.element_selection,command_data.node_selection,
 				command_data.user_interface);
 			/*???RC.  May want to use functions to modify default_scene here */
 			/* eg. to add model lights, etc. */
@@ -1017,7 +1025,8 @@ Main program for the CMISS Graphical User Interface
 		command_data.fe_field_manager,command_data.element_group_manager,
 		command_data.node_manager,command_data.data_group_manager,
 		command_data.node_group_manager,command_data.basis_manager,
-		command_data.element_manager,computed_field_manager,
+		command_data.element_manager,command_data.element_selection,
+		command_data.node_selection,computed_field_manager,
 		command_data.graphics_window_manager,
 		command_data.texture_manager,command_data.scene_manager,
 		command_data.light_model_manager,command_data.light_manager,
@@ -1100,7 +1109,8 @@ Main program for the CMISS Graphical User Interface
 		if (command_data.default_scene)
 		{
 			command_data.graphical_node_editor=CREATE(Graphical_node_editor)(
-				command_data.default_scene,command_data.node_manager);
+				command_data.default_scene,command_data.node_manager,
+				command_data.node_selection);
 		}
 		else
 		{
@@ -1108,7 +1118,8 @@ Main program for the CMISS Graphical User Interface
 		}
 		command_data.graphical_element_creator=CREATE(Graphical_element_creator)(
 			command_data.basis_manager,command_data.element_manager,
-			command_data.fe_field_manager,command_data.node_manager);
+			command_data.fe_field_manager,command_data.node_manager,
+			command_data.element_selection,command_data.node_selection);
 		if (command_list)
 		{
 #if defined (MOTIF)
@@ -1750,6 +1761,9 @@ Main program for the CMISS Graphical User Interface
 
 				DEACCESS(Scene)(&(command_data.default_scene));
 				DESTROY(MANAGER(Scene))(&command_data.scene_manager);
+
+				DESTROY(FE_node_selection)(&(command_data.node_selection));
+				DESTROY(FE_element_selection)(&(command_data.element_selection));
 
 				DESTROY(LIST(GT_object))(&command_data.graphics_object_list);
 				DESTROY(LIST(GT_object))(&command_data.glyph_list);
