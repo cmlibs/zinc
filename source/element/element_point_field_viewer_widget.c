@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : element_point_field_viewer_widget.c
 
-LAST MODIFIED : 23 May 2000
+LAST MODIFIED : 31 May 2000
 
 DESCRIPTION :
 Widget for displaying and editing component values of computed fields defined
@@ -35,7 +35,7 @@ Module types
 
 struct Element_point_field_viewer_widget_struct
 /*******************************************************************************
-LAST MODIFIED : 22 May 2000
+LAST MODIFIED : 31 May 2000
 
 DESCRIPTION :
 ==============================================================================*/
@@ -43,9 +43,14 @@ DESCRIPTION :
 	/* remember number of components to detect redefinition of computed fields */
 	int number_of_components;
 	struct Callback_data update_callback;
-	struct Computed_field *current_field;
-	struct FE_element *current_element;
+	/* information about the element point being edited; note element in
+		 identifier is not accessed, and should not be managed */
+	struct Element_point_ranges_identifier element_point_identifier;
+	int element_point_number;
+	/* xi value of element point being edited */
 	FE_value xi[MAXIMUM_ELEMENT_XI_DIMENSIONS];
+	/* field being edited */
+	struct Computed_field *current_field;
 	Widget component_rowcol,widget,*widget_address,widget_parent;
 }; /* element_point_field_viewer_struct */
 
@@ -116,7 +121,7 @@ all dynamic memory allocations and pointers.
 static void element_point_field_viewer_widget_update_values(
 	struct Element_point_field_viewer_widget_struct *element_point_field_viewer)
 /*******************************************************************************
-LAST MODIFIED : 23 May 2000
+LAST MODIFIED : 31 May 2000
 
 DESCRIPTION :
 Updates all widgets in the rowcol to make sure they say the correct value.
@@ -131,7 +136,7 @@ Updates all widgets in the rowcol to make sure they say the correct value.
 
 	ENTER(element_point_field_viewer_widget_update_values);
 	if (element_point_field_viewer&&element_point_field_viewer->component_rowcol&&
-		(element=element_point_field_viewer->current_element)&&
+		(element=element_point_field_viewer->element_point_identifier.element)&&
 		(xi=element_point_field_viewer->xi)&&
 		(field=element_point_field_viewer->current_field))
 	{
@@ -200,7 +205,7 @@ data, and then changes the correct value in the array structure.
 	if ((element_point_field_viewer=
 		(struct Element_point_field_viewer_widget_struct *)
 		element_point_field_viewer_void)&&
-		(element=element_point_field_viewer->current_element)&&
+		(element=element_point_field_viewer->element_point_identifier.element)&&
 		(xi=element_point_field_viewer->xi)&&
 		(field=element_point_field_viewer->current_field)&&
 		(0<=component_number)&&
@@ -251,7 +256,7 @@ data, and then changes the correct value in the array structure.
 static int element_point_field_viewer_widget_setup_components(
 	struct Element_point_field_viewer_widget_struct *element_point_field_viewer)
 /*******************************************************************************
-LAST MODIFIED : 22 May 2000
+LAST MODIFIED : 31 May 2000
 
 DESCRIPTION :
 Creates the array of cells containing field component names and values.
@@ -259,11 +264,15 @@ Creates the array of cells containing field component names and values.
 {
 	Arg args[4];
 	char *component_name;
-	int comp_no,number_of_components,return_code;
+	Colormap cmap;
+	int comp_no,dimension,editable,i,number_of_components,
+		number_in_xi[MAXIMUM_ELEMENT_XI_DIMENSIONS],return_code;
+	Pixel background_color;
 	struct Computed_field *field;
 	struct FE_element *element;
 	Widget widget;
 	XmString new_string;
+	XColor color,unused;
 
 	ENTER(element_point_field_viewer_setup_components);
 	if (element_point_field_viewer)
@@ -276,10 +285,31 @@ Creates the array of cells containing field component names and values.
 			XtUnmanageChild(element_point_field_viewer->component_rowcol);
 			XtDestroyWidget(element_point_field_viewer->component_rowcol);
 		}
-		if ((element=element_point_field_viewer->current_element)&&
+		if ((element=element_point_field_viewer->element_point_identifier.element)&&
 			(field=element_point_field_viewer->current_field)&&
 			Computed_field_is_defined_in_element(field,element))
 		{
+			if ((XI_DISCRETIZATION_CELL_CORNERS==element_point_field_viewer->
+				element_point_identifier.xi_discretization_mode)&&
+				Computed_field_get_native_discretization_in_element(field,element,
+					number_in_xi))
+			{
+				editable=1;
+				/* check matching discretization */
+				dimension=get_FE_element_dimension(element);
+				for (i=0;(i<dimension)&&editable;i++)
+				{
+					if (element_point_field_viewer->
+						element_point_identifier.number_in_xi[i] != number_in_xi[i])
+					{
+						editable=0;
+					}
+				}
+			}
+			else
+			{
+				editable=0;
+			}
 			number_of_components=Computed_field_get_number_of_components(field);
 			element_point_field_viewer->number_of_components=number_of_components;
 			/* now create another */
@@ -326,16 +356,31 @@ Creates the array of cells containing field component names and values.
 					XtSetArg(args[0],XmNuserData,(XtPointer)comp_no);
 					XtSetArg(args[1],XmNeditMode,XmSINGLE_LINE_EDIT);
 					XtSetArg(args[2],XmNcolumns,10);
+					XtSetArg(args[3],XmNeditable,editable);
 					if (widget=XmCreateTextField(
-						element_point_field_viewer->component_rowcol,"value",args,3))
+						element_point_field_viewer->component_rowcol,"value",args,4))
 					{
-						/* add callbacks for data input */
-						XtAddCallback(widget,XmNactivateCallback,
-							element_point_field_viewer_widget_value_CB,
-							(XtPointer)element_point_field_viewer);
-						XtAddCallback(widget,XmNlosingFocusCallback,
-							element_point_field_viewer_widget_value_CB,
-							(XtPointer)element_point_field_viewer);
+						if (editable)
+						{
+							/* add callbacks for data input */
+							XtAddCallback(widget,XmNactivateCallback,
+								element_point_field_viewer_widget_value_CB,
+								(XtPointer)element_point_field_viewer);
+							XtAddCallback(widget,XmNlosingFocusCallback,
+								element_point_field_viewer_widget_value_CB,
+								(XtPointer)element_point_field_viewer);
+						}
+						else
+						{
+							/* set the background colour to gray to denote uneditable */
+							/* Following is from O'Reilly X window System Guide Volume Six:
+								 Motif Programming Manual, Section 11.5.2, p391 */
+							XtVaGetValues(widget,XmNcolormap,&cmap,NULL);
+							XAllocNamedColor(XtDisplay(widget),cmap,"gray",
+								&color,&unused);
+							background_color=color.pixel;
+							XtVaSetValues(widget,XmNbackground,background_color,NULL);
+						}
 						XtManageChild(widget);
 					}
 					else
@@ -374,21 +419,33 @@ Global functions
 
 Widget create_element_point_field_viewer_widget(
 	Widget *element_point_field_viewer_widget_address,Widget parent,
-	struct FE_element *element_point,FE_value *xi,struct Computed_field *field)
+	struct Element_point_ranges_identifier *initial_element_point_identifier,
+	int initial_element_point_number,struct Computed_field *initial_field)
 /*******************************************************************************
-LAST MODIFIED : 22 May 2000
+LAST MODIFIED : 31 May 2000
 
 DESCRIPTION :
 Widget for displaying and editing computed field components at element points.
+<initial_element_point_identifier> must be passed, but no initial element point
+is referred to if its element is NULL. The element in the identifier, if any,
+should be a local copy of a global element; up to the parent dialog to make
+changes global.
 ==============================================================================*/
 {
 	Arg args[6];
 	struct Element_point_field_viewer_widget_struct *element_point_field_viewer;
+	struct FE_element *initial_element;
 	Widget return_widget;
 
 	ENTER(create_element_point_field_viewer_widget);
 	return_widget=(Widget)NULL;
-	if (element_point_field_viewer_widget_address&&parent)
+	if (element_point_field_viewer_widget_address&&parent&&
+		initial_element_point_identifier&&(((struct FE_element *)NULL==
+			(initial_element=initial_element_point_identifier->element))||
+			(Element_point_ranges_identifier_element_point_number_is_valid(
+				initial_element_point_identifier,initial_element_point_number)&&
+				initial_field&&
+				Computed_field_is_defined_in_element(initial_field,initial_element))))
 	{
 		/* allocate memory */
 		if (ALLOCATE(element_point_field_viewer,
@@ -396,7 +453,8 @@ Widget for displaying and editing computed field components at element points.
 		{
 			/* initialise the structure */
 			element_point_field_viewer->number_of_components=-1;
-			element_point_field_viewer->current_element=(struct FE_element *)NULL;
+			element_point_field_viewer->element_point_identifier.element=
+				(struct FE_element *)NULL;
 			element_point_field_viewer->current_field=(struct Computed_field *)NULL;
 			element_point_field_viewer->update_callback.procedure=
 				(Callback_procedure *)NULL;
@@ -423,7 +481,8 @@ Widget for displaying and editing computed field components at element points.
 					(XtPointer)element_point_field_viewer);
 				/* create the components of the field */
 				element_point_field_viewer_widget_set_element_point_field(
-					element_point_field_viewer->widget,element_point,xi,field);
+					element_point_field_viewer->widget,initial_element_point_identifier,
+					initial_element_point_number,initial_field);
 				XtManageChild(element_point_field_viewer->widget);
 				return_widget=element_point_field_viewer->widget;
 			}
@@ -501,20 +560,22 @@ has been modified.
 
 int element_point_field_viewer_widget_get_element_point_field(
 	Widget element_point_field_viewer_widget,
-	struct FE_element **element,FE_value *xi,struct Computed_field **field)
+	struct Element_point_ranges_identifier *element_point_identifier,
+	int *element_point_number_address,struct Computed_field **field_address)
 /*******************************************************************************
-LAST MODIFIED : 22 May 2000
+LAST MODIFIED : 31 May 2000
 
 DESCRIPTION :
 Returns the element_point/field being edited in the
 <element_point_field_viewer_widget>.
 ==============================================================================*/
 {
-	int dimension,i,return_code;
+	int return_code;
 	struct Element_point_field_viewer_widget_struct *element_point_field_viewer;
 
 	ENTER(element_point_field_viewer_widget_get_element_point_field);
-	if (element_point_field_viewer_widget&&element&&xi&&field)
+	if (element_point_field_viewer_widget&&element_point_identifier&&
+		element_point_number_address&&field_address)
 	{
 		element_point_field_viewer=
 			(struct Element_point_field_viewer_widget_struct *)NULL;
@@ -523,17 +584,11 @@ Returns the element_point/field being edited in the
 			XmNuserData,&element_point_field_viewer,NULL);
 		if (element_point_field_viewer)
 		{
-			*element = element_point_field_viewer->current_element;
-			if (element_point_field_viewer->current_element)
-			{
-				dimension=
-					get_FE_element_dimension(element_point_field_viewer->current_element);
-				for (i=0;i<dimension;i++)
-				{
-					xi[i]=element_point_field_viewer->xi[i];
-				}
-			}
-			*field = element_point_field_viewer->current_field;
+			COPY(Element_point_ranges_identifier)(element_point_identifier,
+				&(element_point_field_viewer->element_point_identifier));
+			*element_point_number_address=
+				element_point_field_viewer->element_point_number;
+			*field_address = element_point_field_viewer->current_field;
 			return_code=1;
 		}
 		else
@@ -541,8 +596,6 @@ Returns the element_point/field being edited in the
 			display_message(ERROR_MESSAGE,
 				"element_point_field_viewer_widget_get_element_point_field.  "
 				"Missing widget data");
-			*element = (struct FE_element *)NULL;
-			*field = (struct Computed_field *)NULL;
 			return_code=0;
 		}
 	}
@@ -560,23 +613,28 @@ Returns the element_point/field being edited in the
 
 int element_point_field_viewer_widget_set_element_point_field(
 	Widget element_point_field_viewer_widget,
-	struct FE_element *element,FE_value *xi,struct Computed_field *field)
+	struct Element_point_ranges_identifier *element_point_identifier,
+	int element_point_number,struct Computed_field *field)
 /*******************************************************************************
-LAST MODIFIED : 22 May 2000
+LAST MODIFIED : 31 May 2000
 
 DESCRIPTION :
 Sets the element_point/field being edited in the
 <element_point_field_viewer_widget>.
 Note that the viewer works on the element itself, not a local copy. Hence, only
-pass unmanaged elements to this widget.
+pass unmanaged elements in the element_point_identifier to this widget.
 ==============================================================================*/
 {
-	int dimension,i,return_code,setup_components;
+	int return_code,setup_components;
 	struct Element_point_field_viewer_widget_struct *element_point_field_viewer;
 
 	ENTER(element_point_field_viewer_widget_set_element_point_field);
-	if (element_point_field_viewer_widget&&((!element)||(!field)||
-		Computed_field_is_defined_in_element(field,element))&&xi)
+	if (element_point_field_viewer_widget&&
+		(((struct FE_element *)NULL==element_point_identifier->element)||
+			(Element_point_ranges_identifier_element_point_number_is_valid(
+				element_point_identifier,element_point_number)&&field&&
+				Computed_field_is_defined_in_element(field,
+					element_point_identifier->element))))
 	{
 		element_point_field_viewer=
 			(struct Element_point_field_viewer_widget_struct *)NULL;
@@ -586,7 +644,8 @@ pass unmanaged elements to this widget.
 		if (element_point_field_viewer)
 		{
 			/* rebuild viewer widgets if nature of element_point or field changed */
-			if ((!element)||(!(element_point_field_viewer->current_element))||
+			if ((!element_point_identifier->element)||
+				(!(element_point_field_viewer->element_point_identifier.element))||
 				(field != element_point_field_viewer->current_field)||
 				(field&&(element_point_field_viewer->number_of_components !=
 					Computed_field_get_number_of_components(field))))
@@ -597,19 +656,23 @@ pass unmanaged elements to this widget.
 			{
 				setup_components=0;
 			}
-			if (element&&field)
+			if (element_point_identifier->element&&field)
 			{
-				element_point_field_viewer->current_element=element;
-				dimension=get_FE_element_dimension(element);
-				for (i=0;i<dimension;i++)
-				{
-					element_point_field_viewer->xi[i]=xi[i];
-				}
+				COPY(Element_point_ranges_identifier)(
+					&(element_point_field_viewer->element_point_identifier),
+					element_point_identifier);
+				element_point_field_viewer->element_point_number=element_point_number;
 				element_point_field_viewer->current_field=field;
+				Xi_discretization_mode_get_element_point_xi(
+					element_point_identifier->xi_discretization_mode,
+					get_FE_element_dimension(element_point_identifier->element),
+					element_point_identifier->number_in_xi,
+					element_point_number,element_point_field_viewer->xi);
 			}
 			else
 			{
-				element_point_field_viewer->current_element=(struct FE_element *)NULL;
+				element_point_field_viewer->element_point_identifier.element=
+					(struct FE_element *)NULL;
 				element_point_field_viewer->current_field=(struct Computed_field *)NULL;
 			}
 			if (setup_components)
@@ -617,7 +680,7 @@ pass unmanaged elements to this widget.
 				element_point_field_viewer_widget_setup_components(
 					element_point_field_viewer);
 			}
-			if (element&&field)
+			if (element_point_identifier->element&&field)
 			{
 				element_point_field_viewer_widget_update_values(
 					element_point_field_viewer);
