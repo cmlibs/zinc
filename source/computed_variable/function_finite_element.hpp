@@ -1,7 +1,7 @@
 //******************************************************************************
 // FILE : function_finite_element.hpp
 //
-// LAST MODIFIED : 8 April 2004
+// LAST MODIFIED : 27 April 2004
 //
 // DESCRIPTION :
 //==============================================================================
@@ -122,7 +122,7 @@ typedef boost::intrusive_ptr<Function_finite_element>
 
 class Function_finite_element : public Function
 //******************************************************************************
-// LAST MODIFIED : 8 April 2004
+// LAST MODIFIED : 27 April 2004
 //
 // DESCRIPTION :
 // A function for a finite element interpolation field.
@@ -154,14 +154,16 @@ class Function_finite_element : public Function
 			element_xi(),
 			nodal_values(),
 			nodal_values(std::string component_name,struct FE_node *node,
-				enum FE_nodal_value_type value_type,int version),
+				enum FE_nodal_value_type value_type,Function_size_type version),
 			nodal_values(Function_size_type component_number,struct FE_node *node,
-				enum FE_nodal_value_type value_type,int version),
-			nodal_values(std::string component_name),
-			nodal_values(Function_size_type component_number),
+				enum FE_nodal_value_type value_type,Function_size_type version),
+			// use nodal_values_component instead of overloading nodal_values to
+			//   prevent same argument signature as for version
+			nodal_values_component(std::string component_name),
+			nodal_values_component(Function_size_type component_number),
 			nodal_values(struct FE_node *node),
 			nodal_values(enum FE_nodal_value_type value_type),
-			nodal_values(int version),
+			nodal_values(Function_size_type version),
 			xi(),
 			xi(Function_size_type);
 		// return the number of components
@@ -176,7 +178,8 @@ class Function_finite_element : public Function
 		// return the number of derivatives for the component at the node
 		Function_size_type number_of_derivatives(
 			Function_size_type component_number,struct FE_node *node) const;
-		// return the nodal value types for the component at the node
+		// return the (1+number_of_derivatives) nodal value types for the component
+		// at the node
 		// NB.  The calling program should DEALLOCATE the returned array when it is
 		//   no longer needed
 		enum FE_nodal_value_type *nodal_value_types(
@@ -184,13 +187,13 @@ class Function_finite_element : public Function
 		// return true and get the value if exactly one nodal value is specified,
 		//   otherwise return false
 		bool get_nodal_value(Function_size_type component_number,
-			struct FE_node *node,enum FE_nodal_value_type value_type,int version,
-			Scalar& value);
+			struct FE_node *node,enum FE_nodal_value_type value_type,
+			Function_size_type version,Scalar& value);
 		// return true and set the value if exactly one nodal value is specified,
 		//   otherwise return false
 		bool set_nodal_value(Function_size_type component_number,
-			struct FE_node *node,enum FE_nodal_value_type value_type,int version,
-			Scalar& value);
+			struct FE_node *node,enum FE_nodal_value_type value_type,
+			Function_size_type version,Scalar& value);
 		// return the dimension of the element and the number of xi
 		Function_size_type number_of_xi() const;
 		// return the element.  NB.  The calling program should use

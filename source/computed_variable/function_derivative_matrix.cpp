@@ -1,7 +1,7 @@
 //******************************************************************************
 // FILE : function_derivative_matrix.cpp
 //
-// LAST MODIFIED : 11 April 2004
+// LAST MODIFIED : 31 May 2004
 //
 // DESCRIPTION :
 //==============================================================================
@@ -2260,7 +2260,7 @@ Function_derivative_matrix::Function_derivative_matrix(
 	Function(),dependent_variable(dependent_variable),
 	independent_variables(independent_variables),matrices()
 //******************************************************************************
-// LAST MODIFIED : 5 March 2004
+// LAST MODIFIED : 31 May 2004
 //
 // DESCRIPTION :
 // Constructor.
@@ -2270,6 +2270,7 @@ Function_derivative_matrix::Function_derivative_matrix(
 		number_differentiable();
 	std::list<Function_variable_handle>::const_iterator
 		independent_variable_iterator;
+	std::list< std::list<Function_variable_handle> > matrix_independent_variables;
 
 	for (independent_variable_iterator=independent_variables.begin();
 		independent_variable_iterator!=independent_variables.end();
@@ -2280,11 +2281,11 @@ Function_derivative_matrix::Function_derivative_matrix(
 		Function_size_type number_of_independent_values=independent_variable->
 			number_differentiable();
 		std::list<Matrix>::iterator matrix_iterator,last;
-		std::list< std::list<Function_variable_handle> >
-			matrix_independent_variables;
 		std::list< std::list<Function_variable_handle> >::iterator
 			matrix_independent_variables_iterator;
 
+		// calculate the derivative of dependent variable with respect to
+		//   independent variable and add to matrix list
 		{
 			Function_size_type row,column;
 			Function_variable_iterator atomic_dependent_variable_iterator(0);

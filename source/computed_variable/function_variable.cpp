@@ -1,7 +1,7 @@
 //******************************************************************************
 // FILE : function_variable.cpp
 //
-// LAST MODIFIED : 11 April 2004
+// LAST MODIFIED : 19 May 2004
 //
 // DESCRIPTION :
 // See function_variable.hpp
@@ -552,23 +552,26 @@ Function_handle Function_variable::evaluate_derivative(
 
 bool Function_variable::set_value(Function_handle value)
 //******************************************************************************
-// LAST MODIFIED : 5 March 2004
+// LAST MODIFIED : 19 May 2004
 //
 // DESCRIPTION :
 //==============================================================================
 {
 	bool result;
+	Function_variable_handle value_output;
 
 	result=false;
-	if (this&&value)
+	if (this&&value&&(value_output=value->output()))
 	{
 		Function_variable_iterator atomic_value_iterator=
-			(value->output())->begin_atomic(),atomic_variable_iterator=begin_atomic();
+			value_output->begin_atomic(),atomic_variable_iterator=begin_atomic();
 
 		// not using std::for_each because then functor would have to be a friend of
 		//   Function
+		// there needs to be just on value_output.  (value->output())->end_atomic()
+		//   would be for a different variable than atomic_variable_iterator
 		while ((atomic_variable_iterator!=end_atomic())&&
-			(atomic_value_iterator!=(value->output())->end_atomic()))
+			(atomic_value_iterator!=value_output->end_atomic()))
 		{
 			Assert((*atomic_variable_iterator)&&
 				((*atomic_variable_iterator)->function()),std::logic_error(
@@ -589,25 +592,28 @@ bool Function_variable::set_value(Function_handle value)
 
 bool Function_variable::rset_value(Function_handle value)
 //******************************************************************************
-// LAST MODIFIED : 5 March 2004
+// LAST MODIFIED : 19 May 2004
 //
 // DESCRIPTION :
 // Setting from back to front
 //==============================================================================
 {
 	bool result;
+	Function_variable_handle value_output;
 
 	result=false;
-	if (this&&value)
+	if (this&&value&&(value_output=value->output()))
 	{
 		std::reverse_iterator<Function_variable_iterator>
-			atomic_value_iterator=(value->output())->rbegin_atomic(),
+			atomic_value_iterator=value_output->rbegin_atomic(),
 			atomic_variable_iterator=rbegin_atomic();
 
 		// not using std::for_each because then functor would have to be a friend of
 		//   Function
+		// there needs to be just on value_output.  (value->output())->end_atomic()
+		//   would be for a different variable than atomic_variable_iterator
 		while ((atomic_variable_iterator!=rend_atomic())&&
-			(atomic_value_iterator!=(value->output())->rend_atomic()))
+			(atomic_value_iterator!=value_output->rend_atomic()))
 		{
 			Assert((*atomic_variable_iterator)&&
 				((*atomic_variable_iterator)->function()),std::logic_error(

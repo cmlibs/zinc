@@ -1,7 +1,7 @@
 //******************************************************************************
 // FILE : function_matrix.cpp
 //
-// LAST MODIFIED : 11 April 2004
+// LAST MODIFIED : 15 May 2004
 //
 // DESCRIPTION :
 //???DB.  Should be template?
@@ -76,7 +76,7 @@ static bool Function_variable_matrix_set_scalar_function(Scalar& value,
 
 class Function_variable_matrix : public Function_variable
 //******************************************************************************
-// LAST MODIFIED : 15 March 2004
+// LAST MODIFIED : 15 May 2004
 //
 // DESCRIPTION :
 // <column> and <row> start from one when referencing a matrix entry.  Zero
@@ -154,7 +154,7 @@ class Function_variable_matrix : public Function_variable
 		Function_handle function()
 		{
 			return (function_matrix);
-		}
+		};
 		string_handle get_string_representation()
 		{
 			string_handle return_string(0);
@@ -162,7 +162,8 @@ class Function_variable_matrix : public Function_variable
 			if (return_string=new std::string)
 			{
 				std::ostringstream out;
-				
+
+#if defined (OLD_CODE)
 				if (0==row)
 				{
 					if (0==column)
@@ -204,6 +205,26 @@ class Function_variable_matrix : public Function_variable
 						out << out_matrix;
 					}
 				}
+#endif // defined (OLD_CODE)
+				out << "matrix[";
+				if (0==row)
+				{
+					out << "1:" << (function_matrix->number_of_rows)();
+				}
+				else
+				{
+					out << row;
+				}
+				out << ",";
+				if (0==column)
+				{
+					out << "1:" << (function_matrix->number_of_columns)();
+				}
+				else
+				{
+					out << column;
+				}
+				out << "]";
 				*return_string=out.str();
 			}
 

@@ -4,6 +4,7 @@
 // LAST MODIFIED : 11 April 2004
 //
 // DESCRIPTION :
+//???DB.  Should make a Matrix if it can?  Changes type in constructors?
 //==============================================================================
 
 #include <sstream>
