@@ -75,8 +75,10 @@ but shared between different materials with the same state.
 {
 	enum Material_program_type type;
 
+#if defined GL_ARB_vertex_program && defined GL_ARB_fragment_program
 	GLuint vertex_program;
 	GLuint fragment_program;
+#endif /* defined GL_ARB_vertex_program && defined GL_ARB_fragment_program */
 
 	/* Flag indicating whether the program is compiled or not */
 	int compiled;
@@ -208,6 +210,7 @@ Frees the memory for the material_program.
 		if (0==material_program->access_count)
 		{
 #if defined (OPENGL_API)
+#if defined GL_ARB_vertex_program && defined GL_ARB_fragment_program
 			if (material_program->vertex_program)
 			{
 				glDeleteProgramsARB(1, &material_program->vertex_program);
@@ -216,6 +219,7 @@ Frees the memory for the material_program.
 			{
 				glDeleteProgramsARB(1, &material_program->fragment_program);
 			}
+#endif /* defined GL_ARB_vertex_program && defined GL_ARB_fragment_program */
 			if (material_program->display_list)
 			{
 				glDeleteLists(material_program->display_list, 1);
