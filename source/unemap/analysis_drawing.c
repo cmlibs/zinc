@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : analysis.c
 
-LAST MODIFIED : 10 May 2002
+LAST MODIFIED : 11 September 2002
 
 DESCRIPTION :
 ==============================================================================*/
@@ -76,7 +76,7 @@ int draw_signal(struct FE_node *device_node,
 	struct Signal_drawing_information *signal_drawing_information,
 	struct User_interface *user_interface)
 /*******************************************************************************
-LAST MODIFIED : 2 August 2000
+LAST MODIFIED : 11 September 2002
 
 DESCRIPTION :
 Draws the <device> signal in the <pixel_map> at the specified position
@@ -99,9 +99,9 @@ NB.  0<=current_data_interval<number_of_data_intervals
 		world_top,world_width,x_scale,y_scale;
 	GC graphics_context;
 	int ascent,descent,*highlight,direction,i,j,k,length,*number_of_points,
-		number_of_segments,*number_of_signals,number_of_ticks,return_code,x_marker,
-		x_max,x_min,x_ref,x_string,x_tick,x_tick_length=3,y_marker,y_max,y_min,
-		y_ref,y_string,y_tick,y_tick_length=3;
+		number_of_segments,*number_of_signals,number_of_ticks,return_code,
+		signal_step,x_marker,x_max,x_min,x_ref,x_string,x_tick,x_tick_length=3,
+		y_marker,y_max,y_min,y_ref,y_string,y_tick,y_tick_length=3;
 	short int value_short_int,x;
 	XCharStruct bounds;
 	XFontStruct *font;
@@ -754,13 +754,24 @@ NB.  0<=current_data_interval<number_of_data_intervals
 								/* calculate the points */
 								point=points;
 								time=times[k];
+#if defined (OLD_CODE)
+								/*???DB.  Have reversed the order, signal number now varies
+									fastest */
 								signal_value=signals_values[k]+(j*number_of_points[k]);
+#endif /* defined (OLD_CODE) */
+								signal_value=signals_values[k]+j;
+								signal_step=number_of_signals[k];
 								for (i=number_of_points[k];i>0;i--)
 								{
 									point->x=SCALE_X(*time,time_ref,x_ref,time_scale);
 									point->y=SCALE_Y(*signal_value,signal_ref,y_ref,value_scale);
 									point++;
+#if defined (OLD_CODE)
+									/*???DB.  Have reversed the order, signal number now varies
+										fastest */
 									signal_value++;
+#endif /* defined (OLD_CODE) */
+									signal_value += signal_step;
 									time++;
 								}
 								/* draw */
@@ -781,7 +792,13 @@ NB.  0<=current_data_interval<number_of_data_intervals
 							{
 								segment=segments;
 								time=times[k];
+#if defined (OLD_CODE)
+								/*???DB.  Have reversed the order, signal number now varies
+									fastest */
 								signal_value=signals_values[k]+(j*number_of_points[k]);
+#endif /* defined (OLD_CODE) */
+								signal_value=signals_values[k]+j;
+								signal_step=number_of_signals[k];
 								value_short_int=SCALE_Y(*signal_value,signal_ref,y_ref,
 									value_scale);
 								segment->x1=x_min;
@@ -793,7 +810,12 @@ NB.  0<=current_data_interval<number_of_data_intervals
 								while (i>0)
 								{
 									time++;
+#if defined (OLD_CODE)
+									/*???DB.  Have reversed the order, signal number now varies
+										fastest */
 									signal_value++;
+#endif /* defined (OLD_CODE) */
+									signal_value += signal_step;
 									while ((i>0)&&(segment->x2==
 										(x=SCALE_X(*time,time_ref,x_ref,time_scale))))
 									{
@@ -810,7 +832,12 @@ NB.  0<=current_data_interval<number_of_data_intervals
 												segment->y2=value_short_int;
 											}
 										}
+#if defined (OLD_CODE)
+										/*???DB.  Have reversed the order, signal number now varies
+											fastest */
 										signal_value++;
+#endif /* defined (OLD_CODE) */
+										signal_value += signal_step;
 										time++;
 										i--;
 									}
