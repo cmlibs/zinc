@@ -364,7 +364,7 @@ DESCRIPTION : Implement image smoothing using Gaussian filter.
 	FE_value *data_index, *result_index, *temp_index, *gaussian_kernel;
 	int i, j, k, return_code, kernel_size, storage_size;
 	int center, iX, iY, cur_pt;
-	FE_value x, fx, sum, dot;
+	FE_value x, fx, sum, dot, *lmax;
 
 	ENTER(Image_cache_gaussian_filter);
 	if (image && (image->dimension == 2) && (image->depth > 0))
@@ -379,6 +379,7 @@ DESCRIPTION : Implement image smoothing using Gaussian filter.
 		}
 		if (ALLOCATE(gaussian_kernel, FE_value, kernel_size) &&
 			ALLOCATE(storage, char, storage_size * sizeof(FE_value)) &&
+			ALLOCATE(lmax, FE_value, image->depth) &&
 			ALLOCATE(temp_index, FE_value, storage_size))
 		{
 		        return_code = 1;
@@ -402,7 +403,10 @@ DESCRIPTION : Implement image smoothing using Gaussian filter.
 			{
 			        gaussian_kernel[j] /= sum;
 			}
-
+			for (k = 0; k < image->depth; k++)
+			{
+			        lmax[k] = 0.0;
+			}
 			data_index = (FE_value *)image->data;
 			result_index = (FE_value *)storage;
 			/* Blur in the x - direction. */
@@ -447,14 +451,22 @@ DESCRIPTION : Implement image smoothing using Gaussian filter.
 							}
 						}
 						cur_pt = (iY * image->sizes[0] + iX) * image->depth;
-						if ((dot / sum) > 1.0)
-						{
-						        *(result_index + cur_pt + k) = 1.0;
-						}
-						else
-						{
-						        *(result_index + cur_pt + k) = dot/sum;
-						}
+						*(result_index + cur_pt + k) = dot/sum;
+						lmax[k] = my_Max(dot/sum, lmax[k]);
+					}
+				}
+			}
+			for (i = 0; i < storage_size / image->depth; i++)
+			{
+			        for(k = 0; k < image->depth; k++)
+				{
+				        if(lmax[k] == 0.0)
+					{
+					        result_index[k] = 0.0;
+					}
+					else
+					{
+					        result_index[k] /= lmax[k];
 					}
 				}
 			}
@@ -472,7 +484,7 @@ DESCRIPTION : Implement image smoothing using Gaussian filter.
 
 			DEALLOCATE(gaussian_kernel);
 			DEALLOCATE(temp_index);
-
+			DEALLOCATE(lmax);
 		}
 		else
 		{
