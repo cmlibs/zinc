@@ -19,4 +19,4 @@ LAST MODIFIED : 4 December 2003
 DESCRIPTION :
 ==============================================================================*/
 
-#endif /* !defined (COMPUTED_FIELD_dilate_filter_H) */
+#endif /* !defined (COMPUTED_FIELD_DILATE_FILTER_H) */

@@ -363,11 +363,13 @@ DESCRIPTION : Implement image smoothing using Gaussian filter.
 	char *storage;
 	FE_value *data_index, *result_index, *temp_index, *gaussian_kernel;
 	int i, j, k, return_code, kernel_size, storage_size;
-	int center, iX, iY, cur_pt;
-	FE_value x, fx, sum, dot, *lmax;
+	int center;
+	FE_value x, fx, sum, dot;
+	int *offsets;
+	int image_step, m;
 
 	ENTER(Image_cache_gaussian_filter);
-	if (image && (image->dimension == 2) && (image->depth > 0))
+	if (image && (image->depth > 0))
 	{
 		return_code = 1;
 		kernel_size = 1 + 2 *((int) ceil(2.5 * sigma));
@@ -379,7 +381,7 @@ DESCRIPTION : Implement image smoothing using Gaussian filter.
 		}
 		if (ALLOCATE(gaussian_kernel, FE_value, kernel_size) &&
 			ALLOCATE(storage, char, storage_size * sizeof(FE_value)) &&
-			ALLOCATE(lmax, FE_value, image->depth) &&
+			ALLOCATE(offsets, int, kernel_size) &&
 			ALLOCATE(temp_index, FE_value, storage_size))
 		{
 		        return_code = 1;
@@ -403,66 +405,44 @@ DESCRIPTION : Implement image smoothing using Gaussian filter.
 			{
 			        gaussian_kernel[j] /= sum;
 			}
-			for (k = 0; k < image->depth; k++)
-			{
-			        lmax[k] = 0.0;
-			}
 			data_index = (FE_value *)image->data;
+			for (i = 0; i < storage_size; i++)
+			{
+			        temp_index[i] = *data_index;
+				data_index++;
+			}
 			result_index = (FE_value *)storage;
-			/* Blur in the x - direction. */
-			for (iY = 0; iY < image->sizes[1]; iY++)
+			image_step = 1;
+			for (m = 0; m < image->dimension; m++)
 			{
-			        for (iX = 0; iX < image->sizes[0]; iX++)
+			        for (j = 0; j < kernel_size; j++)
 				{
-					for (k = 0; k < image->depth; k++)
+				        offsets[j] = (j - center) * image_step * image->depth;
+				}
+				image_step *= image->sizes[m];
+				for (i = 0; i < storage_size / image->depth; i++)
+				{
+				        for (k = 0; k < image->depth; k++)
 					{
-						dot = 0.0;
-						for (j = (- center); j <= center; j++)
+					        dot = 0.0;
+						for (j = 0; j < kernel_size; j++)
 						{
-						        if(((iX + j) >= 0) && ((iX + j) < image->sizes[0]))
+						        if ((result_index + offsets[j] >= (FE_value *)storage) &&
+							         (result_index + offsets[j] < ((FE_value *)storage) + storage_size))
 							{
-							         cur_pt = (iY * image->sizes[0] + iX + j) * image->depth;
-							         dot += *(data_index + cur_pt + k) * gaussian_kernel[center + j];
+							         dot += temp_index[i * image->depth + offsets[j] + k] * gaussian_kernel[j];
 							}
 						}
-						cur_pt = (iY * image->sizes[0] + iX) * image->depth;
-						temp_index[cur_pt + k] = dot/sum;
+						result_index[k] = dot;
 					}
+					result_index += image->depth;
 				}
-			}
-			/* Blur int the y - direction */
-			for (iX = 0; iX < image->sizes[0]; iX++)
-			{
-			        for (iY = 0; iY < image->sizes[1]; iY++)
+				for (i = (storage_size / image->depth) - 1; i >= 0; i--)
 				{
-					for (k = 0; k < image->depth; k++)
+				        result_index -= image->depth;
+				        for (k = 0; k < image->depth; k++)
 					{
-						dot = 0.0;
-						for (j = (- center); j <= center; j++)
-						{
-						        if(((iY + j) >= 0) && ((iY + j) < image->sizes[1]))
-							{
-							         cur_pt = ((iY + j) * image->sizes[0] + iX) * image->depth;
-							         dot += temp_index[cur_pt + k] * gaussian_kernel[center + j];
-							}
-						}
-						cur_pt = (iY * image->sizes[0] + iX) * image->depth;
-						*(result_index + cur_pt + k) = dot/sum;
-						lmax[k] = my_Max(dot/sum, lmax[k]);
-					}
-				}
-			}
-			for (i = 0; i < storage_size / image->depth; i++)
-			{
-			        for(k = 0; k < image->depth; k++)
-				{
-				        if(lmax[k] == 0.0)
-					{
-					        result_index[k] = 0.0;
-					}
-					else
-					{
-					        result_index[k] /= lmax[k];
+					        temp_index[i * image->depth + k] = result_index[k];
 					}
 				}
 			}
@@ -480,7 +460,7 @@ DESCRIPTION : Implement image smoothing using Gaussian filter.
 
 			DEALLOCATE(gaussian_kernel);
 			DEALLOCATE(temp_index);
-			DEALLOCATE(lmax);
+			DEALLOCATE(offsets);
 		}
 		else
 		{
