@@ -39,7 +39,7 @@ cmgui-gtk : USER_INTERFACE=USER_INTERFACE=GTK_USER_INTERFACE
 
 utilities: TARGET=utilities
 
-cmgui cmgui-debug cmgui-dynamicgl cmgui-dynamicgl-debug cmgui64 cmgui64-debug utilities :
+cmgui cmgui-debug cmgui-dynamicgl cmgui-dynamicgl-debug cmgui64 cmgui64-debug cmgui-console cmgui-gtk utilities :
 	cd source ; \
 	$(MAKE) -f $(MAKEFILE) $(TARGET) $(USER_INTERFACE) $(ABI) $(DYNAMIC_GL_LINUX) $(DEBUG) $(MEMORYCHECK) ;
 
