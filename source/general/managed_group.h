@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : managed_group.h
 
-LAST MODIFIED : 1 September 1999
+LAST MODIFIED : 18 January 2002
 
 DESCRIPTION :
 Special version of group.h for groups that keep their manager (and thus can
@@ -312,21 +312,6 @@ DESCRIPTION : \
 Performs a global update. \
 ==============================================================================*/
 
-#if defined (FULL_NAMES)
-#define MANAGED_GROUP_CAN_BE_DESTROYED( object_type )  group_can_be_destroyed_ ## object_type
-#else
-#define MANAGED_GROUP_CAN_BE_DESTROYED( object_type )  gcbd ## object_type
-#endif
-
-#define PROTOTYPE_MANAGED_GROUP_CAN_BE_DESTROYED_FUNCTION( object_type ) \
-int MANAGED_GROUP_CAN_BE_DESTROYED(object_type)(struct GROUP(object_type) *group) \
-/***************************************************************************** \
-LAST MODIFIED : 1 September 1999 \
-\
-DESCRIPTION : \
-Returns true if the managed group can be destroyed (access_count==1). \
-==============================================================================*/
-
 #define DECLARE_MANAGED_GROUP_TYPES( object_type ) \
 DECLARE_GROUP_TYPE(object_type); \
 DECLARE_GROUP_CONDITIONAL_FUNCTION(object_type); \
@@ -350,7 +335,6 @@ PROTOTYPE_FOR_EACH_OBJECT_IN_GROUP_FUNCTION(object_type); \
 PROTOTYPE_IS_OBJECT_IN_GROUP_FUNCTION(object_type); \
 PROTOTYPE_MANAGED_GROUP_BEGIN_CACHE_FUNCTION(object_type); \
 PROTOTYPE_MANAGED_GROUP_END_CACHE_FUNCTION(object_type); \
-PROTOTYPE_MANAGED_GROUP_CAN_BE_DESTROYED_FUNCTION(object_type); \
 PROTOTYPE_LIST_FUNCTIONS(GROUP(object_type)); \
 PROTOTYPE_FIND_BY_IDENTIFIER_IN_LIST_FUNCTION(GROUP(object_type),name,char *); \
 PROTOTYPE_MANAGER_FUNCTIONS(GROUP(object_type)); \

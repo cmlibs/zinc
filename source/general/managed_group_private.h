@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : managed_group_private.h
 
-LAST MODIFIED : 11 June 2001
+LAST MODIFIED : 18 January 2002
 
 DESCRIPTION :
 Special version of group_private.h for groups that are managed. These groups
@@ -423,27 +423,6 @@ PROTOTYPE_MANAGED_GROUP_END_CACHE_FUNCTION(object_type) \
 	return (return_code); \
 } /* GROUP_END_CACHE(object_type) */
 
-#define DECLARE_MANAGED_GROUP_CAN_BE_DESTROYED_FUNCTION( object_type ) \
-PROTOTYPE_MANAGED_GROUP_CAN_BE_DESTROYED_FUNCTION(object_type) \
-{ \
-	int return_code; \
-\
-	ENTER(GROUP_CAN_BE_DESTROYED(object_type)); \
-	if (group) \
-	{ \
-		return_code=(group->access_count == 1); \
-	} \
-	else \
-	{ \
-		display_message(ERROR_MESSAGE, \
-			"GROUP_CAN_BE_DESTROYED(" #object_type ").  Invalid argument"); \
-		return_code=0; \
-	} \
-	LEAVE; \
-\
-	return (return_code); \
-} /* GROUP_CAN_BE_DESTROYED(object_type) */
-
 #define DECLARE_MANAGED_GROUP_MODULE_FUNCTIONS( object_type ) \
 DECLARE_INDEXED_LIST_MODULE_FUNCTIONS(GROUP(object_type),name,char *,strcmp) \
 DECLARE_LOCAL_MANAGER_FUNCTIONS(GROUP(object_type)) \
@@ -466,12 +445,12 @@ DECLARE_FOR_EACH_OBJECT_IN_GROUP_FUNCTION(object_type) \
 DECLARE_IS_OBJECT_IN_GROUP_FUNCTION(object_type) \
 DECLARE_MANAGED_GROUP_BEGIN_CACHE_FUNCTION(object_type) \
 DECLARE_MANAGED_GROUP_END_CACHE_FUNCTION(object_type) \
-DECLARE_MANAGED_GROUP_CAN_BE_DESTROYED_FUNCTION(object_type) \
 DECLARE_INDEXED_LIST_FUNCTIONS(GROUP(object_type)) \
 DECLARE_FIND_BY_IDENTIFIER_IN_INDEXED_LIST_FUNCTION(GROUP(object_type),name, \
 	char *,strcmp) \
 DECLARE_GROUP_MANAGER_COPY_FUNCTIONS(object_type) \
 DECLARE_MANAGER_FUNCTIONS(GROUP(object_type)) \
+DECLARE_DEFAULT_MANAGED_OBJECT_NOT_IN_USE_FUNCTION(GROUP(object_type)) \
 DECLARE_INDEXED_LIST_IDENTIFIER_CHANGE_FUNCTIONS(GROUP(object_type),name) \
 DECLARE_OBJECT_WITH_MANAGER_MANAGER_IDENTIFIER_FUNCTIONS( \
 	GROUP(object_type),name,char *,group_manager)

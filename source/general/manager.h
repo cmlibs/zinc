@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : manager.h
 
-LAST MODIFIED : 18 May 2001
+LAST MODIFIED : 18 January 2001
 
 DESCRIPTION :
 Managers oversee the creation, deletion and modification of global objects -
@@ -421,6 +421,27 @@ Returns a non-zero if the <object> is managed by the <manager>. \
 ==============================================================================*/
 
 #if defined (FULL_NAMES)
+#define MANAGED_OBJECT_NOT_IN_USE_( object_type ) \
+	managed_object_not_in_use_ ## object_type
+#else
+#define MANAGED_OBJECT_NOT_IN_USE_( object_type ) moniu ## object_type
+#endif
+#define MANAGED_OBJECT_NOT_IN_USE( object_type ) \
+	MANAGED_OBJECT_NOT_IN_USE_(object_type)
+
+#define PROTOTYPE_MANAGED_OBJECT_NOT_IN_USE_FUNCTION( object_type ) \
+int MANAGED_OBJECT_NOT_IN_USE(object_type)(struct object_type *object, \
+	struct MANAGER(object_type) *manager) \
+/***************************************************************************** \
+LAST MODIFIED : 18 January 2002 \
+\
+DESCRIPTION : \
+Returns true if <object> is only accessed by the manager or other managed \
+objects. In general, a true result is sufficient to indicate the object may be \
+removed from the manager or modified. \
+==============================================================================*/
+
+#if defined (FULL_NAMES)
 #define FIND_BY_IDENTIFIER_IN_MANAGER_( object_type , identifier ) \
 	manager_find_by_identifier_ ## object_type ## identifier
 #else
@@ -597,6 +618,7 @@ PROTOTYPE_NUMBER_IN_MANAGER_FUNCTION(object_type); \
 PROTOTYPE_MANAGER_REGISTER_FUNCTION(object_type); \
 PROTOTYPE_MANAGER_DEREGISTER_FUNCTION(object_type); \
 PROTOTYPE_IS_MANAGED_FUNCTION(object_type); \
+PROTOTYPE_MANAGED_OBJECT_NOT_IN_USE_FUNCTION(object_type); \
 PROTOTYPE_FIRST_OBJECT_IN_MANAGER_THAT_FUNCTION(object_type); \
 PROTOTYPE_FOR_EACH_OBJECT_IN_MANAGER_FUNCTION(object_type); \
 PROTOTYPE_MANAGER_BEGIN_CACHE_FUNCTION(object_type); \
