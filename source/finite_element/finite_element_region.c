@@ -2234,8 +2234,16 @@ Calls <iterator_function> with <user_data> for each FE_field in <region>.
 	ENTER(FE_region_for_each_FE_field);
 	if (fe_region && iterator_function)
 	{
-		return_code = FOR_EACH_OBJECT_IN_LIST(FE_field)(iterator_function,
-			user_data, fe_region->fe_field_list);
+		if (fe_region->master_fe_region)
+		{
+			return_code = FE_region_for_each_FE_field(fe_region->master_fe_region,
+				iterator_function, user_data);
+		}
+		else
+		{
+			return_code = FOR_EACH_OBJECT_IN_LIST(FE_field)(iterator_function,
+				user_data, fe_region->fe_field_list);
+		}
 	}
 	else
 	{

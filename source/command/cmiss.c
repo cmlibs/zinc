@@ -19654,7 +19654,6 @@ If <use_data> is set, writing data, otherwise writing nodes.
 	FILE *file;
 	int return_code;
 	struct Cmiss_command_data *command_data;
-	struct Cmiss_region *region;
 	struct FE_field_order_info *field_order_info;
 	struct Option_table *option_table;
 
@@ -19691,17 +19690,13 @@ If <use_data> is set, writing data, otherwise writing nodes.
 			}
 			if (return_code)
 			{
-				if (Cmiss_region_get_region_from_path(command_data->root_region,
-					region_path, &region))
+				/* open the file */
+				if (return_code = check_suffix(&file_name, file_ext))
 				{
-					/* open the file */
-					if (return_code = check_suffix(&file_name, file_ext))
-					{
-						file = fopen(file_name, "w");
-						return_code =
-							write_fieldml_file(file, region, "", 1, 1, field_order_info);
-						fclose(file);
-					}
+					file = fopen(file_name, "w");
+					return_code =
+						write_fieldml_file(file, command_data->root_region, region_path, 1, 1, field_order_info);
+					fclose(file);
 				}
 			}
 		}

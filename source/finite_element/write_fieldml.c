@@ -52,6 +52,9 @@ struct Basis_mapping
 struct Element_template
 {
 	struct FE_element_field_component *field_component;
+	struct FE_element *element; /* Needed so we can check nodal value names */
+	struct FE_field *field;
+	int component_number;
 	char element_template_name[100];
 }; /* struct Element_template */
 
@@ -1587,20 +1590,27 @@ basis mapping.
 } /* FE_element_field_components_have_same_mapping */
 
 int FE_element_field_components_have_same_element_template(
-	struct FE_element_field_component *component_1,
-	struct FE_element_field_component *component_2)
+	struct FE_element_field_component *component_1, struct FE_element *element_1,
+	struct FE_field *field_1, int component_number_1,
+	struct FE_element_field_component *component_2, struct FE_element *element_2,
+	struct FE_field *field_2, int component_number_2)
 /*******************************************************************************
-LAST MODIFIED : 3 February 2003
+LAST MODIFIED : 4 September 2003
 
 DESCRIPTION :
 Returns true if <component_1> and <component_2> are represented by the same
-element template.
+element template.  <element_1>, <field_1> and <component_number_1> and 
+<element_2>,  <field_2> and <component_number_2> are required so we can check the
+names for the nodal_value indices.
 ==============================================================================*/
 {
+	enum FE_nodal_value_type *nodal_value_types_1, *nodal_value_types_2;
 	enum Global_to_element_map_type component_type_1, component_type_2;
-	int j, k, nodal_value_index_1, nodal_value_index_2, node_index_1, node_index_2,
+	int derivatives_1, derivatives_2, j, k, nodal_value_index_1,
+		nodal_value_index_2, node_index_1, node_index_2,
 		number_of_nodal_values_1, number_of_nodal_values_2, number_of_nodes_1,
-		number_of_nodes_2, return_code;
+		number_of_nodes_2, return_code, versions_1, versions_2, version_1, version_2;
+	struct FE_node *node_1, *node_2;
 	struct Standard_node_to_element_map *standard_node_map_1,
 		*standard_node_map_2;
 
@@ -1641,16 +1651,51 @@ element template.
 									if ((node_index_1 == node_index_2) && 
 										(number_of_nodal_values_1 == number_of_nodal_values_2))
 									{
-										for (k = 0; return_code && (k < number_of_nodal_values_1) ; k++)
+										get_FE_element_node(element_1, node_index_1, &node_1);
+										get_FE_element_node(element_2, node_index_2, &node_2);
+										derivatives_1 = get_FE_node_field_component_number_of_derivatives(
+											node_1, field_1, component_number_1);
+										derivatives_2 = get_FE_node_field_component_number_of_derivatives(
+											node_2, field_2, component_number_2);
+										versions_1 = get_FE_node_field_component_number_of_versions(
+											node_1, field_1, component_number_1);
+										versions_2 = get_FE_node_field_component_number_of_versions(
+											node_2, field_2, component_number_2);
+										if ((derivatives_1 == derivatives_2) && (versions_1 == versions_2))
 										{
-											Standard_node_to_element_map_get_nodal_value_index(
-												standard_node_map_1, k, &nodal_value_index_1);
-											Standard_node_to_element_map_get_nodal_value_index(
-												standard_node_map_2, k, &nodal_value_index_2);
-											if (nodal_value_index_1 != nodal_value_index_2)
+											nodal_value_types_1 = get_FE_node_field_component_nodal_value_types(
+												node_1, field_1, component_number_1);
+											nodal_value_types_2 = get_FE_node_field_component_nodal_value_types(
+												node_2, field_2, component_number_2);
+											for (k = 0; return_code && (k < number_of_nodal_values_1) ; k++)
 											{
-												return_code = 0;
+												Standard_node_to_element_map_get_nodal_value_index(
+													standard_node_map_1, k, &nodal_value_index_1);
+												Standard_node_to_element_map_get_nodal_value_index(
+													standard_node_map_2, k, &nodal_value_index_2);
+												version_1 = nodal_value_index_1 / (derivatives_1 + 1);
+												version_2 = nodal_value_index_2 / (derivatives_2 + 1);
+												nodal_value_index_1 = nodal_value_index_1 % (derivatives_1 + 1);
+												nodal_value_index_2 = nodal_value_index_2 % (derivatives_2 + 1);
+												if ((version_1 != version_2) ||
+													(nodal_value_types_1[nodal_value_index_1] !=
+													nodal_value_types_2[nodal_value_index_2]))
+												{
+													return_code = 0;
+												}
 											}
+											if (nodal_value_types_1)
+											{
+												DEALLOCATE(nodal_value_types_1);
+											}
+											if (nodal_value_types_2)
+											{
+												DEALLOCATE(nodal_value_types_2);
+											}
+										}
+										else
+										{
+											return_code = 0;
 										}
 									}
 									else
@@ -1956,7 +2001,7 @@ Writes information describing how <field> is defined at <element>.
 				{
 					/* Try and find this basis */
 					basis_mapping = (struct Basis_mapping *)NULL;
-					for (j = 0 ; j < *(data->number_of_basis_mappings) ; j++)
+					for (j = 0 ; (!basis_mapping) && (j < *(data->number_of_basis_mappings)) ; j++)
 					{
 						if (FE_element_field_components_have_same_mapping(component,
 								 (*data->basis_mappings)[j].field_component))
@@ -2023,11 +2068,14 @@ Writes information describing how <field> is defined at <element>.
 					
 					/* Try and find this element node lookup template */
 					element_template = (struct Element_template *)NULL;
-					for (j = 0 ; j < *(data->number_of_element_templates) ; j++)
+					for (j = 0 ; (!element_template) && (j < *(data->number_of_element_templates)) ; j++)
 					{
 						if (FE_element_field_components_have_same_element_template(
-								 component,
-								 (*data->element_templates)[j].field_component))
+							component, element, field, i,
+							(*data->element_templates)[j].field_component,
+							(*data->element_templates)[j].element,
+							(*data->element_templates)[j].field,
+							(*data->element_templates)[j].component_number))
 						{
 							element_template = (*data->element_templates) + j;
 						}
@@ -2040,6 +2088,12 @@ Writes information describing how <field> is defined at <element>.
 							*data->element_templates = element_templates;
 							element_templates[*(data->number_of_element_templates)].field_component =
 								component;
+							element_templates[*(data->number_of_element_templates)].element =
+								element;
+							element_templates[*(data->number_of_element_templates)].field =
+								field;
+							element_templates[*(data->number_of_element_templates)].component_number =
+								i;
 							sprintf(element_templates[*(data->number_of_element_templates)].element_template_name,
 								"ElementTemplate%d", *(data->number_of_element_templates) + 1);
 							element_template = 
@@ -2121,7 +2175,7 @@ Writes information describing how <field> is defined at <element>.
 				{
 					/* Find the correct basis mapping and element nodal template */
 					basis_mapping = (struct Basis_mapping *)NULL;
-					for (j = 0 ; j < *(data->number_of_basis_mappings) ; j++)
+					for (j = 0 ; (!basis_mapping) && (j < *(data->number_of_basis_mappings)) ; j++)
 					{
 						if (FE_element_field_components_have_same_mapping(component,
 								 (*data->basis_mappings)[j].field_component))
@@ -2130,10 +2184,14 @@ Writes information describing how <field> is defined at <element>.
 						}
 					}			
 					element_template = (struct Element_template *)NULL;
-					for (j = 0 ; j < *(data->number_of_element_templates) ; j++)
+					for (j = 0 ; (!element_template) && (j < *(data->number_of_element_templates)) ; j++)
 					{
 						if (FE_element_field_components_have_same_element_template(
-								 component, (*data->element_templates)[j].field_component))
+							component, element, field, i,
+							(*data->element_templates)[j].field_component,
+							(*data->element_templates)[j].element,
+							(*data->element_templates)[j].field,
+							(*data->element_templates)[j].component_number))
 						{
 							element_template = (*data->element_templates) + j;
 						}
@@ -3266,6 +3324,7 @@ Notes:
 * element_xi values currently restricted to being in the root_region.
 ==============================================================================*/
 {
+	char *write_path_copy;
 	int return_code;
 	struct Cmiss_region *write_path_region;
 	struct FE_region *fe_region;
@@ -3281,6 +3340,7 @@ Notes:
 		{
 			/* if <write_path> is "" or "/", the following clears it to NULL and
 				 sets write_region to region */
+			write_path_copy = duplicate_string(write_path);
 			if (Cmiss_region_get_child_region_from_path(region, write_path,
 				&write_path_region, &write_path))
 			{
@@ -3294,6 +3354,10 @@ Notes:
 				display_message(ERROR_MESSAGE,
 					"write_Cmiss_region.  Invalid write path");
 				return_code = 0;
+			}
+			if (write_path_copy)
+			{
+				fprintf(output_file, "<group name=\"%s\">\n", write_path_copy);
 			}
 		}
 		if (return_code)
@@ -3309,6 +3373,11 @@ Notes:
 					"write_Cmiss_region.  Error writing finite element region");
 				return_code = 0;
 			}
+		}
+		if (write_path_copy)
+		{
+			fprintf(output_file, "</group>\n");
+			DEALLOCATE(write_path_copy);
 		}
 #if defined (NEW_CODE)
 		if (return_code)
@@ -3495,9 +3564,7 @@ If <field_order_info> contains fields, they are written in that order.
 
 	ENTER(write_exregion_file);
 	write_region = (struct Cmiss_region *)NULL;
-	if (output_file && root_region && 
-		((!write_path) || (Cmiss_region_get_region_from_path(root_region,
-			write_path, &write_region) && write_region)))
+	if (output_file && root_region)
 	{
 		return_code = 1;
 		write_info_list = CREATE(LIST(Cmiss_region_write_info))();

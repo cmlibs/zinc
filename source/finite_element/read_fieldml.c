@@ -121,7 +121,9 @@ DESCRIPTION :
 	int unknown_depth; /* Record the depth of unknown entities so we can start
 								 parsing again when we end */
 	struct Cmiss_region *root_region;
-	struct FE_region *root_fe_region;
+	struct FE_region *current_fe_region, *root_fe_region;
+	struct MANAGER(FE_basis) *basis_manager;
+	struct LIST(FE_element_shape) *element_shape_list;
 	struct LIST(Fieldml_label_name) *label_templates;
 	struct LIST(Fieldml_label_name) *basis_mappings;
 	struct LIST(Fieldml_label_name) *element_interpolations;
@@ -1472,7 +1474,7 @@ DESCRIPTION :
 									(1 == sscanf(sub_label->value, "%d", &node_number)))
 								{
 									if (label->current_node = 
-										FE_region_get_FE_node_from_identifier(fieldml_data->root_fe_region,
+										FE_region_get_FE_node_from_identifier(fieldml_data->current_fe_region,
 											node_number))
 									{
 										/* OK */
@@ -2135,7 +2137,7 @@ DESCRIPTION :
 	}
 	if (label_name)
 	{
-		if (field = FE_region_get_FE_field_from_name(fieldml_data->root_fe_region,
+		if (field = FE_region_get_FE_field_from_name(fieldml_data->current_fe_region,
 			label_name))
 		{
 			fieldml_data->current_label_name = fieldml_create_label_name_in_hierarchy(
@@ -2967,7 +2969,8 @@ DESCRIPTION :
 		if (field_name)
 		{
 			fieldml_data->current_field = CREATE(FE_field)(field_name,
-				fieldml_data->root_fe_region);
+				fieldml_data->current_fe_region);
+			set_FE_field_CM_field_type(fieldml_data->current_field, CM_COORDINATE_FIELD);
 			if (value_type_string &&
 				(value_type = Value_type_from_string(value_type_string)))
 			{
@@ -3048,7 +3051,7 @@ DESCRIPTION :
 
 	if (fieldml_data->current_field)
 	{
-		FE_region_merge_FE_field(fieldml_data->root_fe_region,
+		FE_region_merge_FE_field(fieldml_data->current_fe_region,
 			fieldml_data->current_field);
 		fieldml_data->current_field = (struct FE_field *)NULL;
 	}
@@ -3170,7 +3173,7 @@ DESCRIPTION :
 		if (node_number)
 		{
 			fieldml_data->current_node = CREATE(FE_node)(
-			 	node_number, fieldml_data->root_fe_region, (struct FE_node *)NULL);
+			 	node_number, fieldml_data->current_fe_region, (struct FE_node *)NULL);
 		}
 		else
 		{
@@ -3199,7 +3202,7 @@ DESCRIPTION :
 
 	if (fieldml_data->current_node)
 	{
-		FE_region_merge_FE_node(fieldml_data->root_fe_region,
+		FE_region_merge_FE_node(fieldml_data->current_fe_region,
 			fieldml_data->current_node);
 		fieldml_data->current_node = (struct FE_node *)NULL;
 	}
@@ -3515,7 +3518,7 @@ DESCRIPTION :
 				if (!strcmp(attribute_name, "shape"))
 				{
 					shape = fieldml_read_FE_element_shape(attribute_value,
-						fieldml_data->root_fe_region);
+						fieldml_data->current_fe_region);
 				}
 				i += 2;
 			}
@@ -3578,7 +3581,7 @@ DESCRIPTION :
 			element_template = (struct FE_element *)NULL;
 			fieldml_data->current_element = CREATE(FE_element)(
 				&cm, fieldml_data->current_element_shape, 
-				fieldml_data->root_fe_region, element_template);
+				fieldml_data->current_fe_region, element_template);
 		}
 		if (fieldml_data->face_numbers)
 		{
@@ -3589,7 +3592,7 @@ DESCRIPTION :
 				{
 					face_identifier.number = fieldml_data->face_numbers[j];
 					if (face_element = FE_region_get_FE_element_from_identifier(
-						fieldml_data->root_fe_region, &face_identifier))
+						fieldml_data->current_fe_region, &face_identifier))
 					{
 						if (!set_FE_element_face(fieldml_data->current_element,j,
 							face_element))
@@ -3718,7 +3721,7 @@ DESCRIPTION :
 					"Element has label lists but no interpolation.");
 			}
 		}
-		FE_region_merge_FE_element(fieldml_data->root_fe_region,
+		FE_region_merge_FE_element(fieldml_data->current_fe_region,
 			fieldml_data->current_element);
 		if (fieldml_data->current_element_labels)
 		{
@@ -4262,7 +4265,7 @@ Some examples of basis descriptions in an input file are:
 			if (no_error)
 			{
 				basis = FE_region_get_FE_basis_matching_basis_type(
-					fieldml_data->root_fe_region, basis_type);
+					fieldml_data->current_fe_region, basis_type);
 			}
 			else
 			{
@@ -5153,6 +5156,98 @@ DESCRIPTION :
 	LEAVE;
 } /* fieldml_end_xml_element */
 
+static void fieldml_start_group(
+	struct Fieldml_sax_data *fieldml_data, char **attributes)
+/*******************************************************************************
+LAST MODIFIED : 4 September 2003
+
+DESCRIPTION :
+==============================================================================*/
+{
+	char *attribute_name, *attribute_value, *name;
+	int i;
+	struct Cmiss_region *region;
+	struct FE_region *fe_region;
+
+	ENTER(fieldml_start_group);
+
+	name = (char *)NULL;
+	i = 0;
+	if (attributes)
+	{
+		while (attributes[i])
+		{
+			attribute_name = (char *)attributes[i];
+			attribute_value = (char *)attributes[i + 1];
+			if (!strcmp(attribute_name, "name"))
+			{
+				name = attribute_value;
+			}
+			i += 2;
+		}
+	}
+	if (name)
+	{
+		if (!(region = Cmiss_region_get_child_region_from_name(
+					fieldml_data->root_region, name)))
+		{
+			region = CREATE(Cmiss_region)();
+			if (!Cmiss_region_add_child_region(fieldml_data->root_region,
+					 region, name, /*child_position*/-1))
+			{
+				display_message(ERROR_MESSAGE,
+					"fieldml_start_group.  Could not add child region");
+				DESTROY(Cmiss_region)(&region);
+				region = (struct Cmiss_region *)NULL;
+			}
+		}
+		if (region)
+		{
+			if (!(fe_region = Cmiss_region_get_FE_region(region)))
+			{
+				/*???RC Later allow separate namespace for group,
+				  Use "Region name : NAME" token instead? */
+				fe_region = CREATE(FE_region)(fieldml_data->root_fe_region, 
+					fieldml_data->basis_manager, fieldml_data->element_shape_list);
+				if (!Cmiss_region_attach_FE_region(region, fe_region))
+				{
+					display_message(ERROR_MESSAGE, "fieldml_start_group.  "
+						"Could not attach finite element region");
+					DESTROY(FE_region)(&fe_region);
+					fe_region = (struct FE_region *)NULL;
+				}
+			}
+		}
+		if (region && fe_region)
+		{
+			fieldml_data->current_fe_region = fe_region;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE, "fieldml_start_group.  "
+			"Missing group name.");
+	}
+	
+	LEAVE;
+} /* fieldml_start_group */
+
+static void fieldml_end_group(
+	struct Fieldml_sax_data *fieldml_data)
+/*******************************************************************************
+LAST MODIFIED : 4 September 2003
+
+DESCRIPTION :
+==============================================================================*/
+{
+
+	ENTER(fieldml_end_group);
+
+	fieldml_data->current_fe_region = fieldml_data->root_fe_region;
+
+	LEAVE;
+} /* fieldml_end_group */
+
 static void general_start_xml_element(void *user_data, const xmlChar *name,
 	const xmlChar **const_attributes)
 /*******************************************************************************
@@ -5188,6 +5283,17 @@ DESCRIPTION :
 						if (!strcmp((char *)name, "fieldml"))
 						{
 							fieldml_start_fieldml(fieldml_data, attributes);
+						}
+						else
+						{
+							fieldml_data->unknown_depth = 1;
+						}
+					} break;
+					case 'g':
+					{
+						if (!strcmp((char *)name, "group"))
+						{
+							fieldml_start_group(fieldml_data, attributes);
 						}
 						else
 						{
@@ -5248,6 +5354,18 @@ DESCRIPTION :
 			{
 				switch (*name)
 				{
+					case 'g':
+					{
+						if (!strcmp((char *)name, "group"))
+						{
+							fieldml_end_group(fieldml_data);
+						}
+						else
+						{
+							display_message(ERROR_MESSAGE, "general_end_xml_element.  "
+								"Closing with an unknown element which wasn't opened.");
+						}
+					} break;
 					case 'r':
 					{
 						if (!strcmp((char *)name, "regionml"))
@@ -5400,14 +5518,18 @@ LAST MODIFIED : 10 February 2003
 DESCRIPTION :
 ==============================================================================*/
 {
+	char *sax_error;
 	va_list args;
 
 	ENTER(fieldml_sax_error);
 	USE_PARAMETER(user_data);
+	ALLOCATE(sax_error, char, strlen(msg) + 3000);
 	va_start(args, msg);
+	vsprintf(sax_error, msg, args);
 	display_message(ERROR_MESSAGE,
-		"fieldml_sax_error.  %s", msg, args);
+		"fieldml_sax_error.  %s", sax_error);
 	va_end(args);
+	DEALLOCATE(sax_error);
 	LEAVE;
 } /* fieldml_sax_error */
 
@@ -5485,6 +5607,8 @@ Cmiss_region.
 		fieldml_data.return_val = 0;
 		fieldml_data.fieldml_version = -1; /* Not in fieldml yet */
 		fieldml_data.fieldml_subversion = -1; /* Not in fieldml yet */
+		fieldml_data.basis_manager = basis_manager;
+		fieldml_data.element_shape_list = element_shape_list;
 		fieldml_data.root_region = root_region;
 		fieldml_data.root_fe_region =
 			CREATE(FE_region)((struct FE_region *)NULL, basis_manager, element_shape_list);
@@ -5501,6 +5625,7 @@ Cmiss_region.
 	
 		fieldml_data.current_assign_labels = (struct Fieldml_label_name *)NULL;
 		fieldml_data.current_label_name = (struct Fieldml_label_name *)NULL;
+		fieldml_data.current_fe_region = fieldml_data.root_fe_region;
 		fieldml_data.current_field = (struct FE_field *)NULL;
 		fieldml_data.current_field_ref = (struct FE_field *)NULL;
 		fieldml_data.current_field_component_name = (char *)NULL;
