@@ -10,6 +10,7 @@
 #include <iterator>
 #include <typeinfo>
 #include <iostream>
+#include <sstream>
 
 #include "computed_variable/function_variable_union.hpp"
 
