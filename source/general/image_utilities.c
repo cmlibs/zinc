@@ -157,7 +157,7 @@ DECLARE_FIND_BY_IDENTIFIER_IN_INDEXED_LIST_FUNCTION(Colour_map_entry, \
 static int byte_swap(unsigned char *byte_array,int value_size,
 	int number_of_values,int least_to_most)
 /*******************************************************************************
-LAST MODIFIED : 20 May 1998
+LAST MODIFIED : 16 April 2000
 
 DESCRIPTION :
 To take care of little/big endian.
@@ -169,6 +169,7 @@ To take care of little/big endian.
 	unsigned char *bottom_byte,byte,*element,*top_byte;
 #endif /* defined (__BYTE_ORDER) */
 
+	ENTER(byte_swap);
 	USE_PARAMETER(byte_array);
 	USE_PARAMETER(value_size);
 	USE_PARAMETER(number_of_values);
@@ -198,18 +199,20 @@ To take care of little/big endian.
 		}
 	}
 #endif /* defined (__BYTE_ORDER) */
+	LEAVE;
 
 	return (return_code);
 } /* byte_swap */
 
 static int byte_swap_and_write(unsigned char *byte_array,int value_size,
-	int number_of_values,int least_to_most, FILE *output_file)
+	int number_of_values,int least_to_most,FILE *output_file)
 /*******************************************************************************
-LAST MODIFIED : 
+LAST MODIFIED : 16 April 2000
 
 DESCRIPTION :
 Performs the byte swap and write, copying if necessary so that
 the original values are not modified.
+???DB.  Should be combined with functions in general/myio
 ==============================================================================*/
 {
 	int return_code;
@@ -219,11 +222,12 @@ the original values are not modified.
 	unsigned char *bottom_byte,byte,*element,*top_byte;
 #endif /* defined (__BYTE_ORDER) */
 
+	ENTER(byte_swap_and_write);
 	USE_PARAMETER(byte_array);
 	USE_PARAMETER(value_size);
 	USE_PARAMETER(number_of_values);
 	USE_PARAMETER(least_to_most);
-
+	return_code=0;
 #if defined (__BYTE_ORDER)
 #if (1234==__BYTE_ORDER)
 	if (!least_to_most)
@@ -231,12 +235,11 @@ the original values are not modified.
 	if (least_to_most)
 #endif /* (1234==__BYTE_ORDER) */
 	{
-		/* We must copy the bytes before reordering so as not to mess up the 
+		/* we must copy the bytes before reordering so as not to mess up the 
 			original data */
-		if (ALLOCATE(temp_byte_array, char, value_size * number_of_values))
+		if (ALLOCATE(temp_byte_array,char,value_size*number_of_values))
 		{
-			memcpy(temp_byte_array, byte_array, value_size * number_of_values);
-
+			memcpy(temp_byte_array,byte_array,value_size*number_of_values);
 			element=temp_byte_array;
 			for (j=number_of_values;j>0;j--)
 			{
@@ -252,7 +255,8 @@ the original values are not modified.
 				}
 				element += value_size;
 			}
-			return_code=fwrite(temp_byte_array, value_size, number_of_values, output_file);
+			return_code=fwrite(temp_byte_array,value_size,number_of_values,
+				output_file);
 			DEALLOCATE(temp_byte_array);
 		}
 		else
@@ -264,23 +268,83 @@ the original values are not modified.
 	}
 	else
 	{
-		return_code=fwrite(byte_array, value_size, number_of_values, output_file);
+		return_code=fwrite(byte_array,value_size,number_of_values,output_file);
 	}
 #else /* defined (__BYTE_ORDER) */
-
-	return_code=fwrite(byte_array, value_size, number_of_values, output_file);
-
+	return_code=fwrite(byte_array,value_size,number_of_values,output_file);
 #endif /* defined (__BYTE_ORDER) */
-
+	LEAVE;
 
 	return (return_code);
 } /* byte_swap_and_write */
+
+static int read_and_byte_swap(unsigned char *byte_array,int value_size,
+	int number_of_values,int least_to_most,FILE *input_file)
+/*******************************************************************************
+LAST MODIFIED : 16 April 2000
+
+DESCRIPTION :
+Performs the read and byte.
+???DB.  Should be combined with functions in general/myio
+==============================================================================*/
+{
+	int return_code;
+#if defined (__BYTE_ORDER)
+	char *temp_byte_array;
+	int i,j;
+	unsigned char *bottom_byte,byte,*element,*top_byte;
+#endif /* defined (__BYTE_ORDER) */
+
+	ENTER(read_and_byte_swap);
+	USE_PARAMETER(byte_array);
+	USE_PARAMETER(value_size);
+	USE_PARAMETER(number_of_values);
+	USE_PARAMETER(least_to_most);
+	return_code=0;
+#if defined (__BYTE_ORDER)
+#if (1234==__BYTE_ORDER)
+	if (!least_to_most)
+#else /* (1234==__BYTE_ORDER) */
+	if (least_to_most)
+#endif /* (1234==__BYTE_ORDER) */
+	{
+		if (number_of_values==(return_code=fread(byte_array,value_size,
+			number_of_values,input_file)))
+		{
+			element=byte_array;
+			for (j=number_of_values;j>0;j--)
+			{
+				bottom_byte=element;
+				top_byte=element+value_size;
+				for (i=value_size/2;i>0;i--)
+				{
+					top_byte--;
+					byte= *bottom_byte;
+					*bottom_byte= *top_byte;
+					*top_byte=byte;
+					bottom_byte++;
+				}
+				element += value_size;
+			}
+		}
+	}
+	else
+	{
+		return_code=fread(byte_array,value_size,number_of_values,input_file);
+	}
+#else /* defined (__BYTE_ORDER) */
+	return_code=fread(byte_array,value_size,number_of_values,input_file);
+#endif /* defined (__BYTE_ORDER) */
+	LEAVE;
+
+	return (return_code);
+} /* read_and_byte_swap */
 
 static int read_tiff_field(unsigned short int *tag,unsigned short int *type,
 	unsigned long int *count,void *value_address,FILE *tiff_file,
 	int least_to_most)
 /*******************************************************************************
-LAST MODIFIED : 27 April 1998
+LAST MODIFIED : 16 April 2000
 
 DESCRIPTION :
 For reading a field in an image file directory.
@@ -299,8 +363,7 @@ For reading a field in an image file directory.
 	printf("Field");
 #endif /* defined (DEBUG) */
 	/* read tag */
-	if ((2==fread(byte_array,sizeof(char),2,tiff_file))&&byte_swap(byte_array,2,1,
-		least_to_most))
+	if (2==read_and_byte_swap(byte_array,sizeof(char),2,least_to_most,tiff_file))
 	{
 		*tag= *((unsigned short int *)byte_array);
 #if defined (DEBUG)
@@ -308,8 +371,8 @@ For reading a field in an image file directory.
 		printf(".  tag=%d",*tag);
 #endif /* defined (DEBUG) */
 		/* read field type: short, long, rational ... */
-		if ((2==fread(byte_array,sizeof(char),2,tiff_file))&&byte_swap(byte_array,2,
-			1,least_to_most))
+		if (2==read_and_byte_swap(byte_array,sizeof(char),2,least_to_most,
+			tiff_file))
 		{
 			*type= *((unsigned short int *)byte_array);
 #if defined (DEBUG)
@@ -437,8 +500,8 @@ For reading a field in an image file directory.
 				} break;
 			}
 			/* read field count: (how many values are present) */
-			if ((4==fread(byte_array,sizeof(char),4,tiff_file))&&byte_swap(byte_array,
-				4,1,least_to_most))
+			if (4==read_and_byte_swap(byte_array,sizeof(char),4,least_to_most,
+				tiff_file))
 			{
 				*count= *((unsigned long int *)byte_array);
 #if defined (DEBUG)
@@ -567,7 +630,7 @@ int write_rgb_image_file(char *file_name,int number_of_components,
 	int number_of_rows,int number_of_columns,int row_padding,
 	long unsigned *image)
 /*******************************************************************************
-LAST MODIFIED : 28 May 1999
+LAST MODIFIED : 16 April 2000
 
 DESCRIPTION :
 Writes an image in SGI rgb file format.
@@ -619,19 +682,32 @@ Writes an image in SGI rgb file format.
 				/* normal interpretation (B/W for 1 component, RGB for 3 components
 					and RGBA for 4 components) of image file */
 				colour_map=0;
-				if ((1==byte_swap_and_write(&magic_number,2,1,least_to_most,output_file))&&
-					(1==byte_swap_and_write(&storage,1,1,least_to_most,output_file))&&
-					(1==byte_swap_and_write(&bytes_per_component,1,1,least_to_most,output_file))&&
-					(1==byte_swap_and_write(&dimension,2,1,least_to_most,output_file))&&
-					(1==byte_swap_and_write(&width,2,1,least_to_most,output_file))&&
-					(1==byte_swap_and_write(&height,2,1,least_to_most,output_file))&&
-					(1==byte_swap_and_write(&components,2,1,least_to_most,output_file))&&
-					(1==byte_swap_and_write(&minimum_pixel_value,4,1,least_to_most,output_file))&&
-					(1==byte_swap_and_write(&maximum_pixel_value,4,1,least_to_most,output_file))&&
-					(1==byte_swap_and_write(dummy,4,1,least_to_most,output_file))&&
-					(1==byte_swap_and_write(image_name,80,1,least_to_most,output_file))&&
-					(1==byte_swap_and_write(&colour_map,4,1,least_to_most,output_file))&&
-					(1==byte_swap_and_write(dummy,404,1,least_to_most,output_file)))
+				if ((1==byte_swap_and_write((unsigned char *)&magic_number,2,1,
+					least_to_most,output_file))&&
+					(1==byte_swap_and_write((unsigned char *)&storage,1,1,least_to_most,
+					output_file))&&
+					(1==byte_swap_and_write((unsigned char *)&bytes_per_component,1,1,
+					least_to_most,output_file))&&
+					(1==byte_swap_and_write((unsigned char *)&dimension,2,1,least_to_most,
+					output_file))&&
+					(1==byte_swap_and_write((unsigned char *)&width,2,1,least_to_most,
+					output_file))&&
+					(1==byte_swap_and_write((unsigned char *)&height,2,1,least_to_most,
+					output_file))&&
+					(1==byte_swap_and_write((unsigned char *)&components,2,1,
+					least_to_most,output_file))&&
+					(1==byte_swap_and_write((unsigned char *)&minimum_pixel_value,4,1,
+					least_to_most,output_file))&&
+					(1==byte_swap_and_write((unsigned char *)&maximum_pixel_value,4,1,
+					least_to_most,output_file))&&
+					(1==byte_swap_and_write((unsigned char *)dummy,4,1,least_to_most,
+					output_file))&&
+					(1==byte_swap_and_write((unsigned char *)image_name,80,1,
+					least_to_most,output_file))&&
+					(1==byte_swap_and_write((unsigned char *)&colour_map,4,1,
+					least_to_most,output_file))&&
+					(1==byte_swap_and_write((unsigned char *)dummy,404,1,least_to_most,
+					output_file)))
 				{
 					/* write the image header */
 					row_starts=(long)(512+number_of_rows*sizeof(unsigned long));
@@ -647,7 +723,8 @@ Writes an image in SGI rgb file format.
 						{
 							fseek(output_file,row_starts+(long)(l*number_of_rows*
 								sizeof(unsigned long)),SEEK_SET);
-							byte_swap_and_write(&row_start,sizeof(unsigned long),1,least_to_most,output_file);
+							byte_swap_and_write((unsigned char *)&row_start,
+								sizeof(unsigned long),1,least_to_most,output_file);
 							fseek(output_file,row_start,SEEK_SET);
 							row_size=0;
 							pixel=((unsigned char *)image)+number_of_components*
@@ -670,8 +747,10 @@ Writes an image in SGI rgb file format.
 											k--;
 											pixel += number_of_components;
 										} while ((k>0)&&(run_length<0x7f)&&(*pixel==last_pixel));
-										byte_swap_and_write(&run_length,sizeof(unsigned char),1,least_to_most,output_file);
-										byte_swap_and_write(&last_pixel,sizeof(unsigned char),1,least_to_most,output_file);
+										byte_swap_and_write((unsigned char *)&run_length,
+											sizeof(unsigned char),1,least_to_most,output_file);
+										byte_swap_and_write((unsigned char *)&last_pixel,
+											sizeof(unsigned char),1,least_to_most,output_file);
 										row_size += 2;
 									}
 									else
@@ -687,25 +766,31 @@ Writes an image in SGI rgb file format.
 										} while ((k>0)&&(run_length<0x7f)&&(*pixel!=last_pixel));
 										row_size += run_length+1;
 										run_length |= 0x80;
-										byte_swap_and_write(&run_length,sizeof(unsigned char),1,least_to_most,output_file);
+										byte_swap_and_write((unsigned char *)&run_length,
+											sizeof(unsigned char),1,least_to_most,output_file);
 										run_length &= 0x7f;
-										byte_swap_and_write(run,sizeof(unsigned char),(size_t)run_length,
-											least_to_most,output_file);
+										byte_swap_and_write((unsigned char *)run,
+											sizeof(unsigned char),(size_t)run_length,least_to_most,
+											output_file);
 									}
 								}
 								else
 								{
-									byte_swap_and_write(&run_length,sizeof(unsigned char),1,least_to_most,output_file);
-									byte_swap_and_write(&last_pixel,sizeof(unsigned char),1,least_to_most,output_file);
+									byte_swap_and_write((unsigned char *)&run_length,
+										sizeof(unsigned char),1,least_to_most,output_file);
+									byte_swap_and_write((unsigned char *)&last_pixel,
+										sizeof(unsigned char),1,least_to_most,output_file);
 									row_size += 2;
 								}
 							}
 							run_length=0;
-							byte_swap_and_write(&run_length,sizeof(unsigned char),1,least_to_most,output_file);
+							byte_swap_and_write((unsigned char *)&run_length,
+								sizeof(unsigned char),1,least_to_most,output_file);
 							row_size++;
 							fseek(output_file,row_sizes+(long)(l*number_of_rows*
 								sizeof(unsigned long)),SEEK_SET);
-							byte_swap_and_write(&row_size,sizeof(unsigned long),1,least_to_most,output_file);
+							byte_swap_and_write((unsigned char *)&row_size,
+								sizeof(unsigned long),1,least_to_most,output_file);
 							row_start += row_size;
 						}
 					}
@@ -2194,7 +2279,7 @@ int read_rgb_image_file(char *file_name,int *number_of_components_address,
 	long int *height_address,long int *width_address,
 	long unsigned **image_address)
 /*******************************************************************************
-LAST MODIFIED : 28 May 1999
+LAST MODIFIED : 16 April 2000
 
 DESCRIPTION :
 Reads an image from a SGI rgb file.
@@ -2224,18 +2309,18 @@ number_of_components=4, RGBA
 	{
 		if (image_file=fopen(file_name,"rb"))
 		{
-			if ((1==fread(&magic_number,2,1,image_file))&&
-			    (1==fread(&image_file_type,2,1,image_file))&&
-			    (1==fread(&dimension,2,1,image_file))&&
-			    (1==fread(&width,2,1,image_file))&&
-			    (1==fread(&height,2,1,image_file))&&
-			    (1==fread(&number_of_components,2,1,image_file))
-			    &&byte_swap((unsigned char *)&magic_number,2,1,least_to_most)
-			    &&byte_swap((unsigned char *)&image_file_type,2,1,least_to_most)
-			    &&byte_swap((unsigned char *)&dimension,2,1,least_to_most)
-			    &&byte_swap((unsigned char *)&width,2,1,least_to_most)
-			    &&byte_swap((unsigned char *)&height,2,1,least_to_most)
-			    &&byte_swap((unsigned char *)&number_of_components,2,1,least_to_most))
+			if ((1==read_and_byte_swap((unsigned char *)&magic_number,2,1,
+				least_to_most,image_file))&&
+				(1==read_and_byte_swap((unsigned char *)&image_file_type,2,1,
+				least_to_most,image_file))&&
+				(1==read_and_byte_swap((unsigned char *)&dimension,2,1,least_to_most,
+				image_file))&&
+				(1==read_and_byte_swap((unsigned char *)&width,2,1,least_to_most,
+				image_file))&&
+				(1==read_and_byte_swap((unsigned char *)&height,2,1,least_to_most,
+				image_file))&&
+				(1==read_and_byte_swap((unsigned char *)&number_of_components,2,1,
+				least_to_most,image_file)))
 			{
 #if defined (DEBUG)
 				/*???debug */
@@ -2453,7 +2538,8 @@ number_of_components=4, RGBA
 					else
 					{
 						/* verbatim */
-						if (ALLOCATE(row,unsigned char,width * *number_of_bytes_per_component)&&
+						if (ALLOCATE(row,unsigned char,
+							width*(*number_of_bytes_per_component))&&
 							ALLOCATE(image,unsigned char,width*height*number_of_bytes))
 						{
 							if (0==fseek(image_file,512,SEEK_SET))
@@ -2465,8 +2551,9 @@ number_of_components=4, RGBA
 									j=height;
 									while (return_code&&(j>0))
 									{
-										if ((width==fread(row,*number_of_bytes_per_component,width,image_file))&&
-										    byte_swap(row,*number_of_bytes_per_component,width,least_to_most))
+										if (width==read_and_byte_swap(row,
+											*number_of_bytes_per_component,width,least_to_most,
+											image_file))
 										{
 											row_ptr=row;
 											switch( *number_of_bytes_per_component )
@@ -2574,7 +2661,7 @@ int read_tiff_image_file(char *file_name,int *number_of_components_address,
 	long int *height_address,long int *width_address,
 	long unsigned **image_address)
 /*******************************************************************************
-LAST MODIFIED : 31 July 1998
+LAST MODIFIED : 16 April 2000
 
 DESCRIPTION :
 Reads an image from a TIFF file.
@@ -2720,8 +2807,8 @@ the second the denominator.
 				printf("           1 = least to most significant\n\n");
 #endif /* defined (DEBUG) */
 				/* check file number */
-				if ((2==fread(byte_array,sizeof(char),2,tiff_file))&&
-					byte_swap(byte_array,2,1,least_to_most))
+				if (2==read_and_byte_swap(byte_array,sizeof(char),2,least_to_most,
+					tiff_file))
 				{
 					file_type= *((unsigned short int *)byte_array);
 #if defined (DEBUG)
@@ -2746,8 +2833,8 @@ the second the denominator.
 				{
 					/* find offset of first image file directory */
 						/*???DB.  Only reading first */
-					if ((4==fread(byte_array,sizeof(char),4,tiff_file))&&
-						byte_swap(byte_array,4,1,least_to_most))
+					if (4==read_and_byte_swap(byte_array,sizeof(char),4,least_to_most,
+						tiff_file))
 					{
 						ifd_offset= *((unsigned long int *)byte_array);
 #if defined (DEBUG)
@@ -2772,8 +2859,8 @@ the second the denominator.
 						/* go to image file directory and find out the number of fields */
 						if (0==fseek(tiff_file,(signed long int)ifd_offset,0))
 						{
-							if ((2==fread(byte_array,sizeof(char),2,tiff_file))&&
-								byte_swap(byte_array,2,1,least_to_most))
+							if (2==read_and_byte_swap(byte_array,sizeof(char),2,
+								least_to_most,tiff_file))
 							{
 								number_of_fields= *((unsigned short int *)byte_array);
 #if defined (DEBUG)
