@@ -1,0 +1,113 @@
+!*******************************************************************************
+! FILE : node_viewer_widget.uil
+!
+! LAST MODIFIED : 11 May 2000
+!
+! DESCRIPTION :
+! Widgets for choosing a field at a node and viewing/editing their contents in
+! a node_field_viewer_widget.
+!===============================================================================
+module node_vw_widget
+	version = 'v1.0'
+
+procedure
+	node_vw_id_choose_field_form;
+	node_vw_id_field_viewer_form;
+	node_vw_destroy_CB;
+
+value
+	shadow_size : 2;
+
+identifier
+	!The gap between widgets
+	widget_spacing;
+	!Pointer to data specific to this instance of the node_viewer widget
+	node_vw_structure;
+	!Fonts go here
+	button_font;
+	heading_font;
+	list_font;
+	menu_Font;
+	normal_font;
+	normal_non_proportional_font;
+	small_font;
+
+!*******************************************************************************
+! The node_viewer widget
+object
+	node_viewer_widget: XmForm
+		{
+		arguments
+			{
+			XmNleftAttachment = XmATTACH_FORM;
+			XmNrightAttachment = XmATTACH_FORM;
+			XmNtopAttachment = XmATTACH_FORM;
+			XmNbottomAttachment = XmATTACH_FORM;
+			XmNuserData = node_vw_structure;
+			};
+		controls
+			{
+			XmRowColumn node_vw_choose_field_entry;
+			XmForm node_vw_field_viewer_form;
+			};
+		callbacks
+			{
+			XmNdestroyCallback = procedure node_vw_destroy_CB(node_vw_structure);
+			};
+		};
+  node_vw_choose_field_entry: XmRowColumn
+    {
+		arguments
+			{
+			XmNleftAttachment = XmATTACH_FORM;
+			XmNrightAttachment = XmATTACH_NONE;
+			XmNtopAttachment = XmATTACH_FORM;
+			XmNbottomAttachment = XmATTACH_NONE;
+			XmNmarginHeight = 0;
+			XmNmarginWidth = 0;
+			XmNspacing = 0;
+			XmNorientation = XmHORIZONTAL;
+			XmNpacking = XmPACK_TIGHT;
+			};
+    controls
+      {
+      XmLabelGadget node_vw_choose_field_label;
+      XmForm node_vw_choose_field_form;
+      };
+    };
+  node_vw_choose_field_label: XmLabelGadget
+    {
+    arguments
+      {
+      XmNlabelString = compound_string("Field:");
+      XmNalignment = XmALIGNMENT_BEGINNING;
+      XmNfontList = button_font;
+      };
+    };
+	node_vw_choose_field_form: XmForm
+		{
+		callbacks
+			{
+			MrmNcreateCallback = procedure
+				node_vw_id_choose_field_form(node_vw_structure);
+			};
+		};
+	node_vw_field_viewer_form: XmForm
+		{
+		arguments
+			{
+			XmNleftAttachment = XmATTACH_FORM;
+			XmNrightAttachment = XmATTACH_FORM;
+			XmNtopAttachment = XmATTACH_WIDGET;
+			XmNtopWidget = node_vw_choose_field_entry;
+			XmNbottomAttachment = XmATTACH_FORM;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedure
+				node_vw_id_field_viewer_form(node_vw_structure);
+			};
+		};
+!*******************************************************************************
+end module;
+
