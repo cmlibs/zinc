@@ -334,10 +334,10 @@ PRODUCT_UIDH_PATH=$(PRODUCT_PATH)/uidh/cmgui/aix_g
 #endif /* defined (O64) */
 #elif defined (WIN32) /* switch OperatingSystem */
 #if defined (CONSOLE)
-#define Target cmgui_win32_console
-#define SpacesToTabsTarget spaces_to_tabs_win32
-#define TabsToSpacesTarget tabs_to_spaces_win32
-#define Uid2uidhTarget uid2uidh_win32
+#define Target cmgui_win32_console.exe
+#define SpacesToTabsTarget spaces_to_tabs_win32.exe
+#define TabsToSpacesTarget tabs_to_spaces_win32.exe
+#define Uid2uidhTarget uid2uidh_win32.exe
 #define Makefile cmgui_win32_console.make
 #define DependMake cmgui_win32_console.depend
 #define ObjSuffix o
@@ -347,10 +347,10 @@ UIDH_PATH=$(CMGUI_DEV_ROOT)/uidh/cmgui/win32_console
 PRODUCT_UIDH_PATH=$(PRODUCT_PATH)/uidh/cmgui/win32_console
 #else /* defined (CONSOLE) */
 #if defined (GTK_USER_INTERFACE)
-#define Target cmgui_win32_gtk
-#define SpacesToTabsTarget spaces_to_tabs_linux
-#define TabsToSpacesTarget tabs_to_spaces_linux
-#define Uid2uidhTarget uid2uidh_linux
+#define Target cmgui_win32_gtk.exe
+#define SpacesToTabsTarget spaces_to_tabs_win32.exe
+#define TabsToSpacesTarget tabs_to_spaces_win32.exe
+#define Uid2uidhTarget uid2uidh_win32.exe
 #define Makefile cmgui_win32_gtk.make
 #define DependMake cmgui_win32_gtk.depend
 #define ObjSuffix o
@@ -360,10 +360,10 @@ UIDH_PATH=$(CMGUI_DEV_ROOT)/uidh/cmgui/win32_gtk
 PRODUCT_UIDH_PATH=$(PRODUCT_PATH)/uidh/cmgui/win32_gtk
 #else /* defined (GTK_USER_INTERFACE) */
 #if defined (OPTIMISED)
-#define Target cmgui_win32_optimised
-#define SpacesToTabsTarget spaces_to_tabs_win32
-#define TabsToSpacesTarget tabs_to_spaces_win32
-#define Uid2uidhTarget uid2uidh_win32
+#define Target cmgui_win32_optimised.exe
+#define SpacesToTabsTarget spaces_to_tabs_win32.exe
+#define TabsToSpacesTarget tabs_to_spaces_win32.exe
+#define Uid2uidhTarget uid2uidh_win32.exe
 #define Makefile cmgui_win32_optimised.make
 #define DependMake cmgui_win32_optimised.depend
 #define ObjSuffix o
@@ -373,18 +373,18 @@ UIDH_PATH=$(CMGUI_DEV_ROOT)/uidh/cmgui/win32_optimised
 PRODUCT_UIDH_PATH=$(PRODUCT_PATH)/uidh/cmgui/win32_optimised
 #else /* defined (OPTIMISED) */
 #if defined (MEMORY_CHECK)
-#define Target cmgui_win32_memorycheck
-#define SpacesToTabsTarget spaces_to_tabs_win32
-#define TabsToSpacesTarget tabs_to_spaces_win32
-#define Uid2uidhTarget uid2uidh_win32
+#define Target cmgui_win32_memorycheck.exe
+#define SpacesToTabsTarget spaces_to_tabs_win32.exe
+#define TabsToSpacesTarget tabs_to_spaces_win32.exe
+#define Uid2uidhTarget uid2uidh_win32.exe
 #define Makefile cmgui_win32_memorycheck.make
 #define DependMake cmgui_win32_memorycheck.depend
 #define ObjSuffix o
 #else /* defined (MEMORY_CHECK) */
-#define Target cmgui_win32
-#define SpacesToTabsTarget spaces_to_tabs_win32
-#define TabsToSpacesTarget tabs_to_spaces_win32
-#define Uid2uidhTarget uid2uidh_win32
+#define Target cmgui_win32.exe
+#define SpacesToTabsTarget spaces_to_tabs_win32.exe
+#define TabsToSpacesTarget tabs_to_spaces_win32.exe
+#define Uid2uidhTarget uid2uidh_win32.exe
 #define Makefile cmgui_win32.make
 #define DependMake cmgui_win32.depend
 #define ObjSuffix o
@@ -598,7 +598,7 @@ INTERPRETER_LIB = $(INTERPRETER_PATH)/lib/aix-64/libperlinterpreter-opt.a
 INTERPRETER_LIB = $(INTERPRETER_PATH)/lib/aix-32/libperlinterpreter-opt.a
 #endif /* defined (O64) */
 #elif defined(WIN32) /* switch OperatingSystem */
-INTERPRETER_LIB = $(INTERPRETER_PATH)/lib/win32/libperlinterpreter-opt.a $(INTERPRETER_PATH)/lib/win32/libPerl_cmiss.a $(INTERPRETER_PATH)/lib/win32/libperl56.a
+INTERPRETER_LIB = -L$(INTERPRETER_PATH)/lib/win32/ -lperlinterpreter-opt -lPerl_cmiss -lperl56
 XCOMM INTERPRETER_LIB = $(INTERPRETER_PATH)/lib/CYGWIN_NT-5.0-32/libperlinterpreter-debug.a
 #endif /* switch OperatingSystem */
 #endif /* !defined (PERL_INTERPRETER) */
@@ -928,17 +928,24 @@ USER_INTERFACE_LIB =
 LIB = -lm -ldl -lSM -lICE -lpthread -lcrypt -lbsd -lld -lC128
 #elif defined(WIN32) /* switch OperatingSystem */
 #if defined (GTK_USER_INTERFACE) /* switch (USER_INTERFACE) */
-USER_INTERFACE_PATH = /home/blackett/cross-tools/gtk2
-/* USER_INTERFACE_PATH = c: */
+#if defined (CMISS_ROOT_DEFINED)
+/* SAB It seems that ld currently requires (version 2.13.90 20021005) the perl_library to have a full
+       filename alphabetically ahead of these gtk libs, therefore be careful if you relocate these libraries
+       perl_interpreter versus win32_lib */																			  
+USER_INTERFACE_PATH = $(CMISS_ROOT)/win32lib/gtk2/
+#else /* defined (CMISS_ROOT_DEFINED) */
+USER_INTERFACE__PATH = $(CMGUI_DEV_ROOT)/win32lib/gtk2/
+/* USER_INTERFACE_PATH = c:/dev/gtk2 */
+#endif /* defined (CMISS_ROOT_DEFINED) */
 USER_INTERFACE_INC = -I$(USER_INTERFACE_PATH)/include/gtk-2.0 -I$(USER_INTERFACE_PATH)/include/pango-1.0 -I$(USER_INTERFACE_PATH)/include/glib-2.0/ -I$(USER_INTERFACE_PATH)/include/atk-1.0 -I$(USER_INTERFACE_PATH)/include/gtkgl-2.0/ -I$(USER_INTERFACE_PATH)/lib/glib-2.0/include -I$(USER_INTERFACE_PATH)/lib/gtk-2.0/include
-USER_INTERFACE_LIB = $(USER_INTERFACE_PATH)/lib/libgtkgl-2.0.a $(USER_INTERFACE_PATH)/lib/libgtk-win32-2.0.dll.a $(USER_INTERFACE_PATH)/lib/libgdk-win32-2.0.dll.a $(USER_INTERFACE_PATH)/lib/libatk-1.0.dll.a $(USER_INTERFACE_PATH)/lib/libgdk_pixbuf-2.0.dll.a $(USER_INTERFACE_PATH)/lib/libpangowin32-1.0.dll.a $(USER_INTERFACE_PATH)/lib/libpango-1.0.dll.a $(USER_INTERFACE_PATH)/lib/libgobject-2.0.dll.a $(USER_INTERFACE_PATH)/lib/libgmodule-2.0.dll.a $(USER_INTERFACE_PATH)/lib/libglib-2.0.dll.a -lopengl32 -lglu32
+USER_INTERFACE_LIB = -L$(USER_INTERFACE_PATH)/lib -lgtkgl-2.0 -lgtk-win32-2.0.dll -lgdk-win32-2.0.dll -latk-1.0.dll -lgdk_pixbuf-2.0.dll -lpangowin32-1.0.dll -lpango-1.0.dll -lgobject-2.0.dll -lgmodule-2.0.dll -lglib-2.0.dll -lopengl32 -lglu32
 /* USER_INTERFACE_INC = -L"c:\perl\5.6.1\lib\MSWin32-x86\CORE" -L"c:\dev\gcc\lib" -Ic:/dev/gtk2/include/gtk-2.0 -Ic:/dev/gtk2/include/pango-1.0 -Ic:/dev/gtk2/include/glib-2.0/ -Ic:/dev/gtk2/include/atk-1.0 -Ic:/dev/gtk2/include/gtkgl-2.0/ -Ic:/dev/gtk2/lib/glib-2.0/include -Ic:/dev/gtk2/lib/gtk-2.0/include
 USER_INTERFACE_LIB = -L"c:\dev\gtk2\lib" -lgtkgl-2.0 -lgtk-win32-2.0 -lgdk-win32-2.0 -latk-1.0 -lgdk_pixbuf-2.0 -lm -lpangowin32-1.0 -lpango-1.0 -lgobject-2.0 -lgmodule-2.0 -lglib-2.0 */
 #elif 1 /* switch (USER_INTERFACE) */
 USER_INTERFACE_INC = 
 USER_INTERFACE_LIB = -lcomdlg32
 #endif /* switch (USER_INTERFACE) */
-LIB = -lmsvcrt -lmoldname -lkernel32 -luser32 -lgdi32  -lwinspool -lcomdlg32 -ladvapi32 -lshell32 -lole32 -loleaut32 -lnetapi32 -luuid -lwsock32 -lmpr -lwinmm -lversion -lodbc32
+LIB = -lgdi32  -lwinspool -lcomdlg32 -ladvapi32 -lshell32 -lole32 -loleaut32 -lnetapi32 -luuid -lwsock32 -lmpr -lwinmm -lversion -lodbc32
 #endif /* switch OperatingSystem */
 
 START_ALL_DEFINES =
