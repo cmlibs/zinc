@@ -78,9 +78,9 @@ DESCRIPTION :
 #include "graphics/light.h"
 #include "graphics/light_model.h"
 #include "graphics/material.h"
-#if defined (MOTIF)
+#if defined (SGI_MOVIE_FILE) && defined (MOTIF)
 #include "graphics/movie_graphics.h"
-#endif /* defined (MOTIF) */
+#endif /* defined (SGI_MOVIE_FILE) && defined (MOTIF) */
 #include "graphics/scene.h"
 #if defined (MOTIF)
 #include "graphics/scene_editor.h"
@@ -113,9 +113,9 @@ DESCRIPTION :
 #include "selection/element_point_ranges_selection.h"
 #include "selection/element_selection.h"
 #include "selection/node_selection.h"
-#if defined (SGI_MOVIE_FILE)
+#if defined (MOTIF)
 #include "three_d_drawing/movie_extensions.h"
-#endif /* defined (SGI_MOVIE_FILE) */
+#endif /* defined (MOTIF) */
 #if defined (MOTIF)
 #include "time/time_editor_dialog.h"
 #endif /* defined (MOTIF) */
@@ -908,9 +908,9 @@ Main program for the CMISS Graphical User Interface
 	command_data.command_window=(struct Command_window *)NULL;
 #endif /* defined (MOTIF) || defined (WIN32_USER_INTERFACE) || defined (GTK_USER_INTERFACE) */
 	command_data.fe_time = (struct FE_time *)NULL;
-#if defined (SGI_MOVIE_FILE)
+#if defined (SGI_MOVIE_FILE) && defined (MOTIF)
 	command_data.movie_graphics_manager=(struct MANAGER(Movie_graphics) *)NULL;
-#endif /* defined (SGI_MOVIE_FILE) */
+#endif /* defined (SGI_MOVIE_FILE) && defined (MOTIF) */
 	command_data.transform_tool=(struct Interactive_tool *)NULL;
 #if defined (MOTIF)
 	command_data.node_tool=(struct Node_tool *)NULL;
@@ -1449,9 +1449,9 @@ Main program for the CMISS Graphical User Interface
 		/*???DB.  Still needs to be turned into a manager */
 	coord_widget_init();
 #endif /* defined (MOTIF) */
-#if defined (SGI_MOVIE_FILE)
+#if defined (SGI_MOVIE_FILE) && defined (MOTIF)
 	command_data.movie_graphics_manager = CREATE(MANAGER(Movie_graphics))();
-#endif /* defined (SGI_MOVIE_FILE) */
+#endif /* defined (SGI_MOVIE_FILE) && defined (MOTIF) */
 
 	/* scene manager */
 	/*???RC & SAB.   LOTS of managers need to be created before this 
@@ -1904,9 +1904,9 @@ Main program for the CMISS Graphical User Interface
 #endif /* defined (MOTIF) || defined (GTK_USER_INTERFACE) */
 	}
 
-#if defined (SGI_MOVIE_FILE)
+#if defined (SGI_MOVIE_FILE) && defined (MOTIF)
 	DESTROY(MANAGER(Movie_graphics))(&command_data.movie_graphics_manager);
-#endif /* defined (SGI_MOVIE_FILE) */
+#endif /* defined (SGI_MOVIE_FILE) && defined (MOTIF) */
 
 #if defined (CELL)
 	/*created in execute_command_cell_open in command/cmiss.c */

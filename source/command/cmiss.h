@@ -77,9 +77,9 @@ DESCRIPTION :
 	struct Light *default_light;
 	struct MANAGER(Light_model) *light_model_manager;
 	struct Light_model *default_light_model;
-#if defined (SGI_MOVIE_FILE)
+#if defined (SGI_MOVIE_FILE) && defined (MOTIF)
 	struct MANAGER(Movie_graphics) *movie_graphics_manager;
-#endif /* defined (SGI_MOVIE_FILE) */
+#endif /* defined (SGI_MOVIE_FILE) && defined (MOTIF) */
 	struct MANAGER(Texture) *texture_manager;
 	struct MANAGER(Control_curve) *control_curve_manager;
 	struct MANAGER(Scene) *scene_manager;
