@@ -1913,8 +1913,6 @@ Main program for the CMISS Graphical User Interface
 				DESTROY(MANAGER(Graphics_window))(
 					&command_data.graphics_window_manager);
 
-				DESTROY(Computed_field_package)(&command_data.computed_field_package);
-
 				if (computed_field_finite_element_package)
 				{
 					Computed_field_deregister_types_finite_element(
@@ -1951,6 +1949,8 @@ Main program for the CMISS Graphical User Interface
 
 				DEACCESS(Scene)(&(command_data.default_scene));
 				DESTROY(MANAGER(Scene))(&command_data.scene_manager);
+
+				DESTROY(Computed_field_package)(&command_data.computed_field_package);
 
 				DESTROY(FE_node_selection)(&(command_data.data_selection));
 				DESTROY(FE_node_selection)(&(command_data.node_selection));
