@@ -1496,7 +1496,7 @@ $(OBJECT_PATH)/$(EXPORTS_FILE).link :	$(EXPORTS_FILE)
 	cp $(EXPORTS_FILE) $(OBJECT_PATH)/$(EXPORTS_FILE).c
 #endif /* defined (CMISS_ROOT_DEFINED) */
 	cd $(OBJECT_PATH) ; $(CPREPROCESS) $(ALL_DEFINES) $(EXPORTS_FILE).c
-	cp $(OBJECT_PATH)/$(EXPORTS_FILE).i $(OBJECT_PATH)/$(EXPORTS_FILE)
+	cp $(OBJECT_PATH)/$(EXPORTS_FILE).i $(OBJECT_PATH)/$(EXPORTS_FILE).link
 #endif /* defined (EXPORT_EVERYTHING) */
 #elif defined(LINUX) /* switch OperatingSystem */
 #if defined (DYNAMIC_GL_LINUX)
