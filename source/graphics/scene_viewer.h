@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : scene_viewer.h
 
-LAST MODIFIED : 14 July 2000
+LAST MODIFIED : 29 September 2000
 
 DESCRIPTION :
 Three_D_drawing derivative for viewing a Scene from an arbitrary position.
@@ -147,6 +147,35 @@ LAST MODIFIED : 18 November 1998
 
 DESCRIPTION :
 Closes the scene_viewer and disposes of the scene_viewer data structure.
+==============================================================================*/
+
+int Scene_viewer_awaken(struct Scene_viewer *scene_viewer);
+/*******************************************************************************
+LAST MODIFIED : 29 September 2000
+
+DESCRIPTION :
+Restores manager callbacks of previously inactive scene_viewer. Must call after
+Scene_viewer_sleep to restore normal activity.
+==============================================================================*/
+
+int Scene_viewer_stop_animations(struct Scene_viewer *scene_viewer);
+/*******************************************************************************
+LAST MODIFIED : 29 September 2000
+
+DESCRIPTION :
+Tells the <scene_viewer> to stop all automatic informations that it produces,
+eg. automatic tumble.
+==============================================================================*/
+
+int Scene_viewer_sleep(struct Scene_viewer *scene_viewer);
+/*******************************************************************************
+LAST MODIFIED : 29 September 2000
+
+DESCRIPTION :
+Turns off any pending automatic tumbles or redraws in idle time, and removes
+any manager callbacks to minimise impact of inactive scene_viewer on rest of
+program. Must call Scene_viewer_awaken to restore manager callbacks.
+Must call this in DESTROY function.
 ==============================================================================*/
 
 int Scene_viewer_get_antialias_mode(struct Scene_viewer *scene_viewer,

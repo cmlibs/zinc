@@ -1501,12 +1501,17 @@ removed from WorkProc queue.
 
 			if (scene_viewer->interactive_tool)
 			{
+				/*???RC*//*X3dThreeDDrawingMakeCurrent(scene_viewer->drawing_widget);*/
+
 				glGetIntegerv(GL_VIEWPORT,viewport);
 				viewport_left   = (double)(viewport[0]);
 				viewport_bottom = (double)(viewport[1]);
 				viewport_width  = (double)(viewport[2]);
 				viewport_height = (double)(viewport[3]);
-				
+
+				/*???RC*//*Scene_viewer_calculate_transformation(scene_viewer,
+					viewport_width,viewport_height);*/
+
 				size_x = SCENE_VIEWER_PICK_SIZE;
 				size_y = SCENE_VIEWER_PICK_SIZE;
 				
@@ -1526,11 +1531,15 @@ removed from WorkProc queue.
 					scene_viewer->scene);
 				ACCESS(Interactive_event)(interactive_event);
 				Interactive_tool_handle_interactive_event(
-					scene_viewer->interactive_tool,(void *)scene_viewer,interactive_event);
+					scene_viewer->interactive_tool,(void *)scene_viewer,
+					interactive_event);
 				DEACCESS(Interactive_event)(&interactive_event);
 				DEACCESS(Interaction_volume)(&interaction_volume);
 			}
-
+		}
+		else
+		{
+			scene_viewer->tumble_angle = 0.0;
 		}
 		scene_viewer->tumble_callback_id = (XtWorkProcId)NULL;
 	}
@@ -2235,20 +2244,25 @@ Converts mouse button-press and motion events into viewing transformations in
 									if (Scene_viewer_rotate_about_lookat_point(scene_viewer,axis,
 										-angle))
 									{
-										/* Store axis and angle so that we can make the
-											scene viewer spin if left alone. */
-										scene_viewer->tumble_axis[0] = axis[0];
-										scene_viewer->tumble_axis[1] = axis[1];
-										scene_viewer->tumble_axis[2] = axis[2];
-										scene_viewer->tumble_angle = -angle;
-										scene_viewer->tumble_active = 0;
-										if (!scene_viewer->tumble_callback_id)
+										/* Only allow automatic tumble in transform mode */
+										if (SCENE_VIEWER_TRANSFORM == scene_viewer->input_mode)
 										{
-											/* Add this now, if we hold still it will stop the
-												rotate if not it will happen after the buttonrelease */
-											scene_viewer->tumble_callback_id=XtAppAddWorkProc(
-												scene_viewer->user_interface->application_context,
-												Scene_viewer_automatic_tumble_callback,scene_viewer);
+											/* Store axis and angle so that we can make the
+												 scene viewer spin if left alone. */
+											scene_viewer->tumble_axis[0] = axis[0];
+											scene_viewer->tumble_axis[1] = axis[1];
+											scene_viewer->tumble_axis[2] = axis[2];
+											scene_viewer->tumble_angle = -angle;
+											scene_viewer->tumble_active = 0;
+											if (!scene_viewer->tumble_callback_id)
+											{
+												/* Add this now, if we hold still it will stop the
+													 rotate if not it will happen after the button
+													 release */
+												scene_viewer->tumble_callback_id=XtAppAddWorkProc(
+													scene_viewer->user_interface->application_context,
+													Scene_viewer_automatic_tumble_callback,scene_viewer);
+											}
 										}
 										view_changed=1;
 									}
@@ -3144,33 +3158,7 @@ performed in idle time so that multiple redraws are avoided.
 						Scene_viewer_expose_callback,scene_viewer);
 					XtAddCallback(drawing_widget,X3dNinputCallback,
 						Scene_viewer_input_callback,scene_viewer);
-					/* register for lighting changes */
-					if (light_manager)
-					{
-						scene_viewer->light_manager_callback_id=
-							MANAGER_REGISTER(Light)(Scene_viewer_light_change,
-								(void *)scene_viewer,scene_viewer->light_manager);
-					}
-					if (light_model_manager)
-					{
-						scene_viewer->light_model_manager_callback_id=
-						MANAGER_REGISTER(Light_model)(Scene_viewer_light_model_change,
-							(void *)scene_viewer,scene_viewer->light_model_manager);
-					}
-					/* register for any scene changes */
-					if (scene_manager)
-					{
-						scene_viewer->scene_manager_callback_id=
-							MANAGER_REGISTER(Scene)(Scene_viewer_scene_change,
-								(void *)scene_viewer,scene_viewer->scene_manager);
-					}
-					/* register for any texture changes */
-					if (texture_manager)
-					{
-						scene_viewer->texture_manager_callback_id=
-							MANAGER_REGISTER(Texture)(Scene_viewer_texture_change,
-								(void *)scene_viewer,scene_viewer->texture_manager);
-					}
+					Scene_viewer_awaken(scene_viewer);
 					XtManageChild(drawing_widget);
 				}
 				else
@@ -3204,7 +3192,7 @@ performed in idle time so that multiple redraws are avoided.
 
 int DESTROY(Scene_viewer)(struct Scene_viewer **scene_viewer_address)
 /*******************************************************************************
-LAST MODIFIED : 18 November 1998
+LAST MODIFIED : 29 September 2000
 
 DESCRIPTION :
 Closes the scene_viewer and disposes of the scene_viewer data structure.
@@ -3216,47 +3204,7 @@ Closes the scene_viewer and disposes of the scene_viewer data structure.
 	ENTER(DESTROY(Scene_viewer));
 	if (scene_viewer_address&&(scene_viewer= *scene_viewer_address))
 	{
-		/* turn off manager messages */
-		if (scene_viewer->light_manager_callback_id)
-		{
-			MANAGER_DEREGISTER(Light)(
-				scene_viewer->light_manager_callback_id,
-				scene_viewer->light_manager);
-			scene_viewer->light_manager_callback_id=(void *)NULL;
-		}
-		if (scene_viewer->light_model_manager_callback_id)
-		{
-			MANAGER_DEREGISTER(Light_model)(
-				scene_viewer->light_model_manager_callback_id,
-				scene_viewer->light_model_manager);
-			scene_viewer->light_model_manager_callback_id=(void *)NULL;
-		}
-		if (scene_viewer->scene_manager_callback_id)
-		{
-			MANAGER_DEREGISTER(Scene)(
-				scene_viewer->scene_manager_callback_id,
-				scene_viewer->scene_manager);
-			scene_viewer->scene_manager_callback_id=(void *)NULL;
-		}
-		if (scene_viewer->scene_manager_callback_id)
-		{
-			MANAGER_DEREGISTER(Scene)(
-				scene_viewer->scene_manager_callback_id,
-				scene_viewer->scene_manager);
-			scene_viewer->scene_manager_callback_id=(void *)NULL;
-		}
-		if (scene_viewer->texture_manager_callback_id)
-		{
-			MANAGER_DEREGISTER(Texture)(scene_viewer->texture_manager_callback_id,
-				scene_viewer->texture_manager);
-			scene_viewer->texture_manager_callback_id=(void *)NULL;
-		}
-		/* if there's an update pending, then remove the workproc from the queue */
-		/*???DB.  Is a workproc really necessary ? */
-		if (scene_viewer->idle_update_proc)
-		{
-			XtRemoveWorkProc(scene_viewer->idle_update_proc);
-		}
+		Scene_viewer_sleep(scene_viewer);
 		/* dispose of our data structure */
 		if (scene_viewer->background_texture)
 		{
@@ -3304,6 +3252,174 @@ Closes the scene_viewer and disposes of the scene_viewer data structure.
 
 	return (return_code);
 } /* DESTROY(Scene_viewer) */
+
+int Scene_viewer_awaken(struct Scene_viewer *scene_viewer)
+/*******************************************************************************
+LAST MODIFIED : 29 September 2000
+
+DESCRIPTION :
+Restores manager callbacks of previously inactive scene_viewer. Must call after
+Scene_viewer_sleep to restore normal activity.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(Scene_viewer_awaken);
+	if (scene_viewer)
+	{
+		/* register for lighting changes */
+		if (scene_viewer->light_manager &&
+			(!scene_viewer->light_manager_callback_id))
+		{
+			scene_viewer->light_manager_callback_id=
+				MANAGER_REGISTER(Light)(Scene_viewer_light_change,
+					(void *)scene_viewer,scene_viewer->light_manager);
+		}
+		if (scene_viewer->light_model_manager &&
+			(!scene_viewer->light_model_manager_callback_id))
+		{
+			scene_viewer->light_model_manager_callback_id=
+				MANAGER_REGISTER(Light_model)(Scene_viewer_light_model_change,
+					(void *)scene_viewer,scene_viewer->light_model_manager);
+		}
+		/* register for any scene changes */
+		if (scene_viewer->scene_manager &&
+			(!scene_viewer->scene_manager_callback_id))
+		{
+			scene_viewer->scene_manager_callback_id=
+				MANAGER_REGISTER(Scene)(Scene_viewer_scene_change,
+					(void *)scene_viewer,scene_viewer->scene_manager);
+		}
+		/* register for any texture changes */
+		if (scene_viewer->texture_manager &&
+			(!scene_viewer->texture_manager_callback_id))
+		{
+			scene_viewer->texture_manager_callback_id=
+				MANAGER_REGISTER(Texture)(Scene_viewer_texture_change,
+					(void *)scene_viewer,scene_viewer->texture_manager);
+		}
+		return_code=1;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"Scene_viewer_awaken.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Scene_viewer_awaken */
+
+int Scene_viewer_stop_animations(struct Scene_viewer *scene_viewer)
+/*******************************************************************************
+LAST MODIFIED : 29 September 2000
+
+DESCRIPTION :
+Tells the <scene_viewer> to stop all automatic informations that it produces,
+eg. automatic tumble.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(Scene_viewer_stop_animations);
+	if (scene_viewer)
+	{
+		if (scene_viewer->tumble_callback_id)
+		{
+			XtRemoveWorkProc(scene_viewer->tumble_callback_id);
+			scene_viewer->tumble_callback_id=(XtWorkProcId)NULL;
+		}
+		scene_viewer->tumble_active = 0;
+		scene_viewer->tumble_angle = 0.0;
+		return_code=1;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Scene_viewer_stop_animations.  Missing scene_viewer");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Scene_viewer_stop_animations */
+
+int Scene_viewer_sleep(struct Scene_viewer *scene_viewer)
+/*******************************************************************************
+LAST MODIFIED : 29 September 2000
+
+DESCRIPTION :
+Turns off any pending automatic tumbles or redraws in idle time, and removes
+any manager callbacks to minimise impact of inactive scene_viewer on rest of
+program. Must call Scene_viewer_awaken to restore manager callbacks.
+Must call this in DESTROY function.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(Scene_viewer_sleep);
+	if (scene_viewer)
+	{
+		/* if there's an update pending, then remove the workproc from the queue */
+		/*???DB.  Is a workproc really necessary ? */
+		if (scene_viewer->idle_update_proc)
+		{
+			XtRemoveWorkProc(scene_viewer->idle_update_proc);
+			scene_viewer->idle_update_proc=(XtWorkProcId)NULL;
+		}
+		if (scene_viewer->tumble_callback_id)
+		{
+			XtRemoveWorkProc(scene_viewer->tumble_callback_id);
+			scene_viewer->tumble_callback_id=(XtWorkProcId)NULL;
+		}
+		scene_viewer->tumble_active = 0;
+		scene_viewer->tumble_angle = 0.0;
+		/* turn off manager messages */
+		if (scene_viewer->light_manager_callback_id)
+		{
+			MANAGER_DEREGISTER(Light)(
+				scene_viewer->light_manager_callback_id,
+				scene_viewer->light_manager);
+			scene_viewer->light_manager_callback_id=(void *)NULL;
+		}
+		if (scene_viewer->light_model_manager_callback_id)
+		{
+			MANAGER_DEREGISTER(Light_model)(
+				scene_viewer->light_model_manager_callback_id,
+				scene_viewer->light_model_manager);
+			scene_viewer->light_model_manager_callback_id=(void *)NULL;
+		}
+		if (scene_viewer->scene_manager_callback_id)
+		{
+			MANAGER_DEREGISTER(Scene)(
+				scene_viewer->scene_manager_callback_id,
+				scene_viewer->scene_manager);
+			scene_viewer->scene_manager_callback_id=(void *)NULL;
+		}
+		if (scene_viewer->scene_manager_callback_id)
+		{
+			MANAGER_DEREGISTER(Scene)(
+				scene_viewer->scene_manager_callback_id,
+				scene_viewer->scene_manager);
+			scene_viewer->scene_manager_callback_id=(void *)NULL;
+		}
+		if (scene_viewer->texture_manager_callback_id)
+		{
+			MANAGER_DEREGISTER(Texture)(scene_viewer->texture_manager_callback_id,
+				scene_viewer->texture_manager);
+			scene_viewer->texture_manager_callback_id=(void *)NULL;
+		}
+		return_code=1;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"Scene_viewer_sleep.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Scene_viewer_sleep */
 
 int Scene_viewer_get_background_colour(struct Scene_viewer *scene_viewer,
 	struct Colour *background_colour)
@@ -3648,6 +3764,14 @@ Sets the input_mode of the Scene_viewer.
 		(SCENE_VIEWER_SELECT==input_mode)||
 		(SCENE_VIEWER_TRANSFORM==input_mode)))
 	{
+		/* clear automatic tumble since cannot make successful input while on */
+		if (scene_viewer->tumble_callback_id)
+		{
+			XtRemoveWorkProc(scene_viewer->tumble_callback_id);
+			scene_viewer->tumble_callback_id=(XtWorkProcId)NULL;
+		}
+		scene_viewer->tumble_active = 0;
+		scene_viewer->tumble_angle = 0.0;
 		scene_viewer->input_mode=input_mode;
 		return_code=1;
 	}
@@ -5363,7 +5487,7 @@ Requests a full redraw in idle time.
 
 int Scene_viewer_redraw_now(struct Scene_viewer *scene_viewer)
 /*******************************************************************************
-LAST MODIFIED : 14 July 2000
+LAST MODIFIED : 29 September 2000
 
 DESCRIPTION :
 Requests a full redraw immediately.
@@ -5379,6 +5503,19 @@ Requests a full redraw immediately.
 		{
 			XtRemoveWorkProc(scene_viewer->idle_update_proc);
 			scene_viewer->idle_update_proc=(XtWorkProcId)NULL;
+			if (scene_viewer->tumble_active)
+			{
+				if(!scene_viewer->tumble_callback_id)
+				{
+					scene_viewer->tumble_callback_id=XtAppAddWorkProc(
+						scene_viewer->user_interface->application_context,
+						Scene_viewer_automatic_tumble_callback,scene_viewer);			
+				}
+			}
+			else
+			{
+				scene_viewer->tumble_angle = 0.0;
+			}
 		}
 		X3dThreeDDrawingMakeCurrent(scene_viewer->drawing_widget);
 		/* always do a full redraw */

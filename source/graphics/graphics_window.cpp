@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : graphics_window.c
 
-LAST MODIFIED : 8 September 2000
+LAST MODIFIED : 29 September 2000
 
 DESCRIPTION:
 Code for opening, closing and working a CMISS 3D display window.
@@ -3289,7 +3289,7 @@ Returns the layout mode in effect on the <window>.
 int Graphics_window_set_layout_mode(struct Graphics_window *window,
 	enum Graphics_window_layout_mode layout_mode)
 /*******************************************************************************
-LAST MODIFIED : 28 June 2000
+LAST MODIFIED : 29 September 2000
 
 DESCRIPTION :
 Sets the layout mode in effect on the <window>.
@@ -3312,6 +3312,18 @@ Sets the layout mode in effect on the <window>.
 			/* make sure the current layout mode is displayed on the chooser */
 			choose_enumerator_set_string(window->layout_mode_widget,
 				Graphics_window_layout_mode_string(layout_mode));
+			/* awaken scene_viewers in panes to be used; put others to sleep */
+			for	(pane_no=0;pane_no<GRAPHICS_WINDOW_MAX_NUMBER_OF_PANES;pane_no++)
+			{
+				if (pane_no < window->number_of_panes)
+				{
+					Scene_viewer_awaken(window->scene_viewer[pane_no]);
+				}
+				else
+				{
+					Scene_viewer_sleep(window->scene_viewer[pane_no]);
+				}
+			}
 		}
 		/* get projection mode of pane 0, using parallel for custom */
 		if (SCENE_VIEWER_PERSPECTIVE==
@@ -4359,7 +4371,7 @@ with commands for setting these.
 int Graphics_window_view_changed(struct Graphics_window *window,
 	int changed_pane)
 /*******************************************************************************
-LAST MODIFIED : 28 June 2000
+LAST MODIFIED : 29 September 2000
 
 DESCRIPTION :
 Call this function whenever the view in a pane has changed. Depending on the
@@ -4381,6 +4393,10 @@ current layout_mode, the function adjusts the view in all the panes tied to
 			 separate near and far clipping planes for each pane_no */
 		for (pane_no=0;pane_no<window->number_of_panes;pane_no++)
 		{
+			if (pane_no != changed_pane)
+			{
+				Scene_viewer_stop_animations(window->scene_viewer[pane_no]);
+			}
 			Scene_viewer_get_viewing_volume(window->scene_viewer[pane_no],
 				&left,&right,&bottom,&top,&(near[pane_no]),&(far[pane_no]));
 		}
