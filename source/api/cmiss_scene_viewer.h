@@ -442,6 +442,60 @@ DESCRIPTION :
 Forces a redraw of the given scene viewer to take place immediately
 ==============================================================================*/
 
+int Cmiss_scene_viewer_get_translation_rate(Cmiss_scene_viewer_id scene_viewer,
+	double *translation_rate);
+/*******************************************************************************
+LAST MODIFIED : 4 February 2005
+
+DESCRIPTION :
+Gets the scene viewer translation rate.
+==============================================================================*/
+
+int Cmiss_scene_viewer_set_translation_rate(Cmiss_scene_viewer_id scene_viewer,
+	double translation_rate);
+/*******************************************************************************
+LAST MODIFIED : 4 February 2005
+
+DESCRIPTION :
+Sets the scene viewer translation rate.
+==============================================================================*/
+
+int Cmiss_scene_viewer_get_tumble_rate(Cmiss_scene_viewer_id scene_viewer,
+	double *tumble_rate);
+/*******************************************************************************
+LAST MODIFIED : 4 February 2005
+
+DESCRIPTION :
+Gets the scene viewer tumble rate.
+==============================================================================*/
+
+int Cmiss_scene_viewer_set_tumble_rate(Cmiss_scene_viewer_id scene_viewer,
+	double tumble_rate);
+/*******************************************************************************
+LAST MODIFIED : 4 February 2005
+
+DESCRIPTION :
+Sets the scene viewer tumble rate.
+==============================================================================*/
+
+int Cmiss_scene_viewer_get_zoom_rate(Cmiss_scene_viewer_id scene_viewer,
+	double *zoom_rate);
+/*******************************************************************************
+LAST MODIFIED : 4 February 2005
+
+DESCRIPTION :
+Gets the scene viewer zoom rate.
+==============================================================================*/
+
+int Cmiss_scene_viewer_set_zoom_rate(Cmiss_scene_viewer_id scene_viewer,
+	double zoom_rate);
+/*******************************************************************************
+LAST MODIFIED : 4 February 2005
+
+DESCRIPTION :
+Sets the scene viewer zoom rate.
+==============================================================================*/
+
 int Cmiss_scene_viewer_get_freespin_tumble_angle(Cmiss_scene_viewer_id scene_viewer,
 	double *tumble_angle);
 /*******************************************************************************
