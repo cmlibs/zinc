@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : import_finite_element.h
 
-LAST MODIFIED : 6 September 1999
+LAST MODIFIED : 6 March 2000
 
 DESCRIPTION :
 The function prototypes for importing finite element data, from a file or cmiss
@@ -10,6 +10,7 @@ The function prototypes for importing finite element data, from a file or cmiss
 #if !defined (IMPORT_FINITE_ELEMENT_H)
 #define IMPORT_FINITE_ELEMENT_H
 
+#include <stdio.h>
 #include "finite_element/finite_element.h"
 
 /*

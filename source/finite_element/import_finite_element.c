@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : import_finite_element.c
 
-LAST MODIFIED : 29 November 1999
+LAST MODIFIED : 6 March 2000
 
 DESCRIPTION :
 The function for importing finite element data, from a file or CMISS (via a
@@ -9,10 +9,10 @@ socket) into the graphical interface to CMISS.
 ???DB.  Not accessing and deaccessing FE_basis's properly.
 ==============================================================================*/
 #include <ctype.h>
-#include <stdio.h>
 #include "finite_element/finite_element.h"
 #include "finite_element/import_finite_element.h"
 #include "general/debug.h"
+#include "general/myio.h"
 #include "general/mystring.h"
 #include "general/object.h"
 #include "user_interface/message.h"
@@ -32,8 +32,7 @@ Module variables
 Module functions
 ----------------
 */
-
-#if defined(OLD_CODE)
+#if defined (OLD_CODE)
 static int read_FE_value_array(FILE *input_file,int *number_of_values,
 	FE_value **values)
 /*******************************************************************************
@@ -102,12 +101,13 @@ number_of_values in the array; the real values follow.
 
 	return (return_code);
 } /* read_FE_value_array */
-#endif /* OLD_CODE*/
+#endif /* defined (OLD_CODE) */
+
 static int read_element_xi_value(FILE *input_file,
-	struct MANAGER(FE_element) *element_manager,
-	struct FE_element **element,FE_value *xi)
+	struct MANAGER(FE_element) *element_manager,struct FE_element **element,
+	FE_value *xi)
 /*******************************************************************************
-LAST MODIFIED : 22 September 1999
+LAST MODIFIED : 6 March 2000
 
 DESCRIPTION :
 Reads an element:xi position in from the <input_file> in the format:
@@ -155,12 +155,18 @@ E<lement>/F<ace>/L<ine> ELEMENT_NUMBER DIMENSION xi1 xi2... xiDIMENSION
 							(dimension<=MAXIMUM_ELEMENT_XI_DIMENSIONS)&&
 							(dimension == (*element)->shape->dimension))
 						{
-							for (k=0;k<dimension;k++)
+							k=0;
+							while (return_code&&(k<dimension))
 							{
-								if (1!=fscanf(input_file,FE_VALUE_INPUT_STRING,&(xi[k])))
+								if (1==fscanf(input_file,FE_VALUE_INPUT_STRING,&(xi[k])))
+								{
+									k++;
+								}
+								else
 								{
 									display_message(ERROR_MESSAGE,
-										"read_element_xi_value.  Missing xi value(s)");
+										"read_element_xi_value.  Missing %d xi value(s).  Line %d",
+										k,get_line_number(input_file));
 									return_code=0;
 								}
 							}
@@ -168,31 +174,35 @@ E<lement>/F<ace>/L<ine> ELEMENT_NUMBER DIMENSION xi1 xi2... xiDIMENSION
 						else
 						{
 							display_message(ERROR_MESSAGE,"read_element_xi_value.  "
-								"Invalid dimension (%d) for %s %d; should be %d",
+								"Invalid dimension (%d) for %s %d - should be %d.  Line %d",
 								dimension,CM_element_type_string(cm.type),cm.number,
-								(*element)->shape->dimension);
+								(*element)->shape->dimension,get_line_number(input_file));
 							return_code=0;
 						}
 					}
 					else
 					{
 						display_message(ERROR_MESSAGE,"read_element_xi_value.  "
-							"Could not find %s %d",CM_element_type_string(cm.type),cm.number);
+							"Could not find %s %d.  Line %d",
+							CM_element_type_string(cm.type),cm.number,
+							get_line_number(input_file));
 						return_code=0;
 					}
 				}
 				else
 				{
 					display_message(ERROR_MESSAGE,"read_element_xi_value.  "
-						"Missing %s number",CM_element_type_string(cm.type));
+						"Missing %s number.  Line %d",
+						CM_element_type_string(cm.type),get_line_number(input_file));
 					return_code=0;
 				}
 			}
 		}
 		else
 		{
-			display_message(ERROR_MESSAGE,
-				"read_element_xi_value.  Missing element type");
+			display_message(ERROR_MESSAGE,"read_element_xi_value.  "
+				"Missing element type.  Line %d",
+				get_line_number(input_file));
 			return_code=0;
 		}
 	}
@@ -209,7 +219,7 @@ E<lement>/F<ace>/L<ine> ELEMENT_NUMBER DIMENSION xi1 xi2... xiDIMENSION
 
 static int read_string_value(FILE *input_file,char **string_address)
 /*******************************************************************************
-LAST MODIFIED : 14 September 1999
+LAST MODIFIED : 6 March 2000
 
 DESCRIPTION :
 Returns an allocated string with the next contiguous block (length>0) of
@@ -220,7 +230,7 @@ followed by whitespace or EOF. Repeat that quote mark to put it once in the
 string.
 ==============================================================================*/
 {
-	char* the_string;
+	char *the_string;
 	int allocated_length,length,quote_mark,reading_token,return_code,this_char;
 
 	ENTER(read_string_value);
@@ -385,13 +395,15 @@ not have any component names; these must be set by the calling function.
 				field_name[i]='\0';
 				if (0==i)
 				{
-					display_message(ERROR_MESSAGE,"read_FE_field.  No field name");
+					display_message(ERROR_MESSAGE,"read_FE_field.  "
+						"No field name.  Line %d",get_line_number(input_file));
 					return_code=0;
 				}
 			}
 			else
 			{
-				display_message(ERROR_MESSAGE,"read_FE_field.  Missing field name");
+				display_message(ERROR_MESSAGE,"read_FE_field.  "
+					"Missing field name.  Line %d",get_line_number(input_file));
 				return_code=0;
 			}
 		}
@@ -426,9 +438,9 @@ not have any component names; these must be set by the calling function.
 			}
 			else
 			{
-				display_message(ERROR_MESSAGE,
-					"read_FE_field.  Field '%s' has unknown CM field type '%s'",
-					field_name,next_block);
+				display_message(ERROR_MESSAGE,"read_FE_field.  "
+					"Field '%s' has unknown CM field type '%s'.  Line %d",field_name,
+					next_block,get_line_number(input_file));
 				return_code=0;
 			}
 		}
@@ -461,9 +473,9 @@ not have any component names; these must be set by the calling function.
 					(1==fscanf(input_file,", #Values=%d",&number_of_indexed_values))&&
 					(0<number_of_indexed_values)))
 				{
-					display_message(ERROR_MESSAGE,
-						"read_FE_field.  Field '%s' missing indexing information",
-						field_name);
+					display_message(ERROR_MESSAGE,"read_FE_field.  "
+						"Field '%s' missing indexing information.  Line %d",field_name,
+						get_line_number(input_file));
 					return_code=0;
 				}
 				fscanf(input_file,", ");
@@ -506,7 +518,8 @@ not have any component names; these must be set by the calling function.
 			{
 				coordinate_system.type=SPHERICAL_POLAR;
 			}
-			else if (fuzzy_string_compare_same_length(next_block,"prolate spheroidal"))
+			else if (fuzzy_string_compare_same_length(next_block,
+				"prolate spheroidal"))
 			{
 				coordinate_system.type=PROLATE_SPHEROIDAL;
 				fscanf(input_file," focus=");
@@ -533,7 +546,7 @@ not have any component names; these must be set by the calling function.
 				coordinate_system.type=FIBRE;
 				value_type=FE_VALUE_VALUE;
 			}
-			if (coordinate_system.type != NOT_APPLICABLE)
+			if (NOT_APPLICABLE!=coordinate_system.type)
 			{
 				DEALLOCATE(next_block);
 				if (return_code)
@@ -560,14 +573,14 @@ not have any component names; these must be set by the calling function.
 				if (coordinate_system.type != NOT_APPLICABLE)
 				{
 					/* for backwards compatibility default to FE_VALUE_VALUE if
-						 coordinate system specified */
+						coordinate system specified */
 					value_type=FE_VALUE_VALUE;
 				}
 				else
 				{
-					display_message(ERROR_MESSAGE,
-						"read_FE_field.  Field '%s' has unknown value_type %s",
-						field_name,next_block);
+					display_message(ERROR_MESSAGE,"read_FE_field.  "
+						"Field '%s' has unknown value_type %s.  Line %d",field_name,
+						next_block,get_line_number(input_file));
 					return_code=0;
 				}
 			}
@@ -590,8 +603,9 @@ not have any component names; these must be set by the calling function.
 			if (!((1==sscanf(next_block," #Components=%d",
 				&number_of_components))&&(0<number_of_components)))
 			{
-				display_message(ERROR_MESSAGE,
-					"read_FE_field.  Field '%s' missing #Components",field_name);
+				display_message(ERROR_MESSAGE,"read_FE_field.  "
+					"Field '%s' missing #Components.  Line %d",field_name,
+					get_line_number(input_file));
 				return_code=0;
 			}
 		}
@@ -3451,7 +3465,7 @@ int read_FE_node_group_with_order(FILE *input_file,
 	struct MANAGER(GROUP(FE_element)) *element_group_manager,
 	struct FE_node_order_info *node_order_info)
 /*******************************************************************************
-LAST MODIFIED : 17 November 1999
+LAST MODIFIED : 6 March 2000
 
 DESCRIPTION :
 Reads node groups from an <input_file> or the socket (if <input_file> is NULL).
@@ -3499,7 +3513,8 @@ in the order of the file.
 		}
 		else
 		{
-			display_message(ERROR_MESSAGE,"read_FE_node_group_with_order.  Missing input_file");
+			display_message(ERROR_MESSAGE,
+				"read_FE_node_group_with_order.  Missing input_file");
 			return_code=0;
 		}
 		if (return_code)
@@ -3579,7 +3594,8 @@ in the order of the file.
 							else
 							{
 								display_message(ERROR_MESSAGE,
-									"Error reading node group name from file");
+									"Error reading node group name from file.  Line %d",
+									get_line_number(input_file));
 								return_code=0;
 							}
 						}
@@ -3700,7 +3716,7 @@ in the order of the file.
 											if (!ADD_OBJECT_TO_GROUP(FE_node)(node,existing_group))
 											{
 												display_message(ERROR_MESSAGE,
-									"read_FE_node_group_with_order.  Could not add node to existing_group");
+													"read_FE_node_group_with_order.  Could not add node to existing_group");
 												REMOVE_OBJECT_FROM_GROUP(FE_node)(node,nodes_in_file);
 												REMOVE_OBJECT_FROM_MANAGER(FE_node)(node,node_manager);
 												node=(struct FE_node *)NULL;
@@ -3757,14 +3773,17 @@ in the order of the file.
 				{
 					if (read_string(input_file,"[^\n]",&temp_string))
 					{
-						display_message(ERROR_MESSAGE,"Invalid flag.  Line %c%s",
+						display_message(ERROR_MESSAGE,
+							"Invalid flag \'%c\' in node file.  Line %d \'%c%s\'",
+							group_field_node_flag,get_line_number(input_file),
 							group_field_node_flag,temp_string);
 						DEALLOCATE(temp_string);
 					}
 					else
 					{
-						display_message(ERROR_MESSAGE,"Invalid flag %c",
-							group_field_node_flag);
+						display_message(ERROR_MESSAGE,
+							"Invalid flag \'%c\' in node file.  Line %d",
+							group_field_node_flag,get_line_number(input_file));
 					}
 					return_code=0;
 				} break;
@@ -3821,12 +3840,9 @@ node groups are updated to contain nodes used by elements in associated group.
 	int return_code;
 
 	ENTER(read_FE_node_group);
-
-	return_code = read_FE_node_group_with_order(input_file,
-		fe_field_manager, node_manager, element_manager,
-		node_group_manager, data_group_manager, element_group_manager,
-		(struct FE_node_order_info *)NULL);
-
+	return_code=read_FE_node_group_with_order(input_file,fe_field_manager,
+		node_manager,element_manager,node_group_manager,data_group_manager,
+		element_group_manager,(struct FE_node_order_info *)NULL);
 	LEAVE;
 
 	return (return_code);
@@ -3890,7 +3906,7 @@ int read_FE_element_group(FILE *input_file,
 	struct MANAGER(GROUP(FE_node)) *data_group_manager,
 	struct MANAGER(FE_basis) *basis_manager)
 /*******************************************************************************
-LAST MODIFIED : 12 October 1999
+LAST MODIFIED : 6 March 2000
 
 DESCRIPTION :
 Reads an element group from an <input_file> or the socket (if <input_file> is
@@ -4074,7 +4090,8 @@ node groups are updated to contain nodes used by elements in associated group.
 							else
 							{
 								display_message(ERROR_MESSAGE,"read_FE_element_group.  "
-									"Error reading element group name from file");
+									"Error reading element group name from file.  Line %d",
+									get_line_number(input_file));
 								return_code=0;
 							}
 						}
@@ -4285,14 +4302,16 @@ node groups are updated to contain nodes used by elements in associated group.
 					if (read_string(input_file,"[^\n]",&temp_string))
 					{
 						display_message(ERROR_MESSAGE,
-							"Invalid flag in element file.  Line %c%s",
+							"Invalid flag \'%c\' in element file.  Line %d \'%c%s\'",
+							group_field_shape_element_flag,get_line_number(input_file),
 							group_field_shape_element_flag,temp_string);
 						DEALLOCATE(temp_string);
 					}
 					else
 					{
-						display_message(ERROR_MESSAGE,"Invalid flag %c in element file",
-							group_field_shape_element_flag);
+						display_message(ERROR_MESSAGE,
+							"Invalid flag \'%c\' in element file.  Line %d",
+							group_field_shape_element_flag,get_line_number(input_file));
 					}
 					return_code=0;
 				} break;
@@ -4379,5 +4398,3 @@ Reads an element group from a file.
 
 	return (return_code);
 } /* file_read_FE_element_group */
-
-

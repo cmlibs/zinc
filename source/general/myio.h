@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : myio.h
 
-LAST MODIFIED : 21 April 1997
+LAST MODIFIED : 6 March 2000
 
 DESCRIPTION :
 Some additions/modifications to stdio.
@@ -15,6 +15,24 @@ Some additions/modifications to stdio.
 #if defined (WINDOWS)
 #define __BYTE_ORDER 1234
 #endif /* defined (WINDOWS) */
+
+/*
+Global macros
+-------------
+*/
+#if defined (__BYTE_ORDER) && (1234==__BYTE_ORDER)
+#define BINARY_FILE_READ( char_ptr,sizeof_type,count,binary_file ) \
+fread_little_to_big_endian(char_ptr,sizeof_type,count,binary_file)
+
+#define BINARY_FILE_WRITE( char_ptr,sizeof_type,count,binary_file ) \
+fwrite_big_to_little_endian(char_ptr,sizeof_type,count,binary_file)
+#else /* defined (__BYTE_ORDER) && (1234==__BYTE_ORDER) */
+#define BINARY_FILE_READ( char_ptr,sizeof_type,count,binary_file ) \
+fread(char_ptr,sizeof_type,count,binary_file)
+
+#define BINARY_FILE_WRITE( char_ptr,sizeof_type,count,binary_file ) \
+fwrite(char_ptr,sizeof_type,count,binary_file)
+#endif /* defined (__BYTE_ORDER) && (1234==__BYTE_ORDER) */
 
 /*
 Global functions
@@ -38,23 +56,13 @@ LAST MODIFIED : 4 September 1995
 DESCRIPTION :
 fwrites the little endian form of <char_ptr>.
 ==============================================================================*/
-#endif
+#endif /* defined (__BYTE_ORDER) && (1234==__BYTE_ORDER) */
 
-/*
-Global macros
--------------
-*/
-#if defined (__BYTE_ORDER) && (1234==__BYTE_ORDER)
-#define BINARY_FILE_READ( char_ptr,sizeof_type,count,binary_file ) \
-fread_little_to_big_endian(char_ptr,sizeof_type,count,binary_file)
+int get_line_number(FILE *stream);
+/*******************************************************************************
+LAST MODIFIED : 6 March 2000
 
-#define BINARY_FILE_WRITE( char_ptr,sizeof_type,count,binary_file ) \
-fwrite_big_to_little_endian(char_ptr,sizeof_type,count,binary_file)
-#else
-#define BINARY_FILE_READ( char_ptr,sizeof_type,count,binary_file ) \
-fread(char_ptr,sizeof_type,count,binary_file)
-
-#define BINARY_FILE_WRITE( char_ptr,sizeof_type,count,binary_file ) \
-fwrite(char_ptr,sizeof_type,count,binary_file)
-#endif
-#endif
+DESCRIPTION :
+Function for calculating the current line in a file.
+==============================================================================*/
+#endif /* !defined (MYIO_H) */

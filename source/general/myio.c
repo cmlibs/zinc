@@ -1,12 +1,13 @@
 /*******************************************************************************
 FILE : myio.c
 
-LAST MODIFIED : 24 December 1996
+LAST MODIFIED : 6 March 2000
 
 DESCRIPTION :
 Some additions/modifications to stdio.
 ==============================================================================*/
 #include <stddef.h>
+#include <stdio.h>
 #include "general/myio.h"
 #include "general/debug.h"
 
@@ -102,4 +103,38 @@ fwrites the little endian form of <char_ptr>.
 
 	return (fwrite_result);
 } /* fwrite_big_to_little_endian */
-#endif
+#endif /* defined (__BYTE_ORDER) && (1234==__BYTE_ORDER) */
+
+int get_line_number(FILE *stream)
+/*******************************************************************************
+LAST MODIFIED : 6 March 2000
+
+DESCRIPTION :
+Function for calculating the current line in a file.
+==============================================================================*/
+{
+	int c,line_number;
+	fpos_t location,temp_location;
+
+	ENTER(get_line_number);
+	line_number=0;
+	if (stream)
+	{
+		fgetpos(stream,&location);
+		rewind(stream);
+		fgetpos(stream,&temp_location);
+		while (temp_location<=location)
+		{
+			do
+			{
+				c=fgetc(stream);
+			} while (('\n'!=c)&&(EOF!=c));
+			fgetpos(stream,&temp_location);
+			line_number++;
+		}
+		fsetpos(stream,&location);
+	}
+	LEAVE;
+
+	return (line_number);
+} /* get_line_number */
