@@ -257,17 +257,52 @@ Element_point_ranges_identifier_is_valid.
 	return(return_code);
 } /* Element_point_ranges_identifier_element_point_number_is_valid */
 
+PROTOTYPE_COPY_OBJECT_FUNCTION(Element_point_ranges_identifier)
+/*******************************************************************************
+LAST MODIFIED : 31 May 2000
+
+DESCRIPTION :
+syntax: COPY(Element_point_ranges_identifier)(destination,source)
+Copies the contents of source to destination.
+Note! No accessing of elements is assumed or performed by this function; it is
+purely a copy. [DE]ACCESSing must be handled by calling function if required.
+==============================================================================*/
+{
+	int i,return_code;
+
+	ENTER(COPY(Element_point_ranges_identifier));
+	if (destination&&source&&(destination!=source))
+	{
+		destination->element=source->element;
+		destination->xi_discretization_mode=source->xi_discretization_mode;
+		for (i=0;i<MAXIMUM_ELEMENT_XI_DIMENSIONS;i++)
+		{
+			destination->number_in_xi[i]=source->number_in_xi[i];
+		}
+		return_code=1;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"COPY(Element_point_ranges_identifier).  Invalid argument(s)");
+		/* error defaults to the same? */
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* COPY(Element_point_ranges_identifier) */
+
 struct Element_point_ranges *CREATE(Element_point_ranges)(
 	struct Element_point_ranges_identifier *identifier)
 /*******************************************************************************
-LAST MODIFIED : 25 May 2000
+LAST MODIFIED : 31 May 2000
 
 DESCRIPTION :
 Creates an Element_point_ranges object that can store ranges of points in the
 element:Xi_discretization_mode of the <identifier>.
 ==============================================================================*/
 {
-	int dimension,i;
 	struct Element_point_ranges *element_point_ranges;
 
 	ENTER(CREATE(Element_point_ranges));
@@ -277,16 +312,12 @@ element:Xi_discretization_mode of the <identifier>.
 		if (ALLOCATE(element_point_ranges,struct Element_point_ranges,1)&&
 			(element_point_ranges->ranges=CREATE(Multi_range)()))
 		{
-			element_point_ranges->id.element=ACCESS(FE_element)(identifier->element);
-			element_point_ranges->id.xi_discretization_mode=
-				identifier->xi_discretization_mode;
-			dimension=get_FE_element_dimension(identifier->element);
-			for (i=0;i<dimension;i++)
-			{
-				element_point_ranges->id.number_in_xi[i]=identifier->number_in_xi[i];
-			}
 			/* ensure identifier points at id for indexed lists */
 			element_point_ranges->identifier = &(element_point_ranges->id);
+			COPY(Element_point_ranges_identifier)(
+				element_point_ranges->identifier,identifier);
+			/* struct Element_point_ranges ACCESSes the element in the identifier */
+			ACCESS(FE_element)(element_point_ranges->identifier->element);
 			element_point_ranges->access_count=0;
 		}
 		else

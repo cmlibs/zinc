@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : element_point_ranges.h
 
-LAST MODIFIED : 30 May 2000
+LAST MODIFIED : 31 May 2000
 
 DESCRIPTION :
 Structure for storing ranges of points in elements according to the various
@@ -98,6 +98,8 @@ Returns true if <element_point_number> is in the number_in_xi range for
 <identifier>. Assumes <identifier> is already validated by
 Element_point_ranges_identifier_is_valid.
 ==============================================================================*/
+
+PROTOTYPE_COPY_OBJECT_FUNCTION(Element_point_ranges_identifier);
 
 struct Element_point_ranges *CREATE(Element_point_ranges)(
 	struct Element_point_ranges_identifier *identifier);
