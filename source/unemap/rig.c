@@ -10,6 +10,7 @@ Contains function definitions for measurement rigs.
 #include <stddef.h>
 #include <string.h>
 #include <math.h>
+#include <ieeefp.h>
 #if defined (WIN32)
 #include <float.h>
 #endif /* defined (WIN32) */
@@ -4045,18 +4046,13 @@ the <input_file>.
 {
 	enum Region_type rig_type;
 	enum Signal_value_type signal_value_type;
-	float frequency;
-	int fread_result,index,number_of_devices,number_of_samples,number_of_signals,
+	float frequency,*buffer_value;
+	int fread_result,i,index,number_of_devices,number_of_samples,number_of_signals,
 		return_code,temp_int;
 	struct Device **device;
 	struct Rig *rig;
 	struct Signal *signal;
 	struct Signal_buffer *buffer;
-#if defined (NOT_ANSI)
-/*???DB.  isnan is not ansi? */
-	float *buffer_value;
-	int i;
-#endif /* defined (NOT_ANSI) */
 
 	ENTER(read_signal_file);
 	/* check the arguments */
@@ -4123,27 +4119,34 @@ the <input_file>.
 												fread_result=BINARY_FILE_READ((char *)buffer->signals.
 													float_values,sizeof(float),
 													number_of_samples*number_of_signals,input_file);
-#if defined (NOT_ANSI)
-/*???DB.  isnan is not ansi? */
 												/* check signal values.  If it's not a valid float, set
-													it to 0  */
+													 it to 0  */																								
 												buffer_value=buffer->signals.float_values;
 												for (i=0;i<number_of_samples*number_of_signals;i++)
-												{
+												{			
+#if defined (OLD_CODE)
 #if defined (WIN32)
 													if (_isnan((double)(*buffer_value)))
 #else /* defined (WIN32) */
-													if (isnan((double)(*buffer_value)))
+														if (isnan((double)(*buffer_value)))
 #endif /* defined (WIN32) */
+														{
+															*buffer_value=0.0;
+															display_message(ERROR_MESSAGE,
+																"read_signal_file. signal value is not "
+																"a number. Set to 0 ");
+														}
+#endif /* defined (OLD_CODE) */
+													/* check if data is valid finite() checks inf and nan*/
+													if(!finite( (double)(*buffer_value)  ))
 													{
 														*buffer_value=0.0;
 														display_message(ERROR_MESSAGE,
-															"read_signal_file. signal value is not "
-															"a number. Set to 0 ");
+															"read_signal_file.Signal value is infinite or not a number. "
+															"Set to 0 ");
 													}
 													buffer_value++;
 												}
-#endif /* defined (NOT_ANSI) */
 											} break;
 										}
 										if (fread_result==number_of_samples*number_of_signals)

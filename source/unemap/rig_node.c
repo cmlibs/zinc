@@ -10,6 +10,7 @@ the rig and signal information. rather than special structures.
 #include <stddef.h>
 #include <string.h>
 #include <math.h>
+#include <ieeefp.h>
 #include "finite_element/finite_element.h"
 #include "general/debug.h"
 #include "general/geometry.h"
@@ -2304,12 +2305,22 @@ Doesn't load in auxilliary devices that are linear combinations of other channel
 											buffer_value=buffer_signals_float;
 											for(i=0;i<number_of_samples*number_of_signals;i++)
 											{											
+#if defined (OLD_CODE)										
 												if(isnan((double)(*buffer_value)))
 												{
 													*buffer_value=0.0;	
 													display_message(ERROR_MESSAGE,
 														"read_signal_FE_node_group. signal value is not "
 														"a number. Set to 0 ");											
+												}
+#endif /* defined (OLD_CODE)*/
+												/* check if data is valid finite() checks inf and nan*/
+												if(!finite( (double)(*buffer_value)  ))
+												{
+													*buffer_value=0.0;
+													display_message(ERROR_MESSAGE,
+														"read_signal_FE_node_group. signal value is infinite or not a number. "
+														"Set to 0 ");
 												}
 												buffer_value++;
 											}
