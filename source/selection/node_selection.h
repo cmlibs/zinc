@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : node_selection.h
 
-LAST MODIFIED : 21 March 2000
+LAST MODIFIED : 4 July 2000
 
 DESCRIPTION :
 Global store of selected nodes for group actions and highlighting.
@@ -145,6 +145,15 @@ If <node> is in <node_selection> it is removed and added to the
 newly_unselected_node_list. Note it is added to this list if not currently
 selected. Also ensures it is removed from the newly_selected_node_list if it is
 currently there. Calls FE_node_selection_update.
+==============================================================================*/
+
+int FE_node_unselect_in_FE_node_selection(struct FE_node *node,
+	void *node_selection_void);
+/*******************************************************************************
+LAST MODIFIED : 4 July 2000
+
+DESCRIPTION :
+FE_node iterator version of FE_node_selection_unselect_node.
 ==============================================================================*/
 
 struct LIST(FE_node) *FE_node_selection_get_node_list(

@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : node_selection.c
 
-LAST MODIFIED : 23 March 2000
+LAST MODIFIED : 4 July 2000
 
 DESCRIPTION :
 Global store of selected nodes for group actions and highlighting.
@@ -462,6 +462,25 @@ currently there. Calls FE_node_selection_update.
 
 	return (return_code);
 } /* FE_node_selection_unselect_node */
+
+int FE_node_unselect_in_FE_node_selection(struct FE_node *node,
+	void *node_selection_void)
+/*******************************************************************************
+LAST MODIFIED : 4 July 2000
+
+DESCRIPTION :
+FE_node iterator version of FE_node_selection_unselect_node.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(FE_node_unselect_in_FE_node_selection);
+	return_code=FE_node_selection_unselect_node(
+		(struct FE_node_selection *)node_selection_void,node);
+	LEAVE;
+
+	return (return_code);
+} /* FE_node_unselect_in_FE_node_selection */
 
 struct LIST(FE_node) *FE_node_selection_get_node_list(
 	struct FE_node_selection *node_selection)
