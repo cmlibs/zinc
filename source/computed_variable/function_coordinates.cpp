@@ -1,7 +1,7 @@
 //******************************************************************************
 // FILE : function_coordinates.cpp
 //
-// LAST MODIFIED : 13 January 2005
+// LAST MODIFIED : 1 March 2005
 //
 // DESCRIPTION :
 //==============================================================================
@@ -34,7 +34,7 @@ typedef boost::intrusive_ptr<Function_variable_matrix_rectangular_cartesian>
 class Function_variable_matrix_rectangular_cartesian :
 	public Function_variable_matrix<Scalar>
 //******************************************************************************
-// LAST MODIFIED : 22 November 2004
+// LAST MODIFIED : 1 March 2005
 //
 // DESCRIPTION :
 //==============================================================================
@@ -46,13 +46,20 @@ class Function_variable_matrix_rectangular_cartesian :
 			const Function_prolate_spheroidal_to_rectangular_cartesian_handle&
 			function_prolate_spheroidal_to_rectangular_cartesian,
 			Function_size_type component_number=0):Function_variable_matrix<Scalar>(
-			function_prolate_spheroidal_to_rectangular_cartesian,component_number,1)
-			{};
+			function_prolate_spheroidal_to_rectangular_cartesian,
+#if defined (Function_variable_matrix_HAS_INPUT_ATTRIBUTE)
+			false,
+#endif // defined (Function_variable_matrix_HAS_INPUT_ATTRIBUTE)
+			component_number,1){};
 		Function_variable_matrix_rectangular_cartesian(
 			const Function_prolate_spheroidal_to_rectangular_cartesian_handle&
 			function_prolate_spheroidal_to_rectangular_cartesian,
 			const std::string component_name):Function_variable_matrix<Scalar>(
-			function_prolate_spheroidal_to_rectangular_cartesian,0,1)
+			function_prolate_spheroidal_to_rectangular_cartesian,
+#if defined (Function_variable_matrix_HAS_INPUT_ATTRIBUTE)
+			false,
+#endif // defined (Function_variable_matrix_HAS_INPUT_ATTRIBUTE)
+			0,1)
 		{
 			if (function_prolate_spheroidal_to_rectangular_cartesian)
 			{
@@ -284,7 +291,7 @@ typedef boost::intrusive_ptr<Function_variable_matrix_prolate_spheroidal>
 class Function_variable_matrix_prolate_spheroidal :
 	public Function_variable_matrix<Scalar>
 //******************************************************************************
-// LAST MODIFIED : 1 September 2004
+// LAST MODIFIED : 1 March 2005
 //
 // DESCRIPTION :
 // component  number
@@ -300,13 +307,21 @@ class Function_variable_matrix_prolate_spheroidal :
 			const Function_prolate_spheroidal_to_rectangular_cartesian_handle&
 			function_prolate_spheroidal_to_rectangular_cartesian,
 			Function_size_type component_number):Function_variable_matrix<Scalar>(
-			function_prolate_spheroidal_to_rectangular_cartesian,component_number,1)
+			function_prolate_spheroidal_to_rectangular_cartesian,
+#if defined (Function_variable_matrix_HAS_INPUT_ATTRIBUTE)
+			true,
+#endif // defined (Function_variable_matrix_HAS_INPUT_ATTRIBUTE)
+			component_number,1)
 		{};
 		Function_variable_matrix_prolate_spheroidal(
 			const Function_prolate_spheroidal_to_rectangular_cartesian_handle&
 			function_prolate_spheroidal_to_rectangular_cartesian,
 			const std::string component_name):Function_variable_matrix<Scalar>(
-			function_prolate_spheroidal_to_rectangular_cartesian,0,1)
+			function_prolate_spheroidal_to_rectangular_cartesian,
+#if defined (Function_variable_matrix_HAS_INPUT_ATTRIBUTE)
+			true,
+#endif // defined (Function_variable_matrix_HAS_INPUT_ATTRIBUTE)
+			0,1)
 		{
 			if (function_prolate_spheroidal_to_rectangular_cartesian)
 			{
@@ -461,7 +476,7 @@ typedef boost::intrusive_ptr<Function_variable_matrix_focus>
 
 class Function_variable_matrix_focus : public Function_variable_matrix<Scalar>
 //******************************************************************************
-// LAST MODIFIED : 6 August 2004
+// LAST MODIFIED : 1 March 2005
 //
 // DESCRIPTION :
 //==============================================================================
@@ -473,7 +488,11 @@ class Function_variable_matrix_focus : public Function_variable_matrix<Scalar>
 			const Function_prolate_spheroidal_to_rectangular_cartesian_handle&
 			function_prolate_spheroidal_to_rectangular_cartesian):
 			Function_variable_matrix<Scalar>(
-			function_prolate_spheroidal_to_rectangular_cartesian,1,1){};
+			function_prolate_spheroidal_to_rectangular_cartesian,
+#if defined (Function_variable_matrix_HAS_INPUT_ATTRIBUTE)
+			true,
+#endif // defined (Function_variable_matrix_HAS_INPUT_ATTRIBUTE)
+			1,1){};
 		~Function_variable_matrix_focus(){};
 	// inherited
 	public:

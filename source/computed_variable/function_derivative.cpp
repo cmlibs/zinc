@@ -1,7 +1,7 @@
 //******************************************************************************
 // FILE : function_derivative.cpp
 //
-// LAST MODIFIED : 27 January 2005
+// LAST MODIFIED : 1 March 2005
 //
 // DESCRIPTION :
 //==============================================================================
@@ -1424,7 +1424,7 @@ Function_variable_iterator_representation_atomic_derivative::
 
 class Function_variable_derivative : public Function_variable_matrix<Scalar>
 //******************************************************************************
-// LAST MODIFIED : 13 January 2005
+// LAST MODIFIED : 1 March 2005
 //
 // DESCRIPTION :
 //==============================================================================
@@ -1434,11 +1434,19 @@ class Function_variable_derivative : public Function_variable_matrix<Scalar>
 		// constructor
 		Function_variable_derivative(
 			const Function_derivative_handle& function_derivative):
-			Function_variable_matrix<Scalar>(function_derivative){};
+			Function_variable_matrix<Scalar>(function_derivative
+#if defined (Function_variable_matrix_HAS_INPUT_ATTRIBUTE)
+			,false
+#endif // defined (Function_variable_matrix_HAS_INPUT_ATTRIBUTE)
+			){};
 		Function_variable_derivative(
 			const Function_derivative_handle& function_derivative,
 			const Function_size_type row,const Function_size_type column):
-			Function_variable_matrix<Scalar>(function_derivative,row,column){};
+			Function_variable_matrix<Scalar>(function_derivative,
+#if defined (Function_variable_matrix_HAS_INPUT_ATTRIBUTE)
+			false,
+#endif // defined (Function_variable_matrix_HAS_INPUT_ATTRIBUTE)
+			row,column){};
 		// destructor
 		~Function_variable_derivative(){};
 	// inherited
@@ -2316,7 +2324,7 @@ typedef boost::intrusive_ptr<Function_variable_derivatnew>
 class Function_variable_derivatnew :
 	public Function_variable_matrix<Scalar>
 //******************************************************************************
-// LAST MODIFIED : 21 January 2005
+// LAST MODIFIED : 1 March 2005
 //
 // DESCRIPTION :
 // <column> and <row> start from one when referencing a matrix entry.  Zero
@@ -2329,8 +2337,11 @@ class Function_variable_derivatnew :
 		Function_variable_derivatnew(
 			const Function_derivatnew_handle function_derivatnew,
 			const std::list<Function_variable_handle>& partial_independent_variables):
-			Function_variable_matrix<Scalar>(function_derivatnew,0,0),
-			matrix_reverse_index(0),number_of_columns_private(0),
+			Function_variable_matrix<Scalar>(function_derivatnew,
+#if defined (Function_variable_matrix_HAS_INPUT_ATTRIBUTE)
+			false,
+#endif // defined (Function_variable_matrix_HAS_INPUT_ATTRIBUTE)
+			0,0),matrix_reverse_index(0),number_of_columns_private(0),
 			number_of_rows_private(0),
 			partial_independent_variables(partial_independent_variables)
 		{
@@ -2368,8 +2379,11 @@ class Function_variable_derivatnew :
 			const Function_derivatnew_handle function_derivatnew,
 			const std::list<Function_variable_handle>& partial_independent_variables,
 			const Function_size_type row,const Function_size_type column):
-			Function_variable_matrix<Scalar>(function_derivatnew,row,column),
-			matrix_reverse_index(0),number_of_columns_private(0),
+			Function_variable_matrix<Scalar>(function_derivatnew,
+#if defined (Function_variable_matrix_HAS_INPUT_ATTRIBUTE)
+			false,
+#endif // defined (Function_variable_matrix_HAS_INPUT_ATTRIBUTE)
+			row,column),matrix_reverse_index(0),number_of_columns_private(0),
 			number_of_rows_private(0),
 			partial_independent_variables(partial_independent_variables)
 		{
@@ -2609,13 +2623,20 @@ class Function_variable_derivatnew :
 				boost::dynamic_pointer_cast<Function_derivatnew,Function>(
 				function());
 			Function_size_type i;
+			Function_variable_handle local_dependent_variable;
 			std::list<Function_variable_handle>::iterator
 				partial_independent_variable_iterator;
 
 			// recalculate number of rows and columns
-			if (function_derivatnew)
+			//???DB.  Added evaluate() so that number_differentiable will be right.
+			//  Fixes one problem, but there ends up being a variable which is not
+			//  a variable_composition and uses Function_variable::evaluate.
+			//  Function_composition::evaluate is called an throws an exception
+			if (function_derivatnew&&
+				(local_dependent_variable=function_derivatnew->dependent_variable)&&
+				(local_dependent_variable->evaluate()))
 			{
-				number_of_rows_private=(function_derivatnew->dependent_variable)->
+				number_of_rows_private=local_dependent_variable->
 					number_differentiable();
 			}
 			else
