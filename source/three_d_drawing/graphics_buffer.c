@@ -2898,12 +2898,14 @@ DESCRIPTION :
 					buffer->context);
 				return_code = 1;
 			} break;
+#  if defined (USE_GLX_PBUFFER) || defined (GLX_SGIX_dmbuffer) || defined (GLX_SGIX_pbuffer)
 			case GRAPHICS_BUFFER_GLX_PBUFFER_TYPE:
 			{
 				glXMakeCurrent(buffer->display, buffer->glx_pbuffer,
 					buffer->context);
 				return_code = 1;
 			} break;
+#  endif /* defined (USE_GLX_PBUFFER) || defined (GLX_SGIX_dmbuffer) || defined (GLX_SGIX_pbuffer) */
 			case GRAPHICS_BUFFER_GLX_PIXMAP_TYPE:
 			{
 				glXMakeCurrent(buffer->display, buffer->glx_pixmap,
@@ -3373,11 +3375,13 @@ DESCRIPTION :
 				glXSwapBuffers(buffer->display, XtWindow(buffer->drawing_widget));
 				return_code = 1;
 			} break;
+#  if defined (USE_GLX_PBUFFER) || defined (GLX_SGIX_dmbuffer) || defined (GLX_SGIX_pbuffer)
 			case GRAPHICS_BUFFER_GLX_PBUFFER_TYPE:
 			{
 				glXSwapBuffers(buffer->display, buffer->glx_pbuffer);
 				return_code = 1;
 			} break;
+#  endif /* defined (USE_GLX_PBUFFER) || defined (GLX_SGIX_dmbuffer) || defined (GLX_SGIX_pbuffer) */
 			case GRAPHICS_BUFFER_GLX_PIXMAP_TYPE:
 			{
 				glXSwapBuffers(buffer->display, buffer->glx_pixmap);
@@ -3436,12 +3440,14 @@ made current) to be the GLX destination.
 		switch (buffer->type)
 		{
 #if defined (MOTIF)
+#  if defined (USE_GLX_PBUFFER) || defined (GLX_SGIX_dmbuffer) || defined (GLX_SGIX_pbuffer)
 			case GRAPHICS_BUFFER_GLX_PBUFFER_TYPE:
 			{
 				glXMakeContextCurrent(buffer->display, glXGetCurrentDrawable(),
 					buffer->glx_pbuffer, buffer->context);
 				return_code = 1;
 			} break;
+#  endif /* defined (USE_GLX_PBUFFER) || defined (GLX_SGIX_dmbuffer) || defined (GLX_SGIX_pbuffer) */
 #endif /* defined (MOTIF) */
 			default:
 			{
