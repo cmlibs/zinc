@@ -3014,6 +3014,68 @@ Assumes values_storage has already been allocated.
 } /* FE_node_field_initialise_value_storage */
 #endif /* defined (OLD_CODE) */
 
+static int FE_node_field_free_values_storage_arrays(
+	struct FE_node_field *node_field, void *start_of_values_storage_void)
+/*******************************************************************************
+LAST MODIFIED: 9 March 2005
+
+DESCRIPTION:
+Frees accesses and dynamically allocated memory in <start_of_values_storage> 
+for the FE_node_field.
+The <start_of_the_values_storage> address is passed so that the this function
+can be called from an interator, the <node> is not passed so this function can
+be used to deallocate parts of any values_storage.  The <values_storage> can
+be NULL if there are no GENERAL_FE_FIELDs defined on the node.
+Only certain value types, eg. arrays, strings, element_xi require this.
+==============================================================================*/
+{
+	enum Value_type value_type;
+	int i,number_of_components,number_of_values,return_code;
+	struct FE_node_field_component *component;
+	Value_storage *start_of_values_storage, *values_storage;
+
+	ENTER(FE_node_field_free_values_storage_arrays);
+	if (node_field&&node_field->field)
+	{
+		return_code = 1;
+		/* only general fields have node_field_components and can have
+			 values_storage at the node */
+		if (GENERAL_FE_FIELD==node_field->field->fe_field_type)
+		{
+			value_type = node_field->field->value_type;
+			number_of_components = node_field->field->number_of_components;
+			component = node_field->components;
+			for (i=0;i<number_of_components;i++)
+			{
+				if (start_of_values_storage=(Value_storage *)start_of_values_storage_void)
+				{
+					values_storage = start_of_values_storage + component->value;	
+					number_of_values=
+						(1+component->number_of_derivatives)*component->number_of_versions;
+					free_value_storage_array(values_storage,value_type,
+						node_field->time_sequence,number_of_values);
+					component++;
+				}
+				else
+				{
+					display_message(ERROR_MESSAGE,
+						"FE_node_field_free_values_storage_arrays. Invalid values storage");
+					return_code = 0;
+				}
+			}
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"FE_node_field_free_values_storage_arrays. Invalid arguments");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* FE_node_field_free_values_storage_arrays */
+
 struct FE_node_field_merge_values_storage_data
 {
 	Value_storage *new_values_storage;
@@ -3170,6 +3232,10 @@ Assumes component nodal values are consecutive and start at first component.
 							}
 							else
 							{
+								/* Release the storage of the old values.  The pointer is from the 
+									start of the values storage to make it work as a node_field iterator. */
+								FE_node_field_free_values_storage_arrays(old_node_field,
+									(void *)copy_data->old_values_storage);
 								return_code = copy_value_storage_array(destination, value_type,
 									old_node_field->time_sequence, add_node_field->time_sequence,
 									number_of_values, source);
@@ -3368,55 +3434,6 @@ and any arrays in values_storage.
 
 	return (return_code);
 } /* allocate_and_copy_FE_node_values_storage */
-
-static int FE_node_field_free_values_storage_arrays(
-	struct FE_node_field *node_field,void *node_void)
-/*******************************************************************************
-LAST MODIFIED: 20 October 1999
-
-DESCRIPTION:
-Frees accesses and dynamically allocated memory for the FE_node_field at node.
-Only certain value types, eg. arrays, strings, element_xi require this.
-==============================================================================*/
-{
-	enum Value_type value_type;
-	int i,number_of_components,number_of_values,return_code;
-	struct FE_node_field_component *component;
-	struct FE_node *node;
-	Value_storage *values_storage;
-
-	ENTER(FE_node_field_free_values_storage_arrays);
-	if (node_field&&node_field->field&&(node=(struct FE_node *)node_void))
-	{
-		return_code = 1;
-		/* only general fields have node_field_components and can have
-			 values_storage at the node */
-		if (GENERAL_FE_FIELD==node_field->field->fe_field_type)
-		{
-			value_type = node_field->field->value_type;
-			number_of_components = node_field->field->number_of_components;
-			component = node_field->components;
-			for (i=0;i<number_of_components;i++)
-			{
-				values_storage = node->values_storage + component->value;	
-				number_of_values=
-					(1+component->number_of_derivatives)*component->number_of_versions;
-				free_value_storage_array(values_storage,value_type,
-					node_field->time_sequence,number_of_values);
-				component++;
-			}
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"FE_node_field_free_values_storage_arrays. Invalid arguments");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* FE_node_field_free_values_storage_arrays */
 
 static int FE_node_field_is_coordinate_field(struct FE_node_field 
 	*node_field,void *dummy)
@@ -15653,7 +15670,7 @@ Frees the memory for the node, sets <*node_address> to NULL.
 			{
 				FOR_EACH_OBJECT_IN_LIST(FE_node_field)(
 					FE_node_field_free_values_storage_arrays,
-					(void *)node,node->fields->node_field_list);		
+					(void *)node->values_storage,node->fields->node_field_list);		
 				DEACCESS(FE_node_field_info)(&(node->fields));
 			}
 			DEALLOCATE(node->values_storage);
@@ -15700,7 +15717,7 @@ Creates an EXACT copy of the node.
 		{			
 			FOR_EACH_OBJECT_IN_LIST(FE_node_field)(
 				FE_node_field_free_values_storage_arrays,
-				(void *)destination,destination->fields->node_field_list);		
+				(void *)destination->values_storage,destination->fields->node_field_list);		
 		}
 		DEALLOCATE(destination->values_storage);
 
@@ -20849,7 +20866,8 @@ Function is atomic; <destination> is unchanged if <source> cannot be merged.
 									{			
 										FOR_EACH_OBJECT_IN_LIST(FE_node_field)(
 											FE_node_field_free_values_storage_arrays,
-											(void *)destination, destination_fields->node_field_list);
+											(void *)destination->values_storage, 
+											destination_fields->node_field_list);
 									}
 									DEALLOCATE(destination->values_storage);
 								}
@@ -21006,7 +21024,7 @@ Creates an EXACT copy of the node (without the identifier).
 			{
 				FOR_EACH_OBJECT_IN_LIST(FE_node_field)(
 					FE_node_field_free_values_storage_arrays,
-					(void *)destination,destination->fields->node_field_list);
+					(void *)destination->values_storage,destination->fields->node_field_list);
 				DEALLOCATE(destination->values_storage);
 			}
 			destination->values_storage=temp_values_storage;
@@ -21116,7 +21134,7 @@ Overwrites without merging.
 				{
 					FOR_EACH_OBJECT_IN_LIST(FE_node_field)(
 						FE_node_field_free_values_storage_arrays,
-						(void *)destination,destination->fields->node_field_list);
+						(void *)destination->values_storage,destination->fields->node_field_list);
 					DEALLOCATE(destination->values_storage);
 				}
 				destination->values_storage=temp_values_storage;
