@@ -77,9 +77,9 @@ int main(int argc, char *argv[])
 	int j;
 #endif /* (defined (BYTE_ORDER)) && (1234==BYTE_ORDER) */
 
-	if(argc != 3 && argc != 5)
+	if(argc != 3 && argc != 4)
 	{
-		printf("Usage: uid2uidh infile outfile\n");
+		printf("Usage: uid2uidh infile outfile [string_prefix_name]\n");
 	}
 	else
 	{
@@ -93,11 +93,18 @@ int main(int argc, char *argv[])
 				byte_count = 0;
 				data = 0;
 
-				strcpy(string_name, argv[1]);
-				string_ptr = basename(string_name);
-				if(dot_ptr = strchr(string_ptr, '.'))
+				if (argc == 4)
 				{
-					*dot_ptr = 0;
+					string_ptr = argv[3];
+				}
+				else
+				{
+					strcpy(string_name, argv[1]);
+					string_ptr = basename(string_name);
+					if(dot_ptr = strchr(string_ptr, '.'))
+					{
+						*dot_ptr = 0;
+					}
 				}
 
 				fprintf(outfile, "static char %s_uidh[] = \"", string_ptr);
