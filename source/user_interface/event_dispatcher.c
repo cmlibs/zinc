@@ -1140,6 +1140,7 @@ DESCRIPTION :
 		{
 			REACCESS(Event_dispatcher_idle_callback)(
 				&event_dispatcher->special_idle_callback, idle_callback);
+			event_dispatcher->special_idle_callback_pending = 1;
 		}
 		else
 		{
