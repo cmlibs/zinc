@@ -529,6 +529,127 @@ PROTOTYPE_FOR_EACH_OBJECT_IN_LIST_FUNCTION(object_type) \
 	return (return_code); \
 } /* FOR_EACH_OBJECT_IN_LIST(object_type) */
 
+#if defined (FULL_NAMES)
+#define LIST_IDENTIFIER_CHANGE_DATA( object_type , identifier ) \
+	list_identifier_change_data_ ## object_type ## identifier
+#else
+#define LIST_IDENTIFIER_CHANGE_DATA( object_type , identifier ) \
+	licd ## object_type ## identifier
+#endif
+
+#define DECLARE_LIST_IDENTIFIER_CHANGE_DATA( object_type , identifier ) \
+struct LIST_IDENTIFIER_CHANGE_DATA(object_type,identifier) \
+/***************************************************************************** \
+LAST MODIFIED : 21 December 2000 \
+\
+DESCRIPTION : \
+Data structure used by LIST_BEGIN/END_IDENTIFIER_CHANGE functions. \
+Should only be declared with manager functions. \
+============================================================================*/ \
+{ \
+	void *dummy; \
+} /* struct LIST_IDENTIFIER_CHANGE_DATA(object_type,identifier) */
+
+#if defined (FULL_NAMES)
+#define LIST_BEGIN_IDENTIFIER_CHANGE( object_type, identifier ) \
+	list_begin_identifier_change_ ## object_type ## identifier
+#else
+#define LIST_BEGIN_IDENTIFIER_CHANGE( object_type, identifier ) \
+	lbic ## object_type ## identifier
+#endif
+
+#define DECLARE_LIST_BEGIN_IDENTIFIER_CHANGE_FUNCTION( object_type , \
+	identifier ) \
+static struct LIST_IDENTIFIER_CHANGE_DATA(object_type,identifier) \
+	*LIST_BEGIN_IDENTIFIER_CHANGE(object_type,identifier) ( \
+	struct object_type *object) \
+/***************************************************************************** \
+LAST MODIFIED : 21 December 2000 \
+\
+DESCRIPTION : \
+Dummy version of equivalent function used by indexed lists. \
+Should only be declared with manager functions. \
+============================================================================*/ \
+{ \
+	struct LIST_IDENTIFIER_CHANGE_DATA(object_type,identifier) \
+		*identifier_change_data; \
+\
+	ENTER(LIST_BEGIN_IDENTIFIER_CHANGE(object_type,identifier)); \
+	if (object) \
+	{ \
+		if (ALLOCATE(identifier_change_data, \
+			struct LIST_IDENTIFIER_CHANGE_DATA(object_type, identifier), 1)) \
+		{ \
+			identifier_change_data->dummy = (void *)NULL; \
+		} \
+		else \
+		{ \
+			display_message(ERROR_MESSAGE, \
+				"LIST_BEGIN_IDENTIFIER_CHANGE(" #object_type "," #identifier \
+				").  Not enough memory"); \
+		} \
+	} \
+	else \
+	{ \
+		display_message(ERROR_MESSAGE, \
+			"LIST_BEGIN_IDENTIFIER_CHANGE(" #object_type "," #identifier \
+			").  Invalid argument(s)"); \
+		identifier_change_data = \
+			(struct LIST_IDENTIFIER_CHANGE_DATA(object_type,identifier) *)NULL; \
+	} \
+	LEAVE; \
+\
+	return (identifier_change_data); \
+} /* LIST_BEGIN_IDENTIFIER_CHANGE(object_type,identifier) */
+
+#if defined (FULL_NAMES)
+#define LIST_END_IDENTIFIER_CHANGE( object_type, identifier ) \
+	list_end_identifier_change_ ## object_type ## identifier
+#else
+#define LIST_END_IDENTIFIER_CHANGE( object_type, identifier ) \
+	leic ## object_type ## identifier
+#endif
+
+#define DECLARE_LIST_END_IDENTIFIER_CHANGE_FUNCTION( \
+	object_type , identifier ) \
+static int LIST_END_IDENTIFIER_CHANGE(object_type,identifier)( \
+	struct LIST_IDENTIFIER_CHANGE_DATA(object_type,identifier) \
+		**identifier_change_data_address) \
+/***************************************************************************** \
+LAST MODIFIED : 21 December 2000 \
+\
+DESCRIPTION : \
+Companion function to LIST_BEGIN_IDENTIFIER_CHANGE function. \
+Should only be declared with manager functions. \
+============================================================================*/ \
+{ \
+	int return_code; \
+\
+	ENTER(LIST_END_IDENTIFIER_CHANGE(object_type,identifier)); \
+	if (identifier_change_data_address && *identifier_change_data_address) \
+	{ \
+		DEALLOCATE(*identifier_change_data_address); \
+		*identifier_change_data_address = \
+			(struct LIST_IDENTIFIER_CHANGE_DATA(object_type,identifier) *)NULL; \
+	} \
+	else \
+	{ \
+		display_message(ERROR_MESSAGE, \
+			"LIST_END_IDENTIFIER_CHANGE(" #object_type "," #identifier \
+			").  Invalid argument(s)"); \
+		return_code = 0; \
+	} \
+	LEAVE; \
+\
+	return (return_code); \
+} /* LIST_END_IDENTIFIER_CHANGE(object_type,identifier) */
+
+/* following only need to be declared when used with managers */
+#define DECLARE_LIST_IDENTIFIER_CHANGE_FUNCTIONS( object_type , identifier ) \
+DECLARE_LIST_IDENTIFIER_CHANGE_DATA(object_type,identifier); \
+DECLARE_LIST_BEGIN_IDENTIFIER_CHANGE_FUNCTION(object_type,identifier) \
+DECLARE_LIST_END_IDENTIFIER_CHANGE_FUNCTION(object_type,identifier)
+
 #define DECLARE_LIST_FUNCTIONS( object_type ) \
 DECLARE_CREATE_LIST_FUNCTION(object_type) \
 DECLARE_DESTROY_LIST_FUNCTION(object_type) \

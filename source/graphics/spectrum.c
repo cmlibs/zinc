@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : spectrum.c
 
-LAST MODIFIED : 22 June 1999
+LAST MODIFIED : 21 December 2000
 
 DESCRIPTION :
 Spectrum functions and support code.
@@ -16,7 +16,7 @@ Spectrum functions and support code.
 #endif /* defined (OPENGL_API) */
 #include "command/parser.h"
 #include "general/debug.h"
-#include "general/list_private.h"
+#include "general/indexed_list_private.h"
 #include "general/manager_private.h"
 #include "general/object.h"
 #include "general/mystring.h"
@@ -46,7 +46,7 @@ Spectrum type is private.
 	int access_count;
 }; /* struct Spectrum */
 
-FULL_DECLARE_LIST_TYPE(Spectrum);
+FULL_DECLARE_INDEXED_LIST_TYPE(Spectrum);
 
 FULL_DECLARE_MANAGER_TYPE(Spectrum);
 
@@ -54,6 +54,8 @@ FULL_DECLARE_MANAGER_TYPE(Spectrum);
 Module functions
 ----------------
 */
+DECLARE_INDEXED_LIST_MODULE_FUNCTIONS(Spectrum,name,char *,strcmp)
+
 DECLARE_LOCAL_MANAGER_FUNCTIONS(Spectrum)
 
 /*
@@ -62,9 +64,11 @@ Global functions
 */
 DECLARE_OBJECT_FUNCTIONS(Spectrum)
 
-DECLARE_LIST_FUNCTIONS(Spectrum)
+DECLARE_INDEXED_LIST_FUNCTIONS(Spectrum)
 
-DECLARE_FIND_BY_IDENTIFIER_IN_LIST_FUNCTION(Spectrum,name,char *,strcmp)
+DECLARE_FIND_BY_IDENTIFIER_IN_INDEXED_LIST_FUNCTION(Spectrum,name,char *,strcmp)
+
+DECLARE_INDEXED_LIST_IDENTIFIER_CHANGE_FUNCTIONS(Spectrum,name)
 
 PROTOTYPE_MANAGER_COPY_WITH_IDENTIFIER_FUNCTION(Spectrum,name)
 {

@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : environment_map.c
 
-LAST MODIFIED : 21 September 1998
+LAST MODIFIED : 21 December 2000
 
 DESCRIPTION :
 The functions for manipulating environment maps.
@@ -252,6 +252,7 @@ DECLARE_DEFAULT_GET_OBJECT_NAME_FUNCTION(Environment_map)
 DECLARE_LIST_FUNCTIONS(Environment_map)
 
 DECLARE_FIND_BY_IDENTIFIER_IN_LIST_FUNCTION(Environment_map,name,char *,strcmp)
+DECLARE_LIST_IDENTIFIER_CHANGE_FUNCTIONS(Environment_map,name)
 
 int modify_Environment_map(struct Parse_state *state,void *environment_map_void,
 	void *modify_environment_map_data_void)

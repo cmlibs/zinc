@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : light.c
 
-LAST MODIFIED : 1 December 1999
+LAST MODIFIED : 21 December 2000
 
 DESCRIPTION :
 The functions for manipulating lights.
@@ -828,6 +828,7 @@ DECLARE_DEFAULT_GET_OBJECT_NAME_FUNCTION(Light)
 
 DECLARE_LIST_FUNCTIONS(Light)
 DECLARE_FIND_BY_IDENTIFIER_IN_LIST_FUNCTION(Light,name,char *,strcmp)
+DECLARE_LIST_IDENTIFIER_CHANGE_FUNCTIONS(Light,name)
 
 PROTOTYPE_MANAGER_COPY_WITH_IDENTIFIER_FUNCTION(Light,name)
 {

@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : light_model.c
 
-LAST MODIFIED : 21 September 1998
+LAST MODIFIED : 21 December 2000
 
 DESCRIPTION :
 The functions for manipulating light models.
@@ -390,6 +390,7 @@ DECLARE_DEFAULT_GET_OBJECT_NAME_FUNCTION(Light_model)
 
 DECLARE_LIST_FUNCTIONS(Light_model)
 DECLARE_FIND_BY_IDENTIFIER_IN_LIST_FUNCTION(Light_model,name,char *,strcmp)
+DECLARE_LIST_IDENTIFIER_CHANGE_FUNCTIONS(Light_model,name)
 
 PROTOTYPE_MANAGER_COPY_WITH_IDENTIFIER_FUNCTION(Light_model,name)
 {

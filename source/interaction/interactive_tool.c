@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : interactive_tool.c
 
-LAST MODIFIED : 11 May 2000
+LAST MODIFIED : 21 December 2000
 
 DESCRIPTION :
 Active CMGUI tools should create a wrapper Interactive_tool that supplies a
@@ -175,6 +175,7 @@ DECLARE_DEFAULT_GET_OBJECT_NAME_FUNCTION(Interactive_tool)
 DECLARE_LIST_FUNCTIONS(Interactive_tool)
 DECLARE_FIND_BY_IDENTIFIER_IN_LIST_FUNCTION(Interactive_tool, \
 	name,char *,strcmp)
+DECLARE_LIST_IDENTIFIER_CHANGE_FUNCTIONS(Interactive_tool,name)
 
 PROTOTYPE_MANAGER_COPY_WITH_IDENTIFIER_FUNCTION(Interactive_tool,name)
 {

@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : movie_graphics.c
 
-LAST MODIFIED : 3 February 2000
+LAST MODIFIED : 21 December 2000
 
 DESCRIPTION :
 ==============================================================================*/
@@ -143,6 +143,7 @@ DECLARE_DEFAULT_GET_OBJECT_NAME_FUNCTION(Movie_graphics)
 DECLARE_INDEXED_LIST_FUNCTIONS(Movie_graphics)
 DECLARE_FIND_BY_IDENTIFIER_IN_INDEXED_LIST_FUNCTION(Movie_graphics,name, \
 	char *,strcmp)
+DECLARE_INDEXED_LIST_IDENTIFIER_CHANGE_FUNCTIONS(Movie_graphics,name)
 
 PROTOTYPE_MANAGER_COPY_WITH_IDENTIFIER_FUNCTION(Movie_graphics,name)
 {

@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : control_curve.c
 
-LAST MODIFIED : 28 November 2000
+LAST MODIFIED : 21 December 2000
 
 DESCRIPTION :
 Definition of struct Control_curve used to describe time-value or x-y functions.
@@ -1606,6 +1606,7 @@ DECLARE_OBJECT_FUNCTIONS(Control_curve)
 DECLARE_INDEXED_LIST_FUNCTIONS(Control_curve)
 DECLARE_FIND_BY_IDENTIFIER_IN_INDEXED_LIST_FUNCTION(Control_curve,name,char *, \
 	strcmp)
+DECLARE_INDEXED_LIST_IDENTIFIER_CHANGE_FUNCTIONS(Control_curve,name)
 
 DECLARE_DEFAULT_GET_OBJECT_NAME_FUNCTION(Control_curve)
 

@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : material.c
 
-LAST MODIFIED : 7 September 2000
+LAST MODIFIED : 21 December 2000
 
 DESCRIPTION :
 The functions for manipulating graphical materials.
@@ -402,6 +402,7 @@ DECLARE_DEFAULT_GET_OBJECT_NAME_FUNCTION(Graphical_material)
 DECLARE_INDEXED_LIST_FUNCTIONS(Graphical_material)
 DECLARE_FIND_BY_IDENTIFIER_IN_INDEXED_LIST_FUNCTION(Graphical_material,name,
 	char *,strcmp)
+DECLARE_INDEXED_LIST_IDENTIFIER_CHANGE_FUNCTIONS(Graphical_material,name)
 
 PROTOTYPE_MANAGER_COPY_WITH_IDENTIFIER_FUNCTION(Graphical_material,name)
 {

@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : scene.c
 
-LAST MODIFIED : 16 November 2000
+LAST MODIFIED : 21 December 2000
 
 DESCRIPTION :
 Structure for storing the collections of objects that make up a 3-D graphical
@@ -4961,6 +4961,7 @@ DECLARE_OBJECT_FUNCTIONS(Scene)
 DECLARE_DEFAULT_GET_OBJECT_NAME_FUNCTION(Scene)
 DECLARE_LIST_FUNCTIONS(Scene)
 DECLARE_FIND_BY_IDENTIFIER_IN_LIST_FUNCTION(Scene,name,char *,strcmp)
+DECLARE_LIST_IDENTIFIER_CHANGE_FUNCTIONS(Scene,name)
 
 PROTOTYPE_MANAGER_COPY_WITH_IDENTIFIER_FUNCTION(Scene,name)
 {

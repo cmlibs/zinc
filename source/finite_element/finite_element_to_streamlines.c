@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : finite_element_to_streamlines.c
 
-LAST MODIFIED : 27 November 2000
+LAST MODIFIED : 21 December 2000
 
 DESCRIPTION :
 Functions for calculating streamlines in finite elements.
@@ -1833,6 +1833,8 @@ DECLARE_LIST_FUNCTIONS(Interactive_streamline)
 
 DECLARE_FIND_BY_IDENTIFIER_IN_LIST_FUNCTION(Interactive_streamline,name,char *,
 	strcmp)
+
+DECLARE_LIST_IDENTIFIER_CHANGE_FUNCTIONS(Interactive_streamline,name)
 
 PROTOTYPE_MANAGER_COPY_WITH_IDENTIFIER_FUNCTION(Interactive_streamline,name)
 {

@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : texture.c
 
-LAST MODIFIED : 12 October 2000
+LAST MODIFIED : 21 December 2000
 
 DESCRIPTION :
 The functions for manipulating graphical textures.
@@ -28,7 +28,7 @@ return to direct rendering, as described with these routines.
 #include "command/parser.h"
 #include "general/debug.h"
 #include "general/image_utilities.h"
-#include "general/list_private.h"
+#include "general/indexed_list_private.h"
 #include "general/manager_private.h"
 #include "general/mystring.h"
 #include "general/object.h"
@@ -111,7 +111,7 @@ The properties of a graphical texture.
 	int access_count;
 }; /* struct Texture */
 
-FULL_DECLARE_LIST_TYPE(Texture);
+FULL_DECLARE_INDEXED_LIST_TYPE(Texture);
 
 FULL_DECLARE_MANAGER_TYPE(Texture);
 
@@ -124,6 +124,8 @@ Module variables
 Module functions
 ----------------
 */
+DECLARE_INDEXED_LIST_MODULE_FUNCTIONS(Texture,name,char *,strcmp)
+
 DECLARE_LOCAL_MANAGER_FUNCTIONS(Texture)
 
 int Texture_get_number_of_components_from_storage_type(
@@ -1340,9 +1342,11 @@ Frees the memory for the texture and sets <*texture_address> to NULL.
 DECLARE_OBJECT_FUNCTIONS(Texture)
 DECLARE_DEFAULT_GET_OBJECT_NAME_FUNCTION(Texture)
 
-DECLARE_LIST_FUNCTIONS(Texture)
+DECLARE_INDEXED_LIST_FUNCTIONS(Texture)
 
-DECLARE_FIND_BY_IDENTIFIER_IN_LIST_FUNCTION(Texture,name,char *,strcmp)
+DECLARE_FIND_BY_IDENTIFIER_IN_INDEXED_LIST_FUNCTION(Texture,name,char *,strcmp)
+
+DECLARE_INDEXED_LIST_IDENTIFIER_CHANGE_FUNCTIONS(Texture,name)
 
 PROTOTYPE_MANAGER_COPY_WITH_IDENTIFIER_FUNCTION(Texture,name)
 {

@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : manager_private.h
 
-LAST MODIFIED : 6 December 2000
+LAST MODIFIED : 21 December 2000
 
 DESCRIPTION :
 Managers oversee the creation, deletion and modification of global objects -
@@ -778,6 +778,8 @@ PROTOTYPE_NUMBER_IN_MANAGER_FUNCTION(object_type) \
 PROTOTYPE_MANAGER_MODIFY_FUNCTION(object_type) \
 { \
 	int return_code; \
+	struct LIST_IDENTIFIER_CHANGE_DATA(object_type, \
+		identifier_field_name) *identifier_change_data; \
 	struct object_type *tmp_object; \
 \
 	ENTER(MANAGER_MODIFY(object_type)); \
@@ -790,48 +792,41 @@ PROTOTYPE_MANAGER_MODIFY_FUNCTION(object_type) \
 				tmp_object= \
 					FIND_BY_IDENTIFIER_IN_LIST(object_type,identifier_field_name)( \
 					new_data->identifier_field_name,manager->object_list); \
-				if ((!tmp_object)||(tmp_object==object)) \
+				if ((!tmp_object) || (tmp_object == object)) \
 				{ \
-					/* remove and re-add object to list so ordering is correct */ \
-					/* must use ACCESS/DEACCESS so that object is not DESTROYed! */ \
-					/* Note: DEACCESS clears pointer so keep tmp_object as copy */ \
-					tmp_object=ACCESS(object_type)(object); \
-					if (REMOVE_OBJECT_FROM_LIST(object_type)(object, \
-						manager->object_list)) \
+					if (identifier_change_data = \
+						LIST_BEGIN_IDENTIFIER_CHANGE(object_type, \
+							identifier_field_name)(object)) \
 					{ \
-						if (MANAGER_COPY_WITH_IDENTIFIER(object_type,\
-							identifier_field_name)(object,new_data)) \
+						if (!(return_code = MANAGER_COPY_WITH_IDENTIFIER(object_type, \
+							identifier_field_name)(object,new_data))) \
 						{ \
-							if (ADD_OBJECT_TO_LIST(object_type)(object, \
-								manager->object_list)) \
-							{ \
-								/* make sure the change is incorporated in manager message */ \
-								MANAGER_NOTE_CHANGE(object_type)( \
-									MANAGER_CHANGE_OBJECT(object_type),object,manager); \
-								return_code=1; \
-							} \
-							else  \
-							{ \
-								display_message(ERROR_MESSAGE,"MANAGER_MODIFY(" #object_type \
-									").  Could not re-add object"); \
-								return_code=0; \
-							} \
-						} \
-						else  \
-						{ \
-							ADD_OBJECT_TO_LIST(object_type)(object,manager->object_list); \
 							display_message(ERROR_MESSAGE, \
-								"MANAGER_MODIFY(" #object_type ").  Could not copy object"); \
-							return_code=0; \
+								"MANAGER_MODIFY(" #object_type "," #identifier_field_name \
+								").  Could not copy object"); \
+						} \
+						if (!LIST_END_IDENTIFIER_CHANGE(object_type, \
+							identifier_field_name)(&identifier_change_data)) \
+						{ \
+							display_message(ERROR_MESSAGE, \
+								"MANAGER_MODIFY(" #object_type "," #identifier_field_name \
+								").  Could not restore object to all indexed lists"); \
+						} \
+						if (return_code) \
+						{ \
+							/* make sure the change is incorporated in manager message, \
+								 and AFTER object is replaced in original indexed lists */ \
+							MANAGER_NOTE_CHANGE(object_type)( \
+								MANAGER_CHANGE_OBJECT(object_type), object, manager); \
 						} \
 					} \
 					else  \
 					{ \
 						display_message(ERROR_MESSAGE, \
-							"MANAGER_MODIFY(" #object_type ").  Could not remove object"); \
-						return_code=0; \
+							"MANAGER_MODIFY(" #object_type "," #identifier_field_name \
+							").  Could not safely change identifier in indexed lists"); \
+						return_code = 0; \
 					} \
-					DEACCESS(object_type)(&tmp_object); \
 				} \
 				else \
 				{ \
@@ -930,6 +925,8 @@ PROTOTYPE_MANAGER_MODIFY_IDENTIFIER_FUNCTION(object_type, \
 	identifier_field_name,identifier_type) \
 { \
 	int return_code; \
+	struct LIST_IDENTIFIER_CHANGE_DATA(object_type, \
+		identifier_field_name) *identifier_change_data; \
 	struct object_type *tmp_object; \
 \
 	ENTER(MANAGER_MODIFY_IDENTIFIER(object_type,identifier_field_name)); \
@@ -942,51 +939,43 @@ PROTOTYPE_MANAGER_MODIFY_IDENTIFIER_FUNCTION(object_type, \
 				tmp_object= \
 					FIND_BY_IDENTIFIER_IN_LIST(object_type,identifier_field_name)( \
 					new_identifier,manager->object_list); \
-				if ((!tmp_object)||(object==tmp_object)) \
+				if ((!tmp_object) || (tmp_object == object)) \
 				{ \
-					/* remove and re-add object to list so ordering is correct */ \
-					/* must use ACCESS/DEACCESS so that object is not DESTROYed! */ \
-					/* Note: DEACCESS clears pointer so keep tmp_object as copy */ \
-					tmp_object=ACCESS(object_type)(object); \
-					if (REMOVE_OBJECT_FROM_LIST(object_type)(object, \
-						manager->object_list)) \
+					if (identifier_change_data = \
+						LIST_BEGIN_IDENTIFIER_CHANGE(object_type, \
+							identifier_field_name)(object)) \
 					{ \
-						if (MANAGER_COPY_IDENTIFIER(object_type,identifier_field_name)( \
-							object,new_identifier)) \
+						if (!(return_code = MANAGER_COPY_IDENTIFIER(object_type, \
+							identifier_field_name)(object, new_identifier))) \
 						{ \
-							if (ADD_OBJECT_TO_LIST(object_type)(object, \
-								manager->object_list)) \
-							{ \
-								/* make sure the change is incorporated in manager message */ \
-								MANAGER_NOTE_CHANGE(object_type)( \
-									MANAGER_CHANGE_IDENTIFIER(object_type),object,manager); \
-								return_code=1; \
-							} \
-							else  \
-							{ \
-								display_message(ERROR_MESSAGE, \
-									"MANAGER_MODIFY_IDENTIFIER(" #object_type "," \
-									#identifier_field_name ").  Could not add object"); \
-								return_code=0; \
-							} \
-						} \
-						else  \
-						{ \
-							ADD_OBJECT_TO_LIST(object_type)(object,manager->object_list); \
 							display_message(ERROR_MESSAGE, \
 								"MANAGER_MODIFY_IDENTIFIER(" #object_type "," \
 								#identifier_field_name ").  Could not copy identifier"); \
-							return_code=0; \
+						} \
+						if (!LIST_END_IDENTIFIER_CHANGE(object_type, \
+							identifier_field_name)(&identifier_change_data)) \
+						{ \
+							display_message(ERROR_MESSAGE, \
+								"MANAGER_MODIFY_IDENTIFIER(" #object_type "," \
+								#identifier_field_name \
+								").  Could not restore object to all indexed lists"); \
+						} \
+						if (return_code) \
+						{ \
+							/* make sure the change is incorporated in manager message, \
+								 and AFTER object is replaced in original indexed lists */ \
+							MANAGER_NOTE_CHANGE(object_type)( \
+								MANAGER_CHANGE_IDENTIFIER(object_type), object, manager); \
 						} \
 					} \
 					else  \
 					{ \
 						display_message(ERROR_MESSAGE, \
 							"MANAGER_MODIFY_IDENTIFIER(" #object_type "," \
-							#identifier_field_name ").  Could not remove object"); \
-						return_code=0; \
+							#identifier_field_name \
+							").  Could not safely change identifier in indexed lists"); \
+						return_code = 0; \
 					} \
-					DEACCESS(object_type)(&tmp_object); \
 				} \
 				else \
 				{ \
@@ -1453,4 +1442,5 @@ DECLARE_FIND_BY_IDENTIFIER_IN_MANAGER_FUNCTION(object_type, \
 DECLARE_GROUP_MANAGER_COPY_WITHOUT_IDENTIFIER(object_type) \
 DECLARE_GROUP_MANAGER_COPY_IDENTIFIER(object_type) \
 DECLARE_GROUP_MANAGER_COPY_WITH_IDENTIFIER(object_type)
-#endif
+
+#endif /* !defined (MANAGER_PRIVATE_H) */

@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : volume_texture.c
 
-LAST MODIFIED : 22 June 1999
+LAST MODIFIED : 21 December 2000
 
 DESCRIPTION :
 Contains data structures for the 3d volumetric textures to be mapped onto
@@ -17,7 +17,7 @@ xi2, xi3 space.
 #include <string.h>
 #include "command/parser.h"
 #include "general/debug.h"
-#include "general/list_private.h"
+#include "general/indexed_list_private.h"
 #include "general/manager_private.h"
 #include "general/mystring.h"
 #include "general/object.h"
@@ -35,7 +35,7 @@ xi2, xi3 space.
 Module types
 ------------
 */
-FULL_DECLARE_LIST_TYPE(VT_volume_texture);
+FULL_DECLARE_INDEXED_LIST_TYPE(VT_volume_texture);
 
 FULL_DECLARE_MANAGER_TYPE(VT_volume_texture);
 
@@ -43,6 +43,8 @@ FULL_DECLARE_MANAGER_TYPE(VT_volume_texture);
 Module functions
 ----------------
 */
+DECLARE_INDEXED_LIST_MODULE_FUNCTIONS(VT_volume_texture,name,char *,strcmp)
+
 DECLARE_LOCAL_MANAGER_FUNCTIONS(VT_volume_texture)
 
 /*???Mark.  temp clip function for testing */
@@ -481,7 +483,7 @@ DESCRIPTION :
 Frees the memory for the volume texture and sets <*texture_address> to NULL.
 ==============================================================================*/
 {
-	int i,j,n_cells,n_nodes,number_of_scalar_fields,return_code;
+	int i,n_cells,n_nodes,number_of_scalar_fields,return_code;
 	struct VT_node_group *node_group;
 	struct VT_texture_cell **cell;
 	struct VT_texture_curve *curve,*curve_next;
@@ -624,10 +626,12 @@ Frees the memory for the volume texture and sets <*texture_address> to NULL.
 DECLARE_OBJECT_FUNCTIONS(VT_volume_texture)
 DECLARE_DEFAULT_GET_OBJECT_NAME_FUNCTION(VT_volume_texture)
 
-DECLARE_LIST_FUNCTIONS(VT_volume_texture)
+DECLARE_INDEXED_LIST_FUNCTIONS(VT_volume_texture)
 
-DECLARE_FIND_BY_IDENTIFIER_IN_LIST_FUNCTION(VT_volume_texture,name,char *,
+DECLARE_FIND_BY_IDENTIFIER_IN_INDEXED_LIST_FUNCTION(VT_volume_texture,name,char *,
 	strcmp)
+
+DECLARE_INDEXED_LIST_IDENTIFIER_CHANGE_FUNCTIONS(VT_volume_texture,name)
 
 PROTOTYPE_MANAGER_COPY_WITH_IDENTIFIER_FUNCTION(VT_volume_texture,name)
 {
@@ -699,7 +703,7 @@ Syntax: MANAGER_COPY_WITH_IDENTIFIER(VT_volume_texture,name)(destination,source)
 	double *destination_double,*grid_spacing,*source_double;
 	int *destination_int,*group_nodes,i,j,k,l,m,n_cells,n_groups,n_mc_cells,
 		n_nodes,n_points,n_triangle_lists,return_code,*source_deform,
-		*source_int,maxk,tj,tj_start,tk,tk_start,tk_max,ti,ti_max;
+		*source_int,maxk;
 	struct Environment_map *env_map;
 	struct MC_cell *cell,**cells,*source_cell,**source_cells;
 	struct MC_iso_surface *iso_surface,*source_iso_surface;
@@ -3528,7 +3532,7 @@ int read_volume_texture_from_obj_file(struct VT_volume_texture *texture,
 	FILE *in_file,struct MANAGER(Graphical_material) *graphical_material_manager,
 	struct MANAGER(Environment_map) *environment_map_manager,int deformable)
 /*******************************************************************************
-LAST MODIFIED : 15 October 1998
+LAST MODIFIED : 21 December 2000
 
 DESCRIPTION :
 Reads the volume <texture> from the obj <in_file>.
@@ -3540,26 +3544,23 @@ important to maintain the connectivities and vertex indices so that .obj files
 can be exported with only vertex positions changed.
 ==============================================================================*/
 {
-	char face_word[MAX_OBJ_VERTICES][128],*temp_string,text[512],*word,
-		matname[128];
-	double v[3],v_min,v_max,vn[3],v_scale,vt[3],v_temp;
+	char face_word[MAX_OBJ_VERTICES][128], text[512], *word, matname[128];
+	double v[3],v_min,v_max;
 	float *new_normal_vertices, *normal_vertices,
 		*new_texture_vertices, *texture_vertices;
-	int *deform,dimension,face_index,face_vertex[MAX_OBJ_VERTICES][3],found,i,ii,index,j,
-		line_number,n,n_cells,n_face_vertices,nfv_ptr,n_nodes,n_obj_triangles,
+	int *deform,dimension,face_index,face_vertex[MAX_OBJ_VERTICES][3],i,ii,
+		j, line_number, n_cells,n_face_vertices,nfv_ptr,n_nodes,n_obj_triangles,
 		n_obj_vertices,n_obj_texture_vertices,n_obj_normal_vertices,
-		number_of_env_maps,number_of_materials,return_code,
-		triangle_index,warning_multiple_normals,vertex_index;
-	struct Environment_map **index_to_env_map,*env_map;
-	struct Graphical_material *default_material,**index_to_material,*material,
-		*scanned_material;
+		return_code, triangle_index, warning_multiple_normals, vertex_index;
+	struct Graphical_material *default_material, *scanned_material;
 	struct MC_triangle **compiled_triangle_list,*mc_triangle,**temp_triangle_ptrs;
 	struct MC_vertex **compiled_vertex_list,*mc_vertex;
-	struct VT_texture_cell *cell,**cell_list;
+	struct VT_texture_cell **cell_list;
 	struct VT_texture_curve *curve,*curve_next;
-	struct VT_texture_node *node,**node_list;
+	struct VT_texture_node **node_list;
 
 	ENTER(read_volume_texture_from_obj_file);
+	USE_PARAMETER(environment_map_manager);
 #if defined (DEBUG)
 	/*???debug */
 	printf("enter read_volume_texture_from_obj_file\n");
@@ -4339,7 +4340,7 @@ Writes the volume <texture> to a <out_file>.
 {
 	int *cell_index,*cell_index_table,found,i,j,last_node,n,n_cells,n_nodes,
 		*node_index,*node_index_table,number_of_materials,number_of_env_maps,
-		output_active,output_active_nodes,return_code;
+		output_active_nodes,return_code;
 	struct Environment_map **index_to_env_map,**index_to_env_map_table,*env_map;
 	struct Graphical_material **index_to_material,**index_to_material_table,
 		*material;
@@ -5035,6 +5036,7 @@ Modifier function to set the clipping from a command.
 	struct Clipping *clipping,**clipping_address;
 
 	ENTER(set_Clipping);
+	USE_PARAMETER(dummy_user_data);
 	if (state)
 	{
 		if (current_token=state->current_token)

@@ -1637,41 +1637,40 @@ PROTOTYPE_FIND_BY_IDENTIFIER_IN_LIST_FUNCTION(object_type,identifier, \
 } /* FIND_BY_IDENTIFIER_IN_LIST(object_type,identifier) */
 
 #if defined (FULL_NAMES)
-#define INDEXED_LIST_SAFE_IDENTIFIER_CHANGE_DATA( object_type , identifier ) \
-	indexed_list_safe_identifier_change_data_ ## object_type ## identifier
+#define LIST_IDENTIFIER_CHANGE_DATA( object_type , identifier ) \
+	list_identifier_change_data_ ## object_type ## identifier
 #else
-#define INDEXED_LIST_SAFE_IDENTIFIER_CHANGE_DATA( object_type , identifier ) \
-	ilsicd ## object_type ## identifier
+#define LIST_IDENTIFIER_CHANGE_DATA( object_type , identifier ) \
+	licd ## object_type ## identifier
 #endif
 
-#define DECLARE_INDEXED_LIST_SAFE_IDENTIFIER_CHANGE_DATA( object_type , \
-	identifier ) \
-struct INDEXED_LIST_SAFE_IDENTIFIER_CHANGE_DATA(object_type,identifier) \
+#define DECLARE_INDEXED_LIST_IDENTIFIER_CHANGE_DATA( object_type , identifier ) \
+struct LIST_IDENTIFIER_CHANGE_DATA(object_type,identifier) \
 /***************************************************************************** \
 LAST MODIFIED : 20 December 2000 \
 \
 DESCRIPTION : \
-Data structure used by INDEXED_LIST_BEGIN/END_SAFE_IDENTIFIER_CHANGE \
-functions. Should only be declared with manager functions. \
+Data structure used by LIST_BEGIN/END_IDENTIFIER_CHANGE functions. \
+Should only be declared with manager functions. \
 ============================================================================*/ \
 { \
 	struct object_type *object; \
 	struct LIST(object_type) **lists_containing_object; \
 	int number_of_lists_containing_object; \
-} /* struct INDEXED_LIST_SAFE_IDENTIFIER_CHANGE_DATA(object_type,identifier) */
+} /* struct LIST_IDENTIFIER_CHANGE_DATA(object_type,identifier) */
 
 #if defined (FULL_NAMES)
-#define INDEXED_LIST_BEGIN_SAFE_IDENTIFIER_CHANGE( object_type, identifier ) \
-	indexed_list_begin_safe_identifier_change_ ## object_type ## identifier
+#define LIST_BEGIN_IDENTIFIER_CHANGE( object_type, identifier ) \
+	list_begin_identifier_change_ ## object_type ## identifier
 #else
-#define INDEXED_LIST_BEGIN_SAFE_IDENTIFIER_CHANGE( object_type, identifier ) \
-	ilbsic ## object_type ## identifier
+#define LIST_BEGIN_IDENTIFIER_CHANGE( object_type, identifier ) \
+	lbic ## object_type ## identifier
 #endif
 
-#define DECLARE_INDEXED_LIST_BEGIN_SAFE_IDENTIFIER_CHANGE_FUNCTION( \
-	object_type , identifier ) \
-static struct INDEXED_LIST_SAFE_IDENTIFIER_CHANGE_DATA(object_type,identifier) \
-	*INDEXED_LIST_BEGIN_SAFE_IDENTIFIER_CHANGE(object_type,identifier) ( \
+#define DECLARE_INDEXED_LIST_BEGIN_IDENTIFIER_CHANGE_FUNCTION( object_type , \
+	identifier ) \
+static struct LIST_IDENTIFIER_CHANGE_DATA(object_type,identifier) \
+	*LIST_BEGIN_IDENTIFIER_CHANGE(object_type,identifier) ( \
 	struct object_type *object) \
 /***************************************************************************** \
 LAST MODIFIED : 20 December 2000 \
@@ -1679,7 +1678,7 @@ LAST MODIFIED : 20 December 2000 \
 DESCRIPTION : \
 MANAGER functions using indexed object lists must call this before modifying \
 the identifier of any object, and afterwards call the companion function \
-INDEXED_LIST_END_SAFE_IDENTIFIER_CHANGE with the returned \
+LIST_END_IDENTIFIER_CHANGE with the returned \
 identifier_change_data. These functions temporarily remove the object from \
 any list it is in, then re-add it later so it is in the correct indexed \
 position. <object> is ACCESSed between these two functions. \
@@ -1687,17 +1686,17 @@ Should only be declared with manager functions. \
 ============================================================================*/ \
 { \
 	int i, j; \
-	struct INDEXED_LIST_SAFE_IDENTIFIER_CHANGE_DATA(object_type,identifier) \
+	struct LIST_IDENTIFIER_CHANGE_DATA(object_type,identifier) \
 		*identifier_change_data; \
 	struct object_type *object_in_list; \
 \
-	ENTER(INDEXED_LIST_BEGIN_SAFE_IDENTIFIER_CHANGE(object_type,identifier)); \
+	ENTER(LIST_BEGIN_IDENTIFIER_CHANGE(object_type,identifier)); \
 	if (object) \
 	{ \
 		if (0 == ITERATION_COUNT(object_type)) \
 		{ \
 			if (ALLOCATE(identifier_change_data, \
-				struct INDEXED_LIST_SAFE_IDENTIFIER_CHANGE_DATA(object_type, \
+				struct LIST_IDENTIFIER_CHANGE_DATA(object_type, \
 					identifier), 1) && \
 				ALLOCATE(identifier_change_data->lists_containing_object, \
 					struct LIST(object_type) *, NUMBER_OF_DEFINED_LISTS(object_type))) \
@@ -1725,60 +1724,60 @@ Should only be declared with manager functions. \
 			else \
 			{ \
 				display_message(ERROR_MESSAGE, \
-					"INDEXED_LIST_BEGIN_SAFE_IDENTIFIER_CHANGE(" #object_type \
-					"," #identifier ").  Not enough memory"); \
+					"LIST_BEGIN_IDENTIFIER_CHANGE(" #object_type "," #identifier \
+					").  Not enough memory"); \
 				DEALLOCATE(identifier_change_data); \
 			} \
 		} \
 		else \
 		{ \
 			display_message(ERROR_MESSAGE, \
-				"INDEXED_LIST_BEGIN_SAFE_IDENTIFIER_CHANGE(" #object_type \
-				"," #identifier ").  Not allowed during list iteration"); \
+				"LIST_BEGIN_IDENTIFIER_CHANGE(" #object_type "," #identifier \
+				").  Not allowed during list iteration"); \
 			DEALLOCATE(identifier_change_data); \
 		} \
 	} \
 	else \
 	{ \
 		display_message(ERROR_MESSAGE, \
-			"INDEXED_LIST_BEGIN_SAFE_IDENTIFIER_CHANGE(" #object_type \
-			"," #identifier ").  Invalid argument(s)"); \
-		identifier_change_data = (struct INDEXED_LIST_SAFE_IDENTIFIER_CHANGE_DATA( \
+			"LIST_BEGIN_IDENTIFIER_CHANGE(" #object_type "," #identifier \
+			").  Invalid argument(s)"); \
+		identifier_change_data = (struct LIST_IDENTIFIER_CHANGE_DATA( \
 			object_type,identifier) *)NULL; \
 	} \
 	LEAVE; \
 \
 	return (identifier_change_data); \
-} /* INDEXED_LIST_BEGIN_SAFE_IDENTIFIER_CHANGE(object_type,identifier) */
+} /* LIST_BEGIN_IDENTIFIER_CHANGE(object_type,identifier) */
 
 #if defined (FULL_NAMES)
-#define INDEXED_LIST_END_SAFE_IDENTIFIER_CHANGE( object_type, identifier ) \
-	indexed_list_end_safe_identifier_change_ ## object_type ## identifier
+#define LIST_END_IDENTIFIER_CHANGE( object_type, identifier ) \
+	list_end_identifier_change_ ## object_type ## identifier
 #else
-#define INDEXED_LIST_END_SAFE_IDENTIFIER_CHANGE( object_type, identifier ) \
-	ilesic ## object_type ## identifier
+#define LIST_END_IDENTIFIER_CHANGE( object_type, identifier ) \
+	leic ## object_type ## identifier
 #endif
 
-#define DECLARE_INDEXED_LIST_END_SAFE_IDENTIFIER_CHANGE_FUNCTION( \
+#define DECLARE_INDEXED_LIST_END_IDENTIFIER_CHANGE_FUNCTION( \
 	object_type , identifier ) \
-static int INDEXED_LIST_END_SAFE_IDENTIFIER_CHANGE(object_type,identifier)( \
-	struct INDEXED_LIST_SAFE_IDENTIFIER_CHANGE_DATA(object_type,identifier) \
+static int LIST_END_IDENTIFIER_CHANGE(object_type,identifier)( \
+	struct LIST_IDENTIFIER_CHANGE_DATA(object_type,identifier) \
 		**identifier_change_data_address) \
 /***************************************************************************** \
 LAST MODIFIED : 20 December 2000 \
 \
 DESCRIPTION : \
-Companion function to INDEXED_LIST_BEGIN_SAFE_IDENTIFIER_CHANGE function. \
+Companion function to LIST_BEGIN_IDENTIFIER_CHANGE function. \
 Re-adds the changed object to all the lists it was in. \
 Should only be declared with manager functions. \
 ============================================================================*/ \
 { \
 	int i, return_code; \
-	struct INDEXED_LIST_SAFE_IDENTIFIER_CHANGE_DATA(object_type,identifier) \
+	struct LIST_IDENTIFIER_CHANGE_DATA(object_type,identifier) \
 		*identifier_change_data; \
 	struct object_type *object; \
 \
-	ENTER(INDEXED_LIST_END_SAFE_IDENTIFIER_CHANGE(object_type,identifier)); \
+	ENTER(LIST_END_IDENTIFIER_CHANGE(object_type,identifier)); \
 	if (identifier_change_data_address && \
 		(identifier_change_data = *identifier_change_data_address) && \
 		(object = identifier_change_data->object)) \
@@ -1798,35 +1797,35 @@ Should only be declared with manager functions. \
 			if (!return_code) \
 			{ \
 				display_message(ERROR_MESSAGE, \
-					"INDEXED_LIST_END_SAFE_IDENTIFIER_CHANGE(" #object_type \
-					"," #identifier ").  Failed: object may be missing from lists"); \
+					"LIST_END_IDENTIFIER_CHANGE(" #object_type "," #identifier \
+					").  Failed: object may be missing from lists"); \
 				DEALLOCATE(identifier_change_data); \
 			} \
 		} \
 		else \
 		{ \
 			display_message(ERROR_MESSAGE, \
-				"INDEXED_LIST_END_SAFE_IDENTIFIER_CHANGE(" #object_type \
-				"," #identifier ").  Not allowed during list iteration"); \
+				"LIST_END_IDENTIFIER_CHANGE(" #object_type "," #identifier \
+				").  Not allowed during list iteration"); \
 			return_code = 0; \
 		} \
 		DEACCESS(object_type)(&(identifier_change_data->object)); \
 		DEALLOCATE(identifier_change_data->lists_containing_object); \
 		DEALLOCATE(*identifier_change_data_address); \
 		*identifier_change_data_address = (struct \
-			INDEXED_LIST_SAFE_IDENTIFIER_CHANGE_DATA(object_type,identifier) *)NULL; \
+			LIST_IDENTIFIER_CHANGE_DATA(object_type,identifier) *)NULL; \
 	} \
 	else \
 	{ \
 		display_message(ERROR_MESSAGE, \
-			"INDEXED_LIST_END_SAFE_IDENTIFIER_CHANGE(" #object_type \
-			"," #identifier ").  Invalid argument(s)"); \
+			"LIST_END_IDENTIFIER_CHANGE(" #object_type "," #identifier \
+			").  Invalid argument(s)"); \
 		return_code = 0; \
 	} \
 	LEAVE; \
 \
 	return (return_code); \
-} /* INDEXED_LIST_END_SAFE_IDENTIFIER_CHANGE(object_type,identifier) */
+} /* LIST_END_IDENTIFIER_CHANGE(object_type,identifier) */
 
 #define DECLARE_INDEXED_LIST_MODULE_FUNCTIONS( object_type , identifier , \
 	identifier_type , compare_function ) \
@@ -1846,13 +1845,10 @@ DECLARE_FIRST_OBJECT_IN_INDEX_THAT_FUNCTION(object_type) \
 DECLARE_FOR_EACH_OBJECT_IN_INDEX_FUNCTION(object_type)
 
 /* following only need to be declared when used with managers */
-#define DECLARE_INDEXED_LIST_SAFE_IDENTIFIER_CHANGE_FUNCTIONS( object_type , \
-	identifier ) \
-DECLARE_INDEXED_LIST_SAFE_IDENTIFIER_CHANGE_DATA(object_type,identifier); \
-DECLARE_INDEXED_LIST_BEGIN_SAFE_IDENTIFIER_CHANGE_FUNCTION(object_type, \
-	identifier) \
-DECLARE_INDEXED_LIST_END_SAFE_IDENTIFIER_CHANGE_FUNCTION(object_type, \
-	identifier)
+#define DECLARE_INDEXED_LIST_IDENTIFIER_CHANGE_FUNCTIONS( object_type , identifier ) \
+DECLARE_INDEXED_LIST_IDENTIFIER_CHANGE_DATA(object_type,identifier); \
+DECLARE_INDEXED_LIST_BEGIN_IDENTIFIER_CHANGE_FUNCTION(object_type,identifier) \
+DECLARE_INDEXED_LIST_END_IDENTIFIER_CHANGE_FUNCTION(object_type,identifier)
 
 #define DECLARE_INDEXED_LIST_FUNCTIONS( object_type ) \
 DECLARE_CREATE_INDEXED_LIST_FUNCTION(object_type) \

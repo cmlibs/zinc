@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : digitiser_window.c
 
-LAST MODIFIED : 13 June 2000
+LAST MODIFIED : 21 December 2000
 
 DESCRIPTION:
 Routines for generating and managing digitiser_windows. The digitiser window
@@ -941,6 +941,7 @@ DECLARE_DEFAULT_GET_OBJECT_NAME_FUNCTION(Digitiser_window)
 DECLARE_INDEXED_LIST_FUNCTIONS(Digitiser_window)
 DECLARE_FIND_BY_IDENTIFIER_IN_INDEXED_LIST_FUNCTION(Digitiser_window, \
 	name,char *,strcmp)
+DECLARE_INDEXED_LIST_IDENTIFIER_CHANGE_FUNCTIONS(Digitiser_window,name)
 
 PROTOTYPE_MANAGER_COPY_WITH_IDENTIFIER_FUNCTION(Digitiser_window,name)
 {
