@@ -98,10 +98,10 @@ static void
 	*display_information_message_data=(void *)NULL,
 	*display_warning_message_data=(void *)NULL;
 
-#define MESSAGE_STRING_SIZE 1000
+#define MESSAGE_STRING_SIZE 10000
 static char message_string[MESSAGE_STRING_SIZE];
 #else /* defined (MANUAL_CMISS) */
-#define COMMAND_STRING_SIZE 1000
+#define COMMAND_STRING_SIZE 10000
 static char command_string[COMMAND_STRING_SIZE];
 #endif /* defined (MANUAL_CMISS) */
 
@@ -3267,8 +3267,6 @@ mode number slowest.
 	return (return_code);
 } /* pf_get_basis */
 
-/* #define CMGUI_BUG_PAD_HACK */
-
 int pf_specify_image(int pf_job_id,int width,int height,
 	enum PF_image_format image_format,char *image)
 /*******************************************************************************
@@ -3293,39 +3291,6 @@ Used to specify the image to be texture mapped onto the model.
 		sprintf(filename, "%s/source_image.raw", pf_job->working_path);
 		if (image_file = fopen(filename, "wb"))
 		{
-#if defined CMGUI_BUG_PAD_HACK
-			{
-				char padding[3] = {(char)255,(char)255,(char)255};
-				int j, pad;
-
-				if (width % 4)
-				{
-					pad = 4 - (width % 4);
-				}
-				else
-				{
-					pad = 0;
-				}
-				image_ptr = image;
-				for (i = 0 ; i < height ; i++)
-				{
-					for (j = 0 ; j < width ; j++)
-					{
-						fwrite(image_ptr, 1, 3, image_file);
-						image_ptr += 3;
-					}
-					for (j = 0 ; j < pad ; j++)
-					{
-						fwrite(padding, 1, 3, image_file);		
-					}
-				}
-				fclose(image_file);
-				if (pad)
-				{
-					width += pad;
-				}
-			}
-#else /* defined CMGUI_BUG_PAD_HACK */
 			image_ptr = image;
 			for (i = 0 ; i < width * height ; i++)
 			{
@@ -3333,7 +3298,6 @@ Used to specify the image to be texture mapped onto the model.
 				image_ptr += 3;
 			}
 			fclose(image_file);
-#endif /* defined CMGUI_BUG_PAD_HACK */
 
 			/* Calculate the texture placement coordinates in ndc space */
 			texture_ndc_x = - pf_job->ndc_texture_offset * pf_job->ndc_texture_scaling
@@ -3407,65 +3371,15 @@ is filled in based on the current model.
 	if(PF_SUCCESS_RC == (return_code = 
 		get_Pf_job_from_id_and_lock(pf_job_id, &pf_job)))
 	{
-	return_code=PF_GENERAL_FAILURE_RC;
-	/* Use cmgui to calculate the texture based on the specified image */
-	sprintf(filename, "%s/pf_get_texture.com", pf_job->working_path);
-	if (texture_comfile = fopen(filename, "w"))
-	{
-		fprintf(texture_comfile, "$width = %d\n", width);
-		fprintf(texture_comfile, "$height = %d\n", height);
-		fprintf(texture_comfile, "gfx mod win 1 back texture source_image\n");
-		fprintf(texture_comfile, "gfx def field projection window_projection field coordinates win 1\n");
-		fprintf(texture_comfile, "gfx def field mapped_texture sample_texture coord projection texture source_image\n");
-#if defined (BACKWARD_PROJECTION)
-		/* This is the original precise texture calculation */
-		fprintf(texture_comfile, "gfx modify texture face_mapped width 1 height 1 evaluate_image field mapped_texture spectrum rgba_spectrum width $width height $height texture_coord texture element_group objface format rgba\n");
-		fprintf(texture_comfile, "gfx write texture face_mapped file %s/standinA.rgb rgb\n",
-			pf_job->remote_working_path);
-#else /* defined (BACKWARD_PROJECTION) */
-		/* This is the projection just involving drawing the image in texture space which is 
-			faster with a potentially small degradation in quality */
-		/* Use a single buffer window to get the full colour depth if it draws onscreen */
-		fprintf(texture_comfile, "gfx create material source_image texture source_image\n");
-		fprintf(texture_comfile, "gfx create scene texture_projection manual\n");
-		fprintf(texture_comfile, "gfx set vis axes off scene texture_projection\n");
-		fprintf(texture_comfile, "gfx draw group objface scene texture_projection\n");
-		/* Dither the graphics object around so that the colours near the edges bleed into
-			the holes and so there are no blank pixels on our texture */
-		fprintf(texture_comfile, "gfx draw group objface scene texture_projection as objface2\n");
-		fprintf(texture_comfile, "gfx set transformation name objface2 scene texture_projection 1 0 0 0 0 1 0 0 0 0 1 0 0.001 0.001 -1 1\n");		
-		fprintf(texture_comfile, "gfx draw group objface scene texture_projection as objface3\n");
-		fprintf(texture_comfile, "gfx set transformation name objface3 scene texture_projection 1 0 0 0 0 1 0 0 0 0 1 0 -0.001 0.001 -2 1\n");		
-		fprintf(texture_comfile, "gfx draw group objface scene texture_projection as objface4\n");
-		fprintf(texture_comfile, "gfx set transformation name objface4 scene texture_projection 1 0 0 0 0 1 0 0 0 0 1 0 0.001 -0.001 -3 1\n");		
-		fprintf(texture_comfile, "gfx draw group objface scene texture_projection as objface5\n");
-		fprintf(texture_comfile, "gfx set transformation name objface5 scene texture_projection 1 0 0 0 0 1 0 0 0 0 1 0 -0.001 -0.001 -4 1\n");		
-		fprintf(texture_comfile, "gfx modify g_element objface surfaces coordinate texture select_on material source_image texture_coordinates projection selected_material default_selected render_shaded scene texture_projection\n");
-
-		/* 	Some Linux X servers don't do single	
-		fprintf(texture_comfile, "gfx create window texture_projection single\n"); */
-		fprintf(texture_comfile, "gfx create window texture_projection\n");
-		fprintf(texture_comfile, "gfx modify window texture_projection layout 2d ortho_axes z -y width $width height $height\n");
-		fprintf(texture_comfile, "gfx modify window texture_projection image scene texture_projection\n");
-		fprintf(texture_comfile, "gfx modify window texture_projection view parallel eye_point 0.5 0.5 3 interest_point 0.5 0.5 0 up_vector 0.0 1.0 0.0 view_angle 26.525435202 near_clipping_plane 0.0288485 far_clipping_plane 10.3095 relative_viewport ndc_placement -1 -1 2 2 viewport_coordinates -1 -1 400 400\n");
-		fprintf(texture_comfile, "gfx print window texture_projection rgb file %s/standinA.rgb width $width height $height\n",
-			pf_job->remote_working_path);
-#endif /* defined (BACKWARD_PROJECTION) */
-		fprintf(texture_comfile, "open comfile %scmiss/pf_make_standin_texture.com exec\n",
-			photoface_remote_path);
-		fprintf(texture_comfile, "gfx modify texture face_mapped image %s/standin.rgb\n",
-			pf_job->remote_working_path);
-		fprintf(texture_comfile, "gfx modify material skin texture face_mapped\n");
-		fprintf(texture_comfile, "gfx modify g_element objface surfaces select_on material skin texture_coord texture\n");
-		fprintf(texture_comfile, "gfx mod win 1 back texture none\n");
-		fclose(texture_comfile);
+		return_code=PF_GENERAL_FAILURE_RC;
+		/* Use cmgui to calculate the texture based on the specified image */
 		if (linux_execute(
-			"%sbin/cmgui_control 'open comfile %s/pf_get_texture.com exec'",
-			photoface_remote_path, pf_job->remote_working_path))
+				 "%sbin/cmgui_control '$width=%d;$height=%d;cmiss(\"open comfile %scmiss/pf_get_texture.com exec\")'",
+				 photoface_remote_path, width, height, photoface_remote_path))
 		{
 			return_code=PF_SUCCESS_RC;
 		}
-
+		
 		sprintf(filename, "%s/standin.rgb", pf_job->working_path);
 		if (read_rgb_image_file(filename, &number_of_components,
 			&number_of_bytes_per_component, &file_height, &file_width, &image))
@@ -3514,11 +3428,6 @@ is filled in based on the current model.
 #endif /* defined (MANUAL_CMISS) */
 			return_code=PF_READ_FILE_FAILURE_RC;
 		}
-	}
-	else
-	{
-		return_code=PF_OPEN_FILE_FAILURE_RC;
-	}
 		save_state_Pf_job_and_unlock(&pf_job);
 	}
 	else
@@ -3532,3 +3441,330 @@ is filled in based on the current model.
 
 	return (return_code);
 } /* pf_get_texture */
+
+int pf_get_hair_model(int pf_job_id,int *number_of_vertices,
+	float **vertex_3d_locations,int *number_of_texture_vertices,
+	float **texture_vertex_3d_locations,int *number_of_triangles,
+	int **triangle_vertices,int **triangle_texture_vertices)
+/*******************************************************************************
+LAST MODIFIED : 21 June 2001
+
+DESCRIPTION :
+Returns the current transformed generic head as
+<vertex_3d_locations> a 1-D array of 3*<number_of_vertices> floats specifying
+	the world locations of the vertices (vertex number varying slowest)
+<texture_vertex_3d_locations> a 1-D array of 3*<number_of_texture_vertices>
+	floats specifying the texture locations of the texture vertices (vertex number
+	varying slowest)
+<triangle_vertices> a 1-D array of 3*<number_of_triangles> ints giving the
+	vertex numbers for each triangle
+<triangle_texture_vertices> a 1-D array of 3*<number_of_triangles> ints giving
+	the texture vertex numbers for each triangle
+==============================================================================*/
+{
+	char filename[100];
+	int return_code;
+	struct Obj *obj;
+	struct Pf_job *pf_job;
+
+	ENTER(pf_get_head_model);
+	if(PF_SUCCESS_RC == (return_code = 
+		get_Pf_job_from_id_and_lock(pf_job_id, &pf_job)))
+	{
+		return_code=PF_SUCCESS_RC;
+		/* Read the fitted obj file and return all the values */
+		sprintf(filename, "%s/hairgeometry.obj", pf_job->working_path);
+		if(obj = read_obj(filename))
+		{
+			*number_of_vertices = obj->number_of_vertices;
+			*vertex_3d_locations = obj->vertex_3d_locations;
+			*number_of_texture_vertices = obj->number_of_texture_vertices;
+			*texture_vertex_3d_locations = obj->texture_vertex_3d_locations;
+			*number_of_triangles = obj->number_of_triangles;
+			*triangle_vertices = obj->triangle_vertices;
+			*triangle_texture_vertices = obj->triangle_texture_vertices;
+			DEALLOCATE(obj);
+			return_code=PF_SUCCESS_RC;
+		}
+		else
+		{
+			return_code= PF_OPEN_FILE_FAILURE_RC;
+		}
+		save_state_Pf_job_and_unlock(&pf_job);
+	}
+	else
+	{
+#if defined (MANUAL_CMISS)
+		display_message(PF_ERROR_MESSAGE,
+			"Problem locking job.");
+#endif /* defined (MANUAL_CMISS) */
+	}
+	LEAVE;
+
+	return (return_code);
+} /* pf_get_head_model */
+
+int pf_specify_hair_mask(int pf_job_id,int width,int height,
+	enum PF_image_format image_format,char *image)
+/*******************************************************************************
+LAST MODIFIED : 21 June 2001
+
+DESCRIPTION :
+Used to specify the image to be texture mapped onto the model.
+==============================================================================*/
+{
+	char *image_ptr, filename[200];
+	float texture_ndc_x, texture_ndc_y, texture_ndc_width, texture_ndc_height;
+	FILE *image_file, *image_comfile;
+	int i, return_code;
+	struct Pf_job *pf_job;
+
+	ENTER(pf_specify_hair_mask);
+	if(PF_SUCCESS_RC == (return_code = 
+		get_Pf_job_from_id_and_lock(pf_job_id, &pf_job)))
+	{
+		return_code=PF_GENERAL_FAILURE_RC;
+		/* Create the rgb image for this image and make the image square by padding */
+		sprintf(filename, "%s/source_hair_mask.raw", pf_job->working_path);
+		if (image_file = fopen(filename, "wb"))
+		{
+			image_ptr = image;
+			for (i = 0 ; i < width * height ; i++)
+			{
+				fwrite(image_ptr, 1, 3, image_file);
+				image_ptr += 3;
+			}
+			fclose(image_file);
+
+			/* Calculate the texture placement coordinates in ndc space */
+			texture_ndc_x = - pf_job->ndc_texture_offset * pf_job->ndc_texture_scaling
+				- 1.0f;
+			texture_ndc_y = pf_job->ndc_texture_offset * pf_job->ndc_texture_scaling
+				- 1.0f;
+			texture_ndc_width = ((float)width - pf_job->ndc_texture_offset) *
+				pf_job->ndc_texture_scaling - 1.0f - texture_ndc_x;
+			/* OK This appears to be insane, i.e. texture_ndc_x is used where you might expect texture_ndc_y but that
+				is because the y position is already mangled */
+			texture_ndc_height = ((float)height - pf_job->ndc_texture_offset)
+				* pf_job->ndc_texture_scaling - 1.0f - texture_ndc_x;
+
+			sprintf(filename, "%s/pf_specify_hair_mask.com", pf_job->working_path);
+			if (image_comfile = fopen(filename, "w"))
+			{
+				fprintf(image_comfile, "gfx create texture source_hair_mask\n");
+				fprintf(image_comfile, "gfx modify texture source_hair_mask image rgb:%s/source_hair_mask.raw specify_width %d specify_height %d raw_interleaved\n",
+					pf_job->remote_working_path, width, height);
+
+				fclose(image_comfile);
+
+				if (linux_execute(
+					"%sbin/cmgui_control 'open comfile %s/pf_specify_hair_mask.com exec'",
+					photoface_remote_path, pf_job->remote_working_path))
+				{
+					return_code=PF_SUCCESS_RC;
+				}
+			}
+			else
+			{
+				return_code=PF_OPEN_FILE_FAILURE_RC;
+			}
+		}
+		else
+		{
+			return_code=PF_OPEN_FILE_FAILURE_RC;
+		}
+		save_state_Pf_job_and_unlock(&pf_job);
+	}
+	else
+	{
+#if defined (MANUAL_CMISS)
+		display_message(PF_ERROR_MESSAGE,
+			"Problem locking job.");
+#endif /* defined (MANUAL_CMISS) */
+	}
+	LEAVE;
+
+	return (return_code);
+} /* pf_specify_hair_mask */
+
+int pf_get_hair_texture(int pf_job_id,int width,int height,char *texture)
+/*******************************************************************************
+LAST MODIFIED : 21 June 2001
+
+DESCRIPTION :
+The caller specifies the texture size and provides the storage.  The <texture>
+is filled in based on the current model.
+==============================================================================*/
+{
+	char filename[200], *src_image_ptr, *dest_image_ptr;
+	FILE *texture_comfile;
+	int i, number_of_bytes_per_component, number_of_components, return_code;
+	long int file_height, file_width;
+	long unsigned *image;
+	struct Pf_job *pf_job;
+
+	ENTER(pf_get_hair_texture);
+	if(PF_SUCCESS_RC == (return_code = 
+		get_Pf_job_from_id_and_lock(pf_job_id, &pf_job)))
+	{
+		return_code=PF_GENERAL_FAILURE_RC;
+		/* Use cmgui to calculate the texture based on the specified image */
+		if (linux_execute(
+				 "%sbin/cmgui_control '$width=%d;$height=%d;cmiss(\"open comfile %scmiss/pf_get_hair_texture.com exec\")'",
+				 photoface_remote_path, width, height, photoface_remote_path))
+		{
+			return_code=PF_SUCCESS_RC;
+		}
+		
+		sprintf(filename, "%s/hair.rgb", pf_job->working_path);
+		if (read_rgb_image_file(filename, &number_of_components,
+			&number_of_bytes_per_component, &file_height, &file_width, &image))
+		{
+			if ((number_of_bytes_per_component == 1) && (number_of_components > 2)
+				&& (number_of_components < 5))
+			{
+				if ((file_width == width) && (file_height == height))
+				{
+					src_image_ptr = (char *) image;
+					dest_image_ptr = texture;
+					for (i = 0 ; i < width * height ; i++)
+					{
+						*dest_image_ptr = *src_image_ptr;
+						*(dest_image_ptr + 1) = *(src_image_ptr + 1);
+						*(dest_image_ptr + 2) = *(src_image_ptr + 2);
+						src_image_ptr += number_of_components;
+						dest_image_ptr += 3;
+					}
+					return_code=PF_SUCCESS_RC;
+				}
+				else
+				{
+#if defined (MANUAL_CMISS)
+					display_message(PF_ERROR_MESSAGE,
+						"File image dimensions are not what was expected in file %s",
+						filename);
+#endif /* defined (MANUAL_CMISS) */
+					return_code=PF_GENERAL_FAILURE_RC;
+				}
+			}
+			else
+			{
+#if defined (MANUAL_CMISS)
+				display_message(PF_ERROR_MESSAGE, "Unsupported image format in file %s",
+					filename);
+#endif /* defined (MANUAL_CMISS) */
+				return_code=PF_GENERAL_FAILURE_RC;
+			}
+		}
+		else
+		{
+#if defined (MANUAL_CMISS)
+			display_message(PF_ERROR_MESSAGE, "Unable to read image from file %s",
+				filename);
+#endif /* defined (MANUAL_CMISS) */
+			return_code=PF_READ_FILE_FAILURE_RC;
+		}
+		save_state_Pf_job_and_unlock(&pf_job);
+	}
+	else
+	{
+#if defined (MANUAL_CMISS)
+		display_message(PF_ERROR_MESSAGE,
+			"Problem locking job.");
+#endif /* defined (MANUAL_CMISS) */
+	}
+	LEAVE;
+
+	return (return_code);
+} /* pf_get_hair_texture */
+
+int pf_get_distorted_background(int pf_job_id,int width,int height,char *texture)
+/*******************************************************************************
+LAST MODIFIED : 21 June 2001
+
+DESCRIPTION :
+The caller specifies the texture size and provides the storage.  The <texture>
+is filled in based on the current model.
+==============================================================================*/
+{
+	char filename[200], *src_image_ptr, *dest_image_ptr;
+	FILE *texture_comfile;
+	int i, number_of_bytes_per_component, number_of_components, return_code;
+	long int file_height, file_width;
+	long unsigned *image;
+	struct Pf_job *pf_job;
+
+	ENTER(pf_get_distorted_background);
+	if(PF_SUCCESS_RC == (return_code = 
+		get_Pf_job_from_id_and_lock(pf_job_id, &pf_job)))
+	{
+		return_code=PF_GENERAL_FAILURE_RC;
+		/* Use image magick to distort the background image */
+		if (linux_execute(
+				 "%sbin/cmgui_control '$width=%d;$height=%d;cmiss(\"open comfile %scmiss/pf_get_distorted_background.com exec\")'",
+				 photoface_remote_path, width, height, photoface_remote_path))
+		{
+			return_code=PF_SUCCESS_RC;
+		}
+		
+		sprintf(filename, "%s/source_image_distorted.rgb", pf_job->working_path);
+		if (read_rgb_image_file(filename, &number_of_components,
+			&number_of_bytes_per_component, &file_height, &file_width, &image))
+		{
+			if ((number_of_bytes_per_component == 1) && (number_of_components > 2)
+				&& (number_of_components < 5))
+			{
+				if ((file_width == width) && (file_height == height))
+				{
+					src_image_ptr = (char *) image;
+					dest_image_ptr = texture;
+					for (i = 0 ; i < width * height ; i++)
+					{
+						*dest_image_ptr = *src_image_ptr;
+						*(dest_image_ptr + 1) = *(src_image_ptr + 1);
+						*(dest_image_ptr + 2) = *(src_image_ptr + 2);
+						src_image_ptr += number_of_components;
+						dest_image_ptr += 3;
+					}
+					return_code=PF_SUCCESS_RC;
+				}
+				else
+				{
+#if defined (MANUAL_CMISS)
+					display_message(PF_ERROR_MESSAGE,
+						"File image dimensions are not what was expected in file %s",
+						filename);
+#endif /* defined (MANUAL_CMISS) */
+					return_code=PF_GENERAL_FAILURE_RC;
+				}
+			}
+			else
+			{
+#if defined (MANUAL_CMISS)
+				display_message(PF_ERROR_MESSAGE, "Unsupported image format in file %s",
+					filename);
+#endif /* defined (MANUAL_CMISS) */
+				return_code=PF_GENERAL_FAILURE_RC;
+			}
+		}
+		else
+		{
+#if defined (MANUAL_CMISS)
+			display_message(PF_ERROR_MESSAGE, "Unable to read image from file %s",
+				filename);
+#endif /* defined (MANUAL_CMISS) */
+			return_code=PF_READ_FILE_FAILURE_RC;
+		}
+		save_state_Pf_job_and_unlock(&pf_job);
+	}
+	else
+	{
+#if defined (MANUAL_CMISS)
+		display_message(PF_ERROR_MESSAGE,
+			"Problem locking job.");
+#endif /* defined (MANUAL_CMISS) */
+	}
+	LEAVE;
+
+	return (return_code);
+} /* pf_get_distorted_background */

@@ -71,7 +71,9 @@ Runs a job through the photoface interface.
 									"lips_upper_top_1",
 									"jaw_gnathon"},
 		image_array[3 * IMAGE_WIDTH * IMAGE_HEIGHT], *image_ptr,
-		texture_array[3 * TEXTURE_WIDTH * TEXTURE_HEIGHT];
+		texture_array[3 * TEXTURE_WIDTH * TEXTURE_HEIGHT],
+		hair_texture_array[3 * TEXTURE_WIDTH * TEXTURE_HEIGHT],
+		distorted_background_array[3 * IMAGE_WIDTH * IMAGE_HEIGHT];
 	char *eye_marker_names[] = {"eyeball_origin_left",
 										 "eyeball_origin_right"};
 	float marker_2d_positions[] = {25, 30,
@@ -98,7 +100,7 @@ Runs a job through the photoface interface.
 		*vertex_3d_locations, view_angle;
 	int i, j, number_of_markers = 9, number_of_modes, number_of_vertices,
 		pf_job_id;
-	struct Obj obj;
+	struct Obj hair_obj, obj;
 
 #if defined (MANUAL_CMISS)
 	pf_set_display_message_function(PF_ERROR_MESSAGE,display_message_function,NULL);
@@ -193,12 +195,53 @@ Runs a job through the photoface interface.
 
 	if (0 == pf_get_texture(pf_job_id, TEXTURE_WIDTH, TEXTURE_HEIGHT, texture_array))
 	{
-		printf ("Texture[30][30]: %d %d %d\n", texture_array[3 * 30 * 100 + 3 * 30],
-			texture_array[3 * 30 * 100 + 3 * 30 + 1], texture_array[3 * 30 * 100 + 3 * 30 + 2]);
-		printf ("Texture[70][70]: %d %d %d\n", texture_array[3 * 70 * 100 + 3 * 70],
-			texture_array[3 * 70 * 100 + 3 * 70 + 1], texture_array[3 * 70 * 100 + 3 * 70 + 2]);
+		printf ("Texture[30][30]: %d %d %d\n", texture_array[3 * 30 * TEXTURE_WIDTH + 3 * 30],
+			texture_array[3 * 30 * TEXTURE_WIDTH + 3 * 30 + 1], texture_array[3 * 30 * TEXTURE_WIDTH + 3 * 30 + 2]);
+		printf ("Texture[70][70]: %d %d %d\n", texture_array[3 * 70 * TEXTURE_WIDTH + 3 * 70],
+			texture_array[3 * 70 * TEXTURE_WIDTH + 3 * 70 + 1], texture_array[3 * 70 * TEXTURE_WIDTH + 3 * 70 + 2]);
 	}
 
+	/* Put something into the image array */
+	image_ptr = image_array;
+	for (i = 0 ; i < IMAGE_HEIGHT ; i++)
+	{
+		for (j = 0 ; j < IMAGE_WIDTH ; j++)
+		{
+			*image_ptr = (i * 255 / IMAGE_HEIGHT + 128) % 256;
+			image_ptr++;
+			*image_ptr = *(image_ptr-1);
+			image_ptr++;
+			*image_ptr = *(image_ptr-1);
+			image_ptr++;
+		}
+	}
+
+	if (0 == pf_get_hair_model(pf_job_id, &(hair_obj.number_of_vertices), &(hair_obj.vertex_3d_locations),
+		&(hair_obj.number_of_texture_vertices), &(hair_obj.texture_vertex_3d_locations),
+		&(hair_obj.number_of_triangles), &(hair_obj.triangle_vertices),
+	  &(hair_obj.triangle_texture_vertices)))
+	{
+		printf("Completed pf_get_hair_model. vertices %d, %d, triangles %d\n",
+			hair_obj.number_of_vertices, hair_obj.number_of_texture_vertices, hair_obj.number_of_triangles);
+	}
+
+	pf_specify_hair_mask(pf_job_id, IMAGE_WIDTH, IMAGE_HEIGHT, PF_RGB_IMAGE, image_array);
+	
+	if (0 == pf_get_hair_texture(pf_job_id, TEXTURE_WIDTH, TEXTURE_HEIGHT, hair_texture_array))
+	{
+		printf ("Hair Texture[30][30]: %d %d %d\n", hair_texture_array[3 * 30 * TEXTURE_WIDTH + 3 * 30],
+			hair_texture_array[3 * 30 * TEXTURE_WIDTH + 3 * 30 + 1], hair_texture_array[3 * 30 * TEXTURE_WIDTH + 3 * 30 + 2]);
+		printf ("Hair Texture[70][70]: %d %d %d\n", hair_texture_array[3 * 70 * TEXTURE_WIDTH + 3 * 70],
+			hair_texture_array[3 * 70 * TEXTURE_WIDTH + 3 * 70 + 1], hair_texture_array[3 * 70 * TEXTURE_WIDTH + 3 * 70 + 2]);
+	}
+
+	if (0 == pf_get_distorted_background(pf_job_id, IMAGE_WIDTH, IMAGE_HEIGHT, distorted_background_array))
+	{
+		printf ("Distorted Background[30][30]: %d %d %d\n", distorted_background_array[3 * 30 * IMAGE_WIDTH + 3 * 30],
+			distorted_background_array[3 * 30 * IMAGE_WIDTH + 3 * 30 + 1], distorted_background_array[3 * 30 * IMAGE_WIDTH + 3 * 30 + 2]);
+		printf ("Distorted Background[70][70]: %d %d %d\n", distorted_background_array[3 * 70 * IMAGE_WIDTH + 3 * 70],
+			distorted_background_array[3 * 70 * IMAGE_WIDTH + 3 * 70 + 1], distorted_background_array[3 * 70 * IMAGE_WIDTH + 3 * 70 + 2]);
+	}
 
 	/* Write out the files */
 	/* Most of the model comes from pf_get_head_model but the number of dynamic vertices
@@ -220,7 +263,7 @@ Runs a job through the photoface interface.
 
 
 	/* End this job */
-	pf_close(pf_job_id);
+	/* pf_close(pf_job_id); */
 
 
 	/* Free up the path memory */

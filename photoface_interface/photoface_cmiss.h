@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : photoface_cmiss.h
 
-LAST MODIFIED : 7 June 2001
+LAST MODIFIED : 21 June 2001
 
 DESCRIPTION :
 The functions that interface Photoface to cmiss.  All functions have an integer
@@ -237,6 +237,45 @@ Used to specify the image to be texture mapped onto the model.
 CMISSDECLSPEC int pf_get_texture(int pf_job_id,int width,int height,char *texture);
 /*******************************************************************************
 LAST MODIFIED : 9 May 2001
+
+DESCRIPTION :
+The caller specifies the texture size and provides the storage.  The <texture>
+is filled in based on the current model.
+==============================================================================*/
+
+CMISSDECLSPEC int pf_get_hair_model(int pf_job_id,int *number_of_vertices,
+	float **vertex_3d_locations,int *number_of_texture_vertices,
+	float **texture_vertex_3d_locations,int *number_of_triangles,
+	int **triangle_vertices,int **triangle_texture_vertices);
+/*******************************************************************************
+LAST MODIFIED : 21 June 2001
+
+DESCRIPTION :
+Returns the current transformed generic head as
+<vertex_3d_locations> a 1-D array of 3*<number_of_vertices> floats specifying
+  the world locations of the vertices (vertex number varying slowest)
+<texture_vertex_3d_locations> a 1-D array of 3*<number_of_texture_vertices>
+  floats specifying the texture locations of the texture vertices (vertex number
+  varying slowest)
+<triangle_vertices> a 1-D array of 3*<number_of_triangles> ints giving the
+  vertex numbers for each triangle
+<triangle_texture_vertices> a 1-D array of 3*<number_of_triangles> ints giving
+  the texture vertex numbers for each triangle
+==============================================================================*/
+
+CMISSDECLSPEC int pf_specify_hair_mask(int pf_job_id,int width,int height,
+	enum PF_image_format image_format,char *image);
+/*******************************************************************************
+LAST MODIFIED : 21 June 2001
+
+DESCRIPTION :
+Used to specify the image to be texture mapped onto the model.
+==============================================================================*/
+
+CMISSDECLSPEC int pf_get_hair_texture(int pf_job_id,int width,int height,
+	char *texture);
+/*******************************************************************************
+LAST MODIFIED : 21 June 2001
 
 DESCRIPTION :
 The caller specifies the texture size and provides the storage.  The <texture>
