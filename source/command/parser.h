@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : parser.h
 
-LAST MODIFIED : 15 December 1999
+LAST MODIFIED : 10 March 2000
 
 DESCRIPTION :
 Public interface for the beginnings of a simple parser (although at the moment
@@ -286,6 +286,24 @@ LAST MODIFIED : 18 June 1996
 
 DESCRIPTION :
 Executes a VARIABLE command.
+==============================================================================*/
+
+int execute_assign_variable(struct Parse_state *state,
+	void *dummy_to_be_modified,void *dummy_user_data);
+/*******************************************************************************
+LAST MODIFIED : 10 March 2000
+
+DESCRIPTION :
+Executes an ASSIGN VARIABLE command.  Does a very small subset of the intended
+use of this command.
+==============================================================================*/
+
+int destroy_assign_variable_list(void);
+/*******************************************************************************
+LAST MODIFIED : 10 March 2000
+
+DESCRIPTION :
+Clean up the global assign_variable_list.
 ==============================================================================*/
 
 int set_name(struct Parse_state *state,void *name_address_void,

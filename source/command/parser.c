@@ -21,6 +21,8 @@ A module for supporting command parsing.
 #include "command/parser.h"
 #include "general/debug.h"
 #include "general/mystring.h"
+#include "general/object.h"
+#include "general/indexed_list_private.h"
 #include "user_interface/message.h"
 #include "user_interface/user_interface.h"
 
@@ -55,6 +57,17 @@ enum Variable_operation_type
 	SUBTRACT_VARIABLE_OPERATION
 }; /* enum Variable_operation_type */
 
+/* SAB.  First implementation of "assign variable" to conform to "new interpreter".
+   These are string variables, are case sensitive and have global scope.
+	The use of a variable is indicated by a $ symbol in any token. */
+struct Assign_variable
+{
+	char *name;
+	char *value;
+
+	int access_count;
+}; /* struct Assign_variable */
+
 /*
 Module variables
 ----------------
@@ -68,10 +81,185 @@ static float variable_float[MAX_VARIABLES];
 static int exclusive_option=0,multiple_options=0,usage_indentation_level=0,
 	usage_newline;
 
+DECLARE_LIST_TYPES(Assign_variable);
+FULL_DECLARE_INDEXED_LIST_TYPE(Assign_variable);
+
+PROTOTYPE_OBJECT_FUNCTIONS(Assign_variable);
+PROTOTYPE_LIST_FUNCTIONS(Assign_variable);
+PROTOTYPE_FIND_BY_IDENTIFIER_IN_LIST_FUNCTION(Assign_variable,name,void *);
+
+static struct LIST(Assign_variable) *assign_variable_list = NULL;
+
 /*
 Module functions
 ----------------
 */
+static struct Assign_variable *CREATE(Assign_variable)(char *name)
+/*******************************************************************************
+LAST MODIFIED : 10 March 2000
+
+DESCRIPTION :
+==============================================================================*/
+{
+	struct Assign_variable *variable;
+	
+	if (name)
+	{
+		if (ALLOCATE(variable, struct Assign_variable, 1)
+			&& ALLOCATE(variable->name, char, strlen(name)+1))
+		{
+			strcpy(variable->name, name);
+			variable->value = (char *)NULL;
+			variable->access_count = 0;
+			/* Add into the global list */
+			if (!assign_variable_list)
+			{
+				assign_variable_list = CREATE_LIST(Assign_variable)();
+			}
+			
+			if (!(ADD_OBJECT_TO_LIST(Assign_variable)(variable, assign_variable_list)))
+			{
+				display_message(ERROR_MESSAGE,
+					"CREATE(Assign_variable).  Unable to add variable to global list");
+			}
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,
+				"CREATE(Assign_variable).  Unable to allocate memory for assign_variable structure");
+			DEALLOCATE(variable);
+			variable = (struct Assign_variable *)NULL;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"CREATE(Assign_variable).  Invalid arguments");
+		variable = (struct Assign_variable *)NULL;
+	}
+			
+	
+	return(variable);
+}
+
+int DESTROY(Assign_variable)(struct Assign_variable **variable_address)
+/*******************************************************************************
+LAST MODIFIED : 10 March 2000
+
+DESCRIPTION :
+==============================================================================*/
+{
+	int return_code;
+	struct Assign_variable *variable;
+
+	if (variable_address && (variable = *variable_address))
+	{
+		if (variable->access_count <= 1)
+		{
+			if (variable->access_count == 1)
+			{
+				if (assign_variable_list)
+				{
+					/* Check that it is only the global list and then remove */
+					if (IS_OBJECT_IN_LIST(Assign_variable)(variable,
+						assign_variable_list))
+					{
+						REMOVE_OBJECT_FROM_LIST(Assign_variable)(variable,
+							assign_variable_list);
+					}
+					else
+					{
+						display_message(ERROR_MESSAGE,
+							"DESTROY(Assign_variable).  Destroy called when access count == 1 and the variable isn't in the global list.");
+						*variable_address = (struct Assign_variable *)NULL;
+						return_code = 0;
+					}
+				}
+				else
+				{
+					display_message(ERROR_MESSAGE,
+						"DESTROY(Assign_variable).  Destroy called when access count == 1 and there isn't a global list.");
+					*variable_address = (struct Assign_variable *)NULL;
+					return_code = 0;
+				}
+			}
+			else
+			{
+				return_code = 1;
+			}
+			if (return_code)
+			{
+				if (variable->name)
+				{
+					DEALLOCATE(variable->name);
+				}
+				if (variable->value)
+				{
+					DEALLOCATE(variable->value);
+				}
+				DEALLOCATE(variable);
+				*variable_address = (struct Assign_variable *)NULL;
+			}
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,
+				"DESTROY(Assign_variable).  Destroy called when access count > 1.");
+			*variable_address = (struct Assign_variable *)NULL;
+			return_code = 0;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"DESTROY(Assign_variable).  Invalid arguments.");
+		return_code = 0;
+	}
+
+	return (return_code);
+}
+
+static int Assign_variable_set_value(struct Assign_variable *variable, char *value)
+/*******************************************************************************
+LAST MODIFIED : 10 March 2000
+
+DESCRIPTION :
+==============================================================================*/
+{
+	char *new_value;
+	int return_code;
+	
+	if (variable && value)
+	{
+		if (REALLOCATE(new_value, variable->value, char, strlen(value) + 1))
+		{
+			variable->value = new_value;
+			strcpy(variable->value, value);
+			return_code = 1;
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,
+				"Assign_variable_set_value.  Unable to allocate memory for assign_variable value");
+			return_code = 0;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Assign_variable_set_value.  Invalid arguments");
+		return_code = 0;
+	}
+
+	return(return_code);
+} /* Assign_variable_set_value */
+
+DECLARE_OBJECT_FUNCTIONS(Assign_variable)
+DECLARE_INDEXED_LIST_MODULE_FUNCTIONS(Assign_variable,name,void *,strcmp)
+DECLARE_INDEXED_LIST_FUNCTIONS(Assign_variable)
+DECLARE_FIND_BY_IDENTIFIER_IN_INDEXED_LIST_FUNCTION(Assign_variable,name,void *,
+	strcmp)
+
 static int reduce_fuzzy_string(char *reduced_string,char *string)
 /*******************************************************************************
 LAST MODIFIED : 16 September 1998
@@ -1858,16 +2046,19 @@ the <state>.  Useful for changing the kept history echoed to the command window.
 
 int parse_variable(char **token)
 /*******************************************************************************
-LAST MODIFIED : 17 February 1998
+LAST MODIFIED : 10 March 2000
 
 DESCRIPTION :
 Replaces occurrences of %<f/i/z/l><nnn>% with the value of that variable.  May
 be called recursively.  Reallocates <*token>, so there is no problem with
 over-writing.
+Also replaces $LFX with the string representing LFX in the Assign_variable list
+if it exists.
 ==============================================================================*/
 {
-	char *begin,*end,*new_token,temp_string[100];
+	char *begin,*end,*index,*new_token,temp_string[100],*var_name;
 	int length,temp_int,number,return_code,temp_string_offset;
+	struct Assign_variable *variable;
 
 	ENTER(parse_variable);
 	/* check argument */
@@ -1970,6 +2161,85 @@ over-writing.
 				return_code=0;
 			}
 		}
+		/* Separately parse for $assign_variables */
+		/* try to find a $ */
+		while (return_code && (begin=strchr(*token,'$')))
+		{
+			if ((begin == *token) || ((begin > *token + 2) &&
+				(!strncmp(begin - 2, "//", 2))))
+			{
+				begin++;
+				/* look for the end of this token */
+				if (!(end=strchr(begin,'/')))
+				{
+					end = begin + strlen(begin);
+				}
+				if ((*end == 0) || (!(strncmp(end, "//", 2))))
+				{
+					if (ALLOCATE(var_name, char, end - begin))
+					{
+						strncpy(var_name, begin, end - begin);
+						var_name[end - begin] = 0;
+						if (variable = FIND_BY_IDENTIFIER_IN_LIST(Assign_variable, name)
+							(var_name, assign_variable_list))
+						{
+							if (ALLOCATE(new_token, char, strlen(variable->value) +
+								strlen(*token) - (end - begin)))
+							{
+								index = new_token;
+								if ((begin - *token - 3) > 0)
+								{
+									strncpy(index, *token, begin - *token - 3);
+									index += begin - *token - 3;
+								}
+								if (strlen(variable->value) > 0)
+								{
+									strncpy(index, variable->value, strlen(variable->value));
+									index += strlen(variable->value);
+								}
+								if (strlen(end) > 2)
+								{
+									strcpy(index, end + 2);
+									index += strlen(end + 2);
+								}
+								*index = 0;
+#if defined (DEBUG)
+								display_message(INFORMATION_MESSAGE,
+									"parse_variable.\n\tOld token %s\n\tVariable value %s\n\tNew token %s\n", *token, variable->value, new_token);
+#endif /* defined (DEBUG) */
+								DEALLOCATE(*token);
+								*token = new_token;
+							}
+						}
+						else
+						{
+							display_message(ERROR_MESSAGE,
+								"parse_variable.  Variable \"%s\" not found.", var_name);
+							return_code=0;
+						}
+						DEALLOCATE(var_name);
+					}
+					else
+					{
+						display_message(ERROR_MESSAGE,
+							"parse_variable.  Unable to allocate variable name string");
+						return_code=0;
+					}
+				}
+				else
+				{
+					display_message(ERROR_MESSAGE,
+						"parse_variable.  Concatenation token operator \"//\" required between variable and plain text.");
+					return_code=0;				
+				}
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE,
+					"parse_variable.  Concatenation token operator \"//\" required between variable and plain text.");
+				return_code=0;				
+			}
+		}
 	}
 	else
 	{
@@ -2029,6 +2299,181 @@ Executes a VARIABLE command.
 
 	return (return_code);
 } /* execute_variable_command */
+
+int execute_assign_variable(struct Parse_state *state,
+	void *dummy_to_be_modified,void *dummy_user_data)
+/*******************************************************************************
+LAST MODIFIED : 10 March 2000
+
+DESCRIPTION :
+Executes an ASSIGN VARIABLE command.  Does a very small subset of the intended
+use of this command.
+==============================================================================*/
+{
+	char *begin, *begin2, *current_token, *end, *env_string, *var_name;
+	int return_code;
+	struct Assign_variable *variable;
+	
+	ENTER(execute_assign_variable);
+	USE_PARAMETER(dummy_to_be_modified);
+	USE_PARAMETER(dummy_user_data);
+	if (state)
+	{
+		if (current_token=state->current_token)
+		{
+			if (strcmp(PARSER_HELP_STRING,current_token)&&
+				strcmp(PARSER_RECURSIVE_HELP_STRING,current_token))
+			{
+				return_code = 1;
+				if (!(assign_variable_list) || 
+					!(variable = FIND_BY_IDENTIFIER_IN_LIST(Assign_variable, name)
+					(current_token, assign_variable_list)))
+				{
+					if (!(variable = CREATE(Assign_variable)(current_token)))
+					{
+						display_message(ERROR_MESSAGE,
+							"execute_assign_variable.  Unable to find or create variable %s",
+							current_token);
+						return_code = 0;
+					}
+				}
+				if (return_code && variable)
+				{
+					shift_Parse_state(state,1);
+					if (current_token=state->current_token)
+					{
+						if (strcmp(PARSER_HELP_STRING,current_token)&&
+							strcmp(PARSER_RECURSIVE_HELP_STRING,current_token))
+						{
+							/* Implement special case getenv command */
+							if (!strncmp(current_token, "getenv", 6))
+							{
+								if (begin=strchr(current_token,'('))
+								{
+									if (begin2=strchr(begin,'"'))
+									{
+										begin = begin2;
+										if (!(end = strchr(begin + 1,'"')))
+										{
+											display_message(ERROR_MESSAGE,
+												"execute_assign_variable.  Closing \" missing.",
+												state->current_token);
+											return_code = 0;
+										}
+									}
+									else
+									{
+										if (!(end = strchr(begin + 1,')')))
+										{
+											display_message(ERROR_MESSAGE,
+												"execute_assign_variable.  Closing ) missing.",
+												state->current_token);
+											return_code = 0;
+										}										
+									}
+								}
+								else
+								{
+									display_message(ERROR_MESSAGE,
+										"execute_assign_variable.  Bracket missing after funciton getenv",
+										state->current_token);
+									return_code = 0;
+								}
+								if (return_code)
+								{
+									if (ALLOCATE(var_name, char, end - begin))
+									{
+										strncpy(var_name, begin + 1, end - begin - 1);
+										var_name[end - begin - 1] = 0;
+										if (env_string = getenv(var_name))
+										{
+											return_code = 
+												Assign_variable_set_value(variable,
+													env_string);
+										}
+										else
+										{
+											display_message(ERROR_MESSAGE,
+												"execute_assign_variable.  Environment variable %s not found",
+												var_name);
+											return_code = 0;
+										}
+										DEALLOCATE(var_name);
+									}
+								}
+							}
+							else
+							{
+								return_code = 
+									Assign_variable_set_value(variable, current_token);
+							}
+						}
+						else
+						{
+							display_message(INFORMATION_MESSAGE,
+								"\n           value");
+							return_code = 1;
+						}
+					}
+					else
+					{
+						display_message(ERROR_MESSAGE,
+							"execute_assign_variable.  Specify new value",
+							state->current_token);
+						return_code = 0;						
+					}
+				}
+			}
+			else
+			{
+				display_message(INFORMATION_MESSAGE,
+					"\n         VARIABLE_NAME value");
+				return_code = 1;
+			}
+		}
+		else
+		{
+			return_code=1;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"execute_assign_variable.  Missing state");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* execute_assign_variable */
+
+int destroy_assign_variable_list(void)
+/*******************************************************************************
+LAST MODIFIED : 10 March 2000
+
+DESCRIPTION :
+Clean up the global assign_variable_list.
+==============================================================================*/
+{
+	int return_code;
+	
+	ENTER(destroy_assign_variable_list);
+
+	if (assign_variable_list)
+	{
+		return_code = DESTROY_LIST(Assign_variable)(&assign_variable_list);
+		assign_variable_list = (struct LIST(Assign_variable) *)NULL;
+	}
+	else
+	{
+		return_code = 1;
+	}
+
+	LEAVE;
+
+	return (return_code);
+} /* destroy_assign_variable_list */
+
 
 int set_name(struct Parse_state *state,void *name_address_void,
 	void *prefix_space)

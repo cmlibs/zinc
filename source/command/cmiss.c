@@ -20591,6 +20591,78 @@ Executes a CELL command.
 #endif /* !defined (WINDOWS_DEV_FLAG) */
 
 #if !defined (WINDOWS_DEV_FLAG)
+static int execute_command_assign(struct Parse_state *state,
+	void *prompt_void,void *command_data_void)
+/*******************************************************************************
+LAST MODIFIED : 
+
+DESCRIPTION :
+Executes an ASSIGN command.
+First implementation of a small subset of the assign command which exists 
+in the "new interpreter".
+==============================================================================*/
+{
+	int return_code;
+	struct Cmiss_command_data *command_data;
+
+	ENTER(execute_command_assign);
+	USE_PARAMETER(prompt_void);
+	if (state)
+	{
+		if (state->current_token)
+		{
+			if (strcmp(PARSER_HELP_STRING,state->current_token)&&
+				strcmp(PARSER_RECURSIVE_HELP_STRING,state->current_token))
+			{
+				if (fuzzy_string_compare(state->current_token, "variable"))
+				{
+					shift_Parse_state(state,1);
+					return_code=execute_assign_variable(state,(void *)NULL,
+						(void *)NULL);
+				}
+				else
+				{
+					display_message(ERROR_MESSAGE,
+						"execute_command_assign:  Only \"assign variable VARIABLE_NAME value\" implemented currently");
+					return_code=0;
+				}
+			}
+			else
+			{
+				display_message(INFORMATION_MESSAGE,
+					"\n      variable");
+				/* By not shifting the parse state the rest of the help should come out */
+				return_code=execute_assign_variable(state,(void *)NULL,
+					(void *)NULL);
+			}
+		}
+		else
+		{
+			if (command_data=(struct Cmiss_command_data *)command_data_void)
+			{
+				set_command_prompt("assign",command_data->command_window);
+				return_code=1;
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE,
+					"execute_command_assign.  Missing command_data");
+				return_code=0;
+			}
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"execute_command_assign.  Missing state");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* execute_command_assign */
+#endif /* !defined (WINDOWS_DEV_FLAG) */
+
+#if !defined (WINDOWS_DEV_FLAG)
 static int execute_command_create(struct Parse_state *state,
 	void *prompt_void,void *command_data_void)
 /*******************************************************************************
@@ -21669,6 +21741,7 @@ Execute a <command_string>. If there is a command
 #if !defined (WINDOWS_DEV_FLAG)
 	static struct Modifier_entry option_table[]=
 	{
+		{"assign","assign",NULL,execute_command_assign},
 		{"cell","cell",NULL,execute_command_cell},
 		{"command_window","command_window",NULL,modify_Command_window},
 		{"create","create",NULL,execute_command_create},
