@@ -6098,6 +6098,7 @@ Set grid-based <destination_field> in all the elements in <element_group> or
 		if (Computed_field_get_number_of_components(source_field) ==
 			 Computed_field_get_number_of_components(destination_field))
 		{
+			return_code=1;
 			data.source_field = source_field;
 			data.destination_field = destination_field;
 			data.element_manager = element_manager;
@@ -6117,6 +6118,7 @@ Set grid-based <destination_field> in all the elements in <element_group> or
 						"  Either source field isn't defined at element or destination "
 						"field could not be set.",
 						data.success_count,data.attempt_count);
+					return_code=0;
 				}
 			}
 			else
@@ -6132,6 +6134,7 @@ Set grid-based <destination_field> in all the elements in <element_group> or
 						"  Either source field isn't defined at element or destination "
 						"field could not be set.",
 						data.success_count,data.attempt_count);
+					return_code=0;
 				}
 			}
 			MANAGER_END_CACHE(FE_element)(element_manager);
