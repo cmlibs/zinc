@@ -358,28 +358,29 @@ Main program for unemap
 #define XmNidentifyingColour "identifyingColour"
 #define XmCIdentifyingColour "IdentifyingColour"
 	static XtResource resources[]=
-	{
-		{
-			XmNidentifyingColour,
-			XmCIdentifyingColour,
-			XmRPixel,
-			sizeof(Pixel),
-			XtOffsetOf(User_settings,identifying_colour),
-			XmRString,
-			"green"
-		},
-#if defined (UNEMAP_USE_3D)
-		{
-			XmNstandardTorso,
-			XmCStandardTorso,
-			XmRString,
-			sizeof(char *),
-			XtOffsetOf(struct Standard_torso_defaults,standard_torso_file),
-			XmRString,
-			""
-		}
-#endif/* defined (UNEMAP_USE_3D) */
+	{		
+		XmNidentifyingColour,
+		XmCIdentifyingColour,
+		XmRPixel,
+		sizeof(Pixel),
+		XtOffsetOf(User_settings,identifying_colour),
+		XmRString,
+		"green"	
 	};
+
+#if defined (UNEMAP_USE_3D)
+	static XtResource standard_torso_resources[]=
+	{
+		XmNstandardTorso,
+		XmCStandardTorso,
+		XmRString,
+		sizeof(char *),
+		XtOffsetOf(struct Standard_torso_defaults,standard_torso_file),
+		XmRString,
+		""
+	};
+#endif/* defined (UNEMAP_USE_3D) */
+
 	struct System_window_data
 	{
 		Position x;
@@ -941,8 +942,8 @@ Main program for unemap
 			/* get the location of the default_torso file from Xresoures*/
 			standard_torso_defaults.standard_torso_file= "";			
 			XtVaGetApplicationResources(system->window_shell,
-				&standard_torso_defaults,resources,
-				XtNumber(resources),NULL);
+				&standard_torso_defaults,standard_torso_resources,
+				XtNumber(standard_torso_resources),NULL);
 			/* do nothing if no default torso file specified */
 			if(strcmp(standard_torso_defaults.standard_torso_file,""))
 			{									
