@@ -559,13 +559,13 @@ static START_COMPUTED_VARIABLE_EVALUATE_DERIVATIVE_TYPE_SPECIFIC_FUNCTION(
 	struct Computed_variable *independent_variable,**independent_variable_address;
 	struct Computed_variable_finite_element_type_specific_data *data;
 	struct FE_element *element;
-	struct FE_field *fe_field;
+/*	struct FE_field *fe_field;*/
 
 	data=(struct Computed_variable_finite_element_type_specific_data *)
 		Computed_variable_get_type_specific_data(variable);
 	ASSERT_IF(data&&(data->field),return_code,0)
 	{
-		fe_field=data->field;
+/*		fe_field=data->field;*/
 		component_number=data->component_number;
 		if (value_type=CREATE(Computed_value)())
 		{
