@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : pacing_window.c
 
-LAST MODIFIED : 11 November 2001
+LAST MODIFIED : 13 November 2001
 
 DESCRIPTION :
 ==============================================================================*/
@@ -993,7 +993,7 @@ Finds the id of the basic cycle length pace button in the pacing window.
 static void ch_pacing_basic_cycle_length_pa(Widget widget,
 	XtPointer pacing_window_structure,XtPointer call_data)
 /*******************************************************************************
-LAST MODIFIED : 11 November 2001
+LAST MODIFIED : 13 November 2001
 
 DESCRIPTION :
 Called when the basic cycle length pace button is toggled.
@@ -1030,22 +1030,30 @@ Called when the basic cycle length pace button is toggled.
 				pacing_voltages[number_of_pacing_voltages/2]=
 					pacing_window->control_voltage;
 				voltages_per_second=2000./(pacing_window->s2_resolution);
-				for (i=0;i<pacing_window->number_of_pacing_channels;i++)
+				if (0<pacing_window->number_of_pacing_channels)
 				{
-					unemap_set_channel_stimulating((pacing_window->pacing_channels)[i],1);
+					for (i=0;i<pacing_window->number_of_pacing_channels;i++)
+					{
+						unemap_set_channel_stimulating((pacing_window->pacing_channels)[i],
+							1);
+					}
+					unemap_load_voltage_stimulating(
+						pacing_window->number_of_pacing_channels,
+						pacing_window->pacing_channels,number_of_pacing_voltages,
+						voltages_per_second,pacing_voltages,(unsigned int)0);
 				}
-				unemap_load_voltage_stimulating(
-					pacing_window->number_of_pacing_channels,
-					pacing_window->pacing_channels,number_of_pacing_voltages,
-					voltages_per_second,pacing_voltages,(unsigned int)0);
-				for (i=0;i<pacing_window->number_of_return_channels;i++)
+				if (0<pacing_window->number_of_return_channels)
 				{
-					unemap_set_channel_stimulating((pacing_window->return_channels)[i],1);
+					for (i=0;i<pacing_window->number_of_return_channels;i++)
+					{
+						unemap_set_channel_stimulating((pacing_window->return_channels)[i],
+							1);
+					}
+					unemap_load_voltage_stimulating(
+						pacing_window->number_of_return_channels,
+						pacing_window->return_channels,(int)0,(float)0,(float *)NULL,
+						(unsigned int)0);
 				}
-				unemap_load_voltage_stimulating(
-					pacing_window->number_of_return_channels,
-					pacing_window->return_channels,(int)0,(float)0,(float *)NULL,
-					(unsigned int)0);
 				/* start pacing */
 				unemap_start_stimulating();
 				pacing_window->pacing=1;
@@ -1650,7 +1658,7 @@ Finds the id of the restitution time pace button in the pacing window.
 static void ch_pacing_restitution_time_pace(Widget widget,
 	XtPointer pacing_window_structure,XtPointer call_data)
 /*******************************************************************************
-LAST MODIFIED : 11 November 2001
+LAST MODIFIED : 13 November 2001
 
 DESCRIPTION :
 Called when the restitution time pace button is toggled.
@@ -1722,22 +1730,30 @@ Called when the restitution time pace button is toggled.
 				pacing_voltages[number_of_pacing_voltages]=0;
 				number_of_pacing_voltages++;
 				voltages_per_second=2000./(pacing_window->s2_resolution);
-				for (i=0;i<pacing_window->number_of_pacing_channels;i++)
+				if (0<pacing_window->number_of_pacing_channels)
 				{
-					unemap_set_channel_stimulating((pacing_window->pacing_channels)[i],1);
+					for (i=0;i<pacing_window->number_of_pacing_channels;i++)
+					{
+						unemap_set_channel_stimulating((pacing_window->pacing_channels)[i],
+							1);
+					}
+					unemap_load_voltage_stimulating(
+						pacing_window->number_of_pacing_channels,
+						pacing_window->pacing_channels,number_of_pacing_voltages,
+						voltages_per_second,pacing_voltages,(unsigned int)1);
 				}
-				unemap_load_voltage_stimulating(
-					pacing_window->number_of_pacing_channels,
-					pacing_window->pacing_channels,number_of_pacing_voltages,
-					voltages_per_second,pacing_voltages,(unsigned int)1);
-				for (i=0;i<pacing_window->number_of_return_channels;i++)
+				if (0<pacing_window->number_of_return_channels)
 				{
-					unemap_set_channel_stimulating((pacing_window->return_channels)[i],1);
+					for (i=0;i<pacing_window->number_of_return_channels;i++)
+					{
+						unemap_set_channel_stimulating((pacing_window->return_channels)[i],
+							1);
+					}
+					unemap_load_voltage_stimulating(
+						pacing_window->number_of_return_channels,
+						pacing_window->return_channels,(int)0,(float)0,(float *)NULL,
+						(unsigned int)0);
 				}
-				unemap_load_voltage_stimulating(
-					pacing_window->number_of_return_channels,
-					pacing_window->return_channels,(int)0,(float)0,(float *)NULL,
-					(unsigned int)0);
 				/* start pacing */
 				unemap_start_stimulating();
 				pacing_window->pacing=1;
@@ -1822,7 +1838,7 @@ Finds the id of the restitution time yes button in the pacing window.
 static void ac_pacing_restitution_time_yes(Widget widget,
 	XtPointer pacing_window_structure,XtPointer call_data)
 /*******************************************************************************
-LAST MODIFIED : 11 November 2001
+LAST MODIFIED : 13 November 2001
 
 DESCRIPTION :
 Called when the restitution time yes button is pressed.
@@ -1902,14 +1918,20 @@ Called when the restitution time yes button is pressed.
 			pacing_voltages[number_of_pacing_voltages]=0;
 			number_of_pacing_voltages++;
 			voltages_per_second=2000./(pacing_window->s2_resolution);
-			unemap_load_voltage_stimulating(
-				pacing_window->number_of_pacing_channels,
-				pacing_window->pacing_channels,number_of_pacing_voltages,
-				voltages_per_second,pacing_voltages,(unsigned int)1);
-			unemap_load_voltage_stimulating(
-				pacing_window->number_of_return_channels,
-				pacing_window->return_channels,(int)0,(float)0,(float *)NULL,
-				(unsigned int)0);
+			if (0<pacing_window->number_of_pacing_channels)
+			{
+				unemap_load_voltage_stimulating(
+					pacing_window->number_of_pacing_channels,
+					pacing_window->pacing_channels,number_of_pacing_voltages,
+					voltages_per_second,pacing_voltages,(unsigned int)1);
+			}
+			if (0<pacing_window->number_of_return_channels)
+			{
+				unemap_load_voltage_stimulating(
+					pacing_window->number_of_return_channels,
+					pacing_window->return_channels,(int)0,(float)0,(float *)NULL,
+					(unsigned int)0);
+			}
 			/* start pacing */
 			unemap_start_stimulating();
 		}
@@ -1976,7 +1998,7 @@ Finds the id of the restitution time no button in the pacing window.
 static void ac_pacing_restitution_time_no(Widget widget,
 	XtPointer pacing_window_structure,XtPointer call_data)
 /*******************************************************************************
-LAST MODIFIED : 11 November 2001
+LAST MODIFIED : 13 November 2001
 
 DESCRIPTION :
 Called when the restitution time no button is pressed.
@@ -2056,14 +2078,20 @@ Called when the restitution time no button is pressed.
 			pacing_voltages[number_of_pacing_voltages]=0;
 			number_of_pacing_voltages++;
 			voltages_per_second=2000./(pacing_window->s2_resolution);
-			unemap_load_voltage_stimulating(
-				pacing_window->number_of_pacing_channels,
-				pacing_window->pacing_channels,number_of_pacing_voltages,
-				voltages_per_second,pacing_voltages,(unsigned int)1);
-			unemap_load_voltage_stimulating(
-				pacing_window->number_of_return_channels,
-				pacing_window->return_channels,(int)0,(float)0,(float *)NULL,
-				(unsigned int)0);
+			if (0<pacing_window->number_of_pacing_channels)
+			{
+				unemap_load_voltage_stimulating(
+					pacing_window->number_of_pacing_channels,
+					pacing_window->pacing_channels,number_of_pacing_voltages,
+					voltages_per_second,pacing_voltages,(unsigned int)1);
+			}
+			if (0<pacing_window->number_of_return_channels)
+			{
+				unemap_load_voltage_stimulating(
+					pacing_window->number_of_return_channels,
+					pacing_window->return_channels,(int)0,(float)0,(float *)NULL,
+					(unsigned int)0);
+			}
 			/* start pacing */
 			unemap_start_stimulating();
 		}
@@ -2484,22 +2512,30 @@ Called when the restitution curve pace button is toggled.
 				XtSetSensitive(pacing_window->basic_cycle_length_pace_toggle,False);
 				/* set up pacing */
 				voltages_per_second=2000./(pacing_window->s2_resolution);
-				for (i=0;i<pacing_window->number_of_pacing_channels;i++)
+				if (0<pacing_window->number_of_pacing_channels)
 				{
-					unemap_set_channel_stimulating((pacing_window->pacing_channels)[i],1);
+					for (i=0;i<pacing_window->number_of_pacing_channels;i++)
+					{
+						unemap_set_channel_stimulating((pacing_window->pacing_channels)[i],
+							1);
+					}
+					unemap_load_voltage_stimulating(
+						pacing_window->number_of_pacing_channels,
+						pacing_window->pacing_channels,number_of_pacing_voltages,
+						voltages_per_second,pacing_window->pacing_voltages,(unsigned int)1);
 				}
-				unemap_load_voltage_stimulating(
-					pacing_window->number_of_pacing_channels,
-					pacing_window->pacing_channels,number_of_pacing_voltages,
-					voltages_per_second,pacing_window->pacing_voltages,(unsigned int)1);
-				for (i=0;i<pacing_window->number_of_return_channels;i++)
+				if (0<pacing_window->number_of_return_channels)
 				{
-					unemap_set_channel_stimulating((pacing_window->return_channels)[i],1);
+					for (i=0;i<pacing_window->number_of_return_channels;i++)
+					{
+						unemap_set_channel_stimulating((pacing_window->return_channels)[i],
+							1);
+					}
+					unemap_load_voltage_stimulating(
+						pacing_window->number_of_return_channels,
+						pacing_window->return_channels,(int)0,(float)0,(float *)NULL,
+						(unsigned int)0);
 				}
-				unemap_load_voltage_stimulating(
-					pacing_window->number_of_return_channels,
-					pacing_window->return_channels,(int)0,(float)0,(float *)NULL,
-					(unsigned int)0);
 				/* start pacing */
 				unemap_start_stimulating();
 				pacing_window->pacing=1;
