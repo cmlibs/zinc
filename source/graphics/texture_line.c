@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : texture_line.c
 
-LAST MODIFIED : 15 October 2001
+LAST MODIFIED : 8 August 2002
 
 DESCRIPTION :
 ==============================================================================*/
@@ -81,7 +81,7 @@ DESCRIPTION :
 int add_curve_to_list(struct VT_texture_curve **ptrfirst,
 	struct VT_texture_curve *newcurve)
 /*******************************************************************************
-LAST MODIFIED : 30 August 1996
+LAST MODIFIED : 8 August 2002
 
 DESCRIPTION :
 ==============================================================================*/
@@ -90,8 +90,10 @@ DESCRIPTION :
 	struct VT_texture_curve **p;
 
 	ENTER(add_curve_to_list);
+#if defined (DEBUG)
 /*???debug */
 printf("adding curve to list\n");
+#endif /* defined (DEBUG) */
 	/* default return value */
 	return_code=0;
 	/* checking arguments */
