@@ -126,7 +126,7 @@ Creates a machine information structure.
 		(machine_information=*machine_information_address))
 	{
 		DEALLOCATE(machine_information->name);
-		DEALLOCATE(machine_information_address);
+		DEALLOCATE(*machine_information_address);
 		return_code=1;
 	}
 	else
