@@ -225,7 +225,7 @@ ifdef USE_UNEMAP_3D
    ifneq ($(USER_INTERFACE), GTK_USER_INTERFACE)
    #For GTK_USER_INTERFACE the OpenGL comes from the GTK_LIBRARIES automatically
       ifeq ($(SYSNAME),Linux)
-         GRAPHICS_LIB += -L$(firstword $(wildcard /usr/local/Mesa-5.0/lib /usr/X11R6/lib))
+         GRAPHICS_LIB += -L$(firstword $(wildcard /usr/local/Mesa/lib /usr/X11R6/lib))
       endif # $(SYSNAME) == Linux
       ifeq ($(SYSNAME),win32)
          GRAPHICS_LIB += -L/usr/X11R6/lib
@@ -314,8 +314,8 @@ USER_INTERFACE_INC =
 USER_INTERFACE_LIB =
 ifeq ($(USER_INTERFACE),MOTIF_USER_INTERFACE)
    ifeq ($(SYSNAME),Linux)
-      ifneq ($(wildcard /usr/local/Mesa-5.0/include),)
-         USER_INTERFACE_INC += -I/usr/local/Mesa-5.0/include
+      ifneq ($(wildcard /usr/local/Mesa/include),)
+         USER_INTERFACE_INC += -I/usr/local/Mesa/include
       endif
       USER_INTERFACE_INC += -I/usr/X11R6/include
       X_LIB = /usr/X11R6/lib
@@ -367,11 +367,11 @@ ifeq ($(USER_INTERFACE),GTK_USER_INTERFACE)
          ifneq ($(STATIC_LINK),true)
             USER_INTERFACE_LIB += $(shell "/home/blackett/bin/pkg-config gtkgl-2.0 gtk+-2.0 --libs")
          else # $(STATIC_LINK) != true
-            USER_INTERFACE_LIB += -L/home/blackett/lib -lgtkgl-2.0 -lgtk-x11-2.0 -lgdk-x11-2.0 -latk-1.0 -lgdk_pixbuf-2.0 -lm -lpangox-1.0 -lpango-1.0 -lgobject-2.0 -lgmodule-2.0 -ldl -lglib-2.0 -L/usr/local/Mesa-5.0/lib -lGLU -lGL
+            USER_INTERFACE_LIB += -L/home/blackett/lib -lgtkgl-2.0 -lgtk-x11-2.0 -lgdk-x11-2.0 -latk-1.0 -lgdk_pixbuf-2.0 -lm -lpangox-1.0 -lpango-1.0 -lgobject-2.0 -lgmodule-2.0 -ldl -lglib-2.0 -L/usr/local/Mesa/lib -lGLU -lGL
          endif # $(STATIC_LINK) != true
       else # $(USE_GTK2) == true
          USER_INTERFACE_INC +=  -I/usr/include/gtk-1.2 -I/usr/include/glib-1.2 -I/usr/lib/glib/include/
-         USER_INTERFACE_LIB +=  -lgtkgl -L/usr/local/Mesa-5.0/lib -lGLU -lGL -lgtk -lgdk -lgmodule -lglib -ldl -lXi -lXext -lX11
+         USER_INTERFACE_LIB +=  -lgtkgl -L/usr/local/Mesa/lib -lGLU -lGL -lgtk -lgdk -lgmodule -lglib -ldl -lXi -lXext -lX11
       endif # $(USE_GTK2) == true
    else # $(SYSNAME) != win32
       # SAB It seems that ld currently requires (version 2.13.90 20021005) the 
