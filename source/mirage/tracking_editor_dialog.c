@@ -15,6 +15,7 @@ Source code for the tracking editor dialog box.
 #include <sys/socket.h>
 #include <netdb.h>
 #include <sys/signal.h>
+#include <sys/time.h>
 #if defined (SGI)
 /* SAB  The alternative probably works on the SGI too
 	but I don't want to break it at the moment */
@@ -115,7 +116,10 @@ DESCRIPTION :
 	/* Tracking settings */
 	enum Tracking_editor_tracking_tolerance tracking_tolerance;
 	int tracking_search_radius;
-	int tracking_cm_interval;
+	int tracking_port;
+
+   /* The socket processes input callback id */
+	XtInputId input_id;
 
 	/* following needed to remotely run and control processes */
 	char host[BUFFER_SIZE],remote_host[BUFFER_SIZE];
@@ -234,24 +238,41 @@ Kills the process running on the remote host.
 	}
 }
 
-static int SocketInitialize(int *theSocket,char *protocol_name)
+static int getPortFromProtocol(char *protocol_name)
 /*******************************************************************************
-LAST MODIFIED : 14 April 1998
+LAST MODIFIED : 15 June 2000
 
 DESCRIPTION :
 ==============================================================================*/
 {
+	int return_code;
 	struct servent *serv;
-	struct sockaddr_in socketDescriptor;
-	int optionValue;
 
 	/* fetch the port to connect to */
 	if ((serv = getservbyname(protocol_name, NULL)) == NULL)
 	{
-		display_message(ERROR_MESSAGE,"SocketInitialize.  "
-			"looking for %s service in /etc/services in getservbyname()",protocol_name);
-		return(0);
+		display_message(ERROR_MESSAGE,"getPortFromProtocol.  "
+			"Failed to find %s service in /etc/services in getservbyname()",protocol_name);
+		return_code = 0;
 	}
+	else
+	{
+		return_code = ntohs(serv->s_port);
+	}
+
+	return (return_code);
+}
+
+static int SocketInitialize(int *theSocket, int port)
+/*******************************************************************************
+LAST MODIFIED : 15 June 2000
+
+DESCRIPTION :
+==============================================================================*/
+{
+	struct sockaddr_in socketDescriptor;
+	int optionValue;
+
 
 	/* Create the (internet, stream) socket */
 	if ((*theSocket = socket(AF_INET, SOCK_STREAM, 0)) == -1 ) {
@@ -273,11 +294,11 @@ DESCRIPTION :
 	/* Bind this socket to all incoming addresses on the port */
 	memset(&socketDescriptor, 0, sizeof(socketDescriptor));
 	socketDescriptor.sin_family      = AF_INET; /* Protocol Family */
-	socketDescriptor.sin_port        = serv->s_port; /* Port */
+	socketDescriptor.sin_port        = htons(port); /* Port */
 	socketDescriptor.sin_addr.s_addr = INADDR_ANY; /* listen to all */
 #if defined (OLD_CODE)
-	/* These functions stop the Linux version from working and don't
-		seem to be necessary! */
+	/* The port number (so that it is actually 2000) needs to be converted
+		through htons and back again! */
 	socketDescriptor.sin_port        = htons(serv->s_port); /* Port */
 	socketDescriptor.sin_addr.s_addr = htonl(INADDR_ANY); /* listen to all */
 #endif /* defined (OLD_CODE) */
@@ -2369,6 +2390,249 @@ Node manager change callback. Puts changed nodes in the pending list.
 	LEAVE;
 } /* Tracking_editor_dialog_node_change */
 
+static void tracking_editor_process_input_cb(XtPointer track_ed_void,
+	int *source, XtInputId *input_id)
+/*******************************************************************************
+LAST MODIFIED : 29 April 1998
+
+DESCRIPTION :
+Callback set up by XtAppAddTimeOut. When XVG is running this callback is active
+and called after a given time delay. It polls the socket to see if there are
+incoming messages. If there are it processes them, updating the bar chart
+accordingly.
+Except when the message says the processing is complete, this function then
+sets up another timeout.
+SAB Instead of setting a timeout and then polling in here, just at the file
+descriptor to those that X polls itself, it will callback only when data becomes
+available.
+==============================================================================*/
+{
+	char *args=NULL;
+	static char InCom[XVG_SOCKET_COMMAND_LEN+1],cbuf[1024];
+	int poll_value,PollReadEvents,frame_no,view_no;
+#if defined (SGI)
+	struct pollfd pfd;
+#else /* defined (SGI) */
+	int pfd;
+	fd_set read_fdset;
+	struct timeval timeout_struct;
+#endif /* defined (SGI) */
+	struct Mirage_movie *movie;
+	struct Mirage_view *view;
+	struct Tracking_editor_dialog *track_ed;
+
+	ENTER(tracking_editor_process_input_cb);
+	USE_PARAMETER(input_id);
+	if ((track_ed=(struct Tracking_editor_dialog *)track_ed_void)&&
+		(movie=track_ed->mirage_movie))
+	{
+#if defined (SGI)
+		/* set polling bits */
+		PollReadEvents = POLLIN | POLLRDNORM | POLLRDBAND | POLLPRI;
+		pfd.fd = track_ed->process_remote_client;
+		pfd.events = PollReadEvents;
+#else /* defined (SGI) */
+		pfd = track_ed->process_remote_client;
+		FD_ZERO(&read_fdset);
+		FD_SET(pfd, &read_fdset);
+#endif /* defined (SGI) */
+
+		args=(char *)NULL;
+#if defined (SGI)
+		if ((0 < (poll_value=poll(&pfd,(unsigned long)1,0)))&&
+			tracking_editor_get_message(track_ed->process_remote_client,InCom,&args))
+#else /* defined (SGI) */
+		  /* A zero timeout is a poll */
+		timeout_struct.tv_sec = 0;
+		timeout_struct.tv_usec = 0;
+		if ((0 < (poll_value=select(FD_SETSIZE, &read_fdset,NULL,NULL,&timeout_struct)))&&
+			tracking_editor_get_message(track_ed->process_remote_client,InCom,&args))
+#endif /* defined (SGI) */
+		{
+			/* Suspend messages until the end of the routine as confirmation routines
+				allow X callbacks */
+			if (track_ed->input_id)
+			{
+				XtRemoveInput(track_ed->input_id);
+				track_ed->input_id = 0;
+			}
+
+			/********* decode incoming message **********/
+			/* abort */
+			if (strcmp("ABRT",InCom) == 0)
+			{
+				/*tracking_editor_send_message(remoteClient, "OK  ", NULL, 0);*/
+				track_ed->processing=0;
+				track_ed->process_ID=0;
+				if (args)
+				{
+					printf("ABRT command received... %s\n",args);
+				}
+				else
+				{
+					printf("ABRT command received...\n");
+				}
+				Mirage_movie_refresh_node_groups(movie);
+				/* must read frame in case it was one changed */
+				Mirage_movie_read_frame_nodes(movie,movie->current_frame_no);
+				printf("\a\a\a");
+				fflush(stdout);
+				if (args)
+				{
+					confirmation_warning_ok("Process aborted",args,track_ed->dialog,
+						track_ed->user_interface);
+				}
+				else
+				{
+					confirmation_warning_ok("Process aborted","No reason given",
+						track_ed->dialog, track_ed->user_interface);
+				}
+			}
+			/* done */
+			else if (strcmp("DONE",InCom) == 0)
+			{
+				/*tracking_editor_send_message(remoteClient, "OK  ", NULL, 0);*/
+				track_ed->processing=0;
+				track_ed->process_ID=0;
+				printf("DONE command received...\n");
+				/*???RC some of this redundant if TEXT works - keep just in case */
+				Node_status_list_add(movie->placed_list,movie->pending_list);
+				Node_status_list_subtract(movie->problem_list,movie->pending_list);
+				if ((TRACK_MODE==track_ed->control_mode)||
+					(BACKTRACK_MODE==track_ed->control_mode))
+				{
+					sprintf(cbuf,"%s_req_lost",movie->name);
+					Node_status_list_read(movie->problem_list,cbuf);
+				}
+				Node_status_list_clear(movie->pending_list);
+				tracking_editor_update_bar_chart(track_ed);
+				Mirage_movie_refresh_node_groups(movie);
+				/* must read frame in case it was one changed */
+				Mirage_movie_read_frame_nodes(movie,movie->current_frame_no);
+				/* tell the user the job is completed */
+				printf("\a\a\a");
+				fflush(stdout);
+				if (args)
+				{
+					confirmation_warning_ok("Process done",
+						"Process successfully completed",track_ed->dialog,
+						track_ed->user_interface );
+				}
+			}
+			/* text message */
+			else if (strcmp("TEXT",InCom) == 0)
+			{
+				if (args)
+				{
+					printf("TEXT : \"%s\"\n",args);
+					tracking_editor_send_message(track_ed->process_remote_client,
+						"OK  ",NULL,0);
+					if (1==sscanf(args,"Frame %d",&frame_no))
+					{
+						Node_status_list_add_at_value(movie->placed_list,
+							movie->pending_list,frame_no);
+						/* also remove from placed lists in individual views */
+						for (view_no=0;view_no<movie->number_of_views;view_no++)
+						{
+							if (view=movie->views[view_no])
+							{
+								Node_status_list_subtract_at_value(view->placed_list,
+									movie->placed_list,frame_no);
+							}
+						}
+						Node_status_list_subtract_at_value(movie->problem_list,
+							movie->pending_list,frame_no);
+						/* reduce pending ranges as you track */
+						switch (track_ed->control_mode)
+						{
+						case TRACK_MODE:
+							{
+								Node_status_list_subtract_at_value(movie->pending_list,
+									movie->pending_list,frame_no-1);
+							} break;
+						case BACKTRACK_MODE:
+							{
+								Node_status_list_subtract_at_value(movie->pending_list,
+									movie->pending_list,frame_no+1);
+							} break;
+						case SUBSTITUTE_MODE:
+							{
+								Node_status_list_subtract_at_value(movie->pending_list,
+									movie->pending_list,frame_no);
+							} break;
+						}
+						if ((TRACK_MODE==track_ed->control_mode)||
+							(BACKTRACK_MODE==track_ed->control_mode))
+						{
+							/* append the lost nodes on to the problem list */
+							sprintf(cbuf,"%s_req_lost",movie->name);
+							Node_status_list_read(movie->problem_list,cbuf);
+						}
+						tracking_editor_update_bar_chart(track_ed);
+						/* auto save the node status lists that have changed */
+						/*???RC remove if this affects performance? */
+						Mirage_movie_write_node_status_lists(movie,"");
+						if (frame_no==movie->current_frame_no)
+						{
+							Mirage_movie_read_frame_nodes(movie,movie->current_frame_no);
+						}
+					}
+				}
+				else
+				{
+					printf("TEXT : !NO ARGS!\n");
+				}
+			}
+			/* PID */
+			else if (strcmp("PID ",InCom) == 0)
+			{
+				track_ed->process_ID=atoi(args);
+				printf("XVG PID : %d\n", track_ed->process_ID);
+				tracking_editor_send_message(track_ed->process_remote_client,
+					"OK  ",NULL,0);
+			}
+			/* unsupported message */
+			else
+			{
+				sprintf(cbuf, "Unknown command \"%s\"...\n", InCom);
+				tracking_editor_send_message(track_ed->process_remote_client,
+					"NOK ",cbuf,strlen(cbuf)+1);
+			}
+			if (args)
+			{
+				DEALLOCATE(args);
+			}
+		}
+		else
+		{
+			if (poll_value)
+			{
+				display_message(ERROR_MESSAGE,
+					"tracking_editor_process_cb.  poll()");
+				tracking_editor_kill_process(track_ed);
+				/*???RC close the socket? */
+			}
+		}
+		if (track_ed->processing)
+		{
+			/* Reinstate the callback */
+			track_ed->input_id = XtAppAddInput(track_ed->user_interface->application_context,
+				track_ed->process_remote_client, (XtPointer) XtInputReadMask,
+				tracking_editor_process_input_cb, (XtPointer) track_ed);
+		}
+		else
+		{
+			tracking_editor_exit_process_mode(track_ed);
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"tracking_editor_process_input_cb.  Invalid argument(s)");
+	}
+	LEAVE;
+} /* tracking_editor_process_input_cb */
+
 static int tracking_editor_enter_process_mode(
 	struct Tracking_editor_dialog *track_ed)
 /*******************************************************************************
@@ -2413,6 +2677,10 @@ Turns on the Abort button.
 				track_ed->node_group_manager);
 			track_ed->node_group_manager_callback_id=NULL;
 		}
+
+		track_ed->input_id = XtAppAddInput(track_ed->user_interface->application_context,
+			track_ed->process_remote_client, (XtPointer) XtInputReadMask,
+			tracking_editor_process_input_cb, (XtPointer) track_ed);
 	}
 	else
 	{
@@ -2441,6 +2709,22 @@ Turns on the Abort button.
 	/* checking arguments */
 	if (track_ed)
 	{
+		if (track_ed->input_id)
+		{
+			XtRemoveInput(track_ed->input_id);
+			track_ed->input_id = 0;
+		}
+		if (track_ed->process_remote_client)
+		{
+			close(track_ed->process_remote_client);
+			track_ed->process_remote_client = 0;
+		}
+		if (track_ed->process_socket)
+		{
+			close(track_ed->process_socket);
+			track_ed->process_socket = 0;
+		}
+
 		XtSetSensitive(track_ed->file_menu,True);
 #if defined (OLD_CODE)
 		XtSetSensitive(track_ed->edit_menu,True);
@@ -2630,9 +2914,9 @@ Reads a movie file into the tracking editor.
 			}
 			if (!return_code&&track_ed->mirage_movie)
 			{
+				DESTROY(Mirage_movie)(&(track_ed->mirage_movie));
 				confirmation_warning_ok("Error!","Could not read parts of the movie",
 					track_ed->dialog, track_ed->user_interface);
-				DESTROY(Mirage_movie)(&(track_ed->mirage_movie));
 			}
 		}
 		else
@@ -3213,238 +3497,6 @@ Turns on node numbers of the placed points in the 2-D and 3-D views.
 	LEAVE;
 } /* tracking_editor_view_node_numbers_cb */
 
-static void tracking_editor_process_timeout_cb(XtPointer track_ed_void,
-	XtIntervalId *interval_id)
-/*******************************************************************************
-LAST MODIFIED : 29 April 1998
-
-DESCRIPTION :
-Callback set up by XtAppAddTimeOut. When XVG is running this callback is active
-and called after a given time delay. It polls the socket to see if there are
-incoming messages. If there are it processes them, updating the bar chart
-accordingly.
-Except when the message says the processing is complete, this function then
-sets up another timeout.
-SAB Instead of setting a timeout and then polling in here, just at the file
-descriptor to those that X polls itself, it will callback only when data becomes
-available.
-==============================================================================*/
-{
-	char *args=NULL;
-	static char InCom[XVG_SOCKET_COMMAND_LEN+1],cbuf[1024];
-	int poll_value,PollReadEvents,frame_no,view_no;
-#if defined (SGI)
-	struct pollfd pfd;
-#else /* defined (SGI) */
-	int pfd;
-	fd_set read_fdset;
-#endif /* defined (SGI) */
-	struct Mirage_movie *movie;
-	struct Mirage_view *view;
-	struct Tracking_editor_dialog *track_ed;
-
-	ENTER(tracking_editor_process_timeout_cb);
-	USE_PARAMETER(interval_id);
-	if ((track_ed=(struct Tracking_editor_dialog *)track_ed_void)&&
-		(movie=track_ed->mirage_movie))
-	{
-#if defined (SGI)
-		/* set polling bits */
-		PollReadEvents = POLLIN | POLLRDNORM | POLLRDBAND | POLLPRI;
-		pfd.fd = track_ed->process_remote_client;
-		pfd.events = PollReadEvents;
-#else /* defined (SGI) */
-		pfd = track_ed->process_remote_client;
-		FD_ZERO(&read_fdset);
-		FD_SET(pfd, &read_fdset);
-#endif /* defined (SGI) */
-
-		args=(char *)NULL;
-#if defined (SGI)
-		if ((0 < (poll_value=poll(&pfd,(unsigned long)1,0)))&&
-			tracking_editor_get_message(track_ed->process_remote_client,InCom,&args))
-#else /* defined (SGI) */
-		if ((0 < (poll_value=select(FD_SETSIZE, &read_fdset,NULL,NULL,0)))&&
-			tracking_editor_get_message(track_ed->process_remote_client,InCom,&args))
-#endif /* defined (SGI) */
-		{
-			/********* decode incoming message **********/
-			/* abort */
-			if (strcmp("ABRT",InCom) == 0)
-			{
-				/*tracking_editor_send_message(remoteClient, "OK  ", NULL, 0);*/
-				track_ed->processing=0;
-				track_ed->process_ID=0;
-				if (args)
-				{
-					printf("ABRT command received... %s\n",args);
-				}
-				else
-				{
-					printf("ABRT command received...\n");
-				}
-				Mirage_movie_refresh_node_groups(movie);
-				/* must read frame in case it was one changed */
-				Mirage_movie_read_frame_nodes(movie,movie->current_frame_no);
-				printf("\a\a\a");
-				fflush(stdout);
-				if (args)
-				{
-					confirmation_warning_ok("Process aborted",args,track_ed->dialog,
-						track_ed->user_interface);
-				}
-				else
-				{
-					confirmation_warning_ok("Process aborted","No reason given",
-						track_ed->dialog, track_ed->user_interface);
-				}
-			}
-			/* done */
-			else if (strcmp("DONE",InCom) == 0)
-			{
-				/*tracking_editor_send_message(remoteClient, "OK  ", NULL, 0);*/
-				track_ed->processing=0;
-				track_ed->process_ID=0;
-				printf("DONE command received...\n");
-				/*???RC some of this redundant if TEXT works - keep just in case */
-				Node_status_list_add(movie->placed_list,movie->pending_list);
-				Node_status_list_subtract(movie->problem_list,movie->pending_list);
-				if ((TRACK_MODE==track_ed->control_mode)||
-					(BACKTRACK_MODE==track_ed->control_mode))
-				{
-					sprintf(cbuf,"%s_req_lost",movie->name);
-					Node_status_list_read(movie->problem_list,cbuf);
-				}
-				Node_status_list_clear(movie->pending_list);
-				tracking_editor_update_bar_chart(track_ed);
-				Mirage_movie_refresh_node_groups(movie);
-				/* must read frame in case it was one changed */
-				Mirage_movie_read_frame_nodes(movie,movie->current_frame_no);
-				/* tell the user the job is completed */
-				printf("\a\a\a");
-				fflush(stdout);
-				if (args)
-				{
-					confirmation_warning_ok("Process done",
-						"Process successfully completed",track_ed->dialog,
-						track_ed->user_interface );
-				}
-			}
-			/* text message */
-			else if (strcmp("TEXT",InCom) == 0)
-			{
-				if (args)
-				{
-					printf("TEXT : \"%s\"\n",args);
-					tracking_editor_send_message(track_ed->process_remote_client,
-						"OK  ",NULL,0);
-					if (1==sscanf(args,"Frame %d",&frame_no))
-					{
-						Node_status_list_add_at_value(movie->placed_list,
-							movie->pending_list,frame_no);
-						/* also remove from placed lists in individual views */
-						for (view_no=0;view_no<movie->number_of_views;view_no++)
-						{
-							if (view=movie->views[view_no])
-							{
-								Node_status_list_subtract_at_value(view->placed_list,
-									movie->placed_list,frame_no);
-							}
-						}
-						Node_status_list_subtract_at_value(movie->problem_list,
-							movie->pending_list,frame_no);
-						/* reduce pending ranges as you track */
-						switch (track_ed->control_mode)
-						{
-						case TRACK_MODE:
-							{
-								Node_status_list_subtract_at_value(movie->pending_list,
-									movie->pending_list,frame_no-1);
-							} break;
-						case BACKTRACK_MODE:
-							{
-								Node_status_list_subtract_at_value(movie->pending_list,
-									movie->pending_list,frame_no+1);
-							} break;
-						case SUBSTITUTE_MODE:
-							{
-								Node_status_list_subtract_at_value(movie->pending_list,
-									movie->pending_list,frame_no);
-							} break;
-						}
-						if ((TRACK_MODE==track_ed->control_mode)||
-							(BACKTRACK_MODE==track_ed->control_mode))
-						{
-							/* append the lost nodes on to the problem list */
-							sprintf(cbuf,"%s_req_lost",movie->name);
-							Node_status_list_read(movie->problem_list,cbuf);
-						}
-						tracking_editor_update_bar_chart(track_ed);
-						/* auto save the node status lists that have changed */
-						/*???RC remove if this affects performance? */
-						Mirage_movie_write_node_status_lists(movie,"");
-						if (frame_no==movie->current_frame_no)
-						{
-							Mirage_movie_read_frame_nodes(movie,movie->current_frame_no);
-						}
-					}
-				}
-				else
-				{
-					printf("TEXT : !NO ARGS!\n");
-				}
-			}
-			/* PID */
-			else if (strcmp("PID ",InCom) == 0)
-			{
-				track_ed->process_ID=atoi(args);
-				printf("XVG PID : %d\n", track_ed->process_ID);
-				tracking_editor_send_message(track_ed->process_remote_client,
-					"OK  ",NULL,0);
-			}
-			/* unsupported message */
-			else
-			{
-				sprintf(cbuf, "Unknown command \"%s\"...\n", InCom);
-				tracking_editor_send_message(track_ed->process_remote_client,
-					"NOK ",cbuf,strlen(cbuf)+1);
-			}
-			if (args)
-			{
-				DEALLOCATE(args);
-			}
-		}
-		else
-		{
-			if (poll_value)
-			{
-				display_message(ERROR_MESSAGE,
-					"tracking_editor_process_cb.  poll()");
-				tracking_editor_kill_process(track_ed);
-				/*???RC close the socket? */
-			}
-		}
-		if (track_ed->processing)
-		{
-			/* await another message */
-			XtAppAddTimeOut(track_ed->user_interface->application_context,
-				20,tracking_editor_process_timeout_cb,(XtPointer)track_ed);
-		}
-		else
-		{
-			tracking_editor_exit_process_mode(track_ed);
-			close(track_ed->process_remote_client);
-			close(track_ed->process_socket);
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"tracking_editor_process_timeout_cb.  Invalid argument(s)");
-	}
-	LEAVE;
-} /* tracking_editor_process_timeout_cb */
-
 static void tracking_editor_process_tracking_tolerance_cb(Widget widget,
 	XtPointer track_ed_void,XtPointer call_data)
 /*******************************************************************************
@@ -3466,7 +3518,7 @@ DESCRIPTION :
 			XmNlabelString, &button_label,
 			NULL );
 		XmStringGetLtoR(button_label, XmSTRING_DEFAULT_CHARSET, &button_text);
-		if ( !strcmp(button_text, "Pre-rotate"))
+		if ( !strcmp(button_text, "Predictive"))
 		{
 			track_ed->tracking_tolerance = LOW_TOLERANCE;
 		}
@@ -3474,10 +3526,12 @@ DESCRIPTION :
 		{
 			track_ed->tracking_tolerance = MEDIUM_TOLERANCE;
 		}
+#if defined (OLD_CODE)
 		else if ( !strcmp(button_text, "Refine"))
 		{
 			track_ed->tracking_tolerance = HIGH_TOLERANCE;
 		}
+#endif /* defined (OLD_CODE) */
 
 		XtFree(button_text);
 	}
@@ -3558,7 +3612,7 @@ DESCRIPTION :
 	LEAVE;
 } /* tracking_editor_process_tracking_second_pass_cb */
 
-static void tracking_editor_process_tracking_cm_interval_cb(Widget widget,
+static void tracking_editor_process_tracking_port_cb(Widget widget,
 	XtPointer track_ed_void,XtPointer call_data)
 /*******************************************************************************
 LAST MODIFIED : 13 May 1998
@@ -3573,12 +3627,12 @@ DESCRIPTION :
 	USE_PARAMETER(call_data);
 	if (widget&&(track_ed=(struct Tracking_editor_dialog *)track_ed_void))
 	{
-		track_ed->tracking_cm_interval = 0;
+		track_ed->tracking_port = 0;
 		XtVaGetValues ( widget,
 			XmNvalue, &text,
 			NULL );
-		sscanf( text, "%d",&(track_ed->tracking_cm_interval) );
-		sprintf( new_text, "%d", track_ed->tracking_cm_interval );
+		sscanf( text, "%d",&(track_ed->tracking_port) );
+		sprintf( new_text, "%d", track_ed->tracking_port );
 		XtVaSetValues( widget,
 			XmNvalue, new_text,
 			NULL );
@@ -3586,10 +3640,10 @@ DESCRIPTION :
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"tracking_editor_process_tracking_cm_interval_cb.  Invalid argument(s)");
+			"tracking_editor_process_tracking_port_cb.  Invalid argument(s)");
 	}
 	LEAVE;
-} /* tracking_editor_process_tracking_cm_interval_cb */
+} /* tracking_editor_process_tracking_port_cb */
 
 static int tracking_editor_process_tracking_options( Widget parent,
 	void *track_ed_void )
@@ -3601,7 +3655,7 @@ DESCRIPTION :
 {
 	Arg option_menu_args[] = {
 		{XmNoptionLabel, NULL},
-		{XmNbuttonCount, 3},
+		{XmNbuttonCount, 2},
 		{XmNbuttons, NULL},
 		{XmNbuttonSet, 0},
 		{XmNentryCallback, NULL},
@@ -3610,14 +3664,14 @@ DESCRIPTION :
 		{XmNleftPosition,10},
 		{XmNtopAttachment,XmATTACH_FORM},
 		{XmNtopOffset,10}};
-	char search_radius_value[15], cm_interval_value[15];
+	char search_radius_value[15], port_value[15];
 	int return_code;
 	struct Tracking_editor_dialog *track_ed;
 	struct User_interface *user_interface;
 	Widget option_form, search_radius_label, search_radius_text,
-		cm_interval_label, cm_interval_text, tolerance_option_menu;
+		port_label, port_text, tolerance_option_menu;
 	XmString button_labels[3], option_label_string, search_radius_label_string,
-		cm_interval_label_string;
+		port_label_string;
 	XtCallbackRec callback_list[2];
 
 	ENTER(tracking_editor_process_tracking_options);
@@ -3635,9 +3689,8 @@ DESCRIPTION :
 				in the XmNentryCallback callback function and their order should
 				correspond to the order of the respective values in the
 				Tracking_editor_tracking_tolerance enum. */
-			button_labels[0] = XmStringCreateSimple("Pre-rotate");
+			button_labels[0] = XmStringCreateSimple("Predictive");
 			button_labels[1] = XmStringCreateSimple("Normal");
-			button_labels[2] = XmStringCreateSimple("Refine");
 			option_menu_args[2].value = (XtArgVal)button_labels;
 			option_menu_args[3].value = (XtArgVal)track_ed->tracking_tolerance;
 			callback_list[0].callback = tracking_editor_process_tracking_tolerance_cb;
@@ -3653,7 +3706,6 @@ DESCRIPTION :
 			XmStringFree( option_label_string );
 			XmStringFree( button_labels[0] );
 			XmStringFree( button_labels[1] );
-			XmStringFree( button_labels[2] );
 			XtManageChild ( tolerance_option_menu );
 
 			search_radius_label_string = XmStringCreateSimple( "Search radius");
@@ -3685,8 +3737,8 @@ DESCRIPTION :
 			XtAddCallback(search_radius_text, XmNlosingFocusCallback,
 				tracking_editor_process_tracking_search_radius_cb, track_ed_void);
 			
-			cm_interval_label_string = XmStringCreateSimple( "CM interval"); 
-			cm_interval_label = XtVaCreateManagedWidget("tracking_cm_interval_label",
+			port_label_string = XmStringCreateSimple( "Port number"); 
+			port_label = XtVaCreateManagedWidget("tracking_port_label",
 				xmLabelWidgetClass, option_form,
 				XmNleftAttachment,XmATTACH_POSITION,
 				XmNleftOffset,0,
@@ -3694,25 +3746,25 @@ DESCRIPTION :
 				XmNtopAttachment,XmATTACH_WIDGET,
 				XmNtopOffset,user_interface->widget_spacing,
 				XmNtopWidget,search_radius_text,
-				XmNlabelString, cm_interval_label_string,
+				XmNlabelString, port_label_string,
 				NULL);
-			XmStringFree( cm_interval_label_string );
-			sprintf(cm_interval_value, "%d", track_ed->tracking_cm_interval );
-			cm_interval_text = XtVaCreateManagedWidget("tracking_cm_interval_label",
+			XmStringFree( port_label_string );
+			sprintf(port_value, "%d", track_ed->tracking_port );
+			port_text = XtVaCreateManagedWidget("tracking_port_label",
 				xmTextWidgetClass, option_form,
 				XmNleftAttachment,XmATTACH_WIDGET,
 				XmNleftOffset,user_interface->widget_spacing,
-				XmNleftWidget, cm_interval_label,
+				XmNleftWidget, port_label,
 				XmNtopAttachment,XmATTACH_WIDGET,
 				XmNtopOffset,user_interface->widget_spacing,
 				XmNtopWidget,search_radius_text,
-				XmNvalue, cm_interval_value,
-				XmNwidth, 50,
+				XmNvalue, port_value,
+				XmNwidth, 90,
 				NULL);
-			XtAddCallback(cm_interval_text, XmNactivateCallback,
-				tracking_editor_process_tracking_cm_interval_cb, track_ed_void);
-			XtAddCallback(cm_interval_text, XmNlosingFocusCallback,
-				tracking_editor_process_tracking_cm_interval_cb, track_ed_void);
+			XtAddCallback(port_text, XmNactivateCallback,
+				tracking_editor_process_tracking_port_cb, track_ed_void);
+			XtAddCallback(port_text, XmNlosingFocusCallback,
+				tracking_editor_process_tracking_port_cb, track_ed_void);
 		}
 		else
 		{
@@ -3817,9 +3869,10 @@ Sets tracking or other process running if in one of these modes.
 									movie->name,track_ed->host,req_file_name,
 									track_ed->tracking_tolerance,
 									track_ed->tracking_search_radius,
-									track_ed->tracking_cm_interval);
+									track_ed->tracking_port);
 								run_process=return_code=
-									SocketInitialize(&(track_ed->process_socket),"cmgui-xvg");
+									SocketInitialize(&(track_ed->process_socket),
+									  track_ed->tracking_port);
 							} break;
 						case BACKTRACK_MODE:
 							{
@@ -3827,13 +3880,13 @@ Sets tracking or other process running if in one of these modes.
 									movie->name,track_ed->host,req_file_name,
 									track_ed->tracking_tolerance,
 									track_ed->tracking_search_radius,
-									track_ed->tracking_cm_interval);
+									track_ed->tracking_port);
 								run_process=return_code=
-									SocketInitialize(&(track_ed->process_socket),"cmgui-xvg");
+									SocketInitialize(&(track_ed->process_socket),
+									  track_ed->tracking_port);
 							} break;
 						case SUBSTITUTE_MODE:
 							{
-								printf("Hello\n");
 								if ( good_node_list = Node_status_list_duplicate(movie->placed_list ))
 								{
 									if ( Node_status_list_subtract( good_node_list, movie->problem_list ))
@@ -3850,7 +3903,8 @@ Sets tracking or other process running if in one of these modes.
 													good_req_file_name,
 													movie->node_file_name_template);
 												run_process=return_code=
-													SocketInitialize(&(track_ed->process_socket),"cmgui-substnode");
+													SocketInitialize(&(track_ed->process_socket),
+													  getPortFromProtocol("cmgui-substnode"));
 											}
 											DEALLOCATE(good_req_file_name);
 										}
@@ -3864,7 +3918,8 @@ Sets tracking or other process running if in one of these modes.
 									track_ed->host,req_file_name,
 									movie->node_file_name_template);
 								run_process=return_code=
-									SocketInitialize(&(track_ed->process_socket),"cmgui-lininterp");
+									SocketInitialize(&(track_ed->process_socket),
+									  getPortFromProtocol("cmgui-lininterp"));
 							} break;
 						case MAKE_BAD_MODE:
 							{
@@ -3898,6 +3953,7 @@ Sets tracking or other process running if in one of these modes.
 								display_message(ERROR_MESSAGE,"tracking_editor_process_cb.  "
 									"error executing process: error code=%d",error_code);
 								close(track_ed->process_socket);
+								track_ed->process_socket = 0;
 							}
 							else
 							{
@@ -3914,6 +3970,8 @@ Sets tracking or other process running if in one of these modes.
 										"tracking_editor_process_cb.  accept()");
 									tracking_editor_kill_process(track_ed);
 									close(track_ed->process_socket);
+									track_ed->process_socket = 0;
+									track_ed->process_remote_client = 0;
 								}
 								else
 								{
@@ -3929,8 +3987,10 @@ Sets tracking or other process running if in one of these modes.
 	/*???debug*/fprintf(stderr,"process_cb #2\n");
 									/* request timeout to check socket messages */
 									tracking_editor_enter_process_mode(track_ed);
+#if defined (OLD_CODE)
 									XtAppAddTimeOut(track_ed->user_interface->application_context,
-										20,tracking_editor_process_timeout_cb,(XtPointer)track_ed);
+										20,tracking_editor_process_input_cb,(XtPointer)track_ed);
+#endif /* defined (OLD_CODE) */
 								}
 							}
 						}
@@ -5111,10 +5171,15 @@ DESCRIPTION :
 					track_ed->user_interface = user_interface;
 					track_ed->process_ID=0;
 					track_ed->processing=0;
+
+					track_ed->input_id=0;
+					track_ed->process_remote_client=0;
+					track_ed->process_socket=0;
+
 					/* default values for process mode settings */
 					track_ed->tracking_tolerance = MEDIUM_TOLERANCE;
 					track_ed->tracking_search_radius = 16;
-					track_ed->tracking_cm_interval = 0;
+					track_ed->tracking_port = getPortFromProtocol("cmgui-xvg");
 					/* clear widgets */
 					track_ed->file_menu=(Widget)NULL;
 					track_ed->edit_menu=(Widget)NULL;
@@ -5352,7 +5417,7 @@ int main ()
 				/* request timeout to check socket messages */
 				/* tracking_editor_enter_process_mode(track_ed); */
 				/* XtAppAddTimeOut(track_ed->user_interface->application_context,
-					20,tracking_editor_process_timeout_cb,(XtPointer)track_ed); */
+					20,tracking_editor_process_input_cb,(XtPointer)track_ed); */
 			}
 		}
 	}
