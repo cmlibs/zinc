@@ -202,6 +202,80 @@ To take care of little/big endian.
 	return (return_code);
 } /* byte_swap */
 
+static int byte_swap_and_write(unsigned char *byte_array,int value_size,
+	int number_of_values,int least_to_most, FILE *output_file)
+/*******************************************************************************
+LAST MODIFIED : 
+
+DESCRIPTION :
+Performs the byte swap and write, copying if necessary so that
+the original values are not modified.
+==============================================================================*/
+{
+	int return_code;
+#if defined (__BYTE_ORDER)
+	char *temp_byte_array;
+	int i,j;
+	unsigned char *bottom_byte,byte,*element,*top_byte;
+#endif /* defined (__BYTE_ORDER) */
+
+	USE_PARAMETER(byte_array);
+	USE_PARAMETER(value_size);
+	USE_PARAMETER(number_of_values);
+	USE_PARAMETER(least_to_most);
+
+#if defined (__BYTE_ORDER)
+#if (1234==__BYTE_ORDER)
+	if (!least_to_most)
+#else /* (1234==__BYTE_ORDER) */
+	if (least_to_most)
+#endif /* (1234==__BYTE_ORDER) */
+	{
+		/* We must copy the bytes before reordering so as not to mess up the 
+			original data */
+		if (ALLOCATE(temp_byte_array, char, value_size * number_of_values))
+		{
+			memcpy(temp_byte_array, byte_array, value_size * number_of_values);
+
+			element=temp_byte_array;
+			for (j=number_of_values;j>0;j--)
+			{
+				bottom_byte=element;
+				top_byte=element+value_size;
+				for (i=value_size/2;i>0;i--)
+				{
+					top_byte--;
+					byte= *bottom_byte;
+					*bottom_byte= *top_byte;
+					*top_byte=byte;
+					bottom_byte++;
+				}
+				element += value_size;
+			}
+			return_code=fwrite(temp_byte_array, value_size, number_of_values, output_file);
+			DEALLOCATE(temp_byte_array);
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,
+				"byte_swap_and_write.  Unable to allocate memory for temp byte array.");
+			return_code = 0;
+		}
+	}
+	else
+	{
+		return_code=fwrite(byte_array, value_size, number_of_values, output_file);
+	}
+#else /* defined (__BYTE_ORDER) */
+
+	return_code=fwrite(byte_array, value_size, number_of_values, output_file);
+
+#endif /* defined (__BYTE_ORDER) */
+
+
+	return (return_code);
+} /* byte_swap_and_write */
+
 static int read_tiff_field(unsigned short int *tag,unsigned short int *type,
 	unsigned long int *count,void *value_address,FILE *tiff_file,
 	int least_to_most)
@@ -503,7 +577,7 @@ Writes an image in SGI rgb file format.
 {
 	char bytes_per_component,dummy[404],image_name[80],storage;
 	FILE *output_file;
-	int i,k,l,return_code;
+	int i,k,l,least_to_most,return_code;
 	long colour_map,maximum_pixel_value,minimum_pixel_value,
 	   row_size,row_sizes,row_start,row_starts;
 	short magic_number;
@@ -511,7 +585,9 @@ Writes an image in SGI rgb file format.
 	unsigned short components,dimension,height,width;
 
 	ENTER(write_rgb_image_file);
-	/* check arguments */
+
+	least_to_most = 0;
+
 	if (file_name&&(0<number_of_components)&&(0<number_of_rows)&&
 		(0<number_of_columns)&&image)
 	{
@@ -543,19 +619,19 @@ Writes an image in SGI rgb file format.
 				/* normal interpretation (B/W for 1 component, RGB for 3 components
 					and RGBA for 4 components) of image file */
 				colour_map=0;
-				if ((1==fwrite(&magic_number,2,1,output_file))&&
-					(1==fwrite(&storage,1,1,output_file))&&
-					(1==fwrite(&bytes_per_component,1,1,output_file))&&
-					(1==fwrite(&dimension,2,1,output_file))&&
-					(1==fwrite(&width,2,1,output_file))&&
-					(1==fwrite(&height,2,1,output_file))&&
-					(1==fwrite(&components,2,1,output_file))&&
-					(1==fwrite(&minimum_pixel_value,4,1,output_file))&&
-					(1==fwrite(&maximum_pixel_value,4,1,output_file))&&
-					(1==fwrite(dummy,4,1,output_file))&&
-					(1==fwrite(image_name,80,1,output_file))&&
-					(1==fwrite(&colour_map,4,1,output_file))&&
-					(1==fwrite(dummy,404,1,output_file)))
+				if ((1==byte_swap_and_write(&magic_number,2,1,least_to_most,output_file))&&
+					(1==byte_swap_and_write(&storage,1,1,least_to_most,output_file))&&
+					(1==byte_swap_and_write(&bytes_per_component,1,1,least_to_most,output_file))&&
+					(1==byte_swap_and_write(&dimension,2,1,least_to_most,output_file))&&
+					(1==byte_swap_and_write(&width,2,1,least_to_most,output_file))&&
+					(1==byte_swap_and_write(&height,2,1,least_to_most,output_file))&&
+					(1==byte_swap_and_write(&components,2,1,least_to_most,output_file))&&
+					(1==byte_swap_and_write(&minimum_pixel_value,4,1,least_to_most,output_file))&&
+					(1==byte_swap_and_write(&maximum_pixel_value,4,1,least_to_most,output_file))&&
+					(1==byte_swap_and_write(dummy,4,1,least_to_most,output_file))&&
+					(1==byte_swap_and_write(image_name,80,1,least_to_most,output_file))&&
+					(1==byte_swap_and_write(&colour_map,4,1,least_to_most,output_file))&&
+					(1==byte_swap_and_write(dummy,404,1,least_to_most,output_file)))
 				{
 					/* write the image header */
 					row_starts=(long)(512+number_of_rows*sizeof(unsigned long));
@@ -571,7 +647,7 @@ Writes an image in SGI rgb file format.
 						{
 							fseek(output_file,row_starts+(long)(l*number_of_rows*
 								sizeof(unsigned long)),SEEK_SET);
-							fwrite(&row_start,sizeof(unsigned long),1,output_file);
+							byte_swap_and_write(&row_start,sizeof(unsigned long),1,least_to_most,output_file);
 							fseek(output_file,row_start,SEEK_SET);
 							row_size=0;
 							pixel=((unsigned char *)image)+number_of_components*
@@ -594,8 +670,8 @@ Writes an image in SGI rgb file format.
 											k--;
 											pixel += number_of_components;
 										} while ((k>0)&&(run_length<0x7f)&&(*pixel==last_pixel));
-										fwrite(&run_length,sizeof(unsigned char),1,output_file);
-										fwrite(&last_pixel,sizeof(unsigned char),1,output_file);
+										byte_swap_and_write(&run_length,sizeof(unsigned char),1,least_to_most,output_file);
+										byte_swap_and_write(&last_pixel,sizeof(unsigned char),1,least_to_most,output_file);
 										row_size += 2;
 									}
 									else
@@ -611,25 +687,25 @@ Writes an image in SGI rgb file format.
 										} while ((k>0)&&(run_length<0x7f)&&(*pixel!=last_pixel));
 										row_size += run_length+1;
 										run_length |= 0x80;
-										fwrite(&run_length,sizeof(unsigned char),1,output_file);
+										byte_swap_and_write(&run_length,sizeof(unsigned char),1,least_to_most,output_file);
 										run_length &= 0x7f;
-										fwrite(run,sizeof(unsigned char),(size_t)run_length,
-											output_file);
+										byte_swap_and_write(run,sizeof(unsigned char),(size_t)run_length,
+											least_to_most,output_file);
 									}
 								}
 								else
 								{
-									fwrite(&run_length,sizeof(unsigned char),1,output_file);
-									fwrite(&last_pixel,sizeof(unsigned char),1,output_file);
+									byte_swap_and_write(&run_length,sizeof(unsigned char),1,least_to_most,output_file);
+									byte_swap_and_write(&last_pixel,sizeof(unsigned char),1,least_to_most,output_file);
 									row_size += 2;
 								}
 							}
 							run_length=0;
-							fwrite(&run_length,sizeof(unsigned char),1,output_file);
+							byte_swap_and_write(&run_length,sizeof(unsigned char),1,least_to_most,output_file);
 							row_size++;
 							fseek(output_file,row_sizes+(long)(l*number_of_rows*
 								sizeof(unsigned long)),SEEK_SET);
-							fwrite(&row_size,sizeof(unsigned long),1,output_file);
+							byte_swap_and_write(&row_size,sizeof(unsigned long),1,least_to_most,output_file);
 							row_start += row_size;
 						}
 					}
