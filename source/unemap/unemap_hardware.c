@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : unemap_hardware.c
 
-LAST MODIFIED : 27 May 2002
+LAST MODIFIED : 31 July 2002
 
 DESCRIPTION :
 Code for controlling the National Instruments (NI) data acquisition and unemap
@@ -8944,7 +8944,7 @@ problem, but not on first sample) when using large sampling buffers.
 #else /* defined (CLEAR_DAQ_FOR_START_SAMPLING) */
 int unemap_start_sampling(void)
 /*******************************************************************************
-LAST MODIFIED : 29 December 2001
+LAST MODIFIED : 31 July 2002
 
 DESCRIPTION :
 The function fails if the hardware is not configured.
@@ -9977,6 +9977,7 @@ if (unemap_start_sampling_count<=2)
 #endif /* defined (DEBUG) */
 									if (0==status)
 									{
+										return_code=1;
 									}
 									else
 									{
@@ -10152,17 +10153,17 @@ many samples were acquired.
 			module_configured,module_NI_CARDS,module_number_of_NI_CARDS);
 	}
 #endif /* defined (NI_DAQ) */
+#if defined (DEBUG)
 	/*???debug */
 #if defined (UNEMAP_THREAD_SAFE)
 	display_message(INFORMATION_MESSAGE,"scrolling_callback_mutex_locked_count=%d\n",
 		scrolling_callback_mutex_locked_count);
 #endif /* defined (UNEMAP_THREAD_SAFE) */
-#if defined (DEBUG)
 #endif /* defined (DEBUG) */
+#if defined (DEBUG)
 	/*???debug */
 	display_message(INFORMATION_MESSAGE,"leave unemap_stop_sampling %d %lu %lu\n",
 		return_code,module_sample_buffer_size,module_starting_sample_number);
-#if defined (DEBUG)
 #endif /* defined (DEBUG) */
 	LEAVE;
 
