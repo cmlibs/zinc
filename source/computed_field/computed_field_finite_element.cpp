@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : computed_field_finite_element.c
 
-LAST MODIFIED : 17 July 2000
+LAST MODIFIED : 19 July 2000
 
 DESCRIPTION :
 Implements a number of basic component wise operations on computed fields.
@@ -1699,7 +1699,7 @@ Copy the type specific data used by this type.
 int Computed_field_default_coordinate_clear_cache_type_specific(
 	struct Computed_field *field)
 /*******************************************************************************
-LAST MODIFIED : 18 July 2000
+LAST MODIFIED : 19 July 2000
 
 DESCRIPTION :
 This function is not needed for this type.
@@ -1716,6 +1716,7 @@ This function is not needed for this type.
 				 COMPUTED_FIELD_DEFAULT_COORDINATE */
 			for (i=0;i< field->number_of_source_fields;i++)
 			{
+				Computed_field_clear_cache(field->source_fields[i]);
 				DEACCESS(Computed_field)(&(field->source_fields[i]));
 			}
 			DEALLOCATE(field->source_fields);
