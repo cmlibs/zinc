@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : scene.h
 
-LAST MODIFIED : 9 March 2001
+LAST MODIFIED : 15 March 2001
 
 DESCRIPTION :
 Structure for storing the collections of objects that make up a 3-D graphical
@@ -1152,61 +1152,89 @@ DESCRIPTION :
 Calls the just fast_changing display list for <scene>, if any.
 ==============================================================================*/
 
+int Scene_remove_Scene_object(struct Scene *scene,
+	struct Scene_object *scene_object);
+/*******************************************************************************
+LAST MODIFIED : 14 March 2001
+
+DESCRIPTION :
+Removes <scene object> from the list of objects on <scene>.
+==============================================================================*/
+
 int Scene_add_graphics_object(struct Scene *scene,
-	struct GT_object *graphics_object,int position, char *name,
+	struct GT_object *graphics_object, int position, char *scene_object_name,
 	int fast_changing);
 /*******************************************************************************
-LAST MODIFIED : 11 July 1000
+LAST MODIFIED : 15 March 2001
 
 DESCRIPTION :
 Adds <graphics_object> to the list of objects on <scene> at <position>.
 A position of 1 indicates the top of the list, while less than 1 or greater
 than the number of graphics objects in the list puts it at the end.
-The <name> is used for the scene_object and must be unique for the scene.
+The optional <scene_object_name> allows the scene_object to be given a different
+name from that of the <graphics_object>, and must be unique for the scene.
 Also set the <fast_changing> flag on creation to avoid wrong updates if on.
 ==============================================================================*/
 
 int Scene_remove_graphics_object(struct Scene *scene,
 	struct GT_object *graphics_object);
 /*******************************************************************************
-LAST MODIFIED : 8 December 1997
+LAST MODIFIED : 15 March 2001
 
 DESCRIPTION :
-Removes <graphics object> from the list of objects on <scene>.
+Removes all scene objects containing <graphics object> from <scene>.
+Does not complain if <graphics_object> is not used in <scene>.
 ==============================================================================*/
 
 int Scene_add_child_scene(struct Scene *scene, struct Scene *child_scene,
-	int position, char *name, struct MANAGER(Scene) *scene_manager);
+	int position, char *scene_object_name, struct MANAGER(Scene) *scene_manager);
 /*******************************************************************************
-LAST MODIFIED : 20 November 1998
+LAST MODIFIED : 15 March 2001
 
 DESCRIPTION :
 Adds <child_scene> to the list of objects on <scene> at <position>.
 A position of 1 indicates the top of the list, while less than 1 or greater
 than the number of graphics objects in the list puts it at the end.
-The <name> is used for the scene_object and must be unique for the scene.
+The optional <scene_object_name> allows the scene_object to be given a different
+name from that of the <child_scene>, and must be unique for the scene.
 ==============================================================================*/
 
-int Scene_remove_child_scene(struct Scene *scene,struct Scene *child_scene);
+int Scene_remove_child_scene(struct Scene *scene, struct Scene *child_scene);
 /*******************************************************************************
-LAST MODIFIED : 20 November 1998
+LAST MODIFIED : 15 March 2001
 
 DESCRIPTION :
-Removes <child_scene> from the list of scenes in <scene>.
+Removes all scene objects containing <child_scene> from <scene>.
+Does not complain if <child_scene> is not used in <scene>.
 ==============================================================================*/
 
-int Scene_add_graphical_finite_element(struct Scene *scene,
-	struct GROUP(FE_element) *element_group,char *scene_object_name);
+int Scene_add_graphical_element_group(struct Scene *scene,
+	struct GROUP(FE_element) *element_group, int position,
+	char *scene_object_name);
 /*******************************************************************************
-LAST MODIFIED : 4 April 2000
+LAST MODIFIED : 15 March 2001
 
 DESCRIPTION :
-Adds a graphical <element_group> to the <scene> with some default settings
-depending on the scene's graphical_element_mode.
-The optional <scene_object_name> allows the name of the scene_object containing
-the group to be overridden from the group name; note that this does not allow
-the same element group to be added twice.
-???RC Could allow multiple renditions for same group in future.
+Adds a graphical <element_group> to the list of objects on <scene> at
+<position>. The group will be given a default rendition depending on the
+scenes current graphical_element_mode.
+A position of 1 indicates the top of the list, while less than 1 or greater
+than the number of graphics objects in the list puts it at the end.
+The optional <scene_object_name> allows the scene_object to be given a different
+name from that of the <element_group>, and must be unique for the scene.
+Note if the scene is in GRAPHICAL_ELEMENT_MANUAL mode, a group may be added
+more than once with a different name, however, it will share the underlying
+GT_element_group and therefore have the same rendition.
+==============================================================================*/
+
+int Scene_remove_graphical_element_group(struct Scene *scene,
+	struct GROUP(FE_element) *element_group);
+/*******************************************************************************
+LAST MODIFIED : 15 March 2001
+
+DESCRIPTION :
+Removes all scene objects containing a graphical rendition of <element_group>
+from <scene>. Does not complain if <element_group> is not used in <scene>.
 ==============================================================================*/
 
 int Scene_update_time_behaviour(struct Scene *scene, struct GT_object *graphics_object);
@@ -1387,12 +1415,13 @@ Returns the visibility of the GFE for <element_group> in <scene>.
 ==============================================================================*/
 
 int Scene_set_element_group_visibility(struct Scene *scene,
-	struct GROUP(FE_element) *element_group,enum GT_visibility_type visibility);
+	struct GROUP(FE_element) *element_group, enum GT_visibility_type visibility);
 /*******************************************************************************
-LAST MODIFIED : 16 February 1998
+LAST MODIFIED : 15 March 2001
 
 DESCRIPTION :
-Sets the visibility of the GFE for <element_group> in <scene>.
+Sets the visibility of all scene objects that are graphical element groups for
+<element_group> in <scene>.
 ==============================================================================*/
 
 enum GT_visibility_type Scene_get_graphics_object_visibility(
@@ -1407,10 +1436,10 @@ Returns the visibility of <graphics_object> in <scene>.
 int Scene_set_graphics_object_visibility(struct Scene *scene,
 	struct GT_object *graphics_object,enum GT_visibility_type visibility);
 /*******************************************************************************
-LAST MODIFIED : 9 December 1997
+LAST MODIFIED : 15 March 2001
 
 DESCRIPTION :
-Sets the visibility of <graphics_object> in <scene>.
+Sets the visibility of all instances of <graphics_object> in <scene>.
 ==============================================================================*/
 
 int Scene_has_graphics_object(struct Scene *scene,
@@ -1437,12 +1466,13 @@ DESCRIPTION :
 Returns true if <child_scene> is in the list of scenes in <scene>.
 ==============================================================================*/
 
-struct Scene_object *Scene_get_scene_object_by_name(struct Scene *scene,
-	char *graphics_object_name);
+struct Scene_object *Scene_get_Scene_object_by_name(struct Scene *scene,
+	char *name);
 /*******************************************************************************
-LAST MODIFIED : 12 October 1998
+LAST MODIFIED : 14 March 2001
 
 DESCRIPTION :
+Returns the Scene_object called <name> in <scene>, or NULL if not found.
 ==============================================================================*/
 
 int Scene_has_graphical_element_group(struct Scene *scene,

@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : cmiss.c
 
-LAST MODIFIED : 2 March 2001
+LAST MODIFIED : 15 March 2001
 
 DESCRIPTION :
 Functions for executing cmiss commands.
@@ -11351,14 +11351,14 @@ Executes a GFX DESTROY command.
 
 struct Scene_add_graphics_object_iterator_data
 {
+	int position;
 	struct Scene *scene;
 };
 
-#if !defined (WINDOWS_DEV_FLAG)
 static int Scene_add_graphics_object_iterator(struct GT_object *graphics_object,
 	void *data_void)
 /*******************************************************************************
-LAST MODIFIED : 11 July 2000
+LAST MODIFIED : 15 March 2001
 
 DESCRIPTION :
 ==============================================================================*/
@@ -11368,24 +11368,27 @@ DESCRIPTION :
 	struct Scene_add_graphics_object_iterator_data *data;
 
 	ENTER(Scene_add_graphics_object_iterator);
-	return_code=0;
-	/* check arguments */
-	if (graphics_object&&
-		(data=(struct Scene_add_graphics_object_iterator_data *)data_void)&&
-		(scene=data->scene))
+	return_code = 0;
+	if (graphics_object &&
+		(data = (struct Scene_add_graphics_object_iterator_data *)data_void )&&
+		(scene = data->scene))
 	{
-		if (Scene_has_graphics_object(scene,graphics_object))
+		if (Scene_has_graphics_object(scene, graphics_object))
 		{
-			return_code=1;
+			return_code = 1;
 		}
 		else
 		{
-			return_code=Scene_add_graphics_object(scene,graphics_object,0,
-				graphics_object->name,/*fast_changing*/0);
+			return_code = Scene_add_graphics_object(scene,graphics_object,
+				data->position, graphics_object->name,/*fast_changing*/0);
+			if (0 < data->position)
+			{
+				data->position++;
+			}
 		}
-		if (1<GT_object_get_number_of_times(graphics_object))
+		if (1 < GT_object_get_number_of_times(graphics_object))
 		{
-			Scene_update_time_behaviour(data->scene,graphics_object);
+			Scene_update_time_behaviour(data->scene, graphics_object);
 		}
 	}
 	else
@@ -11397,21 +11400,19 @@ DESCRIPTION :
 
 	return (return_code);
 } /* Scene_add_graphics_object_iterator */
-#endif /* !defined (WINDOWS_DEV_FLAG) */
 
-#if !defined (WINDOWS_DEV_FLAG)
 static int execute_command_gfx_draw(struct Parse_state *state,
 	void *dummy_to_be_modified,void *command_data_void)
 /*******************************************************************************
-LAST MODIFIED : 4 April 2000
+LAST MODIFIED : 15 March 2001
 
 DESCRIPTION :
 Executes a GFX DRAW command.
 ==============================================================================*/
 {
-	char *scene_object_name,*time_object_name;
+	char *scene_object_name, *time_object_name;
 	struct GT_object *graphics_object;
-	int return_code,position;
+	int return_code, position;
 	struct Cmiss_command_data *command_data;
 	struct GROUP(FE_element) *element_group;
 	struct Scene *child_scene,*scene;
@@ -11420,155 +11421,138 @@ Executes a GFX DRAW command.
 
 	ENTER(execute_command_gfx_draw);
 	USE_PARAMETER(dummy_to_be_modified);
-	if (state)
+	if (state && (command_data=(struct Cmiss_command_data *)command_data_void))
 	{
-		if (command_data=(struct Cmiss_command_data *)command_data_void)
-		{
-			/* initialize defaults */
-			graphics_object=(struct GT_object *)NULL;
-			element_group=(struct GROUP(FE_element) *)NULL;
-			scene_object_name=(char *)NULL;
-			time_object_name=(char *)NULL;
-			position=0;
-			scene=ACCESS(Scene)(command_data->default_scene);
-			child_scene=(struct Scene *)NULL;
+		/* initialize defaults */
+		graphics_object = (struct GT_object *)NULL;
+		element_group = (struct GROUP(FE_element) *)NULL;
+		scene_object_name = (char *)NULL;
+		time_object_name = (char *)NULL;
+		position = 0;
+		scene = ACCESS(Scene)(command_data->default_scene);
+		child_scene = (struct Scene *)NULL;
 
-			option_table=CREATE(Option_table)();
-			/* as */
-			Option_table_add_entry(option_table,"as",&scene_object_name,
-				(void *)1,set_name);
-			/* child_scene */
-			Option_table_add_entry(option_table,"child_scene",&child_scene,
-				command_data->scene_manager,set_Scene);
-			/* graphics_object */
-			Option_table_add_entry(option_table,"graphics_object",&graphics_object,
-				command_data->graphics_object_list,set_Graphics_object);
-			/* group */
-			Option_table_add_entry(option_table,"group",&element_group,
-				command_data->element_group_manager,set_FE_element_group);
-			/* position */
-			Option_table_add_entry(option_table,"position",&position,
-				(void *)1,set_int);
-			/* scene */
-			Option_table_add_entry(option_table,"scene",&scene,
-				command_data->scene_manager,set_Scene);
-			/* time_object */
-			Option_table_add_entry(option_table,"time_object",&time_object_name,
-				(void *)1,set_name);
-			/* default when token omitted (graphics_object) */
-			Option_table_add_entry(option_table,(char *)NULL,&graphics_object,
-				command_data->graphics_object_list,set_Graphics_object);
-			return_code=Option_table_multi_parse(option_table,state);
-			if ((child_scene&&graphics_object) || (graphics_object&&element_group) ||
-				(element_group&&child_scene))
-			{
-				display_message(ERROR_MESSAGE,"execute_command_gfx_draw.  "
-					"Specify only one of child_scene|graphics_object|group");
-				return_code=0;
-			}
-			if (child_scene&&time_object_name)
-			{
-				display_message(ERROR_MESSAGE,"execute_command_gfx_draw.  "
-					"Time objects may not be associated with a child_scene");
-				return_code=0;
-			}
-			/* no errors, not asking for help */
-			if (return_code)
-			{
-				data.scene=scene;
-				if (graphics_object)
-				{
-					if (scene)
-					{
-						if (!scene_object_name)
-						{
-							ALLOCATE(scene_object_name,char,
-								strlen(graphics_object->name)+1);
-							strcpy(scene_object_name,graphics_object->name);
-						}
-						return_code=Scene_add_graphics_object(scene,graphics_object,0,
-							scene_object_name,/*fast_changing*/0);
-						if (time_object_name)
-						{
-							/* SAB A new time_object is created and associated with the named
-								 scene_object, the time_keeper is supplied so that the
-							    default could be overridden */
-							Scene_set_time_behaviour(scene,scene_object_name, time_object_name,
-								command_data->default_time_keeper);
-						}
-						if (1<GT_object_get_number_of_times(graphics_object))
-						{
-							/* any scene_objects referring to this graphics_object which do
-								 not already have a time_object all are associated with a
-								 single common time_object */
-							Scene_update_time_behaviour(scene,graphics_object);
-						}
-					}
-				}
-				else if (child_scene)
-				{
-					if (!scene_object_name)
-					{
-						GET_NAME(Scene)(child_scene,&scene_object_name);
-					}
-					return_code=Scene_add_child_scene(scene,child_scene,0,
-						scene_object_name,command_data->scene_manager);
-				}
-				else if (element_group)
-				{
-					return_code=Scene_add_graphical_finite_element(scene,element_group,
-						scene_object_name);
-				}
-				else
-				{
-					return_code=FOR_EACH_OBJECT_IN_LIST(GT_object)(
-						Scene_add_graphics_object_iterator,(void *)&data,
-						command_data->graphics_object_list);
-				}
-			} /* parse error,help */
-			DESTROY(Option_table)(&option_table);
-			if (element_group)
-			{
-				DEACCESS(GROUP(FE_element))(&element_group);
-			}
-			if (scene)
-			{
-				DEACCESS(Scene)(&scene);
-			}
-			if (child_scene)
-			{
-				DEACCESS(Scene)(&child_scene);
-			}
+		option_table=CREATE(Option_table)();
+		/* as */
+		Option_table_add_entry(option_table,"as",&scene_object_name,
+			(void *)1,set_name);
+		/* child_scene */
+		Option_table_add_entry(option_table,"child_scene",&child_scene,
+			command_data->scene_manager,set_Scene);
+		/* graphics_object */
+		Option_table_add_entry(option_table,"graphics_object",&graphics_object,
+			command_data->graphics_object_list,set_Graphics_object);
+		/* group */
+		Option_table_add_entry(option_table,"group",&element_group,
+			command_data->element_group_manager,set_FE_element_group);
+		/* position */
+		Option_table_add_entry(option_table,"position",&position,
+			(void *)1,set_int);
+		/* scene */
+		Option_table_add_entry(option_table,"scene",&scene,
+			command_data->scene_manager,set_Scene);
+		/* time_object */
+		Option_table_add_entry(option_table,"time_object",&time_object_name,
+			(void *)1,set_name);
+		/* default when token omitted (graphics_object) */
+		Option_table_add_entry(option_table,(char *)NULL,&graphics_object,
+			command_data->graphics_object_list,set_Graphics_object);
+		return_code = Option_table_multi_parse(option_table,state);
+		if ((child_scene && graphics_object) ||
+			(graphics_object && element_group) ||
+			(element_group && child_scene))
+		{
+			display_message(ERROR_MESSAGE, "execute_command_gfx_draw.  "
+				"Specify only one of child_scene|graphics_object|group");
+			return_code = 0;
+		}
+		if (child_scene && time_object_name)
+		{
+			display_message(ERROR_MESSAGE, "execute_command_gfx_draw.  "
+				"Time objects may not be associated with a child_scene");
+			return_code = 0;
+		}
+		/* no errors, not asking for help */
+		if (return_code)
+		{
 			if (graphics_object)
 			{
-				DEACCESS(GT_object)(&graphics_object);
+				if (scene)
+				{
+					return_code = Scene_add_graphics_object(scene, graphics_object,
+						position, scene_object_name, /*fast_changing*/0);
+					if (time_object_name)
+					{
+						/* SAB A new time_object is created and associated with the named
+							 scene_object, the time_keeper is supplied so that the
+							 default could be overridden */
+						Scene_set_time_behaviour(scene,scene_object_name, time_object_name,
+							command_data->default_time_keeper);
+					}
+					if (1<GT_object_get_number_of_times(graphics_object))
+					{
+						/* any scene_objects referring to this graphics_object which do
+							 not already have a time_object all are associated with a
+							 single common time_object */
+						Scene_update_time_behaviour(scene,graphics_object);
+					}
+				}
 			}
-			if (scene_object_name)
+			else if (child_scene)
 			{
-				DEALLOCATE(scene_object_name);
+				return_code = Scene_add_child_scene(scene, child_scene, position,
+					scene_object_name, command_data->scene_manager);
 			}
-			if (time_object_name)
+			else if (element_group)
 			{
-				DEALLOCATE(time_object_name);
+				return_code = Scene_add_graphical_element_group(scene, element_group,
+					position, scene_object_name);
 			}
-		}
-		else
+			else
+			{
+				data.scene = scene;
+				data.position = position;
+				return_code = FOR_EACH_OBJECT_IN_LIST(GT_object)(
+					Scene_add_graphics_object_iterator, (void *)&data,
+					command_data->graphics_object_list);
+			}
+		} /* parse error,help */
+		DESTROY(Option_table)(&option_table);
+		if (element_group)
 		{
-			display_message(ERROR_MESSAGE,
-				"execute_command_gfx_draw.  Missing command_data");
-			return_code=0;
+			DEACCESS(GROUP(FE_element))(&element_group);
+		}
+		if (scene)
+		{
+			DEACCESS(Scene)(&scene);
+		}
+		if (child_scene)
+		{
+			DEACCESS(Scene)(&child_scene);
+		}
+		if (graphics_object)
+		{
+			DEACCESS(GT_object)(&graphics_object);
+		}
+		if (scene_object_name)
+		{
+			DEALLOCATE(scene_object_name);
+		}
+		if (time_object_name)
+		{
+			DEALLOCATE(time_object_name);
 		}
 	}
 	else
 	{
-		display_message(ERROR_MESSAGE,"execute_command_gfx_draw.  Missing state");
-		return_code=0;
+		display_message(ERROR_MESSAGE,
+			"execute_command_gfx_draw.  Invalid argument(s)");
+		return_code = 0;
 	}
 	LEAVE;
 
 	return (return_code);
 } /* execute_command_gfx_draw */
-#endif /* !defined (WINDOWS_DEV_FLAG) */
 
 struct Edit_graphics_object_data
 {
@@ -11832,7 +11816,7 @@ Executes a GFX EDIT GRAPHICS_OBJECT command.
 			if (return_code)
 			{
 				if (scene&&graphics_object_name&&(scene_object=
-					Scene_get_scene_object_by_name(
+					Scene_get_Scene_object_by_name(
 					scene,graphics_object_name)))
 				{
 					if (apply_flag)
@@ -12280,134 +12264,93 @@ Executes a GFX ELEMENT_TOOL command.
 	return (return_code);
 } /* execute_command_gfx_element_tool */
 
-#if !defined (WINDOWS_DEV_FLAG)
 static int execute_command_gfx_erase(struct Parse_state *state,
-	void *dummy_to_be_modified,void *command_data_void)
+	void *dummy_to_be_modified, void *command_data_void)
 /*******************************************************************************
-LAST MODIFIED : 16 June 1999
+LAST MODIFIED : 14 March 2001
 
 DESCRIPTION :
 Executes a GFX ERASE command.
 ==============================================================================*/
 {
-	char *child_scene_name;
-	int i,return_code;
+	char *scene_name, *scene_object_name;
+	int return_code;
 	struct Cmiss_command_data *command_data;
-	struct GT_object *graphics_object;
-	struct Scene *child_scene,*scene;
-	static struct Modifier_entry option_table[]=
-	{
-		{"child_scene",NULL,NULL,set_Scene},
-		{"graphics_object",NULL,NULL,set_Graphics_object},
-		{"scene",NULL,NULL,set_Scene},
-		{NULL,NULL,NULL,set_Graphics_object}
-	};
+	struct Option_table *option_table;
+	struct Scene *scene;
+	struct Scene_object *scene_object;
 
 	ENTER(execute_command_gfx_erase);
 	USE_PARAMETER(dummy_to_be_modified);
-	if (state)
+	if (state && (command_data = (struct Cmiss_command_data *)command_data_void))
 	{
-		if (command_data=(struct Cmiss_command_data *)command_data_void)
+		scene_object_name = (char *)NULL;
+		scene = ACCESS(Scene)(command_data->default_scene);
+		option_table = CREATE(Option_table)();
+		/* scene */
+		Option_table_add_entry(option_table, "scene", &scene,
+			command_data->scene_manager, set_Scene);
+		/* default option: scene object name */
+		Option_table_add_entry(option_table, (char *)NULL, &scene_object_name,
+			NULL, set_name);
+		if (return_code = Option_table_multi_parse(option_table, state))
 		{
-			/* initialize defaults */
-			child_scene=(struct Scene *)NULL;
-			graphics_object=(struct GT_object *)NULL;
-			scene=ACCESS(Scene)(command_data->default_scene);
-			i=0;
-			/* child_scene */
-			(option_table[i]).to_be_modified= &child_scene;
-			(option_table[i]).user_data=command_data->scene_manager;
-			i++;
-			/* graphics_object */
-			(option_table[i]).to_be_modified= &graphics_object;
-			(option_table[i]).user_data=command_data->graphics_object_list;
-			i++;
-			/* scene */
-			(option_table[i]).to_be_modified= &scene;
-			(option_table[i]).user_data=command_data->scene_manager;
-			i++;
-			/* default (graphics_object) */
-			(option_table[i]).to_be_modified= &graphics_object;
-			(option_table[i]).user_data=command_data->graphics_object_list;
-			i++;
-			return_code=process_multiple_options(state,option_table);
-			/* no errors, not asking for help */
-			if (return_code)
+			if (scene && scene_object_name)
 			{
-				if (scene&&(graphics_object||child_scene))
+				if (scene_object =
+					Scene_get_Scene_object_by_name(scene, scene_object_name))
 				{
-					if (graphics_object)
+					if (Scene_remove_Scene_object(scene, scene_object))
 					{
-						if (Scene_has_graphics_object(scene,graphics_object))
-						{
-							if (!Scene_remove_graphics_object(scene,graphics_object))
-							{
-								return_code=0;
-							}
-						}
-						else
-						{
-							display_message(WARNING_MESSAGE,
-								"No graphics_object named '%s' in scene",graphics_object->name);
-							return_code=0;
-						}
+						return_code = 1;
 					}
-					if (child_scene)
+					else
 					{
-						if (Scene_has_child_scene(scene,child_scene))
-						{
-							if (!Scene_remove_child_scene(scene,child_scene))
-							{
-								return_code=0;
-							}
-						}
-						else
-						{
-							GET_NAME(Scene)(child_scene,&child_scene_name);
-							display_message(WARNING_MESSAGE,
-								"No child_scene named '%s' in scene",child_scene_name);
-							DEALLOCATE(child_scene_name);
-							return_code=0;
-						}
+						GET_NAME(Scene)(scene, &scene_name);
+						display_message(ERROR_MESSAGE, "execute_command_gfx_erase.  "
+							"Could not erase '%s' from scene '%s'",
+							scene_object_name, scene_name);
+						DEALLOCATE(scene_name);
+						return_code = 0;
 					}
 				}
 				else
 				{
-					display_message(WARNING_MESSAGE,
-						"Must specify scene, and graphics_object or child_scene to erase");
-					return_code=0;
+					GET_NAME(Scene)(scene, &scene_name);
+					display_message(ERROR_MESSAGE,
+						"gfx erase:  No object named '%s' in scene '%s'",
+						scene_object_name, scene_name);
+					DEALLOCATE(scene_name);
+					return_code = 0;
 				}
-			} /* parse error,help */
-			if (child_scene)
-			{
-				DEACCESS(Scene)(&child_scene);
 			}
-			if (graphics_object)
+			else
 			{
-				DEACCESS(GT_object)(&graphics_object);
-			}
-			if (scene)
-			{
-				DEACCESS(Scene)(&scene);
+				display_message(ERROR_MESSAGE,
+					"gfx erase:  Must specify an object and a scene to erase it from");
+				return_code = 0;
 			}
 		}
-		else
+		DESTROY(Option_table)(&option_table);
+		if (scene)
 		{
-			display_message(ERROR_MESSAGE,
-				"execute_command_gfx_erase.  Missing command_data");
-			return_code=0;
+			DEACCESS(Scene)(&scene);
+		}
+		if (scene_object_name)
+		{
+			DEALLOCATE(scene_object_name);
 		}
 	}
 	else
 	{
-		display_message(ERROR_MESSAGE,"execute_command_gfx_erase.  Missing state");
-		return_code=0;
+		display_message(ERROR_MESSAGE,
+			"execute_command_gfx_erase.  Invalid argument(s)");
+		return_code = 0;
 	}
 	LEAVE;
 
 	return (return_code);
 } /* execute_command_gfx_erase */
-#endif /* !defined (WINDOWS_DEV_FLAG) */
 
 #if !defined (WINDOWS_DEV_FLAG)
 static int gfx_export_alias(struct Parse_state *state,
@@ -12710,11 +12653,11 @@ Executes a GFX EXPORT WAVEFRONT command.
 			{
 				if (scene_object_name)
 				{
-					if (!(scene_object=Scene_get_scene_object_by_name(scene,
+					if (!(scene_object=Scene_get_Scene_object_by_name(scene,
 						scene_object_name)))
 					{
 						display_message(ERROR_MESSAGE,
-							"gfx_export_wavefront.  Unable to find object %s in scene",
+							"gfx_export_wavefront.  Unable to find object '%s' in scene",
 							scene_object_name);
 						return_code=0;						
 					}
@@ -14644,7 +14587,7 @@ Executes a GFX LIST TEXTURE.
 static int gfx_list_transformation(struct Parse_state *state,
 	void *dummy_to_be_modified,void *command_data_void)
 /*******************************************************************************
-LAST MODIFIED : 16 June 1999
+LAST MODIFIED : 14 March 2001
 
 DESCRIPTION :
 Executes a GFX LIST TRANSFORMATION.
@@ -14682,25 +14625,27 @@ Executes a GFX LIST TRANSFORMATION.
 			/* no errors, not asking for help */
 			if (return_code)
 			{
-				if (GET_NAME(Scene)(scene,&scene_name))
+				if (GET_NAME(Scene)(scene, &scene_name))
 				{
 					if ((!scene_object_name)||(scene_object=
-						Scene_get_scene_object_by_name(scene,scene_object_name)))
+						Scene_get_Scene_object_by_name(scene,scene_object_name)))
 					{
 						if (commands_flag)
 						{
-							if (ALLOCATE(command_prefix,char,40+strlen(scene_name)))
+							/* quote scene name if it contains special characters */
+							make_valid_token(&scene_name);
+							if (ALLOCATE(command_prefix, char, 40 + strlen(scene_name)))
 							{
-								sprintf(command_prefix,"gfx set transformation scene %s name",
+								sprintf(command_prefix, "gfx set transformation scene %s name",
 									scene_name);
 								if (scene_object_name)
 								{
-									return_code=list_Scene_object_transformation_commands(
+									return_code = list_Scene_object_transformation_commands(
 										scene_object,(void *)command_prefix);
 								}
 								else
 								{
-									return_code=for_each_Scene_object_in_Scene(scene,
+									return_code = for_each_Scene_object_in_Scene(scene,
 										list_Scene_object_transformation_commands,
 										(void *)command_prefix);
 								}
@@ -19192,7 +19137,7 @@ Sets the ordering of graphics objects on scene(s) from the command line.
 			{
 				if (name)
 				{
-					if (scene_object=Scene_get_scene_object_by_name(scene,name))
+					if (scene_object=Scene_get_Scene_object_by_name(scene,name))
 					{
 						return_code=Scene_set_scene_object_position(scene,scene_object,
 							position);
@@ -19459,7 +19404,7 @@ Sets the transformation for a graphics object from the command line.
 			{
 				if (scene_object_name)
 				{
-					if (scene_object=Scene_get_scene_object_by_name(scene,
+					if (scene_object=Scene_get_Scene_object_by_name(scene,
 						scene_object_name))
 					{
 						Scene_object_set_transformation(scene_object,
@@ -20120,7 +20065,7 @@ Toggles the visibility of graphics objects on scenes from the command line.
 				{
 					if (name)
 					{
-						if (scene_object=Scene_get_scene_object_by_name(scene,name))
+						if (scene_object=Scene_get_Scene_object_by_name(scene,name))
 						{
 							current_visibility=Scene_object_get_visibility(scene_object);
 							if (on_flag)

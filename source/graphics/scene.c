@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : scene.c
 
-LAST MODIFIED : 9 March 2001
+LAST MODIFIED : 15 March 2001
 
 DESCRIPTION :
 Structure for storing the collections of objects that make up a 3-D graphical
@@ -1425,7 +1425,7 @@ to the "axes" glyph used for displaying axes with the scene.
 	return (graphics_object);
 } /* make_axis_graphics_object */
 
-static int Scene_add_scene_object(struct Scene *scene,
+static int Scene_add_Scene_object(struct Scene *scene,
 	struct Scene_object *scene_object,int position)
 /*******************************************************************************
 LAST MODIFIED : 11 July 2000
@@ -1442,7 +1442,7 @@ functions such as Scene_add_graphics_object rather creating their own scene_obje
 	int fast_changing,number_in_list,return_code;
 	struct Scene_object *scene_object_in_way;
 	
-	ENTER(Scene_add_scene_object);
+	ENTER(Scene_add_Scene_object);
 	if (scene&&scene_object)
 	{
 		if(!IS_OBJECT_IN_LIST(Scene_object)(scene_object, scene->scene_object_list))
@@ -1484,7 +1484,7 @@ functions such as Scene_add_graphics_object rather creating their own scene_obje
 					{
 						DEACCESS(Scene_object)(&scene_object_in_way);
 					}
-					display_message(ERROR_MESSAGE,"Scene_add_scene_object.  "
+					display_message(ERROR_MESSAGE,"Scene_add_Scene_object.  "
 						"Could not add object - list may have changed");
 					return_code=0;
 				}
@@ -1494,39 +1494,36 @@ functions such as Scene_add_graphics_object rather creating their own scene_obje
 		}
 		else
 		{
-			display_message(ERROR_MESSAGE,"Scene_add_scene_object.  "
+			display_message(ERROR_MESSAGE,"Scene_add_Scene_object.  "
 				"Object already in list");
 			return_code=0;
 		}
 	}
 	else
 	{
-		display_message(ERROR_MESSAGE,"Scene_add_scene_object.  "
+		display_message(ERROR_MESSAGE,"Scene_add_Scene_object.  "
 			"Invalid argument(s)");
 		return_code=0;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* Scene_add_scene_object */
+} /* Scene_add_Scene_object */
 
-static int Scene_remove_scene_object(struct Scene *scene,
+static int Scene_remove_Scene_object_private(struct Scene *scene,
 	struct Scene_object *scene_object)
 /*******************************************************************************
-LAST MODIFIED : 12 July 2000
+LAST MODIFIED : 15 March 2001
 
 DESCRIPTION :
-Removes <scene object> from the list of objects on <scene>.
-These routines are static as modules other than the scene should be using
-functions such as Scene_add_graphics_object rather creating their own
-scene_object.
+Removes <scene object> from the list of objects on <scene>. Private because it
+does not restrict the ability to remove some objects as the public version does.
 ==============================================================================*/
 {
-	int fast_changing,position,return_code,visibility;
+	int fast_changing, position, return_code, visibility;
 
-	ENTER(Scene_remove_scene_object);
-	/* check arguments */
-	if (scene&&scene_object)
+	ENTER(Scene_remove_Scene_object_private);
+	if (scene && scene_object)
 	{
 		if (IS_OBJECT_IN_LIST(Scene_object)(scene_object,
 			scene->scene_object_list))
@@ -1570,25 +1567,25 @@ scene_object.
 		else
 		{
 			display_message(ERROR_MESSAGE,
-				"Scene_remove_scene_object.  Object not in scene");
+				"Scene_remove_Scene_object_private.  Object not in scene");
 			return_code=0;
 		}
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Scene_remove_scene_object.  Invalid argument(s)");
+			"Scene_remove_Scene_object_private.  Invalid argument(s)");
 		return_code=0;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* Scene_remove_scene_object */
+} /* Scene_remove_Scene_object_private */
 
-int element_group_to_scene(struct GROUP(FE_element) *element_group,
+static int element_group_to_scene(struct GROUP(FE_element) *element_group,
 	void *scene_void)
 /*******************************************************************************
-LAST MODIFIED : 4 April 2000
+LAST MODIFIED : 15 March 2001
 
 DESCRIPTION :
 Iterator function for adding graphical element_groups to <scene>.
@@ -1603,7 +1600,8 @@ First checks <element_group> not already in scene.
 	{
 		if (!Scene_has_graphical_element_group(scene,element_group))
 		{
-			Scene_add_graphical_finite_element(scene,element_group,(char *)NULL);
+			Scene_add_graphical_element_group(scene, element_group, /*position*/0,
+				(char *)NULL);
 		}
 		return_code=1;
 	}
@@ -1621,7 +1619,7 @@ First checks <element_group> not already in scene.
 static void Scene_element_group_change(
 	struct MANAGER_MESSAGE(GROUP(FE_element)) *message,void *scene_void)
 /*******************************************************************************
-LAST MODIFIED : 6 April 2000
+LAST MODIFIED : 15 March 2001
 
 DESCRIPTION :
 Element group manager change callback. Adds/removes graphical element groups
@@ -1653,7 +1651,7 @@ from <scene> in response to manager messages.
 					Scene_object_has_unmanaged_element_group,
 					(void *)scene->element_group_manager,scene->scene_object_list))
 				{
-					Scene_remove_scene_object(scene,scene_object);
+					Scene_remove_Scene_object_private(scene,scene_object);
 				}
 			} break;
 			case MANAGER_CHANGE_ADD(GROUP(FE_element)):
@@ -1661,21 +1659,16 @@ from <scene> in response to manager messages.
 				if ((GRAPHICAL_ELEMENT_NONE != scene->graphical_element_mode)&&
 					(GRAPHICAL_ELEMENT_MANUAL != scene->graphical_element_mode))
 				{
-					Scene_add_graphical_finite_element(scene,message->object_changed,
-						(char *)NULL);
+					Scene_add_graphical_element_group(scene,
+						message->object_changed, /*position*/0, (char *)NULL);
 				}
 			} break;
 			case MANAGER_CHANGE_DELETE(GROUP(FE_element)):
 			{
-				/* if there is a GT_element_group for the element_group that is being
-					 deleted, remove it from the scene */
-				if ((element_group=message->object_changed)&&
-					(scene_object=FIRST_OBJECT_IN_LIST_THAT(Scene_object)(
-					Scene_object_has_element_group,(void *)element_group,
-					scene->scene_object_list)))
-				{
-					Scene_remove_scene_object(scene,scene_object);
-				}
+				/* remove any graphical element group renditions for the deleted
+					 element_group from scene  */
+				element_group = message->object_changed;
+				Scene_remove_graphical_element_group(scene, element_group);
 			} break;
 			case MANAGER_CHANGE_OBJECT(GROUP(FE_element)):
 			case MANAGER_CHANGE_OBJECT_NOT_IDENTIFIER(GROUP(FE_element)):
@@ -4316,14 +4309,14 @@ in an easy-to-interpret matrix multiplication form.
 int list_Scene_object_transformation_commands(struct Scene_object *scene_object,
 	void *command_prefix_void)
 /*******************************************************************************
-LAST MODIFIED : 26 April 1999
+LAST MODIFIED : 14 March 2001
 
 DESCRIPTION :
 Iterator function for writing the transformation in effect for <scene_object>
 as a command, using the given <command_prefix>.
 ==============================================================================*/
 {
-	char *command_prefix;
+	char *command_prefix, *scene_object_name;
 	int i,j,return_code;
 	gtMatrix transformation_matrix;
  
@@ -4333,8 +4326,12 @@ as a command, using the given <command_prefix>.
 		if (return_code=Scene_object_get_transformation(scene_object,
 			&transformation_matrix))
 		{
-			display_message(INFORMATION_MESSAGE,"%s %s",command_prefix,
-				scene_object->name);
+			scene_object_name = duplicate_string(scene_object->name);
+			/* put quotes around name if it contains special characters */
+			make_valid_token(&scene_object_name);
+			display_message(INFORMATION_MESSAGE, "%s %s", command_prefix,
+				scene_object_name);
+			DEALLOCATE(scene_object_name);
 			for (i=0;i<4;i++)
 			{
 				for (j=0;j<4;j++)
@@ -4909,7 +4906,7 @@ material and spectrum.
 				Scene_object_has_graphical_element_group,(void *)NULL,
 				scene->scene_object_list))
 			{
-				Scene_remove_scene_object(scene,scene_object);
+				Scene_remove_Scene_object_private(scene,scene_object);
 			}
 			scene->node_manager=(struct MANAGER(FE_node) *)NULL;
 			scene->node_group_manager=(struct MANAGER(GROUP(FE_node)) *)NULL;
@@ -7082,17 +7079,56 @@ Calls the just fast_changing display list for <scene>, if any.
 	return (return_code);
 } /* execute_Scene_fast_changing */
 
+int Scene_remove_Scene_object(struct Scene *scene,
+	struct Scene_object *scene_object)
+/*******************************************************************************
+LAST MODIFIED : 15 March 2001
+
+DESCRIPTION :
+Removes <scene object> from the list of objects on <scene>.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(Scene_remove_Scene_object);
+	if (scene && scene_object)
+	{
+		/* can only remove graphical element groups if in "manual" mode */
+		if ((SCENE_OBJECT_GRAPHICAL_ELEMENT_GROUP != scene_object->type) ||
+			(GRAPHICAL_ELEMENT_MANUAL == scene->graphical_element_mode))
+		{
+			return_code = Scene_remove_Scene_object_private(scene, scene_object);
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,
+				"Scene_remove_Scene_object.  Can only remove groups in manual mode");
+			return_code = 0;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Scene_remove_Scene_object.  Invalid argument(s)");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Scene_remove_Scene_object */
+
 int Scene_add_graphics_object(struct Scene *scene,
-	struct GT_object *graphics_object,int position, char *name,
+	struct GT_object *graphics_object, int position, char *scene_object_name,
 	int fast_changing)
 /*******************************************************************************
-LAST MODIFIED : 11 July 1000
+LAST MODIFIED : 15 March 2001
 
 DESCRIPTION :
 Adds <graphics_object> to the list of objects on <scene> at <position>.
 A position of 1 indicates the top of the list, while less than 1 or greater
 than the number of graphics objects in the list puts it at the end.
-The <name> is used for the scene_object and must be unique for the scene.
+The optional <scene_object_name> allows the scene_object to be given a different
+name from that of the <graphics_object>, and must be unique for the scene.
 Also set the <fast_changing> flag on creation to avoid wrong updates if on.
 ==============================================================================*/
 {
@@ -7100,38 +7136,39 @@ Also set the <fast_changing> flag on creation to avoid wrong updates if on.
 	struct Scene_object *scene_object;
 	
 	ENTER(Scene_add_graphics_object);
-	/* check arguments */
-	if (scene&&graphics_object&&name)
+	if (scene && graphics_object)
 	{
-		if (!(scene_object=FIRST_OBJECT_IN_LIST_THAT(Scene_object)(
-			Scene_object_has_name, (void *)name, scene->scene_object_list)))
+		if (!scene_object_name)
 		{
-			if (scene_object=create_Scene_object_with_Graphics_object(
-				name, graphics_object))
+			scene_object_name = graphics_object->name;
+		}
+		if (!FIRST_OBJECT_IN_LIST_THAT(Scene_object)(Scene_object_has_name,
+			(void *)scene_object_name, scene->scene_object_list))
+		{
+			if (scene_object = create_Scene_object_with_Graphics_object(
+				scene_object_name, graphics_object))
 			{
-				Scene_object_set_fast_changing(scene_object,fast_changing);
-				return_code = Scene_add_scene_object(scene, scene_object, position);
+				Scene_object_set_fast_changing(scene_object, fast_changing);
+				return_code = Scene_add_Scene_object(scene, scene_object, position);
 			}
 			else
 			{
-				return_code=0;
+				return_code = 0;
 			}
 		}
 		else
 		{
-			/* not really an error */
-#if defined (OLD_CODE)
 			display_message(WARNING_MESSAGE,
-				"Scene_add_graphics_object.  Object with that name already in scene");
-#endif /* defined (OLD_CODE) */
-			return_code=1;
+				"Scene_add_graphics_object.  Object with name '%s' already in scene",
+				scene_object_name);
+			return_code = 1;
 		}
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
 			"Scene_add_graphics_object.  Invalid argument(s)");
-		return_code=0;
+		return_code = 0;
 	}
 	LEAVE;
 
@@ -7141,37 +7178,36 @@ Also set the <fast_changing> flag on creation to avoid wrong updates if on.
 int Scene_remove_graphics_object(struct Scene *scene,
 	struct GT_object *graphics_object)
 /*******************************************************************************
-LAST MODIFIED : 15 June 1998
+LAST MODIFIED : 15 March 2001
 
 DESCRIPTION :
-Removes <graphics object> from the list of objects on <scene>.
+Removes all scene objects containing <graphics object> from <scene>.
+Does not complain if <graphics_object> is not used in <scene>.
 ==============================================================================*/
 {
 	int return_code;
 	struct Scene_object *scene_object;
 
 	ENTER(Scene_remove_graphics_object);
-	/* check arguments */
-	if (scene&&graphics_object)
+	if (scene && graphics_object)
 	{
-		if (scene_object=FIRST_OBJECT_IN_LIST_THAT(Scene_object)(
-			Scene_object_has_gt_object,(void *)graphics_object,
-			scene->scene_object_list))
+		return_code = 1;
+		while (return_code && (scene_object =
+			FIRST_OBJECT_IN_LIST_THAT(Scene_object)(Scene_object_has_gt_object,
+				(void *)graphics_object, scene->scene_object_list)))
 		{
-			return_code = Scene_remove_scene_object(scene, scene_object);
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"Scene_remove_graphics_object.  Object not in scene");
-			return_code=0;
+			if (!Scene_remove_Scene_object(scene, scene_object))
+			{
+				display_message(ERROR_MESSAGE, "Scene_remove_graphics_object.  Failed");
+				return_code = 0;
+			}
 		}
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
 			"Scene_remove_graphics_object.  Invalid argument(s)");
-		return_code=0;
+		return_code = 0;
 	}
 	LEAVE;
 
@@ -7179,142 +7215,204 @@ Removes <graphics object> from the list of objects on <scene>.
 } /* Scene_remove_graphics_object */
 
 int Scene_add_child_scene(struct Scene *scene, struct Scene *child_scene,
-	int position, char *name, struct MANAGER(Scene) *scene_manager)
+	int position, char *scene_object_name, struct MANAGER(Scene) *scene_manager)
 /*******************************************************************************
-LAST MODIFIED : 11 July 2000
+LAST MODIFIED : 15 March 2001
 
 DESCRIPTION :
 Adds <child_scene> to the list of objects on <scene> at <position>.
 A position of 1 indicates the top of the list, while less than 1 or greater
 than the number of graphics objects in the list puts it at the end.
-The optional <scene_object_name> is used for the scene_object and must be unique for the scene.
+The optional <scene_object_name> allows the scene_object to be given a different
+name from that of the <child_scene>, and must be unique for the scene.
 ==============================================================================*/
 {
 	int return_code;
 	struct Scene_object *scene_object;
 	
 	ENTER(Scene_add_child_scene);
-	if (scene&&child_scene&&name)
+	if (scene && child_scene)
 	{
-		if (!(scene_object=FIRST_OBJECT_IN_LIST_THAT(Scene_object)(
-			Scene_object_has_name, (void *)name, scene->scene_object_list)))
+		if (!scene_object_name)
 		{
-			if (scene_object=create_Scene_object_with_Scene(
-				name, child_scene, scene_manager))
+			scene_object_name = child_scene->name;
+		}
+		if (!FIRST_OBJECT_IN_LIST_THAT(Scene_object)(Scene_object_has_name,
+			(void *)scene_object_name, scene->scene_object_list))
+		{
+			if (scene_object = create_Scene_object_with_Scene(
+				scene_object_name, child_scene, scene_manager))
 			{
-				return_code = Scene_add_scene_object(scene, scene_object,position);
+				return_code = Scene_add_Scene_object(scene, scene_object, position);
 			}
 			else
 			{
-				return_code=0;
+				return_code = 0;
 			}
 		}
 		else
 		{
-			display_message(ERROR_MESSAGE,
-				"Scene_add_child_scene.  Object with name %s already in scene", name);
-			return_code=0;
+			display_message(ERROR_MESSAGE, "Scene_add_child_scene.  "
+				"Object with name '%s' already in scene", scene_object_name);
+			return_code = 0;
 		}
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
 			"Scene_add_child_scene.  Invalid argument(s)");
-		return_code=0;
+		return_code = 0;
 	}
 	LEAVE;
 
 	return (return_code);
 } /* Scene_add_child_scene */
 
-int Scene_remove_child_scene(struct Scene *scene,struct Scene *child_scene)
+int Scene_remove_child_scene(struct Scene *scene, struct Scene *child_scene)
 /*******************************************************************************
-LAST MODIFIED : 20 November 1998
+LAST MODIFIED : 15 March 2001
 
 DESCRIPTION :
-Removes <child_scene> from the list of scenes in <scene>.
+Removes all scene objects containing <child_scene> from <scene>.
+Does not complain if <child_scene> is not used in <scene>.
 ==============================================================================*/
 {
 	int return_code;
 	struct Scene_object *scene_object;
 
 	ENTER(Scene_remove_child_scene);
-	if (scene&&child_scene)
+	if (scene && child_scene)
 	{
-		if (scene_object=FIRST_OBJECT_IN_LIST_THAT(Scene_object)(
-			Scene_object_has_child_scene,(void *)child_scene,
-			scene->scene_object_list))
+		return_code = 1;
+		while (return_code && (scene_object =
+			FIRST_OBJECT_IN_LIST_THAT(Scene_object)(Scene_object_has_child_scene,
+				(void *)child_scene, scene->scene_object_list)))
 		{
-			return_code = Scene_remove_scene_object(scene, scene_object);
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"Scene_remove_child_scene.  child_scene not in scene");
-			return_code=0;
+			if (!Scene_remove_Scene_object(scene, scene_object))
+			{
+				display_message(ERROR_MESSAGE, "Scene_remove_child_scene.  Failed");
+				return_code = 0;
+			}
 		}
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
 			"Scene_remove_child_scene.  Invalid argument(s)");
-		return_code=0;
+		return_code = 0;
 	}
 	LEAVE;
 
 	return (return_code);
 } /* Scene_remove_child_scene */
 
-int Scene_add_graphical_finite_element(struct Scene *scene,
-	struct GROUP(FE_element) *element_group,char *scene_object_name)
+int Scene_add_graphical_element_group(struct Scene *scene,
+	struct GROUP(FE_element) *element_group, int position,
+	char *scene_object_name)
 /*******************************************************************************
-LAST MODIFIED : 16 November 2000
+LAST MODIFIED : 15 March 2001
 
 DESCRIPTION :
-Adds a graphical <element_group> to the <scene> with some default settings
-depending on the scene's graphical_element_mode.
-The optional <scene_object_name> allows the name of the scene_object containing
-the group to be overridden from the group name; note that this does not allow
-the same element group to be added twice.
-???RC Could allow multiple renditions for same group in future.
+Adds a graphical <element_group> to the list of objects on <scene> at
+<position>. The group will be given a default rendition depending on the
+scenes current graphical_element_mode.
+A position of 1 indicates the top of the list, while less than 1 or greater
+than the number of graphics objects in the list puts it at the end.
+The optional <scene_object_name> allows the scene_object to be given a different
+name from that of the <element_group>, and must be unique for the scene.
+Note if the scene is in GRAPHICAL_ELEMENT_MANUAL mode, a group may be added
+more than once with a different name, however, it will share the underlying
+GT_element_group and therefore have the same rendition.
 ==============================================================================*/
 {
 	char *element_group_name;
 	enum Glyph_scaling_mode glyph_scaling_mode;
 	enum GT_visibility_type visibility;
-	int default_value,maximum_value,return_code;
+	int default_value, maximum_value, return_code;
 	struct Computed_field *default_coordinate_field, *element_xi_coordinate_field,
 		*orientation_scale_field, *variable_scale_field;
 	struct Element_discretization element_discretization;
-	struct GROUP(FE_node) *data_group,*node_group;
+	struct GROUP(FE_node) *data_group, *node_group;
 	struct GT_object *glyph;
 	struct GT_element_group *gt_element_group;
 	struct GT_element_settings *settings;
 	struct Scene_object *scene_object;
-	Triple glyph_centre,glyph_size,glyph_scale_factors;
+	Triple glyph_centre, glyph_size, glyph_scale_factors;
 
-	ENTER(Scene_add_graphical_finite_element);
-	if (scene&&element_group)
+	ENTER(Scene_add_graphical_element_group);
+	if (scene && element_group)
 	{
-		if (scene->element_manager)
+		element_group_name = (char *)NULL;
+		GET_NAME(GROUP(FE_element))(element_group, &element_group_name);
+		if (!scene_object_name)
 		{
-			if (!Scene_has_graphical_element_group(scene,element_group))
+			scene_object_name = element_group_name;
+		}
+		if (!FIRST_OBJECT_IN_LIST_THAT(Scene_object)(Scene_object_has_name,
+			(void *)scene_object_name, scene->scene_object_list))
+		{
+			/* see if group is currently in scene under any name */
+			if (scene_object = FIRST_OBJECT_IN_LIST_THAT(Scene_object)(
+				Scene_object_has_element_group, (void *)element_group,
+				scene->scene_object_list))
 			{
-				if (GET_NAME(GROUP(FE_element))(element_group,&element_group_name))
+				gt_element_group =
+					Scene_object_get_graphical_element_group(scene_object);
+			}
+			else
+			{
+				gt_element_group = (struct GT_element_group *)NULL;
+			}
+			return_code = 1;
+			switch (scene->graphical_element_mode)
+			{
+				case GRAPHICAL_ELEMENT_INVISIBLE:
+				case GRAPHICAL_ELEMENT_EMPTY:
+				case GRAPHICAL_ELEMENT_LINES:
 				{
-					if (!scene_object_name)
+					/* not allowed to add group more than once, and must have same name
+						 as element_group */
+					if (scene_object || strcmp(scene_object_name, element_group_name))
 					{
-						scene_object_name=element_group_name;
+						display_message(ERROR_MESSAGE,
+							"Scene_add_graphical_element_group.  "
+							"Can not add groups again or under different names in %s mode",
+							Scene_graphical_element_mode_string(
+								scene->graphical_element_mode));
+						return_code = 0;
 					}
-					/* Make the GT_element_group: */
+				} break;
+				case GRAPHICAL_ELEMENT_MANUAL:
+				{
+					/* ok - already checked no object of same name in scene */
+				} break;
+				case GRAPHICAL_ELEMENT_NONE:
+				{
+					display_message(ERROR_MESSAGE, "Scene_add_graphical_element_group.  "
+						"Graphical element groups are not enabled for scene %s",
+						scene->name);
+					return_code = 0;
+				} break;
+				default:
+				{
+					display_message(ERROR_MESSAGE, "Scene_add_graphical_element_group.  "
+						"Unknown scene graphical element mode");
+					return_code = 0;
+				} break;
+			}
+			if (return_code)
+			{
+				if (!gt_element_group)
+				{
+					/* Make a new GT_element_group */
 					/* First retrieve node group of the same name as the element group.
 						 Retrieve/create data group as necessary */
-					node_group=FIND_BY_IDENTIFIER_IN_MANAGER(GROUP(FE_node),name)(
-						element_group_name,scene->node_group_manager);
-					if (!(data_group=FIND_BY_IDENTIFIER_IN_MANAGER(GROUP(FE_node),name)(
-						element_group_name,scene->data_group_manager)))
+					node_group = FIND_BY_IDENTIFIER_IN_MANAGER(GROUP(FE_node),name)(
+						element_group_name, scene->node_group_manager);
+					if (!(data_group = FIND_BY_IDENTIFIER_IN_MANAGER(GROUP(FE_node),name)(
+						element_group_name, scene->data_group_manager)))
 					{
-						if (data_group=CREATE(GROUP(FE_node))(element_group_name))
+						if (data_group = CREATE(GROUP(FE_node))(element_group_name))
 						{
 							if (!ADD_OBJECT_TO_MANAGER(GROUP(FE_node))(data_group,
 								scene->data_group_manager))
@@ -7323,10 +7421,10 @@ the same element group to be added twice.
 							}
 						}
 					}
-					if (node_group&&data_group)
+					if (node_group && data_group)
 					{
-						if (gt_element_group=CREATE(GT_element_group)(
-							element_group,node_group,data_group,
+						if (gt_element_group = CREATE(GT_element_group)(
+							element_group, node_group, data_group,
 							scene->element_manager,
 							scene->element_group_manager,
 							scene->node_manager,
@@ -7339,220 +7437,244 @@ the same element group to be added twice.
 							scene->node_selection,
 							scene->data_selection))
 						{
-							if (!(scene_object=FIRST_OBJECT_IN_LIST_THAT(Scene_object)(
-								Scene_object_has_name, (void *)scene_object_name,
-								scene->scene_object_list)))
+							/* give the new group a default coordinate field */
+							/*???RC later get this from region */
+							default_coordinate_field=FIND_BY_IDENTIFIER_IN_MANAGER(
+								Computed_field,name)("default_coordinate",
+									scene->computed_field_manager);
+							GT_element_group_set_default_coordinate_field(
+								gt_element_group, default_coordinate_field);
+							/* set default circle and element discretization in group */
+							read_circle_discretization_defaults(&default_value,
+								&maximum_value, scene->user_interface);
+							GT_element_group_set_circle_discretization(gt_element_group,
+								default_value, scene->user_interface);
+							read_element_discretization_defaults(&default_value,
+								&maximum_value, scene->user_interface);
+							element_discretization.number_in_xi1 = default_value;
+							element_discretization.number_in_xi2 = default_value;
+							element_discretization.number_in_xi3 = default_value;
+							GT_element_group_set_element_discretization(gt_element_group,
+								&element_discretization, scene->user_interface);
+
+							if (GRAPHICAL_ELEMENT_LINES == scene->graphical_element_mode)
 							{
-								if ((scene_object=create_Scene_object_with_Graphical_element_group(
-									scene_object_name, gt_element_group)) && 
-									Scene_add_scene_object(scene, scene_object, /*position*/0))
+								/* add default settings - wireframe (line) rendition */
+								if (settings =
+									CREATE(GT_element_settings)(GT_ELEMENT_SETTINGS_LINES))
 								{
-									/* give the new group a default coordinate field */
-									/*???RC later get this from region */
-									default_coordinate_field=FIND_BY_IDENTIFIER_IN_MANAGER(
-										Computed_field,name)("default_coordinate",
-											scene->computed_field_manager);
-									GT_element_group_set_default_coordinate_field(
-										gt_element_group,default_coordinate_field);
-									/* set default circle and element discretization in group */
-									read_circle_discretization_defaults(&default_value,
-										&maximum_value,scene->user_interface);
-									GT_element_group_set_circle_discretization(gt_element_group,
-										default_value,scene->user_interface);
-									read_element_discretization_defaults(&default_value,
-										&maximum_value,scene->user_interface);
-									element_discretization.number_in_xi1=default_value;
-									element_discretization.number_in_xi2=default_value;
-									element_discretization.number_in_xi3=default_value;
-									GT_element_group_set_element_discretization(gt_element_group,
-										&element_discretization,scene->user_interface);
-									switch (scene->graphical_element_mode)
+									GT_element_settings_set_material(settings,
+										scene->default_material);
+									GT_element_settings_set_selected_material(settings,
+										FIND_BY_IDENTIFIER_IN_MANAGER(Graphical_material,name)(
+											"default_selected", scene->graphical_material_manager));
+									if (!GT_element_group_add_settings(gt_element_group,
+										settings, 0))
 									{
-										case GRAPHICAL_ELEMENT_INVISIBLE:
-										{
-											visibility=g_INVISIBLE;
-										} break;
-										case GRAPHICAL_ELEMENT_EMPTY:
-										case GRAPHICAL_ELEMENT_MANUAL:
-										{
-											visibility=g_VISIBLE;
-										} break;
-										case GRAPHICAL_ELEMENT_LINES:
-										{
-											/* add default settings - wireframe (line) rendition */
-											if (settings=CREATE(GT_element_settings)(
-												GT_ELEMENT_SETTINGS_LINES))
-											{
-												GT_element_settings_set_material(settings,
-													scene->default_material);
-												GT_element_settings_set_selected_material(settings,
-													FIND_BY_IDENTIFIER_IN_MANAGER(Graphical_material,name)(
-														"default_selected",
-														scene->graphical_material_manager));
-												if (GT_element_group_add_settings(gt_element_group,
-													settings,0))
-												{
-													/* if the group has data, and either the
-														 default_coordinate_field defined over them or the
-														 element_xi_coordinate, add data_points to the
-														 rendition */
-													element_xi_coordinate_field=
-														FIND_BY_IDENTIFIER_IN_MANAGER(Computed_field,name)(
-															"element_xi_coordinate",
-															scene->computed_field_manager);
-													if (FIRST_OBJECT_IN_GROUP_THAT(FE_node)(
-														(GROUP_CONDITIONAL_FUNCTION(FE_node) *)NULL,
-														(void *)NULL,data_group)&&
-														(FIRST_OBJECT_IN_GROUP_THAT(FE_node)(
-															FE_node_has_Computed_field_defined,
-															(void *)default_coordinate_field,data_group)||
-															(element_xi_coordinate_field&&
-																FIRST_OBJECT_IN_GROUP_THAT(FE_node)(
-																	FE_node_has_Computed_field_defined,
-																	(void *)element_xi_coordinate_field,
-																	data_group))))
-													{
-														if (settings=CREATE(GT_element_settings)(
-															GT_ELEMENT_SETTINGS_DATA_POINTS))
-														{
-															if (element_xi_coordinate_field&&
-																!(FIRST_OBJECT_IN_GROUP_THAT(FE_node)(
-																	FE_node_has_Computed_field_defined,
-																	(void *)default_coordinate_field,data_group)))
-															{
-																GT_element_settings_set_coordinate_field(
-																	settings,element_xi_coordinate_field);
-															}
-															GT_element_settings_set_material(settings,
-																scene->default_material);
-															GT_element_settings_set_selected_material(settings,
-																FIND_BY_IDENTIFIER_IN_MANAGER(Graphical_material,
-																	name)("default_selected",
-																		scene->graphical_material_manager));
-															/* set the glyph to "point" */
-															GT_element_settings_get_glyph_parameters(settings,
-																&glyph, &glyph_scaling_mode, glyph_centre,
-																glyph_size, &orientation_scale_field,
-																glyph_scale_factors, &variable_scale_field);
-															glyph=FIND_BY_IDENTIFIER_IN_LIST(GT_object,name)(
-																"point",scene->glyph_list);
-															GT_element_settings_set_glyph_parameters(settings,
-																glyph, glyph_scaling_mode, glyph_centre,
-																glyph_size, orientation_scale_field,
-																glyph_scale_factors, variable_scale_field);
-															if (!GT_element_group_add_settings(gt_element_group,
-																settings,0))
-															{
-																DESTROY(GT_element_settings)(&settings);
-															}
-														}
-													}
-													/* build graphics for default rendition */
-													GT_element_group_build_graphics_objects(
-														gt_element_group,(struct FE_element *)NULL,
-														(struct FE_node *)NULL);
-												}
-												else
-												{
-													display_message(ERROR_MESSAGE,
-														"Scene_add_graphical_finite_element.  "
-														"Could not add default settings");
-													DESTROY(GT_element_settings)(&settings);
-												}
-											}
-											else
-											{
-												display_message(ERROR_MESSAGE,
-													"Scene_add_graphical_finite_element.  "
-													"Could not create default settings");
-											}
-											visibility=g_VISIBLE;
-											scene->display_list_current=0;
-										} break;
-										default:
-										{
-											display_message(ERROR_MESSAGE,
-												"Scene_add_graphical_finite_element.  "
-												"Invalid graphical element mode %s",
-												Scene_graphical_element_mode_string(
-													scene->graphical_element_mode));
-											visibility=g_INVISIBLE;
-										} break;
-									}
-									/* set the visibility of the new GFE */
-									if (scene_object=FIRST_OBJECT_IN_LIST_THAT(Scene_object)(
-										Scene_object_has_element_group,(void *)element_group,
-										scene->scene_object_list))
-									{
-										return_code=
-											Scene_object_set_visibility(scene_object,visibility);
-									}
-									else
-									{
-										return_code=0;
+										display_message(ERROR_MESSAGE,
+											"Scene_add_graphical_element_group.  "
+											"Could not add default line settings");
+										DESTROY(GT_element_settings)(&settings);
 									}
 								}
 								else
 								{
-									return_code=0;
+									display_message(ERROR_MESSAGE,
+										"Scene_add_graphical_element_group.  "
+										"Could not create default line settings");
 								}
-							}
-							else
-							{
-								display_message(WARNING_MESSAGE,
-									"Scene_add_graphical_finite_element.  "
-									"Object with that name already in scene");
-								return_code=1;
+								/* if the group has data, and the default_coordinate_field
+									 element_xi_coordinate field defined over them, then
+									 add data_points to the rendition */
+								element_xi_coordinate_field =
+									FIND_BY_IDENTIFIER_IN_MANAGER(Computed_field,name)(
+										"element_xi_coordinate", scene->computed_field_manager);
+								if (FIRST_OBJECT_IN_GROUP_THAT(FE_node)(
+									(GROUP_CONDITIONAL_FUNCTION(FE_node) *)NULL,
+									(void *)NULL, data_group) &&
+									(FIRST_OBJECT_IN_GROUP_THAT(FE_node)(
+										FE_node_has_Computed_field_defined,
+										(void *)default_coordinate_field, data_group) ||
+										(element_xi_coordinate_field &&
+											FIRST_OBJECT_IN_GROUP_THAT(FE_node)(
+												FE_node_has_Computed_field_defined,
+												(void *)element_xi_coordinate_field, data_group))))
+								{
+									if (settings = CREATE(GT_element_settings)(
+										GT_ELEMENT_SETTINGS_DATA_POINTS))
+									{
+										if (element_xi_coordinate_field&&
+											!(FIRST_OBJECT_IN_GROUP_THAT(FE_node)(
+												FE_node_has_Computed_field_defined,
+												(void *)default_coordinate_field,data_group)))
+										{
+											GT_element_settings_set_coordinate_field(
+												settings,element_xi_coordinate_field);
+										}
+										GT_element_settings_set_material(settings,
+											scene->default_material);
+										GT_element_settings_set_selected_material(settings,
+											FIND_BY_IDENTIFIER_IN_MANAGER(Graphical_material,
+												name)("default_selected",
+													scene->graphical_material_manager));
+										/* set the glyph to "point" */
+										GT_element_settings_get_glyph_parameters(settings,
+											&glyph, &glyph_scaling_mode, glyph_centre,
+											glyph_size, &orientation_scale_field,
+											glyph_scale_factors, &variable_scale_field);
+										glyph = FIND_BY_IDENTIFIER_IN_LIST(GT_object,name)(
+											"point", scene->glyph_list);
+										GT_element_settings_set_glyph_parameters(settings,
+											glyph, glyph_scaling_mode, glyph_centre,
+											glyph_size, orientation_scale_field,
+											glyph_scale_factors, variable_scale_field);
+										if (!GT_element_group_add_settings(gt_element_group,
+											settings, 0))
+										{
+											display_message(ERROR_MESSAGE,
+												"Scene_add_graphical_element_group.  "
+												"Could not add default data_point settings");
+											DESTROY(GT_element_settings)(&settings);
+										}
+									}
+									else
+									{
+										display_message(ERROR_MESSAGE,
+											"Scene_add_graphical_element_group.  "
+											"Could not create default data_point settings");
+									}
+								}
+								/* build graphics for default rendition */
+								GT_element_group_build_graphics_objects(
+									gt_element_group, (struct FE_element *)NULL,
+									(struct FE_node *)NULL);
 							}
 						}
 						else
 						{
 							display_message(ERROR_MESSAGE,
-								"Scene_add_graphical_finite_element.  "
-								"Could not make gt_element_group");
-							return_code=0;
+								"Scene_add_graphical_element_group.  "
+								"Could not create graphical element group");
+							return_code = 0;
 						}
 					}
 					else
 					{
 						display_message(ERROR_MESSAGE,
-							"Scene_add_graphical_finite_element.  "
-							"Could not get node_group and/or data_group of same name");
-						return_code=0;
+							"Scene_add_graphical_element_group.  "
+							"Could not get matching node_group and/or data_group");
+						return_code = 0;
 					}
-					DEALLOCATE(element_group_name);
 				}
-				else
+				if (gt_element_group)
 				{
-					display_message(ERROR_MESSAGE,"Scene_add_graphical_finite_element.  "
-						"Could not get element group name");
-					return_code=0;
+					ACCESS(GT_element_group)(gt_element_group);
+					switch (scene->graphical_element_mode)
+					{
+						case GRAPHICAL_ELEMENT_INVISIBLE:
+						{
+							visibility = g_INVISIBLE;
+						} break;
+						case GRAPHICAL_ELEMENT_EMPTY:
+						case GRAPHICAL_ELEMENT_MANUAL:
+						{
+							visibility = g_VISIBLE;
+						} break;
+						case GRAPHICAL_ELEMENT_LINES:
+						{
+							visibility = g_VISIBLE;
+							scene->display_list_current = 0;
+						} break;
+						default:
+						{
+							display_message(ERROR_MESSAGE,
+								"Scene_add_graphical_element_group.  "
+								"Unknown graphical element mode");
+							visibility = g_INVISIBLE;
+						} break;
+					}
+					if (scene_object = create_Scene_object_with_Graphical_element_group(
+						scene_object_name, gt_element_group))
+					{
+						Scene_object_set_visibility(scene_object, visibility);
+						if (!Scene_add_Scene_object(scene, scene_object, position))
+						{
+							display_message(ERROR_MESSAGE,
+								"Scene_add_graphical_element_group.  "
+								"Could not add scene object to scene");
+							DESTROY(Scene_object)(&scene_object);
+							return_code = 0;
+						}
+					}
+					else
+					{
+						display_message(ERROR_MESSAGE,
+							"Scene_add_graphical_element_group.  "
+							"Could not create scene object");
+						return_code = 0;
+					}
+					DEACCESS(GT_element_group)(&gt_element_group);
 				}
-			}
-			else
-			{
-				display_message(ERROR_MESSAGE,"Scene_add_graphical_finite_element.  "
-					"Element group already in scene");
-				return_code=0;
 			}
 		}
 		else
 		{
-			display_message(ERROR_MESSAGE,"Scene_add_graphical_finite_element.  "
-				"Graphical elements not enabled");
-			return_code=0;
+			display_message(ERROR_MESSAGE, "Scene_add_graphical_element_group.  "
+				"Object with name '%s' already in scene", scene_object_name);
+			return_code = 0;
+		}
+		DEALLOCATE(element_group_name);
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Scene_add_graphical_element_group.  Invalid argument(s)");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Scene_add_graphical_element_group */
+
+int Scene_remove_graphical_element_group(struct Scene *scene,
+	struct GROUP(FE_element) *element_group)
+/*******************************************************************************
+LAST MODIFIED : 15 March 2001
+
+DESCRIPTION :
+Removes all scene objects containing a graphical rendition of <element_group>
+from <scene>. Does not complain if <element_group> is not used in <scene>.
+==============================================================================*/
+{
+	int return_code;
+	struct Scene_object *scene_object;
+
+	ENTER(Scene_remove_graphical_element_group);
+	if (scene && element_group)
+	{
+		return_code = 1;
+		while (return_code && (scene_object =
+			FIRST_OBJECT_IN_LIST_THAT(Scene_object)(Scene_object_has_element_group,
+				(void *)element_group, scene->scene_object_list)))
+		{
+			if (!Scene_remove_Scene_object(scene, scene_object))
+			{
+				display_message(ERROR_MESSAGE,
+					"Scene_remove_graphical_element_group.  Failed");
+				return_code = 0;
+			}
 		}
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Scene_add_graphical_finite_element.  Invalid argument(s)");
-		return_code=0;
+			"Scene_remove_graphical_element_group.  Invalid argument(s)");
+		return_code = 0;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* Scene_add_graphical_finite_element */
+} /* Scene_remove_graphical_element_group */
 
 int Scene_update_time_behaviour(struct Scene *scene,
 	struct GT_object *graphics_object)
@@ -8318,7 +8440,7 @@ objects in the list puts <graphics_object> at the end.
 int Scene_set_scene_object_position(struct Scene *scene,
 	struct Scene_object *scene_object,int position)
 /*******************************************************************************
-LAST MODIFIED : 9 December 1997
+LAST MODIFIED : 15 March 2001
 
 DESCRIPTION :
 The order in which objects are drawn is important for OpenGL transparency.
@@ -8334,8 +8456,8 @@ objects in the list puts <scene_object> at the end.
 	{
 		/* take it out of the list and add it at the new position */
 		ACCESS(Scene_object)(scene_object);
-		return_code=(Scene_remove_scene_object(scene,scene_object)&&
-			Scene_add_scene_object(scene,scene_object,position));
+		return_code = (Scene_remove_Scene_object_private(scene, scene_object)&&
+			Scene_add_Scene_object(scene, scene_object, position));
 		DEACCESS(Scene_object)(&scene_object);
 	}
 	else
@@ -8388,39 +8510,79 @@ Returns the visibility of the GFE for <element_group> in <scene>.
 	return (visibility);
 } /* Scene_get_element_group_visibility */
 
-int Scene_set_element_group_visibility(struct Scene *scene,
-	struct GROUP(FE_element) *element_group,enum GT_visibility_type visibility)
+struct Element_group_visibility_data
+{
+	struct GROUP(FE_element) *element_group;
+	enum GT_visibility_type visibility;
+};
+
+static int Scene_object_set_element_group_visibility_iterator(
+	struct Scene_object *scene_object, void *user_data_void)
 /*******************************************************************************
-LAST MODIFIED : 11 July 2000
+LAST MODIFIED : 15 March 2001
 
 DESCRIPTION :
-Sets the visibility of the GFE for <element_group> in <scene>.
+If the <scene_object> is a graphical element group using <element_group>, set
+its <visibility>.
 ==============================================================================*/
 {
 	int return_code;
-	struct Scene_object *scene_object;
+	struct Element_group_visibility_data *user_data;
 
-	ENTER(Scene_set_element_group_visibility);
-	if (scene&&element_group)
+	ENTER(Scene_object_set_element_group_visibility_iterator);
+	if (scene_object &&
+		(user_data = (struct Element_group_visibility_data *)user_data_void))
 	{
-		if (scene_object=FIRST_OBJECT_IN_LIST_THAT(Scene_object)(
-			Scene_object_has_element_group,(void *)element_group,
-			scene->scene_object_list))
+		if (Scene_object_has_element_group(scene_object,
+			(void *)user_data->element_group))
 		{
-			return_code=Scene_object_set_visibility(scene_object,visibility);
+			return_code =
+				Scene_object_set_visibility(scene_object, user_data->visibility);
 		}
 		else
 		{
-			display_message(ERROR_MESSAGE,"Scene_set_element_group_visibility.  "
-				"Graphics object not in scene");
-			return_code=0;
+			return_code = 1;
 		}
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
+			"Scene_object_set_element_group_visibility_iterator.  "
+			"Invalid argument(s)");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Scene_object_set_element_group_visibility_iterator */
+
+int Scene_set_element_group_visibility(struct Scene *scene,
+	struct GROUP(FE_element) *element_group,enum GT_visibility_type visibility)
+/*******************************************************************************
+LAST MODIFIED : 15 March 2001
+
+DESCRIPTION :
+Sets the visibility of all scene objects that are graphical element groups for
+<element_group> in <scene>.
+==============================================================================*/
+{
+	int return_code;
+	struct Element_group_visibility_data user_data;
+
+	ENTER(Scene_set_element_group_visibility);
+	if (scene && element_group)
+	{
+		user_data.element_group = element_group;
+		user_data.visibility = visibility;
+		return_code = FOR_EACH_OBJECT_IN_LIST(Scene_object)(
+			Scene_object_set_element_group_visibility_iterator,
+			(void *)&user_data, scene->scene_object_list);
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
 			"Scene_set_element_group_visibility.  Invalid argument(s)");
-		return_code=0;
+		return_code = 0;
 	}
 	LEAVE;
 
@@ -8466,39 +8628,77 @@ Returns the visibility of <graphics_object> in <scene>.
 	return (visibility);
 } /* Scene_get_graphics_object_visibility */
 
-int Scene_set_graphics_object_visibility(struct Scene *scene,
-	struct GT_object *graphics_object,enum GT_visibility_type visibility)
+struct Graphics_object_visibility_data
+{
+	struct GT_object *graphics_object;
+	enum GT_visibility_type visibility;
+};
+
+static int Scene_object_set_graphics_object_visibility_iterator(
+	struct Scene_object *scene_object, void *user_data_void)
 /*******************************************************************************
-LAST MODIFIED : 15 June 1998
+LAST MODIFIED : 15 March 2001
 
 DESCRIPTION :
-Sets the visibility of <graphics_object> in <scene>.
+If the <scene_object> contains <graphics_object>, sets its <visibility>.
 ==============================================================================*/
 {
 	int return_code;
-	struct Scene_object *scene_object;
+	struct Graphics_object_visibility_data *user_data;
 
-	ENTER(Scene_set_graphics_object_visibility);
-	if (scene&&graphics_object)
+	ENTER(Scene_object_set_graphics_object_visibility_iterator);
+	if (scene_object &&
+		(user_data = (struct Graphics_object_visibility_data *)user_data_void))
 	{
-		if (scene_object=FIRST_OBJECT_IN_LIST_THAT(Scene_object)(
-			Scene_object_has_gt_object,(void *)graphics_object,
-			scene->scene_object_list))
+		if (Scene_object_has_gt_object(scene_object,
+			(void *)user_data->graphics_object))
 		{
-			return_code=Scene_object_set_visibility(scene_object,visibility);
+			return_code =
+				Scene_object_set_visibility(scene_object, user_data->visibility);
 		}
 		else
 		{
-			display_message(ERROR_MESSAGE,"Scene_set_graphics_object_visibility.  "
-				"Graphics object not in scene");
-			return_code=0;
+			return_code = 1;
 		}
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
+			"Scene_object_set_graphics_object_visibility_iterator.  "
+			"Invalid argument(s)");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Scene_object_set_graphics_object_visibility_iterator */
+
+int Scene_set_graphics_object_visibility(struct Scene *scene,
+	struct GT_object *graphics_object,enum GT_visibility_type visibility)
+/*******************************************************************************
+LAST MODIFIED : 15 March 2001
+
+DESCRIPTION :
+Sets the visibility of all instances of <graphics_object> in <scene>.
+==============================================================================*/
+{
+	int return_code;
+	struct Graphics_object_visibility_data user_data;
+
+	ENTER(Scene_set_graphics_object_visibility);
+	if (scene && graphics_object)
+	{
+		user_data.graphics_object = graphics_object;
+		user_data.visibility = visibility;
+		return_code = FOR_EACH_OBJECT_IN_LIST(Scene_object)(
+			Scene_object_set_graphics_object_visibility_iterator,
+			(void *)&user_data, scene->scene_object_list);
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
 			"Scene_set_graphics_object_visibility.  Invalid argument(s)");
-		return_code=0;
+		return_code = 0;
 	}
 	LEAVE;
 
@@ -8575,40 +8775,33 @@ Returns true if <child_scene> is in the list of scenes in <scene>.
 	return (return_code);
 } /* Scene_has_child_scene */
 
-struct Scene_object *Scene_get_scene_object_by_name(struct Scene *scene,
+struct Scene_object *Scene_get_Scene_object_by_name(struct Scene *scene,
 	char *name)
 /*******************************************************************************
-LAST MODIFIED : 5 July 1999
+LAST MODIFIED : 14 March 2001
 
 DESCRIPTION :
-Looks for a scene object that has the given name.
+Returns the Scene_object called <name> in <scene>, or NULL if not found.
 ==============================================================================*/
 {
-	struct Scene_object *return_scene_object;
+	struct Scene_object *scene_object;
 
-	ENTER(Scene_get_scene_object_by_name);
-	/* check arguments */
+	ENTER(Scene_get_Scene_object_by_name);
 	if (scene && name)
 	{
-		if (!(return_scene_object=FIRST_OBJECT_IN_LIST_THAT(Scene_object)(
-			Scene_object_has_name,(void *)name,
-			scene->scene_object_list)))
-		{
-		display_message(ERROR_MESSAGE,
-			"Scene_get_scene_object_by_name.  Object %s not found in scene", name);
-			return_scene_object=(struct Scene_object *)NULL;
-		}
+		scene_object = FIRST_OBJECT_IN_LIST_THAT(Scene_object)(
+			Scene_object_has_name, (void *)name, scene->scene_object_list);
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Scene_get_scene_object_by_name.  Invalid argument(s)");
-		return_scene_object=(struct Scene_object *)NULL;
+			"Scene_get_Scene_object_by_name.  Invalid argument(s)");
+		scene_object = (struct Scene_object *)NULL;
 	}
 	LEAVE;
 
-	return (return_scene_object);
-} /* Scene_get_scene_object_by_name */
+	return (scene_object);
+} /* Scene_get_Scene_object_by_name */
 
 int Scene_has_graphical_element_group(struct Scene *scene,
 	struct GROUP(FE_element) *element_group)
@@ -8849,7 +9042,7 @@ work on these sub_elements.  These created scenes are not added to the manager.
 									{
 										*next_index = 0;
 									}
-									if (scene_object = Scene_get_scene_object_by_name(scene, index))
+									if (scene_object = Scene_get_Scene_object_by_name(scene, index))
 									{
 										switch (scene_object->type)
 										{
@@ -8872,7 +9065,7 @@ work on these sub_elements.  These created scenes are not added to the manager.
 														time_object = Scene_object_get_time_object(scene_object);
 														Scene_object_set_time_object(new_scene_object, time_object);
 													}
-													return_code = Scene_add_scene_object(scene, new_scene_object, 0);
+													return_code = Scene_add_Scene_object(scene, new_scene_object, 0);
 												}
 												else
 												{
@@ -8925,7 +9118,7 @@ work on these sub_elements.  These created scenes are not added to the manager.
 															time_object = Scene_object_get_time_object(scene_object);
 															Scene_object_set_time_object(new_scene_object, time_object);
 														}
-														return_code = Scene_add_scene_object(scene, new_scene_object, 0);
+														return_code = Scene_add_Scene_object(scene, new_scene_object, 0);
 													}
 												}
 												else

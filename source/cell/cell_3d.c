@@ -437,7 +437,7 @@ callbacks.
           component->graphic->graphics_object,0,component->name,
 					/*fast_changing*/0);
         /* grab the scene object */
-        if (scene_object = Scene_get_scene_object_by_name(
+        if (scene_object = Scene_get_Scene_object_by_name(
           (cell->cell_3d).scene,component->name))
         {
           /* construct the transformation matrix */

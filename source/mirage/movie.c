@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : movie.c
 
-LAST MODIFIED : 2 March 2001
+LAST MODIFIED : 15 March 2001
 
 DESCRIPTION :
 ==============================================================================*/
@@ -2213,15 +2213,15 @@ resulting 3-D display.
 								user_interface)&&
 							/* manually add graphical elements for pending, problem and
 								 placed */
-							Scene_add_graphical_finite_element(view->scene,
-								view->pending_elements,(char *)NULL)&&
-							Scene_add_graphical_finite_element(view->scene,
-								view->problem_elements,(char *)NULL)&&
-							Scene_add_graphical_finite_element(view->scene,
-								view->placed_elements,(char *)NULL)&&
+							Scene_add_graphical_element_group(view->scene,
+								view->pending_elements, /*position*/0, (char *)NULL)&&
+							Scene_add_graphical_element_group(view->scene,
+								view->problem_elements, /*position*/0, (char *)NULL)&&
+							Scene_add_graphical_element_group(view->scene,
+								view->placed_elements, /*position*/0, (char *)NULL)&&
 							/* also add the 3-D placed so can be drawn over image */
-							Scene_add_graphical_finite_element(view->scene,
-								movie->placed_elements_3d,(char *)NULL)&&
+							Scene_add_graphical_element_group(view->scene,
+								movie->placed_elements_3d, /*position*/0, (char *)NULL)&&
 							/* turn off axes in each views scene */
 							Scene_set_axis_visibility(view->scene,g_INVISIBLE)&&
 							(gt_element_group=Scene_get_graphical_element_group(

@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : cell_component.c
 
-LAST MODIFIED : 28 August 2000
+LAST MODIFIED : 15 March 2001
 
 DESCRIPTION :
 Functions and structures for using the Cell_component structure.
@@ -440,7 +440,7 @@ Returns the Cell_components corresponding to the <component>.
 
 void destroy_cell_component_list(struct Cell_window *cell)
 /*******************************************************************************
-LAST MODIFIED : 10 September 1999
+LAST MODIFIED : 15 March 2001
 
 DESCRIPTION :
 Deallocates the memory associated with the component list.
