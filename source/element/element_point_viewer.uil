@@ -1,7 +1,7 @@
 !*******************************************************************************
 ! FILE : element_point_viewer.uil
 !
-! LAST MODIFIED : 20 June 2000
+! LAST MODIFIED : 30 June 2000
 !
 ! DESCRIPTION :
 ! Dialog for selecting an element point, viewing and editing its fields and
@@ -81,11 +81,11 @@ object
 			};
 		controls
 			{
-  		XmToggleButtonGadget elem_pt_v_apply_options_btn;
+  		XmToggleButton elem_pt_v_apply_options_btn;
 			XmRowColumn elem_pt_v_apply_options;
 			};
 		};
-  elem_pt_v_apply_options_btn: XmToggleButtonGadget
+  elem_pt_v_apply_options_btn: XmToggleButton
     {
     arguments
       {
@@ -144,11 +144,11 @@ object
 			};
     controls
       {
-      XmToggleButtonGadget elem_pt_v_match_grid_btn;
+      XmToggleButton elem_pt_v_match_grid_btn;
       XmForm elem_pt_v_match_field_form;
       };
     };
-  elem_pt_v_match_grid_btn: XmToggleButtonGadget
+  elem_pt_v_match_grid_btn: XmToggleButton
     {
     arguments
       {
@@ -227,11 +227,11 @@ object
 			};
     controls
       {
-      XmLabelGadget elem_pt_v_element_label;
+      XmLabel elem_pt_v_element_label;
       XmForm elem_pt_v_element_form;
       };
     };
-  elem_pt_v_element_label: XmLabelGadget
+  elem_pt_v_element_label: XmLabel
     {
     arguments
       {
@@ -262,11 +262,11 @@ object
 			};
     controls
       {
-      XmLabelGadget elem_pt_v_top_element_label;
+      XmLabel elem_pt_v_top_element_label;
       XmForm elem_pt_v_top_element_form;
       };
     };
-  elem_pt_v_top_element_label: XmLabelGadget
+  elem_pt_v_top_element_label: XmLabel
     {
     arguments
       {
@@ -297,11 +297,11 @@ object
 			};
     controls
       {
-      XmLabelGadget elem_pt_v_xi_disc_mode_label;
+      XmLabel elem_pt_v_xi_disc_mode_label;
       XmForm elem_pt_v_xi_disc_mode_form;
       };
     };
-  elem_pt_v_xi_disc_mode_label: XmLabelGadget
+  elem_pt_v_xi_disc_mode_label: XmLabel
     {
     arguments
       {
@@ -354,11 +354,11 @@ object
 			};
     controls
       {
-      XmLabelGadget elem_pt_v_disc_label;
+      XmLabel elem_pt_v_disc_label;
       XmTextField elem_pt_v_disc_text;
       };
     };
-  elem_pt_v_disc_label: XmLabelGadget
+  elem_pt_v_disc_label: XmLabel
     {
     arguments
       {
@@ -399,11 +399,11 @@ object
 			};
     controls
       {
-    	XmLabelGadget elem_pt_v_point_number_label;
+    	XmLabel elem_pt_v_point_number_label;
       XmTextField elem_pt_v_point_number_text;
       };
     };
-  elem_pt_v_point_number_label: XmLabelGadget
+  elem_pt_v_point_number_label: XmLabel
     {
     arguments
       {
@@ -445,11 +445,11 @@ object
 			};
     controls
       {
-      XmLabelGadget elem_pt_v_xi_label;
+      XmLabel elem_pt_v_xi_label;
       XmTextField elem_pt_v_xi_text;
       };
     };
-  elem_pt_v_xi_label: XmLabelGadget
+  elem_pt_v_xi_label: XmLabel
     {
     arguments
       {
@@ -511,11 +511,11 @@ object
 			};
     controls
       {
-      XmLabelGadget elem_pt_v_grid_field_label;
+      XmLabel elem_pt_v_grid_field_label;
       XmForm elem_pt_v_grid_field_form;
       };
     };
-  elem_pt_v_grid_field_label: XmLabelGadget
+  elem_pt_v_grid_field_label: XmLabel
     {
     arguments
       {
@@ -545,11 +545,11 @@ object
 			};
     controls
       {
-      XmLabelGadget elem_pt_v_grid_value_label;
+      XmLabel elem_pt_v_grid_value_label;
       XmTextField elem_pt_v_grid_value_text;
       };
     };
-  elem_pt_v_grid_value_label: XmLabelGadget
+  elem_pt_v_grid_value_label: XmLabel
     {
     arguments
       {
@@ -617,13 +617,13 @@ object
 			};
 		controls
 			{
-			XmPushButtonGadget elem_pt_v_control_apply;
-			XmPushButtonGadget elem_pt_v_control_apply_all;
-			XmPushButtonGadget elem_pt_v_control_revert;
-			XmPushButtonGadget elem_pt_v_control_close;
+			XmPushButton elem_pt_v_control_apply;
+			XmPushButton elem_pt_v_control_apply_all;
+			XmPushButton elem_pt_v_control_revert;
+			XmPushButton elem_pt_v_control_close;
 			};
 		};
-	elem_pt_v_control_apply: XmPushButtonGadget
+	elem_pt_v_control_apply: XmPushButton
 		{
 		arguments
 			{
@@ -635,7 +635,7 @@ object
 			XmNactivateCallback = procedure elem_pt_v_apply_CB(elem_pt_v_structure);
 			};
 		};
-	elem_pt_v_control_apply_all: XmPushButtonGadget
+	elem_pt_v_control_apply_all: XmPushButton
 		{
 		arguments
 			{
@@ -648,7 +648,7 @@ object
 				procedure elem_pt_v_apply_all_CB(elem_pt_v_structure);
 			};
 		};
-	elem_pt_v_control_revert: XmPushButtonGadget
+	elem_pt_v_control_revert: XmPushButton
 		{
 		arguments
 			{
@@ -661,7 +661,7 @@ object
 				procedure elem_pt_v_revert_CB(elem_pt_v_structure);
 			};
 		};
-	elem_pt_v_control_close: XmPushButtonGadget
+	elem_pt_v_control_close: XmPushButton
 		{
 		arguments
 			{

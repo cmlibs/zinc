@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : element_point_field_viewer_widget.c
 
-LAST MODIFIED : 15 June 2000
+LAST MODIFIED : 30 June 2000
 
 DESCRIPTION :
 Widget for displaying and editing component values of computed fields defined
@@ -9,7 +9,7 @@ over a element_point. One field at a time can be viewed/edited.
 Note the element_point passed to this widget should be a non-managed local copy.
 ==============================================================================*/
 #include <Xm/Xm.h>
-#include <Xm/LabelG.h>
+#include <Xm/Label.h>
 #include <Xm/RowColumn.h>
 #include <Xm/ScrolledW.h>
 #include <Xm/TextF.h>
@@ -35,7 +35,7 @@ Module types
 
 struct Element_point_field_viewer_widget_struct
 /*******************************************************************************
-LAST MODIFIED : 15 June 2000
+LAST MODIFIED : 30 June 2000
 
 DESCRIPTION :
 ==============================================================================*/
@@ -54,8 +54,9 @@ DESCRIPTION :
 	FE_value xi[MAXIMUM_ELEMENT_XI_DIMENSIONS];
 	/* field being edited */
 	struct Computed_field *current_field;
-	Pixel modified_background_color,uneditable_background_color,
-		normal_background_color;
+	Pixel label_background_color,label_foreground_color,
+		textfield_background_color,textfield_bottom_shadow_color,
+		textfield_foreground_color,textfield_top_shadow_color;
 	Widget component_rowcol,widget,*widget_address,widget_parent;
 }; /* element_point_field_viewer_struct */
 
@@ -126,7 +127,7 @@ all dynamic memory allocations and pointers.
 static void element_point_field_viewer_widget_update_values(
 	struct Element_point_field_viewer_widget_struct *element_point_field_viewer)
 /*******************************************************************************
-LAST MODIFIED : 15 June 2000
+LAST MODIFIED : 30 June 2000
 
 DESCRIPTION :
 Updates all widgets in the rowcol to make sure they say the correct value.
@@ -135,7 +136,7 @@ Updates all widgets in the rowcol to make sure they say the correct value.
 	char *value_string;
 	FE_value *xi;
 	int comp_no,num_children,number_of_components;
-	Pixel background_color;
+	Pixel bottom_shadow_color,top_shadow_color;
 	struct Computed_field *field;
 	struct FE_element *element,*top_level_element;
 	struct Field_value_index_ranges *modified_ranges;
@@ -165,20 +166,25 @@ Updates all widgets in the rowcol to make sure they say the correct value.
 					field,comp_no,element,xi,top_level_element))
 				{
 					/* set background colour to modified or unmodified if editable */
-					XtVaGetValues(widget,XmNbackground,&background_color,NULL);
-					if (background_color !=
-						element_point_field_viewer->uneditable_background_color)
+					XtVaGetValues(widget,XmNtopShadowColor,&top_shadow_color,NULL);
+					XtVaGetValues(widget,XmNbottomShadowColor,&bottom_shadow_color,NULL);
+					if (top_shadow_color != bottom_shadow_color)
 					{
 						if (modified_ranges&&Field_value_index_ranges_is_index_in_range(
 							modified_ranges,comp_no))
 						{
+							/* invert colours of modified components */
+							XtVaSetValues(widget,XmNforeground,
+								element_point_field_viewer->textfield_background_color,NULL);
 							XtVaSetValues(widget,XmNbackground,
-								element_point_field_viewer->modified_background_color,NULL);
+								element_point_field_viewer->textfield_foreground_color,NULL);
 						}
 						else
 						{
+							XtVaSetValues(widget,XmNforeground,
+								element_point_field_viewer->textfield_foreground_color,NULL);
 							XtVaSetValues(widget,XmNbackground,
-								element_point_field_viewer->normal_background_color,NULL);
+								element_point_field_viewer->textfield_background_color,NULL);
 						}
 					}
 					XmTextFieldSetString(widget,value_string);
@@ -311,9 +317,11 @@ data, and then changes the correct value in the array structure.
 							Field_value_index_ranges_list_add_field_value_index(
 								element_point_field_viewer->modified_field_components,
 								field,component_number);
-							/* show modified_background_color in this widget */
+							/* invert colours in widget to show it is modified */
+							XtVaSetValues(widget,XmNforeground,
+								element_point_field_viewer->textfield_background_color,NULL);
 							XtVaSetValues(widget,XmNbackground,
-								element_point_field_viewer->modified_background_color,NULL);
+								element_point_field_viewer->textfield_foreground_color,NULL);
 							/* inform any clients of the changes */
 							element_point_field_viewer_widget_update(
 								element_point_field_viewer);
@@ -484,9 +492,14 @@ Creates the array of cells containing field component names and values.
 						new_string=XmStringCreateSimple(component_name);
 						XtSetArg(args[0],XmNlabelString,new_string);
 						XtSetArg(args[1],XmNalignment,XmALIGNMENT_CENTER);
-						if (widget=XmCreateLabelGadget(
+						if (widget=XmCreateLabel(
 							element_point_field_viewer->component_rowcol,"",args,2))
 						{
+							/* get label colours for non-editable text fields */
+							XtVaGetValues(widget,XmNforeground,
+								&(element_point_field_viewer->label_foreground_color),NULL);
+							XtVaGetValues(widget,XmNbackground,
+								&(element_point_field_viewer->label_background_color),NULL);
 							XtManageChild(widget);
 						}
 						else
@@ -514,9 +527,17 @@ Creates the array of cells containing field component names and values.
 					if (widget=XmCreateTextField(
 						element_point_field_viewer->component_rowcol,"value",args,4))
 					{
-						/* store background colour to keep for unmodified components */
+						/* get colours for editable text fields */
+						XtVaGetValues(widget,XmNforeground,
+							&(element_point_field_viewer->textfield_foreground_color),NULL);
 						XtVaGetValues(widget,XmNbackground,
-							&(element_point_field_viewer->normal_background_color),NULL);
+							&(element_point_field_viewer->textfield_background_color),NULL);
+						XtVaGetValues(widget,XmNbottomShadowColor,
+							&(element_point_field_viewer->textfield_bottom_shadow_color),
+							NULL);
+						XtVaGetValues(widget,XmNtopShadowColor,
+							&(element_point_field_viewer->textfield_top_shadow_color),NULL);
+
 						if (editable)
 						{
 							/* add callbacks for data input */
@@ -529,9 +550,15 @@ Creates the array of cells containing field component names and values.
 						}
 						else
 						{
-							/* Use background cue to show value is uneditable */
+							/* make textfield look like a label to show value is uneditable */
+							XtVaSetValues(widget,XmNforeground,
+								element_point_field_viewer->label_foreground_color,NULL);
 							XtVaSetValues(widget,XmNbackground,
-								element_point_field_viewer->uneditable_background_color,NULL);
+								element_point_field_viewer->label_background_color,NULL);
+							XtVaSetValues(widget,XmNbottomShadowColor,
+								element_point_field_viewer->textfield_bottom_shadow_color,NULL);
+							XtVaSetValues(widget,XmNtopShadowColor,
+								element_point_field_viewer->textfield_bottom_shadow_color,NULL);
 						}
 						XtManageChild(widget);
 					}
@@ -576,7 +603,7 @@ Widget create_element_point_field_viewer_widget(
 	struct Element_point_ranges_identifier *initial_element_point_identifier,
 	int initial_element_point_number,struct Computed_field *initial_field)
 /*******************************************************************************
-LAST MODIFIED : 15 June 2000
+LAST MODIFIED : 30 June 2000
 
 DESCRIPTION :
 Widget for displaying and editing computed field components at element points.
@@ -587,11 +614,9 @@ changes global.
 ==============================================================================*/
 {
 	Arg args[7];
-	Colormap cmap;
 	struct Element_point_field_viewer_widget_struct *element_point_field_viewer;
 	struct FE_element *initial_element;
 	Widget return_widget;
-	XColor color,unused;
 
 	ENTER(create_element_point_field_viewer_widget);
 	return_widget=(Widget)NULL;
@@ -636,19 +661,6 @@ changes global.
 			if (element_point_field_viewer->widget=XmCreateScrolledWindow(parent,
 				"element_point_field_viewer_widget",args,7))
 			{
-				/* get background colours for uneditable and modified text fields */
-				/* Following is from O'Reilly X window System Guide Volume Six:
-					 Motif Programming Manual, Section 11.5.2, p391 */
-				XtVaGetValues(element_point_field_viewer->widget,
-					XmNcolormap,&cmap,NULL);
-				XAllocNamedColor(XtDisplay(element_point_field_viewer->widget),
-					cmap,"gray",&color,&unused);
-				element_point_field_viewer->uneditable_background_color=color.pixel;
-				XAllocNamedColor(XtDisplay(element_point_field_viewer->widget),
-					cmap,"red",&color,&unused);
-				element_point_field_viewer->modified_background_color=color.pixel;
-
-
 				/* add destroy callback for widget */
 				XtAddCallback(element_point_field_viewer->widget,XmNdestroyCallback,
 					element_point_field_viewer_widget_destroy_CB,

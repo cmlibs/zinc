@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : element_point_viewer.c
 
-LAST MODIFIED : 21 June 2000
+LAST MODIFIED : 30 June 2000
 
 DESCRIPTION :
 Dialog for selecting an element point, viewing and editing its fields and
@@ -13,7 +13,7 @@ selected element point, or set it if entered in this dialog.
 #include <Xm/MwmUtil.h>
 #include <Xm/Xm.h>
 #include <Xm/TextF.h>
-#include <Xm/ToggleBG.h>
+#include <Xm/ToggleB.h>
 #endif /* defined (MOTIF) */
 #include "choose/choose_enumerator.h"
 #include "choose/text_choose_fe_element.h"
@@ -39,7 +39,7 @@ static MrmHierarchy element_point_viewer_hierarchy;
 
 struct Element_point_viewer
 /*******************************************************************************
-LAST MODIFIED : 20 June 2000
+LAST MODIFIED : 30 June 2000
 
 DESCRIPTION :
 Contains all the information carried by the element_point_viewer widget.
@@ -67,7 +67,9 @@ Contains all the information carried by the element_point_viewer widget.
 		 if non-NULL */
 	struct Computed_field *match_grid_field;
 	/* widgets */
-	Pixel editable_background_color,non_editable_background_color;
+	Pixel label_background_color,label_foreground_color,
+		textfield_background_color,textfield_bottom_shadow_color,
+		textfield_foreground_color,textfield_top_shadow_color;
 	Widget element_form,element_widget,
 		top_level_element_form,top_level_element_widget,
 		xi_discretization_mode_form,xi_discretization_mode_widget,
@@ -406,6 +408,59 @@ current point.
 	return (return_code);
 } /* Element_point_viewer_refresh_xi_discretization_mode */
 
+static int Element_point_viewer_set_textfield_edit_status(
+	struct Element_point_viewer *element_point_viewer,Widget textfield_widget,
+	int is_editable)
+/*******************************************************************************
+LAST MODIFIED : 30 June 2000
+
+DESCRIPTION :
+Sets colours and XmNeditable flag of <textfield_widget> to match <is_editable>.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(Element_point_viewer_set_textfield_edit_status);
+	if (element_point_viewer&&textfield_widget)
+	{
+		if (is_editable)
+		{
+			/* make it look like a textfield */
+			XtVaSetValues(textfield_widget,XmNforeground,
+				element_point_viewer->textfield_foreground_color,NULL);
+			XtVaSetValues(textfield_widget,XmNbackground,
+				element_point_viewer->textfield_background_color,NULL);
+			XtVaSetValues(textfield_widget,XmNbottomShadowColor,
+				element_point_viewer->textfield_bottom_shadow_color,NULL);
+			XtVaSetValues(textfield_widget,XmNtopShadowColor,
+				element_point_viewer->textfield_top_shadow_color,NULL);
+			XtVaSetValues(textfield_widget,XmNeditable,True,NULL);
+		}
+		else
+		{
+			/* make it look like a label */
+			XtVaSetValues(textfield_widget,XmNforeground,
+				element_point_viewer->label_foreground_color,NULL);
+			XtVaSetValues(textfield_widget,XmNbackground,
+				element_point_viewer->label_background_color,NULL);
+			XtVaSetValues(textfield_widget,XmNbottomShadowColor,
+				element_point_viewer->textfield_bottom_shadow_color,NULL);
+			XtVaSetValues(textfield_widget,XmNtopShadowColor,
+				element_point_viewer->textfield_bottom_shadow_color,NULL);
+			XtVaSetValues(textfield_widget,XmNeditable,False,NULL);
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Element_point_viewer_set_textfield_edit_status.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Element_point_viewer_set_textfield_edit_status */
+
 static int Element_point_viewer_refresh_discretization_text(
 	struct Element_point_viewer *element_point_viewer)
 /*******************************************************************************
@@ -458,22 +513,8 @@ writes the discretization in use, otherwise N/A.
 				is_editable=False;
 				is_sensitive=False;
 			}
-			if (is_editable)
-			{
-				/* editable */
-				XtVaSetValues(element_point_viewer->discretization_text,XmNbackground,
-					element_point_viewer->editable_background_color,NULL);
-				XtVaSetValues(element_point_viewer->discretization_text,
-					XmNeditable,True,NULL);
-			}
-			else
-			{
-				/* non-editable */
-				XtVaSetValues(element_point_viewer->discretization_text,XmNbackground,
-					element_point_viewer->non_editable_background_color,NULL);
-				XtVaSetValues(element_point_viewer->discretization_text,
-					XmNeditable,False,NULL);
-			}
+			Element_point_viewer_set_textfield_edit_status(element_point_viewer,
+				element_point_viewer->discretization_text,is_editable);
 			/* only set string if different from that shown */
 			if (strcmp(temp_string,value_string))
 			{
@@ -528,22 +569,8 @@ writes its number, otherwise N/A.
 				is_editable=False;
 				is_sensitive=False;
 			}
-			if (is_editable)
-			{
-				/* editable */
-				XtVaSetValues(element_point_viewer->point_number_text,XmNbackground,
-					element_point_viewer->editable_background_color,NULL);
-				XtVaSetValues(element_point_viewer->point_number_text,
-					XmNeditable,True,NULL);
-			}
-			else
-			{
-				/* non-editable */
-				XtVaSetValues(element_point_viewer->point_number_text,XmNbackground,
-					element_point_viewer->non_editable_background_color,NULL);
-				XtVaSetValues(element_point_viewer->point_number_text,
-					XmNeditable,False,NULL);
-			}
+			Element_point_viewer_set_textfield_edit_status(element_point_viewer,
+				element_point_viewer->point_number_text,is_editable);
 			/* only set string if different from that shown */
 			if (strcmp(temp_string,value_string))
 			{
@@ -615,20 +642,8 @@ value otherwise N/A.
 				is_editable=False;
 				is_sensitive=False;
 			}
-			if (is_editable)
-			{
-				/* editable */
-				XtVaSetValues(element_point_viewer->xi_text,XmNbackground,
-					element_point_viewer->editable_background_color,NULL);
-				XtVaSetValues(element_point_viewer->xi_text,XmNeditable,True,NULL);
-			}
-			else
-			{
-				/* non-editable */
-				XtVaSetValues(element_point_viewer->xi_text,XmNbackground,
-					element_point_viewer->non_editable_background_color,NULL);
-				XtVaSetValues(element_point_viewer->xi_text,XmNeditable,False,NULL);
-			}
+			Element_point_viewer_set_textfield_edit_status(element_point_viewer,
+				element_point_viewer->xi_text,is_editable);
 			/* only set string if different from that shown */
 			if (strcmp(temp_string,value_string))
 			{
@@ -790,7 +805,7 @@ match_grid_field.
 		/* give the button and chooser the correct appearance */
 		field_set=((struct Computed_field *)NULL !=
 			element_point_viewer->match_grid_field);
-		XmToggleButtonGadgetSetState(element_point_viewer->match_grid_button,
+		XmToggleButtonSetState(element_point_viewer->match_grid_button,
 			/*state*/field_set,/*notify*/False);
 		XtSetSensitive(element_point_viewer->match_grid_field_widget,
 			field_set);
@@ -1406,7 +1421,7 @@ Toggles visibility of apply options panel.
 	if (widget&&(element_point_viewer=
 		(struct Element_point_viewer *)element_point_viewer_void))
 	{
-		if (XmToggleButtonGadgetGetState(widget))
+		if (XmToggleButtonGetState(widget))
 		{
 			XtManageChild(element_point_viewer->apply_options);
 		}
@@ -1917,7 +1932,7 @@ struct Element_point_viewer *CREATE(Element_point_viewer)(
 	struct MANAGER(FE_field) *fe_field_manager,
 	struct User_interface *user_interface)
 /*******************************************************************************
-LAST MODIFIED : 21 June 2000
+LAST MODIFIED : 30 June 2000
 
 DESCRIPTION :
 Creates a dialog for choosing element points and displaying and editing their
@@ -1926,7 +1941,6 @@ fields.
 {
 	Atom WM_DELETE_WINDOW;
 	char **valid_strings;
-	Colormap cmap;
 	int i,init_widgets,number_of_faces,number_of_valid_strings,start,stop,
 		temp_element_point_number;
 	MrmType element_point_viewer_dialog_class;
@@ -1990,7 +2004,6 @@ fields.
 	{
 		{"elem_pt_v_structure",(XtPointer)NULL}
 	};
-	XColor color,unused;
 
 	ENTER(CREATE(Element_point_viewer));
 	element_point_viewer=(struct Element_point_viewer *)NULL;
@@ -2158,17 +2171,24 @@ fields.
 								&(element_point_viewer->widget),
 								&element_point_viewer_dialog_class))
 							{
-								/* store background colour for editable text fields */
+								/* get colours for editable and non-editable text fields -
+									 make non_editable look like labels */
+								XtVaGetValues(element_point_viewer->xi_text,XmNforeground,
+									&(element_point_viewer->textfield_foreground_color),NULL);
 								XtVaGetValues(element_point_viewer->xi_text,XmNbackground,
-									&(element_point_viewer->editable_background_color),NULL);
-								/* establish background colour for non-editable text fields */
-								/* Following is from O'Reilly X window System Guide Volume Six:
-									 Motif Programming Manual, Section 11.5.2, p391 */
+									&(element_point_viewer->textfield_background_color),NULL);
 								XtVaGetValues(element_point_viewer->xi_text,
-									XmNcolormap,&cmap,NULL);
-								XAllocNamedColor(XtDisplay(element_point_viewer->xi_text),
-									cmap,"gray",&color,&unused);
-								element_point_viewer->non_editable_background_color=color.pixel;
+									XmNbottomShadowColor,
+									&(element_point_viewer->textfield_bottom_shadow_color),NULL);
+								XtVaGetValues(element_point_viewer->xi_text,XmNtopShadowColor,
+									&(element_point_viewer->textfield_top_shadow_color),NULL);
+
+								XtVaGetValues(element_point_viewer->apply_options_button,
+									XmNhighlightColor,
+									&(element_point_viewer->label_foreground_color),NULL);
+								XtVaGetValues(element_point_viewer->apply_options_button,
+									XmNbackground,
+									&(element_point_viewer->label_background_color),NULL);
 
 								/* apply options are initially hidden */
 								XtUnmanageChild(element_point_viewer->apply_options);
