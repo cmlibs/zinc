@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : volume_texture.h
 
-LAST MODIFIED : 15 October 1998
+LAST MODIFIED : 7 January 2003
 
 DESCRIPTION :
 Contains data structures for the 3d volumetric textures to be mapped onto
@@ -389,7 +389,7 @@ DECLARE_MANAGER_TYPES(VT_volume_texture);
 
 struct Modify_VT_volume_texture_data
 /*******************************************************************************
-LAST MODIFIED : 24 September 1996
+LAST MODIFIED : 7 January 2003
 
 DESCRIPTION :
 ==============================================================================*/
@@ -397,7 +397,7 @@ DESCRIPTION :
 	struct MANAGER(Environment_map) *environment_map_manager;
 	struct MANAGER(Graphical_material) *graphical_material_manager;
 	struct MANAGER(VT_volume_texture) *volume_texture_manager;
-	struct Modifier_entry *set_file_name_option_table;
+	char **example_directory_address;
 }; /* struct Modify_VT_volume_texture_data */
 
 /*

@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : menu_window.c
 
-LAST MODIFIED : 25 August 1997
+LAST MODIFIED : 7 January 2003
 
 DESCRIPTION :
 Management routines for the menu window.
@@ -11,6 +11,7 @@ Management routines for the menu window.
 #include <Xm/MwmUtil.h>
 #include <Xm/List.h>
 #endif /* defined (MOTIF) */
+#include "command/command.h"
 #include "command/parser.h"
 #include "general/debug.h"
 #include "general/mystring.h"
@@ -740,10 +741,9 @@ Stores the id of the message areas.
 } /* identify_menu_list */
 
 int open_menu(struct Parse_state *state,struct Execute_command *execute_command,
-	struct Modifier_entry *set_file_name_option_table,
-	struct User_interface *user_interface)
+	char **example_directory_address, struct User_interface *user_interface)
 /*******************************************************************************
-LAST MODIFIED : 23 December 1996
+LAST MODIFIED : 7 January 2003
 
 DESCRIPTION :
 Opens a menu, and a window if it is to be executed.  If a menu is not specified
@@ -753,23 +753,24 @@ on the command line, a file selection box is presented to the user.
 	char *file_name,*temp_file_name;
 	int return_code;
 	struct File_open_data *file_open_data;
-	struct Modifier_entry *entry;
+	struct Option_table *option_table;
 
 	ENTER(open_menu);
-	/* check arguments */
-	if (state&&execute_command&&
-		(entry=set_file_name_option_table))
+	if (state && execute_command && example_directory_address)
 	{
 		if (state->current_token)
 		{
-			file_name=(char *)NULL;
-			while (entry->option)
-			{
-				entry->to_be_modified= &file_name;
-				entry++;
-			}
-			entry->to_be_modified= &file_name;
-			if (return_code=process_option(state,set_file_name_option_table))
+			file_name = (char *)NULL;
+			option_table = CREATE(Option_table)();
+			/* example */
+			Option_table_add_entry(option_table, CMGUI_EXAMPLE_DIRECTORY_SYMBOL,
+				&file_name, example_directory_address, set_file_name);
+			/* default */
+			Option_table_add_entry(option_table, NULL, &file_name,
+				NULL, set_file_name);
+			return_code = Option_table_parse(option_table, state);
+			DESTROY(Option_table)(&option_table);
+			if (return_code)
 			{
 				if (user_interface)
 				{

@@ -270,7 +270,6 @@ DESCRIPTION :
 	struct Scene *default_scene;
 	struct MANAGER(Spectrum) *spectrum_manager;
 	struct MANAGER(VT_volume_texture) *volume_texture_manager;
-	struct Modifier_entry *set_file_name_option_table;
 #if defined (MOTIF)
 	struct Prompt_window *prompt_window;
 	struct Projection_window *projection_window;
@@ -8419,10 +8418,10 @@ struct Texture_image_data
 	int crop_bottom_margin,crop_left_margin,crop_height,crop_width;
 };
 
-static int gfx_modify_Texture_image(struct Parse_state *state,void *data_void,
-	void *set_file_name_option_table_void)
+static int gfx_modify_Texture_image(struct Parse_state *state,
+	void *data_void, void *command_data_void)
 /*******************************************************************************
-LAST MODIFIED : 12 October 2000
+LAST MODIFIED : 7 January 2002
 
 DESCRIPTION :
 Modifies the properties of a texture.
@@ -8430,12 +8429,13 @@ Modifies the properties of a texture.
 {
 	char *current_token;
 	int return_code;
-	struct Modifier_entry *entry;
+	struct Cmiss_command_data *command_data;
+	struct Option_table *option_table;
 	struct Texture_image_data *data;
 
 	ENTER(gfx_modify_Texture_image);
 	if (state && (data = (struct Texture_image_data *)data_void) &&
-		(entry=(struct Modifier_entry *)set_file_name_option_table_void))
+		(command_data = (struct Cmiss_command_data *)command_data_void))
 	{
 		return_code=1;
 		if (current_token=state->current_token)
@@ -8472,14 +8472,16 @@ Modifies the properties of a texture.
 		{
 			if (current_token=state->current_token)
 			{
-				while (entry->option)
-				{
-					entry->to_be_modified= &(data->image_file_name);
-					entry++;
-				}
-				entry->to_be_modified= &(data->image_file_name);
-				return_code=process_option(state,
-					(struct Modifier_entry *)set_file_name_option_table_void);
+				option_table = CREATE(Option_table)();
+				/* example */
+				Option_table_add_entry(option_table, CMGUI_EXAMPLE_DIRECTORY_SYMBOL,
+					&(data->image_file_name), &(command_data->example_directory),
+					set_file_name);
+				/* default */
+				Option_table_add_entry(option_table, NULL, &(data->image_file_name),
+					NULL, set_file_name);
+				return_code = Option_table_parse(option_table, state);
+				DESTROY(Option_table)(&option_table);
 			}
 			else
 			{
@@ -8781,8 +8783,7 @@ Modifies the properties of a texture.
 					  NULL,set_float_non_negative);
 					/* image */
 					Option_table_add_entry(option_table, "image",
-						&image_data, command_data->set_file_name_option_table,
-						gfx_modify_Texture_image);
+						&image_data, command_data, gfx_modify_Texture_image);
 					/* linear_filter/nearest_filter */
 					filter_mode_string = ENUMERATOR_STRING(Texture_filter_mode)(
 						Texture_get_filter_mode(texture));
@@ -10150,7 +10151,7 @@ Executes a GFX CREATE VOLUMES command.
 static int gfx_create_volume_texture(struct Parse_state *state,
 	void *dummy_to_be_modified,void *command_data_void)
 /*******************************************************************************
-LAST MODIFIED : 14 June 1999
+LAST MODIFIED : 7 January 2003
 
 DESCRIPTION :
 Executes a GFX CREATE VTEXTURE command.
@@ -10187,8 +10188,8 @@ Executes a GFX CREATE VTEXTURE command.
 									command_data->environment_map_manager;
 								modify_VT_volume_texture_data.volume_texture_manager=
 									command_data->volume_texture_manager;
-								modify_VT_volume_texture_data.set_file_name_option_table=
-									command_data->set_file_name_option_table;
+								modify_VT_volume_texture_data.example_directory_address =
+									&(command_data->example_directory);
 								return_code=modify_VT_volume_texture(state,
 									(void *)volume_texture,
 									(void *)(&modify_VT_volume_texture_data));
@@ -10232,8 +10233,8 @@ Executes a GFX CREATE VTEXTURE command.
 						command_data->environment_map_manager;
 					modify_VT_volume_texture_data.volume_texture_manager=
 						command_data->volume_texture_manager;
-					modify_VT_volume_texture_data.set_file_name_option_table=
-						command_data->set_file_name_option_table;
+					modify_VT_volume_texture_data.example_directory_address =
+						&(command_data->example_directory);
 					return_code=modify_VT_volume_texture(state,(void *)NULL,
 						(void *)(&modify_VT_volume_texture_data));
 				}
@@ -19287,8 +19288,8 @@ Executes a GFX MODIFY command.
 					command_data->environment_map_manager;
 				modify_VT_volume_texture_data.volume_texture_manager=
 					command_data->volume_texture_manager;
-				modify_VT_volume_texture_data.set_file_name_option_table=
-					command_data->set_file_name_option_table;
+				modify_VT_volume_texture_data.example_directory_address =
+					&(command_data->example_directory);
 				Option_table_add_entry(option_table,"vtexture",NULL, 
 					(void *)(&modify_VT_volume_texture_data), modify_VT_volume_texture);
 #if defined (MOTIF) || defined (GTK_USER_INTERFACE)
@@ -20060,7 +20061,7 @@ Executes a GFX PRINT command.
 static int gfx_read_Control_curve(struct Parse_state *state,
 	void *dummy_to_be_modified,void *command_data_void)
 /*******************************************************************************
-LAST MODIFIED : 26 July 2002
+LAST MODIFIED : 7 January 2002
 
 DESCRIPTION :
 Reads a curve from 3 files: ~.curve.com, ~.curve.exnode, ~.curve.exelem, where
@@ -20072,24 +20073,25 @@ instruction to read in the mesh.
 	char *file_name;
 	int return_code;
 	struct Cmiss_command_data *command_data;
-	struct Modifier_entry *entry;
+	struct Option_table *option_table;
 
 	ENTER(gfx_read_Control_curve);
 	USE_PARAMETER(dummy_to_be_modified);
 	if (state)
 	{
-		if ((command_data=(struct Cmiss_command_data *)command_data_void)&&
-			(entry=command_data->set_file_name_option_table))
+		if (command_data = (struct Cmiss_command_data *)command_data_void)
 		{
-			file_name=(char *)NULL;
-			while (entry->option)
-			{
-				entry->to_be_modified= &file_name;
-				entry++;
-			}
-			entry->to_be_modified= &file_name;
-			if (return_code=process_multiple_options(state,
-				command_data->set_file_name_option_table))
+			option_table = CREATE(Option_table)();
+			/* example */
+			Option_table_add_entry(option_table, CMGUI_EXAMPLE_DIRECTORY_SYMBOL,
+				&file_name, &(command_data->example_directory),
+				set_file_name);
+			/* default */
+			Option_table_add_entry(option_table, NULL, &file_name,
+				NULL, set_file_name);
+			return_code = Option_table_parse(option_table, state);
+			DESTROY(Option_table)(&option_table);
+			if (return_code)
 			{
 				if (!file_name)
 				{
@@ -20128,89 +20130,10 @@ instruction to read in the mesh.
 	return (return_code);
 } /* gfx_read_Control_curve */
 
-static int gfx_read_data(struct Parse_state *state,
-	void *dummy_to_be_modified,void *command_data_void)
-/*******************************************************************************
-LAST MODIFIED : 6 September 1999
-
-DESCRIPTION :
-If a data file is not specified a file selection box is presented to the user,
-otherwise the data file is read.
-???DB.  Almost identical to gfx_read_nodes.  Could set up struct Read_nodes_data
-	to combine, but will probably be adding ipdata format
-==============================================================================*/
-{
-	char *file_name;
-	int return_code;
-	struct Cmiss_command_data *command_data;
-	struct File_read_FE_node_group_data data;
-	struct Modifier_entry *entry;
-
-	ENTER(gfx_read_data);
-	USE_PARAMETER(dummy_to_be_modified);
-	if (state)
-	{
-		if ((command_data=(struct Cmiss_command_data *)command_data_void)&&
-			(entry=command_data->set_file_name_option_table))
-		{
-			file_name=(char *)NULL;
-			while (entry->option)
-			{
-				entry->to_be_modified= &file_name;
-				entry++;
-			}
-			entry->to_be_modified= &file_name;
-			if (return_code=process_multiple_options(state,
-				command_data->set_file_name_option_table))
-			{
-				data.fe_field_manager=command_data->fe_field_manager;
-				data.fe_time=command_data->fe_time;
-				data.element_group_manager=command_data->element_group_manager;
-				/*???RC note swapping node and data manager stuff - extends to
-				  also creating a node_group for the new data group! */
-				data.node_manager=command_data->data_manager;
-				data.element_manager=command_data->element_manager;
-				data.node_group_manager=command_data->data_group_manager;
-				data.data_group_manager=command_data->node_group_manager;
-				if (!file_name)
-				{
-					if (!(file_name = confirmation_get_read_filename(".exdata",
-						command_data->user_interface)))
-					{
-						return_code = 0;
-					}
-				}
-				if (return_code)
-				{
-					/* open the file */
-					if (return_code=check_suffix(&file_name,".exdata"))
-					{
-						return_code=file_read_FE_node_group(file_name,(void *)&data);
-					}
-				}
-			}
-			DEALLOCATE(file_name);
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,"gfx_read_data.  Missing command_data");
-			return_code=0;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,"gfx_read_data.  Missing state");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* gfx_read_data */
-
 static int gfx_read_elements(struct Parse_state *state,
 	void *dummy_to_be_modified,void *command_data_void)
 /*******************************************************************************
-LAST MODIFIED : 22 April 1999
+LAST MODIFIED : 7 January 2003
 
 DESCRIPTION :
 If an element file is not specified a file selection box is presented to the
@@ -20221,24 +20144,25 @@ user, otherwise the elements file is read.
 	int return_code;
 	struct Cmiss_command_data *command_data;
 	struct File_read_FE_element_group_data data;
-	struct Modifier_entry *entry;
+	struct Option_table *option_table;
 
 	ENTER(gfx_read_elements);
 	USE_PARAMETER(dummy_to_be_modified);
 	if (state)
 	{
-		if ((command_data=(struct Cmiss_command_data *)command_data_void)&&
-			(entry=command_data->set_file_name_option_table))
+		if (command_data = (struct Cmiss_command_data *)command_data_void)
 		{
-			file_name=(char *)NULL;
-			while (entry->option)
-			{
-				entry->to_be_modified= &file_name;
-				entry++;
-			}
-			entry->to_be_modified= &file_name;
-			if (return_code=process_multiple_options(state,
-				command_data->set_file_name_option_table))
+			file_name = (char *)NULL;
+			option_table = CREATE(Option_table)();
+			/* example */
+			Option_table_add_entry(option_table,CMGUI_EXAMPLE_DIRECTORY_SYMBOL,
+				&file_name, &(command_data->example_directory), set_file_name);
+			/* default */
+			Option_table_add_entry(option_table,NULL,&file_name,
+				NULL,set_file_name);
+			return_code = Option_table_multi_parse(option_table, state);
+			DESTROY(Option_table)(&option_table);
+			if (return_code)
 			{
 				data.element_manager=command_data->element_manager;
 				data.element_group_manager=command_data->element_group_manager;
@@ -20284,13 +20208,14 @@ user, otherwise the elements file is read.
 } /* gfx_read_elements */
 
 static int gfx_read_nodes(struct Parse_state *state,
-	void *dummy_to_be_modified,void *command_data_void)
+	void *use_data, void *command_data_void)
 /*******************************************************************************
-LAST MODIFIED : 6 September 1999
+LAST MODIFIED : 7 January 2003
 
 DESCRIPTION :
 If a nodes file is not specified a file selection box is presented to the user,
 otherwise the nodes file is read.
+If the <use_data> flag is set, then read data, otherwise nodes.
 ==============================================================================*/
 {
 	char *file_name, time_set_flag;
@@ -20303,10 +20228,9 @@ otherwise the nodes file is read.
 	struct Option_table *option_table;
 
 	ENTER(gfx_read_nodes);
-	USE_PARAMETER(dummy_to_be_modified);
 	if (state)
 	{
-		if (command_data=(struct Cmiss_command_data *)command_data_void)
+		if (command_data = (struct Cmiss_command_data *)command_data_void)
 		{
 			file_name = (char *)NULL;
 			time = 0;
@@ -20320,18 +20244,29 @@ otherwise the nodes file is read.
 			Option_table_add_entry(option_table,"time",
 				&time, &time_set_flag, set_float_and_char_flag);
 			/* default */
-			Option_table_add_entry(option_table,NULL,&file_name,
-				NULL,set_file_name);
-			return_code=Option_table_multi_parse(option_table,state);
+			Option_table_add_entry(option_table, NULL, &file_name,
+				NULL, set_file_name);
+			return_code = Option_table_multi_parse(option_table,state);
 			DESTROY(Option_table)(&option_table);
 			if (return_code)
 			{
 				if (!file_name)
 				{
-					if (!(file_name = confirmation_get_read_filename(".exnode",
-						command_data->user_interface)))
+					if (use_data)
 					{
-						return_code = 0;
+						if (!(file_name = confirmation_get_read_filename(".exdata",
+							command_data->user_interface)))
+						{
+							return_code = 0;
+						}
+					}
+					else
+					{
+						if (!(file_name = confirmation_get_read_filename(".exnode",
+							command_data->user_interface)))
+						{
+							return_code = 0;
+						}
 					}
 				}
 				if (time_set_flag)
@@ -20342,17 +20277,38 @@ otherwise the nodes file is read.
 				if (return_code)
 				{
 					/* open the file */
-					if (return_code=check_suffix(&file_name,".exnode"))
+					if (use_data)
 					{
-						if (input_file=fopen(file_name,"r"))
+						return_code = check_suffix(&file_name,".exdata");
+					}
+					else
+					{
+						return_code = check_suffix(&file_name,".exnode");
+					}
+					if (return_code)
+					{
+						if (input_file = fopen(file_name,"r"))
 						{
-							return_code=read_FE_node_group_with_order(input_file,
-								command_data->fe_field_manager, command_data->fe_time,
-								command_data->node_manager, command_data->element_manager, 
-								command_data->node_group_manager,
-								command_data->data_group_manager, 
-								command_data->element_group_manager,
-								(struct FE_node_order_info *)NULL, node_time_index);
+							if (use_data)
+							{
+								return_code = read_FE_node_group_with_order(input_file,
+									command_data->fe_field_manager, command_data->fe_time,
+									command_data->data_manager, command_data->element_manager, 
+									command_data->data_group_manager,
+									command_data->node_group_manager, 
+									command_data->element_group_manager,
+									(struct FE_node_order_info *)NULL, node_time_index);
+							}
+							else
+							{
+								return_code = read_FE_node_group_with_order(input_file,
+									command_data->fe_field_manager, command_data->fe_time,
+									command_data->node_manager, command_data->element_manager, 
+									command_data->node_group_manager,
+									command_data->data_group_manager, 
+									command_data->element_group_manager,
+									(struct FE_node_order_info *)NULL, node_time_index);
+							}
 							fclose(input_file);
 						}
 						else
@@ -20408,7 +20364,7 @@ otherwise the nodes file is read.
 static int gfx_read_objects(struct Parse_state *state,
 	void *dummy_to_be_modified,void *command_data_void)
 /*******************************************************************************
-LAST MODIFIED : 13 October 1998
+LAST MODIFIED : 7 January 2003
 
 DESCRIPTION :
 If a file is not specified a file selection box is presented to the user,
@@ -20418,24 +20374,25 @@ otherwise the file of graphics objects is read.
 	char *file_name;
 	int return_code;
 	struct Cmiss_command_data *command_data;
-	struct Modifier_entry *entry;
+	struct Option_table *option_table;
 
 	ENTER(gfx_read_objects);
 	USE_PARAMETER(dummy_to_be_modified);
 	if (state)
 	{
-		if ((command_data=(struct Cmiss_command_data *)command_data_void)&&
-			(entry=command_data->set_file_name_option_table))
+		if (command_data = (struct Cmiss_command_data *)command_data_void)
 		{
-			file_name=(char *)NULL;
-			while (entry->option)
-			{
-				entry->to_be_modified= &file_name;
-				entry++;
-			}
-			entry->to_be_modified= &file_name;
-			if (return_code=process_multiple_options(state,
-				command_data->set_file_name_option_table))
+			file_name = (char *)NULL;
+			option_table=CREATE(Option_table)();
+			/* example */
+			Option_table_add_entry(option_table,CMGUI_EXAMPLE_DIRECTORY_SYMBOL,
+				&file_name, &(command_data->example_directory), set_file_name);
+			/* default */
+			Option_table_add_entry(option_table,NULL,&file_name,
+				NULL,set_file_name);
+			return_code = Option_table_multi_parse(option_table,state);
+			DESTROY(Option_table)(&option_table);
+			if (return_code)
 			{
 				if (!file_name)
 				{
@@ -20589,57 +20546,55 @@ otherwise the wavefront obj file is read.
 static int execute_command_gfx_read(struct Parse_state *state,
 	void *dummy_to_be_modified,void *command_data_void)
 /*******************************************************************************
-LAST MODIFIED : 25 November 1999
+LAST MODIFIED : 7 January 2003
 
 DESCRIPTION :
 Executes a GFX READ command.
 ==============================================================================*/
 {
-	int i,return_code;
+	int return_code;
 	struct Cmiss_command_data *command_data;
-	static struct Modifier_entry option_table[]=
-	{
-		{"curve",NULL,NULL,gfx_read_Control_curve},
-		{"data",NULL,NULL,gfx_read_data},
-		{"elements",NULL,NULL,gfx_read_elements},
-		{"nodes",NULL,NULL,gfx_read_nodes},
-		{"objects",NULL,NULL,gfx_read_objects},
-		{"wavefront_obj",NULL,NULL,gfx_read_wavefront_obj},
-		{NULL,NULL,NULL,NULL}
-	};
+	struct Option_table *option_table;
 
 	ENTER(execute_command_gfx_read);
 	USE_PARAMETER(dummy_to_be_modified);
-	if (state&&(command_data=(struct Cmiss_command_data *)command_data_void))
+	if (state && (command_data = (struct Cmiss_command_data *)command_data_void))
 	{
 		if (state->current_token)
 		{
-			i=0;
-			(option_table[i]).user_data=command_data_void;
-			i++;
-			(option_table[i]).user_data=command_data_void;
-			i++;
-			(option_table[i]).user_data=command_data_void;
-			i++;
-			(option_table[i]).user_data=command_data_void;
-			i++;
-			(option_table[i]).user_data=command_data_void;
-			i++;
-			(option_table[i]).user_data=command_data_void;
-			i++;
-			return_code=process_option(state,option_table);
+			option_table = CREATE(Option_table)();
+			/* curve */
+			Option_table_add_entry(option_table, "curve",
+				NULL, command_data_void, gfx_read_Control_curve);
+			/* data */
+			Option_table_add_entry(option_table, "data",
+				/*use_data*/(void *)1, command_data_void, gfx_read_nodes);
+			/* elements */
+			Option_table_add_entry(option_table, "elements",
+				NULL, command_data_void, gfx_read_elements);
+			/* nodes */
+			Option_table_add_entry(option_table, "nodes",
+				/*use_data*/(void *)0, command_data_void, gfx_read_nodes);
+			/* objects */
+			Option_table_add_entry(option_table, "objects",
+				NULL, command_data_void, gfx_read_objects);
+			/* wavefront_obj */
+			Option_table_add_entry(option_table, "wavefront_obj",
+				NULL, command_data_void, gfx_read_wavefront_obj);
+			return_code = Option_table_parse(option_table, state);
+			DESTROY(Option_table)(&option_table);
 		}
 		else
 		{
-			set_command_prompt("gfx read",command_data);
-			return_code=1;
+			set_command_prompt("gfx read", command_data);
+			return_code = 1;
 		}
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
 			"execute_command_gfx_read.  Invalid argument(s)");
-		return_code=0;
+		return_code = 0;
 	}
 	LEAVE;
 
@@ -24964,7 +24919,7 @@ Executes a CELL CLOSE command.
 static int execute_command_cell_read_model(struct Parse_state *state,
 	void *dummy_to_be_modified,void *command_data_void)
 /*******************************************************************************
-LAST MODIFIED : 02 April 2001
+LAST MODIFIED : 7 January 2003
 
 DESCRIPTION :
 Executes a CELL READ MODEL command.
@@ -24974,25 +24929,26 @@ Executes a CELL READ MODEL command.
 	int return_code;
 	struct Cell_interface *cell_interface;
 	struct Cmiss_command_data *command_data;
-	struct Modifier_entry *entry;
-  
+	struct Option_table *option_table;
+
 	ENTER(execute_command_cell_read_model);
 	USE_PARAMETER(dummy_to_be_modified);
 	/* check argument */
 	if (state)
 	{
-		if ((command_data=(struct Cmiss_command_data *)command_data_void)&&
-			(entry=command_data->set_file_name_option_table))
+		if (command_data = (struct Cmiss_command_data *)command_data_void)
 		{
-      file_name=(char *)NULL;
-      while (entry->option)
-      {
-        entry->to_be_modified= &file_name;
-        entry++;
-      }
-      entry->to_be_modified= &file_name;
-      if (return_code=process_multiple_options(state,
-        command_data->set_file_name_option_table))
+			file_name = (char *)NULL;
+			option_table=CREATE(Option_table)();
+			/* example */
+			Option_table_add_entry(option_table,CMGUI_EXAMPLE_DIRECTORY_SYMBOL,
+				&file_name, &(command_data->example_directory), set_file_name);
+			/* default */
+			Option_table_add_entry(option_table, NULL, &file_name,
+				NULL, set_file_name);
+			return_code = Option_table_multi_parse(option_table, state);
+			DESTROY(Option_table)(&option_table);
+			if (return_code)
       {
         if (!((current_token=state->current_token)&&
           !(strcmp(PARSER_HELP_STRING,current_token)&&
@@ -25104,7 +25060,7 @@ Executes a CELL READ command.
 static int execute_command_cell_write_model(struct Parse_state *state,
 	void *dummy_to_be_modified,void *command_data_void)
 /*******************************************************************************
-LAST MODIFIED : 02 April 2001
+LAST MODIFIED : 7 January 2003
 
 DESCRIPTION :
 Executes a CELL WRITE MODEL command.
@@ -25114,25 +25070,26 @@ Executes a CELL WRITE MODEL command.
 	int return_code;
 	struct Cell_interface *cell_interface;
 	struct Cmiss_command_data *command_data;
-	struct Modifier_entry *entry;
-  
+	struct Option_table *option_table;
+
 	ENTER(execute_command_cell_write_model);
 	USE_PARAMETER(dummy_to_be_modified);
 	/* check argument */
 	if (state)
 	{
-		if ((command_data=(struct Cmiss_command_data *)command_data_void)&&
-			(entry=command_data->set_file_name_option_table))
+		if (command_data = (struct Cmiss_command_data *)command_data_void)
 		{
-      file_name=(char *)NULL;
-      while (entry->option)
-      {
-        entry->to_be_modified= &file_name;
-        entry++;
-      }
-      entry->to_be_modified= &file_name;
-      if (return_code=process_multiple_options(state,
-        command_data->set_file_name_option_table))
+			file_name = (char *)NULL;
+			option_table=CREATE(Option_table)();
+			/* example */
+			Option_table_add_entry(option_table,CMGUI_EXAMPLE_DIRECTORY_SYMBOL,
+				&file_name, &(command_data->example_directory), set_file_name);
+			/* default */
+			Option_table_add_entry(option_table, NULL, &file_name,
+				NULL, set_file_name);
+			return_code = Option_table_multi_parse(option_table, state);
+			DESTROY(Option_table)(&option_table);
+			if (return_code)
       {
         if (!((current_token=state->current_token)&&
           !(strcmp(PARSER_HELP_STRING,current_token)&&
@@ -25208,7 +25165,7 @@ Executes a CELL WRITE MODEL command.
 static int execute_command_cell_write_ipcell(struct Parse_state *state,
 	void *dummy_to_be_modified,void *command_data_void)
 /*******************************************************************************
-LAST MODIFIED : 02 April 2001
+LAST MODIFIED : 7 January 2003
 
 DESCRIPTION :
 Executes a CELL WRITE IPCELL command.
@@ -25218,25 +25175,26 @@ Executes a CELL WRITE IPCELL command.
 	int return_code;
 	struct Cell_interface *cell_interface;
 	struct Cmiss_command_data *command_data;
-	struct Modifier_entry *entry;
-  
+	struct Option_table *option_table;
+
 	ENTER(execute_command_cell_write_ipcell);
 	USE_PARAMETER(dummy_to_be_modified);
 	/* check argument */
 	if (state)
 	{
-		if ((command_data=(struct Cmiss_command_data *)command_data_void)&&
-			(entry=command_data->set_file_name_option_table))
+		if (command_data = (struct Cmiss_command_data *)command_data_void)
 		{
-      file_name=(char *)NULL;
-      while (entry->option)
-      {
-        entry->to_be_modified= &file_name;
-        entry++;
-      }
-      entry->to_be_modified= &file_name;
-      if (return_code=process_multiple_options(state,
-        command_data->set_file_name_option_table))
+			file_name = (char *)NULL;
+			option_table=CREATE(Option_table)();
+			/* example */
+			Option_table_add_entry(option_table,CMGUI_EXAMPLE_DIRECTORY_SYMBOL,
+				&file_name, &(command_data->example_directory), set_file_name);
+			/* default */
+			Option_table_add_entry(option_table, NULL, &file_name,
+				NULL, set_file_name);
+			return_code = Option_table_multi_parse(option_table, state);
+			DESTROY(Option_table)(&option_table);
+			if (return_code)
       {
         if (!((current_token=state->current_token)&&
           !(strcmp(PARSER_HELP_STRING,current_token)&&
@@ -26647,7 +26605,7 @@ Executes a LIST_MEMORY command.
 static int execute_command_open_menu(struct Parse_state *state,
 	void *dummy_to_be_modified,void *command_data_void)
 /*******************************************************************************
-LAST MODIFIED : 24 September 1996
+LAST MODIFIED : 7 January 2003
 
 DESCRIPTION :
 Executes a OPEN MENU command.
@@ -26658,13 +26616,12 @@ Executes a OPEN MENU command.
 
 	ENTER(execute_command_open_menu);
 	USE_PARAMETER(dummy_to_be_modified);
-	/* check argument */
 	if (state)
 	{
 		if (command_data=(struct Cmiss_command_data *)command_data_void)
 		{
-			return_code=open_menu(state,command_data->execute_command,
-				command_data->set_file_name_option_table,command_data->user_interface);
+			return_code = open_menu(state, command_data->execute_command,
+				&(command_data->example_directory), command_data->user_interface);
 		}
 		else
 		{
@@ -28031,7 +27988,7 @@ Parses command line options from <state>.
 struct Cmiss_command_data *CREATE(Cmiss_command_data)(int argc,char *argv[], 
 	char *version_string)
 /*******************************************************************************
-LAST MODIFIED : 19 December 2002
+LAST MODIFIED : 7 January 2003
 
 DESCRIPTION :
 Initialise all the subcomponents of cmgui and create the Cmiss_command_data
@@ -28141,11 +28098,6 @@ Initialise all the subcomponents of cmgui and create the Cmiss_command_data
 	struct FE_field *fe_field;
 	struct Graphical_material *material;
 	struct MANAGER(Computed_field) *computed_field_manager;
-	struct Modifier_entry set_file_name_option_table[]=
-	{
-		{CMGUI_EXAMPLE_DIRECTORY_SYMBOL,NULL,NULL,set_file_name},
-		{NULL,NULL,NULL,set_file_name}
-	};
 	struct Option_table *option_table;
 	struct Parse_state *state;
 	User_settings user_settings;
@@ -28202,9 +28154,6 @@ Initialise all the subcomponents of cmgui and create the Cmiss_command_data
 		command_data->tracking_editor_dialog=(struct Tracking_editor_dialog *)NULL;
 #endif /* defined (MIRAGE) */
 		command_data->example_directory=(char *)NULL;
-		(set_file_name_option_table[0]).user_data=
-			&(command_data->example_directory);
-		command_data->set_file_name_option_table=set_file_name_option_table;
 
 #if defined (MOTIF)
 		command_data->comfile_window_manager=(struct MANAGER(Comfile_window) *)NULL;

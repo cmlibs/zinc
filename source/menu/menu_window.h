@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : menu_window.h
 
-LAST MODIFIED : 11 November 1998
+LAST MODIFIED : 7 January 2003
 
 DESCRIPTION :
 Definitions for the menu window and structures.
@@ -114,10 +114,9 @@ Stores the id of the message areas.
 ==============================================================================*/
 
 int open_menu(struct Parse_state *state,struct Execute_command *execute_command,
-	struct Modifier_entry *set_file_name_option_table,
-	struct User_interface *user_interface);
+	char **example_directory_address, struct User_interface *user_interface);
 /*******************************************************************************
-LAST MODIFIED : 4 October 1996
+LAST MODIFIED : 7 January 2003
 
 DESCRIPTION :
 ==============================================================================*/

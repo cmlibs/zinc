@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : volume_texture.c
 
-LAST MODIFIED : 21 January 2002
+LAST MODIFIED : 7 January 2003
 
 DESCRIPTION :
 Contains data structures for the 3d volumetric textures to be mapped onto
@@ -15,6 +15,7 @@ xi2, xi3 space.
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#include "command/command.h"
 #include "command/parser.h"
 #include "general/debug.h"
 #include "general/indexed_list_private.h"
@@ -209,7 +210,7 @@ printf("Normalizing vtexture\n");
 static int set_VT_volume_texture_file(struct Parse_state *state,
 	void *volume_texture_void,void *data_void)
 /*******************************************************************************
-LAST MODIFIED : 18 May 1998
+LAST MODIFIED : 7 January 2003
 
 DESCRIPTION :
 Modifier function to set the volume texture file from a command.
@@ -218,7 +219,7 @@ Modifier function to set the volume texture file from a command.
 	char *file_name;
 	FILE *in_file;
 	int return_code;
-	struct Modifier_entry *entry;
+	struct Option_table *option_table;
 	struct Modify_VT_volume_texture_data *data;
 
 	ENTER(set_VT_volume_texture_file);
@@ -227,95 +228,89 @@ Modifier function to set the volume texture file from a command.
 		if (volume_texture_void&&
 			(data=(struct Modify_VT_volume_texture_data *)data_void))
 		{
-			if (entry=data->set_file_name_option_table)
+			file_name = (char *)NULL;
+			option_table = CREATE(Option_table)();
+			/* example */
+			Option_table_add_entry(option_table, CMGUI_EXAMPLE_DIRECTORY_SYMBOL,
+				&file_name, data->example_directory_address, set_file_name);
+			/* default */
+			Option_table_add_entry(option_table, NULL, &file_name,
+				NULL, set_file_name);
+			return_code = Option_table_parse(option_table, state);
+			DESTROY(Option_table)(&option_table);
+			if (return_code)
 			{
-				file_name=(char *)NULL;
-				while (entry->option)
+				if (in_file=fopen(file_name,"r"))
 				{
-					entry->to_be_modified= &file_name;
-					entry++;
-				}
-				entry->to_be_modified= &file_name;
-				if (return_code=process_option(state,data->set_file_name_option_table))
-				{
-					if (in_file=fopen(file_name,"r"))
+					if (strstr(file_name, ".objv") != NULL )
 					{
-						if (strstr(file_name, ".objv") != NULL )
+						display_message(WARNING_MESSAGE,
+							"Importing .objv file : Volume functions disabled");
+						if (read_volume_texture_from_obj_file(
+							(struct VT_volume_texture *)volume_texture_void,in_file,
+							data->graphical_material_manager,data->environment_map_manager,
+							1))
+						{
+							return_code=1;
+						}
+						else
+						{
+							display_message(ERROR_MESSAGE,
+								"Error reading volume texture objv file: %s",file_name);
+							return_code=0;
+						}
+					}
+					else
+					{
+						if (strstr(file_name, ".obj") != NULL )
 						{
 							display_message(WARNING_MESSAGE,
-								"Importing .objv file : Volume functions disabled");
+								"Importing .obj file : Volume functions disabled");
 							if (read_volume_texture_from_obj_file(
 								(struct VT_volume_texture *)volume_texture_void,in_file,
-								data->graphical_material_manager,data->environment_map_manager,
-								1))
+								data->graphical_material_manager,
+								data->environment_map_manager,0))
 							{
 								return_code=1;
 							}
 							else
 							{
 								display_message(ERROR_MESSAGE,
-									"Error reading volume texture objv file: %s",file_name);
+									"Error reading volume texture obj file: %s",file_name);
 								return_code=0;
 							}
 						}
 						else
 						{
-							if (strstr(file_name, ".obj") != NULL )
+							if (read_volume_texture_from_file(
+								(struct VT_volume_texture *)volume_texture_void,in_file,
+								data->graphical_material_manager,
+								data->environment_map_manager))
 							{
-								display_message(WARNING_MESSAGE,
-									"Importing .obj file : Volume functions disabled");
-								if (read_volume_texture_from_obj_file(
-									(struct VT_volume_texture *)volume_texture_void,in_file,
-									data->graphical_material_manager,
-									data->environment_map_manager,0))
-								{
-									return_code=1;
-								}
-								else
-								{
-									display_message(ERROR_MESSAGE,
-										"Error reading volume texture obj file: %s",file_name);
-									return_code=0;
-								}
+								return_code=1;
 							}
 							else
 							{
-								if (read_volume_texture_from_file(
-									(struct VT_volume_texture *)volume_texture_void,in_file,
-									data->graphical_material_manager,
-									data->environment_map_manager))
-								{
-									return_code=1;
-								}
-								else
-								{
-									display_message(ERROR_MESSAGE,
-										"Error reading volume texture file: %s",file_name);
-									return_code=0;
-								}
+								display_message(ERROR_MESSAGE,
+									"Error reading volume texture file: %s",file_name);
+								return_code=0;
 							}
 						}
-						fclose(in_file);
 					}
-					else
-					{
-						display_message(ERROR_MESSAGE,"Invalid file name: %s",file_name);
-						display_parse_state_location(state);
-						return_code=0;
-					}
+					fclose(in_file);
 				}
 				else
 				{
-					return_code=1;
+					display_message(ERROR_MESSAGE,"Invalid file name: %s",file_name);
+					display_parse_state_location(state);
+					return_code=0;
 				}
-				DEALLOCATE(file_name);
 			}
 			else
 			{
-				display_message(ERROR_MESSAGE,
-					"set_VT_volume_texture_file.  Missing set_file_name_option_table");
-				return_code=0;
+				return_code=1;
 			}
+			DEALLOCATE(file_name);
 		}
 		else
 		{
