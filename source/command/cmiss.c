@@ -51,6 +51,7 @@ Functions for executing cmiss commands.
 
 #include "image_processing/computed_field_adaptive_adjust_contrast.h"
 #include "image_processing/computed_field_adjust_contrast.h"
+#include "image_processing/computed_field_adjusted_gaussian.h"
 #include "image_processing/computed_field_binomial_filter.h"
 
 #include "image_processing/computed_field_canny_filter.h"
@@ -24375,6 +24376,9 @@ Initialise all the subcomponents of cmgui and create the Cmiss_command_data
 					command_data->computed_field_package,
 					command_data->root_region, command_data->graphics_buffer_package);
 				Computed_field_register_types_adjust_contrast(
+					command_data->computed_field_package,
+					command_data->root_region, command_data->graphics_buffer_package);
+				Computed_field_register_types_adjusted_gaussian(
 					command_data->computed_field_package,
 					command_data->root_region, command_data->graphics_buffer_package);
 				Computed_field_register_types_binomial_filter(
