@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : select_finite_element.c
 
-LAST MODIFIED : 20 April 2000
+LAST MODIFIED : 20 December 2000
 
 DESCRIPTION :
 Declares select widget functions for FE_node and GROUP(FE_node) objects.
@@ -61,7 +61,7 @@ FE_node version uses the integer cm_node_identifier as an identifier.
 
 PROTOTYPE_SELECT_MANAGER_MODIFY_IDENTIFIER_AS_NAME_FUNCTION(FE_node)
 /*****************************************************************************
-LAST MODIFIED : 24 August 2000
+LAST MODIFIED : 20 December 2000
 
 DESCRIPTION :
 Version for FE_node objects converts object_name into a node number and calls
@@ -70,11 +70,10 @@ MANAGER_MODIFY_IDENTIFIER function.
 ============================================================================*/
 {
 	int return_code;
-#if defined (OLD_CODE)
 	int new_number;
-#endif /* defined (OLD_CODE) */
 
 	ENTER(SELECT_MANAGER_MODIFY_IDENTIFIER_AS_NAME(FE_node));
+#if defined (OLD_CODE)
 	USE_PARAMETER(object_name);
 	USE_PARAMETER(object);
 	USE_PARAMETER(object_manager);
@@ -82,11 +81,10 @@ MANAGER_MODIFY_IDENTIFIER function.
 		"SELECT_MANAGER_MODIFY_IDENTIFIER_AS_NAME(FE_node).  "
 		"Not allowed to rename nodes");
 	return_code=0;
-#if defined (OLD_CODE)
+#endif /* defined (OLD_CODE) */
 	sscanf(object_name,"%i",&new_number);
 	return_code = MANAGER_MODIFY_IDENTIFIER(FE_node,cm_node_identifier)(
 		object,new_number,object_manager);
-#endif /* defined (OLD_CODE) */
 	LEAVE;
 
 	return return_code;
