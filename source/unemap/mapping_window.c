@@ -146,12 +146,12 @@ Sets the minimum and maximum of the timekeeper to relate to the current map
 				case POTENTIAL:
 				{
 					if ((NO_INTERPOLATION!=map->interpolation_type) &&
-						(map->frame_end_time > map->frame_start_time))
+						(map->end_time > map->start_time))
 					{
 						Time_keeper_set_minimum(Time_object_get_time_keeper(
-							mapping->potential_time_object), map->frame_start_time);
+							mapping->potential_time_object), map->start_time);
 						Time_keeper_set_maximum(Time_object_get_time_keeper(
-							mapping->potential_time_object), map->frame_end_time);
+							mapping->potential_time_object), map->end_time);
 					}
 					else
 					{
@@ -163,15 +163,6 @@ Sets the minimum and maximum of the timekeeper to relate to the current map
 							mapping->potential_time_object),
 							(float)buffer->times[*(map->end_search_interval)]*1000.0/
 							buffer->frequency);
-#if defined (OLD_CODE)
-						Time_keeper_set_minimum(Time_object_get_time_keeper(
-							mapping->potential_time_object),
-							(float)buffer->times[0] * 1000.0 / buffer->frequency);
-						Time_keeper_set_maximum(Time_object_get_time_keeper(
-							mapping->potential_time_object),
-							(float)buffer->times[buffer->number_of_samples - 1]
-							* 1000.0 / buffer->frequency);
-#endif /* defined (OLD_CODE) */
 					}
 				} break;
 				case SINGLE_ACTIVATION:
@@ -195,15 +186,6 @@ Sets the minimum and maximum of the timekeeper to relate to the current map
 						mapping->potential_time_object),
 						(float)buffer->times[*(map->end_search_interval)]*1000.0/
 						buffer->frequency);
-#if defined (OLD_CODE)
-					Time_keeper_set_minimum(Time_object_get_time_keeper(
-						mapping->potential_time_object),
-						(float)buffer->times[0] * 1000.0 / buffer->frequency);
-					Time_keeper_set_maximum(Time_object_get_time_keeper(
-						mapping->potential_time_object),
-						(float)buffer->times[buffer->number_of_samples - 1]
-						* 1000.0 / buffer->frequency);
-#endif /* defined (OLD_CODE) */
 				} break;
 			}
 		}
@@ -234,12 +216,11 @@ necessary.
 	enum Interpolation_type interpolation_type;
 	float buffer_end_time,buffer_start_time,frame_end_time,frame_start_time,
 		maximum_range,minimum_range,value;
-	int electrodes_marker_size,frame_number,i,number_of_frames,
+	int electrodes_marker_size,frame_number,number_of_frames,
 		number_of_mesh_columns,number_of_mesh_rows,recalculate;
 	struct Map *map;
 	struct Map_dialog *map_dialog;
 	struct Map_drawing_information *drawing_information;
-	struct Map_frame *frame;
 	struct Mapping_window *mapping;
 	struct Signal_buffer *buffer;
 	Widget option_widget;
@@ -883,145 +864,39 @@ necessary.
 				{
 					recalculate=3;
 				}
-				if (frame=map->frames)
-				{
-					if (number_of_frames<(i=map->number_of_frames))
-					{
-						i -= number_of_frames;
-						frame += number_of_frames;
-						while (i>0)
-						{
-							DEALLOCATE(frame->contour_x);
-							DEALLOCATE(frame->contour_y);
-							DEALLOCATE(frame->pixel_values);
-							if(frame->image)
-							{
-								if(frame->image->data)
-								{
-									DEALLOCATE(frame->image->data);
-								}
-							}
-							XFree((char *)(frame->image));
-							frame++;
-							i--;
-						}
-						if (REALLOCATE(frame,map->frames,struct Map_frame,number_of_frames))
-						{
-							map->frames=frame;
-						}
-						else
-						{
-							frame=map->frames;
-							while (number_of_frames>0)
-							{
-								DEALLOCATE(frame->contour_x);
-								DEALLOCATE(frame->contour_y);
-								DEALLOCATE(frame->pixel_values);
-								DEALLOCATE(frame->image->data);
-								XFree((char *)(frame->image));
-								frame++;
-								number_of_frames--;
-							}
-							DEALLOCATE(map->frames);
-							frame_number=1;
-							display_message(ERROR_MESSAGE,
-								"update_map_from_dialog.  Could not reallocate frames");
-						}
-					}
-					else
-					{
-						if (REALLOCATE(frame,map->frames,struct Map_frame,number_of_frames))
-						{
-							map->frames=frame;
-							frame += i;
-							i=number_of_frames-i;
-							while (i>0)
-							{
-								frame->contour_x=(short int *)NULL;
-								frame->contour_y=(short int *)NULL;
-								frame->pixel_values=(float *)NULL;
-								frame->image=(XImage *)NULL;
-								frame++;
-								i--;
-							}
-						}
-						else
-						{
-							frame=map->frames;
-							while (i>0)
-							{
-								DEALLOCATE(frame->contour_x);
-								DEALLOCATE(frame->contour_y);
-								DEALLOCATE(frame->pixel_values);
-								DEALLOCATE(frame->image->data);
-								XFree((char *)(frame->image));
-								frame++;
-								i--;
-							}
-							DEALLOCATE(map->frames);
-							number_of_frames=0;
-							frame_number=1;
-							display_message(ERROR_MESSAGE,
-								"update_map_from_dialog.  Could not reallocate frames");
-						}
-					}
-				}
-				else
-				{
-					number_of_frames=0;
-					frame_number=1;
-				}
 			}
-#if defined (OLD_CODE)
-			if (number_of_frames!=map->number_of_frames)
+
+			if (number_of_frames!=map->number_of_movie_frames)
 			{
-				map->number_of_frames=number_of_frames;
-				if (1<number_of_frames)
-				{
-					XtSetSensitive(mapping->animate_button,True);
-					XtSetSensitive(mapping->print_menu.animate_rgb_button,True);
-					XtSetSensitive(mapping->print_menu.animate_tiff_button,True);
-					XtSetSensitive(mapping->print_menu.animate_jpg_button,True);
-				}
-				else
-				{
-					XtSetSensitive(mapping->animate_button,False);
-					XtSetSensitive(mapping->print_menu.animate_rgb_button,False);
-					XtSetSensitive(mapping->print_menu.animate_tiff_button,False);
-					XtSetSensitive(mapping->print_menu.animate_jpg_button,False);
-				}
-			}
-#else
-		if (number_of_frames!=map->number_of_frames)
-			{
-				map->number_of_frames=number_of_frames;
-			
+				map->number_of_movie_frames=number_of_frames;			
 			}	
-		/* no animation if only one frame*/
-		if (1<number_of_frames)
-		{
-			XtSetSensitive(mapping->animate_button,True);
-			XtSetSensitive(mapping->print_menu.animate_rgb_button,True);
-			XtSetSensitive(mapping->print_menu.animate_tiff_button,True);
-			XtSetSensitive(mapping->print_menu.animate_jpg_button,True);
-		}
-		else
-		{
-			XtSetSensitive(mapping->animate_button,False);
-			XtSetSensitive(mapping->print_menu.animate_rgb_button,False);
-			XtSetSensitive(mapping->print_menu.animate_tiff_button,False);
-			XtSetSensitive(mapping->print_menu.animate_jpg_button,False);
-		}
-#endif
-			map->frame_number=frame_number-1;
+
+			/* no animation if only one frame*/
+			if (1<number_of_frames)
+			{
+				XtSetSensitive(mapping->animate_button,True);
+				XtSetSensitive(mapping->print_menu.animate_rgb_button,True);
+				XtSetSensitive(mapping->print_menu.animate_tiff_button,True);
+				XtSetSensitive(mapping->print_menu.animate_jpg_button,True);
+			}
+			else
+			{
+				XtSetSensitive(mapping->animate_button,False);
+				XtSetSensitive(mapping->print_menu.animate_rgb_button,False);
+				XtSetSensitive(mapping->print_menu.animate_tiff_button,False);
+				XtSetSensitive(mapping->print_menu.animate_jpg_button,False);
+			}
+
+			map->sub_map_number=frame_number-1;
+
 			if (frame_start_time!=map_dialog->start_time)
 			{
-				map->frame_start_time=frame_start_time;
+				map->start_time=frame_start_time;
 				map_dialog->start_time=frame_start_time;
 			}
 			if (frame_end_time!=map_dialog->end_time)
 			{
-				map->frame_end_time=frame_end_time;
+				map->end_time=frame_end_time;
 				map_dialog->end_time=frame_end_time;
 			}
 			map_dialog->number_of_frames=number_of_frames;
@@ -1473,8 +1348,8 @@ Draws a frame in the activation map animation.
 						update_mapping_colour_or_auxili(mapping);
 					}
 					else
-					{
-						(void)update_colour_map_unemap(map,drawing);
+					{					
+						(void)update_colour_map_unemap(map,drawing);		
 					}
 				}
 			}
@@ -1532,8 +1407,8 @@ Draws a frame in the activation map animation.
 					else
 					{
 						update_mapping_drawing_area(mapping,0);
-						(map->frame_number)++;
-						if (map->frame_number<map->number_of_frames)
+						(map->sub_map_number)++;
+						if (map->sub_map_number<map->number_of_sub_maps)
 						{
 							(void)XtAppAddTimeOut(
 								mapping->user_interface->application_context,(long unsigned)100,
@@ -1541,7 +1416,7 @@ Draws a frame in the activation map animation.
 						}
 						else
 						{
-							map->frame_number=map->activation_front;
+							map->sub_map_number=map->activation_front;
 							map->activation_front= -1;
 							XtSetSensitive(mapping->animate_button,True);
 							update_mapping_drawing_area(mapping,0);
@@ -1595,7 +1470,7 @@ Starts the activation map animation.
 						{
 							/* Jump to the start of the animated sequence */
 							Time_keeper_request_new_time(time_keeper,
-								map->frame_start_time);
+								map->start_time);
 						}
 					} break;
 					case SINGLE_ACTIVATION:
@@ -1643,8 +1518,8 @@ Starts the activation map animation.
 						}
 						else
 						{
-							map->activation_front=map->frame_number;
-							map->frame_number=0;
+							map->activation_front=map->sub_map_number;
+							map->sub_map_number=0;
 						}
 					}
 				}
@@ -2333,7 +2208,7 @@ Finds the id of the mapping file save electrode values button.
 
 static int write_electrode_values_file(char *file_name,void *mapping_window)
 /*******************************************************************************
-LAST MODIFIED : 23 July 2001
+LAST MODIFIED : 28 July 2001
 
 DESCRIPTION :
 Write the electrode values for the current map to a file.
@@ -2341,19 +2216,21 @@ Write the electrode values for the current map to a file.
 {
 	FILE *output_file;
 	float *value;
-	int i,number_of_electrodes,return_code;
+	int i,j,number_of_electrodes,return_code;
 	struct Device **electrode;
 	struct Map *map;
 	struct Mapping_window *mapping;	
+	struct sub_Map *sub_map;
 
 	ENTER(write_electrode_values_file);
 	return_code=0;
+	/*check we have at least one sub map. Multiple sub maps dealt with below*/
 	if ((mapping=(struct Mapping_window *)mapping_window)&&(map=mapping->map)&&
-		(map->sub_map/*!!jw more than one sub_map?*/)&&(map->type)&&file_name)
-	{
+		(map->sub_map)&&(map->type)&&file_name)
+	{	
 		if ((0<(number_of_electrodes=map->number_of_electrodes))&&
 			(electrode=map->electrodes)&&
-			(/*!!jw more than one sub_map?*/value=(*(map->sub_map))->electrode_value)&&
+			(value=(*(map->sub_map))->electrode_value)&&
 			(NO_MAP_FIELD!= *(map->type)))
 		{
 			if (output_file=fopen(file_name,"wt"))
@@ -2375,19 +2252,45 @@ Write the electrode values for the current map to a file.
 					} break;
 					case POTENTIAL:
 					{
-						fprintf(output_file,",Potential\n");
+						fprintf(output_file,",(Potential Time,)*number of maps\n");
 					} break;
 					default:
 					{
 						fprintf(output_file,",Unknown\n");
 					} break;
 				}
-				/* write the electrode names and values */
-				for (i=number_of_electrodes;i>0;i--)
+				if(*(map->type)==POTENTIAL)
+				{					
+					for (i=0;i<number_of_electrodes;i++)
+					{
+						/* write the electrode name*/
+						fprintf(output_file,"%s,",(*electrode)->description->name);
+						/*for all the sub maps*/
+						for(j=0;j<map->number_of_sub_maps;j++)
+						{
+							sub_map=map->sub_map[j];
+							/* write value */							
+							fprintf(output_file,"%g ",sub_map->electrode_value[i]);
+							/* write time  */
+							fprintf(output_file,"%g",sub_map->frame_time);
+							if(j<(map->number_of_sub_maps-1))
+							{
+								fprintf(output_file,",");
+							}
+						}
+						fprintf(output_file,"\n");
+						electrode++;					
+					}
+				}
+				else
 				{
-					fprintf(output_file,"%s,%g\n",(*electrode)->description->name,*value);
-					electrode++;
-					value++;
+					/* write the electrode names and values */
+					for (i=number_of_electrodes;i>0;i--)
+					{
+						fprintf(output_file,"%s,%g\n",(*electrode)->description->name,*value);
+						electrode++;
+						value++;
+					}
 				}
 				fclose(output_file);
 				return_code=1;
@@ -3017,7 +2920,8 @@ window file menu.
 	{
 		return_code=1;
 		if ((map=mapping->map)&&(map->type)&&(0<map->number_of_electrodes)&&
-			(map->electrodes)&&(map->sub_map/*!!jw more than one sub_map*/)&&
+			/* at least one sub_map*/
+			(map->electrodes)&&(map->sub_map)&&
 			((*map->sub_map)->electrode_value)&&(NO_MAP_FIELD!= *(map->type)))
 		{
 			XtSetSensitive(mapping->file_menu.save_electrode_values_button,True);
@@ -4048,7 +3952,7 @@ mapping_window.
 static int write_map_animation_files(char *file_name,void *mapping_window,
 	enum Image_file_format image_file_format)
 /*******************************************************************************
-LAST MODIFIED : 6 June 2001
+LAST MODIFIED :28 September 2001
 
 DESCRIPTION :
 This function writes the rgb files for drawing the animation associated with the
@@ -4112,9 +4016,9 @@ mapping_window.
 					}
 					else
 					{					
-						number_of_frames=map->number_of_frames;
-						map->activation_front=map->frame_number;
-						map->frame_number=0;
+						number_of_frames=map->number_of_sub_maps;
+						map->activation_front=map->sub_map_number;
+						map->sub_map_number=0;
 					}
 				}
 			}
@@ -4239,7 +4143,7 @@ mapping_window.
 								else
 								{
 									update_mapping_drawing_area(mapping,0);
-									(map->frame_number)++;
+									(map->sub_map_number)++;
 								}
 							}
 						}
@@ -4317,7 +4221,6 @@ mapping_window.
 				{
 					if (POTENTIAL== *(map->type))
 					{
-						*(map->potential_time)=map->activation_front;
 						map->activation_front= -1;
 						update_mapping_drawing_area(mapping,2);
 						update_mapping_colour_or_auxili(mapping);
@@ -4325,7 +4228,7 @@ mapping_window.
 					}
 					else
 					{
-						map->frame_number=map->activation_front;
+						map->sub_map_number=map->activation_front;
 						map->activation_front= -1;
 						update_mapping_drawing_area(mapping,0);
 					}
@@ -4340,7 +4243,6 @@ mapping_window.
 		return_code=0;
 	}
 	LEAVE;
-
 	return (return_code);
 } /* write_map_animation_files */
 
@@ -5577,12 +5479,11 @@ int highlight_electrode_or_auxiliar(struct Device *device,
 	int electrode_number,	int auxiliary_number,struct Map *map,
 	struct Mapping_window *mapping)
 /*******************************************************************************
-LAST MODIFIED : 26 July 2001
+LAST MODIFIED : 20 September 2001
 
 DESCRIPTION :
 Highlights/dehighlights an electrode or an auxiliary device in the <mapping>
 window.
-
 ==============================================================================*/
 {
 	char electrode_drawn,*device_name,*name,value_string[11];
@@ -5590,7 +5491,7 @@ window.
 	enum Map_type map_type;
 	float f_value,max_f,min_f,range_f;
 	GC graphics_context;
-	int ascent,descent,device_channel_number,device_highlighted,direction,
+	int ascent,descent,device_channel_number,device_highlighted,direction,j,
 		marker_size,name_length,number_of_spectrum_colours,return_code,xmax,
 		xmin,xpos,xstart,ymax,ymin,ypos,ystart;
 	Pixel *spectrum_pixels;
@@ -5612,8 +5513,7 @@ window.
 	highlight_field=(struct FE_field *)NULL;
 #endif /* defined (UNEMAP_USE_NODES) */
 	return_code=0;
-	if (map&&(sub_map=map->sub_map[map->number_of_sub_maps-1]/*!!jw more than one sub_map*/)
-		&&mapping&&(drawing_information=map->drawing_information)&&
+	if (map&&&mapping&&(drawing_information=map->drawing_information)&&
 		(drawing_information->user_interface)&&
 #if defined (UNEMAP_USE_NODES)
 		((device&&!device_node)||(!device&&device_node)))
@@ -5657,203 +5557,206 @@ window.
 				device_channel_number=0;
 			}
 		}
-		if (map&&/*(map->electrodes_option!=HIDE_ELECTRODES)&&*/
-			(electrode_number>=0)&&(map->electrode_drawn)&&
+		if (map&&(electrode_number>=0)&&(map->electrode_drawn)&&
 			((map->electrode_drawn)[electrode_number])&&mapping&&
 			(mapping->map_drawing_area_2d)&&(mapping->map_drawing))
 		{
-			f_value=(sub_map->electrode_value)[electrode_number];
-			switch (map->electrodes_option)
-			{	
-				case HIDE_ELECTRODES:
-				{
-					electrode_drawn=1;
-					/*do nothing at the moment*/
-				}break;
-				case SHOW_ELECTRODE_NAMES:
-				{
-					electrode_drawn=1;
-					name=device_name;
-				}break;
-				case SHOW_CHANNEL_NUMBERS:
-				{
-					electrode_drawn=1;				
-					sprintf(value_string,"%d",device_channel_number);
-					name=value_string;
-				}break;
-				case SHOW_ELECTRODE_VALUES:
-				{				
-					electrode_drawn=(map->electrode_drawn)[electrode_number];
-					if (electrode_drawn)
-					{
-						if (HIDE_COLOUR!=map->colour_option)
-						{
-							sprintf(value_string,"%.4g",f_value);
-							name=value_string;
-						}
-						else
-						{
-							name=(char *)NULL;
-						}
-					}
-				}break;	
-				default:
-				{
-					name=(char *)NULL;
-				} break;
-			}/* switch */
+			/* loop through sub maps */
+			for(j=0;j<map->number_of_sub_maps;j++)
+			{
+				sub_map=map->sub_map[j];
 
-			
-			if (device_highlighted)
-			{
-				graphics_context=(drawing_information->graphics_context).
-					highlighted_colour;
-			}
-			else
-			{
-				if ((map->electrodes_option==SHOW_ELECTRODE_VALUES)&&
-					(HIDE_COLOUR==map->colour_option)&&
-					(SHOW_CONTOURS==map->contours_option))
-				{
-					graphics_context=(drawing_information->graphics_context).
-						unhighlighted_colour;
-				}
-				else
-				{
-					min_f=map->minimum_value;
-					max_f=map->maximum_value;				
-					if(map->colour_electrodes_with_signal)
-					{					
-						graphics_context=(drawing_information->graphics_context).spectrum;
-						if (f_value<=min_f)
+				f_value=(sub_map->electrode_value)[electrode_number];
+				switch (map->electrodes_option)
+				{	
+					case HIDE_ELECTRODES:
+					{
+						electrode_drawn=1;
+						/*do nothing at the moment*/
+					}break;
+					case SHOW_ELECTRODE_NAMES:
+					{
+						electrode_drawn=1;
+						name=device_name;
+					}break;
+					case SHOW_CHANNEL_NUMBERS:
+					{
+						electrode_drawn=1;				
+						sprintf(value_string,"%d",device_channel_number);
+						name=value_string;
+					}break;
+					case SHOW_ELECTRODE_VALUES:
+					{				
+						electrode_drawn=(map->electrode_drawn)[electrode_number];
+						if (electrode_drawn)
 						{
-							XSetForeground(display,graphics_context,
-								spectrum_pixels[0]);
-						}
-						else
-						{
-							if (f_value>=max_f)
+							if (HIDE_COLOUR!=map->colour_option)
 							{
-								XSetForeground(display,graphics_context,
-									spectrum_pixels[number_of_spectrum_colours-1]);
+								sprintf(value_string,"%.4g",f_value);
+								name=value_string;
 							}
 							else
 							{
-								if ((range_f=max_f-min_f)<=0)
-								{
-									range_f=1;
-								}
-								XSetForeground(display,graphics_context,
-									spectrum_pixels[(int)((f_value-min_f)*
-										(float)(number_of_spectrum_colours-1)/range_f)]);
+								name=(char *)NULL;
 							}
 						}
-					}
-					else
-					{				
+					}break;	
+					default:
+					{
+						name=(char *)NULL;
+					} break;
+				}/* switch */	
+				if (device_highlighted)
+				{
+					graphics_context=(drawing_information->graphics_context).
+						highlighted_colour;
+				}
+				else
+				{
+					if ((map->electrodes_option==SHOW_ELECTRODE_VALUES)&&
+						(HIDE_COLOUR==map->colour_option)&&
+						(SHOW_CONTOURS==map->contours_option))
+					{
 						graphics_context=(drawing_information->graphics_context).
 							unhighlighted_colour;
 					}
-				}
-			}			
-			if (electrode_drawn)
-			{
-				/* draw marker */
-				xpos=(sub_map->electrode_x)[electrode_number];
-				ypos=(sub_map->electrode_y)[electrode_number];
-				marker_size=map->electrodes_marker_size;
-				xmin=xpos-marker_size;
-				xmax=xpos+marker_size;
-				ymin=ypos-marker_size;
-				ymax=ypos+marker_size;
-				switch (map->electrodes_marker_type)
-				{
-					case CIRCLE_ELECTRODE_MARKER:
-					{
-						/* draw circle */
-						XFillArc(display,mapping->map_drawing->pixel_map,graphics_context,
-							xmin,ymin,2*marker_size+1,2*marker_size+1,(int)0,(int)(360*64));
-					} break;
-					case PLUS_ELECTRODE_MARKER:
-					{
-						/* draw plus */
-						XDrawLine(display,mapping->map_drawing->pixel_map,graphics_context,
-							xmin,ypos,xmax,ypos);
-						XDrawLine(display,mapping->map_drawing->pixel_map,graphics_context,
-							xpos,ymin,xpos,ymax);
-					} break;
-					case SQUARE_ELECTRODE_MARKER:
-					{
-						/* draw square */
-						XFillRectangle(display,mapping->map_drawing->pixel_map,
-							graphics_context,xmin,ymin,2*marker_size+1,2*marker_size+1);
-					} break;
-				}
-				if (name)
-				{
-					/* write name */
-					name_length=strlen(name);
-					XTextExtents(font,name,name_length,&direction,&ascent,&descent,
-						&bounds);
-					xstart=xpos+(bounds.lbearing-bounds.rbearing+1)/2;
-					ystart=ypos-descent-1;
-					if (xstart-bounds.lbearing<0)
-					{
-						xstart=bounds.lbearing;
-					}
 					else
 					{
-						if (xstart+bounds.rbearing>mapping->map_drawing->width)
-						{
-							xstart=mapping->map_drawing->width-bounds.rbearing;
+						min_f=map->minimum_value;
+						max_f=map->maximum_value;				
+						if(map->colour_electrodes_with_signal)
+						{					
+							graphics_context=(drawing_information->graphics_context).spectrum;
+							if (f_value<=min_f)
+							{
+								XSetForeground(display,graphics_context,
+									spectrum_pixels[0]);
+							}
+							else
+							{
+								if (f_value>=max_f)
+								{
+									XSetForeground(display,graphics_context,
+										spectrum_pixels[number_of_spectrum_colours-1]);
+								}
+								else
+								{
+									if ((range_f=max_f-min_f)<=0)
+									{
+										range_f=1;
+									}
+									XSetForeground(display,graphics_context,
+										spectrum_pixels[(int)((f_value-min_f)*
+											(float)(number_of_spectrum_colours-1)/range_f)]);
+								}
+							}
+						}
+						else
+						{				
+							graphics_context=(drawing_information->graphics_context).
+								unhighlighted_colour;
 						}
 					}
-					if (ystart-ascent<0)
+				}			
+				if (electrode_drawn)
+				{
+					/* draw marker */
+					xpos=(sub_map->electrode_x)[electrode_number];
+					ypos=(sub_map->electrode_y)[electrode_number];
+					marker_size=map->electrodes_marker_size;
+					xmin=xpos-marker_size;
+					xmax=xpos+marker_size;
+					ymin=ypos-marker_size;
+					ymax=ypos+marker_size;
+					switch (map->electrodes_marker_type)
 					{
-						ystart=ascent;
-					}
-					else
-					{
-						if (ystart+descent>mapping->map_drawing->height)
+						case CIRCLE_ELECTRODE_MARKER:
 						{
-							ystart=mapping->map_drawing->height-descent;
+							/* draw circle */
+							XFillArc(display,mapping->map_drawing->pixel_map,graphics_context,
+								xmin,ymin,2*marker_size+1,2*marker_size+1,(int)0,(int)(360*64));
+						} break;
+						case PLUS_ELECTRODE_MARKER:
+						{
+							/* draw plus */
+							XDrawLine(display,mapping->map_drawing->pixel_map,graphics_context,
+								xmin,ypos,xmax,ypos);
+							XDrawLine(display,mapping->map_drawing->pixel_map,graphics_context,
+								xpos,ymin,xpos,ymax);
+						} break;
+						case SQUARE_ELECTRODE_MARKER:
+						{
+							/* draw square */
+							XFillRectangle(display,mapping->map_drawing->pixel_map,
+								graphics_context,xmin,ymin,2*marker_size+1,2*marker_size+1);
+						} break;
+					}
+					if (name)
+					{
+						/* write name */
+						name_length=strlen(name);
+						XTextExtents(font,name,name_length,&direction,&ascent,&descent,
+							&bounds);
+						xstart=xpos+(bounds.lbearing-bounds.rbearing+1)/2;
+						ystart=ypos-descent-1;
+						if (xstart-bounds.lbearing<0)
+						{
+							xstart=bounds.lbearing;
+						}
+						else
+						{
+							if (xstart+bounds.rbearing>mapping->map_drawing->width)
+							{
+								xstart=mapping->map_drawing->width-bounds.rbearing;
+							}
+						}
+						if (ystart-ascent<0)
+						{
+							ystart=ascent;
+						}
+						else
+						{
+							if (ystart+descent>mapping->map_drawing->height)
+							{
+								ystart=mapping->map_drawing->height-descent;
+							}
+						}
+						if (device_highlighted)
+						{
+							XDrawString(display,mapping->map_drawing->pixel_map,
+								(drawing_information->graphics_context).highlighted_colour,xstart,
+								ystart,name,name_length);
+						}
+						else
+						{
+							XDrawString(display,mapping->map_drawing->pixel_map,
+								(drawing_information->graphics_context).node_text_colour,xstart,
+								ystart,name,name_length);
+						}
+						if (xstart+bounds.lbearing<xmin)
+						{
+							xmin=xstart+bounds.lbearing;
+						}
+						if (xstart+bounds.rbearing>xmax)
+						{
+							xmax=xstart+bounds.rbearing;
+						}
+						if (ystart-ascent<ymin)
+						{
+							ymin=ystart-ascent;
+						}
+						if (ystart+descent>ymax)
+						{
+							ymax=ystart+descent;
 						}
 					}
-					if (device_highlighted)
-					{
-						XDrawString(display,mapping->map_drawing->pixel_map,
-							(drawing_information->graphics_context).highlighted_colour,xstart,
-							ystart,name,name_length);
-					}
-					else
-					{
-						XDrawString(display,mapping->map_drawing->pixel_map,
-							(drawing_information->graphics_context).node_text_colour,xstart,
-							ystart,name,name_length);
-					}
-					if (xstart+bounds.lbearing<xmin)
-					{
-						xmin=xstart+bounds.lbearing;
-					}
-					if (xstart+bounds.rbearing>xmax)
-					{
-						xmax=xstart+bounds.rbearing;
-					}
-					if (ystart-ascent<ymin)
-					{
-						ymin=ystart-ascent;
-					}
-					if (ystart+descent>ymax)
-					{
-						ymax=ystart+descent;
-					}
-				}
-				XCopyArea(display,mapping->map_drawing->pixel_map,
-					XtWindow(mapping->map_drawing_area_2d),
-					(drawing_information->graphics_context).copy,xmin,ymin,xmax-xmin+1,
-					ymax-ymin+1,xmin,ymin);
-				return_code=1;
-			}
+					XCopyArea(display,mapping->map_drawing->pixel_map,
+						XtWindow(mapping->map_drawing_area_2d),
+						(drawing_information->graphics_context).copy,xmin,ymin,xmax-xmin+1,
+						ymax-ymin+1,xmin,ymin);
+					return_code=1;
+				}	
+			}/* for(j=0;j<map->number_of_sub_maps;j++)*/
 		}
 		if ((NO_MAP_FIELD==map_type)&&(auxiliary_number>=0)&&
 			(mapping->colour_or_auxiliary_drawing_area)&&

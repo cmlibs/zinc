@@ -2391,30 +2391,38 @@ Opens the <map_dialog>.
 					False);
 			}
 			/* set animation options */
-			map_dialog->number_of_frames=map->number_of_frames;
-			sprintf(value_string,"%d",map->number_of_frames);
+			map_dialog->number_of_frames=map->number_of_sub_maps;
+			sprintf(value_string,"%d",map->number_of_sub_maps);
 			XtVaSetValues(map_dialog->animation.number_of_frames_text,
 				XmNvalue,value_string,
 				NULL);
-			map_dialog->frame_number=(map->frame_number)+1;
+			map_dialog->frame_number=(map->sub_map_number)+1;
 			sprintf(value_string,"%d",map_dialog->frame_number);
 			XtVaSetValues(map_dialog->animation.frame_number_text,
 				XmNvalue,value_string,
 				NULL);
-			sprintf(value_string,"%g",map->frame_start_time);
+			sprintf(value_string,"%g",map->start_time);
 			sscanf(value_string,"%f",&(map_dialog->start_time));
 			XtVaSetValues(map_dialog->animation.start_time_text,
-				XmNvalue,value_string,
-				NULL);
-			sprintf(value_string,"%g",map->frame_end_time);
+				XmNvalue,value_string,NULL);
+			sprintf(value_string,"%g",map->end_time);
 			sscanf(value_string,"%f",&(map_dialog->end_time));
 			XtVaSetValues(map_dialog->animation.end_time_text,
 				XmNvalue,value_string,
-				NULL);
+				NULL);					  
 			if ((map->type)&&(POTENTIAL== *(map->type))&&
-				(NO_INTERPOLATION!=map->interpolation_type))
+				(NO_INTERPOLATION!=map->interpolation_type))			
 			{
-				XtSetSensitive(map_dialog->animation.row_column,True);
+				if((ELECTRICAL_IMAGING==*map->analysis_mode)&&
+					(*map->first_eimaging_event))
+				{	
+					/*now movies if showing (lots of little) maps of electrical imaging events*/
+					XtSetSensitive(map_dialog->animation.row_column,False);
+				}
+				else
+				{
+					XtSetSensitive(map_dialog->animation.row_column,True);
+				}
 			}
 			else
 			{

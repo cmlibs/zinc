@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : mapping.c
 
-LAST MODIFIED : 4 September 2001
+LAST MODIFIED : 18 September 2001
 
 DESCRIPTION :
 ==============================================================================*/
@@ -673,6 +673,7 @@ Destroy a sub map
 ==============================================================================*/
 {
 	int return_code;
+	struct Map_frame *frame;
 	struct sub_Map *the_sub_map;
 
 	ENTER(destroy_sub_Map);
@@ -689,6 +690,17 @@ Destroy a sub map
 		DEALLOCATE(the_sub_map->electrode_y);
 		DEALLOCATE(the_sub_map->start_x);
 		DEALLOCATE(the_sub_map->start_y);
+
+		frame=&(the_sub_map->frame);
+		DEALLOCATE(frame->contour_x);
+		DEALLOCATE(frame->contour_y);
+		DEALLOCATE(frame->pixel_values);
+		if (frame->image)
+		{
+			DEALLOCATE(frame->image->data);
+			XFree((char *)(frame->image));
+		}
+
 		/* free the sub_Map  structure */
 		DEALLOCATE(the_sub_map);
 		return_code=1;
@@ -739,7 +751,8 @@ in an array of number_of_sub_maps sub_Maps.
 			}
 		}
 		map->number_of_sub_maps=0;
-		DEALLOCATE(map->sub_map);		
+		DEALLOCATE(map->sub_map);
+
 	}
 	LEAVE;
 	return(return_code);
@@ -777,7 +790,7 @@ Add <sub_map> to the list in <map>
 
 struct sub_Map *create_sub_Map(int number_of_drawn_regions,
 	int number_of_electrodes,int x_offset,int y_offset,int height,int width,
-	int potential_time_index,float frame_start_time,float frame_end_time)
+	int potential_time_index,float frame_time)
 /*******************************************************************************
 LAST MODIFIED : 10 September 2001
 
@@ -798,8 +811,17 @@ Create a sub map
 			sub_map->x_offset=x_offset;
 			sub_map->y_offset=y_offset;
 			sub_map->potential_time_index=potential_time_index;
-			sub_map->frame_start_time=frame_start_time;
-			sub_map->frame_end_time=frame_end_time;
+			sub_map->frame_time=frame_time;			
+			sub_map->maximum_value=0; 
+			sub_map->frame.maximum_screen_x= -1;
+			sub_map->frame.maximum_screen_y= -1;
+			sub_map->minimum_value=0;
+			sub_map->frame.minimum_screen_x= -1;
+			sub_map->frame.minimum_screen_y= -1;
+			sub_map->frame.pixel_values=(float *)NULL;
+			sub_map->frame.image=(XImage *)NULL;
+			sub_map->frame.contour_x=(short int *)NULL;
+			sub_map->frame.contour_y=(short int *)NULL;
 			ALLOCATE(sub_map->electrode_value,float,number_of_electrodes);
 			ALLOCATE(sub_map->max_x,float,number_of_drawn_regions);
 			ALLOCATE(sub_map->max_y,float,number_of_drawn_regions);
@@ -6443,9 +6465,13 @@ NULL if not successful.
 			)
 	{
 		/* allocate memory */
-		if (ALLOCATE(map,struct Map,1)&&ALLOCATE(map->frames,struct Map_frame,1))
+		if (ALLOCATE(map,struct Map,1))
 		{
+			map->start_time=0;
+			map->end_time=0;
 			map->number_of_sub_maps=0;
+			map->number_of_movie_frames=0;
+			map->sub_map_number=0;
 			map->sub_map=(struct sub_Map **)NULL;
 			map->contour_x_spacing=0;
 			map->contour_y_spacing=0;
@@ -6551,22 +6577,7 @@ NULL if not successful.
 			map->number_of_contours=2;
 			map->activation_front= -1;
 			map->print=0;
-			map->frame_number=0;
-			map->number_of_frames=1;
-			map->frames->maximum=0;
-			map->frames->maximum_x= -1;
-			map->frames->maximum_y= -1;
-			map->frames->minimum=0;
-			map->frames->minimum_x= -1;
-			map->frames->minimum_y= -1;
-			map->frames->pixel_values=(float *)NULL;
-			map->frames->image=(XImage *)NULL;
-			map->frames->contour_x=(short int *)NULL;
-			map->frames->contour_y=(short int *)NULL;
 			map->drawing_information=map_drawing_information;
-#if defined (OLD_CODE)
-			map->user_interface=user_interface;
-#endif /* defined (OLD_CODE) */
 #if defined (UNEMAP_USE_3D)
 			map->unemap_package = unemap_package;			
 #else
@@ -6599,9 +6610,7 @@ the <rig_pointer>  and Unemap_package fields  ) ,
 deallocates the memory for <**map> and sets <*map> to NULL.
 ==============================================================================*/
 {
-	int i,return_code;
-	struct Map_frame *frame;
-
+	int return_code;
 	ENTER(destroy_Map);
 	return_code=1;
 	if (map&&(*map))
@@ -6613,21 +6622,6 @@ deallocates the memory for <**map> and sets <*map> to NULL.
 		DEALLOCATE((*map)->auxiliary_y);
 		DEALLOCATE((*map)->draw_region_number);
 		DEALLOCATE((*map)->electrode_drawn);
-		if ((0<(*map)->number_of_frames)&&(frame=(*map)->frames))
-		{
-			for (i=(*map)->number_of_frames;i>0;i--)
-			{			
-				DEALLOCATE(frame->contour_x);
-				DEALLOCATE(frame->contour_y);
-				DEALLOCATE(frame->pixel_values);
-				if (frame->image)
-				{
-					DEALLOCATE(frame->image->data);
-					XFree((char *)(frame->image));
-				}
-			}
-			DEALLOCATE((*map)->frames);
-		}
 		map_destroy_sub_Maps(*map);
 		DEALLOCATE(*map);
 	}
@@ -6636,12 +6630,13 @@ deallocates the memory for <**map> and sets <*map> to NULL.
 	return (return_code);
 } /* destroy_Map */
 
-int update_colour_map_unemap(struct Map *map,struct Drawing_2d *drawing)
+int update_colour_map_unemap_original(struct Map *map,struct Drawing_2d *drawing)
 /*******************************************************************************
-LAST MODIFIED : 16 January 2001
+LAST MODIFIED : 20 September  2001
 
 DESCRIPTION :
 Updates the colour map being used for map.
+Called by (see also) update_colour_map_unemap.
 ???DB.  <drawing> added because of read only colour maps.
 ==============================================================================*/
 {
@@ -6650,7 +6645,7 @@ Updates the colour map being used for map.
 	float background_pixel_value,blue,boundary_pixel_value,contour_maximum,
 		contour_minimum,f_approx,green,max_f,maximum_value,min_f,minimum_value,
 		*pixel_value,range_f,red,theta;
-	int cell_number,cell_range,drawing_height,drawing_width,end_cell,i,
+	int cell_number,cell_range,drawing_height,drawing_width,end_cell,i,j,
 		number_of_contours,number_of_spectrum_colours,return_code,start_cell,
 		update_pixel[MAX_SPECTRUM_COLOURS],update_pixel_assignment,x_pixel,y_pixel;
 	Pixel background_pixel,boundary_pixel,*spectrum_pixels;
@@ -6663,19 +6658,18 @@ Updates the colour map being used for map.
 	struct Spectrum *spectrum_to_be_modified_copy=(struct Spectrum *)NULL;
 	struct Spectrum *spectrum_copy=(struct Spectrum *)NULL;	
 	struct MANAGER(Spectrum) *spectrum_manager=(struct MANAGER(Spectrum) *)NULL;
+	struct sub_Map *sub_map;
 
-	ENTER(update_colour_map_unemap);
+	ENTER(update_colour_map_unemap_original);
 #if !defined (UNEMAP_USE_3D)
 	USE_PARAMETER(spectrum);
 	USE_PARAMETER(spectrum_to_be_modified_copy);
 	USE_PARAMETER(spectrum_manager);
 #endif/* defined (UNEMAP_USE_3D)*/
 	if (map&&(map->type)&&(drawing_information=map->drawing_information)&&
-		(drawing_information->user_interface)&&drawing&&(0<=map->frame_number)&&
-		(map_frame=map->frames))
+		(drawing_information->user_interface)&&drawing)
 	{
 		return_code=1;
-		map_image=(map_frame += map->frame_number)->image;
 		display=drawing_information->user_interface->display;
 		minimum_value=map->minimum_value;
 		maximum_value=map->maximum_value;
@@ -6872,8 +6866,8 @@ Updates the colour map being used for map.
 		/* adjust the computer colour map for contours */
 		if (SHOW_CONTOURS==map->contours_option)
 		{
-			if ((VARIABLE_THICKNESS==map->contour_thickness)||
-				!(map_frame->pixel_values))
+			if ((VARIABLE_THICKNESS==map->contour_thickness)
+				/* ||!(map_frame->pixel_values)*/)
 			{
 				colour.pixel=drawing_information->contour_colour;
 				XQueryColor(display,colour_map,&colour);
@@ -6901,82 +6895,89 @@ Updates the colour map being used for map.
 		}
 		if (drawing_information->read_only_colour_map)
 		{
-			for (i=0;i<number_of_spectrum_colours;i++)
+			/*loop through all the sub_maps */
+			for(j=0;j<map->number_of_sub_maps;j++)
 			{
-				if (update_pixel[i])
+				sub_map=map->sub_map[j];
+				map_frame=&(sub_map->frame);
+				map_image=map_frame->image;
+				for (i=0;i<number_of_spectrum_colours;i++)
 				{
-					colour.pixel=spectrum_rgb[i].pixel;
-					colour.flags=spectrum_rgb[i].flags;
-					colour.red=spectrum_rgb[i].red;
-					colour.blue=spectrum_rgb[i].blue;
-					colour.green=spectrum_rgb[i].green;
-					XAllocColor(display,colour_map,&colour);
-					if (spectrum_pixels[i]!=colour.pixel)
+					if (update_pixel[i])
 					{
-						update_pixel_assignment=1;
-						spectrum_pixels[i]=colour.pixel;
+						colour.pixel=spectrum_rgb[i].pixel;
+						colour.flags=spectrum_rgb[i].flags;
+						colour.red=spectrum_rgb[i].red;
+						colour.blue=spectrum_rgb[i].blue;
+						colour.green=spectrum_rgb[i].green;
+						XAllocColor(display,colour_map,&colour);
+						if (spectrum_pixels[i]!=colour.pixel)
+						{
+							update_pixel_assignment=1;
+							spectrum_pixels[i]=colour.pixel;
+						}
 					}
 				}
-			}
-			if (update_pixel_assignment&&map_image)
-			{
-				min_f=map->minimum_value;
-				max_f=map->maximum_value;
-				background_pixel_value=map_frame->minimum;
-				boundary_pixel_value=map_frame->maximum;
-				pixel_value=map_frame->pixel_values;
-				background_pixel=drawing_information->background_drawing_colour;
-				boundary_pixel=drawing_information->boundary_colour;
-				drawing_height=drawing->height;
-				drawing_width=drawing->width;
-				/* calculate range of values */
-				range_f=max_f-min_f;
-				if (range_f<=0)
+				if (update_pixel_assignment&&map_image)
 				{
-					range_f=1;
-				}
-				for (y_pixel=0;y_pixel<drawing_height;y_pixel++)
-				{
-					for (x_pixel=0;x_pixel<drawing_width;x_pixel++)
+					min_f=map->minimum_value;
+					max_f=map->maximum_value;
+					background_pixel_value=sub_map->minimum_value;
+					boundary_pixel_value=sub_map->maximum_value;
+					pixel_value=map_frame->pixel_values;
+					background_pixel=drawing_information->background_drawing_colour;
+					boundary_pixel=drawing_information->boundary_colour;
+					drawing_height=drawing->height;
+					drawing_width=drawing->width;
+					/* calculate range of values */
+					range_f=max_f-min_f;
+					if (range_f<=0)
 					{
-						f_approx= *pixel_value;
-						if (f_approx>=background_pixel_value)
+						range_f=1;
+					}
+					for (y_pixel=0;y_pixel<drawing_height;y_pixel++)
+					{
+						for (x_pixel=0;x_pixel<drawing_width;x_pixel++)
 						{
-							if (f_approx<=boundary_pixel_value)
+							f_approx= *pixel_value;
+							if (f_approx>=background_pixel_value)
 							{
-								if (f_approx<min_f)
+								if (f_approx<=boundary_pixel_value)
 								{
-									f_approx=min_f;
+									if (f_approx<min_f)
+									{
+										f_approx=min_f;
+									}
+									else
+									{
+										if (f_approx>max_f)
+										{
+											f_approx=max_f;
+										}
+									}
+									cell_number=(int)((f_approx-min_f)*
+										(float)(number_of_spectrum_colours-1)/
+										range_f+0.5);
+									XPutPixel(map_image,x_pixel,y_pixel,
+										spectrum_pixels[cell_number]);
 								}
 								else
 								{
-									if (f_approx>max_f)
-									{
-										f_approx=max_f;
-									}
+									XPutPixel(map_image,x_pixel,y_pixel,
+										boundary_pixel);
 								}
-								cell_number=(int)((f_approx-min_f)*
-									(float)(number_of_spectrum_colours-1)/
-									range_f+0.5);
-								XPutPixel(map_image,x_pixel,y_pixel,
-									spectrum_pixels[cell_number]);
 							}
 							else
 							{
 								XPutPixel(map_image,x_pixel,y_pixel,
-									boundary_pixel);
+									background_pixel);
 							}
-						}
-						else
-						{
-							XPutPixel(map_image,x_pixel,y_pixel,
-								background_pixel);
-						}
-						pixel_value++;
-					}
-				}
-			}
-		}
+							pixel_value++;
+						}/*for (x_pixel=0*/
+					}/* for (y_pixel=0;y_ */
+				}/* if (update_pixel_assignment&&map_image)*/
+			}/* for(j=0;j<map->number_of_sub_maps;j++) */
+		}/* if (drawing_information->read_only_colour_map)*/
 		else
 		{
 			XStoreColors(display,colour_map,spectrum_rgb,number_of_spectrum_colours);
@@ -7006,19 +7007,19 @@ Updates the colour map being used for map.
 				else
 				{
 					display_message(ERROR_MESSAGE,
-						" update_colour_map_unemap. Could not create spectrum copy.");				
+						" update_colour_map_unemap_original. Could not create spectrum copy.");				
 				}
 			}
 			else
 			{
 				display_message(ERROR_MESSAGE,
-					" update_colour_map_unemap. Spectrum is not in manager!");		
+					" update_colour_map_unemap_original. Spectrum is not in manager!");		
 			}
 		}
 		else
 		{
 			display_message(ERROR_MESSAGE,
-				" update_colour_map_unemap. Spectrum_manager not present");
+				" update_colour_map_unemap_original. Spectrum_manager not present");
 		}
 #else			
 		/*Ensure spectrum is set correctly */
@@ -7029,13 +7030,42 @@ Updates the colour map being used for map.
 	else
 	{
 		return_code=0;
-		display_message(ERROR_MESSAGE,"update_colour_map.  Missing map");
+		display_message(ERROR_MESSAGE,"update_colour_map_unemap_original.  Missing map");
 	}
 	LEAVE;
 
 	return (return_code);
-} /* update_colour_map */
+} /* update_colour_map_unemap_original */
 
+int update_colour_map_unemap(struct Map *map,struct Drawing_2d *drawing)
+/*******************************************************************************
+LAST MODIFIED : 20 September  2001
+
+DESCRIPTION :
+Calls update_colour_map_unemap_original, the relevant function twice,
+as for BLUE_WHITE_RED_SPECTRUM need to do (something in) 
+update_colour_map_unemap_original again, as  fix_minimum, fix_maximum cause problems 
+??JW Fix this bug!
+==============================================================================*/
+{
+	int return_code;
+	struct Map_drawing_information *drawing_information;
+
+	return_code=update_colour_map_unemap_original(map,drawing);
+	/*!!jw this is a problem! for BLUE_WHITE_RED_SPECTRUM need to do*/
+	/* (something in) update_colour_map_unemap_original again, as */
+	/* fix_minimum, fix_maximum cause problems */
+	{	
+		drawing_information=map-> drawing_information;
+		if (BLUE_WHITE_RED_SPECTRUM == Spectrum_get_simple_type(
+			drawing_information->spectrum))
+		{
+			return_code=update_colour_map_unemap_original(map,drawing);					
+		}/*!!jw*/
+	}
+	LEAVE;
+	return (return_code);
+}
 #if defined (UNEMAP_USE_3D)
 int map_remove_torso_arm_labels(struct Map_drawing_information *drawing_information)/*FOR AJP*/	
 /*******************************************************************************
@@ -7071,7 +7101,7 @@ and do Scene_remove_graphics_object in the DESTROY Map_3d_package
 #if defined (UNEMAP_USE_3D)
 int draw_map_3d(struct Map *map)
 /*******************************************************************************
-LAST MODIFIED : 1 March 2001
+LAST MODIFIED : 17 September 2001
 
 DESCRIPTION :
 This function draws the <map> in as a 3D CMGUI scene, for the current region(s).
@@ -7099,6 +7129,7 @@ Removes 3d drawing for non-current region(s).
 	struct Unemap_package *unemap_package;
 	struct Scene *scene;
 	struct Spectrum *spectrum,*spectrum_to_be_modified_copy;
+	struct sub_Map *sub_map;
 	struct MANAGER(Spectrum) *spectrum_manager;
 	struct Map_3d_package *map_3d_package;
 	struct GROUP(FE_element) *element_group,*mapped_torso_element_group,
@@ -7127,9 +7158,11 @@ Removes 3d drawing for non-current region(s).
 	unrejected_node_group=(struct GROUP(FE_node) *)NULL;		
 	mapped_torso_element_group=(struct GROUP(FE_element) *)NULL;
 	delauney_torso_element_group=(struct GROUP(FE_element) *)NULL;
+	sub_map=(struct sub_Map *)NULL;
 	if (map&&(drawing_information=map->drawing_information))
 	{		
 		range_set=0;
+		sub_map=map->sub_map[0];/*!!jw more than one sub map? */
 		display_all_regions=0;
 		unemap_package=map->unemap_package;
 		/* do we have a default torso loaded ? */
@@ -7181,7 +7214,7 @@ Removes 3d drawing for non-current region(s).
 		{					
 			return_code=1;				
 			undecided_accepted=map->undecided_accepted;			
-			frame_time=map->frame_start_time; 
+			frame_time=sub_map->frame_time; 
 			current_region=get_Rig_current_region(rig);				
 			/*if current_region NULL, displaying all regions*/
 			if (!current_region)
@@ -7192,7 +7225,7 @@ Removes 3d drawing for non-current region(s).
 			{						
 				scene=get_map_drawing_information_scene(drawing_information);			
 				region_item=get_Rig_region_list(rig);
-				time=map->frame_start_time/1000;/* ms to s*/
+				time=sub_map->frame_time/1000;/* ms to s*/
 				while(region_item)
 				{						
 					region=get_Region_list_item_region(region_item);
@@ -7551,10 +7584,10 @@ drawing) and sub_map_rows, sub_map_cols, the number of sub_map rows and columns.
 	return(return_code);
 } /* get_number_of_sub_maps_x_step_y_step_rows_cols */
 
-static int draw_2d_fill_in_image(struct Map *map,int map_height,int map_width,
+static int draw_2d_fill_in_image(struct Map *map,struct sub_Map *sub_map,
 	Pixel *spectrum_pixels)
 /*******************************************************************************
-LAST MODIFIED : 17 July 2001
+LAST MODIFIED : 17 September 2001
 
 DESCRIPTION :
 Fill in the 2D map pixel image.
@@ -7562,9 +7595,9 @@ Fill in the 2D map pixel image.
 {
 	float background_pixel_value,boundary_pixel_value,f_approx,max_f,min_f,
 		*pixel_value,range_f;
-	int cell_number,contour_area,contour_areas_in_x,frame_number,next_contour_x,
-		number_of_contour_areas,number_of_frames,number_of_spectrum_colours,
-		return_code,x_pixel,y_pixel;
+	int cell_number,contour_area,contour_areas_in_x,next_contour_x,map_height,
+		map_width,number_of_contour_areas,number_of_spectrum_colours,return_code,
+		x_pixel,y_pixel;
 	Pixel background_pixel,boundary_pixel;
 	short int *contour_x,*contour_y;
 	struct Map_drawing_information *drawing_information;
@@ -7577,15 +7610,16 @@ Fill in the 2D map pixel image.
 	contour_x=(short int *)NULL;
 	contour_y=(short int *)NULL;
 	drawing_information=(struct Map_drawing_information *)NULL;
-	if (map&&(drawing_information=map->drawing_information))
+	if (map&&sub_map&&(drawing_information=map->drawing_information))
 	{
-		return_code=1;		
+		return_code=1;	 
+		map_height=sub_map->height;
+		map_width=sub_map->width;
 		background_pixel=drawing_information->background_drawing_colour;	
 		boundary_pixel=drawing_information->boundary_colour;
 		contour_areas_in_x=map->number_of_contour_areas_in_x;
 		number_of_contour_areas=map->number_of_contour_areas;
 		number_of_spectrum_colours=drawing_information->number_of_spectrum_colours;
-		number_of_frames=map->number_of_frames;
 		/* fill in the image */
 		min_f=map->minimum_value;
 		max_f=map->maximum_value;
@@ -7595,71 +7629,66 @@ Fill in the 2D map pixel image.
 		{
 			range_f=1;
 		}
-		frame=map->frames;
-		frame_number=0;
-		while ((frame_number<number_of_frames)&&return_code)
+		frame=&(sub_map->frame);
+
+		background_pixel_value=sub_map->minimum_value;
+		boundary_pixel_value=sub_map->maximum_value;
+		pixel_value=frame->pixel_values;
+		frame_image=frame->image;
+		for (y_pixel=0;y_pixel<map_height;y_pixel++)
 		{
-			background_pixel_value=frame->minimum;
-			boundary_pixel_value=frame->maximum;
-			pixel_value=frame->pixel_values;
-			frame_image=frame->image;
-			for (y_pixel=0;y_pixel<map_height;y_pixel++)
+			contour_area=
+				(y_pixel/map->contour_y_spacing)*contour_areas_in_x;
+			next_contour_x=map->contour_x_spacing-1;
+			contour_x=(frame->contour_x)+contour_area;
+			contour_y=(frame->contour_y)+contour_area;
+			for (x_pixel=0;x_pixel<map_width;x_pixel++)
 			{
-				contour_area=
-					(y_pixel/map->contour_y_spacing)*contour_areas_in_x;
-				next_contour_x=map->contour_x_spacing-1;
-				contour_x=(frame->contour_x)+contour_area;
-				contour_y=(frame->contour_y)+contour_area;
-				for (x_pixel=0;x_pixel<map_width;x_pixel++)
+				f_approx= *pixel_value;
+				if (f_approx>=background_pixel_value)
 				{
-					f_approx= *pixel_value;
-					if (f_approx>=background_pixel_value)
+					if (f_approx<=boundary_pixel_value)
 					{
-						if (f_approx<=boundary_pixel_value)
+						if (f_approx<min_f)
 						{
-							if (f_approx<min_f)
-							{
-								f_approx=min_f;
-							}
-							else
-							{
-								if (f_approx>max_f)
-								{
-									f_approx=max_f;
-								}
-							}
-							cell_number=(int)((f_approx-min_f)*
-								(float)(number_of_spectrum_colours-1)/
-								range_f+0.5);
-							XPutPixel(frame_image,x_pixel,y_pixel,
-								spectrum_pixels[cell_number]);
-							cell_number *= number_of_contour_areas;
-							contour_x[cell_number]=x_pixel;
-							contour_y[cell_number]=y_pixel;
+							f_approx=min_f;
 						}
 						else
 						{
-							XPutPixel(frame_image,x_pixel,y_pixel,
-								boundary_pixel);
+							if (f_approx>max_f)
+							{
+								f_approx=max_f;
+							}
 						}
+						cell_number=(int)((f_approx-min_f)*
+							(float)(number_of_spectrum_colours-1)/
+							range_f+0.5);
+						XPutPixel(frame_image,x_pixel,y_pixel,
+							spectrum_pixels[cell_number]);
+						cell_number *= number_of_contour_areas;
+						contour_x[cell_number]=x_pixel;
+						contour_y[cell_number]=y_pixel;
 					}
 					else
 					{
 						XPutPixel(frame_image,x_pixel,y_pixel,
-							background_pixel);
-					}
-					pixel_value++;
-					if (x_pixel>=next_contour_x)
-					{
-						contour_x++;
-						contour_y++;
-						next_contour_x += map->contour_x_spacing;
+							boundary_pixel);
 					}
 				}
+				else
+				{
+					XPutPixel(frame_image,x_pixel,y_pixel,
+						background_pixel);
+				}
+				pixel_value++;
+				if (x_pixel>=next_contour_x)
+				{
+					contour_x++;
+					contour_y++;
+					next_contour_x += map->contour_x_spacing;
+				}
 			}
-			frame_number++;
-			frame++;
-		}/* while ((frame_number<number_of_frames)&&return_code) */
+		}
 	}
 	else
 	{
@@ -7672,31 +7701,32 @@ Fill in the 2D map pixel image.
 }/* draw_2d_fill_in_image */
 
 static int draw_2d_constant_thickness_contours(struct Map *map,
-	struct sub_Map *sub_map,struct Drawing_2d *drawing,struct Map_frame *frame,
-	float *pixel_value,float *min_f,float *max_f,char draw_boundary)
+	struct sub_Map *sub_map,struct Drawing_2d *drawing,float *pixel_value,
+	char draw_boundary)
 /*******************************************************************************
-LAST MODIFIED : 10 September 2001
+LAST MODIFIED : 19 September 2001
 
 DESCRIPTION :
 draw the constant thickness contours
 *******************************************************************************/
-{
-	char draw_contours;
+{	
 	Display *display;
 	GC graphics_context;
 	int boundary_type,end,i,j,k,map_x_offset,map_y_offset,map_width,map_height,
 		number_of_contours,return_code,start,valid_i_j,valid_i_jm1,valid_im1_j,
 		valid_im1_jm1;
 	float a,b,background_pixel_value,boundary_pixel_value,contour_step,contour_maximum,
-		contour_minimum,f_i_j,f_i_jm1,f_im1_j,f_im1_jm1;
+		contour_minimum,f_i_j,f_i_jm1,f_im1_j,f_im1_jm1,min_f,max_f;
 	struct Map_drawing_information *drawing_information;
 
 	ENTER(draw_2d_constant_thickness_contours);
 	display=(Display *)NULL;
-	if (frame&&map&&sub_map&&drawing&&(drawing_information=map->drawing_information)&&
+	if (map&&sub_map&&drawing&&(drawing_information=map->drawing_information)&&
 		pixel_value)
 	{
-		return_code=1;
+		return_code=1; 
+		min_f=map->minimum_value;
+		max_f=map->maximum_value;
 		map_x_offset=sub_map->x_offset;
 		map_y_offset=sub_map->y_offset;
 		map_width=sub_map->width;
@@ -7710,8 +7740,8 @@ draw the constant thickness contours
 		contour_step=(contour_maximum-contour_minimum)/
 			(float)(number_of_contours-1);
 		graphics_context=(drawing_information->graphics_context).contour_colour;
-		background_pixel_value=frame->minimum;
-		boundary_pixel_value=frame->maximum;
+		background_pixel_value=sub_map->minimum_value;
+		boundary_pixel_value=sub_map->maximum_value;
 		for (j=1+map_y_offset;j<map_height+map_y_offset;j++)
 		{
 			f_i_jm1= *pixel_value;
@@ -7764,60 +7794,60 @@ draw the constant thickness contours
 				pixel_value++;
 				boundary_type=((valid_im1_jm1*2+valid_im1_j)*2+
 					valid_i_jm1)*2+valid_i_j;
-				if (draw_contours&&(15==boundary_type))
+				if (15==boundary_type)
 				{
 					/* calculate contour using bilinear */
 					if (f_im1_jm1<f_i_j)
 					{
-						*min_f=f_im1_jm1;
-						*max_f=f_i_j;
+						min_f=f_im1_jm1;
+						max_f=f_i_j;
 					}
 					else
 					{
-						*min_f=f_i_j;
-						*max_f=f_im1_jm1;
+						min_f=f_i_j;
+						max_f=f_im1_jm1;
 					}
-					if (f_im1_j<*min_f)
+					if (f_im1_j<min_f)
 					{
-						*min_f=f_im1_j;
+						min_f=f_im1_j;
 					}
 					else
 					{
-						if (f_im1_j>*max_f)
+						if (f_im1_j>max_f)
 						{
-							*max_f=f_im1_j;
+							max_f=f_im1_j;
 						}
 					}
-					if (f_i_jm1<*min_f)
+					if (f_i_jm1<min_f)
 					{
-						*min_f=f_i_jm1;
+						min_f=f_i_jm1;
 					}
 					else
 					{
-						if (f_i_jm1>*max_f)
+						if (f_i_jm1>max_f)
 						{
-							*max_f=f_i_jm1;
+							max_f=f_i_jm1;
 						}
 					}
-					if ((*min_f<=contour_maximum)&&
-						(contour_minimum<=*max_f))
+					if ((min_f<=contour_maximum)&&
+						(contour_minimum<=max_f))
 					{
-						if (*min_f<=contour_minimum)
+						if (min_f<=contour_minimum)
 						{
 							start=0;
 						}
 						else
 						{
-							start=1+(int)((*min_f-contour_minimum)/
+							start=1+(int)((min_f-contour_minimum)/
 								contour_step);
 						}
-						if (contour_maximum<=*max_f)
+						if (contour_maximum<=max_f)
 						{
 							end=number_of_contours;
 						}
 						else
 						{
-							end=(int)((*max_f-contour_minimum)/contour_step);
+							end=(int)((max_f-contour_minimum)/contour_step);
 						}
 						for (k=start;k<=end;k++)
 						{
@@ -8033,7 +8063,7 @@ draw the constant thickness contours
 	return(return_code);
 }/* draw_2d_constant_thickness_contours */
 
-static int set_map_2d_frame_min_max(struct Map_frame *frame,float max_f,
+static int set_sub_map_min_max(struct sub_Map *sub_map, float max_f,
 	float min_f,int minimum_x,int maximum_x,int minimum_y,int maximum_y)
 /*******************************************************************************
 LAST MODIFIED : 18 July 2001
@@ -8043,85 +8073,74 @@ DESCRIPTION :
 *******************************************************************************/
 {
 	int return_code;
+	struct Map_frame *frame;
 
-	ENTER(set_map_2d_fram_min_max);
-	if (frame)
+	ENTER(et_sub_map_min_max);
+	if (sub_map)
 	{
+		frame=&(sub_map->frame);
 		return_code=1;
 		if (max_f<min_f)
 		{
-			frame->maximum=0;
-			frame->maximum_x= -1;
-			frame->maximum_y= -1;
-			frame->minimum=0;
-			frame->minimum_x= -1;
-			frame->minimum_y= -1;	
+			sub_map->maximum_value=0;
+			sub_map->minimum_value=0;
+			frame->maximum_screen_x= -1;
+			frame->maximum_screen_y= -1;
+			frame->minimum_screen_x= -1;
+			frame->minimum_screen_y= -1;	
 		}/* if (max_f<min_f) */
 		else
 		{
-			frame->maximum=max_f;
-			frame->maximum_x=maximum_x;
-			frame->maximum_y=maximum_y;
-			frame->minimum=min_f;
-			frame->minimum_x=minimum_x;
-			frame->minimum_y=minimum_y;
+			sub_map->maximum_value=max_f;
+			sub_map->minimum_value=min_f;
+			frame->maximum_screen_x=maximum_x;
+			frame->maximum_screen_y=maximum_y;
+			frame->minimum_screen_x=minimum_x;
+			frame->minimum_screen_y=minimum_y;
 		}
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"set_map_2d_frame_min_max invalid arguments");
+			"set_sub_map_min_max invalid arguments");
     return_code=0;
 	}	
 	LEAVE;
 	return(return_code);
-}/* set_map_2d_frame_min_max */
+}/* set_sub_map_min_max */
 
 static int set_map_2d_map_min_max(struct Map *map)
 /*******************************************************************************
-LAST MODIFIED : 18 July 2001
+LAST MODIFIED : 18 September 2001
 
 DESCRIPTION :
-Sets the (possibly multi frame) <map>'s minimum and maximum, 
-based upon the map's frame's min and max.
+Sets the  <map>'s minimum and maximum, 
+based upon its  sub_map(s)'  min and max.
 *******************************************************************************/
 {
 	float min_f,max_f;
-	int i,number_of_frames,return_code;
-	struct Map_frame *frame;
+	int i;	
+	struct sub_Map *sub_map;
+	int return_code;
 
 	ENTER(set_map_2d_map_min_max);
-	if (map)
+	if (map&&map->sub_map&&(sub_map=map->sub_map[0]))
 	{
 		return_code=1;
-		number_of_frames=map->number_of_frames;
-		/*???DB.  loop over frames */
 		if (!(map->fixed_range)||(map->minimum_value>map->maximum_value))
-		{
-			frame=map->frames;
-			min_f=frame->minimum;
-			max_f=frame->maximum;
-			for (i=number_of_frames-1;i>0;i--)
+		{			
+			min_f=sub_map->minimum_value;
+			max_f=sub_map->maximum_value;
+			for (i=0;i<map->number_of_sub_maps;i++)
 			{
-				frame++;
-				if (frame->minimum<=frame->maximum)
+				sub_map=map->sub_map[i];				
+				if(sub_map->minimum_value<min_f)
 				{
-					if (min_f<=max_f)
-					{
-						if (frame->minimum<min_f)
-						{
-							min_f=frame->minimum;
-						}
-						if (frame->maximum<max_f)
-						{
-							max_f=frame->maximum;
-						}
-					}
-					else
-					{
-						min_f=frame->minimum;
-						max_f=frame->maximum;
-					}
+					min_f=sub_map->minimum_value;
+				}
+				if(sub_map->maximum_value>max_f)
+				{
+					max_f=sub_map->maximum_value;
 				}
 			}
 			map->minimum_value=min_f;
@@ -8143,22 +8162,24 @@ based upon the map's frame's min and max.
 static int set_map_2d_no_interpolation_min_max(struct Map *map,
 	struct sub_Map *sub_map)
 /*******************************************************************************
-LAST MODIFIED : 18 July 2001
+LAST MODIFIED : 18 September 2001
 
 DESCRIPTION :
-Sets the (possibly multi frame) <map>'s minimum and maximum, 
+Sets the  <map>'s minimum and maximum, 
 for the case map->interpolation_type==NO_INTERPOLATION.
 *******************************************************************************/
 {
+	char undecided_accepted;
 	float *electrode_value,f_approx,max_f,min_f;
-	int *draw_region_number,frame_number,number_of_frames,i,maximum_x,maximum_y,
-		minimum_x,minimum_y,number_of_electrodes,number_of_regions,region_number,
-		return_code,*screen_x,*screen_y,temp_region_number;
+	int *draw_region_number,i,maximum_x,maximum_y,minimum_x,minimum_y,
+		number_of_electrodes,number_of_regions,region_number,return_code,
+		*screen_x,*screen_y,temp_region_number;
 	struct Device	**electrode;
 	struct Map_frame *frame;
 	struct Region *maximum_region,*minimum_region,*current_region;
 	struct Region_list_item *region_item;
 	struct Rig *rig;
+	struct Signal *signal;
 
 	ENTER(set_map_2d_no_interpolation_min_max);
 	frame=(struct Map_frame *)NULL;
@@ -8169,42 +8190,43 @@ for the case map->interpolation_type==NO_INTERPOLATION.
 	screen_y=(int *)NULL;
 	electrode_value=(float *)NULL;
 	draw_region_number=(int *)NULL;
+	signal=(struct Signal *)NULL;
 	if(map&&sub_map)
 	{
 		return_code=1;
+		undecided_accepted=map->undecided_accepted;
 		draw_region_number=map->draw_region_number;
 		number_of_electrodes=map->number_of_electrodes;
 		rig=*(map->rig_pointer);
 		number_of_regions=rig->number_of_regions;
 		/*???DB.  Put the frame loop on the inside ? */
 		/*???DB.  Electrode values are not changing with frame */
-		frame=map->frames;
-		frame_number=0;
-		number_of_frames=map->number_of_frames;
-		while ((frame_number<number_of_frames)&&return_code)
+		frame=&(sub_map->frame);
+		min_f=1;
+		max_f=0;
+		maximum_region=(struct Region *)NULL;
+		minimum_region=(struct Region *)NULL;
+		/* for each region */
+		region_item=get_Rig_region_list(rig);
+		for (temp_region_number=0;temp_region_number<number_of_regions;
+				 temp_region_number++)
 		{
-			min_f=1;
-			max_f=0;
-			maximum_region=(struct Region *)NULL;
-			minimum_region=(struct Region *)NULL;
-			/* for each region */
-			region_item=get_Rig_region_list(rig);
-			for (temp_region_number=0;temp_region_number<number_of_regions;
-					 temp_region_number++)
+			region_number=draw_region_number[temp_region_number];
+			if (0<=region_number)
 			{
-				region_number=draw_region_number[temp_region_number];
-				if (0<=region_number)
+				current_region=get_Region_list_item_region(region_item);
+				/* find maximum and minimum electrodes for region */
+				electrode=map->electrodes;
+				screen_x=sub_map->electrode_x;
+				screen_y=sub_map->electrode_y;
+				electrode_value=sub_map->electrode_value;
+				for (i=number_of_electrodes;i>0;i--)
 				{
-					current_region=get_Region_list_item_region(region_item);
-					/* find maximum and minimum electrodes for region */
-					electrode=map->electrodes;
-					screen_x=sub_map->electrode_x;
-					screen_y=sub_map->electrode_y;
-					electrode_value=sub_map->electrode_value;
-					for (i=number_of_electrodes;i>0;i--)
+					if (current_region==(*electrode)->description->region)
 					{
-						if (current_region==(*electrode)->description->region)
-						{
+						if((signal=(*electrode)->signal)&&((ACCEPTED==signal->status)||
+							(undecided_accepted&&(UNDECIDED==signal->status))))
+						{						
 							f_approx= *electrode_value;
 							if (max_f<min_f)
 							{
@@ -8237,23 +8259,20 @@ for the case map->interpolation_type==NO_INTERPOLATION.
 									}
 								}
 							}
-						}
-						electrode++;
-						screen_x++;
-						screen_y++;
-						electrode_value++;
-					}
+						}/* if((signal=(*electrode)->signal) */
+					}/* if (current_region==*/
+					electrode++;
+					screen_x++;
+					screen_y++;
+					electrode_value++;
 				}
-				region_item=get_Region_list_item_next(region_item);
 			}
-			frame->maximum_region=maximum_region;
-			frame->minimum_region=minimum_region;
-			set_map_2d_frame_min_max(frame,max_f,min_f,minimum_x,maximum_x,
-				minimum_y,maximum_y);
-			frame_number++;
-			frame++;
+			region_item=get_Region_list_item_next(region_item);
 		}
-		set_map_2d_map_min_max(map);
+		frame->maximum_region=maximum_region;
+		frame->minimum_region=minimum_region;
+		set_sub_map_min_max(sub_map,max_f,min_f,minimum_x,maximum_x,
+			minimum_y,maximum_y);
 	}			
 	else
 	{		
@@ -8268,10 +8287,11 @@ for the case map->interpolation_type==NO_INTERPOLATION.
 static int draw_2d_contour_values(struct Map *map,struct sub_Map *sub_map,
 	struct Drawing_2d *drawing)
 /*******************************************************************************
-LAST MODIFIED : 10 September 2001
+LAST MODIFIED : 17 September 2001
 
 DESCRIPTION :
 Write the values of the contours.
+Works off map min and max values, not sub_map.
 *******************************************************************************/
 {
 	char draw_contour_value,value_string[11];
@@ -8280,10 +8300,9 @@ Write the values of the contours.
 	float a,contour_maximum,contour_minimum,maximum_value,minimum_value,
 		string_length;
   int ascent,cell_range,cell_number,contour_areas_in_x,descent,direction,end,
-		frame_number,i,j,number_of_contours,number_of_contour_areas,map_x_offset,
-		map_y_offset,number_of_spectrum_colours,number_of_frames,pixel_left,pixel_top,
-		return_code,start,temp_int,x_offset,x_pixel,x_separation,y_offset,y_pixel,
-		y_separation;
+		i,j,number_of_contours,number_of_contour_areas,map_x_offset,map_y_offset,
+		number_of_spectrum_colours,pixel_left,pixel_top,return_code,start,temp_int,
+		x_offset,x_pixel,x_separation,y_offset,y_pixel,y_separation;
 	short int *contour_x,*contour_y;
 	struct Map_frame *frame;
   struct Map_drawing_information *drawing_information;  
@@ -8305,11 +8324,8 @@ Write the values of the contours.
 		map_x_offset=sub_map->x_offset;
 		map_y_offset=sub_map->y_offset;
 		font=drawing_information->font;
-		if ((0<(number_of_frames=map->number_of_frames))&&
-			(0<=(frame_number=map->frame_number))&&
-			(frame_number<number_of_frames)&&(frame=map->frames))
+		if(frame=&(sub_map->frame))
 		{
-			frame += frame_number;
 			if ((frame->contour_x)&&(frame->contour_y))
 			{
 				number_of_spectrum_colours=drawing_information->number_of_spectrum_colours;		
@@ -8945,7 +8961,7 @@ Limits the string position given by <x_string> <y_string>, <bounds> <ascent>,
 static int draw_2d_extrema(struct Map *map,struct sub_Map *sub_map,
 	struct Drawing_2d *drawing)
 /*******************************************************************************
-LAST MODIFIED : 10 September 2001
+LAST MODIFIED : 17 September 2001
 
 DESCRIPTION :
 draw the extrema
@@ -8954,10 +8970,9 @@ draw the extrema
   Display *display;
   char *name,value_string[11];  
   GC graphics_context;
-  int ascent,descent,frame_number,direction,*draw_region_number,map_width,
-		map_height,map_x_offset,map_y_offset,name_length,number_of_frames,
-		number_of_regions,region_number,return_code,temp_region_number,x_string,
-		y_string;
+  int ascent,descent,direction,*draw_region_number,map_width,map_height,
+		map_x_offset,map_y_offset,name_length,number_of_regions,region_number,
+		return_code,temp_region_number,x_string,y_string;
   struct Map_drawing_information *drawing_information;
   struct Map_frame *frame=(struct Map_frame *)NULL;
   struct Region *current_region;
@@ -8983,12 +8998,9 @@ draw the extrema
    draw_region_number=map->draw_region_number;
    font=drawing_information->font;	
    number_of_regions=rig->number_of_regions;
-   if ((0<(number_of_frames=map->number_of_frames))&&
-	  (0<=(frame_number=map->frame_number))&&
-	  (frame_number<number_of_frames)&&(frame=map->frames))
+   if (frame=&(sub_map->frame))
    {
      return_code=1;
-		 frame += frame_number;
 		 /* set the colour for the extrema */
 		 graphics_context=(drawing_information->graphics_context).spectrum,
 		 XSetForeground(display,graphics_context,drawing_information->landmark_colour);
@@ -9004,28 +9016,28 @@ draw the extrema
 				 {
 					 /* draw plus */
 					 XPSFillRectangle(display,drawing->pixel_map,graphics_context,
-						 (frame->maximum_x-5)+map_x_offset,(frame->maximum_y-1)+map_y_offset,
+						 (frame->maximum_screen_x-5)+map_x_offset,(frame->maximum_screen_y-1)+map_y_offset,
 						 11,3);
 					 XPSFillRectangle(display,drawing->pixel_map,graphics_context,
-						 (frame->maximum_x-1)+map_x_offset,(frame->maximum_y-5)+map_y_offset,
+						 (frame->maximum_screen_x-1)+map_x_offset,(frame->maximum_screen_y-5)+map_y_offset,
 						 3,11);
 					 /* if not animation */
 					 if (map->activation_front<0)
 					 {
 						 /* write value */
-						 sprintf(value_string,"%.4g",frame->maximum);
+						 sprintf(value_string,"%.4g",sub_map->maximum_value);
 						 name=value_string;
 						 name_length=strlen(value_string);
-						 x_string=frame->maximum_x;
+						 x_string=frame->maximum_screen_x;
 #if defined (NO_ALIGNMENT)
 						 XTextExtents(font,name,name_length,&direction,&ascent,&descent,&bounds);
 						 x_string += (bounds.lbearing-bounds.rbearing+1)/2+map_x_offset;
 #else /* defined (NO_ALIGNMENT) */
 						 SET_HORIZONTAL_ALIGNMENT(CENTRE_HORIZONTAL_ALIGNMENT);
 #endif /* defined (NO_ALIGNMENT) */
-						 if ((frame->maximum_y+map_y_offset)>(map_height/2 +map_y_offset))
+						 if ((frame->maximum_screen_y+map_y_offset)>(map_height/2 +map_y_offset))
 						 {
-							 y_string=frame->maximum_y-6 +map_y_offset;
+							 y_string=frame->maximum_screen_y-6 +map_y_offset;
 #if defined (NO_ALIGNMENT)
 							 y_string -= descent+1;
 #else /* defined (NO_ALIGNMENT) */
@@ -9034,7 +9046,7 @@ draw the extrema
 						 }
 						 else
 						 {
-							 y_string=frame->maximum_y+6 +map_y_offset;
+							 y_string=frame->maximum_screen_y+6 +map_y_offset;
 #if defined (NO_ALIGNMENT)
 							 y_string += ascent+1;
 #else /* defined (NO_ALIGNMENT) */
@@ -9055,16 +9067,16 @@ draw the extrema
 				 {
 					 /* draw minus */
 					 XPSFillRectangle(display,drawing->pixel_map,graphics_context,
-						 (frame->minimum_x-5)+map_x_offset,(frame->minimum_y-1)+map_y_offset,
+						 (frame->minimum_screen_x-5)+map_x_offset,(frame->minimum_screen_y-1)+map_y_offset,
 						 11,3);
 					 /* if not animation */
 					 if (map->activation_front<0)
 					 {
 						 /* write value */
-						 sprintf(value_string,"%.4g",frame->minimum);
+						 sprintf(value_string,"%.4g",sub_map->minimum_value);
 						 name=value_string;
 						 name_length=strlen(value_string);
-						 x_string=frame->minimum_x;
+						 x_string=frame->minimum_screen_x;
 #if defined (NO_ALIGNMENT)
 						 XTextExtents(font,name,name_length,&direction,&ascent,&descent,
 							 &bounds);
@@ -9072,9 +9084,9 @@ draw the extrema
 #else /* defined (NO_ALIGNMENT) */
 						 SET_HORIZONTAL_ALIGNMENT(CENTRE_HORIZONTAL_ALIGNMENT);
 #endif /* defined (NO_ALIGNMENT) */
-						 if (frame->minimum_y+map_y_offset>map_height/2+map_y_offset)
+						 if (frame->minimum_screen_y+map_y_offset>map_height/2+map_y_offset)
 						 {
-							 y_string=frame->minimum_y-6 +map_y_offset;
+							 y_string=frame->minimum_screen_y-6 +map_y_offset;
 #if defined (NO_ALIGNMENT)
 							 y_string -= descent+1;
 #else /* defined (NO_ALIGNMENT) */
@@ -9083,7 +9095,7 @@ draw the extrema
 						 }
 						 else
 						 {
-							 y_string=frame->minimum_y+6 +map_y_offset;
+							 y_string=frame->minimum_screen_y+6 +map_y_offset;
 #if defined (NO_ALIGNMENT)
 							 y_string += ascent+1;
 #else /* defined (NO_ALIGNMENT) */
@@ -9650,10 +9662,10 @@ DESCRIPTION :  Draw the electrode in 2D, and write it's name.
   return(return_code);
 }/* draw_2d_electrode */
 
-static int draw_2d_show_map(struct Map *map,struct sub_Map *sub_map,
+static int draw_2d_show_map(struct Map *map,int sub_map_number,
 	int recalculate,struct Drawing_2d *drawing)
 /*******************************************************************************
-LAST MODIFIED : 10 September 2001
+LAST MODIFIED : 27 September 2001
 
 DESCRIPTION :
 Actually draw the map from the calculated data. 
@@ -9670,6 +9682,7 @@ Actually draw the map from the calculated data.
 	struct Device	**electrode;
 	struct Map_drawing_information *drawing_information;
 	struct Map_frame *frame;
+  struct sub_Map *sub_map;
 	XImage *frame_image;
 
 	ENTER(draw_2d_show_map);
@@ -9683,7 +9696,12 @@ Actually draw the map from the calculated data.
 	electrode=(struct Device **)NULL;
 	electrode_drawn=(char *)NULL;
 	electrode_value=(float *)NULL;
-	if(map&&sub_map&&drawing&&(drawing_information=map->drawing_information)&&
+  sub_map=(struct sub_Map *)NULL;
+
+	if(map&&(sub_map_number>-1)&&
+	  (sub_map_number<map->number_of_sub_maps)&&
+	   (sub_map=map->sub_map[sub_map_number])&&
+		 drawing&&(drawing_information=map->drawing_information)&&
 		(drawing->user_interface))
 	{
 		return_code=1;
@@ -9703,21 +9721,11 @@ Actually draw the map from the calculated data.
 			{
 				if (recalculate)
 				{
-					draw_2d_fill_in_image(map,map_height,map_width,spectrum_pixels);
+					draw_2d_fill_in_image(map,sub_map,spectrum_pixels);
 				}								
-				frame=(map->frames)+(map->frame_number);
+				frame=&(sub_map->frame);
 				if (frame_image=frame->image)
-				{											
-					update_colour_map_unemap(map,drawing);									
-					/*!!jw this is a problem! for BLUE_WHITE_RED_SPECTRUM need to do*/
-					/* (something in) update_colour_map_unemap again, as */
-					/* fix_minimum, fix_maximum cause problems */
-					if (BLUE_WHITE_RED_SPECTRUM == Spectrum_get_simple_type(
-						drawing_information->spectrum))
-					{
-						update_colour_map_unemap(map,drawing);
-					}/*!!jw*/
-
+				{		
 					if ((CONSTANT_THICKNESS==map->contour_thickness)&&
 						(pixel_value=frame->pixel_values))
 					{
@@ -9753,11 +9761,9 @@ Actually draw the map from the calculated data.
 							draw_contours=0;
 						}
 						if (draw_contours||draw_boundary)
-						{							
-							min_f=frame->minimum;
-							max_f=frame->maximum;
-							draw_2d_constant_thickness_contours(map,sub_map,drawing,frame,
-								pixel_value,&min_f,&max_f,draw_boundary);
+						{							             
+							draw_2d_constant_thickness_contours(map,sub_map,drawing,
+								pixel_value,draw_boundary);
 						}
 					}/* if ((CONSTANT_THICKNESS==map->contour_thickness)&&*/
 					else
@@ -9772,14 +9778,6 @@ Actually draw the map from the calculated data.
 					display_message(ERROR_MESSAGE,"draw_2d_show_map.  Missing image");
 				}
 			}
-			else /* if (NO_INTERPOLATION!=map->interpolation_type) */
-			{
-				if (1<recalculate)
-				{							
-					set_map_2d_no_interpolation_min_max(map,sub_map);
-				}								
-				update_colour_map_unemap(map,drawing);								
-			} /* if (NO_INTERPOLATION!=map->interpolation_type) */
 		}/* if (NO_MAP_FIELD!=map_type) */
 		/* write contour values */
 		if ((HIDE_COLOUR==map->colour_option)&&
@@ -10026,11 +10024,10 @@ Calculate electrode value for 2d <map>'s <electrode>, returns in <f_value>
 	char undecided_accepted;
 	double integral;
 	enum Map_type map_type;
-	float a,*float_value,frame_end_time,frame_start_time,frame_time,
-		frame_time_freq,proportion;
-	int after,before,datum,end_search_interval,event_number,frame_number,
-		found,i,middle,number_of_frames,number_of_signals,potential_time_index,
-		return_code,start_search_interval,*times;
+	float a,*float_value,frame_time,frame_time_freq,proportion;
+	int after,before,datum,end_search_interval,event_number,found,i,middle,
+		number_of_signals,potential_time_index,return_code,start_search_interval,
+		*times;
 	short int	*short_int_value;
 	struct Event *event;
 	struct Signal *signal;
@@ -10046,14 +10043,12 @@ Calculate electrode value for 2d <map>'s <electrode>, returns in <f_value>
 	if (map&&sub_map&&electrode_drawn)
 	{
 		potential_time_index=sub_map->potential_time_index;
-		frame_start_time=sub_map->frame_start_time;
-		frame_end_time=sub_map->frame_end_time;
+		frame_time=sub_map->frame_time;
 		return_code=1;
 		if ((map->type)&&(NO_MAP_FIELD!=(map_type= *(map->type)))&&(map->datum)&&
 			(map->event_number)&&(map->end_search_interval)&&
 			(map->start_search_interval))
 		{
-			number_of_frames=map->number_of_frames;
 			datum= *(map->datum);
 			event_number= *(map->event_number);
 			undecided_accepted=map->undecided_accepted;
@@ -10200,17 +10195,7 @@ Calculate electrode value for 2d <map>'s <electrode>, returns in <f_value>
 					}
 					else
 					{
-						if (1<number_of_frames)
-						{
-							frame_number=map->frame_number;
-							frame_time=((float)(number_of_frames-frame_number-1)*
-								(frame_start_time)+(float)frame_number*
-								(frame_end_time))/(float)(number_of_frames-1);
-						}
-						else
-						{
-							frame_time=frame_start_time;
-						}
+						frame_time=sub_map->frame_time;
 						if ((signal=(*electrode)->signal)&&
 							((ACCEPTED==signal->status)||(undecided_accepted&&
 								(UNDECIDED==signal->status)))&&
@@ -11018,24 +11003,24 @@ static int draw_2d_construct_image_map(struct Map *map,struct sub_Map *sub_map,
 	char undecided_accepted,float pi_over_2,float pi,float two_pi,
 	int screen_region_height,int screen_region_width)
 /*******************************************************************************
-LAST MODIFIED : 27 July 2001
+LAST MODIFIED :17 September 2001
 
 DESCRIPTION :
 Construct a colour map image for colour map or contours or  values  in the
-<map> frames.
+<map> frame.
 *******************************************************************************/
 {
 	char *background_map_boundary,*background_map_boundary_base,*temp_char,
 		valid_u_and_v;
 	Display *display;	
 	enum Map_type map_type;
-	float background_pixel_value,boundary_pixel_value,f_approx,frame_end_time,
-		frame_start_time,frame_time,max_f,min_f,*min_x,*min_y,*pixel_value,
+	float background_pixel_value,boundary_pixel_value,f_approx,
+		frame_time,max_f,min_f,*min_x,*min_y,*pixel_value,
 		*stretch_x,*stretch_y,u,v,*x_mesh,*y_mesh,x_screen,x_screen_left,
 		x_screen_step,y_screen,y_screen_top,y_screen_step;
 	int bit_map_pad,bit_map_unit,column,contour_areas_in_x,contour_areas_in_y,
-		*draw_region_number,frame_number,i,j,map_width,map_height,maximum_x,maximum_y,
-		minimum_x,minimum_y,number_of_contour_areas,number_of_frames,number_of_regions,
+		*draw_region_number,i,j,map_width,map_height,maximum_x,maximum_y,
+		minimum_x,minimum_y,number_of_contour_areas,number_of_regions,
 		number_of_mesh_rows,number_of_mesh_columns,number_of_spectrum_colours,
 		pixel_left,pixel_top,region_number,return_code,row,scan_line_bytes,*start_x,
 		*start_y,temp_region_number,x_pixel,y_pixel;
@@ -11046,7 +11031,7 @@ Construct a colour map image for colour map or contours or  values  in the
 	struct Region	*maximum_region,*minimum_region,*current_region;
 	struct Region_list_item *region_item;
 	struct Rig *rig;
-#if defined(GOURAUD_FROM_PIXEL_VALUE) 
+#if defined(GOURAUD_FROM_PIXEL_VALUE)  
 	int num_pixels,min_x_pixel,min_y_pixel,max_x_pixel,max_y_pixel;
 	float *just_map_pixel_value,*new_pixel_value;
 	min_x_pixel=10000;
@@ -11086,15 +11071,13 @@ Construct a colour map image for colour map or contours or  values  in the
 		return_code=1;		
 		map_width=sub_map->width;
 		map_height=sub_map->height;
-		frame_start_time=sub_map->frame_start_time;
-		frame_end_time=sub_map->frame_end_time;
+		frame_time=sub_map->frame_time;
 		draw_region_number=map->draw_region_number;
 		rig= *(map->rig_pointer);
 		number_of_regions=rig->number_of_regions;
-		number_of_frames=map->number_of_frames;
 		number_of_spectrum_colours=drawing_information->number_of_spectrum_colours;	
 		display=drawing->user_interface->display;
-		frame=map->frames;
+		frame=&(sub_map->frame);
 		stretch_x=sub_map->stretch_x;
 		stretch_y=sub_map->stretch_y;
 		min_x=sub_map->min_x;
@@ -11164,121 +11147,115 @@ Construct a colour map image for colour map or contours or  values  in the
 				bit_map_pad=BitmapPad(display);
 				scan_line_bytes=(((map_width*bit_map_unit-1)/
 					bit_map_pad+1)*bit_map_pad-1)/8+1;
-				frame_number=0;
-				while ((frame_number<number_of_frames)&&return_code)
+				/* allocate memory for drawing contour values */
+				contour_x=(short int *)NULL;
+				contour_y=(short int *)NULL;
+				/*???DB.  This REALLOC causes unemap to crash when being
+					run under XWin32 at Cedars Sinai */
+				if (REALLOCATE(contour_x,frame->contour_x,short int,
+					number_of_contour_areas*number_of_spectrum_colours)&&
+					REALLOCATE(contour_y,frame->contour_y,short int,
+						number_of_contour_areas*number_of_spectrum_colours))
 				{
-					/* allocate memory for drawing contour values */
-					contour_x=(short int *)NULL;
-					contour_y=(short int *)NULL;
-					/*???DB.  This REALLOC causes unemap to crash when being
-						run under XWin32 at Cedars Sinai */
-					if (REALLOCATE(contour_x,frame->contour_x,short int,
-						number_of_contour_areas*number_of_spectrum_colours)&&
-						REALLOCATE(contour_y,frame->contour_y,short int,
-							number_of_contour_areas*number_of_spectrum_colours))
+					frame->contour_x=contour_x;
+					frame->contour_y=contour_y;
+					/* allocate memory for pixel values */
+					pixel_value=(float *)NULL;
+					if (REALLOCATE(pixel_value,frame->pixel_values,float,
+						map_width*map_height))
 					{
-						frame->contour_x=contour_x;
-						frame->contour_y=contour_y;
-						/* allocate memory for pixel values */
-						pixel_value=(float *)NULL;
-						if (REALLOCATE(pixel_value,frame->pixel_values,float,
-							map_width*map_height))
+						frame->pixel_values=pixel_value;
+						/* allocate memory for image */
+						if (frame->image)
 						{
-							frame->pixel_values=pixel_value;
-							/* allocate memory for image */
-							if (frame->image)
+							DEALLOCATE(frame->image->data);
+							XFree((char *)(frame->image));
+							frame->image=(XImage *)NULL;
+						}
+						temp_char=(char *)NULL;
+						if (ALLOCATE(temp_char,char,map_height*scan_line_bytes)&&
+							(frame->image=XCreateImage(display,
+								XDefaultVisual(display,XDefaultScreen(display)),
+								drawing->depth,ZPixmap,0,temp_char,map_width,
+								map_height,bit_map_pad,scan_line_bytes)))
+						{
+							/* initialize the contour areas */
+							for (i=number_of_contour_areas*number_of_spectrum_colours;i>0;i--)
 							{
-								DEALLOCATE(frame->image->data);
-								XFree((char *)(frame->image));
-								frame->image=(XImage *)NULL;
+								*contour_x= -1;
+								*contour_y= -1;
+								contour_x++;
+								contour_y++;
 							}
-							temp_char=(char *)NULL;
-							if (ALLOCATE(temp_char,char,map_height*scan_line_bytes)&&
-								(frame->image=XCreateImage(display,
-									XDefaultVisual(display,XDefaultScreen(display)),
-									drawing->depth,ZPixmap,0,temp_char,map_width,
-									map_height,bit_map_pad,scan_line_bytes)))
-							{
-								/* initialize the contour areas */
-								for (i=number_of_contour_areas*number_of_spectrum_colours;i>0;i--)
-								{
-									*contour_x= -1;
-									*contour_y= -1;
-									contour_x++;
-									contour_y++;
-								}
-								frame->maximum=0;
-								frame->maximum_x= -1;
-								frame->maximum_y= -1;
-								frame->minimum=0;
-								frame->minimum_x= -1;
-								frame->minimum_y= -1;
-								frame++;
-								frame_number++;
-							}
-							else
-							{
-								DEALLOCATE(temp_char);
-								if (frame->image)
-								{
-									XFree((char *)(frame->image));
-									frame->image=(XImage *)NULL;
-								}
-								DEALLOCATE(frame->contour_x);
-								DEALLOCATE(frame->contour_y);
-								DEALLOCATE(frame->pixel_values);
-								display_message(ERROR_MESSAGE,
-									"draw_2d_construct_image_map.  Insufficient memory for frame image");
-								return_code=0;
-							}
+							sub_map->maximum_value=0;
+							sub_map->minimum_value=0;
+							frame->maximum_screen_x= -1;
+							frame->maximum_screen_y= -1;								
+							frame->minimum_screen_x= -1;
+							frame->minimum_screen_y= -1;
 						}
 						else
 						{
+							DEALLOCATE(temp_char);
+							if (frame->image)
+							{
+								XFree((char *)(frame->image));
+								frame->image=(XImage *)NULL;
+							}
 							DEALLOCATE(frame->contour_x);
 							DEALLOCATE(frame->contour_y);
-							if (pixel_value)
-							{
-								/* this can't happen.  But included in case changes
-									 are made to allocation */
-								DEALLOCATE(pixel_value);
-								frame->pixel_values=(float *)NULL;
-							}
-							else
-							{
-								DEALLOCATE(frame->pixel_values);
-							}
+							DEALLOCATE(frame->pixel_values);
 							display_message(ERROR_MESSAGE,
-								"draw_2d_construct_image_map.  Insufficient memory for frame pixel values");
+								"draw_2d_construct_image_map.  Insufficient memory for frame image");
 							return_code=0;
 						}
 					}
 					else
 					{
-						if (contour_x)
+						DEALLOCATE(frame->contour_x);
+						DEALLOCATE(frame->contour_y);
+						if (pixel_value)
 						{
-							DEALLOCATE(contour_x);
-							frame->contour_x=(short int *)NULL;
-							if (contour_y)
-							{
-								/* this can't happen.  But included in case changes
-									 are made to allocation */
-								DEALLOCATE(contour_x);
-								frame->contour_x=(short int *)NULL;
-							}
-							else
-							{
-								DEALLOCATE(frame->contour_y);
-							}
+							/* this can't happen.  But included in case changes
+								 are made to allocation */
+							DEALLOCATE(pixel_value);
+							frame->pixel_values=(float *)NULL;
 						}
 						else
 						{
-							DEALLOCATE(frame->contour_x);
-							DEALLOCATE(frame->contour_y);
+							DEALLOCATE(frame->pixel_values);
 						}
 						display_message(ERROR_MESSAGE,
-							"draw_2d_construct_image_map.  Insufficient memory for frame contour values");
+							"draw_2d_construct_image_map.  Insufficient memory for frame pixel values");
 						return_code=0;
 					}
+				}
+				else
+				{
+					if (contour_x)
+					{
+						DEALLOCATE(contour_x);
+						frame->contour_x=(short int *)NULL;
+						if (contour_y)
+						{
+							/* this can't happen.  But included in case changes
+								 are made to allocation */
+							DEALLOCATE(contour_x);
+							frame->contour_x=(short int *)NULL;
+						}
+						else
+						{
+							DEALLOCATE(frame->contour_y);
+						}
+					}
+					else
+					{
+						DEALLOCATE(frame->contour_x);
+						DEALLOCATE(frame->contour_y);
+					}
+					display_message(ERROR_MESSAGE,
+						"draw_2d_construct_image_map.  Insufficient memory for frame contour values");
+					return_code=0;
 				}
 				if (return_code)
 				{
@@ -11290,17 +11267,12 @@ Construct a colour map image for colour map or contours or  values  in the
 					map->number_of_contour_areas=0;
 					map->number_of_contour_areas_in_x=0;
 					/* free memory */
-					while (frame_number>0)
-					{
-						frame--;
-						frame_number--;
-						DEALLOCATE(frame->image->data);
-						XFree((char *)(frame->image));
-						frame->image=(XImage *)NULL;
-						DEALLOCATE(frame->contour_x);
-						DEALLOCATE(frame->contour_y);
-						DEALLOCATE(frame->pixel_values);
-					}
+					DEALLOCATE(frame->image->data);
+					XFree((char *)(frame->image));
+					frame->image=(XImage *)NULL;
+					DEALLOCATE(frame->contour_x);
+					DEALLOCATE(frame->contour_y);
+					DEALLOCATE(frame->pixel_values);
 				}
 			}
 			if (return_code)
@@ -11311,215 +11283,197 @@ Construct a colour map image for colour map or contours or  values  in the
 					if (ALLOCATE(background_map_boundary_base,char,map_width*map_height))
 					{
 						/*???DB.  Put the frame loop on the inside ? */
-						frame=map->frames;
-						frame_number=0;
-						while ((frame_number<number_of_frames)&&return_code)
+						frame=&(sub_map->frame);
+						frame_time=sub_map->frame_time;
+						pixel_value=frame->pixel_values;
+						/* clear the image */
+						background_map_boundary=background_map_boundary_base;
+						for (i=map_width*map_height;i>0;i--)
 						{
-							if (1<number_of_frames)
+							*background_map_boundary=0;
+							background_map_boundary++;
+						}
+						min_f=1;
+						max_f=0;
+						maximum_region=(struct Region *)NULL;
+						minimum_region=(struct Region *)NULL;	
+						/* for each region */
+						region_item=get_Rig_region_list(rig);
+						for (temp_region_number=0;
+								 temp_region_number<number_of_regions;
+								 temp_region_number++)
+						{
+							region_number=
+								draw_region_number[temp_region_number];
+							if (0<=region_number)
 							{
-								frame_time=
-									((float)(number_of_frames-frame_number-1)*
-										(frame_start_time)+(float)frame_number*
-										(frame_end_time))/
-									(float)(number_of_frames-1);
-							}
-							else
-							{
-								frame_time=frame_start_time;
-							}
-							pixel_value=frame->pixel_values;
-							/* clear the image */
-							background_map_boundary=background_map_boundary_base;
-							for (i=map_width*map_height;i>0;i--)
-							{
-								*background_map_boundary=0;
-								background_map_boundary++;
-							}
-							min_f=1;
-							max_f=0;
-							maximum_region=(struct Region *)NULL;
-							minimum_region=(struct Region *)NULL;	
-							/* for each region */
-							region_item=get_Rig_region_list(rig);
-							for (temp_region_number=0;
-									 temp_region_number<number_of_regions;
-									 temp_region_number++)
-							{
-								region_number=
-									draw_region_number[temp_region_number];
-								if (0<=region_number)
-								{
-									current_region=get_Region_list_item_region(
-										region_item);
-																/* interpolate data */
-									if ((0!=stretch_x[region_number])&&
-										(0!=stretch_y[region_number])&&
-										(function=calculate_interpolation_functio(
-											map_type,rig,current_region,map->event_number,
-											frame_time,map->datum,
-											map->start_search_interval,
-											map->end_search_interval,undecided_accepted,
-											map->finite_element_mesh_rows,
-											map->finite_element_mesh_columns,
-											map->membrane_smoothing,
-											map->plate_bending_smoothing)))
-									{																															
-										number_of_mesh_columns=
-											function->number_of_columns;
-										number_of_mesh_rows=
-											function->number_of_rows;
-										y_mesh=function->y_mesh;
-										x_mesh=function->x_mesh;
-										/* calculate pixel values */
-										pixel_left=((region_number/map->number_of_region_rows)*
-											map_width)/map->number_of_region_columns;
-										pixel_top=((region_number%map->number_of_region_rows)*
-											map_height)/map->number_of_region_rows;
-										x_screen_step=1/stretch_x[region_number];
-										y_screen_step= -1/stretch_y[region_number];
-										x_screen_left=min_x[region_number]+
-											(pixel_left-start_x[region_number])*
-											x_screen_step;
-										y_screen_top=min_y[region_number]+
-											(pixel_top-start_y[region_number])*
-											y_screen_step;
-										y_screen=y_screen_top;
-										y_pixel=pixel_top;
+								current_region=get_Region_list_item_region(
+									region_item);
+								/* interpolate data */
+								if ((0!=stretch_x[region_number])&&
+									(0!=stretch_y[region_number])&&
+									(function=calculate_interpolation_functio(
+										map_type,rig,current_region,map->event_number,
+										frame_time,map->datum,
+										map->start_search_interval,
+										map->end_search_interval,undecided_accepted,
+										map->finite_element_mesh_rows,
+										map->finite_element_mesh_columns,
+										map->membrane_smoothing,
+										map->plate_bending_smoothing)))
+								{																															
+									number_of_mesh_columns=
+										function->number_of_columns;
+									number_of_mesh_rows=
+										function->number_of_rows;
+									y_mesh=function->y_mesh;
+									x_mesh=function->x_mesh;
+									/* calculate pixel values */
+									pixel_left=((region_number/map->number_of_region_rows)*
+										map_width)/map->number_of_region_columns;
+									pixel_top=((region_number%map->number_of_region_rows)*
+										map_height)/map->number_of_region_rows;
+									x_screen_step=1/stretch_x[region_number];
+									y_screen_step= -1/stretch_y[region_number];
+									x_screen_left=min_x[region_number]+
+										(pixel_left-start_x[region_number])*
+										x_screen_step;
+									y_screen_top=min_y[region_number]+
+										(pixel_top-start_y[region_number])*
+										y_screen_step;
+									y_screen=y_screen_top;
+									y_pixel=pixel_top;
 #if defined(GOURAUD_FROM_PIXEL_VALUE) 
-										/* Allocate space for
+									/* Allocate space for
 										 pixel-array-without-border.  This will be a
 										 bit too big, but don't know exact size yet */
-										if (!(ALLOCATE(just_map_pixel_value,float,
-											map_width*map_height)))
-										{	
-											display_message(ERROR_MESSAGE,
-												"draw_2d_construct_image_map. ALLOCATE just_map_pixel_value failed");
-											return_code=0;
-										}														
+									if (!(ALLOCATE(just_map_pixel_value,float,
+										map_width*map_height)))
+									{	
+										display_message(ERROR_MESSAGE,
+											"draw_2d_construct_image_map. ALLOCATE just_map_pixel_value failed");
+										return_code=0;
+									}														
 #endif /* defined(GOURAUD_FROM_PIXEL_VALUE) */
-										for (j=0;j<screen_region_height;j++)
+									for (j=0;j<screen_region_height;j++)
+									{
+										x_screen=x_screen_left;
+										x_pixel=pixel_left;
+										for (i=0;i<screen_region_width;i++)
 										{
-											x_screen=x_screen_left;
-											x_pixel=pixel_left;
-											for (i=0;i<screen_region_width;i++)
-											{
-												/* calculate the u and v  */
-												draw_2d_calculate_u_and_v(map,
-													current_region,x_screen,y_screen,pi_over_2,
-													pi,two_pi,&u,&v,&valid_u_and_v);
-												/* calculate the element coordinates */
-												if (valid_u_and_v)
-												{																		
-													/* determine which element the point is
-														 in */
-													column=0;
-													while ((column<number_of_mesh_columns)&&
-														(u>=x_mesh[column]))
+											/* calculate the u and v  */
+											draw_2d_calculate_u_and_v(map,
+												current_region,x_screen,y_screen,pi_over_2,
+												pi,two_pi,&u,&v,&valid_u_and_v);
+											/* calculate the element coordinates */
+											if (valid_u_and_v)
+											{																		
+												/* determine which element the point is
+													 in */
+												column=0;
+												while ((column<number_of_mesh_columns)&&
+													(u>=x_mesh[column]))
+												{
+													column++;
+												}
+												if ((column>0)&&(u<=x_mesh[column]))
+												{
+													row=0;
+													while ((row<number_of_mesh_rows)&&
+														(v>=y_mesh[row]))
 													{
-														column++;
+														row++;
 													}
-													if ((column>0)&&(u<=x_mesh[column]))
-													{
-														row=0;
-														while ((row<number_of_mesh_rows)&&
-															(v>=y_mesh[row]))
+													if ((row>0)&&(v<=y_mesh[row]))
+													{	
+														draw_2d_calculate_f_approx(function,
+															&f_approx,column,row,u,v);
+														if (max_f<min_f)
 														{
-															row++;
-														}
-														if ((row>0)&&(v<=y_mesh[row]))
-														{	
-															draw_2d_calculate_f_approx(function,
-																&f_approx,column,row,u,v);
-															if (max_f<min_f)
+															min_f=f_approx;
+															max_f=f_approx;
+															maximum_region=current_region;
+															minimum_region=current_region;
+															maximum_x=i;
+															maximum_y=j;
+															minimum_x=i;
+															minimum_y=j;
+														}/* if (max_f<min_f) */
+														else
+														{
+															if (f_approx<min_f)
 															{
 																min_f=f_approx;
-																max_f=f_approx;
-																maximum_region=current_region;
 																minimum_region=current_region;
-																maximum_x=i;
-																maximum_y=j;
 																minimum_x=i;
 																minimum_y=j;
-															}/* if (max_f<min_f) */
+															}
 															else
 															{
-																if (f_approx<min_f)
+																if (f_approx>max_f)
 																{
-																	min_f=f_approx;
-																	minimum_region=current_region;
-																	minimum_x=i;
-																	minimum_y=j;
+																	max_f=f_approx;
+																	maximum_region=current_region;
+																	maximum_x=i;
+																	maximum_y=j;
 																}
-																else
-																{
-																	if (f_approx>max_f)
-																	{
-																		max_f=f_approx;
-																		maximum_region=current_region;
-																		maximum_x=i;
-																		maximum_y=j;
-																	}
-																}
-															}/* if (max_f<min_f) */
-															pixel_value[y_pixel*map_width+x_pixel]=f_approx;
-															background_map_boundary_base[
-																y_pixel*map_width+x_pixel]=1;
+															}
+														}/* if (max_f<min_f) */
+														pixel_value[y_pixel*map_width+x_pixel]=f_approx;
+														background_map_boundary_base[
+															y_pixel*map_width+x_pixel]=1;
 #if defined(GOURAUD_FROM_PIXEL_VALUE)																				
-															set_just_map_pixel_value(
-																just_map_pixel_value,&num_pixels,
-																f_approx,x_pixel,y_pixel,&min_x_pixel,
-																&max_x_pixel,&min_y_pixel,&max_y_pixel);
+														set_just_map_pixel_value(
+															just_map_pixel_value,&num_pixels,
+															f_approx,x_pixel,y_pixel,&min_x_pixel,
+															&max_x_pixel,&min_y_pixel,&max_y_pixel);
 #endif /* defined(GOURAUD_FROM_PIXEL_VALUE) */
-														}/* if ((row>0)&&(v<=y_mesh[row])) */
-													}/* if ((column>0)&&(u<=x_mesh[column])) */
-												}/* if (valid_u_and_v) */
-												x_screen += x_screen_step;
-												x_pixel++;																
-											}/* for (i=0;i<screen_region_width;i++) */
-											y_screen += y_screen_step;
-											y_pixel++;															
-										}/* for (j=0;j<screen_region_height;j++) */
-										destroy_Interpolation_function(&function);
+													}/* if ((row>0)&&(v<=y_mesh[row])) */
+												}/* if ((column>0)&&(u<=x_mesh[column])) */
+											}/* if (valid_u_and_v) */
+											x_screen += x_screen_step;
+											x_pixel++;																
+										}/* for (i=0;i<screen_region_width;i++) */
+										y_screen += y_screen_step;
+										y_pixel++;															
+									}/* for (j=0;j<screen_region_height;j++) */
+									destroy_Interpolation_function(&function);
 #if defined(GOURAUD_FROM_PIXEL_VALUE)
-										gouraud_from_pixel_value(map,just_map_pixel_value,
-											min_x_pixel,max_x_pixel,min_y_pixel,max_y_pixel,
-											number_of_mesh_columns,number_of_mesh_rows,
-											num_pixels,&min_f,&max_f,map_height,map_width,
-											pixel_value);
-										DEALLOCATE(just_map_pixel_value);
-										DEALLOCATE(new_pixel_value);
+									gouraud_from_pixel_value(map,just_map_pixel_value,
+										min_x_pixel,max_x_pixel,min_y_pixel,max_y_pixel,
+										number_of_mesh_columns,number_of_mesh_rows,
+										num_pixels,&min_f,&max_f,map_height,map_width,
+										pixel_value);
+									DEALLOCATE(just_map_pixel_value);
+									DEALLOCATE(new_pixel_value);
 #endif /* defined(GOURAUD_FROM_PIXEL_VALUE) */
-									}/* if ((0!=stretch_x[region_number])&& */
-								}/* if (0<=region_number) */
-								region_item=get_Region_list_item_next(region_item);
-							}/* for (temp_region_number=0; */
-							frame->maximum_region=maximum_region;
-							frame->minimum_region=minimum_region;
-							set_map_2d_frame_min_max(frame,max_f,min_f,minimum_x,
-								maximum_x,minimum_y,maximum_y);
-							if (max_f<min_f)
+								}/* if ((0!=stretch_x[region_number])&& */
+							}/* if (0<=region_number) */
+							region_item=get_Region_list_item_next(region_item);
+						}/* for (temp_region_number=0; */
+						frame->maximum_region=maximum_region;
+						frame->minimum_region=minimum_region;
+						set_sub_map_min_max(sub_map,max_f,min_f,minimum_x,
+							maximum_x,minimum_y,maximum_y);
+						if (max_f<min_f)
+						{
+							background_pixel_value= -1;
+							boundary_pixel_value=1;	
+						}
+						else
+						{
+							background_pixel_value=min_f-1;
+							boundary_pixel_value=max_f+1;
+							if ((background_pixel_value>=min_f)||
+								(boundary_pixel_value<=max_f))
 							{
-								background_pixel_value= -1;
-								boundary_pixel_value=1;	
+								display_message(ERROR_MESSAGE,
+									"draw_2d_construct_image_map.  Problems with background/boundary");
 							}
-							else
-							{
-								background_pixel_value=min_f-1;
-								boundary_pixel_value=max_f+1;
-								if ((background_pixel_value>=min_f)||
-									(boundary_pixel_value<=max_f))
-								{
-									display_message(ERROR_MESSAGE,
-										"draw_2d_construct_image_map.  Problems with background/boundary");
-								}
-							}/* if (max_f<min_f) */
-							draw_2d_map_boundary(background_map_boundary_base,
-								map_height,map_width,pixel_value,boundary_pixel_value,
-								background_pixel_value);
-							frame_number++;
-							frame++;
-						}/* while ((frame_number<number_of_frames)&&return_code) */
-						set_map_2d_map_min_max(map);
+						}/* if (max_f<min_f) */
+						draw_2d_map_boundary(background_map_boundary_base,
+							map_height,map_width,pixel_value,boundary_pixel_value,
+							background_pixel_value);
 						DEALLOCATE(background_map_boundary_base);
 					}/* if (ALLOCATE(background_map_boundary_base,char, */
 					else
@@ -11545,9 +11499,9 @@ Construct a colour map image for colour map or contours or  values  in the
 
 static int draw_2d_make_map(struct Map *map,int recalculate,struct Drawing_2d *drawing,
 	int map_width,int map_height, int map_x_offset,int map_y_offset,
-	int potential_time_index,float frame_start_time,float frame_end_time)
+	int potential_time_index,float frame_time)
 /*******************************************************************************
-LAST MODIFIED : 26 July 2001
+LAST MODIFIED : 17 September 2001
 DESCRIPTION :
 This function draws the <map> in the <drawing>, with <map_width>, <map_height> 
 at <map_x_offset> <map_y_offset>. <map_width>, <map_height> <map_x_offset> 
@@ -11580,9 +11534,9 @@ comparison with 3D maps.
 	float *y=(float *)NULL;
 	float *y_item=(float *)NULL;
 	int ascent,descent,direction,*draw_region_number,i,number_of_devices,
-		number_of_drawn_regions,number_of_electrodes,number_of_frames,
-		number_of_regions,region_number,return_code,screen_region_height,
-		screen_region_width,x_border,x_name_border,y_border,y_name_border;
+		number_of_drawn_regions,number_of_electrodes,number_of_regions,
+		region_number,return_code,screen_region_height,screen_region_width,x_border,
+		x_name_border,y_border,y_name_border;
 	int *screen_x=(int *)NULL;
 	int *screen_y=(int *)NULL;
 	int *start_x=(int *)NULL;
@@ -11603,8 +11557,6 @@ comparison with 3D maps.
 	return_code=1;
 	/* check arguments */
 	if (map&&drawing&&(drawing_information=map->drawing_information)&&
-		(0<(number_of_frames=map->number_of_frames))&&(0<=map->frame_number)&&
-		(map->frame_number<number_of_frames)&&(map->frames)&&
 		(drawing_information->user_interface)&&
 		(drawing_information->user_interface=drawing->user_interface)&&
 		(map_width+map_x_offset<=drawing->width)&&
@@ -11728,7 +11680,7 @@ comparison with 3D maps.
 						map->electrode_drawn=electrode_drawn;															
 						if((sub_map=create_sub_Map(number_of_drawn_regions,number_of_electrodes,
 							map_x_offset,map_y_offset,map_height,map_width,potential_time_index,
-							frame_start_time,frame_end_time))
+							frame_time))
 							&&(map_add_sub_Map(map,sub_map)))
 						{
 							screen_x=sub_map->electrode_x;
@@ -11855,6 +11807,13 @@ comparison with 3D maps.
 										undecided_accepted,pi_over_2,pi,two_pi,screen_region_height,
 										screen_region_width);
 								}/* (NO_INTERPOLATION!=map->interpolation_type) */
+								else
+								{
+									if (1<recalculate)
+									{							
+										set_map_2d_no_interpolation_min_max(map,sub_map);
+									}	
+								}
 							}/* if (NO_MAP_FIELD!=map_type) */
 						}/* if (x&&y&&electrode&&screen_x&&screen_y&&electrode_value&& */
 						else
@@ -11892,16 +11851,16 @@ comparison with 3D maps.
 	return (return_code);
 } /* draw_2d_make_map */
 
-static int draw_map_2d(struct Map *map,int recalculate,struct Drawing_2d *drawing)
+static int draw_2d_electrical_imaging_maps(struct Map *map,int recalculate,
+	struct Drawing_2d *drawing)
 /*******************************************************************************
-LAST MODIFIED :10 September 2001
+LAST MODIFIED 27 September 2001
 
 DESCRIPTION:
-Draws all the sub maps of the 2D <map>, by first making it with draw_2d_make_map, 
-then drawing it with draw_2d_show_map. Arranges the sub maps on the page.
+Draw multiple sub maps on the same window for Electrical Imaging.
 ==============================================================================*/
 {
-	float frame_start_time,frame_end_time;
+	float frame_time;
 	int num_maps,sub_map_rows,sub_map_cols,count,x_step,y_step,j,map_width,map_height,
 		map_x_offset,map_y_offset,potential_time_index,return_code,*times;				
 	struct Electrical_imaging_event *eimaging_event;	
@@ -11909,85 +11868,205 @@ then drawing it with draw_2d_show_map. Arranges the sub maps on the page.
 	struct Signal_buffer *buffer;
 	struct Rig *rig;
 	struct Device *device;
-	struct sub_Map *sub_map;
 
-	ENTER(draw_map_2d);
+	ENTER(draw_2d_electrical_imaging_maps);
 	eimaging_event=(struct Electrical_imaging_event *)NULL;
 	signal=(struct Signal *)NULL;
 	buffer=(struct Signal_buffer *)NULL;
 	times=(int *)NULL;
 	rig=(struct Rig *)NULL;
-	device=(struct Device *)NULL;
-	sub_map=(struct sub_Map *)NULL;
-	return_code=1;
+	device=(struct Device *)NULL;	
 	if(map&&drawing)
-	{	
+	{
+		return_code=1;
+		rig= *(map->rig_pointer);
+		device=*(rig->devices);
+		signal=(device)->signal;
+		buffer=signal->buffer;
+		times=buffer->times;
+		eimaging_event=*map->first_eimaging_event;
+
+		potential_time_index=*map->potential_time;
+		frame_time=(int)((float)((times)[*(map->potential_time)])
+			*1000./buffer->frequency);
+		map->number_of_movie_frames=0;
+		map->start_time=frame_time;
+		map->end_time=map->start_time;	
+
 		/* Destroy any existing sub maps */
-		map_destroy_sub_Maps(map);
-		if ((eimaging_event=*map->first_eimaging_event)&&
+		map_destroy_sub_Maps(map);								
+		/*get size and position of sub_maps*/
+		get_number_of_sub_maps_x_step_y_step_rows_cols(map,drawing,&num_maps,
+			&x_step,&y_step,&sub_map_rows,&sub_map_cols);	 
+		map_width=drawing->width/sub_map_rows;
+		map_height=drawing->height/sub_map_cols;				
+		map_x_offset=0;
+		map_y_offset=0;
+		count=0;
+		j=1;
+		/* loop through and create all the sub maps*/	
+		while(count<num_maps)
+		{	
+			/*set the sub_map's times from the electrical imaging events */
+			potential_time_index=eimaging_event->time;
+			frame_time=(int)((float)((times)[eimaging_event->time])
+				*1000./buffer->frequency+0.5);			
+			return_code=draw_2d_make_map(map,recalculate,drawing,map_width,map_height,
+				map_x_offset,map_y_offset,potential_time_index,frame_time);	
+			map_x_offset+=x_step;						
+			count++;
+			j++;
+			if (j>sub_map_rows)
+			{
+				j=1;
+				map_x_offset=0;
+				map_y_offset+=y_step;
+			}	
+			eimaging_event=eimaging_event->next;					
+		}
+		if(recalculate>1)
+		{
+			set_map_2d_map_min_max(map);
+		}
+		update_colour_map_unemap(map,drawing);
+		/* loop through and draw all the sub maps*/		
+		count=0;	
+		while(count<num_maps)
+		{			
+			draw_2d_show_map(map,count,recalculate,drawing);
+			count++;
+		}		
+		map->sub_map_number=0;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"draw_2d_electrical_imaging_maps. Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+	return(return_code);
+}/* draw_2d_electrical_imaging_maps */
+
+static int draw_map_2d(struct Map *map,int recalculate,struct Drawing_2d *drawing)
+/*******************************************************************************
+LAST MODIFIED 27 September 2001
+
+DESCRIPTION:
+Draws all the sub maps of the 2D <map>, by first making it with draw_2d_make_map, 
+then drawing it with draw_2d_show_map. Arranges the sub maps on the page.
+==============================================================================*/
+{
+	float end_time,start_time,frame_time;
+	int frame_number,number_of_frames,map_width,map_height,map_x_offset,
+		map_y_offset,potential_time_index,
+		return_code,*times;			 	
+	struct Signal *signal;
+	struct Signal_buffer *buffer;
+	struct Rig *rig;
+	struct Device *device;
+
+	ENTER(draw_map_2d);
+	signal=(struct Signal *)NULL;
+	buffer=(struct Signal_buffer *)NULL;
+	times=(int *)NULL;
+	rig=(struct Rig *)NULL;
+	device=(struct Device *)NULL;
+	if(map&&drawing)
+	{			
+		return_code=1;	
+		if ((*map->first_eimaging_event)&&
 			(ELECTRICAL_IMAGING==*map->analysis_mode)&&(*(map->type)==POTENTIAL))
-		{					
+		{	
+			/*draw lots of little maps*/
+			draw_2d_electrical_imaging_maps(map,recalculate,drawing);
+		}
+		else
+		{	
 			rig= *(map->rig_pointer);
 			device=*(rig->devices);
 			signal=(device)->signal;
 			buffer=signal->buffer;
 			times=buffer->times;
-			/*get size and position of sub_maps*/
-			get_number_of_sub_maps_x_step_y_step_rows_cols(map,drawing,&num_maps,
-				&x_step,&y_step,&sub_map_rows,&sub_map_cols);	 
-			map_width=drawing->width/sub_map_rows;
-			map_height=drawing->height/sub_map_cols;				
-			map_x_offset=0;
-			map_y_offset=0;
-			count=0;
-			j=1;
-			while(count<num_maps)
-			{	
-				/*set the sub_map's times from the electrical imaging events */
-				potential_time_index=eimaging_event->time;
-				frame_start_time=(int)((float)((times)[eimaging_event->time])
-					*1000./buffer->frequency+0.5);
-				/* frame_end_time irrelevent, so just set to start time*/
-				frame_end_time=frame_start_time;
-				return_code=draw_2d_make_map(map,recalculate,drawing,map_width,map_height,
-					map_x_offset,map_y_offset,potential_time_index,frame_start_time,
-					frame_end_time);
-				map_x_offset+=x_step;						
-				count++;
-				j++;
-				if (j>sub_map_rows)
-				{
-					j=1;
+			if(map->number_of_movie_frames)
+			{											
+				if(recalculate>2)
+				{	
+					/*making movies, on location*/				
+					/* Destroy any existing sub maps */
+					map_destroy_sub_Maps(map);				
+					map_width=drawing->width;
+					map_height=drawing->height;				
 					map_x_offset=0;
-					map_y_offset+=y_step;
+					map_y_offset=0;
+					map->sub_map_number=0;
+					start_time=map->start_time;
+					end_time=map->end_time;
+					number_of_frames=map->number_of_movie_frames;
+					frame_number=0;				 				
+					/*make the sub_maps(frames) */
+					for(frame_number=0;frame_number<number_of_frames;frame_number++)
+					{
+						frame_time=((float)(number_of_frames-frame_number-1)*(start_time)+
+							(float)frame_number*(end_time))/(float)(number_of_frames-1);						
+						/*calculate potential_time_index from the frame_time*/
+						potential_time_index=(int)(frame_time*buffer->frequency/1000.0)-
+							(buffer->times)[0];
+						if (potential_time_index<0)
+						{
+							potential_time_index=0;
+						}
+						if (potential_time_index>=buffer->number_of_samples)
+						{
+							potential_time_index=buffer->number_of_samples-1;
+						}
+						return_code=draw_2d_make_map(map,recalculate,drawing,map_width,map_height,
+							map_x_offset,map_y_offset,potential_time_index,frame_time);
+					}
+					/* draw the first frame of movie*/
+					recalculate=1;
+					set_map_2d_map_min_max(map);	
+					update_colour_map_unemap(map,drawing);				
+					draw_2d_show_map(map,0,recalculate,drawing);
+				}
+				else if(recalculate==0)
+				{	
+					/* draw the current frame of a movie*/
+					recalculate=1;				
+					draw_2d_show_map(map,map->sub_map_number,recalculate,drawing);
 				}	
-				eimaging_event=eimaging_event->next;					
-			}		 
-			/* loop through and draw all the sub maps*/		
-			count=0;	
-			while(count<num_maps)
-			{
-				sub_map=map->sub_map[count];
-				draw_2d_show_map(map,sub_map,recalculate,drawing);
-				count++;
+				else
+				{
+					map->number_of_movie_frames=0;
+				}
 			}
-		}
-		else
-		{	
-			/*just one sub map*/
-			map_width=drawing->width;
-			map_height=drawing->height;				
-			map_x_offset=0;
-			map_y_offset=0;
-			/* set the (single) sub_map's times from the map. map times controled*/
-			/* from the time object */
-			potential_time_index=*map->potential_time;
-			frame_start_time=map->frame_start_time;
-			frame_end_time=map->frame_end_time;
-			return_code=draw_2d_make_map(map,recalculate,drawing,map_width,map_height,
-				map_x_offset,map_y_offset,potential_time_index,frame_start_time,
-				frame_end_time);			
-			draw_2d_show_map(map,*(map->sub_map),recalculate,drawing);
+			/*could have changed from above*/
+			if(!map->number_of_movie_frames)
+			{
+				/* set the (single) sub_map's times from the map. map times controled*/
+				/* from the time object */
+				potential_time_index=*map->potential_time;
+				frame_time=(int)((float)((times)[*(map->potential_time)])
+					*1000./buffer->frequency);
+				map->number_of_movie_frames=0;
+				map->start_time=frame_time;
+				map->end_time=map->start_time;	
+				/* Destroy any existing sub maps */
+				map_destroy_sub_Maps(map);
+				/*just one sub map*/
+				map_width=drawing->width;
+				map_height=drawing->height;				
+				map_x_offset=0;
+				map_y_offset=0;
+				map->sub_map_number=0;			
+				return_code=draw_2d_make_map(map,recalculate,drawing,map_width,map_height,
+					map_x_offset,map_y_offset,potential_time_index,frame_time);
+				if(recalculate>1)
+				{
+					set_map_2d_map_min_max(map);
+				}
+				update_colour_map_unemap(map,drawing);
+				draw_2d_show_map(map,0,recalculate,drawing);
+			}
 		}
 	}
 	else

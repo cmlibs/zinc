@@ -25,6 +25,16 @@ Global types
 ------------
 */
 
+enum Trace_moving_status
+{
+	TRACE_MOVING_BOX,
+	TRACE_MOVING_NONE,
+	TRACE_MOVING_CARDIAC_END_TIME,
+	TRACE_MOVING_CARDIAC_PT_TIME,
+	TRACE_MOVING_CARDIAC_START_TIME,
+	TRACE_MOVING_ELECTRICAL_IMAGING_EVENT
+};
+
 enum Inverse_electrodes_mode
 /*******************************************************************************
 LAST MODIFIED : 20 February 2001
@@ -810,14 +820,43 @@ LAST MODIFIED :  28 March 2001
 DESCRIPTION : Moves the cardiac interval in time.
 ==============================================================================*/
 
-int move_add_remove_Electrical_imaging_event(XmDrawingAreaCallbackStruct *callback,
-	struct Trace_window *trace,
-	struct Signal_drawing_information *signal_drawing_information,
-	struct User_interface *user_interface,int pointer_sensitivity);
+int write_marker_time(char *time_str,int x_marker,int axes_left,int axes_width,int top,
+	XFontStruct *font,GC graphics_context,Display *display,Widget drawing_area,
+	struct Drawing_2d *drawing);
+/*******************************************************************************
+LAST MODIFIED : writes the time at the top of a marker.
+
+DESCRIPTION : 4 April 2001
+==============================================================================*/
+
+int reconcile_Electrical_imaging_event_marker(int *marker,
+	struct Electrical_imaging_event *event,float x_scale,int axes_left,
+	int start_analysis_interval);
 /*******************************************************************************
 LAST MODIFIED : 13 June 2001
 
-DESCRIPTION : moves, adds or removes an Electrical_imaging_event.
+DESCRIPTION : ensure that that the  <event>'s time matches the <marker>.
+Set <event> to <marker> and then <marker> to <event> to avoid 
+rounding error in SCALE_X(..1/x_scale...) followed by SCALE_X(..x_scale...)
+==============================================================================*/
+
+int draw_Electrical_imaging_event_marker(struct Electrical_imaging_event *event,
+	int end_analysis_interval, int start_analysis_interval,
+	int top,int height,int axes_left,int axes_width, 
+	Widget drawing_area,struct Drawing_2d *drawing,
+	struct Signal_drawing_information *signal_drawing_information,
+	struct Signal_buffer *buffer);
+/*******************************************************************************
+LAST MODIFIED :  1 June 2001
+
+DESCRIPTION : Draws the marker of the Electrical_imaging_event <event>
+==============================================================================*/
+
+int draw_Electrical_imaging_event_markers(struct Trace_window *trace);
+/*******************************************************************************
+LAST MODIFIED :1 June 2001
+
+DESCRIPTION : draws the markers on the trace window.
 ==============================================================================*/
 
 int alter_eimaging_button_event_info(Widget widget,

@@ -292,11 +292,10 @@ DESCRIPTION :
 ==============================================================================*/
 {
 	enum Projection_type projection_type;
-	int maintain_aspect_ratio,number_of_frames;
+	int maintain_aspect_ratio;
 	struct Analysis_window *analysis_window;
 	struct Analysis_work_area *analysis;
 	struct Map *map;
-	struct Map_frame *frame;
 	struct Mapping_window *mapping;
 	struct Signal_buffer *buffer;
 	struct User_interface *user_interface;
@@ -304,10 +303,9 @@ DESCRIPTION :
 	analysis_window=(struct Analysis_window *)NULL;
 	analysis=(struct Analysis_work_area *)NULL;
 	map=(struct Map *)NULL;
-	frame=(struct Map_frame *)NULL;
 	mapping=(struct Mapping_window *)NULL;
-	buffer=(struct Signal_buffer *)NULL;
 	user_interface=(struct User_interface *)NULL;
+	buffer=(struct Signal_buffer *)NULL;
 	if ((analysis=(struct Analysis_work_area *)analysis_work_area)&&
 		(analysis_window=analysis->window)&&
 		(user_interface=analysis->user_interface))
@@ -425,55 +423,20 @@ DESCRIPTION :
 				map->minimum_value=1;
 				map->maximum_value=0;
 			}
-			/* make sure that only one frame */
-			if ((1<(number_of_frames=map->number_of_frames))&&(frame=map->frames))
-			{
-				number_of_frames--;
-				while (number_of_frames>0)
-				{
-					number_of_frames--;
-					frame++;
-					DEALLOCATE(frame->contour_x);
-					DEALLOCATE(frame->contour_y);
-					DEALLOCATE(frame->pixel_values);
-					DEALLOCATE(frame->image->data);
-					XFree((char *)(frame->image));
-				}
-				if (REALLOCATE(frame,map->frames,struct Map_frame,1))
-				{
-					map->frames=frame;
-					map->frame_number=0;
-					map->number_of_frames=1;
-				}
-				else
-				{
-					frame=map->frames;
-					DEALLOCATE(frame->contour_x);
-					DEALLOCATE(frame->contour_y);
-					DEALLOCATE(frame->pixel_values);
-					DEALLOCATE(frame->image->data);
-					XFree((char *)(frame->image));
-					DEALLOCATE(map->frames);
-					map->frame_number=0;
-					map->number_of_frames=0;
-					display_message(ERROR_MESSAGE,
-						"display_map.  Could not reallocate frames");
-				}
-			}
 			/* set the start and end frame times based on the potential time */
 			if ((analysis->rig)&&(analysis->rig->devices)&&
 				(*(analysis->rig->devices))&&
 				(buffer=get_Device_signal_buffer(*(analysis->rig->devices))))
 			{
-				map->frame_start_time=
+				map->start_time=
 					(float)((buffer->times)[analysis->potential_time])*1000./
 					(buffer->frequency);
-				map->frame_end_time=map->frame_start_time;
+				map->end_time=map->start_time;
 			}
 			else
 			{
-				map->frame_start_time=0;
-				map->frame_end_time=0;
+				map->start_time=0;
+				map->end_time=0;
 			}
 			update_mapping_drawing_area(mapping,2);
 			update_mapping_colour_or_auxili(mapping);
@@ -699,7 +662,7 @@ continuation.  Display the map.
 				}
 			} break;
 			case POTENTIAL:
-			{
+			{								
 				while ((number_of_devices>0)&&(no_undecided||no_accepted))
 				{
 					if ((ELECTRODE==(description=(*device)->description)->type)&&
@@ -722,7 +685,7 @@ continuation.  Display the map.
 					}
 					device++;
 					number_of_devices--;
-				}
+				}				
 			} break;
 			case INTEGRAL:
 			{
@@ -7181,6 +7144,390 @@ trace window.
 	LEAVE;
 } /* increment_number_of_events */
 
+static int move_Electrical_imaging_event_marker(
+	struct Trace_window_area_3 *trace_area_3,
+	int initial_marker,struct Electrical_imaging_event *event,float x_scale,
+	struct Signal_drawing_information *signal_drawing_information,Display *display,
+	int x_pointer,enum Trace_moving_status moving,int *times,
+	float frequency,int start_analysis_interval,unsigned int working_button,
+	struct Mapping_window *mapping)
+/*******************************************************************************
+LAST MODIFIED 24 September 2001
+
+DESCRIPTION : moves the Electrical_imaging_event <event> in response to mouse 
+event.
+==============================================================================*/
+{									
+	Boolean owner_events;	
+	char time_string[20];		
+	Cursor cursor;
+	enum Interpolation_type interpolation;
+	GC graphics_context;
+	int axes_bottom,axes_left,axes_right,axes_top,axes_width,
+		keyboard_mode,marker,pointer_mode,pointer_x,pointer_y,previous_marker,
+		return_code,time;
+	Pixmap pixel_map;
+	struct Map *map;		
+	Window confine_to,working_window;
+	XEvent xevent;
+
+	ENTER(move_Electrical_imaging_event_marker);	
+	map=(struct Map *)NULL;
+	if(trace_area_3&&event&&signal_drawing_information&&display&&times)
+	{	
+		graphics_context=(signal_drawing_information->graphics_context).
+			eimaging_event_colour;
+		axes_left=trace_area_3->axes_left;
+		axes_width=trace_area_3->axes_width;
+		axes_right=axes_left+axes_width-1;
+		axes_top=trace_area_3->axes_top;
+		axes_bottom=axes_top+(trace_area_3->axes_height)-1;	
+		/* grab the pointer */
+		cursor=XCreateFontCursor(display,XC_sb_h_double_arrow);
+		owner_events=True;
+		pointer_mode=GrabModeAsync;
+		keyboard_mode=GrabModeAsync;
+		confine_to=None;
+		if (GrabSuccess==XtGrabPointer(trace_area_3->drawing_area,
+			owner_events,
+			ButtonMotionMask|ButtonPressMask|ButtonReleaseMask,
+			pointer_mode,keyboard_mode,confine_to,cursor,CurrentTime))
+		{			
+			XWarpPointer(display,None,None,0,0,0,0,
+				initial_marker-x_pointer,0);					
+			pointer_x=initial_marker;
+			marker=initial_marker;
+			working_window=XtWindow(trace_area_3->drawing_area);
+			pixel_map=trace_area_3->drawing->pixel_map;
+			while (TRACE_MOVING_NONE!=moving)
+			{				
+				XNextEvent(display,&xevent);
+				switch (xevent.type)
+				{
+					case MotionNotify:									
+					{																					
+						previous_marker=marker;																	
+						/* reduce the number of motion events displayed */
+						while (True==XCheckMaskEvent(display,ButtonMotionMask,&xevent));
+						pointer_x=xevent.xmotion.x;
+						pointer_y=xevent.xmotion.y;									 											
+						if((xevent.xmotion.window==working_window)&&
+							(pointer_y>=axes_top)&&(pointer_y<=axes_bottom))
+						{										
+							if (pointer_x<axes_left)
+							{
+								marker=axes_left;
+							}
+							else
+							{
+								if (pointer_x>axes_right)
+								{
+									marker=axes_right;
+								}
+								else
+								{
+									marker=pointer_x;
+								}
+							}	
+							reconcile_Electrical_imaging_event_marker(&marker,event,x_scale,
+								axes_left,start_analysis_interval);
+							if (marker!=previous_marker)
+							{							
+								/* clear the old marker */
+								XDrawLine(display,pixel_map,graphics_context,
+									previous_marker,axes_top+1,previous_marker,axes_bottom);
+								XDrawLine(display,working_window,graphics_context,
+									previous_marker,axes_top+1,previous_marker,axes_bottom);		
+								/* draw the new marker */
+								XDrawLine(display,pixel_map,graphics_context,marker,
+									axes_top+1,marker,axes_bottom);
+								XDrawLine(display,working_window,graphics_context,
+									marker,axes_top+1,marker,axes_bottom);
+							}	/* if (marker!=previous_marker)	*/
+						}
+					} break;
+					case ButtonRelease:
+					{							
+						/*event->time, marker always reconciled when moved, so don't need */
+						/* to clear, reconcile, draw the marker again. I think! */
+											
+						/*write in the new time (&set flag),so last-selected/current event is */
+						/*labelled */
+						time=(int)((float)((times)[event->time])
+							*1000./frequency+0.5);
+						sprintf(time_string,"%d",time);
+						write_marker_time(time_string,marker,axes_left,
+							axes_width,axes_top,signal_drawing_information->font,
+							graphics_context,display,trace_area_3->drawing_area,
+							trace_area_3->drawing);
+						event->is_current_event=1;
+						moving=TRACE_MOVING_NONE;												
+						/*if we have a map, update it with NO_INTERPOLATION, so just get electrodes*/
+						if(mapping&&(map=mapping->map))
+						{
+							interpolation=map->interpolation_type;
+							map->interpolation_type=NO_INTERPOLATION;
+							update_mapping_drawing_area(mapping,1);
+							update_mapping_colour_or_auxili(mapping);
+							map->interpolation_type=interpolation;
+						}				 
+					}break;
+					case ButtonPress:
+					{													
+						if (xevent.xbutton.button==working_button)
+						{						
+							display_message(ERROR_MESSAGE,
+								"move_Electrical_imaging_event_marker. Unexpected button press\n");
+							moving=TRACE_MOVING_NONE;
+						}
+					} break;
+					default:
+					{															
+						XtDispatchEvent(&xevent);
+					}
+				}
+			}
+			/* release the pointer */
+			XtUngrabPointer(trace_area_3->drawing_area,CurrentTime);
+		}
+		XFreeCursor(display,cursor);
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"move_Electrical_imaging_event_marker. Missing argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+	return(return_code);
+} /* move_Electrical_imaging_event_marker */
+
+static int erase_Electrical_imaging_event_markers_time_text(
+	struct Trace_window *trace,struct Signal_buffer *buffer,
+	float x_scale,struct Signal_drawing_information *signal_drawing_information,
+	Display *display)
+/*******************************************************************************
+LAST MODIFIED : 13 June 2001
+
+DESCRIPTION : loop therough all the Electrical_imaging_event markers in <trace>,
+erasing the time text from any events that have it written.
+==============================================================================*/
+{	
+	char time_string[20];
+	GC graphics_context;
+	float frequency;
+	int axes_left,axes_top,axes_width,marker,return_code,start_analysis_interval,
+		time,*times;
+	struct Electrical_imaging_event *event;	
+	struct Trace_window_area_3 *trace_area_3;
+
+	ENTER(erase_Electrical_imaging_event_markers_time_text);
+	if(trace&&(trace_area_3=&(trace->area_3))&&display&&buffer&&
+		signal_drawing_information)
+	{
+		graphics_context=(signal_drawing_information->graphics_context).
+			eimaging_event_colour;
+		axes_left=trace_area_3->axes_left;
+		axes_width=trace_area_3->axes_width;
+		axes_top=trace_area_3->axes_top;
+		start_analysis_interval=buffer->start;
+		frequency=buffer->frequency;
+		return_code=1;
+		times=buffer->times;
+		event=*trace->first_eimaging_event;
+		while(event)
+		{
+			if(event->is_current_event)
+			{
+				/* erase the time text from any events that have it written */
+				marker=SCALE_X(event->time,start_analysis_interval,
+					axes_left,x_scale);
+				reconcile_Electrical_imaging_event_marker(&marker,event,x_scale,
+					axes_left,start_analysis_interval);
+				time=(int)((float)((times)[event->time])
+					*1000./frequency+0.5);
+				sprintf(time_string,"%d",time);
+				write_marker_time(time_string,marker,axes_left,
+					axes_width,axes_top,signal_drawing_information->font,
+					graphics_context,display,trace_area_3->drawing_area,
+					trace_area_3->drawing);
+				event->is_current_event=0;
+			}
+			event=event->next;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"erase_Electrical_imaging_event_marker_time_text. Missing argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+	return(return_code);
+}	/* erase_Electrical_imaging_event_marker_time_text */
+
+int move_add_remove_Electrical_imaging_event(XmDrawingAreaCallbackStruct *callback,
+	struct Trace_window *trace,
+	struct Signal_drawing_information *signal_drawing_information,
+	struct User_interface *user_interface,int pointer_sensitivity,
+	struct Mapping_window *mapping)
+/*******************************************************************************
+LAST MODIFIED : 24 September 2001
+
+DESCRIPTION : detect mouse or keyboard activity and moves, adds or removes an 
+Electrical_imaging_event.
+==============================================================================*/
+{		
+	enum Trace_moving_status moving;
+	struct Device *cardiac_interval_device;	
+	Display *display;
+	float frequency,x_scale;
+	GC graphics_context;
+	int axes_bottom,axes_height,axes_left,axes_right,axes_top,axes_width,
+		end_analysis_interval,event_time,found,marker,pointer_x,
+		pointer_y,return_code,start_analysis_interval,*times;
+	struct Drawing_2d *drawing;
+	struct Electrical_imaging_event *event;
+	struct Signal_buffer *buffer;
+	struct Trace_window_area_3 *trace_area_3;
+	unsigned int working_button;
+	Widget drawing_area;
+	XButtonEvent *button_event;
+
+	ENTER(move_add_remove_Electrical_imaging_event);	
+	times=(int *)NULL;
+	event =(struct Electrical_imaging_event *)NULL;
+	buffer=(struct Signal_buffer *)NULL;
+	trace_area_3=(struct Trace_window_area_3 *)NULL;
+	button_event=(XButtonEvent *)NULL;
+	display=(Display *)NULL;
+	if(callback&&trace&&(trace_area_3=&(trace->area_3))&&signal_drawing_information&&
+		user_interface&&(cardiac_interval_device=trace->cardiac_interval_device)&&
+		(buffer=get_Device_signal_buffer(cardiac_interval_device))&&(times=buffer->times))
+	{
+		graphics_context=(signal_drawing_information->graphics_context).
+			eimaging_event_colour;
+		return_code=1;
+		if(ButtonPress==callback->event->type)
+		{	
+			event=*trace->first_eimaging_event;
+			drawing_area=trace_area_3->drawing_area;
+			drawing=trace_area_3->drawing;
+			display=user_interface->display;
+			button_event= &(callback->event->xbutton);
+			working_button=button_event->button;		
+			pointer_x=button_event->x;
+			pointer_y=button_event->y;	
+			axes_height=trace_area_3->axes_height;
+			axes_left=trace_area_3->axes_left;
+			axes_width=trace_area_3->axes_width;
+			axes_right=axes_left+axes_width-1;
+			axes_top=trace_area_3->axes_top;
+			axes_bottom=axes_top+(trace_area_3->axes_height)-1;		
+			if ((pointer_x>=axes_left-pointer_sensitivity)&&
+				(pointer_x<=axes_right+pointer_sensitivity)&&
+				(pointer_y>=axes_top-pointer_sensitivity)&&
+				(pointer_y<=axes_bottom+pointer_sensitivity))
+			{	
+				start_analysis_interval=buffer->start;
+				end_analysis_interval=buffer->end;
+				x_scale=SCALE_FACTOR(end_analysis_interval-
+					start_analysis_interval,axes_right-axes_left);						
+				frequency=buffer->frequency;
+				/* are we at an electrical imaging event? */
+				found=0;
+				moving=TRACE_MOVING_NONE;
+				while(event&&(!found))
+				{					
+					marker=SCALE_X(event->time,start_analysis_interval,
+						axes_left,x_scale);				
+					if ((pointer_x>=marker-pointer_sensitivity)&&
+						(pointer_x<=marker+pointer_sensitivity))
+					{																			
+						moving=TRACE_MOVING_ELECTRICAL_IMAGING_EVENT;
+						found=1;
+					}			
+					if(!found)
+					{ 
+						event=event->next;
+					}
+				}/* while(interval&&(!found))*/
+				if(found)
+				{		
+					if((moving==TRACE_MOVING_ELECTRICAL_IMAGING_EVENT)&&
+						(working_button!=Button3))
+					{ 
+						erase_Electrical_imaging_event_markers_time_text(trace,
+							buffer,x_scale,signal_drawing_information,display);
+						move_Electrical_imaging_event_marker(trace_area_3,marker,event,
+							x_scale,signal_drawing_information,display,pointer_x,moving,times,
+							frequency,start_analysis_interval,working_button,mapping);					
+					}
+					else if(working_button==Button3)
+					{	
+						int is_current_event,time;
+						char time_string[20];
+					
+
+						/*remove the Electrical_imaging_event */
+						/*erase graphic */
+						draw_Electrical_imaging_event_marker(event,end_analysis_interval,
+							start_analysis_interval,axes_top,axes_height,axes_left,axes_width, 
+							drawing_area,drawing,signal_drawing_information,buffer);
+						/* remove from list */
+						is_current_event=event->is_current_event;
+						remove_Electrical_imaging_event_from_list(trace->first_eimaging_event,
+							event);
+						/* if the deleted event was the current one, and there's an event*/
+						/* remaining, make it the current event*/
+						if(is_current_event&&(event=*trace->first_eimaging_event))
+						{
+							event->is_current_event=1;
+							marker=SCALE_X(event->time,start_analysis_interval,
+								axes_left,x_scale);
+							reconcile_Electrical_imaging_event_marker(&marker,event,x_scale,
+								axes_left,start_analysis_interval);
+							time=(int)((float)((times)[event->time])*1000./frequency+0.5);
+							sprintf(time_string,"%d",time);
+							write_marker_time(time_string,marker,axes_left,
+								axes_width,axes_top,signal_drawing_information->font,
+								graphics_context,display,drawing_area,drawing);
+						}
+					}
+				}/* if(found) */
+				else
+				{
+					/* add an event */
+					if(working_button==Button3)
+					{						
+						erase_Electrical_imaging_event_markers_time_text(trace,
+							buffer,x_scale,signal_drawing_information,display);
+						/* create and add event */						
+						event_time=SCALE_X(pointer_x,axes_left,start_analysis_interval,
+							1/x_scale);					
+						event=create_Electrical_imaging_event(event_time);
+						event->is_current_event=1;
+						add_Electrical_imaging_event_to_sorted_list(
+							trace->first_eimaging_event,event);
+						/* draw graphic */						
+						draw_Electrical_imaging_event_marker(event,end_analysis_interval,
+							start_analysis_interval,axes_top,axes_height,axes_left,axes_width, 
+							drawing_area,drawing,signal_drawing_information,buffer);
+					}
+				}
+			}/* if ((pointer_x>=axes_left-pointer_sensitivity) */			
+		}/* if((ButtonPress==callback->e */
+	}
+	else
+	{	
+		return_code=0;
+		display_message(ERROR_MESSAGE,
+			"move_add_remove_Electrical_imaging_event. invalid argument");
+	}
+	LEAVE;
+	return(return_code);
+} /* move_add_remove_Electrical_imaging_event */
+
 static void select_trace_1_drawing_area(Widget widget,
 	XtPointer analysis_work_area,XtPointer call_data)
 /*******************************************************************************
@@ -8318,7 +8665,8 @@ should be done as a callback from the trace_window.
 					{						
 						move_add_remove_Electrical_imaging_event(callback,
 							analysis->trace,analysis->signal_drawing_information,
-							analysis->user_interface,analysis->pointer_sensitivity);
+							analysis->user_interface,analysis->pointer_sensitivity,
+							analysis->mapping_window);
 					}break;
 					case EVENT_DETECTION: case BEAT_AVERAGING:
 					{
@@ -13480,29 +13828,29 @@ Calculates the next desired update callback from the time object.
 				{
 					if (NO_INTERPOLATION!=map->interpolation_type)
 					{
-						if (map->frame_end_time>map->frame_start_time)
+						if (map->end_time>map->start_time)
 						{
 							/* valid frames */
 							switch (play_direction)
 							{
 								case TIME_KEEPER_PLAY_FORWARD:
 								{
-									next_time=map->frame_start_time+
-										(map->frame_end_time-map->frame_start_time)/
-										(float)(map->number_of_frames-1)*
-										floor((float)(map->number_of_frames-1)*
-										((time_after-map->frame_start_time)/
-										(map->frame_end_time-map->frame_start_time))+1.0);
+									next_time=map->start_time+
+										(map->end_time-map->start_time)/
+										(float)(map->number_of_sub_maps-1)*
+										floor((float)(map->number_of_sub_maps-1)*
+										((time_after-map->start_time)/
+										(map->end_time-map->start_time))+1.0);
 									time_set=1;
 								} break;
 								case TIME_KEEPER_PLAY_BACKWARD:
 								{
-									next_time=map->frame_start_time+
-										(map->frame_end_time - map->frame_start_time)/
-										(float)(map->number_of_frames-1)*
-										ceil((float)(map->number_of_frames-1)*
-										((time_after-map->frame_start_time)/
-										(map->frame_end_time-map->frame_start_time))-1.0);
+									next_time=map->start_time+
+										(map->end_time - map->start_time)/
+										(float)(map->number_of_sub_maps-1)*
+										ceil((float)(map->number_of_sub_maps-1)*
+										((time_after-map->start_time)/
+										(map->end_time-map->start_time))-1.0);
 									time_set=1;
 								} break;
 							}
@@ -13573,14 +13921,13 @@ Calculates the next desired update callback from the time object.
 #endif /* defined (DEBUG) */
 	}
 	LEAVE;
-
 	return (next_time);
 } /* analysis_potential_time_next_time_callback */
 
 static int analysis_potential_time_update_callback(
 	struct Time_object *time_object,double current_time,void *analysis_void)
 /*******************************************************************************
-LAST MODIFIED : 31 August 2000
+LAST MODIFIED : 17 September 2001
 
 DESCRIPTION :
 Responds to update callbacks from the time object.
@@ -13592,7 +13939,7 @@ Responds to update callbacks from the time object.
 	enum Interpolation_type interpolation;
 	float contour_maximum,contour_minimum, frequency, maximum_value,minimum_value,
 		map_potential_time, number_of_spectrum_colours;
-	int cell_number, datum, frame_number, i, number_of_contours,
+	int cell_number,datum,frame_number,i,number_of_contours,
 		potential_time, previous_potential_time, return_code;
 	Pixel *spectrum_pixels;
 	struct Analysis_work_area *analysis;
@@ -13601,6 +13948,9 @@ Responds to update callbacks from the time object.
 	struct Map_drawing_information *drawing_information;
 	struct Mapping_window *mapping;
 	struct Signal_buffer *buffer;
+#if defined (UNEMAP_USE_3D)
+	struct sub_Map *sub_map;
+#endif
 	XColor colour, spectrum_rgb[MAX_SPECTRUM_COLOURS];
 
 	ENTER(analysis_potential_time_update_callback);
@@ -13609,7 +13959,7 @@ Responds to update callbacks from the time object.
 	if ((analysis=(struct Analysis_work_area *)analysis_void)&&
 		(analysis->highlight)&&(highlight_device= *(analysis->highlight))&&
 		(buffer=get_Device_signal_buffer(highlight_device)))
-	{
+	{	 
 		frequency=buffer->frequency;
 		previous_potential_time=analysis->potential_time;
 		potential_time=(int)(current_time*frequency/1000.0)-
@@ -13653,11 +14003,6 @@ Responds to update callbacks from the time object.
 #endif /* defined (DEBUG) */
 		if (potential_time<0)
 		{
-#if defined (OLD_CODE)
-			Time_keeper_request_new_time(
-				Time_object_get_time_keeper(analysis->potential_time_object),
-				(float)buffer->times[buffer->number_of_samples - 1]*1000.0/frequency);
-#endif /* defined (OLD_CODE) */
 			display_message(ERROR_MESSAGE,"analysis_potential_time_update_callback.  "
 				"Potential time less than minimum");
 		}
@@ -13665,11 +14010,6 @@ Responds to update callbacks from the time object.
 		{
 			if (potential_time>=buffer->number_of_samples)
 			{
-#if defined (OLD_CODE)
-				Time_keeper_request_new_time(
-					Time_object_get_time_keeper(analysis->potential_time_object),
-					(float)buffer->times[0]*1000.0/frequency);
-#endif /* defined (OLD_CODE) */
 				display_message(ERROR_MESSAGE,
 					"analysis_potential_time_update_callback.  "
 					"Potential time greater than maximum");
@@ -13684,45 +14024,50 @@ Responds to update callbacks from the time object.
 					potential_time,previous_potential_time);
 				trace_update_potential_time(analysis->trace,
 					potential_time,previous_potential_time,&analysis->trace_update_flags);
-				if ((mapping=analysis->mapping_window)&&(map=mapping->map)&&
+				if ((mapping=analysis->mapping_window)&&(map=mapping->map)&&										
 					(drawing_information=map->drawing_information))
 				{
-					switch (analysis->map_type)
-					{
-						case POTENTIAL:
-						{
-							map_potential_time=current_time;
-							if (NO_INTERPOLATION!=map->interpolation_type)
-							{
-								if (-1!=map->activation_front)
-								{
-									/* playing movie */
-									/* ??JW fix the range when playing the movie? IF so need */
-									/* to update map dialog as well as map->fixed_range=1 */
 #if defined (UNEMAP_USE_3D)
-									/* 3d map */
-									if (map->projection_type==THREED_PROJECTION)
+					sub_map=map->sub_map[0];
+#endif
+					/* if we're in ELECTRICAL_IMAGING mode and have events, do nothing, as*/
+					/* in this mode we make maps from the eimaging_events, not the */
+					/*map_potential_time*/
+					if (!((map->first_eimaging_event&&*map->first_eimaging_event)&&
+						(ELECTRICAL_IMAGING==*map->analysis_mode)))
+					{			
+						switch (analysis->map_type)
+						{
+							case POTENTIAL:
+							{						 
+								map_potential_time=current_time;
+								if (NO_INTERPOLATION!=map->interpolation_type)
+								{
+									if (-1!=map->activation_front)
 									{
-										map->frame_start_time=map_potential_time;
-										map->frame_end_time=map_potential_time;
-										map->frame_number=0;
-										/* recalculate not used for 3d maps */
-										update_mapping_drawing_area(mapping,1/*recalculate*/);
-										update_mapping_colour_or_auxili(mapping);
-									}
-									/*2d map */
-									else
-									{
-#endif /* defined (UNEMAP_USE_3D) */
-										/* 2d map */
-										if (map->frame_end_time>map->frame_start_time)
+										/* playing movie */
+										/* ??JW fix the range when playing the movie? IF so need */
+										/* to update map dialog as well as map->fixed_range=1 */
+#if defined (UNEMAP_USE_3D)
+										/* 3d map */
+										if (map->projection_type==THREED_PROJECTION)
 										{
-											frame_number=(int)((float)(map->number_of_frames-1)*
-												((map_potential_time-map->frame_start_time)/
-													(map->frame_end_time-map->frame_start_time)));
-											if ((frame_number>=0)&&(frame_number<map->number_of_frames))
+											sub_map->frame_time=map_potential_time;										
+											/* recalculate not used for 3d maps */
+											update_mapping_drawing_area(mapping,1/*recalculate*/);
+											update_mapping_colour_or_auxili(mapping);
+										}
+										/*2d map */
+										else
+										{
+#endif /* defined (UNEMAP_USE_3D) */
+											/* 2d map */
+											if (map->end_time>map->start_time)
 											{
-												map->frame_number=frame_number;
+												frame_number=(int)((float)(map->number_of_movie_frames-1)*
+												((map_potential_time-map->start_time)/
+													(map->end_time-map->start_time)));
+												map->sub_map_number=frame_number;
 												update_mapping_drawing_area(mapping,0);
 												update_mapping_colour_or_auxili(mapping);
 											}
@@ -13730,251 +14075,187 @@ Responds to update callbacks from the time object.
 											{
 												display_message(ERROR_MESSAGE,
 													"analysis_potential_time_update_callback.  "
-													"Wrong time for an animated_sequence");
+													"End time greater or equal to start time");
+												return_code=0;
 											}
-											return_code=1;
+#if defined (UNEMAP_USE_3D)
+										}
+#endif /* defined (UNEMAP_USE_3D) */
+									}
+									else
+									{
+										if ((map_potential_time>=map->start_time)&&
+											(map_potential_time<=map->end_time))
+										{	
+											if (map->start_time<map->end_time)
+											{
+												frame_number=(int)((float)(map->number_of_movie_frames-1)*
+													((map_potential_time-map->start_time)/
+													(map->end_time-map->start_time)));
+											}
+											else
+											{
+												frame_number=0;
+											}
+											map->sub_map_number=frame_number;
+											update_mapping_drawing_area(mapping,0);
+											update_mapping_colour_or_auxili(mapping);
 										}
 										else
 										{
-											display_message(ERROR_MESSAGE,
-												"analysis_potential_time_update_callback.  "
-												"End time greater or equal to start time");
-											return_code=0;
-										}
 #if defined (UNEMAP_USE_3D)
-									}
+											/* 3d map */
+											if (map->projection_type==THREED_PROJECTION)
+											{
+												/* 3d map */
+												sub_map->frame_time=map_potential_time;											
+												/* recalculate not used for 3d maps */
+												update_mapping_drawing_area(mapping,1/*recalculate*/);
+												update_mapping_colour_or_auxili(mapping);
+											}
+											else
+												/* 2d map */
+											{
 #endif /* defined (UNEMAP_USE_3D) */
+												/* 2d map */
+												interpolation=map->interpolation_type;
+												map->interpolation_type=NO_INTERPOLATION;
+												update_mapping_drawing_area(mapping,1);
+												update_mapping_colour_or_auxili(mapping);
+												map->interpolation_type=interpolation;
+#if defined (UNEMAP_USE_3D)
+											}
+#endif /* defined (UNEMAP_USE_3D) */
+										}
+									}
 								}
 								else
 								{
-									if ((map_potential_time>=map->frame_start_time)&&
-										(map_potential_time<=map->frame_end_time))
+#if defined (UNEMAP_USE_3D)
+									/* 3d map */
+									if (map->projection_type==THREED_PROJECTION)
 									{
-										if (map->frame_start_time<map->frame_end_time)
-										{
-											frame_number=(int)((float)(map->number_of_frames-1)*
-												((map_potential_time-map->frame_start_time)/
-												(map->frame_end_time-map->frame_start_time)));
-										}
-										else
-										{
-											frame_number=0;
-										}
-										map->frame_number=frame_number;
+										/* for 3d map, with NO_INTERPOLATION need the frame_start_time
+											 to get the signal min,max */
+										sub_map->frame_time=map_potential_time;								
+									}
+#endif /* defined (UNEMAP_USE_3D) */
+									update_mapping_drawing_area(mapping,1);
+									update_mapping_colour_or_auxili(mapping);
+								}
+							} break;
+							case SINGLE_ACTIVATION:
+							{
+								number_of_spectrum_colours=
+									drawing_information->number_of_spectrum_colours;
+								map->activation_front=(float)(number_of_spectrum_colours-1)*
+									(current_time-(float)buffer->times[analysis->datum]*1000.0/
+										frequency-map->minimum_value)/(map->maximum_value-
+											map->minimum_value);
+#if defined (DEBUG)
+								printf("analysis_potential_time_update_callback.  front %d current %f  datum %f  minimum %f maximum %f\n",
+									map->activation_front,current_time,
+									(float)buffer->times[analysis->datum]*1000.0/frequency,
+									map->minimum_value,map->maximum_value);
+#endif /* defined (DEBUG) */
+								if ((0<=map->activation_front)&&
+									(map->activation_front<number_of_spectrum_colours))
+								{
+									if (drawing_information->read_only_colour_map)
+									{
 										update_mapping_drawing_area(mapping,0);
 										update_mapping_colour_or_auxili(mapping);
 									}
 									else
 									{
-#if defined (UNEMAP_USE_3D)
-										/* 3d map */
-										if (map->projection_type==THREED_PROJECTION)
+										display=drawing_information->user_interface->display;
+										colour_map=drawing_information->colour_map;
+										spectrum_pixels=drawing_information->spectrum_colours;
+										/* use background drawing colour for the whole spectrum */
+										colour.pixel=drawing_information->background_drawing_colour;
+										XQueryColor(display,colour_map,&colour);
+										for (i=0;i<number_of_spectrum_colours;i++)
 										{
-											/* 3d map */
-											map->frame_start_time=map_potential_time;
-											map->frame_end_time=map_potential_time;
-											map->frame_number=0;
-											/* recalculate not used for 3d maps */
-											update_mapping_drawing_area(mapping,1/*recalculate*/);
-											update_mapping_colour_or_auxili(mapping);
+											spectrum_rgb[i].pixel=spectrum_pixels[i];
+											spectrum_rgb[i].flags=DoRed|DoGreen|DoBlue;
+											spectrum_rgb[i].red=colour.red;
+											spectrum_rgb[i].blue=colour.blue;
+											spectrum_rgb[i].green=colour.green;
 										}
-										else
-										/* 2d map */
+										if ((SHOW_CONTOURS==map->contours_option)&&
+											(VARIABLE_THICKNESS==map->contour_thickness))
 										{
-#endif /* defined (UNEMAP_USE_3D) */
-											/* 2d map */
-											interpolation=map->interpolation_type;
-											map->interpolation_type=NO_INTERPOLATION;
-											update_mapping_drawing_area(mapping,1);
-											update_mapping_colour_or_auxili(mapping);
-											map->interpolation_type=interpolation;
-#if defined (UNEMAP_USE_3D)
+											colour.pixel=drawing_information->contour_colour;
+											XQueryColor(display,colour_map,&colour);
+											number_of_contours=map->number_of_contours;
+											maximum_value=map->maximum_value;
+											minimum_value=map->minimum_value;
+											contour_maximum=map->contour_maximum;
+											contour_minimum=map->contour_minimum;
+											number_of_contours=map->number_of_contours;
+											for (i=0;i<number_of_contours;i++)
+											{
+												cell_number=(int)(((contour_maximum*(float)i+
+													contour_minimum*(float)(number_of_contours-1-i))/
+													(float)(number_of_contours-1)-minimum_value)/
+													(maximum_value-minimum_value)*
+													(float)(number_of_spectrum_colours-1)+0.5);
+												spectrum_rgb[cell_number].pixel=
+													spectrum_pixels[cell_number];
+												spectrum_rgb[cell_number].flags=DoRed|DoGreen|DoBlue;
+												spectrum_rgb[cell_number].red=colour.red;
+												spectrum_rgb[cell_number].blue=colour.blue;
+												spectrum_rgb[cell_number].green=colour.green;
+											}
 										}
-#endif /* defined (UNEMAP_USE_3D) */
-									}
-								}
-							}
-							else
-							{
-#if defined (UNEMAP_USE_3D)
-								/* 3d map */
-								if (map->projection_type==THREED_PROJECTION)
-								{
-									/* for 3d map, with NO_INTERPOLATION need the frame_start_time
-										 to get the signal min,max */
-									map->frame_start_time=map_potential_time;
-									map->frame_end_time=map_potential_time;
-									map->frame_number=0;
-								}
-#endif /* defined (UNEMAP_USE_3D) */
-								update_mapping_drawing_area(mapping,1);
-								update_mapping_colour_or_auxili(mapping);
-							}
-#if defined (OLD_CODE)
-								map->frame_start_time=map_potential_time;
-								map->frame_end_time=map_potential_time;
-								if (map->number_of_frames>1)
-								{
-									/* deallocate all the frames except one */
-									i=map->number_of_frames;
-									frame=map->frames+1;
-									while (i>1)
-									{
-										DEALLOCATE(frame->contour_x);
-										DEALLOCATE(frame->contour_y);
-										DEALLOCATE(frame->pixel_values);
-										DEALLOCATE(frame->image->data);
-										XFree((char *)(frame->image));
-										frame++;
-										i--;
-									}
-									if (REALLOCATE(frame,map->frames,struct Map_frame,1))
-									{
-										map->frames=frame;
-									}
-									else
-									{
-										display_message(ERROR_MESSAGE,
-											"analysis_potential_time_update_callback.  "
-											"Could not reallocate frame array");
-										return_code=0;
-									}
-									map->number_of_frames=1;
-								}
-								map->frame_number=0;
-#endif /* defined (OLD_CODE) */
-						} break;
-						case SINGLE_ACTIVATION:
-						{
-							number_of_spectrum_colours=
-								drawing_information->number_of_spectrum_colours;
-							map->activation_front=(float)(number_of_spectrum_colours-1)*
-								(current_time-(float)buffer->times[analysis->datum]*1000.0/
-								frequency-map->minimum_value)/(map->maximum_value-
-								map->minimum_value);
-#if defined (DEBUG)
-							printf("analysis_potential_time_update_callback.  front %d current %f  datum %f  minimum %f maximum %f\n",
-								map->activation_front,current_time,
-								(float)buffer->times[analysis->datum]*1000.0/frequency,
-								map->minimum_value,map->maximum_value);
-#endif /* defined (DEBUG) */
-							if ((0<=map->activation_front)&&
-								(map->activation_front<number_of_spectrum_colours))
-							{
-								if (drawing_information->read_only_colour_map)
-								{
-									update_mapping_drawing_area(mapping,0);
-									update_mapping_colour_or_auxili(mapping);
-								}
-								else
-								{
-									display=drawing_information->user_interface->display;
-									colour_map=drawing_information->colour_map;
-									spectrum_pixels=drawing_information->spectrum_colours;
-									/* use background drawing colour for the whole spectrum */
-									colour.pixel=drawing_information->background_drawing_colour;
-									XQueryColor(display,colour_map,&colour);
-									for (i=0;i<number_of_spectrum_colours;i++)
-									{
+										/* show the activation front */
+										colour.pixel=drawing_information->contour_colour;
+										XQueryColor(display,colour_map,&colour);
+										i=map->activation_front;
 										spectrum_rgb[i].pixel=spectrum_pixels[i];
 										spectrum_rgb[i].flags=DoRed|DoGreen|DoBlue;
 										spectrum_rgb[i].red=colour.red;
 										spectrum_rgb[i].blue=colour.blue;
 										spectrum_rgb[i].green=colour.green;
+										XStoreColors(display,colour_map,spectrum_rgb,
+											number_of_spectrum_colours);
+										/* show the map boundary */
+										colour.pixel=drawing_information->boundary_colour;
+										colour.flags=DoRed|DoGreen|DoBlue;
+										XStoreColor(display,colour_map,&colour);
 									}
-									if ((SHOW_CONTOURS==map->contours_option)&&
-										(VARIABLE_THICKNESS==map->contour_thickness))
-									{
-										colour.pixel=drawing_information->contour_colour;
-										XQueryColor(display,colour_map,&colour);
-										number_of_contours=map->number_of_contours;
-										maximum_value=map->maximum_value;
-										minimum_value=map->minimum_value;
-										contour_maximum=map->contour_maximum;
-										contour_minimum=map->contour_minimum;
-										number_of_contours=map->number_of_contours;
-										for (i=0;i<number_of_contours;i++)
-										{
-											cell_number=(int)(((contour_maximum*(float)i+
-												contour_minimum*(float)(number_of_contours-1-i))/
-												(float)(number_of_contours-1)-minimum_value)/
-												(maximum_value-minimum_value)*
-												(float)(number_of_spectrum_colours-1)+0.5);
-											spectrum_rgb[cell_number].pixel=
-												spectrum_pixels[cell_number];
-											spectrum_rgb[cell_number].flags=DoRed|DoGreen|DoBlue;
-											spectrum_rgb[cell_number].red=colour.red;
-											spectrum_rgb[cell_number].blue=colour.blue;
-											spectrum_rgb[cell_number].green=colour.green;
-										}
-									}
-									/* show the activation front */
-									colour.pixel=drawing_information->contour_colour;
-									XQueryColor(display,colour_map,&colour);
-									i=map->activation_front;
-									spectrum_rgb[i].pixel=spectrum_pixels[i];
-									spectrum_rgb[i].flags=DoRed|DoGreen|DoBlue;
-									spectrum_rgb[i].red=colour.red;
-									spectrum_rgb[i].blue=colour.blue;
-									spectrum_rgb[i].green=colour.green;
-									XStoreColors(display,colour_map,spectrum_rgb,
-										number_of_spectrum_colours);
-									/* show the map boundary */
-									colour.pixel=drawing_information->boundary_colour;
-									colour.flags=DoRed|DoGreen|DoBlue;
-									XStoreColor(display,colour_map,&colour);
-								}
-							}
-							else
-							{
-								if (Time_keeper_is_playing(
-									Time_object_get_time_keeper(analysis->potential_time_object)))
-								{
-#if defined (OLD_CODE)
-									if (TIME_KEEPER_PLAY_FORWARD==Time_keeper_get_play_direction(
-										Time_object_get_time_keeper(analysis->
-										potential_time_object)))
-									{
-										Time_keeper_request_new_time(Time_object_get_time_keeper(
-											analysis->potential_time_object),map->minimum_value+
-											(float)buffer->times[analysis->datum]*1000.0/frequency);
-									}
-									else
-									{
-										Time_keeper_request_new_time(Time_object_get_time_keeper(
-											analysis->potential_time_object),map->maximum_value+
-											(float)buffer->times[analysis->datum]*1000.0/frequency);
-									}
-#endif /* defined (OLD_CODE) */
-									display_message(ERROR_MESSAGE,
-										"analysis_potential_time_update_callback.  "
-										"Time outside range of single activation");
 								}
 								else
 								{
-									map->activation_front= -1;
-									update_mapping_drawing_area(mapping,0);
-									update_mapping_colour_or_auxili(mapping);
+									if (Time_keeper_is_playing(
+										Time_object_get_time_keeper(analysis->potential_time_object)))
+									{
+										display_message(ERROR_MESSAGE,
+											"analysis_potential_time_update_callback.  "
+											"Time outside range of single activation");
+									}
+									else
+									{
+										map->activation_front= -1;
+										update_mapping_drawing_area(mapping,0);
+										update_mapping_colour_or_auxili(mapping);
+									}
 								}
-							}
-						} break;
-						case MULTIPLE_ACTIVATION:
-						{
-							datum=analysis->datum;
-							analysis->datum=potential_time;
-#if defined (OLD_CODE)
-							analysis->datum=(float)potential_time-
-								(float)(analysis->start_search_interval);
-#endif /* defined (OLD_CODE) */
+							} break;
+							case MULTIPLE_ACTIVATION:
+							{
+								datum=analysis->datum;
+								analysis->datum=potential_time;
 #if defined (DEBUG)
-							printf("MULTIPLE_ACTIVATION.  datum %d (%d)\n",analysis->datum,
-								analysis->start_search_interval);
+								printf("MULTIPLE_ACTIVATION.  datum %d (%d)\n",analysis->datum,
+									analysis->start_search_interval);
 #endif /* defined (DEBUG) */
-							update_mapping_drawing_area(mapping,2);
-							update_mapping_colour_or_auxili(mapping);
-							analysis->datum=datum;
-						} break;
-					}
+								update_mapping_drawing_area(mapping,2);
+								update_mapping_colour_or_auxili(mapping);
+								analysis->datum=datum;
+							} break;
+						} /*switch(analysis->map_type)*/
+					}/* if (!((eimaging_event=*map->first_eimaging_event)&& */
 				}
 			}
 		}
@@ -13987,7 +14268,6 @@ Responds to update callbacks from the time object.
 		return_code=0;
 	}
 	LEAVE;
-
 	return (return_code);
 } /* analysis_potential_time_update_callback */
 
@@ -16386,7 +16666,7 @@ area, mapping drawing area, colour bar or auxiliary devices drawing area).
 void analysis_select_map_drawing_are(Widget widget,
 	XtPointer analysis_work_area,XtPointer call_data)
 /*******************************************************************************
-LAST MODIFIED : 29 September 2000
+LAST MODIFIED : 20 September 2001
 
 DESCRIPTION :
 The callback for selecting a device in the analysis work area (signals drawing
@@ -16394,7 +16674,8 @@ area, mapping drawing area, colour bar or auxiliary devices drawing area).
 ==============================================================================*/
 {
 	char *electrode_drawn;
-	int electrode_number,*electrode_x,*electrode_y,pointer_sensitivity;
+	int electrode_number,*electrode_x,*electrode_y,found_electrode,j,
+		pointer_sensitivity;
 	struct Analysis_work_area *analysis;
 	struct Map *map;
 	struct Mapping_window *mapping;
@@ -16425,52 +16706,58 @@ area, mapping drawing area, colour bar or auxiliary devices drawing area).
 					if (ButtonPress==callback->event->type)
 					{
 						event= &(callback->event->xbutton);
-						if ((map=mapping->map)&&(sub_map=*(map->sub_map)/*!!jw more than one sub_map??*/)
-							&&(map->number_of_electrodes>0))
+						if ((map=mapping->map)&&(map->number_of_electrodes>0))
 						{
-							/* the sensitivity depends on the size of the electrode marker */
-							pointer_sensitivity=map->electrodes_marker_size;
-#if defined (OLD_CODE)
-							pointer_sensitivity=analysis->pointer_sensitivity;
-#endif/*defined (OLD_CODE) */
-							/* determine the electrode number */
-							electrode_number=0;
-							electrode_x=sub_map->electrode_x;
-							electrode_y=sub_map->electrode_y;
-							electrode_drawn=map->electrode_drawn;
-							while ((electrode_number<map->number_of_electrodes)&&
-								((!(*electrode_drawn))||
-								(event->x<*electrode_x-pointer_sensitivity)||
-								(event->x>*electrode_x+pointer_sensitivity)||
-								(event->y<*electrode_y-pointer_sensitivity)||
-								(event->y>*electrode_y+pointer_sensitivity)))
+							found_electrode=0;
+							j=0;
+							while((j<map->number_of_sub_maps)&&(!found_electrode))
 							{
-								electrode_number++;
-								electrode_x++;
-								electrode_y++;
-								electrode_drawn++;
+								sub_map=map->sub_map[j];
+								/* the sensitivity depends on the size of the electrode marker */
+								pointer_sensitivity=map->electrodes_marker_size;
+								/* determine the electrode number */
+								electrode_number=0;
+								electrode_x=sub_map->electrode_x;
+								electrode_y=sub_map->electrode_y;
+								electrode_drawn=map->electrode_drawn;
+								while((electrode_number<map->number_of_electrodes)&&(!found_electrode))
+								{
+									if((*electrode_drawn)&&
+										((event->x>*electrode_x-pointer_sensitivity)&&
+											(event->x<*electrode_x+pointer_sensitivity)&&
+											(event->y>*electrode_y-pointer_sensitivity)&&
+											(event->y<*electrode_y+pointer_sensitivity)))
+									{
+										found_electrode=1;
+									}
+									else
+									{	
+										electrode_number++;
+										electrode_x++;
+										electrode_y++;
+										electrode_drawn++;
+									}
+								}
+								j++;
 							}
-#if defined (UNEMAP_USE_NODES)
-							highlight_analysis_device_node((event->state)&ShiftMask,
-								(struct FE_node *)NULL,(int *)NULL,&electrode_number,
-								(int *)NULL,analysis);
-#else
-							if (!highlight_analysis_device((event->state)&ShiftMask,
-								(struct Device **)NULL,(int *)NULL,&electrode_number,
-								(int *)NULL,analysis))
+							if(found_electrode)
 							{
+								if (!highlight_analysis_device((event->state)&ShiftMask,
+									(struct Device **)NULL,(int *)NULL,&electrode_number,
+									(int *)NULL,analysis))
+								{
 #if defined (UNEMAP_USE_3D)
-								/*highlight analysis_device_node has failed, */
-								/* The mouse click wasn't on an electrode. Unselect everything */
-								FE_node_selection_clear(get_unemap_package_FE_node_selection
-									(analysis->unemap_package));
+									/*highlight analysis_device_node has failed, */
+									/* The mouse click wasn't on an electrode. Unselect everything */
+									FE_node_selection_clear(get_unemap_package_FE_node_selection
+										(analysis->unemap_package));
 #endif /* defined (UNEMAP_USE_3D)	*/
-							}
-#endif /*  defined (UNEMAP_USE_NODES) */
-						}
-					}
-				}
-			}
+								} /* if (!highlight_analysis_device(*/
+							}/* if(found)*/
+						}/* if ((map=mapping->map) */
+					}/* if (ButtonPress==callback->event->type)*/
+				}/* if (callback->event)*/
+			}/* if (XmCR_INPUT==callback->reason)*/
 			else
 			{
 				display_message(ERROR_MESSAGE,

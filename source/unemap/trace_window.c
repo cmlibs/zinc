@@ -47,15 +47,6 @@ static MrmHierarchy trace_window_hierarchy;
 
 XmString auto_correlation_string,cross_correlation_string;
 
-enum Trace_moving_status
-{
-	TRACE_MOVING_BOX,
-	TRACE_MOVING_NONE,
-	TRACE_MOVING_CARDIAC_END_TIME,
-	TRACE_MOVING_CARDIAC_PT_TIME,
-	TRACE_MOVING_CARDIAC_START_TIME,
-	TRACE_MOVING_ELECTRICAL_IMAGING_EVENT
-};
 /*
 Module functions
 ----------------
@@ -4835,7 +4826,7 @@ Saves the id of the calculate calculate  button.
 	LEAVE;
 } /* id_trace_calculate_butt */
 
-static int write_marker_time(char *time_str,int x_marker,int axes_left,int axes_width,int top,
+int write_marker_time(char *time_str,int x_marker,int axes_left,int axes_width,int top,
 	XFontStruct *font,GC graphics_context,Display *display,Widget drawing_area,
 	struct Drawing_2d *drawing)
 /*******************************************************************************
@@ -5011,7 +5002,7 @@ DESCRIPTION : draws the markers on the trace window.
 	return(return_code);
 } /* draw_Cardiac_interval_markers */
 
-static int reconcile_Electrical_imaging_event_marker(int *marker,
+int reconcile_Electrical_imaging_event_marker(int *marker,
 	struct Electrical_imaging_event *event,float x_scale,int axes_left,
 	int start_analysis_interval)
 /*******************************************************************************
@@ -5043,8 +5034,7 @@ rounding error in SCALE_X(..1/x_scale...) followed by SCALE_X(..x_scale...)
 	return(return_code);
 }/* reconcile_Electrical_imaging_event_marker */
 
-static int draw_Electrical_imaging_event_marker(
-	struct Electrical_imaging_event *event,
+int draw_Electrical_imaging_event_marker(struct Electrical_imaging_event *event,
 	int end_analysis_interval, int start_analysis_interval,
 	int top,int height,int axes_left,int axes_width, 
 	Widget drawing_area,struct Drawing_2d *drawing,
@@ -5107,7 +5097,7 @@ DESCRIPTION : Draws the marker of the Electrical_imaging_event <event>
 	return (return_code);
 } /* draw_Electrical_imaging_event_marker */
 
-static int draw_Electrical_imaging_event_markers(struct Trace_window *trace)
+int draw_Electrical_imaging_event_markers(struct Trace_window *trace)
 /*******************************************************************************
 LAST MODIFIED :1 June 2001
 
@@ -5159,6 +5149,7 @@ DESCRIPTION : draws the markers on the trace window.
 	LEAVE;
 	return(return_code);
 } /* draw_Electrical_imaging_event_markers */
+
 
 static int calculate_Cardiac_interval_device(struct Trace_window *trace)
 /*******************************************************************************
@@ -5238,7 +5229,14 @@ calculated, it contains the entire signal.
 			if(AUXILIARY==source_device->description->type)
 			{				
 				electrodes=(source_device->description->properties).auxiliary.electrodes;
-				device=(*electrodes);			
+				if(electrodes)
+				{
+					device=(*electrodes);
+				}
+				else
+				{
+					device=source_device;	
+				}
 			}
 			else
 			{
@@ -5320,9 +5318,15 @@ calculated, it contains the entire signal.
 					{	
 						if(AUXILIARY==source_device->description->type)
 						{						
-							electrodes=(source_device->description->properties).auxiliary.electrodes;
-							device=(*electrodes);	
-
+							electrodes=(source_device->description->properties).auxiliary.electrodes;						
+							if(electrodes)
+							{
+								device=(*electrodes);
+							}
+							else
+							{
+								device=source_device;	
+							}
 						}
 						else
 						{
@@ -10327,7 +10331,14 @@ before this function is exited.
 				if(AUXILIARY==device->description->type)
 				{				
 					electrodes=(device->description->properties).auxiliary.electrodes;
-					a_device=(*electrodes);					
+					if(electrodes)
+					{
+						a_device=(*electrodes);				
+					}	
+					else
+					{
+						a_device=device;
+					}
 				}
 				else
 				{
@@ -10477,8 +10488,16 @@ before this function is exited.
 						}					
 						if(AUXILIARY==device->description->type)
 						{
-							electrodes=(device->description->properties).auxiliary.electrodes;
-							a_device=*electrodes;
+							electrodes=(device->description->properties).auxiliary.electrodes;							
+							if(electrodes)
+							{
+								a_device=(*electrodes);				
+							}	
+							else
+							{
+								a_device=device;
+							}
+
 						}
 						else
 						{
@@ -12281,376 +12300,6 @@ either individually or the whole box.
 	LEAVE;
 	return(return_code);
 }/* move_Cardiac_interval */
-
-static int move_Electrical_imaging_event_marker(
-	struct Trace_window_area_3 *trace_area_3,
-	int initial_marker,struct Electrical_imaging_event *event,float x_scale,
-	struct Signal_drawing_information *signal_drawing_information,Display *display,
-	int x_pointer,enum Trace_moving_status moving,int *times,
-	float frequency,int start_analysis_interval,unsigned int working_button)
-/*******************************************************************************
-LAST MODIFIED :13 June 2001
-
-DESCRIPTION : moves the Electrical_imaging_event <event> in response to mouse 
-event.
-==============================================================================*/
-{	
-	Boolean owner_events;
-	char time_string[20];	
-	Cursor cursor;
-	GC graphics_context;
-	int axes_bottom,axes_left,axes_right,axes_top,axes_width,
-		keyboard_mode,marker,pointer_mode,pointer_x,pointer_y,previous_marker,
-		return_code,time;
-	Pixmap pixel_map;		
-	Window confine_to,working_window;
-	XEvent xevent;
-
-	ENTER(move_Electrical_imaging_event_marker);
-	if(trace_area_3&&event&&signal_drawing_information&&display&&times)
-	{	
-		graphics_context=(signal_drawing_information->graphics_context).
-			eimaging_event_colour;
-		axes_left=trace_area_3->axes_left;
-		axes_width=trace_area_3->axes_width;
-		axes_right=axes_left+axes_width-1;
-		axes_top=trace_area_3->axes_top;
-		axes_bottom=axes_top+(trace_area_3->axes_height)-1;	
-		/* grab the pointer */
-		cursor=XCreateFontCursor(display,XC_sb_h_double_arrow);
-		owner_events=True;
-		pointer_mode=GrabModeAsync;
-		keyboard_mode=GrabModeAsync;
-		confine_to=None;
-		if (GrabSuccess==XtGrabPointer(trace_area_3->drawing_area,
-			owner_events,
-			ButtonMotionMask|ButtonPressMask|ButtonReleaseMask,
-			pointer_mode,keyboard_mode,confine_to,cursor,CurrentTime))
-		{			
-			XWarpPointer(display,None,None,0,0,0,0,
-				initial_marker-x_pointer,0);					
-			pointer_x=initial_marker;
-			marker=initial_marker;
-			working_window=XtWindow(trace_area_3->drawing_area);
-			pixel_map=trace_area_3->drawing->pixel_map;
-			while (TRACE_MOVING_NONE!=moving)
-			{				
-				XNextEvent(display,&xevent);
-				switch (xevent.type)
-				{
-					case MotionNotify:									
-					{																					
-						previous_marker=marker;																	
-						/* reduce the number of motion events displayed */
-						while (True==XCheckMaskEvent(display,ButtonMotionMask,&xevent));
-						pointer_x=xevent.xmotion.x;
-						pointer_y=xevent.xmotion.y;									 											
-						if((xevent.xmotion.window==working_window)&&
-							(pointer_y>=axes_top)&&(pointer_y<=axes_bottom))
-						{										
-							if (pointer_x<axes_left)
-							{
-								marker=axes_left;
-							}
-							else
-							{
-								if (pointer_x>axes_right)
-								{
-									marker=axes_right;
-								}
-								else
-								{
-									marker=pointer_x;
-								}
-							}	
-							reconcile_Electrical_imaging_event_marker(&marker,event,x_scale,
-								axes_left,start_analysis_interval);
-							if (marker!=previous_marker)
-							{							
-								/* clear the old marker */
-								XDrawLine(display,pixel_map,graphics_context,
-									previous_marker,axes_top+1,previous_marker,axes_bottom);
-								XDrawLine(display,working_window,graphics_context,
-									previous_marker,axes_top+1,previous_marker,axes_bottom);		
-								/* draw the new marker */
-								XDrawLine(display,pixel_map,graphics_context,marker,
-									axes_top+1,marker,axes_bottom);
-								XDrawLine(display,working_window,graphics_context,
-									marker,axes_top+1,marker,axes_bottom);
-							}	/* if (marker!=previous_marker)	*/
-						}
-					} break;
-					case ButtonRelease:
-					{							
-						/*event->time, marker always reconciled when moved, so don't need */
-						/* to clear, reconcile, draw the marker again. I think! */
-											
-						/*write in the new time (&set flag),so last-selected/current event is */
-						/*labelled */
-						time=(int)((float)((times)[event->time])
-							*1000./frequency+0.5);
-						sprintf(time_string,"%d",time);
-						write_marker_time(time_string,marker,axes_left,
-							axes_width,axes_top,signal_drawing_information->font,
-							graphics_context,display,trace_area_3->drawing_area,
-							trace_area_3->drawing);
-						event->is_current_event=1;
-						moving=TRACE_MOVING_NONE;																										
-					}break;
-					case ButtonPress:
-					{													
-						if (xevent.xbutton.button==working_button)
-						{						
-							display_message(ERROR_MESSAGE,
-								"move_Electrical_imaging_event_marker. Unexpected button press\n");
-							moving=TRACE_MOVING_NONE;
-						}
-					} break;
-					default:
-					{															
-						XtDispatchEvent(&xevent);
-					}
-				}
-			}
-			/* release the pointer */
-			XtUngrabPointer(trace_area_3->drawing_area,CurrentTime);
-		}
-		XFreeCursor(display,cursor);
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"move_Electrical_imaging_event_marker. Missing argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-	return(return_code);
-} /* move_Electrical_imaging_event_marker */
-
-static int erase_Electrical_imaging_event_markers_time_text(
-	struct Trace_window *trace,struct Signal_buffer *buffer,
-	float x_scale,struct Signal_drawing_information *signal_drawing_information,
-	Display *display)
-/*******************************************************************************
-LAST MODIFIED : 13 June 2001
-
-DESCRIPTION : loop therough all the Electrical_imaging_event markers in <trace>,
-erasing the time text from any events that have it written.
-==============================================================================*/
-{	
-	char time_string[20];
-	GC graphics_context;
-	float frequency;
-	int axes_left,axes_top,axes_width,marker,return_code,start_analysis_interval,
-		time,*times;
-	struct Electrical_imaging_event *event;	
-	struct Trace_window_area_3 *trace_area_3;
-
-	ENTER(erase_Electrical_imaging_event_markers_time_text);
-	if(trace&&(trace_area_3=&(trace->area_3))&&display&&buffer&&
-		signal_drawing_information)
-	{
-		graphics_context=(signal_drawing_information->graphics_context).
-			eimaging_event_colour;
-		axes_left=trace_area_3->axes_left;
-		axes_width=trace_area_3->axes_width;
-		axes_top=trace_area_3->axes_top;
-		start_analysis_interval=buffer->start;
-		frequency=buffer->frequency;
-		return_code=1;
-		times=buffer->times;
-		event=*trace->first_eimaging_event;
-		while(event)
-		{
-			if(event->is_current_event)
-			{
-				/* erase the time text from any events that have it written */
-				marker=SCALE_X(event->time,start_analysis_interval,
-					axes_left,x_scale);
-				reconcile_Electrical_imaging_event_marker(&marker,event,x_scale,
-					axes_left,start_analysis_interval);
-				time=(int)((float)((times)[event->time])
-					*1000./frequency+0.5);
-				sprintf(time_string,"%d",time);
-				write_marker_time(time_string,marker,axes_left,
-					axes_width,axes_top,signal_drawing_information->font,
-					graphics_context,display,trace_area_3->drawing_area,
-					trace_area_3->drawing);
-				event->is_current_event=0;
-			}
-			event=event->next;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"erase_Electrical_imaging_event_marker_time_text. Missing argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-	return(return_code);
-}	/* erase_Electrical_imaging_event_marker_time_text */
-
-int move_add_remove_Electrical_imaging_event(XmDrawingAreaCallbackStruct *callback,
-	struct Trace_window *trace,
-	struct Signal_drawing_information *signal_drawing_information,
-	struct User_interface *user_interface,int pointer_sensitivity)
-/*******************************************************************************
-LAST MODIFIED : 27 June 2001
-
-DESCRIPTION : detect mouse or keyboard activity and moves, adds or removes an 
-Electrical_imaging_event.
-==============================================================================*/
-{		
-	enum Trace_moving_status moving;
-	struct Device *cardiac_interval_device;	
-	Display *display;
-	float frequency,x_scale;
-	GC graphics_context;
-	int axes_bottom,axes_height,axes_left,axes_right,axes_top,axes_width,
-		end_analysis_interval,event_time,found,marker,pointer_x,
-		pointer_y,return_code,start_analysis_interval,*times;
-	struct Drawing_2d *drawing;
-	struct Electrical_imaging_event *event;
-	struct Signal_buffer *buffer;
-	struct Trace_window_area_3 *trace_area_3;
-	unsigned int working_button;
-	Widget drawing_area;
-	XButtonEvent *button_event;
-
-	ENTER(move_add_remove_Electrical_imaging_event);	
-	times=(int *)NULL;
-	event =(struct Electrical_imaging_event *)NULL;
-	buffer=(struct Signal_buffer *)NULL;
-	trace_area_3=(struct Trace_window_area_3 *)NULL;
-	button_event=(XButtonEvent *)NULL;
-	display=(Display *)NULL;
-	if(callback&&trace&&(trace_area_3=&(trace->area_3))&&signal_drawing_information&&
-		user_interface&&(cardiac_interval_device=trace->cardiac_interval_device)&&
-		(buffer=get_Device_signal_buffer(cardiac_interval_device))&&(times=buffer->times))
-	{
-		graphics_context=(signal_drawing_information->graphics_context).
-			eimaging_event_colour;
-		return_code=1;
-		if(ButtonPress==callback->event->type)
-		{	
-			event=*trace->first_eimaging_event;
-			drawing_area=trace_area_3->drawing_area;
-			drawing=trace_area_3->drawing;
-			display=user_interface->display;
-			button_event= &(callback->event->xbutton);
-			working_button=button_event->button;		
-			pointer_x=button_event->x;
-			pointer_y=button_event->y;	
-			axes_height=trace_area_3->axes_height;
-			axes_left=trace_area_3->axes_left;
-			axes_width=trace_area_3->axes_width;
-			axes_right=axes_left+axes_width-1;
-			axes_top=trace_area_3->axes_top;
-			axes_bottom=axes_top+(trace_area_3->axes_height)-1;		
-			if ((pointer_x>=axes_left-pointer_sensitivity)&&
-				(pointer_x<=axes_right+pointer_sensitivity)&&
-				(pointer_y>=axes_top-pointer_sensitivity)&&
-				(pointer_y<=axes_bottom+pointer_sensitivity))
-			{	
-				start_analysis_interval=buffer->start;
-				end_analysis_interval=buffer->end;
-				x_scale=SCALE_FACTOR(end_analysis_interval-
-					start_analysis_interval,axes_right-axes_left);						
-				frequency=buffer->frequency;
-				/* are we at an electrical imaging event? */
-				found=0;
-				moving=TRACE_MOVING_NONE;
-				while(event&&(!found))
-				{					
-					marker=SCALE_X(event->time,start_analysis_interval,
-						axes_left,x_scale);				
-					if ((pointer_x>=marker-pointer_sensitivity)&&
-						(pointer_x<=marker+pointer_sensitivity))
-					{																			
-						moving=TRACE_MOVING_ELECTRICAL_IMAGING_EVENT;
-						found=1;
-					}			
-					if(!found)
-					{ 
-						event=event->next;
-					}
-				}/* while(interval&&(!found))*/
-				if(found)
-				{		
-					if((moving==TRACE_MOVING_ELECTRICAL_IMAGING_EVENT)&&
-						(working_button!=Button3))
-					{ 
-						erase_Electrical_imaging_event_markers_time_text(trace,
-							buffer,x_scale,signal_drawing_information,display);
-						move_Electrical_imaging_event_marker(trace_area_3,marker,event,
-							x_scale,signal_drawing_information,display,pointer_x,moving,times,
-							frequency,start_analysis_interval,working_button);					
-					}
-					else if(working_button==Button3)
-					{	
-						int is_current_event,time;
-						char time_string[20];
-					
-
-						/*remove the Electrical_imaging_event */
-						/*erase graphic */
-						draw_Electrical_imaging_event_marker(event,end_analysis_interval,
-							start_analysis_interval,axes_top,axes_height,axes_left,axes_width, 
-							drawing_area,drawing,signal_drawing_information,buffer);
-						/* remove from list */
-						is_current_event=event->is_current_event;
-						remove_Electrical_imaging_event_from_list(trace->first_eimaging_event,
-							event);
-						/* if the deleted event was the current one, and there's an event*/
-						/* remaining, make it the current event*/
-						if(is_current_event&&(event=*trace->first_eimaging_event))
-						{
-							event->is_current_event=1;
-							marker=SCALE_X(event->time,start_analysis_interval,
-								axes_left,x_scale);
-							reconcile_Electrical_imaging_event_marker(&marker,event,x_scale,
-								axes_left,start_analysis_interval);
-							time=(int)((float)((times)[event->time])*1000./frequency+0.5);
-							sprintf(time_string,"%d",time);
-							write_marker_time(time_string,marker,axes_left,
-								axes_width,axes_top,signal_drawing_information->font,
-								graphics_context,display,drawing_area,drawing);
-						}
-					}
-				}/* if(found) */
-				else
-				{
-					/* add an event */
-					if(working_button==Button3)
-					{						
-						erase_Electrical_imaging_event_markers_time_text(trace,
-							buffer,x_scale,signal_drawing_information,display);
-						/* create and add event */						
-						event_time=SCALE_X(pointer_x,axes_left,start_analysis_interval,
-							1/x_scale);					
-						event=create_Electrical_imaging_event(event_time);
-						event->is_current_event=1;
-						add_Electrical_imaging_event_to_sorted_list(
-							trace->first_eimaging_event,event);
-						/* draw graphic */						
-						draw_Electrical_imaging_event_marker(event,end_analysis_interval,
-							start_analysis_interval,axes_top,axes_height,axes_left,axes_width, 
-							drawing_area,drawing,signal_drawing_information,buffer);
-					}
-				}
-			}/* if ((pointer_x>=axes_left-pointer_sensitivity) */			
-		}/* if((ButtonPress==callback->e */
-	}
-	else
-	{	
-		return_code=0;
-		display_message(ERROR_MESSAGE,
-			"move_add_remove_Electrical_imaging_event. invalid argument");
-	}
-	LEAVE;
-	return(return_code);
-} /* move_add_remove_Electrical_imaging_event */
 
 void redraw_trace_1_drawing_area(Widget widget,XtPointer trace_window,
 	XtPointer call_data)

@@ -283,7 +283,7 @@ from here.
 
 struct Map_frame
 /*******************************************************************************
-LAST MODIFIED : 7 October 1997
+LAST MODIFIED :17 September 2001
 
 DESCRIPTION :
 ==============================================================================*/
@@ -291,9 +291,7 @@ DESCRIPTION :
 	/* save the interpolated value at each pixel to be used for contouring */
 		/*???DB.  Is this the best place for this ?  Drawing size dependent */
 	float *pixel_values;
-	/* extrema */
-	float maximum,minimum;
-	int maximum_x,maximum_y,minimum_x,minimum_y;
+	int maximum_screen_x,maximum_screen_y,minimum_screen_x,minimum_screen_y;
 	struct Region *maximum_region,*minimum_region;
 	/* for writing contour values */
 	short int *contour_x,*contour_y;
@@ -305,16 +303,18 @@ DESCRIPTION :
 
 struct sub_Map
 /*******************************************************************************
-LAST MODIFIED : 10 September 2001
+LAST MODIFIED : 14 September 2001
 
 DESCRIPTION :
 Data unique to each sub map, passed from calculate step to show step.
 ==============================================================================*/
 {
-	float *electrode_value,frame_start_time,frame_end_time,*max_x,*max_y,*min_x,
+	float contour_maximum,contour_minimum,maximum_value,minimum_value,
+		*electrode_value,frame_time,*max_x,*max_y,*min_x,
 		*min_y,*stretch_x,*stretch_y;
-	int *electrode_x,*electrode_y,height,number_of_drawn_regions,*start_x,
-		*start_y,potential_time_index,width,x_offset,y_offset;
+	int *electrode_x,*electrode_y,height,number_of_drawn_regions,
+		*start_x,*start_y,potential_time_index,width,x_offset,y_offset;
+	struct Map_frame frame;	
 };
 
 struct Map
@@ -358,8 +358,7 @@ DESCRIPTION : The Map.
 	int fixed_range;
 		/*???DB.  Should be combined with spectrum_range */
 	int range_changed;
-	float contour_maximum,contour_minimum,maximum_value,minimum_value;
-	int activation_front,number_of_contours;
+	int number_of_contours;
 		/*???DB.  Replace activation_front by frame_number ? */
 	int colour_bar_bottom,colour_bar_left,colour_bar_right,colour_bar_top;
 	/* for drawing values on contours.  The drawing area is divided into equal
@@ -368,22 +367,20 @@ DESCRIPTION : The Map.
 		(-1,-1)) for putting the contour value at */
 	int number_of_contour_areas,number_of_contour_areas_in_x;
 	enum Contour_thickness contour_thickness;
-	/* for potential movies */
-	float frame_end_time,frame_start_time;
-	int frame_number,number_of_frames;
-	struct Map_frame *frames;
 	/* set if the map is being printed */
 	char print;
 	/*???DB.  Used to be in user_settings */
 	float membrane_smoothing,plate_bending_smoothing;
 	int finite_element_mesh_columns,finite_element_mesh_rows;
 	struct Map_drawing_information *drawing_information;
+	int activation_front;
+	float contour_maximum,contour_minimum,maximum_value,minimum_value;
 #if defined (OLD_CODE)
 	struct User_interface *user_interface;
 #endif /* defined (OLD_CODE) */
 	struct Unemap_package *unemap_package;
-	/*do sub_maps as a linked list, or array? */
-	int number_of_sub_maps;
+	float end_time,start_time;
+	int number_of_sub_maps,number_of_movie_frames,sub_map_number;
 	struct sub_Map **sub_map;
 	int contour_x_spacing,contour_y_spacing;
 	/* rows and columns for drawing regions */
@@ -427,7 +424,7 @@ This function deallocates the memory associated with the fields of <**map>
 
 int update_colour_map_unemap(struct Map *map,struct Drawing_2d *drawing);
 /*******************************************************************************
-LAST MODIFIED : 6 July 1997
+LAST MODIFIED : 17 September 2001
 
 DESCRIPTION :
 Updates the colour map being used for map.
@@ -457,7 +454,7 @@ and do Scene_remove_graphics_object in the DESTROY Map_3d_package
 #if defined (UNEMAP_USE_3D)
 int draw_map_3d(struct Map *map);
 /*******************************************************************************
-LAST MODIFIED : 15 May 2000
+LAST MODIFIED :17 September 2001
 
 DESCRIPTION :
 This function draws the <map> in as a 3D CMGUI scene.
