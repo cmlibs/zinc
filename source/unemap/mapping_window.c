@@ -2078,7 +2078,7 @@ the mapping_area of the <mapping_window>.
 		{
 			graphics_buffer = create_Graphics_buffer_X3d(
 				mapping_window->map3d_viewing_form, X3dCOLOUR_RGB_MODE, 
-				X3dDOUBLE_BUFFERING, 
+				X3dDOUBLE_BUFFERING, X3dMONO_BUFFERING,
 				User_interface_get_specified_visual_id(
 				get_map_drawing_information_user_interface(drawing_information)));
 			mapping_window->scene_viewer=
