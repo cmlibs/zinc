@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : pacing_window.c
 
-LAST MODIFIED : 23 May 2004
+LAST MODIFIED : 26 May 2004
 
 DESCRIPTION :
 ==============================================================================*/
@@ -5151,7 +5151,7 @@ static struct Pacing_window *create_Pacing_window(
 #endif /* defined (MOTIF) */
 	struct User_interface *user_interface)
 /*******************************************************************************
-LAST MODIFIED : 22 May 2004
+LAST MODIFIED : 26 May 2004
 
 DESCRIPTION :
 Allocates the memory for a pacing window.  Retrieves the necessary widgets and
@@ -5802,7 +5802,11 @@ initializes the appropriate fields.
 								{
 									XtVaSetValues(pacing_window->control_voltcur_label,
 										XmNlabelString,XmStringCreate(
-										"Control square wave amplitude (proportion of maximum current)",
+										/*???DB.  The unemap_hardware interface is in terms of a
+											proportion of maximum, but that maximum happens to be
+											1 mA */
+/*										"Control square wave amplitude (proportion of maximum current)",*/
+										"Control square wave amplitude (mA)",
 										XmSTRING_DEFAULT_CHARSET),
 										NULL);
 								}
