@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : mapping.c
 
-LAST MODIFIED : 26 June 2003
+LAST MODIFIED : 24 November 2003
 
 DESCRIPTION :
 ==============================================================================*/
@@ -4628,7 +4628,7 @@ haven't
 			/*??JW maybe we should just store a flag to indicate that the electrode has*/
 			/* changed, rather than storing all the electrodes_marker_size,electrode */
 			/* option changed  etc at the package/map_info. If so, remove unemap/mapping.h*/
-			/* from unemap_package.h cf map_settings_changed in update_map_from_dialog */
+			/* from unemap_package.h cf map_settings_changed in redraw_map_from_dialog */
 			/* in mapping_window.c */
 			GET_NAME(GT_object)(electrode_glyph,&electrode_glyph_name);
 			/*Glyph type has changed */
@@ -6901,7 +6901,7 @@ Called by (see also) update_colour_map_unemap.
 		{
 			update_pixel[i]=0;
 		}
-		if (maximum_value==minimum_value)
+		if (maximum_value<=minimum_value)
 		{
 			start_cell=0;
 			end_cell=number_of_spectrum_colours;
@@ -13442,7 +13442,7 @@ static int draw_2d_make_map(struct Map *map,int recalculate,
 	struct Drawing_2d *drawing,int map_width,int map_height,int map_x_offset,
 	int map_y_offset,float frame_time,int use_potential_time)
 /*******************************************************************************
-LAST MODIFIED : 8 June 2003
+LAST MODIFIED : 24 November 2003
 
 DESCRIPTION :
 This function draws the <map> in the <drawing>, with <map_width>, <map_height>
@@ -13517,6 +13517,10 @@ to the drawing or writes to a postscript file.
 			/* if we have no map, don't colour electrodes with the signal  */
 		{
 			map->colour_electrodes_with_signal=0;
+		}
+		else
+		{
+			map->colour_electrodes_with_signal=1;
 		}
 		switch (map_type)
 		{

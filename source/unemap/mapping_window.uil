@@ -1,7 +1,7 @@
 !*******************************************************************************
 !FILE : mapping_window.uil
 !
-!LAST MODIFIED : 18 August 2002
+!LAST MODIFIED : 27 November 2003
 !
 !DESCRIPTION :
 !The widgets/gadgets for the mapping window in the mapping work area.
@@ -12,7 +12,7 @@ module mapping_window_module
 procedure
 	identify_mapping_menu;
 	identify_mapping_map_button;
-	configure_map;
+	configure_map_dialog_and_open;
 	identify_mapping_animate_button;
 	animate_activation_map;
 	identify_mapping_setup_button;
@@ -208,7 +208,7 @@ object
 				};
 			XmNactivateCallback = procedures
 				{
-				configure_map(mapping_window_structure);
+				configure_map_dialog_and_open(mapping_window_structure);
 				};
 			};
 		};

@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : mapping_window.c
 
-LAST MODIFIED : 8 June 2003
+LAST MODIFIED : 27 November 2003
 
 DESCRIPTION :
 ???DB.  Missing settings ?
@@ -370,7 +370,7 @@ If the <mapping> has a time keeper, stop it and destroy it's editor widget.
 	return (return_code);
 }/* mapping_window_kill_time_keeper_editor */
 
-static void update_map_from_dialog(Widget widget,XtPointer mapping_window,
+static void redraw_map_from_dialog(Widget widget,XtPointer mapping_window,
 	XtPointer call_data)
 /*******************************************************************************
 LAST MODIFIED : 18 August 2002
@@ -397,20 +397,19 @@ necessary.
 	Widget option_widget;
 	struct Spectrum *spectrum;
 	struct Spectrum *spectrum_to_be_modified_copy;
+#if defined (UNEMAP_USE_3D)
 	struct MANAGER(Spectrum) *spectrum_manager;
+#endif /* defined (UNEMAP_USE_3D) */
 	struct Time_keeper *time_keeper;
 
-	ENTER(update_map_from_dialog);
+	ENTER(redraw_map_from_dialog);
 	time_keeper=(struct Time_keeper *)NULL;
 	spectrum=(struct Spectrum *)NULL;
 	spectrum_to_be_modified_copy=(struct Spectrum *)NULL;
-	spectrum_manager=(struct MANAGER(Spectrum) *)NULL;
 	USE_PARAMETER(call_data);
-#if !defined (UNEMAP_USE_3D)
-	USE_PARAMETER(spectrum_manager);
-#endif/* defined (UNEMAP_USE_3D)*/
 	if ((mapping=(struct Mapping_window *)mapping_window)&&(map=mapping->map)&&
-		(map_dialog=mapping->map_dialog)&&(drawing_information=map->drawing_information))
+		(map_dialog=mapping->map_dialog)&&
+		(drawing_information=map->drawing_information))
 	{
 		map_settings_changed=0;
 		recalculate=0;
@@ -492,19 +491,19 @@ necessary.
 						else
 						{
 							display_message(ERROR_MESSAGE,
-								" update_map_from_dialog. Could not create spectrum copy.");
+								" redraw_map_from_dialog. Could not create spectrum copy.");
 						}
 					}
 					else
 					{
 						display_message(ERROR_MESSAGE,
-							" update_map_from_dialog. Spectrum is not in manager!");
+							" redraw_map_from_dialog. Spectrum is not in manager!");
 					}
 				}
 				else
 				{
 					display_message(ERROR_MESSAGE,
-						" update_map_from_dialog. Spectrum_manager not present");
+						" redraw_map_from_dialog. Spectrum_manager not present");
 				}
 #endif /* defined (UNEMAP_USE_3D) */
 			}
@@ -1038,10 +1037,10 @@ necessary.
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"update_map_from_dialog.  Invalid or missing mapping_window");
+			"redraw_map_from_dialog.  Invalid or missing mapping_window");
 	}
 	LEAVE;
-} /* update_map_from_dialog */
+} /* redraw_map_from_dialog */
 
 static void update_dialog_elec_options(Widget widget,XtPointer mapping_window,
 	XtPointer call_data)
@@ -1084,56 +1083,81 @@ as if not showinf markers, not showing labels either.
 	LEAVE;
 } /* update_dialog_elec_options */
 
-static void configure_map(Widget widget,XtPointer mapping_window,
-	XtPointer call_data)
+static int configure_map_dialog(struct Mapping_window *mapping_window)
 /*******************************************************************************
-LAST MODIFIED : 28 December 1996
+LAST MODIFIED : 27 November 2003
 
 DESCRIPTION :
-Opens the dialog box associated with the map button in the mapping window.
 ==============================================================================*/
 {
-	struct Map_dialog *map_dialog;
-	struct Mapping_window *mapping;
+	int return_code;
 	static MrmRegisterArg identifier_list[]=
 	{
 		{"mapping_window_structure",(XtPointer)NULL}
 	};
 
-	ENTER(configure_map);
-	USE_PARAMETER(widget);
-	USE_PARAMETER(call_data);
-	if ((mapping=(struct Mapping_window *)mapping_window)&&(mapping->map))
+	ENTER(configure_map_dialog);
+	return_code=0;
+	if (mapping_window&&(mapping_window->map))
 	{
-		if (!(map_dialog=mapping->map_dialog))
+		if (mapping_window->map_dialog)
+		{
+			return_code=1;
+		}
+		else
 		{
 			/* assign and register the identifiers */
 				/*???DB.  Have to put in global name list because the map dialog
 					hierarchy may not be open */
-			identifier_list[0].value=(XtPointer)mapping;
+			identifier_list[0].value=(XtPointer)mapping_window;
 			if (MrmSUCCESS==MrmRegisterNames(identifier_list,
 				XtNumber(identifier_list)))
 			{
-				map_dialog=create_Map_dialog(&(mapping->map_dialog),&(mapping->map),
-					mapping->map_button,mapping->user_interface);
+				if (create_Map_dialog(&(mapping_window->map_dialog),
+					&(mapping_window->map),mapping_window->map_button,
+					mapping_window->user_interface))
+				{
+					return_code=1;
+				}
 			}
 			else
 			{
 				display_message(ERROR_MESSAGE,
-					"configure_map.  Could not register identifiers");
+					"configure_map_dialog.  Could not register identifiers");
 			}
-		}
-		if (map_dialog)
-		{
-			open_map_dialog(map_dialog);
 		}
 	}
 	else
 	{
-		display_message(ERROR_MESSAGE,"configure_map.  Missing mapping_window");
+		display_message(ERROR_MESSAGE,
+			"configure_map_dialog.  Missing mapping_window");
 	}
 	LEAVE;
-} /* configure_map */
+
+	return (return_code);
+} /* configure_map_dialog */
+
+static void configure_map_dialog_and_open(Widget widget,
+	XtPointer mapping_window,XtPointer call_data)
+/*******************************************************************************
+LAST MODIFIED : 27 November 2003
+
+DESCRIPTION :
+Opens the dialog box associated with the map button in the mapping window.
+==============================================================================*/
+{
+	struct Mapping_window *mapping;
+
+	ENTER(configure_map_dialog_and_open);
+	USE_PARAMETER(widget);
+	USE_PARAMETER(call_data);
+	mapping=(struct Mapping_window *)mapping_window;
+	if (configure_map_dialog(mapping))
+	{
+		open_map_dialog(mapping->map_dialog);
+	}
+	LEAVE;
+} /* configure_map_dialog_and_open */
 
 static void identify_mapping_area(Widget *widget_id,
 	XtPointer mapping_window,XtPointer call_data)
@@ -4676,7 +4700,7 @@ static struct Mapping_window *create_Mapping_window(
 #endif /*  defined (UNEMAP_USE_3D) */
 	)
 /*******************************************************************************
-LAST MODIFIED : 18 August 2002
+LAST MODIFIED : 27 November 2003
 
 DESCRIPTION :
 This function allocates the memory for a mapping_window and sets the fields to
@@ -4696,7 +4720,8 @@ the created mapping window.  If unsuccessful, NULL is returned.
 			{"destroy_Mapping_window",(XtPointer)destroy_Mapping_window},
 			{"identify_mapping_menu",(XtPointer)identify_mapping_menu},
 			{"identify_mapping_map_button",(XtPointer)identify_mapping_map_button},
-			{"configure_map",(XtPointer)configure_map},
+			{"configure_map_dialog_and_open",
+				(XtPointer)configure_map_dialog_and_open},
 			{"identify_mapping_animate_button",
 				(XtPointer)identify_mapping_animate_button},
 			{"animate_activation_map",(XtPointer)animate_activation_map},
@@ -4789,7 +4814,7 @@ the created mapping window.  If unsuccessful, NULL is returned.
 		{
 			{"create_simple_rig_from_dialog",
 				(XtPointer)create_simple_rig_from_dialog},
-			{"update_map_from_dialog",(XtPointer)update_map_from_dialog},
+			{"redraw_map_from_dialog",(XtPointer)redraw_map_from_dialog},
 			{"update_dialog_elec_options",(XtPointer)update_dialog_elec_options}
 		},
 		identifier_list[]=
@@ -5049,7 +5074,7 @@ the created mapping window.  If unsuccessful, NULL is returned.
 								mapping->map3d_interactive_tool_form,interactive_tool_manager,
 								INTERACTIVE_TOOLBAR_VERTICAL))
 							{
-								/* add tools to toolbar*/
+								/* add tools to toolbar */
 								add_interactive_tool_to_interactive_toolbar_widget(
 									mapping->transform_tool,
 									(void *)mapping->interactive_toolbar_widget);
@@ -5199,7 +5224,7 @@ int open_mapping_window(struct Mapping_window **mapping_address,
 	struct Electrical_imaging_event **first_eimaging_event,
 	enum Signal_analysis_mode *analysis_mode)
 /*******************************************************************************
-LAST MODIFIED : 5 July 2001
+LAST MODIFIED : 27 November 2003
 
 DESCRIPTION :
 If the mapping window does not exist then it is created with the specified
@@ -5219,7 +5244,15 @@ properties.  Then the mapping window is opened.
 		)
 	{
 		return_code=1;
-		if (!(mapping= *mapping_address))
+		if (mapping= *mapping_address)
+		{
+			if ((mapping->map)&&(mapping->map_dialog)&&
+				(mapping->map->drawing_information))
+			{
+				redraw_map_from_dialog((Widget)NULL,(XtPointer)mapping,(XtPointer)NULL);
+			}
+		}
+		else
 		{
 			/* if there is not a mapping window shell */
 			if (!(*shell))
@@ -5374,6 +5407,7 @@ properties.  Then the mapping window is opened.
 								"open_mapping_window.  Invalid mapping associate");
 						} break;
 					}
+					configure_map_dialog(mapping);
 				}
 				else
 				{

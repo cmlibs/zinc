@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : system_window.c
 
-LAST MODIFIED : 16 September 2002
+LAST MODIFIED : 27 November 2003
 
 DESCRIPTION :
 ???DB.  Have to have a proper destroy callback for the system window
@@ -574,7 +574,7 @@ Finds the id of the system analysis button.
 static void associate_mapping_analysis(Widget widget,XtPointer system_window,
 	XtPointer call_data)
 /*******************************************************************************
-LAST MODIFIED : 24 November 1999
+LAST MODIFIED : 27 November 2003
 
 DESCRIPTION :
 Associate the mapping window with the analysis work area
@@ -668,28 +668,30 @@ Associate the mapping window with the analysis work area
 						"associate_mapping_analysis. Spectrum_manager not present");
 				}
 #endif /* defined (UNEMAP_USE_NODES) */
+				open_mapping_window(&(system->analysis.mapping_window),
+					system->mapping_button,system->window_shell,
+					&(system->mapping.window_shell),&(system->mapping.outer_form),
+					&(system->mapping.current_mapping_window),
+					&(system->mapping.open),&(system->mapping.associate),
+					&(system->analysis.map_type),HIDE_COLOUR,HIDE_CONTOURS,
+					SHOW_ELECTRODE_NAMES,HIDE_FIBRES,HIDE_LANDMARKS,HIDE_EXTREMA,
+					maintain_aspect_ratio,1,HAMMER_PROJECTION,VARIABLE_THICKNESS,
+					&(system->analysis.rig),&(system->analysis.event_number),
+					&(system->analysis.potential_time),&(system->analysis.datum),
+					&(system->analysis.start_search_interval),
+					&(system->analysis.end_search_interval),system->analysis_colour,
+					ANALYSIS_ASSOCIATE,(XtPointer)set_mapping_analysis_region,
+					(XtPointer)analysis_select_map_drawing_are,
+					(XtPointer)analysis_select_auxiliary_drawi,
+					(XtPointer)&(system->analysis),
+					User_interface_get_screen_width(user_interface),
+					User_interface_get_screen_height(user_interface),
+					system->configuration_file_extension,
+					system->postscript_file_extension,system->map_drawing_information,
+					user_interface,system->unemap_package,
+					&((system->analysis).first_eimaging_event),
+					&((system->analysis).analysis_mode));
 			}
-			open_mapping_window(&(system->analysis.mapping_window),
-				system->mapping_button,system->window_shell,
-				&(system->mapping.window_shell),&(system->mapping.outer_form),
-				&(system->mapping.current_mapping_window),
-				&(system->mapping.open),&(system->mapping.associate),
-				&(system->analysis.map_type),HIDE_COLOUR,HIDE_CONTOURS,
-				SHOW_ELECTRODE_NAMES,HIDE_FIBRES,HIDE_LANDMARKS,HIDE_EXTREMA,
-				maintain_aspect_ratio,1,HAMMER_PROJECTION,VARIABLE_THICKNESS,
-				&(system->analysis.rig),&(system->analysis.event_number),
-				&(system->analysis.potential_time),&(system->analysis.datum),
-				&(system->analysis.start_search_interval),
-				&(system->analysis.end_search_interval),system->analysis_colour,
-				ANALYSIS_ASSOCIATE,(XtPointer)set_mapping_analysis_region,
-				(XtPointer)analysis_select_map_drawing_are,
-				(XtPointer)analysis_select_auxiliary_drawi,
-				(XtPointer)&(system->analysis),User_interface_get_screen_width(user_interface),
-				User_interface_get_screen_height(user_interface),system->configuration_file_extension,
-				system->postscript_file_extension,system->map_drawing_information,
-				user_interface,system->unemap_package,
-				&((system->analysis).first_eimaging_event),
-				&((system->analysis).analysis_mode));
 		}
 		else
 		{
