@@ -6,6 +6,7 @@ LAST MODIFIED : 31 October 2000
 DESCRIPTION :
 Functions for executing cmiss commands.
 ==============================================================================*/
+#include <limits.h>
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
@@ -22077,7 +22078,8 @@ Executes a UNEMAP OPEN command.
 				/* (cleaned up when the program shuts down) */		
 				read_exnode_and_exelem_file_from_string_and_offset(
 					default_torso_exnode_string,default_torso_exelem_string,
-					"default_torso",command_data->fe_field_manager,command_data->node_manager,
+					"default_torso",INT_MAX/2,command_data->fe_field_manager,
+					command_data->node_manager,
 					command_data->element_manager,command_data->node_group_manager,
 					command_data->data_group_manager,command_data->element_group_manager
 					,command_data->basis_manager);
