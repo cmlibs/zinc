@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : scene.c
 
-LAST MODIFIED : 22 January 2002
+LAST MODIFIED : 13 March 2002
 
 DESCRIPTION :
 Structure for storing the collections of objects that make up a 3-D graphical
@@ -42,7 +42,7 @@ November 1997. Created from Scene description part of Drawing.
 #include "general/matrix_vector.h"
 #include "general/mystring.h"
 #include "general/object.h"
-/*#include "graphics/auxiliary_graphics_types.h"*/
+#include "graphics/auxiliary_graphics_types.h"
 #include "graphics/element_group_settings.h"
 #include "graphics/graphics_library.h"
 #include "graphics/glyph.h"
@@ -186,9 +186,8 @@ Stores the collections of objects that make up a 3-D graphical model.
 	int build;
 	/* display list identifier for the scene */
 	GLuint display_list,fast_changing_display_list;
-	/* flag indicating the status of the display_list; 1 = ok,
-		 0 = needing rebuilding, 2 = child objects need rebuilding */
-	int display_list_current;
+	/* enumeration indicates whether the graphics display list is up to date */
+	enum Graphics_compile_status compile_status;
 	/* the number of objects accessing this scene. The scene cannot be removed
 		from manager unless it is 1 (ie. only the manager is accessing it) */
 	int access_count;
@@ -238,7 +237,7 @@ DEFINE_CALLBACK_FUNCTIONS(Scene_object_transformation, \
 
 static int execute_child_Scene(struct Scene *scene)
 /*******************************************************************************
-LAST MODIFIED : 9 March 2001
+LAST MODIFIED : 13 March 2002
 
 DESCRIPTION :
 Calls the display list for <scene>. If the display list is not current, an
@@ -250,7 +249,7 @@ an error is reported. Version calls both the normal and fast_changing lists.
 	ENTER(execute_Scene);
 	if (scene)
 	{
-		if (scene->display_list_current)
+		if (GRAPHICS_COMPILED == scene->compile_status)
 		{
 			glCallList(scene->display_list);
 			if (Scene_has_fast_changing_objects(scene))
@@ -327,15 +326,15 @@ manager modify not identifier instead.
 
 static int Scene_notify_object_changed(struct Scene *scene,int fast_changing)
 /*******************************************************************************
-LAST MODIFIED : 7 June 2001
+LAST MODIFIED : 13 March 2002
 
 DESCRIPTION :
-Scene functions such as add/remove graphics_object and set_visibility clear
-the display_list_current flag of the scene. Changes to objects in the scene only
-require a rebuild of those objects themselves, not the scene. This latter case
-is signified by a display_list_current value of 2.
-This function sets display_list_current to 2 if it is not already 0, then
-calls Scene_refresh to inform clients of the change.
+Scene functions such as add/remove graphics_object and set_visibility change
+the scene->compile_status to GRAPHICS_NOT_COMPILED. Changes to objects in the
+scene only require a rebuild of those objects themselves, not the scene. This
+latter case a compile_status of CHILD_GRAPHICS_NOT_COMPILED. This function sets
+the compile status to CHILD_GRAPHICS_NOT_COMPILED if it is not already
+GRAPHICS_NOT_COMPILED, then calls Scene_refresh to inform clients of the change.
 They must call compile_Scene to make sure its display list is made up to date.
 If the <fast_changing> flag is set, and the scene is not already set for general
 change, set it to SCENE_FAST_CHANGE, otherwise SCENE_CHANGE.
@@ -357,14 +356,14 @@ Private to the Scene and Scene_objects
 		{
 			scene->change_status = SCENE_CHANGE;
 		}
-		if (0 != scene->display_list_current)
+		if (GRAPHICS_NOT_COMPILED != scene->compile_status)
 		{
 			/* objects in scene need recompiling */
-			scene->display_list_current=2;
+			scene->compile_status = CHILD_GRAPHICS_NOT_COMPILED;
 		}
 #if defined (DEBUG)
 		/*???debug*/
-		printf("Scene %s changed %i\n",scene->name,scene->display_list_current);
+		printf("Scene %s changed %i\n",scene->name,scene->compile_status);
 #endif /* defined (DEBUG) */
 		if (scene->scene_manager)
 		{
@@ -417,10 +416,10 @@ Private to the Scene and Scene_objects.
 		{
 			scene->change_status = SCENE_CHANGE;
 		}
-		scene->display_list_current=0;
+		scene->compile_status = GRAPHICS_NOT_COMPILED;
 #if defined (DEBUG)
 		/*???debug*/
-		printf("Scene %s changed %i\n",scene->name,scene->display_list_current);
+		printf("Scene %s changed %i\n",scene->name,scene->compile_status);
 #endif /* defined (DEBUG) */
 		if (scene->scene_manager)
 		{
@@ -1862,12 +1861,11 @@ in such situations that their display lists need to be updated.
 static void Scene_Graphical_material_change(
 	struct MANAGER_MESSAGE(Graphical_material) *message, void *scene_void)
 /*******************************************************************************
-LAST MODIFIED : 7 June 2001
+LAST MODIFIED : 12 March 2002
 
 DESCRIPTION :
 Something has changed globally in the material manager.
 Tell the scene it has changed and it will rebuild affected materials too.
-???RC Review Manager Messages Here
 ==============================================================================*/
 {
 	struct Scene *scene;
@@ -1880,7 +1878,7 @@ Tell the scene it has changed and it will rebuild affected materials too.
 			case MANAGER_CHANGE_OBJECT(Graphical_material):
 			case MANAGER_CHANGE_OBJECT_NOT_IDENTIFIER(Graphical_material):
 			{
-				/* cache the following in case more than one changed spectrum in use */
+				/* cache the following in case more than one changed material in use */
 				Scene_begin_cache(scene);
 				/* let Scene_object deal with the changes */
 				FOR_EACH_OBJECT_IN_LIST(Scene_object)(
@@ -2003,16 +2001,16 @@ graphics_obects using the affected spectrums as g_NOT_CREATED.
 static void Scene_Texture_change(
 	struct MANAGER_MESSAGE(Texture) *message,void *scene_void)
 /*******************************************************************************
-LAST MODIFIED : 30 May 2001
+LAST MODIFIED : 13 March 2002
 
 DESCRIPTION :
 Something has changed globally in the texture manager.
 Tell the scene it has changed and it will rebuild affected textures too.
-???RC Review Manager Messages Here
 Textures aren't even used by any objects in the scene! Should transfer messages
-to material independently!
+to texture independently!
 ==============================================================================*/
 {
+	struct Graphical_material_Texture_change_data texture_change_data;
 	struct Scene *scene;
 
 	ENTER(Scene_Texture_change);
@@ -2023,15 +2021,29 @@ to material independently!
 			case MANAGER_CHANGE_OBJECT(Texture):
 			case MANAGER_CHANGE_OBJECT_NOT_IDENTIFIER(Texture):
 			{
-				/*???RC difficult to work out which materials are used in scene, so
-					 following inefficient */
-				/* update scene if changed textures are used in any materials */
-				if (FIRST_OBJECT_IN_MANAGER_THAT(Graphical_material)(
-					Graphical_material_uses_texture_in_list,
-					(void *)message->changed_object_list,
-					scene->graphical_material_manager))
+				/* make a list of materials using the changed textures */
+				if (texture_change_data.changed_material_list =
+					CREATE(LIST(Graphical_material))())
 				{
-					Scene_notify_object_changed(scene, /*fast_changing*/0);
+					texture_change_data.changed_texture_list =
+						message->changed_object_list;
+					FOR_EACH_OBJECT_IN_MANAGER(Graphical_material)(
+						Graphical_material_Texture_change,
+						(void *)&texture_change_data, scene->graphical_material_manager);
+					if (0 < NUMBER_IN_LIST(Graphical_material)(
+						texture_change_data.changed_material_list))
+					{
+						/* cache the scene in case more than one changed material in use */
+						Scene_begin_cache(scene);
+						/* let Scene_object deal with the changes */
+						FOR_EACH_OBJECT_IN_LIST(Scene_object)(
+							Scene_object_Graphical_material_change,
+							(void *)(texture_change_data.changed_material_list),
+							scene->scene_object_list);
+						Scene_end_cache(scene);
+					}
+					DESTROY(LIST(Graphical_material))(
+						&texture_change_data.changed_material_list);
 				}
 			} break;
 			case MANAGER_CHANGE_ADD(Texture):
@@ -4378,7 +4390,7 @@ from the default versions of these functions.
 			/* display list index and current flag: */
 			scene->display_list = 0;
 			scene->fast_changing_display_list = 0;
-			scene->display_list_current = 0;
+			scene->compile_status = GRAPHICS_NOT_COMPILED;
 			/* input callback handling information: */
 			scene->input_callback.procedure=(Scene_input_callback_procedure *)NULL;
 			scene->input_callback.data=(void *)NULL;
@@ -5066,7 +5078,7 @@ PROTOTYPE_MANAGER_COPY_WITHOUT_IDENTIFIER_FUNCTION(Scene,name)
 			DESTROY(LIST(Scene_object))(&(destination->scene_object_list));
 			destination->scene_object_list=temp_scene_object_list;
 			/* NOTE: MUST NOT COPY SCENE_MANAGER! */
-			destination->display_list_current=0;
+			destination->compile_status = GRAPHICS_NOT_COMPILED;
 			return_code=1;
 		}
 		else
@@ -6983,7 +6995,7 @@ this function must be called before compile_Scene.
 
 int compile_Scene(struct Scene *scene)
 /*******************************************************************************
-LAST MODIFIED : 31 May 2001
+LAST MODIFIED : 13 March 2002
 
 DESCRIPTION :
 Assembles the display list containing the whole scene. Before that, however, it
@@ -6992,54 +7004,31 @@ Note that lights are not included in the scene and must be handled separately!
 Must also call build_Scene before this functions.
 ==============================================================================*/
 {
-	int fast_changing,return_code;
+	int fast_changing, return_code;
 
 	ENTER(compile_Scene);
 	if (scene && scene->graphical_material_manager)
 	{
-		return_code=1;
-		/* 1 = display list current, 0 = not current. Any other number denotes
-			 display list of member(s) of scene not current, but scene itself OK */
-		if (1 != scene->display_list_current)
+		return_code = 1;
+		if (GRAPHICS_COMPILED != scene->compile_status)
 		{
-#if defined (DEBUG)
-			if (0 !=  scene->display_list_current)
-			{
-				printf("--- compiling members of scene %s\n",scene->name);
-			}
-#endif /* defined (DEBUG) */
-			/* compile all the objects that make up the scene */
-			/* compile textures first since they may be used by materials */
-			FOR_EACH_OBJECT_IN_MANAGER(Texture)(
-				compile_Texture,(void *)NULL,scene->texture_manager);
-			/* compile graphical materials */
-			FOR_EACH_OBJECT_IN_MANAGER(Graphical_material)(
-				compile_Graphical_material,(void *)NULL,
-				scene->graphical_material_manager);
-			/* compile glyphs when used by the glyph set
-			glyph_time = 0.0;
-			FOR_EACH_OBJECT_IN_LIST(GT_object)(compile_GT_object,&glyph_time,
-				scene->glyph_list); */
 			/* compile objects in the scene */
 			FOR_EACH_OBJECT_IN_LIST(Scene_object)(compile_Scene_object,
 				NULL,scene->scene_object_list);
 			/* compile lights in the scene */
 			FOR_EACH_OBJECT_IN_LIST(Light)(compile_Light,(void *)NULL,
 				scene->list_of_lights);
-			if (0==scene->display_list_current)
+			if (GRAPHICS_NOT_COMPILED == scene->compile_status)
 			{
-				if (scene->display_list||(scene->display_list=glGenLists(1)))
+				if (scene->display_list || (scene->display_list = glGenLists(1)))
 				{
-					fast_changing=0;
-#if defined (DEBUG)
-					/*???debug*/printf("--- compiling scene %s\n",scene->name);
-#endif /* defined (DEBUG) */
+					fast_changing = 0;
 					/* compile non-fast changing part of scene */
-					glNewList(scene->display_list,GL_COMPILE);
+					glNewList(scene->display_list, GL_COMPILE);
 					/* push a dummy name to be overloaded with scene_object identifiers */
 					glPushName(0);
 					FOR_EACH_OBJECT_IN_LIST(Scene_object)(execute_Scene_object,
-						(void *)&fast_changing,scene->scene_object_list);
+						(void *)&fast_changing, scene->scene_object_list);
 					glPopName();
 					glEndList();
 				}
@@ -7047,19 +7036,19 @@ Must also call build_Scene before this functions.
 				{
 					display_message(ERROR_MESSAGE,
 						"compile_Scene.  Could not generate display list");
-					return_code=0;
+					return_code = 0;
 				}
 				if (Scene_has_fast_changing_objects(scene))
 				{
-					if (scene->fast_changing_display_list||
-						(scene->fast_changing_display_list=glGenLists(1)))
+					if (scene->fast_changing_display_list ||
+						(scene->fast_changing_display_list = glGenLists(1)))
 					{
-						fast_changing=1;
-						glNewList(scene->fast_changing_display_list,GL_COMPILE);
+						fast_changing = 1;
+						glNewList(scene->fast_changing_display_list, GL_COMPILE);
 						/* push dummy name to be overloaded with scene_object identifiers */
 						glPushName(0);
 						FOR_EACH_OBJECT_IN_LIST(Scene_object)(execute_Scene_object,
-							(void *)&fast_changing,scene->scene_object_list);
+							(void *)&fast_changing, scene->scene_object_list);
 						glPopName();
 						glEndList();
 					}
@@ -7067,20 +7056,20 @@ Must also call build_Scene before this functions.
 					{
 						display_message(ERROR_MESSAGE,
 							"compile_Scene.  Could not generate fast changing display list");
-						return_code=0;
+						return_code = 0;
 					}
 				}
 			}
 			if (return_code)
 			{
-				scene->display_list_current=1;
+				scene->compile_status = GRAPHICS_COMPILED;
 			}
 		}
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE, "compile_Scene.  Invalid argument(s)");
-		return_code=0;
+		return_code = 0;
 	}
 	LEAVE;
 
@@ -7130,7 +7119,7 @@ Calls just the normal non-fast_changing display list for <scene>, if any.
 	ENTER(execute_Scene_non_fast_changing);
 	if (scene)
 	{
-		if (scene->display_list_current)
+		if (GRAPHICS_COMPILED == scene->compile_status)
 		{
 			glCallList(scene->display_list);
 			return_code=1;
@@ -7166,7 +7155,7 @@ Calls the just fast_changing display list for <scene>, if any.
 	ENTER(execute_Scene_fast_changing);
 	if (scene)
 	{
-		if (scene->display_list_current)
+		if (GRAPHICS_COMPILED == scene->compile_status)
 		{
 			if (Scene_has_fast_changing_objects(scene))
 			{
@@ -7693,7 +7682,7 @@ GT_element_group and therefore have the same rendition.
 						case GRAPHICAL_ELEMENT_LINES:
 						{
 							visibility = g_VISIBLE;
-							scene->display_list_current = 0;
+							scene->compile_status = GRAPHICS_NOT_COMPILED;
 						} break;
 						default:
 						{
