@@ -1454,16 +1454,22 @@ material results.
 		if (material->bump_texture)
 		{
 			glActiveTextureARB(GL_TEXTURE1_ARB);
-
 			execute_Texture(material->bump_texture);
-			
 			glActiveTextureARB(GL_TEXTURE0_ARB);
 		}
 		else
 		{
-			glActiveTextureARB(GL_TEXTURE1_ARB);			
-			glDisable(GL_TEXTURE_2D);
-			glActiveTextureARB(GL_TEXTURE0_ARB);
+			/* If the bump_texture has been set then we know the
+				extension is available so we do not need to test above.
+				When disabling however we are unsure whether any multitextures
+				have been enabled and so have to check if the extension is available
+				and if so then disable. */				
+			if (query_gl_extension("GL_ARB_multitexture"))
+			{
+				glActiveTextureARB(GL_TEXTURE1_ARB);			
+				glDisable(GL_TEXTURE_2D);
+				glActiveTextureARB(GL_TEXTURE0_ARB);
+			}
 		}
 #endif /* defined (GL_ARB_multitexture) */
 
