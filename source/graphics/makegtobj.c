@@ -291,6 +291,7 @@ un-selected graphics are drawn.
 						{
 							glPushAttrib(GL_TRANSFORM_BIT);
 						}
+						/*???RC Why do we need NORMALIZE on for voltex? */
 						glEnable(GL_NORMALIZE);
 						if (picking_names)
 						{
