@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : cmiss.c
 
-LAST MODIFIED : 20 July 2000
+LAST MODIFIED : 28 August 2000
 
 DESCRIPTION :
 Functions for executing cmiss commands.
@@ -22502,7 +22502,7 @@ Executes a UNEMAP command.
 static int execute_command_cell_open(struct Parse_state *state,
 	void *dummy_to_be_modified,void *command_data_void)
 /*******************************************************************************
-LAST MODIFIED : 16 June 1999
+LAST MODIFIED : 28 August 2000
 
 DESCRIPTION :
 Executes a CELL OPEN command.
@@ -22540,6 +22540,8 @@ Executes a CELL OPEN command.
 							if (cell_window=create_Cell_window(command_data->user_interface,
 								(char *)NULL,command_data->control_curve_manager,
 								command_data->unemap_package,
+								command_data->any_object_selection,
+								command_data->interactive_tool_manager,
 								&(command_data->background_colour),command_data->light_manager,
 								command_data->default_light,command_data->light_model_manager,
 								command_data->default_light_model,command_data->scene_manager,
@@ -22567,6 +22569,7 @@ Executes a CELL OPEN command.
 #endif /* defined (CELL_CONTROL_CURVE) */
 #endif /* defined (OLD_CODE) */
 							{
+								return_code=1;
 								command_data->cell_window=cell_window;
 #if defined (CELL)
 								/*create_Shell_list_item(&(cell_window->window_shell),
@@ -22583,22 +22586,26 @@ Executes a CELL OPEN command.
 							{
 								display_message(ERROR_MESSAGE,
 									"execute_command_cell_open.  Could not create cell_window");
+								return_code=0;
 							}
 						}
 						else
 						{
 							display_message(ERROR_MESSAGE,
 								"execute_command_cell_open.  Could not create cell_window shell");
+							return_code=0;
 						}
 					}
 					else
 					{
 						display_message(ERROR_MESSAGE,
 							"execute_command_cell_open.  Could not ALLOCATE Execute_command structure");
+						return_code=0;
 					}	
 				}
-					if (cell_window->shell)
+				if (cell_window->shell)
 				{
+					return_code=1;
 #if defined (CELL)
 					/* pop up the CELL window shell */
 					XtPopup(cell_window->shell,XtGrabNone);
@@ -22611,8 +22618,9 @@ Executes a CELL OPEN command.
 			}
 			else
 			{
-				/* no help */
-				return_code=1;
+				display_message(ERROR_MESSAGE,"Unknown option: %s",current_token);
+				display_parse_state_location(state);
+				return_code=0;
 			}
 		}
 		else
