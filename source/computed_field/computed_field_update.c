@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : computed_field_update.c
 
-LAST MODIFIED : 4 February 2002
+LAST MODIFIED : 8 October 2002
 
 DESCRIPTION :
 Functions for updating values of one computed field from those of another.
@@ -139,7 +139,7 @@ int Computed_field_update_nodal_values_from_source(
 	struct GROUP(FE_node) *node_group, struct MANAGER(FE_node) *node_manager,
 	struct FE_node_selection *node_selection, FE_value time)
 /*******************************************************************************
-LAST MODIFIED : 11 October 2001
+LAST MODIFIED : 8 October 2002
 
 DESCRIPTION :
 Set <destination_field> in all the nodes in <node_group> or <node_manager> if
@@ -190,6 +190,9 @@ Restricts update to nodes in <node_selection>, if supplied.
 						"or destination field could not be set.",
 						data.success_count, data.selected_count);
 				}
+				/* to be safe, clear cache of source and destination fields */
+				Computed_field_clear_cache(source_field);
+				Computed_field_clear_cache(destination_field);
 				MANAGER_END_CACHE(FE_node)(node_manager);
 				DEALLOCATE(data.values);
 			}
@@ -428,7 +431,7 @@ int Computed_field_update_element_values_from_source(
 	struct Element_point_ranges_selection *element_point_ranges_selection,
 	struct FE_element_selection *element_selection, FE_value time)
 /*******************************************************************************
-LAST MODIFIED : 3 December 2001
+LAST MODIFIED : 8 October 2002
 
 DESCRIPTION :
 Set grid-based <destination_field> in all the elements in <element_group> or
@@ -480,6 +483,9 @@ Note the union of these two selections is used if both supplied.
 					data.success_count, data.selected_count);
 				return_code=0;
 			}
+			/* to be safe, clear cache of source and destination fields */
+			Computed_field_clear_cache(source_field);
+			Computed_field_clear_cache(destination_field);
 			MANAGER_END_CACHE(FE_element)(element_manager);
 		}
 		else
