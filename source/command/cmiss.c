@@ -28435,7 +28435,8 @@ Initialise all the subcomponents of cmgui and create the Cmiss_command_data
 			/* retrieve application specific constants */
 			display = User_interface_get_display(command_data->user_interface);
 			XtVaGetApplicationResources(User_interface_get_application_shell(
-													 command_data->user_interface),&user_settings,resources,XtNumber(resources),NULL);
+			   command_data->user_interface),&user_settings,resources,
+			   XtNumber(resources),NULL);
 			/*???DB.  User settings should be divided among tools */
 			/* retrieve the background rgb settings */
 			rgb.pixel=user_settings.background_colour;
@@ -29174,10 +29175,6 @@ Initialise all the subcomponents of cmgui and create the Cmiss_command_data
 			cmiss_execute_command("??", (void *)command_data);
 		}
 
-		if (examples_directory)
-		{
-			DEALLOCATE(examples_directory);
-		}
 		if (example_id)
 		{
 			DEALLOCATE(example_id);
