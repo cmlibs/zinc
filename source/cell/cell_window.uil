@@ -1,7 +1,7 @@
 !*******************************************************************************
 ! FILE : cell_window.uil
 !
-! LAST MODIFIED : 28 August 2000
+! LAST MODIFIED : 31 January 2001
 !
 ! DESCRIPTION :
 ! The widgets/gadgets for the Cell window.
@@ -10,56 +10,28 @@ module Cell_Window
 	names = case_sensitive
 
 procedure
-	export_to_cmiss_files;
-	export_control_curves;
-	apply_button_callback;
-	reset_button_callback;
-	identify_export_button;
-	!identify_node_chooser_form;
-	!identify_node_chooser_label;
-	identify_element_form;
-	identify_point_number_text;
-	point_number_text_CB;
-	grid_value_text_CB;
-	identify_grid_field_form;
-	identify_grid_value_text;
-	identify_description_label;
-	identify_apply_button;
-	identify_reset_button;
-	identify_toolbar_form;
-	identify_output_pane;
-	edit_dist_changed_callback;
-	save_toggle_changed_callback;
-	debug_toggle_changed_callback;
-	identify_drawing_area;
-	identify_cell_3d_form;
+	id_export_button;
 	file_open_and_read;
 	file_open_and_write;
-	open_model_callback;
-	file_close_callback;
-	calculate_button_callback;
-	clear_button_callback;
-	model_button_callback;
+	close_model_callback;
+	exit_callback;
 	variables_button_callback;
-	currents_button_callback;
-	parameters_button_callback;
-	help_index_callback;
-	help_desc_param_callback;
-	help_desc_comp_callback;
-	drawing_area_input;
-	drawing_area_expose;
-	drawing_area_resize;
+	calculate_button_callback;
+	show_scene_callback;
+	distributed_callback;
+	id_distributed_toggle;
+	show_unemap_button_callback;
+	clear_unemap_button_callback;
+	save_signals_toggle_changed_cb;
+	cell_window_id_unemap_button;
+	cell_window_id_3d_toolbar;
+	cell_window_id_3d_form;
 
 identifier
 	cell_window_structure;
-	drawing_area_width;
-	drawing_area_height;
-	parameters_file_open_data;
-	variables_file_open_data;
 	model_file_open_data;
-	variables_file_write_data;
-	model_file_write_data;
-	cmiss_file_write_data;
+	model_file_save_data;
+	ipcell_file_save_data;
 
 value
 	sash_width : 50;
@@ -76,386 +48,15 @@ object
 			XmNborderWidth = 0;
 			XmNdefaultPosition = false;
 			XmNresizePolicy = XmRESIZE_ANY;
-			XmNdialogTitle = compound_string("CELL");
+			XmNdialogTitle = compound_string("Cell");
 			};
 		controls
 			{
-			XmPanedWindow paned_window;
 			XmForm menu_form;
-			};
-		};
-	paned_window: XmPanedWindow
-		{
-		arguments
-			{
-			XmNsashWidth = sash_width;
-			XmNtopOffset = small_widget_spacing;
-			XmNtopAttachment = XmATTACH_WIDGET;
-			XmNtopWidget = XmForm menu_form;
-			XmNleftOffset = small_widget_spacing;
-			XmNleftAttachment = XmATTACH_FORM;
-			XmNrightOffset = small_widget_spacing;
-			XmNrightAttachment = XmATTACH_FORM;
-			XmNbottomOffset = small_widget_spacing;
-			XmNbottomAttachment = XmATTACH_FORM;
-			};
-		controls
-			{
-			!XmDrawingArea drawing_area;
+			XmForm cell_3d_toolbar;
 			XmForm cell_3d_form;
-			XmScrolledWindow output_scrolled_window;
 			};
 		};
-	cell_3d_form: XmForm
-		{
-		arguments
-			{
-			XmNborderWidth = 0;
-			XmNdefaultPosition = false;
-			XmNresizePolicy = XmRESIZE_ANY;
-			XmNwidth = drawing_area_width;
-			XmNheight = drawing_area_height;
-			};
-		callbacks
-			{
-			MrmNcreateCallback = procedures
-				{
-				identify_cell_3d_form(cell_window_structure);
-				};
-			};
-		};
-	drawing_area: XmDrawingArea
-		{
-		arguments
-			{
-			XmNresizePolicy = XmRESIZE_ANY;
-			XmNwidth = drawing_area_width;
-			XmNheight = drawing_area_height;
-			};
-		callbacks
-			{
-			MrmNcreateCallback = procedures
-				{
-				identify_drawing_area(cell_window_structure);
-				};
-			XmNinputCallback = procedures
-				{
-				drawing_area_input(cell_window_structure);
-				};
-			XmNexposeCallback = procedures
-				{
-				drawing_area_expose(cell_window_structure);
-				};
-			XmNresizeCallback = procedures
-				{
-				drawing_area_resize(cell_window_structure);
-				};
-			};
-		};
-	output_scrolled_window: XmScrolledWindow
-		{
-		arguments
-			{
-			XmNscrollingPolicy = XmAUTOMATIC;
-			XmNallowResize = true;
-			XmNpaneMaximum = max_pane_size;
-			XmNpaneMinimum = min_pane_size;
-			XmNscrollBarDisplayPolicy = XmSTATIC;
-			XmNworkWindow = XmRowColumn output_rowcol;
-			};
-		controls
-			{
-			XmRowColumn output_rowcol;
-			};
-		};
-	output_rowcol: XmRowColumn
-		{
-		arguments
-			{
-			XmNentryAlignment = XmALIGNMENT_BEGINNING;
-			XmNpacking = XmPACK_TIGHT;
-			XmNorientation = XmVERTICAL;
-			XmNnumColumns = 1;
-			};
-		controls
-			{
-			XmToggleButtonGadget edit_distributed_toggle;
-			!XmRowColumn node_chooser_rowcol;
-			XmRowColumn element_point_chooser_rowcol;
-			XmLabelGadget description_label;
-			XmForm button_form;
-			};
-		};
-	edit_distributed_toggle: XmToggleButtonGadget
-		{
-		arguments
-			{
-			XmNlabelString = compound_string(
-				"Edit distributed parameters");
-			XmNset = false;
-			};
-		callbacks
-			{
-			XmNvalueChangedCallback = procedures
-				{
-				edit_dist_changed_callback(
-					cell_window_structure);
-				};
-			};
-		};
-!	node_chooser_rowcol: XmRowColumn
-!		{
-!		arguments
-!			{
-!			XmNentryAlignment = XmALIGNMENT_BEGINNING;
-!			XmNpacking = XmPACK_TIGHT;
-!			XmNorientation = XmHORIZONTAL;
-!			XmNnumColumns = 1;
-!			};
-!		controls
-!			{
-!			XmLabelGadget node_chooser_label;
-!			XmForm node_chooser_form;
-!			};
-!		};
-!	node_chooser_label: XmLabelGadget
-!		{
-!		arguments
-!			{
-!			XmNsensitive = false;
-!			XmNlabelString = compound_string("Node:");
-!			};
-!		callbacks
-!			{
-!			MrmNcreateCallback = procedures
-!				{
-!				identify_node_chooser_label(
-!					cell_window_structure);
-!				};
-!			};
-!		};
-!	node_chooser_form: XmForm
-!		{
-!		callbacks
-!			{
-!			MrmNcreateCallback = procedures
-!				{
-!				identify_node_chooser_form(
-!					cell_window_structure);
-!				};
-!			};
-!		};
-	element_point_chooser_rowcol: XmRowColumn
-		{
-		arguments
-			{
-			XmNentryAlignment = XmALIGNMENT_BEGINNING;
-			XmNpacking = XmPACK_TIGHT;
-			XmNorientation = XmHORIZONTAL;
-			XmNnumColumns = 1;
-			};
-		controls
-			{
-			XmLabelGadget element_chooser_label;
-			XmForm element_chooser_form;
-			XmLabelGadget point_number_label;
-			XmTextField point_number_text;
-			XmLabelGadget grid_field_chooser_label;
-			XmForm grid_field_chooser_form;
-			XmLabelGadget grid_value_label;
-			XmTextField grid_value_text;
-			};
-		};
-	element_chooser_label: XmLabelGadget
-		{
-		arguments
-			{
-			XmNlabelString = compound_string("Element:");
-			XmNalignment = XmALIGNMENT_BEGINNING;
-			};
-		};
-	element_chooser_form: XmForm
-		{
-		callbacks
-			{
-			MrmNcreateCallback = procedures
-				{
-				identify_element_form(
-					cell_window_structure);
-				};
-			};
-		};
-	point_number_label: XmLabelGadget
-		{
-		arguments
-			{
-			XmNlabelString = compound_string("Point:");
-			XmNalignment = XmALIGNMENT_BEGINNING;
-			};
-		};
-	point_number_text: XmTextField
-		{
-		arguments
-			{
-			XmNvalue = "";
-			XmNcolumns = 12;
-			};
-		callbacks
-			{
-			MrmNcreateCallback = procedure
-				identify_point_number_text(
-					cell_window_structure);
-			XmNactivateCallback = procedure
-				point_number_text_CB(cell_window_structure);
-			XmNlosingFocusCallback = procedure
-				point_number_text_CB(cell_window_structure);
-			};
-		};
-	grid_field_chooser_label: XmLabelGadget
-		{
-		arguments
-			{
-			XmNlabelString = compound_string("Grid field:");
-			XmNalignment = XmALIGNMENT_BEGINNING;
-			};
-		};
-	grid_field_chooser_form: XmForm
-		{
-		callbacks
-			{
-			MrmNcreateCallback = procedures
-				{
-				identify_grid_field_form(
-					cell_window_structure);
-				};
-			};
-		};
-	grid_value_label: XmLabelGadget
-		{
-		arguments
-			{
-			XmNlabelString = compound_string("Grid value:");
-			XmNalignment = XmALIGNMENT_BEGINNING;
-			};
-		};
-	grid_value_text: XmTextField
-		{
-		arguments
-			{
-			XmNvalue = "";
-			XmNcolumns = 12;
-			};
-		callbacks
-			{
-			MrmNcreateCallback = procedure
-				identify_grid_value_text(
-					cell_window_structure);
-			XmNactivateCallback = procedure
-				grid_value_text_CB(cell_window_structure);
-			XmNlosingFocusCallback = procedure
-				grid_value_text_CB(cell_window_structure);
-			};
-		};
-	description_label: XmLabelGadget
-		{
-		arguments
-			{
-			XmNsensitive = false;
-			XmNlabelString = compound_string(
-			"No grid point");
-			};
-		callbacks
-			{
-			MrmNcreateCallback = procedures
-				{
-				identify_description_label(
-					cell_window_structure);
-				};
-			};
-		};
-	button_form: XmForm
-		{
-		arguments
-			{
-			XmNfractionBase = 16;
-			};
-		controls
-			{
-			XmPushButton apply_button;
-			XmPushButton reset_button;
-			};
-		};
-	apply_button: XmPushButton
-		{
-		arguments
-			{
-			XmNlabelString = 
-				compound_string("Apply to grid point");
-			XmNtopAttachment = XmATTACH_FORM;
-			XmNbottomAttachment = XmATTACH_FORM;
-			XmNleftAttachment = XmATTACH_POSITION;
-			XmNleftPosition = 2;
-			XmNrightAttachment = XmATTACH_POSITION;
-			XmNrightPosition = 6;
-			XmNsensitive = false;
-			};
-		callbacks
-			{
-			XmNactivateCallback = procedures
-				{
-				apply_button_callback(cell_window_structure);
-				};
-			MrmNcreateCallback = procedures
-				{
-				identify_apply_button(
-					cell_window_structure);
-				};
-			};
-		};
-	reset_button: XmPushButton
-		{
-		arguments
-			{
-			XmNlabelString = compound_string(
-				"Revert to grid point values");
-			XmNtopAttachment = XmATTACH_FORM;
-			XmNbottomAttachment = XmATTACH_FORM;
-			XmNleftAttachment = XmATTACH_POSITION;
-			XmNleftPosition = 10;
-			XmNrightAttachment = XmATTACH_POSITION;
-			XmNrightPosition = 14;
-			XmNsensitive = false;
-			};
-		callbacks
-			{
-			XmNactivateCallback = procedures
-				{
-				reset_button_callback(cell_window_structure);
-				};
-			MrmNcreateCallback = procedures
-				{
-				identify_reset_button(
-					cell_window_structure);
-				};
-			};
-		};
-!	output_text: XmText
-!		{
-!		arguments
-!			{
-!			XmNeditMode = XmMULTI_LINE_EDIT;
-!			XmNeditable = false;
-!			XmNwordWrap = true;
-!			XmNsensitive = true;
-!			};
-!		callbacks
-!			{
-!			MrmNcreateCallback = procedures
-!				{
-!				identify_output_pane(cell_window_structure);
-!				};
-!			};
-!		};
 	menu_form: XmForm
 		{
 		arguments
@@ -490,12 +91,7 @@ object
 		controls
 			{
 			XmCascadeButton file_button;
-			XmCascadeButton model_button;
-			XmCascadeButton variables_button;
-			XmCascadeButton parameters_button;
-			XmCascadeButton currents_button;
-			XmCascadeButton calculate_button;
-			XmCascadeButton clear_button;
+			XmCascadeButton unemap_button;
 			};
 		};
 	file_button: XmCascadeButton
@@ -503,7 +99,6 @@ object
 		arguments
 			{
 			XmNlabelString = compound_string("File");
-			XmNmnemonic = keysym("F");
 			};
 		controls
 			{
@@ -515,11 +110,12 @@ object
 		controls
 			{
 			XmCascadeButton open_button;
-			XmCascadeButton write_button;
+			XmCascadeButton save_button;
 			XmSeparator
 				{
 				};
-			XmPushButton close_button;
+			XmPushButton close_model_button;
+			XmPushButton exit_button;
 			};
 		};
 	open_button: XmCascadeButton
@@ -538,36 +134,6 @@ object
 		controls
 			{
 			XmPushButton open_model_button;
-			XmPushButton open_parameters_button;
-			XmPushButton open_variables_button;
-			};
-		};
-	open_parameters_button: XmPushButton
-		{
-		arguments
-			{
-			XmNlabelString = compound_string("Parameters file");
-			};
-		callbacks
-			{
-			XmNactivateCallback = procedures
-				{
-				file_open_and_read(parameters_file_open_data);
-				};
-			};
-		};
-	open_variables_button: XmPushButton
-		{
-		arguments
-			{
-			XmNlabelString = compound_string("Variables file");
-			};
-		callbacks
-			{
-			XmNactivateCallback = procedures
-				{
-				file_open_and_read(variables_file_open_data);
-				};
 			};
 		};
 	open_model_button: XmPushButton
@@ -580,110 +146,73 @@ object
 			{
 			XmNactivateCallback = procedures
 				{
-				open_model_callback(cell_window_structure);
+				file_open_and_read(model_file_open_data);
 				};
 			};
 		};
-	write_button: XmCascadeButton
+	save_button: XmCascadeButton
 		{
 		arguments
 			{
-			XmNlabelString = compound_string("Write");
+			XmNlabelString = compound_string("Save");
 			};
 		controls
 			{
-			XmPulldownMenu write_menu;
+			XmPulldownMenu save_menu;
 			};
 		};
-	write_menu: XmPulldownMenu
+	save_menu: XmPulldownMenu
 		{
 		controls
 			{
-			XmPushButton write_model_button;
-			XmPushButton write_variables_button;
-			XmPushButton write_cmiss_button;
-			XmPushButton export_to_cmiss_button;
-			XmPushButton export_control_curve_button;
+			XmPushButton save_model_button;
+			XmPushButton save_ipcell_button;
+			XmPushButton export_button;
 			};
 		};
-	write_model_button: XmPushButton
+	save_model_button: XmPushButton
 		{
 		arguments
 			{
-			XmNlabelString = compound_string("Cell model file");
+			XmNlabelString = compound_string("Cell model");
 			};
 		callbacks
 			{
 			XmNactivateCallback = procedures
 				{
-				file_open_and_write(model_file_write_data);
+				file_open_and_write(model_file_save_data);
 				};
 			};
 		};
-	write_cmiss_button: XmPushButton
+	save_ipcell_button: XmPushButton
 		{
 		arguments
 			{
-			XmNlabelString = compound_string("CMISS file");
+			XmNlabelString = compound_string("Cell model to ipcell");
 			};
-		callbacks 
+		callbacks
 			{
 			XmNactivateCallback = procedures
 				{
-				file_open_and_write(cmiss_file_write_data);
+				file_open_and_write(ipcell_file_save_data);
 				};
 			};
 		};
-	export_to_cmiss_button: XmPushButton
+	export_button: XmPushButton
 		{
 		arguments
 			{
-			XmNlabelString = compound_string(
-				"Export to CMISS files");
-			XmNsensitive = false;
+			XmNlabelString = compound_string("Export CMISS files");
 			};
-		callbacks 
+		callbacks
 			{
 			MrmNcreateCallback = procedures
 				{
-				identify_export_button(cell_window_structure);
-				};
-			XmNactivateCallback = procedures
-				{
-				export_to_cmiss_files(cell_window_structure);
+				id_export_button(cell_window_structure);
 				};
 			};
 		};
-	export_control_curve_button: XmPushButton
-		{
-		arguments
-			{
-			XmNlabelString = 
-				compound_string("Export control curves");
-			};
-		callbacks 
-			{
-			XmNactivateCallback = procedures
-				{
-				export_control_curves(cell_window_structure);
-				};
-			};
-		};
-	write_variables_button: XmPushButton
-		{
-		arguments
-			{
-			XmNlabelString = compound_string("Variables file");
-			};
-		callbacks 
-			{
-			XmNactivateCallback = procedures
-				{
-				file_open_and_write(variables_file_write_data);
-				};
-			};
-		};
-	close_button:  XmPushButton
+	close_model_button:  XmPushButton
 		{
 		arguments
 			{
@@ -693,26 +222,66 @@ object
 			{
 			XmNactivateCallback = procedures
 				{
-				file_close_callback(cell_window_structure);
+				close_model_callback(cell_window_structure);
 				};
 			};
 		};
-	calculate_button:  XmCascadeButton
+	exit_button:  XmPushButton
 		{
 		arguments
 			{
-			XmNlabelString = compound_string("Calculate");
+			XmNlabelString = compound_string("Exit");
 			};
 		callbacks
 			{
 			XmNactivateCallback = procedures
 				{
-				calculate_button_callback(
-					cell_window_structure);
+				exit_callback(cell_window_structure);
 				};
 			};
 		};
-	clear_button:  XmCascadeButton
+	unemap_button: XmCascadeButton
+		{
+		arguments
+			{
+			XmNlabelString = compound_string("UnEmap");
+			};
+		controls
+			{
+			XmPulldownMenu unemap_pulldown_menu;
+			};
+		};
+	unemap_pulldown_menu: XmPulldownMenu
+		{
+		controls
+			{
+			XmPushButton show_unemap_button;
+			XmPushButton clear_unemap_button;
+			XmSeparator
+				{
+				};
+			XmToggleButton save_signals_toggle;
+			};
+		};
+	show_unemap_button:  XmPushButton
+		{
+		arguments
+			{
+			XmNlabelString = compound_string("Show");
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedures
+				{
+				cell_window_id_unemap_button(cell_window_structure);
+				};
+			XmNactivateCallback = procedures
+				{
+				show_unemap_button_callback(cell_window_structure);
+				};
+			};
+		};
+	clear_unemap_button:  XmPushButton
 		{
 		arguments
 			{
@@ -722,66 +291,22 @@ object
 			{
 			XmNactivateCallback = procedures
 				{
-				clear_button_callback(cell_window_structure);
+				clear_unemap_button_callback(cell_window_structure);
 				};
 			};
 		};
-	model_button:  XmCascadeButton
+	save_signals_toggle: XmToggleButton
 		{
 		arguments
 			{
-			XmNlabelString = compound_string("Model");
+			XmNlabelString = compound_string("Save signals");
+			XmNset = false;
 			};
 		callbacks
 			{
-			XmNactivateCallback = procedures
+			XmNvalueChangedCallback = procedures
 				{
-				model_button_callback(cell_window_structure);
-				};
-			};
-		};
-	variables_button:  XmCascadeButton
-		{
-		arguments
-			{
-			XmNlabelString = compound_string("Variables");
-			};
-		callbacks
-			{
-			XmNactivateCallback = procedures
-				{
-				variables_button_callback(
-					cell_window_structure);
-				};
-			};
-		};
-	currents_button:  XmCascadeButton
-		{
-		arguments
-			{
-			XmNlabelString = compound_string("Currents");
-			};
-		callbacks
-			{
-			XmNactivateCallback = procedures
-				{
-				currents_button_callback(
-					cell_window_structure);
-				};
-			};
-		};
-	parameters_button:  XmCascadeButton
-		{
-		arguments
-			{
-			XmNlabelString = compound_string("Parameters");
-			};
-		callbacks
-			{
-			XmNactivateCallback = procedures
-				{
-				parameters_button_callback(
-					cell_window_structure);
+				save_signals_toggle_changed_cb(cell_window_structure);
 				};
 			};
 		};
@@ -791,10 +316,10 @@ object
 			{
 			XmNtopOffset = small_widget_spacing;
 			XmNtopAttachment = XmATTACH_FORM;
-			XmNleftOffset = small_widget_spacing;
+			XmNleftOffset = large_widget_spacing;
 			XmNleftAttachment = XmATTACH_WIDGET;
 			XmNleftWidget = menu_bar;
-			XmNrightOffset = small_widget_spacing;
+			XmNrightOffset = large_widget_spacing;
 			XmNrightAttachment = XmATTACH_WIDGET;
 			XmNrightWidget = help_menu_bar;
 			XmNbottomOffset = small_widget_spacing;
@@ -805,48 +330,79 @@ object
 			};
 		controls
 			{
-			XmToggleButton save_toggle;
-			XmToggleButton debug_toggle;
-			XmForm toolbar_form;
+			XmPushButton variables_button;
+			XmPushButton calculate_button;
+			XmToggleButton show_scene_toggle;
+			XmToggleButton distributed_toggle;
 			};
 		};
-	save_toggle: XmToggleButton
+	calculate_button:  XmPushButton
 		{
 		arguments
 			{
-			XmNlabelString = compound_string("Save");
+			XmNlabelString = compound_string("Calculate");
+			XmNshadowThickness = 0;
+			XmNhighlightThickness = 0;
+			};
+		callbacks
+			{
+			XmNactivateCallback = procedures
+				{
+				calculate_button_callback(
+					cell_window_structure);
+				};
+			};
+		};
+	show_scene_toggle:  XmToggleButton
+		{
+		arguments
+			{
+			XmNlabelString = compound_string("Show scene");
 			XmNset = false;
 			};
 		callbacks
 			{
 			XmNvalueChangedCallback = procedures
 				{
-				save_toggle_changed_callback(
-					cell_window_structure);
+				show_scene_callback(cell_window_structure);
 				};
 			};
-		};
-	debug_toggle: XmToggleButton
+		};	
+	distributed_toggle:  XmToggleButton
 		{
 		arguments
 			{
-			XmNlabelString = compound_string("DOP");
+			XmNlabelString = compound_string("Distributed");
+			XmNset = false;
+			XmNsensitive = false;
 			};
 		callbacks
 			{
+			MrmNcreateCallback = procedures
+				{
+				id_distributed_toggle(cell_window_structure);
+				};
 			XmNvalueChangedCallback = procedures
 				{
-				debug_toggle_changed_callback(
-					cell_window_structure);
+				distributed_callback(cell_window_structure);
 				};
 			};
 		};
-	toolbar_form: XmForm
+	variables_button:  XmPushButton
 		{
+		arguments
+			{
+			XmNlabelString = compound_string("Variables");
+			XmNshadowThickness = 0;
+			XmNhighlightThickness = 0;
+			};
 		callbacks
 			{
-			MrmNcreateCallback = procedure
-				identify_toolbar_form(cell_window_structure);
+			XmNactivateCallback = procedures
+				{
+				variables_button_callback(
+					cell_window_structure);
+				};
 			};
 		};
 	help_menu_bar: XmMenuBar
@@ -872,7 +428,6 @@ object
 		arguments
 			{
 			XmNlabelString = compound_string("Help");
-			XmNmnemonic = keysym("H");
 			};
 		controls
 			{
@@ -895,10 +450,10 @@ object
 			};
 		callbacks
 			{
-			XmNactivateCallback = procedures
-				{
-				help_index_callback(cell_window_structure);
-				};
+!			XmNactivateCallback = procedures
+!				{
+!				help_index_callback(cell_window_structure);
+!				};
 			};
 		};
 	help_describe_button: XmCascadeButton
@@ -926,13 +481,6 @@ object
 			{
 			XmNlabelString = compound_string("parameter");
 			};
-		callbacks
-			{
-			XmNactivateCallback = procedures
-				{
-				help_desc_param_callback(cell_window_structure);
-				};
-			};
 		};
 	describe_component_button: XmPushButton
 		{
@@ -940,11 +488,52 @@ object
 			{
 			XmNlabelString = compound_string("component");
 			};
+		};
+	cell_3d_toolbar: XmForm
+		{
+		arguments
+			{
+			XmNrightAttachment = XmATTACH_FORM;
+			XmNrightOffset = small_widget_spacing;
+			XmNleftAttachment = XmATTACH_FORM;
+			XmNleftOffset = small_widget_spacing;
+			XmNtopAttachment = XmATTACH_WIDGET;
+			XmNtopOffset = small_widget_spacing;
+			XmNtopWidget = menu_form;
+			XmNborderWidth = 0;
+			XmNdefaultPosition = false;
+			XmNresizePolicy = XmRESIZE_ANY;
+			};
 		callbacks
 			{
-			XmNactivateCallback = procedures
+			MrmNcreateCallback = procedures
 				{
-				help_desc_comp_callback(cell_window_structure);
+				cell_window_id_3d_toolbar(cell_window_structure);
+				};
+			};
+		};
+	cell_3d_form: XmForm
+		{
+		arguments
+			{
+			XmNrightAttachment = XmATTACH_FORM;
+			XmNrightOffset = small_widget_spacing;
+			XmNleftAttachment = XmATTACH_FORM;
+			XmNleftOffset = small_widget_spacing;
+			XmNtopAttachment = XmATTACH_WIDGET;
+			XmNtopOffset = small_widget_spacing;
+			XmNtopWidget = cell_3d_toolbar;
+			XmNbottomAttachment = XmATTACH_FORM;
+			XmNbottomOffset = small_widget_spacing;
+			XmNborderWidth = 0;
+			XmNdefaultPosition = false;
+			XmNresizePolicy = XmRESIZE_ANY;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedures
+				{
+				cell_window_id_3d_form(cell_window_structure);
 				};
 			};
 		};

@@ -1,0 +1,246 @@
+!*******************************************************************************
+! FILE : cell_variable_editing_dialog.uil
+!
+! LAST MODIFIED : 21 March 2001
+!
+! DESCRIPTION :
+! The widgets/gadgets for the variable editing dialog.
+!===============================================================================
+module Parameter_Dialog
+	names = case_sensitive
+
+procedure
+	id_component_form;
+	id_plot_form;
+	ok_button_callback;
+	apply_button_callback;
+	reset_button_callback;
+	cancel_button_callback;
+	help_button_callback;
+
+identifier
+	variable_editing_dialog;
+	user_settings_void;
+	window_width;
+	window_height;
+	dialog_title;
+
+value
+	sash_width : 50;
+	small_widget_spacing : 1;
+	large_widget_spacing : 4;
+	max_pane_size : 200;
+	min_pane_size : 50;
+	visible_items : 15;
+
+object
+	variable_editing_dialog_widget: XmForm
+		{
+		arguments
+			{
+			XmNborderWidth = 0;
+			XmNdefaultPosition = false;
+			XmNresizePolicy = XmRESIZE_ANY;
+			XmNdialogTitle = dialog_title;
+			};
+		controls
+			{
+			XmPanedWindow variable_editing_dialog_pane;
+			XmForm button_form;
+			};
+		};
+	variable_editing_dialog_pane: XmPanedWindow
+		{
+		arguments
+			{
+!			XmNallowResize = true;
+			XmNborderWidth = 1;
+			XmNmarginWidth = 0;
+			XmNmarginHeight = 0;
+			XmNspacing = large_widget_spacing;
+			XmNleftAttachment = XmATTACH_FORM;
+			XmNleftOffset = 0;
+			XmNrightAttachment = XmATTACH_FORM;
+			XmNrightOffset = 0;
+			XmNtopAttachment = XmATTACH_FORM;
+			XmNtopOffset = 0;
+			XmNbottomAttachment = XmATTACH_WIDGET;
+			XmNbottomWidget = button_form;
+			XmNbottomOffset = 0;
+			};
+		controls
+			{
+			XmScrolledWindow component_window;
+			XmForm plot_form;
+			};
+		};
+	component_window: XmScrolledWindow
+		{
+		arguments
+			{
+			XmNwidth = window_width;
+			XmNheight = window_height;
+			XmNscrollBarDisplayPolicy = XmSTATIC;
+			XmNworkWindow = XmForm component_form;
+			XmNscrollingPolicy = XmAUTOMATIC;
+			};
+		controls
+			{
+			XmForm component_form;
+			};
+		};
+	component_form: XmForm
+		{
+		arguments
+			{
+			
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedures
+				{
+				id_component_form(
+					variable_editing_dialog);
+				};
+			};
+		};
+	plot_form: XmForm
+		{
+		arguments
+			{
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedures
+				{
+				id_plot_form(
+					variable_editing_dialog);
+				};
+			};
+		};
+	button_form: XmForm
+		{
+		arguments
+			{
+			XmNresizable = false;
+			XmNbottomAttachment = XmATTACH_FORM;
+			XmNleftAttachment = XmATTACH_FORM;
+			XmNrightAttachment = XmATTACH_FORM;
+			XmNfractionBase = 16;
+			};
+		controls
+			{
+			XmPushButton ok_button;
+			XmPushButton apply_button;
+			XmPushButton reset_button;
+			XmPushButton cancel_button;
+			XmPushButton help_button;
+			};
+		};
+	ok_button: XmPushButton
+		{
+		arguments
+			{
+			XmNlabelString = compound_string("OK");
+			XmNtopAttachment = XmATTACH_FORM;
+			XmNbottomAttachment = XmATTACH_FORM;
+			XmNleftAttachment = XmATTACH_POSITION;
+			XmNleftPosition = 1;
+			XmNrightAttachment = XmATTACH_POSITION;
+			XmNrightPosition = 3;
+			XmNuserData = user_settings_void;
+			};
+		callbacks
+			{
+			XmNactivateCallback = procedures
+				{
+				ok_button_callback(variable_editing_dialog);
+				};
+			};
+		};
+	apply_button: XmPushButton
+		{
+		arguments
+			{
+			XmNlabelString = compound_string("Apply");
+			XmNtopAttachment = XmATTACH_FORM;
+			XmNbottomAttachment = XmATTACH_FORM;
+			XmNleftAttachment = XmATTACH_POSITION;
+			XmNleftPosition = 4;
+			XmNrightAttachment = XmATTACH_POSITION;
+			XmNrightPosition = 6;
+			XmNuserData = user_settings_void;
+			};
+		callbacks
+			{
+			XmNactivateCallback = procedures
+				{
+				apply_button_callback(variable_editing_dialog);
+				};
+			};
+		};
+	reset_button: XmPushButton
+		{
+		arguments
+			{
+			XmNlabelString = compound_string("Reset");
+			XmNtopAttachment = XmATTACH_FORM;
+			XmNbottomAttachment = XmATTACH_FORM;
+			XmNleftAttachment = XmATTACH_POSITION;
+			XmNleftPosition = 7;
+			XmNrightAttachment = XmATTACH_POSITION;
+			XmNrightPosition = 9;
+			XmNuserData = user_settings_void;
+			};
+		callbacks
+			{
+			XmNactivateCallback = procedures
+				{
+				reset_button_callback(variable_editing_dialog);
+				};
+			};
+		};
+	cancel_button: XmPushButton
+		{
+		arguments
+			{
+			XmNlabelString = compound_string("Cancel");
+			XmNtopAttachment = XmATTACH_FORM;
+			XmNbottomAttachment = XmATTACH_FORM;
+			XmNleftAttachment = XmATTACH_POSITION;
+			XmNleftPosition = 10;
+			XmNrightAttachment = XmATTACH_POSITION;
+			XmNrightPosition = 12;
+			XmNuserData = user_settings_void;
+			};
+		callbacks
+			{
+			XmNactivateCallback = procedures
+				{
+				cancel_button_callback(
+					variable_editing_dialog);
+				};
+			};
+		};
+	help_button: XmPushButton
+		{
+		arguments
+			{
+			XmNlabelString = compound_string("Help");
+			XmNtopAttachment = XmATTACH_FORM;
+			XmNbottomAttachment = XmATTACH_FORM;
+			XmNleftAttachment = XmATTACH_POSITION;
+			XmNleftPosition = 13;
+			XmNrightAttachment = XmATTACH_POSITION;
+			XmNrightPosition = 15;
+			XmNuserData = user_settings_void;
+			};
+		callbacks
+			{
+			XmNactivateCallback = procedures
+				{
+				help_button_callback(variable_editing_dialog);
+				};
+			};
+		};
+end module;

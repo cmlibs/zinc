@@ -1,531 +1,1108 @@
 /*******************************************************************************
 FILE : cell_component.c
 
-LAST MODIFIED : 15 March 2001
+LAST MODIFIED : 20 November 2000
 
 DESCRIPTION :
-Functions and structures for using the Cell_component structure.
+Routines for using the Cell_component objects
 ==============================================================================*/
-#include <string.h>
+
 #include <stdio.h>
-#if defined (MOTIF)
-#include <Xm/Xm.h>
-#endif /* if defined (MOTIF) */
-#include "user_interface/user_interface.h"
-#include "general/debug.h"
-#include "cell/cell_window.h"
+#include <string.h>
+
 #include "cell/cell_component.h"
-#include "cell/cell_parameter.h"
-#include "cell/parameter_dialog.h"
+#include "cell/cell_interface.h"
+#include "cell/cell_variable.h"
+
+#include "general/indexed_list_private.h"
+#include "general/compare.h"
 #include "general/any_object_definition.h"
-#include "graphics/scene.h"
 
 /*
-Module types
-============
+Module objects
+--------------
 */
+struct Cell_component
+/*******************************************************************************
+LAST MODIFIED : 18 November 2000
 
-/*
-Module variables
-================
-*/
+DESCRIPTION :
+A data object used to store information about any object from the CellML which
+the user may decide to display and interact with in the Cell interface.
+==============================================================================*/
+{
+  /* The component's ID, used for the indexed list because the name is
+   * not guaranteed to be unique
+   */
+  int id;
+  /* The access counter */
+  int access_count;
+  /* The component's name */
+  char *name;
+  /* A more descriptive name for the component */
+  char *display_name;
+  /* A list of all the variables associated with the component */
+  struct LIST(Cell_variable) *variable_list;
+  /* A list of all the variables "exported" from the component */
+  struct LIST(Cell_variable) *exported_variable_list;
+  /* A list of all the variables "imported" from the component */
+  struct LIST(Cell_variable) *imported_variable_list;
+  /* The parent component */
+  struct Cell_component *parent;
+  /* The children components */
+  struct LIST(Cell_component) *children_list;
+  /* The information for placing the component's graphic */
+  FE_value axis1[3],axis2[3],axis3[3],point[3];
+  /* And the graphic */
+  struct Cell_graphic *graphic;
+}; /* struct Cell_component */
+
+FULL_DECLARE_INDEXED_LIST_TYPE(Cell_component);
 
 /*
 Module functions
-================
+----------------
 */
-static char *set_component_name(char *component)
+/*DECLARE_INDEXED_LIST_MODULE_FUNCTIONS(Cell_component,id,int,compare_int)*/
+DECLARE_INDEXED_LIST_MODULE_FUNCTIONS(Cell_component,name,char *,strcmp)
+
+static void Cell_component_list_full(struct Cell_component *cell_component)
 /*******************************************************************************
-LAST MODIFIED : 25 August 2000
+LAST MODIFIED : 17 October 2000
 
 DESCRIPTION :
-Returns the component name corresponding to the <component> type.
+Does a full listing of the <cell_component>.
 ==============================================================================*/
 {
-  char *name;
-
-  ENTER(set_component_name);
-	if (component)
-	{
-		if (ALLOCATE(name,char,strlen(component)+1))
-		{
-			strcpy(name,component);
-		}
-	}
+  int full = 0;
+  
+  ENTER(Cell_component_list_full);
+  if (cell_component)
+  {
+    display_message(INFORMATION_MESSAGE,"Component: %s\n",
+      cell_component->name);
+    display_message(INFORMATION_MESSAGE,"  Display name: %s\n",
+      cell_component->display_name);
+    display_message(INFORMATION_MESSAGE,"  ID: %d\n",cell_component->id);
+    display_message(INFORMATION_MESSAGE,"  access count: %d\n",
+      cell_component->access_count);
+    display_message(INFORMATION_MESSAGE,"  Variables:\n");
+    FOR_EACH_OBJECT_IN_LIST(Cell_variable)(Cell_variable_list,(void *)(&full),
+      cell_component->variable_list);
+  }
   else
   {
-    name = (char *)NULL;
+    display_message(ERROR_MESSAGE,"Cell_component_list_full.  "
+      "Invalid argument(s)");
   }
   LEAVE;
-
-  return (name);
-} /* END set_component_name() */
-
-static int create_cell_component(struct Cell_window *cell,char *component)
+} /* Cell_component_list_full() */
+  
+static void Cell_component_list_brief(struct Cell_component *cell_component,
+  void *indent_level_void)
 /*******************************************************************************
-LAST MODIFIED : 08 September 1999
+LAST MODIFIED : 17 October 2000
 
 DESCRIPTION :
-Creates a new cell component and adds it to the list of cell components.
+Does a brief listing of the <cell_component>. Can be used as an iterator
+function.
 ==============================================================================*/
 {
-  int return_code = 0,i;
-  struct Cell_component *new = (struct Cell_component *)NULL;
-  struct Cell_component *current = (struct Cell_component *)NULL;
-
-  ENTER(create_cell_component);
-  if (cell)
+  int *indent_level = (int *)indent_level_void;
+  int full = 1;
+  
+  ENTER(Cell_component_list_brief);
+  if (cell_component)
   {
-    if (ALLOCATE(new,struct Cell_component,1))
+    WRITE_INDENT(*indent_level);
+    display_message(INFORMATION_MESSAGE,"Component: %s\n",
+      cell_component->name);
+    display_message(INFORMATION_MESSAGE,"  Variables:\n");
+    FOR_EACH_OBJECT_IN_LIST(Cell_variable)(Cell_variable_list,(void *)(&full),
+      cell_component->variable_list);
+  }
+  else
+  {
+    display_message(ERROR_MESSAGE,"Cell_component_list_brief.  "
+      "Invalid argument(s)");
+  }
+  LEAVE;
+} /* Cell_component_list_brief() */
+  
+/*
+Global functions
+----------------
+*/
+
+DEFINE_ANY_OBJECT(Cell_component)
+
+DECLARE_OBJECT_FUNCTIONS(Cell_component)
+DECLARE_INDEXED_LIST_FUNCTIONS(Cell_component)
+  /*DECLARE_FIND_BY_IDENTIFIER_IN_INDEXED_LIST_FUNCTION(Cell_component,id, \
+    int,compare_int)*/
+DECLARE_FIND_BY_IDENTIFIER_IN_INDEXED_LIST_FUNCTION(Cell_component,name, \
+  char *,strcmp)
+
+struct Cell_component *CREATE(Cell_component)(struct Cell_component *parent,
+  char *name)
+/*******************************************************************************
+LAST MODIFIED : 17 October 2000
+
+DESCRIPTION :
+Creates a Cell_component object.
+==============================================================================*/
+{
+  static int current_component_number; /* used to assign id's to each component
+                                        * as it is created */
+  struct Cell_component *cell_component;
+  int i;
+
+  ENTER(CREATE(Cell_component));
+  if (name)
+  {
+    if (ALLOCATE(cell_component,struct Cell_component,1))
     {
-      new->name = set_component_name(component);
-      new->cell = cell;
-      new->component = new->name;
-      /* always create an empty region to avoid errors when checking for
-         points in region */
-      new->region = XCreateRegion();
-      new->number_of_parameters = 0;
-      new->parameters = (struct Cell_parameter **)NULL;
-      new->dialog = (struct Parameter_dialog *)NULL;
-      new->graphic = (struct Cell_graphic *)NULL;
+      /* Assign an ID to each component as it is created to guarantee a unique
+       * reference to each compnent object
+       */
+      current_component_number++;
+      cell_component->id = current_component_number;
+      /* initialise data objects */
+      cell_component->access_count = 0;
+      cell_component->name = (char *)NULL;
+      cell_component->display_name = (char *)NULL;
+      cell_component->parent = (struct Cell_component *)NULL;
+      cell_component->variable_list = (struct LIST(Cell_variable) *)NULL;
+      cell_component->exported_variable_list =
+        (struct LIST(Cell_variable) *)NULL;
+      cell_component->imported_variable_list =
+        (struct LIST(Cell_variable) *)NULL;
+      cell_component->children_list = (struct LIST(Cell_component) *)NULL;
       for (i=0;i<3;i++)
       {
-        new->axis1[i]=0.0;
-        new->axis2[i]=0.0;
-        new->axis3[i]=0.0;
-        new->point[i]=0.0;
+        cell_component->axis1[i] = (FE_value)0.0;
+        cell_component->axis2[i] = (FE_value)0.0;
+        cell_component->axis3[i] = (FE_value)0.0;
+        cell_component->point[i] = (FE_value)0.0;
       }
-      new->next = (struct Cell_component *)NULL;
-      if (cell->components == (struct Cell_component *)NULL)
+      cell_component->graphic = (struct Cell_graphic *)NULL;
+      if (cell_component->variable_list = CREATE(LIST(Cell_variable))())
       {
-        cell->components = new;
+        if (cell_component->children_list = CREATE(LIST(Cell_component))())
+        {
+          /* set the name of the component */
+          Cell_component_set_name(cell_component,name);
+          /* set the parent of the component */
+          cell_component->parent = parent;
+          /* add the new component to the parent's list of chilren */
+          if (parent)
+          {
+            /* can have a NULL parent!! */
+            Cell_component_add_child_to_children_list(parent,
+              cell_component);
+          }
+        }
+        else
+        {
+          display_message(ERROR_MESSAGE,"CREATE(Cell_component).  "
+            "Unable to create the children list");
+          DESTROY(Cell_component)(&cell_component);
+          cell_component = (struct Cell_component *)NULL;
+        }
       }
       else
       {
-        current = cell->components;
-        while (current->next != (struct Cell_component *)NULL)
-        {
-          current = current->next;
-        }
-        current->next = new;
+        display_message(ERROR_MESSAGE,"CREATE(Cell_component).  "
+          "Unable to create the variable list");
+        DESTROY(Cell_component)(&cell_component);
+        cell_component = (struct Cell_component *)NULL;
       }
-      return_code = 1;
     }
     else
     {
-      display_message(ERROR_MESSAGE,"create_cell_component. "
-        "Unable to allocate memory for the new component");
+      display_message(ERROR_MESSAGE,"CREATE(Cell_component).  "
+        "Unable to allocate memory for the Cell component object");
+      cell_component = (struct Cell_component *)NULL;
+    }
+  }
+  else
+  {
+    display_message(ERROR_MESSAGE,"CREATE(Cell_component).  "
+      "Invalid argument(s)");
+    cell_component = (struct Cell_component *)NULL;
+  }
+  LEAVE;
+  return(cell_component);
+} /* CREATE(Cell_component) */
+
+int DESTROY(Cell_component)(struct Cell_component **cell_component_address)
+/*******************************************************************************
+LAST MODIFIED : 18 July 2000
+
+DESCRIPTION :
+Destroys a Cell_component object.
+==============================================================================*/
+{
+	int return_code;
+  struct Cell_component *cell_component;
+
+	ENTER(DESTROY(Cell_component));
+	if (cell_component_address && (cell_component = *cell_component_address))
+	{
+    if (cell_component->access_count == 0)
+    {
+      if (cell_component->variable_list)
+      {
+        /* Removing the objects from the list will cause them to be
+           destroy'ed */
+        REMOVE_ALL_OBJECTS_FROM_LIST(Cell_variable)
+          (cell_component->variable_list);
+        /* and destroy the list */
+        DESTROY(LIST(Cell_variable))(&(cell_component->variable_list));
+      }
+      if (cell_component->exported_variable_list)
+      {
+        /* Removing the objects from the list will cause them to be
+           destroy'ed */
+        REMOVE_ALL_OBJECTS_FROM_LIST(Cell_variable)
+          (cell_component->exported_variable_list);
+        /* and destroy the list */
+        DESTROY(LIST(Cell_variable))(&(cell_component->exported_variable_list));
+      }
+      if (cell_component->imported_variable_list)
+      {
+        /* Removing the objects from the list will cause them to be
+           destroy'ed */
+        REMOVE_ALL_OBJECTS_FROM_LIST(Cell_variable)
+          (cell_component->imported_variable_list);
+        /* and destroy the list */
+        DESTROY(LIST(Cell_variable))(&(cell_component->imported_variable_list));
+      }
+      if (cell_component->children_list)
+      {
+        /* Removing the objects from the list will cause them to be
+           destroy'ed */
+        REMOVE_ALL_OBJECTS_FROM_LIST(Cell_component)
+          (cell_component->children_list);
+        /* and destroy the list */
+        DESTROY(LIST(Cell_component))(&(cell_component->children_list));
+      }
+      DEALLOCATE(*cell_component_address);
+      *cell_component_address = (struct Cell_component *)NULL;
+      return_code=1;
+    }
+    else
+    {
+      display_message(WARNING_MESSAGE,"DESTROY(Cell_component).  "
+        "Access count is not zero - cannot destroy object");
+      return_code = 0;
+    }
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"DESTROY(Cell_component).  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+	return (return_code);
+} /* DESTROY(Cell_component) */
+
+int Cell_component_list(struct Cell_component *cell_component,void *full_void)
+/*******************************************************************************
+LAST MODIFIED : 09 July 2000
+
+DESCRIPTION :
+Iterator function used to list out the current components. If <full> is not 0,
+then a full listing of the <cell_component> is given, otherwise just a brief
+listing.
+==============================================================================*/
+{
+  int return_code = 0;
+  int *full = (int *)full_void;
+  int indent_level = 0;
+
+  ENTER(Cell_component_list);
+  if (cell_component)
+  {
+    if (*full)
+    {
+      /* do a full listing */
+      Cell_component_list_full(cell_component);
+    }
+    else
+    {
+      /* do a brief listing */
+      Cell_component_list_brief(cell_component,(void *)(&indent_level));
+    }
+    return_code = 1;
+  }
+  else
+  {
+    display_message(ERROR_MESSAGE,"Cell_component_list.  "
+      "Invalid argument(s)");
+    return_code = 0;
+  }
+  LEAVE;
+  return(return_code);
+} /* Cell_component_list() */
+
+int Cell_component_destroy_variable_list(struct Cell_component *cell_component,
+  void *unused_void)
+/*******************************************************************************
+LAST MODIFIED : 09 July 2000
+
+DESCRIPTION :
+Iterator function used to remove all the variable references in the variable
+list of the <cell_component>
+==============================================================================*/
+{
+  int return_code = 0;
+
+  ENTER(Cell_component_destroy_variable_list);
+  USE_PARAMETER(unused_void);
+  if (cell_component)
+  {
+    REMOVE_ALL_OBJECTS_FROM_LIST(Cell_variable)(cell_component->variable_list);
+    return_code = 1;
+  }
+  else
+  {
+    display_message(ERROR_MESSAGE,"Cell_component_destroy_variable_list.  "
+      "Invalid argument(s)");
+    return_code = 0;
+  }
+  LEAVE;
+  return(return_code);
+} /* Cell_component_destroy_variable_list() */
+
+int Cell_component_set_name(struct Cell_component *cell_component,
+  char *name)
+/*******************************************************************************
+LAST MODIFIED : 09 July 2000
+
+DESCRIPTION :
+Sets the <name> of the <cell_component> - copies the <name> so the calling
+routine should deallocate it.
+==============================================================================*/
+{
+  int return_code = 0;
+  
+  ENTER(Cell_component_set_name);
+  if (cell_component && name)
+  {
+    if (ALLOCATE(cell_component->name,char,strlen(name)+1))
+    {
+      strcpy(cell_component->name,name);
+/*        sprintf(cell_component->name,"%s\0",name); */
+    }
+    else
+    {
+      display_message(ERROR_MESSAGE,"Cell_component_set_name.  "
+        "Unable to allocate memory for the name");
       return_code = 0;
     }
   }
   else
   {
-    display_message(ERROR_MESSAGE,"create_cell_component. "
-      "Missing Cell window");
+    display_message(ERROR_MESSAGE,"Cell_component_set_name.  "
+      "Invalid argument(s)");
     return_code = 0;
   }
   LEAVE;
   return(return_code);
-} /* END create_cell_component() */
+} /* Cell_component_set_name() */
 
-static int add_parameter_to_component(struct Cell_window *cell,
-  struct Cell_parameter *parameter,char *component_type)
+int Cell_component_set_display_name(struct Cell_component *cell_component,
+  char *display_name)
 /*******************************************************************************
-LAST MODIFIED : 08 September 1999
+LAST MODIFIED : 09 July 2000
 
 DESCRIPTION :
-Adds the <parameter> to the cell component which corresponds to the
-<component_type>. If the cell component does not exist, it is created.
+Sets the <display_name> of the <cell_component> - copies the <display_name>
+so the calling routine should deallocate it.
 ==============================================================================*/
 {
   int return_code = 0;
-  struct Cell_component *current = (struct Cell_component *)NULL;
-  struct Cell_component *component = (struct Cell_component *)NULL;
-
-  ENTER(add_parameter_to_component);
-  if ((cell != (struct Cell_window *)NULL) &&
-    (parameter != (struct Cell_parameter *)NULL))
+  
+  ENTER(Cell_component_set_display_name);
+  if (cell_component && display_name)
   {
-    current = cell->components;
-    while ((current != (struct Cell_component *)NULL) &&
-      (component == (struct Cell_component *)NULL))
+    if (ALLOCATE(cell_component->display_name,char,strlen(display_name)+1))
     {
-      if (!strcmp(current->component,component_type))
-      {
-        component = current;
-      }
-      current = current->next;
+      strcpy(cell_component->display_name,display_name);
+/*        sprintf(cell_component->display_name,"%s\0",display_name); */
     }
-    if (component == (struct Cell_component *)NULL)
+    else
     {
-      /* need to create the component and add to the list of components */
-      if (create_cell_component(cell,component_type))
+      display_message(ERROR_MESSAGE,"Cell_component_set_display_name.  "
+        "Unable to allocate memory for the display name");
+      return_code = 0;
+    }
+  }
+  else
+  {
+    display_message(ERROR_MESSAGE,"Cell_component_set_display_name.  "
+      "Invalid argument(s)");
+    return_code = 0;
+  }
+  LEAVE;
+  return(return_code);
+} /* Cell_component_set_display_name() */
+
+int Cell_component_add_variable_to_variable_list(
+  struct Cell_component *cell_component,
+  struct Cell_variable *cell_variable)
+/*******************************************************************************
+LAST MODIFIED : 10 July 2000
+
+DESCRIPTION :
+Adds the <cell_variable> to the <cell_component>'s variable list.
+==============================================================================*/
+{
+  int return_code = 0;
+
+  ENTER(Cell_component_add_variable_to_variable_list);
+  if (cell_component && cell_variable)
+  {
+    if (ADD_OBJECT_TO_LIST(Cell_variable)(cell_variable,
+      cell_component->variable_list))
+    {
+      return_code = 1;
+    }
+    else
+    {
+      display_message(ERROR_MESSAGE,
+        "Cell_component_add_variable_to_variable_list.  "
+        "Unable to add the variable to the variable list");
+      return_code = 0;
+    }
+  }
+  else
+  {
+    display_message(ERROR_MESSAGE,
+      "Cell_component_add_variable_to_variable_list.  "
+      "Invalid argument(s)");
+    return_code = 0;
+  }
+  LEAVE;
+  return(return_code);
+} /* Cell_component_add_variable_to_variable_list() */
+
+int Cell_component_add_variable_to_exported_variable_list(
+  struct Cell_component *cell_component,
+  struct Cell_variable *cell_variable)
+/*******************************************************************************
+LAST MODIFIED : 18 July 2000
+
+DESCRIPTION :
+Adds the <cell_variable> to the <cell_component>'s exported variable list.
+Creates the list if this is the first variable to be added to the list.
+==============================================================================*/
+{
+  int return_code = 0;
+
+  ENTER(Cell_component_add_variable_to_exported_variable_list);
+  if (cell_component && cell_variable)
+  {
+    if (cell_component->exported_variable_list ==
+      (struct LIST(Cell_variable) *)NULL)
+    {
+      /* need to create the list */
+      if (cell_component->exported_variable_list =
+        CREATE(LIST(Cell_variable))())
       {
-        /* now get the component which was added to the end of the list */
-        current = cell->components;
-        while (current->next != (struct Cell_component *)NULL)
-        {
-          current = current->next;
-        }
-        component = current;
+        /* do nothing */
       }
       else
       {
-        component = (struct Cell_component *)NULL;
+        cell_component->exported_variable_list =
+          (struct LIST(Cell_variable) *)NULL;
       }
     }
-    if (component != (struct Cell_component *)NULL)
+    if (cell_component->exported_variable_list)
     {
-      /* add the parameter to the component */
-      if (component->parameters == (struct Cell_parameter **)NULL)
+      if (ADD_OBJECT_TO_LIST(Cell_variable)(cell_variable,
+        cell_component->exported_variable_list))
       {
-        component->number_of_parameters = 1;
-        if (!ALLOCATE(component->parameters,struct Cell_parameter *,1))
-        {
-          component->parameters = (struct Cell_parameter **)NULL;
-          component->number_of_parameters = 0;
-        }
-      }
-      else
-      {
-        component->number_of_parameters++;
-        if (!REALLOCATE(component->parameters,component->parameters,
-          struct Cell_parameter *,component->number_of_parameters))
-        {
-          component->parameters = (struct Cell_parameter **)NULL;
-          component->number_of_parameters = 0;
-        }
-      }
-      if (component->parameters != (struct Cell_parameter **)NULL)
-      {
-        component->parameters[component->number_of_parameters-1] = parameter;
         return_code = 1;
       }
       else
       {
-        display_message(ERROR_MESSAGE,"add_parameter_to_component. "
-          "Unable alolocate memory for the parameter");
+        display_message(ERROR_MESSAGE,
+          "Cell_component_add_variable_to_exported_variable_list.  "
+          "Unable to add the variable to the exported variable list");
         return_code = 0;
       }
     }
     else
     {
-      display_message(ERROR_MESSAGE,"add_parameter_to_component. "
-        "Unable to get corresponding component");
+      display_message(ERROR_MESSAGE,
+        "Cell_component_add_variable_to_exported_variable_list.  "
+        "Invalid exported variable list");
       return_code = 0;
     }
   }
   else
   {
-    display_message(ERROR_MESSAGE,"add_parameter_to_component. "
+    display_message(ERROR_MESSAGE,
+      "Cell_component_add_variable_to_exported_variable_list.  "
+      "Invalid argument(s)");
+    return_code = 0;
+  }
+  LEAVE;
+  return(return_code);
+} /* Cell_component_add_variable_to_exported_variable_list() */
+
+int Cell_component_add_variable_to_imported_variable_list(
+  struct Cell_component *cell_component,
+  struct Cell_variable *cell_variable)
+/*******************************************************************************
+LAST MODIFIED : 18 July 2000
+
+DESCRIPTION :
+Adds the <cell_variable> to the <cell_component>'s imported variable list.
+Creates the list if this is the first variable to be added to the list.
+==============================================================================*/
+{
+  int return_code = 0;
+
+  ENTER(Cell_component_add_variable_to_imported_variable_list);
+  if (cell_component && cell_variable)
+  {
+    if (cell_component->imported_variable_list ==
+      (struct LIST(Cell_variable) *)NULL)
+    {
+      /* need to create the list */
+      if (cell_component->imported_variable_list =
+        CREATE(LIST(Cell_variable))())
+      {
+        /* do nothing */
+      }
+      else
+      {
+        cell_component->imported_variable_list =
+          (struct LIST(Cell_variable) *)NULL;
+      }
+    }
+    if (cell_component->imported_variable_list)
+    {
+      if (ADD_OBJECT_TO_LIST(Cell_variable)(cell_variable,
+        cell_component->imported_variable_list))
+      {
+        return_code = 1;
+      }
+      else
+      {
+        display_message(ERROR_MESSAGE,
+          "Cell_component_add_variable_to_imported_variable_list.  "
+          "Unable to add the variable to the imported variable list");
+        return_code = 0;
+      }
+    }
+    else
+    {
+      display_message(ERROR_MESSAGE,
+        "Cell_component_add_variable_to_imported_variable_list.  "
+        "Invalid imported variable list");
+      return_code = 0;
+    }
+  }
+  else
+  {
+    display_message(ERROR_MESSAGE,
+      "Cell_component_add_variable_to_imported_variable_list.  "
+      "Invalid argument(s)");
+    return_code = 0;
+  }
+  LEAVE;
+  return(return_code);
+} /* Cell_component_add_variable_to_imported_variable_list() */
+
+int Cell_component_add_child_to_children_list(
+  struct Cell_component *cell_component,
+  struct Cell_component *child)
+/*******************************************************************************
+LAST MODIFIED : 11 July 2000
+
+DESCRIPTION :
+Adds the <child> to the <cell_component>'s list of children
+==============================================================================*/
+{
+  int return_code = 0;
+
+  ENTER(Cell_component_add_child_to_children_list);
+  if (cell_component && child)
+  {
+    if (ADD_OBJECT_TO_LIST(Cell_component)(child,
+      cell_component->children_list))
+    {
+      return_code = 1;
+    }
+    else
+    {
+      display_message(ERROR_MESSAGE,
+        "Cell_component_add_child_to_children_list.  "
+        "Unable to add the child to the children list");
+      return_code = 0;
+    }
+  }
+  else
+  {
+    display_message(ERROR_MESSAGE,
+      "Cell_component_add_child_to_children_list.  "
+      "Invalid argument(s)");
+    return_code = 0;
+  }
+  LEAVE;
+  return(return_code);
+} /* Cell_component_add_child_to_children_list() */
+
+int Cell_component_list_component_hierarchy(
+  struct Cell_component *cell_component,void *indent_level_void)
+/*******************************************************************************
+LAST MODIFIED : 11 July 2000
+
+DESCRIPTION :
+Lists out the given <cell_component>'s hierarchy.
+==============================================================================*/
+{
+  int return_code = 0;
+  int *indent_level = (int *)indent_level_void;
+  int indent;
+
+  ENTER(Cell_component_list_component_hierarchy);
+  if (cell_component)
+  {
+    indent = *indent_level;
+    /* write out the current component */
+    Cell_component_list_brief(cell_component,(void *)(&indent));
+    indent += 2;
+    /* and all of its children */
+    FOR_EACH_OBJECT_IN_LIST(Cell_component)(
+      Cell_component_list_component_hierarchy,(void *)(&indent),
+      cell_component->children_list);
+    return_code = 1;
+  }
+  else
+  {
+    display_message(ERROR_MESSAGE,"Cell_component_list_component_hierarchy.  "
+      "Invalid argument(s)");
+    return_code = 0;
+  }
+  LEAVE;
+  return(return_code);
+} /* Cell_component_list_component_hierarchy() */
+
+struct Cell_variable *Cell_component_get_cell_variable_by_name(
+  struct Cell_component *cell_component,char *name)
+/*******************************************************************************
+LAST MODIFIED : 25 October 2000
+
+DESCRIPTION :
+Returns the cell variable given by <name> from the <cell_component>'s variable
+list - or NULL if a coresponding variable is not found.
+==============================================================================*/
+{
+  struct Cell_variable *cell_variable = (struct Cell_variable *)NULL;
+  
+  ENTER(Cell_component_get_cell_variable_by_name);
+  if (cell_component && name)
+  {
+    cell_variable =
+      FIND_BY_IDENTIFIER_IN_LIST(Cell_variable,name)(
+        name,cell_component->variable_list);
+  }
+  else
+  {
+    display_message(ERROR_MESSAGE,"Cell_component_get_cell_variable_by_name.  "
+      "Invalid argument(s)");
+    cell_variable = (struct Cell_variable *)NULL;
+  }
+  LEAVE;
+  return(cell_variable);
+} /* Cell_component_get_cell_variable_by_name() */
+
+char *Cell_component_get_name(struct Cell_component *cell_component)
+/*******************************************************************************
+LAST MODIFIED : 25 October 2000
+
+DESCRIPTION :
+Returns a copy of the <cell_component>'s name.
+==============================================================================*/
+{
+  char *name;
+  
+  ENTER(Cell_component_get_name);
+  if (cell_component && cell_component->name)
+  {
+    if (ALLOCATE(name,char,strlen(cell_component->name)+1))
+    {
+      strcpy(name,cell_component->name);
+    }
+    else
+    {
+      display_message(ERROR_MESSAGE,"Cell_component_get_name.  "
+        "Unable to allocate memory for the name");
+      name = (char *)NULL;
+    }
+  }
+  else
+  {
+    display_message(ERROR_MESSAGE,"Cell_component_get_name.  "
+      "Invalid argument(s)");
+    name = (char *)NULL;
+  }
+  LEAVE;
+  return(name);
+} /* Cell_component_get_name() */
+
+char *Cell_component_get_display_name(struct Cell_component *cell_component)
+/*******************************************************************************
+LAST MODIFIED : 25 October 2000
+
+DESCRIPTION :
+Returns a copy of the <cell_component>'s display name.
+==============================================================================*/
+{
+  char *display_name;
+  
+  ENTER(Cell_component_get_display_name);
+  if (cell_component)
+  {
+    if (cell_component->display_name)
+    {
+      if (ALLOCATE(display_name,char,strlen(cell_component->display_name)+1))
+      {
+        strcpy(display_name,cell_component->display_name);
+      }
+      else
+      {
+        display_message(ERROR_MESSAGE,"Cell_component_get_display_name.  "
+          "Unable to allocate memory for the name");
+        display_name = (char *)NULL;
+      }
+    }
+    else
+    {
+      /* Not really an error to have no display name */
+      display_name = (char *)NULL;
+    }
+  }
+  else
+  {
+    display_message(ERROR_MESSAGE,"Cell_component_get_display_name.  "
+      "Invalid argument(s)");
+    display_name = (char *)NULL;
+  }
+  LEAVE;
+  return(display_name);
+} /* Cell_component_get_display_name() */
+
+int Cell_component_component_has_children(struct Cell_component *cell_component)
+/*******************************************************************************
+LAST MODIFIED : 07 November 2000
+
+DESCRIPTION :
+Returns 1 if the <cell_component> has any children components, otherwise 0.
+==============================================================================*/
+{
+  int return_code = 0;
+
+  ENTER(Cell_component_component_has_children);
+  if (cell_component)
+  {
+    if (NUMBER_IN_LIST(Cell_component)(cell_component->children_list) > 0)
+    {
+      return_code = 1;
+    }
+    else
+    {
+      return_code = 0;
+    }
+  }
+  else
+  {
+    display_message(ERROR_MESSAGE,"Cell_component_component_has_children.  "
       "Invalid arguments");
     return_code = 0;
   }
   LEAVE;
   return(return_code);
-} /* END add_parameter_to_component() */
+} /* Cell_component_component_has_children() */
 
-/*
-Global functions
-================
-*/
-
-DEFINE_ANY_OBJECT(Cell_component)
-
-enum Cell_components get_cell_component_from_string(char *component_string)
+struct LIST(Cell_component) *Cell_component_get_children_list(
+  struct Cell_component *cell_component)
 /*******************************************************************************
-LAST MODIFIED : 18 February 1999
+LAST MODIFIED : 07 November 2000
 
 DESCRIPTION :
-Returns the Cell_components corresponding to the <component>.
+Returns the children list of the given <cell_component>
 ==============================================================================*/
 {
-  enum Cell_components component;
-  char INA_string[] = {"INa"};
-  char ICAL_string[] = {"ICaL"};
-  char IPCA_string[] = {"IpCa"};
-  char PASSIVE_ELEMENTS_string[] = {"Passive elements"};
-  char ICAB_string[] = {"ICab"};
-  char ICAT_string[] = {"ICaT"};
-  char EXTRACELLULAR_CA_string[] = {"Extracellular Ca"};
-  char INACA_string[] = {"INaCa"};
-  char INSCA_string[] = {"InsCa"};
-  char MEMBRANE_string[] = {"Membrane"};
-  char JSRCA_string[] = {"JSR Ca"};
-  char IREL_string[] = {"Irel"};
-  char ITR_string[] = {"Itr"};
-  char IUP_string[] = {"Iup"};
-  char NSRCA_string[] = {"NSR Ca"};
-  char ILEAK_string[] = {"Ileak"};
-  char MITOCHONDRIA_string[] = {"Mitochondria"};
-  char CALMODULIN_string[] = {"Calmodulin"};
-  char INTRACELLULAR_CA_string[] = {"Intracellular Ca"};
-  char TROPONIN_string[] = {"Troponin"};
-  char TROPOMYOSIN_string[] = {"Tropomyosin"};
-  char STEADY_STATE_MECHANICS_string[] = {"Steady state mechanics"};
-  char CROSSBRIDGES_string[] = {"Crossbridges"};
-  char ITO_string[] = {"Ito"};
-  char IKP_string[] = {"IKp"};
-  char IK1_string[] = {"IK1"};
-  char IKS_string[] = {"IKs"};
-  char IKR_string[] = {"IKr"};
-  char INAK_string[] = {"INaK"};
-  char INTRACELLULAR_MG_string[] = {"Intracellular Mg"};
-  char INTRACELLULAR_NA_string[] = {"Intracellular Na"};
-  char INTRACELLULAR_K_string[] = {"Intracellular K"};
-  char EXTRACELLULAR_NA_string[] = {"Extracellular Na"};
-  char EXTRACELLULAR_K_string[] = {"Extracellular K"};
-  char INAB_string[] = {"INab"};
-  char IF_string[] = {"If"};
-  char PARAMETERS_string[] = {"Parameters"};
+  struct LIST(Cell_component) *children_list;
 
-  ENTER(get_cell_component_from_string);
-  if (!strcmp(component_string,INA_string))
+  ENTER(Cell_component_get_children_list);
+  if (cell_component)
   {
-    component = INA;
-  }
-  else if (!strcmp(component_string,ICAL_string))
-  {
-    component = ICAL;
-  }
-  else if (!strcmp(component_string,IPCA_string))
-  {
-    component = IPCA;
-  }
-  else if (!strcmp(component_string,PASSIVE_ELEMENTS_string))
-  {
-    component = PASSIVE_ELEMENTS;
-  }
-  else if (!strcmp(component_string,ICAB_string))
-  {
-    component = ICAB;
-  }
-  else if (!strcmp(component_string,ICAT_string))
-  {
-    component = ICAT;
-  }
-  else if (!strcmp(component_string,EXTRACELLULAR_CA_string))
-  {
-    component = EXTRACELLULAR_CA;
-  }
-  else if (!strcmp(component_string,INACA_string))
-  {
-    component = INACA;
-  }
-  else if (!strcmp(component_string,INSCA_string))
-  {
-    component = INSCA;
-  }
-  else if (!strcmp(component_string,MEMBRANE_string))
-  {
-    component = MEMBRANE;
-  }
-  else if (!strcmp(component_string,JSRCA_string))
-  {
-    component = JSRCA;
-  }
-  else if (!strcmp(component_string,IREL_string))
-  {
-    component = IREL;
-  }
-  else if (!strcmp(component_string,ITR_string))
-  {
-    component = ITR;
-  }
-  else if (!strcmp(component_string,IUP_string))
-  {
-    component = IUP;
-  }
-  else if (!strcmp(component_string,NSRCA_string))
-  {
-    component = NSRCA;
-  }
-  else if (!strcmp(component_string,ILEAK_string))
-  {
-    component = ILEAK;
-  }
-  else if (!strcmp(component_string,MITOCHONDRIA_string))
-  {
-    component = MITOCHONDRIA;
-  }
-  else if (!strcmp(component_string,CALMODULIN_string))
-  {
-    component = CALMODULIN;
-  }
-  else if (!strcmp(component_string,INTRACELLULAR_CA_string))
-  {
-    component = INTRACELLULAR_CA;
-  }
-  else if (!strcmp(component_string,TROPONIN_string))
-  {
-    component = TROPONIN;
-  }
-  else if (!strcmp(component_string,TROPOMYOSIN_string))
-  {
-    component = TROPOMYOSIN;
-  }
-  else if (!strcmp(component_string,STEADY_STATE_MECHANICS_string))
-  {
-    component = STEADY_STATE_MECHANICS;
-  }
-  else if (!strcmp(component_string,CROSSBRIDGES_string))
-  {
-    component = CROSSBRIDGES;
-  }
-  else if (!strcmp(component_string,ITO_string))
-  {
-    component = ITO;
-  }
-  else if (!strcmp(component_string,IKP_string))
-  {
-    component = IKP;
-  }
-  else if (!strcmp(component_string,IK1_string))
-  {
-    component = IK1;
-  }
-  else if (!strcmp(component_string,IKS_string))
-  {
-    component = IKS;
-  }
-  else if (!strcmp(component_string,IKR_string))
-  {
-    component = IKR;
-  }
-  else if (!strcmp(component_string,INAK_string))
-  {
-    component = INAK;
-  }
-  else if (!strcmp(component_string,INTRACELLULAR_MG_string))
-  {
-    component = INTRACELLULAR_MG;
-  }
-  else if (!strcmp(component_string,INTRACELLULAR_NA_string))
-  {
-    component = INTRACELLULAR_NA;
-  }
-  else if (!strcmp(component_string,INTRACELLULAR_K_string))
-  {
-    component = INTRACELLULAR_K;
-  }
-  else if (!strcmp(component_string,EXTRACELLULAR_NA_string))
-  {
-    component = EXTRACELLULAR_NA;
-  }
-  else if (!strcmp(component_string,EXTRACELLULAR_K_string))
-  {
-    component = EXTRACELLULAR_K;
-  }
-  else if (!strcmp(component_string,INAB_string))
-  {
-    component = INAB;
-  }
-  else if (!strcmp(component_string,IF_string))
-  {
-    component = IF;
-  }
-  else if (!strcmp(component_string,PARAMETERS_string))
-  {
-    component = PARAMETERS;
+    children_list = cell_component->children_list;
   }
   else
   {
-    component = UNKNOWN_COMPONENT;
-    display_message(WARNING_MESSAGE,"get_component_from_string. "
-      "Unknown component: %s",component_string);
+    display_message(ERROR_MESSAGE,"Cell_component_get_children_list.  "
+      "Invalid arguments");
+    children_list = (struct LIST(Cell_component) *)NULL;
   }
   LEAVE;
-  return(component);
-} /* END get_cell_component_from_string() */
+  return(children_list);
+} /* Cell_component_get_children_list() */
 
-void destroy_cell_component_list(struct Cell_window *cell)
+struct LIST(Cell_variable) *Cell_component_get_variable_list(
+  struct Cell_component *cell_component)
 /*******************************************************************************
-LAST MODIFIED : 15 March 2001
+LAST MODIFIED : 08 November 2000
 
 DESCRIPTION :
-Deallocates the memory associated with the component list.
+Returns the variable list of the given <cell_component>
 ==============================================================================*/
 {
-  struct Cell_component *current = (struct Cell_component *)NULL;
-  struct Cell_component *tmp = (struct Cell_component *)NULL;
+  struct LIST(Cell_variable) *variable_list;
 
-  ENTER(destroy_cell_component_list);
-  if (cell)
+  ENTER(Cell_component_get_variable_list);
+  if (cell_component)
   {
-    if (cell->components != (struct Cell_component *)NULL)
-    {
-      current = cell->components;
-      while (current->next != (struct Cell_component *)NULL)
-      {
-        /* remove the graphic from the scene */
-        if ((current->graphic != (struct Cell_graphic *)NULL) &&
-          (current->graphic->graphics_object != (struct GT_object *)NULL))
-        {
-          Scene_remove_graphics_object((cell->cell_3d).scene,
-            current->graphic->graphics_object);
-        }
-        close_parameter_dialog(current);
-        tmp = current->next;
-        DEALLOCATE(current);
-        current = tmp;
-      }
-      if ((current->graphic != (struct Cell_graphic *)NULL) &&
-        (current->graphic->graphics_object != (struct GT_object *)NULL))
-      {
-        Scene_remove_graphics_object((cell->cell_3d).scene,
-          current->graphic->graphics_object);
-      }
-      close_parameter_dialog(current);
-      destroy_cell_graphic(current);
-      DEALLOCATE(current);
-      cell->components = (struct Cell_component *)NULL;
-    }
+    variable_list = cell_component->variable_list;
   }
   else
   {
-    display_message(ERROR_MESSAGE,"destroy_cell_component_list. "
-      "Missing cell window");
+    display_message(ERROR_MESSAGE,"Cell_component_get_variable_list.  "
+      "Invalid arguments");
+    variable_list = (struct LIST(Cell_variable) *)NULL;
   }
   LEAVE;
-} /* END destroy_cell_component_list() */
+  return(variable_list);
+} /* Cell_component_get_variable_list() */
 
-int create_cell_component_list(struct Cell_window *cell)
+int Cell_component_set_graphical_transformation(
+  struct Cell_component *component,char *pos_x,char *pos_y,char *pos_z,
+  char *dir_x,char *dir_y,char *dir_z,char *scale_x,char *scale_y,
+  char *scale_z)
 /*******************************************************************************
-LAST MODIFIED : 08 September 1999
+LAST MODIFIED : 18 November 2000
 
 DESCRIPTION :
-Creates the cell component list from the defined parameters.
+Sets the transformation to be used for the graphical representation of the
+given <component>
 ==============================================================================*/
 {
   int return_code = 0,i;
-  struct Cell_parameter *current = (struct Cell_parameter *)NULL;
-
-  ENTER(create_cell_component_list);
-  if (cell)
+  float x,y,z;
+  FE_value a[3],b[3],c[3],orientation[3],size[3],size1,size2,size3;
+  
+  ENTER(Cell_component_set_graphical_transformation);
+  if ((component != (struct Cell_component *)NULL) && pos_x && pos_y &&
+    pos_z && dir_x && dir_y && dir_z && scale_x && scale_y && scale_z)
   {
-    if (cell->components != (struct Cell_component *)NULL)
+    /* Set the data which will be used to create the transformation matrix */
+    sscanf(dir_x,"%f",&x);
+    sscanf(dir_y,"%f",&y);
+    sscanf(dir_z,"%f",&z);
+    orientation[0] = (FE_value)x;
+    orientation[1] = (FE_value)y;
+    orientation[2] = (FE_value)z;
+    if (make_glyph_orientation_scale_axes(3,orientation,a,b,c,size))
     {
-      destroy_cell_component_list(cell);
-    }
-    current = cell->parameters;
-    return_code = 1;
-    while ((current != (struct Cell_parameter *)NULL) && return_code)
-    {
-      for (i=0;(i<current->number_of_components)&&return_code;i++)
+      sscanf(scale_x,"%f",&x);
+      sscanf(scale_y,"%f",&y);
+      sscanf(scale_z,"%f",&z);
+      size1 = size[0] * (FE_value)x;
+      size2 = size[1] * (FE_value)y;
+      size3 = size[2] * (FE_value)z;
+      for (i=0;i<3;i++)
       {
-        /* add a pointer to the current parameter to all of its components */
-        return_code = add_parameter_to_component(cell,current,
-          current->components[i]);
+        a[i] *= size1;
+        b[i] *= size2;
+        c[i] *= size3;
+        component->axis1[i] = a[i];
+        component->axis2[i] = b[i];
+        component->axis3[i] = c[i];
       }
-      current = current->next;
-    } /* while (current != (struct Cell_parameter *)NULL) */
+      sscanf(pos_x,"%f",&x);
+      sscanf(pos_y,"%f",&y);
+      sscanf(pos_z,"%f",&z);
+      component->point[0] = (FE_value)x;
+      component->point[1] = (FE_value)y;
+      component->point[2] = (FE_value)z;
+      return_code = 1;
+    }
+    else
+    {
+      display_message(ERROR_MESSAGE,
+        "Cell_component_set_graphical_transformation. "
+        "Unable to make transformation information");
+      return_code = 0;
+    }
   }
   else
   {
-    display_message(ERROR_MESSAGE,"create_cell_component_list. "
+    display_message(ERROR_MESSAGE,
+      "Cell_component_set_graphical_transformation. "
       "Invalid arguments");
     return_code = 0;
   }
   LEAVE;
   return(return_code);
-} /* END create_cell_component_list() */
+} /* Cell_component_set_graphical_transformation() */
+
+int Cell_component_set_graphic(struct Cell_component *cell_component,
+  struct Cell_graphic *cell_graphic)
+/*******************************************************************************
+LAST MODIFIED : 20 November 2000
+
+DESCRIPTION :
+Sets the <cell_graphic> for the given <cell_component>
+==============================================================================*/
+{
+  int return_code = 0;
+
+  ENTER(Cell_component_set_graphic);
+  if (cell_component && cell_graphic)
+  {
+    cell_component->graphic = cell_graphic;
+  }
+  else
+  {
+    display_message(ERROR_MESSAGE,"Cell_component_set_graphic.  "
+      "Invalid argument(s)");
+    return_code = 0;
+  }
+  LEAVE;
+  return(return_code);
+} /* Cell_component_set_graphic() */
+
+struct Cell_graphic *Cell_component_get_graphic(
+  struct Cell_component *cell_component)
+/*******************************************************************************
+LAST MODIFIED : 20 November 2000
+
+DESCRIPTION :
+Gets the Cell graphic for the given <cell_component>
+==============================================================================*/
+{
+  struct Cell_graphic *graphic;
+
+  ENTER(Cell_component_get_graphic);
+  if (cell_component)
+  {
+    graphic = cell_component->graphic;
+  }
+  else
+  {
+    display_message(ERROR_MESSAGE,"Cell_component_get_graphic.  "
+      "Invalid argument(s)");
+    graphic = (struct Cell_graphic *)NULL;
+  }
+  LEAVE;
+  return(graphic);
+} /* Cell_component_get_graphic() */
+
+FE_value Cell_component_get_axis1(struct Cell_component *component,int index)
+/*******************************************************************************
+LAST MODIFIED : 20 November 2000
+
+DESCRIPTION :
+Returns the value of axis1[<index>]
+==============================================================================*/
+{
+  FE_value value;
+
+  ENTER(Cell_component_get_axis1);
+  if (component && (index >= 0) && (index < 3))
+  {
+    value = component->axis1[index];
+  }
+  else
+  {
+    display_message(ERROR_MESSAGE,"Cell_component_get_axis1.  "
+      "Invalid argument(s)");
+    value = (FE_value)0.0;
+  }
+  LEAVE;
+  return(value);
+} /* Cell_component_get_axis1() */
+
+FE_value Cell_component_get_axis2(struct Cell_component *component,int index)
+/*******************************************************************************
+LAST MODIFIED : 20 November 2000
+
+DESCRIPTION :
+Returns the value of axis2[<index>]
+==============================================================================*/
+{
+  FE_value value;
+
+  ENTER(Cell_component_get_axis2);
+  if (component && (index >= 0) && (index < 3))
+  {
+    value = component->axis2[index];
+  }
+  else
+  {
+    display_message(ERROR_MESSAGE,"Cell_component_get_axis2.  "
+      "Invalid argument(s)");
+    value = (FE_value)0.0;
+  }
+  LEAVE;
+  return(value);
+} /* Cell_component_get_axis2() */
+
+FE_value Cell_component_get_axis3(struct Cell_component *component,int index)
+/*******************************************************************************
+LAST MODIFIED : 20 November 2000
+
+DESCRIPTION :
+Returns the value of axis3[<index>]
+==============================================================================*/
+{
+  FE_value value;
+
+  ENTER(Cell_component_get_axis3);
+  if (component && (index >= 0) && (index < 3))
+  {
+    value = component->axis3[index];
+  }
+  else
+  {
+    display_message(ERROR_MESSAGE,"Cell_component_get_axis3.  "
+      "Invalid argument(s)");
+    value = (FE_value)0.0;
+  }
+  LEAVE;
+  return(value);
+} /* Cell_component_get_axis3() */
+
+FE_value Cell_component_get_point(struct Cell_component *component,int index)
+/*******************************************************************************
+LAST MODIFIED : 20 November 2000
+
+DESCRIPTION :
+Returns the value of point[<index>]
+==============================================================================*/
+{
+  FE_value value;
+
+  ENTER(Cell_component_get_point);
+  if (component && (index >= 0) && (index < 3))
+  {
+    value = component->point[index];
+  }
+  else
+  {
+    display_message(ERROR_MESSAGE,"Cell_component_get_point.  "
+      "Invalid argument(s)");
+    value = (FE_value)0.0;
+  }
+  LEAVE;
+  return(value);
+} /* Cell_component_get_point() */
+

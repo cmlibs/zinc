@@ -1,0 +1,328 @@
+!*******************************************************************************
+! FILE : cell_export_dialog.uil
+!
+! LAST MODIFIED : 03 February 2001
+!
+! DESCRIPTION :
+! The widgets/gadgets for the export dialog.
+!===============================================================================
+module Export_Dialog
+	names = case_sensitive
+
+procedure
+	id_group_chooser_form;
+	id_grid_field_chooser_form;
+	id_ipcell_file_label;
+	id_ipmatc_file_label;
+	ipcell_browse_CB;
+	ipmatc_browse_CB;
+	ok_button_CB;
+	cancel_button_CB;
+
+identifier
+	dialog_structure;
+	default_ipcell_file_name;
+	default_ipmatc_file_name;
+! Standard CMGUI values
+	button_font;
+	heading_font;
+
+value
+	sash_width : 50;
+	small_widget_spacing : 1;
+	large_widget_spacing : 4;
+	max_pane_size : 200;
+	min_pane_size : 50;
+	visible_items : 15;
+
+object
+	export_dialog: XmForm
+		{
+		arguments
+			{
+			XmNborderWidth = 0;
+			XmNdefaultPosition = false;
+			XmNresizePolicy = XmRESIZE_ANY;
+			XmNdialogTitle = compound_string("Export to CMISS..");
+			};
+		controls
+			{
+			XmForm export_window;
+			XmForm button_form;
+			};
+		};
+	export_window: XmForm
+		{
+		arguments
+			{
+			XmNtopOffset = small_widget_spacing;
+			XmNtopAttachment = XmATTACH_FORM;
+			XmNleftOffset = small_widget_spacing;
+			XmNleftAttachment = XmATTACH_FORM;
+			XmNrightOffset = small_widget_spacing;
+			XmNrightAttachment = XmATTACH_FORM;
+			XmNbottomOffset = small_widget_spacing;
+			XmNbottomAttachment = XmATTACH_WIDGET;
+			XmNbottomWidget = button_form;
+			};
+		controls
+			{
+			XmRowColumn export_rowcol;
+			};
+		};
+	export_rowcol: XmRowColumn
+		{
+		arguments
+			{
+			XmNentryAlignment = XmALIGNMENT_BEGINNING;
+			XmNpacking = XmPACK_TIGHT;
+			XmNorientation = XmVERTICAL;
+			XmNnumColumns = 1;
+			};
+		controls
+			{
+			XmRowColumn group_chooser_rowcol;
+			XmRowColumn grid_field_chooser_rowcol;
+			XmRowColumn ipcell_file_rowcol;
+			XmRowColumn ipmatc_file_rowcol;
+			};
+		};
+	group_chooser_rowcol: XmRowColumn
+		{
+		arguments
+			{
+			XmNentryAlignment = XmALIGNMENT_BEGINNING;
+			XmNpacking = XmPACK_TIGHT;
+			XmNorientation = XmHORIZONTAL;
+			XmNnumColumns = 1;
+			};
+		controls
+			{
+			XmLabelGadget group_chooser_label;
+			XmForm group_chooser_form;
+			};
+		};
+	group_chooser_label: XmLabelGadget
+		{
+		arguments
+			{
+			XmNlabelString = 
+				compound_string("Element group to export:");
+			XmNfontList = heading_font;
+			};
+		};
+	group_chooser_form: XmForm
+		{
+		callbacks
+			{
+			MrmNcreateCallback = procedures
+				{
+				id_group_chooser_form(
+					dialog_structure);
+				};
+			};
+		};
+	grid_field_chooser_rowcol: XmRowColumn
+		{
+		arguments
+			{
+			XmNentryAlignment = XmALIGNMENT_BEGINNING;
+			XmNpacking = XmPACK_TIGHT;
+			XmNorientation = XmHORIZONTAL;
+			XmNnumColumns = 1;
+			};
+		controls
+			{
+			XmLabelGadget grid_field_chooser_label;
+			XmForm grid_field_chooser_form;
+			};
+		};
+	grid_field_chooser_label: XmLabelGadget
+		{
+		arguments
+			{
+			XmNlabelString = 
+				compound_string("Grid point numbers field:");
+			XmNfontList = heading_font;
+			};
+		};
+	grid_field_chooser_form: XmForm
+		{
+		callbacks
+			{
+			MrmNcreateCallback = procedures
+				{
+				id_grid_field_chooser_form(
+					dialog_structure);
+				};
+			};
+		};
+	ipcell_file_rowcol: XmRowColumn
+		{
+		arguments
+			{
+			XmNentryAlignment = XmALIGNMENT_BEGINNING;
+			XmNpacking = XmPACK_TIGHT;
+			XmNorientation = XmHORIZONTAL;
+			XmNnumColumns = 1;
+			};
+		controls
+			{
+			XmLabelGadget ipcell_file_label1;
+			XmLabelGadget ipcell_file_label2;
+			XmPushButton ipcell_file_button;
+			};
+		};
+	ipcell_file_label1: XmLabelGadget
+		{
+		arguments
+			{
+			XmNlabelString = compound_string("ipcell file: ");
+			XmNfontList = heading_font;
+			};
+		};
+	ipcell_file_label2: XmLabelGadget
+		{
+		arguments
+			{
+			XmNlabelString = default_ipcell_file_name;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedures
+				{
+				id_ipcell_file_label(
+					dialog_structure);
+				};
+			};
+		};
+	ipcell_file_button: XmPushButton
+		{
+		arguments
+			{
+			XmNlabelString = compound_string("Browse...");
+			XmNfontList = button_font;
+			};
+		callbacks
+			{
+			XmNactivateCallback = procedures
+				{
+				ipcell_browse_CB(dialog_structure);
+				};
+			};
+		};
+	ipmatc_file_rowcol: XmRowColumn
+		{
+		arguments
+			{
+			XmNentryAlignment = XmALIGNMENT_BEGINNING;
+			XmNpacking = XmPACK_TIGHT;
+			XmNorientation = XmHORIZONTAL;
+			XmNnumColumns = 1;
+			};
+		controls
+			{
+			XmLabelGadget ipmatc_file_label1;
+			XmLabelGadget ipmatc_file_label2;
+			XmPushButton ipmatc_file_button;
+			};
+		};
+	ipmatc_file_label1: XmLabelGadget
+		{
+		arguments
+			{
+			XmNlabelString = compound_string("ipmatc file: ");
+			XmNfontList = heading_font;
+			};
+		};
+	ipmatc_file_label2: XmLabelGadget
+		{
+		arguments
+			{
+			XmNlabelString = default_ipmatc_file_name;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedures
+				{
+				id_ipmatc_file_label(
+					dialog_structure);
+				};
+			};		
+		};
+	ipmatc_file_button: XmPushButton
+		{
+		arguments
+			{
+			XmNlabelString = compound_string("Browse...");
+			XmNfontList = button_font;
+			};
+		callbacks
+			{
+			XmNactivateCallback = procedures
+				{
+				ipmatc_browse_CB(dialog_structure);
+				};
+			};
+		};
+	button_form: XmForm
+		{
+		arguments
+			{
+			XmNrightAttachment = XmATTACH_FORM;
+			XmNrightOffset = small_widget_spacing;
+			XmNleftAttachment = XmATTACH_FORM;
+			XmNleftOffset = small_widget_spacing;
+			XmNbottomAttachment = XmATTACH_FORM;
+			XmNbottomOffset = small_widget_spacing;
+			XmNfractionBase = 13;
+			};
+		controls
+			{
+			XmPushButton ok_button;
+			XmPushButton cancel_button;
+			};
+		};
+	ok_button: XmPushButton
+		{
+		arguments
+			{
+			XmNlabelString = compound_string("Export");
+			XmNtopAttachment = XmATTACH_FORM;
+			XmNbottomAttachment = XmATTACH_FORM;
+			XmNleftAttachment = XmATTACH_POSITION;
+			XmNleftPosition = 1;
+			XmNrightAttachment = XmATTACH_POSITION;
+			XmNrightPosition = 5;
+			XmNfontList = button_font;
+			};
+		callbacks
+			{
+			XmNactivateCallback = procedures
+				{
+				ok_button_CB(dialog_structure);
+				};
+			};
+		};
+	cancel_button: XmPushButton
+		{
+		arguments
+			{
+			XmNlabelString = compound_string("Cancel");
+			XmNtopAttachment = XmATTACH_FORM;
+			XmNbottomAttachment = XmATTACH_FORM;
+			XmNleftAttachment = XmATTACH_POSITION;
+			XmNleftPosition = 7;
+			XmNrightAttachment = XmATTACH_POSITION;
+			XmNrightPosition = 11;
+			XmNfontList = button_font;
+			};
+		callbacks
+			{
+			XmNactivateCallback = procedures
+				{
+				cancel_button_CB(dialog_structure);
+				};
+			};
+		};
+end module;

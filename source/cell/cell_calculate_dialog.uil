@@ -1,0 +1,511 @@
+!*******************************************************************************
+! FILE : cell_calculate_dialog.uil
+!
+! LAST MODIFIED : 21 February 2001
+!
+! DESCRIPTION :
+! The widgets/gadgets for the calculate dialog.
+!===============================================================================
+module Calculate_Dialog
+	names = case_sensitive
+
+procedure
+	tstart_changed_callback;
+	tend_changed_callback;
+	dt_changed_callback;
+	tabt_changed_callback;
+	calculate_button_callback;
+	close_button_callback;
+	help_button_callback;
+	model_routine_changed_cb;
+	model_dso_changed_cb;
+	intg_routine_changed_cb;
+	intg_dso_changed_cb;
+	id_model_routine_pulldown;
+	id_model_routine_textfield;
+	id_model_dso_textfield;
+	id_model_option_menu;
+	id_intg_routine_pulldown;
+	id_intg_routine_textfield;
+	id_intg_dso_textfield;
+	id_intg_option_menu;
+
+identifier
+	calculate_dialog;
+	tstart_value_string;
+	tend_value_string;
+	dt_value_string;
+	tabt_value_string;
+
+value
+	sash_width : 50;
+	small_widget_spacing : 1;
+	large_widget_spacing : 4;
+	max_pane_size : 200;
+	min_pane_size : 50;
+	visible_items : 15;
+
+object
+	calculate_dialog_widget: XmForm
+		{
+		arguments
+			{
+			XmNborderWidth = 0;
+			XmNdefaultPosition = false;
+			XmNresizePolicy = XmRESIZE_ANY;
+			};
+		controls
+			{
+			XmRowColumn main_rowcol;
+			XmForm button_form;
+			};
+		};
+	main_rowcol: XmRowColumn
+		{
+		arguments
+			{
+			XmNentryAlignment = XmALIGNMENT_BEGINNING;
+			XmNpacking = XmPACK_TIGHT;
+			XmNorientation = XmVERTICAL;
+			XmNnumColumns = 1;
+			};
+		controls
+			{
+			XmRowColumn time_parameter_rowcol;
+			XmSeparator separator;
+			XmRowColumn model_routine_rowcol;
+			XmSeparator separator;
+			XmRowColumn intg_routine_rowcol;
+			XmSeparator separator;
+			};
+		};
+	separator: XmSeparator
+		{
+		arguments
+			{
+			XmNmargin = 0;
+			};
+		};
+	time_parameter_rowcol: XmRowColumn
+		{
+		arguments
+			{
+			XmNpacking = XmPACK_COLUMN;
+			XmNorientation = XmHORIZONTAL;
+			XmNnumColumns = 4;
+			};
+		controls
+			{
+			XmLabel tstart_label;
+			XmTextField tstart_value;
+			XmLabel tend_label;
+			XmTextField tend_value;
+			XmLabel dt_label;
+			XmTextField dt_value;
+			XmLabel tabt_label;
+			XmTextField tabt_value;
+			};
+		};
+	tstart_label: XmLabel
+		{
+		arguments
+			{
+			XmNlabelString = compound_string("Start Time:");
+			XmNalignment = XmALIGNMENT_END;
+			};
+		};
+	tstart_value: XmTextField
+		{
+		arguments
+			{
+			XmNvalue = tstart_value_string;
+			XmNeditable = true;
+      XmNcolumns = 15;
+			};
+		callbacks
+			{
+			XmNactivateCallback = procedures
+				{
+				tstart_changed_callback(calculate_dialog);
+				};
+			XmNlosingFocusCallback = procedures
+				{
+				tstart_changed_callback(calculate_dialog);
+				};
+			};
+		};
+	tend_label: XmLabel
+		{
+		arguments
+			{
+			XmNlabelString = compound_string("End Time:");
+			XmNalignment = XmALIGNMENT_END;
+			};
+		};
+	tend_value: XmTextField
+		{
+		arguments
+			{
+			XmNvalue = tend_value_string;
+			XmNeditable = true;
+      XmNcolumns = 15;
+			};
+		callbacks
+			{
+			XmNactivateCallback = procedures
+				{
+				tend_changed_callback(calculate_dialog);
+				};
+			XmNlosingFocusCallback = procedures
+				{
+				tend_changed_callback(calculate_dialog);
+				};
+			};
+		};
+	dt_label: XmLabel
+		{
+		arguments
+			{
+			XmNlabelString = compound_string("Time Step:");
+			XmNalignment = XmALIGNMENT_END;
+			};
+		};
+	dt_value: XmTextField
+		{
+		arguments
+			{
+			XmNvalue = dt_value_string;
+			XmNeditable = true;
+      XmNcolumns = 15;
+			};
+		callbacks
+			{
+			XmNactivateCallback = procedures
+				{
+				dt_changed_callback(calculate_dialog);
+				};
+			XmNlosingFocusCallback = procedures
+				{
+				dt_changed_callback(calculate_dialog);
+				};
+			};
+		};
+	tabt_label: XmLabel
+		{
+		arguments
+			{
+			XmNlabelString = compound_string("Tabulation Step:");
+			XmNalignment = XmALIGNMENT_END;
+			};
+		};
+	tabt_value: XmTextField
+		{
+		arguments
+			{
+			XmNvalue = tabt_value_string;
+			XmNeditable = true;
+      XmNcolumns = 15;
+			};
+		callbacks
+			{
+			XmNactivateCallback = procedures
+				{
+				tabt_changed_callback(calculate_dialog);
+				};
+			XmNlosingFocusCallback = procedures
+				{
+				tabt_changed_callback(calculate_dialog);
+				};
+			};
+		};
+	model_routine_rowcol: XmRowColumn
+		{
+		arguments
+			{
+			XmNpacking = XmPACK_COLUMN;
+			XmNorientation = XmHORIZONTAL;
+			XmNnumColumns = 4;
+			};
+		controls
+			{
+			XmOptionMenu model_routine_menu;
+			XmTextField model_routine_value;
+			XmLabel model_dso_label;
+			XmTextField model_dso_value;
+			};
+		};
+	model_routine_menu: XmOptionMenu
+		{
+		arguments
+			{
+			XmNlabelString = compound_string("Model RHS Routine:");
+			};
+		controls
+			{
+			XmPulldownMenu model_routine_pulldown;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedures
+				{
+				id_model_option_menu(calculate_dialog);
+				};
+			};
+		};
+	model_routine_pulldown: XmPulldownMenu
+		{
+		arguments
+			{
+			XmNborderWidth = 1;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedures
+				{
+				id_model_routine_pulldown(calculate_dialog);
+				};
+			};
+		};
+	model_routine_value: XmTextField
+		{
+		arguments
+			{
+			XmNvalue = "";
+			XmNeditable = false;
+      XmNcolumns = 20;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedures
+				{
+				id_model_routine_textfield(calculate_dialog);
+				};
+			XmNactivateCallback = procedures
+				{
+				model_routine_changed_cb(calculate_dialog);
+				};
+			XmNlosingFocusCallback = procedures
+				{
+				model_routine_changed_cb(calculate_dialog);
+				};
+			};
+		};
+	model_dso_label: XmLabel
+		{
+		arguments
+			{
+			XmNlabelString = compound_string("Model DSO:");
+			XmNalignment = XmALIGNMENT_END;
+			};
+		};
+	model_dso_value: XmTextField
+		{
+		arguments
+			{
+			XmNvalue = "";
+			XmNeditable = false;
+      XmNcolumns = 20;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedures
+				{
+				id_model_dso_textfield(calculate_dialog);
+				};
+			XmNactivateCallback = procedures
+				{
+				model_dso_changed_cb(calculate_dialog);
+				};
+			XmNlosingFocusCallback = procedures
+				{
+				model_dso_changed_cb(calculate_dialog);
+				};
+			};
+		};
+	intg_routine_rowcol: XmRowColumn
+		{
+		arguments
+			{
+			XmNpacking = XmPACK_COLUMN;
+			XmNorientation = XmHORIZONTAL;
+			XmNnumColumns = 4;
+			};
+		controls
+			{
+			XmOptionMenu intg_routine_menu;
+			XmTextField intg_routine_value;
+			XmLabel intg_dso_label;
+			XmTextField intg_dso_value;
+			};
+		};
+	intg_routine_menu: XmOptionMenu
+		{
+		arguments
+			{
+			XmNlabelString = compound_string("Integrator Routine:");
+			};
+		controls
+			{
+			XmPulldownMenu intg_routine_pulldown;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedures
+				{
+				id_intg_option_menu(calculate_dialog);
+				};
+			};
+		};
+	intg_routine_pulldown: XmPulldownMenu
+		{
+		arguments
+			{
+			XmNborderWidth = 1;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedures
+				{
+				id_intg_routine_pulldown(calculate_dialog);
+				};
+			};
+		};
+	intg_routine_value: XmTextField
+		{
+		arguments
+			{
+			XmNvalue = "";
+			XmNeditable = false;
+      XmNcolumns = 20;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedures
+				{
+				id_intg_routine_textfield(calculate_dialog);
+				};
+			XmNactivateCallback = procedures
+				{
+				intg_routine_changed_cb(calculate_dialog);
+				};
+			XmNlosingFocusCallback = procedures
+				{
+				intg_routine_changed_cb(calculate_dialog);
+				};
+			};
+		};
+	intg_dso_label: XmLabel
+		{
+		arguments
+			{
+			XmNlabelString = compound_string("Integrator DSO:");
+			XmNalignment = XmALIGNMENT_END;
+			};
+		};
+	intg_dso_value: XmTextField
+		{
+		arguments
+			{
+			XmNvalue = "";
+			XmNeditable = false;
+      XmNcolumns = 20;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedures
+				{
+				id_intg_dso_textfield(calculate_dialog);
+				};
+			XmNactivateCallback = procedures
+				{
+				intg_dso_changed_cb(calculate_dialog);
+				};
+			XmNlosingFocusCallback = procedures
+				{
+				intg_dso_changed_cb(calculate_dialog);
+				};
+			};
+		};
+	button_form: XmForm
+		{
+		arguments
+			{
+			XmNrightAttachment = XmATTACH_FORM;
+			XmNrightOffset = small_widget_spacing;
+			XmNleftAttachment = XmATTACH_FORM;
+			XmNleftOffset = small_widget_spacing;
+			XmNbottomAttachment = XmATTACH_FORM;
+			XmNbottomOffset = small_widget_spacing;
+			XmNtopAttachment = XmATTACH_WIDGET;
+			XmNtopWidget = main_rowcol;
+			XmNtopOffset = small_widget_spacing;
+			XmNfractionBase = 10;
+			};
+		controls
+			{
+			XmPushButton calculate_button;
+			XmPushButton close_button;
+			XmPushButton help_button;
+			};
+		};
+	calculate_button: XmPushButton
+		{
+		arguments
+			{
+			XmNlabelString = compound_string("Calculate");
+			XmNtopAttachment = XmATTACH_FORM;
+			XmNbottomAttachment = XmATTACH_FORM;
+			XmNleftAttachment = XmATTACH_POSITION;
+			XmNleftPosition = 1;
+			XmNrightAttachment = XmATTACH_POSITION;
+			XmNrightPosition = 3;
+			};
+		callbacks
+			{
+			XmNactivateCallback = procedures
+				{
+				calculate_button_callback(calculate_dialog);
+				};
+			};
+		};
+	close_button: XmPushButton
+		{
+		arguments
+			{
+			XmNlabelString = compound_string("Close");
+			XmNtopAttachment = XmATTACH_FORM;
+			XmNbottomAttachment = XmATTACH_FORM;
+			XmNleftAttachment = XmATTACH_POSITION;
+			XmNleftPosition = 4;
+			XmNrightAttachment = XmATTACH_POSITION;
+			XmNrightPosition = 6;
+			};
+		callbacks
+			{
+			XmNactivateCallback = procedures
+				{
+				close_button_callback(calculate_dialog);
+				};
+			};
+		};
+	help_button: XmPushButton
+		{
+		arguments
+			{
+			XmNlabelString = compound_string("Help");
+			XmNtopAttachment = XmATTACH_FORM;
+			XmNbottomAttachment = XmATTACH_FORM;
+			XmNleftAttachment = XmATTACH_POSITION;
+			XmNleftPosition = 7;
+			XmNrightAttachment = XmATTACH_POSITION;
+			XmNrightPosition = 9;
+			};
+		callbacks
+			{
+			XmNactivateCallback = procedures
+				{
+				help_button_callback(calculate_dialog);
+				};
+			};
+		};
+end module;

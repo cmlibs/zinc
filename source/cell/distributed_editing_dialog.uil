@@ -1,0 +1,269 @@
+!*******************************************************************************
+! FILE : distributed_editing_dialog.uil
+!
+! LAST MODIFIED : 16 January 2001
+!
+! DESCRIPTION :
+! The widgets/gadgets for the distributed editing dialog.
+!===============================================================================
+module Distributed_Editing_Dialog
+	names = case_sensitive
+
+procedure
+	id_element_form;
+	id_point_number_text;
+	point_number_text_CB;
+	id_grid_field_form;
+	id_grid_value_text;
+	grid_value_text_CB;
+	id_description_label;
+	apply_button_CB;
+	apply_all_button_CB;
+	reset_button_CB;
+
+identifier
+	distributed_editing_dialog;
+	distributed_editing_interface;
+
+value
+	sash_width : 50;
+	small_widget_spacing : 1;
+	large_widget_spacing : 4;
+	max_pane_size : 200;
+	min_pane_size : 50;
+	visible_items : 15;
+
+object
+	dist_editing_dialog_widget: XmForm
+		{
+		arguments
+			{
+			XmNborderWidth = 0;
+			XmNdefaultPosition = false;
+			XmNresizePolicy = XmRESIZE_ANY;
+			XmNdialogTitle = compound_string("Cell - Distributed Editing");
+			};
+		controls
+			{
+			XmRowColumn work_rowcol;
+			};
+		};
+	work_rowcol: XmRowColumn
+		{
+		arguments
+			{
+			XmNentryAlignment = XmALIGNMENT_BEGINNING;
+			XmNpacking = XmPACK_TIGHT;
+			XmNorientation = XmVERTICAL;
+			XmNnumColumns = 1;
+			};
+		controls
+			{
+			XmRowColumn element_point_chooser_rowcol;
+			XmLabelGadget description_label;
+			XmForm button_form;
+			};
+		};
+	element_point_chooser_rowcol: XmRowColumn
+		{
+		arguments
+			{
+			XmNentryAlignment = XmALIGNMENT_BEGINNING;
+			XmNpacking = XmPACK_TIGHT;
+			XmNorientation = XmHORIZONTAL;
+			XmNnumColumns = 1;
+			};
+		controls
+			{
+			XmLabelGadget element_chooser_label;
+			XmForm element_chooser_form;
+			XmLabelGadget point_number_label;
+			XmTextField point_number_text;
+			XmLabelGadget grid_field_chooser_label;
+			XmForm grid_field_chooser_form;
+			XmLabelGadget grid_value_label;
+			XmTextField grid_value_text;
+			};
+		};
+	element_chooser_label: XmLabelGadget
+		{
+		arguments
+			{
+			XmNlabelString = compound_string("Element:");
+			XmNalignment = XmALIGNMENT_BEGINNING;
+			};
+		};
+	element_chooser_form: XmForm
+		{
+		callbacks
+			{
+			MrmNcreateCallback = procedures
+				{
+				id_element_form(distributed_editing_dialog);
+				};
+			};
+		};
+	point_number_label: XmLabelGadget
+		{
+		arguments
+			{
+			XmNlabelString = compound_string("Point:");
+			XmNalignment = XmALIGNMENT_BEGINNING;
+			};
+		};
+	point_number_text: XmTextField
+		{
+		arguments
+			{
+			XmNvalue = "";
+			XmNcolumns = 12;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedure
+				id_point_number_text(distributed_editing_dialog);
+			XmNactivateCallback = procedure
+				point_number_text_CB(distributed_editing_interface);
+			XmNlosingFocusCallback = procedure
+				point_number_text_CB(distributed_editing_interface);
+			};
+		};
+	grid_field_chooser_label: XmLabelGadget
+		{
+		arguments
+			{
+			XmNlabelString = compound_string("Grid field:");
+			XmNalignment = XmALIGNMENT_BEGINNING;
+			};
+		};
+	grid_field_chooser_form: XmForm
+		{
+		callbacks
+			{
+			MrmNcreateCallback = procedures
+				{
+				id_grid_field_form(distributed_editing_dialog);
+				};
+			};
+		};
+	grid_value_label: XmLabelGadget
+		{
+		arguments
+			{
+			XmNlabelString = compound_string("Grid value:");
+			XmNalignment = XmALIGNMENT_BEGINNING;
+			};
+		};
+	grid_value_text: XmTextField
+		{
+		arguments
+			{
+			XmNvalue = "";
+			XmNcolumns = 12;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedure
+				id_grid_value_text(distributed_editing_dialog);
+			XmNactivateCallback = procedure
+				grid_value_text_CB(distributed_editing_interface);
+			XmNlosingFocusCallback = procedure
+				grid_value_text_CB(distributed_editing_interface);
+			};
+		};
+	description_label: XmLabelGadget
+		{
+		arguments
+			{
+			XmNsensitive = true;
+			XmNlabelString = compound_string("No grid point");
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedures
+				{
+				id_description_label(distributed_editing_dialog);
+				};
+			};
+		};
+	button_form: XmForm
+		{
+		arguments
+			{
+			XmNfractionBase = 13;
+			};
+		controls
+			{
+			XmPushButton apply_button;
+			XmPushButton apply_all_button;
+			XmPushButton reset_button;
+			};
+		};
+	apply_button: XmPushButton
+		{
+		arguments
+			{
+			XmNlabelString = 
+				compound_string("Apply to GP");
+			XmNtopAttachment = XmATTACH_FORM;
+			XmNbottomAttachment = XmATTACH_FORM;
+			XmNleftAttachment = XmATTACH_POSITION;
+			XmNleftPosition = 1;
+			XmNrightAttachment = XmATTACH_POSITION;
+			XmNrightPosition = 4;
+			XmNsensitive = true;
+			};
+		callbacks
+			{
+			XmNactivateCallback = procedures
+				{
+				apply_button_CB(distributed_editing_dialog);
+				};
+			};
+		};
+	apply_all_button: XmPushButton
+		{
+		arguments
+			{
+			XmNlabelString = 
+				compound_string("Apply all");
+			XmNtopAttachment = XmATTACH_FORM;
+			XmNbottomAttachment = XmATTACH_FORM;
+			XmNleftAttachment = XmATTACH_POSITION;
+			XmNleftPosition = 5;
+			XmNrightAttachment = XmATTACH_POSITION;
+			XmNrightPosition = 8;
+			XmNsensitive = true;
+			};
+		callbacks
+			{
+			XmNactivateCallback = procedures
+				{
+				apply_all_button_CB(distributed_editing_dialog);
+				};
+			};
+		};
+	reset_button: XmPushButton
+		{
+		arguments
+			{
+			XmNlabelString = compound_string(
+				"Revert to GP values");
+			XmNtopAttachment = XmATTACH_FORM;
+			XmNbottomAttachment = XmATTACH_FORM;
+			XmNleftAttachment = XmATTACH_POSITION;
+			XmNleftPosition = 9;
+			XmNrightAttachment = XmATTACH_POSITION;
+			XmNrightPosition = 12;
+			XmNsensitive = true;
+			};
+		callbacks
+			{
+			XmNactivateCallback = procedures
+				{
+				reset_button_CB(distributed_editing_dialog);
+				};
+			};
+		};
+
+end module;

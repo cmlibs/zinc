@@ -1,110 +1,236 @@
 /*******************************************************************************
 FILE : cell_variable.h
 
-LAST MODIFIED : 8 November 1999
+LAST MODIFIED : 15 March 2001
 
 DESCRIPTION :
-Functions and structures for using the Cell_variable structure.
+Routines for using the Cell_variable objects
 ==============================================================================*/
 #if !defined (CELL_VARIABLE_H)
 #define CELL_VARIABLE_H
 
-#if defined (MOTIF)
-#include <Xm/Xm.h>
-#endif /* defined (MOTIF) */
-#include "cell/variables_dialog.h"
+#include "general/object.h"
+#include "general/list.h"
+
+#include "cell/cell_types.h"
 
 /*
-Global types
-============
+Module objects
+--------------
 */
-struct Cell_variable
+struct Cell_variable;
 /*******************************************************************************
-LAST MODIFIED : 8 November 1999
+LAST MODIFIED : 17 January 2001
 
 DESCRIPTION :
-Structure containing information related to the individual variables.
+A data object used to store information for all variables found in the CellML.
 ==============================================================================*/
-{
-  char *label;
-  Widget label_widget;
-  char *units;
-  Widget units_widget;
-  enum Cell_array array;
-  int position;
-  char *spatial_label; /* the name of the variable */
-  int spatial_switch;
-  Widget spatial_switch_widget;
-  float value;
-  Widget value_widget;
-  char *control_curve_label;
-  int control_curve_switch;
-  int control_curve_allowed;
-  Widget control_curve_toggle;
-  Widget control_curve_button;
-  struct Control_curve *control_curve;
-  struct Cell_variable *next;
-}; /* Cell_variable */
+DECLARE_LIST_TYPES(Cell_variable);
 
 /*
 Global functions
-================
+----------------
 */
-int set_variable_information(struct Cell_window *cell,char *array,
-  char *position,char *name,char *label,char *units,char *spatial,
-  char *control_curve,char *value,int default_value);
+PROTOTYPE_OBJECT_FUNCTIONS(Cell_variable);
+PROTOTYPE_LIST_FUNCTIONS(Cell_variable);
+/*PROTOTYPE_FIND_BY_IDENTIFIER_IN_LIST_FUNCTION(Cell_variable,id,int);*/
+PROTOTYPE_FIND_BY_IDENTIFIER_IN_LIST_FUNCTION(Cell_variable,name,char *);
+
+struct Cell_variable *CREATE(Cell_variable)(char *name);
 /*******************************************************************************
-LAST MODIFIED : 25 March 1999
+LAST MODIFIED : 02 July 2000
 
 DESCRIPTION :
-Sets the information in the variables structure for use when creating the
-variables dialog. If <default_value> is 0, then the variable is not a default
-value, and MUST replace one in the list, if it does not correspond to a
-variable already in then list, then it is ignored.
-
-<array> specifies the computational array that the variable belongs in, with
-a specified <position>.
-
-?? Assume that the default values are always read in first, which sets all
-variable values and their order, so that when another set of variables is
-read in from a model file the existing variables will simply be replaced by
-the newer ones, keeping the order the same. ??
+Creates a Cell_variable object.
 ==============================================================================*/
-int add_variables_to_variables_dialog(struct Cell_window *cell,
-  struct Variables_dialog_user_settings *user_settings);
+int DESTROY(Cell_variable)(struct Cell_variable **cell_variable_address);
 /*******************************************************************************
-LAST MODIFIED : 13 March 1999
+LAST MODIFIED : 29 June 2000
 
 DESCRIPTION :
-Add the variables widgets to the variables dialog.
+Destroys a Cell_variable object.
 ==============================================================================*/
-void destroy_cell_variables(struct Cell_window *cell);
+int Cell_variable_set_name(struct Cell_variable *cell_variable,
+  char *name);
 /*******************************************************************************
-LAST MODIFIED : 12 February 1999
+LAST MODIFIED : 10 July 2000
 
 DESCRIPTION :
-Destroys the current list of variables.
+Sets the <name> of the <cell_variable> - copies the <name> so the calling
+routine should deallocate it.
 ==============================================================================*/
-void format_variable_widgets(struct Cell_variable *variables);
+int Cell_variable_set_display_name(struct Cell_variable *cell_variable,
+  char *display_name);
 /*******************************************************************************
-LAST MODIFIED : 12 February 1999
+LAST MODIFIED : 10 July 2000
 
 DESCRIPTION :
-Formats the widget placement for all the <variables>
+Sets the <display_name> of the <cell_variable> - copies the <display_name> so
+the calling routine should deallocate it.
 ==============================================================================*/
-void reset_variable_values(struct Cell_variable *variables);
+int Cell_variable_set_value_type(struct Cell_variable *cell_variable,
+  enum Cell_value_type value_type);
 /*******************************************************************************
-LAST MODIFIED : 13 February 1999
+LAST MODIFIED : 20 October 2000
 
 DESCRIPTION :
-Resets each of the <variables> to their respective values.
+Sets the value type of the <cell_variable> to be <value_type>.
 ==============================================================================*/
-void update_variable_values(struct Cell_variable *variables);
+int Cell_variable_set_value_from_string(struct Cell_variable *cell_variable,
+  char *value_string);
 /*******************************************************************************
-LAST MODIFIED : 13 February 1999
+LAST MODIFIED : 20 October 2000
 
 DESCRIPTION :
-Updates each of the <variables> from the value text field.
+Sets the value of the <cell_variable> from the given <value_string>
+==============================================================================*/
+char *Cell_variable_get_value_as_string(struct Cell_variable *cell_variable);
+/*******************************************************************************
+LAST MODIFIED : 09 November 2000
+
+DESCRIPTION :
+Returns the value of the <cell_variable> as a string.
+==============================================================================*/
+int Cell_variable_list(struct Cell_variable *cell_variable,void *full_void);
+/*******************************************************************************
+LAST MODIFIED : 09 July 2000
+
+DESCRIPTION :
+Iterator function used to list out the current variables. If <full> is not 0,
+then a full listing of the <cell_variable> is given, otherwise just a brief
+listing.
+==============================================================================*/
+int Cell_variable_set_cmiss_interface(struct Cell_variable *cell_variable,
+  char *array_string,char *position_string);
+/*******************************************************************************
+LAST MODIFIED : 25 October 2000
+
+DESCRIPTION :
+Sets the CMISS variable interface information for the given <cell_variable>
+==============================================================================*/
+struct Cell_cmiss_interface *Cell_variable_get_cmiss_interface(
+  struct Cell_variable *cell_variable);
+/*******************************************************************************
+LAST MODIFIED : 28 October 2000
+
+DESCRIPTION :
+Gets the CMISS variable interface for the given <cell_variable>
+==============================================================================*/
+struct Cell_variable_unemap_interface *Cell_variable_get_unemap_interface(
+  struct Cell_variable *cell_variable);
+/*******************************************************************************
+LAST MODIFIED : 03 November 2000
+
+DESCRIPTION :
+Gets the UnEmap variable interface for the given <cell_variable>
+==============================================================================*/
+CELL_REAL Cell_variable_get_real_value(struct Cell_variable *cell_variable);
+/*******************************************************************************
+LAST MODIFIED : 28 October 2000
+
+DESCRIPTION :
+Returns the variable's value as a real.
+==============================================================================*/
+CELL_INTEGER Cell_variable_get_integer_value(
+  struct Cell_variable *cell_variable);
+/*******************************************************************************
+LAST MODIFIED : 28 October 2000
+
+DESCRIPTION :
+Returns the variable's value as a integer.
+==============================================================================*/
+int Cell_variable_set_unemap_interface(struct Cell_variable *cell_variable);
+/*******************************************************************************
+LAST MODIFIED : 01 November 2000
+
+DESCRIPTION :
+Sets the UnEmap variable interface information for the given <cell_variable>
+==============================================================================*/
+char *Cell_variable_get_name(struct Cell_variable *cell_variable);
+/*******************************************************************************
+LAST MODIFIED : 08 November 2000
+
+DESCRIPTION :
+Returns a copy of the name for the given <cell_variable>
+==============================================================================*/
+char *Cell_variable_get_display_name(struct Cell_variable *cell_variable);
+/*******************************************************************************
+LAST MODIFIED : 08 November 2000
+
+DESCRIPTION :
+Returns a copy of the display name for the given <cell_variable>
+==============================================================================*/
+int Cell_variable_variable_has_unemap_interface(
+  struct Cell_variable *cell_variable);
+/*******************************************************************************
+LAST MODIFIED : 09 November 2000
+
+DESCRIPTION :
+Returns 1 if the given <cell_variable> has a UnEmap interface defined.
+==============================================================================*/
+int Cell_variable_variable_has_cmiss_interface(
+  struct Cell_variable *cell_variable);
+/*******************************************************************************
+LAST MODIFIED : 14 March 2001
+
+DESCRIPTION :
+Returns 1 if the given <cell_variable> has a CMISS interface defined.
+==============================================================================*/
+int Cell_variable_destroy_unemap_interface(struct Cell_variable *cell_variable);
+/*******************************************************************************
+LAST MODIFIED : 09 November 2000
+
+DESCRIPTION :
+If the <cell_variable> has a UnEmap interface, it is destroyed.
+==============================================================================*/
+int Cell_variable_set_changed(struct Cell_variable *cell_variable,int value);
+/*******************************************************************************
+LAST MODIFIED : 09 November 2000
+
+DESCRIPTION :
+Sets the changed field of the given <cell_variable> object to <value>.
+==============================================================================*/
+int Cell_variable_get_changed(struct Cell_variable *cell_variable);
+/*******************************************************************************
+LAST MODIFIED : 09 November 2000
+
+DESCRIPTION :
+Gets the changed field of the given <cell_variable>.
+==============================================================================*/
+char *Cell_variable_check_value_string(struct Cell_variable *cell_variable,
+  char *value_string);
+/*******************************************************************************
+LAST MODIFIED : 09 November 2000
+
+DESCRIPTION :
+Checks the <value_string> for a valid value for the given <cell_variable> and
+returns the value in "Cell format" if a valid value is found, otherwise a
+NULL string is returned.
+==============================================================================*/
+int Cell_variable_add_value_text_field(struct Cell_variable *variable,
+  void *widget_void);
+/*******************************************************************************
+LAST MODIFIED : 18 January 2000
+
+DESCRIPTION :
+Adds the given text field <widget> to the <variable>'s list of value widgets.
+==============================================================================*/
+int Cell_variable_delete_value_text_fields(struct Cell_variable *variable,
+  void *user_data_void);
+/*******************************************************************************
+LAST MODIFIED : 19 January 2000
+
+DESCRIPTION :
+Iterator function used to delete all value text field widgets for the given
+<variable>.
+==============================================================================*/
+int Cell_variable_set_ode(struct Cell_variable *cell_variable);
+/*******************************************************************************
+LAST MODIFIED : 15 March 2001
+
+DESCRIPTION :
+Sets the ODE field of the given <cell_variable>'s CMISS interface object to be
+true.
 ==============================================================================*/
 
 #endif /* !defined (CELL_VARIABLE_H) */
