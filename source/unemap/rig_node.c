@@ -1,11 +1,11 @@
 /*******************************************************************************
 FILE : rig_node.c
 
-LAST MODIFIED : 3 April 2000
+LAST MODIFIED : 27 April 2000
 
 DESCRIPTION :
 Essentially the same functionality as rig.c, but using nodes and fields to store
-the rig and signal information. rather that special structures.
+the rig and signal information. rather than special structures.
 ==============================================================================*/
 #include <stddef.h>
 #include <string.h>
@@ -1157,7 +1157,7 @@ static struct GROUP(FE_node) *read_binary_config_FE_node_group(FILE *input_file,
 	struct Unemap_package *package,enum Region_type rig_type,
 	struct FE_node_order_info **the_node_order_info) 
 /*******************************************************************************
-LAST MODIFIED : 31 May 1999
+LAST MODIFIED : 27 April 2000
 
 DESCRIPTION :
 Reads and returns a node group from a configuration file. An FE_node_order_info
@@ -1166,14 +1166,16 @@ cf read_FE_node_group() in import_finite_element.c, and read_configuration()
 in rig.c
 ==============================================================================*/
 {	
-	char *page_name,*rig_name,*region_name,*device_name;	
+	char *device_name,*page_name,*rig_name,*region_name;
+	char region_num_string[10];	
 	enum Config_node_type config_node_type;	
 	enum Device_type device_type;
 	enum Region_type region_type;
 	FE_value focus;	
 	int count,device_count,device_number,last_node_number,node_number,
-		number_of_pages,number_of_regions,region_number,region_number_of_devices,
-		success,string_length,number_of_page_devices;
+		number_of_pages,number_of_page_devices,number_of_regions,region_number,
+		region_number_of_devices,string_length,success;
+	int string_error =0;
 	struct FE_field_order_info *field_order_info;	
 	struct FE_node *node,*template_node;
 	struct FE_node_order_info *node_order_info;	
@@ -1189,7 +1191,6 @@ in rig.c
 	rig_name =(char *)NULL;	
 	region_name =(char *)NULL;
 	device_name =(char *)NULL;
-		
 	page_name =(char *)NULL;	
 	template_node = (struct FE_node *)NULL;	
 	field_order_info = (struct FE_field_order_info *)NULL;
@@ -1263,9 +1264,12 @@ in rig.c
 				/* read the region name */
 				BINARY_FILE_READ((char *)&string_length,sizeof(int),1,input_file);
 				if (ALLOCATE(region_name,char,string_length+1))
-				{
+				{					
 					BINARY_FILE_READ(region_name,sizeof(char),string_length,input_file);	
 					region_name[string_length]='\0';
+					/*append the region number to the name, to ensure it's unique*/
+					sprintf(region_num_string,"%d",region_number);
+					append_string(&region_name,region_num_string,&string_error);
 					if (MIXED==rig_type)
 					{
 						switch (region_type)
@@ -1286,7 +1290,7 @@ in rig.c
 									focus,&field_order_info,package);						
 								node_group = make_node_and_element_and_data_groups(node_group_manager,
 									node_manager,element_manager,element_group_manager,data_group_manager,
-									"sock");
+									region_name);
 								set_unemap_package_rig_node_group(package,node_group);
 							} break;
 							case TORSO:
@@ -1304,7 +1308,7 @@ in rig.c
 									0,&field_order_info,package);
 								node_group = make_node_and_element_and_data_groups(node_group_manager,
 									node_manager,element_manager,element_group_manager,data_group_manager,
-									"torso");
+									region_name);
 								set_unemap_package_rig_node_group(package,node_group);
 							} break;
 							case PATCH:
@@ -1322,7 +1326,7 @@ in rig.c
 									0,&field_order_info,package);
 								node_group = make_node_and_element_and_data_groups(node_group_manager,
 									node_manager,element_manager,element_group_manager,data_group_manager,
-									"patch");
+									region_name);
 								set_unemap_package_rig_node_group(package,node_group);
 							}break;
 						}/*	switch (region_type) */	
@@ -1586,7 +1590,7 @@ in rig.c
 static struct GROUP(FE_node) *read_text_config_FE_node_group(FILE *input_file,
 	struct Unemap_package *package,enum Region_type region_type)
 /*******************************************************************************
-LAST MODIFIED : 12 October 1999
+LAST MODIFIED : 27 April 2000
 
 DESCRIPTION :
 Reads a node group from a configuration file.
@@ -1597,11 +1601,13 @@ FE_node_order_info, as this is used to pass info when reading signal
 files, and there are no text signal files.
 ==============================================================================*/
 {	
-	char *dummy_str,input_str[6],*region_name,*rig_name,*name,*dummy,separator;	
+	char *dummy,*dummy_str,input_str[6],*name,*region_name,region_num_string[10],
+		*rig_name,separator;
 	enum Config_node_type config_node_type;
 	FE_value focus;
 	int device_number,finished,is_auxiliary,is_electrode,last_node_number,
-		node_number,success;
+		node_number,success,region_number;
+	int string_error =0;
 	struct FE_node *node,*template_node;			
 	struct FE_field_order_info *field_order_info;	
 	struct GROUP(FE_node) *node_group,*all_devices_node_group;
@@ -1620,6 +1626,7 @@ files, and there are no text signal files.
 	all_devices_node_group=(struct GROUP(FE_node) *)NULL;
 	element_manager=(struct MANAGER(FE_element) *)NULL;
 	device_number=0;
+	region_number=0;
 	if (input_file&&package) 
 	{
 		element_group_manager=get_unemap_package_element_group_manager(package);
@@ -1687,7 +1694,11 @@ files, and there are no text signal files.
 					if (read_string(input_file,"[^\n]",&dummy_str)&&
 						(rig_name=trim_string(dummy_str)))
 					{	
-						fscanf(input_file," ");											
+						fscanf(input_file," ");
+						/*append the region number to the name, to ensure it's unique*/
+						sprintf(region_num_string,"%d",region_number);
+						append_string(&rig_name,region_num_string,&string_error);					
+						region_number++;
 					}	
 					else
 					{	
@@ -1709,7 +1720,7 @@ files, and there are no text signal files.
 						&field_order_info,package);
 					node_group=make_node_and_element_and_data_groups(node_group_manager,
 						node_manager,element_manager,element_group_manager,
-						data_group_manager,input_str);					
+						data_group_manager,rig_name);					
 					set_unemap_package_rig_node_group(package,node_group);
 					/* new group, new rig, so reset device number */
 					device_number=0;
@@ -1721,7 +1732,11 @@ files, and there are no text signal files.
 					if (read_string(input_file,"[^\n]",&dummy_str)&&
 						(rig_name=trim_string(dummy_str))) 
 					{	
-						fscanf(input_file," ");											
+						fscanf(input_file," ");		
+						/*append the region number to the name, to ensure it's unique*/
+						sprintf(region_num_string,"%d",region_number);
+						append_string(&rig_name,region_num_string,&string_error);						
+						region_number++;										
 					}	
 					else
 					{	
@@ -1743,7 +1758,7 @@ files, and there are no text signal files.
 						0,&field_order_info,package);
 					node_group=make_node_and_element_and_data_groups(node_group_manager,
 						node_manager,element_manager,element_group_manager,
-						data_group_manager,input_str);					
+						data_group_manager,rig_name);					
 					set_unemap_package_rig_node_group(package,node_group);
 					/* new group, new rig, so reset device number */
 					device_number=0;
@@ -1763,7 +1778,11 @@ files, and there are no text signal files.
 						{
 							focus=(float)0;
 						}	
-						fscanf(input_file," ");		
+						fscanf(input_file," ");	
+						/*append the region number to the name, to ensure it's unique*/
+						sprintf(region_num_string,"%d",region_number);
+						append_string(&rig_name,region_num_string,&string_error);						
+						region_number++;		
 					}	
 					else
 					{	
@@ -1785,7 +1804,7 @@ files, and there are no text signal files.
 						&field_order_info,package);
 					node_group=make_node_and_element_and_data_groups(node_group_manager,
 						node_manager,element_manager,element_group_manager,
-						data_group_manager,input_str);
+						data_group_manager,rig_name);
 					set_unemap_package_rig_node_group(package,node_group);
 					/* new group, new rig, so reset device number */
 					device_number=0;
@@ -1795,7 +1814,11 @@ files, and there are no text signal files.
 					/* line is "region" */
 					fscanf(input_file,"n : "); 
 					read_string(input_file,"[^\n]",&dummy_str);
-					region_name=trim_string(dummy_str);	 	
+					region_name=trim_string(dummy_str);	
+					/*append the region number to the name, to ensure it's unique*/
+					sprintf(region_num_string,"%d",region_number);
+					append_string(&region_name,region_num_string,&string_error);
+					region_number++;						
 					/* stop caching the current group,(if any) */
 					if (node_group)
 					{

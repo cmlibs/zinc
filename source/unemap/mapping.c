@@ -18,6 +18,7 @@ DESCRIPTION :
 #include "general/debug.h"
 #include "general/geometry.h"
 #include "general/postscript.h"
+#include "general/mystring.h"
 #if defined (UNEMAP_USE_NODES)
 #include "graphics/graphics_window.h"
 #include "graphics/graphical_element.h"
@@ -3340,7 +3341,7 @@ static int make_fit_node_and_element_groups(
 	char *name,FE_value sock_lambda,FE_value sock_focus,FE_value torso_r,
 	FE_value patch_z,int region_number,int rig_node_group_number)
 /*******************************************************************************
-LAST MODIFIED : August 12  1999
+LAST MODIFIED : April 27 2000
 
 DESCRIPTION :
 Given the <function> and <package>, determines if  identical node and element 
@@ -3351,12 +3352,13 @@ If the identical groups don't exist, create the groups and fill them in, with
 interpolation_function_to_node_group and make_fit_elements
 *******************************************************************************/
 {
-	char *fit_name,*fit_str = "_fit",*patch_str="_patch",*sock_str="_sock",
+	char *fit_name,*fit_str = "_fit",*patch_str="_patch",region_num_string[10],
+		*sock_str="_sock",
 		*torso_str="_torso",*type_str;
 	int return_code,string_length;
+	int string_error =0;
 	struct FE_node_order_info *node_order_info;
 	struct FE_field_order_info *field_order_info;	
-	
 	ENTER(make_fit_node_and_element_groups);
 	node_order_info = (struct FE_node_order_info *)NULL;
 	field_order_info = (struct FE_field_order_info *)NULL;	
@@ -3389,6 +3391,9 @@ interpolation_function_to_node_group and make_fit_elements
 			strcpy(fit_name,name);
 			strcat(fit_name,fit_str);
 			strcat(fit_name,type_str);
+			/*append the region number to the name, to ensure it's unique*/
+			sprintf(region_num_string,"%d",region_number);
+			append_string(&fit_name,region_num_string,&string_error);
 			/* check if the function properties are the same as the last one, i.e */
 			/* identical node and element groups should already exist */
 			if((get_unemap_package_map_number_of_map_rows(package,region_number)
