@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : mapping_window.h
 
-LAST MODIFIED : 1 November 2001
+LAST MODIFIED : 26 November 2001
 
 DESCRIPTION :
 ==============================================================================*/
@@ -226,6 +226,24 @@ LAST MODIFIED : 7 August 1992
 
 DESCRIPTION :
 Updates the mapping region menu to be consistent with the current rig.
+==============================================================================*/
+
+int update_map_from_maunal_time_update(struct Mapping_window *mapping);
+/*******************************************************************************
+LAST MODIFIED : 23 November 2001
+
+DESCRIPTION :
+Sets recalculate and map->interpolation_type from 
+map->draw_map_on_maunal_time_update, and update the map.
+Reset map->interpolation_type to it's initial value.
+==============================================================================*/
+
+int mapping_window_set_animation_buttons(struct Mapping_window *mapping);
+/*******************************************************************************
+LAST MODIFIED : 23 November 2001
+
+DESCRIPTION :
+Sets the animation buttons of the mapping window based upon map information
 ==============================================================================*/
 
 int highlight_electrode_or_auxiliar(struct Device *device,

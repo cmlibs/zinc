@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : mapping_window.c
 
-LAST MODIFIED : 20 November 2001
+LAST MODIFIED : 26 November 2001
 
 DESCRIPTION :
 ???DB.  Missing settings ?
@@ -147,25 +147,29 @@ Sets the minimum and maximum of the timekeeper to relate to the current map
 			{
 				case POTENTIAL:
 				{
-					if ((NO_INTERPOLATION!=map->interpolation_type) &&
-						(map->end_time > map->start_time))
+					switch(map->interpolation_type)
 					{
-						Time_keeper_set_minimum(Time_object_get_time_keeper(
-							mapping->potential_time_object), map->start_time);
-						Time_keeper_set_maximum(Time_object_get_time_keeper(
-							mapping->potential_time_object), map->end_time);
-					}
-					else
-					{
-						Time_keeper_set_minimum(Time_object_get_time_keeper(
-							mapping->potential_time_object),
-							(float)buffer->times[*(map->start_search_interval)]*1000.0/
-							(buffer->frequency));
-						Time_keeper_set_maximum(Time_object_get_time_keeper(
-							mapping->potential_time_object),
-							(float)buffer->times[*(map->end_search_interval)]*1000.0/
-							buffer->frequency);
-					}
+						case BICUBIC_INTERPOLATION:
+						{	
+							Time_keeper_set_minimum(Time_object_get_time_keeper(
+								mapping->potential_time_object), map->start_time);
+							Time_keeper_set_maximum(Time_object_get_time_keeper(
+								mapping->potential_time_object), map->end_time);
+						}break;
+						case NO_INTERPOLATION:
+						case DIRECT_INTERPOLATION:
+						default:
+						{
+							Time_keeper_set_minimum(Time_object_get_time_keeper(
+								mapping->potential_time_object),
+								(float)buffer->times[*(map->start_search_interval)]*1000.0/
+								(buffer->frequency));
+							Time_keeper_set_maximum(Time_object_get_time_keeper(
+								mapping->potential_time_object),
+								(float)buffer->times[*(map->end_search_interval)]*1000.0/
+								buffer->frequency);
+						}break;					
+					}/*switch(map->interpolation_type)*/
 				} break;
 				case SINGLE_ACTIVATION:
 				{
@@ -200,6 +204,185 @@ Sets the minimum and maximum of the timekeeper to relate to the current map
 	LEAVE;
 } /* mapping_window_update_time_limits */
 
+static int update_movie_frames_information(struct Mapping_window *mapping,
+int *recalculate,	char *map_settings_changed)
+/*******************************************************************************
+LAST MODIFIED : 26 November 2001
+
+DESCRIPTION :
+For for map in <mapping>, dealing with precalculated movies, update the number 
+of frames, map dialog information, etc. and set <recalculate> 
+<map_settings_changed>
+==============================================================================*/
+{
+	char *value_string;
+	float buffer_end_time,buffer_start_time,frame_end_time,frame_start_time;
+	int frame_number,number_of_frames,return_code;
+	struct Map *map;
+	struct Map_dialog *map_dialog;
+	struct Signal_buffer *buffer;
+
+	ENTER(update_movie_frames_information);
+	map=(struct Map *)NULL;
+	map_dialog=(struct Map_dialog *)NULL;
+	buffer=(struct Signal_buffer *)NULL;
+	if(mapping&&(map_dialog=mapping->map_dialog)&&(map=mapping->map))
+	{
+		return_code=1;
+		XtVaGetValues((map_dialog->animation).number_of_frames_text,
+			XmNvalue,&value_string,NULL);
+		if (1==sscanf(value_string,"%d",&number_of_frames))
+		{
+			if (number_of_frames<1)
+			{
+				number_of_frames=1;
+			}
+		}
+		else
+		{
+			number_of_frames=map_dialog->number_of_frames;
+		}
+		XtFree(value_string);
+		XtVaGetValues((map_dialog->animation).frame_number_text,
+			XmNvalue,&value_string,NULL);
+		if (1==sscanf(value_string,"%d",&frame_number))
+		{
+			if (frame_number<1)
+			{
+				frame_number=1;
+			}
+			else
+			{
+				if (frame_number>number_of_frames)
+				{
+					frame_number=number_of_frames;
+				}
+			}
+		}
+		else
+		{
+			frame_number=map_dialog->frame_number;
+		}
+		XtFree(value_string);
+		if ((map->rig_pointer)&&(*(map->rig_pointer))&&
+			((*(map->rig_pointer))->devices)&&(*((*(map->rig_pointer))->devices))&&
+			((*((*(map->rig_pointer))->devices))->signal)&&
+			(buffer=(*((*(map->rig_pointer))->devices))->signal->buffer))
+		{
+			buffer_start_time=(float)((buffer->times)[buffer->start])*1000./
+				(buffer->frequency);
+			buffer_end_time=(float)((buffer->times)[buffer->end])*1000./
+				(buffer->frequency);
+			XtVaGetValues((map_dialog->animation).start_time_text,
+				XmNvalue,&value_string,NULL);
+			if (1==sscanf(value_string,"%f",&frame_start_time))
+			{
+				if (frame_start_time<buffer_start_time)
+				{
+					frame_start_time=buffer_start_time;
+				}
+			}
+			else
+			{
+				frame_start_time=map_dialog->start_time;
+			}
+			XtFree(value_string);
+			XtVaGetValues((map_dialog->animation).end_time_text,
+				XmNvalue,&value_string,
+				NULL);
+			if (1==sscanf(value_string,"%f",&frame_end_time))
+			{
+				if (frame_end_time>buffer_end_time)
+				{
+					frame_end_time=buffer_end_time;
+				}
+			}
+			else
+			{
+				frame_end_time=map_dialog->end_time;
+			}
+			XtFree(value_string);
+		}
+		else
+		{
+			frame_start_time=map_dialog->start_time;
+			frame_end_time=map_dialog->end_time;
+		}
+		if (frame_start_time>=frame_end_time)
+		{
+			frame_end_time=frame_start_time;
+			number_of_frames=1;
+			frame_number=1;
+		}
+		if (number_of_frames==map_dialog->number_of_frames)
+		{
+			if ((frame_start_time==map_dialog->start_time)&&
+				(frame_end_time==map_dialog->end_time))
+			{
+				if (frame_number!=map_dialog->frame_number)
+				{
+					*map_settings_changed=1;
+				}
+			}
+			else
+			{
+				*map_settings_changed=1;
+				if (*recalculate<2)
+				{
+					*recalculate=2;
+				}
+			}
+		}
+		else
+		{
+			*map_settings_changed=1;
+			if (*recalculate<3)
+			{
+				*recalculate=3;
+			}
+		}
+		if (number_of_frames!=map->number_of_frames)
+		{
+			map->number_of_frames=number_of_frames;
+		}	
+		/* no animation if only one frame*/
+		if (1<number_of_frames)
+		{
+			XtSetSensitive(mapping->animate_button,True);
+			XtSetSensitive(mapping->print_menu.animate_rgb_button,True);
+			XtSetSensitive(mapping->print_menu.animate_tiff_button,True);
+			XtSetSensitive(mapping->print_menu.animate_jpg_button,True);
+		}
+		else
+		{
+			XtSetSensitive(mapping->animate_button,False);
+			XtSetSensitive(mapping->print_menu.animate_rgb_button,False);
+			XtSetSensitive(mapping->print_menu.animate_tiff_button,False);
+			XtSetSensitive(mapping->print_menu.animate_jpg_button,False);
+		}
+		map->sub_map_number=frame_number-1;
+		if (frame_start_time!=map_dialog->start_time)
+		{
+			map->start_time=frame_start_time;
+			map_dialog->start_time=frame_start_time;
+		}
+		if (frame_end_time!=map_dialog->end_time)
+		{
+			map->end_time=frame_end_time;
+			map_dialog->end_time=frame_end_time;
+		}
+		map_dialog->number_of_frames=number_of_frames;
+		map_dialog->frame_number=frame_number;
+	}
+	else
+	{	
+		display_message(ERROR_MESSAGE,"update_movie_frames_information.  Invalid_argurment(s)");
+		return_code=0;
+	}
+	LEAVE;
+	return(return_code);
+}/* update_movie_frames_information */
+
 static void update_map_from_dialog(Widget widget,XtPointer mapping_window,
 	XtPointer call_data)
 /*******************************************************************************
@@ -216,15 +399,13 @@ necessary.
 	enum Electrodes_label_type electrodes_label_type;
 	enum Fibres_option fibres_option;
 	enum Interpolation_type interpolation_type;
-	float buffer_end_time,buffer_start_time,frame_end_time,frame_start_time,
-		maximum_range,minimum_range,value;
-	int electrodes_marker_size,frame_number,number_of_frames,
-		number_of_mesh_columns,number_of_mesh_rows,recalculate;
+	float maximum_range,minimum_range,value;
+	int electrodes_marker_size,number_of_mesh_columns,number_of_mesh_rows,
+		recalculate;
 	struct Map *map;
 	struct Map_dialog *map_dialog;
 	struct Map_drawing_information *drawing_information;
 	struct Mapping_window *mapping;
-	struct Signal_buffer *buffer;
 	Widget option_widget;
 	struct Spectrum *spectrum=(struct Spectrum *)NULL;
 	struct Spectrum *spectrum_to_be_modified_copy=(struct Spectrum *)NULL;
@@ -749,165 +930,46 @@ necessary.
 				map->print_spectrum=0;
 			}
 		}
-		if ((POTENTIAL== *(map->type))&&(NO_INTERPOLATION!=map->interpolation_type))
+		if (POTENTIAL== *(map->type))
 		{
-			XtVaGetValues((map_dialog->animation).number_of_frames_text,
-				XmNvalue,&value_string,
-				NULL);
-			if (1==sscanf(value_string,"%d",&number_of_frames))
+			switch(map->interpolation_type)
 			{
-				if (number_of_frames<1)
+				case BICUBIC_INTERPOLATION:
 				{
-					number_of_frames=1;
-				}
-			}
-			else
-			{
-				number_of_frames=map_dialog->number_of_frames;
-			}
-			XtFree(value_string);
-			XtVaGetValues((map_dialog->animation).frame_number_text,
-				XmNvalue,&value_string,
-				NULL);
-			if (1==sscanf(value_string,"%d",&frame_number))
-			{
-				if (frame_number<1)
+					update_movie_frames_information(mapping,&recalculate,
+						&map_settings_changed);
+				}break; /*case BICUBIC_INTERPOLATION:*/
+				case NO_INTERPOLATION:
+				case DIRECT_INTERPOLATION:
+				default:
 				{
-					frame_number=1;
-				}
-				else
-				{
-					if (frame_number>number_of_frames)
-					{
-						frame_number=number_of_frames;
+					if(ELECTRICAL_IMAGING==(*map->analysis_mode))
+					{	
+						XtSetSensitive(mapping->animate_button,False);
+						XtSetSensitive(mapping->print_menu.animate_rgb_button,False);
+						XtSetSensitive(mapping->print_menu.animate_tiff_button,False);
+						XtSetSensitive(mapping->print_menu.animate_jpg_button,False);					
 					}
-				}
-			}
-			else
-			{
-				frame_number=map_dialog->frame_number;
-			}
-			XtFree(value_string);
-			if ((map->rig_pointer)&&(*(map->rig_pointer))&&
-				((*(map->rig_pointer))->devices)&&(*((*(map->rig_pointer))->devices))&&
-				((*((*(map->rig_pointer))->devices))->signal)&&
-				(buffer=(*((*(map->rig_pointer))->devices))->signal->buffer))
-			{
-				buffer_start_time=(float)((buffer->times)[buffer->start])*1000./
-					(buffer->frequency);
-				buffer_end_time=(float)((buffer->times)[buffer->end])*1000./
-					(buffer->frequency);
-				XtVaGetValues((map_dialog->animation).start_time_text,
-					XmNvalue,&value_string,
-					NULL);
-				if (1==sscanf(value_string,"%f",&frame_start_time))
-				{
-					if (frame_start_time<buffer_start_time)
+					else
 					{
-						frame_start_time=buffer_start_time;
-					}
-				}
-				else
-				{
-					frame_start_time=map_dialog->start_time;
-				}
-				XtFree(value_string);
-				XtVaGetValues((map_dialog->animation).end_time_text,
-					XmNvalue,&value_string,
-					NULL);
-				if (1==sscanf(value_string,"%f",&frame_end_time))
-				{
-					if (frame_end_time>buffer_end_time)
-					{
-						frame_end_time=buffer_end_time;
-					}
-				}
-				else
-				{
-					frame_end_time=map_dialog->end_time;
-				}
-				XtFree(value_string);
-			}
-			else
-			{
-				frame_start_time=map_dialog->start_time;
-				frame_end_time=map_dialog->end_time;
-			}
-			if (frame_start_time>=frame_end_time)
-			{
-				frame_end_time=frame_start_time;
-				number_of_frames=1;
-				frame_number=1;
-			}
-			if (number_of_frames==map_dialog->number_of_frames)
-			{
-				if ((frame_start_time==map_dialog->start_time)&&
-					(frame_end_time==map_dialog->end_time))
-				{
-					if (frame_number!=map_dialog->frame_number)
-					{
-						map_settings_changed=1;
-					}
-				}
-				else
-				{
-					map_settings_changed=1;
-					if (recalculate<2)
-					{
-						recalculate=2;
-					}
-				}
-			}
-			else
-			{
-				map_settings_changed=1;
-				if (recalculate<3)
-				{
-					recalculate=3;
-				}
-			}
-			if (number_of_frames!=map->number_of_frames)
-			{
-				map->number_of_frames=number_of_frames;
-			}	
-			/* no animation if only one frame*/
-			if (1<number_of_frames)
-			{
-				XtSetSensitive(mapping->animate_button,True);
-				XtSetSensitive(mapping->print_menu.animate_rgb_button,True);
-				XtSetSensitive(mapping->print_menu.animate_tiff_button,True);
-				XtSetSensitive(mapping->print_menu.animate_jpg_button,True);
-			}
-			else
-			{
-				XtSetSensitive(mapping->animate_button,False);
-				XtSetSensitive(mapping->print_menu.animate_rgb_button,False);
-				XtSetSensitive(mapping->print_menu.animate_tiff_button,False);
-				XtSetSensitive(mapping->print_menu.animate_jpg_button,False);
-			}
-
-			map->sub_map_number=frame_number-1;
-
-			if (frame_start_time!=map_dialog->start_time)
-			{
-				map->start_time=frame_start_time;
-				map_dialog->start_time=frame_start_time;
-			}
-			if (frame_end_time!=map_dialog->end_time)
-			{
-				map->end_time=frame_end_time;
-				map_dialog->end_time=frame_end_time;
-			}
-			map_dialog->number_of_frames=number_of_frames;
-			map_dialog->frame_number=frame_number;
-		}
-		if ((POTENTIAL== *(map->type))&&(NO_INTERPOLATION==map->interpolation_type))
-		{
-			XtSetSensitive(mapping->animate_button,True);
-			XtSetSensitive(mapping->print_menu.animate_rgb_button,True);
-			XtSetSensitive(mapping->print_menu.animate_tiff_button,True);
-			XtSetSensitive(mapping->print_menu.animate_jpg_button,True);
-		}
+						if(map->projection_type==THREED_PROJECTION)
+						{	
+							/*not sure what we're going to do with 3D movies yet*/
+							/*for now make them behave like bicubic 2D movies */
+							update_movie_frames_information(mapping,&recalculate,
+								&map_settings_changed);
+						}
+						else
+						{
+							XtSetSensitive(mapping->animate_button,True);
+							XtSetSensitive(mapping->print_menu.animate_rgb_button,True);
+							XtSetSensitive(mapping->print_menu.animate_tiff_button,True);
+							XtSetSensitive(mapping->print_menu.animate_jpg_button,True);
+						}
+					}				
+				}break;
+			}/*switch (map->interpolation_type) */
+		}	/* if (POTENTIAL== *(map->type)) */
 		if (MULTIPLE_ACTIVATION== *(map->type))
 		{
 			if (NO_INTERPOLATION!=map->interpolation_type)
@@ -1423,47 +1485,52 @@ Draws a frame in the activation map animation.
 			{
 				if (POTENTIAL== *(map->type))
 				{
-					if (NO_INTERPOLATION==map->interpolation_type)
+					switch(map->interpolation_type)
 					{
-						update_mapping_drawing_area(mapping,2);
-						update_mapping_colour_or_auxili(mapping);
-						/*???DB.  What about the trace window ? */
-						(*(map->potential_time))++;
-						if (*(map->potential_time)< *(map->end_search_interval))
+						case BICUBIC_INTERPOLATION:
 						{
-							(void)XtAppAddTimeOut(
-								mapping->user_interface->application_context,(long unsigned)10,
-								draw_activation_animation_frame,mapping_window);
-						}
-						else
+							update_mapping_drawing_area(mapping,0);
+							(map->sub_map_number)++;
+							if (map->sub_map_number<map->number_of_sub_maps)
+							{
+								(void)XtAppAddTimeOut(
+									mapping->user_interface->application_context,(long unsigned)100,
+									draw_activation_animation_frame,mapping_window);
+							}
+							else
+							{
+								map->sub_map_number=map->activation_front;
+								map->activation_front= -1;
+								XtSetSensitive(mapping->animate_button,True);
+								update_mapping_drawing_area(mapping,0);
+							}
+						}break;
+						case NO_INTERPOLATION:
+						case DIRECT_INTERPOLATION:
+						default:
 						{
-							*(map->potential_time)=map->activation_front;
-							map->activation_front= -1;
-							XtSetSensitive(mapping->animate_button,True);
 							update_mapping_drawing_area(mapping,2);
 							update_mapping_colour_or_auxili(mapping);
 							/*???DB.  What about the trace window ? */
-						}
-					}
-					else
-					{
-						update_mapping_drawing_area(mapping,0);
-						(map->sub_map_number)++;
-						if (map->sub_map_number<map->number_of_sub_maps)
-						{
-							(void)XtAppAddTimeOut(
-								mapping->user_interface->application_context,(long unsigned)100,
-								draw_activation_animation_frame,mapping_window);
-						}
-						else
-						{
-							map->sub_map_number=map->activation_front;
-							map->activation_front= -1;
-							XtSetSensitive(mapping->animate_button,True);
-							update_mapping_drawing_area(mapping,0);
-						}
-					}
-				}
+							(*(map->potential_time))++;
+							if (*(map->potential_time)< *(map->end_search_interval))
+							{
+								(void)XtAppAddTimeOut(
+									mapping->user_interface->application_context,(long unsigned)10,
+									draw_activation_animation_frame,mapping_window);
+							}
+							else
+							{
+								*(map->potential_time)=map->activation_front;
+								map->activation_front= -1;
+								XtSetSensitive(mapping->animate_button,True);
+								update_mapping_drawing_area(mapping,2);
+								update_mapping_colour_or_auxili(mapping);
+								/*???DB.  What about the trace window ? */
+							}
+						}break;
+					}/*switch(map->interpolation_type) */
+				}/* if (POTENTIAL== *(map->type)) */
 			}
 		}
 	}
@@ -1484,6 +1551,9 @@ Starts the activation map animation.
 	struct Time_keeper *time_keeper;
 
 	ENTER(animate_activation_map);
+	mapping= (struct Mapping_window *)NULL;
+	map= (struct Map *)NULL;
+	time_keeper=(struct Time_keeper *)NULL;
 	USE_PARAMETER(widget);
 	USE_PARAMETER(call_data);
 	if ((mapping=(struct Mapping_window *)mapping_window)&&(map=mapping->map)&&
@@ -1507,12 +1577,25 @@ Starts the activation map animation.
 					case POTENTIAL:
 					{
 						map->activation_front= 0;
-						if (NO_INTERPOLATION!=map->interpolation_type)
+						switch(map->interpolation_type)
 						{
-							/* Jump to the start of the animated sequence */
-							Time_keeper_request_new_time(time_keeper,
-								map->start_time);
-						}
+							case BICUBIC_INTERPOLATION:
+							{
+								/* Jump to the start of the animated sequence */
+								Time_keeper_request_new_time(time_keeper,
+									map->start_time);
+							}break;
+							case NO_INTERPOLATION:
+							case DIRECT_INTERPOLATION:
+							default:
+							{
+								/*do nothing */
+								;			
+
+								Time_keeper_request_new_time(time_keeper,
+									map->start_time);					
+							}break;
+						}/* map->interpolation_type */
 					} break;
 					case SINGLE_ACTIVATION:
 					{
@@ -1753,7 +1836,6 @@ Opens the dialog box associated with the setup button in the mapping window.
 	}
 	LEAVE;
 } /* setup_simple_rig */
-
 
 static int Mapping_window_make_drawing_area_2d(
 	struct Mapping_window *mapping_window)
@@ -2987,6 +3069,53 @@ window file menu.
 	return (return_code);
 } /* update_mapping_window_file_menu */
 
+int mapping_window_set_animation_buttons(struct Mapping_window *mapping)
+/*******************************************************************************
+LAST MODIFIED : 23 November 2001
+
+DESCRIPTION :
+Sets the animation buttons of the mapping window based upon map information
+==============================================================================*/
+{
+	int return_code;
+	struct Map *map;
+
+	ENTER(mapping_window_set_animation_buttons);
+	if(mapping)
+	{
+		return_code=1;
+		if ((map=mapping->map)&&(map->type)&&	
+			(ELECTRICAL_IMAGING!=(*map->analysis_mode))&&
+			((SINGLE_ACTIVATION== *(map->type)||
+			((MULTIPLE_ACTIVATION== *(map->type))&&
+			(NO_INTERPOLATION==map->interpolation_type))||
+			((POTENTIAL== *(map->type))&&
+			((NO_INTERPOLATION==map->interpolation_type)||
+			(DIRECT_INTERPOLATION==map->interpolation_type))))))
+		{							
+			XtSetSensitive(mapping->animate_button,True);
+			XtSetSensitive(mapping->print_menu.animate_rgb_button,True);
+			XtSetSensitive(mapping->print_menu.animate_tiff_button,True);
+			XtSetSensitive(mapping->print_menu.animate_jpg_button,True);			
+		}
+		else
+		{
+			XtSetSensitive(mapping->animate_button,False);
+			XtSetSensitive(mapping->print_menu.animate_rgb_button,False);
+			XtSetSensitive(mapping->print_menu.animate_tiff_button,False);
+			XtSetSensitive(mapping->print_menu.animate_jpg_button,False);
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"mapping_window_set_animation_buttons.  Invalid argument(s)");
+		return_code=0;
+	}	
+	LEAVE;
+	return (return_code);
+} /* mapping_window_set_animation_buttons */
+
 static void expose_mapping_drawing_area_2d(Widget widget,
 	XtPointer mapping_window,XtPointer call_data)
 /*******************************************************************************
@@ -3041,6 +3170,7 @@ The callback for redrawing part of a mapping drawing area.
 									update_mapping_colour_or_auxili(mapping);
 									/* set the sensitivity of the save electrode values button */
 									update_mapping_window_file_menu(mapping);
+									mapping_window_set_animation_buttons(mapping);
 								}
 								else
 								{
@@ -3164,6 +3294,7 @@ The callback for resizing a mapping drawing area.
 							draw_map(mapping->map,3,drawing);
 							/* set the sensitivity of the save electrode values button */
 							update_mapping_window_file_menu(mapping);
+							mapping_window_set_animation_buttons(mapping);
 							/* display the intersection of the old rectangle and the new
 								rectangle */
 							if (attributes.width<width)
@@ -3280,8 +3411,7 @@ Sets the projection to be the polar projection.
 				mapping->map->projection_type=POLAR_PROJECTION;				
 				Mapping_window_make_drawing_area_2d(mapping);
 				update_mapping_drawing_area(mapping,2);
-				/*need to regenerate maps if change projection type*/
-				XtSetSensitive(mapping->animate_button,False);
+				mapping_window_set_animation_buttons(mapping);
 			}
 		}
 		else
@@ -3320,9 +3450,8 @@ drawing
 			/*must set the rojection_type to something*/
 			mapping->map->projection_type=CYLINDRICAL_PROJECTION;
 			Mapping_window_make_drawing_area_2d(mapping);
-			update_mapping_drawing_area(mapping,2);	
-			/*need to regenerate maps if change projection type*/
-			XtSetSensitive(mapping->animate_button,False);	
+			update_mapping_drawing_area(mapping,2);
+			mapping_window_set_animation_buttons(mapping);
 		}
 		else
 		{
@@ -3360,8 +3489,7 @@ Sets the projection to be the cylinder projection.
 				mapping->map->projection_type=CYLINDRICAL_PROJECTION;				
 				Mapping_window_make_drawing_area_2d(mapping);
 				update_mapping_drawing_area(mapping,2);
-				/*need to regenerate maps if change projection type*/
-				XtSetSensitive(mapping->animate_button,False);
+				mapping_window_set_animation_buttons(mapping);
 			}
 		}
 		else
@@ -3986,6 +4114,7 @@ mapping_window.
 					mapping->map_drawing->height,mapping->map_drawing->width,/*row_padding*/0,image);
 			}
 #else /* defined (IMAGEMAGICK) */
+			USE_PARAMETER(file_name);
 			display_message(ERROR_MESSAGE,
 				"write_map_jpg_file. Need to compile with IMAGEMAGICK for JPG");
 			return_code=0;
@@ -4068,19 +4197,24 @@ mapping_window.
 			{
 				if (POTENTIAL== *(map->type))
 				{
-					if (NO_INTERPOLATION==map->interpolation_type)
+					switch(map->interpolation_type)
 					{
-						number_of_frames= *(map->end_search_interval)-
-							*(map->start_search_interval);
-						map->activation_front= *(map->potential_time);
-						*(map->potential_time)= *(map->start_search_interval);
-					}
-					else
-					{					
-						number_of_frames=map->number_of_sub_maps;
-						map->activation_front=map->sub_map_number;
-						map->sub_map_number=0;
-					}
+						case BICUBIC_INTERPOLATION:
+						{
+							number_of_frames=map->number_of_sub_maps;
+							map->activation_front=map->sub_map_number;
+							map->sub_map_number=0;
+						}break;
+						case NO_INTERPOLATION:
+						case DIRECT_INTERPOLATION:
+						default:
+						{	
+							number_of_frames= *(map->end_search_interval)-
+								*(map->start_search_interval);
+							map->activation_front= *(map->potential_time);
+							*(map->potential_time)= *(map->start_search_interval);
+						}break;						
+					}/*switch(map->interpolation_type)*/
 				}
 			}
 		}			
@@ -4194,18 +4328,23 @@ mapping_window.
 						{
 							if (POTENTIAL== *(map->type))
 							{
-								if (NO_INTERPOLATION==map->interpolation_type)
-								{
-									update_mapping_drawing_area(mapping,2);
-									update_mapping_colour_or_auxili(mapping);
-									/*???DB.  What about the trace window ? */
-									(*(map->potential_time))++;
-								}
-								else
-								{
-									update_mapping_drawing_area(mapping,0);
-									(map->sub_map_number)++;
-								}
+								switch(map->interpolation_type)
+								{	
+									case BICUBIC_INTERPOLATION:
+									{
+										update_mapping_drawing_area(mapping,0);
+										(map->sub_map_number)++;
+									}break;
+									case NO_INTERPOLATION:
+									case DIRECT_INTERPOLATION:
+									default:
+									{
+										update_mapping_drawing_area(mapping,2);
+										update_mapping_colour_or_auxili(mapping);
+										/*???DB.  What about the trace window ? */
+										(*(map->potential_time))++;
+									}break;
+								}/* map->interpolation_type */
 							}
 						}
 					}
@@ -4574,7 +4713,7 @@ the created mapping window.  If unsuccessful, NULL is returned.
 				mapping->region_pull_down_menu=(Widget)NULL;
 				mapping->number_of_regions=0;
 				mapping->regions=(Widget *)NULL;
-				mapping->potential_time_object = (struct Time_object *)NULL;
+				mapping->potential_time_object=(struct Time_object *)NULL;
 				mapping->time_editor_dialog = (Widget)NULL;
 				mapping->print_button=(Widget)NULL;
 				(mapping->print_menu).postscript_button=(Widget)NULL;
@@ -5168,7 +5307,7 @@ Calls draw_map_3d or update_mapping_drawing_area_2d depending upon
 		update_mapping_drawing_area_2d(mapping,recalculate);
 #endif /* defined (UNEMAP_USE_3D) */	
 		/* set the sensitivity of the save electrode values button */
-		update_mapping_window_file_menu(mapping);
+		update_mapping_window_file_menu(mapping);	
 	}
 	else
 	{		
@@ -5533,6 +5672,50 @@ Updates the mapping region pull down menu to be consistent with the current rig.
 
 	return (return_code);
 } /* update_mapping_window_menu */
+
+
+int update_map_from_maunal_time_update(struct Mapping_window *mapping)
+/*******************************************************************************
+LAST MODIFIED : 23 November 2001
+
+DESCRIPTION :
+Sets recalculate and map->interpolation_type from 
+map->draw_map_on_maunal_time_update, and update the map.
+Reset map->interpolation_type to it's initial value.
+==============================================================================*/
+{
+	enum Interpolation_type interpolation;
+	int recalculate,return_code;
+	struct Map *map;
+
+	ENTER(update_map_from_maunal_time_update);
+	map=(struct Map *)NULL;
+	if(mapping&&(map=mapping->map))
+	{
+		return_code=1;
+		interpolation=map->interpolation_type;							
+		if(map->draw_map_on_maunal_time_update)
+		{
+			recalculate=2;
+		}
+		else
+		{
+			recalculate=1;
+			map->interpolation_type=NO_INTERPOLATION;
+		}												
+		update_mapping_drawing_area(mapping,recalculate);
+		update_mapping_colour_or_auxili(mapping);
+		map->interpolation_type=interpolation;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"update_map_from_maunal_time_update. Invalid arguments");
+		return_code=0;
+	}
+	LEAVE;
+	return(return_code);
+}/* update_map_from_maunal_time_update */
 
 int highlight_electrode_or_auxiliar(struct Device *device,
 #if defined (UNEMAP_USE_NODES)
@@ -5931,3 +6114,5 @@ DESCRIPTION :
 
 	return (return_code);
 } /* Mapping_window_set_potential_time_object */
+
+

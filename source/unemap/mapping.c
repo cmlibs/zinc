@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : mapping.c
 
-LAST MODIFIED : 20 November 2001
+LAST MODIFIED : 26 November 2001
 
 DESCRIPTION :
 ==============================================================================*/
@@ -27,7 +27,6 @@ DESCRIPTION :
 #include "graphics/graphics_window.h"
 #include "graphics/graphical_element.h"
 #include "graphics/element_group_settings.h"
-#include "unemap/delauney.h"
 #endif /* defined (UNEMAP_USE_3D) */
 #include "graphics/spectrum.h"
 #include "unemap/drawing_2d.h"
@@ -6312,7 +6311,7 @@ struct Map *create_Map(enum Map_type *map_type,enum Colour_option colour_option,
 	struct Electrical_imaging_event **eimaging_event_list,
 	enum Signal_analysis_mode *analysis_mode)
 /*******************************************************************************
-LAST MODIFIED :8 November 2001
+LAST MODIFIED : 23 November 2001
 
 DESCRIPTION :
 This function allocates memory for a map and initializes the fields to the
@@ -6321,7 +6320,7 @@ NULL if not successful.
 ==============================================================================*/
 {
 	char *electrodes_marker_type,*finite_element_interpolation,
-		*fixed_automatic_range;
+		*fixed_automatic_range,*draw_on_update;
 	int membrane_smoothing_ten_thous,plate_bending_smoothing_ten_tho;
 #define XmNfiniteElementInterpolation "finiteElementInterpolation"
 #define XmCFiniteElementInterpolation "FiniteElementInterpolation"
@@ -6345,6 +6344,8 @@ NULL if not successful.
 #define XmCMapRangeMinimum "MapRangeMinimum"
 #define XmNmapRangeMaximum "mapRangeMaximum"
 #define XmCMapRangeMaximum "MapRangeMaximum"
+#define XmNreDrawMapOnMaunalTimeUpdate "reDrawMapOnMaunalTimeUpdate"
+#define XmCReDrawMapOnMaunalTimeUpdate "ReDrawMapOnMaunalTimeUpdate"
 	static XtResource
 		resources_1[]=
 		{
@@ -6462,6 +6463,18 @@ NULL if not successful.
 				XmRString,
 				"0"
 			}
+		},
+		resources_10[]=
+		{
+			{
+				XmNreDrawMapOnMaunalTimeUpdate,
+				XmCReDrawMapOnMaunalTimeUpdate,
+				XmRString,
+				sizeof(char *),
+				0,
+				XmRString,
+				"false"
+			}
 		};
 	struct Map *map;
 
@@ -6527,7 +6540,7 @@ NULL if not successful.
 				map->interpolation_type=BICUBIC_INTERPOLATION;
 			}
 			else
-			{
+			{if (POTENTIAL== *(map->type))
 				map->interpolation_type=NO_INTERPOLATION;
 			}
 			XtVaGetApplicationResources(user_interface->application_shell,
@@ -6573,6 +6586,16 @@ NULL if not successful.
 			XtVaGetApplicationResources(user_interface->application_shell,
 				&(map->maximum_value),resources_9,XtNumber(resources_9),
 				NULL);
+			XtVaGetApplicationResources(user_interface->application_shell,
+				&draw_on_update,resources_10,XtNumber(resources_10),NULL);
+			if (fuzzy_string_compare(draw_on_update,"true"))
+			{
+				map->draw_map_on_maunal_time_update=1;			
+			}
+			else
+			{
+				map->draw_map_on_maunal_time_update=0;				
+			}
 			map->colour_electrodes_with_signal=1;
 			/*??? calculate from rig ? */
 			map->number_of_electrodes=0;
@@ -12361,8 +12384,7 @@ to the drawing or writes to a postscript file.
 							{
 								if (use_potential_time)
 								{
-									if ((map->potential_time)&&(*(map->potential_time))&&
-										(rig->devices)&&(*(rig->devices))&&
+									if ((map->potential_time)&&(rig->devices)&&(*(rig->devices))&&
 										((*(rig->devices))->signal)&&
 										(buffer=(*(rig->devices))->signal->buffer)&&
 										(times=buffer->times))
@@ -12372,7 +12394,7 @@ to the drawing or writes to a postscript file.
 									}
 									else
 									{
-										sub_map->frame_time=0;
+										sub_map->frame_time=1;
 									}
 								}
 								screen_x=sub_map->electrode_x;

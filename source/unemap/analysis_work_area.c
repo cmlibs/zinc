@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : analysis_work_area.c
 
-LAST MODIFIED : 20 November 2001
+LAST MODIFIED : 26 November 2001
 
 DESCRIPTION :
 ???DB.  Have yet to tie event objective and preprocessor into the event times
@@ -397,25 +397,7 @@ DESCRIPTION :
 			map->number_of_frames=1;
 			update_mapping_drawing_area(mapping,2);
 			update_mapping_colour_or_auxili(mapping);
-			if ((map=mapping->map)&&(map->type)&&
-				((SINGLE_ACTIVATION== *(map->type)||
-				((MULTIPLE_ACTIVATION== *(map->type))&&
-				(NO_INTERPOLATION==map->interpolation_type))||
-				((POTENTIAL== *(map->type))&&
-				(NO_INTERPOLATION==map->interpolation_type)))))
-			{
-				XtSetSensitive(mapping->animate_button,True);
-				XtSetSensitive(mapping->print_menu.animate_rgb_button,True);
-				XtSetSensitive(mapping->print_menu.animate_tiff_button,True);
-				XtSetSensitive(mapping->print_menu.animate_jpg_button,True);
-			}
-			else
-			{
-				XtSetSensitive(mapping->animate_button,False);
-				XtSetSensitive(mapping->print_menu.animate_rgb_button,False);
-				XtSetSensitive(mapping->print_menu.animate_tiff_button,False);
-				XtSetSensitive(mapping->print_menu.animate_jpg_button,False);
-			}
+			mapping_window_set_animation_buttons(mapping);
 		}
 	}
 	else
@@ -7477,7 +7459,7 @@ static int move_Electrical_imaging_event_marker(
 	float frequency,int start_analysis_interval,unsigned int working_button,
 	struct Mapping_window *mapping)
 /*******************************************************************************
-LAST MODIFIED 24 September 2001
+LAST MODIFIED 22 November 2001
 
 DESCRIPTION : moves the Electrical_imaging_event <event> in response to mouse 
 event.
@@ -7485,19 +7467,16 @@ event.
 {									
 	Boolean owner_events;	
 	char time_string[20];		
-	Cursor cursor;
-	enum Interpolation_type interpolation;
+	Cursor cursor;	
 	GC graphics_context;
 	int axes_bottom,axes_left,axes_right,axes_top,axes_width,
 		keyboard_mode,marker,pointer_mode,pointer_x,pointer_y,previous_marker,
 		return_code,time;
 	Pixmap pixel_map;
-	struct Map *map;		
 	Window confine_to,working_window;
 	XEvent xevent;
 
 	ENTER(move_Electrical_imaging_event_marker);	
-	map=(struct Map *)NULL;
 	if(trace_area_3&&event&&signal_drawing_information&&display&&times)
 	{	
 		graphics_context=(signal_drawing_information->graphics_context).
@@ -7587,14 +7566,10 @@ event.
 							trace_area_3->drawing);
 						event->is_current_event=1;
 						moving=TRACE_MOVING_NONE;												
-						/*if we have a map, update it with NO_INTERPOLATION, so just get electrodes*/
-						if(mapping&&(map=mapping->map))
+						/*if we have a map, update it */
+						if(mapping&&mapping->map)
 						{
-							interpolation=map->interpolation_type;
-							map->interpolation_type=NO_INTERPOLATION;
-							update_mapping_drawing_area(mapping,1);
-							update_mapping_colour_or_auxili(mapping);
-							map->interpolation_type=interpolation;
+							update_map_from_maunal_time_update(mapping);						
 						}				 
 					}break;
 					case ButtonPress:
@@ -7803,6 +7778,11 @@ Electrical_imaging_event.
 						is_current_event=event->is_current_event;
 						remove_Electrical_imaging_event_from_list(trace->first_eimaging_event,
 							event);
+						/*if we have a map, update it */
+						if(mapping&&mapping->map)
+						{
+							update_map_from_maunal_time_update(mapping);						
+						}	
 						/* if the deleted event was the current one, and there's an event*/
 						/* remaining, make it the current event*/
 						if(is_current_event&&(event=*trace->first_eimaging_event))
@@ -7818,7 +7798,7 @@ Electrical_imaging_event.
 								axes_width,axes_top,signal_drawing_information->font,
 								graphics_context,display,drawing_area,drawing);
 						}
-					}
+					}/* else if(working_button==Button3) */
 				}/* if(found) */
 				else
 				{
@@ -7838,8 +7818,13 @@ Electrical_imaging_event.
 						draw_Electrical_imaging_event_marker(event,end_analysis_interval,
 							start_analysis_interval,axes_top,axes_height,axes_left,axes_width, 
 							drawing_area,drawing,signal_drawing_information,buffer);
-					}
-				}
+						/*if we have a map, update it */
+						if(mapping&&mapping->map)
+						{
+							update_map_from_maunal_time_update(mapping);						
+						}	
+					}/*if(working_button==Button3)*/
+				}/* if(found) */
 			}/* if ((pointer_x>=axes_left-pointer_sensitivity) */			
 		}/* if((ButtonPress==callback->e */
 	}
@@ -14159,36 +14144,46 @@ Calculates the next desired update callback from the time object.
 			{
 				case POTENTIAL:
 				{
-					if (NO_INTERPOLATION!=map->interpolation_type)
+					switch(map->interpolation_type)
 					{
-						if (map->end_time>map->start_time)
-						{
-							/* valid frames */
-							switch (play_direction)
+						case BICUBIC_INTERPOLATION:
+						{						
+							if (map->end_time>map->start_time)
 							{
-								case TIME_KEEPER_PLAY_FORWARD:
+								/* valid frames */
+								switch (play_direction)
 								{
-									next_time=map->start_time+
-										(map->end_time-map->start_time)/
-										(float)(map->number_of_frames-1)*
-										floor((float)(map->number_of_frames-1)*
-										((time_after-map->start_time)/
-										(map->end_time-map->start_time))+1.0);
-									time_set=1;
-								} break;
-								case TIME_KEEPER_PLAY_BACKWARD:
-								{
-									next_time=map->start_time+
-										(map->end_time - map->start_time)/
-										(float)(map->number_of_frames-1)*
-										ceil((float)(map->number_of_frames-1)*
-										((time_after-map->start_time)/
-										(map->end_time-map->start_time))-1.0);
-									time_set=1;
-								} break;
+									case TIME_KEEPER_PLAY_FORWARD:
+									{
+										next_time=map->start_time+
+											(map->end_time-map->start_time)/
+											(float)(map->number_of_frames-1)*
+											floor((float)(map->number_of_frames-1)*
+												((time_after-map->start_time)/
+													(map->end_time-map->start_time))+1.0);
+										time_set=1;
+									} break;
+									case TIME_KEEPER_PLAY_BACKWARD:
+									{
+										next_time=map->start_time+
+											(map->end_time - map->start_time)/
+											(float)(map->number_of_frames-1)*
+											ceil((float)(map->number_of_frames-1)*
+												((time_after-map->start_time)/
+													(map->end_time-map->start_time))-1.0);
+										time_set=1;
+									} break;
+								}
 							}
-						}
-					}
+						}break;
+						case NO_INTERPOLATION:
+						case DIRECT_INTERPOLATION:
+						default:
+						{
+							/*do nothing */
+							;
+						}break;
+					}/* switch(map->interpolation_type) */
 				} break;
 				case SINGLE_ACTIVATION:
 				{
@@ -14268,12 +14263,11 @@ Responds to update callbacks from the time object.
 ==============================================================================*/
 {
 	Colormap colour_map;
-	Display *display;
-	enum Interpolation_type interpolation;
+	Display *display;	
 	float contour_maximum,contour_minimum, frequency, maximum_value,minimum_value,
 		map_potential_time, number_of_spectrum_colours;
 	int cell_number,datum,frame_number,i,number_of_contours,
-		potential_time, previous_potential_time, return_code;
+		potential_time, previous_potential_time,return_code;
 	Pixel *spectrum_pixels;
 	struct Analysis_work_area *analysis;
 	struct Device *highlight_device;
@@ -14368,106 +14362,110 @@ Responds to update callbacks from the time object.
 							case POTENTIAL:
 							{						 
 								map_potential_time=current_time;
-								if (NO_INTERPOLATION!=map->interpolation_type)
+								switch(map->interpolation_type)
 								{
-									if (-1!=map->activation_front)
+									case BICUBIC_INTERPOLATION:
 									{
-										/* playing movie */
-										/* ??JW fix the range when playing the movie? IF so need */
-										/* to update map dialog as well as map->fixed_range=1 */
-#if defined (UNEMAP_USE_3D)
-										/* 3d map */
-										if (map->projection_type==THREED_PROJECTION)
+										if (-1!=map->activation_front)
 										{
-											/* recalculate not used for 3d maps */
-											update_mapping_drawing_area(mapping,1/*recalculate*/);
-											update_mapping_colour_or_auxili(mapping);
-										}
-										/*2d map */
-										else
-										{
-#endif /* defined (UNEMAP_USE_3D) */
-											/* 2d map */
-											if (map->end_time>map->start_time)
-											{
-												frame_number=(int)((float)(map->number_of_frames-1)*
-												((map_potential_time-map->start_time)/
-													(map->end_time-map->start_time)));
-												map->sub_map_number=frame_number;
-												update_mapping_drawing_area(mapping,0);
-												update_mapping_colour_or_auxili(mapping);
-											}
-											else
-											{
-												display_message(ERROR_MESSAGE,
-													"analysis_potential_time_update_callback.  "
-													"End time greater or equal to start time");
-												return_code=0;
-											}
-#if defined (UNEMAP_USE_3D)
-										}
-#endif /* defined (UNEMAP_USE_3D) */
-									}
-									else
-									{
-										if ((map_potential_time>=map->start_time)&&
-											(map_potential_time<=map->end_time))
-										{	
-											if (map->start_time<map->end_time)
-											{
-												frame_number=(int)((float)(map->number_of_frames-1)*
-													((map_potential_time-map->start_time)/
-													(map->end_time-map->start_time)));
-											}
-											else
-											{
-												frame_number=0;
-											}
-											map->sub_map_number=frame_number;
-											update_mapping_drawing_area(mapping,0);
-											update_mapping_colour_or_auxili(mapping);
-										}
-										else
-										{
+											/* playing movie */
+											/* ??JW fix the range when playing the movie? IF so need */
+											/* to update map dialog as well as map->fixed_range=1 */
 #if defined (UNEMAP_USE_3D)
 											/* 3d map */
 											if (map->projection_type==THREED_PROJECTION)
 											{
-												/* 3d map */
 												/* recalculate not used for 3d maps */
 												update_mapping_drawing_area(mapping,1/*recalculate*/);
 												update_mapping_colour_or_auxili(mapping);
-											}
+											}										
 											else
-												/* 2d map */
 											{
+												/*2d map */
 #endif /* defined (UNEMAP_USE_3D) */
 												/* 2d map */
-												interpolation=map->interpolation_type;
-												map->interpolation_type=NO_INTERPOLATION;
-												update_mapping_drawing_area(mapping,1);
+												if (map->end_time>map->start_time)
+												{
+													frame_number=(int)((float)(map->number_of_frames-1)*
+														((map_potential_time-map->start_time)/
+															(map->end_time-map->start_time)));
+													map->sub_map_number=frame_number;
+													update_mapping_drawing_area(mapping,0);
+													update_mapping_colour_or_auxili(mapping);
+												}
+												else
+												{
+													display_message(ERROR_MESSAGE,
+														"analysis_potential_time_update_callback.  "
+														"End time greater or equal to start time");
+													return_code=0;
+												}
+#if defined (UNEMAP_USE_3D)
+											}/* if (map->projection_type==THREED_PROJECTION) */
+#endif /* defined (UNEMAP_USE_3D) */
+										}/* if (-1!=map->activation_front) */
+										else
+										{
+											if ((map_potential_time>=map->start_time)&&
+												(map_potential_time<=map->end_time))
+											{	
+												if (map->start_time<map->end_time)
+												{
+													frame_number=(int)((float)(map->number_of_frames-1)*
+														((map_potential_time-map->start_time)/
+															(map->end_time-map->start_time)));
+												}
+												else
+												{
+													frame_number=0;
+												}
+												map->sub_map_number=frame_number;
+												update_mapping_drawing_area(mapping,0);
 												update_mapping_colour_or_auxili(mapping);
-												map->interpolation_type=interpolation;
-												map->start_time=map_potential_time;
-												map->end_time=map->start_time;
+											}/* if ((map_potential_time>=map->start_time)&&*/
+											else
+											{
 #if defined (UNEMAP_USE_3D)
-											}
+												/* 3d map */
+												if (map->projection_type==THREED_PROJECTION)
+												{
+													/* 3d map */
+													/* recalculate not used for 3d maps */
+													update_mapping_drawing_area(mapping,1/*recalculate*/);
+													update_mapping_colour_or_auxili(mapping);
+												}
+												else											
+												{													
 #endif /* defined (UNEMAP_USE_3D) */
+													/* 2d map */
+													update_map_from_maunal_time_update(mapping);													
+													map->start_time=map_potential_time;
+													map->end_time=map->start_time;
+#if defined (UNEMAP_USE_3D)
+												}/* if (map->projection_type==THREED_PROJECTION)*/
+#endif /* defined (UNEMAP_USE_3D) */
+											}/* if ((map_potential_time>=map->start_time)&&*/
+										}/* if (-1!=map->activation_front) */
+									}break;
+									case DIRECT_INTERPOLATION:									
+									{
+										if(map->activation_front==0)											
+										{
+											update_mapping_drawing_area(mapping,2/*recalculate*/);
+											update_mapping_colour_or_auxili(mapping);
+										} 
+										else
+										{ 
+											update_map_from_maunal_time_update(mapping);
 										}
-									}
-								}
-								else
-								{
-#if defined (UNEMAP_USE_3D)
-									/* 3d map */
-									if (map->projection_type==THREED_PROJECTION)
-									{									
-										;
-									}
-#endif /* defined (UNEMAP_USE_3D) */
-									update_mapping_drawing_area(mapping,1);
-									update_mapping_colour_or_auxili(mapping);
-								}
+									}break;
+									case NO_INTERPOLATION:
+									default:									
+									{
+										update_mapping_drawing_area(mapping,1);
+										update_mapping_colour_or_auxili(mapping);
+									}break;
+								}/*map->interpolation_type*/ 
 							} break;
 							case SINGLE_ACTIVATION:
 							{
@@ -15348,7 +15346,7 @@ else
 /*#endif not defined (UNEMAP_USE_3D) */
 
 #if defined (UNEMAP_USE_3D)
-static int rig_node_highlight_change(struct FE_node *node,void *change_data_void)
+int rig_node_highlight_change(struct FE_node *node,void *change_data_void)
 /*******************************************************************************
 LAST MODIFIED : 3 October 2000
 

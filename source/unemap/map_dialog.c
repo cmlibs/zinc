@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : map_dialog.c
 
-LAST MODIFIED : 20 November 2001
+LAST MODIFIED : 26 November 2001
 
 DESCRIPTION :
 ==============================================================================*/
@@ -490,7 +490,7 @@ Finds the id of the direct interpolation option in the map dialog.
 static void set_interpolation_direct(Widget *widget_id,
 	XtPointer map_dialog_structure,XtPointer call_data)
 /*******************************************************************************
-LAST MODIFIED : 12 December 2000
+LAST MODIFIED : 26 November 2001
 
 DESCRIPTION :
 Sets the sensitivity of widgets in the map dialog.
@@ -509,7 +509,16 @@ Sets the sensitivity of widgets in the map dialog.
 		if ((map_dialog->map)&&(*(map_dialog->map))&&((*(map_dialog->map))->type)&&
 			(POTENTIAL== *((*(map_dialog->map))->type)))
 		{
-			XtSetSensitive(map_dialog->animation.row_column,True);
+			if((*(map_dialog->map))->projection_type==THREED_PROJECTION)
+			{
+				/*not sure what we're going to do with 3D movies yet*/
+				/*for now make them behave like bicubic 2D movies */
+				XtSetSensitive(map_dialog->animation.row_column,True);
+			}
+			else
+			{
+				XtSetSensitive(map_dialog->animation.row_column,False);
+			}
 		}
 	}
 	else
@@ -548,7 +557,7 @@ Finds the id of the none interpolation option in the map dialog.
 static void set_interpolation_none(Widget *widget_id,
 	XtPointer map_dialog_structure,XtPointer call_data)
 /*******************************************************************************
-LAST MODIFIED : 24 November 1999
+LAST MODIFIED : 26 November 2001
 
 DESCRIPTION :
 Sets the sensitivity of widgets in the map dialog.
@@ -566,8 +575,17 @@ Sets the sensitivity of widgets in the map dialog.
 		XtSetSensitive(map_dialog->interpolation.mesh_columns,False);
 		if ((map_dialog->map)&&(*(map_dialog->map))&&((*(map_dialog->map))->type)&&
 			(POTENTIAL== *((*(map_dialog->map))->type)))
-		{
-			XtSetSensitive(map_dialog->animation.row_column,False);
+		{	
+			if((*(map_dialog->map))->projection_type==THREED_PROJECTION)
+			{
+				/*not sure what we're going to do with 3D movies yet*/
+				/*for now make them behave like bicubic 2D movies */
+				XtSetSensitive(map_dialog->animation.row_column,True);
+			}
+			else
+			{
+				XtSetSensitive(map_dialog->animation.row_column,False);
+			}		
 		}
 	}
 	else
@@ -2053,7 +2071,7 @@ initializes the appropriate fields.
 
 int open_map_dialog(struct Map_dialog *map_dialog)
 /*******************************************************************************
-LAST MODIFIED : 18 May 2000
+LAST MODIFIED : 22 November 2001
 
 DESCRIPTION :
 Opens the <map_dialog>.
@@ -2391,24 +2409,44 @@ Opens the <map_dialog>.
 			XtVaSetValues(map_dialog->animation.end_time_text,
 				XmNvalue,value_string,
 				NULL);					  
-			if ((map->type)&&(POTENTIAL== *(map->type))&&
-				(NO_INTERPOLATION!=map->interpolation_type))			
+			if ((map->type)&&(POTENTIAL==*(map->type)))
 			{
-				if((ELECTRICAL_IMAGING==*map->analysis_mode)&&
-					(*map->first_eimaging_event))
-				{	
-					/*now movies if showing (lots of little) maps of electrical imaging events*/
-					XtSetSensitive(map_dialog->animation.row_column,False);
-				}
-				else
+				switch(map->interpolation_type)
 				{
-					XtSetSensitive(map_dialog->animation.row_column,True);
-				}
+					case BICUBIC_INTERPOLATION:
+					{
+						if((ELECTRICAL_IMAGING==*map->analysis_mode)&&
+							(*map->first_eimaging_event))
+						{	
+							/*no movies if showing (lots of little) maps of electrical imaging events*/
+							XtSetSensitive(map_dialog->animation.row_column,False);
+						}
+						else
+						{
+							XtSetSensitive(map_dialog->animation.row_column,True);
+						}
+					}break;
+					case NO_INTERPOLATION:
+					case DIRECT_INTERPOLATION:
+					default:
+					{
+						if(map->projection_type==THREED_PROJECTION)
+						{
+							/*not sure what we're going to do with 3D movies yet*/
+							/*for now make them behave like bicubic 2D movies */
+							XtSetSensitive(map_dialog->animation.row_column,True);
+						}
+						else
+						{
+							XtSetSensitive(map_dialog->animation.row_column,False);
+						}
+					}break;				
+				}/* switch(map->interpolation_type)	*/
 			}
 			else
 			{
 				XtSetSensitive(map_dialog->animation.row_column,False);
-			}
+			}	
 			/*???Set menu history for interpolation choice */
 			/* ghost the activation button */
 			XtSetSensitive(map_dialog->activation,False);
