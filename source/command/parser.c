@@ -2825,8 +2825,8 @@ then the index for that token is set in <data->valid_tokens->index> (these shoul
 all be initialised to zero). 
 ==============================================================================*/
 {
-	char *current_token,**names;
-	int counter, i, number_of_names, return_code, valid_token;
+	char *current_token;
+	int counter, i, return_code, valid_token;
 	struct Set_names_from_list_data *data;
 
 	ENTER(set_names_from_list);
@@ -2866,29 +2866,15 @@ all be initialised to zero).
 			}
 			else
 			{
-				/* write help text */
-				for (i=0;i<number_of_names;i++)
+				display_message(INFORMATION_MESSAGE," NAMES");
+				display_message(INFORMATION_MESSAGE,"[");
+				for (i = 0 ; i < data->number_of_tokens ; i++)
 				{
-					display_message(INFORMATION_MESSAGE," NAME");
-				}
-				for (i=0;i<number_of_names;i++)
-				{
-					if (0==i)
+					if (i > 0)
 					{
-						display_message(INFORMATION_MESSAGE,"[",names[0]);
+						display_message(INFORMATION_MESSAGE,",");
 					}
-					else
-					{
-						display_message(INFORMATION_MESSAGE," ",names[i]);
-					}
-					if (names[i])
-					{
-						display_message(INFORMATION_MESSAGE,"%s",names[i]);
-					}
-					else
-					{
-						display_message(INFORMATION_MESSAGE,"\"\"");
-					}
+					display_message(INFORMATION_MESSAGE,data->tokens[i].string);
 				}
 				display_message(INFORMATION_MESSAGE,"]");
 			}
