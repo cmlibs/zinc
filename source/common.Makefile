@@ -269,7 +269,7 @@ ifeq ($(SYSNAME),win32)
    CPP = gcc -c
    CPP_FLAGS =
    FORTRAN = f77 -c
-   MAKEDEPEND = makedepend
+   MAKEDEPEND = gcc -MM -MG
    CPREPROCESS = 
    LINK = gcc -mno-cygwin -fnative-struct -mms-bitfields
    ifeq ($(filter-out CONSOLE_USER_INTERFACE GTK_USER_INTERFACE,$(USER_INTERFACE)),)
