@@ -1,9 +1,9 @@
 /******************************************************************
-  FILE: computed_field_wiener_filter.c
+  FILE: computed_field_local_frequency.c
 
-  LAST MODIFIED: 11 June 2004
+  LAST MODIFIED: 2 March 2005
 
-  DESCRIPTION:Implement image decovolution in the basis of Wiener filter
+  DESCRIPTION:Implement image local frequency detection
 ==================================================================*/
 #include <math.h>
 #include "computed_field/computed_field.h"
@@ -15,10 +15,13 @@
 #include "general/debug.h"
 #include "general/mystring.h"
 #include "user_interface/message.h"
-#include "image_processing/computed_field_wiener_filter.h"
+#include "image_processing/computed_field_local_frequency.h"
 
+#define my_Min(x,y) ((x) <= (y) ? (x) : (y))
+#define my_Max(x,y) ((x) <= (y) ? (y) : (x))
 
-struct Computed_field_wiener_filter_package
+#define SWAP(a,b) tempr=(a);(a)=(b);(b)=tempr;
+struct Computed_field_local_frequency_package
 /*******************************************************************************
 LAST MODIFIED : 17 March 2004
 
@@ -32,10 +35,11 @@ A container for objects required to define fields in this module.
 };
 
 
-struct Computed_field_wiener_filter_type_specific_data
+struct Computed_field_local_frequency_type_specific_data
 {
 	double sigma;
-	double lambda;
+	FE_value *angle_from_u_axis;
+	FE_value *centre_frequency;
 
 	float cached_time;
 	int element_dimension;
@@ -46,11 +50,11 @@ struct Computed_field_wiener_filter_type_specific_data
 	void *computed_field_manager_callback_id;
 };
 
-static char computed_field_wiener_filter_type_string[] = "wiener_filter";
+static char computed_field_local_frequency_type_string[] = "local_frequency";
 
-int Computed_field_is_type_wiener_filter(struct Computed_field *field)
+int Computed_field_is_type_local_frequency(struct Computed_field *field)
 /*******************************************************************************
-LAST MODIFIED : 6 January 2004
+LAST MODIFIED : 2 March 2005
 
 DESCRIPTION :
 ==============================================================================*/
@@ -58,23 +62,23 @@ DESCRIPTION :
 	int return_code;
 
 
-	ENTER(Computed_field_is_type_wiener_filter);
+	ENTER(Computed_field_is_type_local_frequency);
 	if (field)
 	{
 		return_code =
-		  (field->type_string == computed_field_wiener_filter_type_string);
+		  (field->type_string == computed_field_local_frequency_type_string);
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Computed_field_is_type_wiener_filter.  Missing field");
+			"Computed_field_is_type_local_frequency.  Missing field");
 		return_code = 0;
 	}
 
 	return (return_code);
-} /* Computed_field_is_type_wiener_filter */
+} /* Computed_field_is_type_local_frequency */
 
-static void Computed_field_wiener_filter_field_change(
+static void Computed_field_local_frequency_field_change(
 	struct MANAGER_MESSAGE(Computed_field) *message, void *field_void)
 /*******************************************************************************
 LAST MODIFIED : 5 December 2003
@@ -85,11 +89,11 @@ we know to invalidate the image cache.
 ==============================================================================*/
 {
 	struct Computed_field *field;
-	struct Computed_field_wiener_filter_type_specific_data *data;
+	struct Computed_field_local_frequency_type_specific_data *data;
 
-	ENTER(Computed_field_wiener_filter_source_field_change);
+	ENTER(Computed_field_local_frequency_source_field_change);
 	if (message && (field = (struct Computed_field *)field_void) && (data =
-		(struct Computed_field_wiener_filter_type_specific_data *)
+		(struct Computed_field_local_frequency_type_specific_data *)
 		field->type_specific_data))
 	{
 		switch (message->change)
@@ -119,27 +123,27 @@ we know to invalidate the image cache.
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Computed_field_wiener_filter_source_field_change.  "
+			"Computed_field_local_frequency_source_field_change.  "
 			"Invalid arguments.");
 	}
 	LEAVE;
-} /* Computed_field_wiener_filter_source_field_change */
+} /* Computed_field_local_frequency_source_field_change */
 
-static int Computed_field_wiener_filter_clear_type_specific(
+static int Computed_field_local_frequency_clear_type_specific(
 	struct Computed_field *field)
 /*******************************************************************************
-LAST MODIFIED : 6 January 2004
+LAST MODIFIED : 2 March 2005
 
 DESCRIPTION :
 Clear the type specific data used by this type.
 ==============================================================================*/
 {
 	int return_code;
-	struct Computed_field_wiener_filter_type_specific_data *data;
+	struct Computed_field_local_frequency_type_specific_data *data;
 
-	ENTER(Computed_field_wiener_filter_clear_type_specific);
+	ENTER(Computed_field_local_frequency_clear_type_specific);
 	if (field && (data =
-		(struct Computed_field_wiener_filter_type_specific_data *)
+		(struct Computed_field_local_frequency_type_specific_data *)
 		field->type_specific_data))
 	{
 		if (data->region)
@@ -156,43 +160,54 @@ Clear the type specific data used by this type.
 				data->computed_field_manager_callback_id,
 				data->computed_field_manager);
 		}
+		if (data->centre_frequency)
+		{
+		        DEALLOCATE(data->centre_frequency);
+		}
+		if (data->angle_from_u_axis)
+		{
+		        DEALLOCATE(data->angle_from_u_axis);
+		}
 		DEALLOCATE(field->type_specific_data);
 		return_code = 1;
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Computed_field_wiener_filter_clear_type_specific.  "
+			"Computed_field_local_frequency_clear_type_specific.  "
 			"Invalid arguments.");
 		return_code = 0;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* Computed_field_wiener_filter_clear_type_specific */
+} /* Computed_field_local_frequency_clear_type_specific */
 
-static void *Computed_field_wiener_filter_copy_type_specific(
+static void *Computed_field_local_frequency_copy_type_specific(
 	struct Computed_field *source_field, struct Computed_field *destination_field)
 /*******************************************************************************
-LAST MODIFIED : 6 January 2004
+LAST MODIFIED : 2 March 2005
 
 DESCRIPTION :
 Copy the type specific data used by this type.
 ==============================================================================*/
 {
-	struct Computed_field_wiener_filter_type_specific_data *destination,
+	struct Computed_field_local_frequency_type_specific_data *destination,
 		*source;
 
-	ENTER(Computed_field_wiener_filter_copy_type_specific);
+	ENTER(Computed_field_local_frequency_copy_type_specific);
 	if (source_field && destination_field && (source =
-		(struct Computed_field_wiener_filter_type_specific_data *)
+		(struct Computed_field_local_frequency_type_specific_data *)
 		source_field->type_specific_data))
 	{
 		if (ALLOCATE(destination,
-			struct Computed_field_wiener_filter_type_specific_data, 1))
+			struct Computed_field_local_frequency_type_specific_data, 1))
 		{
 			destination->sigma = source->sigma;
-			destination->lambda = source->lambda;
+			destination->angle_from_u_axis[0] = source->angle_from_u_axis[0];
+			destination->angle_from_u_axis[1] = source->angle_from_u_axis[1];
+			destination->centre_frequency[0] = source->centre_frequency[0];
+			destination->centre_frequency[1] = source->centre_frequency[1];
 			destination->cached_time = source->cached_time;
 			destination->region = ACCESS(Cmiss_region)(source->region);
 			destination->element_dimension = source->element_dimension;
@@ -200,7 +215,7 @@ Copy the type specific data used by this type.
 			destination->computed_field_manager = source->computed_field_manager;
 			destination->computed_field_manager_callback_id =
 				MANAGER_REGISTER(Computed_field)(
-				Computed_field_wiener_filter_field_change, (void *)destination_field,
+				Computed_field_local_frequency_field_change, (void *)destination_field,
 				destination->computed_field_manager);
 			if (source->image)
 			{
@@ -218,7 +233,7 @@ Copy the type specific data used by this type.
 		else
 		{
 			display_message(ERROR_MESSAGE,
-				"Computed_field_wiener_filter_copy_type_specific.  "
+				"Computed_field_local_frequency_copy_type_specific.  "
 				"Unable to allocate memory.");
 			destination = NULL;
 		}
@@ -226,29 +241,29 @@ Copy the type specific data used by this type.
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Computed_field_wiener_filter_copy_type_specific.  "
+			"Computed_field_local_frequency_copy_type_specific.  "
 			"Invalid arguments.");
 		destination = NULL;
 	}
 	LEAVE;
 
 	return (destination);
-} /* Computed_field_wiener_filter_copy_type_specific */
+} /* Computed_field_local_frequency_copy_type_specific */
 
-int Computed_field_wiener_filter_clear_cache_type_specific
+int Computed_field_local_frequency_clear_cache_type_specific
    (struct Computed_field *field)
 /*******************************************************************************
-LAST MODIFIED : 6 January 2004
+LAST MODIFIED : 2 March 2005
 
 DESCRIPTION :
 ==============================================================================*/
 {
 	int return_code;
-	struct Computed_field_wiener_filter_type_specific_data *data;
+	struct Computed_field_local_frequency_type_specific_data *data;
 
-	ENTER(Computed_field_wiener_filter_clear_type_specific);
+	ENTER(Computed_field_local_frequency_clear_type_specific);
 	if (field && (data =
-		(struct Computed_field_wiener_filter_type_specific_data *)
+		(struct Computed_field_local_frequency_type_specific_data *)
 		field->type_specific_data))
 	{
 		if (data->image)
@@ -260,37 +275,40 @@ DESCRIPTION :
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Computed_field_wiener_filter_clear_type_specific.  "
+			"Computed_field_local_frequency_clear_type_specific.  "
 			"Invalid arguments.");
 		return_code = 0;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* Computed_field_wiener_filter_clear_type_specific */
+} /* Computed_field_local_frequency_clear_type_specific */
 
-static int Computed_field_wiener_filter_type_specific_contents_match(
+static int Computed_field_local_frequency_type_specific_contents_match(
 	struct Computed_field *field, struct Computed_field *other_computed_field)
 /*******************************************************************************
-LAST MODIFIED : 6 January 2004
+LAST MODIFIED : 2 March 2005
 
 DESCRIPTION :
 Compare the type specific data
 ==============================================================================*/
 {
 	int return_code;
-	struct Computed_field_wiener_filter_type_specific_data *data,
+	struct Computed_field_local_frequency_type_specific_data *data,
 		*other_data;
 
-	ENTER(Computed_field_wiener_filter_type_specific_contents_match);
+	ENTER(Computed_field_local_frequency_type_specific_contents_match);
 	if (field && other_computed_field && (data =
-		(struct Computed_field_wiener_filter_type_specific_data *)
+		(struct Computed_field_local_frequency_type_specific_data *)
 		field->type_specific_data) && (other_data =
-		(struct Computed_field_wiener_filter_type_specific_data *)
+		(struct Computed_field_local_frequency_type_specific_data *)
 		other_computed_field->type_specific_data))
 	{
 		if ((data->sigma == other_data->sigma) &&
-		        (data->lambda == other_data->lambda) &&
+		        (data->angle_from_u_axis[0] == other_data->angle_from_u_axis[0]) &&
+			(data->angle_from_u_axis[1] == other_data->angle_from_u_axis[1]) &&
+			(data->centre_frequency[0] == other_data->centre_frequency[0]) &&
+			(data->centre_frequency[1] == other_data->centre_frequency[1]) &&
 			data->image && other_data->image &&
 			(data->image->dimension == other_data->image->dimension) &&
 			(data->image->depth == other_data->image->depth))
@@ -310,53 +328,51 @@ Compare the type specific data
 	LEAVE;
 
 	return (return_code);
-} /* Computed_field_wiener_filter_type_specific_contents_match */
+} /* Computed_field_local_frequency_type_specific_contents_match */
 
-#define Computed_field_wiener_filter_is_defined_in_element \
+#define Computed_field_local_frequency_is_defined_in_element \
 	Computed_field_default_is_defined_in_element
 /*******************************************************************************
-LAST MODIFIED : 6 January 2004
+LAST MODIFIED : 2 March 2005
 
 DESCRIPTION :
 Check the source fields using the default.
 ==============================================================================*/
 
-#define Computed_field_wiener_filter_is_defined_at_node \
+#define Computed_field_local_frequency_is_defined_at_node \
 	Computed_field_default_is_defined_at_node
 /*******************************************************************************
-LAST MODIFIED : 6 January 2004
+LAST MODIFIED : 2 March 2005
 
 DESCRIPTION :
 Check the source fields using the default.
 ==============================================================================*/
 
-#define Computed_field_wiener_filter_has_numerical_components \
+#define Computed_field_local_frequency_has_numerical_components \
 	Computed_field_default_has_numerical_components
 /*******************************************************************************
-LAST MODIFIED : 6 January 2004
+LAST MODIFIED : 2 March 2005
 
 DESCRIPTION :
 Window projection does have numerical components.
 ==============================================================================*/
 
-#define Computed_field_wiener_filter_not_in_use \
+#define Computed_field_local_frequency_not_in_use \
 	(Computed_field_not_in_use_function)NULL
 /*******************************************************************************
-LAST MODIFIED : 6 January 2004
+LAST MODIFIED : 2 March 2005
 
 DESCRIPTION :
 No special criteria.
 ==============================================================================*/
 
 
-int This_fft1d(FE_value *Xr, FE_value *Xi, FE_value *Yr, FE_value *Yi,
+int local_frequency_fft1d(FE_value *Xr, FE_value *Xi, FE_value *Yr, FE_value *Yi,
          char *inverse, int data_size)
 /****************************************************************************
-      LAST MODIFIED: 2 June 2004
+      LAST MODIFIED: 2 March 2005
 
-      DESCRIPTION: Implement 1D fast Fourier transform. The input <Xr> is the real part,
-      <Xi> is the image part. <Yr> and <Yi> are the real and image parts of the output,
-      respectively.
+      DESCRIPTION: Implement 1D fast Fourier transform
 ============================================================================*/
 {
         int size,n,mmax,m,j,istep,i,isign;
@@ -364,7 +380,7 @@ int This_fft1d(FE_value *Xr, FE_value *Xi, FE_value *Yr, FE_value *Yi,
 	FE_value tempr,tempi;
 	FE_value  *data;
 	int return_code;
-	ENTER(This_fft1d);
+	ENTER(local_frequency_fft1d);
 	size = data_size;
 	if (!inverse)
 	{
@@ -466,12 +482,12 @@ int This_fft1d(FE_value *Xr, FE_value *Xi, FE_value *Yr, FE_value *Yi,
 	}
 	LEAVE;
 	return(return_code);
-}/* This_fft1d */
+}/* local_frequency_fft1d */
 
-int This_fft2d(FE_value *in_re, FE_value *in_im, FE_value *out_re, FE_value *out_im,
+int local_frequency_fft2d(FE_value *in_re, FE_value *in_im, FE_value *out_re, FE_value *out_im,
          char *i_flag, int xsize, int ysize)
 /****************************************************************************
-      LAST MODIFIED: 2 June 2004
+      LAST MODIFIED: 2 March 2005
 
       DESCRIPTION: Implement 2D fast Fourier transform
 ============================================================================*/
@@ -481,7 +497,7 @@ int This_fft2d(FE_value *in_re, FE_value *in_im, FE_value *out_re, FE_value *out
 	FE_value  *f1_re, *f1_im, *f2_re, *f2_im;
 	FE_value  *f3_re, *f3_im, *f4_re, *f4_im;
 	FE_value  *tmp_re, *tmp_im;
-	ENTER(This_fft2d);
+	ENTER(local_frequency_fft2d);
 	p = xsize;
 	n = ysize;
 	if (ALLOCATE(f1_re, FE_value, p) &&
@@ -500,7 +516,7 @@ int This_fft2d(FE_value *in_re, FE_value *in_im, FE_value *out_re, FE_value *out
 			        f1_re[j] = in_re[p*i+j];
 				f1_im[j] = in_im[p*i+j];
 			}
-			This_fft1d(f1_re,f1_im,f2_re,f2_im,i_flag, p);
+			local_frequency_fft1d(f1_re,f1_im,f2_re,f2_im,i_flag, p);
 			for (j=0;j<p;j++)
 			{
 			        tmp_re[p*i+j] = f2_re[j];
@@ -519,7 +535,7 @@ int This_fft2d(FE_value *in_re, FE_value *in_im, FE_value *out_re, FE_value *out
 				        f3_re[i] = tmp_re[p*i+j];
 					f3_im[i] = tmp_im[p*i+j];
 				}
-				This_fft1d(f3_re,f3_im,f4_re,f4_im,i_flag, n);
+				local_frequency_fft1d(f3_re,f3_im,f4_re,f4_im,i_flag, n);
 				for (i=0;i<n;i++)
 				{
 				        out_re[p*i+j] = f4_re[i];
@@ -554,193 +570,57 @@ int This_fft2d(FE_value *in_re, FE_value *in_im, FE_value *out_re, FE_value *out
 	}
 	LEAVE;
 	return(return_code);
-}/* This_fft2d */
+}/* local_frequency_fft2d */
 
 
-int This_fft3d(FE_value *in_re, FE_value *in_im, FE_value *out_re, FE_value *out_im,
-         char *i_flag, int xsize, int ysize, int zsize)
-/****************************************************************************
-      LAST MODIFIED: 17 February 2005
-
-      DESCRIPTION: Implement 3D fast Fourier transform
-============================================================================*/
-{
-        int      i, j, k, n, p, q;
-	int return_code;
-	FE_value  *f1_re, *f1_im, *f2_re, *f2_im;
-	FE_value  *f3_re, *f3_im, *f4_re, *f4_im;
-	FE_value  *f5_re, *f5_im, *f6_re, *f6_im;
-	FE_value  *tmp1_re, *tmp1_im;
-	FE_value  *tmp2_re, *tmp2_im;
-	ENTER(This_fft3d);
-	p = xsize;
-	n = ysize;
-	q = zsize;
-	if (ALLOCATE(f1_re, FE_value, p) &&
-	     ALLOCATE(f1_im, FE_value, p) &&
-	     ALLOCATE(f2_re, FE_value, p) &&
-	     ALLOCATE(f2_im, FE_value, p) &&
-	     ALLOCATE(tmp1_re, FE_value, xsize*ysize*zsize) &&
-	     ALLOCATE(tmp1_im, FE_value, xsize*ysize*zsize) &&
-	     ALLOCATE(tmp2_re, FE_value, xsize*ysize*zsize) &&
-	     ALLOCATE(tmp2_im, FE_value, xsize*ysize*zsize) &&
-	     ALLOCATE(f3_re, FE_value, n) &&
-	     ALLOCATE(f3_im, FE_value, n) &&
-	     ALLOCATE(f4_re, FE_value, n) &&
-	     ALLOCATE(f4_im, FE_value, n) &&
-	     ALLOCATE(f5_re, FE_value, q) &&
-	     ALLOCATE(f5_im, FE_value, q) &&
-	     ALLOCATE(f6_re, FE_value, q) &&
-	     ALLOCATE(f6_im, FE_value, q))
-	{
-	        return_code = 1;
-
-		for (i=0;i<q;i++)
-		{
-		        for (j=0;j<n;j++)
-			{
-			        for (k=0;k<p;k++)
-				{
-			                f1_re[k] = in_re[p*n*i+p*j+k];
-					f1_im[k] = in_im[p*n*i+p*j+k];
-				}
-				This_fft1d(f1_re,f1_im,f2_re,f2_im,i_flag, p);
-				for (k=0;k<p;k++)
-				{
-			        	tmp1_re[p*n*i+p*j+k] = f2_re[k];
-					tmp1_im[p*n*i+p*j+k] = f2_im[k];
-				}
-			}
-		}
-		DEALLOCATE(f1_re);
-		DEALLOCATE(f1_im);
-		DEALLOCATE(f2_re);
-		DEALLOCATE(f2_im);
-		for (i=0;i<q;i++)
-		{
-			for (k=0;k<p;k++)
-			{
-			        for (j=0;j<n;j++)
-				{
-				        f3_re[j] = tmp1_re[p*n*i+p*j+k];
-				        f3_im[j] = tmp1_im[p*n*i+p*j+k];
-				}
-				This_fft1d(f3_re,f3_im,f4_re,f4_im,i_flag, n);
-				for (j=0;j<n;j++)
-				{
-					tmp2_re[p*n*i+p*j+k] = f4_re[j];
-					tmp2_im[p*n*i+p*j+k] = f4_im[j];
-				}
-			}
-		}
-		DEALLOCATE(f3_re);
-		DEALLOCATE(f3_im);
-		DEALLOCATE(f4_re);
-		DEALLOCATE(f4_im);
-		for (j=0;j<n;j++)
-		{
-			for (k=0;k<p;k++)
-			{
-			        for (i=0;i<q;i++)
-				{
-				        f5_re[i] = tmp2_re[p*n*i+p*j+k];
-				        f5_im[i] = tmp2_im[p*n*i+p*j+k];
-				}
-				This_fft1d(f5_re,f5_im,f6_re,f6_im,i_flag, q);
-				for (i=0;i<q;i++)
-				{
-					out_re[p*n*i+p*j+k] = f6_re[i];
-					out_im[p*n*i+p*j+k] = f6_im[i];
-				}
-			}
-		}
-		DEALLOCATE(f5_re);
-		DEALLOCATE(f5_im);
-		DEALLOCATE(f6_re);
-		DEALLOCATE(f6_im);
-		DEALLOCATE(tmp1_re);
-		DEALLOCATE(tmp1_im);
-		DEALLOCATE(tmp2_re);
-		DEALLOCATE(tmp2_im);
-	}
-	else
-	{
-	        display_message(ERROR_MESSAGE,
-				"In function fft3d.  "
-				"Unable to allocate memory.");
-		return_code = 0;
-	}
-	LEAVE;
-	return(return_code);
-}/* This_fft3d */
-
-
-void This_gaussian_kernel2d(FE_value *kernel,double g, int xsize, int ysize)
+void local_frequency_gaussian(FE_value *kernel,double g, int xsize, int ysize, 
+         FE_value *angle_from_u_axis, FE_value *centre_frequency)
 /***********************************************************************
-   LAST MODIFIED: 1 June 2004
+   LAST MODIFIED: 2 March 2005
 
-   DESCRIPTION: Build a Gaussian kernel with std g in Fourier domain
+   DESCRIPTION: Build a Gaussian kernel with std <g>,
+                rotation angle <angle_from_u_axis> which corresponding to the angle 
+		PI*angle_from_u_axis[0]/angle_from_u_axis[1],
+                and centre frequency <centre_frequency> in 2D Fourier domain
 ========================================================================*/
 {
         int nx,ny,x,y,adr;
-	FE_value cx,cy;
+	FE_value cx, cy, theta, u, v, U, V;
 	nx = xsize;
 	ny = ysize;
-	cx = (FE_value)(g*g)*2.*M_PI*M_PI/(FE_value)(nx*nx);
+	cx = (FE_value)(g*g)*8.*M_PI*M_PI/(FE_value)(nx*nx);
 	cy = (FE_value)(g*g)*2.*M_PI*M_PI/(FE_value)(ny*ny);
+	theta = M_PI*angle_from_u_axis[0]/angle_from_u_axis[1];
+	U = centre_frequency[0] * cos(theta) + centre_frequency[1] * sin(theta);
+	V = centre_frequency[1] * cos(theta) - centre_frequency[0] * sin(theta);
 	for (x=-nx/2;x<nx/2;x++)
 	{
 	        for (y=-ny/2;y<ny/2;y++)
 		{
 		        adr = (y<0?ny+y:y)*nx+(x<0?nx+x:x);
-			kernel[adr] = (FE_value)exp(-cx*(FE_value)(x*x)-cy*(FE_value)(y*y));
+			u = (FE_value)x * cos(theta) + (FE_value)y * sin(theta);
+			v = (FE_value)y * cos(theta) - (FE_value)x * sin(theta);
+			kernel[adr] = (FE_value)exp(-cx*(u-U)*(u-U)-cy*(v-V)*(v-V));
 		}
 	}
-}/* This_gaussian_kernel2d */
+}/* local_frequency_gaussian */
 
-void This_gaussian_kernel3d(FE_value *kernel,double g, int xsize, int ysize, int zsize)
-/***********************************************************************
-   LAST MODIFIED: 1 June 2004
 
-   DESCRIPTION: Build a Gaussian kernel with std g in Fourier domain
-========================================================================*/
-{
-        int nx,ny,nz,x,y,z,adr;
-	FE_value cx,cy,cz;
-	nx = xsize;
-	ny = ysize;
-	nz = zsize;
-	cx = (FE_value)(g*g)*2.*M_PI*M_PI/(FE_value)(nx*nx);
-	cy = (FE_value)(g*g)*2.*M_PI*M_PI/(FE_value)(ny*ny);
-	cz = (FE_value)(g*g)*2.*M_PI*M_PI/(FE_value)(nz*nz);
-	for (z=-nz/2;z<nz/2;z++)
-	{
-		for (y=-ny/2;y<ny/2;y++)
-		{
-			for (x=-nx/2;x<nx/2;x++)
-			{
-			         adr = (z<0?nz+z:z)*nx*ny+(y<0?ny+y:y)*nx+(x<0?nx+x:x);
-				 kernel[adr] = (FE_value)exp(-cx*(FE_value)(x*x)-cy*(FE_value)(y*y)-cz*(FE_value)(z*z));
-			}
-		}
-	}
-}/* This_gaussian_kernel3d */
-
-int This_wiener2d(FE_value *data_index, FE_value *result_index, double g, double lambda,
-          int xsize, int ysize)
+int local_frequency_wiener2d(FE_value *data_index, FE_value *result_index, double g,
+          FE_value *angle_from_u_axis, FE_value *centre_frequency, int xsize, int ysize)
 /************************************************************************
-    LAST MODIFIED: 1 June 2004
+    LAST MODIFIED: 2 March 2005
 
-    DESCRIPTION: Implement Wiener filtering
+    DESCRIPTION: Implement Wiener-like filtering
 =========================================================================*/
 {
         FE_value *re, *im, *kernel, *nothing;
 	int x,y,nx,ny,adr;
-	FE_value c,k,rho2,cx,cy;
+	FE_value cx,cy;
 	int storage_size;
 	int return_code;
 	int i;
-	ENTER(This_wiener2d);
+	ENTER(local_frequency_wiener2d);
 	storage_size = xsize * ysize;
 
         if(ALLOCATE(re, FE_value, storage_size) &&
@@ -756,9 +636,9 @@ int This_wiener2d(FE_value *data_index, FE_value *result_index, double g, double
 		        nothing[i] = 0.0;
 		}
 
-		This_fft2d(data_index, nothing, re, im, (char *)0, nx, ny);
+		local_frequency_fft2d(data_index, nothing, re, im, (char *)0, nx, ny);
 
-		This_gaussian_kernel2d(kernel, g, xsize, ysize);
+		local_frequency_gaussian(kernel, g, xsize, ysize, angle_from_u_axis, centre_frequency);
 
 		cx = M_PI*M_PI/(FE_value)(nx*nx);
 		cy = M_PI*M_PI/(FE_value)(ny*ny);
@@ -766,15 +646,12 @@ int This_wiener2d(FE_value *data_index, FE_value *result_index, double g, double
 		{
 		        for (y=-ny/2;y<ny/2;y++)
 			{
-			         adr = (y<0?ny+y:y)*nx+(x<0?nx+x:x);
-				 rho2 = cx*(FE_value)(x*x)+cy*(FE_value)(y*y);
-				 k = kernel[adr];
-				 c = lambda * k/(lambda*k*k+rho2);
-				 re[adr] *= c;
-				 im[adr] *= c;
-			}
+			        adr = (y<0?ny+y:y)*nx+(x<0?nx+x:x);
+				re[adr] *= kernel[adr]*8.0;
+				im[adr] *= kernel[adr]*8.0;
+			}	
 		}
-		This_fft2d(re, im, result_index, nothing, (char *)1, nx,ny);
+		local_frequency_fft2d(re, im, result_index, nothing, (char *)1, nx,ny);
 		DEALLOCATE(re);
 		DEALLOCATE(im);
 		DEALLOCATE(nothing);
@@ -789,92 +666,24 @@ int This_wiener2d(FE_value *data_index, FE_value *result_index, double g, double
 	}
 	LEAVE;
 	return(return_code);
-}/* This_wiener2d */
+}/* local_frequency_wiener2d */
 
-int This_wiener3d(FE_value *data_index, FE_value *result_index, double g, double lambda,
-          int xsize, int ysize, int zsize)
-/************************************************************************
-    LAST MODIFIED: 17 February 2005
 
-    DESCRIPTION: Implement 3D Wiener filtering
-=========================================================================*/
-{
-        FE_value *re, *im, *kernel, *nothing;
-	int x,y,z, nx,ny,nz,adr;
-	FE_value c,k,rho2,cx,cy,cz;
-	int storage_size;
-	int return_code;
-	int i;
-	ENTER(This_wiener3d);
-	storage_size = xsize * ysize * zsize;
-
-        if(ALLOCATE(re, FE_value, storage_size) &&
-	         ALLOCATE(im, FE_value, storage_size) &&
-		 ALLOCATE(nothing, FE_value, storage_size) &&
-		 ALLOCATE(kernel, FE_value, storage_size))
-	{
-	        return_code = 1;
-		nx = xsize;
-		ny = ysize;
-		nz = zsize;
-		for (i = 0; i < storage_size; i++)
-		{
-		        nothing[i] = 0.0;
-		}
-
-		This_fft3d(data_index, nothing, re, im, (char *)0, nx, ny, nz);
-
-		This_gaussian_kernel3d(kernel, g, xsize, ysize, zsize);
-
-		cx = M_PI*M_PI/(FE_value)(nx*nx);
-		cy = M_PI*M_PI/(FE_value)(ny*ny);
-		cz = M_PI*M_PI/(FE_value)(nz*nz);
-		for (z=-nz/2;z<nz/2;z++)
-		{
-		        for (y=-ny/2;y<ny/2;y++)
-			{
-			         for (x=-nx/2;x<nx/2;x++)
-				 {
-			                 adr = (z<0?nz+z:z)*nx*ny+(y<0?ny+y:y)*nx+(x<0?nx+x:x);
-				         rho2 = cx*(FE_value)(x*x)+cy*(FE_value)(y*y)+cz*(FE_value)(z*z);
-				         k = kernel[adr];
-				         c = lambda * k/(lambda*k*k+rho2);
-				         re[adr] *= c;
-				         im[adr] *= c;
-				 }
-			}
-		}
-		This_fft3d(re, im, result_index, nothing, (char *)1, nx,ny,nz);
-		DEALLOCATE(re);
-		DEALLOCATE(im);
-		DEALLOCATE(nothing);
-		DEALLOCATE(kernel);
-	}
-	else
-	{
-	        display_message(ERROR_MESSAGE,
-				"In function wiener.  "
-				"Unable to allocate memory.");
-		return_code = 0;
-	}
-	LEAVE;
-	return(return_code);
-}/* This_wiener3d */
-
-static int Image_cache_wiener_filter(struct Image_cache *image, double sigma, double lambda)
+static int Image_cache_local_frequency(struct Image_cache *image, double sigma,
+         FE_value *angle_from_u_axis, FE_value *centre_frequency)
 /*******************************************************************************
-LAST MODIFIED : 17 March 2004
+LAST MODIFIED : 2 March 2005
 
-DESCRIPTION : Implement deconvolution with Wiener filter.
+DESCRIPTION : Implement image local frequency detection.
 
 ==============================================================================*/
 {
 	char *storage;
-	FE_value *data_index, *result_index, *data_index1, *result_index1;
+	FE_value *data_index, *result_index, *data_index1, *result_index1, *max;
 	int i, return_code, storage_size, k;
 
-	ENTER(Image_cache_wiener_filter);
-	if (image && (image->dimension == 2 ||image->dimension==3 ) && (image->depth > 0))
+	ENTER(Image_cache_local_frequency);
+	if (image && (image->dimension == 2) && (image->depth > 0))
 	{
 		return_code = 1;
 
@@ -885,6 +694,7 @@ DESCRIPTION : Implement deconvolution with Wiener filter.
 		}
 		if (ALLOCATE(storage, char, storage_size * sizeof(FE_value))&&
 		         ALLOCATE(data_index1, FE_value, storage_size/image->depth) &&
+			 ALLOCATE(max, FE_value, image->depth) &&
 			 ALLOCATE(result_index1, FE_value, storage_size/image->depth))
 		{
 		        return_code = 1;
@@ -893,6 +703,10 @@ DESCRIPTION : Implement deconvolution with Wiener filter.
 			{
 				*result_index = 0.0;
 				result_index++;
+			}
+			for (k = 0; k < image->depth; k++)
+			{
+			        max[k] = 0.0;
 			}
 			data_index = (FE_value *)image->data;
 			result_index = (FE_value *)storage;
@@ -904,22 +718,32 @@ DESCRIPTION : Implement deconvolution with Wiener filter.
 					 data_index += image->depth;
 					 result_index += image->depth;
 			        }
-				if (image->dimension == 2)
-				{
-			                 This_wiener2d(data_index1, result_index1, sigma, lambda,
+				
+			        local_frequency_wiener2d(data_index1, result_index1, sigma, 
+				               angle_from_u_axis, centre_frequency,
 			                       image->sizes[0], image->sizes[1]);
-			        }
-				else if (image->dimension == 3)
-				{
-				         This_wiener3d(data_index1, result_index1, sigma, lambda,
-			                       image->sizes[0], image->sizes[1], image->sizes[2]);
-				}
+			        
 				for (i = (storage_size/image->depth)-1; i >= 0; i--)
 			        {
 				         data_index -= image->depth;
 					 result_index -= image->depth;
 			                 result_index[k] = result_index1[i];
+					 max[k] = my_Max(max[k],result_index[k]);
 			        }
+			}
+			for (i = 0; i < storage_size/image->depth; i++)
+			{
+			        for (k = 0; k < image->depth; k++)
+				{
+				        if (max[k] == 0.0)
+					{
+					         result_index[k] = 0.0;
+					}
+					else
+					{
+					         result_index[k] /= max[k];
+					}
+				}
 			}
 			if (return_code)
 			{
@@ -933,40 +757,41 @@ DESCRIPTION : Implement deconvolution with Wiener filter.
 			}
 			DEALLOCATE(data_index1);
 			DEALLOCATE(result_index1);
+			DEALLOCATE(max);
 		}
 		else
 		{
 			display_message(ERROR_MESSAGE,
-				"Image_cache_wiener_filter.  Not enough memory");
+				"Image_cache_local_frequency.  Not enough memory");
 			return_code = 0;
 		}
 	}
 	else
 	{
-		display_message(ERROR_MESSAGE, "Image_cache_wiener_filter.  "
+		display_message(ERROR_MESSAGE, "Image_cache_local_frequency.  "
 			"Invalid arguments.");
 		return_code=0;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* Image_cache_wiener_filter */
+} /* Image_cache_local_frequency */
 
-static int Computed_field_wiener_filter_evaluate_cache_at_node(
+static int Computed_field_local_frequency_evaluate_cache_at_node(
 	struct Computed_field *field, struct FE_node *node, FE_value time)
 /*******************************************************************************
-LAST MODIFIED : 6 January 2004
+LAST MODIFIED : 2 March 2005
 
 DESCRIPTION :
 Evaluate the fields cache at the node.
 ==============================================================================*/
 {
 	int return_code;
-	struct Computed_field_wiener_filter_type_specific_data *data;
+	struct Computed_field_local_frequency_type_specific_data *data;
 
-	ENTER(Computed_field_wiener_filter_evaluate_cache_at_node);
+	ENTER(Computed_field_local_frequency_evaluate_cache_at_node);
 	if (field && node &&
-		(data = (struct Computed_field_wiener_filter_type_specific_data *)field->type_specific_data))
+		(data = (struct Computed_field_local_frequency_type_specific_data *)field->type_specific_data))
 	{
 		return_code = 1;
 		/* 1. Precalculate the Image_cache */
@@ -976,7 +801,8 @@ Evaluate the fields cache at the node.
 				field->source_fields[1], data->element_dimension, data->region,
 				data->graphics_buffer_package);
 			/* 2. Perform image processing operation */
-			return_code = Image_cache_wiener_filter(data->image, data->sigma, data->lambda);
+			return_code = Image_cache_local_frequency(data->image, data->sigma,
+			                   data->angle_from_u_axis, data->centre_frequency);
 		}
 		/* 3. Evaluate texture coordinates and copy image to field */
 		Computed_field_evaluate_cache_at_node(field->source_fields[1],
@@ -987,33 +813,33 @@ Evaluate the fields cache at the node.
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Computed_field_wiener_filter_evaluate_cache_at_node.  "
+			"Computed_field_local_frequency_evaluate_cache_at_node.  "
 			"Invalid argument(s)");
 		return_code = 0;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* Computed_field_wiener_filter_evaluate_cache_at_node */
+} /* Computed_field_local_frequency_evaluate_cache_at_node */
 
-static int Computed_field_wiener_filter_evaluate_cache_in_element(
+static int Computed_field_local_frequency_evaluate_cache_in_element(
 	struct Computed_field *field, struct FE_element *element, FE_value *xi,
 	FE_value time, struct FE_element *top_level_element,int calculate_derivatives)
 /*******************************************************************************
-LAST MODIFIED : 6 January 2004
+LAST MODIFIED : 2 March 2005
 
 DESCRIPTION :
 Evaluate the fields cache at the node.
 ==============================================================================*/
 {
 	int return_code;
-	struct Computed_field_wiener_filter_type_specific_data *data;
+	struct Computed_field_local_frequency_type_specific_data *data;
 
-	ENTER(Computed_field_wiener_filter_evaluate_cache_in_element);
+	ENTER(Computed_field_local_frequency_evaluate_cache_in_element);
 	USE_PARAMETER(calculate_derivatives);
 	if (field && element && xi && (field->number_of_source_fields > 0) &&
 		(field->number_of_components == field->source_fields[0]->number_of_components) &&
-		(data = (struct Computed_field_wiener_filter_type_specific_data *) field->type_specific_data) &&
+		(data = (struct Computed_field_local_frequency_type_specific_data *) field->type_specific_data) &&
 		data->image && (field->number_of_components == data->image->depth))
 	{
 		return_code = 1;
@@ -1024,7 +850,8 @@ Evaluate the fields cache at the node.
 				field->source_fields[1], data->element_dimension, data->region,
 				data->graphics_buffer_package);
 			/* 2. Perform image processing operation */
-			return_code = Image_cache_wiener_filter(data->image, data->sigma, data->lambda);
+			return_code = Image_cache_local_frequency(data->image, data->sigma,
+			                   data->angle_from_u_axis, data->centre_frequency);
 		}
 		/* 3. Evaluate texture coordinates and copy image to field */
 		Computed_field_evaluate_cache_in_element(field->source_fields[1],
@@ -1035,70 +862,70 @@ Evaluate the fields cache at the node.
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Computed_field_wiener_filter_evaluate_cache_in_element.  "
+			"Computed_field_local_frequency_evaluate_cache_in_element.  "
 			"Invalid argument(s)");
 		return_code = 0;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* Computed_field_wiener_filter_evaluate_cache_in_element */
+} /* Computed_field_local_frequency_evaluate_cache_in_element */
 
-#define Computed_field_wiener_filter_evaluate_as_string_at_node \
+#define Computed_field_local_frequency_evaluate_as_string_at_node \
 	Computed_field_default_evaluate_as_string_at_node
 /*******************************************************************************
-LAST MODIFIED : 6 January 2004
+LAST MODIFIED : 2 March 2005
 
 DESCRIPTION :
 Print the values calculated in the cache.
 ==============================================================================*/
 
-#define Computed_field_wiener_filter_evaluate_as_string_in_element \
+#define Computed_field_local_frequency_evaluate_as_string_in_element \
 	Computed_field_default_evaluate_as_string_in_element
 /*******************************************************************************
-LAST MODIFIED : 6 January 2004
+LAST MODIFIED : 2 March 2005
 
 DESCRIPTION :
 Print the values calculated in the cache.
 ==============================================================================*/
 
-#define Computed_field_wiener_filter_set_values_at_node \
+#define Computed_field_local_frequency_set_values_at_node \
    (Computed_field_set_values_at_node_function)NULL
 /*******************************************************************************
-LAST MODIFIED : 6 January 2004
+LAST MODIFIED : 2 March 2005
 
 DESCRIPTION :
 Not implemented yet.
 ==============================================================================*/
 
-#define Computed_field_wiener_filter_set_values_in_element \
+#define Computed_field_local_frequency_set_values_in_element \
    (Computed_field_set_values_in_element_function)NULL
 /*******************************************************************************
-LAST MODIFIED : 6 January 2004
+LAST MODIFIED : 2 March 2005
 
 DESCRIPTION :
 Not implemented yet.
 ==============================================================================*/
 
-#define Computed_field_wiener_filter_get_native_discretization_in_element \
+#define Computed_field_local_frequency_get_native_discretization_in_element \
 	Computed_field_default_get_native_discretization_in_element
 /*******************************************************************************
-LAST MODIFIED : 6 January 2004
+LAST MODIFIED : 2 March 2005
 
 DESCRIPTION :
 Inherit result from first source field.
 ==============================================================================*/
 
-#define Computed_field_wiener_filter_find_element_xi \
+#define Computed_field_local_frequency_find_element_xi \
    (Computed_field_find_element_xi_function)NULL
 /*******************************************************************************
-LAST MODIFIED : 6 January 2004
+LAST MODIFIED : 2 March 2005
 
 DESCRIPTION :
 Not implemented yet.
 ==============================================================================*/
 
-int Computed_field_wiener_filter_get_native_resolution(struct Computed_field *field,
+int Computed_field_local_frequency_get_native_resolution(struct Computed_field *field,
         int *dimension, int **sizes, FE_value **minimums, FE_value **maximums,
 	struct Computed_field **texture_coordinate_field)
 /*******************************************************************************
@@ -1111,11 +938,11 @@ the <field>. These parameters will be used in image processing.
 ==============================================================================*/
 {       
         int return_code;
-	struct Computed_field_wiener_filter_type_specific_data *data;
+	struct Computed_field_local_frequency_type_specific_data *data;
 	
-	ENTER(Computed_field_wiener_filter_get_native_resolution);
+	ENTER(Computed_field_local_frequency_get_native_resolution);
 	if (field && (data =
-		(struct Computed_field_wiener_filter_type_specific_data *)
+		(struct Computed_field_local_frequency_type_specific_data *)
 		field->type_specific_data) && data->image)
 	{
 		Image_cache_get_native_resolution(data->image,
@@ -1134,14 +961,14 @@ the <field>. These parameters will be used in image processing.
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Computed_field_wiener_filter_get_native_resolution.  Missing field");
+			"Computed_field_local_frequency_get_native_resolution.  Missing field");
 		return_code=0;
 	}
 
 	return (return_code);
-} /* Computed_field_wiener_filter_get_native_resolution */
+} /* Computed_field_local_frequency_get_native_resolution */
 
-static int list_Computed_field_wiener_filter(
+static int list_Computed_field_local_frequency(
 	struct Computed_field *field)
 /*******************************************************************************
 LAST MODIFIED : 4 December 2003
@@ -1150,11 +977,11 @@ DESCRIPTION :
 ==============================================================================*/
 {
 	int return_code;
-	struct Computed_field_wiener_filter_type_specific_data *data;
+	struct Computed_field_local_frequency_type_specific_data *data;
 
-	ENTER(List_Computed_field_wiener_filter);
-	if (field && (field->type_string==computed_field_wiener_filter_type_string)
-		&& (data = (struct Computed_field_wiener_filter_type_specific_data *)
+	ENTER(List_Computed_field_local_frequency);
+	if (field && (field->type_string==computed_field_local_frequency_type_string)
+		&& (data = (struct Computed_field_local_frequency_type_specific_data *)
 		field->type_specific_data))
 	{
 		display_message(INFORMATION_MESSAGE,
@@ -1163,22 +990,20 @@ DESCRIPTION :
 			"    texture coordinate field : %s\n",field->source_fields[1]->name);
 		display_message(INFORMATION_MESSAGE,
 			"    filter sigma : %f\n", data->sigma);
-		display_message(INFORMATION_MESSAGE,
-			"    filter lambda : %f\n", data->lambda);
 		return_code = 1;
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"list_Computed_field_wiener_filter.  Invalid field");
+			"list_Computed_field_local_frequency.  Invalid field");
 		return_code = 0;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* list_Computed_field_wiener_filter */
+} /* list_Computed_field_local_frequency */
 
-static char *Computed_field_wiener_filter_get_command_string(
+static char *Computed_field_local_frequency_get_command_string(
 	struct Computed_field *field)
 /*******************************************************************************
 LAST MODIFIED : 4 December 2003
@@ -1189,17 +1014,17 @@ Returns allocated command string for reproducing field. Includes type.
 {
 	char *command_string, *field_name, temp_string[40];
 	int error;
-	struct Computed_field_wiener_filter_type_specific_data *data;
+	struct Computed_field_local_frequency_type_specific_data *data;
 
-	ENTER(Computed_field_wiener_filter_get_command_string);
+	ENTER(Computed_field_local_frequency_get_command_string);
 	command_string = (char *)NULL;
-	if (field&& (field->type_string==computed_field_wiener_filter_type_string)
-		&& (data = (struct Computed_field_wiener_filter_type_specific_data *)
+	if (field&& (field->type_string==computed_field_local_frequency_type_string)
+		&& (data = (struct Computed_field_local_frequency_type_specific_data *)
 		field->type_specific_data) )
 	{
 		error = 0;
 		append_string(&command_string,
-			computed_field_wiener_filter_type_string, &error);
+			computed_field_local_frequency_type_string, &error);
 		append_string(&command_string, " field ", &error);
 		if (GET_NAME(Computed_field)(field->source_fields[0], &field_name))
 		{
@@ -1217,7 +1042,12 @@ Returns allocated command string for reproducing field. Includes type.
 		sprintf(temp_string, " dimension %d", data->image->dimension);
 		append_string(&command_string, temp_string, &error);
 
-		sprintf(temp_string, " lambda %f", data->lambda);
+		sprintf(temp_string, " angle_from_u_axis %f %f",
+		                    data->angle_from_u_axis[0],data->angle_from_u_axis[1]);
+		append_string(&command_string, temp_string, &error);
+
+		sprintf(temp_string, " centre_frequency %f %f",
+		                    data->centre_frequency[0],data->centre_frequency[1]);
 		append_string(&command_string, temp_string, &error);
 
 		sprintf(temp_string, " sigma %f", data->sigma);
@@ -1239,14 +1069,14 @@ Returns allocated command string for reproducing field. Includes type.
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Computed_field_wiener_filter_get_command_string.  Invalid field");
+			"Computed_field_local_frequency_get_command_string.  Invalid field");
 	}
 	LEAVE;
 
 	return (command_string);
-} /* Computed_field_wiener_filter_get_command_string */
+} /* Computed_field_local_frequency_get_command_string */
 
-#define Computed_field_wiener_filter_has_multiple_times \
+#define Computed_field_local_frequency_has_multiple_times \
 	Computed_field_default_has_multiple_times
 /*******************************************************************************
 LAST MODIFIED : 4 December 2003
@@ -1255,10 +1085,10 @@ DESCRIPTION :
 Works out whether time influences the field.
 ==============================================================================*/
 
-int Computed_field_set_type_wiener_filter(struct Computed_field *field,
+int Computed_field_set_type_local_frequency(struct Computed_field *field,
 	struct Computed_field *source_field,
 	struct Computed_field *texture_coordinate_field,
-	double sigma, double lambda,
+	double sigma, FE_value *angle_from_u_axis, FE_value *centre_frequency,
 	int dimension, int *sizes, FE_value *minimums, FE_value *maximums,
 	int element_dimension, struct MANAGER(Computed_field) *computed_field_manager,
 	struct Cmiss_region *region, struct Graphics_buffer_package *graphics_buffer_package)
@@ -1266,7 +1096,7 @@ int Computed_field_set_type_wiener_filter(struct Computed_field *field,
 LAST MODIFIED : Mar 18 2004
 
 DESCRIPTION :
-Converts <field> to type COMPUTED_FIELD_wiener_filter with the supplied
+Converts <field> to type COMPUTED_FIELD_local_frequency with the supplied
 fields, <source_field> and <texture_coordinate_field>.  The <sigma> specifies
 half the width and height of the filter window.  The <dimension> is the
 size of the <sizes>, <minimums> and <maximums> vectors and should be less than
@@ -1277,10 +1107,10 @@ although its cache may be lost.
 {
 	int depth, number_of_source_fields, return_code;
 	struct Computed_field **source_fields;
-	struct Computed_field_wiener_filter_type_specific_data *data;
+	struct Computed_field_local_frequency_type_specific_data *data;
 
-	ENTER(Computed_field_set_type_wiener_filter);
-	if (field && source_field && texture_coordinate_field && (lambda > 0) &&
+	ENTER(Computed_field_set_type_local_frequency);
+	if (field && source_field && texture_coordinate_field && 
 		(sigma > 0) && (depth = source_field->number_of_components) &&
 		(dimension <= texture_coordinate_field->number_of_components) &&
 		region && graphics_buffer_package)
@@ -1288,9 +1118,11 @@ although its cache may be lost.
 		return_code=1;
 		/* 1. make dynamic allocations for any new type-specific data */
 		number_of_source_fields=2;
-		data = (struct Computed_field_wiener_filter_type_specific_data *)NULL;
+		data = (struct Computed_field_local_frequency_type_specific_data *)NULL;
 		if (ALLOCATE(source_fields, struct Computed_field *, number_of_source_fields) &&
-			ALLOCATE(data, struct Computed_field_wiener_filter_type_specific_data, 1) &&
+			ALLOCATE(data, struct Computed_field_local_frequency_type_specific_data, 1) &&
+			ALLOCATE(data->angle_from_u_axis, FE_value, 2) &&
+			ALLOCATE(data->centre_frequency, FE_value, 2) &&
 			(data->image = ACCESS(Image_cache)(CREATE(Image_cache)())) &&
 			Image_cache_update_dimension(
 			data->image, dimension, depth, sizes, minimums, maximums) &&
@@ -1299,27 +1131,30 @@ although its cache may be lost.
 			/* 2. free current type-specific data */
 			Computed_field_clear_type(field);
 			/* 3. establish the new type */
-			field->type_string = computed_field_wiener_filter_type_string;
+			field->type_string = computed_field_local_frequency_type_string;
 			field->number_of_components = source_field->number_of_components;
 			source_fields[0]=ACCESS(Computed_field)(source_field);
 			source_fields[1]=ACCESS(Computed_field)(texture_coordinate_field);
 			field->source_fields=source_fields;
 			field->number_of_source_fields=number_of_source_fields;
 			data->sigma = sigma;
-			data->lambda = lambda;
+			data->angle_from_u_axis[0] = angle_from_u_axis[0];
+			data->angle_from_u_axis[1] = angle_from_u_axis[1];
+			data->centre_frequency[0] = centre_frequency[0];
+			data->centre_frequency[1] = centre_frequency[1];
 			data->element_dimension = element_dimension;
 			data->region = ACCESS(Cmiss_region)(region);
 			data->graphics_buffer_package = graphics_buffer_package;
 			data->computed_field_manager = computed_field_manager;
 			data->computed_field_manager_callback_id =
 				MANAGER_REGISTER(Computed_field)(
-				Computed_field_wiener_filter_field_change, (void *)field,
+				Computed_field_local_frequency_field_change, (void *)field,
 				computed_field_manager);
 
 			field->type_specific_data = data;
 
 			/* Set all the methods */
-			COMPUTED_FIELD_ESTABLISH_METHODS(wiener_filter);
+			COMPUTED_FIELD_ESTABLISH_METHODS(local_frequency);
 		}
 		else
 		{
@@ -1338,44 +1173,50 @@ although its cache may be lost.
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Computed_field_set_type_wiener_filter.  Invalid argument(s)");
+			"Computed_field_set_type_local_frequency.  Invalid argument(s)");
 		return_code = 0;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* Computed_field_set_type_wiener_filter */
+} /* Computed_field_set_type_local_frequency */
 
-int Computed_field_get_type_wiener_filter(struct Computed_field *field,
+int Computed_field_get_type_local_frequency(struct Computed_field *field,
 	struct Computed_field **source_field,
 	struct Computed_field **texture_coordinate_field,
-	double *sigma, double *lambda, int *dimension, int **sizes, FE_value **minimums,
+	double *sigma, FE_value **angle_from_u_axis, FE_value **centre_frequency,
+	int *dimension, int **sizes, FE_value **minimums,
 	FE_value **maximums, int *element_dimension)
 /*******************************************************************************
 LAST MODIFIED : 17 December 2003
 
 DESCRIPTION :
-If the field is of type COMPUTED_FIELD_wiener_filter, the
+If the field is of type COMPUTED_FIELD_local_frequency, the
 parameters defining it are returned.
 ==============================================================================*/
 {
 	int i, return_code;
-	struct Computed_field_wiener_filter_type_specific_data *data;
+	struct Computed_field_local_frequency_type_specific_data *data;
 
-	ENTER(Computed_field_get_type_wiener_filter);
-	if (field && (field->type_string==computed_field_wiener_filter_type_string)
-		&& (data = (struct Computed_field_wiener_filter_type_specific_data *)
+	ENTER(Computed_field_get_type_local_frequency);
+	if (field && (field->type_string==computed_field_local_frequency_type_string)
+		&& (data = (struct Computed_field_local_frequency_type_specific_data *)
 		field->type_specific_data) && data->image)
 	{
 		*dimension = data->image->dimension;
 		if (ALLOCATE(*sizes, int, *dimension)
+		        && ALLOCATE(*angle_from_u_axis, FE_value, 2)
+			&& ALLOCATE(*centre_frequency, FE_value, 2)
 			&& ALLOCATE(*minimums, FE_value, *dimension)
 			&& ALLOCATE(*maximums, FE_value, *dimension))
 		{
 			*source_field = field->source_fields[0];
 			*texture_coordinate_field = field->source_fields[1];
 			*sigma = data->sigma;
-			*lambda = data->lambda;
+			(*angle_from_u_axis)[0] = data->angle_from_u_axis[0];
+			(*angle_from_u_axis)[1] = data->angle_from_u_axis[1];
+			(*centre_frequency)[0] = data->centre_frequency[0];
+			(*centre_frequency)[1] = data->centre_frequency[1];
 			for (i = 0 ; i < *dimension ; i++)
 			{
 				(*sizes)[i] = data->image->sizes[i];
@@ -1388,47 +1229,49 @@ parameters defining it are returned.
 		else
 		{
 			display_message(ERROR_MESSAGE,
-				"Computed_field_get_type_wiener_filter.  Unable to allocate vectors.");
+				"Computed_field_get_type_local_frequency.  Unable to allocate vectors.");
 			return_code = 0;
 		}
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Computed_field_get_type_wiener_filter.  Invalid argument(s)");
+			"Computed_field_get_type_local_frequency.  Invalid argument(s)");
 		return_code = 0;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* Computed_field_get_type_wiener_filter */
+} /* Computed_field_get_type_local_frequency */
 
-static int define_Computed_field_type_wiener_filter(struct Parse_state *state,
-	void *field_void, void *computed_field_wiener_filter_package_void)
+static int define_Computed_field_type_local_frequency(struct Parse_state *state,
+	void *field_void, void *computed_field_local_frequency_package_void)
 /*******************************************************************************
 LAST MODIFIED : 4 December 2003
 
 DESCRIPTION :
-Converts <field> into type COMPUTED_FIELD_wiener_filter (if it is not
+Converts <field> into type COMPUTED_FIELD_local_frequency (if it is not
 already) and allows its contents to be modified.
 ==============================================================================*/
 {
 	char *current_token;
 	FE_value *minimums, *maximums;
-	double sigma, lambda;
+	double sigma;
+	FE_value *angle_from_u_axis, *centre_frequency;
+	int dim = 2;
 	int dimension, element_dimension, return_code, *sizes;
 	struct Computed_field *field, *source_field, *texture_coordinate_field;
-	struct Computed_field_wiener_filter_package
-		*computed_field_wiener_filter_package;
+	struct Computed_field_local_frequency_package
+		*computed_field_local_frequency_package;
 	struct Option_table *option_table;
 	struct Set_Computed_field_conditional_data set_source_field_data,
 		set_texture_coordinate_field_data;
 
-	ENTER(define_Computed_field_type_wiener_filter);
+	ENTER(define_Computed_field_type_local_frequency);
 	if (state&&(field=(struct Computed_field *)field_void)&&
-		(computed_field_wiener_filter_package=
-		(struct Computed_field_wiener_filter_package *)
-		computed_field_wiener_filter_package_void))
+		(computed_field_local_frequency_package=
+		(struct Computed_field_local_frequency_package *)
+		computed_field_local_frequency_package_void))
 	{
 		return_code=1;
 		source_field = (struct Computed_field *)NULL;
@@ -1439,25 +1282,27 @@ already) and allows its contents to be modified.
 		maximums = (FE_value *)NULL;
 		element_dimension = 0;
 		sigma = 1.0;
-		lambda = 1.0;
+		angle_from_u_axis = (FE_value *)NULL;
+		centre_frequency = (FE_value *)NULL;
 		/* field */
 		set_source_field_data.computed_field_manager =
-			computed_field_wiener_filter_package->computed_field_manager;
+			computed_field_local_frequency_package->computed_field_manager;
 		set_source_field_data.conditional_function =
 			Computed_field_has_numerical_components;
 		set_source_field_data.conditional_function_user_data = (void *)NULL;
 		/* texture_coordinate_field */
 		set_texture_coordinate_field_data.computed_field_manager =
-			computed_field_wiener_filter_package->computed_field_manager;
+			computed_field_local_frequency_package->computed_field_manager;
 		set_texture_coordinate_field_data.conditional_function =
 			Computed_field_has_numerical_components;
 		set_texture_coordinate_field_data.conditional_function_user_data = (void *)NULL;
 
-		if (computed_field_wiener_filter_type_string ==
+		if (computed_field_local_frequency_type_string ==
 			Computed_field_get_type_string(field))
 		{
-			return_code = Computed_field_get_type_wiener_filter(field,
-				&source_field, &texture_coordinate_field, &sigma, &lambda,
+			return_code = Computed_field_get_type_local_frequency(field,
+				&source_field, &texture_coordinate_field, &sigma, 
+				&angle_from_u_axis, &centre_frequency,
 				&dimension, &sizes, &minimums, &maximums, &element_dimension);
 		}
 		if (return_code)
@@ -1486,9 +1331,12 @@ already) and allows its contents to be modified.
 				/* field */
 				Option_table_add_Computed_field_conditional_entry(option_table,
 					"field", &source_field, &set_source_field_data);
-				/* lambda */
-				Option_table_add_double_entry(option_table,
-					"lambda", &lambda);
+				/* angle_from_u_axis */
+				Option_table_add_FE_value_vector_entry(option_table,
+					"angle_from_u_axis", angle_from_u_axis, &dim);
+				/* centre_frequency */
+				Option_table_add_FE_value_vector_entry(option_table,
+					"centre_frequency", centre_frequency, &dim);
 				/* maximums */
 				Option_table_add_FE_value_vector_entry(option_table,
 					"maximums", maximums, &dimension);
@@ -1521,6 +1369,8 @@ already) and allows its contents to be modified.
 					if (return_code = Option_table_parse(option_table, state))
 					{
 						if (!(REALLOCATE(sizes, sizes, int, dimension) &&
+						        REALLOCATE(angle_from_u_axis, angle_from_u_axis, FE_value, 2) &&
+							REALLOCATE(centre_frequency, centre_frequency, FE_value, 2) &&
 							REALLOCATE(minimums, minimums, FE_value, dimension) &&
 							REALLOCATE(maximums, maximums, FE_value, dimension)))
 						{
@@ -1546,9 +1396,12 @@ already) and allows its contents to be modified.
 				/* field */
 				Option_table_add_Computed_field_conditional_entry(option_table,
 					"field", &source_field, &set_source_field_data);
-				/* lambda */
-				Option_table_add_double_entry(option_table,
-					"lambda", &lambda);
+				/* angle_from_u_axis */
+				Option_table_add_FE_value_vector_entry(option_table,
+					"angle_from_u_axis", angle_from_u_axis, &dim);
+				/* centre_frequency */
+				Option_table_add_FE_value_vector_entry(option_table,
+					"centre_frequency", centre_frequency, &dim);
 				/* maximums */
 				Option_table_add_FE_value_vector_entry(option_table,
 					"maximums", maximums, &dimension);
@@ -1576,12 +1429,13 @@ already) and allows its contents to be modified.
 			/* no errors,not asking for help */
 			if (return_code)
 			{
-				return_code = Computed_field_set_type_wiener_filter(field,
-					source_field, texture_coordinate_field, sigma, lambda, dimension,
-					sizes, minimums, maximums, element_dimension,
-					computed_field_wiener_filter_package->computed_field_manager,
-					computed_field_wiener_filter_package->root_region,
-					computed_field_wiener_filter_package->graphics_buffer_package);
+				return_code = Computed_field_set_type_local_frequency(field,
+					source_field, texture_coordinate_field, sigma, 
+					angle_from_u_axis, centre_frequency,
+					dimension, sizes, minimums, maximums, element_dimension,
+					computed_field_local_frequency_package->computed_field_manager,
+					computed_field_local_frequency_package->root_region,
+					computed_field_local_frequency_package->graphics_buffer_package);
 			}
 			if (!return_code)
 			{
@@ -1591,7 +1445,7 @@ already) and allows its contents to be modified.
 				{
 					/* error */
 					display_message(ERROR_MESSAGE,
-						"define_Computed_field_type_wiener_filter.  Failed");
+						"define_Computed_field_type_local_frequency.  Failed");
 				}
 			}
 			if (source_field)
@@ -1606,6 +1460,14 @@ already) and allows its contents to be modified.
 			{
 				DEALLOCATE(sizes);
 			}
+			if (angle_from_u_axis)
+			{
+			        DEALLOCATE(angle_from_u_axis);
+			}
+			if (centre_frequency)
+			{
+			        DEALLOCATE(centre_frequency);
+			}
 			if (minimums)
 			{
 				DEALLOCATE(minimums);
@@ -1619,15 +1481,15 @@ already) and allows its contents to be modified.
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"define_Computed_field_type_wiener_filter.  Invalid argument(s)");
+			"define_Computed_field_type_local_frequency.  Invalid argument(s)");
 		return_code = 0;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* define_Computed_field_type_wiener_filter */
+} /* define_Computed_field_type_local_frequency */
 
-int Computed_field_register_types_wiener_filter(
+int Computed_field_register_types_local_frequency(
 	struct Computed_field_package *computed_field_package,
 	struct Cmiss_region *root_region, struct Graphics_buffer_package *graphics_buffer_package)
 /*******************************************************************************
@@ -1637,30 +1499,30 @@ DESCRIPTION :
 ==============================================================================*/
 {
 	int return_code;
-	static struct Computed_field_wiener_filter_package
-		computed_field_wiener_filter_package;
+	static struct Computed_field_local_frequency_package
+		computed_field_local_frequency_package;
 
-	ENTER(Computed_field_register_types_wiener_filter);
+	ENTER(Computed_field_register_types_local_frequency);
 	if (computed_field_package)
 	{
-		computed_field_wiener_filter_package.computed_field_manager =
+		computed_field_local_frequency_package.computed_field_manager =
 			Computed_field_package_get_computed_field_manager(
 				computed_field_package);
-		computed_field_wiener_filter_package.root_region = root_region;
-		computed_field_wiener_filter_package.graphics_buffer_package = graphics_buffer_package;
+		computed_field_local_frequency_package.root_region = root_region;
+		computed_field_local_frequency_package.graphics_buffer_package = graphics_buffer_package;
 		return_code = Computed_field_package_add_type(computed_field_package,
-			            computed_field_wiener_filter_type_string,
-			            define_Computed_field_type_wiener_filter,
-			            &computed_field_wiener_filter_package);
+			            computed_field_local_frequency_type_string,
+			            define_Computed_field_type_local_frequency,
+			            &computed_field_local_frequency_package);
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Computed_field_register_types_wiener_filter.  Invalid argument(s)");
+			"Computed_field_register_types_local_frequency.  Invalid argument(s)");
 		return_code = 0;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* Computed_field_register_types_wiener_filter */
+} /* Computed_field_register_types_local_frequency */
 
