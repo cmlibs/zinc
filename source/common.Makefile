@@ -189,7 +189,7 @@ ifeq ($(SYSNAME),AIX)
    CC = xlc -c
    CPP = xlc -qnolm -c
    FORTRAN = f77 -c
-   MAKEDEPEND = makedepend
+   MAKEDEPEND = makedepend -f-
    CPREPROCESS = 
    LINK = xlc
    ifneq ($(DEBUG),true)
