@@ -737,6 +737,7 @@ already) and allows its contents to be modified.
 		return_code = 1;
 		search_region = (struct Cmiss_region *)NULL;
 		search_region_path = (char *)NULL;
+		old_region_path = (char *)NULL;
 		calculate_values_field = (struct Computed_field *)NULL;
 		find_element_xi_field = (struct Computed_field *)NULL;
 		texture_coordinates_field = (struct Computed_field *)NULL;
@@ -747,7 +748,14 @@ already) and allows its contents to be modified.
 			return_code = Computed_field_get_type_compose(field, 
 				&calculate_values_field, &find_element_xi_field,
 				&texture_coordinates_field, &search_region, &old_region_path);
+		}
+		if (old_region_path)
+		{
 			search_region_path = duplicate_string(old_region_path);
+		}
+		else
+		{
+			Cmiss_region_get_root_region_path(&search_region_path);
 		}
 		if (return_code)
 		{
@@ -805,8 +813,9 @@ already) and allows its contents to be modified.
 			{
 				if (search_region_path)
 				{
-					if (!(search_region = Cmiss_region_get_child_region_from_name(
-								computed_field_compose_package->root_region, search_region_path)))
+					if (!(Cmiss_region_get_region_from_path(
+						computed_field_compose_package->root_region, 
+						search_region_path, &search_region)))
 					{
 						display_message(ERROR_MESSAGE,
 							"define_Computed_field_type_compose.  Unable to find region %s",
