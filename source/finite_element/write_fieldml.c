@@ -1383,6 +1383,146 @@ output contains no characters before or after the printed numbers.
 	return (return_code);
 } /* write_FE_element_identifier */
 
+static int write_FE_element_shape(FILE *output_file,
+	struct FE_element_shape *element_shape)
+/*******************************************************************************
+LAST MODIFIED : 1 April 1999
+
+DESCRIPTION :
+Writes out the <element_shape> to <output_file>.
+==============================================================================*/
+{
+	int dimension,linked_dimensions,number_of_polygon_vertices,return_code,
+		second_xi_number,*temp_entry,*type_entry,xi_number;
+
+	ENTER(write_FE_element_shape);
+	if (output_file&&element_shape&&element_shape->type&&
+		(0<(dimension=element_shape->dimension)))
+	{
+		return_code=1;
+		xi_number=0;
+		type_entry=element_shape->type;
+		linked_dimensions=0;
+		while (return_code&&(xi_number<dimension))
+		{
+			switch (*type_entry)
+			{
+				case LINE_SHAPE:
+				{
+					fprintf(output_file,"line");
+				} break;
+				case POLYGON_SHAPE:
+				{
+					fprintf(output_file,"polygon");
+					if (0==linked_dimensions)
+					{
+						/* for first linked polygon dimension write (N;M) where N is the
+							 number_of_polygon_vertices, and M is the linked dimension -
+							 a number from 2..dimension */
+						second_xi_number=xi_number;
+						temp_entry=type_entry;
+						do
+						{
+							/*???RC note: pointer arithmetic relies on second_xi_number
+								being incremented after following line: */
+							temp_entry += (dimension-second_xi_number);
+							second_xi_number++;
+						} while ((second_xi_number<dimension)&&
+							(POLYGON_SHAPE != *temp_entry));
+						if ((second_xi_number<dimension)&&(POLYGON_SHAPE==(*temp_entry)))
+						{
+							if (3<=(number_of_polygon_vertices=
+								*(type_entry+(second_xi_number-xi_number))))
+							{
+								fprintf(output_file,"(%d;%d)",number_of_polygon_vertices,
+									second_xi_number+1);
+							}
+							else
+							{
+								display_message(ERROR_MESSAGE,"write_FE_element_shape.  "
+									"Invalid number of vertices in polygon");
+								return_code=0;
+							}
+						}
+						else
+						{
+							display_message(ERROR_MESSAGE,"write_FE_element_shape.  "
+								"No second linked dimensions in polygon");
+							return_code=0;
+						}
+					}
+					linked_dimensions++;
+					if (2<linked_dimensions)
+					{
+						display_message(ERROR_MESSAGE,"write_FE_element_shape.  "
+							"Too many linked dimensions in polygon");
+						return_code=0;
+					}
+				} break;
+				case SIMPLEX_SHAPE:
+				{
+					fprintf(output_file,"simplex");
+					if (0==linked_dimensions)
+					{
+						linked_dimensions++;
+						/* for first linked simplex dimension write (N1[;N2]) where N1 is
+							 first linked dimension, N2 is the second - for tetrahedra */
+						fprintf(output_file,"(");
+						temp_entry=type_entry;
+						second_xi_number=xi_number;
+						do
+						{
+							/*???RC note: pointer arithmetic relies on second_xi_number
+								being incremented after following line: */
+							temp_entry += (dimension-second_xi_number);
+							second_xi_number++;
+							if (SIMPLEX_SHAPE == *temp_entry)
+							{
+								linked_dimensions++;
+								if (2<linked_dimensions)
+								{
+									fprintf(output_file,";");
+								}
+								fprintf(output_file,"%d",second_xi_number+1);
+							}
+						} while (second_xi_number<dimension);
+						fprintf(output_file,")");
+						if (1==linked_dimensions)
+						{
+							display_message(ERROR_MESSAGE,"write_FE_element_shape.  "
+								"Too few linked dimensions in simplex shape");
+							return_code=0;
+						}
+					}
+				} break;
+				default:
+				{
+					display_message(ERROR_MESSAGE,
+						"write_FE_element_shape.  Unknown shape type");
+					return_code=0;
+				} break;
+			}
+			/*???RC note: pointer arithmetic relies on xi_number being
+				incremented after following line: */
+			type_entry += (dimension-xi_number);
+			xi_number++;
+			if (xi_number<dimension)
+			{
+				fprintf(output_file,"*");
+			}
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"write_FE_element_shape.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* write_FE_element_shape */
+
 static int write_FE_basis_mapping(FILE *output_file, int indent, 
 	struct Basis_mapping *basis_mapping, 
 	struct FE_element_field_component *component)
@@ -1598,7 +1738,7 @@ Writes out the <basis> to <output_file>.
 		indent += EXPORT_INDENT_SPACES;
 		indent_fprintf(output_file, indent, "<component_lookup>\n");
 		indent_fprintf(output_file, indent + EXPORT_INDENT_SPACES,
-			"<label name=\"%s\"/>\n", basis_mapping->element_nodal_values_name);
+			"<label_lookup indices=\"%s\"/>\n", basis_mapping->element_nodal_values_name);
 		indent_fprintf(output_file, indent, "</component_lookup>\n");
 		indent -= EXPORT_INDENT_SPACES;
 		indent_fprintf(output_file, indent, "</field_lookup>\n");
@@ -1609,7 +1749,7 @@ Writes out the <basis> to <output_file>.
 		{
 			indent_fprintf(output_file, indent, "<element_lookup>\n");
 			indent_fprintf(output_file, indent + EXPORT_INDENT_SPACES,
-				"<label name=\"%s\"/>\n", basis_mapping->scale_factor_list_name);
+				"<label_lookup indices=\"%s\"/>\n", basis_mapping->scale_factor_list_name);
 			indent_fprintf(output_file, indent, "</element_lookup>\n");
 		}
 		indent -= EXPORT_INDENT_SPACES;
@@ -1855,19 +1995,19 @@ Writes out the element nodal template represented in <component> to <output_file
 
 								indent_fprintf(output_file, indent, "<node_lookup>\n");
 								indent += EXPORT_INDENT_SPACES;
-								indent_fprintf(output_file, indent, "<node>\n");
+								indent_fprintf(output_file, indent, "<node_index>\n");
 								indent += EXPORT_INDENT_SPACES;
 								indent_fprintf(output_file, indent, "<element_lookup>\n");
 								indent += EXPORT_INDENT_SPACES;
-								indent_fprintf(output_file, indent, "<label indices=\"ElementNodeList\">\n");
+								indent_fprintf(output_file, indent, "<label_lookup indices=\"ElementNodeList\">\n");
 								indent_fprintf(output_file, indent + EXPORT_INDENT_SPACES,
 
-									"<label indices=\"%d\"/>\n", node_index + 1);
-								indent_fprintf(output_file, indent, "</label>\n");
+									"<label_lookup indices=\"%d\"/>\n", node_index + 1);
+								indent_fprintf(output_file, indent, "</label_lookup>\n");
 								indent -= EXPORT_INDENT_SPACES;
 								indent_fprintf(output_file, indent, "</element_lookup>\n");
 								indent -= EXPORT_INDENT_SPACES;
-								indent_fprintf(output_file, indent, "</node>\n");
+								indent_fprintf(output_file, indent, "</node_index>\n");
 								indent_fprintf(output_file, indent, "<field_lookup>\n");
 								indent += EXPORT_INDENT_SPACES;
 								indent_fprintf(output_file, indent, "<component_lookup>\n");
@@ -1876,7 +2016,7 @@ Writes out the element nodal template represented in <component> to <output_file
 								{
 									version = nodal_value_index / (number_of_derivatives + 1);
 									indent_fprintf(output_file, indent,
-										"<label indices=\"version_%d\">\n", version + 1);
+										"<label_lookup indices=\"version_%d\">\n", version + 1);
 									indent += EXPORT_INDENT_SPACES;
 									nodal_value_index -= (number_of_derivatives + 1) *
 										version;
@@ -1888,60 +2028,60 @@ Writes out the element nodal template represented in <component> to <output_file
 										case FE_NODAL_VALUE:
 										{
 											indent_fprintf(output_file, indent,
-												"<label indices=\"value\"/>\n");
+												"<label_lookup indices=\"value\"/>\n");
 										} break;
 										case FE_NODAL_D_DS1:
 										{
 											indent_fprintf(output_file, indent,
-												"<label indices=\"d/ds1\"/>\n");
+												"<label_lookup indices=\"d/ds1\"/>\n");
 										} break;
 										case FE_NODAL_D_DS2:
 										{
 											indent_fprintf(output_file, indent,
-												"<label indices=\"d/ds2\"/>\n");
+												"<label_lookup indices=\"d/ds2\"/>\n");
 										} break;
 										case FE_NODAL_D_DS3:
 										{
 											indent_fprintf(output_file, indent,
-												"<label indices=\"d/ds3\"/>\n");
+												"<label_lookup indices=\"d/ds3\"/>\n");
 										} break;
 										case FE_NODAL_D2_DS1DS2:
 										{
 											indent_fprintf(output_file, indent,
-												"<label indices=\"d2/ds1ds2\"/>\n");
+												"<label_lookup indices=\"d2/ds1ds2\"/>\n");
 										} break;
 										case FE_NODAL_D2_DS1DS3:
 										{
 											indent_fprintf(output_file, indent,
-												"<label indices=\"d2/ds1ds3\"/>\n");
+												"<label_lookup indices=\"d2/ds1ds3\"/>\n");
 										} break;
 										case FE_NODAL_D2_DS2DS3:
 										{
 											indent_fprintf(output_file, indent,
-												"<label indices=\"d2/ds2ds3\"/>\n");
+												"<label_lookup indices=\"d2/ds2ds3\"/>\n");
 										} break;
 										case FE_NODAL_D3_DS1DS2DS3:
 										{
 											indent_fprintf(output_file, indent,
-												"<label indices=\"d3/ds1ds2ds3\"/>\n");
+												"<label_lookup indices=\"d3/ds1ds2ds3\"/>\n");
 										} break;
 										case FE_NODAL_UNKNOWN:
 										default:
 										{
 											indent_fprintf(output_file, indent,
-												"<label indices=\"%d\"/>\n", nodal_value_index + 1);
+												"<label_lookup indices=\"%d\"/>\n", nodal_value_index + 1);
 										} break;
 									}
 								}
 								else
 								{
 									indent_fprintf(output_file, indent,
-										"<label indices=\"%d\"/>\n", nodal_value_index + 1);
+										"<label_lookup indices=\"%d\"/>\n", nodal_value_index + 1);
 								}
 								if (number_of_versions > 1)
 								{
 									indent -= EXPORT_INDENT_SPACES;
-									indent_fprintf(output_file, indent, "</label>\n");
+									indent_fprintf(output_file, indent, "</label_lookup>\n");
 								}
 								indent -= EXPORT_INDENT_SPACES;
 								indent_fprintf(output_file, indent, "</component_lookup>\n");
@@ -2237,7 +2377,7 @@ Writes information describing how <field> is defined at <element>.
 							indent_fprintf(output_file, indent, "<label name=\"%s\">\n",
 								basis_mapping->element_nodal_values_name);
 							indent_fprintf(output_file, indent + EXPORT_INDENT_SPACES,
-								"<reference_labels template=\"%s\"/>\n", 
+								"<labels_template_ref ref=\"%s\"/>\n", 
 								element_template->element_template_name);
 							indent_fprintf(output_file, indent, "</label>\n");
 
@@ -2903,6 +3043,7 @@ DESCRIPTION :
 		number_of_faces, number_of_fields, number_of_nodes, 
 		number_of_scale_factor_sets, return_code, scale_factor_index;
 	struct FE_element *face;
+	struct FE_element_shape *shape;
 	struct FE_field *field;
 	struct FE_node *node;
 
@@ -2915,6 +3056,10 @@ DESCRIPTION :
 		/* write the element identifier */
 		indent_fprintf(output_file, indent, "<element name=\"");
 		write_FE_element_identifier(output_file, element);
+		fprintf(output_file, "\"\n");
+		indent_fprintf(output_file, indent + 9, "shape=\"");
+		get_FE_element_shape(element, &shape);
+		write_FE_element_shape(output_file, shape);
 		fprintf(output_file,"\">\n");
 		indent += EXPORT_INDENT_SPACES;
 		if (get_FE_element_number_of_faces(element, &number_of_faces) &&
