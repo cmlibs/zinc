@@ -1,5 +1,20 @@
-/*******************************************************************************
-FILE : photoface_cmiss.h
+
+/****************************************************************************
+ The functions that interface Photoface to cmiss.  All functions have an
+ integer return code - zero is success, non-zero is failure.
+ LAST MODIFIED : 26 February 2002
+
+File: photoface_cmiss.h
+Project: Jetson
+Created: August 17, 2001
+Author: David Bullivant and Shane Blackett (N.Z.)
+
+* dynamic info (modified by source code control system) *
+Last changed
+$Author$ <- Last changed by
+$Date$ <- Date of change
+$Name$ 
+$Revision$ <- Revision number
 
 LAST MODIFIED : 21 June 2001
 
@@ -46,6 +61,8 @@ Return codes for the interface functions.
 #define PF_WRITE_FILE_FAILURE_RC ((int)-7)
 #define PF_OPEN_FILE_FAILURE_RC ((int)-8)
 #define PF_NULL_POINTER_RC ((int)-9)
+#define PF_DB_READ_FAILURE_RC ((int)-10)
+#define PF_DB_WRITE_FAILURE_RC ((int)-11)
 
 /*
 Global types
@@ -366,3 +383,28 @@ Macros
 #endif /* defined (MEMORY_CHECKING) */
 
 #endif /* !defined (PHOTOFACE_CMISS_H) */
+
+/*
+$Log$
+Revision 1.11  2002/02/26 03:56:24  blackett
+Merging with Bens version of this file
+
+Revision 1.1  2001/12/20 23:55:58  blackett
+Implemented the use of the pf_setup state flag and the pf_get_error_message function.
+
+Revision 1.5  2001/10/26 21:47:48  bdawson
+Completely re-did error messages
+
+Revision 1.4  2001/10/18 18:15:21  bdawson
+interLin, photoface_cmiss.h: free arrays passed by CMISS interface to stop leaks. PFeyeteeth: new logic for pupils
+
+Revision 1.3  2001/10/16 16:52:06  bdawson
+Added return of error messages through the database so can see errors in release mode
+
+Revision 1.2  2001/09/27 17:15:47  bdawson
+Put in Shane's hack for hair alpha mask.  Updated to new lib
+
+Revision 1.1  2001/08/17 18:15:24  APogrebnyak
+Initial CVS revision.
+
+*/
