@@ -1853,7 +1853,7 @@ dialog in existence, then bring it to the front, otherwise create new one.
 #if defined (MIRAGE)
 					/* read EM basis */
 					em_object=(struct EM_Object *)NULL;
-					if (EM_read_basis(basis_file_name,&em_object))
+					if (EM_read_basis(basis_file_name,&em_object,(int *)NULL,0))
 					{
 						number_of_nodes=EM_number_of_nodes(em_object);
 						number_of_modes=EM_number_of_modes(em_object);

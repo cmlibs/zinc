@@ -179,18 +179,23 @@ reference offset.
 	return( em_object->mode_one_std );
 }
 
-struct EM_Object *EM_read_basis(char *filename,struct EM_Object **em_object)
+struct EM_Object *EM_read_basis(char *filename,struct EM_Object **em_object,
+	int *node_index_list, int number_in_node_list)
 /*******************************************************************************
-LAST MODIFIED : 2 March 1998
+LAST MODIFIED : 6 March 2000
 
 DESCRIPTION :
 Read in a file containing a basis function. Creates a EM_Object and returns
 it, deallocating the old em_object and pointing it to the new one.
+The <node_index_list> and <number_in_node_list> are required when the basis_file
+is a version two file as these basis files do not include information about
+the corresponding nodes.
 ==============================================================================*/
 {
 	char buff[sizeof(magic)];
+	char magic2[] = "em basis 2.0\n";
 	FILE *file;
-	int n_modes,n_nodes;
+	int i,j,n_modes,n_nodes;
 	struct EM_Object *ptr;
 
 	ENTER(EM_read_basis);
@@ -200,9 +205,10 @@ it, deallocating the old em_object and pointing it to the new one.
 	{
 		if (file=fopen(filename,"r"))
 		{
-			fread(buff,sizeof(buff),1,file);
+			fread(buff,sizeof(buff) - 1,1,file);
 			if (0==strncmp(buff,magic,sizeof(magic)))
 			{
+				fread(buff,1,1,file); /* The string NULL termination */
 				fread(&n_nodes,sizeof(int),1,file);
 				fread(&n_modes,sizeof(int),1,file);
 				n_nodes=n_nodes/3;
@@ -215,6 +221,53 @@ it, deallocating the old em_object and pointing it to the new one.
 					destroy_EM_Object(em_object);
 					*em_object=ptr;
 					ptr->minimum_nodes=(int *)NULL;
+				}
+				else
+				{
+					display_message(ERROR_MESSAGE,
+						"EM_read_basis.  not enough memory to allocate basis_object");
+				}
+			}
+			else if (strncmp(buff,magic2,sizeof(magic2) - 1) == 0)
+			{
+				/* Comment/title line */
+				fscanf(file, "%*[^\n]%*[\n]");
+				 
+				fscanf(file, "%d%d", &n_nodes, &n_modes);
+				n_nodes=n_nodes/3;
+				if (ptr=create_EM_Object(n_modes,n_nodes))
+				{
+					for (i=0;i<n_modes;i++)
+					{
+						for (j=0;j<n_nodes;j++)
+						{
+							fscanf(file, "%lf", ptr->u + i * n_nodes + j);
+						}
+						ptr->w[i] = 1.0;
+						ptr->v[i * n_modes] = 1.0;
+						for (j=1;j<n_modes;j++)
+						{
+								ptr->v[i * n_modes + j] = 0.0;
+						}
+						ptr->v[i * n_modes + i] = 1.0;
+					}
+					if (number_in_node_list >= n_nodes)
+					{
+						for (i=0;i<n_nodes;i++)
+						{
+							ptr->index[i] = node_index_list[i];
+						}
+						destroy_EM_Object(em_object);
+						*em_object=ptr;
+						ptr->minimum_nodes=(int *)NULL;
+					}
+					else
+					{
+						destroy_EM_Object(&ptr);
+						display_message(ERROR_MESSAGE,
+							"EM_read_basis.  A node index group is required when loading a version 2 basis file to indicate active nodes\n"
+							"   number nodes in basis: %d  number of nodes in index group %d\n", n_nodes, number_in_node_list);
+					}
 				}
 				else
 				{

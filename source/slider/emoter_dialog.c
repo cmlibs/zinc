@@ -1954,12 +1954,12 @@ the marker is incremented.
 	return (return_code);
 } /* read_file_marker */
 
-static int read_weights( int file_modes,
-	int solid_body_modes,
+static int read_weights( int file_modes_index, int file_modes,
+	int solid_body_index, int solid_body_modes,
 	struct read_file_data *file_data,
-	int basis_modes, float *weights )
+	int basis_modes, int total_values, float *weights )
 /*******************************************************************************
-LAST MODIFIED : 8 April 1998
+LAST MODIFIED : 6 March 2000
 
 DESCRIPTION :
 Reads a weight vector from the <file>.
@@ -1970,21 +1970,25 @@ Reads a weight vector from the <file>.
 
 	ENTER(read_weights);
 
-	for ( j = 0 ; j < basis_modes + solid_body_modes ; j++ )
-	{
-		if ( j < file_modes + solid_body_modes )
-		{
-			read_file_float(file_data, &weight );
-			weights[j] = weight;
-		}
-		else
-		{
-			weights[j] = 0;
-		}
-	}
-	while ( j < file_modes + solid_body_modes )
+	for ( j = 0 ; j < total_values ; j++ )
 	{
 		read_file_float(file_data, &weight );
+		if (solid_body_modes && (j >= solid_body_index) &&
+			(j < solid_body_index + solid_body_modes))
+		{
+			weights[j - solid_body_index] = weight;
+		}
+		if (file_modes && (j >= file_modes_index) &&
+			(j < file_modes_index + file_modes) && 
+			(j < file_modes_index + basis_modes))
+		{
+			weights[j - file_modes_index + solid_body_modes] = weight;
+		}
+	}
+	j = file_modes;
+	while (j < basis_modes)
+	{
+		weights[j + solid_body_modes] = 0.0;
 		j++;
 	}
 	LEAVE;
@@ -2446,7 +2450,8 @@ Reads stuff from a file.
 {
 	char warning[300], *name, *temp_filename, temp_string[300], *char_data;
 	float *shape_vector,total_time;
-	int i, j, n_modes, return_code;
+	int face_index, face_values, header, i, index, j, n_modes, return_code,
+		solid_body_index, values;
 	unsigned int integer_data;
 	struct read_file_data *file_data;
 	struct Emoter_combine_slider *combine_slider, **new_combine_sliders;
@@ -2642,29 +2647,97 @@ Reads stuff from a file.
 					}
 					return_code = 1;
 				}
-				else
+				else 
 				{
-					/* Drop the marker if it is there, otherwise assume mode data anyway */
-					read_file_marker(file_data, "MODE_DATA");
-					if ( read_file_marker(file_data, "SOLID_BODY_MOTION"))
+					/* Try version 2 */
+					if (read_file_marker(file_data, "em"))
 					{
-						slider->solid_body_motion = SOLID_BODY_MODES;
+						if (read_file_marker(file_data, "sequence") &&
+							!strcmp(file_data->current_token, "2.0"))
+						{
+							/* Comment/title line */
+							fscanf(file_data->file, "%*[^\n]%*[\n]");
+							
+							read_file_next_token(file_data);
+							header = 1;
+							index = 0;
+							face_index = 0;
+							face_values = 0;
+							while (header)
+							{
+								if (read_file_marker(file_data, "face"))
+								{
+									face_index = index;
+									read_file_int(file_data, &face_values);
+									index = index + face_values;
+								}
+								else if (read_file_marker(file_data, "head"))
+								{
+									solid_body_index = index;
+									read_file_int(file_data, &values);
+									slider->solid_body_motion = values;
+									index = index + values;
+								}
+								else if (read_file_marker(file_data, "eyes")
+									|| read_file_marker(file_data, "jaw"))
+								{
+									read_file_int(file_data, &values);
+									index = index + values;
+								}
+								else
+								{
+									header = 0;
+								}
+							}
+							values = index;
+							n_modes = face_values;
+							return_code = 1;
+						}
+						else
+						{
+							display_message(ERROR_MESSAGE,
+								"read_emoter_slider_file.  Unknown em file type");
+							return_code = 0;						
+						}
 					}
 					else
 					{
-						slider->solid_body_motion = 0;
-					}
-					read_file_int(file_data, &n_modes);
-					if ( no_confirm || (shared->number_of_modes == n_modes))
-					{
+						/* Drop the marker if it is there, otherwise assume mode data anyway */
+						read_file_marker(file_data, "MODE_DATA");
+						if ( read_file_marker(file_data, "SOLID_BODY_MOTION"))
+						{
+							slider->solid_body_motion = SOLID_BODY_MODES;
+							solid_body_index = 0;
+							read_file_int(file_data, &n_modes);
+							face_values = n_modes;
+							face_index = SOLID_BODY_MODES;
+							values = SOLID_BODY_MODES + n_modes;
+						}
+						else
+						{
+							solid_body_index = 0;
+							slider->solid_body_motion = 0;
+							read_file_int(file_data, &n_modes);
+							/* All the values are the face modes */
+							face_values = n_modes;
+							face_index = 0;
+							values = n_modes;
+						}
 						return_code = 1;
 					}
-					else
+					if (return_code)
 					{
-						sprintf(warning, "The number of modes in file %s is %d which is not the \nsame as the basis file which has %d modes.  Do you want to load this file anyway?",
-							filename, n_modes, shared->number_of_modes );
-						return_code = confirmation_warning_ok_cancel("Emotionator warning",
-							warning, emoter_dialog->shell, shared->user_interface );
+						if (no_confirm || (shared->number_of_modes == n_modes))
+						{
+							return_code = 1;
+						}
+						else
+						{
+							sprintf(warning, "The number of modes in file %s is %d which is not the \nsame as the basis file which has %d modes.  Do you want to load this file anyway?",
+								filename, n_modes, shared->number_of_modes );
+							return_code = confirmation_warning_ok_cancel("Emotionator warning",
+								warning, emoter_dialog->shell, shared->user_interface );
+						}
 					}
 					if ( return_code )
 					{
@@ -2707,8 +2780,9 @@ Reads stuff from a file.
 										*end_time = *start_time;
 										Control_curve_set_parameter( emoter_curve,
 											/*element_no*/1,/*local_node_no*/0,	*start_time);
-										read_weights( n_modes, slider->solid_body_motion, file_data,
-											shared->number_of_modes, shape_vector );
+										read_weights( face_index, n_modes, solid_body_index, 
+											slider->solid_body_motion, file_data, 
+											shared->number_of_modes, values, shape_vector);
 										Control_curve_set_node_values( emoter_curve,
 											1, 0, shape_vector);
 										if ( !read_file_eof_marker(file_data, "END_MODE_DATA"))
@@ -2720,7 +2794,9 @@ Reads stuff from a file.
 												read_file_string(file_data, temp_string);
 												read_file_float(file_data, end_time);
 											}
-											read_weights( n_modes, slider->solid_body_motion, file_data, shared->number_of_modes, shape_vector );
+											read_weights( face_index, n_modes, solid_body_index, 
+												slider->solid_body_motion, file_data, 
+												shared->number_of_modes, values, shape_vector);
 										}
 										Control_curve_set_parameter( emoter_curve,
 											/*element_no*/1,/*local_node_no*/1,	total_time );
@@ -2763,8 +2839,9 @@ Reads stuff from a file.
 											total_time += 1.0;
 											Control_curve_set_parameter( emoter_curve,
 												/*element_no*/i,/*local_node_no*/1,	total_time );
-											read_weights( n_modes, slider->solid_body_motion, file_data,
-												shared->number_of_modes, shape_vector );
+											read_weights( face_index, n_modes, solid_body_index, 
+												slider->solid_body_motion, file_data, 
+												shared->number_of_modes, values, shape_vector);
 											Control_curve_set_node_values( emoter_curve,
 												i, 1, shape_vector);
 											i++;
@@ -5515,6 +5592,54 @@ a time.  This implementation may be changed later.
 	return (return_code);
 } /* bring_up_emoter_dialog */
 
+struct Index_list_data
+{
+	int number_of_index_nodes;
+	int maximum_index_nodes;
+	int *index_nodes;
+}; /* struct Index_list_data */
+
+static int add_FE_node_number_to_list(struct FE_node *node,
+	void *index_list_data_void)
+/*******************************************************************************
+LAST MODIFIED : 6 March 2000
+
+DESCRIPTION :
+==============================================================================*/
+{
+	int return_code;
+	struct Index_list_data *index_list_data;
+
+	ENTER(add_FE_node_number_to_list);
+	if (node && (index_list_data = 
+		(struct Index_list_data *)index_list_data_void))
+	{
+		if (index_list_data->number_of_index_nodes < 
+			index_list_data->maximum_index_nodes)
+		{
+			index_list_data->index_nodes[index_list_data->number_of_index_nodes] =
+				get_FE_node_cm_node_identifier(node);
+			index_list_data->number_of_index_nodes++;
+			return_code = 1;
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,
+				"add_FE_node_number_to_list.  Too many nodes for memory allocated.");
+			return_code=0;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"add_FE_node_number_to_list.  Invalid arguments");
+		return_code=0;
+	}
+	
+	LEAVE;
+
+	return (return_code);
+} /* add_FE_node_number_to_list */
 /*
 Global functions
 ----------------
@@ -5522,7 +5647,7 @@ Global functions
 int gfx_create_emoter(struct Parse_state *state,void *dummy_to_be_modified,
 	void *create_emoter_slider_data_void)
 /*******************************************************************************
-LAST MODIFIED : 6 September 1999
+LAST MODIFIED : 6 March 2000
 
 DESCRIPTION :
 Executes a GFX CREATE EMOTER command.  If there is a emoter dialog
@@ -5530,8 +5655,11 @@ in existence, then bring it to the front, otherwise create new one.
 ==============================================================================*/
 {
 	char *basis_file_name, minimum_nodeset_flag;
-	int i,number_of_modes,number_of_nodes,return_code;
+	int i,*index_nodes,number_of_modes,number_of_nodes,number_of_index_nodes,
+		return_code;
 	struct Create_emoter_slider_data *create_emoter_slider_data;
+	struct GROUP(FE_node) *node_group;
+	struct Index_list_data index_list_data;
 	struct MANAGER(FE_node) *node_manager;
 	struct Shared_emoter_slider_data *shared_emoter_slider_data;
 	struct EM_Object *em_object;
@@ -5539,6 +5667,7 @@ in existence, then bring it to the front, otherwise create new one.
 	{
 		{"minimum_nodeset",NULL,NULL,set_char_flag},
 		{"basis",NULL,(void *)1,set_name},
+		{"ngroup",NULL,NULL,set_FE_node_group},
 		{NULL,NULL,NULL,set_name}
 	};
 
@@ -5556,11 +5685,17 @@ in existence, then bring it to the front, otherwise create new one.
 		(create_emoter_slider_data->control_curve_manager)&&
 		(create_emoter_slider_data->execute_command))
 	{
+		index_nodes = (int *)NULL;
+		number_of_index_nodes = 0;
 		minimum_nodeset_flag = 0;
 		basis_file_name = (char *)NULL;
+		node_group = (struct GROUP(FE_node) *) NULL;
 		(option_table[0]).to_be_modified = &minimum_nodeset_flag;
 		(option_table[1]).to_be_modified = &basis_file_name;
-		(option_table[2]).to_be_modified = &basis_file_name;
+		(option_table[2]).to_be_modified = &node_group;
+		(option_table[2]).user_data=
+			create_emoter_slider_data->node_group_manager;
+		(option_table[3]).to_be_modified = &basis_file_name;
 		return_code=process_multiple_options(state,option_table);
 		if (return_code)
 		{
@@ -5580,7 +5715,31 @@ in existence, then bring it to the front, otherwise create new one.
 			if (return_code)
 			{
 				em_object=(struct EM_Object *)NULL;
-				if (EM_read_basis(basis_file_name,&em_object))
+				if (node_group)
+				{
+					number_of_index_nodes = NUMBER_IN_GROUP(FE_node)(node_group);
+					if (ALLOCATE(index_nodes, int, number_of_index_nodes))
+					{
+						index_list_data.number_of_index_nodes = 0;
+						index_list_data.maximum_index_nodes = number_of_index_nodes;
+						index_list_data.index_nodes = index_nodes;
+						FOR_EACH_OBJECT_IN_GROUP(FE_node)(add_FE_node_number_to_list,
+							(void *)&index_list_data, node_group);
+						if (index_list_data.number_of_index_nodes != 
+							number_of_index_nodes)
+						{
+							display_message(ERROR_MESSAGE,
+								"gfx_create_emoter.  Inconsistent index node group counts");
+							number_of_index_nodes = index_list_data.number_of_index_nodes;
+						}
+					}
+					else
+					{
+						number_of_index_nodes = 0;
+					}
+				}
+				if (EM_read_basis(basis_file_name,&em_object,index_nodes,
+					number_of_index_nodes))
 				{
 					number_of_nodes=EM_number_of_nodes(em_object);
 					number_of_modes=EM_number_of_modes(em_object);
@@ -5683,7 +5842,15 @@ in existence, then bring it to the front, otherwise create new one.
 					display_message(ERROR_MESSAGE,"Could not read %s",basis_file_name);
 					return_code=0;
 				}
+				if (index_nodes)
+				{
+					DEALLOCATE(index_nodes);
+				}
 			}
+		}
+		if (node_group)
+		{
+			DEACCESS(GROUP(FE_node))(&node_group);
 		}
 	}
 	else
