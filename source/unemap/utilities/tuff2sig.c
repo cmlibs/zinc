@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : tuff2sig.c
 
-LAST MODIFIED : 7 December 2001
+LAST MODIFIED : 20 May 2002
 
 DESCRIPTION :
 Converts TUFF (Telefactor Universal File Format, Beehive 7) files to a unemap
@@ -69,6 +69,11 @@ The referential and differential files will have the same block diagram.
 #include "general/debug.h"
 #include "general/myio.h"
 #include "unemap/rig.h"
+
+/* Xm/Xm.h, which is included by unemap/rig.h ->
+	finite_element/finite_element_region.h -> general/callback.h defines Status to
+	be int.  This is not appropriate here */
+#undef Status
 
 /*
 Constants
