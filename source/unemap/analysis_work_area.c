@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : analysis_work_area.c
 
-LAST MODIFIED : 14 June 2001
+LAST MODIFIED : 19 June 2001
 
 DESCRIPTION :
 ???DB.  Have yet to tie event objective and preprocessor into the event times
@@ -16397,7 +16397,7 @@ int create_analysis_work_area(struct Analysis_work_area *analysis,
 	struct User_interface *user_interface, struct Time_keeper *time_keeper,
 	struct Unemap_package *package)
 /*******************************************************************************
-LAST MODIFIED : 1 April 2001
+LAST MODIFIED : 18 June 2001
 
 DESCRIPTION :
 Creates the windows associated with the analysis work area.
@@ -16543,6 +16543,15 @@ Creates the windows associated with the analysis work area.
 		Time_object_add_callback(analysis->datum_time_object,
 			analysis_datum_time_update_callback,(void *)analysis);
 		analysis->search_interval_divisions=(int *)NULL;
+    /* DPN 18 June 2001 - Initialise the file selection boxes */
+    analysis->read_signal_file_data = (struct File_open_data *)NULL;
+    analysis->event_times_file_data = (struct File_open_data *)NULL;
+    analysis->read_bard_electrode_data = (struct File_open_data *)NULL;
+    analysis->read_beekeeper_eeg_fil_data = (struct File_open_data *)NULL;
+    analysis->read_cardiomapp_electr_data = (struct File_open_data *)NULL;
+    analysis->read_neurosoft_electro_data = (struct File_open_data *)NULL;
+    analysis->write_signal_file_data = (struct File_open_data *)NULL;
+    analysis->overlay_signal_file_data = (struct File_open_data *)NULL;
 		/* retrieve the settings */
 		XtVaGetApplicationResources(user_interface->application_shell,analysis,
 			resources,XtNumber(resources),NULL);
@@ -16585,31 +16594,44 @@ Creates the windows associated with the analysis work area.
 					and passed ? (Reduces modularity ?) */
 			{
 				/* assign and register the identifiers */
+        /* DPN 18 June 2001 - need to keep pointers to all the file selection
+           boxes */
 				identifier_list[0].value=(XtPointer)analysis;
-				identifier_list[1].value=(XtPointer)create_File_open_data(
+        analysis->read_signal_file_data = create_File_open_data(
 					signal_file_extension_read,REGULAR,analysis_read_signal_file,
 					(void *)analysis,0,user_interface);
-				identifier_list[2].value=(XtPointer)create_File_open_data(
+				identifier_list[1].value=(XtPointer)(analysis->read_signal_file_data);
+        analysis->event_times_file_data = create_File_open_data(
 					analysis->events_file_extension,REGULAR,read_event_times_file,
 					(XtPointer)analysis,0,user_interface);
-				identifier_list[3].value=(XtPointer)create_File_open_data(".ele",
+				identifier_list[2].value=(XtPointer)(analysis->event_times_file_data);
+        analysis->read_bard_electrode_data = create_File_open_data(".ele",
 					REGULAR,analysis_read_bard_electrode_fi,(XtPointer)analysis,0,
 					user_interface);
-				identifier_list[4].value=(XtPointer)create_File_open_data(".eeg",
+				identifier_list[3].value=(XtPointer)(analysis->read_bard_electrode_data);
+        analysis->read_beekeeper_eeg_fil_data = create_File_open_data(".eeg",
 					REGULAR,analysis_read_beekeeper_eeg_fil,(XtPointer)analysis,0,
 					user_interface);
-				identifier_list[5].value=(XtPointer)create_File_open_data(
+				identifier_list[4].value =
+          (XtPointer)(analysis->read_beekeeper_eeg_fil_data);
+        analysis->read_cardiomapp_electr_data = create_File_open_data(
 					configuration_file_extension,REGULAR,analysis_read_cardiomapp_electr,
 					(XtPointer)analysis,0,user_interface);
-				identifier_list[6].value=(XtPointer)create_File_open_data(
+				identifier_list[5].value =
+          (XtPointer)(analysis->read_cardiomapp_electr_data);
+        analysis->read_neurosoft_electro_data = create_File_open_data(
 					configuration_file_extension,REGULAR,analysis_read_neurosoft_electro,
 					(XtPointer)analysis,0,user_interface);
-				identifier_list[7].value=(XtPointer)create_File_open_data(
+				identifier_list[6].value =
+          (XtPointer)(analysis->read_neurosoft_electro_data);
+        analysis->write_signal_file_data = create_File_open_data(
 					signal_file_extension_write,REGULAR,
 					file_analysis_write_signal_file,(XtPointer)analysis,0,user_interface);
-				identifier_list[8].value=(XtPointer)create_File_open_data(
+				identifier_list[7].value=(XtPointer)(analysis->write_signal_file_data);
+        analysis->overlay_signal_file_data = create_File_open_data(
 					signal_file_extension_read,REGULAR,analysis_overlay_signal_file,
 					(void *)analysis,0,user_interface);
+				identifier_list[8].value=(XtPointer)(analysis->overlay_signal_file_data);
 				if (MrmSUCCESS==MrmRegisterNames(identifier_list,
 					XtNumber(identifier_list)))
 					/*???DB.  Using global name table because the analysis and trace
@@ -16686,7 +16708,7 @@ Creates the windows associated with the analysis work area.
 void close_analysis_work_area(Widget widget,
 	XtPointer analysis_work_area,XtPointer call_data)
 /*******************************************************************************
-LAST MODIFIED : 3 January 2000
+LAST MODIFIED : 18 June 2001
 
 DESCRIPTION :
 Closes the windows associated with the analysis work area.
@@ -16743,3 +16765,103 @@ Closes the windows associated with the analysis work area.
 	}
 	LEAVE;
 } /* close_analysis_work_area */
+
+int destroy_analysis_work_area(struct Analysis_work_area *analysis)
+/*******************************************************************************
+LAST MODIFIED : 19 June 2001
+
+DESCRIPTION :
+Frees up the memory associated with the <analysis> work area object given. Does
+NOT deallocate the actual pointer <analysis> and should only be called after a
+call to close_analysis_work_area().
+
+Created by DPN to try and fix up memory leaks when the UnEmap analysis work area
+is used in Cell.
+==============================================================================*/
+{
+  int return_code = 0;
+  struct Analysis_window *window;
+
+  ENTER(destroy_analysis_work_area);
+  if (analysis)
+  {
+    /* destroy all the file selection boxes */
+    if (analysis->read_signal_file_data)
+    {
+      destroy_File_open_data(&(analysis->read_signal_file_data));
+    }
+    if (analysis->event_times_file_data)
+    {
+      destroy_File_open_data(&(analysis->event_times_file_data));
+    }
+    if (analysis->read_bard_electrode_data)
+    {
+      destroy_File_open_data(&(analysis->read_bard_electrode_data));
+    }
+    if (analysis->read_beekeeper_eeg_fil_data)
+    {
+      destroy_File_open_data(&(analysis->read_beekeeper_eeg_fil_data));
+    }
+    if (analysis->read_cardiomapp_electr_data)
+    {
+      destroy_File_open_data(&(analysis->read_cardiomapp_electr_data));
+    }
+    if (analysis->read_neurosoft_electro_data)
+    {
+      destroy_File_open_data(&(analysis->read_neurosoft_electro_data));
+    }
+    if (analysis->write_signal_file_data)
+    {
+      destroy_File_open_data(&(analysis->write_signal_file_data));
+    }
+    if (analysis->overlay_signal_file_data)
+    {
+      destroy_File_open_data(&(analysis->overlay_signal_file_data));
+    }
+    if (window = analysis->window)
+    {
+      if (window->write_times_file_open_data)
+      {
+        destroy_File_open_data(&(window->write_times_file_open_data));
+      }
+      if (window->print_all_signals_data)
+      {
+        destroy_File_open_data(&(window->print_all_signals_data));
+      }
+      if (window->print_selected_signals_data)
+      {
+        destroy_File_open_data(&(window->print_selected_signals_data));
+      }
+    }
+    /* Clear out the rigs */
+    if (analysis->rig)
+    {
+      destroy_Rig(&(analysis->rig));
+    }
+    if (analysis->raw_rig)
+    {
+      destroy_Rig(&(analysis->raw_rig));
+    }
+    /* destroy the signal drawing information */
+    if (analysis->signal_drawing_information)
+    {
+      destroy_Signal_drawing_information(
+        &(analysis->signal_drawing_information));
+    }
+    /* Destroy the shell widget */
+    XtDestroyWidget(analysis->window_shell);
+    /* and stuff */
+    if (analysis->events_file_extension)
+    {
+      DEALLOCATE(analysis->events_file_extension);
+    }
+  }
+  else
+  {
+    display_message(ERROR_MESSAGE,"destroy_analysis_work_area.  "
+      "Invalid argument(s)");
+    return_code = 0;
+  }
+  LEAVE;
+  return(return_code);
+} /* destroy_analysis_work_area */

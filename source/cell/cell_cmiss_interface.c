@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : cell_cmiss_interface.c
 
-LAST MODIFIED : 15 March 2001
+LAST MODIFIED : 11 June 2001
 
 DESCRIPTION :
 Routines for using the Cell_cmiss_interface objects which map Cell_variables
@@ -242,9 +242,9 @@ outside <size>. The final array is returned.
     /* the size of the current array is sufficient */
     new_array = array;
   }
-  if (new_array)
+  if (new_array && name && ALLOCATE(new_array[position-1],char,strlen(name)+1))
   {
-    new_array[position-1] = name;
+    strcpy(new_array[position-1],name);
   }
   LEAVE;
   return(new_array);
@@ -264,6 +264,7 @@ the <cmiss_interface_arrays> object.
   int return_code = 0,size;
   struct Cell_cmiss_interface_arrays *cmiss_interface_arrays;
   struct Cell_cmiss_interface *cmiss_interface;
+  char *name;
 
   ENTER(cmiss_interface_arrays_add_variable);
   if (cell_variable && cmiss_interface_arrays_void &&
@@ -273,6 +274,7 @@ the <cmiss_interface_arrays> object.
     /* get the variable's cmiss interface - if it has one */
     if (cmiss_interface = Cell_variable_get_cmiss_interface(cell_variable))
     {
+      name = Cell_variable_get_name(cell_variable);
       /* and add the variable to the appropriate array */
       switch (cmiss_interface->cmiss_array)
       {
@@ -288,7 +290,7 @@ the <cmiss_interface_arrays> object.
           cmiss_interface_arrays->time_names =
             add_variable_name_to_cmiss_array(
               cmiss_interface_arrays->time_names,&size,
-              Cell_variable_get_name(cell_variable),
+              name,
               cmiss_interface->position);
         } break;
         case STATE:
@@ -308,7 +310,7 @@ the <cmiss_interface_arrays> object.
           cmiss_interface_arrays->y_names =
             add_variable_name_to_cmiss_array(
               cmiss_interface_arrays->y_names,&size,
-              Cell_variable_get_name(cell_variable),
+              name,
               cmiss_interface->position);
           /* special case - need to make DY the same size as Y and intialise */
           size = cmiss_interface_arrays->size_dy;
@@ -321,7 +323,7 @@ the <cmiss_interface_arrays> object.
           cmiss_interface_arrays->dy_names =
             add_variable_name_to_cmiss_array(
               cmiss_interface_arrays->dy_names,&size,
-              Cell_variable_get_name(cell_variable),
+              name,
               cmiss_interface->position);
         } break;
         case DERIVED:
@@ -336,7 +338,7 @@ the <cmiss_interface_arrays> object.
           cmiss_interface_arrays->derived_names =
             add_variable_name_to_cmiss_array(
               cmiss_interface_arrays->derived_names,&size,
-              Cell_variable_get_name(cell_variable),
+              name,
               cmiss_interface->position);
         } break;
         case PARAMETERS:
@@ -351,7 +353,7 @@ the <cmiss_interface_arrays> object.
           cmiss_interface_arrays->parameters_names =
             add_variable_name_to_cmiss_array(
               cmiss_interface_arrays->parameters_names,&size,
-              Cell_variable_get_name(cell_variable),
+              name,
               cmiss_interface->position);
         } break;
         case PROTOCOL:
@@ -366,7 +368,7 @@ the <cmiss_interface_arrays> object.
           cmiss_interface_arrays->protocol_names =
             add_variable_name_to_cmiss_array(
               cmiss_interface_arrays->protocol_names,&size,
-              Cell_variable_get_name(cell_variable),
+              name,
               cmiss_interface->position);
         } break;
         case ARI:
@@ -381,7 +383,7 @@ the <cmiss_interface_arrays> object.
           cmiss_interface_arrays->ari_names =
             add_variable_name_to_cmiss_array(
               cmiss_interface_arrays->ari_names,&size,
-              Cell_variable_get_name(cell_variable),
+              name,
               cmiss_interface->position);
         } break;
         case ARO:
@@ -396,7 +398,7 @@ the <cmiss_interface_arrays> object.
           cmiss_interface_arrays->aro_names =
             add_variable_name_to_cmiss_array(
               cmiss_interface_arrays->aro_names,&size,
-              Cell_variable_get_name(cell_variable),
+              name,
               cmiss_interface->position);
         } break;
         case CONTROL:
@@ -411,7 +413,7 @@ the <cmiss_interface_arrays> object.
           cmiss_interface_arrays->control_names =
             add_variable_name_to_cmiss_array(
               cmiss_interface_arrays->control_names,&size,
-              Cell_variable_get_name(cell_variable),
+              name,
               cmiss_interface->position);
         } break;
         case MODEL:
@@ -426,7 +428,7 @@ the <cmiss_interface_arrays> object.
           cmiss_interface_arrays->model_names =
             add_variable_name_to_cmiss_array(
               cmiss_interface_arrays->model_names,&size,
-              Cell_variable_get_name(cell_variable),
+              name,
               cmiss_interface->position);
         } break;
         case SIZES:
@@ -441,7 +443,7 @@ the <cmiss_interface_arrays> object.
           cmiss_interface_arrays->sizes_names =
             add_variable_name_to_cmiss_array(
               cmiss_interface_arrays->sizes_names,&size,
-              Cell_variable_get_name(cell_variable),
+              name,
               cmiss_interface->position);
         } break;
         case AII:
@@ -456,7 +458,7 @@ the <cmiss_interface_arrays> object.
           cmiss_interface_arrays->aii_names =
             add_variable_name_to_cmiss_array(
               cmiss_interface_arrays->aii_names,&size,
-              Cell_variable_get_name(cell_variable),
+              name,
               cmiss_interface->position);
         } break;
         case AIO:
@@ -471,10 +473,11 @@ the <cmiss_interface_arrays> object.
           cmiss_interface_arrays->aio_names =
             add_variable_name_to_cmiss_array(
               cmiss_interface_arrays->aio_names,&size,
-              Cell_variable_get_name(cell_variable),
+              name,
               cmiss_interface->position);
         } break;
       } /* switch (cmiss_interface->cmiss_array) */
+      if (name) DEALLOCATE(name);
       return_code = 1;
     }
     else

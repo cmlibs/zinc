@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : cell_variable.c
 
-LAST MODIFIED : 15 March 2001
+LAST MODIFIED : 11 June 2001
 
 DESCRIPTION :
 Routines for using the Cell_variable objects
@@ -272,6 +272,14 @@ Destroys a Cell_variable object.
 	{
     if (cell_variable->access_count == 0)
     {
+      if (cell_variable->name)
+      {
+        DEALLOCATE(cell_variable->name);
+      }
+      if (cell_variable->display_name)
+      {
+        DEALLOCATE(cell_variable->display_name);
+      }
       if (cell_variable->cmiss_interface)
       {
         DESTROY(Cell_cmiss_interface)(&(cell_variable->cmiss_interface));

@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : cell_input.c
 
-LAST MODIFIED : 21 April 2001
+LAST MODIFIED : 19 June 2001
 
 DESCRIPTION :
 Input routines for the cell interface.
@@ -385,6 +385,7 @@ element in the DOM tree.
                     "Unable to create exported variables");
                   return_code = 0;
                 }
+                DESTROY(Cell_component)(&subspace_ref_component);
               }
               else
               {
@@ -615,6 +616,7 @@ Sets information in the <cell_calculate> object.
   char *value_string,*model_routine_name,*model_dso_name;
   char *intg_routine_name,*intg_dso_name;
   char *model_dso_path,*intg_dso_path;
+  char *dummy_string;
 
   ENTER(build_calculation_information);
   if (parent && cell_calculate)
@@ -645,27 +647,35 @@ Sets information in the <cell_calculate> object.
             /* Set the time integration parameters */
             if (value_string = XMLParser_get_attribute_value(parent,"tstart"))
             {
-              Cell_calculate_set_start_time_from_string(cell_calculate,
-                value_string);
+              dummy_string =
+                Cell_calculate_set_start_time_from_string(cell_calculate,
+                  value_string);
               free(value_string);
+              DEALLOCATE(dummy_string);
             }
             if (value_string = XMLParser_get_attribute_value(parent,"tend"))
             {
-              Cell_calculate_set_end_time_from_string(cell_calculate,
-                value_string);
+              dummy_string =
+                Cell_calculate_set_end_time_from_string(cell_calculate,
+                  value_string);
               free(value_string);
+              DEALLOCATE(dummy_string);
             }
             if (value_string = XMLParser_get_attribute_value(parent,"dt"))
             {
-              Cell_calculate_set_dt_from_string(cell_calculate,
-                value_string);
+              dummy_string = 
+                Cell_calculate_set_dt_from_string(cell_calculate,
+                  value_string);
               free(value_string);
+              DEALLOCATE(dummy_string);
             }
             if (value_string = XMLParser_get_attribute_value(parent,"tabt"))
             {
-              Cell_calculate_set_tabt_from_string(cell_calculate,
-                value_string);
+              dummy_string = 
+                Cell_calculate_set_tabt_from_string(cell_calculate,
+                  value_string);
               free(value_string);
+              DEALLOCATE(dummy_string);
             }
           }
           else
@@ -1459,7 +1469,7 @@ Returns the display name of the model.
         /* tidy-up */
         if (base_path)
         {
-          DEALLOCATE(base_path);
+          free(base_path);
         }
         /* CRIM_destroy_document(cell_input->crim_document);
          * cell_input->crim_document = (void *)NULL;

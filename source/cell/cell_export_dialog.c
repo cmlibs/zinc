@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : cell_export_dialog.c
 
-LAST MODIFIED : 03 February 2001
+LAST MODIFIED : 18 June 2001
 
 DESCRIPTION :
 The export dialog used to export cell variables to ipcell and ipmatc files
@@ -192,6 +192,7 @@ Callback for the browse button for the ipcell file.
       set_ipcell_cb,(XtPointer)dialog,0,dialog->user_interface))
     {
       open_file_and_write(widget,(XtPointer)file_open_data,call_data);
+      destroy_File_open_data(&file_open_data);
     }
   }
   else
@@ -221,6 +222,7 @@ Callback for the browse button for the ipmatc file.
       set_ipmatc_cb,(XtPointer)dialog,0,dialog->user_interface))
     {
       open_file_and_write(widget,(XtPointer)file_open_data,call_data);
+      destroy_File_open_data(&file_open_data);
     }
   }
   else

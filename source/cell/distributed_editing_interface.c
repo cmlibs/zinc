@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : distributed_editing_interface.c
 
-LAST MODIFIED : 23 April 2001
+LAST MODIFIED : 11 June 2001
 
 DESCRIPTION :
 The interface routines for editing distributed cellular parameters. Only used
@@ -93,15 +93,18 @@ Iterator function for updating Cell variable's from a given element point
   struct Iterator_data *iterator_data;
   struct Computed_field *field;
   char *value_string;
+  char *name;
 
 	ENTER(update_variable_from_element_point);
 	if (cell_variable &&
     (iterator_data = (struct Iterator_data *)iterator_data_void))
 	{
-    if (field = FIND_BY_IDENTIFIER_IN_MANAGER(Computed_field,name)(
-      Cell_variable_get_name(cell_variable),
+    name = Cell_variable_get_name(cell_variable);
+    field = FIND_BY_IDENTIFIER_IN_MANAGER(Computed_field,name)(name,
       Cell_cmgui_interface_get_computed_field_manager(
-        iterator_data->cmgui_interface)))
+        iterator_data->cmgui_interface));
+    if (name) DEALLOCATE(name);
+    if (field)
     {
       if (value_string = Computed_field_evaluate_as_string_in_element(field,
         iterator_data->comp_no,iterator_data->element,iterator_data->xi,
@@ -113,9 +116,10 @@ Iterator function for updating Cell variable's from a given element point
       }
       else
       {
+        name = Cell_variable_get_name(cell_variable);
         display_message(WARNING_MESSAGE,"update_variable_from_element_point.  "
-          "Unable to get a value for the field: %s",
-          Cell_variable_get_name(cell_variable));
+          "Unable to get a value for the field: %s",name);
+        if (name) DEALLOCATE(name);
         return_code = 1;
       }
     }
@@ -672,6 +676,7 @@ graphics/element_point_ranges.c/Field_value_index_ranges_set_grid_values()
 	struct FE_field *fe_field;
   struct Iterator_data_set *iterator_data;
   int component_number;
+  char *name;
 
 	ENTER(set_grid_values_from_variable);
 	if (variable && iterator_data_void &&
@@ -681,13 +686,13 @@ graphics/element_point_ranges.c/Field_value_index_ranges_set_grid_values()
 		(source_element = set_grid_values_data->source_identifier->element) &&
 		set_grid_values_data->destination_identifier &&
 		(destination_element = set_grid_values_data->element_copy) &&
-		set_grid_values_data->destination_element_point_numbers)
+		set_grid_values_data->destination_element_point_numbers &&
+    (name = Cell_variable_get_name(variable)))
 	{
     /* Check that it is a field that we want to modify - only interested in
      * single component fields as there are no multi-component Cell variables??
      */
-    if ((field = FIND_BY_IDENTIFIER_IN_MANAGER(Computed_field,name)(
-      Cell_variable_get_name(variable),
+    if ((field = FIND_BY_IDENTIFIER_IN_MANAGER(Computed_field,name)(name,
       Cell_cmgui_interface_get_computed_field_manager(
         iterator_data->interface->cmgui_interface))) &&
       (number_of_components = Computed_field_get_number_of_components(field)) &&

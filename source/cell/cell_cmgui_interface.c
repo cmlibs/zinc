@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : cell_cmgui_interface.c
 
-LAST MODIFIED : 02 February 2001
+LAST MODIFIED : 19 June 2001
 
 DESCRIPTION :
 Routines for using the Cell_cmgui_interface objects which allow Cell to interact
@@ -94,6 +94,7 @@ Initialise the scene viewer for Cell 3D.
     /* set the background colour to black */
     colour = create_Colour(0.0,0.0,0.0);
     Scene_viewer_set_background_colour(cmgui_interface->scene_viewer,colour);
+    destroy_Colour(&colour);
     /* set the view */
     Scene_viewer_set_lookat_parameters_non_skew(cmgui_interface->scene_viewer,
       0.371067,8.52279,-63.3145,-0.884569,0.135409,0.298719,1,0,0);
@@ -601,7 +602,18 @@ Destroys a Cell_cmgui_interface object.
     {
       DEACCESS(Interactive_tool)(&cmgui_interface->select_tool);
     }
+    if (cmgui_interface->toolbar_widget)
+    {
+      /* By destroying the widget we free up the associated memory in the
+         widget's destroy callback */
+      XtDestroyWidget(cmgui_interface->toolbar_widget);
+    }
+    if (cmgui_interface->scene_viewer)
+    {
+      DESTROY(Scene_viewer)(&cmgui_interface->scene_viewer);
+    }
     DEALLOCATE(*cmgui_interface_address);
+    *cmgui_interface_address = (struct Cell_cmgui_interface *)NULL;
   }
   else
   {

@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : cell_calculate.c
 
-LAST MODIFIED : 07 May 2001
+LAST MODIFIED : 20 June 2001
 
 DESCRIPTION :
 Routines for model calculation
@@ -227,6 +227,10 @@ Destroys all the UnEmap interface value structures.
   if (values && (unemap_interface_value = *values))
   {
     next = unemap_interface_value->next;
+    if (unemap_interface_value->variable_value_address)
+    {
+      DEALLOCATE(unemap_interface_value->variable_value_address);
+    }
     DEALLOCATE(unemap_interface_value);
     *values = (struct Unemap_interface_value *)NULL;
     if (next)
@@ -769,6 +773,10 @@ written to.
                             cell_calculate->tabT,
                             cell_calculate->data_file_name);
                         }
+                        if (variable_unemap_interfaces)
+                        {
+                          DEALLOCATE(variable_unemap_interfaces);
+                        }
                       }
                       else
                       {
@@ -777,6 +785,8 @@ written to.
                           "= %f)",current_time);
                         return_code = 0;
                       }
+                      DEALLOCATE(integer_work);
+                      DEALLOCATE(real_work);
                     }
                     else
                     {

@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : cell_plot.c
 
-LAST MODIFIED : 23 March 2001
+LAST MODIFIED : 11 June 2001
 
 DESCRIPTION :
 The object used to draw plots in Cell.
@@ -1100,6 +1100,7 @@ Adds the given <variable> to the <plot>'s current data sets.
             "Unable to create the data object for the variable: %s",name);
         }
       }
+      DEALLOCATE(name);
     }
     else
     {
@@ -1144,6 +1145,7 @@ Removes the given <variable> from the <plot>'s current data sets.
            should be nothing else ACCESS'ing it ?? */
         REMOVE_OBJECT_FROM_LIST(Cell_plot_data)(data,plot->data_list);
       }
+      DEALLOCATE(name);
     }
     else
     {

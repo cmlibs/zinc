@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : cell_variable_editing_dialog.c
 
-LAST MODIFIED : 14 March 2001
+LAST MODIFIED : 11 June 2001
 
 DESCRIPTION :
 The dialog used for editing variables in Cell.
@@ -457,6 +457,7 @@ Reset button callback for the Cell variable editing dialog
               /* Re-set the text in the value widget */
               XmTextFieldSetString(changed_variable->widget,value_string);
             }
+            DEALLOCATE(value_string);
           }
           temp = changed_variable->next;
           DESTROY(Changed_variable)(&changed_variable);
@@ -960,6 +961,7 @@ appropriate callbacks.
       XmNforeground,user_settings->value_colour,
       XmNuserData,(XtPointer)user_settings,
       NULL);
+    if (value_string) DEALLOCATE(value_string);
     /* Grab the foreground and background colours for later use */
     XtVaGetValues(previous,
       XmNforeground,&(user_settings->value_widget_foreground),

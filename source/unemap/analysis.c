@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : analysis.c
 
-LAST MODIFIED : 18 April 2001
+LAST MODIFIED : 18 June 2001
 
 DESCRIPTION :
 ==============================================================================*/
@@ -2543,7 +2543,7 @@ DESCRIPTION : creates the Signal_drawing_information
 int destroy_Signal_drawing_information(
 	struct Signal_drawing_information **signal_drawing_information_address)
 /*******************************************************************************
-LAST MODIFIED : 12 April 2001
+LAST MODIFIED : 18 June 2001
 
 DESCRIPTION : destroys the Signal_drawing_information
 ==============================================================================*/
@@ -2557,62 +2557,169 @@ DESCRIPTION : destroys the Signal_drawing_information
 		(signal_drawing_information= *signal_drawing_information_address)&&
 		(signal_drawing_information->user_interface))
 	{
-		display=signal_drawing_information->user_interface->display;
-		XFreeGC(display,(signal_drawing_information->graphics_context).
-			accepted_colour);
-		XFreeGC(display,(signal_drawing_information->graphics_context).
-			accepted_colour_text);
-		XFreeGC(display,(signal_drawing_information->graphics_context).
-			axis_colour);
-		XFreeGC(display,(signal_drawing_information->graphics_context).
-			background_drawing_colour);
-		XFreeGC(display,(signal_drawing_information->graphics_context).copy);
-		XFreeGC(display,(signal_drawing_information->graphics_context).
-			datum_colour);
-		XFreeGC(display,(signal_drawing_information->graphics_context).
-			pwave_colour);
-		XFreeGC(display,(signal_drawing_information->graphics_context).
-			qrswave_colour);
-		XFreeGC(display,(signal_drawing_information->graphics_context).
-			twave_colour);
-		XFreeGC(display,(signal_drawing_information->graphics_context).
-			cardiac_interval_colour);
-		XFreeGC(display,(signal_drawing_information->graphics_context).
-			device_name_colour);
-		XFreeGC(display,(signal_drawing_information->graphics_context).
-			highlighted_box_colour);
-		XFreeGC(display,(signal_drawing_information->graphics_context).
-			highlighted_colour);
-		XFreeGC(display,(signal_drawing_information->graphics_context).
-			interval_box_colour);
-		XFreeGC(display,(signal_drawing_information->graphics_context).
-			potential_time_colour);
-		XFreeGC(display,(signal_drawing_information->graphics_context).
-			potential_time_colour_text);
-		XFreeGC(display,(signal_drawing_information->graphics_context).
-			rejected_colour);
-		XFreeGC(display,(signal_drawing_information->graphics_context).
-			rejected_colour_text);
-		XFreeGC(display,(signal_drawing_information->graphics_context).
-			scaling_signal_colour);
-		XFreeGC(display,(signal_drawing_information->graphics_context).
-			signal_accepted_colour);
-		XFreeGC(display,(signal_drawing_information->graphics_context).
-			signal_rejected_colour);
-		XFreeGC(display,(signal_drawing_information->graphics_context).
-			signal_overlay_colour);
-		XFreeGC(display,(signal_drawing_information->graphics_context).
-			signal_undecided_colour);
-		XFreeGC(display,(signal_drawing_information->graphics_context).spectrum);
-		XFreeGC(display,(signal_drawing_information->graphics_context).
-			undecided_colour);
-		XFreeGC(display,(signal_drawing_information->graphics_context).
-			undecided_colour_text);
-		XFreeGC(display,(signal_drawing_information->graphics_context).
-			unhighlighted_colour);
-		XFreeGC(display,(signal_drawing_information->graphics_context).
-			accepted_colour);
-		DEALLOCATE(signal_drawing_information->signal_overlay_colours);
+    /* DPN 18 June 2001 - Need to check things */
+    if (display=signal_drawing_information->user_interface->display)
+    {
+      if ((signal_drawing_information->graphics_context).accepted_colour)
+      {
+        XFreeGC(display,(signal_drawing_information->graphics_context).
+          accepted_colour);
+      }
+      if ((signal_drawing_information->graphics_context).accepted_colour_text)
+      {
+        XFreeGC(display,(signal_drawing_information->graphics_context).
+          accepted_colour_text);
+      }
+      if ((signal_drawing_information->graphics_context).axis_colour)
+      {
+        XFreeGC(display,(signal_drawing_information->graphics_context).
+          axis_colour);
+      }
+      if ((signal_drawing_information->graphics_context).
+        background_drawing_colour)
+      {
+        XFreeGC(display,(signal_drawing_information->graphics_context).
+          background_drawing_colour);
+      }
+      if ((signal_drawing_information->graphics_context).copy)
+      {
+        XFreeGC(display,(signal_drawing_information->graphics_context).copy);
+      }
+      if ((signal_drawing_information->graphics_context).datum_colour)
+      {
+        XFreeGC(display,(signal_drawing_information->graphics_context).
+          datum_colour);
+      }
+      if ((signal_drawing_information->graphics_context).pwave_colour)
+      {
+        XFreeGC(display,(signal_drawing_information->graphics_context).
+          pwave_colour);
+      }
+      if ((signal_drawing_information->graphics_context).qrswave_colour)
+      {
+        XFreeGC(display,(signal_drawing_information->graphics_context).
+          qrswave_colour);
+      }
+      if ((signal_drawing_information->graphics_context).twave_colour)
+      {
+        XFreeGC(display,(signal_drawing_information->graphics_context).
+          twave_colour);
+      }
+      if ((signal_drawing_information->graphics_context).cardiac_interval_colour)
+      {
+        XFreeGC(display,(signal_drawing_information->graphics_context).
+          cardiac_interval_colour);
+      }
+      if ((signal_drawing_information->graphics_context).device_name_colour)
+      {
+        XFreeGC(display,(signal_drawing_information->graphics_context).
+          device_name_colour);
+      }
+      if ((signal_drawing_information->graphics_context).
+        highlighted_box_colour)
+      {
+        XFreeGC(display,(signal_drawing_information->graphics_context).
+          highlighted_box_colour);
+      }
+      if ((signal_drawing_information->graphics_context).
+        highlighted_colour)
+      {
+        XFreeGC(display,(signal_drawing_information->graphics_context).
+          highlighted_colour);
+      }
+      if ((signal_drawing_information->graphics_context).
+        interval_box_colour)
+      {
+        XFreeGC(display,(signal_drawing_information->graphics_context).
+          interval_box_colour);
+      }
+      if ((signal_drawing_information->graphics_context).
+        potential_time_colour)
+      {
+        XFreeGC(display,(signal_drawing_information->graphics_context).
+          potential_time_colour);
+      }
+      if ((signal_drawing_information->graphics_context).
+        potential_time_colour_text)
+      {
+        XFreeGC(display,(signal_drawing_information->graphics_context).
+          potential_time_colour_text);
+      }
+      if ((signal_drawing_information->graphics_context).
+        rejected_colour)
+      {
+        XFreeGC(display,(signal_drawing_information->graphics_context).
+          rejected_colour);
+      }
+      if ((signal_drawing_information->graphics_context).
+        rejected_colour_text)
+      {
+        XFreeGC(display,(signal_drawing_information->graphics_context).
+          rejected_colour_text);
+      }
+      if ((signal_drawing_information->graphics_context).
+        scaling_signal_colour)
+      {
+        XFreeGC(display,(signal_drawing_information->graphics_context).
+          scaling_signal_colour);
+      }
+      if ((signal_drawing_information->graphics_context).
+        signal_accepted_colour)
+      {
+        XFreeGC(display,(signal_drawing_information->graphics_context).
+          signal_accepted_colour);
+      }
+      if ((signal_drawing_information->graphics_context).
+        signal_rejected_colour)
+      {
+        XFreeGC(display,(signal_drawing_information->graphics_context).
+          signal_rejected_colour);
+      }
+      if ((signal_drawing_information->graphics_context).
+        signal_overlay_colour)
+      {
+        XFreeGC(display,(signal_drawing_information->graphics_context).
+          signal_overlay_colour);
+      }
+      if ((signal_drawing_information->graphics_context).
+        signal_undecided_colour)
+      {
+        XFreeGC(display,(signal_drawing_information->graphics_context).
+          signal_undecided_colour);
+      }
+      if ((signal_drawing_information->graphics_context).spectrum)
+      {
+        XFreeGC(display,(signal_drawing_information->graphics_context).spectrum);
+      }
+      if ((signal_drawing_information->graphics_context).
+        undecided_colour)
+      {
+        XFreeGC(display,(signal_drawing_information->graphics_context).
+          undecided_colour);
+      }
+      if ((signal_drawing_information->graphics_context).
+        undecided_colour_text)
+      {
+        XFreeGC(display,(signal_drawing_information->graphics_context).
+          undecided_colour_text);
+      }
+      if ((signal_drawing_information->graphics_context).
+        unhighlighted_colour)
+      {
+        XFreeGC(display,(signal_drawing_information->graphics_context).
+          unhighlighted_colour);
+      }
+      if ((signal_drawing_information->graphics_context).
+        accepted_colour)
+      {
+        XFreeGC(display,(signal_drawing_information->graphics_context).
+          accepted_colour);
+      }
+    }
+    if (signal_drawing_information->signal_overlay_colours)
+    {
+      DEALLOCATE(signal_drawing_information->signal_overlay_colours);
+    }
 		DEALLOCATE(*signal_drawing_information_address);
 		return_code=1;
 	}

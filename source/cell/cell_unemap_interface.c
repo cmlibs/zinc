@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : cell_unemap_interface.c
 
-LAST MODIFIED : 07 May 2001
+LAST MODIFIED : 20 June 2001
 
 DESCRIPTION :
 The interface between Cell and UnEMAP
@@ -12,6 +12,7 @@ The interface between Cell and UnEMAP
 
 #include "cell/cell_unemap_interface.h"
 #include "unemap/analysis_work_area.h"
+#include "user_interface/filedir.h"
 
 /*
 Module objects
@@ -605,7 +606,7 @@ Creates a Cell_unemap_interface object.
               user_interface,time_keeper,
               (struct Unemap_package *)NULL))
             {
-              /* ??? */
+              DEALLOCATE(user_settings);
             }
             else
             {
@@ -659,7 +660,7 @@ Creates a Cell_unemap_interface object.
 int DESTROY(Cell_unemap_interface)(
   struct Cell_unemap_interface **cell_unemap_interface_address)
 /*******************************************************************************
-LAST MODIFIED : 30 October 2000
+LAST MODIFIED : 19 June 2001
 
 DESCRIPTION :
 Destroys a Cell_unemap_interface object.
@@ -672,12 +673,21 @@ Destroys a Cell_unemap_interface object.
 	if (cell_unemap_interface_address &&
     (cell_unemap_interface = *cell_unemap_interface_address))
 	{
+    /* Make sure everything is cleared first */
+    Cell_unemap_interface_clear_analysis_work_area(cell_unemap_interface);
+    /* Then destroy the UnEmap analysis work area */
     if (cell_unemap_interface->analysis_work_area)
     {
-      /* ??? Really should have a proper destroy function ??? */
       close_analysis_work_area((Widget)NULL,
         (XtPointer)(cell_unemap_interface->analysis_work_area),(XtPointer)NULL);
+      destroy_analysis_work_area(cell_unemap_interface->analysis_work_area);
       DEALLOCATE(cell_unemap_interface->analysis_work_area);
+    }
+    /* And get rid of the saved rigs */
+    if (cell_unemap_interface->saved_rigs)
+    {
+      /* All the actual rigs should already be destroyed... */
+      DEALLOCATE(cell_unemap_interface->saved_rigs);
     }
     DEALLOCATE(*cell_unemap_interface_address);
     *cell_unemap_interface_address = (struct Cell_unemap_interface *)NULL;
@@ -1175,6 +1185,8 @@ Clears the analysis work area and destroys all the signals associated with it.
   struct Analysis_work_area *analysis;
   int i,number_of_saved_rigs;
   struct Rig **saved_rigs;
+  struct Device *device;
+  struct Signal_buffer *buffer;
 
   ENTER(Cell_unemap_interface_clear_analysis_work_area);
   if (cell_unemap_interface &&
@@ -1194,6 +1206,11 @@ Clears the analysis work area and destroys all the signals associated with it.
     cell_unemap_interface->saved_rigs = (struct Rig **)NULL;
     if (analysis->rig)
     {
+      if ((device = *(analysis->rig->devices)) &&
+        (buffer = get_Device_signal_buffer(device)))
+      {
+        destroy_Signal_buffer(&buffer);
+      }
       destroy_Rig(&(analysis->rig));
       analysis->rig = (struct Rig *)NULL;
       analysis->datum=0;
@@ -1223,7 +1240,7 @@ int Cell_unemap_interface_update_analysis_work_area(
 LAST MODIFIED : 05 November 2000
 
 DESCRIPTION :
-updates the analsysis work area widgets.
+updates the analysis work area widgets.
 ==============================================================================*/
 {
   int return_code = 0;

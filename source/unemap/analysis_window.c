@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : analysis_window.c
 
-LAST MODIFIED : 23 February 2001
+LAST MODIFIED : 18 June 2001
 
 DESCRIPTION :
 ===========================================================================*/
@@ -4402,12 +4402,16 @@ returned.
 					/* assign and register the identifiers */
 					identifier_list[0].value=(XtPointer)analysis;
 					identifier_list[1].value=(XtPointer)identifying_colour;
-					identifier_list[2].value=(XtPointer)create_File_open_data(
+          /* DPN 18 June 2001 - Keep a pointer to the file selection boxes */
+          analysis->print_all_signals_data = create_File_open_data(
 						postscript_file_extension,REGULAR,print_all_signals,
 						(XtPointer)analysis,1,user_interface);
-					identifier_list[3].value=(XtPointer)create_File_open_data(
+					identifier_list[2].value=(XtPointer)(analysis->print_all_signals_data);
+          analysis->print_selected_signals_data = create_File_open_data(
 						postscript_file_extension,REGULAR,print_selected_signals,
 						(XtPointer)analysis,1,user_interface);
+					identifier_list[3].value =
+            (XtPointer)(analysis->print_selected_signals_data);
 					if (MrmSUCCESS==MrmRegisterNamesInHierarchy(analysis_window_hierarchy,
 						identifier_list,XtNumber(identifier_list)))
 					{

@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : analysis_work_area.h
 
-LAST MODIFIED : 11 February 2000
+LAST MODIFIED : 19 June 2001
 
 DESCRIPTION :
 ==============================================================================*/
@@ -28,7 +28,7 @@ Global types
 */
 struct Analysis_work_area
 /*******************************************************************************
-LAST MODIFIED : 18 April 2001
+LAST MODIFIED : 18 June 2001
 
 DESCRIPTION :
 ==============================================================================*/
@@ -86,6 +86,16 @@ DESCRIPTION :
 		parts of the analysis work area but is not input to a timekeeper */
 	struct Time_object *datum_time_object;
 	struct Unemap_package *unemap_package;
+  /* DPN 18 June 2001 - Need to keep pointers to file selection boxes to be
+     able to destroy them */
+  struct File_open_data *read_signal_file_data;
+  struct File_open_data *event_times_file_data;
+  struct File_open_data *read_bard_electrode_data;
+  struct File_open_data *read_beekeeper_eeg_fil_data;
+  struct File_open_data *read_cardiomapp_electr_data;
+  struct File_open_data *read_neurosoft_electro_data;
+  struct File_open_data *write_signal_file_data;
+  struct File_open_data *overlay_signal_file_data;
 }; /* struct Analysis_work_area */
 
 /*
@@ -219,6 +229,19 @@ LAST MODIFIED : 21 June 1997
 
 DESCRIPTION :
 Closes the windows associated with the analysis work area.
+==============================================================================*/
+
+int destroy_analysis_work_area(struct Analysis_work_area *analysis);
+/*******************************************************************************
+LAST MODIFIED : 19 June 2001
+
+DESCRIPTION :
+Frees up the memory associated with the <analysis> work area object given. Does
+NOT deallocate the actual pointer <analysis> and should only be called after a
+call to close_analysis_work_area().
+
+Created by DPN to try and fix up memory leaks when the UnEmap analysis work area
+is used in Cell.
 ==============================================================================*/
 
 #endif

@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : analysis_window.h
 
-LAST MODIFIED :  23 February 2001
+LAST MODIFIED : 18 June 2001
 
 DESCRIPTION :
 ==============================================================================*/
@@ -138,7 +138,7 @@ The area of the analysis window where the interval is drawn.
 
 struct Analysis_window
 /*******************************************************************************
-LAST MODIFIED : 11 February 2000
+LAST MODIFIED : 18 June 2001
 
 DESCRIPTION :
 The analysis window object.
@@ -202,6 +202,9 @@ The analysis window object.
 #if defined (UNEMAP_USE_NODES)
 	struct FE_node_order_info *rig_node_order_info;
 #endif
+  /* DPN 18 June 2001 - Need to keep a pointer to the file selection boxes */
+  struct File_open_data *print_all_signals_data;
+  struct File_open_data *print_selected_signals_data;
 }; /* struct Analysis_window */
 
 enum Analysis_window_update_flags

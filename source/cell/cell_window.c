@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : cell_window.c
 
-LAST MODIFIED : 01 February 2001
+LAST MODIFIED : 18 June 2001
 
 DESCRIPTION :
 The Cell Interface main window.
@@ -51,6 +51,10 @@ The Cell Interface main window structure.
   Widget toolbar_form;
   /* The export to CMISS button */
   Widget export_button;
+  /* File dialogs */
+  struct File_open_data *model_file_open_data;
+  struct File_open_data *model_file_save_data;
+  struct File_open_data *ipcell_file_save_data;
 }; /* struct Cell_window */
 
 /*
@@ -544,7 +548,7 @@ struct Cell_window *CREATE(Cell_window)(
   struct User_interface *user_interface,
   XtCallbackProc exit_callback)
 /*******************************************************************************
-LAST MODIFIED : 31 January 2001
+LAST MODIFIED : 18 June 2001
 
 DESCRIPTION :
 Creates the Cell interface main window.
@@ -553,9 +557,6 @@ Creates the Cell interface main window.
   Atom WM_DELETE_WINDOW;
 	MrmType cell_window_class;
   struct Cell_window *cell_window;
-  struct File_open_data *model_file_open_data;
-  struct File_open_data *model_file_save_data;
-  struct File_open_data *ipcell_file_save_data;
   static MrmRegisterArg callback_list[] = {
     {"exit_callback",(XtPointer)NULL},
     {"close_model_callback",(XtPointer)close_model_cb},
@@ -603,6 +604,9 @@ Creates the Cell interface main window.
         cell_window->scene_form = (Widget)NULL;
         cell_window->toolbar_form = (Widget)NULL;
         cell_window->export_button = (Widget)NULL;
+        cell_window->model_file_open_data = (struct File_open_data *)NULL;
+        cell_window->model_file_save_data = (struct File_open_data *)NULL;
+        cell_window->ipcell_file_save_data = (struct File_open_data *)NULL;
         if (cell_window->shell = XtVaCreatePopupShell("cell_window_shell",
           xmDialogShellWidgetClass,user_interface->application_shell,
 					XmNdeleteResponse,XmDO_NOTHING,
@@ -629,33 +633,39 @@ Creates the Cell interface main window.
             /* the cell window object */
             identifier_list[0].value = (XtPointer)cell_window;
             /* the model file open data object */
-            if (model_file_open_data = create_File_open_data(".cell.xml",
+            if (cell_window->model_file_open_data =
+              create_File_open_data(".cell.xml",
               REGULAR,model_file_open_cb,(XtPointer)cell_window,0,
               user_interface))
             {
-              identifier_list[1].value = (XtPointer)model_file_open_data;
+              identifier_list[1].value =
+                (XtPointer)(cell_window->model_file_open_data);
             }
             else
             {
               identifier_list[1].value = (XtPointer)NULL;
             }
             /* the model file save data object */
-            if (model_file_save_data = create_File_open_data(".cell.xml",
+            if (cell_window->model_file_save_data =
+              create_File_open_data(".cell.xml",
               REGULAR,model_file_save_cb,(XtPointer)cell_window,0,
               user_interface))
             {
-              identifier_list[2].value = (XtPointer)model_file_save_data;
+              identifier_list[2].value =
+                (XtPointer)(cell_window->model_file_save_data);
             }
             else
             {
               identifier_list[2].value = (XtPointer)NULL;
             }
             /* the ipcell file save data object */
-            if (ipcell_file_save_data = create_File_open_data(".ipcell",
+            if (cell_window->ipcell_file_save_data =
+              create_File_open_data(".ipcell",
               REGULAR,ipcell_file_save_cb,(XtPointer)cell_window,0,
               user_interface))
             {
-              identifier_list[3].value = (XtPointer)ipcell_file_save_data;
+              identifier_list[3].value =
+                (XtPointer)(cell_window->ipcell_file_save_data);
             }
             else
             {
@@ -755,7 +765,7 @@ Creates the Cell interface main window.
 
 int DESTROY(Cell_window)(struct Cell_window **cell_window_address)
 /*******************************************************************************
-LAST MODIFIED : 18 October 2000
+LAST MODIFIED : 18 June 2001
 
 DESCRIPTION :
 Destroys the Cell_window object.
@@ -766,10 +776,28 @@ Destroys the Cell_window object.
   ENTER(DESTROY(Cell_window));
   if (cell_window_address && (cell_window = *cell_window_address))
 	{
+    /* Destroy the file selection dialogs */
+    if (cell_window->model_file_open_data)
+    {
+      destroy_File_open_data(&(cell_window->model_file_open_data));
+    }
+    if (cell_window->model_file_save_data)
+    {
+      destroy_File_open_data(&(cell_window->model_file_save_data));
+    }
+    if (cell_window->ipcell_file_save_data)
+    {
+      destroy_File_open_data(&(cell_window->ipcell_file_save_data));
+    }
     /* make sure the window isn't currently being displayed */
     if (cell_window->shell)
     {
       XtPopdown(cell_window->shell);
+      /* remove the dialog from the shell list */
+      destroy_Shell_list_item_from_shell(&(cell_window->shell),
+        cell_window->user_interface);
+      /* destroying the shell should destroy all the children */
+      /*XtDestroyWidget(cell_window->shell);*/
     }
 		DEALLOCATE(*cell_window_address);
 		return_code=1;

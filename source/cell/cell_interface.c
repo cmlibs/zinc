@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : cell_interface.c
 
-LAST MODIFIED : 07 May 2001
+LAST MODIFIED : 19 June 2001
 
 DESCRIPTION :
 The Cell Interface.
@@ -503,11 +503,13 @@ Reads in a Cell model. If no <filename> is given, then prompts for a file name.
             {
               sprintf(title,"Cell - %s",display_name);
               Cell_window_set_title_bar(cell_interface->window,title);
+              DEALLOCATE(title);
             }
             else
             {
               Cell_window_set_title_bar(cell_interface->window,display_name);
             }
+            DEALLOCATE(display_name);
           }
           else
           {

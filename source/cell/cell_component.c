@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : cell_component.c
 
-LAST MODIFIED : 04 April 2001
+LAST MODIFIED : 19 June 2001
 
 DESCRIPTION :
 Routines for using the Cell_component objects
@@ -277,6 +277,14 @@ Destroys a Cell_component object.
           (cell_component->children_list);
         /* and destroy the list */
         DESTROY(LIST(Cell_component))(&(cell_component->children_list));
+      }
+      if (cell_component->name)
+      {
+        DEALLOCATE(cell_component->name);
+      }
+      if (cell_component->display_name)
+      {
+        DEALLOCATE(cell_component->display_name);
       }
       DEALLOCATE(*cell_component_address);
       *cell_component_address = (struct Cell_component *)NULL;
