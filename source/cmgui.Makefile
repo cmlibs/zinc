@@ -850,6 +850,9 @@ clobber : clean
 	-rm $(BIN_PATH)/Target
 
 depend :
+	if [ ! -d $(dir $(DEPENDFILE)) ]; then \
+		mkdir -p $(dir $(DEPENDFILE)); \
+	fi
 	echo > $(DEPENDFILE)
 	(makedepend -f $(DEPENDFILE) -o.o -Y -- $(ALL_FLAGS) -- cmgui.c 2> $(DEPENDFILE).tmp)
 	(makedepend -f $(DEPENDFILE) -o.o -Y -a -- $(ALL_FLAGS) -- $(SRCS_1) 2>> $(DEPENDFILE).tmp)
