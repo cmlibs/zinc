@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : scene.h
 
-LAST MODIFIED : 15 May 2000
+LAST MODIFIED : 18 May 2000
 
 DESCRIPTION :
 Structure for storing the collections of objects that make up a 3-D graphical
@@ -853,6 +853,15 @@ arguments are not NULL, they are filled with the appropriate information
 pertaining to the nearest element point.
 The returned Element_point_ranges structure should be used or destroyed by the
 calling function.
+==============================================================================*/
+
+struct LIST(Element_point_ranges) *Scene_picked_object_list_get_picked_element_points(
+	struct LIST(Scene_picked_object) *scene_picked_object_list);
+/*******************************************************************************
+LAST MODIFIED : 18 May 2000
+
+DESCRIPTION :
+Returns the list of all element_points in the <scene_picked_object_list>.
 ==============================================================================*/
 
 struct FE_node *Scene_picked_object_list_get_nearest_node(

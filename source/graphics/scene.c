@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : scene.c
 
-LAST MODIFIED : 15 May 2000
+LAST MODIFIED : 18 May 2000
 
 DESCRIPTION :
 Structure for storing the collections of objects that make up a 3-D graphical
@@ -1892,9 +1892,8 @@ and destroy it once returned.
 				(GT_ELEMENT_SETTINGS_ELEMENT_POINTS==
 					GT_element_settings_get_settings_type(settings)))
 			{
-				if (element=
-					FE_element_group_get_element_with_Use_element_type(element_group,
-					GT_element_settings_get_use_element_type(settings),
+				if (element=FE_element_group_get_element_with_Use_element_type(
+					element_group,GT_element_settings_get_use_element_type(settings),
 					Scene_picked_object_get_subobject(scene_picked_object,1)))
 				{
 					/* determine discretization of element for graphic */
@@ -1980,6 +1979,121 @@ and destroy it once returned.
 
 	return (return_code);
 } /* Scene_picked_object_get_nearest_element_point */
+
+static int Scene_picked_object_get_picked_element_points(
+	struct Scene_picked_object *scene_picked_object,
+	void *picked_element_points_list_void)
+/*******************************************************************************
+LAST MODIFIED : 18 May 2000
+
+DESCRIPTION :
+If the <scene_picked_object> refers to an element_point, it is converted into
+an Element_point_ranges and added to the <picked_element_points_list>.
+==============================================================================*/
+{
+	int element_point_number,face_number,return_code,
+		top_level_number_in_xi[MAXIMUM_ELEMENT_XI_DIMENSIONS];
+	struct Element_discretization element_discretization;
+	struct Element_point_ranges *element_point_ranges;
+	struct Element_point_ranges_identifier element_point_ranges_identifier;
+	struct FE_element *element,*top_level_element;
+	struct FE_field *native_discretization_field;
+	struct GROUP(FE_element) *element_group;
+	struct GT_element_group *gt_element_group;
+	struct GT_element_settings *settings;
+	struct Scene_object *scene_object;
+
+	ENTER(Scene_picked_object_get_picked_element_points);
+	if (scene_picked_object&&picked_element_points_list_void)
+	{
+		return_code=1;
+		/* is the last scene_object a Graphical_element wrapper, and does the
+			 settings for the graphic refer to element_points? */
+		if ((scene_object=Scene_picked_object_get_Scene_object(scene_picked_object,
+			Scene_picked_object_get_number_of_scene_objects(scene_picked_object)-1))
+			&&(SCENE_OBJECT_GRAPHICAL_ELEMENT_GROUP==
+				Scene_object_get_type(scene_object))&&(gt_element_group=
+					Scene_object_get_graphical_element_group(scene_object))&&
+			(element_group=GT_element_group_get_element_group(gt_element_group))&&
+			(3==Scene_picked_object_get_number_of_subobjects(scene_picked_object))&&
+			(settings=get_settings_at_position_in_GT_element_group(
+				gt_element_group,
+				Scene_picked_object_get_subobject(scene_picked_object,0)))&&
+			(GT_ELEMENT_SETTINGS_ELEMENT_POINTS==
+				GT_element_settings_get_settings_type(settings)))
+		{
+			if (element=FE_element_group_get_element_with_Use_element_type(
+				element_group,GT_element_settings_get_use_element_type(settings),
+				Scene_picked_object_get_subobject(scene_picked_object,1)))
+			{
+				/* determine discretization of element for graphic */
+				top_level_element=(struct FE_element *)NULL;
+				GT_element_settings_get_discretization(settings,
+					&element_discretization);
+				top_level_number_in_xi[0]=element_discretization.number_in_xi1;
+				top_level_number_in_xi[1]=element_discretization.number_in_xi2;
+				top_level_number_in_xi[2]=element_discretization.number_in_xi3;
+				GT_element_settings_get_face(settings,&face_number);
+				native_discretization_field=
+					GT_element_settings_get_native_discretization_field(settings);
+				if (get_FE_element_discretization(element,element_group,face_number,
+					native_discretization_field,top_level_number_in_xi,
+					&top_level_element,element_point_ranges_identifier.number_in_xi))
+				{
+					element_point_ranges_identifier.element=element;
+					element_point_ranges_identifier.xi_discretization_mode=
+						GT_element_settings_get_xi_discretization_mode(settings);
+					if (element_point_ranges=CREATE(Element_point_ranges)(
+						&element_point_ranges_identifier))
+					{
+						element_point_number=
+							Scene_picked_object_get_subobject(scene_picked_object,2);
+						if (!(Element_point_ranges_add_range(element_point_ranges,
+							element_point_number,element_point_number)&&
+							Element_point_ranges_add_to_list(element_point_ranges,
+								picked_element_points_list_void)))
+						{
+							display_message(WARNING_MESSAGE,
+								"Scene_picked_object_get_picked_element_points.  "
+								"Could not add element point to picked list");
+							return_code=0;
+						}
+						DESTROY(Element_point_ranges)(&element_point_ranges);
+					}
+					else
+					{
+						display_message(WARNING_MESSAGE,
+							"Scene_picked_object_get_picked_element_points.  "
+							"Could not create Element_point_ranges");
+						return_code=0;
+					}
+				}
+				else
+				{
+					display_message(WARNING_MESSAGE,
+						"Scene_picked_object_get_picked_element_points.  "
+						"Could not get discretization");
+					return_code=0;
+				}
+			}
+			else
+			{
+				display_message(WARNING_MESSAGE,
+					"Scene_picked_object_get_picked_element_points.  Invalid element");
+				return_code=0;
+			}
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Scene_picked_object_get_picked_element_points.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Scene_picked_object_get_picked_element_points */
 
 struct Scene_picked_object_get_nearest_node_data
 {
@@ -5110,6 +5224,45 @@ calling function.
 	return (nearest_element_point_data.nearest_element_point);
 } /* Scene_picked_object_list_get_nearest_element_point */
 
+struct LIST(Element_point_ranges) *Scene_picked_object_list_get_picked_element_points(
+	struct LIST(Scene_picked_object) *scene_picked_object_list)
+/*******************************************************************************
+LAST MODIFIED : 18 May 2000
+
+DESCRIPTION :
+Returns the list of all element_points in the <scene_picked_object_list>.
+==============================================================================*/
+{
+	struct LIST(Element_point_ranges) *picked_element_points_list;
+
+	ENTER(Scene_picked_object_list_get_picked_element_points);
+	if (scene_picked_object_list)
+	{	
+		if (picked_element_points_list=CREATE(LIST(Element_point_ranges))())
+		{
+			FOR_EACH_OBJECT_IN_LIST(Scene_picked_object)(
+				Scene_picked_object_get_picked_element_points,
+				(void *)picked_element_points_list,scene_picked_object_list);
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,
+				"Scene_picked_object_list_get_picked_element_points.  "
+				"Could not create element point ranges list");
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Scene_picked_object_list_get_picked_element_points.  "
+			"Invalid argument(s)");
+		picked_element_points_list=(struct LIST(Element_point_ranges) *)NULL;
+	}
+	LEAVE;
+
+	return (picked_element_points_list);
+} /* Scene_picked_object_list_get_picked_element_points */
+
 struct FE_node *Scene_picked_object_list_get_nearest_node(
 	struct LIST(Scene_picked_object) *scene_picked_object_list,
 	struct MANAGER(FE_node) *node_manager,int data_manager,
@@ -5172,7 +5325,7 @@ struct LIST(FE_node) *Scene_picked_object_list_get_picked_nodes(
 	struct LIST(Scene_picked_object) *scene_picked_object_list,
 	struct MANAGER(FE_node) *node_manager,int data_manager)
 /*******************************************************************************
-LAST MODIFIED : 28 April 2000
+LAST MODIFIED : 18 May 2000
 
 DESCRIPTION :
 Returns the list of all nodes in the <scene_picked_object_list> in the
@@ -5197,7 +5350,8 @@ data_manager - needed since different settings type used for each.
 		else
 		{
 			display_message(ERROR_MESSAGE,
-				"Scene_picked_object_list_get_picked_nodes.  Invalid argument(s)");
+				"Scene_picked_object_list_get_picked_nodes.  "
+				"Could not create node list");
 		}
 	}
 	else
