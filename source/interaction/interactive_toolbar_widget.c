@@ -313,7 +313,7 @@ are removed from the manager - will have no effect on any unmanaged tools added
 to the toolbar.
 ==============================================================================*/
 {
-	Arg args[12];
+	Arg args[14];
 	struct Interactive_toolbar_widget_struct *interactive_toolbar;
 	Widget return_widget;
 
@@ -344,8 +344,9 @@ to the toolbar.
 			XtSetArg(args[9],XmNmarginWidth,0);
 			XtSetArg(args[10],XmNspacing,0);
 			XtSetArg(args[11],XmNadjustLast,False);
-			if (interactive_toolbar->widget=
-				XmCreateRowColumn(parent,"interactive_toolbar",args,12))
+			XtSetArg(args[12],XmNradioAlwaysOne,True);
+			if (interactive_toolbar->widget =
+				XmCreateRowColumn(parent, "interactive_toolbar", args, 13))
 			{
 				/* add destroy callback for widget */
 				XtAddCallback(interactive_toolbar->widget,XmNdestroyCallback,
@@ -558,7 +559,7 @@ Sets the current interactive_tool in the <interactive_toolbar_widget>.
 int interactive_toolbar_widget_add_interactive_tool(
 	Widget interactive_toolbar_widget,struct Interactive_tool *interactive_tool)
 /*******************************************************************************
-LAST MODIFIED : 8 May 2000
+LAST MODIFIED : 21 November 2001
 
 DESCRIPTION :
 Adds <interactive_tool> to the toolbar widget. Tool is represented by a button
@@ -592,6 +593,9 @@ it is automatically chosen as the current tool.
 				if (widget=Interactive_tool_make_button(interactive_tool,
 					interactive_toolbar->widget))
 				{
+					/* work-around since there is an open motif bug that makes
+						 toggle buttons unreleasable with XmONE_OF_MANY */
+					XtVaSetValues(widget, XmNindicatorType, XmN_OF_MANY, NULL);
 					if (!(interactive_toolbar->current_interactive_tool))
 					{
 						XmToggleButtonSetState(widget,True,False);
