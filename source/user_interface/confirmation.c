@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : confirmation.c
 
-LAST MODIFIED : 22 July 2002
+LAST MODIFIED : 17 December 2002
 
 DESCRIPTION :
 Routines for waiting for user input.
@@ -134,7 +134,7 @@ static int confirmation(enum Confirm_type type,char *title,char *prompt,
 #endif /* defined (MOTIF) */
 	struct User_interface *user_interface)
 /*******************************************************************************
-LAST MODIFIED : 11 June 1999
+LAST MODIFIED : 17 December 2002
 
 DESCRIPTION :
 This routine supplies a dialog window which requires a response before anything
@@ -148,7 +148,11 @@ button is clicked.
 		{
 			{XmNmessageString,(XtArgVal)NULL},
 			{XmNtitle,(XtArgVal)NULL},
+			/*???DB.  Changed dialogStyle to deleteResponse because of something
+				hanging in unemap acquisition, but can't remember what.  So leaving as
+				is */
 			{XmNdialogStyle,(XtArgVal)XmDIALOG_FULL_APPLICATION_MODAL}
+/*			{XmNdeleteResponse,(XtArgVal)XmDESTROY}*/
 		};
 	struct Confirmation confirmation;
 	Widget message_box,message_parent,message_shell;
