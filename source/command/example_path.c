@@ -24,7 +24,7 @@ Global functions
 */
 
 char *resolve_example_path(char *example_path, char *directory_name,
-	char **comfile_name)
+	char **comfile_name, char **requirements)
 /*******************************************************************************
 LAST MODIFIED : 17 April 2000
 
@@ -36,13 +36,17 @@ an object and want to encapsulate the whole process in one file for calling
 from the back end.
 <*comfile_name> is allocated and returned as well if the resolve function
 returns a string for it.  This too must be DEALLOCATED by the calling function.
+<*requirements> is either set to NULL or is an allocated string specifying 
+the features required to run this example, i.e. whether the example 
+needs cmgui and/or cm. The requirements are comma separated.  This too must 
+be DEALLOCATED by the calling function.
 ==============================================================================*/
 {
 	char *return_string;
 #if defined (UNIX)
 #define BLOCKSIZE (100)
 	char end[3] = {04, 10, 00}, *error_message, *filename, last_char, *new_string,
-		*space_offset;
+		*comfile_offset, *end_offset, *requirements_offset;
 	fd_set readfds;
 	int flags, stdin_filedes[2], stdout_filedes[2], 
 		timeout;
@@ -159,35 +163,70 @@ returns a string for it.  This too must be DEALLOCATED by the calling function.
 
 						if (return_string)
 						{
-							/* Look for a space separator in the returned string */
-							if ((space_offset = strchr(return_string, ' '))&&
-							  ALLOCATE(*comfile_name, char,
-							  strlen(space_offset + 1) + 1))
-							{
-								strcpy(*comfile_name, space_offset + 1);
-								/* Terminate the first string and process 
-									as before */
-								*space_offset = 0;
-							}
-							else
-							{
-								*comfile_name = (char *)NULL;
-							}
-							if (ALLOCATE(new_string, char,
-								strlen(return_string) + strlen(example_path) + 5))
-							{
-								sprintf(new_string, "%s/%s/", example_path,
-									return_string);
-								DEALLOCATE(return_string);
-								return_string = new_string;
-							}
-							else
-							{
-								DEALLOCATE(return_string);
-								display_message(ERROR_MESSAGE,"resolve_example_path."
-									"  Unable to make final reallocate of string");
-								return_string = (char *)NULL;
-							}
+						   comfile_offset = (char *)NULL;
+						   requirements_offset = (char *)NULL;
+						   /* Look for the first space separator in the 
+							  returned string */
+						   if (comfile_offset = strchr(return_string, ' '))
+						   {
+							  /* Terminate the example path string */
+							  *comfile_offset = 0;
+							  comfile_offset++;
+
+							  /* Look for the next space */
+							  if (requirements_offset = strchr(comfile_offset, ' '))
+							  {
+								 /* Terminate the comfile string */
+								 *requirements_offset = 0;
+								 requirements_offset++;
+
+								 /* Look for the end of this word */
+								 if (end_offset = strchr(requirements_offset, ' '))
+								 {
+									/* Terminate the requirements string */
+									*end_offset = 0;
+								 }
+							  }
+						   }
+						   if (ALLOCATE(new_string, char,
+							  strlen(return_string) + strlen(example_path) + 5))
+						   {
+							  sprintf(new_string, "%s/%s/", example_path,
+								 return_string);
+							  DEALLOCATE(return_string);
+							  return_string = new_string;
+						   }
+						   else
+						   {
+							  DEALLOCATE(return_string);
+							  display_message(ERROR_MESSAGE,"resolve_example_path."
+								 "  Unable to make final reallocate of string");
+							  return_string = (char *)NULL;
+						   }
+						   if (comfile_name)
+						   {
+							  if (comfile_offset && ALLOCATE(*comfile_name, char,
+								 strlen (comfile_offset) + 1))
+							  {
+								 strcpy (*comfile_name, comfile_offset);
+							  }
+							  else
+							  {
+								 *comfile_name = (char *)NULL;
+							  }
+						   }
+						   if (requirements)
+						   {
+							  if (requirements_offset && ALLOCATE(*requirements, 
+								 char, strlen (requirements_offset) + 1))
+							  {
+								 strcpy (*requirements, requirements_offset);
+							  }
+							  else
+							  {
+								 *requirements = (char *)NULL;
+							  }
+						   }
 						}
 					}
 					else

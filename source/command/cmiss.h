@@ -27,7 +27,8 @@ DESCRIPTION :
 ==============================================================================*/
 {
 	char *cm_examples_directory,*cm_parameters_file_name,*example_directory,
-		*examples_directory,*example_comfile,*help_directory,*help_url;
+		*examples_directory,*example_comfile,*example_requirements,*help_directory,
+		*help_url;
 #if defined (CELL)
 	struct Cell_interface *cell_interface;
 #endif /* defined (CELL) */

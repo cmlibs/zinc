@@ -26491,6 +26491,114 @@ Executes a READ command.
 	return (return_code);
 } /* execute_command_read */
 
+static int open_example(struct Parse_state *state,void *dummy_to_be_modified,
+	void *command_data_void)
+/*******************************************************************************
+LAST MODIFIED : 12 December 2002
+
+DESCRIPTION :
+Opens an example.
+==============================================================================*/
+{
+	char *example, *execute_flag, *found_cm, temp_string[100];
+	int return_code;
+	struct Cmiss_command_data *command_data;
+	struct Option_table *option_table;
+
+	ENTER(open_example);
+	USE_PARAMETER(dummy_to_be_modified);
+	if (state)
+	{
+		if (command_data=(struct Cmiss_command_data *)command_data_void)
+		{
+		   example = (char *)NULL;
+			execute_flag = 0;
+			option_table = CREATE(Option_table)();
+			/* example */
+			Option_table_add_entry(option_table, "example",
+				&example, (void *)1, set_name);
+			/* execute */
+			Option_table_add_entry(option_table, "execute",
+				&execute_flag, NULL, set_char_flag);
+			/* default */
+			Option_table_add_entry(option_table, (void *)NULL,
+				&example, NULL, set_name);
+			return_code=Option_table_multi_parse(option_table,state);
+			DESTROY(Option_table)(&option_table);
+			/* no errors, not asking for help */
+			if (return_code)
+			{
+				if (!example)
+				{
+					display_message(ERROR_MESSAGE,
+						"open_example.  You must specify an example name");
+					return_code = 0;
+				}
+			}
+			if (return_code)
+			{
+				/* set the examples directory */
+				sprintf(temp_string,"set dir ");
+				strcat(temp_string,CMGUI_EXAMPLE_DIRECTORY_SYMBOL);
+				strcat(temp_string," ");
+				strcat(temp_string,example);
+				Execute_command_execute_string(command_data->execute_command,temp_string);
+				/* The example_comfile and example_requirements strings are 
+					currently set as a sideeffect of "set dir" */
+				if (command_data->example_requirements)
+				{
+					if (found_cm = strstr(command_data->example_requirements, "cm"))
+					{
+						if ((found_cm[2] == 0) || (found_cm[2] == ':') || 
+							(found_cm[2] == ','))
+						{
+							sprintf(temp_string,"create cm");
+							Execute_command_execute_string(command_data->execute_command,
+								temp_string);
+						}
+					}
+				}
+				sprintf(temp_string,"open comfile ");
+				if (command_data->example_comfile)
+				{
+					strcat(temp_string,command_data->example_comfile);
+				}
+				else
+				{
+					strcat(temp_string,"example_");
+					strcat(temp_string,example);
+				}
+				strcat(temp_string,";");
+				strcat(temp_string,CMGUI_EXAMPLE_DIRECTORY_SYMBOL);
+				if (execute_flag)
+				{
+					strcat(temp_string," execute");
+				}
+				return_code=Execute_command_execute_string(command_data->execute_command,
+					temp_string);
+			}
+			if (example)
+			{
+				DEALLOCATE(example);
+			}
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,
+				"open_example.  Missing command_data");
+			return_code=0;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"open_example.  Missing state");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* open_comfile */
+
 static int execute_command_open(struct Parse_state *state,
 	void *dummy_to_be_modified,void *command_data_void)
 /*******************************************************************************
@@ -26531,6 +26639,8 @@ Executes a OPEN command.
 				open_comfile_data.user_interface=command_data->user_interface;
 				Option_table_add_entry(option_table, "comfile", NULL,
 					(void *)&open_comfile_data, open_comfile);
+				Option_table_add_entry(option_table, "example", NULL,
+					command_data_void, open_example);
 #if defined (MOTIF)
 				Option_table_add_entry(option_table, "menu", NULL,
 					command_data_void, execute_command_open_menu);
@@ -26611,136 +26721,6 @@ Executes a QUIT command.
 	return (return_code);
 } /* execute_command_quit */
 
-#if defined (OLD_CODE)
-#if defined (MOTIF)
-static int execute_command_set_dir_example(struct Parse_state *state,
-	void *dummy_to_be_modified,void *command_data_void)
-/*******************************************************************************
-LAST MODIFIED : 16 October 1998
-
-DESCRIPTION :
-Executes a SET DIR #CMGUI_EXAMPLE_DIRECTORY_SYMBOL command.
-==============================================================================*/
-{
-	char *current_token,*example_directory,*temp_char;
-	int current_token_length,file_name_length,i,return_code;
-	struct Cmiss_command_data *command_data;
-
-	ENTER(execute_command_set_dir_example);
-	USE_PARAMETER(dummy_to_be_modified);
-	/* check argument */
-	if (state)
-	{
-		if (current_token=state->current_token)
-		{
-			if (strcmp(PARSER_HELP_STRING,current_token)&&
-				strcmp(PARSER_RECURSIVE_HELP_STRING,current_token))
-			{
-				if (command_data=(struct Cmiss_command_data *)command_data_void)
-				{
-					/* construct the example directory path */
-					if ((current_token_length=strlen(current_token))>0)
-					{
-						file_name_length=
-							1+(current_token_length*(current_token_length+3))/2;
-						if (command_data->examples_directory)
-						{
-							file_name_length += strlen(command_data->examples_directory);
-						}
-						if (ALLOCATE(example_directory,char,file_name_length))
-						{
-							*example_directory='\0';
-							if (command_data->examples_directory)
-							{
-								strcat(example_directory,command_data->examples_directory);
-							}
-							temp_char=example_directory+strlen(example_directory);
-							for (i=1;i<=current_token_length;i++)
-							{
-								strncpy(temp_char,current_token,i);
-								temp_char += i;
-								*temp_char='/';
-								temp_char++;
-							}
-							*temp_char='\0';
-							DEALLOCATE(command_data->example_directory);
-							command_data->example_directory=example_directory;
-							/* send command to the back end */
-							return_code=execute_command_cm(state,(void *)NULL,
-								command_data_void);
-						}
-						else
-						{
-							display_message(ERROR_MESSAGE,
-								"execute_command_set_dir_example.  Insufficient memory");
-						}
-					}
-					else
-					{
-						display_message(ERROR_MESSAGE,
-							"execute_command_set_dir_example.  Invalid example name");
-					}
-#if defined (OLD_CODE)
-					file_name_length=strlen(current_token)+2;
-					if (command_data->examples_directory)
-					{
-						file_name_length += strlen(command_data->examples_directory);
-					}
-					if (ALLOCATE(example_directory,char,file_name_length))
-					{
-						*example_directory='\0';
-						if (command_data->examples_directory)
-						{
-							strcat(example_directory,command_data->examples_directory);
-						}
-						strcat(example_directory,current_token);
-						strcat(example_directory,"/");
-						DEALLOCATE(command_data->example_directory);
-						command_data->example_directory=example_directory;
-						return_code=execute_command_cm(state,(void *)NULL,
-							command_data_void);
-					}
-					else
-					{
-						display_message(ERROR_MESSAGE,
-"execute_command_set_dir_example.  Insufficient memory for relative example directory");
-						return_code=0;
-					}
-#endif /* defined (OLD_CODE) */
-				}
-				else
-				{
-					display_message(ERROR_MESSAGE,
-						"execute_command_set_dir_example.  Missing command_data");
-					return_code=0;
-				}
-			}
-			else
-			{
-				display_message(INFORMATION_MESSAGE," RELATIVE_EXAMPLE_DIRECTORY");
-				return_code=1;
-			}
-		}
-		else
-		{
-			display_message(WARNING_MESSAGE,"Missing graphics object name");
-			display_parse_state_location(state);
-			return_code=1;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"execute_command_set_dir_example.  Missing state");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* execute_command_set_dir_example */
-#endif /* defined (MOTIF) */
-#endif /* defined (OLD_CODE) */
-
 static int set_dir(struct Parse_state *state,
 	void *dummy_to_be_modified,void *command_data_void)
 /*******************************************************************************
@@ -26750,7 +26730,8 @@ DESCRIPTION :
 Executes a SET DIR command.
 ==============================================================================*/
 {
-	char *comfile_name, *directory_name, *example_directory, example_flag, *token;
+	char *comfile_name, *directory_name, *example_directory, example_flag, 
+		*example_requirements, *token;
 	int file_name_length, return_code;
 	struct Cmiss_command_data *command_data;
 	static struct Modifier_entry option_table[]=
@@ -26783,7 +26764,7 @@ Executes a SET DIR command.
 							/* Lookup the example path */
 							if (example_directory = 
 								resolve_example_path(command_data->examples_directory, 
-								directory_name, &comfile_name))
+								directory_name, &comfile_name, &example_requirements))
 							{
 								if (command_data->example_directory)
 								{
@@ -26801,6 +26782,19 @@ Executes a SET DIR command.
 								else
 								{
 									command_data->example_comfile = (char *)NULL;
+								}
+								if (command_data->example_requirements)
+								{
+									DEALLOCATE(command_data->example_requirements);
+								}
+								if (example_requirements)
+								{
+									command_data->example_requirements = 
+										example_requirements;
+								}
+								else
+								{
+									command_data->example_requirements = (char *)NULL;
 								}
 #if defined (PERL_INTERPRETER)
 								/* Set the interpreter variable */
@@ -26828,53 +26822,6 @@ Executes a SET DIR command.
 									"set_dir.  Unable to resolve example path.");
 								return_code = 0;
 							}
-#if defined (OLD_CODE)
-							/* construct the example directory path */
-							if ((directory_name_length=strlen(directory_name))>0)
-							{
-								file_name_length=
-									1+(directory_name_length*(directory_name_length+3))/2;
-								if (command_data->examples_directory)
-								{
-									file_name_length += strlen(command_data->examples_directory);
-								}
-								if (ALLOCATE(example_directory,char,file_name_length))
-								{
-									*example_directory='\0';
-									if (command_data->examples_directory)
-									{
-										strcat(example_directory,command_data->examples_directory);
-									}
-									temp_char=example_directory+strlen(example_directory);
-									for (i=1;i<=directory_name_length;i++)
-									{
-										strncpy(temp_char,directory_name,i);
-										temp_char += i;
-										*temp_char='/';
-										temp_char++;
-									}
-									*temp_char='\0';
-									DEALLOCATE(command_data->example_directory);
-									command_data->example_directory=example_directory;
-									/* send command to the back end */
-									/* have to reset the token position to get it to
-										export the command */
-									state->current_token = token;
-									return_code=execute_command_cm(state,(void *)NULL,
-										command_data_void);
-								}
-								else
-								{
-									display_message(ERROR_MESSAGE,
-										"set_dir.  Insufficient memory");
-								}
-							}
-							else
-							{
-								display_message(ERROR_MESSAGE,
-									"set_dir.  Invalid example name");
-							}
-#endif /* defined (OLD_CODE) */
 						}
 						else
 						{

@@ -923,6 +923,7 @@ Main program for the CMISS Graphical User Interface
 #endif /* defined (MOTIF) */
 	command_data.examples_directory=(char *)NULL;
 	command_data.example_comfile=(char *)NULL;
+	command_data.example_requirements=(char *)NULL;
 	command_data.cm_examples_directory=(char *)NULL;
 	command_data.cm_parameters_file_name=(char *)NULL;
 	command_data.default_time_keeper = (struct Time_keeper *)NULL;
@@ -2078,6 +2079,10 @@ Main program for the CMISS Graphical User Interface
 	if (command_data.example_comfile)
 	{
 		DEALLOCATE(command_data.example_comfile);
+	}
+	if (command_data.example_requirements)
+	{
+		DEALLOCATE(command_data.example_requirements);
 	}
 
 #if defined (MOTIF)
