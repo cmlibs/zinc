@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : cmiss.c
 
-LAST MODIFIED : 1 December 1999
+LAST MODIFIED : 7 December 1999
 
 DESCRIPTION :
 Functions for executing cmiss commands.
@@ -2779,13 +2779,14 @@ editor at a time.  This implementation may be changed later.
 static int gfx_create_grid_field_calculator(struct Parse_state *state,
 	void *dummy_to_be_modified,void *command_data_void)
 /*******************************************************************************
-LAST MODIFIED : 1 December 1999
+LAST MODIFIED : 7 December 1999
 
 DESCRIPTION :
 Executes a GFX CREATE GRID_FIELD_CALCULATOR command.
 Invokes the grid field calculator dialog.
 ==============================================================================*/
 {
+	char *current_token;
 	int return_code;
 	struct Cmiss_command_data *command_data;
 
@@ -2795,14 +2796,27 @@ Invokes the grid field calculator dialog.
 	{
 		if (command_data=(struct Cmiss_command_data *)command_data_void)
 		{
-			return_code=bring_up_grid_field_calculator(
-				&(command_data->grid_field_calculator_dialog),
-				command_data->user_interface->application_shell,
-				command_data->computed_field_package,
-				&(command_data->control_curve_editor_dialog),
-				command_data->control_curve_manager,
-				command_data->element_manager,
-				command_data->user_interface);
+			if (current_token=state->current_token)
+			{
+				if (strcmp(PARSER_HELP_STRING,current_token)&&
+					strcmp(PARSER_RECURSIVE_HELP_STRING,current_token))
+				{
+					display_message(ERROR_MESSAGE,"Unknown option: %s",current_token);
+					display_parse_state_location(state);
+					return_code=0;
+				}
+			}
+			else
+			{
+				return_code=bring_up_grid_field_calculator(
+					&(command_data->grid_field_calculator_dialog),
+					command_data->user_interface->application_shell,
+					command_data->computed_field_package,
+					&(command_data->control_curve_editor_dialog),
+					command_data->control_curve_manager,
+					command_data->element_manager,
+					command_data->user_interface);
+			}
 		}
 		else
 		{
@@ -9302,6 +9316,9 @@ Executes a GFX CREATE command.
 				(option_table[i]).user_data=command_data_void;
 				i++;
 				/* graphical_material_editor */
+				(option_table[i]).user_data=command_data_void;
+				i++;
+				/* grid_field_calculator */
 				(option_table[i]).user_data=command_data_void;
 				i++;
 #if defined (HAPTIC)
