@@ -10,7 +10,9 @@ the rig and signal information. rather than special structures.
 #include <stddef.h>
 #include <string.h>
 #include <math.h>
+#if defined (NOT_ANSI)
 #include <ieeefp.h>
+#endif /* defined (NOT_ANSI) */
 #include "finite_element/finite_element.h"
 #include "general/debug.h"
 #include "general/geometry.h"
@@ -2301,6 +2303,7 @@ Doesn't load in auxilliary devices that are linear combinations of other channel
 										{
 											fread_result=BINARY_FILE_READ((char *)buffer_signals_float,
 												sizeof(float),number_of_samples*number_of_signals,input_file);
+#if defined (NOT_ANSI)
 											/* check signal values.  If it's non a valid float, set it to 0  */
 											buffer_value=buffer_signals_float;
 											for(i=0;i<number_of_samples*number_of_signals;i++)
@@ -2324,6 +2327,7 @@ Doesn't load in auxilliary devices that are linear combinations of other channel
 												}
 												buffer_value++;
 											}
+#endif /*defined (NOT_ANSI)*/
 										}
 										else
 										{

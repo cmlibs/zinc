@@ -10,7 +10,9 @@ Contains function definitions for measurement rigs.
 #include <stddef.h>
 #include <string.h>
 #include <math.h>
+#if defined (NOT_ANSI)
 #include <ieeefp.h>
+#endif /* defined (NOT_ANSI) */
 #if defined (WIN32)
 #include <float.h>
 #endif /* defined (WIN32) */
@@ -4046,14 +4048,19 @@ the <input_file>.
 {
 	enum Region_type rig_type;
 	enum Signal_value_type signal_value_type;
-	float frequency,*buffer_value;
-	int fread_result,i,index,number_of_devices,number_of_samples,number_of_signals,
+	float frequency;
+	int fread_result,index,number_of_devices,number_of_samples,number_of_signals,
 		return_code,temp_int;
 	struct Device **device;
 	struct Rig *rig;
 	struct Signal *signal;
 	struct Signal_buffer *buffer;
 
+#if defined (NOT_ANSI)
+/*???DB.  isnan is not ansi? */
+	float *buffer_value;
+	int i;
+#endif /* defined (NOT_ANSI) */
 	ENTER(read_signal_file);
 	/* check the arguments */
 	if (input_file&&rig_pointer)
@@ -4119,6 +4126,7 @@ the <input_file>.
 												fread_result=BINARY_FILE_READ((char *)buffer->signals.
 													float_values,sizeof(float),
 													number_of_samples*number_of_signals,input_file);
+#if defined (NOT_ANSI)
 												/* check signal values.  If it's not a valid float, set
 													 it to 0  */																								
 												buffer_value=buffer->signals.float_values;
@@ -4147,6 +4155,7 @@ the <input_file>.
 													}
 													buffer_value++;
 												}
+#endif /*defined (NOT_ANSI)*/
 											} break;
 										}
 										if (fread_result==number_of_samples*number_of_signals)
