@@ -4605,7 +4605,7 @@ face with the same nodes is extremely rapid. add_FE_element_and_faces_to_manager
 uses them to find faces and lines for elements without them, if they exist.
 ==============================================================================*/
 {
-	int i,j,k,node_number,*node_numbers,number_of_nodes,placed;
+	int i,node_number,*node_numbers,number_of_nodes;
 	struct FE_element_type_node_sequence *element_type_node_sequence;
 	struct FE_node **nodes_in_element;
 
@@ -4632,6 +4632,11 @@ uses them to find faces and lines for elements without them, if they exist.
 				for (i=0;element_type_node_sequence&&(i<number_of_nodes);i++)
 				{
 					node_number=(nodes_in_element[i])->cm_node_identifier;
+					node_numbers[i]=node_number;
+#if defined (OLD_CODE)
+					/* SAB We do not want to sort these node numbers as the order of the nodes
+						determines which ordering the faces are in and if these do not match
+						we will get the lines matched to different pairs of the nodes. */
 					placed=0;
 					for (j=0;(!placed)&&(j<i);j++)
 					{
@@ -4650,8 +4655,8 @@ uses them to find faces and lines for elements without them, if they exist.
 					{
 						node_numbers[i]=node_number;
 					}
+#endif /* defined (OLD_CODE) */
 				}
-#if defined (DEBUG)
 				/*???debug*/
 				printf("FE_element_type_node_sequence  %s %d has nodes: ",
 					CM_element_type_string(element->cm.type), element->cm.number);
@@ -4660,6 +4665,7 @@ uses them to find faces and lines for elements without them, if they exist.
 					printf(" %d",node_numbers[i]);
 				}
 				printf("\n");
+#if defined (DEBUG)
 #endif /* defined (DEBUG) */
 			}
 			else
