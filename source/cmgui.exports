@@ -1504,3 +1504,6 @@ PL_vtbl_defelem
 Perl_magicname
 Perl_pp_eservent
 Perl_save_svref
+euler_
+improved_euler_
+runge_kutta_
