@@ -1,3 +1,25 @@
+#Context of where we are
+ifndef SYSNAME
+  SYSNAME := $(shell uname)
+  ifeq ($(SYSNAME),)
+    $(error error with shell command uname)
+  endif
+endif
+
+ifndef NODENAME
+  NODENAME := $(shell uname -n)
+  ifeq ($(NODENAME),)
+    $(error error with shell command uname -n)
+  endif
+endif
+
+ifndef MACHNAME
+  MACHNAME := $(shell uname -m)
+  ifeq ($(MACHNAME),)
+    $(error error with shell command uname -m)
+  endif
+endif
+
 #Paths
 PRODUCT_PATH=$(CMISS_ROOT)/cmgui
 PRODUCT_SOURCE_PATH=$(PRODUCT_PATH)/source
@@ -75,44 +97,28 @@ cmgui cmgui-debug cmgui-debug-memorycheck cmgui-static cmgui-static-debug cmgui6
 	cd source ; \
 	$(MAKE) -f $(SUBMAKEFILE) $(OPTIONS) ;
 
-ESU_BUILD_LIST = cmgui cmgui-debug cmgui64 cmgui-console cmgui-debug-memorycheck
-ESU_BUILD_PATH = '\$${CMISS_ROOT}/cmgui'
-ESU_BUILD_MACHINE = 130.216.208.35 #esu35
-ESP_BUILD_LIST = cmgui cmgui-debug cmgui-debug-memorycheck cmgui-static cmgui-static-debug cmgui-console
-ESP_BUILD_PATH = '\$${CMISS_ROOT}/cmgui'
-ESP_BUILD_MACHINE = 130.216.208.69 #bioeng69
-HPC1_BUILD_LIST = cmgui cmgui-debug cmgui64 cmgui64-debug
-HPC1_BUILD_PATH = '\$${CMISS_ROOT}/cmgui'
-HPC1_BUILD_MACHINE = 130.216.191.92 #hpc1
-
-
-update_sources :
-	ssh cmiss@$(ESU_BUILD_MACHINE) 'cd $(ESU_BUILD_PATH)/source ; cvs update' && \
-	ssh cmiss@$(HPC1_BUILD_MACHINE) 'cd $(HPC1_BUILD_PATH)/source ; cvs update' ;
+ifeq ($(SYSNAME:IRIX%=),)
+all : cmgui cmgui-debug cmgui64 cmgui-console cmgui-debug-memorycheck
+endif # SYSNAME == IRIX%=
+ifeq ($(SYSNAME),Linux)
+all : cmgui cmgui-debug cmgui-debug-memorycheck cmgui-static cmgui-static-debug cmgui-console
+endif # SYSNAME == Linux
+ifeq ($(SYSNAME),AIX)
+all : cmgui cmgui-debug cmgui64 cmgui64-debug
+endif # SYSNAME == AIX
+ifeq ($(SYSNAME),win32)
+all :
+endif # SYSNAME == win32
+ifeq ($(SYSNAME),CYGWIN%=)
+all :
+endif # SYSNAME == CYGWIN%=
 
 #If not already cmiss become cmiss first and then propogate so that the user
 #only has to authenticate as cmiss once at the start.
 update :
-	if [ "$(USER)" = "cmiss" ] ; then \
-		ssh cmiss@$(ESU_BUILD_MACHINE) 'cd $(ESU_BUILD_PATH) ; $(MAKE) -f $(MAKEFILE) $(ESU_BUILD_LIST)' && \
-		ssh cmiss@$(ESP_BUILD_MACHINE) 'cd $(ESP_BUILD_PATH) ; $(MAKE) -f $(MAKEFILE) $(ESP_BUILD_LIST)' && \
-		ssh cmiss@$(HPC1_BUILD_MACHINE) 'cd $(HPC1_BUILD_PATH) ; $(MAKE) -f $(MAKEFILE) $(HPC1_BUILD_LIST)' && \
-		ssh cmiss@130.216.208.67 'setenv CMISS_ROOT /product/cmiss ; cd $(PRODUCT_PATH) ; $(MAKE) -f $(MAKEFILE) cmgui-gtk cmgui-gtk-debug && /home/blackett/bin/cross-make -f $(MAKEFILE) cmgui-gtk' ; \
-	else \
-		ssh cmiss@$(ESU_BUILD_MACHINE) 'cd $(ESU_BUILD_PATH) ; $(MAKE) -f $(MAKEFILE) update' ; \
-	fi
+	$(CMISS_ROOT)/bin/cmissmake cmgui;
 
-run_tests:
-	if [ "$(USER)" = "cmiss" ]; then \
-		cd $(TEST_PATH); \
-		$(MAKE) ; \
-		ssh 130.216.208.156 'setenv CMISS_ROOT /product/cmiss ; cd $(TEST_PATH) ; make cmgui-linux-test' ; \
-		cat all.mail ; \
-	else \
-		echo "Must be cmiss"; \
-	fi
-
-cronjob: update_sources
+cronjob:
 	if [ "$(USER)" = "cmiss" ]; then \
 		cd $(PRODUCT_PATH); \
 		echo -n > $(MAILFILE_PATH)/programmer.mail ; \
