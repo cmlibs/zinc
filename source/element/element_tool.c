@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : element_tool.c
 
-LAST MODIFIED : 14 July 2000
+LAST MODIFIED : 18 July 2000
 
 DESCRIPTION :
 Interactive tool for selecting elements with mouse and other devices.
@@ -226,40 +226,6 @@ release.
 	LEAVE;
 } /* Element_tool_interactive_event_handler */
 
-static int Element_tool_bring_up_interactive_tool_dialog(
-	void *element_tool_void)
-/*******************************************************************************
-LAST MODIFIED : 5 July 2000
-
-DESCRIPTION :
-Brings up a dialog for editing settings of the Element_tool - in a
-standard format for passing to an Interactive_toolbar.
-==============================================================================*/
-{
-	int return_code;
-	struct Element_tool *element_tool;
-
-	ENTER(Element_tool_bring_up_interactive_tool_dialog);
-	if (element_tool=(struct Element_tool *)element_tool_void)
-	{
-		/* bring up the dialog */
-		display_message(INFORMATION_MESSAGE,
-			"Element_tool_bring_up_interactive_tool_dialog.  Not implemented\n");
-		USE_PARAMETER(element_tool);
-		return_code=0;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Element_tool_bring_up_interactive_tool_dialog.  "
-			"Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Element_tool_bring_up_interactive_tool_dialog */
-
 static Widget Element_tool_make_interactive_tool_button(
 	void *element_tool_void,Widget parent)
 /*******************************************************************************
@@ -318,7 +284,7 @@ struct Element_tool *CREATE(Element_tool)(
 	struct FE_element_selection *element_selection,
 	struct Graphical_material *rubber_band_material)
 /*******************************************************************************
-LAST MODIFIED : 14 July 2000
+LAST MODIFIED : 18 July 2000
 
 DESCRIPTION :
 Creates an Element_tool with Interactive_tool in <interactive_tool_manager>.
@@ -340,7 +306,7 @@ Selects elements in <element_selection> in response to interactive_events.
 				"element_tool","Element point tool",
 				Element_tool_interactive_event_handler,
 				Element_tool_make_interactive_tool_button,
-				Element_tool_bring_up_interactive_tool_dialog,
+				(Interactive_tool_bring_up_dialog_function *)NULL,
 				(void *)element_tool);
 			ADD_OBJECT_TO_MANAGER(Interactive_tool)(
 				element_tool->interactive_tool,

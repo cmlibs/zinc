@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : element_point_tool.c
 
-LAST MODIFIED : 14 July 2000
+LAST MODIFIED : 18 July 2000
 
 DESCRIPTION :
 Interactive tool for selecting element/grid points with mouse and other devices.
@@ -239,42 +239,6 @@ release.
 	LEAVE;
 } /* Element_point_tool_interactive_event_handler */
 
-static int Element_point_tool_bring_up_interactive_tool_dialog(
-	void *element_point_tool_void)
-/*******************************************************************************
-LAST MODIFIED : 16 May 2000
-
-DESCRIPTION :
-Brings up a dialog for editing settings of the Element_point_tool - in a
-standard format for passing to an Interactive_toolbar.
-==============================================================================*/
-{
-	int return_code;
-	struct Element_point_tool *element_point_tool;
-
-	ENTER(Element_point_tool_bring_up_interactive_tool_dialog);
-	if (element_point_tool=
-		(struct Element_point_tool *)element_point_tool_void)
-	{
-		/* bring up the dialog */
-		display_message(INFORMATION_MESSAGE,
-			"Element_point_tool_bring_up_interactive_tool_dialog.  "
-			"Not implemented\n");
-		USE_PARAMETER(element_point_tool);
-		return_code=0;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Element_point_tool_bring_up_interactive_tool_dialog.  "
-			"Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Element_point_tool_bring_up_interactive_tool_dialog */
-
 static Widget Element_point_tool_make_interactive_tool_button(
 	void *element_point_tool_void,Widget parent)
 /*******************************************************************************
@@ -338,7 +302,7 @@ struct Element_point_tool *CREATE(Element_point_tool)(
 	struct Element_point_ranges_selection *element_point_ranges_selection,
 	struct Graphical_material *rubber_band_material)
 /*******************************************************************************
-LAST MODIFIED : 14 July 2000
+LAST MODIFIED : 18 July 2000
 
 DESCRIPTION :
 Creates an Element_point_tool with Interactive_tool in
@@ -363,7 +327,7 @@ Creates an Element_point_tool with Interactive_tool in
 				"element_point_tool","Element point tool",
 				Element_point_tool_interactive_event_handler,
 				Element_point_tool_make_interactive_tool_button,
-				Element_point_tool_bring_up_interactive_tool_dialog,
+				(Interactive_tool_bring_up_dialog_function *)NULL,
 				(void *)element_point_tool);
 			ADD_OBJECT_TO_MANAGER(Interactive_tool)(
 				element_point_tool->interactive_tool,
