@@ -8991,7 +8991,8 @@ Modifies the properties of a texture.
 									number_of_file_names = 1 + (file_number_series_data.stop -
 										file_number_series_data.start) /
 										file_number_series_data.increment;
-									file_number = file_number_series_data.start;
+									file_number = file_number_series_data.start + 
+										file_number_series_data.increment;
 									for (i = 1 ; i < number_of_file_names ; i++)
 									{
 										Cmgui_image_information_set_file_name_series(
