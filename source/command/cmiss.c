@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : cmiss.c
 
-LAST MODIFIED : 5 July 2002
+LAST MODIFIED : 26 July 2002
 
 DESCRIPTION :
 Functions for executing cmiss commands.
@@ -19521,7 +19521,7 @@ Executes a GFX PRINT command.
 static int gfx_read_Control_curve(struct Parse_state *state,
 	void *dummy_to_be_modified,void *command_data_void)
 /*******************************************************************************
-LAST MODIFIED : 25 November 1999
+LAST MODIFIED : 26 July 2002
 
 DESCRIPTION :
 Reads a curve from 3 files: ~.curve.com, ~.curve.exnode, ~.curve.exelem, where
@@ -19563,8 +19563,11 @@ instruction to read in the mesh.
 				if (return_code)
 				{
 					/* open the file */
-					return_code=check_suffix(&file_name,".curve.com")&&
-						execute_comfile(file_name,command_data->execute_command);
+					if (return_code=check_suffix(&file_name,".curve.com"))
+					{
+						return_code=execute_comfile(file_name,
+							command_data->execute_command);
+					}
 				}
 			}
 			DEALLOCATE(file_name);
