@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : graphics_object.c
 
-LAST MODIFIED : 13 July 1999
+LAST MODIFIED : 1 February 2000
 
 DESCRIPTION :
 gtObject/gtWindow management routines.
@@ -2735,7 +2735,7 @@ Frees the memory for <**voltex> and sets <*voltex> to NULL.
 
 int update_GT_voltex_materials_to_default(struct GT_object *graphics_object)
 /*******************************************************************************
-LAST MODIFIED : 17 June 1998
+LAST MODIFIED : 1 February 2000
 
 DESCRIPTION :
 Voltexes differ from other graphics objects in that their materials are
@@ -2777,7 +2777,7 @@ from <graphics_object> to the iso_poly_material array in the voltex. Of course,
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"update_GT_voltex_materials_to_default.  Invalid argument");
+			"update_GT_voltex_materials_to_default.  Invalid argument(s)");
 		return_code=0;
 	}
 	LEAVE;
@@ -4477,7 +4477,7 @@ Removes all primitive at <time> from <graphics_object>.
 	primitive_type,gt_object_type,primitive_var,primitive_destroy_function) \
 PROTOTYPE_GT_OBJECT_REMOVE_PRIMITIVES_WITH_OBJECT_NAME_FUNCTION(primitive_type)\
 /***************************************************************************** \
-LAST MODIFIED : 20 June 1998 \
+LAST MODIFIED : 1 February 2000 \
 \
 DESCRIPTION : \
 Removes all primitives from <graphics_object> at <time> for which the \
@@ -4531,10 +4531,7 @@ object_name member matches the given <object_name>. \
 		} \
 		else \
 		{ \
-			display_message(ERROR_MESSAGE, \
-				"GT_OBJECT_REMOVE_PRIMITIVES_WITH_OBJECT_NAME(" #primitive_type \
-				").  No primitives at that time"); \
-			return_code=0; \
+			return_code=1; \
 		} \
 	} \
 	else \

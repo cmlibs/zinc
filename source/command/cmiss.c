@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : cmiss.c
 
-LAST MODIFIED : 17 January 2000
+LAST MODIFIED : 1 February 2000
 
 DESCRIPTION :
 Functions for executing cmiss commands.
@@ -35,6 +35,7 @@ Functions for executing cmiss commands.
 #include "finite_element/export_finite_element.h"
 #include "finite_element/finite_element.h"
 #include "finite_element/finite_element_to_graphics_object.h"
+#include "finite_element/finite_element_to_iso_lines.h"
 #include "finite_element/finite_element_to_streamlines.h"
 #include "finite_element/grid_field_calculator.h"
 #include "finite_element/import_finite_element.h"
@@ -3013,21 +3014,26 @@ float parameters.
 static int gfx_create_iso_surfaces(struct Parse_state *state,
 	void *dummy_to_be_modified,void *command_data_void)
 /*******************************************************************************
-LAST MODIFIED : 18 January 1999
+LAST MODIFIED : 1 February 2000
 
 DESCRIPTION :
 Executes a GFX CREATE ISO_SURFACES command.
 ==============================================================================*/
 {
-	char *graphics_object_name;
+	char exterior_flag,*graphics_object_name,*use_element_type_string,
+		**valid_strings;
+	enum GT_object_type graphics_object_type;
 	float time;
-	int return_code;
+	int face_number,number_of_valid_strings,return_code;
 	static char default_name[]="iso_surfaces";
 	struct Clipping *clipping;
 	struct Cmiss_command_data *command_data;
-	struct Computed_field *coordinate_field, *data_field, *iso_scalar_field,
+	struct Computed_field *coordinate_field, *data_field, *scalar_field,
 		*surface_data_density_field;
-	struct Element_to_iso_surface_data element_to_iso_surface_data;
+	struct Element_discretization discretization;
+	struct Element_to_iso_scalar_data element_to_iso_scalar_data;
+	struct FE_element *first_element;
+	struct FE_field *native_discretization_field;
 	struct FE_node *data_to_destroy;
 	struct GROUP(FE_element) *element_group;
 	struct GROUP(FE_node) *surface_data_group;
@@ -3035,7 +3041,7 @@ Executes a GFX CREATE ISO_SURFACES command.
 	struct MANAGER(Computed_field) *computed_field_manager;
 	struct Option_table *option_table;
 	struct Set_Computed_field_conditional_data set_coordinate_field_data,
-		set_data_field_data, set_iso_scalar_field_data,
+		set_data_field_data, set_scalar_field_data,
 		set_surface_data_density_field_data;
 	struct Spectrum *spectrum;
 
@@ -3064,16 +3070,19 @@ Executes a GFX CREATE ISO_SURFACES command.
 			surface_data_group = (struct GROUP(FE_node) *)NULL;
 			surface_data_density_field=(struct Computed_field *)NULL;
 			time=0;
-			element_to_iso_surface_data.material=
+			element_to_iso_scalar_data.material=
 				ACCESS(Graphical_material)(command_data->default_graphical_material);
 			element_group=(struct GROUP(FE_element) *)NULL;
 			clipping=(struct Clipping *)NULL;
-			iso_scalar_field=(struct Computed_field *)NULL;
-			element_to_iso_surface_data.iso_value=0;
+			scalar_field=(struct Computed_field *)NULL;
+			element_to_iso_scalar_data.iso_value=0;
+			native_discretization_field=(struct FE_field *)NULL;
 			spectrum=ACCESS(Spectrum)(command_data->default_spectrum);
-			element_to_iso_surface_data.discretization.number_in_xi1=4;
-			element_to_iso_surface_data.discretization.number_in_xi2=4;
-			element_to_iso_surface_data.discretization.number_in_xi3=4;
+			discretization.number_in_xi1=4;
+			discretization.number_in_xi2=4;
+			discretization.number_in_xi3=4;
+			exterior_flag=0;
+			face_number=0;
 
 			option_table=CREATE(Option_table)();
 			/* as */
@@ -3098,24 +3107,34 @@ Executes a GFX CREATE ISO_SURFACES command.
 			set_data_field_data.conditional_function_user_data=(void *)NULL;
 			Option_table_add_entry(option_table,"data",&data_field,
 				&set_data_field_data,set_Computed_field_conditional);
+			/* exterior */
+			Option_table_add_entry(option_table,"exterior",&exterior_flag,
+				NULL,set_char_flag);
+			/* face */
+			Option_table_add_entry(option_table,"face",&face_number,
+				NULL,set_exterior);
 			/* from */
 			Option_table_add_entry(option_table,"from",&element_group,
 				command_data->element_group_manager,set_FE_element_group);
 			/* iso_scalar */
-			set_iso_scalar_field_data.computed_field_package=
+			set_scalar_field_data.computed_field_package=
 				command_data->computed_field_package;
-			set_iso_scalar_field_data.conditional_function=
+			set_scalar_field_data.conditional_function=
 				Computed_field_has_1_component;
-			set_iso_scalar_field_data.conditional_function_user_data=(void *)NULL;
-			Option_table_add_entry(option_table,"iso_scalar",&iso_scalar_field,
-				&set_iso_scalar_field_data,set_Computed_field_conditional);
+			set_scalar_field_data.conditional_function_user_data=(void *)NULL;
+			Option_table_add_entry(option_table,"iso_scalar",&scalar_field,
+				&set_scalar_field_data,set_Computed_field_conditional);
 			/* iso_value */
 			Option_table_add_entry(option_table,"iso_value",
-				&(element_to_iso_surface_data.iso_value),NULL,set_double);
+				&(element_to_iso_scalar_data.iso_value),NULL,set_double);
 			/* material */
 			Option_table_add_entry(option_table,"material",
-				&(element_to_iso_surface_data.material),
+				&(element_to_iso_scalar_data.material),
 				command_data->graphical_material_manager,set_Graphical_material);
+			/* native_discretization */
+			Option_table_add_entry(option_table,"native_discretization",
+				&native_discretization_field,command_data->fe_field_manager,
+				set_FE_field);
 			/* spectrum */
 			Option_table_add_entry(option_table,"spectrum",&spectrum,
 				command_data->spectrum_manager,set_Spectrum);
@@ -3134,77 +3153,119 @@ Executes a GFX CREATE ISO_SURFACES command.
 				&surface_data_group,command_data->data_group_manager,set_FE_node_group);
 			/* time */
 			Option_table_add_entry(option_table,"time",&time,NULL,set_float);
+			/* use_elements/use_faces/use_lines */
+			use_element_type_string=Use_element_type_string(USE_ELEMENTS);
+			valid_strings=
+				Use_element_type_get_valid_strings(&number_of_valid_strings);
+			Option_table_add_enumerator(option_table,number_of_valid_strings,
+				valid_strings,&use_element_type_string);
+			DEALLOCATE(valid_strings);
 			/* with */
-			Option_table_add_entry(option_table,"with",
-				&(element_to_iso_surface_data.discretization),
+			Option_table_add_entry(option_table,"with",&discretization,
 				command_data->user_interface,set_Element_discretization);
-			return_code=Option_table_multi_parse(option_table,state);
-			if(surface_data_group&&(!surface_data_density_field))
+			if (return_code=Option_table_multi_parse(option_table,state))
 			{
-				display_message(ERROR_MESSAGE,
-					"gfx_create_volumes."
-					"  Must supply a surface_data_density_field with a surface_data_group");
-				return_code=0;
-			}
-			if((!surface_data_group)&&surface_data_density_field)
-			{
-				display_message(ERROR_MESSAGE,
-					"gfx_create_volumes."
-					"  Must supply a surface_data_group with a surface_data_density_field");
-				return_code=0;
-			}
-			/* no errors, not asking for help */
-			if (return_code)
-			{
-				if (iso_scalar_field)
+				face_number -= 2;
+				if (surface_data_group&&(!surface_data_density_field))
 				{
-					if (graphics_object_name)
+					display_message(ERROR_MESSAGE,"gfx_create_volumes.  Must supply "
+						"a surface_data_density_field with a surface_data_group");
+					return_code=0;
+				}
+				if ((!surface_data_group)&&surface_data_density_field)
+				{
+					display_message(ERROR_MESSAGE,"gfx_create_volumes.  Must supply "
+						"a surface_data_group with a surface_data_density_field");
+					return_code=0;
+				}
+				if (!scalar_field)
+				{
+					display_message(WARNING_MESSAGE,"Missing iso_scalar field");
+					return_code=0;
+				}
+				element_to_iso_scalar_data.use_element_type=
+					Use_element_type_from_string(use_element_type_string);
+				switch (element_to_iso_scalar_data.use_element_type)
+				{
+					case USE_ELEMENTS:
 					{
-						if (graphics_object=FIND_BY_IDENTIFIER_IN_LIST(GT_object,name)(
-							graphics_object_name,command_data->graphics_object_list))
+						graphics_object_type=g_VOLTEX;
+						if (element_group)
 						{
-							if (g_VOLTEX==graphics_object->object_type)
+							first_element=FIRST_OBJECT_IN_GROUP_THAT(FE_element)(
+								FE_element_is_top_level,(void *)NULL,element_group);
+						}
+						else
+						{
+							first_element=FIRST_OBJECT_IN_MANAGER_THAT(FE_element)(
+								FE_element_is_top_level,(void *)NULL,
+								command_data->element_manager);
+						}
+						if (first_element&&(2==get_FE_element_dimension(first_element)))
+						{
+							graphics_object_type=g_POLYLINE;
+						}
+					} break;
+					case USE_FACES:
+					{
+						graphics_object_type=g_POLYLINE;
+					} break;
+					case USE_LINES:
+					{
+						display_message(ERROR_MESSAGE,
+							".  "
+							"USE_LINES not supported for iso_scalar");
+						return_code=0;
+					} break;
+					default:
+					{
+						display_message(ERROR_MESSAGE,
+							".  "
+							"Unknown use_element_type");
+						return_code=0;
+					} break;
+				}
+				if (!graphics_object_name)
+				{
+					display_message(WARNING_MESSAGE,"Missing name");
+					return_code=0;
+				}
+				if (return_code)
+				{
+					if (graphics_object=FIND_BY_IDENTIFIER_IN_LIST(GT_object,name)(
+						graphics_object_name,command_data->graphics_object_list))
+					{
+						if (graphics_object_type==graphics_object->object_type)
+						{
+							if (GT_object_has_time(graphics_object,time))
 							{
-								if (GT_object_has_time(graphics_object,time))
-								{
-									display_message(WARNING_MESSAGE,
-										"Overwriting time %g in graphics object '%s'",time,
-										graphics_object_name);
-									return_code=GT_object_delete_time(graphics_object,time);
-								}
-							}
-							else
-							{
-								display_message(ERROR_MESSAGE,
-									"Object of different type named '%s' already exists",
+								display_message(WARNING_MESSAGE,
+									"Overwriting time %g in graphics object '%s'",time,
 									graphics_object_name);
-								return_code=0;
+								return_code=GT_object_delete_time(graphics_object,time);
 							}
 						}
 						else
 						{
-							if (!((graphics_object=CREATE(GT_object)(graphics_object_name,
-								g_VOLTEX,(struct Graphical_material *)NULL))&&
-								ADD_OBJECT_TO_LIST(GT_object)(graphics_object,
-								command_data->graphics_object_list)))
-							{
-								display_message(ERROR_MESSAGE,
-									"gfx_create_iso_surfaces.  Could not create graphics object");
-								DESTROY(GT_object)(&graphics_object);
-								return_code=0;
-							}
+							display_message(ERROR_MESSAGE,
+								"Object of different type named '%s' already exists",
+								graphics_object_name);
+							return_code=0;
 						}
 					}
 					else
 					{
-						display_message(WARNING_MESSAGE,"Missing name");
-						return_code=0;
+						if (!((graphics_object=CREATE(GT_object)(graphics_object_name,
+							graphics_object_type,element_to_iso_scalar_data.material))&&
+							ADD_OBJECT_TO_LIST(GT_object)(graphics_object,
+								command_data->graphics_object_list)))
+						{
+							display_message(ERROR_MESSAGE,
+								"gfx_create_iso_surfaces.  Could not create graphics object");
+							DESTROY(GT_object)(&graphics_object);
+							return_code=0;
+						}
 					}
-				}
-				else
-				{
-					display_message(WARNING_MESSAGE,"Missing iso_scalar field");
-					return_code=0;
 				}
 				if (return_code && surface_data_group)
 				{
@@ -3225,42 +3286,49 @@ Executes a GFX CREATE ISO_SURFACES command.
 					}
 					if(!return_code)
 					{
-						display_message(ERROR_MESSAGE,
-							"gfx_create_iso_surfaces.  Unable to remove all data from data_group");
+						display_message(ERROR_MESSAGE,"gfx_create_iso_surfaces.  "
+							"Unable to remove all data from data_group");
 						MANAGED_GROUP_END_CACHE(FE_node)(surface_data_group);
 					}
 				}
 				if (return_code)
 				{
-					element_to_iso_surface_data.coordinate_field=
+					element_to_iso_scalar_data.coordinate_field=
 						Computed_field_begin_wrap_coordinate_field(coordinate_field);
-					element_to_iso_surface_data.data_field=data_field;
-					element_to_iso_surface_data.iso_scalar_field=iso_scalar_field;
-					element_to_iso_surface_data.graphics_object_name=
-						graphics_object_name;
-					element_to_iso_surface_data.graphics_object=graphics_object;
-					element_to_iso_surface_data.clipping=clipping;
-					element_to_iso_surface_data.graphics_object_list=
-						command_data->graphics_object_list;
-					element_to_iso_surface_data.surface_data_density_field = 
+					element_to_iso_scalar_data.data_field=data_field;
+					element_to_iso_scalar_data.scalar_field=scalar_field;
+					element_to_iso_scalar_data.graphics_object=graphics_object;
+					element_to_iso_scalar_data.clipping=clipping;
+					element_to_iso_scalar_data.surface_data_density_field = 
 						surface_data_density_field;
-					element_to_iso_surface_data.surface_data_group = 
+					element_to_iso_scalar_data.surface_data_group = 
 						surface_data_group;
-					element_to_iso_surface_data.data_manager = 
+					element_to_iso_scalar_data.data_manager = 
 						command_data->data_manager;
-					element_to_iso_surface_data.fe_field_manager =
+					element_to_iso_scalar_data.fe_field_manager =
 						command_data->fe_field_manager;
-					element_to_iso_surface_data.time=time;
+					element_to_iso_scalar_data.time=time;
+					element_to_iso_scalar_data.number_in_xi[0]=
+						discretization.number_in_xi1;
+					element_to_iso_scalar_data.number_in_xi[1]=
+						discretization.number_in_xi2;
+					element_to_iso_scalar_data.number_in_xi[2]=
+						discretization.number_in_xi3;
+					element_to_iso_scalar_data.element_group=element_group;
+					element_to_iso_scalar_data.exterior=exterior_flag;
+					element_to_iso_scalar_data.face_number=face_number;
+					element_to_iso_scalar_data.native_discretization_field=
+						native_discretization_field;
 					if (element_group)
 					{
 						return_code=FOR_EACH_OBJECT_IN_GROUP(FE_element)(
-							element_to_iso_surface,(void *)&element_to_iso_surface_data,
+							element_to_iso_scalar,(void *)&element_to_iso_scalar_data,
 							element_group);
 					}
 					else
 					{
 						return_code=FOR_EACH_OBJECT_IN_MANAGER(FE_element)(
-							element_to_iso_surface,(void *)&element_to_iso_surface_data,
+							element_to_iso_scalar,(void *)&element_to_iso_scalar_data,
 							command_data->element_manager);
 					}
 					if (return_code&&GT_object_has_time(graphics_object,time))
@@ -3268,7 +3336,7 @@ Executes a GFX CREATE ISO_SURFACES command.
 						if (data_field)
 						{
 							return_code=set_GT_object_Spectrum(
-								element_to_iso_surface_data.graphics_object,spectrum);
+								element_to_iso_scalar_data.graphics_object,spectrum);
 						}
 					}
 					else
@@ -3281,7 +3349,7 @@ Executes a GFX CREATE ISO_SURFACES command.
 						}
 					}
 					Computed_field_end_wrap(
-						&(element_to_iso_surface_data.coordinate_field));
+						&(element_to_iso_scalar_data.coordinate_field));
 					if (surface_data_group)
 					{
 						MANAGED_GROUP_END_CACHE(FE_node)(surface_data_group);
@@ -3297,9 +3365,9 @@ Executes a GFX CREATE ISO_SURFACES command.
 			{
 				DEACCESS(Computed_field)(&data_field);
 			}
-			if (iso_scalar_field)
+			if (scalar_field)
 			{
-				DEACCESS(Computed_field)(&iso_scalar_field);
+				DEACCESS(Computed_field)(&scalar_field);
 			}
 			if (surface_data_density_field)
 			{
@@ -3313,9 +3381,17 @@ Executes a GFX CREATE ISO_SURFACES command.
 			{
 				DESTROY(Clipping)(&clipping);
 			}
+			if (native_discretization_field)
+			{
+				DEACCESS(FE_field)(&native_discretization_field);
+			}
+			if (element_group)
+			{
+				DEACCESS(GROUP(FE_element))(&element_group);
+			}
 			DEACCESS(Spectrum)(&spectrum);
 			DEACCESS(Graphical_material)(
-				&(element_to_iso_surface_data.material));
+				&(element_to_iso_scalar_data.material));
 			DEALLOCATE(graphics_object_name);
 		}
 		else

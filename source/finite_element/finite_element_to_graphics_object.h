@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : finite_element_to_graphics_object.h
 
-LAST MODIFIED : 22 December 1999
+LAST MODIFIED : 28 January 2000
 
 DESCRIPTION :
 The function prototypes for creating graphical objects from finite elements.
@@ -168,9 +168,9 @@ Data for converting a 3-D element into a volume.
 	struct VT_volume_texture *volume_texture;
 }; /* struct Element_to_volume_data */
 
-struct Element_to_iso_surface_data
+struct Element_to_iso_scalar_data
 /*******************************************************************************
-LAST MODIFIED : 15 February 1999
+LAST MODIFIED : 28 January 2000
 
 DESCRIPTION :
 Data for converting a 3-D element into an iso_surface (via a volume_texture).
@@ -178,17 +178,19 @@ Data for converting a 3-D element into an iso_surface (via a volume_texture).
 converted voltex code.
 ==============================================================================*/
 {
-	char *graphics_object_name;
+	char exterior;
 	double iso_value;
-	int field_component_number;
+	enum Use_element_type use_element_type;
 	float time;
-	gtObject *graphics_object;
+	int face_number;
 	struct Clipping *clipping;
-	struct Computed_field *coordinate_field, *data_field, *iso_scalar_field;
+	struct Computed_field *coordinate_field, *data_field, *scalar_field;
 	struct Computed_field *surface_data_density_field;
-	struct Element_discretization discretization;
+	int number_in_xi[MAXIMUM_ELEMENT_XI_DIMENSIONS];
+	struct FE_field *native_discretization_field;
 	struct Graphical_material *material;
-	struct LIST(GT_object) *graphics_object_list;
+	struct GT_object *graphics_object;
+	struct GROUP(FE_element) *element_group;
 	struct GROUP(FE_node) *surface_data_group;
 	struct MANAGER(FE_node) *data_manager;
 	struct MANAGER(FE_field) *fe_field_manager;
@@ -398,6 +400,21 @@ LAST MODIFIED : 6 July 1999
 DESCRIPTION :
 The optional <top_level_element> may be provided as a clue to Computed_fields
 to say which parent element they should be evaluated on as necessary.
+==============================================================================*/
+
+int get_surface_element_segmentation(struct FE_element *element,
+			int number_of_segments_in_xi1_requested,
+			int number_of_segments_in_xi2_requested,int reverse_normals,
+			int *number_of_points_in_xi1,int *number_of_points_in_xi2,
+			int *number_of_points,int *number_of_polygon_vertices,
+			int *polygon_xi2_zero,gtPolygonType *polygon_type,
+			int *collapsed_nodes,char *modified_reverse_normals);
+/*******************************************************************************
+LAST MODIFIED : 27 January 2000
+
+DESCRIPTION :
+Sorts out how standard, polygon and simplex elements are segmented, based on
+numbers of segments requested for "square" elements.
 ==============================================================================*/
 
 struct GT_surface *create_GT_surface_from_FE_element(
@@ -718,10 +735,26 @@ DESCRIPTION :
 Converts a 3-D element into a volume.
 ==============================================================================*/
 
-int element_to_iso_surface(struct FE_element *element,
-	void *void_element_to_iso_surface_data);
+int element_to_iso_scalar(struct FE_element *element,
+	void *element_to_iso_scalar_data_void);
 /*******************************************************************************
-LAST MODIFIED : 15 February 1999
+LAST MODIFIED : 28 January 2000
+
+DESCRIPTION :
+Computes iso-surfaces/lines/points graphics from <element>.
+==============================================================================*/
+
+int create_iso_surfaces_from_FE_element(struct FE_element *element,
+	double iso_value,float time,struct Clipping *clipping,
+	struct Computed_field *coordinate_field,
+	struct Computed_field *data_field,struct Computed_field *scalar_field,
+	struct Computed_field *surface_data_density_field,int *number_in_xi,
+	struct Graphical_material *material,struct GT_object *graphics_object,
+	struct GROUP(FE_node) *surface_data_group,
+	struct MANAGER(FE_node) *data_manager,
+	struct MANAGER(FE_field) *fe_field_manager);
+/*******************************************************************************
+LAST MODIFIED : 28 January 2000
 
 DESCRIPTION :
 Converts a 3-D element into an iso_surface (via a volume_texture).

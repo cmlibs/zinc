@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : element_group_settings.c
 
-LAST MODIFIED : 27 January 2000
+LAST MODIFIED : 28 January 2000
 
 DESCRIPTION :
 GT_element_settings structure and routines for describing and manipulating the
@@ -18,6 +18,7 @@ appearance of graphical finite element groups.
 #include "finite_element/computed_field.h"
 #include "finite_element/finite_element.h"
 #include "finite_element/finite_element_to_graphics_object.h"
+#include "finite_element/finite_element_to_iso_lines.h"
 #include "finite_element/finite_element_to_streamlines.h"
 #include "graphics/auxiliary_graphics_types.h"
 #include "graphics/element_group_settings.h"
@@ -37,7 +38,7 @@ Module types
 
 struct GT_element_settings
 /*******************************************************************************
-LAST MODIFIED : 13 July 1999
+LAST MODIFIED : 28 January 2000
 
 DESCRIPTION :
 Stores one group of settings for a single line/surface/etc. part of the
@@ -54,13 +55,13 @@ finite element group rendition.
 	/* for all graphic types */
 	enum GT_element_settings_type settings_type;
 	struct Computed_field *coordinate_field;
-	/* for lines, surfaces only */
+	/* for 1-D and 2-D elements only */
 	char exterior;
-	/* For surfaces only at the moment */
-	struct Computed_field *texture_coordinate_field;
 	/* face number is from -1 to 5, where -1 is none/all, 0 is xi1=0, 1 is xi1=1,
 		 2 is xi2=0 etc. */
 	int face;
+	/* For surfaces only at the moment */
+	struct Computed_field *texture_coordinate_field;
 	/* for cylinders only */
 	/* use radius = constant_radius + scale_factor*radius_scalar_field */
 	float constant_radius,radius_scale_factor;
@@ -74,8 +75,9 @@ finite element group rendition.
 	struct Computed_field *orientation_scale_field;
 	struct Computed_field *label_field;
 	enum Glyph_edit_mode glyph_edit_mode;
-	/* for element_points only */
+	/* for element_points and iso_surfaces */
 	enum Use_element_type use_element_type;
+	/* for element_points only */
 	struct FE_field *native_discretization_field;
 	struct Element_discretization discretization;
 	enum Xi_discretization_mode xi_discretization_mode;
@@ -185,8 +187,9 @@ Allocates memory and assigns fields for a struct GT_element_settings.
 			settings->orientation_scale_field=(struct Computed_field *)NULL;
 			settings->label_field=(struct Computed_field *)NULL;
 			settings->glyph_edit_mode=GLYPH_EDIT_OFF;
-			/* for element_points only */
+			/* for element_points and iso_surfaces */
 			settings->use_element_type=USE_ELEMENTS;
+			/* for element_points only */
 			settings->native_discretization_field=(struct FE_field *)NULL;
 			/* default to 1*1*1 discretization for fastest possible display.
 				 Important since model may have a *lot* of elements */
@@ -433,8 +436,9 @@ Note: destination->access_count is not changed by COPY.
 		}
 		REACCESS(Computed_field)(&(destination->label_field),source->label_field);
 		destination->glyph_edit_mode=source->glyph_edit_mode;
-		/* for element_points only */
+		/* for element_points and iso_surfaces */
 		destination->use_element_type=source->use_element_type;
+		/* for element_points only */
 		REACCESS(FE_field)(&(destination->native_discretization_field),
 			source->native_discretization_field);
 		destination->discretization.number_in_xi1=
@@ -889,13 +893,13 @@ Returns the dimension of the <settings>, which varies for some settings types.
 			{
 				dimension=2;
 			} break;
-			case GT_ELEMENT_SETTINGS_ISO_SURFACES:
 			case GT_ELEMENT_SETTINGS_VOLUMES:
 			case GT_ELEMENT_SETTINGS_STREAMLINES:
 			{
 				dimension=3;
 			} break;
 			case GT_ELEMENT_SETTINGS_ELEMENT_POINTS:
+			case GT_ELEMENT_SETTINGS_ISO_SURFACES:
 			{
 				dimension=Use_element_type_dimension(settings->use_element_type);
 			} break;
@@ -1796,17 +1800,19 @@ For settings_type GT_ELEMENT_SETTINGS_STREAMLINES only.
 enum Use_element_type GT_element_settings_get_use_element_type(
 	struct GT_element_settings *settings)
 /*******************************************************************************
-LAST MODIFIED : 22 December 1999
+LAST MODIFIED : 28 January 2000
 
 DESCRIPTION :
 Returns the type of elements used by the settings.
-For <settings> type GT_ELEMENT_SETTINGS_ELEMENT_POINTS only.
+For <settings> type GT_ELEMENT_SETTINGS_ELEMENT_POINTS and
+GT_ELEMENT_SETTINGS_ISO_SURFACES only.
 ==============================================================================*/
 {
 	enum Use_element_type use_element_type;
 
 	ENTER(GT_element_settings_get_use_element_type);
-	if (settings&&(GT_ELEMENT_SETTINGS_ELEMENT_POINTS==settings->settings_type))
+	if (settings&&((GT_ELEMENT_SETTINGS_ELEMENT_POINTS==settings->settings_type)||
+		(GT_ELEMENT_SETTINGS_ISO_SURFACES==settings->settings_type)))
 	{
 		use_element_type=settings->use_element_type;
 	}
@@ -1824,17 +1830,19 @@ For <settings> type GT_ELEMENT_SETTINGS_ELEMENT_POINTS only.
 int GT_element_settings_set_use_element_type(
 	struct GT_element_settings *settings,enum Use_element_type use_element_type)
 /*******************************************************************************
-LAST MODIFIED : 22 December 1999
+LAST MODIFIED : 28 January 2000
 
 DESCRIPTION :
 Sets the type of elements used by the settings.
-For <settings> type GT_ELEMENT_SETTINGS_ELEMENT_POINTS only.
+For <settings> type GT_ELEMENT_SETTINGS_ELEMENT_POINTS and
+GT_ELEMENT_SETTINGS_ISO_SURFACES only.
 ==============================================================================*/
 {
 	int return_code;
 
 	ENTER(GT_element_settings_set_use_element_type);
-	if (settings&&(GT_ELEMENT_SETTINGS_ELEMENT_POINTS==settings->settings_type))
+	if (settings&&((GT_ELEMENT_SETTINGS_ELEMENT_POINTS==settings->settings_type)||
+		(GT_ELEMENT_SETTINGS_ISO_SURFACES==settings->settings_type)))
 	{
 		settings->use_element_type=use_element_type;
 		return_code=1;
@@ -2801,12 +2809,19 @@ settings describe EXACTLY the same geometry.
 				(settings->label_field==second_settings->label_field)&&
 				(settings->glyph_edit_mode==second_settings->glyph_edit_mode);
 		}
+		/* for element_points and iso_surfaces */
+		if (return_code&&
+			((GT_ELEMENT_SETTINGS_ELEMENT_POINTS==settings->settings_type)||
+				(GT_ELEMENT_SETTINGS_ISO_SURFACES==settings->settings_type)))
+		{
+			return_code=
+				(settings->use_element_type==second_settings->use_element_type);
+		}
 		/* for element_points only */
 		if (return_code&&
 			(GT_ELEMENT_SETTINGS_ELEMENT_POINTS==settings->settings_type))
 		{
 			return_code=
-				(settings->use_element_type==second_settings->use_element_type)&&
 				(settings->native_discretization_field==
 					second_settings->native_discretization_field)&&
 				(settings->discretization.number_in_xi1==
@@ -2968,8 +2983,7 @@ any trivial differences are fixed up in the graphics_obejct.
 					{
 						set_GT_object_default_material(settings->graphics_object,
 							settings->material);
-						if ((GT_ELEMENT_SETTINGS_ISO_SURFACES==settings->settings_type)||
-							(GT_ELEMENT_SETTINGS_VOLUMES==settings->settings_type))
+						if (g_VOLTEX==settings->graphics_object->object_type)
 						{
 							update_GT_voltex_materials_to_default(settings->graphics_object);
 						}
@@ -3017,7 +3031,8 @@ ensure the relevant parent elements are also in the group.
 	if (settings&&element&&element_group)
 	{
 		dimension=GT_element_settings_get_dimension(settings);
-		if (GT_ELEMENT_SETTINGS_ELEMENT_POINTS==settings->settings_type)
+		if ((GT_ELEMENT_SETTINGS_ELEMENT_POINTS==settings->settings_type)||
+			(GT_ELEMENT_SETTINGS_ISO_SURFACES==settings->settings_type))
 		{
 			cm_element_type=Use_element_type_CM_element_type(
 				settings->use_element_type);
@@ -3040,51 +3055,10 @@ ensure the relevant parent elements are also in the group.
 	return (return_code);
 } /* GT_element_settings_uses_FE_element */
 
-#if defined (OLD_CODE)
-struct FE_element_used_by_GT_element_settings_data
-{
-	struct GROUP(FE_element) *element_group;
-	struct GT_element_settings *settings;
-};
-
-int FE_element_used_by_GT_element_settings(struct FE_element *element,
-	void *element_used_by_settings_data_void)
-/*******************************************************************************
-LAST MODIFIED : 21 September 1998
-
-DESCRIPTION :
-FE_element conditional function wrapper for GT_element_settings_uses_FE_element.
-==============================================================================*/
-{
-	int return_code;
-	struct FE_element_used_by_GT_element_settings_data
-		*element_used_by_settings_data;
-
-	ENTER(FE_element_used_by_GT_element_settings);
-	if (element&&(element_used_by_settings_data=
-		(struct FE_element_used_by_GT_element_settings_data *)
-		element_used_by_settings_data_void))
-	{
-		return_code=GT_element_settings_uses_FE_element(
-			element_used_by_settings_data->settings,element,
-			element_used_by_settings_data->element_group);
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"FE_element_used_by_GT_element_settings.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* FE_element_used_by_GT_element_settings */
-#endif /* defined (OLD_CODE) */
-
 int GT_element_settings_type_uses_dimension(
 	enum GT_element_settings_type settings_type,int dimension)
 /*******************************************************************************
-LAST MODIFIED : 19 March 1999
+LAST MODIFIED : 28 January 2000
 
 DESCRIPTION :
 Returns true if the particular <settings_type> can deal with nodes/elements of
@@ -3110,13 +3084,13 @@ the given <dimension>.
 		{
 			return_code=(2==dimension);
 		} break;
-		case GT_ELEMENT_SETTINGS_ISO_SURFACES:
 		case GT_ELEMENT_SETTINGS_VOLUMES:
 		case GT_ELEMENT_SETTINGS_STREAMLINES:
 		{
 			return_code=(3==dimension);
 		} break;
 		case GT_ELEMENT_SETTINGS_ELEMENT_POINTS:
+		case GT_ELEMENT_SETTINGS_ISO_SURFACES:
 		{
 			return_code=((1==dimension)||(2==dimension)||(3==dimension));
 		} break;
@@ -3304,7 +3278,7 @@ Returns the <GT_element_settings_type> described by
 char *GT_element_settings_string(struct GT_element_settings *settings,
 	enum GT_element_settings_string_details settings_detail)
 /*******************************************************************************
-LAST MODIFIED : 22 December 1999
+LAST MODIFIED : 28 January 2000
 
 DESCRIPTION :
 Returns a string describing the settings, suitable for entry into the command
@@ -3526,11 +3500,18 @@ if no coordinate field. Currently only write if we have a field.
 				error=1;
 			}
 		}
+		/* for element_points and iso_surfaces */
+		if ((GT_ELEMENT_SETTINGS_ELEMENT_POINTS==settings->settings_type)||
+			(GT_ELEMENT_SETTINGS_ISO_SURFACES==settings->settings_type))
+		{
+			sprintf(temp_string," %s",
+				Use_element_type_string(settings->use_element_type));
+			append_string(&settings_string,temp_string,&error);
+		}
 		/* for element_points only */
 		if (GT_ELEMENT_SETTINGS_ELEMENT_POINTS==settings->settings_type)
 		{
-			sprintf(temp_string," %s discretization %d*%d*%d",
-				Use_element_type_string(settings->use_element_type),
+			sprintf(temp_string," discretization %d*%d*%d",
 				settings->discretization.number_in_xi1,
 				settings->discretization.number_in_xi2,
 				settings->discretization.number_in_xi3);
@@ -3831,7 +3812,7 @@ Makes a copy of the settings and puts it in the list_of_settings.
 static int element_to_graphics_object(struct FE_element *element,
 	void *settings_to_object_data_void)
 /*******************************************************************************
-LAST MODIFIED : 21 December 1999
+LAST MODIFIED : 28 January 2000
 
 DESCRIPTION :
 Converts a finite element into a graphics object with the supplied settings.
@@ -4008,19 +3989,61 @@ Converts a finite element into a graphics object with the supplied settings.
 					} break;
 					case GT_ELEMENT_SETTINGS_ISO_SURFACES:
 					{
-						settings_to_object_data->iso_surface_data->
-							discretization.number_in_xi1=top_level_number_in_xi[0];
-						settings_to_object_data->iso_surface_data->
-							discretization.number_in_xi2=top_level_number_in_xi[1];
-						settings_to_object_data->iso_surface_data->
-							discretization.number_in_xi3=top_level_number_in_xi[2];
-						if (edit_mode)
+						switch (settings->graphics_object->object_type)
 						{
-							GT_OBJECT_REMOVE_PRIMITIVES_WITH_OBJECT_NAME(GT_voltex)(
-								settings->graphics_object,time,element->cm.number);
+							case g_VOLTEX:
+							{
+								if (3==get_FE_element_dimension(element))
+								{
+									if (edit_mode)
+									{
+										GT_OBJECT_REMOVE_PRIMITIVES_WITH_OBJECT_NAME(GT_voltex)(
+											settings->graphics_object,time,element->cm.number);
+									}
+									return_code=create_iso_surfaces_from_FE_element(element,
+										settings->iso_value,time,(struct Clipping *)NULL,
+										settings_to_object_data->rc_coordinate_field,
+										settings->data_field,settings->iso_scalar_field,
+										(struct Computed_field *)NULL,number_in_xi,
+										settings->material,settings->graphics_object,
+										(struct GROUP(FE_node) *)NULL,
+										(struct MANAGER(FE_node) *)NULL,
+										(struct MANAGER(FE_field) *)NULL);
+								}
+								else
+								{
+									display_message(WARNING_MESSAGE,
+										"Cannot add iso_lines of 2-D element to voltex");
+								}
+							} break;
+							case g_POLYLINE:
+							{
+								if (2==get_FE_element_dimension(element))
+								{
+									if (edit_mode)
+									{
+										GT_OBJECT_REMOVE_PRIMITIVES_WITH_OBJECT_NAME(GT_polyline)(
+											settings->graphics_object,time,element->cm.number);
+									}
+									return_code=create_iso_lines_from_FE_element(element,
+										settings_to_object_data->rc_coordinate_field,
+										settings->iso_scalar_field,settings->iso_value,
+										settings->data_field,number_in_xi[0],number_in_xi[1],
+										top_level_element,settings->graphics_object,time);
+								}
+								else
+								{
+									display_message(WARNING_MESSAGE,
+										"Cannot add iso_surfaces of 3-D element to polyline");
+								}
+							} break;
+							default:
+							{
+								display_message(ERROR_MESSAGE,"element_to_graphics_object.  "
+									"Invalid graphic type for iso_scalar");
+								return_code=0;
+							} break;
 						}
-						return_code=element_to_iso_surface(element,
-							settings_to_object_data->iso_surface_data);
 					} break;
 					case GT_ELEMENT_SETTINGS_ELEMENT_POINTS:
 					{
@@ -4055,9 +4078,6 @@ Converts a finite element into a graphics object with the supplied settings.
 								GT_OBJECT_REMOVE_PRIMITIVES_WITH_OBJECT_NAME(GT_glyph_set)(
 									settings->graphics_object,time,element->cm.number);
 							}
-							/* glyph sets take the element and top_level_element. Calculations
-								 are done on the latter, while the glyph set is marked as being
-								 calculated on the former, so that the above editing code works */
 							if (glyph_set=create_GT_glyph_set_from_FE_element(
 								element,top_level_element,
 								settings_to_object_data->rc_coordinate_field,
@@ -4093,7 +4113,8 @@ Converts a finite element into a graphics object with the supplied settings.
 							(struct Clipping *)NULL,element,
 							settings_to_object_data->rc_coordinate_field,settings->data_field,
 							settings->volume_texture,
-							settings->displacement_map_field, settings->displacement_map_xi_direction,
+							settings->displacement_map_field,
+							settings->displacement_map_xi_direction,
 							settings->blur_field))
 						{
 							if (edit_mode)
@@ -4189,7 +4210,7 @@ Converts a finite element into a graphics object with the supplied settings.
 int GT_element_settings_to_graphics_object(
 	struct GT_element_settings *settings,void *settings_to_object_data_void)
 /*******************************************************************************
-LAST MODIFIED : 19 August 1999
+LAST MODIFIED : 1 February 2000
 
 DESCRIPTION :
 Creates a GT_object and fills it with the objects described by settings.
@@ -4201,12 +4222,7 @@ The graphics object is stored with with the settings it was created from.
 	enum GT_object_type graphics_object_type;
 	int multi_element_voltex,return_code;
 	struct Computed_field *coordinate_field;
-	struct Element_to_iso_surface_data iso_surface_data;
-	struct FE_element *changed_element;
-#if defined (OLD_CODE)
-	struct FE_element_used_by_GT_element_settings_data
-		element_used_by_settings_data;
-#endif /* defined (OLD_CODE) */
+	struct FE_element *changed_element,*first_element;
 	struct FE_field *fe_coordinate_field;
 	struct FE_node *changed_node;
 	struct GROUP(FE_element) *element_group;
@@ -4286,7 +4302,39 @@ The graphics object is stored with with the settings it was created from.
 							} break;
 							case GT_ELEMENT_SETTINGS_ISO_SURFACES:
 							{
-								graphics_object_type=g_VOLTEX;
+								switch (settings->use_element_type)
+								{
+									case USE_ELEMENTS:
+									{
+										graphics_object_type=g_VOLTEX;
+										if (first_element=FIRST_OBJECT_IN_GROUP_THAT(FE_element)(
+											FE_element_is_top_level,(void *)NULL,element_group))
+										{
+											if (2==get_FE_element_dimension(first_element))
+											{
+												graphics_object_type=g_POLYLINE;
+											}
+										}
+									} break;
+									case USE_FACES:
+									{
+										graphics_object_type=g_POLYLINE;
+									} break;
+									case USE_LINES:
+									{
+										display_message(ERROR_MESSAGE,
+											"GT_element_settings_to_graphics_object.  "
+											"USE_LINES not supported for iso_scalar");
+										return_code=0;
+									} break;
+									default:
+									{
+										display_message(ERROR_MESSAGE,
+											"GT_element_settings_to_graphics_object.  "
+											"Unknown use_element_type");
+										return_code=0;
+									} break;
+								}
 							} break;
 							case GT_ELEMENT_SETTINGS_NODE_POINTS:
 							case GT_ELEMENT_SETTINGS_DATA_POINTS:
@@ -4389,34 +4437,8 @@ The graphics object is stored with with the settings it was created from.
 							case GT_ELEMENT_SETTINGS_CYLINDERS:
 							case GT_ELEMENT_SETTINGS_SURFACES:
 							case GT_ELEMENT_SETTINGS_ELEMENT_POINTS:
-							{
-								return_code=FOR_EACH_OBJECT_IN_GROUP(FE_element)(
-									element_to_graphics_object,settings_to_object_data_void,
-									element_group);
-							} break;
 							case GT_ELEMENT_SETTINGS_ISO_SURFACES:
 							{
-								iso_surface_data.graphics_object_name=(char *)NULL;
-								iso_surface_data.iso_value=settings->iso_value;
-								iso_surface_data.time=time;
-								iso_surface_data.coordinate_field=
-									settings_to_object_data->rc_coordinate_field;
-								iso_surface_data.data_field=settings->data_field;
-								iso_surface_data.surface_data_density_field=
-									(struct Computed_field *)NULL;
-								iso_surface_data.graphics_object=settings->graphics_object;
-								iso_surface_data.clipping=(struct Clipping *)NULL;
-								iso_surface_data.iso_scalar_field=settings->iso_scalar_field;
-								iso_surface_data.material=settings->material;
-								iso_surface_data.graphics_object_list=
-									(struct LIST(GT_object) *)NULL;
-								iso_surface_data.surface_data_group=
-									(struct GROUP(FE_node) *)NULL;
-								iso_surface_data.data_manager=
-									(struct MANAGER(FE_node) *)NULL;
-								iso_surface_data.fe_field_manager=
-									(struct MANAGER(FE_field) *)NULL;
-								settings_to_object_data->iso_surface_data=&iso_surface_data;
 								return_code=FOR_EACH_OBJECT_IN_GROUP(FE_element)(
 									element_to_graphics_object,settings_to_object_data_void,
 									element_group);
@@ -5789,7 +5811,7 @@ parsed settings. Note that the settings are ACCESSed once on valid return.
 int gfx_modify_g_element_iso_surfaces(struct Parse_state *state,
 	void *modify_g_element_data_void,void *g_element_command_data_void)
 /*******************************************************************************
-LAST MODIFIED : 22 December 1999
+LAST MODIFIED : 28 January 2000
 
 DESCRIPTION :
 Executes a GFX MODIFY G_ELEMENT ISO_SURFACES command.
@@ -5797,8 +5819,8 @@ If return_code is 1, returns the completed Modify_g_element_data with the
 parsed settings. Note that the settings are ACCESSed once on valid return.
 ==============================================================================*/
 {
-	char invisible_flag;
-	int return_code;
+	char invisible_flag,*use_element_type_string,**valid_strings;
+	int number_of_valid_strings,return_code;
 	struct Computed_field *scalar_field;
 	struct Modify_g_element_data *modify_g_element_data;
 	struct GT_element_settings *settings;
@@ -5860,6 +5882,12 @@ parsed settings. Note that the settings are ACCESSed once on valid return.
 					/* delete */
 					Option_table_add_entry(option_table,"delete",
 						&(modify_g_element_data->delete_flag),NULL,set_char_flag);
+					/* exterior */
+					Option_table_add_entry(option_table,"exterior",&(settings->exterior),
+						NULL,set_char_flag);
+					/* face */
+					Option_table_add_entry(option_table,"face",&(settings->face),
+						NULL,set_exterior);
 					/* invisible */
 					Option_table_add_entry(option_table,"invisible",&(invisible_flag),
 						NULL,set_char_flag);
@@ -5890,25 +5918,40 @@ parsed settings. Note that the settings are ACCESSed once on valid return.
 					Option_table_add_entry(option_table,"spectrum",
 						&(settings->spectrum),g_element_command_data->spectrum_manager,
 						set_Spectrum);
+					/* use_elements/use_faces/use_lines */
+					use_element_type_string=
+						Use_element_type_string(settings->use_element_type);
+					valid_strings=
+						Use_element_type_get_valid_strings(&number_of_valid_strings);
+					Option_table_add_enumerator(option_table,number_of_valid_strings,
+						valid_strings,&use_element_type_string);
+					DEALLOCATE(valid_strings);
 					if (return_code=Option_table_multi_parse(option_table,state))
 					{
-						if (settings->iso_scalar_field)
-						{
-							if (settings->data_field&&!settings->spectrum)
-							{
-								settings->spectrum=ACCESS(Spectrum)(
-									g_element_command_data->default_spectrum);
-							}
-							if (invisible_flag)
-							{
-								settings->visibility=0;
-							}
-						}
-						else
+						if ((struct Computed_field *)NULL==settings->iso_scalar_field)
 						{
 							display_message(ERROR_MESSAGE,
 								"gfx_modify_g_element_iso_surfaces.  Missing iso_scalar field");
 							return_code=0;
+						}
+						GT_element_settings_set_use_element_type(settings,
+							Use_element_type_from_string(use_element_type_string));
+						if (settings->data_field&&!settings->spectrum)
+						{
+							settings->spectrum=ACCESS(Spectrum)(
+								g_element_command_data->default_spectrum);
+						}
+						if (invisible_flag)
+						{
+							settings->visibility=0;
+						}
+						if (0 < settings->face)
+						{
+							settings->face -= 2;
+						}
+						else
+						{
+							settings->face=-1;
 						}
 					}
 					DESTROY(Option_table)(&option_table);
@@ -6101,7 +6144,8 @@ parsed settings. Note that the settings are ACCESSed once on valid return.
 						&(settings->spectrum),g_element_command_data->spectrum_manager,
 						set_Spectrum);
 					/* use_elements/use_faces/use_lines */
-					use_element_type_string=Use_element_type_string(USE_ELEMENTS);
+					use_element_type_string=
+						Use_element_type_string(settings->use_element_type);
 					valid_strings=
 						Use_element_type_get_valid_strings(&number_of_valid_strings);
 					Option_table_add_enumerator(option_table,number_of_valid_strings,

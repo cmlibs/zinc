@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : element_group_settings.h
 
-LAST MODIFIED : 22 December 1999
+LAST MODIFIED : 28 January 2000
 
 DESCRIPTION :
 GT_element_settings structure and routines for describing and manipulating the
@@ -119,7 +119,7 @@ Subset of command data passed to g_element modify routines.
 
 struct GT_element_settings_to_graphics_object_data
 /*******************************************************************************
-LAST MODIFIED : 19 March 1999
+LAST MODIFIED : 28 January 2000
 
 DESCRIPTION :
 Data required to produce or edit a graphics object for a GT_element_settings
@@ -140,8 +140,6 @@ object.
 
 	/* additional values for passing to element_to_graphics_object */
 	struct GT_element_settings *settings;
-	/* for creating iso surfaces */
-	struct Element_to_iso_surface_data *iso_surface_data;
 };
 
 struct GT_element_settings_computed_field_change_data
@@ -569,21 +567,23 @@ For settings_type GT_ELEMENT_SETTINGS_STREAMLINES only.
 enum Use_element_type GT_element_settings_get_use_element_type(
 	struct GT_element_settings *settings);
 /*******************************************************************************
-LAST MODIFIED : 22 December 1999
+LAST MODIFIED : 28 January 2000
 
 DESCRIPTION :
 Returns the type of elements used by the settings.
-For <settings> type GT_ELEMENT_SETTINGS_ELEMENT_POINTS only.
+For <settings> type GT_ELEMENT_SETTINGS_ELEMENT_POINTS and
+GT_ELEMENT_SETTINGS_ISO_SURFACES only.
 ==============================================================================*/
 
 int GT_element_settings_set_use_element_type(
 	struct GT_element_settings *settings,enum Use_element_type use_element_type);
 /*******************************************************************************
-LAST MODIFIED : 22 December 1999
+LAST MODIFIED : 28 January 2000
 
 DESCRIPTION :
 Sets the type of elements used by the settings.
-For <settings> type GT_ELEMENT_SETTINGS_ELEMENT_POINTS only.
+For <settings> type GT_ELEMENT_SETTINGS_ELEMENT_POINTS and
+GT_ELEMENT_SETTINGS_ISO_SURFACES only.
 ==============================================================================*/
 
 int GT_element_settings_get_visibility(struct GT_element_settings *settings);

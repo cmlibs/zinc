@@ -1,7 +1,7 @@
 XCOMM **************************************************************************
 XCOMM FILE : cmgui.imake
 XCOMM
-XCOMM LAST MODIFIED : 19 January 2000
+XCOMM LAST MODIFIED : 27 January 2000
 XCOMM
 XCOMM DESCRIPTION :
 XCOMM
@@ -639,6 +639,7 @@ FINITE_ELEMENT_SRCS = \
 	finite_element/export_finite_element.c \
 	finite_element/finite_element.c \
 	finite_element/finite_element_to_graphics_object.c \
+	finite_element/finite_element_to_iso_lines.c \
 	finite_element/finite_element_to_streamlines.c \
 	finite_element/grid_field_calculator.c \
 	finite_element/import_finite_element.c

@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : settings_editor.c
 
-LAST MODIFIED : 21 January 2000
+LAST MODIFIED : 28 January 2000
 
 DESCRIPTION :
 Provides the widgets to manipulate element group settings.
@@ -3252,15 +3252,34 @@ Changes the currently chosen settings.
 								XtUnmanageChild(settings_editor->label_field_entry);
 							}
 
-							/* element_points */
-							if (GT_ELEMENT_SETTINGS_ELEMENT_POINTS==settings_type)
+							/* element_points and iso_surfaces */
+							if ((GT_ELEMENT_SETTINGS_ELEMENT_POINTS==settings_type)||
+								(GT_ELEMENT_SETTINGS_ISO_SURFACES==settings_type))
 							{
 								choose_enumerator_set_string(
 									settings_editor->use_element_type_widget,
 									Use_element_type_string(
 										GT_element_settings_get_use_element_type(new_settings)));
 								XtManageChild(settings_editor->use_element_type_entry);
+								/* turn on callbacks */
+								callback.data=(void *)settings_editor;
+								callback.procedure=settings_editor_update_use_element_type;
+								choose_enumerator_set_callback(
+									settings_editor->use_element_type_widget,&callback);
+							}
+							else
+							{
+								XtUnmanageChild(settings_editor->use_element_type_entry);
+								/* turn off callbacks */
+								callback.procedure=(Callback_procedure *)NULL;
+								callback.data=(void *)NULL;
+								choose_enumerator_set_callback(
+									settings_editor->use_element_type_widget,&callback);
+							}
 
+							/* element_points */
+							if (GT_ELEMENT_SETTINGS_ELEMENT_POINTS==settings_type)
+							{
 								GT_element_settings_get_discretization(new_settings,
 									&discretization);
 								sprintf(temp_string,"%d*%d*%d",discretization.number_in_xi1,
@@ -3294,9 +3313,6 @@ Changes the currently chosen settings.
 								XtManageChild(settings_editor->xi_discretization_mode_entry);
 								/* turn on callbacks */
 								callback.data=(void *)settings_editor;
-								callback.procedure=settings_editor_update_use_element_type;
-								choose_enumerator_set_callback(
-									settings_editor->use_element_type_widget,&callback);
 								callback.procedure=
 									settings_editor_update_native_discretization_field;
 								CHOOSE_OBJECT_SET_CALLBACK(FE_field)(
@@ -3309,15 +3325,12 @@ Changes the currently chosen settings.
 							}
 							else
 							{
-								XtUnmanageChild(settings_editor->use_element_type_entry);
 								XtUnmanageChild(settings_editor->discretization_entry);
 								XtUnmanageChild(settings_editor->native_discretization_entry);
 								XtUnmanageChild(settings_editor->xi_discretization_mode_entry);
 								/* turn off callbacks */
 								callback.procedure=(Callback_procedure *)NULL;
 								callback.data=(void *)NULL;
-								choose_enumerator_set_callback(
-									settings_editor->use_element_type_widget,&callback);
 								CHOOSE_OBJECT_SET_CALLBACK(FE_field)(
 									settings_editor->native_discretization_field_widget,
 									&callback);
