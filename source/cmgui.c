@@ -954,15 +954,15 @@ Main program for the CMISS Graphical User Interface
 	if (command_data.graphical_material_manager=
 		CREATE(MANAGER(Graphical_material))())
 	{
-		struct Colour colour;
-
 		if (command_data.default_graphical_material=
 			CREATE(Graphical_material)("default"))
 		{
+#if defined (MOTIF)
 			Graphical_material_set_ambient(command_data.default_graphical_material,
 				&(command_data.foreground_colour));
 			Graphical_material_set_diffuse(command_data.default_graphical_material,
 				&(command_data.foreground_colour));
+#endif /* defined (MOTIF) */
 			Graphical_material_set_alpha(command_data.default_graphical_material,
 				1.0);
 			/* ACCESS so can never be destroyed */
@@ -980,9 +980,11 @@ Main program for the CMISS Graphical User Interface
 		if (default_selected_material=CREATE(Graphical_material)(
 			"default_selected"))
 		{
-			colour.red=1.0;
-			colour.green=0.0;
-			colour.blue=0.0;
+			struct Colour colour;
+
+			colour.red = 1.0;
+			colour.green = 0.0;
+			colour.blue = 0.0;
 			Graphical_material_set_ambient(default_selected_material,&colour);
 			Graphical_material_set_diffuse(default_selected_material,&colour);
 			/* ACCESS so can never be destroyed */
@@ -1468,8 +1470,8 @@ Main program for the CMISS Graphical User Interface
 				display_message(ERROR_MESSAGE,"Unable to register callbacks");
 				return_code=0;
 			}
-#endif /* defined (MOTIF) */
 		}
+#endif /* defined (MOTIF) */
 	}	
 
 #if defined (MOTIF)
