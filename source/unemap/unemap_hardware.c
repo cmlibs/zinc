@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : unemap_hardware.c
 
-LAST MODIFIED : 19 May 2000
+LAST MODIFIED : 25 May 2000
 
 DESCRIPTION :
 Code for controlling the National Instruments (NI) data acquisition and unemap
@@ -2860,7 +2860,7 @@ DESCRIPTION :
 static void scrolling_callback_NI(HWND handle,UINT message,WPARAM wParam,
 	LPARAM lParam)
 /*******************************************************************************
-LAST MODIFIED : 10 September 1999
+LAST MODIFIED : 25 May 2000
 
 DESCRIPTION :
 Always called so that <module_starting_sample_number> and
@@ -2875,14 +2875,24 @@ Always called so that <module_starting_sample_number> and
 	static int first_error=1;
 	struct NI_card *ni_card;
 	unsigned char *byte_array;
-	unsigned long offset,number_of_samples,sample_number;
+	unsigned long end1,end2,end3,offset,number_of_samples,sample_number;
 
 	ENTER(scrolling_callback_NI);
-	/* keep <module_starting_sample_number> and <module_sample_buffer_size> up to
-		date */
+	/* callback may come after the sampling has stopped or stopped and started
+		again, in which case <module_starting_sample_number> and
+		<module_sample_buffer_size> will have already been updated */
 	sample_number=(unsigned long)lParam;
 	number_of_samples=(module_NI_CARDS->hardware_buffer_size)/
 		NUMBER_OF_CHANNELS_ON_NI_CARD;
+	end1=(module_starting_sample_number+module_sample_buffer_size)%
+		number_of_samples;
+	end2=end1+module_scrolling_refresh_period;
+	end3=end2%number_of_samples;
+	if (module_sampling_on&&(((end1<=sample_number)&&(sample_number<=end2))||
+		((sample_number<=end3)&&(end3<end1))))
+	{
+		/* keep <module_starting_sample_number> and <module_sample_buffer_size> up
+			to date */
 #if defined (DEBUG)
 /*???debug */
 {
@@ -2898,131 +2908,131 @@ Always called so that <module_starting_sample_number> and
 	}
 }
 #endif /* defined (DEBUG) */
-	/* NIDAQ returns the number of the next sample */
-	if (module_sample_buffer_size<number_of_samples)
-	{
-		if (sample_number<module_starting_sample_number+module_sample_buffer_size)
+		/* NIDAQ returns the number of the next sample */
+		if (module_sample_buffer_size<number_of_samples)
 		{
-			module_sample_buffer_size += (sample_number+number_of_samples)-
-				(module_starting_sample_number+module_sample_buffer_size);
-		}
-		else
-		{
-			module_sample_buffer_size += sample_number-
-				(module_starting_sample_number+module_sample_buffer_size);
-		}
-		if (module_sample_buffer_size>=number_of_samples)
-		{
-			module_sample_buffer_size=number_of_samples;
-			module_starting_sample_number=sample_number%number_of_samples;
-			if (module_buffer_full_callback)
+			if (sample_number<module_starting_sample_number+module_sample_buffer_size)
 			{
-				(*module_buffer_full_callback)(module_buffer_full_callback_data);
-			}
-		}
-	}
-	else
-	{
-		module_starting_sample_number=sample_number%number_of_samples;
-	}
-	sample_number += number_of_samples-1;
-	sample_number %= number_of_samples;
-	if (module_scrolling_on&&module_sampling_on&&
-		(0<module_number_of_scrolling_channels)&&
-		(module_scrolling_window||module_scrolling_callback))
-	{
-		if (module_scrolling_window)
-		{
-			number_of_bytes=(module_number_of_scrolling_channels+2)*sizeof(int)+
-				module_number_of_scrolling_channels*
-				NUMBER_OF_SCROLLING_VALUES_PER_CHANNEL*sizeof(SHORT)+
-				sizeof(module_scrolling_callback_data);
-			if (ALLOCATE(byte_array,unsigned char,number_of_bytes))
-			{
-				*((int *)byte_array)=module_number_of_scrolling_channels;
-				channel_numbers=(int *)(byte_array+sizeof(int));
-				*((int *)(byte_array+(module_number_of_scrolling_channels+1)*
-					sizeof(int)))=NUMBER_OF_SCROLLING_VALUES_PER_CHANNEL;
-				value_array=(SHORT *)(byte_array+
-					(module_number_of_scrolling_channels+2)*sizeof(int));
-				*((void **)(byte_array+((module_number_of_scrolling_channels+2)*
-					sizeof(int)+module_number_of_scrolling_channels*
-					NUMBER_OF_SCROLLING_VALUES_PER_CHANNEL*sizeof(SHORT))))=
-					module_scrolling_callback_data;
+				module_sample_buffer_size += (sample_number+number_of_samples)-
+					(module_starting_sample_number+module_sample_buffer_size);
 			}
 			else
 			{
-				if (first_error)
+				module_sample_buffer_size += sample_number-
+					(module_starting_sample_number+module_sample_buffer_size);
+			}
+			if (module_sample_buffer_size>=number_of_samples)
+			{
+				module_sample_buffer_size=number_of_samples;
+				module_starting_sample_number=sample_number%number_of_samples;
+				if (module_buffer_full_callback)
 				{
-					display_message(ERROR_MESSAGE,
-						"scrolling_callback_NI.  Could not allocate byte_array");
-					first_error=0;
+					(*module_buffer_full_callback)(module_buffer_full_callback_data);
 				}
 			}
 		}
 		else
 		{
-			ALLOCATE(channel_numbers,int,module_number_of_scrolling_channels);
-			ALLOCATE(value_array,SHORT,module_number_of_scrolling_channels*
-				NUMBER_OF_SCROLLING_VALUES_PER_CHANNEL);
-			if (!(channel_numbers&&value_array))
-			{
-				DEALLOCATE(channel_numbers);
-				DEALLOCATE(value_array);
-				if (first_error)
-				{
-					display_message(ERROR_MESSAGE,
-			"scrolling_callback_NI.  Could not allocate channel_numbers/value_array");
-					first_error=0;
-				}
-			}
+			module_starting_sample_number=sample_number%number_of_samples;
 		}
-		/* calculate the values */
-		if (value=value_array)
+		sample_number += number_of_samples-1;
+		sample_number %= number_of_samples;
+		if (module_scrolling_on&&module_sampling_on&&
+			(0<module_number_of_scrolling_channels)&&
+			(module_scrolling_window||module_scrolling_callback))
 		{
-			for (k=0;k<module_number_of_scrolling_channels;k++)
+			if (module_scrolling_window)
 			{
-				channel_number=module_scrolling_channel_numbers[k];
-				channel_numbers[k]=channel_number;
-				ni_card=module_NI_CARDS+
-					((channel_number-1)/NUMBER_OF_CHANNELS_ON_NI_CARD);
-				hardware_buffer=ni_card->hardware_buffer;
-				offset=NUMBER_OF_CHANNELS_ON_NI_CARD*sample_number+
-					(ni_card->channel_reorder)[(channel_number-1)%
-					NUMBER_OF_CHANNELS_ON_NI_CARD];
-				averaging_length=module_scrolling_refresh_period/
-					NUMBER_OF_SCROLLING_VALUES_PER_CHANNEL;
-				for (j=NUMBER_OF_SCROLLING_VALUES_PER_CHANNEL-1;j>=0;j--)
+				number_of_bytes=(module_number_of_scrolling_channels+2)*sizeof(int)+
+					module_number_of_scrolling_channels*
+					NUMBER_OF_SCROLLING_VALUES_PER_CHANNEL*sizeof(SHORT)+
+					sizeof(module_scrolling_callback_data);
+				if (ALLOCATE(byte_array,unsigned char,number_of_bytes))
 				{
-					sum=0;
-					for (i=averaging_length;i>0;i--)
+					*((int *)byte_array)=module_number_of_scrolling_channels;
+					channel_numbers=(int *)(byte_array+sizeof(int));
+					*((int *)(byte_array+(module_number_of_scrolling_channels+1)*
+						sizeof(int)))=NUMBER_OF_SCROLLING_VALUES_PER_CHANNEL;
+					value_array=(SHORT *)(byte_array+
+						(module_number_of_scrolling_channels+2)*sizeof(int));
+					*((void **)(byte_array+((module_number_of_scrolling_channels+2)*
+						sizeof(int)+module_number_of_scrolling_channels*
+						NUMBER_OF_SCROLLING_VALUES_PER_CHANNEL*sizeof(SHORT))))=
+						module_scrolling_callback_data;
+				}
+				else
+				{
+					if (first_error)
 					{
-						sum += (long)(hardware_buffer[offset]);
-						if (offset<NUMBER_OF_CHANNELS_ON_NI_CARD)
-						{
-							offset += NUMBER_OF_CHANNELS_ON_NI_CARD*(number_of_samples-1);
-						}
-						else
-						{
-							offset -= NUMBER_OF_CHANNELS_ON_NI_CARD;
-						}
+						display_message(ERROR_MESSAGE,
+							"scrolling_callback_NI.  Could not allocate byte_array");
+						first_error=0;
 					}
-					value[j]=(SHORT)(sum/averaging_length);
 				}
-				value += NUMBER_OF_SCROLLING_VALUES_PER_CHANNEL;
 			}
-			if ((UnEmap_2V1==module_NI_CARDS->unemap_type)||
-				(UnEmap_2V2==module_NI_CARDS->unemap_type))
+			else
 			{
-				/* Unemap_2V1 and UnEmap_2V2 invert */
-				value=value_array;
-				for (k=module_number_of_scrolling_channels*
-					NUMBER_OF_SCROLLING_VALUES_PER_CHANNEL;k>0;k--)
+				ALLOCATE(channel_numbers,int,module_number_of_scrolling_channels);
+				ALLOCATE(value_array,SHORT,module_number_of_scrolling_channels*
+					NUMBER_OF_SCROLLING_VALUES_PER_CHANNEL);
+				if (!(channel_numbers&&value_array))
 				{
-					*value= -(*value);
-					value++;
+					DEALLOCATE(channel_numbers);
+					DEALLOCATE(value_array);
+					if (first_error)
+					{
+						display_message(ERROR_MESSAGE,
+			"scrolling_callback_NI.  Could not allocate channel_numbers/value_array");
+						first_error=0;
+					}
 				}
 			}
+			/* calculate the values */
+			if (value=value_array)
+			{
+				for (k=0;k<module_number_of_scrolling_channels;k++)
+				{
+					channel_number=module_scrolling_channel_numbers[k];
+					channel_numbers[k]=channel_number;
+					ni_card=module_NI_CARDS+
+						((channel_number-1)/NUMBER_OF_CHANNELS_ON_NI_CARD);
+					hardware_buffer=ni_card->hardware_buffer;
+					offset=NUMBER_OF_CHANNELS_ON_NI_CARD*sample_number+
+						(ni_card->channel_reorder)[(channel_number-1)%
+						NUMBER_OF_CHANNELS_ON_NI_CARD];
+					averaging_length=module_scrolling_refresh_period/
+						NUMBER_OF_SCROLLING_VALUES_PER_CHANNEL;
+					for (j=NUMBER_OF_SCROLLING_VALUES_PER_CHANNEL-1;j>=0;j--)
+					{
+						sum=0;
+						for (i=averaging_length;i>0;i--)
+						{
+							sum += (long)(hardware_buffer[offset]);
+							if (offset<NUMBER_OF_CHANNELS_ON_NI_CARD)
+							{
+								offset += NUMBER_OF_CHANNELS_ON_NI_CARD*(number_of_samples-1);
+							}
+							else
+							{
+								offset -= NUMBER_OF_CHANNELS_ON_NI_CARD;
+							}
+						}
+						value[j]=(SHORT)(sum/averaging_length);
+					}
+					value += NUMBER_OF_SCROLLING_VALUES_PER_CHANNEL;
+				}
+				if ((UnEmap_2V1==module_NI_CARDS->unemap_type)||
+					(UnEmap_2V2==module_NI_CARDS->unemap_type))
+				{
+					/* Unemap_2V1 and UnEmap_2V2 invert */
+					value=value_array;
+					for (k=module_number_of_scrolling_channels*
+						NUMBER_OF_SCROLLING_VALUES_PER_CHANNEL;k>0;k--)
+					{
+						*value= -(*value);
+						value++;
+					}
+				}
 #if defined (DEBUG)
 /*???debug */
 {
@@ -3044,44 +3054,45 @@ Always called so that <module_starting_sample_number> and
 	}
 }
 #endif /* defined (DEBUG) */
-			if (module_scrolling_window)
-			{
-				if (module_scrolling_callback)
+				if (module_scrolling_window)
 				{
-					ALLOCATE(channel_numbers_2,int,module_number_of_scrolling_channels);
-					ALLOCATE(value_array_2,SHORT,module_number_of_scrolling_channels*
-						NUMBER_OF_SCROLLING_VALUES_PER_CHANNEL);
-					if (channel_numbers_2&&value_array_2)
+					if (module_scrolling_callback)
 					{
-						memcpy((char *)channel_numbers_2,(char *)channel_numbers,
-							module_number_of_scrolling_channels*sizeof(int));
-						memcpy((char *)value_array_2,(char *)value_array,
-							module_number_of_scrolling_channels*
-							NUMBER_OF_SCROLLING_VALUES_PER_CHANNEL*sizeof(SHORT));
-						(*module_scrolling_callback)(module_number_of_scrolling_channels,
-							channel_numbers_2,(int)NUMBER_OF_SCROLLING_VALUES_PER_CHANNEL,
-							value_array_2,module_scrolling_callback_data);
-					}
-					else
-					{
-						DEALLOCATE(channel_numbers_2);
-						DEALLOCATE(value_array_2);
-						if (first_error)
+						ALLOCATE(channel_numbers_2,int,module_number_of_scrolling_channels);
+						ALLOCATE(value_array_2,SHORT,module_number_of_scrolling_channels*
+							NUMBER_OF_SCROLLING_VALUES_PER_CHANNEL);
+						if (channel_numbers_2&&value_array_2)
 						{
-							display_message(ERROR_MESSAGE,
+							memcpy((char *)channel_numbers_2,(char *)channel_numbers,
+								module_number_of_scrolling_channels*sizeof(int));
+							memcpy((char *)value_array_2,(char *)value_array,
+								module_number_of_scrolling_channels*
+								NUMBER_OF_SCROLLING_VALUES_PER_CHANNEL*sizeof(SHORT));
+							(*module_scrolling_callback)(module_number_of_scrolling_channels,
+								channel_numbers_2,(int)NUMBER_OF_SCROLLING_VALUES_PER_CHANNEL,
+								value_array_2,module_scrolling_callback_data);
+						}
+						else
+						{
+							DEALLOCATE(channel_numbers_2);
+							DEALLOCATE(value_array_2);
+							if (first_error)
+							{
+								display_message(ERROR_MESSAGE,
 	"scrolling_callback_NI.  Could not allocate channel_numbers_2/value_array_2");
-							first_error=0;
+								first_error=0;
+							}
 						}
 					}
+					PostMessage(module_scrolling_window,module_scrolling_message,
+						(WPARAM)byte_array,(ULONG)number_of_bytes);
 				}
-				PostMessage(module_scrolling_window,module_scrolling_message,
-					(WPARAM)byte_array,(ULONG)number_of_bytes);
-			}
-			else
-			{
-				(*module_scrolling_callback)(module_number_of_scrolling_channels,
-					channel_numbers,(int)NUMBER_OF_SCROLLING_VALUES_PER_CHANNEL,
-					value_array,module_scrolling_callback_data);
+				else
+				{
+					(*module_scrolling_callback)(module_number_of_scrolling_channels,
+						channel_numbers,(int)NUMBER_OF_SCROLLING_VALUES_PER_CHANNEL,
+						value_array,module_scrolling_callback_data);
+				}
 			}
 		}
 	}
@@ -5495,7 +5506,7 @@ calibrated channels and the <calibration_end_callback_data>.
 
 int unemap_start_sampling(void)
 /*******************************************************************************
-LAST MODIFIED : 18 October 1999
+LAST MODIFIED : 25 May 2000
 
 DESCRIPTION :
 The function fails if the hardware is not configured.
@@ -5565,18 +5576,21 @@ Starts the sampling.
 									((module_NI_CARDS[0]).hardware_buffer_size/
 									(unsigned long)NUMBER_OF_CHANNELS_ON_NI_CARD);
 								module_sample_buffer_size=0;
+								module_sampling_on=1;
 								/* start the data acquisition */
 								status=GPCTR_Control((module_NI_CARDS[0]).device_number,
 									SCAN_COUNTER,ND_PROGRAM);
 								if (0==status)
 								{
+#else /* !defined (SLAVE_CRATE) */
+									module_sampling_on=1;
 #endif /* !defined (SLAVE_CRATE) */
 									return_code=1;
-									module_sampling_on=1;
 #if !defined (SLAVE_CRATE)
 								}
 								else
 								{
+									module_sampling_on=0;
 									display_message(ERROR_MESSAGE,
 									"unemap_start_sampling.  GPCTR_Control (ND_PROGRAM) failed");
 								}
@@ -5633,7 +5647,7 @@ Starts the sampling.
 
 int unemap_stop_sampling(void)
 /*******************************************************************************
-LAST MODIFIED : 4 May 1999
+LAST MODIFIED : 25 May 1999
 
 DESCRIPTION :
 The function fails if the hardware is not configured.
@@ -5650,6 +5664,9 @@ many samples were acquired.
 
 	ENTER(unemap_stop_sampling);
 	return_code=0;
+	/* has to be at the beginning because scrolling_callback_NI is done in a
+		different thread */
+	module_sampling_on=0;
 #if defined (NI_DAQ)
 	if (module_configured&&module_NI_CARDS&&(0<module_number_of_NI_CARDS))
 	{
@@ -5701,7 +5718,6 @@ many samples were acquired.
 			display_message(ERROR_MESSAGE,
 				"unemap_stop_sampling.  GPCTR_Control failed");
 		}
-		module_sampling_on=0;
 	}
 	else
 	{

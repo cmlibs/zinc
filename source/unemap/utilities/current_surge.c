@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : current_surge.c
 
-LAST MODIFIED : 22 April 2000
+LAST MODIFIED : 25 May 2000
 
 DESCRIPTION :
 Code for turning a unemap power distribution unit on and off until a current
@@ -173,9 +173,6 @@ i16 battery_A_line_UnEmap2v1,battery_good_input_line_UnEmap2vx,
 	shift_register_strobe_output_line_UnEmap2vx;
 i16 BattA_setting_UnEmap2vx;
 	/*???DB.  Get rid of BattA_setting_UnEmap2vx */
-/*???debug */
-char first_sample=1;
-unsigned long max_sample_number,min_sample_number;
 #endif /* defined (NI_DAQ) */
 
 /* scrolling information set by unemap_configure and
@@ -216,9 +213,6 @@ u32 module_sampling_high_count=0,module_sampling_low_count=0;
 int module_slave=0;
 
 int max_channels=NUMBER_OF_CHANNELS_ON_NI_CARD;
-
-/*???debug */
-FILE *history_file=(FILE *)NULL;
 
 /*
 Module functions
@@ -1708,7 +1702,7 @@ DESCRIPTION :
 static void scrolling_callback_NI(HWND handle,UINT message,WPARAM wParam,
 	LPARAM lParam)
 /*******************************************************************************
-LAST MODIFIED : 10 September 1999
+LAST MODIFIED : 25 May 2000
 
 DESCRIPTION :
 Always called so that <module_starting_sample_number> and
@@ -1723,64 +1717,52 @@ Always called so that <module_starting_sample_number> and
 	static int first_error=1;
 	struct NI_card *ni_card;
 	unsigned char *byte_array;
-	unsigned long offset,number_of_samples,sample_number;
-	/*???debug */
-	static int first=1;
-	static UINT last_message=0;
+	unsigned long end1,end2,end3,offset,number_of_samples,sample_number;
 
 	ENTER(scrolling_callback_NI);
-	/*???debug */
-	if (history_file&&first)
-	{
-		fprintf(history_file,"scrolling_callback_NI first message %u\n",message);
-		first=0;
-	}
-	/* keep <module_starting_sample_number> and <module_sample_buffer_size> up to
-		date */
+	/* callback may come after the sampling has stopped or stopped and started
+		again, in which case <module_starting_sample_number> and
+		<module_sample_buffer_size> will have already been updated */
 	sample_number=(unsigned long)lParam;
 	number_of_samples=(module_NI_CARDS->hardware_buffer_size)/
 		NUMBER_OF_CHANNELS_ON_NI_CARD;
-	/* NIDAQ returns the number of the next sample */
-	if (module_sample_buffer_size<number_of_samples)
+	end1=(module_starting_sample_number+module_sample_buffer_size)%
+		number_of_samples;
+	end2=end1+module_scrolling_refresh_period;
+	end3=end2%number_of_samples;
+	if (module_sampling_on&&(((end1<=sample_number)&&(sample_number<=end2))||
+		((sample_number<=end3)&&(end3<end1))))
 	{
-		if (sample_number<module_starting_sample_number+module_sample_buffer_size)
+		/* keep <module_starting_sample_number> and <module_sample_buffer_size> up
+			to date */
+			NUMBER_OF_CHANNELS_ON_NI_CARD;
+		/* NIDAQ returns the number of the next sample */
+		if (module_sample_buffer_size<number_of_samples)
 		{
-			module_sample_buffer_size += (sample_number+number_of_samples)-
-				(module_starting_sample_number+module_sample_buffer_size);
+			if (sample_number<module_starting_sample_number+module_sample_buffer_size)
+			{
+				module_sample_buffer_size += (sample_number+number_of_samples)-
+					(module_starting_sample_number+module_sample_buffer_size);
+			}
+			else
+			{
+				module_sample_buffer_size += sample_number-
+					(module_starting_sample_number+module_sample_buffer_size);
+			}
+			if (module_sample_buffer_size>=number_of_samples)
+			{
+				module_sample_buffer_size=number_of_samples;
+				module_starting_sample_number=sample_number%number_of_samples;
+				if (module_buffer_full_callback)
+				{
+					(*module_buffer_full_callback)(module_buffer_full_callback_data);
+				}
+			}
 		}
 		else
 		{
-			module_sample_buffer_size += sample_number-
-				(module_starting_sample_number+module_sample_buffer_size);
-		}
-		if (module_sample_buffer_size>=number_of_samples)
-		{
-			module_sample_buffer_size=number_of_samples;
 			module_starting_sample_number=sample_number%number_of_samples;
-			/*???debug */
-			if (history_file)
-			{
-				fprintf(history_file,
-					"1.  change module_starting_sample_number %lu  %u %u  %lu %lu\n",
-					module_starting_sample_number,message,last_message,sample_number,
-					number_of_samples);
-			}
-			if (module_buffer_full_callback)
-			{
-				(*module_buffer_full_callback)(module_buffer_full_callback_data);
-			}
 		}
-	}
-	else
-	{
-		module_starting_sample_number=sample_number%number_of_samples;
-		/*???debug */
-		if (history_file)
-		{
-			fprintf(history_file,"2.  change module_starting_sample_number %lu\n",
-				module_starting_sample_number);
-		}
-	}
 #if defined (DEBUG)
 /*???debug */
 {
@@ -1796,104 +1778,104 @@ Always called so that <module_starting_sample_number> and
 	}
 }
 #endif /* defined (DEBUG) */
-	sample_number += number_of_samples-1;
-	sample_number %= number_of_samples;
-	if (module_scrolling_on&&module_sampling_on&&
-		(0<module_number_of_scrolling_channels)&&
-		(module_scrolling_window||module_scrolling_callback))
-	{
-		if (module_scrolling_window)
+		sample_number += number_of_samples-1;
+		sample_number %= number_of_samples;
+		if (module_scrolling_on&&module_sampling_on&&
+			(0<module_number_of_scrolling_channels)&&
+			(module_scrolling_window||module_scrolling_callback))
 		{
-			number_of_bytes=(module_number_of_scrolling_channels+2)*sizeof(int)+
-				module_number_of_scrolling_channels*
-				NUMBER_OF_SCROLLING_VALUES_PER_CHANNEL*sizeof(SHORT)+
-				sizeof(module_scrolling_callback_data);
-			if (ALLOCATE(byte_array,unsigned char,number_of_bytes))
+			if (module_scrolling_window)
 			{
-				*((int *)byte_array)=module_number_of_scrolling_channels;
-				channel_numbers=(int *)(byte_array+sizeof(int));
-				*((int *)(byte_array+(module_number_of_scrolling_channels+1)*
-					sizeof(int)))=NUMBER_OF_SCROLLING_VALUES_PER_CHANNEL;
-				value_array=(SHORT *)(byte_array+
-					(module_number_of_scrolling_channels+2)*sizeof(int));
-				*((void **)(byte_array+((module_number_of_scrolling_channels+2)*
-					sizeof(int)+module_number_of_scrolling_channels*
-					NUMBER_OF_SCROLLING_VALUES_PER_CHANNEL*sizeof(SHORT))))=
-					module_scrolling_callback_data;
+				number_of_bytes=(module_number_of_scrolling_channels+2)*sizeof(int)+
+					module_number_of_scrolling_channels*
+					NUMBER_OF_SCROLLING_VALUES_PER_CHANNEL*sizeof(SHORT)+
+					sizeof(module_scrolling_callback_data);
+				if (ALLOCATE(byte_array,unsigned char,number_of_bytes))
+				{
+					*((int *)byte_array)=module_number_of_scrolling_channels;
+					channel_numbers=(int *)(byte_array+sizeof(int));
+					*((int *)(byte_array+(module_number_of_scrolling_channels+1)*
+						sizeof(int)))=NUMBER_OF_SCROLLING_VALUES_PER_CHANNEL;
+					value_array=(SHORT *)(byte_array+
+						(module_number_of_scrolling_channels+2)*sizeof(int));
+					*((void **)(byte_array+((module_number_of_scrolling_channels+2)*
+						sizeof(int)+module_number_of_scrolling_channels*
+						NUMBER_OF_SCROLLING_VALUES_PER_CHANNEL*sizeof(SHORT))))=
+						module_scrolling_callback_data;
+				}
+				else
+				{
+					if (first_error)
+					{
+						display_message(ERROR_MESSAGE,
+							"scrolling_callback_NI.  Could not allocate byte_array");
+						first_error=0;
+					}
+				}
 			}
 			else
 			{
-				if (first_error)
+				ALLOCATE(channel_numbers,int,module_number_of_scrolling_channels);
+				ALLOCATE(value_array,SHORT,module_number_of_scrolling_channels*
+					NUMBER_OF_SCROLLING_VALUES_PER_CHANNEL);
+				if (!(channel_numbers&&value_array))
 				{
-					display_message(ERROR_MESSAGE,
-						"scrolling_callback_NI.  Could not allocate byte_array");
-					first_error=0;
-				}
-			}
-		}
-		else
-		{
-			ALLOCATE(channel_numbers,int,module_number_of_scrolling_channels);
-			ALLOCATE(value_array,SHORT,module_number_of_scrolling_channels*
-				NUMBER_OF_SCROLLING_VALUES_PER_CHANNEL);
-			if (!(channel_numbers&&value_array))
-			{
-				DEALLOCATE(channel_numbers);
-				DEALLOCATE(value_array);
-				if (first_error)
-				{
-					display_message(ERROR_MESSAGE,
-			"scrolling_callback_NI.  Could not allocate channel_numbers/value_array");
-					first_error=0;
-				}
-			}
-		}
-		/* calculate the values */
-		if (value=value_array)
-		{
-			for (k=0;k<module_number_of_scrolling_channels;k++)
-			{
-				channel_number=module_scrolling_channel_numbers[k];
-				channel_numbers[k]=channel_number;
-				ni_card=module_NI_CARDS+
-					((channel_number-1)/NUMBER_OF_CHANNELS_ON_NI_CARD);
-				hardware_buffer=ni_card->hardware_buffer;
-				offset=NUMBER_OF_CHANNELS_ON_NI_CARD*sample_number+
-					(ni_card->channel_reorder)[(channel_number-1)%
-					NUMBER_OF_CHANNELS_ON_NI_CARD];
-				averaging_length=module_scrolling_refresh_period/
-					NUMBER_OF_SCROLLING_VALUES_PER_CHANNEL;
-				for (j=NUMBER_OF_SCROLLING_VALUES_PER_CHANNEL-1;j>=0;j--)
-				{
-					sum=0;
-					for (i=averaging_length;i>0;i--)
+					DEALLOCATE(channel_numbers);
+					DEALLOCATE(value_array);
+					if (first_error)
 					{
-						sum += (long)(hardware_buffer[offset]);
-						if (offset<NUMBER_OF_CHANNELS_ON_NI_CARD)
-						{
-							offset += NUMBER_OF_CHANNELS_ON_NI_CARD*(number_of_samples-1);
-						}
-						else
-						{
-							offset -= NUMBER_OF_CHANNELS_ON_NI_CARD;
-						}
+						display_message(ERROR_MESSAGE,
+			"scrolling_callback_NI.  Could not allocate channel_numbers/value_array");
+						first_error=0;
 					}
-					value[j]=(SHORT)(sum/averaging_length);
 				}
-				value += NUMBER_OF_SCROLLING_VALUES_PER_CHANNEL;
 			}
-			if ((UnEmap_2V1==module_NI_CARDS->unemap_hardware_version)||
-				(UnEmap_2V2==module_NI_CARDS->unemap_hardware_version))
+			/* calculate the values */
+			if (value=value_array)
 			{
-				/* Unemap_2V1 and UnEmap_2V2 invert */
-				value=value_array;
-				for (k=module_number_of_scrolling_channels*
-					NUMBER_OF_SCROLLING_VALUES_PER_CHANNEL;k>0;k--)
+				for (k=0;k<module_number_of_scrolling_channels;k++)
 				{
-					*value= -(*value);
-					value++;
+					channel_number=module_scrolling_channel_numbers[k];
+					channel_numbers[k]=channel_number;
+					ni_card=module_NI_CARDS+
+						((channel_number-1)/NUMBER_OF_CHANNELS_ON_NI_CARD);
+					hardware_buffer=ni_card->hardware_buffer;
+					offset=NUMBER_OF_CHANNELS_ON_NI_CARD*sample_number+
+						(ni_card->channel_reorder)[(channel_number-1)%
+						NUMBER_OF_CHANNELS_ON_NI_CARD];
+					averaging_length=module_scrolling_refresh_period/
+						NUMBER_OF_SCROLLING_VALUES_PER_CHANNEL;
+					for (j=NUMBER_OF_SCROLLING_VALUES_PER_CHANNEL-1;j>=0;j--)
+					{
+						sum=0;
+						for (i=averaging_length;i>0;i--)
+						{
+							sum += (long)(hardware_buffer[offset]);
+							if (offset<NUMBER_OF_CHANNELS_ON_NI_CARD)
+							{
+								offset += NUMBER_OF_CHANNELS_ON_NI_CARD*(number_of_samples-1);
+							}
+							else
+							{
+								offset -= NUMBER_OF_CHANNELS_ON_NI_CARD;
+							}
+						}
+						value[j]=(SHORT)(sum/averaging_length);
+					}
+					value += NUMBER_OF_SCROLLING_VALUES_PER_CHANNEL;
 				}
-			}
+				if ((UnEmap_2V1==module_NI_CARDS->unemap_hardware_version)||
+					(UnEmap_2V2==module_NI_CARDS->unemap_hardware_version))
+				{
+					/* Unemap_2V1 and UnEmap_2V2 invert */
+					value=value_array;
+					for (k=module_number_of_scrolling_channels*
+						NUMBER_OF_SCROLLING_VALUES_PER_CHANNEL;k>0;k--)
+					{
+						*value= -(*value);
+						value++;
+					}
+				}
 #if defined (DEBUG)
 /*???debug */
 {
@@ -1915,49 +1897,48 @@ Always called so that <module_starting_sample_number> and
 	}
 }
 #endif /* defined (DEBUG) */
-			if (module_scrolling_window)
-			{
-				if (module_scrolling_callback)
+				if (module_scrolling_window)
 				{
-					ALLOCATE(channel_numbers_2,int,module_number_of_scrolling_channels);
-					ALLOCATE(value_array_2,SHORT,module_number_of_scrolling_channels*
-						NUMBER_OF_SCROLLING_VALUES_PER_CHANNEL);
-					if (channel_numbers_2&&value_array_2)
+					if (module_scrolling_callback)
 					{
-						memcpy((char *)channel_numbers_2,(char *)channel_numbers,
-							module_number_of_scrolling_channels*sizeof(int));
-						memcpy((char *)value_array_2,(char *)value_array,
-							module_number_of_scrolling_channels*
-							NUMBER_OF_SCROLLING_VALUES_PER_CHANNEL*sizeof(SHORT));
-						(*module_scrolling_callback)(module_number_of_scrolling_channels,
-							channel_numbers_2,(int)NUMBER_OF_SCROLLING_VALUES_PER_CHANNEL,
-							value_array_2,module_scrolling_callback_data);
-					}
-					else
-					{
-						DEALLOCATE(channel_numbers_2);
-						DEALLOCATE(value_array_2);
-						if (first_error)
+						ALLOCATE(channel_numbers_2,int,module_number_of_scrolling_channels);
+						ALLOCATE(value_array_2,SHORT,module_number_of_scrolling_channels*
+							NUMBER_OF_SCROLLING_VALUES_PER_CHANNEL);
+						if (channel_numbers_2&&value_array_2)
 						{
-							display_message(ERROR_MESSAGE,
+							memcpy((char *)channel_numbers_2,(char *)channel_numbers,
+								module_number_of_scrolling_channels*sizeof(int));
+							memcpy((char *)value_array_2,(char *)value_array,
+								module_number_of_scrolling_channels*
+								NUMBER_OF_SCROLLING_VALUES_PER_CHANNEL*sizeof(SHORT));
+							(*module_scrolling_callback)(module_number_of_scrolling_channels,
+								channel_numbers_2,(int)NUMBER_OF_SCROLLING_VALUES_PER_CHANNEL,
+								value_array_2,module_scrolling_callback_data);
+						}
+						else
+						{
+							DEALLOCATE(channel_numbers_2);
+							DEALLOCATE(value_array_2);
+							if (first_error)
+							{
+								display_message(ERROR_MESSAGE,
 	"scrolling_callback_NI.  Could not allocate channel_numbers_2/value_array_2");
-							first_error=0;
+								first_error=0;
+							}
 						}
 					}
+					PostMessage(module_scrolling_window,module_scrolling_message,
+						(WPARAM)byte_array,(ULONG)number_of_bytes);
 				}
-				PostMessage(module_scrolling_window,module_scrolling_message,
-					(WPARAM)byte_array,(ULONG)number_of_bytes);
-			}
-			else
-			{
-				(*module_scrolling_callback)(module_number_of_scrolling_channels,
-					channel_numbers,(int)NUMBER_OF_SCROLLING_VALUES_PER_CHANNEL,
-					value_array,module_scrolling_callback_data);
+				else
+				{
+					(*module_scrolling_callback)(module_number_of_scrolling_channels,
+						channel_numbers,(int)NUMBER_OF_SCROLLING_VALUES_PER_CHANNEL,
+						value_array,module_scrolling_callback_data);
+				}
 			}
 		}
 	}
-	/*???debug */
-	last_message=message;
 	LEAVE;
 } /* scrolling_callback_NI */
 #endif /* defined (NI_DAQ) */
@@ -2194,12 +2175,6 @@ hardware.
 			}
 			module_sample_buffer_size=0;
 			module_starting_sample_number=0;
-			/*???debug */
-			if (history_file)
-			{
-				fprintf(history_file,"3.  change module_starting_sample_number %lu\n",
-					module_starting_sample_number);
-			}
 			module_scrolling_refresh_period=0;
 #if defined (WINDOWS)
 			module_scrolling_window=(HWND)NULL;
@@ -2594,7 +2569,7 @@ switched on.
 	D_N_P
 }; /* enum Power_sequence */
 
-static enum Power_sequence power_sequence=PND;
+static enum Power_sequence power_sequence=P_ND;
 
 static int unemap_set_power(int on)
 /*******************************************************************************
@@ -2757,6 +2732,8 @@ on.
 					}
 				}
 				channel_number=1;
+#if defined (NOT_TESTING)
+/*???DB.  To speed up testing */
 				for (i=0;i<module_number_of_NI_CARDS;i++)
 				{
 					/* set power light on (and set other shift registers) */
@@ -2779,10 +2756,13 @@ on.
 					}
 					channel_number += NUMBER_OF_CHANNELS_ON_NI_CARD;
 				}
+#endif /* defined (NOT_TESTING) */
 				BattA_setting_UnEmap2vx=1;
 			}
 			else
 			{
+#if defined (NOT_TESTING)
+/*???DB.  To speed up testing */
 				for (i=0;i<module_number_of_NI_CARDS;i++)
 				{
 					/* set power light off */
@@ -2797,6 +2777,7 @@ on.
 							PC_LED_SHIFT_REGISTER_UnEmap2vx,1,1);
 					}
 				}
+#endif /* defined (NOT_TESTING) */
 				if (UnEmap_2V1==module_NI_CARDS->unemap_hardware_version)
 				{
 					DIG_Out_Line(module_NI_CARDS->device_number,(i16)0,
@@ -3402,6 +3383,21 @@ determines whether the hardware is configured as slave (<0) or master (>0)
 													}
 													if (0==status)
 													{
+														/*???debug */
+														{
+															FILE *unemap_debug;
+
+															if (unemap_debug=fopen_UNEMAP_HARDWARE(
+																"unemap.deb","a"))
+															{
+																fprintf(unemap_debug,
+																	"%d AI_Change_Parameter %d\n",i,
+																	AI_Change_Parameter((module_NI_CARDS[i]).
+																	device_number,(i16)1,(u32)ND_BUFFER_START,
+																	(u32)0));
+																fclose(unemap_debug);
+															}
+														}
 														/* acquisition won't actually start (controlled by
 															conversion signal) */
 														status=SCAN_Start(
@@ -3477,12 +3473,6 @@ determines whether the hardware is configured as slave (<0) or master (>0)
 					}
 					module_sample_buffer_size=0;
 					module_starting_sample_number=0;
-					/*???debug */
-					if (history_file)
-					{
-						fprintf(history_file,"4.  change module_starting_sample_number %lu\n",
-							module_starting_sample_number);
-					}
 					if (0==status)
 					{
 						return_code=1;
@@ -4109,7 +4099,7 @@ Intended for diagnostic use only.
 
 int unemap_start_sampling(void)
 /*******************************************************************************
-LAST MODIFIED : 30 March 2000
+LAST MODIFIED : 25 May 2000
 
 DESCRIPTION :
 The function fails if the hardware is not configured.
@@ -4171,6 +4161,11 @@ Starts the sampling.
 								ND_GPCTR0_OUTPUT,ND_DONT_CARE);
 							if (0==status)
 							{
+#if defined (TEST_CODE)
+								/*???debug */
+								status=AI_Change_Parameter((module_NI_CARDS[0]).device_number,
+									(i16)-1,(u32)ND_BUFFER_START,(u32)0);
+#endif /* defined (TEST_CODE) */
 								status=DAQ_Check((module_NI_CARDS[0]).device_number,&stopped,
 									&retrieved);
 								if (0==status)
@@ -4179,25 +4174,18 @@ Starts the sampling.
 										(unsigned long)NUMBER_OF_CHANNELS_ON_NI_CARD)%
 										((module_NI_CARDS[0]).hardware_buffer_size/
 										(unsigned long)NUMBER_OF_CHANNELS_ON_NI_CARD);
-									/*???debug */
-									if (history_file)
-									{
-										fprintf(history_file,
-											"5.  change module_starting_sample_number %lu %lu %lu\n",
-											module_starting_sample_number,retrieved,
-											(module_NI_CARDS[0]).hardware_buffer_size);
-									}
 									module_sample_buffer_size=0;
+									module_sampling_on=1;
 									/* start the data acquisition */
 									status=GPCTR_Control((module_NI_CARDS[0]).device_number,
 										SCAN_COUNTER,ND_PROGRAM);
 									if (0==status)
 									{
 										return_code=1;
-										module_sampling_on=1;
 									}
 									else
 									{
+										module_sampling_on=0;
 										display_message(ERROR_MESSAGE,
 									"unemap_start_sampling.  GPCTR_Control (ND_PROGRAM) failed");
 									}
@@ -4248,12 +4236,6 @@ Starts the sampling.
 					(unsigned long)NUMBER_OF_CHANNELS_ON_NI_CARD)%
 					((module_NI_CARDS[0]).hardware_buffer_size/
 					(unsigned long)NUMBER_OF_CHANNELS_ON_NI_CARD);
-				/*???debug */
-				if (history_file)
-				{
-					fprintf(history_file,"6.  change module_starting_sample_number %lu\n",
-						module_starting_sample_number);
-				}
 				module_sample_buffer_size=0;
 				return_code=1;
 				module_sampling_on=1;
@@ -4280,7 +4262,7 @@ Starts the sampling.
 
 int unemap_stop_sampling(void)
 /*******************************************************************************
-LAST MODIFIED : 4 May 1999
+LAST MODIFIED : 25 May 2000
 
 DESCRIPTION :
 The function fails if the hardware is not configured.
@@ -4296,12 +4278,10 @@ many samples were acquired.
 #endif /* defined (NI_DAQ) */
 
 	ENTER(unemap_stop_sampling);
-#if defined (DEBUG)
-	/*???debug */
-	display_message(INFORMATION_MESSAGE,"enter unemap_stop_sampling %lu\n",
-		module_sample_buffer_size);
-#endif /* defined (DEBUG) */
 	return_code=0;
+	/* has to be at the beginning because scrolling_callback_NI is done in a
+		different thread */
+	module_sampling_on=0;
 #if defined (NI_DAQ)
 	if (module_configured&&module_NI_CARDS&&(0<module_number_of_NI_CARDS))
 	{
@@ -4340,23 +4320,11 @@ many samples were acquired.
 					{
 						module_sample_buffer_size=number_of_samples;
 						module_starting_sample_number=sample_number%number_of_samples;
-						/*???debug */
-						if (history_file)
-						{
-							fprintf(history_file,"7.  change module_starting_sample_number %lu\n",
-								module_starting_sample_number);
-						}
 					}
 				}
 				else
 				{
 					module_starting_sample_number=sample_number%number_of_samples;
-					/*???debug */
-					if (history_file)
-					{
-						fprintf(history_file,"8.  change module_starting_sample_number %lu\n",
-							module_starting_sample_number);
-					}
 				}
 				return_code=1;
 			}
@@ -4371,7 +4339,6 @@ many samples were acquired.
 			display_message(ERROR_MESSAGE,
 				"unemap_stop_sampling.  GPCTR_Control failed");
 		}
-		module_sampling_on=0;
 	}
 	else
 	{
@@ -4380,11 +4347,6 @@ many samples were acquired.
 			module_configured,module_NI_CARDS,module_number_of_NI_CARDS);
 	}
 #endif /* defined (NI_DAQ) */
-#if defined (DEBUG)
-	/*???debug */
-	display_message(INFORMATION_MESSAGE,"leave unemap_stop_sampling %d %lu\n",
-		return_code,module_sample_buffer_size);
-#endif /* defined (DEBUG) */
 	LEAVE;
 
 	return (return_code);
@@ -4646,9 +4608,6 @@ static void process_keyboard(
 						sample=samples;
 						/* only average "steady state" */
 						offset=(int)(0.1*sampling_frequency);
-						/*???debug */
-						printf("%lu %lu %d\n",number_of_channels,number_of_samples_acquired,
-							offset);
 						sample += offset*number_of_channels;
 						number_of_samples_acquired -= 2*offset;
 						for (i=number_of_samples_acquired;i>0;i--)
@@ -4683,11 +4642,7 @@ static void process_keyboard(
 				} break;
 				case '4':
 				{
-					/* test until error */
-					/*???DB.  The history file id to try and determine why the saved file
-						is getting out of synch with the on/off sequence */
-					history_file=fopen("surge_history.txt","w");
-					return_code=1;
+					/* test until error (1 SCU) */
 					count=0;
 					do
 					{
@@ -4715,7 +4670,7 @@ static void process_keyboard(
 							mean_VCCm=0;
 							sample=samples;
 							/* only average "steady state" */
-							offset=(int)(0.1*sampling_frequency);
+							offset=(int)(0.3*sampling_frequency);
 							sample += offset*number_of_channels;
 							window_length=number_of_samples_acquired-2*offset;
 							for (i=window_length;i>0;i--)
@@ -4728,15 +4683,6 @@ static void process_keyboard(
 							mean_VCC /= (float)window_length;
 							mean_VCCm /= (float)window_length;
 							mean_VCCp /= (float)window_length;
-							if (history_file)
-							{
-								fprintf(history_file,"%d.  %f %f %f  %lu %lu %lu\n",count,
-									mean_VCC,mean_VCCm,mean_VCCp,module_starting_sample_number,
-									module_sample_buffer_size,(module_starting_sample_number+
-									module_sample_buffer_size)%
-									((module_NI_CARDS->hardware_buffer_size)/
-									NUMBER_OF_CHANNELS_ON_NI_CARD));
-							}
 							if (0!=mean_VCC)
 							{
 								ratio_VCCm_VCC=mean_VCCm/mean_VCC;
@@ -4765,6 +4711,24 @@ static void process_keyboard(
 						printf("  mean VCC = %g\n",mean_VCC);
 						printf("  mean VCC- = %g\n",mean_VCCm);
 						printf("  mean VCC+ = %g\n",mean_VCCp);
+						/*???DB.  Bug in NIdaq? */
+						if (number_of_samples_acquired>=4000)
+						{
+							printf("Number of samples acquired (%d) >= 4000\n",
+								number_of_samples_acquired);
+							ratio_VCCm_VCC= -1;
+							ratio_VCC_VCCp=1;
+							/* restart */
+							unemap_deconfigure();
+							unemap_configure(sampling_frequency,(int)number_of_samples,
+#if defined (WINDOWS)
+								(HWND)NULL,0,
+#endif /* defined (WINDOWS) */
+#if defined (MOTIF)
+								application_context,
+#endif /* defined (MOTIF) */
+								(Unemap_hardware_callback *)NULL,(void *)NULL,(float)0);
+						}
 						/* give time for capacitors to discharge */
 #if defined (WINDOWS)
 						/* in milliseconds */
@@ -4772,13 +4736,10 @@ static void process_keyboard(
 #endif /* defined (WINDOWS) */
 /*					} while (return_code&&(ratio_VCCm_VCC< -1)&&(1<ratio_VCC_VCCp));*/
 /*					} while (return_code&&(ratio_VCCm_VCC< -0.9)&&(0.9<ratio_VCC_VCCp));*/
-					} while (return_code&&(ratio_VCCm_VCC< -0.9)&&(0.9<ratio_VCC_VCCp)&&
-						(number_of_samples_acquired<4000));
-					if (history_file)
-					{
-						fclose(history_file);
-						history_file=(FILE *)NULL;
-					}
+/*					} while (return_code&&(ratio_VCCm_VCC< -0.9)&&(0.9<ratio_VCC_VCCp)&&
+						(number_of_samples_acquired<4000));*/
+					} while (return_code&&(ratio_VCCm_VCC< -0.9)&&(-1.2<ratio_VCCm_VCC)&&
+						(ratio_VCC_VCCp<1.2)&&(0.9<ratio_VCC_VCCp));
 					printf("number of power on/off cycles = %d.  %g %g %lu\n",count,
 						ratio_VCCm_VCC,ratio_VCC_VCCp,number_of_samples_acquired);
 					printf("mean VCC = %g\n",mean_VCC);
@@ -5001,12 +4962,6 @@ field of <ni_card>.
 			all the cards have to be restarted, otherwise they'd be out of synch */
 		module_sample_buffer_size=0;
 		module_starting_sample_number=0;
-		/*???debug */
-		if (history_file)
-		{
-			fprintf(history_file,"9.  change module_starting_sample_number %lu\n",
-				module_starting_sample_number);
-		}
 		ni_card_temp=module_NI_CARDS;
 		status=0;
 		j=module_number_of_NI_CARDS;
