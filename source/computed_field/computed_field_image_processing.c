@@ -940,6 +940,7 @@ Evaluate the fields cache at the node.
 	if (field && node &&
 		(data = (struct Computed_field_sobel_filter_type_specific_data *)field->type_specific_data))
 	{
+		return_code = 1;
 		/* 1. Precalculate the Image_cache */
 		if (!data->image->valid)
 		{
@@ -1020,6 +1021,7 @@ Evaluate the fields cache at the node.
 		(data = (struct Computed_field_sobel_filter_type_specific_data *) field->type_specific_data) &&
 		data->image && (field->number_of_components == data->image->depth))
 	{
+		return_code = 1;
 		/* 1. Precalculate the Image_cache */
 		if (!data->image->valid)
 		{
