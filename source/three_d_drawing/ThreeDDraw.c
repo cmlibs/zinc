@@ -783,8 +783,7 @@ because the initialize method is downward chained.
 					glx_major_version = major_version_number;
 					glx_minor_version = minor_version_number;
 					/* only want to print this once */
-					printf("GLX\n");
-					printf("  major version = %d, minor version = %d\n",
+					printf("GLX version = %d.%d\n",
 						major_version_number,minor_version_number);
 				}
 			}
