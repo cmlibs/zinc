@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : geometry.c
 
-LAST MODIFIED : 17 January 2000
+LAST MODIFIED : 18 January 2000
 
 DESCRIPTION :
 Functions for performing coordinate transformations.
@@ -177,7 +177,7 @@ z = z_in
 int cartesian_to_spherical_polar(float x,float y,float z,float *r,float *theta,
 	float *phi,float *jacobian)
 /*******************************************************************************
-LAST MODIFIED : 17 January 2000
+LAST MODIFIED : 18 January 2000
 
 DESCRIPTION :
 For transforming from spherical polar to cartesian coordinates.
@@ -186,54 +186,58 @@ y = r*cos(phi)*sin(theta)
 z = r*sin(phi)
 ==============================================================================*/
 {
-	float r_temp,r2,x_temp,y_temp;
+	double cos_phi,cos_theta,r_temp,sin_phi,sin_theta;
 	int return_code;
 
 	ENTER(cartesian_to_spherical_polar);
 	return_code=1;
-	r2=x*x+y*y+z*z;
-	*r=(float)sqrt(r2);
-	r_temp=(float)sqrt(x*x+y*y);
-	if ((r_temp!=0)||(z!=0))
+	r_temp=sqrt(x*x+y*y+z*z);
+	*r=(float)r_temp;
+	if (0<r_temp)
 	{
-		*phi=(float)atan2(z,r_temp);
-	}
-	else
-	{
-		*phi=(float)0;
-	}
-	r_temp=cos(*phi);
-	if (r_temp!=0)
-	{
-		x_temp=x/r_temp;
-		y_temp=y/r_temp;
-		if ((x_temp!=0)||(y_temp!=0))
+		sin_phi=(double)z/r_temp;
+		cos_phi=sqrt(x*x+y*y)/r_temp;
+		*phi=(float)atan2(sin_phi,cos_phi);
+		if (0<cos_phi)
 		{
-			*theta=(float)atan2(y_temp,x_temp);
+			cos_theta=(double)x/(r_temp*cos_phi);
+			sin_theta=(double)y/(r_temp*cos_phi);
+			*theta=(float)atan2(sin_theta,cos_theta);
+			if (jacobian)
+			{
+				jacobian[0]=(float)(cos_phi*cos_theta);
+				jacobian[1]=(float)(cos_phi*sin_theta);
+				jacobian[2]=(float)sin_phi;
+				jacobian[3]=(float)(-sin_theta/(r_temp*cos_phi));
+				jacobian[4]=(float)(cos_theta/(r_temp*cos_phi));
+				jacobian[5]=(float)0;
+				jacobian[6]=(float)(-sin_phi*cos_theta/r_temp);
+				jacobian[7]=(float)(-sin_phi*sin_theta/r_temp);
+				jacobian[8]=(float)(cos_phi/r_temp);
+			}
 		}
 		else
 		{
 			*theta=(float)0;
+			if (jacobian)
+			{
+				jacobian[0]=(float)0;
+				jacobian[1]=(float)0;
+				jacobian[2]=(float)0;
+				jacobian[3]=(float)0;
+				jacobian[4]=(float)0;
+				jacobian[5]=(float)0;
+				jacobian[6]=(float)0;
+				jacobian[7]=(float)0;
+				jacobian[8]=(float)0;
+			}
 		}
 	}
 	else
 	{
 		*theta=(float)0;
-	}
-	if (jacobian)
-	{
-#if defined (OLD_CODE)
-		/*???DB.  To be done */
-		if (*r>0)
-		{
-			jacobian[0]=x/(*r);
-			jacobian[1]=y/(*r);
-			jacobian[2]=(float)0;
-			jacobian[3]= -y/r2;
-			jacobian[4]=x/r2;
-			jacobian[5]=(float)0;
-		}
-		else
+		*phi=(float)0;
+		if (jacobian)
 		{
 			jacobian[0]=(float)0;
 			jacobian[1]=(float)0;
@@ -241,11 +245,10 @@ z = r*sin(phi)
 			jacobian[3]=(float)0;
 			jacobian[4]=(float)0;
 			jacobian[5]=(float)0;
+			jacobian[6]=(float)0;
+			jacobian[7]=(float)0;
+			jacobian[8]=(float)0;
 		}
-		jacobian[6]=(float)0;
-		jacobian[7]=(float)0;
-		jacobian[8]=(float)1;
-#endif /* defined (OLD_CODE) */
 	}
 	LEAVE;
 

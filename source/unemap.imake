@@ -1,7 +1,7 @@
 XCOMM **************************************************************************
 XCOMM  FILE : unemap.imake
 XCOMM
-XCOMM LAST MODIFIED : 6 January 2000
+XCOMM LAST MODIFIED : 18 January 2000
 XCOMM
 XCOMM  DESCRIPTION :
 XCOMM  Makefile for unemap
@@ -41,6 +41,7 @@ UTILITIES_PATH=$(CMISS_ROOT)/cmgui/source/utilities
 	at the moment */
 #define Target unemap64
 #define Bmsi2sigTarget unemap/bmsi2sig64
+#define Biosense2sigTarget unemap/biosense2sig64
 #define ChangeCalibrationTarget unemap/change_calibration64
 #define ChangeChannelsTarget unemap/change_channels64
 #define ChangeConfigurationTarget unemap/change_configuration64
@@ -69,6 +70,7 @@ PRODUCT_UIDH_PATH=$(PRODUCT_PATH)/uidh/unemap/64
 #define Target unemap_optimised
 #define Makefile unemap_sgioptimised.make
 #define Bmsi2sigTarget unemap/bmsi2sig_optimised
+#define Biosense2sigTarget unemap/biosense2sig_optimised
 #define ChangeCalibrationTarget unemap/change_calibration_optimised
 #define ChangeChannelsTarget unemap/change_channels_optimised
 #define ChangeConfigurationTarget unemap/change_configuration_optimised
@@ -96,6 +98,7 @@ PRODUCT_UIDH_PATH=$(PRODUCT_PATH)/uidh/unemap/n32
 /* currently only version with nodes */
 #define Target unemap_nodes
 #define Bmsi2sigTarget unemap/bmsi2sig_nodes
+#define Biosense2sigTarget unemap/biosense2sig_nodes
 #define ChangeCalibrationTarget unemap/change_calibration_nodes
 #define ChangeChannelsTarget unemap/change_channels_nodes
 #define ChangeConfigurationTarget unemap/change_configuration_nodes
@@ -125,6 +128,7 @@ PRODUCT_UIDH_PATH=$(PRODUCT_PATH)/uidh/unemap/n32
 /* 1.2.2.2.1 IRIX-N32-!OPTIMISED-!USE_UNEMAP_NODES-!MEMORY_CHECK */
 #define Target unemap32
 #define Bmsi2sigTarget unemap/bmsi2sig32
+#define Biosense2sigTarget unemap/biosense2sig32
 #define ChangeCalibrationTarget unemap/change_calibration32
 #define ChangeChannelsTarget unemap/change_channels32
 #define ChangeConfigurationTarget unemap/change_configuration32
@@ -150,6 +154,7 @@ PRODUCT_UIDH_PATH=$(PRODUCT_PATH)/uidh/unemap/n32
 /* 1.2.2.2.1 IRIX-N32-!OPTIMISED-!USE_UNEMAP_NODES-MEMORY_CHECK */
 #define Target unemap_memorycheck
 #define Bmsi2sigTarget unemap/bmsi2sig32
+#define Biosense2sigTarget unemap/biosense2sig32
 #define ChangeCalibrationTarget unemap/change_calibration32
 #define ChangeChannelsTarget unemap/change_channels32
 #define ChangeConfigurationTarget unemap/change_configuration32
@@ -179,6 +184,7 @@ PRODUCT_UIDH_PATH=$(PRODUCT_PATH)/uidh/unemap/n32
 /* 2 LINUX */
 #define Target unemap_linux
 #define Bmsi2sigTarget unemap/bmsi2sig_linux
+#define Biosense2sigTarget unemap/biosense2sig_linux
 #define ChangeCalibrationTarget unemap/change_calibration_linux
 #define ChangeChannelsTarget unemap/change_channels_linux
 #define ChangeConfigurationTarget unemap/change_configuration_linux
@@ -628,11 +634,11 @@ general/debug_memory_check.ObjSuffix: general/debug.c general/debug.h
 	fi
 #endif /* defined (MEMORY_CHECK) */
 
-utilities : Bmsi2sigTarget ChangeCalibrationTarget ChangeChannelsTarget \
-ChangeConfigurationTarget ChangeEventsTarget ChangeFrequencyTarget \
-CombineSignalsTarget DifferenceSignalsTarget ExtractSignalTarget \
-Img2sigTarget Plt2cnfgTarget Posdat2sigTarget RegisterTarget \
-TestUnemapHardwareTarget
+utilities : Bmsi2sigTarget Biosense2sigTarget ChangeCalibrationTarget \
+ChangeChannelsTarget ChangeConfigurationTarget ChangeEventsTarget \
+ChangeFrequencyTarget CombineSignalsTarget DifferenceSignalsTarget \
+ExtractSignalTarget Img2sigTarget Plt2cnfgTarget Posdat2sigTarget \
+RegisterTarget TestUnemapHardwareTarget
 
 BMSI2SIG_SRCS = \
 	unemap/utilities/bmsi2sig.c \
@@ -647,6 +653,20 @@ BMSI2SIG_SRCS = \
 	user_interface/message.c
 
 BuildNormalTarget(Bmsi2sigTarget,$(UTILITIES_PATH),BMSI2SIG_SRCS,BMSI2SIG_OBJSA,BMSI2SIG_OBJSB,BMSI2SIG_OBJS,-lm) 
+
+BIOSENSE2SIG_SRCS = \
+	unemap/utilities/biosense2sig.c \
+	command/parser.c \
+	general/debug.c \
+	general/geometry.c \
+	general/matrix_vector.c \
+	general/myio.c \
+	general/mystring.c \
+	unemap/interpolate.c \
+	unemap/rig.c \
+	user_interface/message.c
+
+BuildNormalTarget(Biosense2sigTarget,$(UTILITIES_PATH),BIOSENSE2SIG_SRCS,BIOSENSE2SIG_OBJSA,BIOSENSE2SIG_OBJSB,BIOSENSE2SIG_OBJS,-lm) 
 
 CHANGE_CALIBRATION_SRCS = \
 	unemap/utilities/change_calibration.c \
