@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : graphical_element.c
 
-LAST MODIFIED : 6 April 2000
+LAST MODIFIED : 28 April 2000
 
 DESCRIPTION :
 ==============================================================================*/
@@ -37,7 +37,7 @@ struct GT_element_group_callback_data
 
 struct GT_element_group
 /*******************************************************************************
-LAST MODIFIED : 6 April 2000
+LAST MODIFIED : 28 April 2000
 
 DESCRIPTION :
 Structure for maintaining a graphical rendition of an element group.
@@ -82,7 +82,7 @@ Structure for maintaining a graphical rendition of an element group.
 	/* global stores of selected objects for automatic highlighting */
 	struct Element_point_ranges_selection *element_point_ranges_selection;
 	struct FE_element_selection *element_selection;
-	struct FE_node_selection *node_selection;
+	struct FE_node_selection *data_selection,*node_selection;
 	/* flag storing whether the GT_element_group has changed since last cleared */
 	int changed;
 	/* for accessing objects */
@@ -605,6 +605,45 @@ Callback for change in the global node selection.
 	LEAVE;
 } /* GT_element_group_node_selection_change */
 
+static void GT_element_group_data_selection_change(
+	struct FE_node_selection *data_selection,
+	struct FE_node_selection_changes *changes,void *gt_element_group_void)
+/*******************************************************************************
+LAST MODIFIED : 28 April 2000
+
+DESCRIPTION :
+Callback for change in the global data selection.
+==============================================================================*/
+{
+	struct GT_element_group *gt_element_group;
+
+	ENTER(GT_element_group_data_selection_change);
+	if (data_selection&&changes&&
+		(gt_element_group=(struct GT_element_group *)gt_element_group_void))
+	{
+		/* find out if any of the changes affect data in this group */
+		if (FIRST_OBJECT_IN_LIST_THAT(FE_node)(FE_node_is_in_group,
+			(void *)gt_element_group->data_group,changes->newly_selected_node_list)||
+			FIRST_OBJECT_IN_LIST_THAT(FE_node)(FE_node_is_in_group,
+				(void *)gt_element_group->data_group,
+				changes->newly_unselected_node_list))
+		{
+			/* update the graphics to match */
+			FOR_EACH_OBJECT_IN_LIST(GT_element_settings)(
+				GT_element_settings_selected_data_change,(void *)NULL,
+				gt_element_group->list_of_settings);
+			GT_element_group_build_graphics_objects(gt_element_group,
+				(struct FE_element *)NULL,(struct FE_node *)NULL);
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"GT_element_group_data_selection_change.  Invalid argument(s)");
+	}
+	LEAVE;
+} /* GT_element_group_data_selection_change */
+
 /*
 Global functions
 ----------------
@@ -623,9 +662,10 @@ struct GT_element_group *CREATE(GT_element_group)(
 	struct Computed_field_package *computed_field_package,
 	struct Element_point_ranges_selection *element_point_ranges_selection,
 	struct FE_element_selection *element_selection,
-	struct FE_node_selection *node_selection)
+	struct FE_node_selection *node_selection,
+	struct FE_node_selection *data_selection)
 /*******************************************************************************
-LAST MODIFIED : 6 April 2000
+LAST MODIFIED : 28 April 2000
 
 DESCRIPTION :
 Allocates memory and assigns fields for a graphical finite element group for
@@ -738,6 +778,7 @@ If supplied, callbacks are requested from the <element_selection> and
 					element_point_ranges_selection;
 				gt_element_group->element_selection=element_selection;
 				gt_element_group->node_selection=node_selection;
+				gt_element_group->data_selection=data_selection;
 				gt_element_group->changed=1;
 				gt_element_group->access_count=0;
 				/* request callbacks from the global selections */
@@ -757,6 +798,11 @@ If supplied, callbacks are requested from the <element_selection> and
 				{
 					FE_node_selection_add_callback(node_selection,
 						GT_element_group_node_selection_change,(void *)gt_element_group);
+				}
+				if (data_selection)
+				{
+					FE_node_selection_add_callback(data_selection,
+						GT_element_group_data_selection_change,(void *)gt_element_group);
 				}
 			}
 			else
@@ -786,7 +832,7 @@ If supplied, callbacks are requested from the <element_selection> and
 struct GT_element_group *create_editor_copy_GT_element_group(
 	struct GT_element_group *existing_gt_element_group)
 /*******************************************************************************
-LAST MODIFIED : 6 April 2000
+LAST MODIFIED : 28 April 2000
 
 DESCRIPTION :
 Creates a GT_element_group that is a copy of <existing_gt_element_group> -
@@ -812,6 +858,7 @@ WITHOUT copying graphics objects, and WITHOUT manager and selection callbacks.
 			(struct Computed_field_package *)NULL,
 			(struct Element_point_ranges_selection *)NULL,
 			(struct FE_element_selection *)NULL,
+			(struct FE_node_selection *)NULL,
 			(struct FE_node_selection *)NULL))
 		{
 			/* copy settings WITHOUT graphics objects; do not cause whole function
@@ -915,6 +962,11 @@ Frees the memory for <**gt_element_group> and sets <*gt_element_group> to NULL.
 					FE_element_selection_remove_callback(
 						gt_element_group->element_selection,
 						GT_element_group_element_selection_change,(void *)gt_element_group);
+				}
+				if (gt_element_group->data_selection)
+				{
+					FE_node_selection_remove_callback(gt_element_group->data_selection,
+						GT_element_group_data_selection_change,(void *)gt_element_group);
 				}
 				if (gt_element_group->node_selection)
 				{
@@ -1555,7 +1607,7 @@ int GT_element_group_build_graphics_objects(
 	struct GT_element_group *gt_element_group,struct FE_element *changed_element,
 	struct FE_node *changed_node)
 /*******************************************************************************
-LAST MODIFIED : 28 March 2000
+LAST MODIFIED : 28 April 2000
 
 DESCRIPTION :
 Adds or edits a graphics object for each settings in <gt_element_group> without
@@ -1598,6 +1650,8 @@ a graphics object or affected by <changed_element> or <changed_node>.
 			settings_to_object_data.selected_element_list=
 				FE_element_selection_get_element_list(
 					gt_element_group->element_selection);
+			settings_to_object_data.selected_data_list=
+				FE_node_selection_get_node_list(gt_element_group->data_selection);
 			settings_to_object_data.selected_node_list=
 				FE_node_selection_get_node_list(gt_element_group->node_selection);
 			return_code=FOR_EACH_OBJECT_IN_LIST(GT_element_settings)(

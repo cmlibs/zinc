@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : graphical_element.h
 
-LAST MODIFIED : 6 April 2000
+LAST MODIFIED : 28 April 2000
 
 DESCRIPTION :
 Graphical element group data structure.
@@ -65,9 +65,10 @@ struct GT_element_group *CREATE(GT_element_group)(
 	struct Computed_field_package *computed_field_package,
 	struct Element_point_ranges_selection *element_point_ranges_selection,
 	struct FE_element_selection *element_selection,
-	struct FE_node_selection *node_selection);
+	struct FE_node_selection *node_selection,
+	struct FE_node_selection *data_selection);
 /*******************************************************************************
-LAST MODIFIED : 6 April 2000
+LAST MODIFIED : 28 April 2000
 
 DESCRIPTION :
 Allocates memory and assigns fields for a graphical finite element group for

@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : element_group_settings.c
 
-LAST MODIFIED : 22 March 2000
+LAST MODIFIED : 1 May 2000
 
 DESCRIPTION :
 GT_element_settings structure and routines for describing and manipulating the
@@ -4599,7 +4599,7 @@ Converts a finite element into a graphics object with the supplied settings.
 int GT_element_settings_to_graphics_object(
 	struct GT_element_settings *settings,void *settings_to_object_data_void)
 /*******************************************************************************
-LAST MODIFIED : 29 February 2000
+LAST MODIFIED : 1 May 2000
 
 DESCRIPTION :
 Creates a GT_object and fills it with the objects described by settings.
@@ -4615,7 +4615,6 @@ The graphics object is stored with with the settings it was created from.
 	struct FE_field *fe_coordinate_field;
 	struct FE_node *changed_node;
 	struct GROUP(FE_element) *element_group;
-	struct GROUP(FE_node) *node_group;
 	struct GT_element_settings_to_graphics_object_data *settings_to_object_data;
 	struct GT_glyph_set *glyph_set;
 	struct Multi_range *subranges;
@@ -4807,21 +4806,30 @@ The graphics object is stored with with the settings it was created from.
 								}
 								if (GT_ELEMENT_SETTINGS_NODE_POINTS==settings->settings_type)
 								{
-									node_group=settings_to_object_data->node_group;
+									glyph_set=create_GT_glyph_set_from_FE_node_group(
+										settings_to_object_data->node_group,
+										(struct MANAGER(FE_node) *)NULL,
+										settings_to_object_data->rc_coordinate_field,
+										settings->glyph,settings->glyph_centre,settings->glyph_size,
+										settings_to_object_data->wrapper_orientation_scale_field,
+										settings->glyph_scale_factors,settings->data_field,
+										settings->label_field,settings->select_mode,
+										settings_to_object_data->selected_node_list);
 								}
 								else
 								{
-									node_group=settings_to_object_data->data_group;
+									glyph_set=create_GT_glyph_set_from_FE_node_group(
+										settings_to_object_data->data_group,
+										(struct MANAGER(FE_node) *)NULL,
+										settings_to_object_data->rc_coordinate_field,
+										settings->glyph,settings->glyph_centre,settings->glyph_size,
+										settings_to_object_data->wrapper_orientation_scale_field,
+										settings->glyph_scale_factors,settings->data_field,
+										settings->label_field,settings->select_mode,
+										settings_to_object_data->selected_data_list);
 								}
 								/* NOT an error if no glyph_set produced == empty group */
-								if (glyph_set=create_GT_glyph_set_from_FE_node_group(node_group,
-									(struct MANAGER(FE_node) *)NULL,
-									settings_to_object_data->rc_coordinate_field,
-									settings->glyph,settings->glyph_centre,settings->glyph_size,
-									settings_to_object_data->wrapper_orientation_scale_field,
-									settings->glyph_scale_factors,settings->data_field,
-									settings->label_field,settings->select_mode,
-									settings_to_object_data->selected_node_list))
+								if (glyph_set)
 								{
 									if (!GT_OBJECT_ADD(GT_glyph_set)(settings->graphics_object,
 										time,glyph_set))
@@ -4978,6 +4986,24 @@ The graphics object is stored with with the settings it was created from.
 					GT_object_clear_selected_graphic_list(settings->graphics_object);
 					switch (settings->settings_type)
 					{
+						case GT_ELEMENT_SETTINGS_DATA_POINTS:
+						{
+							if (0<NUMBER_IN_LIST(FE_node)(
+								settings_to_object_data->selected_data_list))
+							{
+								if (subranges=CREATE(Multi_range)())
+								{
+									FOR_EACH_OBJECT_IN_LIST(FE_node)(
+										add_FE_node_number_to_Multi_range,(void *)subranges,
+										settings_to_object_data->selected_data_list);
+									if (!GT_object_select_graphic(settings->graphics_object,
+										0,subranges))
+									{
+										DESTROY(Multi_range)(&subranges);
+									}
+								}
+							}
+						} break;
 						case GT_ELEMENT_SETTINGS_NODE_POINTS:
 						{
 							if (0<NUMBER_IN_LIST(FE_node)(
@@ -5018,7 +5044,6 @@ The graphics object is stored with with the settings it was created from.
 								(void *)&element_point_ranges_select_data,
 								settings_to_object_data->selected_element_point_ranges_list);
 						} break;
-						case GT_ELEMENT_SETTINGS_DATA_POINTS:
 						case GT_ELEMENT_SETTINGS_ISO_SURFACES:
 						case GT_ELEMENT_SETTINGS_VOLUMES:
 						case GT_ELEMENT_SETTINGS_STREAMLINES:
@@ -5238,6 +5263,64 @@ Must call GT_element_settings_to_graphics_object afterwards to complete.
 
 	return (return_code);
 } /* GT_element_settings_selected_nodes_change */
+
+int GT_element_settings_selected_data_change(
+	struct GT_element_settings *settings,void *dummy_void)
+/*******************************************************************************
+LAST MODIFIED : 28 April 2000
+
+DESCRIPTION :
+Tells <settings> that if the graphics resulting from it depend on the currently
+selected nodes, then they should be updated.
+Must call GT_element_settings_to_graphics_object afterwards to complete.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(GT_element_settings_selected_data_change);
+	USE_PARAMETER(dummy_void);
+	if (settings)
+	{
+		return_code=1;
+		if (settings->graphics_object&&
+			(GT_ELEMENT_SETTINGS_DATA_POINTS==settings->settings_type))
+		{
+			switch (settings->select_mode)
+			{
+				case GRAPHICS_SELECT_ON:
+				{
+					/* for efficiency, just request update of selected graphics */
+					settings->selected_graphics_changed=1;
+				} break;
+				case GRAPHICS_NO_SELECT:
+				{
+					/* nothing to do as no names put out with graphic */
+				} break;
+				case GRAPHICS_DRAW_SELECTED:
+				case GRAPHICS_DRAW_UNSELECTED:
+				{
+					/* need to rebuild graphics_object from scratch */
+					DEACCESS(GT_object)(&(settings->graphics_object));
+					settings->graphics_object=(struct GT_object *)NULL;
+				} break;
+				default:
+				{
+					display_message(ERROR_MESSAGE,
+						"GT_element_settings_selected_data_change.  Unknown select_mode");
+				} break;
+			}
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"GT_element_settings_selected_data_change.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* GT_element_settings_selected_data_change */
 
 int GT_element_settings_compile_visible_settings(
 	struct GT_element_settings *settings,void *time_void)

@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : element_group_settings.h
 
-LAST MODIFIED : 28 February 2000
+LAST MODIFIED : 28 April 2000
 
 DESCRIPTION :
 GT_element_settings structure and routines for describing and manipulating the
@@ -120,7 +120,7 @@ Subset of command data passed to g_element modify routines.
 
 struct GT_element_settings_to_graphics_object_data
 /*******************************************************************************
-LAST MODIFIED : 28 February 2000
+LAST MODIFIED : 28 April 2000
 
 DESCRIPTION :
 Data required to produce or edit a graphics object for a GT_element_settings
@@ -141,7 +141,7 @@ object.
 	/* for highlighting of selected objects */
 	struct LIST(Element_point_ranges) *selected_element_point_ranges_list;
 	struct LIST(FE_element) *selected_element_list;
-	struct LIST(FE_node) *selected_node_list;
+	struct LIST(FE_node) *selected_data_list,*selected_node_list;
 
 	/* additional values for passing to element_to_graphics_object */
 	struct GT_element_settings *settings;
@@ -1066,6 +1066,17 @@ int GT_element_settings_selected_nodes_change(
 	struct GT_element_settings *settings,void *dummy_void);
 /*******************************************************************************
 LAST MODIFIED : 25 February 2000
+
+DESCRIPTION :
+Tells <settings> that if the graphics resulting from it depend on the currently
+selected nodes, then they should be updated.
+Must call GT_element_settings_to_graphics_object afterwards to complete.
+==============================================================================*/
+
+int GT_element_settings_selected_data_change(
+	struct GT_element_settings *settings,void *dummy_void);
+/*******************************************************************************
+LAST MODIFIED : 28 April 2000
 
 DESCRIPTION :
 Tells <settings> that if the graphics resulting from it depend on the currently
