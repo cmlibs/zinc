@@ -81,6 +81,20 @@ The menu bar at the top of the command window
 }; /* struct Menu_bar */
 #endif /* !defined (WINDOWS_DEV_FLAG) */
 
+enum Command_window_outfile_mode
+/*******************************************************************************
+LAST MODIFIED : 11 August 2000
+
+DESCRIPTION :
+Controls what is written to the log file.
+These are independent flags which can be || together.
+==============================================================================*/
+{
+	OUTFILE_INVALID = 0,
+	OUTFILE_OUTPUT = 1,
+	OUTFILE_INPUT = 2
+}; /* enum Command_window_outfile_mode */
+
 struct Command_window
 /*******************************************************************************
 LAST MODIFIED : 9 November 1998
@@ -104,6 +118,7 @@ DESCRIPTION :
 	/* the information written to the command window can also be directed to a
 		file */
 	FILE *out_file;
+	enum Command_window_outfile_mode out_file_mode;
 	struct User_interface *user_interface;
 	/* for executing commands */
 	struct Execute_command *execute_command;
@@ -676,6 +691,13 @@ Called when a command is entered in the command entry area.
 			/*???DB.  Short term solution ?  Stop using XmCommand ? */
 			/* delete last element */
 			XmListDeletePos(command_window->command_history,0);
+
+			if (command_window->out_file &&
+				(command_window->out_file_mode & OUTFILE_INPUT))
+			{
+				fprintf(command_window->out_file,"%s\n",command);
+			}
+
 			Execute_command_execute_string(command_window->execute_command,
 				command);
 /*      reset_command_box(command_window);*/
@@ -1013,10 +1035,12 @@ LAST MODIFIED : 11 November 1998
 DESCRIPTION :
 ==============================================================================*/
 {
-	char *file_name;
+	char *file_name, input, output;
 	int return_code;
 	static struct Modifier_entry option_table[]=
 	{
+	   {"input",NULL,NULL,set_char_flag},
+	   {"output",NULL,NULL,set_char_flag},
 		{NULL,NULL,NULL,set_file_name},
 	};
 	struct Command_window *command_window;
@@ -1027,14 +1051,35 @@ DESCRIPTION :
 	if (state)
 	{
 		file_name=(char *)NULL;
-		option_table[0].to_be_modified= &file_name;
-		return_code=process_option(state,option_table);
+		input = 0;
+		output = 0;
+		option_table[0].to_be_modified= &input;
+		option_table[1].to_be_modified= &output;
+		option_table[2].to_be_modified= &file_name;
+		return_code=process_multiple_options(state,option_table);
 		/* no errors, not asking for help */
 		if (return_code)
 		{
 			if ((command_window=(struct Command_window *)command_window_void)
 				&&file_name)
 			{
+			   if (input && output)
+				{
+					command_window->out_file_mode = OUTFILE_INPUT & OUTFILE_OUTPUT;
+				}
+				else if (input)
+				{
+					command_window->out_file_mode = OUTFILE_INPUT;
+				}
+				else if (output)
+				{
+					command_window->out_file_mode = OUTFILE_OUTPUT;
+				}
+				else
+				{
+					/* This is what it used to do, so this is the default */
+					command_window->out_file_mode = OUTFILE_OUTPUT;
+				}
 				if (command_window->out_file)
 				{
 					display_message(WARNING_MESSAGE,"Closing existing file");
@@ -1256,6 +1301,7 @@ Create the structures and retrieve the command window from the uil file.
 				command_window->user_interface=user_interface;
 				command_window->execute_command=execute_command;
 				command_window->out_file=(FILE *)NULL;
+				command_window->out_file_mode=OUTFILE_INVALID;
 #if defined (MOTIF)
 				command_window->main_menu.file_menu.open_menu.open_comfile_button=
 					(Widget)NULL;
@@ -1717,7 +1763,8 @@ Writes the <message> to the <command_window>.
 			return_code=1;
 #endif /* defined (MOTIF) */
 		}
-		if (command_window->out_file)
+		if (command_window->out_file &&
+			(command_window->out_file_mode & OUTFILE_OUTPUT))
 		{
 			fprintf(command_window->out_file,message);
 			return_code=1;
