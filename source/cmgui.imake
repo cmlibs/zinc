@@ -598,7 +598,7 @@ INTERPRETER_LIB = $(INTERPRETER_PATH)/lib/aix-64/libperlinterpreter-opt.a
 INTERPRETER_LIB = $(INTERPRETER_PATH)/lib/aix-32/libperlinterpreter-opt.a
 #endif /* defined (O64) */
 #elif defined(WIN32) /* switch OperatingSystem */
-INTERPRETER_LIB = -L$(INTERPRETER_PATH)/lib/win32/ -lperlinterpreter-opt -lPerl_cmiss -lperl56
+INTERPRETER_LIB = $(INTERPRETER_PATH)/lib/win32/libperlinterpreter-opt.a $(INTERPRETER_PATH)/lib/win32/libPerl_cmiss.a $(INTERPRETER_PATH)/lib/win32/libperl56.a
 XCOMM INTERPRETER_LIB = $(INTERPRETER_PATH)/lib/CYGWIN_NT-5.0-32/libperlinterpreter-debug.a
 #endif /* switch OperatingSystem */
 #endif /* !defined (PERL_INTERPRETER) */
@@ -1480,9 +1480,21 @@ $(OBJECT_PATH)/$(EXPORTS_FILE) :
 	touch $(OBJECT_PATH)/$(EXPORTS_FILE)
 #else /* defined (EXPORT_EVERYTHING) */
 EXPORTS_FILE = cmgui.exports
-EXPORTS_LINK_FLAGS = -Wl,-exports_file,$(EXPORTS_FILE)
-$(OBJECT_PATH)/$(EXPORTS_FILE) :	$(EXPORTS_FILE)
+EXPORTS_LINK_FLAGS = -Wl,-exports_file,$(EXPORTS_FILE).link
+/* The .link extension prevents the makefile predecessor cycle */
+$(OBJECT_PATH)/$(EXPORTS_FILE).link :	$(EXPORTS_FILE)
+	@if [ ! -d $(OBJECT_PATH) ]; then \
+		mkdir -p $(OBJECT_PATH); \
+	fi
+#if defined (CMISS_ROOT_DEFINED)
+	if [ -f $(EXPORTS_FILE) ]; then \
+		cp $(EXPORTS_FILE) $(OBJECT_PATH)/$(EXPORTS_FILE).c; \
+	else \
+		cp $(PRODUCT_SOURCE_PATH)/$(EXPORTS_FILE) $(OBJECT_PATH)/$(EXPORTS_FILE).c; \
+	fi
+#else /* defined (CMISS_ROOT_DEFINED) */
 	cp $(EXPORTS_FILE) $(OBJECT_PATH)/$(EXPORTS_FILE).c
+#endif /* defined (CMISS_ROOT_DEFINED) */
 	cd $(OBJECT_PATH) ; $(CPREPROCESS) $(ALL_DEFINES) $(EXPORTS_FILE).c
 	cp $(OBJECT_PATH)/$(EXPORTS_FILE).i $(OBJECT_PATH)/$(EXPORTS_FILE)
 #endif /* defined (EXPORT_EVERYTHING) */
@@ -1508,7 +1520,18 @@ EXPORTS_FILE = cmgui_ld_version.script
 SRC_EXPORTS_FILE = cmgui.exports
 EXPORTS_LINK_FLAGS = -Wl,-export-dynamic,--version-script,$(EXPORTS_FILE)
 $(OBJECT_PATH)/$(EXPORTS_FILE) :	$(SRC_EXPORTS_FILE)
+	@if [ ! -d $(OBJECT_PATH) ]; then \
+		mkdir -p $(OBJECT_PATH); \
+	fi
+#if defined (CMISS_ROOT_DEFINED)
+	if [ -f $(SRC_EXPORTS_FILE) ]; then \
+		cp $(SRC_EXPORTS_FILE) $(OBJECT_PATH)/$(EXPORTS_FILE).c; \
+	else \
+		cp $(PRODUCT_SOURCE_PATH)/$(SRC_EXPORTS_FILE) $(OBJECT_PATH)/$(EXPORTS_FILE).c; \
+	fi
+#else /* defined (CMISS_ROOT_DEFINED) */
 	cp $(SRC_EXPORTS_FILE) $(OBJECT_PATH)/$(EXPORTS_FILE).c
+#endif /* defined (CMISS_ROOT_DEFINED) */
 	$(CPREPROCESS) $(ALL_DEFINES) $(OBJECT_PATH)/$(EXPORTS_FILE).c -o $(OBJECT_PATH)/$(EXPORTS_FILE).E
 	echo > $(OBJECT_PATH)/$(EXPORTS_FILE)	"CMISS_EXP_1.0 {"
 	echo >> $(OBJECT_PATH)/$(EXPORTS_FILE)	"global:"
@@ -1528,7 +1551,18 @@ EXPORTS_SONAME = cmgui.so /* If we are going to put this in the executable lets 
 SRC_EXPORTS_FILE = cmgui.exports
 EXPORTS_LINK_FLAGS = $(EXPORTS_FILE) -Wl,-soname,$(EXPORTS_SONAME)
 $(OBJECT_PATH)/$(EXPORTS_FILE) :	$(SRC_EXPORTS_FILE)
+	@if [ ! -d $(OBJECT_PATH) ]; then \
+		mkdir -p $(OBJECT_PATH); \
+	fi
+#if defined (CMISS_ROOT_DEFINED)
+	if [ -f $(SRC_EXPORTS_FILE) ]; then \
+		cp $(SRC_EXPORTS_FILE) $(OBJECT_PATH)/$(EXPORTS_FILE).c; \
+	else \
+		cp $(PRODUCT_SOURCE_PATH)/$(SRC_EXPORTS_FILE) $(OBJECT_PATH)/$(EXPORTS_FILE).c; \
+	fi
+#else /* defined (CMISS_ROOT_DEFINED) */
 	cp $(SRC_EXPORTS_FILE) $(OBJECT_PATH)/$(EXPORTS_FILE).c
+#endif /* defined (CMISS_ROOT_DEFINED) */
 	$(CPREPROCESS) $(ALL_DEFINES) $(OBJECT_PATH)/$(EXPORTS_FILE).c -o $(OBJECT_PATH)/$(EXPORTS_FILE).E
 	echo > $(OBJECT_PATH)/$(EXPORTS_FILE).c	"#define lt_preloaded_symbols some_other_symbol"
 	echo >> $(OBJECT_PATH)/$(EXPORTS_FILE).c	"#define dynamic_ptr void *"
