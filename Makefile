@@ -131,9 +131,11 @@ depend : $(SOURCE_PATH)/cmgui_sgi.make $(SOURCE_PATH)/cmgui_sgioptimised.make $(
 	if [ "$(USER)" = "cmiss" ]; then \
 		export CMGUI_DEV_ROOT=$(PWD) ; \
 		cd $(PRODUCT_SOURCE_PATH); \
+		rm -f *.depend ; \
 		$(MAKE) -f cmgui_sgi.make depend ; \
 		$(MAKE) -f cmgui_sgioptimised.make depend ; \
 		$(MAKE) -f cmgui_sgi_memorycheck.make depend ; \
+		$(MAKE) -f cmgui_sgilite.make depend ; \
 		$(MAKE) -f cmgui_sgi64.make depend ; \
 		rsh 130.216.208.156 'setenv CMISS_ROOT /product/cmiss ; setenv CMGUI_DEV_ROOT $(PWD) ; cd $(PRODUCT_SOURCE_PATH) ; $(MAKE) -f cmgui_linux.make depend ' ; \
 	else \
@@ -143,7 +145,7 @@ depend : $(SOURCE_PATH)/cmgui_sgi.make $(SOURCE_PATH)/cmgui_sgioptimised.make $(
 run_tests :
 	if [ "$(USER)" = "cmiss" ]; then \
 		cd $(TEST_PATH); \
-		make -u; \
+		$(MAKE) -u; \
 		rsh 130.216.208.156 'setenv CMISS_ROOT /product/cmiss ; cd $(TEST_PATH) ; make -W cmgui_linux.exe cmgui_linux_test' ; \
 		cat all.mail ; \
 	else \
