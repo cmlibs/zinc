@@ -4866,7 +4866,7 @@ This function draws the <map> in as a 3D CMGUI scene.
 							}
 						}/* if (function=calculate_interpolation_functio */
 						region_item=region_item->next;
-					} /* for (region_number=0; */							
+					} /* for (region_number=0; */
 					/* Alter the spectrum */
 					time=map->frame_start_time/1000;/* ms to s*/						
 					/* spectrum range changed and fixed */

@@ -3659,7 +3659,9 @@ The extraction arguments are:
 ==============================================================================*/
 {
 	char *name=(char *)NULL;
+#if defined (UNEMAP_USE_NODES)
 	char *signal_status_str=(char *)NULL;
+#endif /* defined (UNEMAP_USE_NODES) */
 	enum Event_signal_status *signals_status=(enum Event_signal_status *)NULL;
 	float channel_offset,channel_gain,signal_minimum,signal_maximum;
 	float	*signal_value=(float *)NULL;

@@ -4871,56 +4871,77 @@ Updates the mapping region pull down menu to be consistent with the current rig.
 						XtSetSensitive(mapping->projection_polar,False);
 						XtSetSensitive(mapping->projection_3d,False);
 						XtSetSensitive(mapping->projection_patch,False);
-						switch(rig->current_region->type)
+						if(rig->current_region)
 						{
-							case SOCK:
+							switch(rig->current_region->type)
 							{
-								XtSetSensitive(mapping->projection_hammer,True);
-								XtSetSensitive(mapping->projection_polar,True);
-								XtSetSensitive(mapping->projection_3d,True);
-								/* set the projection choic */
-								XtVaGetValues(mapping->projection_choice,XmNmenuHistory,
-									&current_projection,NULL);
-								if ((current_projection!=mapping->projection_hammer)&&
-									(current_projection!=mapping->projection_polar)
-									&&(current_projection!=mapping->projection_3d))
+								case SOCK:
 								{
-									XtVaSetValues(mapping->projection_choice,
-										XmNmenuHistory,mapping->projection_hammer,
-										NULL);
-								}
-							}break;
-							case TORSO:
+									XtSetSensitive(mapping->projection_hammer,True);
+									XtSetSensitive(mapping->projection_polar,True);
+									XtSetSensitive(mapping->projection_3d,True);
+									/* set the projection choic */
+									XtVaGetValues(mapping->projection_choice,XmNmenuHistory,
+										&current_projection,NULL);
+									if ((current_projection!=mapping->projection_hammer)&&
+										(current_projection!=mapping->projection_polar)
+										&&(current_projection!=mapping->projection_3d))
+									{
+										XtVaSetValues(mapping->projection_choice,
+											XmNmenuHistory,mapping->projection_hammer,
+											NULL);
+									}
+								}break;
+								case TORSO:
+								{
+									XtSetSensitive(mapping->projection_cylinder,True);
+									XtSetSensitive(mapping->projection_3d,True);	
+									/* set the projection choice */
+									XtVaGetValues(mapping->projection_choice,XmNmenuHistory,
+										&current_projection,NULL);
+									if ((current_projection!=mapping->projection_cylinder)									
+										&&(current_projection!=mapping->projection_3d))
+									{
+										XtVaSetValues(mapping->projection_choice,
+											XmNmenuHistory,mapping->projection_cylinder,
+											NULL);
+									}
+								}break;
+								case PATCH:
+								{									
+									XtSetSensitive(mapping->projection_patch,True);
+									XtSetSensitive(mapping->projection_3d,True);
+									/* set the projection choice */
+									XtVaGetValues(mapping->projection_choice,XmNmenuHistory,
+										&current_projection,NULL);
+									if ((current_projection!=mapping->projection_patch)									
+										&&(current_projection!=mapping->projection_3d))
+									{
+										XtVaSetValues(mapping->projection_choice,
+											XmNmenuHistory,mapping->projection_patch,
+											NULL);
+									}
+								}break;
+							}/* switch(rig->current_region->type) */ 
+						}/*  if(rig->current_region) */
+						else
+						/*This is a mixed rig */
+						{
+							XtSetSensitive(mapping->projection_hammer,True);
+							XtSetSensitive(mapping->projection_polar,True);
+							XtSetSensitive(mapping->projection_3d,True);
+							/* set the projection choic */
+							XtVaGetValues(mapping->projection_choice,XmNmenuHistory,
+								&current_projection,NULL);
+							if ((current_projection!=mapping->projection_hammer)&&
+								(current_projection!=mapping->projection_polar)
+								&&(current_projection!=mapping->projection_3d))
 							{
-								XtSetSensitive(mapping->projection_cylinder,True);
-								XtSetSensitive(mapping->projection_3d,True);	
-								/* set the projection choice */
-								XtVaGetValues(mapping->projection_choice,XmNmenuHistory,
-									&current_projection,NULL);
-								if ((current_projection!=mapping->projection_cylinder)									
-									&&(current_projection!=mapping->projection_3d))
-								{
-									XtVaSetValues(mapping->projection_choice,
-										XmNmenuHistory,mapping->projection_cylinder,
-										NULL);
-								}
-							}break;
-							case PATCH:
-							{									
-								XtSetSensitive(mapping->projection_patch,True);
-								XtSetSensitive(mapping->projection_3d,True);
-								/* set the projection choice */
-								XtVaGetValues(mapping->projection_choice,XmNmenuHistory,
-									&current_projection,NULL);
-								if ((current_projection!=mapping->projection_patch)									
-									&&(current_projection!=mapping->projection_3d))
-								{
-									XtVaSetValues(mapping->projection_choice,
-										XmNmenuHistory,mapping->projection_patch,
-										NULL);
-								}
-							}break;
-						}/* switch(rig->current_region->type) */	
+								XtVaSetValues(mapping->projection_choice,
+									XmNmenuHistory,mapping->projection_hammer,
+									NULL);
+							}
+						}
 #else 
 							XtManageChild(mapping->projection_choice);
 						XtVaSetValues(mapping->region_choice,
