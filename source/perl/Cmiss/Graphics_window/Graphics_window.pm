@@ -1,4 +1,4 @@
-package Cmiss::graphics_window;
+package Cmiss::Graphics_window;
 
 use 5.006;
 use strict;
@@ -15,7 +15,7 @@ our @ISA = qw(Exporter DynaLoader);
 # names by default without a very good reason. Use EXPORT_OK instead.
 # Do not simply export all your public functions/methods/constants.
 
-# This allows declaration	use Cmiss::graphics_window ':all';
+# This allows declaration	use Cmiss::Graphics_window ':all';
 # If you do not need this, moving things directly into @EXPORT or @EXPORT_OK
 # will save memory.
 our %EXPORT_TAGS = ( 'all' => [ qw(
@@ -45,7 +45,7 @@ sub AUTOLOAD {
 	    goto &AutoLoader::AUTOLOAD;
 	}
 	else {
-	    croak "Your vendor has not defined Cmiss::graphics_window macro $constname";
+	    croak "Your vendor has not defined Cmiss::Graphics_window macro $constname";
 	}
     }
     {
@@ -61,14 +61,11 @@ sub AUTOLOAD {
     goto &$AUTOLOAD;
 }
 
-use Cmiss;
-#Need an interpreter before we load the main "cmiss" library until we separate the
-#graphics from the command processing
-use Cmiss::Perl_cmiss;
-Cmiss::require_library('cmgui');
+#Graphics windows currently require the command data to be initialised.
+use Cmiss::Cmgui_command_data;
 
 require XSLoader;
-XSLoader::load('Cmiss::graphics_window', $VERSION);
+XSLoader::load('Cmiss::Graphics_window', $VERSION);
 
 # Preloaded methods go here.
 
@@ -79,15 +76,19 @@ __END__
 
 =head1 NAME
 
-Cmiss::graphics_window - Perl extension for interacting with Cmiss graphics_windows.
+Cmiss::Graphics_window - Perl extension for interacting with Cmiss graphics_windows.
 
 =head1 SYNOPSIS
 
-  use Cmiss::graphics_window;
+gfx create window 1;
+
+use Cmiss::Graphics_window;
+
+$bob = Cmiss::Graphics_window::get_scene_viewer_by_name("1", 0);
 
 =head1 DESCRIPTION
 
-Perl bindings to the public interface of Cmiss::graphics_window.
+Perl bindings to the public interface of Cmiss::Graphics_window.
 
 =head2 EXPORT
 
@@ -95,7 +96,7 @@ None by default.
 
 =head2 Exportable functions
 
-Cmiss_scene_viewer_id get_scene_viewer_by_name(char *graphics_window_name,
+Cmiss::Scene_viewer Cmiss_scene_viewer_id get_scene_viewer_by_name(char *graphics_window_name,
 	 int pane_number);
 The first pane is <pane_number> 0.
 
