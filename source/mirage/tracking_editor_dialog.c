@@ -3644,7 +3644,7 @@ Creates a new 3-D window.
 			track_ed->graphics_window_manager))
 		{
 			if (window=CREATE(Graphics_window)(name,
-				GRAPHICS_WINDOW_DOUBLE_BUFFERING, GRAPHICS_BUFFER_MONO,
+				GRAPHICS_WINDOW_DOUBLE_BUFFERING, GRAPHICS_WINDOW_MONO,
 				/*minimum_colour_buffer_depth*/0,
 				/*minimum_depth_buffer_depth*/0,
 				/*minimum_accumulation_buffer_depth*/0,
