@@ -358,7 +358,7 @@ DESCRIPTION : The Map.
 	/*???DB.  Used to be in user_settings */
 	float membrane_smoothing,plate_bending_smoothing;
 	int finite_element_mesh_columns,finite_element_mesh_rows,
-		draw_map_on_maunal_time_update;
+		draw_map_on_manual_time_update;
 	struct Map_drawing_information *drawing_information;
 	int activation_front;
 	float contour_maximum,contour_minimum,maximum_value,minimum_value;
