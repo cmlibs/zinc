@@ -546,26 +546,13 @@ already) and allows its contents to be modified.
 		source_fields = (struct Computed_field **)NULL;
 		if (ALLOCATE(source_fields, struct Computed_field *, 2))
 		{
+			source_fields[0] = (struct Computed_field *)NULL;
+			source_fields[1] = (struct Computed_field *)NULL;
 			if (computed_field_multiply_components_type_string ==
 				Computed_field_get_type_string(field))
 			{
 				return_code=Computed_field_get_type_multiply_components(field, 
 					source_fields, source_fields + 1);
-			}
-			else
-			{
-				if (source_fields[0]=FIRST_OBJECT_IN_MANAGER_THAT(Computed_field)(
-					Computed_field_has_numerical_components,(void *)NULL,
-					computed_field_component_operations_package->computed_field_manager))
-				{
-					source_fields[1] = source_fields[0];
-				}
-				else
-				{
-					display_message(ERROR_MESSAGE,
-						"define_Computed_field_type_multiply_components.  No fields defined");
-					return_code = 0;
-				}
 			}
 			if (return_code)
 			{
@@ -1167,26 +1154,13 @@ already) and allows its contents to be modified.
 		source_fields = (struct Computed_field **)NULL;
 		if (ALLOCATE(source_fields, struct Computed_field *, 2))
 		{
+			source_fields[0] = (struct Computed_field *)NULL;
+			source_fields[1] = (struct Computed_field *)NULL;
 			if (computed_field_divide_components_type_string ==
 				Computed_field_get_type_string(field))
 			{
 				return_code=Computed_field_get_type_divide_components(field, 
 					source_fields, source_fields + 1);
-			}
-			else
-			{
-				if (source_fields[0]=FIRST_OBJECT_IN_MANAGER_THAT(Computed_field)(
-					Computed_field_has_numerical_components,(void *)NULL,
-					computed_field_component_operations_package->computed_field_manager))
-				{
-					source_fields[1] = source_fields[0];
-				}
-				else
-				{
-					display_message(ERROR_MESSAGE,
-						"define_Computed_field_type_divide_components.  No fields defined");
-					return_code = 0;
-				}
 			}
 			if (return_code)
 			{
@@ -1803,30 +1777,16 @@ already) and allows its contents to be modified.
 		if (ALLOCATE(source_fields, struct Computed_field *, 2)&&
 			ALLOCATE(scale_factors, FE_value, 2))
 		{
+			source_fields[0] = (struct Computed_field *)NULL;
+			source_fields[1] = (struct Computed_field *)NULL;
+			scale_factors[0] = 1.0;
+			scale_factors[1] = 1.0;
 			if (computed_field_add_type_string ==
 				Computed_field_get_type_string(field))
 			{
 				return_code=Computed_field_get_type_add(field, 
 					source_fields, scale_factors,
 					source_fields + 1, scale_factors + 1);
-			}
-			else
-			{
-				if (source_fields[0]=FIRST_OBJECT_IN_MANAGER_THAT(Computed_field)(
-					Computed_field_has_numerical_components,(void *)NULL,
-					computed_field_component_operations_package->computed_field_manager))
-				{
-					source_fields[1] = source_fields[0];
-					/* default scale factors for simple add */
-					scale_factors[0] = 1.0;
-					scale_factors[1] = 1.0;
-				}
-				else
-				{
-					display_message(ERROR_MESSAGE,
-						"define_Computed_field_type_add.  No fields defined");
-					return_code = 0;
-				}
 			}
 			if (return_code)
 			{
@@ -2399,7 +2359,7 @@ DESCRIPTION :
 int Computed_field_set_type_scale(struct Computed_field *field,
 	struct Computed_field *source_field, FE_value *scale_factors)
 /*******************************************************************************
-LAST MODIFIED : 14 July 2000
+LAST MODIFIED : 18 December 2001
 
 DESCRIPTION :
 Converts <field> to type COMPUTED_FIELD_SCALE which scales the values of the
@@ -2414,7 +2374,8 @@ although its cache may be lost.
 	struct Computed_field **source_fields;
 
 	ENTER(Computed_field_set_type_scale);
-	if (field&&source_field&&(source_field->number_of_components>0))
+	if (field && source_field && (0 < source_field->number_of_components) &&
+		scale_factors)
 	{
 		return_code=1;
 		/* 1. make dynamic allocations for any new type-specific data */
@@ -2652,7 +2613,7 @@ already) and allows its contents to be modified.
 				return_code=Option_table_multi_parse(option_table,state);
 				DESTROY(Option_table)(&option_table);
 			}
-			/* no errors,not asking for help */
+			/* no errors, not asking for help */
 			if (return_code)
 			{
 				return_code = Computed_field_set_type_scale(field,
@@ -2660,9 +2621,9 @@ already) and allows its contents to be modified.
 			}
 			if (!return_code)
 			{
-				if ((!state->current_token)||
-					(strcmp(PARSER_HELP_STRING,state->current_token)&&
-						strcmp(PARSER_RECURSIVE_HELP_STRING,state->current_token)))
+				if ((!state->current_token) ||
+					(strcmp(PARSER_HELP_STRING, state->current_token) &&
+						strcmp(PARSER_RECURSIVE_HELP_STRING, state->current_token)))
 				{
 					/* error */
 					display_message(ERROR_MESSAGE,
@@ -3339,7 +3300,7 @@ If the field is of type COMPUTED_FIELD_CLAMP_MAXIMUM, the
 static int define_Computed_field_type_clamp_maximum(struct Parse_state *state,
 	void *field_void,void *computed_field_component_operations_package_void)
 /*******************************************************************************
-LAST MODIFIED : 16 August 2000
+LAST MODIFIED : 18 December 2001
 
 DESCRIPTION :
 Converts <field> into type COMPUTED_FIELD_CLAMP_MAXIMUM (if it is not 
@@ -3348,8 +3309,8 @@ already) and allows its contents to be modified.
 {
 	char *current_token;
 	FE_value *maximums, *temp_maximums;
-	int i, number_of_maximums,return_code;
-	struct Computed_field *field,*source_field;
+	int i, number_of_maximums, previous_number_of_maximums, return_code;
+	struct Computed_field *field, *source_field;
 	struct Computed_field_component_operations_package 
 		*computed_field_component_operations_package;
 	struct Option_table *option_table;
@@ -3363,90 +3324,63 @@ already) and allows its contents to be modified.
 	{
 		return_code=1;
 		/* get valid parameters for projection field */
-		set_source_field_data.computed_field_manager=
+		set_source_field_data.computed_field_manager =
 			computed_field_component_operations_package->computed_field_manager;
-		set_source_field_data.conditional_function=Computed_field_has_numerical_components;
-		set_source_field_data.conditional_function_user_data=(void *)NULL;
+		set_source_field_data.conditional_function =
+			Computed_field_has_numerical_components;
+		set_source_field_data.conditional_function_user_data = (void *)NULL;
 		source_field = (struct Computed_field *)NULL;
-		maximums=(FE_value *)NULL;
+		maximums = (FE_value *)NULL;
+		previous_number_of_maximums = 0;
 		if (computed_field_clamp_maximum_type_string ==
 			Computed_field_get_type_string(field))
 		{
-			return_code=Computed_field_get_type_clamp_maximum(field,
-				&source_field,&maximums);
-		}
-		else
-		{
-			/* get first available field, and set maximums for it to 0.0 */
-			if (source_field=FIRST_OBJECT_IN_MANAGER_THAT(Computed_field)(
-				Computed_field_has_numerical_components,(void *)NULL,
-				computed_field_component_operations_package->computed_field_manager))
-			{
-				number_of_maximums=source_field->number_of_components;
-			}
-			else
-			{
-				number_of_maximums=1;
-			}
-			if (ALLOCATE(maximums,FE_value,number_of_maximums))
-			{
-				for (i=0;i<number_of_maximums;i++)
-				{
-					maximums[i]=0.0;
-				}
-			}
-			else
-			{
-				return_code = 0;
-			}
+			return_code = Computed_field_get_type_clamp_maximum(field,
+				&source_field, &maximums);
 		}
 		if (return_code)
 		{
 			if (source_field)
 			{
+				previous_number_of_maximums = source_field->number_of_components;
 				ACCESS(Computed_field)(source_field);
 			}
 			if ((current_token=state->current_token) &&
 				(!(strcmp(PARSER_HELP_STRING,current_token)&&
 					strcmp(PARSER_RECURSIVE_HELP_STRING,current_token))))
 			{
-				number_of_maximums=source_field->number_of_components;
 				option_table = CREATE(Option_table)();					
 				Option_table_add_entry(option_table,"field",&source_field,
 					&set_source_field_data,set_Computed_field_conditional);
 				Option_table_add_entry(option_table,"maximums",maximums,
-					&number_of_maximums,set_FE_value_array);
+					&previous_number_of_maximums,set_FE_value_array);
 				return_code=Option_table_multi_parse(option_table,state);
 				DESTROY(Option_table)(&option_table);
 			}
 			/* parse the field ... */
-			if (return_code&&(current_token=state->current_token))
+			if (return_code && (current_token = state->current_token))
 			{
 				/* ... only if the "field" token is next */
-				if (fuzzy_string_compare(current_token,"field"))
+				if (fuzzy_string_compare(current_token, "field"))
 				{
-					number_of_maximums=source_field->number_of_components;
 					option_table = CREATE(Option_table)();
-					/* fields */
-					set_source_field_data.computed_field_manager=
-						computed_field_component_operations_package->computed_field_manager;
-					set_source_field_data.conditional_function=Computed_field_has_numerical_components;
-					set_source_field_data.conditional_function_user_data=(void *)NULL;
-					Option_table_add_entry(option_table,"field",&source_field,
-						&set_source_field_data,set_Computed_field_conditional);
-					if (return_code=Option_table_parse(option_table,state))
+					/* field */
+					Option_table_add_entry(option_table, "field", &source_field,
+						&set_source_field_data, set_Computed_field_conditional);
+					if (return_code = Option_table_parse(option_table, state))
 					{
 						if (source_field)
 						{
-							if (REALLOCATE(temp_maximums,maximums,FE_value,
-								source_field->number_of_components))
+							number_of_maximums = source_field->number_of_components;
+							if (REALLOCATE(temp_maximums, maximums, FE_value,
+								number_of_maximums))
 							{
-								maximums=temp_maximums;
+								maximums = temp_maximums;
 								/* make any new maximums equal to 1.0 */
-								for (i=number_of_maximums;
-									i<source_field->number_of_components;i++)
+								for (i = previous_number_of_maximums; i < number_of_maximums;
+									i++)
 								{
-									maximums[i]=1.0;
+									maximums[i] = 1.0;
 								}
 							}
 							else
@@ -3465,16 +3399,16 @@ already) and allows its contents to be modified.
 				}
 			}
 			/* parse the maximums */
-			if (return_code&&state->current_token)
+			if (return_code && state->current_token)
 			{
 				option_table = CREATE(Option_table)();
-				number_of_maximums=source_field->number_of_components;
-				Option_table_add_entry(option_table,"maximums",maximums,
-					&number_of_maximums,set_FE_value_array);
-				return_code=Option_table_multi_parse(option_table,state);
+				number_of_maximums = source_field->number_of_components;
+				Option_table_add_entry(option_table, "maximums", maximums,
+					&number_of_maximums, set_FE_value_array);
+				return_code = Option_table_multi_parse(option_table, state);
 				DESTROY(Option_table)(&option_table);
 			}
-			/* no errors,not asking for help */
+			/* no errors, not asking for help */
 			if (return_code)
 			{
 				return_code = Computed_field_set_type_clamp_maximum(field,
@@ -3482,9 +3416,9 @@ already) and allows its contents to be modified.
 			}
 			if (!return_code)
 			{
-				if ((!state->current_token)||
-					(strcmp(PARSER_HELP_STRING,state->current_token)&&
-						strcmp(PARSER_RECURSIVE_HELP_STRING,state->current_token)))
+				if ((!state->current_token) ||
+					(strcmp(PARSER_HELP_STRING, state->current_token) &&
+						strcmp(PARSER_RECURSIVE_HELP_STRING, state->current_token)))
 				{
 					/* error */
 					display_message(ERROR_MESSAGE,
@@ -4161,7 +4095,7 @@ If the field is of type COMPUTED_FIELD_CLAMP_MINIMUM, the
 static int define_Computed_field_type_clamp_minimum(struct Parse_state *state,
 	void *field_void,void *computed_field_component_operations_package_void)
 /*******************************************************************************
-LAST MODIFIED : 16 August 2000
+LAST MODIFIED : 18 December 2001
 
 DESCRIPTION :
 Converts <field> into type COMPUTED_FIELD_CLAMP_MINIMUM (if it is not 
@@ -4170,8 +4104,8 @@ already) and allows its contents to be modified.
 {
 	char *current_token;
 	FE_value *minimums, *temp_minimums;
-	int i, number_of_minimums,return_code;
-	struct Computed_field *field,*source_field;
+	int i, number_of_minimums, previous_number_of_minimums, return_code;
+	struct Computed_field *field, *source_field;
 	struct Computed_field_component_operations_package 
 		*computed_field_component_operations_package;
 	struct Option_table *option_table;
@@ -4185,90 +4119,63 @@ already) and allows its contents to be modified.
 	{
 		return_code=1;
 		/* get valid parameters for projection field */
-		set_source_field_data.computed_field_manager=
+		set_source_field_data.computed_field_manager =
 			computed_field_component_operations_package->computed_field_manager;
-		set_source_field_data.conditional_function=Computed_field_has_numerical_components;
-		set_source_field_data.conditional_function_user_data=(void *)NULL;
+		set_source_field_data.conditional_function =
+			Computed_field_has_numerical_components;
+		set_source_field_data.conditional_function_user_data = (void *)NULL;
 		source_field = (struct Computed_field *)NULL;
-		minimums=(FE_value *)NULL;
+		minimums = (FE_value *)NULL;
+		previous_number_of_minimums = 0;
 		if (computed_field_clamp_minimum_type_string ==
 			Computed_field_get_type_string(field))
 		{
-			return_code=Computed_field_get_type_clamp_minimum(field,
-				&source_field,&minimums);
-		}
-		else
-		{
-			/* get first available field, and set minimums for it to 0.0 */
-			if (source_field=FIRST_OBJECT_IN_MANAGER_THAT(Computed_field)(
-				Computed_field_has_numerical_components,(void *)NULL,
-				computed_field_component_operations_package->computed_field_manager))
-			{
-				number_of_minimums=source_field->number_of_components;
-			}
-			else
-			{
-				number_of_minimums=1;
-			}
-			if (ALLOCATE(minimums,FE_value,number_of_minimums))
-			{
-				for (i=0;i<number_of_minimums;i++)
-				{
-					minimums[i]=0.0;
-				}
-			}
-			else
-			{
-				return_code = 0;
-			}
+			return_code = Computed_field_get_type_clamp_minimum(field,
+				&source_field, &minimums);
 		}
 		if (return_code)
 		{
 			if (source_field)
 			{
+				previous_number_of_minimums = source_field->number_of_components;
 				ACCESS(Computed_field)(source_field);
 			}
 			if ((current_token=state->current_token) &&
 				(!(strcmp(PARSER_HELP_STRING,current_token)&&
 					strcmp(PARSER_RECURSIVE_HELP_STRING,current_token))))
 			{
-				number_of_minimums=source_field->number_of_components;
 				option_table = CREATE(Option_table)();					
 				Option_table_add_entry(option_table,"field",&source_field,
 					&set_source_field_data,set_Computed_field_conditional);
 				Option_table_add_entry(option_table,"minimums",minimums,
-					&number_of_minimums,set_FE_value_array);
+					&previous_number_of_minimums,set_FE_value_array);
 				return_code=Option_table_multi_parse(option_table,state);
 				DESTROY(Option_table)(&option_table);
 			}
 			/* parse the field ... */
-			if (return_code&&(current_token=state->current_token))
+			if (return_code && (current_token = state->current_token))
 			{
 				/* ... only if the "field" token is next */
-				if (fuzzy_string_compare(current_token,"field"))
+				if (fuzzy_string_compare(current_token, "field"))
 				{
-					number_of_minimums=source_field->number_of_components;
 					option_table = CREATE(Option_table)();
-					/* fields */
-					set_source_field_data.computed_field_manager=
-						computed_field_component_operations_package->computed_field_manager;
-					set_source_field_data.conditional_function=Computed_field_has_numerical_components;
-					set_source_field_data.conditional_function_user_data=(void *)NULL;
-					Option_table_add_entry(option_table,"field",&source_field,
-						&set_source_field_data,set_Computed_field_conditional);
-					if (return_code=Option_table_parse(option_table,state))
+					/* field */
+					Option_table_add_entry(option_table, "field", &source_field,
+						&set_source_field_data, set_Computed_field_conditional);
+					if (return_code = Option_table_parse(option_table, state))
 					{
 						if (source_field)
 						{
-							if (REALLOCATE(temp_minimums,minimums,FE_value,
-								source_field->number_of_components))
+							number_of_minimums = source_field->number_of_components;
+							if (REALLOCATE(temp_minimums, minimums, FE_value,
+								number_of_minimums))
 							{
-								minimums=temp_minimums;
+								minimums = temp_minimums;
 								/* make any new minimums equal to 1.0 */
-								for (i=number_of_minimums;
-									i<source_field->number_of_components;i++)
+								for (i = previous_number_of_minimums; i < number_of_minimums;
+									i++)
 								{
-									minimums[i]=1.0;
+									minimums[i] = 1.0;
 								}
 							}
 							else
@@ -4287,16 +4194,16 @@ already) and allows its contents to be modified.
 				}
 			}
 			/* parse the minimums */
-			if (return_code&&state->current_token)
+			if (return_code && state->current_token)
 			{
 				option_table = CREATE(Option_table)();
-				number_of_minimums=source_field->number_of_components;
-				Option_table_add_entry(option_table,"minimums",minimums,
-					&number_of_minimums,set_FE_value_array);
-				return_code=Option_table_multi_parse(option_table,state);
+				number_of_minimums = source_field->number_of_components;
+				Option_table_add_entry(option_table, "minimums", minimums,
+					&number_of_minimums, set_FE_value_array);
+				return_code = Option_table_multi_parse(option_table, state);
 				DESTROY(Option_table)(&option_table);
 			}
-			/* no errors,not asking for help */
+			/* no errors, not asking for help */
 			if (return_code)
 			{
 				return_code = Computed_field_set_type_clamp_minimum(field,
@@ -4304,9 +4211,9 @@ already) and allows its contents to be modified.
 			}
 			if (!return_code)
 			{
-				if ((!state->current_token)||
-					(strcmp(PARSER_HELP_STRING,state->current_token)&&
-						strcmp(PARSER_RECURSIVE_HELP_STRING,state->current_token)))
+				if ((!state->current_token) ||
+					(strcmp(PARSER_HELP_STRING, state->current_token) &&
+						strcmp(PARSER_RECURSIVE_HELP_STRING, state->current_token)))
 				{
 					/* error */
 					display_message(ERROR_MESSAGE,
@@ -5385,7 +5292,7 @@ Print the values calculated in the cache.
 #define Computed_field_sum_components_set_values_at_node \
    (Computed_field_set_values_at_node_function)NULL
 /*******************************************************************************
-LAST MODIFIED : 13 July 2000
+LAST MODIFIED : 13 December 2000
 
 DESCRIPTION :
 Not implemented yet.
@@ -5394,7 +5301,7 @@ Not implemented yet.
 #define Computed_field_sum_components_set_values_in_element \
    (Computed_field_set_values_in_element_function)NULL
 /*******************************************************************************
-LAST MODIFIED : 13 July 2000
+LAST MODIFIED : 13 December 2000
 
 DESCRIPTION :
 Not implemented yet.
@@ -5488,7 +5395,7 @@ DESCRIPTION :
 int Computed_field_set_type_sum_components(struct Computed_field *field,
 	struct Computed_field *source_field, FE_value *weights)
 /*******************************************************************************
-LAST MODIFIED : 13 December 2001
+LAST MODIFIED : 18 December 2001
 
 DESCRIPTION :
 Converts <field> to type COMPUTED_FIELD_SUM_COMPONENTS with the supplied which
@@ -5504,7 +5411,8 @@ although its cache may be lost.
 	struct Computed_field **source_fields;
 
 	ENTER(Computed_field_set_type_sum_components);
-	if (field && source_field && (source_field->number_of_components > 0))
+	if (field && source_field && (0 < source_field->number_of_components) &&
+		weights)
 	{
 		return_code = 1;
 		/* 1. make dynamic allocations for any new type-specific data */
@@ -5777,10 +5685,802 @@ already) and allows its contents to be modified.
 	return (return_code);
 } /* define_Computed_field_type_sum_components */
 
+static char computed_field_edit_mask_type_string[] = "edit_mask";
+
+int Computed_field_is_type_edit_mask(struct Computed_field *field)
+/*******************************************************************************
+LAST MODIFIED : 18 December 2001
+
+DESCRIPTION :
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(Computed_field_is_type_edit_mask);
+	if (field)
+	{
+		return_code =
+			(field->type_string == computed_field_edit_mask_type_string);
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Computed_field_is_type_edit_mask.  Missing field");
+		return_code = 0;
+	}
+
+	return (return_code);
+} /* Computed_field_is_type_edit_mask */
+
+static int Computed_field_edit_mask_clear_type_specific(
+	struct Computed_field *field)
+/*******************************************************************************
+LAST MODIFIED : 18 December 2001
+
+DESCRIPTION :
+Clear the type specific data used by this type.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(Computed_field_edit_mask_clear_type_specific);
+	if (field)
+	{
+		return_code = 1;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Computed_field_edit_mask_clear_type_specific.  "
+			"Invalid field");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Computed_field_edit_mask_clear_type_specific */
+
+static void *Computed_field_edit_mask_copy_type_specific(
+	struct Computed_field *field)
+/*******************************************************************************
+LAST MODIFIED : 18 December 2001
+
+DESCRIPTION :
+Copy the type specific data used by this type.
+==============================================================================*/
+{
+	void *destination
+
+	ENTER(Computed_field_edit_mask_copy_type_specific);
+	if (field)
+	{
+		destination = (void *)1;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Computed_field_edit_mask_copy_type_specific.  "
+			"Invalid field");
+		destination = NULL;
+	}
+	LEAVE;
+
+	return (destination);
+} /* Computed_field_edit_mask_copy_type_specific */
+
+#define Computed_field_edit_mask_clear_cache_type_specific \
+   (Computed_field_clear_cache_type_specific_function)NULL
+/*******************************************************************************
+LAST MODIFIED : 18 December 2001
+
+DESCRIPTION :
+This function is not needed for this type.
+==============================================================================*/
+
+static int Computed_field_edit_mask_type_specific_contents_match(
+	struct Computed_field *field, struct Computed_field *other_computed_field)
+/*******************************************************************************
+LAST MODIFIED : 18 December 2001
+
+DESCRIPTION :
+Compare the type specific data
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(Computed_field_component_operations_type_specific_contents_match);
+	if (field && other_computed_field)
+	{
+		return_code = 1;
+	}
+	else
+	{
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Computed_field_component_operations_type_specific_contents_match */
+
+#define Computed_field_edit_mask_is_defined_in_element \
+	Computed_field_default_is_defined_in_element
+/*******************************************************************************
+LAST MODIFIED : 18 December 2001
+
+DESCRIPTION :
+Check the source fields using the default.
+==============================================================================*/
+
+#define Computed_field_edit_mask_is_defined_at_node \
+	Computed_field_default_is_defined_at_node
+/*******************************************************************************
+LAST MODIFIED : 18 December 2001
+
+DESCRIPTION :
+Check the source fields using the default.
+==============================================================================*/
+
+#define Computed_field_edit_mask_has_numerical_components \
+	Computed_field_default_has_numerical_components
+/*******************************************************************************
+LAST MODIFIED : 18 December 2001
+
+DESCRIPTION :
+Window projection does have numerical components.
+==============================================================================*/
+
+#define Computed_field_edit_mask_can_be_destroyed \
+	(Computed_field_can_be_destroyed_function)NULL
+/*******************************************************************************
+LAST MODIFIED : 18 December 2001
+
+DESCRIPTION :
+No special criteria on the destroy
+==============================================================================*/
+
+static int Computed_field_edit_mask_evaluate_cache_at_node(
+	struct Computed_field *field, struct FE_node *node, FE_value time)
+/*******************************************************************************
+LAST MODIFIED : 18 December 2001
+
+DESCRIPTION :
+Evaluate the fields cache at the node.
+==============================================================================*/
+{
+	FE_value *temp;
+	int i, return_code;
+
+	ENTER(Computed_field_edit_mask_evaluate_cache_at_node);
+	if (field && node &&
+		(field->type_string == computed_field_edit_mask_type_string))
+	{
+		/* 1. Precalculate any source fields that this field depends on */
+		if (return_code = 
+			Computed_field_evaluate_source_fields_cache_at_node(field, node, time))
+		{
+			/* 2. Calculate the field */
+			/* exact copy of source field */
+			temp = field->source_fields[0]->values;
+			for (i = 0; i < field->number_of_components; i++)
+			{
+				field->values[i] = temp[i];
+			}
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Computed_field_edit_mask_evaluate_cache_at_node.  Invalid argument(s)");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Computed_field_edit_mask_evaluate_cache_at_node */
+
+static int Computed_field_edit_mask_evaluate_cache_in_element(
+	struct Computed_field *field, struct FE_element *element, FE_value *xi,
+	FE_value time, struct FE_element *top_level_element,int calculate_derivatives)
+/*******************************************************************************
+LAST MODIFIED : 18 December 2001
+
+DESCRIPTION :
+Evaluate the fields cache at the node.
+==============================================================================*/
+{
+	FE_value *temp, *temp2;
+	int element_dimension, i, j, return_code;
+
+	ENTER(Computed_field_edit_mask_evaluate_cache_in_element);
+	if (field && element && xi &&
+		(field->type_string == computed_field_edit_mask_type_string))
+	{
+		/* 1. Precalculate any source fields that this field depends on */
+		if (return_code = 
+			Computed_field_evaluate_source_fields_cache_in_element(field, element,
+				xi, time, top_level_element, calculate_derivatives))
+		{
+			element_dimension = get_FE_element_dimension(element);
+			/* 2. Calculate the field */
+			/* exact copy of source field */
+			temp = field->source_fields[0]->values;
+			for (i = 0; i < field->number_of_components; i++)
+			{
+				field->values[i] = temp[i];
+			}
+			if (calculate_derivatives)
+			{
+				temp = field->derivatives;
+				temp2 = field->source_fields[0]->derivatives;
+				for (i = 0; i < field->number_of_components; i++)
+				{
+					for (j = 0; j < element_dimension; j++)
+					{
+						(*temp) = (*temp2);
+						temp++;
+						temp2++;
+					}
+				}
+				field->derivatives_valid = 1;
+			}
+			else
+			{
+				field->derivatives_valid = 0;
+			}
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Computed_field_edit_mask_evaluate_cache_in_element.  "
+			"Invalid argument(s)");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Computed_field_edit_mask_evaluate_cache_in_element */
+
+#define Computed_field_edit_mask_evaluate_as_string_at_node \
+	Computed_field_default_evaluate_as_string_at_node
+/*******************************************************************************
+LAST MODIFIED : 18 December 2001
+
+DESCRIPTION :
+Print the values calculated in the cache.
+==============================================================================*/
+
+#define Computed_field_edit_mask_evaluate_as_string_in_element \
+	Computed_field_default_evaluate_as_string_in_element
+/*******************************************************************************
+LAST MODIFIED : 18 December 2001
+
+DESCRIPTION :
+Print the values calculated in the cache.
+==============================================================================*/
+
+static int Computed_field_edit_mask_set_values_at_node(
+	struct Computed_field *field, struct FE_node *node, FE_value *values)
+/*******************************************************************************
+LAST MODIFIED : 18 December 2001
+
+DESCRIPTION :
+==============================================================================*/
+{
+	FE_value *source_values;
+	int i, return_code;
+
+	ENTER(Computed_field_edit_mask_set_values_at_node);
+	if (field && node && values)
+	{
+		return_code = 1;
+		/* need current field values to partially set */
+		if (ALLOCATE(source_values, FE_value,
+			field->source_fields[0]->number_of_components))
+		{
+			if (Computed_field_evaluate_at_node(field->source_fields[0], node,
+				/*time*/0, source_values))
+			{
+				/* set value of the component leaving other components intact */
+				for (i = 0; i < field->number_of_components; i++)
+				{
+					if (field->source_values[i])
+					{
+						source_values[i] = values[i];
+					}
+				}
+				return_code = Computed_field_set_values_at_node(
+					field->source_fields[0], node, source_values);
+			}
+			else
+			{
+				return_code=0;
+			}
+			DEALLOCATE(source_values);
+		}
+		else
+		{
+			return_code=0;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Computed_field_edit_mask_set_values_at_node.  Invalid argument(s)");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Computed_field_edit_mask_set_values_at_node */
+
+static int Computed_field_edit_mask_set_values_in_element(
+	struct Computed_field *field, struct FE_element *element, int *number_in_xi,
+	FE_value *values)
+/*******************************************************************************
+LAST MODIFIED : 18 December 2001
+
+DESCRIPTION :
+==============================================================================*/
+{
+	FE_value *source_values;
+	int element_dimension, i, j, k, number_of_points, offset, return_code;
+
+	ENTER(Computed_field_edit_mask_set_values_in_element);
+	if (field && element && number_in_xi && values)
+	{
+		return_code = 1;
+		element_dimension = element->shape->dimension;
+		number_of_points = 1;
+		for (i = 0; (i < element_dimension) && return_code; i++)
+		{
+			if (0 < number_in_xi[i])
+			{
+				number_of_points *= (number_in_xi[i] + 1);
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE,
+					"Computed_field_edit_mask_set_values_in_element.  "
+					"number_in_xi must be positive");
+				return_code = 0;
+			}
+		}
+		if (return_code)
+		{
+			/* need current field values to partially set */
+			if (Computed_field_get_values_in_element(field->source_fields[0],
+				element, number_in_xi, &source_values, /*time*/0))
+			{
+				/* insert the components with mask on into this array */
+				for (k = 0; k < field->number_of_components; k++)
+				{
+					if (field->source_values[k])
+					{
+						offset = k*number_of_points;
+						for (j=0;j<number_of_points;j++)
+						{
+							source_values[offset + j] = values[offset + j];
+						}
+					}
+				}
+				return_code = Computed_field_set_values_in_element(
+					field->source_fields[0], element, number_in_xi, source_values);
+				DEALLOCATE(source_values);
+			}
+			else
+			{
+				return_code = 0;
+			}
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Computed_field_edit_mask_set_values_in_element.  Invalid argument(s)");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Computed_field_edit_mask_set_values_in_element */
+
+#define Computed_field_edit_mask_get_native_discretization_in_element \
+	Computed_field_default_get_native_discretization_in_element
+/*******************************************************************************
+LAST MODIFIED : 18 December 2001
+
+DESCRIPTION :
+Inherit result from first source field.
+==============================================================================*/
+
+#define Computed_field_edit_mask_find_element_xi \
+   (Computed_field_find_element_xi_function)NULL
+/*******************************************************************************
+LAST MODIFIED : 18 December 2001
+
+DESCRIPTION :
+Not implemented yet.
+==============================================================================*/
+
+static int list_Computed_field_edit_mask(
+	struct Computed_field *field)
+/*******************************************************************************
+LAST MODIFIED : 18 December 2001
+
+DESCRIPTION :
+==============================================================================*/
+{
+	int i, return_code;
+
+	ENTER(List_Computed_field_edit_mask);
+	if (field)
+	{
+		display_message(INFORMATION_MESSAGE,"    field : %s\n",
+			field->source_fields[0]->name);
+		display_message(INFORMATION_MESSAGE,"    edit mask :");
+		for (i = 0; i < field->number_of_source_values; i++)
+		{
+			display_message(INFORMATION_MESSAGE," %g",field->source_values[i]);
+		}
+		display_message(INFORMATION_MESSAGE,"\n");
+		return_code = 1;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"list_Computed_field_edit_mask.  Invalid field");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* list_Computed_field_edit_mask */
+
+static int list_Computed_field_edit_mask_commands(
+	struct Computed_field *field)
+/*******************************************************************************
+LAST MODIFIED : 18 December 2001
+
+DESCRIPTION :
+==============================================================================*/
+{
+	int i, return_code;
+
+	ENTER(list_Computed_field_edit_mask_commands);
+	if (field)
+	{
+		display_message(INFORMATION_MESSAGE," field %s edit_mask",
+			field->source_fields[0]->name);
+		for (i = 0; i < field->number_of_source_values; i++)
+		{
+			display_message(INFORMATION_MESSAGE, " %g", field->source_values[i]);
+		}
+		return_code = 1;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"list_Computed_field_edit_mask_commands.  Invalid field");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* list_Computed_field_edit_mask_commands */
+
+int Computed_field_set_type_edit_mask(struct Computed_field *field,
+	struct Computed_field *source_field, FE_value *edit_mask)
+/*******************************************************************************
+LAST MODIFIED : 18 December 2001
+
+DESCRIPTION :
+Converts <field> to type COMPUTED_FIELD_EDIT_MASK, returning the <source_field>
+with each component edit_masked by its respective FE_value in <edit_mask>, ie.
+if the edit_mask value for a component is non-zero, the component is editable.
+The <edit_mask> array must therefore contain as many FE_values as there are
+components in <source_field>.
+Sets the number of components to the same as <source_field>.
+If function fails, field is guaranteed to be unchanged from its original state,
+although its cache may be lost.
+==============================================================================*/
+{
+	int i, number_of_source_fields, number_of_source_values, return_code;
+	FE_value *source_values;
+	struct Computed_field **source_fields;
+
+	ENTER(Computed_field_set_type_edit_mask);
+	if (field && source_field && (0 < source_field->number_of_components) &&
+		edit_mask)
+	{
+		return_code = 1;
+		/* 1. make dynamic allocations for any new type-specific data */
+		number_of_source_values = source_field->number_of_components;
+		number_of_source_fields = 1;
+		if (ALLOCATE(source_values, FE_value, number_of_source_values) &&
+			ALLOCATE(source_fields, struct Computed_field *, number_of_source_fields))
+		{
+			/* 2. free current type-specific data */
+			Computed_field_clear_type(field);
+			/* 3. establish the new type */
+			field->type = COMPUTED_FIELD_NEW_TYPES;
+			field->type_string = computed_field_edit_mask_type_string;
+			field->number_of_components = source_field->number_of_components;
+			source_fields[0] = ACCESS(Computed_field)(source_field);
+			field->source_fields = source_fields;
+			field->number_of_source_fields = number_of_source_fields;			
+			for (i = 0; i < number_of_source_values; i++)
+			{
+				source_values[i] = edit_mask[i];
+			}
+			field->source_values = source_values;
+			field->number_of_source_values = number_of_source_values;
+			field->type_specific_data = (void *)1;
+
+			/* Set all the methods */
+			field->computed_field_clear_type_specific_function =
+				Computed_field_edit_mask_clear_type_specific;
+			field->computed_field_copy_type_specific_function =
+				Computed_field_edit_mask_copy_type_specific;
+			field->computed_field_clear_cache_type_specific_function =
+				Computed_field_edit_mask_clear_cache_type_specific;
+			field->computed_field_type_specific_contents_match_function =
+				Computed_field_edit_mask_type_specific_contents_match;
+			field->computed_field_is_defined_in_element_function =
+				Computed_field_edit_mask_is_defined_in_element;
+			field->computed_field_is_defined_at_node_function =
+				Computed_field_edit_mask_is_defined_at_node;
+			field->computed_field_has_numerical_components_function =
+				Computed_field_edit_mask_has_numerical_components;
+			field->computed_field_can_be_destroyed_function =
+				Computed_field_edit_mask_can_be_destroyed;
+			field->computed_field_evaluate_cache_at_node_function =
+				Computed_field_edit_mask_evaluate_cache_at_node;
+			field->computed_field_evaluate_cache_in_element_function =
+				Computed_field_edit_mask_evaluate_cache_in_element;
+			field->computed_field_evaluate_as_string_at_node_function =
+				Computed_field_edit_mask_evaluate_as_string_at_node;
+			field->computed_field_evaluate_as_string_in_element_function =
+				Computed_field_edit_mask_evaluate_as_string_in_element;
+			field->computed_field_set_values_at_node_function =
+				Computed_field_edit_mask_set_values_at_node;
+			field->computed_field_set_values_in_element_function =
+				Computed_field_edit_mask_set_values_in_element;
+			field->computed_field_get_native_discretization_in_element_function =
+				Computed_field_edit_mask_get_native_discretization_in_element;
+			field->computed_field_find_element_xi_function =
+				Computed_field_edit_mask_find_element_xi;
+			field->list_Computed_field_function = 
+				list_Computed_field_edit_mask;
+			field->list_Computed_field_commands_function = 
+				list_Computed_field_edit_mask_commands;
+			field->computed_field_has_multiple_times_function = 
+				Computed_field_default_has_multiple_times;
+		}
+		else
+		{
+			DEALLOCATE(source_fields);
+			return_code = 0;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Computed_field_set_type_edit_mask.  Invalid argument(s)");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Computed_field_set_type_edit_mask */
+
+int Computed_field_get_type_edit_mask(struct Computed_field *field,
+	struct Computed_field **source_field, FE_value **edit_mask)
+/*******************************************************************************
+LAST MODIFIED : 18 December 2001
+
+DESCRIPTION :
+If the field is of type COMPUTED_FIELD_EDIT_MASK, the 
+<source_field> and <edit_mask> used by it are returned. Since the number of
+edit_mask values is equal to the number of components in the source_field, and
+you don't know this yet, this function returns in *edit_mask a pointer to an
+allocated array containing the FE_values.
+==============================================================================*/
+{
+	int i, return_code;
+
+	ENTER(Computed_field_get_type_edit_mask);
+	if (field && (COMPUTED_FIELD_NEW_TYPES == field->type) &&
+		(field->type_string == computed_field_edit_mask_type_string))
+	{
+		if (ALLOCATE(*edit_mask, FE_value,
+			field->source_fields[0]->number_of_components))
+		{
+			*source_field = field->source_fields[0];
+			for (i = 0; i < field->source_fields[0]->number_of_components; i++)
+			{
+				(*edit_mask)[i] = field->source_values[i];
+			}
+			return_code = 1;
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,
+				"Computed_field_get_type_edit_mask.  Could not allocate edit masks");
+			return_code = 0;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Computed_field_get_type_edit_mask.  Invalid argument(s)");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Computed_field_get_type_edit_mask */
+
+static int define_Computed_field_type_edit_mask(struct Parse_state *state,
+	void *field_void, void *computed_field_component_operations_package_void)
+/*******************************************************************************
+LAST MODIFIED : 18 December 2001
+
+DESCRIPTION :
+Converts <field> into type COMPUTED_FIELD_EDIT_MASK (if it is not 
+already) and allows its contents to be modified.
+==============================================================================*/
+{
+	char *current_token;
+	FE_value *edit_mask, *temp_edit_mask;
+	int i, number_of_edit_mask, previous_number_of_edit_mask, return_code;
+	struct Computed_field *field,*source_field;
+	struct Computed_field_component_operations_package 
+		*computed_field_component_operations_package;
+	struct Option_table *option_table;
+	struct Set_Computed_field_conditional_data set_source_field_data;
+
+	ENTER(define_Computed_field_type_edit_mask);
+	if (state && (field = (struct Computed_field *)field_void) &&
+		(computed_field_component_operations_package =
+			(struct Computed_field_component_operations_package *)
+			computed_field_component_operations_package_void))
+	{
+		return_code = 1;
+		/* get valid parameters for projection field */
+		set_source_field_data.computed_field_manager =
+			computed_field_component_operations_package->computed_field_manager;
+		set_source_field_data.conditional_function =
+			Computed_field_has_numerical_components;
+		set_source_field_data.conditional_function_user_data = (void *)NULL;
+		source_field = (struct Computed_field *)NULL;
+		edit_mask = (FE_value *)NULL;
+		previous_number_of_edit_mask = 0;
+		if (computed_field_edit_mask_type_string ==
+			Computed_field_get_type_string(field))
+		{
+			return_code =
+				Computed_field_get_type_edit_mask(field, &source_field, &edit_mask);
+		}
+		if (return_code)
+		{
+			if (source_field)
+			{
+				previous_number_of_edit_mask = source_field->number_of_components;
+				ACCESS(Computed_field)(source_field);
+			}
+			if ((current_token = state->current_token) &&
+				(!(strcmp(PARSER_HELP_STRING, current_token) &&
+					strcmp(PARSER_RECURSIVE_HELP_STRING, current_token))))
+			{
+				option_table = CREATE(Option_table)();					
+				Option_table_add_entry(option_table, "field", &source_field,
+					&set_source_field_data, set_Computed_field_conditional);
+				Option_table_add_entry(option_table, "edit_mask", edit_mask,
+					&previous_number_of_edit_mask, set_FE_value_array);
+				return_code = Option_table_multi_parse(option_table, state);
+				DESTROY(Option_table)(&option_table);
+			}
+			/* parse the field ... */
+			if (return_code && (current_token = state->current_token))
+			{
+				/* ... only if the "field" token is next */
+				if (fuzzy_string_compare(current_token, "field"))
+				{
+					option_table = CREATE(Option_table)();
+					/* field */
+					Option_table_add_entry(option_table, "field", &source_field,
+						&set_source_field_data, set_Computed_field_conditional);
+					if (return_code = Option_table_parse(option_table, state))
+					{
+						if (source_field)
+						{
+							number_of_edit_mask = source_field->number_of_components;
+							if (REALLOCATE(temp_edit_mask, edit_mask, FE_value,
+								number_of_edit_mask))
+							{
+								edit_mask = temp_edit_mask;
+								/* make any new edit_mask equal to 1.0 */
+								for (i = previous_number_of_edit_mask; i < number_of_edit_mask;
+									i++)
+								{
+									edit_mask[i] = 1.0;
+								}
+							}
+							else
+							{
+								return_code = 0;
+							}
+						}
+						else
+						{
+							display_message(ERROR_MESSAGE,
+								"define_Computed_field_type_edit_mask.  Invalid field");
+							return_code = 0;
+						}
+					}
+					DESTROY(Option_table)(&option_table);
+				}
+			}
+			/* parse the edit_mask */
+			if (return_code && state->current_token)
+			{
+				option_table = CREATE(Option_table)();
+				number_of_edit_mask = source_field->number_of_components;
+				Option_table_add_entry(option_table, "edit_mask", edit_mask,
+					&number_of_edit_mask, set_FE_value_array);
+				return_code = Option_table_multi_parse(option_table, state);
+				DESTROY(Option_table)(&option_table);
+			}
+			/* no errors,not asking for help */
+			if (return_code)
+			{
+				return_code = Computed_field_set_type_edit_mask(field,
+					source_field, edit_mask);
+			}
+			if (!return_code)
+			{
+				if ((!state->current_token) ||
+					(strcmp(PARSER_HELP_STRING, state->current_token) &&
+						strcmp(PARSER_RECURSIVE_HELP_STRING, state->current_token)))
+				{
+					/* error */
+					display_message(ERROR_MESSAGE,
+						"define_Computed_field_type_edit_mask.  Failed");
+				}
+			}
+			if (source_field)
+			{
+				DEACCESS(Computed_field)(&source_field);
+			}
+			DESTROY(Option_table)(&option_table);
+		}
+		DEALLOCATE(edit_mask);
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"define_Computed_field_type_edit_mask.  Invalid argument(s)");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* define_Computed_field_type_edit_mask */
+
+
+
+
+
+
+
+
+
+
 int Computed_field_register_types_component_operations(
 	struct Computed_field_package *computed_field_package)
 /*******************************************************************************
-LAST MODIFIED : 13 December 2001
+LAST MODIFIED : 18 December 2001
 
 DESCRIPTION :
 ==============================================================================*/
@@ -5826,6 +6526,10 @@ DESCRIPTION :
 		return_code = Computed_field_package_add_type(computed_field_package,
 			computed_field_sum_components_type_string, 
 			define_Computed_field_type_sum_components,
+			&computed_field_component_operations_package);
+		return_code = Computed_field_package_add_type(computed_field_package,
+			computed_field_edit_mask_type_string, 
+			define_Computed_field_type_edit_mask,
 			&computed_field_component_operations_package);
 	}
 	else

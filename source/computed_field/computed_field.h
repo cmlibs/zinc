@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : computed_field.h
 
-LAST MODIFIED : 13 December 2001
+LAST MODIFIED : 18 December 2001
 
 DESCRIPTION :
 A Computed_field is an abstraction of an FE_field. For each FE_field there is
@@ -46,7 +46,7 @@ Global types
 
 enum Computed_field_type
 /******************************************************************************
-LAST MODIFIED : 13 December 2001
+LAST MODIFIED : 18 December 2001
 
 DESCRIPTION :
 ==============================================================================*/
@@ -54,7 +54,6 @@ DESCRIPTION :
 	COMPUTED_FIELD_INVALID,
 	COMPUTED_FIELD_COMPOSE,            /* compose three Computed_fields in sequence */
 	COMPUTED_FIELD_CUBIC_TEXTURE_COORDINATES, /* cube projected from a centre */
-	COMPUTED_FIELD_EDIT_MASK,          /* edit particular components without affecting others */
 	COMPUTED_FIELD_EXTERNAL,           /* uses an external program to perform computation */
 	COMPUTED_FIELD_NEW_TYPES           /* all the new types to which all will be changed */
 };
