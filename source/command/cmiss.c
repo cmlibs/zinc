@@ -10369,89 +10369,202 @@ element groups are destroyed together.
 } /* gfx_destroy_element_group */
 #endif /* !defined (WINDOWS_DEV_FLAG) */
 
-#if !defined (WINDOWS_DEV_FLAG)
-static int FE_element_is_top_level_in_Multi_range_and_can_be_destroyed(
-	struct FE_element *element,void *multi_range_void)
-/*******************************************************************************
-LAST MODIFIED : 5 July 1999
-
-DESCRIPTION :
-Returns true if the <element> cm.number is in the <multi_range> and
-Fe_element_can_be_destroyed returns true for it.
-==============================================================================*/
-{
-	int return_code;
-	struct Multi_range *multi_range;
-
-	ENTER(FE_element_is_top_level_in_Multi_range_and_can_be_destroyed);
-	if (element&&(multi_range=(struct Multi_range *)multi_range_void))
-	{
-		return_code=(CM_ELEMENT==element->cm.type)&&
-			Multi_range_is_value_in_range(multi_range,element->cm.number)&&
-			FE_element_can_be_destroyed(element);
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"FE_element_is_top_level_in_Multi_range_and_can_be_destroyed.  "
-			"Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* FE_element_is_top_level_in_Multi_range_and_can_be_destroyed */
-#endif /* !defined (WINDOWS_DEV_FLAG) */
-
-#if !defined (WINDOWS_DEV_FLAG)
 static int gfx_destroy_elements(struct Parse_state *state,
 	void *dummy_to_be_modified,void *command_data_void)
 /*******************************************************************************
-LAST MODIFIED : 5 July 1999
+LAST MODIFIED : 4 July 2000
 
 DESCRIPTION :
 Executes a GFX DESTROY ELEMENTS command.
 ==============================================================================*/
 {
-	int number_of_elements_destroyed,return_code;
+	char all_flag,ranges_flag,selected_flag;
+	int number_of_elements_destroyed,number_of_elements_not_destroyed,return_code;
 	struct Cmiss_command_data *command_data;
-	static struct Modifier_entry option_table[]=
-	{
-		{NULL,NULL,NULL,set_Multi_range}
-	};
+	struct Element_point_ranges *element_point_ranges;
 	struct FE_element *element_to_destroy;
+	struct FE_element_list_conditional_data list_conditional_data;
+	struct GROUP(FE_element) *element_group;
+	struct LIST(Element_point_ranges) *selected_element_point_ranges_list;
+	struct LIST(FE_element) *destroy_element_list,*selected_element_list,
+		*temp_element_list;
 	struct Multi_range *element_ranges;
+	struct Option_table *option_table;
 
 	ENTER(gfx_destroy_elements);
 	USE_PARAMETER(dummy_to_be_modified);
 	if (state&&(command_data=(struct Cmiss_command_data *)command_data_void))
 	{
 		/* initialise defaults */
+		all_flag=0;
+		selected_flag=0;
 		element_ranges=CREATE(Multi_range)();
-		(option_table[0]).to_be_modified=element_ranges;
-		return_code=process_multiple_options(state,option_table);
-		/* no errors, not asking for help */
-		if (return_code)
+
+		option_table=CREATE(Option_table)();
+		/* all */
+		Option_table_add_entry(option_table,"all",&all_flag,NULL,set_char_flag);
+		/* selected */
+		Option_table_add_entry(option_table,"selected",&selected_flag,
+			NULL,set_char_flag);
+		/* default option: top_level element number ranges */
+		Option_table_add_entry(option_table,(char *)NULL,(void *)element_ranges,
+			NULL,set_Multi_range);
+		if (return_code=Option_table_multi_parse(option_table,state))
 		{
-			number_of_elements_destroyed=0;
-			while (return_code&&(element_to_destroy=
-				FIRST_OBJECT_IN_MANAGER_THAT(FE_element)(
-					FE_element_is_top_level_in_Multi_range_and_can_be_destroyed,
-					(void *)element_ranges,command_data->element_manager)))
+			if (destroy_element_list=CREATE(LIST(FE_element))())
 			{
-				if (remove_FE_element_and_faces_from_manager(element_to_destroy,
-					command_data->element_manager))
+				ranges_flag=(0<Multi_range_get_number_of_ranges(element_ranges));
+				if (selected_flag)
 				{
-					number_of_elements_destroyed++;
+					/* add the selected top_level elements to destroy_element_list, and if
+						 element_ranges given, intersect with them */
+					return_code=FOR_EACH_OBJECT_IN_LIST(FE_element)(
+						ensure_top_level_FE_element_is_in_list,(void *)destroy_element_list,
+						FE_element_selection_get_element_list(
+							command_data->element_selection))&&
+						((!ranges_flag)||REMOVE_OBJECTS_FROM_LIST_THAT(FE_element)(
+							FE_element_is_not_top_level_in_Multi_range,element_ranges,
+							destroy_element_list));
+				}
+				else if (ranges_flag)
+				{
+					/* add top_level elements with numbers in element_ranges to
+						 destroy_element_list */
+					list_conditional_data.element_list=destroy_element_list;
+					list_conditional_data.function=FE_element_is_top_level_in_Multi_range;
+					list_conditional_data.user_data=element_ranges;
+					return_code=FOR_EACH_OBJECT_IN_MANAGER(FE_element)(
+						ensure_FE_element_is_in_list_conditional,
+						(void *)&list_conditional_data,command_data->element_manager);
+				}
+				else if (all_flag)
+				{
+					/* add all top_level elements to destroy_element_list */
+					return_code=FOR_EACH_OBJECT_IN_MANAGER(FE_element)(
+						ensure_top_level_FE_element_is_in_list,(void *)destroy_element_list,
+						command_data->element_manager);
+				}
+				if (return_code)
+				{
+					if (0<NUMBER_IN_LIST(FE_element)(destroy_element_list))
+					{
+						/* make element_list to put elements that could not be destroyed */
+						temp_element_list=CREATE(LIST(FE_element))();
+						/* remove the elements - and their faces recursively - from all
+							 groups they are in */
+						while (return_code&&(element_group=
+							FIRST_OBJECT_IN_MANAGER_THAT(GROUP(FE_element))(
+								FE_element_group_intersects_list,(void *)destroy_element_list,
+								command_data->element_group_manager)))
+						{
+							MANAGED_GROUP_BEGIN_CACHE(FE_element)(element_group);
+							while (return_code&&(element_to_destroy=
+								FIRST_OBJECT_IN_GROUP_THAT(FE_element)(
+									FE_element_is_in_list,(void *)destroy_element_list,
+									element_group)))
+							{
+								return_code=remove_FE_element_and_faces_from_group(
+									element_to_destroy,element_group);
+							}
+							MANAGED_GROUP_END_CACHE(FE_element)(element_group);
+						}
+						/* remove elements - and their faces and lines - from the
+							 global element_selection */
+						FE_element_selection_begin_cache(command_data->element_selection);
+						selected_element_list=FE_element_selection_get_element_list(
+							command_data->element_selection);
+						while (return_code&&(element_to_destroy=
+							FIRST_OBJECT_IN_LIST_THAT(FE_element)(
+								FE_element_has_all_top_level_parents_in_list,
+								(void *)destroy_element_list,selected_element_list)))
+						{
+							return_code=FE_element_selection_unselect_element(
+								command_data->element_selection,element_to_destroy);
+						}
+						FE_element_selection_end_cache(command_data->element_selection);
+						/* remove all references to elements being removed from the global
+							 element_point_ranges_selection */
+						Element_point_ranges_selection_begin_cache(
+							command_data->element_point_ranges_selection);
+						selected_element_point_ranges_list=
+							Element_point_ranges_selection_get_element_point_ranges_list(
+								command_data->element_point_ranges_selection);
+						while (return_code&&(element_point_ranges=
+							FIRST_OBJECT_IN_LIST_THAT(Element_point_ranges)(
+								Element_point_ranges_uses_top_level_element_in_list,
+								(void *)destroy_element_list,
+								selected_element_point_ranges_list)))
+						{
+							return_code=
+								Element_point_ranges_selection_unselect_element_point_ranges(
+									command_data->element_point_ranges_selection,
+									element_point_ranges);
+						}
+						Element_point_ranges_selection_end_cache(
+							command_data->element_point_ranges_selection);
+						/* now remove the elements from the manager */
+						number_of_elements_destroyed=0;
+						while (return_code&&(element_to_destroy=
+							FIRST_OBJECT_IN_LIST_THAT(FE_element)(
+								(LIST_CONDITIONAL_FUNCTION(FE_element) *)NULL,(void *)NULL,
+								destroy_element_list)))
+						{
+							/* element cannot be destroyed while it is in a list */
+							if (REMOVE_OBJECT_FROM_LIST(FE_element)(element_to_destroy,
+								destroy_element_list))
+							{
+								if (FE_element_can_be_destroyed(element_to_destroy))
+								{
+									if (return_code=remove_FE_element_and_faces_from_manager(
+										element_to_destroy,command_data->element_manager))
+									{
+										number_of_elements_destroyed++;
+									}
+								}
+								else
+								{
+									/* add it to temp_element_list for reporting */
+									ADD_OBJECT_TO_LIST(FE_element)(element_to_destroy,
+										temp_element_list);
+								}
+							}
+							else
+							{
+								return_code=0;
+							}
+						}
+						if (0<(number_of_elements_not_destroyed=
+							NUMBER_IN_LIST(FE_element)(temp_element_list)))
+						{
+							display_message(WARNING_MESSAGE,"%d element(s) destroyed; "
+								"%d element(s) could not be destroyed because in use",
+								number_of_elements_destroyed,number_of_elements_not_destroyed);
+							return_code=0;
+						}
+						DESTROY(LIST(FE_element))(&temp_element_list);
+					}
+					else
+					{
+						display_message(WARNING_MESSAGE,
+							"gfx destroy elements:  No elements specified");
+						return_code=0;
+					}
 				}
 				else
 				{
-					return_code=0;
+					display_message(ERROR_MESSAGE,
+						"gfx_destroy_elements.  Could not fill destroy_element_list");
 				}
+				DESTROY(LIST(FE_element))(&destroy_element_list);
 			}
-			display_message(INFORMATION_MESSAGE,"%d element(s) destroyed\n",
-				number_of_elements_destroyed);
+			else
+			{
+				display_message(ERROR_MESSAGE,
+					"gfx_destroy_elements.  Could not make destroy_element_list");
+				return_code=0;
+			}
 		}
+		DESTROY(Option_table)(&option_table);
 		DESTROY(Multi_range)(&element_ranges);
 	}
 	else
@@ -10463,7 +10576,6 @@ Executes a GFX DESTROY ELEMENTS command.
 
 	return (return_code);
 } /* gfx_destroy_elements */
-#endif /* !defined (WINDOWS_DEV_FLAG) */
 
 #if !defined (WINDOWS_DEV_FLAG)
 static int gfx_destroy_Computed_field(struct Parse_state *state,
@@ -10864,7 +10976,7 @@ Executes a GFX DESTROY NODES command.
 							}
 							MANAGED_GROUP_END_CACHE(FE_node)(node_group);
 						}
-						/* remove nodes from the node_selection */
+						/* remove nodes from the global node_selection */
 						FE_node_selection_begin_cache(command_data->node_selection);
 						FOR_EACH_OBJECT_IN_LIST(FE_node)(
 							FE_node_unselect_in_FE_node_selection,
@@ -10903,8 +11015,7 @@ Executes a GFX DESTROY NODES command.
 						if (0<(number_of_nodes_not_destroyed=
 							NUMBER_IN_LIST(FE_node)(temp_node_list)))
 						{
-							display_message(WARNING_MESSAGE,
-								"%d node(s) destroyed; "
+							display_message(WARNING_MESSAGE,"%d node(s) destroyed; "
 								"%d node(s) could not be destroyed because in use",
 								number_of_nodes_destroyed,number_of_nodes_not_destroyed);
 							return_code=0;
@@ -13137,8 +13248,8 @@ Executes a GFX LIST ELEMENT.
 										}
 										else
 										{
-											display_message(ERROR_MESSAGE,"Unknown %d-D element: %d ",
-												4-(cm.type+1),cm.number);
+											display_message(ERROR_MESSAGE,"Unknown %s: %d ",
+												CM_element_type_string(cm.type),cm.number);
 											return_code=0;
 										}
 									}
