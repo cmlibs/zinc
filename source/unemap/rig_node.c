@@ -5096,7 +5096,7 @@ rig_node_group_set_map_electrode_position_lambda_r
 							/* convert coords to cylindrical polar */
 							cartesian_to_cylindrical_polar(x,y,z_rc,&r,&theta,&z_cp,(float *)NULL);
 							/* change the r */
-#if defined (ROUND_TORSO)
+#if defined (ROUND_TORSO) /*FOR AJP*/
 							r=set_map_electrode_position_info->value1;/* r_major */
 #else		
 							torso_major_r=set_map_electrode_position_info->value1;	

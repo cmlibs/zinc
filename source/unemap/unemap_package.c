@@ -39,7 +39,7 @@ struct Map_info
 	struct GROUP(FE_element) *element_group;
 	struct GROUP(FE_node) *node_group;		
 	struct GT_object *electrode_glyph;	
-	struct GT_object *torso_arms;
+	struct GT_object *torso_arms;/*FOR AJP*/
 	struct MANAGER(Computed_field) *computed_field_manager;
 	struct MANAGER(FE_element) *element_manager;
 	struct MANAGER(FE_field) *fe_field_manager;
@@ -101,7 +101,7 @@ Create and  and set it's components
 				map_info->element_manager=element_manager;
 				map_info->computed_field_manager=computed_field_manager;
 				map_info->electrode_glyph=(struct GT_object *)NULL;
-				map_info->torso_arms=(struct GT_object *)NULL;
+				map_info->torso_arms=(struct GT_object *)NULL;/*FOR AJP*/
 				map_info->electrode_size=0;
 				map_info->electrodes_option=HIDE_ELECTRODES;
 				map_info->colour_electrodes_with_signal=1;
@@ -200,7 +200,7 @@ to NULL.
 		/* electrode_glyph*/
 		DEACCESS(GT_object)(&(map_info->electrode_glyph));
 		/* torso_arms*/
-		DEACCESS(GT_object)(&(map_info->torso_arms));
+		DEACCESS(GT_object)(&(map_info->torso_arms));/*FOR AJP*/
 		/* node_order_info */
 		DEACCESS(FE_node_order_info)(&(map_info->node_order_info));
 		/*element_group */
@@ -903,7 +903,7 @@ is 1,2,3...
 } /* set_unemap_package_map_electrode_glyph */
 
 struct GT_object *get_unemap_package_map_torso_arms(
-	struct Unemap_package *package,int map_number)
+	struct Unemap_package *package,int map_number)/*FOR AJP*/
 /*******************************************************************************
 LAST MODIFIED : 15 June 2000
 
@@ -940,7 +940,7 @@ is 1,2,3... i.e
 } /* get_unemap_package_map_torso_arms */
 
 int set_unemap_package_map_torso_arms(struct Unemap_package *package,
-	struct GT_object *torso_arms,int map_number)
+	struct GT_object *torso_arms,int map_number)/*FOR AJP*/
 /*******************************************************************************
 LAST MODIFIED : 15 June 2000
 
@@ -4197,7 +4197,7 @@ cf free_unemap_package_map_info
 		for(count=0;count<package->number_of_maps;count++)
 		{	/*remove the torso arms from the scene */
 			/*??JW probably a bad place to do this. perhaps should maintain */
-			/*a list of GT_objects cf CMGUI. Arms show be temporary anyway*/
+			/*a list of GT_objects cf CMGUI. Arms show be temporary anyway*//*FOR AJP*/
 			if((package->maps_info)&&(package->maps_info[count])
 				&&(package->maps_info[count]->torso_arms)&&(package->scene))
 			{
@@ -4241,7 +4241,7 @@ cf free_unemap_package_maps
 		return_code=1;	
 		/*remove the torso arms from the scene */
 		/*??JW probably a bad place to do this. perhaps should maintain */
-		/*a list of GT_objects cf CMGUI. Arms show be temporary anyway*/
+		/*a list of GT_objects cf CMGUI. Arms show be temporary anyway*//*FOR AJP*/
 		if((package->maps_info)&&(package->maps_info[map_number])
 			&&(package->maps_info[map_number]->torso_arms)&&(package->scene))
 		{

@@ -2453,7 +2453,7 @@ i.e sock is a hemisphere, torso is a cylinder.
 								node_number = get_next_FE_node_number(node_manager,last_node_number);						
 								theta=function->x_mesh[j];
 								z=function->y_mesh[i];
-#if defined (ROUND_TORSO)
+#if defined (ROUND_TORSO)/*FOR AJP*/
 								r_value_and_derivatives[0]= torso_major_r;
 #else																
 								t=function->x_mesh[j];
@@ -4221,8 +4221,14 @@ Also applies <number_of_contours> contours to surface.
 #if defined (UNEMAP_USE_NODES)
 #define FIT_SOCK_LAMBDA 4.5 /* chosen by trial and error!*/
 #define FIT_SOCK_FOCUS 1.0
+#if defined (OLD_CODE)
 #define FIT_TORSO_MAJOR_R 200.0
 #define FIT_TORSO_MINOR_R 100.0
+#endif /* defined (OLD_CODE) */
+/*this is for FOR AJPs p117_m8c1_modified.signal*/
+#define FIT_TORSO_MAJOR_R 100.0
+#define FIT_TORSO_MINOR_R 50.0
+
 #define FIT_PATCH_Z 0.0
 static int make_and_add_map_electrode_position_field(int region_number,
 	enum Region_type region_type,struct Unemap_package *unemap_package)
@@ -4954,7 +4960,7 @@ Removes the map electrodes if they've changed, then redraws them.
 #endif /* UNEMAP_USE_NODES */
 
 #if defined (UNEMAP_USE_NODES)
-int draw_torso_arms(struct Unemap_package *package,int map_number)
+int draw_torso_arms(struct Unemap_package *package,int map_number)/*FOR AJP*/
 /*******************************************************************************
 LAST MODIFIED : 15 June 2000
 
@@ -5208,7 +5214,7 @@ This function draws the <map> in as a 3D CMGUI scene.
 								}
 							}/* if (function=calculate_interpolation_functio */	
 							/*draw the arms  */				
-							if(current_region->type==TORSO)
+							if(current_region->type==TORSO)/*FOR AJP*/
 							{
 								draw_torso_arms(unemap_package,region_number);
 							}

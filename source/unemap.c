@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : unemap.c
 
-LAST MODIFIED : 16 May 2000
+LAST MODIFIED : 16 June 2000
 
 DESCRIPTION :
 Main program for unemap.  Based on cmgui.
@@ -27,6 +27,7 @@ Main program for unemap.  Based on cmgui.
 #include "graphics/material.h"
 #include "graphics/scene.h"
 #include "graphics/spectrum.h"
+#include "graphics/transform_tool.h"
 #include "interaction/interactive_tool.h"
 #include "node/node_tool.h"
 #include "selection/element_point_ranges_selection.h"
@@ -314,6 +315,7 @@ Main program for unemap
 	struct MANAGER(Spectrum) *spectrum_manager=(struct MANAGER(Spectrum) *)NULL;
 	struct MANAGER(Texture) *texture_manager=(struct MANAGER(Texture) *)NULL;
 	struct Node_tool *node_tool=(struct Node_tool *)NULL;
+	struct Transform_tool *transform_tool=(struct Transform_tool *)NULL;
 #endif /* defined (UNEMAP_USE_NODES) */
 	struct System_window *system;
 	struct Time_keeper *time_keeper;
@@ -814,6 +816,7 @@ Main program for unemap
 		/* interactive_tools */
 		node_tool=CREATE(Node_tool)(interactive_tool_manager,node_manager,
 			/*data_manager*/0,node_selection,computed_field_package);
+		transform_tool=CREATE(Transform_tool)(interactive_tool_manager);
 		unemap_package=CREATE(Unemap_package)(fe_field_manager,
 			element_group_manager,node_manager,data_group_manager,node_group_manager,
 			fe_basis_manager,element_manager,element_point_ranges_selection,
@@ -953,6 +956,7 @@ Main program for unemap
 
 			/* destroy Interactive_tools and manager */
 			DESTROY(Node_tool)(&node_tool);
+			DESTROY(Transform_tool)(&transform_tool);
 			DESTROY(MANAGER(Interactive_tool))(&interactive_tool_manager);
 
 			DESTROY(FE_node_selection)(&data_selection);
