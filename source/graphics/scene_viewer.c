@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : scene_viewer.c
 
-LAST MODIFIED : 5 April 2000
+LAST MODIFIED : 27 April 2000
 
 DESCRIPTION :
 Three_D_drawing derivative for viewing a Scene from an arbitrary position.
@@ -59,7 +59,7 @@ Module types
 */
 struct Scene_viewer
 /*******************************************************************************
-LAST MODIFIED : 27 September 1999
+LAST MODIFIED : 11 April 2000
 
 DESCRIPTION :
 ==============================================================================*/
@@ -150,6 +150,11 @@ DESCRIPTION :
 	void *scene_manager_callback_id;
 	struct MANAGER(Texture) *texture_manager;
 	void *texture_manager_callback_id;
+	/* interaction */
+	/* Note: interactive_tool is NOT accessed by Scene_viewer; up to dialog
+		 owning it to clear it if it is destroyed. This is usually ensured by having
+		 a tool chooser in the parent dialog */
+	struct Interactive_tool *interactive_tool;
 	/* background */
 	struct Colour background_colour;
 	enum Scene_viewer_buffer_mode buffer_mode;
@@ -1325,6 +1330,7 @@ world space.
 	return (return_code);
 } /* Scene_viewer_unproject */
 
+#if defined (OLD_CODE)
 static int Scene_viewer_input_select(struct Scene_viewer *scene_viewer,
 	XEvent *event)
 /*******************************************************************************
@@ -1525,6 +1531,155 @@ Converts mouse button-press and motion events into viewing transformations in
 				printf("Scene_viewer_input_select.  Invalid X event");
 				return_code=0;
 			} break;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Scene_viewer_input_select.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Scene_viewer_input_select */
+#endif /* defined (OLD_CODE) */
+
+static int Scene_viewer_input_select(struct Scene_viewer *scene_viewer,
+	XEvent *event)
+/*******************************************************************************
+LAST MODIFIED : 27 April 2000
+
+DESCRIPTION :
+Creates abstract interactive events relating to the mouse input to the
+<scene_viewer> <event> and sends them to the current interactive_tool for the
+scene_viewer.
+==============================================================================*/
+{
+	double centre_x,centre_y,size_x,size_y,viewport_bottom,viewport_height,
+		viewport_left,viewport_width;
+	enum Interactive_event_type interactive_event_type;
+	int button_number,input_modifier,modifier_state,mouse_event,return_code;
+	XButtonEvent *button_event;
+	XMotionEvent *motion_event;
+	GLint viewport[4];
+	struct Interactive_event *interactive_event;
+	struct Interaction_volume *interaction_volume;
+
+	ENTER(Scene_viewer_input_select);
+	if (scene_viewer&&scene_viewer->interactive_tool&&event)
+	{
+		return_code=1;
+		mouse_event=0;
+		glGetIntegerv(GL_VIEWPORT,viewport);
+		viewport_left   = (double)(viewport[0]);
+		viewport_bottom = (double)(viewport[1]);
+		viewport_width  = (double)(viewport[2]);
+		viewport_height = (double)(viewport[3]);
+		switch (event->type)
+		{
+			case ButtonPress:
+			{
+				interactive_event_type=INTERACTIVE_EVENT_BUTTON_PRESS;
+				button_event=&(event->xbutton);
+				centre_x=(double)(button_event->x);
+				/* flip y as x event has y=0 at top of window, increasing down */
+				centre_y=viewport_height-(double)(button_event->y)-1.0;
+				button_number=button_event->button;
+				modifier_state=button_event->state;
+				mouse_event=1;
+			} break;
+			case MotionNotify:
+			{
+				interactive_event_type=INTERACTIVE_EVENT_MOTION_NOTIFY;
+				motion_event= &(event->xmotion);
+				centre_x=(double)(motion_event->x);
+				/* flip y as x event has y=0 at top of window, increasing down */
+				centre_y=viewport_height-(double)(motion_event->y)-1.0;
+				button_number=-1;
+				modifier_state=motion_event->state;
+				mouse_event=1;
+			} break;
+			case ButtonRelease:
+			{
+				interactive_event_type=INTERACTIVE_EVENT_BUTTON_RELEASE;
+				button_event=&(event->xbutton);
+				centre_x=(double)(button_event->x);
+				/* flip y as x event has y=0 at top of window, increasing down */
+				centre_y=viewport_height-(double)(button_event->y)-1.0;
+				button_number=button_event->button;
+				modifier_state=button_event->state;
+				mouse_event=1;
+			}
+			case KeyPress:
+			{
+#if defined (DEBUG)
+	XKeyEvent *key_event;
+#endif /* defined (DEBUG) */
+#if defined (DEBUG)
+				key_event= &(event->xkey);
+				printf("key %u press at %d %d\n",key_event->keycode,key_event->x,
+					key_event->y);
+#endif /* defined (DEBUG) */
+#if defined (OLD_CODE)
+				charcount=XLookupString(key_event,buffer,bufsize,&keysym,&compose);
+				switch (keysym)
+				{
+					case XK_Delete:
+					{
+#if defined (DEBUG)
+						printf("* Delete pressed!\n");
+#endif /* defined (DEBUG) */
+					} break;
+				}
+#endif /* defined (OLD_CODE) */
+			} break;
+			case KeyRelease:
+			{
+#if defined (DEBUG)
+				key_event= &(event->xkey);
+				printf("key %u release at %d %d\n",key_event->keycode,key_event->x,
+					key_event->y);
+#endif /* defined (DEBUG) */
+			} break;
+			default:
+			{
+				printf("Scene_viewer_input_select.  Invalid X event");
+				return_code=0;
+			} break;
+		}
+		if (return_code&&mouse_event)
+		{
+			/*???RC Picking sensitivity should not be hardcoded - read from
+				defaults file and/or set from text command */
+			size_x = SCENE_VIEWER_PICK_SIZE;
+			size_y = SCENE_VIEWER_PICK_SIZE;
+			input_modifier=0;
+			if (ShiftMask&modifier_state)
+			{
+				input_modifier += INTERACTIVE_EVENT_MODIFIER_SHIFT;
+			}
+			/* note that control key currently overrides to transform mode */
+			if (ControlMask&modifier_state)
+			{
+				input_modifier += INTERACTIVE_EVENT_MODIFIER_CONTROL;
+			}
+			if (Mod1Mask&modifier_state)
+			{
+				input_modifier += INTERACTIVE_EVENT_MODIFIER_ALT;
+			}
+			interaction_volume=create_Interaction_volume_ray_frustum(
+				scene_viewer->modelview_matrix,scene_viewer->window_projection_matrix,
+				viewport_left,viewport_bottom,viewport_width,viewport_height,
+				centre_x,centre_y,size_x,size_y);
+			ACCESS(Interaction_volume)(interaction_volume);
+			interactive_event=CREATE(Interactive_event)(interactive_event_type,
+				button_number,input_modifier,interaction_volume,scene_viewer->scene);
+			ACCESS(Interactive_event)(interactive_event);
+			return_code=Interactive_tool_handle_interactive_event(
+				scene_viewer->interactive_tool,(void *)scene_viewer,interactive_event);
+			DEACCESS(Interactive_event)(&interactive_event);
+			DEACCESS(Interaction_volume)(&interaction_volume);
 		}
 	}
 	else
@@ -2393,7 +2548,7 @@ struct Scene_viewer *CREATE(Scene_viewer)(Widget parent,
 	struct MANAGER(Texture) *texture_manager,
 	struct User_interface *user_interface)
 /*******************************************************************************
-LAST MODIFIED : 23 November 1998
+LAST MODIFIED : 11 April 2000
 
 DESCRIPTION :
 Creates a Scene_viewer in the widget <parent> to display <scene>.
@@ -2506,6 +2661,8 @@ performed in idle time so that multiple redraws are avoided.
 					scene_viewer->scene_manager_callback_id=(void *)NULL;
 					scene_viewer->texture_manager=texture_manager;
 					scene_viewer->texture_manager_callback_id=(void *)NULL;
+					/* no current interactive_tool */
+					scene_viewer->interactive_tool=(struct Interactive_tool *)NULL;
 					/* set projection matrices to identity */
 					for (i=0;i<16;i++)
 					{
@@ -5079,6 +5236,63 @@ Scales of the absolute image while keeping the same centre point.
 
 	return (return_code);
 } /* Scene_viewer_viewport_zoom */
+
+struct Interactive_tool *Scene_viewer_get_interactive_tool(
+	struct Scene_viewer *scene_viewer)
+/*******************************************************************************
+LAST MODIFIED : 11 April 2000
+
+DESCRIPTION :
+Returns the interactive_tool used by the Scene_viewer.
+The interactive_tool may be NULL, indicating that no overlay is in use.
+==============================================================================*/
+{
+	struct Interactive_tool *interactive_tool;
+
+	ENTER(Scene_viewer_get_interactive_tool);
+	if (scene_viewer)
+	{
+		interactive_tool=scene_viewer->interactive_tool;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Scene_viewer_get_interactive_tool.  Invalid argument(s)");
+		interactive_tool=(struct Interactive_tool *)NULL;
+	}
+	LEAVE;
+
+	return (interactive_tool);
+} /* Scene_viewer_get_interactive_tool */
+
+int Scene_viewer_set_interactive_tool(struct Scene_viewer *scene_viewer,
+	struct Interactive_tool *interactive_tool)
+/*******************************************************************************
+LAST MODIFIED : 26 April 2000
+
+DESCRIPTION :
+Sets the interactive tool that will receive input if the Scene_viewer is in
+SCENE_VIEWER_SELECT mode. A NULL value indicates no tool.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(Scene_viewer_set_interactive_tool);
+	if (scene_viewer)
+	{
+		scene_viewer->interactive_tool=interactive_tool;
+		return_code=1;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Scene_viewer_set_interactive_tool.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Scene_viewer_set_interactive_tool */
 
 int Scene_viewer_set_input_callback(struct Scene_viewer *scene_viewer,
 	struct Callback_data *callback)

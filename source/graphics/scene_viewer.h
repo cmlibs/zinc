@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : scene_viewer.h
 
-LAST MODIFIED : 28 September 1999
+LAST MODIFIED : 11 April 2000
 
 DESCRIPTION :
 Three_D_drawing derivative for viewing a Scene from an arbitrary position.
@@ -17,19 +17,13 @@ translating and zooming with mouse button press and motion events.
 #if !defined (SCENE_VIEWER_H)
 #define SCENE_VIEWER_H
 
-/*
-#include <stddef.h>
-#include <X11/Xlib.h>
-#include <X11/Intrinsic.h>
-#include "general/geometry.h"
-#include "graphics/colour.h"
-#include "graphics/scene.h"
-#include "graphics/graphics_library.h"
-*/
 #include "general/image_utilities.h"
 #include "general/object.h"
+#include "graphics/colour.h"
+#include "graphics/scene.h"
 #include "graphics/light.h"
 #include "graphics/light_model.h"
+#include "interaction/interactive_tool.h"
 
 /*
 Global types
@@ -260,6 +254,26 @@ LAST MODIFIED : 15 October 1998
 
 DESCRIPTION :
 Returns the buffer mode - single_buffer/double_buffer - of the Scene_viewer.
+==============================================================================*/
+
+struct Interactive_tool *Scene_viewer_get_interactive_tool(
+	struct Scene_viewer *scene_viewer);
+/*******************************************************************************
+LAST MODIFIED : 11 April 2000
+
+DESCRIPTION :
+Returns the interactive_tool used by the Scene_viewer.
+The interactive_tool may be NULL, indicating that no overlay is in use.
+==============================================================================*/
+
+int Scene_viewer_set_interactive_tool(struct Scene_viewer *scene_viewer,
+	struct Interactive_tool *interactive_tool);
+/*******************************************************************************
+LAST MODIFIED : 11 April 2000
+
+DESCRIPTION :
+Sets the interactive tool that will receive input if the Scene_viewer is in
+SCENE_VIEWER_SELECT mode. A NULL value indicates no tool.
 ==============================================================================*/
 
 enum Scene_viewer_input_mode Scene_viewer_get_input_mode(
