@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : cmgui.c
 
-LAST MODIFIED : 31 October 2000
+LAST MODIFIED : 20 November 2000
 
 DESCRIPTION :
 ???DB.  Prototype main program for an application that uses the "cmgui tools".
@@ -621,7 +621,7 @@ Main program for the CMISS Graphical User Interface
 	struct Execute_command *execute_command, *set_command;
 	struct FE_field *fe_field;
 	struct Graphical_material *default_selected_material;
-	struct GT_object *glyph;
+	struct GT_object *glyph, *mirror_glyph;
 	struct MANAGER(Computed_field) *computed_field_manager;
 #if !defined (WINDOWS_DEV_FLAG)
 	struct Modifier_entry set_file_name_option_table[]=
@@ -967,7 +967,17 @@ Main program for the CMISS Graphical User Interface
 		{
 			ADD_OBJECT_TO_LIST(GT_object)(glyph,command_data.glyph_list);
 		}
+		mirror_glyph = glyph;
+		if (glyph=make_glyph_mirror("mirror_arrow_line",mirror_glyph))
+		{
+			ADD_OBJECT_TO_LIST(GT_object)(glyph,command_data.glyph_list);
+		}
 		if (glyph=make_glyph_arrow_solid("arrow_solid",12,2./3.,1./6.))
+		{
+			ADD_OBJECT_TO_LIST(GT_object)(glyph,command_data.glyph_list);
+		}
+		mirror_glyph = glyph;
+		if (glyph=make_glyph_mirror("mirror_arrow_solid",mirror_glyph))
 		{
 			ADD_OBJECT_TO_LIST(GT_object)(glyph,command_data.glyph_list);
 		}
@@ -979,7 +989,20 @@ Main program for the CMISS Graphical User Interface
 		{
 			ADD_OBJECT_TO_LIST(GT_object)(glyph,command_data.glyph_list);
 		}
+		mirror_glyph = glyph;
+		if (glyph=make_glyph_mirror("mirror_cone",mirror_glyph))
+		{
+			ADD_OBJECT_TO_LIST(GT_object)(glyph,command_data.glyph_list);
+		}
 		if (glyph=make_glyph_cross("cross"))
+		{
+			ADD_OBJECT_TO_LIST(GT_object)(glyph,command_data.glyph_list);
+		}
+		if (glyph=make_glyph_cube_solid("cube_solid"))
+		{
+			ADD_OBJECT_TO_LIST(GT_object)(glyph,command_data.glyph_list);
+		}
+		if (glyph=make_glyph_cube_wireframe("cube_wireframe"))
 		{
 			ADD_OBJECT_TO_LIST(GT_object)(glyph,command_data.glyph_list);
 		}
@@ -1000,6 +1023,11 @@ Main program for the CMISS Graphical User Interface
 			ADD_OBJECT_TO_LIST(GT_object)(glyph,command_data.glyph_list);
 		}
 		if (glyph=make_glyph_line("line"))
+		{
+			ADD_OBJECT_TO_LIST(GT_object)(glyph,command_data.glyph_list);
+		}
+		mirror_glyph = glyph;
+		if (glyph=make_glyph_mirror("mirror_line",mirror_glyph))
 		{
 			ADD_OBJECT_TO_LIST(GT_object)(glyph,command_data.glyph_list);
 		}
