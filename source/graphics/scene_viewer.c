@@ -1659,7 +1659,6 @@ DESCRIPTION :
 	ENTER(Scene_viewer_initialise_callback);
 	USE_PARAMETER(graphics_buffer);
 	USE_PARAMETER(dummy_void);
-	USE_PARAMETER(return_code);
 	if (scene_viewer=(struct Scene_viewer *)scene_viewer_void)
 	{
 		/* initialise graphics library to load XFont */
@@ -1672,6 +1671,7 @@ DESCRIPTION :
 		return_code = 0;
 	}
 	LEAVE;
+	USE_PARAMETER(return_code);
 } /* Scene_viewer_initialise_callback */
 
 static void Scene_viewer_resize_callback(struct Graphics_buffer *graphics_buffer,
@@ -1690,7 +1690,6 @@ callbacks interested in the scene_viewers transformations.
 	ENTER(Scene_viewer_resize_callback);
 	USE_PARAMETER(graphics_buffer);
 	USE_PARAMETER(dummy_void);
-	USE_PARAMETER(return_code);
 	if (scene_viewer=(struct Scene_viewer *)scene_viewer_void)
 	{
 		scene_viewer->transform_flag = 1;
@@ -1703,6 +1702,7 @@ callbacks interested in the scene_viewers transformations.
 		return_code = 0;
 	}
 	LEAVE;
+	USE_PARAMETER(return_code);
 } /* Scene_viewer_resize_callback */
 
 static void Scene_viewer_expose_callback(struct Graphics_buffer *graphics_buffer,
@@ -1722,7 +1722,6 @@ if there are no more expose events pending.
 	ENTER(Scene_viewer_expose_callback);
 	USE_PARAMETER(graphics_buffer);
 	USE_PARAMETER(dummy_void);
-	USE_PARAMETER(return_code);
 	if (scene_viewer=(struct Scene_viewer *)scene_viewer_void)
 	{
 		return_code = Scene_viewer_redraw(scene_viewer);
@@ -1734,6 +1733,7 @@ if there are no more expose events pending.
 		return_code = 0;
 	}
 	LEAVE;
+	USE_PARAMETER(return_code);
 } /* Scene_viewer_expose_callback */
 
 static int Scene_viewer_unproject(int pointer_x,int pointer_y,

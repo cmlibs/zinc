@@ -253,7 +253,7 @@ returned to the scene.
 		input.key_code = 0;
 		input.position_x = 0;
 		input.position_y = 0;
-		input.input_modifier = 0;
+		input.input_modifier = (enum Graphics_buffer_input_modifier)0;
 		switch(event->type)
 		{
 			case MotionNotify:
@@ -286,7 +286,7 @@ returned to the scene.
 				input.button_number = button_event->button;
 				input.position_x = button_event->x;
 				input.position_y = button_event->y;
-				input.input_modifier = 0;
+				input.input_modifier = (enum Graphics_buffer_input_modifier)0;
 				if (ShiftMask&(button_event->state))
 				{
 					input.input_modifier |= GRAPHICS_BUFFER_INPUT_MODIFIER_SHIFT;
@@ -374,7 +374,8 @@ returned to the scene.
 			} break;
 			default:
 			{
-				printf("Graphics_buffer_input_callback.  Unknown X event");
+				display_message(ERROR_MESSAGE,
+					"Graphics_buffer_input_callback.  Unknown X event");
 				return_code=0;
 				/* This event type is not being passed on */
 			} break;
