@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : import_finite_element.c
 
-LAST MODIFIED : 3 September 2001
+LAST MODIFIED : 4 September 2001
 
 DESCRIPTION :
 The function for importing finite element data, from a file or CMISS (via a
@@ -1134,7 +1134,7 @@ static struct FE_node *read_FE_node_field_info(FILE *input_file,
 	struct MANAGER(FE_field) *fe_field_manager,
 	struct FE_field_order_info **field_order_info)
 /*******************************************************************************
-LAST MODIFIED : 8 October 1999
+LAST MODIFIED : 4 September 2001
 
 DESCRIPTION :
 Creates a node with the field information read from the <input_file>.
@@ -1148,34 +1148,39 @@ from a previous call to this function.
 	struct FE_field *field;
 
 	ENTER(read_FE_node_field_info);
-	node=(struct FE_node *)NULL;
-	if (input_file&&fe_field_manager&&field_order_info)
+	node = (struct FE_node *)NULL;
+	if (input_file && fe_field_manager && field_order_info)
 	{
 		if (*field_order_info)
 		{
 			DESTROY(FE_field_order_info)(field_order_info);
 		}
 		/* create the node */
-		if (node=CREATE(FE_node)(0,(struct FE_node *)NULL))
+		if (node = CREATE(FE_node)(0, (struct FE_node *)NULL))
 		{
-			return_code=1;
+			return_code = 1;
 			if ((1==fscanf(input_file,"Fields=%d",&number_of_fields))&&
 				(0<=number_of_fields))
 			{
-				*field_order_info=CREATE(FE_field_order_info)(number_of_fields);
+				*field_order_info = CREATE(FE_field_order_info)();
 				/* read in the node fields */
-				for (i=0;(i<number_of_fields)&&return_code;i++)
+				for (i = 0; (i < number_of_fields) && return_code; i++)
 				{
-					field=(struct FE_field *)NULL;
+					field = (struct FE_field *)NULL;
 					if (read_FE_node_field(input_file,fe_field_manager,node,&field))
 					{
-						set_FE_field_order_info_field(*field_order_info,i,field);
+						if (!add_FE_field_order_info_field(*field_order_info, field))
+						{
+							display_message(ERROR_MESSAGE,
+								"read_FE_node_field_info.  Could not add field to list");
+							return_code = 0;
+						}
 					}
 					else
 					{
 						display_message(ERROR_MESSAGE,
 							"read_FE_node_field_info.  Could not read node field");
-						return_code=0;
+						return_code = 0;
 					}
 				}
 			}
@@ -1183,7 +1188,7 @@ from a previous call to this function.
 			{
 				display_message(ERROR_MESSAGE,
 					"read_FE_node_field_info.  Error reading number of fields from file");
-				return_code=0;
+				return_code = 0;
 			}
 			if (!return_code)
 			{
@@ -1194,7 +1199,7 @@ from a previous call to this function.
 		{
 			display_message(ERROR_MESSAGE,
 				"read_FE_node_field_info.  Could not create node");
-			return_code=0;
+			return_code = 0;
 		}
 	}
 	else
@@ -2886,7 +2891,7 @@ static struct FE_element *read_FE_element_field_info(
 	struct MANAGER(FE_basis) *basis_manager,
 	struct FE_field_order_info **field_order_info)
 /*******************************************************************************
-LAST MODIFIED : 12 October 1999
+LAST MODIFIED : 4 September 2001
 
 DESCRIPTION :
 Returns a template element with the element field information read in from the
@@ -3005,22 +3010,26 @@ from a previous call to this function.
 					}
 					if (return_code)
 					{
-						*field_order_info=CREATE(FE_field_order_info)(number_of_fields);
+						*field_order_info = CREATE(FE_field_order_info)();
 						/* read in the element fields */
-						for (i=0;(i<number_of_fields)&&return_code;i++)
+						for (i = 0; (i < number_of_fields) && return_code; i++)
 						{
-							field=(struct FE_field *)NULL;
-							if (read_FE_element_field(input_file,shape,fe_field_manager,
-								basis_manager,element,&field))
+							field = (struct FE_field *)NULL;
+							if (read_FE_element_field(input_file, shape, fe_field_manager,
+								basis_manager, element, &field))
 							{
-								set_FE_field_order_info_field(*field_order_info,i,field);
+								if (!add_FE_field_order_info_field(*field_order_info, field))
+								{
+									display_message(ERROR_MESSAGE,
+										"read_FE_element_field_info.  Could not add field to list");
+									return_code = 0;
+								}
 							}
 							else
 							{
 								display_message(ERROR_MESSAGE,
-									"read_FE_element_field_info.  "
-									"Could not read element field");
-								return_code=0;
+									"read_FE_element_field_info.  Could not read element field");
+								return_code = 0;
 							}
 						}
 					}
@@ -3906,7 +3915,7 @@ int read_FE_element_group(FILE *input_file,
 	struct MANAGER(GROUP(FE_node)) *data_group_manager,
 	struct MANAGER(FE_basis) *basis_manager)
 /*******************************************************************************
-LAST MODIFIED : 2 March 2001
+LAST MODIFIED : 4 September 2001
 
 DESCRIPTION :
 Reads an element group from an <input_file> or the socket (if <input_file> is
@@ -4204,8 +4213,7 @@ node groups are updated to contain nodes used by elements in associated group.
 						{
 							DESTROY(FE_field_order_info)(&field_order_info);
 						}
-						field_order_info=
-							CREATE(FE_field_order_info)(/*number_of_fields*/0);
+						field_order_info = CREATE(FE_field_order_info)();
 					}
 					else
 					{
@@ -4781,4 +4789,3 @@ It is up to the user to DEALLOCATE <group_name>.
 	LEAVE;
 	return(return_code);
 } /* read_FE_node_and_elem_groups_and_return_name_given_file_name */
-

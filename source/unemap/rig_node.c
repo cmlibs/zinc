@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : rig_node.c
 
-LAST MODIFIED : 31 August 2001
+LAST MODIFIED : 4 September 2001
 
 DESCRIPTION :
 Essentially the same functionality as rig.c, but using nodes and fields to store
@@ -125,7 +125,7 @@ static struct FE_node *create_config_template_node(enum Config_node_type
 	config_node_type,FE_value focus,struct FE_field_order_info **field_order_info,
 	struct Unemap_package *package,struct FE_field **electrode_position_field)
 /*******************************************************************************
-LAST MODIFIED : 31 August 2001
+LAST MODIFIED : 4 September 2001
 
 DESCRIPTION :
 Creates and returns a configuration template node for read_text_config_FE_node
@@ -166,7 +166,7 @@ created electrode_position_field.
 
 	char *electrode_name;
 	char *rig_type_str;
-	int field_number,number_of_fields,success,string_length;
+	int number_of_fields,success;
 	struct Coordinate_system coordinate_system;	
 	struct FE_field *channel_number_field;
 	struct FE_field *device_name_field;
@@ -268,7 +268,6 @@ created electrode_position_field.
 #endif /*  defined (UNEMAP_USE_NODES) */
 	int read_order_components_number_of_derivatives[1]={0},
 	  read_order_components_number_of_versions[1]={1};
-	
 
 	ENTER(create_config_template_node);
 	if (package)
@@ -289,57 +288,46 @@ created electrode_position_field.
 		fe_field_manager=(struct MANAGER(FE_field) *)NULL;
 		fe_field_manager=get_unemap_package_FE_field_manager(package);	
 		success = 1;			
-		field_number = 0;
 		electrode_name = (char *)NULL;
 		/* create the node */		
-		if (node=CREATE(FE_node)(0,(struct FE_node *)NULL))
-		{		
-			/* create the FE_field_order_info for all the fields */
+		if (node = CREATE(FE_node)(0, (struct FE_node *)NULL))
+		{
+			/* get info that depends on config_node_type */
 			switch (config_node_type)
 			{
 				case SOCK_ELECTRODE_TYPE:
 				{	
-					the_field_order_info=
-						CREATE(FE_field_order_info)(SOCK_NUM_CONFIG_FIELDS);
 					number_of_fields = SOCK_NUM_CONFIG_FIELDS; 
 					rig_type_str = (char *)sock_electrode_position_str;
 				} break;
 				case PATCH_ELECTRODE_TYPE:
 				{		
-					the_field_order_info=
-						CREATE(FE_field_order_info)(PATCH_NUM_CONFIG_FIELDS);	
 					number_of_fields = PATCH_NUM_CONFIG_FIELDS;				
 					rig_type_str = (char *)patch_electrode_position_str;
 				} break;
 				case TORSO_ELECTRODE_TYPE:
 				{	
-					the_field_order_info=
-						CREATE(FE_field_order_info)(TORSO_NUM_CONFIG_FIELDS);
 					number_of_fields = TORSO_NUM_CONFIG_FIELDS;
 					rig_type_str = (char *)torso_electrode_position_str;
 				} break;
 				case AUXILIARY_TYPE:
 				{						
-					the_field_order_info=
-						CREATE(FE_field_order_info)(AUXILIARY_NUM_CONFIG_FIELDS);
 					number_of_fields = AUXILIARY_NUM_CONFIG_FIELDS;
 					rig_type_str = (char *)auxiliary_str;
 				} break;
 			}
-			if (!the_field_order_info)
+			/* create the FE_field_order_info for all the fields */
+			if (!(the_field_order_info = CREATE(FE_field_order_info)()))
 			{
 				display_message(ERROR_MESSAGE,
-					"create_config_template_node. Could not create field_order_info");
-				success=0;
+					"create_config_template_node.  Could not create field_order_info");
+				success = 0;
 			}
 			/* create the fields which depend on template types. */		
 			if (success)
 			{
-				string_length = strlen(rig_type_str);				
-				string_length++;
-				if (ALLOCATE(electrode_name,char,string_length))
-				{	
-					strcpy(electrode_name,rig_type_str);				
+				if (electrode_name = duplicate_string(rig_type_str))
+				{
 					switch (config_node_type)
 					{
 						case SOCK_ELECTRODE_TYPE:
@@ -363,8 +351,8 @@ created electrode_position_field.
 								success =define_node_field_and_field_order_info(node,
 									the_electrode_position_field,
 									electrode_components_number_of_derivatives,
-									electrode_components_number_of_versions,&field_number,
-									number_of_fields,electrode_components_nodal_value_types,
+									electrode_components_number_of_versions,
+									electrode_components_nodal_value_types,
 									the_field_order_info);															 				
 							}
 							else
@@ -392,9 +380,9 @@ created electrode_position_field.
 							{
 								success =define_node_field_and_field_order_info(node,
 									the_electrode_position_field,
-									electrode_components_number_of_derivatives
-									,electrode_components_number_of_versions,&field_number,
-									number_of_fields,electrode_components_nodal_value_types,
+									electrode_components_number_of_derivatives,
+									electrode_components_number_of_versions,
+									electrode_components_nodal_value_types,
 									the_field_order_info);								 				
 							}
 							else
@@ -424,8 +412,8 @@ created electrode_position_field.
 								success=define_node_field_and_field_order_info(node,
 									the_electrode_position_field,
 									electrode_components_number_of_derivatives,
-									electrode_components_number_of_versions,&field_number,
-									number_of_fields,electrode_components_nodal_value_types,
+									electrode_components_number_of_versions,
+									electrode_components_nodal_value_types,
 									the_field_order_info);
 							}
 							else
@@ -465,8 +453,8 @@ created electrode_position_field.
 					set_unemap_package_device_name_field(package,device_name_field);
 					success =define_node_field_and_field_order_info(node,
 						device_name_field,device_name_components_number_of_derivatives,
-						device_name_components_number_of_versions,&field_number,
-						number_of_fields,device_name_components_nodal_value_types,
+						device_name_components_number_of_versions,
+						device_name_components_nodal_value_types,
 						the_field_order_info); 
 				}
 				else
@@ -490,9 +478,9 @@ created electrode_position_field.
 				{ 
 					set_unemap_package_device_type_field(package,device_type_field);
 					success =define_node_field_and_field_order_info(node,
-						device_type_field,device_type_components_number_of_derivatives
-						,device_type_components_number_of_versions,&field_number,
-						number_of_fields,device_type_components_nodal_value_types,
+						device_type_field,device_type_components_number_of_derivatives,
+						device_type_components_number_of_versions,
+						device_type_components_nodal_value_types,
 						the_field_order_info); 						
 				}
 				else
@@ -515,9 +503,9 @@ created electrode_position_field.
 				{	
 					set_unemap_package_channel_number_field(package,channel_number_field);
 					success =define_node_field_and_field_order_info(node,
-						channel_number_field,channel_number_components_number_of_derivatives
-						,channel_number_components_number_of_versions,&field_number,
-						number_of_fields,channel_number_components_nodal_value_types,
+						channel_number_field,channel_number_components_number_of_derivatives,
+						channel_number_components_number_of_versions,
+						channel_number_components_nodal_value_types,
 						the_field_order_info); 
 				}
 				else
@@ -540,9 +528,9 @@ created electrode_position_field.
 				{	
 					set_unemap_package_read_order_field(package,read_order_field);
 					success =define_node_field_and_field_order_info(node,
-						read_order_field,read_order_components_number_of_derivatives
-						,read_order_components_number_of_versions,&field_number,
-						number_of_fields,read_order_components_nodal_value_types,
+						read_order_field,read_order_components_number_of_derivatives,
+						read_order_components_number_of_versions,
+						read_order_components_nodal_value_types,
 						the_field_order_info); 
 				}
 				else
@@ -566,9 +554,9 @@ created electrode_position_field.
 				{	
 					set_unemap_package_highlight_field(package,highlight_field);					
 					success =define_node_field_and_field_order_info(node,
-						highlight_field,highlight_components_number_of_derivatives
-						,highlight_components_number_of_versions,&field_number,
-						number_of_fields,highlight_components_nodal_value_types,
+						highlight_field,highlight_components_number_of_derivatives,
+						highlight_components_number_of_versions,
+						highlight_components_nodal_value_types,
 						the_field_order_info); 
 				}
 				else
@@ -578,14 +566,22 @@ created electrode_position_field.
 					success=0;
 				}			
 #endif /*  defined (UNEMAP_USE_NODES) */
-			} /* if (success) */		
+				/* check the number of fields matched what was expected */
+				if (get_FE_field_order_info_number_of_fields(the_field_order_info) !=
+					number_of_fields)
+				{
+					display_message(ERROR_MESSAGE, "create_config_template_node.  "
+						"Wrong number of fields for config_node_type");
+					success = 0;
+				}
+			} /* if (success) */
 		}	
 		else
 		{
 			display_message(ERROR_MESSAGE,
 				"create_config_template_node.  Could not create node");
-			success=0;
-		}			
+			success = 0;
+		}
 		*field_order_info = the_field_order_info;
 		*electrode_position_field = the_electrode_position_field;
 		if (!success)

@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : mapping.c
 
-LAST MODIFIED : 31 August 2001
+LAST MODIFIED : 4 September 2001
 
 DESCRIPTION :
 ==============================================================================*/
@@ -878,7 +878,7 @@ Creates the mapping fields, returns them in a FE_field_order_info.
 	struct MANAGER(FE_field) *fe_field_manager;
 	struct FE_field_order_info *the_field_order_info = 
 		(struct FE_field_order_info *)NULL;
-	int success,field_number,string_length;
+	int success, string_length;
 	char *fit_point_name,*map_type_str;
 	struct Coordinate_system coordinate_system;	
 	struct FE_field *position_field,*potential_field;
@@ -904,7 +904,6 @@ Creates the mapping fields, returns them in a FE_field_order_info.
 	{	
 		success = 1;				
 		fit_point_name = (char *)NULL;
-		field_number=0;
 		fe_field_manager=get_unemap_package_FE_field_manager(package);
 		switch (region_type)
 		{
@@ -940,8 +939,7 @@ Creates the mapping fields, returns them in a FE_field_order_info.
 			{
 				case SOCK:
 				{	
-					if (the_field_order_info=
-						CREATE(FE_field_order_info)(NUM_MAPPING_FIELDS))
+					if (the_field_order_info = CREATE(FE_field_order_info)())
 					{					
 						/* set up the info needed to create the  fit point position field */
 						coordinate_system.type=PROLATE_SPHEROIDAL;								
@@ -973,8 +971,7 @@ Creates the mapping fields, returns them in a FE_field_order_info.
 				} break;			
 				case TORSO:
 				{		
-					if (the_field_order_info=
-						CREATE(FE_field_order_info)(NUM_MAPPING_FIELDS))
+					if (the_field_order_info = CREATE(FE_field_order_info)())
 					{				 								
 						/* set up the info needed to create the  fit point position field */
 						coordinate_system.type=CYLINDRICAL_POLAR;
@@ -1004,8 +1001,7 @@ Creates the mapping fields, returns them in a FE_field_order_info.
 				} break;		
 				case PATCH:
 				{	
-					if (the_field_order_info=
-						CREATE(FE_field_order_info)(NUM_MAPPING_FIELDS))
+					if (the_field_order_info = CREATE(FE_field_order_info)())
 					{								
 						/* set up the info needed to create the  fit point position field */
 						coordinate_system.type=RECTANGULAR_CARTESIAN;
@@ -1042,24 +1038,22 @@ Creates the mapping fields, returns them in a FE_field_order_info.
 			} /* switch */		
 			if (success)
 			{
-				set_FE_field_order_info_field(the_field_order_info,field_number,
-					position_field);
-				field_number++;					
+				success =
+					add_FE_field_order_info_field(the_field_order_info, position_field);
 			}
 			/* create fields common to all nodes*/
 			if (success)
 			{
 				if (potential_field=get_unemap_package_map_fit_field(package))
 				{
-					set_FE_field_order_info_field(the_field_order_info,field_number,
+					success = add_FE_field_order_info_field(the_field_order_info,
 						potential_field);
-					field_number++;		
 				}
 				else
 				{
 					display_message(ERROR_MESSAGE,
 						"create_mapping_fields. Could not retrieve potential_value field");
-					success=0;
+					success = 0;
 				}				
 			} /* if (success)*/
 			DEALLOCATE(fit_point_name);
@@ -1809,11 +1803,13 @@ Make the elements for the 3d map surface.
 
 		/* check the number of derivatives and components, as all nodes should
 			 have the same fields */
+		number_of_fields =
+			get_FE_field_order_info_number_of_fields(field_order_info);
 		if (return_code)
 		{
-			for(i=0;i<field_order_info->number_of_fields;i++)
+			for(i = 0; i < number_of_fields; i++)
 			{			
-				field=field_order_info->fields[i];
+				field = get_FE_field_order_info_field(field_order_info, i);
 				k=0;
 				number_of_components=get_FE_field_number_of_components(field);
 				while ((k<number_of_components)&&return_code)
@@ -1874,7 +1870,6 @@ Make the elements for the 3d map surface.
 			return_code=0;
 		}
 		/* create the scale_factor sets */
-		number_of_fields=get_FE_field_order_info_number_of_fields(field_order_info);
 		number_of_scale_factor_sets=0;
 		numbers_in_scale_factor_sets=(int *)NULL;	
 		scale_factor_set_identifiers=(void **)NULL;

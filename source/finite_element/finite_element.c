@@ -379,6 +379,19 @@ struct FE_element_field_priority_iterator_and_data
 	struct LIST(FE_field) *priority_field_list;
 }; /* struct FE_element_field_iterator_and_data */
 
+struct FE_field_order_info
+/*******************************************************************************
+LAST MODIFIED : 4 September 2001
+
+DESCRIPTION :
+Stores a list of fields in the order they are added.
+???RC move up in file.
+==============================================================================*/
+{
+	int allocated_number_of_fields, number_of_fields;
+	struct FE_field **fields;
+}; /* FE_field_order_info */
+
 /*
 Module variables
 ----------------
@@ -40671,73 +40684,39 @@ The node group is returned.
 			display_message(ERROR_MESSAGE,"make_node_and_element_and_data_groups."
 				" Failed to create or free groups");
 			node_group = (struct GROUP(FE_node) *)NULL;	 
-		}									 	
+		}
 	}
 	else
-	{	
+	{
 		display_message(ERROR_MESSAGE,"make_node_and_element_and_data_groups. Invalid arguments");	
 		node_group = (struct GROUP(FE_node) *)NULL;
-	}					
+	}
 	LEAVE;
 
 	return (node_group);
 } /* make_node_and_element_and_data_groups */
 
-struct FE_field_order_info *CREATE(FE_field_order_info)(int number_of_fields)
+struct FE_field_order_info *CREATE(FE_field_order_info)(void)
 /*******************************************************************************
-LAST MODIFIED : 13 July 1999
+LAST MODIFIED : 4 September 2001
 
-DESCRIPTION
-Allocate space for an array of pointers to fields of length number_of_field, 
-set these to NULL, copy the number-of_fields. 
+DESCRIPTION :
+Creates an empty FE_field_order_info structure.
 ==============================================================================*/
 {
-	int i;
 	struct FE_field_order_info *field_order_info;
 
 	ENTER(CREATE(FE_field_order_info));
-	if (number_of_fields>=0)
+	if (ALLOCATE(field_order_info,struct FE_field_order_info,1))
 	{
-		if (ALLOCATE(field_order_info,struct FE_field_order_info,1))
-		{
-			if (number_of_fields)
-			{
-				if (ALLOCATE(field_order_info->fields,struct FE_field *,
-					number_of_fields))
-				{
-					field_order_info->number_of_fields = number_of_fields; 
-					for (i=0;i<number_of_fields;i++)
-					{				
-						field_order_info->fields[i] = (struct FE_field *)NULL;
-					}		
-				}
-				else
-				{
-					display_message(ERROR_MESSAGE,
-						"CREATE(FE_field_order_info). "
-						"Could not allocate memory for fields pointer");
-					DEALLOCATE(field_order_info);	
-				}
-			}
-			else
-			{
-				field_order_info->number_of_fields = number_of_fields; 
-				field_order_info->fields = (struct FE_field **)NULL;
-				field_order_info->access_count=0;
-			}
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-"CREATE(FE_field_order_info).  Could not allocate memory for node field info");
-			DEALLOCATE(field_order_info);	
-		}
+		field_order_info->allocated_number_of_fields = 0;
+		field_order_info->number_of_fields = 0;
+		field_order_info->fields = (struct FE_field **)NULL;
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"CREATE(FE_field_order_info).  Invalid argument(s)");
-		DEALLOCATE(field_order_info);	
+			"CREATE(FE_field_order_info).  Not enough memory");
 	}
 	LEAVE;
 
@@ -40747,93 +40726,363 @@ set these to NULL, copy the number-of_fields.
 int DESTROY(FE_field_order_info)(
 	struct FE_field_order_info **field_order_info_address)
 /*******************************************************************************
-LAST MODIFIED : 13 July 1999
+LAST MODIFIED : 4 September 2001
 
 DESCRIPTION
 Frees them memory used by field_order_info.
 ==============================================================================*/
 {
-	int return_code,i;
+	int return_code, i;
 	struct FE_field_order_info *field_order_info;
 
 	ENTER(DESTROY(FE_field_order_info));
-	if ((field_order_info_address)&&
-		(field_order_info= *field_order_info_address))
+	if ((field_order_info_address) &&
+		(field_order_info = *field_order_info_address))
 	{			
-		/* free the components */
 		if (field_order_info->fields)
 		{		
-			/* free the components */		
-			for (i=0;i<field_order_info->number_of_fields;i++)
-			{				
+			for (i = 0; i < field_order_info->number_of_fields; i++)
+			{
 				DEACCESS(FE_field)(&(field_order_info->fields[i]));
-			}		
+			}
 			DEALLOCATE(field_order_info->fields);	
 		}
 		DEALLOCATE(*field_order_info_address);	
-		return_code=1;
+		return_code = 1;
 	}
 	else
 	{
-		return_code=0;
+		return_code = 0;
 	}
 	LEAVE;
 
 	return (return_code);
 } /* DESTROY(FE_field_order_info) */
 
+int add_FE_field_order_info_field(
+	struct FE_field_order_info *field_order_info, struct FE_field *field)
+/*******************************************************************************
+LAST MODIFIED : 4 September 2001
+
+DESCRIPTION :
+Adds <field> to the end of the list of fields in <field_order_info>.
+==============================================================================*/
+{
+#define FE_FIELD_ORDER_INFO_ALLOCATE_SIZE 10
+	int return_code;
+	struct FE_field **temp_fields;
+
+	ENTER(add_FE_field_order_info_field);
+	if (field_order_info && field)
+	{
+		return_code = 1;
+		if (field_order_info->number_of_fields ==
+			field_order_info->allocated_number_of_fields)
+		{
+			field_order_info->allocated_number_of_fields +=
+				FE_FIELD_ORDER_INFO_ALLOCATE_SIZE;
+			if (REALLOCATE(temp_fields, field_order_info->fields, struct FE_field *,
+				field_order_info->allocated_number_of_fields))
+			{
+				field_order_info->fields = temp_fields;
+			}
+			else
+			{
+				field_order_info->allocated_number_of_fields -=
+					FE_FIELD_ORDER_INFO_ALLOCATE_SIZE;
+				display_message(ERROR_MESSAGE,
+					"add_FE_field_order_info_field.  Not enough memory");		
+				return_code = 0;
+			}
+		}
+		if (return_code)
+		{
+			field_order_info->fields[field_order_info->number_of_fields] =
+				ACCESS(FE_field)(field);
+			field_order_info->number_of_fields++;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"add_FE_field_order_info_field.  Invalid argument");		
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* add_FE_field_order_info_field */
+
+int clear_FE_field_order_info(struct FE_field_order_info *field_order_info)
+/*******************************************************************************
+LAST MODIFIED : 4 September 2001
+
+DESCRIPTION : 
+Clears the fields from <field_order_info>.
+==============================================================================*/
+{
+	int i, return_code;
+
+	ENTER(clear_FE_field_order_info_field);
+	if (field_order_info)
+	{		
+		for (i = 0; i < field_order_info->number_of_fields; i++)
+		{
+			DEACCESS(FE_field)(&(field_order_info->fields[i]));
+		}
+		field_order_info->number_of_fields = 0;
+		return_code = 1;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"clear_FE_field_order_info_field.  Invalid argument");		
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* clear_FE_field_order_field */
+
+int get_FE_field_order_info_number_of_fields(
+	struct FE_field_order_info *field_order_info)
+/*******************************************************************************
+LAST MODIFIED : 13 July 1999
+
+DESCRIPTION : 
+Gets the <field_order_info> number_of_fields
+==============================================================================*/
+{
+	int number_of_fields;
+
+	ENTER(get_FE_field_order_info_number_of_fields);
+	if (field_order_info)
+	{
+		number_of_fields=field_order_info->number_of_fields;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"get_FE_field_order_info_number_of_fields.  Invalid argument");		
+		number_of_fields=0;
+	}
+	LEAVE;
+
+	return (number_of_fields);
+} /* get_FE_field_order_info_number_of_fields */
+
+struct FE_field *get_FE_field_order_info_field(
+	struct FE_field_order_info *field_order_info,int field_number)
+/*******************************************************************************
+LAST MODIFIED : 4 September 2001
+
+DESCRIPTION : 
+Gets the <field_order_info> field at the specified field_number.
+==============================================================================*/
+{
+	struct FE_field *field;
+
+	ENTER(get_FE_field_order_info_field);
+	if (field_order_info &&
+		(field_number <= field_order_info->number_of_fields))
+	{		
+		field=field_order_info->fields[field_number];
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"get_FE_field_order_info_field.  Invalid argument(s)");		
+		field = (struct FE_field *)NULL;
+	}
+	LEAVE;
+
+	return (field);
+} /* get_FE_field_order_field */
+
+int set_FE_fields(struct Parse_state *state,
+	void *field_order_info_address_void, void *fe_field_manager_void)
+/*******************************************************************************
+LAST MODIFIED : 4 September 2001
+
+DESCRIPTION :
+Modifier function to set an ordered list of fields, each separated by white
+space until an unrecognised field name is encountered. Two special tokens are
+understood in place of any fields: 'all' and 'none'.
+For the case of 'all', a NULL FE_field_order_info structure is returned.
+For the case of 'none', an empty FE_field_order_info structure is returned.
+It is up to the calling function to destroy any FE_field_order_info structure
+returned by this function, however, any such structure passed to this function
+may be destroyed here - ie. in the 'all' case.
+==============================================================================*/
+{
+	char *current_token;
+	int i, number_of_fields, return_code;
+	struct FE_field *field;
+	struct FE_field_order_info **field_order_info_address;
+	struct MANAGER(FE_field) *fe_field_manager;
+
+	ENTER(set_FE_fields);
+	if (state && (field_order_info_address =
+		(struct FE_field_order_info **)field_order_info_address_void) &&
+		(fe_field_manager = (struct MANAGER(FE_field) *)fe_field_manager_void))
+	{
+		if (current_token = state->current_token)
+		{
+			if (strcmp(PARSER_HELP_STRING, current_token) &&
+				strcmp(PARSER_RECURSIVE_HELP_STRING, current_token))
+			{
+				return_code = 1;
+				if (fuzzy_string_compare(current_token, "ALL"))
+				{
+					/* return a NULL field_order_info for the ALL case */
+					if (*field_order_info_address)
+					{
+						DESTROY(FE_field_order_info)(field_order_info_address);
+						*field_order_info_address = (struct FE_field_order_info *)NULL;
+					}
+					shift_Parse_state(state, 1);
+				}
+				else if ((*field_order_info_address &&
+					clear_FE_field_order_info(*field_order_info_address)) ||
+					(*field_order_info_address = CREATE(FE_field_order_info)()))
+				{
+					if (fuzzy_string_compare(current_token, "NONE"))
+					{
+						/* return the empty FE_field_order_info for the NONE case */
+						shift_Parse_state(state, 1);
+					}
+					else
+					{
+						/* find fields by name in the parse state until one is not
+							 recognized or there are no more tokens */
+						while (return_code && (current_token = state->current_token) &&
+							(field = FIND_BY_IDENTIFIER_IN_MANAGER(FE_field, name)(
+								current_token, fe_field_manager)))
+						{
+							if (!(add_FE_field_order_info_field(*field_order_info_address,
+								field) && shift_Parse_state(state, 1)))
+							{
+								display_message(ERROR_MESSAGE,
+									"set_FE_fields.  Could not add field to list");
+								return_code = 0;
+							}
+						}
+						if (0 == get_FE_field_order_info_number_of_fields(
+							*field_order_info_address))
+						{
+							display_message(ERROR_MESSAGE,
+								"Unknown field : %s", current_token);
+							return_code = 0;
+						}
+					}
+				}
+				else
+				{
+					display_message(ERROR_MESSAGE, "set_FE_fields.  Not enough memory");
+					return_code = 0;
+				}
+			}
+			else
+			{
+				display_message(INFORMATION_MESSAGE, " FIELD_NAMES|all|none");
+				if (*field_order_info_address)
+				{
+					number_of_fields = get_FE_field_order_info_number_of_fields(
+						*field_order_info_address);
+					if (0 == number_of_fields)
+					{
+						display_message(INFORMATION_MESSAGE, "[none]");
+					}
+					else
+					{
+						display_message(INFORMATION_MESSAGE, "[");
+						for (i = 0; i < number_of_fields; i++)
+						{
+							if (0 < i)
+							{
+								display_message(INFORMATION_MESSAGE, " ");
+							}
+							if (field =
+								get_FE_field_order_info_field(*field_order_info_address, i))
+							{
+								display_message(INFORMATION_MESSAGE, "%s", field->name);
+							}
+						}
+						display_message(INFORMATION_MESSAGE, "]");
+					}
+				}
+				else
+				{
+					display_message(INFORMATION_MESSAGE, "[all]");
+				}
+				return_code = 1;
+			}
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE, "Missing field specifications");
+			display_parse_state_location(state);
+			return_code = 0;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE, "set_FE_fields.  Invalid argument(s)");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* set_FE_fields */
+
 int define_node_field_and_field_order_info(struct FE_node *node,
 	struct FE_field *field,int *number_of_derivatives,int *number_of_versions,
-	int *field_number,int number_of_fields,
 	enum FE_nodal_value_type **nodal_value_types,
 	struct FE_field_order_info *field_order_info)
 /*******************************************************************************
-LAST MODIFIED : 21 May 1999
+LAST MODIFIED : 4 September 2001
 
 DESCRIPTION :
 Helper function for create_config_template_node() and
-create_mapping_template_node() that,  given the node,field and
-field_order_info, defines the field at the node, and places it in the
-field_order_info
+create_mapping_template_node() that, given the node, field and
+field_order_info, defines the field at the node, and places it at the end of
+the field_order_info list.
 ==============================================================================*/
 {
 	int return_code;
 
 	ENTER(define_node_field_and_field_order_info);
-	return_code=0;
-	if (node&&field&&field_order_info&&nodal_value_types&&
-		number_of_derivatives&&number_of_versions)
+	return_code = 0;
+	if (node && field && field_order_info && nodal_value_types &&
+		number_of_derivatives && number_of_versions)
 	{
-		return_code=1;
-		if (define_FE_field_at_node(node,field,number_of_derivatives,
-			number_of_versions,nodal_value_types))
-		{	
-			if (*field_number<number_of_fields)
-			{			
-				set_FE_field_order_info_field(field_order_info,*field_number,
-					field);
-				(*field_number)++;
-			}
-			else
+		return_code = 1;
+		if (define_FE_field_at_node(node, field, number_of_derivatives,
+			number_of_versions, nodal_value_types))
+		{
+			if (!add_FE_field_order_info_field(field_order_info, field))
 			{
 				display_message(ERROR_MESSAGE,
-"define_node_field_and_field_order_info.  Too many fields for sock the_field_order_info");
-				return_code=0;
+					"define_node_field_and_field_order_info.  "
+					"Could not add field to list");
+				return_code = 0;
 			}
 		}
 		else
 		{
 			display_message(ERROR_MESSAGE,
-"define_node_field_and_field_order_info.  Could not define  field at node");
-			DESTROY(FE_field)(&field);				
-			return_code=0;
+				"define_node_field_and_field_order_info.  "
+				"Could not define field at node");
+			/*???RC This should not have been here: */
+			/* DESTROY(FE_field)(&field); */
+			return_code = 0;
 		}	
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"define_node_field_and_field_order_info. Invalid arguments");
-		return_code=0;	
+			"define_node_field_and_field_order_info.  Invalid argument(s)");
+		return_code = 0;
 	}		 
 	LEAVE;
 
@@ -40911,91 +41160,6 @@ Assumes the node is managed, copys the node out the manager to modify.
 	LEAVE;
 	return (return_code);
 } /*iterative_define_FE_field_at_node */
-
-int get_FE_field_order_info_number_of_fields(
-	struct FE_field_order_info *field_order_info)
-/*******************************************************************************
-LAST MODIFIED : 13 July 1999
-
-DESCRIPTION : 
-Gets the <field_order_info> number_of_fields
-==============================================================================*/
-{
-	int number_of_fields;
-
-	ENTER(get_FE_field_order_info_number_of_fields);
-	if (field_order_info)
-	{
-		number_of_fields=field_order_info->number_of_fields;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"get_FE_field_order_info_number_of_fields.  Invalid argument");		
-		number_of_fields=0;
-	}
-	LEAVE;
-
-	return (number_of_fields);
-} /* get_FE_field_order_info_number_of_fields */
-
-struct FE_field *get_FE_field_order_info_field(
-	struct FE_field_order_info *field_order_info,int field_number)
-/*******************************************************************************
-LAST MODIFIED : 13 July 1999
-
-DESCRIPTION : 
-Gets the <field_order_info> field at the specified field_number
-==============================================================================*/
-{
-	struct FE_field *field;
-
-	ENTER(get_FE_field_order_info_field);
-	if ((field_order_info)&&
-		(field_number<=field_order_info->number_of_fields))
-	{		
-		field=field_order_info->fields[field_number];
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"get_FE_field_order_info_field.  Invalid argument");		
-		field=(struct FE_field *)NULL;
-	}
-	LEAVE;
-
-	return (field);
-} /* get_FE_node_field_order_field */
-
-int set_FE_field_order_info_field(
-	struct FE_field_order_info *field_order_info,int field_number,
-	struct FE_field *field)
-/*******************************************************************************
-LAST MODIFIED : 13 July 1999
-
-DESCRIPTION : 
-Sets the <field_order_info> field at the specified field_number
-==============================================================================*/
-{
-	int return_code
-
-	ENTER(set_FE_field_order_info_field);
-	return_code=0;
-	if ((field_order_info)&&
-		(field_number<=field_order_info->number_of_fields)&&(field))
-	{		
-		REACCESS(FE_field)(&(field_order_info->fields[field_number]),field);
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"set_FE_field_order_info_field.  Invalid argument");		
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* set_FE_field_order_info_field */
 
 struct FE_node_order_info *CREATE(FE_node_order_info)(
 	int number_of_nodes)

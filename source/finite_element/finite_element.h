@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : finite_element.h
 
-LAST MODIFIED : 2 September 2001
+LAST MODIFIED : 4 September 2001
 
 DESCRIPTION :
 The data structures used for representing finite elements in the graphical
@@ -885,18 +885,14 @@ Used by add_node_to_smoothed_node_lists and smooth_field_over_element.
 	struct MANAGER(FE_node) *node_manager;
 }; /* struct Smooth_field_over_element_data */
 
-struct FE_field_order_info
+struct FE_field_order_info;
 /*******************************************************************************
-LAST MODIFIED : 5 October 1999
+LAST MODIFIED : 4 September 2001
 
 DESCRIPTION :
-Use to store the order fields are read in from the input files - for elements
-and nodes.
+Stores a list of fields in the order they are added.
+The contents of this object are private.
 ==============================================================================*/
-{
-	int number_of_fields,access_count;
-	struct FE_field **fields;
-}; /* FE_field_order_info */ 
 
 struct FE_node_order_info
 /*******************************************************************************
@@ -4450,35 +4446,37 @@ visible in the 3D window/graphical element editor.
 The node group is returned. 
 ==============================================================================*/
 
-struct FE_field_order_info *CREATE(FE_field_order_info)(int number_of_fields);
+struct FE_field_order_info *CREATE(FE_field_order_info)(void);
 /*******************************************************************************
-LAST MODIFIED : 16 March 1999
+LAST MODIFIED : 4 September 2001
 
-Allocate space for an array of pointers to fields of length number_of_field, 
-set these to NULL, copy the number-of_fields. 
+DESCRIPTION
+Frees them memory used by field_order_info.
 ==============================================================================*/
 
 int DESTROY(FE_field_order_info)(
 	struct FE_field_order_info **field_order_info_address);
 /*******************************************************************************
-LAST MODIFIED : 16 March 1999
+LAST MODIFIED : 4 September 2001
 
 Frees memory for FE_field_order_info
 ==============================================================================*/
 
-int define_node_field_and_field_order_info(struct FE_node *node,
-	struct FE_field *field,int *number_of_derivatives,int *number_of_versions,
-	int *field_number,int number_of_fields,
-	enum FE_nodal_value_type **nodal_value_types,
-	struct FE_field_order_info *field_order_info);
+int add_FE_field_order_info_field(
+	struct FE_field_order_info *field_order_info, struct FE_field *field);
 /*******************************************************************************
-LAST MODIFIED : 21 May 1999
+LAST MODIFIED : 4 September 2001
 
 DESCRIPTION :
-Helper function for create_config_template_node() and
-create_mapping_template_node() that, given the node,field and
-field_order_info, defines the field at the node, and places it in the
-field_order_info
+Adds <field> to the end of the list of fields in <field_order_info>.
+==============================================================================*/
+
+int clear_FE_field_order_info(struct FE_field_order_info *field_order_info);
+/*******************************************************************************
+LAST MODIFIED : 4 September 2001
+
+DESCRIPTION : 
+Clears the fields from <field_order_info>.
 ==============================================================================*/
 
 int get_FE_field_order_info_number_of_fields(
@@ -4499,14 +4497,34 @@ DESCRIPTION :
 Gets the <field_order_info> field at the specified field_number
 ==============================================================================*/
 
-int set_FE_field_order_info_field(
-	struct FE_field_order_info *field_order_info,int field_number,
-	struct FE_field *field);
+int set_FE_fields(struct Parse_state *state,
+	void *field_order_info_address_void, void *fe_field_manager_void);
 /*******************************************************************************
-LAST MODIFIED : 13 July 1999
+LAST MODIFIED : 4 September 2001
 
-DESCRIPTION : 
-Sets the <field_order_info> field at the specified field_number
+DESCRIPTION :
+Modifier function to set an ordered list of fields, each separated by white
+space until an unrecognised field name is encountered. Two special tokens are
+understood in place of any fields: 'all' and 'none'.
+For the case of 'all', a NULL FE_field_order_info structure is returned.
+For the case of 'none', an empty FE_field_order_info structure is returned.
+It is up to the calling function to destroy any FE_field_order_info structure
+returned by this function, however, any such structure passed to this function
+may be destroyed here - ie. in the 'all' case.
+==============================================================================*/
+
+int define_node_field_and_field_order_info(struct FE_node *node,
+	struct FE_field *field,int *number_of_derivatives,int *number_of_versions,
+	enum FE_nodal_value_type **nodal_value_types,
+	struct FE_field_order_info *field_order_info);
+/*******************************************************************************
+LAST MODIFIED : 4 September 2001
+
+DESCRIPTION :
+Helper function for create_config_template_node() and
+create_mapping_template_node() that, given the node, field and
+field_order_info, defines the field at the node, and places it at the end of
+the field_order_info list.
 ==============================================================================*/
 
 struct FE_node_order_info *CREATE(FE_node_order_info)(
