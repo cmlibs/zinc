@@ -712,7 +712,7 @@ Main program for unemap
 		}
 		data_manager=CREATE_MANAGER(FE_node)();
 		if ((computed_field_package=CREATE(Computed_field_package)(
-		fe_field_manager,element_manager,texture_manager,control_curve_manager))&&
+		fe_field_manager,element_manager,control_curve_manager))&&
 		(computed_field_manager=Computed_field_package_get_computed_field_manager(
 			computed_field_package)))
 		{
