@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : movie.h
 
-LAST MODIFIED : 6 September 2000
+LAST MODIFIED : 5 March 2002
 
 DESCRIPTION :
 The data types and function prototypes used for digitizing Mirage movies.
@@ -107,7 +107,7 @@ These are intended to be binary flags so they can be |ed together.
 
 struct Mirage_movie
 /*******************************************************************************
-LAST MODIFIED : 5 September 2000
+LAST MODIFIED : 5 March 2002
 
 DESCRIPTION :
 Stores information for moving through and digitizing the movie.
@@ -136,11 +136,13 @@ Stores information for moving through and digitizing the movie.
 	struct MANAGER(FE_element) *element_manager;
 	struct MANAGER(GROUP(FE_element)) *element_group_manager;
 	struct MANAGER(FE_field) *fe_field_manager;
+	struct FE_time *fe_time;
 	struct MANAGER(FE_node) *node_manager;
 	struct MANAGER(GROUP(FE_node)) *node_group_manager;
 	struct MANAGER(FE_node) *data_manager;
 	struct MANAGER(GROUP(FE_node)) *data_group_manager;
 	struct MANAGER(Scene) *scene_manager;
+	struct MANAGER(Texture) *texture_manager;
 	/* need node and element selections for destroying nodes and elements */
 	struct Element_point_ranges_selection *element_point_ranges_selection;
 	struct FE_element_selection *element_selection;
@@ -261,6 +263,7 @@ int enable_Mirage_movie_graphics(struct Mirage_movie *movie,
 	struct MANAGER(FE_element) *element_manager,
 	struct MANAGER(GROUP(FE_element)) *element_group_manager,
 	struct MANAGER(FE_field) *fe_field_manager,
+	struct FE_time *fe_time,
 	struct LIST(GT_object) *glyph_list,
 	struct MANAGER(Graphical_material) *graphical_material_manager,
 	struct Graphical_material *default_graphical_material,
@@ -280,7 +283,7 @@ int enable_Mirage_movie_graphics(struct Mirage_movie *movie,
 	struct MANAGER(Texture) *texture_manager,
 	struct User_interface *user_interface);
 /*******************************************************************************
-LAST MODIFIED : 28 April 2000
+LAST MODIFIED : 11 February 2002
 
 DESCRIPTION :
 From an already-created movie - eg. read in from read_Mirage_movie - creates

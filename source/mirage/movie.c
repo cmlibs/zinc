@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : movie.c
 
-LAST MODIFIED : 7 September 2001
+LAST MODIFIED : 5 March 2002
 
 DESCRIPTION :
 ==============================================================================*/
@@ -202,7 +202,7 @@ Cleans up space used by Mirage_view structure.
 
 struct Mirage_movie *CREATE(Mirage_movie)(void)
 /*******************************************************************************
-LAST MODIFIED : 5 September 2000
+LAST MODIFIED : 5 March 2002
 
 DESCRIPTION :
 Allocates space for and initializes the Mirage_movie structure.
@@ -244,11 +244,13 @@ Allocates space for and initializes the Mirage_movie structure.
 		mirage_movie->element_group_manager=
 			(struct MANAGER(GROUP(FE_element)) *)NULL;
 		mirage_movie->fe_field_manager=(struct MANAGER(FE_field) *)NULL;
+		mirage_movie->fe_time = (struct FE_time *)NULL;
 		mirage_movie->node_manager=(struct MANAGER(FE_node) *)NULL;
 		mirage_movie->node_group_manager=(struct MANAGER(GROUP(FE_node)) *)NULL;
 		mirage_movie->data_manager=(struct MANAGER(FE_node) *)NULL;
 		mirage_movie->data_group_manager=(struct MANAGER(GROUP(FE_node)) *)NULL;
 		mirage_movie->scene_manager=(struct MANAGER(Scene) *)NULL;
+		mirage_movie->texture_manager=(struct MANAGER(Texture) *)NULL;
 		mirage_movie->element_point_ranges_selection=
 			(struct Element_point_ranges_selection *)NULL;
 		mirage_movie->element_selection=(struct FE_element_selection *)NULL;
@@ -1736,6 +1738,7 @@ int enable_Mirage_movie_graphics(struct Mirage_movie *movie,
 	struct MANAGER(FE_element) *element_manager,
 	struct MANAGER(GROUP(FE_element)) *element_group_manager,
 	struct MANAGER(FE_field) *fe_field_manager,
+	struct FE_time *fe_time,
 	struct LIST(GT_object) *glyph_list,
 	struct MANAGER(Graphical_material) *graphical_material_manager,
 	struct Graphical_material *default_graphical_material,
@@ -1755,7 +1758,7 @@ int enable_Mirage_movie_graphics(struct Mirage_movie *movie,
 	struct MANAGER(Texture) *texture_manager,
 	struct User_interface *user_interface)
 /*******************************************************************************
-LAST MODIFIED : 5 September 2000
+LAST MODIFIED : 11 February 2002
 
 DESCRIPTION :
 From an already-created movie - eg. read in from read_Mirage_movie - creates
@@ -1784,7 +1787,7 @@ resulting 3-D display.
 	struct Mirage_view *view;
 
 	ENTER(enable_Mirage_movie_graphics);
-	if (movie&&element_manager&&element_group_manager&&fe_field_manager&&
+	if (movie&&element_manager&&element_group_manager&&fe_field_manager&&fe_time&&
 		glyph_list&&graphical_material_manager&&default_graphical_material&&
 		light_manager&&node_manager&&node_group_manager&&data_manager&&
 		data_group_manager&&element_point_ranges_selection&&
@@ -1797,12 +1800,14 @@ resulting 3-D display.
 		movie->element_manager=element_manager;
 		movie->element_group_manager=element_group_manager;
 		movie->fe_field_manager=fe_field_manager;
+		movie->fe_time = fe_time;
 		movie->glyph_list=glyph_list;
 		movie->node_manager=node_manager;
 		movie->node_group_manager=node_group_manager;
 		movie->data_manager=data_manager;
 		movie->data_group_manager=data_group_manager;
 		movie->scene_manager=scene_manager;
+		movie->texture_manager=texture_manager;
 		movie->element_point_ranges_selection=element_point_ranges_selection;
 		movie->element_selection=element_selection;
 		movie->node_selection=node_selection;
@@ -1970,6 +1975,7 @@ resulting 3-D display.
 			if (ALLOCATE(read_node_data,struct File_read_FE_node_group_data,1))
 			{
 				read_node_data->fe_field_manager=fe_field_manager;
+				read_node_data->fe_time = fe_time;
 				read_node_data->element_group_manager=element_group_manager;
 				read_node_data->node_manager=node_manager;
 				read_node_data->element_manager=element_manager;
@@ -1990,6 +1996,7 @@ resulting 3-D display.
 				read_element_data->element_manager=element_manager;
 				read_element_data->element_group_manager=element_group_manager;
 				read_element_data->fe_field_manager=fe_field_manager;
+				read_element_data->fe_time = fe_time;
 				read_element_data->node_manager=node_manager;
 				read_element_data->node_group_manager=node_group_manager;
 				read_element_data->data_group_manager=data_group_manager;
@@ -2716,7 +2723,7 @@ Turns off surfaces for the placed elements in the 3-D view, updates scene.
 
 int Mirage_movie_read_frame_images(struct Mirage_movie *movie,int frame_no)
 /*******************************************************************************
-LAST MODIFIED : 6 September 2000
+LAST MODIFIED : 5 March 2002
 
 DESCRIPTION :
 Reads the images for frame <frame_no> in <movie>.
@@ -2727,15 +2734,12 @@ It is up to you to ensure that the exnode_frame_no and image_frame_no match --
 it is often useful for them to temporarily differ.
 ==============================================================================*/
 {
-	char *image_file_name,*last_image_file_name_template;
-	enum Texture_storage_type texture_storage;
-	int crop_bottom_margin,crop_height,crop_left_margin,crop_width,
-		number_of_bytes_per_component,number_of_components,number_of_images_read,
-		return_code,view_no;
-	long int image_width,image_height;
+	char *image_file_name, *last_image_file_name_template;
+	int crop_bottom_margin, crop_height, crop_left_margin, crop_width,
+		number_of_images_read, return_code, view_no;
+	struct Cmgui_image *cmgui_image;
+	struct Cmgui_image_information *cmgui_image_information;
 	struct Mirage_view *view;
-	struct Texture *temp_texture;
-	unsigned long *image;
 
 	ENTER(Mirage_movie_read_frame_images);
 	if (movie && (frame_no >= movie->start_frame_no) &&
@@ -2744,145 +2748,113 @@ it is often useful for them to temporarily differ.
 		return_code=1;
 		number_of_images_read=0;
 		/* read images for each view */
-		image=(unsigned long *)NULL;
+		cmgui_image = (struct Cmgui_image *)NULL;
 		last_image_file_name_template=(char *)NULL;
-		if (temp_texture=CREATE(Texture)("temp"))
+		MANAGER_BEGIN_CACHE(Texture)(movie->texture_manager);
+		for (view_no=0;return_code&&(view_no<movie->number_of_views);view_no++)
 		{
-			for (view_no=0;return_code&&(view_no<movie->number_of_views);view_no++)
+			if ((view=movie->views[view_no])&&(image_file_name=
+				make_Mirage_file_name(view->image_file_name_template,frame_no)))
 			{
-				if ((view=movie->views[view_no])&&(image_file_name=
-					make_Mirage_file_name(view->image_file_name_template,frame_no)))
+				MANAGER_BEGIN_CHANGE(Texture)(view->texture_manager,
+					MANAGER_CHANGE_OBJECT_NOT_IDENTIFIER(Texture), view->texture);
+				/* get the image for this view */
+				if (cmgui_image)
 				{
-					/* get the image for this view */
-					if (image)
+					/* try to reuse images if possible */
+					if (strcmp(view->image_file_name_template,
+						last_image_file_name_template))
 					{
-						/* try to reuse images if possible */
-						if (strcmp(view->image_file_name_template,
-							last_image_file_name_template))
-						{
-							DEALLOCATE(image);
-						}
+						DESTROY(Cmgui_image)(&cmgui_image);
+						cmgui_image = (struct Cmgui_image *)NULL;
 					}
-					last_image_file_name_template=view->image_file_name_template;
-					if (0==(movie->image_frame_no % 2))
-					{
-						/* even frame numbers */
-						crop_left_margin=view->crop0_left;
-						crop_bottom_margin=view->crop0_bottom;
-						crop_width=view->crop0_width;
-						crop_height=view->crop0_height;
-					}
-					else
-					{
-						/* odd frame numbers */
-						crop_left_margin=view->crop1_left;
-						crop_bottom_margin=view->crop1_bottom;
-						crop_width=view->crop1_width;
-						crop_height=view->crop1_height;
-					}
-					if (!image)
-					{
-						/*???debug*/
-						printf("  Reading image: '%s'\n",image_file_name);
-#if defined (IMAGEMAGICK)
-						if (return_code=
-							read_image_file(image_file_name,&number_of_components,
-							&number_of_bytes_per_component,&image_height,&image_width,
-							&image) && (0<number_of_components))
-#else /* defined (IMAGEMAGICK) */
-						if (return_code=
-							read_image_file(image_file_name,&number_of_components,
-								&number_of_bytes_per_component,&image_height,&image_width,
-								/*raw_image_storage*/RAW_PLANAR_RGB,&image) &&
-							(0<number_of_components))
-#endif /* defined (IMAGEMAGICK) */
-						{
-							number_of_images_read++;
-						}
-					}
-					if (image && return_code)
-					{
-						/*???DB.  Guessing at texture storage for 4.  Should
-							read_image_file return.  Is something like this already
-							defined for images ? */
-						switch (number_of_components)
-						{
-							case 1:
-							{
-								texture_storage=TEXTURE_LUMINANCE;
-							} break;
-							case 2:
-							{
-								texture_storage=TEXTURE_LUMINANCE_ALPHA;
-							} break;
-							case 3:
-							{
-								texture_storage=TEXTURE_RGB;
-							} break;
-							case 4:
-							{
-								texture_storage=TEXTURE_RGBA;
-							} break;
-							default:
-							{
-								texture_storage=TEXTURE_UNDEFINED_STORAGE;
-							} break;
-						}
-						if (Texture_set_image(temp_texture,image,
-							texture_storage,number_of_bytes_per_component,
-							image_width,image_height,TEXTURE_TOP_TO_BOTTOM,image_file_name,
-							crop_left_margin,crop_bottom_margin,crop_width,crop_height,
-							/*perform_crop*/1))
-						{
-							/* the texture stores the distortion centre and factor k1.
-								 Since the centre jiggles between even and odd frames with
-								 interlacing, must set it again each time. */
-							if (0==(movie->image_frame_no % 2))
-							{
-								/* even frame numbers */
-								Texture_set_physical_size(temp_texture,
-									(float)view->image0_width,
-									(float)view->image0_height);
-								Texture_set_distortion_info(temp_texture,
-									(float)view->dist_centre_x-view->image0_left,
-									(float)view->dist_centre_y-view->image0_bottom,
-									(float)view->dist_factor_k1);
-							}
-							else
-							{
-								/* odd frame numbers */
-								Texture_set_physical_size(temp_texture,
-									(float)view->image1_width,
-									(float)view->image1_height);
-								Texture_set_distortion_info(temp_texture,
-									(float)view->dist_centre_x-view->image1_left,
-									(float)view->dist_centre_y-view->image1_bottom,
-									(float)view->dist_factor_k1);
-							}
-							return_code=MANAGER_MODIFY_NOT_IDENTIFIER(Texture,name)(
-								view->texture,temp_texture,view->texture_manager);
-						}
-						else
-						{
-							return_code=0;
-						}
-					}
-					DEALLOCATE(image_file_name);
+				}
+				last_image_file_name_template=view->image_file_name_template;
+				if (0==(movie->image_frame_no % 2))
+				{
+					/* even frame numbers */
+					crop_left_margin=view->crop0_left;
+					crop_bottom_margin=view->crop0_bottom;
+					crop_width=view->crop0_width;
+					crop_height=view->crop0_height;
 				}
 				else
 				{
-					return_code=0;
+					/* odd frame numbers */
+					crop_left_margin=view->crop1_left;
+					crop_bottom_margin=view->crop1_bottom;
+					crop_width=view->crop1_width;
+					crop_height=view->crop1_height;
 				}
+				if (!cmgui_image)
+				{
+					/*???debug*/
+					printf("  Reading image: '%s'\n",image_file_name);
+					cmgui_image_information = CREATE(Cmgui_image_information)();
+					Cmgui_image_information_add_file_name(cmgui_image_information,
+						image_file_name);
+					if (cmgui_image = Cmgui_image_read(cmgui_image_information))
+					{
+						number_of_images_read++;
+					}
+					else
+					{
+						return_code = 0;
+					}
+					DESTROY(Cmgui_image_information)(&cmgui_image_information);
+				}
+				if (cmgui_image && return_code)
+				{
+					if (Texture_set_image(view->texture, cmgui_image, image_file_name,
+						/*file_number_pattern*/(char *)NULL, /*start_file_number*/0,
+						/*stop_file_number*/0, /*file_number_increment*/0,
+						crop_left_margin, crop_bottom_margin, crop_width, crop_height))
+					{
+						/* the texture stores the distortion centre and factor k1.
+							 Since the centre jiggles between even and odd frames with
+							 interlacing, must set it again each time. */
+						if (0==(movie->image_frame_no % 2))
+						{
+							/* even frame numbers */
+							Texture_set_physical_size(view->texture,
+								(float)view->image0_width,
+								(float)view->image0_height,
+								/*depth*/1.0);
+							Texture_set_distortion_info(view->texture,
+								(float)view->dist_centre_x-view->image0_left,
+								(float)view->dist_centre_y-view->image0_bottom,
+								(float)view->dist_factor_k1);
+						}
+						else
+						{
+							/* odd frame numbers */
+							Texture_set_physical_size(view->texture,
+								(float)view->image1_width,
+								(float)view->image1_height,
+								/*depth*/1.0);
+							Texture_set_distortion_info(view->texture,
+								(float)view->dist_centre_x-view->image1_left,
+								(float)view->dist_centre_y-view->image1_bottom,
+								(float)view->dist_factor_k1);
+						}
+					}
+					else
+					{
+						return_code=0;
+					}
+				}
+				DEALLOCATE(image_file_name);
+				MANAGER_END_CHANGE(Texture)(view->texture_manager);
 			}
-			DESTROY(Texture)(&temp_texture);
+			else
+			{
+				return_code=0;
+			}
 		}
-		else
+		MANAGER_END_CACHE(Texture)(movie->texture_manager);
+		if (cmgui_image)
 		{
-			return_code=0;
-		}
-		if (image)
-		{
-			DEALLOCATE(image);
+			DESTROY(Cmgui_image)(&cmgui_image);
 		}
 		if (return_code)
 		{
@@ -3016,7 +2988,7 @@ in the <movie> and placed lists in the views.
 
 int Mirage_movie_read_frame_nodes(struct Mirage_movie *movie,int frame_no)
 /*******************************************************************************
-LAST MODIFIED : 4 September 2000
+LAST MODIFIED : 11 February 2002
 
 DESCRIPTION :
 Reads the nodes for frame <frame_no> in <movie>.
@@ -3046,7 +3018,8 @@ it is often useful for them to temporarily differ.
 				if (ALLOCATE(read_node_data,struct File_read_FE_node_group_data,1))
 				{
 					/*printf("> Reading node file '%s'\n",node_file_name);*/
-					read_node_data->fe_field_manager=movie->fe_field_manager;
+					read_node_data->fe_field_manager = movie->fe_field_manager;
+					read_node_data->fe_time = movie->fe_time;
 					read_node_data->element_group_manager=movie->element_group_manager;
 					read_node_data->node_manager=movie->node_manager;
 					read_node_data->element_manager=movie->element_manager;
