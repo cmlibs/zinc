@@ -395,7 +395,7 @@ DESCRIPTION : Implement image smoothing using Gaussian filter.
 			for(j = 0; j < kernel_size; j++)
 			{
                                 x = (FE_value)(j - center);
-                                fx = pow(2.71828, -0.5*x*x/(sigma*sigma)) / (sigma * sqrt(6.2831853));
+                                fx = pow(2.7, -0.5*x*x/(sigma*sigma)) / (sigma * 2.5);
                                 gaussian_kernel[j] = fx;
 				sum += fx;
 			}
@@ -416,7 +416,6 @@ DESCRIPTION : Implement image smoothing using Gaussian filter.
 				{
 					for (k = 0; k < image->depth; k++)
 					{
-					        sum = 0.0;
 						dot = 0.0;
 						for (j = (- center); j <= center; j++)
 						{
@@ -424,11 +423,10 @@ DESCRIPTION : Implement image smoothing using Gaussian filter.
 							{
 							         cur_pt = (iY * image->sizes[0] + iX + j) * image->depth;
 							         dot += *(data_index + cur_pt + k) * gaussian_kernel[center + j];
-								 sum += gaussian_kernel[center + j];
 							}
 						}
 						cur_pt = (iY * image->sizes[0] + iX) * image->depth;
-						*(temp_index + cur_pt + k) = dot/sum;
+						temp_index[cur_pt + k] = dot/sum;
 					}
 				}
 			}
@@ -439,15 +437,13 @@ DESCRIPTION : Implement image smoothing using Gaussian filter.
 				{
 					for (k = 0; k < image->depth; k++)
 					{
-					        sum = 0.0;
 						dot = 0.0;
 						for (j = (- center); j <= center; j++)
 						{
 						        if(((iY + j) >= 0) && ((iY + j) < image->sizes[1]))
 							{
 							         cur_pt = ((iY + j) * image->sizes[0] + iX) * image->depth;
-							         dot += *(temp_index + cur_pt + k) * gaussian_kernel[center + j];
-								 sum += gaussian_kernel[center + j];
+							         dot += temp_index[cur_pt + k] * gaussian_kernel[center + j];
 							}
 						}
 						cur_pt = (iY * image->sizes[0] + iX) * image->depth;
