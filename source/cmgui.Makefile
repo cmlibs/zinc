@@ -864,6 +864,7 @@ IMAGE_PROCESSING_SRCS = \
 	image_processing/computed_field_histogram_equalize.c \
 	image_processing/computed_field_histogram_normalize.c \
 	image_processing/computed_field_histogram_stretch.c \
+	image_processing/computed_field_image_approximation.c \
 	image_processing/computed_field_image_contour.c \
 	image_processing/computed_field_image_correlation.c \
 	image_processing/computed_field_image_enhancement.c \
