@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : finite_element_to_graphics_object.c
 
-LAST MODIFIED : 8 August 2002
+LAST MODIFIED : 3 October 2002
 
 DESCRIPTION :
 The functions for creating graphical objects from finite elements.
@@ -1464,7 +1464,7 @@ struct GT_surface *create_cylinder_from_FE_element(struct FE_element *element,
 	int number_of_segments_along,int number_of_segments_around,
 	struct FE_element *top_level_element,FE_value time)
 /*******************************************************************************
-LAST MODIFIED : 6 May 2002
+LAST MODIFIED : 3 October 2002
 
 DESCRIPTION :
 Creates a <GT_surface> from the <coordinate_field> and the radius for the 1-D
@@ -1480,17 +1480,15 @@ Notes:
 - the coordinate field is assumed to be rectangular cartesian.
 ==============================================================================*/
 {
-	FE_value coordinate_1,coordinate_2,coordinate_3,coordinates[3],cos_theta,
-		derivative_xi[3],distance,dS_dxi,end_aligned_normal[3],facet_angle,
-		jacobian[9],length,normal_1,normal_2,normal_3,
-		*radius_array,radius_derivative,radius_value,sin_theta,theta,theta_change,
-		xi,x,y;
+	FE_value coordinates[3], cos_theta, derivative_xi[3], distance, dS_dxi,
+		end_aligned_normal[3], facet_angle, jacobian[9], length, normal_1, normal_2,
+		normal_3, *radius_array, radius_derivative, radius_value, sin_theta, theta,
+		theta_change, xi, x, y;
 	GTDATA *data, *datum;
 	int facet_offset,i,j,k,n_data_components,number_of_points;
 	struct GT_surface *surface;
-	Triple *derivative, *normal,*normalpoints,*point,*points,*point_s,
-		*point_t,*previous_point,*previous_normal,*texturepoints,*texture_coordinate,
-		*texture_coordinate_s,*texture_coordinate_t;
+	Triple *derivative, *normal, *normalpoints, *point, *points, *previous_point,
+		*previous_normal, *texturepoints, *texture_coordinate;
 
 	ENTER(create_cylinder_from_FE_element);
 	if (element&&(element->shape)&&(1==element->shape->dimension)&&
@@ -1896,65 +1894,18 @@ Notes:
 					normal++;
 				}
 				/* calculate the texture coordinates */
-				/*???DB.  Should be able to use scale factors, but don't know
-					for linear.  Locate in structure ? */
-				point=points;
-				point_s=point;
-				point_t=point;
-				texture_coordinate=texturepoints;
-				texture_coordinate_s=texture_coordinate;
-				texture_coordinate_t=texture_coordinate;
-				(*texture_coordinate)[0]=0.;
-				(*texture_coordinate)[1]=0.;
-				for (j=number_of_segments_around;j>0;j--)
+				/* default texture coordinates range from 0 to 1 along the length of
+					 the cylinder and from 0 to 1 around its circumference */
+				texture_coordinate = texturepoints;
+				for (i = 0; i <= number_of_segments_along; i++)
 				{
-					point++;
-					texture_coordinate++;
-					coordinate_1=(*point)[0]-(*point_s)[0];
-					coordinate_2=(*point)[1]-(*point_s)[1];
-					coordinate_3=(*point)[2]-(*point_s)[2];
-					(*texture_coordinate)[0]=(*texture_coordinate_s)[0]+
-						sqrt(coordinate_1*coordinate_1+coordinate_2*coordinate_2+
-							coordinate_3*coordinate_3);
-					(*texture_coordinate)[1]=0.;
-					point_s++;
-					texture_coordinate_s++;
-				}
-				for (i=number_of_segments_along;i>0;i--)
-				{
-					point++;
-					texture_coordinate++;
-					point_s++;
-					texture_coordinate_s++;
-					(*texture_coordinate)[0]=0.;
-					coordinate_1=(*point)[0]-(*point_t)[0];
-					coordinate_2=(*point)[1]-(*point_t)[1];
-					coordinate_3=(*point)[2]-(*point_t)[2];
-					(*texture_coordinate)[1]=(*texture_coordinate_t)[1]+
-						sqrt(coordinate_1*coordinate_1+coordinate_2*coordinate_2+
-							coordinate_3*coordinate_3);
-					point_t++;
-					texture_coordinate_t++;
-					for (j=number_of_segments_around;j>0;j--)
+					for (j = 0; j <= number_of_segments_around; j++)
 					{
-						point++;
+						(*texture_coordinate)[0] = (float)i /
+							(float)number_of_segments_along;
+						(*texture_coordinate)[1] =
+							(float)j / (float)number_of_segments_around;
 						texture_coordinate++;
-						coordinate_1=(*point)[0]-(*point_s)[0];
-						coordinate_2=(*point)[1]-(*point_s)[1];
-						coordinate_3=(*point)[2]-(*point_s)[2];
-						(*texture_coordinate)[0]=(*texture_coordinate_s)[0]+
-							sqrt(coordinate_1*coordinate_1+coordinate_2*coordinate_2+
-								coordinate_3*coordinate_3);
-						coordinate_1=(*point)[0]-(*point_t)[0];
-						coordinate_2=(*point)[1]-(*point_t)[1];
-						coordinate_3=(*point)[2]-(*point_t)[2];
-						(*texture_coordinate)[1]=(*texture_coordinate_t)[1]+
-							sqrt(coordinate_1*coordinate_1+coordinate_2*coordinate_2+
-								coordinate_3*coordinate_3);
-						point_s++;
-						texture_coordinate_s++;
-						point_t++;
-						texture_coordinate_t++;
 					}
 				}
 			}
