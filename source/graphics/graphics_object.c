@@ -3178,7 +3178,7 @@ Sends a callback to all registered clients indicating the GT_object_has changed.
 
 int GT_object_changed(struct GT_object *graphics_object)
 /*******************************************************************************
-LAST MODIFIED : 7 June 2001
+LAST MODIFIED : 8 June 2001
 
 DESCRIPTION :
 External modules that change a GT_object should call this routine so that
@@ -3186,7 +3186,6 @@ objects interested in this GT_object will be notified that is has changed.
 ==============================================================================*/
 {
 	int return_code;
-	struct Graphics_object_callback_data *callback_data;
 
 	ENTER(GT_object_changed);
 
