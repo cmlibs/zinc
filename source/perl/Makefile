@@ -44,9 +44,12 @@ endif
 
 define InstallPerlArchModules
 	cd Cmiss && \
-	make clean && \
+	make clean ; \
+	export CMGUI_DEV_SOURCE=$(CMGUI_DEV_SOURCE) && \
 	$(1) Makefile.PL PREFIX=$(PERL_INSTALL) $(OPT_FLAG) && \
 	make install;
+
+endef
 
 main :
 	$(call InstallPerlArchModules, $(PERL))
@@ -65,4 +68,4 @@ endif
 .NOTPARALLEL:
 
 all :
-	$(foreach perl, $(PERL_EXECUTABLES), $(call InstallPerlArchModules, perl))
+	$(foreach perl, $(PERL_EXECUTABLES), $(call InstallPerlArchModules, $(perl)))
