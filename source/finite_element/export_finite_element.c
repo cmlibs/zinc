@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : export_finite_element.c
 
-LAST MODIFIED : 13 October 1999
+LAST MODIFIED : 21 February 2000
 
 DESCRIPTION :
 The function for exporting finite element data, to a file or to CMISS (via a
@@ -34,7 +34,6 @@ struct Write_FE_element_group_sub
 struct File_write_FE_element_group_sub
 {
 	FILE *output_file;
-	struct GROUP(FE_element) *active_element_group;
 	struct FE_field *field;
 }; /* struct File_write_FE_element_group_sub */
 
@@ -64,7 +63,6 @@ struct Write_FE_node_group_sub
 struct File_write_FE_node_group_sub
 {
 	FILE *output_file;
-	struct GROUP(FE_node) *active_node_group;
 	struct FE_field *field;
 }; /* struct File_write_FE_node_group_sub */
 
@@ -1820,7 +1818,7 @@ in the header.
 static int file_write_FE_element_group_sub(
 	struct GROUP(FE_element) *element_group,void *data_void)
 /*******************************************************************************
-LAST MODIFIED : 4 October 1999
+LAST MODIFIED : 21 February 2000
 
 DESCRIPTION :
 Writes an element group to a file.
@@ -1831,15 +1829,8 @@ Writes an element group to a file.
 
 	ENTER(file_write_FE_element_group_sub);
 	data=(struct File_write_FE_element_group_sub *)data_void;
-	if (element_group != data->active_element_group)
-	{
-		return_code=
-			write_FE_element_group(data->output_file,element_group,data->field);
-	}
-	else
-	{
-		return_code = 1;
-	}
+	return_code=
+		write_FE_element_group(data->output_file,element_group,data->field);
 	LEAVE;
 
 	return (return_code);
@@ -2290,7 +2281,7 @@ different from the last node then the header is written out.
 static int file_write_FE_node_group_sub(struct GROUP(FE_node) *node_group,
 	void *data_void)
 /*******************************************************************************
-LAST MODIFIED : 4 October 1999
+LAST MODIFIED : 21 February 2000
 
 DESCRIPTION :
 Writes a node group to a file.  Do not write the active group from the iterator.
@@ -2301,14 +2292,7 @@ Writes a node group to a file.  Do not write the active group from the iterator.
 
 	ENTER(file_write_FE_node_group_sub);
 	data=(struct File_write_FE_node_group_sub *)data_void;
-	if (node_group != data->active_node_group)
-	{
-		return_code=write_FE_node_group(data->output_file,node_group,data->field);
-	}
-	else
-	{
-		return_code = 1;
-	}
+	return_code=write_FE_node_group(data->output_file,node_group,data->field);
 	LEAVE;
 
 	return (return_code);
@@ -2419,7 +2403,7 @@ Writes an element group to a file.
 
 int file_write_all_FE_element_groups(char *file_name,void *data_void)
 /*******************************************************************************
-LAST MODIFIED : 30 March 1999
+LAST MODIFIED : 21 February 2000
 
 DESCRIPTION :
 Writes all existing element groups to a file.
@@ -2440,7 +2424,6 @@ Writes all existing element groups to a file.
 		{
 			data_sub.output_file=output_file;
 			data_sub.field=data->field;
-			data_sub.active_element_group = data->active_element_group;
 			FOR_EACH_OBJECT_IN_MANAGER(GROUP(FE_element))(
 				file_write_FE_element_group_sub,
 				(void *)&data_sub,element_group_manager);
@@ -2557,7 +2540,7 @@ Writes a node group to a file.
 
 int file_write_all_FE_node_groups(char *file_name,void *data_void)
 /*******************************************************************************
-LAST MODIFIED : 30 April 1998
+LAST MODIFIED : 21 February 2000
 
 DESCRIPTION :
 Writes all existing node groups to a file.
@@ -2578,7 +2561,6 @@ Writes all existing node groups to a file.
 		{
 			data_sub.output_file=output_file;
 			data_sub.field=data->field;
-			data_sub.active_node_group = data->active_node_group;
 			FOR_EACH_OBJECT_IN_MANAGER(GROUP(FE_node))(file_write_FE_node_group_sub,
 				(void *)&data_sub,node_group_manager);
 			fclose(output_file);

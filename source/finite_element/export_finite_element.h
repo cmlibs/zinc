@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : export_finite_element.h
 
-LAST MODIFIED : 4 October 1999
+LAST MODIFIED : 21 February 2000
 
 DESCRIPTION :
 The function prototypes for importing finite element data, from a file or cmiss
@@ -30,14 +30,12 @@ DESCRIPTION :
 
 struct Fwrite_all_FE_element_groups_data
 /*******************************************************************************
-LAST MODIFIED : 4 October 1999
+LAST MODIFIED : 21 February 2000
 
 DESCRIPTION :
-The active group is not written out unless asked for explicitly
 ==============================================================================*/
 {
 	struct FE_field *field;
-	struct GROUP(FE_element) *active_element_group;
 	struct MANAGER(GROUP(FE_element)) *element_group_manager;
 }; /* struct File_write_FE_element_group_data */
 
@@ -54,13 +52,12 @@ DESCRIPTION :
 
 struct Fwrite_all_FE_node_groups_data
 /*******************************************************************************
-LAST MODIFIED : 4 October 1999
+LAST MODIFIED : 21 February 2000
 
 DESCRIPTION :
 ==============================================================================*/
 {
 	struct FE_field *field;
-	struct GROUP(FE_node) *active_node_group;
 	struct MANAGER(GROUP(FE_node)) *node_group_manager;
 }; /* struct Fwrite_all_FE_node_groups_data */
 
