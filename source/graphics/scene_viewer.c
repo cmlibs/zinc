@@ -1659,6 +1659,7 @@ DESCRIPTION :
 	ENTER(Scene_viewer_initialise_callback);
 	USE_PARAMETER(graphics_buffer);
 	USE_PARAMETER(dummy_void);
+	USE_PARAMETER(return_code);
 	if (scene_viewer=(struct Scene_viewer *)scene_viewer_void)
 	{
 		/* initialise graphics library to load XFont */
@@ -1689,6 +1690,7 @@ callbacks interested in the scene_viewers transformations.
 	ENTER(Scene_viewer_resize_callback);
 	USE_PARAMETER(graphics_buffer);
 	USE_PARAMETER(dummy_void);
+	USE_PARAMETER(return_code);
 	if (scene_viewer=(struct Scene_viewer *)scene_viewer_void)
 	{
 		scene_viewer->transform_flag = 1;
@@ -1720,6 +1722,7 @@ if there are no more expose events pending.
 	ENTER(Scene_viewer_expose_callback);
 	USE_PARAMETER(graphics_buffer);
 	USE_PARAMETER(dummy_void);
+	USE_PARAMETER(return_code);
 	if (scene_viewer=(struct Scene_viewer *)scene_viewer_void)
 	{
 		return_code = Scene_viewer_redraw(scene_viewer);
@@ -2396,12 +2399,12 @@ Converts mouse button-press and motion events into viewing transformations in
 			} break;
 			case GRAPHICS_BUFFER_KEY_PRESS:
 			{
-				printf("key %u press at %d %d\n",input->key_code,input->position_x,
+				printf("key %d press at %d %d\n",input->key_code,input->position_x,
 					input->position_y);
 			} break;
 			case GRAPHICS_BUFFER_KEY_RELEASE:
 			{
-				printf("key %u release at %d %d\n",input->key_code,input->position_x,
+				printf("key %d release at %d %d\n",input->key_code,input->position_x,
 					input->position_y);
 			} break;
 			default:
@@ -2516,12 +2519,12 @@ transformations.
 			} break;
 			case GRAPHICS_BUFFER_KEY_PRESS:
 			{
-				printf("key %u press at %d %d\n",input->key_code,input->position_x,
+				printf("key %d press at %d %d\n",input->key_code,input->position_x,
 					input->position_y);
 			} break;
 			case GRAPHICS_BUFFER_KEY_RELEASE:
 			{
-				printf("key %u release at %d %d\n",input->key_code,input->position_x,
+				printf("key %d release at %d %d\n",input->key_code,input->position_x,
 					input->position_y);
 			} break;
 			default:
