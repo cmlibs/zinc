@@ -1,7 +1,7 @@
 # **************************************************************************
 # FILE : cmgui.Makefile
 #
-# LAST MODIFIED : 27 December 2002
+# LAST MODIFIED : 28 January 2003
 #
 # DESCRIPTION :
 #
@@ -50,9 +50,9 @@ ifeq ($(filter CONSOLE_USER_INTERFACE GTK_USER_INTERFACE,$(USER_INTERFACE)),)
    LINK_CMISS = true
 endif # $(USER_INTERFACE) != CONSOLE_USER_INTERFACE && $(USER_INTERFACE) != GTK_USER_INTERFACE
 PERL_INTERPRETER = true
-ifneq ($(SYSNAME),win32)
+#ifneq ($(SYSNAME),win32)
    IMAGEMAGICK = true
-endif # SYSNAME != win32
+#endif # SYSNAME != win32
 ifeq ($(SYSNAME),win32)
    ifeq ($(filter CONSOLE_USER_INTERFACE GTK_USER_INTERFACE,$(USER_INTERFACE)),)
       WIN32_USER_INTERFACE = true 
@@ -589,6 +589,9 @@ COMPUTED_FIELD_SRCS = \
 	computed_field/computed_field_wrappers.c
 COMPUTED_FIELD_INTERFACE_SRCS = \
 	computed_field/computed_field_window_projection.c
+COMPUTED_VARIABLE_SRCS = \
+	computed_variable/computed_value.c \
+	computed_variable/computed_variable.c
 CURVE_SRCS = \
 	curve/control_curve.c
 CURVE_INTERFACE_SRCS = \
@@ -792,6 +795,7 @@ SRCS_1 = \
 	$(COMFILE_SRCS) \
 	$(COMMAND_SRCS) \
 	$(COMPUTED_FIELD_SRCS) \
+	$(COMPUTED_VARIABLE_SRCS) \
 	$(CURVE_SRCS) \
 	$(DATA_SRCS) \
 	$(ELEMENT_SRCS) \
@@ -892,6 +896,7 @@ transfer :
 	colour/*.c colour/*.h colour/*.uil \
 	comfile/*.c comfile/*.h comfile/*.rc comfile/*.uil \
 	computed_field/*.c computed_field/*.h computed_field/*.rc computed_field/*.uil \
+	computed_variable/*.c computed_variable/*.h computed_variable/*.rc computed_variable/*.uil \
 	curve/*.c curve/*.h curve/*.uil \
 	data/*.c data/*.h data/*.uil \
 	database/*.c database/*.h database/*.uil \
