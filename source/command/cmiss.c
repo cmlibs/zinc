@@ -6891,7 +6891,6 @@ Modifies the properties of a texture.
 					Texture_get_combine_alpha(texture_to_be_modified_copy, &alpha);
 					Texture_get_combine_colour(texture_to_be_modified_copy, &colour);
 					Texture_get_physical_size(texture_to_be_modified_copy,&width,&height);
-					movie = 0;
 					field = (struct Computed_field *)NULL;
 					spectrum = (struct Spectrum *)NULL;
 					source_height = 100;
