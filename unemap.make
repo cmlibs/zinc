@@ -1,3 +1,25 @@
+#Context of where we are
+ifndef SYSNAME
+  SYSNAME := $(shell uname)
+  ifeq ($(SYSNAME),)
+    $(error error with shell command uname)
+  endif
+endif
+
+ifndef NODENAME
+  NODENAME := $(shell uname -n)
+  ifeq ($(NODENAME),)
+    $(error error with shell command uname -n)
+  endif
+endif
+
+ifndef MACHNAME
+  MACHNAME := $(shell uname -m)
+  ifeq ($(MACHNAME),)
+    $(error error with shell command uname -m)
+  endif
+endif
+
 #Paths
 PRODUCT_PATH=$(CMISS_ROOT)/cmgui
 PRODUCT_SOURCE_PATH=$(PRODUCT_PATH)/source
@@ -82,32 +104,10 @@ unemap unemap-debug unemap-debug-memorycheck unemap-static unemap-static-debug u
 	cd source ; \
 	$(MAKE) -f $(SUBMAKEFILE) $(OPTIONS) ;
 
-ESU_BUILD_LIST = unemap unemap-debug unemap-debug-memorycheck unemap64 unemap-nodes unemap-3d unemap-3d-debug utilities utilities64
-ESU_BUILD_PATH = '\$${CMISS_ROOT}/cmgui'
-ESU_BUILD_MACHINE = 130.216.208.35 #esu35
-ESP_BUILD_LIST = unemap unemap-debug unemap-debug-memorycheck unemap-static unemap-static-debug unemap-3d unemap-3d-debug utilities
-ESP_BUILD_PATH = '\$${CMISS_ROOT}/cmgui'
-ESP_BUILD_MACHINE = 130.216.208.69 #bioeng69
-HPC1_BUILD_LIST = unemap unemap-debug unemap64 unemap64-debug unemap-3d
-HPC1_BUILD_PATH = '\$${CMISS_ROOT}/cmgui'
-HPC1_BUILD_MACHINE = 130.216.191.92 #hpc1
-
-update_sources :
-	ssh cmiss@$(ESU_BUILD_MACHINE) 'cd $(ESU_BUILD_PATH)/source ; cvs update' && \
-	ssh cmiss@$(HPC1_BUILD_MACHINE) 'cd $(HPC1_BUILD_PATH)/source ; cvs update' ;
-
-#If not already cmiss become cmiss first and then propogate so that the user
-#only has to authenticate as cmiss once at the start.
 update :
-	if [ "$(USER)" = "cmiss" ] ; then \
-		ssh cmiss@$(ESU_BUILD_MACHINE) 'cd $(ESU_BUILD_PATH) ; $(MAKE) -f $(MAKEFILE) $(ESU_BUILD_LIST)' && \
-		ssh cmiss@$(ESP_BUILD_MACHINE) 'cd $(ESP_BUILD_PATH) ; $(MAKE) -f $(MAKEFILE) $(ESP_BUILD_LIST)' && \
-	ssh cmiss@$(HPC1_BUILD_MACHINE) 'cd $(HPC1_BUILD_PATH) ; $(MAKE) -f $(MAKEFILE) $(HPC1_BUILD_LIST)' ; \
-	else \
-		ssh cmiss@$(ESU_BUILD_MACHINE) 'cd $(ESU_BUILD_PATH) ; $(MAKE) -f $(MAKEFILE) update' ; \
-	fi
+	$(CMISS_ROOT)/bin/cmissmake cmgui;
 
-cronjob: update_sources
+cronjob:
 	if [ "$(USER)" = "cmiss" ]; then \
 		cd $(PRODUCT_PATH); \
 		echo -n > $(MAILFILE_PATH)/unemap_programmer.mail ; \
