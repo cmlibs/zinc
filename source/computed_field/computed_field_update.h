@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : computed_field_update.h
 
-LAST MODIFIED : 11 October 2001
+LAST MODIFIED : 4 February 2002
 
 DESCRIPTION :
 Functions for updating values of one computed field from those of another.
@@ -19,6 +19,21 @@ Functions for updating values of one computed field from those of another.
 Global types
 ------------
 */
+
+int Computed_field_copy_values_at_node(struct FE_node *node,
+	struct Computed_field *destination_field,
+	struct Computed_field *source_field, FE_value time);
+/*******************************************************************************
+LAST MODIFIED : 4 February 2002
+
+DESCRIPTION :
+Evaluates <source_field> at node and sets <destination_field> to those values.
+<node> must not be managed -- ie. it should be a local copy.
+Both fields must have the same number of values.
+Assumes both fields are defined at the node.
+Up to user to call Computed_field_clear_cache for each field after calls to
+this function are finished.
+==============================================================================*/
 
 int Computed_field_update_nodal_values_from_source(
 	struct Computed_field *destination_field,	struct Computed_field *source_field,

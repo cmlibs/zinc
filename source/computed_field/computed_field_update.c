@@ -1,17 +1,75 @@
 /*******************************************************************************
 FILE : computed_field_update.c
 
-LAST MODIFIED : 12 October 2001
+LAST MODIFIED : 4 February 2002
 
 DESCRIPTION :
 Functions for updating values of one computed field from those of another.
 ==============================================================================*/
 #include "computed_field/computed_field.h"
+#include "computed_field/computed_field_private.h"
 #include "computed_field/computed_field_update.h"
 #include "finite_element/finite_element.h"
 #include "finite_element/finite_element_discretization.h"
 #include "general/debug.h"
 #include "user_interface/message.h"
+
+int Computed_field_copy_values_at_node(struct FE_node *node,
+	struct Computed_field *destination_field,
+	struct Computed_field *source_field, FE_value time)
+/*******************************************************************************
+LAST MODIFIED : 4 February 2002
+
+DESCRIPTION :
+Evaluates <source_field> at node and sets <destination_field> to those values.
+<node> must not be managed -- ie. it should be a local copy.
+Both fields must have the same number of values.
+Assumes both fields are defined at the node.
+Up to user to call Computed_field_clear_cache for each field after calls to
+this function are finished.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(Computed_field_copy_values_at_node);
+	if (node && destination_field && source_field &&
+		(Computed_field_get_number_of_components(destination_field) ==
+			Computed_field_get_number_of_components(source_field)))
+	{
+		if (Computed_field_evaluate_cache_at_node(source_field, node, time))
+		{
+			/* time should be passed to following function */
+			if (Computed_field_set_values_at_node(destination_field,
+				node, source_field->values))
+			{
+				return_code = 1;
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE,
+					"Computed_field_copy_values_at_node.  "
+					"Destination field not defined at node");
+				return_code = 0;
+			}
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,
+				"Computed_field_copy_values_at_node.  "
+				"Source field not defined at node");
+			return_code = 0;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Computed_field_copy_values_at_node.  Invalid argument(s)");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Computed_field_copy_values_at_node */
 
 struct Computed_field_update_nodal_values_from_source_data
 /*******************************************************************************
