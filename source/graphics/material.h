@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : material.h
 
-LAST MODIFIED : 7 September 2000
+LAST MODIFIED : 30 May 2001
 
 DESCRIPTION :
 The data structures used for representing graphical materials.
@@ -229,13 +229,13 @@ DESCRIPTION :
 Sets the texture member of the material.
 ==============================================================================*/
 
-int Graphical_material_uses_texture(struct Graphical_material *material,
-	void *texture_void);
+int Graphical_material_uses_texture_in_list(struct Graphical_material *material,
+	void *texture_list_void);
 /*******************************************************************************
-LAST MODIFIED : 15 June 1998
+LAST MODIFIED : 30 May 2001
 
 DESCRIPTION :
-Returns 1 if the <material> uses texture, or any texture if <texture> is NULL.
+Returns true if the <material> uses a texture in the <texture_list>.
 ==============================================================================*/
 
 int Graphical_material_set_spectrum_flag(struct Graphical_material *material);

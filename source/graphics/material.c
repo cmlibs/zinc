@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : material.c
 
-LAST MODIFIED : 21 December 2000
+LAST MODIFIED : 6 June 2001
 
 DESCRIPTION :
 The functions for manipulating graphical materials.
@@ -1028,29 +1028,29 @@ Sets the texture member of the material.
 	return (return_code);
 } /* Graphical_material_set_texture */
 
-int Graphical_material_uses_texture(struct Graphical_material *material,
-	void *texture_void)
+int Graphical_material_uses_texture_in_list(struct Graphical_material *material,
+	void *texture_list_void)
 /*******************************************************************************
-LAST MODIFIED : 15 June 1998
+LAST MODIFIED : 6 June 2001
 
 DESCRIPTION :
-Returns 1 if the <material> uses texture, or any texture if <texture> is NULL.
+Returns true if the <material> uses a texture in the <texture_list>.
 ==============================================================================*/
 {
 	int return_code;
-	struct Texture *texture;
+	struct LIST(Texture) *texture_list;
 
 	ENTER(Graphical_material_uses_texture);
-	if (material)
+	if (material && (texture_list = (struct LIST(Texture) *)texture_list_void))
 	{
-		texture=(struct Texture *)texture_void;
-		return_code=(material->texture&&((!texture)||(texture==material->texture)));
+		return_code = material->texture &&
+			IS_OBJECT_IN_LIST(Texture)(material->texture, texture_list);
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Graphical_material_uses_texture.  Missing material");
-		return_code=0;
+			"Graphical_material_uses_texture.  Invalid argument(s)");
+		return_code = 0;
 	}
 	LEAVE;
 
