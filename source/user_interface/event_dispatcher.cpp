@@ -1039,7 +1039,6 @@ DESCRIPTION :
 	return (timeout_callback);
 } /* Event_dispatcher_add_timeout_callback_at_time */
 #else /* defined (USE_XTAPP_CONTEXT) */
-#if !defined (WIN32_USER_INTERFACE)
 struct Event_dispatcher_timeout_callback *Event_dispatcher_add_timeout_callback_at_time(
 	struct Event_dispatcher *event_dispatcher, unsigned long timeout_s, unsigned long timeout_ns,
 	Event_dispatcher_timeout_function *timeout_function, void *user_data)
@@ -1116,7 +1115,6 @@ DESCRIPTION :
 
 	return (timeout_callback);
 } /* Event_dispatcher_add_file_descriptor_timeout_callback */
-#endif /* !defined (WIN32_USER_INTERFACE) */
 #endif /* defined (USE_XTAPP_CONTEXT) */
 
 int Event_dispatcher_remove_timeout_callback(
