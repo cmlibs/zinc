@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : finite_element.c
 
-LAST MODIFIED : 1 August 2000
+LAST MODIFIED : 17 August 2000
 
 DESCRIPTION :
 Functions for manipulating finite element structures.
@@ -7871,11 +7871,13 @@ static int find_FE_nodal_values_storage_dest(struct FE_node *node,
 	enum FE_nodal_value_type type,enum Value_type value_type,
 	Value_storage **values_storage)
 /*******************************************************************************
-LAST MODIFIED : 19 March 1999
+LAST MODIFIED : 17 August 2000
 
 DESCRIPTION :
 Returns a pointer to the nodal values_storage for the given node, component,
-version, type, value_type. 
+version, type, value_type.
+Returns 0 with no error in cases where the version or type is not stored, hence
+can use this function to determing if either are defined.
 ==============================================================================*/
 {
 	enum FE_nodal_value_type *nodal_value_type;
@@ -7886,40 +7888,47 @@ version, type, value_type.
 
 	ENTER(find_FE_nodal_values_storage_dest);
 	return_code=0;
-	/* check arguments */
 	if (node&&component&&(component->field)&&(0<=component->number)&&
 		(component->number<component->field->number_of_components)&&(0<=version))
 	{
 		if (node_field=find_FE_node_field_in_info(component->field,node->fields))
 		{
-			if ((node_field_component=node_field->components)&&
-				(nodal_value_type=node_field_component->nodal_value_types))
+			if (node_field_component=node_field->components)
 			{
-				if(node_field->field->value_type==value_type)
+				if (node_field->field->value_type == value_type)
 				{					
 					node_field_component += component->number;
-					if (version<node_field_component->number_of_versions)
+					if (version < node_field_component->number_of_versions)
 					{
-						length=1+(node_field_component->number_of_derivatives);
-						i=0;
-						while ((i<length)&&(type!=nodal_value_type[i]))
+						if (nodal_value_type=node_field_component->nodal_value_types)
 						{
-							i++;
+							length=1+(node_field_component->number_of_derivatives);
+							i=0;
+							while ((i<length) && (type != nodal_value_type[i]))
+							{
+								i++;
+							}
+							if (i<length)
+							{
+								size = get_Value_storage_size(value_type);
+								the_values_storage = node->values_storage +
+									(node_field_component->value) + ((version*length+i)*size);
+								*values_storage = the_values_storage;
+								return_code=1;
+							}
 						}
-						if (i<length)
+						else
 						{
-							size = get_Value_storage_size(value_type);
-							the_values_storage = node->values_storage+(node_field_component->value)+
-								((version*length+i)*size);
-							*values_storage = the_values_storage;
-							return_code=1;
+							display_message(ERROR_MESSAGE,
+								"find_FE_nodal_values_storage_dest.  "
+								"Missing nodal_value_type array");
 						}
 					}
 				}
 				else
 				{
 					display_message(ERROR_MESSAGE,
-						"find_FE_nodal_values_storage_dest. value_type mismatch");
+						"find_FE_nodal_values_storage_dest.  value_type mismatch");
 				}
 			}
 			else
@@ -7931,8 +7940,8 @@ version, type, value_type.
 	}
 	else
 	{
-		display_message(ERROR_MESSAGE,"find_FE_nodal_values_storage_dest."
-			" Invalid argument(s)");
+		display_message(ERROR_MESSAGE,"find_FE_nodal_values_storage_dest.  "
+			"Invalid argument(s)");
 	}
 	LEAVE;
 
