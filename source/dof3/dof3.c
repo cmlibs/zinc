@@ -539,6 +539,7 @@ slider.
 	XmScrollBarCallbackStruct *temp_data;
 
 	ENTER(dof3_slider_CB);
+	USE_PARAMETER(tag);
 	/* reset temp_increment */
 	for (i=0;i<3;i++)
 	{
@@ -1326,11 +1327,11 @@ Changes the icons and labels to reflect the new coordinate system.
 					{
 						if (temp_dof3->mode==DOF3_RELATIVE)
 						{
-							sprintf(pixmap_name,"dof3_pos_r_axis%u_coord0_icon",n);
+							sprintf(pixmap_name,"dof3_pos_r_axis%d_coord0_icon",n);
 						}
 						else
 						{
-							sprintf(pixmap_name,"dof3_pos_axis%u_coord%u_icon",n,
+							sprintf(pixmap_name,"dof3_pos_axis%d_coord%d_icon",n,
 								temp_dof3->current_coord);
 						}
 					} break;
@@ -1338,17 +1339,17 @@ Changes the icons and labels to reflect the new coordinate system.
 					{
 						if (temp_dof3->mode==DOF3_RELATIVE)
 						{
-							sprintf(pixmap_name,"dof3_dir_r_axis%u_coord0_icon",n);
+							sprintf(pixmap_name,"dof3_dir_r_axis%d_coord0_icon",n);
 						}
 						else
 						{
-							sprintf(pixmap_name,"dof3_dir_axis%u_coord%u_icon",n,
+							sprintf(pixmap_name,"dof3_dir_axis%d_coord%d_icon",n,
 								temp_dof3->current_coord);
 						}
 					} break;
 					case DOF3_VECTOR:
 					{
-						sprintf(pixmap_name,"dof3_vec_axis%u_coord%u_icon",n,
+						sprintf(pixmap_name,"dof3_vec_axis%d_coord%d_icon",n,
 							temp_dof3->current_coord);
 					} break;
 				}

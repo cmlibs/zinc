@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : transformation_editor_dialog.c
 
-LAST MODIFIED : 19 October 1998
+LAST MODIFIED : 26 November 2001
 
 DESCRIPTION :
 This module creates a free transformation_editor_dialog input device.
@@ -75,6 +75,8 @@ details - mem etc
 	struct Transformation_editor_dialog_struct *temp_transformation_editor_dialog;
 
 	ENTER(transformation_editor_dialog_destroy_CB);
+	USE_PARAMETER(tag);
+	USE_PARAMETER(reason);
 	if (widget)
 	{
 		/* get the pointer to the data for the transformation_editor_dialog
@@ -119,6 +121,7 @@ Callback from transformation editor informing of change in transformation.
 	struct Transformation_editor_dialog_struct *temp_transformation_editor_dialog;
 
 	ENTER(transformation_editor_dialog_update_transformation);
+	USE_PARAMETER(widget);
 	if ((temp_transformation_editor_dialog=
 		(struct Transformation_editor_dialog_struct *)user_data)&&
 		(new_transformation=(struct Cmgui_coordinate *)call_data))
@@ -413,7 +416,6 @@ from <transformation_editor_dialog widget>.  Otherwise, get the data item from
 {
 	int num_children;
 	static struct Callback_data callback;
-	static Widget dat_widget;
 	struct Transformation_editor_dialog_struct *temp_transformation_editor_dialog;
 	Widget *child_list;
 	void *data;
@@ -484,10 +486,10 @@ from <transformation_editor_dialog widget>.  Otherwise, get the data item from
 } /* transformation_editor_dialog_get_data */
 
 int bring_up_transformation_editor_dialog(
-	Widget *transformation_editor_dialog_address,Widget parent,
+	Widget *transformation_editor_dialog_address,
 	struct Cmgui_coordinate *init_data,struct User_interface *user_interface)
 /*******************************************************************************
-LAST MODIFIED : 23 June 1996
+LAST MODIFIED : 26 November 2001
 
 DESCRIPTION :
 If there is a transformation editor dialog in existence, then bring it to the
@@ -499,8 +501,7 @@ front, otherwise it creates a new one.
 	int return_code;
 
 	ENTER(bring_up_transformation_editor_dialog);
-	/* check arguments */
-	if (transformation_editor_dialog_address&&user_interface)
+	if (transformation_editor_dialog_address && user_interface)
 	{
 		/* does it exist */
 		if (*transformation_editor_dialog_address)

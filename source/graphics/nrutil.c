@@ -8,6 +8,7 @@
 #include <stdio.h>
 #include <stddef.h>
 #include <stdlib.h>
+#include <general/debug.h>
 #define NR_END 1
 #define FREE_ARG char*
 
@@ -150,6 +151,7 @@ float **submatrix(float **a, long oldrl, long oldrh, long oldcl, long oldch,
 	long i,j,nrow=oldrh-oldrl+1,ncol=oldcl-newcl;
 	float **m;
 
+	USE_PARAMETER(oldch);
 	/* allocate array of pointers to rows */
 	m=(float **) malloc((size_t) ((nrow+NR_END)*sizeof(float*)));
 	if (!m) nrerror("allocation failure in submatrix()");
@@ -223,36 +225,43 @@ float ***f3tensor(long nrl, long nrh, long ncl, long nch, long ndl, long ndh)
 void free_vector(float *v, long nl, long nh)
 /* free a float vector allocated with vector() */
 {
+	USE_PARAMETER(nh);
 	free((FREE_ARG) (v+nl-NR_END));
 }
 
 void free_ivector(int *v, long nl, long nh)
 /* free an int vector allocated with ivector() */
 {
+	USE_PARAMETER(nh);
 	free((FREE_ARG) (v+nl-NR_END));
 }
 
 void free_cvector(unsigned char *v, long nl, long nh)
 /* free an unsigned char vector allocated with cvector() */
 {
+	USE_PARAMETER(nh);
 	free((FREE_ARG) (v+nl-NR_END));
 }
 
 void free_lvector(unsigned long *v, long nl, long nh)
 /* free an unsigned long vector allocated with lvector() */
 {
+	USE_PARAMETER(nh);
 	free((FREE_ARG) (v+nl-NR_END));
 }
 
 void free_dvector(double *v, long nl, long nh)
 /* free a double vector allocated with dvector() */
 {
+	USE_PARAMETER(nh);
 	free((FREE_ARG) (v+nl-NR_END));
 }
 
 void free_matrix(float **m, long nrl, long nrh, long ncl, long nch)
 /* free a float matrix allocated by matrix() */
 {
+	USE_PARAMETER(nrh);
+	USE_PARAMETER(nch);
 	free((FREE_ARG) (m[nrl]+ncl-NR_END));
 	free((FREE_ARG) (m+nrl-NR_END));
 }
@@ -260,6 +269,8 @@ void free_matrix(float **m, long nrl, long nrh, long ncl, long nch)
 void free_dmatrix(double **m, long nrl, long nrh, long ncl, long nch)
 /* free a double matrix allocated by dmatrix() */
 {
+	USE_PARAMETER(nrh);
+	USE_PARAMETER(nch);
 	free((FREE_ARG) (m[nrl]+ncl-NR_END));
 	free((FREE_ARG) (m+nrl-NR_END));
 }
@@ -267,6 +278,8 @@ void free_dmatrix(double **m, long nrl, long nrh, long ncl, long nch)
 void free_imatrix(int **m, long nrl, long nrh, long ncl, long nch)
 /* free an int matrix allocated by imatrix() */
 {
+	USE_PARAMETER(nrh);
+	USE_PARAMETER(nch);
 	free((FREE_ARG) (m[nrl]+ncl-NR_END));
 	free((FREE_ARG) (m+nrl-NR_END));
 }
@@ -274,12 +287,18 @@ void free_imatrix(int **m, long nrl, long nrh, long ncl, long nch)
 void free_submatrix(float **b, long nrl, long nrh, long ncl, long nch)
 /* free a submatrix allocated by submatrix() */
 {
+	USE_PARAMETER(nrh);
+	USE_PARAMETER(ncl);
+	USE_PARAMETER(nch);
 	free((FREE_ARG) (b+nrl-NR_END));
 }
 
 void free_convert_matrix(float **b, long nrl, long nrh, long ncl, long nch)
 /* free a matrix allocated by convert_matrix() */
 {
+	USE_PARAMETER(nrh);
+	USE_PARAMETER(ncl);
+	USE_PARAMETER(nch);
 	free((FREE_ARG) (b+nrl-NR_END));
 }
 
@@ -287,6 +306,9 @@ void free_f3tensor(float ***t, long nrl, long nrh, long ncl, long nch,
 	long ndl, long ndh)
 /* free a float f3tensor allocated by f3tensor() */
 {
+	USE_PARAMETER(nrh);
+	USE_PARAMETER(nch);
+	USE_PARAMETER(ndh);
 	free((FREE_ARG) (t[nrl][ncl]+ndl-NR_END));
 	free((FREE_ARG) (t[nrl]+ncl-NR_END));
 	free((FREE_ARG) (t+nrl-NR_END));

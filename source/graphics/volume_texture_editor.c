@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : volume_texture_editor.c
 
-LAST MODIFIED : 23 November 2001
+LAST MODIFIED : 26 November 2001
 
 DISCRIPTION :
 Creation & Callback code for Motif texture window
@@ -1381,7 +1381,7 @@ printf("(%p) %lf %lf %lf %lf %lf %lf\n", texture_window,
 static void open_transformation_editor(Widget widget,XtPointer texture_window,
 	XtPointer call_data)
 /*******************************************************************************
-LAST MODIFIED : 23 June 1996
+LAST MODIFIED : 26 November 2001
 
 DESCRIPTION :
 ==============================================================================*/
@@ -1395,8 +1395,7 @@ DESCRIPTION :
 	if (window=(struct Texture_window *)texture_window)
 	{
 		bring_up_transformation_editor_dialog(window->transformation_editor_address,
-			window->user_interface->application_shell,(struct Cmgui_coordinate *)NULL,
-			window->user_interface);
+			(struct Cmgui_coordinate *)NULL, window->user_interface);
 		/* set update callback */
 		callback_data.procedure=transformation_editor_callback;
 		callback_data.data=(void *)texture_window;

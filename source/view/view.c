@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : view.c
 
-LAST MODIFIED : 13 December 1996
+LAST MODIFIED : 26 November 2001
 
 DESCRIPTION :
 This module creates a view widget that will return a global camera position
@@ -213,7 +213,9 @@ format, then updates any clients of the view widget.
 	int i;
 	struct View_struct *temp_view = user_data;
 	struct Camera_data *temp_camera = temp_cam;
+
 	ENTER(view_update_relative);
+	USE_PARAMETER(camera_widget);
 	if(temp_view->mode==VIEW_RELATIVE_MODE)
 	{
 		/* convert it to standard - no conversion */
@@ -241,6 +243,7 @@ format, then updates any clients of the view widget.
 	struct Camera_data *temp_camera = temp_cam;
 
 	ENTER(view_update_camera);
+	USE_PARAMETER(camera_widget);
 	if(temp_view->mode==VIEW_CAMERA_MODE)
 	{
 		/* convert it to standard - no conversion */
@@ -267,6 +270,7 @@ format, then updates any clients of the view widget.
 	struct Poi_data *temp_poi = temp_pointerest;
 
 	ENTER(view_update_poi);
+	USE_PARAMETER(camera_widget);
 	if(temp_view->mode==VIEW_POI_MODE)
 	{
 		poi_to_camera(temp_poi,&temp_view->current_value);
@@ -286,6 +290,7 @@ Finds the id of the buttons on the view widget.
 	struct View_struct *temp_view;
 
 	ENTER(view_identify_button);
+	USE_PARAMETER(reason);
 	/* find out which view widget we are in */
 	XtVaGetValues(w,XmNuserData,&temp_view,NULL);
 	switch (button_num)
@@ -326,6 +331,8 @@ Callback for the viewment dialog - tidies up all details - mem etc
 	struct View_struct *temp_view;
 
 	ENTER(view_destroy_CB);
+	USE_PARAMETER(tag);
+	USE_PARAMETER(reason);
 	/* Get the pointer to the data for the view widget */
 	XtVaGetValues(w,XmNuserData,&temp_view,NULL);
 	/* deallocate the memory for the user data */
@@ -674,7 +681,6 @@ Changes a data item of the view widget.
 	struct View_struct *temp_view;
 	static struct Callback_data dat_callback;
 	static struct Poi_data temp_poi_value;
-	static Widget dat_widget;
 
 	ENTER(view_get_data);
 	/* Get the pointer to the data for the view dialog */

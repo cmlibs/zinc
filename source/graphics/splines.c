@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : splines.c
 
-LAST MODIFIED : 29 August 1996
+LAST MODIFIED : 26 November 2001
 
 DESCRIPTION:
 ==============================================================================*/
@@ -307,6 +307,7 @@ output:  data:  completed, as above.
 	return (return_code);
 } /* bessel_ends */
 
+#if defined (OLD_CODE)
 static int parameters(double *data_x,double *data_y,int l,double *knot)
 /*******************************************************************************
 LAST MODIFIED : 29 August 1996
@@ -367,6 +368,7 @@ Note data_x[1],data_x[l+1] are not used - same for data_y
 
 	return (return_code);
 } /* parameters */
+#endif /* defined (OLD_CODE) */
 
 static double deboor(int degree,double *coeff,int n_coeff,int coord,
 	double *knot,int n_knot,double u,int i)
@@ -389,7 +391,7 @@ Output  coord value
 	int j,k;
 
 	ENTER(deboor);
-	/* checking arguments */
+	USE_PARAMETER(n_knot);
 	if (coeff&&knot)
 	{
 		if (ALLOCATE(coeffa,double,n_coeff+1))

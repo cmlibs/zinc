@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : vector.c
 
-LAST MODIFIED : 13 December 1996
+LAST MODIFIED : 26 November 2001
 
 DESCRIPTION :
 This module creates a free vector input device, using two dof3, two control and
@@ -76,8 +76,8 @@ Finds the id of the buttons on the vector widget.
 	int toggle_num;
 	struct Vector_struct *temp_vector;
 
-
 	ENTER(vector_identify_button);
+	USE_PARAMETER(reason);
 	switch (button_num)
 	{
 		case vector_menu_ID:
@@ -121,6 +121,8 @@ Callback for the vectorment dialog - tidies up all details - mem etc
 	struct Vector_struct *temp_vector;
 
 	ENTER(vector_destroy_CB);
+	USE_PARAMETER(tag);
+	USE_PARAMETER(reason);
 	/* Get the pointer to the data for the vector widget */
 	XtVaGetValues(w,XmNuserData,&temp_vector,NULL);
 	/* deallocate the memory for the user data */
@@ -142,6 +144,8 @@ menu choices.
 	struct Vector_struct *temp_vector;
 
 	ENTER(vector_button_CB);
+	USE_PARAMETER(tag);
+	USE_PARAMETER(reason);
 	XtVaGetValues(XtParent(w),XmNuserData,&temp_vector,NULL);
 	XtVaGetValues(w,XmNuserData,&toggle_num,NULL);
 	if ((toggle_num>=0)&&(toggle_num<VECTOR_NUM_CHOICES))

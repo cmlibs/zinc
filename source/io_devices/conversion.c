@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : conversion.c
 
-LAST MODIFIED : 6 January 1998
+LAST MODIFIED : 26 November 2001
 
 DESCRIPTION :
 Converts between different coordinate systems.
@@ -544,6 +544,7 @@ Modifier function to set the position from a command.
 	struct Modifier_entry *entry;
 
 	ENTER(set_Dof3_position);
+	USE_PARAMETER(dummy_user_data);
 	if (state)
 	{
 		if (current_token=state->current_token)

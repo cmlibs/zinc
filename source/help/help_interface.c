@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : help_interface.c
 
-LAST MODIFIED : 15 October 1998
+LAST MODIFIED : 26 November 2001
 
 DESCRIPTION :
 Interface routines for CMISS commands to work with the help window.
@@ -462,11 +462,12 @@ Executes the netscape url.
 Global functions
 ----------------
 */
+
 void do_help(char *help_string,char *help_examples_directory,
 	struct Execute_command *execute_command,
 	struct User_interface *user_interface)
 /*******************************************************************************
-LAST MODIFIED : 30 January 1998
+LAST MODIFIED : 26 November 2001
 
 DESCRIPTION :
 Gets help for help_string.
@@ -505,6 +506,9 @@ Then it sets the help topic edit field and gets the help on the string.
 #endif /* defined (NETSCAPE_HELP) */
 
 	ENTER(do_help);
+#if !defined (HYPERTEXT_HELP)
+	USE_PARAMETER(help_examples_directory);
+#endif /* !defined (HYPERTEXT_HELP) */
 #if defined (DEBUG)
 	/*???debug */
 	printf("enter do_help %s\n",help_string);

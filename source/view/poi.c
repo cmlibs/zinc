@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : poi.c
 
-LAST MODIFIED : 13 December 1996
+LAST MODIFIED : 26 November 2001
 
 DESCRIPTION :
 This module creates a free poi input device, using two dof3, two control and
@@ -172,6 +172,7 @@ Tells CMGUI about the current values.
 	struct Dof3_data new_dof3;
 
 	ENTER(poi_update_position_coord);
+	USE_PARAMETER(coord_widget);
 	temp_poi->current_position_coordinate = coordinate;
 	if (coordinate!=poi_rel_coordinate_ptr)
 	{
@@ -204,6 +205,7 @@ Tells CMGUI about the current values.
 	struct Dof3_data new_dof3,*temp_pointerest,*temp_up_vector;
 
 	ENTER(poi_update_poi_coord);
+	USE_PARAMETER(coord_widget);
 	temp_poi->current_poi_coordinate = coordinate;
 	get_local_position(&(temp_poi->current_value.poi),
 		coordinate,&new_dof3);
@@ -265,6 +267,7 @@ Tells CMGUI about the current values.
 	struct Dof3_data *temp_position = temp_dof3;
 
 	ENTER(poi_update_position);
+	USE_PARAMETER(position_widget);
 	if (temp_poi->relative)
 	{
 		get_poi_relative_global_position(temp_poi,temp_position);
@@ -291,6 +294,7 @@ Tells CMGUI about the current values.
 	struct Dof3_data *temp_pointerest = temp_dof3;
 
 	ENTER(poi_update_poi);
+	USE_PARAMETER(direction_widget);
 	get_global_position(temp_pointerest,temp_poi->current_poi_coordinate,
 		&(temp_poi->current_value.poi));
 	if (temp_poi->relative)
@@ -318,6 +322,7 @@ Tells CMGUI about the current values.
 	Gmatrix origin;
 
 	ENTER(poi_update_up_vector);
+	USE_PARAMETER(direction_widget);
 	/* only interested in an up vector if the vector has non-zero magnitude */
 	if ((fabs(temp_up_vector->data[0])+fabs(temp_up_vector->data[1])+
 		fabs(temp_up_vector->data[2]))>0)
@@ -354,6 +359,7 @@ Finds the id of the buttons on the poi widget.
 	struct Poi_struct *temp_poi;
 
 	ENTER(poi_identify_button);
+	USE_PARAMETER(reason);
 	/* find out which poi widget we are in */
 	XtVaGetValues(w,XmNuserData,&temp_poi,NULL);
 	switch (button_num)
@@ -406,6 +412,8 @@ Callback for the poiment dialog - tidies up all details - mem etc
 	struct Poi_struct *temp_poi;
 
 	ENTER(poi_destroy_CB);
+	USE_PARAMETER(tag);
+	USE_PARAMETER(reason);
 	/* Get the pointer to the data for the poi widget */
 	XtVaGetValues(w,XmNuserData,&temp_poi,NULL);
 	*(temp_poi->widget_address) = (Widget)NULL;
@@ -754,8 +762,6 @@ Changes a data item of the poi widget.
 	void *return_code;
 	struct Poi_struct *temp_poi;
 	static struct Callback_data dat_callback;
-	static Widget dat_widget;
-	static struct Poi_data dat_data;
 
 	ENTER(poi_get_data);
 	/* Get the pointer to the data for the poi dialog */

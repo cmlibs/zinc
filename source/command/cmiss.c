@@ -12420,7 +12420,6 @@ Executes a GFX EDIT GRAPHICS_OBJECT command.
 						(initial_transformation.origin.direction.data)[2]=0;
 						bring_up_transformation_editor_dialog(
 							&(command_data->transformation_editor_dialog),
-							command_data->user_interface->application_shell,
 							&initial_transformation,command_data->user_interface);
 						edit_graphics_object_data=(struct Edit_graphics_object_data *)NULL;
 						if ((callback_data=(struct Callback_data *)

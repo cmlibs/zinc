@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : postscript.c
 
-LAST MODIFIED : 24 July 1998
+LAST MODIFIED : 26 November 2001
 
 DESCRIPTION :
 Functions for creating postscript output from the mapping system.
@@ -1283,7 +1283,7 @@ the drawable (not sure which)
 			(float)(colour.red>>8)/(float)0xff,(float)(colour.green>>8)/(float)0xff,
 			(float)(colour.blue>>8)/(float)0xff);
 		/* specify the rectangle */
-		(void)fprintf(postscript.file,"%.5g %.5g %d %d\n",(float)x-world_origin_x,
+		(void)fprintf(postscript.file,"%.5g %.5g %u %u\n",(float)x-world_origin_x,
 			world_origin_y-(float)y,width,height);
 	}
 	else
@@ -1432,7 +1432,7 @@ the <drawable> (not sure which)
 				temp_int=angle2;
 			}
 		}
-		(void)fprintf(postscript.file,"%.5g %.5g %d %d %d %d\n",
+		(void)fprintf(postscript.file,"%.5g %.5g %u %u %d %d\n",
 			(float)x-world_origin_x,world_origin_y-(float)y,width,height,angle1,
 			temp_int);
 	}

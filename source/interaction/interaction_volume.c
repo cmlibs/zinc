@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : interaction_volume.c
 
-LAST MODIFIED : 14 June 2000
+LAST MODIFIED : 26 November 2001
 
 DESCRIPTION :
 Structure representing volume of space and centre interacted on by input
@@ -360,7 +360,7 @@ struct Interaction_volume *create_Interaction_volume_bounding_box(
 	struct Interaction_volume *interaction_volume1,
 	struct Interaction_volume *interaction_volume2)
 /*******************************************************************************
-LAST MODIFIED : 14 June 2000
+LAST MODIFIED : 26 November 2001
 
 DESCRIPTION :
 Creates an Interaction_volume between the centres of <interaction_volume1> and
@@ -373,7 +373,7 @@ and will span between their centres.
 ==============================================================================*/
 {
 	double centre_x,centre_y,centre_z,size_x,size_y,size_z;
-	int i,matching_projections;
+	int matching_projections;
 	struct Interaction_volume *interaction_volume;
 
 	ENTER(create_Interaction_volume_bounding_box);
@@ -418,18 +418,21 @@ and will span between their centres.
 				{
 					/* check projections match */
 					matching_projections=1;
-#if defined (DEBUG)				 
-					/* SAB Removed this check as we just want to use the 
-						second one and spinning scene viewers cause this to
-						happen all the time */
-					for (i=0;i<16;i++)
+#if defined (DEBUG)
 					{
-						if ((interaction_volume1->data.ray_frustum.modelview_matrix[i] !=
-							interaction_volume2->data.ray_frustum.modelview_matrix[i]) ||
-							(interaction_volume1->data.ray_frustum.projection_matrix[i] !=
-								interaction_volume2->data.ray_frustum.projection_matrix[i]))
+						int i;
+						/* SAB Removed this check as we just want to use the 
+							 second one and spinning scene viewers cause this to
+							 happen all the time */
+						for (i=0;i<16;i++)
 						{
-							matching_projections=0;
+							if ((interaction_volume1->data.ray_frustum.modelview_matrix[i] !=
+								interaction_volume2->data.ray_frustum.modelview_matrix[i]) ||
+								(interaction_volume1->data.ray_frustum.projection_matrix[i] !=
+									interaction_volume2->data.ray_frustum.projection_matrix[i]))
+							{
+								matching_projections=0;
+							}
 						}
 					}
 #endif /* defined (DEBUG) */

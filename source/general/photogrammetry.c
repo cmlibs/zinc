@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : photogrammetry.c
 
-LAST MODIFIED : 20 May 1999
+LAST MODIFIED : 26 November 2001
 
 DESCRIPTION :
 Routines for performing photogrammetry calculations.
@@ -69,7 +69,7 @@ Returns the 2-D position of point <pos3> by transformation with matrix <t>.
 
 int point_pair_to_3d(double *p1,double *t1,double *p2,double *t2,double *b)
 /*******************************************************************************
-LAST MODIFIED : 28 January 1998
+LAST MODIFIED : 26 November 2001
 
 DESCRIPTION :
 Performs the photogrammetry calculations for converting a pair of points on
@@ -90,12 +90,12 @@ vector <b>.
 ==============================================================================*/
 {
 	double a1[12]/*4x3*/,a1t[12]/*3x4*/,a[9]/*3x3*/,b1[4]/*4x1*/,d;
-	int return_code,i,indx[3];
+	int return_code, indx[3];
 
 	ENTER(point_pair_to_3d);
 	if (p1&&t1&&p2&&t2&&b)
 	{
-		/*
+#if defined (DEBUG)
 		printf("\n>>> ENTER: point_pair_to_3d <<<\n");
 		printf("p1:\n");
 		print_matrix(2,1,p1," %12.7f");
@@ -105,7 +105,8 @@ vector <b>.
 		print_matrix(2,1,p2," %12.7f");
 		printf("t2:\n");
 		print_matrix(4,3,t2," %12.7f");
-		*/
+#endif /* defined (DEBUG) */
+
 		a1[ 0] = t1[0]-p1[0]*t1[2];
 		a1[ 1] = t1[3]-p1[0]*t1[5];
 		a1[ 2] = t1[6]-p1[0]*t1[8];
@@ -122,7 +123,10 @@ vector <b>.
 		a1[10] = t2[4]-p2[1]*t2[5];
 		a1[11] = t2[7]-p2[1]*t2[8];
 
-		/* printf("a1:\n"); print_matrix(4,3,a1," %12.7f"); */
+#if defined (DEBUG)
+		printf("a1:\n");
+		print_matrix(4,3,a1," %12.7f");
+#endif /* defined (DEBUG) */
 
 		/* fill vector b1 */
 		b1[0] = p1[0]*t1[11]-t1[9];
@@ -132,7 +136,7 @@ vector <b>.
 		b1[3] = p2[1]*t2[11]-t2[10];
 		/* printf("b1:\n"); print_matrix(4,1,b1," %12.7f"); */
 
-#if defined (OLD_CODE)
+#if defined (DEBUG)
 		/* a1(t)a1 . x = a1(t) b1 */
 		transpose_matrix(4,3,a1,a1t);
 		printf("a1t:\n");
@@ -151,7 +155,8 @@ vector <b>.
 		printf("Solution:\n");
 		print_matrix(3,1,b," %12.7f");
 		return_code=1;
-#endif /* defined (OLD_CODE) */
+#endif /* defined (DEBUG) */
+
 		return_code=
 			/* a1(t)a1 . x = a1(t) b1 */
 			(transpose_matrix(4,3,a1,a1t)&&
@@ -174,7 +179,7 @@ vector <b>.
 int weighted_point_pair_to_3d(double *p1,double *t1,double w1,
 	double *p2,double *t2,double w2,double *b)
 /*******************************************************************************
-LAST MODIFIED : 9 March 1998
+LAST MODIFIED : 26 November 2001
 
 DESCRIPTION :
 Version of point_pair_to_3d allowing weighting on each pair of points to be
@@ -186,12 +191,12 @@ as nearly as possible within the remaining degree of freedom.
 ==============================================================================*/
 {
 	double a1[12]/*4x3*/,a1t[12]/*3x4*/,a[9]/*3x3*/,b1[4]/*4x1*/,d;
-	int return_code,i,indx[3];
+	int return_code, indx[3];
 
 	ENTER(weighted_point_pair_to_3d);
 	if (p1&&t1&&(0<w1)&&p2&&t2&&(0<w2)&&b)
 	{
-		/*
+#if defined (DEBUG)
 		printf("\n>>> ENTER: point_pair_to_3d <<<\n");
 		printf("p1:\n");
 		print_matrix(2,1,p1," %12.7f");
@@ -201,7 +206,8 @@ as nearly as possible within the remaining degree of freedom.
 		print_matrix(2,1,p2," %12.7f");
 		printf("t2:\n");
 		print_matrix(4,3,t2," %12.7f");
-		*/
+#endif /* defined (DEBUG) */
+
 		a1[ 0] = w1*(t1[0]-p1[0]*t1[2]);
 		a1[ 1] = w1*(t1[3]-p1[0]*t1[5]);
 		a1[ 2] = w1*(t1[6]-p1[0]*t1[8]);
@@ -218,7 +224,10 @@ as nearly as possible within the remaining degree of freedom.
 		a1[10] = w2*(t2[4]-p2[1]*t2[5]);
 		a1[11] = w2*(t2[7]-p2[1]*t2[8]);
 
-		/* printf("a1:\n"); print_matrix(4,3,a1," %12.7f"); */
+#if defined (DEBUG)
+		printf("a1:\n");
+		print_matrix(4,3,a1," %12.7f");
+#endif /* defined (DEBUG) */
 
 		/* fill vector b1 */
 		b1[0] = w1*(p1[0]*t1[11]-t1[9]);
@@ -227,7 +236,11 @@ as nearly as possible within the remaining degree of freedom.
 		b1[2] = w2*(p2[0]*t2[11]-t2[9]);
 		b1[3] = w2*(p2[1]*t2[11]-t2[10]);
 
-		/* printf("b1:\n"); print_matrix(4,1,b1," %12.7f"); */
+#if defined (DEBUG)
+		printf("b1:\n");
+		print_matrix(4,1,b1," %12.7f");
+#endif /* defined (DEBUG) */
+
 		return_code=
 			/* a1(t)a1 . x = a1(t) b1 */
 			(transpose_matrix(4,3,a1,a1t)&&
@@ -253,7 +266,7 @@ int photogrammetry_to_graphics_projection(double *t,double near,double far,
 	double *modelview_matrix,double *projection_matrix,double *eye,
 	double *lookat,double *up)
 /*******************************************************************************
-LAST MODIFIED : 20 May 1999
+LAST MODIFIED : 26 November 2001
 
 DESCRIPTION :
 Extracts 4x4 modelview and projection matrices suitable for sending to a
@@ -264,38 +277,43 @@ Also returns lookat parameters <eye> position, <lookat> point and <up> vector.
 Requires for now that NDC_bottom and NDC_left are zero.
 ==============================================================================*/
 {
-	double z[3],length,eye_distance,tmp3[9],tmpb[3],tmpd,p1[2],p2[2],
-		xnorm,ynorm,znorm,S14,S24,S33,S34,S44,tmp_result[16],eye_matrix[9],d;
-	int return_code,i,tmpindx[3];
+	double eye_distance, xnorm, ynorm, znorm, S14, S24, S33, S34, S44,
+		eye_matrix[9], d;
+	int return_code, tmpindx[3];
 
 	ENTER(photogrammetry_to_graphics_projection);
 	if (t&&(0<near)&&(near<far)&&(0!=NDC_width)&&(0!=NDC_height)&&
 		projection_matrix&&modelview_matrix&&eye&&lookat&&up)
 	{
-		/* quick test of matrix solver: It worked! */
-		/* Hand calculations give x=7/39,y=27/39,z=4/39
-		tmp3[0]=5;
-		tmp3[1]=2;
-		tmp3[2]=7;
-		tmp3[3]=1;
-		tmp3[4]=0;
-		tmp3[5]=8;
-		tmp3[6]=4;
-		tmp3[7]=3;
-		tmp3[8]=2;
-		tmpb[0]=3;
-		tmpb[1]=1;
-		tmpb[2]=3;
-		printf("Matrix:\n");
-		print_matrix(3,3,tmp3," %8.5f");
-		printf("RHS:\n");
-		print_matrix(3,1,tmpb," %12.7f");
-		LU_decompose(3,tmp3,tmpindx,&tmpd);
-		LU_backsubstitute(3,tmp3,tmpindx,tmpb);
-		printf("Solution:\n");
-		print_matrix(3,1,tmpb," %12.7f");
-		printf("\n");
-		*/
+#if defined (DEBUG)
+		{
+			double tmp3[9], tmpb[3], tmpd;
+			/* quick test of matrix solver: It worked! */
+			/* Hand calculations give x=7/39,y=27/39,z=4/39 */
+			tmp3[0]=5;
+			tmp3[1]=2;
+			tmp3[2]=7;
+			tmp3[3]=1;
+			tmp3[4]=0;
+			tmp3[5]=8;
+			tmp3[6]=4;
+			tmp3[7]=3;
+			tmp3[8]=2;
+			tmpb[0]=3;
+			tmpb[1]=1;
+			tmpb[2]=3;
+			printf("Matrix:\n");
+			print_matrix(3,3,tmp3," %8.5f");
+			printf("RHS:\n");
+			print_matrix(3,1,tmpb," %12.7f");
+			LU_decompose(3,tmp3,tmpindx,&tmpd);
+			LU_backsubstitute(3,tmp3,tmpindx,tmpb);
+			printf("Solution:\n");
+			print_matrix(3,1,tmpb," %12.7f");
+			printf("\n");
+		}
+#endif /* defined (DEBUG) */
+
 		/* the eye position is the point where x', y' and h are all zero */
 		eye_matrix[0]=t[0];
 		eye_matrix[1]=t[3];
@@ -311,17 +329,22 @@ Requires for now that NDC_bottom and NDC_left are zero.
 		eye[1]=-t[10];
 		eye[2]=-t[11];
 		LU_backsubstitute(3,eye_matrix,tmpindx,eye);
-#if defined (OLD_CODE)
-		/* can also find eye position using photogrammetry calculations with 2
-			 different points on the same image - not as efficient, though */
-		p1[0]=NDC_left;
-		p1[1]=NDC_bottom;
-		p2[0]=NDC_left+NDC_width;
-		p2[1]=NDC_bottom+NDC_height;
-		point_pair_to_3d(p1,t,p2,t,eye);
-#endif /* defined (OLD_CODE) */
-		/*printf("Eye position:\n");
-			print_matrix(1,3,eye," %14.7f");*/
+
+#if defined (DEBUG)
+		{
+			double p1[2], p2[2];
+			/* can also find eye position using photogrammetry calculations with 2
+				 different points on the same image - not as efficient, though */
+			p1[0]=NDC_left;
+			p1[1]=NDC_bottom;
+			p2[0]=NDC_left+NDC_width;
+			p2[1]=NDC_bottom+NDC_height;
+			point_pair_to_3d(p1,t,p2,t,eye);
+
+			printf("Eye position:\n");
+			print_matrix(1,3,eye," %14.7f");
+		}
+#endif /* defined (DEBUG) */
 
 		/* form modelview matrix from unit vector axes in t */
 		modelview_matrix[ 0]= t[0];
@@ -376,32 +399,37 @@ Requires for now that NDC_bottom and NDC_left are zero.
 		S33=(-znorm*(near+far)-2*S44)/(far-near);
 		S34=(-znorm*(near+far)-2*S44)*near/(far-near)-znorm*near-S44;
 
-		/* test! */
-		/*printf("T:\n");
-		print_matrix(4,3,t," %12.7f");
-		projection_matrix[0]=xnorm;
-		projection_matrix[1]=0.0;
-		projection_matrix[2]=0.0;
-		projection_matrix[3]=S14;
-		projection_matrix[4]=0.0;
-		projection_matrix[5]=ynorm;
-		projection_matrix[6]=0.0;
-		projection_matrix[7]=S24;
-		projection_matrix[8]=0.0;
-		projection_matrix[9]=0.0;
-		projection_matrix[10]=S33;
-		projection_matrix[11]=S34;
-		projection_matrix[12]=0.0;
-		projection_matrix[13]=0.0;
-		projection_matrix[14]=-znorm;
-		projection_matrix[15]=S44;
-		printf("modelview matrix:\n");
-		print_matrix(4,4,modelview_matrix," %12.7f");
-		printf("projection matrix:\n");
-		print_matrix(4,4,projection_matrix," %12.7f");
-		multiply_matrix(4,4,4,projection_matrix,modelview_matrix,tmp_result);
-		printf("result:\n");
-		print_matrix(4,4,tmp_result," %12.7f");*/
+#if defined (DEBUG)
+		{
+			double tmp_result[16];
+			/* test! */
+			printf("T:\n");
+			print_matrix(4,3,t," %12.7f");
+			projection_matrix[0]=xnorm;
+			projection_matrix[1]=0.0;
+			projection_matrix[2]=0.0;
+			projection_matrix[3]=S14;
+			projection_matrix[4]=0.0;
+			projection_matrix[5]=ynorm;
+			projection_matrix[6]=0.0;
+			projection_matrix[7]=S24;
+			projection_matrix[8]=0.0;
+			projection_matrix[9]=0.0;
+			projection_matrix[10]=S33;
+			projection_matrix[11]=S34;
+			projection_matrix[12]=0.0;
+			projection_matrix[13]=0.0;
+			projection_matrix[14]=-znorm;
+			projection_matrix[15]=S44;
+			printf("modelview matrix:\n");
+			print_matrix(4,4,modelview_matrix," %12.7f");
+			printf("projection matrix:\n");
+			print_matrix(4,4,projection_matrix," %12.7f");
+			multiply_matrix(4,4,4,projection_matrix,modelview_matrix,tmp_result);
+			printf("result:\n");
+			print_matrix(4,4,tmp_result," %12.7f");
+		}
+#endif /* defined (DEBUG) */
 
 		/* Final projection matrix is S premultiplied by the following matrix A */
 		/* to give the viewing volume in Normalized Device Coordinates: */

@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : select_private.h
 
-LAST MODIFIED : 5 December 2000
+LAST MODIFIED : 26 November 2001
 
 DESCRIPTION :
 Creates a scrolled list of objects based upon their name.  Allows the user
@@ -21,7 +21,9 @@ New version using macros to handle different object types.
 #include <Xm/TextF.h>
 #include "general/debug.h"
 #include "select/select.h"
+#if !defined (NO_SELECT_UIDH)
 #include "select/select.uidh"
+#endif /* !defined (NO_SELECT_UIDH) */
 #include "user_interface/gui_dialog_macros.h"
 #include "user_interface/message.h"
 #include "user_interface/user_interface.h"

@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : input_module.c
 
-LAST MODIFIED : 25 August 2000
+LAST MODIFIED : 26 November 2001
 
 DESCRIPTION :
 Contains all the code needed to handle input from any of a number of devices,
@@ -58,6 +58,9 @@ data.
 #include <X11/extensions/XI.h>
 #include <X11/extensions/XInput.h>
 #include <X11/Xutil.h>
+/* X11/extensions/XI.h has "#define CREATE 1" which interferes with our
+	 CREATE/DESTROY macros */
+#undef CREATE
 #endif
 #include "general/debug.h"
 #include "io_devices/input_module.h"
@@ -115,7 +118,8 @@ int
 #endif
 	spaceball_button_press_event_type,spaceball_button_release_event_type,
 	spaceball_motion_event_type;
-int spaceball_button_press_event_class,spaceball_button_release_event_class,
+/*???RC changed type of following from int to unsigned long */
+unsigned long spaceball_button_press_event_class,spaceball_button_release_event_class,
 	spaceball_motion_event_class;
 int spaceball_valid=0;
 #if defined (SGI)
@@ -149,7 +153,8 @@ static char polhemus_station[]={'l','1','\15'};
 #if defined (DIALS)
 int dials_motion_event_type,dials_button_press_event_type,
 	dials_button_release_event_type;
-int dials_motion_event_class,dials_button_press_event_class,
+/*???RC changed type of following from int to unsigned long */
+unsigned long dials_motion_event_class,dials_button_press_event_class,
 	dials_button_release_event_class;
 int dials_valid=0;
 int dials_calibrated[6],dials_calibrate_value[6];
@@ -185,7 +190,7 @@ Module functions
 static int input_module_do_callback(Input_module_message message,int device,
 	struct User_interface *user_interface)
 /*******************************************************************************
-LAST MODIFIED : 23 June 1996
+LAST MODIFIED : 26 November 2001
 
 DESCRIPTION :
 Calls the callback, given the message.  Searches through a linked list, on the
@@ -194,9 +199,12 @@ it to the window with the mouse on it.
 ==============================================================================*/
 {
 	Input_module_callback_info temp;
+	int return_code;
+#if defined (OLD_CODE)
 	int return_code,root_x_ret,root_y_ret,win_x_ret,win_y_ret;
 	unsigned int mask_ret;
 	Window child_ret,root_ret;
+#endif /* defined (OLD_CODE) */
 
 	ENTER(input_module_do_callback);
 	/* check arguments */
@@ -369,6 +377,7 @@ Initialises the polhemus via the RS232C, and gets initial data.
 	struct termio Setup;
 
 	ENTER(input_module_polhemus_init);
+	USE_PARAMETER(user_interface);
 	return_code=0;
 	for (i=0;i<3;i++)
 	{
@@ -594,6 +603,7 @@ Closes the polhemus RS232 port.
 ==============================================================================*/
 {
 	ENTER(input_module_polhemus_close);
+	USE_PARAMETER(user_interface);
 	close(RS232);
 	LEAVE;
 
@@ -617,6 +627,7 @@ Initialises the faro arm via the RS232C, and gets initial data.
 	struct termio Setup;
 
 	ENTER(input_module_faro_init);
+	USE_PARAMETER(user_interface);
 
 	return_code=0;
 
@@ -865,6 +876,7 @@ Sends commands to calibrate the faro arm
 } /* input_module_faro_calibrate */
 #endif /* defined (FARO) */
 
+#if defined (OLD_CODE)
 #if defined (FARO)
 static int input_module_faro_close(struct User_interface *user_interface)
 /*******************************************************************************
@@ -875,6 +887,7 @@ Closes the faro faro_serial_port port.
 ==============================================================================*/
 {
 	ENTER(input_module_faro_close);
+	USE_PARAMETER(user_interface);
 	close(faro_serial_port);
 	LEAVE;
 
@@ -882,6 +895,7 @@ Closes the faro faro_serial_port port.
 	return (1);
 } /* input_module_faro_close */
 #endif /* defined (FARO) */
+#endif /* defined (OLD_CODE) */
 
 #if defined (DIALS)
 static int input_module_dials_init(struct User_interface *user_interface)
@@ -1933,7 +1947,6 @@ Currently supports a scaling and an offset of HAPTIC for mapping it
 to world coordinates.
 ==============================================================================*/
 {
-	double *double_data;
 	int return_code;
 
 	switch ( mode )
@@ -1942,14 +1955,14 @@ to world coordinates.
 		{
 			if ( data )
 			{
-				double_data = (double *)data;
-
 				return_code = 1;
 				switch ( device )
 				{
 #if defined (HAPTIC)
 					case IM_DEVICE_HAPTIC:
 					{
+						double *double_data = (double *)data;
+
 						haptic_set_scale(double_data[0], double_data[1], double_data[2]);
 						/* SAB The haptic environment only supports a single scale factor
 							so I have made them all work off the x */
@@ -1970,14 +1983,14 @@ to world coordinates.
 		{
 			if ( data )
 			{
-				double_data = (double *)data;
-
 				return_code = 1;
 				switch ( device )
 				{
 #if defined (HAPTIC)
 					case IM_DEVICE_HAPTIC:
 					{
+						double *double_data = (double *)data;
+
 						haptic_position_offset[0] = double_data[0];
 						haptic_position_offset[1] = double_data[1];
 						haptic_position_offset[2] = double_data[2];
@@ -2051,7 +2064,6 @@ Currently supports a scaling and an offset of HAPTIC for mapping it
 to world coordinates.
 ==============================================================================*/
 {
-	double *double_data;
 	int return_code;
 
 	switch ( mode )
@@ -2060,14 +2072,14 @@ to world coordinates.
 		{
 			if ( data )
 			{
-				double_data = (double *)data;
-
 				return_code = 1;
 				switch ( device )
 				{
 #if defined (HAPTIC)
 					case IM_DEVICE_HAPTIC:
 					{
+						double *double_data = (double *)data;
+
 						double_data[0] = haptic_position_scale[0];
 						double_data[1] = haptic_position_scale[1];
 						double_data[2] = haptic_position_scale[2];
@@ -2086,14 +2098,14 @@ to world coordinates.
 		{
 			if ( data )
 			{
-				double_data = (double *)data;
-
 				return_code = 1;
 				switch ( device )
 				{
 #if defined (HAPTIC)
 					case IM_DEVICE_HAPTIC:
 					{
+						double *double_data = (double *)data;
+
 						double_data[0] = haptic_position_offset[0];
 						double_data[1] = haptic_position_offset[1];
 						double_data[2] = haptic_position_offset[2];
@@ -2112,14 +2124,14 @@ to world coordinates.
 		{
 			if ( data )
 			{
-				double_data = (double *)data;
-
 				return_code = 1;
 				switch ( device )
 				{
 #if defined (HAPTIC)
 					case IM_DEVICE_HAPTIC:
 					{
+						double *double_data = (double *)data;
+
 						double_data[0] = haptic_position_current[0];
 						double_data[1] = haptic_position_current[1];
 						double_data[2] = haptic_position_current[2];

@@ -36,8 +36,26 @@ Module functions
 ----------------
 */
 
+/*???RC Don't need IS_OBJECT_IN_INDEX_FUNCTION, hence include module functions
+	one-at-a-time */
+#if defined (OLD_CODE)
 DECLARE_INDEXED_LIST_MODULE_FUNCTIONS(Any_object, \
 	subobject,void *,compare_pointer)
+#endif /* defined (OLD_CODE) */
+
+DECLARE_CREATE_INDEX_NODE_FUNCTION(Any_object)
+DECLARE_DESTROY_INDEX_NODE_FUNCTION(Any_object)
+DECLARE_DUPLICATE_INDEX_NODE_FUNCTION(Any_object)
+DECLARE_FIND_LEAF_NODE_IN_INDEX_FUNCTION(Any_object, subobject, void *,
+	compare_pointer)
+DECLARE_REMOVE_OBJECT_FROM_INDEX_FUNCTION(Any_object, subobject,
+	compare_pointer)
+DECLARE_REMOVE_OBJECTS_FROM_INDEX_THAT_FUNCTION(Any_object)
+DECLARE_ADD_INDEX_TO_NODE_PARENT_FUNCTION(Any_object, subobject,
+	compare_pointer)
+DECLARE_ADD_OBJECT_TO_INDEX_FUNCTION(Any_object, subobject, compare_pointer)
+DECLARE_FIRST_OBJECT_IN_INDEX_THAT_FUNCTION(Any_object)
+DECLARE_FOR_EACH_OBJECT_IN_INDEX_FUNCTION(Any_object)
 
 /*
 Global functions

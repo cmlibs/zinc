@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : machine.c
 
-LAST MODIFIED : 22 June 1999
+LAST MODIFIED : 26 November 2001
 
 DESCRIPTION :
 ==============================================================================*/
@@ -150,12 +150,12 @@ Parses the name, and turns it into a type.
 {
 #if !defined (WINDOWS_DEV_FLAG)
 	enum Machine_type *machine_type_address;
-	char *current_token,*directory_name,**name_address;
-	int file_name_length;
+	char *current_token;
 #endif /* !defined (WINDOWS_DEV_FLAG) */
 	int return_code;
 
 	ENTER(set_file_name);
+	USE_PARAMETER(dummy_user_data);
 	if (state)
 	{
 #if !defined (WINDOWS_DEV_FLAG)

@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : transformation_editor.c
 
-LAST MODIFIED : 13 December 1996
+LAST MODIFIED : 26 November 2001
 
 DESCRIPTION :
 This module creates a free transformation_editor input device, using two dof3,
@@ -74,6 +74,7 @@ Tells CMGUI about the current values.
 	struct Dof3_data new_dof3;
 
 	ENTER(transformation_editor_update_coord);
+	USE_PARAMETER(coord_widget);
 	temp_transformation_editor->parent_coordinate = coordinate;
 	get_local_position(&(temp_transformation_editor->current_value.origin.
 		position),coordinate,&new_dof3);
@@ -99,6 +100,7 @@ Tells CMGUI about the current values.
 	struct Dof3_data *temp_pos = temp_dof3;
 
 	ENTER(transformation_editor_update_position);
+	USE_PARAMETER(transformation_editor_widget);
 	get_global_position(temp_pos,temp_transformation_editor->parent_coordinate,
 		&(temp_transformation_editor->current_value.origin.position));
 	transformation_editor_update(temp_transformation_editor);
@@ -118,6 +120,7 @@ Tells CMGUI about the current values.
 	struct Dof3_data *temp_direction = temp_dof3;
 
 	ENTER(transformation_editor_update_direction);
+	USE_PARAMETER(direction_widget);
 	get_global_direction(temp_direction,
 		temp_transformation_editor->parent_coordinate,
 		&(temp_transformation_editor->current_value.origin.direction));
@@ -137,6 +140,7 @@ Finds the id of the buttons on the transformation_editor widget.
 	struct Transformation_editor_struct *temp_transformation_editor;
 
 	ENTER(transformation_editor_identify_button);
+	USE_PARAMETER(reason);
 	/* find out which transformation_editor widget we are in */
 	XtVaGetValues(w,XmNuserData,&temp_transformation_editor,NULL);
 	switch (button_num)
@@ -191,6 +195,8 @@ mem etc
 	struct Transformation_editor_struct *temp_transformation_editor;
 
 	ENTER(transformation_editor_destroy_CB);
+	USE_PARAMETER(reason);
+	USE_PARAMETER(tag);
 	/* Get the pointer to the data for the transformation_editor widget */
 	XtVaGetValues(w,XmNuserData,&temp_transformation_editor,NULL);
 	/* deallocate the memory for the user data */
@@ -555,7 +561,6 @@ Changes a data item of the transformation_editor widget.
 	void *return_code;
 	struct Transformation_editor_struct *temp_transformation_editor;
 	static struct Callback_data dat_callback;
-	static Widget dat_widget;
 
 	ENTER(transformation_editor_get_data);
 	/* Get the pointer to the data for the transformation_editor dialog */

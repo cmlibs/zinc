@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : application.c
 
-LAST MODIFIED : 19 September 1996
+LAST MODIFIED : 26 November 2001
 
 DESCRIPTION :
 The functions linking cmgui with applications.
@@ -31,6 +31,8 @@ Called in response to the command
 	int return_code;
 
 	ENTER(set_application_parameters);
+	USE_PARAMETER(dummy_to_be_modified);
+	USE_PARAMETER(dummy_user_data);
 	if (state)
 	{
 		if (current_token=state->current_token)

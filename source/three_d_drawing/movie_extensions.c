@@ -1,11 +1,9 @@
 /*******************************************************************************
 FILE : movie_extensions.c
 
-LAST MODIFIED : 10 June 1998
+LAST MODIFIED : 26 November 2001
 
 DESCRIPTION :
-
-HISTORY :
 ==============================================================================*/
 #include <dlfcn.h>
 #include <Xm/Xm.h>
@@ -147,7 +145,7 @@ DESCRIPTION :
 struct X3d_movie *CREATE(X3d_movie)(char *filename, 
 	enum X3d_movie_create_option create_option)
 /*******************************************************************************
-LAST MODIFIED : 10 June 1998
+LAST MODIFIED : 26 November 2001
 
 DESCRIPTION :
 Attempts to create a movie object.
@@ -156,17 +154,17 @@ Attempts to create a movie object.
 	int return_code;
 #if defined (SGI_MOVIE_FILE)
 	DMparams *params;
+	/*void *handleA, *handleB, *handleC;*/
 #endif /* defined (SGI_MOVIE_FILE) */
 	struct X3d_movie *movie;
-	void *handleA, *handleB, *handleC;
 
 	ENTER(CREATE(X3d_movie));
 	if (filename)
 	{
 #if defined (SGI_MOVIE_FILE)
-		if ((handleA = dlopen("libmoviefile.so", RTLD_LAZY | RTLD_GLOBAL ))
-			&& (handleB = dlopen("libmovieplay.so", RTLD_LAZY | RTLD_GLOBAL ))
-			&& (handleC = dlopen("libdmedia.so", RTLD_LAZY | RTLD_GLOBAL )))
+		if ((/*handleA = */dlopen("libmoviefile.so", RTLD_LAZY | RTLD_GLOBAL ))
+			&& (/*handleB = */dlopen("libmovieplay.so", RTLD_LAZY | RTLD_GLOBAL ))
+			&& (/*handleC = */dlopen("libdmedia.so", RTLD_LAZY | RTLD_GLOBAL )))
 		{
 			/* Actually only need handle if we want to close it again */
 			if (ALLOCATE(movie, struct X3d_movie, 1 ))

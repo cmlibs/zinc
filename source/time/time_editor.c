@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : time_editor.c
 
-LAST MODIFIED : 24 November 1999
+LAST MODIFIED : 26 November 2001
 
 DESCRIPTION :
 ==============================================================================*/
@@ -805,8 +805,9 @@ Changes the time_keeper in the time_editor widget.
 					time_editor->time_keeper = ACCESS(Time_keeper)(time_keeper);
 					Time_keeper_add_callback(time_editor->time_keeper,
 						time_editor_time_keeper_callback, (void *)time_editor,
-						TIME_KEEPER_NEW_TIME | TIME_KEEPER_STARTED |
-						TIME_KEEPER_STOPPED | TIME_KEEPER_CHANGED_DIRECTION );
+						(enum Time_keeper_event)
+							(TIME_KEEPER_NEW_TIME | TIME_KEEPER_STARTED |
+								TIME_KEEPER_STOPPED | TIME_KEEPER_CHANGED_DIRECTION ));
 					/* Get the text widget to display the correct time */
 					time_editor_time_keeper_callback(time_keeper,
 						TIME_KEEPER_NEW_TIME, (void *)time_editor);

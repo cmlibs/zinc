@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : colour_editor.c
 
-LAST MODIFIED : 29 November 1997
+LAST MODIFIED : 26 November 2001
 
 DESCRIPTION :
 Creates a window that allows the user to create a colour.  Each colour component
@@ -131,6 +131,7 @@ Finds the id of the buttons on the colour_editor control dialog box.
 	struct Colour_editor_struct *temp_colour_editor;
 
 	ENTER(colour_editor_identify_button);
+	USE_PARAMETER(reason);
 	/* find out which colour_editor dialog we are in */
 	XtVaGetValues(w,XmNuserData,&temp_colour_editor,NULL);
 	switch (button_num)
@@ -490,6 +491,8 @@ Callback for the colour_editor dialog - tidies up all memory allocation
 	struct Colour_editor_struct *temp_colour_editor;
 
 	ENTER(colour_editor_destroy_CB);
+	USE_PARAMETER(tag);
+	USE_PARAMETER(reason);
 	/* Get the pointer to the data for the colour_editor dialog */
 	XtVaGetValues(w,XmNuserData,&temp_colour_editor,NULL);
 	/* deallocate the memory for the user data */
@@ -614,6 +617,8 @@ button has been pressed,and then exits.
 	struct Colour_editor_struct *temp_colour_editor;
 
 	ENTER(colour_editor_number_CB);
+	USE_PARAMETER(tag);
+	USE_PARAMETER(reason);
 	/* Get the pointer to the data for the colour_editor dialog */
 	XtVaGetValues(w,XmNuserData,&temp_colour_editor,NULL);
 	/* Find out which combo the number is from */
@@ -661,6 +666,8 @@ button has been pressed,and then exits.
 	struct Colour_editor_struct *temp_colour_editor;
 
 	ENTER(colour_editor_slider_CB);
+	USE_PARAMETER(tag);
+	USE_PARAMETER(reason);
 	/* Get the pointer to the data for the colour_editor dialog */
 	XtVaGetValues(w,XmNuserData,&temp_colour_editor,NULL);
 	/* Find out which combo the number is from */
@@ -707,6 +714,7 @@ Callback for the option menu - to change between RGB/HSV etc
 	struct Colour_editor_struct *temp_colour_editor;
 
 	ENTER(colour_editor_mode_CB);
+	USE_PARAMETER(reason);
 	/* Get the pointer to the data for the colour_editor dialog */
 	XtVaGetValues(w,XmNuserData,&temp_colour_editor,NULL);
 	switch (button_num)

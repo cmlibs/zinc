@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : transformation_editor_dialog.h
 
-LAST MODIFIED : 7 September 1998
+LAST MODIFIED : 26 November 2001
 
 DESCRIPTION :
 This module creates a free transformation_editor_dialog input device.
@@ -80,10 +80,10 @@ from <transformation_editor_dialog widget>.  Otherwise, get the data item from
 ==============================================================================*/
 
 int bring_up_transformation_editor_dialog(
-	Widget *transformation_editor_dialog_address,Widget parent,
+	Widget *transformation_editor_dialog_address,
 	struct Cmgui_coordinate *init_data,struct User_interface *user_interface);
 /*******************************************************************************
-LAST MODIFIED : 23 June 1996
+LAST MODIFIED : 26 November 2001
 
 DESCRIPTION :
 If there is a transformation editor dialog in existence, then bring it to the

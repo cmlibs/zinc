@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : camera.c
 
-LAST MODIFIED : 13 December 1996
+LAST MODIFIED : 26 November 2001
 
 DESCRIPTION :
 This module creates a free camera input device,using two dof3,two control and
@@ -69,6 +69,7 @@ Tells CMGUI about the current values.
 	struct Dof3_data new_dof3;
 
 	ENTER(camera_update_coord);
+	USE_PARAMETER(coord_widget);
 	temp_camera->current_coordinate=coordinate;
 	get_local_position(&(temp_camera->current_value.position),
 		coordinate,&new_dof3);
@@ -92,6 +93,7 @@ Tells CMGUI about the current values.
 	struct Dof3_data *temp_position=temp_dof3;
 
 	ENTER(camera_update_position);
+	USE_PARAMETER(position_widget);
 	get_global_position(temp_position,temp_camera->current_coordinate,
 		&(temp_camera->current_value.position));
 	camera_update(temp_camera);
@@ -111,6 +113,7 @@ Tells CMGUI about the current values.
 	struct Dof3_data *temp_direction=temp_dof3;
 
 	ENTER(camera_update_direction);
+	USE_PARAMETER(direction_widget);
 	get_global_direction(temp_direction,temp_camera->current_coordinate,
 		&(temp_camera->current_value.direction));
 	camera_update(temp_camera);
@@ -129,6 +132,7 @@ Finds the id of the buttons on the camera widget.
 	struct Camera_struct *temp_camera;
 
 	ENTER(camera_identify_button);
+	USE_PARAMETER(reason);
 	/* find out which camera widget we are in */
 	XtVaGetValues(w,XmNuserData,&temp_camera,NULL);
 	switch (button_num)
@@ -177,6 +181,8 @@ Callback for the camerament dialog - tidies up all details - mem etc
 	struct Camera_struct *temp_camera;
 
 	ENTER(camera_destroy_CB);
+	USE_PARAMETER(tag);
+	USE_PARAMETER(reason);
 	/* Get the pointer to the data for the camera widget */
 	XtVaGetValues(w,XmNuserData,&temp_camera,NULL);
 	*(temp_camera->widget_address)=(Widget)NULL;
@@ -493,8 +499,6 @@ Changes a data item of the camera widget.
 	void *return_code;
 	struct Camera_struct *temp_camera;
 	static struct Callback_data dat_callback;
-	static Widget dat_widget;
-	static struct Camera_data dat_data;
 
 	ENTER(camera_get_data);
 	/* Get the pointer to the data for the camera dialog */

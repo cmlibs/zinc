@@ -88,6 +88,7 @@ Finds the id of the buttons on the edit_var control dialog box.
 	struct Edit_var_struct *temp_edit_var;
 
 	ENTER(edit_var_identify_button);
+	USE_PARAMETER(reason);
 	/* find out which edit_var dialog we are in */
 	XtVaGetValues(w,XmNuserData,&temp_edit_var,NULL);
 	switch (button_num)
@@ -124,6 +125,8 @@ Callback for the edit_var dialog - tidies up all memory allocation
 	struct Edit_var_struct *temp_edit_var;
 
 	ENTER(edit_var_destroy_CB);
+	USE_PARAMETER(tag);
+	USE_PARAMETER(reason);
 	/* Get the pointer to the data for the edit_var dialog */
 	XtVaGetValues(w,XmNuserData,&temp_edit_var,NULL);
 	/* deallocate the memory for the user data */
@@ -200,6 +203,8 @@ has been pressed, and then exits.
 	struct Edit_var_struct *temp_edit_var;
 
 	ENTER(edit_var_number_CB);
+	USE_PARAMETER(tag);
+	USE_PARAMETER(reason);
 	/* Get the pointer to the data for the edit_var dialog */
 	XtVaGetValues(w,XmNuserData,&temp_edit_var,NULL);
 	/* get the string */
@@ -231,6 +236,8 @@ has been pressed, and then exits.
 	struct Edit_var_struct *temp_edit_var;
 
 	ENTER(edit_var_slider_CB);
+	USE_PARAMETER(tag);
+	USE_PARAMETER(reason);
 	/* Get the pointer to the data for the edit_var dialog */
 	XtVaGetValues(w,XmNuserData,&temp_edit_var,NULL);
 	/* get the string */
@@ -261,7 +268,6 @@ Allows the user to set the value of a variable between the limits low_limit
 and high_limit.
 ==============================================================================*/
 {
-	int i;
 	MrmType edit_var_dialog_class;
 	struct Edit_var_struct *temp_edit_var=NULL;
 	static MrmRegisterArg callback_list[]=
@@ -449,8 +455,6 @@ Returns a data item of the edit_var widget.
 ==============================================================================*/
 {
 	int return_code;
-	static struct Callback_data dat_callback;
-	static EDIT_VAR_PRECISION dat_number;
 	struct Edit_var_struct *temp_edit_var;
 
 	ENTER(edit_var_get_data);
