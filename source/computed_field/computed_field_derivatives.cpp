@@ -237,7 +237,7 @@ Check the source fields using the default.
 	LEAVE;
 
 	return (return_code);
-} /* Computed_field_derivative_evaluate_cache_at_node */
+} /* Computed_field_derivative_is_defined_at_node */
 
 #define Computed_field_derivative_has_numerical_components \
 	Computed_field_default_has_numerical_components
