@@ -1800,7 +1800,9 @@ NB
 			{
 				/* Replace the %z1% variables and $variables in the working_string */
 				strcpy(working_string,command_string);
+#if ! defined (PERL_INTERPRETER)
 				parse_variable(&working_string);
+#endif /* ! defined (PERL_INTERPRETER) */
 				if (ALLOCATE(state->command_string,char,strlen(working_string)+1))
 				{
 					strcpy(state->command_string,working_string);
