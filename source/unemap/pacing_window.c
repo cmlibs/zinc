@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : pacing_window.c
 
-LAST MODIFIED : 23 January 2002
+LAST MODIFIED : 26 January 2003
 
 DESCRIPTION :
 ==============================================================================*/
@@ -15,6 +15,7 @@ DESCRIPTION :
 #include <X11/Composite.h>
 #include <Xm/Xm.h>
 #include <Xm/PushBG.h>
+#include <Xm/ScrollBar.h>
 #include <Mrm/MrmPublic.h>
 #include <Mrm/MrmDecls.h>
 #endif /* defined (MOTIF) */
@@ -34,7 +35,7 @@ Module types
 */
 struct Pacing_window
 /*******************************************************************************
-LAST MODIFIED : 11 November 2001
+LAST MODIFIED : 26 January 2003
 
 DESCRIPTION :
 The window associated with the set up button.
@@ -42,9 +43,9 @@ The window associated with the set up button.
 {
 	char *decrement_threshold_pairs_string,pacing,*pacing_electrodes,response,
 		*return_electrodes;
-	float basic_cycle_length,control_voltage,*decrement_threshold_pairs,
-		*pacing_voltages,s2_delay,s2_delay_change,s2_delay_change_factor,
-		s2_resolution,s2_s1_pause;
+	float basic_cycle_length,control_voltage,control_width,
+		*decrement_threshold_pairs,*pacing_voltages,s2_delay,s2_delay_change,
+		s2_delay_change_factor,s2_s1_pause;
 	int number_of_pacing_channels,number_of_return_channels,number_of_s1,
 		number_of_decrement_threshold_pairs,*pacing_channels,*return_channels,
 		total_number_of_s1_pacing_voltages;
@@ -53,8 +54,10 @@ The window associated with the set up button.
 	struct User_interface *user_interface;
 #if defined (MOTIF)
 	Widget activation,window,shell;
-	Widget basic_cycle_length_form,basic_cycle_length_value;
-	Widget control_voltage_form,control_voltage_value;
+	Widget basic_cycle_length_form,basic_cycle_length_slider,
+		basic_cycle_length_value;
+	Widget control_voltage_form,control_voltage_slider,control_voltage_value;
+	Widget control_width_form,control_width_slider,control_width_value;
 	Widget decrement_threshold_pairs_form,decrement_threshold_pairs_value;
 	Widget number_of_s1_form,number_of_s1_value;
 	Widget pacing_electrodes_form,pacing_electrodes_value;
@@ -62,7 +65,6 @@ The window associated with the set up button.
 	Widget s2_delay_form,s2_delay_value;
 	Widget s2_delay_change_form,s2_delay_change_value;
 	Widget s2_delay_change_factor_form,s2_delay_change_factor_value;
-	Widget s2_resolution_form,s2_resolution_value;
 	Widget s2_s1_pause_form,s2_s1_pause_value;
 	Widget basic_cycle_length_pace_toggle,restitution_curve_pace_toggle,
 		restitution_time_pace_toggle,restitution_time_no_button,
@@ -85,6 +87,151 @@ static MrmHierarchy pacing_window_hierarchy;
 Module functions
 ----------------
 */
+static int change_control_width(struct Pacing_window *pacing_window,
+	float control_width)
+/*******************************************************************************
+LAST MODIFIED : 26 January 2002
+
+DESCRIPTION :
+Parses the <electrodes> string to get the channels for the <rig>.
+==============================================================================*/
+{
+	char *temp_decrement_threshold_pairs_string,value_string[101];
+	float *decrement_threshold_pairs;
+	int i,number_of_decrement_threshold_pairs,return_code;
+
+	ENTER(change_control_width);
+	return_code=0;
+	if (pacing_window&&(0<control_width))
+	{
+		return_code=1;
+		pacing_window->control_width=control_width;
+		sprintf(value_string,"%g",pacing_window->control_width);
+		XtVaSetValues(pacing_window->control_width_value,
+			XmNcursorPosition,strlen(value_string),
+			XmNvalue,value_string,
+			NULL);
+		DEALLOCATE(pacing_window->decrement_threshold_pairs_string);
+		assign_empty_string(&(pacing_window->decrement_threshold_pairs_string));
+		i=0;
+		number_of_decrement_threshold_pairs=
+			pacing_window->number_of_decrement_threshold_pairs;
+		decrement_threshold_pairs=pacing_window->decrement_threshold_pairs;
+		while (return_code&&(i<number_of_decrement_threshold_pairs))
+		{
+			/* must be a multiple of the control width */
+			if (decrement_threshold_pairs[2*i]<pacing_window->control_width)
+			{
+				decrement_threshold_pairs[2*i]=pacing_window->control_width;
+			}
+			else
+			{
+				decrement_threshold_pairs[2*i]=(pacing_window->control_width)*
+					(float)floor(decrement_threshold_pairs[2*i]/
+					(pacing_window->control_width)+0.5);
+			}
+			/* must be a multiple of the control width and at least twice the
+				control width */
+			if (decrement_threshold_pairs[2*i+1]<2*(pacing_window->control_width))
+			{
+				decrement_threshold_pairs[2*i+1]=2*(pacing_window->control_width);
+			}
+			else
+			{
+				decrement_threshold_pairs[2*i+1]=(pacing_window->control_width)*
+					(float)floor(decrement_threshold_pairs[2*i+1]/
+					(pacing_window->control_width)+0.5);
+			}
+			sprintf(value_string,"%g,%g;",decrement_threshold_pairs[2*i],
+				decrement_threshold_pairs[2*i+1]);
+			if (REALLOCATE(temp_decrement_threshold_pairs_string,
+				pacing_window->decrement_threshold_pairs_string,char,
+				strlen(pacing_window->decrement_threshold_pairs_string)+
+				strlen(value_string)+1))
+			{
+				strcat(temp_decrement_threshold_pairs_string,value_string);
+				pacing_window->decrement_threshold_pairs_string=
+					temp_decrement_threshold_pairs_string;
+				i++;
+			}
+			else
+			{
+				return_code=0;
+			}
+		}
+		XtVaSetValues(pacing_window->decrement_threshold_pairs_value,
+			XmNcursorPosition,strlen(pacing_window->decrement_threshold_pairs_string),
+			XmNvalue,pacing_window->decrement_threshold_pairs_string,
+			NULL);
+		/* must be a multiple of the control width and at least twice the control
+			width */
+		if (pacing_window->basic_cycle_length<2*(pacing_window->control_width))
+		{
+			pacing_window->basic_cycle_length=2*(pacing_window->control_width);
+		}
+		else
+		{
+			pacing_window->basic_cycle_length=(pacing_window->control_width)*
+				floor((pacing_window->basic_cycle_length)/
+				(pacing_window->control_width)+0.5);
+		}
+		sprintf(value_string,"%g",pacing_window->basic_cycle_length);
+		XtVaSetValues(pacing_window->basic_cycle_length_value,
+			XmNcursorPosition,strlen(value_string),
+			XmNvalue,value_string,
+			NULL);
+		/* must be a multiple of the control width */
+		if (pacing_window->s2_delay<pacing_window->control_width)
+		{
+			pacing_window->s2_delay=pacing_window->control_width;
+		}
+		else
+		{
+			pacing_window->s2_delay=(pacing_window->control_width)*
+				floor((pacing_window->s2_delay)/(pacing_window->control_width)+0.5);
+		}
+		sprintf(value_string,"%g",pacing_window->s2_delay);
+		XtVaSetValues(pacing_window->s2_delay_value,
+			XmNcursorPosition,strlen(value_string),
+			XmNvalue,value_string,
+			NULL);
+		/* must be a multiple of the control width */
+		if (pacing_window->s2_delay_change<pacing_window->control_width)
+		{
+			pacing_window->s2_delay_change=pacing_window->control_width;
+		}
+		else
+		{
+			pacing_window->s2_delay_change=(pacing_window->control_width)*
+				floor((pacing_window->s2_delay_change)/
+				(pacing_window->control_width)+0.5);
+		}
+		sprintf(value_string,"%g",pacing_window->s2_delay_change);
+		XtVaSetValues(pacing_window->s2_delay_change_value,
+			XmNcursorPosition,strlen(value_string),
+			XmNvalue,value_string,
+			NULL);
+		/* must be a multiple of the control width */
+		if (pacing_window->s2_s1_pause<pacing_window->control_width)
+		{
+			pacing_window->s2_s1_pause=pacing_window->control_width;
+		}
+		else
+		{
+			pacing_window->s2_s1_pause=(pacing_window->control_width)*
+				floor((pacing_window->s2_s1_pause)/(pacing_window->control_width)+0.5);
+		}
+		sprintf(value_string,"%g",pacing_window->s2_s1_pause);
+		XtVaSetValues(pacing_window->s2_s1_pause_value,
+			XmNcursorPosition,strlen(value_string),
+			XmNvalue,value_string,
+			NULL);
+	}
+	LEAVE;
+
+	return (return_code);
+} /* change_control_width */
+
 static int set_channels_from_string(char *electrodes,struct Rig *rig,
 	int number_of_restricted_channels,int *restricted_channels,
 	char **electrodes_result_address,int *number_of_channels_address,
@@ -333,14 +480,14 @@ Parses the <return_electrodes> string to get the return channels for the
 static int set_decrement_threshold_pairs_from_string(
 	struct Pacing_window *pacing_window,char *decrement_threshold_pairs_string)
 /*******************************************************************************
-LAST MODIFIED : 13 November 2001
+LAST MODIFIED : 26 January 2003
 
 DESCRIPTION :
 Parses the <decrement_threshold_pairs_string> to get the steps to take for the
 restitution curve protocol.
 ==============================================================================*/
 {
-	char *temp_decrement_threshold_pairs_string,temp_string[101];
+	char *temp_decrement_threshold_pairs_string,value_string[101];
 	float decrement,*decrement_threshold_pairs,*temp_decrement_threshold_pairs,
 		threshold;
 	int i,j,number_of_characters,number_of_decrement_threshold_pairs,position,
@@ -377,15 +524,15 @@ restitution curve protocol.
 				(1==sscanf(decrement_threshold_pairs_string+position,"%f",&decrement)))
 			{
 				position += number_of_characters;
-				/* must be a multiple of the S2 resolution */
-				if (decrement<pacing_window->s2_resolution)
+				/* must be a multiple of the control width */
+				if (decrement<pacing_window->control_width)
 				{
-					decrement=pacing_window->s2_resolution;
+					decrement=pacing_window->control_width;
 				}
 				else
 				{
-					decrement=(pacing_window->s2_resolution)*
-						(float)floor(decrement/(pacing_window->s2_resolution)+0.5);
+					decrement=(pacing_window->control_width)*
+						(float)floor(decrement/(pacing_window->control_width)+0.5);
 				}
 				/* skip separators */
 				number_of_characters=0;
@@ -405,15 +552,16 @@ restitution curve protocol.
 						decrement_threshold_pairs_string+position,"%f",&threshold)))
 					{
 						position += number_of_characters;
-						/* must be a multiple of the S2 resolution */
-						if (threshold<pacing_window->s2_resolution)
+						/* must be a multiple of the control width and at least twice
+							control width */
+						if (threshold<2*(pacing_window->control_width))
 						{
-							threshold=pacing_window->s2_resolution;
+							threshold=2*(pacing_window->control_width);
 						}
 						else
 						{
-							threshold=(pacing_window->s2_resolution)*
-								(float)floor(threshold/(pacing_window->s2_resolution)+0.5);
+							threshold=(pacing_window->control_width)*
+								(float)floor(threshold/(pacing_window->control_width)+0.5);
 						}
 						/* add to array */
 						i=0;
@@ -483,14 +631,14 @@ restitution curve protocol.
 		i=0;
 		while (return_code&&(i<number_of_decrement_threshold_pairs))
 		{
-			sprintf(temp_string,"%g,%g;",decrement_threshold_pairs[2*i],
+			sprintf(value_string,"%g,%g;",decrement_threshold_pairs[2*i],
 				decrement_threshold_pairs[2*i+1]);
 			if (REALLOCATE(temp_decrement_threshold_pairs_string,
 				pacing_window->decrement_threshold_pairs_string,char,
 				strlen(pacing_window->decrement_threshold_pairs_string)+
-				strlen(decrement_threshold_pairs_string)))
+				strlen(value_string)+1))
 			{
-				strcat(temp_decrement_threshold_pairs_string,temp_string);
+				strcat(temp_decrement_threshold_pairs_string,value_string);
 				pacing_window->decrement_threshold_pairs_string=
 					temp_decrement_threshold_pairs_string;
 				i++;
@@ -746,6 +894,90 @@ Called when the return electrodes widget is changed.
 } /* ch_pacing_return_electrodes_val */
 #endif /* defined (MOTIF) */
 
+static int start_basic_cycle_length_pacing(struct Pacing_window *pacing_window)
+/*******************************************************************************
+LAST MODIFIED : 26 January 2003
+
+DESCRIPTION :
+Starts or re-starts the basic cycle length pacing.
+==============================================================================*/
+{
+#if defined (MOTIF)
+	Boolean status;
+#endif /* defined (MOTIF) */
+	float *pacing_voltages,voltages_per_second;
+	int i,number_of_pacing_voltages,return_code;
+
+	ENTER(start_basic_cycle_length_pacing);
+	return_code=0;
+	if (pacing_window)
+	{
+		number_of_pacing_voltages=(int)((pacing_window->basic_cycle_length)/
+			(pacing_window->control_width)+0.5);
+		if (REALLOCATE(pacing_voltages,pacing_window->pacing_voltages,float,
+			number_of_pacing_voltages))
+		{
+			pacing_window->pacing_voltages=pacing_voltages;
+			/* set control sensitivity */
+#if defined (MOTIF)
+			XtSetSensitive(pacing_window->restitution_time_pace_toggle,False);
+			XtSetSensitive(pacing_window->restitution_curve_pace_toggle,False);
+#endif /* defined (MOTIF) */
+			/* set up pacing */
+			pacing_voltages[0]=pacing_window->control_voltage;
+			for (i=0;i<number_of_pacing_voltages;i++)
+			{
+				pacing_voltages[i]=0;
+			}
+			pacing_voltages[number_of_pacing_voltages/2]=
+				pacing_window->control_voltage;
+			voltages_per_second=1000./(pacing_window->control_width);
+			if (0<pacing_window->number_of_pacing_channels)
+			{
+				for (i=0;i<pacing_window->number_of_pacing_channels;i++)
+				{
+					unemap_set_channel_stimulating((pacing_window->pacing_channels)[i],
+						1);
+				}
+				unemap_load_voltage_stimulating(
+					pacing_window->number_of_pacing_channels,
+					pacing_window->pacing_channels,number_of_pacing_voltages,
+					voltages_per_second,pacing_voltages,(unsigned int)0,
+					(Unemap_stimulation_end_callback *)NULL,(void *)NULL);
+			}
+			if (0<pacing_window->number_of_return_channels)
+			{
+				for (i=0;i<pacing_window->number_of_return_channels;i++)
+				{
+					unemap_set_channel_stimulating((pacing_window->return_channels)[i],
+						1);
+				}
+				unemap_load_voltage_stimulating(
+					pacing_window->number_of_return_channels,
+					pacing_window->return_channels,(int)0,(float)0,(float *)NULL,
+					(unsigned int)0,(Unemap_stimulation_end_callback *)NULL,
+					(void *)NULL);
+			}
+			/* start pacing */
+			unemap_start_stimulating();
+			pacing_window->pacing=1;
+			return_code=1;
+		}
+		else
+		{
+#if defined (MOTIF)
+			status=False;
+			XtVaSetValues(pacing_window->basic_cycle_length_pace_toggle,
+				XmNset,status,
+				NULL);
+#endif /* defined (MOTIF) */
+		}
+	}
+	LEAVE;
+
+	return (return_code);
+} /* start_basic_cycle_length_pacing */
+
 #if defined (MOTIF)
 static void id_pacing_control_voltage_form(Widget *widget_id,
 	XtPointer pacing_window_structure,XtPointer call_data)
@@ -804,12 +1036,13 @@ Finds the id of the control voltage value in the pacing window.
 static void ch_pacing_control_voltage_value(Widget *widget_id,
 	XtPointer pacing_window_structure,XtPointer call_data)
 /*******************************************************************************
-LAST MODIFIED : 14 October 2001
+LAST MODIFIED : 26 January 2003
 
 DESCRIPTION :
 Called when the control voltage widget is changed.
 ==============================================================================*/
 {
+	Boolean status;
 	char *new_value,value_string[20];
 	float control_voltage;
 	struct Pacing_window *pacing_window;
@@ -823,7 +1056,10 @@ Called when the control voltage widget is changed.
 	{
 		if (pacing_window=(struct Pacing_window *)pacing_window_structure)
 		{
-			if (!(pacing_window->pacing))
+			XtVaGetValues(pacing_window->basic_cycle_length_pace_toggle,
+				XmNset,&status,
+				NULL);
+			if (!(pacing_window->pacing)||(True==status))
 			{
 				XtVaGetValues(pacing_window->control_voltage_value,
 					XmNvalue,&new_value,
@@ -831,6 +1067,11 @@ Called when the control voltage widget is changed.
 				if ((1==sscanf(new_value,"%f",&control_voltage))&&(0<control_voltage))
 				{
 					pacing_window->control_voltage=control_voltage;
+					if (True==status)
+					{
+						unemap_stop_stimulating(0);
+						start_basic_cycle_length_pacing(pacing_window);
+					}
 				}
 			}
 			sprintf(value_string,"%g",pacing_window->control_voltage);
@@ -847,6 +1088,315 @@ Called when the control voltage widget is changed.
 	}
 	LEAVE;
 } /* ch_pacing_control_voltage_value */
+#endif /* defined (MOTIF) */
+
+#if defined (MOTIF)
+static void id_pacing_control_voltage_slide(Widget *widget_id,
+	XtPointer pacing_window_structure,XtPointer call_data)
+/*******************************************************************************
+LAST MODIFIED : 26 January 2003
+
+DESCRIPTION :
+Sets the id of the control voltage slider in the pacing window.
+==============================================================================*/
+{
+	struct Pacing_window *pacing_window;
+
+	ENTER(id_pacing_control_voltage_slide);
+	USE_PARAMETER(call_data);
+	if (pacing_window=(struct Pacing_window *)pacing_window_structure)
+	{
+		pacing_window->control_voltage_slider= *widget_id;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"id_pacing_control_voltage_slide.  Missing pacing_window_structure");
+	}
+	LEAVE;
+} /* id_pacing_control_voltage_slide */
+#endif /* defined (MOTIF) */
+
+#if defined (MOTIF)
+static void ch_pacing_control_voltage_slide(Widget *widget_id,
+	XtPointer pacing_window_structure,XtPointer call_data)
+/*******************************************************************************
+LAST MODIFIED : 26 January 2003
+
+DESCRIPTION :
+Called when the control voltage slider is changed.
+==============================================================================*/
+{
+	Boolean status;
+	char value_string[20];
+	float control_voltage;
+	int slider_maximum,slider_minumum,slider_size;
+	struct Pacing_window *pacing_window;
+	XmScrollBarCallbackStruct *scroll_data;
+
+	ENTER(ch_pacing_control_voltage_slide);
+	USE_PARAMETER(widget_id);
+	if ((scroll_data=(XmScrollBarCallbackStruct *)call_data)&&
+		(XmCR_VALUE_CHANGED==scroll_data->reason))
+	{
+		if (pacing_window=(struct Pacing_window *)pacing_window_structure)
+		{
+			XtVaGetValues(pacing_window->control_voltage_slider,
+				XmNminimum,&slider_minumum,
+				XmNmaximum,&slider_maximum,
+				XmNsliderSize,&slider_size,
+				NULL);
+			XtVaGetValues(pacing_window->basic_cycle_length_pace_toggle,
+				XmNset,&status,
+				NULL);
+			if (!(pacing_window->pacing)||(True==status))
+			{
+				control_voltage=(pacing_window->control_voltage)+
+					((float)(scroll_data->value)/
+					(float)(slider_maximum-slider_minumum-slider_size)-0.5);
+				if (control_voltage>0)
+				{
+					pacing_window->control_voltage=control_voltage;
+					if (True==status)
+					{
+						unemap_stop_stimulating(0);
+						start_basic_cycle_length_pacing(pacing_window);
+					}
+				}
+			}
+			sprintf(value_string,"%g",pacing_window->control_voltage);
+			XtVaSetValues(pacing_window->control_voltage_value,
+				XmNcursorPosition,strlen(value_string),
+				XmNvalue,value_string,
+				NULL);
+			XtVaSetValues(pacing_window->control_voltage_slider,
+				XmNvalue,(slider_maximum-slider_minumum-slider_size)/2,
+				NULL);
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,
+				"ch_pacing_control_voltage_slide.  Missing pacing_window_structure");
+		}
+	}
+	LEAVE;
+} /* ch_pacing_control_voltage_slide */
+#endif /* defined (MOTIF) */
+
+#if defined (MOTIF)
+static void id_pacing_control_width_form(Widget *widget_id,
+	XtPointer pacing_window_structure,XtPointer call_data)
+/*******************************************************************************
+LAST MODIFIED : 26 January 2003
+
+DESCRIPTION :
+Finds the id of the control width form in the pacing window.
+==============================================================================*/
+{
+	struct Pacing_window *pacing_window;
+
+	ENTER(id_pacing_control_width_form);
+	USE_PARAMETER(call_data);
+	if (pacing_window=(struct Pacing_window *)pacing_window_structure)
+	{
+		pacing_window->control_width_form= *widget_id;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"id_pacing_control_width_form.  Missing pacing_window_structure");
+	}
+	LEAVE;
+} /* id_pacing_control_width_form */
+#endif /* defined (MOTIF) */
+
+#if defined (MOTIF)
+static void id_pacing_control_width_value(Widget *widget_id,
+	XtPointer pacing_window_structure,XtPointer call_data)
+/*******************************************************************************
+LAST MODIFIED : 26 January 2003
+
+DESCRIPTION :
+Finds the id of the control width value in the pacing window.
+==============================================================================*/
+{
+	struct Pacing_window *pacing_window;
+
+	ENTER(id_pacing_control_width_value);
+	USE_PARAMETER(call_data);
+	if (pacing_window=(struct Pacing_window *)pacing_window_structure)
+	{
+		pacing_window->control_width_value= *widget_id;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"id_pacing_control_width_value.  Missing pacing_window_structure");
+	}
+	LEAVE;
+} /* id_pacing_control_width_value */
+#endif /* defined (MOTIF) */
+
+#if defined (MOTIF)
+static void ch_pacing_control_width_value(Widget *widget_id,
+	XtPointer pacing_window_structure,XtPointer call_data)
+/*******************************************************************************
+LAST MODIFIED : 26 January 2003
+
+DESCRIPTION :
+Called when the control width widget is changed.
+==============================================================================*/
+{
+	Boolean status;
+	char *new_value,value_string[20];
+	float control_width;
+	int changed;
+	struct Pacing_window *pacing_window;
+	XmAnyCallbackStruct *text_data
+
+	ENTER(ch_pacing_control_width_value);
+	USE_PARAMETER(widget_id);
+	if ((text_data=(XmAnyCallbackStruct *)call_data)&&
+		((XmCR_ACTIVATE==text_data->reason)||
+		(XmCR_LOSING_FOCUS==text_data->reason)))
+	{
+		if (pacing_window=(struct Pacing_window *)pacing_window_structure)
+		{
+			changed=0;
+			XtVaGetValues(pacing_window->basic_cycle_length_pace_toggle,
+				XmNset,&status,
+				NULL);
+			if (!(pacing_window->pacing)||(True==status))
+			{
+				XtVaGetValues(pacing_window->control_width_value,
+					XmNvalue,&new_value,
+					NULL);
+				if ((1==sscanf(new_value,"%f",&control_width))&&(0<control_width))
+				{
+					change_control_width(pacing_window,control_width);
+					changed=1;
+					if (True==status)
+					{
+						unemap_stop_stimulating(0);
+						start_basic_cycle_length_pacing(pacing_window);
+					}
+				}
+			}
+			if (!changed)
+			{
+				sprintf(value_string,"%g",pacing_window->control_width);
+				XtVaSetValues(pacing_window->control_width_value,
+					XmNcursorPosition,strlen(value_string),
+					XmNvalue,value_string,
+					NULL);
+			}
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,
+				"ch_pacing_control_width_value.  Missing pacing_window_structure");
+		}
+	}
+	LEAVE;
+} /* ch_pacing_control_width_value */
+#endif /* defined (MOTIF) */
+
+#if defined (MOTIF)
+static void id_pacing_control_width_slider(Widget *widget_id,
+	XtPointer pacing_window_structure,XtPointer call_data)
+/*******************************************************************************
+LAST MODIFIED : 26 January 2003
+
+DESCRIPTION :
+Sets the id of the control width slider in the pacing window.
+==============================================================================*/
+{
+	struct Pacing_window *pacing_window;
+
+	ENTER(id_pacing_control_width_slider);
+	USE_PARAMETER(call_data);
+	if (pacing_window=(struct Pacing_window *)pacing_window_structure)
+	{
+		pacing_window->control_width_slider= *widget_id;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"id_pacing_control_width_slider.  Missing pacing_window_structure");
+	}
+	LEAVE;
+} /* id_pacing_control_width_slider */
+#endif /* defined (MOTIF) */
+
+#if defined (MOTIF)
+static void ch_pacing_control_width_slider(Widget *widget_id,
+	XtPointer pacing_window_structure,XtPointer call_data)
+/*******************************************************************************
+LAST MODIFIED : 26 January 2003
+
+DESCRIPTION :
+Called when the control width slider is changed.
+==============================================================================*/
+{
+	Boolean status;
+	char value_string[20];
+	float control_width;
+	int changed,slider_maximum,slider_minumum,slider_size;
+	struct Pacing_window *pacing_window;
+	XmScrollBarCallbackStruct *scroll_data;
+
+	ENTER(ch_pacing_control_width_slider);
+	USE_PARAMETER(widget_id);
+	if ((scroll_data=(XmScrollBarCallbackStruct *)call_data)&&
+		(XmCR_VALUE_CHANGED==scroll_data->reason))
+	{
+		if (pacing_window=(struct Pacing_window *)pacing_window_structure)
+		{
+			changed=0;
+			XtVaGetValues(pacing_window->control_width_slider,
+				XmNminimum,&slider_minumum,
+				XmNmaximum,&slider_maximum,
+				XmNsliderSize,&slider_size,
+				NULL);
+			XtVaGetValues(pacing_window->basic_cycle_length_pace_toggle,
+				XmNset,&status,
+				NULL);
+			if (!(pacing_window->pacing)||(True==status))
+			{
+				control_width=(pacing_window->control_width)+
+					((float)(scroll_data->value)-
+					(float)(slider_maximum-slider_minumum-slider_size)/2);
+				if (0<control_width)
+				{
+					change_control_width(pacing_window,control_width);
+					changed=1;
+					if (True==status)
+					{
+						unemap_stop_stimulating(0);
+						start_basic_cycle_length_pacing(pacing_window);
+					}
+				}
+			}
+			if (!changed)
+			{
+				sprintf(value_string,"%g",pacing_window->control_width);
+				XtVaSetValues(pacing_window->control_width_value,
+					XmNcursorPosition,strlen(value_string),
+					XmNvalue,value_string,
+					NULL);
+			}
+			XtVaSetValues(pacing_window->control_width_slider,
+				XmNvalue,(slider_maximum-slider_minumum-slider_size)/2,
+				NULL);
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,
+				"ch_pacing_control_width_slider.  Missing pacing_window_structure");
+		}
+	}
+	LEAVE;
+} /* ch_pacing_control_width_slider */
 #endif /* defined (MOTIF) */
 
 #if defined (MOTIF)
@@ -907,12 +1457,13 @@ Finds the id of the basic cycle length value in the pacing window.
 static void ch_pacing_basic_cycle_length_va(Widget *widget_id,
 	XtPointer pacing_window_structure,XtPointer call_data)
 /*******************************************************************************
-LAST MODIFIED : 14 October 2001
+LAST MODIFIED : 26 January 2003
 
 DESCRIPTION :
 Called when the basic cycle length widget is changed.
 ==============================================================================*/
 {
+	Boolean status;
 	char *new_value,value_string[20];
 	float basic_cycle_length;
 	struct Pacing_window *pacing_window;
@@ -926,24 +1477,33 @@ Called when the basic cycle length widget is changed.
 	{
 		if (pacing_window=(struct Pacing_window *)pacing_window_structure)
 		{
-			if (!(pacing_window->pacing))
+			XtVaGetValues(pacing_window->basic_cycle_length_pace_toggle,
+				XmNset,&status,
+				NULL);
+			if (!(pacing_window->pacing)||(True==status))
 			{
 				XtVaGetValues(pacing_window->basic_cycle_length_value,
 					XmNvalue,&new_value,
 					NULL);
 				if (1==sscanf(new_value,"%f",&basic_cycle_length))
 				{
-					/* must be a multiple of the S2 resolution */
-					if (basic_cycle_length<pacing_window->s2_resolution)
+					/* must be a multiple of the control width and at least twice the
+						control width */
+					if (basic_cycle_length<2*(pacing_window->control_width))
 					{
-						basic_cycle_length=pacing_window->s2_resolution;
+						basic_cycle_length=2*(pacing_window->control_width);
 					}
 					else
 					{
-						basic_cycle_length=(pacing_window->s2_resolution)*
-							floor(basic_cycle_length/(pacing_window->s2_resolution)+0.5);
+						basic_cycle_length=(pacing_window->control_width)*
+							floor(basic_cycle_length/(pacing_window->control_width)+0.5);
 					}
 					pacing_window->basic_cycle_length=basic_cycle_length;
+					if (True==status)
+					{
+						unemap_stop_stimulating(0);
+						start_basic_cycle_length_pacing(pacing_window);
+					}
 				}
 			}
 			sprintf(value_string,"%g",pacing_window->basic_cycle_length);
@@ -960,6 +1520,107 @@ Called when the basic cycle length widget is changed.
 	}
 	LEAVE;
 } /* ch_pacing_basic_cycle_length_va */
+#endif /* defined (MOTIF) */
+
+#if defined (MOTIF)
+static void id_pacing_basic_cycle_length_sl(Widget *widget_id,
+	XtPointer pacing_window_structure,XtPointer call_data)
+/*******************************************************************************
+LAST MODIFIED : 26 January 2003
+
+DESCRIPTION :
+Sets the id of the basic cycle length slider in the pacing window.
+==============================================================================*/
+{
+	struct Pacing_window *pacing_window;
+
+	ENTER(id_pacing_basic_cycle_length_sl);
+	USE_PARAMETER(call_data);
+	if (pacing_window=(struct Pacing_window *)pacing_window_structure)
+	{
+		pacing_window->basic_cycle_length_slider= *widget_id;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"id_pacing_basic_cycle_length_sl.  Missing pacing_window_structure");
+	}
+	LEAVE;
+} /* id_pacing_basic_cycle_length_sl */
+#endif /* defined (MOTIF) */
+
+#if defined (MOTIF)
+static void ch_pacing_basic_cycle_length_sl(Widget *widget_id,
+	XtPointer pacing_window_structure,XtPointer call_data)
+/*******************************************************************************
+LAST MODIFIED : 26 January 2003
+
+DESCRIPTION :
+Called when the basic cycle length slider is changed.
+==============================================================================*/
+{
+	Boolean status;
+	char value_string[20];
+	float basic_cycle_length;
+	int slider_maximum,slider_minumum,slider_size;
+	struct Pacing_window *pacing_window;
+	XmScrollBarCallbackStruct *scroll_data;
+
+	ENTER(ch_pacing_basic_cycle_length_sl);
+	USE_PARAMETER(widget_id);
+	if ((scroll_data=(XmScrollBarCallbackStruct *)call_data)&&
+		(XmCR_VALUE_CHANGED==scroll_data->reason))
+	{
+		if (pacing_window=(struct Pacing_window *)pacing_window_structure)
+		{
+			XtVaGetValues(pacing_window->basic_cycle_length_slider,
+				XmNminimum,&slider_minumum,
+				XmNmaximum,&slider_maximum,
+				XmNsliderSize,&slider_size,
+				NULL);
+			XtVaGetValues(pacing_window->basic_cycle_length_pace_toggle,
+				XmNset,&status,
+				NULL);
+			if (!(pacing_window->pacing)||(True==status))
+			{
+				basic_cycle_length=(pacing_window->basic_cycle_length)+
+					10*((float)(scroll_data->value)-
+					(float)(slider_maximum-slider_minumum-slider_size)/2);
+				/* must be a multiple of the control width and at least twice the
+					control width */
+				if (basic_cycle_length<2*(pacing_window->control_width))
+				{
+					basic_cycle_length=2*(pacing_window->control_width);
+				}
+				else
+				{
+					basic_cycle_length=(pacing_window->control_width)*
+						floor(basic_cycle_length/(pacing_window->control_width)+0.5);
+				}
+				pacing_window->basic_cycle_length=basic_cycle_length;
+				if (True==status)
+				{
+					unemap_stop_stimulating(0);
+					start_basic_cycle_length_pacing(pacing_window);
+				}
+			}
+			sprintf(value_string,"%g",pacing_window->basic_cycle_length);
+			XtVaSetValues(pacing_window->basic_cycle_length_value,
+				XmNcursorPosition,strlen(value_string),
+				XmNvalue,value_string,
+				NULL);
+			XtVaSetValues(pacing_window->basic_cycle_length_slider,
+				XmNvalue,(slider_maximum-slider_minumum-slider_size)/2,
+				NULL);
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,
+				"ch_pacing_basic_cycle_length_sl.  Missing pacing_window_structure");
+		}
+	}
+	LEAVE;
+} /* ch_pacing_basic_cycle_length_sl */
 #endif /* defined (MOTIF) */
 
 #if defined (MOTIF)
@@ -993,15 +1654,18 @@ Finds the id of the basic cycle length pace button in the pacing window.
 static void ch_pacing_basic_cycle_length_pa(Widget widget,
 	XtPointer pacing_window_structure,XtPointer call_data)
 /*******************************************************************************
-LAST MODIFIED : 13 November 2001
+LAST MODIFIED : 26 January 2003
 
 DESCRIPTION :
 Called when the basic cycle length pace button is toggled.
 ==============================================================================*/
 {
 	Boolean status;
+	int i;
+#if defined (OLD_CODE)
 	float *pacing_voltages,voltages_per_second;
-	int i,number_of_pacing_voltages;
+	int number_of_pacing_voltages;
+#endif /* defined (OLD_CODE) */
 	struct Pacing_window *pacing_window;
 
 	ENTER(ch_pacing_basic_cycle_length_pa);
@@ -1012,59 +1676,7 @@ Called when the basic cycle length pace button is toggled.
 		XtVaGetValues(widget,XmNset,&status,NULL);
 		if (True==status)
 		{
-			number_of_pacing_voltages=2*(int)((pacing_window->basic_cycle_length)/
-				(pacing_window->s2_resolution)+0.5);
-			if (REALLOCATE(pacing_voltages,pacing_window->pacing_voltages,float,
-				number_of_pacing_voltages))
-			{
-				pacing_window->pacing_voltages=pacing_voltages;
-				/* set control sensitivity */
-				XtSetSensitive(pacing_window->restitution_time_pace_toggle,False);
-				XtSetSensitive(pacing_window->restitution_curve_pace_toggle,False);
-				/* set up pacing */
-				pacing_voltages[0]=pacing_window->control_voltage;
-				for (i=0;i<number_of_pacing_voltages;i++)
-				{
-					pacing_voltages[i]=0;
-				}
-				pacing_voltages[number_of_pacing_voltages/2]=
-					pacing_window->control_voltage;
-				voltages_per_second=2000./(pacing_window->s2_resolution);
-				if (0<pacing_window->number_of_pacing_channels)
-				{
-					for (i=0;i<pacing_window->number_of_pacing_channels;i++)
-					{
-						unemap_set_channel_stimulating((pacing_window->pacing_channels)[i],
-							1);
-					}
-					unemap_load_voltage_stimulating(
-						pacing_window->number_of_pacing_channels,
-						pacing_window->pacing_channels,number_of_pacing_voltages,
-						voltages_per_second,pacing_voltages,(unsigned int)0,
-						(Unemap_stimulation_end_callback *)NULL,(void *)NULL);
-				}
-				if (0<pacing_window->number_of_return_channels)
-				{
-					for (i=0;i<pacing_window->number_of_return_channels;i++)
-					{
-						unemap_set_channel_stimulating((pacing_window->return_channels)[i],
-							1);
-					}
-					unemap_load_voltage_stimulating(
-						pacing_window->number_of_return_channels,
-						pacing_window->return_channels,(int)0,(float)0,(float *)NULL,
-						(unsigned int)0,(Unemap_stimulation_end_callback *)NULL,
-						(void *)NULL);
-				}
-				/* start pacing */
-				unemap_start_stimulating();
-				pacing_window->pacing=1;
-			}
-			else
-			{
-				status=False;
-				XtVaSetValues(widget,XmNset,status,NULL);
-			}
+			start_basic_cycle_length_pacing(pacing_window);
 		}
 		else
 		{
@@ -1197,109 +1809,6 @@ Called when the number of s1 widget is changed.
 #endif /* defined (MOTIF) */
 
 #if defined (MOTIF)
-static void id_pacing_s2_resolution_form(Widget *widget_id,
-	XtPointer pacing_window_structure,XtPointer call_data)
-/*******************************************************************************
-LAST MODIFIED : 14 October 2001
-
-DESCRIPTION :
-Finds the id of the S2 resolution form in the pacing window.
-==============================================================================*/
-{
-	struct Pacing_window *pacing_window;
-
-	ENTER(id_pacing_s2_resolution_form);
-	USE_PARAMETER(call_data);
-	if (pacing_window=(struct Pacing_window *)pacing_window_structure)
-	{
-		pacing_window->s2_resolution_form= *widget_id;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"id_pacing_s2_resolution_form.  Missing pacing_window_structure");
-	}
-	LEAVE;
-} /* id_pacing_s2_resolution_form */
-#endif /* defined (MOTIF) */
-
-#if defined (MOTIF)
-static void id_pacing_s2_resolution_value(Widget *widget_id,
-	XtPointer pacing_window_structure,XtPointer call_data)
-/*******************************************************************************
-LAST MODIFIED : 14 October 2001
-
-DESCRIPTION :
-Finds the id of the S2 resolution value in the pacing window.
-==============================================================================*/
-{
-	struct Pacing_window *pacing_window;
-
-	ENTER(id_pacing_s2_resolution_value);
-	USE_PARAMETER(call_data);
-	if (pacing_window=(struct Pacing_window *)pacing_window_structure)
-	{
-		pacing_window->s2_resolution_value= *widget_id;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"id_pacing_s2_resolution_value.  Missing pacing_window_structure");
-	}
-	LEAVE;
-} /* id_pacing_s2_resolution_value */
-#endif /* defined (MOTIF) */
-
-#if defined (MOTIF)
-static void ch_pacing_s2_resolution_value(Widget *widget_id,
-	XtPointer pacing_window_structure,XtPointer call_data)
-/*******************************************************************************
-LAST MODIFIED : 14 October 2001
-
-DESCRIPTION :
-Called when the s2 resolution widget is changed.
-==============================================================================*/
-{
-	char *new_value,value_string[20];
-	float s2_resolution;
-	struct Pacing_window *pacing_window;
-	XmAnyCallbackStruct *text_data
-
-	ENTER(ch_pacing_s2_resolution_value);
-	USE_PARAMETER(widget_id);
-	if ((text_data=(XmAnyCallbackStruct *)call_data)&&
-		((XmCR_ACTIVATE==text_data->reason)||
-		(XmCR_LOSING_FOCUS==text_data->reason)))
-	{
-		if (pacing_window=(struct Pacing_window *)pacing_window_structure)
-		{
-			if (!(pacing_window->pacing))
-			{
-				XtVaGetValues(pacing_window->s2_resolution_value,
-					XmNvalue,&new_value,
-					NULL);
-				if ((1==sscanf(new_value,"%f",&s2_resolution))&&(0<s2_resolution))
-				{
-					pacing_window->s2_resolution=s2_resolution;
-				}
-			}
-			sprintf(value_string,"%g",pacing_window->s2_resolution);
-			XtVaSetValues(pacing_window->s2_resolution_value,
-				XmNcursorPosition,strlen(value_string),
-				XmNvalue,value_string,
-				NULL);
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"ch_pacing_s2_resolution_value.  Missing pacing_window_structure");
-		}
-	}
-	LEAVE;
-} /* ch_pacing_s2_resolution_value */
-#endif /* defined (MOTIF) */
-
-#if defined (MOTIF)
 static void id_pacing_s2_delay_form(Widget *widget_id,
 	XtPointer pacing_window_structure,XtPointer call_data)
 /*******************************************************************************
@@ -1383,15 +1892,15 @@ Called when the s2 delay widget is changed.
 					NULL);
 				if (1==sscanf(new_value,"%f",&s2_delay))
 				{
-					/* must be a multiple of the S2 resolution */
-					if (s2_delay<pacing_window->s2_resolution)
+					/* must be a multiple of the control width */
+					if (s2_delay<pacing_window->control_width)
 					{
-						s2_delay=pacing_window->s2_resolution;
+						s2_delay=pacing_window->control_width;
 					}
 					else
 					{
-						s2_delay=(pacing_window->s2_resolution)*
-							floor(s2_delay/(pacing_window->s2_resolution)+0.5);
+						s2_delay=(pacing_window->control_width)*
+							floor(s2_delay/(pacing_window->control_width)+0.5);
 					}
 					pacing_window->s2_delay=s2_delay;
 				}
@@ -1496,15 +2005,15 @@ Called when the s2 delay change widget is changed.
 					NULL);
 				if (1==sscanf(new_value,"%f",&s2_delay_change))
 				{
-					/* must be a multiple of the S2 resolution */
-					if (s2_delay_change<pacing_window->s2_resolution)
+					/* must be a multiple of the control width */
+					if (s2_delay_change<pacing_window->control_width)
 					{
-						s2_delay_change=pacing_window->s2_resolution;
+						s2_delay_change=pacing_window->control_width;
 					}
 					else
 					{
-						s2_delay_change=(pacing_window->s2_resolution)*
-							floor(s2_delay_change/(pacing_window->s2_resolution)+0.5);
+						s2_delay_change=(pacing_window->control_width)*
+							floor(s2_delay_change/(pacing_window->control_width)+0.5);
 					}
 					pacing_window->s2_delay_change=s2_delay_change;
 				}
@@ -1660,7 +2169,7 @@ Finds the id of the restitution time pace button in the pacing window.
 static void ch_pacing_restitution_time_pace(Widget widget,
 	XtPointer pacing_window_structure,XtPointer call_data)
 /*******************************************************************************
-LAST MODIFIED : 13 November 2001
+LAST MODIFIED : 26 January 2003
 
 DESCRIPTION :
 Called when the restitution time pace button is toggled.
@@ -1680,9 +2189,9 @@ Called when the restitution time pace button is toggled.
 		XtVaGetValues(widget,XmNset,&status,NULL);
 		if (True==status)
 		{
-			number_of_pacing_voltages=2*((pacing_window->number_of_s1)+3)*
+			number_of_pacing_voltages=((pacing_window->number_of_s1)+3)*
 				((int)((pacing_window->basic_cycle_length)/
-				(pacing_window->s2_resolution))+1);
+				(pacing_window->control_width))+1);
 			if (REALLOCATE(pacing_voltages,pacing_window->pacing_voltages,float,
 				number_of_pacing_voltages))
 			{
@@ -1694,8 +2203,8 @@ Called when the restitution time pace button is toggled.
 				XtSetSensitive(pacing_window->restitution_curve_pace_toggle,False);
 				/* set up pacing */
 				number_of_s1_voltages=
-					2*(int)((pacing_window->basic_cycle_length)/
-					(pacing_window->s2_resolution)+0.5);
+					(int)((pacing_window->basic_cycle_length)/
+					(pacing_window->control_width)+0.5);
 				number_of_pacing_voltages=0;
 				for (j=0;j<number_of_s1_voltages;j++)
 				{
@@ -1716,8 +2225,8 @@ Called when the restitution time pace button is toggled.
 				pacing_window->total_number_of_s1_pacing_voltages=
 					number_of_pacing_voltages;
 				pacing_window->response='f';
-				number_of_s2_voltages=2*(int)((pacing_window->s2_delay)/
-					(pacing_window->s2_resolution)+0.5);
+				number_of_s2_voltages=(int)((pacing_window->s2_delay)/
+					(pacing_window->control_width)+0.5);
 				pacing_voltages[number_of_pacing_voltages]=
 					pacing_window->control_voltage;
 				number_of_pacing_voltages++;
@@ -1731,7 +2240,7 @@ Called when the restitution time pace button is toggled.
 				number_of_pacing_voltages++;
 				pacing_voltages[number_of_pacing_voltages]=0;
 				number_of_pacing_voltages++;
-				voltages_per_second=2000./(pacing_window->s2_resolution);
+				voltages_per_second=1000./(pacing_window->control_width);
 				if (0<pacing_window->number_of_pacing_channels)
 				{
 					for (i=0;i<pacing_window->number_of_pacing_channels;i++)
@@ -1769,7 +2278,7 @@ Called when the restitution time pace button is toggled.
 				printf("Initial S2 delay change = %g ms\n",
 					pacing_window->s2_delay_change);
 				printf("Delay factor = %g\n",pacing_window->s2_delay_change_factor);
-				printf("S2 resolution = %g ms\n",pacing_window->s2_resolution);
+				printf("Control width = %g ms\n",pacing_window->control_width);
 			}
 			else
 			{
@@ -1842,7 +2351,7 @@ Finds the id of the restitution time yes button in the pacing window.
 static void ac_pacing_restitution_time_yes(Widget widget,
 	XtPointer pacing_window_structure,XtPointer call_data)
 /*******************************************************************************
-LAST MODIFIED : 13 November 2001
+LAST MODIFIED : 26 January 2003
 
 DESCRIPTION :
 Called when the restitution time yes button is pressed.
@@ -1863,24 +2372,24 @@ Called when the restitution time yes button is pressed.
 		stop=0;
 		if (('f'!=pacing_window->response)&&('y'!=pacing_window->response))
 		{
-			if (pacing_window->s2_delay_change>pacing_window->s2_resolution)
+			if (pacing_window->s2_delay_change>pacing_window->control_width)
 			{
 				pacing_window->s2_delay_change /= pacing_window->s2_delay_change_factor;
-				/* must be a multiple of the S2 resolution */
-				if (pacing_window->s2_delay_change<pacing_window->s2_resolution)
+				/* must be a multiple of the control width */
+				if (pacing_window->s2_delay_change<pacing_window->control_width)
 				{
-					pacing_window->s2_delay_change=pacing_window->s2_resolution;
+					pacing_window->s2_delay_change=pacing_window->control_width;
 				}
 				else
 				{
-					pacing_window->s2_delay_change=(pacing_window->s2_resolution)*
+					pacing_window->s2_delay_change=(pacing_window->control_width)*
 						floor((pacing_window->s2_delay_change)/
-						(pacing_window->s2_resolution)+0.5);
+						(pacing_window->control_width)+0.5);
 				}
 			}
 			else
 			{
-				pacing_window->s2_delay_change=pacing_window->s2_resolution;
+				pacing_window->s2_delay_change=pacing_window->control_width;
 				stop=1;
 			}
 			sprintf(value_string,"%g",pacing_window->s2_delay_change);
@@ -1894,7 +2403,7 @@ Called when the restitution time yes button is pressed.
 			pacing_window->s2_delay_change,pacing_window->s2_delay);
 		s2_delay=(pacing_window->s2_delay)-(pacing_window->s2_delay_change);
 		pacing_window->response='y';
-		if (!stop&&(pacing_window->s2_resolution<=s2_delay)&&
+		if (!stop&&(2*(pacing_window->control_width)<=s2_delay)&&
 			(s2_delay<2*(pacing_window->basic_cycle_length)))
 		{
 			pacing_window->s2_delay=s2_delay;
@@ -1906,8 +2415,8 @@ Called when the restitution time yes button is pressed.
 			pacing_voltages=pacing_window->pacing_voltages;
 			number_of_pacing_voltages=
 				pacing_window->total_number_of_s1_pacing_voltages;
-			number_of_s2_voltages=2*(int)((pacing_window->s2_delay)/
-				(pacing_window->s2_resolution)+0.5);
+			number_of_s2_voltages=(int)((pacing_window->s2_delay)/
+				(pacing_window->control_width)+0.5);
 			pacing_voltages[number_of_pacing_voltages]=
 				pacing_window->control_voltage;
 			number_of_pacing_voltages++;
@@ -1921,7 +2430,7 @@ Called when the restitution time yes button is pressed.
 			number_of_pacing_voltages++;
 			pacing_voltages[number_of_pacing_voltages]=0;
 			number_of_pacing_voltages++;
-			voltages_per_second=2000./(pacing_window->s2_resolution);
+			voltages_per_second=1000./(pacing_window->control_width);
 			if (0<pacing_window->number_of_pacing_channels)
 			{
 				unemap_load_voltage_stimulating(
@@ -2004,7 +2513,7 @@ Finds the id of the restitution time no button in the pacing window.
 static void ac_pacing_restitution_time_no(Widget widget,
 	XtPointer pacing_window_structure,XtPointer call_data)
 /*******************************************************************************
-LAST MODIFIED : 13 November 2001
+LAST MODIFIED : 26 January 2003
 
 DESCRIPTION :
 Called when the restitution time no button is pressed.
@@ -2025,24 +2534,24 @@ Called when the restitution time no button is pressed.
 		stop=0;
 		if (('f'!=pacing_window->response)&&('n'!=pacing_window->response))
 		{
-			if (pacing_window->s2_delay_change>pacing_window->s2_resolution)
+			if (pacing_window->s2_delay_change>pacing_window->control_width)
 			{
 				pacing_window->s2_delay_change /= pacing_window->s2_delay_change_factor;
-				/* must be a multiple of the S2 resolution */
-				if (pacing_window->s2_delay_change<pacing_window->s2_resolution)
+				/* must be a multiple of the control width */
+				if (pacing_window->s2_delay_change<pacing_window->control_width)
 				{
-					pacing_window->s2_delay_change=pacing_window->s2_resolution;
+					pacing_window->s2_delay_change=pacing_window->control_width;
 				}
 				else
 				{
-					pacing_window->s2_delay_change=(pacing_window->s2_resolution)*
+					pacing_window->s2_delay_change=(pacing_window->control_width)*
 						floor((pacing_window->s2_delay_change)/
-						(pacing_window->s2_resolution)+0.5);
+						(pacing_window->control_width)+0.5);
 				}
 			}
 			else
 			{
-				pacing_window->s2_delay_change=pacing_window->s2_resolution;
+				pacing_window->s2_delay_change=pacing_window->control_width;
 				stop=1;
 			}
 			sprintf(value_string,"%g",pacing_window->s2_delay_change);
@@ -2056,7 +2565,7 @@ Called when the restitution time no button is pressed.
 			pacing_window->s2_delay_change,pacing_window->s2_delay);
 		s2_delay=(pacing_window->s2_delay)+(pacing_window->s2_delay_change);
 		pacing_window->response='n';
-		if (!stop&&(pacing_window->s2_resolution<=s2_delay)&&
+		if (!stop&&(2*(pacing_window->control_width)<=s2_delay)&&
 			(s2_delay<2*(pacing_window->basic_cycle_length)))
 		{
 			pacing_window->s2_delay=s2_delay;
@@ -2068,8 +2577,8 @@ Called when the restitution time no button is pressed.
 			pacing_voltages=pacing_window->pacing_voltages;
 			number_of_pacing_voltages=
 				pacing_window->total_number_of_s1_pacing_voltages;
-			number_of_s2_voltages=2*(int)((pacing_window->s2_delay)/
-				(pacing_window->s2_resolution)+0.5);
+			number_of_s2_voltages=(int)((pacing_window->s2_delay)/
+				(pacing_window->control_width)+0.5);
 			pacing_voltages[number_of_pacing_voltages]=
 				pacing_window->control_voltage;
 			number_of_pacing_voltages++;
@@ -2083,7 +2592,7 @@ Called when the restitution time no button is pressed.
 			number_of_pacing_voltages++;
 			pacing_voltages[number_of_pacing_voltages]=0;
 			number_of_pacing_voltages++;
-			voltages_per_second=2000./(pacing_window->s2_resolution);
+			voltages_per_second=1000./(pacing_window->control_width);
 			if (0<pacing_window->number_of_pacing_channels)
 			{
 				unemap_load_voltage_stimulating(
@@ -2193,7 +2702,7 @@ Finds the id of the S2-S1 pause value in the pacing window.
 static void ch_pacing_s2_s1_pause_value(Widget *widget_id,
 	XtPointer pacing_window_structure,XtPointer call_data)
 /*******************************************************************************
-LAST MODIFIED : 4 November 2001
+LAST MODIFIED : 26 January 2003
 
 DESCRIPTION :
 Called when the S2-S1 pause widget is changed.
@@ -2219,15 +2728,16 @@ Called when the S2-S1 pause widget is changed.
 					NULL);
 				if (1==sscanf(new_value,"%f",&s2_s1_pause))
 				{
-					/* must be a multiple of the S2 resolution */
-					if (s2_s1_pause<pacing_window->s2_resolution)
+					/* must be a multiple of the control width and at least twice control
+						width */
+					if (s2_s1_pause<2*(pacing_window->control_width))
 					{
-						s2_s1_pause=pacing_window->s2_resolution;
+						s2_s1_pause=2*(pacing_window->control_width);
 					}
 					else
 					{
-						s2_s1_pause=(pacing_window->s2_resolution)*
-							floor(s2_s1_pause/(pacing_window->s2_resolution)+0.5);
+						s2_s1_pause=(pacing_window->control_width)*
+							floor(s2_s1_pause/(pacing_window->control_width)+0.5);
 					}
 					pacing_window->s2_s1_pause=s2_s1_pause;
 				}
@@ -2382,7 +2892,7 @@ Finds the id of the restitution curve pace button in the pacing window.
 static void ch_pacing_restitution_curve_pac(Widget widget,
 	XtPointer pacing_window_structure,XtPointer call_data)
 /*******************************************************************************
-LAST MODIFIED : 13 November 2001
+LAST MODIFIED : 26 January 2003
 
 DESCRIPTION :
 Called when the restitution curve pace button is toggled.
@@ -2408,7 +2918,7 @@ Called when the restitution curve pace button is toggled.
 			printf("Restitution Curve Pacing start with\n");
 			printf("BCL = %g ms\n",pacing_window->basic_cycle_length);
 			printf("Number of S1 stimulations = %d\n",pacing_window->number_of_s1);
-			printf("S2 resolution = %g ms\n",pacing_window->s2_resolution);
+			printf("Control width = %g ms\n",pacing_window->control_width);
 			printf("S2-S1 pause = %g ms\n",pacing_window->s2_s1_pause);
 			for (i=0;i<pacing_window->number_of_decrement_threshold_pairs;i++)
 			{
@@ -2416,8 +2926,8 @@ Called when the restitution curve pace button is toggled.
 					i+1,(pacing_window->decrement_threshold_pairs)[2*i],
 					(pacing_window->decrement_threshold_pairs)[2*i+1]);
 			}
-			number_of_s2_s1_pacing_voltages=2*(int)((pacing_window->s2_s1_pause)/
-				(pacing_window->s2_resolution)+0.5);
+			number_of_s2_s1_pacing_voltages=(int)((pacing_window->s2_s1_pause)/
+				(pacing_window->control_width)+0.5);
 			if (REALLOCATE(pacing_voltages,pacing_window->pacing_voltages,float,
 				number_of_s2_s1_pacing_voltages))
 			{
@@ -2429,8 +2939,8 @@ Called when the restitution curve pace button is toggled.
 				}
 				number_of_pacing_voltages=number_of_s2_s1_pacing_voltages;
 				number_of_s1_pacing_voltages=
-					2*(int)((pacing_window->basic_cycle_length)/
-					(pacing_window->s2_resolution)+0.5);
+					(int)((pacing_window->basic_cycle_length)/
+					(pacing_window->control_width)+0.5);
 				s2_delay=pacing_window->s2_delay;
 				return_code=1;
 				i=0;
@@ -2443,8 +2953,8 @@ Called when the restitution curve pace button is toggled.
 						(last||((i<pacing_window->number_of_decrement_threshold_pairs)&&
 						(s2_delay>(pacing_window->decrement_threshold_pairs)[2*i+1]))))
 					{
-						number_of_s2_pacing_voltages=2*(int)(s2_delay/
-							(pacing_window->s2_resolution)+0.5);
+						number_of_s2_pacing_voltages=(int)(s2_delay/
+							(pacing_window->control_width)+0.5);
 						if (REALLOCATE(pacing_voltages,pacing_window->pacing_voltages,float,
 							number_of_pacing_voltages+number_of_s2_s1_pacing_voltages+
 							(pacing_window->number_of_s1-1)*number_of_s1_pacing_voltages+
@@ -2483,15 +2993,16 @@ Called when the restitution curve pace button is toggled.
 								pacing_voltages++;
 							}
 							s2_delay -= (pacing_window->decrement_threshold_pairs)[2*i];
-							/* must be a multiple of the S2 resolution */
-							if (s2_delay<pacing_window->s2_resolution)
+							/* must be a multiple of the control width and at least twice the
+								control width */
+							if (s2_delay<2*(pacing_window->control_width))
 							{
-								s2_delay=pacing_window->s2_resolution;
+								s2_delay=2*(pacing_window->control_width);
 							}
 							else
 							{
-								s2_delay=(pacing_window->s2_resolution)*
-									floor(s2_delay/(pacing_window->s2_resolution)+0.5);
+								s2_delay=(pacing_window->control_width)*
+									floor(s2_delay/(pacing_window->control_width)+0.5);
 							}
 						}
 						else
@@ -2519,7 +3030,7 @@ Called when the restitution curve pace button is toggled.
 				XtSetSensitive(pacing_window->restitution_time_pace_toggle,False);
 				XtSetSensitive(pacing_window->basic_cycle_length_pace_toggle,False);
 				/* set up pacing */
-				voltages_per_second=2000./(pacing_window->s2_resolution);
+				voltages_per_second=1000./(pacing_window->control_width);
 				if (0<pacing_window->number_of_pacing_channels)
 				{
 					for (i=0;i<pacing_window->number_of_pacing_channels;i++)
@@ -2622,7 +3133,7 @@ static struct Pacing_window *create_Pacing_window(
 #endif /* defined (MOTIF) */
 	struct User_interface *user_interface)
 /*******************************************************************************
-LAST MODIFIED : 11 November 2001
+LAST MODIFIED : 26 January 2003
 
 DESCRIPTION :
 Allocates the memory for a pacing window.  Retrieves the necessary widgets and
@@ -2630,7 +3141,9 @@ initializes the appropriate fields.
 ==============================================================================*/
 {
 #if defined (MOTIF)
-	char *decrement_threshold_pairs_string,*pacing_electrodes,*return_electrodes;
+	char *decrement_threshold_pairs_string,*pacing_electrodes,*return_electrodes,
+		temp_string[20];
+	float s2_resolution;
 	MrmType pacing_window_class;
 	static MrmRegisterArg callback_list[]={
 		{"close_Pacing_window",(XtPointer)close_Pacing_window},
@@ -2651,12 +3164,27 @@ initializes the appropriate fields.
 		(XtPointer)id_pacing_control_voltage_value},
 		{"ch_pacing_control_voltage_value",
 		(XtPointer)ch_pacing_control_voltage_value},
+		{"id_pacing_control_voltage_slide",
+		(XtPointer)id_pacing_control_voltage_slide},
+		{"ch_pacing_control_voltage_slide",
+		(XtPointer)ch_pacing_control_voltage_slide},
+		{"id_pacing_control_width_form",(XtPointer)id_pacing_control_width_form},
+		{"id_pacing_control_width_value",(XtPointer)id_pacing_control_width_value},
+		{"ch_pacing_control_width_value",(XtPointer)ch_pacing_control_width_value},
+		{"id_pacing_control_width_slider",
+		(XtPointer)id_pacing_control_width_slider},
+		{"ch_pacing_control_width_slider",
+		(XtPointer)ch_pacing_control_width_slider},
 		{"id_pacing_basic_cycle_length_fo",
 		(XtPointer)id_pacing_basic_cycle_length_fo},
 		{"id_pacing_basic_cycle_length_va",
 		(XtPointer)id_pacing_basic_cycle_length_va},
 		{"ch_pacing_basic_cycle_length_va",
 		(XtPointer)ch_pacing_basic_cycle_length_va},
+		{"id_pacing_basic_cycle_length_sl",
+		(XtPointer)id_pacing_basic_cycle_length_sl},
+		{"ch_pacing_basic_cycle_length_sl",
+		(XtPointer)ch_pacing_basic_cycle_length_sl},
 		{"id_pacing_basic_cycle_length_pa",
 		(XtPointer)id_pacing_basic_cycle_length_pa},
 		{"ch_pacing_basic_cycle_length_pa",
@@ -2664,9 +3192,6 @@ initializes the appropriate fields.
 		{"id_pacing_number_of_s1_form",(XtPointer)id_pacing_number_of_s1_form},
 		{"id_pacing_number_of_s1_value",(XtPointer)id_pacing_number_of_s1_value},
 		{"ch_pacing_number_of_s1_value",(XtPointer)ch_pacing_number_of_s1_value},
-		{"id_pacing_s2_resolution_form",(XtPointer)id_pacing_s2_resolution_form},
-		{"id_pacing_s2_resolution_value",(XtPointer)id_pacing_s2_resolution_value},
-		{"ch_pacing_s2_resolution_value",(XtPointer)ch_pacing_s2_resolution_value},
 		{"id_pacing_s2_delay_form",(XtPointer)id_pacing_s2_delay_form},
 		{"id_pacing_s2_delay_value",(XtPointer)id_pacing_s2_delay_value},
 		{"ch_pacing_s2_delay_value",(XtPointer)ch_pacing_s2_delay_value},
@@ -2714,6 +3239,8 @@ initializes the appropriate fields.
 #define XmCRestitutionBasicCycleLength "RestitutionBasicCycleLength"
 #define XmNrestitutionControlVoltage "restitutionControlVoltage"
 #define XmCRestitutionControlVoltage "RestitutionControlVoltage"
+#define XmNrestitutionControlWidth "restitutionControlWidth"
+#define XmCRestitutionControlWidth "RestitutionControlWidth"
 #define XmNrestitutionDecrementThresholdPairs "restitutionDecrementThresholdPairs"
 #define XmCRestitutionDecrementThresholdPairs "RestitutionDecrementThresholdPairs"
 #define XmNrestitutionNumberOfS1 "restitutionNumberOfS1"
@@ -2789,15 +3316,6 @@ initializes the appropriate fields.
 			"2"
 		},
 		{
-			XmNrestitutionS2Resolution,
-			XmCRestitutionS2Resolution,
-			XmRFloat,
-			sizeof(float),
-			XtOffsetOf(Pacing_window_settings,s2_resolution),
-			XmRString,
-			"20"
-		},
-		{
 			XmNrestitutionS2S1Pause,
 			XmCRestitutionS2S1Pause,
 			XmRFloat,
@@ -2805,6 +3323,30 @@ initializes the appropriate fields.
 			XtOffsetOf(Pacing_window_settings,s2_s1_pause),
 			XmRString,
 			"800"
+		},
+	};
+	static XtResource s2_resolution_resources[]=
+	{
+		{
+			XmNrestitutionS2Resolution,
+			XmCRestitutionS2Resolution,
+			XmRFloat,
+			sizeof(float),
+			0,
+			XmRString,
+			"20"
+		},
+	};
+	static XtResource control_width_resources[]=
+	{
+		{
+			XmNrestitutionControlWidth,
+			XmCRestitutionControlWidth,
+			XmRFloat,
+			sizeof(float),
+			XtOffsetOf(Pacing_window_settings,control_width),
+			XmRString,
+			"10"
 		},
 	};
 	static XtResource pacing_electrodes_resources[]=
@@ -2884,6 +3426,10 @@ initializes the appropriate fields.
 				pacing_window->basic_cycle_length_value=(Widget)NULL;
 				pacing_window->control_voltage_form=(Widget)NULL;
 				pacing_window->control_voltage_value=(Widget)NULL;
+				pacing_window->control_voltage_slider=(Widget)NULL;
+				pacing_window->control_width_form=(Widget)NULL;
+				pacing_window->control_width_value=(Widget)NULL;
+				pacing_window->control_width_slider=(Widget)NULL;
 				pacing_window->number_of_s1_form=(Widget)NULL;
 				pacing_window->number_of_s1_value=(Widget)NULL;
 				pacing_window->pacing_electrodes_form=(Widget)NULL;
@@ -2896,32 +3442,43 @@ initializes the appropriate fields.
 				pacing_window->s2_delay_change_value=(Widget)NULL;
 				pacing_window->s2_delay_change_factor_form=(Widget)NULL;
 				pacing_window->s2_delay_change_factor_value=(Widget)NULL;
-				pacing_window->s2_resolution_form=(Widget)NULL;
-				pacing_window->s2_resolution_value=(Widget)NULL;
 				pacing_window->s2_s1_pause_form=(Widget)NULL;
 				pacing_window->s2_s1_pause_value=(Widget)NULL;
 				pacing_window->decrement_threshold_pairs_form=(Widget)NULL;
 				pacing_window->decrement_threshold_pairs_value=(Widget)NULL;
 				pacing_window->restitution_curve_pace_toggle=(Widget)NULL;
 				/* retrieve the settings */
-				XtVaGetApplicationResources(User_interface_get_application_shell(user_interface),
+				XtVaGetApplicationResources(
+					User_interface_get_application_shell(user_interface),
 					pacing_window,resources,XtNumber(resources),NULL);
+				XtVaGetApplicationResources(
+					User_interface_get_application_shell(user_interface),&s2_resolution,
+					s2_resolution_resources,XtNumber(s2_resolution_resources),NULL);
+				sprintf(temp_string,"%g",s2_resolution/2);
+				control_width_resources[0].default_addr=temp_string;
+				XtVaGetApplicationResources(
+					User_interface_get_application_shell(user_interface),
+					pacing_window,control_width_resources,
+					XtNumber(control_width_resources),NULL);
 				pacing_electrodes=(char *)NULL;
-				XtVaGetApplicationResources(User_interface_get_application_shell(user_interface),
+				XtVaGetApplicationResources(
+					User_interface_get_application_shell(user_interface),
 					&pacing_electrodes,pacing_electrodes_resources,
 					XtNumber(pacing_electrodes_resources),NULL);
 				/* NB.  XtVaGetApplicationResources does not allocate memory for
 					pacing_electrodes, so it does not need to be free'd */
 				set_pacing_channels_from_string(pacing_window,pacing_electrodes);
 				return_electrodes=(char *)NULL;
-				XtVaGetApplicationResources(User_interface_get_application_shell(user_interface),
+				XtVaGetApplicationResources(
+					User_interface_get_application_shell(user_interface),
 					&return_electrodes,return_electrodes_resources,
 					XtNumber(return_electrodes_resources),NULL);
 				/* NB.  XtVaGetApplicationResources does not allocate memory for
 					return_electrodes, so it does not need to be free'd */
 				set_return_channels_from_string(pacing_window,return_electrodes);
 				decrement_threshold_pairs_string=(char *)NULL;
-				XtVaGetApplicationResources(User_interface_get_application_shell(user_interface),
+				XtVaGetApplicationResources(
+					User_interface_get_application_shell(user_interface),
 					&decrement_threshold_pairs_string,decrement_threshold_pairs_resources,
 					XtNumber(decrement_threshold_pairs_resources),NULL);
 				/* NB.  XtVaGetApplicationResources does not allocate memory for
@@ -3114,13 +3671,13 @@ opened.
 				XmNvalue,value_string,
 				NULL);
 #endif /* defined (MOTIF) */
-			if (pacing_window->s2_resolution<=0)
+			if (pacing_window->control_width<=0)
 			{
-				pacing_window->s2_resolution=20;
+				pacing_window->control_width=10;
 			}
 #if defined (MOTIF)
-			sprintf(value_string,"%g",pacing_window->s2_resolution);
-			XtVaSetValues(pacing_window->s2_resolution_value,
+			sprintf(value_string,"%g",pacing_window->control_width);
+			XtVaSetValues(pacing_window->control_width_value,
 				XmNcursorPosition,strlen(value_string),
 				XmNvalue,value_string,
 				NULL);
@@ -3129,15 +3686,17 @@ opened.
 			{
 				pacing_window->s2_delay=500;
 			}
-			/* must be a multiple of the S2 resolution */
-			if (pacing_window->s2_delay<pacing_window->s2_resolution)
+			/* must be a multiple of the control width and at least twice the control
+				width*/
+			if (pacing_window->s2_delay<2*(pacing_window->control_width))
 			{
-				pacing_window->s2_delay=pacing_window->s2_resolution;
+				pacing_window->s2_delay=2*(pacing_window->control_width);
 			}
 			else
 			{
-				pacing_window->s2_delay=(pacing_window->s2_resolution)*
-					(float)floor((pacing_window->s2_delay)/(pacing_window->s2_resolution)+0.5);
+				pacing_window->s2_delay=(pacing_window->control_width)*
+					(float)floor((pacing_window->s2_delay)/
+					(pacing_window->control_width)+0.5);
 			}
 #if defined (MOTIF)
 			sprintf(value_string,"%g",pacing_window->s2_delay);
@@ -3150,16 +3709,16 @@ opened.
 			{
 				pacing_window->s2_delay_change=100;
 			}
-			/* must be a multiple of the S2 resolution */
-			if (pacing_window->s2_delay_change<pacing_window->s2_resolution)
+			/* must be a multiple of the control width */
+			if (pacing_window->s2_delay_change<pacing_window->control_width)
 			{
-				pacing_window->s2_delay_change=pacing_window->s2_resolution;
+				pacing_window->s2_delay_change=pacing_window->control_width;
 			}
 			else
 			{
-				pacing_window->s2_delay_change=(pacing_window->s2_resolution)*
+				pacing_window->s2_delay_change=(pacing_window->control_width)*
 					(float)floor((pacing_window->s2_delay_change)/
-					(pacing_window->s2_resolution)+0.5);
+					(pacing_window->control_width)+0.5);
 			}
 #if defined (MOTIF)
 			sprintf(value_string,"%g",pacing_window->s2_delay_change);
@@ -3187,16 +3746,17 @@ opened.
 			{
 				pacing_window->s2_s1_pause=800;
 			}
-			/* must be a multiple of the S2 resolution */
-			if (pacing_window->s2_s1_pause<pacing_window->s2_resolution)
+			/* must be a multiple of the control width and at least twice the control
+				width */
+			if (pacing_window->s2_s1_pause<2*(pacing_window->control_width))
 			{
-				pacing_window->s2_s1_pause=pacing_window->s2_resolution;
+				pacing_window->s2_s1_pause=2*(pacing_window->control_width);
 			}
 			else
 			{
-				pacing_window->s2_s1_pause=(pacing_window->s2_resolution)*
-					(float)floor((pacing_window->s2_s1_pause)/(pacing_window->s2_resolution)+
-					0.5);
+				pacing_window->s2_s1_pause=(pacing_window->control_width)*
+					(float)floor((pacing_window->s2_s1_pause)/
+					(pacing_window->control_width)+0.5);
 			}
 #if defined (MOTIF)
 			sprintf(value_string,"%g",pacing_window->s2_s1_pause);
