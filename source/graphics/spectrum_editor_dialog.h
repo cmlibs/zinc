@@ -9,7 +9,6 @@ Header description for spectrum_editor_dialog widget.
 #if !defined (SPECTRUM_EDITOR_DIALOG_H)
 #define SPECTRUM_EDITOR_DIALOG_H
 
-#include "general/callback.h"
 #include "user_interface/user_interface.h"
 
 /*

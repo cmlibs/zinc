@@ -12,7 +12,7 @@ selected from an option menu.
 
 #include <Xm/Xm.h>
 #include "finite_element/finite_element.h"
-#include "general/callback.h"
+#include "general/callback_motif.h"
 #include "user_interface/user_interface.h"
 
 /*

@@ -13,7 +13,7 @@ for each type it supports.
 #define SELECT_H
 
 #include <Xm/Xm.h>
-#include "general/callback.h"
+#include "general/callback_motif.h"
 
 /*
 Global Types

@@ -13,6 +13,8 @@ Global variables
 ----------------
 */
 
+#include "general/callback_motif.h"
+
 struct Cmiss_region_chooser;
 /*******************************************************************************
 LAST MODIFIED : 9 January 2003

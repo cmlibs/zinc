@@ -9,7 +9,7 @@ This module creates a time_editor_dialog.
 #include <stdio.h>
 #include <Xm/Xm.h>
 #include <Xm/Protocols.h>
-#include "general/callback.h"
+#include "general/callback_motif.h"
 #include "general/debug.h"
 #include "time/time_keeper.h"
 #include "time/time_editor.h"

@@ -11,7 +11,7 @@ Note the node passed to this widget should be a non-managed local copy.
 #if !defined (NODE_FIELD_VIEWER_WIDGET_H)
 #define NODE_FIELD_VIEWER_WIDGET_H
 
-#include "general/callback.h"
+#include "general/callback_motif.h"
 #include "finite_element/finite_element.h"
 #include "time/time.h"
 

@@ -11,7 +11,7 @@ and the returned value is a global one.
 #if !defined (RELATIVE_H)
 #define RELATIVE_H
 
-#include "general/callback.h"
+#include "general/callback_motif.h"
 #include "dof3/dof3.h"
 
 #define RELATIVE_PRECISION double

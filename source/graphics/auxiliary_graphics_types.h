@@ -14,7 +14,10 @@ represent curves in three xi-directions;
 #define AUXILIARY_GRAPHICS_TYPES_H
 
 #include "general/enumerator.h"
-#include "user_interface/user_interface.h"
+
+/* Define this here rather than include the interface header and therefore Motif */
+struct User_interface;
+struct Parse_state;
 
 /*
 Global types

@@ -12,7 +12,7 @@ and the returned value is a global one.
 #define POI_H
 
 #include "dof3/dof3.h"
-#include "general/callback.h"
+#include "general/callback_motif.h"
 
 #define POI_PRECISION double
 #define POI_PRECISION_STRING "lf"

@@ -9,7 +9,7 @@ Provides the widgets to modify Control_curve structures.
 #if !defined (CONTROL_CURVE_EDITOR_H)
 #define CONTROL_CURVE_EDITOR_H
 
-#include "general/callback.h"
+#include "general/callback_motif.h"
 #include "curve/control_curve.h"
 #include "user_interface/user_interface.h"
 

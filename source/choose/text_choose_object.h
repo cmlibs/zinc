@@ -12,7 +12,7 @@ Calls the client-specified callback routine if a different object is chosen.
 #define TEXT_CHOOSE_OBJECT_H
 
 #include <Xm/Xm.h>
-#include "general/callback.h"
+#include "general/callback_motif.h"
 
 /*
 Global Types

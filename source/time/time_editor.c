@@ -17,7 +17,7 @@ DESCRIPTION :
 #include <Xm/TextF.h>
 #include <Xm/ToggleB.h>
 #include "command/parser.h"
-#include "general/callback.h"
+#include "general/callback_motif.h"
 #include "general/debug.h"
 #include "time/time.h"
 #include "time/time_keeper.h"

@@ -9,7 +9,7 @@ Provides the widgets to manipulate graphical element group settings.
 #if !defined (GRAPHICAL_ELEMENT_EDITOR_H)
 #define GRAPHICAL_ELEMENT_EDITOR_H
 
-#include "general/callback.h"
+#include "general/callback_motif.h"
 #include "graphics/material.h"
 #include "graphics/graphics_object.h"
 #include "user_interface/user_interface.h"

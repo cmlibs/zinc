@@ -15,7 +15,7 @@ Provides the widgets to manipulate element group settings.
 #include <Xm/ToggleBG.h>
 #include <Xm/RowColumn.h>
 #endif /* defined (MOTIF) */
-#include "general/callback.h"
+#include "general/callback_motif.h"
 #include "general/debug.h"
 #include "graphics/spectrum.h"
 #include "graphics/spectrum_settings.h"

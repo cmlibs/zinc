@@ -9,7 +9,7 @@ Header description for material_editor_dialog widget.
 #if !defined (MATERIAL_EDITOR_DIALOG_H)
 #define MATERIAL_EDITOR_DIALOG_H
 
-#include "general/callback.h"
+#include "general/callback_motif.h"
 #include "graphics/material.h"
 #include "user_interface/user_interface.h"
 

@@ -11,7 +11,7 @@ it via a slider or text field.
 #define EDIT_VAR_H
 
 #include <Xm/Xm.h>
-#include "general/callback.h"
+#include "general/callback_motif.h"
 
 #define EDIT_VAR_PRECISION double
 #define EDIT_VAR_PRECISION_STRING "lf"

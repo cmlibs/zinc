@@ -11,7 +11,7 @@ and the returned value is a global one.
 #if !defined (CAMERA_H)
 #define CAMERA_H
 
-#include "general/callback.h"
+#include "general/callback_motif.h"
 #include "dof3/dof3.h"
 
 #define CAMERA_PRECISION double

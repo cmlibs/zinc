@@ -9,7 +9,7 @@ Header description for time_editor_dialog widget.
 #if !defined (TIME_EDITOR_DIALOG_H)
 #define TIME_EDITOR_DIALOG_H
 
-#include "general/callback.h"
+#include "general/callback_motif.h"
 #include "user_interface/user_interface.h"
 
 /*

@@ -10,7 +10,7 @@ Allows 2d digitisation of data from an arbitrary client.
 #define DATA_2D_H
 
 #include <Xm/Xm.h>
-#include "general/callback.h"
+#include "general/callback_motif.h"
 #include "finite_element/finite_element.h"
 
 /*

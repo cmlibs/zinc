@@ -10,7 +10,7 @@ series of icons presented as radio buttons.
 #if !defined (INTERACTIVE_TOOLBAR_WIDGET_H)
 #define INTERACTIVE_TOOLBAR_WIDGET_H
 
-#include "general/callback.h"
+#include "general/callback_motif.h"
 #include "interaction/interactive_tool.h"
 
 /*

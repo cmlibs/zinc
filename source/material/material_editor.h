@@ -9,7 +9,7 @@ Widgets for editing a graphical material.
 #if !defined (MATERIAL_EDITOR_H)
 #define MATERIAL_EDITOR_H
 
-#include "general/callback.h"
+#include "general/callback_motif.h"
 #include "graphics/material.h"
 #include "user_interface/user_interface.h"
 

@@ -11,7 +11,6 @@ coordinate system, and the returned value is a global one.
 #if !defined (DATA_2D_DIALOG_H)
 #define DATA_2D_DIALOG_H
 
-#include "general/callback.h"
 #include "finite_element/finite_element.h"
 #include "data/data_2d.h"
 

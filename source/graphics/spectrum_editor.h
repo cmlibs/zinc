@@ -9,7 +9,7 @@ Provides the widgets to manipulate graphical element group settings.
 #if !defined (SPECTRUM_EDITOR_H)
 #define SPECTRUM_EDITOR_H
 
-#include "general/callback.h"
+#include "general/callback_motif.h"
 #include "user_interface/user_interface.h"
 
 /*

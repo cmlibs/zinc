@@ -11,7 +11,7 @@ Note the element_point passed to this widget should be a non-managed local copy.
 #if !defined (ELEMENT_POINT_FIELD_VIEWER_WIDGET_H)
 #define ELEMENT_POINT_FIELD_VIEWER_WIDGET_H
 
-#include "general/callback.h"
+#include "general/callback_motif.h"
 #include "computed_field/computed_field.h"
 #include "computed_field/computed_field_value_index_ranges.h"
 #include "finite_element/finite_element.h"

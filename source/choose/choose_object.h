@@ -13,7 +13,7 @@ Calls the client-specified callback routine if a different object is chosen.
 #define CHOOSE_OBJECT_H
 
 #include <Xm/Xm.h>
-#include "general/callback.h"
+#include "general/callback_motif.h"
 #include "user_interface/user_interface.h"
 
 /*

@@ -18,7 +18,7 @@ char **Enumerated_type_get_valid_strings(&number_of_valid_strings);
 #define CHOOSE_ENUMERATOR_H
 
 #include <Xm/Xm.h>
-#include "general/callback.h"
+#include "general/callback_motif.h"
 #include "user_interface/user_interface.h"
 
 /*

@@ -8,9 +8,6 @@ Macro definition for lists of callbacks between objects.
 ==============================================================================*/
 #if !defined (CALLBACK_H)
 #define CALLBACK_H
-#if defined (MOTIF)
-#include <Xm/Xm.h>
-#endif /* defined (MOTIF) */
 #include "general/list.h"
 #include "general/object.h"
 
@@ -18,23 +15,6 @@ Macro definition for lists of callbacks between objects.
 Global Types
 ------------
 */
-
-#if defined (MOTIF)
-/*???DB.  Should have a return_code ? */
-typedef void Callback_procedure(Widget,void *,void *);
-
-struct Callback_data
-/*******************************************************************************
-LAST MODIFIED : 4 January 1995
-
-DESCRIPTION :
-Contains all information necessary for a callback.
-==============================================================================*/
-{
-	Callback_procedure *procedure;
-	void *data;
-}; /* struct Callback_data */
-#endif /* defined (MOTIF) */
 
 #if ! defined (SHORT_NAMES)
 #define CMISS_CALLBACK_FUNCTION( callback_type ) callback_function_ ## callback_type

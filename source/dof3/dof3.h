@@ -55,7 +55,7 @@ The update callback for the dof3 widget returns -
 #if !defined (DOF3_H)
 #define DOF3_H
 
-#include "general/callback.h"
+#include "general/callback_motif.h"
 /* contains struct Dof3_data as it is used for conversions */
 #include "io_devices/conversion.h"
 #include "io_devices/matrix.h"

@@ -10,7 +10,6 @@ Form set aside for the actual variable editor.
 #if !defined (CONTROL_CURVE_EDITOR_DIALOG_H)
 #define CONTROL_CURVE_EDITOR_DIALOG_H
 
-#include "general/callback.h"
 #include "curve/control_curve.h"
 #include "user_interface/user_interface.h"
 

@@ -9,7 +9,7 @@ DESCRIPTION :
 #define DATA_GRABBER_H
 
 #include <Xm/Xm.h>
-#include "general/callback.h"
+#include "general/callback_motif.h"
 #include "general/simple_list.h"
 #include "dof3/dof3.h"
 

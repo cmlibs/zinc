@@ -49,7 +49,7 @@ endif
 #define VIEW_H
 
 #include "dof3/dof3.h"
-#include "general/callback.h"
+#include "general/callback_motif.h"
 #include "view/camera.h"
 #include "view/poi.h"
 

@@ -16,7 +16,7 @@ Chooser.
 #define CHOOSER_H
 
 #include <Xm/Xm.h>
-#include "general/callback.h"
+#include "general/callback_motif.h"
 #include "general/object.h"
 #include "user_interface/user_interface.h"
 
