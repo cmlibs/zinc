@@ -1,10 +1,10 @@
 /*******************************************************************************
 FILE : rendergl.c
 
-LAST MODIFIED : 6 July 2000
+LAST MODIFIED : 7 July 2000
 
 DESCRIPTION :
-GL rendering calls (API specific).
+GL rendering calls - API specific.
 ???DB.  Should this be render.c ?
 ==============================================================================*/
 /*???DB.  For debug */
@@ -1465,7 +1465,7 @@ int draw_voltexGL(int n_iso_polys,int *triangle_list,
 	float *texturemap_coord,int *texturemap_index,int number_of_data_components,
 	GTDATA *data, struct Graphical_material *default_material,struct Spectrum *spectrum)
 /*******************************************************************************
-LAST MODIFIED : 9 June 1999
+LAST MODIFIED : 7 July
 
 DESCRIPTION :
 ==============================================================================*/
@@ -1480,18 +1480,17 @@ DESCRIPTION :
 	/* checking arguments */
 	if (triangle_list&&vertex_list&&iso_env_map&&
 		((!texturemap_coord)&&(!texturemap_index)||(texturemap_coord&&texturemap_index))
-		&&(0<n_rep)&&(0<n_iso_polys))
+		&&(0<n_rep)&&(0<n_iso_polys)&&default_material)
 	{
 #if defined (OPENGL_API)
-		if (iso_poly_material)
-		{
-			last_material=iso_poly_material[0];
-		}
-		else
+		if (!(iso_poly_material&&(last_material=iso_poly_material[0])))
 		{
 			last_material=default_material;
 		}
-		execute_Graphical_material(last_material);
+		if (last_material)
+		{
+			execute_Graphical_material(last_material);
+		}
 		if ((!data)||(render_data=spectrum_start_renderGL(spectrum,last_material,
 				number_of_data_components)))
 		{
@@ -1499,30 +1498,33 @@ DESCRIPTION :
 			{
 				for (i=0;i<n_iso_polys;i++)
 				{
+					next_material=default_material;
 					/* if an environment map exists use it in preference to a material */
 					if (iso_env_map[i*3])
 					{
 						if ((iso_env_map[i*3]->face_material)[texturemap_index[i*3]])
 						{
-							if (last_material!=(next_material=iso_env_map[i*3]->
-								face_material[texturemap_index[i*3]]))
-							{
-								execute_Graphical_material(next_material);
-								last_material=next_material;
-							}
+							next_material=
+								iso_env_map[i*3]->face_material[texturemap_index[i*3]];
 						}
 					}
 					else
 					{
 						if (iso_poly_material)
 						{
-							if (last_material!=(next_material=iso_poly_material[i*3]))
-							{
-								execute_Graphical_material(next_material);
-								last_material=next_material;
-							}
+							next_material=iso_poly_material[i*3];
 						}
 					}
+					if (!next_material)
+					{
+						next_material=default_material;
+					}
+					if (next_material != last_material)
+					{
+						execute_Graphical_material(next_material);
+						last_material=next_material;
+					}
+
 					glBegin(GL_TRIANGLES);
 					if (texturemap_coord)
 					{
@@ -1538,29 +1540,32 @@ DESCRIPTION :
 					glVertex3fv(
 						&(vertex_list[triangle_list[i*3+0]+n_vertices*ii].coord[0]));
 
+					next_material=default_material;
 					if (iso_env_map[i*3+2])
 					{
 						if (iso_env_map[i*3+2]->face_material[texturemap_index[i*3+2]])
 						{
-							if (last_material!=(next_material=iso_env_map[i*3+2]->
-								face_material[texturemap_index[i*3+2]]))
-							{
-								execute_Graphical_material(next_material);
-								last_material=next_material;
-							}
+							next_material=
+								iso_env_map[i*3+2]->face_material[texturemap_index[i*3+2]];
 						}
 					}
 					else
 					{
 						if (iso_poly_material)
 						{
-							if (last_material!=(next_material=iso_poly_material[i*3+2]))
-							{
-								execute_Graphical_material(next_material);
-								last_material=next_material;
-							}
+							next_material=iso_poly_material[i*3+2];
 						}
 					}
+					if (!next_material)
+					{
+						next_material=default_material;
+					}
+					if (next_material != last_material)
+					{
+						execute_Graphical_material(next_material);
+						last_material=next_material;
+					}
+
 					if (texturemap_coord)
 					{
 						glTexCoord2fv(&(texturemap_coord[3*(3*i+2)]));
@@ -1575,30 +1580,32 @@ DESCRIPTION :
 					glVertex3fv(
 						&(vertex_list[triangle_list[i*3+2]+n_vertices*ii].coord[0]));
 
+					next_material=default_material;
 					if (iso_env_map[i*3+1])
 					{
-						if (iso_env_map[i*3+1]->face_material
-							[texturemap_index[i*3+1]])
+						if (iso_env_map[i*3+1]->face_material[texturemap_index[i*3+1]])
 						{
-							if (last_material!=(next_material=iso_env_map[i*3+1]->
-								face_material[texturemap_index[i*3+1]]))
-							{
-								execute_Graphical_material(next_material);
-								last_material=next_material;
-							}
+							next_material=
+								iso_env_map[i*3+1]->face_material[texturemap_index[i*3+1]];
 						}
 					}
 					else
 					{
 						if (iso_poly_material)
 						{
-							if (last_material!=(next_material=iso_poly_material[i*3+1]))
-							{
-								execute_Graphical_material(next_material);
-								last_material=next_material;
-							}
+							next_material=iso_poly_material[i*3+1];
 						}
 					}
+					if (!next_material)
+					{
+						next_material=default_material;
+					}
+					if (next_material != last_material)
+					{
+						execute_Graphical_material(next_material);
+						last_material=next_material;
+					}
+
 					if (texturemap_coord)
 					{
 						glTexCoord2fv(&(texturemap_coord[3*(3*i+1)]));
