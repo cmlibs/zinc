@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : cmiss.c
 
-LAST MODIFIED : 7 July 2000
+LAST MODIFIED : 17 July 2000
 
 DESCRIPTION :
 Functions for executing cmiss commands.
@@ -8698,7 +8698,7 @@ Executes a GFX CREATE VOLUME_EDITOR command.
 static int gfx_create_volumes(struct Parse_state *state,
 	void *dummy_to_be_modified,void *command_data_void)
 /*******************************************************************************
-LAST MODIFIED : 18 January 2000
+LAST MODIFIED : 17 July 2000
 
 DESCRIPTION :
 Executes a GFX CREATE VOLUMES command.
@@ -8717,6 +8717,7 @@ Executes a GFX CREATE VOLUMES command.
 	struct Element_to_volume_data element_to_volume_data;
 	struct FE_element *seed_element;
 	struct FE_node *data_to_destroy;
+	struct Graphical_material *material;
 	struct GROUP(FE_element) *element_group;
 	struct GROUP(FE_node) *surface_data_group;
 	struct GT_object *graphics_object;
@@ -8752,6 +8753,8 @@ Executes a GFX CREATE VOLUMES command.
 			ACCESS(Computed_field)(coordinate_field);
 			data_field=(struct Computed_field *)NULL;
 			seed_element=(struct FE_element *)NULL;
+			material=
+				ACCESS(Graphical_material)(command_data->default_graphical_material);
 			spectrum=ACCESS(Spectrum)(command_data->default_spectrum);
 			surface_data_group = (struct GROUP(FE_node) *)NULL;
 			surface_data_density_field=(struct Computed_field *)NULL;
@@ -8803,6 +8806,9 @@ Executes a GFX CREATE VOLUMES command.
 			/* from */
 			Option_table_add_entry(option_table,"from",&element_group,
 				command_data->element_group_manager,set_FE_element_group);
+			/* material */
+			Option_table_add_entry(option_table,"material",&material,
+				command_data->graphical_material_manager,set_Graphical_material);
 			/* render_type */
 			render_type_string=
 				Render_type_string(RENDER_TYPE_SHADED);
@@ -8887,7 +8893,7 @@ Executes a GFX CREATE VOLUMES command.
 				else
 				{
 					if ((graphics_object=CREATE(GT_object)(graphics_object_name,
-						g_VOLTEX,(struct Graphical_material *)NULL))&&
+						g_VOLTEX,material))&&
 						ADD_OBJECT_TO_LIST(GT_object)(graphics_object,
 						command_data->graphics_object_list))
 					{
@@ -9010,6 +9016,7 @@ Executes a GFX CREATE VOLUMES command.
 			{
 				DEACCESS(Computed_field)(&data_field);
 			}
+			DEACCESS(Graphical_material)(&material);
 			DEACCESS(Spectrum)(&spectrum);
 			if (clipping)
 			{
