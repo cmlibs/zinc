@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : user_interface.c
 
-LAST MODIFIED : 22 July 2002
+LAST MODIFIED : 24 July 2002
 
 DESCRIPTION :
 Functions for opening and closing the user interface.
@@ -742,7 +742,7 @@ int busy_cursor_on(
 #endif /* defined (MOTIF) */
 	struct User_interface *user_interface)
 /*******************************************************************************
-LAST MODIFIED : 23 June 1998
+LAST MODIFIED : 24 July 2002
 
 DESCRIPTION :
 Switchs from the default cursor to the busy cursor for all shells except the
@@ -817,10 +817,9 @@ Switchs from the default cursor to the busy cursor for all shells except the
 	{
 		return_code=0;
 	}
-#endif /* defined (MOTIF) */
-#if defined (WIN32_USER_INTERFACE)
+#else /* defined (MOTIF) */
 	return_code=0;
-#endif /* defined (WIN32_USER_INTERFACE) */
+#endif /* defined (MOTIF) */
 	LEAVE;
 
 	return (return_code);
@@ -832,7 +831,7 @@ int busy_cursor_off(
 #endif /* defined (MOTIF) */
 	struct User_interface *user_interface)
 /*******************************************************************************
-LAST MODIFIED : 25 November 1999
+LAST MODIFIED : 24 July 2002
 
 DESCRIPTION :
 Switchs from the busy cursor to the default cursor for all shells except the
@@ -945,10 +944,9 @@ Switchs from the busy cursor to the default cursor for all shells except the
 		}
 		return_code=0;
 	}
-#endif /* defined (MOTIF) */
-#if defined (WIN32_USER_INTERFACE)
+#else /* defined (MOTIF) */
 	return_code=0;
-#endif /* defined (WIN32_USER_INTERFACE) */
+#endif /* defined (MOTIF) */
 	LEAVE;
 
 	return (return_code);
@@ -1373,7 +1371,7 @@ Open the <user_interface>.
 
 int DESTROY(User_interface)(struct User_interface **user_interface_address)
 /*******************************************************************************
-LAST MODIFIED : 5 March 2002
+LAST MODIFIED : 24 July 2002
 
 DESCRIPTION :
 ==============================================================================*/
@@ -1391,10 +1389,11 @@ DESCRIPTION :
 		}
 #endif /* defined (LINK_CMISS) */
 #if defined (MOTIF)
-		if (user_interface->property_notify_callback && user_interface->property_notify_widget)
+		if ((user_interface->property_notify_callback)&&
+			(user_interface->property_notify_widget))
 		{
-			set_property_notify_callback(user_interface, (Property_notify_callback)NULL,
-				NULL, (Widget)NULL);
+			set_property_notify_callback(user_interface,
+				(Property_notify_callback)NULL,NULL,(Widget)NULL);
 		}
 		if (user_interface->local_machine_info)
 		{
@@ -1420,13 +1419,13 @@ DESCRIPTION :
 		if (user_interface->main_x_connection_handler)
 		{
 			Event_dispatcher_remove_file_descriptor_handler(
-				user_interface->event_dispatcher, user_interface->main_x_connection_handler);
+				user_interface->event_dispatcher,
+				user_interface->main_x_connection_handler);
 		}
 #endif /* ! defined (USE_XTAPP_CONTEXT) */
 #endif /* defined (MOTIF) */
-
-		DEALLOCATE(*user_interface_address);
-		*user_interface_address = (struct User_interface *)NULL;
+		DEALLOCATE(*user_interface);
+		*user_interface_address=(struct User_interface *)NULL;
 		return_code=1;
 	}
 	else
@@ -1682,9 +1681,10 @@ Returns the application shell widget
 } /* User_interface_get_screen_height */
 #endif /* defined (MOTIF) */
 
+#if defined (MOTIF) || defined (WIN32_USER_INTERFACE)
 int User_interface_get_widget_spacing(struct User_interface *user_interface)
 /*******************************************************************************
-LAST MODIFIED : 22 July 2002
+LAST MODIFIED : 24 July 2002
 
 DESCRIPTION :
 Returns the widget spacing.
@@ -1707,6 +1707,7 @@ Returns the widget spacing.
 
 	return (widget_spacing);
 } /* User_interface_get_widget_spacing */
+#endif /* defined (MOTIF) || defined (WIN32_USER_INTERFACE) */
 
 #if defined (WIN32_USER_INTERFACE)
 HINSTANCE User_interface_get_instance(struct User_interface *user_interface)
