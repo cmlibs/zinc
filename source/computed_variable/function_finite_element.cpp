@@ -3980,7 +3980,7 @@ Function_variable_handle Function_finite_element::time()
 		Function_finite_element_handle(this))));
 }
 
-Scalar Function_finite_element::time_value()
+Scalar Function_finite_element::time_value() const
 //******************************************************************************
 // LAST MODIFIED : 16 February 2005
 //
