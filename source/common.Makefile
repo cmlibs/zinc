@@ -175,14 +175,14 @@ ifeq ($(SYSNAME),Linux)
    ifneq ($(DEBUG),true)
       OPTIMISATION_FLAGS = -O
       COMPILE_DEFINES = -DOPTIMISED
-      COMPILE_FLAGS = 
+      COMPILE_FLAGS = -fPIC
       STRICT_FLAGS = -Werror
       DIGITAL_MEDIA_NON_STRICT_FLAGS = 
       DIGITAL_MEDIA_NON_STRICT_FLAGS_PATTERN = NONE # Must specify a pattern that doesn't match
    else  # DEBUG != true
       OPTIMISATION_FLAGS = -g
       COMPILE_DEFINES = -DREPORT_GL_ERRORS -DUSE_PARAMETER_ON
-      COMPILE_FLAGS = 
+      COMPILE_FLAGS = -fPIC
       # A bug with gcc on esp56 stops -Wformat from working */
       STRICT_FLAGS = -W -Wall -Wno-parentheses -Wno-switch -Wno-format -Werror
       DIGITAL_MEDIA_NON_STRICT_FLAGS = 
