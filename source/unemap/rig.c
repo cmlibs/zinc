@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : rig.c
 
-LAST MODIFIED : 29 June 2000
+LAST MODIFIED : 27 July 2000
 
 DESCRIPTION :
 Contains function definitions for measurement rigs.
@@ -4673,7 +4673,7 @@ int read_signal_file(FILE *input_file,struct Rig **rig_pointer
 #endif /* defined (UNEMAP_USE_NODES)*/
 			)
 /*******************************************************************************
-LAST MODIFIED : LAST MODIFIED : 13 July 2000
+LAST MODIFIED : 27 July 2000
 
 DESCRIPTION :
 This function reads in a rig configuration and an interval of signal data from
@@ -4684,8 +4684,8 @@ the <input_file>.
 	enum Region_type rig_type;
 	enum Signal_value_type signal_value_type;
 	float frequency,*buffer_value;
-	int fread_result,i,index,number_of_devices,number_of_samples,number_of_signals,
-		return_code,temp_int;
+	int fread_result,i,index,number_of_devices,number_of_samples,
+		number_of_signals,return_code,temp_int;
 	struct Device **device;
 	struct Rig *rig;
 	struct Signal *signal;
@@ -4778,14 +4778,18 @@ the <input_file>.
 																"a number. Set to 0 ");
 														}
 #endif /* defined (OLD_CODE) */
-													/* check if data is valid finite() checks inf and nan*/
-													/*finite() in math.h for Linux, ieeefp.h for Irix*/
-													if(!finite( (double)(*buffer_value)  ))
+													/* check if data is valid finite() checks inf and
+														nan */
+													/* finite() in math.h for Linux, ieeefp.h for Irix */
+#if defined (WIN32)
+													if (!_finite((double)(*buffer_value)))
+#else /* defined (WIN32) */
+													if (!finite((double)(*buffer_value)))
+#endif /* defined (WIN32) */
 													{
-														*buffer_value=0.0;
+														*buffer_value=(float)0;
 														display_message(ERROR_MESSAGE,
-															"read_signal_file. signal value is infinite or not a number "
-															"Set to 0 ");
+			"read_signal_file.  Signal value is infinite or not a number.  Set to 0");
 													}
 													buffer_value++;
 												}							

@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : manager.h
 
-LAST MODIFIED : 22 June 2000
+LAST MODIFIED : 27 July 2000
 
 DESCRIPTION :
 Managers oversee the creation, deletion and modification of global objects -
@@ -104,7 +104,8 @@ struct MANAGER(object_type)
 #define MANAGER_CHANGE_OBJECT_NOT_IDENTIFIER_( object_type ) \
 	manager_change_object_not_identifier ## object_type
 #else
-#define MANAGER_CHANGE_OBJECT_NOT_IDENTIFIER_( object_type )  mcn ## object_type
+#define MANAGER_CHANGE_OBJECT_NOT_IDENTIFIER_( object_type )  \
+	mcni ## object_type
 #endif
 #define MANAGER_CHANGE_OBJECT_NOT_IDENTIFIER( object_type ) \
 	MANAGER_CHANGE_OBJECT_NOT_IDENTIFIER_(object_type)

@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : register.c
 
-LAST MODIFIED : 9 July 2000
+LAST MODIFIED : 27 July 2000
 
 DESCRIPTION :
 For setting and checking registers on second version of the signal conditioning
@@ -178,7 +178,7 @@ int draw_histogram(FILE *file,int channel_number)
 	return_code=0;
 	/* check arguments */
 	if (file&&unemap_get_number_of_channels(&number_of_channels)&&
-		(0<channel_number)&&((unsigned long)channel_number<number_of_channels))
+		(0<channel_number)&&(channel_number<number_of_channels))
 	{
 		if (unemap_get_number_of_samples_acquired(&number_of_samples)&&
 			(0<number_of_samples)&&ALLOCATE(samples,short int,number_of_samples))
@@ -283,7 +283,7 @@ int register_write_signal_file(char *file_name,int channel_number)
 	return_code=0;
 	/* check arguments */
 	if (file_name&&unemap_get_number_of_channels(&number_of_channels)&&
-		(0<channel_number)&&((unsigned long)channel_number<number_of_channels))
+		(0<channel_number)&&(channel_number<number_of_channels))
 	{
 		if (unemap_get_number_of_samples_acquired(&number_of_samples)&&
 			(0<number_of_samples)&&ALLOCATE(samples,short int,number_of_samples*

@@ -109,7 +109,7 @@ Replaces the contents of the <target_group> with those of the <source_group>. \
 #define REMOVE_OBJECT_FROM_GROUP( object_type ) \
 	group_remove_object_ ## object_type
 #else
-#define REMOVE_OBJECT_FROM_GROUP( object_type )  rg ## object_type
+#define REMOVE_OBJECT_FROM_GROUP( object_type )  rag ## object_type
 #endif
 
 #define PROTOTYPE_REMOVE_OBJECT_FROM_GROUP( object_type ) \

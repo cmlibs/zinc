@@ -11,7 +11,9 @@ checking.
 #if !defined (VALUE_H)
 #define VALUE_H
 
+#if defined (UNIX)
 #include <values.h>
+#endif /* defined (UNIX) */
 
 /*
 Global types

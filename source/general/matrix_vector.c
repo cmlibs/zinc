@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : matrix_vector.c
 
-LAST MODIFIED : 15 March 1999
+LAST MODIFIED : 27 July 2000
 
 DESCRIPTION:
 Code for performing vector calculations - normalize, dot product etc. -, and
@@ -748,7 +748,7 @@ FE_value vectors <a> and <b>.
 int cross_product_FE_value_vector4(FE_value *a,FE_value *b,FE_value *c,
   FE_value *result)
 /*******************************************************************************
-LAST MODIFIED : 12 July 2000
+LAST MODIFIED : 27 July 2000
 
 DESCRIPTION :
 Calculates and returns in <result> the vector cross product of 3 4-component
@@ -770,10 +770,10 @@ FE_value vectors <a>, <b> and <c>.
 		F = (b[2] * c[3]) - (b[3] * c[2]);
 
 		/* Calculate the result-vector components. */
-		result[0] =   (a[1] * F) - (a[2] * E) + (a[3] * D);
-		result[1] = - (a[0] * F) + (a[2] * C) - (a[3] * B);
-		result[2] =   (a[0] * E) - (a[1] * C) + (a[3] * A);
-		result[3] = - (a[0] * D) + (a[1] * B) - (a[2] * A);
+		result[0] = (FE_value)(  (a[1] * F) - (a[2] * E) + (a[3] * D));
+		result[1] = (FE_value)(- (a[0] * F) + (a[2] * C) - (a[3] * B));
+		result[2] = (FE_value)(  (a[0] * E) - (a[1] * C) + (a[3] * A));
+		result[3] = (FE_value)(- (a[0] * D) + (a[1] * B) - (a[2] * A));
 		return_code=1;
 	}
 	else
