@@ -607,10 +607,12 @@ IMAGEMAGICK_LIB = $(IMAGEMAGICK_PATH)/liblinux/libMagick.a $(IMAGEMAGICK_PATH)/l
 XCOMM for OpenGL without SGI movie (64bit doesnt have libraries as of Jan99)
 GRAPHICS_LIBRARY_SWITCH = -DOPENGL_API -DDM_BUFFERS 
 GRAPHICS_LIB = -lGL -lGLU
+HELP_LIB = -lXmu
 #else /* defined (O64) */
 XCOMM  for OpenGL with SGI movie
 GRAPHICS_LIBRARY_SWITCH = -DOPENGL_API -DDM_BUFFERS -DSGI_MOVIE_FILE -DSGI_DIGITAL_MEDIA
 GRAPHICS_LIB = -delay_load -lmoviefile -delay_load -ldmedia -lGL -lGLU
+HELP_LIB =
 #endif /* defined (O64) */
 #elif defined(LINUX) /* switch OperatingSystem */
 XCOMM for OpenGL without SGI movie
@@ -735,9 +737,9 @@ ALL_FLAGS = $(OPTIMISATION_FLAGS) $(COMPILE_FLAGS) $(TARGET_TYPE_FLAGS) \
 	$(ALL_DEFINES) $(ALL_INCLUDES)
 
 #if defined (USE_UNEMAP_NODES) || defined (USE_UNEMAP_3D)
-ALL_LIB = $(GRAPHICS_LIB) $(IMAGEMAGICK_LIB) $(LIB) $(EXTERNAL_INPUT_LIB)
+ALL_LIB = $(GRAPHICS_LIB) $(IMAGEMAGICK_LIB) $(LIB) $(EXTERNAL_INPUT_LIB) $(HELP_LIB)
 #else
-ALL_LIB = $(IMAGEMAGICK_LIB) $(LIB) $(EXTERNAL_INPUT_LIB)
+ALL_LIB = $(IMAGEMAGICK_LIB) $(LIB) $(EXTERNAL_INPUT_LIB) $(HELP_LIB)
 #endif /* defined (USE_UNEMAP_NODES) || defined (USE_UNEMAP_3D) */
 
 COMMAND_SRCS = \
