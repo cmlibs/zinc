@@ -3559,11 +3559,9 @@ If <field_order_info> contains fields, they are written in that order.
 ==============================================================================*/
 {
 	int return_code;
-	struct Cmiss_region *write_region;
 	struct LIST(Cmiss_region_write_info) *write_info_list;
 
 	ENTER(write_exregion_file);
-	write_region = (struct Cmiss_region *)NULL;
 	if (output_file && root_region)
 	{
 		return_code = 1;
