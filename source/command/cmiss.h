@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : cmiss.h
 
-LAST MODIFIED : 18 April 2003
+LAST MODIFIED : 30 July 2003
 
 DESCRIPTION :
 Functions and types for executing cmiss commands.
@@ -90,6 +90,15 @@ LAST MODIFIED : 18 April 2003
 
 DESCRIPTION :
 Returns the root region from the <command_data>.
+==============================================================================*/
+
+struct Time_keeper *Cmiss_command_data_get_default_time_keeper(
+	struct Cmiss_command_data *command_data);
+/*******************************************************************************
+LAST MODIFIED : 30 July 2003
+
+DESCRIPTION :
+Returns the default time_keeper from the <command_data>.
 ==============================================================================*/
 
 struct Execute_command *Cmiss_command_data_get_execute_command(
