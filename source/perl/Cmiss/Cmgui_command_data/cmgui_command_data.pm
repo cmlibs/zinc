@@ -102,12 +102,12 @@ sub new
 
 sub get_cmiss_root_region
 {
-  my $cmgui_command_data = $@;
+  my ($self, %args) = @_;
   my $objref;
 
-  if (defined $cmgui_command_data)
+  if (defined $self)
   {
-	 $objref=command_data_get_root_region($cmgui_command_data);
+	 $objref=command_data_get_root_region($self);
 	 if ($objref)
 	 {
 		$objref;

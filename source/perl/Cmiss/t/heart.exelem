@@ -1,0 +1,198 @@
+ Group name: heart
+ Shape.  Dimension=3
+ #Scale factor sets= 4
+   c.Hermite*c.Hermite*l.Lagrange, #Scale factors=32
+   l.Lagrange*l.Lagrange*l.Lagrange, #Scale factors= 8
+   l.Lagrange*l.Lagrange*c.Hermite, #Scale factors=16
+   l.Lagrange*c.Hermite*c.Hermite, #Scale factors=32
+ #Nodes=           6
+ #Fields=2
+ 1) coordinates, coordinate, prolate spheroidal, focus=  0.3525E+02, #Components=3
+   lambda.  c.Hermite*c.Hermite*l.Lagrange, no modify, standard node based.
+     #Nodes= 8
+      1.  #Values=4
+       Value indices:     1   2   3   4
+       Scale factor indices:   1   2   3   4
+      1.  #Values=4
+       Value indices:     1   2   3   4
+       Scale factor indices:   5   6   7   8
+      2.  #Values=4
+       Value indices:     1   2   3   4
+       Scale factor indices:   9  10  11  12
+      3.  #Values=4
+       Value indices:     1   2   3   4
+       Scale factor indices:  13  14  15  16
+      4.  #Values=4
+       Value indices:     1   2   3   4
+       Scale factor indices:  17  18  19  20
+      4.  #Values=4
+       Value indices:     1   2   3   4
+       Scale factor indices:  21  22  23  24
+      5.  #Values=4
+       Value indices:     1   2   3   4
+       Scale factor indices:  25  26  27  28
+      6.  #Values=4
+       Value indices:     1   2   3   4
+       Scale factor indices:  29  30  31  32
+   mu.  l.Lagrange*l.Lagrange*l.Lagrange, no modify, standard node based.
+     #Nodes= 8
+      1.  #Values=1
+       Value indices:     1
+       Scale factor indices:  33
+      1.  #Values=1
+       Value indices:     1
+       Scale factor indices:  34
+      2.  #Values=1
+       Value indices:     1
+       Scale factor indices:  35
+      3.  #Values=1
+       Value indices:     1
+       Scale factor indices:  36
+      4.  #Values=1
+       Value indices:     1
+       Scale factor indices:  37
+      4.  #Values=1
+       Value indices:     1
+       Scale factor indices:  38
+      5.  #Values=1
+       Value indices:     1
+       Scale factor indices:  39
+      6.  #Values=1
+       Value indices:     1
+       Scale factor indices:  40
+   theta.  l.Lagrange*l.Lagrange*l.Lagrange, decreasing in xi1, standard node based.
+     #Nodes= 8
+      1.  #Values=1
+       Value indices:     2
+       Scale factor indices:  33
+      1.  #Values=1
+       Value indices:     1
+       Scale factor indices:  34
+      2.  #Values=1
+       Value indices:     1
+       Scale factor indices:  35
+      3.  #Values=1
+       Value indices:     1
+       Scale factor indices:  36
+      4.  #Values=1
+       Value indices:     2
+       Scale factor indices:  37
+      4.  #Values=1
+       Value indices:     1
+       Scale factor indices:  38
+      5.  #Values=1
+       Value indices:     1
+       Scale factor indices:  39
+      6.  #Values=1
+       Value indices:     1
+       Scale factor indices:  40
+ 2) fibres, anatomical, fibre, #Components=3
+   fibre angle.  l.Lagrange*l.Lagrange*c.Hermite, no modify, standard node based.
+     #Nodes= 8
+      1.  #Values=2
+       Value indices:     1   2
+       Scale factor indices:  41  42
+      1.  #Values=2
+       Value indices:     1   2
+       Scale factor indices:  43  44
+      2.  #Values=2
+       Value indices:     1   2
+       Scale factor indices:  45  46
+      3.  #Values=2
+       Value indices:     1   2
+       Scale factor indices:  47  48
+      4.  #Values=2
+       Value indices:     1   2
+       Scale factor indices:  49  50
+      4.  #Values=2
+       Value indices:     1   2
+       Scale factor indices:  51  52
+      5.  #Values=2
+       Value indices:     1   2
+       Scale factor indices:  53  54
+      6.  #Values=2
+       Value indices:     1   2
+       Scale factor indices:  55  56
+   imbrication angle.  l.Lagrange*l.Lagrange*l.Lagrange, no modify, standard node based.
+     #Nodes= 8
+      1.  #Values=1
+       Value indices:     1
+       Scale factor indices:  33
+      1.  #Values=1
+       Value indices:     1
+       Scale factor indices:  34
+      2.  #Values=1
+       Value indices:     1
+       Scale factor indices:  35
+      3.  #Values=1
+       Value indices:     1
+       Scale factor indices:  36
+      4.  #Values=1
+       Value indices:     1
+       Scale factor indices:  37
+      4.  #Values=1
+       Value indices:     1
+       Scale factor indices:  38
+      5.  #Values=1
+       Value indices:     1
+       Scale factor indices:  39
+      6.  #Values=1
+       Value indices:     1
+       Scale factor indices:  40
+   sheet angle.  l.Lagrange*c.Hermite*c.Hermite, no modify, standard node based.
+     #Nodes= 8
+      1.  #Values=4
+       Value indices:     1   2   3   4
+       Scale factor indices:  57  58  59  60
+      1.  #Values=4
+       Value indices:     1   2   3   4
+       Scale factor indices:  61  62  63  64
+      2.  #Values=4
+       Value indices:     1   2   3   4
+       Scale factor indices:  65  66  67  68
+      3.  #Values=4
+       Value indices:     1   2   3   4
+       Scale factor indices:  69  70  71  72
+      4.  #Values=4
+       Value indices:     1   2   3   4
+       Scale factor indices:  73  74  75  76
+      4.  #Values=4
+       Value indices:     1   2   3   4
+       Scale factor indices:  77  78  79  80
+      5.  #Values=4
+       Value indices:     1   2   3   4
+       Scale factor indices:  81  82  83  84
+      6.  #Values=4
+       Value indices:     1   2   3   4
+       Scale factor indices:  85  86  87  88
+ Element:           21 0 0
+   Faces: 
+     0     0 0
+     0     0 0
+     0     0 0
+     0     0 0
+     0     0 0
+     0     0 0
+   Nodes:
+               28           24           81           13            9           51
+   Scale factors:
+       0.1000000000000000E+01   0.1000000000000000E+01   0.3403248665609059E+02   0.3403248665609059E+02   0.1000000000000000E+01
+   0.1000000000000000E+01   0.3397167399474852E+02   0.3397167399474852E+02   0.1000000000000000E+01   0.8644839085880292E+01
+   0.3446950815410504E+02   0.2979833513616767E+03   0.1000000000000000E+01   0.8542553035127238E+01   0.3712329257631156E+02
+   0.3171276956716868E+03   0.1000000000000000E+01   0.1000000000000000E+01   0.4143837200556658E+02   0.4143837200556658E+02
+   0.1000000000000000E+01   0.1000000000000000E+01   0.4112908199391330E+02   0.4112908199391330E+02   0.1000000000000000E+01
+   0.1099927582075593E+02   0.4067351044493734E+02   0.4473791599822629E+03   0.1000000000000000E+01   0.1073651503942772E+02
+   0.4371296786992085E+02   0.4693249369534259E+03
+       0.1000000000000000E+01   0.1000000000000000E+01   0.1000000000000000E+01   0.1000000000000000E+01   0.1000000000000000E+01
+   0.1000000000000000E+01   0.1000000000000000E+01   0.1000000000000000E+01
+       0.1000000000000000E+01   0.5590506903831034E+01   0.1000000000000000E+01   0.5590506903831034E+01   0.1000000000000000E+01
+   0.1115402043488847E+02   0.1000000000000000E+01   0.1112241822640270E+02   0.1000000000000000E+01   0.6538593781370129E+01
+   0.1000000000000000E+01   0.6538593781370129E+01   0.1000000000000000E+01   0.7424483864674529E+01   0.1000000000000000E+01
+   0.7415889088287325E+01
+       0.1000000000000000E+01   0.3403248665609059E+02   0.5590506903831034E+01   0.1902588516054120E+03   0.1000000000000000E+01
+   0.3397167399474852E+02   0.5590506903831034E+01   0.1899188780023388E+03   0.1000000000000000E+01   0.3446950815410504E+02
+   0.1115402043488847E+02   0.3844735983314424E+03   0.1000000000000000E+01   0.3712329257631156E+02   0.1112241822640270E+02
+   0.4129007859748477E+03   0.1000000000000000E+01   0.4143837200556658E+02   0.6538593781370129E+01   0.2709486815056997E+03
+   0.1000000000000000E+01   0.4112908199391330E+02   0.6538593781370129E+01   0.2689263597588636E+03   0.1000000000000000E+01
+   0.4067351044493734E+02   0.7424483864674529E+01   0.3019798220181082E+03   0.1000000000000000E+01   0.4371296786992085E+02
+   0.7415889088287325E+01   0.3241705214432004E+03
