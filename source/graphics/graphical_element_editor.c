@@ -121,6 +121,7 @@ LAST MODIFIED : 14 November 2001
 DESCRIPTION :
 Calls a private function of the <form> to force a resize of the widget.
 ???RC Can't find any other way of getting this to work properly!
+???RC Also in <scene_editor>. Put in common place?
 ==============================================================================*/
 {
 	ENTER(XmForm_resize);

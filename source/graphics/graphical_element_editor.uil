@@ -1,7 +1,7 @@
 !*******************************************************************************
 ! FILE : graphical_element_editor.uil
 !
-! LAST MODIFIED : 20 November 2001
+! LAST MODIFIED : 3 December 2001
 !
 ! DESCRIPTION :
 ! The widgets for the graphical element group editor widget.
@@ -40,8 +40,6 @@ value
 	sash_width : 50;
 
 identifier
-	!The gap between widgets
-	widget_spacing;
 	!Pointer to data specific to this instance of the gelem_ed widget
 	gelem_ed_structure;
 	!fonts here
@@ -53,6 +51,10 @@ object
 		{
 		arguments
 			{
+			XmNleftAttachment = XmATTACH_FORM;
+			XmNrightAttachment = XmATTACH_FORM;
+			XmNtopAttachment = XmATTACH_FORM;
+			XmNbottomAttachment = XmATTACH_FORM;
 			XmNuserData = gelem_ed_structure;
 			};
 		controls
@@ -113,6 +115,8 @@ object
 		arguments
 			{
 			XmNsashWidth = sash_width;
+			XmNmarginHeight = 0;
+			XmNmarginWidth = 0;
 			XmNleftAttachment = XmATTACH_FORM;
 			XmNrightAttachment = XmATTACH_FORM;
 			XmNbottomAttachment = XmATTACH_FORM;
@@ -126,6 +130,10 @@ object
 		};
 	gelem_ed_sett_type_list_form: XmForm
 		{
+    arguments
+      {
+      XmNallowResize = true;
+      };
 		controls
 			{
 			XmForm gelem_ed_type_modify_form;
@@ -134,6 +142,10 @@ object
 		};
 	gelem_ed_settings_form: XmForm
 		{
+    arguments
+      {
+      XmNallowResize = true;
+      };
 		callbacks
 			{
 			MrmNcreateCallback = procedure
@@ -166,9 +178,11 @@ object
 		{
 		arguments
 			{
-			XmNheight = 186;
-			XmNwidth = 300;
+!			XmNheight = 186;
+!			XmNwidth = 300;
 			XmNscrollingPolicy = XmAUTOMATIC;
+!???RC temp:
+			XmNvisualPolicy = XmVARIABLE;
 			XmNleftAttachment = XmATTACH_FORM;
 			XmNrightAttachment = XmATTACH_FORM;
 			XmNtopAttachment = XmATTACH_WIDGET;
