@@ -1,7 +1,7 @@
 //******************************************************************************
 // FILE : function_matrix.hpp
 //
-// LAST MODIFIED : 13 January 2005
+// LAST MODIFIED : 23 February 2005
 //
 // DESCRIPTION :
 //==============================================================================
@@ -15,7 +15,7 @@
 EXPORT template<typename Value_type>
 class Function_matrix : public Function
 //******************************************************************************
-// LAST MODIFIED : 13 January 2005
+// LAST MODIFIED : 23 February 2005
 //
 // DESCRIPTION :
 // An identity function whose input/output is a matrix
@@ -36,6 +36,8 @@ class Function_matrix : public Function
 		virtual Function_variable_handle output();
 	// additional
 	public:
+		// get the matrix values
+		const ublas::matrix<Value_type,ublas::column_major>& matrix();
 		// get a matrix entry variable
 		virtual Function_variable_handle entry(Function_size_type,
 			Function_size_type);
