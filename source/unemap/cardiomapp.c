@@ -727,7 +727,7 @@ Reads a .rdt signal file produced by ART's CardioMapp program.
 						/* read the signals */
 							/*???DB.  BINARY_FIELD_READ converts from little to big endian on
 								the PC */
-						if (number_of_signals*number_of_samples==fread(
+						if (number_of_signals*number_of_samples==(int)fread(
 							(char *)signal_buffer->signals.short_int_values,
 							sizeof(short int),number_of_samples*number_of_signals,
 							cardiomapp_file))

@@ -208,9 +208,9 @@ Determines if there is a netscape on the <display>.
 {
 	Atom property_type;
 	float current_version_number, greatest_version_number;
-	int data_unit,i, navigator_window;
+	int data_unit, navigator_window;
 	unsigned char *version, *name;
-	unsigned int number_of_child_windows;
+	unsigned int i,number_of_child_windows;
 	unsigned long bytes_left,number_of_units;
 	Window child_window,*child_windows,netscape_window,parent_window,
 		root_window_1,root_window_2;

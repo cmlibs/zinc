@@ -163,7 +163,7 @@ Parses the <electrodes> string to get the channels for the <rig>.
 				while (!found&&(0<number_of_devices))
 				{
 					if ((ELECTRODE==(*device)->description->type)&&
-						(number_of_characters==strlen((*device)->description->name))&&
+						(number_of_characters==(int)strlen((*device)->description->name))&&
 						(0==strncmp(electrodes+position,(*device)->description->name,
 						number_of_characters)))
 					{

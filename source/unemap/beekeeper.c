@@ -1249,7 +1249,7 @@ configuration (electrode information is not available).
 	FILE *beekeeper_file;
 	float frequency,full_range;
 	int buffer_size,calibration_index,calibration_size,*electrodes_in_row,found,i,
-		index,j,number_of_channels,number_of_data_gaps,number_of_devices,
+		index,number_of_channels,number_of_data_gaps,number_of_devices,
 		number_of_DTM,number_of_rows,number_of_samples,number_of_128,number_of_400,
 		number_of_64,record_size,return_code,*signal_time;
 	short *signal_value;
@@ -1260,7 +1260,7 @@ configuration (electrode information is not available).
 	unsigned long data_gap_length,end_time,start_time,time;
 	unsigned short gain[128],*unpacked,value[128],value_1,value_2;
 #if defined (FILL_IN_DATA_GAPS)
-	int max_data_gap_length;
+	unsigned int j, max_data_gap_length;
 #endif /* defined (FILL_IN_DATA_GAPS) */
 
 	ENTER(read_beekeeper_eeg_file);

@@ -1458,7 +1458,7 @@ the drawable (not sure which)
 {
 	char black_and_white,*blue,*colour_blue,*colour_green,*colour_parity,
 		*colour_red,*green,*parity,*red;
-	int column,count,i,number_of_colours,return_code,row,scan_line_length;
+	unsigned int column,count,i,number_of_colours,return_code,row,scan_line_length;
 	Pixel background_pixel,foreground_pixel,pixel,*spectrum_pixel;
 	unsigned char bit_mask,byte;
 	unsigned short background_blue,background_green,background_red,
@@ -1474,7 +1474,7 @@ the drawable (not sure which)
 		/*???Use src, dest and size ? */
 		if (image&&screen_visual&&(postscript.spectrum_pixels)&&
 			(0<postscript.number_of_spectrum_colours)&&
-			(postscript.number_of_spectrum_colours<=
+			((unsigned int)postscript.number_of_spectrum_colours<=
 			(number_of_colours=screen_visual->map_entries))&&
 			((foreground_pixel=postscript.foreground_drawing_colour)<
 			number_of_colours)&&

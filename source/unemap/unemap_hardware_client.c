@@ -714,13 +714,13 @@ The <module_acquired_callback> is responsible for deallocating the samples.
 			{
 				/* succeeded */
 				memcpy(&message_size,message_header+2,sizeof(message_size));
-				if (sizeof(number_of_channels)<=message_size)
+				if ((int)sizeof(number_of_channels)<=message_size)
 				{
 					if (SOCKET_ERROR!=socket_recv(crate->acquired_socket,
 						(unsigned char *)&number_of_channels,sizeof(number_of_channels),0))
 					{
 						message_size -= sizeof(number_of_channels);
-						if (sizeof(number_of_samples)<=message_size)
+						if ((int)sizeof(number_of_samples)<=message_size)
 						{
 							if (SOCKET_ERROR!=socket_recv(crate->acquired_socket,
 								(unsigned char *)&number_of_samples,sizeof(number_of_samples),
@@ -1026,7 +1026,7 @@ Called when there is input on the calibration socket.
 			{
 				/* succeeded */
 				memcpy(&message_size,message_header+2,sizeof(message_size));
-				if (sizeof(number_of_channels)<=message_size)
+				if ((int)sizeof(number_of_channels)<=message_size)
 				{
 					if (SOCKET_ERROR!=socket_recv(crate->calibration_socket,
 						(unsigned char *)&number_of_channels,sizeof(number_of_channels),0))
