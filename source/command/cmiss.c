@@ -1590,7 +1590,7 @@ Executes a GFX CREATE EGROUP command.
 					}
 					else
 					{
-						display_message(ERROR_MESSAGE,"gfx_create_eleemnt_group.  "
+						display_message(ERROR_MESSAGE,"gfx_create_element_group.  "
 							"Could not create data/node/element group(s)");
 						DESTROY(GROUP(FE_element))(&element_group);
 						DESTROY(GROUP(FE_node))(&node_group);
@@ -3000,8 +3000,8 @@ DESCRIPTION :
 Executes a GFX CREATE ISO_SURFACES command.
 ==============================================================================*/
 {
-	char exterior_flag,*graphics_object_name,*use_element_type_string,
-		**valid_strings;
+	char exterior_flag,*graphics_object_name,*render_type_string,
+		*use_element_type_string, **valid_strings;
 	enum GT_object_type graphics_object_type;
 	float time;
 	int face_number,number_of_valid_strings,return_code;
@@ -3115,6 +3115,14 @@ Executes a GFX CREATE ISO_SURFACES command.
 			Option_table_add_entry(option_table,"native_discretization",
 				&native_discretization_field,command_data->fe_field_manager,
 				set_FE_field);
+			/* render_type */
+			render_type_string=
+				Render_type_string(RENDER_TYPE_SHADED);
+			valid_strings=Render_type_get_valid_strings(
+				&number_of_valid_strings);
+			Option_table_add_enumerator(option_table,number_of_valid_strings,
+				valid_strings,&render_type_string);
+			DEALLOCATE(valid_strings);
 			/* spectrum */
 			Option_table_add_entry(option_table,"spectrum",&spectrum,
 				command_data->spectrum_manager,set_Spectrum);
@@ -3294,6 +3302,8 @@ Executes a GFX CREATE ISO_SURFACES command.
 						discretization.number_in_xi2;
 					element_to_iso_scalar_data.number_in_xi[2]=
 						discretization.number_in_xi3;
+					element_to_iso_scalar_data.render_type=
+						Render_type_from_string(render_type_string);
 					element_to_iso_scalar_data.element_group=element_group;
 					element_to_iso_scalar_data.exterior=exterior_flag;
 					element_to_iso_scalar_data.face_number=face_number;
@@ -6422,11 +6432,12 @@ DESCRIPTION :
 Executes a GFX CREATE SURFACES command.
 ==============================================================================*/
 {
-	char exterior_flag,*graphics_object_name,nurb,reverse_normals;
+	char exterior_flag,*graphics_object_name,nurb,*render_type_string,
+		reverse_normals,**valid_strings;
 	enum GT_object_type object_type;
 	float time;
 	gtObject *graphics_object;
-	int face_number,return_code;
+	int face_number,number_of_valid_strings,return_code;
 	static char default_name[]="surfaces";
 	struct Cmiss_command_data *command_data;
 	struct Computed_field *coordinate_field,*data_field,*texture_coordinate_field;
@@ -6514,6 +6525,14 @@ Executes a GFX CREATE SURFACES command.
 			/* reverse_normals */
 			Option_table_add_entry(option_table,"reverse_normals",
 				&reverse_normals,NULL,set_char_flag);
+			/* render_type */
+			render_type_string=
+				Render_type_string(RENDER_TYPE_SHADED);
+			valid_strings=Render_type_get_valid_strings(
+				&number_of_valid_strings);
+			Option_table_add_enumerator(option_table,number_of_valid_strings,
+				valid_strings,&render_type_string);
+			DEALLOCATE(valid_strings);
 			/* spectrum */
 			Option_table_add_entry(option_table,"spectrum",&spectrum,
 				command_data->spectrum_manager,set_Spectrum);
@@ -6595,6 +6614,8 @@ Executes a GFX CREATE SURFACES command.
 				element_to_surface_data.data_field=data_field;
 				element_to_surface_data.reverse_normals=reverse_normals;
 				element_to_surface_data.graphics_object=graphics_object;
+				element_to_surface_data.render_type=
+					Render_type_from_string(render_type_string);
 				element_to_surface_data.texture_coordinate_field=
 					texture_coordinate_field;
 				element_to_surface_data.time=time;
@@ -7789,9 +7810,9 @@ DESCRIPTION :
 Executes a GFX CREATE VOLUMES command.
 ==============================================================================*/
 {
-	char *graphics_object_name;
+	char *graphics_object_name,*render_type_string,**valid_strings;
 	float time;
-	int displacement_map_xi_direction, return_code;
+	int displacement_map_xi_direction,number_of_valid_strings, return_code;
 	static char default_name[]="volumes";
 	struct Clipping *clipping;
 	struct Cmiss_command_data *command_data;
@@ -7885,6 +7906,14 @@ Executes a GFX CREATE VOLUMES command.
 			/* from */
 			Option_table_add_entry(option_table,"from",&element_group,
 				command_data->element_group_manager,set_FE_element_group);
+			/* render_type */
+			render_type_string=
+				Render_type_string(RENDER_TYPE_SHADED);
+			valid_strings=Render_type_get_valid_strings(
+				&number_of_valid_strings);
+			Option_table_add_enumerator(option_table,number_of_valid_strings,
+				valid_strings,&render_type_string);
+			DEALLOCATE(valid_strings);
 			/* seed_element */
 			Option_table_add_entry(option_table,"seed_element",
 				&seed_element,command_data->element_manager,set_FE_element_dimension_3);
@@ -8004,6 +8033,8 @@ Executes a GFX CREATE VOLUMES command.
 					element_to_volume_data.data_field=data_field;
 					element_to_volume_data.graphics_object=graphics_object;
 					element_to_volume_data.time=time;
+					element_to_volume_data.render_type=
+						Render_type_from_string(render_type_string);
 					element_to_volume_data.volume_texture=volume_texture;
 					element_to_volume_data.displacement_map_field = displacement_map_field;
 					element_to_volume_data.displacement_map_xi_direction =
@@ -22058,8 +22089,8 @@ DESCRIPTION :
 Executes a SET DIR command.
 ==============================================================================*/
 {
-	char *directory_name, *example_directory, example_flag, *temp_char, *token;
-	int directory_name_length, file_name_length, i, return_code;
+	char *directory_name, *example_directory, example_flag, *token;
+	int file_name_length, return_code;
 	struct Cmiss_command_data *command_data;
 	static struct Modifier_entry option_table[]=
 	{
@@ -22097,6 +22128,12 @@ Executes a SET DIR command.
 									DEALLOCATE(command_data->example_directory);
 								}
 								command_data->example_directory=example_directory;
+								/* send command to the back end */
+								/* have to reset the token position to get it to
+									export the command */
+								state->current_token = token;
+								return_code=execute_command_cm(state,(void *)NULL,
+								  command_data_void);
 							}
 							else
 							{
@@ -22168,6 +22205,12 @@ Executes a SET DIR command.
 								}
 								DEALLOCATE(command_data->example_directory);
 								command_data->example_directory=example_directory;
+								/* send command to the back end */
+								/* have to reset the token position to get it to
+									export the command */
+								state->current_token = token;
+								return_code=execute_command_cm(state,(void *)NULL,
+								  command_data_void);
 							}
 							else
 							{
