@@ -163,7 +163,7 @@ update :
 		chgrp -R cmgui_programmers * && \
 		cd $(PRODUCT_PATH) && \
 		$(MAKE) -f cmgui.make cmgui cmgui_optimised cmgui64 cmgui_lite cmgui_memorycheck && \
-		rsh 130.216.208.156 'setenv CMISS_ROOT /product/cmiss ; cd $(PRODUCT_PATH) ; $(MAKE) -f cmgui.make cmgui_linux cmgui_linux_optimised' && \
+		ssh 130.216.208.156 'setenv CMISS_ROOT /product/cmiss ; cd $(PRODUCT_PATH) ; $(MAKE) -f cmgui.make cmgui_linux cmgui_linux_optimised' && \
 		cd $(PRODUCT_SOURCE_PATH) && \
 		chgrp -R cmgui_programmers *; \
 	else \
@@ -181,7 +181,7 @@ depend : $(SOURCE_PATH)/cmgui_sgi.make $(SOURCE_PATH)/cmgui_sgioptimised.make $(
 		$(MAKE) -f cmgui_sgi_memorycheck.make depend ; \
 		$(MAKE) -f cmgui_sgilite.make depend ; \
 		$(MAKE) -f cmgui_sgi64.make depend ; \
-		rsh 130.216.208.156 'setenv CMISS_ROOT /product/cmiss ; setenv CMGUI_DEV_ROOT $(PWD) ; cd $(PRODUCT_SOURCE_PATH) ; $(MAKE) -f cmgui_linux.make depend ; $(MAKE) -f cmgui_linux_optimised.make depend ' ; \
+		ssh 130.216.208.156 'setenv CMISS_ROOT /product/cmiss ; setenv CMGUI_DEV_ROOT $(PWD) ; cd $(PRODUCT_SOURCE_PATH) ; $(MAKE) -f cmgui_linux.make depend ; $(MAKE) -f cmgui_linux_optimised.make depend ' ; \
 	else \
 		echo "Must be cmiss"; \
 	fi
@@ -190,7 +190,7 @@ run_tests :
 	if [ "$(USER)" = "cmiss" ]; then \
 		cd $(TEST_PATH); \
 		$(MAKE) -u; \
-		rsh 130.216.208.156 'setenv CMISS_ROOT /product/cmiss ; cd $(TEST_PATH) ; make -W cmgui_linux.exe cmgui_linux_test' ; \
+		ssh 130.216.208.156 'setenv CMISS_ROOT /product/cmiss ; cd $(TEST_PATH) ; make -W cmgui_linux.exe cmgui_linux_test' ; \
 		cat all.mail ; \
 	else \
 		echo "Must be cmiss"; \

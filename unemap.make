@@ -124,7 +124,7 @@ update :
 		chgrp -R cmgui_programmers * && \
 		cd $(PRODUCT_PATH) && \
 		$(MAKE) -f unemap.make unemap32 unemap_nodes unemap_optimised unemap_64 unemap_memorycheck utilities; \
-		rsh 130.216.208.156 'setenv CMISS_ROOT /product/cmiss ; cd $(PRODUCT_PATH) ; $(MAKE) -f unemap.make unemap_linux utilities_linux' ; \
+		ssh 130.216.208.156 'setenv CMISS_ROOT /product/cmiss ; cd $(PRODUCT_PATH) ; $(MAKE) -f unemap.make unemap_linux utilities_linux' ; \
 		cd $(PRODUCT_SOURCE_PATH) && \
 		chgrp -R cmgui_programmers *; \
 	else \
@@ -140,7 +140,7 @@ depend : $(SOURCE_PATH)/unemap_sgi.make $(SOURCE_PATH)/unemap_sginodes.make $(SO
 		$(MAKE) -f unemap_sginodes.make depend  ; \
 		$(MAKE) -f unemap_sgioptimised.make depend  ; \
 		$(MAKE) -f unemap_sgi64.make depend  ; \
-		rsh 130.216.208.156 'setenv CMISS_ROOT /product/cmiss ; setenv CMGUI_DEV_ROOT $(PWD) ; cd $(PRODUCT_SOURCE_PATH) ; $(MAKE) -f unemap_linux.make depend ' ; \
+		ssh 130.216.208.156 'setenv CMISS_ROOT /product/cmiss ; setenv CMGUI_DEV_ROOT $(PWD) ; cd $(PRODUCT_SOURCE_PATH) ; $(MAKE) -f unemap_linux.make depend ' ; \
 	else \
 		echo "Must be cmiss"; \
 	fi
