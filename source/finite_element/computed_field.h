@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : computed_field.h
 
-LAST MODIFIED : 26 May 2000
+LAST MODIFIED : 20 June 2000
 
 DESCRIPTION :
 A Computed_field is an abstraction of an FE_field. For each FE_field there is
@@ -256,13 +256,22 @@ DESCRIPTION :
 Manager conditional function version of Computed_field_is_defined_in_element.
 ==============================================================================*/
 
+int Computed_field_is_scalar_integer(struct Computed_field *field,
+	void *dummy_void);
+/*******************************************************************************
+LAST MODIFIED : 20 June 2000
+
+DESCRIPTION :
+Returns true if <field> is a 1 integer component FINITE_ELEMENT wrapper.
+==============================================================================*/
+
 int Computed_field_is_scalar_integer_grid_in_element(
 	struct Computed_field *field,void *element_void);
 /*******************************************************************************
 LAST MODIFIED : 26 May 2000
 
 DESCRIPTION :
-Returns true if <field> has a 1 integer component FINITE_ELEMENT wrapper which
+Returns true if <field> is a 1 integer component FINITE_ELEMENT wrapper which
 is defined in <element> AND is grid-based.
 Used for choosing field suitable for identifying grid points.
 ==============================================================================*/

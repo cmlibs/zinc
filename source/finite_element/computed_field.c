@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : computed_field.c
 
-LAST MODIFIED : 26 May 2000
+LAST MODIFIED : 20 June 2000
 
 DESCRIPTION :
 A Computed_field is an abstraction of an FE_field. For each FE_field there is
@@ -1528,13 +1528,44 @@ Manager conditional function version of Computed_field_is_defined_in_element.
 	return (return_code);
 } /* Computed_field_is_defined_in_element_conditional */
 
+int Computed_field_is_scalar_integer(struct Computed_field *field,
+	void *dummy_void)
+/*******************************************************************************
+LAST MODIFIED : 20 June 2000
+
+DESCRIPTION :
+Returns true if <field> is a 1 integer component FINITE_ELEMENT wrapper.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(Computed_field_is_scalar_integer);
+	USE_PARAMETER(dummy_void);
+	if (field)
+	{
+		return_code=
+			(1==field->number_of_components)&&
+			(COMPUTED_FIELD_FINITE_ELEMENT==field->type)&&
+			(INT_VALUE==get_FE_field_value_type(field->fe_field));
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Computed_field_is_scalar_integer.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Computed_field_is_scalar_integer */
+
 int Computed_field_is_scalar_integer_grid_in_element(
 	struct Computed_field *field,void *element_void)
 /*******************************************************************************
 LAST MODIFIED : 26 May 2000
 
 DESCRIPTION :
-Returns true if <field> has a 1 integer component FINITE_ELEMENT wrapper which
+Returns true if <field> is a 1 integer component FINITE_ELEMENT wrapper which
 is defined in <element> AND is grid-based.
 Used for choosing field suitable for identifying grid points.
 ==============================================================================*/
@@ -17797,7 +17828,7 @@ static void Computed_field_Control_curve_change(
 	struct MANAGER_MESSAGE(Control_curve) *message,
 	void *computed_field_package_void)
 /*******************************************************************************
-LAST MODIFIED : 5 November 1999
+LAST MODIFIED : 22 June 2000
 
 DESCRIPTION :
 Something has changed globally in the Control_curve manager. Passes on messages
@@ -17807,7 +17838,6 @@ COMPUTED_FIELD_CURVE_LOOKUP.
 {
 	struct Computed_field *field;
 	struct Computed_field_package *computed_field_package;
-	struct MANAGER_MESSAGE(Computed_field) *computed_field_message;
 	struct Other_Computed_field_uses_Control_curve_data curve_data;
 
 	ENTER(Computed_field_Control_curve_change);
@@ -17826,37 +17856,24 @@ COMPUTED_FIELD_CURVE_LOOKUP.
 					computed_field_package->computed_field_manager))
 				{
 					/* use internal MANAGER messaging calls to send messages */
-					if (ALLOCATE(computed_field_message,
-						struct MANAGER_MESSAGE(Computed_field),1))
+					curve_data.field=field;
+					curve_data.curve=message->object_changed;
+					/* do more than one field use the modified curve(s)? */
+					if (FIRST_OBJECT_IN_MANAGER_THAT(Computed_field)(
+						other_Computed_field_uses_Control_curve,(void *)&curve_data,
+						computed_field_package->computed_field_manager))
 					{
-						curve_data.field=field;
-						curve_data.curve=message->object_changed;
-						if (FIRST_OBJECT_IN_MANAGER_THAT(Computed_field)(
-							other_Computed_field_uses_Control_curve,(void *)&curve_data,
-							computed_field_package->computed_field_manager))
-						{
-							/* send change all message */
-							computed_field_message->change=MANAGER_CHANGE_ALL(Computed_field);
-							computed_field_message->object_changed=
-								(struct Computed_field *)NULL;
-						}
-						else
-						{
-							/* send change object not identifier message */
-							computed_field_message->change=
-								MANAGER_CHANGE_OBJECT_NOT_IDENTIFIER(Computed_field);
-							computed_field_message->object_changed=field;
-						}
-						/* send the message */
-						MANAGER_UPDATE(Computed_field)(computed_field_message,
+						/* send CHANGE_ALL message */
+						MANAGER_NOTE_CHANGE(Computed_field)(
+							MANAGER_CHANGE_ALL(Computed_field),(struct Computed_field *)NULL,
 							computed_field_package->computed_field_manager);
-						DEALLOCATE(computed_field_message);
 					}
 					else
 					{
-						display_message(ERROR_MESSAGE,
-							"Computed_field_Control_curve_change.  "
-							"Could not allocate manager message");
+						/* send CHANGE_OBJECT_NOT_IDENTIFIER message */
+						MANAGER_NOTE_CHANGE(Computed_field)(
+							MANAGER_CHANGE_OBJECT_NOT_IDENTIFIER(Computed_field),field,
+							computed_field_package->computed_field_manager);
 					}
 				}
 			} break;
