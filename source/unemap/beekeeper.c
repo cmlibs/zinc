@@ -1699,7 +1699,7 @@ if (!found)
 	long temp_long;
 	unsigned short temp_short;
 
-	printf("time %ld\n",time);
+	printf("time %ld\n",(long int)(time));
 	for (i=0;i<number_of_channels;i++)
 	{
 		if (0xFFFF!=gain[i])

@@ -57,6 +57,8 @@ Tidys up when the user destroys the projection dialog box.
 	struct Projection_dialog *dialog;
 
 	ENTER(destroy_Projection_dialog);
+	USE_PARAMETER(widget);
+	USE_PARAMETER(call_data);
 	if (dialog=(struct Projection_dialog *)projection_dialog)
 	{
 		if (dialog->address)
@@ -85,6 +87,7 @@ Finds the id of the range type option menu in the projection dialog.
 	struct Projection_dialog *dialog;
 
 	ENTER(identify_prj_dialog_range_type);
+	USE_PARAMETER(call_data);
 	if (dialog=(struct Projection_dialog *)projection_dialog)
 	{
 		(dialog->range).type_option_menu= *widget_id;
@@ -109,6 +112,7 @@ Saves the id of the automatic range option in the projection dialog.
 	struct Projection_dialog *dialog;
 
 	ENTER(identify_prj_dialog_range_autom);
+	USE_PARAMETER(call_data);
 	if (dialog=(struct Projection_dialog *)projection_dialog)
 	{
 		(dialog->range).type_option.automatic= *widget_id;
@@ -133,6 +137,7 @@ Saves the id of the fixed range option in the projection dialog.
 	struct Projection_dialog *dialog;
 
 	ENTER(identify_prj_dialog_range_fixed);
+	USE_PARAMETER(call_data);
 	if (dialog=(struct Projection_dialog *)projection_dialog)
 	{
 		(dialog->range).type_option.fixed= *widget_id;
@@ -157,6 +162,7 @@ Saves the id of the minimum value text field in the projection dialog.
 	struct Projection_dialog *dialog;
 
 	ENTER(identify_prj_dialog_range_minim);
+	USE_PARAMETER(call_data);
 	if (dialog=(struct Projection_dialog *)projection_dialog)
 	{
 		dialog->range.minimum_value= *widget_id;
@@ -181,6 +187,7 @@ Saves the id of the maximum value text field in the projection dialog.
 	struct Projection_dialog *dialog;
 
 	ENTER(identify_prj_dialog_range_maxim);
+	USE_PARAMETER(call_data);
 	if (dialog=(struct Projection_dialog *)projection_dialog)
 	{
 		dialog->range.maximum_value= *widget_id;
@@ -205,6 +212,7 @@ Finds the id of the spectrum type option menu in the projection dialog.
 	struct Projection_dialog *dialog;
 
 	ENTER(identify_prj_dialog_spectrum);
+	USE_PARAMETER(call_data);
 	if (dialog=(struct Projection_dialog *)projection_dialog)
 	{
 		(dialog->spectrum).type_option_menu= *widget_id;
@@ -229,6 +237,7 @@ Saves the id of the no spectrum option in the projection dialog.
 	struct Projection_dialog *dialog;
 
 	ENTER(identify_prj_dialog_spectrum_no);
+	USE_PARAMETER(call_data);
 	if (dialog=(struct Projection_dialog *)projection_dialog)
 	{
 		(dialog->spectrum).type_option.none= *widget_id;
@@ -253,6 +262,7 @@ Saves the id of the blue->red spectrum option in the projection dialog.
 	struct Projection_dialog *dialog;
 
 	ENTER(identify_prj_dialog_blue_red);
+	USE_PARAMETER(call_data);
 	if (dialog=(struct Projection_dialog *)projection_dialog)
 	{
 		(dialog->spectrum).type_option.blue_red= *widget_id;
@@ -277,6 +287,7 @@ Saves the id of the blue_white_red spectrum option in the projection dialog.
 	struct Projection_dialog *dialog;
 
 	ENTER(identify_prj_dialog_bl_wh_rd);
+	USE_PARAMETER(call_data);
 	if (dialog=(struct Projection_dialog *)projection_dialog)
 	{
 		(dialog->spectrum).type_option.blue_white_red= *widget_id;
@@ -301,6 +312,7 @@ Saves the id of the red->blue spectrum option in the projection dialog.
 	struct Projection_dialog *dialog;
 
 	ENTER(identify_prj_dialog_red_blue);
+	USE_PARAMETER(call_data);
 	if (dialog=(struct Projection_dialog *)projection_dialog)
 	{
 		(dialog->spectrum).type_option.red_blue= *widget_id;
@@ -325,6 +337,7 @@ Saves the id of the log(blue->red) spectrum option in the projection dialog.
 	struct Projection_dialog *dialog;
 
 	ENTER(identify_prj_dialog_log_blue_re);
+	USE_PARAMETER(call_data);
 	if (dialog=(struct Projection_dialog *)projection_dialog)
 	{
 		(dialog->spectrum).type_option.log_blue_red= *widget_id;
@@ -349,6 +362,7 @@ Saves the id of the log(red->blue) spectrum option in the projection dialog.
 	struct Projection_dialog *dialog;
 
 	ENTER(identify_prj_dialog_log_red_blu);
+	USE_PARAMETER(call_data);
 	if (dialog=(struct Projection_dialog *)projection_dialog)
 	{
 		(dialog->spectrum).type_option.log_red_blue= *widget_id;
@@ -373,6 +387,7 @@ Finds the id of the contours type option menu in the projection dialog.
 	struct Projection_dialog *dialog;
 
 	ENTER(identify_prj_dialog_contours);
+	USE_PARAMETER(call_data);
 	if (dialog=(struct Projection_dialog *)projection_dialog)
 	{
 		(dialog->contours).type_option_menu= *widget_id;
@@ -397,6 +412,7 @@ Saves the id of the no contours option in the projection dialog.
 	struct Projection_dialog *dialog;
 
 	ENTER(identify_prj_dialog_contours_no);
+	USE_PARAMETER(call_data);
 	if (dialog=(struct Projection_dialog *)projection_dialog)
 	{
 		(dialog->contours).type_option.none= *widget_id;
@@ -421,6 +437,7 @@ Saves the id of the constant thickness contours option in the projection dialog.
 	struct Projection_dialog *dialog;
 
 	ENTER(identify_prj_dialog_contours_co);
+	USE_PARAMETER(call_data);
 	if (dialog=(struct Projection_dialog *)projection_dialog)
 	{
 		(dialog->contours).type_option.constant_thickness= *widget_id;
@@ -445,6 +462,7 @@ Saves the id of the variable thickness contours option in the projection dialog.
 	struct Projection_dialog *dialog;
 
 	ENTER(identify_prj_dialog_contours_va);
+	USE_PARAMETER(call_data);
 	if (dialog=(struct Projection_dialog *)projection_dialog)
 	{
 		(dialog->contours).type_option.variable_thickness= *widget_id;
@@ -469,6 +487,7 @@ Finds the id of the increment number of contours arrow in the projection dialog.
 	struct Projection_dialog *dialog;
 
 	ENTER(identify_prj_dialog_contours_do);
+	USE_PARAMETER(call_data);
 	if (dialog=(struct Projection_dialog *)projection_dialog)
 	{
 		dialog->contours.down_arrow= *widget_id;
@@ -494,6 +513,8 @@ Decrement the number of contours.
 	char number_string[3];
 
 	ENTER(decrement_number_of_contours);
+	USE_PARAMETER(call_data);
+	USE_PARAMETER(widget);
 	if (dialog=(struct Projection_dialog *)projection_dialog)
 	{
 		if (99==dialog->number_of_contours)
@@ -531,6 +552,7 @@ dialog.
 	struct Projection_dialog *dialog;
 
 	ENTER(identify_prj_dialog_contours_nu);
+	USE_PARAMETER(call_data);
 	if (dialog=(struct Projection_dialog *)projection_dialog)
 	{
 		dialog->contours.number= *widget_id;
@@ -555,6 +577,7 @@ Finds the id of the decrement number of contours arrow in the projection dialog.
 	struct Projection_dialog *dialog;
 
 	ENTER(identify_prj_dialog_contours_up);
+	USE_PARAMETER(call_data);
 	if (dialog=(struct Projection_dialog *)projection_dialog)
 	{
 		dialog->contours.up_arrow= *widget_id;
@@ -580,6 +603,8 @@ Increment the number of contours.
 	char number_string[3];
 
 	ENTER(increment_number_of_contours);
+	USE_PARAMETER(call_data);
+	USE_PARAMETER(widget);
 	if (dialog=(struct Projection_dialog *)projection_dialog)
 	{
 		if (2==dialog->number_of_contours)
@@ -616,6 +641,7 @@ Saves the id of the xi_3 value text field in the projection dialog.
 	struct Projection_dialog *dialog;
 
 	ENTER(identify_prj_dialog_xi_3_value);
+	USE_PARAMETER(call_data);
 	if (dialog=(struct Projection_dialog *)projection_dialog)
 	{
 		dialog->xi_3_value= *widget_id;
@@ -640,6 +666,7 @@ Finds the id of the type option menu in the projection dialog.
 	struct Projection_dialog *dialog;
 
 	ENTER(identify_prj_dialog_type_menu);
+	USE_PARAMETER(call_data);
 	if (dialog=(struct Projection_dialog *)projection_dialog)
 	{
 		dialog->type_option_menu= *widget_id;
@@ -664,6 +691,7 @@ Finds the id of the hammer button in type option menu in the projection dialog.
 	struct Projection_dialog *dialog;
 
 	ENTER(identify_prj_dialog_type_hammer);
+	USE_PARAMETER(call_data);
 	if (dialog=(struct Projection_dialog *)projection_dialog)
 	{
 		dialog->type_option.hammer= *widget_id;
@@ -688,6 +716,7 @@ Finds the id of the polar button in type option menu in the projection dialog.
 	struct Projection_dialog *dialog;
 
 	ENTER(identify_prj_dialog_type_polar);
+	USE_PARAMETER(call_data);
 	if (dialog=(struct Projection_dialog *)projection_dialog)
 	{
 		dialog->type_option.polar= *widget_id;
@@ -713,6 +742,7 @@ dialog.
 	struct Projection_dialog *dialog;
 
 	ENTER(identify_prj_dialog_type_cylind);
+	USE_PARAMETER(call_data);
 	if (dialog=(struct Projection_dialog *)projection_dialog)
 	{
 		dialog->type_option.cylindrical= *widget_id;
@@ -737,6 +767,7 @@ Finds the id of the elements option menu in the projection dialog.
 	struct Projection_dialog *dialog;
 
 	ENTER(id_prj_dialog_elements_menu);
+	USE_PARAMETER(call_data);
 	if (dialog=(struct Projection_dialog *)projection_dialog)
 	{
 		dialog->elements_option_menu= *widget_id;
@@ -762,6 +793,7 @@ projection dialog.
 	struct Projection_dialog *dialog;
 
 	ENTER(id_prj_dialog_elements_name);
+	USE_PARAMETER(call_data);
 	if (dialog=(struct Projection_dialog *)projection_dialog)
 	{
 		dialog->elements_option.name_and_boundary= *widget_id;
@@ -787,6 +819,7 @@ projection dialog.
 	struct Projection_dialog *dialog;
 
 	ENTER(id_prj_dialog_elements_bound);
+	USE_PARAMETER(call_data);
 	if (dialog=(struct Projection_dialog *)projection_dialog)
 	{
 		dialog->elements_option.boundary_only= *widget_id;
@@ -812,6 +845,7 @@ dialog.
 	struct Projection_dialog *dialog;
 
 	ENTER(id_prj_dialog_elements_hide);
+	USE_PARAMETER(call_data);
 	if (dialog=(struct Projection_dialog *)projection_dialog)
 	{
 		dialog->elements_option.hide= *widget_id;
@@ -836,6 +870,7 @@ Finds the id of the nodes option menu in the projection dialog.
 	struct Projection_dialog *dialog;
 
 	ENTER(identify_prj_dialog_nodes_menu);
+	USE_PARAMETER(call_data);
 	if (dialog=(struct Projection_dialog *)projection_dialog)
 	{
 		dialog->nodes_option_menu= *widget_id;
@@ -860,6 +895,7 @@ Finds the id of the name button in nodes option menu in the projection dialog.
 	struct Projection_dialog *dialog;
 
 	ENTER(identify_prj_dialog_nodes_name);
+	USE_PARAMETER(call_data);
 	if (dialog=(struct Projection_dialog *)projection_dialog)
 	{
 		dialog->nodes_option.name= *widget_id;
@@ -884,6 +920,7 @@ Finds the id of the value button in nodes option menu in the projection dialog.
 	struct Projection_dialog *dialog;
 
 	ENTER(identify_prj_dialog_nodes_value);
+	USE_PARAMETER(call_data);
 	if (dialog=(struct Projection_dialog *)projection_dialog)
 	{
 		dialog->nodes_option.value= *widget_id;
@@ -908,6 +945,7 @@ Finds the id of the hide button in nodes option menu in the projection dialog.
 	struct Projection_dialog *dialog;
 
 	ENTER(identify_prj_dialog_nodes_hide);
+	USE_PARAMETER(call_data);
 	if (dialog=(struct Projection_dialog *)projection_dialog)
 	{
 		dialog->nodes_option.hide= *widget_id;
@@ -932,6 +970,7 @@ Finds the id of the fibres option menu in the projection dialog.
 	struct Projection_dialog *dialog;
 
 	ENTER(identify_prj_dialog_fibre_menu);
+	USE_PARAMETER(call_data);
 	if (dialog=(struct Projection_dialog *)projection_dialog)
 	{
 		dialog->fibres_option_menu= *widget_id;
@@ -957,6 +996,7 @@ dialog.
 	struct Projection_dialog *dialog;
 
 	ENTER(identify_prj_dialog_fibre_hide);
+	USE_PARAMETER(call_data);
 	if (dialog=(struct Projection_dialog *)projection_dialog)
 	{
 		dialog->fibres_option.hide= *widget_id;
@@ -982,6 +1022,7 @@ dialog.
 	struct Projection_dialog *dialog;
 
 	ENTER(identify_prj_dialog_fibre_fine);
+	USE_PARAMETER(call_data);
 	if (dialog=(struct Projection_dialog *)projection_dialog)
 	{
 		dialog->fibres_option.fine= *widget_id;
@@ -1007,6 +1048,7 @@ dialog.
 	struct Projection_dialog *dialog;
 
 	ENTER(identify_prj_dialog_fibre_mediu);
+	USE_PARAMETER(call_data);
 	if (dialog=(struct Projection_dialog *)projection_dialog)
 	{
 		dialog->fibres_option.medium= *widget_id;
@@ -1032,6 +1074,7 @@ dialog.
 	struct Projection_dialog *dialog;
 
 	ENTER(identify_prj_dialog_fibre_coars);
+	USE_PARAMETER(call_data);
 	if (dialog=(struct Projection_dialog *)projection_dialog)
 	{
 		dialog->fibres_option.coarse= *widget_id;
@@ -1056,6 +1099,7 @@ Finds the id of the landmarks button in the projection dialog.
 	struct Projection_dialog *dialog;
 
 	ENTER(identify_prj_dialog_landmarks_b);
+	USE_PARAMETER(call_data);
 	if (dialog=(struct Projection_dialog *)projection_dialog)
 	{
 		dialog->show_landmarks_toggle= *widget_id;
@@ -1080,6 +1124,7 @@ Finds the id of the extrema button in the projection dialog.
 	struct Projection_dialog *dialog;
 
 	ENTER(identify_prj_dialog_extrema_but);
+	USE_PARAMETER(call_data);
 	if (dialog=(struct Projection_dialog *)projection_dialog)
 	{
 		dialog->show_extrema_toggle= *widget_id;
@@ -1104,6 +1149,7 @@ Finds the id of the maintain aspect ratio button in the projection dialog.
 	struct Projection_dialog *dialog;
 
 	ENTER(identify_prj_dialog_aspect_rati);
+	USE_PARAMETER(call_data);
 	if (dialog=(struct Projection_dialog *)projection_dialog)
 	{
 		dialog->maintain_aspect_ratio_toggle= *widget_id;
@@ -1128,6 +1174,7 @@ Finds the id of the print spectrum button in the projection dialog.
 	struct Projection_dialog *dialog;
 
 	ENTER(identify_prj_dialog_print_spect);
+	USE_PARAMETER(call_data);
 	if (dialog=(struct Projection_dialog *)projection_dialog)
 	{
 		dialog->print_spectrum_toggle= *widget_id;
@@ -1152,6 +1199,7 @@ Finds the id of the cancel button in the projection dialog.
 	struct Projection_dialog *dialog;
 
 	ENTER(identify_prj_dialog_cancel_butt);
+	USE_PARAMETER(call_data);
 	if (dialog=(struct Projection_dialog *)projection_dialog)
 	{
 		dialog->cancel_button= *widget_id;
@@ -1176,6 +1224,7 @@ Finds the id of the apply button in the projection dialog.
 	struct Projection_dialog *dialog;
 
 	ENTER(identify_prj_dialog_apply_butto);
+	USE_PARAMETER(call_data);
 	if (dialog=(struct Projection_dialog *)projection_dialog)
 	{
 		dialog->apply_button= *widget_id;
@@ -1200,6 +1249,7 @@ Finds the id of the ok button in the projection dialog.
 	struct Projection_dialog *dialog;
 
 	ENTER(identify_prj_dialog_ok_button);
+	USE_PARAMETER(call_data);
 	if (dialog=(struct Projection_dialog *)projection_dialog)
 	{
 		dialog->ok_button= *widget_id;
@@ -1236,6 +1286,7 @@ projection if necessary.
 	Widget option_widget;
 
 	ENTER(update_projection_from_dialog);
+	USE_PARAMETER(call_data);
 	if ((window=(struct Projection_window *)projection_window)&&
 		(projection=window->projection)&&
 		(configure_dialog=window->configure_dialog))
@@ -2288,6 +2339,8 @@ Closes the windows associated with the projection dialog box.
 	struct Projection_dialog *dialog;
 
 	ENTER(close_projection_dialog);
+	USE_PARAMETER(call_data);
+	USE_PARAMETER(widget);
 	if (dialog=(struct Projection_dialog *)projection_dialog)
 	{
 		/* close the projection dialog box */
