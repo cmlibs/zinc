@@ -1,7 +1,7 @@
 XCOMM **************************************************************************
 XCOMM FILE : unemap.imake
 XCOMM
-XCOMM LAST MODIFIED : 3 June 2002
+XCOMM LAST MODIFIED : 18 July 2002
 XCOMM
 XCOMM DESCRIPTION :
 XCOMM Makefile for unemap
@@ -714,6 +714,7 @@ ALL_DEFINES = $(START_ALL_DEFINES) \
 	$(GRAPHICS_LIBRARY_SWITCH) $(IMAGEMAGICK_SWITCH)\
 	-DNOT_ACQUISITION_ONLY \
 	-DSPECTRAL_TOOLS \
+	-DNETSCAPE_HELP \
 	$(END_ALL_DEFINES)
 #else
 ALL_DEFINES = $(START_ALL_DEFINES) \
@@ -740,6 +741,7 @@ ALL_LIB = $(IMAGEMAGICK_LIB) $(LIB) $(EXTERNAL_INPUT_LIB)
 #endif /* defined (USE_UNEMAP_NODES) || defined (USE_UNEMAP_3D) */
 
 COMMAND_SRCS = \
+	command/command.c \
 	command/parser.c
 
 #if defined (USE_UNEMAP_NODES) || defined (USE_UNEMAP_3D)
@@ -820,6 +822,8 @@ GRAPHICS_SRCS = \
 	graphics/spectrum_settings.c \
  	graphics/texture.c \
  	graphics/transform_tool.c
+HELP_INTERFACE_SRCS = \
+	help/help_interface.c
 INTERACTION_SRCS = \
 	interaction/interaction_graphics.c \
 	interaction/interaction_volume.c \
@@ -829,6 +833,8 @@ INTERACTION_SRCS = \
 POSITION_SRCS = \
 	io_devices/input_module.c \
 	io_devices/matrix.c
+MOTIF_INTERFACE_SRCS =  \
+	motif/image_utilities.c
 NODE_SRCS = \
 	node/node_operations.c \
 	node/node_tool.c
@@ -875,6 +881,7 @@ UNEMAP_SRCS = \
 	unemap/spectral_methods.c \
 	unemap/system_window.c \
 	unemap/trace_window.c \
+	unemap/unemap_command.c \
 	unemap/unemap_package.c \
 	unemap/unemap_hardware_client.c
 #else
@@ -901,8 +908,10 @@ GRAPHICS_SRCS = \
 	graphics/spectrum.c \
 	graphics/spectrum_settings.c \
 	graphics/texture.c
+HELP_INTERFACE_SRCS =
 INTERACTION_SRCS =
 POSITION_SRCS =
+MOTIF_INTERFACE_SRCS =
 NODE_SRCS =
 SELECTION_SRCS =
 TIME_SRCS = \
@@ -940,6 +949,7 @@ UNEMAP_SRCS = \
 	unemap/spectral_methods.c \
 	unemap/system_window.c \
 	unemap/trace_window.c \
+	unemap/unemap_command.c \
 	unemap/unemap_package.c \
 	unemap/unemap_hardware_client.c
 #endif /* defined (USE_UNEMAP_NODES) || defined (USE_UNEMAP_3D) */
@@ -960,9 +970,11 @@ SRCS = \
 	$(FINITE_ELEMENT_SRCS) \
 	$(GENERAL_SRCS) \
 	$(GRAPHICS_SRCS) \
+	$(HELP_INTERFACE_SRCS) \
 	$(INTERACTION_SRCS) \
-	$(POSITION_SRCS) \
+	$(MOTIF_INTERFACE_SRCS) \
 	$(NODE_SRCS) \
+	$(POSITION_SRCS) \
 	$(SELECTION_SRCS) \
 	$(THREE_D_DRAWING_SRCS) \
 	$(TIME_SRCS) \
