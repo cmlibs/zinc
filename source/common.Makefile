@@ -132,6 +132,7 @@ ifeq ($(SYSNAME:IRIX%=),)
    endif # ABI != 64
    CC = cc -c
    CPP = CC -c
+   CPP_FLAGS = -LANG:std
    FORTRAN = f77 -c
    MAKEDEPEND = makedepend -f- -Y --
    CPREPROCESS = cc -P
@@ -185,6 +186,7 @@ ifeq ($(SYSNAME),Linux)
       # gcc
       CC = gcc -c
       CPP = g++ -c
+      CPP_FLAGS =
       FORTRAN = g77 -c -fno-second-underscore
 #    endif
    MAKEDEPEND = gcc -MM -MG
@@ -226,6 +228,7 @@ ifeq ($(SYSNAME),AIX)
    UIL = uil
    CC = xlc -c
    CPP = xlc -qnolm -c
+   CPP_FLAGS =
    FORTRAN = f77 -c
    MAKEDEPEND = makedepend -f-
    CPREPROCESS = 
@@ -258,6 +261,7 @@ ifeq ($(SYSNAME),win32)
    # CC = gcc -c -mno-cygwin -fnative-struct */
    CC = gcc -c -mno-cygwin -mms-bitfields
    CPP = gcc -c
+   CPP_FLAGS =
    FORTRAN = f77 -c
    MAKEDEPEND = makedepend
    CPREPROCESS = 
@@ -284,6 +288,7 @@ ifeq ($(SYSNAME:CYGWIN%=),)# CYGWIN
    UIL = uil
    CC = gcc -c
    CPP = g++ -c
+   CPP_FLAGS =
    FORTRAN = g77 -c -fno-second-underscore
    MAKEDEPEND = gcc -MM -MG
    CPREPROCESS = gcc -E -P
@@ -367,24 +372,24 @@ ifdef CMISS_ROOT_DEFINED
 	@if [ -f $*.cpp ]; then \
 	   case $*.cpp in  \
 	      $(DIGITAL_MEDIA_NON_STRICT_FLAGS_PATTERN) ) \
-            set -x ; $(CPP) -o $(OBJECT_PATH)/$*.o $(ALL_FLAGS) $(STRICT_FLAGS) $(DIGITAL_MEDIA_NON_STRICT_FLAGS) $*.cpp;; \
+            set -x ; $(CPP) -o $(OBJECT_PATH)/$*.o $(ALL_FLAGS) $(CPP_FLAGS) $(STRICT_FLAGS) $(DIGITAL_MEDIA_NON_STRICT_FLAGS) $*.cpp;; \
 	      * ) \
-	   	   set -x ; $(CPP) -o $(OBJECT_PATH)/$*.o $(ALL_FLAGS) $(STRICT_FLAGS) $*.cpp;; \
+	   	   set -x ; $(CPP) -o $(OBJECT_PATH)/$*.o $(ALL_FLAGS) $(CPP_FLAGS) $(STRICT_FLAGS) $*.cpp;; \
 	   esac ; \
 	else \
 	   case $*.cpp in  \
 	      $(DIGITAL_MEDIA_NON_STRICT_FLAGS_PATTERN) ) \
-	        set -x ; $(CPP) -o $(OBJECT_PATH)/$*.o $(ALL_FLAGS) $(STRICT_FLAGS) $(DIGITAL_MEDIA_NON_STRICT_FLAGS) $(PRODUCT_SOURCE_PATH)/$*.cpp;; \
+	        set -x ; $(CPP) -o $(OBJECT_PATH)/$*.o $(ALL_FLAGS) $(CPP_FLAGS) $(STRICT_FLAGS) $(DIGITAL_MEDIA_NON_STRICT_FLAGS) $(PRODUCT_SOURCE_PATH)/$*.cpp;; \
 	      * ) \
-	        set -x ; $(CPP) -o $(OBJECT_PATH)/$*.o $(ALL_FLAGS) $(STRICT_FLAGS) $(PRODUCT_SOURCE_PATH)/$*.cpp;; \
+	        set -x ; $(CPP) -o $(OBJECT_PATH)/$*.o $(ALL_FLAGS) $(CPP_FLAGS) $(STRICT_FLAGS) $(PRODUCT_SOURCE_PATH)/$*.cpp;; \
 	   esac ; \
 	fi
 else # CMISS_ROOT_DEFINED
 	case $*.cpp in  \
 		$(DIGITAL_MEDIA_NON_STRICT_FLAGS_PATTERN) ) \
-	  set -x ; $(CPP) -o $(OBJECT_PATH)/$*.o $(ALL_FLAGS) $(STRICT_FLAGS) $(DIGITAL_MEDIA_NON_STRICT_FLAGS) $*.cpp;; \
+	  set -x ; $(CPP) -o $(OBJECT_PATH)/$*.o $(ALL_FLAGS) $(CPP_FLAGS) $(STRICT_FLAGS) $(DIGITAL_MEDIA_NON_STRICT_FLAGS) $*.cpp;; \
 	  * ) \
-	  set -x ; $(CPP) -o $(OBJECT_PATH)/$*.o $(ALL_FLAGS) $(STRICT_FLAGS) $*.cpp;; \
+	  set -x ; $(CPP) -o $(OBJECT_PATH)/$*.o $(ALL_FLAGS) $(CPP_FLAGS) $(STRICT_FLAGS) $*.cpp;; \
 	esac ;
 endif # CMISS_ROOT_DEFINED)
 
