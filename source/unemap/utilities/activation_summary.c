@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : activation_summary.c
 
-LAST MODIFIED : 17 December 2002
+LAST MODIFIED : 13 May 2004
 
 DESCRIPTION :
 Writes out a summary of the activation in a signal file.
@@ -51,7 +51,7 @@ int main(int argc,char *argv[])
 			&datum_type,&edit_order,&signal_order,&start_search_interval,
 			&end_search_interval,&level,&average_width
 #if defined (UNEMAP_USE_3D)
-			,(struct Unemap_package *)NULL;
+			,(struct Unemap_package *)NULL
 #endif /* defined (UNEMAP_USE_NODES) */
 			))
 		{
@@ -67,7 +67,11 @@ int main(int argc,char *argv[])
 				if ((summary_buffer=create_Signal_buffer(SHORT_INT_VALUE,
 					number_of_regions,number_of_samples,frequency))&&
 					(summary_rig=create_standard_Rig("summary",PATCH,MONITORING_OFF,
-					EXPERIMENT_OFF,1,&number_of_regions,1,0,(float)1)))
+					EXPERIMENT_OFF,1,&number_of_regions,1,0,(float)1
+#if defined (UNEMAP_USE_3D)
+					,(struct Unemap_package *)NULL
+#endif /* defined (UNEMAP_USE_NODES) */
+					)))
 				{
 					/* fill in the devices and signals */
 					return_code=1;
