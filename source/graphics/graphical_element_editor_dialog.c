@@ -283,6 +283,7 @@ graphics and envokes a scene update.
 #endif /* defined (OLD_CODE) */
 			return_code=1;
 		}
+#if defined (OLD_CODE)
 		else
 		{
 			display_message(ERROR_MESSAGE,
@@ -290,6 +291,7 @@ graphics and envokes a scene update.
 				"Missing graphical element group");
 			return_code=0;
 		}
+#endif /* defined (OLD_CODE) */
 	}
 	else
 	{
