@@ -54,7 +54,7 @@ update_sources :
 		echo "Must be cmiss and in $(PRODUCT_PATH)"; \
 	fi
 
-ESU_BUILD_LIST = unemap unemap-debug unemap-debug-memorycheck unemap64 unemap64-debug unemap-nodes unemap-3d unemap-3d-debug utilities
+ESU_BUILD_LIST = unemap unemap-debug unemap-debug-memorycheck unemap64 unemap-nodes unemap-3d unemap-3d-debug utilities
 ESP_BUILD_LIST = unemap unemap-debug unemap-debug-memorycheck unemap-3d unemap-3d-debug utilities
 HPC1_BUILD_LIST = unemap unemap-debug unemap64 unemap64-debug unemap-3d
 
