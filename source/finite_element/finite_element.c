@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : finite_element.c
 
-LAST MODIFIED : 18 January 2002
+LAST MODIFIED : 12 June 2002
 
 DESCRIPTION :
 Functions for manipulating finite element structures.
@@ -23494,28 +23494,28 @@ Frees the memory for the fields of the <element_field_values> structure.
 	return (return_code);
 } /* clear_FE_element_field_values */
 
-int standard_basis_function_is_bicubic(Standard_basis_function *function,
+int standard_basis_function_is_monomial(Standard_basis_function *function,
 	void *arguments_void)
 /*******************************************************************************
-LAST MODIFIED : 5 June 2002
+LAST MODIFIED : 12 June 2002
 
 DESCRIPTION :
-Returns true if the standard basis function is a bicubic.
+Returns true if the standard basis function is a monomial.
 ==============================================================================*/
 {
 	int *arguments,return_code;
 
-	ENTER(standard_basis_function_is_bicubic);
+	ENTER(standard_basis_function_is_monomial);
 	return_code=0;
 	if ((monomial_basis_functions==function)&&(arguments=(int *)arguments_void)&&
-		(2==arguments[0])&&(3==arguments[1])&&(3==arguments[2]))
+		(1<=arguments[0]))
 	{
 		return_code=1;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* standard_basis_function_is_bicubic */
+} /* standard_basis_function_is_monomial */
 
 int calculate_FE_element_field_nodes(struct FE_element *element,
 	struct FE_field *field,int *number_of_element_field_nodes_address,

@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : finite_element.h
 
-LAST MODIFIED : 1 February 2002
+LAST MODIFIED : 12 June 2002
 
 DESCRIPTION :
 The data structures used for representing finite elements in the graphical
@@ -2363,13 +2363,13 @@ DESCRIPTION :
 Frees the memory for the fields of the <element_field_values> structure.
 ==============================================================================*/
 
-int standard_basis_function_is_bicubic(Standard_basis_function *function,
+int standard_basis_function_is_monomial(Standard_basis_function *function,
 	void *arguments_void);
 /*******************************************************************************
-LAST MODIFIED : 5 June 2002
+LAST MODIFIED : 12 June 2002
 
 DESCRIPTION :
-Returns true if the standard basis function is a bicubic.
+Returns true if the standard basis function is a monomial.
 ==============================================================================*/
 
 int calculate_FE_element_field_nodes(struct FE_element *element,
