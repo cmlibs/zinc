@@ -226,14 +226,17 @@ Returns true if the OpenGL version is at least <major_version>.<minor_version>
 #endif /* defined (OPENGL_API) */
 
 int Graphics_library_read_pixels(unsigned char *frame_data,
-	int width, int height, enum Texture_storage_type storage);
+	int width, int height, enum Texture_storage_type storage,
+	int front_buffer);
 /*******************************************************************************
-LAST MODIFIED : 12 September 2002
+LAST MODIFIED : 30 June 2004
 
 DESCRIPTION :
 Read pixels from the current graphics context into <frame_data> of size <width>
 and <height> according to the storage type.  'MakeCurrent' the desired source 
-before calling this routine.
+before calling this routine.  If <front_buffer> is 1 then pixels will be read
+from the front buffer, otherwise they will be read from the back buffer in a
+double buffered context.
 ==============================================================================*/
 
 int Graphics_library_load_extension(char *extensions);

@@ -4720,8 +4720,6 @@ graphics window on screen.
 
 							if (return_code)
 							{
-								/* Swap buffers if it is double buffered */
-								Graphics_buffer_swap_buffers(offscreen_buffer);
 								if (i < tiles_across - 1)
 								{
 									patch_width = tile_width;
@@ -4742,7 +4740,7 @@ graphics window on screen.
 									(i * tile_width + pane_i * (pane_width + PANE_BORDER) + 
 									(j * tile_height + (panes_down - 1 - pane_j) * (pane_height + PANE_BORDER))
 									* frame_width) * number_of_components,
-									patch_width, patch_height, storage);
+									patch_width, patch_height, storage, /*front_buffer*/0);
 							}
 						}
 					}
@@ -4804,7 +4802,7 @@ graphics window on screen.
 					{
 						/* Only one pane */
 						if (!(return_code=Graphics_library_read_pixels(*frame_data, frame_width,
-							frame_height, storage)))
+									frame_height, storage, /*front_buffer*/0)))
 						{
 							DEALLOCATE(*frame_data);
 						}

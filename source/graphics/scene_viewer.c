@@ -7122,14 +7122,13 @@ scene viewer on screen.
 				/*left*/0, /*bottom*/0, /*right*/*width, /*top*/*height,
 				preferred_antialias, preferred_transparency_layers,
 				/*drawing_offscreen*/1);
-			Graphics_buffer_swap_buffers(offscreen_buffer);
 			number_of_components =
 				Texture_storage_type_get_number_of_components(storage);
 			if (ALLOCATE(*frame_data, unsigned char,
 				number_of_components * (*width) * (*height)))
 			{
 				if (!(return_code=Graphics_library_read_pixels(*frame_data, *width,
-					*height, storage)))
+					*height, storage, /*front_buffer*/0)))
 				{
 					DEALLOCATE(*frame_data);
 				}
@@ -7158,7 +7157,7 @@ scene viewer on screen.
 				number_of_components * (*width) * (*height)))
 			{
 				if (!(return_code=Graphics_library_read_pixels(*frame_data, *width,
-					*height, storage)))
+					*height, storage, /*front_buffer*/0)))
 				{
 					DEALLOCATE(*frame_data);
 				}
