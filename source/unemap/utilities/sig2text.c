@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : sig2text.c
 
-LAST MODIFIED : 15 November 2000
+LAST MODIFIED : 03 February 2004
 
 DESCRIPTION :
 Writes out a signal file as text with devices across and time down.  The columns
@@ -152,5 +152,14 @@ int main(int argc,char *argv[])
 		return_code=0;
 	}
 
+  /* DPN 03-FEB-2004 Returning 0 for non-error */
+  if (return_code == 0)
+  {
+    return_code = -1;
+  }
+  else
+  {
+    return_code = 0;
+  }
 	return (return_code);
 } /* main */

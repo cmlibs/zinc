@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : text2sig.c
 
-LAST MODIFIED : 24 September 2003
+LAST MODIFIED : 03 February 2004
 
 DESCRIPTION :
 Reads in a text signal file.  Finds the end of the header as the last line
@@ -494,5 +494,14 @@ int main(int argc,char *argv[])
 		return_code=0;
 	}
 
+  /* DPN 03-FEB-2004 Returning 0 for non-error */
+  if (return_code == 0)
+  {
+    return_code = -1;
+  }
+  else
+  {
+    return_code = 0;
+  }
 	return (return_code);
 } /* main */
