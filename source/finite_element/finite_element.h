@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : finite_element.h
 
-LAST MODIFIED : 21 June 2000
+LAST MODIFIED : 4 July 2000
 
 DESCRIPTION :
 The data structures used for representing finite elements in the graphical
@@ -1193,6 +1193,24 @@ Sets a particular element_xi_value (<version>, <type>) for the field <component>
 should.
 ==============================================================================*/
 
+int FE_node_is_in_Multi_range(struct FE_node *node,void *multi_range_void);
+/*******************************************************************************
+LAST MODIFIED : 4 July 2000
+
+DESCRIPTION :
+Conditional function returning true if <node> identifier is in the
+<multi_range>.
+==============================================================================*/
+
+int FE_node_is_not_in_Multi_range(struct FE_node *node,void *multi_range_void);
+/*******************************************************************************
+LAST MODIFIED : 4 July 2000
+
+DESCRIPTION :
+Conditional function returning true if <node> identifier is NOT in the
+<multi_range>.
+==============================================================================*/
+
 int add_FE_node_number_to_Multi_range(struct FE_node *node,
 	void *multi_range_void);
 /*******************************************************************************
@@ -1238,6 +1256,32 @@ DESCRIPTION :
 Iterator function for adding <node> to <node_list> if not currently in it.
 ==============================================================================*/
 
+struct FE_node_list_conditional_data
+/*******************************************************************************
+LAST MODIFIED : 4 July 2000
+
+DESCRIPTION :
+Data for passing to ensure_FE_node_is_in_list_conditional.
+==============================================================================*/
+{
+	struct LIST(FE_node) *node_list;
+	LIST_CONDITIONAL_FUNCTION(FE_node) *function;
+	void *user_data;
+}; /* FE_node_list_conditional_data */
+
+int ensure_FE_node_is_in_list_conditional(struct FE_node *node,
+	void *list_conditional_data_void);
+/*******************************************************************************
+LAST MODIFIED : 4 July 2000
+
+DESCRIPTION :
+Iterator function for adding <node> to a list - if not already in it - if a
+conditional function with user_data is true.
+The node_list, conditional function and user_data are passed in a
+struct FE_node_list_conditional_data * in the second argument.
+Warning: Must not be iterating over the list being added to!
+==============================================================================*/
+
 int ensure_FE_node_is_not_in_list(struct FE_node *node,void *node_list_void);
 /*******************************************************************************
 LAST MODIFIED : 20 April 1999
@@ -1271,12 +1315,20 @@ Returns true if <node> conatins a field which depends on the changed_element
 of changed_node in the <data_void>.
 ==============================================================================*/
 
-int FE_node_not_in_list(struct FE_node *node,void *list_of_nodes_void);
+int FE_node_is_in_list(struct FE_node *node,void *node_list_void);
 /*******************************************************************************
-LAST MODIFIED : 13 April 1999
+LAST MODIFIED : 4 July 2000
 
 DESCRIPTION :
-Returns true if <node> is not in <list_of_nodes>.
+Returns true if <node> is in <node_list>.
+==============================================================================*/
+
+int FE_node_is_not_in_list(struct FE_node *node,void *node_list_void);
+/*******************************************************************************
+LAST MODIFIED : 4 July 2000
+
+DESCRIPTION :
+Returns true if <node> is not in <node_list>.
 ==============================================================================*/
 
 char *get_FE_nodal_value_type_string(enum FE_nodal_value_type nodal_value_type);
@@ -1495,8 +1547,7 @@ DESCRIPTION :
 Gets a particular short_array_value element for the array 
 (<version>, <type>) for the field <component> 
 at the <node>. 
-
-===============================================================================*/
+==============================================================================*/
 
 short get_FE_nodal_short_array_interpolated_value(struct FE_node *node,
 	struct FE_field_component *component,int version,
@@ -1532,7 +1583,6 @@ LAST MODIFIED : 29 September 1999
 DESCRIPTION :
 Gets a the minimum and maximum values for the FE_value_array 
 (<version>, <type>) for the field <component> at the <node>
-
 ==============================================================================*/
 
 int get_FE_nodal_short_array_min_max(struct FE_node *node,
@@ -1544,7 +1594,6 @@ LAST MODIFIED : 29 September 1999
 DESCRIPTION :
 Gets a the minimum and maximum values for the _value_array 
 (<version>, <type>) for the field <component> at the <node>
-
 ==============================================================================*/
 
 int get_FE_nodal_string_value(struct FE_node *node,
@@ -1845,6 +1894,15 @@ LAST MODIFIED : 28 January 1998
 
 DESCRIPTION :
 Outputs the information contained by the node group.
+==============================================================================*/
+
+int FE_node_group_intersects_list(struct GROUP(FE_node) *node_group,
+	void *node_list_void);
+/*******************************************************************************
+LAST MODIFIED : 4 July 2000
+
+DESCRIPTION :
+Returns true if <node_group> contains any nodes in <node_list>.
 ==============================================================================*/
 
 struct FE_basis *CREATE(FE_basis)(int *type);

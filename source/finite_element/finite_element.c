@@ -9937,6 +9937,64 @@ Sets a particular element_xi_value (<version>, <type>) for the field
 	return (return_code);
 } /* set_FE_nodal_element_xi_value */
 
+int FE_node_is_in_Multi_range(struct FE_node *node,void *multi_range_void)
+/*******************************************************************************
+LAST MODIFIED : 4 July 2000
+
+DESCRIPTION :
+Conditional function returning true if <node> identifier is in the
+<multi_range>.
+==============================================================================*/
+{
+	int return_code;
+	struct Multi_range *multi_range;
+
+	ENTER(FE_node_is_in_Multi_range);
+	if (node&&(multi_range=(struct Multi_range *)multi_range_void))
+	{
+		return_code=
+			Multi_range_is_value_in_range(multi_range,node->cm_node_identifier);
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"FE_node_is_in_Multi_range.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* FE_node_is_in_Multi_range */
+
+int FE_node_is_not_in_Multi_range(struct FE_node *node,void *multi_range_void)
+/*******************************************************************************
+LAST MODIFIED : 4 July 2000
+
+DESCRIPTION :
+Conditional function returning true if <node> identifier is NOT in the
+<multi_range>.
+==============================================================================*/
+{
+	int return_code;
+	struct Multi_range *multi_range;
+
+	ENTER(FE_node_is_not_in_Multi_range);
+	if (node&&(multi_range=(struct Multi_range *)multi_range_void))
+	{
+		return_code=
+			!Multi_range_is_value_in_range(multi_range,node->cm_node_identifier);
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"FE_node_is_not_in_Multi_range.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* FE_node_is_not_in_Multi_range */
+
 int add_FE_node_number_to_Multi_range(struct FE_node *node,
 	void *multi_range_void)
 /*******************************************************************************
@@ -9968,7 +10026,7 @@ Iterator function for adding the number of <node> to <multi_range>.
 
 int FE_node_is_in_group(struct FE_node *node,void *node_group_void)
 /*******************************************************************************
-LAST MODIFIED : 20 March 2000
+LAST MODIFIED : 4 July 2000
 
 DESCRIPTION :
 Returns true if <node> is in <node_group>.
@@ -9980,8 +10038,14 @@ Returns true if <node> is in <node_group>.
 	ENTER(FE_node_is_in_group);
 	if (node&&(node_group=(struct GROUP(FE_node) *)node_group_void))
 	{
-		return_code=(struct FE_node *)NULL != 
-			IS_OBJECT_IN_GROUP(FE_node)(node,node_group);
+		if (IS_OBJECT_IN_GROUP(FE_node)(node,node_group))
+		{
+			return_code=1;
+		}
+		else
+		{
+			return_code=0;
+		}
 	}
 	else
 	{
@@ -9995,7 +10059,7 @@ Returns true if <node> is in <node_group>.
 
 int ensure_FE_node_is_in_group(struct FE_node *node,void *node_group_void)
 /*******************************************************************************
-LAST MODIFIED : 20 April 1999
+LAST MODIFIED : 4 July 2000
 
 DESCRIPTION :
 Iterator function for adding <node> to <node_group> if not currently in it.
@@ -10009,8 +10073,7 @@ MANAGED_GROUP_BEGIN_CACHE/END_CACHE calls for efficient manager messages.
 	ENTER(ensure_FE_node_is_in_group);
 	if (node&&(node_group=(struct GROUP(FE_node) *)node_group_void))
 	{
-		if (!FIND_BY_IDENTIFIER_IN_GROUP(FE_node,cm_node_identifier)(
-			get_FE_node_cm_node_identifier(node),node_group))
+		if (!IS_OBJECT_IN_GROUP(FE_node)(node,node_group))
 		{
 			return_code=ADD_OBJECT_TO_GROUP(FE_node)(node,node_group);
 		}
@@ -10032,7 +10095,7 @@ MANAGED_GROUP_BEGIN_CACHE/END_CACHE calls for efficient manager messages.
 
 int ensure_FE_node_is_not_in_group(struct FE_node *node,void *node_group_void)
 /*******************************************************************************
-LAST MODIFIED : 20 April 1999
+LAST MODIFIED : 4 July 2000
 
 DESCRIPTION :
 Iterator function for removing <node> from <node_group> if currently in it.
@@ -10046,8 +10109,7 @@ MANAGED_GROUP_BEGIN_CACHE/END_CACHE calls for efficient manager messages.
 	ENTER(ensure_FE_node_is_not_in_group);
 	if (node&&(node_group=(struct GROUP(FE_node) *)node_group_void))
 	{
-		if (FIND_BY_IDENTIFIER_IN_GROUP(FE_node,cm_node_identifier)(
-			get_FE_node_cm_node_identifier(node),node_group))
+		if (IS_OBJECT_IN_GROUP(FE_node)(node,node_group))
 		{
 			return_code=REMOVE_OBJECT_FROM_GROUP(FE_node)(node,node_group);
 		}
@@ -10081,8 +10143,7 @@ Iterator function for adding <node> to <node_list> if not currently in it.
 	ENTER(ensure_FE_node_is_in_list);
 	if (node&&(node_list=(struct LIST(FE_node) *)node_list_void))
 	{
-		if (!FIND_BY_IDENTIFIER_IN_LIST(FE_node,cm_node_identifier)(
-			get_FE_node_cm_node_identifier(node),node_list))
+		if (!IS_OBJECT_IN_LIST(FE_node)(node,node_list))
 		{
 			return_code=ADD_OBJECT_TO_LIST(FE_node)(node,node_list);
 		}
@@ -10102,9 +10163,59 @@ Iterator function for adding <node> to <node_list> if not currently in it.
 	return (return_code);
 } /* ensure_FE_node_is_in_list */
 
+int ensure_FE_node_is_in_list_conditional(struct FE_node *node,
+	void *list_conditional_data_void)
+/*******************************************************************************
+LAST MODIFIED : 4 July 2000
+
+DESCRIPTION :
+Iterator function for adding <node> to a list - if not already in it - if a
+conditional function with user_data is true.
+The node_list, conditional function and user_data are passed in a
+struct FE_node_list_conditional_data * in the second argument.
+Warning: Must not be iterating over the list being added to!
+==============================================================================*/
+{
+	int return_code;
+	struct FE_node_list_conditional_data *list_conditional_data;
+
+	ENTER(ensure_FE_node_is_in_list_conditional);
+	if (node&&(list_conditional_data=
+		(struct FE_node_list_conditional_data *)list_conditional_data_void)&&
+		list_conditional_data->node_list&&list_conditional_data->function)
+	{
+		if ((list_conditional_data->function)(node,
+			list_conditional_data->user_data))
+		{
+			if (!IS_OBJECT_IN_LIST(FE_node)(node,list_conditional_data->node_list))
+			{
+				return_code=
+					ADD_OBJECT_TO_LIST(FE_node)(node,list_conditional_data->node_list);
+			}
+			else
+			{
+				return_code=1;
+			}
+		}
+		else
+		{
+			return_code=1;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"ensure_FE_node_is_in_list_conditional.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* ensure_FE_node_is_in_list_conditional */
+
 int ensure_FE_node_is_not_in_list(struct FE_node *node,void *node_list_void)
 /*******************************************************************************
-LAST MODIFIED : 20 April 1999
+LAST MODIFIED : 4 July 2000
 
 DESCRIPTION :
 Iterator function for removing <node> from <node_list> if currently in it.
@@ -10116,8 +10227,7 @@ Iterator function for removing <node> from <node_list> if currently in it.
 	ENTER(ensure_FE_node_is_not_in_list);
 	if (node&&(node_list=(struct LIST(FE_node) *)node_list_void))
 	{
-		if (FIND_BY_IDENTIFIER_IN_LIST(FE_node,cm_node_identifier)(
-			get_FE_node_cm_node_identifier(node),node_list))
+		if (IS_OBJECT_IN_LIST(FE_node)(node,node_list))
 		{
 			return_code=REMOVE_OBJECT_FROM_LIST(FE_node)(node,node_list);
 		}
@@ -10139,7 +10249,7 @@ Iterator function for removing <node> from <node_list> if currently in it.
 
 int toggle_FE_node_in_list(struct FE_node *node,void *node_list_void)
 /*******************************************************************************
-LAST MODIFIED : 15 February 2000
+LAST MODIFIED : 4 July 2000
 
 DESCRIPTION :
 If <node> is in <node_list> it is taken out, otherwise it is added.
@@ -10151,8 +10261,7 @@ If <node> is in <node_list> it is taken out, otherwise it is added.
 	ENTER(toggle_FE_node_in_list);
 	if (node&&(node_list=(struct LIST(FE_node) *)node_list_void))
 	{
-		if (FIND_BY_IDENTIFIER_IN_LIST(FE_node,cm_node_identifier)(
-			get_FE_node_cm_node_identifier(node),node_list))
+		if (IS_OBJECT_IN_LIST(FE_node)(node,node_list))
 		{
 			return_code=REMOVE_OBJECT_FROM_LIST(FE_node)(node,node_list);
 		}
@@ -10235,39 +10344,59 @@ of changed_node in the <data_void>.
 	return (return_code);
 } /* FE_node_has_embedded_element */
 
-int FE_node_not_in_list(struct FE_node *node,void *list_of_nodes_void)
+int FE_node_is_in_list(struct FE_node *node,void *node_list_void)
 /*******************************************************************************
-LAST MODIFIED : 13 April 1999
+LAST MODIFIED : 4 July 2000
 
 DESCRIPTION :
-Returns true if <node> is not in <list_of_nodes>.
+Returns true if <node> is in <node_list>.
 ==============================================================================*/
 {
 	int return_code;
-	struct LIST(FE_node) *list_of_nodes;
+	struct LIST(FE_node) *node_list;
 
-	ENTER(FE_node_not_in_list);
-	if (node&&(list_of_nodes=(struct LIST(FE_node) *)list_of_nodes_void))
+	ENTER(FE_node_is_in_list);
+	if (node&&(node_list=(struct LIST(FE_node) *)node_list_void))
 	{
-		if (FIND_BY_IDENTIFIER_IN_LIST(FE_node,cm_node_identifier)(
-			get_FE_node_cm_node_identifier(node),list_of_nodes))
-		{
-			return_code=0;
-		}
-		else
-		{
-			return_code=1;
-		}
+		return_code = IS_OBJECT_IN_LIST(FE_node)(node,node_list);
 	}
 	else
 	{
-		display_message(ERROR_MESSAGE,"FE_node_not_in_list.  Invalid argument(s)");
+		display_message(ERROR_MESSAGE,
+			"FE_node_is_in_list.  Invalid argument(s)");
 		return_code=0;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* FE_node_not_in_list */
+} /* FE_node_is_in_list */
+
+int FE_node_is_not_in_list(struct FE_node *node,void *node_list_void)
+/*******************************************************************************
+LAST MODIFIED : 4 July 2000
+
+DESCRIPTION :
+Returns true if <node> is not in <node_list>.
+==============================================================================*/
+{
+	int return_code;
+	struct LIST(FE_node) *node_list;
+
+	ENTER(FE_node_is_not_in_list);
+	if (node&&(node_list=(struct LIST(FE_node) *)node_list_void))
+	{
+		return_code = !IS_OBJECT_IN_LIST(FE_node)(node,node_list);
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"FE_node_is_not_in_list.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* FE_node_is_not_in_list */
 
 char *get_FE_nodal_value_type_string(enum FE_nodal_value_type nodal_value_type)
 /*******************************************************************************
@@ -13574,7 +13703,6 @@ Used in command parsing to create a list of node groups.
 	return (return_code);
 } /* set_FE_node_group_list */
 
-#if !defined (WINDOWS_DEV_FLAG)
 int list_group_FE_node(struct GROUP(FE_node) *node_group,void *list_nodes)
 /*******************************************************************************
 LAST MODIFIED : 28 January 1998
@@ -13609,7 +13737,35 @@ Outputs the information contained by the node group.
 
 	return (return_code);
 } /* list_group_FE_node */
-#endif /* !defined (WINDOWS_DEV_FLAG) */
+
+int FE_node_group_intersects_list(struct GROUP(FE_node) *node_group,
+	void *node_list_void)
+/*******************************************************************************
+LAST MODIFIED : 4 July 2000
+
+DESCRIPTION :
+Returns true if <node_group> contains any nodes in <node_list>.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(FE_node_group_intersects_list);
+	if (node_group&&node_list_void)
+	{
+		return_code = (struct FE_node *)NULL !=
+			FIRST_OBJECT_IN_GROUP_THAT(FE_node)(FE_node_is_in_list,
+				node_list_void,node_group);
+	}
+	else
+	{
+		display_message(WARNING_MESSAGE,
+			"FE_node_group_intersects_list.  Invalid node group");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* FE_node_group_intersects_list */
 
 struct FE_basis *CREATE(FE_basis)(int *type)
 /*******************************************************************************
