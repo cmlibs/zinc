@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : postscript.c
 
-LAST MODIFIED : 26 November 2001
+LAST MODIFIED : 22 September 2004
 
 DESCRIPTION :
 Functions for creating postscript output from the mapping system.
@@ -1447,7 +1447,7 @@ void XPSPutImage(Display *display,Drawable drawable,GC gc,XImage *image,
 	int src_x,int src_y,int dest_x,int dest_y,unsigned int width,
 	unsigned int height)
 /*******************************************************************************
-LAST MODIFIED : 30 September 1997
+LAST MODIFIED : 22 September 2004
 
 DESCRIPTION :
 If the <postscript> file is open then PostScript for displaying the <image> is
@@ -1456,15 +1456,15 @@ written to the file, otherwise XPutImage is called.
 the drawable (not sure which)
 ==============================================================================*/
 {
-	char black_and_white,*blue,*colour_blue,*colour_green,*colour_parity,
-		*colour_red,*green,*parity,*red;
-	unsigned int column,count,i,number_of_colours,return_code,row,scan_line_length;
-	Pixel background_pixel,foreground_pixel,pixel,*spectrum_pixel;
+	char black_and_white;
+	unsigned int column,count,i,number_of_colours,return_code,
+		row,scan_line_length;
+	Pixel background_pixel,*spectrum_pixel;
 	unsigned char bit_mask,byte;
 	unsigned short background_blue,background_green,background_red,
 		foreground_blue,foreground_green,foreground_red;
 	Visual *screen_visual;
-	XColor *colour,*colours;
+	XColor colour;
 
 	ENTER(XPSPutImage);
 	if (postscript.file)
@@ -1475,236 +1475,177 @@ the drawable (not sure which)
 		if (image&&screen_visual&&(postscript.spectrum_pixels)&&
 			(0<postscript.number_of_spectrum_colours)&&
 			((unsigned int)postscript.number_of_spectrum_colours<=
-			(number_of_colours=screen_visual->map_entries))&&
-			((foreground_pixel=postscript.foreground_drawing_colour)<
-			number_of_colours)&&
-			((background_pixel=postscript.background_drawing_colour)<
-			number_of_colours)&&ALLOCATE(colours,XColor,number_of_colours))
+			(number_of_colours=screen_visual->map_entries)))
 		{
-			colour=colours+number_of_colours;
-			for (i=number_of_colours;i>0;)
-			{
-				colour--;
-				i--;
-				colour->pixel=i;
-				colour->pad=0;
-			}
-			XQueryColors(display,postscript.colour_map,colours,number_of_colours);
-			/* determine if colour or black and white */
-			black_and_white=1;
-			foreground_red=colours[foreground_pixel].red;
-			foreground_green=colours[foreground_pixel].green;
-			foreground_blue=colours[foreground_pixel].blue;
-			background_blue=colours[background_pixel].blue;
-			background_red=colours[background_pixel].red;
-			background_green=colours[background_pixel].green;
-			spectrum_pixel=postscript.spectrum_pixels;
 			return_code=1;
+			background_pixel=postscript.background_drawing_colour;
+			colour.pad=0;
+			/* determine if colour or black and white */
+			colour.pixel=postscript.foreground_drawing_colour;
+			XQueryColor(display,postscript.colour_map,&colour);
+			foreground_red=colour.red;
+			foreground_green=colour.green;
+			foreground_blue=colour.blue;
+			colour.pixel=background_pixel;
+			XQueryColor(display,postscript.colour_map,&colour);
+			background_red=colour.red;
+			background_green=colour.green;
+			background_blue=colour.blue;
+			black_and_white=1;
+			spectrum_pixel=postscript.spectrum_pixels;
 			i=postscript.number_of_spectrum_colours;
 			while (return_code&&black_and_white&&(i>0))
 			{
-				if (*spectrum_pixel<number_of_colours)
+				colour.pixel= *spectrum_pixel;
+				XQueryColor(display,postscript.colour_map,&colour);
+				if (((foreground_red==colour.red)&&
+					(foreground_green==colour.green)&&
+					(foreground_blue==colour.blue))||
+					((background_red==colour.red)&&
+					(background_green==colour.green)&&
+					(background_blue==colour.blue)))
 				{
-					colour=colours+(*spectrum_pixel);
-					if (((foreground_red==colour->red)&&
-						(foreground_green==colour->green)&&
-						(foreground_blue==colour->blue))||
-						((background_red==colour->red)&&
-						(background_green==colour->green)&&
-						(background_blue==colour->blue)))
-					{
-						i--;
-						spectrum_pixel++;
-					}
-					else
-					{
-						black_and_white=0;
-					}
+					i--;
+					spectrum_pixel++;
 				}
 				else
 				{
-					return_code=0;
+					black_and_white=0;
 				}
 			}
-			if (return_code)
+			if (black_and_white)
 			{
-				if (black_and_white)
+				/* write the postscript for displaying the image */
+				scan_line_length=width/8;
+				if (0!=width%8)
 				{
-					if (ALLOCATE(colour_parity,char,number_of_colours))
+					scan_line_length++;
+				}
+				(void)fprintf(postscript.file,"%% PutImage\n");
+				(void)fprintf(postscript.file,"gsave\n");
+				(void)fprintf(postscript.file,"/scan_line %d string def\n",
+					(int)scan_line_length);
+				(void)fprintf(postscript.file,"0 setgray\n");
+				(void)fprintf(postscript.file,"%d %d translate\n",dest_x,dest_y);
+				(void)fprintf(postscript.file,"%u %u\n",width,height);
+				(void)fprintf(postscript.file,"true\n");
+				(void)fprintf(postscript.file,"[1 0 0 -1 0 %u]\n",height);
+				(void)fprintf(postscript.file,"{\n");
+				(void)fprintf(postscript.file,
+					"  currentfile scan_line readhexstring pop\n");
+				(void)fprintf(postscript.file,"}\n");
+				(void)fprintf(postscript.file,"imagemask\n");
+				/* output image data */
+				count=0;
+				byte=0x00;
+				bit_mask=0x80;
+				for (row=0;row<height;row++)
+				{
+					for (column=0;column<width;column++)
 					{
-						colour=colours;
-						parity=colour_parity;
-						for (i=number_of_colours;i>0;i--)
+						colour.pixel=XGetPixel(image,column+src_x,row+src_y);
+						XQueryColor(display,postscript.colour_map,&colour);
+						if ((foreground_red==colour.red)&&
+							(foreground_green==colour.green)&&
+							(foreground_blue==colour.blue))
 						{
-							if ((foreground_red==colour->red)&&
-								(foreground_green==colour->green)&&
-								(foreground_blue==colour->blue))
-							{
-								*parity=1;
-							}
-							else
-							{
-								*parity=0;
-							}
-							colour++;
-							parity++;
+							byte=byte|bit_mask;
 						}
-						/* write the postscript for displaying the image */
-						scan_line_length=width/8;
-						if (0!=width%8)
+						bit_mask=bit_mask>>1;
+						if (0x00==bit_mask)
 						{
-							scan_line_length++;
+							(void)fprintf(postscript.file,"%02x",byte);
+							byte=0x00;
+							bit_mask=0x80;
+							count++;
+							if (count>=40)
+							{
+								count=0;
+								(void)fprintf(postscript.file,"\n");
+							}
 						}
-						(void)fprintf(postscript.file,"%% PutImage\n");
-						(void)fprintf(postscript.file,"gsave\n");
-						(void)fprintf(postscript.file,"/scan_line %d string def\n",
-							(int)scan_line_length);
-						(void)fprintf(postscript.file,"0 setgray\n");
-						(void)fprintf(postscript.file,"%d %d translate\n",dest_x,dest_y);
-						(void)fprintf(postscript.file,"%u %u\n",width,height);
-						(void)fprintf(postscript.file,"true\n");
-						(void)fprintf(postscript.file,"[1 0 0 -1 0 %u]\n",height);
-						(void)fprintf(postscript.file,"{\n");
-						(void)fprintf(postscript.file,
-							"  currentfile scan_line readhexstring pop\n");
-						(void)fprintf(postscript.file,"}\n");
-						(void)fprintf(postscript.file,"imagemask\n");
-						/* output image data */
-						count=0;
+					}
+					/* rows must start on a character boundary */
+					if (0x80!=bit_mask)
+					{
+						(void)fprintf(postscript.file,"%02x",byte);
 						byte=0x00;
 						bit_mask=0x80;
-						for (row=0;row<height;row++)
+						count++;
+						if (count>=40)
 						{
-							for (column=0;column<width;column++)
-							{
-								if (colour_parity[XGetPixel(image,column+src_x,row+src_y)])
-								{
-									byte=byte|bit_mask;
-								}
-								bit_mask=bit_mask>>1;
-								if (0x00==bit_mask)
-								{
-									(void)fprintf(postscript.file,"%02x",byte);
-									byte=0x00;
-									bit_mask=0x80;
-									count++;
-									if (count>=40)
-									{
-										count=0;
-										(void)fprintf(postscript.file,"\n");
-									}
-								}
-							}
-							/* rows must start on a character boundary */
-							if (0x80!=bit_mask)
-							{
-								(void)fprintf(postscript.file,"%02x",byte);
-								byte=0x00;
-								bit_mask=0x80;
-								count++;
-								if (count>=40)
-								{
-									count=0;
-									(void)fprintf(postscript.file,"\n");
-								}
-							}
-						}
-						if (count!=0)
-						{
+							count=0;
 							(void)fprintf(postscript.file,"\n");
 						}
-						(void)fprintf(postscript.file,"grestore\n");
-						(void)fprintf(postscript.file,"\n");
-						DEALLOCATE(colour_parity);
-					}
-					else
-					{
-						display_message(ERROR_MESSAGE,
-							"XPSPutImage.  Insufficient memory for colour_parity");
 					}
 				}
-				else
+				if (count!=0)
 				{
-					if (ALLOCATE(colour_red,char,number_of_colours)&&
-						ALLOCATE(colour_green,char,number_of_colours)&&
-						ALLOCATE(colour_blue,char,number_of_colours))
-					{
-						/* set the background drawing colour to the background postscript
-							colour */
-						colour=colours+background_pixel;
-						colour->red=
-							(unsigned short)(postscript.background_printer_colour.red*65535.);
-						colour->green=(unsigned short)(postscript.background_printer_colour.
-							green*65535.);
-						colour->blue=(unsigned short)(postscript.background_printer_colour.
-							blue*65535.);
-						colour=colours;
-						red=colour_red;
-						green=colour_green;
-						blue=colour_blue;
-						for (i=number_of_colours;i>0;i--)
-						{
-							*red=(char)((colour->red)>>8);
-							*green=(char)((colour->green)>>8);
-							*blue=(char)((colour->blue)>>8);
-							red++;
-							green++;
-							blue++;
-							colour++;
-						}
-						/* write the postscript for displaying the image */
-						scan_line_length=3*width;
-						(void)fprintf(postscript.file,"%% PutImage\n");
-						(void)fprintf(postscript.file,"gsave\n");
-						(void)fprintf(postscript.file,"/scan_line %d string def\n",
-							(int)scan_line_length);
-						(void)fprintf(postscript.file,"%d %d translate\n",dest_x,dest_y);
-						(void)fprintf(postscript.file,"%u %u\n",width,height);
-						(void)fprintf(postscript.file,"8\n");
-						(void)fprintf(postscript.file,"[1 0 0 -1 0 %u]\n",height);
-						(void)fprintf(postscript.file,"{\n");
-						(void)fprintf(postscript.file,
-							"  currentfile scan_line readhexstring pop\n");
-						(void)fprintf(postscript.file,"}\n");
-						(void)fprintf(postscript.file,"false\n");
-						(void)fprintf(postscript.file,"3\n");
-						(void)fprintf(postscript.file,"colorimage\n");
-						/* output image data */
-						count=0;
-						for (row=0;row<height;row++)
-						{
-							for (column=0;column<width;column++)
-							{
-								pixel=XGetPixel(image,column+src_x,row+src_y);
-								(void)fprintf(postscript.file,"%02x%02x%02x",colour_red[pixel],
-									colour_green[pixel],colour_blue[pixel]);
-								count++;
-								if (count>=13)
-								{
-									count=0;
-									(void)fprintf(postscript.file,"\n");
-								}
-							}
-						}
-						if (count!=0)
-						{
-							(void)fprintf(postscript.file,"\n");
-						}
-						(void)fprintf(postscript.file,"grestore\n");
-						(void)fprintf(postscript.file,"\n");
-					}
-					else
-					{
-						display_message(ERROR_MESSAGE,
-							"XPSPutImage.  Insufficient memory for red, green and blue");
-					}
+					(void)fprintf(postscript.file,"\n");
 				}
+				(void)fprintf(postscript.file,"grestore\n");
+				(void)fprintf(postscript.file,"\n");
 			}
 			else
 			{
-				display_message(ERROR_MESSAGE,"XPSPutImage.  Invalid pixel value");
+				/* set the background drawing colour to the background postscript
+					colour */
+				background_red=
+					(unsigned short)(postscript.background_printer_colour.red*255.);
+				background_green=
+					(unsigned short)(postscript.background_printer_colour.green*255.);
+				background_blue=
+					(unsigned short)(postscript.background_printer_colour.blue*255.);
+				/* write the postscript for displaying the image */
+				scan_line_length=3*width;
+				(void)fprintf(postscript.file,"%% PutImage\n");
+				(void)fprintf(postscript.file,"gsave\n");
+				(void)fprintf(postscript.file,"/scan_line %d string def\n",
+					(int)scan_line_length);
+				(void)fprintf(postscript.file,"%d %d translate\n",dest_x,dest_y);
+				(void)fprintf(postscript.file,"%u %u\n",width,height);
+				(void)fprintf(postscript.file,"8\n");
+				(void)fprintf(postscript.file,"[1 0 0 -1 0 %u]\n",height);
+				(void)fprintf(postscript.file,"{\n");
+				(void)fprintf(postscript.file,
+					"  currentfile scan_line readhexstring pop\n");
+				(void)fprintf(postscript.file,"}\n");
+				(void)fprintf(postscript.file,"false\n");
+				(void)fprintf(postscript.file,"3\n");
+				(void)fprintf(postscript.file,"colorimage\n");
+				/* output image data */
+				count=0;
+				for (row=0;row<height;row++)
+				{
+					for (column=0;column<width;column++)
+					{
+						colour.pixel=XGetPixel(image,column+src_x,row+src_y);
+						if (background_pixel==colour.pixel)
+						{
+							(void)fprintf(postscript.file,"%02x%02x%02x",
+								background_red,background_green,background_blue);
+						}
+						else
+						{
+							XQueryColor(display,postscript.colour_map,&colour);
+							(void)fprintf(postscript.file,"%02x%02x%02x",
+								(colour.red)>>8,(colour.green)>>8,(colour.blue)>>8);
+						}
+						count++;
+						if (count>=13)
+						{
+							count=0;
+							(void)fprintf(postscript.file,"\n");
+						}
+					}
+				}
+				if (count!=0)
+				{
+					(void)fprintf(postscript.file,"\n");
+				}
+				(void)fprintf(postscript.file,"grestore\n");
+				(void)fprintf(postscript.file,"\n");
 			}
-			DEALLOCATE(colours);
 		}
 		else
 		{
