@@ -65,6 +65,14 @@ sub require_library_actual
   }
 }
 
+sub locate_this_module
+{
+  my $modlibname = (caller())[1];
+  $modlibname =~ s,/Cmiss.pm$,,;
+  return $modlibname;
+}
+
+
 
 {
   no strict 'vars';
@@ -78,8 +86,7 @@ sub require_library_actual
 	 require Cmiss::Perl_cmiss;
 	 *require_library = \&require_library_actual;
 	 my $tmp_command_data;
-    my $modlibname = (caller())[1];
-	 $modlibname =~ s,/Cmiss/.*$,,;
+    my $modlibname = locate_this_module();
 	 require_library("$modlibname/auto/Cmiss/Perl_cmiss/Perl_cmiss.so");
 	 require_library("cmgui");
     require Cmiss::cmgui_command_data;
