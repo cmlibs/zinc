@@ -1,7 +1,7 @@
 //******************************************************************************
 // FILE : function_derivative_matrix.hpp
 //
-// LAST MODIFIED : 13 January 2005
+// LAST MODIFIED : 22 February 2005
 //
 // DESCRIPTION :
 //==============================================================================
@@ -13,6 +13,8 @@
 #include "computed_variable/function.hpp"
 #include "computed_variable/function_variable.hpp"
 
+#define SEPARATE_ATOMIC_AND_MATRIX_SPLITTING
+
 class Function_derivative_matrix;
 
 typedef boost::intrusive_ptr<Function_derivative_matrix>
@@ -20,7 +22,7 @@ typedef boost::intrusive_ptr<Function_derivative_matrix>
 
 class Function_derivative_matrix : public Function
 //******************************************************************************
-// LAST MODIFIED : 13 January 2005
+// LAST MODIFIED : 21 February 2005
 //
 // DESCRIPTION :
 //==============================================================================
