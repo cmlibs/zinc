@@ -108,12 +108,9 @@ Creates a single Cmgui_image which stores the data from the X <pixmap>.
 						char_ximage_data = (unsigned char *)(ximage->data + j * ximage->bytes_per_line);
 						for (i = 0 ; i < width ; i++)
 						{
-							pixel_data[0] = (unsigned char)(0xFF &
-								(*((unsigned long *)char_ximage_data) >> 8));
-							pixel_data[1] = (unsigned char)(0xFF &
-								(*((unsigned long *)char_ximage_data) >> 16));
-							pixel_data[2] = (unsigned char)(0xFF &
-								(*((unsigned long *)char_ximage_data) >> 24));
+							pixel_data[0] = char_ximage_data[1];
+							pixel_data[1] = char_ximage_data[2];
+							pixel_data[2] = char_ximage_data[3];
 							pixel_data += 3;
 							char_ximage_data += 4;
 						}
@@ -128,12 +125,9 @@ Creates a single Cmgui_image which stores the data from the X <pixmap>.
 						char_ximage_data = (unsigned char *)(ximage->data + j * ximage->bytes_per_line);
 						for (i = 0 ; i < width ; i++)
 						{
-							pixel_data[0] = (unsigned char)(0xFF & 
-								(*((unsigned long *)char_ximage_data) >> 16));
-							pixel_data[1] = (unsigned char)(0xFF &
-								(*((unsigned long *)char_ximage_data) >> 8));
-							pixel_data[2] = (unsigned char)(0xFF & 
-								(*((unsigned long *)char_ximage_data)));
+							pixel_data[0] = char_ximage_data[2];
+							pixel_data[1] = char_ximage_data[1];
+							pixel_data[2] = char_ximage_data[0];
 							pixel_data += 3;
 							char_ximage_data += 4;
 						}
