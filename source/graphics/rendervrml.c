@@ -57,6 +57,48 @@ Module functions
 ----------------
 */
 
+static double clamped_acos(double x)
+/*******************************************************************************
+LAST MODIFIED : 9 May 1999
+
+DESCRIPTION :
+Protects us from errors due to numbers being close but outside the range of
+-1 to 1.
+==============================================================================*/
+{
+	double result, tolerance;
+
+	ENTER(clamped_acos);
+
+	tolerance = 1e-3;
+	if (x > 1.0)
+	{
+		if (x > 1.0 + tolerance)
+		{
+			display_message(WARNING_MESSAGE,
+				"clamped_acos.  Value passed to acos is greater than 1.0 plus tolerance.");
+		}
+		result = 0.0;
+	}
+	else if (x < -1.0)
+	{
+		if (x < -1.0 - tolerance)
+		{
+			display_message(WARNING_MESSAGE,
+				"clamped_acos.  Value passed to acos is less than -1.0 minus tolerance.");
+		}
+		result = PI;
+	}
+	else
+	{
+		result = acos(x);
+	}
+
+	LEAVE;
+
+	return (result);
+} /* clamped_acos */
+
 static struct VRML_prototype *CREATE(VRML_prototype)(char *name,
 	struct Texture *texture,
 	struct Graphical_material *material,
@@ -913,7 +955,7 @@ points  given by the positions in <point_list> and oriented and scaled by
 								a1 = 0.0;
 								a2 = -ax3 / a_magnitude;
 								a3 = ax2 / a_magnitude;
-								a_angle = acos(ax1);
+								a_angle = clamped_acos(ax1);
 							}
 							else
 							{
@@ -939,7 +981,7 @@ points  given by the positions in <point_list> and oriented and scaled by
 							j1 = -sin(a_angle) * a3;
 							j2 = (1.0 - cos(a_angle)) * a2 * a2 + cos(a_angle);
 							j3 = (1.0 - cos(a_angle)) * a2 * a3;
-							b_angle = acos(j1*bx1 + j2*bx2 + j3*bx3);
+							b_angle = clamped_acos(j1*bx1 + j2*bx2 + j3*bx3);
 							if (0.0 != b_angle)
 							{
 								/* get c = j1 (x) bx and normalise it */
