@@ -1,7 +1,7 @@
 XCOMM **************************************************************************
 XCOMM FILE : cell.imake
 XCOMM
-XCOMM LAST MODIFIED : 28 June 2001
+XCOMM LAST MODIFIED : 16 October 2001
 XCOMM
 XCOMM DESCRIPTION :
 XCOMM
@@ -458,6 +458,7 @@ COMPUTED_FIELD_SRCS =  \
 	computed_field/computed_field_fibres.c \
 	computed_field/computed_field_find_xi.c \
 	computed_field/computed_field_finite_element.c \
+	computed_field/computed_field_value_index_ranges.c \
 	computed_field/computed_field_wrappers.c
 CURVE_SRCS = \
 	curve/control_curve.c
@@ -466,9 +467,9 @@ DOF3_SRCS =
 ELEMENT_SRCS = 
 FINITE_ELEMENT_SRCS = \
 	finite_element/export_finite_element.c \
-	finite_element/field_value_index_ranges.c \
 	finite_element/finite_element.c \
 	finite_element/finite_element_adjacent_elements.c \
+	finite_element/finite_element_discretization.c \
 	finite_element/finite_element_to_graphics_object.c \
 	finite_element/finite_element_to_iso_lines.c \
 	finite_element/finite_element_to_streamlines.c \
