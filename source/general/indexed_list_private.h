@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : indexed_list_private.h
 
-LAST MODIFIED : 29 August 2000
+LAST MODIFIED : 20 December 2000
 
 DESCRIPTION :
 Macros for declaring indexed list types and declaring indexed list functions.
@@ -39,6 +39,27 @@ Local types
 #define INDEX_NODE( object_type )  in ## object_type
 #endif
 
+#if defined (FULL_NAMES)
+#define NUMBER_OF_DEFINED_LISTS( object_type ) \
+	number_of_defined_lists_ ## object_type
+#else
+#define NUMBER_OF_DEFINED_LISTS( object_type )  nodls ## object_type
+#endif
+
+#if defined (FULL_NAMES)
+#define DEFINED_LISTS( object_type ) \
+	defined_lists_ ## object_type
+#else
+#define DEFINED_LISTS( object_type )  dls ## object_type
+#endif
+
+#if defined (FULL_NAMES)
+#define ITERATION_COUNT( object_type ) \
+	iteration_count_ ## object_type
+#else
+#define ITERATION_COUNT( object_type )  dlic ## object_type
+#endif
+
 #define FULL_DECLARE_INDEXED_LIST_TYPE( object_type ) \
 struct INDEX_NODE(object_type) \
 /***************************************************************************** \
@@ -72,7 +93,24 @@ The object_type list structure. \
 	int count; \
 	/* the index set for the list */ \
 	struct INDEX_NODE(object_type) *index; \
-} /* struct LIST(object_type) */
+}; /* struct LIST(object_type) */ \
+\
+/***************************************************************************** \
+LAST MODIFIED : 15 December 2000 \
+\
+DESCRIPTION : \
+When indexed lists are created, add to DEFINED_LISTS, when destroyed, remove. \
+This record of all the indexed lists in existence is then used to facilitate \
+safe change of index by removing each changing object from all lists it is in \
+the adding it back afterwards. Note that ITERATION_COUNT, incremented by 1 \
+while any iteration is going on for any list of this object_type, should be \
+zero when this is done otherwise list corruption will occur. This is checked \
+by the LIST_BEGIN/END_SAFE_INDEX_CHANGE functions. \
+============================================================================*/ \
+int NUMBER_OF_DEFINED_LISTS(object_type) = 0; \
+struct LIST(object_type) **DEFINED_LISTS(object_type) \
+	= (struct LIST(object_type) **)NULL; \
+int ITERATION_COUNT(object_type) = 0
 
 /*
 Local functions
@@ -1102,18 +1140,27 @@ Global functions
 #define DECLARE_CREATE_INDEXED_LIST_FUNCTION( object_type ) \
 PROTOTYPE_CREATE_LIST_FUNCTION(object_type) \
 { \
-	struct LIST(object_type) *list; \
+	struct LIST(object_type) *list, **temp_defined_lists; \
 \
 	ENTER(CREATE_LIST(object_type)); \
-	if (ALLOCATE(list,struct LIST(object_type),1)) \
+	/* note adding list to DEFINED_LISTS; only reallocate this every 10 lists */ \
+	temp_defined_lists = DEFINED_LISTS(object_type); \
+	if (ALLOCATE(list,struct LIST(object_type),1) && \
+		((NUMBER_OF_DEFINED_LISTS(object_type) % 10) || \
+			REALLOCATE(temp_defined_lists,DEFINED_LISTS(object_type), \
+				struct LIST(object_type) *,NUMBER_OF_DEFINED_LISTS(object_type) + 10))) \
 	{ \
-		list->count=0; \
-		list->index=(struct INDEX_NODE(object_type) *)NULL; \
+		DEFINED_LISTS(object_type) = temp_defined_lists; \
+		DEFINED_LISTS(object_type)[NUMBER_OF_DEFINED_LISTS(object_type)] = list; \
+		(NUMBER_OF_DEFINED_LISTS(object_type))++; \
+		list->count = 0 ; \
+		list->index = (struct INDEX_NODE(object_type) *)NULL; \
 	} \
 	else \
 	{ \
 		display_message(ERROR_MESSAGE, \
 			"CREATE_LIST(" #object_type ").  Insufficient memory"); \
+		DEALLOCATE(list); \
 	} \
 	LEAVE; \
 \
@@ -1123,23 +1170,48 @@ PROTOTYPE_CREATE_LIST_FUNCTION(object_type) \
 #define DECLARE_DESTROY_INDEXED_LIST_FUNCTION( object_type ) \
 PROTOTYPE_DESTROY_LIST_FUNCTION(object_type) \
 { \
-	int return_code; \
+	int i, j, return_code; \
+	struct LIST(object_type) *list; \
 \
 	ENTER(DESTROY_LIST(object_type)); \
 	if (list_address) \
 	{ \
-		if (*list_address) \
+		if (list = *list_address) \
 		{ \
-			DESTROY_INDEX_NODE(object_type)(&((*list_address)->index)); \
-			DEALLOCATE(*list_address); \
+			/* remove list from DEFINED_LISTS */ \
+			j = 0; \
+			for (i = 0; i < NUMBER_OF_DEFINED_LISTS(object_type); i++) \
+			{ \
+				if (DEFINED_LISTS(object_type)[i] != list) \
+				{ \
+					DEFINED_LISTS(object_type)[j] = DEFINED_LISTS(object_type)[i]; \
+					j++; \
+				} \
+			} \
+			if (j == (NUMBER_OF_DEFINED_LISTS(object_type) - 1)) \
+			{ \
+				(NUMBER_OF_DEFINED_LISTS(object_type))--; \
+				if (0 == NUMBER_OF_DEFINED_LISTS(object_type)) \
+				{ \
+					DEALLOCATE(DEFINED_LISTS(object_type)); \
+				} \
+				DESTROY_INDEX_NODE(object_type)(&(list->index)); \
+				DEALLOCATE(*list_address); \
+			} \
+			else \
+			{ \
+				display_message(ERROR_MESSAGE, \
+					"DESTROY_LIST(" #object_type ").  Invalid list"); \
+				return_code = 0; \
+			} \
 		} \
-		return_code=1; \
+		return_code = 1; \
 	} \
 	else \
 	{ \
 		display_message(ERROR_MESSAGE, \
 			"DESTROY_LIST(" #object_type ").  Invalid argument"); \
-		return_code=0; \
+		return_code = 0; \
 	} \
 	LEAVE; \
 \
@@ -1392,6 +1464,70 @@ PROTOTYPE_IS_OBJECT_IN_LIST_FUNCTION(object_type) \
 	return (return_code); \
 } /* IS_OBJECT_IN_LIST(object_type) */
 
+#define DECLARE_FIRST_OBJECT_IN_INDEXED_LIST_THAT_FUNCTION( object_type ) \
+PROTOTYPE_FIRST_OBJECT_IN_LIST_THAT_FUNCTION(object_type) \
+{ \
+	struct object_type *object; \
+\
+	ENTER(FIRST_OBJECT_IN_LIST_THAT(object_type)); \
+	/* check the arguments */ \
+	if (list) \
+	{ \
+		if (list->index) \
+		{ \
+			(ITERATION_COUNT(object_type))++; \
+			object=FIRST_OBJECT_IN_INDEX_THAT(object_type)(conditional,user_data, \
+				list->index); \
+			(ITERATION_COUNT(object_type))--; \
+		} \
+		else \
+		{ \
+			object=(struct object_type *)NULL; \
+		} \
+	} \
+	else \
+	{ \
+		display_message(ERROR_MESSAGE, \
+			"FIRST_OBJECT_IN_LIST_THAT(" #object_type ").  Invalid argument(s)"); \
+		object=(struct object_type *)NULL; \
+	} \
+	LEAVE; \
+\
+	return (object); \
+} /* FIRST_OBJECT_IN_LIST_THAT(object_type) */
+
+#define DECLARE_FOR_EACH_OBJECT_IN_INDEXED_LIST_FUNCTION( object_type ) \
+PROTOTYPE_FOR_EACH_OBJECT_IN_LIST_FUNCTION(object_type) \
+{ \
+	int return_code; \
+\
+	ENTER(FOR_EACH_OBJECT_IN_LIST(object_type)); \
+	/* check the arguments */ \
+	if (list&&iterator) \
+	{ \
+		if (list->index) \
+		{ \
+			(ITERATION_COUNT(object_type))++; \
+			return_code=FOR_EACH_OBJECT_IN_INDEX(object_type)(iterator,user_data, \
+				list->index); \
+			(ITERATION_COUNT(object_type))--; \
+		} \
+		else \
+		{ \
+			return_code=1; \
+		} \
+	} \
+	else \
+	{ \
+		display_message(ERROR_MESSAGE, \
+			"FOR_EACH_OBJECT_IN_LIST(" #object_type ").  Invalid argument(s)"); \
+		return_code=0; \
+	} \
+	LEAVE; \
+\
+	return (return_code); \
+} /* FOR_EACH_OBJECT_IN_LIST(object_type) */
+
 #define DECLARE_FIND_BY_IDENTIFIER_IN_INDEXED_LIST_FUNCTION( object_type , \
 	identifier , identifier_type , compare_function ) \
 PROTOTYPE_FIND_BY_IDENTIFIER_IN_LIST_FUNCTION(object_type,identifier, \
@@ -1500,65 +1636,197 @@ PROTOTYPE_FIND_BY_IDENTIFIER_IN_LIST_FUNCTION(object_type,identifier, \
 	return (object); \
 } /* FIND_BY_IDENTIFIER_IN_LIST(object_type,identifier) */
 
-#define DECLARE_FIRST_OBJECT_IN_INDEXED_LIST_THAT_FUNCTION( object_type ) \
-PROTOTYPE_FIRST_OBJECT_IN_LIST_THAT_FUNCTION(object_type) \
+#if defined (FULL_NAMES)
+#define INDEXED_LIST_SAFE_IDENTIFIER_CHANGE_DATA( object_type , identifier ) \
+	indexed_list_safe_identifier_change_data_ ## object_type ## identifier
+#else
+#define INDEXED_LIST_SAFE_IDENTIFIER_CHANGE_DATA( object_type , identifier ) \
+	ilsicd ## object_type ## identifier
+#endif
+
+#define DECLARE_INDEXED_LIST_SAFE_IDENTIFIER_CHANGE_DATA( object_type , \
+	identifier ) \
+struct INDEXED_LIST_SAFE_IDENTIFIER_CHANGE_DATA(object_type,identifier) \
+/***************************************************************************** \
+LAST MODIFIED : 20 December 2000 \
+\
+DESCRIPTION : \
+Data structure used by INDEXED_LIST_BEGIN/END_SAFE_IDENTIFIER_CHANGE \
+functions. Should only be declared with manager functions. \
+============================================================================*/ \
 { \
 	struct object_type *object; \
+	struct LIST(object_type) **lists_containing_object; \
+	int number_of_lists_containing_object; \
+} /* struct INDEXED_LIST_SAFE_IDENTIFIER_CHANGE_DATA(object_type,identifier) */
+
+#if defined (FULL_NAMES)
+#define INDEXED_LIST_BEGIN_SAFE_IDENTIFIER_CHANGE( object_type, identifier ) \
+	indexed_list_begin_safe_identifier_change_ ## object_type ## identifier
+#else
+#define INDEXED_LIST_BEGIN_SAFE_IDENTIFIER_CHANGE( object_type, identifier ) \
+	ilbsic ## object_type ## identifier
+#endif
+
+#define DECLARE_INDEXED_LIST_BEGIN_SAFE_IDENTIFIER_CHANGE_FUNCTION( \
+	object_type , identifier ) \
+static struct INDEXED_LIST_SAFE_IDENTIFIER_CHANGE_DATA(object_type,identifier) \
+	*INDEXED_LIST_BEGIN_SAFE_IDENTIFIER_CHANGE(object_type,identifier) ( \
+	struct object_type *object) \
+/***************************************************************************** \
+LAST MODIFIED : 20 December 2000 \
 \
-	ENTER(FIRST_OBJECT_IN_LIST_THAT(object_type)); \
-	/* check the arguments */ \
-	if (list) \
+DESCRIPTION : \
+MANAGER functions using indexed object lists must call this before modifying \
+the identifier of any object, and afterwards call the companion function \
+INDEXED_LIST_END_SAFE_IDENTIFIER_CHANGE with the returned \
+identifier_change_data. These functions temporarily remove the object from \
+any list it is in, then re-add it later so it is in the correct indexed \
+position. <object> is ACCESSed between these two functions. \
+Should only be declared with manager functions. \
+============================================================================*/ \
+{ \
+	int i, j; \
+	struct INDEXED_LIST_SAFE_IDENTIFIER_CHANGE_DATA(object_type,identifier) \
+		*identifier_change_data; \
+	struct object_type *object_in_list; \
+\
+	ENTER(INDEXED_LIST_BEGIN_SAFE_IDENTIFIER_CHANGE(object_type,identifier)); \
+	if (object) \
 	{ \
-		if (list->index) \
+		if (0 == ITERATION_COUNT(object_type)) \
 		{ \
-			object=FIRST_OBJECT_IN_INDEX_THAT(object_type)(conditional,user_data, \
-				list->index); \
+			if (ALLOCATE(identifier_change_data, \
+				struct INDEXED_LIST_SAFE_IDENTIFIER_CHANGE_DATA(object_type, \
+					identifier), 1) && \
+				ALLOCATE(identifier_change_data->lists_containing_object, \
+					struct LIST(object_type) *, NUMBER_OF_DEFINED_LISTS(object_type))) \
+			{ \
+				identifier_change_data->object = ACCESS(object_type)(object); \
+				j = 0; \
+				for (i = 0; i < NUMBER_OF_DEFINED_LISTS(object_type); i++) \
+				{ \
+					/* note must also compare pointer as different object with same \
+						 identifier may be returned by */ \
+					if ((object_in_list = \
+						FIND_BY_IDENTIFIER_IN_LIST(object_type,identifier)( \
+						object->identifier, DEFINED_LISTS(object_type)[i])) && \
+						(object_in_list == object)) \
+					{ \
+						identifier_change_data->lists_containing_object[j] = \
+							DEFINED_LISTS(object_type)[i]; \
+						REMOVE_OBJECT_FROM_LIST(object_type)(object, \
+							DEFINED_LISTS(object_type)[i]); \
+						j++; \
+					} \
+				} \
+				identifier_change_data->number_of_lists_containing_object = j; \
+			} \
+			else \
+			{ \
+				display_message(ERROR_MESSAGE, \
+					"INDEXED_LIST_BEGIN_SAFE_IDENTIFIER_CHANGE(" #object_type \
+					"," #identifier ").  Not enough memory"); \
+				DEALLOCATE(identifier_change_data); \
+			} \
 		} \
 		else \
 		{ \
-			object=(struct object_type *)NULL; \
+			display_message(ERROR_MESSAGE, \
+				"INDEXED_LIST_BEGIN_SAFE_IDENTIFIER_CHANGE(" #object_type \
+				"," #identifier ").  Not allowed during list iteration"); \
+			DEALLOCATE(identifier_change_data); \
 		} \
 	} \
 	else \
 	{ \
 		display_message(ERROR_MESSAGE, \
-			"FIRST_OBJECT_IN_LIST_THAT(" #object_type ").  Invalid argument(s)"); \
-		object=(struct object_type *)NULL; \
+			"INDEXED_LIST_BEGIN_SAFE_IDENTIFIER_CHANGE(" #object_type \
+			"," #identifier ").  Invalid argument(s)"); \
+		identifier_change_data = (struct INDEXED_LIST_SAFE_IDENTIFIER_CHANGE_DATA( \
+			object_type,identifier) *)NULL; \
 	} \
 	LEAVE; \
 \
-	return (object); \
-} /* FIRST_OBJECT_IN_LIST_THAT(object_type) */
+	return (identifier_change_data); \
+} /* INDEXED_LIST_BEGIN_SAFE_IDENTIFIER_CHANGE(object_type,identifier) */
 
-#define DECLARE_FOR_EACH_OBJECT_IN_INDEXED_LIST_FUNCTION( object_type ) \
-PROTOTYPE_FOR_EACH_OBJECT_IN_LIST_FUNCTION(object_type) \
-{ \
-	int return_code; \
+#if defined (FULL_NAMES)
+#define INDEXED_LIST_END_SAFE_IDENTIFIER_CHANGE( object_type, identifier ) \
+	indexed_list_end_safe_identifier_change_ ## object_type ## identifier
+#else
+#define INDEXED_LIST_END_SAFE_IDENTIFIER_CHANGE( object_type, identifier ) \
+	ilesic ## object_type ## identifier
+#endif
+
+#define DECLARE_INDEXED_LIST_END_SAFE_IDENTIFIER_CHANGE_FUNCTION( \
+	object_type , identifier ) \
+static int INDEXED_LIST_END_SAFE_IDENTIFIER_CHANGE(object_type,identifier)( \
+	struct INDEXED_LIST_SAFE_IDENTIFIER_CHANGE_DATA(object_type,identifier) \
+		**identifier_change_data_address) \
+/***************************************************************************** \
+LAST MODIFIED : 20 December 2000 \
 \
-	ENTER(FOR_EACH_OBJECT_IN_LIST(object_type)); \
-	/* check the arguments */ \
-	if (list&&iterator) \
+DESCRIPTION : \
+Companion function to INDEXED_LIST_BEGIN_SAFE_IDENTIFIER_CHANGE function. \
+Re-adds the changed object to all the lists it was in. \
+Should only be declared with manager functions. \
+============================================================================*/ \
+{ \
+	int i, return_code; \
+	struct INDEXED_LIST_SAFE_IDENTIFIER_CHANGE_DATA(object_type,identifier) \
+		*identifier_change_data; \
+	struct object_type *object; \
+\
+	ENTER(INDEXED_LIST_END_SAFE_IDENTIFIER_CHANGE(object_type,identifier)); \
+	if (identifier_change_data_address && \
+		(identifier_change_data = *identifier_change_data_address) && \
+		(object = identifier_change_data->object)) \
 	{ \
-		if (list->index) \
+		if (0 == ITERATION_COUNT(object_type)) \
 		{ \
-			return_code=FOR_EACH_OBJECT_IN_INDEX(object_type)(iterator,user_data, \
-				list->index); \
+			return_code = 1; \
+			for (i = 0; \
+				i < identifier_change_data->number_of_lists_containing_object; i++) \
+			{ \
+				if (!ADD_OBJECT_TO_LIST(object_type)(object, \
+					identifier_change_data->lists_containing_object[i])) \
+				{ \
+					return_code = 0; \
+				} \
+			} \
+			if (!return_code) \
+			{ \
+				display_message(ERROR_MESSAGE, \
+					"INDEXED_LIST_END_SAFE_IDENTIFIER_CHANGE(" #object_type \
+					"," #identifier ").  Failed: object may be missing from lists"); \
+				DEALLOCATE(identifier_change_data); \
+			} \
 		} \
 		else \
 		{ \
-			return_code=1; \
+			display_message(ERROR_MESSAGE, \
+				"INDEXED_LIST_END_SAFE_IDENTIFIER_CHANGE(" #object_type \
+				"," #identifier ").  Not allowed during list iteration"); \
+			return_code = 0; \
 		} \
+		DEACCESS(object_type)(&(identifier_change_data->object)); \
+		DEALLOCATE(identifier_change_data->lists_containing_object); \
+		DEALLOCATE(*identifier_change_data_address); \
+		*identifier_change_data_address = (struct \
+			INDEXED_LIST_SAFE_IDENTIFIER_CHANGE_DATA(object_type,identifier) *)NULL; \
 	} \
 	else \
 	{ \
 		display_message(ERROR_MESSAGE, \
-			"FOR_EACH_OBJECT_IN_LIST(" #object_type ").  Invalid argument(s)"); \
-		return_code=0; \
+			"INDEXED_LIST_END_SAFE_IDENTIFIER_CHANGE(" #object_type \
+			"," #identifier ").  Invalid argument(s)"); \
+		return_code = 0; \
 	} \
 	LEAVE; \
 \
 	return (return_code); \
-} /* FOR_EACH_OBJECT_IN_LIST(object_type) */
+} /* INDEXED_LIST_END_SAFE_IDENTIFIER_CHANGE(object_type,identifier) */
 
 #define DECLARE_INDEXED_LIST_MODULE_FUNCTIONS( object_type , identifier , \
 	identifier_type , compare_function ) \
@@ -1576,6 +1844,15 @@ DECLARE_ADD_OBJECT_TO_INDEX_FUNCTION(object_type,identifier,compare_function) \
 DECLARE_IS_OBJECT_IN_INDEX_FUNCTION(object_type,identifier,compare_function) \
 DECLARE_FIRST_OBJECT_IN_INDEX_THAT_FUNCTION(object_type) \
 DECLARE_FOR_EACH_OBJECT_IN_INDEX_FUNCTION(object_type)
+
+/* following only need to be declared when used with managers */
+#define DECLARE_INDEXED_LIST_SAFE_IDENTIFIER_CHANGE_FUNCTIONS( object_type , \
+	identifier ) \
+DECLARE_INDEXED_LIST_SAFE_IDENTIFIER_CHANGE_DATA(object_type,identifier); \
+DECLARE_INDEXED_LIST_BEGIN_SAFE_IDENTIFIER_CHANGE_FUNCTION(object_type, \
+	identifier) \
+DECLARE_INDEXED_LIST_END_SAFE_IDENTIFIER_CHANGE_FUNCTION(object_type, \
+	identifier)
 
 #define DECLARE_INDEXED_LIST_FUNCTIONS( object_type ) \
 DECLARE_CREATE_INDEXED_LIST_FUNCTION(object_type) \
