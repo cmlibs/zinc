@@ -2198,12 +2198,23 @@ resulting 3-D display.
 								light_manager,spectrum_manager,default_spectrum,
 								texture_manager)&&
 							Scene_set_graphical_element_mode(view->scene,
-								GRAPHICAL_ELEMENT_INVISIBLE,
+								GRAPHICAL_ELEMENT_MANUAL,
 								computed_field_manager,element_manager,element_group_manager,
 								fe_field_manager,node_manager,node_group_manager,
 								data_manager,data_group_manager,element_point_ranges_selection,
 								element_selection,node_selection,data_selection,
 								user_interface)&&
+							/* manually add graphical elements for pending, problem and
+								 placed */
+							Scene_add_graphical_finite_element(view->scene,
+								view->pending_elements,(char *)NULL)&&
+							Scene_add_graphical_finite_element(view->scene,
+								view->problem_elements,(char *)NULL)&&
+							Scene_add_graphical_finite_element(view->scene,
+								view->placed_elements,(char *)NULL)&&
+							/* also add the 3-D placed so can be drawn over image */
+							Scene_add_graphical_finite_element(view->scene,
+								movie->placed_elements_3d,(char *)NULL)&&
 							/* turn off axes in each views scene */
 							Scene_set_axis_visibility(view->scene,g_INVISIBLE)&&
 							(gt_element_group=Scene_get_graphical_element_group(
@@ -2217,11 +2228,11 @@ resulting 3-D display.
 							Scene_set_element_group_visibility(view->scene,
 								view->pending_elements,g_VISIBLE)&&
 							Scene_set_element_group_position(view->scene,
-								view->placed_elements,1)&&
+								view->pending_elements,1)&&
 							Scene_set_element_group_position(view->scene,
-								view->problem_elements,1)&&
+								view->problem_elements,2)&&
 							Scene_set_element_group_position(view->scene,
-								view->pending_elements,1));
+								view->placed_elements,3));
 					}
 					if (return_code)
 					{
