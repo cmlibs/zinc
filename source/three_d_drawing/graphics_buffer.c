@@ -1135,6 +1135,10 @@ DESCRIPTION :
 					*attribute_ptr = minimum_colour_buffer_depth;
 					attribute_ptr++;
 				}
+				*attribute_ptr = GDK_GL_ALPHA_SIZE;
+				attribute_ptr++;
+				*attribute_ptr = 8;
+				attribute_ptr++;
 				if (minimum_depth_buffer_depth)
 				{
 					*attribute_ptr = GDK_GL_DEPTH_SIZE;
