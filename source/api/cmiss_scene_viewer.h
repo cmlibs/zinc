@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : cmiss_scene_viewer.h
 
-LAST MODIFIED : 14 February 2005
+LAST MODIFIED : 17 February 2005
 
 DESCRIPTION :
 The public interface to the Cmiss_scene_viewer object for rendering cmiss
@@ -506,9 +506,9 @@ Returns the <scene_viewer> freespin tool tumble angle.
 ==============================================================================*/
 
 int Cmiss_scene_viewer_set_freespin_tumble_angle(Cmiss_scene_viewer_id scene_viewer,
-	double *tumble_angle);
+	double tumble_angle);
 /*******************************************************************************
-LAST MODIFIED : 15 October 1998
+LAST MODIFIED : 17 February 2005
 
 DESCRIPTION :
 Sets the <scene_viewer> freespin tool tumble angle.

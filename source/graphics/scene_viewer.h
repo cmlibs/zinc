@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : scene_viewer.h
 
-LAST MODIFIED : 4 February 2004
+LAST MODIFIED : 17 February 2004
 
 DESCRIPTION :
 Three_D_drawing derivative for viewing a Scene from an arbitrary position.
@@ -234,9 +234,9 @@ Gets the <scene_viewer> tumble angle.
 ==============================================================================*/
 
 int Scene_viewer_set_freespin_tumble_angle(struct Scene_viewer *scene_viewer,
-	double *tumble_angle);
+	double tumble_angle);
 /*******************************************************************************
-LAST MODIFIED : 9 October 2003
+LAST MODIFIED : 17 February 2005
 
 DESCRIPTION :
 Sets the <scene_viewer> tumble angle.  
