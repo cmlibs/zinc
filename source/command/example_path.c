@@ -13,7 +13,6 @@ DESCRIPTION :
 #include <sys/time.h>
 #include <fcntl.h>
 #include "general/debug.h"
-#include "general/mystring.h"
 #include "user_interface/message.h"
 #include "command/example_path.h"
 
@@ -138,9 +137,11 @@ returns a string for it.  This too must be DEALLOCATED by the calling function.
 						if (return_string)
 						{
 							/* Look for a space separator in the returned string */
-							if (space_offset = strchr(return_string, ' '))
+							if ((space_offset = strchr(return_string, ' '))&&
+							  ALLOCATE(*comfile_name, char,
+							  strlen(space_offset + 1) + 1))
 							{
-								*comfile_name = duplicate_string(space_offset + 1);
+								strcpy(*comfile_name, space_offset + 1);
 								/* Terminate the first string and process 
 									as before */
 								*space_offset = 0;
