@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : cmiss.c
 
-LAST MODIFIED : 12 September 2000
+LAST MODIFIED : 21 September 2000
 
 DESCRIPTION :
 Functions for executing cmiss commands.
@@ -13324,7 +13324,7 @@ Executes a GFX LIST ELEMENT.
 static int gfx_list_FE_node(struct Parse_state *state,
 	void *use_data,void *command_data_void)
 /*******************************************************************************
-LAST MODIFIED : 7 September 2000
+LAST MODIFIED : 21 September 2000
 
 DESCRIPTION :
 Executes a GFX LIST NODES.
@@ -13332,9 +13332,8 @@ If <used_data_flag> is set, use data_manager and data_selection, otherwise
 use node_manager and node_selection.
 ==============================================================================*/
 {
-	char all_flag,ranges_flag,*ranges_string,*remaining_string,
-		selected_flag,verbose_flag;
-	int length_to_print,remaining_length,return_code;
+	char all_flag,ranges_flag,selected_flag,verbose_flag;
+	int return_code;
 	struct Cmiss_command_data *command_data;
 	struct FE_node_list_conditional_data list_conditional_data;
 	struct FE_node_selection *node_selection;
@@ -13429,44 +13428,9 @@ use node_manager and node_selection.
 							Multi_range_clear(node_ranges);
 							if (FOR_EACH_OBJECT_IN_LIST(FE_node)(
 								add_FE_node_number_to_Multi_range,(void *)node_ranges,
-								node_list)&&
-								(ranges_string=Multi_range_get_ranges_string(node_ranges)))
+								node_list))
 							{
-								remaining_string = ranges_string;
-								remaining_length = strlen(remaining_string);
-								while ((0<remaining_length)&&return_code)
-								{
-									if (remaining_length < 80)
-									{
-										display_message(INFORMATION_MESSAGE,remaining_string);
-										display_message(INFORMATION_MESSAGE,"\n");
-										remaining_length=0;
-									}
-									else
-									{
-										/* go back to last comma in string */
-										length_to_print = 80;
-										while (length_to_print&&
-											(remaining_string[length_to_print] != ','))
-										{
-											length_to_print--;
-										}
-										if (0<length_to_print)
-										{
-											/* null terminate string */
-											remaining_string[length_to_print] = '\0';
-											display_message(INFORMATION_MESSAGE,remaining_string);
-											display_message(INFORMATION_MESSAGE,",\n");
-											remaining_string += (length_to_print+1);
-											remaining_length -= (length_to_print+1);
-										}
-										else
-										{
-											return_code=0;
-										}
-									}
-								}
-								DEALLOCATE(ranges_string);
+								return_code=Multi_range_display_ranges(node_ranges);
 							}
 							else
 							{
@@ -13870,7 +13834,143 @@ Executes a GFX LIST GLYPH/GRAPHICS_OBJECT command.
 } /* gfx_list_graphics_object */
 #endif /* !defined (WINDOWS_DEV_FLAG) */
 
-#if !defined (WINDOWS_DEV_FLAG)
+static int gfx_list_grid_points(struct Parse_state *state,
+	void *dummy_to_be_modified,void *command_data_void)
+/*******************************************************************************
+LAST MODIFIED : 21 September 2000
+
+DESCRIPTION :
+Executes a GFX LIST NODES.
+If <used_data_flag> is set, use data_manager and data_selection, otherwise
+use node_manager and node_selection.
+==============================================================================*/
+{
+	char all_flag,ranges_flag,selected_flag;
+	int return_code;
+	struct Cmiss_command_data *command_data;
+	struct Element_point_ranges_grid_to_multi_range_data grid_to_multi_range_data;
+	struct FE_element_grid_to_multi_range_data element_grid_to_multi_range_data;
+	struct FE_field *grid_field;
+	struct Multi_range *grid_point_ranges,*multi_range;
+	struct Option_table *option_table;
+	struct Set_FE_field_conditional_data set_grid_field_data;
+
+	ENTER(gfx_list_grid_points);
+	USE_PARAMETER(dummy_to_be_modified);
+	if (state&&(command_data=(struct Cmiss_command_data *)command_data_void))
+	{
+		/* initialise defaults */
+		all_flag=0;
+		selected_flag=0;
+		grid_point_ranges=CREATE(Multi_range)();
+		if ((grid_field=FIND_BY_IDENTIFIER_IN_MANAGER(FE_field,name)(
+			"grid_point_number",command_data->fe_field_manager))&&
+			FE_field_is_1_component_integer(grid_field,(void *)NULL))
+		{
+			ACCESS(FE_field)(grid_field);
+		}
+		else
+		{
+			grid_field=(struct FE_field *)NULL;
+		}
+
+		option_table=CREATE(Option_table)();
+		/* all */
+		Option_table_add_entry(option_table,"all",&all_flag,NULL,set_char_flag);
+		/* grid_field */
+		set_grid_field_data.fe_field_manager=command_data->fe_field_manager;
+		set_grid_field_data.conditional_function=FE_field_is_1_component_integer;
+		set_grid_field_data.conditional_function_user_data=(void *)NULL;
+		Option_table_add_entry(option_table,"grid_field",
+			&grid_field,&set_grid_field_data,set_FE_field_conditional);
+		/* selected */
+		Option_table_add_entry(option_table,"selected",&selected_flag,
+			NULL,set_char_flag);
+		/* default option: grid point number ranges */
+		Option_table_add_entry(option_table,(char *)NULL,(void *)grid_point_ranges,
+			NULL,set_Multi_range);
+		if (return_code=Option_table_multi_parse(option_table,state))
+		{
+			if (grid_field)
+			{
+				if (multi_range=CREATE(Multi_range)())
+				{
+					ranges_flag=(0<Multi_range_get_number_of_ranges(grid_point_ranges));
+					if (selected_flag)
+					{
+						/* fill multi_range with selected grid_point_number ranges */
+						grid_to_multi_range_data.grid_fe_field=grid_field;
+						grid_to_multi_range_data.multi_range=multi_range;
+						grid_to_multi_range_data.all_points_native=1;
+						return_code=FOR_EACH_OBJECT_IN_LIST(Element_point_ranges)(
+							Element_point_ranges_grid_to_multi_range,
+							(void *)&grid_to_multi_range_data,
+							Element_point_ranges_selection_get_element_point_ranges_list(
+								command_data->element_point_ranges_selection));
+					}
+					else if (ranges_flag||all_flag)
+					{
+						/* fill multi_range with all grid_point_number ranges */
+						element_grid_to_multi_range_data.grid_fe_field=grid_field;
+						element_grid_to_multi_range_data.multi_range=multi_range;
+						return_code=FOR_EACH_OBJECT_IN_MANAGER(FE_element)(
+							FE_element_grid_to_multi_range,
+							(void *)&element_grid_to_multi_range_data,
+							command_data->element_manager);
+					}
+					if (return_code)
+					{
+						if (ranges_flag)
+						{
+							/* include in multi_range only values also in grid_point_ranges */
+							Multi_range_intersect(multi_range,grid_point_ranges);
+						}
+						if (0<Multi_range_get_number_of_ranges(multi_range))
+						{
+							display_message(INFORMATION_MESSAGE,"Grid points:\n");
+							return_code=Multi_range_display_ranges(multi_range);
+						}
+						else
+						{
+							display_message(WARNING_MESSAGE,
+								"gfx list grid_points:  No grid points specified");
+						}
+					}
+					DESTROY(Multi_range)(&multi_range);
+				}
+				else
+				{
+					return_code=0;
+				}
+				if (!return_code)
+				{
+					display_message(ERROR_MESSAGE,"gfx_list_grid_points.  Failed");
+				}
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE,"To list grid_points, "
+					"need integer grid_field (eg. grid_point_number)");
+				return_code=0;
+			}
+		}
+		DESTROY(Option_table)(&option_table);
+		DESTROY(Multi_range)(&grid_point_ranges);
+		if (grid_field)
+		{
+			DEACCESS(FE_field)(&grid_field);
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"gfx_list_grid_points.  Missing state");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* gfx_list_grid_points */
+
 static int gfx_list_group_FE_node(struct Parse_state *state,
 	void *dummy_to_be_modified,void *node_group_manager_void)
 /*******************************************************************************
@@ -13948,9 +14048,7 @@ Executes a GFX LIST NGROUP.
 
 	return (return_code);
 } /* gfx_list_group_FE_node */
-#endif /* !defined (WINDOWS_DEV_FLAG) */
 
-#if !defined (WINDOWS_DEV_FLAG)
 static int gfx_list_group_data(struct Parse_state *state,
 	void *dummy_to_be_modified,void *data_group_manager_void)
 /*******************************************************************************
@@ -13992,7 +14090,7 @@ Executes a GFX LIST DGROUP.
 				}
 				else
 				{
-					display_message(INFORMATION_MESSAGE," <NODE_GROUP_NAME{all}>");
+					display_message(INFORMATION_MESSAGE," <DATA_GROUP_NAME{all}>");
 					return_code=1;
 				}
 			}
@@ -14028,7 +14126,6 @@ Executes a GFX LIST DGROUP.
 
 	return (return_code);
 } /* gfx_list_group_data */
-#endif /* !defined (WINDOWS_DEV_FLAG) */
 
 #if !defined (WINDOWS_DEV_FLAG)
 static int gfx_list_interest_point(struct Parse_state *state,
@@ -15008,7 +15105,7 @@ Executes a GFX LIST WINDOW.
 static int execute_command_gfx_list(struct Parse_state *state,
 	void *dummy_to_be_modified,void *command_data_void)
 /*******************************************************************************
-LAST MODIFIED : 29 August 2000
+LAST MODIFIED : 20 September 2000
 
 DESCRIPTION :
 Executes a GFX LIST command.
@@ -15028,6 +15125,7 @@ Executes a GFX LIST command.
 		{"g_element",NULL,NULL,gfx_list_g_element},
 		{"glyph",NULL,NULL,gfx_list_graphics_object},
 		{"graphics_object",NULL,NULL,gfx_list_graphics_object},
+		{"grid_points",NULL,NULL,gfx_list_grid_points},
 		{"interest_point",NULL,NULL,gfx_list_interest_point},
 		{"light",NULL,NULL,gfx_list_light},
 		{"lmodel",NULL,NULL,gfx_list_light_model},
@@ -15089,6 +15187,9 @@ Executes a GFX LIST command.
 				i++;
 				/* graphics_object */
 				(option_table[i]).user_data=command_data->graphics_object_list;
+				i++;
+				/* grid_points */
+				(option_table[i]).user_data=command_data_void;
 				i++;
 				/* interest_point */
 				(option_table[i]).user_data=command_data_void;
