@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : user_interface.h
 
-LAST MODIFIED : 25 November 1999
+LAST MODIFIED : 27 December 1999
 
 DESCRIPTION :
 Function definitions for the user interface.
@@ -41,7 +41,7 @@ typedef int (*Property_notify_callback)(XPropertyEvent *,void *,
 
 struct User_interface
 /*******************************************************************************
-LAST MODIFIED : 18 November 1997
+LAST MODIFIED : 27 December 1999
 
 DESCRIPTION :
 The variables that control the interaction of the application with the
@@ -54,6 +54,8 @@ application/window manager.
 	Cursor busy_cursor;
 	Display *display;
 	int *argc_address,screen_height,screen_width,widget_spacing;
+	/* to avoid large gaps on the right of cascade buttons (option menus) */
+	Pixmap no_cascade_pixmap;
 	/* for communication with other applications */
 	Property_notify_callback property_notify_callback;
 	void *property_notify_data;

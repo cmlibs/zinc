@@ -4302,6 +4302,7 @@ the created trace window.  If unsuccessful, NULL is returned.
 	Dimension left_margin,right_margin;
 	int device_number,i,widget_spacing;
 	MrmType trace_window_class;
+	Pixmap no_cascade_pixmap;
 	static MrmRegisterArg callback_list[]={
 		{"destroy_Trace_window",(XtPointer)destroy_Trace_window},
 		{"identify_event_detection_button",
@@ -4540,6 +4541,7 @@ the created trace window.  If unsuccessful, NULL is returned.
 	/* check arguments */
 	if (signal_drawing_information&&user_interface)
 	{
+		no_cascade_pixmap=user_interface->no_cascade_pixmap;
 		if (MrmOpenHierarchy_base64_string(trace_window_uidh,
 			&trace_window_hierarchy,&trace_window_hierarchy_open))
 		{
@@ -5152,7 +5154,7 @@ the created trace window.  If unsuccessful, NULL is returned.
 							XtVaSetValues(child_widget,
 								XmNshadowThickness,0,
 								XmNhighlightThickness,0,
-/*???DB.								XmNcascadePixmap,no_cascade_pixmap,*/
+								XmNcascadePixmap,no_cascade_pixmap,
 								XmNalignment,XmALIGNMENT_BEGINNING,
 								XmNmarginLeft,0,
 								XmNmarginRight,0,
@@ -5171,7 +5173,7 @@ the created trace window.  If unsuccessful, NULL is returned.
 							XtVaSetValues(child_widget,
 								XmNshadowThickness,0,
 								XmNhighlightThickness,0,
-/*???DB.								XmNcascadePixmap,no_cascade_pixmap,*/
+								XmNcascadePixmap,no_cascade_pixmap,
 								XmNalignment,XmALIGNMENT_BEGINNING,
 								XmNmarginLeft,0,
 								XmNmarginRight,0,
@@ -5196,13 +5198,12 @@ the created trace window.  If unsuccessful, NULL is returned.
 							XtVaSetValues(child_widget,
 								XmNshadowThickness,0,
 								XmNhighlightThickness,0,
-/*???DB.								XmNcascadePixmap,no_cascade_pixmap,*/
+								XmNcascadePixmap,no_cascade_pixmap,
 								XmNalignment,XmALIGNMENT_BEGINNING,
 								XmNmarginLeft,0,
 								XmNmarginRight,0,
 								XmNmarginWidth,0,
 								NULL);
-							/* adjust the enlarge detection choice */
 							child_widget=
 								XmOptionLabelGadget(trace->area_1.enlarge.detection_choice);
 							XtVaSetValues(child_widget,
@@ -5215,7 +5216,7 @@ the created trace window.  If unsuccessful, NULL is returned.
 							XtVaSetValues(child_widget,
 								XmNshadowThickness,0,
 								XmNhighlightThickness,0,
-/*???DB.								XmNcascadePixmap,no_cascade_pixmap,*/
+								XmNcascadePixmap,no_cascade_pixmap,
 								XmNalignment,XmALIGNMENT_BEGINNING,
 								XmNmarginLeft,0,
 								XmNmarginRight,0,
@@ -5234,7 +5235,7 @@ the created trace window.  If unsuccessful, NULL is returned.
 							XtVaSetValues(child_widget,
 								XmNshadowThickness,0,
 								XmNhighlightThickness,0,
-/*???DB.								XmNcascadePixmap,no_cascade_pixmap,*/
+								XmNcascadePixmap,no_cascade_pixmap,
 								XmNalignment,XmALIGNMENT_BEGINNING,
 								XmNmarginLeft,0,
 								XmNmarginRight,0,
@@ -5274,7 +5275,7 @@ the created trace window.  If unsuccessful, NULL is returned.
 							XtVaSetValues(child_widget,
 								XmNshadowThickness,0,
 								XmNhighlightThickness,0,
-/*???DB.								XmNcascadePixmap,no_cascade_pixmap,*/
+								XmNcascadePixmap,no_cascade_pixmap,
 								XmNalignment,XmALIGNMENT_BEGINNING,
 								XmNmarginLeft,0,
 								XmNmarginRight,0,
@@ -5342,7 +5343,7 @@ the created trace window.  If unsuccessful, NULL is returned.
 							XtVaSetValues(child_widget,
 								XmNshadowThickness,0,
 								XmNhighlightThickness,0,
-/*???DB.								XmNcascadePixmap,no_cascade_pixmap,*/
+								XmNcascadePixmap,no_cascade_pixmap,
 								XmNalignment,XmALIGNMENT_BEGINNING,
 								XmNmarginLeft,0,
 								XmNmarginRight,0,
@@ -5524,7 +5525,7 @@ the created trace window.  If unsuccessful, NULL is returned.
 							XtVaSetValues(child_widget,
 								XmNshadowThickness,0,
 								XmNhighlightThickness,0,
-/*???DB.								XmNcascadePixmap,no_cascade_pixmap,*/
+								XmNcascadePixmap,no_cascade_pixmap,
 								XmNalignment,XmALIGNMENT_BEGINNING,
 								XmNmarginLeft,0,
 								XmNmarginRight,0,

@@ -1,11 +1,10 @@
 /*******************************************************************************
 FILE : user_interface.c
 
-LAST MODIFIED : 25 November 1999
+LAST MODIFIED : 27 December 1999
 
 DESCRIPTION :
 Functions for opening and closing the user interface.
-???DB.  no_cascade_pixmap ?
 ==============================================================================*/
 #include <stddef.h>
 #include <stdlib.h>
@@ -778,7 +777,7 @@ Visual *default_visual;
 
 int open_user_interface(struct User_interface *user_interface)
 /*******************************************************************************
-LAST MODIFIED : 12 October 1998
+LAST MODIFIED : 27 December 1999
 
 DESCRIPTION :
 Open the <user_interface>.
@@ -787,6 +786,7 @@ Open the <user_interface>.
 {
 	int return_code;
 #if defined (MOTIF)
+	char bitmap_data;
 	int screen_number;
 	static MrmRegisterArg identifiers[]=
 	{
@@ -917,6 +917,7 @@ Open the <user_interface>.
 		user_interface->shell_list=(struct Shell_list_item *)NULL;
 		user_interface->active_shell_stack=(struct Shell_stack_item *)NULL;
 #if defined (MOTIF)
+		user_interface->no_cascade_pixmap=XmUNSPECIFIED_PIXMAP;
 		/* initialize the Motif resource manager */
 		MrmInitialize();
 		/* initialize the X toolkit */
@@ -994,6 +995,15 @@ XmNvisual,default_visual,
 #endif /* defined (TEST_TRUE_COLOUR_VISUAL) */
 				NULL))
 			{
+				/* to avoid large gaps on the right of cascade gadgets (option menus) */
+				bitmap_data=(char)0x0;
+				if (!(user_interface->no_cascade_pixmap=XCreatePixmapFromBitmapData(
+					user_interface->display,XRootWindow(user_interface->display,
+					screen_number),&bitmap_data,1,1,0,XWhitePixel(user_interface->display,
+					screen_number),XDefaultDepth(user_interface->display,screen_number))))
+				{
+					user_interface->no_cascade_pixmap=XmUNSPECIFIED_PIXMAP;
+				}
 				/* for communication with other applications */
 				user_interface->property_notify_callback=(Property_notify_callback)NULL;
 				user_interface->property_notify_data=(void *)NULL;
@@ -1078,7 +1088,7 @@ XmNvisual,default_visual,
 
 int close_user_interface(struct User_interface *user_interface)
 /*******************************************************************************
-LAST MODIFIED : 25 November 1999
+LAST MODIFIED : 27 December 1999
 
 DESCRIPTION :
 ???DB.  What should this do ?  Should it be called from inside the main
@@ -1088,18 +1098,31 @@ DESCRIPTION :
 	int return_code;
 
 	ENTER(close_user_interface);
-	USE_PARAMETER(user_interface);
-#if defined (LINK_CMISS)
-	if (CMISS)
+	return_code=0;
+	if (user_interface)
 	{
-		DESTROY(CMISS_connection)(&CMISS);
-	}
+#if defined (LINK_CMISS)
+		if (CMISS)
+		{
+			DESTROY(CMISS_connection)(&CMISS);
+		}
 #endif /* defined (LINK_CMISS) */
 #if defined (MOTIF)
+		if ((user_interface->no_cascade_pixmap)&&(XmUNSPECIFIED_PIXMAP!=
+			user_interface->no_cascade_pixmap))
+		{
+			XFreePixmap(user_interface->display,user_interface->no_cascade_pixmap);
+			user_interface->no_cascade_pixmap=XmUNSPECIFIED_PIXMAP;
+		}
 /*???DB.  Bad ! */
-	exit(0);
+		exit(0);
 #endif /* defined (MOTIF) */
-	return_code=1;
+		return_code=1;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"close_user_interface.  Invalid argument");
+	}
 	LEAVE;
 
 	return (return_code);

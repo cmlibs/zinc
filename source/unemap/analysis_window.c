@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : analysis_window.c
 
-LAST MODIFIED : 6 December 1999
+LAST MODIFIED : 27 December 1999
 
 DESCRIPTION :
 ==============================================================================*/
@@ -3319,7 +3319,7 @@ struct Analysis_window *create_Analysis_window(
 	struct Signal_drawing_information *signal_drawing_information,
 	struct User_interface *user_interface)
 /*******************************************************************************
-LAST MODIFIED : 6 December 1999
+LAST MODIFIED : 27 December 1999
 
 DESCRIPTION :
 This function allocates the memory for an analysis window and sets the fields
@@ -3334,6 +3334,7 @@ returned.
 	Dimension left_margin,right_margin;
 	int signal_aspect_ratio_percent,widget_spacing;
 	MrmType analysis_window_class;
+	Pixmap no_cascade_pixmap;
 	static MrmRegisterArg callback_list[]={
 		{"identify_analysis_reset_button",
 			(XtPointer)identify_analysis_reset_button},
@@ -3495,6 +3496,7 @@ returned.
 	ENTER(create_Analysis_window);
 	if (signal_drawing_information&&user_interface)
 	{
+		no_cascade_pixmap=user_interface->no_cascade_pixmap;
 		if (MrmOpenHierarchy_base64_string(analysis_window_uidh,
 			&analysis_window_hierarchy,&analysis_window_hierarchy_open))
 		{
@@ -3664,7 +3666,7 @@ returned.
 							XtVaSetValues(child_widget,
 								XmNshadowThickness,0,
 								XmNhighlightThickness,0,
-/*???DB								XmNcascadePixmap,no_cascade_pixmap,*/
+								XmNcascadePixmap,no_cascade_pixmap,
 								XmNalignment,XmALIGNMENT_BEGINNING,
 								XmNmarginLeft,0,
 								XmNmarginRight,0,
@@ -3720,7 +3722,7 @@ returned.
 							XtVaSetValues(child_widget,
 								XmNshadowThickness,0,
 								XmNhighlightThickness,0,
-/*???DB								XmNcascadePixmap,no_cascade_pixmap,*/
+								XmNcascadePixmap,no_cascade_pixmap,
 								XmNalignment,XmALIGNMENT_BEGINNING,
 								XmNmarginLeft,0,
 								XmNmarginRight,0,
@@ -3776,7 +3778,7 @@ returned.
 							XtVaSetValues(child_widget,
 								XmNshadowThickness,0,
 								XmNhighlightThickness,0,
-/*???DB								XmNcascadePixmap,no_cascade_pixmap,*/
+								XmNcascadePixmap,no_cascade_pixmap,
 								XmNalignment,XmALIGNMENT_BEGINNING,
 								XmNmarginLeft,0,
 								XmNmarginRight,0,

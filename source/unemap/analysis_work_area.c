@@ -1146,6 +1146,43 @@ Sets the detection algorithm to level.
 	if ((analysis=(struct Analysis_work_area *)analysis_work_area)&&
 		(analysis->user_interface))
 	{
+		/*???debug */
+		{
+			Dimension height,left,margin_width,right,width;
+			Pixmap pixmap;
+			Widget child_widget;
+
+			enlarge= &(analysis->trace->area_1.enlarge);
+			child_widget=XmOptionLabelGadget(enlarge->detection_choice);
+			XtVaGetValues(child_widget,
+				XmNmarginLeft,&left,
+				XmNmarginRight,&right,
+				XmNmarginWidth,&margin_width,
+				NULL);
+			printf("label %p.  left=%d, right=%d, margin_width=%d\n",child_widget,
+				left,right,margin_width);
+			child_widget=XmOptionButtonGadget(enlarge->detection_choice);
+			XtVaGetValues(child_widget,
+				XmNmarginLeft,&left,
+				XmNmarginRight,&right,
+				XmNmarginWidth,&margin_width,
+				XmNheight,&height,
+				XmNwidth,&width,
+				XmNcascadePixmap,&pixmap,
+				NULL);
+			printf(
+				"button %p.  left=%d, right=%d, margin_width=%d, width=%d, height=%d, pixmap=%d\n",
+				child_widget,left,right,margin_width,width,height,pixmap);
+			XtVaSetValues(child_widget,
+				XmNmarginRight,0,
+				NULL);
+			child_widget=enlarge->detection.threshold_button;
+			XtVaGetValues(child_widget,
+				XmNheight,&height,
+				XmNwidth,&width,
+				NULL);
+			printf("threshold %p.  width=%d, height=%d\n",child_widget,width,height);
+		}
 		if (EDA_LEVEL!=analysis->detection)
 		{
 			widget_spacing=analysis->user_interface->widget_spacing;
