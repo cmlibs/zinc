@@ -156,6 +156,19 @@ $(SOURCE_PATH)/cmgui_linux_optimised.make : $(SOURCE_PATH)/cmgui.imake $(SOURCE_
 	$(COMMON_IMAKE_RULE) \
 	imake -DLINUX -DOPTIMISED $${CMISS_ROOT_DEF} -s cmgui_linux_optimised.make $${CMGUI_IMAKE_FILE} $${COMMON_IMAKE_FILE};
 
+#Linux optimised dynamic OpenGL version
+cmgui_linux_optimised_dynamic : force $(SOURCE_PATH)/cmgui_linux_optimised_dynamic.make
+	$(COMMON_MAKE_RULE) \
+	if [ -f cmgui_linux_optimised_dynamic.make ]; then \
+		$(MAKE) -f cmgui_linux_optimised_dynamic.make $(TARGET) ; \
+	else \
+		$(MAKE) -f $(PRODUCT_SOURCE_PATH)/cmgui_linux_optimised_dynamic.make $(TARGET) ; \
+	fi
+
+$(SOURCE_PATH)/cmgui_linux_optimised_dynamic.make : $(SOURCE_PATH)/cmgui.imake $(SOURCE_PATH)/common.imake cmgui.make
+	$(COMMON_IMAKE_RULE) \
+	imake -DLINUX -DOPTIMISED -DDYNAMIC_GL_LINUX $${CMISS_ROOT_DEF} -s cmgui_linux_optimised_dynamic.make $${CMGUI_IMAKE_FILE} $${COMMON_IMAKE_FILE};
+
 update :
 	if ( [ "$(PWD)" -ef "$(PRODUCT_PATH)" ] && [ "$(USER)" = "cmiss" ] ); then \
 		cvs update && \
@@ -163,7 +176,7 @@ update :
 		chgrp -R cmgui_programmers * && \
 		cd $(PRODUCT_PATH) && \
 		$(MAKE) -f cmgui.make cmgui cmgui_optimised cmgui64 cmgui_lite cmgui_memorycheck && \
-		ssh 130.216.208.156 'setenv CMISS_ROOT /product/cmiss ; cd $(PRODUCT_PATH) ; $(MAKE) -f cmgui.make cmgui_linux cmgui_linux_optimised' && \
+		ssh 130.216.208.156 'setenv CMISS_ROOT /product/cmiss ; cd $(PRODUCT_PATH) ; $(MAKE) -f cmgui.make cmgui_linux cmgui_linux_optimised cmgui_linux_optimised_dynamic' && \
 		cd $(PRODUCT_SOURCE_PATH) && \
 		chgrp -R cmgui_programmers *; \
 	else \
@@ -181,7 +194,7 @@ depend : $(SOURCE_PATH)/cmgui_sgi.make $(SOURCE_PATH)/cmgui_sgioptimised.make $(
 		$(MAKE) -f cmgui_sgi_memorycheck.make depend ; \
 		$(MAKE) -f cmgui_sgilite.make depend ; \
 		$(MAKE) -f cmgui_sgi64.make depend ; \
-		ssh 130.216.208.156 'setenv CMISS_ROOT /product/cmiss ; setenv CMGUI_DEV_ROOT $(PWD) ; cd $(PRODUCT_SOURCE_PATH) ; $(MAKE) -f cmgui_linux.make depend ; $(MAKE) -f cmgui_linux_optimised.make depend ' ; \
+		ssh 130.216.208.156 'setenv CMISS_ROOT /product/cmiss ; setenv CMGUI_DEV_ROOT $(PWD) ; cd $(PRODUCT_SOURCE_PATH) ; $(MAKE) -f cmgui_linux.make depend ; $(MAKE) -f cmgui_linux_optimised.make depend ; $(MAKE) -f cmgui_linux_optimised_dynamic.make depend ' ; \
 	else \
 		echo "Must be cmiss"; \
 	fi

@@ -170,6 +170,15 @@ PRODUCT_UIDH_PATH=$(PRODUCT_PATH)/uidh/cmgui/64
 /* SAB Couldn't compile cell/cell_calculate.f 
    #define CELL */
 #if defined (OPTIMISED)
+#if defined (DYNAMIC_GL_LINUX)
+#define Target cmgui_linux_optimised_dynamic
+#define SpacesToTabsTarget spaces_to_tabs_linux
+#define TabsToSpacesTarget tabs_to_spaces_linux
+#define Uid2uidhTarget uid2uidh_linux
+#define Makefile cmgui_linux_optimised_dynamic.make
+#define DependMake cmgui_linux_optimised_dynamic.depend
+#define ObjSuffix o
+#else /* defined (DYNAMIC_GL_LINUX) */
 #define Target cmgui_linux_optimised
 #define SpacesToTabsTarget spaces_to_tabs_linux
 #define TabsToSpacesTarget tabs_to_spaces_linux
@@ -177,12 +186,22 @@ PRODUCT_UIDH_PATH=$(PRODUCT_PATH)/uidh/cmgui/64
 #define Makefile cmgui_linux_optimised.make
 #define DependMake cmgui_linux_optimised.depend
 #define ObjSuffix o
+#endif /* defined (DYNAMIC_GL_LINUX) */
 /* Can't use linux on its own as this is defined! */
 OBJECT_PATH=$(CMGUI_DEV_ROOT)/object/cmgui/linux_optimised
 PRODUCT_OBJECT_PATH=$(PRODUCT_PATH)/object/cmgui/linux_optimised
 UIDH_PATH=$(CMGUI_DEV_ROOT)/uidh/cmgui/linux_optimised
 PRODUCT_UIDH_PATH=$(PRODUCT_PATH)/uidh/cmgui/linux_optimised
 #else /* defined (OPTIMISED) */
+#if defined (DYNAMIC_GL_LINUX)
+#define Target cmgui_linux_dynamic
+#define SpacesToTabsTarget spaces_to_tabs_linux
+#define TabsToSpacesTarget tabs_to_spaces_linux
+#define Uid2uidhTarget uid2uidh_linux
+#define Makefile cmgui_linux_dynamic.make
+#define DependMake cmgui_linux_dynamic.depend
+#define ObjSuffix o
+#else /* defined (DYNAMIC_GL_LINUX) */
 #define Target cmgui_linux
 #define SpacesToTabsTarget spaces_to_tabs_linux
 #define TabsToSpacesTarget tabs_to_spaces_linux
@@ -190,6 +209,7 @@ PRODUCT_UIDH_PATH=$(PRODUCT_PATH)/uidh/cmgui/linux_optimised
 #define Makefile cmgui_linux.make
 #define DependMake cmgui_linux.depend
 #define ObjSuffix o
+#endif /* defined (DYNAMIC_GL_LINUX) */
 /* Can't use linux on its own as this is defined! */
 OBJECT_PATH=$(CMGUI_DEV_ROOT)/object/cmgui/linux_g
 PRODUCT_OBJECT_PATH=$(PRODUCT_PATH)/object/cmgui/linux_g
@@ -251,7 +271,11 @@ GRAPHICS_LIB = -delay_load -lmoviefile -delay_load -ldmedia -lGL -lGLU
 #endif /* defined (O64) */
 #elif defined(LINUX) /* switch OperatingSystem */
 GRAPHICS_LIBRARY_SWITCH = -DOPENGL_API
+#if defined (DYNAMIC_GL_LINUX)
+GRAPHICS_LIB = -lGLU -lGL
+#else /* defined (DYNAMIC_GL_LINUX) */
 GRAPHICS_LIB = -L/usr/local/lib -lMesaGL -lMesaGLU
+#endif /* defined (DYNAMIC_GL_LINUX) */
 #endif /* switch OperatingSystem */
 #if defined (OLD_CODE)
 XCOMM GRAPHICS_LIB = -delay_load -lmoviefile -delay_load -lmovieplay -lGL -lGLU -delay_load -ldmedia
@@ -624,7 +648,12 @@ LIB = -lMrm -lXm -lXt -lX11 -lXmu -lPW -lftn -lm
 #if defined (IRIX) /* switch OperatingSystem */
 LIB = -lMrm -lSgm -lXm -lXt -lX11 -lXmu -lPW -lftn -lm -lpthread
 #elif defined(LINUX) /* switch OperatingSystem */
+#if defined (DYNAMIC_GL_LINUX)
+X_LIB = /usr/X11R6/lib
+LIB = $(X_LIB)/libMrm.a $(X_LIB)/libXm.a $(X_LIB)/libXt.a $(X_LIB)/libX11.a $(X_LIB)/libXmu.a $(X_LIB)/libXpm.a -lXext $(X_LIB)/libXp.a $(X_LIB)/libSM.a $(X_LIB)/libICE.a -lm -ldl -lc 
+#else /* defined (DYNAMIC_GL_LINUX) */
 LIB = -lMrm -lXm -lXt -lX11 -lXmu -lXpm -lXext -lg2c -lm -ldl -lXp -lSM -lICE -lpthread
+#endif /* defined (DYNAMIC_GL_LINUX) */
 #endif /* switch OperatingSystem */
 
 START_ALL_DEFINES =
@@ -652,8 +681,8 @@ ALL_INCLUDES = $(START_ALL_INCLUDES) \
 ALL_FLAGS = $(OPTIMISATION_FLAGS) $(COMPILE_FLAGS) $(TARGET_TYPE_FLAGS) \
 	$(ALL_DEFINES) $(ALL_INCLUDES)
 
-ALL_LIB = $(GRAPHICS_LIB) $(HAPTIC_LIB) $(INTERPRETER_LIB) $(LIB) $(VIDEO_LIB) \
-	  $(WORMHOLE_LIB)	$(EXTERNAL_INPUT_LIB) $(NAG_LIB) $(HELP_LIB) \
+ALL_LIB = $(GRAPHICS_LIB) $(HAPTIC_LIB) $(WORMHOLE_LIB)	$(INTERPRETER_LIB) $(LIB) $(VIDEO_LIB) \
+	  $(EXTERNAL_INPUT_LIB) $(NAG_LIB) $(HELP_LIB) \
 	  $(MOVIE_FILE_LIB) $(XML_LIB)
    
 
@@ -1085,7 +1114,7 @@ Target : $(OBJS) cmgui.ObjSuffix
 	cd $(OBJECT_PATH) ; \
 	rm -f product_object ; \
 	ln -s $(PRODUCT_OBJECT_PATH) product_object ; \
-	$(LINK) -o $(BIN_PATH)/Target $(ALL_FLAGS) `cat object.list` $(ALL_LIB)
+	$(LINK) -o $(BIN_PATH)/Target `cat object.list` $(ALL_LIB)
 
 CmguiFiltLibrary : $(LIB_FILT_OBJS) $(FILT_OBJ) Makefile libCmguiFiltExports
 	cd $(OBJECT_PATH)
