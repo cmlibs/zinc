@@ -117,26 +117,6 @@ sub get_element
 	}
 }
 
-sub get_field
-{
-	my ($self, %args) = @_;
-	my %defaults=();
-	my %args_with_defaults=(%defaults,%args);
-	my $path=$args_with_defaults{name};
-
-	if ($path)
-	{
-		$path =~ s/[^\/]*$//;
-		my $identifier=$args_with_defaults{name};
-		$identifier =~ s/^.*\///;
-		region_get_field($self, $path, $identifier);
-	}
-	else
-	{
-		croak "Missing name";
-	}
-}
-
 sub get_node
 {
 	my ($self, %args) = @_;
