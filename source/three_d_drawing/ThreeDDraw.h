@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : ThreeDDraw.h
 
-LAST MODIFIED : 25 July 1998
+LAST MODIFIED : 26 April 2000
 
 DESCRIPTION :
 Public header file for the 3-D drawing widget.
@@ -108,6 +108,14 @@ LAST MODIFIED : 10 September 1998
 
 DESCRIPTION :
 Change the context to the last ThreeDDrawing that was made current
+==============================================================================*/
+
+Widget X3dThreeDDrawingGetCurrent(void);
+/*******************************************************************************
+LAST MODIFIED : 26 April 2000
+
+DESCRIPTION :
+Returns the current X3d drawing widget; non-NULL if OpenGL already in-use.
 ==============================================================================*/
 
 void X3dThreeDDrawingSwapBuffers(void);

@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : ThreeDDraw.c
 
-LAST MODIFIED : 15 October 1998
+LAST MODIFIED : 26 April 2000
 
 DESCRIPTION :
 Code for the 3-D drawing widget (including methods and actions).
@@ -1754,6 +1754,21 @@ Change the context to the last ThreeDDrawing that was made current
 		printf("X3dThreeDDrawingRemakeCurrent.  Missing widget\n");
 	}
 } /* X3dThreeDDrawingRemakeCurrent */
+
+Widget X3dThreeDDrawingGetCurrent(void)
+/*******************************************************************************
+LAST MODIFIED : 26 April 2000
+
+DESCRIPTION :
+Returns the current X3d drawing widget; non-NULL if OpenGL already in-use.
+==============================================================================*/
+{
+	Widget widget;
+
+	widget=current_ThreeDDrawing;
+
+	return (widget);
+} /* X3dThreeDDrawingGetCurrent */
 
 void X3dThreeDDrawingSwapBuffers(void)
 /*******************************************************************************
