@@ -81,7 +81,6 @@ DESCRIPTION :
 	XtAppContext application_context;
 #if ! defined (USE_XTAPP_CONTEXT)
 	struct Event_dispatcher_file_descriptor_handler *main_x_connection_handler;
-	struct Event_dispatcher_idle_callback *idle_x_callback;
 	struct Event_dispatcher_idle_callback *special_idle_x_callback;
 	struct Event_dispatcher_timeout_callback *timeout_x_callback;
 #endif /* ! defined (USE_XTAPP_CONTEXT) */
@@ -176,18 +175,6 @@ Module functions
 */
 #if defined (MOTIF)
 #if ! defined (USE_XTAPP_CONTEXT)
-static int User_interface_idle_X_callback(void *user_interface_void);
-/*******************************************************************************
-LAST MODIFIED : 6 March 2002
-
-DESCRIPTION :
-This function is called to process X connections.
-==============================================================================*/
-#endif /* ! defined (USE_XTAPP_CONTEXT) */
-#endif /* defined (MOTIF) */
-
-#if defined (MOTIF)
-#if ! defined (USE_XTAPP_CONTEXT)
 static int User_interface_X_callback(int file_descriptor, 
 	void *user_interface_void)
 /*******************************************************************************
@@ -205,14 +192,6 @@ This function is called to process X connections.
 	if (user_interface=(struct User_interface *)user_interface_void)
 	{
 		XtAppProcessEvent(user_interface->application_context, XtIMAll);
-		if (!(user_interface->idle_x_callback = Event_dispatcher_add_idle_event_callback(
-			user_interface->event_dispatcher, User_interface_idle_X_callback, 
-			user_interface_void, EVENT_DISPATCHER_X_PRIORITY)))
-		{
-			display_message(ERROR_MESSAGE,
-				"User_interface_timeout_X_callback.  Unable to add idle x callback.");
-			return_code = 0;
-		}
 		return_code = 1;
 	}
 	else
@@ -250,18 +229,6 @@ This function is called to process X connections.
 		if (XtAppPending(user_interface->application_context))
 		{
 			XtAppProcessEvent(user_interface->application_context, XtIMAll);
-		}
-		/* Requeue the idle event handler */
-		if (!user_interface->idle_x_callback)
-		{
-			if (!(user_interface->idle_x_callback = Event_dispatcher_add_idle_event_callback(
-				user_interface->event_dispatcher, User_interface_idle_X_callback, 
-				user_interface_void, EVENT_DISPATCHER_X_PRIORITY)))
-			{
-				display_message(ERROR_MESSAGE,
-					"User_interface_timeout_X_callback.  Unable to add idle x callback.");
-				return_code = 0;
-			}
 		}
 	}
 	else
@@ -317,10 +284,8 @@ This function is called to process X connections.
 			}
 			else
 			{
-				/* This idle callback is finished, it will get destroyed 
+				/* This idle callback is finished, it will sleep 
 				   if we return 0 */
-				user_interface->idle_x_callback =
-					(struct Event_dispatcher_idle_callback *)NULL;
 				return_code = 0;
 			}
 		}
@@ -329,8 +294,6 @@ This function is called to process X connections.
 	{
 		display_message(ERROR_MESSAGE,
 			"User_interface_idle_X_callback.  Missing user_interface");
-		user_interface->idle_x_callback =
-			(struct Event_dispatcher_idle_callback *)NULL;
 		return_code = 0;
 	}
 	LEAVE;
@@ -1157,8 +1120,6 @@ Open the <user_interface>.
 #if ! defined (USE_XTAPP_CONTEXT)
 		user_interface->main_x_connection_handler = 
 			(struct Event_dispatcher_file_descriptor_handler *)NULL;
-		user_interface->idle_x_callback = 
-			(struct Event_dispatcher_idle_callback *)NULL;
 		user_interface->special_idle_x_callback = 
 			(struct Event_dispatcher_idle_callback *)NULL;
 		user_interface->timeout_x_callback = 
@@ -1230,27 +1191,15 @@ Open the <user_interface>.
 				user_interface->event_dispatcher, ConnectionNumber(user_interface->display),
 				User_interface_X_callback, (void *)user_interface))
 			{
-				if (user_interface->idle_x_callback = Event_dispatcher_add_idle_event_callback(
+				if (user_interface->special_idle_x_callback = Event_dispatcher_set_special_idle_callback(
 						 user_interface->event_dispatcher, User_interface_idle_X_callback, 
 						 (void *)user_interface, EVENT_DISPATCHER_X_PRIORITY))
 				{
-					if (user_interface->special_idle_x_callback = Event_dispatcher_set_special_idle_callback(
-							 user_interface->event_dispatcher, User_interface_idle_X_callback, 
-							 (void *)user_interface, EVENT_DISPATCHER_X_PRIORITY))
-					{
-						if (!XAddConnectionWatch(user_interface->display, 
-								 User_interface_X_connection_callback, (XPointer)user_interface))
-						{
-							display_message(ERROR_MESSAGE,
-								"CREATE(User_interface).  Unable to register connection watch.");
-							DEALLOCATE(user_interface);
-							user_interface = (struct User_interface *)NULL;
-						}
-					}
-					else
+					if (!XAddConnectionWatch(user_interface->display, 
+							 User_interface_X_connection_callback, (XPointer)user_interface))
 					{
 						display_message(ERROR_MESSAGE,
-							"CREATE(User_interface).  Unable to register special X connection.");
+							"CREATE(User_interface).  Unable to register connection watch.");
 						DEALLOCATE(user_interface);
 						user_interface = (struct User_interface *)NULL;
 					}
@@ -1258,7 +1207,7 @@ Open the <user_interface>.
 				else
 				{
 					display_message(ERROR_MESSAGE,
-						"CREATE(User_interface).  Unable to register idle X connection.");
+						"CREATE(User_interface).  Unable to register special X connection.");
 					DEALLOCATE(user_interface);
 					user_interface = (struct User_interface *)NULL;
 				}
