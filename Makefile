@@ -37,16 +37,16 @@ cmgui-static cmgui-static-debug : STATIC_LINK_OPTION=STATIC_LINK=$(STATIC_LINK)
 cmgui-static cmgui-static-debug : STATIC_LINK=true
 cmgui cmgui-static cmgui64 cmgui-console cmgui-gtk : DEBUG_OPTION=DEBUG=$(DEBUG)
 cmgui cmgui-static cmgui64 cmgui-console cmgui-gtk : DEBUG=false
-cmgui-debug cmgui-debug-memorycheck cmgui-static-debug cmgui64-debug : DEBUG_OPTION=DEBUG=$(DEBUG)
-cmgui-debug cmgui-debug-memorycheck cmgui-static-debug cmgui64-debug : DEBUG=true
+cmgui-debug cmgui-debug-memorycheck cmgui-static-debug cmgui64-debug cmgui-gtk-debug : DEBUG_OPTION=DEBUG=$(DEBUG)
+cmgui-debug cmgui-debug-memorycheck cmgui-static-debug cmgui64-debug cmgui-gtk-debug : DEBUG=true
 cmgui64 cmgui64-debug utilities64 : ABI_OPTION=ABI=$(ABI)
 cmgui64 cmgui64-debug utilities64 : ABI=64
 cmgui-debug-memorycheck : MEMORYCHECK_OPTION=MEMORYCHECK=$(MEMORYCHECK)
 cmgui-debug-memorycheck : MEMORYCHECK=true
 cmgui-console : USER_INTERFACE_OPTION=USER_INTERFACE=$(USER_INTERFACE)
 cmgui-console : USER_INTERFACE=CONSOLE_USER_INTERFACE
-cmgui-gtk : USER_INTERFACE_OPTION=USER_INTERFACE=$(USER_INTERFACE)
-cmgui-gtk : USER_INTERFACE=GTK_USER_INTERFACE
+cmgui-gtk cmgui-gtk-debug : USER_INTERFACE_OPTION=USER_INTERFACE=$(USER_INTERFACE)
+cmgui-gtk cmgui-gtk-debug : USER_INTERFACE=GTK_USER_INTERFACE
 
 utilities utilities64 : TARGET_OPTION=utilities
 utilities utilities64 : force
@@ -97,7 +97,7 @@ update :
 		ssh cmiss@$(ESU_BUILD_MACHINE) 'cd $(ESU_BUILD_PATH) ; $(MAKE) -f $(MAKEFILE) $(ESU_BUILD_LIST)' && \
 		ssh cmiss@$(ESP_BUILD_MACHINE) 'cd $(ESP_BUILD_PATH) ; $(MAKE) -f $(MAKEFILE) $(ESP_BUILD_LIST)' && \
 		ssh cmiss@$(HPC1_BUILD_MACHINE) 'cd $(HPC1_BUILD_PATH) ; $(MAKE) -f $(MAKEFILE) $(HPC1_BUILD_LIST)' && \
-		ssh cmiss@130.216.209.167 'setenv CMISS_ROOT /product/cmiss ; cd $(PRODUCT_PATH) ; $(MAKE) -f $(MAKEFILE) cmgui-gtk && /home/blackett/bin/cross-make -f $(MAKEFILE) cmgui-gtk' ; \
+		ssh cmiss@130.216.209.167 'setenv CMISS_ROOT /product/cmiss ; cd $(PRODUCT_PATH) ; $(MAKE) -f $(MAKEFILE) cmgui-gtk cmgui-gtk-debug && /home/blackett/bin/cross-make -f $(MAKEFILE) cmgui-gtk' ; \
 	else \
 		ssh cmiss@$(ESU_BUILD_MACHINE) 'cd $(ESU_BUILD_PATH) ; $(MAKE) -f $(MAKEFILE) update' ; \
 	fi
