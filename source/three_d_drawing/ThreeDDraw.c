@@ -1929,21 +1929,28 @@ supplied drawable the current GL source.
 	if (read_drawable && current_ThreeDDrawing)
 	{
 		drawing_widget=(ThreeDDrawingWidget)current_ThreeDDrawing;
-#if defined (GLX_SGI_make_current_read)
+#if defined (SGI) && defined (GLX_SGI_make_current_read)
+		/* SAB Mesa defines this extension everywhere even though it is only
+			available and used on SGI */
+		/* SAB Could add better GLX extension support similar to that provided for
+			normal GL in graphics/graphics_library but it would have to be down
+			here somewhere, maybe three_d_drawing/graphics_buffer */
 		if (!glXMakeCurrentReadSGI(XtDisplay(current_ThreeDDrawing),
-			XtWindow(current_ThreeDDrawing),
-			read_drawable,
+			XtWindow(current_ThreeDDrawing), read_drawable,
 			(drawing_widget)->three_d_drawing.normal_buffer.rendering_context))
 		{
 			display_message(ERROR_MESSAGE,"X3dThreeDDrawingMakeCurrent.  Unable to make current read and draw drawables\n");
 		}
-#endif /* defined (GLX_SGI_make_current_read) */
+#else /* defined (SGI) && defined (GLX_SGI_make_current_read) */
+		display_message(ERROR_MESSAGE, "X3dThreeDDrawingAddReadContext.  "
+			"GLX_SGI_make_current_read is not supported with this display or executable.");
+#endif /* defined (SGI) && defined (GLX_SGI_make_current_read) */
 	}
 	else
 	{
-		display_message(ERROR_MESSAGE,"X3dThreeDDrawingMakeCurrent.  Missing widget\n");
+		display_message(ERROR_MESSAGE,"X3dThreeDDrawingAddReadContext.  Missing widget\n");
 	}
-} /* X3dThreeDDrawingMakeCurrent */
+} /* X3dThreeDDrawingAddReadContext */
 
 void X3dThreeDDrawingRemakeCurrent(void)
 /*******************************************************************************
