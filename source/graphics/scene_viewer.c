@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : scene_viewer.c
 
-LAST MODIFIED : 27 November 2001
+LAST MODIFIED : 11 February 2002
 
 DESCRIPTION :
 Three_D_drawing derivative for viewing a Scene from an arbitrary position.
@@ -237,7 +237,7 @@ DEFINE_CALLBACK_FUNCTIONS(Scene_viewer_destroy, \
 static int Scene_viewer_render_background_texture(
 	struct Scene_viewer *scene_viewer,int viewport_width,int viewport_height)
 /*******************************************************************************
-LAST MODIFIED : 5 April 2000
+LAST MODIFIED : 11 February 2002
 
 DESCRIPTION :
 ==============================================================================*/
@@ -246,9 +246,9 @@ DESCRIPTION :
 		distortion_centre_x,distortion_centre_y,distortion_factor_k1,
 		dist_x,dist_y1,dist_y2,min_x,max_x,min_y,max_y,tex_ratio_x,tex_ratio_y,
 		viewport_texture_height,viewport_texture_width;
-	float centre_x,centre_y,factor_k1,texture_width,texture_height;
+	float centre_x,centre_y,factor_k1,texture_width,texture_height,texture_depth;
 	GLdouble viewport_left,viewport_right,viewport_bottom,viewport_top;
-	int height_texels,i,j,k,min_i,max_i,min_j,max_j,return_code,
+	int depth_texels, height_texels,i,j,k,min_i,max_i,min_j,max_j,return_code,
 		texels_per_polygon_x,texels_per_polygon_y,width_texels;
 
 	ENTER(Scene_viewer_render_background_texture);
@@ -256,9 +256,9 @@ DESCRIPTION :
 	{
 		/* get information about the texture */
 		Texture_get_original_size(scene_viewer->background_texture,
-			&width_texels,&height_texels);
+			&width_texels, &height_texels, &depth_texels);
 		Texture_get_physical_size(scene_viewer->background_texture,
-			&texture_width,&texture_height);
+			&texture_width, &texture_height, &texture_depth);
 		tex_ratio_x=texture_width/width_texels;
 		tex_ratio_y=texture_height/height_texels;
 		/* note the texture stores radial distortion parameters in terms
