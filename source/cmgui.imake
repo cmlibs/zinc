@@ -31,7 +31,9 @@ XCOMM ==========================================================================
 SHELL=/bin/sh
 
 #define PERL_INTERPRETER
-
+#if defined (aix)
+#define aix aix
+#endif
 BIN_PATH=$(CMGUI_DEV_ROOT)/bin
 SOURCE_PATH=$(CMGUI_DEV_ROOT)/source
 UTILITIES_PATH=$(CMGUI_DEV_ROOT)/utilities
@@ -197,6 +199,75 @@ PRODUCT_OBJECT_PATH=$(PRODUCT_PATH)/object/cmgui/linux_g
 UIDH_PATH=$(CMGUI_DEV_ROOT)/uidh/cmgui/linux_g
 PRODUCT_UIDH_PATH=$(PRODUCT_PATH)/uidh/cmgui/linux_g
 #endif /* defined (OPTIMISED) */
+#elif defined (AIX) /* switch OperatingSystem */
+#define MIRAGE
+#define UNEMAP
+/*#define CELL*/
+#define IMAGEMAGICK
+#if defined (O64)
+#if defined (OPTIMISED)
+#define Target cmgui_aix64_optimised
+#define SpacesToTabsTarget spaces_to_tabs_aix
+#define TabsToSpacesTarget tabs_to_spaces_aix
+#define Uid2uidhTarget uid2uidh_aix
+#define Makefile cmgui_aix64_optimised.make
+#define DependMake cmgui_aix64_optimised.depend
+#define ObjSuffix o
+OBJECT_PATH=$(CMGUI_DEV_ROOT)/object/cmgui/aix64_optimised
+PRODUCT_OBJECT_PATH=$(PRODUCT_PATH)/object/cmgui/aix64_optimised
+UIDH_PATH=$(CMGUI_DEV_ROOT)/uidh/cmgui/aix64_optimised
+PRODUCT_UIDH_PATH=$(PRODUCT_PATH)/uidh/cmgui/aix64_optimised
+#else /* defined (OPTIMISED) */
+#define Target cmgui_aix64
+#define SpacesToTabsTarget spaces_to_tabs_aix
+#define TabsToSpacesTarget tabs_to_spaces_aix
+#define Uid2uidhTarget uid2uidh_aix
+#define Makefile cmgui_aix64.make
+#define DependMake cmgui_aix64.depend
+#define ObjSuffix o
+OBJECT_PATH=$(CMGUI_DEV_ROOT)/object/cmgui/aix64
+PRODUCT_OBJECT_PATH=$(PRODUCT_PATH)/object/cmgui/aix64
+UIDH_PATH=$(CMGUI_DEV_ROOT)/uidh/cmgui/aix64
+PRODUCT_UIDH_PATH=$(PRODUCT_PATH)/uidh/cmgui/aix64
+#endif /* defined (OPTIMISED) */
+#else /* defined (O64) */
+#if defined (OPTIMISED)
+#define Target cmgui_aix_optimised
+#define SpacesToTabsTarget spaces_to_tabs_aix
+#define TabsToSpacesTarget tabs_to_spaces_aix
+#define Uid2uidhTarget uid2uidh_aix
+#define Makefile cmgui_aix_optimised.make
+#define DependMake cmgui_aix_optimised.depend
+#define ObjSuffix o
+OBJECT_PATH=$(CMGUI_DEV_ROOT)/object/cmgui/aix_optimised
+PRODUCT_OBJECT_PATH=$(PRODUCT_PATH)/object/cmgui/aix_optimised
+UIDH_PATH=$(CMGUI_DEV_ROOT)/uidh/cmgui/aix_optimised
+PRODUCT_UIDH_PATH=$(PRODUCT_PATH)/uidh/cmgui/aix_optimised
+#else /* defined (OPTIMISED) */
+#if defined (MEMORY_CHECK)
+#define Target cmgui_aix_memorycheck
+#define SpacesToTabsTarget spaces_to_tabs_aix
+#define TabsToSpacesTarget tabs_to_spaces_aix
+#define Uid2uidhTarget uid2uidh_aix
+#define Makefile cmgui_aix_memorycheck.make
+#define DependMake cmgui_aix_memorycheck.depend
+#define ObjSuffix o
+#else /* defined (MEMORY_CHECK) */
+#define Target cmgui_aix
+#define SpacesToTabsTarget spaces_to_tabs_aix
+#define TabsToSpacesTarget tabs_to_spaces_aix
+#define Uid2uidhTarget uid2uidh_aix
+#define Makefile cmgui_aix.make
+#define DependMake cmgui_aix.depend
+#define ObjSuffix o
+#endif /* defined (MEMORY_CHECK) */
+/* Can't use aix on its own as this is defined! */
+OBJECT_PATH=$(CMGUI_DEV_ROOT)/object/cmgui/aix_g
+PRODUCT_OBJECT_PATH=$(PRODUCT_PATH)/object/cmgui/aix_g
+UIDH_PATH=$(CMGUI_DEV_ROOT)/uidh/cmgui/aix_g
+PRODUCT_UIDH_PATH=$(PRODUCT_PATH)/uidh/cmgui/aix_g
+#endif /* defined (OPTIMISED) */
+#endif /* defined (O64) */
 #endif /* switch OperatingSystem */
 
 #if defined (CMISS_ROOT_DEFINED)
@@ -214,6 +285,8 @@ SOURCE_DIRECTORY_INC = -I$(SOURCE_PATH) -I$(PRODUCT_SOURCE_PATH)
 PLATFORM_SWITCH = -DSGI -Dmips -DCMGUI 
 #elif defined(LINUX) /* switch OperatingSystem */
 PLATFORM_SWITCH = -DGENERIC_PC -DCMGUI 
+#elif defined(AIX) /* switch OperatingSystem */
+PLATFORM_SWITCH = -DAIX -DCMGUI 
 #endif /* switch OperatingSystem */
 
 #if defined (OLD_CODE)
@@ -259,6 +332,9 @@ GRAPHICS_LIB = -L/usr/local/lib -lGL -lGLU
 /*GRAPHICS_LIB = -L/home/blackett/lib -lGL -lGLU*/
 /*GRAPHICS_LIB = -L/home/nickerso/cmiss/cmgui -lMesaGL -lMesaGLU*/
 #endif /* defined (DYNAMIC_GL_LINUX) */
+#elif defined(AIX) /* switch OperatingSystem */
+GRAPHICS_LIBRARY_SWITCH = -DOPENGL_API
+GRAPHICS_LIB = -lGL -lGLU
 #endif /* switch OperatingSystem */
 #if defined (OLD_CODE)
 XCOMM GRAPHICS_LIB = -delay_load -lmoviefile -delay_load -lmovieplay -lGL -lGLU -delay_load -ldmedia
@@ -273,6 +349,8 @@ XCOMM   trouble with some visuals
 THREE_D_DRAWING_DEFINES = 
 #elif defined(LINUX) /* switch OperatingSystem */
 THREE_D_DRAWING_DEFINES = -DINSTALL_COLOURMAP -DUSING_MESA
+#elif defined(AIX) /* switch OperatingSystem */
+THREE_D_DRAWING_DEFINES = 
 #endif /* switch OperatingSystem */
 
 CONNECTIVITY_DEFINES = -DLINK_CMISS
@@ -308,6 +386,15 @@ IMAGEMAGICK_LIB = $(IMAGEMAGICK_PATH)/libirix-n32/libMagick.a $(IMAGEMAGICK_PATH
 IMAGEMAGICK_SWITCH = -DIMAGEMAGICK -D_FILE_OFFSET_BITS=64
 IMAGEMAGICK_INC = -I$(IMAGEMAGICK_PATH)/includelinux/
 IMAGEMAGICK_LIB = $(IMAGEMAGICK_PATH)/liblinux/libMagick.a $(IMAGEMAGICK_PATH)/liblinux/libtiff.a $(IMAGEMAGICK_PATH)/liblinux/libpng.a $(IMAGEMAGICK_PATH)/liblinux/libjpeg.a $(IMAGEMAGICK_PATH)/liblinux/libxml2.a $(IMAGEMAGICK_PATH)/liblinux/libz.a
+#elif defined (AIX) /* switch OperatingSystem */
+IMAGEMAGICK_SWITCH = -DIMAGEMAGICK
+#if defined (O64)
+IMAGEMAGICK_INC = -I$(IMAGEMAGICK_PATH)/includeaix-64/
+IMAGEMAGICK_LIB = $(IMAGEMAGICK_PATH)/libaix-64/libMagick.a $(IMAGEMAGICK_PATH)/libaix-64/libtiff.a $(IMAGEMAGICK_PATH)/libaix-64/libpng.a $(IMAGEMAGICK_PATH)/libaix-64/libjpeg.a $(IMAGEMAGICK_PATH)/libaix-64/libxml2.a $(IMAGEMAGICK_PATH)/libaix-64/libz.a /usr/lib/libiconv.a
+#else /* defined (O64) */
+IMAGEMAGICK_INC = -I$(IMAGEMAGICK_PATH)/includeaix-32/
+IMAGEMAGICK_LIB = $(IMAGEMAGICK_PATH)/libaix-32/libMagick.a $(IMAGEMAGICK_PATH)/libaix-32/libtiff.a $(IMAGEMAGICK_PATH)/libaix-32/libpng.a $(IMAGEMAGICK_PATH)/libaix-32/libjpeg.a $(IMAGEMAGICK_PATH)/libaix-32/libxml2.a $(IMAGEMAGICK_PATH)/libaix-32/libz.a /usr/lib/libiconv.a
+#endif /* defined (O64) */
 #endif /* switch OperatingSystem */
 #endif /* !defined (IMAGEMAGICK) */
 
@@ -352,6 +439,12 @@ INTERPRETER_LIB = $(INTERPRETER_PATH)/lib/mips4-n32/libperlinterpreter-opt.a
 #endif /* defined (O64) */
 #elif defined(LINUX) /* switch OperatingSystem */
 INTERPRETER_LIB = $(INTERPRETER_PATH)/lib/linux86/libperlinterpreter-opt.a
+#elif defined(AIX) /* switch OperatingSystem */
+#if defined (O64)
+INTERPRETER_LIB = $(INTERPRETER_PATH)/lib/aix-64/libperlinterpreter-opt.a
+#else /* defined (O64) */
+INTERPRETER_LIB = $(INTERPRETER_PATH)/lib/aix-32/libperlinterpreter-opt.a
+#endif /* defined (O64) */
 #endif /* switch OperatingSystem */
 #endif /* !defined (PERL_INTERPRETER) */
 
@@ -552,6 +645,14 @@ WORMHOLE_INC = -I${WORMHOLE_PATH}/source
 #elif defined(LINUX) /* switch OperatingSystem */
 WORMHOLE_LIB = -L${WORMHOLE_PATH}/lib -lwormhole_linux
 WORMHOLE_INC = -I${WORMHOLE_PATH}/source
+#elif defined(AIX) /* switch OperatingSystem */
+#if defined (O64)
+WORMHOLE_LIB = -L${WORMHOLE_PATH}/lib -lwormhole_aix64
+WORMHOLE_INC = -I${WORMHOLE_PATH}/source
+#else /* defined (O64) */
+WORMHOLE_LIB = -L${WORMHOLE_PATH}/lib -lwormhole_aix
+WORMHOLE_INC = -I${WORMHOLE_PATH}/source
+#endif /* defined (O64) */
 #endif /* switch OperatingSystem */
 
 
@@ -695,6 +796,12 @@ LIB = $(X_LIB)/libMrm.a $(X_LIB)/libXm.a $(X_LIB)/libXt.a $(X_LIB)/libX11.a $(X_
 #else /* defined (DYNAMIC_GL_LINUX) */
 LIB = -lMrm -lXm -lXt -lX11 -lXmu -lXext -lg2c -lm -ldl -lXp -lSM -lICE -lpthread -lcrypt -lstdc++
 #endif /* defined (DYNAMIC_GL_LINUX) */
+#elif defined(AIX) /* switch OperatingSystem */
+#if defined (O64)
+LIB = -lMrm -lXm -lXt -lX11 -lXmu -lXext -lm -pg -ldl -lSM -lICE -lpthread -lcrypt -lbsd -lld -lC128
+#else */ defined (O64) */
+LIB = -lMrm -lXm -lXt -lX11 -lXmu -lXext -lm -ldl -lSM -lICE -lpthread -lcrypt -lbsd -lld -lC128
+#endif /* defined (O64) */
 #endif /* switch OperatingSystem */
 
 #if defined (LINUX)
@@ -1037,7 +1144,7 @@ LIB_FILT_OBJS = $(LIB_FILT_OBJSB:.f=.ObjSuffix)
 #endif /* defined (MEMORY_CHECK) */
 
 depend :
-	echo -n > DependMake
+	echo > DependMake
 	(makedepend -f DependMake -o.ObjSuffix -Y -- $(ALL_FLAGS) -- cmgui.c 2> DependMake.tmp)
 	(makedepend -f DependMake -o.ObjSuffix -Y -a -- $(ALL_FLAGS) -- $(SRCS_1) 2>> DependMake.tmp)
 	(makedepend -f DependMake -o.ObjSuffix -Y -a -- $(ALL_FLAGS) -- $(SRCS_2) 2>> DependMake.tmp)
@@ -1243,6 +1350,8 @@ Target : $(OBJS) cmgui.ObjSuffix $(OBJECT_PATH)/$(EXPORTS_FILE)
 #if defined (IRIX) /* switch OperatingSystem */
 	cd $(OBJECT_PATH) ; (ls $(OBJS) cmgui.ObjSuffix 2>&1 | sed "s%Cannot access %product_object/%;s%: No such file or directory%%;s%UX:ls: ERROR: %%" > object.list)
 #elif defined(LINUX) /* switch OperatingSystem */
+	cd $(OBJECT_PATH) ; (ls $(OBJS) cmgui.ObjSuffix 2>&1 | sed "s%ls: %product_object/%;s%: No such file or directory%%" > object.list)
+#elif defined(AIX) /* switch OperatingSystem */
 	cd $(OBJECT_PATH) ; (ls $(OBJS) cmgui.ObjSuffix 2>&1 | sed "s%ls: %product_object/%;s%: No such file or directory%%" > object.list)
 #endif /* switch OperatingSystem */
 	cd $(OBJECT_PATH) ; \

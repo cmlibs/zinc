@@ -118,6 +118,28 @@ TARGET_TYPE_FLAGS =
 TARGET_TYPE_DEFINES =
 #endif /* defined (OPTIMISED) */
 #elif defined(AIX) /* switch OperatingSystem */
+UIL = uil
+CC = xlc -c
+CPP = xlc -qnolm -c
+FORTRAN = f77 -c
+LINK = xlc
+#if defined (OPTIMISED)
+OPTIMISATION_FLAGS = -O2 -qmaxmem=-1
+#else /* defined (OPTIMISED) */
+OPTIMISATION_FLAGS = -g
+#endif /* defined (OPTIMISED) */
+COMPILE_FLAGS = 
+COMPILE_DEFINES = 
+STRICT_FLAGS = 
+DIGITAL_MEDIA_NON_STRICT_FLAGS = 
+DIGITAL_MEDIA_NON_STRICT_FLAGS_PATTERN = NONE /* Must specify a pattern that doesn't match */
+#if defined (O64)
+TARGET_TYPE_FLAGS =  -q64
+TARGET_TYPE_DEFINES = -DO64
+#else /* defined (O64) */
+TARGET_TYPE_FLAGS = -q32
+TARGET_TYPE_DEFINES =
+#endif /* defined (O64) */
 #if defined (O64)
 AR_FLAGS = -X64
 #endif /* defined (O64) */
@@ -261,8 +283,14 @@ oscheck :
 	@echo -n > /dev/null
 	/* Do something that only works under LINUX */
 #else /* defined (LINUX) */
+#if defined (AIX)
+oscheck :
+	@echo -n > /dev/null
+	/* Do something that only works under AIX */
+#else /* defined (AIX) */
 oscheck :
 	echo "No known operating system defined for imake"
+#endif  /* defined (AIX) */
 #endif  /* defined (LINUX) */
 #endif  /* defined (IRIX) */
 
@@ -310,6 +338,25 @@ Target: $(OBJS)                                                                 
 	ln -s $(PRODUCT_OBJECT_PATH) product_object ; \                                   @@\
 	(ls $(OBJS) 2>&1 | sed "s%ls: %product_object/%;s%: No such file or directory%%" > object.list)  ; \ @@\
 	$(LINK) -o UTILITIES_PATH/Target $(ALL_FLAGS) `cat object.list` LIBS
+#elif defined (AIX) /* switch OperatingSystem */
+		/* Note: You can't do the switch inside the macro definition */
+#define BuildNormalTarget(Target, UTILITIES_PATH, SRCS, OBJSA, OBJSB, OBJS, LIBS)    @@\
+OBJSA = $(SRCS:.c=.ObjSuffix)                                                        @@\
+OBJSB = $(OBJSA:.cpp=.ObjSuffix)                                                     @@\
+OBJS = $(OBJSB:.f=.ObjSuffix)                                                        @@\
+                                                                                     @@\
+Target: $(OBJS)                                                                      @@\
+	@if [ ! -d $(OBJECT_PATH) ]; then \                                               @@\
+		mkdir -p $(OBJECT_PATH); \                                                     @@\
+	fi	                                                                               @@\
+	@if [ ! -d `dirname UTILITIES_PATH/Target` ]; then \                              @@\
+		mkdir -p `dirname UTILITIES_PATH/Target` ; \                                   @@\
+	fi                                                                                @@\
+	cd $(OBJECT_PATH) ; \                                                             @@\
+	rm -f product_object ; \                                                          @@\
+	ln -s $(PRODUCT_OBJECT_PATH) product_object ; \                                   @@\
+	(ls $(OBJS) 2>&1 | sed "s%Cannot access %product_object/%;s%: No such file or directory%%" > object.list) ; \  @@\
+	$(LINK) -o UTILITIES_PATH/Target $(ALL_FLAGS) `cat object.list` LIBS
 #endif /* switch OperatingSystem */
 
 #if defined (IRIX) /* switch OperatingSystem */
@@ -333,6 +380,25 @@ Target: $(OBJS)                                                                 
 	rm -f UTILITIES_PATH/Target ; \
 	ar $(AR_FLAGS) cr UTILITIES_PATH/Target $(OBJS)
 #elif defined(LINUX) /* switch OperatingSystem */
+#define BuildLibraryTarget(Target, UTILITIES_PATH, SRCS, OBJSA, OBJSB, OBJS, LIBS)    @@\
+OBJSA = $(SRCS:.c=.ObjSuffix)                                                        @@\
+OBJSB = $(OBJSA:.cpp=.ObjSuffix)                                                     @@\
+OBJS = $(OBJSB:.f=.ObjSuffix)                                                        @@\
+                                                                                     @@\
+Target: $(OBJS)                                                                      @@\
+	@if [ ! -d $(OBJECT_PATH) ]; then \                                               @@\
+		mkdir -p $(OBJECT_PATH); \                                                     @@\
+	fi	                                                                               @@\
+	@if [ ! -d `dirname UTILITIES_PATH/Target` ]; then \                              @@\
+		mkdir -p `dirname UTILITIES_PATH/Target` ; \                                   @@\
+	fi                                                                                @@\
+	cd $(OBJECT_PATH) ; \                                                             @@\
+	rm -f product_object ; \                                                          @@\
+	ln -s $(PRODUCT_OBJECT_PATH) product_object ; \                                   @@\
+	(ls $(OBJS) 2>&1 | sed "s%ls: %product_object/%;s%: No such file or directory%%" > object.list)  ; \ @@\
+	rm -f UTILITIES_PATH/Target ; \
+	ar $(AR_FLAGS) cr UTILITIES_PATH/Target $(OBJS)
+#elif defined(AIX) /* switch OperatingSystem */
 #define BuildLibraryTarget(Target, UTILITIES_PATH, SRCS, OBJSA, OBJSB, OBJS, LIBS)    @@\
 OBJSA = $(SRCS:.c=.ObjSuffix)                                                        @@\
 OBJSB = $(OBJSA:.cpp=.ObjSuffix)                                                     @@\

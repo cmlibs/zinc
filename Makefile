@@ -169,6 +169,55 @@ $(SOURCE_PATH)/cmgui_linux_optimised_dynamic.make : $(SOURCE_PATH)/cmgui.imake $
 	$(COMMON_IMAKE_RULE) \
 	imake -DLINUX -DOPTIMISED -DDYNAMIC_GL_LINUX $${CMISS_ROOT_DEF} -s cmgui_linux_optimised_dynamic.make $${CMGUI_IMAKE_FILE} $${COMMON_IMAKE_FILE};
 
+#AIX version
+cmgui_aix : force $(SOURCE_PATH)/cmgui_aix.make
+	$(COMMON_MAKE_RULE) \
+	if [ -f cmgui_aix.make ]; then \
+		$(MAKE) -f cmgui_aix.make $(TARGET) ; \
+	else \
+		$(MAKE) -f $(PRODUCT_SOURCE_PATH)/cmgui_aix.make $(TARGET) ; \
+	fi
+
+$(SOURCE_PATH)/cmgui_aix.make : $(SOURCE_PATH)/cmgui.imake $(SOURCE_PATH)/common.imake cmgui.make
+	$(COMMON_IMAKE_RULE) \
+	imake -DAIX $${CMISS_ROOT_DEF} -s cmgui_aix.make $${CMGUI_IMAKE_FILE} $${COMMON_IMAKE_FILE};
+
+cmgui_aix_optimised : force $(SOURCE_PATH)/cmgui_aix_optimised.make
+	$(COMMON_MAKE_RULE) \
+	if [ -f cmgui_aix_optimised.make ]; then \
+		$(MAKE) -f cmgui_aix_optimised.make $(TARGET) ; \
+	else \
+		$(MAKE) -f $(PRODUCT_SOURCE_PATH)/cmgui_aix_optimised.make $(TARGET) ; \
+	fi
+
+$(SOURCE_PATH)/cmgui_aix_optimised.make : $(SOURCE_PATH)/cmgui.imake $(SOURCE_PATH)/common.imake cmgui.make
+	$(COMMON_IMAKE_RULE) \
+	imake -DAIX -DOPTIMISED $${CMISS_ROOT_DEF} -s cmgui_aix_optimised.make $${CMGUI_IMAKE_FILE} $${COMMON_IMAKE_FILE};
+
+cmgui_aix64 : force $(SOURCE_PATH)/cmgui_aix64.make
+	$(COMMON_MAKE_RULE) \
+	if [ -f cmgui_aix64.make ]; then \
+		$(MAKE) -f cmgui_aix64.make $(TARGET) ; \
+	else \
+		$(MAKE) -f $(PRODUCT_SOURCE_PATH)/cmgui_aix64.make $(TARGET) ; \
+	fi
+
+$(SOURCE_PATH)/cmgui_aix64.make : $(SOURCE_PATH)/cmgui.imake $(SOURCE_PATH)/common.imake cmgui.make
+	$(COMMON_IMAKE_RULE) \
+	imake -DAIX -DO64 $${CMISS_ROOT_DEF} -s cmgui_aix64.make $${CMGUI_IMAKE_FILE} $${COMMON_IMAKE_FILE};
+
+cmgui_aix64_optimised : force $(SOURCE_PATH)/cmgui_aix64_optimised.make
+	$(COMMON_MAKE_RULE) \
+	if [ -f cmgui_aix64_optimised.make ]; then \
+		$(MAKE) -f cmgui_aix64_optimised.make $(TARGET) ; \
+	else \
+		$(MAKE) -f $(PRODUCT_SOURCE_PATH)/cmgui_aix64_optimised.make $(TARGET) ; \
+	fi
+
+$(SOURCE_PATH)/cmgui_aix64_optimised.make : $(SOURCE_PATH)/cmgui.imake $(SOURCE_PATH)/common.imake cmgui.make
+	$(COMMON_IMAKE_RULE) \
+	imake -DAIX -DO64 -DOPTIMISED $${CMISS_ROOT_DEF} -s cmgui_aix64_optimised.make $${CMGUI_IMAKE_FILE} $${COMMON_IMAKE_FILE};
+
 update :
 	if ( [ "$(PWD)" -ef "$(PRODUCT_PATH)" ] && [ "$(USER)" = "cmiss" ] ); then \
 		cd $(PRODUCT_SOURCE_PATH) && \
