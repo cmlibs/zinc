@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : posdat2sig.c
 
-LAST MODIFIED : 22 March 1999
+LAST MODIFIED : 27 November 2001
 
 DESCRIPTION :
 Combines a .pos file and a .dat file (eeg mapping with Blake Johnson) into a
@@ -11,6 +11,7 @@ Combines a .pos file and a .dat file (eeg mapping with Blake Johnson) into a
 #include <stdlib.h>
 #include <stdio.h>
 #include <ctype.h>
+#include <math.h>
 	/*???DB.  Contains definition of __BYTE_ORDER for Linux */
 #include "general/debug.h"
 #include "general/geometry.h"
@@ -18,7 +19,7 @@ Combines a .pos file and a .dat file (eeg mapping with Blake Johnson) into a
 
 int main(int argc,char *argv[])
 /*******************************************************************************
-LAST MODIFIED : 22 March 1999
+LAST MODIFIED : 27 November 2001
 
 DESCRIPTION :
 ==============================================================================*/
@@ -28,7 +29,6 @@ DESCRIPTION :
 	float sampling_frequency=1/0.00375,*signal_value,x,y,z;
 	int device_number,i,j,k,number_of_signals,number_of_samples,return_code=0,
 		*time;
-	long int img_file_size;
 	struct Channel *channel;
 	struct Device **device,**devices;
 	struct Device_description *description;
@@ -391,5 +391,6 @@ DESCRIPTION :
 		return_code=0;
 	}
 
-	return (return_code);
+	/* zero is the return code for success with shell programs -- hence the not: */
+	return (!return_code);
 } /* main */
