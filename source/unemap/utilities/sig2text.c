@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : sig2text.c
 
-LAST MODIFIED : 13 May 2004
+LAST MODIFIED : 14 May 2004
 
 DESCRIPTION :
 Writes out a signal file as text with devices across and time down.  The columns
@@ -15,7 +15,7 @@ are tab separated.
 #include <ctype.h>
 #include <math.h>
 #include "general/debug.h"
-#include "unemap/rig.h"
+#include "unemap/analysis.h"
 #include "user_interface/message.h"
 
 enum Output_signals
@@ -28,7 +28,7 @@ int main(int argc,char *argv[])
 {
 	char *cnfg_file_name,*output_file_name,*signal_file_name,*temp_string;
 	enum Output_signals output_signals;
-	FILE *output_file,*signal_file;
+	FILE *output_file;
 	float frequency,gain,offset;
 	int arg_number,i,j,length,number_of_devices,number_of_signals,return_code,
 		*time;
@@ -112,13 +112,29 @@ int main(int argc,char *argv[])
 	}
 	if (return_code)
 	{
+		char calculate_events;
+		enum Datum_type datum_type;
+		enum Edit_order edit_order;
+		enum Event_detection_algorithm detection;
+		enum Signal_order signal_order;
+		float level;
+		int analysis_information,datum,average_width,end_search_interval,
+			event_number,minimum_separation,number_of_events,potential_time,
+			start_search_interval,threshold;
+
 		return_code=0;
 		/* read the signal file */
 		signal_rig=(struct Rig *)NULL;
-		if ((signal_file=fopen(signal_file_name,"rb"))&&
-			read_signal_file(signal_file,&signal_rig))
+		if (analysis_read_signal_file(signal_file_name,&signal_rig,
+			&analysis_information,&datum,&calculate_events,&detection,
+			&event_number,&number_of_events,&potential_time,&minimum_separation,
+			&threshold,&datum_type,&edit_order,&signal_order,&start_search_interval,
+			&end_search_interval,&level,&average_width
+#if defined (UNEMAP_USE_3D)
+			,(struct Unemap_package *)NULL
+#endif /* defined (UNEMAP_USE_NODES) */
+			))
 		{
-			fclose(signal_file);
 			/* open the signal text file */
 			if (output_file=fopen(output_file_name,"w"))
 			{

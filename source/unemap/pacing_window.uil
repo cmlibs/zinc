@@ -1,7 +1,7 @@
 !*******************************************************************************
 !FILE : pacing_window.uil
 !
-!LAST MODIFIED : 8 August 2003
+!LAST MODIFIED : 14 May 2004
 !
 !DESCRIPTION :
 !The widgets/gadgets for the pacing window in the acquisition work area.
@@ -45,6 +45,7 @@ procedure
 	id_pacing_number_of_si_dec;
 	decrement_number_of_si;
 	id_pacing_number_of_si_value;
+	ch_pacing_number_of_si_value;
 	id_pacing_number_of_si_inc;
 	increment_number_of_si;
 	id_pacing_si_length_value;
@@ -954,7 +955,7 @@ object
 			XmArrowButtonGadget pacing_s_number_inc;
 			XmLabel pacing_number_of_si_label;
 			XmArrowButtonGadget pacing_number_of_si_dec;
-			XmLabel pacing_number_of_si_value;
+			XmTextField pacing_number_of_si_value;
 			XmArrowButtonGadget pacing_number_of_si_inc;
 			XmLabel pacing_si_length_label;
 			XmTextField pacing_si_length_value;
@@ -1098,13 +1099,12 @@ object
 				};
 			};
 		};
-	pacing_number_of_si_value: XmLabel
+	pacing_number_of_si_value: XmTextField
 		{
 		arguments
 			{
-			XmNlabelString = compound_string("");
+			XmNcolumns = 3;
 			XmNfontList = button_font;
-			XmNalignment = XmALIGNMENT_END;
 			XmNleftAttachment = XmATTACH_WIDGET;
 			XmNleftOffset = widget_spacing;
 			XmNleftWidget = XmArrowButtonGadget pacing_number_of_si_dec;
@@ -1120,6 +1120,14 @@ object
 				{
 				id_pacing_number_of_si_value(pacing_window_structure);
 				};
+			XmNactivateCallback = procedures
+				{
+				ch_pacing_number_of_si_value(pacing_window_structure);
+				};
+			XmNlosingFocusCallback = procedures
+				{
+				ch_pacing_number_of_si_value(pacing_window_structure);
+				};
 			};
 		};
 	pacing_number_of_si_inc: XmArrowButtonGadget
@@ -1131,7 +1139,7 @@ object
 			XmNhighlightThickness = 0;
 			XmNleftAttachment = XmATTACH_WIDGET;
 			XmNleftOffset = widget_spacing;
-			XmNleftWidget = XmLabel pacing_number_of_si_value;
+			XmNleftWidget = XmTextField pacing_number_of_si_value;
 			XmNrightAttachment = XmATTACH_NONE;
 			XmNtopAttachment = XmATTACH_FORM;
 			XmNtopOffset = 0;

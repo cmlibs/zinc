@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : pacing_window.c
 
-LAST MODIFIED : 15 April 2004
+LAST MODIFIED : 14 May 2004
 
 DESCRIPTION :
 ==============================================================================*/
@@ -2231,7 +2231,7 @@ Sets the id of the stimulus number decrement in the pacing window.
 
 static int change_number_of_si(struct Pacing_window *pacing_window)
 /*******************************************************************************
-LAST MODIFIED : 25 May 2003
+LAST MODIFIED : 14 May 2004
 
 DESCRIPTION :
 Updates after a change to the number of cycles for a stimulus type.
@@ -2272,7 +2272,8 @@ Updates after a change to the number of cycles for a stimulus type.
 		sprintf(value_string,"%d",(pacing_window->number_of_si)[(pacing_window->
 			stimulus_number)-1]);
 		XtVaSetValues(pacing_window->number_of_si_value,
-			XmNlabelString,XmStringCreate(value_string,XmSTRING_DEFAULT_CHARSET),
+			XmNcursorPosition,strlen(value_string),
+			XmNvalue,value_string,
 			NULL);
 #endif /* defined (MOTIF) */
 		return_code=1;
@@ -2587,6 +2588,49 @@ Sets the id of the number of Si beats value in the pacing window.
 	}
 	LEAVE;
 } /* id_pacing_number_of_si_value */
+#endif /* defined (MOTIF) */
+
+#if defined (MOTIF)
+static void ch_pacing_number_of_si_value(Widget *widget_id,
+	XtPointer pacing_window_structure,XtPointer call_data)
+/*******************************************************************************
+LAST MODIFIED : 14 May 2004
+
+DESCRIPTION :
+Called when the number of Si widget is changed.
+==============================================================================*/
+{
+	char *new_value;
+	int number_of_si;
+	struct Pacing_window *pacing_window;
+	XmAnyCallbackStruct *text_data
+
+	ENTER(ch_pacing_number_of_si_value);
+	USE_PARAMETER(widget_id);
+	if ((text_data=(XmAnyCallbackStruct *)call_data)&&
+		((XmCR_ACTIVATE==text_data->reason)||
+		(XmCR_LOSING_FOCUS==text_data->reason)))
+	{
+		if (pacing_window=(struct Pacing_window *)pacing_window_structure)
+		{
+			XtVaGetValues(pacing_window->number_of_si_value,
+				XmNvalue,&new_value,
+				NULL);
+			if (1==sscanf(new_value,"%d",&number_of_si))
+			{
+				(pacing_window->number_of_si)[(pacing_window->stimulus_number)-1]=
+					number_of_si;
+			}
+			change_number_of_si(pacing_window);
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,
+				"ch_pacing_number_of_si_value.  Missing pacing_window_structure");
+		}
+	}
+	LEAVE;
+} /* ch_pacing_number_of_si_value */
 #endif /* defined (MOTIF) */
 
 #if defined (MOTIF)
@@ -4927,7 +4971,7 @@ static struct Pacing_window *create_Pacing_window(
 #endif /* defined (MOTIF) */
 	struct User_interface *user_interface)
 /*******************************************************************************
-LAST MODIFIED : 15 April 2004
+LAST MODIFIED : 14 May 2004
 
 DESCRIPTION :
 Allocates the memory for a pacing window.  Retrieves the necessary widgets and
@@ -4993,6 +5037,7 @@ initializes the appropriate fields.
 		{"id_pacing_number_of_si_inc",(XtPointer)id_pacing_number_of_si_inc},
 		{"increment_number_of_si",(XtPointer)increment_number_of_si},
 		{"id_pacing_number_of_si_value",(XtPointer)id_pacing_number_of_si_value},
+		{"ch_pacing_number_of_si_value",(XtPointer)ch_pacing_number_of_si_value},
 		{"id_pacing_number_of_si_dec",(XtPointer)id_pacing_number_of_si_dec},
 		{"decrement_number_of_si",(XtPointer)decrement_number_of_si},
 		{"id_pacing_si_length_value",(XtPointer)id_pacing_si_length_value},
@@ -5726,7 +5771,7 @@ opened.
 			change_stimulus_number(pacing_window);
 #if defined (MOTIF)
 			sprintf(value_string,"%d",(pacing_window->number_of_si)[
-				(pacing_window->stimulus_number)-1]-1);
+				(pacing_window->stimulus_number)-1]);
 			XtVaSetValues(pacing_window->number_of_si_value,
 				XmNcursorPosition,strlen(value_string),
 				XmNvalue,value_string,
