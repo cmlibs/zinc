@@ -22,6 +22,13 @@ Functions and structures for interfacing with the graphics library.
 #if defined (OPENGL_API)
 #include <GL/gl.h>
 #include <GL/glu.h>
+#if defined (WIN32_SYSTEM)
+/* SAB On Win32 I think you have to load all OpenGL 1.2, 1.3 etc functions
+	as extensions and keep pointer references to them.  I haven't done this
+	yet so we will undefine the version symbols */
+#undef GL_VERSION_1_2
+#undef GL_VERSION_1_3
+#endif /* defined (WIN32_SYSTEM) */
 #endif
 #if defined (DECPHIGS_API)
 #include <phigs.h>
