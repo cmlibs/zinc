@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : unemap.c
 
-LAST MODIFIED 12 May 2000
+LAST MODIFIED : 16 May 2000
 
 DESCRIPTION :
 Main program for unemap.  Based on cmgui.
@@ -27,6 +27,8 @@ Main program for unemap.  Based on cmgui.
 #include "graphics/material.h"
 #include "graphics/scene.h"
 #include "graphics/spectrum.h"
+#include "interaction/interactive_tool.h"
+#include "node/node_tool.h"
 #include "selection/element_point_ranges_selection.h"
 #include "selection/element_selection.h"
 #include "selection/node_selection.h"
@@ -248,7 +250,7 @@ int WINAPI WinMain(HINSTANCE current_instance,HINSTANCE previous_instance,
 	/*???DB. Win32 SDK says that don't have to call it WinMain */
 #endif /* defined (WINDOWS) */
 /*******************************************************************************
-LAST MODIFIED : 12 May 2000
+LAST MODIFIED : 16 May 2000
 
 DESCRIPTION :
 Main program for unemap
@@ -275,6 +277,7 @@ Main program for unemap
 		(struct Element_point_ranges_selection *)NULL;
 	struct FE_element_selection *element_selection=(struct FE_element_selection *)NULL;
 	struct FE_node_selection *node_selection=(struct FE_node_selection *)NULL;
+	struct FE_node_selection *data_selection=(struct FE_node_selection *)NULL;
 	struct Graphical_material *default_graphical_material=(struct Graphical_material *)NULL;
 	struct Graphical_material *default_selected_material=(struct Graphical_material *)NULL;
 	struct GT_object *glyph=(struct GT_object *)NULL;
@@ -302,13 +305,15 @@ Main program for unemap
 		(struct MANAGER(GROUP(FE_node)) *)NULL;
 	struct MANAGER(GROUP(FE_node))*node_group_manager=
 		(struct MANAGER(GROUP(FE_node))*)NULL;		
-	struct MANAGER(Light) *light_manager=
-		(struct MANAGER(Light) *)NULL;
+	struct MANAGER(Interactive_tool) *interactive_tool_manager=
+		(struct MANAGER(Interactive_tool) *)NULL;
+	struct MANAGER(Light) *light_manager=(struct MANAGER(Light) *)NULL;
 	struct MANAGER(Light_model) *light_model_manager=
 		(struct MANAGER(Light_model) *)NULL;
 	struct MANAGER(Scene) *scene_manager=(struct MANAGER(Scene) *)NULL;
 	struct MANAGER(Spectrum) *spectrum_manager=(struct MANAGER(Spectrum) *)NULL;
 	struct MANAGER(Texture) *texture_manager=(struct MANAGER(Texture) *)NULL;
+	struct Node_tool *node_tool=(struct Node_tool *)NULL;
 #endif /* defined (UNEMAP_USE_NODES) */
 	struct System_window *system;
 	struct Time_keeper *time_keeper;
@@ -629,6 +634,11 @@ Main program for unemap
 			CREATE(Element_point_ranges_selection)();
 		element_selection=CREATE(FE_element_selection)();
 		node_selection=CREATE(FE_node_selection)();
+		data_selection=CREATE(FE_node_selection)();
+
+		/* interactive_tool manager */
+		interactive_tool_manager=CREATE(MANAGER(Interactive_tool))();
+
 		scene_manager=CREATE_MANAGER(Scene)();
 		if (light_model_manager=CREATE_MANAGER(Light_model)())
 		{
@@ -801,12 +811,18 @@ Main program for unemap
 				ADD_OBJECT_TO_LIST(GT_object)(glyph,glyph_list);
 			}
 		}
+
+		/* interactive_tools */
+		node_tool=CREATE(Node_tool)(interactive_tool_manager,node_manager,
+			/*data_manager*/0,node_selection,computed_field_package);
+
 		unemap_package=CREATE(Unemap_package)(fe_field_manager,
 			element_group_manager,node_manager,data_group_manager,node_group_manager,
 			fe_basis_manager,element_manager,element_point_ranges_selection,
-			element_selection,node_selection,computed_field_manager,
-			graphics_window_manager,texture_manager,scene_manager,light_model_manager,
-			light_manager,spectrum_manager,graphical_material_manager,data_manager,
+			element_selection,node_selection,data_selection,computed_field_manager,
+			graphics_window_manager,texture_manager,interactive_tool_manager,
+			scene_manager,light_model_manager,light_manager,
+			spectrum_manager,graphical_material_manager,data_manager,
 			glyph_list);
 		set_unemap_package_graphical_material(unemap_package,default_graphical_material);
 		set_unemap_package_computed_field_package(unemap_package,computed_field_package);
@@ -935,11 +951,17 @@ Main program for unemap
 				application_main_loop is not infinite */
 #if defined (NOT_ACQUISITION_ONLY)
 #if defined (UNEMAP_USE_NODES )
+			DESTROY(Unemap_package)(&unemap_package);	
+
+			/* destroy Interactive_tools and manager */
+			DESTROY(Node_tool)(&node_tool);
+			DESTROY(MANAGER(Interactive_tool))(&interactive_tool_manager);
+
+			DESTROY(FE_node_selection)(&data_selection);
 			DESTROY(FE_node_selection)(&node_selection);
 			DESTROY(FE_element_selection)(&element_selection);
 			DESTROY(Element_point_ranges_selection)(&element_point_ranges_selection);
 
-			DESTROY(Unemap_package)(&unemap_package);	
 			DESTROY(MANAGER(FE_field))(&fe_field_manager);
 			DESTROY(MANAGER(GROUP(FE_node)))(&node_group_manager);
 			DESTROY(MANAGER(FE_node))(&node_manager);
