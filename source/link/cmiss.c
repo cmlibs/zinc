@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : cmiss.c
 
-LAST MODIFIED : 13 September 2001
+LAST MODIFIED : 4 October 2001
 
 DESCRIPTION :
 See cmiss.h for interface details.
@@ -33,7 +33,8 @@ Node
 ???GMH  Oi - how do node groups fit into this scheme?
 
 NOTE
-fsm == finite state machine
+1 fsm == finite state machine
+2 input and output for wormholes are from the point of view of the wormhole
 ==============================================================================*/
 #include <stdlib.h>
 #include <unistd.h>
@@ -49,6 +50,7 @@ fsm == finite state machine
 #include <clidef.h>
 #endif /* defined (VMS) */
 #include <stdio.h>
+#include "wormhole.h"
 #include "link/cmiss.h"
 #include "general/debug.h"
 #include "user_interface/message.h"
@@ -98,7 +100,7 @@ States occupied by the data stream (on input).
 
 struct CMISS_connection
 /*******************************************************************************
-LAST MODIFIED : 3 September 2001
+LAST MODIFIED : 3 October 2001
 
 DESCRIPTION :
 Private structure representing the connection between cm and cmgui.
@@ -106,10 +108,16 @@ Private structure representing the connection between cm and cmgui.
 {
 	/* name of the machine this is running on */
 	char *name;
+	/* if this flag is set then cmgui does not wait for cm commands to complete,
+		otherwise it does */
+	char asynchronous_commands;
+	/* if this flag is set then a cm command is in progress */
+	char command_in_progress;
+	/* if this flag is set then have received a cm quit message */
+	char cm_quit;
 	/* finite state information */
 	enum CMISS_connection_data_input_state data_input_state;
 	int data_type,template_node_number_of_fields;
-	struct Execute_command *execute_command;
 	struct FE_element_field_info *current_element_field_info;
 	struct FE_field **template_node_fields;
 	struct FE_node *template_node;
@@ -2580,27 +2588,22 @@ Global functions
 */
 struct CMISS_connection *CREATE(CMISS_connection)(char *machine,
 	enum Machine_type type,int attach,double wormhole_timeout,char mycm_flag,
-	struct MANAGER(FE_element) *element_manager,
+	char asynchronous_commands,struct MANAGER(FE_element) *element_manager,
 	struct MANAGER(GROUP(FE_element)) *element_group_manager,
 	struct MANAGER(FE_field) *fe_field_manager,
 	struct MANAGER(FE_node) *node_manager,struct MANAGER(FE_node) *data_manager,
 	struct MANAGER(GROUP(FE_node)) *node_group_manager,
 	struct MANAGER(GROUP(FE_node)) *data_group_manager,
 	struct Prompt_window **prompt_window_address,char *parameters_file_name,
-	char *examples_directory_path,struct Execute_command *execute_command,
-	struct User_interface *user_interface)
+	char *examples_directory_path,struct User_interface *user_interface)
 /*******************************************************************************
-LAST MODIFIED : 3 September 2001
+LAST MODIFIED : 3 October 2001
 
 DESCRIPTION :
-Creates a connection to the machine specified in <machine>.  <attach> is not
-currently supported.
-There are a number of types of connections:
-file:/tmp/cmiss_link#### (unix, local)
-file:cmiss_link#### (unix, remote)
-sock:#### (any)
-
-???GMH.  We should find some way of determining the current machine name.
+Creates a connection to the machine specified in <machine>.  If <attach> is 
+not zero then cm already exists and <attach> is the base port number to connect
+on, otherwise a new cm is spawned.  If <asynchronous_commands> is set then cmgui
+does not wait for cm commands to complete, otherwise it does.
 ==============================================================================*/
 {
 	struct CMISS_connection *return_struct;
@@ -2646,10 +2649,13 @@ sock:#### (any)
 #endif /* defined (NOT_DEBUG) */
 	if (machine&&element_manager&&element_group_manager&&fe_field_manager&&
 		node_manager&&data_manager&&node_group_manager&&data_group_manager&&
-		execute_command&&user_interface)
+		user_interface)
 	{
 		if (ALLOCATE(return_struct,struct CMISS_connection,1))
 		{
+			return_struct->asynchronous_commands=asynchronous_commands;
+			return_struct->command_in_progress=0;
+			return_struct->cm_quit=0;
 			if (ALLOCATE(return_struct->name,char,strlen(machine)+1))
 			{
 				strcpy(return_struct->name,machine);
@@ -2927,7 +2933,6 @@ sock:#### (any)
 					return_struct->template_node=(struct FE_node *)NULL;
 					return_struct->template_node_fields=(struct FE_field **)NULL;
 					return_struct->template_node_number_of_fields=0;
-					return_struct->execute_command=execute_command;
 					/* I guess we shell out something here... */
 				}
 				else
@@ -2963,7 +2968,7 @@ sock:#### (any)
 
 int DESTROY(CMISS_connection)(struct CMISS_connection **connection_address)
 /*******************************************************************************
-LAST MODIFIED : 3 September 2001
+LAST MODIFIED : 1 October 2001
 
 DESCRIPTION :
 Frees the memory for the connection, sets <*node_address> to NULL.
@@ -2977,45 +2982,52 @@ Frees the memory for the connection, sets <*node_address> to NULL.
 	if ((connection_address)&&(connection= *connection_address))
 	{
 		/* tell the back end to quit */
-		CMISS_connection_process_command(connection,"quit");
-		/* destroy the connection */
-		DEALLOCATE(connection->name);
-		MANAGER_DEREGISTER(FE_element)(connection->element_manager_callback_id,
-			connection->element_manager);
-		MANAGER_DEREGISTER(FE_node)(connection->node_manager_callback_id,
-			connection->node_manager);
-		MANAGER_DEREGISTER(FE_node)(connection->data_manager_callback_id,
-			connection->data_manager);
-		if (DESTROY(Wh_input)(&(connection->command_input))&&
-			DESTROY(Wh_output)(&(connection->command_output))&&
-			DESTROY(Wh_input)(&(connection->prompt_input))&&
-			DESTROY(Wh_output)(&(connection->prompt_output))&&
-			DESTROY(Wh_input)(&(connection->data_input))&&
-			DESTROY(Wh_output)(&(connection->data_output)))
+		CMISS_connection_process_command(connection_address,"quit");
+		if (connection= *connection_address)
 		{
-			if (connection->new_node_group)
+			/* destroy the connection */
+			DEALLOCATE(connection->name);
+			MANAGER_DEREGISTER(FE_element)(connection->element_manager_callback_id,
+				connection->element_manager);
+			MANAGER_DEREGISTER(FE_node)(connection->node_manager_callback_id,
+				connection->node_manager);
+			MANAGER_DEREGISTER(FE_node)(connection->data_manager_callback_id,
+				connection->data_manager);
+			if (DESTROY(Wh_input)(&(connection->command_input))&&
+				DESTROY(Wh_output)(&(connection->command_output))&&
+				DESTROY(Wh_input)(&(connection->prompt_input))&&
+				DESTROY(Wh_output)(&(connection->prompt_output))&&
+				DESTROY(Wh_input)(&(connection->data_input))&&
+				DESTROY(Wh_output)(&(connection->data_output)))
 			{
-				display_message(WARNING_MESSAGE,"DESTROY(CMISS_connection).  %s",
-					"Non-NULL new node group");
-				DESTROY(GROUP(FE_node))(&(connection->new_node_group));
-			}
-			if (connection->template_node)
-			{
-				for (i=0;i<connection->template_node_number_of_fields;i++)
+				if (connection->new_node_group)
 				{
-					DEACCESS(FE_field)((connection->template_node_fields)+i);
+					display_message(WARNING_MESSAGE,"DESTROY(CMISS_connection).  %s",
+						"Non-NULL new node group");
+					DESTROY(GROUP(FE_node))(&(connection->new_node_group));
 				}
-				DEALLOCATE(connection->template_node_fields);
-				DEACCESS(FE_node)(&(connection->template_node));
+				if (connection->template_node)
+				{
+					for (i=0;i<connection->template_node_number_of_fields;i++)
+					{
+						DEACCESS(FE_field)((connection->template_node_fields)+i);
+					}
+					DEALLOCATE(connection->template_node_fields);
+					DEACCESS(FE_node)(&(connection->template_node));
+				}
+				return_code=1;
 			}
-			return_code=1;
+			else
+			{
+				display_message(ERROR_MESSAGE,"DESTROY(CMISS_connection).  %s",
+					"Could not destroy wormholes");
+			}
+			DEALLOCATE(*connection_address);
 		}
 		else
 		{
-			display_message(ERROR_MESSAGE,"DESTROY(CMISS_connection).  %s",
-				"Could not destroy wormholes");
+			return_code=1;
 		}
-		DEALLOCATE(*connection_address);
 	}
 	else
 	{
@@ -3027,20 +3039,21 @@ Frees the memory for the connection, sets <*node_address> to NULL.
 	return (return_code);
 } /* DESTROY(CMISS_connection) */
 
-int CMISS_connection_process_command(struct CMISS_connection *connection,
-	char *command)
+int CMISS_connection_process_command(
+	struct CMISS_connection **connection_address,char *command)
 /*******************************************************************************
-LAST MODIFIED : 18 March 1997
+LAST MODIFIED : 3 October 2001
 
 DESCRIPTION :
 Executes the given command within CMISS.
 ==============================================================================*/
 {
 	int return_code;
+	struct CMISS_connection *connection;
 
 	ENTER(CMISS_connection_process_command);
 	return_code=0;
-	if (connection)
+	if (connection_address&&(connection= *connection_address))
 	{
 		if (wh_input_open_message(connection->command_input,0,2))
 		{
@@ -3050,28 +3063,40 @@ Executes the given command within CMISS.
 			}
 			else
 			{
-				display_message(ERROR_MESSAGE,"CMISS_connection_process_command.  %s",
+				display_message(ERROR_MESSAGE,"CMISS_connection_process_command.  "
 					"Could not add characters");
 			}
 			if (wh_input_close_message(connection->command_input))
 			{
+				wh_input_update(connection->command_input);
 				/*???DB.  Wait for cm to acknowledge receipt of command ? */
+				if (!(connection->asynchronous_commands)&&!(connection->cm_quit))
+				{
+					/* wait for command to complete */
+					connection->command_in_progress=1;
+					while (connection&&(connection->command_in_progress))
+					{
+						wh_output_wait(connection->command_output,0);
+						CMISS_connection_update(connection_address);
+						connection= *connection_address;
+					}
+				}
 			}
 			else
 			{
-				display_message(ERROR_MESSAGE,"CMISS_connection_process_command.  %s",
+				display_message(ERROR_MESSAGE,"CMISS_connection_process_command.  "
 					"Could not close message");
 			}
 		}
 		else
 		{
-			display_message(ERROR_MESSAGE,"CMISS_connection_process_command.  %s",
+			display_message(ERROR_MESSAGE,"CMISS_connection_process_command.  "
 				"Could not open message");
 		}
 	}
 	else
 	{
-		display_message(ERROR_MESSAGE,"CMISS_connection_process_command.  %s",
+		display_message(ERROR_MESSAGE,"CMISS_connection_process_command.  "
 			"Invalid connection");
 	}
 	LEAVE;
@@ -3082,7 +3107,7 @@ Executes the given command within CMISS.
 int CMISS_connection_process_prompt_reply(struct CMISS_connection *connection,
 	char *reply)
 /*******************************************************************************
-LAST MODIFIED : 03 December 1996
+LAST MODIFIED : 3 December 1996
 
 DESCRIPTION :
 Sends the given text in response to the prompt.
@@ -3108,18 +3133,18 @@ Sends the given text in response to the prompt.
 			}
 			else
 			{
-				display_message(ERROR_MESSAGE,"CMISS_connection_process_prompt_reply.  %s",
+				display_message(ERROR_MESSAGE,"CMISS_connection_process_prompt_reply.  "
 					"Could not add characters");
 			}
 			if (!wh_input_close_message(connection->prompt_input))
 			{
-				display_message(ERROR_MESSAGE,"CMISS_connection_process_prompt_reply.  %s",
+				display_message(ERROR_MESSAGE,"CMISS_connection_process_prompt_reply.  "
 					"Could not close message");
 			}
 		}
 		else
 		{
-			display_message(ERROR_MESSAGE,"CMISS_connection_process_prompt_reply.  %s",
+			display_message(ERROR_MESSAGE,"CMISS_connection_process_prompt_reply.  "
 				"Could not open message");
 		}
 	}
@@ -3133,9 +3158,9 @@ Sends the given text in response to the prompt.
 	return (return_code);
 } /* CMISS_connection_process_prompt_reply */
 
-int CMISS_connection_update(struct CMISS_connection *connection)
+int CMISS_connection_update(struct CMISS_connection **connection_address)
 /*******************************************************************************
-LAST MODIFIED : 4 March 1997
+LAST MODIFIED : 3 October 2001
 
 DESCRIPTION :
 Performs any updating necessary.
@@ -3146,13 +3171,13 @@ the CMISS_connection being valid after a call to this routine.
 	int return_code;
 	int close_message,i,primary_id,secondary_id,num_items;
 	char *output_string,*formatted_output_string;
-	static char suicide_string[]="gfx destroy cmiss";
 	int commit_suicide;
+	struct CMISS_connection *connection;
 
 	ENTER(CMISS_connection_update);
 	return_code=0;
 	commit_suicide=0;
-	if (connection)
+	if (connection_address&&(connection= *connection_address))
 	{
 		if (wh_input_update(connection->command_input)&&
 			wh_output_update(connection->command_output)&&
@@ -3189,7 +3214,7 @@ the CMISS_connection being valid after a call to this routine.
 							}
 							else
 							{
-								display_message(ERROR_MESSAGE,"CMISS_connection_update.  %s",
+								display_message(ERROR_MESSAGE,"CMISS_connection_update.  "
 									"Could not retrieve output string");
 							}
 						}
@@ -3197,13 +3222,21 @@ the CMISS_connection being valid after a call to this routine.
 					case 3: /* the back end is closing down */
 					{
 						commit_suicide=1;
+						connection->command_in_progress=0;
+						connection->cm_quit=1;
+					} break;
+					case 5: /* cm command completion */
+					{
+						wh_output_get_remainder(connection->command_output);
+						close_message=0;
+						connection->command_in_progress=0;
 					} break;
 					default: /* unknown message */
 					{
 						wh_output_get_remainder(connection->command_output);
 						close_message=0;
-						display_message(WARNING_MESSAGE,"CMISS_connection_update.  %s",
-							"Invalid secondary id");
+						display_message(WARNING_MESSAGE,"CMISS_connection_update.  "
+							"Invalid secondary id %d",secondary_id);
 					} break;
 				}
 				if (close_message)
@@ -3243,7 +3276,8 @@ the CMISS_connection being valid after a call to this routine.
 						if (output_string=wh_output_get_unknown_string(
 							connection->prompt_output))
 						{
-							if (formatted_output_string=reformat_fortran_string(output_string))
+							if (formatted_output_string=
+								reformat_fortran_string(output_string))
 							{
 								write_question(formatted_output_string,
 									connection->prompt_window_address,
@@ -3314,7 +3348,7 @@ the CMISS_connection being valid after a call to this routine.
 	/* this MUST be the last portion of code */
 	if (commit_suicide)
 	{
-		Execute_command_execute_string(connection->execute_command, suicide_string);
+		DESTROY(CMISS_connection)(connection_address);
 		/* and we now do not exist anymore */
 	}
 	LEAVE;

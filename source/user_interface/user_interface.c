@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : user_interface.c
 
-LAST MODIFIED : 27 December 1999
+LAST MODIFIED : 3 October 2001
 
 DESCRIPTION :
 Functions for opening and closing the user interface.
@@ -148,7 +148,7 @@ devices, and then resets the timeout.
 #if defined (MOTIF)
 static void process_cmiss_link(XtPointer user_interface_void)
 /*******************************************************************************
-LAST MODIFIED : 18 January 1997
+LAST MODIFIED : 3 October 2001
 
 DESCRIPTION :
 Calls the input module update function, so we can get input from external
@@ -164,7 +164,7 @@ devices, and then resets the timeout.
 		deregistering this callback when CMISS_connection's are created */
 		if (CMISS)
 		{
-			CMISS_connection_update(CMISS);
+			CMISS_connection_update(&CMISS);
 			/* if connection, then check every tenth of a second */
 			cmiss_link_delay=100;
 		}

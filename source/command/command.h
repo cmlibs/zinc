@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : command.h
 
-LAST MODIFIED : 9 November 1998
+LAST MODIFIED : 5 October 2001
 
 DESCRIPTION :
 Functions and types associated with commands.
@@ -34,7 +34,7 @@ struct Execute_command;
 Global functions
 ----------------
 */
-#if !defined (WINDOWS_DEV_FLAG)
+#if defined (MOTIF)
 void callback_command(Widget widget_id,XtPointer command,XtPointer call_data);
 /*******************************************************************************
 LAST MODIFIED : 11 June 1993
@@ -42,8 +42,9 @@ LAST MODIFIED : 11 June 1993
 DESCRIPTION :
 Allows easy execution of <command>s from menu buttons.
 ==============================================================================*/
+#endif /* defined (MOTIF) */
 
-int read_iod_file_via_selection_box(char *file_name, void *dummy);
+int read_iod_file_via_selection_box(char *file_name,void *dummy);
 /*******************************************************************************
 LAST MODIFIED : 15 June 1993
 
@@ -51,7 +52,8 @@ DESCRIPTION :
 ==============================================================================*/
 
 struct Execute_command *CREATE(Execute_command)(
-	Execute_command_function *execute_command_function, void *command_function_data);
+	Execute_command_function *execute_command_function,
+	void *command_function_data);
 /*******************************************************************************
 LAST MODIFIED : 8 December 1999
 
@@ -73,5 +75,4 @@ LAST MODIFIED : 8 December 1999
 
 DESCRIPTION :
 ==============================================================================*/
-#endif /* !defined (WINDOWS_DEV_FLAG) */
 #endif /* !defined (COMMAND_H) */

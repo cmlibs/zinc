@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : cmiss.c
 
-LAST MODIFIED : 18 September 2001
+LAST MODIFIED : 3 October 2001
 
 DESCRIPTION :
 Functions for executing cmiss commands.
@@ -9830,26 +9830,18 @@ a time.  This implementation may be changed later.
 static int gfx_create_cmiss(struct Parse_state *state,
 	void *dummy_to_be_modified,void *command_data_void)
 /*******************************************************************************
-LAST MODIFIED : 16 June 1999
+LAST MODIFIED : 26 September 2001
 
 DESCRIPTION :
 Executes a GFX CREATE CMISS_CONNECTION command.
 ==============================================================================*/
 {
-	char *examples_directory,*host_name,mycm_flag,*parameters_file_name;
+	char asynchronous_commands,*examples_directory,*host_name,mycm_flag,
+		*parameters_file_name;
 	enum Machine_type host_type;
 	int connection_number,return_code;
 	struct Cmiss_command_data *command_data;
-	static struct Modifier_entry option_table[]=
-	{
-		{"connection_number",NULL,NULL,set_int_non_negative},
-		{"examples_directory",NULL,(void *)1,set_name},
-		{"host",NULL,(void *)1,set_name},
-		{"mycm",NULL,NULL,set_char_flag},
-		{"parameters",NULL,(void *)1,set_name},
-		{"type",NULL,NULL,set_machine_type},
-		{NULL,NULL,NULL,set_name}
-	};
+	struct Option_table *option_table;
 /*???DB.  Not sure if this is quite the right place */
 	double wormhole_timeout;
 #if defined (MOTIF)
@@ -9931,6 +9923,7 @@ Executes a GFX CREATE CMISS_CONNECTION command.
 			connection_number=0;
 			host_type=MACHINE_UNKNOWN;
 			mycm_flag=0;
+			asynchronous_commands=0;
 			wormhole_timeout=300;
 #if defined (MOTIF)
 			if (command_data->user_interface)
@@ -9941,14 +9934,24 @@ Executes a GFX CREATE CMISS_CONNECTION command.
 				wormhole_timeout=(double)wormhole_timeout_seconds;
 			}
 #endif /* defined (MOTIF) */
-			(option_table[0]).to_be_modified= &connection_number;
-			(option_table[1]).to_be_modified= &examples_directory;
-			(option_table[2]).to_be_modified= &host_name;
-			(option_table[3]).to_be_modified= &mycm_flag;
-			(option_table[4]).to_be_modified= &parameters_file_name;
-			(option_table[5]).to_be_modified= &host_type;
-			(option_table[6]).to_be_modified= &host_name;
-			return_code=process_multiple_options(state,option_table);
+			option_table=CREATE(Option_table)();
+			Option_table_add_entry(option_table,"asynchronous_commands",
+				&asynchronous_commands,(void *)NULL,set_char_flag);
+			Option_table_add_entry(option_table,"connection_number",
+				&connection_number,(void *)NULL,set_int_non_negative);
+			Option_table_add_entry(option_table,"examples_directory",
+				&examples_directory,(void *)NULL,set_name);
+			Option_table_add_entry(option_table,"host",&host_name,(void *)NULL,
+				set_name);
+			Option_table_add_entry(option_table,"mycm",&mycm_flag,(void *)NULL,
+				set_char_flag);
+			Option_table_add_entry(option_table,"parameters",&parameters_file_name,
+				(void *)NULL,set_name);
+			Option_table_add_entry(option_table,"type",&host_type,(void *)NULL,
+				set_machine_type);
+			Option_table_add_entry(option_table,(char *)NULL,&host_name,(void *)NULL,
+				set_name);
+			return_code=Option_table_multi_parse(option_table,state);
 			/* no errors, not asking for help */
 			if (return_code)
 			{
@@ -9971,14 +9974,13 @@ Executes a GFX CREATE CMISS_CONNECTION command.
 						}
 					}
 					if (CMISS=CREATE(CMISS_connection)(host_name,host_type,
-						connection_number,wormhole_timeout,mycm_flag,
-						command_data->element_manager,
-						command_data->element_group_manager,
+						connection_number,wormhole_timeout,mycm_flag,asynchronous_commands,
+						command_data->element_manager,command_data->element_group_manager,
 						command_data->fe_field_manager,command_data->node_manager,
 						command_data->data_manager,command_data->node_group_manager,
 						command_data->data_group_manager,&(command_data->prompt_window),
 						parameters_file_name,examples_directory,
-						command_data->execute_command,command_data->user_interface))
+						command_data->user_interface))
 					{
 						return_code=1;
 					}
@@ -10000,6 +10002,7 @@ Executes a GFX CREATE CMISS_CONNECTION command.
 			return_code=0;
 #endif /* defined (LINK_CMISS) */
 			} /* parse error, help */
+			DESTROY(Option_table)(&option_table);
 			DEALLOCATE(examples_directory);
 			DEALLOCATE(host_name);
 		}
@@ -17784,7 +17787,8 @@ instruction to read in the mesh.
 		}
 		else
 		{
-			display_message(ERROR_MESSAGE,"gfx_read_Control_curve.  Missing command_data");
+			display_message(ERROR_MESSAGE,
+				"gfx_read_Control_curve.  Missing command_data");
 			return_code=0;
 		}
 	}
@@ -22997,7 +23001,7 @@ Executes a GFX command.
 static int execute_command_cm(struct Parse_state *state,
 	void *prompt_void,void *command_data_void)
 /*******************************************************************************
-LAST MODIFIED : 27 May 1997
+LAST MODIFIED : 3 October 2001
 
 DESCRIPTION :
 Executes a cm (back end) command.
@@ -23019,7 +23023,7 @@ Executes a cm (back end) command.
 				if (CMISS)
 				{
 					/* somehow extract the whole command */
-					return_code=CMISS_connection_process_command(CMISS,
+					return_code=CMISS_connection_process_command(&CMISS,
 						state->command_string);
 				}
 				else

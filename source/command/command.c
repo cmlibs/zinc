@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : command.c
 
-LAST MODIFIED : 9 November 1998
+LAST MODIFIED : 5 October 2001
 
 DESCRIPTION :
 Functions associated with commands.
@@ -34,7 +34,7 @@ DESCRIPTION :
 Global functions
 ----------------
 */
-#if !defined (WINDOWS_DEV_FLAG)
+#if defined (MOTIF)
 void callback_command(Widget widget,XtPointer string,XtPointer call_data)
 /*******************************************************************************
 LAST MODIFIED : 16 June 1993
@@ -68,9 +68,8 @@ Allows easy execution of command <string>s from menu buttons.
 	}
 	LEAVE;
 } /* callback_command */
-#endif /* !defined (WINDOWS_DEV_FLAG) */
+#endif /* defined (MOTIF) */
 
-#if !defined (WINDOWS_DEV_FLAG)
 int read_iod_file_via_selection_box(char *file_name,void *execute_command_void)
 /*******************************************************************************
 LAST MODIFIED : 5 June 1996
@@ -109,9 +108,8 @@ Submits a command to open an iod file.
 		}
 		else
 		{
-			display_message(ERROR_MESSAGE,
-"read_iod_file_via_selection_box.  Could not allocate memory for command string"
-				);
+			display_message(ERROR_MESSAGE,"read_iod_file_via_selection_box.  "
+				"Could not allocate memory for command string");
 			return_code=0;
 		}
 	}
@@ -127,9 +125,10 @@ Submits a command to open an iod file.
 } /* read_iod_file_via_selection_box */
 
 struct Execute_command *CREATE(Execute_command)(
-	Execute_command_function *execute_command_function, void *command_function_data)
+	Execute_command_function *execute_command_function,
+	void *command_function_data)
 /*******************************************************************************
-LAST MODIFIED : 8 December 1999
+LAST MODIFIED : 5 October 2001
 
 DESCRIPTION :
 ==============================================================================*/
@@ -137,25 +136,24 @@ DESCRIPTION :
 	struct Execute_command *execute_command;
 
 	ENTER(CREATE(Execute_command));
+	execute_command=(struct Execute_command *)NULL;
 	if (execute_command_function)
 	{
 		if (ALLOCATE(execute_command,struct Execute_command, 1))
 		{
-			execute_command->function = execute_command_function;
-			execute_command->data = command_function_data;
+			execute_command->function=execute_command_function;
+			execute_command->data=command_function_data;
 		}
 		else
 		{
-			display_message(ERROR_MESSAGE,
-				"CREATE(Execute_command).  Unable to allocate Execute_command structure");
-			execute_command = (struct Execute_command *)NULL;
+			display_message(ERROR_MESSAGE,"CREATE(Execute_command).  "
+				"Unable to allocate Execute_command structure");
 		}
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
 			"CREATE(Execute_command).  Invalid argument(s)");
-		execute_command = (struct Execute_command *)NULL;
 	}
 	LEAVE;
 
@@ -165,7 +163,7 @@ DESCRIPTION :
 int Execute_command_execute_string(struct Execute_command *execute_command,
 	char *string)
 /*******************************************************************************
-LAST MODIFIED : 8 December 1999
+LAST MODIFIED : 5 October 2001
 
 DESCRIPTION :
 ==============================================================================*/
@@ -173,15 +171,16 @@ DESCRIPTION :
 	int return_code;
 
 	ENTER(Execute_command_execute_string);
-	if (execute_command && string)
+	return_code=0;
+	if (execute_command&&string)
 	{
-		return_code = (*(execute_command->function))(string,execute_command->data);
+		return_code=(*(execute_command->function))(string,execute_command->data);
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Execute_command_execute_string.  Invalid argument(s)");
-		return_code=0;
+			"Execute_command_execute_string.  Invalid argument(s).  %p %p",
+			execute_command,string);
 	}
 	LEAVE;
 
@@ -190,7 +189,7 @@ DESCRIPTION :
 
 int DESTROY(Execute_command)(struct Execute_command **execute_command_address)
 /*******************************************************************************
-LAST MODIFIED : 8 December 1999
+LAST MODIFIED : 5 October 2001
 
 DESCRIPTION :
 ==============================================================================*/
@@ -198,19 +197,19 @@ DESCRIPTION :
 	int return_code;
 
 	ENTER(DESTROY(Execute_command));
-	if (execute_command_address&&*execute_command_address)
+	return_code=0;
+	if (execute_command_address&&(*execute_command_address))
 	{
 		DEALLOCATE(*execute_command_address);
-		*execute_command_address = (struct Execute_command *)NULL;
+		*execute_command_address=(struct Execute_command *)NULL;
 		return_code=1;
 	}
 	else
 	{
-		display_message(ERROR_MESSAGE,"DESTROY(Execute_command).  Missing execute_command");
-		return_code=0;
+		display_message(ERROR_MESSAGE,
+			"DESTROY(Execute_command).  Missing execute_command");
 	}
 	LEAVE;
 
 	return (return_code);
 } /* DESTROY(Execute_command) */
-#endif /* !defined (WINDOWS_DEV_FLAG) */

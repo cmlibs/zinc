@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : unemap.c
 
-LAST MODIFIED : 7 June 2001
+LAST MODIFIED : 3 October 2001
 
 DESCRIPTION :
 Main program for unemap.  Based on cmgui.
@@ -81,9 +81,9 @@ Dummy
 	return (return_code);
 } /* DESTROY(CMISS_connection) */
 
-int CMISS_connection_update(struct CMISS_connection *connection)
+int CMISS_connection_update(struct CMISS_connection **connection_address)
 /*******************************************************************************
-LAST MODIFIED : 11 April 1997
+LAST MODIFIED : 3 October 2001
 
 DESCRIPTION :
 Dummy
