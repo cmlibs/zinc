@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : analysis_window.c
 
-LAST MODIFIED : 18 June 2001
+LAST MODIFIED : 15 August 2001
 
 DESCRIPTION :
 ===========================================================================*/
@@ -1816,7 +1816,7 @@ Finds the id of the analysis print all button.
 
 static int print_signals(char all,char *file_name,void *analysis_window)
 /*******************************************************************************
-LAST MODIFIED : 11 January 2000
+LAST MODIFIED : 15 August 2001
 
 DESCRIPTION :
 Writes the PostScript for drawing either <all> the signals from the
@@ -1830,6 +1830,7 @@ Writes the PostScript for drawing either <all> the signals from the
 	int axes_height,axes_left,axes_top,axes_width,first_data,i,j,last_data,
 		number_of_devices,return_code,screen,signal_height_pixel,signals_per_page,
 		signal_width_pixel;
+	Pixel background_drawing_colour;
 	struct Analysis_window *analysis;
 	struct Device **device;
 	struct Printer printer;
@@ -1858,6 +1859,11 @@ Writes the PostScript for drawing either <all> the signals from the
 				XtWindow((analysis->signals).drawing_area),&window_attributes))
 			{
 				/* open the postscript file */
+				/* normally the background_drawing_colour argument over open_postscript
+					is set to the background colour of the window.  Here it is set to the
+					printer background colour because the signals print out is black and
+					white (not grey or colour) and the foreground colours for the
+					graphics contexts will be set later in this function */
 				if (open_postscript(file_name,LANDSCAPE,window_attributes.colormap,
 					(Pixel *)NULL,0,printer.background_colour_pixel,
 					&(printer.background_colour),printer.foreground_colour_pixel,
@@ -1885,45 +1891,156 @@ Writes the PostScript for drawing either <all> the signals from the
 					signal_width_point=(float)signal_width_pixel/scale_point_to_pixel_x;
 					y_position_point=postscript_page_height-signal_height_point;
 					/* print the signals with a single colour */
-					XSetForeground(display,
-						(signal_drawing_information->graphics_context).axis_colour,
-						printer.foreground_colour_pixel);
-					XSetForeground(display,
-						(signal_drawing_information->graphics_context).device_name_colour,
-						printer.foreground_colour_pixel);
-					XSetForeground(display,
-						(signal_drawing_information->graphics_context).highlighted_colour,
-						printer.foreground_colour_pixel);
-					XSetForeground(display,
-						(signal_drawing_information->graphics_context).
-						unhighlighted_colour,printer.foreground_colour_pixel);
-					XSetForeground(display,
-						(signal_drawing_information->graphics_context).accepted_colour,
-						printer.foreground_colour_pixel);
-					XSetForeground(display,
-						(signal_drawing_information->graphics_context).rejected_colour,
-						printer.foreground_colour_pixel);
-					XSetForeground(display,
-						(signal_drawing_information->graphics_context).undecided_colour,
-						printer.foreground_colour_pixel);
-					XSetForeground(display,
-						(signal_drawing_information->graphics_context).
-						accepted_colour_text,printer.foreground_colour_pixel);
-					XSetForeground(display,
-						(signal_drawing_information->graphics_context).
-						rejected_colour_text,printer.foreground_colour_pixel);
-					XSetForeground(display,
-						(signal_drawing_information->graphics_context).
-						undecided_colour_text,printer.foreground_colour_pixel);
-					XSetForeground(display,
-						(signal_drawing_information->graphics_context).
-						signal_accepted_colour,printer.foreground_colour_pixel);
-					XSetForeground(display,
-						(signal_drawing_information->graphics_context).
-						signal_rejected_colour,printer.foreground_colour_pixel);
-					XSetForeground(display,
-						(signal_drawing_information->graphics_context).
-						signal_undecided_colour,printer.foreground_colour_pixel);
+					background_drawing_colour=
+						signal_drawing_information->background_drawing_colour;
+					if (background_drawing_colour==
+						signal_drawing_information->axis_colour)
+					{
+						XSetForeground(display,
+							(signal_drawing_information->graphics_context).axis_colour,
+							printer.background_colour_pixel);
+					}
+					else
+					{
+						XSetForeground(display,
+							(signal_drawing_information->graphics_context).axis_colour,
+							printer.foreground_colour_pixel);
+					}
+					if (background_drawing_colour==
+						signal_drawing_information->device_name_colour)
+					{
+						XSetForeground(display,
+							(signal_drawing_information->graphics_context).device_name_colour,
+							printer.background_colour_pixel);
+					}
+					else
+					{
+						XSetForeground(display,
+							(signal_drawing_information->graphics_context).device_name_colour,
+							printer.foreground_colour_pixel);
+					}
+					if (background_drawing_colour==
+						signal_drawing_information->highlighted_colour)
+					{
+						XSetForeground(display,
+							(signal_drawing_information->graphics_context).highlighted_colour,
+							printer.background_colour_pixel);
+					}
+					else
+					{
+						XSetForeground(display,
+							(signal_drawing_information->graphics_context).highlighted_colour,
+							printer.foreground_colour_pixel);
+					}
+					if (background_drawing_colour==
+						signal_drawing_information->unhighlighted_colour)
+					{
+						XSetForeground(display,
+							(signal_drawing_information->graphics_context).
+							unhighlighted_colour,printer.background_colour_pixel);
+					}
+					else
+					{
+						XSetForeground(display,
+							(signal_drawing_information->graphics_context).
+							unhighlighted_colour,printer.foreground_colour_pixel);
+					}
+					if (background_drawing_colour==
+						signal_drawing_information->accepted_colour)
+					{
+						XSetForeground(display,
+							(signal_drawing_information->graphics_context).accepted_colour,
+							printer.background_colour_pixel);
+						XSetForeground(display,
+							(signal_drawing_information->graphics_context).
+							accepted_colour_text,printer.background_colour_pixel);
+					}
+					else
+					{
+						XSetForeground(display,
+							(signal_drawing_information->graphics_context).accepted_colour,
+							printer.foreground_colour_pixel);
+						XSetForeground(display,
+							(signal_drawing_information->graphics_context).
+							accepted_colour_text,printer.foreground_colour_pixel);
+					}
+					if (background_drawing_colour==
+						signal_drawing_information->rejected_colour)
+					{
+						XSetForeground(display,
+							(signal_drawing_information->graphics_context).rejected_colour,
+							printer.background_colour_pixel);
+						XSetForeground(display,
+							(signal_drawing_information->graphics_context).
+							rejected_colour_text,printer.background_colour_pixel);
+					}
+					else
+					{
+						XSetForeground(display,
+							(signal_drawing_information->graphics_context).rejected_colour,
+							printer.foreground_colour_pixel);
+						XSetForeground(display,
+							(signal_drawing_information->graphics_context).
+							rejected_colour_text,printer.foreground_colour_pixel);
+					}
+					if (background_drawing_colour==
+						signal_drawing_information->undecided_colour)
+					{
+						XSetForeground(display,
+							(signal_drawing_information->graphics_context).undecided_colour,
+							printer.background_colour_pixel);
+						XSetForeground(display,
+							(signal_drawing_information->graphics_context).
+							undecided_colour_text,printer.background_colour_pixel);
+					}
+					else
+					{
+						XSetForeground(display,
+							(signal_drawing_information->graphics_context).undecided_colour,
+							printer.foreground_colour_pixel);
+						XSetForeground(display,
+							(signal_drawing_information->graphics_context).
+							undecided_colour_text,printer.foreground_colour_pixel);
+					}
+					if (background_drawing_colour==
+						signal_drawing_information->signal_accepted_colour)
+					{
+						XSetForeground(display,
+							(signal_drawing_information->graphics_context).
+							signal_accepted_colour,printer.background_colour_pixel);
+					}
+					else
+					{
+						XSetForeground(display,
+							(signal_drawing_information->graphics_context).
+							signal_accepted_colour,printer.foreground_colour_pixel);
+					}
+					if (background_drawing_colour==
+						signal_drawing_information->signal_rejected_colour)
+					{
+						XSetForeground(display,
+							(signal_drawing_information->graphics_context).
+							signal_rejected_colour,printer.background_colour_pixel);
+					}
+					else
+					{
+						XSetForeground(display,
+							(signal_drawing_information->graphics_context).
+							signal_rejected_colour,printer.foreground_colour_pixel);
+					}
+					if (background_drawing_colour==
+						signal_drawing_information->signal_undecided_colour)
+					{
+						XSetForeground(display,
+							(signal_drawing_information->graphics_context).
+							signal_undecided_colour,printer.background_colour_pixel);
+					}
+					else
+					{
+						XSetForeground(display,
+							(signal_drawing_information->graphics_context).
+							signal_undecided_colour,printer.foreground_colour_pixel);
+					}
 					/* print all the signals with the specified number of signals per
 						page */
 					i=number_of_devices;
@@ -1947,9 +2064,9 @@ Writes the PostScript for drawing either <all> the signals from the
 								(float)signal_height_pixel,(float)signal_width_pixel,
 								(float)signal_height_pixel);
 							/* print the signal */
-							draw_signal(
-								(struct FE_node *)NULL,(struct Signal_drawing_package *)NULL,*device,
-								PRINTER_DETAIL,1,0,&first_data,&last_data,0,signal_height_pixel,
+							draw_signal((struct FE_node *)NULL,
+								(struct Signal_drawing_package *)NULL,*device,PRINTER_DETAIL,1,
+								0,&first_data,&last_data,0,signal_height_pixel,
 								signal_width_pixel,signal_height_pixel,(Pixmap)NULL,&axes_left,
 								&axes_top,&axes_width,&axes_height,
 								analysis->signal_drawing_information,analysis->user_interface);

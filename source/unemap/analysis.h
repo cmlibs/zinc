@@ -144,17 +144,17 @@ Information needed for drawing a signal.  Windowing system dependent
 		device_name_colour,highlighted_colour,interval_box_colour,
 		potential_time_colour,pwave_colour,qrswave_colour,rejected_colour,
 		scaling_signal_colour,signal_accepted_colour,*signal_overlay_colours,
-		signal_rejected_colour,signal_undecided_colour,twave_colour,undecided_colour,
-		unhighlighted_colour;
+		signal_rejected_colour,signal_undecided_colour,twave_colour,
+		undecided_colour,unhighlighted_colour;
 	struct
 	{
-		GC accepted_colour,axis_colour,background_drawing_colour,cardiac_interval_colour,
-			eimaging_event_colour,copy,datum_colour,
+		GC accepted_colour,axis_colour,background_drawing_colour,
+			cardiac_interval_colour,eimaging_event_colour,copy,datum_colour,
 			device_name_colour,highlighted_box_colour,highlighted_colour,
 			interval_box_colour,potential_time_colour,pwave_colour,qrswave_colour,
 			rejected_colour,scaling_signal_colour,signal_accepted_colour,
-			signal_overlay_colour,signal_rejected_colour,signal_undecided_colour,spectrum,
-			undecided_colour,twave_colour,unhighlighted_colour;
+			signal_overlay_colour,signal_rejected_colour,signal_undecided_colour,
+			spectrum,undecided_colour,twave_colour,unhighlighted_colour;
 		/*???DB.  When using an RS/6000 model with the Color Graphics Display
 			Adapter (#2770), GCs stop writing text to the pixel map after they've
 			been used for drawing lines to the window.  So I duplicate them */
