@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : unemap_hardware.c
 
-LAST MODIFIED : 7 January 2001
+LAST MODIFIED : 23 September 2001
 
 DESCRIPTION :
 Code for controlling the National Instruments (NI) data acquisition and unemap
@@ -7851,7 +7851,7 @@ Returns a non-zero if unemap is sampling and zero otherwise.
 
 int unemap_set_isolate_record_mode(int channel_number,int isolate)
 /*******************************************************************************
-LAST MODIFIED : 16 August 1999
+LAST MODIFIED : 23 September 2001
 
 DESCRIPTION :
 The function does not need the hardware to be configured.
@@ -7895,6 +7895,15 @@ to a calibration signal.
 			return_code=1;
 			if (isolate)
 			{
+				/* isolate external circuits.  Since now through pdu and BattB, has
+					to be crate by crate */
+				if (((-1==card_number)||(0==card_number))&&
+					(UnEmap_2V2==module_NI_CARDS->unemap_hardware_version)&&
+					!((module_NI_CARDS->unemap_2vx).isolate_mode))
+				{
+					set_shift_register(module_NI_CARDS,BattB_SHIFT_REGISTER_UnEmap2vx,0,
+						0);
+				}
 				ni_card=module_NI_CARDS;
 				for (j=0;j<module_number_of_NI_CARDS;j++)
 				{
@@ -7955,6 +7964,15 @@ to a calibration signal.
 			}
 			else
 			{
+				/* connect external circuits.  Since now through pdu and BattB, has
+					to be crate by crate */
+				if (((-1==card_number)||(0==card_number))&&
+					(UnEmap_2V2==module_NI_CARDS->unemap_hardware_version)&&
+					((module_NI_CARDS->unemap_2vx).isolate_mode))
+				{
+					set_shift_register(module_NI_CARDS,BattB_SHIFT_REGISTER_UnEmap2vx,1,
+						0);
+				}
 				ni_card=module_NI_CARDS;
 				for (j=0;j<module_number_of_NI_CARDS;j++)
 				{
