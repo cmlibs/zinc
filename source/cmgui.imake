@@ -832,7 +832,7 @@ MOTIF_LIB = $(X_LIB)/libMrm.a $(X_LIB)/libXm.a $(X_LIB)/libXt.a $(X_LIB)/libX11.
 #else /* defined (MOTIF) */
 MOTIF_LIB =
 #endif /* defined (MOTIF) */
-LIB = $(MOTIF_LIB) -lg2c -lm -ldl -lc /usr/lib/libpthread.a /usr/lib/libcrypt.a /usr/lib/libstdc++-libc6.2-2.a.3
+LIB = $(MOTIF_LIB) -lg2c -lm -ldl -lc /usr/lib/libpthread.a /usr/lib/libcrypt.a /usr/lib/libstdc++-2-libc6.1-1-2.9.0.a
 #else /* defined (DYNAMIC_GL_LINUX) */
 #if defined (MOTIF)
 MOTIF_LIB = -lMrm -lXm -lXt -lX11 -lXmu -lXext
@@ -1453,8 +1453,7 @@ Target : $(OBJS) $(COMPILED_RESOURCE_FILES) cmgui.ObjSuffix $(OBJECT_PATH)/$(EXP
 	cd $(OBJECT_PATH) ; \
 	rm -f product_object ; \
 	ln -s $(PRODUCT_OBJECT_PATH) product_object ; \
-	$(LINK) -o /tmp/Target $(ALL_FLAGS) `cat object.list` $(ALL_LIB) $(EXPORTS_LINK_FLAGS) $(COMPILED_RESOURCE_FILES) ; \
-	cp /tmp/Target $(BIN_PATH)/Target
+	$(LINK) -o /tmp/Target $(ALL_FLAGS) `cat object.list` $(ALL_LIB) $(EXPORTS_LINK_FLAGS) $(COMPILED_RESOURCE_FILES)
 
 CmguiFiltLibrary : $(LIB_FILT_OBJS) $(FILT_OBJ) Makefile libCmguiFiltExports
 	cd $(OBJECT_PATH)
