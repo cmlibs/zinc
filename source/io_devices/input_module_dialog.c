@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : input_module_dialog.c
 
-LAST MODIFIED : 23 March 2000
+LAST MODIFIED : 18 April 2000
 
 DESCRIPTION :
 Brings up a window which holds a data_grabber.  Allows the user to change what
@@ -2004,7 +2004,7 @@ Allows the user to control the input_module.
 									CREATE_CHOOSE_OBJECT_WIDGET(Scene)(
 									input_module_dialog->scene_chooser_form,
 									input_module_dialog->scene,scene_manager,
-									(MANAGER_CONDITIONAL_FUNCTION(Scene) *)NULL))
+									(MANAGER_CONDITIONAL_FUNCTION(Scene) *)NULL,(void *)NULL))
 								{
 									callback.data = (void *)input_module_dialog;
 									callback.procedure=
@@ -2015,7 +2015,8 @@ Allows the user to control the input_module.
 										CREATE_CHOOSE_OBJECT_WIDGET(Graphical_material)(
 										input_module_dialog->material_chooser_form,
 										input_module_dialog->material,material_manager,
-										(MANAGER_CONDITIONAL_FUNCTION(Graphical_material) *)NULL))
+										(MANAGER_CONDITIONAL_FUNCTION(Graphical_material) *)NULL,
+										(void *)NULL))
 									{
 										callback.data = (void *)input_module_dialog;
 										callback.procedure=

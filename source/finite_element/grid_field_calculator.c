@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : grid_field_calculator.c
 
-LAST MODIFIED : 3 December 1999
+LAST MODIFIED : 18 April 2000
 
 DESCRIPTION :
 An editor for setting values of grid fields in elements based on
@@ -911,7 +911,8 @@ control curve variation over coordinates - usually xi_texture_coordinates.
 								if (!(grid_calc->grid_field_widget=
 									CREATE_CHOOSE_OBJECT_WIDGET(Computed_field)(
 										grid_calc->grid_field_form,(struct Computed_field *)NULL,
-										computed_field_manager,Computed_field_has_1_component)))
+										computed_field_manager,Computed_field_has_1_component,
+										(void *)NULL)))
 								{
 									init_widgets=0;
 								}
@@ -919,7 +920,7 @@ control curve variation over coordinates - usually xi_texture_coordinates.
 									CREATE_CHOOSE_OBJECT_WIDGET(Computed_field)(
 										grid_calc->coord_field_form,(struct Computed_field *)NULL,
 										computed_field_manager,
-										Computed_field_has_1_to_3_components)))
+										Computed_field_has_1_to_3_components,(void *)NULL)))
 								{
 									init_widgets=0;
 								}
@@ -935,21 +936,24 @@ control curve variation over coordinates - usually xi_texture_coordinates.
 								if (!(grid_calc->axis1_curve_widget=
 									CREATE_CHOOSE_OBJECT_WIDGET(Control_curve)(
 										grid_calc->axis1_curve_form,(struct Control_curve *)NULL,
-										control_curve_manager,Control_curve_has_1_component)))
+										control_curve_manager,Control_curve_has_1_component,
+										(void *)NULL)))
 								{
 									init_widgets=0;
 								}
 								if (!(grid_calc->axis2_curve_widget=
 									CREATE_CHOOSE_OBJECT_WIDGET(Control_curve)(
 										grid_calc->axis2_curve_form,(struct Control_curve *)NULL,
-										control_curve_manager,Control_curve_has_1_component)))
+										control_curve_manager,Control_curve_has_1_component,
+										(void *)NULL)))
 								{
 									init_widgets=0;
 								}
 								if (!(grid_calc->axis3_curve_widget=
 									CREATE_CHOOSE_OBJECT_WIDGET(Control_curve)(
 										grid_calc->axis3_curve_form,(struct Control_curve *)NULL,
-										control_curve_manager,Control_curve_has_1_component)))
+										control_curve_manager,Control_curve_has_1_component,
+										(void *)NULL)))
 								{
 									init_widgets=0;
 								}

@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : settings_editor.c
 
-LAST MODIFIED : 22 February 2000
+LAST MODIFIED : 8 May 2000
 
 DESCRIPTION :
 Provides the widgets to manipulate element group settings.
@@ -2382,7 +2382,7 @@ Widget create_settings_editor_widget(Widget *settings_editor_widget,
 	struct MANAGER(VT_volume_texture) *volume_texture_manager,
 	struct User_interface *user_interface)
 /*******************************************************************************
-LAST MODIFIED : 23 February 2000
+LAST MODIFIED : 8 May 2000
 
 DESCRIPTION :
 Creates a settings_editor widget.
@@ -2720,7 +2720,7 @@ Creates a settings_editor widget.
 								CREATE_CHOOSE_OBJECT_WIDGET(Computed_field)(
 								settings_editor->coordinate_field_form,
 								(struct Computed_field *)NULL,computed_field_manager,
-								Computed_field_has_1_to_3_components)))
+								Computed_field_has_1_to_3_components,(void *)NULL)))
 							{
 								init_widgets=0;
 							}
@@ -2728,7 +2728,7 @@ Creates a settings_editor widget.
 								CREATE_CHOOSE_OBJECT_WIDGET(Computed_field)(
 								settings_editor->radius_scalar_field_form,
 								(struct Computed_field *)NULL,computed_field_manager,
-								Computed_field_has_1_component)))
+								Computed_field_has_1_component,(void *)NULL)))
 							{
 								init_widgets=0;
 							}
@@ -2736,7 +2736,7 @@ Creates a settings_editor widget.
 								CREATE_CHOOSE_OBJECT_WIDGET(Computed_field)(
 								settings_editor->iso_scalar_field_form,
 								(struct Computed_field *)NULL,computed_field_manager,
-								Computed_field_has_1_component)))
+								Computed_field_has_1_component,(void *)NULL)))
 							{
 								init_widgets=0;
 							}
@@ -2752,7 +2752,7 @@ Creates a settings_editor widget.
 								CREATE_CHOOSE_OBJECT_WIDGET(Computed_field)(
 								settings_editor->glyph_orientation_scale_field_form,
 								(struct Computed_field *)NULL,computed_field_manager,
-								Computed_field_is_orientation_scale_capable)))
+								Computed_field_is_orientation_scale_capable,(void *)NULL)))
 							{
 								init_widgets=0;
 							}
@@ -2760,7 +2760,8 @@ Creates a settings_editor widget.
 								CREATE_CHOOSE_OBJECT_WIDGET(Computed_field)(
 								settings_editor->label_field_form,
 								(struct Computed_field *)NULL,computed_field_manager,
-								(MANAGER_CONDITIONAL_FUNCTION(Computed_field) *)NULL)))
+								(MANAGER_CONDITIONAL_FUNCTION(Computed_field) *)NULL,
+								(void *)NULL)))
 							{
 								init_widgets=0;
 							}
@@ -2768,7 +2769,7 @@ Creates a settings_editor widget.
 								CREATE_CHOOSE_OBJECT_WIDGET(FE_field)(
 								settings_editor->native_discretization_field_form,
 								(struct FE_field *)NULL,fe_field_manager,
-								(MANAGER_CONDITIONAL_FUNCTION(FE_field) *)NULL)))
+								(MANAGER_CONDITIONAL_FUNCTION(FE_field) *)NULL,(void *)NULL)))
 							{
 								init_widgets=0;
 							}
@@ -2787,7 +2788,8 @@ Creates a settings_editor widget.
 								CREATE_CHOOSE_OBJECT_WIDGET(VT_volume_texture)(
 								settings_editor->volume_texture_form,
 								(struct VT_volume_texture *)NULL,volume_texture_manager,
-								(MANAGER_CONDITIONAL_FUNCTION(VT_volume_texture) *)NULL)))
+								(MANAGER_CONDITIONAL_FUNCTION(VT_volume_texture) *)NULL,
+								(void *)NULL)))
 							{
 								init_widgets=0;
 							}
@@ -2815,7 +2817,7 @@ Creates a settings_editor widget.
 								CREATE_CHOOSE_OBJECT_WIDGET(Computed_field)(
 								settings_editor->stream_vector_field_form,
 								(struct Computed_field *)NULL,computed_field_manager,
-								Computed_field_is_stream_vector_capable)))
+								Computed_field_is_stream_vector_capable,(void *)NULL)))
 							{
 								init_widgets=0;
 							}
@@ -2846,7 +2848,8 @@ Creates a settings_editor widget.
 								settings_editor->material_form,
 								(struct Graphical_material *)NULL,
 								settings_editor->graphical_material_manager,
-								(MANAGER_CONDITIONAL_FUNCTION(Graphical_material) *)NULL)))
+								(MANAGER_CONDITIONAL_FUNCTION(Graphical_material) *)NULL,
+								(void *)NULL)))
 							{
 								init_widgets=0;
 							}
@@ -2854,7 +2857,7 @@ Creates a settings_editor widget.
 								CREATE_CHOOSE_OBJECT_WIDGET(Computed_field)(
 								settings_editor->texture_coord_field_form,
 								(struct Computed_field *)NULL,computed_field_manager,
-								Computed_field_has_1_to_3_components)))
+								Computed_field_has_1_to_3_components,(void *)NULL)))
 							{
 								init_widgets=0;
 							}
@@ -2862,7 +2865,7 @@ Creates a settings_editor widget.
 								CREATE_CHOOSE_OBJECT_WIDGET(Computed_field)(
 								settings_editor->data_field_form,
 								(struct Computed_field *)NULL,computed_field_manager,
-								Computed_field_has_at_least_1_component)))
+								Computed_field_has_at_least_1_component,(void *)NULL)))
 							{
 								init_widgets=0;
 							}
@@ -2870,7 +2873,7 @@ Creates a settings_editor widget.
 								CREATE_CHOOSE_OBJECT_WIDGET(Spectrum)(
 								settings_editor->spectrum_form,
 								(struct Spectrum *)NULL,spectrum_manager,
-								(MANAGER_CONDITIONAL_FUNCTION(Spectrum) *)NULL)))
+								(MANAGER_CONDITIONAL_FUNCTION(Spectrum) *)NULL,(void *)NULL)))
 							{
 								init_widgets=0;
 							}
@@ -2879,7 +2882,8 @@ Creates a settings_editor widget.
 								settings_editor->selected_material_form,
 								(struct Graphical_material *)NULL,
 								settings_editor->graphical_material_manager,
-								(MANAGER_CONDITIONAL_FUNCTION(Graphical_material) *)NULL)))
+								(MANAGER_CONDITIONAL_FUNCTION(Graphical_material) *)NULL,
+								(void *)NULL)))
 							{
 								init_widgets=0;
 							}

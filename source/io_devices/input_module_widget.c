@@ -84,7 +84,6 @@ Finds the id of the buttons on the input_module widget.
 	{
 		XtVaGetValues(XtParent(w),XmNuserData,&temp_input_module,NULL);
 		XtVaGetValues(w,XmNuserData,&button_num,NULL);
-		printf("id\n");
 		switch (button_type)
 		{
 			case input_module_device_button_ID:
