@@ -10592,7 +10592,7 @@ sub_map.
 static int draw_2d_fibres(struct Map *map,struct Sub_map *sub_map,
 	struct Drawing_2d *drawing)
 /*******************************************************************************
-LAST MODIFIED : 10 May 2004
+LAST MODIFIED : 13 May 2004
 
 DESCRIPTION :
 Draw the fibres
@@ -10607,8 +10607,8 @@ Draw the fibres
 		mu_1,mu_2,mu_3,mu_4,pi,pi_over_2,sin_mu_hat,sin_theta_hat,*stretch_x,
 		*stretch_y,theta,theta_1,theta_2,theta_3,theta_4,two_pi,xi_1,xi_2,x_screen,
 		x_screen_left,x_screen_step,y_screen,y_screen_top,y_screen_step;
-	int *draw_region_number,fibre_iteration,fibre_spacing,i,j,k,l,map_height,
-		map_width,map_x_offset,map_y_offset,number_of_regions,pixel_left,pixel_top,
+	int *draw_region_number,fibre_iteration,fibre_spacing,i,j,k,l,map_width,
+		map_x_offset,map_y_offset,number_of_regions,pixel_left,pixel_top,
 		region_number,return_code,screen_region_height,screen_region_width,*start_x,
 		*start_y,temp_region_number,x_pixel,y_pixel;
 	struct Fibre_node *local_fibre_node_1,*local_fibre_node_2,*local_fibre_node_3,
@@ -10635,7 +10635,6 @@ Draw the fibres
 		map_x_offset=sub_map->x_offset;
 		map_y_offset=sub_map->y_offset;
 		map_width=sub_map->width;
-		map_height=sub_map->height;
 		start_x=sub_map->start_x;
 		start_y=sub_map->start_y;
 		min_x=sub_map->min_x;
@@ -11050,7 +11049,7 @@ LAST MODIFIED : 16 July 2001
 DESCRIPTION :
 Limits the string position given by <x_string> <y_string>, <bounds> <ascent>,
 <descent> to the map given by <map_x_offset> <map_y_offset> <map_width>
-< map_height>
+<map_height>
 ==============================================================================*/
 {
 	int return_code;
@@ -13380,7 +13379,7 @@ static int draw_2d_construct_interpolated_image_map(struct Map *map,
 	int *minimum_x,int *minimum_y,int *maximum_x,int *maximum_y,
 	float *max_f,float *min_f,char *background_map_boundary_base)
 /*******************************************************************************
-LAST MODIFIED : 10 May 2004
+LAST MODIFIED : 13 May 2004
 
 DESCRIPTION :
 Construct a colour map image for colour map or contours or  values  in the
@@ -13393,7 +13392,7 @@ Construct a colour map image for colour map or contours or  values  in the
 		*stretch_y,u,v,*x_mesh,*y_mesh,x_screen,x_screen_left,x_screen_step,
 		y_screen,y_screen_top,y_screen_step,*value_data,*weight_data,*x_data,
 		*y_data;
-	int column,i,j,map_width,map_height,number_of_data,number_of_mesh_rows,
+	int column,i,j,map_width,number_of_data,number_of_mesh_rows,
 		number_of_mesh_columns,pixel_left,pixel_top,return_code,row,
 		screen_region_height,screen_region_width,*start_x,*start_y,x_pixel,y_pixel;
 	struct Device **device_data;
@@ -13420,7 +13419,6 @@ Construct a colour map image for colour map or contours or  values  in the
 		minimum_y&&maximum_x&&maximum_y&&max_f&&min_f&&background_map_boundary_base)
 	{
 		map_width=sub_map->width;
-		map_height=sub_map->height;
 		stretch_x=sub_map->stretch_x;
 		stretch_y=sub_map->stretch_y;
 		min_x=sub_map->min_x;
