@@ -733,7 +733,7 @@ The <module_acquired_callback> is responsible for deallocating the samples.
 							{
 								message_size -= sizeof(number_of_samples);
 								/*???debug */
-								printf("number_of_samples.  %ld\n",number_of_samples);
+								printf("number_of_samples.  %lu\n",number_of_samples);
 #if defined (DEBUG)
 #endif /* defined (DEBUG) */
 								if (number_of_channels*(long)(number_of_samples*sizeof(short))==
@@ -10248,7 +10248,7 @@ transferred.
 				if (unemap_get_samples_acquired(channel_number,samples))
 				{
 					number_transferred=(*transfer_samples_function)(samples,
-						number_of_channels*number_of_samples,
+						(int)number_of_channels*number_of_samples,
 						transfer_samples_function_data);
 					if (number_of_channels*(int)number_of_samples!=number_transferred)
 					{
