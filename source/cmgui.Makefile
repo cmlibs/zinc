@@ -540,7 +540,7 @@ ifeq ($(SYSNAME),AIX)
    LIB = -lm -ldl -lSM -lICE -lpthread -lcrypt -lbsd -lld -lC128
 endif # SYSNAME == AIX
 ifeq ($(SYSNAME),win32)
-   LIB = -lgdi32  -lwinspool -lcomdlg32 -ladvapi32 -lshell32 -lole32 -loleaut32 -lnetapi32 -luuid -lwsock32 -lmpr -lwinmm -lversion -lodbc32 -lstdc++
+   LIB = -lg2c -lgdi32  -lwinspool -lcomdlg32 -ladvapi32 -lshell32 -lole32 -loleaut32 -lnetapi32 -luuid -lwsock32 -lmpr -lwinmm -lversion -lodbc32 -lstdc++
 endif # SYSNAME == win32
 
 ALL_DEFINES = $(COMPILE_DEFINES) $(TARGET_TYPE_DEFINES) \
