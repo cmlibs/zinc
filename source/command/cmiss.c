@@ -22649,7 +22649,8 @@ Executes a cm (back end) command.
 				{
 					/* somehow extract the whole command */
 					return_code=CMISS_connection_process_command(&CMISS,
-						state->command_string);
+						state->command_string, Command_window_get_message_pane(
+                  command_data->command_window));
 				}
 				else
 				{

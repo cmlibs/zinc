@@ -1992,10 +1992,10 @@ Main program for the CMISS Graphical User Interface
 
 #if defined (CELL)
 				/*created in execute_command_cell_open in command/cmiss.c */
-        if (command_data.cell_interface)
-        {
-          DESTROY(Cell_interface)(&command_data.cell_interface);
-        }
+				if (command_data.cell_interface)
+				{
+					DESTROY(Cell_interface)(&command_data.cell_interface);
+				}
 #endif /* defined (CELL) */
 
 #if defined (UNEMAP)

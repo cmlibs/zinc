@@ -64,7 +64,8 @@ Frees the memory for the connection, sets <*node_address> to NULL.
 ==============================================================================*/
 
 int CMISS_connection_process_command(
-	struct CMISS_connection **connection_address,char *command);
+	struct CMISS_connection **connection_address,char *command,
+	Widget modal_widget);
 /*******************************************************************************
 LAST MODIFIED : 3 October 2001
 

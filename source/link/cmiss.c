@@ -2990,7 +2990,7 @@ Frees the memory for the connection, sets <*node_address> to NULL.
 	if ((connection_address)&&(connection= *connection_address))
 	{
 		/* tell the back end to quit */
-		CMISS_connection_process_command(connection_address,"quit");
+		CMISS_connection_process_command(connection_address,"quit",(Widget)NULL);
 		if (connection= *connection_address)
 		{
 			/* destroy the connection */
@@ -3054,7 +3054,8 @@ Frees the memory for the connection, sets <*node_address> to NULL.
 } /* DESTROY(CMISS_connection) */
 
 int CMISS_connection_process_command(
-	struct CMISS_connection **connection_address,char *command)
+	struct CMISS_connection **connection_address,char *command,
+	Widget modal_widget)
 /*******************************************************************************
 LAST MODIFIED : 3 October 2001
 
@@ -3064,6 +3065,7 @@ Executes the given command within CMISS.
 {
 	int return_code;
 	struct CMISS_connection *connection;
+	struct User_interface *user_interface;
 
 	ENTER(CMISS_connection_process_command);
 	return_code=0;
@@ -3086,14 +3088,28 @@ Executes the given command within CMISS.
 				/*???DB.  Wait for cm to acknowledge receipt of command ? */
 				if (!(connection->asynchronous_commands)&&!(connection->cm_quit))
 				{
+					/* Hold on to the user interface in case the connection
+						closes on us */
+					user_interface = connection->user_interface;
+					busy_cursor_on(
+#if defined (MOTIF)
+						modal_widget,
+#endif /* defined (MOTIF) */
+						user_interface);
 					/* wait for command to complete */
 					connection->command_in_progress=1;
 					while (connection&&(connection->command_in_progress))
 					{
-						wh_output_wait(connection->command_output,0);
+						/* wh_output_wait(connection->command_output,0.001);
 						CMISS_connection_update(connection_address);
-						connection= *connection_address;
+						connection= *connection_address; */
+						application_main_step(user_interface);
 					}
+					busy_cursor_off(
+#if defined (MOTIF)
+						modal_widget,
+#endif /* defined (MOTIF) */
+						user_interface);
 				}
 			}
 			else

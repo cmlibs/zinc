@@ -1273,7 +1273,9 @@ Create the structures and retrieve the command window from the uil file.
 {
 #if defined (MOTIF)
 	Atom WM_DELETE_WINDOW;
+#if defined (OLD_CODE)								
 	long event_mask;
+#endif /* defined (OLD_CODE) */
 	MrmType command_window_class;
 	static MrmRegisterArg callback_list[]={
 		{"command_changed",(XtPointer)command_changed},
@@ -1320,7 +1322,9 @@ Create the structures and retrieve the command window from the uil file.
 		{"command_window_close",(XtPointer)command_window_close}
 	};
 	static MrmRegisterArg identifier_list[2];
+#if defined (OLD_CODE)								
 	XWindowAttributes window_attributes;
+#endif /* defined (OLD_CODE) */
 #endif /* defined (MOTIF) */
 	struct Command_window *command_window;
 #if defined (WINDOWS)
@@ -1455,23 +1459,27 @@ Create the structures and retrieve the command window from the uil file.
 									XtWindow(command_window->shell),XA_CMGUI_VERSION,XA_STRING,8,
 									PropModeReplace,(unsigned char *)version_id_string,
 									strlen(version_id_string));
+#if defined (OLD_CODE)								
 								XGetWindowAttributes(user_interface->display,
 									XtWindow(command_window->shell),&window_attributes);
 								event_mask=(window_attributes.your_event_mask)|
 									PropertyChangeMask;
 								XSelectInput(user_interface->display,
 									XtWindow(command_window->shell), event_mask);
+#endif /* defined (OLD_CODE) */
 								set_property_notify_callback(user_interface,
 									command_window_property_notify_callback,
-									(void *)command_window);
+									(void *)command_window, command_window->shell);
 								XtPopup(command_window->shell,XtGrabNone);
 								/*???DB.  If I don't have this call to XmuClientWindow, then
 									sometimes cmgui doesn't pick up any of the properties set by
 									Netscape.  It is some sort of timing problem.  XmuClientWindow
 									finds a window at or below the specified one which has the
 									WM_STATE property set */
+#if defined (OLD_CODE)								
 								XmuClientWindow(user_interface->display,
 									XtWindow(command_window->shell));
+#endif /* defined (OLD_CODE) */
 							}
 							else
 							{
@@ -1787,6 +1795,32 @@ Does not override the command prompt.
 
 	return (return_code);
 } /* Command_window_set_command_string */
+
+Widget Command_window_get_message_pane(struct Command_window *command_window)
+/*******************************************************************************
+LAST MODIFIED : 28 February 2002
+
+DESCRIPTION :
+Returns the message pane widget.
+==============================================================================*/
+{
+	Widget return_widget;
+
+	ENTER(Command_window_get_message_pane);
+	if (command_window)
+	{
+		return_widget = command_window->output_pane;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Command_window_get_message_pane.  Invalid argument(s)");
+		return_widget = (Widget)NULL;
+	}
+	LEAVE;
+
+	return (return_widget);
+} /* Command_window_get_message_pane */
 
 int write_command_window(char *message,struct Command_window *command_window)
 /*******************************************************************************

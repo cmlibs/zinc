@@ -320,6 +320,7 @@ Pops down the prompt window if it is up.
 	{
 		if (prompt_window->popup)
 		{
+			XtRemoveGrab(prompt_window->shell);
 			XtPopdown(prompt_window->shell);
 			prompt_window->popup = 0;
 			XtVaSetValues(prompt_window->prompt_history,
@@ -354,6 +355,7 @@ Pops up the prompt window.
 		if (!prompt_window->popup)
 		{
 			XtPopup(prompt_window->shell, XtGrabNone);
+			XtAddGrab(prompt_window->shell,True,False);
 			prompt_window->popup = 1;
 		}
 		return_code=1;
