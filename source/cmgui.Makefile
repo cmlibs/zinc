@@ -155,19 +155,21 @@ endif # $(USER_INTERFACE) == CONSOLE_USER_INTERFACE
 
 GRAPHICS_LIBRARY_DEFINES = -DOPENGL_API
 GRAPHICS_LIB =
-ifeq ($(SYSNAME:IRIX%=),)
-   GRAPHICS_LIBRARY_DEFINES += -DDM_BUFFERS
-   ifneq ($(ABI),64)
-      GRAPHICS_LIBRARY_DEFINES += -DSGI_MOVIE_FILE -DSGI_DIGITAL_MEDIA
-      GRAPHICS_LIB += -delay_load -lmoviefile -delay_load -ldmedia
-   endif # ABI != 64
-endif # SYSNAME == IRIX%=
-ifeq ($(SYSNAME),Linux)
-   GRAPHICS_LIBRARY_DEFINES += -DDM_BUFFERS
-endif # SYSNAME == Linux
-ifeq ($(SYSNAME),AIX)
-   GRAPHICS_LIBRARY_DEFINES += -DDM_BUFFERS
-endif # SYSNAME == AIX
+ifeq ($(USER_INTERFACE), MOTIF_USER_INTERFACE)
+   ifeq ($(SYSNAME:IRIX%=),)
+      GRAPHICS_LIBRARY_DEFINES += -DDM_BUFFERS
+      ifneq ($(ABI),64)
+         GRAPHICS_LIBRARY_DEFINES += -DSGI_MOVIE_FILE -DSGI_DIGITAL_MEDIA
+         GRAPHICS_LIB += -delay_load -lmoviefile -delay_load -ldmedia
+      endif # ABI != 64
+   endif # SYSNAME == IRIX%=
+   ifeq ($(SYSNAME),Linux)
+      GRAPHICS_LIBRARY_DEFINES += -DDM_BUFFERS
+   endif # SYSNAME == Linux
+   ifeq ($(SYSNAME),AIX)
+      GRAPHICS_LIBRARY_DEFINES += -DDM_BUFFERS
+   endif # SYSNAME == AIX
+endif # $(USER_INTERFACE) == MOTIF_USER_INTERFACE
 
 ifneq ($(USER_INTERFACE), GTK_USER_INTERFACE)
 #For GTK_USER_INTERFACE the OpenGL comes from the GTK_LIBRARIES automatically
