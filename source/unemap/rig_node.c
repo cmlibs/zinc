@@ -135,7 +135,7 @@ static struct FE_node *create_config_template_node(enum Config_node_type
 	config_node_type,FE_value focus,struct FE_field_order_info **field_order_info,
 	struct Unemap_package *package,struct FE_field **electrode_position_field)
 /*******************************************************************************
-LAST MODIFIED : 5 July 2000
+LAST MODIFIED : 24 July 2000
 
 DESCRIPTION :
 Creates and returns a configuration template node for read_text_config_FE_node
@@ -151,28 +151,28 @@ beware of name clashes if loading multiple rigs of the same node_type.
 Also returns the created electrode_position_field.
 ==============================================================================*/
 {		
-  #define AUXILIARY_NUM_CONFIG_FIELDS 3 /*,device_name_field,*/
-	/* device_type_field channel_number */
-  #define PATCH_NUM_CONFIG_FIELDS 4 /* electrode_position_field,*/ 
-	  /*device_name_field,device_type_field,channel_number*/
-  #define SOCK_NUM_CONFIG_FIELDS 4 /* electrode_position_field,*/
-	  /*device_name_field,device_type_field,channel_number */
-  #define TORSO_NUM_CONFIG_FIELDS 4/* electrode_position_field,*/ 
-    /*device_name_field,device_type_field,channel_number */
+  #define AUXILIARY_NUM_CONFIG_FIELDS 4 /*,device_name_field,*/
+	/* device_type_field channel_number,read_order_field */
+  #define PATCH_NUM_CONFIG_FIELDS 5 /* electrode_position_field,*/ 
+	/*device_name_field,device_type_field,channel_number,read_order_field*/	
+  #define SOCK_NUM_CONFIG_FIELDS 5 /* electrode_position_field,*/
+	/*device_name_field,device_type_field,channel_number,read_order_field */
+  #define TORSO_NUM_CONFIG_FIELDS 5/* electrode_position_field,*/ 
+  /*device_name_field,device_type_field,channel_number,read_order_field */
 
-	char *electrode_name =(char *)NULL;
-	char *rig_type_str =(char *)NULL;
+	char *electrode_name;
+	char *rig_type_str;
 	int field_number,number_of_fields,success,string_length;
 	struct CM_field_information field_info;	
 	struct Coordinate_system coordinate_system;	
-	struct FE_field *channel_number_field=(struct FE_field *)NULL;
-	struct FE_field *device_name_field=(struct FE_field *)NULL;
-	struct FE_field *device_type_field=(struct FE_field *)NULL;
-	struct FE_field *the_electrode_position_field=(struct FE_field *)NULL;
-	struct FE_field_order_info *the_field_order_info = 
-		(struct FE_field_order_info *)NULL;
-	struct FE_node *node=(struct FE_node *)NULL;
-	struct MANAGER(FE_field) *fe_field_manager=(struct MANAGER(FE_field) *)NULL;
+	struct FE_field *channel_number_field;
+	struct FE_field *device_name_field;
+	struct FE_field *device_type_field;
+	struct FE_field *the_electrode_position_field;
+	struct FE_field *read_order_field;
+	struct FE_field_order_info *the_field_order_info;
+	struct FE_node *node;
+	struct MANAGER(FE_field) *fe_field_manager;
 	
 	char *device_name_component_names[1]=
 	{
@@ -192,7 +192,11 @@ Also returns the created electrode_position_field.
 	};	
 	char *channel_number_component_names[1]=
 	{
-		"number"
+		"channel number"
+	};		
+	char *read_order_component_names[1]=
+	{
+		"read order"
 	};
 
 	enum FE_nodal_value_type *device_name_components_nodal_value_types[1]=
@@ -207,7 +211,6 @@ Also returns the created electrode_position_field.
 			FE_NODAL_VALUE
 		}
 	};
-
 	enum FE_nodal_value_type *electrode_components_nodal_value_types[3]=
 	{
 		{
@@ -220,8 +223,13 @@ Also returns the created electrode_position_field.
 			FE_NODAL_VALUE
 		}
 	};
-
 	enum FE_nodal_value_type *channel_number_components_nodal_value_types[1]=
+	{
+		{
+			FE_NODAL_VALUE
+		}
+	};		
+	enum FE_nodal_value_type *read_order_components_nodal_value_types[1]=
 	{
 		{
 			FE_NODAL_VALUE
@@ -234,11 +242,24 @@ Also returns the created electrode_position_field.
 	int electrode_components_number_of_derivatives[3]={0,0,0},
 		  electrode_components_number_of_versions[3]={1,1,1};
 	int channel_number_components_number_of_derivatives[1]={0},
-	  channel_number_components_number_of_versions[1]={1};
+	  channel_number_components_number_of_versions[1]={1};	
+	int read_order_components_number_of_derivatives[1]={0},
+	  read_order_components_number_of_versions[1]={1};
  
 	ENTER(create_config_template_node);
 	if(package)
-	{	
+	{		
+		electrode_name =(char *)NULL;
+		rig_type_str =(char *)NULL;	
+		channel_number_field=(struct FE_field *)NULL;
+		read_order_field=(struct FE_field *)NULL;
+		device_name_field=(struct FE_field *)NULL;
+		device_type_field=(struct FE_field *)NULL;			
+		the_electrode_position_field=(struct FE_field *)NULL;
+		the_field_order_info = 
+			(struct FE_field_order_info *)NULL;
+		node=(struct FE_node *)NULL;
+		fe_field_manager=(struct MANAGER(FE_field) *)NULL;
 		fe_field_manager=get_unemap_package_FE_field_manager(package);	
 		success = 1;			
 		field_number = 0;
@@ -386,8 +407,8 @@ Also returns the created electrode_position_field.
 				else
 				{	
 					display_message(ERROR_MESSAGE,
-								"create_config_template_node. Could not allocate memory for "
-								"electrode_name");
+						"create_config_template_node. Could not allocate memory for "
+						"electrode_name");
 					success =0;
 				}
 			} /* if(success) */
@@ -469,7 +490,32 @@ Also returns the created electrode_position_field.
 					display_message(ERROR_MESSAGE,
 						"create_config_template_node. Could not retrieve channel number field");
 					success=0;
-				}							
+				}
+				/* set up the info needed to create the read_order field */			
+				set_CM_field_information(&field_info,CM_FIELD,(int *)NULL);		
+				coordinate_system.type=NOT_APPLICABLE;				
+				/* create the channel number field, add it to the node */			
+				if (read_order_field=get_FE_field_manager_matched_field(
+					fe_field_manager,"read_order",
+					GENERAL_FE_FIELD,/*indexer_field*/(struct FE_field *)NULL,
+					/*number_of_indexed_values*/0,&field_info,
+					&coordinate_system,INT_VALUE,
+					/*number_of_components*/1,read_order_component_names,
+					/*number_of_times*/0,/*time_value_type*/UNKNOWN_VALUE))
+				{	
+					set_unemap_package_read_order_field(package,read_order_field);					
+					success =define_node_field_and_field_order_info(node,
+						read_order_field,read_order_components_number_of_derivatives
+						,read_order_components_number_of_versions,&field_number,
+						number_of_fields,read_order_components_nodal_value_types,
+						the_field_order_info); 
+				}
+				else
+				{
+					display_message(ERROR_MESSAGE,
+						"create_config_template_node. Could not retrieve channel number field");
+					success=0;
+				}			
 			} /* if(success) */		
 		}	
 		else
@@ -500,11 +546,11 @@ Also returns the created electrode_position_field.
 #if defined (UNEMAP_USE_NODES)
 static struct FE_node *set_config_FE_node(FILE *input_file,
 	struct FE_node *template_node,struct MANAGER(FE_node) *node_manager,
-	enum Config_node_type	config_node_type,int node_number,
+	enum Config_node_type	config_node_type,int node_number,int read_order_number,
 	struct FE_field_order_info *field_order_info,char *name,
 	int channel_number,FE_value xpos,FE_value ypos,FE_value zpos)
 /*******************************************************************************
-LAST MODIFIED : 3 September 1999
+LAST MODIFIED : 24 July 2000
 
 DESCRIPTION :
 sets a node's values storage with the passed, name, channel_number,
@@ -565,7 +611,14 @@ and the field_order_info
 					field_number++;
 					component.number=0;
 					set_FE_nodal_int_value(node,&component,/*version*/0,
-						FE_NODAL_VALUE,channel_number);
+						FE_NODAL_VALUE,channel_number);	
+					/* 5th field contains read_order_number */
+					component.field=get_FE_field_order_info_field(
+						field_order_info,field_number);
+					field_number++;
+					component.number=0;
+					set_FE_nodal_int_value(node,&component,/*version*/0,
+						FE_NODAL_VALUE,read_order_number);
 				} break;
 				case TORSO_ELECTRODE_TYPE:
 				{
@@ -599,7 +652,14 @@ and the field_order_info
 					field_number++;
 					component.number=0;
 					set_FE_nodal_int_value(node,&component,/*version*/0,
-						FE_NODAL_VALUE,channel_number);
+						FE_NODAL_VALUE,channel_number);	
+					/* 5th field contains read_order_number */
+					component.field=get_FE_field_order_info_field(
+						field_order_info,field_number);
+					field_number++;
+					component.number=0;
+					set_FE_nodal_int_value(node,&component,/*version*/0,
+						FE_NODAL_VALUE,read_order_number);
 				} break;		
 				case PATCH_ELECTRODE_TYPE:
 				{	 
@@ -631,7 +691,14 @@ and the field_order_info
 					field_number++;
 					component.number=0;
 					set_FE_nodal_int_value(node,&component,/*version*/0,
-						FE_NODAL_VALUE,channel_number);
+						FE_NODAL_VALUE,channel_number);	
+					/* 5th field contains read_order_number */
+					component.field=get_FE_field_order_info_field(
+						field_order_info,field_number);
+					field_number++;
+					component.number=0;
+					set_FE_nodal_int_value(node,&component,/*version*/0,
+						FE_NODAL_VALUE,read_order_number);
 				} break;
 				case AUXILIARY_TYPE:
 				{					
@@ -655,7 +722,14 @@ and the field_order_info
 					field_number++;
 					component.number=0;
 					set_FE_nodal_int_value(node,&component,/*version*/0,
-						FE_NODAL_VALUE,channel_number);
+						FE_NODAL_VALUE,channel_number);	
+					/* 4th field contains read_order_number */
+					component.field=get_FE_field_order_info_field(
+						field_order_info,field_number);
+					field_number++;
+					component.number=0;
+					set_FE_nodal_int_value(node,&component,/*version*/0,
+						FE_NODAL_VALUE,read_order_number);
 				} break;
 			}	/* switch() */
 			if (FIND_BY_IDENTIFIER_IN_MANAGER(FE_node,
@@ -686,10 +760,10 @@ and the field_order_info
 #if defined (UNEMAP_USE_NODES)
 static struct FE_node *read_text_config_FE_node(FILE *input_file,
 	struct FE_node *template_node,struct MANAGER(FE_node) *node_manager,
-	enum Config_node_type	config_node_type,int node_number,
+	enum Config_node_type	config_node_type,int node_number,int read_order_number,
 	struct FE_field_order_info *field_order_info)
 /*******************************************************************************
-LAST MODIFIED : 29 July 1999
+LAST MODIFIED : 21 July 2000
 
 DESCRIPTION :
 Reads a node  from a text configuration file, using the template node created in
@@ -898,7 +972,7 @@ cf read_FE_node() in import_finite_element.c
 			if (success)
 			{
 				if (!(node=set_config_FE_node(input_file,template_node,node_manager,
-					config_node_type,node_number,field_order_info,name,
+					config_node_type,node_number,read_order_number,field_order_info,name,
 					channel_number,xpos,ypos,zpos)))
 				{		
 					display_message(ERROR_MESSAGE,
@@ -937,10 +1011,10 @@ cf read_FE_node() in import_finite_element.c
 #if defined (UNEMAP_USE_NODES)
 static struct FE_node *read_binary_config_FE_node(FILE *input_file,
 	struct FE_node *template_node,struct MANAGER(FE_node) *node_manager,
-	enum Config_node_type	config_node_type,int node_number,
+	enum Config_node_type	config_node_type,int node_number,int read_order_number,
 	struct FE_field_order_info *field_order_info)
 /*******************************************************************************
-LAST MODIFIED : 29 July 1999
+LAST MODIFIED : 24 July 1999
 
 DESCRIPTION :
 Reads a node from a binary configuration file, using the template node created
@@ -1018,7 +1092,7 @@ cf read_FE_node() in import_finite_element.c
 			if (success)
 			{
 				if (!(node=set_config_FE_node(input_file,template_node,node_manager,
-					config_node_type,node_number,field_order_info,name,
+					config_node_type,node_number,read_order_number,field_order_info,name,
 					channel_number,xpos,ypos,zpos)))
 				{
 					display_message(ERROR_MESSAGE,
@@ -1171,14 +1245,14 @@ The caching must be ended by the calling function.
 #endif /* defined (OLD_CODE) */
 
 #if defined (UNEMAP_USE_NODES)
-static struct GROUP(FE_node) *read_binary_config_FE_node_group(FILE *input_file,
+static int read_binary_config_FE_node_group(FILE *input_file,
 	struct Unemap_package *package,enum Region_type rig_type,
 	struct FE_node_order_info **the_node_order_info,struct Rig *rig) 
 /*******************************************************************************
-LAST MODIFIED : 5 July 2000
+LAST MODIFIED : 24 July 2000
 
 DESCRIPTION :
-Reads and returns a node group from a configuration file. An FE_node_order_info
+Reads  a node group from a configuration file into the rig . An FE_node_order_info
 is created, and so must be destroyed by the calling function.
 cf read_FE_node_group() in import_finite_element.c, and read_configuration()
 in rig.c
@@ -1191,13 +1265,13 @@ in rig.c
 	enum Region_type region_type;
 	FE_value focus;	
 	int count,device_count,device_number,last_node_number,node_number,
-		number_of_pages,number_of_page_devices,number_of_regions,region_number,
-		region_number_of_devices,string_length,success;
+		number_of_pages,number_of_page_devices,number_of_regions,read_order_number,
+		region_number,region_number_of_devices,return_code,string_length;
 	int string_error =0;
 	struct FE_field *electrode_position_field;	
 	struct FE_field_order_info *field_order_info;	
 	struct FE_node *node,*template_node;
-	struct FE_node_order_info *node_order_info;	
+	struct FE_node_order_info *all_devices_node_order_info;	
 	struct GROUP(FE_node) *node_group,*all_devices_node_group;	
 	struct MANAGER(FE_element) *element_manager;
 	struct MANAGER(FE_node) *node_manager;
@@ -1208,7 +1282,7 @@ in rig.c
 	struct Region_list_item *region_item=(struct Region_list_item *)NULL;
 
 	ENTER(read_binary_config_FE_node_group);	
-	success = 1;
+	return_code = 1;
 	rig_name =(char *)NULL;	
 	region_name =(char *)NULL;
 	device_name =(char *)NULL;
@@ -1218,7 +1292,7 @@ in rig.c
 	electrode_position_field = (struct FE_field *)NULL;
 	node_group = (struct GROUP(FE_node) *)NULL;
 	all_devices_node_group = (struct GROUP(FE_node) *)NULL;
-	node_order_info =(struct FE_node_order_info *)NULL;	
+	all_devices_node_order_info =(struct FE_node_order_info *)NULL;	
 	element_manager= (struct MANAGER(FE_element) *)NULL;
 	device_count =0;
 	if(input_file&&package) 
@@ -1271,17 +1345,17 @@ in rig.c
 			set_Rig_all_devices_rig_node_group(rig,all_devices_node_group);
 			last_node_number = 1;	
 			/* read the number of regions */
-			BINARY_FILE_READ((char *)&number_of_regions,sizeof(int),1,input_file);	
+			BINARY_FILE_READ((char *)&number_of_regions,sizeof(int),1,input_file);			
 			region_number=0;			
 			if(region_item=get_Rig_region_list(rig))
 			{
-				while((region_number<number_of_regions)&&success)
+				while((region_number<number_of_regions)&&return_code)
 				{
 					if(!(region=get_Region_list_item_region(region_item)))
 					{
 						display_message(ERROR_MESSAGE,"read_binary_config_FE_node_group. "
 							"region_item->region is NULL ");
-						success=0;
+						return_code=0;
 					}
 					/* read the region type */
 					if (MIXED==rig_type)
@@ -1413,32 +1487,34 @@ in rig.c
 						/* read the number of inputs */
 						BINARY_FILE_READ((char *)&region_number_of_devices,
 							sizeof(int),1,input_file);	
-						/* create or reallocate the node_order_info */
-						if(!node_order_info)
+						/* create or reallocate the all_devices_node_order_info */
+						if(!all_devices_node_order_info)
 						{
-							node_order_info =CREATE(FE_node_order_info)
+							all_devices_node_order_info =CREATE(FE_node_order_info)
 								(region_number_of_devices);
-							*the_node_order_info = node_order_info;
-							if(!node_order_info)
+
+							*the_node_order_info = all_devices_node_order_info;
+							if(!all_devices_node_order_info)
 							{
 								display_message(ERROR_MESSAGE,"read_binary_config_FE_node_group."
 									"CREATE(FE_node_order_info) failed ");
-								success =0;						
+								return_code=0;						
 								DESTROY_GROUP(FE_node)(&node_group);
 								node_group = (struct GROUP(FE_node) *)NULL;					
 							}
 						}
 						else
 						{ 
-							if(!(success =add_nodes_FE_node_order_info(
-								region_number_of_devices,node_order_info)))
+							if(!(return_code =add_nodes_FE_node_order_info(
+								region_number_of_devices,all_devices_node_order_info)))
 							{							
 								DESTROY_GROUP(FE_node)(&node_group);
 								node_group = (struct GROUP(FE_node) *)NULL;	
 							}
 						}
 						/* read in the inputs */
-						while((region_number_of_devices>0)&&success)
+						read_order_number=0;
+						while((region_number_of_devices>0)&&return_code)
 						{
 							BINARY_FILE_READ((char *)&device_type,sizeof(enum Device_type),1,
 								input_file);
@@ -1456,7 +1532,7 @@ in rig.c
 									case ELECTRODE:
 									{
 										node=read_binary_config_FE_node(input_file,template_node,
-											node_manager,config_node_type,node_number,
+											node_manager,config_node_type,node_number,read_order_number,
 											field_order_info);
 										last_node_number = node_number;	
 									} break;
@@ -1468,7 +1544,7 @@ in rig.c
 										template_node = create_config_template_node(config_node_type,
 											0,&field_order_info,package,&electrode_position_field);
 										node=read_binary_config_FE_node(input_file,template_node,
-											node_manager,config_node_type,node_number,
+											node_manager,config_node_type,node_number,read_order_number,
 											field_order_info);
 										last_node_number = node_number;										
 									}break;
@@ -1483,7 +1559,7 @@ in rig.c
 												all_devices_node_group))
 											{
 												/* add the node to the node_order_info*/
-												set_FE_node_order_info_node(node_order_info,device_count,
+												set_FE_node_order_info_node(all_devices_node_order_info,device_count,
 													node);
 												device_count++;
 											}
@@ -1496,7 +1572,7 @@ in rig.c
 													all_devices_node_group);
 												REMOVE_OBJECT_FROM_MANAGER(FE_node)(node,node_manager);
 												node=(struct FE_node *)NULL;
-												success=0;
+												return_code=0;
 											}
 										}
 										else
@@ -1507,7 +1583,7 @@ in rig.c
 											REMOVE_OBJECT_FROM_GROUP(FE_node)(node,node_group);
 											REMOVE_OBJECT_FROM_MANAGER(FE_node)(node,node_manager);
 											node=(struct FE_node *)NULL;
-											success=0;
+											return_code=0;
 										}							
 									}/* if(!ADD_OBJECT_TO_MANAGER(FE_node) */
 									else
@@ -1517,7 +1593,7 @@ in rig.c
 											" node_manager");
 										REMOVE_OBJECT_FROM_MANAGER(FE_node)(node,node_manager);
 										node=(struct FE_node *)NULL;
-										success=0;
+										return_code=0;
 									}
 								}/*	if(node) */		
 								if(device_name)
@@ -1529,18 +1605,19 @@ in rig.c
 							{
 								display_message(ERROR_MESSAGE,
 									"read_binary_config_FE_node_group. Invalid device type");
-								success = 0;
+								return_code = 0;
 							}
 							region_number_of_devices--;
-						} /*	while (region_number_of_devices>0)&&success) */
+							read_order_number++;
+						} /*	while (region_number_of_devices>0)&&return_code) */
 					}	/* if (ALLOCATE(region_name */
 					else
 					{
 						display_message(ERROR_MESSAGE,
 							"read_binary_config_FE_node_group. Could not create region name");
-						success =0;		
+						return_code =0;		
 					}	
-					if (success)
+					if (return_code)
 					{
 						/* move to the next region */
 						region_number++;				
@@ -1550,21 +1627,21 @@ in rig.c
 					{
 						DEALLOCATE(region_name);
 					}				
-				}/*	while((region_number<number_of_regions)&&success) */
+				}/*	while((region_number<number_of_regions)&&return_code) */
 			}
 			else
 			{
 				display_message(ERROR_MESSAGE,
 						"read_binary_config_FE_node_group. rig->region_list is NULL");
-					success =0;		
+					return_code =0;		
 			}
-			if (success)
+			if (return_code)
 			{
 				/* read the number of pages */
 				BINARY_FILE_READ((char *)&number_of_pages,sizeof(int),1,input_file);
 				/* read in the pages */
 				count=0;		
-				while ((count<number_of_pages)&&success)
+				while ((count<number_of_pages)&&return_code)
 				{									
 					/* read the page name */
 					BINARY_FILE_READ((char *)&string_length,sizeof(int),1,input_file);
@@ -1576,7 +1653,7 @@ in rig.c
 						BINARY_FILE_READ((char *)&number_of_page_devices,sizeof(int),1,
 							input_file);
 						/* read the device list */					
-						while ((number_of_page_devices>0)&&success)
+						while ((number_of_page_devices>0)&&return_code)
 						{
 							BINARY_FILE_READ((char *)&device_number,sizeof(int),1,input_file);
 							number_of_page_devices--;
@@ -1586,21 +1663,21 @@ in rig.c
 					{
 						display_message(ERROR_MESSAGE,
 							"read_binary_config_FE_node_group.  Could not create page name");
-						success = 0;
+						return_code = 0;
 					}			 
 					if(page_name)
 					{
 						DEALLOCATE(page_name);
 					}
 					count++;
-				} /*	while ((count<number_of_pages)&&success) */
+				} /*	while ((count<number_of_pages)&&return_code) */
 			}	/* if (success) */
 		}
 		else
 		{
 			display_message(ERROR_MESSAGE,"read_binary_config_FE_node_group. "
 				"Can't read rig name");	
-			success =0;		
+			return_code =0;		
 		}	
 		/* We've finished. Clean up */	
 		if (template_node)
@@ -1640,20 +1717,20 @@ in rig.c
 	}
 	else
 	{
-		success = 0;
+		return_code = 0;
 		display_message(ERROR_MESSAGE,
 			"read_binary_config_FE_node_group. Invalid arguments");
 	}
 	LEAVE;
-	return (all_devices_node_group);
+	return (return_code);
 } /* read_binary_config_FE_node_group */
 #endif /* defined (UNEMAP_USE_NODES) */
 
 #if defined (UNEMAP_USE_NODES)
-static struct GROUP(FE_node) *read_text_config_FE_node_group(FILE *input_file,
+static int read_text_config_FE_node_group(FILE *input_file,
 	struct Unemap_package *package,enum Region_type region_type,struct Rig *rig)
 /*******************************************************************************
-LAST MODIFIED : 5 July 2000
+LAST MODIFIED : 24 July 2000
 
 DESCRIPTION :
 Reads a node group from a configuration file.
@@ -1669,7 +1746,7 @@ files, and there are no text signal files.
 	enum Config_node_type config_node_type;
 	FE_value focus;
 	int device_number,finished,is_auxiliary,is_electrode,last_node_number,
-		node_number,success,region_number;
+		node_number,read_order_number,region_number,return_code;
 	int string_error =0;
 	struct FE_node *node,*template_node;
 	struct FE_field *electrode_position_field;				
@@ -1692,9 +1769,10 @@ files, and there are no text signal files.
 	node_group=(struct GROUP(FE_node) *)NULL; 	
 	all_devices_node_group=(struct GROUP(FE_node) *)NULL;
 	element_manager=(struct MANAGER(FE_element) *)NULL;
+	read_order_number=0;
 	device_number=0;
 	region_number=0;
-	success=1;
+	return_code=1;
 	if (input_file&&package) 
 	{		
 		element_group_manager=get_unemap_package_element_group_manager(package);
@@ -1748,7 +1826,7 @@ files, and there are no text signal files.
 			finished=0;
 			if(region_item=get_Rig_region_list(rig))
 			{
-				while ((!feof(input_file))&&(!finished)&&success)
+				while ((!feof(input_file))&&(!finished)&&return_code)
 				{
 					if(region_item)
 					/* not an error if it isn't set*/
@@ -1779,7 +1857,7 @@ files, and there are no text signal files.
 						{	
 							display_message(ERROR_MESSAGE,"read_text_config_FE_node_group."
 								" Can't read torso rig name");	
-							success =0;	
+							return_code =0;	
 						}
 						config_node_type=TORSO_ELECTRODE_TYPE;
 						/*destroy any existing template,field_order_info*/						
@@ -1818,7 +1896,7 @@ files, and there are no text signal files.
 						{	
 							display_message(ERROR_MESSAGE,"read_text_config_FE_node_group."
 								" Can't read patch rig name");	
-							success=0;	
+							return_code=0;	
 						}
 						config_node_type=PATCH_ELECTRODE_TYPE;
 						/*destroy any existing template,field_order_info*/	
@@ -1865,7 +1943,7 @@ files, and there are no text signal files.
 						{	
 							display_message(ERROR_MESSAGE,"read_text_config_FE_node_group."
 								" Can't read sock rig name");	
-							success=0;	
+							return_code=0;	
 						}
 						config_node_type=SOCK_ELECTRODE_TYPE;
 						/*destroy any existing template,field_order_info*/	
@@ -1952,17 +2030,19 @@ files, and there are no text signal files.
 							template_node=create_config_template_node(config_node_type,0,
 								&field_order_info,package,&electrode_position_field);
 							node=read_text_config_FE_node(input_file,template_node,node_manager,
-								config_node_type,node_number,field_order_info);
+								config_node_type,node_number,read_order_number,field_order_info);
 							last_node_number=node_number;	
-							device_number++;					
+							device_number++;
+							read_order_number++;					
 						}
 						else if (is_electrode)
 						{							
 							/* not an auxiliary node,electrode node! */
 							node=read_text_config_FE_node(input_file,template_node,node_manager,
-								config_node_type,node_number,field_order_info);	
+								config_node_type,node_number,read_order_number,field_order_info);	
 							last_node_number=node_number;
 							device_number++;
+							read_order_number++;
 						}						
 						if (node)
 						{ 
@@ -1979,7 +2059,7 @@ files, and there are no text signal files.
 											all_devices_node_group);
 										REMOVE_OBJECT_FROM_MANAGER(FE_node)(node,node_manager);
 										node=(struct FE_node *)NULL;
-										success=0;
+										return_code=0;
 									}
 								}
 								else
@@ -1989,7 +2069,7 @@ files, and there are no text signal files.
 									REMOVE_OBJECT_FROM_GROUP(FE_node)(node,node_group);
 									REMOVE_OBJECT_FROM_MANAGER(FE_node)(node,node_manager);
 									node=(struct FE_node *)NULL;
-									success=0;
+									return_code=0;
 								}							
 							} /* if(!ADD_OBJECT_TO_MANAGER(FE_node) */
 							else
@@ -1998,7 +2078,7 @@ files, and there are no text signal files.
 									" Could not add node to node_manager");
 								REMOVE_OBJECT_FROM_MANAGER(FE_node)(node,node_manager);
 								node=(struct FE_node *)NULL;
-								success=0;
+								return_code=0;
 							}
 						} /*if (node) */					
 					} /* else if ((is_electrode = */
@@ -2020,9 +2100,9 @@ files, and there are no text signal files.
 			{
 				display_message(ERROR_MESSAGE,
 						"read_text_config_FE_node_group. rig->region_list is NULL");
-					success =0;		
+					return_code =0;		
 			}
-			if (success&&!feof(input_file))
+			if (return_code&&!feof(input_file))
 			{
 				if (!strcmp("pages",input_str))			
 				{				
@@ -2030,12 +2110,12 @@ files, and there are no text signal files.
 					if (read_string(input_file,"s",&name))
 					{
 						fscanf(input_file," %c",&separator);
-						while (!feof(input_file)&&success&&(':'==separator))
+						while (!feof(input_file)&&return_code&&(':'==separator))
 						{													
 							/* read the list of devices */
 							fscanf(input_file," ");
 							separator=',';					
-							while (!feof(input_file)&&success&&(separator!=':'))
+							while (!feof(input_file)&&return_code&&(separator!=':'))
 							{
 								if (read_string(input_file,"[^:, \n]",&dummy))
 								{
@@ -2066,7 +2146,7 @@ files, and there are no text signal files.
 										display_message(ERROR_MESSAGE,
 											"read_text_config_FE_node_group."
 											"  Could not create device name for page");
-										success=0;
+										return_code=0;
 									}
 								}
 								else
@@ -2074,7 +2154,7 @@ files, and there are no text signal files.
 									display_message(ERROR_MESSAGE,
 										"read_text_config_FE_node_group."
 										"  Could not create device name for page");
-									success=0;
+									return_code=0;
 								}
 							}
 						}
@@ -2083,14 +2163,14 @@ files, and there are no text signal files.
 					{
 						display_message(ERROR_MESSAGE,
 							"read_text_config_FE_node_group.  Could not create page name");
-						success=0;
+						return_code=0;
 					}
 				}
 				else
 				{
 					display_message(ERROR_MESSAGE,
 						"read_text_config_FE_node_group.  Invalid device type");
-					success=0;
+					return_code=0;
 				}
 			}
 		}	
@@ -2098,7 +2178,7 @@ files, and there are no text signal files.
 		{	
 			display_message(ERROR_MESSAGE,
 				"read_text_config_FE_node_group. Can't read rig name");	
-			success=0;	
+			return_code=0;	
 		}					
 		/* we've finished. Clean up */
 		/* clear template node */			
@@ -2134,55 +2214,56 @@ files, and there are no text signal files.
 	}
 	else
 	{
-		success=0;
+		return_code=0;
 		display_message(ERROR_MESSAGE,
 			"read_text_config_FE_node_group. Invalid arguments");
 	}
 	LEAVE;
 
-	return (all_devices_node_group);
+	return (return_code);
 } /* read_text_config_FE_node_group */
 #endif /* defined (UNEMAP_USE_NODES) */
 
 #if defined (UNEMAP_USE_NODES)
-static struct GROUP(FE_node) *read_config_FE_node_group(FILE *input_file,
+static int read_config_FE_node_group(FILE *input_file,
 	struct Unemap_package *unemap_package,
 	enum Region_type region_type,	enum Rig_file_type file_type,
 	struct FE_node_order_info **node_order_info,struct Rig *rig)
 /*******************************************************************************
-LAST MODIFIED : 28 July 1999
+LAST MODIFIED : 21 July 2000
 
 DESCRIPTION :
-Reads a node group from a configuration file.
+Reads a node group from a configuration file into the rig
 cf read_FE_node_group() in import_finite_element.c
 ==============================================================================*/
 {		
-	struct GROUP(FE_node) *node_group;
+	int return_code;
 
 	ENTER(read_config_FE_node_group);	
-	node_group=(struct GROUP(FE_node) *)NULL;	
+	return_code=0;
 	if (input_file&&unemap_package)
 	{				
 		if (TEXT==file_type)
 		{
-			node_group=read_text_config_FE_node_group(input_file,unemap_package,region_type,
+			return_code=read_text_config_FE_node_group(input_file,unemap_package,region_type,
 				rig);
 		}
 		else
 		{
 			/* must be binary */
-			node_group=read_binary_config_FE_node_group(input_file,unemap_package,
+			return_code=read_binary_config_FE_node_group(input_file,unemap_package,
 				region_type,node_order_info,rig);
 		}		
 	}
 	else
 	{	
+		return_code=0;
 		display_message(ERROR_MESSAGE,
 			"read_config_FE_node_group. Invalid arguments");
 	}
 	LEAVE;
 
-	return (node_group);
+	return (return_code);
 } /* read_config_FE_node_group */
 #endif /* defined (UNEMAP_USE_NODES) */
 
@@ -2200,82 +2281,106 @@ Performs the same loading functions as read_signal_file, but using the rig_node 
 Doesn't load in auxilliary devices that are linear combinations of other channels.
 ==============================================================================*/
 {
+	char
+	*channel_gain_component_names[1]=
+	{
+		"gain_value"
+	},	
+	*channel_offset_component_names[1]=
+	{
+		"offset_value"
+	},	
+	*display_start_time_component_names[1]=
+	{
+		"display start time"
+	},	
+	*display_end_time_component_names[1]=
+	{
+		"display end time"
+	},	
+	*signal_maximum_component_names[1]=
+	{
+		"maximum_value"
+	},
+	*signal_minimum_component_names[1]=
+	{
+		"minimum_value"
+	},	
+	*signal_component_names[1]=
+	{
+		"signal_value"
+	},	
+	*signal_status_component_names[1]=
+	{
+		"status"
+	};
+	
 
-		enum FE_nodal_value_type
-		*signal_components_nodal_value_types[1]=
+	enum FE_nodal_value_type
+	*signal_components_nodal_value_types[1]=
+	{
 		{
-			{
-				FE_NODAL_VALUE
-			}
-		},	
-		*channel_gain_components_nodal_value_types[1]=
+			FE_NODAL_VALUE
+		}
+	},	
+	*channel_gain_components_nodal_value_types[1]=
+	{
 		{
-			{
-				FE_NODAL_VALUE
-			}
-		},	
-		*signal_maximum_components_nodal_value_types[1]=
+			FE_NODAL_VALUE
+		}
+	},	
+	*display_start_time_components_nodal_value_types[1]=
+	{
 		{
-			{
-				FE_NODAL_VALUE
-			}
-		},
-		*signal_minimum_components_nodal_value_types[1]=
+			FE_NODAL_VALUE
+		}
+	},
+  *display_end_time_components_nodal_value_types[1]=
+	{
 		{
-			{
-				FE_NODAL_VALUE
-			}
-		},	
-		*channel_offset_components_nodal_value_types[1]=
+			FE_NODAL_VALUE
+		}
+	},
+	*signal_maximum_components_nodal_value_types[1]=
+	{
 		{
-			{
-				FE_NODAL_VALUE
-			}
-		},
-		*signal_status_components_nodal_value_types[1]=
+			FE_NODAL_VALUE
+		}
+	},
+	*signal_minimum_components_nodal_value_types[1]=
+	{
 		{
-			{
-				FE_NODAL_VALUE
-			}
-		};
-
-	  char
-		*channel_gain_component_names[1]=
+			FE_NODAL_VALUE
+		}
+	},	
+	*channel_offset_components_nodal_value_types[1]=
+	{
 		{
-			"gain_value"
-		},	
-		*signal_maximum_component_names[1]=
+			FE_NODAL_VALUE
+		}
+	},
+	*signal_status_components_nodal_value_types[1]=
+	{
 		{
-			"maximum_value"
-		},
-		*signal_minimum_component_names[1]=
-		{
-			"minimum_value"
-		},
-		*channel_offset_component_names[1]=
-		{
-			"offset_value"
-		},
-		*signal_component_names[1]=
-		{
-			"signal_value"
-		},	
-		*signal_status_component_names[1]=
-		{
-			"status"
-		};
+			FE_NODAL_VALUE
+		}
+	};
 	
 
 	char *device_type_string;
 	enum Signal_value_type signal_value_type;	
-	FE_value *node_signals_fe_value,period,*times;
+	FE_value end_time,*node_signals_fe_value,period,start_time,*times;
 	float *buffer_signals_float,*buffer_value,*channel_gains,*channel_offsets,frequency;
 	int *buffer_times,channel_number,count,fread_result,i,j,number_of_samples,number_of_devices,
 		number_of_signals,return_code,temp_int,		
 	  channel_gain_components_number_of_derivatives[1]={0},
 	  channel_gain_components_number_of_versions[1]={1},
 		channel_offset_components_number_of_derivatives[1]={0},
-	  channel_offset_components_number_of_versions[1]={1},
+	  channel_offset_components_number_of_versions[1]={1},	
+		display_start_time_components_number_of_derivatives[1]={0},
+	  display_start_time_components_number_of_versions[1]={1},
+	  display_end_time_components_number_of_derivatives[1]={0},
+	  display_end_time_components_number_of_versions[1]={1},
 		signal_components_number_of_derivatives[1]={0},
 	  signal_components_number_of_versions[1]={1},
 		signal_minimum_components_number_of_derivatives[1]={0},
@@ -2287,8 +2392,9 @@ Doesn't load in auxilliary devices that are linear combinations of other channel
 		short int *buffer_signals_short,*node_signals_short;
 	struct CM_field_information field_info;	
 	struct Coordinate_system coordinate_system;		
-	struct FE_field *channel_gain_field,*channel_offset_field,*signal_field,
-		*signal_maximum_field,*signal_minimum_field,*signal_status_field;
+	struct FE_field *channel_gain_field,*channel_offset_field,*display_start_time_field,
+		*display_end_time_field,*signal_field,*signal_maximum_field,*signal_minimum_field,
+		*signal_status_field;
 	struct FE_field_component component;
 	struct FE_node *device_node,*node,*node_managed;
 	struct MANAGER(FE_field) *fe_field_manager;
@@ -2310,6 +2416,8 @@ Doesn't load in auxilliary devices that are linear combinations of other channel
 	signal_field=(struct FE_field *)NULL;
 	channel_gain_field=(struct FE_field *)NULL;
 	channel_offset_field=(struct FE_field *)NULL;
+	display_start_time_field=(struct FE_field *)NULL;
+	display_end_time_field=(struct FE_field *)NULL;
 	signal_minimum_field=(struct FE_field *)NULL;
 	signal_maximum_field=(struct FE_field *)NULL;
 	times=(FE_value *)NULL;
@@ -2344,7 +2452,7 @@ Doesn't load in auxilliary devices that are linear combinations of other channel
 					/* read the sampling frequency (Hz) */
 					if (1==BINARY_FILE_READ((char *)&frequency,sizeof(float),1,
 						input_file))
-					{					
+					{																		
 						/* read the sample times */
 						if(ALLOCATE(buffer_times,int,number_of_samples))
 						{
@@ -2380,15 +2488,6 @@ Doesn't load in auxilliary devices that are linear combinations of other channel
 											buffer_value=buffer_signals_float;
 											for(i=0;i<number_of_samples*number_of_signals;i++)
 											{	
-#if defined (OLD_CODE)										
-												if(isnan((double)(*buffer_value)))
-												{
-													*buffer_value=0.0;	
-													display_message(ERROR_MESSAGE,
-														"read_signal_FE_node_group. signal value is not "
-														"a number. Set to 0 ");											
-												}
-#endif /* defined (OLD_CODE)*/
 												/* check if data is valid finite() checks inf and nan*/
 												if(!finite( (double)(*buffer_value)  ))
 												{
@@ -2487,7 +2586,10 @@ Doesn't load in auxilliary devices that are linear combinations of other channel
 											for(j=0;j<number_of_samples;j++)
 											{
 												times[j] = buffer_times[j]*period;										
-											}
+											}	
+											/*used a little later in fields display_start_time display_start_time*/
+											start_time=times[0];
+											end_time=times[number_of_samples-1];											
 										}
 										else
 										{
@@ -2818,6 +2920,73 @@ Doesn't load in auxilliary devices that are linear combinations of other channel
 														" define_field_at_node failed");							
 													return_code=0;
 												}
+												/* create the display start time field, add it to the node */	
+												/*NOTE: it's a CONSTANT_FE_FIELD, values stored t field, not node */
+												if (display_start_time_field=get_FE_field_manager_matched_field(
+													fe_field_manager,"display_start_time",
+													CONSTANT_FE_FIELD,/*indexer_field*/(struct FE_field *)NULL,
+													/*number_of_indexed_values*/0,&field_info,
+													&coordinate_system,FE_VALUE_VALUE,
+													/*number_of_components*/1,display_start_time_component_names,
+													/*number_of_times*/0,/*time_value_type*/UNKNOWN_VALUE))
+												{
+													if(define_FE_field_at_node(node,display_start_time_field,
+														display_start_time_components_number_of_derivatives
+														,display_start_time_components_number_of_versions,
+														display_start_time_components_nodal_value_types))
+													{	
+														/* add it to the unemap package */
+														set_unemap_package_display_start_time_field(package,
+															display_start_time_field);													
+														set_FE_field_FE_value_value(display_start_time_field,0,start_time);
+													}
+													else
+													{
+														display_message(ERROR_MESSAGE,"read_signal_FE_node_group."
+															"error defining display_start_time_field");	
+														return_code =0;
+													}	
+												}
+												else
+												{
+													display_message(ERROR_MESSAGE,"read_signal_FE_node_group."
+														"error getting  display_start_time_field");	
+													return_code =0;
+												}	
+												/* create the display start time field, add it to the node */	
+												/*NOTE: it's a CONSTANT_FE_FIELD, values stored t field, not node */
+												if (display_end_time_field=get_FE_field_manager_matched_field(
+													fe_field_manager,"display_end_time",
+													CONSTANT_FE_FIELD,/*indexer_field*/(struct FE_field *)NULL,
+													/*number_of_indexed_values*/0,&field_info,
+													&coordinate_system,FE_VALUE_VALUE,
+													/*number_of_components*/1,display_end_time_component_names,
+													/*number_of_times*/0,/*time_value_type*/UNKNOWN_VALUE))
+												{
+													if(define_FE_field_at_node(node,display_end_time_field,
+														display_end_time_components_number_of_derivatives
+														,display_end_time_components_number_of_versions,
+														display_end_time_components_nodal_value_types))
+													{	
+														/* add it to the unemap package */
+														set_unemap_package_display_end_time_field(package,
+															display_end_time_field);													
+														set_FE_field_FE_value_value(display_end_time_field,0,end_time);
+													}
+													else
+													{
+														display_message(ERROR_MESSAGE,"read_signal_FE_node_group."
+															"error defining display_end_time_field");	
+														return_code =0;
+													}	
+												}
+												else
+												{
+													display_message(ERROR_MESSAGE,"read_signal_FE_node_group."
+														"error getting  display_end_time_field");	
+													return_code =0;
+												}	
+
 												/* copy node back into the manager */
 												MANAGER_MODIFY_NOT_IDENTIFIER(FE_node,cm_node_identifier)
 													(node_managed,node,node_manager);
@@ -3129,6 +3298,9 @@ Create a Signal_drawing_package, set all it's fields to NULL.
 		package->device_name_field=(struct FE_field *)NULL;		
 		package->device_type_field=(struct FE_field *)NULL;	
 		package->channel_number_field=(struct FE_field *)NULL;
+		package->display_start_time_field=(struct FE_field *)NULL;
+		package->display_end_time_field=(struct FE_field *)NULL;
+		package->read_order_field=(struct FE_field *)NULL;
 		package->signal_field=(struct FE_field *)NULL;		
 		package->signal_status_field=(struct FE_field *)NULL;	
 		package->signal_minimum_field=(struct FE_field *)NULL;
@@ -3167,7 +3339,10 @@ sets <*package_address> to NULL.
 	{	
 		DEACCESS(FE_field)(&(package->device_name_field));	
 		DEACCESS(FE_field)(&(package->device_type_field));
-		DEACCESS(FE_field)(&(package->channel_number_field)); 
+		DEACCESS(FE_field)(&(package->channel_number_field));
+		DEACCESS(FE_field)(&(package->display_start_time_field));
+		DEACCESS(FE_field)(&(package->display_end_time_field));
+		DEACCESS(FE_field)(&(package->read_order_field));
 		DEACCESS(FE_field)(&(package->signal_field));	
 		DEACCESS(FE_field)(&(package->signal_status_field)); 
 		DEACCESS(FE_field)(&(package->signal_minimum_field));
@@ -3194,7 +3369,7 @@ struct FE_field *get_Signal_drawing_package_device_name_field(
 LAST MODIFIED : 16 August 1999
 
 DESCRIPTION :
-gets the field of the unemap package.
+gets the field of the Signal_drawing_package.
 ==============================================================================*/
 {	
 	struct FE_field *device_name_field;
@@ -3223,7 +3398,7 @@ int set_Signal_drawing_package_device_name_field(struct Signal_drawing_package *
 LAST MODIFIED : 16 August 1999
 
 DESCRIPTION :
-Sets the field of the draw package.
+Sets the field of the Signal_drawing_package.
 ==============================================================================*/
 {
 	int return_code;	
@@ -3253,7 +3428,7 @@ struct FE_field *get_Signal_drawing_package_device_type_field(
 LAST MODIFIED : 16 August 1999
 
 DESCRIPTION :
-Gets the field of the unemap package.
+Gets the field of the Signal_drawing_package.
 ==============================================================================*/
 {	
 	struct FE_field *device_type_field;
@@ -3282,7 +3457,7 @@ int set_Signal_drawing_package_device_type_field(struct Signal_drawing_package *
 LAST MODIFIED : 16 August 1999
 
 DESCRIPTION :
-Sets the field of the draw package.
+Sets the field of the Signal_drawing_package.
 ==============================================================================*/
 {
 	int return_code;	
@@ -3312,7 +3487,7 @@ struct FE_field *get_Signal_drawing_package_channel_number_field(
 LAST MODIFIED : 16 August 1999
 
 DESCRIPTION :
-Gets the field of the unemap package.
+Gets the field of the Signal_drawing_package.
 ==============================================================================*/
 {	
 	struct FE_field *channel_number_field;
@@ -3341,7 +3516,7 @@ int set_Signal_drawing_package_channel_number_field(struct Signal_drawing_packag
 LAST MODIFIED : 16 August 1999
 
 DESCRIPTION :
-Sets the field of the draw package.
+Sets the field of the Signal_drawing_package.
 ==============================================================================*/
 {
 	int return_code;	
@@ -3365,12 +3540,189 @@ Sets the field of the draw package.
 #endif /* defined (UNEMAP_USE_NODES) */
 
 #if defined (UNEMAP_USE_NODES)
+struct FE_field *get_Signal_drawing_package_display_start_time_field(
+	struct Signal_drawing_package *package)
+/*******************************************************************************
+LAST MODIFIED : 16 August 1999
+
+DESCRIPTION :
+Gets the field of the Signal_drawing_package.
+==============================================================================*/
+{	
+	struct FE_field *display_start_time_field;
+
+	ENTER(get_Signal_drawing_package_display_start_time_field);
+	if (package)
+	{	
+		display_start_time_field=package->display_start_time_field; 	
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"get_Signal_drawing_package_display_start_time_field.  Invalid argument");
+		display_start_time_field=(struct FE_field *)NULL;
+	}
+	LEAVE;
+
+	return (display_start_time_field);
+} /* get_Signal_drawing_package_display_start_time_field */
+#endif /* defined (UNEMAP_USE_NODES) */
+
+#if defined (UNEMAP_USE_NODES)
+int set_Signal_drawing_package_display_start_time_field(struct Signal_drawing_package *package,
+	struct FE_field *display_start_time_field)
+/*******************************************************************************
+LAST MODIFIED : 16 August 1999
+
+DESCRIPTION :
+Sets the field of the Signal_drawing_package.
+==============================================================================*/
+{
+	int return_code;	
+
+	ENTER(set_Signal_drawing_package_display_start_time_field);
+	if (package)
+	{
+		return_code=1;		
+		REACCESS(FE_field)(&(package->display_start_time_field),display_start_time_field);		
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"set_Signal_drawing_package_display_start_time_field.  Invalid argument");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* set_Signal_drawing_package_display_start_time_field */
+#endif /* defined (UNEMAP_USE_NODES) */
+
+#if defined (UNEMAP_USE_NODES)
+struct FE_field *get_Signal_drawing_package_display_end_time_field(
+	struct Signal_drawing_package *package)
+/*******************************************************************************
+LAST MODIFIED : 16 August 1999
+
+DESCRIPTION :
+Gets the field of the Signal_drawing_package.
+==============================================================================*/
+{	
+	struct FE_field *display_end_time_field;
+
+	ENTER(get_Signal_drawing_package_display_end_time_field);
+	if (package)
+	{	
+		display_end_time_field=package->display_end_time_field; 	
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"get_Signal_drawing_package_display_end_time_field.  Invalid argument");
+		display_end_time_field=(struct FE_field *)NULL;
+	}
+	LEAVE;
+
+	return (display_end_time_field);
+} /* get_Signal_drawing_package_display_end_time_field */
+#endif /* defined (UNEMAP_USE_NODES) */
+
+#if defined (UNEMAP_USE_NODES)
+int set_Signal_drawing_package_display_end_time_field(struct Signal_drawing_package *package,
+	struct FE_field *display_end_time_field)
+/*******************************************************************************
+LAST MODIFIED : 16 August 1999
+
+DESCRIPTION :
+Sets the field of the Signal_drawing_package.
+==============================================================================*/
+{
+	int return_code;	
+
+	ENTER(set_Signal_drawing_package_display_end_time_field);
+	if (package)
+	{
+		return_code=1;		
+		REACCESS(FE_field)(&(package->display_end_time_field),display_end_time_field);		
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"set_Signal_drawing_package_display_end_time_field.  Invalid argument");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* set_Signal_drawing_package_display_end_time_field */
+#endif /* defined (UNEMAP_USE_NODES) */
+
+#if defined (UNEMAP_USE_NODES)
+struct FE_field *get_Signal_drawing_package_read_order_field(
+	struct Signal_drawing_package *package)
+/*******************************************************************************
+LAST MODIFIED : 26 July 2000
+
+DESCRIPTION :
+Gets the field of the Signal_drawing_package.
+==============================================================================*/
+{	
+	struct FE_field *read_order_field;
+
+	ENTER(get_Signal_drawing_package_read_order_field);
+	if (package)
+	{	
+		read_order_field=package->read_order_field; 	
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"get_Signal_drawing_package_read_order_field.  Invalid argument");
+		read_order_field=(struct FE_field *)NULL;
+	}
+	LEAVE;
+
+	return (read_order_field);
+} /* get_Signal_drawing_package_read_order_field */
+#endif /* defined (UNEMAP_USE_NODES) */
+
+#if defined (UNEMAP_USE_NODES)
+int set_Signal_drawing_package_read_order_field(struct Signal_drawing_package *package,
+	struct FE_field *read_order_field)
+/*******************************************************************************
+LAST MODIFIED : 26 July 2000
+
+DESCRIPTION :
+Sets the field of the Signal_drawing_package.
+==============================================================================*/
+{
+	int return_code;	
+
+	ENTER(set_Signal_drawing_package_read_order_field);
+	if (package)
+	{
+		return_code=1;		
+		REACCESS(FE_field)(&(package->read_order_field),read_order_field);		
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"set_Signal_drawing_package_read_order_field.  Invalid argument");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* set_Signal_drawing_package_read_order_field */
+#endif /* defined (UNEMAP_USE_NODES) */
+
+#if defined (UNEMAP_USE_NODES)
 struct FE_field *get_Signal_drawing_package_signal_field(struct Signal_drawing_package *package)
 /*******************************************************************************
 LAST MODIFIED : 16 August 1999
 
 DESCRIPTION :
-Gets the field of the unemap package.
+Gets the field of the Signal_drawing_package.
 ==============================================================================*/
 {	
 	struct FE_field *signal_field;
@@ -3399,7 +3751,7 @@ int set_Signal_drawing_package_signal_field(struct Signal_drawing_package *packa
 LAST MODIFIED : 16 August 1999
 
 DESCRIPTION :
-Sets the field of the draw package.
+Sets the field of the Signal_drawing_package.
 ==============================================================================*/
 {
 	int return_code;	
@@ -3423,12 +3775,13 @@ Sets the field of the draw package.
 #endif /* defined (UNEMAP_USE_NODES) */
 
 #if defined (UNEMAP_USE_NODES)
-struct FE_field *get_Signal_drawing_package_signal_status_field(struct Signal_drawing_package *package)
+struct FE_field *get_Signal_drawing_package_signal_status_field
+ (struct Signal_drawing_package *package)
 /*******************************************************************************
 LAST MODIFIED : 16 August 1999
 
 DESCRIPTION :
-Gets the field of the unemap package.
+Gets the field of the Signal_drawing_package.
 ==============================================================================*/
 {	
 	struct FE_field *signal_status_field;
@@ -3457,7 +3810,7 @@ int set_Signal_drawing_package_signal_status_field(struct Signal_drawing_package
 LAST MODIFIED : 16 August 1999
 
 DESCRIPTION :
-Sets the field of the draw package.
+Sets the field of the Signal_drawing_package.
 ==============================================================================*/
 {
 	int return_code;	
@@ -3481,12 +3834,13 @@ Sets the field of the draw package.
 #endif /* defined (UNEMAP_USE_NODES) */
 
 #if defined (UNEMAP_USE_NODES)
-struct FE_field *get_Signal_drawing_package_signal_minimum_field(struct Signal_drawing_package *package)
+struct FE_field *get_Signal_drawing_package_signal_minimum_field
+ (struct Signal_drawing_package *package)
 /*******************************************************************************
 LAST MODIFIED : 16 August 1999
 
 DESCRIPTION :
-Gets the field of the unemap package.
+Gets the field of the Signal_drawing_package.
 ==============================================================================*/
 {	
 	struct FE_field *signal_minimum_field;
@@ -3515,7 +3869,7 @@ int set_Signal_drawing_package_signal_minimum_field(struct Signal_drawing_packag
 LAST MODIFIED : 16 August 1999
 
 DESCRIPTION :
-Sets the field of the draw package.
+Sets the field of the Signal_drawing_package.
 ==============================================================================*/
 {
 	int return_code;	
@@ -3539,12 +3893,13 @@ Sets the field of the draw package.
 #endif /* defined (UNEMAP_USE_NODES) */
 
 #if defined (UNEMAP_USE_NODES)
-struct FE_field *get_Signal_drawing_package_signal_maximum_field(struct Signal_drawing_package *package)
+struct FE_field *get_Signal_drawing_package_signal_maximum_field
+ (struct Signal_drawing_package *package)
 /*******************************************************************************
 LAST MODIFIED : 16 August 1999
 
 DESCRIPTION :
-Gets the field of the unemap package.
+Gets the field of the Signal_drawing_package.
 ==============================================================================*/
 {	
 	struct FE_field *signal_maximum_field;
@@ -3573,7 +3928,7 @@ int set_Signal_drawing_package_signal_maximum_field(struct Signal_drawing_packag
 LAST MODIFIED : 16 August 1999
 
 DESCRIPTION :
-Sets the field of the draw package.
+Sets the field of the Signal_drawing_package.
 ==============================================================================*/
 {
 	int return_code;	
@@ -3603,7 +3958,7 @@ struct FE_field *get_Signal_drawing_package_channel_offset_field(
 LAST MODIFIED : 16 August 1999
 
 DESCRIPTION :
-Gets the field of the unemap package.
+Gets the field of the Signal_drawing_package.
 ==============================================================================*/
 {	
 	struct FE_field *channel_offset_field;
@@ -3632,7 +3987,7 @@ int set_Signal_drawing_package_channel_offset_field(struct Signal_drawing_packag
 LAST MODIFIED : 16 August 1999
 
 DESCRIPTION :
-Sets the field of the unemap package.
+Sets the field of the Signal_drawing_package.
 ==============================================================================*/
 {
 	int return_code;	
@@ -3662,7 +4017,7 @@ struct FE_field *get_Signal_drawing_package_channel_gain_field(
 LAST MODIFIED : 16 August 1999
 
 DESCRIPTION :
-Gets the field of the unemap package.
+Gets the field of the Signal_drawing_package.
 ==============================================================================*/
 {	
 	struct FE_field *channel_gain_field;
@@ -3691,7 +4046,7 @@ int set_Signal_drawing_package_channel_gain_field(struct Signal_drawing_package 
 LAST MODIFIED : 16 August 1999
 
 DESCRIPTION :
-Sets the field of the unemap package.
+Sets the field of the Signal_drawing_package.
 ==============================================================================*/
 {
 	int return_code;	
@@ -4176,7 +4531,12 @@ The extraction arguments are:
 			int i,number_of_nodal_values;
 			short int *short_signal_data=(short int *)NULL;
 			struct FE_field_component component;						
-			
+			struct FE_field *display_start_time_field=(struct FE_field *)NULL;/*!!jw*/
+			struct FE_field *display_end_time_field=(struct FE_field *)NULL;	/*!!jw*/
+			struct FE_field *signal_field=(struct FE_field *)NULL;/*!!jw*/	
+			FE_value end_time,start_time,time_high,time_low;/*!!jw*/
+			int end_array_index,start_array_index,index_high,index_low;/*!!jw*/
+
 			return_code=1;
 			/*???DB.  Currently only storing one signal at node */
 			number_of_signals=1;
@@ -4198,9 +4558,36 @@ The extraction arguments are:
 			number_of_nodal_values=get_FE_nodal_array_number_of_elements(device_node,
 				&component,0,FE_NODAL_VALUE);
 			value_type= get_FE_nodal_value_type(device_node,&component,0);
-			if((number_of_nodal_values>0)&&(value_type!=UNKNOWN_VALUE))
+			/*!!jw*/
+			display_start_time_field=
+							get_Signal_drawing_package_display_start_time_field(signal_drawing_package);
+			display_end_time_field=
+							get_Signal_drawing_package_display_end_time_field(signal_drawing_package);
+			signal_field=
+							get_Signal_drawing_package_signal_field(signal_drawing_package);
+			/*!!jw*/		
+			if((number_of_nodal_values>0)&&(value_type!=UNKNOWN_VALUE)&&
+				display_start_time_field&&display_end_time_field&&signal_field)
 			{
-				return_code=1;
+				/*!!jw*/
+				return_code=get_FE_field_FE_value_value(display_start_time_field,0,
+					&start_time);
+				return_code=get_FE_field_FE_value_value(display_end_time_field,0,
+					&end_time);
+				return_code=get_FE_field_time_array_index_at_FE_value_time(
+					signal_field,start_time,&time_high,&time_low,&start_array_index,
+					&index_high,&index_low);	
+				return_code=get_FE_field_time_array_index_at_FE_value_time(
+					signal_field,end_time,&time_high,&time_low,&end_array_index,
+					&index_high,&index_low);
+				/*
+				printf("\n");
+				printf("start_time= %g start_array_index=%d \n",start_time,start_array_index);
+				printf("end_time= %g end_array_index=%d \n",end_time,end_array_index);
+				fflush(NULL);
+				*/
+				/*!!jw*/
+				/* return_code=1;*/
 			}
 			else
 			{			
@@ -4541,23 +4928,22 @@ The extraction arguments are:
 } /* extract_signal_information */
 
 #if defined (UNEMAP_USE_NODES)
-struct GROUP(FE_node) *file_read_signal_FE_node_group(char *file_name,
+int file_read_signal_FE_node_group(char *file_name,
 	struct Unemap_package *unemap_package,struct Rig *rig)
 /*******************************************************************************
-LAST MODIFIED : 27 June 2000
+LAST MODIFIED : 21 July 2000
 
 DESCRIPTION :
-Reads and returns node group from a signal file. Signal file includes the
+Reads  node group(s) from a signal file into rig . Signal file includes the
 configuration info.
 ==============================================================================*/
 {
 	enum Region_type region_type;	
 	FILE *input_file;
+	int return_code;
 	struct FE_node_order_info *node_order_info;
-	struct GROUP(FE_node) *node_group;
 
 	ENTER(file_read_signal_FE_node_group);
-	node_group=(struct GROUP(FE_node) *)NULL;
 	if (file_name&&unemap_package)
 	{		
 		node_order_info=(struct FE_node_order_info *)NULL;		
@@ -4569,10 +4955,10 @@ configuration info.
 				if ((SOCK==region_type)||(PATCH==region_type)||(MIXED==region_type)||
 					(TORSO==region_type))
 				{										
-					if (node_group=read_config_FE_node_group(input_file,unemap_package,
+					if (return_code=read_config_FE_node_group(input_file,unemap_package,
 						region_type,BINARY,&node_order_info,rig))	
 					{
-						if (read_signal_FE_node_group(input_file,unemap_package,
+						if (return_code=read_signal_FE_node_group(input_file,unemap_package,
 							node_order_info))
 						{
 							if(!read_event_settings_and_signal_status_FE_node_group
@@ -4581,36 +4967,42 @@ configuration info.
 								display_message(ERROR_MESSAGE,
 									"file_read_signal_FE_node_group."
 									" read_event_settings_FE_node_group failed");
+								return_code=0;
 							}
 						}
 						else
 						{	
 							display_message(ERROR_MESSAGE,
 								"file_read_signal_FE_node_group.  read_signal_FE_node_group failed");
+							return_code=0;
 						}
 						/* no longer needed */
 						DEACCESS(FE_node_order_info)(&node_order_info);
 					}
 					else
 					{	
+						return_code=0;
 						display_message(ERROR_MESSAGE,
 					"file_read_signal_FE_node_group.  read_config_FE_node_group failed");
 					}
 				}
 				else
 				{	
+					return_code=0;
 					display_message(ERROR_MESSAGE,
 						"file_read_signal_FE_node_group.  Invalid rig type");
 				}
 			}	
 			else
 			{
+				return_code=0;
 				display_message(ERROR_MESSAGE,
 					"file_read_signal_FE_node_group.  Error reading file - rig type");
 			}
 		}
 		else
 		{
+			return_code=0;
 			display_message(ERROR_MESSAGE,
 				"file_read_signal_FE_node_group.  Could not open %s",file_name);
 			fclose(input_file);
@@ -4618,23 +5010,24 @@ configuration info.
 	}
 	else
 	{	
+		return_code=0;
 		display_message(ERROR_MESSAGE,
 			"file_read_signal_FE_node_group.  Invalid arguments");
 	}
 	LEAVE;	
 
-	return (node_group);
+	return (return_code);
 } /* file_read_signal_FE_node_group */
 #endif /* defined (UNEMAP_USE_NODES) */
 
 #if defined (UNEMAP_USE_NODES)
-struct GROUP(FE_node) *file_read_config_FE_node_group(char *file_name,
+int file_read_config_FE_node_group(char *file_name,
 	struct Unemap_package *unemap_package,struct Rig *rig)
 /*******************************************************************************
-LAST MODIFIED : 27 June 2000
+LAST MODIFIED : 21 July 2000
 
 DESCRIPTION :
-Reads and returns configuration file into  a node group.
+Reads  configuration file into  a node group.
 cf file_read_FE_node_group() in import_finite_element.c
 ==============================================================================*/
 {	
@@ -4642,14 +5035,12 @@ cf file_read_FE_node_group() in import_finite_element.c
 	enum Region_type region_type;
 	enum Rig_file_type file_type;
 	FILE *input_file = (FILE *)NULL;
-	int success;	
+	int return_code;	
 	struct FE_node_order_info *node_order_info;
-	struct GROUP(FE_node) *node_group;
 
 	ENTER(file_read_config_FE_node_group);
-	node_group=(struct GROUP(FE_node) *)NULL;
 	input_file=(FILE *)NULL;
-	success=0;	
+	return_code=0;	
 	if (file_name&&unemap_package)
 	{
 		node_order_info=(struct FE_node_order_info *)NULL;
@@ -4662,7 +5053,7 @@ cf file_read_FE_node_group() in import_finite_element.c
 				(TORSO==region_type))
 			{
 				file_type=BINARY;
-				success=1;	
+				return_code=1;	
 			}
 			else
 			{
@@ -4687,25 +5078,25 @@ cf file_read_FE_node_group() in import_finite_element.c
 					/* shorten string, 'sock' only 4 chars long*/
 					rig_type_text[4]='\0';
 					file_type=TEXT;	
-					success=1;		
+					return_code=1;		
 				}
 				else if (!strcmp("torso",rig_type_text))
 				{	
 					region_type=TORSO;	
 					file_type=TEXT;		
-					success=1;		
+					return_code=1;		
 				}
 				else if (!strcmp("patch",rig_type_text))
 				{
 					region_type=PATCH;
 					file_type=TEXT;	
-					success=1;					
+					return_code=1;					
 				}
 				else if (!strcmp("mixed",rig_type_text))
 				{
 					region_type=MIXED;
 					file_type=TEXT;		
-					success=1;				
+					return_code=1;				
 				}	
 				else
 				{	
@@ -4716,18 +5107,11 @@ cf file_read_FE_node_group() in import_finite_element.c
 				}
 			} /* if(input_file=fopen(file_name,"r")) */
 		} /* if(!input_file) */
-		if (input_file&&success)
+		if (input_file&&return_code)
 		{		
-			node_group=read_config_FE_node_group(input_file,unemap_package,
+			return_code=read_config_FE_node_group(input_file,unemap_package,
 				region_type,file_type,&node_order_info,rig);
-			if (node_group)
-			{
-				success=1;
-			}
-			else
-			{	
-				success=0;
-			}
+		
 			fclose(input_file);		
 			/* no longer needed */
 			DEACCESS(FE_node_order_info)(&node_order_info);
@@ -4736,18 +5120,18 @@ cf file_read_FE_node_group() in import_finite_element.c
 		{	
 			display_message(ERROR_MESSAGE,
 				"file_read_config_FE_node_group.  Invalid file: %s",file_name);
-			success = 0;
+			return_code= 0;
 		}		
 	}
 	else
 	{
-		success=0;
+		return_code=0;
 		display_message(ERROR_MESSAGE,
 			"file_read_config_FE_node_group. Invalid arguments");
 	}
 	LEAVE;
 
-	return (node_group);
+	return (return_code);
 } /* file_read_config_FE_node_group */
 
 static int get_rig_node_map_electrode_position_min_max(struct FE_node *node,
@@ -5508,4 +5892,73 @@ in addition to the one created with create_config_template_node.
 	LEAVE;
 	return (return_code);
 } /* rig_node_group_change_electrode_position_focus */
+
+int sort_rig_node_sorts_by_read_order(void *first,void *second)
+/*******************************************************************************
+LAST MODIFIED : 25 July 2000
+
+DESCRIPTION :
+Returns whether the <first> rig_node_sort has a smaller (< 0), the same (0) or a
+larger (> 0) read_order than the <second> device.
+==============================================================================*/
+{
+	int first_number,return_code,second_number;
+
+	ENTER(sort_rig_node_sorts_by_read_order);
+	first_number=(*((struct Rig_node_sort **)first))->read_order;
+	second_number=(*((struct Rig_node_sort **)second))->read_order;
+	if (first_number<second_number)
+	{
+		return_code=-1;
+	}
+	else
+	{
+		if (first_number>second_number)
+		{
+			return_code=1;
+		}
+		else
+		{
+			return_code=0;
+		}
+	}
+	LEAVE;
+
+	return (return_code);
+} /*sort_rig_node_sorts_by_read_order(  */
+
+int sort_rig_node_sorts_by_event_time(void *first,void *second)
+/*******************************************************************************
+LAST MODIFIED : 26 July 2000
+
+DESCRIPTION :
+Returns whether the <first> rig_node_sort has a smaller (< 0), the same (0) or a
+larger (> 0) event_time than the <second> device.
+==============================================================================*/
+{
+	FE_value first_number,second_number;
+	int return_code;
+
+	ENTER(sort_rig_node_sorts_by_event_time);
+	first_number=(*((struct Rig_node_sort **)first))->event_time;
+	second_number=(*((struct Rig_node_sort **)second))->event_time;
+	if (first_number<second_number)
+	{
+		return_code=-1;
+	}
+	else
+	{
+		if (first_number>second_number)
+		{
+			return_code=1;
+		}
+		else
+		{
+			return_code=0;
+		}
+	}
+	LEAVE;
+
+	return (return_code);
+} /*sort_rig_node_sorts_by_event_time(  */
 #endif /* defined (UNEMAP_USE_NODES) */

@@ -16,8 +16,13 @@ different parameter choices can be compared in dfn.
 
 #include <stddef.h>
 #include <stdio.h>
+#if defined (UNEMAP_USE_NODES)
+#include "computed_field/computed_field.h"
+#include "computed_field/computed_field_finite_element.h"
+#endif /* defined (UNEMAP_USE_NODES) */
 #include "finite_element/finite_element.h"
 #include "general/geometry.h"
+
 /*
 Global types
 ------------

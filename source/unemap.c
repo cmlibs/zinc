@@ -275,9 +275,7 @@ Main program for unemap
 	struct Colour ambient_colour,default_colour;	
 	struct Computed_field *computed_field=(struct Computed_field *)NULL;
 	struct Computed_field_package *computed_field_package=
-		(struct Computed_field_package *)NULL;
-	struct Computed_field_finite_element_package *computed_field_finite_element_package=
-		(struct Computed_field_finite_element_package *)NULL;
+		(struct Computed_field_package *)NULL;	
 	struct Coordinate_system rect_coord_system;
 	struct Element_point_ranges_selection *element_point_ranges_selection=
 		(struct Element_point_ranges_selection *)NULL;
@@ -752,9 +750,7 @@ Main program for unemap
 			{
 				DESTROY(Computed_field)(&computed_field);
 			}
-			/* Add Computed_fields to the Computed_field_package */
-			computed_field_finite_element_package = 
-			  (struct Computed_field_finite_element_package *)NULL;
+			/* Add Computed_fields to the Computed_field_package */			
 			if (computed_field_package)
 			{
 				Computed_field_register_types_vector_operations(
@@ -763,7 +759,6 @@ Main program for unemap
 					computed_field_package);
 				if (fe_field_manager)
 				{
-					computed_field_finite_element_package =
 						Computed_field_register_types_finite_element(
 							computed_field_package,
 							fe_field_manager);

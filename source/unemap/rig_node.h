@@ -19,6 +19,17 @@ the rig and signal information. rather that special structures.
 Global types
 ------------
 */
+#if defined (UNEMAP_USE_NODES)
+struct Rig_node_sort
+/* so we can sort arrays of nodes, (or rather, arrays of Rig_node_sorts) */
+/* by  read_order or event_time using heapsort or quicksort */
+{
+	struct FE_node *node;
+	int read_order;
+	FE_value event_time; /* I think event_time is an FE_value*/
+};/* Rig_node_sort */
+#endif /* defined (UNEMAP_USE_NODES) */
+
 struct Signal_drawing_package
 /*******************************************************************************
 LAST MODIFIED : 29 July 1999
@@ -34,8 +45,10 @@ unemap_package struct. If a field is set to NULL, then it isn't drawn.
 	/* so we know what fields to get from the nodes*/
 	struct FE_field *channel_number_field;
 	struct FE_field *device_name_field;
-	struct FE_field *device_type_field;
-	/* the time series for the signals */	
+	struct FE_field *device_type_field;	
+	struct FE_field *display_end_time_field;
+	struct FE_field *display_start_time_field;
+	struct FE_field *read_order_field;	
 	struct FE_field *channel_gain_field;
 	struct FE_field *channel_offset_field; 
 	struct FE_field *signal_field;	
@@ -79,7 +92,7 @@ struct FE_field *get_Signal_drawing_package_electrode_position_field(
 LAST MODIFIED : July 13 1999
 
 DESCRIPTION :
-Gets the field of the unemap package.
+Gets the field of the signal_drawing_package.
 ==============================================================================*/
 #endif /* defined (UNEMAP_USE_NODES) */
 
@@ -90,7 +103,7 @@ int set_Signal_drawing_package_electrode_position_field(struct Signal_drawing_pa
 LAST MODIFIED : July 8 1999
 
 DESCRIPTION :
-Sets the field of the draw package.
+Sets the field of the signal_drawing_package.
 ==============================================================================*/
 #endif /* defined (UNEMAP_USE_NODES) */
 
@@ -101,7 +114,7 @@ struct FE_field *get_Signal_drawing_package_device_name_field(
 LAST MODIFIED : July 13 1999
 
 DESCRIPTION :
-Gets the field of the unemap package.
+Gets the field of the signal_drawing_package.
 ==============================================================================*/
 #endif /* defined (UNEMAP_USE_NODES) */
 
@@ -112,7 +125,7 @@ int set_Signal_drawing_package_device_name_field(struct Signal_drawing_package *
 LAST MODIFIED : July 8 1999
 
 DESCRIPTION :
-Sets the field of the draw package.
+Sets the field of the signal_drawing_package.
 ==============================================================================*/
 #endif /* defined (UNEMAP_USE_NODES) */
 
@@ -123,7 +136,7 @@ struct FE_field *get_Signal_drawing_package_device_type_field(
 LAST MODIFIED : July 13 1999
 
 DESCRIPTION :
-Gets the field of the unemap package.
+Gets the field of the signal_drawing_package.
 ==============================================================================*/
 #endif /* defined (UNEMAP_USE_NODES) */
 
@@ -134,7 +147,7 @@ int set_Signal_drawing_package_device_type_field(struct Signal_drawing_package *
 LAST MODIFIED : July 8 1999
 
 DESCRIPTION :
-Sets the field of the draw package.
+Sets the field of the signal_drawing_package.
 ==============================================================================*/
 #endif /* defined (UNEMAP_USE_NODES) */
 
@@ -145,7 +158,7 @@ struct FE_field *get_Signal_drawing_package_channel_number_field(
 LAST MODIFIED : July 13 1999
 
 DESCRIPTION :
-Gets the field of the unemap package.
+Gets the field of the  signal_drawing_package.
 ==============================================================================*/
 #endif /* defined (UNEMAP_USE_NODES) */
 
@@ -156,7 +169,73 @@ int set_Signal_drawing_package_channel_number_field(struct Signal_drawing_packag
 LAST MODIFIED : July 8 1999
 
 DESCRIPTION :
-Sets the field of the draw package.
+Sets the field of the signal_drawing_package.
+==============================================================================*/
+#endif /* defined (UNEMAP_USE_NODES) */
+
+#if defined (UNEMAP_USE_NODES)
+struct FE_field *get_Signal_drawing_package_display_start_time_field(
+	struct Signal_drawing_package *package);
+/*******************************************************************************
+LAST MODIFIED : July 13 1999
+
+DESCRIPTION :
+Gets the field of the  signal_drawing_package.
+==============================================================================*/
+#endif /* defined (UNEMAP_USE_NODES) */
+
+#if defined (UNEMAP_USE_NODES)
+int set_Signal_drawing_package_display_start_time_field(struct Signal_drawing_package *package,
+	struct FE_field *display_start_time_field);
+/*******************************************************************************
+LAST MODIFIED : July 8 1999
+
+DESCRIPTION :
+Sets the field of the signal_drawing_package.
+==============================================================================*/
+#endif /* defined (UNEMAP_USE_NODES) */
+
+#if defined (UNEMAP_USE_NODES)
+struct FE_field *get_Signal_drawing_package_display_end_time_field(
+	struct Signal_drawing_package *package);
+/*******************************************************************************
+LAST MODIFIED : July 13 1999
+
+DESCRIPTION :
+Gets the field of the  signal_drawing_package.
+==============================================================================*/
+#endif /* defined (UNEMAP_USE_NODES) */
+
+#if defined (UNEMAP_USE_NODES)
+int set_Signal_drawing_package_display_end_time_field(struct Signal_drawing_package *package,
+	struct FE_field *display_end_time_field);
+/*******************************************************************************
+LAST MODIFIED : July 8 1999
+
+DESCRIPTION :
+Sets the field of the signal_drawing_package.
+==============================================================================*/
+#endif /* defined (UNEMAP_USE_NODES) */
+
+#if defined (UNEMAP_USE_NODES)
+struct FE_field *get_Signal_drawing_package_read_order_field(
+	struct Signal_drawing_package *package);
+/*******************************************************************************
+LAST MODIFIED : July 26 2000
+
+DESCRIPTION :
+Gets the field of the signal_drawing_package.
+==============================================================================*/
+#endif /* defined (UNEMAP_USE_NODES) */
+
+#if defined (UNEMAP_USE_NODES)
+int set_Signal_drawing_package_read_order_field(struct Signal_drawing_package *package,
+	struct FE_field *read_order_field);
+/*******************************************************************************
+LAST MODIFIED : July 26 2000
+
+DESCRIPTION :
+Sets the field of the signal_drawing_package.
 ==============================================================================*/
 #endif /* defined (UNEMAP_USE_NODES) */
 
@@ -167,7 +246,7 @@ struct FE_field *get_Signal_drawing_package_signal_field(
 LAST MODIFIED : July 13 1999
 
 DESCRIPTION :
-Gets the field of the unemap package.
+Gets the field of the signal_drawing_package.
 ==============================================================================*/
 #endif /* defined (UNEMAP_USE_NODES) */
 
@@ -178,7 +257,7 @@ struct FE_field *get_Signal_drawing_package_signal_status_field(
 LAST MODIFIED : July 13 1999
 
 DESCRIPTION :
-Gets the field of the unemap package.
+Gets the field of the signal_drawing_package.
 ==============================================================================*/
 #endif /* defined (UNEMAP_USE_NODES) */
 
@@ -189,7 +268,7 @@ struct FE_field *get_Signal_drawing_package_signal_minimum_field(
 LAST MODIFIED : July 13 1999
 
 DESCRIPTION :
-Gets the field of the unemap package.
+Gets the field of the signal_drawing_package.
 ==============================================================================*/
 #endif /* defined (UNEMAP_USE_NODES) */
 
@@ -200,7 +279,7 @@ int set_Signal_drawing_package_signal_field(struct Signal_drawing_package *packa
 LAST MODIFIED : July 8 1999
 
 DESCRIPTION :
-Sets the field of the draw package.
+Sets the field of the signal_drawing_package.
 ==============================================================================*/
 #endif /* defined (UNEMAP_USE_NODES) */
 
@@ -211,7 +290,7 @@ int set_Signal_drawing_package_signal_status_field(struct Signal_drawing_package
 LAST MODIFIED : July 8 1999
 
 DESCRIPTION :
-Sets the field of the draw package.
+Sets the field of the signal_drawing_package.
 ==============================================================================*/
 #endif /* defined (UNEMAP_USE_NODES) */
 
@@ -222,7 +301,7 @@ struct FE_field *get_Signal_drawing_package_signal_minimum_field(
 LAST MODIFIED : July 13 1999
 
 DESCRIPTION :
-Gets the field of the unemap package.
+Gets the field of the signal_drawing_package.
 ==============================================================================*/
 #endif /* defined (UNEMAP_USE_NODES) */
 
@@ -233,7 +312,7 @@ int set_Signal_drawing_package_signal_minimum_field(struct Signal_drawing_packag
 LAST MODIFIED : July 8 1999
 
 DESCRIPTION :
-Sets the field of the draw package.
+Sets the field of the signal_drawing_package.
 ==============================================================================*/
 #endif /* defined (UNEMAP_USE_NODES) */
 
@@ -244,7 +323,7 @@ struct FE_field *get_Signal_drawing_package_signal_maximum_field(
 LAST MODIFIED : July 13 1999
 
 DESCRIPTION :
-Gets the field of the unemap package.
+Gets the field of the signal_drawing_package.
 ==============================================================================*/
 #endif /* defined (UNEMAP_USE_NODES) */
 
@@ -255,7 +334,7 @@ int set_Signal_drawing_package_signal_maximum_field(struct Signal_drawing_packag
 LAST MODIFIED : July 8 1999
 
 DESCRIPTION :
-Sets the field of the draw package.
+Sets the field of the signal_drawing_package.
 ==============================================================================*/
 #endif /* defined (UNEMAP_USE_NODES) */
 
@@ -266,7 +345,7 @@ struct FE_field *get_Signal_drawing_package_channel_offset_field(
 LAST MODIFIED : July 12 1999
 
 DESCRIPTION :
-Gets the field of the unemap package.
+Gets the field of the signal_drawing_package.
 ==============================================================================*/
 #endif /* defined (UNEMAP_USE_NODES) */
 
@@ -277,7 +356,7 @@ int set_Signal_drawing_package_channel_offset_field(struct Signal_drawing_packag
 LAST MODIFIED : July 8 1999
 
 DESCRIPTION :
-Sets the field of the unemap package.
+Sets the field of the signal_drawing_package.
 ==============================================================================*/
 #endif /* defined (UNEMAP_USE_NODES) */
 
@@ -288,7 +367,7 @@ struct FE_field *get_Signal_drawing_package_channel_gain_field(
 LAST MODIFIED : July 12 1999
 
 DESCRIPTION :
-Gets the field of the unemap package.
+Gets the field of the signal_drawing_package.
 ==============================================================================*/
 #endif /* defined (UNEMAP_USE_NODES) */
 
@@ -299,7 +378,7 @@ int set_Signal_drawing_package_channel_gain_field(struct Signal_drawing_package 
 LAST MODIFIED : July 8 1999
 
 DESCRIPTION :
-Sets the field of the unemap package.
+Sets the field of the signal_drawing_package.
 ==============================================================================*/
 #endif /* defined (UNEMAP_USE_NODES) */
 
@@ -345,25 +424,25 @@ The extraction arguments are:
 ==============================================================================*/
 
 #if defined (UNEMAP_USE_NODES)
-struct GROUP(FE_node) *file_read_config_FE_node_group(char *file_name,
-	struct Unemap_package *package,struct Rig *rig);
+int file_read_config_FE_node_group(char *file_name,
+	struct Unemap_package *unemap_package,struct Rig *rig);
 /*******************************************************************************
-LAST MODIFIED : 27 June 2000
+LAST MODIFIED : 21 July 2000
 
 DESCRIPTION :
-Reads and returns configuration file into  a node group.
+Reads  configuration file into  a node group.
 cf file_read_FE_node_group() in import_finite_element.c
 ==============================================================================*/
 #endif /* defined (UNEMAP_USE_NODES) */
 
 #if defined (UNEMAP_USE_NODES)
-struct GROUP(FE_node) *file_read_signal_FE_node_group(char *file_name,
+int file_read_signal_FE_node_group(char *file_name,
 	struct Unemap_package *unemap_package,struct Rig *rig);
 /*******************************************************************************
-LAST MODIFIED : 27 June 2000
+LAST MODIFIED : 21 July 2000
 
 DESCRIPTION :
-Reads and returns node group from a signal file. Signal file includes the
+Reads  node group(s) from a signal file into rig . Signal file includes the
 configuration info.
 ==============================================================================*/
 
@@ -412,6 +491,24 @@ DESCRIPTION :
 Add an electrode_position_field  to the <rig_node_group> nodes,
 in addition to the one created with create_config_template_node.
 
+==============================================================================*/
+
+int sort_rig_node_sorts_by_read_order(void *first,void *second);
+/*******************************************************************************
+LAST MODIFIED : 25 July 2000
+
+DESCRIPTION :
+Returns whether the <first> rig_node_sort has a smaller (< 0), the same (0) or a
+larger (> 0) read_order than the <second> device.
+==============================================================================*/
+
+int sort_rig_node_sorts_by_event_time(void *first,void *second);
+/*******************************************************************************
+LAST MODIFIED : 26 July 2000
+
+DESCRIPTION :
+Returns whether the <first> rig_node_sort has a smaller (< 0), the same (0) or a
+larger (> 0) event_time than the <second> device.
 ==============================================================================*/
 #endif /* defined (UNEMAP_USE_NODES) */
 #endif /* #if !defined (RIG_NODE_H) */

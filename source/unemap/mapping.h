@@ -16,6 +16,8 @@ DESCRIPTION :
 #include "general/geometry.h"
 #include "graphics/spectrum.h"
 #if defined (UNEMAP_USE_NODES)
+#include "computed_field/computed_field.h"
+#include "computed_field/computed_field_finite_element.h"
 #include "graphics/graphics_window.h"
 #include "graphics/graphical_element.h"
 #include "graphics/element_group_settings.h"

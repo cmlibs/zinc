@@ -42,16 +42,20 @@ element,nodes, fields when they are no longer required.
 	struct MANAGER(FE_element) *element_manager;
 	struct MANAGER(Computed_field) *computed_field_manager;
 	/* fields of the rig_nodes, so we know what to clean up, and what to*/
-	/*construct draw package with */
+	/*construct draw package with */	
+	struct FE_field *channel_gain_field;
+	struct FE_field *channel_number_field;
+	struct FE_field *channel_offset_field;
 	struct FE_field *device_name_field;
 	struct FE_field *device_type_field;
-	struct FE_field *channel_number_field;
+	struct FE_field *display_end_time_field;
+	struct FE_field *display_start_time_field;
+	struct FE_field *read_order_field;
 	struct FE_field *signal_field;
 	struct FE_field *signal_minimum_field;
 	struct FE_field *signal_maximum_field;
 	struct FE_field *signal_status_field;
-	struct FE_field *channel_gain_field;
-	struct FE_field *channel_offset_field;
+
 	struct Computed_field *signal_value_at_time_field;
 	struct Computed_field *time_field;
 	int access_count;
@@ -134,6 +138,60 @@ gets the field of the unemap package.
 
 int set_unemap_package_channel_number_field(struct Unemap_package *package,
 	struct FE_field *channel_number_field);
+/*******************************************************************************
+LAST MODIFIED : July 8 1999
+
+DESCRIPTION :
+Sets the field of the unemap package.
+==============================================================================*/
+
+struct FE_field *get_unemap_package_display_start_time_field(
+	struct Unemap_package *package);
+/*******************************************************************************
+LAST MODIFIED : July 12 1999
+
+DESCRIPTION :
+gets the field of the unemap package.
+==============================================================================*/
+
+int set_unemap_package_display_start_time_field(struct Unemap_package *package,
+	struct FE_field *display_start_time_field);
+/*******************************************************************************
+LAST MODIFIED : July 8 1999
+
+DESCRIPTION :
+Sets the field of the unemap package.
+==============================================================================*/
+
+struct FE_field *get_unemap_package_display_end_time_field(
+	struct Unemap_package *package);
+/*******************************************************************************
+LAST MODIFIED : July 12 1999
+
+DESCRIPTION :
+gets the field of the unemap package.
+==============================================================================*/
+
+int set_unemap_package_display_end_time_field(struct Unemap_package *package,
+	struct FE_field *display_end_time_field);
+/*******************************************************************************
+LAST MODIFIED : July 8 1999
+
+DESCRIPTION :
+Sets the field of the unemap package.
+==============================================================================*/
+
+struct FE_field *get_unemap_package_read_order_field(
+	struct Unemap_package *package);
+/*******************************************************************************
+LAST MODIFIED : July 12 1999
+
+DESCRIPTION :
+gets the field of the unemap package.
+==============================================================================*/
+
+int set_unemap_package_read_order_field(struct Unemap_package *package,
+	struct FE_field *read_order_field);
 /*******************************************************************************
 LAST MODIFIED : July 8 1999
 

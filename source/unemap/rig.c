@@ -805,7 +805,7 @@ the devices in the device list.
 					the_region->map_electrode_position_field);
 				the_region->map_electrode_position_field=(struct FE_field *)NULL;
 			}			
-		}
+		}	
 		DEACCESS(GROUP(FE_node))(&((*region)->rig_node_group));
 		DEACCESS(Map_3d_package)(&((*region)->map_3d_package));
 		DEACCESS(FE_field)(&((*region)->electrode_position_field));
@@ -1267,7 +1267,7 @@ NULL if unsuccessful.
 			rig->current_region=current_region;
 #if defined (UNEMAP_USE_NODES)
 			rig->unemap_package=ACCESS(Unemap_package)(unemap_package);
-			rig->all_devices_rig_node_group=(struct GROUP(FE_node) *)NULL;			
+			rig->all_devices_rig_node_group=(struct GROUP(FE_node) *)NULL;	
 #endif /* defined (UNEMAP_USE_NODES) */
 			rig->signal_file_name=(char *)NULL;
 #if defined (OLD_CODE)
@@ -1604,7 +1604,7 @@ memory for <**rig> and changes <*rig> to NULL.
 			device++;
 			number_of_devices--;
 		}
-#if defined (UNEMAP_USE_NODES)	
+#if defined (UNEMAP_USE_NODES) 
 		/*free up the package dependent things in the rig*/
 		if(((*rig)->all_devices_rig_node_group)&&((*rig)->unemap_package))
 		{

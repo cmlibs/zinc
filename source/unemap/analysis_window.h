@@ -198,6 +198,10 @@ The analysis window object.
 	float signal_aspect_ratio;
 	int signals_per_printer_page,signal_overlap_spacing;
 	struct Signal_drawing_information *signal_drawing_information;
+	enum Signal_order *signal_order;
+#if defined (UNEMAP_USE_NODES)
+	struct FE_node_order_info *rig_node_order_info;
+#endif
 }; /* struct Analysis_window */
 
 enum Analysis_window_update_flags
@@ -274,7 +278,7 @@ struct Analysis_window *create_Analysis_window(
 		/*???DB.  height of interval drawing area.  Better ? */
 	char *postscript_file_extension,char *events_file_extension,
 	struct Signal_drawing_information *signal_drawing_information,
-	struct User_interface *user_interface);
+	struct User_interface *user_interface,enum Signal_order *signal_order);
 /*******************************************************************************
 LAST MODIFIED : 11 February 2000
 
@@ -315,15 +319,11 @@ DESCRIPTION :
 The callback for redrawing the analysis interval drawing area.
 ==============================================================================*/
 
-int draw_all_signals(struct Rig *rig,int datum,int potential_time,
-	struct Signals_area *signals,enum Signal_layout layout,
-	float signal_aspect_ratio,int signal_overlap_spacing,
-	struct Signal_drawing_information *signal_drawing_information,
-	struct User_interface *user_interface,struct Signal_drawing_package *signal_drawing_package);
+int analysis_Window_free_rig_node_order_info(struct  Analysis_window *analysis);
 /*******************************************************************************
-LAST MODIFIED : 17 June 1999
+LAST MODIFIED : 25 July 2000
 
-DESCRIPTION :
+DESCRIPTION : frees up <analysis>'s the Fe_node_order_info  
 ==============================================================================*/
 
 int update_analysis_window_menu(struct Analysis_window *analysis);

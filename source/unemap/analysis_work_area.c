@@ -2187,14 +2187,19 @@ Sets up the analysis work area for analysing a set of signals.
 			{
 				destroy_Signal_buffer(&buffer);
 			}
-#if defined (UNEMAP_USE_NODES)
-			if (analysis->mapping_window->map)
+#if defined (UNEMAP_USE_NODES)			
+			if ((analysis->mapping_window)&&(analysis->mapping_window->map))
 			{
 				map_remove_torso_arms(analysis->mapping_window->map);
+			}	
+			/* remove nodes from window, so can remove from rig */		
+			if(analysis->window)
+			{
+				analysis_Window_free_rig_node_order_info(analysis->window);
 			}
 #endif /* defined (UNEMAP_USE_NODES)*/		
 			destroy_Rig(&(analysis->rig));			
-#if defined (UNEMAP_USE_NODES)		
+#if defined (UNEMAP_USE_NODES)				
 			if (analysis->signal_drawing_package)
 			{
 				DEACCESS(Signal_drawing_package)(&(analysis->signal_drawing_package));
@@ -2844,6 +2849,14 @@ Sets up the analysis work area for analysing a set of signals.
 			set_Signal_drawing_package_device_type_field(analysis->signal_drawing_package,field);
 			field=get_unemap_package_channel_number_field(analysis->unemap_package);
 			set_Signal_drawing_package_channel_number_field(analysis->signal_drawing_package,field);
+			field=get_unemap_package_display_start_time_field(analysis->unemap_package);
+			set_Signal_drawing_package_display_start_time_field(analysis->signal_drawing_package,
+				field);
+			field=get_unemap_package_display_end_time_field(analysis->unemap_package);
+			set_Signal_drawing_package_display_end_time_field(analysis->signal_drawing_package,
+				field);
+			field=get_unemap_package_read_order_field(analysis->unemap_package);
+			set_Signal_drawing_package_read_order_field(analysis->signal_drawing_package,field);
 			field=get_unemap_package_signal_field(analysis->unemap_package);
 			set_Signal_drawing_package_signal_field(analysis->signal_drawing_package,field);
 			field=get_unemap_package_channel_offset_field(analysis->unemap_package);
@@ -6074,7 +6087,6 @@ drawing area.
 	struct Map *map;
 	struct Signal_buffer *buffer;
 	struct Trace_window *trace;
-
 	unsigned int working_button;
 	Window working_window;
 	XButtonEvent *button_event;
@@ -6082,18 +6094,22 @@ drawing area.
 	XEvent xevent;
 	XFontStruct *font;
 	XmDrawingAreaCallbackStruct *callback;
-#if defined(OLD_CODE)
-	int end_analysis_interval,signal_index,start_analysis_interval;
-	struct User_interface *user_interface;
-#endif
+#if defined (UNEMAP_USE_NODES)
+	int time_index;
+	FE_value end_time,start_time;
+	struct FE_field *display_start_time_field,*display_end_time_field,*signal_field;
+	struct Signal_drawing_package *signal_drawing_package;
+#endif /* defined (UNEMAP_USE_NODES)*/
 
 	ENTER(select_analysis_interval);
+#if defined (UNEMAP_USE_NODES)
+	display_start_time_field=(struct FE_field *)NULL;
+	display_end_time_field=(struct FE_field *)NULL;
+	signal_field=(struct FE_field *)NULL;	
+	signal_drawing_package=(struct Signal_drawing_package *)NULL;
+#endif /* defined (UNEMAP_USE_NODES)*/
 	USE_PARAMETER(widget);
 	if ((analysis=(struct Analysis_work_area *)analysis_work_area)&&
-#if defined(OLD_CODE)
-		(user_interface=analysis->user_interface)&&
-		(signal_drawing_information=analysis->signal_drawing_information)&&
-#endif
 		(analysis->highlight)&&(highlight_device= *(analysis->highlight))&&
 		(buffer=get_Device_signal_buffer(highlight_device))&&(times=buffer->times))
 	{
@@ -6159,6 +6175,14 @@ drawing area.
 								}
 							}
 						}
+#if defined (UNEMAP_USE_NODES)
+						signal_drawing_package=analysis->signal_drawing_package;
+						display_start_time_field=
+							get_Signal_drawing_package_display_start_time_field(signal_drawing_package);
+						display_end_time_field=
+							get_Signal_drawing_package_display_end_time_field(signal_drawing_package);
+						signal_field=get_Signal_drawing_package_signal_field(signal_drawing_package);
+#endif /* defined (UNEMAP_USE_NODES)*/	
 						/* grab the pointer */
 						owner_events=True;
 						pointer_mode=GrabModeAsync;
@@ -6385,12 +6409,24 @@ drawing area.
 																buffer->start=SCALE_X(left_box,axes_left,0,
 																	1/x_scale);
 																interval->left_box=left_box;
+#if defined (UNEMAP_USE_NODES)															
+																time_index=buffer->start;
+																/*get the start time,update the display_start_time_field */
+																get_FE_field_time_FE_value(signal_field,time_index,&start_time);
+																set_FE_field_FE_value_value(display_start_time_field,0,start_time);
+#endif /* defined (UNEMAP_USE_NODES)*/	
 															}
 															if (right_box!=interval->right_box)
 															{
 																buffer->end=SCALE_X(right_box,axes_left,0,
 																	1/x_scale);
 																interval->right_box=right_box;
+#if defined (UNEMAP_USE_NODES)
+																time_index=buffer->end;	
+																/*get the end time,update the display_end_time_field */
+																get_FE_field_time_FE_value(signal_field,time_index,&end_time);
+																set_FE_field_FE_value_value(display_end_time_field,0,end_time);
+#endif /* defined (UNEMAP_USE_NODES)*/	
 															}
 															/* update the search interval */
 															temp=analysis->end_search_interval-
@@ -6539,83 +6575,6 @@ drawing area.
 													{
 														if (potential_time!=initial_potential_time)
 														{
-#if defined (OLD_CODE)
-															start_analysis_interval=buffer->start;
-															end_analysis_interval=buffer->end;
-
-															/* clear the old markers */
-															trace_draw_potential_time(analysis->trace);
-															if ((analysis->window)&&(analysis->rig)&&
-																(signals= &(analysis->window->signals)))
-															{
-																signals_axes_left=signals->axes_left;
-																signals_axes_top=signals->axes_top;
-																signals_axes_width=signals->axes_width;
-																signals_axes_height=signals->axes_height;
-																signals_window=XtWindow(signals->drawing_area);
-																signals_pixel_map=signals->drawing->pixel_map;
-																drawing_width=signals->drawing->width;
-																drawing_height=signals->drawing->height;
-																number_of_rows=signals->number_of_rows;
-																number_of_columns=signals->number_of_columns;
-																device_number=analysis->rig->number_of_devices;
-																device=analysis->rig->devices;
-																switch (signals->layout)
-																{
-																	case SEPARATE_LAYOUT:
-																	{
-																		rows_divisor=number_of_rows;
-																	} break;
-																	case OVERLAP_LAYOUT:
-																	{
-																		rows_divisor=number_of_rows+3;
-																	} break;
-																}
-																xpos=signals_axes_left;
-																ypos=signals_axes_top;
-																i=0;
-																j=0;
-																while (device_number>0)
-																{
-																	if ((*device)->signal)
-																	{
-																		signal_index=(*device)->signal->index;
-																	}
-																	else
-																	{
-																		signal_index= -1;
-																	}
-																	draw_potential_time_marker(
-																		analysis->potential_time,buffer,
-																		(*device)->channel,signal_index,
-																		SIGNAL_AREA_DETAIL,start_analysis_interval,
-																		end_analysis_interval,xpos,ypos,
-																		signals_axes_width,signals_axes_height,
-																		signals_window,signals_pixel_map,
-																		signal_drawing_information,user_interface);
-																	i++;
-																	if (i>=number_of_rows)
-																	{
-																		i=0;
-																		ypos=signals_axes_top;
-																		j++;
-																		xpos=signals_axes_left+
-																			(j*drawing_width)/number_of_columns;
-																	}
-																	else
-																	{
-																		ypos=signals_axes_top+
-																			(i*drawing_height)/rows_divisor;
-																	}
-																	device_number--;
-																	device++;
-																}
-															}
-															else
-															{
-																signals=(struct Signals_area *)NULL;
-															}
-#endif /* defined (OLD_CODE) */
 															/* clear the cursor */
 															XDrawLine(display,pixel_map,
 																potential_time_colour,
@@ -6640,101 +6599,6 @@ drawing area.
 																analysis->potential_time_object),
 																((double)times[potential_time]*1000.0/
 																frequency));
-#if defined (OLD_CODE)
-															/* write the potential time */
-															sprintf(number_string,"%d",
-																(int)((float)(times[analysis->potential_time])*
-																1000./frequency));
-															length=strlen(number_string);
-															XTextExtents(font,number_string,length,&direction,
-																&ascent,&descent,&bounds);
-															x_string=potential_time+
-																(bounds.lbearing-bounds.rbearing+1)/2;
-															if (x_string+bounds.rbearing>=axes_right)
-															{
-																x_string=axes_right-bounds.rbearing;
-															}
-															if (x_string-bounds.lbearing<axes_left)
-															{
-																x_string=axes_left+bounds.lbearing;
-															}
-															y_string=axes_top-descent;
-															XDrawString(display,pixel_map,
-																potential_time_colour_text,
-																x_string,y_string,number_string,length);
-															XDrawString(display,working_window,
-																potential_time_colour,
-																x_string,y_string,number_string,length);
-															/* draw the new markers */
-															trace_draw_potential_time(analysis->trace);
-															if (signals)
-															{
-																device_number=analysis->rig->number_of_devices;
-																device=analysis->rig->devices;
-																xpos=signals_axes_left;
-																ypos=signals_axes_top;
-																i=0;
-																j=0;
-																while (device_number>0)
-																{
-																	if ((*device)->signal)
-																	{
-																		signal_index=(*device)->signal->index;
-																	}
-																	else
-																	{
-																		signal_index= -1;
-																	}
-																	draw_potential_time_marker(
-																		analysis->potential_time,buffer,
-																		(*device)->channel,signal_index,
-																		SIGNAL_AREA_DETAIL,start_analysis_interval,
-																		end_analysis_interval,xpos,ypos,
-																		signals_axes_width,signals_axes_height,
-																		signals_window,signals_pixel_map,
-																		signal_drawing_information,user_interface);
-																	i++;
-																	if (i>=number_of_rows)
-																	{
-																		i=0;
-																		ypos=signals_axes_top;
-																		j++;
-																		xpos=signals_axes_left+
-																			(j*drawing_width)/number_of_columns;
-																	}
-																	else
-																	{
-																		ypos=signals_axes_top+
-																			(i*drawing_height)/rows_divisor;
-																	}
-																	device_number--;
-																	device++;
-																}
-															}
-															/* update the mapping window */
-															if ((POTENTIAL==analysis->map_type)&&
-																(mapping=analysis->mapping_window)&&
-																(map=mapping->map))
-															{
-																if (NO_INTERPOLATION==map->interpolation_type)
-																{
-																	update_mapping_drawing_area(mapping,2);
-																	update_mapping_colour_or_auxili(mapping);
-																}
-																else
-																{
-																	analysis->map_type=NO_MAP_FIELD;
-																	map->colour_option=HIDE_COLOUR;
-																	map->contours_option=HIDE_CONTOURS;
-																	map->electrodes_option=SHOW_ELECTRODE_NAMES;
-																	/* clear the colour map */
-																	map->activation_front= -1;
-																	update_mapping_drawing_area(mapping,2);
-																	update_mapping_colour_or_auxili(mapping);
-																	XtSetSensitive(mapping->animate_button,False);
-																}
-															}
-#endif /* defined (OLD_CODE) */
 														}
 														else
 														{
@@ -9832,6 +9696,7 @@ should be done as a callback from the trace_window.
 	LEAVE;
 } /* select_trace_3_drawing_area */
 
+#if 0
 static struct Rig *create_processed_rig(struct Rig *raw_rig)
 /*******************************************************************************
 LAST MODIFIED : 13 October 1999
@@ -10065,6 +9930,540 @@ Duplicates the raw rig, except that
 												(region_number!=region->number))
 											{
 												region_item=get_Region_list_item_next(region_item);
+											}											
+											if (!region_item)
+											{
+												display_message(ERROR_MESSAGE,
+													"create_processed_rig.  Missing region");
+												destroy_Rig(&rig);
+											}											
+										}
+										else
+										{
+											region=(struct Region *)NULL;
+										}
+										if (rig)
+										{
+											if ((description=create_Device_description(
+												(*raw_device)->description->name,
+												(*raw_device)->description->type,region))&&
+												(*device=create_Device((*raw_device)->number,
+												description,channel,signal)))
+											{
+												(rig->number_of_devices)++;
+												(region->number_of_devices)++;
+												switch ((*raw_device)->description->type)
+												{
+													case AUXILIARY:
+													{
+														auxiliary= &((description->properties).auxiliary);
+														raw_auxiliary= &(((*raw_device)->description->
+															properties).auxiliary);
+														if (0<(number_of_electrodes=raw_auxiliary->
+															number_of_electrodes))
+														{
+															ALLOCATE(auxiliary->electrodes,struct Device *,
+																number_of_electrodes);
+															ALLOCATE(auxiliary->electrode_coefficients,float,
+																number_of_electrodes);
+															if ((auxiliary->electrodes)&&
+																(auxiliary->electrode_coefficients))
+															{
+																auxiliary->number_of_electrodes=
+																	number_of_electrodes;
+																j=0;
+																while ((j<number_of_electrodes)&&rig)
+																{
+																	if ((auxiliary->electrodes)[j]=create_Device(
+																		((raw_auxiliary->electrodes)[j])->number,
+																		(struct Device_description *)NULL,
+																		(struct Channel *)NULL,
+																		(struct Signal *)NULL))
+																	{
+																		(auxiliary->electrode_coefficients)[j]=
+																			(raw_auxiliary->
+																			electrode_coefficients)[j];
+																		j++;
+																	}
+																	else
+																	{
+																		display_message(ERROR_MESSAGE,
+"create_processed_rig.  Could not create electrode for an auxiliary device that is a linear combination");
+																		while (j>0)
+																		{
+																			j--;
+																			destroy_Device((auxiliary->electrodes)+j);
+																		}
+																		destroy_Rig(&rig);
+																	}
+																}
+															}
+															else
+															{
+																display_message(ERROR_MESSAGE,
+"create_processed_rig.  Could not allocate memory for an auxiliary device that is a linear combination");
+																DEALLOCATE(auxiliary->electrodes);
+																DEALLOCATE(auxiliary->electrode_coefficients);
+																destroy_Rig(&rig);
+															}
+														}
+													} break;
+													case ELECTRODE:
+													{
+														(description->properties).electrode.position.x=
+															((*raw_device)->description->properties).
+															electrode.position.x;
+														(description->properties).electrode.position.y=
+															((*raw_device)->description->properties).
+															electrode.position.y;
+														(description->properties).electrode.position.z=
+															((*raw_device)->description->properties).
+															electrode.position.z;
+													} break;
+												}
+												if (rig)
+												{
+													if (channel&&signal)
+													{
+														/* perform offset and gain */
+														channel_offset=(*raw_device)->channel->offset;
+														channel_gain=(*raw_device)->channel->gain;
+														if ((0!=channel_offset)||(1!=channel_gain))
+														{
+															buffer_offset=signal_buffer->number_of_signals;
+															value=(signal_buffer->signals.float_values)+
+																(signal->index);
+															for (j=signal_buffer->number_of_samples;j>0;j--)
+															{
+																*value=channel_gain*((*value)-channel_offset);
+																value += buffer_offset;
+															}
+														}
+													}
+												}
+											}
+											else
+											{
+												display_message(ERROR_MESSAGE,
+													"create_processed_rig.  Could not create device");
+												if (description)
+												{
+													destroy_Device_description(&description);
+												}
+												if (channel)
+												{
+													destroy_Channel(&channel);
+												}
+												if (signal)
+												{
+													destroy_Signal(&signal);
+												}
+												destroy_Rig(&rig);
+											}
+										}
+										else
+										{
+											if (channel)
+											{
+												destroy_Channel(&channel);
+											}
+											if (signal)
+											{
+												destroy_Signal(&signal);
+											}
+										}
+									}
+									else
+									{
+										if (channel)
+										{
+											destroy_Channel(&channel);
+										}
+									}
+								}
+							}
+							else
+							{
+								display_message(ERROR_MESSAGE,
+									"create_processed_rig.  Invalid raw_device");
+								destroy_Rig(&rig);
+							}
+							i--;
+							device++;
+							raw_device++;
+						}
+						if (rig)
+						{
+							/* finish assigning auxiliary devices that are linear
+								combinations of electrodes */
+							device=rig->devices;
+							for (i=0;i<rig->number_of_devices;i++)
+							{
+								if (device[i]&&(device[i]->description)&&(AUXILIARY==
+									device[i]->description->type)&&(0<(auxiliary=
+									&((device[i]->description->properties).auxiliary))->
+									number_of_electrodes))
+								{
+									for (j=0;j<auxiliary->number_of_electrodes;j++)
+									{
+										device_number=((auxiliary->electrodes)[j])->number;
+										destroy_Device((auxiliary->electrodes)+j);
+										(auxiliary->electrodes)[j]=device[device_number];
+									}
+								}
+							}
+							/* duplicate the pages */
+							rig->page_list=(struct Page_list_item *)NULL;
+							page_item_address= &(rig->page_list);
+							raw_page_item=raw_rig->page_list;
+							while (rig&&raw_page_item)
+							{
+								if (raw_page_item->page)
+								{
+									/* duplicate the device list */
+									device_list=(struct Device_list_item *)NULL;
+									device_item=(struct Device_list_item *)NULL;
+									device_item_address= &device_list;
+									raw_device_item=raw_page_item->page->device_list;
+									while (rig&&raw_device_item)
+									{
+										if (raw_device_item->device)
+										{
+											i=raw_rig->number_of_devices;
+											device=rig->devices;
+											raw_device=raw_rig->devices;
+											while ((i>0)&&(raw_device_item->device!= *raw_device))
+											{
+												device++;
+												raw_device++;
+												i--;
+											}
+											if (i>0)
+											{
+												if (*device_item_address=create_Device_list_item(
+													*device,device_item,(struct Device_list_item *)NULL))
+												{
+													device_item= *device_item_address;
+													device_item_address= &(device_item->next);
+												}
+												else
+												{
+													display_message(ERROR_MESSAGE,
+												"create_processed_rig.  Could not create device item");
+													destroy_Device_list(&device_list,0);
+													destroy_Rig(&rig);
+												}
+											}
+											else
+											{
+												display_message(ERROR_MESSAGE,
+													"create_processed_rig.  Unknown page device");
+												destroy_Device_list(&device_list,0);
+												destroy_Rig(&rig);
+											}
+										}
+										else
+										{
+											display_message(ERROR_MESSAGE,
+												"create_processed_rig.  Invalid page");
+											destroy_Device_list(&device_list,0);
+											destroy_Rig(&rig);
+										}
+										raw_device_item=raw_device_item->next;
+									}
+									if (rig)
+									{
+										if (ALLOCATE(*page_item_address,struct Page_list_item,1)&&
+											((*page_item_address)->page=create_Page(
+											raw_page_item->page->name,device_list)))
+										{
+											(*page_item_address)->next=(struct Page_list_item *)NULL;
+											page_item_address= &((*page_item_address)->next);
+										}
+										else
+										{
+											if (*page_item_address)
+											{
+												DEALLOCATE(*page_item_address);
+											}
+											display_message(ERROR_MESSAGE,
+												"create_processed_rig.  Invalid page");
+											destroy_Device_list(&device_list,0);
+											destroy_Rig(&rig);
+										}
+									}
+								}
+								else
+								{
+									display_message(ERROR_MESSAGE,
+										"create_processed_rig.  Invalid page item");
+									destroy_Rig(&rig);
+								}
+								raw_page_item=raw_page_item->next;
+							}
+						}
+					}
+					else
+					{
+						display_message(ERROR_MESSAGE,
+							"create_processed_rig.  Could not create devices array");
+						destroy_Rig(&rig);
+					}
+				}
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE,
+					"create_processed_rig.  Could not create processed signal buffer");
+				destroy_Rig(&rig);
+			}
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,
+				"create_processed_rig.  Could not create processed rig");
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"create_processed_rig.  Invalid raw_rig");
+		rig=(struct Rig *)NULL;
+	}
+	LEAVE;
+
+	return (rig);
+} /* create_processed_rig */
+#endif
+
+static struct Rig *create_processed_rig(struct Rig *raw_rig)
+/*******************************************************************************
+LAST MODIFIED : 13 October 1999
+
+DESCRIPTION :
+Duplicates the raw rig, except that
+1 The created rig has FLOAT_VALUEs
+2 The offset and gain operation has been performed on the signal values (offset
+	0 and gain 1 for all channels)
+==============================================================================*/
+{
+	float channel_gain,channel_offset,*raw_float_value,*value;
+	int buffer_offset,device_number,i,j,number_of_electrodes,*raw_time,
+		region_number,*time;
+	short int *raw_short_int_value;
+	Linear_transformation *linear_transformation,*raw_linear_transformation;
+	struct Auxiliary_properties *auxiliary,*raw_auxiliary;
+	struct Channel *channel;
+	struct Device **device,**raw_device;
+	struct Device_description *description;
+	struct Device_list_item *device_item,**device_item_address,*device_list,
+		*raw_device_item;
+	struct Page_list_item **page_item_address,*raw_page_item;
+	struct Region *raw_region,*region;
+	struct Region_list_item *raw_region_item,*region_item,**region_item_address;
+	struct Rig *rig;
+	struct Signal *signal;
+	struct Signal_buffer *raw_signal_buffer,*signal_buffer;
+
+	ENTER(create_processed_rig);
+	if (raw_rig&&(0<raw_rig->number_of_devices)&&(raw_rig->devices)&&
+		(*(raw_rig->devices))&&
+		(raw_signal_buffer=get_Device_signal_buffer(*(raw_rig->devices))))
+	{
+		if (rig=create_Rig(raw_rig->name,raw_rig->monitoring,raw_rig->experiment,0,
+			(struct Device **)NULL,(struct Page_list_item *)NULL,0,
+			(struct Region_list_item *)NULL,(struct Region *)NULL)
+#if defined (UNEMAP_USE_NODES)
+			,get_Rig_unemap_package(raw_rig)
+#endif /* defined (UNEMAP_USE_NODES) */
+				)
+		{
+			if (raw_rig->signal_file_name)
+			{
+				/* assign the signal file name */
+				if (ALLOCATE(rig->signal_file_name,char,
+					strlen(raw_rig->signal_file_name)+1))
+				{
+					strcpy(rig->signal_file_name,raw_rig->signal_file_name);
+				}
+				else
+				{
+					display_message(ERROR_MESSAGE,
+			"create_processed_rig.  Could not allocate memory for signal file name");
+				}
+			}
+			if (signal_buffer=create_Signal_buffer(FLOAT_VALUE,
+				raw_signal_buffer->number_of_signals,
+				raw_signal_buffer->number_of_samples,raw_signal_buffer->frequency))
+			{
+				signal_buffer->start=raw_signal_buffer->start;
+				signal_buffer->end=raw_signal_buffer->end;
+				/* duplicate the times */
+				time=signal_buffer->times;
+				raw_time=raw_signal_buffer->times;
+				for (i=signal_buffer->number_of_samples;i>0;i--)
+				{
+					*time= *raw_time;
+					time++;
+					raw_time++;
+				}
+				/* copy the values */
+				value=(signal_buffer->signals).float_values;
+				switch (raw_signal_buffer->value_type)
+				{
+					case SHORT_INT_VALUE:
+					{
+						raw_short_int_value=(raw_signal_buffer->signals).short_int_values;
+						for (i=(signal_buffer->number_of_samples)*
+							(signal_buffer->number_of_signals);i>0;i--)
+						{
+							*value=(float)(*raw_short_int_value);
+							value++;
+							raw_short_int_value++;
+						}
+					} break;
+					case FLOAT_VALUE:
+					{
+						raw_float_value=(raw_signal_buffer->signals).float_values;
+						for (i=(signal_buffer->number_of_samples)*
+							(signal_buffer->number_of_signals);i>0;i--)
+						{
+							*value= *raw_float_value;
+							value++;
+							raw_float_value++;
+						}
+					} break;
+				}
+				/* duplicate the regions */
+				rig->region_list=(struct Region_list_item *)NULL;
+				rig->current_region=(struct Region *)NULL;
+				rig->number_of_regions=0;
+				region_item_address= &(rig->region_list);
+				raw_region_item=raw_rig->region_list;
+				while (rig&&raw_region_item)
+				{
+					if (raw_region=raw_region_item->region)
+					{
+						if ((*region_item_address=create_Region_list_item(create_Region(
+							raw_region->name,raw_region->type,raw_region->number,0),
+#if defined (UNEMAP_USE_NODES)
+							,get_Rig_unemap_package(raw_rig)
+#endif /* defined (UNEMAP_USE_NODES) */
+							(struct Region_list_item *)NULL))&&
+							((*region_item_address)->region))
+						{
+							switch (raw_region->type)
+							{
+								case SOCK:
+								{
+									((*region_item_address)->region->properties).sock.focus=
+										(raw_region->properties).sock.focus;
+									if (raw_linear_transformation=
+										(raw_region->properties).sock.linear_transformation)
+									{
+										if (ALLOCATE(linear_transformation,Linear_transformation,1))
+										{
+											((*region_item_address)->region->properties).sock.
+												linear_transformation=linear_transformation;
+											linear_transformation->translate_x=
+												raw_linear_transformation->translate_x;
+											linear_transformation->translate_y=
+												raw_linear_transformation->translate_y;
+											linear_transformation->translate_z=
+												raw_linear_transformation->translate_z;
+											linear_transformation->txx=raw_linear_transformation->txx;
+											linear_transformation->txy=raw_linear_transformation->txy;
+											linear_transformation->txz=raw_linear_transformation->txz;
+											linear_transformation->tyx=raw_linear_transformation->tyx;
+											linear_transformation->tyy=raw_linear_transformation->tyy;
+											linear_transformation->tyz=raw_linear_transformation->tyz;
+											linear_transformation->tzx=raw_linear_transformation->tzx;
+											linear_transformation->tzy=raw_linear_transformation->tzy;
+											linear_transformation->tzz=raw_linear_transformation->tzz;
+										}
+										else
+										{
+											display_message(ERROR_MESSAGE,
+							"create_processed_rig.  Could not create linear transformation");
+											destroy_Rig(&rig);
+										}
+									}
+								} break;
+							}
+							if (rig)
+							{
+								if (raw_region==raw_rig->current_region)
+								{
+									rig->current_region=(*region_item_address)->region;
+								}
+								region_item_address= &((*region_item_address)->next);
+								(rig->number_of_regions)++;
+								raw_region_item=raw_region_item->next;
+							}
+						}
+						else
+						{
+							display_message(ERROR_MESSAGE,
+								"create_processed_rig.  Could not create processed region");
+							destroy_Rig(&rig);
+						}
+					}
+					else
+					{
+						display_message(ERROR_MESSAGE,
+							"create_processed_rig.  Missing raw_region");
+						destroy_Rig(&rig);
+					}
+				}
+				if (rig)
+				{
+					/* duplicate the devices */
+					i=raw_rig->number_of_devices;
+					if (ALLOCATE(device,struct Device *,i))
+					{
+						rig->devices=device;
+						rig->number_of_devices=0;
+						raw_device=raw_rig->devices;
+						while ((i>0)&&rig)
+						{
+							if ((*raw_device)&&((*raw_device)->description))
+							{
+								if ((*raw_device)->channel)
+								{
+									if (!(channel=create_Channel((*raw_device)->channel->number,
+										(float)0,(float)1)))
+									{
+										destroy_Rig(&rig);
+									}
+								}
+								else
+								{
+									channel=(struct Channel *)NULL;
+								}
+								if (rig)
+								{
+									if ((*raw_device)->signal)
+									{
+										if (!(signal=create_Signal((*raw_device)->signal->index,
+											signal_buffer,(*raw_device)->signal->status,
+											(*raw_device)->signal->number)))
+										{
+											destroy_Rig(&rig);
+										}
+									}
+									else
+									{
+										signal=(struct Signal *)NULL;
+									}
+									if (rig)
+									{
+										if ((*raw_device)->description->region)
+										{
+											region_number=(*raw_device)->description->region->number;
+											region_item=rig->region_list;
+											while (region_item&&(region=region_item->region)&&
+												(region_number!=region->number))
+											{
+												region_item=region_item->next;
 											}
 											if (!region_item)
 											{
@@ -14393,7 +14792,7 @@ Creates the windows associated with the analysis work area.
 							&(analysis->search_interval_divisions),
 							&(analysis->end_search_interval),user_interface->screen_height,
 							postscript_file_extension,analysis->events_file_extension,
-							analysis->signal_drawing_information,user_interface))
+							analysis->signal_drawing_information,user_interface,&(analysis->signal_order)))
 						{
 							XtAddCallback(analysis->window->region_pull_down_menu,
 								XmNentryCallback,(XtCallbackProc)set_analysis_analysis_region,

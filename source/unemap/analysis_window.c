@@ -25,6 +25,7 @@ DESCRIPTION :
 #include <Mrm/MrmDecls.h>
 #endif /* defined (MOTIF) */
 #include "general/debug.h"
+#include "general/heapsort.h"
 #include "general/mystring.h"
 #include "general/postscript.h"
 #include "unemap/analysis.h"
@@ -2244,6 +2245,604 @@ Finds the id of the analysis drawing area.
 	LEAVE;
 } /* identify_signals_drawing_area */
 
+#if defined (UNEMAP_USE_NODES)
+static int Analysis_window_set_and_sort_rig_node_order_info
+   (struct Analysis_window *analysis_window)
+/*******************************************************************************
+LAST MODIFIED : 26 July 2000
+
+DESCRIPTION : Creates and sets the <analysis_window> ->rig_node_order_info,
+from the rig_node_group at the <analysis_window> rig or region. 
+Sorts rig_node_order_info according to <analysis_window> ->signal_order
+==============================================================================*/
+{
+	enum Signal_order signal_order;
+	int count,number_of_nodes,return_code;
+	struct FE_field_component component;
+	struct FE_node_order_info *node_order_info;
+	struct GROUP(FE_node) *rig_node_group;
+	struct Rig_node_sort **rig_node_sort_array;
+	struct Rig_node_sort *rig_node_sort;
+	struct Region *current_region;
+	struct Rig *rig;	
+	struct Signal_drawing_package *signal_drawing_package;
+
+	ENTER(Analysis_window_set_and_sort_rig_node_order_info);
+	node_order_info=(struct FE_node_order_info *)NULL;
+	rig_node_sort_array=(struct Rig_node_sort **)NULL;
+	rig_node_sort=(struct Rig_node_sort *)NULL;	
+	current_region=(struct Region *)NULL;
+	rig=(struct Rig *)NULL;
+	rig_node_group=(struct GROUP(FE_node) *)NULL;
+	signal_drawing_package=(struct Signal_drawing_package *)NULL;
+	if (analysis_window)
+	{	
+		rig=*(analysis_window->rig);
+		signal_order=*(analysis_window->signal_order);
+		return_code=0;
+		signal_drawing_package=*(analysis_window->signal_drawing_package);	
+		/* create an array of pointers to the nodes, in node_order_info */
+		/* so can increment through nodes similar to devices. */
+		/* should use GROUP NEXT operator (when it's ready!) */		
+		if (node_order_info=CREATE(FE_node_order_info)(0))
+		{		
+			if (current_region=get_Rig_current_region(rig))
+			{	
+				rig_node_group=get_Region_rig_node_group(current_region);						
+			}
+			else
+			{
+				rig_node_group=get_Rig_all_devices_rig_node_group(rig);
+			}
+			if (return_code=FOR_EACH_OBJECT_IN_GROUP(FE_node)(
+				fill_FE_node_order_info,(void *)node_order_info,
+				rig_node_group))
+			{												
+				number_of_nodes= get_FE_node_order_info_number_of_nodes(node_order_info);
+				/* create and fill an array of Rig_node_sort pointers to sort*/
+				if(ALLOCATE(rig_node_sort_array,struct Rig_node_sort *,number_of_nodes))
+				{
+					component.number=0;	
+					switch(signal_order)
+					{	
+						case CHANNEL_ORDER:
+						default:
+						{								
+							component.field=
+								get_Signal_drawing_package_read_order_field(signal_drawing_package);
+						}break;
+						case EVENT_ORDER:
+						{							
+							/*??JW will have to extract this properly, when we have the field Set NULL for now */
+							component.field=(struct FE_field *)NULL;
+						}break;
+					}/* switch(signal_order) */
+					count=0;
+					while((count<number_of_nodes)&&(return_code))
+					{
+						/*create and fill a rig_node_sort */
+						if(ALLOCATE(rig_node_sort,struct Rig_node_sort,1))
+						{
+							rig_node_sort->node=get_FE_node_order_info_node(node_order_info,count);
+							switch(signal_order)
+							{
+								case CHANNEL_ORDER:
+								default:
+								{
+									return_code=get_FE_nodal_int_value(rig_node_sort->node,&component,0,
+										FE_NODAL_VALUE,&(rig_node_sort->read_order));
+									rig_node_sort->event_time=0;
+								}break;
+								case EVENT_ORDER:
+								{
+									rig_node_sort->read_order=0;
+									/*??JW will have to extract this properly, when have a field*/
+									/* Set to a dummy for now */
+									rig_node_sort->event_time=count;
+								}break;
+							}/* switch(signal_order) */
+							rig_node_sort_array[count]=rig_node_sort;
+							count++;
+						}/* if(ALLOCATE(rig_node_sort */
+						else
+						{
+							return_code=0;
+							display_message(ERROR_MESSAGE,"draw_all_signals. "
+								"ALLOCATE(node_sorter failed");
+						}
+					}/* while(( */
+					/*sort the array*/	
+					switch(signal_order)
+					{	
+						case CHANNEL_ORDER:
+						default:
+						{
+							heapsort((void *)(rig_node_sort_array),number_of_nodes,
+								sizeof(struct Rig_node_sort *),sort_rig_node_sorts_by_read_order);
+						}break;
+						case EVENT_ORDER:
+						{
+							heapsort((void *)(rig_node_sort_array),number_of_nodes,
+								sizeof(struct Rig_node_sort *),sort_rig_node_sorts_by_event_time);
+						}break;
+					}/* switch(signal_order) */
+#if defined (DEBUG)
+					for(count=0;count<number_of_nodes;count++)
+					{								
+						printf("%d\n",node_sorter_array[count]->sort_number);
+					}
+#endif /*  defined (DEBUG) */
+					/*reset the sorted array into the node_order_info*/
+					for(count=0;count<number_of_nodes;count++)
+					{								
+						set_FE_node_order_info_node(node_order_info,count,
+							rig_node_sort_array[count]->node);
+						DEALLOCATE(rig_node_sort_array[count]);
+					}
+					DEALLOCATE(rig_node_sort_array);
+					/* save the rig_node_order_info */				
+					REACCESS(FE_node_order_info)(&(analysis_window->rig_node_order_info),
+						node_order_info);
+				}/* if(ALLOCATE(node_sort */
+				else
+				{
+					display_message(ERROR_MESSAGE,"draw_all_signals. "
+						"ALLOCATE(node_sorter_array failed");
+					return_code=0;
+				}			
+			}/* if (return_code=FOR_EACH_OBJECT_IN_GROUP(FE_node)( */
+		}/* if (node_order_info=CREATE(FE_node_order_info)(0)) */
+		else
+		{
+			display_message(ERROR_MESSAGE,"draw_all_signals. "
+				"CREATE(FE_node_order_info) failed");
+			return_code=0;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Analysis_window_set_and_sort_rig_node_order_info. client_data missing");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Analysis_window_set_and_sort_rig_node_order_info */
+#endif /* defined (UNEMAP_USE_NODES) */
+
+#if defined(USE_RIG_FOR_DRAW_ALL_SIGNALS)
+#undef UNEMAP_USE_NODES
+#endif /* defined(USE_RIG_FOR_DRAW_ALL_SIGNALS)*/
+static int draw_all_signals(struct Analysis_window *analysis_window)
+/*******************************************************************************
+LAST MODIFIED : 26 July 2000
+
+DESCRIPTION :
+This function draws all the signals for the <analysis_window>  signal_event_list
+in the drawing using the graphics_context.
+
+If <analysis_window> signal_drawing_package is not NULL, then use rig_node_group
+from rig/region to draw signals. In this case, create an array of pointers to the
+nodes, in , <analysis_window> rig_node_order_info so can increment through nodes 
+similar to rig->devices. This FE_node_order_info is also used elsewhere.
+==============================================================================*/
+{	
+	enum Signal_layout layout;
+	float signal_aspect_ratio;	
+	int axes_height,axes_left,axes_top,axes_width,datum,drawing_height,drawing_width,
+		first_data,i,j,last_data,number_of_columns,number_of_rows,number_of_signals,
+		potential_time,return_code,signal_height,signal_overlap_spacing,signal_width,
+		using_rig_node_group,xpos,ypos;
+	struct Drawing_2d *drawing;
+	struct Device **device;
+	struct Region *current_region;
+	struct Rig *rig;
+	struct Signals_area *signals;
+	struct Signal_buffer *buffer;
+	struct Signal_drawing_information *signal_drawing_information;
+	struct Signal_drawing_package *signal_drawing_package;
+	struct User_interface *user_interface;
+	Pixmap pixel_map;
+#if defined (UNEMAP_USE_NODES)
+	int node_number;
+	struct FE_field *field;
+	struct FE_node *node;
+	struct FE_node_order_info *node_order_info;	
+#endif /* defined (UNEMAP_USE_NODES) */
+	ENTER(draw_all_signals);
+#if defined (UNEMAP_USE_NODES)
+	field=(struct FE_field *)NULL;
+	node_order_info=(struct FE_node_order_info *)NULL;
+	node=(struct FE_node *)NULL;
+#endif /* defined (UNEMAP_USE_NODES) */
+	drawing=(struct Drawing_2d *)NULL;
+	device=(struct Device **)NULL;
+	current_region=(struct Region *)NULL;
+	rig=(struct Rig *)NULL;
+	signals=(struct Signals_area *)NULL;
+	buffer=(struct Signal_buffer *)NULL;
+	signal_drawing_information=(struct Signal_drawing_information *)NULL;
+	signal_drawing_package=(struct Signal_drawing_package *)NULL;
+	user_interface=(struct User_interface *)NULL;
+	rig=*(analysis_window->rig);
+	datum=*(analysis_window->datum);
+	potential_time=*(analysis_window->potential_time);
+	signals=&(analysis_window->signals);
+	layout=signals->layout;
+	signal_aspect_ratio=analysis_window->signal_aspect_ratio;
+	signal_overlap_spacing=analysis_window->signal_overlap_spacing;
+	signal_drawing_information=analysis_window->signal_drawing_information;
+	user_interface=analysis_window->user_interface;
+	signal_drawing_package=*(analysis_window->signal_drawing_package);	
+
+	if (signals&&(drawing=signals->drawing)&&signal_drawing_information&&
+		user_interface)
+	{
+		pixel_map=drawing->pixel_map;
+		drawing_width=drawing->width;
+		drawing_height=drawing->height;
+		/* clear the drawing area */
+		XFillRectangle(user_interface->display,pixel_map,
+			(signal_drawing_information->graphics_context).background_drawing_colour,
+			0,0,drawing_width,drawing_height);
+		using_rig_node_group=0;
+		/* check that rig is set OR both the signal_drawing_package and  the rig are set, */
+		/* OR everything is NULL */
+		if ((!rig&&!signal_drawing_package)||(rig&&!signal_drawing_package)||
+			(rig&&signal_drawing_package))
+		{
+			number_of_signals=0;
+			return_code=1;
+			if (signal_drawing_package)
+			{
+#if defined (UNEMAP_USE_NODES)
+				using_rig_node_group=1;
+				return_code=Analysis_window_set_and_sort_rig_node_order_info(analysis_window);
+				node_order_info=analysis_window->rig_node_order_info;	
+				first_data=0;
+				/* time is stored at signal field. For moment, assume only 1 signal per node */
+				field=get_Signal_drawing_package_signal_field(signal_drawing_package);
+				last_data=get_FE_field_number_of_times(field)-1;
+				node_number=0;
+				node=get_FE_node_order_info_node(node_order_info,node_number);
+				number_of_signals=get_FE_node_order_info_number_of_nodes(node_order_info);
+#endif /* defined (UNEMAP_USE_NODES) */
+			}
+			else if (rig&&(device=rig->devices)&&(*device)&&
+				(buffer=get_Device_signal_buffer(*device)))
+			{				
+				first_data=buffer->start;
+				last_data=buffer->end;
+				/* determine the number of signals */		
+				if(current_region=get_Rig_current_region(rig))
+				{
+					number_of_signals=current_region->number_of_devices;
+				}
+				else
+				{
+					number_of_signals=rig->number_of_devices;
+				}
+			}/*if rig( */
+			if ((number_of_signals>0)&&return_code)
+			{
+				switch (layout)
+				{
+					case SEPARATE_LAYOUT:
+					{
+						/* First choose the signal width so that all signals are shown, the
+							 signals have the specified aspect ratio and the signals are as
+							 large as possible */
+						signal_width=(int)sqrt((float)(drawing_height*drawing_width)/
+							(signal_aspect_ratio*(float)number_of_signals));
+						if (drawing_width<signal_width)
+						{
+							signal_width=drawing_width;
+						}
+						number_of_columns=(drawing_width)/signal_width;
+						number_of_rows=(number_of_signals-1)/number_of_columns+1;
+						/* equalize the columns */
+						if ((number_of_signals>1)&&(number_of_columns>1)&&
+							((i=number_of_rows*number_of_columns-number_of_signals-1)>0))
+						{
+							number_of_rows -= i/(number_of_columns-1);
+						}
+						/* make the signals fill the width and height */
+						signal_width=(drawing_width)/number_of_columns;
+						signal_height=(drawing_height)/number_of_rows;
+						/* save signal drawing area parameters */
+						signals->number_of_signals=number_of_signals;
+						signals->number_of_rows=number_of_rows;
+						signals->number_of_columns=number_of_columns;
+						signals->signal_width=signal_width;
+						signals->signal_height=signal_height;
+						/* Draw each signal */
+						/* if using rig, (not rig_node_group) skip the devices not in the*/
+						/* current region */
+						if ((!using_rig_node_group)&&(current_region))
+						{
+							while ((*device)->description->region!=current_region)
+							{
+								device++;
+							}
+						}
+						i=0;
+						j=0;
+						xpos=0;
+						ypos=0;
+						draw_signal(
+#if defined (UNEMAP_USE_NODES)
+							node,signal_drawing_package,(struct Device *)NULL,
+#else /* defined (UNEMAP_USE_NODES) */
+							(struct FE_node *)NULL,(struct Signal_drawing_package *)NULL,*device,
+#endif /* defined (UNEMAP_USE_NODES) */
+							SIGNAL_AREA_DETAIL,1,0,&first_data,&last_data,xpos,ypos,
+							signal_width,signal_height,pixel_map,&axes_left,&axes_top,
+							&axes_width,&axes_height,signal_drawing_information,
+							user_interface);
+						signals->axes_left=axes_left;
+						signals->axes_top=axes_top;
+						signals->axes_width=axes_width;
+						signals->axes_height=axes_height;
+						/*if using rig,(not rig_node_group) draw_device_markers, and inc */
+						/* device pointer write code rig_node based draw_device_markers later */
+						if(!using_rig_node_group)
+						{
+							draw_device_markers(*device,first_data,last_data,datum,1,
+								potential_time,1,SIGNAL_AREA_DETAIL,0,axes_left,axes_top,
+								axes_width,axes_height,(Window)NULL,pixel_map,
+								signal_drawing_information,user_interface);
+							device++;
+						}
+#if defined (UNEMAP_USE_NODES)
+						else
+						{
+							/* for rig_node based, get next rig node */
+							node_number++;
+							node=get_FE_node_order_info_node(node_order_info,node_number);
+						}
+#endif /* defined (UNEMAP_USE_NODES) */
+						number_of_signals--;
+						while (number_of_signals>0)
+						{
+							/* if using rig,(not rig_node_group) skip the devices not */
+							/*in the current region */
+							if ((!using_rig_node_group)&&(current_region))
+							{
+								while ((*device)->description->region!=current_region)
+								{
+									device++;
+								}
+							}
+							i++;
+							if (i>=number_of_rows)
+							{
+								i=0;
+								ypos=0;
+								j++;
+								xpos=(j*drawing_width)/number_of_columns;
+							}
+							else
+							{
+								ypos=(i*drawing_height)/number_of_rows;
+							}
+							draw_signal(
+#if defined (UNEMAP_USE_NODES)
+								node,signal_drawing_package,(struct Device *)NULL,
+#else /* defined (UNEMAP_USE_NODES) */
+								(struct FE_node *)NULL,(struct Signal_drawing_package *)NULL,*device,
+#endif /* defined (UNEMAP_USE_NODES) */
+								SIGNAL_AREA_DETAIL,1,0,&first_data,&last_data,xpos,ypos,
+								signal_width,signal_height,pixel_map,&axes_left,&axes_top,
+								&axes_width,&axes_height,signal_drawing_information,
+								user_interface);
+							/*if using rig,( not rig_node_group) draw_device_markers, */
+							/* and inc device pointer. write code rig_node based */
+							/*draw_device_markers later */
+							if (!using_rig_node_group)
+							{
+								draw_device_markers(*device,first_data,last_data,datum,1,
+									potential_time,1,SIGNAL_AREA_DETAIL,0,axes_left,axes_top,
+									axes_width,axes_height,(Window)NULL,pixel_map,
+									signal_drawing_information,user_interface);
+								device++;
+							}
+#if defined (UNEMAP_USE_NODES)
+							else
+							{
+								/* for rig_node based, get next rig node*/
+								node_number++;
+								node=get_FE_node_order_info_node(node_order_info,node_number);
+							}
+#endif /* defined (UNEMAP_USE_NODES) */
+							number_of_signals--;
+						}
+						return_code=1;
+					} break;
+					case OVERLAP_LAYOUT:
+					{
+						number_of_rows=(drawing_height/signal_overlap_spacing)-3;
+						if (number_of_rows>number_of_signals)
+						{
+							number_of_rows=number_of_signals;
+						}
+						number_of_columns=(number_of_signals-1)/number_of_rows+1;
+						/* equalize the columns */
+						if ((number_of_signals>1)&&(number_of_columns>1)&&
+							((i=number_of_rows*number_of_columns-number_of_signals-1)>0))
+						{
+							number_of_rows -= i/(number_of_columns-1);
+						}
+						/* make the signals fill the width and height */
+						signal_width=(drawing_width)/number_of_columns;
+						signal_height=4*signal_overlap_spacing;
+						/* save signal drawing area parameters */
+						signals->number_of_signals=number_of_signals;
+						signals->number_of_rows=number_of_rows;
+						signals->number_of_columns=number_of_columns;
+						signals->signal_width=signal_width;
+						signals->signal_height=signal_height;
+						/* Draw each signal */
+						i=0;
+						j=0;
+						xpos=0;
+						ypos=0;
+						draw_signal(
+#if defined (UNEMAP_USE_NODES)
+							node,signal_drawing_package,(struct Device *)NULL,
+#else /* defined (UNEMAP_USE_NODES) */
+							(struct FE_node *)NULL,(struct Signal_drawing_package *)NULL,*device,
+#endif /* defined (UNEMAP_USE_NODES) */
+							SIGNAL_AREA_DETAIL,1,0,&first_data,&last_data,xpos,ypos,
+							signal_width,signal_height,pixel_map,&axes_left,&axes_top,
+							&axes_width,&axes_height,signal_drawing_information,
+							user_interface);
+						signals->axes_left=axes_left;
+						signals->axes_top=axes_top;
+						signals->axes_width=axes_width;
+						signals->axes_height=axes_height;
+						if(!using_rig_node_group)					
+						{
+							/* for rig based, get next device */
+							device++;
+						}
+#if defined (UNEMAP_USE_NODES)
+						else
+						{
+							/* for rig_node based, get next rig node*/
+							node_number++;
+							node=get_FE_node_order_info_node(node_order_info,node_number);
+						}
+#endif /* defined (UNEMAP_USE_NODES) */
+						number_of_signals--;
+						while (number_of_signals>0)
+						{
+							i++;
+							if (i>=number_of_rows)
+							{
+								i=0;
+								ypos=0;
+								j++;
+								xpos=(j*drawing_width)/number_of_columns;
+							}
+							else
+							{
+								ypos=(i*drawing_height)/(number_of_rows+3);
+							}
+							draw_signal(
+#if defined (UNEMAP_USE_NODES)
+								node,signal_drawing_package,(struct Device *)NULL,
+#else /* defined (UNEMAP_USE_NODES) */
+								(struct FE_node *)NULL,(struct Signal_drawing_package *)NULL,*device,
+#endif /* defined (UNEMAP_USE_NODES) */
+								SIGNAL_AREA_DETAIL,1,0,&first_data,&last_data,xpos,ypos,
+								signal_width,signal_height,pixel_map,&axes_left,&axes_top,
+								&axes_width,&axes_height,signal_drawing_information,
+								user_interface);
+							if(!using_rig_node_group)							
+							{
+								/* for rig based, get next device */
+								device++;
+							}
+#if defined (UNEMAP_USE_NODES)
+							else
+							{
+								/* for rig_node based, get next rig node*/
+								node_number++;
+								node=get_FE_node_order_info_node(node_order_info,node_number);
+							}
+#endif /* defined (UNEMAP_USE_NODES) */
+							number_of_signals--;
+						}
+						/* have to draw the markers separately because the signals
+							 overlap */
+						if(!using_rig_node_group)
+						{
+							/* for rig based */
+							device=rig->devices;
+							number_of_signals=rig->number_of_devices;
+						}
+#if defined (UNEMAP_USE_NODES)
+						else
+						{
+							/* for rig_node based, get next rig node*/
+							node_number=0;
+							node=get_FE_node_order_info_node(node_order_info,node_number);
+							number_of_signals=get_FE_node_order_info_number_of_nodes(
+								node_order_info);
+						}
+#endif /* defined (UNEMAP_USE_NODES) */
+						i=0;
+						j=0;
+						axes_left=signals->axes_left;
+						axes_top=signals->axes_top;
+						xpos=axes_left;
+						ypos=axes_top;
+						while (number_of_signals>0)
+						{
+							if(!using_rig_node_group)
+							{
+								draw_device_markers(*device,first_data,last_data,datum,1,
+									potential_time,1,SIGNAL_AREA_DETAIL,0,xpos,ypos,axes_width,
+									axes_height,(Window)NULL,pixel_map,signal_drawing_information,
+									user_interface);
+							}
+							i++;
+							if (i>=number_of_rows)
+							{
+								i=0;
+								ypos=axes_top;
+								j++;
+								xpos=axes_left+(j*drawing_width)/number_of_columns;
+							}
+							else
+							{
+								ypos=axes_top+(i*drawing_height)/(number_of_rows+3);
+							}
+							if(!using_rig_node_group)
+							{
+								/* for rig based, get next device */
+								device++;
+							}
+#if defined (UNEMAP_USE_NODES)
+							else
+							{
+								/* for rig_node based, get next rig node*/
+								node_number=0;
+								node=get_FE_node_order_info_node(node_order_info,node_number);
+							}
+#endif /* defined (UNEMAP_USE_NODES) */
+							number_of_signals--;
+						}
+						return_code=1;
+					} break;
+					default:
+					{
+						display_message(ERROR_MESSAGE,
+							"draw_all_signals.  Invalid signal layout");
+					} break;
+				} /* switch */
+			}	/* if (number_of_signals>0)*/
+		} /* if ((!rig_node_group&&!signal_drawing_package)|| */
+		else
+		{
+			display_message(ERROR_MESSAGE,"draw_all_signals. Invalid arguments");
+			return_code=0;
+		}
+	}/* if (signals&&(drawing=s */
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"draw_all_signals.  signals missing or incomplete");
+		return_code=0;
+	}
+	LEAVE;
+	return (return_code);
+} /* draw_all_signals */
+#if defined(USE_RIG_FOR_DRAW_ALL_SIGNALS)
+#define UNEMAP_USE_NODES 1
+#endif /* defined(USE_RIG_FOR_DRAW_ALL_SIGNALS)*/
+
 static void expose_signals_drawing_area(Widget widget,
 	XtPointer analysis_window,XtPointer call_data)
 /*******************************************************************************
@@ -2289,25 +2888,7 @@ The callback for redrawing part of an analysis drawing area.
 #if defined(USE_RIG_FOR_DRAW_ALL_SIGNALS)
 #undef UNEMAP_USE_NODES
 #endif /* defined(USE_RIG_FOR_DRAW_ALL_SIGNALS)*/
-#if defined (UNEMAP_USE_NODES)
-									/* use rig_node_group and signal_drawing_package */
-									draw_all_signals(*(analysis->rig),*(analysis->datum),
-										*(analysis->potential_time),signals,signals->layout,
-										analysis->signal_aspect_ratio,
-										analysis->signal_overlap_spacing,
-										analysis->signal_drawing_information,
-										analysis->user_interface,
-										*(analysis->signal_drawing_package));
-#else /* defined (UNEMAP_USE_NODES) */
-									/* use rig */
-									draw_all_signals(*(analysis->rig),*(analysis->datum),
-										*(analysis->potential_time),signals,signals->layout,
-										analysis->signal_aspect_ratio,
-										analysis->signal_overlap_spacing,
-										analysis->signal_drawing_information,
-										analysis->user_interface,
-										(struct Signal_drawing_package *)NULL);
-#endif /* defined (UNEMAP_USE_NODES) */
+									draw_all_signals(analysis);
 #if defined(USE_RIG_FOR_DRAW_ALL_SIGNALS)
 #define UNEMAP_USE_NODES 1
 #endif /* defined(USE_RIG_FOR_DRAW_ALL_SIGNALS)*/
@@ -2420,21 +3001,7 @@ The callback for resizing an analysis drawing area.
 #if defined(USE_RIG_FOR_DRAW_ALL_SIGNALS)
 #undef UNEMAP_USE_NODES
 #endif /* defined(USE_RIG_FOR_DRAW_ALL_SIGNALS)*/
-#if defined (UNEMAP_USE_NODES)
-							/* use rig_node_group and signal_drawing_package */
-							draw_all_signals(*(analysis->rig),*(analysis->datum),
-								*(analysis->potential_time),signals,signals->layout,
-								analysis->signal_aspect_ratio,analysis->signal_overlap_spacing,
-								analysis->signal_drawing_information,analysis->user_interface,
-								*(analysis->signal_drawing_package));
-#else /* defined (UNEMAP_USE_NODES) */
-							/* use rig */
-							draw_all_signals(*(analysis->rig),*(analysis->datum),
-								*(analysis->potential_time),signals,signals->layout,
-								analysis->signal_aspect_ratio,analysis->signal_overlap_spacing,
-								analysis->signal_drawing_information,analysis->user_interface,
-								(struct Signal_drawing_package *)NULL);
-#endif /* defined (UNEMAP_USE_NODES) */
+							draw_all_signals(analysis);
 #if defined(USE_RIG_FOR_DRAW_ALL_SIGNALS)
 #define UNEMAP_USE_NODES 1
 #endif /* defined(USE_RIG_FOR_DRAW_ALL_SIGNALS)*/
@@ -2825,6 +3392,9 @@ analysis window and frees the memory associated with the analysis window.
 	USE_PARAMETER(widget);
 	if (analysis=(struct Analysis_window *)analysis_window)
 	{
+#if defined (UNEMAP_USE_NODES)
+		DEACCESS(FE_node_order_info)(&(analysis->rig_node_order_info));				
+#endif
 		/* set the pointer to the analysis window to NULL */
 		if (analysis->address)
 		{
@@ -3310,7 +3880,7 @@ struct Analysis_window *create_Analysis_window(
 		/*???DB.  height of interval drawing area.  Better ? */
 	char *postscript_file_extension,char *events_file_extension,
 	struct Signal_drawing_information *signal_drawing_information,
-	struct User_interface *user_interface)
+	struct User_interface *user_interface,enum Signal_order *signal_order)
 /*******************************************************************************
 LAST MODIFIED : 11 February 2000
 
@@ -3496,6 +4066,10 @@ returned.
 			if (ALLOCATE(analysis,struct Analysis_window,1))
 			{
 				/* assign fields */
+				analysis->signal_order=signal_order;
+#if defined (UNEMAP_USE_NODES)
+				analysis->rig_node_order_info=(struct FE_node_order_info *)NULL;
+#endif
 				analysis->user_interface=user_interface;
 				analysis->signal_drawing_information=signal_drawing_information;
 				analysis->address=address;
@@ -3893,21 +4467,7 @@ The callback for redrawing the analysis drawing area.
 #if defined(USE_RIG_FOR_DRAW_ALL_SIGNALS)
 #undef UNEMAP_USE_NODES
 #endif /* defined(USE_RIG_FOR_DRAW_ALL_SIGNALS)*/
-#if defined (UNEMAP_USE_NODES)
-		/* use rig_node_group and signal_drawing_package */
-		draw_all_signals(*(analysis->rig),*(analysis->datum),
-			*(analysis->potential_time),signals,signals->layout,
-			analysis->signal_aspect_ratio,analysis->signal_overlap_spacing,
-			analysis->signal_drawing_information,analysis->user_interface,
-			*(analysis->signal_drawing_package));
-#else /* defined (UNEMAP_USE_NODES) */
-		/* use rig */
-		draw_all_signals(*(analysis->rig),*(analysis->datum),
-			*(analysis->potential_time),signals,signals->layout,
-			analysis->signal_aspect_ratio,analysis->signal_overlap_spacing,
-			analysis->signal_drawing_information,analysis->user_interface,
-			(struct Signal_drawing_package *)NULL);
-#endif /* defined (UNEMAP_USE_NODES) */
+		draw_all_signals(analysis);
 #if defined(USE_RIG_FOR_DRAW_ALL_SIGNALS)
 #define UNEMAP_USE_NODES 1
 #endif /* defined(USE_RIG_FOR_DRAW_ALL_SIGNALS)*/
@@ -4069,453 +4629,34 @@ The function for redrawing the analysis interval drawing area.
 	return (return_code);
 } /* update_interval_drawing_area */
 
-#if defined(USE_RIG_FOR_DRAW_ALL_SIGNALS)
-#undef UNEMAP_USE_NODES
-#endif /* defined(USE_RIG_FOR_DRAW_ALL_SIGNALS)*/
-int draw_all_signals(struct Rig *rig,int datum,int potential_time,
-	struct Signals_area *signals,enum Signal_layout layout,
-	float signal_aspect_ratio,int signal_overlap_spacing,
-	struct Signal_drawing_information *signal_drawing_information,
-	struct User_interface *user_interface,struct Signal_drawing_package *signal_drawing_package)
+#if defined (UNEMAP_USE_NODES)
+int analysis_Window_free_rig_node_order_info(struct  Analysis_window *analysis)
 /*******************************************************************************
-LAST MODIFIED : 6 December 1999
+LAST MODIFIED : 25 July 2000
 
-DESCRIPTION :
-This function draws all the signals for the <signal_event_list> in the <drawing>
-using the <graphics_context>.
-
-Pass either <rig > or (<rig_node_group> and <signal_drawing_package> ).  If pass
-<rig_node_group> and <signal_drawing_package>, then we create an array of pointers to the
-nodes, in an FE_node_order_info, so can increment through nodes similar
-to rig->devices. This is not ideal, but is done for compatibility with the
-rig->devices approach. ??JW Do differently when have removed rig->devices
-Should use GROUP NEXT operator (when it's ready!)
+DESCRIPTION : frees up <analysis>'s the Fe_node_order_info  
 ==============================================================================*/
 {
-	int axes_height,axes_left,axes_top,axes_width,drawing_height,drawing_width,
-		first_data,i,j,last_data,number_of_columns,number_of_rows,number_of_signals,
-		return_code,signal_height,signal_width,using_rig_node_group,xpos,ypos;
-	struct Drawing_2d *drawing;
-	struct Device **device;
-	struct Region *current_region;
-	struct Signal_buffer *buffer;
-	Pixmap pixel_map;
-#if defined (UNEMAP_USE_NODES)
-	int node_number;
-	struct FE_field *field;
-	struct FE_node *node;
-	struct FE_node_order_info *node_order_info;
-	struct GROUP(FE_node) *rig_node_group=(struct GROUP(FE_node) *)NULL;
-#endif /* defined (UNEMAP_USE_NODES) */
+	int return_code;
 
-	ENTER(draw_all_signals);
-#if defined (UNEMAP_USE_NODES)
-	field=(struct FE_field *)NULL;
-	node_order_info=(struct FE_node_order_info *)NULL;
-	node=(struct FE_node *)NULL;
-#endif /* defined (UNEMAP_USE_NODES) */
-	drawing=(struct Drawing_2d *)NULL;
-	current_region=(struct Region *)NULL;
-	buffer=(struct Signal_buffer *)NULL;
-	device= (struct Device **)NULL;
-	if (signals&&(drawing=signals->drawing)&&signal_drawing_information&&
-		user_interface)
+	ENTER(analysis_Window_free_rig_node_order_info);
+	if(analysis)
 	{
-		pixel_map=drawing->pixel_map;
-		drawing_width=drawing->width;
-		drawing_height=drawing->height;
-		/* clear the drawing area */
-		XFillRectangle(user_interface->display,pixel_map,
-			(signal_drawing_information->graphics_context).background_drawing_colour,
-			0,0,drawing_width,drawing_height);
-		using_rig_node_group=0;
-		/* check that rig is set OR both the signal_drawing_package and  the rig are set, */
-		/* OR everything is NULL */
-		if ((!rig&&!signal_drawing_package)||(rig&&!signal_drawing_package)||(rig&&signal_drawing_package))
-		{
-			number_of_signals=0;
-			return_code=1;
-			if (signal_drawing_package) /* must extract info from rig's node group */
-			{
-#if defined (UNEMAP_USE_NODES)
-				using_rig_node_group=1;
-				/* create an array of pointers to the nodes, in node_order_info */
-				/* so can increment through nodes similar to devices. */
-				/* should use GROUP NEXT operator (when it's ready!) */
-				if (!node_order_info)
-				{
-					node_order_info=CREATE(FE_node_order_info)(0);
-				}
-				if (node_order_info)
-				{	
-					if (current_region=get_Rig_current_region(rig))
-					{	
-						rig_node_group=get_Region_rig_node_group(current_region);						
-					}
-					else
-					{
-						rig_node_group=get_Rig_all_devices_rig_node_group(rig);
-					}
-					if (return_code=FOR_EACH_OBJECT_IN_GROUP(FE_node)(
-						fill_FE_node_order_info,(void *)node_order_info,
-						rig_node_group))
-					{
-						node_number=0;
-						node=get_FE_node_order_info_node(node_order_info,node_number);
-						number_of_signals= get_FE_node_order_info_number_of_nodes(
-							node_order_info);
-						first_data=0;
-						/* time is stored at signal field.  For moment, assume only 1 signal
-							per node */
-						field=get_Signal_drawing_package_signal_field(signal_drawing_package);
-						last_data=get_FE_field_number_of_times(field)-1;
-					}
-				}
-				else
-				{
-					display_message(ERROR_MESSAGE,"draw_all_signals. "
-						"CREATE(FE_node_order_info) failed");
-					return_code=0;
-				}
-#endif /* defined (UNEMAP_USE_NODES) */
-			}
-			else if (rig&&(device=rig->devices)&&(*device)&&
-				(buffer=get_Device_signal_buffer(*device)))
-			{				
-				first_data=buffer->start;
-				last_data=buffer->end;
-				/* determine the number of signals */		
-				if(current_region=get_Rig_current_region(rig))
-				{
-					number_of_signals=current_region->number_of_devices;
-				}
-				else
-				{
-					number_of_signals=rig->number_of_devices;
-				}
-			}/*if rig( */
-			if ((number_of_signals>0)&&return_code)
-			{
-				switch (layout)
-				{
-					case SEPARATE_LAYOUT:
-					{
-						/* First choose the signal width so that all signals are shown, the
-							 signals have the specified aspect ratio and the signals are as
-							 large as possible */
-						signal_width=(int)sqrt((float)(drawing_height*drawing_width)/
-							(signal_aspect_ratio*(float)number_of_signals));
-						if (drawing_width<signal_width)
-						{
-							signal_width=drawing_width;
-						}
-						number_of_columns=(drawing_width)/signal_width;
-						number_of_rows=(number_of_signals-1)/number_of_columns+1;
-						/* equalize the columns */
-						if ((number_of_signals>1)&&(number_of_columns>1)&&
-							((i=number_of_rows*number_of_columns-number_of_signals-1)>0))
-						{
-							number_of_rows -= i/(number_of_columns-1);
-						}
-						/* make the signals fill the width and height */
-						signal_width=(drawing_width)/number_of_columns;
-						signal_height=(drawing_height)/number_of_rows;
-						/* save signal drawing area parameters */
-						signals->number_of_signals=number_of_signals;
-						signals->number_of_rows=number_of_rows;
-						signals->number_of_columns=number_of_columns;
-						signals->signal_width=signal_width;
-						signals->signal_height=signal_height;
-						/* Draw each signal */
-						/* if using rig, (not rig_node_group) skip the devices not in the*/
-						/* current region */
-						if ((!using_rig_node_group)&&(current_region))
-						{
-							while ((*device)->description->region!=current_region)
-							{
-								device++;
-							}
-						}
-						i=0;
-						j=0;
-						xpos=0;
-						ypos=0;
-						draw_signal(
-#if defined (UNEMAP_USE_NODES)
-							node,signal_drawing_package,(struct Device *)NULL,
-#else /* defined (UNEMAP_USE_NODES) */
-							(struct FE_node *)NULL,(struct Signal_drawing_package *)NULL,*device,
-#endif /* defined (UNEMAP_USE_NODES) */
-							SIGNAL_AREA_DETAIL,1,0,&first_data,&last_data,xpos,ypos,
-							signal_width,signal_height,pixel_map,&axes_left,&axes_top,
-							&axes_width,&axes_height,signal_drawing_information,
-							user_interface);
-						signals->axes_left=axes_left;
-						signals->axes_top=axes_top;
-						signals->axes_width=axes_width;
-						signals->axes_height=axes_height;
-						/*if using rig,(not rig_node_group) draw_device_markers, and inc */
-						/* device pointer write code rig_node based draw_device_markers later */
-						if(!using_rig_node_group)
-						{
-							draw_device_markers(*device,first_data,last_data,datum,1,
-								potential_time,1,SIGNAL_AREA_DETAIL,0,axes_left,axes_top,
-								axes_width,axes_height,(Window)NULL,pixel_map,
-								signal_drawing_information,user_interface);
-							device++;
-						}
-#if defined (UNEMAP_USE_NODES)
-						else
-						{
-							/* for rig_node based, get next rig node */
-							node_number++;
-							node=get_FE_node_order_info_node(node_order_info,node_number);
-						}
-#endif /* defined (UNEMAP_USE_NODES) */
-						number_of_signals--;
-						while (number_of_signals>0)
-						{
-							/* if using rig,(not rig_node_group) skip the devices not */
-							/*in the current region */
-							if ((!using_rig_node_group)&&(current_region))
-							{
-								while ((*device)->description->region!=current_region)
-								{
-									device++;
-								}
-							}
-							i++;
-							if (i>=number_of_rows)
-							{
-								i=0;
-								ypos=0;
-								j++;
-								xpos=(j*drawing_width)/number_of_columns;
-							}
-							else
-							{
-								ypos=(i*drawing_height)/number_of_rows;
-							}
-							draw_signal(
-#if defined (UNEMAP_USE_NODES)
-								node,signal_drawing_package,(struct Device *)NULL,
-#else /* defined (UNEMAP_USE_NODES) */
-								(struct FE_node *)NULL,(struct Signal_drawing_package *)NULL,*device,
-#endif /* defined (UNEMAP_USE_NODES) */
-								SIGNAL_AREA_DETAIL,1,0,&first_data,&last_data,xpos,ypos,
-								signal_width,signal_height,pixel_map,&axes_left,&axes_top,
-								&axes_width,&axes_height,signal_drawing_information,
-								user_interface);
-							/*if using rig,( not rig_node_group) draw_device_markers, */
-							/* and inc device pointer. write code rig_node based */
-							/*draw_device_markers later */
-							if (!using_rig_node_group)
-							{
-								draw_device_markers(*device,first_data,last_data,datum,1,
-									potential_time,1,SIGNAL_AREA_DETAIL,0,axes_left,axes_top,
-									axes_width,axes_height,(Window)NULL,pixel_map,
-									signal_drawing_information,user_interface);
-								device++;
-							}
-#if defined (UNEMAP_USE_NODES)
-							else
-							{
-								/* for rig_node based, get next rig node*/
-								node_number++;
-								node=get_FE_node_order_info_node(node_order_info,node_number);
-							}
-#endif /* defined (UNEMAP_USE_NODES) */
-							number_of_signals--;
-						}
-						return_code=1;
-					} break;
-					case OVERLAP_LAYOUT:
-					{
-						number_of_rows=(drawing_height/signal_overlap_spacing)-3;
-						if (number_of_rows>number_of_signals)
-						{
-							number_of_rows=number_of_signals;
-						}
-						number_of_columns=(number_of_signals-1)/number_of_rows+1;
-						/* equalize the columns */
-						if ((number_of_signals>1)&&(number_of_columns>1)&&
-							((i=number_of_rows*number_of_columns-number_of_signals-1)>0))
-						{
-							number_of_rows -= i/(number_of_columns-1);
-						}
-						/* make the signals fill the width and height */
-						signal_width=(drawing_width)/number_of_columns;
-						signal_height=4*signal_overlap_spacing;
-						/* save signal drawing area parameters */
-						signals->number_of_signals=number_of_signals;
-						signals->number_of_rows=number_of_rows;
-						signals->number_of_columns=number_of_columns;
-						signals->signal_width=signal_width;
-						signals->signal_height=signal_height;
-						/* Draw each signal */
-						i=0;
-						j=0;
-						xpos=0;
-						ypos=0;
-						draw_signal(
-#if defined (UNEMAP_USE_NODES)
-							node,signal_drawing_package,(struct Device *)NULL,
-#else /* defined (UNEMAP_USE_NODES) */
-							(struct FE_node *)NULL,(struct Signal_drawing_package *)NULL,*device,
-#endif /* defined (UNEMAP_USE_NODES) */
-							SIGNAL_AREA_DETAIL,1,0,&first_data,&last_data,xpos,ypos,
-							signal_width,signal_height,pixel_map,&axes_left,&axes_top,
-							&axes_width,&axes_height,signal_drawing_information,
-							user_interface);
-						signals->axes_left=axes_left;
-						signals->axes_top=axes_top;
-						signals->axes_width=axes_width;
-						signals->axes_height=axes_height;
-						if(!using_rig_node_group)					
-						{
-							/* for rig based, get next device */
-							device++;
-						}
-#if defined (UNEMAP_USE_NODES)
-						else
-						{
-							/* for rig_node based, get next rig node*/
-							node_number++;
-							node=get_FE_node_order_info_node(node_order_info,node_number);
-						}
-#endif /* defined (UNEMAP_USE_NODES) */
-						number_of_signals--;
-						while (number_of_signals>0)
-						{
-							i++;
-							if (i>=number_of_rows)
-							{
-								i=0;
-								ypos=0;
-								j++;
-								xpos=(j*drawing_width)/number_of_columns;
-							}
-							else
-							{
-								ypos=(i*drawing_height)/(number_of_rows+3);
-							}
-							draw_signal(
-#if defined (UNEMAP_USE_NODES)
-								node,signal_drawing_package,(struct Device *)NULL,
-#else /* defined (UNEMAP_USE_NODES) */
-								(struct FE_node *)NULL,(struct Signal_drawing_package *)NULL,*device,
-#endif /* defined (UNEMAP_USE_NODES) */
-								SIGNAL_AREA_DETAIL,1,0,&first_data,&last_data,xpos,ypos,
-								signal_width,signal_height,pixel_map,&axes_left,&axes_top,
-								&axes_width,&axes_height,signal_drawing_information,
-								user_interface);
-							if(!using_rig_node_group)							
-							{
-								/* for rig based, get next device */
-								device++;
-							}
-#if defined (UNEMAP_USE_NODES)
-							else
-							{
-								/* for rig_node based, get next rig node*/
-								node_number++;
-								node=get_FE_node_order_info_node(node_order_info,node_number);
-							}
-#endif /* defined (UNEMAP_USE_NODES) */
-							number_of_signals--;
-						}
-						/* have to draw the markers separately because the signals
-							 overlap */
-						if(!using_rig_node_group)
-						{
-							/* for rig based */
-							device=rig->devices;
-							number_of_signals=rig->number_of_devices;
-						}
-#if defined (UNEMAP_USE_NODES)
-						else
-						{
-							/* for rig_node based, get next rig node*/
-							node_number=0;
-							node=get_FE_node_order_info_node(node_order_info,node_number);
-							number_of_signals=get_FE_node_order_info_number_of_nodes(
-								node_order_info);
-						}
-#endif /* defined (UNEMAP_USE_NODES) */
-						i=0;
-						j=0;
-						axes_left=signals->axes_left;
-						axes_top=signals->axes_top;
-						xpos=axes_left;
-						ypos=axes_top;
-						while (number_of_signals>0)
-						{
-							if(!using_rig_node_group)
-							{
-								draw_device_markers(*device,first_data,last_data,datum,1,
-									potential_time,1,SIGNAL_AREA_DETAIL,0,xpos,ypos,axes_width,
-									axes_height,(Window)NULL,pixel_map,signal_drawing_information,
-									user_interface);
-							}
-							i++;
-							if (i>=number_of_rows)
-							{
-								i=0;
-								ypos=axes_top;
-								j++;
-								xpos=axes_left+(j*drawing_width)/number_of_columns;
-							}
-							else
-							{
-								ypos=axes_top+(i*drawing_height)/(number_of_rows+3);
-							}
-							if(!using_rig_node_group)
-							{
-								/* for rig based, get next device */
-								device++;
-							}
-#if defined (UNEMAP_USE_NODES)
-							else
-							{
-								/* for rig_node based, get next rig node*/
-								node_number=0;
-								node=get_FE_node_order_info_node(node_order_info,node_number);
-							}
-#endif /* defined (UNEMAP_USE_NODES) */
-							number_of_signals--;
-						}
-						return_code=1;
-					} break;
-					default:
-					{
-						display_message(ERROR_MESSAGE,
-							"draw_all_signals.  Invalid signal layout");
-					} break;
-				} /* switch */
-			}	/* if (number_of_signals>0)*/
-		} /* if ((!rig_node_group&&!signal_drawing_package)|| */
-		else
-		{
-			display_message(ERROR_MESSAGE,"draw_all_signals. Invalid arguments");
-			return_code=0;
+		return_code=1;
+		if(analysis->rig_node_order_info)
+		{			
+			DEACCESS(FE_node_order_info)(&(analysis->rig_node_order_info));
 		}
-	}/* if (signals&&(drawing=s */
+	}
 	else
 	{
-		display_message(ERROR_MESSAGE,
-			"draw_all_signals.  signals missing or incomplete");
+		display_message(ERROR_MESSAGE,"analysis_Window_free_rig_node_order_info. Invalid arguments");
 		return_code=0;
 	}
-#if defined (UNEMAP_USE_NODES)
-	/* no longer needed */
-	DEACCESS(FE_node_order_info)(&node_order_info);
-#endif /* defined (UNEMAP_USE_NODES) */
 	LEAVE;
-	return (return_code);
-} /* draw_all_signals */
-#if defined(USE_RIG_FOR_DRAW_ALL_SIGNALS)
-#define UNEMAP_USE_NODES 1
-#endif /* defined(USE_RIG_FOR_DRAW_ALL_SIGNALS)*/
+	return(return_code);
+}/* analysis_Window_free_rig_node_order_info */
+#endif /* defined (UNEMAP_USE_NODES) */
 
 int update_analysis_window_menu(struct Analysis_window *analysis)
 /*******************************************************************************

@@ -5111,6 +5111,7 @@ Called when the save button is pressed.
 					page_window->drawing_area,WM_USER,(LPARAM)page_window);
 			}
 #else /* defined (MIRADA) */
+			USE_PARAMETER(device);
 #if defined (BACKGROUND_SAVING)
 			/* write out the signal file */
 			open_file_and_write(

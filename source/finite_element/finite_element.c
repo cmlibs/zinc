@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : finite_element.c
 
-LAST MODIFIED : 19 July 2000
+LAST MODIFIED : 1 August 2000
 
 DESCRIPTION :
 Functions for manipulating finite element structures.
@@ -5544,7 +5544,7 @@ Outputs the information contained by the element field.
 #if !defined (WINDOWS_DEV_FLAG)
 static int list_FE_node_field(struct FE_node_field *node_field,void *node_void)
 /*******************************************************************************
-LAST MODIFIED : 10 June 1999
+LAST MODIFIED : 31 July 2000
 
 DESCRIPTION :
 Outputs the information contained by the node field.
@@ -5640,7 +5640,41 @@ Outputs the information contained by the node field.
 				else
 				{
 					display_message(INFORMATION_MESSAGE,".  ");
+				}			
+				/* display field based information*/
+				if(field->number_of_values)
+				{	
+					int count;
+
+					display_message(INFORMATION_MESSAGE,"field based values: ");							
+					switch(field->value_type)
+					{
+						case FE_VALUE_VALUE:
+						{
+							display_message(INFORMATION_MESSAGE,"\n");
+							display_message(INFORMATION_MESSAGE,"    "); 
+							/* output in columns if FE_VALUE_MAX_OUTPUT_COLUMNS > 0 */
+							for (count=0;count<field->number_of_values;count++)
+							{	
+								display_message(INFORMATION_MESSAGE,"%g",
+									/*	display_message(INFORMATION_MESSAGE," %"FE_VALUE_STRING,*/
+									*((FE_value*)(field->values_storage + count*sizeof(FE_value)) ));
+								if ((0<FE_VALUE_MAX_OUTPUT_COLUMNS)&&
+									(0==((count+1) % DOUBLE_VALUE_MAX_OUTPUT_COLUMNS)))
+								{
+									display_message(INFORMATION_MESSAGE,"\n");
+								}											
+							}	
+							display_message(INFORMATION_MESSAGE,"\n");																						
+						} break;
+						default:
+						{
+							display_message(INFORMATION_MESSAGE,"list_FE_node_field: "
+								"Can't display that field value_type yet. Write the code!");
+						} break;
+					}	/* switch() */							
 				}
+				/* display node based information*/
 				if ((values_storage=node->values_storage)&&(type=node_field_component->
 					nodal_value_types))
 				{					
@@ -5690,39 +5724,7 @@ Outputs the information contained by the node field.
 									} break;
 								}	/* switch() */							
 							}
-#endif /* defined (NEW_CODE) */
-#if defined (NEW_CODE) /* not sure how we're going to display these yet */
-							/* display field based information*/
-							if(field->number_of_values)
-							{	
-								int count;
-
-								display_message(INFORMATION_MESSAGE,"field based values: ");							
-								switch(field->value_type)
-								{
-									case FE_VALUE_VALUE:
-									{
-										display_message(INFORMATION_MESSAGE,"\n");
-										/* output in columns if FE_VALUE_MAX_OUTPUT_COLUMNS > 0 */
-										for (count=0;count<field->number_of_values;count++)
-										{
-											display_message(INFORMATION_MESSAGE," %"FE_VALUE_STRING,
-												*((FE_value*)(field->values_storage + count*sizeof(FE_value)) ));
-											if ((0<FE_VALUE_MAX_OUTPUT_COLUMNS)&&
-												(0==((count+1) % DOUBLE_VALUE_MAX_OUTPUT_COLUMNS)))
-											{
-												display_message(INFORMATION_MESSAGE,"\n");
-											}											
-										}																							
-									} break;
-									default:
-									{
-										display_message(INFORMATION_MESSAGE,"list_FE_node_field: "
-											"Can't display that field value_type yet. Write the code!");
-									} break;
-								}	/* switch() */							
-							}
-#endif /* defined (NEW_CODE) */	
+#endif /* defined (NEW_CODE) */				
 							/* display node based field information*/
 							if(field->number_of_times)
 							{
@@ -5932,9 +5934,13 @@ Outputs the information contained by the node field.
 				}
 				else
 				{
-					display_message(ERROR_MESSAGE,
-						"list_FE_node_field.  Missing nodal values");
-					return_code=0;
+					/*Missing nodal values only an error if no field based values either */
+					if(!(field->number_of_values))
+					{
+						display_message(ERROR_MESSAGE,
+							"list_FE_node_field.  Missing nodal values");
+						return_code=0;
+					}
 				}
 				node_field_component++;
 				i++;
@@ -11502,6 +11508,156 @@ at the <node>.
 	return (return_code);
 } /* set_FE_nodal_short_array_element */
 
+int get_FE_field_time_array_index_at_FE_value_time(struct FE_field *field,
+	FE_value time,FE_value *the_time_high,FE_value *the_time_low,
+	int *the_array_index,int *the_index_high,int *the_index_low)
+/*******************************************************************************
+LAST MODIFIED : 1 August 2000
+
+DESCRIPTION 
+Given a <field> and <time>, checks that <field> has times defined and returns:
+<the_array_index>, the array index of <field> times closest to <time>.
+<the_index_high>, <the_index_low> the upper and lower limits for <the_array_index>
+(ideally <the_index_high>==<the_index_low>==<the_array_index>).
+<the_time_low> the time corresponding to <the_index_low>.
+<the_time_high> the time corresponding to <the_index_high>.
+
+All this information (rather than just <the_array_index> ) is returned so can
+perform interpolation, etc.
+==============================================================================*/
+{	
+	int array_index,done,index_high,index_low,number_of_times,return_code,step;	
+	FE_value first_time,last_time,this_time,fe_value_index,time_high,time_low;
+
+	ENTER(get_FE_field_time_array_index_at_FE_value_time);
+	return_code=0;
+	/* check arguments */
+	if(field&&the_time_high&&the_time_low&&the_array_index&&the_index_high&&
+		the_index_low&&(number_of_times=get_FE_field_number_of_times(field)))
+	{		
+		get_FE_field_time_FE_value(field,0,&first_time);
+		get_FE_field_time_FE_value(field,number_of_times-1,&last_time);
+		/*Initial est. of the array index, assuming times evenly spaced, no gaps */	
+		/*This assumption and hence estimate is true for most signal files. */
+		fe_value_index=((time-first_time)/(last_time-first_time))*(number_of_times-1);
+		fe_value_index+=0.5;/*round float to nearest int */
+		array_index=floor(fe_value_index);
+		time_low=0;
+		time_high=0;
+		done=0;
+		index_low=0;
+		index_high=number_of_times-1;
+		/* do binary search for <time>'s array index. Also look at time of */
+		/* adjacent array element, as index estimate may be slightly off due to*/
+		/* rounding error. This avoids unnecessarily long search from end of array */
+		while(!done)
+		{	
+			if(get_FE_field_time_FE_value(field,array_index,&this_time))
+			{
+				if(this_time>=time)
+				{ 
+					index_high=array_index;					
+					if(array_index>0)
+					{
+						/* get adjacent array element*/
+						get_FE_field_time_FE_value(field,array_index-1,&time_low);
+						/* are we between elements?*/
+						if(time_low<time)
+						{			
+							index_low=array_index-1;
+							return_code=1;
+							done=1;
+						}	
+						else
+						{
+							time_low=0;
+						}
+					}
+					else
+					{
+						/* can't get lower adjacent array element when array_index=0. Finished*/
+						get_FE_field_time_FE_value(field,array_index,&time_low);
+						index_low=array_index;
+						return_code=1;
+						done=1;
+					}
+				}
+				else /* (this_time<time) */
+				{
+					index_low=array_index;
+					if(array_index<(number_of_times-1))
+					{
+						/* get adjacent array element*/
+						get_FE_field_time_FE_value(field,array_index+1,&time_high);	
+						/* are we between elements?*/
+						if(time_high>time)
+						{		
+							index_high=array_index+1;
+							return_code=1;
+							done=1;
+						}	
+						else
+						{
+							time_high=0;
+						}
+					}
+					else
+					{
+						/* can't get higher adjacent array element when */
+						/*array_index=(number_of_times-1). Finished*/
+						get_FE_field_time_FE_value(field,array_index,&time_high);
+						index_high=array_index;
+						return_code=1;
+						done=1;
+					}
+				}	
+				if(!done)
+				{	
+					step=(index_high-index_low)/2;	
+					/* No exact match, can't subdivide further, must do interpolation.*/
+					if(step==0)												
+					{	
+						done=1;	
+						return_code=1;														
+					}
+					else
+					{
+						array_index=index_low+step;
+					}
+						
+				}/* if(!done)	*/
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE,
+					"get_FE_field_time_array_index_at_FE_value_time time out of range");
+			}
+		}	/* while(!done)	*/
+		/* index_low and index_high should now be adjacent */
+		if(!time_low)
+		{
+			get_FE_field_time_FE_value(field,index_low,&time_low);
+		}
+		if(!time_high)
+		{
+			get_FE_field_time_FE_value(field,index_high,&time_high);
+		}
+		*the_time_high=time_high;
+		*the_time_low=time_low;
+		*the_array_index=array_index;
+		*the_index_high=index_high;
+		*the_index_low=index_low;
+	}
+	else
+	{
+		return_code=0;
+		display_message(ERROR_MESSAGE,
+			"get_FE_field_time_array_index_at_FE_value_time. Invalid arguments time out of range");
+	}	
+	LEAVE;
+	return (return_code);
+}/*get_FE_field_time_array_index_at_FE_value_time*/
+
 int get_FE_nodal_FE_value_array_value_at_FE_value_time(struct FE_node *node,
 	struct FE_field_component *component,int version,
 	enum FE_nodal_value_type type,FE_value time,FE_value *value)
@@ -11518,9 +11674,9 @@ range, but doesn't correspond exactly to an array element, interpolates to deter
  	
 ==============================================================================*/
 {
-	int array_number_of_values,array_index,done,index_high,index_low,
-		number_of_times,return_code,step;	
-	FE_value first_time,last_time,this_time,fe_value_index,time_high,time_low,prop;
+	int array_number_of_values,array_index,index_high,index_low,number_of_times,
+		return_code;	
+	FE_value time_high,time_low,prop;
 	struct FE_field *field;
 	
 	ENTER(get_FE_nodal_FE_value_array_value_at_FE_value_time);
@@ -11537,90 +11693,11 @@ range, but doesn't correspond exactly to an array element, interpolates to deter
 			if(number_of_times==array_number_of_values)
 			{
 				/* field has the right time values, and is defined at node. We're OK*/
-				get_FE_field_time_FE_value(field,0,&first_time);
-				get_FE_field_time_FE_value(field,number_of_times-1,&last_time);
-				/*Initial est. of the array index, assuming times evenly spaced, no gaps */	
-				/*This assumption and hence estimate is true from most signal files. */
-				fe_value_index=((time-first_time)/(last_time-first_time))*(number_of_times-1);
-				fe_value_index+=0.5;/*round float to nearest int */
-				array_index=floor(fe_value_index);
-				time_low=0;
-				time_high=0;
-				done=0;
-				index_low=0;
-				index_high=number_of_times-1;
-				/* do binary search for <time>'s array index. Also look at time of */
-				/* adjacent array element, as index estimate may be slightly off due to*/
-				/* rounding error. This avoids unnecessarily long search from end of array */
-				while(!done)
-				{	
-					if(get_FE_field_time_FE_value(field,array_index,&this_time))
-					{
-						if(this_time>=time)
-						{ 
-							index_high=array_index;
-							/* get adjacent array element*/
-							get_FE_field_time_FE_value(field,array_index-1,&time_low);
-							/* are we between elements?*/
-							if(time_low<time)
-							{			
-								index_low=array_index-1;
-								return_code=1;
-								done=1;
-							}	
-							else
-							{
-								time_low=0;
-							}
-						}
-						else /* (this_time<time) */
-						{
-							index_low=array_index;
-							get_FE_field_time_FE_value(field,array_index+1,&time_high);
-							if(time_high>time)
-							{		
-								index_high=array_index+1;
-								return_code=1;
-								done=1;
-							}	
-							else
-							{
-								time_high=0;
-							}
-						}	
-						if(!done)
-						{	
-							step=(index_high-index_low)/2;	
-							/* No exact match, can't subdivide further, must do interpolation.*/
-							if(step==0)												
-							{	
-								done=1;	
-								return_code=1;														
-							}
-							else
-							{
-								array_index=index_low+step;
-							}
-						
-						}/* if(!done)	*/
-					}
-					else
-					{
-						display_message(ERROR_MESSAGE,
-							"get_FE_nodal_FE_value_array_value_at_FE_value_time."
-							" time out of range");
-					}
-				}	/* while(!done)	*/
-				/* index_low and index_high should now be adjacent */
-				if(!time_low)
-				{
-					get_FE_field_time_FE_value(field,index_low,&time_low);
-				}
-				if(!time_high)
-				{
-					get_FE_field_time_FE_value(field,index_high,&time_high);
-				}
-				prop=(time_high-time)/(time_high-time_low);	 
+				/*get the field's time array index of <time>*/
+				return_code=get_FE_field_time_array_index_at_FE_value_time(field,
+					time,&time_high,&time_low,&array_index,&index_high,&index_low);
+				prop=(time_high-time)/(time_high-time_low);
+				/* interpolate the nodal value at this array index*/
 				*value=get_FE_nodal_FE_value_array_interpolated_value(node,component,version,
 					type,index_low,prop);					
 			}
@@ -11665,9 +11742,9 @@ range, but doesn't correspond exactly to an array element, interpolates to deter
  	
 ==============================================================================*/
 {
-	int array_number_of_values,array_index,done,index_high,index_low,
-		number_of_times,return_code,step;	
-	FE_value first_time,last_time,this_time,fe_value_index,time_high,time_low,prop;
+	int array_number_of_values,array_index,index_high,index_low,number_of_times,
+		return_code;	
+	FE_value time_high,time_low,prop;
 	struct FE_field *field;
 	
 	ENTER(get_FE_nodal_short_array_value_at_FE_value_time);
@@ -11682,91 +11759,13 @@ range, but doesn't correspond exactly to an array element, interpolates to deter
 			array_number_of_values = get_FE_nodal_array_number_of_elements(node,
 				component,version,type);									
 			if(number_of_times==array_number_of_values)
-			{
+			{			
 				/* field has the right time values, and is defined at node. We're OK*/
-				get_FE_field_time_FE_value(field,0,&first_time);
-				get_FE_field_time_FE_value(field,number_of_times-1,&last_time);
-				/*Initial est. of the array index, assuming times evenly spaced, no gaps */	
-				/*This assumption and hence estimate is true from most signal files. */
-				fe_value_index=((time-first_time)/(last_time-first_time))*(number_of_times-1);
-				fe_value_index+=0.5;/*round float to nearest int */
-				array_index=floor(fe_value_index);
-				time_low=0;
-				time_high=0;
-				done=0;
-				index_low=0;
-				index_high=number_of_times-1;
-				/* do binary search for <time>'s array index. Also look at time of */
-				/* adjacent array element, as index estimate may be slightly off due to*/
-				/* rounding error. This avoids unnecessarily long search from end of array */
-				while(!done)
-				{	
-					if(get_FE_field_time_FE_value(field,array_index,&this_time))
-					{
-						if(this_time>=time)
-						{ 
-							index_high=array_index;
-							/* get adjacent array element*/
-							get_FE_field_time_FE_value(field,array_index-1,&time_low);
-							/* are we between elements?*/
-							if(time_low<time)
-							{			
-								index_low=array_index-1;
-								return_code=1;
-								done=1;
-							}	
-							else
-							{
-								time_low=0;
-							}
-						}
-						else /* (this_time<time) */
-						{
-							index_low=array_index;
-							get_FE_field_time_FE_value(field,array_index+1,&time_high);
-							if(time_high>time)
-							{		
-								index_high=array_index+1;
-								return_code=1;
-								done=1;
-							}	
-							else
-							{
-								time_high=0;
-							}
-						}	
-						if(!done)
-						{	
-							step=(index_high-index_low)/2;	
-							/* No exact match, can't subdivide further, must do interpolation.*/
-							if(step==0)												
-							{	
-								done=1;	
-								return_code=1;														
-							}
-							else
-							{
-								array_index=index_low+step;
-							}
-						}/* if(!done)	*/
-					}
-					else
-					{
-						display_message(ERROR_MESSAGE,
-							"get_FE_nodal_short_array_value_at_FE_value_time."
-							" time out of range");
-					}
-				}	/* while(!done)	*/
-				/* index_low and index_high should now be adjacent */
-				if(!time_low)
-				{
-					get_FE_field_time_FE_value(field,index_low,&time_low);
-				}
-				if(!time_high)
-				{
-					get_FE_field_time_FE_value(field,index_high,&time_high);
-				}
-				prop=(time_high-time)/(time_high-time_low);	 
+				/*get the field's time array index of <time>*/
+				return_code=get_FE_field_time_array_index_at_FE_value_time(field,
+					time,&time_high,&time_low,&array_index,&index_high,&index_low);				
+				prop=(time_high-time)/(time_high-time_low);		
+				/* interpolate the nodal value at this array index*/ 
 				*value=get_FE_nodal_short_array_interpolated_value(node,component,version,
 					type,index_low,prop);					
 			}
