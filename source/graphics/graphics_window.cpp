@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : graphics_window.c
 
-LAST MODIFIED : 28 September 1999
+LAST MODIFIED : 27 January 2000
 
 DESCRIPTION:
 Code for opening, closing and working a CMISS 3D display window.
@@ -2064,7 +2064,7 @@ Parser commands for setting simple parameters applicable to the whole <window>.
 static int modify_Graphics_window_view(struct Parse_state *state,
 	void *window_void,void *modify_graphics_window_data_void)
 /*******************************************************************************
-LAST MODIFIED : 12 November 1998
+LAST MODIFIED : 27 January 2000
 
 DESCRIPTION :
 Parser commands for modifying the view in the current pane of <window>,
@@ -2298,17 +2298,14 @@ view angle, interest point etc.
 								up[0],up[1],up[2]);
 						}
 						/* must set view angle after lookat parameters */
-						if (view_angle != old_view_angle)
+						if ((0.0<view_angle)&&(view_angle<180.0))
 						{
-							if ((0.0<view_angle)&&(view_angle<180.0))
-							{
-								Scene_viewer_set_view_angle(scene_viewer,view_angle*(PI/180.0));
-							}
-							else
-							{
-								display_message(WARNING_MESSAGE,
-									"View angle should be between 0 and 180 degrees.");
-							}
+							Scene_viewer_set_view_angle(scene_viewer,view_angle*(PI/180.0));
+						}
+						else
+						{
+							display_message(WARNING_MESSAGE,
+								"View angle should be between 0 and 180 degrees.");
 						}
 						if (absolute_viewport_flag)
 						{
@@ -4976,7 +4973,7 @@ Writes the properties of the <window> to the command window.
 int list_Graphics_window_commands(struct Graphics_window *window,
 	void *dummy_void)
 /*******************************************************************************
-LAST MODIFIED : 28 September 1999
+LAST MODIFIED : 27 January 2000
 
 DESCRIPTION :
 Writes the commands for creating the <window> and establishing the views in it
@@ -5081,6 +5078,10 @@ to the command window.
 				display_message(INFORMATION_MESSAGE," max_pixels_per_polygon %g",
 					max_pixels_per_polygon);
 				DEALLOCATE(name);
+			}
+			else
+			{
+				display_message(INFORMATION_MESSAGE," texture none");
 			}
 			display_message(INFORMATION_MESSAGE,"\n");
 			/* view */
