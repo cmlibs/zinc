@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : unemap_hardware_service.c
 
-LAST MODIFIED : 2 November 2003
+LAST MODIFIED : 26 May 2004
 
 DESCRIPTION :
 The unemap service which runs under NT and talks to unemap via sockets.
@@ -1087,7 +1087,7 @@ static int process_message(const unsigned char operation_code,
 	const long message_size,const unsigned char big_endian,
 	unsigned char **out_buffer_address,long *out_buffer_size_address)
 /*******************************************************************************
-LAST MODIFIED : 10 October 2003
+LAST MODIFIED : 26 May 2004
 
 DESCRIPTION :
 ==============================================================================*/
@@ -1168,7 +1168,7 @@ DESCRIPTION :
 			{
 				float sampling_frequency,scrolling_callback_frequency,
 					scrolling_frequency;
-				int buffer_position,*channel_numbers,number_of_channels,
+				int buffer_position,*channel_numbers,i,number_of_channels,
 					number_of_samples_in_buffer,software_version,synchronization_card;
 
 				return_code=0;
@@ -1248,16 +1248,22 @@ DESCRIPTION :
 							{
 								if (size+number_of_channels*(long)sizeof(int)==message_size)
 								{
-									if (ALLOCATE(channel_numbers,int,number_of_channels))
+									if (ALLOCATE(channel_numbers,int,number_of_channels+1))
 									{
 										retval=socket_recv(command_socket,command_socket_read_event,
-											(unsigned char *)channel_numbers,
+											(unsigned char *)(channel_numbers+1),
 											number_of_channels*sizeof(int),0);
 										if (SOCKET_ERROR!=retval)
 										{
 											unread_size -= retval;
 											if (number_of_channels*(long)sizeof(int)==retval)
 											{
+												for (i=0;i<number_of_channels;i++)
+												{
+													copy_byte_swapped(
+														(unsigned char *)(channel_numbers+i),sizeof(int),
+														(unsigned char *)(channel_numbers+i+1),big_endian);
+												}
 												return_code=1;
 											}
 										}
