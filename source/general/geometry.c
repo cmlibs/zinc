@@ -1058,6 +1058,13 @@ Calculate the <jacobian> if not NULL.
 							&destination_values[0],&destination_values[1],
 							&destination_values[2],jacobian);
 					} break;
+					case SPHERICAL_POLAR:
+					{
+						return_code=cartesian_to_spherical_polar(source_values[0],
+							source_values[1],source_values[2],
+							&destination_values[0],&destination_values[1],
+							&destination_values[2],jacobian);
+					} break;
 					case  PROLATE_SPHEROIDAL:
 					{
 						return_code=cartesian_to_prolate_spheroidal(source_values[0],
