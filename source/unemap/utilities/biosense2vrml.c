@@ -28,9 +28,9 @@ DESCRIPTION :
 {
 	char flag,*status_array,*status_array_temp;
 	FILE *biosense_file,*vrml_file;
-	float blue,centre_x,centre_y,centre_z,green,max_x,max_y,max_z,min_x,min_y,
-		min_z,red,sphere_radius,value,view_radius,x,*x_array,*x_array_temp,y,
-		*y_array,*y_array_temp,z,*z_array,*z_array_temp;
+	float blue,centre_x,centre_y,centre_z,decay_time,green,max_x,max_y,max_z,
+		min_x,min_y,min_z,normalized_decay_time,red,sphere_radius,value,view_radius,
+		x,*x_array,*x_array_temp,y,*y_array,*y_array_temp,z,*z_array,*z_array_temp;
 	int i,id,*id_array,*id_array_temp,max_time,min_time,number_of_positions,
 		return_code,time,*time_array,*time_array_temp;
 
@@ -236,6 +236,9 @@ DESCRIPTION :
 						fprintf(vrml_file,"      type [\"EXAMINE\",\"ANY\"]\n");
 						fprintf(vrml_file,"    } #NavigationInfo\n");
 						sphere_radius=1;
+						decay_time=50;
+						normalized_decay_time=
+							decay_time/(float)(max_time+decay_time-min_time);
 						for (i=0;i<number_of_positions;i++)
 						{
 							if (status_array[i]&&(min_time<max_time))
@@ -277,12 +280,15 @@ DESCRIPTION :
 										}
 									}
 								}
+								value=(time_array[i]-min_time)/
+									(float)(max_time+decay_time-min_time);
 							}
 							else
 							{
 								red=1;
 								green=1;
 								blue=1;
+								value= -1;
 							}
 							fprintf(vrml_file,"    Transform\n");
 							fprintf(vrml_file,"    {\n");
@@ -297,6 +303,7 @@ DESCRIPTION :
 							fprintf(vrml_file,"          Appearance\n");
 							fprintf(vrml_file,"          {\n");
 							fprintf(vrml_file,"            material\n");
+							fprintf(vrml_file,"            DEF electrode_%1d\n",i+1);
 							fprintf(vrml_file,"            Material\n");
 							fprintf(vrml_file,"            {\n");
 							fprintf(vrml_file,"              diffuseColor %f %f %f\n",red,
@@ -364,7 +371,37 @@ DESCRIPTION :
 							fprintf(vrml_file,"        } #Billboard\n");
 							fprintf(vrml_file,"      ]\n");
 							fprintf(vrml_file,"    } #Transform\n");
+							if (value>=0)
+							{
+								fprintf(vrml_file,"    DEF electrode_colour_%1d\n",i+1);
+								fprintf(vrml_file,"    ColorInterpolator\n");
+								fprintf(vrml_file,"    {\n");
+								fprintf(vrml_file,"      key\n");
+								fprintf(vrml_file,"      [\n");
+								fprintf(vrml_file,"        0.0,\n");
+								fprintf(vrml_file,"        %g,\n",value/2);
+								fprintf(vrml_file,"        %g,\n",value/2);
+								fprintf(vrml_file,"        %g,\n",
+									(value+normalized_decay_time)/2);
+								fprintf(vrml_file,"        1.0\n");
+								fprintf(vrml_file,"      ]\n");
+								fprintf(vrml_file,"      keyValue\n");
+								fprintf(vrml_file,"      [\n");
+								fprintf(vrml_file,"        0.0 0.0 0.0,\n");
+								fprintf(vrml_file,"        0.0 0.0 0.0,\n");
+								fprintf(vrml_file,"        1.0 0.0 0.0,\n");
+								fprintf(vrml_file,"        0.0 0.0 0.0,\n");
+								fprintf(vrml_file,"        0.0 0.0 0.0\n");
+								fprintf(vrml_file,"      ]\n");
+								fprintf(vrml_file,"    } #ColorInterpolator\n");
+							}
 						}
+						fprintf(vrml_file,"    DEF clock\n");
+						fprintf(vrml_file,"    TimeSensor\n");
+						fprintf(vrml_file,"    {\n");
+						fprintf(vrml_file,"      cycleInterval 10.0\n");
+						fprintf(vrml_file,"      loop TRUE\n");
+						fprintf(vrml_file,"    } #TimeSensor\n");
 						return_code=1;
 					}
 					else
@@ -374,6 +411,18 @@ DESCRIPTION :
 					}
 					fprintf(vrml_file,"  ]\n");
 					fprintf(vrml_file,"} #Group\n");
+					for (i=0;i<number_of_positions;i++)
+					{
+						if (status_array[i]&&(min_time<max_time))
+						{
+							fprintf(vrml_file,
+								"ROUTE clock.fraction_changed TO electrode_colour_%1d.set_fraction\n",
+								i+1);
+							fprintf(vrml_file,
+								"ROUTE electrode_colour_%1d.value_changed TO electrode_%1d.set_diffuseColor\n",
+								i+1,i+1);
+						}
+					}
 					/* set lights... */
 					fclose(vrml_file);
 				}
