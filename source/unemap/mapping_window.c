@@ -3125,7 +3125,7 @@ Sets the animation buttons of the mapping window based upon map information
 static void expose_mapping_drawing_area_2d(Widget widget,
 	XtPointer mapping_window,XtPointer call_data)
 /*******************************************************************************
-LAST MODIFIED : 24 July 2001
+LAST MODIFIED : 12 December 2001
 
 DESCRIPTION :
 The callback for redrawing part of a mapping drawing area.
@@ -3172,7 +3172,7 @@ The callback for redrawing part of a mapping drawing area.
 										background_drawing_colour,0,0,drawing->width,
 										drawing->height);							
 									/* draw the map */				
-									draw_map(mapping->map,3,drawing);
+									draw_map(mapping->map,2/*recalculate*/,drawing);
 									update_mapping_colour_or_auxili(mapping);
 									/* set the sensitivity of the save electrode values button */
 									update_mapping_window_file_menu(mapping);
