@@ -692,7 +692,7 @@ depend :
 
 transfer :
 	tar -cvf - \
-	unemap.make unemap.c version.h \
+	../unemap.make unemap.imake common.imake unemap.c version.h \
 	unemap/WildC unemap/WildH unemap/WildUil \
 	unemap_hardware_service/WildC unemap_hardware_service/WildH unemap_hardware_service/WildUil \
 	unemap/utilities/WildC unemap/utilities/WildH unemap/utilities/WildUil \
