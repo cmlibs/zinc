@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : control_curve_editor.c
 
-LAST MODIFIED : 25 November 1999
+LAST MODIFIED : 9 February 2000
 
 DESCRIPTION :
 Provides the widgets to modify Control_curve structures.
@@ -13,6 +13,7 @@ Provides the widgets to modify Control_curve structures.
 #include <X11/keysym.h>
 #include <Xm/ToggleBG.h>
 #include "general/debug.h"
+#include "choose/choose_enumerator.h"
 #include "choose/choose_field_component.h"
 #include "curve/control_curve.h"
 #include "curve/control_curve_editor.h"
@@ -39,7 +40,7 @@ static MrmHierarchy curve_editor_hierarchy;
 
 struct Control_curve_editor
 /*******************************************************************************
-LAST MODIFIED : 25 November 1999
+LAST MODIFIED : 9 February 2000
 
 DESCRIPTION :
 Contains all the information needed for the control_curve_editor widget.
@@ -57,9 +58,9 @@ Contains all the information needed for the control_curve_editor widget.
 	struct User_interface *user_interface;
 	struct Callback_data update_callback;
 	struct Control_curve_drawing_information *curve_drawing_information;
-	Widget basis_option,basis_menu,num_components_text,drawing_area,
+	Widget basis_type_form,basis_type_widget,num_components_text,drawing_area,
 		component_form,component_widget,min_comp_text,max_comp_text,
-		extend_mode_option, extend_mode_menu, comp_grid_text,
+		extend_mode_form,extend_mode_widget, comp_grid_text,
 		parameter_grid_text,full_range_button,min_parameter_text,max_parameter_text,
 		comps_shown_text,snap_value_button,snap_parameter_button,
 		up_button,down_button;
@@ -492,9 +493,7 @@ Tells CMGUI about the current values, when they are changed.
 DECLARE_DIALOG_IDENTIFY_FUNCTION(control_curve_editor, \
 	Control_curve_editor,drawing_area)
 DECLARE_DIALOG_IDENTIFY_FUNCTION(control_curve_editor, \
-	Control_curve_editor,basis_option)
-DECLARE_DIALOG_IDENTIFY_FUNCTION(control_curve_editor, \
-	Control_curve_editor,basis_menu)
+	Control_curve_editor,basis_type_form)
 DECLARE_DIALOG_IDENTIFY_FUNCTION(control_curve_editor, \
 	Control_curve_editor,num_components_text)
 DECLARE_DIALOG_IDENTIFY_FUNCTION(control_curve_editor, \
@@ -504,9 +503,7 @@ DECLARE_DIALOG_IDENTIFY_FUNCTION(control_curve_editor, \
 DECLARE_DIALOG_IDENTIFY_FUNCTION(control_curve_editor, \
 	Control_curve_editor,max_comp_text)
 DECLARE_DIALOG_IDENTIFY_FUNCTION(control_curve_editor, \
-	Control_curve_editor,extend_mode_option)
-DECLARE_DIALOG_IDENTIFY_FUNCTION(control_curve_editor, \
-	Control_curve_editor,extend_mode_menu)
+	Control_curve_editor,extend_mode_form)
 DECLARE_DIALOG_IDENTIFY_FUNCTION(control_curve_editor, \
 	Control_curve_editor,comp_grid_text)
 DECLARE_DIALOG_IDENTIFY_FUNCTION(control_curve_editor, \
@@ -2601,142 +2598,53 @@ be moved.
 	LEAVE;
 } /* control_curve_editor_drawing_area_input_CB */
 
-static int control_curve_editor_set_basis_type(
-	struct Control_curve_editor *curve_editor)
+static void control_curve_editor_update_basis_type(Widget widget,
+	void *control_curve_editor_void,void *fe_basis_type_string_void)
 /*******************************************************************************
-LAST MODIFIED : 13 October 1997
+LAST MODIFIED : 9 February 2000
 
 DESCRIPTION :
-Sets the current face_number on the option menu.
+Callback for change of basis_type.
 ==============================================================================*/
 {
-	enum FE_basis_type fe_basis_type,current_fe_basis_type;
-	int return_code,num_children,i;
-	Widget *child_list;
-
-	ENTER(control_curve_editor_set_basis_type);
-	if (curve_editor&&curve_editor->edit_curve&&curve_editor->basis_menu&&
-		(current_fe_basis_type=
-		Control_curve_get_fe_basis_type(curve_editor->edit_curve)))
-	{
-		/* get children of the menu so that one may be selected */
-		XtVaGetValues(curve_editor->basis_menu,XmNnumChildren,
-			&num_children,XmNchildren,&child_list,NULL);
-		return_code=0;
-		for (i=0;(!return_code)&&(i<num_children);i++)
-		{
-			XtVaGetValues(child_list[i],XmNuserData,&fe_basis_type,NULL);
-			if (fe_basis_type==current_fe_basis_type)
-			{
-				XtVaSetValues(curve_editor->basis_option,
-					XmNmenuHistory,child_list[i],NULL);
-				return_code=1;
-			}
-		}
-		if (!return_code)
-		{
-			display_message(ERROR_MESSAGE,
-				"control_curve_editor_set_basis_type.  Invalid basis type");
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"control_curve_editor_set_basis_type.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* control_curve_editor_set_basis_type */
-
-static void control_curve_editor_basis_menu_CB(Widget widget,
-	XtPointer client_data,XtPointer call_data)
-/*******************************************************************************
-LAST MODIFIED : 13 October 1997
-
-DESCRIPTION :
-Callback for the option menu - change of FE_basis.
-==============================================================================*/
-{
-	enum FE_basis_type new_fe_basis_type;
-	int return_code,elem_no,number_of_elements,number_of_nodes,first_node_no,
-		node_no;
+	enum FE_basis_type fe_basis_type;
 	struct Control_curve *curve;
 	struct Control_curve_editor *curve_editor;
-	Widget menu_item_widget;
 
-	ENTER(control_curve_editor_basis_menu_CB);
-	if (widget&&(curve_editor=(struct Control_curve_editor *)client_data)&&
+	ENTER(control_curve_editor_update_basis_type);
+	USE_PARAMETER(widget);
+	if ((curve_editor=(struct Control_curve_editor *)control_curve_editor_void)&&
 		(curve=curve_editor->edit_curve))
 	{
-		/* get the widget from the call data */
-		if (menu_item_widget=((XmRowColumnCallbackStruct *)call_data)->widget)
+		if ((FE_BASIS_TYPE_INVALID != (fe_basis_type=
+			Control_curve_FE_basis_type_from_string(
+				(char *)fe_basis_type_string_void)))&&
+			(Control_curve_get_fe_basis_type(curve) != fe_basis_type))
 		{
-			/* Get the material this menu item represents and make it current */
-			XtVaGetValues(menu_item_widget,XmNuserData,&new_fe_basis_type,NULL);
-			if (Control_curve_get_fe_basis_type(curve) != new_fe_basis_type)
+			/* Ensure no node selected since may not exist under new basis */
+			curve_editor->current_element_no=0;
+			curve_editor->current_node_no=-1;
+			curve_editor->current_component_no=-1;
+			if (Control_curve_set_fe_basis_type(curve,fe_basis_type))
 			{
-				/* Ensure no node selected since may not exist under new basis */
-				curve_editor->current_element_no=0;
-				curve_editor->current_node_no=-1;
-				curve_editor->current_component_no=-1;
-				if (Control_curve_set_fe_basis_type(curve,new_fe_basis_type))
-				{
-					/* enforce continuity if derivatives used in new basis type */
-					if (0<Control_curve_get_derivatives_per_node(curve))
-					{
-						number_of_elements=Control_curve_get_number_of_elements(curve);
-						number_of_nodes=Control_curve_get_nodes_per_element(curve);
-						return_code=1;
-						for (elem_no=1;return_code&&(elem_no <= number_of_elements);
-							elem_no++)
-						{
-							if (1==elem_no)
-							{
-								first_node_no=0;
-							}
-							else
-							{
-								first_node_no=1;
-							}
-							for (node_no=first_node_no;return_code&&(node_no<number_of_nodes);
-								node_no++)
-							{
-#if defined (OLD_CODE)
-								if (!Control_curve_enforce_continuity(curve,
-									elem_no,node_no,1,CONTROL_CURVE_CONTINUITY_SLOPE))
-								{
-									display_message(ERROR_MESSAGE,
-										"control_curve_editor_basis_menu_CB.  "
-										"Error forcing continuity in new basis");
-									return_code=0;
-								}
-#endif /* defined (OLD_CODE) */
-							}
-						}
-					}
-					control_curve_editor_drawing_area_redraw(curve_editor,0);
-					/* inform the client of the change */
-					control_curve_editor_update(curve_editor);
-				}
+				control_curve_editor_drawing_area_redraw(curve_editor,0);
+				/* inform the client of the change */
+				control_curve_editor_update(curve_editor);
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE,
+					"control_curve_editor_update_basis_type.  Could not set basis type");
 			}
 		}
-		else
-		{
-			display_message(ERROR_MESSAGE,"control_curve_editor_basis_menu_CB.  "
-				"Could not find the activated menu item");
-		}
-		/* make sure the correct basis type is shown in case of error */
-		control_curve_editor_set_basis_type(curve_editor);
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"control_curve_editor_basis_menu_CB.  Invalid argument(s)");
+			"control_curve_editor_update_basis_type.  Invalid argument(s)");
 	}
 	LEAVE;
-} /* control_curve_editor_basis_menu_CB */
+} /* control_curve_editor_update_basis_type */
 
 static int control_curve_editor_set_range_component_no(
 	struct Control_curve_editor *curve_editor,int component_no)
@@ -3057,114 +2965,47 @@ Callback for changing the maximum range of the current component.
 	LEAVE;
 } /* control_curve_editor_max_component_text_CB */
 
-static int control_curve_editor_set_extend_mode(
-	struct Control_curve_editor *curve_editor)
+static void control_curve_editor_update_extend_mode(Widget widget,
+	void *control_curve_editor_void,void *extend_mode_string_void)
 /*******************************************************************************
-LAST MODIFIED : 6 April 1998
+LAST MODIFIED : 9 February 2000
 
 DESCRIPTION :
-Sets the current extend_mode on the option menu.
+Callback for change of extend_mode.
 ==============================================================================*/
 {
-	enum Control_curve_extend_mode extend_mode,current_extend_mode;
-	int return_code,num_children,i;
-	Widget *child_list;
-
-	ENTER(control_curve_editor_set_extend_mode);
-	if (curve_editor&&curve_editor->edit_curve&&curve_editor->extend_mode_menu&&
-		(Control_curve_get_extend_mode(curve_editor->edit_curve,&current_extend_mode)))
-	{
-		/* get children of the menu so that one may be selected */
-		XtVaGetValues(curve_editor->extend_mode_menu,XmNnumChildren,
-			&num_children,XmNchildren,&child_list,NULL);
-		return_code=0;
-		for (i=0;(!return_code)&&(i<num_children);i++)
-		{
-			XtVaGetValues(child_list[i],XmNuserData,&extend_mode,NULL);
-			if (extend_mode==current_extend_mode)
-			{
-				XtVaSetValues(curve_editor->extend_mode_option,
-					XmNmenuHistory,child_list[i],NULL);
-				return_code=1;
-			}
-		}
-		if (!return_code)
-		{
-			display_message(ERROR_MESSAGE,
-				"control_curve_editor_set_extend_mode.  Unknown play mode");
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"control_curve_editor_set_extend_mode.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* control_curve_editor_set_extend_mode */
-
-static void control_curve_editor_extend_mode_menu_CB(Widget widget,
-	XtPointer client_data,XtPointer call_data)
-/*******************************************************************************
-LAST MODIFIED : 6 April 1998
-
-DESCRIPTION :
-Callback for the option menu - change of extend_mode.
-==============================================================================*/
-{
-	enum Control_curve_extend_mode new_extend_mode, old_extend_mode;
+	enum Control_curve_extend_mode extend_mode;
 	struct Control_curve *curve;
 	struct Control_curve_editor *curve_editor;
-	Widget menu_item_widget;
 
-	ENTER(control_curve_editor_extend_mode_menu_CB);
-	if (widget&&(curve_editor=(struct Control_curve_editor *)client_data)&&
+	ENTER(control_curve_editor_update_extend_mode);
+	USE_PARAMETER(widget);
+	if ((curve_editor=(struct Control_curve_editor *)control_curve_editor_void)&&
 		(curve=curve_editor->edit_curve))
 	{
-		/* get the widget from the call data */
-		if (menu_item_widget=((XmRowColumnCallbackStruct *)call_data)->widget)
+		if ((CONTROL_CURVE_EXTEND_MODE_INVALID != (extend_mode=
+			Control_curve_extend_mode_from_string((char *)extend_mode_string_void)))&&
+			(Control_curve_get_extend_mode(curve) != extend_mode))
 		{
-			/* Get the material this menu item represents and make it current */
-			XtVaGetValues(menu_item_widget,XmNuserData,&new_extend_mode,NULL);
-			if ( Control_curve_get_extend_mode(curve, &old_extend_mode))
+			if (Control_curve_set_extend_mode(curve,extend_mode))
 			{
-				if ( old_extend_mode != new_extend_mode )
-				{
-					if (Control_curve_set_extend_mode(curve,new_extend_mode))
-					{
-					control_curve_editor_update(curve_editor);
-					}
-					else
-					{
-						display_message(ERROR_MESSAGE,"control_curve_editor_extend_mode_menu_CB.  "
-							"Could not set new play mode");
-					}
-				}
-				/* else nothing to change */
+				control_curve_editor_update(curve_editor);
 			}
 			else
 			{
-				display_message(ERROR_MESSAGE,"control_curve_editor_extend_mode_menu_CB.  "
-					"Could not get current play mode");
+				display_message(ERROR_MESSAGE,
+					"control_curve_editor_update_extend_mode.  "
+					"Could not set new extend mode");
 			}
 		}
-		else
-		{
-			display_message(ERROR_MESSAGE,"control_curve_editor_extend_mode_menu_CB.  "
-				"Could not find the activated menu item");
-		}
-		/* make sure the correct extend_mode type is shown in case of error */
-		control_curve_editor_set_extend_mode(curve_editor);
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"control_curve_editor_extend_mode_menu_CB.  Invalid argument(s)");
+			"control_curve_editor_update_extend_mode.  Invalid argument(s)");
 	}
 	LEAVE;
-} /* control_curve_editor_extend_mode_menu_CB */
+} /* control_curve_editor_update_extend_mode */
 
 FE_value control_curve_editor_get_cursor_parameter(
 	Widget control_curve_editor_widget)
@@ -3743,14 +3584,14 @@ Widget create_control_curve_editor_widget(Widget *curve_editor_widget,
 	Widget parent,struct Control_curve *curve,
 	struct User_interface *user_interface)
 /*******************************************************************************
-LAST MODIFIED : 25 November 1999
+LAST MODIFIED : 9 February 2000
 
 DESCRIPTION :
 Creates a control_curve_editor widget.
 ==============================================================================*/
 {
-	char temp_string[30];
-	int init_widgets;
+	char temp_string[30],**valid_strings;
+	int number_of_valid_strings,init_widgets;
 	MrmType control_curve_editor_dialog_class;
 	struct Control_curve_editor *curve_editor=NULL;
 	static MrmRegisterArg callback_list[]=
@@ -3758,10 +3599,8 @@ Creates a control_curve_editor widget.
 		{"curve_ed_destroy_CB",(XtPointer)control_curve_editor_destroy_CB},
 		{"curve_ed_id_drawing_area",(XtPointer)
 			DIALOG_IDENTIFY(control_curve_editor,drawing_area)},
-		{"curve_ed_id_basis_option",(XtPointer)
-			DIALOG_IDENTIFY(control_curve_editor,basis_option)},
-		{"curve_ed_id_basis_menu",(XtPointer)
-			DIALOG_IDENTIFY(control_curve_editor,basis_menu)},
+		{"curve_ed_id_basis_type_form",(XtPointer)
+			DIALOG_IDENTIFY(control_curve_editor,basis_type_form)},
 		{"curve_ed_id_num_components_text",(XtPointer)
 			DIALOG_IDENTIFY(control_curve_editor,num_components_text)},
 		{"curve_ed_id_component_form",(XtPointer)
@@ -3770,10 +3609,8 @@ Creates a control_curve_editor widget.
 			DIALOG_IDENTIFY(control_curve_editor,min_comp_text)},
 		{"curve_ed_id_max_comp_text",(XtPointer)
 			DIALOG_IDENTIFY(control_curve_editor,max_comp_text)},
-		{"curve_ed_id_extend_mode_option",(XtPointer)
-			DIALOG_IDENTIFY(control_curve_editor,extend_mode_option)},
-		{"curve_ed_id_extend_mode_menu",(XtPointer)
-			DIALOG_IDENTIFY(control_curve_editor,extend_mode_menu)},
+		{"curve_ed_id_extend_mode_form",(XtPointer)
+			DIALOG_IDENTIFY(control_curve_editor,extend_mode_form)},
 		{"curve_ed_id_comp_grid_text",(XtPointer)
 			DIALOG_IDENTIFY(control_curve_editor,comp_grid_text)},
 		{"curve_ed_id_parameter_grid_text",(XtPointer)
@@ -3800,16 +3637,12 @@ Creates a control_curve_editor widget.
 			control_curve_editor_resize_drawing_area_CB},
 		{"curve_ed_drawing_area_input_CB",(XtPointer)
 			control_curve_editor_drawing_area_input_CB},
-		{"curve_ed_basis_menu_CB",(XtPointer)
-			control_curve_editor_basis_menu_CB},
 		{"curve_ed_num_components_text_CB",(XtPointer)
 			control_curve_editor_num_components_text_CB},
 		{"curve_ed_min_comp_text_CB",(XtPointer)
 			control_curve_editor_min_component_text_CB},
 		{"curve_ed_max_comp_text_CB",(XtPointer)
 			control_curve_editor_max_component_text_CB},
-		{"curve_ed_extend_mode_menu_CB",(XtPointer)
-			control_curve_editor_extend_mode_menu_CB},
 		{"curve_ed_comp_grid_text_CB",(XtPointer)
 			control_curve_editor_component_grid_text_CB},
 		{"curve_ed_parameter_grid_text_CB",(XtPointer)
@@ -3833,14 +3666,7 @@ Creates a control_curve_editor widget.
 	};
 	static MrmRegisterArg identifier_list[]=
 	{
-		{"curve_ed_structure",(XtPointer)NULL},
-		{"curve_ed_cubic_Hermite",(XtPointer)CUBIC_HERMITE},
-		{"curve_ed_linear_Lagrange",(XtPointer)LINEAR_LAGRANGE},
-		{"curve_ed_quadratic_Lagrange",(XtPointer)QUADRATIC_LAGRANGE},
-		{"curve_ed_cubic_Lagrange",(XtPointer)CUBIC_LAGRANGE},
-		{"curve_ed_extend_clamp",(XtPointer)CONTROL_CURVE_EXTEND_CLAMP},
-		{"curve_ed_extend_cycle",(XtPointer)CONTROL_CURVE_EXTEND_CYCLE},
-		{"curve_ed_extend_swing",(XtPointer)CONTROL_CURVE_EXTEND_SWING}
+		{"curve_ed_structure",(XtPointer)NULL}
 	};
 	Widget return_widget;
 #if defined (OLD_CODE)
@@ -3850,7 +3676,6 @@ Creates a control_curve_editor widget.
 
 	ENTER(create_control_curve_editor_widget);
 	return_widget=(Widget)NULL;
-	/* check arguments */
 	if (curve_editor_widget&&parent&&user_interface)
 	{
 		if (MrmOpenHierarchy_base64_string(control_curve_editor_uidh,
@@ -3866,8 +3691,10 @@ Creates a control_curve_editor widget.
 				curve_editor->widget_address=curve_editor_widget;
 				curve_editor->widget=(Widget)NULL;
 				curve_editor->drawing_area=(Widget)NULL;
-				curve_editor->basis_option=(Widget)NULL;
-				curve_editor->basis_menu=(Widget)NULL;
+				curve_editor->basis_type_form=(Widget)NULL;
+				curve_editor->basis_type_widget=(Widget)NULL;
+				curve_editor->extend_mode_form=(Widget)NULL;
+				curve_editor->extend_mode_widget=(Widget)NULL;
 				curve_editor->num_components_text=(Widget)NULL;
 				curve_editor->component_form=(Widget)NULL;
 				curve_editor->component_widget=(Widget)NULL;
@@ -3941,12 +3768,33 @@ Creates a control_curve_editor widget.
 								XtVaSetValues(curve_editor->snap_parameter_button,
 									XmNset,curve_editor->snap_parameter,NULL);
 							}
-							if (!(curve_editor->component_widget=
-								create_choose_field_component_widget(curve_editor->component_form,
-								(struct FE_field *)NULL,0)))
+							valid_strings=Control_curve_FE_basis_type_get_valid_strings(
+								&number_of_valid_strings);
+							if (!(curve_editor->basis_type_widget=
+								create_choose_enumerator_widget(curve_editor->basis_type_form,
+									number_of_valid_strings,valid_strings,
+									FE_basis_type_string(LINEAR_LAGRANGE))))
 							{
 								init_widgets=0;
 							}
+							DEALLOCATE(valid_strings);
+							if (!(curve_editor->component_widget=
+								create_choose_field_component_widget(
+									curve_editor->component_form,(struct FE_field *)NULL,0)))
+							{
+								init_widgets=0;
+							}
+							valid_strings=Control_curve_extend_mode_get_valid_strings(
+								&number_of_valid_strings);
+							if (!(curve_editor->extend_mode_widget=
+								create_choose_enumerator_widget(curve_editor->extend_mode_form,
+									number_of_valid_strings,valid_strings,
+									Control_curve_extend_mode_string(
+										CONTROL_CURVE_EXTEND_CLAMP))))
+							{
+								init_widgets=0;
+							}
+							DEALLOCATE(valid_strings);
 							if (init_widgets)
 							{
 								control_curve_editor_set_curve(curve_editor->widget,curve);
@@ -4005,6 +3853,47 @@ Creates a control_curve_editor widget.
 	return (return_widget);
 } /* create_control_curve_editor_widget */
 
+struct Callback_data *control_curve_editor_get_callback(
+	Widget control_curve_editor_widget)
+/*******************************************************************************
+LAST MODIFIED : 8 November 1999
+
+DESCRIPTION :
+Returns a pointer to the update_callback item of the control_curve_editor
+widget.
+==============================================================================*/
+{
+	struct Callback_data *return_callback;
+	struct Control_curve_editor *curve_editor;
+
+	ENTER(control_curve_editor_get_callback);
+	/* check arguments */
+	if (control_curve_editor_widget)
+	{
+		/* Get the pointer to the data for the dialog */
+		XtVaGetValues(control_curve_editor_widget,XmNuserData,&curve_editor,NULL);
+		if (curve_editor)
+		{
+			return_callback=&(curve_editor->update_callback);
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,
+				"control_curve_editor_get_callback.  Missing widget data");
+			return_callback=(struct Callback_data *)NULL;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"control_curve_editor_get_callback.  Missing widget");
+		return_callback=(struct Callback_data *)NULL;
+	}
+	LEAVE;
+
+	return (return_callback);
+} /* control_curve_editor_get_callback */
+
 int control_curve_editor_set_callback(Widget control_curve_editor_widget,
 	struct Callback_data *new_callback)
 /*******************************************************************************
@@ -4049,159 +3938,6 @@ called when the curve changes in any way.
 	return (return_code);
 } /* control_curve_editor_set_callback */
 
-int control_curve_editor_set_curve(Widget control_curve_editor_widget,
-	struct Control_curve *curve)
-/*******************************************************************************
-LAST MODIFIED : 22 November 1999
-
-DESCRIPTION :
-Sets the Control_curve to be edited by the control_curve_editor widget.
-==============================================================================*/
-{
-	char temp_string[30];
-	FE_value component_grid_size,parameter_grid_size;
-	int return_code;
-	struct Callback_data callback;
-	struct Control_curve_editor *curve_editor;
-
-	ENTER(control_curve_editor_set_curve);
-	/* check arguments */
-	if (control_curve_editor_widget)
-	{
-		/* Get the pointer to the data for the control_curve_editor_widget */
-		XtVaGetValues(control_curve_editor_widget,XmNuserData,&curve_editor,NULL);
-		if (curve_editor)
-		{
-			return_code=1;
-			if (curve_editor->edit_curve)
-			{
-				DESTROY(Control_curve)(&(curve_editor->edit_curve));
-			}
-			if (curve)
-			{
-				if ((curve_editor->edit_curve=CREATE(Control_curve)("copy",
-					LINEAR_LAGRANGE,1))&&(MANAGER_COPY_WITHOUT_IDENTIFIER(
-					Control_curve,name)(curve_editor->edit_curve,curve))&&
-					control_curve_editor_view_full_range(curve_editor))
-				{
-					/* make sure no node selected initially: */
-					curve_editor->current_element_no=0;
-					curve_editor->current_node_no=-1;
-					curve_editor->current_component_no=-1;
-					curve_editor->first_component_in_view=0;
-					/* set widget values */
-					control_curve_editor_set_basis_type(curve_editor);
-					control_curve_editor_set_extend_mode(curve_editor);
-					sprintf(temp_string,"%i",
-						Control_curve_get_number_of_components(curve_editor->edit_curve));
-					XtVaSetValues(curve_editor->num_components_text,
-						XmNvalue,temp_string,NULL);
-					curve_editor->range_component_no=-1;
-					control_curve_editor_set_range_component_no(curve_editor,0);
-
-					Control_curve_get_parameter_grid(curve,&parameter_grid_size);
-					sprintf(temp_string,"%g",parameter_grid_size);
-					XtVaSetValues(curve_editor->parameter_grid_text,
-						XmNvalue,temp_string,NULL);
-					Control_curve_get_value_grid(curve,&component_grid_size);
-					sprintf(temp_string,"%g",component_grid_size);
-					XtVaSetValues(curve_editor->comp_grid_text,
-						XmNvalue,temp_string,NULL);
-
-					/* draw new curve */
-					control_curve_editor_drawing_layout_change(curve_editor);
-					control_curve_editor_drawing_area_redraw(curve_editor,0);
-					/* turn on callbacks */
-					callback.data=(void *)curve_editor;
-					callback.procedure=control_curve_editor_change_component;
-					choose_field_component_set_callback(
-						curve_editor->component_widget,&callback);
-					XtManageChild(curve_editor->widget);
-				}
-				else
-				{
-					if (curve_editor->edit_curve)
-					{
-						DESTROY(Control_curve)(&(curve_editor->edit_curve));
-					}
-					display_message(ERROR_MESSAGE,
-						"control_curve_editor_set_curve.  Could not make copy of curve");
-					curve=(struct Control_curve *)NULL;
-					return_code=0;
-				}
-			}
-			if (!curve)
-			{
-				/* switch off subwidget callbacks */
-				callback.procedure=(Callback_procedure *)NULL;
-				callback.data=(void *)NULL;
-				choose_field_component_set_callback(
-					curve_editor->component_widget,&callback);
-				/* set subwidget curves to NULL */
-				choose_field_component_set_field_component(
-					curve_editor->component_widget,(struct FE_field *)NULL,0);
-				XtUnmanageChild(curve_editor->widget);
-			}
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"control_curve_editor_set_curve.  Missing widget data");
-			return_code=0;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"control_curve_editor_set_curve.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* control_curve_editor_set_curve */
-
-struct Callback_data *control_curve_editor_get_callback(
-	Widget control_curve_editor_widget)
-/*******************************************************************************
-LAST MODIFIED : 8 November 1999
-
-DESCRIPTION :
-Returns a pointer to the update_callback item of the control_curve_editor
-widget.
-==============================================================================*/
-{
-	struct Callback_data *return_callback;
-	struct Control_curve_editor *curve_editor;
-
-	ENTER(control_curve_editor_get_callback);
-	/* check arguments */
-	if (control_curve_editor_widget)
-	{
-		/* Get the pointer to the data for the dialog */
-		XtVaGetValues(control_curve_editor_widget,XmNuserData,&curve_editor,NULL);
-		if (curve_editor)
-		{
-			return_callback=&(curve_editor->update_callback);
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"control_curve_editor_get_callback.  Missing widget data");
-			return_callback=(struct Callback_data *)NULL;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"control_curve_editor_get_callback.  Missing widget");
-		return_callback=(struct Callback_data *)NULL;
-	}
-	LEAVE;
-
-	return (return_callback);
-} /* control_curve_editor_get_callback */
-
 struct Control_curve *control_curve_editor_get_curve(
 	Widget control_curve_editor_widget)
 /*******************************************************************************
@@ -4241,3 +3977,128 @@ Returns the Control_curve currently being edited.
 
 	return (return_curve);
 } /* control_curve_editor_get_curve */
+
+int control_curve_editor_set_curve(Widget control_curve_editor_widget,
+	struct Control_curve *curve)
+/*******************************************************************************
+LAST MODIFIED : 9 February 2000
+
+DESCRIPTION :
+Sets the Control_curve to be edited by the control_curve_editor widget.
+==============================================================================*/
+{
+	char temp_string[30];
+	FE_value component_grid_size,parameter_grid_size;
+	int return_code;
+	struct Callback_data callback;
+	struct Control_curve_editor *curve_editor;
+
+	ENTER(control_curve_editor_set_curve);
+	if (control_curve_editor_widget)
+	{
+		/* Get the pointer to the data for the control_curve_editor_widget */
+		XtVaGetValues(control_curve_editor_widget,XmNuserData,&curve_editor,NULL);
+		if (curve_editor)
+		{
+			return_code=1;
+			if (curve_editor->edit_curve)
+			{
+				DESTROY(Control_curve)(&(curve_editor->edit_curve));
+			}
+			if (curve)
+			{
+				if ((curve_editor->edit_curve=CREATE(Control_curve)("copy",
+					LINEAR_LAGRANGE,1))&&(MANAGER_COPY_WITHOUT_IDENTIFIER(
+					Control_curve,name)(curve_editor->edit_curve,curve))&&
+					control_curve_editor_view_full_range(curve_editor))
+				{
+					/* make sure no node selected initially: */
+					curve_editor->current_element_no=0;
+					curve_editor->current_node_no=-1;
+					curve_editor->current_component_no=-1;
+					curve_editor->first_component_in_view=0;
+					/* set widget values */
+					choose_enumerator_set_string(curve_editor->basis_type_widget,
+						FE_basis_type_string(
+							Control_curve_get_fe_basis_type(curve_editor->edit_curve)));
+					choose_enumerator_set_string(curve_editor->extend_mode_widget,
+						Control_curve_extend_mode_string(
+							Control_curve_get_extend_mode(curve_editor->edit_curve)));
+					sprintf(temp_string,"%i",
+						Control_curve_get_number_of_components(curve_editor->edit_curve));
+					XtVaSetValues(curve_editor->num_components_text,
+						XmNvalue,temp_string,NULL);
+					curve_editor->range_component_no=-1;
+					control_curve_editor_set_range_component_no(curve_editor,0);
+
+					Control_curve_get_parameter_grid(curve,&parameter_grid_size);
+					sprintf(temp_string,"%g",parameter_grid_size);
+					XtVaSetValues(curve_editor->parameter_grid_text,
+						XmNvalue,temp_string,NULL);
+					Control_curve_get_value_grid(curve,&component_grid_size);
+					sprintf(temp_string,"%g",component_grid_size);
+					XtVaSetValues(curve_editor->comp_grid_text,
+						XmNvalue,temp_string,NULL);
+
+					/* draw new curve */
+					control_curve_editor_drawing_layout_change(curve_editor);
+					control_curve_editor_drawing_area_redraw(curve_editor,0);
+					/* turn on callbacks */
+					callback.data=(void *)curve_editor;
+					callback.procedure=control_curve_editor_change_component;
+					choose_field_component_set_callback(
+						curve_editor->component_widget,&callback);
+					callback.procedure=control_curve_editor_update_basis_type;
+					choose_field_component_set_callback(
+						curve_editor->basis_type_widget,&callback);
+					callback.procedure=control_curve_editor_update_extend_mode;
+					choose_field_component_set_callback(
+						curve_editor->extend_mode_widget,&callback);
+					XtManageChild(curve_editor->widget);
+				}
+				else
+				{
+					if (curve_editor->edit_curve)
+					{
+						DESTROY(Control_curve)(&(curve_editor->edit_curve));
+					}
+					display_message(ERROR_MESSAGE,
+						"control_curve_editor_set_curve.  Could not make copy of curve");
+					curve=(struct Control_curve *)NULL;
+					return_code=0;
+				}
+			}
+			if (!curve)
+			{
+				/* switch off subwidget callbacks */
+				callback.procedure=(Callback_procedure *)NULL;
+				callback.data=(void *)NULL;
+				choose_field_component_set_callback(
+					curve_editor->component_widget,&callback);
+				choose_field_component_set_callback(
+					curve_editor->basis_type_widget,&callback);
+				choose_field_component_set_callback(
+					curve_editor->extend_mode_widget,&callback);
+				/* set subwidget curves to NULL */
+				choose_field_component_set_field_component(
+					curve_editor->component_widget,(struct FE_field *)NULL,0);
+				XtUnmanageChild(curve_editor->widget);
+			}
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,
+				"control_curve_editor_set_curve.  Missing widget data");
+			return_code=0;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"control_curve_editor_set_curve.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* control_curve_editor_set_curve */

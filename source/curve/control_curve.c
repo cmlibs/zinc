@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : control_curve.c
 
-LAST MODIFIED : 29 November 1999
+LAST MODIFIED : 9 February 2000
 
 DESCRIPTION :
 Definition of struct Control_curve used to describe time-value or x-y functions.
@@ -975,6 +975,99 @@ Works even when <destination> and <source> are the same.
 Global functions
 ----------------
 */
+
+char **Control_curve_FE_basis_type_get_valid_strings(
+	int *number_of_valid_strings)
+/*******************************************************************************
+LAST MODIFIED : 9 February 2000
+
+DESCRIPTION :
+Returns and allocated array of pointers to all static strings for all
+Fe_basis_types valid with Control_curves - obtained from function
+FE_basis_type_string.
+Up to calling function to deallocate returned array - but not the strings in it!
+==============================================================================*/
+{
+	char **valid_strings;
+
+	ENTER(Control_curve_FE_basis_type_get_valid_strings);
+	if (number_of_valid_strings)
+	{
+		*number_of_valid_strings=4;
+		if (ALLOCATE(valid_strings,char *,*number_of_valid_strings))
+		{
+			valid_strings[0]=FE_basis_type_string(CUBIC_HERMITE);
+			valid_strings[1]=FE_basis_type_string(CUBIC_LAGRANGE);
+			valid_strings[2]=FE_basis_type_string(LINEAR_LAGRANGE);
+			valid_strings[3]=FE_basis_type_string(QUADRATIC_LAGRANGE);
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,
+				"Control_curve_FE_basis_type_get_valid_strings.  Not enough memory");
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Control_curve_FE_basis_type_get_valid_strings.  Invalid argument");
+		valid_strings=(char **)NULL;
+	}
+	LEAVE;
+
+	return (valid_strings);
+} /* Control_curve_FE_basis_type_get_valid_strings */
+
+enum FE_basis_type Control_curve_FE_basis_type_from_string(
+	char *fe_basis_type_string)
+/*******************************************************************************
+LAST MODIFIED : 9 February 2000
+
+DESCRIPTION :
+Returns the FE_basis_type described by <fe_basis_type_string>, if valid for
+use in Control_curves.
+==============================================================================*/
+{
+	enum FE_basis_type fe_basis_type;
+
+	ENTER(Control_curve_FE_basis_type_from_string);
+	if (fe_basis_type_string)
+	{
+		if (fuzzy_string_compare_same_length(fe_basis_type_string,
+			FE_basis_type_string(CUBIC_HERMITE)))
+		{
+			fe_basis_type=CUBIC_HERMITE;
+		}
+		else if (fuzzy_string_compare_same_length(fe_basis_type_string,
+			FE_basis_type_string(CUBIC_LAGRANGE)))
+		{
+			fe_basis_type=CUBIC_LAGRANGE;
+		}
+		else if (fuzzy_string_compare_same_length(fe_basis_type_string,
+			FE_basis_type_string(LINEAR_LAGRANGE)))
+		{
+			fe_basis_type=LINEAR_LAGRANGE;
+		}
+		else if (fuzzy_string_compare_same_length(fe_basis_type_string,
+			FE_basis_type_string(QUADRATIC_LAGRANGE)))
+		{
+			fe_basis_type=QUADRATIC_LAGRANGE;
+		}
+		else
+		{
+			fe_basis_type=FE_BASIS_TYPE_INVALID;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Control_curve_FE_basis_type_from_string.  Invalid argument");
+		fe_basis_type=FE_BASIS_TYPE_INVALID;
+	}
+	LEAVE;
+
+	return (fe_basis_type);
+} /* Control_curve_FE_basis_type_from_string */
 
 char *Control_curve_extend_mode_string(
 	enum Control_curve_extend_mode extend_mode)
@@ -3532,35 +3625,33 @@ allowed by the curve editor. Also controls display of grids in the editor.
 	return (return_code);
 } /* Control_curve_set_value_grid */
 
-int Control_curve_get_extend_mode(struct Control_curve *curve,
-	enum Control_curve_extend_mode *extend_mode)
+enum Control_curve_extend_mode Control_curve_get_extend_mode(
+	struct Control_curve *curve)
 /*******************************************************************************
-LAST MODIFIED : 6 April 1998
+LAST MODIFIED : 9 February 2000
 
 DESCRIPTION :
-Returns the mode used for evaluating the values returned for a parameter outside the
-range of parameters defined for a curve.  The definition of
+Returns the mode used for evaluating the values returned for a parameter
+outside the range of parameters defined for a curve. The definition of
 enum Control_curve_extend_mode gives more information.
 ==============================================================================*/
 {
-	int return_code;
+	enum Control_curve_extend_mode extend_mode;
 
 	ENTER(Control_curve_get_extend_mode);
-	/* check arguments */
-	if (curve&&extend_mode)
+	if (curve)
 	{
-		*extend_mode = curve->extend_mode;
-		return_code=1;
+		extend_mode = curve->extend_mode;
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
 			"Control_curve_get_extend_mode.  Invalid argument(s)");
-		return_code=0;
+		extend_mode=CONTROL_CURVE_EXTEND_MODE_INVALID;
 	}
 	LEAVE;
 
-	return (return_code);
+	return (extend_mode);
 } /* Control_curve_get_extend_mode */
 
 int Control_curve_set_extend_mode(struct Control_curve *curve,
@@ -4223,36 +4314,20 @@ DESCRIPTION :
 int define_Control_curve_information(struct Parse_state *state,
 	void *curve_definition_void,void *dummy_void)
 /*******************************************************************************
-LAST MODIFIED : 29 November 1999
+LAST MODIFIED : 9 February 2000
 
 DESCRIPTION :
 ==============================================================================*/
 {
-	char extend_clamp_flag,extend_cycle_flag,extend_swing_flag,*file_name;
+	char *extend_mode_string,*file_name,**valid_strings;
+	enum Control_curve_extend_mode extend_mode;
 	enum FE_basis_type new_fe_basis_type;
 	FE_value *max_value,*min_value,parameter_grid,value_grid;
-	int comp_no,existing_number_of_components,i,new_number_of_components,
-		number_of_components,return_code;
+	int comp_no,existing_number_of_components,new_number_of_components,
+		number_of_components,number_of_valid_strings,return_code;
 	struct Control_curve *temp_curve;
 	struct Control_curve_definition *curve_definition;
-	struct Modifier_entry
-		extend_mode_option_table[]=
-		{
-			{"extend_clamp",NULL,NULL,set_char_flag},
-			{"extend_cycle",NULL,NULL,set_char_flag},
-			{"extend_swing",NULL,NULL,set_char_flag},
-			{NULL,NULL,NULL,NULL}
-		},
-		option_table[]=
-		{
-			{NULL,NULL,NULL,NULL},
-			{"file",NULL,(void *)1,set_name},
-			{"max_value",NULL,NULL,set_float_vector},
-			{"min_value",NULL,NULL,set_float_vector},
-			{"parameter_grid",NULL,NULL,set_float_non_negative},
-			{"value_grid",NULL,NULL,set_float_non_negative},
-			{NULL,NULL,NULL,NULL}
-		};
+	struct Option_table *option_table;
 
 	ENTER(define_Control_curve_information);
 	USE_PARAMETER(dummy_void);
@@ -4292,6 +4367,8 @@ DESCRIPTION :
 						curve_definition->curve_to_be_modified,&parameter_grid);
 					Control_curve_get_value_grid(
 						curve_definition->curve_to_be_modified,&value_grid);
+					extend_mode=Control_curve_get_extend_mode(
+						curve_definition->curve_to_be_modified);
 				}
 				else
 				{
@@ -4303,121 +4380,117 @@ DESCRIPTION :
 					Control_curve_get_parameter_grid(curve_definition->curve,
 						&parameter_grid);
 					Control_curve_get_value_grid(curve_definition->curve,&value_grid);
+					extend_mode=Control_curve_get_extend_mode(curve_definition->curve);
 				}
-				extend_clamp_flag=0;
-				extend_cycle_flag=0;
-				extend_swing_flag=0;
-				i=0;
-				/* extend_clamp|extend_cycle|extend_swing */
-				(extend_mode_option_table[0]).to_be_modified= &extend_clamp_flag;
-				(extend_mode_option_table[1]).to_be_modified= &extend_cycle_flag;
-				(extend_mode_option_table[2]).to_be_modified= &extend_swing_flag;
-				(option_table[i]).user_data= &extend_mode_option_table;
-				i++;
+
+				option_table=CREATE(Option_table)();
+				/* extend mode */
+				extend_mode_string=Control_curve_extend_mode_string(extend_mode);
+				valid_strings=Control_curve_extend_mode_get_valid_strings(
+					&number_of_valid_strings);
+				Option_table_add_enumerator(option_table,number_of_valid_strings,
+					valid_strings,&extend_mode_string);
+				DEALLOCATE(valid_strings);
 				/* file */
-				(option_table[i]).to_be_modified=(void *)&file_name;
-				i++;
+				Option_table_add_entry(option_table,"file",&file_name,
+					(void *)1,set_name);
 				/* max_value */
-				(option_table[i]).to_be_modified=(void *)max_value;
-				(option_table[i]).user_data=(void *)&number_of_components;
-				i++;
+				Option_table_add_entry(option_table,"max_value",max_value,
+					&number_of_components,set_float_vector);
 				/* min_value */
-				(option_table[i]).to_be_modified=(void *)min_value;
-				(option_table[i]).user_data=(void *)&number_of_components;
-				i++;
+				Option_table_add_entry(option_table,"min_value",min_value,
+					&number_of_components,set_float_vector);
 				/* parameter_grid */
-				(option_table[i]).to_be_modified=(void *)&parameter_grid;
-				i++;
+				Option_table_add_entry(option_table,"parameter_grid",&parameter_grid,
+					NULL,set_float_non_negative);
 				/* value_grid */
-				(option_table[i]).to_be_modified=(void *)&value_grid;
-				i++;
-				if (return_code=process_multiple_options(state,option_table))
+				Option_table_add_entry(option_table,"value_grid",&value_grid,
+					NULL,set_float_non_negative);
+				if (return_code=Option_table_multi_parse(option_table,state))
 				{
-					if (file_name&&(temp_curve=create_Control_curve_from_file(
-						curve_definition->curve->name,file_name)))
+					if (file_name)
 					{
-						if (curve_definition->fe_basis_type_set)
+						if (temp_curve=create_Control_curve_from_file(
+							curve_definition->curve->name,file_name))
 						{
-							new_fe_basis_type=curve_definition->fe_basis_type;
-						}
-						else
-						{
-							new_fe_basis_type=Control_curve_get_fe_basis_type(temp_curve);
-						}
-						if (curve_definition->number_of_components_set)
-						{
-							new_number_of_components=curve_definition->number_of_components;
-						}
-						else
-						{
-							new_number_of_components=
-								Control_curve_get_number_of_components(temp_curve);
-						}
-						if ((Control_curve_get_number_of_components(temp_curve)==
-							new_number_of_components)&&
-							(Control_curve_get_fe_basis_type(temp_curve)==new_fe_basis_type))
-						{
-							/* use this instead of curve created earlier */
-							REACCESS(Control_curve)(&(curve_definition->curve),temp_curve);
-						}
-						else
-						{
-							if (!(return_code=cc_copy_convert_without_name(
-								curve_definition->curve,new_fe_basis_type,
-								new_number_of_components,temp_curve)))
+							if (curve_definition->fe_basis_type_set)
 							{
-								display_message(ERROR_MESSAGE,
-									"define_Control_curve_information.  "
-									"Could not copy curve from file");
+								new_fe_basis_type=curve_definition->fe_basis_type;
 							}
-							DESTROY(Control_curve)(&temp_curve);
+							else
+							{
+								new_fe_basis_type=Control_curve_get_fe_basis_type(temp_curve);
+							}
+							if (curve_definition->number_of_components_set)
+							{
+								new_number_of_components=curve_definition->number_of_components;
+							}
+							else
+							{
+								new_number_of_components=
+									Control_curve_get_number_of_components(temp_curve);
+							}
+							if ((Control_curve_get_number_of_components(temp_curve)==
+								new_number_of_components)&&(new_fe_basis_type ==
+								(Control_curve_get_fe_basis_type(temp_curve))))
+							{
+								/* use this instead of curve created earlier */
+								REACCESS(Control_curve)(&(curve_definition->curve),temp_curve);
+							}
+							else
+							{
+								if (!(return_code=cc_copy_convert_without_name(
+									curve_definition->curve,new_fe_basis_type,
+									new_number_of_components,temp_curve)))
+								{
+									display_message(ERROR_MESSAGE,
+										"define_Control_curve_information.  "
+										"Could not copy curve from file %s",file_name);
+									DEACCESS(Control_curve)(&(curve_definition->curve));
+									return_code=0;
+								}
+								DESTROY(Control_curve)(&temp_curve);
+							}
+						}
+						else
+						{
+							display_message(ERROR_MESSAGE,
+								"define_Control_curve_information.  "
+								"Could not read curve from file %s",file_name);
+							DEACCESS(Control_curve)(&(curve_definition->curve));
+							return_code=0;
 						}
 					}
 					else if (curve_definition->curve_to_be_modified)
 					{
 						if (!(return_code=cc_copy_convert_without_name(
 							curve_definition->curve,curve_definition->fe_basis_type,
-							curve_definition->number_of_components,
-							curve_definition->curve_to_be_modified)))
+							number_of_components,curve_definition->curve_to_be_modified)))
 						{
 							display_message(ERROR_MESSAGE,
 								"define_Control_curve_information.  Could not copy curve");
 						}
 						new_number_of_components=number_of_components;
 					}
-					for (comp_no=0;comp_no<number_of_components;comp_no++)
+					if (return_code)
 					{
-						if (comp_no<new_number_of_components)
+						for (comp_no=0;comp_no<number_of_components;comp_no++)
 						{
-							Control_curve_set_edit_component_range(curve_definition->curve,
-								comp_no,min_value[comp_no],max_value[comp_no]);
+							if (comp_no<new_number_of_components)
+							{
+								Control_curve_set_edit_component_range(curve_definition->curve,
+									comp_no,min_value[comp_no],max_value[comp_no]);
+							}
 						}
-					}
-					Control_curve_set_parameter_grid(curve_definition->curve,
-						parameter_grid);
-					Control_curve_set_value_grid(curve_definition->curve,
-						value_grid);
-					if (1<(extend_clamp_flag+extend_cycle_flag+extend_swing_flag))
-					{
-						display_message(ERROR_MESSAGE,
-							"Only one of extend_clamp|extend_cycle|extend_swing");
-					}
-					else if (extend_clamp_flag)
-					{
+						Control_curve_set_parameter_grid(curve_definition->curve,
+							parameter_grid);
+						Control_curve_set_value_grid(curve_definition->curve,
+							value_grid);
 						Control_curve_set_extend_mode(curve_definition->curve,
-							CONTROL_CURVE_EXTEND_CLAMP);
-					}
-					else if (extend_cycle_flag)
-					{
-						Control_curve_set_extend_mode(curve_definition->curve,
-							CONTROL_CURVE_EXTEND_CYCLE);
-					}
-					else if (extend_swing_flag)
-					{
-						Control_curve_set_extend_mode(curve_definition->curve,
-							CONTROL_CURVE_EXTEND_SWING);
+							Control_curve_extend_mode_from_string(extend_mode_string));
 					}
 				}
+				DESTROY(Option_table)(&option_table);
 			}
 			else
 			{
@@ -4563,6 +4636,18 @@ DESCRIPTION :
 			if (strcmp(PARSER_HELP_STRING,current_token)&&
 				strcmp(PARSER_RECURSIVE_HELP_STRING,current_token))
 			{
+#if defined (OLD_CODE)
+				/*???RC Currently can't handle these optional tokens that also know if
+					set, hence leave with old parsing stuff for now */
+				/* basis type */
+				fe_basis_type_string=
+					FE_basis_type_string(curve_definition->fe_basis_type);
+				valid_strings=Control_curve_FE_basis_type_get_valid_strings(
+					&number_of_valid_strings);
+				Option_table_add_enumerator(option_table,number_of_valid_strings,
+					valid_strings,&fe_basis_type_string);
+				DEALLOCATE(valid_strings);
+#endif /* defined (OLD_CODE) */
 				/* read the optional fe_basis_type parameter */
 				if (fuzzy_string_compare(current_token,"c.Hermite"))
 				{

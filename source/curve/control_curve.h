@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : control_curve.h
 
-LAST MODIFIED : 29 November 1999
+LAST MODIFIED : 9 February 2000
 
 DESCRIPTION :
 Definition of struct Control_curve used to describe parameter-value functions.
@@ -91,6 +91,28 @@ DECLARE_MANAGER_TYPES(Control_curve);
 Global functions
 ----------------
 */
+
+char **Control_curve_FE_basis_type_get_valid_strings(
+	int *number_of_valid_strings);
+/*******************************************************************************
+LAST MODIFIED : 9 February 2000
+
+DESCRIPTION :
+Returns and allocated array of pointers to all static strings for all
+Fe_basis_types valid with Control_curves - obtained from function
+FE_basis_type_string.
+Up to calling function to deallocate returned array - but not the strings in it!
+==============================================================================*/
+
+enum FE_basis_type Control_curve_FE_basis_type_from_string(
+	char *fe_basis_type_string);
+/*******************************************************************************
+LAST MODIFIED : 9 February 2000
+
+DESCRIPTION :
+Returns the FE_basis_type described by <fe_basis_type_string>, if valid for
+use in Control_curves.
+==============================================================================*/
 
 char *Control_curve_extend_mode_string(
 	enum Control_curve_extend_mode extend_mode);
@@ -507,14 +529,14 @@ Sets the <value_grid> of the <curve> = smallest change in value
 allowed by the curve editor. Also controls display of grids in the editor.
 ==============================================================================*/
 
-int Control_curve_get_extend_mode(struct Control_curve *curve,
-	enum Control_curve_extend_mode *extend_mode);
+enum Control_curve_extend_mode Control_curve_get_extend_mode(
+	struct Control_curve *curve);
 /*******************************************************************************
-LAST MODIFIED : 16 November 1999
+LAST MODIFIED : 9 February 2000
 
 DESCRIPTION :
-Returns the mode used for evaluating the values returned for a parameter outside
-the range of parameters defined for a curve.  The definition of
+Returns the mode used for evaluating the values returned for a parameter
+outside the range of parameters defined for a curve. The definition of
 enum Control_curve_extend_mode gives more information.
 ==============================================================================*/
 

@@ -1,7 +1,7 @@
 !*******************************************************************************
 ! FILE : control_curve_editor.uil
 !
-! LAST MODIFIED : 23 November 1999
+! LAST MODIFIED : 9 February 2000
 !
 ! DESCRIPTION :
 ! The widgets for the control_curve editor widget.
@@ -13,8 +13,7 @@ procedure
 ! ---------|---------|---------|- 31 characters max
 	curve_ed_destroy_CB;
 	curve_ed_id_drawing_area;
-	curve_ed_id_basis_option;
-	curve_ed_id_basis_menu;
+	curve_ed_id_basis_type_form;
 	curve_ed_id_num_components_text;
 	curve_ed_id_component_form;
 	curve_ed_id_min_comp_text;
@@ -24,8 +23,7 @@ procedure
 	curve_ed_id_full_range_btn;
 	curve_ed_id_min_parameter_text;
 	curve_ed_id_max_parameter_text;
-	curve_ed_id_extend_mode_option;
-	curve_ed_id_extend_mode_menu;
+	curve_ed_id_extend_mode_form;
 	curve_ed_id_snap_value_btn;
 	curve_ed_id_snap_parameter_btn;
 	curve_ed_id_comps_shown_text;
@@ -34,7 +32,6 @@ procedure
 	curve_ed_expose_drawing_area_CB;
 	curve_ed_resize_drawing_area_CB;
 	curve_ed_drawing_area_input_CB;
-	curve_ed_basis_menu_CB;
 	curve_ed_num_components_text_CB;
 	curve_ed_min_comp_text_CB;
 	curve_ed_max_comp_text_CB;
@@ -43,7 +40,6 @@ procedure
 	curve_ed_full_range_btn_CB;
 	curve_ed_min_parameter_text_CB;
 	curve_ed_max_parameter_text_CB;
-	curve_ed_extend_mode_menu_CB;
 	curve_ed_snap_value_btn_CB;
 	curve_ed_snap_parameter_btn_CB;
 	curve_ed_comps_shown_text_CB;
@@ -67,14 +63,6 @@ identifier
 	widget_spacing;
 	!Pointer to data specific to this instance of the curve_ed widget
 	curve_ed_structure;
-	!control_curve basis types;
-	curve_ed_cubic_Hermite;
-	curve_ed_linear_Lagrange;
-	curve_ed_quadratic_Lagrange;
-	curve_ed_cubic_Lagrange;
-	curve_ed_extend_clamp;
-	curve_ed_extend_cycle;
-	curve_ed_extend_swing;
 	!fonts here
 	normal_font;
 	button_font;
@@ -153,13 +141,13 @@ object
 			};
 		controls
 			{
-			XmOptionMenu curve_ed_basis_option;
+			XmRowColumn curve_ed_basis_type_entry;
 			XmRowColumn curve_ed_num_comp_entry;
 			XmRowColumn curve_ed_comp_no_entry;
 			XmRowColumn curve_ed_comp_range_entry;
 			XmRowColumn curve_ed_parameter_grid_entry;
 			XmRowColumn curve_ed_value_grid_entry;
-			XmOptionMenu curve_ed_extend_mode_option;
+			XmRowColumn curve_ed_extend_mode_entry;
 			};
 		};
   curve_ed_num_comp_entry: XmRowColumn
@@ -382,78 +370,40 @@ object
 			};
 		};
 !*******************************************************************************
-	curve_ed_basis_option: XmOptionMenu
-		{
-		arguments
-			{
-!      XmNlabelString = compound_string("Basis:");
-			XmNuserData = curve_ed_structure;
-			};
-		controls
-			{
-			XmPulldownMenu curve_ed_basis_menu;
-			};
-		callbacks
-			{
-			MrmNcreateCallback = procedure
-				curve_ed_id_basis_option(curve_ed_structure);
-			};
-		};
-	curve_ed_basis_menu: XmPulldownMenu
-		{
-		arguments
-			{
-!      XmNborderWidth = 1;
-			XmNbuttonFontList = button_font;
-			XmNuserData = curve_ed_structure;
-			};
-		callbacks
-			{
-			MrmNcreateCallback = procedure
-				curve_ed_id_basis_menu(curve_ed_structure);
-			XmNentryCallback = procedure
-				curve_ed_basis_menu_CB(curve_ed_structure);
-			};
-		controls
-			{
-			XmPushButtonGadget
-				{
-				arguments
-					{
-					XmNlabelString = compound_string("cubic Hermite");
-					XmNfontList = button_font;
-					XmNuserData = curve_ed_cubic_Hermite;
-					};
-				};
-			XmPushButtonGadget
-				{
-				arguments
-					{
-					XmNlabelString = compound_string("linear Lagrange");
-					XmNfontList = button_font;
-					XmNuserData = curve_ed_linear_Lagrange;
-					};
-				};
-			XmPushButtonGadget
-				{
-				arguments
-					{
-					XmNlabelString = compound_string("quadratic Lagrange");
-					XmNfontList = button_font;
-					XmNuserData = curve_ed_quadratic_Lagrange;
-					};
-				};
-			XmPushButtonGadget
-				{
-				arguments
-					{
-					XmNlabelString = compound_string("cubic Lagrange");
-					XmNfontList = button_font;
-					XmNuserData = curve_ed_cubic_Lagrange;
-					};
-				};
-			};
-		};
+  curve_ed_basis_type_entry: XmRowColumn
+    {
+    arguments
+      {
+			XmNmarginHeight = 0;
+			XmNmarginWidth = 0;
+			XmNspacing = 0;
+			XmNorientation = XmHORIZONTAL;
+			XmNpacking = XmPACK_TIGHT;
+      };
+    controls
+      {
+      XmLabelGadget curve_ed_basis_type_label;
+      XmForm curve_ed_basis_type_form;
+      };
+    };
+  curve_ed_basis_type_label: XmLabelGadget
+    {
+    arguments
+      {
+      XmNlabelString = compound_string("Basis:");
+      XmNalignment = XmALIGNMENT_BEGINNING;
+      XmNfontList = button_font;
+      };
+    };
+  curve_ed_basis_type_form: XmForm
+    {
+    callbacks
+      {
+      MrmNcreateCallback = procedure
+				curve_ed_id_basis_type_form(curve_ed_structure);
+      };
+    };
+!*******************************************************************************
 	curve_ed_num_components_label: XmLabelGadget
 		{
 		arguments
@@ -635,68 +585,40 @@ object
 				curve_ed_snap_value_btn_CB(curve_ed_structure);
 			};
 		};
-	curve_ed_extend_mode_option: XmOptionMenu
-		{
-		arguments
-			{
-			XmNuserData = curve_ed_structure;
-			};
-		controls
-			{
-				XmPulldownMenu curve_ed_extend_mode_menu;
-			};
-		callbacks
-			{
-			MrmNcreateCallback = procedure
-				curve_ed_id_extend_mode_option(curve_ed_structure);
-			};
-		};
-	curve_ed_extend_mode_menu: XmPulldownMenu
-		{
-		arguments
-			{
-			XmNbuttonFontList = button_font;
-			XmNuserData = curve_ed_structure;
-			};
-		callbacks
-			{
-			MrmNcreateCallback = procedure
-				curve_ed_id_extend_mode_menu(curve_ed_structure);
-			XmNentryCallback = procedure
-				curve_ed_extend_mode_menu_CB(curve_ed_structure);
-			};
-		controls
-			{
-			XmPushButtonGadget
-				{
-				arguments
-					{
-					XmNlabelString = compound_string("Extend Clamp");
-					XmNfontList = button_font;
-					XmNuserData = curve_ed_extend_clamp;
-					};
-				};
-			XmPushButtonGadget
-				{
-				arguments
-					{
-					XmNlabelString = compound_string("Extend Cycle");
-					XmNfontList = button_font;
-					XmNuserData = curve_ed_extend_cycle;
-					};
-				};
-			XmPushButtonGadget
-				{
-				arguments
-					{
-					XmNlabelString = compound_string("Extend Swing");
-					XmNfontList = button_font;
-					XmNuserData = curve_ed_extend_swing;
-					};
-				};
-			};
-		};
-
+!*******************************************************************************
+  curve_ed_extend_mode_entry: XmRowColumn
+    {
+    arguments
+      {
+			XmNmarginHeight = 0;
+			XmNmarginWidth = 0;
+			XmNspacing = 0;
+			XmNorientation = XmHORIZONTAL;
+			XmNpacking = XmPACK_TIGHT;
+      };
+    controls
+      {
+      XmLabelGadget curve_ed_extend_mode_label;
+      XmForm curve_ed_extend_mode_form;
+      };
+    };
+  curve_ed_extend_mode_label: XmLabelGadget
+    {
+    arguments
+      {
+      XmNlabelString = compound_string("Extend:");
+      XmNalignment = XmALIGNMENT_BEGINNING;
+      XmNfontList = button_font;
+      };
+    };
+  curve_ed_extend_mode_form: XmForm
+    {
+    callbacks
+      {
+      MrmNcreateCallback = procedure
+				curve_ed_id_extend_mode_form(curve_ed_structure);
+      };
+    };
 !*******************************************************************************
 	curve_ed_full_range_btn: XmPushButtonGadget
 		{
