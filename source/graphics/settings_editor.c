@@ -466,7 +466,7 @@ Called when entry is made into the name text field.
 			XtVaGetValues(widget,XmNvalue,&text_entry,NULL);
 			if (text_entry)
 			{
-				sscanf(text_entry,"%s",&new_name);
+				sscanf(text_entry, "%s", new_name);
 				if (strcmp(name, new_name))
 				{
 					GT_element_settings_set_name(
