@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : cmiss.c
 
-LAST MODIFIED : 30 August 2001
+LAST MODIFIED : 31 August 2001
 
 DESCRIPTION :
 See cmiss.h for interface details.
@@ -55,6 +55,284 @@ fsm == finite state machine
 
 /*???DB.  Enable data transfer */
 #define NOT_TEMPORARY
+
+#if defined (REDO_CM_field_information)
+/*???DB.  Being redone */
+struct CM_field_information
+/*******************************************************************************
+LAST MODIFIED : 2 February 1999
+
+DESCRIPTION :
+Private structure containing field information needed by cm.
+???DB.  What about grids (element based fields) ?
+???DB.  Should this be hidden in the name as at present ?  This is how it would
+  have to be done for any other application communicating with cmgui.  User
+  data ?
+==============================================================================*/
+{
+  union
+  {
+		struct
+    {
+      int nc,niy,nr,nxc,nxt;
+    } dependent;
+		struct
+    {
+      int nr;
+    } independent;
+  } indices;
+}; /* struct CM_field_information */
+
+int get_FE_field_CM_field_information(struct FE_field *field,
+	struct CM_field_information *cm_field_information)
+/*******************************************************************************
+LAST MODIFIED : 25 August 1999
+
+DESCRIPTION :
+Returns the <cm_field_information> of the <field>.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(get_FE_field_CM_field_information);
+	if (field&&cm_field_information)
+	{
+		return_code=COPY(CM_field_information)(cm_field_information,&(field->cm));
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"get_FE_field_CM_field_information.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* get_FE_field_CM_field_information */
+
+int set_FE_field_CM_field_information(struct FE_field *field,
+	struct CM_field_information *cm_field_information)
+/*******************************************************************************
+LAST MODIFIED : 25 August 1999
+
+DESCRIPTION :
+Sets the <cm_field_information> of the <field>.
+Should only call this function for unmanaged fields.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(set_FE_field_CM_field_information);
+	if (field&&cm_field_information)
+	{
+		return_code=COPY(CM_field_information)(&(field->cm),cm_field_information);
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"set_FE_field_CM_field_information.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* set_FE_field_CM_field_information */
+
+/*???DB.  Being redone */
+PROTOTYPE_COPY_OBJECT_FUNCTION(CM_field_information)
+/*******************************************************************************
+LAST MODIFIED: 4 February 1999
+
+DESCRIPTION:
+Copies the CM_Field_information from source to destination
+==============================================================================*/
+{
+	int return_code;
+	ENTER(COPY(CM_field_information));
+	if (destination&&source)
+	{
+		destination->type = source->type;
+		switch (source->type)
+		{
+			case CM_DEPENDENT_FIELD:
+			{
+				destination->indices.dependent.nc = source->indices.dependent.nc;
+				destination->indices.dependent.niy = source->indices.dependent.niy;
+				destination->indices.dependent.nr = source->indices.dependent.nr;
+				destination->indices.dependent.nxc = source->indices.dependent.nxc;
+				destination->indices.dependent.nxt = source->indices.dependent.nxt;			
+			} break;
+			default: /* everything else is independent*/
+			{
+				destination->indices.independent.nr = source->indices.independent.nr;;
+			} break;
+		}
+		return_code =1;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"COPY(CM_field_informatio). Invalid arguments");
+		return_code = 0;
+	}
+	LEAVE;
+	return (return_code);
+
+}/* PROTOTYPE_COPY_OBJECT_FUNCTION(CM_field_information) */
+
+enum CM_field_type get_CM_field_information_type(
+	struct CM_field_information *field_info)
+/*******************************************************************************
+LAST MODIFIED : 30 August 2001
+
+DESCRIPTION :
+gets the name type and indice of field_info.
+==============================================================================*/
+{
+	enum CM_field_type cm_field_type;
+
+	ENTER(get_CM_field_information_type);
+	if (field_info)
+	{
+		cm_field_type = field_info->type;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"get_CM_field_information_type.  Invalid CM_field_information ");
+		cm_field_type = CM_GENERAL_FIELD;	
+	}
+	LEAVE;
+
+	return (cm_field_type);
+} /* get_CM_field_information_type */
+
+int set_CM_field_information(struct CM_field_information *field_info,
+	enum CM_field_type type, int *indices)
+/*******************************************************************************
+LAST MODIFIED : 4 February 1999
+
+DESCRIPTION :
+Sets the  type and indices (if any) of field_info. Any indices passed as a 
+pointer to an array.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(set_CM_field_information);
+	if (field_info)
+	{
+		field_info->type = type;
+
+		switch (type)
+		{
+			case CM_DEPENDENT_FIELD:
+			{
+				if (indices)/* have some data */
+				{
+					field_info->indices.dependent.nc = *indices;
+					indices++;
+					field_info->indices.dependent.niy = *indices;
+					indices++;
+					field_info->indices.dependent.nr = *indices;
+					indices++;
+					field_info->indices.dependent.nxc = *indices;
+					indices++;
+					field_info->indices.dependent.nxt = *indices;
+				}
+				else /* no data, assume all zero */
+				{
+					field_info->indices.dependent.nc = 0;
+					field_info->indices.dependent.niy = 0;
+					field_info->indices.dependent.nr = 0;
+					field_info->indices.dependent.nxc = 0;
+					field_info->indices.dependent.nxt = 0;
+				}					
+			} break;
+			default: /* everything else is independent*/
+			{
+				if (indices)/* have some data */
+				{
+					field_info->indices.independent.nr = *indices;
+				}
+				else /* no data, assume all zero */
+				{
+					field_info->indices.independent.nr = 0;
+				}		
+			} break;
+		}
+
+		return_code =1;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"set_CM_field_information. Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /*set_CM_field_information */
+
+int compare_CM_field_information(struct CM_field_information *field_info1,
+	struct CM_field_information *field_info2)
+/************************************************************************
+LAST MODIFIED: 4 February 1999
+
+DESCRIPTION:
+Compares the CM_Field_information structures, field_info1 and field_info2.
+???DB.  To be done
+=======================================================================*/
+{
+	int return_code;
+	ENTER(compare_CM_field_information);
+
+	if (field_info1&&field_info2)
+	{
+		if (field_info1->type != field_info2->type )/* do the types match? */
+			return_code =0;
+		else
+		{
+			/*???DB.  To be done */
+			if (field_info1->type == CM_UNKNOWN_FIELD)
+				return_code = 1; /*if both CM_UNKNOWN_FIELD don't have to match anything else */
+			else /* do the indices match?*/
+				{
+					switch (field_info1->type)
+					{
+						case CM_DEPENDENT_FIELD:
+						{
+							return_code = (
+							  (field_info1->indices.dependent.nc == 
+									field_info2->indices.dependent.nc)&&
+								(field_info1->indices.dependent.niy == 
+									field_info2->indices.dependent.niy)&&
+								(field_info1->indices.dependent.nr ==
+									field_info2->indices.dependent.nr)&&
+								(field_info1->indices.dependent.nxc ==
+									field_info2->indices.dependent.nxc)&&
+								(field_info1->indices.dependent.nxt == 
+									field_info2->indices.dependent.nxt)
+									);
+						} break;
+						default: /* everything else is independent*/
+						{
+							return_code = (field_info1->indices.independent.nr == 
+								field_info2->indices.independent.nr);
+						} break;
+					} /* switch*/
+				}
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE," compare_CM_field_information. Invalid arguments");
+		return_code = 0;
+	}
+	LEAVE;
+	return (return_code);
+}/*compare_CM_field_information */
+#endif /* defined (REDO_CM_field_information) */
 
 /*
 Module Variables
@@ -175,7 +453,7 @@ Convert fortran-style strings to C-style printf strings.
 #define NUM_COMPONENT_DATA 3
 int CMISS_connection_get_data(struct CMISS_connection *connection)
 /*******************************************************************************
-LAST MODIFIED : 30 August 2001
+LAST MODIFIED : 31 August 2001
 
 DESCRIPTION :
 Receives any data from the output data wormhole.
@@ -428,7 +706,8 @@ Receives any data from the output data wormhole.
 										/*number_of_indexed_values*/0,cm_field_type,
 										&coordinate_system,FE_VALUE_VALUE,
 										number_of_components,component_names,
-										/*number_of_times*/0,/*time_value_type*/UNKNOWN_VALUE))
+										/*number_of_times*/0,/*time_value_type*/UNKNOWN_VALUE,
+										(struct FE_field_external_information *)NULL))
 									{
 										if(number_of_field_values)
 										{

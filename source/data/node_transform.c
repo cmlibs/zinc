@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : node_transform.c
 
-LAST MODIFIED : 30 August 2001
+LAST MODIFIED : 31 August 2001
 
 DESCRIPTION :
 ???DB.  Conditions need tidying up, generalizing and put in their own module
@@ -765,7 +765,7 @@ Transforms a given node to 3d.
 static int transform_nodes_2d_to_3d_sub_sub(struct FE_node *node,
 	void *user_data)
 /*******************************************************************************
-LAST MODIFIED : 30 August 2001
+LAST MODIFIED : 31 August 2001
 
 DESCRIPTION :
 Transforms a given node to 3d.
@@ -825,7 +825,8 @@ Transforms a given node to 3d.
 				/*number_of_indexed_values*/0,CM_COORDINATE_FIELD,
 				&rect_cart_coords,FE_VALUE_VALUE,
 				/*number_of_components*/3,component_names,
-				/*number_of_times*/0,/*time_value_type*/UNKNOWN_VALUE))
+				/*number_of_times*/0,/*time_value_type*/UNKNOWN_VALUE,
+				(struct FE_field_external_information *)NULL))
 			{
 				if ((template_node=CREATE(FE_node)(0,(struct FE_node *)NULL))
 					&&define_FE_field_at_node(template_node,
@@ -1108,7 +1109,7 @@ Executes a GFX TRANSFORM NODE 2D_TO_3D command.  This command transforms nodes
 static int transform_nodes_2d_scale_sub_sub(struct FE_node *node,
 	void *user_data)
 /*******************************************************************************
-LAST MODIFIED : 30 August 2001
+LAST MODIFIED : 31 August 2001
 
 DESCRIPTION :
 Transforms a given node in 2d space - adds an origin and scales the pixel
@@ -1159,7 +1160,8 @@ coordinates.
 				/*number_of_indexed_values*/0,CM_COORDINATE_FIELD,
 				&rect_cart_coords,FE_VALUE_VALUE,
 				/*number_of_components*/2,component_names,
-				/*number_of_times*/0,/*time_value_type*/UNKNOWN_VALUE))
+				/*number_of_times*/0,/*time_value_type*/UNKNOWN_VALUE,
+				(struct FE_field_external_information *)NULL))
 			{
 				if ((template_node=CREATE(FE_node)(0,(struct FE_node *)NULL))&&
 					define_FE_field_at_node(template_node,

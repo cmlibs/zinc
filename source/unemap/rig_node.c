@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : rig_node.c
 
-LAST MODIFIED : 30 August 2001
+LAST MODIFIED : 31 August 2001
 
 DESCRIPTION :
 Essentially the same functionality as rig.c, but using nodes and fields to store
@@ -125,7 +125,7 @@ static struct FE_node *create_config_template_node(enum Config_node_type
 	config_node_type,FE_value focus,struct FE_field_order_info **field_order_info,
 	struct Unemap_package *package,struct FE_field **electrode_position_field)
 /*******************************************************************************
-LAST MODIFIED : 30 August 2001
+LAST MODIFIED : 31 August 2001
 
 DESCRIPTION :
 Creates and returns a configuration template node for read_text_config_FE_node
@@ -357,7 +357,8 @@ created electrode_position_field.
 								/*number_of_indexed_values*/0,CM_COORDINATE_FIELD,
 								&coordinate_system,FE_VALUE_VALUE,
 								/*number_of_components*/3,sock_electrode_component_names,
-								/*number_of_times*/0,/*time_value_type*/UNKNOWN_VALUE)))
+								/*number_of_times*/0,/*time_value_type*/UNKNOWN_VALUE,
+								(struct FE_field_external_information *)NULL)))
 							{						
 								success =define_node_field_and_field_order_info(node,
 									the_electrode_position_field,
@@ -386,7 +387,8 @@ created electrode_position_field.
 								/*number_of_indexed_values*/0,CM_COORDINATE_FIELD,
 								&coordinate_system,FE_VALUE_VALUE,
 								/*number_of_components*/3,electrode_component_names,
-								/*number_of_times*/0,/*time_value_type*/UNKNOWN_VALUE)))
+								/*number_of_times*/0,/*time_value_type*/UNKNOWN_VALUE,
+								(struct FE_field_external_information *)NULL)))
 							{
 								success =define_node_field_and_field_order_info(node,
 									the_electrode_position_field,
@@ -416,7 +418,8 @@ created electrode_position_field.
 								/*number_of_indexed_values*/0,CM_COORDINATE_FIELD,
 								&coordinate_system,FE_VALUE_VALUE,
 								/*number_of_components*/2,electrode_component_names,
-								/*number_of_times*/0,/*time_value_type*/UNKNOWN_VALUE)))
+								/*number_of_times*/0,/*time_value_type*/UNKNOWN_VALUE,
+								(struct FE_field_external_information *)NULL)))
 							{
 								success=define_node_field_and_field_order_info(node,
 									the_electrode_position_field,
@@ -456,7 +459,8 @@ created electrode_position_field.
 					/*number_of_indexed_values*/0,CM_GENERAL_FIELD,
 					&coordinate_system,STRING_VALUE,
 					/*number_of_components*/1,device_name_component_names,
-					/*number_of_times*/0,/*time_value_type*/UNKNOWN_VALUE))
+					/*number_of_times*/0,/*time_value_type*/UNKNOWN_VALUE,
+					(struct FE_field_external_information *)NULL))
 				{ 
 					set_unemap_package_device_name_field(package,device_name_field);
 					success =define_node_field_and_field_order_info(node,
@@ -481,7 +485,8 @@ created electrode_position_field.
 					/*number_of_indexed_values*/0,CM_GENERAL_FIELD,
 					&coordinate_system,STRING_VALUE,
 					/*number_of_components*/1,device_type_component_names,
-					/*number_of_times*/0,/*time_value_type*/UNKNOWN_VALUE))
+					/*number_of_times*/0,/*time_value_type*/UNKNOWN_VALUE,
+					(struct FE_field_external_information *)NULL))
 				{ 
 					set_unemap_package_device_type_field(package,device_type_field);
 					success =define_node_field_and_field_order_info(node,
@@ -505,7 +510,8 @@ created electrode_position_field.
 					/*number_of_indexed_values*/0,CM_GENERAL_FIELD,
 					&coordinate_system,INT_VALUE,
 					/*number_of_components*/1,channel_number_component_names,
-					/*number_of_times*/0,/*time_value_type*/UNKNOWN_VALUE))
+					/*number_of_times*/0,/*time_value_type*/UNKNOWN_VALUE,
+					(struct FE_field_external_information *)NULL))
 				{	
 					set_unemap_package_channel_number_field(package,channel_number_field);
 					success =define_node_field_and_field_order_info(node,
@@ -529,7 +535,8 @@ created electrode_position_field.
 					/*number_of_indexed_values*/0,CM_GENERAL_FIELD,
 					&coordinate_system,INT_VALUE,
 					/*number_of_components*/1,read_order_component_names,
-					/*number_of_times*/0,/*time_value_type*/UNKNOWN_VALUE))
+					/*number_of_times*/0,/*time_value_type*/UNKNOWN_VALUE,
+					(struct FE_field_external_information *)NULL))
 				{	
 					set_unemap_package_read_order_field(package,read_order_field);
 					success =define_node_field_and_field_order_info(node,
@@ -554,7 +561,8 @@ created electrode_position_field.
 					/*number_of_indexed_values*/0,CM_GENERAL_FIELD,
 					&coordinate_system,INT_VALUE,
 					/*number_of_components*/1,highlight_component_names,
-					/*number_of_times*/0,/*time_value_type*/UNKNOWN_VALUE))
+					/*number_of_times*/0,/*time_value_type*/UNKNOWN_VALUE,
+					(struct FE_field_external_information *)NULL))
 				{	
 					set_unemap_package_highlight_field(package,highlight_field);					
 					success =define_node_field_and_field_order_info(node,
@@ -2373,7 +2381,7 @@ static int read_signal_FE_node_group(FILE *input_file,
 	struct Unemap_package *package,
 	struct FE_node_order_info *node_order_info)
 /*******************************************************************************
-LAST MODIFIED : 30 August 2001
+LAST MODIFIED : 31 August 2001
 
 DESCRIPTION :
 Reads signals from a signal file, stores them in a node group, via 
@@ -2728,7 +2736,8 @@ linear combinations of other channels.
 														&coordinate_system,SHORT_ARRAY_VALUE,
 														/*number_of_components*/1,signal_component_names,
 														/*number_of_times*/number_of_samples,/*time_value_type*/
-														FE_VALUE_VALUE)))
+														FE_VALUE_VALUE,
+														(struct FE_field_external_information *)NULL)))
 													{
 														display_message(ERROR_MESSAGE,"read_signal_FE_node_group."
 															"error getting signal field");	
@@ -2752,7 +2761,8 @@ linear combinations of other channels.
 														/*number_of_indexed_values*/0,CM_GENERAL_FIELD,
 														&coordinate_system,FE_VALUE_ARRAY_VALUE,
 														/*number_of_components*/1,signal_component_names,
-														number_of_samples,/*time_value_type*/FE_VALUE_VALUE)))
+														number_of_samples,/*time_value_type*/FE_VALUE_VALUE,
+														(struct FE_field_external_information *)NULL)))
 													{
 														display_message(ERROR_MESSAGE,"read_signal_FE_node_group."
 															"error getting signal field");	
@@ -2818,7 +2828,8 @@ linear combinations of other channels.
 													/*number_of_indexed_values*/0,CM_GENERAL_FIELD,
 													&coordinate_system,FE_VALUE_VALUE,
 													/*number_of_components*/1,channel_gain_component_names,
-													/*number_of_times*/0,/*time_value_type*/UNKNOWN_VALUE))
+													/*number_of_times*/0,/*time_value_type*/UNKNOWN_VALUE,
+													(struct FE_field_external_information *)NULL))
 												{
 													if (define_FE_field_at_node(node,channel_gain_field,
 														channel_gain_components_number_of_derivatives
@@ -2853,7 +2864,8 @@ linear combinations of other channels.
 													/*number_of_indexed_values*/0,CM_GENERAL_FIELD,
 													&coordinate_system,FE_VALUE_VALUE,
 													/*number_of_components*/1,channel_offset_component_names,
-													/*number_of_times*/0,/*time_value_type*/UNKNOWN_VALUE))
+													/*number_of_times*/0,/*time_value_type*/UNKNOWN_VALUE,
+													(struct FE_field_external_information *)NULL))
 												{ 
 													if (define_FE_field_at_node(node,channel_offset_field,
 														channel_offset_components_number_of_derivatives
@@ -2890,7 +2902,8 @@ linear combinations of other channels.
 													/*number_of_indexed_values*/0,CM_GENERAL_FIELD,
 													&coordinate_system,FE_VALUE_VALUE,
 													/*number_of_components*/1,signal_minimum_component_names,
-													/*number_of_times*/0,/*time_value_type*/UNKNOWN_VALUE))
+													/*number_of_times*/0,/*time_value_type*/UNKNOWN_VALUE,
+													(struct FE_field_external_information *)NULL))
 												{
 													if (define_FE_field_at_node(node,signal_minimum_field,
 														signal_minimum_components_number_of_derivatives
@@ -2927,7 +2940,8 @@ linear combinations of other channels.
 													/*number_of_indexed_values*/0,CM_GENERAL_FIELD,
 													&coordinate_system,FE_VALUE_VALUE,
 													/*number_of_components*/1,signal_maximum_component_names,
-													/*number_of_times*/0,/*time_value_type*/UNKNOWN_VALUE))
+													/*number_of_times*/0,/*time_value_type*/UNKNOWN_VALUE,
+													(struct FE_field_external_information *)NULL))
 												{
 													if (define_FE_field_at_node(node,signal_maximum_field,
 														signal_maximum_components_number_of_derivatives
@@ -2964,7 +2978,8 @@ linear combinations of other channels.
 													/*number_of_indexed_values*/0,CM_GENERAL_FIELD,
 													&coordinate_system,STRING_VALUE,
 													/*number_of_components*/1,signal_status_component_names,
-													/*number_of_times*/0,/*time_value_type*/UNKNOWN_VALUE))
+													/*number_of_times*/0,/*time_value_type*/UNKNOWN_VALUE,
+													(struct FE_field_external_information *)NULL))
 												{ 
 													if (define_FE_field_at_node(node,signal_status_field,
 														signal_status_components_number_of_derivatives
@@ -3047,7 +3062,8 @@ linear combinations of other channels.
 													/*number_of_indexed_values*/0,CM_GENERAL_FIELD,
 													&coordinate_system,FE_VALUE_VALUE,
 													/*number_of_components*/1,display_start_time_component_names,
-													/*number_of_times*/0,/*time_value_type*/UNKNOWN_VALUE))
+													/*number_of_times*/0,/*time_value_type*/UNKNOWN_VALUE,
+													(struct FE_field_external_information *)NULL))
 												{
 													if (define_FE_field_at_node(node,display_start_time_field,
 														display_start_time_components_number_of_derivatives
@@ -3080,7 +3096,8 @@ linear combinations of other channels.
 													/*number_of_indexed_values*/0,CM_GENERAL_FIELD,
 													&coordinate_system,FE_VALUE_VALUE,
 													/*number_of_components*/1,display_end_time_component_names,
-													/*number_of_times*/0,/*time_value_type*/UNKNOWN_VALUE))
+													/*number_of_times*/0,/*time_value_type*/UNKNOWN_VALUE,
+													(struct FE_field_external_information *)NULL))
 												{
 													if (define_FE_field_at_node(node,display_end_time_field,
 														display_end_time_components_number_of_derivatives

@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : mapping.c
 
-LAST MODIFIED : 30 August 2001
+LAST MODIFIED : 31 August 2001
 
 DESCRIPTION :
 ==============================================================================*/
@@ -867,7 +867,7 @@ and the field_order_info.
 static struct FE_field_order_info *create_mapping_fields(enum Region_type 
 	region_type,FE_value focus,struct Unemap_package *package)
 /*******************************************************************************
-LAST MODIFIED : 30 August 2001
+LAST MODIFIED : 31 August 2001
 
 DESCRIPTION :
 Creates the mapping fields, returns them in a FE_field_order_info.
@@ -954,7 +954,8 @@ Creates the mapping fields, returns them in a FE_field_order_info.
 							/*number_of_indexed_values*/0,CM_COORDINATE_FIELD,
 							&coordinate_system,FE_VALUE_VALUE,
 							/*number_of_components*/3,sock_fit_point_component_names,
-							/*number_of_times*/0,/*time_value_type*/UNKNOWN_VALUE)))
+							/*number_of_times*/0,/*time_value_type*/UNKNOWN_VALUE,
+							(struct FE_field_external_information *)NULL)))
 						{
 							display_message(ERROR_MESSAGE,
 								"create_mapping_fields.Could not retrieve sock fit point"
@@ -984,7 +985,8 @@ Creates the mapping fields, returns them in a FE_field_order_info.
 							/*number_of_indexed_values*/0,CM_COORDINATE_FIELD,
 							&coordinate_system,FE_VALUE_VALUE,
 							/*number_of_components*/3,torso_fit_point_component_names,
-							/*number_of_times*/0,/*time_value_type*/UNKNOWN_VALUE)))				
+							/*number_of_times*/0,/*time_value_type*/UNKNOWN_VALUE,
+							(struct FE_field_external_information *)NULL)))
 						{
 							display_message(ERROR_MESSAGE,
 								"create_mapping_fields. Could not torso retrieve fit point"
@@ -1014,7 +1016,8 @@ Creates the mapping fields, returns them in a FE_field_order_info.
 							/*number_of_indexed_values*/0,CM_COORDINATE_FIELD,
 							&coordinate_system,FE_VALUE_VALUE,
 							/*number_of_components*/2,patch_fit_point_component_names,
-							/*number_of_times*/0,/*time_value_type*/UNKNOWN_VALUE)))				
+							/*number_of_times*/0,/*time_value_type*/UNKNOWN_VALUE,
+							(struct FE_field_external_information *)NULL)))
 						{
 							display_message(ERROR_MESSAGE,
 								"create_mapping_fields. Could not retrieve patch "
@@ -3786,7 +3789,7 @@ static int make_and_add_map_electrode_position_field(
 	struct Unemap_package *unemap_package,
 	struct GROUP(FE_node) *rig_node_group,struct Region *region,int delauney_map)
 /*******************************************************************************
-LAST MODIFIED : 30 August 2001
+LAST MODIFIED : 31 August 2001
 
 DESCRIPTION :
 if  necessaty makes maps electrode position field, and adds to the nodes in the 
@@ -3897,7 +3900,8 @@ map_electode_position field
 							get_FE_field_manager_matched_field(field_manager,field_name,
 							field_type,indexer_field,number_of_indexed_values,cm_field_type,
 							coordinate_system,value_type,number_of_components,component_names,
-							number_of_times,time_value_type)))
+							number_of_times,time_value_type,
+							(struct FE_field_external_information *)NULL)))
 						{
 							struct FE_field *old_map_electrode_position_field;
 							old_map_electrode_position_field=
@@ -15111,7 +15115,7 @@ for these elements defines <fit_field> at the element, and it's nodes.
 struct FE_field *create_mapping_type_fe_field(char *field_name,
 	struct MANAGER(FE_field) *fe_field_manager)
 /*******************************************************************************
-LAST MODIFIED : 30 August 2001
+LAST MODIFIED : 31 August 2001
 
 DESCRIPTION :
 creates a 1 component  <field_name>
@@ -15132,7 +15136,8 @@ creates a 1 component  <field_name>
 			/*number_of_indexed_values*/0,CM_GENERAL_FIELD,
 			&coordinate_system,FE_VALUE_VALUE,
 			/*number_of_components*/1,fit_comp_name,
-			/*number_of_times*/0,/*time_value_type*/UNKNOWN_VALUE)))
+			/*number_of_times*/0,/*time_value_type*/UNKNOWN_VALUE,
+			(struct FE_field_external_information *)NULL)))
 		{
 			display_message(ERROR_MESSAGE,"create_mapping_type_fe_field.  "
 				"Could not retrieve potential_value field");

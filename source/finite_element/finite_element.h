@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : finite_element.h
 
-LAST MODIFIED : 30 August 2001
+LAST MODIFIED : 31 August 2001
 
 DESCRIPTION :
 The data structures used for representing finite elements in the graphical
@@ -752,13 +752,89 @@ ensure the ENUMERATOR_STRING function returns a string for each value here.
 	CM_GENERAL_FIELD
 }; /* enum CM_field_type */
 
-struct CM_field_information;
+struct FE_field_external_information;
 /*******************************************************************************
-LAST MODIFIED : 30 August 2001
+LAST MODIFIED : 31 August 2001
 
 DESCRIPTION :
-Private structure containing field information needed by cm.
+A structure that allows external tools have their field information/identifier.
+
+This was developed for cm so that information about where the fields are stored
+in cm can be kept in cmgui.  The version for cm can be found in link/cmiss.c
 ==============================================================================*/
+
+typedef int (Compare_FE_field_external_information)( \
+	struct FE_field_external_information *, \
+	struct FE_field_external_information *);
+
+typedef int (Copy_FE_field_external_information)( \
+	struct FE_field_external_information **, \
+	struct FE_field_external_information *);
+
+struct FE_field_external_information
+{
+	/* function for ordering this structure.  Returns -1 if first<second, 0 if
+		first=second and 1 if first>second */
+	/* also serves as an id so that different external tools can tell if the field
+		is theirs */
+		/*???DB.  Does not allow for more than one external tool of each type */
+	Compare_FE_field_external_information *compare;
+	/* the destination is first and the source second */
+	/* if the source is NULL then the destination should be deallocated */
+	Copy_FE_field_external_information *copy;
+	/* the external tool's field information */
+	void *information;
+}; /* struct FE_field_external_information */
+
+#if defined (REDO_CM_field_information)
+/*???DB.  Being redone */
+int get_FE_field_external_information(struct FE_field *field,
+	struct FE_field_external_information *external_information);
+/*******************************************************************************
+LAST MODIFIED : 31 August 2001
+
+DESCRIPTION :
+Returns the <cm_field_information> of the <field>.
+==============================================================================*/
+
+int set_FE_field_CM_field_information(struct FE_field *field,
+	struct CM_field_information *cm_field_information);
+/*******************************************************************************
+LAST MODIFIED : 25 August 1999
+
+DESCRIPTION :
+Sets the <cm_field_information> of the <field>.
+Should only call this function for unmanaged fields.
+==============================================================================*/
+
+enum CM_field_type get_CM_field_information_type(
+	struct CM_field_information *field_info);
+/*******************************************************************************
+LAST MODIFIED : 4 February 1999
+
+DESCRIPTION :
+gets the name type and indice of field_info.
+==============================================================================*/
+
+int set_CM_field_information(struct CM_field_information *field_info,
+	enum CM_field_type type, int *indices);
+/*******************************************************************************
+LAST MODIFIED : 4 February 1999
+
+DESCRIPTION :
+Sets the type and indices (if any) of field_info. Any inidces passed as a 
+pointer to an array.
+==============================================================================*/
+
+int compare_CM_field_information(struct CM_field_information *field_info1,
+	struct CM_field_information *field_info2);
+/*******************************************************************************
+LAST MODIFIED: 4 February 1999
+
+DESCRIPTION:
+Compares the CM_Field_information structures, field_info1 and field_info2.
+==============================================================================*/
+#endif /* defined (REDO_CM_field_information) */
 
 DECLARE_LIST_TYPES(FE_field);
 
@@ -3146,6 +3222,17 @@ Modifies the already calculated <values>.
 
 PROTOTYPE_ENUMERATOR_FUNCTIONS(CM_field_type);
 
+int COPY(FE_field_external_information)(
+	struct FE_field_external_information **destination_address,
+	struct FE_field_external_information *source);
+/*******************************************************************************
+LAST MODIFIED: 31 August 2001
+
+DESCRIPTION:
+Copies the FE_field_external_information from source to destination.
+==============================================================================*/
+
+
 struct FE_field *CREATE(FE_field)(void);
 /*******************************************************************************
 LAST MODIFIED : 21 June 2000
@@ -3201,9 +3288,10 @@ int FE_field_matches_description(struct FE_field *field,char *name,
 	int number_of_indexed_values,enum CM_field_type cm_field_type,
 	struct Coordinate_system *coordinate_system,enum Value_type value_type,
 	int number_of_components,char **component_names,
-	int number_of_times,enum Value_type time_value_type);
+	int number_of_times,enum Value_type time_value_type,
+	struct FE_field_external_information *external);
 /*******************************************************************************
-LAST MODIFIED : 30 August 2001
+LAST MODIFIED : 31 August 2001
 
 DESCRIPTION :
 Returns true if <field> has exactly the same <name>, <field_info>... etc. as
@@ -3225,9 +3313,10 @@ struct FE_field *get_FE_field_manager_matched_field(
 	int number_of_indexed_values,enum CM_field_type cm_field_type,
 	struct Coordinate_system *coordinate_system,enum Value_type value_type,
 	int number_of_components,char **component_names,
-	int number_of_times,enum Value_type time_value_type);
+	int number_of_times,enum Value_type time_value_type,
+	struct FE_field_external_information *external);
 /*******************************************************************************
-LAST MODIFIED : 30 August 2001
+LAST MODIFIED : 31 August 2001
 
 DESCRIPTION :
 Using searches the <fe_field_manager> for a field, if one is found it is
@@ -3672,28 +3761,6 @@ DESCRIPTION :
 Sets the name of the <field>.
 Should only call this function for unmanaged fields.
 ==============================================================================*/
-
-#if defined (REDO_CM_field_information)
-/*???DB.  Being redone */
-int get_FE_field_CM_field_information(struct FE_field *field,
-	struct CM_field_information *cm_field_information);
-/*******************************************************************************
-LAST MODIFIED : 25 August 1999
-
-DESCRIPTION :
-Returns the <cm_field_information> of the <field>.
-==============================================================================*/
-
-int set_FE_field_CM_field_information(struct FE_field *field,
-	struct CM_field_information *cm_field_information);
-/*******************************************************************************
-LAST MODIFIED : 25 August 1999
-
-DESCRIPTION :
-Sets the <cm_field_information> of the <field>.
-Should only call this function for unmanaged fields.
-==============================================================================*/
-#endif /* defined (REDO_CM_field_information) */
 
 PROTOTYPE_GET_OBJECT_NAME_FUNCTION(FE_field_component);
 
@@ -4374,39 +4441,6 @@ DESCRIPTION :
 	factors ?
 ???DB.  Came from command.c .  Knows too much about nodes/elements to stay there
 ==============================================================================*/
-
-#if defined (REDO_CM_field_information)
-/*???DB.  Being redone */
-PROTOTYPE_COPY_OBJECT_FUNCTION(CM_field_information);
-
-enum CM_field_type get_CM_field_information_type(
-	struct CM_field_information *field_info);
-/*******************************************************************************
-LAST MODIFIED : 4 February 1999
-
-DESCRIPTION :
-gets the name type and indice of field_info.
-==============================================================================*/
-
-int set_CM_field_information(struct CM_field_information *field_info,
-	enum CM_field_type type, int *indices);
-/*******************************************************************************
-LAST MODIFIED : 4 February 1999
-
-DESCRIPTION :
-Sets the type and indices (if any) of field_info. Any inidces passed as a 
-pointer to an array.
-==============================================================================*/
-
-int compare_CM_field_information(struct CM_field_information *field_info1,
-	struct CM_field_information *field_info2);
-/*******************************************************************************
-LAST MODIFIED: 4 February 1999
-
-DESCRIPTION:
-Compares the CM_Field_information structures, field_info1 and field_info2.
-==============================================================================*/
-#endif /* defined (REDO_CM_field_information) */
 
 int FE_element_field_is_type_CM_coordinate(
 	struct FE_element_field *element_field, void *dummy);

@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : finite_element.c
 
-LAST MODIFIED : 30 August 2001
+LAST MODIFIED : 31 August 2001
 
 DESCRIPTION :
 Functions for manipulating finite element structures.
@@ -295,34 +295,9 @@ against.
 DECLARE_LIST_TYPES(FE_element_type_node_sequence);
 FULL_DECLARE_INDEXED_LIST_TYPE(FE_element_type_node_sequence);
 
-struct CM_field_information
-/*******************************************************************************
-LAST MODIFIED : 2 February 1999
-
-DESCRIPTION :
-Private structure containing field information needed by cm.
-???DB.  What about grids (element based fields) ?
-???DB.  Should this be hidden in the name as at present ?  This is how it would
-  have to be done for any other application communicating with cmgui.  User
-  data ?
-==============================================================================*/
-{
-  union
-  {
-		struct
-    {
-      int nc,niy,nr,nxc,nxt;
-    } dependent;
-		struct
-    {
-      int nr;
-    } independent;
-  } indices;
-}; /* struct CM_field_information */
-
 struct FE_field
 /*******************************************************************************
-LAST MODIFIED : 30 August 2001
+LAST MODIFIED : 31 August 2001
 
 DESCRIPTION :
 Stores the information for calculating the value of a field at a point.  The
@@ -334,7 +309,7 @@ the point and the Xi coordinates of the point within the element.
 	char *name;
 	/* CMISS field type and number */
 	enum CM_field_type cm_field_type;
-	struct CM_field_information *cm;
+	struct FE_field_external_information *external;
 	enum FE_field_type fe_field_type;
 	/* following two for INDEXED_FE_FIELD only */
 	struct FE_field *indexer_field;
@@ -32952,9 +32927,93 @@ This version assumes all valid enumerator values are sequential from 1.
 
 DEFINE_DEFAULT_ENUMERATOR_FUNCTIONS(CM_field_type)
 
+int COPY(FE_field_external_information)(
+	struct FE_field_external_information **destination_address,
+	struct FE_field_external_information *source)
+/*******************************************************************************
+LAST MODIFIED: 31 August 2001
+
+DESCRIPTION:
+Copies the FE_field_external_information from source to destination.
+==============================================================================*/
+{
+	int return_code;
+	struct FE_field_external_information *destination;
+
+	ENTER(COPY(FE_field_external_information));
+	return_code=0;
+	if (destination_address)
+	{
+		destination= *destination_address;
+		if (source)
+		{
+			if (source->copy)
+			{
+				if (destination)
+				{
+					if (destination->copy)
+					{
+						if (source->copy!=destination->copy)
+						{
+							(destination->copy)(destination_address,
+								(struct FE_field_external_information *)NULL);
+						}
+						(source->copy)(destination_address,source);
+						return_code=1;
+					}
+					else
+					{
+						display_message(ERROR_MESSAGE,
+							"COPY(FE_field_external_information).  Invalid destination");
+					}
+				}
+				else
+				{
+					(source->copy)(destination_address,source);
+					return_code=1;
+				}
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE,
+					"COPY(FE_field_external_information).  Invalid source");
+			}
+		}
+		else
+		{
+			if (destination)
+			{
+				if (destination->copy)
+				{
+					(destination->copy)(destination_address,
+						(struct FE_field_external_information *)NULL);
+					return_code=1;
+				}
+				else
+				{
+					display_message(ERROR_MESSAGE,
+						"COPY(FE_field_external_information).  Invalid destination");
+				}
+			}
+			else
+			{
+				return_code=1;
+			}
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"COPY(FE_field_external_information).  Missing destination_address");
+	}
+	LEAVE;
+
+	return (return_code);
+} /* COPY(FE_field_external_information) */
+
 struct FE_field *CREATE(FE_field)(void)
 /*******************************************************************************
-LAST MODIFIED : 30 August 2001
+LAST MODIFIED : 31 August 2001
 
 DESCRIPTION :
 Creates and returns a struct FE_field. The new field defaults to 1 component, 
@@ -32972,7 +33031,7 @@ no name, and the single component is named "1".
 		field->indexer_field=(struct FE_field *)NULL;
 		field->number_of_indexed_values=0;
 		field->cm_field_type=CM_GENERAL_FIELD;
-		field->cm=(struct CM_field_information *)NULL;
+		field->external=(struct FE_field_external_information *)NULL;
 		field->number_of_components=1;
 		/* don't allocate component names until we have custom names */
 		field->component_names=(char **)NULL;
@@ -33312,10 +33371,8 @@ if any other <source> and <destination> parameters do not match.
 				if (!matching_fields)
 				{
 					destination->cm_field_type=source->cm_field_type;
-#if defined (REDO_CM_field_information)
-/*???DB.  Being redone */
-					COPY(CM_field_information)(&(destination->cm),&(source->cm));
-#endif /* defined (REDO_CM_field_information) */
+					COPY(FE_field_external_information)(&(destination->external),
+						source->external);
 					destination->fe_field_type=source->fe_field_type;
 					REACCESS(FE_field)(&(destination->indexer_field),
 						source->indexer_field);
@@ -33571,9 +33628,10 @@ int FE_field_matches_description(struct FE_field *field,char *name,
 	int number_of_indexed_values,enum CM_field_type cm_field_type,
 	struct Coordinate_system *coordinate_system,enum Value_type value_type,
 	int number_of_components,char **component_names,
-	int number_of_times,enum Value_type time_value_type)
+	int number_of_times,enum Value_type time_value_type,
+	struct FE_field_external_information *external)
 /*******************************************************************************
-LAST MODIFIED : 30 August 2001
+LAST MODIFIED : 31 August 2001
 
 DESCRIPTION :
 Returns true if <field> has exactly the same <name>, <field_info>... etc. as
@@ -33602,6 +33660,36 @@ those given in the parameters.
 		{
 			/* matches until disproven */
 			return_code=1;
+			/* check external */
+			if (external)
+			{
+				if (field->external)
+				{
+					if ((external->compare)&&
+						(external->compare==field->external->compare))
+					{
+						if ((external->compare)(external,field->external))
+						{
+							return_code=0;
+						}
+					}
+					else
+					{
+						return_code=0;
+					}
+				}
+				else
+				{
+					return_code=0;
+				}
+			}
+			else
+			{
+				if (field->external)
+				{
+					return_code=0;
+				}
+			}
 			/* check the component names match */
 			i=number_of_components;
 			while ((i>0)&&return_code)
@@ -33637,7 +33725,7 @@ those given in the parameters.
 
 int FE_fields_match(struct FE_field *field1,struct FE_field *field2)
 /*******************************************************************************
-LAST MODIFIED : 30 August 2001
+LAST MODIFIED : 31 August 2001
 
 DESCRIPTION :
 Returns true if <field1> and <field2> are equivalent. Does this by calling
@@ -33654,7 +33742,7 @@ FE_field_matches_description for <field1> with the description for <field2>.
 			field2->number_of_indexed_values,field2->cm_field_type,
 			&(field2->coordinate_system),field2->value_type,
 			field2->number_of_components,field2->component_names,
-			field2->number_of_times,field2->time_value_type);
+			field2->number_of_times,field2->time_value_type,field2->external);
 	}
 	else
 	{
@@ -33672,9 +33760,10 @@ struct FE_field *get_FE_field_manager_matched_field(
 	int number_of_indexed_values,enum CM_field_type cm_field_type,
 	struct Coordinate_system *coordinate_system,enum Value_type value_type,
 	int number_of_components,char **component_names,
-	int number_of_times,enum Value_type time_value_type)
+	int number_of_times,enum Value_type time_value_type,
+	struct FE_field_external_information *external)
 /*******************************************************************************
-LAST MODIFIED : 30 August 2001
+LAST MODIFIED : 31 August 2001
 
 DESCRIPTION :
 Using searches the <fe_field_manager> for a field, if one is found it is
@@ -33701,7 +33790,7 @@ The field is returned, or NULL in case of inconsistency.
 			if (!FE_field_matches_description(field,name,fe_field_type,
 				indexer_field,number_of_indexed_values,cm_field_type,
 				coordinate_system,value_type,number_of_components,component_names,
-				number_of_times,time_value_type))
+				number_of_times,time_value_type,external))
 			{
 				display_message(ERROR_MESSAGE,
 					"get_FE_field_manager_matched_field.  "
@@ -35765,64 +35854,6 @@ Should only call this function for unmanaged fields.
 
 	return (return_code);
 } /* set_FE_field_name */
-
-#if defined (REDO_CM_field_information)
-/*???DB.  Being redone */
-int get_FE_field_CM_field_information(struct FE_field *field,
-	struct CM_field_information *cm_field_information)
-/*******************************************************************************
-LAST MODIFIED : 25 August 1999
-
-DESCRIPTION :
-Returns the <cm_field_information> of the <field>.
-==============================================================================*/
-{
-	int return_code;
-
-	ENTER(get_FE_field_CM_field_information);
-	if (field&&cm_field_information)
-	{
-		return_code=COPY(CM_field_information)(cm_field_information,&(field->cm));
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"get_FE_field_CM_field_information.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* get_FE_field_CM_field_information */
-
-int set_FE_field_CM_field_information(struct FE_field *field,
-	struct CM_field_information *cm_field_information)
-/*******************************************************************************
-LAST MODIFIED : 25 August 1999
-
-DESCRIPTION :
-Sets the <cm_field_information> of the <field>.
-Should only call this function for unmanaged fields.
-==============================================================================*/
-{
-	int return_code;
-
-	ENTER(set_FE_field_CM_field_information);
-	if (field&&cm_field_information)
-	{
-		return_code=COPY(CM_field_information)(&(field->cm),cm_field_information);
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"set_FE_field_CM_field_information.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* set_FE_field_CM_field_information */
-#endif /* defined (REDO_CM_field_information) */
 
 PROTOTYPE_GET_OBJECT_NAME_FUNCTION(FE_field_component)
 /*****************************************************************************
@@ -40336,203 +40367,6 @@ DESCRIPTION :
 
 	return (return_code);
 } /* smooth_field_over_element */
-
-#if defined (REDO_CM_field_information)
-/*???DB.  Being redone */
-PROTOTYPE_COPY_OBJECT_FUNCTION(CM_field_information)
-/*******************************************************************************
-LAST MODIFIED: 4 February 1999
-
-DESCRIPTION:
-Copies the CM_Field_information from source to destination
-==============================================================================*/
-{
-	int return_code;
-	ENTER(COPY(CM_field_information));
-	if (destination&&source)
-	{
-		destination->type = source->type;
-		switch (source->type)
-		{
-			case CM_DEPENDENT_FIELD:
-			{
-				destination->indices.dependent.nc = source->indices.dependent.nc;
-				destination->indices.dependent.niy = source->indices.dependent.niy;
-				destination->indices.dependent.nr = source->indices.dependent.nr;
-				destination->indices.dependent.nxc = source->indices.dependent.nxc;
-				destination->indices.dependent.nxt = source->indices.dependent.nxt;			
-			} break;
-			default: /* everything else is independent*/
-			{
-				destination->indices.independent.nr = source->indices.independent.nr;;
-			} break;
-		}
-		return_code =1;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,"COPY(CM_field_informatio). Invalid arguments");
-		return_code = 0;
-	}
-	LEAVE;
-	return (return_code);
-
-}/* PROTOTYPE_COPY_OBJECT_FUNCTION(CM_field_information) */
-
-enum CM_field_type get_CM_field_information_type(
-	struct CM_field_information *field_info)
-/*******************************************************************************
-LAST MODIFIED : 30 August 2001
-
-DESCRIPTION :
-gets the name type and indice of field_info.
-==============================================================================*/
-{
-	enum CM_field_type cm_field_type;
-
-	ENTER(get_CM_field_information_type);
-	if (field_info)
-	{
-		cm_field_type = field_info->type;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"get_CM_field_information_type.  Invalid CM_field_information ");
-		cm_field_type = CM_GENERAL_FIELD;	
-	}
-	LEAVE;
-
-	return (cm_field_type);
-} /* get_CM_field_information_type */
-
-int set_CM_field_information(struct CM_field_information *field_info,
-	enum CM_field_type type, int *indices)
-/*******************************************************************************
-LAST MODIFIED : 4 February 1999
-
-DESCRIPTION :
-Sets the  type and indices (if any) of field_info. Any indices passed as a 
-pointer to an array.
-==============================================================================*/
-{
-	int return_code;
-
-	ENTER(set_CM_field_information);
-	if (field_info)
-	{
-		field_info->type = type;
-
-		switch (type)
-		{
-			case CM_DEPENDENT_FIELD:
-			{
-				if (indices)/* have some data */
-				{
-					field_info->indices.dependent.nc = *indices;
-					indices++;
-					field_info->indices.dependent.niy = *indices;
-					indices++;
-					field_info->indices.dependent.nr = *indices;
-					indices++;
-					field_info->indices.dependent.nxc = *indices;
-					indices++;
-					field_info->indices.dependent.nxt = *indices;
-				}
-				else /* no data, assume all zero */
-				{
-					field_info->indices.dependent.nc = 0;
-					field_info->indices.dependent.niy = 0;
-					field_info->indices.dependent.nr = 0;
-					field_info->indices.dependent.nxc = 0;
-					field_info->indices.dependent.nxt = 0;
-				}					
-			} break;
-			default: /* everything else is independent*/
-			{
-				if (indices)/* have some data */
-				{
-					field_info->indices.independent.nr = *indices;
-				}
-				else /* no data, assume all zero */
-				{
-					field_info->indices.independent.nr = 0;
-				}		
-			} break;
-		}
-
-		return_code =1;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"set_CM_field_information. Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /*set_CM_field_information */
-
-int compare_CM_field_information(struct CM_field_information *field_info1,
-	struct CM_field_information *field_info2)
-/************************************************************************
-LAST MODIFIED: 4 February 1999
-
-DESCRIPTION:
-Compares the CM_Field_information structures, field_info1 and field_info2.
-???DB.  To be done
-=======================================================================*/
-{
-	int return_code;
-	ENTER(compare_CM_field_information);
-
-	if (field_info1&&field_info2)
-	{
-		if (field_info1->type != field_info2->type )/* do the types match? */
-			return_code =0;
-		else
-		{
-			/*???DB.  To be done */
-			if (field_info1->type == CM_UNKNOWN_FIELD)
-				return_code = 1; /*if both CM_UNKNOWN_FIELD don't have to match anything else */
-			else /* do the indices match?*/
-				{
-					switch (field_info1->type)
-					{
-						case CM_DEPENDENT_FIELD:
-						{
-							return_code = (
-							  (field_info1->indices.dependent.nc == 
-									field_info2->indices.dependent.nc)&&
-								(field_info1->indices.dependent.niy == 
-									field_info2->indices.dependent.niy)&&
-								(field_info1->indices.dependent.nr ==
-									field_info2->indices.dependent.nr)&&
-								(field_info1->indices.dependent.nxc ==
-									field_info2->indices.dependent.nxc)&&
-								(field_info1->indices.dependent.nxt == 
-									field_info2->indices.dependent.nxt)
-									);
-						} break;
-						default: /* everything else is independent*/
-						{
-							return_code = (field_info1->indices.independent.nr == 
-								field_info2->indices.independent.nr);
-						} break;
-					} /* switch*/
-				}
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE," compare_CM_field_information. Invalid arguments");
-		return_code = 0;
-	}
-	LEAVE;
-	return (return_code);
-}/*compare_CM_field_information */
-#endif /* defined (REDO_CM_field_information) */
 
 int FE_element_field_is_type_CM_coordinate(
 	struct FE_element_field *element_field, void *dummy)

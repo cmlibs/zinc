@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : sync_2d_3d.c
 
-LAST MODIFIED : 30 August 2001
+LAST MODIFIED : 31 August 2001
 
 DESCRIPTION :
 ==============================================================================*/
@@ -686,7 +686,7 @@ upon its name.
 
 static int add_node_to_group(struct FE_node *node,void *user_data)
 /*******************************************************************************
-LAST MODIFIED : 30 August 2001
+LAST MODIFIED : 31 August 2001
 
 DESCRIPTION :
 Adds the node to the group specified by user_data.
@@ -736,14 +736,16 @@ to the node in addition to its current one.
 			/*number_of_indexed_values*/0,CM_COORDINATE_FIELD,
 			/*number_of_components*/&rect_cart_coords,FE_VALUE_VALUE,
 			2,component_names,
-			/*number_of_times*/0,/*time_value_type*/UNKNOWN_VALUE))&&
+			/*number_of_times*/0,/*time_value_type*/UNKNOWN_VALUE,
+			(struct FE_field_external_information *)NULL))&&
 			(coordinate_field=get_FE_field_manager_matched_field(
 			temp_data->fe_field_manager,COORDINATES_3D_FIELD_NAME,
 			GENERAL_FE_FIELD,/*indexer_field*/(struct FE_field *)NULL,
 			/*number_of_indexed_values*/0,CM_COORDINATE_FIELD,
 			/*number_of_components*/&rect_cart_coords,FE_VALUE_VALUE,
 			3,component_names,
-			/*number_of_times*/0,/*time_value_type*/UNKNOWN_VALUE)))
+			/*number_of_times*/0,/*time_value_type*/UNKNOWN_VALUE,
+			(struct FE_field_external_information *)NULL)))
 		{
 			/* look for the digitised coordinates */
 			if (FE_node_get_position_cartesian(node,digitised_field,old_position,
@@ -962,7 +964,7 @@ any changes made).
 
 static int restrict_nodes(struct FE_node *node,void *user_data)
 /*******************************************************************************
-LAST MODIFIED : 30 August 2001
+LAST MODIFIED : 31 August 2001
 
 DESCRIPTION :
 Adds the node to the group specified by user_data.
@@ -1005,14 +1007,16 @@ Adds the node to the group specified by user_data.
 			/*number_of_indexed_values*/0,CM_COORDINATE_FIELD,
 			&rect_cart_coords,FE_VALUE_VALUE,
 			/*number_of_components*/2,component_names,
-			/*number_of_times*/0,/*time_value_type*/UNKNOWN_VALUE))&&
+			/*number_of_times*/0,/*time_value_type*/UNKNOWN_VALUE,
+			(struct FE_field_external_information *)NULL))&&
 			(coordinate_field=get_FE_field_manager_matched_field(
 			temp_data->fe_field_manager,COORDINATES_3D_FIELD_NAME,
 			GENERAL_FE_FIELD,/*indexer_field*/(struct FE_field *)NULL,
 			/*number_of_indexed_values*/0,CM_COORDINATE_FIELD,
 			&rect_cart_coords,FE_VALUE_VALUE,
 			/*number_of_components*/3,component_names,
-			/*number_of_times*/0,/*time_value_type*/UNKNOWN_VALUE)))
+			/*number_of_times*/0,/*time_value_type*/UNKNOWN_VALUE,
+			(struct FE_field_external_information *)NULL)))
 		{
 			if (FE_node_get_position_cartesian(node,coordinate_field,old_position,
 				old_position+1,old_position+2,(FE_value *)NULL))

@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : data_grabber_dialog.c
 
-LAST MODIFIED : 30 August 2001
+LAST MODIFIED : 31 August 2001
 
 DESCRIPTION :
 Brings up a window which holds a data_grabber.  Allows the user to change what
@@ -41,7 +41,7 @@ Module functions
 */
 static void dg_dialog_update(struct DG_dialog_struct *data_grabber_dialog)
 /*******************************************************************************
-LAST MODIFIED : 30 August 2001
+LAST MODIFIED : 31 August 2001
 
 DESCRIPTION :
 Tells CMGUI about the current values. Returns a pointer to the material.
@@ -189,7 +189,8 @@ Tells CMGUI about the current values. Returns a pointer to the material.
 			/*number_of_indexed_values*/0,CM_COORDINATE_FIELD,
 			&rect_cart_coords,FE_VALUE_VALUE,
 			/*number_of_components*/3,component_names,
-			/*number_of_times*/0,/*time_value_type*/UNKNOWN_VALUE))
+			/*number_of_times*/0,/*time_value_type*/UNKNOWN_VALUE,
+			(struct FE_field_external_information *)NULL))
 		{
 			if ((template_node=CREATE(FE_node)(0,(struct FE_node *)NULL))&&
 				define_FE_field_at_node(template_node,
@@ -208,7 +209,8 @@ Tells CMGUI about the current values. Returns a pointer to the material.
 								/*number_of_indexed_values*/0,CM_GENERAL_FIELD,
 								&rect_cart_coords,FE_VALUE_VALUE,
 								/*number_of_components*/3,component_names,
-								/*number_of_times*/0,/*time_value_type*/UNKNOWN_VALUE))
+								/*number_of_times*/0,/*time_value_type*/UNKNOWN_VALUE,
+								(struct FE_field_external_information *)NULL))
 							{
 								if (define_FE_field_at_node(template_node,tangent_field,
 									components_number_of_derivatives,
@@ -239,7 +241,8 @@ Tells CMGUI about the current values. Returns a pointer to the material.
 								/*number_of_indexed_values*/0,CM_ANATOMICAL_FIELD,
 								&rect_cart_coords,FE_VALUE_VALUE,
 								/*number_of_components*/1,fibre_component_name,
-								/*number_of_times*/0,/*time_value_type*/UNKNOWN_VALUE))
+								/*number_of_times*/0,/*time_value_type*/UNKNOWN_VALUE,
+								(struct FE_field_external_information *)NULL))
 							{
 								if (define_FE_field_at_node(template_node,tangent_field,
 									components_number_of_derivatives,
@@ -281,7 +284,8 @@ Tells CMGUI about the current values. Returns a pointer to the material.
 						/*number_of_indexed_values*/0,CM_GENERAL_FIELD,
 						&rect_cart_coords,FE_VALUE_VALUE,
 						/*number_of_components*/3,component_names,
-						/*number_of_times*/0,/*time_value_type*/UNKNOWN_VALUE))
+						/*number_of_times*/0,/*time_value_type*/UNKNOWN_VALUE,
+						(struct FE_field_external_information *)NULL))
 					{
 						if (define_FE_field_at_node(template_node,normal_field,
 							components_number_of_derivatives,

@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : finite_element_to_graphics_object.c
 
-LAST MODIFIED : 30 August 2001
+LAST MODIFIED : 31 August 2001
 
 DESCRIPTION :
 The functions for creating graphical objects from finite elements.
@@ -6548,7 +6548,7 @@ int create_surface_data_points_from_GT_voltex(struct GT_voltex *voltex,
 	struct Computed_field *data_density_field,
 	struct Computed_field *data_coordinate_field)
 /*******************************************************************************
-LAST MODIFIED : 30 August 2001
+LAST MODIFIED : 31 August 2001
 
 DESCRIPTION :
 This function takes a <voltex> and the corresponding <vtexture> and creates
@@ -6825,7 +6825,8 @@ the position of the point, with appropriate coordinate conversion.
 										/*number_of_indexed_values*/0,CM_COORDINATE_FIELD,
 										&rect_cart_coords,ELEMENT_XI_VALUE,
 										/*number_of_components*/1,element_xi_component_names,
-										/*number_of_times*/0,/*time_value_type*/UNKNOWN_VALUE))
+										/*number_of_times*/0,/*time_value_type*/UNKNOWN_VALUE,
+										(struct FE_field_external_information *)NULL))
 									{
 										/* create the node */
 										if ((template_node=CREATE(FE_node)(0,

@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : data_2d.c
 
-LAST MODIFIED : 30 August 2001
+LAST MODIFIED : 31 August 2001
 
 DESCRIPTION :
 ==============================================================================*/
@@ -1096,7 +1096,7 @@ Returns a pointer to a data item of the input widget.
 int data_2d_selection(Widget data_2d_widget,DATA_2D_PRECISION *data,
 	int button_down,int single)
 /*******************************************************************************
-LAST MODIFIED : 30 August 2001
+LAST MODIFIED : 31 August 2001
 
 DESCRIPTION :
 Notifies the grabber about the selection process.
@@ -1209,7 +1209,8 @@ Notifies the grabber about the selection process.
 								/*number_of_indexed_values*/0,CM_COORDINATE_FIELD,
 								&rect_cart_coords,FE_VALUE_VALUE,
 								/*number_of_components*/temp_data_2d->dimension,component_names,
-								/*number_of_times*/0,/*time_value_type*/UNKNOWN_VALUE))
+								/*number_of_times*/0,/*time_value_type*/UNKNOWN_VALUE,
+								(struct FE_field_external_information *)NULL))
 							{
 								if (!temp_data_2d->data_2d_field)
 								{
