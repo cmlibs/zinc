@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : element_point_ranges_selection.c
 
-LAST MODIFIED : 27 March 2000
+LAST MODIFIED : 18 May 2000
 
 DESCRIPTION :
 Global store of selected element_point_ranges for group actions and
@@ -454,6 +454,56 @@ Calls Element_point_ranges_selection_update.
 	return (return_code);
 } /* Element_point_ranges_selection_select_element_point_ranges */
 
+int FE_element_select_grid_field_ranges(struct FE_element *element,
+	void *select_data_void)
+/*******************************************************************************
+LAST MODIFIED : 18 May 2000
+
+DESCRIPTION :
+Iterator function that gets an Element_point_ranges structure representing all
+the grid_points in <element> with discretization of the single component
+integer <grid_field>, for which the field value is in the given <ranges>.
+Note that there may legitimately be none if <grid_field> is not grid-based in
+<element> or the ranges do not intersect with the values in the field.
+The structure is then added to the <element_point_ranges_selection>.
+select_data_void should point to a
+struct FE_element_select_grid_field_ranges_data.
+Note only looks at top-level elements.
+==============================================================================*/
+{
+	int return_code;
+	struct Element_point_ranges *element_point_ranges;
+	struct FE_element_select_grid_field_ranges_data *select_data;
+
+	ENTER(FE_element_select_grid_field_ranges);
+	if (element&&(select_data=
+		(struct FE_element_select_grid_field_ranges_data *)select_data_void))
+	{
+		/* use only top-level elements */
+		if ((CM_ELEMENT==element->cm.type)&&
+			(element_point_ranges=Element_point_ranges_from_grid_field_ranges(
+				element,select_data->grid_field,select_data->ranges)))
+		{
+			return_code=Element_point_ranges_selection_select_element_point_ranges(
+				select_data->element_point_ranges_selection,element_point_ranges);
+			DESTROY(Element_point_ranges)(&element_point_ranges);
+		}
+		else
+		{
+			return_code=1;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"FE_element_select_grid_field_ranges.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* FE_element_select_grid_field_ranges */
+
 int Element_point_ranges_selection_unselect_element_point_ranges(
 	struct Element_point_ranges_selection *element_point_ranges_selection,
 	struct Element_point_ranges *element_point_ranges)
@@ -533,6 +583,56 @@ Element_point_ranges_selection_update.
 
 	return (return_code);
 } /* Element_point_ranges_selection_unselect_element_point_ranges */
+
+int FE_element_unselect_grid_field_ranges(struct FE_element *element,
+	void *unselect_data_void)
+/*******************************************************************************
+LAST MODIFIED : 18 May 2000
+
+DESCRIPTION :
+Iterator function that gets an Element_point_ranges structure representing all
+the grid_points in <element> with discretization of the single component
+integer <grid_field>, for which the field value is in the given <ranges>.
+Note that there may legitimately be none if <grid_field> is not grid-based in
+<element> or the ranges do not intersect with the values in the field.
+The structure is then removed from the <element_point_ranges_selection>.
+select_data_void should point to a
+struct FE_element_unselect_grid_field_ranges_data.
+Note only looks at top-level elements.
+==============================================================================*/
+{
+	int return_code;
+	struct Element_point_ranges *element_point_ranges;
+	struct FE_element_select_grid_field_ranges_data *unselect_data;
+
+	ENTER(FE_element_unselect_grid_field_ranges);
+	if (element&&(unselect_data=
+		(struct FE_element_select_grid_field_ranges_data *)unselect_data_void))
+	{
+		/* use only top-level elements */
+		if ((CM_ELEMENT==element->cm.type)&&
+			(element_point_ranges=Element_point_ranges_from_grid_field_ranges(
+				element,unselect_data->grid_field,unselect_data->ranges)))
+		{
+			return_code=Element_point_ranges_selection_unselect_element_point_ranges(
+				unselect_data->element_point_ranges_selection,element_point_ranges);
+			DESTROY(Element_point_ranges)(&element_point_ranges);
+		}
+		else
+		{
+			return_code=1;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"FE_element_unselect_grid_field_ranges.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* FE_element_unselect_grid_field_ranges */
 
 struct LIST(Element_point_ranges)
 	*Element_point_ranges_selection_get_element_point_ranges_list(
