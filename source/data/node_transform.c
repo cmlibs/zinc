@@ -1531,7 +1531,7 @@ to 3d versions (ie used when digitising image data)
 	{
 		{"2d_scale",NULL,NULL,gfx_transform_node_2d_scale},
 		{"2d_to_3d",NULL,NULL,gfx_transform_node_2d_to_3d},
-		{NULL,NULL,NULL}
+		{NULL,NULL,NULL,NULL}
 	};
 
 	ENTER(gfx_transform_node);
