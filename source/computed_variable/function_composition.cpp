@@ -424,7 +424,7 @@ bool Function_composition::evaluate_derivative(Scalar& derivative,
 			(1==derivative_value->number_of_rows())&&
 			(1==derivative_value->number_of_columns()))
 		{
-			derivative=(*derivative_value)(0,0);
+			derivative=(*derivative_value)(1,1);
 			result=true;
 		}
 	}

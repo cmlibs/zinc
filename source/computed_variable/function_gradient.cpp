@@ -74,7 +74,7 @@ class Function_variable_iterator_representation_atomic_gradient:
 
 class Function_variable_gradient : public Function_variable
 //******************************************************************************
-// LAST MODIFIED : 26 August 2004
+// LAST MODIFIED : 1 September 2004
 //
 // DESCRIPTION :
 //==============================================================================
@@ -251,7 +251,7 @@ class Function_variable_gradient : public Function_variable
 						derivative_value_iterator=derivative_values.begin();
 						for (i=0;i<number_of_derivative_values;i++)
 						{
-							result_matrix(i,0)=(**derivative_value_iterator)(0,0);
+							result_matrix(i,0)=(**derivative_value_iterator)(1,1);
 							derivative_value_iterator++;
 						}
 						result=Function_handle(new Function_matrix<Scalar>(result_matrix));
@@ -360,7 +360,7 @@ class Function_variable_gradient : public Function_variable
 						{
 							for (j=0;j<number_of_columns;j++)
 							{
-								result_matrix(i,j)=(**derivative_value_iterator)(0,j);
+								result_matrix(i,j)=(**derivative_value_iterator)(1,j+1);
 							}
 							derivative_value_iterator++;
 						}
