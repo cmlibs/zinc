@@ -109,6 +109,8 @@ ifeq ($(USER_INTERFACE), MOTIF_USER_INTERFACE)
    PRODUCT_UIDH_PATH=$(PRODUCT_PATH)/uidh/$(LIB_ARCH_DIR)/$(TARGET_EXECUTABLE_BASENAME)
 endif # $(USER_INTERFACE) == MOTIF_USER_INTERFACE
 
+$(BIN_TARGET) :
+
 ifdef MAKECMDGOALS
    define BUILDING_MESSAGE
 Making $(MAKECMDGOALS) for version $(BIN_TARGET)
@@ -838,6 +840,9 @@ else # $(MEMORYCHECK) != true
    OBJS = $(OBJSC:.f=.o)
 endif # $(MEMORYCHECK) != true
 
+MAIN_SRC = cmgui.c
+MAIN_OBJ = $(MAIN_SRC:.c=.o)
+
 $(BIN_TARGET) :
 
 clean :
@@ -854,7 +859,7 @@ depend :
 		mkdir -p $(dir $(DEPENDFILE)); \
 	fi
 	echo > $(DEPENDFILE)
-	(makedepend -f $(DEPENDFILE) -o.o -Y -- $(ALL_FLAGS) -- cmgui.c 2> $(DEPENDFILE).tmp)
+	(makedepend -f $(DEPENDFILE) -o.o -Y -- $(ALL_FLAGS) -- $(MAIN_SRC) 2> $(DEPENDFILE).tmp)
 	(makedepend -f $(DEPENDFILE) -o.o -Y -a -- $(ALL_FLAGS) -- $(SRCS_1) 2>> $(DEPENDFILE).tmp)
 	(makedepend -f $(DEPENDFILE) -o.o -Y -a -- $(ALL_FLAGS) -- $(SRCS_2) 2>> $(DEPENDFILE).tmp)
 	(makedepend -f $(DEPENDFILE) -o.o -Y -a -- $(ALL_FLAGS) -- filt/exnodecmgui.c 2>> $(DEPENDFILE).tmp)
@@ -971,7 +976,7 @@ $(OBJECT_PATH)/version.o.h : $(OBJS) cmgui.Makefile
 #	sed 's/"//;s/./"CMISS(cmgui) version 001.001.018  &/;s/.$$/&\\nCopyright 1996-1998, Auckland UniServices Ltd."/' < date.h >> $(OBJECT_PATH)/version.o.h
 # 	sed 's/./#define VERSION "CMISS(cmgui) version 001.001.018  &/;s/.$$/&\\nCopyright 1996-1998, Auckland UniServices Ltd."/' < date.h >> $(OBJECT_PATH)/version.o.h
 
-cmgui.o : cmgui.c $(OBJECT_PATH)/version.o.h $(INTERPRETER_LIB)
+$(MAIN_OBJ) : $(MAIN_SRC) $(OBJECT_PATH)/version.o.h $(INTERPRETER_LIB)
 	@if [ -f $*.c ]; then \
 		set -x; \
 		cat $(OBJECT_PATH)/version.o.h $*.c > $(OBJECT_PATH)/$*.o.c ; \
@@ -1103,21 +1108,21 @@ ifeq ($(SYSNAME),win32)
    endif # $(USER_INTERFACE) != GTK_USER_INTERFACE
 endif # $(SYSNAME) == win32
 
-$(BIN_TARGET) : $(OBJS) $(COMPILED_RESOURCE_FILES) cmgui.o $(OBJECT_PATH)/$(EXPORTS_FILE)
+$(BIN_TARGET) : $(OBJS) $(COMPILED_RESOURCE_FILES) $(MAIN_OBJ) $(OBJECT_PATH)/$(EXPORTS_FILE)
 	if [ ! -d $(BIN_PATH) ]; then \
 		mkdir -p $(BIN_PATH); \
 	fi
 ifeq ($(SYSNAME:IRIX%=),)
-	cd $(OBJECT_PATH) ; (ls $(OBJS) cmgui.o 2>&1 | sed "s%Cannot access %product_object/%;s%: No such file or directory%%;s%UX:ls: ERROR: %%" > object.list)
+	cd $(OBJECT_PATH) ; (ls $(OBJS) $(MAIN_OBJ) 2>&1 | sed "s%Cannot access %product_object/%;s%: No such file or directory%%;s%UX:ls: ERROR: %%" > object.list)
 endif # SYSNAME == IRIX%=
 ifeq ($(SYSNAME),Linux)
-	cd $(OBJECT_PATH) ; (ls $(OBJS) cmgui.o 2>&1 | sed "s%ls: %product_object/%;s%: No such file or directory%%" > object.list)
+	cd $(OBJECT_PATH) ; (ls $(OBJS) $(MAIN_OBJ) 2>&1 | sed "s%ls: %product_object/%;s%: No such file or directory%%" > object.list)
 endif # SYSNAME == Linux
 ifeq ($(SYSNAME),AIX)
-	cd $(OBJECT_PATH) ; (ls $(OBJS) cmgui.o 2>&1 | sed "s%ls: %product_object/%;s%: No such file or directory%%" > object.list)
+	cd $(OBJECT_PATH) ; (ls $(OBJS) $(MAIN_OBJ) 2>&1 | sed "s%ls: %product_object/%;s%: No such file or directory%%" > object.list)
 endif # SYSNAME == AIX
 ifeq ($(SYSNAME),win32)
-	cd $(OBJECT_PATH) ; (ls $(OBJS) cmgui.o 2>&1 | sed "s%ls: %product_object/%;s%: No such file or directory%%" > object.list)
+	cd $(OBJECT_PATH) ; (ls $(OBJS) $(MAIN_OBJ) 2>&1 | sed "s%ls: %product_object/%;s%: No such file or directory%%" > object.list)
 endif # SYSNAME == win32
    # Link in the OBJECT_PATH and copy to the BIN_PATH as often the OBJECT_PATH is kept locally.
 	cd $(OBJECT_PATH) ; \
@@ -1149,21 +1154,26 @@ ifeq ($(USER_INTERFACE),MOTIF_USER_INTERFACE)
 
    utilities : $(UID2UIDH_BIN)
 
-   UID2UIDH_SRCS = \
-	   utilities/uid2uidh.c
+   #Only have the rules to build it if it doesn't exist, so that if it is
+   #found but the objects are in another version that won't force other
+   #version to rebuild.
+   ifneq ($(UID2UIDH_FOUND),true)
+      UID2UIDH_SRCS = \
+	      utilities/uid2uidh.c
 
-   UID2UIDH_LIB =
-   ifeq ($(SYSNAME:IRIX%=),)
-      UID2UIDH_LIB += -lgen
-   endif # SYSNAME == IRIX%=
+      UID2UIDH_LIB =
+      ifeq ($(SYSNAME:IRIX%=),)
+         UID2UIDH_LIB += -lgen
+      endif # SYSNAME == IRIX%=
 
-   UID2UIDH_OBJSA = $(UID2UIDH_SRCS:.c=.o)
-   UID2UIDH_OBJSB = $(UID2UIDH_OBJSA:.cpp=.o)
-   UID2UIDH_OBJS = $(UID2UIDH_OBJSB:.f=.o)
-   BUILD_UID2UIDH = $(call BuildNormalTarget,$(UID2UIDH),$(UTILITIES_PATH),UID2UIDH_OBJS,$(UID2UIDH_LIB))
+      UID2UIDH_OBJSA = $(UID2UIDH_SRCS:.c=.o)
+      UID2UIDH_OBJSB = $(UID2UIDH_OBJSA:.cpp=.o)
+      UID2UIDH_OBJS = $(UID2UIDH_OBJSB:.f=.o)
+      BUILD_UID2UIDH = $(call BuildNormalTarget,$(UID2UIDH),$(UTILITIES_PATH),UID2UIDH_OBJS,$(UID2UIDH_LIB))
 
-   $(UID2UIDH_BIN): $(UID2UIDH_OBJS)
-		$(BUILD_UID2UIDH)
+      $(UID2UIDH_BIN): $(UID2UIDH_OBJS)
+			$(BUILD_UID2UIDH)
+   endif # $(UID2UIDH_FOUND != true
 endif # $(USER_INTERFACE) == MOTIF_USER_INTERFACE
 
 utilities : SpacesToTabs TabsToSpaces
@@ -1190,7 +1200,6 @@ BUILD_TABS_TO_SPACES = $(call BuildNormalTarget,TabsToSpaces,$(UTILITIES_PATH),T
 TabsToSpaces: $(TABS_TO_SPACES_OBJS)
 	$(BUILD_TABS_TO_SPACES)
 
-# sinclude used so that the makefile can be run when the dependency file doesn't exist,
-# it should then make one
+# Still try and include both of them
 sinclude $(PRODUCT_DEPENDFILE)
 sinclude $(DEPENDFILE)
