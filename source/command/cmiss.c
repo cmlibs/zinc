@@ -19412,16 +19412,20 @@ Which tool that is being modified is passed in <node_tool_void>.
 				{
 					Node_tool_pop_down_dialog(node_tool);
 				}
-				Node_tool_set_select_enabled(node_tool,select_enabled);
-				Node_tool_set_edit_enabled(node_tool,edit_enabled);
-				Node_tool_set_define_enabled(node_tool,define_enabled);
 				Node_tool_set_coordinate_field(node_tool,coordinate_field);
-				Node_tool_set_create_enabled(node_tool,create_enabled);
 				Node_tool_set_node_group(node_tool,node_group);
 				Node_tool_set_streaming_create_enabled(node_tool,
 					streaming_create_enabled);
 				Node_tool_set_url_field(node_tool,url_field);
+
+				/* Set the state after setting the parameters as some of them
+				   states rely on these parameters */
+				Node_tool_set_edit_enabled(node_tool,edit_enabled);
+				Node_tool_set_select_enabled(node_tool,select_enabled);
+				Node_tool_set_define_enabled(node_tool,define_enabled);
+				Node_tool_set_create_enabled(node_tool,create_enabled);
 				Node_tool_set_motion_update_enabled(node_tool,motion_update_enabled);
+
 				if (dialog_string == dialog_strings[0])
 				{
 					Node_tool_pop_up_dialog(node_tool);
