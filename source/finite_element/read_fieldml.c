@@ -102,12 +102,12 @@ struct FE_field *FE_region_merge_FE_field(struct FE_region *fe_region,
 	struct FE_field **field_address)
 {
 	char *field_name;
-	struct FE_field *existing_field, *field;
+	struct FE_field *field;
 
 	field = *field_address;
 	if (field_name = get_FE_field_name(field))
 	{
-		if (existing_field=FIND_BY_IDENTIFIER_IN_MANAGER(FE_field,
+		if (FIND_BY_IDENTIFIER_IN_MANAGER(FE_field,
 				 name)(field_name,fe_region->fe_field_manager))
 		{
 			display_message(ERROR_MESSAGE,
@@ -201,7 +201,7 @@ struct FE_node *FE_region_merge_FE_node(struct FE_region *fe_region,
 /* end Temporary delarations so that the code compiles before regions exist. */
 
 void fieldml_start_fieldml(struct Fieldml_sax_data *fieldml_data,
-	const xmlChar **attributes)
+	char **attributes)
 /*******************************************************************************
 LAST MODIFIED : 10 February 2003
 
@@ -209,13 +209,12 @@ DESCRIPTION :
 ==============================================================================*/
 {
 	char *version_string, *attribute_name, *attribute_value;
-	int i, fieldml_number;
+	int i;
 
 	ENTER(fieldml_start_fieldml);
 
 	if (0 > fieldml_data->fieldml_version)
 	{
-		fieldml_number = 0;
 		i = 0;
 		while (attributes[i])
 		{
@@ -273,7 +272,7 @@ DESCRIPTION :
 } /* fieldml_end_fieldml */
 
 void fieldml_start_field(struct Fieldml_sax_data *fieldml_data,
-	const xmlChar **attributes)
+	char **attributes)
 /*******************************************************************************
 LAST MODIFIED : 10 February 2003
 
@@ -415,7 +414,7 @@ DESCRIPTION :
 } /* fieldml_end_field */
 
 void fieldml_start_field_component(struct Fieldml_sax_data *fieldml_data,
-	const xmlChar **attributes)
+	char **attributes)
 /*******************************************************************************
 LAST MODIFIED : 10 February 2003
 
@@ -491,7 +490,7 @@ DESCRIPTION :
 } /* fieldml_end_field_component */
 
 void fieldml_start_node(struct Fieldml_sax_data *fieldml_data,
-	const xmlChar **attributes)
+	char **attributes)
 /*******************************************************************************
 LAST MODIFIED : 10 February 2003
 
@@ -563,7 +562,7 @@ DESCRIPTION :
 } /* fieldml_end_node */
 
 void fieldml_start_xml_element(struct Fieldml_sax_data *fieldml_data, 
-	const xmlChar *name, const xmlChar **attributes)
+	char *name, char **attributes)
 /*******************************************************************************
 LAST MODIFIED : 10 February 2003
 
@@ -636,7 +635,7 @@ DESCRIPTION :
 } /* fieldml_start_xml_element */
 
 void fieldml_end_xml_element(struct Fieldml_sax_data *fieldml_data,
-	const xmlChar *name)
+	char *name)
 /*******************************************************************************
 LAST MODIFIED : 10 February 2003
 
@@ -722,19 +721,21 @@ DESCRIPTION :
 } /* fieldml_end_xml_element */
 
 void general_start_xml_element(void *user_data, const xmlChar *name,
-	const xmlChar **attributes)
+	const xmlChar **const_attributes)
 /*******************************************************************************
 LAST MODIFIED : 10 February 2003
 
 DESCRIPTION :
 ==============================================================================*/
 {
+	char **attributes;
 	struct Fieldml_sax_data *fieldml_data;
 
 	ENTER(general_start_xml_element);
 
 	if (fieldml_data = (struct Fieldml_sax_data *)user_data)
 	{
+		attributes = (char **)const_attributes;
 		if (fieldml_data->unknown_depth > 0)
 		{
 			fieldml_data->unknown_depth++;
@@ -743,7 +744,7 @@ DESCRIPTION :
 		{
 			if (0 <= fieldml_data->fieldml_version)
 			{
-				fieldml_start_xml_element(fieldml_data, name, attributes);
+				fieldml_start_xml_element(fieldml_data, (char *)name, attributes);
 			}
 			else
 			{
@@ -751,7 +752,7 @@ DESCRIPTION :
 				{
 					case 'f':
 					{
-						if (!strcmp(name, "fieldml"))
+						if (!strcmp((char *)name, "fieldml"))
 						{
 							fieldml_start_fieldml(fieldml_data, attributes);
 						}
@@ -762,7 +763,7 @@ DESCRIPTION :
 					} break;
 					case 'r':
 					{
-						if (!strcmp(name, "regionml"))
+						if (!strcmp((char *)name, "regionml"))
 						{
 							/* ignore for now */
 						}
@@ -808,7 +809,7 @@ DESCRIPTION :
 		{
 			if (0 <= fieldml_data->fieldml_version)
 			{
-				fieldml_end_xml_element(fieldml_data, name);
+				fieldml_end_xml_element(fieldml_data, (char *)name);
 			}
 			else
 			{
@@ -816,7 +817,7 @@ DESCRIPTION :
 				{
 					case 'r':
 					{
-						if (!strcmp(name, "regionml"))
+						if (!strcmp((char *)name, "regionml"))
 						{
 							/* ignore for now */
 						}

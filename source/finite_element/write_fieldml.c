@@ -2173,7 +2173,6 @@ Writes information describing how <field> is defined at <element>.
 ==============================================================================*/
 {
 	char *component_name, *field_name;
-	enum FE_field_type fe_field_type;
 	FILE *output_file;
 	int i, indent, j, number_of_components, return_code;
 	struct Basis_mapping *basis_mapping;
@@ -2192,7 +2191,6 @@ Writes information describing how <field> is defined at <element>.
 	{
 		indent = data->indent;
 		return_code = 1;
-		fe_field_type=get_FE_field_FE_field_type(field);
 		data->field_number++;
 		if (GET_NAME(FE_field)(field,&field_name))
 		{
@@ -2349,6 +2347,8 @@ are passed to this function.
 			
 		if (field_order_info)
 		{
+			number_of_fields =
+				get_FE_field_order_info_number_of_fields(field_order_info);
 			for (field_no = 0; field_no < number_of_fields; field_no++)
 			{
 				if ((field =
