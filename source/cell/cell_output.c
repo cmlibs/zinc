@@ -1046,6 +1046,7 @@ Writes the current Cell model to a ipcell file
               cmiss_interface_arrays->ari_names[i]);
           }
         }
+        fclose(file);
         return_code = 1;
       }
       else
@@ -1257,6 +1258,7 @@ Writes the current Cell model to a ipcell file, using any defined fields
             }
           }
         }
+        fclose(file);
         return_code = 1;
       }
       else
@@ -1388,7 +1390,7 @@ number field.
           cmgui_interface,file,element_group,grid_field);
       }
 			return_code = 1;
-		fclose(file);
+      fclose(file);
 	}
 	else
 	{
