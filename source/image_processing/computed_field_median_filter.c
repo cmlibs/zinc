@@ -51,12 +51,9 @@ A container for objects required to define fields in this module.
 };
 
 
-
 struct Computed_field_median_filter_type_specific_data
 {
-	/* The size of the median filter window */
 	int radius;
-
 	float cached_time;
 	int element_dimension;
 	struct Cmiss_region *region;
@@ -76,7 +73,6 @@ DESCRIPTION :
 ==============================================================================*/
 {
 	int return_code;
-
 
 	ENTER(Computed_field_is_type_median_filter);
 	if (field)
@@ -308,8 +304,7 @@ Compare the type specific data
 		(struct Computed_field_median_filter_type_specific_data *)
 		other_computed_field->type_specific_data))
 	{
-		if ((data->radius == other_data->radius) &&
-			data->image && other_data->image &&
+		if (data->image && other_data->image &&
 			(data->image->dimension == other_data->image->dimension) &&
 			(data->image->depth == other_data->image->depth))
 		{
@@ -499,7 +494,7 @@ Evaluate the fields cache at the node.
 {
 	int return_code;
 	struct Computed_field_median_filter_type_specific_data *data;
-
+	
 	ENTER(Computed_field_median_filter_evaluate_cache_at_node);
 	if (field && node &&
 		(data = (struct Computed_field_median_filter_type_specific_data *)field->type_specific_data))
@@ -512,6 +507,7 @@ Evaluate the fields cache at the node.
 				field->source_fields[1], data->element_dimension, data->region,
 				data->graphics_buffer_package);
 			/* 2. Perform image processing operation */
+			
 			return_code = Image_cache_median_filter(data->image, data->radius);
 		}
 		/* 3. Evaluate texture coordinates and copy image to field */
@@ -544,7 +540,7 @@ Evaluate the fields cache at the node.
 {
 	int return_code;
 	struct Computed_field_median_filter_type_specific_data *data;
-
+       
 	ENTER(Computed_field_median_filter_evaluate_cache_in_element);
 	USE_PARAMETER(calculate_derivatives);
 	if (field && element && xi && (field->number_of_source_fields > 0) &&
@@ -634,6 +630,49 @@ DESCRIPTION :
 Not implemented yet.
 ==============================================================================*/
 
+int Computed_field_median_filter_get_native_resolution(struct Computed_field *field,
+        int *dimension, int **sizes, FE_value **minimums, FE_value **maximums,
+	struct Computed_field **texture_coordinate_field)
+/*******************************************************************************
+LAST MODIFIED : 4 February 2005
+
+DESCRIPTION :
+Gets the <dimension>, <sizes>, <minimums>, <maximums> and <texture_coordinate_field> from
+the <field>. These parameters will be used in image processing.
+
+==============================================================================*/
+{       
+        int return_code;
+	struct Computed_field_median_filter_type_specific_data *data;
+	
+	ENTER(Computed_field_median_filter_get_native_resolution);
+	if (field && (data =
+		(struct Computed_field_median_filter_type_specific_data *)
+		field->type_specific_data) && data->image)
+	{
+		Image_cache_get_native_resolution(data->image,
+			dimension, sizes, minimums, maximums);
+		/* Texture_coordinate_field from source fields */
+		if (*texture_coordinate_field)
+		{
+			/* DEACCESS(Computed_field)(&(*texture_coordinate_field));
+			*texture_coordinate_field = ACCESS(Computed_field)(field->source_fields[1]); */
+		}
+		else
+		{
+		        *texture_coordinate_field = ACCESS(Computed_field)(field->source_fields[1]);
+		}	 
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Computed_field_median_filter_get_native_resolution.  Missing field");
+		return_code=0;
+	}
+
+	return (return_code);
+} /* Computed_field_median_filter_get_native_resolution */
+
 static int list_Computed_field_median_filter(
 	struct Computed_field *field)
 /*******************************************************************************
@@ -644,12 +683,12 @@ DESCRIPTION :
 {
 	int return_code;
 	struct Computed_field_median_filter_type_specific_data *data;
-
+        
 	ENTER(List_Computed_field_median_filter);
 	if (field && (field->type_string==computed_field_median_filter_type_string)
 		&& (data = (struct Computed_field_median_filter_type_specific_data *)
 		field->type_specific_data))
-	{
+	{        
 		display_message(INFORMATION_MESSAGE,
 			"    source field : %s\n",field->source_fields[0]->name);
 		display_message(INFORMATION_MESSAGE,
@@ -681,7 +720,7 @@ Returns allocated command string for reproducing field. Includes type.
 	char *command_string, *field_name, temp_string[40];
 	int error;
 	struct Computed_field_median_filter_type_specific_data *data;
-
+        
 	ENTER(Computed_field_median_filter_get_command_string);
 	command_string = (char *)NULL;
 	if (field&& (field->type_string==computed_field_median_filter_type_string)
@@ -765,7 +804,7 @@ although its cache may be lost.
 	int depth, number_of_source_fields, return_code;
 	struct Computed_field **source_fields;
 	struct Computed_field_median_filter_type_specific_data *data;
-
+        
 	ENTER(Computed_field_set_type_median_filter);
 	if (field && source_field && texture_coordinate_field &&
 		(radius > 0) && (depth = source_field->number_of_components) &&
@@ -775,6 +814,7 @@ although its cache may be lost.
 		return_code=1;
 		/* 1. make dynamic allocations for any new type-specific data */
 		number_of_source_fields=2;
+		
 		data = (struct Computed_field_median_filter_type_specific_data *)NULL;
 		if (ALLOCATE(source_fields, struct Computed_field *, number_of_source_fields) &&
 			ALLOCATE(data, struct Computed_field_median_filter_type_specific_data, 1) &&
@@ -801,7 +841,7 @@ although its cache may be lost.
 				MANAGER_REGISTER(Computed_field)(
 				Computed_field_median_filter_field_change, (void *)field,
 				computed_field_manager);
-
+			
 			field->type_specific_data = data;
 
 			/* Set all the methods */
@@ -847,7 +887,7 @@ parameters defining it are returned.
 {
 	int i, return_code;
 	struct Computed_field_median_filter_type_specific_data *data;
-
+        
 	ENTER(Computed_field_get_type_median_filter);
 	if (field && (field->type_string==computed_field_median_filter_type_string)
 		&& (data = (struct Computed_field_median_filter_type_specific_data *)
@@ -922,7 +962,7 @@ already) and allows its contents to be modified.
 		minimums = (FE_value *)NULL;
 		maximums = (FE_value *)NULL;
 		element_dimension = 0;
-		radius = 1;
+		radius = 0;
 		/* field */
 		set_source_field_data.computed_field_manager =
 			computed_field_median_filter_package->computed_field_manager;
@@ -1010,12 +1050,12 @@ already) and allows its contents to be modified.
 					DESTROY(Option_table)(&option_table);
 				}
 			}
-			if (return_code && (dimension < 1))
+			/*if (return_code && (dimension < 1))
 			{
 				display_message(ERROR_MESSAGE,
 					"define_Computed_field_type_scale.  Must specify a dimension first.");
 				return_code = 0;
-			}
+			} */
 			/* parse the rest of the table */
 			if (return_code&&state->current_token)
 			{
@@ -1044,6 +1084,11 @@ already) and allows its contents to be modified.
 					&set_texture_coordinate_field_data);
 				return_code=Option_table_multi_parse(option_table,state);
 				DESTROY(Option_table)(&option_table);
+			}
+			if (dimension < 1)
+			{
+			        return_code = Computed_field_get_native_resolution(source_field,
+				     &dimension,&sizes,&minimums,&maximums,&texture_coordinate_field);
 			}
 			/* no errors,not asking for help */
 			if (return_code)

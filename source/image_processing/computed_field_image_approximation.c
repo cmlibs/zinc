@@ -43,7 +43,7 @@ struct Computed_field_image_approximation_type_specific_data
 	double sigma;
 	double alpha;
 	double belta;
-	int iteration_times;
+	int number_of_iterations;
 	float cached_time;
 	int element_dimension;
 	struct Cmiss_region *region;
@@ -201,7 +201,7 @@ Copy the type specific data used by this type.
 			destination->sigma = source->sigma;
 			destination->alpha = source->alpha;
 			destination->belta = source->belta;
-			destination->iteration_times = source->iteration_times;
+			destination->number_of_iterations = source->number_of_iterations;
 			destination->cached_time = source->cached_time;
 			destination->region = ACCESS(Cmiss_region)(source->region);
 			destination->element_dimension = source->element_dimension;
@@ -301,7 +301,7 @@ Compare the type specific data
 		if ((data->sigma == other_data->sigma) &&
 		        (data->alpha == other_data->alpha) &&
 			(data->belta == other_data->belta) &&
-			(data->iteration_times == other_data->iteration_times) &&
+			(data->number_of_iterations == other_data->number_of_iterations) &&
 			data->image && other_data->image &&
 			(data->image->dimension == other_data->image->dimension) &&
 			(data->image->depth == other_data->image->depth))
@@ -361,7 +361,7 @@ No special criteria.
 
 
 static int Image_cache_image_approximation(struct Image_cache *image,
-          double sigma, double alpha, double belta, int iteration_times)
+          double sigma, double alpha, double belta, int number_of_iterations)
 /*******************************************************************************
 LAST MODIFIED : 6 August 2004
 
@@ -489,7 +489,7 @@ DESCRIPTION : Implement image approximation based on variational model.
 			}*/
 			data_index = (FE_value *)image->data;
 			result_index = (FE_value *)storage;
-			for (out = 0; out < iteration_times; out++)
+			for (out = 0; out < number_of_iterations; out++)
 			{
 				for (i = 0; i < storage_size /image->depth; i++)
 				{
@@ -651,7 +651,7 @@ Evaluate the fields cache at the node.
 				data->graphics_buffer_package);
 			/* 2. Perform image processing operation */
 			return_code = Image_cache_image_approximation(data->image, data->sigma,
-			        data->alpha, data->belta, data->iteration_times);
+			        data->alpha, data->belta, data->number_of_iterations);
 		}
 		/* 3. Evaluate texture coordinates and copy image to field */
 		Computed_field_evaluate_cache_at_node(field->source_fields[1],
@@ -700,7 +700,7 @@ Evaluate the fields cache at the node.
 				data->graphics_buffer_package);
 			/* 2. Perform image processing operation */
 			return_code = Image_cache_image_approximation(data->image, data->sigma,
-			        data->alpha, data->belta, data->iteration_times);
+			        data->alpha, data->belta, data->number_of_iterations);
 		}
 		/* 3. Evaluate texture coordinates and copy image to field */
 		Computed_field_evaluate_cache_in_element(field->source_fields[1],
@@ -774,6 +774,49 @@ DESCRIPTION :
 Not implemented yet.
 ==============================================================================*/
 
+int Computed_field_image_approximation_get_native_resolution(struct Computed_field *field,
+        int *dimension, int **sizes, FE_value **minimums, FE_value **maximums,
+	struct Computed_field **texture_coordinate_field)
+/*******************************************************************************
+LAST MODIFIED : 4 February 2005
+
+DESCRIPTION :
+Gets the <dimension>, <sizes>, <minimums>, <maximums> and <texture_coordinate_field> from
+the <field>. These parameters will be used in image processing.
+
+==============================================================================*/
+{       
+        int return_code;
+	struct Computed_field_image_approximation_type_specific_data *data;
+	
+	ENTER(Computed_field_image_approximation_get_native_resolution);
+	if (field && (data =
+		(struct Computed_field_image_approximation_type_specific_data *)
+		field->type_specific_data) && data->image)
+	{
+		Image_cache_get_native_resolution(data->image,
+			dimension, sizes, minimums, maximums);
+		/* Texture_coordinate_field from source fields */
+		if (*texture_coordinate_field)
+		{
+			/* DEACCESS(Computed_field)(&(*texture_coordinate_field));
+			*texture_coordinate_field = ACCESS(Computed_field)(field->source_fields[1]); */
+		}
+		else
+		{
+		        *texture_coordinate_field = ACCESS(Computed_field)(field->source_fields[1]);
+		}	 
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Computed_field_median_filter_get_native_resolution.  Missing field");
+		return_code=0;
+	}
+
+	return (return_code);
+} /* Computed_field_image_approximation_get_native_resolution */
+
 static int list_Computed_field_image_approximation(
 	struct Computed_field *field)
 /*******************************************************************************
@@ -801,7 +844,7 @@ DESCRIPTION :
 		display_message(INFORMATION_MESSAGE,
 			"    belta : %f\n", data->belta);
 		display_message(INFORMATION_MESSAGE,
-			"    iteration_times : %d\n", data->iteration_times);
+			"    number_of_iterations : %d\n", data->number_of_iterations);
 		return_code = 1;
 	}
 	else
@@ -863,7 +906,7 @@ Returns allocated command string for reproducing field. Includes type.
 		sprintf(temp_string, " belta %f", data->belta);
 		append_string(&command_string, temp_string, &error);
 
-		sprintf(temp_string, " iteration_times %d", data->iteration_times);
+		sprintf(temp_string, " number_of_iterations %d", data->number_of_iterations);
 		append_string(&command_string, temp_string, &error);
 
 		sprintf(temp_string, " sizes %d %d",
@@ -901,7 +944,7 @@ Works out whether time influences the field.
 int Computed_field_set_type_image_approximation(struct Computed_field *field,
 	struct Computed_field *source_field,
 	struct Computed_field *texture_coordinate_field,
-	double sigma, double alpha, double belta, int iteration_times,
+	double sigma, double alpha, double belta, int number_of_iterations,
 	int dimension, int *sizes, FE_value *minimums, FE_value *maximums,
 	int element_dimension, struct MANAGER(Computed_field) *computed_field_manager,
 	struct Cmiss_region *region, struct Graphics_buffer_package *graphics_buffer_package)
@@ -951,7 +994,7 @@ although its cache may be lost.
 			data->sigma = sigma;
 			data->alpha = alpha;
 			data->belta = belta;
-			data->iteration_times = iteration_times;
+			data->number_of_iterations = number_of_iterations;
 			data->element_dimension = element_dimension;
 			data->region = ACCESS(Cmiss_region)(region);
 			data->graphics_buffer_package = graphics_buffer_package;
@@ -994,7 +1037,7 @@ although its cache may be lost.
 int Computed_field_get_type_image_approximation(struct Computed_field *field,
 	struct Computed_field **source_field,
 	struct Computed_field **texture_coordinate_field,
-	double *sigma, double *alpha, double *belta, int *iteration_times,
+	double *sigma, double *alpha, double *belta, int *number_of_iterations,
 	int *dimension, int **sizes, FE_value **minimums,
 	FE_value **maximums, int *element_dimension)
 /*******************************************************************************
@@ -1023,7 +1066,7 @@ parameters defining it are returned.
 			*sigma = data->sigma;
 			*alpha = data->alpha;
 			*belta = data->belta;
-			*iteration_times = data->iteration_times;
+			*number_of_iterations = data->number_of_iterations;
 			for (i = 0 ; i < *dimension ; i++)
 			{
 				(*sizes)[i] = data->image->sizes[i];
@@ -1064,7 +1107,7 @@ already) and allows its contents to be modified.
 	char *current_token;
 	FE_value *minimums, *maximums;
 	double sigma, alpha, belta;
-	int iteration_times;
+	int number_of_iterations;
 	int dimension, element_dimension, return_code, *sizes;
 	struct Computed_field *field, *source_field, *texture_coordinate_field;
 	struct Computed_field_image_approximation_package
@@ -1090,7 +1133,7 @@ already) and allows its contents to be modified.
 		sigma = 1.0;
 		alpha = 0.0;
 		belta = 0.0;
-		iteration_times = 1;
+		number_of_iterations = 1;
 		/* field */
 		set_source_field_data.computed_field_manager =
 			computed_field_image_approximation_package->computed_field_manager;
@@ -1109,7 +1152,7 @@ already) and allows its contents to be modified.
 		{
 			return_code = Computed_field_get_type_image_approximation(field,
 				&source_field, &texture_coordinate_field,
-				&sigma, &alpha, &belta, &iteration_times,
+				&sigma, &alpha, &belta, &number_of_iterations,
 				&dimension, &sizes, &minimums, &maximums, &element_dimension);
 		}
 		if (return_code)
@@ -1153,9 +1196,9 @@ already) and allows its contents to be modified.
 				/* belta */
 				Option_table_add_double_entry(option_table,
 					"belta", &belta);
-				/* iteration_times */
+				/* number_of_iterations */
 				Option_table_add_int_positive_entry(option_table,
-					"iteration_times", &iteration_times);
+					"number_of_iterations", &number_of_iterations);
 				/* sizes */
 				Option_table_add_int_vector_entry(option_table,
 					"sizes", sizes, &dimension);
@@ -1188,12 +1231,12 @@ already) and allows its contents to be modified.
 					DESTROY(Option_table)(&option_table);
 				}
 			}
-			if (return_code && (dimension < 1))
+			/*if (return_code && (dimension < 1))
 			{
 				display_message(ERROR_MESSAGE,
 					"define_Computed_field_type_scale.  Must specify a dimension first.");
 				return_code = 0;
-			}
+			}*/
 			/* parse the rest of the table */
 			if (return_code&&state->current_token)
 			{
@@ -1219,9 +1262,9 @@ already) and allows its contents to be modified.
 				/* belta */
 				Option_table_add_double_entry(option_table,
 					"belta", &belta);
-				/* iteration_times */
+				/* number_of_iterations */
 				Option_table_add_int_positive_entry(option_table,
-					"iteration_times", &iteration_times);
+					"number_of_iterations", &number_of_iterations);
 				/* sizes */
 				Option_table_add_int_vector_entry(option_table,
 					"sizes", sizes, &dimension);
@@ -1232,12 +1275,17 @@ already) and allows its contents to be modified.
 				return_code=Option_table_multi_parse(option_table,state);
 				DESTROY(Option_table)(&option_table);
 			}
+			if (dimension < 1)
+			{
+			        return_code = Computed_field_get_native_resolution(source_field,
+				     &dimension,&sizes,&minimums,&maximums,&texture_coordinate_field);
+			}
 			/* no errors,not asking for help */
 			if (return_code)
 			{
 				return_code = Computed_field_set_type_image_approximation(field,
 					source_field, texture_coordinate_field,
-					sigma, alpha, belta, iteration_times,
+					sigma, alpha, belta, number_of_iterations,
 					dimension, sizes, minimums, maximums, element_dimension,
 					computed_field_image_approximation_package->computed_field_manager,
 					computed_field_image_approximation_package->root_region,

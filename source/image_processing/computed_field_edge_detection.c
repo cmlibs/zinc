@@ -37,7 +37,7 @@ A container for objects required to define fields in this module.
 struct Computed_field_edge_detection_type_specific_data
 {
 	char *operator;
-	double threshold;
+	double global_threshold;
 	float cached_time;
 	int element_dimension;
 	struct Cmiss_region *region;
@@ -192,7 +192,7 @@ Copy the type specific data used by this type.
 			struct Computed_field_edge_detection_type_specific_data, 1))
 		{
 			destination->operator = source->operator;
-			destination->threshold = source->threshold;
+			destination->global_threshold = source->global_threshold;
 			destination->cached_time = source->cached_time;
 			destination->region = ACCESS(Cmiss_region)(source->region);
 			destination->element_dimension = source->element_dimension;
@@ -291,7 +291,7 @@ Compare the type specific data
 	{
 		if ((strcmp(data->operator, other_data->operator) == 0) &&
 			data->image && other_data->image &&
-			(data->threshold == other_data->threshold) &&
+			(data->global_threshold == other_data->global_threshold) &&
 			(data->image->dimension == other_data->image->dimension) &&
 			(data->image->depth == other_data->image->depth))
 		{
@@ -348,7 +348,7 @@ DESCRIPTION :
 No special criteria.
 ==============================================================================*/
 
-static int Image_cache_edge_detection(struct Image_cache *image, char *operator, double threshold)
+static int Image_cache_edge_detection(struct Image_cache *image, char *operator, double global_threshold)
 /*******************************************************************************
 LAST MOErFIED : 13 July 2004
 
@@ -534,9 +534,9 @@ Perform edges detection on the image cache.
 						{
 					        	result_index[k] /= max[k];
 						}
-						if (threshold > 0.0)
+						if (global_threshold > 0.0)
 						{
-						        if (result_index[k] < threshold)
+						        if (result_index[k] < global_threshold)
 						        {
 						               result_index[k] = 0.0;
 						        }
@@ -604,7 +604,7 @@ Evaluate the fields cache at the node.
 				field->source_fields[1], data->element_dimension, data->region,
 				data->graphics_buffer_package);
 			/* 2. Perform image processing operation */
-			return_code = Image_cache_edge_detection(data->image, data->operator, data->threshold);
+			return_code = Image_cache_edge_detection(data->image, data->operator, data->global_threshold);
 		}
 		/* 3. Evaluate texture coordinates and copy image to field */
 		Computed_field_evaluate_cache_at_node(field->source_fields[1],
@@ -652,7 +652,7 @@ Evaluate the fields cache at the node.
 				field->source_fields[1], data->element_dimension, data->region,
 				data->graphics_buffer_package);
 			/* 2. Perform image processing operation */
-			return_code = Image_cache_edge_detection(data->image, data->operator, data->threshold);
+			return_code = Image_cache_edge_detection(data->image, data->operator, data->global_threshold);
 		}
 		/* 3. Evaluate texture coordinates and copy image to field */
 		Computed_field_evaluate_cache_in_element(field->source_fields[1],
@@ -726,6 +726,49 @@ DESCRIPTION :
 Not implemented yet.
 ==============================================================================*/
 
+int Computed_field_edge_detection_get_native_resolution(struct Computed_field *field,
+        int *dimension, int **sizes, FE_value **minimums, FE_value **maximums,
+	struct Computed_field **texture_coordinate_field)
+/*******************************************************************************
+LAST MODIFIED : 4 February 2005
+
+DESCRIPTION :
+Gets the <dimension>, <sizes>, <minimums>, <maximums> and <texture_coordinate_field> from
+the <field>. These parameters will be used in image processing.
+
+==============================================================================*/
+{       
+        int return_code;
+	struct Computed_field_edge_detection_type_specific_data *data;
+	
+	ENTER(Computed_field_edge_detection_get_native_resolution);
+	if (field && (data =
+		(struct Computed_field_edge_detection_type_specific_data *)
+		field->type_specific_data) && data->image)
+	{
+		Image_cache_get_native_resolution(data->image,
+			dimension, sizes, minimums, maximums);
+		/* Texture_coordinate_field from source fields */
+		if (*texture_coordinate_field)
+		{
+			/* DEACCESS(Computed_field)(&(*texture_coordinate_field));
+			*texture_coordinate_field = ACCESS(Computed_field)(field->source_fields[1]); */
+		}
+		else
+		{
+		        *texture_coordinate_field = ACCESS(Computed_field)(field->source_fields[1]);
+		}	 
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Computed_field_median_filter_get_native_resolution.  Missing field");
+		return_code=0;
+	}
+
+	return (return_code);
+} /* Computed_field_edge_detection_get_native_resolution */
+
 static int list_Computed_field_edge_detection(
 	struct Computed_field *field)
 /*******************************************************************************
@@ -749,7 +792,7 @@ DESCRIPTION :
 		display_message(INFORMATION_MESSAGE,
 			"    operator : %s\n", data->operator);
 		display_message(INFORMATION_MESSAGE,
-			"    threshold : %f\n", data->threshold);
+			"    global_threshold : %f\n", data->global_threshold);
 		return_code = 1;
 	}
 	else
@@ -805,7 +848,7 @@ Returns allocated command string for reproducing field. Includes type.
 		sprintf(temp_string, " operator %s ", data->operator);
 		append_string(&command_string, temp_string, &error);
 
-		sprintf(temp_string, " threshold %f ", data->threshold);
+		sprintf(temp_string, " global_threshold %f ", data->global_threshold);
 		append_string(&command_string, temp_string, &error);
 
 		sprintf(temp_string, " sizes %d %d ",
@@ -841,7 +884,7 @@ Works out whether time influences the field.
 
 int Computed_field_set_type_edge_detection(struct Computed_field *field,
 	struct Computed_field *source_field,
-	struct Computed_field *texture_coordinate_field, double threshold,
+	struct Computed_field *texture_coordinate_field, double global_threshold,
 	int roberts_index, int sobel_index, int prewitt_index, int isotropic_index, int laplacian_index,
 	int dimension, int *sizes, FE_value *minimums, FE_value *maximums,
 	int element_dimension, struct MANAGER(Computed_field) *computed_field_manager,
@@ -851,8 +894,8 @@ LAST MODIFIED : 17 December 2003
 
 DESCRIPTION :
 Converts <field> to type COMPUTED_FIELD_edge_detection with the supplied
-fields, <source_field> and <texture_coordinate_field>.  The <threshold> specifies
-half the threshold value for gradient image.  The <dimension> is the
+fields, <source_field> and <texture_coordinate_field>.  The <global_threshold> specifies
+half the global_threshold value for gradient image.  The <dimension> is the
 size of the <sizes>, <minimums> and <maximums> vectors and should be less than
 or equal to the number of components in the <texture_coordinate_field>.
 If function fails, field is guaranteed to be unchanged from its original state,
@@ -909,7 +952,7 @@ although its cache may be lost.
 			{
 			        data->operator = "laplacian";
 			}
-			data->threshold = threshold;
+			data->global_threshold = global_threshold;
 			data->element_dimension = element_dimension;
 			data->region = ACCESS(Cmiss_region)(region);
 			data->graphics_buffer_package = graphics_buffer_package;
@@ -951,7 +994,7 @@ although its cache may be lost.
 
 int Computed_field_get_type_edge_detection(struct Computed_field *field,
 	struct Computed_field **source_field,
-	struct Computed_field **texture_coordinate_field, double *threshold,
+	struct Computed_field **texture_coordinate_field, double *global_threshold,
 	int *roberts_index, int *sobel_index, int *prewitt_index, int *isotropic_index, int *laplacian_index,
 	 int *dimension, int **sizes, FE_value **minimums,
 	FE_value **maximums, int *element_dimension)
@@ -978,7 +1021,7 @@ parameters defining it are returned.
 		{
 			*source_field = field->source_fields[0];
 			*texture_coordinate_field = field->source_fields[1];
-			*threshold = data->threshold;
+			*global_threshold = data->global_threshold;
 			*roberts_index = *sobel_index = *prewitt_index = *isotropic_index = 0;
 			if (strcmp(data->operator, "roberts") == 0)
 			{
@@ -1041,7 +1084,7 @@ already) and allows its contents to be modified.
 	char roberts_string[] = "roberts", sobel_string[] = "sobel", prewitt_string[] = "prewitt";
 	char isotropic_string[] = "isotropic", laplacian_string[] = "laplacian";
 	FE_value *minimums, *maximums;
-	double threshold;
+	double global_threshold;
 	int dimension, element_dimension, return_code, *sizes;
 	struct Computed_field *field, *source_field, *texture_coordinate_field;
 	struct Computed_field_edge_detection_package
@@ -1061,7 +1104,7 @@ already) and allows its contents to be modified.
 		source_field = (struct Computed_field *)NULL;
 		texture_coordinate_field = (struct Computed_field *)NULL;
 		dimension = 0;
-		threshold = 0.0;
+		global_threshold = 0.0;
 		sizes = (int *)NULL;
 		minimums = (FE_value *)NULL;
 		maximums = (FE_value *)NULL;
@@ -1097,7 +1140,7 @@ already) and allows its contents to be modified.
 		{
 			return_code = Computed_field_get_type_edge_detection(field,
 				&source_field, &texture_coordinate_field,
-				&threshold, &operator.tokens[0].index,
+				&global_threshold, &operator.tokens[0].index,
 				&operator.tokens[1].index, &operator.tokens[2].index,
 				&operator.tokens[3].index, &operator.tokens[4].index,
 				&dimension, &sizes, &minimums, &maximums, &element_dimension);
@@ -1144,9 +1187,9 @@ already) and allows its contents to be modified.
 				Option_table_add_Computed_field_conditional_entry(option_table,
 					"texture_coordinate_field", &texture_coordinate_field,
 					&set_texture_coordinate_field_data);
-				/* threshold */
-				Option_table_add_double_entry(option_table, "threshold",
-					&threshold);
+				/* global_threshold */
+				Option_table_add_double_entry(option_table, "global_threshold",
+					&global_threshold);
 				return_code=Option_table_multi_parse(option_table,state);
 				DESTROY(Option_table)(&option_table);
 			}
@@ -1172,12 +1215,12 @@ already) and allows its contents to be modified.
 					DESTROY(Option_table)(&option_table);
 				}
 			}
-			if (return_code && (dimension < 1))
+			/*if (return_code && (dimension < 1))
 			{
 				display_message(ERROR_MESSAGE,
 					"define_Computed_field_type_scale.  Must specify a dimension first.");
 				return_code = 0;
-			}
+			}*/
 			/* parse the rest of the table */
 			if (return_code&&state->current_token)
 			{
@@ -1204,18 +1247,23 @@ already) and allows its contents to be modified.
 				Option_table_add_Computed_field_conditional_entry(option_table,
 					"texture_coordinate_field", &texture_coordinate_field,
 					&set_texture_coordinate_field_data);
-				/* threshold */
-				Option_table_add_double_entry(option_table, "threshold",
-					&threshold);
+				/* global_threshold */
+				Option_table_add_double_entry(option_table, "global_threshold",
+					&global_threshold);
 				return_code=Option_table_multi_parse(option_table,state);
 				DESTROY(Option_table)(&option_table);
+			}
+			if (dimension < 1)
+			{
+			        return_code = Computed_field_get_native_resolution(source_field,
+				     &dimension,&sizes,&minimums,&maximums,&texture_coordinate_field);
 			}
 			/* no errors,not asking for help */
 			if (return_code)
 			{
 				return_code = Computed_field_set_type_edge_detection(field,
 					source_field, texture_coordinate_field,
-					threshold, operator.tokens[0].index,
+					global_threshold, operator.tokens[0].index,
 					operator.tokens[1].index, operator.tokens[2].index,
 					operator.tokens[3].index, operator.tokens[4].index,
 					dimension, sizes, minimums, maximums, element_dimension,

@@ -40,7 +40,7 @@ struct Computed_field_image_correlation_type_specific_data
 	int *input_sizes;
 	int *output_sizes;
 	int *template_sizes;
-	struct Image_cache *template;
+	struct Image_cache *template_image;
 	float cached_time;
 	int element_dimension;
 	struct Cmiss_region *region;
@@ -112,9 +112,9 @@ we know to invalidate the image cache.
 					{
 						data->image->valid = 0;
 					}
-					if (data->template)
+					if (data->template_image)
 					{
-						data->template->valid = 0;
+						data->template_image->valid = 0;
 					}
 				}
 			} break;
@@ -160,9 +160,9 @@ Clear the type specific data used by this type.
 		{
 			DEACCESS(Image_cache)(&data->image);
 		}
-		if (data->template)
+		if (data->template_image)
 		{
-			DEACCESS(Image_cache)(&data->template);
+			DEACCESS(Image_cache)(&data->template_image);
 		}
 		if (data->computed_field_manager && data->computed_field_manager_callback_id)
 		{
@@ -249,17 +249,17 @@ Copy the type specific data used by this type.
 			{
 				destination->image = (struct Image_cache *)NULL;
 			}
-			if (source->template)
+			if (source->template_image)
 			{
-				destination->template = ACCESS(Image_cache)(CREATE(Image_cache)());
-				Image_cache_update_dimension(destination->template,
-					source->dimension, source->template->depth,
-					source->template_sizes, source->template->minimums,
-					source->template->maximums);
+				destination->template_image = ACCESS(Image_cache)(CREATE(Image_cache)());
+				Image_cache_update_dimension(destination->template_image,
+					source->dimension, source->template_image->depth,
+					source->template_sizes, source->template_image->minimums,
+					source->template_image->maximums);
 			}
 			else
 			{
-				destination->template = (struct Image_cache *)NULL;
+				destination->template_image = (struct Image_cache *)NULL;
 			}
 		}
 		else
@@ -302,7 +302,7 @@ DESCRIPTION :
 		{
 			/* data->image->valid = 0; */
 		}
-		if (data->template)
+		if (data->template_image)
 		{
 
 		}
@@ -398,7 +398,7 @@ No special criteria.
 ==============================================================================*/
 
 static int Image_cache_image_correlation(struct Image_cache *image,
-	struct Image_cache *template, int dimension, int *output_sizes, int *template_sizes)
+	struct Image_cache *template_image, int dimension, int *output_sizes, int *template_sizes)
 /*******************************************************************************
 LAST MODIFIED : 2 July 2004
 
@@ -415,11 +415,11 @@ Comput images correlation/weighted averaging on the image cache.
 	FE_value *mean, *tval;
 	ENTER(Image_cache_image_correlation);
 	if (image && (dimension == image->dimension) && (image->dimension > 0)
-		&& (image->depth > 0) && (image->depth == template->depth))
+		&& (image->depth > 0) && (image->depth == template_image->depth))
 	{
 	        return_code = 1;
 		data_size = 1;
-		weights_size = template->depth;
+		weights_size = template_image->depth;
 		storage_size = image->depth;
  		for (i = 0 ; i < dimension ; i++)
 		{
@@ -428,7 +428,7 @@ Comput images correlation/weighted averaging on the image cache.
 			data_size *= image->sizes[i];
 		}
 		if (ALLOCATE(storage, char, storage_size * sizeof(FE_value))
-		         && ALLOCATE(tval, FE_value, template->depth)
+		         && ALLOCATE(tval, FE_value, template_image->depth)
 			 && ALLOCATE(xout, int, dimension)
 			 && ALLOCATE(xin, int, dimension)
 			 && ALLOCATE(offsets, int, weights_size)
@@ -436,7 +436,7 @@ Comput images correlation/weighted averaging on the image cache.
 		{
                         return_code = 1;
 			data_index = (FE_value *)image->data;
-			weights_index = (FE_value *)template->data;
+			weights_index = (FE_value *)template_image->data;
 			result_index = (FE_value *)storage;
 			for (i = 0; i < storage_size; i++)
 			{
@@ -444,21 +444,21 @@ Comput images correlation/weighted averaging on the image cache.
 				result_index++;
 			}
 			result_index = (FE_value *)storage;
-			for (k = 0; k < template->depth; k++)
+			for (k = 0; k < template_image->depth; k++)
 			{
 			        tval[k] = 0.0;
 			}
-			for (j = 0; j < weights_size / template->depth; j++)
+			for (j = 0; j < weights_size / template_image->depth; j++)
 			{
-			        for (k = 0; k < template->depth; k++)
+			        for (k = 0; k < template_image->depth; k++)
 				{
 				        tval[k] += *(weights_index + k);
 				}
-				weights_index += template->depth;
+				weights_index += template_image->depth;
 				offsets[j] = 0.0;
 			}
 
-			for(j = 0; j < weights_size / template->depth; j++)
+			for(j = 0; j < weights_size / template_image->depth; j++)
 			{
 			        weight_step = 1;
 				image_step = 1;
@@ -472,7 +472,7 @@ Comput images correlation/weighted averaging on the image cache.
 			}
                         for (i = 0; i < storage_size / image->depth; i++)
 			{
-			        weights_index = (FE_value *)template->data;
+			        weights_index = (FE_value *)template_image->data;
 			        cur_pt = i;
 			        for (m = 0; m < dimension; m++)
 				{
@@ -489,7 +489,7 @@ Comput images correlation/weighted averaging on the image cache.
 				{
 				        mean[k] = 0.0;
 				}
-				for (j = 0; j < weights_size / template->depth; j ++)
+				for (j = 0; j < weights_size / template_image->depth; j ++)
 				{
 				        for (k = 0; k < image->depth; k++)
 					{
@@ -506,7 +506,7 @@ Comput images correlation/weighted averaging on the image cache.
 						        mean[k] += *(data_index + offsets[j] + cur_pt * image->depth + k) * *(weights_index + k);
 						}
 					}
-					weights_index += template->depth;
+					weights_index += template_image->depth;
 				}
 
 				for (k = 0; k < image->depth; k++)
@@ -578,12 +578,12 @@ Evaluate the fields cache at the node.
 				return_code = Image_cache_update_from_fields(data->image, field->source_fields[0],
 				         field->source_fields[1], data->element_dimension, data->region,
 				        data->graphics_buffer_package);
-				return_code = Image_cache_update_from_fields(data->template, field->source_fields[2],
+				return_code = Image_cache_update_from_fields(data->template_image, field->source_fields[2],
 				         field->source_fields[1], data->element_dimension, data->region,
 				        data->graphics_buffer_package);
 				/* 2. Perform image processing operation */
 				return_code = Image_cache_image_correlation(data->image,
-					data->template, data->dimension,
+					data->template_image, data->dimension,
 					data->output_sizes, data->template_sizes);
 			}
 			/* 3. Evaluate texture coordinates and copy image to field */
@@ -634,12 +634,12 @@ Evaluate the fields cache at the node.
 				return_code = Image_cache_update_from_fields(data->image, field->source_fields[0],
 				        field->source_fields[1], data->element_dimension, data->region,
 				        data->graphics_buffer_package);
-				return_code = Image_cache_update_from_fields(data->template, field->source_fields[2],
+				return_code = Image_cache_update_from_fields(data->template_image, field->source_fields[2],
 				        field->source_fields[1], data->element_dimension, data->region,
 				        data->graphics_buffer_package);
 				/* 2. Perform image processing operation */
 				return_code = Image_cache_image_correlation(data->image,
-				        data->template, data->dimension,
+				        data->template_image, data->dimension,
 				        data->output_sizes, data->template_sizes);
 			}
 			/* 3. Evaluate texture coordinates and copy image to field */
@@ -714,6 +714,49 @@ DESCRIPTION :
 Not implemented yet.
 ==============================================================================*/
 
+int Computed_field_image_correlation_get_native_resolution(struct Computed_field *field,
+        int *dimension, int **sizes, FE_value **minimums, FE_value **maximums,
+	struct Computed_field **texture_coordinate_field)
+/*******************************************************************************
+LAST MODIFIED : 4 February 2005
+
+DESCRIPTION :
+Gets the <dimension>, <sizes>, <minimums>, <maximums> and <texture_coordinate_field> from
+the <field>. These parameters will be used in image processing.
+
+==============================================================================*/
+{       
+        int return_code;
+	struct Computed_field_image_correlation_type_specific_data *data;
+	
+	ENTER(Computed_field_image_correlation_get_native_resolution);
+	if (field && (data =
+		(struct Computed_field_image_correlation_type_specific_data *)
+		field->type_specific_data) && data->image)
+	{
+		Image_cache_get_native_resolution(data->image,
+			dimension, sizes, minimums, maximums);
+		/* Texture_coordinate_field from source fields */
+		if (*texture_coordinate_field)
+		{
+			/* DEACCESS(Computed_field)(&(*texture_coordinate_field));
+			*texture_coordinate_field = ACCESS(Computed_field)(field->source_fields[1]); */
+		}
+		else
+		{
+		        *texture_coordinate_field = ACCESS(Computed_field)(field->source_fields[1]);
+		}	 
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Computed_field_median_filter_get_native_resolution.  Missing field");
+		return_code=0;
+	}
+
+	return (return_code);
+} /* Computed_field_image_correlation_get_native_resolution */
+
 static int list_Computed_field_image_correlation(
 	struct Computed_field *field)
 /*******************************************************************************
@@ -735,7 +778,7 @@ DESCRIPTION :
 		display_message(INFORMATION_MESSAGE,
 			"    texture coordinate field : %s\n",field->source_fields[1]->name);
 		display_message(INFORMATION_MESSAGE,
-			"    template field : %s\n", field->source_fields[2]->name);
+			"    template_image field : %s\n", field->source_fields[2]->name);
 		display_message(INFORMATION_MESSAGE,
 			"    dimension : %d\n", data->dimension);
 		return_code = 1;
@@ -859,14 +902,14 @@ If function fails, field is guaranteed to be unchanged from its original state,
 although its cache may be lost.
 ==============================================================================*/
 {
-	int i, depth, template_depth, number_of_source_fields, return_code;
+	int i, depth, template_image_depth, number_of_source_fields, return_code;
 	struct Computed_field **source_fields;
 	struct Computed_field_image_correlation_type_specific_data *data;
 
 	ENTER(Computed_field_set_type_image_correlation);
 	if (field && source_field && texture_coordinate_field && template_field
 		&& (depth = source_field->number_of_components) &&
-		(template_depth = template_field->number_of_components) &&
+		(template_image_depth = template_field->number_of_components) &&
 		(dimension <= texture_coordinate_field->number_of_components) &&
 		region && graphics_buffer_package)
 	{
@@ -883,10 +926,10 @@ although its cache may be lost.
 			Image_cache_update_dimension(
 			data->image, dimension, depth, input_sizes, minimums, maximums) &&
 			Image_cache_update_data_storage(data->image)&&
-			(data->template = ACCESS(Image_cache)(CREATE(Image_cache)())) &&
+			(data->template_image = ACCESS(Image_cache)(CREATE(Image_cache)())) &&
 			Image_cache_update_dimension(
-			data->template, dimension, template_depth, template_sizes, minimums, maximums) &&
-			Image_cache_update_data_storage(data->template))
+			data->template_image, dimension, template_image_depth, template_sizes, minimums, maximums) &&
+			Image_cache_update_data_storage(data->template_image))
 		{
 			/* 2. free current type-specific data */
 			Computed_field_clear_type(field);
@@ -929,9 +972,9 @@ although its cache may be lost.
 				{
 					DESTROY(Image_cache)(&data->image);
 				}
-				if (data->template)
+				if (data->template_image)
 				{
-					DESTROY(Image_cache)(&data->template);
+					DESTROY(Image_cache)(&data->template_image);
 				}
 				DEALLOCATE(data);
 			}
@@ -970,7 +1013,7 @@ parameters defining it are returned.
 	ENTER(Computed_field_get_type_image_correlation);
 	if (field && (field->type_string==computed_field_image_correlation_type_string)
 		&& (data = (struct Computed_field_image_correlation_type_specific_data *)
-		field->type_specific_data) && data->image && data->template)
+		field->type_specific_data) && data->image && data->template_image)
 	{
 		*dimension = data->dimension;
 
@@ -1158,12 +1201,12 @@ already) and allows its contents to be modified.
 					DESTROY(Option_table)(&option_table);
 				}
 			}
-			if (return_code && (dimension < 1))
+			/*if (return_code && (dimension < 1))
 			{
 				display_message(ERROR_MESSAGE,
 					"define_Computed_field_type_scale.  Must specify a dimension first.");
 				return_code = 0;
-			}
+			}*/
 			/* parse the rest of the table */
 			if (return_code&&state->current_token)
 			{
@@ -1199,6 +1242,11 @@ already) and allows its contents to be modified.
 					&set_texture_coordinate_field_data);
 				return_code=Option_table_multi_parse(option_table,state);
 				DESTROY(Option_table)(&option_table);
+			}
+			if (dimension < 1)
+			{
+			        return_code = Computed_field_get_native_resolution(source_field,
+				     &dimension,&input_sizes,&minimums,&maximums,&texture_coordinate_field);
 			}
 			/* no errors,not asking for help */
 			if (return_code)

@@ -433,3 +433,58 @@ int Image_cache_evaluate_field(struct Image_cache *image, struct Computed_field 
 	LEAVE;
 	return (return_code);
 }/* Image_cache_evaluate_field */
+
+int Image_cache_get_native_resolution(struct Image_cache *image,
+		int *dimension, int **sizes, FE_value **minimums, FE_value **maximums)
+/*************************************************************************************
+    LAST MODIFIED: 04 February 2005
+    DESCRIPTION: Gets the resolution of the input image.
+
+=====================================================================================*/
+{
+        int i, return_code;
+	ENTER(Image_cache_get_native_resolution);
+	if (image)
+	{
+	        return_code = 1;
+		*dimension = image->dimension;
+		if ((*sizes) && (*minimums) && (*maximums))
+		{
+		        if (!(REALLOCATE(*sizes, *sizes, int, image->dimension) &&
+			        REALLOCATE(*minimums, *minimums, FE_value, image->dimension) &&
+				REALLOCATE(*maximums, *maximums, FE_value, image->dimension)))
+		        {
+				return_code = 0;
+			}
+		}
+		else
+		{
+			if (!(ALLOCATE(*sizes, int, image->dimension) &&
+				ALLOCATE(*minimums, FE_value, image->dimension) &&
+				ALLOCATE(*maximums, FE_value, image->dimension)))
+			{
+				return_code = 0;
+			}
+		}
+		if (return_code)
+		{
+			for (i = 0; i < image->dimension; i++)
+			{
+				(*sizes)[i] = image->sizes[i];
+				(*minimums)[i]=image->minimums[i];
+				(*maximums)[i]=image->maximums[i];
+			}
+		}
+	}
+	else
+	{
+	        display_message(ERROR_MESSAGE,
+			"Image_cache_get_native_resolution.  "
+			"Missing image.");
+		return_code = 0;
+	}
+	LEAVE;
+	return (return_code);
+}/* Image_cache_get_native_resolution */
+
+

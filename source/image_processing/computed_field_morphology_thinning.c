@@ -39,7 +39,7 @@ A container for objects required to define fields in this module.
 
 struct Computed_field_morphology_thinning_type_specific_data
 {
-	int iteration_times;
+	int number_of_iterations;
 
 	float cached_time;
 	int element_dimension;
@@ -194,7 +194,7 @@ Copy the type specific data used by this type.
 		if (ALLOCATE(destination,
 			struct Computed_field_morphology_thinning_type_specific_data, 1))
 		{
-			destination->iteration_times = source->iteration_times;
+			destination->number_of_iterations = source->number_of_iterations;
 			destination->cached_time = source->cached_time;
 			destination->region = ACCESS(Cmiss_region)(source->region);
 			destination->element_dimension = source->element_dimension;
@@ -291,7 +291,7 @@ Compare the type specific data
 		(struct Computed_field_morphology_thinning_type_specific_data *)
 		other_computed_field->type_specific_data))
 	{
-		if ((data->iteration_times == other_data->iteration_times) &&
+		if ((data->number_of_iterations == other_data->number_of_iterations) &&
 			data->image && other_data->image &&
 			(data->image->dimension == other_data->image->dimension) &&
 			(data->image->depth == other_data->image->depth))
@@ -348,6 +348,376 @@ LAST MODIFIED : 10 December 2003
 DESCRIPTION :
 No special criteria.
 ==============================================================================*/
+
+int Evaluate_kernel(FE_value *data_index, FE_value *result_index, FE_value *kernel,
+                char *storage, int *offsets,
+                int storage_size, int kernel_size, int k)
+/* ***********************************************************************************
+        LAST MODIFIED: 7 May 2004
+	DESCRIPTION: Evaluate the neighbor pixels
+======================================================================================*/
+{
+        int j, return_code;
+	ENTER(Evaluate_kernel);
+        for (j = 0 ; j < kernel_size ; j++)
+	{
+		if (result_index + offsets[j] < ((FE_value *)storage))
+		{
+			/*wrapping around */
+			kernel[j] = *(data_index + offsets[j] + storage_size +k);
+		}
+		else if (result_index + offsets[j] >= ((FE_value *)storage) + storage_size)
+		{
+                        /*wrapping back */
+			kernel[j] = *(data_index + offsets[j]-storage_size + k);
+		}
+		else
+		{
+			/*standard */
+			kernel[j] = *(data_index + offsets[j] + k);
+
+		}
+	}
+	LEAVE;
+	return (return_code);
+}/* Evaluate_kernel */
+
+static int Image_cache_binary2d_thinning_filter(struct Image_cache *image, int iteration_times)
+/*******************************************************************************
+LAST MODIFIED : 8 January 2004
+
+DESCRIPTION :
+Perform a binary_thinning extraction operation on the image cache.
+==============================================================================*/
+{
+	char *storage;
+	FE_value *data_index, *result_index, *kernel;
+	int image_step, kernel_step;
+
+	int filter_size, i, j, k, n, m, *offsets, return_code;
+	int kernel_size, radius, storage_size;
+
+	ENTER(Image_cache_binary2d_thinning_filter);
+	if (image && (image->dimension > 0) && (image->depth > 0))
+	{
+		return_code = 1;
+		filter_size = 3;
+		radius = 1;
+		/* We only need the one kernel as it is just a reordering for the other dimensions */
+		kernel_size = 1;
+		for (i = 0 ; i < image->dimension ; i++)
+		{
+			kernel_size *= filter_size;
+		}
+		/* Allocate a new storage block for our data */
+		storage_size = image->depth;
+		for (i = 0 ; i < image->dimension ; i++)
+		{
+			storage_size *= image->sizes[i];
+		}
+		if (ALLOCATE(kernel, FE_value, kernel_size) &&
+			ALLOCATE(offsets, int, kernel_size) &&
+			ALLOCATE(storage, char, storage_size * sizeof(FE_value)))
+		{
+			result_index = (FE_value *)storage;
+			for (i = 0 ; i < storage_size ; i++)
+			{
+				*result_index = 0.0;
+				result_index++;
+			}
+			for (j = 0 ; j < kernel_size ; j++)
+			{
+				offsets[j] = 0;
+			}
+			for(j = 0; j < kernel_size; j++)
+			{
+			        kernel_step = 1;
+				image_step = 1;
+				for(m = 0; m < image->dimension; m++)
+				{
+				        k = ((int)((FE_value)j/((FE_value)kernel_step))) % filter_size;
+					offsets[j] += (k - radius) * image_step;
+					kernel_step *= filter_size;
+					image_step *= image->sizes[m];
+				}
+			}
+			data_index = (FE_value *)image->data;
+			result_index = (FE_value *)storage;
+			for (n = 0; n < iteration_times; n++)
+			{
+			        for (i = 0 ; return_code && i < storage_size / image->depth ; i++)
+				{
+				        for (k = 0 ; k < image->depth ; k++)
+					{
+				                Evaluate_kernel(data_index, result_index, kernel, storage, offsets,
+                                                        storage_size, kernel_size, k);
+						if (kernel[0] == 1.0 && kernel[1] == 1.0 && kernel[2] == 1.0 &&
+					               kernel[4] == 0.0 && kernel[6] == 0.0 &&
+						       kernel[7] == 0.0 && kernel[8] == 0.0)
+					        {
+						        result_index[k] = 0.0;
+						}
+						else
+						{
+						        result_index[k] = 1.0;
+						}
+					}
+					data_index += image->depth;
+					result_index += image->depth;
+				}
+				for (i = storage_size - 1 ; i >= 0; i--)
+				{
+				        data_index--;
+					result_index--;
+					if (*result_index == 0.0)
+					{
+					        *data_index = 1.0;
+					}
+				}
+				for (i = 0 ; return_code && i < storage_size / image->depth ; i++)
+				{
+					for (k = 0 ; k < image->depth ; k++)
+					{
+                                	        Evaluate_kernel(data_index, result_index, kernel, storage, offsets,
+                                                      storage_size, kernel_size, k);
+						if (kernel[1] == 1.0 && kernel[2] == 1.0 && kernel[5] == 1.0 &&
+					                 kernel[3] == 0.0 && kernel[4] == 0.0 &&
+						         kernel[6] == 0.0 && kernel[7] == 0.0)
+						{
+					        	result_index[k] = 0.0;
+						}
+						else
+						{
+					        	result_index[k] = 1.0;
+						}
+
+					}
+					data_index += image->depth;
+					result_index += image->depth;
+				}
+				for (i = storage_size - 1 ; i >= 0; i--)
+				{
+				        data_index--;
+					result_index--;
+					if (*result_index == 0.0)
+					{
+					        *data_index = 1.0;
+					}
+				}
+				for (i = 0 ; return_code && i < storage_size / image->depth ; i++)
+				{
+					for (k = 0 ; k < image->depth ; k++)
+					{
+                                        	Evaluate_kernel(data_index, result_index, kernel, storage, offsets,
+                                                       storage_size, kernel_size, k);
+						if (kernel[2] == 1.0 && kernel[5] == 1.0 && kernel[8] == 1.0 &&
+					                kernel[0] == 0.0 && kernel[3] == 0.0 &&
+						        kernel[4] == 0.0 && kernel[6] == 0.0)
+						{
+					        	result_index[k] = 0.0;
+						}
+						else
+						{
+					        	result_index[k] = 1.0;
+						}
+
+					}
+					data_index += image->depth;
+					result_index += image->depth;
+				}
+				for (i = storage_size - 1 ; i >= 0; i--)
+				{
+			        	data_index--;
+					result_index--;
+					if (*result_index == 0.0)
+					{
+				        	*data_index = 1.0;
+					}
+				}
+				for (i = 0 ; return_code && i < storage_size / image->depth ; i++)
+				{
+					for (k = 0 ; k < image->depth ; k++)
+					{
+                                        	Evaluate_kernel(data_index, result_index, kernel, storage, offsets,
+                                                	storage_size, kernel_size, k);
+						if (kernel[5] == 1.0 && kernel[7] == 1.0 && kernel[8] == 1.0 &&
+					        	kernel[0] == 0.0 && kernel[1] == 0.0 &&
+							kernel[3] == 0.0 && kernel[4] == 0.0)
+						{
+					        	result_index[k] = 0.0;
+						}
+						else
+						{
+					        	result_index[k] = 1.0;
+						}
+					}
+					data_index += image->depth;
+					result_index += image->depth;
+				}
+				for (i = storage_size - 1 ; i >= 0; i--)
+				{
+			        	data_index--;
+					result_index--;
+					if (*result_index == 0.0)
+					{
+				        	*data_index = 1.0;
+					}
+				}
+				for (i = 0 ; return_code && i < storage_size / image->depth ; i++)
+				{
+					for (k = 0 ; k < image->depth ; k++)
+					{
+                                        	Evaluate_kernel(data_index, result_index, kernel, storage, offsets,
+                                                	 storage_size, kernel_size, k);
+						if (kernel[6] == 1.0 && kernel[7] == 1.0 && kernel[8] == 1.0 &&
+					        	kernel[0] == 0.0 && kernel[1] == 0.0 &&
+							kernel[2] == 0.0 && kernel[4] == 0.0)
+						{
+					        	result_index[k] = 0.0;
+						}
+						else
+						{
+					        	result_index[k] = 1.0;
+						}
+					}
+					data_index += image->depth;
+					result_index += image->depth;
+				}
+				for (i = storage_size - 1 ; i >= 0; i--)
+				{
+			        	data_index--;
+					result_index--;
+					if (*result_index == 0.0)
+					{
+				        	*data_index = 1.0;
+					}
+				}
+				for (i = 0 ; return_code && i < storage_size / image->depth ; i++)
+				{
+					for (k = 0 ; k < image->depth ; k++)
+					{
+                                        	Evaluate_kernel(data_index, result_index, kernel, storage, offsets,
+                                                	storage_size, kernel_size, k);
+						if (kernel[3] == 1.0 && kernel[6] == 1.0 && kernel[7] == 1.0 &&
+					        	kernel[1] == 0.0 && kernel[2] == 0.0 &&
+							kernel[4] == 0.0 && kernel[5] == 0.0)
+						{
+					        	result_index[k] = 0.0;
+						}
+						else
+						{
+					        	result_index[k] = 1.0;
+						}
+					}
+					data_index += image->depth;
+					result_index += image->depth;
+				}
+				for (i = storage_size - 1 ; i >= 0; i--)
+				{
+			        	data_index--;
+					result_index--;
+					if (*result_index == 0.0)
+					{
+				        	*data_index = 1.0;
+					}
+				}
+				for (i = 0 ; return_code && i < storage_size / image->depth ; i++)
+				{
+					for (k = 0 ; k < image->depth ; k++)
+					{
+                                        	Evaluate_kernel(data_index, result_index, kernel, storage, offsets,
+                                                	storage_size, kernel_size, k);
+						if (kernel[0] == 1.0 && kernel[3] == 1.0 && kernel[6] == 1.0 &&
+					        	kernel[2] == 0.0 && kernel[4] == 0.0 &&
+							kernel[5] == 0.0 && kernel[8] == 0.0)
+						{
+					        	result_index[k] = 0.0;
+						}
+						else
+						{
+					        	result_index[k] = 1.0;
+						}
+					}
+					data_index += image->depth;
+					result_index += image->depth;
+				}
+				for (i = storage_size - 1 ; i >= 0; i--)
+				{
+			        	data_index--;
+					result_index--;
+					if (*result_index == 0.0)
+					{
+				        	*data_index = 1.0;
+					}
+				}
+				for (i = 0 ; return_code && i < storage_size / image->depth ; i++)
+				{
+					for (k = 0 ; k < image->depth ; k++)
+					{
+                                        	Evaluate_kernel(data_index, result_index, kernel, storage, offsets,
+                                                	storage_size, kernel_size, k);
+						if (kernel[0] == 1.0 && kernel[1] == 1.0 && kernel[3] == 1.0 &&
+					        	kernel[4] == 0.0 && kernel[5] == 0.0 &&
+							kernel[7] == 0.0 && kernel[8] == 0.0)
+						{
+					        	result_index[k] = 0.0;
+						}
+						else
+						{
+					        	result_index[k] = 1.0;
+						}
+					}
+					data_index += image->depth;
+					result_index += image->depth;
+				}
+				for (i = storage_size - 1 ; i >= 0; i--)
+				{
+			        	data_index--;
+					result_index--;
+					if (*result_index == 0.0)
+					{
+				        	*data_index = 1.0;
+					}
+				}
+			}
+			for (i = 0; i < storage_size; i++)
+			{
+			        *result_index = *data_index;
+				result_index++;
+				data_index++;
+			}
+			if (return_code)
+			{
+				DEALLOCATE(image->data);
+				image->data = storage;
+				image->valid = 1;
+			}
+			else
+			{
+				DEALLOCATE(storage);
+			}
+			DEALLOCATE(kernel);
+			DEALLOCATE(offsets);
+
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,
+				"Image_cache_binary2d_thinning_filter.  Not enough memory");
+			return_code = 0;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE, "Image_cache_binary2d_thinning_filter.  "
+			"Invalid arguments.");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Image_cache_binary2d_thinning */
+
 static int morphology_open(FE_value *X_index,FE_value *E_index, FE_value *E1_index, int *sizes, int direction)
 /*************************************************************************************************************
 LAST MODIFIED: 28 October 2004
@@ -737,12 +1107,12 @@ DESCRIPTION: residual = X\(XoB)
 	
 }/*residual*/
 
-static int Image_cache_morphology_thinning(struct Image_cache *image, int iteration_times)
+static int Image_cache_binary3d_thinning_filter(struct Image_cache *image, int number_of_iterations)
 /*******************************************************************************
 LAST MOErFIED : 27 October 2004
 
 DESCRIPTION :
-Perform a morphology thinning operation on the image cache in the basis of S = X\((X-B)+B).
+Perform a morphology thinning operation on the 3d image cache in the basis of S = X\((X-B)+B).
 ==============================================================================*/
 {
 	char *storage;
@@ -750,9 +1120,8 @@ Perform a morphology thinning operation on the image cache in the basis of S = X
 	
 	int i, k, return_code, storage_size;
 	int n, stop, x, y, z, current, dir;
-	/* int n1,n2;*/
 
-	ENTER(Image_cache_morphology_thinning);
+	ENTER(Image_cache_binary3d_thinning_filter);
 	if (image && (image->dimension > 0) && (image->depth > 0))
 	{
 		return_code = 1;
@@ -787,7 +1156,7 @@ Perform a morphology thinning operation on the image cache in the basis of S = X
 				data_index += image->depth;
 			}
 			result_index = (FE_value *)storage;
-			for (n = 0; n < iteration_times; n++)
+			for (n = 0; n < number_of_iterations; n++)
 			{
 			        
 				stop = 0.0;
@@ -1206,20 +1575,51 @@ Perform a morphology thinning operation on the image cache in the basis of S = X
 		else
 		{
 			display_message(ERROR_MESSAGE,
-				"Image_cache_thinning_detection.  Not enough memory");
+				"Image_cache_binary3d_thinning_filter.  Not enough memory");
 			return_code = 0;
 		}
 	}
 	else
 	{
-		display_message(ERROR_MESSAGE, "Image_cache_thinning_detection.  "
+		display_message(ERROR_MESSAGE, "Image_cache_binary3d_thinning_filter.  "
 			"Invalid arguments.");
 		return_code=0;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* Image_cache_morphology_thinning */
+} /* Image_cache_binary3d_thinning_filter */
+
+static int Image_cache_morphology_thinning(struct Image_cache *image, int number_of_iterations)
+/*******************************************************************************
+LAST MOErFIED : 27 October 2004
+
+DESCRIPTION :
+Perform a morphology thinning operation on the image cache.
+==============================================================================*/
+{
+       int return_code;
+       ENTER(Image_cache_morphology_thinning);
+       if (image && (image->dimension == 2 || image->dimension == 3))
+       {
+                if (image->dimension == 2)
+		{
+		        return_code = Image_cache_binary2d_thinning_filter(image, number_of_iterations);
+		}
+		else
+		{
+		        return_code = Image_cache_binary3d_thinning_filter(image, number_of_iterations);
+		}
+       }
+       else
+       {
+                display_message(ERROR_MESSAGE, "Image_cache_morphology_thinning.  "
+			"Invalid arguments.");
+		return_code=0;
+       }
+       LEAVE;
+       return (return_code);
+}/* Image_cache_morphology_thinning */
 
 static int Computed_field_morphology_thinning_evaluate_cache_at_node(
 	struct Computed_field *field, struct FE_node *node, FE_value time)
@@ -1245,7 +1645,7 @@ Evaluate the fields cache at the node.
 				field->source_fields[1], data->element_dimension, data->region,
 				data->graphics_buffer_package);
 			/* 2. Perform image processing operation */
-			return_code = Image_cache_morphology_thinning(data->image, data->iteration_times);
+			return_code = Image_cache_morphology_thinning(data->image, data->number_of_iterations);
 		}
 		/* 3. Evaluate texture coordinates and copy image to field */
 		Computed_field_evaluate_cache_at_node(field->source_fields[1],
@@ -1293,7 +1693,7 @@ Evaluate the fields cache at the node.
 				field->source_fields[1], data->element_dimension, data->region,
 				data->graphics_buffer_package);
 			/* 2. Perform image processing operation */
-			return_code = Image_cache_morphology_thinning(data->image, data->iteration_times);
+			return_code = Image_cache_morphology_thinning(data->image, data->number_of_iterations);
 		}
 		/* 3. Evaluate texture coordinates and copy image to field */
 		Computed_field_evaluate_cache_in_element(field->source_fields[1],
@@ -1367,6 +1767,49 @@ DESCRIPTION :
 Not implemented yet.
 ==============================================================================*/
 
+int Computed_field_morphology_thinning_get_native_resolution(struct Computed_field *field,
+        int *dimension, int **sizes, FE_value **minimums, FE_value **maximums,
+	struct Computed_field **texture_coordinate_field)
+/*******************************************************************************
+LAST MODIFIED : 4 February 2005
+
+DESCRIPTION :
+Gets the <dimension>, <sizes>, <minimums>, <maximums> and <texture_coordinate_field> from
+the <field>. These parameters will be used in image processing.
+
+==============================================================================*/
+{       
+        int return_code;
+	struct Computed_field_morphology_thinning_type_specific_data *data;
+	
+	ENTER(Computed_field_morphology_thinning_get_native_resolution);
+	if (field && (data =
+		(struct Computed_field_morphology_thinning_type_specific_data *)
+		field->type_specific_data) && data->image)
+	{
+		Image_cache_get_native_resolution(data->image,
+			dimension, sizes, minimums, maximums);
+		/* Texture_coordinate_field from source fields */
+		if (*texture_coordinate_field)
+		{
+			/* DEACCESS(Computed_field)(&(*texture_coordinate_field));
+			*texture_coordinate_field = ACCESS(Computed_field)(field->source_fields[1]); */
+		}
+		else
+		{
+		        *texture_coordinate_field = ACCESS(Computed_field)(field->source_fields[1]);
+		}	 
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Computed_field_morphology_thinning_get_native_resolution.  Missing field");
+		return_code=0;
+	}
+
+	return (return_code);
+} /* Computed_field_morphology_thinning_get_native_resolution */
+
 static int list_Computed_field_morphology_thinning(
 	struct Computed_field *field)
 /*******************************************************************************
@@ -1388,7 +1831,7 @@ DESCRIPTION :
 		display_message(INFORMATION_MESSAGE,
 			"    texture coordinate field : %s\n",field->source_fields[1]->name);
 		display_message(INFORMATION_MESSAGE,
-			"    filter iteration_times : %d\n", data->iteration_times);
+			"    filter number_of_iterations : %d\n", data->number_of_iterations);
 		return_code = 1;
 	}
 	else
@@ -1441,7 +1884,7 @@ Returns allocated command string for reproducing field. Includes type.
 		sprintf(temp_string, " dimension %d", data->image->dimension);
 		append_string(&command_string, temp_string, &error);
 
-		sprintf(temp_string, " iteration_times %d", data->iteration_times);
+		sprintf(temp_string, " number_of_iterations %d", data->number_of_iterations);
 		append_string(&command_string, temp_string, &error);
 
 		sprintf(temp_string, " sizes %d %d",
@@ -1478,7 +1921,7 @@ Works out whether time influences the field.
 int Computed_field_set_type_morphology_thinning(struct Computed_field *field,
 	struct Computed_field *source_field,
 	struct Computed_field *texture_coordinate_field,
-	int iteration_times,
+	int number_of_iterations,
 	int dimension, int *sizes, FE_value *minimums, FE_value *maximums,
 	int element_dimension, struct MANAGER(Computed_field) *computed_field_manager,
 	struct Cmiss_region *region, struct Graphics_buffer_package *graphics_buffer_package)
@@ -1487,7 +1930,7 @@ LAST MODIFIED : 17 December 2003
 
 DESCRIPTION :
 Converts <field> to type COMPUTED_FIELD_morphology_thinning with the supplied
-fields, <source_field> and <texture_coordinate_field>.  The <iteration_times> specifies
+fields, <source_field> and <texture_coordinate_field>.  The <number_of_iterations> specifies
 half the width and height of the filter window.  The <dimension> is the
 size of the <sizes>, <minimums> and <maximums> vectors and should be less than
 or equal to the number of components in the <texture_coordinate_field>.
@@ -1501,7 +1944,7 @@ although its cache may be lost.
 
 	ENTER(Computed_field_set_type_morphology_thinning);
 	if (field && source_field && texture_coordinate_field &&
-		(iteration_times > 0) && (depth = source_field->number_of_components) &&
+		(number_of_iterations > 0) && (depth = source_field->number_of_components) &&
 		(dimension <= texture_coordinate_field->number_of_components) &&
 		region && graphics_buffer_package)
 	{
@@ -1525,7 +1968,7 @@ although its cache may be lost.
 			source_fields[1]=ACCESS(Computed_field)(texture_coordinate_field);
 			field->source_fields=source_fields;
 			field->number_of_source_fields=number_of_source_fields;
-			data->iteration_times = iteration_times;
+			data->number_of_iterations = number_of_iterations;
 			data->element_dimension = element_dimension;
 			data->region = ACCESS(Cmiss_region)(region);
 			data->graphics_buffer_package = graphics_buffer_package;
@@ -1568,7 +2011,7 @@ although its cache may be lost.
 int Computed_field_get_type_morphology_thinning(struct Computed_field *field,
 	struct Computed_field **source_field,
 	struct Computed_field **texture_coordinate_field,
-	int *iteration_times, int *dimension, int **sizes, FE_value **minimums,
+	int *number_of_iterations, int *dimension, int **sizes, FE_value **minimums,
 	FE_value **maximums, int *element_dimension)
 /*******************************************************************************
 LAST MODIFIED : 17 December 2003
@@ -1593,7 +2036,7 @@ parameters defining it are returned.
 		{
 			*source_field = field->source_fields[0];
 			*texture_coordinate_field = field->source_fields[1];
-			*iteration_times = data->iteration_times;
+			*number_of_iterations = data->number_of_iterations;
 			for (i = 0 ; i < *dimension ; i++)
 			{
 				(*sizes)[i] = data->image->sizes[i];
@@ -1633,7 +2076,7 @@ already) and allows its contents to be modified.
 {
 	char *current_token;
 	FE_value *minimums, *maximums;
-	int dimension, element_dimension, iteration_times, return_code, *sizes;
+	int dimension, element_dimension, number_of_iterations, return_code, *sizes;
 	struct Computed_field *field, *source_field, *texture_coordinate_field;
 	struct Computed_field_morphology_thinning_package
 		*computed_field_morphology_thinning_package;
@@ -1655,7 +2098,7 @@ already) and allows its contents to be modified.
 		minimums = (FE_value *)NULL;
 		maximums = (FE_value *)NULL;
 		element_dimension = 0;
-		iteration_times = 1;
+		number_of_iterations = 1;
 		/* field */
 		set_source_field_data.computed_field_manager =
 			computed_field_morphology_thinning_package->computed_field_manager;
@@ -1673,7 +2116,7 @@ already) and allows its contents to be modified.
 			Computed_field_get_type_string(field))
 		{
 			return_code = Computed_field_get_type_morphology_thinning(field,
-				&source_field, &texture_coordinate_field, &iteration_times,
+				&source_field, &texture_coordinate_field, &number_of_iterations,
 				&dimension, &sizes, &minimums, &maximums, &element_dimension);
 		}
 		if (return_code)
@@ -1708,9 +2151,9 @@ already) and allows its contents to be modified.
 				/* minimums */
 				Option_table_add_FE_value_vector_entry(option_table,
 					"minimums", minimums, &dimension);
-				/* iteration_times */
+				/* number_of_iterations */
 				Option_table_add_int_positive_entry(option_table,
-					"iteration_times", &iteration_times);
+					"number_of_iterations", &number_of_iterations);
 				/* sizes */
 				Option_table_add_int_vector_entry(option_table,
 					"sizes", sizes, &dimension);
@@ -1743,12 +2186,12 @@ already) and allows its contents to be modified.
 					DESTROY(Option_table)(&option_table);
 				}
 			}
-			if (return_code && (dimension < 1))
+			/*if (return_code && (dimension < 1))
 			{
 				display_message(ERROR_MESSAGE,
 					"define_Computed_field_type_scale.  Must specify a dimension first.");
 				return_code = 0;
-			}
+			}*/
 			/* parse the rest of the table */
 			if (return_code&&state->current_token)
 			{
@@ -1765,9 +2208,9 @@ already) and allows its contents to be modified.
 				/* minimums */
 				Option_table_add_FE_value_vector_entry(option_table,
 					"minimums", minimums, &dimension);
-				/* iteration_times */
+				/* number_of_iterations */
 				Option_table_add_int_positive_entry(option_table,
-					"iteration_times", &iteration_times);
+					"number_of_iterations", &number_of_iterations);
 				/* sizes */
 				Option_table_add_int_vector_entry(option_table,
 					"sizes", sizes, &dimension);
@@ -1778,11 +2221,16 @@ already) and allows its contents to be modified.
 				return_code=Option_table_multi_parse(option_table,state);
 				DESTROY(Option_table)(&option_table);
 			}
+			if (dimension < 1)
+			{
+			        return_code = Computed_field_get_native_resolution(source_field,
+				     &dimension,&sizes,&minimums,&maximums,&texture_coordinate_field);
+			}
 			/* no errors,not asking for help */
 			if (return_code)
 			{
 				return_code = Computed_field_set_type_morphology_thinning(field,
-					source_field, texture_coordinate_field, iteration_times, dimension,
+					source_field, texture_coordinate_field, number_of_iterations, dimension,
 					sizes, minimums, maximums, element_dimension,
 					computed_field_morphology_thinning_package->computed_field_manager,
 					computed_field_morphology_thinning_package->root_region,

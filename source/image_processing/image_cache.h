@@ -93,4 +93,12 @@ int Image_cache_evaluate_field(struct Image_cache *image, struct Computed_field 
     DESCRIPTION: Copy the result image to computed_field
 =================================================================================*/
 
+int Image_cache_get_native_resolution(struct Image_cache *image,
+		int *dimension, int **sizes, FE_value **minimums, FE_value **maximums);
+/*************************************************************************************
+    LAST MODIFIED: 04 February 2005
+    DESCRIPTION: Gets the resolution of the input image.
+
+=====================================================================================*/
+
 #endif /* !defined (IMAGE_CACHE_H) */
