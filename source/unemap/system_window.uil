@@ -16,8 +16,8 @@ procedure
 	open_analysis_work_area;
 	identify_system_mapping_button;
 	open_mapping_work_area;
-	identify_system_close_button;
-	close_emap;
+	identify_system_close_button;	
+	close_emap;	
 
 identifier
 !The gap between widgets
@@ -45,7 +45,7 @@ object
 		controls
 			{
 			XmForm system_menu;
-			};
+			};		
 		};
 	system_menu: XmForm 
 		{

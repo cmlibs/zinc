@@ -1068,7 +1068,7 @@ Close emap environment.
 	USE_PARAMETER(widget);
 	USE_PARAMETER(call_data);
 	if (system=(struct System_window *)system_window)
-	{
+	{		
 		if(system->time_keeper)
 		{
 			DEACCESS(Time_keeper)(&(system->time_keeper));
@@ -1158,7 +1158,7 @@ pointer to the created structure if successful and NULL if unsuccessful.
 			{"identify_system_mapping_button",
 				(XtPointer)identify_system_mapping_button},
 			{"open_mapping_work_area",(XtPointer)open_mapping_work_area},
-			{"identify_system_close_button",(XtPointer)identify_system_close_button}
+			{"identify_system_close_button",(XtPointer)identify_system_close_button},		
 		},
 		global_callback_list[]=
 		{
@@ -1579,7 +1579,7 @@ pointer to the created structure if successful and NULL if unsuccessful.
 				}
 				/*???DB.  Retrieve settings */
 				/* register the callbacks */
-				(callback_list[0]).value=(XtPointer)close_button_callback;
+				(callback_list[0]).value=(XtPointer)close_button_callback;				
 				if ((MrmSUCCESS==MrmRegisterNamesInHierarchy(system_window_hierarchy,
 					callback_list,XtNumber(callback_list)))&&(MrmSUCCESS==
 					MrmRegisterNames(global_callback_list,

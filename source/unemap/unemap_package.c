@@ -172,13 +172,10 @@ to NULL.
 {
 	int return_code;
 	struct Unemap_package *package;
-#if defined(NEW_CODE)
 	struct GROUP(FE_node) *default_torso_node_group;
-#endif /* defined(NEW_CODE) */
 	ENTER(DESTROY(Unemap_package));
-#if defined(NEW_CODE)
+
 	default_torso_node_group=(struct GROUP(FE_node) *)NULL;
-#endif /* defined(NEW_CODE) */
 	if ((package_address)&&(package= *package_address))
 	{		
 		DEACCESS(FE_time)(&(package->fe_time));
@@ -189,14 +186,10 @@ to NULL.
 		DEACCESS(FE_field)(&(package->display_start_time_field));
 		DEACCESS(FE_field)(&(package->display_end_time_field));
 		DEACCESS(FE_field)(&(package->highlight_field));
-#endif /* defined (UNEMAP_USE_NODES)*/	
-		
-#if defined(NEW_CODE)
-		/* ??JW should really do this (although EVERYTHING is cleaned up on shut down) */
-		/* don't do at the moment as unemap doesn't destroy either the rig or the*/
-		/* unemap_package and cmgui doesn't destroy the rig. (The rig contains */
+#endif /* defined (UNEMAP_USE_NODES)*/			
+		/* Note: Unemap and Cmgui don't destroy the rig (but should!). (The rig contains */
 		/* map_3d_packages which contain mapped_torso_node{element}_groups */
-		/* which contain a subset of the nodes,elements in default_torso_node_group */
+		/* which contain a subset of the nodes,elements in default_torso_node_group */					
 		if ((package->default_torso_name)&&(default_torso_node_group=
 			FIND_BY_IDENTIFIER_IN_MANAGER(GROUP(FE_node),name)
 			(package->default_torso_name,package->node_group_manager)))
@@ -209,7 +202,7 @@ to NULL.
 				package->data_manager,package->data_group_manager,
 				package->node_manager,package->node_group_manager);		
 		}
-#endif /* defined(NEW_CODE) */	
+		
 		DEALLOCATE(package->default_torso_name);
 		DEACCESS(FE_field)(&(package->read_order_field));
 		DEACCESS(FE_field)(&(package->map_fit_field));

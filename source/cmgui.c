@@ -863,7 +863,7 @@ Main program for the CMISS Graphical User Interface
 			Light_model_set_ambient(command_data.default_light_model,&ambient_colour);
 			Light_model_set_side_mode(command_data.default_light_model,
 				LIGHT_MODEL_TWO_SIDED);
-			/*???DB.  Include default as part of manager ? */
+			/*???DB.  Include default as part of manager ? */			
 			ACCESS(Light_model)(command_data.default_light_model);
 			if (!ADD_OBJECT_TO_MANAGER(Light_model)(
 				command_data.default_light_model,command_data.light_model_manager))
@@ -1998,7 +1998,7 @@ Main program for the CMISS Graphical User Interface
 				}
 #endif /* defined (CELL) */
 
-#if defined (UNEMAP)
+#if defined (UNEMAP)			
 				/*created in execute_command_unemap_open in command/cmiss.c */
 				DESTROY(Unemap_package)(&command_data.unemap_package); 
 #endif /* defined (UNEMAP) */
@@ -2122,8 +2122,7 @@ Main program for the CMISS Graphical User Interface
 
 				DESTROY(MANAGER(VT_volume_texture))(&command_data.volume_texture_manager);
 				DESTROY(MANAGER(Texture))(&command_data.texture_manager);
-				DESTROY(MANAGER(Environment_map))(&command_data.environment_map_manager);
-
+				DESTROY(MANAGER(Environment_map))(&command_data.environment_map_manager);				
 				DEACCESS(Light_model)(&(command_data.default_light_model));
 				DESTROY(MANAGER(Light_model))(&command_data.light_model_manager);
 				DEACCESS(Light)(&(command_data.default_light));

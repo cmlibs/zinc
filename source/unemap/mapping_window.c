@@ -3817,7 +3817,7 @@ and frees the memory for the mapping window.
 	USE_PARAMETER(widget);
 	USE_PARAMETER(call_data);
 	if (mapping=(struct Mapping_window *)client_data)
-	{
+	{	
 #if defined (UNEMAP_USE_3D)
 		if(mapping->scene_viewer)
 		{

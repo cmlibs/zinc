@@ -305,7 +305,7 @@ Display a unemap warning message.
 #if defined (MOTIF)
 static void exit_unemap(Widget widget,XtPointer user_data,XtPointer call_data)
 /*******************************************************************************
-LAST MODIFIED : 23 June 1999
+LAST MODIFIED : 13 March 2001
 
 DESCRIPTION :
 Exits unemap
@@ -320,15 +320,25 @@ Exits unemap
 	USE_PARAMETER(widget);
 	USE_PARAMETER(call_data);
 #if defined (NOT_ACQUISITION_ONLY)
-	if ((system_window=(struct System_window *)user_data)&&
-		(page_window=(system_window->acquisition).window))
-#else /* defined (NOT_ACQUISITION_ONLY) */
-	if (page_window=(struct Page_window *)user_data)
-#endif /* defined (NOT_ACQUISITION_ONLY) */
+	if (system_window=(struct System_window *)user_data)
 	{
+		struct User_interface *user_interface;
+
+		if(user_interface=system_window->user_interface)
+		{			
+			User_interface_end_application_loop(user_interface);
+		}
+		if(page_window=(system_window->acquisition).window)
+		{
+			destroy_Page_window(&page_window);
+		}
+	}
+#else /* defined (NOT_ACQUISITION_ONLY) */
+	if (page_window=(struct Page_window *)user_data)	
+	{		 
 		destroy_Page_window(&page_window);
 	}
-	exit(0);
+#endif /* defined (NOT_ACQUISITION_ONLY) */
 	LEAVE;
 } /* exit_unemap */
 #endif /* defined (MOTIF) */
@@ -777,9 +787,9 @@ Main program for unemap
 				ambient_colour.green=0.2;
 				ambient_colour.blue=0.2;
 				Light_model_set_ambient(default_light_model,&ambient_colour);
-				Light_model_set_side_mode(default_light_model,LIGHT_MODEL_TWO_SIDED);
+				Light_model_set_side_mode(default_light_model,LIGHT_MODEL_TWO_SIDED);		
 				/*???DB.  Include default as part of manager ? */
-				ACCESS(Light_model)(default_light_model);
+				ACCESS(Light_model)(default_light_model);		
 				if (!ADD_OBJECT_TO_MANAGER(Light_model)(
 					default_light_model,light_model_manager))
 				{
@@ -796,7 +806,7 @@ Main program for unemap
 				default_colour.green=1.0;
 				default_colour.blue=1.0;		
 				set_Light_colour(default_light,&default_colour); 				
-				set_Light_direction(default_light,default_light_direction);
+				set_Light_direction(default_light,default_light_direction);			
 				/*???DB.  Include default as part of manager ? */
 				ACCESS(Light)(default_light);
 				if (!ADD_OBJECT_TO_MANAGER(Light)(default_light,light_manager))
@@ -1009,7 +1019,7 @@ Main program for unemap
 #if defined (MOTIF)
 			create_Shell_list_item(&(system->window_shell),&user_interface);
 #endif /* defined (MOTIF) */
-#if defined (MOTIF)
+#if defined (MOTIF)		
 			XtAddCallback(system->window_shell,XmNdestroyCallback,close_emap,
 				(XtPointer)system);
 			/* manage the system window */
@@ -1134,11 +1144,9 @@ Main program for unemap
 						"Invalid memory reference occured");
 				} break;
 			}
-			/* user interface loop */
-			return_code=application_main_loop(&user_interface);
-			/*???DB.  Need better way to stop error handling because
-				application_main_loop is infinite.  Alternatively make sure that
-				application_main_loop is not infinite */
+			/* user interface loop */		
+			return_code=application_main_loop(&user_interface);			
+			
 #if defined (NOT_ACQUISITION_ONLY)
 #if defined (UNEMAP_USE_3D )
 			DESTROY(Unemap_package)(&unemap_package);	
