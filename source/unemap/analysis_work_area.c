@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : analysis_work_area.c
 
-LAST MODIFIED : 27 October 2001
+LAST MODIFIED : 1 November 2001
 
 DESCRIPTION :
 ???DB.  Have yet to tie event objective and preprocessor into the event times
@@ -420,7 +420,7 @@ DESCRIPTION :
 			}
 			map->colour_option=SHOW_COLOUR;
 			map->contours_option=HIDE_CONTOURS;
-			map->electrodes_option=SHOW_ELECTRODE_VALUES;			
+			map->electrodes_label_type=SHOW_ELECTRODE_VALUES;			
 			if (analysis->time_keeper && Time_keeper_is_playing(analysis->time_keeper))
 			{
 				map->activation_front = 0;
@@ -1234,7 +1234,7 @@ Sets the detection algorithm to interval.
 				analysis->map_type=NO_MAP_FIELD;
 				map->colour_option=HIDE_COLOUR;
 				map->contours_option=HIDE_CONTOURS;
-				map->electrodes_option=SHOW_ELECTRODE_NAMES;
+				map->electrodes_label_type=SHOW_ELECTRODE_NAMES;
 				/* clear the colour map */
 				map->activation_front= -1;
 				update_mapping_drawing_area(analysis->mapping_window,2);
@@ -1386,7 +1386,7 @@ Sets the detection algorithm to level.
 				analysis->map_type=NO_MAP_FIELD;
 				map->colour_option=HIDE_COLOUR;
 				map->contours_option=HIDE_CONTOURS;
-				map->electrodes_option=SHOW_ELECTRODE_NAMES;
+				map->electrodes_label_type=SHOW_ELECTRODE_NAMES;
 				/* clear the colour map */
 				map->activation_front= -1;
 				update_mapping_drawing_area(analysis->mapping_window,2);
@@ -1552,7 +1552,7 @@ Sets the detection algorithm to threshold.
 				analysis->map_type=NO_MAP_FIELD;
 				map->colour_option=HIDE_COLOUR;
 				map->contours_option=HIDE_CONTOURS;
-				map->electrodes_option=SHOW_ELECTRODE_NAMES;
+				map->electrodes_label_type=SHOW_ELECTRODE_NAMES;
 				/* clear the colour map */
 				map->activation_front= -1;
 				update_mapping_drawing_area(analysis->mapping_window,2);
@@ -1682,7 +1682,7 @@ Sets the objective for the detection algorithm to absolute slope.
 				analysis->map_type=NO_MAP_FIELD;
 				map->colour_option=HIDE_COLOUR;
 				map->contours_option=HIDE_CONTOURS;
-				map->electrodes_option=SHOW_ELECTRODE_NAMES;
+				map->electrodes_label_type=SHOW_ELECTRODE_NAMES;
 				/* clear the colour map */
 				map->activation_front= -1;
 				update_mapping_drawing_area(analysis->mapping_window,2);
@@ -1767,7 +1767,7 @@ Sets the objective for the detection algorithm to positive slope.
 				analysis->map_type=NO_MAP_FIELD;
 				map->colour_option=HIDE_COLOUR;
 				map->contours_option=HIDE_CONTOURS;
-				map->electrodes_option=SHOW_ELECTRODE_NAMES;
+				map->electrodes_label_type=SHOW_ELECTRODE_NAMES;
 				/* clear the colour map */
 				map->activation_front= -1;
 				update_mapping_drawing_area(analysis->mapping_window,2);
@@ -1852,7 +1852,7 @@ Sets the objective for the detection algorithm to negative slope.
 				analysis->map_type=NO_MAP_FIELD;
 				map->colour_option=HIDE_COLOUR;
 				map->contours_option=HIDE_CONTOURS;
-				map->electrodes_option=SHOW_ELECTRODE_NAMES;
+				map->electrodes_label_type=SHOW_ELECTRODE_NAMES;
 				/* clear the colour map */
 				map->activation_front= -1;
 				update_mapping_drawing_area(analysis->mapping_window,2);
@@ -1937,7 +1937,7 @@ Sets the objective for the detection algorithm to absolute value.
 				analysis->map_type=NO_MAP_FIELD;
 				map->colour_option=HIDE_COLOUR;
 				map->contours_option=HIDE_CONTOURS;
-				map->electrodes_option=SHOW_ELECTRODE_NAMES;
+				map->electrodes_label_type=SHOW_ELECTRODE_NAMES;
 				/* clear the colour map */
 				map->activation_front= -1;
 				update_mapping_drawing_area(analysis->mapping_window,2);
@@ -2022,7 +2022,7 @@ Sets the objective for the detection algorithm to positive value.
 				analysis->map_type=NO_MAP_FIELD;
 				map->colour_option=HIDE_COLOUR;
 				map->contours_option=HIDE_CONTOURS;
-				map->electrodes_option=SHOW_ELECTRODE_NAMES;
+				map->electrodes_label_type=SHOW_ELECTRODE_NAMES;
 				/* clear the colour map */
 				map->activation_front= -1;
 				update_mapping_drawing_area(analysis->mapping_window,2);
@@ -2107,7 +2107,7 @@ Sets the objective for the detection algorithm to negative value.
 				analysis->map_type=NO_MAP_FIELD;
 				map->colour_option=HIDE_COLOUR;
 				map->contours_option=HIDE_CONTOURS;
-				map->electrodes_option=SHOW_ELECTRODE_NAMES;
+				map->electrodes_label_type=SHOW_ELECTRODE_NAMES;
 				/* clear the colour map */
 				map->activation_front= -1;
 				update_mapping_drawing_area(analysis->mapping_window,2);
@@ -2380,7 +2380,7 @@ Sets up the analysis work area for analysing a set of signals.
 				map->activation_front= -1;
 				map->colour_option=HIDE_COLOUR;
 				map->contours_option=HIDE_CONTOURS;
-				map->electrodes_option=SHOW_ELECTRODE_NAMES;
+				map->electrodes_label_type=SHOW_ELECTRODE_NAMES;
 #if defined (UNEMAP_USE_3D)
 				if (map->drawing_information)
 				{
@@ -3245,7 +3245,7 @@ signals.
 						map->activation_front= -1;
 						map->colour_option=HIDE_COLOUR;
 						map->contours_option=HIDE_CONTOURS;
-						map->electrodes_option=SHOW_ELECTRODE_NAMES;
+						map->electrodes_label_type=SHOW_ELECTRODE_NAMES;
 					}
 				}
 				/* get the analysis window title */
@@ -4297,7 +4297,7 @@ analysing the signals.
 					map->activation_front= -1;
 					map->colour_option=HIDE_COLOUR;
 					map->contours_option=HIDE_CONTOURS;
-					map->electrodes_option=SHOW_ELECTRODE_NAMES;
+					map->electrodes_label_type=SHOW_ELECTRODE_NAMES;
 				}
 			}
 			if (analysis->mapping_window)
@@ -4509,7 +4509,7 @@ for analysing the signals.
 					map->activation_front= -1;
 					map->colour_option=HIDE_COLOUR;
 					map->contours_option=HIDE_CONTOURS;
-					map->electrodes_option=SHOW_ELECTRODE_NAMES;
+					map->electrodes_label_type=SHOW_ELECTRODE_NAMES;
 				}
 			}
 			if (analysis->mapping_window)
@@ -4709,7 +4709,7 @@ for analysing the signals.
 					map->activation_front= -1;
 					map->colour_option=HIDE_COLOUR;
 					map->contours_option=HIDE_CONTOURS;
-					map->electrodes_option=SHOW_ELECTRODE_NAMES;
+					map->electrodes_label_type=SHOW_ELECTRODE_NAMES;
 #if defined (UNEMAP_USE_3D)
 					if (map->drawing_information)
 					{
@@ -5007,7 +5007,7 @@ for analysing the signals.
 					map->activation_front= -1;
 					map->colour_option=HIDE_COLOUR;
 					map->contours_option=HIDE_CONTOURS;
-					map->electrodes_option=SHOW_ELECTRODE_NAMES;
+					map->electrodes_label_type=SHOW_ELECTRODE_NAMES;
 				}
 			}
 			if (analysis->mapping_window)
@@ -5224,7 +5224,7 @@ for analysing the signals.
 					map->activation_front= -1;
 					map->colour_option=HIDE_COLOUR;
 					map->contours_option=HIDE_CONTOURS;
-					map->electrodes_option=SHOW_ELECTRODE_NAMES;
+					map->electrodes_label_type=SHOW_ELECTRODE_NAMES;
 				}
 			}
 			if (analysis->mapping_window)
@@ -5611,7 +5611,7 @@ DESCRIPTION : accepts the analysis event
 			if (((SINGLE_ACTIVATION==analysis->map_type)||
 				(MULTIPLE_ACTIVATION==analysis->map_type))&&
 				(mapping=analysis->mapping_window)&&(mapping->map)&&
-				(SHOW_ELECTRODE_VALUES==mapping->map->electrodes_option))
+				(SHOW_ELECTRODE_VALUES==mapping->map->electrodes_label_type))
 			{
 				update_mapping_drawing_area(mapping,0);
 			}
@@ -6028,7 +6028,7 @@ trace_window callbacks.
 				if (((SINGLE_ACTIVATION==analysis->map_type)||
 					(MULTIPLE_ACTIVATION==analysis->map_type))&&
 					(mapping=analysis->mapping_window)&&(mapping->map)&&
-					(SHOW_ELECTRODE_VALUES==mapping->map->electrodes_option))
+					(SHOW_ELECTRODE_VALUES==mapping->map->electrodes_label_type))
 				{
 					update_mapping_drawing_area(mapping,0);
 				}
@@ -6495,7 +6495,7 @@ set to automatic and reorder the devices if this is required.
 				analysis->map_type=NO_MAP_FIELD;
 				map->colour_option=HIDE_COLOUR;
 				map->contours_option=HIDE_CONTOURS;
-				map->electrodes_option=SHOW_ELECTRODE_NAMES;
+				map->electrodes_label_type=SHOW_ELECTRODE_NAMES;
 				/* clear the colour map */
 				map->activation_front= -1;
 				update_mapping_drawing_area(analysis->mapping_window,2);
@@ -7185,7 +7185,7 @@ drawing area.
 																	analysis->map_type=NO_MAP_FIELD;
 																	map->colour_option=HIDE_COLOUR;
 																	map->contours_option=HIDE_CONTOURS;
-																	map->electrodes_option=SHOW_ELECTRODE_NAMES;
+																	map->electrodes_label_type=SHOW_ELECTRODE_NAMES;
 																	/* clear the colour map */
 																	map->activation_front= -1;
 																	update_mapping_drawing_area(
@@ -7398,7 +7398,7 @@ trace window.
 			analysis->map_type=NO_MAP_FIELD;
 			map->colour_option=HIDE_COLOUR;
 			map->contours_option=HIDE_CONTOURS;
-			map->electrodes_option=SHOW_ELECTRODE_NAMES;
+			map->electrodes_label_type=SHOW_ELECTRODE_NAMES;
 			/* clear the colour map */
 			map->activation_front= -1;
 			update_mapping_drawing_area(analysis->mapping_window,2);
@@ -7494,7 +7494,7 @@ trace window.
 			analysis->map_type=NO_MAP_FIELD;
 			map->colour_option=HIDE_COLOUR;
 			map->contours_option=HIDE_CONTOURS;
-			map->electrodes_option=SHOW_ELECTRODE_NAMES;
+			map->electrodes_label_type=SHOW_ELECTRODE_NAMES;
 			/* clear the colour map */
 			map->activation_front= -1;
 			update_mapping_drawing_area(analysis->mapping_window,2);
@@ -8772,7 +8772,7 @@ should be done as a callback from the trace_window.
 																			analysis->map_type=NO_MAP_FIELD;
 																			map->colour_option=HIDE_COLOUR;
 																			map->contours_option=HIDE_CONTOURS;
-																			map->electrodes_option=
+																			map->electrodes_label_type=
 																				SHOW_ELECTRODE_NAMES;
 																			/* clear the colour map */
 																			map->activation_front= -1;
@@ -11188,7 +11188,7 @@ Resets the signals being analysed back to the raw data.
 				analysis->map_type=NO_MAP_FIELD;
 				map->colour_option=HIDE_COLOUR;
 				map->contours_option=HIDE_CONTOURS;
-				map->electrodes_option=SHOW_ELECTRODE_NAMES;
+				map->electrodes_label_type=SHOW_ELECTRODE_NAMES;
 				/* clear the colour map */
 				map->activation_front= -1;
 				update_mapping_drawing_area(mapping,2);
@@ -11346,7 +11346,7 @@ value at the potential time.
 				analysis->map_type=NO_MAP_FIELD;
 				map->colour_option=HIDE_COLOUR;
 				map->contours_option=HIDE_CONTOURS;
-				map->electrodes_option=SHOW_ELECTRODE_NAMES;
+				map->electrodes_label_type=SHOW_ELECTRODE_NAMES;
 				/* clear the colour map */
 				map->activation_front= -1;
 				update_mapping_drawing_area(mapping,2);
@@ -12776,16 +12776,15 @@ DESCRIPTION : accept the analysis signal.
 				{				
 					if(mapping->map->drawing_information)
 					{
-					set_map_drawing_information_electrodes_accepted_or_rejected
-						(mapping->map->drawing_information,1);
+						set_map_drawing_information_electrodes_accepted_or_rejected
+							(mapping->map->drawing_information,1);
 					}	
 					update_mapping_drawing_area(mapping,0);
 					update_mapping_colour_or_auxili(mapping);
 				}
 			
 #else /* defined(UNEMAP_USE_3D) */
-				if ((mapping)&&(mapping->map)&&
-					(SHOW_ELECTRODE_VALUES==mapping->map->electrodes_option))
+				if (mapping&&mapping->map)
 				{
 					update_mapping_drawing_area(mapping,0);
 				}
@@ -12978,8 +12977,7 @@ DESCRIPTION : reject the analysis signal
 					update_mapping_colour_or_auxili(mapping);
 				}		
 #else/* defined(UNEMAP_USE_3D) */
-				if ((mapping)&&(mapping->map)&&
-					(SHOW_ELECTRODE_VALUES==mapping->map->electrodes_option))
+				if (mapping&&mapping->map)
 				{
 					update_mapping_drawing_area(mapping,0);
 				}
@@ -13660,7 +13658,7 @@ Applies the current analysis mode settings to all signals.
 						analysis->map_type=NO_MAP_FIELD;
 						map->colour_option=HIDE_COLOUR;
 						map->contours_option=HIDE_CONTOURS;
-						map->electrodes_option=SHOW_ELECTRODE_NAMES;
+						map->electrodes_label_type=SHOW_ELECTRODE_NAMES;
 						/* clear the colour map */
 						map->activation_front= -1;
 						update_mapping_drawing_area(mapping,2);
@@ -13862,7 +13860,7 @@ Applies the current analysis mode settings to all signals.
 						analysis->map_type=NO_MAP_FIELD;
 						map->colour_option=HIDE_COLOUR;
 						map->contours_option=HIDE_CONTOURS;
-						map->electrodes_option=SHOW_ELECTRODE_NAMES;
+						map->electrodes_label_type=SHOW_ELECTRODE_NAMES;
 						/* clear the colour map */
 						map->activation_front= -1;
 						update_mapping_drawing_area(mapping,2);
@@ -14016,7 +14014,7 @@ Applies the current analysis mode settings to all signals.
 						analysis->map_type=NO_MAP_FIELD;
 						map->colour_option=HIDE_COLOUR;
 						map->contours_option=HIDE_CONTOURS;
-						map->electrodes_option=SHOW_ELECTRODE_NAMES;
+						map->electrodes_label_type=SHOW_ELECTRODE_NAMES;
 						/* clear the colour map */
 						map->activation_front= -1;
 						update_mapping_drawing_area(mapping,2);

@@ -2377,7 +2377,7 @@ pointer to the rig if successful and NULL if unsuccessful.
 																						destroy_Device_list(
 																							&last_device_item,1);
 																						destroy_Rig(&rig);
-																					}
+																					}																				 
 																				} break;
 																				case PATCH:
 																				{

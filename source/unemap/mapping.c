@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : mapping.c
 
-LAST MODIFIED : 27 October 2001
+LAST MODIFIED :1 November 2001
 
 DESCRIPTION :
 ==============================================================================*/
@@ -4525,7 +4525,7 @@ Construct the settings and build the graphics objects for the glyphs.
 						map_set_electrode_colour_from_time(package,map->drawing_information->spectrum,
 							unselected_settings,time);
 					}				
-					switch (map->electrodes_option)
+					switch (map->electrodes_label_type)
 					{
 						case SHOW_ELECTRODE_VALUES:
 						{												
@@ -4560,11 +4560,11 @@ Construct the settings and build the graphics objects for the glyphs.
 								}
 							}
 						} break;
-						case HIDE_ELECTRODES:
+						case HIDE_ELECTRODE_LABELS:
 						{
 							label_field=(struct Computed_field *)NULL;
 						} break;
-					}/* switch (electrodes_option) */
+					}/* switch (electrodes_label_type) */
 					GT_element_settings_set_label_field(unselected_settings,label_field);
 					GT_element_settings_set_label_field(selected_settings,label_field);
 					/* add the settings to the group */
@@ -4573,7 +4573,7 @@ Construct the settings and build the graphics objects for the glyphs.
 					{
             map_3d_package=get_Region_map_3d_package(region);
            set_map_3d_package_electrode_size(map_3d_package,map->electrodes_marker_size);
-            set_map_3d_package_electrodes_option(map_3d_package,map->electrodes_option);
+            set_map_3d_package_electrodes_label_type(map_3d_package,map->electrodes_label_type);
             set_map_3d_package_colour_electrodes_with_signal(map_3d_package,
 							map->colour_electrodes_with_signal);
 						return_code=1;
@@ -4726,8 +4726,8 @@ haven't
 				(map->electrodes_marker_size!=				
 					get_map_3d_package_electrode_size(map_3d_package))||
 				/* electrode option changed*/
-				(map->electrodes_option!=
-					get_map_3d_package_electrodes_option(map_3d_package))||
+				(map->electrodes_label_type!=
+					get_map_3d_package_electrodes_label_type(map_3d_package))||
 				/* colour_electrodes_with_signal flag has changed */
 				(map->colour_electrodes_with_signal!=
 					get_map_3d_package_colour_electrodes_with_signal(map_3d_package)))
@@ -6299,7 +6299,7 @@ Global functions
 ----------------
 */
 struct Map *create_Map(enum Map_type *map_type,enum Colour_option colour_option,
-	enum Contours_option contours_option,enum Electrodes_option electrodes_option,
+	enum Contours_option contours_option,enum Electrodes_label_type electrodes_label_type,
 	enum Fibres_option fibres_option,enum Landmarks_option landmarks_option,
 	enum Extrema_option extrema_option,int maintain_aspect_ratio,
 	int print_spectrum,enum Projection_type projection_type,
@@ -6497,7 +6497,7 @@ NULL if not successful.
 			map->end_search_interval=end_search_interval_address;
 			map->contours_option=contours_option;
 			map->colour_option=colour_option;
-			map->electrodes_option=electrodes_option;
+			map->electrodes_label_type=electrodes_label_type;
 			map->fibres_option=fibres_option;
 			map->landmarks_option=landmarks_option;
 			map->extrema_option=extrema_option;
@@ -9393,9 +9393,18 @@ a static string of length 11.
 		{
 			map_type=NO_MAP_FIELD;
 		}		
-		switch (map->electrodes_option)
+
+		if(electrode->signal->status==REJECTED)
+		{
+			*electrode_drawn=0;
+		}
+		else
+		{
+       *electrode_drawn=1;
+		}
+		switch (map->electrodes_label_type)
 		{								
-			case HIDE_ELECTRODES:									
+			case HIDE_ELECTRODE_LABELS:
 			{
         sprintf(name,"%s","");
 				if (electrode->highlight)
@@ -9413,7 +9422,7 @@ a static string of length 11.
 			case SHOW_CHANNEL_NUMBERS:
 			{	
 				/* they're not now always drawn */
-				if (SHOW_ELECTRODE_NAMES==map->electrodes_option)
+				if (SHOW_ELECTRODE_NAMES==map->electrodes_label_type)
 				{
 					sprintf(name,"%s",electrode->description->name);			
 				}
@@ -9449,7 +9458,7 @@ a static string of length 11.
 				sprintf(name,"%s","");
 
 			} break;
-		} /* switch (map->electrodes_option) */
+		} /* switch (map->electrodes_label_type) */
 		/* colour with data values*/
 		if (map->colour_electrodes_with_signal)
 		{
@@ -9669,9 +9678,9 @@ DESCRIPTION :  Draw the electrode in 2D, and write it's name.
 }/* draw_2d_electrode */
 
 static int draw_2d_show_map(struct Map *map,int sub_map_number,
-	int recalculate,struct Drawing_2d *drawing)
+  struct Drawing_2d *drawing)
 /*******************************************************************************
-LAST MODIFIED : 27 September 2001
+LAST MODIFIED : 31 October 2001
 
 DESCRIPTION :
 Actually draw the map from the calculated data. 
@@ -9724,14 +9733,11 @@ Actually draw the map from the calculated data.
 		if (NO_MAP_FIELD!=map_type)
 		{						
 			if (NO_INTERPOLATION!=map->interpolation_type)
-			{
-				if (recalculate)
+			{																								
+				frame=&(sub_map->frame);		 
+				if(frame_image=frame->image)
 				{
-					draw_2d_fill_in_image(map,sub_map,spectrum_pixels);
-				}								
-				frame=&(sub_map->frame);
-				if (frame_image=frame->image)
-				{		
+					draw_2d_fill_in_image(map,sub_map,spectrum_pixels);		
 					if ((CONSTANT_THICKNESS==map->contour_thickness)&&
 						(pixel_value=frame->pixel_values))
 					{
@@ -9778,12 +9784,8 @@ Actually draw the map from the calculated data.
 							(drawing_information->graphics_context).copy,
 							frame_image,0,0,map_x_offset,map_y_offset,map_width,map_height);
 					}
-				}/* if (frame_image=frame->image) */
-				else
-				{
-					display_message(ERROR_MESSAGE,"draw_2d_show_map.  Missing image");
-				}
-			}
+				}/* if (frame_image=frame->image) */							
+			} /* if (NO_INTERPOLATION!=map->interpolation_type) */
 		}/* if (NO_MAP_FIELD!=map_type) */
 		/* write contour values */
 		if ((HIDE_COLOUR==map->colour_option)&&
@@ -9830,14 +9832,13 @@ Actually draw the map from the calculated data.
 		}
 		for (;number_of_electrodes>0;number_of_electrodes--)
 		{
-			set_electrode_2d_name_and_colour(map,drawing,&graphics_context,
-				*electrode,name,*electrode_value,electrode_drawn,range_f);
+      set_electrode_2d_name_and_colour(map,drawing,&graphics_context,
+			 *electrode,name,*electrode_value,electrode_drawn,range_f);
 			if (*electrode_drawn)
-			{									
-				*screen_x+=map_x_offset;
-				*screen_y+=map_y_offset;
-				draw_2d_electrode(map,sub_map,drawing,*screen_x,*screen_y,
-					&graphics_context,name,*electrode);
+			{		
+			  draw_2d_electrode(map,sub_map,drawing,*screen_x,*screen_y,
+					&graphics_context,name,
+					*electrode);
 			}
 			electrode++;
 			screen_x++;
@@ -11818,10 +11819,10 @@ comparison with 3D maps.
 									/* calculate screen position */
 									*screen_x=start_x[region_number]+
 										(int)(((*x_item)-min_x[region_number])*
-											stretch_x[region_number]);
+											stretch_x[region_number]) +map_x_offset;
 									*screen_y=start_y[region_number]-
 										(int)(((*y_item)-min_y[region_number])*
-											stretch_y[region_number]);
+											stretch_y[region_number]) +map_y_offset;
 									electrode++;
 									x_item++;
 									y_item++;
@@ -11934,47 +11935,49 @@ Draw multiple sub maps on the same window for Electrical Imaging.
 		map->number_of_frames=1;
 		map->start_time=frame_time;
 		map->end_time=map->start_time;	
-
-		/* Destroy any existing sub maps */
-		map_destroy_Sub_maps(map);								
-		/*get size and position of sub_maps*/
-		get_number_of_sub_maps_x_step_y_step_rows_cols(map,drawing,&num_maps,
-			&x_step,&y_step,&sub_map_rows,&sub_map_cols);	 
-		map_width=drawing->width/sub_map_rows;
-		map_height=drawing->height/sub_map_cols;				
-		map_x_offset=0;
-		map_y_offset=0;
-		count=0;
-		j=1;
-		/* loop through and create all the sub maps*/	
-		while (count<num_maps)
-		{	
-			/* set the sub_map's times from the electrical imaging events */
-			frame_time=(int)((float)((times)[eimaging_event->time])
-				*1000./buffer->frequency+0.5);			
-			return_code=draw_2d_make_map(map,recalculate,drawing,map_width,map_height,
-				map_x_offset,map_y_offset,frame_time,0);	
-			map_x_offset+=x_step;						
-			count++;
-			j++;
-			if (j>sub_map_rows)
-			{
-				j=1;
-				map_x_offset=0;
-				map_y_offset+=y_step;
-			}	
-			eimaging_event=eimaging_event->next;					
-		}
-		if (recalculate>1)
+		if(recalculate>0) 
 		{
-			set_map_2d_map_min_max(map);
-		}
+			/* Destroy any existing sub maps */
+			map_destroy_Sub_maps(map);										
+			/*get size and position of sub_maps*/
+			get_number_of_sub_maps_x_step_y_step_rows_cols(map,drawing,&num_maps,
+				&x_step,&y_step,&sub_map_rows,&sub_map_cols);	 
+			map_width=drawing->width/sub_map_rows;
+			map_height=drawing->height/sub_map_cols;				
+			map_x_offset=0;
+			map_y_offset=0;
+			count=0;
+			j=1;
+			/* loop through and create all the sub maps*/	
+			while (count<num_maps)
+			{	
+				/* set the sub_map's times from the electrical imaging events */
+				frame_time=(int)((float)((times)[eimaging_event->time])
+					*1000./buffer->frequency+0.5);			
+				return_code=draw_2d_make_map(map,recalculate,drawing,map_width,map_height,
+					map_x_offset,map_y_offset,frame_time,0);	
+				map_x_offset+=x_step;						
+				count++;
+				j++;
+				if (j>sub_map_rows)
+				{
+					j=1;
+					map_x_offset=0;
+					map_y_offset+=y_step;
+				}	
+				eimaging_event=eimaging_event->next;					
+			}
+			if (recalculate>1)
+			{
+				set_map_2d_map_min_max(map);
+			}
+		}/* if(recalculate>0) */
 		update_colour_map_unemap(map,drawing);
 		/* loop through and draw all the sub maps*/		
 		count=0;	
-		while(count<num_maps)
+		while(count<map->number_of_sub_maps)
 		{			
-			draw_2d_show_map(map,count,recalculate,drawing);
+			draw_2d_show_map(map,count,drawing);
 			count++;
 		}		
 		map->sub_map_number=0;
@@ -12025,13 +12028,8 @@ See draw_2d_make_map for meanings of recalculate.
 			}
 			if (recalculate==0)
 			{	
-				/* draw the current frame */
-				if(map->number_of_frames>1)
-				{
-					/*showing a movie*/
-					recalculate=1;
-				}
-				draw_2d_show_map(map,map->sub_map_number,recalculate,drawing);
+				/* just draw the current frame */	
+				draw_2d_show_map(map,map->sub_map_number,drawing);
 			}	
 			else 
 			{	
@@ -12062,7 +12060,7 @@ See draw_2d_make_map for meanings of recalculate.
 							(float)frame_number*(end_time))/(float)(number_of_frames-1);
 					}
 					return_code=draw_2d_make_map(map,recalculate,drawing,map_width,
-						map_height,map_x_offset,map_y_offset,frame_time,use_potential_time);						
+						map_height,map_x_offset,map_y_offset,frame_time,use_potential_time);
 				}
 				if(return_code&&map->number_of_electrodes)
 				/* map->number_of_electrodes=0, nothing to show*/
@@ -12080,7 +12078,7 @@ See draw_2d_make_map for meanings of recalculate.
 						}
 					}					
 					update_colour_map_unemap(map,drawing);				
-					draw_2d_show_map(map,map->sub_map_number,recalculate,drawing);
+					draw_2d_show_map(map,map->sub_map_number,drawing);
 				} /* if(return_code&&map->number_of_electrodes)	*/
 			}/* if (recalculate==0) */
 		}/* if ((*map->first_eimaging_event)&& */
@@ -13097,7 +13095,7 @@ Create and  and set it's components
 			map_3d_package->computed_field_manager=computed_field_manager;
 			map_3d_package->electrode_glyph=(struct GT_object *)NULL;
 			map_3d_package->electrode_size=0;
-			map_3d_package->electrodes_option=HIDE_ELECTRODES;
+			map_3d_package->electrodes_label_type=HIDE_ELECTRODE_LABELS;
 			map_3d_package->colour_electrodes_with_signal=1;
 			map_3d_package->electrodes_min_z=0;
 			map_3d_package->electrodes_max_z=0;
@@ -13516,58 +13514,58 @@ Sets the electrodes_max_z  for map_3d_package <map_number>
 	return (return_code);
 } /* set_map_3d_package_electrodes_max_z */
 
-enum Electrodes_option get_map_3d_package_electrodes_option(
+enum Electrodes_label_type get_map_3d_package_electrodes_label_type(
 	struct Map_3d_package *map_3d_package)
 /*******************************************************************************
 LAST MODIFIED : 9 May 2000
 
 DESCRIPTION :
-gets the map_electrodes_option for map_3d_package <map_number> 
+gets the map_electrodes_label_type for map_3d_package <map_number> 
 ==============================================================================*/
 {
-	enum Electrodes_option electrodes_option;
+	enum Electrodes_label_type electrodes_label_type;
 
-	ENTER(get_map_3d_package_electrodes_option);
+	ENTER(get_map_3d_package_electrodes_label_type);
 	if (map_3d_package)	
 	{	
-		electrodes_option=map_3d_package->electrodes_option;	
+		electrodes_label_type=map_3d_package->electrodes_label_type;	
 	}
 	else
 	{
-		display_message(ERROR_MESSAGE,"get_map_3d_package_electrodes_option."
+		display_message(ERROR_MESSAGE,"get_map_3d_package_electrodes_label_type."
 			" invalid arguments");
-		electrodes_option=HIDE_ELECTRODES;
+		electrodes_label_type=HIDE_ELECTRODE_LABELS;
 	}
 	LEAVE;
-	return (electrodes_option);	
-} /* get_map_3d_package_electrodes_option */
+	return (electrodes_label_type);	
+} /* get_map_3d_package_electrodes_label_type */
 
-int set_map_3d_package_electrodes_option(struct Map_3d_package *map_3d_package,
-	enum Electrodes_option electrodes_option)
+int set_map_3d_package_electrodes_label_type(struct Map_3d_package *map_3d_package,
+	enum Electrodes_label_type electrodes_label_type)
 /*******************************************************************************
 LAST MODIFIED : 5 July 2000
 
 DESCRIPTION :
-Sets the electrodes_option  for map_3d_package <map_number> 
+Sets the electrodes_label_type  for map_3d_package <map_number> 
 ==============================================================================*/
 {
 	int return_code;
 
-	ENTER(set_map_3d_package_electrodes_option);
+	ENTER(set_map_3d_package_electrodes_label_type);
 	if (map_3d_package)
 	{		
 		return_code =1;
-		map_3d_package->electrodes_option=electrodes_option;
+		map_3d_package->electrodes_label_type=electrodes_label_type;
 	}
 	else
 	{
-		display_message(ERROR_MESSAGE,"set_map_3d_package_electrodes_option ."
+		display_message(ERROR_MESSAGE,"set_map_3d_package_electrodes_label_type ."
 			" invalid arguments");
 		return_code =0;
 	}
 	LEAVE;
 	return (return_code);
-} /* set_map_3d_package_electrodes_option */
+} /* set_map_3d_package_electrodes_label_type */
 
 int get_map_3d_package_colour_electrodes_with_signal(
 	struct Map_3d_package *map_3d_package)
@@ -13590,7 +13588,7 @@ gets the map_colour_electrodes_with_signal for map_3d_package
 	{
 		display_message(ERROR_MESSAGE,"get_map_3d_package_colour_electrodes_with_signal."
 			" invalid arguments");
-		colour_electrodes_with_signal=HIDE_ELECTRODES;
+		colour_electrodes_with_signal=HIDE_ELECTRODE_LABELS;
 	}
 	LEAVE;
 	return (colour_electrodes_with_signal);	

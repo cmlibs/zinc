@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : mapping.h
 
-LAST MODIFIED : 27 October 2001
+LAST MODIFIED : 1 November 2001
 
 DESCRIPTION :
 ==============================================================================*/
@@ -100,7 +100,7 @@ DESCRIPTION :
 	HIDE_CONTOURS
 }; /* enum Contours_option */
 
-enum Electrodes_option
+enum Electrodes_label_type
 /*******************************************************************************
 LAST MODIFIED : 18 June 1998
 
@@ -110,8 +110,8 @@ DESCRIPTION : text accompanying electrodes
 	SHOW_ELECTRODE_NAMES,
 	SHOW_ELECTRODE_VALUES,
 	SHOW_CHANNEL_NUMBERS,
-	HIDE_ELECTRODES
-}; /* enum Electrodes_option */
+	HIDE_ELECTRODE_LABELS
+}; /* Electrodes_label_type */
 
 enum Electrodes_marker_type
 /*******************************************************************************
@@ -183,7 +183,7 @@ map_drawing_information.
 ==============================================================================*/
 {	
 	char *fit_name;
-	enum Electrodes_option electrodes_option;
+	enum Electrodes_label_type electrodes_label_type;
 	FE_value electrode_size,electrodes_max_z,electrodes_min_z;
 	/* a flag  */
 	int colour_electrodes_with_signal;
@@ -336,7 +336,7 @@ DESCRIPTION : The Map.
 	int *end_search_interval,*start_search_interval;
 	enum Colour_option colour_option;
 	enum Contours_option contours_option;
-	enum Electrodes_option electrodes_option;
+	enum Electrodes_label_type electrodes_label_type;
 	enum Electrodes_marker_type electrodes_marker_type;
 	int electrodes_marker_size;
 	enum Interpolation_type interpolation_type;
@@ -392,7 +392,8 @@ Global functions
 ----------------
 */
 struct Map *create_Map(enum Map_type *map_type,enum Colour_option colour_option,
-	enum Contours_option contours_option,enum Electrodes_option electrodes_option,
+	enum Contours_option contours_option,	
+	enum Electrodes_label_type electrodes_label_type,
 	enum Fibres_option fibres_option,enum Landmarks_option landmarks_option,
 	enum Extrema_option extrema_option,int maintain_aspect_ratio,
 	int print_spectrum,enum Projection_type projection_type,
@@ -623,22 +624,22 @@ DESCRIPTION :
 Sets the electrodes_max_z  for map_3d_package <map_number> 
 ==============================================================================*/
 
-enum Electrodes_option get_map_3d_package_electrodes_option(
+enum Electrodes_label_type get_map_3d_package_electrodes_label_type(
 	struct Map_3d_package *map_3d_package);
 /*******************************************************************************
 LAST MODIFIED : 5 July 2000
 
 DESCRIPTION :
-gets the map_electrodes_option for map_3d_package 
+gets the map_electrodes_label_type for map_3d_package 
 ==============================================================================*/
 
-int set_map_3d_package_electrodes_option(struct Map_3d_package *map_3d_package,
-	enum Electrodes_option electrodes_option);
+int set_map_3d_package_electrodes_label_type(struct Map_3d_package *map_3d_package,
+	enum Electrodes_label_type electrodes_label_type);
 /*******************************************************************************
 LAST MODIFIED :  5 July 2000
 
 DESCRIPTION :
-Sets the electrodes_option  for map_3d_package
+Sets the electrodes_label_type  for map_3d_package
 ==============================================================================*/
 
 int get_map_3d_package_colour_electrodes_with_signal(

@@ -3728,7 +3728,7 @@ rig_node_group_set_map_electrode_position_lambda_r
 							get_FE_nodal_FE_value_value(node_unmanaged,&component,0,
 								FE_NODAL_VALUE,&z_rc);
 							/* convert coords to cylindrical polar */
-							cartesian_to_cylindrical_polar(x,y,z_rc,&r,&theta,&z_cp,(float *)NULL);
+							cartesian_to_cylindrical_polar(x,y,z_rc,&r,&theta,&z_cp,(float *)NULL);					
 							/* change the r */
 							/* ROUND_TORSO defined in rig_node.h */
 #if defined (ROUND_TORSO) /*FOR AJP*/
