@@ -8506,7 +8506,8 @@ fields defined over it.
 			{
 				if (xi_points=Xi_discretization_mode_get_xi_points(
 					element_to_glyph_set_data->xi_discretization_mode,
-					dimension,number_in_xi,&number_of_xi_points))
+					dimension,number_in_xi,element_to_glyph_set_data->exact_xi,
+					&number_of_xi_points))
 				{
 					if (glyph_set=create_GT_glyph_set_from_FE_element(
 						element,top_level_element,

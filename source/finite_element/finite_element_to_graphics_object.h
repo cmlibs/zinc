@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : finite_element_to_graphics_object.h
 
-LAST MODIFIED : 28 March 2000
+LAST MODIFIED : 7 June 2000
 
 DESCRIPTION :
 The function prototypes for creating graphical objects from finite elements.
@@ -199,7 +199,7 @@ Data for converting a 3-D element into an iso_surface (via a volume_texture).
 
 struct Element_to_glyph_set_data
 /*******************************************************************************
-LAST MODIFIED : 21 December 1999
+LAST MODIFIED : 7 June 2000
 
 DESCRIPTION :
 Data for converting a finite element into a set of glyphs displaying information
@@ -235,7 +235,7 @@ If the dimension is less than 3, <exterior> and <face_number> may be used.
 	struct FE_field *native_discretization_field;
 	struct GROUP(FE_element) *element_group;
 	struct GT_object *glyph,*graphics_object;
-	Triple glyph_centre,glyph_size,glyph_scale_factors;
+	Triple exact_xi,glyph_centre,glyph_size,glyph_scale_factors;
 }; /* struct Element_to_glyph_set_data */
 
 /*
