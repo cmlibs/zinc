@@ -623,7 +623,7 @@ Executes a GFX CREATE COLOUR_BAR command. Creates a colour bar graphics object
 with tick marks and labels for showing the scale of a spectrum.
 ==============================================================================*/
 {
-	char *graphics_object_name,number_format[16],number_string[48];
+	char *graphics_object_name,*number_format;
 	float bar_length,bar_radius,extend_length,tick_length;
 	int number_of_components,return_code,significant_figures,tick_divisions;
 	static char default_name[]="colour_bar";
@@ -649,6 +649,7 @@ with tick marks and labels for showing the scale of a spectrum.
 			{
 				graphics_object_name=(char *)NULL;
 			}
+			number_format = duplicate_string("%+.4e");
 			/* must access it now, because we deaccess it later */
 			label_material=
 				ACCESS(Graphical_material)(command_data->default_graphical_material);
@@ -668,7 +669,6 @@ with tick marks and labels for showing the scale of a spectrum.
 			bar_length=1.6;
 			extend_length=0.06;
 			bar_radius=0.06;
-			significant_figures=4;
 			tick_length=0.04;
 			tick_divisions=10;
 
@@ -694,15 +694,15 @@ with tick marks and labels for showing the scale of a spectrum.
 			/* length */
 			Option_table_add_entry(option_table,"length",&bar_length,
 				NULL,set_float_positive);
+			/* number_format */
+			Option_table_add_entry(option_table,"number_format",&number_format,
+				(void *)1,set_name);
 			/* material */
 			Option_table_add_entry(option_table,"material",&material,
 				command_data->graphical_material_manager,set_Graphical_material);
 			/* radius */
 			Option_table_add_entry(option_table,"radius",&bar_radius,
 				NULL,set_float_positive);
-			/* significant_figures */
-			Option_table_add_entry(option_table,"significant_figures",
-				&significant_figures,NULL,set_int_positive);
 			/* spectrum */
 			Option_table_add_entry(option_table,"spectrum",&spectrum,
 				command_data->spectrum_manager,set_Spectrum);
@@ -714,24 +714,18 @@ with tick marks and labels for showing the scale of a spectrum.
 				NULL,set_float_non_negative);
 			if (return_code=Option_table_multi_parse(option_table,state))
 			{
-				if (20 < significant_figures)
-				{
-					display_message(WARNING_MESSAGE,"Limited to 20 significant figures");
-					significant_figures=20;
-				}
 				if (100 < tick_divisions)
 				{
 					display_message(WARNING_MESSAGE,"Limited to 100 tick_divisions");
 					tick_divisions=100;
 				}
-				sprintf(number_format," %%+.%de",significant_figures-1);
 				/* try to find existing colour_bar for updating */
 				graphics_object=FIND_BY_IDENTIFIER_IN_LIST(GT_object,name)(
 					graphics_object_name,command_data->graphics_object_list);
 				if (create_Spectrum_colour_bar(&graphics_object,
 					graphics_object_name,spectrum,bar_centre,bar_axis,side_axis,
 					bar_length,bar_radius,extend_length,tick_divisions,tick_length,
-					number_format,number_string,material,label_material))
+					number_format,material,label_material))
 				{
 					ACCESS(GT_object)(graphics_object);
 					if (IS_OBJECT_IN_LIST(GT_object)(graphics_object,
@@ -761,6 +755,7 @@ with tick marks and labels for showing the scale of a spectrum.
 			DEACCESS(Graphical_material)(&material);
 			DEACCESS(Spectrum)(&spectrum);
 			DEALLOCATE(graphics_object_name);
+			DEALLOCATE(number_format);
 		}
 		else
 		{

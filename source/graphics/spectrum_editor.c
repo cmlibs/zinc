@@ -964,11 +964,11 @@ Global functions
 int create_Spectrum_colour_bar(struct GT_object **graphics_object_address,
 	char *name,struct Spectrum *spectrum,Triple bar_centre,Triple bar_axis,
 	Triple side_axis,float bar_length,float bar_radius,float extend_length,
-	int tick_divisions,float tick_length,char *number_format,char *number_string,
+	int tick_divisions,float tick_length,char *number_format,
 	struct Graphical_material *bar_material,
 	struct Graphical_material *tick_label_material)
 /*******************************************************************************
-LAST MODIFIED : 4 September 2000
+LAST MODIFIED : 13 October 2000
 
 DESCRIPTION :
 Creates a coloured bar with annotation for displaying the scale of <spectrum>.
@@ -983,8 +983,7 @@ points around the bar and the direction of the <tick_divisions>+1 ticks at which
 spectrum values are written.
 Attached to the bar graphics_object are two graphics objects using the
 <tick_label_material>, one containing the ticks, the other the labels. The
-labels are written using the <number_format>, printed into the <number_string>
-which should be allocated large enough to hold it.
+labels are written using the <number_format>.
 On successful return a pointer to the bar_graphics_object is put at
 <*graphics_object_address>. If there is already a colour_bar at this address it
 is cleared and redefined.
@@ -997,7 +996,8 @@ finite_element_to_graphics_object, but how about a more generic module for
 graphics_objects that don't come from finite_elements?
 ==============================================================================*/
 {
-	char **labels;
+#define NUMBER_STRLEN (100)
+	char **labels, number_string[NUMBER_STRLEN];
 	float cos_theta,extend_fraction,half_final_length,length_factor,magnitude,
 		sin_theta,spectrum_factor,spectrum_minimum,spectrum_maximum,theta,time,
 		unit_factor;
@@ -1295,7 +1295,14 @@ graphics_objects that don't come from finite_elements?
 					/* interpolate to get spectrum value */
 					spectrum_value=(GTDATA)((1.0-unit_factor)*spectrum_minimum +
 						unit_factor*spectrum_maximum);
-					sprintf(number_string,number_format,spectrum_value);
+					if (sprintf(number_string, number_format,
+						spectrum_value) > (NUMBER_STRLEN - 2))
+					{
+						/* Add the termination */
+						number_string[NUMBER_STRLEN-1] = 0;
+						display_message(WARNING_MESSAGE,
+							"create_Spectrum_colour_bar.  Tick label was truncated.");
+					}
 					if (ALLOCATE(labels[i],char,strlen(number_string)+1))
 					{
 						allocated_labels++;
