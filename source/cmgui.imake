@@ -955,8 +955,9 @@ ALL_LIB = $(GRAPHICS_LIB) $(USER_INTERFACE_LIB) $(HAPTIC_LIB) \
 
 API_SRCS = \
 	api/cmiss_core.c \
-	api/cmiss_graphics_window.c \
 	api/cmiss_scene_viewer.c
+API_INTERFACE_SRCS = \
+	api/cmiss_graphics_window.c
 CHOOSE_INTERFACE_SRCS = \
 	choose/choose_computed_field.c \
 	choose/choose_control_curve.c \
@@ -1229,6 +1230,7 @@ SRCS_1 = \
 
 #if defined (MOTIF) /* switch (USER_INTERFACE) */
 SRCS_2 = \
+	$(API_INTERFACE_SRCS) \
 	$(CELL_SRCS) \
 	$(CHOOSE_INTERFACE_SRCS) \
 	$(COLOUR_INTERFACE_SRCS) \
@@ -1262,9 +1264,11 @@ SRCS_2 = \
 	$(VIEW_INTERFACE_SRCS)
 #elif defined (WIN32_USER_INTERFACE)  /* switch (USER_INTERFACE) */
 SRCS_2 = \
+	$(API_INTERFACE_SRCS) \
 	$(COMMAND_INTERFACE_SRCS)
 #elif defined (GTK_USER_INTERFACE)  /* switch (USER_INTERFACE) */
 SRCS_2 = \
+	$(API_INTERFACE_SRCS) \
 	$(COMMAND_INTERFACE_SRCS) \
 	graphics/graphics_window.c \
 	gtk/gtk_cmiss_scene_viewer.c
