@@ -681,7 +681,7 @@ Main program for the CMISS Graphical User Interface
 	command_data.scene_editor = (struct Scene_editor *)NULL;
 	/*???RC.  Temporary - should allow more than one */
 	command_data.spectrum_editor_dialog=(Widget)NULL;
-	command_data.time_editor_dialog=(struct Time_editor_dialog_struct *)NULL;
+	command_data.time_editor_dialog=(struct Time_editor_dialog *)NULL;
 	/*???RC.  Temporary - should allow more than one */
 #if defined (UNEMAP)
 	command_data.unemap_system_window=(struct System_window *)NULL;
