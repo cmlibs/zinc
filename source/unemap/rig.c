@@ -2205,8 +2205,8 @@ pointer to the rig if successful and NULL if unsuccessful.
 																			/* linear combination of devices */
 																			do
 																			{
-																				fscanf(input_file," ");
-																				if (read_string(input_file,"[^+-\n]",
+																				/*???DB.  Stops on a * for the "[^+-\n]" */
+																				if (read_string(input_file,"[^\n+-]",
 																					&dummy))
 																				{
 																					if (0<strlen(dummy))
@@ -2569,7 +2569,7 @@ pointer to the rig if successful and NULL if unsuccessful.
 												last_device_item=(struct Device_list_item *)NULL;
 												while (!feof(input_file)&&rig&&(separator!=':'))
 												{
-													if (read_string(input_file,"[^:, \n]",&dummy))
+													if (read_string(input_file,"[^\n :,]",&dummy))
 													{
 														if (separator!=',')
 														{
