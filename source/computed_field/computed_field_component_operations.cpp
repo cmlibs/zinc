@@ -2419,6 +2419,7 @@ although its cache may be lost.
 				source_values[i]=scale_factors[i];
 			}
 			field->source_values=source_values;
+			field->number_of_source_values=number_of_source_values;
 			field->type_specific_data = (void *)1;
 
 			/* Set all the methods */
@@ -2585,7 +2586,7 @@ already) and allows its contents to be modified.
 			{
 				number_of_scale_factors=source_field->number_of_components;
 				option_table = CREATE(Option_table)();					
-				Option_table_add_entry(option_table,"field",source_field,
+				Option_table_add_entry(option_table,"field",&source_field,
 					&set_source_field_data,set_Computed_field_conditional);
 				Option_table_add_entry(option_table,"scale_factors",scale_factors,
 					&number_of_scale_factors,set_FE_value_array);
@@ -2611,7 +2612,7 @@ already) and allows its contents to be modified.
 						computed_field_component_operations_package->computed_field_manager;
 					set_source_field_data.conditional_function=Computed_field_has_numerical_components;
 					set_source_field_data.conditional_function_user_data=(void *)NULL;
-					Option_table_add_entry(option_table,"field",source_field,
+					Option_table_add_entry(option_table,"field",&source_field,
 						&set_source_field_data,set_Computed_field_conditional);
 					if (return_code=Option_table_parse(option_table,state))
 					{
@@ -3398,7 +3399,7 @@ already) and allows its contents to be modified.
 			{
 				number_of_maximums=source_field->number_of_components;
 				option_table = CREATE(Option_table)();					
-				Option_table_add_entry(option_table,"field",source_field,
+				Option_table_add_entry(option_table,"field",&source_field,
 					&set_source_field_data,set_Computed_field_conditional);
 				Option_table_add_entry(option_table,"maximums",maximums,
 					&number_of_maximums,set_FE_value_array);
