@@ -61,6 +61,16 @@ BOOL WINAPI ControlHandler ( DWORD dwCtrlType );
 LPTSTR GetLastErrorText( LPTSTR lpszBuf, DWORD dwSize );
 
 /*???DB.  unemap hardware specific start */
+/* to add a version to the displayed name */
+int unemap_get_software_version(int *software_version);
+
+#define SERVICE_DISPLAY_NAME_LENGTH 120
+char service_display_name[SERVICE_DISPLAY_NAME_LENGTH];
+/*???DB.  unemap hardware specific end */
+#if defined (UNEMAP_HARDWARE_SPECIFIC)
+#endif /* defined (UNEMAP_HARDWARE_SPECIFIC) */
+
+/*???DB.  unemap hardware specific start */
 FILE *fopen_UNEMAP_HARDWARE(char *file_name,char *type);
 
 VOID AddToMessageLog(LPTSTR lpszMsg)
@@ -132,6 +142,17 @@ void _CRTAPI1 main(int argc, char **argv)
         { TEXT(SZSERVICENAME), (LPSERVICE_MAIN_FUNCTION)service_main },
         { NULL, NULL }
     };
+
+	/*???DB.  unemap hardware specific start */
+	int software_version;
+
+	software_version=0;
+	unemap_get_software_version(&software_version);
+	sprintf(service_display_name,"Unemap Hardware Service. v%d. %s",
+		software_version,__DATE__);
+	/*???DB.  unemap hardware specific end */
+#if defined (UNEMAP_HARDWARE_SPECIFIC)
+#endif /* defined (UNEMAP_HARDWARE_SPECIFIC) */
 
 #if defined (UNEMAP_HARDWARE_SPECIFIC)
 	/*???DB.  unemap hardware specific start */
@@ -545,7 +566,7 @@ void CmdInstallService()
 
     if ( GetModuleFileName( NULL, szPath, 512 ) == 0 )
     {
-        _tprintf(TEXT("Unable to install %s - %s\n"), TEXT(SZSERVICEDISPLAYNAME), GetLastErrorText(szErr, 256));
+        _tprintf(TEXT("Unable to install %s - %s\n"), TEXT(service_display_name), GetLastErrorText(szErr, 256));
         return;
     }
 
@@ -559,7 +580,7 @@ void CmdInstallService()
         schService = CreateService(
             schSCManager,               // SCManager database
             TEXT(SZSERVICENAME),        // name of service
-            TEXT(SZSERVICEDISPLAYNAME), // name to display
+            TEXT(service_display_name), // name to display
             SERVICE_ALL_ACCESS,         // desired access
             SERVICE_WIN32_OWN_PROCESS,  // service type
             SERVICE_AUTO_START,         // start type
@@ -573,7 +594,7 @@ void CmdInstallService()
 
         if ( schService )
         {
-            _tprintf(TEXT("%s installed.\n"), TEXT(SZSERVICEDISPLAYNAME) );
+            _tprintf(TEXT("%s installed.\n"), TEXT(service_display_name) );
             CloseServiceHandle(schService);
         }
         else
@@ -607,6 +628,13 @@ void CmdRemoveService()
     SC_HANDLE   schService;
     SC_HANDLE   schSCManager;
 
+/*???DB.  unemap hardware specific start */
+		DWORD display_name_length;
+		TCHAR display_name[SERVICE_DISPLAY_NAME_LENGTH];
+/*???DB.  unemap hardware specific end */
+#if defined (UNEMAP_HARDWARE_SPECIFIC)
+#endif /* defined (UNEMAP_HARDWARE_SPECIFIC) */
+
     schSCManager = OpenSCManager(
                         NULL,                   // machine (NULL == local)
                         NULL,                   // database (NULL == default)
@@ -618,10 +646,17 @@ void CmdRemoveService()
 
         if (schService)
         {
+/*???DB.  unemap hardware specific start */
+					display_name_length=SERVICE_DISPLAY_NAME_LENGTH;
+					GetServiceDisplayName(schService,TEXT(SZSERVICENAME),display_name,
+						&display_name_length);
+/*???DB.  unemap hardware specific end */
+#if defined (UNEMAP_HARDWARE_SPECIFIC)
+#endif /* defined (UNEMAP_HARDWARE_SPECIFIC) */
             // try to stop the service
             if ( ControlService( schService, SERVICE_CONTROL_STOP, &ssStatus ) )
             {
-                _tprintf(TEXT("Stopping %s."), TEXT(SZSERVICEDISPLAYNAME));
+                _tprintf(TEXT("Stopping %s."), TEXT(display_name));
                 Sleep( 1000 );
 
                 while( QueryServiceStatus( schService, &ssStatus ) )
@@ -636,15 +671,15 @@ void CmdRemoveService()
                 }
 
                 if ( ssStatus.dwCurrentState == SERVICE_STOPPED )
-                    _tprintf(TEXT("\n%s stopped.\n"), TEXT(SZSERVICEDISPLAYNAME) );
+                    _tprintf(TEXT("\n%s stopped.\n"), TEXT(display_name) );
                 else
-                    _tprintf(TEXT("\n%s failed to stop.\n"), TEXT(SZSERVICEDISPLAYNAME) );
+                    _tprintf(TEXT("\n%s failed to stop.\n"), TEXT(display_name) );
 
             }
 
             // now remove the service
             if( DeleteService(schService) )
-                _tprintf(TEXT("%s removed.\n"), TEXT(SZSERVICEDISPLAYNAME) );
+                _tprintf(TEXT("%s removed.\n"), TEXT(display_name) );
             else
                 _tprintf(TEXT("DeleteService failed - %s\n"), GetLastErrorText(szErr,256));
 
@@ -695,7 +730,7 @@ void CmdDebugService(int argc, char ** argv)
     lpszArgv = argv;
 #endif
 
-    _tprintf(TEXT("Debugging %s.\n"), TEXT(SZSERVICEDISPLAYNAME));
+    _tprintf(TEXT("Debugging %s.\n"), TEXT(service_display_name));
 
     SetConsoleCtrlHandler( ControlHandler, TRUE );
 
@@ -723,7 +758,7 @@ BOOL WINAPI ControlHandler ( DWORD dwCtrlType )
     {
         case CTRL_BREAK_EVENT:  // use Ctrl+C or Ctrl+Break to simulate
         case CTRL_C_EVENT:      // SERVICE_CONTROL_STOP in debug mode
-            _tprintf(TEXT("Stopping %s.\n"), TEXT(SZSERVICEDISPLAYNAME));
+            _tprintf(TEXT("Stopping %s.\n"), TEXT(service_display_name));
             ServiceStop();
             return TRUE;
             break;
