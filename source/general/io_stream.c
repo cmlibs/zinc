@@ -1419,6 +1419,7 @@ Implements the stdio function fseek on stream where possible.
 					{
 						stream->memory_block_index = location;
 						stream->buffer_valid_index = 0;
+						stream->buffer_index = 0;
 					}
 					else
 					{
