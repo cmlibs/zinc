@@ -20391,7 +20391,7 @@ Executes a GFX READ command.
 static int execute_command_gfx_select(struct Parse_state *state,
 	void *dummy_to_be_modified,void *command_data_void)
 /*******************************************************************************
-LAST MODIFIED : 2 March 2001
+LAST MODIFIED : 6 December 2002
 
 DESCRIPTION :
 Executes a GFX SELECT command.
@@ -20433,6 +20433,8 @@ Executes a GFX SELECT command.
 			grid_points_flag = 0;
 			lines_flag = 0;
 			nodes_flag = 0;
+			/* With the current method the selection is always additive
+				and so to set the selected flag makes the command useless */
 			selected_flag = 0;
 			multi_range=CREATE(Multi_range)();
 			if ((grid_field=FIND_BY_IDENTIFIER_IN_MANAGER(FE_field,name)(
@@ -20486,8 +20488,6 @@ Executes a GFX SELECT command.
 				(void *)NULL,set_char_flag);
 			Option_table_add_entry(option_table,"points",&element_point_ranges,
 				(void *)command_data->element_manager,set_Element_point_ranges);
-			Option_table_add_entry(option_table,"selected", &selected_flag,
-				(void *)NULL,set_char_flag);
 			/* default option: mulit range */
 			Option_table_add_entry(option_table, (char *)NULL, (void *)multi_range,
 				NULL, set_Multi_range);
@@ -20577,7 +20577,7 @@ Executes a GFX SELECT command.
 							(void *)command_data->element_selection, element_list))
 						{
 							display_message(INFORMATION_MESSAGE,
-								"Selected %d element points.\n",
+								"Selected %d elements.\n",
 								NUMBER_IN_LIST(FE_node)(node_list));
 						}
 						else
@@ -20603,7 +20603,7 @@ Executes a GFX SELECT command.
 							(void *)command_data->element_selection, element_list))
 						{
 							display_message(INFORMATION_MESSAGE,
-								"Selected %d element points.\n",
+								"Selected %d faces.\n",
 								NUMBER_IN_LIST(FE_node)(node_list));
 						}
 						else
@@ -20673,7 +20673,7 @@ Executes a GFX SELECT command.
 							(void *)command_data->element_selection, element_list))
 						{
 							display_message(INFORMATION_MESSAGE,
-								"Selected %d element points.\n",
+								"Selected %d lines.\n",
 								NUMBER_IN_LIST(FE_node)(node_list));
 						}
 						else
@@ -20724,7 +20724,7 @@ Executes a GFX SELECT command.
 								(void *)command_data->node_selection, node_list))
 							{
 								display_message(INFORMATION_MESSAGE,
-									"Selected %d node points.\n",
+									"Selected %d nodes.\n",
 									NUMBER_IN_LIST(FE_node)(node_list));
 							}
 							else
@@ -20772,26 +20772,28 @@ Executes a GFX SELECT command.
 static int execute_command_gfx_unselect(struct Parse_state *state,
 	void *dummy_to_be_modified,void *command_data_void)
 /*******************************************************************************
-LAST MODIFIED : 2 March 2001
+LAST MODIFIED : 6 December 2002
 
 DESCRIPTION :
 Executes a GFX UNSELECT command.
 ==============================================================================*/
 {
-	char *ranges_string;
-	int i,j,number_of_ranges,number_unselected,return_code,start,stop,
-		total_number_in_ranges;
-	struct CM_element_information cm;
-	struct CM_element_type_Multi_range_data element_type_ranges_data;
+	char all_flag,data_flag,elements_flag,faces_flag,grid_points_flag,
+		*group_name,lines_flag,nodes_flag,selected_flag;
+	FE_value time;
+	int return_code;
+	struct Computed_field *conditional_field;
 	struct Cmiss_command_data *command_data;
 	struct Element_point_ranges *element_point_ranges;
-	struct FE_element *element;
 	struct FE_element_grid_to_Element_point_ranges_list_data grid_to_list_data;
 	struct FE_field *grid_field;
-	struct FE_node *node;
-	struct Multi_range *data_ranges, *element_ranges, *face_ranges,
-		*grid_point_ranges, *line_ranges, *multi_range, *node_ranges;
+	struct GROUP(FE_element) *from_element_group;
+	struct GROUP(FE_node) *from_node_group;
+	struct LIST(FE_element) *element_list;
+	struct LIST(FE_node) *node_list;
+	struct Multi_range *multi_range;
 	struct Option_table *option_table;
+	struct Set_Computed_field_conditional_data set_conditional_field_data;
 	struct Set_FE_field_conditional_data set_grid_field_data;
 
 	ENTER(execute_command_gfx_unselect);
@@ -20800,13 +20802,21 @@ Executes a GFX UNSELECT command.
 	{
 		if (state->current_token)
 		{
+			all_flag = 0;
+			conditional_field=(struct Computed_field *)NULL;
+			data_flag = 0;
 			element_point_ranges=(struct Element_point_ranges *)NULL;
-			data_ranges=CREATE(Multi_range)();
-			element_ranges=CREATE(Multi_range)();
-			face_ranges=CREATE(Multi_range)();
-			grid_point_ranges=CREATE(Multi_range)();
-			line_ranges=CREATE(Multi_range)();
-			node_ranges=CREATE(Multi_range)();
+			data_flag = 0;
+			elements_flag = 0;
+			faces_flag = 0;
+			from_element_group = (struct GROUP(FE_element) *)NULL;
+			from_node_group = (struct GROUP(FE_node) *)NULL;
+			grid_points_flag = 0;
+			lines_flag = 0;
+			nodes_flag = 0;
+			/* We only want to unselected from selected objects */
+			selected_flag = 1;
+			multi_range=CREATE(Multi_range)();
 			if ((grid_field=FIND_BY_IDENTIFIER_IN_MANAGER(FE_field,name)(
 				"grid_point_number",command_data->fe_field_manager))&&
 				FE_field_is_1_component_integer(grid_field,(void *)NULL))
@@ -20817,85 +20827,115 @@ Executes a GFX UNSELECT command.
 			{
 				grid_field=(struct FE_field *)NULL;
 			}
+			if (command_data->default_time_keeper)
+			{
+				time = Time_keeper_get_time(command_data->default_time_keeper);
+			}
+			else
+			{
+				time = 0.0;
+			}
 			option_table=CREATE(Option_table)();
-			Option_table_add_entry(option_table,"data",data_ranges,
-				(void *)NULL,set_Multi_range);
-			Option_table_add_entry(option_table,"elements",element_ranges,
-				(void *)NULL,set_Multi_range);
-			Option_table_add_entry(option_table,"faces",face_ranges,
-				(void *)NULL,set_Multi_range);
+			Option_table_add_entry(option_table,"all", &all_flag,
+				(void *)NULL,set_char_flag);
+			set_conditional_field_data.computed_field_manager=
+				Computed_field_package_get_computed_field_manager(
+				command_data->computed_field_package);
+			set_conditional_field_data.conditional_function=
+				(MANAGER_CONDITIONAL_FUNCTION(Computed_field) *)NULL;
+			set_conditional_field_data.conditional_function_user_data=(void *)NULL;
+			Option_table_add_entry(option_table,"conditional_field",
+				&conditional_field,&set_conditional_field_data,
+				set_Computed_field_conditional);
+			Option_table_add_entry(option_table,"data", &data_flag,
+				(void *)NULL,set_char_flag);
+			Option_table_add_entry(option_table,"elements",&elements_flag,
+				(void *)NULL,set_char_flag);
+			Option_table_add_entry(option_table,"faces",&faces_flag,
+				(void *)NULL,set_char_flag);
 			set_grid_field_data.fe_field_manager=command_data->fe_field_manager;
 			set_grid_field_data.conditional_function=FE_field_is_1_component_integer;
 			set_grid_field_data.conditional_function_user_data=(void *)NULL;
 			Option_table_add_entry(option_table,"grid_field",
 				&grid_field,&set_grid_field_data,set_FE_field_conditional);
-			Option_table_add_entry(option_table,"grid_points",grid_point_ranges,
-				(void *)NULL,set_Multi_range);
-			Option_table_add_entry(option_table,"lines",line_ranges,
-				(void *)NULL,set_Multi_range);
-			Option_table_add_entry(option_table,"nodes",node_ranges,
-				(void *)NULL,set_Multi_range);
+			Option_table_add_entry(option_table,"grid_points",&grid_points_flag,
+				(void *)NULL,set_char_flag);
+			Option_table_add_entry(option_table, "group", &from_element_group,
+				command_data->element_group_manager, set_FE_element_group);
+			Option_table_add_entry(option_table,"lines",&lines_flag,
+				(void *)NULL,set_char_flag);
+			Option_table_add_entry(option_table,"nodes",&nodes_flag,
+				(void *)NULL,set_char_flag);
 			Option_table_add_entry(option_table,"points",&element_point_ranges,
 				(void *)command_data->element_manager,set_Element_point_ranges);
+			/* default option: mulit range */
+			Option_table_add_entry(option_table, (char *)NULL, (void *)multi_range,
+				NULL, set_Multi_range);
 			if (return_code=Option_table_multi_parse(option_table,state))
 			{
-				/* data */
-				if (0<(total_number_in_ranges=
-					Multi_range_get_total_number_in_ranges(data_ranges)))
+				if ((data_flag + elements_flag + faces_flag + grid_points_flag
+					+ lines_flag + nodes_flag) != 1)
 				{
-					number_unselected=0;
-					ranges_string=(char *)NULL;
-					if (NUMBER_IN_MANAGER(FE_node)(command_data->data_manager)<
-						total_number_in_ranges)
-					{
-						/* get ranges_string for later warning since modifying ranges */
-						ranges_string=Multi_range_get_ranges_string(data_ranges);
-						/* take numbers not in the manager away from data_ranges to avoid
-							 excess computation if, say, 1..1000000 entered */
-						multi_range=CREATE(Multi_range)();
-						if (FOR_EACH_OBJECT_IN_MANAGER(FE_node)(
-							add_FE_node_number_to_Multi_range,(void *)multi_range,
-							command_data->data_manager))
-						{
-							Multi_range_intersect(data_ranges,multi_range);
-						}
-						DESTROY(Multi_range)(&multi_range);
-					}
-					FE_node_selection_begin_cache(command_data->data_selection);
-					number_of_ranges=Multi_range_get_number_of_ranges(data_ranges);
-					for (i=0;i<number_of_ranges;i++)
-					{
-						Multi_range_get_range(data_ranges,i,&start,&stop);
-						for (j=start;j<=stop;j++)
-						{
-							if (node=FIND_BY_IDENTIFIER_IN_MANAGER(FE_node,
-								cm_node_identifier)(j,command_data->data_manager))
-							{
-								/* only unselect those that are currently selected */
-								if (FE_node_selection_is_node_selected(
-									command_data->data_selection,node)&&
-									FE_node_selection_unselect_node(
-										command_data->data_selection,node))
-								{
-									number_unselected++;
-								}
-							}
-						}
-					}
-					if (number_unselected < total_number_in_ranges)
-					{
-						if (!ranges_string)
-						{
-							ranges_string=Multi_range_get_ranges_string(data_ranges);
-						}
-						display_message(WARNING_MESSAGE,
-							"%d data unselected from %s",number_unselected,
-							ranges_string);
-						DEALLOCATE(ranges_string);
-					}
-					FE_node_selection_end_cache(command_data->data_selection);
+					display_message(ERROR_MESSAGE,"gfx select:  "
+						"You must specify one and only one of "
+						"data/elements/faces/lines/grid_points/nodes.");
+					return_code = 0;
 				}
-
+			}
+			if (return_code)
+			{
+				/* data */
+				if (data_flag)
+				{
+					/* Get the data_group that matches the element group */
+					if (from_element_group)
+					{
+						if (GET_NAME(GROUP(FE_element))(from_element_group, &group_name))
+						{
+							if (!(from_node_group = FIND_BY_IDENTIFIER_IN_MANAGER(GROUP(FE_node),
+								name)(group_name, command_data->data_group_manager)))
+							{
+								display_message(ERROR_MESSAGE,
+									"execute_command_gfx_unselect.  "
+									"Unable to find data group for element group %s",
+									group_name);
+								return_code=0;
+							}
+							DEALLOCATE(group_name);
+						}
+						else
+						{
+							display_message(ERROR_MESSAGE,
+								"execute_command_gfx_unselect.  "
+								"Unable to get group name");
+							return_code=0;
+						}
+					}
+					if (return_code)
+					{
+						if (node_list = FE_node_list_from_all_selected_group_ranges(
+							command_data->data_manager, all_flag, command_data->data_selection, 
+							selected_flag, from_node_group, multi_range, conditional_field,
+							time))
+						{
+							FE_node_selection_begin_cache(command_data->data_selection);
+							if (return_code = FOR_EACH_OBJECT_IN_LIST(FE_node)(
+								FE_node_unselect_in_FE_node_selection,
+								(void *)command_data->data_selection, node_list))
+							{
+								display_message(INFORMATION_MESSAGE,
+									"Unselected %d data points.\n",
+									NUMBER_IN_LIST(FE_node)(node_list));
+							}
+							else
+							{
+								display_message(ERROR_MESSAGE, 
+									"execute_command_gfx_unselect.  Problem selecting nodes.");
+							}
+							FE_node_selection_end_cache(command_data->data_selection);
+						}
+					}
+				}
 				/* element_points */
 				if (element_point_ranges)
 				{
@@ -20903,295 +20943,190 @@ Executes a GFX UNSELECT command.
 						command_data->element_point_ranges_selection,element_point_ranges);
 				}
 				/* elements */
-				if (0<(total_number_in_ranges=
-					Multi_range_get_total_number_in_ranges(element_ranges)))
+				if (elements_flag)
 				{
-					number_unselected=0;
-					ranges_string=(char *)NULL;
-					if (NUMBER_IN_MANAGER(FE_element)(command_data->element_manager)<
-						total_number_in_ranges)
+					if (element_list = FE_element_list_from_all_selected_group_ranges(
+						CM_ELEMENT, command_data->element_manager, all_flag, 
+						command_data->element_selection, 
+						selected_flag, from_element_group, multi_range, conditional_field,
+						time))
 					{
-						/* get ranges_string for later warning since modifying ranges */
-						ranges_string=Multi_range_get_ranges_string(element_ranges);
-						/* take numbers not in the manager away from element_ranges to avoid
-							 excess computation if, say, 1..1000000 entered */
-						element_type_ranges_data.cm_element_type = CM_ELEMENT;
-						element_type_ranges_data.multi_range = CREATE(Multi_range)();
-						if (FOR_EACH_OBJECT_IN_MANAGER(FE_element)(
-							FE_element_of_CM_element_type_add_number_to_Multi_range,
-							(void *)&element_type_ranges_data, command_data->element_manager))
+						FE_element_selection_begin_cache(command_data->element_selection);
+						if (return_code = FOR_EACH_OBJECT_IN_LIST(FE_element)(
+							FE_element_unselect_in_FE_element_selection,
+							(void *)command_data->element_selection, element_list))
 						{
-							Multi_range_intersect(element_ranges,
-								element_type_ranges_data.multi_range);
-						}
-						DESTROY(Multi_range)(&(element_type_ranges_data.multi_range));
-					}
-					FE_element_selection_begin_cache(command_data->element_selection);
-					number_of_ranges=Multi_range_get_number_of_ranges(element_ranges);
-					cm.type=CM_ELEMENT;
-					for (i=0;i<number_of_ranges;i++)
-					{
-						Multi_range_get_range(element_ranges,i,&start,&stop);
-						for (j=start;j<=stop;j++)
-						{
-							cm.number=j;
-							if (element=FIND_BY_IDENTIFIER_IN_MANAGER(FE_element,identifier)(
-								&cm,command_data->element_manager))
-							{
-								/* only unselect those that are currently selected */
-								if (FE_element_selection_is_element_selected(
-									command_data->element_selection,element)&&
-									FE_element_selection_unselect_element(
-										command_data->element_selection,element))
-								{
-									number_unselected++;
-								}
-							}
-						}
-					}
-					if (number_unselected < total_number_in_ranges)
-					{
-						if (!ranges_string)
-						{
-							ranges_string=Multi_range_get_ranges_string(element_ranges);
-						}
-						display_message(WARNING_MESSAGE,
-							"%d element(s) unselected from %s",number_unselected,
-							ranges_string);
-						DEALLOCATE(ranges_string);
-					}
-					FE_element_selection_end_cache(command_data->element_selection);
-				}
-				/* faces */
-				if (0<(total_number_in_ranges=
-					Multi_range_get_total_number_in_ranges(face_ranges)))
-				{
-					number_unselected=0;
-					ranges_string=(char *)NULL;
-					if (NUMBER_IN_MANAGER(FE_element)(command_data->element_manager)<
-						total_number_in_ranges)
-					{
-						/* get ranges_string for later warning since modifying ranges */
-						ranges_string=Multi_range_get_ranges_string(face_ranges);
-						/* take numbers not in the manager away from face_ranges to avoid
-							 excess computation if, say, 1..1000000 entered */
-						element_type_ranges_data.cm_element_type = CM_FACE;
-						element_type_ranges_data.multi_range = CREATE(Multi_range)();
-						if (FOR_EACH_OBJECT_IN_MANAGER(FE_element)(
-							FE_element_of_CM_element_type_add_number_to_Multi_range,
-							(void *)&element_type_ranges_data, command_data->element_manager))
-						{
-							Multi_range_intersect(face_ranges,
-								element_type_ranges_data.multi_range);
-						}
-						DESTROY(Multi_range)(&(element_type_ranges_data.multi_range));
-					}
-					FE_element_selection_begin_cache(command_data->element_selection);
-					number_of_ranges=Multi_range_get_number_of_ranges(face_ranges);
-					cm.type=CM_FACE;
-					for (i=0;i<number_of_ranges;i++)
-					{
-						Multi_range_get_range(face_ranges,i,&start,&stop);
-						for (j=start;j<=stop;j++)
-						{
-							cm.number=j;
-							if (element=FIND_BY_IDENTIFIER_IN_MANAGER(FE_element,identifier)(
-								&cm,command_data->element_manager))
-							{
-								/* only unselect those that are currently selected */
-								if (FE_element_selection_is_element_selected(
-									command_data->element_selection,element)&&
-									FE_element_selection_unselect_element(
-										command_data->element_selection,element))
-								{
-									number_unselected++;
-								}
-							}
-						}
-					}
-					if (number_unselected < total_number_in_ranges)
-					{
-						if (!ranges_string)
-						{
-							ranges_string=Multi_range_get_ranges_string(face_ranges);
-						}
-						display_message(WARNING_MESSAGE,
-							"%d face(s) unselected from %s",number_unselected,
-							ranges_string);
-						DEALLOCATE(ranges_string);
-					}
-					FE_element_selection_end_cache(command_data->element_selection);
-				}
-				/* grid_points */
-				if (0<(total_number_in_ranges=
-					Multi_range_get_total_number_in_ranges(grid_point_ranges)))
-				{
-					if (grid_field)
-					{
-						if (grid_to_list_data.element_point_ranges_list=
-							CREATE(LIST(Element_point_ranges))())
-						{
-							grid_to_list_data.grid_fe_field=grid_field;
-							grid_to_list_data.grid_value_ranges=grid_point_ranges;
-							/* inefficient: go through every element in manager */
-							FOR_EACH_OBJECT_IN_MANAGER(FE_element)(
-								FE_element_grid_to_Element_point_ranges_list,
-								(void *)&grid_to_list_data,command_data->element_manager);
-							if (0<NUMBER_IN_LIST(Element_point_ranges)(
-								grid_to_list_data.element_point_ranges_list))
-							{
-								Element_point_ranges_selection_begin_cache(
-									command_data->element_point_ranges_selection);
-								FOR_EACH_OBJECT_IN_LIST(Element_point_ranges)(
-									Element_point_ranges_unselect,
-									(void *)command_data->element_point_ranges_selection,
-									grid_to_list_data.element_point_ranges_list);
-								Element_point_ranges_selection_end_cache(
-									command_data->element_point_ranges_selection);
-							}
-							DESTROY(LIST(Element_point_ranges))(
-								&(grid_to_list_data.element_point_ranges_list));
+							display_message(INFORMATION_MESSAGE,
+								"Unselected %d elements.\n",
+								NUMBER_IN_LIST(FE_node)(node_list));
 						}
 						else
 						{
-							display_message(ERROR_MESSAGE,"execute_command_gfx_unselect.  "
-								"Could not create grid_point list");
+							display_message(ERROR_MESSAGE, 
+								"execute_command_gfx_unselect.  Problem selecting nodes.");
 						}
+						FE_element_selection_end_cache(command_data->element_selection);
 					}
-					else
+				}
+				/* faces */
+				if (faces_flag)
+				{
+					if (element_list = FE_element_list_from_all_selected_group_ranges(
+						CM_FACE, command_data->element_manager, all_flag, 
+						command_data->element_selection, 
+						selected_flag, from_element_group, multi_range, conditional_field,
+						time))
 					{
-						display_message(ERROR_MESSAGE,"To unselect grid_points, "
-							"need integer grid_field (eg. grid_point_number)");
+						FE_element_selection_begin_cache(command_data->element_selection);
+						if (return_code = FOR_EACH_OBJECT_IN_LIST(FE_element)(
+							FE_element_unselect_in_FE_element_selection,
+							(void *)command_data->element_selection, element_list))
+						{
+							display_message(INFORMATION_MESSAGE,
+								"Unselected %d faces.\n",
+								NUMBER_IN_LIST(FE_node)(node_list));
+						}
+						else
+						{
+							display_message(ERROR_MESSAGE, 
+								"execute_command_gfx_unselect.  Problem selecting nodes.");
+						}
+						FE_element_selection_end_cache(command_data->element_selection);
+					}
+				}
+				/* grid_points */
+				if (grid_points_flag)
+				{
+					if (0<Multi_range_get_total_number_in_ranges(multi_range))
+					{
+						if (grid_field)
+						{
+							if (grid_to_list_data.element_point_ranges_list=
+								CREATE(LIST(Element_point_ranges))())
+							{
+								grid_to_list_data.grid_fe_field=grid_field;
+								grid_to_list_data.grid_value_ranges=multi_range;
+								/* inefficient: go through every element in manager */
+								FOR_EACH_OBJECT_IN_MANAGER(FE_element)(
+									FE_element_grid_to_Element_point_ranges_list,
+									(void *)&grid_to_list_data,command_data->element_manager);
+								if (0<NUMBER_IN_LIST(Element_point_ranges)(
+									grid_to_list_data.element_point_ranges_list))
+								{
+									Element_point_ranges_selection_begin_cache(
+										command_data->element_point_ranges_selection);
+									FOR_EACH_OBJECT_IN_LIST(Element_point_ranges)(
+										Element_point_ranges_unselect,
+										(void *)command_data->element_point_ranges_selection,
+										grid_to_list_data.element_point_ranges_list);
+									Element_point_ranges_selection_end_cache(
+										command_data->element_point_ranges_selection);
+								}
+								DESTROY(LIST(Element_point_ranges))(
+									&(grid_to_list_data.element_point_ranges_list));
+							}
+							else
+							{
+								display_message(ERROR_MESSAGE,"execute_command_gfx_unselect.  "
+									"Could not create grid_point list");
+							}
+						}
+						else
+						{
+							display_message(ERROR_MESSAGE,"To unselect grid_points, "
+								"need integer grid_field (eg. grid_point_number)");
+						}
 					}
 				}
 				/* lines */
-				if (0<(total_number_in_ranges=
-					Multi_range_get_total_number_in_ranges(line_ranges)))
+				if (lines_flag)
 				{
-					number_unselected=0;
-					ranges_string=(char *)NULL;
-					if (NUMBER_IN_MANAGER(FE_element)(command_data->element_manager)<
-						total_number_in_ranges)
+					if (element_list = FE_element_list_from_all_selected_group_ranges(
+						CM_LINE, command_data->element_manager, all_flag, 
+						command_data->element_selection, 
+						selected_flag, from_element_group, multi_range, conditional_field,
+						time))
 					{
-						/* get ranges_string for later warning since modifying ranges */
-						ranges_string=Multi_range_get_ranges_string(line_ranges);
-						/* take numbers not in the manager away from line_ranges to avoid
-							 excess computation if, say, 1..1000000 entered */
-						element_type_ranges_data.cm_element_type = CM_LINE;
-						element_type_ranges_data.multi_range = CREATE(Multi_range)();
-						if (FOR_EACH_OBJECT_IN_MANAGER(FE_element)(
-							FE_element_of_CM_element_type_add_number_to_Multi_range,
-							(void *)&element_type_ranges_data, command_data->element_manager))
+						FE_element_selection_begin_cache(command_data->element_selection);
+						if (return_code = FOR_EACH_OBJECT_IN_LIST(FE_element)(
+							FE_element_unselect_in_FE_element_selection,
+							(void *)command_data->element_selection, element_list))
 						{
-							Multi_range_intersect(line_ranges,
-								element_type_ranges_data.multi_range);
+							display_message(INFORMATION_MESSAGE,
+								"Unselected %d lines.\n",
+								NUMBER_IN_LIST(FE_node)(node_list));
 						}
-						DESTROY(Multi_range)(&(element_type_ranges_data.multi_range));
-					}
-					FE_element_selection_begin_cache(command_data->element_selection);
-					number_of_ranges=Multi_range_get_number_of_ranges(line_ranges);
-					cm.type=CM_LINE;
-					for (i=0;i<number_of_ranges;i++)
-					{
-						Multi_range_get_range(line_ranges,i,&start,&stop);
-						for (j=start;j<=stop;j++)
+						else
 						{
-							cm.number=j;
-							if (element=FIND_BY_IDENTIFIER_IN_MANAGER(FE_element,identifier)(
-								&cm,command_data->element_manager))
-							{
-								/* only unselect those that are currently selected */
-								if (FE_element_selection_is_element_selected(
-									command_data->element_selection,element)&&
-									FE_element_selection_unselect_element(
-										command_data->element_selection,element))
-								{
-									number_unselected++;
-								}
-							}
+							display_message(ERROR_MESSAGE, 
+								"execute_command_gfx_unselect.  Problem selecting nodes.");
 						}
+						FE_element_selection_end_cache(command_data->element_selection);
 					}
-					if (number_unselected < total_number_in_ranges)
-					{
-						if (!ranges_string)
-						{
-							ranges_string=Multi_range_get_ranges_string(line_ranges);
-						}
-						display_message(WARNING_MESSAGE,
-							"%d line(s) unselected from %s",number_unselected,
-							ranges_string);
-						DEALLOCATE(ranges_string);
-					}
-					FE_element_selection_end_cache(command_data->element_selection);
 				}
 				/* nodes */
-				if (0<(total_number_in_ranges=
-					Multi_range_get_total_number_in_ranges(node_ranges)))
+				if (nodes_flag)
 				{
-					number_unselected=0;
-					ranges_string=(char *)NULL;
-					if (NUMBER_IN_MANAGER(FE_node)(command_data->node_manager)<
-						total_number_in_ranges)
+					/* Get the data_group that matches the element group */
+					if (from_element_group)
 					{
-						/* get ranges_string for later warning since modifying ranges */
-						ranges_string=Multi_range_get_ranges_string(node_ranges);
-						/* take numbers not in the manager away from node_ranges to avoid
-							 excess computation if, say, 1..1000000 entered */
-						multi_range=CREATE(Multi_range)();
-						if (FOR_EACH_OBJECT_IN_MANAGER(FE_node)(
-							add_FE_node_number_to_Multi_range,(void *)multi_range,
-							command_data->node_manager))
+						if (GET_NAME(GROUP(FE_element))(from_element_group, &group_name))
 						{
-							Multi_range_intersect(node_ranges,multi_range);
-						}
-						DESTROY(Multi_range)(&multi_range);
-					}
-					FE_node_selection_begin_cache(command_data->node_selection);
-					number_of_ranges=Multi_range_get_number_of_ranges(node_ranges);
-					for (i=0;i<number_of_ranges;i++)
-					{
-						Multi_range_get_range(node_ranges,i,&start,&stop);
-						for (j=start;j<=stop;j++)
-						{
-							if (node=FIND_BY_IDENTIFIER_IN_MANAGER(FE_node,
-								cm_node_identifier)(j,command_data->node_manager))
+							if (!(from_node_group = FIND_BY_IDENTIFIER_IN_MANAGER(GROUP(FE_node),
+								name)(group_name, command_data->node_group_manager)))
 							{
-								/* only unselect those that are currently selected */
-								if (FE_node_selection_is_node_selected(
-									command_data->node_selection,node)&&
-									FE_node_selection_unselect_node(
-										command_data->node_selection,node))
-								{
-									number_unselected++;
-								}
+								display_message(ERROR_MESSAGE,
+									"execute_command_gfx_unselect.  "
+									"Unable to find node group for element group %s",
+									group_name);
+								return_code=0;
 							}
+							DEALLOCATE(group_name);
 						}
-					}
-					if (number_unselected < total_number_in_ranges)
-					{
-						if (!ranges_string)
+						else
 						{
-							ranges_string=Multi_range_get_ranges_string(node_ranges);
+							display_message(ERROR_MESSAGE,
+								"execute_command_gfx_unselect.  "
+								"Unable to get group name");
+							return_code=0;
 						}
-						display_message(WARNING_MESSAGE,
-							"%d node(s) unselected from %s",number_unselected,
-							ranges_string);
-						DEALLOCATE(ranges_string);
 					}
-					FE_node_selection_end_cache(command_data->node_selection);
+					if (return_code)
+					{
+						if (node_list = FE_node_list_from_all_selected_group_ranges(
+							command_data->node_manager, all_flag, command_data->node_selection, 
+							selected_flag, from_node_group, multi_range, conditional_field,
+							time))
+						{
+							FE_node_selection_begin_cache(command_data->node_selection);
+							if (return_code = FOR_EACH_OBJECT_IN_LIST(FE_node)(
+								FE_node_unselect_in_FE_node_selection,
+								(void *)command_data->node_selection, node_list))
+							{
+								display_message(INFORMATION_MESSAGE,
+									"Unselected %d nodes.\n",
+									NUMBER_IN_LIST(FE_node)(node_list));
+							}
+							else
+							{
+								display_message(ERROR_MESSAGE, 
+									"execute_command_gfx_unselect.  Problem selecting nodes.");
+							}
+							FE_node_selection_end_cache(command_data->node_selection);
+						}
+					}
 				}
 			}
 			DESTROY(Option_table)(&option_table);
+			if (conditional_field)
+			{
+				DEACCESS(Computed_field)(&conditional_field);
+			}
 			if (grid_field)
 			{
 				DEACCESS(FE_field)(&grid_field);
 			}
-			DESTROY(Multi_range)(&node_ranges);
-			DESTROY(Multi_range)(&line_ranges);
-			DESTROY(Multi_range)(&grid_point_ranges);
-			DESTROY(Multi_range)(&face_ranges);
-			DESTROY(Multi_range)(&element_ranges);
-			DESTROY(Multi_range)(&data_ranges);
+			DESTROY(Multi_range)(&multi_range);
 			if (element_point_ranges)
 			{
 				DESTROY(Element_point_ranges)(&element_point_ranges);
@@ -21199,7 +21134,7 @@ Executes a GFX UNSELECT command.
 		}
 		else
 		{
-			set_command_prompt("gfx unselect",command_data);
+			set_command_prompt("gfx select",command_data);
 			return_code=1;
 		}
 	}
