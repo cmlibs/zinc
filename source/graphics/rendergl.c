@@ -1046,7 +1046,10 @@ DESCRIPTION :
 	GTDATA *data_1,*data_2;
 	int i,j,return_code;
 	Triple *surface_point_1,*surface_point_2, *normal_point_1, *normal_point_2,
-		*tangent_point_1, *tangent_point_2, *texture_point_1, *texture_point_2;
+		*texture_point_1, *texture_point_2;
+#if defined GL_VERSION_1_3
+	Triple *tangent_point_1, *tangent_point_2;
+#endif /* defined GL_VERSION_1_3 */
 	struct Spectrum_render_data *render_data;
 
 	ENTER(draw_surfaceGL);
