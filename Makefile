@@ -93,14 +93,16 @@ ifdef MEMORYCHECK
 endif
 OPTIONS = $(TARGET_OPTION) $(USER_INTERFACE_OPTION) $(STATIC_LINK_OPTION) $(DEBUG_OPTION) $(ABI_OPTION) $(MEMORYCHECK_OPTION)
 
+FORCE_CROSSCOMPILE = 
+ifeq ($(SYSNAME),Linux)
+   ifeq ($(USER),cmiss)
+      FORCE_CROSSCOMPILE = export PATH=/product/cmiss/cross-compile/i386-glibc21-linux/bin:${PATH};
+   endif
+endif
+
 cmgui cmgui-debug cmgui-debug-memorycheck cmgui-static cmgui-static-debug cmgui64 cmgui64-debug cmgui-console cmgui-gtk cmgui-gtk-debug utilities:
-	cd source ; \
-   if [ "$(USER)" = "cmiss" ]; then \
-      export PATH=/product/cmiss/cross-compile/i386-glibc21-linux/bin:${PATH}; \
-      $(MAKE) -f $(SUBMAKEFILE) $(OPTIONS) ; \
-   else \
-      $(MAKE) -f $(SUBMAKEFILE) $(OPTIONS) ; \
-   fi
+		cd source ; $(FORCE_CROSSCOMPILE) \
+		$(MAKE) -f $(SUBMAKEFILE) $(OPTIONS) ;
 
 #Recurse on these targets so we don't have to redefine in this file what cmgui-gtk-debug is etc.
 cmgui-lib :
