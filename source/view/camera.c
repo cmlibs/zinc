@@ -187,7 +187,6 @@ Callback for the camerament dialog - tidies up all details - mem etc
 	XtVaGetValues(w,XmNuserData,&temp_camera,NULL);
 	*(temp_camera->widget_address)=(Widget)NULL;
 	/* deallocate the memory for the user data */
-	printf("De-allocating memory.\n");
 	DEALLOCATE(temp_camera);
 	LEAVE;
 } /* camera_destroy_CB */

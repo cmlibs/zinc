@@ -227,7 +227,6 @@ Callback for the coordment dialog - tidies up all details - mem etc
 	/* clear the list of widgets */
 	DESTROY_LIST(Coord_data)(&temp_coord->coord_list);
 	/* deallocate the memory for the user data */
-	printf("De-allocating memory.\n");
 	DEALLOCATE(temp_coord);
 	LEAVE;
 } /* coord_destroy_CB */
