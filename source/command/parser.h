@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : parser.h
 
-LAST MODIFIED : 12 May 2000
+LAST MODIFIED : 22 December 2000
 
 DESCRIPTION :
 Public interface for the beginnings of a simple parser (although at the moment
@@ -384,6 +384,16 @@ LAST MODIFIED : 18 June 1996
 
 DESCRIPTION :
 A modifier function for setting a int to a positive value.
+==============================================================================*/
+
+int set_int_and_char_flag(struct Parse_state *state,void *value_address_void,
+	void *flag_address_void);
+/*******************************************************************************
+LAST MODIFIED : 22 December 2000
+
+DESCRIPTION :
+A modifier function for setting an int, and a char flag in the user data to
+indicate that the int has been set.
 ==============================================================================*/
 
 int set_int_vector(struct Parse_state *state,void *values_address_void,

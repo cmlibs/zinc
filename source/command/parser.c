@@ -3032,6 +3032,73 @@ A modifier function for setting a int to a positive value.
 	return (return_code);
 } /* set_int_positive */
 
+int set_int_and_char_flag(struct Parse_state *state,void *value_address_void,
+	void *flag_address_void)
+/*******************************************************************************
+LAST MODIFIED : 22 December 2000
+
+DESCRIPTION :
+A modifier function for setting an int, and a char flag in the user data to
+indicate that the int has been set.
+==============================================================================*/
+{
+	char *current_token, *flag_address;
+	int value, *value_address;
+	int return_code;
+
+	ENTER(set_int_and_char_flag);
+	if (state && (value_address = (int *)value_address_void) &&
+		(flag_address = (char *)flag_address_void))
+	{
+		if (current_token = state->current_token)
+		{
+			if (strcmp(PARSER_HELP_STRING,current_token)&&
+				strcmp(PARSER_RECURSIVE_HELP_STRING,current_token))
+			{
+				if (1 == sscanf(current_token, " %d ", &value))
+				{
+					*value_address = value;
+					*flag_address = 1;
+					return_code = shift_Parse_state(state, 1);
+				}
+				else
+				{
+					display_message(ERROR_MESSAGE, "Invalid int: %s", current_token);
+					display_parse_state_location(state);
+					return_code = 0;
+				}
+			}
+			else
+			{
+				display_message(INFORMATION_MESSAGE, " #");
+				if (*flag_address)
+				{
+					display_message(INFORMATION_MESSAGE, "[%d]", *value_address);
+				}
+				else
+				{
+					display_message(INFORMATION_MESSAGE, "[NOT SET]");
+				}
+				return_code = 1;
+			}
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE, "Missing int");
+			display_parse_state_location(state);
+			return_code = 0;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"set_int_and_char_flag.  Invalid argument(s)");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* set_int_and_char_flag */
+
 int set_int_vector(struct Parse_state *state,void *values_address_void,
 	void *number_of_components_address_void)
 /*******************************************************************************
