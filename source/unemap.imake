@@ -1,7 +1,7 @@
 XCOMM **************************************************************************
 XCOMM FILE : unemap.imake
 XCOMM
-XCOMM LAST MODIFIED : 27 March 2000
+XCOMM LAST MODIFIED : 16 May 2000
 XCOMM
 XCOMM DESCRIPTION :
 XCOMM Makefile for unemap
@@ -457,9 +457,16 @@ GRAPHICS_SRCS = \
 	graphics/selected_graphic.c \
 	graphics/spectrum_settings.c \
  	graphics/texture.c
+INTERACTION_SRCS = \
+	interaction/interaction_volume.c \
+	interaction/interactive_tool.c \
+	interaction/interactive_toolbar_widget.c \
+	interaction/interactive_event.c
 POSITION_SRCS = \
 	io_devices/input_module.c \
 	io_devices/matrix.c
+NODE_SRCS = \
+	node/node_tool.c
 SELECTION_SRCS = \
 	selection/element_point_ranges_selection.c \
 	selection/element_selection.c \
@@ -520,7 +527,9 @@ GRAPHICS_SRCS = \
 	graphics/spectrum.c \
 	graphics/spectrum_settings.c \
 	graphics/texture.c
+INTERACTION_SRCS =
 POSITION_SRCS =
+NODE_SRCS =
 SELECTION_SRCS =
 TIME_SRCS = \
 	time/time.c \
@@ -568,7 +577,9 @@ SRCS = \
 	$(FINITE_ELEMENT_SRCS) \
 	$(GENERAL_SRCS) \
 	$(GRAPHICS_SRCS) \
+	$(INTERACTION_SRCS) \
 	$(POSITION_SRCS) \
+	$(NODE_SRCS) \
 	$(SELECTION_SRCS) \
 	$(THREE_D_DRAWING_SRCS) \
 	$(TIME_SRCS) \
