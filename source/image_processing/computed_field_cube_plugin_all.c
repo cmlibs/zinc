@@ -619,8 +619,8 @@ Perform morphologic parameters extraction on the image cache.
 						bottom = zctr + radius;
 						if (bottom > (zsize - 1)) bottom = zsize - 1;
 
-						Spatial_gray_tone_histogram_cube(data_index1,
-                                                         xsize, ysize, zsize, levels, h);
+						/*Spatial_gray_tone_histogram_cube(data_index1,
+                                                         xsize, ysize, zsize, levels, h);*/
 						Spatial_gray_tone_histogram(data_index1, radius, xctr, yctr, zctr,
                                                          xsize, ysize, zsize, levels, h);
 						Spatial_Euler_number(pixsize, h, &euler_number);
