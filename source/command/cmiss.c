@@ -24749,19 +24749,7 @@ Clean up the command_data, deallocating all the associated memory and resources.
 
 		DESTROY(MANAGER(FE_basis))(&command_data->basis_manager);
 
-		/* check if there are any objects in all lists; if so, do not destroy
-			them since this will cause memory addresses to be deallocated twice
-			as DEACCESS will also request the objects be removed from the list.
-			Do, however, send out an error message */
-		if (0 == NUMBER_IN_LIST(FE_element_shape)(command_data->element_shape_list))
-		{
-			DESTROY(LIST(FE_element_shape))(&command_data->element_shape_list);
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE, "%d element shape(s) still in use",
-				NUMBER_IN_LIST(FE_element_shape)(command_data->element_shape_list));
-		}
+		DESTROY(LIST(FE_element_shape))(&command_data->element_shape_list);
 
 		DEACCESS(Spectrum)(&(command_data->default_spectrum));
 		DESTROY(MANAGER(Spectrum))(&command_data->spectrum_manager);
