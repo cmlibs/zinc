@@ -396,7 +396,7 @@ Main program for the CMISS Graphical User Interface
 		WINAPI
 #endif /* defined (WINDOWS) */
 		return_code;
-	int batch_mode, command_list,non_random,start_cm,start_mycm, status;
+	int batch_mode, command_list,no_display,non_random,start_cm,start_mycm;
 #if defined (MOTIF)
 	char *arg;
 	int i;
@@ -625,6 +625,7 @@ Main program for the CMISS Graphical User Interface
 		command_list) */
 	command_list=0;
 	batch_mode = 0;
+	no_display = 0;
 	i=1;
 	while ((i<argc)&&strcmp("-command_list",argv[i]))
 	{
@@ -643,6 +644,15 @@ Main program for the CMISS Graphical User Interface
 	{
 		batch_mode = 1;
 	}
+	i=1;
+	while ((i<argc)&&strncmp("-no_display",argv[i],4))
+	{
+		i++;
+	}
+	if (i<argc)
+	{
+		no_display = 1;
+	}
 
 #if defined (F90_INTERPRETER) || defined (PERL_INTERPRETER)
 	create_interpreter(&status);
@@ -655,7 +665,7 @@ Main program for the CMISS Graphical User Interface
 	set_command = CREATE(Execute_command)(cmiss_set_command,
 		(void *)(&command_data));
 	command_data.set_command= set_command;
-	if(batch_mode || command_list)
+	if(no_display || command_list)
 	{
 		command_data.user_interface= (struct User_interface *)NULL;
 	}
@@ -1081,7 +1091,7 @@ Main program for the CMISS Graphical User Interface
 
 	if (!command_list)
 	{
-		if (batch_mode)
+		if (no_display)
 		{
 			return_code = 1;
 		}
@@ -1370,6 +1380,7 @@ Main program for the CMISS Graphical User Interface
 							}
 						} break;
 						case 'b':
+						case 'n':
 						{
 						} break;
 						default:
@@ -1398,7 +1409,7 @@ Main program for the CMISS Graphical User Interface
 				i++;
 			}
 #endif /* defined (MOTIF) */
-			if(batch_mode)
+			if(no_display)
 			{
 				command_data.default_time_keeper = (struct Time_keeper *)NULL;
 			}
@@ -1431,7 +1442,7 @@ Main program for the CMISS Graphical User Interface
 					srand(non_random);
 				}
 				user_settings.startup_comfile = (char *)NULL;
-				if (batch_mode)
+				if (no_display)
 				{
 					command_data.background_colour.red=0.0;
 					command_data.background_colour.green=0.0;
@@ -1488,7 +1499,7 @@ Main program for the CMISS Graphical User Interface
 					command_data.foreground_colour.green,
 					command_data.foreground_colour.blue);
 				cmiss_execute_command(global_temp_string,(void *)(&command_data));
-				if (batch_mode || examples_directory)
+				if (no_display || examples_directory)
 				{
 					command_data.examples_directory=examples_directory;
 				}
@@ -1498,7 +1509,7 @@ Main program for the CMISS Graphical User Interface
 				}
 				command_data.cm_examples_directory=cm_examples_directory;
 				command_data.cm_parameters_file_name=cm_parameters_file_name;
-				if(batch_mode)
+				if(no_display)
 				{
 					command_data.help_directory=(char *)NULL;
 					command_data.help_url=(char *)NULL;
@@ -1510,7 +1521,7 @@ Main program for the CMISS Graphical User Interface
 				}
 #endif /* defined (MOTIF) */
 #if defined (MOTIF)
-				if (batch_mode)
+				if (no_display)
 				{
 					return_code = 1;
 				}
@@ -1585,13 +1596,16 @@ Main program for the CMISS Graphical User Interface
 								&user_interface,version_id_string))
 							{
 								command_data.command_window=command_window;
-								/* set up messages */
-								set_display_message_function(ERROR_MESSAGE,
-									display_error_message,command_window);
-								set_display_message_function(INFORMATION_MESSAGE,
-									display_information_message,command_window);
-								set_display_message_function(WARNING_MESSAGE,
-									display_warning_message,command_window);
+								if (!batch_mode)
+								{
+									/* set up messages */
+									set_display_message_function(ERROR_MESSAGE,
+										display_error_message,command_window);
+									set_display_message_function(INFORMATION_MESSAGE,
+										display_information_message,command_window);
+									set_display_message_function(WARNING_MESSAGE,
+										display_warning_message,command_window);
+								}
 
 								XSetErrorHandler(x_error_handler);
 								return_code = 1;
