@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : finite_element_to_graphics_object.c
 
-LAST MODIFIED : 8 May 2001
+LAST MODIFIED : 21 June 2001
 
 DESCRIPTION :
 The functions for creating graphical objects from finite elements.
@@ -2548,7 +2548,7 @@ static int categorize_FE_element_shape(struct FE_element_shape *element_shape,
 	int *number_of_polygon_sides_address, int *linked_xi_directions,
 	int *line_direction_address)
 /*******************************************************************************
-LAST MODIFIED : 19 April 2001
+LAST MODIFIED : 21 June 2001
 
 DESCRIPTION :
 Upon success the overall <element_shape_category> determined from
@@ -2599,7 +2599,7 @@ and in <line_direction_address> the xi direction of LINE_SHAPE.
 			case 3:
 			{
 				if ((LINE_SHAPE == element_shape->type[0]) &&
-					(LINE_SHAPE == element_shape->type[1]))
+					(LINE_SHAPE == element_shape->type[3]))
 				{
 					*element_shape_category_address = ELEMENT_CATEGORY_3D_CUBE;
 				}
@@ -3404,9 +3404,9 @@ comments for simplex and polygons shapes for more details.
 						for (k = 0; k <= number_in_xi[line_direction]; k++)
 						{
 							xi_k = (float)k/(float)number_in_xi[line_direction];
-							for (j = 0; j <= number_in_xi[1]; j++)
+							for (j = 0; j <= number_in_xi[linked_xi_directions[1]]; j++)
 							{
-								xi_j = (float)j/(float)number_in_xi[1];
+								xi_j = (float)j/(float)number_in_xi[linked_xi_directions[1]];
 								for (i = 0; i < number_in_xi_around_polygon; i++)
 								{
 									(*xi)[linked_xi_directions[0]] =

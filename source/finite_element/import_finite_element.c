@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : import_finite_element.c
 
-LAST MODIFIED : 26 April 2001
+LAST MODIFIED : 21 May 2001
 
 DESCRIPTION :
 The function for importing finite element data, from a file or CMISS (via a
@@ -1881,7 +1881,7 @@ static struct FE_basis *read_FE_basis(FILE *input_file,
 	int number_of_xi_coordinates,int *basis_type,
 	struct MANAGER(FE_basis) *basis_manager)
 /*******************************************************************************
-LAST MODIFIED : 26 April 2001
+LAST MODIFIED : 21 May 2001
 
 DESCRIPTION :
 Reads a basis description from an <input_file> or the socket (if <input_file> is
@@ -1891,8 +1891,8 @@ the a copy of the type for the basis.  Some examples of basis descriptions in an
 input file are
 1. c.Hermite*c.Hermite*l.Lagrange  This has cubic variation in xi1 and xi2 and
 	linear variation in xi3.
-2. c.Hermite*l.Lagrange(l.Lagrange)*l.Lagrange  This has cubic variation in xi1
-	and 2-D linear simplex variation for xi2 and xi3.
+2. c.Hermite*l.simplex(3)*l.simplex  This has cubic variation in xi1 and 2-D
+	linear simplex variation for xi2 and xi3.
 3. polygon(5,3)*l.Lagrange*polygon  This has linear variation in xi2 and a 2-D
 	5-gon for xi1 and xi3.
 ==============================================================================*/
