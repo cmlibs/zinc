@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : graphical_element_editor.c
 
-LAST MODIFIED : 10 July 2000
+LAST MODIFIED : 24 November 2000
 
 DESCRIPTION :
 Provides the widgets to manipulate graphical element group settings.
@@ -1111,17 +1111,19 @@ Called when a settings select toggle button is selected.
 static void graphical_element_editor_modify_CB(Widget widget,
 	XtPointer client_data,XtPointer call_data)
 /*******************************************************************************
-LAST MODIFIED : 29 June 2000
+LAST MODIFIED : 24 November 2000
 
 DESCRIPTION :
 Called when a modify button - add, delete, up, down - is activated.
 ==============================================================================*/
 {
+	enum Glyph_scaling_mode glyph_scaling_mode;
 	enum Streamline_type streamline_type;
 	float streamline_length,streamline_width;
 	int list_changed,position,return_code,reverse_track;
 	struct Computed_field *default_coordinate_field,*element_xi_coordinate_field,
-		*iso_scalar_field,*orientation_scale_field,*stream_vector_field;
+		*iso_scalar_field,*orientation_scale_field,*stream_vector_field,
+		*variable_scale_field;
 	struct Graphical_element_editor_struct *gelem_editor;
 	struct GROUP(FE_node) *data_group;
 	struct GT_object *glyph,*old_glyph;
@@ -1219,11 +1221,13 @@ Called when a modify button - add, delete, up, down - is activated.
 						glyph=FIND_BY_IDENTIFIER_IN_LIST(GT_object,name)("point",
 							gelem_editor->glyph_list);
 						if (!(GT_element_settings_get_glyph_parameters(settings,
-							&old_glyph,glyph_centre,glyph_size,&orientation_scale_field,
-							glyph_scale_factors)&&
+							&old_glyph, &glyph_scaling_mode ,glyph_centre, glyph_size,
+							&orientation_scale_field, glyph_scale_factors,
+							&variable_scale_field) &&
 							GT_element_settings_set_glyph_parameters(settings,glyph,
-								glyph_centre,glyph_size,orientation_scale_field,
-								glyph_scale_factors)))
+								glyph_scaling_mode, glyph_centre, glyph_size,
+								orientation_scale_field, glyph_scale_factors,
+								variable_scale_field)))
 						{
 							display_message(WARNING_MESSAGE,"No glyphs defined");
 							return_code=0;
