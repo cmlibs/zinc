@@ -2890,8 +2890,9 @@ the elements they are calculated from.
 			(GT_ELEMENT_SETTINGS_LINES==settings->settings_type)||
 			(GT_ELEMENT_SETTINGS_CYLINDERS==settings->settings_type)||
 			(GT_ELEMENT_SETTINGS_SURFACES==settings->settings_type)||
+			(GT_ELEMENT_SETTINGS_ELEMENT_POINTS==settings->settings_type)||
 			(GT_ELEMENT_SETTINGS_ISO_SURFACES==settings->settings_type)||
-			(GT_ELEMENT_SETTINGS_ELEMENT_POINTS==settings->settings_type));
+			(GT_ELEMENT_SETTINGS_VOLUMES==settings->settings_type));
 	}
 	else
 	{
@@ -3426,10 +3427,6 @@ any trivial differences are fixed up in the graphics_obejct.
 					{
 						set_GT_object_default_material(settings->graphics_object,
 							settings->material);
-						if (g_VOLTEX==settings->graphics_object->object_type)
-						{
-							update_GT_voltex_materials_to_default(settings->graphics_object);
-						}
 					}
 					if (settings->selected_material !=
 						matching_settings->selected_material)
@@ -4010,7 +4007,7 @@ if no coordinate field. Currently only write if we have a field.
 		{
 			sprintf(temp_string," xi %g,%g,%g",
 				settings->seed_xi[0],settings->seed_xi[1],settings->seed_xi[2]);
-			append_string(&settings_string,temp_string,&error);			
+			append_string(&settings_string,temp_string,&error);
 		}
 
 		/* for streamlines only */
@@ -4462,8 +4459,7 @@ Converts a finite element into a graphics object with the supplied settings.
 											settings_to_object_data->rc_coordinate_field,
 											settings->data_field,settings->iso_scalar_field,
 											(struct Computed_field *)NULL,number_in_xi,
-											settings->material,settings->graphics_object,
-											settings->render_type,
+											settings->graphics_object,settings->render_type,
 											(struct GROUP(FE_node) *)NULL,
 											(struct MANAGER(FE_node) *)NULL,
 											(struct MANAGER(FE_field) *)NULL);
@@ -4925,6 +4921,8 @@ The graphics object is stored with with the settings it was created from.
 									group_string, settings_name);
 								settings->graphics_object=CREATE(GT_object)(
 									graphics_object_name,graphics_object_type,settings->material);
+								GT_object_set_select_mode(settings->graphics_object,
+									settings->select_mode);
 								if (settings->selected_material)
 								{
 									set_GT_object_selected_material(settings->graphics_object,
@@ -5144,7 +5142,8 @@ The graphics object is stored with with the settings it was created from.
 				if (settings->graphics_object)
 				{
 					GT_object_clear_selected_graphic_list(settings->graphics_object);
-					if (GRAPHICS_DRAW_UNSELECTED != settings->select_mode)
+					if ((GRAPHICS_SELECT_ON == settings->select_mode) ||
+						(GRAPHICS_DRAW_SELECTED == settings->select_mode))
 					{
 						switch (settings->settings_type)
 						{
@@ -5187,6 +5186,8 @@ The graphics object is stored with with the settings it was created from.
 							case GT_ELEMENT_SETTINGS_CYLINDERS:
 							case GT_ELEMENT_SETTINGS_LINES:
 							case GT_ELEMENT_SETTINGS_SURFACES:
+							case GT_ELEMENT_SETTINGS_ISO_SURFACES:
+							case GT_ELEMENT_SETTINGS_VOLUMES:
 							{
 								select_data.element_group=element_group;
 								select_data.settings=settings;
@@ -5209,11 +5210,9 @@ The graphics object is stored with with the settings it was created from.
 									(void *)&select_data,
 									settings_to_object_data->selected_element_point_ranges_list);
 							} break;
-							case GT_ELEMENT_SETTINGS_ISO_SURFACES:
-							case GT_ELEMENT_SETTINGS_VOLUMES:
 							case GT_ELEMENT_SETTINGS_STREAMLINES:
 							{
-								/* ignore for now */
+								/* no element to select by since go through several */
 							} break;
 							default:
 							{
