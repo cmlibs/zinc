@@ -2392,7 +2392,7 @@ named file.
 							temp_file_name);
 						save_write_signal_file_background_data->page_window=page_window;
 						if (unemap_get_samples_acquired_background(0,
-							page_window->number_of_samples_to_save,
+							(int)page_window->number_of_samples_to_save,
 							save_write_signal_file_background,
 							(void *)save_write_signal_file_background_data))
 						{
