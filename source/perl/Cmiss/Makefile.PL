@@ -44,7 +44,7 @@ WriteMakefile(
     'NAME'    => 'Cmiss',
   #          
   #Only install a subset of "released modules" at the moment
-#	 'DIR'   =>  [ 'Graphics_window', 'Scene_viewer', 'Perl_cmiss', 'Cmgui_command_data' ],
+	 'DIR'   =>  [ 'Graphics_window', 'Scene_viewer', 'Perl_cmiss', 'Cmgui_command_data' ],
 
   #Add the perl version into the site library
     'INSTALLSITELIB'   =>  "\$(PREFIX)/lib/$Config{version}",
