@@ -991,7 +991,14 @@ DESCRIPTION :
 		node_flag = 0;
 		node_offset = 0;
 		sort_by_field = (struct Computed_field *)NULL;
-		time = Time_keeper_get_time(command_data->default_time_keeper);
+		if (command_data->default_time_keeper)
+		{
+			time = Time_keeper_get_time(command_data->default_time_keeper);
+		}
+		else
+		{
+			time = 0;
+		}
 		
 		option_table = CREATE(Option_table)();
 		/* data_offset */
@@ -1658,10 +1665,7 @@ Executes a GFX CREATE CYLINDERS command.
 			element_group=(struct GROUP(FE_element) *)NULL;
 			constant_radius=0.0;
 			scale_factor=1.0;
-			coordinate_field=FIND_BY_IDENTIFIER_IN_MANAGER(Computed_field,name)(
-				"default_coordinate",computed_field_manager);
-			/* must access it now, because we deaccess it later */
-			ACCESS(Computed_field)(coordinate_field);
+			coordinate_field=(struct Computed_field *)NULL;
 			data_field=(struct Computed_field *)NULL;
 			radius_field=(struct Computed_field *)NULL;
 			time=0;
@@ -1993,9 +1997,7 @@ Executes a GFX CREATE ELEMENT_POINTS command.
 		glyph_centre[0]=0.0;
 		glyph_centre[1]=0.0;
 		glyph_centre[2]=0.0;
-		coordinate_field=FIND_BY_IDENTIFIER_IN_MANAGER(Computed_field,name)(
-			"default_coordinate",computed_field_manager);
-		ACCESS(Computed_field)(coordinate_field);
+		coordinate_field=(struct Computed_field *)NULL;
 		data_field = (struct Computed_field *)NULL;
 		xi_point_density_field = (struct Computed_field *)NULL;
 		exterior_flag=0;
@@ -2787,15 +2789,8 @@ Executes a GFX CREATE FLOW_PARTICLES command.
 			graphics_object_name = duplicate_string("particles");
 			element_group=(struct GROUP(FE_element) *)NULL;
 			element_number=0;  /* Zero gives all elements in group */
-			coordinate_field=FIND_BY_IDENTIFIER_IN_MANAGER(Computed_field,name)(
-				"default_coordinate",computed_field_manager);
-			ACCESS(Computed_field)(coordinate_field);
-			if (stream_vector_field=FIRST_OBJECT_IN_MANAGER_THAT(Computed_field)(
-				Computed_field_is_stream_vector_capable,(void *)NULL,
-				computed_field_manager))
-			{
-				ACCESS(Computed_field)(stream_vector_field);
-			}
+			coordinate_field=(struct Computed_field *)NULL;
+			stream_vector_field=(struct Computed_field *)NULL;
 			vector_components=3;
 			xi[0]=0.5;
 			xi[1]=0.5;
@@ -3052,16 +3047,8 @@ Executes a GFX CREATE MORE_FLOW_PARTICLES command.
 			graphics_object_name = duplicate_string("particles");
 			element_group=(struct GROUP(FE_element) *)NULL;
 			element_number=0;  /* Zero gives all elements in group */
-			coordinate_field=FIND_BY_IDENTIFIER_IN_MANAGER(Computed_field,name)(
-				"default_coordinate",computed_field_manager);
-			/* must access it now, because we deaccess it later */
-			ACCESS(Computed_field)(coordinate_field);
-			if (stream_vector_field=FIRST_OBJECT_IN_MANAGER_THAT(Computed_field)(
-				Computed_field_is_stream_vector_capable,(void *)NULL,
-				computed_field_manager))
-			{
-				ACCESS(Computed_field)(stream_vector_field);
-			}
+			coordinate_field=(struct Computed_field *)NULL;
+			stream_vector_field=(struct Computed_field *)NULL;
 			vector_components=3;
 			xi[0]=0.5;
 			xi[1]=0.5;
@@ -3268,16 +3255,8 @@ Executes a GFX MODIFY FLOW_PARTICLES command.
 			(computed_field_manager=Computed_field_package_get_computed_field_manager(
 				command_data->computed_field_package)))
 		{
-			coordinate_field=FIND_BY_IDENTIFIER_IN_MANAGER(Computed_field,name)(
-				"default_coordinate",computed_field_manager);
-			/* must access it now, because we deaccess it later */
-			ACCESS(Computed_field)(coordinate_field);
-			if (stream_vector_field=FIRST_OBJECT_IN_MANAGER_THAT(Computed_field)(
-				Computed_field_is_stream_vector_capable,(void *)NULL,
-				computed_field_manager))
-			{
-				ACCESS(Computed_field)(stream_vector_field);
-			}
+			coordinate_field=(struct Computed_field *)NULL;
+			stream_vector_field=(struct Computed_field *)NULL;
 			stepsize=1;
 			/* If time of 0 is sent the previous points are updated at the previous
 				time value */
@@ -3838,10 +3817,7 @@ Executes a GFX CREATE ISO_SURFACES command.
 		{
 			/* initialise defaults */
 			graphics_object_name = duplicate_string("iso_surfaces");
-			coordinate_field=FIND_BY_IDENTIFIER_IN_MANAGER(Computed_field,name)(
-				"default_coordinate", computed_field_manager);
-			/* must access it now, because we deaccess it later */
-			ACCESS(Computed_field)(coordinate_field);
+			coordinate_field=(struct Computed_field *)NULL;
 			data_field=(struct Computed_field *)NULL;
 			surface_data_group = (struct GROUP(FE_node) *)NULL;
 			surface_data_coordinate_field = (struct Computed_field *)NULL;
@@ -4486,10 +4462,7 @@ Executes a GFX CREATE LINES command.
 			/* initialise defaults */
 			graphics_object_name = duplicate_string("lines");
 			element_group=(struct GROUP(FE_element) *)NULL;
-			coordinate_field=FIND_BY_IDENTIFIER_IN_MANAGER(Computed_field,name)(
-				"default_coordinate",computed_field_manager);
-			/* must access it now, because we deaccess it later */
-			ACCESS(Computed_field)(coordinate_field);
+			coordinate_field=(struct Computed_field *)NULL;
 			data_field=(struct Computed_field *)NULL;
 			time=0;
 			/* must access it now, because we deaccess it later */
@@ -5265,10 +5238,7 @@ If <use_data> is set, creating data points, otherwise creating node points.
 			ACCESS(GT_object)(glyph);
 		}
 		node_group = (struct GROUP(FE_node) *)NULL;
-		coordinate_field = FIND_BY_IDENTIFIER_IN_MANAGER(Computed_field,name)(
-			"default_coordinate", computed_field_manager);
-		/* must access it now, because we deaccess it later */
-		ACCESS(Computed_field)(coordinate_field);
+		coordinate_field = (struct Computed_field *)NULL;
 		data_field = (struct Computed_field *)NULL;
 		/* must access it now, because we deaccess it later */
 		material =
@@ -5277,7 +5247,14 @@ If <use_data> is set, creating data points, otherwise creating node points.
 		orientation_scale_field = (struct Computed_field *)NULL;
 		variable_scale_field = (struct Computed_field *)NULL;
 		spectrum = ACCESS(Spectrum)(command_data->default_spectrum);
-		time = Time_keeper_get_time(command_data->default_time_keeper);
+		if (command_data->default_time_keeper)
+		{
+			time = Time_keeper_get_time(command_data->default_time_keeper);
+		}
+		else
+		{
+			time = 0;
+		}
 		/* final_size = size + scale_factors*magnitude */
 		glyph_scale_factors[0] = 1.0;
 		glyph_scale_factors[1] = 1.0;
@@ -6532,16 +6509,8 @@ Executes a GFX CREATE STREAMLINES command.
 			/* initialise defaults */
 			graphics_object_name = duplicate_string("streamlines");
 			element_group=(struct GROUP(FE_element) *)NULL;
-			coordinate_field=FIND_BY_IDENTIFIER_IN_MANAGER(Computed_field,name)(
-				"default_coordinate",computed_field_manager);
-			/* must access it now, because we deaccess it later */
-			ACCESS(Computed_field)(coordinate_field);
-			if (stream_vector_field=FIRST_OBJECT_IN_MANAGER_THAT(Computed_field)(
-				Computed_field_is_stream_vector_capable,(void *)NULL,
-				computed_field_manager))
-			{
-				ACCESS(Computed_field)(stream_vector_field);
-			}
+			coordinate_field=(struct Computed_field *)NULL;
+			stream_vector_field=(struct Computed_field *)NULL;
 			data_field=(struct Computed_field *)NULL;
 			seed_element=(struct FE_element *)NULL;
 			seed_data_group = (struct GROUP(FE_node) *)NULL;
@@ -6960,16 +6929,8 @@ Executes a GFX CREATE INTERACTIVE_STREAMLINE command.
 			/* initialise defaults */
 			graphics_object_name = duplicate_string("interactive_streamline");
 			element_group=(struct GROUP(FE_element) *)NULL;
-			coordinate_field=FIND_BY_IDENTIFIER_IN_MANAGER(Computed_field,name)(
-				"default_coordinate",computed_field_manager);
-			/* must access it now, because we deaccess it later */
-			ACCESS(Computed_field)(coordinate_field);
-			if (stream_vector_field=FIRST_OBJECT_IN_MANAGER_THAT(Computed_field)(
-				Computed_field_is_stream_vector_capable,(void *)NULL,
-				computed_field_manager))
-			{
-				ACCESS(Computed_field)(stream_vector_field);
-			}
+			coordinate_field=(struct Computed_field *)NULL;
+			stream_vector_field=(struct Computed_field *)NULL;
 			data_field=(struct Computed_field *)NULL;
 			seed_element=(struct FE_element *)NULL;
 			length=1;
@@ -7348,10 +7309,7 @@ Executes a GFX CREATE SURFACES command.
 			/* initialise defaults */
 			graphics_object_name = duplicate_string("surfaces");
 			element_group=(struct GROUP(FE_element) *)NULL;
-			coordinate_field=FIND_BY_IDENTIFIER_IN_MANAGER(Computed_field,name)(
-				"default_coordinate",computed_field_manager);
-			/* must access it now, because we deaccess it later */
-			ACCESS(Computed_field)(coordinate_field);
+			coordinate_field=(struct Computed_field *)NULL;
 			data_field=(struct Computed_field *)NULL;
 			texture_coordinate_field=(struct Computed_field *)NULL;
 			time=0;
@@ -8529,11 +8487,7 @@ Executes a GFX CREATE TEXMAP command.
 			{
 				ACCESS(Graphics_window)(window);
 			}
-			coordinate_field=FIND_BY_IDENTIFIER_IN_MANAGER(Computed_field,name)(
-				"default_coordinate",Computed_field_package_get_computed_field_manager(
-				command_data->computed_field_package));
-			/* must access it now, because we deaccess it later */
-			ACCESS(Computed_field)(coordinate_field);;
+			coordinate_field=(struct Computed_field *)NULL;
 			(option_table[0]).to_be_modified= &out_file_name;
 			/* coordinate */
 			set_coordinate_field_data.computed_field_manager=
@@ -9120,10 +9074,7 @@ Executes a GFX CREATE VOLUMES command.
 			graphics_object_name = duplicate_string("volumes");
 			element_group=(struct GROUP(FE_element) *)NULL;
 			clipping=(struct Clipping *)NULL;
-			coordinate_field=FIND_BY_IDENTIFIER_IN_MANAGER(Computed_field,name)(
-				"default_coordinate",computed_field_manager);
-			/* must access it now, because we deaccess it later */
-			ACCESS(Computed_field)(coordinate_field);
+			coordinate_field=(struct Computed_field *)NULL;
 			data_field=(struct Computed_field *)NULL;
 			seed_element=(struct FE_element *)NULL;
 			material=
@@ -13338,7 +13289,14 @@ DESCRIPTION :
 		selected_flag = 0;
 		destination_field = (struct Computed_field *)NULL;
 		source_field = (struct Computed_field *)NULL;
-		time = Time_keeper_get_time(command_data->default_time_keeper);
+		if (command_data->default_time_keeper)
+		{
+			time = Time_keeper_get_time(command_data->default_time_keeper);
+		}
+		else
+		{
+			time = 0;
+		}
 		
 		option_table = CREATE(Option_table)();
 		/* destination */
@@ -19956,6 +19914,7 @@ Sets the time from the command line.
 			}
 			else
 			{
+				/*This option is used so that help comes out*/
 				time = 0;
 			}
 			(option_table[0]).to_be_modified= &timekeeper_name;
@@ -20911,8 +20870,15 @@ Executes a GFX SMOOTH command.
 			smooth_field_over_element_data.node_manager=command_data->node_manager;
 			smooth_field_over_element_data.element_manager=
 				command_data->element_manager;
-			smooth_field_over_element_data.time = Time_keeper_get_time(
-				command_data->default_time_keeper);
+			if (command_data->default_time_keeper)
+			{
+				smooth_field_over_element_data.time = Time_keeper_get_time(
+					command_data->default_time_keeper);
+			}
+			else
+			{
+				smooth_field_over_element_data.time = 0;
+			}
 			(option_table[0]).to_be_modified= &element_group;
 			(option_table[0]).user_data=command_data->element_group_manager;
 			(option_table[1]).to_be_modified= &(smooth_field_over_element_data.field);
@@ -21365,6 +21331,14 @@ the derivatives).
 			extent.number_in_xi1=1;
 			extent.number_in_xi2=1;
 			extent.number_in_xi3=1;
+			if (command_data->default_time_keeper)
+			{
+				time = Time_keeper_get_time(command_data->default_time_keeper);
+			}
+			else
+			{
+				time = 0;
+			}
 			xi_order=123;
 			node_group=(struct GROUP(FE_node) *)NULL;
 			warp_values.value[0] = 0.0;
@@ -21494,7 +21468,14 @@ gtvoltex according to calculated
 			(warp_values.value)[3] = 0.0;
 			(warp_values.value)[4] = 0.0;
 			(warp_values.value)[5] = 0.0;
-			time = Time_keeper_get_time(command_data->default_time_keeper);
+			if (command_data->default_time_keeper)
+			{
+				time = Time_keeper_get_time(command_data->default_time_keeper);
+			}
+			else
+			{
+				time = 0;
+			}
 			xi_order=123;
 			(option_table[0]).to_be_modified= &extent;
 			(option_table[0]).user_data=command_data->user_interface;
