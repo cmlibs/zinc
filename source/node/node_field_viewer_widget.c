@@ -557,7 +557,7 @@ values whose value_type was not recognized.
 static int node_field_viewer_widget_setup_components(
 	struct Node_field_viewer_widget_struct *node_field_viewer)
 /*******************************************************************************
-LAST MODIFIED : 22 May 2000
+LAST MODIFIED : 5 December 2000
 
 DESCRIPTION :
 Creates the array of cells containing field component values and derivatives
@@ -586,6 +586,8 @@ and their labels.
 			/* unmanage component_rowcol to avoid geometry requests, then destroy */
 			XtUnmanageChild(node_field_viewer->component_rowcol);
 			XtDestroyWidget(node_field_viewer->component_rowcol);
+			/* must clear the pointer! */
+			node_field_viewer->component_rowcol = (Widget)NULL;
 		}
 		if ((node=node_field_viewer->current_node)&&
 			(field=node_field_viewer->current_field)&&
