@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : test_unemap_hardware.c
 
-LAST MODIFIED : 12 November 2000
+LAST MODIFIED : 16 November 2001
 
 DESCRIPTION :
 For testing the unemap hardware software (client, server, standalone).
@@ -491,7 +491,8 @@ static void process_keyboard(
 						if (!constant_voltage)
 						{
 							return_code=unemap_load_current_stimulating(1,&channel_number,
-								number_of_values,values_per_second,values,number_of_cycles);
+								number_of_values,values_per_second,values,number_of_cycles,
+								(Unemap_stimulation_end_callback *)NULL,(void *)NULL);
 							printf("return_code=%d\n",return_code);
 						}
 						else
@@ -524,7 +525,8 @@ static void process_keyboard(
 						if (constant_voltage)
 						{
 							return_code=unemap_load_voltage_stimulating(1,&channel_number,
-								number_of_values,values_per_second,values,number_of_cycles);
+								number_of_values,values_per_second,values,number_of_cycles,
+								(Unemap_stimulation_end_callback *)NULL,(void *)NULL);
 							printf("return_code=%d\n",return_code);
 						}
 						else
