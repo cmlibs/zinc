@@ -3,7 +3,7 @@
 #include "XSUB.h"
 
 #include <string.h>
-#include "computed_variable/computed_variable_finite_element.h"
+#include "api/cmiss_variable_finite_element.h"
 #include "typemap.h"
 
 MODULE = Cmiss::Variable::Nodal_value  PACKAGE = Cmiss::Variable::Nodal_value  PREFIX = Cmiss_variable_nodal_value_
@@ -11,7 +11,7 @@ MODULE = Cmiss::Variable::Nodal_value  PACKAGE = Cmiss::Variable::Nodal_value  P
 PROTOTYPES: DISABLE
 
 Cmiss::Variable
-create(char *name,Cmiss::Variable::Finite_element fe_variable,Cmiss::FE_node node,char *type,int version)
+create(char *name,Cmiss::Variable::Finite_element fe_variable,Cmiss::node node,char *type,int version)
 	CODE:
 		/* the result, in Perl, is a reference to a stash (which is a pointer to the
 			Cmiss_variable structure).  This means that don't need to worry about
@@ -69,15 +69,10 @@ create(char *name,Cmiss::Variable::Finite_element fe_variable,Cmiss::FE_node nod
 				value_type=FE_NODAL_D3_DS1DS2DS3;
 				value_type_valid=1;
 			}
-			if (value_type_valid&&(RETVAL=CREATE(Cmiss_variable)(
-				(struct Cmiss_variable_package *)NULL,name)))
+			if (value_type_valid)
 			{
-				ACCESS(Cmiss_variable)(RETVAL);
-				if (!Cmiss_variable_nodal_value_set_type(RETVAL,fe_variable,node,
-					value_type,version))
-				{
-					DEACCESS(Cmiss_variable)(&RETVAL);
-				}
+				RETVAL = CREATE(Cmiss_variable_nodal_value)(name,fe_variable,
+					node,value_type,version);
 			}
 		}
 		if (!RETVAL)

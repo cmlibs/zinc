@@ -3,6 +3,7 @@
 #include "XSUB.h"
 
 #include <stdio.h>
+#include "api/cmiss_region.h"
 #include "region/cmiss_region.h"
 #include "finite_element/finite_element.h"
 #include "finite_element/finite_element_region.h"
@@ -91,7 +92,7 @@ region_read_file(Cmiss::Region region,char *file_name);
 	OUTPUT:
 		RETVAL
 
-Cmiss::FE_element
+Cmiss::element
 region_get_element(Cmiss::Region region,char *path,char *name,char *type)
 	CODE:
 		RETVAL=0;
@@ -129,7 +130,7 @@ region_get_element(Cmiss::Region region,char *path,char *name,char *type)
 				}
 				if ((CM_ELEMENT_TYPE_INVALID!=identifier.type)&&
 					(1==sscanf(name," %d %n",&(identifier.number),&name_length))&&
-					(name_length==strlen(name)))
+					((unsigned int)name_length==strlen(name)))
 				{
 					RETVAL=FE_region_get_FE_element_from_identifier(fe_region,
 						&identifier);
@@ -165,7 +166,7 @@ region_get_field(Cmiss::Region region,char *path,char *name)
 	OUTPUT:
 		RETVAL
 
-Cmiss::FE_node
+Cmiss::node
 region_get_node(Cmiss::Region region,char *path,char *name)
 	CODE:
 		RETVAL=0;
@@ -178,7 +179,7 @@ region_get_node(Cmiss::Region region,char *path,char *name)
 			if (Cmiss_region_get_region_from_path(region,path,&sub_region)&&
 				sub_region&&(fe_region=Cmiss_region_get_FE_region(sub_region))&&
 				(1==sscanf(name," %d %n",&node_number,&name_length))&&
-				(name_length==strlen(name)))
+				((unsigned int)name_length==strlen(name)))
 			{
 				RETVAL=FE_region_get_FE_node_from_identifier(fe_region,node_number);
 			}

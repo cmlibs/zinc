@@ -10,6 +10,7 @@ The public interface to the Cmiss_value_element_xi object.
 #define __API_CMISS_VALUE_ELEMENT_XI_H__
 
 #include "api/cmiss_value.h"
+#include "api/cmiss_finite_element.h"
 #include "general/object.h"
 
 Cmiss_value_id CREATE(Cmiss_value_element_xi)(int dimension,

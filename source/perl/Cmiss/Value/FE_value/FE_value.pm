@@ -93,19 +93,6 @@ sub new
 	}
 }
 
-# Overload string and numerical conversion
-use overload '""' => \&string_convert, '0+' => \&numerical_convert, fallback => 1;
-
-sub numerical_convert
-{
-	get_type(shift);
-}
-
-sub string_convert
-{
-	get_type(shift);
-}
-
 require XSLoader;
 XSLoader::load('Cmiss::Value::FE_value', $VERSION);
 

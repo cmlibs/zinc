@@ -2,6 +2,7 @@
 #include "perl.h"
 #include "XSUB.h"
 
+#include "api/cmiss_value.h"
 #include "computed_variable/computed_value.h"
 #include "typemap.h"
 
@@ -35,3 +36,10 @@ DESTROY(Cmiss::Value value)
 		}
 	OUTPUT:
 		RETVAL
+
+NO_OUTPUT int
+Cmiss_value_get_string(IN Cmiss::Value value, OUTLIST char *string)
+   POSTCALL:
+	if (RETVAL == 0)
+			XSRETURN_UNDEF;
+

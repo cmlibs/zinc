@@ -38,7 +38,7 @@ WriteMakefile(
       (ABSTRACT_FROM => 'cmgui_command_data.pm', # retrieve abstract from module
        AUTHOR     => '"Shane Blackett <s.blackett@auckland.ac.nz>"') : ()),
     'LIBS'    => [''], # e.g., '-lm'
-    'DEFINE'    => '-DFULL_NAMES', # e.g., '-DHAVE_SOMETHING'
+    'DEFINE'    => '-DPERL_INTERPRETER', # e.g., '-DHAVE_SOMETHING'
   # Insert -I. if you add *.h files later:
     'INC'    => "-I$ENV{CMGUI_DEV_SOURCE}", # e.g., '-I/usr/include/other'
   # Un-comment this if you add C files to link with later:

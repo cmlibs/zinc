@@ -3,7 +3,7 @@
 #include "XSUB.h"
 
 #include <string.h>
-#include "computed_variable/computed_variable_composite.h"
+#include "api/cmiss_variable_composite.h"
 #include "typemap.h"
 
 MODULE = Cmiss::Variable::Composite  PACKAGE = Cmiss::Variable::Composite  PREFIX = Cmiss_variable_composite_
@@ -18,14 +18,11 @@ create(char *name,AV *variables_array)
 			ACCESSing for Perl assignment/copy, $cmiss_variable_2=$cmiss_variable_1,
 			because this increments the reference count for the stash (DESTROY is
 			called when the stash reference count gets to zero) */
-		if (RETVAL=CREATE(Cmiss_variable)((struct Cmiss_variable_package *)NULL,
-			name))
 		{
 			int i,number_of_variables;
 			IV tmp_IV;
 			Cmiss_variable_id *variables;
 
-			ACCESS(Cmiss_variable)(RETVAL);
 			if (variables_array&&(0<(number_of_variables=av_len(variables_array)+1)))
 			{
 				variables=(Cmiss_variable_id *)malloc(
@@ -40,25 +37,19 @@ create(char *name,AV *variables_array)
 						variables[i]=INT2PTR(Cmiss__Variable,tmp_IV);
 						i++;
 					}
-					if (!((i>=number_of_variables)&&Cmiss_variable_composite_set_type(
-						RETVAL,number_of_variables,variables)))
+					if (!((i>=number_of_variables)&&(RETVAL=CREATE(Cmiss_variable_composite)(
+						name,number_of_variables,variables))))
 					{
 						free(variables);
-						DEACCESS(Cmiss_variable)(&RETVAL);
 					}
 				}
 				else
 				{
-					DEACCESS(Cmiss_variable)(&RETVAL);
 					if (variables)
 					{
 						free(variables);
 					}
 				}
-			}
-			else
-			{
-				DEACCESS(Cmiss_variable)(&RETVAL);
 			}
 		}
 		if (!RETVAL)

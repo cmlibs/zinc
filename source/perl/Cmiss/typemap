@@ -1,5 +1,6 @@
-Cmiss::FE_element T_PTROBJ
-Cmiss::FE_element * T_PTROBJ
+Cmiss::element T_PTROBJ
+Cmiss::node T_PTROBJ
+Cmiss::FE_field T_PTROBJ
 Cmiss::cmgui_command_data T_PTROBJ
 
 # SAB These typemaps are wrong in perl versions before 5.8.0 so I have defined

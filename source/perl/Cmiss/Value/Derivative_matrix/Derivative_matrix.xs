@@ -4,6 +4,8 @@
 
 #include <stdlib.h>
 #include <string.h>
+#include "api/cmiss_value.h"
+#include "api/cmiss_value_derivative_matrix.h"
 #include "computed_variable/computed_value_derivative_matrix.h"
 #include "computed_variable/computed_value_matrix.h"
 #include "general/debug.h"
@@ -22,20 +24,19 @@ create(Cmiss::Variable dependent_variable,AV *independent_variables_array, \
 			ACCESSing for Perl assignment/copy, $cmiss_variable_2=$cmiss_variable_1,
 			because this increments the reference count for the stash (DESTROY is
 			called when the stash reference count gets to zero) */
-		if (RETVAL=CREATE(Cmiss_value)())
 		{
-			int i,number_of_matrices,order;
+			int i,number_of_matrices,order,return_code;
 			IV tmp_IV;
 			Cmiss_value_id *matrices;
 			Cmiss_variable_id *independent_variables;
 
-			ACCESS(Cmiss_value)(RETVAL);
 			if (dependent_variable&&independent_variables_array&&
 				(0<(order=av_len(independent_variables_array)+1)))
 			{
 				if (independent_variables=(Cmiss_variable_id *)malloc(order*
 					sizeof(Cmiss_variable_id)))
 				{
+					return_code = 1;
 					i=0;
 					number_of_matrices=0;
 					while ((i<order)&&sv_derived_from(
@@ -65,44 +66,35 @@ create(Cmiss::Variable dependent_variable,AV *independent_variables_array, \
 								if (i!=number_of_matrices)
 								{
 									free(independent_variables);
-									DEACCESS(Cmiss_value)(&RETVAL);
+									return_code = 0;
 								}
 							}
 							else
 							{
 								free(independent_variables);
-								DEACCESS(Cmiss_value)(&RETVAL);
+								return_code = 0;
 							}
 						}
 						else
 						{
 							matrices=(Cmiss_value_id *)NULL;
 						}
-						if (RETVAL)
+						if (return_code)
 						{
-							if (!Cmiss_value_derivative_matrix_set_type(RETVAL,
-								dependent_variable,order,independent_variables,matrices))
+							if (!(RETVAL = CREATE(Cmiss_value_derivative_matrix)(
+								dependent_variable,order,independent_variables,
+								number_of_matrices,matrices)))
 							{
 								free(matrices);
 								free(independent_variables);
-								DEACCESS(Cmiss_value)(&RETVAL);
 							}
 						}
 					}
 					else
 					{
 						free(independent_variables);
-						DEACCESS(Cmiss_value)(&RETVAL);
 					}
 				}
-				else
-				{
-					DEACCESS(Cmiss_value)(&RETVAL);
-				}
-			}
-			else
-			{
-				DEACCESS(Cmiss_value)(&RETVAL);
 			}
 		}
 		if (!RETVAL)

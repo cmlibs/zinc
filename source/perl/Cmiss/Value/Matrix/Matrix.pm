@@ -114,15 +114,6 @@ sub new
 	}
 }
 
-# Overload string and numerical conversion
-use overload '""' => \&string_convert, fallback => 1;
-
-sub string_convert
-{
-	get_string_convert(shift,get_string_convert_max_rows(),
-		get_string_convert_max_columns());
-}
-
 sub sub_matrix
 {
 	my ($self,%args)=@_;

@@ -73,6 +73,14 @@ Cmiss::require_library('cmgui_computed_variable');
 require XSLoader;
 XSLoader::load('Cmiss::Value', $VERSION);
 
+# Overload string and numerical conversion
+use overload '""' => \&string_convert, fallback => 1;
+
+sub string_convert
+{
+	get_string(shift);
+}
+
 # Preloaded methods go here.
 
 # Autoload methods go after =cut, and are processed by the autosplit program.

@@ -3,7 +3,7 @@
 #include "XSUB.h"
 
 #include <string.h>
-#include "computed_variable/computed_variable_derivative.h"
+#include "api/cmiss_variable_derivative.h"
 #include "typemap.h"
 
 MODULE = Cmiss::Variable::Derivative  PACKAGE = Cmiss::Variable::Derivative  PREFIX = Cmiss_variable_derivative_
@@ -18,13 +18,11 @@ create(char *name,Cmiss::Variable dependent_variable,AV *independent_variables_a
 			ACCESSing for Perl assignment/copy, $cmiss_variable_2=$cmiss_variable_1,
 			because this increments the reference count for the stash (DESTROY is
 			called when the stash reference count gets to zero) */
-		if (RETVAL=CREATE(Cmiss_variable)((struct Cmiss_variable_package *)NULL,name))
 		{
 			int i,order;
 			IV tmp_IV;
 			Cmiss_variable_id *independent_variables;
 
-			ACCESS(Cmiss_variable)(RETVAL);
 			if (dependent_variable&&independent_variables_array&&
 				(0<(order=av_len(independent_variables_array)+1)))
 			{
@@ -39,21 +37,12 @@ create(char *name,Cmiss::Variable dependent_variable,AV *independent_variables_a
 						independent_variables[i]=INT2PTR(Cmiss__Variable,tmp_IV);
 						i++;
 					}
-					if (!((i>=order)&&Cmiss_variable_derivative_set_type(RETVAL,
-						dependent_variable,order,independent_variables)))
+					if (!((i>=order)&&(RETVAL=CREATE(Cmiss_variable_derivative)(
+						name,dependent_variable,order,independent_variables))))
 					{
 						free(independent_variables);
-						DEACCESS(Cmiss_variable)(&RETVAL);
 					}
 				}
-				else
-				{
-					DEACCESS(Cmiss_variable)(&RETVAL);
-				}
-			}
-			else
-			{
-				DEACCESS(Cmiss_variable)(&RETVAL);
 			}
 		}
 		if (!RETVAL)

@@ -643,13 +643,6 @@ To override the cmiss:: package specify the full name in the string.
 	*status = return_code;
 } /* interpreter_set_string_ */
 
-static int
-not_here(char *s)
-{
-    croak("%s not implemented on this architecture", s);
-    return -1;
-}
-
 static double
 constant(char *name, int arg)
 {
@@ -658,13 +651,7 @@ constant(char *name, int arg)
     }
     errno = EINVAL;
     return 0;
-
-not_there:
-    errno = ENOENT;
-    return 0;
 }
-
-static XS(XS_Perl_cmiss_constant);
 
 MODULE = Cmiss::Perl_cmiss		PACKAGE = Cmiss::Perl_cmiss		
 

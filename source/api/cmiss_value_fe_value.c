@@ -78,3 +78,35 @@ Creates a Cmiss_value which contains a vector of FE_values.
 
 	return (return_value);
 } /* CREATE(Cmiss_value_FE_value_vector) */
+
+Cmiss_value_id CREATE(Cmiss_value_FE_value_matrix)(int number_of_rows,
+	int number_of_columns, FE_value *values)
+/*******************************************************************************
+LAST MODIFIED : 10 September 2003
+
+DESCRIPTION :
+Creates a Cmiss_value which contains a matrix of FE_values.
+==============================================================================*/
+{
+	Cmiss_value_id return_value;
+
+	ENTER(CREATE(Cmiss_value_FE_value_vector));
+	if (return_value = CREATE(Cmiss_value)())
+	{
+		ACCESS(Cmiss_value)(return_value);
+		if (!Cmiss_value_FE_value_matrix_set_type(return_value, number_of_rows,
+			number_of_columns, values))
+		{
+			DEACCESS(Cmiss_value)(&return_value);
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"CREATE(Cmiss_value_FE_value_vector).  "
+			"Invalid arguments.");
+		return_value = (Cmiss_value_id)NULL;
+	}
+	LEAVE;
+
+	return (return_value);
+} /* CREATE(Cmiss_value_FE_value_vector) */

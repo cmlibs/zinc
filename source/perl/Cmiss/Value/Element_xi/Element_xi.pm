@@ -96,14 +96,6 @@ sub new
 	}
 }
 
-# Overload string conversion
-use overload '""' => \&string_convert, fallback => 1;
-
-sub string_convert
-{
-	get_type(shift);
-}
-
 require XSLoader;
 XSLoader::load('Cmiss::Value::Element_xi', $VERSION);
 

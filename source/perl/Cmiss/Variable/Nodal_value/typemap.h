@@ -1,4 +1,8 @@
-/*???DB.  The __ is from translating :: in Cmiss::Value */
-typedef Cmiss_variable_id Cmiss__Variable;
-typedef Cmiss_variable_id Cmiss__Variable__Finite_element;
-typedef struct FE_node * Cmiss__FE_node;
+#if ! defined (PERL_CMISS_VARIABLE_NODAL_VALUE_TYPEMAP_H)
+#define PERL_CMISS_VARIABLE_NODAL_VALUE_TYPEMAP_H
+
+#include "perl/Cmiss/typemap.h"
+#include "perl/Cmiss/Variable/typemap.h"
+#include "perl/Cmiss/Variable/Finite_element/typemap.h"
+
+#endif /* ! defined (PERL_CMISS_VARIABLE_NODAL_VALUE_TYPEMAP_H) */

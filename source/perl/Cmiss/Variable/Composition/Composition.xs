@@ -3,7 +3,7 @@
 #include "XSUB.h"
 
 #include <string.h>
-#include "computed_variable/computed_variable_composition.h"
+#include "api/cmiss_variable_composition.h"
 #include "typemap.h"
 
 MODULE = Cmiss::Variable::Composition  PACKAGE = Cmiss::Variable::Composition  PREFIX = Cmiss_variable_composition_
@@ -19,14 +19,11 @@ create(char *name,Cmiss::Variable dependent_variable, \
 			ACCESSing for Perl assignment/copy, $cmiss_variable_2=$cmiss_variable_1,
 			because this increments the reference count for the stash (DESTROY is
 			called when the stash reference count gets to zero) */
-		if (RETVAL=CREATE(Cmiss_variable)((struct Cmiss_variable_package *)NULL,
-			name))
 		{
-			int i,j,number_of_source_variables;
+			int i,number_of_source_variables;
 			IV tmp_IV;
 			Cmiss_variable_id *independent_variables,*source_variables;
 
-			ACCESS(Cmiss_variable)(RETVAL);
 			if (dependent_variable&&independent_source_variables_array&&
 				(0<(number_of_source_variables=av_len(
 				independent_source_variables_array)+1))&&
@@ -55,17 +52,15 @@ create(char *name,Cmiss::Variable dependent_variable, \
 						i++;
 					}
 					if (!((i>=number_of_source_variables)&&
-						Cmiss_variable_composition_set_type(RETVAL,dependent_variable,
-						number_of_source_variables,source_variables,independent_variables)))
+						(RETVAL=CREATE(Cmiss_variable_composition)(name,dependent_variable,
+						number_of_source_variables,source_variables,independent_variables))))
 					{
 						free(independent_variables);
 						free(source_variables);
-						DEACCESS(Cmiss_variable)(&RETVAL);
 					}
 				}
 				else
 				{
-					DEACCESS(Cmiss_variable)(&RETVAL);
 					if (independent_variables)
 					{
 						free(independent_variables);
@@ -75,10 +70,6 @@ create(char *name,Cmiss::Variable dependent_variable, \
 						free(source_variables);
 					}
 				}
-			}
-			else
-			{
-				DEACCESS(Cmiss_variable)(&RETVAL);
 			}
 		}
 		if (!RETVAL)

@@ -1,6 +1,0 @@
-Cmiss::Variable T_PTROBJ
-Cmiss::Variable * T_PTROBJ
-Cmiss::Variable::Finite_element T_PTROBJ
-Cmiss::Variable::Finite_element * T_PTROBJ
-Cmiss::FE_node T_PTROBJ
-Cmiss::FE_node * T_PTROBJ

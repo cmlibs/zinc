@@ -93,43 +93,6 @@ sub new
 	}
 }
 
-# Overload string conversion
-use overload '""' => \&string_convert, fallback => 1;
-
-sub string_convert
-{
-	my %type=get_type(shift);
-	my $dependent_variable=$type{dependent};
-	my $independent_variables_ref=$type{independent};
-	my $matrices_ref=$type{matrices};
-	my $result_string='';
-	my $i;
-
-	if (($dependent_variable)&&($independent_variables_ref))
-	{
-		my @independent_variables= @$independent_variables_ref;
-		my $order=@independent_variables;
-
-		$result_string=$result_string."d";
-		if ($order>1)
-		{
-			$result_string=$result_string."$order";
-		}
-		$result_string=$result_string."($dependent_variable)/";
-		for ($i=0;$i<$order;$i++)
-		{
-			$result_string=$result_string."d($independent_variables[$i])";
-		}
-		if ($matrices_ref)
-		{
-			my @matrices= @$matrices_ref;
-			
-			$result_string=$result_string."=$matrices[-1]";
-		}
-	}
-	$result_string;
-}
-
 sub matrix
 {
 	my ($self,%args)=@_;

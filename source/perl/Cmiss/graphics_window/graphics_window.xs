@@ -4,13 +4,6 @@
 
 #include <api/cmiss_graphics_window.h>
 
-static int
-not_here(char *s)
-{
-    croak("%s not implemented on this architecture", s);
-    return -1;
-}
-
 static double
 constant(char *name, int len, int arg)
 {

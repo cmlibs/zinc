@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : api/cmiss_value_fe_value.h
 
-LAST MODIFIED : 20 August 2003
+LAST MODIFIED : 10 September 2003
 
 DESCRIPTION :
 The public interface to the Cmiss_value_fe_value object.
@@ -26,6 +26,15 @@ Cmiss_value_id CREATE(Cmiss_value_FE_value_vector)(int number_of_values,
 	FE_value *values);
 /*******************************************************************************
 LAST MODIFIED : 20 August 2003
+
+DESCRIPTION :
+Creates a Cmiss_value which contains a vector of fe_values.
+==============================================================================*/
+
+Cmiss_value_id CREATE(Cmiss_value_FE_value_matrix)(int number_of_rows,
+	int number_of_columns, FE_value *values);
+/*******************************************************************************
+LAST MODIFIED : 10 September 2003
 
 DESCRIPTION :
 Creates a Cmiss_value which contains a vector of fe_values.
