@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : computed_value.c
 
-LAST MODIFIED : 19 February 2003
+LAST MODIFIED : 6 March 2003
 
 DESCRIPTION :
 A module intended to replace general/value .  Testing and developing in
@@ -77,7 +77,364 @@ static START_COMPUTED_VALUE_SAME_SUB_TYPE_TYPE_SPECIFIC_FUNCTION(FE_value)
 }
 END_COMPUTED_VALUE_SAME_SUB_TYPE_TYPE_SPECIFIC_FUNCTION(FE_value)
 
-static char computed_value_FE_value_vector_type_string[]="FE_value_vector";
+static char computed_value_FE_value_matrix_type_string[]="FE_value matrix";
+
+struct Computed_value_FE_value_matrix_type_specific_data
+/*******************************************************************************
+LAST MODIFIED : 14 February 2003
+
+DESCRIPTION :
+==============================================================================*/
+{
+	/* column number varying faster ie. row-wise */
+	FE_value *fe_value_matrix;
+	int number_of_columns,number_of_rows;
+}; /* struct Computed_value_FE_value_matrix_type_specific_data */
+
+static START_COMPUTED_VALUE_CLEAR_TYPE_SPECIFIC_FUNCTION(FE_value_matrix)
+{
+	DEALLOCATE(data->fe_value_matrix);
+	return_code=1;
+}
+END_COMPUTED_VALUE_CLEAR_TYPE_SPECIFIC_FUNCTION(FE_value_matrix)
+
+static START_COMPUTED_VALUE_DUPLICATE_DATA_TYPE_SPECIFIC_FUNCTION(
+	FE_value_matrix)
+{
+	FE_value *destination_value,*source_value;
+	int number_of_values;
+
+	if ((0<(number_of_values=(source->number_of_rows)*
+		(source->number_of_columns)))&&(source_value=source->fe_value_matrix))
+	{
+		if (ALLOCATE(destination_value,FE_value,number_of_values))
+		{
+			destination->fe_value_matrix=destination_value;
+			while (number_of_values>0)
+			{
+				*destination_value= *source_value;
+				destination_value++;
+				source_value++;
+				number_of_values--;
+			}
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,
+				"Computed_value_FE_value_matrix_duplicate_data_type_specific.  "
+				"Could not allocate <fe_value_matrix>");
+			DEALLOCATE(destination);
+		}
+	}
+	else
+	{
+		destination->fe_value_matrix=(FE_value *)NULL;
+	}
+	if (destination)
+	{
+		destination->number_of_rows=source->number_of_rows;
+		destination->number_of_columns=source->number_of_columns;
+	}
+}
+END_COMPUTED_VALUE_DUPLICATE_DATA_TYPE_SPECIFIC_FUNCTION(FE_value_matrix)
+
+static START_COMPUTED_VALUE_MULTIPLY_AND_ACCUMULATE_TYPE_SPECIFIC_FUNCTION(
+	FE_value_matrix)
+{
+	FE_value *fe_value_1,*fe_value_2,*matrix_total,*matrix_1,*matrix_2,sum;
+	int i,j,k,number_in_sum,total_number_of_columns,total_number_of_rows;
+	struct Computed_value_FE_value_matrix_type_specific_data *data_total,*data_1,
+		*data_2;
+
+	data_1=(struct Computed_value_FE_value_matrix_type_specific_data *)
+		Computed_value_get_type_specific_data(value_1);
+	data_2=(struct Computed_value_FE_value_matrix_type_specific_data *)
+		Computed_value_get_type_specific_data(value_2);
+	data_total=(struct Computed_value_FE_value_matrix_type_specific_data *)
+		Computed_value_get_type_specific_data(total);
+	ASSERT_IF(data_1&&data_2&&data_total,return_code,0)
+	{
+		total_number_of_rows=data_total->number_of_rows;
+		total_number_of_columns=data_total->number_of_columns;
+		number_in_sum=data_1->number_of_columns;
+		if ((total_number_of_rows==data_1->number_of_rows)&&
+			(number_in_sum==data_2->number_of_rows)&&
+			(total_number_of_columns==data_2->number_of_columns))
+		{
+			matrix_total=data_total->fe_value_matrix;
+			matrix_1=data_1->fe_value_matrix;
+			matrix_2=data_2->fe_value_matrix;
+			ASSERT_IF(matrix_total&&matrix_1&&matrix_2,return_code,0)
+			{
+				for (i=total_number_of_rows;i>0;i--)
+				{
+					fe_value_2=matrix_2;
+					for (j=total_number_of_columns;j>0;j--)
+					{
+						fe_value_1=matrix_1;
+						sum=(FE_value)0;
+						for (k=number_in_sum;k>0;k--)
+						{
+							sum += (*fe_value_1)*(*fe_value_2);
+							fe_value_1++;
+							fe_value_2 += total_number_of_columns;
+						}
+						fe_value_2 -= (number_in_sum*total_number_of_columns)-1;
+						*matrix_total += sum;
+						matrix_total++;
+					}
+					matrix_1 += number_in_sum;
+				}
+				return_code=1;
+			}
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,
+				"Computed_value_FE_value_matrix_multiply_and_accumulate_type_specific.  "
+				"Matrices are of inconsistent sizes");
+		}
+	}
+}
+END_COMPUTED_VALUE_MULTIPLY_AND_ACCUMULATE_TYPE_SPECIFIC_FUNCTION(
+	FE_value_matrix)
+
+static START_COMPUTED_VALUE_SAME_SUB_TYPE_TYPE_SPECIFIC_FUNCTION(
+	FE_value_matrix)
+{
+	struct Computed_value_FE_value_matrix_type_specific_data *data_1,*data_2;
+
+	data_1=(struct Computed_value_FE_value_matrix_type_specific_data *)
+		Computed_value_get_type_specific_data(value_1);
+	data_2=(struct Computed_value_FE_value_matrix_type_specific_data *)
+		Computed_value_get_type_specific_data(value_2);
+	ASSERT_IF(data_1&&data_2,return_code,0)
+	{
+		if ((data_1->number_of_rows==data_2->number_of_rows)&&
+			(data_1->number_of_columns==data_2->number_of_columns))
+		{
+			return_code=1;
+		}
+	}
+}
+END_COMPUTED_VALUE_SAME_SUB_TYPE_TYPE_SPECIFIC_FUNCTION(FE_value_matrix)
+
+#if defined (NEW_CODE)
+/*???DB.  May be able to do without tensors.  If do go this way then should
+	be multilinear because tensors have all dimensions the same (domain dimension)
+	except the first (range dimension) */
+static char computed_value_FE_value_tensor_type_string[]="FE_value tensor";
+
+struct Computed_value_FE_value_tensor_type_specific_data
+/*******************************************************************************
+LAST MODIFIED : 20 February 2003
+
+DESCRIPTION :
+A 0th order tensor is a scalar, a 1st order tensor is a vector and a 2nd order
+tensor is a matrix.
+==============================================================================*/
+{
+	/* number of dimensions */
+	unsigned int order;
+	unsigned int *dimensions;
+	/* first dimension (number of columns for matrix) varying fastest */
+	FE_value *values;
+}; /* struct Computed_value_FE_value_tensor_type_specific_data */
+
+static START_COMPUTED_VALUE_CLEAR_TYPE_SPECIFIC_FUNCTION(FE_value_tensor)
+{
+	DEALLOCATE(data->values);
+	return_code=1;
+}
+END_COMPUTED_VALUE_CLEAR_TYPE_SPECIFIC_FUNCTION(FE_value_tensor)
+
+static START_COMPUTED_VALUE_DUPLICATE_DATA_TYPE_SPECIFIC_FUNCTION(
+	FE_value_tensor)
+{
+	FE_value *destination_value,*source_value;
+	unsigned int *destination_dimension,dimension,number_of_values,order,
+		*source_dimension;
+
+	order=source->order;
+	if (order>0)
+	{
+		destination->order=order;
+		if (source_dimension=source->dimensions)
+		{
+			if (ALLOCATE(destination_dimension,unsigned int,order))
+			{
+				destination->dimensions=destination_dimension;
+				number_of_values=1;
+				while (destination&&(order>0))
+				{
+					if ((dimension= *source_dimension)>0)
+					{
+						*destination_dimension=dimension;
+						number_of_values *= dimension;
+						destination_dimension++;
+						source_dimension++;
+						order--;
+					}
+					else
+					{
+						DEALLOCATE(destination->dimensions);
+						DEALLOCATE(destination);
+					}
+				}
+				if (destination)
+				{
+					if (source_value=source->values)
+					{
+						if (ALLOCATE(destination_value,FE_value,number_of_values))
+						{
+							destination->values=destination_value;
+							while (number_of_values>0)
+							{
+								*destination_value= *source_value;
+								destination_value++;
+								source_value++;
+								number_of_values--;
+							}
+						}
+						else
+						{
+							DEALLOCATE(destination->dimensions);
+							DEALLOCATE(destination);
+						}
+					}
+					else
+					{
+						destination->values=(FE_value *)NULL;
+					}
+				}
+			}
+			else
+			{
+				DEALLOCATE(destination);
+			}
+		}
+		else
+		{
+			destination->dimensions=(unsigned int *)NULL;
+			if (source->values)
+			{
+				DEALLOCATE(destination);
+			}
+			else
+			{
+				destination->values=(FE_value *)NULL;
+			}
+		}
+	}
+	else
+	{
+		destination->order=0;
+		destination->dimensions=(unsigned int *)NULL;
+		if (source_value=source->values)
+		{
+			if (ALLOCATE(destination_value,FE_value,1))
+			{
+				destination->values=destination_value;
+				*destination_value= *source_value;
+			}
+			else
+			{
+				DEALLOCATE(destination);
+			}
+		}
+		else
+		{
+			destination->values=(FE_value *)NULL;
+		}
+	}
+}
+END_COMPUTED_VALUE_DUPLICATE_DATA_TYPE_SPECIFIC_FUNCTION(FE_value_tensor)
+
+/*???DB.  Where I'm up to */
+
+static START_COMPUTED_VALUE_MULTIPLY_AND_ACCUMULATE_TYPE_SPECIFIC_FUNCTION(
+	FE_value_tensor)
+{
+	FE_value *fe_value_1,*fe_value_2,*tensor_total,*tensor_1,*tensor_2,sum;
+	int i,j,k,number_in_sum,total_number_of_columns,total_number_of_rows;
+	struct Computed_value_FE_value_tensor_type_specific_data *data_total,*data_1,
+		*data_2;
+
+	data_1=(struct Computed_value_FE_value_tensor_type_specific_data *)
+		Computed_value_get_type_specific_data(value_1);
+	data_2=(struct Computed_value_FE_value_tensor_type_specific_data *)
+		Computed_value_get_type_specific_data(value_2);
+	data_total=(struct Computed_value_FE_value_tensor_type_specific_data *)
+		Computed_value_get_type_specific_data(total);
+	ASSERT_IF(data_1&&data_2&&data_total,return_code,0)
+	{
+		total_number_of_rows=data_total->number_of_rows;
+		total_number_of_columns=data_total->number_of_columns;
+		number_in_sum=data_1->number_of_columns;
+		if ((total_number_of_rows==data_1->number_of_rows)&&
+			(number_in_sum==data_2->number_of_rows)&&
+			(total_number_of_columns==data_2->number_of_columns))
+		{
+			tensor_total=data_total->fe_value_tensor;
+			tensor_1=data_1->fe_value_tensor;
+			tensor_2=data_2->fe_value_tensor;
+			ASSERT_IF(tensor_total&&tensor_1&&tensor_2,return_code,0)
+			{
+				for (i=total_number_of_rows;i>0;i--)
+				{
+					fe_value_2=tensor_2;
+					for (j=total_number_of_columns;j>0;j--)
+					{
+						fe_value_1=tensor_1;
+						sum=(FE_value)0;
+						for (k=number_in_sum;k>0;k--)
+						{
+							sum += (*fe_value_1)*(*fe_value_2);
+							fe_value_1++;
+							fe_value_2 += total_number_of_columns;
+						}
+						fe_value_2 -= (number_in_sum*total_number_of_columns)-1;
+						*tensor_total += sum;
+						tensor_total++;
+					}
+					tensor_1 += number_in_sum;
+				}
+				return_code=1;
+			}
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,
+				"Computed_value_FE_value_tensor_multiply_and_accumulate_type_specific.  "
+				"Matrices are of inconsistent sizes");
+		}
+	}
+}
+END_COMPUTED_VALUE_MULTIPLY_AND_ACCUMULATE_TYPE_SPECIFIC_FUNCTION(
+	FE_value_tensor)
+
+static START_COMPUTED_VALUE_SAME_SUB_TYPE_TYPE_SPECIFIC_FUNCTION(
+	FE_value_tensor)
+{
+	struct Computed_value_FE_value_tensor_type_specific_data *data_1,*data_2;
+
+	data_1=(struct Computed_value_FE_value_tensor_type_specific_data *)
+		Computed_value_get_type_specific_data(value_1);
+	data_2=(struct Computed_value_FE_value_tensor_type_specific_data *)
+		Computed_value_get_type_specific_data(value_2);
+	ASSERT_IF(data_1&&data_2,return_code,0)
+	{
+		if ((data_1->number_of_rows==data_2->number_of_rows)&&
+			(data_1->number_of_columns==data_2->number_of_columns))
+		{
+			return_code=1;
+		}
+	}
+}
+END_COMPUTED_VALUE_SAME_SUB_TYPE_TYPE_SPECIFIC_FUNCTION(FE_value_tensor)
+#endif /* defined (NEW_CODE) */
+
+static char computed_value_FE_value_vector_type_string[]="FE_value vector";
 
 struct Computed_value_FE_value_vector_type_specific_data
 /*******************************************************************************
@@ -195,148 +552,6 @@ static START_COMPUTED_VALUE_SAME_SUB_TYPE_TYPE_SPECIFIC_FUNCTION(
 	}
 }
 END_COMPUTED_VALUE_SAME_SUB_TYPE_TYPE_SPECIFIC_FUNCTION(FE_value_vector)
-
-static char computed_value_FE_value_matrix_type_string[]="FE_value_matrix";
-
-struct Computed_value_FE_value_matrix_type_specific_data
-/*******************************************************************************
-LAST MODIFIED : 14 February 2003
-
-DESCRIPTION :
-==============================================================================*/
-{
-	/* column number varing faster ie. row-wise */
-	FE_value *fe_value_matrix;
-	int number_of_columns,number_of_rows;
-}; /* struct Computed_value_FE_value_matrix_type_specific_data */
-
-static START_COMPUTED_VALUE_CLEAR_TYPE_SPECIFIC_FUNCTION(FE_value_matrix)
-{
-	DEALLOCATE(data->fe_value_matrix);
-	return_code=1;
-}
-END_COMPUTED_VALUE_CLEAR_TYPE_SPECIFIC_FUNCTION(FE_value_matrix)
-
-static START_COMPUTED_VALUE_DUPLICATE_DATA_TYPE_SPECIFIC_FUNCTION(
-	FE_value_matrix)
-{
-	FE_value *destination_value,*source_value;
-	int number_of_values;
-
-	if ((0<(number_of_values=(source->number_of_rows)*
-		(source->number_of_columns)))&&(source_value=source->fe_value_matrix))
-	{
-		if (ALLOCATE(destination_value,FE_value,number_of_values))
-		{
-			destination->fe_value_matrix=destination_value;
-			while (number_of_values>0)
-			{
-				*destination_value= *source_value;
-				destination_value++;
-				source_value++;
-				number_of_values--;
-			}
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"Computed_value_FE_value_matrix_duplicate_data_type_specific.  "
-				"Could not allocate <fe_value_matrix>");
-			DEALLOCATE(destination);
-		}
-	}
-	else
-	{
-		destination->fe_value_matrix=(FE_value *)NULL;
-	}
-	if (destination)
-	{
-		destination->number_of_rows=source->number_of_rows;
-		destination->number_of_columns=source->number_of_columns;
-	}
-}
-END_COMPUTED_VALUE_DUPLICATE_DATA_TYPE_SPECIFIC_FUNCTION(FE_value_matrix)
-
-static START_COMPUTED_VALUE_MULTIPLY_AND_ACCUMULATE_TYPE_SPECIFIC_FUNCTION(
-	FE_value_matrix)
-{
-	FE_value *matrix_total,*matrix_1,*matrix_2,sum,*fe_value_1,*fe_value_2;
-	int i,j,k,number_in_sum,total_number_of_columns,total_number_of_rows;
-	struct Computed_value_FE_value_matrix_type_specific_data *data_total,*data_1,
-		*data_2;
-
-	data_1=(struct Computed_value_FE_value_matrix_type_specific_data *)
-		Computed_value_get_type_specific_data(value_1);
-	data_2=(struct Computed_value_FE_value_matrix_type_specific_data *)
-		Computed_value_get_type_specific_data(value_2);
-	data_total=(struct Computed_value_FE_value_matrix_type_specific_data *)
-		Computed_value_get_type_specific_data(total);
-	ASSERT_IF(data_1&&data_2&&data_total,return_code,0)
-	{
-		total_number_of_rows=data_total->number_of_rows;
-		total_number_of_columns=data_total->number_of_columns;
-		number_in_sum=data_1->number_of_columns;
-		if ((total_number_of_rows==data_1->number_of_rows)&&
-			(number_in_sum==data_2->number_of_rows)&&
-			(total_number_of_columns==data_2->number_of_columns))
-		{
-			matrix_total=data_total->fe_value_matrix;
-			matrix_1=data_1->fe_value_matrix;
-			matrix_2=data_2->fe_value_matrix;
-			ASSERT_IF(matrix_total&&matrix_1&&matrix_2,return_code,0)
-			{
-				for (i=total_number_of_rows;i>0;i--)
-				{
-					fe_value_2=matrix_2;
-					for (j=total_number_of_columns;j>0;j--)
-					{
-						fe_value_1=matrix_1;
-						sum=(FE_value)0;
-						for (k=number_in_sum;k>0;k--)
-						{
-							sum += (*fe_value_1)*(*fe_value_2);
-							fe_value_1++;
-							fe_value_2 += total_number_of_columns;
-						}
-						fe_value_2 -= (number_in_sum*total_number_of_columns)-1;
-						*matrix_total += sum;
-						matrix_total++;
-					}
-					matrix_1 += number_in_sum;
-				}
-				return_code=1;
-			}
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"Computed_value_FE_value_matrix_multiply_and_accumulate_type_specific.  "
-				"Matrices are of inconsistent sizes");
-		}
-	}
-}
-END_COMPUTED_VALUE_MULTIPLY_AND_ACCUMULATE_TYPE_SPECIFIC_FUNCTION(
-	FE_value_matrix)
-
-static START_COMPUTED_VALUE_SAME_SUB_TYPE_TYPE_SPECIFIC_FUNCTION(
-	FE_value_matrix)
-{
-	struct Computed_value_FE_value_matrix_type_specific_data *data_1,*data_2;
-
-	data_1=(struct Computed_value_FE_value_matrix_type_specific_data *)
-		Computed_value_get_type_specific_data(value_1);
-	data_2=(struct Computed_value_FE_value_matrix_type_specific_data *)
-		Computed_value_get_type_specific_data(value_2);
-	ASSERT_IF(data_1&&data_2,return_code,0)
-	{
-		if ((data_1->number_of_rows==data_2->number_of_rows)&&
-			(data_1->number_of_columns==data_2->number_of_columns))
-		{
-			return_code=1;
-		}
-	}
-}
-END_COMPUTED_VALUE_SAME_SUB_TYPE_TYPE_SPECIFIC_FUNCTION(FE_value_matrix)
 
 /*
 Module types
@@ -719,7 +934,7 @@ DEALLOCATE the returned string.
 int Computed_value_set_type_FE_value(struct Computed_value *value,
 	FE_value fe_value)
 /*******************************************************************************
-LAST MODIFIED : 13 February 2003
+LAST MODIFIED : 20 March 2003
 
 DESCRIPTION :
 Makes <value> of type FE_value and sets its <fe_value>.
@@ -739,8 +954,8 @@ Makes <value> of type FE_value and sets its <fe_value>.
 			/* 2.  Clear current type-specific data */
 			Computed_value_clear_type(value);
 			/* 3.  Establish the new type */
-			value->type_string=computed_value_FE_value_type_string;
-			value->type_specific_data=(void *)data;
+			Computed_value_set_type_specific_information(value,
+				computed_value_FE_value_type_string,(void *)data);
 			data->fe_value=fe_value;
 			/* set all the methods */
 			return_code=COMPUTED_VALUE_ESTABLISH_METHODS(value,FE_value);
@@ -766,7 +981,7 @@ DECLARE_COMPUTED_VALUE_IS_TYPE_FUNCTION(FE_value)
 int Computed_value_get_type_FE_value(struct Computed_value *value,
 	FE_value *fe_value_address)
 /*******************************************************************************
-LAST MODIFIED : 14 February 2003
+LAST MODIFIED : 20 March 2003
 
 DESCRIPTION :
 If <value> is of type FE_value, gets its <*fe_value_address>.
@@ -778,7 +993,7 @@ If <value> is of type FE_value, gets its <*fe_value_address>.
 	ENTER(Computed_value_get_type_FE_value);
 	return_code=0;
 	/* check arguments */
-	if (value&&fe_value_address)
+	if (value&&Computed_value_is_type_FE_value(value)&&fe_value_address)
 	{
 		data=(struct Computed_value_FE_value_type_specific_data *)
 			Computed_value_get_type_specific_data(value);
@@ -801,7 +1016,7 @@ If <value> is of type FE_value, gets its <*fe_value_address>.
 int Computed_value_set_type_FE_value_vector(struct Computed_value *value,
 	int number_of_fe_values,FE_value *fe_value_vector)
 /*******************************************************************************
-LAST MODIFIED : 12 February 2003
+LAST MODIFIED : 20 March 2003
 
 DESCRIPTION :
 Makes <value> of type FE_value_vector and sets its <number_of_fe_values> and
@@ -825,8 +1040,8 @@ Makes <value> of type FE_value_vector and sets its <number_of_fe_values> and
 			/* 2.  Clear current type-specific data */
 			Computed_value_clear_type(value);
 			/* 3.  Establish the new type */
-			value->type_string=computed_value_FE_value_vector_type_string;
-			value->type_specific_data=(void *)data;
+			Computed_value_set_type_specific_information(value,
+				computed_value_FE_value_vector_type_string,(void *)data);
 			data->number_of_fe_values=number_of_fe_values;
 			data->fe_value_vector=fe_value_vector;
 			/* set all the methods */
@@ -854,7 +1069,7 @@ DECLARE_COMPUTED_VALUE_IS_TYPE_FUNCTION(FE_value_vector)
 int Computed_value_get_type_FE_value_vector(struct Computed_value *value,
 	int *number_of_fe_values_address,FE_value **fe_value_vector_address)
 /*******************************************************************************
-LAST MODIFIED : 14 February 2003
+LAST MODIFIED : 20 March 2003
 
 DESCRIPTION :
 If <value> is of type FE_value_vector, gets its <*number_of_fe_values_address>
@@ -869,7 +1084,8 @@ The calling program must not DEALLOCATE the returned <*fe_value_vector_address>.
 	ENTER(Computed_value_get_type_FE_value_vector);
 	return_code=0;
 	/* check arguments */
-	if (value&&(number_of_fe_values_address||fe_value_vector_address))
+	if (value&&Computed_value_is_type_FE_value_vector(value)&&
+		(number_of_fe_values_address||fe_value_vector_address))
 	{
 		data=(struct Computed_value_FE_value_vector_type_specific_data *)
 			Computed_value_get_type_specific_data(value);
@@ -900,7 +1116,7 @@ The calling program must not DEALLOCATE the returned <*fe_value_vector_address>.
 int Computed_value_set_type_FE_value_matrix(struct Computed_value *value,
 	int number_of_rows,int number_of_columns,FE_value *fe_value_matrix)
 /*******************************************************************************
-LAST MODIFIED : 14 February 2003
+LAST MODIFIED : 20 March 2003
 
 DESCRIPTION :
 Makes <value> of type FE_value_matrix and sets its <number_of_rows>,
@@ -924,8 +1140,8 @@ After success, the <value> is responsible for DEALLOCATEing <fe_value_matrix>.
 			/* 2.  Clear current type-specific data */
 			Computed_value_clear_type(value);
 			/* 3.  Establish the new type */
-			value->type_string=computed_value_FE_value_matrix_type_string;
-			value->type_specific_data=(void *)data;
+			Computed_value_set_type_specific_information(value,
+				computed_value_FE_value_matrix_type_string,(void *)data);
 			data->number_of_rows=number_of_rows;
 			data->number_of_columns=number_of_columns;
 			data->fe_value_matrix=fe_value_matrix;
@@ -955,7 +1171,7 @@ int Computed_value_get_type_FE_value_matrix(struct Computed_value *value,
 	int *number_of_rows_address,int *number_of_columns_address,
 	FE_value **fe_value_matrix_address)
 /*******************************************************************************
-LAST MODIFIED : 14 February 2003
+LAST MODIFIED : 20 March 2003
 
 DESCRIPTION :
 If <value> is of type FE_value_matrix, gets its <*number_of_rows_address>,
@@ -970,7 +1186,8 @@ The calling program must not DEALLOCATE the returned <*fe_value_matrix_address>.
 	ENTER(Computed_value_get_type_FE_value_matrix);
 	return_code=0;
 	/* check arguments */
-	if (value&&(number_of_rows_address||number_of_columns_address||
+	if (value&&Computed_value_is_type_FE_value_matrix(value)&&
+		(number_of_rows_address||number_of_columns_address||
 		fe_value_matrix_address))
 	{
 		data=(struct Computed_value_FE_value_matrix_type_specific_data *)

@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : computed_variable.h
 
-LAST MODIFIED : 10 February 2003
+LAST MODIFIED : 20 March 2003
 
 DESCRIPTION :
 Computed_variable's are expressions that are constructed for:
@@ -119,36 +119,66 @@ including the MANAGER(Computed_variable).
 Global functions
 ----------------
 */
-int Computed_value_set_type_jacobian_matrix(struct Computed_value *value,
-	struct Matrix *matrix,struct LIST(Computed_variable) *row_variables,
-	struct LIST(Computed_variable) *column_variables);
+int Computed_value_set_type_derivative_matrix(struct Computed_value *value,
+	struct Computed_variable *dependent_variable,int order,
+	struct Computed_variable **independent_variables,
+	struct Computed_value *fe_value_matrix);
 /*******************************************************************************
-LAST MODIFIED : 24 January 2003
+LAST MODIFIED : 20 March 2003
 
 DESCRIPTION :
-Makes <value> of type jacobian_matrix and sets its <matrix>, <row_variables>
-and <column_variables>.  After success, the <value> is responsible for
-DESTROYing <matrix>, <row_variables> and <column_variables>.
+Makes <value> of type derivative_matrix and sets its <fe_value_matrix>,
+<dependent_variable>, <order> and <independent_variables>.  This function
+ACCESSes the <dependent_variable> and <independent_variables>.  After success,
+the <value> is responsible for DESTROY/DEACCESSing <fe_value_matrix>,
+<dependent_variable> and <independent_variables>.
+
+The number of rows is the number of values for the <dependent_variable>.  The
+number of columns is:
+	product(1+number_of_values,for each independent_variable)-1
+The columns are:
+	d(dependent_variable)/d(independent_variables[0])
+	d(dependent_variable)/d(independent_variables[1])
+	d2(dependent_variable)/d(independent_variables[0])d(independent_variables[1])
+	d(dependent_variable)/d(independent_variables[2])
+	d2(dependent_variable)/d(independent_variables[0])d(independent_variables[2])
+	d2(dependent_variable)/d(independent_variables[1])d(independent_variables[2])
+	d3(dependent_variable)/d(independent_variables[0])d(independent_variables[1])
+		d(independent_variables[2])
+	...
+	d(dependent_variable)/d(independent_variables[order-1])
+	d2(dependent_variable)/d(independent_variables[0])
+		d(independent_variables[order-1])
+	d2(dependent_variable)/d(independent_variables[1])
+		d(independent_variables[order-1])
+	d3(dependent_variable)/d(independent_variables[0])d(independent_variables[1])
+		d(independent_variables[order-1])
+	d2(dependent_variable)/d(independent_variables[2])
+		d(independent_variables[order-1])
+	d3(dependent_variable)/d(independent_variables[0])d(independent_variables[2])
+		d(independent_variables[order-1])
+	d3(dependent_variable)/d(independent_variables[1])d(independent_variables[2])
+		d(independent_variables[order-1])
+	d4(dependent_variable)/d(independent_variables[0])d(independent_variables[1])
+		d(independent_variables[2])d(independent_variables[order-1])
+	...
+	d{order}(dependent_variable)/d(independent_variables[0])
+		d(independent_variables[1]) ... d(independent_variables[order-1])
 ==============================================================================*/
 
-int Computed_value_is_type_jacobian_matrix(struct Computed_value *value);
+PROTOTYPE_COMPUTED_VALUE_IS_TYPE_FUNCTION(FE_value);
+
+int Computed_value_get_type_derivative_matrix(struct Computed_value *value,
+	struct Computed_variable **dependent_variable_address,int *order_address,
+	struct Computed_variable ***independent_variables_address,
+	struct Computed_value **fe_value_matrix_address);
 /*******************************************************************************
-LAST MODIFIED : 24 January 2003
+LAST MODIFIED : 6 March 2003
 
 DESCRIPTION :
-Returns a non-zero if <value> is a jacobian_matrix and zero otherwise.
-==============================================================================*/
-
-int Computed_value_get_type_jacobian_matrix(struct Computed_value *value,
-	struct Matrix **matrix_address,
-	struct LIST(Computed_variable) **row_variables_address,
-	struct LIST(Computed_variable) **column_variables_address);
-/*******************************************************************************
-LAST MODIFIED : 24 January 2003
-
-DESCRIPTION :
-If <value> is of type jacobian_matrix, gets its <*matrix_address>,
-<*row_variables_address> and <*column_variables_address>.
+If <value> is of type derivative_matrix, gets its <*fe_value_matrix_address>,
+<*dependent_variable_address>, <*order_address> and
+<*independent_variables_address>.
 
 The calling program must not DEALLOCATE the returned structures.
 ==============================================================================*/
@@ -169,6 +199,15 @@ LAST MODIFIED : 21 January 2003
 
 DESCRIPTION :
 Frees memory/deaccess objects for Computed_variable at <*variable_address>.
+==============================================================================*/
+
+struct Computed_variable *Computed_variable_duplicate(
+	struct Computed_variable *variable);
+/*******************************************************************************
+LAST MODIFIED : 6 March 2003
+
+DESCRIPTION :
+Returns a copy of the <variable>.
 ==============================================================================*/
 
 PROTOTYPE_OBJECT_FUNCTIONS(Computed_variable);
@@ -373,40 +412,42 @@ setting, the current values.
 ==============================================================================*/
 
 int Computed_variable_evaluate_derivative(
-	struct Computed_variable *variable,int order,
+	struct Computed_variable *dependent_variable,int order,
 	struct Computed_variable **independent_variables,
 	struct LIST(Computed_variable_value) *values,
-	struct Computed_value *result);
+	struct Computed_value *derivative_matrix);
 /*******************************************************************************
-LAST MODIFIED : 10 February 2003
+LAST MODIFIED : 7 March 2003
 
 DESCRIPTION :
-Evaluates the <order> degree derivative of <variable> with respect to the
-<independent_variables> and sets the <result>.
+Evaluates the <derivative_matrix> for the <order> degree derivative of
+<dependent_variable> with respect to the <independent_variables>.
 ==============================================================================*/
 
 int Computed_variable_set_type_derivative(
 	struct Computed_variable *derivative,
-	struct Computed_variable *variable,
+	struct Computed_variable *dependent_variable,
 	struct Computed_variable *independent_variable);
 /*******************************************************************************
-LAST MODIFIED : 10 February 2003
+LAST MODIFIED : 7 March 2003
 
 DESCRIPTION :
-Sets <derivative> to be the derivative of the <variable> with respect to the
-<independent_variable>.
+Sets <derivative> to be the derivative of the <dependent_variable> with respect
+to the <independent_variable>.
+
+???DB.  Have an <order> and <independent_variables>?
 ==============================================================================*/
 
 int Computed_variable_set_type_divergence(
 	struct Computed_variable *divergence,
-	struct Computed_variable *variable,
-	struct LIST(Computed_variable) *independent_variables);
+	struct Computed_variable *dependent_variable,
+	struct Computed_variable *independent_variable);
 /*******************************************************************************
-LAST MODIFIED : 24 January 2003
+LAST MODIFIED : 6 March 2003
 
 DESCRIPTION :
-Sets <divergence> to be the divergence of the <variable> with respect to the
-<independent_variables>.
+Sets <divergence> to be the divergence of the <dependent_variable> with respect
+to the <independent_variable>.
 ==============================================================================*/
 
 int Computed_variable_set_type_inverse(
@@ -420,6 +461,8 @@ DESCRIPTION :
 Sets <inverse_variable> to be the inverse of the <variable>.  Its independent
 variables are the dependent variables of the <variable> and its
 <dependent_variables> are independent variables of the <variable>.
+
+???DB.  Just one <independent_variable>?
 ==============================================================================*/
 
 struct Coordinate_system *Computed_variable_get_coordinate_system(

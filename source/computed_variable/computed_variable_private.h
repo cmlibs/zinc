@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : computed_variable_private.h
 
-LAST MODIFIED : 12 February 2003
+LAST MODIFIED : 20 March 2003
 
 DESCRIPTION :
 ???DB.  Move structure into .c .  Means that have to change macro into a
@@ -10,6 +10,8 @@ DESCRIPTION :
 ==============================================================================*/
 #if !defined (COMPUTED_VARIABLE_PRIVATE_H)
 #define COMPUTED_VARIABLE_PRIVATE_H
+
+#include "computed_variable/computed_variable.h"
 
 /*
 Friend types

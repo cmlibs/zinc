@@ -51,14 +51,6 @@ Returns a non-zero if <value> is a #value_type and zero otherwise. \
 Global types
 ------------
 */
-struct Matrix;
-/*******************************************************************************
-LAST MODIFIED : 27 January 2003
-
-DESCRIPTION :
-???DB.  Should be in a linear equation module?
-==============================================================================*/
-
 struct Computed_value;
 /*******************************************************************************
 LAST MODIFIED : 22 January 2003
