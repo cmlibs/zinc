@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : scene.c
 
-LAST MODIFIED : 29 June 2000
+LAST MODIFIED : 5 July 2000
 
 DESCRIPTION :
 Structure for storing the collections of objects that make up a 3-D graphical
@@ -1806,6 +1806,170 @@ DESCRIPTION :
 	return (return_code);
 } /* Scene_object_update_time_behaviour */
 
+struct Scene_picked_object_get_nearest_element_data
+{
+	/* "nearest" value from Scene_picked_object for picked_element */
+	unsigned int nearest;
+	struct FE_element *nearest_element;
+	/* group that the element must be in, or any group if NULL */
+	struct GROUP(FE_element) *element_group;
+	/* information about the nearest element */
+	struct Scene_picked_object *scene_picked_object;
+	struct GT_element_group *gt_element_group;
+	struct GT_element_settings *gt_element_settings;
+};
+
+static int Scene_picked_object_get_nearest_element(
+	struct Scene_picked_object *scene_picked_object,
+	void *nearest_element_data_void)
+/*******************************************************************************
+LAST MODIFIED : 5 July 2000
+
+DESCRIPTION :
+If the <scene_picked_object> refers to an element, the "nearest" value is
+compared with that for the current nearest element in the
+<nearest_element_data>. If there was no current nearest element or the new
+element is nearer, it becomes the nearest element and its "nearest" value is
+stored in the nearest_element_data.
+==============================================================================*/
+{
+	int return_code;
+	struct CM_element_information cm;
+	struct FE_element *element;
+	struct GROUP(FE_element) *element_group;
+	struct GT_element_group *gt_element_group;
+	struct GT_element_settings *settings;
+	struct Scene_object *scene_object;
+	struct Scene_picked_object_get_nearest_element_data	*nearest_element_data;
+
+	ENTER(Scene_picked_object_get_nearest_element);
+	if (scene_picked_object&&(nearest_element_data=
+		(struct Scene_picked_object_get_nearest_element_data	*)
+		nearest_element_data_void))
+	{
+		return_code=1;
+		/* proceed only if there is no picked_element or object is nearer */
+		if (((struct FE_element *)NULL==nearest_element_data->nearest_element)||
+			(Scene_picked_object_get_nearest(scene_picked_object) <
+				nearest_element_data->nearest))
+		{
+			/* is the last scene_object a Graphical_element wrapper, and does the
+				 settings for the graphic refer to elements? */
+			if ((scene_object=Scene_picked_object_get_Scene_object(
+				scene_picked_object,
+				Scene_picked_object_get_number_of_scene_objects(scene_picked_object)-1))
+				&&(SCENE_OBJECT_GRAPHICAL_ELEMENT_GROUP==
+					Scene_object_get_type(scene_object))&&(gt_element_group=
+						Scene_object_get_graphical_element_group(scene_object))&&
+				(element_group=GT_element_group_get_element_group(gt_element_group))&&
+				(2<=Scene_picked_object_get_number_of_subobjects(scene_picked_object))&&
+				(settings=get_settings_at_position_in_GT_element_group(gt_element_group,
+					Scene_picked_object_get_subobject(scene_picked_object,0)))&&
+				(GT_element_settings_selects_elements(settings)))
+			{
+				if (CM_element_information_from_graphics_name(&cm,
+					Scene_picked_object_get_subobject(scene_picked_object,1))&&
+					(element=FIND_BY_IDENTIFIER_IN_GROUP(FE_element,identifier)(
+						&cm,element_group)))
+				{
+					if ((!nearest_element_data->element_group)||
+						((struct FE_element *)NULL != IS_OBJECT_IN_GROUP(FE_element)(
+							element,nearest_element_data->element_group)))
+					{
+						nearest_element_data->nearest_element=element;
+						nearest_element_data->scene_picked_object=scene_picked_object;
+						nearest_element_data->gt_element_group=gt_element_group;
+						nearest_element_data->gt_element_settings=settings;
+						nearest_element_data->nearest=
+							Scene_picked_object_get_nearest(scene_picked_object);
+					}
+				}
+				else
+				{
+					display_message(ERROR_MESSAGE,
+						"Scene_picked_object_get_nearest_element.  "
+						"Invalid element %s %d",CM_element_type_string(cm.type),cm.number);
+					return_code=0;
+				}
+			}
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Scene_picked_object_get_nearest_element.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Scene_picked_object_get_nearest_element */
+
+static int Scene_picked_object_get_picked_elements(
+	struct Scene_picked_object *scene_picked_object,
+	void *picked_elements_list_void)
+/*******************************************************************************
+LAST MODIFIED : 5 July 2000
+
+DESCRIPTION :
+If the <scene_picked_object> refers to an element, it is converted into
+an FE_element and added to the <picked_elements_list>.
+==============================================================================*/
+{
+	int return_code;
+	struct CM_element_information cm;
+	struct FE_element *element;
+	struct GROUP(FE_element) *element_group;
+	struct GT_element_group *gt_element_group;
+	struct GT_element_settings *settings;
+	struct Scene_object *scene_object;
+
+	ENTER(Scene_picked_object_get_picked_elements);
+	if (scene_picked_object&&picked_elements_list_void)
+	{
+		return_code=1;
+		/* is the last scene_object a Graphical_element wrapper, and does the
+			 settings for the graphic refer to elements? */
+		if ((scene_object=Scene_picked_object_get_Scene_object(scene_picked_object,
+			Scene_picked_object_get_number_of_scene_objects(scene_picked_object)-1))
+			&&(SCENE_OBJECT_GRAPHICAL_ELEMENT_GROUP==
+				Scene_object_get_type(scene_object))&&(gt_element_group=
+					Scene_object_get_graphical_element_group(scene_object))&&
+			(element_group=GT_element_group_get_element_group(gt_element_group))&&
+			(2<=Scene_picked_object_get_number_of_subobjects(scene_picked_object))&&
+			(settings=get_settings_at_position_in_GT_element_group(
+				gt_element_group,
+				Scene_picked_object_get_subobject(scene_picked_object,0)))&&
+			(GT_element_settings_selects_elements(settings)))
+		{
+			if (CM_element_information_from_graphics_name(&cm,
+				Scene_picked_object_get_subobject(scene_picked_object,1))&&
+				(element=FIND_BY_IDENTIFIER_IN_GROUP(FE_element,identifier)(
+					&cm,element_group)))
+			{
+				return_code=
+					ensure_FE_element_is_in_list(element,picked_elements_list_void);
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE,
+					"Scene_picked_object_get_picked_elements.  "
+					"Invalid element %s %d",CM_element_type_string(cm.type),cm.number);
+				return_code=0;
+			}
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Scene_picked_object_get_picked_elements.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Scene_picked_object_get_picked_elements */
+
 struct Scene_picked_object_get_nearest_element_point_data
 {
 	/* "nearest" value from Scene_picked_object for picked_element_point */
@@ -1823,7 +1987,7 @@ static int Scene_picked_object_get_nearest_element_point(
 	struct Scene_picked_object *scene_picked_object,
 	void *nearest_element_point_data_void)
 /*******************************************************************************
-LAST MODIFIED : 27 June 2000
+LAST MODIFIED : 5 July 2000
 
 DESCRIPTION :
 If the <scene_picked_object> refers to an element_point, the "nearest" value is
@@ -1873,9 +2037,7 @@ and destroy it once returned.
 					Scene_object_get_type(scene_object))&&(gt_element_group=
 						Scene_object_get_graphical_element_group(scene_object))&&
 				(element_group=GT_element_group_get_element_group(gt_element_group))&&
-				((!nearest_element_point_data->element_group)||
-					(nearest_element_point_data->element_group==element_group))&&
-				(3==Scene_picked_object_get_number_of_subobjects(scene_picked_object))&&
+				(3<=Scene_picked_object_get_number_of_subobjects(scene_picked_object))&&
 				(settings=get_settings_at_position_in_GT_element_group(
 					gt_element_group,
 					Scene_picked_object_get_subobject(scene_picked_object,0)))&&
@@ -1887,88 +2049,94 @@ and destroy it once returned.
 					(element=FIND_BY_IDENTIFIER_IN_GROUP(FE_element,identifier)(&cm,
 						element_group)))
 				{
-					/* determine discretization of element for graphic */
-					top_level_element=(struct FE_element *)NULL;
-					GT_element_settings_get_discretization(settings,
-						&element_discretization);
-					top_level_number_in_xi[0]=element_discretization.number_in_xi1;
-					top_level_number_in_xi[1]=element_discretization.number_in_xi2;
-					top_level_number_in_xi[2]=element_discretization.number_in_xi3;
-					GT_element_settings_get_face(settings,&face_number);
-					native_discretization_field=
-						GT_element_settings_get_native_discretization_field(settings);
-					if (get_FE_element_discretization(element,element_group,face_number,
-						native_discretization_field,top_level_number_in_xi,
-						&top_level_element,element_point_ranges_identifier.number_in_xi))
+					if ((!nearest_element_point_data->element_group)||
+						((struct FE_element *)NULL != IS_OBJECT_IN_GROUP(FE_element)(
+							element,nearest_element_point_data->element_group)))
 					{
-						element_point_ranges_identifier.element=element;
-						element_point_ranges_identifier.top_level_element=top_level_element;
-						element_point_ranges_identifier.xi_discretization_mode=
-							GT_element_settings_get_xi_discretization_mode(settings);
-						if (XI_DISCRETIZATION_EXACT_XI==
-							element_point_ranges_identifier.xi_discretization_mode)
+						/* determine discretization of element for graphic */
+						top_level_element=(struct FE_element *)NULL;
+						GT_element_settings_get_discretization(settings,
+							&element_discretization);
+						top_level_number_in_xi[0]=element_discretization.number_in_xi1;
+						top_level_number_in_xi[1]=element_discretization.number_in_xi2;
+						top_level_number_in_xi[2]=element_discretization.number_in_xi3;
+						GT_element_settings_get_face(settings,&face_number);
+						native_discretization_field=
+							GT_element_settings_get_native_discretization_field(settings);
+						if (get_FE_element_discretization(element,element_group,face_number,
+							native_discretization_field,top_level_number_in_xi,
+							&top_level_element,element_point_ranges_identifier.number_in_xi))
 						{
-							for (i=0;i<MAXIMUM_ELEMENT_XI_DIMENSIONS;i++)
+							element_point_ranges_identifier.element=element;
+							element_point_ranges_identifier.top_level_element=
+								top_level_element;
+							element_point_ranges_identifier.xi_discretization_mode=
+								GT_element_settings_get_xi_discretization_mode(settings);
+							if (XI_DISCRETIZATION_EXACT_XI==
+								element_point_ranges_identifier.xi_discretization_mode)
 							{
-								element_point_ranges_identifier.number_in_xi[i]=1;
-							}
-						}
-						GT_element_settings_get_seed_xi(settings,xi);
-						/*???RC temporary, hopefully */
-						for (i=0;i<3;i++)
-						{
-							element_point_ranges_identifier.exact_xi[i]=xi[i];
-						}
-						if (element_point_ranges=CREATE(Element_point_ranges)(
-							&element_point_ranges_identifier))
-						{
-							element_point_number=
-								Scene_picked_object_get_subobject(scene_picked_object,2);
-							if (Element_point_ranges_add_range(element_point_ranges,
-								element_point_number,element_point_number))
-							{
-								if (nearest_element_point_data->nearest_element_point)
+								for (i=0;i<MAXIMUM_ELEMENT_XI_DIMENSIONS;i++)
 								{
-									DESTROY(Element_point_ranges)(
-										&(nearest_element_point_data->nearest_element_point));
+									element_point_ranges_identifier.number_in_xi[i]=1;
 								}
-								nearest_element_point_data->nearest_element_point=
-									element_point_ranges;
-								nearest_element_point_data->scene_picked_object=
-									scene_picked_object;
-								nearest_element_point_data->gt_element_group=gt_element_group;
-								nearest_element_point_data->gt_element_settings=settings;
-								nearest_element_point_data->nearest=
-									Scene_picked_object_get_nearest(scene_picked_object);
+							}
+							GT_element_settings_get_seed_xi(settings,xi);
+							/*???RC temporary, hopefully */
+							for (i=0;i<3;i++)
+							{
+								element_point_ranges_identifier.exact_xi[i]=xi[i];
+							}
+							if (element_point_ranges=CREATE(Element_point_ranges)(
+								&element_point_ranges_identifier))
+							{
+								element_point_number=
+									Scene_picked_object_get_subobject(scene_picked_object,2);
+								if (Element_point_ranges_add_range(element_point_ranges,
+									element_point_number,element_point_number))
+								{
+									if (nearest_element_point_data->nearest_element_point)
+									{
+										DESTROY(Element_point_ranges)(
+											&(nearest_element_point_data->nearest_element_point));
+									}
+									nearest_element_point_data->nearest_element_point=
+										element_point_ranges;
+									nearest_element_point_data->scene_picked_object=
+										scene_picked_object;
+									nearest_element_point_data->gt_element_group=gt_element_group;
+									nearest_element_point_data->gt_element_settings=settings;
+									nearest_element_point_data->nearest=
+										Scene_picked_object_get_nearest(scene_picked_object);
+								}
+								else
+								{
+									display_message(ERROR_MESSAGE,
+										"Scene_picked_object_get_nearest_element_point.  "
+										"Could not add element point range");
+									DESTROY(Element_point_ranges)(&element_point_ranges);
+									return_code=0;
+								}
 							}
 							else
 							{
-								display_message(WARNING_MESSAGE,
+								display_message(ERROR_MESSAGE,
 									"Scene_picked_object_get_nearest_element_point.  "
-									"Could not add element point range");
-								DESTROY(Element_point_ranges)(&element_point_ranges);
+									"Could not create Element_point_ranges");
 								return_code=0;
 							}
 						}
 						else
 						{
-							display_message(WARNING_MESSAGE,
+							display_message(ERROR_MESSAGE,
 								"Scene_picked_object_get_nearest_element_point.  "
-								"Could not create Element_point_ranges");
+								"Could not get discretization");
 							return_code=0;
 						}
-					}
-					else
-					{
-						display_message(WARNING_MESSAGE,
-							"Scene_picked_object_get_nearest_element_point.  "
-							"Could not get discretization");
-						return_code=0;
 					}
 				}
 				else
 				{
-					display_message(WARNING_MESSAGE,
+					display_message(ERROR_MESSAGE,
 						"Scene_picked_object_get_nearest_element_point.  "
 						"Invalid element %s %d",CM_element_type_string(cm.type),cm.number);
 					return_code=0;
@@ -2024,7 +2192,7 @@ an Element_point_ranges and added to the <picked_element_points_list>.
 				Scene_object_get_type(scene_object))&&(gt_element_group=
 					Scene_object_get_graphical_element_group(scene_object))&&
 			(element_group=GT_element_group_get_element_group(gt_element_group))&&
-			(3==Scene_picked_object_get_number_of_subobjects(scene_picked_object))&&
+			(3<=Scene_picked_object_get_number_of_subobjects(scene_picked_object))&&
 			(settings=get_settings_at_position_in_GT_element_group(
 				gt_element_group,
 				Scene_picked_object_get_subobject(scene_picked_object,0)))&&
@@ -2078,7 +2246,7 @@ an Element_point_ranges and added to the <picked_element_points_list>.
 							Element_point_ranges_add_to_list(element_point_ranges,
 								picked_element_points_list_void)))
 						{
-							display_message(WARNING_MESSAGE,
+							display_message(ERROR_MESSAGE,
 								"Scene_picked_object_get_picked_element_points.  "
 								"Could not add element point to picked list");
 							return_code=0;
@@ -2087,7 +2255,7 @@ an Element_point_ranges and added to the <picked_element_points_list>.
 					}
 					else
 					{
-						display_message(WARNING_MESSAGE,
+						display_message(ERROR_MESSAGE,
 							"Scene_picked_object_get_picked_element_points.  "
 							"Could not create Element_point_ranges");
 						return_code=0;
@@ -2095,7 +2263,7 @@ an Element_point_ranges and added to the <picked_element_points_list>.
 				}
 				else
 				{
-					display_message(WARNING_MESSAGE,
+					display_message(ERROR_MESSAGE,
 						"Scene_picked_object_get_picked_element_points.  "
 						"Could not get discretization");
 					return_code=0;
@@ -2103,8 +2271,9 @@ an Element_point_ranges and added to the <picked_element_points_list>.
 			}
 			else
 			{
-				display_message(WARNING_MESSAGE,
-					"Scene_picked_object_get_picked_element_points.  Invalid element");
+				display_message(ERROR_MESSAGE,
+					"Scene_picked_object_get_picked_element_points.  "
+					"Invalid element %s %d",CM_element_type_string(cm.type),cm.number);
 				return_code=0;
 			}
 		}
@@ -2125,9 +2294,8 @@ struct Scene_picked_object_get_nearest_node_data
 	/* "nearest" value from Scene_picked_object for picked_node */
 	unsigned int nearest;
 	struct FE_node *nearest_node;
-	struct MANAGER(FE_node) *node_manager;
-	/* flag indicating that the above manager is actually the data manager */
-	int data_manager;
+	/* flag set when searching for nearest data point rather than node */
+	int use_data;
 	/* group that the node must be in, or any group if NULL */
 	struct GROUP(FE_node) *node_group;
 	/* information about the nearest node */
@@ -2139,7 +2307,7 @@ struct Scene_picked_object_get_nearest_node_data
 static int Scene_picked_object_get_nearest_node(
 	struct Scene_picked_object *scene_picked_object,void *nearest_node_data_void)
 /*******************************************************************************
-LAST MODIFIED : 28 April 2000
+LAST MODIFIED : 5 July 2000
 
 DESCRIPTION :
 If the <scene_picked_object> refers to a node, the "nearest" value is compared
@@ -2150,11 +2318,12 @@ and its "nearest" value is stored in the nearest_node_data.
 {
 	enum GT_element_settings_type settings_type;
 	int node_number,return_code;
-	struct FE_node *nearest_node;
+	struct FE_node *node;
 	struct Scene_object *scene_object;
 	struct Scene_picked_object_get_nearest_node_data *nearest_node_data;
+	struct GROUP(FE_node) *node_group;
 	struct GT_element_group *gt_element_group;
-	struct GT_element_settings *gt_element_settings;
+	struct GT_element_settings *settings;
 
 	ENTER(Scene_picked_object_get_nearest_node);
 	if (scene_picked_object&&(nearest_node_data=
@@ -2174,40 +2343,40 @@ and its "nearest" value is stored in the nearest_node_data.
 				&&(SCENE_OBJECT_GRAPHICAL_ELEMENT_GROUP==
 					Scene_object_get_type(scene_object))&&(gt_element_group=
 						Scene_object_get_graphical_element_group(scene_object))&&
-				(3==Scene_picked_object_get_number_of_subobjects(scene_picked_object))&&
-				(gt_element_settings=get_settings_at_position_in_GT_element_group(
+				(3<=Scene_picked_object_get_number_of_subobjects(scene_picked_object))&&
+				(settings=get_settings_at_position_in_GT_element_group(
 					gt_element_group,
 					Scene_picked_object_get_subobject(scene_picked_object,0)))&&
 				(((GT_ELEMENT_SETTINGS_NODE_POINTS==
-					(settings_type=
-						GT_element_settings_get_settings_type(gt_element_settings)))&&
-					(!(nearest_node_data->data_manager)))||
+					(settings_type=GT_element_settings_get_settings_type(settings)))&&
+					(!(nearest_node_data->use_data))&&
+					(node_group=GT_element_group_get_node_group(gt_element_group)))||
 					((GT_ELEMENT_SETTINGS_DATA_POINTS==settings_type)&&
-						nearest_node_data->data_manager)))
+						nearest_node_data->use_data&&
+					(node_group=GT_element_group_get_data_group(gt_element_group)))))
 			{
 				node_number=Scene_picked_object_get_subobject(scene_picked_object,2);
-				if (nearest_node=FIND_BY_IDENTIFIER_IN_MANAGER(FE_node,
-					cm_node_identifier)(node_number,nearest_node_data->node_manager))
+				if (node=FIND_BY_IDENTIFIER_IN_GROUP(FE_node,cm_node_identifier)(
+					node_number,node_group))
 				{
-					/* is the node in the node_group, if supplied */
-					if ((!nearest_node_data->node_group)||
-						(nearest_node==FIND_BY_IDENTIFIER_IN_GROUP(FE_node,
-							cm_node_identifier)(node_number,nearest_node_data->node_group)))
+					/* is the node in the nearest_node_data->node_group, if supplied */
+					if ((!nearest_node_data->node_group)||((struct FE_node *)NULL !=
+						IS_OBJECT_IN_GROUP(FE_node)(node,nearest_node_data->node_group)))
 					{
-						nearest_node_data->nearest_node=nearest_node;
+						nearest_node_data->nearest_node=node;
 						nearest_node_data->scene_picked_object=scene_picked_object;
 						nearest_node_data->gt_element_group=gt_element_group;
-						nearest_node_data->gt_element_settings=gt_element_settings;
+						nearest_node_data->gt_element_settings=settings;
 						nearest_node_data->nearest=
 							Scene_picked_object_get_nearest(scene_picked_object);
 					}
 				}
 				else
 				{
-					display_message(WARNING_MESSAGE,
-						"Scene_picked_object_get_nearest_node.  "
-						"Node number %d not in manager",node_number);
-					/*return_code=0;*/
+					display_message(ERROR_MESSAGE,
+						"Scene_picked_object_get_nearest_node.  Invalid node %d",
+						node_number);
+					return_code=0;
 				}
 			}
 		}
@@ -2226,16 +2395,14 @@ and its "nearest" value is stored in the nearest_node_data.
 struct Scene_picked_object_get_picked_nodes_data
 {
 	struct LIST(FE_node) *node_list;
-	/* manager that nodes must be in to add to list */
-	struct MANAGER(FE_node) *node_manager;
-	/* flag indicating that the above manager is actually the data manager */
-	int data_manager;
+	/* flag set when searching for nearest data point rather than node */
+	int use_data;
 };
 
 static int Scene_picked_object_get_picked_nodes(
 	struct Scene_picked_object *scene_picked_object,void *picked_nodes_data_void)
 /*******************************************************************************
-LAST MODIFIED : 28 April 2000
+LAST MODIFIED : 5 July 2000
 
 DESCRIPTION :
 If the <scene_picked_object> refers to a node and the node is in the given
@@ -2247,8 +2414,9 @@ manager, ensures it is in the list.
 	struct FE_node *node;
 	struct Scene_object *scene_object;
 	struct Scene_picked_object_get_picked_nodes_data *picked_nodes_data;
+	struct GROUP(FE_node) *node_group;
 	struct GT_element_group *gt_element_group;
-	struct GT_element_settings *gt_element_settings;
+	struct GT_element_settings *settings;
 
 	ENTER(Scene_picked_object_get_picked_nodes);
 	if (scene_picked_object&&(picked_nodes_data=
@@ -2263,29 +2431,29 @@ manager, ensures it is in the list.
 			&&(SCENE_OBJECT_GRAPHICAL_ELEMENT_GROUP==
 				Scene_object_get_type(scene_object))&&(gt_element_group=
 					Scene_object_get_graphical_element_group(scene_object))&&
-			(3==Scene_picked_object_get_number_of_subobjects(scene_picked_object))&&
-			(gt_element_settings=get_settings_at_position_in_GT_element_group(
+			(3<=Scene_picked_object_get_number_of_subobjects(scene_picked_object))&&
+			(settings=get_settings_at_position_in_GT_element_group(
 				gt_element_group,
 				Scene_picked_object_get_subobject(scene_picked_object,0)))&&
 			(((GT_ELEMENT_SETTINGS_NODE_POINTS==
-				(settings_type=
-					GT_element_settings_get_settings_type(gt_element_settings)))&&
-				(!(picked_nodes_data->data_manager)))||
+				(settings_type=GT_element_settings_get_settings_type(settings)))&&
+				(!(picked_nodes_data->use_data))&&
+				(node_group=GT_element_group_get_node_group(gt_element_group)))||
 				((GT_ELEMENT_SETTINGS_DATA_POINTS==settings_type)&&
-					picked_nodes_data->data_manager)))
+					picked_nodes_data->use_data&&
+					(node_group=GT_element_group_get_data_group(gt_element_group)))))
 		{
 			node_number=Scene_picked_object_get_subobject(scene_picked_object,2);
-			if (node=FIND_BY_IDENTIFIER_IN_MANAGER(FE_node,cm_node_identifier)(
-				node_number,picked_nodes_data->node_manager))
+			if (node=FIND_BY_IDENTIFIER_IN_GROUP(FE_node,cm_node_identifier)(
+				node_number,node_group))
 			{
 				return_code=ensure_FE_node_is_in_list(node,
 					(void *)(picked_nodes_data->node_list));
 			}
 			else
 			{
-				display_message(WARNING_MESSAGE,
-					"Scene_picked_object_get_picked_nodes.  "
-					"Node number %d not in manager",node_number);
+				display_message(ERROR_MESSAGE,
+					"Scene_picked_object_get_picked_nodes.  Invalid node %d",node_number);
 				return_code=0;
 			}
 		}
@@ -5189,6 +5357,97 @@ DECLARE_OBJECT_FUNCTIONS(Scene_picked_object)
 
 DECLARE_LIST_FUNCTIONS(Scene_picked_object)
 
+struct FE_element *Scene_picked_object_list_get_nearest_element(
+	struct LIST(Scene_picked_object) *scene_picked_object_list,
+	struct GROUP(FE_element) *element_group,
+	struct Scene_picked_object **scene_picked_object_address,
+	struct GT_element_group **gt_element_group_address,
+	struct GT_element_settings **gt_element_settings_address)
+/*******************************************************************************
+LAST MODIFIED : 5 July 2000
+
+DESCRIPTION :
+Returns the nearest picked element in <scene_picked_object_list> that is in
+<element_group> (or any group if NULL). If any of the remaining address
+arguments are not NULL, they are filled with the appropriate information
+pertaining to the nearest element.
+==============================================================================*/
+{
+	struct Scene_picked_object_get_nearest_element_data nearest_element_data;
+
+	ENTER(Scene_picked_object_list_get_nearest_element);
+	nearest_element_data.nearest=0;
+	nearest_element_data.nearest_element=(struct FE_element *)NULL;
+	nearest_element_data.element_group=element_group;
+	nearest_element_data.scene_picked_object=(struct Scene_picked_object *)NULL;
+	nearest_element_data.gt_element_group=(struct GT_element_group *)NULL;
+	nearest_element_data.gt_element_settings=(struct GT_element_settings *)NULL;
+	if (scene_picked_object_list)
+	{
+		FOR_EACH_OBJECT_IN_LIST(Scene_picked_object)(
+			Scene_picked_object_get_nearest_element,(void *)&nearest_element_data,
+			scene_picked_object_list);
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Scene_picked_object_list_get_nearest_element.  Invalid argument(s)");
+	}
+	if (scene_picked_object_address)
+	{
+		*scene_picked_object_address=nearest_element_data.scene_picked_object;
+	}
+	if (gt_element_group_address)
+	{
+		*gt_element_group_address=nearest_element_data.gt_element_group;
+	}
+	if (gt_element_settings_address)
+	{
+		*gt_element_settings_address=nearest_element_data.gt_element_settings;
+	}
+	LEAVE;
+
+	return (nearest_element_data.nearest_element);
+} /* Scene_picked_object_list_get_nearest_element */
+
+struct LIST(FE_element) *Scene_picked_object_list_get_picked_elements(
+	struct LIST(Scene_picked_object) *scene_picked_object_list)
+/*******************************************************************************
+LAST MODIFIED : 5 July 2000
+
+DESCRIPTION :
+Returns the list of all elements identified in the <scene_picked_object_list>. 
+==============================================================================*/
+{
+	struct LIST(FE_element) *picked_element_list;
+
+	ENTER(Scene_picked_object_list_get_picked_elements);
+	if (scene_picked_object_list)
+	{	
+		if (picked_element_list=CREATE(LIST(FE_element))())
+		{
+			FOR_EACH_OBJECT_IN_LIST(Scene_picked_object)(
+				Scene_picked_object_get_picked_elements,(void *)picked_element_list,
+				scene_picked_object_list);
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,
+				"Scene_picked_object_list_get_picked_elements.  "
+				"Could not create element list");
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Scene_picked_object_list_get_picked_elements.  Invalid argument(s)");
+		picked_element_list=(struct LIST(FE_element) *)NULL;
+	}
+	LEAVE;
+
+	return (picked_element_list);
+} /* Scene_picked_object_list_get_picked_elements */
+
 struct Element_point_ranges *Scene_picked_object_list_get_nearest_element_point(
 	struct LIST(Scene_picked_object) *scene_picked_object_list,
 	struct GROUP(FE_element) *element_group,
@@ -5290,21 +5549,20 @@ Returns the list of all element_points in the <scene_picked_object_list>.
 
 struct FE_node *Scene_picked_object_list_get_nearest_node(
 	struct LIST(Scene_picked_object) *scene_picked_object_list,
-	struct MANAGER(FE_node) *node_manager,int data_manager,
-	struct GROUP(FE_node) *node_group,
+	int use_data,struct GROUP(FE_node) *node_group,
 	struct Scene_picked_object **scene_picked_object_address,
 	struct GT_element_group **gt_element_group_address,
 	struct GT_element_settings **gt_element_settings_address)
 /*******************************************************************************
-LAST MODIFIED : 28 April 2000
+LAST MODIFIED : 5 July 2000
 
 DESCRIPTION :
 Returns the nearest picked node in <scene_picked_object_list> that is in
 <node_group> (or any group if NULL). If any of the remaining address arguments
 are not NULL, they are filled with the appropriate information pertaining to
 the nearest node.
-The <data_manager> flag indicates that the node_manager is in fact the
-data_manager - needed since different settings type used for each.
+The <use_data> flag indicates that we are searching for a data point instead of
+a node, needed since different settings type used for each.
 ==============================================================================*/
 {
 	struct Scene_picked_object_get_nearest_node_data nearest_node_data;
@@ -5312,13 +5570,12 @@ data_manager - needed since different settings type used for each.
 	ENTER(Scene_picked_object_list_get_nearest_node);
 	nearest_node_data.nearest=0;
 	nearest_node_data.nearest_node=(struct FE_node *)NULL;
-	nearest_node_data.node_manager=node_manager;
-	nearest_node_data.data_manager=data_manager;
+	nearest_node_data.use_data=use_data;
 	nearest_node_data.node_group=node_group;
 	nearest_node_data.scene_picked_object=(struct Scene_picked_object *)NULL;
 	nearest_node_data.gt_element_group=(struct GT_element_group *)NULL;
 	nearest_node_data.gt_element_settings=(struct GT_element_settings *)NULL;
-	if (scene_picked_object_list&&node_manager)
+	if (scene_picked_object_list)
 	{
 		FOR_EACH_OBJECT_IN_LIST(Scene_picked_object)(
 			Scene_picked_object_get_nearest_node,(void *)&nearest_node_data,
@@ -5347,25 +5604,22 @@ data_manager - needed since different settings type used for each.
 } /* Scene_picked_object_list_get_nearest_node */
 
 struct LIST(FE_node) *Scene_picked_object_list_get_picked_nodes(
-	struct LIST(Scene_picked_object) *scene_picked_object_list,
-	struct MANAGER(FE_node) *node_manager,int data_manager)
+	struct LIST(Scene_picked_object) *scene_picked_object_list,int use_data)
 /*******************************************************************************
-LAST MODIFIED : 18 May 2000
+LAST MODIFIED : 5 July 2000
 
 DESCRIPTION :
-Returns the list of all nodes in the <scene_picked_object_list> in the
-<node_manager>. 
-The <data_manager> flag indicates that the node_manager is in fact the
-data_manager - needed since different settings type used for each.
+Returns the list of all nodes in the <scene_picked_object_list>. 
+The <use_data> flag indicates that we are searching for data points instead of
+nodes, needed since different settings type used for each.
 ==============================================================================*/
 {
 	struct Scene_picked_object_get_picked_nodes_data picked_nodes_data;
 
 	ENTER(Scene_picked_object_list_get_picked_nodes);
-	if (scene_picked_object_list&&node_manager)
+	if (scene_picked_object_list)
 	{	
-		picked_nodes_data.node_manager=node_manager;
-		picked_nodes_data.data_manager=data_manager;
+		picked_nodes_data.use_data=use_data;
 		if (picked_nodes_data.node_list=CREATE(LIST(FE_node))())
 		{
 			FOR_EACH_OBJECT_IN_LIST(Scene_picked_object)(

@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : scene.h
 
-LAST MODIFIED : 18 May 2000
+LAST MODIFIED : 5 July 2000
 
 DESCRIPTION :
 Structure for storing the collections of objects that make up a 3-D graphical
@@ -837,6 +837,31 @@ However, if none of the scene objects have transformations, the flag
 be set to the identity.
 ==============================================================================*/
 
+struct FE_element *Scene_picked_object_list_get_nearest_element(
+	struct LIST(Scene_picked_object) *scene_picked_object_list,
+	struct GROUP(FE_element) *element_group,
+	struct Scene_picked_object **scene_picked_object_address,
+	struct GT_element_group **gt_element_group_address,
+	struct GT_element_settings **gt_element_settings_address);
+/*******************************************************************************
+LAST MODIFIED : 5 July 2000
+
+DESCRIPTION :
+Returns the nearest picked element in <scene_picked_object_list> that is in
+<element_group> (or any group if NULL). If any of the remaining address
+arguments are not NULL, they are filled with the appropriate information
+pertaining to the nearest element.
+==============================================================================*/
+
+struct LIST(FE_element) *Scene_picked_object_list_get_picked_elements(
+	struct LIST(Scene_picked_object) *scene_picked_object_list);
+/*******************************************************************************
+LAST MODIFIED : 5 July 2000
+
+DESCRIPTION :
+Returns the list of all elements identified in the <scene_picked_object_list>. 
+==============================================================================*/
+
 struct Element_point_ranges *Scene_picked_object_list_get_nearest_element_point(
 	struct LIST(Scene_picked_object) *scene_picked_object_list,
 	struct GROUP(FE_element) *element_group,
@@ -866,34 +891,31 @@ Returns the list of all element_points in the <scene_picked_object_list>.
 
 struct FE_node *Scene_picked_object_list_get_nearest_node(
 	struct LIST(Scene_picked_object) *scene_picked_object_list,
-	struct MANAGER(FE_node) *node_manager,int data_manager,
-	struct GROUP(FE_node) *node_group,
+	int use_data,struct GROUP(FE_node) *node_group,
 	struct Scene_picked_object **scene_picked_object_address,
 	struct GT_element_group **gt_element_group_address,
 	struct GT_element_settings **gt_element_settings_address);
 /*******************************************************************************
-LAST MODIFIED : 28 April 2000
+LAST MODIFIED : 5 July 2000
 
 DESCRIPTION :
 Returns the nearest picked node in <scene_picked_object_list> that is in
 <node_group> (or any group if NULL). If any of the remaining address arguments
 are not NULL, they are filled with the appropriate information pertaining to
 the nearest node.
-The <data_manager> flag indicates that the node_manager is in fact the
-data_manager - needed since different settings type used for each.
+The <use_data> flag indicates that we are searching for a data point instead of
+a node, needed since different settings type used for each.
 ==============================================================================*/
 
 struct LIST(FE_node) *Scene_picked_object_list_get_picked_nodes(
-	struct LIST(Scene_picked_object) *scene_picked_object_list,
-	struct MANAGER(FE_node) *node_manager,int data_manager);
+	struct LIST(Scene_picked_object) *scene_picked_object_list,int use_data);
 /*******************************************************************************
-LAST MODIFIED : 28 April 2000
+LAST MODIFIED : 5 July 2000
 
 DESCRIPTION :
-Returns the list of all nodes in the <scene_picked_object_list> in the
-<node_manager>. 
-The <data_manager> flag indicates that the node_manager is in fact the
-data_manager - needed since different settings type used for each.
+Returns the list of all nodes in the <scene_picked_object_list>. 
+The <use_data> flag indicates that we are searching for data points instead of
+nodes, needed since different settings type used for each.
 ==============================================================================*/
 
 int Scene_get_input_callback(struct Scene *scene,
