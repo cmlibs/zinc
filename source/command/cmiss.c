@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : cmiss.c
 
-LAST MODIFIED : 14 March 2002
+LAST MODIFIED : 15 March 2002
 
 DESCRIPTION :
 Functions for executing cmiss commands.
@@ -7593,7 +7593,7 @@ static int set_Texture_image_from_field(struct Texture *texture,
 	int image_width, int image_height, int image_depth,
 	struct User_interface *user_interface)
 /*******************************************************************************
-LAST MODIFIED : 5 March 2002
+LAST MODIFIED : 15 March 2002
 
 DESCRIPTION :
 Creates the image in the format given by sampling the <field> according to the
@@ -7602,6 +7602,7 @@ field are converted to "colours" by applying the <spectrum>.
 Currently limited to 1 byte per component.
 ==============================================================================*/
 {
+	char *field_name;
 	unsigned char *image_plane, *ptr;
 	FE_value *data_values, values[3], xi[3];
 	float hint_minimums[3] = {0.0, 0.0, 0.0};
@@ -7632,8 +7633,10 @@ Currently limited to 1 byte per component.
 		return_code = 1;
 		number_of_bytes_per_component = 1;
 		/* allocate the texture image */
+		field_name = (char *)NULL;
+		GET_NAME(Computed_field)(field, &field_name);
 		if (Texture_allocate_image(texture, image_width, image_height,
-			image_depth, storage, number_of_bytes_per_component))
+			image_depth, storage, number_of_bytes_per_component, field_name))
 		{
 			cache = (struct Computed_field_find_element_xi_special_cache *)NULL;
 			number_of_data_components =
@@ -7831,6 +7834,7 @@ Currently limited to 1 byte per component.
 				"set_Texture_image_from_field.  Could not allocate image in texture");
 			return_code = 0;
 		}
+		DEALLOCATE(field_name);
 	}
 	else
 	{

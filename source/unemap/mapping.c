@@ -8314,7 +8314,7 @@ opengl texture reasons (at least on the SGI).
 				success =
 					Texture_allocate_image(skin_texture,
 						/*width*/texture_x_length, /*height*/texture_y_length, /*depth*/1, 
-						storage_type, number_of_bytes_per_component) &&
+						storage_type, number_of_bytes_per_component, (char *)NULL) &&
 					Texture_set_image_block(skin_texture, /*left*/0, /*bottom*/0,
 						/*width*/texture_x_length, /*height*/texture_y_length,
 						/*depth_plane*/0,

@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : texture.c
 
-LAST MODIFIED : 14 March 2002
+LAST MODIFIED : 15 March 2002
 
 DESCRIPTION :
 The functions for manipulating graphical textures.
@@ -2187,9 +2187,9 @@ Sets the texture filter: linear or nearest.
 
 int Texture_allocate_image(struct Texture *texture,
 	int width, int height, int depth, enum Texture_storage_type storage,
-	int number_of_bytes_per_component)
+	int number_of_bytes_per_component, char *source_name)
 /*******************************************************************************
-LAST MODIFIED : 8 March 2002
+LAST MODIFIED : 15 March 2002
 
 DESCRIPTION :
 Establishes the texture image as <width>*<height>*<depth> with the storage and
@@ -2197,7 +2197,8 @@ number_of_components specified in the <storage_type>, and
 <number_of_bytes_per_component> may currently be 1 or 2.
 The allocated space is cleared to values of 0 = black.
 Call Texture_set_image_block to add texel data.
-Clears image_file_name, crop and other parameters.
+The optional <source_name> is recorded as the texture's imagefile_name.
+Crop and other parameters are cleared.
 ==============================================================================*/
 {
 	int bytes_per_pixel, dimension, padded_width_bytes, number_of_components,
@@ -2241,6 +2242,34 @@ Clears image_file_name, crop and other parameters.
 		{
 			dimension = 1;
 		}
+		if ((width != texture_width) ||
+			(height != texture_height) ||
+			(depth != texture_depth))
+		{
+			switch (dimension)
+			{
+				case 1:
+				{
+					display_message(WARNING_MESSAGE,
+						"image width is not a power of 2.  "
+						"Extending (%d) to (%d)", width, texture_width);
+				} break;
+				case 2:
+				{
+					display_message(WARNING_MESSAGE,
+						"image width and/or height not powers of 2.  "
+						"Extending (%d,%d) to (%d,%d)", width, height,
+						texture_width, texture_height);
+				} break;
+				case 3:
+				{
+					display_message(WARNING_MESSAGE,
+						"image width, height and/or depth not powers of 2.  "
+						"Extending (%d,%d,%d) to (%d,%d,%d)", width, height, depth,
+						texture_width, texture_height, texture_depth);
+				} break;
+			}
+		}
 		bytes_per_pixel = number_of_components * number_of_bytes_per_component;
 		padded_width_bytes = 4*((texture_width*bytes_per_pixel + 3)/4);
 		/* reallocate existing texture image to save effort */
@@ -2266,7 +2295,7 @@ Clears image_file_name, crop and other parameters.
 			{
 				DEALLOCATE(texture->image_file_name);
 			}
-			texture->image_file_name = (char *)NULL;
+			texture->image_file_name = duplicate_string(source_name);
 			texture->file_number_pattern = (char *)NULL;
 			texture->start_file_number = 0;
 			texture->stop_file_number = 0;
@@ -2507,7 +2536,7 @@ positive. Cropping is not available in the depth direction.
 					{
 						display_message(WARNING_MESSAGE,
 							"image width, height and/or depth not powers of 2.  "
-							"Extending (%d x %d x %d) to (%d x %d x %d)",
+							"Extending (%d,%d,%d) to (%d,%d,%d)",
 							final_width, final_height, final_depth,
 							texture_width, texture_height, texture_depth);
 					} break;
@@ -2700,7 +2729,7 @@ Gets the current X3d_movie from the texture.
 int Texture_set_movie(struct Texture *texture,struct X3d_movie *movie,
 	struct User_interface *user_interface, char *image_file_name)
 /*******************************************************************************
-LAST MODIFIED : 20 February 2002
+LAST MODIFIED : 15 March 2002
 
 DESCRIPTION :
 Puts the <image> in the texture. The image is left unchanged by this function.
@@ -2714,7 +2743,7 @@ texture, and must be given a value.
 	unsigned char *texture_image;
 	enum Dm_buffer_type dm_buffer_type;
 	enum Texture_storage_type storage;
-	int destination_row_width_bytes,i,image_height,image_width,
+	int destination_row_width_bytes, dimension, i, image_height, image_width,
 		number_of_components;
 	long int texture_height,texture_width;
 #endif /* defined (SGI_MOVIE_FILE) */
@@ -2723,6 +2752,8 @@ texture, and must be given a value.
 #if defined (SGI_MOVIE_FILE)
 	if (texture&&movie&&image_file_name)
 	{
+		/* only 2-D movie textures supported */
+		dimension = 2;
 		X3d_movie_get_bounding_rectangle(movie, (int *)NULL, (int *)NULL,
 			&image_width, &image_height);
 
@@ -2801,6 +2832,7 @@ texture, and must be given a value.
 
 			if (ALLOCATE(temp_file_name,char,strlen(image_file_name)+1))
 			{
+				texture->dimension = dimension;
 				texture->original_width_texels=image_width;
 				texture->original_height_texels=image_height;
 				texture->height_texels=texture_height;
@@ -2856,6 +2888,7 @@ texture, and must be given a value.
 					{
 						strcpy(temp_file_name,image_file_name);
 						/* assign values */
+						texture->dimension = dimension;
 						texture->storage = storage;
 						/* original size is intended to specify useful part of texture */
 						texture->original_width_texels=image_width;
