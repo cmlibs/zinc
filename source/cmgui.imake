@@ -141,7 +141,20 @@ PRODUCT_UIDH_PATH=$(PRODUCT_PATH)/uidh/cmgui/64
 #define UNEMAP
 /* SAB Couldn't compile cell/cell_calculate.f 
    #define CELL */
-
+#if defined (OPTIMISED)
+#define Target cmgui_linux_optimised
+#define SpacesToTabsTarget spaces_to_tabs_linux
+#define TabsToSpacesTarget tabs_to_spaces_linux
+#define Uid2uidhTarget uid2uidh_linux
+#define Makefile cmgui_linux_optimised.make
+#define DependMake cmgui_linux_optimised.depend
+#define ObjSuffix o
+/* Can't use linux on its own as this is defined! */
+OBJECT_PATH=$(CMGUI_DEV_ROOT)/object/cmgui/linux_optimised
+PRODUCT_OBJECT_PATH=$(PRODUCT_PATH)/object/cmgui/linux_optimised
+UIDH_PATH=$(CMGUI_DEV_ROOT)/uidh/cmgui/linux_optimised
+PRODUCT_UIDH_PATH=$(PRODUCT_PATH)/uidh/cmgui/linux_optimised
+#else /* defined (OPTIMISED) */
 #define Target cmgui_linux
 #define SpacesToTabsTarget spaces_to_tabs_linux
 #define TabsToSpacesTarget tabs_to_spaces_linux
@@ -154,6 +167,7 @@ OBJECT_PATH=$(CMGUI_DEV_ROOT)/object/cmgui/linux_g
 PRODUCT_OBJECT_PATH=$(PRODUCT_PATH)/object/cmgui/linux_g
 UIDH_PATH=$(CMGUI_DEV_ROOT)/uidh/cmgui/linux_g
 PRODUCT_UIDH_PATH=$(PRODUCT_PATH)/uidh/cmgui/linux_g
+#endif /* defined (OPTIMISED) */
 #endif /* switch OperatingSystem */
 
 #if defined (CMISS_ROOT_DEFINED)
