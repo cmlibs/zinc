@@ -432,7 +432,7 @@ REFERENCE: J._F. Aujol, et al., "Image decomposition into a bounded variation co
 			data_index = (FE_value *)image->data;
 			for (i = 0; i < storage_size/image->depth; i++)
 			{
-			        u_index[i] = 255.0 *(*data_index - mean);
+			        u_index[i] = (*data_index - mean);
 				v_index[i] = 0.0;
 				data_index += image->depth;
 			}
@@ -476,8 +476,8 @@ REFERENCE: J._F. Aujol, et al., "Image decomposition into a bounded variation co
 							{
 							        diff[y*image->sizes[0] + x] += - q1_index[y*image->sizes[0] + x - 1];
 							}
-							diff[y*image->sizes[0] + x] -= (255.0 *(*data_index - mean) - v_index[y*image->sizes[0] + x])  / lambda;
-							//diff[y*image->sizes[0] + x] -= (*data_index - v_index[y*image->sizes[0] + x])/ lambda;
+							diff[y*image->sizes[0] + x] -= ((*data_index - mean) - v_index[y*image->sizes[0] + x])  / lambda;
+							/*diff[y*image->sizes[0] + x] -= (*data_index - v_index[y*image->sizes[0] + x])/ lambda;*/
 							data_index += image->depth;
 						}
 					}
@@ -546,8 +546,8 @@ REFERENCE: J._F. Aujol, et al., "Image decomposition into a bounded variation co
 						{
 							u_index[y*image->sizes[0] + x] += - q1_index[y*image->sizes[0] + x - 1];
 						}
-						u_index[y*image->sizes[0] + x] = 255.0 * (*data_index - mean)- v_index[y*image->sizes[0] + x] - lambda * u_index[y*image->sizes[0] + x];
-						//u_index[y*image->sizes[0] + x] = *data_index - v_index[y*image->sizes[0] + x] - u_index[y*image->sizes[0] + x];
+						u_index[y*image->sizes[0] + x] = (*data_index - mean)- v_index[y*image->sizes[0] + x] - lambda * u_index[y*image->sizes[0] + x];
+						/*u_index[y*image->sizes[0] + x] = *data_index - v_index[y*image->sizes[0] + x] - u_index[y*image->sizes[0] + x];*/
 						data_index += image->depth;
 					}
 				}
@@ -587,8 +587,8 @@ REFERENCE: J._F. Aujol, et al., "Image decomposition into a bounded variation co
 							{
 							        diff[y*image->sizes[0] + x] += - p1_index[y*image->sizes[0] + x - 1];
 							}
-							diff[y*image->sizes[0] + x] -= (255.0*(*data_index - mean) - u_index[y*image->sizes[0] + x])  / mu;
-							//diff[y*image->sizes[0] + x] -= (*data_index - u_index[y*image->sizes[0] + x])  / mu;
+							diff[y*image->sizes[0] + x] -= ((*data_index - mean) - u_index[y*image->sizes[0] + x])  / mu;
+							/*diff[y*image->sizes[0] + x] -= (*data_index - u_index[y*image->sizes[0] + x])  / mu;*/
 							data_index += image->depth;
 						}
 					}
@@ -682,16 +682,16 @@ REFERENCE: J._F. Aujol, et al., "Image decomposition into a bounded variation co
 			        case 1 :
 				        for (i = 0 ; i < storage_size / image->depth ; i++)
 					{
-						max = my_Max(max, 255.0*mean + u_index[i]);
-						min = my_Min(min, 255.0*mean + u_index[i]);
+						max = my_Max(max, mean + u_index[i]);
+						min = my_Min(min, mean + u_index[i]);
 						
 					}
 					for (i = 0 ; return_code && i < storage_size / image->depth ; i++)
 					{
 						for (k = 0 ; k < image->depth ; k++)
 						{
-                                        		result_index[k] = (255.0* mean + u_index[i] -min)/(max-min);
-							//result_index[k] = (mean*255.0 + u_index[i])/255.0;
+                                        		result_index[k] = (mean + u_index[i] -min)/(max-min);
+							/*result_index[k] = (mean*255.0 + u_index[i])/255.0;*/
 						}
 						result_index += image->depth;
 					}
@@ -714,14 +714,14 @@ REFERENCE: J._F. Aujol, et al., "Image decomposition into a bounded variation co
 				case 3 :
 				        for (i = 0 ; i < storage_size / image->depth ; i++)
 					{
-						max = my_Max(max, (255.0* mean + u_index[i] + v_index[i]));
-						min = my_Min(min, (255.0* mean + u_index[i] + v_index[i]));
+						max = my_Max(max, (mean + u_index[i] + v_index[i]));
+						min = my_Min(min, (mean + u_index[i] + v_index[i]));
 					}
 					for (i = 0 ; return_code && i < storage_size / image->depth ; i++)
 					{
 						for (k = 0 ; k < image->depth ; k++)
 						{
-                                        		result_index[k] = ((255.0* mean + u_index[i] + v_index[i])-min)/(max-min);
+                                        		result_index[k] = ((mean + u_index[i] + v_index[i])-min)/(max-min);
 						}
 						result_index += image->depth;
 					}
@@ -729,8 +729,8 @@ REFERENCE: J._F. Aujol, et al., "Image decomposition into a bounded variation co
 				case 4:
 				        for (i = 0 ; i < storage_size / image->depth ; i++)
 					{
-						max = my_Max(max, fabs(255.0* *data_index - (255.0* mean + u_index[i] + v_index[i])));
-						min = my_Min(min, fabs(255.0* *data_index - (255.0* mean + u_index[i] + v_index[i])));
+						max = my_Max(max, fabs(*data_index - (mean + u_index[i] + v_index[i])));
+						min = my_Min(min, fabs(*data_index - (mean + u_index[i] + v_index[i])));
 						data_index += image->depth;
 					}
 					data_index = (FE_value *)image->data;
@@ -738,7 +738,7 @@ REFERENCE: J._F. Aujol, et al., "Image decomposition into a bounded variation co
 					{
 						for (k = 0 ; k < image->depth ; k++)
 						{
-                                        		result_index[k] = (fabs(255.0* *data_index - (255.0*mean + u_index[i] + v_index[i]))-min)/(max-min);
+                                        		result_index[k] = (fabs(*data_index - (mean + u_index[i] + v_index[i]))-min)/(max-min);
 						}
 						result_index += image->depth;
 						data_index += image->depth;
