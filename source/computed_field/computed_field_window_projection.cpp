@@ -273,7 +273,7 @@ DESCRIPTION :
 				else if (data->projection_type == INVERSE_NDC_PROJECTION)
 				{
 					LU_decompose(/* dimension */4, total_projection_matrix,
-						lu_index, &lu_d);
+						lu_index, &lu_d,/*singular_tolerance*/1.0e-12);
 					for (i = 0 ; i < 4 ; i++)
 					{
 						for (j = 0 ; j < 4 ; j++)
@@ -366,7 +366,7 @@ DESCRIPTION :
 					else if (data->projection_type == INVERSE_VIEWPORT_PROJECTION)
 					{
 						LU_decompose(/* dimension */4, viewport_matrix,
-							lu_index, &lu_d);
+							lu_index, &lu_d,/*singular_tolerance*/1.0e-12);
 						for (i = 0 ; i < 4 ; i++)
 						{
 							for (j = 0 ; j < 4 ; j++)
@@ -484,7 +484,7 @@ DESCRIPTION :
 								else if (data->projection_type == INVERSE_TEXTURE_PROJECTION)
 								{
 									LU_decompose(/* dimension */4, texture_projection_matrix,
-										lu_index, &lu_d);
+										lu_index, &lu_d,/*singular_tolerance*/1.0e-12);
 									for (i = 0 ; i < 4 ; i++)
 									{
 										for (j = 0 ; j < 4 ; j++)
@@ -1013,7 +1013,7 @@ Sets the <values> of the computed <field> at <node>.
 				result[1] = (double)values[1];
 				result[2] = (double)values[2];
 				result[3] = 1.0;
-				if (LU_decompose(4,lu_matrix,indx,&d) &&
+				if (LU_decompose(4,lu_matrix,indx,&d,/*singular_tolerance*/1.0e-12) &&
 					LU_backsubstitute(4,lu_matrix,indx,result) &&
 					(0.0 != result[3]))
 				{
@@ -1110,7 +1110,7 @@ DESCRIPTION :
 				result[1] = (double)values[1];
 				result[2] = (double)values[2];
 				result[3] = 1.0;
-				if (LU_decompose(4,lu_matrix,indx,&d) &&
+				if (LU_decompose(4,lu_matrix,indx,&d,/*singular_tolerance*/1.0e-12) &&
 					LU_backsubstitute(4,lu_matrix,indx,result) &&
 					(0.0 != result[3]))
 				{
@@ -1119,7 +1119,8 @@ DESCRIPTION :
 					source_values[2] = (result[2] / result[3]);
 					return_code=Computed_field_find_element_xi(
 						field->source_fields[0], source_values, 3, element,
-						xi, element_dimension, search_region, /*propagate_field*/1);
+						xi, element_dimension, search_region, /*propagate_field*/1,
+						/*find_nearest_location*/0);
 				}
 				else
 				{

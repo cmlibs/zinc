@@ -11610,7 +11610,7 @@ Cannot guarantee that <normal> is inward.
 						}
 					}
 					if (LU_decompose(dimension-1,matrix_double,pivot_index,
-						&determinant))
+						&determinant,/*singular_tolerance*/1.0e-12))
 					{
 						for (j=0;j<dimension-1;j++)
 						{
@@ -11727,7 +11727,8 @@ on the boundary of the shape.
 					probably singular, just implying that we are travelling parallel
 					to the face */
 				if (LU_decompose(dimension,face_matrix,pivot_index,
-					&determinant)&&LU_backsubstitute(dimension,face_matrix,
+					&determinant,/*singular_tolerance*/1.0e-12)&&
+					LU_backsubstitute(dimension,face_matrix,
 					pivot_index,face_rhs))
 				{
 					step_size_local=face_rhs[0];

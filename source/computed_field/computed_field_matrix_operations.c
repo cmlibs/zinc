@@ -1567,7 +1567,7 @@ been pre-calculated before calling this.
 			{
 				data->a[i] = (double)(source_field->values[i]);
 			}
-			if (LU_decompose(n, data->a, data->indx, &d))
+			if (LU_decompose(n, data->a, data->indx, &d,/*singular_tolerance*/1.0e-12))
 			{
 				return_code = 1;
 				for (i = 0; (i < n) && return_code; i++)

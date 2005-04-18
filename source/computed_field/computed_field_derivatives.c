@@ -2061,7 +2061,7 @@ Evaluate the fields cache in the element.
 						}
 					}
 					/* invert to get derivatives of xi w.r.t. coordinates */
-					if (LU_decompose(coordinate_components,a,indx,&d))
+					if (LU_decompose(coordinate_components,a,indx,&d,/*singular_tolerance*/1.0e-12))
 					{
 						return_code = 1;
 						destination = field->values;

@@ -77,3 +77,35 @@ and 1 if pointer_1 > pointer_2.
 
 	return (return_code);
 } /* compare_pointer */
+
+int compare_double(double double_1, double double_2)
+/*******************************************************************************
+LAST MODIFIED : 15 March 1999
+
+DESCRIPTION :
+Returns -1 if double_1 < double_2, 0 if double_1 = double_2 
+and 1 if double_1 > double_2.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(compare_double);
+	if (double_1<double_2)
+	{
+		return_code= -1;
+	}
+	else
+	{
+		if (double_1>double_2)
+		{
+			return_code=1;
+		}
+		else
+		{
+			return_code=0;
+		}
+	}
+	LEAVE;
+
+	return (return_code);
+} /* compare_double */

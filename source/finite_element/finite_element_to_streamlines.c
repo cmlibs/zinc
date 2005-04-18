@@ -89,7 +89,7 @@ calculating the inverse of the Jacobian matrix <dxdxi> and multiplying.
 				b[i] = vector[i];
 			}
 			i = 0;
-			if (LU_decompose(element_dimension, a, index, &d) &&
+			if (LU_decompose(element_dimension, a, index, &d,/*singular_tolerance*/1.0e-12) &&
 				LU_backsubstitute(element_dimension, a, index, b))
 			{
 				for (i = 0 ; i < element_dimension ; i++)
@@ -127,7 +127,7 @@ calculating the inverse of the Jacobian matrix <dxdxi> and multiplying.
 				}
 			}
 			i = 0;
-			if (LU_decompose(element_dimension, a, index, &d) &&
+			if (LU_decompose(element_dimension, a, index, &d,/*singular_tolerance*/1.0e-12) &&
 				LU_backsubstitute(element_dimension, a, index, b))
 			{
 				for (i = 0 ; i < element_dimension ; i++)

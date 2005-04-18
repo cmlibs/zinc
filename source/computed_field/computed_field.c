@@ -3864,9 +3864,9 @@ to modify and destroy it.
 int Computed_field_find_element_xi(struct Computed_field *field,
 	FE_value *values, int number_of_values, struct FE_element **element, 
 	FE_value *xi, int element_dimension, struct Cmiss_region *search_region,
-	int propagate_field)
+	int propagate_field, int find_nearest_location)
 /*******************************************************************************
-LAST MODIFIED : 13 March 2003
+LAST MODIFIED : 18 April 2005
 
 DESCRIPTION :
 This function implements the reverse of some certain computed_fields
@@ -3876,7 +3876,8 @@ This has been implemented so that the texture_coordinates can be used to extract
 information from textures (sample_texture computed_field) and then modified and
 then put back into another texture.
 The <search_element_group> is the set of elements from which the chosen element
-will belong.
+will belong or alternatively this can be NULL and the <*element> set to 
+a single element to search in.
 If <propagate_field> is set and the field has a find_element_xi_function, it
 is called to undo its field calculation and resume the search on its source
 field. This can result in less computation, but can fail if the source field
@@ -3885,6 +3886,10 @@ since valid values may be a multiple of  2*PI out.
 If <propagate_field> is not set or there is no <find_element_xi_function> this
 function searches all elements in <search_element_group> trying to find a point
 at which the field evaluates to the <values>.
+If <propagate_field> is not set then <find_nearest_location> can be set and 
+then rather than requiring an exact match the closest location in the 
+<search_region> or the <*element> will be found.  If <propagate_field> is set
+then the <find_nearest_location> flag is ignored.
 Note a copy of the <values> array is immediately made so it will be possible to
 pass in pointers to field cache values.
 ==============================================================================*/
@@ -3893,7 +3898,7 @@ pass in pointers to field cache values.
 
 	ENTER(Computed_field_find_element_xi);
 	if (field && values && (number_of_values == field->number_of_components) &&
-		element && xi && search_region)
+		element && xi && (search_region || *element))
 	{
 		if (propagate_field && field->computed_field_find_element_xi_function)
 		{
@@ -3903,7 +3908,8 @@ pass in pointers to field cache values.
 		else
 		{
 			return_code = Computed_field_perform_find_element_xi(field,
-				values, number_of_values, element, xi, element_dimension, search_region);
+				values, number_of_values, element, xi, element_dimension, search_region,
+				find_nearest_location);
 		}
 	}
 	else

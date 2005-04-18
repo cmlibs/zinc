@@ -22,6 +22,9 @@ devices, and used by scenes for picking graphics.
 The contents of this object are private.
 ==============================================================================*/
 
+typedef int (*Interation_volume_constraint_function)(FE_value *point,
+	void *void_data);
+
 /*
 Global functions
 ----------------
@@ -133,9 +136,11 @@ It must therefore be transposed to be used by OpenGL.
 ==============================================================================*/
 
 int Interaction_volume_get_placement_point(
-	struct Interaction_volume *interaction_volume,double *point);
+	struct Interaction_volume *interaction_volume,double *point,
+	Interation_volume_constraint_function constraint_function,
+	void *constraint_function_data);
 /*******************************************************************************
-LAST MODIFIED : 30 March 2000
+LAST MODIFIED : 21 March 2005
 
 DESCRIPTION :
 Returns the point in the <interaction_volume> most appropriate for placing
@@ -144,6 +149,11 @@ arbitratily chosen to be the centre of the view frustum on the ray.
 In future this function may be just one of many for enquiring about the centre
 abilities of the Interaction_volume, which may enable such features as placement
 at the intersection of a ray and a surface/manifold in space.
+If a <constraint_function> is supplied then a location will be passed to this
+function, which is expected to adjust it to satisfy the constraints that it
+represents.  This function will then adjust the location and call the
+<constraint_function> iteratively until either the two locations converge or
+it gives up.
 ==============================================================================*/
 
 int Interaction_volume_get_projection_matrix(

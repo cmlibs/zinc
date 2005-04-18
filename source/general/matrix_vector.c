@@ -585,9 +585,10 @@ checking that the difference between all opposing off-diagonal values is less
 	return (return_code);
 } /* matrix_is_symmetric */
 
-int LU_decompose(int n,double *a,int *indx,double *d)
+int LU_decompose(int n, double *a, int *indx, double *d,
+	double singular_tolerance)
 /*******************************************************************************
-LAST MODIFIED : 25 July 1998
+LAST MODIFIED : 15 March 2005
 
 DESCRIPTION :
 Performs LU decomposition on n x n matrix <a>. <indx> should be a preallocated
@@ -596,6 +597,9 @@ decomposed matrix such that a = LU. The indx array contains information about
 the partial pivoting performed during decomposition, while the sign of *d
 indicates whether an even =+ve, or odd =-ve number of row interchanges have been
 performed - I think ;-).
+<singular_tolerance> is compared to the magnitude of each pivot.  If any of the
+pivot values are less than this parameter the return code will be zero.  The
+decomposition is still completed
 Adapted from "Numerical Recipes in C".
 ==============================================================================*/
 {
@@ -620,7 +624,7 @@ Adapted from "Numerical Recipes in C".
 						big=temp;
 					}
 				}
-				if (0.0<big)
+				if (1e-12<big)
 				{
 					vv[i]=1.0/big;
 				}
@@ -669,9 +673,15 @@ Adapted from "Numerical Recipes in C".
 						vv[imax]=vv[j];
 					}
 					indx[j]=imax;
-					if (0.0==a[j*n+j])
+					if (singular_tolerance>fabs(a[j*n+j]))
 					{
-						a[j*n+j]=TINY;
+						/* Carry on to find a solution but report return_code
+							of zero to indicate that the matrix is singular */
+						if (0 == a[j*n+j])
+						{
+							a[j*n+j]=TINY;
+						}
+						return_code=0;
 					}
 					if (j != (n-1))
 					{

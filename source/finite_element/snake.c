@@ -692,7 +692,7 @@ derivatives; helps make smooth snakes from few data points.
 						force_vectors + n*number_of_rows,"%8.4f");
 				}
 #endif /* defined (DEBUG) */
-				if (LU_decompose(number_of_rows, stiffness_matrix, indx, &d))
+				if (LU_decompose(number_of_rows, stiffness_matrix, indx, &d,/*singular_tolerance*/1.0e-12))
 				{
 					for (n = 0; (n < number_of_components) && return_code; n++)
 					{

@@ -314,7 +314,7 @@ normalised coordinates.
 			copy_matrix(4,4,interaction_volume->transformation_matrix,
 				interaction_volume->inverse_transformation)&&
 			LU_decompose(4,interaction_volume->inverse_transformation,
-				interaction_volume->inverse_transformation_index,&d))
+				interaction_volume->inverse_transformation_index,&d,/*singular_tolerance*/1.0e-12))
 		{
 			interaction_volume->inverse_transformation_calculated=1;
 			return_code=1;
@@ -813,9 +813,11 @@ It must therefore be transposed to be used by OpenGL.
 } /* Interaction_volume_get_modelview_matrix */
 
 int Interaction_volume_get_placement_point(
-struct Interaction_volume *interaction_volume,double *point)
+	struct Interaction_volume *interaction_volume,double *point,
+	Interation_volume_constraint_function constraint_function,
+	void *constraint_function_data)
 /*******************************************************************************
-LAST MODIFIED : 30 March 2000
+LAST MODIFIED : 21 March 2005
 
 DESCRIPTION :
 Returns the point in the <interaction_volume> most appropriate for placing
@@ -824,10 +826,17 @@ arbitratily chosen to be the centre of the view frustum on the ray.
 In future this function may be just one of many for enquiring about the centre
 abilities of the Interaction_volume, which may enable such features as placement
 at the intersection of a ray and a surface/manifold in space.
+If a <constraint_function> is supplied then a location will be passed to this
+function, which is expected to adjust it to satisfy the constraints that it
+represents.  This function will then adjust the location and call the
+<constraint_function> iteratively until either the two locations converge or
+it gives up.
 ==============================================================================*/
 {
-	double normalised_point[3];
-	int return_code;
+	double constraint_change[3], distance, iteration_change[3], 
+		normalised_point[3], previous_point[3];
+	FE_value fe_value_point[3];
+	int converged, return_code, steps;
 
 	ENTER(Interaction_volume_get_placement_point);
 	if (interaction_volume&&point)
@@ -857,6 +866,60 @@ at the intersection of a ray and a surface/manifold in space.
 					"Unknown Interaction_volume_type");
 				return_code=0;
 			} break;
+		}
+		if (constraint_function)
+		{
+			converged = 0;
+			steps = 0;
+			while (return_code && !converged)
+			{
+				previous_point[0] = point[0];
+				previous_point[1] = point[1];
+				previous_point[2] = point[2];
+
+ 				fe_value_point[0] = point[0];
+ 				fe_value_point[1] = point[1];
+ 				fe_value_point[2] = point[2];
+				(*constraint_function)(fe_value_point, constraint_function_data);
+
+				constraint_change[0] = point[0] - fe_value_point[0];
+				constraint_change[1] = point[1] - fe_value_point[1];
+				constraint_change[2] = point[2] - fe_value_point[2];
+
+				/* The constraint function works with FE_values so we need a 
+					relatively large convergence tolerance. */
+				if ((distance = norm3(constraint_change)) < 1.0e-4)
+				{
+					converged = 1;
+				}
+				else
+				{
+					point[0] = fe_value_point[0];
+					point[1] = fe_value_point[1];
+					point[2] = fe_value_point[2];
+					steps++;
+					if (steps > 10000)
+					{
+						return_code = 0;
+					}
+					/* Move the current location back to the centre of the ray */
+					Interaction_volume_model_to_normalised_coordinates(interaction_volume,
+						point, normalised_point);
+					/* Set to the center and convert back to model coordinates */
+					Interaction_volume_centred_normalised_to_model_coordinates(
+						interaction_volume, normalised_point, point);
+
+					iteration_change[0] = point[0] - previous_point[0];
+					iteration_change[1] = point[1] - previous_point[1];
+					iteration_change[2] = point[2] - previous_point[2];
+
+					/* A tighter check, see if we aren't improving at all, then bail */
+					if (norm3(iteration_change) < 1.0e-6)
+					{
+						return_code = 0;
+					}
+				}
+			}
 		}
 	}
 	else

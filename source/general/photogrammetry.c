@@ -163,7 +163,7 @@ vector <b>.
 			multiply_matrix(3,4,3,a1t,a1,a)&&
 			multiply_matrix(3,4,1,a1t,b1,b)&&
 			/* solve a.x = b */
-			LU_decompose(3,a,indx,&d)&&
+			LU_decompose(3,a,indx,&d,/*singular_tolerance*/1.0e-12)&&
 			LU_backsubstitute(3,a,indx,b));
 	}
 	else
@@ -247,7 +247,7 @@ as nearly as possible within the remaining degree of freedom.
 			multiply_matrix(3,4,3,a1t,a1,a)&&
 			multiply_matrix(3,4,1,a1t,b1,b)&&
 			/* solve a.x = b */
-			LU_decompose(3,a,indx,&d)&&
+			LU_decompose(3,a,indx,&d,/*singular_tolerance*/1.0e-12)&&
 			LU_backsubstitute(3,a,indx,b));
 	}
 	else
@@ -324,7 +324,7 @@ Requires for now that NDC_bottom and NDC_left are zero.
 		eye_matrix[6]=t[2];
 		eye_matrix[7]=t[5];
 		eye_matrix[8]=t[8];
-		LU_decompose(3,eye_matrix,tmpindx,&d);
+		LU_decompose(3,eye_matrix,tmpindx,&d,/*singular_tolerance*/1.0e-12);
 		eye[0]=-t[9];
 		eye[1]=-t[10];
 		eye[2]=-t[11];

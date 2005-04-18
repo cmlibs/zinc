@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : matrix_vector.h
 
-LAST MODIFIED : 16 November 2004
+LAST MODIFIED : 15 March 2005
 
 DESCRIPTION:
 Code for performing vector calculations - normalize, dot product etc. -, and
@@ -165,9 +165,10 @@ checking that the difference between all opposing off-diagonal values is less
 <factor> times the largest [absolute] value in <a>.
 ==============================================================================*/
 
-int LU_decompose(int n,double *a,int *indx,double *d);
+int LU_decompose(int n, double *a, int *indx, double *d,
+	double singular_tolerance);
 /*******************************************************************************
-LAST MODIFIED : 28 January 1998
+LAST MODIFIED : 15 March 2005
 
 DESCRIPTION :
 Performs LU decomposition on n x n matrix <a>. <indx> should be a preallocated
@@ -176,6 +177,9 @@ decomposed matrix such that a = LU. The indx array contains information about
 the partial pivoting performed during decomposition, while the sign of *d
 indicates whether an even =+ve, or odd =-ve number of row interchanges have been
 performed - I think ;-).
+<singular_tolerance> is compared to the magnitude of each pivot.  If any of the
+pivot values are less than this parameter the return code will be zero.  The
+decomposition is still completed
 Adapted from "Numerical Recipes in C".
 ==============================================================================*/
 

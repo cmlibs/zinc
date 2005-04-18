@@ -97,6 +97,9 @@ changes in node position and derivatives etc.
 	/* if create_enabled, controls if create will be streaming, ie. creating
 		 a stream of nodes where the user swipes, rather than just 1 */
 	int streaming_create_enabled;
+	/* if create is enabled this option will force the nodes to be created on a surface
+		rather than between near and far */
+	int surface_element_create;
 	enum Node_tool_edit_mode edit_mode;
 	struct Computed_field *coordinate_field, *command_field;
 	struct FE_node *template_node;
@@ -114,9 +117,10 @@ changes in node position and derivatives etc.
 	Display *display;
 	struct Cmiss_region_chooser *cmiss_region_chooser;
 	Widget coordinate_field_form,coordinate_field_widget,create_button,
-		define_button,edit_button,motion_update_button,node_group_form,
-		node_group_widget,select_button,streaming_create_button,
-		command_field_button,command_field_form,command_field_widget;
+		surface_element_create_button,define_button,edit_button,
+		motion_update_button,node_group_form,node_group_widget,select_button,
+		streaming_create_button,command_field_button,command_field_form,
+		command_field_widget;
 	Widget widget,window_shell;
 #else /* defined (MOTIF) */
 	/* without cmiss_region_chooser need somewhere to store the region path */
@@ -161,7 +165,20 @@ to its position between these two planes.
 	/* The last_picked node is used to calculate the delta change and so when
 		the whole active group is looped over this node is ignored */
 	struct FE_node *last_picked_node;
+
+	/* Fields that allow surface_element_create to work correctly,
+		only the last picked node will be updated as this is the only one
+		we know the element for */
+	int surface_element_create;
+	struct FE_element *nearest_element;
+	struct Computed_field *nearest_element_coordinate_field;
 }; /* struct FE_node_edit_information */
+
+struct Node_tool_element_constraint_function_data
+{
+	struct FE_element *element;
+	struct Computed_field *coordinate_field;
+}; /* struct Node_tool_element_constraint_function_data */
 
 /*
 Module functions
@@ -171,6 +188,7 @@ Module functions
 #if defined (MOTIF)
 DECLARE_DIALOG_IDENTIFY_FUNCTION(node_tool,Node_tool,coordinate_field_form)
 DECLARE_DIALOG_IDENTIFY_FUNCTION(node_tool,Node_tool,create_button)
+DECLARE_DIALOG_IDENTIFY_FUNCTION(node_tool,Node_tool,surface_element_create_button)
 DECLARE_DIALOG_IDENTIFY_FUNCTION(node_tool,Node_tool,define_button)
 DECLARE_DIALOG_IDENTIFY_FUNCTION(node_tool,Node_tool,edit_button)
 DECLARE_DIALOG_IDENTIFY_FUNCTION(node_tool,Node_tool,motion_update_button)
@@ -408,7 +426,7 @@ error is reported.
 		model_coordinates[2]=(double)coordinates[2];
 		model_coordinates[3]=1.0;
 		if (LU_backsubstitute(4,LU_transformation_matrix,LU_indx,
-			model_coordinates)&&(0.0 != (h=model_coordinates[3])))
+			model_coordinates)&&(0.0 != (h=model_coordinates[3],/*singular_tolerance*/1.0e-12)))
 		{
 			coordinates[0]=(FE_value)(model_coordinates[0] / h);
 			coordinates[1]=(FE_value)(model_coordinates[1] / h);
@@ -433,6 +451,42 @@ error is reported.
 	return (return_code);
 } /* world_to_model_coordinates */
 
+static int Node_tool_element_constraint_function(FE_value *point,
+	void *void_data)
+/*******************************************************************************
+LAST MODIFIED : 21 March 2005
+
+DESCRIPTION :
+==============================================================================*/
+{
+	FE_value xi[2];
+	int return_code;
+	struct FE_element *found_element;
+	struct Node_tool_element_constraint_function_data *data;
+
+	ENTER(Node_tool_element_constraint_function_data);
+	if (point && (data = (struct Node_tool_element_constraint_function_data *)void_data))
+	{
+		found_element = data->element;
+		return_code = Computed_field_find_element_xi(data->coordinate_field,
+			point, /*number_of_values*/3, &found_element, 
+			xi, /*element_dimension*/2, 
+			(struct Cmiss_region *)NULL, /*propagate_field*/0, /*find_nearest_location*/1);
+		Computed_field_evaluate_in_element(data->coordinate_field,
+			found_element, xi, /*time*/0.0, (struct FE_element *)NULL,
+			point, (FE_value *)NULL);
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Node_tool_element_constraint_function.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Node_tool_element_constraint_function */
+
 static int FE_node_calculate_delta_position(struct FE_node *node,
 	void *edit_info_void)
 /*******************************************************************************
@@ -444,10 +498,11 @@ Calculates the delta change in the coordinates due to the ray supplied in the
 applied to multiple nodes.
 ==============================================================================*/
 {
-	double model_coordinates[3],normalised_coordinates[3];
+	double model_coordinates[3],normalised_coordinates[3],placement_coordinates[3];
 	FE_value coordinates[3], initial_coordinates[3], final_coordinates[3];
 	int return_code;
 	struct FE_node_edit_information *edit_info;
+	struct Node_tool_element_constraint_function_data constraint_data;
 
 	ENTER(FE_node_calculate_delta_position);
 	if (node&&(edit_info=(struct FE_node_edit_information *)edit_info_void)&&
@@ -473,22 +528,37 @@ applied to multiple nodes.
 			}
 			if (return_code)
 			{
-				/* convert initial model coordinates into normalised coordinates in the
+				if (edit_info->surface_element_create && edit_info->nearest_element &&
+					 edit_info->nearest_element_coordinate_field)
+				{
+					constraint_data.element = edit_info->nearest_element;
+					constraint_data.coordinate_field = edit_info->nearest_element_coordinate_field;
+					Interaction_volume_get_placement_point(edit_info->final_interaction_volume,
+						placement_coordinates, Node_tool_element_constraint_function,
+						&constraint_data);
+					coordinates[0] = placement_coordinates[0];
+					coordinates[1] = placement_coordinates[1];
+					coordinates[2] = placement_coordinates[2];		
+				}
+				else
+				{
+					/* convert initial model coordinates into normalised coordinates in the
 					 space of the initial_interaction_volume, and back into model
 					 coordinates in the space of the final_interaction_volume to get
 					 translation of node */
-				model_coordinates[0]=(double)coordinates[0];
-				model_coordinates[1]=(double)coordinates[1];
-				model_coordinates[2]=(double)coordinates[2];
-				return_code=Interaction_volume_model_to_normalised_coordinates(
-					edit_info->initial_interaction_volume,model_coordinates,
-					normalised_coordinates)&&
-					Interaction_volume_normalised_to_model_coordinates(
-						edit_info->final_interaction_volume,normalised_coordinates,
-						model_coordinates);
-				coordinates[0]=(FE_value)model_coordinates[0];
-				coordinates[1]=(FE_value)model_coordinates[1];
-				coordinates[2]=(FE_value)model_coordinates[2];
+					model_coordinates[0]=(double)coordinates[0];
+					model_coordinates[1]=(double)coordinates[1];
+					model_coordinates[2]=(double)coordinates[2];
+					return_code=Interaction_volume_model_to_normalised_coordinates(
+						edit_info->initial_interaction_volume,model_coordinates,
+						normalised_coordinates)&&
+						Interaction_volume_normalised_to_model_coordinates(
+							edit_info->final_interaction_volume,normalised_coordinates,
+							model_coordinates);
+					coordinates[0]=(FE_value)model_coordinates[0];
+					coordinates[1]=(FE_value)model_coordinates[1];
+					coordinates[2]=(FE_value)model_coordinates[2];
+				}
 			}
 			if (return_code&&edit_info->transformation_required)
 			{
@@ -584,21 +654,18 @@ stored in the <edit_info>.
 			{
 				if (return_code)
 				{
-					/* interpolate near and far displacements to displacement at node */
 					coordinates[0] += edit_info->delta1;
 					coordinates[1] += edit_info->delta2;
 					coordinates[2] += edit_info->delta3;
-					if (return_code)
+
+					/*???RC following function currently copies all FE_fields in node,
+					  not just those affected, and therefore sends less efficient
+					  change message */
+					if (!Computed_field_set_values_at_node_in_FE_region(
+							 edit_info->coordinate_field,node,edit_info->time,
+							 edit_info->fe_region,coordinates))
 					{
-						/*???RC following function currently copies all FE_fields in node,
-							not just those affected, and therefore sends less efficient
-							change message */
-						if (!Computed_field_set_values_at_node_in_FE_region(
-								 edit_info->coordinate_field,node,edit_info->time,
-								 edit_info->fe_region,coordinates))
-						{
-							return_code=0;
-						}
+						return_code=0;
 					}
 				}
 			}
@@ -1030,25 +1097,30 @@ object's coordinate field.
 
 static struct FE_node *Node_tool_create_node_at_interaction_volume(
 	struct Node_tool *node_tool,struct Scene *scene,
-	struct Interaction_volume *interaction_volume)
+	struct Interaction_volume *interaction_volume,
+	struct FE_element *nearest_element, struct Computed_field *coordinate_field)
 /*******************************************************************************
-LAST MODIFIED : 15 April 2003
+LAST MODIFIED : 21 March 2005
 
 DESCRIPTION :
 Returns a new node in the position indicated by <interaction_volume>, in the
 <scene> if suppled. If any of the remaining address arguments
 are not NULL, they are filled with the appropriate information pertaining to
 the new node.
+If <nearest_element> and <coordinate_field> are supplied then 
+the interaction volume will be supplied a constraint function which will 
+try to enforce that the node is created on that element.
 ==============================================================================*/
 {
 	double d,LU_transformation_matrix[16],node_coordinates[3];
 	enum GT_element_settings_type gt_element_settings_type;
 	FE_value coordinates[3];
 	int i,LU_indx[4],node_number,transformation_required;
-	struct Computed_field *coordinate_field,*rc_coordinate_field;
+	struct Computed_field *rc_coordinate_field,*node_tool_coordinate_field;
 	struct FE_node *merged_node, *node;
 	struct GT_element_group *gt_element_group;
 	struct GT_element_settings *gt_element_settings;
+	struct Node_tool_element_constraint_function_data constraint_data;
 	struct Scene_object *scene_object;
 	LIST_CONDITIONAL_FUNCTION(Scene_object) *scene_object_conditional_function;
 	struct Scene_picked_object *scene_picked_object;
@@ -1062,7 +1134,7 @@ the new node.
 	{
 		if (Node_tool_create_template_node(node_tool))
 		{
-			coordinate_field=node_tool->coordinate_field;
+			node_tool_coordinate_field=node_tool->coordinate_field;
 			if (node_tool->use_data)
 			{
 				scene_object_conditional_function=Scene_object_has_data_Cmiss_region;
@@ -1094,13 +1166,27 @@ the new node.
 				scene_picked_object=(struct Scene_picked_object *)NULL;
 			}
 			if (rc_coordinate_field=
-				Computed_field_begin_wrap_coordinate_field(coordinate_field))
+				Computed_field_begin_wrap_coordinate_field(node_tool_coordinate_field))
 			{
 				node_number = FE_region_get_next_FE_node_identifier(
 					node_tool->fe_region, /*start*/1);
+
 				/* get new node coordinates from interaction_volume */
+				if (nearest_element && coordinate_field)
+				{
+					constraint_data.element = nearest_element;
+					constraint_data.coordinate_field = coordinate_field;
+					Interaction_volume_get_placement_point(interaction_volume,
+						node_coordinates, Node_tool_element_constraint_function,
+						&constraint_data);
+				}
+				else
+				{
 				Interaction_volume_get_placement_point(interaction_volume,
-					node_coordinates);
+					node_coordinates, (Interation_volume_constraint_function)NULL,
+					(void *)NULL);
+				}
+
 				for (i=0;i<3;i++)
 				{
 					coordinates[i]=(FE_value)node_coordinates[i];
@@ -1109,7 +1195,7 @@ the new node.
 					Scene_picked_object_get_total_transformation_matrix(
 						node_tool->scene_picked_object,&transformation_required,
 						LU_transformation_matrix)&&transformation_required&&
-					LU_decompose(4,LU_transformation_matrix,LU_indx,&d))
+					LU_decompose(4,LU_transformation_matrix,LU_indx,&d,/*singular_tolerance*/1.0e-12))
 				{
 					world_to_model_coordinates(coordinates,
 						LU_transformation_matrix,LU_indx);
@@ -1418,6 +1504,35 @@ ie. streaming in response to interactive events = user drags.
 #endif /* defined (MOTIF) */
 
 #if defined (MOTIF)
+static void Node_tool_surface_element_create_button_CB(Widget widget,
+	void *node_tool_void,void *call_data)
+/*******************************************************************************
+LAST MODIFIED : 18 April 2005
+
+DESCRIPTION :
+Callback from toggle button controlling whether nodes are created on surface
+elements or just halfway between near and far.
+==============================================================================*/
+{
+	struct Node_tool *node_tool;
+
+	ENTER(Node_tool_surface_element_create_button_CB);
+	USE_PARAMETER(call_data);
+	if (node_tool=(struct Node_tool *)node_tool_void)
+	{
+		Node_tool_set_surface_element_create(node_tool,
+			XmToggleButtonGadgetGetState(widget));
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Node_tool_surface_element_create_button_CB.  Invalid argument(s)");
+	}
+	LEAVE;
+} /* Node_tool_surface_element_create_button_CB */
+#endif /* defined (MOTIF) */
+
+#if defined (MOTIF)
 static void Node_tool_command_field_button_CB(Widget widget,
 	void *node_tool_void,void *call_data)
 /*******************************************************************************
@@ -1679,18 +1794,19 @@ release.
 	enum Interactive_event_type event_type;
 	FE_value time;
 	int clear_selection,input_modifier,return_code,shift_pressed;
-	struct Computed_field *coordinate_field;
+	struct Computed_field *coordinate_field, *nearest_element_coordinate_field;
+	struct FE_element *nearest_element;
 	struct FE_node *picked_node;
 	struct FE_node_edit_information edit_info;
-	struct GT_element_group *gt_element_group;
-	struct GT_element_settings *gt_element_settings;
+	struct GT_element_group *gt_element_group, *gt_element_group_element;
+	struct GT_element_settings *gt_element_settings, *gt_element_settings_element;
 	struct GT_object *glyph;
 	struct Interaction_volume *interaction_volume,*temp_interaction_volume;
 	struct LIST(FE_node) *node_list;
 	struct LIST(Scene_picked_object) *scene_picked_object_list;
 	struct Node_tool *node_tool;
 	struct Scene *scene;
-	struct Scene_picked_object *scene_picked_object;
+	struct Scene_picked_object *scene_picked_object, *scene_picked_object2;
 
 	ENTER(Node_tool_interactive_event_handler);
 	if (device_id&&event&&(node_tool=
@@ -1713,12 +1829,30 @@ release.
 							Scene_pick_objects(scene,interaction_volume))
 						{
 							picked_node=(struct FE_node *)NULL;
+							nearest_element = (struct FE_element *)NULL;
 							if (node_tool->select_enabled)
 							{
 								picked_node=Scene_picked_object_list_get_nearest_node(
 									scene_picked_object_list,node_tool->use_data,
 									(struct Cmiss_region *)NULL,&scene_picked_object,
 									&gt_element_group,&gt_element_settings);
+							}
+							if (node_tool->surface_element_create)
+							{
+								nearest_element=Scene_picked_object_list_get_nearest_element(
+									scene_picked_object_list,(struct Cmiss_region *)NULL,
+									/*select_elements_enabled*/0, /*select_faces_enabled*/1, 
+									/*select_lines_enabled*/0, &scene_picked_object2,
+									&gt_element_group_element,&gt_element_settings_element);
+								/* Reject the previously picked node if the element is nearer */
+								if (picked_node)
+								{
+									if (Scene_picked_object_get_nearest(scene_picked_object) >
+										Scene_picked_object_get_nearest(scene_picked_object2))
+									{
+										picked_node = (struct FE_node *)NULL;
+									}
+								}				
 							}
 							if (picked_node)
 							{
@@ -1767,11 +1901,40 @@ release.
 							}
 							else
 							{
-								if (node_tool->create_enabled&&(picked_node=
-									Node_tool_create_node_at_interaction_volume(node_tool,
-										scene,interaction_volume)))
+								if (node_tool->create_enabled)
 								{
-									node_tool->picked_node_was_unselected=1;
+									/* Find the intersection of the element and the interaction volume */
+									nearest_element_coordinate_field = (struct Computed_field *)NULL;
+									if (nearest_element)
+									{
+										if (!(nearest_element_coordinate_field = 
+												GT_element_settings_get_coordinate_field(gt_element_settings_element)))
+										{
+											nearest_element_coordinate_field = 
+												GT_element_group_get_default_coordinate_field(
+												gt_element_group_element);
+										}
+										
+									}
+									/* If we are creating on elements and no element was selected then 
+										don't create */
+									if (!node_tool->surface_element_create || nearest_element)
+									{
+										if (picked_node=Node_tool_create_node_at_interaction_volume(
+											node_tool,scene,interaction_volume,nearest_element,
+											nearest_element_coordinate_field))
+										{
+											node_tool->picked_node_was_unselected=1;
+										}
+										else
+										{
+											node_tool->picked_node_was_unselected=0;
+										}
+									}
+									else
+									{
+										node_tool->picked_node_was_unselected=0;
+									}
 								}
 								else
 								{
@@ -1810,23 +1973,51 @@ release.
 						((INTERACTIVE_EVENT_MOTION_NOTIFY==event_type) ||
 							(1==Interactive_event_get_button_number(event))))
 					{
+						nearest_element = (struct FE_element *)NULL;
+						nearest_element_coordinate_field = (struct Computed_field *)NULL;
 						if (INTERACTIVE_EVENT_MOTION_NOTIFY==event_type)
 						{
 							node_tool->motion_detected=1;
 						}
 						if (node_tool->last_picked_node)
 						{
+							if (node_tool->surface_element_create)
+							{
+								if (scene_picked_object_list=
+									Scene_pick_objects(scene,interaction_volume))
+								{
+									if (nearest_element=Scene_picked_object_list_get_nearest_element(
+										scene_picked_object_list,(struct Cmiss_region *)NULL,
+										/*select_elements_enabled*/0, /*select_faces_enabled*/1, 
+										/*select_lines_enabled*/0, &scene_picked_object2,
+										&gt_element_group_element,&gt_element_settings_element))
+									{
+										if (!(nearest_element_coordinate_field = 
+												GT_element_settings_get_coordinate_field(gt_element_settings_element)))
+										{
+											nearest_element_coordinate_field = 
+												GT_element_group_get_default_coordinate_field(
+													gt_element_group_element);
+										}
+									}
+									DESTROY(LIST(Scene_picked_object))(&(scene_picked_object_list));
+								}
+							}
 							if (node_tool->create_enabled &&
 								node_tool->streaming_create_enabled &&
 								(INTERACTIVE_EVENT_MOTION_NOTIFY == event_type))
 							{
-								if (picked_node = Node_tool_create_node_at_interaction_volume(
-									node_tool, scene, interaction_volume))
+								if (!node_tool->surface_element_create || nearest_element)
 								{
-									FE_node_selection_select_node(node_tool->node_selection,
-										picked_node);
-									REACCESS(FE_node)(&(node_tool->last_picked_node),
-										picked_node);
+									if (picked_node = Node_tool_create_node_at_interaction_volume(
+											 node_tool, scene, interaction_volume, nearest_element,
+											 nearest_element_coordinate_field))
+									{
+										FE_node_selection_select_node(node_tool->node_selection,
+											picked_node);
+										REACCESS(FE_node)(&(node_tool->last_picked_node),
+											picked_node);
+									}
 								}
 							}
 							else if ((node_tool->edit_enabled)&&node_tool->motion_detected &&
@@ -1847,6 +2038,10 @@ release.
 								edit_info.fe_region=node_tool->fe_region;
 								edit_info.time=Time_keeper_get_time(
 									node_tool->time_keeper);
+								edit_info.surface_element_create = node_tool->surface_element_create;
+								edit_info.nearest_element = nearest_element;
+								edit_info.nearest_element_coordinate_field = 
+									nearest_element_coordinate_field;
 								/* get coordinate field to edit */
 								if (node_tool->define_enabled)
 								{
@@ -1895,7 +2090,7 @@ release.
 										edit_info.LU_transformation_matrix)&&
 									((!edit_info.transformation_required)||
 										LU_decompose(4,edit_info.LU_transformation_matrix,
-											edit_info.LU_indx,&d))))
+											edit_info.LU_indx,&d,/*singular_tolerance*/1.0e-12))))
 								{
 									return_code=0;
 								}
@@ -2193,6 +2388,8 @@ used to represent them. <element_manager> should be NULL if <use_data> is true.
 			DIALOG_IDENTIFY(node_tool,create_button)},
 		{"node_tool_id_streaming_btn",(XtPointer)
 			DIALOG_IDENTIFY(node_tool,streaming_create_button)},
+		{"node_tool_id_surface_create_btn",(XtPointer)
+		   DIALOG_IDENTIFY(node_tool,surface_element_create_button)},
 		{"node_tool_id_node_group_form",(XtPointer)
 			DIALOG_IDENTIFY(node_tool,node_group_form)},
 		{"node_tool_id_coord_field_form",(XtPointer)
@@ -2213,6 +2410,8 @@ used to represent them. <element_manager> should be NULL if <use_data> is true.
 		 (XtPointer)Node_tool_create_button_CB},
 		{"node_tool_streaming_btn_CB",
 		 (XtPointer)Node_tool_streaming_create_button_CB},
+		{"node_tool_surface_create_btn_CB",
+		 (XtPointer)Node_tool_surface_element_create_button_CB},
 		{"node_tool_command_field_btn_CB",
 		 (XtPointer)Node_tool_command_field_button_CB},
 		{"node_tool_destroy_selected_CB",
@@ -2260,7 +2459,8 @@ used to represent them. <element_manager> should be NULL if <use_data> is true.
 			node_tool->motion_update_enabled=1;
 			node_tool->define_enabled=0;
 			node_tool->create_enabled=0;
-			node_tool->streaming_create_enabled=0;
+ 			node_tool->streaming_create_enabled=0;
+ 			node_tool->surface_element_create=0;
 			node_tool->edit_mode=NODE_TOOL_EDIT_AUTOMATIC;
 			node_tool->coordinate_field =
 				FIRST_OBJECT_IN_MANAGER_THAT(Computed_field)(
@@ -2310,6 +2510,7 @@ used to represent them. <element_manager> should be NULL if <use_data> is true.
 			node_tool->node_group_widget=(Widget)NULL;
 			node_tool->select_button=(Widget)NULL;
 			node_tool->streaming_create_button=(Widget)NULL;
+			node_tool->surface_element_create_button=(Widget)NULL;
 			node_tool->command_field_button=(Widget)NULL;
 			node_tool->command_field_form=(Widget)NULL;
 			node_tool->command_field_widget=(Widget)NULL;
@@ -2419,6 +2620,10 @@ used to represent them. <element_manager> should be NULL if <use_data> is true.
 									XmToggleButtonGadgetSetState(
 										node_tool->streaming_create_button,
 										/*state*/node_tool->streaming_create_enabled,
+										/*notify*/False);
+									XmToggleButtonGadgetSetState(
+										node_tool->surface_element_create_button,
+										/*state*/node_tool->surface_element_create,
 										/*notify*/False);
 									XmToggleButtonGadgetSetState(node_tool->command_field_button,
 										/*state*/False, /*notify*/False);
@@ -3353,6 +3558,89 @@ created as the user drags the mouse around.
 	return (return_code);
 } /* Node_tool_set_streaming_create_enabled */
 
+int Node_tool_get_surface_element_create(struct Node_tool *node_tool)
+/*******************************************************************************
+LAST MODIFIED : 18 April 2005
+
+DESCRIPTION :
+Returns flag controlling, if create_enabled, whether new nodes will be created
+on the closest surface element or just halfway between near and far.
+==============================================================================*/
+{
+	int surface_element_create;
+
+	ENTER(Node_tool_get_surface_element_create);
+	if (node_tool)
+	{
+		surface_element_create = node_tool->surface_element_create;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Node_tool_get_surface_element_create.  Invalid argument(s)");
+		surface_element_create = 0;
+	}
+	LEAVE;
+
+	return (surface_element_create);
+} /* Node_tool_get_surface_element_create */
+
+int Node_tool_set_surface_element_create(struct Node_tool *node_tool,
+	int surface_element_create)
+/*******************************************************************************
+LAST MODIFIED : 18 April 2005
+
+DESCRIPTION :
+Sets flag controlling, if create_enabled, whether new nodes will be created
+on the closest surface element or just halfway between near and far.
+==============================================================================*/
+{
+	int return_code;
+#if defined (MOTIF)
+	int button_state;
+#endif /* defined (MOTIF) */
+
+	ENTER(Node_tool_set_surface_element_create);
+	if (node_tool)
+	{
+		if (surface_element_create)
+		{
+			/* make sure value of flag is exactly 1 */
+			surface_element_create = 1;
+		}
+		if (surface_element_create != node_tool->surface_element_create)
+		{
+			node_tool->surface_element_create = surface_element_create;
+#if defined (MOTIF)
+			/* make sure button shows current state */
+			if (XmToggleButtonGadgetGetState(node_tool->surface_element_create_button))
+			{
+				button_state = 1;
+			}
+			else
+			{
+				button_state = 0;
+			}
+			if (button_state != node_tool->surface_element_create)
+			{
+				XmToggleButtonGadgetSetState(node_tool->surface_element_create_button,
+					/*state*/node_tool->surface_element_create, /*notify*/False);
+			}
+#endif /* defined (MOTIF) */
+		}
+		return_code = 1;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Node_tool_set_surface_element_create.  Invalid argument(s)");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Node_tool_set_surface_element_create */
+
 struct Computed_field *Node_tool_get_command_field(
 	struct Node_tool *node_tool)
 /*******************************************************************************
@@ -3425,3 +3713,31 @@ Sets the command_field to be executed when the node is clicked on in the <node_t
 
 	return (return_code);
 } /* Node_tool_set_command_field */
+
+struct Interactive_tool *Node_tool_get_interactive_tool(
+	struct Node_tool *node_tool)
+/*******************************************************************************
+LAST MODIFIED : 7 April 2005
+
+DESCRIPTION :
+Returns the generic interactive_tool the represents the <node_tool>.
+==============================================================================*/
+{
+	struct Interactive_tool *interactive_tool;
+
+	ENTER(Node_tool_get_interactive_tool);
+	if (node_tool)
+	{
+		interactive_tool=node_tool->interactive_tool;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Node_tool_get_interactive_tool.  Invalid argument(s)");
+		interactive_tool=(struct Interactive_tool *)NULL;
+	}
+	LEAVE;
+
+	return (interactive_tool);
+} /* Node_tool_get_interactive_tool */
+

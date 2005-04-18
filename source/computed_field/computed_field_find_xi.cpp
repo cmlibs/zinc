@@ -47,6 +47,8 @@ struct Computed_field_find_element_xi_cache
 	FE_value *values;
 	FE_value *working_values;
 	FE_value xi[MAXIMUM_ELEMENT_XI_DIMENSIONS];
+	/* Warn when trying to destroy this cache as it is being filled in */
+	int in_perform_find_element_xi;
 };
 
 struct Computed_field_iterative_find_element_xi_data
@@ -70,6 +72,9 @@ matches the <field> in this structure or one of its source fields.
 	FE_value *found_values;
 	FE_value *found_derivatives;
 	float tolerance;
+	int find_nearest_location;
+	struct FE_element *nearest_element;
+	double nearest_element_distance_squared;
 }; /* Computed_field_iterative_find_element_xi_data */
 
 #define MAX_FIND_XI_ITERATIONS 10
@@ -174,7 +179,7 @@ as the <data> field or any of its source fields.
 								}
 								b[i] = sum;
 							}
-							if (LU_decompose(number_of_xi, a, indx, &d) &&
+							if (LU_decompose(number_of_xi, a, indx, &d,/*singular_tolerance*/1.0e-12) &&
 								LU_backsubstitute(number_of_xi, a, indx, b))
 							{
 								converged = 1;
@@ -255,6 +260,21 @@ as the <data> field or any of its source fields.
 							}
 						}
 					}
+					if (data->find_nearest_location)
+					{
+						sum = 0.0;
+						for (k = 0; k < data->number_of_values; k++)
+						{
+							sum += ((double)data->values[k] - (double)values[k]) *
+								((double)data->values[k] - (double)values[k]);
+						}
+						if (!data->nearest_element || 
+							(sum < data->nearest_element_distance_squared))
+						{
+							data->nearest_element = element;
+							data->nearest_element_distance_squared = sum;
+						}
+					}
 				}
 			}
 			else
@@ -285,9 +305,10 @@ as the <data> field or any of its source fields.
 
 int Computed_field_perform_find_element_xi(struct Computed_field *field,
 	FE_value *values, int number_of_values, struct FE_element **element, 
-	FE_value *xi, int element_dimension, struct Cmiss_region *search_region)
+	FE_value *xi, int element_dimension, struct Cmiss_region *search_region,
+	int find_nearest_location)
 /*******************************************************************************
-LAST MODIFIED : 10 March 2003
+LAST MODIFIED : 18 April 2005
 
 DESCRIPTION :
 This function actually seacrches through the elements in the 
@@ -303,10 +324,20 @@ ultimate parent finite_element field.
 	int i, number_of_xi, return_code;
 
 	ENTER(Computed_field_perform_find_element_xi);
+	fe_region = (struct FE_region *)NULL;
 	if (field && values && (number_of_values == field->number_of_components) &&
-		element && xi && search_region && (fe_region = Cmiss_region_get_FE_region(search_region)))
+		element && xi && ((search_region && (fe_region = Cmiss_region_get_FE_region(search_region)))
+		|| *element))
 	{
 		return_code = 1;
+		/* clear the cache if values already cached for a node as we are about to
+		   evaluate for elements and if the field is caching for elements it will
+		   automatically clear the cache, destroying the find_element_xi_cache it 
+			is in the process of filling in. */
+		if (field->node)
+		{
+			Computed_field_clear_cache(field);
+		}
 		if (field->find_element_xi_cache)
 		{
 			cache = field->find_element_xi_cache;
@@ -316,17 +347,34 @@ ultimate parent finite_element field.
 				DEALLOCATE(cache->values);
 				DEALLOCATE(cache->working_values);
 			}
-			if (cache->valid_values && (cache->search_region != search_region))
-			{
-				cache->valid_values = 0;
-			}
 			if (cache->element &&
 				(element_dimension != get_FE_element_dimension(cache->element)))
 			{
 				cache->valid_values = 0;
 			}
-			if (cache->valid_values && ((!cache->element) || 
-				FE_region_contains_FE_element(fe_region, cache->element)))
+			if (cache->valid_values)
+			{
+				if (search_region)
+				{
+					if (cache->search_region != search_region)
+					{
+						cache->valid_values = 0;
+					}
+					if (cache->element && 
+						!FE_region_contains_FE_element(fe_region, cache->element))
+					{
+						cache->valid_values = 0;
+					}
+				}
+				else
+				{
+					if (cache->element != *element)
+					{
+						cache->valid_values = 0;
+					}
+				}
+			}
+			if (cache->valid_values)
 			{
 				for (i = 0; i < number_of_values; i++)
 				{
@@ -353,6 +401,7 @@ ultimate parent finite_element field.
 				return_code = 0;
 			}
 		}
+		cache->in_perform_find_element_xi = 1;
 		if (return_code && !cache->values)
 		{
 			cache->number_of_values = number_of_values;
@@ -408,22 +457,42 @@ ultimate parent finite_element field.
 				find_element_xi_data.found_number_of_xi = 0;
 				find_element_xi_data.found_derivatives = (FE_value *)NULL;
 				find_element_xi_data.tolerance = 1e-06;
-				*element = (struct FE_element *)NULL;
+				find_element_xi_data.find_nearest_location = find_nearest_location;
+				find_element_xi_data.nearest_element = (struct FE_element *)NULL;
+				find_element_xi_data.nearest_element_distance_squared = 0.0;
 
-				/* Try the cached element first if it is in the group */
-				if (field->element && FE_region_contains_FE_element
-					(fe_region, field->element) &&
-					Computed_field_iterative_element_conditional(
-						field->element, (void *)&find_element_xi_data))
+				if (search_region)
 				{
-					*element = field->element;
+					*element = (struct FE_element *)NULL;
+
+					/* Try the cached element first if it is in the group */
+					if (field->element && FE_region_contains_FE_element
+						(fe_region, field->element) &&
+						Computed_field_iterative_element_conditional(
+							field->element, (void *)&find_element_xi_data))
+					{
+						*element = field->element;
+					}
+					/* Now try every element */
+					if (!*element)
+					{
+						*element = FE_region_get_first_FE_element_that
+							(fe_region, Computed_field_iterative_element_conditional,
+								&find_element_xi_data);
+					}
 				}
-				/* Now try every element */
-				if (!*element)
+				else
 				{
-					*element = FE_region_get_first_FE_element_that
-						(fe_region, Computed_field_iterative_element_conditional,
-						&find_element_xi_data);
+					if ((!Computed_field_iterative_element_conditional(
+							  *element, (void *)&find_element_xi_data)))
+					{
+						*element = (struct FE_element *)NULL;
+					}
+				}
+				/* If an exact match is not found then accept the closest one */
+				if (!*element && find_nearest_location)
+				{
+					*element = find_element_xi_data.nearest_element;
 				}
 				if (*element)
 				{
@@ -465,7 +534,8 @@ ultimate parent finite_element field.
 				"Computed_field_perform_find_element_xi.  "
 				"Unable to allocate value memory.");
 			return_code = 0;
-		}
+		}	
+		cache->in_perform_find_element_xi = 0;
 	}
 	else
 	{
@@ -1036,6 +1106,7 @@ Stores cache data for the find_xi routines.
 	  cache->number_of_values = 0;
 	  cache->values = (FE_value *)NULL;
 	  cache->working_values = (FE_value *)NULL;
+	  cache->in_perform_find_element_xi = 0;
 	}
 	else
 	{
@@ -1062,21 +1133,30 @@ Frees memory/deaccess cache at <*cache_address>.
 	ENTER(DESTROY(Computed_field_find_element_xi_cache));
 	if (cache_address&&*cache_address)
 	{
+		if ((*cache_address)->in_perform_find_element_xi)
+		{
+			display_message(ERROR_MESSAGE,
+				"DESTROY(Computed_field_find_element_xi_cache).  "
+				"This cache cannot be destroyed.");
+		}
+		else
+		{
 #if defined (GRAPHICS_BUFFER_USE_OFFSCREEN_BUFFERS)
-		if ((*cache_address)->graphics_buffer)
-		{
-			DESTROY(Graphics_buffer)(&(*cache_address)->graphics_buffer);
-		}
+			if ((*cache_address)->graphics_buffer)
+			{
+				DESTROY(Graphics_buffer)(&(*cache_address)->graphics_buffer);
+			}
 #endif /* defined (GRAPHICS_BUFFER_USE_OFFSCREEN_BUFFERS) */
-		if ((*cache_address)->values)
-		{
-			DEALLOCATE((*cache_address)->values);
+			if ((*cache_address)->values)
+			{
+				DEALLOCATE((*cache_address)->values);
+			}
+			if ((*cache_address)->working_values)
+			{
+				DEALLOCATE((*cache_address)->working_values);
+			}
+			DEALLOCATE(*cache_address);
 		}
-		if ((*cache_address)->working_values)
-		{
-			DEALLOCATE((*cache_address)->working_values);
-		}
-		DEALLOCATE(*cache_address);
 	}
 	else
 	{
