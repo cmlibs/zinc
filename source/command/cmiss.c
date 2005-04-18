@@ -5662,7 +5662,8 @@ value searches just elements of that dimension.
 								hint_minimums, hint_maximums, hint_resolution) ||
 								Computed_field_find_element_xi(texture_coordinate_field,
 									values, tex_number_of_components, &element, xi,
-									element_dimension, region, propagate_field))
+									element_dimension, region, propagate_field,
+									/*find_nearest_location*/0))
 							{
 								if (element)
 								{
@@ -12384,9 +12385,8 @@ DESCRIPTION :
 Executes a GFX LIST G_ELEMENT.
 ==============================================================================*/
 {
-	char *child_region_name, commands_flag, *command_prefix, *command_suffix,
-		*region_path, *scene_name;
-	int child_region_number, error, return_code;
+	char commands_flag, *command_prefix, *command_suffix, *region_path, *scene_name;
+	int error, return_code;
 	struct Cmiss_command_data *command_data;
 	struct Cmiss_region *region;
 	struct GT_element_group *gt_element_group;
@@ -12422,48 +12422,35 @@ Executes a GFX LIST G_ELEMENT.
 					command_data->root_region, region_path, &region) &&
 					(gt_element_group = Scene_get_graphical_element_group(scene, region)))
 				{
-					if (Cmiss_region_get_child_region_number(command_data->root_region,
-						region, &child_region_number) &&
-						Cmiss_region_get_child_region_name(command_data->root_region,
-							child_region_number, &child_region_name))
+					if (commands_flag)
 					{
-						if (commands_flag)
+						error = 0;
+						command_prefix = duplicate_string("gfx modify g_element ");
+						make_valid_token(&region_path);
+						append_string(&command_prefix, region_path, &error);
+						append_string(&command_prefix, " ", &error);
+						command_suffix = (char *)NULL;
+						make_valid_token(&scene_name);
+						if (scene != command_data->default_scene)
 						{
-							error = 0;
-							command_prefix = duplicate_string("gfx modify g_element ");
-							make_valid_token(&child_region_name);
-							append_string(&command_prefix, child_region_name, &error);
-							append_string(&command_prefix, " ", &error);
-							command_suffix = (char *)NULL;
-							make_valid_token(&scene_name);
-							if (scene != command_data->default_scene)
-							{
-								append_string(&command_suffix, " scene ", &error);
-								append_string(&command_suffix, scene_name, &error);
-							}
-							append_string(&command_suffix, ";", &error);
-							display_message(INFORMATION_MESSAGE,
-								"Commands for reproducing group %s on scene %s:\n",
-								child_region_name, scene_name);
-							return_code = GT_element_group_list_commands(gt_element_group,
-								command_prefix, command_suffix);
-							DEALLOCATE(command_suffix);
-							DEALLOCATE(command_prefix);
+							append_string(&command_suffix, " scene ", &error);
+							append_string(&command_suffix, scene_name, &error);
 						}
-						else
-						{
-							display_message(INFORMATION_MESSAGE,
-								"Contents of group %s on scene %s:\n", child_region_name,
-								scene_name);
-							return_code=GT_element_group_list_contents(gt_element_group);
-						}
-						DEALLOCATE(child_region_name);
+						append_string(&command_suffix, ";", &error);
+						display_message(INFORMATION_MESSAGE,
+							"Commands for reproducing group %s on scene %s:\n",
+							region_path, scene_name);
+						return_code = GT_element_group_list_commands(gt_element_group,
+							command_prefix, command_suffix);
+						DEALLOCATE(command_suffix);
+						DEALLOCATE(command_prefix);
 					}
 					else
 					{
-						display_message(ERROR_MESSAGE,
-							"gfx_list_g_element.  Invalid region");
-						return_code = 0;
+						display_message(INFORMATION_MESSAGE,
+							"Contents of group %s on scene %s:\n", region_path,
+							scene_name);
+						return_code=GT_element_group_list_contents(gt_element_group);
 					}
 				}
 				else
@@ -15585,7 +15572,8 @@ Which tool that is being modified is passed in <node_tool_void>.
 	static char *(dialog_strings[2]) = {"open_dialog", "close_dialog"};
 	char *dialog_string, *region_path;
 	int create_enabled,define_enabled,edit_enabled,motion_update_enabled,
-		return_code,select_enabled, streaming_create_enabled;
+		return_code,select_enabled, streaming_create_enabled,
+		surface_element_create;
 	struct Cmiss_command_data *command_data;
 	struct Cmiss_region *root_region;
 	struct Computed_field *coordinate_field, *command_field;
@@ -15615,6 +15603,7 @@ Which tool that is being modified is passed in <node_tool_void>.
 		motion_update_enabled=0;
 		select_enabled=1;
 		streaming_create_enabled = 0;
+		surface_element_create = 0;
 		command_field=(struct Computed_field *)NULL;
 		region_path = (char *)NULL;
 		if (node_tool)
@@ -15627,6 +15616,8 @@ Which tool that is being modified is passed in <node_tool_void>.
 			select_enabled=Node_tool_get_select_enabled(node_tool);
 			streaming_create_enabled =
 				Node_tool_get_streaming_create_enabled(node_tool);
+			surface_element_create =
+				Node_tool_get_surface_element_create(node_tool);
 			command_field=Node_tool_get_command_field(node_tool);
 			Node_tool_get_region_path(node_tool, &region_path);
 		}
@@ -15670,6 +15661,9 @@ Which tool that is being modified is passed in <node_tool_void>.
 		/* streaming_create/no_streaming_create */
 		Option_table_add_switch(option_table, "streaming_create",
 			"no_streaming_create", &streaming_create_enabled);
+		/* surface_element_create/no_surface_element_create */
+		Option_table_add_switch(option_table,"surface_element_create","no_surface_element_no_create",
+			&surface_element_create);
 		/* command_field */
 		set_command_field_data.computed_field_manager=
 			Computed_field_package_get_computed_field_manager(
@@ -15699,6 +15693,7 @@ Which tool that is being modified is passed in <node_tool_void>.
 				Node_tool_set_select_enabled(node_tool,select_enabled);
 				Node_tool_set_define_enabled(node_tool,define_enabled);
 				Node_tool_set_create_enabled(node_tool,create_enabled);
+				Node_tool_set_surface_element_create(node_tool,surface_element_create);
 				Node_tool_set_motion_update_enabled(node_tool,motion_update_enabled);
 
 				if (dialog_string == dialog_strings[0])

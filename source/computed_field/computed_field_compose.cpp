@@ -222,7 +222,8 @@ DESCRIPTION :
 				if (Computed_field_find_element_xi(
 					field->source_fields[1], field->source_fields[0]->values,
 					field->source_fields[0]->number_of_components, &element, xi,
-					/*element_dimension=all*/0,data->region, /*propagate_field*/1) && element)
+					/*element_dimension=all*/0,data->region, /*propagate_field*/0,
+					/*find_nearest_location*/0) && element)
 				{
 					/* calculate the third source_field at this new location */
 					return_code = Computed_field_is_defined_in_element(
@@ -294,7 +295,7 @@ Evaluate the fields cache at the node.
 				field->source_fields[0]->values,
 				field->source_fields[0]->number_of_components,
 					  &compose_element, compose_xi, /*element_dimension=all*/0,
-					  data->region, /*propagate_field*/1))
+						data->region, /*propagate_field*/0, /*find_nearest_location*/0))
 				&& compose_element)
 			{
 				/* calculate the third source_field at this new location */
@@ -365,7 +366,7 @@ Evaluate the fields cache at the node.
 				field->source_fields[0]->values,
 				field->source_fields[0]->number_of_components,
 					  &compose_element, compose_xi, /*element_dimension=all*/0,
-					  data->region, /*propagate_field*/1))
+						data->region, /*propagate_field*/0, /*find_nearest_location*/0))
 				&& compose_element)
 			{
 				/* calculate the third source_field at this new location */

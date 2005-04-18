@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : computed_field_find_xi.h
 
-LAST MODIFIED : 28 February 2003
+LAST MODIFIED : 18 April 2005
 
 DESCRIPTION :
 Implements a special version of find_xi that uses OpenGL to accelerate the
@@ -24,9 +24,10 @@ struct Computed_field_find_element_xi_cache is private.
 
 int Computed_field_perform_find_element_xi(struct Computed_field *field,
 	FE_value *values, int number_of_values, struct FE_element **element, 
-	FE_value *xi, int element_dimension, struct Cmiss_region *search_region);
+	FE_value *xi, int element_dimension, struct Cmiss_region *search_region,
+	int find_nearest_location);
 /*******************************************************************************
-LAST MODIFIED : 7 January 2003
+LAST MODIFIED : 18 April 2005
 
 DESCRIPTION :
 This function actually seacrches through the elements in the 
