@@ -6580,19 +6580,20 @@ obtained from the node_field_component for the field at the node.
 									{
 										node_field_component=
 											node_field->components + component_number;
+										
+										node_field_info=node->fields;
+										time_sequence = node_field->time_sequence;
+										if (time_sequence)
+										{
+											FE_time_sequence_get_interpolation_for_time(
+												time_sequence, time, &time_index_one, &time_index_two,
+												&xi);
+										}
 									}
 									else
 									{
 										/* field not defined at this node */
 										node_field_component=(struct FE_node_field_component *)NULL;
-									}
-									node_field_info=node->fields;
-									time_sequence = node_field->time_sequence;
-									if (time_sequence)
-									{
-										FE_time_sequence_get_interpolation_for_time(
-											time_sequence, time, &time_index_one, &time_index_two,
-											&xi);
 									}
 								}
 								if (node_field_component)
