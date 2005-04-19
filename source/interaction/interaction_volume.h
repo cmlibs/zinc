@@ -11,6 +11,7 @@ devices, and used by scenes for picking graphics.
 #define INTERACTION_VOLUME_H
 
 #include "general/object.h"
+#include "general/value.h"
 
 struct Interaction_volume;
 /*******************************************************************************

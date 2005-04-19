@@ -278,7 +278,8 @@ value searches just elements of that dimension.
 					image->minimums, image->maximums, sizes_floats) ||
 					Computed_field_find_element_xi(texture_coordinate_field,
 					texture_coordinates, number_of_texture_coordinate_components,
-					&element, xi, element_dimension, region, /*propagate_field*/0))
+					&element, xi, element_dimension, region, /*propagate_field*/0,
+					/*find_nearest_location*/0))
 				{
 					if (element)
 					{

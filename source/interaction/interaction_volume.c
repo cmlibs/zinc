@@ -833,8 +833,8 @@ represents.  This function will then adjust the location and call the
 it gives up.
 ==============================================================================*/
 {
-	double constraint_change[3], distance, iteration_change[3], 
-		normalised_point[3], previous_point[3];
+	double constraint_change[3], iteration_change[3], normalised_point[3], 
+		previous_point[3];
 	FE_value fe_value_point[3];
 	int converged, return_code, steps;
 
@@ -888,7 +888,7 @@ it gives up.
 
 				/* The constraint function works with FE_values so we need a 
 					relatively large convergence tolerance. */
-				if ((distance = norm3(constraint_change)) < 1.0e-4)
+				if (norm3(constraint_change) < 1.0e-4)
 				{
 					converged = 1;
 				}
