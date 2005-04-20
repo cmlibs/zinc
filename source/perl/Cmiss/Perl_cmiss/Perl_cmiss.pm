@@ -57,14 +57,21 @@ package Perl_cmiss;
 # Preloaded methods go here.
 #Using a hash so that the strategy for action could be placed with
 #the word.  For now only one action.
-my %keywords = ( 'command_window' => 1,
+my %keywords = ( 'attach' => 1,
+					  'command_window' => 1,
 					  'create' => 1,
+					  'detach' => 1,
 					  'fem' => 1,
 					  'gfx' => 1,
 					  'itp' => 1,
+					  'iterate' => 1,
 					  'open' => 1,
 					  'quit' => 1,
+					  'list' => 1,
 					  'list_memory' => 1,
+					  'optimise' => 1,
+					  'read' => 1,
+					  'refresh' => 1,
 					  'set' => 1,
 					  'unemap' => 1 );
 
@@ -82,6 +89,7 @@ sub call_command
   local $command = shift;
   {
 	 package cmiss;
+	 *{cmiss::cmiss} = \&{Perl_cmiss::cmiss};
 	 # Catch all warnings as errors */
 	 local $SIG{__WARN__} = sub { die $_[0] };
 	 eval ($Perl_cmiss::command);
@@ -568,14 +576,25 @@ sub execute_command
 										$token = $token . $extracted;
 									 }
 								  else
-									 {
-										if ($cmiss_debug)
-										  {
-											 print "character: " . substr($command, 0, 1) . "\n";
-										  }
-										$token = $token . substr($command, 0, 1);
-										$command = substr($command, 1);
-									 }
+									{
+									  if ($command =~ s/^(\w+)//)
+										{
+										  if ($cmiss_debug)
+											{
+											  print "characters: " . $1 . "\n";
+											}
+										  $token = $token . $1;
+										}
+									  else
+										{
+										  if ($cmiss_debug)
+											{
+											  print "punctuation: " . substr($command, 0, 1) . "\n";
+											}
+										  $token = $token . substr($command, 0, 1);
+										  $command = substr($command, 1);
+										}
+									}
 								}
 						  }
 					 }
@@ -624,7 +643,7 @@ sub execute_command
 			 }
 		  print "";
 		}
-  }
+	}
 
 # Autoload methods go after =cut, and are processed by the autosplit program.
 
