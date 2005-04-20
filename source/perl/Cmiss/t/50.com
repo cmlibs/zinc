@@ -62,7 +62,8 @@ use Cmiss::Function_variable::Exclusion;
 
 # set up regions
 $cube=new Cmiss::Region();
-$cube->read_file(name=>"$path/finite_elasticity/cube.fml");
+#$cube->read_file(name=>"$path/finite_elasticity/cube.fml");
+$cube->read_file(name=>"$path/finite_elasticity_cube.fml");
 
 # set up nodes
 $node_1=$cube->get_node(name=>1);
