@@ -6049,21 +6049,20 @@ Outputs the information contained by the node field.
 													return_code=0;
 												}
 											} break;
+#if defined (UNEMAP_USE_NODES)
 											case DOUBLE_ARRAY_VALUE:
 											{
-												struct FE_field_component component;
 												double *array;
 												int number_of_values,count;
 									
-												component.field =field;
-												component.number = i;
 												number_of_values=get_FE_nodal_array_number_of_elements(node,
-													&component,version,*type);
+													field,/*component_number*/i,version,*type);
 												if (number_of_values>0)
 												{									
 													if (ALLOCATE(array,double,number_of_values))
 													{
-														get_FE_nodal_double_array_value(node,&component,0,
+														get_FE_nodal_double_array_value(node,field,
+															/*component_number*/i,version,
 															*type,array,number_of_values);
 														display_message(INFORMATION_MESSAGE,"\n");
 														/* output in columns if
@@ -6095,19 +6094,17 @@ Outputs the information contained by the node field.
 											} break;	
 											case FE_VALUE_ARRAY_VALUE:
 											{
-												struct FE_field_component component;
 												FE_value *array;
 												int number_of_values,count;
 									
-												component.field=field;
-												component.number=i;
 												number_of_values=get_FE_nodal_array_number_of_elements(node,
-													&component,version,*type);
+													field,/*component_number*/i,version,*type);
 												if (number_of_values>0)
 												{																			
 													if (ALLOCATE(array,FE_value,number_of_values))
 													{
-														get_FE_nodal_FE_value_array(node,&component,version,
+														get_FE_nodal_FE_value_array(node,field,
+															/*component_number*/i,version,
 															*type,array,number_of_values);	
 														display_message(INFORMATION_MESSAGE,"\n");
 														/* output in columns if FE_VALUE_MAX_OUTPUT_COLUMNS>0 */
@@ -6138,19 +6135,17 @@ Outputs the information contained by the node field.
 											} break;	
 											case SHORT_ARRAY_VALUE:
 											{
-												struct FE_field_component component;
 												short *array;
 												int number_of_values,count;									
 
-												component.field =field;
-												component.number = i;
 												number_of_values=get_FE_nodal_array_number_of_elements(node,
-													&component,version,*type);
+													field,/*component_number*/i,version,*type);
 												if (number_of_values>0)
 												{								
 													if (ALLOCATE(array,short,number_of_values))
 													{
-														get_FE_nodal_short_array(node,&component,0,
+														get_FE_nodal_short_array(node,field,
+															/*component_number*/i,version,
 															*type,array,number_of_values);
 														display_message(INFORMATION_MESSAGE,"\n");
 														/* output in columns if
@@ -6180,6 +6175,7 @@ Outputs the information contained by the node field.
 													display_message(INFORMATION_MESSAGE,"array length 0");
 												}
 											} break;									
+#endif /* defined (UNEMAP_USE_NODES) */
 											default:
 											{
 												display_message(INFORMATION_MESSAGE,"list_FE_node_field: "
@@ -11217,7 +11213,7 @@ Returns the FE_node_field structure describing how <fe_field> is defined at
 } /* FE_node_get_FE_node_field */
 
 static int find_FE_nodal_values_storage_dest(struct FE_node *node,
-	struct FE_field_component *component,int version,
+	struct FE_field *field,int component_number,int version,
 	enum FE_nodal_value_type type,enum Value_type value_type,
 	Value_storage **values_storage, struct FE_time_sequence **time_sequence)
 /*******************************************************************************
@@ -11238,16 +11234,16 @@ can use this function to determing if either are defined.
 
 	ENTER(find_FE_nodal_values_storage_dest);
 	return_code=0;
-	if (node&&component&&(component->field)&&(0<=component->number)&&
-		(component->number<component->field->number_of_components)&&(0<=version))
+	if (node&&field&&(0<=component_number)&&
+		(component_number<field->number_of_components)&&(0<=version))
 	{
-		if (node_field = FE_node_get_FE_node_field(node, component->field))
+		if (node_field = FE_node_get_FE_node_field(node, field))
 		{
 			if (node_field_component=node_field->components)
 			{
 				if (node_field->field->value_type == value_type)
 				{					
-					node_field_component += component->number;
+					node_field_component += component_number;
 					if (version < node_field_component->number_of_versions)
 					{
 						if (nodal_value_type=node_field_component->nodal_value_types)
@@ -16974,13 +16970,13 @@ Returns true if all fields are defined in the same way at the two nodes.
 } /* equivalent_FE_fields_at_nodes */
 
 int FE_nodal_value_version_exists(struct FE_node *node,
-	struct FE_field_component *component,int version,
+	struct FE_field *field, int component_number, int version,
 	enum FE_nodal_value_type type)
 /*******************************************************************************
 LAST MODIFIED : 23 June 1999
 
 DESCRIPTION :
-Returns 1 if the field, component number, version and type are stored at the
+Returns 1 if the <field>, <component_number>, <version> and <type> are stored at the
 node and valid at <time>.
 ???DB.  May need speeding up
 ==============================================================================*/
@@ -16991,12 +16987,12 @@ node and valid at <time>.
 
 	ENTER(FE_nodal_value_version_exists);
 	return_code=0;
-	if (node&&component&&(component->field)&&(0<=component->number)&&
-		(component->number<component->field->number_of_components)&&(0<=version))
+	if (node && field && (0<=component_number)&&
+		(component_number < field->number_of_components) && (0<=version))
 	{
-		if (find_FE_nodal_values_storage_dest(node,component,version,type,
-			get_FE_field_value_type(component->field),&values_storage,
-			&time_sequence))
+		if (find_FE_nodal_values_storage_dest(node,field,component_number,
+			version,type,get_FE_field_value_type(field),
+			&values_storage,&time_sequence))
 		{
 			return_code=1;
 		}
@@ -17080,11 +17076,9 @@ It is up to the calling function to DEALLOCATE the returned string.
 			case FE_VALUE_VALUE:
 			{
 				FE_value value;
-				struct FE_field_component component;
 
-				component.field=field;
-				component.number=component_number;
-				if (get_FE_nodal_FE_value_value(node,&component,version,type,time,&value))
+				if (get_FE_nodal_FE_value_value(node,field,component_number,
+					version,type,time,&value))
 				{
 					sprintf(temp_string,"%g",value);
 					return_code=append_string(string,temp_string,&return_code);
@@ -17093,11 +17087,9 @@ It is up to the calling function to DEALLOCATE the returned string.
 			case INT_VALUE:
 			{
 				int value;
-				struct FE_field_component component;
 
-				component.field=field;
-				component.number=component_number;
-				if (get_FE_nodal_int_value(node,&component,version,type,time,&value))
+				if (get_FE_nodal_int_value(node,field,component_number,
+					version,type,time,&value))
 				{
 					sprintf(temp_string,"%d",value);
 					return_code=append_string(string,temp_string,&return_code);
@@ -17130,42 +17122,41 @@ It is up to the calling function to DEALLOCATE the returned string.
 	return (return_code);
 } /* get_FE_nodal_value_as_string */
 
-#define DEFINE_GET_FE_NODAL_VALUE_FUNCTION( value_type, value_enum ) \
+#define INSTANTIATE_GET_FE_NODAL_VALUE_FUNCTION( value_type, value_enum ) \
 int get_FE_nodal_ ## value_type ## _value(struct FE_node *node, \
-	struct FE_field_component *component,int version, \
+	struct FE_field *field, int component_number, int version, \
 	enum FE_nodal_value_type type, FE_value time, value_type *value) \
 /******************************************************************************* \
-LAST MODIFIED : 29 January 2002 \
+LAST MODIFIED : 21 April 2005 \
  \
 DESCRIPTION : \
-Gets a particular value_type value (<version>, <type>) for the field <component> \
-at the <node> and <time>. \
+Gets a particular value (<version>, <type>) for the <field> \
+and <component_number> at the <node> and <time>. \
 ???DB.  May need speeding up \
 ==============================================================================*/ \
 { \
    value_type *array; \
 	FE_value xi; \
 	int return_code, time_index_one, time_index_two; \
-	struct FE_field *field; \
 	struct FE_time_sequence *time_sequence; \
 	Value_storage *values_storage = NULL; \
  \
 	ENTER(get_FE_nodal_ ## value_type ## _value); \
 	return_code=0; \
-	if (node&&component&&(field=component->field)&&(0<=component->number)&& \
-		(component->number < field->number_of_components)&&(0<=version)&&value) \
+	if (node && field && (0 <= component_number) && \
+		(component_number < field->number_of_components) && (0<=version) && value) \
 	{ \
 		switch (field->fe_field_type) \
 		{ \
 			case CONSTANT_FE_FIELD: \
 			{ \
-				*value = *((value_type *)(field->values_storage)+component->number); \
+				*value = *((value_type *)(field->values_storage)+component_number); \
 				return_code=1; \
 			} break; \
 			case GENERAL_FE_FIELD: \
 			{ \
-				if (find_FE_nodal_values_storage_dest(node,component,version,type, \
-					value_enum ,&values_storage,&time_sequence)) \
+				if (find_FE_nodal_values_storage_dest(node,field,component_number, \
+					version,type, value_enum ,&values_storage,&time_sequence)) \
 				{ \
 					if (time_sequence) \
 					{ \
@@ -17190,18 +17181,16 @@ at the <node> and <time>. \
 			case INDEXED_FE_FIELD: \
 			{ \
 				int index; \
-				struct FE_field_component index_component; \
- \
-				index_component.field=field->indexer_field; \
-				index_component.number=0; \
-				if (get_FE_nodal_int_value(node,&index_component,/*version*/0, \
+\
+				if (get_FE_nodal_int_value(node,field->indexer_field, \
+               /*component_number*/0,/*version*/0,	\
 					FE_NODAL_VALUE,time,&index)) \
 				{ \
 					/* index numbers start at 1 */ \
 					if ((1<=index)&&(index<=field->number_of_indexed_values)) \
 					{ \
 						*value = *((value_type *)(field->values_storage)+ \
-							field->number_of_indexed_values*component->number+index-1); \
+							field->number_of_indexed_values*component_number+index-1); \
 						return_code=1;	 \
 					} \
 					else \
@@ -17236,16 +17225,16 @@ at the <node> and <time>. \
 	return (return_code); \
 } /* get_FE_nodal_ ## value_type ## _value */
 
-#define DEFINE_SET_FE_NODAL_VALUE_FUNCTION( value_type, value_enum ) \
+#define INSTANTIATE_SET_FE_NODAL_VALUE_FUNCTION( value_type, value_enum ) \
 int set_FE_nodal_ ## value_type ## _value(struct FE_node *node, \
-	struct FE_field_component *component,int version, \
+	struct FE_field *field, int component_number, int version, \
 	enum FE_nodal_value_type type, FE_value time, value_type value) \
 /******************************************************************************* \
-LAST MODIFIED : 30 January 2002 \
+LAST MODIFIED : 21 April 2005 \
  \
 DESCRIPTION : \
-Sets a particular value (<version>, <type>) for the field <component> \
-at the <node>. \
+Sets a particular value (<version>, <type>) for the <field> \
+and <component_number> at the <node>. \
 ==============================================================================*/ \
 { \
    value_type *array; \
@@ -17256,12 +17245,12 @@ at the <node>. \
 	ENTER(set_FE_nodal_ ## value_type ## _value); \
 	return_code=0; \
 	/* check arguments */ \
-	if (node&&component&&(component->field)&&(0<=component->number)&& \
-		(component->number<component->field->number_of_components)&&(0<=version)) \
+	if (node && field && (0<=component_number) && \
+		(component_number < field->number_of_components) && (0<=version)) \
 	{ \
 		/* get the values storage */ \
-		if (find_FE_nodal_values_storage_dest(node,component,version,type, \
-			value_enum,&values_storage,&time_sequence)) \
+		if (find_FE_nodal_values_storage_dest(node,field,component_number, \
+         version,type, value_enum,&values_storage,&time_sequence)) \
 		{ \
 			if (time_sequence) \
 			{ \
@@ -17284,6 +17273,19 @@ at the <node>. \
 				*((value_type *)values_storage) = value; \
 				return_code=1; \
 			} \
+         if (return_code) \
+         { \
+				/* Check this node is being managed by the region it belongs to (All nodes \
+					are created with respect to some region but they are not necessarily merged \
+					into it yet. */ \
+				if (node->fields && node->fields->fe_region && \
+					FE_region_contains_FE_node(node->fields->fe_region, node)) \
+				{ \
+					/* If so, notify the change */ \
+					FE_region_notify_FE_node_field_change(node->fields->fe_region, node, \
+						field); \
+				} \
+			} \
 		} \
 		else \
 		{	 \
@@ -17302,15 +17304,15 @@ at the <node>. \
 	return (return_code); \
 } /* set_FE_nodal_ ## value_type ## _value */
 
-#define DEFINE_FE_NODAL_VALUE_FUNCTIONS( value_type , value_enum ) \
-DEFINE_GET_FE_NODAL_VALUE_FUNCTION(value_type,value_enum) \
-DEFINE_SET_FE_NODAL_VALUE_FUNCTION(value_type,value_enum)
+#define INSTANTIATE_FE_NODAL_VALUE_FUNCTIONS( value_type , value_enum ) \
+INSTANTIATE_GET_FE_NODAL_VALUE_FUNCTION(value_type,value_enum) \
+INSTANTIATE_SET_FE_NODAL_VALUE_FUNCTION(value_type,value_enum)
 
-DEFINE_FE_NODAL_VALUE_FUNCTIONS( FE_value , FE_VALUE_VALUE )
-DEFINE_FE_NODAL_VALUE_FUNCTIONS( double , DOUBLE_VALUE )
-DEFINE_FE_NODAL_VALUE_FUNCTIONS( float , FLT_VALUE )
-DEFINE_FE_NODAL_VALUE_FUNCTIONS( int , INT_VALUE )
-DEFINE_FE_NODAL_VALUE_FUNCTIONS( short , SHORT_VALUE )
+INSTANTIATE_FE_NODAL_VALUE_FUNCTIONS( FE_value , FE_VALUE_VALUE )
+INSTANTIATE_FE_NODAL_VALUE_FUNCTIONS( double , DOUBLE_VALUE )
+INSTANTIATE_FE_NODAL_VALUE_FUNCTIONS( float , FLT_VALUE )
+INSTANTIATE_FE_NODAL_VALUE_FUNCTIONS( int , INT_VALUE )
+INSTANTIATE_FE_NODAL_VALUE_FUNCTIONS( short , SHORT_VALUE )
 
 int get_FE_nodal_element_xi_value(struct FE_node *node,
 	struct FE_field *field, int component_number, int version,
@@ -17350,8 +17352,8 @@ at the <node>.
 				/* Put into a component for the meantime */
 				component.field = field;
 				component.number = component_number;
-				if (find_FE_nodal_values_storage_dest(node,&component,version,type,
-					ELEMENT_XI_VALUE,&values_storage,&time_sequence))
+				if (find_FE_nodal_values_storage_dest(node,field,component_number,
+					version,type,ELEMENT_XI_VALUE,&values_storage,&time_sequence))
 				{
 					return_code=1;
 				}
@@ -17364,11 +17366,9 @@ at the <node>.
 			case INDEXED_FE_FIELD:
 			{
 				int index;
-				struct FE_field_component index_component;
 
-				index_component.field=field->indexer_field;
-				index_component.number=0;
-				if (get_FE_nodal_int_value(node,&index_component,/*version*/0,
+				if (get_FE_nodal_int_value(node,field->indexer_field,
+					/*component_number*/0,/*version*/0,
 					FE_NODAL_VALUE,/*time*/0,&index))
 				{
 					/* index numbers start at 1 */
@@ -17457,8 +17457,8 @@ Sets a particular element_xi_value (<version>, <type>) for the field
 		component.field = field;
 		component.number = component_number;
 		/* get the values storage */
-		if (find_FE_nodal_values_storage_dest(node,&component,version,type,
-			ELEMENT_XI_VALUE,&values_storage,&time_sequence))
+		if (find_FE_nodal_values_storage_dest(node,field,component_number,
+			version,type,ELEMENT_XI_VALUE,&values_storage,&time_sequence))
 		{
 			number_of_xi_dimensions = element->shape->dimension;
 			/* copy in the element_xi_value */		
@@ -18250,8 +18250,9 @@ Give an error if field->values_storage isn't storing array types.
 } /*get_FE_nodal_array_attributes */
 #endif /* OLD_CODE*/
 
+#if defined (UNEMAP_USE_NODES)
 enum Value_type get_FE_nodal_value_type(struct FE_node *node,
-	struct FE_field_component *component,int version)
+	struct FE_field *field,int component_number,int version)
 /*******************************************************************************
 LAST MODIFIED : 19 February 2003
 
@@ -18263,10 +18264,10 @@ Get's a node's field's value type
 	struct FE_node_field *node_field;
 
 	ENTER(get_FE_nodal_value_type);
-	if (node&&component&&(component->field)&&(0<=component->number)&&
-		(component->number<component->field->number_of_components)&&(0<=version))
+	if (node&&field&&(0<=component_number)&&
+		(component_number<field->number_of_components)&&(0<=version))
 	{
-		if (node_field = FE_node_get_FE_node_field(node, component->field))
+		if (node_field = FE_node_get_FE_node_field(node, field))
 		{		
 			/* get the value type*/
 			value_type	= node_field->field->value_type;		
@@ -18284,7 +18285,7 @@ Get's a node's field's value type
 } /*get_FE_nodal_value_type */
 
 int get_FE_nodal_array_number_of_elements(struct FE_node *node,
-	struct FE_field_component *component,int version,
+	struct FE_field *field,int component_number,int version,
 	enum FE_nodal_value_type type)
 /*******************************************************************************
 LAST MODIFIED : 19 February 2003
@@ -18306,12 +18307,12 @@ Give an error if field->values_storage isn't storing array types.
 
 	ENTER(get_FE_nodal_array_number_of_elements);
 	number_of_array_elements=-1;
-	if (node&&component&&(component->field)&&(0<=component->number)&&
-		(component->number<component->field->number_of_components)&&(0<=version))
+	if (node&&field&&(0<=component_number)&&
+		(component_number<field->number_of_components)&&(0<=version))
 	{
-		if (node_field = FE_node_get_FE_node_field(node, component->field))
+		if (node_field = FE_node_get_FE_node_field(node, field))
 		{
-			if ((node_field_component=node_field->components + component->number)&&
+			if ((node_field_component=node_field->components + component_number)&&
 				(nodal_value_type=node_field_component->nodal_value_types))
 			{			
 				switch (node_field->field->value_type)
@@ -18379,7 +18380,7 @@ Give an error if field->values_storage isn't storing array types.
 } /* get_FE_nodal_array_number_of_elements*/
 
 int get_FE_nodal_double_array_value(struct FE_node *node,
-	struct FE_field_component *component,int version,
+	struct FE_field *field,int component_number,int version,
 	enum FE_nodal_value_type type,double *array, int number_of_array_values)
 /*******************************************************************************
 LAST MODIFIED : 20 April 1999
@@ -18404,12 +18405,12 @@ if need to locally and repetatively get many arrays.
 
 	ENTER(get_FE_nodal_double_array_value);
 	return_code=0;
-	if (node&&component&&(component->field)&&(0<=component->number)&&
-		(component->number<component->field->number_of_components)&&(0<=version)&&
+	if (node&&field&&(0<=component_number)&&
+		(component_number<field->number_of_components)&&(0<=version)&&
 		array)
 	{
-		if (find_FE_nodal_values_storage_dest(node,component,version,type,
-			DOUBLE_ARRAY_VALUE,&values_storage,&time_sequence))
+		if (find_FE_nodal_values_storage_dest(node,field,component_number,
+			version,type,DOUBLE_ARRAY_VALUE,&values_storage,&time_sequence))
 		{					
 			the_array_number_of_values = *((int *)values_storage);
 			if (number_of_array_values>the_array_number_of_values)
@@ -18443,7 +18444,7 @@ if need to locally and repetatively get many arrays.
 } /* get_FE_nodal_double_array_value */
 
 int set_FE_nodal_double_array_value(struct FE_node *node,
-	struct FE_field_component *component,int version,
+	struct FE_field *field,int component_number,int version,
 	enum FE_nodal_value_type type,double *array,int number_of_array_values)
 /*******************************************************************************
 LAST MODIFIED : 20 April 1999
@@ -18472,11 +18473,11 @@ define_FE_field_at_node.
 
 	ENTER(set_FE_nodal_double_array_value);
 	return_code=0;
-	if (node&&component&&(component->field)&&(0<=component->number)&&
-		(component->number<component->field->number_of_components)&&(0<=version))
+	if (node&&field&&(0<=component_number)&&
+		(component_number<field->number_of_components)&&(0<=version))
 	{
 		/* get the values storage */
-		if (find_FE_nodal_values_storage_dest(node,component,version,type,
+		if (find_FE_nodal_values_storage_dest(node,field,component_number,version,type,
 			DOUBLE_ARRAY_VALUE,&values_storage,&time_sequence))
 		{				
 			/* get the pointer to stored the array, free any existing one */
@@ -18524,7 +18525,7 @@ define_FE_field_at_node.
 } /* set_FE_nodal_double_array_value */
 
 int get_FE_nodal_short_array(struct FE_node *node,
-	struct FE_field_component *component,int version,
+	struct FE_field *field,int component_number,int version,
 	enum FE_nodal_value_type type,short *array, int number_of_array_values)
 /*******************************************************************************
 LAST MODIFIED : 8 June 1999
@@ -18549,11 +18550,11 @@ if need to locally and repetatively get many arrays.
 
 	ENTER(get_FE_nodal_short_array);
 	return_code=0;
-	if (node&&component&&(component->field)&&(0<=component->number)&&
-		(component->number<component->field->number_of_components)&&(0<=version)&&
+	if (node&&field&&(0<=component_number)&&
+		(component_number<field->number_of_components)&&(0<=version)&&
 		array)
 	{
-		if (find_FE_nodal_values_storage_dest(node,component,version,type,
+		if (find_FE_nodal_values_storage_dest(node,field,component_number,version,type,
 			SHORT_ARRAY_VALUE,&values_storage,&time_sequence))
 		{					
 			the_array_number_of_values = *((int *)values_storage);
@@ -18588,7 +18589,7 @@ if need to locally and repetatively get many arrays.
 } /* get_FE_nodal_short_array */
 
 int set_FE_nodal_short_array(struct FE_node *node,
-	struct FE_field_component *component,int version,
+	struct FE_field *field,int component_number,int version,
 	enum FE_nodal_value_type type,short *array,int number_of_array_values)
 /*******************************************************************************
 LAST MODIFIED : 8 June 1999
@@ -18617,11 +18618,11 @@ define_FE_field_at_node.
 
 	ENTER(set_FE_nodal_short_value);
 	return_code=0;
-	if (node&&component&&(component->field)&&(0<=component->number)&&
-		(component->number<component->field->number_of_components)&&(0<=version))
+	if (node&&field&&(0<=component_number)&&
+		(component_number<field->number_of_components)&&(0<=version))
 	{
 		/* get the values storage */
-		if (find_FE_nodal_values_storage_dest(node,component,version,type,
+		if (find_FE_nodal_values_storage_dest(node,field,component_number,version,type,
 			SHORT_ARRAY_VALUE,&values_storage,&time_sequence))
 		{				
 			/* get the pointer to stored the array, free any existing one */
@@ -18669,7 +18670,7 @@ define_FE_field_at_node.
 } /* set_FE_nodal_short_array */
 
 int get_FE_nodal_FE_value_array(struct FE_node *node,
-	struct FE_field_component *component,int version,
+	struct FE_field *field,int component_number,int version,
 	enum FE_nodal_value_type type,FE_value *array, int number_of_array_values)
 /*******************************************************************************
 LAST MODIFIED : 8 June 1999
@@ -18694,11 +18695,11 @@ if need to locally and repetatively get many arrays.
 
 	ENTER(get_FE_nodal_FE_value_array);
 	return_code=0;
-	if (node&&component&&(component->field)&&(0<=component->number)&&
-		(component->number<component->field->number_of_components)&&(0<=version)&&
+	if (node&&field&&(0<=component_number)&&
+		(component_number<field->number_of_components)&&(0<=version)&&
 		array)
 	{
-		if (find_FE_nodal_values_storage_dest(node,component,version,type,
+		if (find_FE_nodal_values_storage_dest(node,field,component_number,version,type,
 			FE_VALUE_ARRAY_VALUE,&values_storage,&time_sequence))
 		{					
 			the_array_number_of_values = *((int *)values_storage);
@@ -18733,7 +18734,7 @@ if need to locally and repetatively get many arrays.
 } /* get_FE_nodal_FE_value_array */
 
 int set_FE_nodal_FE_value_array(struct FE_node *node,
-	struct FE_field_component *component,int version,
+	struct FE_field *field,int component_number,int version,
 	enum FE_nodal_value_type type,FE_value *array,int number_of_array_values)
 /*******************************************************************************
 LAST MODIFIED : 13 September 2000
@@ -18763,11 +18764,11 @@ define_FE_field_at_node.
 
 	ENTER(set_FE_nodal_FE_value_array);
 	return_code=0;
-	if (node&&component&&(component->field)&&(0<=component->number)&&
-		(component->number<component->field->number_of_components)&&(0<=version))
+	if (node&&field&&(0<=component_number)&&
+		(component_number<field->number_of_components)&&(0<=version))
 	{
 		/* get the values storage */
-		if (find_FE_nodal_values_storage_dest(node,component,version,type,
+		if (find_FE_nodal_values_storage_dest(node,field,component_number,version,type,
          FE_VALUE_ARRAY_VALUE,&values_storage,&time_sequence))
 		{				
 			/* get the pointer to stored the array, free any existing one */
@@ -18824,7 +18825,7 @@ define_FE_field_at_node.
 } /* set_FE_nodal_FE_value_array */
 
 FE_value get_FE_nodal_FE_value_array_element(struct FE_node *node,
-	struct FE_field_component *component,int version,
+	struct FE_field *field,int component_number,int version,
 	enum FE_nodal_value_type type,int element_number)
 /*******************************************************************************
 LAST MODIFIED : 4 October 1999
@@ -18844,11 +18845,11 @@ at the <node>.
 
 	ENTER(get_FE_nodal_FE_value_array_element);
 	value=0.0;
-	if (node&&component&&(component->field)&&(0<=component->number)&&
-		(component->number<component->field->number_of_components)&&(0<=version)&&
+	if (node&&field&&(0<=component_number)&&
+		(component_number<field->number_of_components)&&(0<=version)&&
 		(element_number>-1))
 	{
-		if (find_FE_nodal_values_storage_dest(node,component,version,type,
+		if (find_FE_nodal_values_storage_dest(node,field,component_number,version,type,
          FE_VALUE_ARRAY_VALUE,&values_storage,&time_sequence))
 		{					
 			the_array_number_of_values = *((int *)values_storage);
@@ -18882,7 +18883,7 @@ at the <node>.
 } /* get_FE_nodal_FE_value_array_element */
 
 FE_value get_FE_nodal_FE_value_array_interpolated_value(struct FE_node *node,
-	struct FE_field_component *component,int version,
+	struct FE_field *field,int component_number,int version,
 	enum FE_nodal_value_type type,int element_number,FE_value proportion)
 /*******************************************************************************
 LAST MODIFIED : 8 May 2000
@@ -18903,11 +18904,11 @@ value=<proportion>*value_low+(1-<proportion>)*value_high;
 	value=0.0;
 	value_low=0.0;
 	value_high=0.0;
-	if (node&&component&&(component->field)&&(0<=component->number)&&
-		(component->number<component->field->number_of_components)&&(0<=version)&&
+	if (node&&field&&(0<=component_number)&&
+		(component_number<field->number_of_components)&&(0<=version)&&
 		(element_number>-1))
 	{
-		if (find_FE_nodal_values_storage_dest(node,component,version,type,
+		if (find_FE_nodal_values_storage_dest(node,field,component_number,version,type,
          FE_VALUE_ARRAY_VALUE,&values_storage,&time_sequence))
 		{					
 			the_array_number_of_values = *((int *)values_storage);
@@ -18952,7 +18953,7 @@ value=<proportion>*value_low+(1-<proportion>)*value_high;
 } /* get_FE_nodal_FE_value_array_interpolated_value */
 
 int set_FE_nodal_FE_value_array_element(struct FE_node *node,
-	struct FE_field_component *component,int version,
+	struct FE_field *field,int component_number,int version,
 	enum FE_nodal_value_type type,int element_number,FE_value value)
 /*******************************************************************************
 LAST MODIFIED : 4 October 1999
@@ -18972,11 +18973,11 @@ at the <node>.
 
 	ENTER(set_FE_nodal_FE_value_array_element);
 	return_code=0;
-	if (node&&component&&(component->field)&&(0<=component->number)&&
-		(component->number<component->field->number_of_components)&&(0<=version)&&
+	if (node&&field&&(0<=component_number)&&
+		(component_number<field->number_of_components)&&(0<=version)&&
 		(element_number>-1))
 	{
-		if (find_FE_nodal_values_storage_dest(node,component,version,type,
+		if (find_FE_nodal_values_storage_dest(node,field,component_number,version,type,
 			FE_VALUE_ARRAY_VALUE,&values_storage,&time_sequence))
 		{					
 			the_array_number_of_values = *((int *)values_storage);
@@ -19011,7 +19012,7 @@ at the <node>.
 } /* set_FE_nodal_FE_value_array_element */
 
 short get_FE_nodal_short_array_element(struct FE_node *node,
-	struct FE_field_component *component,int version,
+	struct FE_field *field,int component_number,int version,
 	enum FE_nodal_value_type type,int element_number)
 /*******************************************************************************
 LAST MODIFIED : 5 October 1999
@@ -19031,11 +19032,11 @@ at the <node>.
 
 	ENTER(get_FE_nodal_short_array_element);
 	value=0.0;
-	if (node&&component&&(component->field)&&(0<=component->number)&&
-		(component->number<component->field->number_of_components)&&(0<=version)&&
+	if (node&&field&&(0<=component_number)&&
+		(component_number<field->number_of_components)&&(0<=version)&&
 		(element_number>-1))
 	{
-		if (find_FE_nodal_values_storage_dest(node,component,version,type,
+		if (find_FE_nodal_values_storage_dest(node,field,component_number,version,type,
 			SHORT_ARRAY_VALUE,&values_storage,&time_sequence))
 		{					
 			the_array_number_of_values = *((int *)values_storage);
@@ -19069,7 +19070,7 @@ at the <node>.
 } /* get_FE_nodal_short_array_element */
 
 short get_FE_nodal_short_array_interpolated_value(struct FE_node *node,
-	struct FE_field_component *component,int version,
+	struct FE_field *field,int component_number,int version,
 	enum FE_nodal_value_type type,int element_number,FE_value proportion)
 /*******************************************************************************
 LAST MODIFIED : 8 May 2000
@@ -19090,11 +19091,11 @@ value=<proportion>*value_low+(1-<proportion>)*value_high;
 	value=0.0;
 	value_low=0.0;
 	value_high=0.0;
-	if (node&&component&&(component->field)&&(0<=component->number)&&
-		(component->number<component->field->number_of_components)&&(0<=version)&&
+	if (node&&field&&(0<=component_number)&&
+		(component_number<field->number_of_components)&&(0<=version)&&
 		(element_number>-1))
 	{
-		if (find_FE_nodal_values_storage_dest(node,component,version,type,
+		if (find_FE_nodal_values_storage_dest(node,field,component_number,version,type,
          SHORT_ARRAY_VALUE,&values_storage,&time_sequence))
 		{					
 			the_array_number_of_values = *((int *)values_storage);
@@ -19139,7 +19140,7 @@ value=<proportion>*value_low+(1-<proportion>)*value_high;
 } /* get_FE_nodal_short_array_interpolated_value */
 
 int set_FE_nodal_short_array_element(struct FE_node *node,
-	struct FE_field_component *component,int version,
+	struct FE_field *field,int component_number,int version,
 	enum FE_nodal_value_type type,int element_number,short value)
 /*******************************************************************************
 LAST MODIFIED : 4 October 1999
@@ -19158,11 +19159,11 @@ at the <node>.
 
 	ENTER(set_FE_nodal_short_array_element);
 	return_code=0;
-	if (node&&component&&(component->field)&&(0<=component->number)&&
-		(component->number<component->field->number_of_components)&&(0<=version)&&
+	if (node&&field&&(0<=component_number)&&
+		(component_number<field->number_of_components)&&(0<=version)&&
 		(element_number>-1))
 	{
-		if (find_FE_nodal_values_storage_dest(node,component,version,type,
+		if (find_FE_nodal_values_storage_dest(node,field,component_number,version,type,
 			FE_VALUE_ARRAY_VALUE,&values_storage,&time_sequence))
 		{					
 			the_array_number_of_values = *((int *)values_storage);
@@ -19346,7 +19347,7 @@ perform interpolation, etc.
 }/*get_FE_field_time_array_index_at_FE_value_time*/
 
 int get_FE_nodal_FE_value_array_value_at_FE_value_time(struct FE_node *node,
-	struct FE_field_component *component,int version,
+	struct FE_field *field,int component_number,int version,
 	enum FE_nodal_value_type type,FE_value time,FE_value *value)
 /*******************************************************************************
 LAST MODIFIED : 8 May 2000
@@ -19364,18 +19365,17 @@ range, but doesn't correspond exactly to an array element, interpolates to deter
 	int array_number_of_values,array_index,index_high,index_low,number_of_times,
 		return_code;	
 	FE_value time_high,time_low,prop;
-	struct FE_field *field;
 	
 	ENTER(get_FE_nodal_FE_value_array_value_at_FE_value_time);
 	return_code=0;
-	if (node&&component&&(field=component->field)&&(0<=component->number)&&
-		(component->number<component->field->number_of_components)&&(0<=version))
+	if (node&&field&&(0<=component_number)&&
+		(component_number<field->number_of_components)&&(0<=version))
 	{
 		if ((get_FE_field_time_value_type(field)==FE_VALUE_VALUE)
 			&&(number_of_times=get_FE_field_number_of_times(field)))
 		{	
 			array_number_of_values = get_FE_nodal_array_number_of_elements(node,
-				component,version,type);									
+				field,component_number,version,type);									
 			if (number_of_times==array_number_of_values)
 			{
 				/* field has the right time values, and is defined at node. We're OK*/
@@ -19384,7 +19384,7 @@ range, but doesn't correspond exactly to an array element, interpolates to deter
 					time,&time_high,&time_low,&array_index,&index_high,&index_low);
 				prop=(time_high-time)/(time_high-time_low);
 				/* interpolate the nodal value at this array index*/
-				*value=get_FE_nodal_FE_value_array_interpolated_value(node,component,version,
+				*value=get_FE_nodal_FE_value_array_interpolated_value(node,field,component_number,version,
 					type,index_low,prop);					
 			}
 			else
@@ -19413,7 +19413,7 @@ range, but doesn't correspond exactly to an array element, interpolates to deter
 } /* get_FE_nodal_FE_value_array_value_at_FE_value_time */
 
 int get_FE_nodal_short_array_value_at_FE_value_time(struct FE_node *node,
-	struct FE_field_component *component,int version,
+	struct FE_field *field,int component_number,int version,
 	enum FE_nodal_value_type type,FE_value time,short *value)
 /*******************************************************************************
 LAST MODIFIED : 8 May 2000
@@ -19431,18 +19431,17 @@ range, but doesn't correspond exactly to an array element, interpolates to deter
 	int array_number_of_values,array_index,index_high,index_low,number_of_times,
 		return_code;	
 	FE_value time_high,time_low,prop;
-	struct FE_field *field;
 	
 	ENTER(get_FE_nodal_short_array_value_at_FE_value_time);
 	return_code=0;
-	if (node&&component&&(field=component->field)&&(0<=component->number)&&
-		(component->number<component->field->number_of_components)&&(0<=version))
+	if (node&&field&&(0<=component_number)&&
+		(component_number<field->number_of_components)&&(0<=version))
 	{
 		if ((get_FE_field_time_value_type(field)==FE_VALUE_VALUE)
 			&&(number_of_times=get_FE_field_number_of_times(field)))
 		{	
 			array_number_of_values = get_FE_nodal_array_number_of_elements(node,
-				component,version,type);									
+				field,component_number,version,type);									
 			if (number_of_times==array_number_of_values)
 			{			
 				/* field has the right time values, and is defined at node. We're OK*/
@@ -19451,7 +19450,7 @@ range, but doesn't correspond exactly to an array element, interpolates to deter
 					time,&time_high,&time_low,&array_index,&index_high,&index_low);				
 				prop=(time_high-time)/(time_high-time_low);		
 				/* interpolate the nodal value at this array index*/ 
-				*value=get_FE_nodal_short_array_interpolated_value(node,component,version,
+				*value=get_FE_nodal_short_array_interpolated_value(node,field,component_number,version,
 					type,index_low,prop);					
 			}
 			else
@@ -19480,7 +19479,7 @@ range, but doesn't correspond exactly to an array element, interpolates to deter
 } /* get_FE_nodal_short_array_value_at_FE_value_time */
 
 int get_FE_nodal_FE_value_array_min_max(struct FE_node *node,
-	struct FE_field_component *component,int version,
+	struct FE_field *field,int component_number,int version,
 	enum FE_nodal_value_type type,FE_value *minimum,FE_value *maximum)
 /*******************************************************************************
 LAST MODIFIED : 29 September 1999
@@ -19498,10 +19497,10 @@ Gets a the minimum and maximum values for the FE_value_array
 
 	ENTER(get_FE_nodal_FE_value_array_min_max);
 	return_code=0;
-	if (node&&component&&(component->field)&&(0<=component->number)&&
-		(component->number<component->field->number_of_components)&&(0<=version))
+	if (node&&field&&(0<=component_number)&&
+		(component_number<field->number_of_components)&&(0<=version))
 	{
-		if (find_FE_nodal_values_storage_dest(node,component,version,type,
+		if (find_FE_nodal_values_storage_dest(node,field,component_number,version,type,
          FE_VALUE_ARRAY_VALUE,&values_storage,&time_sequence))
 		{							
 			array_number_of_values = *((int *)values_storage);		
@@ -19543,7 +19542,7 @@ Gets a the minimum and maximum values for the FE_value_array
 } /* get_FE_nodal_FE_value_array_min_max */
 
 int get_FE_nodal_short_array_min_max(struct FE_node *node,
-	struct FE_field_component *component,int version,
+	struct FE_field *field,int component_number,int version,
 	enum FE_nodal_value_type type,short *minimum,short *maximum)
 /*******************************************************************************
 LAST MODIFIED : 29 September 1999
@@ -19561,10 +19560,10 @@ Gets a the minimum and maximum values for the _value_array
 
 	ENTER(get_FE_nodal_short_array_min_max);
 	return_code=0;
-	if (node&&component&&(component->field)&&(0<=component->number)&&
-		(component->number<component->field->number_of_components)&&(0<=version))
+	if (node&&field&&(0<=component_number)&&
+		(component_number<field->number_of_components)&&(0<=version))
 	{
-		if (find_FE_nodal_values_storage_dest(node,component,version,type,
+		if (find_FE_nodal_values_storage_dest(node,field,component_number,version,type,
          SHORT_ARRAY_VALUE,&values_storage,&time_sequence))
 		{							
 			array_number_of_values = *((int *)values_storage);		
@@ -19603,6 +19602,7 @@ Gets a the minimum and maximum values for the _value_array
 	LEAVE;
 	return (return_code);
 } /* get_FE_nodal_short_array_min_max */
+#endif /* defined (UNEMAP_USE_NODES) */
 
 int get_FE_nodal_string_value(struct FE_node *node,
 	struct FE_field *field,int component_number,int version,
@@ -19618,7 +19618,6 @@ Returned <*string> may be a valid NULL if that is what is in the node.
 {
 	char *the_string;
 	int return_code;
-	struct FE_field_component component;
 	struct FE_time_sequence *time_sequence;
 	Value_storage *values_storage = NULL;
 
@@ -19639,11 +19638,8 @@ Returned <*string> may be a valid NULL if that is what is in the node.
 			} break;
 			case GENERAL_FE_FIELD:
 			{
-				/* Put into a component for the meantime */
-				component.field = field;
-				component.number = component_number;
-				if (find_FE_nodal_values_storage_dest(node,&component,version,type,
-					STRING_VALUE,&values_storage,&time_sequence))
+				if (find_FE_nodal_values_storage_dest(node,field,component_number,
+					version,type,STRING_VALUE,&values_storage,&time_sequence))
 				{
 					return_code=1;
 				}
@@ -19656,11 +19652,9 @@ Returned <*string> may be a valid NULL if that is what is in the node.
 			case INDEXED_FE_FIELD:
 			{
 				int index;
-				struct FE_field_component index_component;
 
-				index_component.field=field->indexer_field;
-				index_component.number=0;
-				if (get_FE_nodal_int_value(node,&index_component,/*version*/0,
+				if (get_FE_nodal_int_value(node,field->indexer_field,
+					/*component_number*/0,/*version*/0,
 					FE_NODAL_VALUE,/*time*/0,&index))
 				{
 					/* index numbers start at 1 */
@@ -19747,7 +19741,6 @@ at the <node>. <string> may be NULL.
 {
 	char *the_string,**string_address;
 	int return_code; 
-	struct FE_field_component component;
 	struct FE_time_sequence *time_sequence;
 	Value_storage *values_storage = NULL;
 
@@ -19756,11 +19749,9 @@ at the <node>. <string> may be NULL.
 	if (node&&field&&(0<=component_number)&&
 		(component_number<field->number_of_components)&&(0<=version))
 	{
-		component.field=field;
-		component.number=component_number;
 		/* get the values storage */
-		if (find_FE_nodal_values_storage_dest(node,&component,version,type,
-			STRING_VALUE,&values_storage,&time_sequence))
+		if (find_FE_nodal_values_storage_dest(node,field,component_number,
+			version,type,STRING_VALUE,&values_storage,&time_sequence))
 		{
 			/* get the pointer to the stored string */			
 			string_address = (char **)(values_storage);
@@ -42486,7 +42477,6 @@ field it actually calculated.
 	struct FE_field *return_field;	
 	struct FE_node_field *coordinate_node_field;
 	struct FE_node_field_info *node_field_information;
-	struct FE_field_component component;
 
 	ENTER(FE_node_get_position_cartesian);
 	if (node&&node_x&&node_y&&node_z&&(node_field_information=node->fields))
@@ -42512,22 +42502,18 @@ field it actually calculated.
 					coordinate_node_field->field->number_of_components;
 
 				coordinate_system=get_FE_field_coordinate_system(coordinate_node_field->field); 
-				component.field = coordinate_field; 
-				component.number = 0;
-				get_FE_nodal_FE_value_value(node,&component,0,FE_NODAL_VALUE,
-					/*time*/0,&node_1);
+				get_FE_nodal_FE_value_value(node,coordinate_field,/*component_number*/0,
+					/*version*/0,FE_NODAL_VALUE,/*time*/0,&node_1);
 
 				if (1<number_of_coordinate_components)
 				{					
-					component.number = 1;
-					get_FE_nodal_FE_value_value(node,&component,0,FE_NODAL_VALUE,
-						/*time*/0,&node_2);
+					get_FE_nodal_FE_value_value(node,coordinate_field,/*component_number*/1,
+						/*version*/0,FE_NODAL_VALUE,/*time*/0,&node_2);
 
 					if (2<number_of_coordinate_components)
 					{						
-						component.number = 2;
-						get_FE_nodal_FE_value_value(node,&component,0,FE_NODAL_VALUE,
-							/*time*/0,&node_3);
+						get_FE_nodal_FE_value_value(node,coordinate_field,/*component_number*/2,
+							/*version*/0,FE_NODAL_VALUE,/*time*/0,&node_3);
 					}
 					else
 					{
@@ -42627,7 +42613,6 @@ for the coordinate_field used.
 	struct Coordinate_system *coordinate_system;
 	FE_value node_1,node_2,node_3;
 	int number_of_coordinate_components,return_code,version;
-	struct FE_field_component field_component;
 	struct FE_node_field *coordinate_node_field;
 	struct FE_node_field_component *coordinate_node_field_component;
 	struct FE_node_field_info *node_field_information;	
@@ -42696,32 +42681,31 @@ for the coordinate_field used.
 					} break;
 				}
 				coordinate_node_field_component=coordinate_node_field->components;
-				field_component.field=coordinate_node_field->field;
-				field_component.number=0;
 				for (version=0;
 						 version<coordinate_node_field_component->number_of_versions;version++)
 				{
-					set_FE_nodal_FE_value_value(node,&field_component,version,FE_NODAL_VALUE,
+					set_FE_nodal_FE_value_value(node,coordinate_node_field->field,
+						/*component_number*/0,version,FE_NODAL_VALUE,
 						/*time*/0, node_1);
 				}
 				if (1<number_of_coordinate_components)
 				{
 					coordinate_node_field_component++;
-					(field_component.number)++;
 					for (version=0;
 							 version<coordinate_node_field_component->number_of_versions;version++)
 					{
-						set_FE_nodal_FE_value_value(node,&field_component,version,
+						set_FE_nodal_FE_value_value(node,coordinate_node_field->field,
+						/*component_number*/1,version,
 							FE_NODAL_VALUE, /*time*/0, node_2);
 					}
 					if (2<number_of_coordinate_components)
 					{
 						coordinate_node_field_component++;
-						(field_component.number)++;
 						for (version=0;version<
 									 coordinate_node_field_component->number_of_versions;version++)
 						{
-							set_FE_nodal_FE_value_value(node,&field_component,version,
+							set_FE_nodal_FE_value_value(node,coordinate_node_field->field,
+								/*component_number*/2,version,
 								FE_NODAL_VALUE, /*time*/0, node_3);
 						}
 					}
@@ -43266,405 +43250,228 @@ Note: returned component must not be modified or destroyed!
 	return (return_code);
 } /* get_FE_element_field_component */
 
-int get_FE_element_field_component_grid_FE_value_values(
-	struct FE_element *element,struct FE_field *field,int component_number,
-	FE_value **values)
-/*******************************************************************************
-LAST MODIFIED : 27 February 2003
+#define INSTANTIATE_GET_FE_ELEMENT_FIELD_COMPONENT_FUNCTION( macro_value_type, value_enum ) \
+int get_FE_element_field_component_grid_ ## macro_value_type ## _values( \
+	struct FE_element *element,struct FE_field *field,int component_number, \
+	macro_value_type **values) \
+/******************************************************************************* \
+LAST MODIFIED : 22 April 2005 \
+ \
+DESCRIPTION : \
+If <field> is grid-based in <element>, returns an allocated array of the grid \
+values stored for <component_number>. To get number of values returned, call \
+get_FE_element_field_number_of_grid_values; Grids change in xi0 fastest. \
+It is up to the calling function to DEALLOCATE the returned values. \
+==============================================================================*/ \
+{ \
+	macro_value_type *value; \
+	int *component_number_in_xi,dimension,i,number_of_grid_values,return_code, \
+		size; \
+	struct FE_element_field *element_field; \
+	struct FE_element_field_component *component; \
+	Value_storage *values_storage; \
+ \
+	ENTER(get_FE_element_field_component_grid_ ## macro_value_type ## _values); \
+	return_code=0; \
+	if (element && element->fields && element->information &&  \
+		element->shape&&(dimension=element->shape->dimension)&&field&& \
+		(0<=component_number)&&(component_number<field->number_of_components)&& \
+		(value_enum==field->value_type)&&values) \
+	{ \
+		if ((element_field=FIND_BY_IDENTIFIER_IN_LIST(FE_element_field,field)( \
+			field,element->fields->element_field_list))) \
+		{ \
+			/* get the component */ \
+			if (element_field->components&& \
+				(component=element_field->components[component_number])) \
+			{ \
+				if ((ELEMENT_GRID_MAP==component->type)&& \
+					(values_storage=element->information->values_storage)) \
+				{ \
+					if (component_number_in_xi= \
+						component->map.element_grid_based.number_in_xi) \
+					{ \
+						values_storage += component->map.element_grid_based.value_index; \
+						size = get_Value_storage_size(value_enum, \
+							(struct FE_time_sequence *)NULL); \
+						number_of_grid_values=1; \
+						for (i=0;i<dimension;i++) \
+						{ \
+							number_of_grid_values *= (component_number_in_xi[i] + 1); \
+						} \
+						if (ALLOCATE(*values,macro_value_type,number_of_grid_values)) \
+						{ \
+							return_code=1; \
+							value= *values; \
+							for (i=number_of_grid_values;0<i;i--) \
+							{ \
+								*value = *((macro_value_type *)values_storage); \
+								value++; \
+								values_storage += size; \
+							} \
+						} \
+						else \
+						{ \
+							display_message(ERROR_MESSAGE, \
+								"get_FE_element_field_component_grid_ ## macro_value_type ## _values.  " \
+								"Not enough memory"); \
+						} \
+					} \
+					else \
+					{ \
+						display_message(ERROR_MESSAGE, \
+							"get_FE_element_field_component_grid_ ## macro_value_type ## _values.  " \
+							"Missing component number_in_xi"); \
+					} \
+				} \
+				else \
+				{ \
+					display_message(ERROR_MESSAGE, \
+						"get_FE_element_field_component_grid_ ## macro_value_type ## _values.  " \
+						"Field is not grid-based in element"); \
+				} \
+			} \
+			else \
+			{ \
+				display_message(ERROR_MESSAGE, \
+					"get_FE_element_field_component_grid_ ## macro_value_type ## _values.  " \
+					"Missing element field component"); \
+			} \
+		} \
+		else \
+		{ \
+			display_message(ERROR_MESSAGE, \
+				"get_FE_element_field_component_grid_ ## macro_value_type ## _values.  " \
+				"Field not defined for element"); \
+		} \
+	} \
+	else \
+	{ \
+		display_message(ERROR_MESSAGE, \
+			"get_FE_element_field_component_grid_ ## macro_value_type ## _values.  " \
+			"Invalid argument(s)"); \
+	} \
+	LEAVE; \
+ \
+	return (return_code); \
+} /* get_FE_element_field_component_grid_ ## macro_value_type ## _values */
 
-DESCRIPTION :
-If <field> is grid-based in <element>, returns an allocated array of the grid
-values stored for <component_number>. To get number of values returned, call
-get_FE_element_field_number_of_grid_values; Grids change in xi0 fastest.
-It is up to the calling function to DEALLOCATE the returned values.
-==============================================================================*/
-{
-	FE_value *value;
-	int *component_number_in_xi,dimension,i,number_of_grid_values,return_code,
-		size;
-	struct FE_element_field *element_field;
-	struct FE_element_field_component *component;
-	Value_storage *values_storage;
+#define INSTANTIATE_SET_FE_ELEMENT_FIELD_COMPONENT_FUNCTION( macro_value_type, value_enum ) \
+int set_FE_element_field_component_grid_ ## macro_value_type ## _values( \
+	struct FE_element *element,struct FE_field *field,int component_number, \
+	macro_value_type *values) \
+/******************************************************************************* \
+LAST MODIFIED : 21 April 2005 \
+\
+DESCRIPTION : \
+If <field> is grid-based in <element>, copies <values> into the values storage \
+for <component_number>. To get number of values to pass, call \
+get_FE_element_field_number_of_grid_values; Grids change in xi0 fastest. \
+==============================================================================*/ \
+{ \
+	macro_value_type *value; \
+	int *component_number_in_xi,dimension,i,number_of_grid_values,return_code, \
+		size; \
+	struct FE_element_field *element_field; \
+	struct FE_element_field_component *component; \
+	Value_storage *values_storage; \
+ \
+	ENTER(set_FE_element_field_component_grid_ ## macro_value_type ## _values); \
+	return_code=0; \
+	if (element&&element->fields && element->information && \
+		element->shape&&(dimension=element->shape->dimension)&&field&& \
+		(0<=component_number)&&(component_number<field->number_of_components)&& \
+		(value_enum==field->value_type)&&values) \
+	{ \
+		if ((element_field=FIND_BY_IDENTIFIER_IN_LIST(FE_element_field,field)( \
+			field,element->fields->element_field_list))) \
+		{ \
+			/* get the component */ \
+			if (element_field->components&& \
+				(component=element_field->components[component_number])) \
+			{ \
+				if ((ELEMENT_GRID_MAP==component->type)&& \
+					(values_storage=element->information->values_storage)) \
+				{ \
+					if (component_number_in_xi= \
+						component->map.element_grid_based.number_in_xi) \
+					{ \
+						return_code=1; \
+						values_storage += component->map.element_grid_based.value_index; \
+						size = get_Value_storage_size(value_enum, \
+							(struct FE_time_sequence *)NULL); \
+						number_of_grid_values=1; \
+						for (i=0;i<dimension;i++) \
+						{ \
+							number_of_grid_values *= (component_number_in_xi[i] + 1); \
+						} \
+						value=values; \
+						for (i=number_of_grid_values;0<i;i--) \
+						{ \
+							/*???RC following should be a macro */ \
+							*((macro_value_type *)values_storage) = *value; \
+							value++; \
+							values_storage += size; \
+						} \
+						if (return_code) \
+						{ \
+							/* Check this node is being managed by the region it belongs to (All nodes \
+								are created with respect to some region but they are not necessarily merged \
+								into it yet. */ \
+							if (element->fields && element->fields->fe_region && \
+								FE_region_contains_FE_element(element->fields->fe_region, element)) \
+							{	\
+								/* If so, notify the change */ \
+								FE_region_notify_FE_element_field_change(element->fields->fe_region, element, \
+									field); \
+							} \
+						} \
+					} \
+					else \
+					{ \
+						display_message(ERROR_MESSAGE, \
+							"set_FE_element_field_component_grid_ ## macro_value_type ## _values.  " \
+							"Missing component number_in_xi"); \
+					} \
+				} \
+				else \
+				{ \
+					display_message(ERROR_MESSAGE, \
+						"set_FE_element_field_component_grid_ ## macro_value_type ## _values.  " \
+						"Field is not grid-based in element"); \
+				} \
+			} \
+			else \
+			{ \
+				display_message(ERROR_MESSAGE, \
+					"set_FE_element_field_component_grid_ ## macro_value_type ## _values.  " \
+					"Missing element field component"); \
+			} \
+		} \
+		else \
+		{ \
+			display_message(ERROR_MESSAGE, \
+				"set_FE_element_field_component_grid_ ## macro_value_type ## _values.  " \
+				"Field not defined for element"); \
+		} \
+	} \
+	else \
+	{ \
+		display_message(ERROR_MESSAGE, \
+			"set_FE_element_field_component_grid_ ## macro_value_type ## _values.  " \
+			"Invalid argument(s)"); \
+	} \
+	LEAVE; \
+ \
+	return (return_code); \
+} /* set_FE_element_field_component_grid_ ## macro_value_type ## _values */
 
-	ENTER(get_FE_element_field_component_grid_FE_value_values);
-	return_code=0;
-	if (element && element->fields && element->information && 
-		element->shape&&(dimension=element->shape->dimension)&&field&&
-		(0<=component_number)&&(component_number<field->number_of_components)&&
-		(FE_VALUE_VALUE==field->value_type)&&values)
-	{
-		if ((element_field=FIND_BY_IDENTIFIER_IN_LIST(FE_element_field,field)(
-			field,element->fields->element_field_list)))
-		{
-			/* get the component */
-			if (element_field->components&&
-				(component=element_field->components[component_number]))
-			{
-				if ((ELEMENT_GRID_MAP==component->type)&&
-					(values_storage=element->information->values_storage))
-				{
-					if (component_number_in_xi=
-						component->map.element_grid_based.number_in_xi)
-					{
-						values_storage += component->map.element_grid_based.value_index;
-						size = get_Value_storage_size(FE_VALUE_VALUE,
-							(struct FE_time_sequence *)NULL);
-						number_of_grid_values=1;
-						for (i=0;i<dimension;i++)
-						{
-							number_of_grid_values *= (component_number_in_xi[i] + 1);
-						}
-						if (ALLOCATE(*values,FE_value,number_of_grid_values))
-						{
-							return_code=1;
-							value= *values;
-							for (i=number_of_grid_values;0<i;i--)
-							{
-								*value = *((FE_value *)values_storage);
-								value++;
-								values_storage += size;
-							}
-						}
-						else
-						{
-							display_message(ERROR_MESSAGE,
-								"get_FE_element_field_component_grid_FE_value_values.  "
-								"Not enough memory");
-						}
-					}
-					else
-					{
-						display_message(ERROR_MESSAGE,
-							"get_FE_element_field_component_grid_FE_value_values.  "
-							"Missing component number_in_xi");
-					}
-				}
-				else
-				{
-					display_message(ERROR_MESSAGE,
-						"get_FE_element_field_component_grid_FE_value_values.  "
-						"Field is not grid-based in element");
-				}
-			}
-			else
-			{
-				display_message(ERROR_MESSAGE,
-					"get_FE_element_field_component_grid_FE_value_values.  "
-					"Missing element field component");
-			}
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"get_FE_element_field_component_grid_FE_value_values.  "
-				"Field not defined for element");
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"get_FE_element_field_component_grid_FE_value_values.  "
-			"Invalid argument(s)");
-	}
-	LEAVE;
+#define INSTANTIATE_FE_ELEMENT_FIELD_COMPONENT_FUNCTIONS( macro_value_type , value_enum ) \
+INSTANTIATE_GET_FE_ELEMENT_FIELD_COMPONENT_FUNCTION(macro_value_type,value_enum) \
+INSTANTIATE_SET_FE_ELEMENT_FIELD_COMPONENT_FUNCTION(macro_value_type,value_enum)
 
-	return (return_code);
-} /* get_FE_element_field_component_grid_FE_value_values */
-
-int set_FE_element_field_component_grid_FE_value_values(
-	struct FE_element *element,struct FE_field *field,int component_number,
-	FE_value *values)
-/*******************************************************************************
-LAST MODIFIED : 27 February 2003
-
-DESCRIPTION :
-If <field> is grid-based in <element>, copies <values> into the values storage
-for <component_number>. To get number of values to pass, call
-get_FE_element_field_number_of_grid_values; Grids change in xi0 fastest.
-==============================================================================*/
-{
-	FE_value *value;
-	int *component_number_in_xi,dimension,i,number_of_grid_values,return_code,
-		size;
-	struct FE_element_field *element_field;
-	struct FE_element_field_component *component;
-	Value_storage *values_storage;
-
-	ENTER(set_FE_element_field_component_grid_FE_value_values);
-	return_code=0;
-	if (element&&element->fields && element->information &&
-		element->shape&&(dimension=element->shape->dimension)&&field&&
-		(0<=component_number)&&(component_number<field->number_of_components)&&
-		(FE_VALUE_VALUE==field->value_type)&&values)
-	{
-		if ((element_field=FIND_BY_IDENTIFIER_IN_LIST(FE_element_field,field)(
-			field,element->fields->element_field_list)))
-		{
-			/* get the component */
-			if (element_field->components&&
-				(component=element_field->components[component_number]))
-			{
-				if ((ELEMENT_GRID_MAP==component->type)&&
-					(values_storage=element->information->values_storage))
-				{
-					if (component_number_in_xi=
-						component->map.element_grid_based.number_in_xi)
-					{
-						return_code=1;
-						values_storage += component->map.element_grid_based.value_index;
-						size = get_Value_storage_size(FE_VALUE_VALUE,
-							(struct FE_time_sequence *)NULL);
-						number_of_grid_values=1;
-						for (i=0;i<dimension;i++)
-						{
-							number_of_grid_values *= (component_number_in_xi[i] + 1);
-						}
-						value=values;
-						for (i=number_of_grid_values;0<i;i--)
-						{
-							/*???RC following should be a macro */
-							*((FE_value *)values_storage) = *value;
-							value++;
-							values_storage += size;
-						}
-					}
-					else
-					{
-						display_message(ERROR_MESSAGE,
-							"set_FE_element_field_component_grid_FE_value_values.  "
-							"Missing component number_in_xi");
-					}
-				}
-				else
-				{
-					display_message(ERROR_MESSAGE,
-						"set_FE_element_field_component_grid_FE_value_values.  "
-						"Field is not grid-based in element");
-				}
-			}
-			else
-			{
-				display_message(ERROR_MESSAGE,
-					"set_FE_element_field_component_grid_FE_value_values.  "
-					"Missing element field component");
-			}
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"set_FE_element_field_component_grid_FE_value_values.  "
-				"Field not defined for element");
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"set_FE_element_field_component_grid_FE_value_values.  "
-			"Invalid argument(s)");
-	}
-	LEAVE;
-
-	return (return_code);
-} /* set_FE_element_field_component_grid_FE_value_values */
-
-int get_FE_element_field_component_grid_int_values(struct FE_element *element,
-	struct FE_field *field,int component_number,int **values)
-/*******************************************************************************
-LAST MODIFIED : 27 February 2003
-
-DESCRIPTION :
-If <field> is grid-based in <element>, returns an allocated array of the grid
-values stored for <component_number>. To get number of values returned, call
-get_FE_element_field_number_of_grid_values; Grids change in xi0 fastest.
-It is up to the calling function to DEALLOCATE the returned values.
-==============================================================================*/
-{
-	int *value;
-	int *component_number_in_xi,dimension,i,number_of_grid_values,return_code,
-		size;
-	struct FE_element_field *element_field;
-	struct FE_element_field_component *component;
-	Value_storage *values_storage;
-
-	ENTER(get_FE_element_field_component_grid_int_values);
-	return_code=0;
-	if (element && element->fields && element->information &&
-		element->shape&&(dimension=element->shape->dimension)&&field&&
-		(0<=component_number)&&(component_number<field->number_of_components)&&
-		(INT_VALUE==field->value_type)&&values)
-	{
-		if ((element_field=FIND_BY_IDENTIFIER_IN_LIST(FE_element_field,field)(
-			field,element->fields->element_field_list)))
-		{
-			/* get the component */
-			if (element_field->components&&
-				(component=element_field->components[component_number]))
-			{
-				if ((ELEMENT_GRID_MAP==component->type)&&
-					(values_storage=element->information->values_storage))
-				{
-					if (component_number_in_xi=
-						component->map.element_grid_based.number_in_xi)
-					{
-						values_storage += component->map.element_grid_based.value_index;
-						size = get_Value_storage_size(INT_VALUE,
-							(struct FE_time_sequence *)NULL);
-						number_of_grid_values=1;
-						for (i=0;i<dimension;i++)
-						{
-							number_of_grid_values *= (component_number_in_xi[i] + 1);
-						}
-						if (ALLOCATE(*values,int,number_of_grid_values))
-						{
-							return_code=1;
-							value= *values;
-							for (i=number_of_grid_values;0<i;i--)
-							{
-								*value = *((int *)values_storage);
-								value++;
-								values_storage += size;
-							}
-						}
-						else
-						{
-							display_message(ERROR_MESSAGE,
-								"get_FE_element_field_component_grid_int_values.  "
-								"Not enough memory");
-						}
-					}
-					else
-					{
-						display_message(ERROR_MESSAGE,
-							"get_FE_element_field_component_grid_int_values.  "
-							"Missing component number_in_xi");
-					}
-				}
-				else
-				{
-					display_message(ERROR_MESSAGE,
-						"get_FE_element_field_component_grid_int_values.  "
-						"Field is not grid-based in element");
-				}
-			}
-			else
-			{
-				display_message(ERROR_MESSAGE,
-					"get_FE_element_field_component_grid_int_values.  "
-					"Missing element field component");
-			}
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"get_FE_element_field_component_grid_int_values.  "
-				"Field not defined for element");
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"get_FE_element_field_component_grid_int_values.  "
-			"Invalid argument(s)");
-	}
-	LEAVE;
-
-	return (return_code);
-} /* get_FE_element_field_component_grid_int_values */
-
-int set_FE_element_field_component_grid_int_values(struct FE_element *element,
-	struct FE_field *field,int component_number,int *values)
-/*******************************************************************************
-LAST MODIFIED : 27 February 2003
-
-DESCRIPTION :
-If <field> is grid-based in <element>, copies <values> into the values storage
-for <component_number>. To get number of values to pass, call
-get_FE_element_field_number_of_grid_values; Grids change in xi0 fastest.
-==============================================================================*/
-{
-	int *value;
-	int *component_number_in_xi,dimension,i,number_of_grid_values,return_code,
-		size;
-	struct FE_element_field *element_field;
-	struct FE_element_field_component *component;
-	Value_storage *values_storage;
-
-	ENTER(set_FE_element_field_component_grid_int_values);
-	return_code=0;
-	if (element && element->fields && element->information &&
-		element->shape&&(dimension=element->shape->dimension)&&field&&
-		(0<=component_number)&&(component_number<field->number_of_components)&&
-		(INT_VALUE==field->value_type)&&values)
-	{
-		if ((element_field=FIND_BY_IDENTIFIER_IN_LIST(FE_element_field,field)(
-			field,element->fields->element_field_list)))
-		{
-			/* get the component */
-			if (element_field->components&&
-				(component=element_field->components[component_number]))
-			{
-				if ((ELEMENT_GRID_MAP==component->type)&&
-					(values_storage=element->information->values_storage))
-				{
-					if (component_number_in_xi=
-						component->map.element_grid_based.number_in_xi)
-					{
-						return_code=1;
-						values_storage += component->map.element_grid_based.value_index;
-						size = get_Value_storage_size(INT_VALUE,
-							(struct FE_time_sequence *)NULL);
-						number_of_grid_values=1;
-						for (i=0;i<dimension;i++)
-						{
-							number_of_grid_values *= (component_number_in_xi[i] + 1);
-						}
-						value=values;
-						for (i=number_of_grid_values;0<i;i--)
-						{
-							/*???RC following should be a macro */
-							*((int *)values_storage) = *value;
-							value++;
-							values_storage += size;
-						}
-					}
-					else
-					{
-						display_message(ERROR_MESSAGE,
-							"set_FE_element_field_component_grid_int_values.  "
-							"Missing component number_in_xi");
-					}
-				}
-				else
-				{
-					display_message(ERROR_MESSAGE,
-						"set_FE_element_field_component_grid_int_values.  "
-						"Field is not grid-based in element");
-				}
-			}
-			else
-			{
-				display_message(ERROR_MESSAGE,
-					"set_FE_element_field_component_grid_int_values.  "
-					"Missing element field component");
-			}
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"set_FE_element_field_component_grid_int_values.  "
-				"Field not defined for element");
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"set_FE_element_field_component_grid_int_values.  "
-			"Invalid argument(s)");
-	}
-	LEAVE;
-
-	return (return_code);
-} /* set_FE_element_field_component_grid_int_values */
+INSTANTIATE_FE_ELEMENT_FIELD_COMPONENT_FUNCTIONS( FE_value , FE_VALUE_VALUE )
+INSTANTIATE_FE_ELEMENT_FIELD_COMPONENT_FUNCTIONS( int , INT_VALUE )
 
 int FE_element_field_get_copy_components(struct FE_element *element,
 	struct FE_field *fe_field,
@@ -43812,8 +43619,6 @@ corresponding integer from <element_count_fe_field>, then undefines
 		{FE_NODAL_D_DS1, FE_NODAL_D_DS2, FE_NODAL_D_DS3};
 	FE_value value;
 	int count, i, j, number_of_components, return_code, version;
-	struct FE_field_component element_count_fe_field_component,
-		fe_field_component;
 
 	ENTER(FE_node_smooth_FE_field);
 	if (node && fe_field && element_count_fe_field &&
@@ -43821,26 +43626,22 @@ corresponding integer from <element_count_fe_field>, then undefines
 	{
 		return_code = 1;
 		version = 0;
-		fe_field_component.field = fe_field;
-		element_count_fe_field_component.field = element_count_fe_field;
 		for (i = 0; (i < number_of_components) && return_code; i++)
 		{
-			fe_field_component.number = i;
-			element_count_fe_field_component.number = i;
 			for (j = 0; (j < 3) && return_code; j++)
 			{
 				type = types[j];
-				if (FE_nodal_value_version_exists(node,	&fe_field_component, version,
-					type))
+				if (FE_nodal_value_version_exists(node, fe_field, /*component_number*/i,
+					version, type))
 				{
-					if (get_FE_nodal_FE_value_value(node, &fe_field_component, version,
-						type, time, &value) &&
-						get_FE_nodal_int_value(node, &element_count_fe_field_component,
-							version, type, time, &count))
+					if (get_FE_nodal_FE_value_value(node, fe_field, /*component_number*/i,
+						version, type, time, &value) &&
+						get_FE_nodal_int_value(node, element_count_fe_field, /*component_number*/i,
+						version, type, time, &count))
 					{
 						if (0 < count)
 						{
-							if (!set_FE_nodal_FE_value_value(node, &fe_field_component,
+							if (!set_FE_nodal_FE_value_value(node, fe_field, /*component_number*/i,
 								version, type, time, value / (FE_value)count))
 							{
 								return_code = 0;
@@ -43886,7 +43687,6 @@ integer counter for the corresponding quantity in <count_fe_field>.
 {
 	FE_value value;
 	int int_value, return_code;
-	struct FE_field_component count_fe_field_component, fe_field_component;
 
 	ENTER(FE_node_field_component_accumulate_value);
 	if (node && fe_field && count_fe_field && (0 <= component_number) &&
@@ -43894,19 +43694,15 @@ integer counter for the corresponding quantity in <count_fe_field>.
 		(0 <= version))
 	{
 		return_code = 1;
-		fe_field_component.field = fe_field;
-		fe_field_component.number = component_number;
-		count_fe_field_component.field = count_fe_field;
-		count_fe_field_component.number = component_number;
-		if (FE_nodal_value_version_exists(node,	&fe_field_component, version, type))
+		if (FE_nodal_value_version_exists(node, fe_field, component_number, version, type))
 		{
-			if (!(get_FE_nodal_FE_value_value(node, &fe_field_component, version,
+			if (!(get_FE_nodal_FE_value_value(node, fe_field, component_number, version,
 				type, time, &value) &&
-				set_FE_nodal_FE_value_value(node, &fe_field_component, version, type,
+				set_FE_nodal_FE_value_value(node, fe_field, component_number, version, type,
 					time, value + delta) &&
-				get_FE_nodal_int_value(node, &count_fe_field_component, version, type,
+				get_FE_nodal_int_value(node, count_fe_field, component_number, version, type,
 					time, &int_value) &&
-				set_FE_nodal_int_value(node, &count_fe_field_component, version, type,
+				set_FE_nodal_int_value(node, count_fe_field, component_number, version, type,
 					time, int_value + 1)))
 			{
 				display_message(ERROR_MESSAGE,
@@ -43966,7 +43762,6 @@ Notes:
 	struct FE_element_field *element_field;
 	struct FE_element_field_component *element_field_component;
 	struct FE_element_field_values *fe_element_field_values;
-	struct FE_field_component fe_field_component;
 	struct FE_node *copy_node[8], *node;
 	struct FE_node_field_creator *fe_node_field_creator;
 	struct LIST(FE_field) *fe_field_list;
@@ -44004,7 +43799,6 @@ Notes:
 							((2 == element_dimension) && (4 == number_of_nodes)) ||
 							((3 == element_dimension) && (8 == number_of_nodes))))
 				{
-					fe_field_component.field = fe_field;
 					for (n = 0; (n < number_of_nodes) && return_code; n++)
 					{
 						/* get the node_to_element_map and hence the node */
@@ -44052,12 +43846,11 @@ Notes:
 										/* restore the nodal values */
 										for (j = 0; j < number_of_components; j++)
 										{
-											fe_field_component.number = j;
 											if (!(get_FE_nodal_FE_value_value(node,
-												&fe_field_component, version,
+												fe_field, /*component_number*/j, version,
 												FE_NODAL_VALUE, time, &value) &&
 												set_FE_nodal_FE_value_value(copy_node[n],
-													&fe_field_component, version,
+													fe_field, /*component_number*/j, version,
 													FE_NODAL_VALUE, time, value)))
 											{
 												display_message(ERROR_MESSAGE,
@@ -44151,11 +43944,10 @@ Notes:
 						}
 						else
 						{
-							fe_field_component.number = i;
 							for (n = 0; (n < number_of_nodes) && return_code; n++)
 							{
 								if (!get_FE_nodal_FE_value_value(copy_node[n],
-									&fe_field_component, version, FE_NODAL_VALUE,
+										fe_field, /*component_number*/i, version, FE_NODAL_VALUE,
 									time, &(component_value[n])))
 								{
 									display_message(ERROR_MESSAGE, "FE_element_smooth_FE_field.  "

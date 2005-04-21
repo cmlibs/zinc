@@ -877,7 +877,6 @@ values, <coords_comp_X_num_versions>,<coords_comp_X>, using <field_order_info>
 	enum FE_nodal_value_type *component_value_types;
 	FE_value *value;
 	int i,j,number_of_derivatives,return_code;
-	struct FE_field_component component;
 
 	ENTER(set_mapping_FE_node_coord_values)
 	if (node&&position_field&&coords_comp_0&&coords_comp_1&&
@@ -3517,8 +3516,7 @@ spaced between <contour_minimum> and <contour_maximum>. If <number_of_contour>
 						contour_value += contour_step;
 					}
 					GT_element_settings_set_iso_surface_parameters(contour_settings,
-						data_field,number_of_contours,contour_values,
-						/*decimation_threshold*/0.0);
+						data_field,number_of_contours,contour_values);
 					GT_element_group_add_settings(gt_element_group,contour_settings,
 						0);
 					DEALLOCATE(contour_values);
@@ -8615,7 +8613,6 @@ opengl texture reasons (at least on the SGI).
 	struct Colour black = {0,0,0},result;
 	struct Computed_field *scaled_offset_signal_value_at_time_field;
 	struct FE_field *electrode_postion_field;
-	struct FE_field_component component;
 	struct FE_node *electrode_node;
 	struct FE_node_order_info *node_order_info;
 	struct Graphical_material *material;

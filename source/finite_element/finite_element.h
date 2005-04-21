@@ -701,13 +701,13 @@ Returns true if all fields are defined in the same way at the two nodes.
 ==============================================================================*/
 
 int FE_nodal_value_version_exists(struct FE_node *node,
-	struct FE_field_component *component,int version,
+	struct FE_field *field, int component_number,int version,
 	enum FE_nodal_value_type type);
 /*******************************************************************************
-LAST MODIFIED : 23 June 1999
+LAST MODIFIED : 21 April 2005
 
 DESCRIPTION :
-Returns 1 if the field, component number, version and type are stored at the
+Returns 1 if the <field>, <component_number>, <version> and <type> are stored at the
 node.
 ???DB.  May need speeding up
 ==============================================================================*/
@@ -726,27 +726,26 @@ It is up to the calling function to DEALLOCATE the returned string.
 
 #define PROTOTYPE_GET_FE_NODAL_VALUE_FUNCTION( value_type, value_enum ) \
 int get_FE_nodal_ ## value_type ## _value(struct FE_node *node, \
-	struct FE_field_component *component,int version, \
+	struct FE_field *field, int component_number, int version, \
 	enum FE_nodal_value_type type, FE_value time, value_type *value); \
 /******************************************************************************* \
-LAST MODIFIED : 30 January 2002 \
+LAST MODIFIED : 21 April 2005 \
  \
 DESCRIPTION : \
-Gets a particular value (<version>, <type>) for the field <component> \
-at the <node> and <time>. \
-???DB.  May need speeding up \
+Gets a particular value (<version>, <type>) for the field> \
+and <component_number> at the <node> and <time>. \
 ==============================================================================*/
 
 #define PROTOTYPE_SET_FE_NODAL_VALUE_FUNCTION( value_type, value_enum ) \
 int set_FE_nodal_ ## value_type ## _value(struct FE_node *node, \
-	struct FE_field_component *component,int version, \
+	struct FE_field *field, int component_number, int version, \
 	enum FE_nodal_value_type type, FE_value time, value_type value); \
 /******************************************************************************* \
-LAST MODIFIED : 30 January 2002 \
+LAST MODIFIED : 21 April 2005 \
  \
 DESCRIPTION : \
-Sets a particular value (<version>, <type>) for the field <component> \
-at the <node>. \
+Sets a particular value (<version>, <type>) for the <field> \
+and <component_number> at the <node>. \
 ==============================================================================*/
 
 #define PROTOTYPE_FE_NODAL_VALUE_FUNCTIONS( value_type , value_enum ) \
@@ -758,36 +757,6 @@ PROTOTYPE_FE_NODAL_VALUE_FUNCTIONS( double , DOUBLE_VALUE )
 PROTOTYPE_FE_NODAL_VALUE_FUNCTIONS( float , FLOAT_VALUE )
 PROTOTYPE_FE_NODAL_VALUE_FUNCTIONS( int , INT_VALUE )
 PROTOTYPE_FE_NODAL_VALUE_FUNCTIONS( short , SHORT_VALUE )
-
-int get_FE_nodal_FE_value_array_value_at_FE_value_time(struct FE_node *node,
-	struct FE_field_component *component,int version,
-	enum FE_nodal_value_type type,FE_value time,FE_value *value);
-/*******************************************************************************
-LAST MODIFIED : 4 October 1999
-
-DESCRIPTION :
-Gets the FE_value <value> from the node's FE_value array at the given
-<component> <version> <type>, using the <time> to index the array.
-The field must have time defined for it, and the number of times must match
-the number of array elements. If <time> is within the node field's time array's 
-range, but doesn't correspond exactly to an array element, interpolates to determine 
-<value>.
-==============================================================================*/
-
-int get_FE_nodal_short_array_value_at_FE_value_time(struct FE_node *node,
-	struct FE_field_component *component,int version,
-	enum FE_nodal_value_type type,FE_value time,short *value);
-/*******************************************************************************
-LAST MODIFIED : 4 October 1999
-
-DESCRIPTION :
-Gets the short <value> from the node's short array at the given
-<component> <version> <type>, using the <time> to index the array.
-The field must have time defined for it, and the number of times must match
-the number of array elements. If <time> is within the node field's time array's 
-range, but doesn't correspond exactly to an array element, interpolates to determine 
-<value>.
-==============================================================================*/
 
 int get_FE_nodal_element_xi_value(struct FE_node *node,
 	struct FE_field *field, int component_number, int version,
@@ -1012,8 +981,9 @@ Returns true if <node> is not in <node_list>.
 
 PROTOTYPE_ENUMERATOR_FUNCTIONS(FE_nodal_value_type);
 
+#if defined (UNEMAP_USE_NODES)
 enum Value_type get_FE_nodal_value_type(struct FE_node *node,
-	struct FE_field_component *component,int version);
+	struct FE_field *field,int component_number,int version);
 /*******************************************************************************
 LAST MODIFIED : 4 October 1999
 
@@ -1022,7 +992,7 @@ Get's a node's field's value type
 ==============================================================================*/
 
 int get_FE_nodal_array_number_of_elements(struct FE_node *node,
-	struct FE_field_component *component,int version,
+	struct FE_field *field,int component_number,int version,
 	enum FE_nodal_value_type type);
 /*******************************************************************************
 LAST MODIFIED : 4 October 1999
@@ -1037,7 +1007,7 @@ Give an error if field->values_storage isn't storing array types.
 ==============================================================================*/
 
 int get_FE_nodal_double_array_value(struct FE_node *node,
-	struct FE_field_component *component,int version,
+	struct FE_field *field,int component_number,int version,
 	enum FE_nodal_value_type type,double *array, int number_of_array_values);
 /*******************************************************************************
 LAST MODIFIED : 22 March 1999
@@ -1054,7 +1024,7 @@ if need to locally and repetatively get many arrays.
 ==============================================================================*/
 
 int set_FE_nodal_double_array_value(struct FE_node *node,
-	struct FE_field_component *component,int version,
+	struct FE_field *field,int component_number,int version,
 	enum FE_nodal_value_type type,double *array,int number_of_array_values);
 /*******************************************************************************
 LAST MODIFIED : 22 March 1999
@@ -1076,7 +1046,7 @@ define_FE_field_at_node()
 ==============================================================================*/
 
 int get_FE_nodal_short_array(struct FE_node *node,
-	struct FE_field_component *component,int version,
+	struct FE_field *field,int component_number,int version,
 	enum FE_nodal_value_type type,short *array, int number_of_array_values);
 /*******************************************************************************
 LAST MODIFIED : 8 June 1999
@@ -1094,7 +1064,7 @@ if need to locally and repetatively get many arrays.
 ==============================================================================*/
 
 int set_FE_nodal_short_array(struct FE_node *node,
-	struct FE_field_component *component,int version,
+	struct FE_field *field,int component_number,int version,
 	enum FE_nodal_value_type type,short *array,int number_of_array_values);
 /*******************************************************************************
 LAST MODIFIED : 8 June 1999
@@ -1116,7 +1086,7 @@ define_FE_field_at_node()
 ==============================================================================*/
 
 int get_FE_nodal_FE_value_array(struct FE_node *node,
-	struct FE_field_component *component,int version,
+	struct FE_field *field,int component_number,int version,
 	enum FE_nodal_value_type type,FE_value *array, int number_of_array_values);
 /*******************************************************************************
 LAST MODIFIED : 8 June 1999
@@ -1133,7 +1103,7 @@ if need to locally and repetatively get many arrays.
 ==============================================================================*/
 
 int set_FE_nodal_FE_value_array(struct FE_node *node,
-	struct FE_field_component *component,int version,
+	struct FE_field *field,int component_number,int version,
 	enum FE_nodal_value_type type,FE_value *array,int number_of_array_values);
 /*******************************************************************************
 LAST MODIFIED : 8 June 1999
@@ -1155,7 +1125,7 @@ define_FE_field_at_node()
 ==============================================================================*/
 
 FE_value get_FE_nodal_FE_value_array_element(struct FE_node *node,
-	struct FE_field_component *component,int version,
+	struct FE_field *field,int component_number,int version,
 	enum FE_nodal_value_type type,int element_number);
 /*******************************************************************************
 LAST MODIFIED : 4 October 1999
@@ -1168,7 +1138,7 @@ at the <node>.
 ==============================================================================*/
 
 FE_value get_FE_nodal_FE_value_array_interpolated_value(struct FE_node *node,
-	struct FE_field_component *component,int version,
+	struct FE_field *field,int component_number,int version,
 	enum FE_nodal_value_type type,int element_number,FE_value proportion);
 /*******************************************************************************
 LAST MODIFIED : 8 May 2000
@@ -1180,7 +1150,7 @@ value=<proportion>*value_low+(1-<proportion>)*value_high;
 ==============================================================================*/
 
 int set_FE_nodal_FE_value_array_element(struct FE_node *node,
-	struct FE_field_component *component,int version,
+	struct FE_field *field,int component_number,int version,
 	enum FE_nodal_value_type type,int element_number,FE_value value);
 /*******************************************************************************
 LAST MODIFIED : 4 October 1999
@@ -1193,7 +1163,7 @@ at the <node>.
 ==============================================================================*/
 
 short get_FE_nodal_short_array_element(struct FE_node *node,
-	struct FE_field_component *component,int version,
+	struct FE_field *field,int component_number,int version,
 	enum FE_nodal_value_type type,int element_number);
 /*******************************************************************************
 LAST MODIFIED : 5 October 1999
@@ -1205,7 +1175,7 @@ at the <node>.
 ==============================================================================*/
 
 short get_FE_nodal_short_array_interpolated_value(struct FE_node *node,
-	struct FE_field_component *component,int version,
+	struct FE_field *field,int component_number,int version,
 	enum FE_nodal_value_type type,int element_number,FE_value proportion);
 /*******************************************************************************
 LAST MODIFIED : 8 May 2000
@@ -1217,7 +1187,7 @@ value=<proportion>*value_low+(1-<proportion>)*value_high;
 ==============================================================================*/
 
 int set_FE_nodal_short_array_element(struct FE_node *node,
-	struct FE_field_component *component,int version,
+	struct FE_field *field,int component_number,int version,
 	enum FE_nodal_value_type type,int element_number,short value);
 /*******************************************************************************
 LAST MODIFIED : 4 October 1999
@@ -1248,7 +1218,7 @@ perform interpolation, etc.
 ==============================================================================*/
 
 int get_FE_nodal_FE_value_array_min_max(struct FE_node *node,
-	struct FE_field_component *component,int version,
+	struct FE_field *field,int component_number,int version,
 	enum FE_nodal_value_type type,FE_value *minimum,FE_value *maximum);
 /*******************************************************************************
 LAST MODIFIED : 29 September 1999
@@ -1259,7 +1229,7 @@ Gets a the minimum and maximum values for the FE_value_array
 ==============================================================================*/
 
 int get_FE_nodal_short_array_min_max(struct FE_node *node,
-	struct FE_field_component *component,int version,
+	struct FE_field *field,int component_number,int version,
 	enum FE_nodal_value_type type,short *minimum,short *maximum);
 /*******************************************************************************
 LAST MODIFIED : 29 September 1999
@@ -1268,6 +1238,7 @@ DESCRIPTION :
 Gets a the minimum and maximum values for the _value_array 
 (<version>, <type>) for the field <component> at the <node>
 ==============================================================================*/
+#endif /* defined (UNEMAP_USE_NODES) */
 
 int get_FE_nodal_string_value(struct FE_node *node,
 	struct FE_field *field,int component_number,int version,
@@ -4262,53 +4233,39 @@ If fails, puts NULL in *<component_address> if supplied.
 Note: returned component must not be modified or destroyed!
 ==============================================================================*/
 
-int get_FE_element_field_component_grid_FE_value_values(
-	struct FE_element *element,struct FE_field *field,int component_number,
-	FE_value **values);
-/*******************************************************************************
-LAST MODIFIED : 12 October 1999
-
-DESCRIPTION :
-If <field> is grid-based in <element>, returns an allocated array of the grid
-values stored for <component_number>. To get number of values returned, call
-get_FE_element_field_number_of_grid_values; Grids change in xi0 fastest.
-It is up to the calling function to DEALLOCATE the returned values.
+#define PROTOTYPE_GET_FE_ELEMENT_FIELD_COMPONENT_FUNCTION( macro_value_type, value_enum ) \
+int get_FE_element_field_component_grid_ ## macro_value_type ## _values( \
+	struct FE_element *element,struct FE_field *field,int component_number, \
+	macro_value_type **values);														\
+/******************************************************************************* \
+LAST MODIFIED : 22 April 2005 \
+ \
+DESCRIPTION : \
+If <field> is grid-based in <element>, returns an allocated array of the grid \
+values stored for <component_number>. To get number of values returned, call \
+get_FE_element_field_number_of_grid_values; Grids change in xi0 fastest. \
+It is up to the calling function to DEALLOCATE the returned values. \
 ==============================================================================*/
 
-int set_FE_element_field_component_grid_FE_value_values(
-	struct FE_element *element,struct FE_field *field,int component_number,
-	FE_value *values);
-/*******************************************************************************
-LAST MODIFIED : 12 October 1999
-
-DESCRIPTION :
-If <field> is grid-based in <element>, copies <values> into the values storage
-for <component_number>. To get number of values to pass, call
-get_FE_element_field_number_of_grid_values; Grids change in xi0 fastest.
+#define PROTOTYPE_SET_FE_ELEMENT_FIELD_COMPONENT_FUNCTION( macro_value_type, value_enum ) \
+int set_FE_element_field_component_grid_ ## macro_value_type ## _values( \
+	struct FE_element *element,struct FE_field *field,int component_number, \
+	macro_value_type *values);															\
+/******************************************************************************* \
+LAST MODIFIED : 21 April 2005 \
+\
+DESCRIPTION : \
+If <field> is grid-based in <element>, copies <values> into the values storage \
+for <component_number>. To get number of values to pass, call \
+get_FE_element_field_number_of_grid_values; Grids change in xi0 fastest. \
 ==============================================================================*/
 
-int get_FE_element_field_component_grid_int_values(struct FE_element *element,
-	struct FE_field *field,int component_number,int **values);
-/*******************************************************************************
-LAST MODIFIED : 14 October 1999
+#define PROTOTYPE_FE_ELEMENT_FIELD_COMPONENT_FUNCTIONS( macro_value_type , value_enum ) \
+PROTOTYPE_GET_FE_ELEMENT_FIELD_COMPONENT_FUNCTION(macro_value_type,value_enum) \
+PROTOTYPE_SET_FE_ELEMENT_FIELD_COMPONENT_FUNCTION(macro_value_type,value_enum)
 
-DESCRIPTION :
-If <field> is grid-based in <element>, returns an allocated array of the grid
-values stored for <component_number>. To get number of values returned, call
-get_FE_element_field_number_of_grid_values; Grids change in xi0 fastest.
-It is up to the calling function to DEALLOCATE the returned values.
-==============================================================================*/
-
-int set_FE_element_field_component_grid_int_values(struct FE_element *element,
-	struct FE_field *field,int component_number,int *values);
-/*******************************************************************************
-LAST MODIFIED : 14 October 1999
-
-DESCRIPTION :
-If <field> is grid-based in <element>, copies <values> into the values storage
-for <component_number>. To get number of values to pass, call
-get_FE_element_field_number_of_grid_values; Grids change in xi0 fastest.
-==============================================================================*/
+PROTOTYPE_FE_ELEMENT_FIELD_COMPONENT_FUNCTIONS( FE_value , FE_VALUE_VALUE )
+PROTOTYPE_FE_ELEMENT_FIELD_COMPONENT_FUNCTIONS( int , INT_VALUE )
 
 int FE_element_field_get_copy_components(struct FE_element *element,
 	struct FE_field *fe_field,
