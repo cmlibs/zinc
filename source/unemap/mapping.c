@@ -904,42 +904,42 @@ values, <coords_comp_X_num_versions>,<coords_comp_X>, using <field_order_info>
 					{
 						/* lambda, theta, x */
 						return_code=(return_code&&set_FE_nodal_FE_value_value(node,
-							&component,i,component_value_types[j],/*time*/0,*value));
+						  position_field,/*component_number*/0,
+						  i,component_value_types[j],/*time*/0,*value));
 						value++;
 					}
 				}
 				DEALLOCATE(component_value_types);
-				component.number = 1;
 				for(i=0;i<coords_comp_1_num_versions;i++)
 				{
 					/* mu, r, y */
-					return_code=(return_code&&set_FE_nodal_FE_value_value(node,&component,
+					return_code=(return_code&&set_FE_nodal_FE_value_value(node,
+						position_field, /*component_number*/1,
 						i,FE_NODAL_VALUE,/*time*/0,coords_comp_1[i]));
 				}
-				component.number = 2;
 				for(i=0;i<coords_comp_2_num_versions;i++)
 				{
 					/* theta, z, z */
-					return_code=(return_code&&set_FE_nodal_FE_value_value(node,&component,
+					return_code=(return_code&&set_FE_nodal_FE_value_value(node,
+						position_field, /*component_number*/2,
 						i,FE_NODAL_VALUE,/*time*/0,coords_comp_2[i]));
 				}
 			} break;
 			case PATCH: /* x,y */
 			{
 				/* 1st field contains coords, possibly more than one version */
-				component.field=position_field;
-				component.number = 0;
 				for(i=0;i<coords_comp_0_num_versions;i++)
 				{
 					/* x */
 					return_code=(return_code&&set_FE_nodal_FE_value_value(node,
-						&component,i,FE_NODAL_VALUE,/*time*/0,coords_comp_0[i]));
+						position_field, /*component_number*/0,
+						i,FE_NODAL_VALUE,/*time*/0,coords_comp_0[i]));
 				}
-				component.number = 1;
 				for(i=0;i<coords_comp_1_num_versions;i++)
 				{
 					/* y */
-					return_code=(return_code&&set_FE_nodal_FE_value_value(node,&component,
+					return_code=(return_code&&set_FE_nodal_FE_value_value(node,
+						position_field, /*component_number*/1,
 						i,FE_NODAL_VALUE,/*time*/0,coords_comp_1[i]));
 				}
 				component.number = 2;
@@ -978,19 +978,16 @@ Sets a node's values storage with the values  potential<f> and derivatives
 ==============================================================================*/
 {
 	int return_code;
-	struct FE_field_component component;
 
 	ENTER(set_mapping_FE_node_fit_values);
 	return_code =1;
 	if (node&&fit_field)
 	{
-		component.field=fit_field;
-		component.number=component_number;
 		return_code=(
-			set_FE_nodal_FE_value_value(node,&component,0,FE_NODAL_VALUE,/*time*/0,f)&&
-			set_FE_nodal_FE_value_value(node,&component,0,FE_NODAL_D_DS1,/*time*/0,dfdx)&&
-			set_FE_nodal_FE_value_value(node,&component,0,FE_NODAL_D_DS2,/*time*/0,dfdy)&&
-			set_FE_nodal_FE_value_value(node,&component,0,FE_NODAL_D2_DS1DS2,/*time*/0,d2fdxdy));
+			set_FE_nodal_FE_value_value(node,fit_field,component_number,0,FE_NODAL_VALUE,/*time*/0,f)&&
+			set_FE_nodal_FE_value_value(node,fit_field,component_number,0,FE_NODAL_D_DS1,/*time*/0,dfdx)&&
+			set_FE_nodal_FE_value_value(node,fit_field,component_number,0,FE_NODAL_D_DS2,/*time*/0,dfdy)&&
+			set_FE_nodal_FE_value_value(node,fit_field,component_number,0,FE_NODAL_D2_DS1DS2,/*time*/0,d2fdxdy));
 	}
 	else
 	{
@@ -2634,16 +2631,14 @@ Conditional function returning true if <node>  in the z range of <data_void>.
 {
 	FE_value torso_node_z;
 	int return_code;
-	struct FE_field_component component;
 	struct Z_value_data *z_value_data;
 
 	ENTER(torso_node_is_in_z_range);
 	return_code=0;
 	if (torso_node&&(z_value_data=(struct Z_value_data *)z_value_data_void))
 	{
-		component.field=z_value_data->torso_position_field;
-		component.number=2;
-		get_FE_nodal_FE_value_value(torso_node,&component,0,FE_NODAL_VALUE,
+		get_FE_nodal_FE_value_value(torso_node,z_value_data->torso_position_field,
+			/*component_number*/2,/*version*/0,FE_NODAL_VALUE,
 			/*time*/0,&torso_node_z);
 		if ((torso_node_z>=z_value_data->map_min_z)&&
 			(torso_node_z<=z_value_data->map_max_z))
@@ -2866,7 +2861,6 @@ Defines and sets the value of the fit field at <torso_node>.
 	struct Cmiss_region *root_cmiss_region;
 	struct FE_element *cylinder_element;
 	struct FE_element_field_values *element_field_values;
-	struct FE_field_component component;
 	struct FE_field *map_fit_field,*torso_position_field;
 	struct FE_node *node;
 	struct FE_region *root_fe_region;
@@ -2891,15 +2885,14 @@ Defines and sets the value of the fit field at <torso_node>.
 		/* field should already defined at node */
 		if (FE_field_is_defined_at_node(map_fit_field,torso_node))
 		{
-			component.field=torso_position_field;
-			component.number=0;
-			get_FE_nodal_FE_value_value(torso_node,&component,0,FE_NODAL_VALUE,
+			get_FE_nodal_FE_value_value(torso_node,torso_position_field,
+				/*component_number*/0,/*version*/0,FE_NODAL_VALUE,
 				/*time*/0,&torso_node_x);
-			component.number=1;
-			get_FE_nodal_FE_value_value(torso_node,&component,0,FE_NODAL_VALUE,
+			get_FE_nodal_FE_value_value(torso_node,torso_position_field,
+				/*component_number*/1,/*version*/0,FE_NODAL_VALUE,
 				/*time*/0,&torso_node_y);
-			component.number=2;
-			get_FE_nodal_FE_value_value(torso_node,&component,0,FE_NODAL_VALUE,
+			get_FE_nodal_FE_value_value(torso_node,torso_position_field,
+				/*component_number*/2,/*version*/0,FE_NODAL_VALUE,
 				/*time*/0,&torso_node_z);
 			/*now have torso x,y,z determine map theta,z (don't need r)*/
 			/* add PI as want map_theta in range 0->2PI,atan2 returns -PI->PI */
@@ -3524,7 +3517,8 @@ spaced between <contour_minimum> and <contour_maximum>. If <number_of_contour>
 						contour_value += contour_step;
 					}
 					GT_element_settings_set_iso_surface_parameters(contour_settings,
-						data_field,number_of_contours,contour_values);
+						data_field,number_of_contours,contour_values,
+						/*decimation_threshold*/0.0);
 					GT_element_group_add_settings(gt_element_group,contour_settings,
 						0);
 					DEALLOCATE(contour_values);
@@ -5339,7 +5333,6 @@ vertices_data->vertices we've filled in.
 	int return_code;
 	FE_value value;
 	struct FE_field *position_field;
-	struct FE_field_component component;
 	struct Vertices_data *vertices_data;
 
 	ENTER(put_electrode_pos_into_vertices);
@@ -5347,23 +5340,20 @@ vertices_data->vertices we've filled in.
 		(struct Vertices_data *)vertices_data_void)
 		&&(position_field=vertices_data->position_field))
 	{
-		component.field=position_field;
-		component.number=0;
-		return_code=get_FE_nodal_FE_value_value(node,&component,0,FE_NODAL_VALUE,
-			/*time*/0,&value);
+		return_code=get_FE_nodal_FE_value_value(node,position_field,
+			/*component_number*/0,/*version*/0,FE_NODAL_VALUE,/*time*/0,&value);
 		if (return_code)
 		{
 			vertices_data->vertices[vertices_data->current_element]=(float)(value);
 			vertices_data->current_element++;
-			component.number=1;
-			return_code=get_FE_nodal_FE_value_value(node,&component,0,FE_NODAL_VALUE,
-				/*time*/0,&value);
+			return_code=get_FE_nodal_FE_value_value(node,position_field,
+				/*component_number*/1,/*version*/0,FE_NODAL_VALUE,/*time*/0,&value);
 			if (return_code)
 			{
 				vertices_data->vertices[vertices_data->current_element]=(float)(value);
 				vertices_data->current_element++;
-				component.number=2;
-				return_code=get_FE_nodal_FE_value_value(node,&component,0,FE_NODAL_VALUE,
+				return_code=get_FE_nodal_FE_value_value(node,position_field,
+					/*component_number*/2,/*version*/0,FE_NODAL_VALUE,
 					/*time*/0,&value);
 				if (return_code)
 				{
@@ -8729,14 +8719,14 @@ opengl texture reasons (at least on the SGI).
 						{
 							electrode_node=get_FE_node_order_info_node(node_order_info,i);
 							/*set up map->electrode_tex_x, map->electrode_tex_y*/
-							component.number=0;
-							get_FE_nodal_FE_value_value(electrode_node,&component,0,
+							get_FE_nodal_FE_value_value(electrode_node,
+								electrode_postion_field,/*component_number*/0,/*version*/0,
 								FE_NODAL_VALUE,/*time*/0,&x);
-							component.number=1;
-							get_FE_nodal_FE_value_value(electrode_node,&component,0,
+							get_FE_nodal_FE_value_value(electrode_node,
+								electrode_postion_field,/*component_number*/1,/*version*/0,
 								FE_NODAL_VALUE,/*time*/0,&y);
-							component.number=2;
-							get_FE_nodal_FE_value_value(electrode_node,&component,0,
+							get_FE_nodal_FE_value_value(electrode_node,
+								electrode_postion_field,/*component_number*/2,/*version*/0,
 								FE_NODAL_VALUE,/*time*/0,&z_rc);
 							cartesian_to_cylindrical_polar(x,y,z_rc,&r,&theta,&z_cp,
 								(float *)NULL);

@@ -60,7 +60,6 @@ Calculates the coordinates and length from the first node.
 	int i, node_number, number_of_components, return_code;
 	struct FE_node_accumulate_length_data *accumulate_data;
 	struct FE_field *coordinate_field;
-	struct FE_field_component component;
 
 	ENTER(FE_node_accumulate_length);
 	if (node && (accumulate_data =
@@ -74,11 +73,10 @@ Calculates the coordinates and length from the first node.
 	{
 		coordinates += node_number*number_of_components;
 		return_code = 1;
-		component.field = coordinate_field;
 		for (i = 0; (i < number_of_components) && return_code; i++)
 		{
-			component.number = i;
-			if (!get_FE_nodal_FE_value_value(node, &component, /*version*/0,
+			if (!get_FE_nodal_FE_value_value(node, coordinate_field,
+				/*component_number*/i, /*version*/0,
 				FE_NODAL_VALUE, /*time*/0, coordinates + i))
 			{
 				display_message(ERROR_MESSAGE,
@@ -490,7 +488,6 @@ derivatives; helps make smooth snakes from few data points.
 		number_of_data, number_of_rows, return_code, row, start_row;
 	struct CM_element_information cm;
 	struct FE_element *element, *template_element;
-	struct FE_field_component component;
 	struct FE_node **nodes, *template_node;
 	struct FE_node_accumulate_length_data accumulate_data;
 
@@ -768,7 +765,6 @@ derivatives; helps make smooth snakes from few data points.
 					 in the nodes array, set their coordinates and derivatives and add
 					 them to the manager and node_group */
 				node_number = 1;
-				component.field = coordinate_field;
 				for (j = 0; (j <= number_of_elements) && return_code; j++)
 				{
 					/* get next unused node number from fe_region */
@@ -780,12 +776,11 @@ derivatives; helps make smooth snakes from few data points.
 						/* set the coordinate and derivatives */
 						for (n = 0; (n < number_of_components) && return_code; n++)
 						{
-							component.number = n;
-							if (!(set_FE_nodal_FE_value_value(nodes[j],
-								&component, /*version*/0, FE_NODAL_VALUE,
+							if (!(set_FE_nodal_FE_value_value(nodes[j], coordinate_field,
+								/*component_number*/n, /*version*/0, FE_NODAL_VALUE,
 								/*time*/0, force_vectors[n*number_of_rows + j*2]) &&
-								set_FE_nodal_FE_value_value(nodes[j],
-									&component, /*version*/0, FE_NODAL_D_DS1, /*time*/0, 
+								set_FE_nodal_FE_value_value(nodes[j], coordinate_field,
+									/*component_number*/n,/*version*/0, FE_NODAL_D_DS1, /*time*/0, 
 									force_vectors[n*number_of_rows + j*2 + 1])))
 							{
 								display_message(ERROR_MESSAGE,

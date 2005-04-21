@@ -18066,28 +18066,9 @@ Sets nodal field values from a command.
 					{
 						if (1 == sscanf(current_token, FE_VALUE_INPUT_STRING, &value))
 						{
-							/* make a copy of <node> with just the one field */
-							if ((fe_field_list = CREATE(LIST(FE_field))()) &&
-								ADD_OBJECT_TO_LIST(FE_field)(component.field, fe_field_list))
-							{
-								if (copy_node =
-									FE_node_copy_with_FE_field_list(node, fe_field_list))
-								{
-									ACCESS(FE_node)(copy_node);
-									if (!(set_FE_nodal_FE_value_value(copy_node,
-										&component, 0, value_type, /*time*/0,value)) &&
-										FE_region_merge_FE_node(fe_region, copy_node))
-									{
-										return_code = 0;
-									}
-									DEACCESS(FE_node)(&copy_node);
-								}
-								else
-								{
-									return_code = 0;
-								}
-							}
-							else
+							if (!(set_FE_nodal_FE_value_value(copy_node,
+								component.field, component.number, 
+								/*version*/0, value_type, /*time*/0,value)))
 							{
 								return_code = 0;
 							}

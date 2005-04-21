@@ -261,20 +261,16 @@ NB.  0<=current_data_interval<number_of_data_intervals
 #if defined (UNEMAP_USE_NODES)
 				else
 				{
-					struct FE_field_component component;
-					component.number=0;
 					/* These max and min are  scaled and offset (by channel_gain,*/
 					/* channel_offset) values*/
-					component.field=get_Signal_drawing_package_signal_minimum_field(
-						signal_drawing_package);
-					/*??JW should be copying out of and into node with MANAGER_MODIFY */
-					set_FE_nodal_FE_value_value(device_node,&component,0,FE_NODAL_VALUE,
-						/*time*/0,signal_minimum);
-					component.number=0;
-					component.field=get_Signal_drawing_package_signal_maximum_field(
-						signal_drawing_package);
-					set_FE_nodal_FE_value_value(device_node,&component,0,FE_NODAL_VALUE,
-						/*time*/0,signal_maximum);
+					set_FE_nodal_FE_value_value(device_node,
+						get_Signal_drawing_package_signal_minimum_field(
+							signal_drawing_package),/*component_number*/0,
+						/*version*/0,FE_NODAL_VALUE,/*time*/0,signal_minimum);
+					set_FE_nodal_FE_value_value(device_node,
+						get_Signal_drawing_package_signal_maximum_field(
+						signal_drawing_package),/*component_number*/0,
+						/*version*/0,FE_NODAL_VALUE,/*time*/0,signal_maximum);
 				}
 #endif /* defined (UNEMAP_USE_NODES) */
 				/* determine the value tick marks */

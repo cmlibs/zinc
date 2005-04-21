@@ -3992,15 +3992,12 @@ bool Function_finite_element::get_nodal_value(
 {
 	bool result;
 	FE_value fe_value;
-	struct FE_field_component fe_field_component;
 
 	result=false;
 	if (this)
 	{
-		fe_field_component.field=field_private;
-		fe_field_component.number=component_number-1;
-		if (get_FE_nodal_FE_value_value(node,
-			&fe_field_component,(version-1),value_type,time,&fe_value))
+		if (get_FE_nodal_FE_value_value(node,field_private,(component_number-1),
+			(version-1),value_type,time,&fe_value))
 		{
 			value=(Scalar)fe_value;
 			result=true;
@@ -4022,16 +4019,13 @@ bool Function_finite_element::set_nodal_value(
 {
 	bool result;
 	FE_value fe_value;
-	struct FE_field_component fe_field_component;
 
 	result=false;
 	if (this)
 	{
-		fe_field_component.field=field_private;
-		fe_field_component.number=component_number-1;
 		fe_value=(FE_value)value;
-		if (set_FE_nodal_FE_value_value(node,
-			&fe_field_component,(version-1),value_type,time,fe_value))
+		if (set_FE_nodal_FE_value_value(node,field_private,(component_number-1),
+			(version-1),value_type,time,fe_value))
 		{
 			result=true;
 		}

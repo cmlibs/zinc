@@ -128,19 +128,16 @@ For Control_curves, <nodal_value_type> can be FE_NODAL_VALUE or FE_NODAL_D_DS1.
 {
 	FE_value *value;
 	int i,number_of_components,return_code;
-	struct FE_field_component component;
 
 	ENTER(cc_get_node_field_values);
 	if (node&&field&&(value=values)&&
 		(0<(number_of_components=get_FE_field_number_of_components(field))))
 	{
 		return_code=1;
-		component.field=field;
 		for (i=0;(i<number_of_components)&&return_code;i++)
 		{
-			component.number=i;
-			if (!get_FE_nodal_FE_value_value(node,&component,0,nodal_value_type,
-				/*time*/0,value))
+			if (!get_FE_nodal_FE_value_value(node,field,/*component_number*/i,
+				/*version*/0,nodal_value_type,/*time*/0,value))
 			{
 				display_message(ERROR_MESSAGE,"cc_get_node_field_values.  "
 					"Field/nodal value type not defined at node");
@@ -173,19 +170,16 @@ For Control_curves, <nodal_value_type> can be FE_NODAL_VALUE or FE_NODAL_D_DS1.
 {
 	FE_value *value;
 	int i,number_of_components,return_code;
-	struct FE_field_component component;
 
 	ENTER(cc_set_node_field_values);
 	if (node&&field&&(value=values)&&
 		(0<(number_of_components=get_FE_field_number_of_components(field))))
 	{
 		return_code=1;
-		component.field=field;
 		for (i=0;(i<number_of_components)&&return_code;i++)
 		{
-			component.number=i;
-			if (!set_FE_nodal_FE_value_value(node,&component,0,nodal_value_type,
-				/*time*/0, *value))
+			if (!set_FE_nodal_FE_value_value(node,field,/*component_number*/i,
+				/*version*/0, nodal_value_type, /*time*/0, *value))
 			{
 				display_message(ERROR_MESSAGE,"cc_set_node_field_values.  "
 					"Field/nodal value type not defined at node");

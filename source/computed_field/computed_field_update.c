@@ -84,7 +84,6 @@ DESCRIPTION :
 	struct Computed_field *source_field;
 	struct Computed_field *destination_field;
 	struct FE_node_selection *node_selection;
-	struct FE_region *fe_region;
 };
 
 static int Computed_field_update_nodal_values_from_source_sub(
@@ -112,8 +111,8 @@ DESCRIPTION :
 				if (Computed_field_evaluate_at_node(data->source_field, node,
 					data->time, data->values))
 				{
-					if (Computed_field_set_values_at_node_in_FE_region(data->destination_field,
-							node, data->time, data->fe_region, data->values))
+					if (Computed_field_set_values_at_node(data->destination_field,
+							node, data->time, data->values))
 					{
 						data->success_count++;
 					}
@@ -164,7 +163,6 @@ Restricts update to nodes in <node_selection>, if supplied.
 			{
 				data.source_field = source_field;
 				data.destination_field = destination_field;
-				data.fe_region = fe_region;
 				data.node_selection = node_selection;
 				data.selected_count = 0;
 				data.success_count = 0;
@@ -230,7 +228,6 @@ DESCRIPTION :
 	struct Computed_field *destination_field;
 	struct Element_point_ranges_selection *element_point_ranges_selection;
 	struct FE_element_selection *element_selection;
-	struct FE_region *fe_region;
 };
 
 static int Computed_field_update_element_values_from_source_sub(
@@ -392,10 +389,10 @@ DESCRIPTION :
 						}
 						if (success)
 						{
-							if (Computed_field_set_values_in_element_in_FE_region(
+							if (Computed_field_set_values_in_element(
 								data->destination_field, element,
 								element_point_ranges_identifier.number_in_xi, data->time,
-								data->fe_region, values))
+								values))
 							{
 								data->success_count++;
 							}
@@ -448,7 +445,6 @@ Note the union of these two selections is used if both supplied.
 			return_code = 1;
 			data.source_field = source_field;
 			data.destination_field = destination_field;
-			data.fe_region = fe_region;
 			data.element_point_ranges_selection = element_point_ranges_selection;
 			data.element_selection = element_selection;
 			data.selected_count = 0;

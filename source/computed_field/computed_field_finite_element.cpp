@@ -556,7 +556,6 @@ Evaluate the fields cache at the node.
 	int i, int_value, return_code;
 	short short_value;
 	struct Computed_field_finite_element_type_specific_data *data;
-	struct FE_field_component fe_field_component;
 
 	ENTER(Computed_field_finite_element_evaluate_cache_at_node);
 	if (field && node && (data = 
@@ -565,43 +564,41 @@ Evaluate the fields cache at the node.
 	{
 		return_code = 1;
 		/* not very efficient - should cache FE_node_field or similar */
-		fe_field_component.field=data->fe_field;
 		value_type=get_FE_field_value_type(data->fe_field);
 		for (i=0;(i<field->number_of_components)&&return_code;i++)
 		{
-			fe_field_component.number=i;
 			switch (value_type)
 			{
 				case DOUBLE_VALUE:
 				{
 					return_code=get_FE_nodal_double_value(node,
-						&fe_field_component,/*version_number*/0,
+						data->fe_field,/*component_number*/i, /*version_number*/0,
 						/*nodal_value_type*/FE_NODAL_VALUE,time,&double_value);
 					field->values[i] = (FE_value)double_value;
 				} break;
 				case FE_VALUE_VALUE:
 				{
 					return_code=get_FE_nodal_FE_value_value(node,
-						&fe_field_component,/*version_number*/0,
+						data->fe_field,/*component_number*/i, /*version_number*/0,
 						/*nodal_value_type*/FE_NODAL_VALUE,time,&(field->values[i]));
 				} break;
 				case FLT_VALUE:
 				{
-					return_code=get_FE_nodal_float_value(node,&fe_field_component,
+					return_code=get_FE_nodal_float_value(node,data->fe_field,/*component_number*/i, 
 						/*version_number*/0,/*nodal_value_type*/FE_NODAL_VALUE,
 						time,&float_value);
 					field->values[i] = (FE_value)float_value;
 				} break;
 				case INT_VALUE:
 				{
-					return_code=get_FE_nodal_int_value(node,&fe_field_component,
+					return_code=get_FE_nodal_int_value(node,data->fe_field,/*component_number*/i, 
 						/*version_number*/0,/*nodal_value_type*/FE_NODAL_VALUE,
 						time,&int_value);
 					field->values[i] = (FE_value)int_value;
 				} break;
 				case SHORT_VALUE:
 				{
-					return_code=get_FE_nodal_short_value(node,&fe_field_component,
+					return_code=get_FE_nodal_short_value(node,data->fe_field,/*component_number*/i, 
 						/*version_number*/0,/*nodal_value_type*/FE_NODAL_VALUE,
 						time,&short_value);
 					field->values[i] = (FE_value)short_value;
@@ -870,7 +867,6 @@ Sets the <values> of the computed <field> at <node>.
 	int i,int_value,j,k,return_code;
 	short short_value;
 	struct Computed_field_finite_element_type_specific_data *data;
-	struct FE_field_component fe_field_component;
 
 	ENTER(Computed_field_finite_element_set_values_at_node);
 	if (field&&node&&values && (data = 
@@ -879,11 +875,9 @@ Sets the <values> of the computed <field> at <node>.
 	{
 		return_code=1;
 
-		fe_field_component.field=data->fe_field;
 		value_type=get_FE_field_value_type(data->fe_field);
 		for (i=0;(i<field->number_of_components)&&return_code;i++)
 		{
-			fe_field_component.number=i;
 			/* set values all versions; to set values for selected version only,
 				use COMPUTED_FIELD_NODE_VALUE instead */
 			k=get_FE_node_field_component_number_of_versions(node,
@@ -895,30 +889,30 @@ Sets the <values> of the computed <field> at <node>.
 					case DOUBLE_VALUE:
 					{
 						double_value=(double)values[i];
-						return_code=set_FE_nodal_double_value(node,&fe_field_component,
+						return_code=set_FE_nodal_double_value(node,data->fe_field,/*component_number*/i, 
 							j,/*nodal_value_type*/FE_NODAL_VALUE,time,double_value);
 					} break;
 					case FE_VALUE_VALUE:
 					{
-						return_code=set_FE_nodal_FE_value_value(node,&fe_field_component,
+						return_code=set_FE_nodal_FE_value_value(node,data->fe_field,/*component_number*/i, 
 							j,/*nodal_value_type*/FE_NODAL_VALUE,time,values[i]);
 					} break;
 					case FLT_VALUE:
 					{
 						float_value=(float)values[i];
-						return_code=set_FE_nodal_float_value(node,&fe_field_component,
+						return_code=set_FE_nodal_float_value(node,data->fe_field,/*component_number*/i, 
 							j,/*nodal_value_type*/FE_NODAL_VALUE,time,float_value);
 					} break;
 					case INT_VALUE:
 					{
 						int_value=(int)floor(values[i]+0.5);
-						return_code=set_FE_nodal_int_value(node,&fe_field_component,
+						return_code=set_FE_nodal_int_value(node,data->fe_field,/*component_number*/i, 
 							j,/*nodal_value_type*/FE_NODAL_VALUE,time,int_value);
 					} break;
 					case SHORT_VALUE:
 					{
 						short_value=(short)floor(values[i]+0.5);
-						return_code=set_FE_nodal_short_value(node,&fe_field_component,
+						return_code=set_FE_nodal_short_value(node,data->fe_field,/*component_number*/i, 
 							j,/*nodal_value_type*/FE_NODAL_VALUE,time,short_value);
 					} break;
 					default:
@@ -2811,7 +2805,6 @@ Check the fe_field
 {
 	int comp_no,return_code;
 	struct Computed_field_node_value_type_specific_data *data;
-	struct FE_field_component fe_field_component;
 
 	ENTER(Computed_field_node_value_is_defined_at_node);
 	if (field && node && (data = 
@@ -2823,12 +2816,10 @@ Check the fe_field
 			/* must ensure at least one component of version_number,
 				nodal_value_type defined at node */
 			return_code=0;
-			fe_field_component.field=data->fe_field;
 			for (comp_no=0;(comp_no<field->number_of_components)&&(!return_code);
 				  comp_no++)
 			{
-				fe_field_component.number=comp_no;
-				if (FE_nodal_value_version_exists(node,&fe_field_component,
+				if (FE_nodal_value_version_exists(node,data->fe_field,/*component_number*/comp_no, 
 					data->version_number,data->nodal_value_type))
 				{
 					return_code=1;
@@ -2900,7 +2891,6 @@ Evaluate the fields cache at the node.
 	int i, int_value, return_code;
 	short short_value;
 	struct Computed_field_node_value_type_specific_data *data;
-	struct FE_field_component fe_field_component;
 
 	ENTER(Computed_field_node_value_evaluate_cache_at_node);
 	if (field && node && (data = 
@@ -2908,12 +2898,10 @@ Evaluate the fields cache at the node.
 		field->type_specific_data))
 	{
 		return_code = 1;
-		fe_field_component.field=data->fe_field;
 		value_type=get_FE_field_value_type(data->fe_field);
 		for (i=0;(i<field->number_of_components)&&return_code;i++)
 		{
-			fe_field_component.number=i;
-			if (FE_nodal_value_version_exists(node,&fe_field_component,
+			if (FE_nodal_value_version_exists(node,data->fe_field,/*component_number*/i, 
 				data->version_number,data->nodal_value_type))
 			{
 				switch (value_type)
@@ -2921,32 +2909,32 @@ Evaluate the fields cache at the node.
 					case DOUBLE_VALUE:
 					{
 						return_code=get_FE_nodal_double_value(node,
-							&fe_field_component,data->version_number,
+							data->fe_field,/*component_number*/i, data->version_number,
 							data->nodal_value_type,time,&double_value);
 						field->values[i] = (FE_value)double_value;
 					} break;
 					case FE_VALUE_VALUE:
 					{
 						return_code=get_FE_nodal_FE_value_value(node,
-							&fe_field_component,data->version_number,
+							data->fe_field,/*component_number*/i, data->version_number,
 							data->nodal_value_type,time,&(field->values[i]));
 					} break;
 					case FLT_VALUE:
 					{
 						return_code=get_FE_nodal_float_value(node,
-							&fe_field_component,data->version_number,
+							data->fe_field,/*component_number*/i, data->version_number,
 							data->nodal_value_type,time,&float_value);
 						field->values[i] = (FE_value)float_value;
 					} break;
 					case INT_VALUE:
 					{
-						return_code=get_FE_nodal_int_value(node,&fe_field_component,
+						return_code=get_FE_nodal_int_value(node,data->fe_field,/*component_number*/i, 
 							data->version_number,data->nodal_value_type,time,&int_value);
 						field->values[i] = (FE_value)int_value;
 					} break;
 					case SHORT_VALUE:
 					{
-						return_code=get_FE_nodal_short_value(node,&fe_field_component,
+						return_code=get_FE_nodal_short_value(node,data->fe_field,/*component_number*/i, 
 							data->version_number,data->nodal_value_type,time,&short_value);
 						field->values[i] = (FE_value)short_value;
 					} break;
@@ -3084,7 +3072,6 @@ Sets the <values> of the computed <field> at <node>.
 	float float_value;
 	int i,int_value,return_code;
 	struct Computed_field_node_value_type_specific_data *data;
-	struct FE_field_component fe_field_component;
 
 	ENTER(Computed_field_node_value_set_values_at_node);
 	if (field&&node&&values && (data = 
@@ -3093,13 +3080,11 @@ Sets the <values> of the computed <field> at <node>.
 	{
 		return_code=1;
 
-		fe_field_component.field=data->fe_field;
 		value_type=get_FE_field_value_type(data->fe_field);
 		for (i=0;(i<field->number_of_components)&&return_code;i++)
 		{
-			fe_field_component.number=i;
 			/* only set nodal value/versions that exist */
-			if (FE_nodal_value_version_exists(node,&fe_field_component,
+			if (FE_nodal_value_version_exists(node,data->fe_field,/*component_number*/i, 
 				data->version_number,data->nodal_value_type))
 			{
 				switch (value_type)
@@ -3107,24 +3092,24 @@ Sets the <values> of the computed <field> at <node>.
 					case DOUBLE_VALUE:
 					{
 						double_value=(double)values[i];
-						return_code=set_FE_nodal_double_value(node,&fe_field_component,
+						return_code=set_FE_nodal_double_value(node,data->fe_field,/*component_number*/i, 
 							data->version_number,data->nodal_value_type,time,double_value);
 					} break;
 					case FE_VALUE_VALUE:
 					{
-						return_code=set_FE_nodal_FE_value_value(node,&fe_field_component,
+						return_code=set_FE_nodal_FE_value_value(node,data->fe_field,/*component_number*/i, 
 							data->version_number,data->nodal_value_type,time,values[i]);
 					} break;
 					case FLT_VALUE:
 					{
 						float_value=(float)values[i];
-						return_code=set_FE_nodal_float_value(node,&fe_field_component,
+						return_code=set_FE_nodal_float_value(node,data->fe_field,/*component_number*/i, 
 							data->version_number,data->nodal_value_type,time,float_value);
 					} break;
 					case INT_VALUE:
 					{
 						int_value=(int)floor(values[i]+0.5);
-						return_code=set_FE_nodal_float_value(node,&fe_field_component,
+						return_code=set_FE_nodal_float_value(node,data->fe_field,/*component_number*/i, 
 							data->version_number,data->nodal_value_type,time,int_value);
 					} break;
 					default:
@@ -3835,7 +3820,6 @@ Check the fe_field
 	FE_value xi[MAXIMUM_ELEMENT_XI_DIMENSIONS];
 	struct Computed_field_embedded_type_specific_data *data;
 	struct FE_element *element;
-	struct FE_field_component fe_field_component;
 
 	ENTER(Computed_field_embedded_is_defined_at_node);
 	if (field && node && (data = 
@@ -3846,13 +3830,12 @@ Check the fe_field
 		if (FE_field_is_defined_at_node(data->element_xi_fe_field,node))
 		{
 			return_code=1;
-			fe_field_component.field=data->element_xi_fe_field;
 			number_of_components=
 				get_FE_field_number_of_components(data->element_xi_fe_field);
 			for (comp_no=0;(comp_no<number_of_components)&&return_code;comp_no++)
 			{
-				fe_field_component.number=comp_no;
-				if (FE_nodal_value_version_exists(node,&fe_field_component,
+				if (FE_nodal_value_version_exists(node,data->element_xi_fe_field,
+					/*component_number*/comp_no,
 					/*version_number*/0,FE_NODAL_VALUE)&&
 					get_FE_nodal_element_xi_value(node,data->element_xi_fe_field,comp_no,
 					 /*version_number*/0,FE_NODAL_VALUE,&element,xi))

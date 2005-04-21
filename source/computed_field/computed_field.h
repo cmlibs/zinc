@@ -374,7 +374,7 @@ number_of_components.
 int Computed_field_set_values_at_node(struct Computed_field *field,
 	struct FE_node *node, FE_value time, FE_value *values);
 /*******************************************************************************
-LAST MODIFIED : 27 October 2004
+LAST MODIFIED : 21 April 2005
 
 DESCRIPTION :
 Sets the <values> of the computed <field> at <node>. Only certain computed field
@@ -387,41 +387,7 @@ can in many cases still choose which one is actually being changed, for example,
 the 'vector' field in this case - coordinates should not change. This process
 continues until the actual FE_field values at the node are changed or a field
 is reached for which its calculation is not reversible, or is not supported yet.
-Note that you must only call this function for nodes that are not managed as it
-will change values inside them. Also, this function does not clear the cache at
-any time, so up to the calling function to do so.
-Note that the values array will not be modified by this function. Also, <node>
-should not be managed at the time it is modified by this function.
 ???RC Note that some functions are not reversible in this way.
-==============================================================================*/
-
-int Computed_field_set_values_at_node_in_FE_region(struct Computed_field *field,
-	struct FE_node *node, FE_value time, struct FE_region *fe_region,
-	FE_value *values);
-/*******************************************************************************
-LAST MODIFIED : 27 October 2004
-
-DESCRIPTION :
-Sets the <values> of the computed <field> at <node>. Only certain computed field
-types allow their values to be set. Fields that deal directly with FE_fields eg.
-FINITE_ELEMENT and NODE_VALUE fall into this category, as do the various
-transformations, RC_COORDINATE, RC_VECTOR, OFFSET, SCALE, etc. which convert
-the values into what they expect from their source field, and then call the same
-function for it. If a field has more than one source field, eg. RC_VECTOR, it
-can in many cases still choose which one is actually being changed, for example,
-the 'vector' field in this case - coordinates should not change. This process
-continues until the actual FE_field values at the node are changed or a field
-is reached for which its calculation is not reversible, or is not supported yet.
-
-This function works by making a copy of the node, then performing all
-modifications to it.  If these are successful then this node is merged back into
-the main one in the region, thus sending manager messages
-to the rest of the program. Because all changes are made on a temporary copy of
-the node, all current cache values will be ignored. For safety, however, the
-cache is always cleared after calling.
-It is up to calling function to begin/end node FE_region cache if more than one
-node is being modified.
-Note that the values array will not be modified by this function.
 ==============================================================================*/
 
 int Computed_field_get_values_in_element(struct Computed_field *field,
@@ -444,7 +410,7 @@ int Computed_field_set_values_in_element(struct Computed_field *field,
 	struct FE_element *element,int *number_in_xi, FE_value time,
 	FE_value *values);
 /*******************************************************************************
-LAST MODIFIED : 27 October 2004
+LAST MODIFIED : 21 April 2005
 
 DESCRIPTION :
 Sets the <values> of the computed <field> over the <element>. Only certain
@@ -465,45 +431,7 @@ points are evenly spaced in xi. There are as many <values> as there are grid
 points X number_of_components, cycling fastest through number of grid points in
 xi1, number of grid points in xi2 etc. and lastly components.
 
-Note that the values array will not be modified by this function. Also,
-<element> should not be managed at the time it is modified by this function.
 ???RC Note that some functions are not reversible in this way.
-==============================================================================*/
-
-int Computed_field_set_values_in_element_in_FE_region(struct Computed_field *field,
-	struct FE_element *element,int *number_in_xi, FE_value time,
-	struct FE_region *fe_region, FE_value *values);
-/*******************************************************************************
-LAST MODIFIED : 27 October 2004
-
-DESCRIPTION :
-Sets the <values> of the computed <field> over the <element>. Only certain
-computed field types allow their values to be set. Fields that deal directly
-with FE_fields eg. FINITE_ELEMENT fall into this category, as do the various
-transformations, RC_COORDINATE, RC_VECTOR, OFFSET, SCALE, etc. which convert
-the values into what they expect from their source field, and then call the
-same function for it. If a field has more than one source field, eg. RC_VECTOR,
-it can in many cases still choose which one is actually being changed, for
-example, the 'vector' field in this case - coordinates should not change. This
-process continues until the actual FE_field values in the element are changed or
-a field is reached for which its calculation is not reversible, or is not
-supported yet.
-
-<number_in_xi> has the number of grid cells in each xi direction of <element>,
-such that there is one more grid point in each direction than this number. Grid
-points are evenly spaced in xi. There are as many <values> as there are grid
-points X number_of_components, cycling fastest through number of grid points in
-xi1, number of grid points in xi2 etc. and lastly components.
-
-This function works by making a copy of the element, then performing all
-modifications to it. If these are successful then this node is merged back into
-the main one in the region, thus sending manager
-messages to the rest of the program. Because all changes are made on a temporary
-copy of the element, all current cache values will be ignored. For safety,
-however, the cache is always cleared after calling.
-It is up to calling function to begin/end region cache if more than one
-element is being modified.
-Note that the values array will not be modified by this function.
 ==============================================================================*/
 
 int Computed_field_get_native_discretization_in_element(

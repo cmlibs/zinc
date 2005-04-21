@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : finite_element_region.c
 
-LAST MODIFIED : 23 August 2004
+LAST MODIFIED : 21 April 2005
 
 DESCRIPTION :
 Object comprising a single finite element mesh including nodes, elements and
@@ -8044,3 +8044,98 @@ having children added or removed.
 	}
 	LEAVE;
 } /* Cmiss_region_synchronise_children_with_FE_region */
+
+int FE_region_notify_FE_node_field_change(struct FE_region *fe_region,
+	struct FE_node *node, struct FE_field *fe_field)
+/*******************************************************************************
+LAST MODIFIED : 21 April 2005
+
+DESCRIPTION :
+Tells the <fe_region> to notify any interested clients that the <node> has
+been modified only for <fe_field>.  This is intended to be called by 
+<finite_element.c> only as any external code will call through the modify
+functions in <finite_element.c>.
+==============================================================================*/
+{
+	int return_code;
+	struct FE_region *master_fe_region;
+
+	ENTER(FE_region_notify_FE_node_field_change);
+	if (fe_region && node && fe_field)
+	{
+		if (FE_region_contains_FE_node(fe_region, node))
+		{
+			return_code = 1;
+			/* get the ultimate master fe_region */
+			master_fe_region = fe_region;
+			while (master_fe_region->master_fe_region)
+			{
+				master_fe_region = master_fe_region->master_fe_region;
+			}
+			FE_REGION_FE_NODE_FIELD_CHANGE(master_fe_region, node, fe_field);
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,
+				"FE_region_notify_FE_node_field_change.  Node is not in region");
+			return_code = 0;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"FE_region_notify_FE_node_field_change.  Invalid argument(s)");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* FE_region_notify_FE_node_field_change */
+
+int FE_region_notify_FE_element_field_change(struct FE_region *fe_region,
+	struct FE_element *element, struct FE_field *fe_field)
+/*******************************************************************************
+LAST MODIFIED : 21 April 2005
+
+DESCRIPTION :
+Tells the <fe_region> to notify any interested clients that the <element> has
+been modified only for <fe_field>.  This is intended to be called by 
+<finite_element.c> only as any external code will call through the modify
+functions in <finite_element.c>.
+==============================================================================*/
+{
+	int return_code;
+	struct FE_region *master_fe_region;
+
+	ENTER(FE_region_notify_FE_element_field_change);
+	if (fe_region && element && fe_field)
+	{
+		if (FE_region_contains_FE_element(fe_region, element))
+		{
+			return_code = 1;
+			/* get the ultimate master fe_region */
+			master_fe_region = fe_region;
+			while (master_fe_region->master_fe_region)
+			{
+				master_fe_region = master_fe_region->master_fe_region;
+			}
+			FE_REGION_FE_ELEMENT_FIELD_CHANGE(master_fe_region, element, fe_field);
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,
+				"FE_region_notify_FE_element_field_change.  Element is not in region");
+			return_code = 0;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"FE_region_notify_FE_element_field_change.  Invalid argument(s)");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* FE_region_notify_FE_element_field_change */
+

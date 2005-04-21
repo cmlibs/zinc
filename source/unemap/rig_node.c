@@ -576,7 +576,6 @@ in  create_config_template_node, and the field_order_info.
 	int component_number,field_number;
 	struct Coordinate_system *coordinate_system;
 	struct FE_field *field;
-	struct FE_field_component component;
 	struct FE_node *node;
 
 	ENTER(set_config_FE_node);
@@ -601,10 +600,9 @@ in  create_config_template_node, and the field_order_info.
 					{	
 						/* convert to prolate */	 
 						/* 1st field contains electrode coords */
-						component.field=get_FE_field_order_info_field(
-							field_order_info,field_number);
+						field = get_FE_field_order_info_field(field_order_info,field_number);
 						field_number++;
-						coordinate_system =	get_FE_field_coordinate_system(component.field);
+						coordinate_system =	get_FE_field_coordinate_system(field);
 					
 #if defined (DEBUG)
 						/* for IUPS heart usr/people/williams/unemap_notes/iups2001/poster/epi_trsf_new.signal */
@@ -641,62 +639,57 @@ in  create_config_template_node, and the field_order_info.
 							coordinate_system->parameters.focus,&lambda,&mu,&theta,
 							(float *)NULL);
 #endif/*  defined (DEBUG)*/
-						component.number = 0;					
-						set_FE_nodal_FE_value_value(node,&component,0,FE_NODAL_VALUE,/*time*/0,lambda);
-						component.number = 1;
-						set_FE_nodal_FE_value_value(node,&component,0,FE_NODAL_VALUE,/*time*/0,mu);
-						component.number = 2;
-						set_FE_nodal_FE_value_value(node,&component,0,FE_NODAL_VALUE,/*time*/0,theta);
+						set_FE_nodal_FE_value_value(node,field,/*component_number*/0,
+							/*version*/0,FE_NODAL_VALUE,/*time*/0,lambda);
+						set_FE_nodal_FE_value_value(node,field,/*component_number*/1,
+							/*version*/0,FE_NODAL_VALUE,/*time*/0,mu);
+						set_FE_nodal_FE_value_value(node,field,/*component_number*/2,
+							/*version*/0,FE_NODAL_VALUE,/*time*/0,theta);
 						/* 2nd field contains device name */
 						field=get_FE_field_order_info_field(field_order_info,
 							field_number);
 						field_number++;
-						component_number=0;
-						set_FE_nodal_string_value(node,field,component_number,/*version*/0,
+						set_FE_nodal_string_value(node,field,/*component_number*/0,/*version*/0,
 							FE_NODAL_VALUE,name);
 						/* 3rd field contains device type */
 						field=get_FE_field_order_info_field(field_order_info,
 							field_number);
 						field_number++;
-						component_number=0;
-						set_FE_nodal_string_value(node,field,component_number,/*version*/0,
+						set_FE_nodal_string_value(node,field,/*component_number*/0,/*version*/0,
 							FE_NODAL_VALUE,"ELECTRODE");
 						/* 4th field contains channel number */
-						component.field=get_FE_field_order_info_field(
+						field=get_FE_field_order_info_field(
 							field_order_info,field_number);
 						field_number++;
-						component.number=0;
-						set_FE_nodal_int_value(node,&component,/*version*/0,
+						set_FE_nodal_int_value(node,field,/*component_number*/0,/*version*/0,
 							FE_NODAL_VALUE,/*time*/0,channel_number);	
 						/* 5th field contains read_order_number */
-						component.field=get_FE_field_order_info_field(
+						field=get_FE_field_order_info_field(
 							field_order_info,field_number);
 						field_number++;
-						component.number=0;
-						set_FE_nodal_int_value(node,&component,/*version*/0,
+						set_FE_nodal_int_value(node,field,/*component_number*/0,/*version*/0,
 							FE_NODAL_VALUE,/*time*/0,read_order_number);	
 #if  defined (UNEMAP_USE_NODES)	
 						/* 6th field contains highlight */
-						component.field=get_FE_field_order_info_field(
+						field=get_FE_field_order_info_field(
 							field_order_info,field_number);
 						field_number++;
-						component.number=0;
-						set_FE_nodal_int_value(node,&component,/*version*/0,
+						set_FE_nodal_int_value(node,field,/*component_number*/0,/*version*/0,
 							FE_NODAL_VALUE,/*time*/0,highlight);
 #endif /*  defined (UNEMAP_USE_NODES) */
 					} break;
 					case TORSO_ELECTRODE_TYPE:
 					{
 						/* 1st field contains electrode coords */	
-						component.field=get_FE_field_order_info_field(
+						field=get_FE_field_order_info_field(
 							field_order_info,field_number);
 						field_number++;
-						component.number = 0;					
-						set_FE_nodal_FE_value_value(node,&component,0,FE_NODAL_VALUE,/*time*/0,xpos);
-						component.number = 1;	
-						set_FE_nodal_FE_value_value(node,&component,0,FE_NODAL_VALUE,/*time*/0,ypos);
-						component.number = 2;	
-						set_FE_nodal_FE_value_value(node,&component,0,FE_NODAL_VALUE,/*time*/0,zpos);
+						set_FE_nodal_FE_value_value(node,field,/*component_number*/0,
+							/*version*/0,FE_NODAL_VALUE,/*time*/0,xpos);
+						set_FE_nodal_FE_value_value(node,field,
+							/*component_number*/1,/*version*/0,FE_NODAL_VALUE,/*time*/0,ypos);
+						set_FE_nodal_FE_value_value(node,field,
+							/*component_number*/2,/*version*/0,FE_NODAL_VALUE,/*time*/0,zpos);
 						/* 2nd field contains device name */
 						field=get_FE_field_order_info_field(field_order_info,
 							field_number);
@@ -712,39 +705,39 @@ in  create_config_template_node, and the field_order_info.
 						set_FE_nodal_string_value(node,field,component_number,/*version*/0,
 							FE_NODAL_VALUE,"ELECTRODE");
 						/* 4th field contains channel number */					
-						component.field=get_FE_field_order_info_field(
+						field=get_FE_field_order_info_field(
 							field_order_info,field_number);
 						field_number++;
-						component.number=0;
-						set_FE_nodal_int_value(node,&component,/*version*/0,
+						set_FE_nodal_int_value(node,field,
+							/*component_number*/0,/*version*//*version*/0,
 							FE_NODAL_VALUE,/*time*/0,channel_number);	
 						/* 5th field contains read_order_number */
-						component.field=get_FE_field_order_info_field(
+						field=get_FE_field_order_info_field(
 							field_order_info,field_number);
 						field_number++;
-						component.number=0;
-						set_FE_nodal_int_value(node,&component,/*version*/0,
+						set_FE_nodal_int_value(node,field,
+							/*component_number*/0,/*version*//*version*/0,
 							FE_NODAL_VALUE,/*time*/0,read_order_number);
 #if  defined (UNEMAP_USE_NODES)		
 						/* 6th field contains highlight */
-						component.field=get_FE_field_order_info_field(
+						field=get_FE_field_order_info_field(
 							field_order_info,field_number);
 						field_number++;
-						component.number=0;
-						set_FE_nodal_int_value(node,&component,/*version*/0,
+						set_FE_nodal_int_value(node,field,
+							/*component_number*/0,/*version*//*version*/0,
 							FE_NODAL_VALUE,/*time*/0,highlight);
 #endif /*  defined (UNEMAP_USE_NODES)	*/
 					} break;		
 					case PATCH_ELECTRODE_TYPE:
 					{	 
 						/* 1st field contains electrode coords */
-						component.field=get_FE_field_order_info_field(
+						field=get_FE_field_order_info_field(
 							field_order_info,field_number);
 						field_number++;
-						component.number = 0;					
-						set_FE_nodal_FE_value_value(node,&component,0,FE_NODAL_VALUE,/*time*/0,xpos);
-						component.number = 1;	
-						set_FE_nodal_FE_value_value(node,&component,0,FE_NODAL_VALUE,/*time*/0,ypos);
+						set_FE_nodal_FE_value_value(node,field,
+							/*component_number*/0,/*version*/0,FE_NODAL_VALUE,/*time*/0,xpos);
+						set_FE_nodal_FE_value_value(node,field,
+							/*component_number*/1,/*version*/0,FE_NODAL_VALUE,/*time*/0,ypos);
 						/* 2nd field contains device name */
 						field=get_FE_field_order_info_field(field_order_info,
 							field_number);
@@ -760,26 +753,26 @@ in  create_config_template_node, and the field_order_info.
 						set_FE_nodal_string_value(node,field,component_number,/*version*/0,
 							FE_NODAL_VALUE,"ELECTRODE");
 						/* 4th field contains channel number */					
-						component.field=get_FE_field_order_info_field(
+						field=get_FE_field_order_info_field(
 							field_order_info,field_number);
 						field_number++;
-						component.number=0;
-						set_FE_nodal_int_value(node,&component,/*version*/0,
+						set_FE_nodal_int_value(node,field,
+							/*component_number*/0,/*version*//*version*/0,
 							FE_NODAL_VALUE,/*time*/0,channel_number);	
 						/* 5th field contains read_order_number */
-						component.field=get_FE_field_order_info_field(
+						field=get_FE_field_order_info_field(
 							field_order_info,field_number);
 						field_number++;
-						component.number=0;
-						set_FE_nodal_int_value(node,&component,/*version*/0,
+						set_FE_nodal_int_value(node,field,
+							/*component_number*/0,/*version*//*version*/0,
 							FE_NODAL_VALUE,/*time*/0,read_order_number);	
 #if  defined (UNEMAP_USE_NODES)	
 						/* 6th field contains highlight */
-						component.field=get_FE_field_order_info_field(
+						field=get_FE_field_order_info_field(
 							field_order_info,field_number);
 						field_number++;
-						component.number=0;
-						set_FE_nodal_int_value(node,&component,/*version*/0,
+						set_FE_nodal_int_value(node,field,
+							/*component_number*/0,/*version*//*version*/0,
 							FE_NODAL_VALUE,/*time*/0,highlight);
 #endif /*  defined (UNEMAP_USE_NODES)	*/
 					} break;
@@ -800,26 +793,26 @@ in  create_config_template_node, and the field_order_info.
 						set_FE_nodal_string_value(node,field,component_number,/*version*/0,
 							FE_NODAL_VALUE,"AUXILIARY");
 						/* 3rd field contains channel number */					
-						component.field=get_FE_field_order_info_field(
+						field=get_FE_field_order_info_field(
 							field_order_info,field_number);
 						field_number++;
-						component.number=0;
-						set_FE_nodal_int_value(node,&component,/*version*/0,
+						set_FE_nodal_int_value(node,field,
+							/*component_number*/0,/*version*//*version*/0,
 							FE_NODAL_VALUE,/*time*/0,channel_number);	
 						/* 4th field contains read_order_number */
-						component.field=get_FE_field_order_info_field(
+						field=get_FE_field_order_info_field(
 							field_order_info,field_number);
 						field_number++;
-						component.number=0;
-						set_FE_nodal_int_value(node,&component,/*version*/0,
+						set_FE_nodal_int_value(node,field,
+							/*component_number*/0,/*version*//*version*/0,
 							FE_NODAL_VALUE,/*time*/0,read_order_number);
 #if  defined (UNEMAP_USE_NODES)		
 						/* 5th field contains highlight */
-						component.field=get_FE_field_order_info_field(
+						field=get_FE_field_order_info_field(
 							field_order_info,field_number);
 						field_number++;
-						component.number=0;
-						set_FE_nodal_int_value(node,&component,/*version*/0,
+						set_FE_nodal_int_value(node,field,
+							/*component_number*/0,/*version*//*version*/0,
 							FE_NODAL_VALUE,/*time*/0,highlight);
 #endif /*  defined (UNEMAP_USE_NODES)	*/
 					} break;
@@ -2325,7 +2318,6 @@ linear combinations of other channels.
 #endif /* defined (UNEMAP_USE_NODES)*/
 		*signal_field,*signal_maximum_field,
 		*signal_minimum_field,*signal_status_field;
-	struct FE_field_component component;
 	struct FE_node *device_node,*node,*node_managed;
 	struct FE_node_field_creator *node_field_creator;
 	struct FE_region *root_fe_region;
@@ -2452,9 +2444,8 @@ linear combinations of other channels.
 												device that is a linear combination see 
 												read_binary_config_FE_node,read_text_config_FE_node*/
 										device_node =get_FE_node_order_info_node(node_order_info,count);
-										component.number=0;										
-										component.field=package->channel_number_field;										
-										if ((get_FE_nodal_int_value(device_node,&component,0,FE_NODAL_VALUE,
+										if ((get_FE_nodal_int_value(device_node,
+											package->channel_number_field,/*component_number*/0,0,FE_NODAL_VALUE,
 											/*time*/0,&channel_number))&&(channel_number>0))
 										{																				
 											if ((1==BINARY_FILE_READ((char *)&temp_int,sizeof(int),1,
@@ -2661,9 +2652,8 @@ linear combinations of other channels.
 															set_unemap_package_channel_gain_field(package,
 																channel_gain_field);
 															/* set the values*/
-															component.number = 0;
-															component.field = channel_gain_field; 
-															set_FE_nodal_FE_value_value(node,&component,0,FE_NODAL_VALUE,
+															set_FE_nodal_FE_value_value(node,channel_gain_field,
+																/*component_number*/0,/*version*/0,FE_NODAL_VALUE,
 																/*time*/0,channel_gains[i]);
 														}
 														else
@@ -2696,9 +2686,8 @@ linear combinations of other channels.
 															set_unemap_package_channel_offset_field(package,
 																channel_offset_field);
 															/* set the values*/
-															component.number = 0;
-															component.field = channel_offset_field; 
-															set_FE_nodal_FE_value_value(node,&component,0,FE_NODAL_VALUE,
+															set_FE_nodal_FE_value_value(node,channel_offset_field,
+																/*component_number*/0,0,FE_NODAL_VALUE,
 																/*time*/0,channel_offsets[i]);
 														}
 														else
@@ -2733,9 +2722,8 @@ linear combinations of other channels.
 															set_unemap_package_signal_minimum_field(package,
 																signal_minimum_field);
 															/*set the signal_minimum_field and signal_maximum_field fields */
-															component.number = 0;
-															component.field = signal_minimum_field;												
-															set_FE_nodal_FE_value_value(node,&component,0,FE_NODAL_VALUE,
+															set_FE_nodal_FE_value_value(node,signal_minimum_field,
+																/*component_number*/0,0,FE_NODAL_VALUE,
 																/*time*/0,1.0);
 														}
 														else
@@ -2769,9 +2757,8 @@ linear combinations of other channels.
 															/* add it to the unemap package */
 															set_unemap_package_signal_maximum_field(package,
 																signal_maximum_field);
-															component.number = 0;
-															component.field = signal_maximum_field; 
-															set_FE_nodal_FE_value_value(node,&component,0,FE_NODAL_VALUE,
+															set_FE_nodal_FE_value_value(node,signal_maximum_field,
+																/*component_number*/0,0,FE_NODAL_VALUE,
 																/*time*/0,0.0);
 														}
 														else
@@ -2845,15 +2832,14 @@ linear combinations of other channels.
 														/* add it to the unemap package */
 														set_unemap_package_signal_field(package,signal_field);
 														/* set the values */
-														component.number = 0;
-														component.field = signal_field; 
 														switch (signal_value_type)
 														{
 															case SHORT_INT_VALUE:
 															{
 																for (j=0;j<number_of_samples;j++)
 																{
-																	set_FE_nodal_short_value(node,&component,0,
+																	set_FE_nodal_short_value(node,signal_field,
+																		/*component_number*/0,0,
 																		FE_NODAL_VALUE,times[j],node_signals_short[j]);
 																}
 															} break;
@@ -2861,7 +2847,8 @@ linear combinations of other channels.
 															{
 																for (j=0;j<number_of_samples;j++)
 																{
-																	set_FE_nodal_FE_value_value(node,&component,0,
+																	set_FE_nodal_FE_value_value(node,signal_field,
+																		/*component_number*/0,0,
 																		FE_NODAL_VALUE,times[j],node_signals_fe_value[j]);
 																}
 															} break;
@@ -3069,7 +3056,6 @@ Must call after read_signal_FE_node_group
 	struct Cmiss_region *root_cmiss_region;
 	struct FE_node *node,*node_managed;
 	struct FE_field *signal_maximum_field,*signal_minimum_field,*signal_status_field;
-	struct FE_field_component component;
 	struct FE_region *root_fe_region;
 
 	ENTER(read_event_settings_and_signal_status_FE_node_group);
@@ -3164,13 +3150,12 @@ Must call after read_signal_FE_node_group
 						if (node = CREATE(FE_node)(get_FE_node_identifier(node_managed),
 							(struct FE_region *)NULL, node_managed))
 						{
-							component.number=0;
-							component.field=signal_minimum_field;
 							/* fields have already been defined at the node in read_signal_FE_node_group*/
-							set_FE_nodal_FE_value_value(node,&component,0,FE_NODAL_VALUE,
+							set_FE_nodal_FE_value_value(node,signal_minimum_field,
+								/*component_number*/0,0,FE_NODAL_VALUE,
 								/*time*/0,signal_minimum);
-							component.field=signal_maximum_field;
-							set_FE_nodal_FE_value_value(node,&component,0,FE_NODAL_VALUE,
+							set_FE_nodal_FE_value_value(node,signal_maximum_field,
+								/*component_number*/0,0,FE_NODAL_VALUE,
 								/*time*/0,signal_maximum);
 							switch (signal_status)
 							{
@@ -3245,7 +3230,6 @@ Finds the min and max coordinates of the  <position_field>
 in the <node>.
 ==============================================================================*/
 {	
-	struct FE_field_component component;
 	FE_value c0,c1,c2,dest_coordinates[3],source_coordinates[3],x_value,
 		y_value,z_value;
 	int return_code;			
@@ -3260,15 +3244,18 @@ in the <node>.
 		position_min_max_iterator=(struct Position_min_max_iterator *)
 			position_min_max_iterator_void;	
 		if (position_min_max_iterator&&position_min_max_iterator->position_field)
-		{													 
-			component.field=position_min_max_iterator->position_field;
-			component.number=0;
-			get_FE_nodal_FE_value_value(node,&component,0,FE_NODAL_VALUE,/*time*/0,&c0);
-			component.number=1;
-			get_FE_nodal_FE_value_value(node,&component,0,FE_NODAL_VALUE,/*time*/0,&c1);
-			component.number=2;
-			get_FE_nodal_FE_value_value(node,&component,0,FE_NODAL_VALUE,/*time*/0,&c2);
-			source_coordinate_system=get_FE_field_coordinate_system(component.field);
+		{
+			get_FE_nodal_FE_value_value(node,
+				position_min_max_iterator->position_field,
+				/*component_number*/0,/*version*/0,FE_NODAL_VALUE,/*time*/0,&c0);
+			get_FE_nodal_FE_value_value(node,
+				position_min_max_iterator->position_field,
+				/*component_number*/1,/*version*/0,FE_NODAL_VALUE,/*time*/0,&c1);
+			get_FE_nodal_FE_value_value(node,
+				position_min_max_iterator->position_field,
+				/*component_number*/2,/*version*/0,FE_NODAL_VALUE,/*time*/0,&c2);
+			source_coordinate_system=get_FE_field_coordinate_system(
+				position_min_max_iterator->position_field);
 			dest_coordinate_system.type=RECTANGULAR_CARTESIAN;
 			source_coordinates[0]=c0;
 			source_coordinates[1]=c1;
@@ -3418,7 +3405,6 @@ rig_node_group_set_map_electrode_position_lambda_r
 {
 	FE_value lambda,mu,theta,r,x,y,z_cp,z_rc;	
 	int return_code;	
-	struct FE_field_component component;	
 	struct FE_field *electrode_position_field,*map_electrode_position_field;
 	struct FE_node *node_unmanaged;	
 	struct FE_region *fe_region;
@@ -3462,28 +3448,32 @@ rig_node_group_set_map_electrode_position_lambda_r
 						case SOCK:
 						{	
 							/* get the source data*/
-							component.field=electrode_position_field;
-							component.number=0;/* lambda */
-							get_FE_nodal_FE_value_value(node_unmanaged,&component,0,
+							/* lambda */
+							get_FE_nodal_FE_value_value(node_unmanaged,electrode_position_field,
+								/*component_number*/0,/*version*/0,
 								FE_NODAL_VALUE,/*time*/0,&lambda);
-							component.number=1;/* mu */
-							get_FE_nodal_FE_value_value(node_unmanaged,&component,0,
+							/* mu */
+							get_FE_nodal_FE_value_value(node_unmanaged,electrode_position_field,
+								/*component_number*/1,/*version*/0,
 								FE_NODAL_VALUE,/*time*/0,&mu);
-							component.number=2;/* theta */
-							get_FE_nodal_FE_value_value(node_unmanaged,&component,0,
+							/* theta */
+							get_FE_nodal_FE_value_value(node_unmanaged,electrode_position_field,
+								/*component_number*/2,/*version*/0,
 								FE_NODAL_VALUE,/*time*/0,&theta);
 							/* change lambda*/
 							lambda=set_map_electrode_position_info->value1;
 							/* set the dest data*/
-							component.field=map_electrode_position_field;
-							component.number=0;/* lambda */
-							set_FE_nodal_FE_value_value(node_unmanaged,&component,0,
+							/* lambda */
+							set_FE_nodal_FE_value_value(node_unmanaged,map_electrode_position_field,
+								/*component_number*/0,/*version*/0,
 								FE_NODAL_VALUE,/*time*/0,lambda);
-							component.number=1;/* mu */
-							set_FE_nodal_FE_value_value(node_unmanaged,&component,0,
+							/* mu */
+							set_FE_nodal_FE_value_value(node_unmanaged,map_electrode_position_field,
+								/*component_number*/1,/*version*/0,
 								FE_NODAL_VALUE,/*time*/0,mu);
-							component.number=2;/* theta */
-							set_FE_nodal_FE_value_value(node_unmanaged,&component,0,
+							/* theta */
+							set_FE_nodal_FE_value_value(node_unmanaged,map_electrode_position_field,
+								/*component_number*/2,/*version*/0,
 								FE_NODAL_VALUE,/*time*/0,theta);							
 						} break;	
 						case TORSO:
@@ -3491,15 +3481,17 @@ rig_node_group_set_map_electrode_position_lambda_r
 							/* Note that the torso map is in cp coords, but the torso */
 							/* electrode_positions are in rc, so torso map_electrode_positions are in cp */
 							/* get the source data stored as cartesian */
-							component.field=electrode_position_field;
-							component.number=0;/* x*/
-							get_FE_nodal_FE_value_value(node_unmanaged,&component,0,
+							/* x*/
+							get_FE_nodal_FE_value_value(node_unmanaged,electrode_position_field,
+								/*component_number*/0,/*version*/0,
 								FE_NODAL_VALUE,/*time*/0,&x);	
-							component.number=1;/* y */
-							get_FE_nodal_FE_value_value(node_unmanaged,&component,0,
+							/* y */
+							get_FE_nodal_FE_value_value(node_unmanaged,electrode_position_field,
+								/*component_number*/1,/*version*/0,
 								FE_NODAL_VALUE,/*time*/0,&y);
-							component.number=2;/* z */
-							get_FE_nodal_FE_value_value(node_unmanaged,&component,0,
+							/* z */
+							get_FE_nodal_FE_value_value(node_unmanaged,electrode_position_field,
+								/*component_number*/2,/*version*/0,
 								FE_NODAL_VALUE,/*time*/0,&z_rc);
 							/* convert coords to cylindrical polar */
 							cartesian_to_cylindrical_polar(x,y,z_rc,&r,&theta,&z_cp,(float *)NULL);
@@ -3523,35 +3515,39 @@ rig_node_group_set_map_electrode_position_lambda_r
 							r=sqrt((torso_x*torso_x)+(torso_y*torso_y));
 #endif /* defined (ROUND_TORSO) */
 							/* set the dest data,stored as cylindrical polar  */
-							component.field=map_electrode_position_field;
-							component.number=0;/* r */	
-							set_FE_nodal_FE_value_value(node_unmanaged,&component,0,
+							/* r */	
+							set_FE_nodal_FE_value_value(node_unmanaged,map_electrode_position_field,
+								/*component_number*/0,/*version*/0,
 								FE_NODAL_VALUE,/*time*/0,r); 
-							component.number=1;/* theta */	
-							set_FE_nodal_FE_value_value(node_unmanaged,&component,0,
+							/* theta */	
+							set_FE_nodal_FE_value_value(node_unmanaged,map_electrode_position_field,
+								/*component_number*/1,/*version*/0,
 								FE_NODAL_VALUE,/*time*/0,theta);
-							component.number=2;/* z_cp */	
-							set_FE_nodal_FE_value_value(node_unmanaged,&component,0,
+							/* z_cp */	
+							set_FE_nodal_FE_value_value(node_unmanaged,map_electrode_position_field,
+								/*component_number*/2,/*version*/0,
 								FE_NODAL_VALUE,/*time*/0,z_cp);							
 						} break;
 						case PATCH:
 						{		
 							/* Data to copy, but none to change */
 							/* get the source data*/
-							component.field=electrode_position_field;
-							component.number=0;/* x */
-							get_FE_nodal_FE_value_value(node_unmanaged,&component,0,
+							/* x */
+							get_FE_nodal_FE_value_value(node_unmanaged,electrode_position_field,
+								/*component_number*/0,/*version*/0,
 								FE_NODAL_VALUE,/*time*/0,&x);
-							component.number=1;/* y */
-							get_FE_nodal_FE_value_value(node_unmanaged,&component,0,
+							/* y */
+							get_FE_nodal_FE_value_value(node_unmanaged,electrode_position_field,
+								/*component_number*/1,/*version*/0,
 								FE_NODAL_VALUE,/*time*/0,&y);
 							/* set the dest data*/
-							component.field=map_electrode_position_field;
-							component.number=0;/* x */
-							set_FE_nodal_FE_value_value(node_unmanaged,&component,0,
+							/* x */
+							set_FE_nodal_FE_value_value(node_unmanaged,map_electrode_position_field,
+								/*component_number*/0,/*version*/0,
 								FE_NODAL_VALUE,/*time*/0,x);
-							component.number=1;/* y */
-							set_FE_nodal_FE_value_value(node_unmanaged,&component,0,
+							/* y */
+							set_FE_nodal_FE_value_value(node_unmanaged,map_electrode_position_field,
+								/*component_number*/1,/*version*/0,
 								FE_NODAL_VALUE,/*time*/0,y);															
 						} break;
 						default:
@@ -5969,11 +5965,12 @@ The extraction arguments are:
 					return_code=0;
 				}
 			}
-			component.field=signal_drawing_package->signal_field;
-			component.number=0;
 			number_of_nodal_values=get_FE_nodal_array_number_of_elements(device_node,
-				&component,0,FE_NODAL_VALUE);
-			value_type= get_FE_nodal_value_type(device_node,&component,0);
+				signal_drawing_package->signal_field,
+				/*component_number*/0,/*version*/0,FE_NODAL_VALUE);
+			value_type= get_FE_nodal_value_type(device_node,
+				signal_drawing_package->signal_field,
+				/*component_number*/0,/*version*/0);
 			/*get the fields for time information */
 			display_start_time_field=
 							get_Signal_drawing_package_display_start_time_field(signal_drawing_package);
@@ -6068,20 +6065,19 @@ The extraction arguments are:
 					if (values_address)
 					{
 						/* get the channel gain and offset */
-						component.field=signal_drawing_package->channel_offset_field;
-						component.number=0;	
-						if (get_FE_nodal_FE_value_value(device_node,&component,0,FE_NODAL_VALUE,
+						if (get_FE_nodal_FE_value_value(device_node,
+							signal_drawing_package->channel_offset_field,
+							/*component_number*/0,/*version*/0,FE_NODAL_VALUE,
 							/*time*/0,&channel_offset))
 						{
-							component.field=signal_drawing_package->channel_gain_field;
-							if (get_FE_nodal_FE_value_value(device_node,&component,0,FE_NODAL_VALUE,
+							if (get_FE_nodal_FE_value_value(device_node,
+								signal_drawing_package->channel_gain_field,
+								/*component_number*/0,/*version*/0,FE_NODAL_VALUE,
 								/*time*/0,&channel_gain))
 							{
 								if (ALLOCATE(signals_values,float,
 									number_of_signals*number_of_values))
 								{
-									component.field=signal_drawing_package->signal_field;
-									component.number=0;
 									switch (value_type)
 									{
 										case FE_VALUE_ARRAY_VALUE:
@@ -6090,8 +6086,9 @@ The extraction arguments are:
 												number_of_nodal_values))
 											{
 												if (get_FE_nodal_FE_value_array(device_node,
-													&component,0,FE_NODAL_VALUE,FE_value_signal_data,
-													number_of_nodal_values))
+													signal_drawing_package->signal_field,
+													/*component_number*/0,/*version*/0,FE_NODAL_VALUE,
+													FE_value_signal_data,number_of_nodal_values))
 												{
 													for (i=0;i<number_of_values;i++)
 													{
@@ -6121,8 +6118,9 @@ The extraction arguments are:
 												number_of_nodal_values))
 											{
 												if (get_FE_nodal_short_array(device_node,
-													&component,0,FE_NODAL_VALUE,short_signal_data,
-													number_of_nodal_values))
+													signal_drawing_package->signal_field,
+													/*component_number*/0,/*version*/0,FE_NODAL_VALUE,
+													short_signal_data,number_of_nodal_values))
 												{
 													for (i=0;i<number_of_values;i++)
 													{
@@ -6271,17 +6269,15 @@ The extraction arguments are:
 				}
 				if (return_code)
 				{
-					/*???DB.  In future get highlight from active group */
 					/*get highligh, signal_minimum,signal_maximum from fields*/
-					component.number=0;				
-					component.field=signal_drawing_package->highlight_field;
-					get_FE_nodal_int_value(device_node,&component,0,FE_NODAL_VALUE,
+					get_FE_nodal_int_value(device_node,signal_drawing_package->highlight_field,
+						/*component_number*/0,/*version*/0,FE_NODAL_VALUE,
 						/*time*/0,&highlight);									
-					component.field=signal_drawing_package->signal_minimum_field;
-					get_FE_nodal_FE_value_value(device_node,&component,0,FE_NODAL_VALUE,
+					get_FE_nodal_FE_value_value(device_node,signal_drawing_package->signal_minimum_field,
+						/*component_number*/0,/*version*/0,FE_NODAL_VALUE,
 						/*time*/0,&signal_minimum);
-					component.field=signal_drawing_package->signal_maximum_field;
-					get_FE_nodal_FE_value_value(device_node,&component,0,FE_NODAL_VALUE,
+					get_FE_nodal_FE_value_value(device_node,signal_drawing_package->signal_maximum_field,
+						/*component_number*/0,/*version*/0,FE_NODAL_VALUE,
 						/*time*/0,&signal_maximum);					
 				}
 			}
@@ -6609,22 +6605,20 @@ in the <node_group>. Note: Not necessarily rectangular catresian coords!
 	{	
 		position_min_max_iterator.count=0;
 		position_min_max_iterator.position_field=position_field;	
-		component.number=0;
-		component.field=position_field;
 		if (node=FE_region_get_first_FE_node_that(node_group,
 			(LIST_CONDITIONAL_FUNCTION(FE_node) *)NULL, NULL))
 		{
 			source_coordinates[0]=0;
-			component.number=0;
-			get_FE_nodal_FE_value_value(node,&component,0,FE_NODAL_VALUE,
+			get_FE_nodal_FE_value_value(node,position_field,
+				/*component_number*/0,/*version*/0,FE_NODAL_VALUE,
 				/*time*/0,&source_coordinates[0]);
 			source_coordinates[1]=0;
-			component.number=1;		
-			get_FE_nodal_FE_value_value(node,&component,0,FE_NODAL_VALUE,
+			get_FE_nodal_FE_value_value(node,position_field,
+				/*component_number*/1,/*version*/0,FE_NODAL_VALUE,
 				/*time*/0,&source_coordinates[1]);
 			source_coordinates[2]=0;
-			component.number=2;
-			get_FE_nodal_FE_value_value(node,&component,0,FE_NODAL_VALUE,
+			get_FE_nodal_FE_value_value(node,position_field,
+				/*component_number*/2,/*version*/0,FE_NODAL_VALUE,
 				/*time*/0,&source_coordinates[2]);
 			source_coordinate_system=get_FE_field_coordinate_system(position_field);
 			dest_coordinate_system.type=RECTANGULAR_CARTESIAN;
@@ -6841,12 +6835,10 @@ This function is called iteratively by analysis_unrange_all
 					&signal_minimum,&signal_maximum,(enum Event_signal_status *)NULL,					
 					1/*int time_range*/);					
 				/* set the new signal_minimum,signal_maximum*/
-				component.number=0;	
-				component.field = min_max_iterator->signal_minimum_field;	
-				/*??JW should be copying to/from node with MANAGER_MODIFY, but this func not yet used */
-				set_FE_nodal_FE_value_value(node,&component,0,FE_NODAL_VALUE,/*time*/0,signal_minimum);
-				component.field = min_max_iterator->signal_maximum_field;
-				set_FE_nodal_FE_value_value(node,&component,0,FE_NODAL_VALUE,/*time*/0,signal_maximum);
+				set_FE_nodal_FE_value_value(node,min_max_iterator->signal_minimum_field,
+					/*component_number*/0,/*version*/0,FE_NODAL_VALUE,/*time*/0,signal_minimum);
+				set_FE_nodal_FE_value_value(node,min_max_iterator->signal_maximum_field,
+					/*component_number*/0,/*version*/0,FE_NODAL_VALUE,/*time*/0,signal_maximum);
 				min_max_iterator->count++; /* don't really use,but  may as well count*/
 			}/* if (FE_field_is_defined_at_node*/
 		}	/* if (min_max_iterator */
@@ -6896,15 +6888,13 @@ This function is called iteratively by anal_set_range_all_accep_undec
 				&&FE_field_is_defined_at_node(min_max_iterator->signal_maximum_field,node))
 				/* nothing to do, but NOT an error if no signal at node*/			
 			{
-				component.number=0;	
 				signal_minimum=min_max_iterator->min;
 				signal_maximum=min_max_iterator->max;
 				/* set the new signal_minimum,signal_maximum*/
-				component.field = min_max_iterator->signal_minimum_field;
-				/*??JW should be copying to/from node with MANAGER_MODIFY, but this func not yet used */
-				set_FE_nodal_FE_value_value(node,&component,0,FE_NODAL_VALUE,/*time*/0,signal_minimum);
-				component.field = min_max_iterator->signal_maximum_field;
-				set_FE_nodal_FE_value_value(node,&component,0,FE_NODAL_VALUE,/*time*/0,signal_maximum);
+				set_FE_nodal_FE_value_value(node,min_max_iterator->signal_minimum_field,
+					/*component_number*/0,/*version*/0,FE_NODAL_VALUE,/*time*/0,signal_minimum);
+				set_FE_nodal_FE_value_value(node,min_max_iterator->signal_maximum_field,
+					/*component_number*/0,/*version*/0,FE_NODAL_VALUE,/*time*/0,signal_maximum);
 				min_max_iterator->count++; /* don't really use,but  may as well count*/
 			}/* if (FE_field_is_defined_at_node*/
 		}	/* if (min_max_iterator */
@@ -7827,7 +7817,6 @@ Assumes that convert_config_rig_to_nodes has been called first.
 	struct Device **device;	
 	struct FE_field *channel_gain_field,*channel_offset_field,*signal_field,
 		*signal_maximum_field,*signal_minimum_field,*signal_status_field;
-	struct FE_field_component component;
 	struct FE_node *node,*node_managed;
 	struct FE_node_field_creator *node_field_creator;
 	struct FE_region *root_fe_region;
@@ -8006,8 +7995,6 @@ Assumes that convert_config_rig_to_nodes has been called first.
 								set_unemap_package_channel_gain_field(package,
 									channel_gain_field);
 								/* set the values*/
-								component.number = 0;
-								component.field = channel_gain_field; 
 								if((*device)->channel)
 								{
 									channel_gain=(*device)->channel->gain;
@@ -8017,7 +8004,8 @@ Assumes that convert_config_rig_to_nodes has been called first.
 									/*a linear combination auxiliary. Not handled properly yet*/
 									channel_gain=1;
 								}
-								set_FE_nodal_FE_value_value(node,&component,0,FE_NODAL_VALUE,
+								set_FE_nodal_FE_value_value(node,channel_gain_field,
+									/*component_number*/0,/*version*/0,FE_NODAL_VALUE,
 									/*time*/0,channel_gain);
 							}
 							else
@@ -8049,8 +8037,6 @@ Assumes that convert_config_rig_to_nodes has been called first.
 								set_unemap_package_channel_offset_field(package,
 									channel_offset_field);
 								/* set the values*/
-								component.number = 0;
-								component.field = channel_offset_field; 
 								if((*device)->channel)
 								{
 									channel_offset=(*device)->channel->offset;
@@ -8060,7 +8046,8 @@ Assumes that convert_config_rig_to_nodes has been called first.
 									/*a linear combination auxiliary. Not handled properly yet*/
 									channel_offset=0;
 								}
-								set_FE_nodal_FE_value_value(node,&component,0,FE_NODAL_VALUE,
+								set_FE_nodal_FE_value_value(node, channel_offset_field,
+									/*component_number*/0,/*version*/0,FE_NODAL_VALUE,
 									/*time*/0,channel_offset);
 							}
 							else
@@ -8094,9 +8081,8 @@ Assumes that convert_config_rig_to_nodes has been called first.
 								set_unemap_package_signal_minimum_field(package,
 									signal_minimum_field);
 								/*set the signal_minimum_field and signal_maximum_field fields */
-								component.number = 0;
-								component.field = signal_minimum_field;												
-								set_FE_nodal_FE_value_value(node,&component,0,FE_NODAL_VALUE,
+								set_FE_nodal_FE_value_value(node, signal_minimum_field,
+									/*component_number*/0,/*version*/0,FE_NODAL_VALUE,
 									/*time*/0,(*device)->signal_display_minimum);
 							}
 							else
@@ -8129,9 +8115,8 @@ Assumes that convert_config_rig_to_nodes has been called first.
 								/* add it to the unemap package */
 								set_unemap_package_signal_maximum_field(package,
 									signal_maximum_field);
-								component.number = 0;
-								component.field = signal_maximum_field; 
-								set_FE_nodal_FE_value_value(node,&component,0,FE_NODAL_VALUE,
+								set_FE_nodal_FE_value_value(node, signal_maximum_field,
+								/*component_number*/0,/*version*/0,FE_NODAL_VALUE,
 									/*time*/0,(*device)->signal_display_maximum);
 							}
 							else
@@ -8222,15 +8207,14 @@ Assumes that convert_config_rig_to_nodes has been called first.
 							/* add it to the unemap package */
 							set_unemap_package_signal_field(package,signal_field);
 							/* set the values */
-							component.number = 0;
-							component.field = signal_field; 
 							switch (signal_value_type)
 							{
 								case SHORT_INT_VALUE:
 								{
 									for (j=0;j<number_of_samples;j++)
 									{
-										set_FE_nodal_short_value(node,&component,0,
+										set_FE_nodal_short_value(node, signal_field,
+											/*component_number*/0, /*version*/0,
 											FE_NODAL_VALUE,times[j],node_signals_short[j]);
 									}
 								} break;
@@ -8238,7 +8222,8 @@ Assumes that convert_config_rig_to_nodes has been called first.
 								{
 									for (j=0;j<number_of_samples;j++)
 									{
-										set_FE_nodal_FE_value_value(node,&component,0,
+										set_FE_nodal_FE_value_value(node, signal_field,
+											/*component_number*/0, /*version*/0,
 											FE_NODAL_VALUE,times[j],node_signals_fe_value[j]);
 									}
 								} break;

@@ -112,7 +112,6 @@ Updates all widgets in the rowcol to make sure they say the correct value.
 	struct Computed_field *field;
 	struct CM_element_information cm_identifier;
 	struct FE_field *fe_field;
-	struct FE_field_component fe_field_component;
 	struct FE_node *node;
 	struct Nodal_value_information *nodal_value_information;
 	Widget *child_list, text_field_widget;
@@ -170,9 +169,6 @@ Updates all widgets in the rowcol to make sure they say the correct value.
 						new_value_string = (char *)NULL;
 						if (fe_field)
 						{
-							fe_field_component.field = fe_field;
-							fe_field_component.number =
-								nodal_value_information->component_number;
 							switch (get_FE_field_value_type(fe_field))
 							{
 								case ELEMENT_XI_VALUE:
@@ -220,7 +216,8 @@ Updates all widgets in the rowcol to make sure they say the correct value.
 									FE_value fe_value_value;
 
 									get_FE_nodal_FE_value_value(node,
-										&fe_field_component,nodal_value_information->version,
+										fe_field, nodal_value_information->component_number,
+										nodal_value_information->version,
 										nodal_value_information->type,time,&fe_value_value);
 									sprintf(temp_value_string, FE_VALUE_INPUT_STRING,
 										fe_value_value);
@@ -231,7 +228,8 @@ Updates all widgets in the rowcol to make sure they say the correct value.
 									int int_value;
 
 									get_FE_nodal_int_value(node,
-										&fe_field_component,nodal_value_information->version,
+										fe_field, nodal_value_information->component_number,
+										nodal_value_information->version,
 										nodal_value_information->type,time,&int_value);
 									sprintf(temp_value_string, "%d", int_value);
 									new_value_string = duplicate_string(temp_value_string);
@@ -239,7 +237,7 @@ Updates all widgets in the rowcol to make sure they say the correct value.
 								case STRING_VALUE:
 								{
 									get_FE_nodal_string_value(node,
-										fe_field,nodal_value_information->component_number,
+										fe_field, nodal_value_information->component_number,
 										nodal_value_information->version,
 										nodal_value_information->type, &new_value_string);
 								} break;
@@ -415,7 +413,6 @@ data, and then changes the correct value in the array structure.
 	FE_value time;
 	struct Computed_field *field;
 	struct FE_field *fe_field;
-	struct FE_field_component fe_field_component;
 	struct FE_node *node;
 	struct Nodal_value_information *nodal_value_information;
 	struct Node_field_viewer_widget_struct *node_field_viewer;
@@ -452,11 +449,9 @@ data, and then changes the correct value in the array structure.
 							FE_value fe_value_value;
 
 							sscanf(value_string,FE_VALUE_INPUT_STRING,&fe_value_value);
-							fe_field_component.field=fe_field;
-							fe_field_component.number=
-								nodal_value_information->component_number;
 							set_FE_nodal_FE_value_value(node,
-								&fe_field_component,nodal_value_information->version,
+								fe_field, nodal_value_information->component_number,
+								nodal_value_information->version,
 								nodal_value_information->type, time, fe_value_value);
 						} break;
 						case INT_VALUE:
@@ -464,11 +459,9 @@ data, and then changes the correct value in the array structure.
 							int int_value;
 
 							sscanf(value_string,"%d",&int_value);
-							fe_field_component.field=fe_field;
-							fe_field_component.number=
-								nodal_value_information->component_number;
 							set_FE_nodal_int_value(node,
-								&fe_field_component,nodal_value_information->version,
+								fe_field, nodal_value_information->component_number,
+								nodal_value_information->version,
 								nodal_value_information->type,time, int_value);
 						} break;
 						case STRING_VALUE:

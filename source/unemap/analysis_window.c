@@ -2805,18 +2805,18 @@ make it the current node of <node_order_info>
 	{
 		current_node=(struct FE_node *)NULL;
 		highlight=0;
-		component.number=0;
-		component.field=highlight_field;
 		set_FE_node_order_info_current_node_number(node_order_info,0);
 		current_node=get_FE_node_order_info_current_node(node_order_info);
-		get_FE_nodal_int_value(current_node,&component,0,FE_NODAL_VALUE,
+		get_FE_nodal_int_value(current_node,highlight_field,
+			/*component_number*/0,/*version*/0,FE_NODAL_VALUE,
 			/*time*/0,&highlight);
 		while (current_node&&!highlight)
 		{
 			current_node=get_FE_node_order_info_next_node(node_order_info);
 			if (current_node)
 			{
-				get_FE_nodal_int_value(current_node,&component,0,FE_NODAL_VALUE,
+				get_FE_nodal_int_value(current_node,highlight_field,
+					/*component_number*/0,/*version*/0,FE_NODAL_VALUE,
 					/*time*/0,&highlight);
 			}
 		}
@@ -5602,11 +5602,10 @@ creates (and returns) an FE_node_order_info containing the nodes of
 ==============================================================================*/
 {
 	int count,number_of_nodes,success;
-	struct FE_field_component component;
 	struct FE_node_order_info *node_order_info;
 	struct Rig_node_sort **rig_node_sort_array;
 	struct Rig_node_sort *rig_node_sort;
-	struct FE_field *highlight_field;
+	struct FE_field *highlight_field, *field;
 
 	ENTER(create_and_sort_FE_node_order_info_from_rig_node_group);
 	node_order_info=(struct FE_node_order_info *)NULL;
@@ -5625,20 +5624,19 @@ creates (and returns) an FE_node_order_info containing the nodes of
 				if (ALLOCATE(rig_node_sort_array,struct Rig_node_sort *,
 					number_of_nodes))
 				{
-					component.number=0;
 					switch (signal_order)
 					{
 						case CHANNEL_ORDER:
 						default:
 						{
-							component.field=get_Signal_drawing_package_read_order_field(
+							field=get_Signal_drawing_package_read_order_field(
 								signal_drawing_package);
 						} break;
 						case EVENT_ORDER:
 						{
 							/*??JW will have to extract this properly, when we have the field
 								Set NULL for now */
-							component.field=(struct FE_field *)NULL;
+							field=(struct FE_field *)NULL;
 						} break;
 					}
 					count=0;
@@ -5653,7 +5651,8 @@ creates (and returns) an FE_node_order_info containing the nodes of
 								case CHANNEL_ORDER:
 								default:
 								{
-									success=get_FE_nodal_int_value(rig_node_sort->node,&component,0,
+									success=get_FE_nodal_int_value(rig_node_sort->node,
+										field,/*component_number*/0,/*version*/0,
 										FE_NODAL_VALUE,/*time*/0,&(rig_node_sort->read_order));
 									rig_node_sort->event_time=0;
 								} break;
@@ -5792,16 +5791,14 @@ c.f analysis_set_highlight_max, analysis_set_highlight_min
 			signal_drawing_package))));
 		if (return_code)
 		{
-			component.number=0;
-			component.field=signal_minimum_field;
-			return_code=get_FE_nodal_FE_value_value(device_rig_node,&component,
-				0,FE_NODAL_VALUE,
+			return_code=get_FE_nodal_FE_value_value(device_rig_node,signal_minimum_field,
+				/*component_number*/0,/*version*/0,FE_NODAL_VALUE,
 				/*time*/0,&minimum);
 		}
 		if (return_code)
 		{
-			component.field=signal_maximum_field;
-			get_FE_nodal_FE_value_value(device_rig_node,&component,0,FE_NODAL_VALUE,
+			return_code=get_FE_nodal_FE_value_value(device_rig_node,signal_maximum_field,
+				/*component_number*/0,/*version*/0,FE_NODAL_VALUE,
 				/*time*/0,&maximum);
 		}
 #else /* defined (UNEMAP_USE_NODES) */
@@ -5855,7 +5852,7 @@ Updates the analysis buffer range menu to be consistent with the current rig.
 			}
 			else
 			{
-				sprintf(value_string,"");
+				/* sprintf(value_string,""); */
 			}
 			XtVaSetValues((analysis->interval).buffer_range.start_time_text,
 				XmNvalue,value_string,NULL);
@@ -5869,7 +5866,7 @@ Updates the analysis buffer range menu to be consistent with the current rig.
 			}
 			else
 			{
-				sprintf(value_string,"");
+				/* sprintf(value_string,""); */
 			}
 			XtVaSetValues((analysis->interval).buffer_range.end_time_text,
 				XmNvalue,value_string,NULL);
@@ -5878,7 +5875,7 @@ Updates the analysis buffer range menu to be consistent with the current rig.
 		}
 		else
 		{
-			sprintf(value_string,"");
+			/* sprintf(value_string,""); */
 			XtVaSetValues((analysis->interval).buffer_range.start_sample_number_text,
 				XmNvalue,value_string,NULL);
 			XtVaSetValues((analysis->interval).buffer_range.start_time_text,

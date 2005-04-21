@@ -247,8 +247,8 @@ Updates the node locations for the <emoter_slider>
 	gtMatrix transformation; /* 4 x 4 */
 	int i,j,k,offset,return_code,versions;
 	struct Cmiss_region *input_sequence;
-	struct FE_field_component coordinate_field_component;
-	struct FE_node *node,*temp_node;
+	struct FE_field *field;
+	struct FE_node *node;
 	struct FE_region *fe_region;
 	struct EM_Object *em_object;
 	struct IO_stream *input_file;
@@ -262,8 +262,7 @@ Updates the node locations for the <emoter_slider>
 		{
 			if ((fe_region=Cmiss_region_get_FE_region(shared_data->region))&&
 				(node=FE_region_get_FE_node_from_identifier(fe_region,
-				(em_object->index)[0]))&&(coordinate_field_component.field=
-				get_FE_node_default_coordinate_field(node)))
+				(em_object->index)[0]))&&(field=get_FE_node_default_coordinate_field(node)))
 			{
 				/* Read from an input sequence which the emoter is overriding */
 				if (shared_data->input_sequence)
@@ -325,99 +324,80 @@ Updates the node locations for the <emoter_slider>
 					if ((node=FE_region_get_FE_node_from_identifier(fe_region,
 						(em_object->index)[i])))
 					{
-						if (temp_node=ACCESS(FE_node)(CREATE(FE_node)((em_object->index)[i],
-							(struct FE_region *)NULL,node)))
+						position[0] = 0;
+						position[1] = 0;
+						position[2] = 0;
+						u=(em_object->u)+(3*i);
+						weights=shared_data->weights + SOLID_BODY_MODES;
+						for (k=shared_data->mode_limit;k>0;k--)
 						{
-							position[0] = 0;
-							position[1] = 0;
-							position[2] = 0;
-							u=(em_object->u)+(3*i);
-							weights=shared_data->weights + SOLID_BODY_MODES;
-							for (k=shared_data->mode_limit;k>0;k--)
-							{
-								position[0] += u[0]*(*weights);
-								position[1] += u[1]*(*weights);
-								position[2] += u[2]*(*weights);
-								u += offset;
-								weights++;
-							}
-
-							if ( solid_body_motion )
-							{
-								if (shared_data->transformation_scene_object)
-								{
-									euler_angles[0] = shared_data->weights[5];
-									euler_angles[1] = shared_data->weights[4];
-									euler_angles[2] = shared_data->weights[3];
-									euler_to_gtMatrix(euler_angles, transformation);
-									transformation[3][0] = shared_data->weights[0];
-									transformation[3][1] = shared_data->weights[1];
-									transformation[3][2] = shared_data->weights[2];
-									Scene_object_set_transformation(
-										shared_data->transformation_scene_object,
-										&transformation);
-								}
-								else
-								{
-									/* Need to apply rotations in reverse order */
-									weights = shared_data->weights + 5;
-									temp_sin = sin( -*weights );
-									temp_cos = cos( -*weights );
-									temp_two = temp_cos * position[0] - temp_sin * position[1];
-									position[1] = temp_sin * position[0] + temp_cos * position[1];
-									position[0] = temp_two;
-									weights--;
-										
-									temp_sin = sin( -*weights );
-									temp_cos = cos( -*weights );
-									temp_two = temp_cos * position[2] - temp_sin * position[0];
-									position[0] = temp_sin * position[2] + temp_cos * position[0];
-									position[2] = temp_two;
-									weights--;
-										
-									temp_sin = sin( -*weights );
-									temp_cos = cos( -*weights );
-									temp_two = temp_cos * position[1] - temp_sin * position[2];
-									position[2] = temp_sin * position[1] + temp_cos * position[2];
-									position[1] = temp_two;
-									weights--;
-										
-									position[2] -= *weights;
-									weights--;
-									position[1] -= *weights;
-									weights--;
-									position[0] -= *weights;
-								}
-							}
-
-							for (k = 0 ; k < 3 ; k++)
-							{
-								coordinate_field_component.number = k;
-								versions = get_FE_node_field_component_number_of_versions(
-									temp_node, coordinate_field_component.field, k);
-								for (j = 0 ; j < versions ; j++)
-								{
-									return_code=set_FE_nodal_FE_value_value(temp_node,
-										&coordinate_field_component, j, FE_NODAL_VALUE,
-										/*time*/0, (FE_value)position[k]);
-								}
-							}
-
-							if (return_code)
-							{
-								if(!FE_region_merge_FE_node(fe_region, temp_node))
-								{
-									return_code = 0;
-								}
-							}
-							DEACCESS(FE_node)(&temp_node);
+							position[0] += u[0]*(*weights);
+							position[1] += u[1]*(*weights);
+							position[2] += u[2]*(*weights);
+							u += offset;
+							weights++;
 						}
-						else
+
+						if ( solid_body_motion )
 						{
-							display_message(ERROR_MESSAGE,
-								"emoter_update_nodes.  Could not copy node");
-							return_code=0;
+							if (shared_data->transformation_scene_object)
+							{
+								euler_angles[0] = shared_data->weights[5];
+								euler_angles[1] = shared_data->weights[4];
+								euler_angles[2] = shared_data->weights[3];
+								euler_to_gtMatrix(euler_angles, transformation);
+								transformation[3][0] = shared_data->weights[0];
+								transformation[3][1] = shared_data->weights[1];
+								transformation[3][2] = shared_data->weights[2];
+								Scene_object_set_transformation(
+									shared_data->transformation_scene_object,
+									&transformation);
+							}
+							else
+							{
+								/* Need to apply rotations in reverse order */
+								weights = shared_data->weights + 5;
+								temp_sin = sin( -*weights );
+								temp_cos = cos( -*weights );
+								temp_two = temp_cos * position[0] - temp_sin * position[1];
+								position[1] = temp_sin * position[0] + temp_cos * position[1];
+								position[0] = temp_two;
+								weights--;
+										
+								temp_sin = sin( -*weights );
+								temp_cos = cos( -*weights );
+								temp_two = temp_cos * position[2] - temp_sin * position[0];
+								position[0] = temp_sin * position[2] + temp_cos * position[0];
+								position[2] = temp_two;
+								weights--;
+										
+								temp_sin = sin( -*weights );
+								temp_cos = cos( -*weights );
+								temp_two = temp_cos * position[1] - temp_sin * position[2];
+								position[2] = temp_sin * position[1] + temp_cos * position[2];
+								position[1] = temp_two;
+								weights--;
+										
+								position[2] -= *weights;
+								weights--;
+								position[1] -= *weights;
+								weights--;
+								position[0] -= *weights;
+							}
 						}
+
+						for (k = 0 ; k < 3 ; k++)
+						{
+							versions = get_FE_node_field_component_number_of_versions(
+								node, field, k);
+							for (j = 0 ; j < versions ; j++)
+							{
+								return_code=set_FE_nodal_FE_value_value(node,
+									field, /*component_number*/k, j, FE_NODAL_VALUE,
+									/*time*/0, (FE_value)position[k]);
+							}
+						}
+
 					}
 					else
 					{

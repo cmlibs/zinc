@@ -81,7 +81,7 @@ greater than or equal to the number of components.
 int Cmiss_computed_field_set_values_at_node(struct Cmiss_computed_field *field,
 	struct Cmiss_node *node, int number_of_values, float time, float *values)
 /*******************************************************************************
-LAST MODIFIED : 28 October 2004
+LAST MODIFIED : 21 April 2005
 
 DESCRIPTION :
 Sets the <values> of the computed <field> at <node>. Only certain computed field
@@ -94,31 +94,15 @@ can in many cases still choose which one is actually being changed, for example,
 the 'vector' field in this case - coordinates should not change. This process
 continues until the actual FE_field values at the node are changed or a field
 is reached for which its calculation is not reversible, or is not supported yet.
-Note that you must only call this function for nodes that are not managed as it
-will change values inside them. Also, this function does not clear the cache at
-any time, so up to the calling function to do so.
-Note that the values array will not be modified by this function. Also, <node>
-should not be managed at the time it is modified by this function.
 ==============================================================================*/
 {
 	int return_code;
-	struct FE_region *fe_region;
 
 	ENTER(Cmiss_computed_field_set_values_at_node);
 	if (field && node && values &&
 		(number_of_values >= Computed_field_get_number_of_components(field)))
 	{
-		if (fe_region = FE_node_get_FE_region(node))
-		{
-			return_code = Computed_field_set_values_at_node_in_FE_region(field,
-				node, time, fe_region, values);
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"Cmiss_computed_field_set_values_at_node.  Unable to get region for node.");
-			return_code=0;
-		}
+		return_code = Computed_field_set_values_at_node(field, node, time, values);
 	}
 	else
 	{

@@ -6310,13 +6310,10 @@ window.
 			channel_number_field=get_unemap_package_channel_number_field(map->unemap_package);
 			get_FE_nodal_string_value(device_node,device_name_field,0,0,FE_NODAL_VALUE,
 				&device_name);
-			component.number=0;
-			component.field=highlight_field;
-			get_FE_nodal_int_value(device_node,&component,0,FE_NODAL_VALUE,
-						/*time*/0,&device_highlighted);
-			component.field=channel_number_field;
-			get_FE_nodal_int_value(device_node,&component,0,FE_NODAL_VALUE,
-						/*time*/0,&device_channel_number);
+			get_FE_nodal_int_value(device_node,highlight_field,/*component_number*/0,
+				/*version*/0,FE_NODAL_VALUE,/*time*/0,&device_highlighted);
+			get_FE_nodal_int_value(device_node,channel_number_field,/*component_number*/0,
+				/*version*/0,FE_NODAL_VALUE,/*time*/0,&device_channel_number);
 		}
 		else
 #endif /* defined (UNEMAP_USE_NODES) */

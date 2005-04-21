@@ -574,9 +574,9 @@ applied to multiple nodes.
 					return_code=Computed_field_evaluate_at_node(
 						edit_info->coordinate_field,node,edit_info->time,
 						initial_coordinates)&&
-						Computed_field_set_values_at_node_in_FE_region(
+						Computed_field_set_values_at_node(
 							edit_info->rc_coordinate_field,node,edit_info->time,
-							edit_info->fe_region, coordinates)&&
+							coordinates)&&
 						Computed_field_evaluate_at_node(edit_info->coordinate_field,
 							node,edit_info->time,final_coordinates);
 					edit_info->delta1 = final_coordinates[0] - initial_coordinates[0];
@@ -588,9 +588,9 @@ applied to multiple nodes.
 					edit_info->delta1 = coordinates[0] - initial_coordinates[0];
 					edit_info->delta2 = coordinates[1] - initial_coordinates[1];
 					edit_info->delta3 = coordinates[2] - initial_coordinates[2];
-					return_code=Computed_field_set_values_at_node_in_FE_region(
+					return_code=Computed_field_set_values_at_node(
 						edit_info->rc_coordinate_field,node,edit_info->time,
-						edit_info->fe_region,coordinates);
+						coordinates);
 				}
 			}
 		}
@@ -661,9 +661,8 @@ stored in the <edit_info>.
 					/*???RC following function currently copies all FE_fields in node,
 					  not just those affected, and therefore sends less efficient
 					  change message */
-					if (!Computed_field_set_values_at_node_in_FE_region(
-							 edit_info->coordinate_field,node,edit_info->time,
-							 edit_info->fe_region,coordinates))
+					if (!Computed_field_set_values_at_node(edit_info->coordinate_field,
+						node,edit_info->time, coordinates))
 					{
 						return_code=0;
 					}
@@ -814,9 +813,9 @@ NOTE: currently does not tolerate having a variable_scale_field.
 			}
 			if (return_code)
 			{
-				if (!Computed_field_set_values_at_node_in_FE_region(
+				if (!Computed_field_set_values_at_node(
 					edit_info->wrapper_orientation_scale_field,node,edit_info->time,
-					edit_info->fe_region,orientation_scale))
+					orientation_scale))
 				{
 					return_code=0;
 				}
@@ -978,9 +977,9 @@ stored in the <edit_info>.
 				}
 				if (return_code)
 				{
-					if (!Computed_field_set_values_at_node_in_FE_region(
+					if (!Computed_field_set_values_at_node(
 						edit_info->orientation_scale_field,node,edit_info->time,
-						edit_info->fe_region,orientation_scale))
+						orientation_scale))
 					{
 						return_code=0;
 					}
