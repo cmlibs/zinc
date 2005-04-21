@@ -889,8 +889,6 @@ values, <coords_comp_X_num_versions>,<coords_comp_X>, using <field_order_info>
 			case TORSO:/*theta,r , z */
 			{
 				/* 1st field contains coords, possibly more than one version */
-				component.field=position_field;
-				component.number = 0;
 				number_of_derivatives=get_FE_node_field_component_number_of_derivatives(
 					node,position_field,0);
 				component_value_types=get_FE_node_field_component_nodal_value_types(
@@ -941,7 +939,6 @@ values, <coords_comp_X_num_versions>,<coords_comp_X>, using <field_order_info>
 						position_field, /*component_number*/1,
 						i,FE_NODAL_VALUE,/*time*/0,coords_comp_1[i]));
 				}
-				component.number = 2;
 			} break;
 			default:
 			{
@@ -8683,7 +8680,6 @@ opengl texture reasons (at least on the SGI).
 			x_offset=(texture_x_length)/2;/*-(-PI*texture_x_length/2PI)*/
 			y_offset=-((z_min*(texture_y_length))/z_range);
 			electrode_postion_field=get_Region_electrode_position_field(region);
-			component.field=electrode_postion_field;
 			number_of_electrodes =
 				FE_region_get_number_of_FE_nodes(unrejected_node_group);
 			if (ALLOCATE(vertices,float,/*x,y,z*/3*number_of_electrodes)&&
