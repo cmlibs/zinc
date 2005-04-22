@@ -6597,7 +6597,6 @@ in the <node_group>. Note: Not necessarily rectangular catresian coords!
 	struct Coordinate_system *source_coordinate_system,dest_coordinate_system;
 	struct Position_min_max_iterator position_min_max_iterator;
 	struct FE_node *node;
-	struct FE_field_component component;
 
 	ENTER(get_node_group_position_min_max);
 	if (node_group&&min_x&&max_x&&min_y&&max_y&&min_z&&max_z
@@ -6626,10 +6625,8 @@ in the <node_group>. Note: Not necessarily rectangular catresian coords!
 				&dest_coordinate_system,3,dest_coordinates,(float *)NULL);
 			position_min_max_iterator.min_x=dest_coordinates[0];
 			position_min_max_iterator.max_x=position_min_max_iterator.min_x;
-			component.number=1;				
 			position_min_max_iterator.min_y=dest_coordinates[1];
 			position_min_max_iterator.max_y=position_min_max_iterator.min_y;
-			component.number=2;
 			position_min_max_iterator.min_z=dest_coordinates[2];
 			position_min_max_iterator.max_z=position_min_max_iterator.min_z;
 
