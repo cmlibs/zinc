@@ -10223,7 +10223,6 @@ Should enclose multiple calls in FE_region_begin_change/end_change wrappers.
 	FE_value x, x2, y, y2, z, z2, h2;
 	int return_code;
 	struct Apply_transformation_data *data;
-	struct FE_node *copy_node;
 	struct FE_field *coordinate_field;
 
 	ENTER(apply_transformation_to_node);
@@ -10251,29 +10250,14 @@ Should enclose multiple calls in FE_region_begin_change/end_change wrappers.
 				+ (data->transformation)[2][2] * z
 				+ (data->transformation)[3][2]) / h2;
 
-			/* create a copy of the node: */
-			if (copy_node = CREATE(FE_node)(get_FE_node_identifier(node),
-				(struct FE_region *)NULL, node))
+			if (FE_node_set_position_cartesian(node,coordinate_field,x2,y2,z2))
 			{
-				ACCESS(FE_node)(copy_node);
-				if (FE_node_set_position_cartesian(copy_node,coordinate_field,x2,y2,z2))
-				{
-					if (FE_region_merge_FE_node(data->fe_region, copy_node))
-					{
-						return_code = 1;
-					}
-				}
-				else
-				{
-					display_message(ERROR_MESSAGE,
-						"apply_transformation_to_node.  Could not move node");
-				}
-				DEACCESS(FE_node)(&copy_node);
+				return_code = 1;
 			}
 			else
 			{
 				display_message(ERROR_MESSAGE,
-					"apply_transformation_to_node.  Could not make copy of node");
+					"apply_transformation_to_node.  Could not move node");
 			}
 		}
 		else
@@ -18017,7 +18001,7 @@ Sets nodal field values from a command.
 	};
 	struct Cmiss_command_data *command_data;
 	struct FE_field_component component;
-	struct FE_node *copy_node, *node;
+	struct FE_node *node;
 	struct FE_region *fe_region;
 	struct LIST(FE_field) *fe_field_list;
 
@@ -18066,7 +18050,7 @@ Sets nodal field values from a command.
 					{
 						if (1 == sscanf(current_token, FE_VALUE_INPUT_STRING, &value))
 						{
-							if (!(set_FE_nodal_FE_value_value(copy_node,
+							if (!(set_FE_nodal_FE_value_value(node,
 								component.field, component.number, 
 								/*version*/0, value_type, /*time*/0,value)))
 							{
