@@ -17327,7 +17327,6 @@ at the <node>.
 ==============================================================================*/
 {
 	int i,return_code;
-	struct FE_field_component component;
 	struct FE_time_sequence *time_sequence;
 	Value_storage *values_storage = NULL;
 
@@ -17349,9 +17348,6 @@ at the <node>.
 			} break;
 			case GENERAL_FE_FIELD:
 			{
-				/* Put into a component for the meantime */
-				component.field = field;
-				component.number = component_number;
 				if (find_FE_nodal_values_storage_dest(node,field,component_number,
 					version,type,ELEMENT_XI_VALUE,&values_storage,&time_sequence))
 				{
@@ -17443,7 +17439,6 @@ Sets a particular element_xi_value (<version>, <type>) for the field
 ==============================================================================*/
 {
 	int i, number_of_xi_dimensions, return_code; 
-	struct FE_field_component component;
 	struct FE_time_sequence *time_sequence;
 	Value_storage *values_storage = NULL;
 
@@ -17453,9 +17448,6 @@ Sets a particular element_xi_value (<version>, <type>) for the field
 		(component_number<field->number_of_components)&&(0<=version)&&
 		element&&element->shape&&xi&&(field->value_type==ELEMENT_XI_VALUE))
 	{
-		/* Put into a component for the meantime */
-		component.field = field;
-		component.number = component_number;
 		/* get the values storage */
 		if (find_FE_nodal_values_storage_dest(node,field,component_number,
 			version,type,ELEMENT_XI_VALUE,&values_storage,&time_sequence))
