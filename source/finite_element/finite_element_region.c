@@ -124,6 +124,11 @@ DESCRIPTION :
 	/*???RC temporary until data_root_region is removed; following flag indicates
 		that the master_fe_region owns fields and elements but not nodes */
 	int data_hack;
+	/* SAB When checking to see if an FE_node belongs to the FE_region as 
+		defined by it's fields we also need to check the data_hack_region,
+		therefore we keep a pointer to it here.  NOT ACCESSED as doing so
+		would create a circular accessing. */
+	struct FE_region *data_hack_fe_region;
 
 	/* field information, ignored if master_fe_region is used */
 	struct FE_time_sequence_package *fe_time;
@@ -1251,6 +1256,7 @@ elements and fields and the <basis_manager> must be supplied in this case.
 					CREATE(LIST(FE_element_field_info))();
 			}
 			fe_region->data_hack = 0;
+			fe_region->data_hack_fe_region = (struct FE_region *)NULL;
 			fe_region->cmiss_region = (struct Cmiss_region *)NULL;
 			fe_region->fe_field_info = (struct FE_field_info *)NULL;
 			fe_region->fe_node_list = CREATE(LIST(FE_node))();
@@ -1338,6 +1344,7 @@ fe_time, fe_field_list etc. are still around.
 			(struct MANAGER(FE_basis) *)NULL, (struct LIST(FE_element_shape) *)NULL))
 		{
 			fe_region->data_hack = 1;
+			data_hack_master_fe_region->data_hack_fe_region = fe_region;
 		}
 	}
 	else
@@ -2897,6 +2904,46 @@ Returns true if <node> is in <fe_region>.
 
 	return (return_code);
 } /* FE_region_contains_FE_node_conditional */
+
+int FE_region_or_data_hack_FE_region_contains_FE_node(struct FE_region *fe_region,
+	struct FE_node *node)
+/*******************************************************************************
+LAST MODIFIED : 26 April 2005
+
+DESCRIPTION :
+Returns true if <node> is in <fe_region> or if the <fe_region> has a data_hack
+region attached to it in that attached region.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(FE_region_contains_FE_node);
+	if (fe_region && node)
+	{
+		if (IS_OBJECT_IN_LIST(FE_node)(node, fe_region->fe_node_list))
+		{
+			return_code = 1;
+		}
+		else if (fe_region->data_hack_fe_region && 
+			IS_OBJECT_IN_LIST(FE_node)(node, fe_region->data_hack_fe_region->fe_node_list))
+		{
+			return_code = 1;
+		}
+		else	
+		{
+			return_code = 0;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"FE_region_contains_FE_node.  Invalid argument(s)");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* FE_region_or_data_hack_FE_region_contains_FE_node */
 
 int FE_node_is_not_in_FE_region(struct FE_node *node, void *fe_region_void)
 /*******************************************************************************
@@ -8068,11 +8115,21 @@ functions in <finite_element.c>.
 			return_code = 1;
 			/* get the ultimate master fe_region */
 			master_fe_region = fe_region;
-			while (master_fe_region->master_fe_region)
+			while (master_fe_region->master_fe_region && 
+				(!master_fe_region->data_hack))
 			{
 				master_fe_region = master_fe_region->master_fe_region;
 			}
 			FE_REGION_FE_NODE_FIELD_CHANGE(master_fe_region, node, fe_field);
+		}
+		/* If we notify the region indicated by the node_field_info of changes 
+			to a data point then this will be the parent of the data_hack region,
+			so we need to check for this node in the data hack region too */
+		else if (fe_region->data_hack_fe_region && 
+			FE_region_contains_FE_node(fe_region->data_hack_fe_region, node))
+		{
+			FE_REGION_FE_NODE_FIELD_CHANGE(fe_region->data_hack_fe_region, 
+				node, fe_field);
 		}
 		else
 		{

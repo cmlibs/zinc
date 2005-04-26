@@ -17279,7 +17279,7 @@ and <component_number> at the <node>. \
 					are created with respect to some region but they are not necessarily merged \
 					into it yet. */ \
 				if (node->fields && node->fields->fe_region && \
-					FE_region_contains_FE_node(node->fields->fe_region, node)) \
+					FE_region_or_data_hack_FE_region_contains_FE_node(node->fields->fe_region, node)) \
 				{ \
 					/* If so, notify the change */ \
 					FE_region_notify_FE_node_field_change(node->fields->fe_region, node, \

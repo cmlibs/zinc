@@ -393,6 +393,16 @@ FE_node conditional function version of FE_region_contains_FE_node.
 Returns true if <node> is in <fe_region>.
 ==============================================================================*/
 
+int FE_region_or_data_hack_FE_region_contains_FE_node(struct FE_region *fe_region,
+	struct FE_node *node);
+/*******************************************************************************
+LAST MODIFIED : 26 April 2005
+
+DESCRIPTION :
+Returns true if <node> is in <fe_region> or if the <fe_region> has a data_hack
+region attached to it in that attached region.
+==============================================================================*/
+
 int FE_node_is_not_in_FE_region(struct FE_node *node, void *fe_region_void);
 /*******************************************************************************
 LAST MODIFIED : 3 April 2003
