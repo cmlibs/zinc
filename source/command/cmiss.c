@@ -59,6 +59,7 @@ Functions for executing cmiss commands.
 #include "image_processing/computed_field_cube_plugin_all.h"
 #include "image_processing/computed_field_dilate_filter.h"
 #include "image_processing/computed_field_edge_detection.h"
+#include "image_processing/computed_field_edge_direction.h"
 #include "image_processing/computed_field_erode_filter.h"
 #include "image_processing/computed_field_first_order_statistics.h"
 #include "image_processing/computed_field_fuzzy_clustering.h"
@@ -24372,6 +24373,9 @@ Initialise all the subcomponents of cmgui and create the Cmiss_command_data
 					command_data->computed_field_package,
 					command_data->root_region, command_data->graphics_buffer_package);
 				Computed_field_register_types_edge_detection(
+					command_data->computed_field_package,
+					command_data->root_region, command_data->graphics_buffer_package);
+				Computed_field_register_types_edge_direction(
 					command_data->computed_field_package,
 					command_data->root_region, command_data->graphics_buffer_package);
 				Computed_field_register_types_erode_filter(
