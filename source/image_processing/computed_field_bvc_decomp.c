@@ -367,13 +367,15 @@ static int Image_cache_bvc_decomp(struct Image_cache *image, char *result, int n
 /*******************************************************************************
 LAST MODIFIED : 15 March 2005
 
-DESCRIPTION :
-Perform a image decomposition operation in Image_cache.
+DESCRIPTION :  Perform a image decomposition operation in Image_cache.
 The method decomps the input image into the sume of a bounded variation
-component and an oscillating component. The oscillating component contains the texture and the noise. This method is based on minimizing a functional 
+component and an oscillating component, f = u + v. The oscillating component v 
+contains the texture and the noise. This method is based on minimizing a functional 
 of two variables. When a variable is fixed, a orthogonal projection method 
 is used to minimize the functional:
-F(u,v) = J(u) + (1/2*lambda) ||f-u-v||^2, v in G_mu^d 
+                F(u,v) = J(u) + (1/2*lambda) ||f-u-v||^2, 
+where,   v in {G_{mu}}^d = {div(g)|g = (g1,g2), g1, g2 in L^2(R) and ||g||_{infinite} <= lambda}
+         u in BV, J(u) is the total variation of u. 
 
 REFERENCE: J._F. Aujol, et al., "Image decomposition into a bounded variation component and an oscillating component," J. of Math. Imaging and Vision, Vol. 22: 71-88, 2005
 ==============================================================================*/
@@ -440,7 +442,8 @@ REFERENCE: J._F. Aujol, et al., "Image decomposition into a bounded variation co
 			result_index = (FE_value *)storage;
 			for (n = 0; n < number_of_iterations; n++)
 			{
-			        
+			        /*1. Fixed v, search for u using orthogonal operator:
+				     u = f - v - P_{G}(f-v) */
 				for (i = 0; i < storage_size/image->depth; i++)
 				{
 				        q1_index[i] = 0.0;
@@ -551,6 +554,8 @@ REFERENCE: J._F. Aujol, et al., "Image decomposition into a bounded variation co
 						data_index += image->depth;
 					}
 				}
+				/*2. Fixed u, search for v using orthogonal operator:
+				        v = P_{G}(f - u)*/
 				data_index = (FE_value *)image->data;
 				for (i = 0; i < storage_size/image->depth; i++)
 				{
