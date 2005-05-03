@@ -425,8 +425,97 @@ DESCRIPTION :
 Not implemented yet.
 ==============================================================================*/
 
-#define Computed_field_sample_texture_get_native_resolution \
-	(Computed_field_get_native_resolution_function)NULL
+
+int Computed_field_sample_texture_get_native_resolution(struct Computed_field *field,
+        int *dimension, int **sizes, FE_value **minimums, FE_value **maximums,
+	struct Computed_field **texture_coordinate_field)
+/*******************************************************************************
+LAST MODIFIED : 4 February 2005
+
+DESCRIPTION :
+Gets the <dimension>, <sizes>, <minimums>, <maximums> and <texture_coordinate_field> from
+the <field>. These parameters will be used in image processing.
+
+==============================================================================*/
+{       
+        int return_code;
+	struct Computed_field_sample_texture_type_specific_data *data;
+	int w, h, d;
+	struct Texture *texture;
+	
+	ENTER(Computed_field_sample_texture_get_native_resolution);
+	if (field && (data =
+		(struct Computed_field_sample_texture_type_specific_data *)
+		field->type_specific_data) && data->texture)
+	{
+	        texture = (struct Texture *)NULL;
+		texture = ACCESS(Texture)(data->texture);
+		Texture_get_size(data->texture, &w, &h, &d);
+		Texture_get_dimension(data->texture,dimension);
+		if ((*sizes) && (*minimums) && (*maximums))
+		{
+		        if (!(REALLOCATE(*sizes, *sizes, int, *dimension) &&
+			        REALLOCATE(*minimums, *minimums, FE_value, *dimension) &&
+				REALLOCATE(*maximums, *maximums, FE_value, *dimension)))
+		        {
+				return_code = 0;
+			}
+		}
+		else
+		{
+			if (!(ALLOCATE(*sizes, int, *dimension) &&
+				ALLOCATE(*minimums, FE_value, *dimension) &&
+				ALLOCATE(*maximums, FE_value, *dimension)))
+			{
+				return_code = 0;
+			}
+		}
+		if (return_code)
+		{
+		        if (*dimension == 2)
+			{
+			        (*sizes)[0] = w;
+				(*sizes)[1] = h;
+				(*minimums)[0]=data->minimum;
+				(*minimums)[1]=data->minimum;
+				(*maximums)[0]=data->maximum;
+				(*maximums)[1]=data->maximum;
+			}
+			else if (*dimension == 3)
+			{
+			        (*sizes)[0] = w;
+				(*sizes)[1] = h;
+				(*sizes)[2] = d;
+				(*minimums)[0]=data->minimum;
+				(*minimums)[1]=data->minimum;
+				(*minimums)[2]=data->minimum;
+				(*maximums)[0]=data->maximum;
+				(*maximums)[1]=data->maximum;
+				(*maximums)[2]=data->maximum;
+			}
+		}
+		/* Texture_coordinate_field from source fields */
+		if (*texture_coordinate_field)
+		{
+			/* DEACCESS(Computed_field)(&(*texture_coordinate_field));
+			*texture_coordinate_field = ACCESS(Computed_field)(field->source_fields[1]); */
+		}
+		else
+		{
+		        *texture_coordinate_field = ACCESS(Computed_field)(field->source_fields[0]);
+		}	 
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Computed_field_sample_texture_get_native_resolution.  Missing field");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Computed_field_sample_texture_get_native_resolution */
+
 
 static int list_Computed_field_sample_texture(
 	struct Computed_field *field)
