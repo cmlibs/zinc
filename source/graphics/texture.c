@@ -4148,6 +4148,25 @@ into the texture.
 	return (return_code);
 } /* Texture_get_size */
 
+int Texture_get_dimension(struct Texture *texture, int *dimension)
+{
+        int return_code;
+	ENTER(Texture_get_dimension);
+	if (texture)
+	{
+	        *dimension = texture->dimension;
+	}
+	else
+	{
+	        display_message(ERROR_MESSAGE,
+			"Texture_get_dimension.  Missing texture");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+}/* Texture_get_dimension */
+
 enum Texture_wrap_mode Texture_get_wrap_mode(struct Texture *texture)
 /*******************************************************************************
 LAST MODIFIED : 11 October 2000

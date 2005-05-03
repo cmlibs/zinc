@@ -543,6 +543,8 @@ and depth returned are at least as large as those of the original image read
 into the texture.
 ==============================================================================*/
 
+int Texture_get_dimension(struct Texture *texture, int *dimension);
+
 enum Texture_wrap_mode Texture_get_wrap_mode(struct Texture *texture);
 /*******************************************************************************
 LAST MODIFIED : 11 October 2000
