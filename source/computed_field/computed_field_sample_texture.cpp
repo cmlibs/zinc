@@ -441,15 +441,13 @@ the <field>. These parameters will be used in image processing.
         int return_code;
 	struct Computed_field_sample_texture_type_specific_data *data;
 	int w, h, d;
-	struct Texture *texture;
 	
 	ENTER(Computed_field_sample_texture_get_native_resolution);
 	if (field && (data =
 		(struct Computed_field_sample_texture_type_specific_data *)
 		field->type_specific_data) && data->texture)
 	{
-	        texture = (struct Texture *)NULL;
-		texture = ACCESS(Texture)(data->texture);
+	        
 		Texture_get_size(data->texture, &w, &h, &d);
 		Texture_get_dimension(data->texture,dimension);
 		if ((*sizes) && (*minimums) && (*maximums))
@@ -497,8 +495,8 @@ the <field>. These parameters will be used in image processing.
 		/* Texture_coordinate_field from source fields */
 		if (*texture_coordinate_field)
 		{
-			/* DEACCESS(Computed_field)(&(*texture_coordinate_field));
-			*texture_coordinate_field = ACCESS(Computed_field)(field->source_fields[1]); */
+			
+			REACCESS(Computed_field)(&(*texture_coordinate_field), field->source_fields[0]); 
 		}
 		else
 		{
