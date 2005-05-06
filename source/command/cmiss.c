@@ -78,6 +78,7 @@ Functions for executing cmiss commands.
 #include "image_processing/computed_field_image_enhancement.h"
 #include "image_processing/computed_field_image_mask.h"
 #include "image_processing/computed_field_image_mean_value.h"
+#include "image_processing/computed_field_image_resample.h"
 #include "image_processing/computed_field_image_threshold.h"
 #include "image_processing/computed_field_image_tv_restoration.h"
 #include "image_processing/computed_field_iteration_threshold.h"
@@ -24430,6 +24431,9 @@ Initialise all the subcomponents of cmgui and create the Cmiss_command_data
 					command_data->computed_field_package,
 					command_data->root_region, command_data->graphics_buffer_package);
 				Computed_field_register_types_image_mean_value(
+					command_data->computed_field_package,
+					command_data->root_region, command_data->graphics_buffer_package);
+				Computed_field_register_types_image_resample(
 					command_data->computed_field_package,
 					command_data->root_region, command_data->graphics_buffer_package);
 				Computed_field_register_types_image_threshold(

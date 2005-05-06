@@ -945,6 +945,7 @@ IMAGE_PROCESSING_SRCS = \
 	image_processing/computed_field_image_enhancement.c \
 	image_processing/computed_field_image_mask.c \
 	image_processing/computed_field_image_mean_value.c \
+	image_processing/computed_field_image_resample.c \
 	image_processing/computed_field_image_threshold.c \
 	image_processing/computed_field_image_tv_restoration.c \
 	image_processing/computed_field_iteration_threshold.c \
