@@ -1140,13 +1140,17 @@ Directly outputs the commands setting up the <texture>.
 			{
 				glTexParameteri(texture_target,GL_TEXTURE_WRAP_S,GL_CLAMP);
 				glTexParameteri(texture_target,GL_TEXTURE_WRAP_T,GL_CLAMP);
+#if defined (GL_VERSION_1_2) || defined (GL_EXT_texture3D)
 				glTexParameteri(texture_target,GL_TEXTURE_WRAP_R,GL_CLAMP);
+#endif /* defined (GL_VERSION_1_2) || defined (GL_EXT_texture3D) */
 			} break;
 			case TEXTURE_REPEAT_WRAP:
 			{
 				glTexParameteri(texture_target,GL_TEXTURE_WRAP_S,GL_REPEAT);
 				glTexParameteri(texture_target,GL_TEXTURE_WRAP_T,GL_REPEAT);
+#if defined (GL_VERSION_1_2) || defined (GL_EXT_texture3D)
 				glTexParameteri(texture_target,GL_TEXTURE_WRAP_R,GL_REPEAT);
+#endif /* defined (GL_VERSION_1_2) || defined (GL_EXT_texture3D) */
 			} break;
 		}
 		switch (texture->filter_mode)
