@@ -5130,6 +5130,13 @@ already) and allows its contents to be modified.
 					DESTROY(Option_table)(&option_table);
 				}
 			}
+			if (!source_field)
+			{
+				display_message(ERROR_MESSAGE,
+					"define_Computed_field_type_offset.  "
+					"You must specify the source field before the offsets.");
+				return_code = 0;
+			}
 			/* parse the offsets */
 			if (return_code && state->current_token)
 			{
