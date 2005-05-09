@@ -2847,21 +2847,21 @@ will work with order_independent_transparency.
 ==============================================================================*/
 {
 	int return_code;
-	struct Material_package *material_package;
 #if defined (OPENGL_API)
 	enum Material_program_type modified_type;
 	struct Material_order_independent_transparency *data;
+	struct Material_package *material_package;
 	struct Material_program *unmodified_program;
 #endif /* defined (OPENGL_API) */
 
 	ENTER(compile_Graphical_material);
 
+#if defined (OPENGL_API)
 	if (material && (data = (struct Material_order_independent_transparency *)
 			material_order_independent_data_void))
 	{
-		material_package = material->package;
 		return_code = 1;
-#if defined (OPENGL_API)
+		material_package = material->package;
 		/* Only do the materials that have been compiled already as the scene
 			is compiled so presumably uncompiled materials are not used. */
 		if ((GRAPHICS_COMPILED == material->compile_status) &&
@@ -2924,11 +2924,6 @@ will work with order_independent_transparency.
 
 			material->program = unmodified_program;
 		}
-#else /* defined (OPENGL_API) */
-		display_message(ERROR_MESSAGE,
-			"compile_Graphical_material.  Not defined for this graphics API");
-		return_code = 0;
-#endif /* defined (OPENGL_API) */
 	}
 	else
 	{
@@ -2936,6 +2931,11 @@ will work with order_independent_transparency.
 			"compile_Graphical_material.  Missing material");
 		return_code=0;
 	}
+#else /* defined (OPENGL_API) */
+	display_message(ERROR_MESSAGE,
+		"compile_Graphical_material.  Not defined for this graphics API");
+	return_code = 0;
+#endif /* defined (OPENGL_API) */
 	LEAVE;
 
 	return (return_code);
