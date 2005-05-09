@@ -2945,6 +2945,13 @@ already) and allows its contents to be modified.
 					"define_Computed_field_type_scale.  Must specify a source field before the scale_factors.");
 				return_code = 0;
 			}
+			if (return_code && !source_field)
+			{
+				display_message(ERROR_MESSAGE,
+					"define_Computed_field_type_scale.  "
+					"You must specify the source field before the offsets.");
+				return_code = 0;
+			}
 			/* parse the scale_factors */
 			if (return_code&&state->current_token)
 			{
@@ -3676,6 +3683,13 @@ already) and allows its contents to be modified.
 					DESTROY(Option_table)(&option_table);
 				}
 			}
+			if (return_code && !source_field)
+			{
+				display_message(ERROR_MESSAGE,
+					"define_Computed_field_type_clamp_maximum.  "
+					"You must specify the source field before the offsets.");
+				return_code = 0;
+			}
 			/* parse the maximums */
 			if (return_code && state->current_token)
 			{
@@ -4398,6 +4412,13 @@ already) and allows its contents to be modified.
 					}
 					DESTROY(Option_table)(&option_table);
 				}
+			}
+			if (return_code && !source_field)
+			{
+				display_message(ERROR_MESSAGE,
+					"define_Computed_field_type_clamp_minimum.  "
+					"You must specify the source field before the offsets.");
+				return_code = 0;
 			}
 			/* parse the minimums */
 			if (return_code && state->current_token)
@@ -5130,7 +5151,7 @@ already) and allows its contents to be modified.
 					DESTROY(Option_table)(&option_table);
 				}
 			}
-			if (!source_field)
+			if (return_code && !source_field)
 			{
 				display_message(ERROR_MESSAGE,
 					"define_Computed_field_type_offset.  "
@@ -5756,6 +5777,13 @@ already) and allows its contents to be modified.
 					}
 					DESTROY(Option_table)(&option_table);
 				}
+			}
+			if (return_code && !source_field)
+			{
+				display_message(ERROR_MESSAGE,
+					"define_Computed_field_type_sum_components.  "
+					"You must specify the source field before the offsets.");
+				return_code = 0;
 			}
 			/* parse the weights */
 			if (return_code && state->current_token)
@@ -6470,6 +6498,13 @@ already) and allows its contents to be modified.
 					}
 					DESTROY(Option_table)(&option_table);
 				}
+			}
+			if (return_code && !source_field)
+			{
+				display_message(ERROR_MESSAGE,
+					"define_Computed_field_type_edit_mask.  "
+					"You must specify the source field before the offsets.");
+				return_code = 0;
 			}
 			/* parse the edit_mask */
 			if (return_code && state->current_token)
