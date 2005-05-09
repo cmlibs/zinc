@@ -2846,11 +2846,13 @@ Recompile each of the <materials> which have already been compiled so that they
 will work with order_independent_transparency. 
 ==============================================================================*/
 {
-	enum Material_program_type modified_type;
 	int return_code;
-	struct Material_order_independent_transparency *data;
 	struct Material_package *material_package;
+#if defined (OPENGL_API)
+	enum Material_program_type modified_type;
+	struct Material_order_independent_transparency *data;
 	struct Material_program *unmodified_program;
+#endif /* defined (OPENGL_API) */
 
 	ENTER(compile_Graphical_material);
 
@@ -2859,12 +2861,12 @@ will work with order_independent_transparency.
 	{
 		material_package = material->package;
 		return_code = 1;
+#if defined (OPENGL_API)
 		/* Only do the materials that have been compiled already as the scene
 			is compiled so presumably uncompiled materials are not used. */
 		if ((GRAPHICS_COMPILED == material->compile_status) &&
 			material->display_list)
 		{
-#if defined (OPENGL_API)
 			unmodified_program = material->program;
 			if (material->program)
 			{
@@ -2921,12 +2923,12 @@ will work with order_independent_transparency.
 			glEndList();
 
 			material->program = unmodified_program;
-#else /* defined (OPENGL_API) */
-				display_message(ERROR_MESSAGE,
-					"compile_Graphical_material.  Not defined for this API");
-				return_code = 0;
-#endif /* defined (OPENGL_API) */
 		}
+#else /* defined (OPENGL_API) */
+		display_message(ERROR_MESSAGE,
+			"compile_Graphical_material.  Not defined for this graphics API");
+		return_code = 0;
+#endif /* defined (OPENGL_API) */
 	}
 	else
 	{
