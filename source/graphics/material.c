@@ -2932,6 +2932,8 @@ will work with order_independent_transparency.
 		return_code=0;
 	}
 #else /* defined (OPENGL_API) */
+	USE_PARAMETER(material);
+	USE_PARAMETER(material_order_independent_data_void);
 	display_message(ERROR_MESSAGE,
 		"compile_Graphical_material.  Not defined for this graphics API");
 	return_code = 0;
