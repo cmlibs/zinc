@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : order_independent_transparency.c
 
-LAST MODIFIED : 14 April 2003
+LAST MODIFIED : 2 May 2005
 
 DESCRIPTION :
 Implements in NVIDIA hardware a depth sorting algorithm where each depth
@@ -22,21 +22,33 @@ HISTORY :
 
 #include "general/debug.h"
 #include "graphics/graphics_library.h"
+#include "graphics/material.h"
 #include "graphics/scene_viewer.h"
 #include "user_interface/message.h"
 
+#if ! defined (WIN32_SYSTEM)
+#define GL_GLEXT_PROTOTYPES
+#define GLX_GLXEXT_PROTOTYPES
+#endif /* ! defined (WIN32_SYSTEM) */
+
 #include "graphics/order_independent_transparency.h"
 
-static char *required_extensions[] = {"GL_NV_register_combiners",
-												  "GL_NV_register_combiners2",
-												  "GL_NV_texture_rectangle",
-												  "GL_NV_texture_shader",
-												  "GL_SGIX_depth_texture",
-												  "GL_SGIX_shadow"};
+#if ! defined GL_ARB_texture_rectangle
+#   if defined GL_EXT_texture_rectangle
+#      define GL_ARB_texture_rectangle GL_EXT_texture_rectangle
+#   endif /* defined GL_EXT_texture_rectangle */
+#endif /* ! defined GL_ARB_texture_rectangle */
+
+static char *required_extensions[] = {"GL_ARB_texture_rectangle",
+												  "GL_ARB_vertex_program",
+												  "GL_ARB_fragment_program",
+												  "GL_ARB_fragment_program_shadow",
+												  "GL_ARB_depth_texture",
+												  "GL_ARB_shadow"};
 #if ! defined (WIN32_SYSTEM) && ! defined (AIX)
-#if defined GL_NV_register_combiners && defined GL_NV_register_combiners2 \
-   && defined GL_NV_texture_rectangle && defined GL_NV_texture_shader \
-   && defined GL_SGIX_depth_texture && defined GL_SGIX_shadow
+#if defined GL_ARB_texture_rectangle && defined GL_ARB_vertex_program \
+   && defined GL_ARB_fragment_program && defined  GL_ARB_fragment_program_shadow \
+   && defined GL_ARB_depth_texture && defined GL_ARB_shadow
 #define ORDER_INDEPENDENT_CAPABLE
 #endif
 #endif /* ! defined (WIN32_SYSTEM) */
@@ -44,24 +56,14 @@ static char *required_extensions[] = {"GL_NV_register_combiners",
 #if defined (ORDER_INDEPENDENT_CAPABLE)
 struct Scene_viewer_order_independent_transparency_data
 /*******************************************************************************
-LAST MODIFIED : 14 April 2003
+LAST MODIFIED : 2 May 2005
 
 DESCRIPTION :
 The private user data for this order independent transparency rendering pass.
 ==============================================================================*/
 {
 	unsigned int ztex_texture_id;
-	unsigned int simple_1x1_uhilo_texture_id;
 	unsigned int *rgba_layer_texture_id;
-
-	unsigned int quad_display_list;
-	unsigned int geometry_display_list;
-	unsigned int rc_highlight_adds_alpha_display_list;
-	unsigned int rc_highlight_adds_alpha__peel_display_list;
-	unsigned int rc_sum_display_list;
-	unsigned int rc_sum__peel_display_list;
-	unsigned int rc_composite_display_list;
-	unsigned int rc_composite_alphaone_display_list;
 
 	int viewport_width;
 	int viewport_height;
@@ -74,6 +76,8 @@ The private user data for this order independent transparency rendering pass.
 	GLuint *zbuffer;	
 
 	GLenum depth_format;
+
+	struct Scene_viewer *scene_viewer;
 };
 
 static void set_texgen_planes(GLenum plane_type, float matrix[16])
@@ -136,86 +140,10 @@ the planes in the <matrix>.
 	LEAVE;
 } /* obj_linear_texgen */
 
-static void texgen(int enable)
-/*******************************************************************************
-LAST MODIFIED : 14 April 2003
-
-DESCRIPTION :
-Enables or disables all the texture generation coordinates.
-==============================================================================*/
-{
-	ENTER(texgen);
-	if(enable)
-	{
-		glEnable(GL_TEXTURE_GEN_S);
-		glEnable(GL_TEXTURE_GEN_T);
-		glEnable(GL_TEXTURE_GEN_R);
-		glEnable(GL_TEXTURE_GEN_Q);
-	}
-	else
-	{
-		glDisable(GL_TEXTURE_GEN_S);
-		glDisable(GL_TEXTURE_GEN_T);
-		glDisable(GL_TEXTURE_GEN_R);
-		glDisable(GL_TEXTURE_GEN_Q);
-	}
-
-	LEAVE;
-} /* texgen */
-
-static void verify_shader_config(void)
-/*******************************************************************************
-LAST MODIFIED : 14 April 2003
-
-DESCRIPTION :
-Initialises the order independent transparency extension.
-==============================================================================*/
-{
-	int consistent;
-
-	ENTER(verify_shader_config);
-
-	glActiveTexture( GL_TEXTURE0 );
-	glGetTexEnviv(GL_TEXTURE_SHADER_NV, GL_SHADER_CONSISTENT_NV, &consistent);
-	if(consistent == GL_FALSE)
-	{
-		display_message(WARNING_MESSAGE,
-			"verify_shader_config.  Shader stage 0 is inconsistent!\n");
-	}
-
-	glActiveTexture( GL_TEXTURE1 );
-	glGetTexEnviv(GL_TEXTURE_SHADER_NV, GL_SHADER_CONSISTENT_NV, &consistent);
-	if(consistent == GL_FALSE)
-	{
-		display_message(WARNING_MESSAGE,
-			"verify_shader_config.  Shader stage 1 is inconsistent!\n");
-	}
-
-	glActiveTexture( GL_TEXTURE2 );
-	glGetTexEnviv(GL_TEXTURE_SHADER_NV, GL_SHADER_CONSISTENT_NV, &consistent);
-	if(consistent == GL_FALSE)
-	{
-		display_message(WARNING_MESSAGE,
-			"verify_shader_config.  Shader stage 2 is inconsistent!\n");
-	}
-
-	glActiveTexture( GL_TEXTURE3 );
-	glGetTexEnviv(GL_TEXTURE_SHADER_NV, GL_SHADER_CONSISTENT_NV, &consistent);
-	if(consistent == GL_FALSE)
-	{
-		display_message(WARNING_MESSAGE,
-			"verify_shader_config.  Shader stage 3 is inconsistent!\n");
-	}
-
-	glActiveTexture( GL_TEXTURE0 );
-
-	LEAVE;
-} /* verify_shader_config */
-
 static int order_independent_init_opengl(
 	struct Scene_viewer_order_independent_transparency_data *data)
 /*******************************************************************************
-LAST MODIFIED : 14 April 2003
+LAST MODIFIED : 2 May 2005
 
 DESCRIPTION :
 Initialises the order independent transparency extension.
@@ -226,291 +154,43 @@ Initialises the order independent transparency extension.
 	ENTER(order_independent_init_opengl);
 
 	return_code = 1;
+#if defined (REPORT_GL_ERRORS)
+		{
+			char message[200];
+			GLenum error;
+			while(GL_NO_ERROR!=(error = glGetError()))
+			{
+				strcpy(message,"order_independent_init_opengl A: GL ERROR ");
+				strcat(message, (char *)gluErrorString(error));
+				display_message(ERROR_MESSAGE, message);
+			}
+		}
+#endif /* defined (REPORT_GL_ERRORS) */
 	if (!data->ztex_texture_id)
 	{
 		glGenTextures(1, &data->ztex_texture_id);
-		glBindTexture(GL_TEXTURE_RECTANGLE_NV, data->ztex_texture_id);
-		glTexParameteri(GL_TEXTURE_RECTANGLE_NV, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-		glTexParameteri(GL_TEXTURE_RECTANGLE_NV, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-		glTexParameteri(GL_TEXTURE_RECTANGLE_NV, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-		glTexParameteri(GL_TEXTURE_RECTANGLE_NV, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-		glTexParameteri(GL_TEXTURE_RECTANGLE_NV, GL_TEXTURE_COMPARE_SGIX, GL_TRUE);
-		glTexParameteri(GL_TEXTURE_RECTANGLE_NV, GL_TEXTURE_COMPARE_OPERATOR_SGIX,
-			GL_TEXTURE_LEQUAL_R_SGIX);
+		glActiveTexture(GL_TEXTURE3);
+		glBindTexture(GL_TEXTURE_RECTANGLE_ARB, data->ztex_texture_id);
+		glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+		glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+		glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+		glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+		glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_COMPARE_MODE_ARB, GL_COMPARE_R_TO_TEXTURE_ARB);
+		glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_COMPARE_FUNC_ARB, GL_GREATER);
+#if defined (REPORT_GL_ERRORS)
+		{
+			char message[200];
+			GLenum error;
+			while(GL_NO_ERROR!=(error = glGetError()))
+			{
+				strcpy(message,"order_independent_init_opengl BA: GL ERROR ");
+				strcat(message, (char *)gluErrorString(error));
+				display_message(ERROR_MESSAGE, message);
+			}
+		}
+#endif /* defined (REPORT_GL_ERRORS) */
+
 	}
-
-	if (!data->simple_1x1_uhilo_texture_id)
-	{
-		GLushort texel[] = {0, 0};
-		 
-		 glGenTextures(1, &data->simple_1x1_uhilo_texture_id);
-		 glBindTexture(GL_TEXTURE_2D, data->simple_1x1_uhilo_texture_id);
-		 glTexImage2D(GL_TEXTURE_2D, 0, GL_HILO_NV, 1, 1, 0, GL_HILO_NV, GL_UNSIGNED_SHORT, texel);
-		 glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-		 glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-		 glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-		 glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-	 }
-	
-	 if (!data->rc_composite_display_list)
-	 {
-		 data->rc_composite_display_list = glGenLists(1);
-		 glNewList(data->rc_composite_display_list, GL_COMPILE);
-#if defined (OLD_CODE)
-		 nvparse(
-			 "!!RC1.0                                                      \n"
-			 "out.rgb = tex0;                                              \n"
-			 "out.a = tex0;                                                \n"
-			 );
-		 nvparse_print_errors(stderr);
-#endif /* defined (OLD_CODE) */
-		glCombinerParameteriNV(GL_NUM_GENERAL_COMBINERS_NV, 1);
-		glCombinerInputNV(GL_COMBINER0_NV, GL_RGB, GL_VARIABLE_A_NV, GL_FALSE, GL_UNSIGNED_IDENTITY_NV, GL_RGB);
-		glCombinerInputNV(GL_COMBINER0_NV, GL_RGB, GL_VARIABLE_B_NV, GL_FALSE, GL_UNSIGNED_IDENTITY_NV, GL_RGB);
-		glCombinerInputNV(GL_COMBINER0_NV, GL_RGB, GL_VARIABLE_C_NV, GL_FALSE, GL_UNSIGNED_IDENTITY_NV, GL_RGB);
-		glCombinerInputNV(GL_COMBINER0_NV, GL_RGB, GL_VARIABLE_D_NV, GL_FALSE, GL_UNSIGNED_IDENTITY_NV, GL_RGB);
-		glCombinerOutputNV(GL_COMBINER0_NV, GL_RGB, GL_DISCARD_NV, GL_DISCARD_NV, GL_DISCARD_NV, GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
-		glCombinerInputNV(GL_COMBINER0_NV, GL_ALPHA, GL_VARIABLE_A_NV, GL_FALSE, GL_UNSIGNED_IDENTITY_NV, GL_ALPHA);
-		glCombinerInputNV(GL_COMBINER0_NV, GL_ALPHA, GL_VARIABLE_B_NV, GL_FALSE, GL_UNSIGNED_IDENTITY_NV, GL_ALPHA);
-		glCombinerInputNV(GL_COMBINER0_NV, GL_ALPHA, GL_VARIABLE_C_NV, GL_FALSE, GL_UNSIGNED_IDENTITY_NV, GL_ALPHA);
-		glCombinerInputNV(GL_COMBINER0_NV, GL_ALPHA, GL_VARIABLE_D_NV, GL_FALSE, GL_UNSIGNED_IDENTITY_NV, GL_ALPHA);
-		glCombinerOutputNV(GL_COMBINER0_NV, GL_ALPHA, GL_DISCARD_NV, GL_DISCARD_NV, GL_DISCARD_NV, GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
-		glDisable(GL_PER_STAGE_CONSTANTS_NV);
-		glCombinerParameteriNV(GL_COLOR_SUM_CLAMP_NV, 0);
-		glFinalCombinerInputNV(GL_VARIABLE_A_NV, GL_FALSE, GL_UNSIGNED_IDENTITY_NV, GL_RGB);
-		glFinalCombinerInputNV(GL_VARIABLE_B_NV, GL_FALSE, GL_UNSIGNED_IDENTITY_NV, GL_RGB);
-		glFinalCombinerInputNV(GL_VARIABLE_C_NV, GL_FALSE, GL_UNSIGNED_IDENTITY_NV, GL_RGB);
-		glFinalCombinerInputNV(GL_VARIABLE_D_NV, GL_TEXTURE0, GL_UNSIGNED_IDENTITY_NV, GL_RGB);
-		glFinalCombinerInputNV(GL_VARIABLE_E_NV, GL_FALSE, GL_UNSIGNED_IDENTITY_NV, GL_RGB);
-		glFinalCombinerInputNV(GL_VARIABLE_F_NV, GL_FALSE, GL_UNSIGNED_IDENTITY_NV, GL_RGB);
-		glFinalCombinerInputNV(GL_VARIABLE_G_NV, GL_TEXTURE0, GL_UNSIGNED_IDENTITY_NV, GL_ALPHA);
-		glEndList();
-	 }
-
-	 if (!data->rc_composite_alphaone_display_list)
-	 {
-		 data->rc_composite_alphaone_display_list = glGenLists(1);
-		 glNewList(data->rc_composite_alphaone_display_list, GL_COMPILE);
-#if defined (OLD_CODE)
-		 nvparse(
-			 "!!RC1.0                                                      \n"
-			 "out.rgb = tex0;                                              \n"
-			 "out.a = 0.0;                                                 \n"
-			 );
-		 nvparse_print_errors(stderr);
-#endif /* defined (OLD_CODE) */
-		glCombinerParameteriNV(GL_NUM_GENERAL_COMBINERS_NV, 1);
-		glCombinerInputNV(GL_COMBINER0_NV, GL_RGB, GL_VARIABLE_A_NV, GL_FALSE, GL_UNSIGNED_IDENTITY_NV, GL_RGB);
-		glCombinerInputNV(GL_COMBINER0_NV, GL_RGB, GL_VARIABLE_B_NV, GL_FALSE, GL_UNSIGNED_IDENTITY_NV, GL_RGB);
-		glCombinerInputNV(GL_COMBINER0_NV, GL_RGB, GL_VARIABLE_C_NV, GL_FALSE, GL_UNSIGNED_IDENTITY_NV, GL_RGB);
-		glCombinerInputNV(GL_COMBINER0_NV, GL_RGB, GL_VARIABLE_D_NV, GL_FALSE, GL_UNSIGNED_IDENTITY_NV, GL_RGB);
-		glCombinerOutputNV(GL_COMBINER0_NV, GL_RGB, GL_DISCARD_NV, GL_DISCARD_NV, GL_DISCARD_NV, GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
-		glCombinerInputNV(GL_COMBINER0_NV, GL_ALPHA, GL_VARIABLE_A_NV, GL_FALSE, GL_UNSIGNED_IDENTITY_NV, GL_ALPHA);
-		glCombinerInputNV(GL_COMBINER0_NV, GL_ALPHA, GL_VARIABLE_B_NV, GL_FALSE, GL_UNSIGNED_IDENTITY_NV, GL_ALPHA);
-		glCombinerInputNV(GL_COMBINER0_NV, GL_ALPHA, GL_VARIABLE_C_NV, GL_FALSE, GL_UNSIGNED_IDENTITY_NV, GL_ALPHA);
-		glCombinerInputNV(GL_COMBINER0_NV, GL_ALPHA, GL_VARIABLE_D_NV, GL_FALSE, GL_UNSIGNED_IDENTITY_NV, GL_ALPHA);
-		glCombinerOutputNV(GL_COMBINER0_NV, GL_ALPHA, GL_DISCARD_NV, GL_DISCARD_NV, GL_DISCARD_NV, GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
-		glDisable(GL_PER_STAGE_CONSTANTS_NV);
-		glCombinerParameteriNV(GL_COLOR_SUM_CLAMP_NV, 0);
-		glFinalCombinerInputNV(GL_VARIABLE_A_NV, GL_FALSE, GL_UNSIGNED_IDENTITY_NV, GL_RGB);
-		glFinalCombinerInputNV(GL_VARIABLE_B_NV, GL_FALSE, GL_UNSIGNED_IDENTITY_NV, GL_RGB);
-		glFinalCombinerInputNV(GL_VARIABLE_C_NV, GL_FALSE, GL_UNSIGNED_IDENTITY_NV, GL_RGB);
-		glFinalCombinerInputNV(GL_VARIABLE_D_NV, GL_TEXTURE0, GL_UNSIGNED_IDENTITY_NV, GL_RGB);
-		glFinalCombinerInputNV(GL_VARIABLE_E_NV, GL_FALSE, GL_UNSIGNED_IDENTITY_NV, GL_RGB);
-		glFinalCombinerInputNV(GL_VARIABLE_F_NV, GL_FALSE, GL_UNSIGNED_IDENTITY_NV, GL_RGB);
-		glFinalCombinerInputNV(GL_VARIABLE_G_NV, GL_ZERO, GL_UNSIGNED_IDENTITY_NV, GL_ALPHA);
-		glEndList();
-	}
-
-	 if (!data->rc_sum__peel_display_list)
-	 {
-		 data->rc_sum__peel_display_list = glGenLists(1);
-		 glNewList(data->rc_sum__peel_display_list, GL_COMPILE);
-#if defined (OLD_CODE)
-		 nvparse(
-			 "!!RC1.0                                                      \n"
-			 "{ rgb { spare0 = unsigned_invert(tex3) * col0.a; } }         \n"
-			 "out.rgb = col0 + col1;                                       \n"
-			 "out.a = spare0.b;                                            \n"
-			 );
-		 nvparse_print_errors(stderr);
-#endif /* defined (OLD_CODE) */
-		glCombinerParameteriNV(GL_NUM_GENERAL_COMBINERS_NV, 1);
-		glCombinerInputNV(GL_COMBINER0_NV, GL_RGB, GL_VARIABLE_A_NV, GL_TEXTURE3, GL_UNSIGNED_INVERT_NV, GL_RGB);
-		glCombinerInputNV(GL_COMBINER0_NV, GL_RGB, GL_VARIABLE_B_NV, GL_PRIMARY_COLOR_NV, GL_SIGNED_IDENTITY_NV, GL_ALPHA);
-		glCombinerInputNV(GL_COMBINER0_NV, GL_RGB, GL_VARIABLE_C_NV, GL_FALSE, GL_UNSIGNED_IDENTITY_NV, GL_RGB);
-		glCombinerInputNV(GL_COMBINER0_NV, GL_RGB, GL_VARIABLE_D_NV, GL_FALSE, GL_UNSIGNED_IDENTITY_NV, GL_RGB);
-		glCombinerOutputNV(GL_COMBINER0_NV, GL_RGB, GL_SPARE0_NV, GL_DISCARD_NV, GL_DISCARD_NV, GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
-		glCombinerInputNV(GL_COMBINER0_NV, GL_ALPHA, GL_VARIABLE_A_NV, GL_FALSE, GL_UNSIGNED_IDENTITY_NV, GL_BLUE);
-		glCombinerInputNV(GL_COMBINER0_NV, GL_ALPHA, GL_VARIABLE_B_NV, GL_FALSE, GL_UNSIGNED_IDENTITY_NV, GL_BLUE);
-		glCombinerInputNV(GL_COMBINER0_NV, GL_ALPHA, GL_VARIABLE_C_NV, GL_FALSE, GL_UNSIGNED_IDENTITY_NV, GL_BLUE);
-		glCombinerInputNV(GL_COMBINER0_NV, GL_ALPHA, GL_VARIABLE_D_NV, GL_FALSE, GL_UNSIGNED_IDENTITY_NV, GL_BLUE);
-		glCombinerOutputNV(GL_COMBINER0_NV, GL_ALPHA, GL_DISCARD_NV, GL_DISCARD_NV, GL_DISCARD_NV, GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
-		glDisable(GL_PER_STAGE_CONSTANTS_NV);
-		glCombinerParameteriNV(GL_COLOR_SUM_CLAMP_NV, 0);
-		glFinalCombinerInputNV(GL_VARIABLE_A_NV, GL_PRIMARY_COLOR_NV, GL_UNSIGNED_IDENTITY_NV, GL_RGB);
-		glFinalCombinerInputNV(GL_VARIABLE_B_NV, GL_FALSE, GL_UNSIGNED_INVERT_NV, GL_RGB);
-		glFinalCombinerInputNV(GL_VARIABLE_C_NV, GL_FALSE, GL_UNSIGNED_IDENTITY_NV, GL_RGB);
-		glFinalCombinerInputNV(GL_VARIABLE_D_NV, GL_SECONDARY_COLOR_NV, GL_UNSIGNED_IDENTITY_NV, GL_RGB);
-		glFinalCombinerInputNV(GL_VARIABLE_E_NV, GL_FALSE, GL_UNSIGNED_IDENTITY_NV, GL_RGB);
-		glFinalCombinerInputNV(GL_VARIABLE_F_NV, GL_FALSE, GL_UNSIGNED_IDENTITY_NV, GL_RGB);
-		glFinalCombinerInputNV(GL_VARIABLE_G_NV, GL_SPARE0_NV, GL_UNSIGNED_IDENTITY_NV, GL_BLUE);
-		glEndList();
-	} 
-
-	 if (!data->rc_sum_display_list)
-	 {
-		 data->rc_sum_display_list = glGenLists(1);
-		 glNewList(data->rc_sum_display_list, GL_COMPILE);
-#if defined (OLD_CODE)
-		 nvparse(
-			 "!!RC1.0                                                      \n"
-			 "out.rgb = col0 + col1;                                       \n"
-			 "out.a = col0;                                                \n"
-			 );
-		 nvparse_print_errors(stderr);
-#endif /* defined (OLD_CODE) */
-		glCombinerParameteriNV(GL_NUM_GENERAL_COMBINERS_NV, 1);
-		glCombinerInputNV(GL_COMBINER0_NV, GL_RGB, GL_VARIABLE_A_NV, GL_FALSE, GL_UNSIGNED_IDENTITY_NV, GL_RGB);
-		glCombinerInputNV(GL_COMBINER0_NV, GL_RGB, GL_VARIABLE_B_NV, GL_FALSE, GL_UNSIGNED_IDENTITY_NV, GL_RGB);
-		glCombinerInputNV(GL_COMBINER0_NV, GL_RGB, GL_VARIABLE_C_NV, GL_FALSE, GL_UNSIGNED_IDENTITY_NV, GL_RGB);
-		glCombinerInputNV(GL_COMBINER0_NV, GL_RGB, GL_VARIABLE_D_NV, GL_FALSE, GL_UNSIGNED_IDENTITY_NV, GL_RGB);
-		glCombinerOutputNV(GL_COMBINER0_NV, GL_RGB, GL_DISCARD_NV, GL_DISCARD_NV, GL_DISCARD_NV, GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
-		glCombinerInputNV(GL_COMBINER0_NV, GL_ALPHA, GL_VARIABLE_A_NV, GL_FALSE, GL_UNSIGNED_IDENTITY_NV, GL_ALPHA);
-		glCombinerInputNV(GL_COMBINER0_NV, GL_ALPHA, GL_VARIABLE_B_NV, GL_FALSE, GL_UNSIGNED_IDENTITY_NV, GL_ALPHA);
-		glCombinerInputNV(GL_COMBINER0_NV, GL_ALPHA, GL_VARIABLE_C_NV, GL_FALSE, GL_UNSIGNED_IDENTITY_NV, GL_ALPHA);
-		glCombinerInputNV(GL_COMBINER0_NV, GL_ALPHA, GL_VARIABLE_D_NV, GL_FALSE, GL_UNSIGNED_IDENTITY_NV, GL_ALPHA);
-		glCombinerOutputNV(GL_COMBINER0_NV, GL_ALPHA, GL_DISCARD_NV, GL_DISCARD_NV, GL_DISCARD_NV, GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
-		glDisable(GL_PER_STAGE_CONSTANTS_NV);
-		glCombinerParameteriNV(GL_COLOR_SUM_CLAMP_NV, 0);
-		glFinalCombinerInputNV(GL_VARIABLE_A_NV, GL_PRIMARY_COLOR_NV, GL_UNSIGNED_IDENTITY_NV, GL_RGB);
-		glFinalCombinerInputNV(GL_VARIABLE_B_NV, GL_FALSE, GL_UNSIGNED_INVERT_NV, GL_RGB);
-		glFinalCombinerInputNV(GL_VARIABLE_C_NV, GL_FALSE, GL_UNSIGNED_IDENTITY_NV, GL_RGB);
-		glFinalCombinerInputNV(GL_VARIABLE_D_NV, GL_SECONDARY_COLOR_NV, GL_UNSIGNED_IDENTITY_NV, GL_RGB);
-		glFinalCombinerInputNV(GL_VARIABLE_E_NV, GL_FALSE, GL_UNSIGNED_IDENTITY_NV, GL_RGB);
-		glFinalCombinerInputNV(GL_VARIABLE_F_NV, GL_FALSE, GL_UNSIGNED_IDENTITY_NV, GL_RGB);
-		glFinalCombinerInputNV(GL_VARIABLE_G_NV, GL_PRIMARY_COLOR_NV, GL_UNSIGNED_IDENTITY_NV, GL_ALPHA);
-		glEndList();
-	} 
-
-	 if (!data->rc_highlight_adds_alpha_display_list)
-	 {
-		 GLfloat const0[4] = {.2, .35, .2, 0};
-		 GLfloat const1[4] = {0, 0, 1, 1};
-
-		 data->rc_highlight_adds_alpha_display_list = glGenLists(1);
-		 glNewList(data->rc_highlight_adds_alpha_display_list, GL_COMPILE);
-#if defined (OLD_CODE)
-		 nvparse(
-			 "!!RC1.0                                                      \n"
-			 "const0 = (.2, .35, .2, 0);                                   \n"
-			 "const1 = (0, 0, 1, 1);                                       \n"
-			 "{ rgb { spare1 = col1 . const0; } }                          \n"
-			 "{ alpha { discard = const1 * spare1.b; discard = const1.b * col0; col0 = sum(); } }\n"
-			 "out.rgb = col0 + col1;                                       \n"
-			 "out.a = col0;                                                \n"
-			 );
-		 nvparse_print_errors(stderr);
-#endif /* defined (OLD_CODE) */
-		glCombinerParameterfvNV(GL_CONSTANT_COLOR0_NV, const0);
-		glCombinerParameterfvNV(GL_CONSTANT_COLOR1_NV, const1);
-		glCombinerParameteriNV(GL_NUM_GENERAL_COMBINERS_NV, 2);
-		glCombinerInputNV(GL_COMBINER0_NV, GL_RGB, GL_VARIABLE_A_NV, GL_SECONDARY_COLOR_NV, GL_SIGNED_IDENTITY_NV, GL_RGB);
-		glCombinerInputNV(GL_COMBINER0_NV, GL_RGB, GL_VARIABLE_B_NV, GL_CONSTANT_COLOR0_NV, GL_SIGNED_IDENTITY_NV, GL_RGB);
-		glCombinerInputNV(GL_COMBINER0_NV, GL_RGB, GL_VARIABLE_C_NV, GL_FALSE, GL_UNSIGNED_IDENTITY_NV, GL_RGB);
-		glCombinerInputNV(GL_COMBINER0_NV, GL_RGB, GL_VARIABLE_D_NV, GL_FALSE, GL_UNSIGNED_IDENTITY_NV, GL_RGB);
-		glCombinerOutputNV(GL_COMBINER0_NV, GL_RGB, GL_SPARE1_NV, GL_DISCARD_NV, GL_DISCARD_NV, GL_FALSE, GL_FALSE, GL_TRUE, GL_FALSE, GL_FALSE);
-		glCombinerInputNV(GL_COMBINER0_NV, GL_ALPHA, GL_VARIABLE_A_NV, GL_FALSE, GL_UNSIGNED_IDENTITY_NV, GL_BLUE);
-		glCombinerInputNV(GL_COMBINER0_NV, GL_ALPHA, GL_VARIABLE_B_NV, GL_FALSE, GL_UNSIGNED_IDENTITY_NV, GL_BLUE);
-		glCombinerInputNV(GL_COMBINER0_NV, GL_ALPHA, GL_VARIABLE_C_NV, GL_FALSE, GL_UNSIGNED_IDENTITY_NV, GL_BLUE);
-		glCombinerInputNV(GL_COMBINER0_NV, GL_ALPHA, GL_VARIABLE_D_NV, GL_FALSE, GL_UNSIGNED_IDENTITY_NV, GL_BLUE);
-		glCombinerOutputNV(GL_COMBINER0_NV, GL_ALPHA, GL_DISCARD_NV, GL_DISCARD_NV, GL_DISCARD_NV, GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
-		glCombinerInputNV(GL_COMBINER1_NV, GL_ALPHA, GL_VARIABLE_A_NV, GL_CONSTANT_COLOR1_NV, GL_SIGNED_IDENTITY_NV, GL_ALPHA);
-		glCombinerInputNV(GL_COMBINER1_NV, GL_ALPHA, GL_VARIABLE_B_NV, GL_SPARE1_NV, GL_SIGNED_IDENTITY_NV, GL_BLUE);
-		glCombinerInputNV(GL_COMBINER1_NV, GL_ALPHA, GL_VARIABLE_C_NV, GL_CONSTANT_COLOR1_NV, GL_SIGNED_IDENTITY_NV, GL_BLUE);
-		glCombinerInputNV(GL_COMBINER1_NV, GL_ALPHA, GL_VARIABLE_D_NV, GL_PRIMARY_COLOR_NV, GL_SIGNED_IDENTITY_NV, GL_ALPHA);
-		glCombinerOutputNV(GL_COMBINER1_NV, GL_ALPHA, GL_DISCARD_NV, GL_DISCARD_NV, GL_PRIMARY_COLOR_NV, GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
-		glCombinerInputNV(GL_COMBINER1_NV, GL_RGB, GL_VARIABLE_A_NV, GL_FALSE, GL_UNSIGNED_IDENTITY_NV, GL_RGB);
-		glCombinerInputNV(GL_COMBINER1_NV, GL_RGB, GL_VARIABLE_B_NV, GL_FALSE, GL_UNSIGNED_IDENTITY_NV, GL_RGB);
-		glCombinerInputNV(GL_COMBINER1_NV, GL_RGB, GL_VARIABLE_C_NV, GL_FALSE, GL_UNSIGNED_IDENTITY_NV, GL_RGB);
-		glCombinerInputNV(GL_COMBINER1_NV, GL_RGB, GL_VARIABLE_D_NV, GL_FALSE, GL_UNSIGNED_IDENTITY_NV, GL_RGB);
-		glCombinerOutputNV(GL_COMBINER1_NV, GL_RGB, GL_DISCARD_NV, GL_DISCARD_NV, GL_DISCARD_NV, GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
-		glDisable(GL_PER_STAGE_CONSTANTS_NV);
-		glCombinerParameteriNV(GL_COLOR_SUM_CLAMP_NV, 0);
-		glFinalCombinerInputNV(GL_VARIABLE_A_NV, GL_PRIMARY_COLOR_NV, GL_UNSIGNED_IDENTITY_NV, GL_RGB);
-		glFinalCombinerInputNV(GL_VARIABLE_B_NV, GL_FALSE, GL_UNSIGNED_INVERT_NV, GL_RGB);
-		glFinalCombinerInputNV(GL_VARIABLE_C_NV, GL_FALSE, GL_UNSIGNED_IDENTITY_NV, GL_RGB);
-		glFinalCombinerInputNV(GL_VARIABLE_D_NV, GL_SECONDARY_COLOR_NV, GL_UNSIGNED_IDENTITY_NV, GL_RGB);
-		glFinalCombinerInputNV(GL_VARIABLE_E_NV, GL_FALSE, GL_UNSIGNED_IDENTITY_NV, GL_RGB);
-		glFinalCombinerInputNV(GL_VARIABLE_F_NV, GL_FALSE, GL_UNSIGNED_IDENTITY_NV, GL_RGB);
-		glFinalCombinerInputNV(GL_VARIABLE_G_NV, GL_PRIMARY_COLOR_NV, GL_UNSIGNED_IDENTITY_NV, GL_ALPHA);
-		glEndList();
-	}
-
-	 if (!data->rc_highlight_adds_alpha__peel_display_list)
-	 {
-		 GLfloat const0[4] = {.2, .35, .2, 0};
-		 GLfloat const1[4] = {0, 0, 1, 1};
-
-		 data->rc_highlight_adds_alpha__peel_display_list = glGenLists(1);
-		 glNewList(data->rc_highlight_adds_alpha__peel_display_list, GL_COMPILE);
-#if defined (OLD_CODE)
-		 nvparse(
-			 "!!RC1.0                                                      \n"
-			 "const0 = (.2, .35, .2, 0);                                   \n"
-			 "const1 = (0, 0, 1, 1);                                       \n"
-			 "{ rgb { spare1 = col1 . const0; } }                          \n"
-			 "{ alpha { discard = const1 * spare1.b; discard = const1.b * col0; col0 = sum(); } }\n"
-			 "{ rgb { spare0 = unsigned_invert(tex3) * col0.a; } }         \n"
-			 "out.rgb = col0 + col1;                                       \n"
-			 "out.a = spare0.b;                                            \n"
-			 );
-		 nvparse_print_errors(stderr);
-#endif /* defined (OLD_CODE) */
-		glCombinerParameterfvNV(GL_CONSTANT_COLOR0_NV, const0);
-		glCombinerParameterfvNV(GL_CONSTANT_COLOR1_NV, const1);
-		glCombinerParameteriNV(GL_NUM_GENERAL_COMBINERS_NV, 3);
-		glCombinerInputNV(GL_COMBINER0_NV, GL_RGB, GL_VARIABLE_A_NV, GL_SECONDARY_COLOR_NV, GL_SIGNED_IDENTITY_NV, GL_RGB);
-		glCombinerInputNV(GL_COMBINER0_NV, GL_RGB, GL_VARIABLE_B_NV, GL_CONSTANT_COLOR0_NV, GL_SIGNED_IDENTITY_NV, GL_RGB);
-		glCombinerInputNV(GL_COMBINER0_NV, GL_RGB, GL_VARIABLE_C_NV, GL_FALSE, GL_UNSIGNED_IDENTITY_NV, GL_RGB);
-		glCombinerInputNV(GL_COMBINER0_NV, GL_RGB, GL_VARIABLE_D_NV, GL_FALSE, GL_UNSIGNED_IDENTITY_NV, GL_RGB);
-		glCombinerOutputNV(GL_COMBINER0_NV, GL_RGB, GL_SPARE1_NV, GL_DISCARD_NV, GL_DISCARD_NV, GL_FALSE, GL_FALSE, GL_TRUE, GL_FALSE, GL_FALSE);
-		glCombinerInputNV(GL_COMBINER0_NV, GL_ALPHA, GL_VARIABLE_A_NV, GL_FALSE, GL_UNSIGNED_IDENTITY_NV, GL_BLUE);
-		glCombinerInputNV(GL_COMBINER0_NV, GL_ALPHA, GL_VARIABLE_B_NV, GL_FALSE, GL_UNSIGNED_IDENTITY_NV, GL_BLUE);
-		glCombinerInputNV(GL_COMBINER0_NV, GL_ALPHA, GL_VARIABLE_C_NV, GL_FALSE, GL_UNSIGNED_IDENTITY_NV, GL_BLUE);
-		glCombinerInputNV(GL_COMBINER0_NV, GL_ALPHA, GL_VARIABLE_D_NV, GL_FALSE, GL_UNSIGNED_IDENTITY_NV, GL_BLUE);
-		glCombinerOutputNV(GL_COMBINER0_NV, GL_ALPHA, GL_DISCARD_NV, GL_DISCARD_NV, GL_DISCARD_NV, GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
-		glCombinerInputNV(GL_COMBINER1_NV, GL_ALPHA, GL_VARIABLE_A_NV, GL_CONSTANT_COLOR1_NV, GL_SIGNED_IDENTITY_NV, GL_ALPHA);
-		glCombinerInputNV(GL_COMBINER1_NV, GL_ALPHA, GL_VARIABLE_B_NV, GL_SPARE1_NV, GL_SIGNED_IDENTITY_NV, GL_BLUE);
-		glCombinerInputNV(GL_COMBINER1_NV, GL_ALPHA, GL_VARIABLE_C_NV, GL_CONSTANT_COLOR1_NV, GL_SIGNED_IDENTITY_NV, GL_BLUE);
-		glCombinerInputNV(GL_COMBINER1_NV, GL_ALPHA, GL_VARIABLE_D_NV, GL_PRIMARY_COLOR_NV, GL_SIGNED_IDENTITY_NV, GL_ALPHA);
-		glCombinerOutputNV(GL_COMBINER1_NV, GL_ALPHA, GL_DISCARD_NV, GL_DISCARD_NV, GL_PRIMARY_COLOR_NV, GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
-		glCombinerInputNV(GL_COMBINER1_NV, GL_RGB, GL_VARIABLE_A_NV, GL_FALSE, GL_UNSIGNED_IDENTITY_NV, GL_RGB);
-		glCombinerInputNV(GL_COMBINER1_NV, GL_RGB, GL_VARIABLE_B_NV, GL_FALSE, GL_UNSIGNED_IDENTITY_NV, GL_RGB);
-		glCombinerInputNV(GL_COMBINER1_NV, GL_RGB, GL_VARIABLE_C_NV, GL_FALSE, GL_UNSIGNED_IDENTITY_NV, GL_RGB);
-		glCombinerInputNV(GL_COMBINER1_NV, GL_RGB, GL_VARIABLE_D_NV, GL_FALSE, GL_UNSIGNED_IDENTITY_NV, GL_RGB);
-		glCombinerOutputNV(GL_COMBINER1_NV, GL_RGB, GL_DISCARD_NV, GL_DISCARD_NV, GL_DISCARD_NV, GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
-		glCombinerInputNV(GL_COMBINER2_NV, GL_RGB, GL_VARIABLE_A_NV, GL_TEXTURE3, GL_UNSIGNED_INVERT_NV, GL_RGB);
-		glCombinerInputNV(GL_COMBINER2_NV, GL_RGB, GL_VARIABLE_B_NV, GL_PRIMARY_COLOR_NV, GL_SIGNED_IDENTITY_NV, GL_ALPHA);
-		glCombinerInputNV(GL_COMBINER2_NV, GL_RGB, GL_VARIABLE_C_NV, GL_FALSE, GL_UNSIGNED_IDENTITY_NV, GL_RGB);
-		glCombinerInputNV(GL_COMBINER2_NV, GL_RGB, GL_VARIABLE_D_NV, GL_FALSE, GL_UNSIGNED_IDENTITY_NV, GL_RGB);
-		glCombinerOutputNV(GL_COMBINER2_NV, GL_RGB, GL_SPARE0_NV, GL_DISCARD_NV, GL_DISCARD_NV, GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
-		glCombinerInputNV(GL_COMBINER2_NV, GL_ALPHA, GL_VARIABLE_A_NV, GL_FALSE, GL_UNSIGNED_IDENTITY_NV, GL_BLUE);
-		glCombinerInputNV(GL_COMBINER2_NV, GL_ALPHA, GL_VARIABLE_B_NV, GL_FALSE, GL_UNSIGNED_IDENTITY_NV, GL_BLUE);
-		glCombinerInputNV(GL_COMBINER2_NV, GL_ALPHA, GL_VARIABLE_C_NV, GL_FALSE, GL_UNSIGNED_IDENTITY_NV, GL_BLUE);
-		glCombinerInputNV(GL_COMBINER2_NV, GL_ALPHA, GL_VARIABLE_D_NV, GL_FALSE, GL_UNSIGNED_IDENTITY_NV, GL_BLUE);
-		glCombinerOutputNV(GL_COMBINER2_NV, GL_ALPHA, GL_DISCARD_NV, GL_DISCARD_NV, GL_DISCARD_NV, GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
-		/* glDisable(GL_PER_STAGE_CONSTANTS_NV); */
-		/* glCombinerParameteriNV(GL_COLOR_SUM_CLAMP_NV, 0); */
-		glFinalCombinerInputNV(GL_VARIABLE_A_NV, GL_PRIMARY_COLOR_NV, GL_UNSIGNED_IDENTITY_NV, GL_RGB);
-		glFinalCombinerInputNV(GL_VARIABLE_B_NV, GL_FALSE, GL_UNSIGNED_INVERT_NV, GL_RGB);
-		glFinalCombinerInputNV(GL_VARIABLE_C_NV, GL_FALSE, GL_UNSIGNED_IDENTITY_NV, GL_RGB);
-		glFinalCombinerInputNV(GL_VARIABLE_D_NV, GL_SECONDARY_COLOR_NV, GL_UNSIGNED_IDENTITY_NV, GL_RGB);
-		glFinalCombinerInputNV(GL_VARIABLE_E_NV, GL_FALSE, GL_UNSIGNED_IDENTITY_NV, GL_RGB);
-		glFinalCombinerInputNV(GL_VARIABLE_F_NV, GL_FALSE, GL_UNSIGNED_IDENTITY_NV, GL_RGB);
-		glFinalCombinerInputNV(GL_VARIABLE_G_NV, GL_SPARE0_NV, GL_UNSIGNED_IDENTITY_NV, GL_BLUE);
-		glEndList();
-	} 
 
 	LEAVE;
 
@@ -522,169 +202,159 @@ static void render_scene_from_camera_view(int layer,
 	struct Scene_viewer_order_independent_transparency_data *data,
 	double *projection_matrix, double *modelview_matrix)
 /*******************************************************************************
-LAST MODIFIED : 14 April 2003
+LAST MODIFIED : 2 May 2005
 
 DESCRIPTION :
 Draws one peeled layer of the scene.
 ==============================================================================*/
 {
-	float identity_matrix[16] = {1, 0, 0, 0,
-										  0, 1, 0, 0,
-										  0, 0, 1, 0,
-										  0, 0, 0, 1};
-	float blue_alpha_matrix[16] = {0, 0, 0, 0,
-											 0, 0, 0, 0,
-											 0, 0, 0, 0,
-											 0, 0, 1, 0};
-
+#if defined (OLD_CODE)
+#define MAX_PROGRAM (20000)
+	char vertex_program_string[MAX_PROGRAM], fragment_program_string[MAX_PROGRAM];
+ 	const GLubyte *error_msg;
+	static GLuint vertex_program = 0, fragment_program = 0;
+#endif /* defined (OLD_CODE) */
 
 	ENTER(render_scene_from_camera_view);
 	USE_PARAMETER(modelview_matrix);
+	USE_PARAMETER(projection_matrix);
 
 	glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT);
 
-	glMatrixMode(GL_PROJECTION);
 
-	glPushMatrix();
-
-	glLoadIdentity();
-	glOrtho(0, data->viewport_width, 0, data->viewport_height, -1, 1);
-
-	glMatrixMode(GL_MODELVIEW);
-
-	glPushMatrix();
-
-	glLoadIdentity();
-
-	/* set up texture shaders for per-pixel z/w calculation
-		-- this more closely matches per-pixel r/q used for shadow mapping */
-	glEnable(GL_TEXTURE_SHADER_NV);
-	glMatrixMode(GL_TEXTURE);
-	glLoadIdentity();
+#if defined (OLD_CODE)
+	{
+		FILE *program_file;
+		int count;
+		char *vertex_program_filename, first_peel_vertex[] = "first_peel.vp",
+			peel_vertex[] = "peel.vp";
+		char *fragment_program_filename, first_peel_fragment[] = "first_peel.fp",
+			peel_fragment[] = "peel.fp";
 		
-	glActiveTexture(GL_TEXTURE0);
-	glBindTexture(GL_TEXTURE_2D, data->simple_1x1_uhilo_texture_id);
-	glTexEnvi(GL_TEXTURE_ENV,GL_TEXTURE_ENV_MODE,GL_DECAL);
-	glTexEnvi(GL_TEXTURE_SHADER_NV, GL_SHADER_OPERATION_NV, GL_TEXTURE_2D);
+		if (layer > 0)
+		{
+			vertex_program_filename = peel_vertex;
+			fragment_program_filename = peel_fragment;
+		}
+		else
+		{
+			vertex_program_filename = first_peel_vertex;
+			fragment_program_filename = first_peel_fragment;
+		}
 
-	glActiveTexture(GL_TEXTURE1);
-	glTexEnvi(GL_TEXTURE_SHADER_NV, GL_SHADER_OPERATION_NV, GL_DOT_PRODUCT_NV);
-	glTexEnvi(GL_TEXTURE_SHADER_NV, GL_PREVIOUS_TEXTURE_INPUT_NV, GL_TEXTURE0);
-	glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_NONE);
-	glMatrixMode(GL_MODELVIEW);
-	glPushMatrix();
-	glLoadIdentity();
-	eye_linear_texgen(identity_matrix);
-	texgen(/*true*/1);
-	glPopMatrix();
-	glMatrixMode(GL_TEXTURE);
-	glLoadIdentity();
-	glTranslatef(0, 0, .5f);
-	glScalef(0, 0, .5f);
-	glMultMatrixd(projection_matrix);
-	glMatrixMode(GL_MODELVIEW);
+		if (program_file = fopen(vertex_program_filename, "r"))
+		{
+			count = fread(vertex_program_string, 1, MAX_PROGRAM - 1, program_file);
+			vertex_program_string[count] = 0;
+			if (count > MAX_PROGRAM - 2)
+			{
+				display_message(ERROR_MESSAGE, "Material_program_compile.  "
+					"Short read on test.vp, need to increase MAX_PROGRAM.");
+			}
+			fclose (program_file);
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE, "Material_program_compile.  "
+				"Unable to open file test.vp.");
+		}
 
-	glActiveTexture(GL_TEXTURE2);
-	glTexEnvi(GL_TEXTURE_SHADER_NV, GL_SHADER_OPERATION_NV, GL_DOT_PRODUCT_DEPTH_REPLACE_NV);
-	glTexEnvi(GL_TEXTURE_SHADER_NV, GL_PREVIOUS_TEXTURE_INPUT_NV, GL_TEXTURE0);
-	glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_NONE);
-	glPushMatrix();
-	glLoadIdentity();
-	eye_linear_texgen(identity_matrix);
-	texgen(/*true*/1);
-	glPopMatrix();
-	glMatrixMode(GL_TEXTURE);
-	glLoadIdentity();
-	glMultMatrixf(blue_alpha_matrix);
-	glMultMatrixd(projection_matrix);
-	glMatrixMode(GL_MODELVIEW);
+		if (program_file = fopen(fragment_program_filename, "r"))
+		{
+			count = fread(fragment_program_string, 1, MAX_PROGRAM - 1, program_file);
+			fragment_program_string[count] = 0;
+			if (count > MAX_PROGRAM - 2)
+			{
+				display_message(ERROR_MESSAGE, "Material_program_compile.  "
+					"Short read on test.fp, need to increase MAX_PROGRAM.");
+			}
+			fclose (program_file);
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE, "Material_program_compile.  "
+				"Unable to open file test.fp.");
+		}
+	}
+
+	if (!vertex_program)
+	{
+		glGenProgramsARB(1, &vertex_program);
+	}
 		
-	glActiveTexture(GL_TEXTURE3);
-	glTexEnvi(GL_TEXTURE_SHADER_NV, GL_SHADER_OPERATION_NV, GL_TEXTURE_RECTANGLE_NV);
-	glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_NONE);
+	glBindProgramARB(GL_VERTEX_PROGRAM_ARB, vertex_program);
+	glProgramStringARB(GL_VERTEX_PROGRAM_ARB, GL_PROGRAM_FORMAT_ASCII_ARB,
+		strlen(vertex_program_string), vertex_program_string);
+	error_msg = glGetString(GL_PROGRAM_ERROR_STRING_ARB);
 
-	glActiveTexture(GL_TEXTURE0);
+	
+	if (!fragment_program)
+	{
+		glGenProgramsARB(1, &fragment_program);
+	}
+	
+	glBindProgramARB(GL_FRAGMENT_PROGRAM_ARB, fragment_program);
+	glProgramStringARB(GL_FRAGMENT_PROGRAM_ARB, GL_PROGRAM_FORMAT_ASCII_ARB,
+		strlen(fragment_program_string), fragment_program_string);
+	error_msg = glGetString(GL_PROGRAM_ERROR_STRING_ARB);
+	
+	glEnable(GL_VERTEX_PROGRAM_ARB);
+	glBindProgramARB(GL_VERTEX_PROGRAM_ARB,
+		vertex_program);
+
+	
+	glEnable(GL_FRAGMENT_PROGRAM_ARB);
+	glBindProgramARB(GL_FRAGMENT_PROGRAM_ARB,
+		fragment_program);
+
+#endif /* defined (OLD_CODE) */
+
+	glProgramEnvParameter4fARB(GL_FRAGMENT_PROGRAM_ARB, 0,
+		data->viewport_width, data->viewport_height, 1.0, 1.0);
 
 	if(layer > 0)
 	{
 		glActiveTexture(GL_TEXTURE3);
-		glPushMatrix();
-		glLoadIdentity();
-		eye_linear_texgen(identity_matrix);
-		glPopMatrix();
-		texgen(/*true*/1);
-		glMatrixMode(GL_TEXTURE);
-		glLoadIdentity();
-		glScalef(data->viewport_width, data->viewport_height, 1);
-		glTranslatef(.5,.5,.5);
-		glScalef(.5,.5,.5);
-		glMultMatrixd(projection_matrix);
+		glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_NONE);
+		glEnable(GL_TEXTURE_RECTANGLE_ARB);
 
-		glMatrixMode(GL_MODELVIEW);
+		glBindTexture(GL_TEXTURE_RECTANGLE_ARB, data->ztex_texture_id);
 		
-		glBindTexture(GL_TEXTURE_RECTANGLE_NV, data->ztex_texture_id);
-		glEnable(GL_TEXTURE_RECTANGLE_NV);
-		
-		glActiveTexture(GL_TEXTURE0);
-		glAlphaFunc(GL_GREATER, 0);
-		glEnable(GL_ALPHA_TEST);
 	}	
 
-	verify_shader_config();
+	glMatrixMode(GL_TEXTURE);
+	glLoadIdentity();
+	glActiveTexture(GL_TEXTURE0);
 
-	glMatrixMode(GL_MODELVIEW);
-	glPopMatrix();
-	
-	glMatrixMode(GL_PROJECTION);
-	glPopMatrix();
-
-	if(layer > 0)
-	{
-		glCallList(data->rc_highlight_adds_alpha__peel_display_list);
-	}
-	else
-	{
-		glCallList(data->rc_highlight_adds_alpha_display_list);
-	}
+	glEnable(GL_VERTEX_PROGRAM_TWO_SIDE_ARB);
 
 	Scene_viewer_call_next_renderer(rendering_data);
-
-	if(layer > 0)
-	{
-		glActiveTexture(GL_TEXTURE3);
-		glDisable(GL_TEXTURE_RECTANGLE_NV);
-		texgen(/*false*/0);
-		glMatrixMode(GL_TEXTURE);
-		glLoadIdentity();
-		glMatrixMode(GL_MODELVIEW);
-		glActiveTexture(GL_TEXTURE0);
-		glDisable(GL_ALPHA_TEST);
-	}
-
-	glDisable(GL_TEXTURE_SHADER_NV);
 
 	if(layer < data->number_of_layers - 1)
 	{
 		/* copy the z buffer unless this is the last peeling pass */
-		glBindTexture(GL_TEXTURE_RECTANGLE_NV, data->ztex_texture_id);
-		glCopyTexSubImage2D(GL_TEXTURE_RECTANGLE_NV, 0, 0, 0, 0, 0,
+		glActiveTexture(GL_TEXTURE3);
+		glBindTexture(GL_TEXTURE_RECTANGLE_ARB, data->ztex_texture_id);
+		glCopyTexSubImage2D(GL_TEXTURE_RECTANGLE_ARB, 0, 0, 0, 0, 0,
 			data->viewport_width, data->viewport_height);
+		glActiveTexture(GL_TEXTURE0);
 	}
 
 	/* copy the RGBA of the layer */
-	glBindTexture(GL_TEXTURE_RECTANGLE_NV, data->rgba_layer_texture_id[layer]);
-	glCopyTexSubImage2D(GL_TEXTURE_RECTANGLE_NV, 0, 0, 0, 0, 0,
+	glBindTexture(GL_TEXTURE_RECTANGLE_ARB, data->rgba_layer_texture_id[layer]);
+	glCopyTexSubImage2D(GL_TEXTURE_RECTANGLE_ARB, 0, 0, 0, 0, 0,
 		data->viewport_width, data->viewport_height);
+
 
 	LEAVE;
 
 } /* render_scene_from_camera_view */
- 
+
 static void draw_sorted_transparency(
 	struct Scene_viewer_order_independent_transparency_data *data,
 	enum Scene_viewer_blending_mode blending_mode)
 /*******************************************************************************
-LAST MODIFIED : 16 April 2003
+LAST MODIFIED : 2 May 2005
 
 DESCRIPTION :
 Draw a textured quad for each layer and blend them all together correctly.
@@ -703,54 +373,54 @@ Draw a textured quad for each layer and blend them all together correctly.
 
 	glDisable(GL_DEPTH_TEST);
 
+	glDisable(GL_VERTEX_PROGRAM_ARB);
+	glDisable(GL_FRAGMENT_PROGRAM_ARB);
+
 	glActiveTexture(GL_TEXTURE0);
-	glEnable(GL_REGISTER_COMBINERS_NV);
- 	glDisable(GL_BLEND);
 
-	/* The last layer contains the background without an alpha channel */
-	glCallList(data->rc_composite_alphaone_display_list);
-
-	glEnable(GL_TEXTURE_RECTANGLE_NV);
+	glDisable(GL_ALPHA_TEST);
+	glEnable(GL_TEXTURE_RECTANGLE_ARB);
 	if (data->using_stencil_overlay)
 	{
 		/* disable stencil buffer to get the overlay in the back plane */
 		glDisable(GL_STENCIL_TEST);
 	}
 
-	for(i = data->number_of_layers-1 ; i >= 0 ; i--)
+	switch(blending_mode)
 	{
-		if ((data->number_of_layers-2) == i)
+		default:
+		case SCENE_VIEWER_BLEND_NORMAL:
 		{
-			glCallList(data->rc_composite_display_list);
-			switch(blending_mode)
-			{
-				default:
-				case SCENE_VIEWER_BLEND_NORMAL:
-				{
-					glEnable(GL_BLEND);
-					glBlendFunc(GL_SRC_ALPHA,GL_ONE_MINUS_SRC_ALPHA);
-				} break;
-				case SCENE_VIEWER_BLEND_NONE:
-				{
-					glDisable(GL_BLEND);
-				} break;
+			glEnable(GL_BLEND);
+			glBlendFunc(GL_SRC_ALPHA,GL_ONE_MINUS_SRC_ALPHA);
+		} break;
+		case SCENE_VIEWER_BLEND_NONE:
+		{
+			glDisable(GL_BLEND);
+		} break;
 #if defined GL_VERSION_1_4
-				case SCENE_VIEWER_BLEND_TRUE_ALPHA:
-				{
-					glBlendFuncSeparate(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA,
-						GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
-					glEnable(GL_BLEND);
-				} break;
+		case SCENE_VIEWER_BLEND_TRUE_ALPHA:
+		{
+			glBlendFuncSeparate(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA,
+				GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
+			glEnable(GL_BLEND);
+		} break;
 #endif /* defined GL_VERSION_1_4 */
-			}
+	}
+
+	glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE);
+
+	for(i = data->number_of_layers - 1 ; i >= 0 ; i--)
+	{
+		if (data->number_of_layers - 2 == i)
+		{
 			if (data->using_stencil_overlay)
 			{
-				/* disable stencil buffer to get the overlay back*/
 				glEnable(GL_STENCIL_TEST);
 			}
 		}
 
-		glBindTexture(GL_TEXTURE_RECTANGLE_NV, data->rgba_layer_texture_id[i]);
+		glBindTexture(GL_TEXTURE_RECTANGLE_ARB, data->rgba_layer_texture_id[i]);
 		
 		glBegin(GL_QUADS);
 		glTexCoord2f(0, 0);
@@ -764,12 +434,11 @@ Draw a textured quad for each layer and blend them all together correctly.
 		glEnd();
 	}
 
-	glDisable(GL_TEXTURE_RECTANGLE_NV);
+	glDisable(GL_TEXTURE_RECTANGLE_ARB);
 
 	glDisable(GL_BLEND);
 	glEnable(GL_DEPTH_TEST);
 
-	glDisable(GL_REGISTER_COMBINERS_NV);
 
 	glMatrixMode(GL_MODELVIEW);
 	glPopMatrix();
@@ -783,7 +452,7 @@ Draw a textured quad for each layer and blend them all together correctly.
 
 int order_independent_capable(void)
 /*******************************************************************************
-LAST MODIFIED : 14 April 2003
+LAST MODIFIED : 2 May 2005
 
 DESCRIPTION :
 Returns true if the current display is capable of order independent transparency.
@@ -798,10 +467,9 @@ Returns true if the current display is capable of order independent transparency
 
 #if defined (ORDER_INDEPENDENT_CAPABLE)
 	return_code = 1;
-	for (i = 0 ; return_code &&
-		(i < (sizeof(required_extensions) / sizeof (char *))) ; i++)
+	for (i = 0 ; (i < (sizeof(required_extensions) / sizeof (char *))) ; i++)
 	{
-		if (!query_gl_extension(required_extensions[i]))
+		if (!Graphics_library_load_extension(required_extensions[i]))
 		{
 			return_code = 0;
 		}
@@ -845,9 +513,9 @@ Returns true if the current display is capable of order independent transparency
 } /* order_independent_capable */
 
 struct Scene_viewer_order_independent_transparency_data *
-   order_independent_initialise(void)
+   order_independent_initialise(struct Scene_viewer *scene_viewer)
 /*******************************************************************************
-LAST MODIFIED : 14 April 2003
+LAST MODIFIED : 2 May 2005
 
 DESCRIPTION :
 Initialises the order independent transparency extension.
@@ -866,18 +534,8 @@ Initialises the order independent transparency extension.
 	{
 		return_code = 1;
 
-		data->simple_1x1_uhilo_texture_id = 0;
 		data->ztex_texture_id = 0;
 		data->rgba_layer_texture_id = (unsigned int *)NULL;
-
-		data->quad_display_list = 0;
-		data->geometry_display_list = 0;
-		data->rc_highlight_adds_alpha_display_list = 0;
-		data->rc_highlight_adds_alpha__peel_display_list = 0;
-		data->rc_sum_display_list = 0;
-		data->rc_sum__peel_display_list = 0;
-		data->rc_composite_display_list = 0;
-		data->rc_composite_alphaone_display_list = 0;
 
 		data->viewport_width = 0;
 		data->viewport_height = 0;
@@ -887,6 +545,8 @@ Initialises the order independent transparency extension.
 
 		data->zbuffer = (GLuint *)NULL;
 
+		data->scene_viewer = scene_viewer;
+
 		glGetIntegerv(GL_DEPTH_BITS, &depth_bits);
 		glGetIntegerv(GL_ALPHA_BITS, &alpha_bits);
 		
@@ -894,11 +554,11 @@ Initialises the order independent transparency extension.
 		{
 			case 16:
 			{
-				data->depth_format = GL_DEPTH_COMPONENT16_SGIX;
+				data->depth_format = GL_DEPTH_COMPONENT16_ARB;
 			} break;
 			case 24:
 			{
-				data->depth_format = GL_DEPTH_COMPONENT24_SGIX;
+				data->depth_format = GL_DEPTH_COMPONENT24_ARB;
 			} break;
 			default:
 			{
@@ -943,7 +603,7 @@ int order_independent_reshape(
 	struct Scene_viewer_order_independent_transparency_data *data,
 	int width, int height, int layers, int using_stencil_overlay)
 /*******************************************************************************
-LAST MODIFIED : 14 April 2003
+LAST MODIFIED : 2 May 2005
 
 DESCRIPTION :
 Initialises per rendering parts of this extension.
@@ -974,13 +634,13 @@ Initialises per rendering parts of this extension.
 			glGenTextures(1, &data->ztex_texture_id);
 		}
 
-		glBindTexture(GL_TEXTURE_RECTANGLE_NV, data->ztex_texture_id);
+		glBindTexture(GL_TEXTURE_RECTANGLE_ARB, data->ztex_texture_id);
 		
 		if (REALLOCATE(data->zbuffer, data->zbuffer, GLuint, width * height))
 		{
 			data->viewport_width = width;
 			data->viewport_height = height;
-			glTexImage2D(GL_TEXTURE_RECTANGLE_NV, 0, data->depth_format, 
+			glTexImage2D(GL_TEXTURE_RECTANGLE_ARB, 0, data->depth_format, 
 				width, height, 0, 
 				GL_DEPTH_COMPONENT, GL_UNSIGNED_INT, data->zbuffer);
 		}
@@ -1016,11 +676,11 @@ Initialises per rendering parts of this extension.
 			data->number_of_layers = layers;
 			for (i = 0 ; i < data->maximum_number_of_layers ; i++)
 			{
-				glBindTexture(GL_TEXTURE_RECTANGLE_NV, data->rgba_layer_texture_id[i]);
-				glTexImage2D(GL_TEXTURE_RECTANGLE_NV, 0, GL_RGBA8, width, height, 0, 
+				glBindTexture(GL_TEXTURE_RECTANGLE_ARB, data->rgba_layer_texture_id[i]);
+				glTexImage2D(GL_TEXTURE_RECTANGLE_ARB, 0, GL_RGBA8, width, height, 0, 
 					GL_RGBA, GL_UNSIGNED_BYTE, data->zbuffer);
-				glTexParameteri(GL_TEXTURE_RECTANGLE_NV, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-				glTexParameteri(GL_TEXTURE_RECTANGLE_NV, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+				glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+				glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 			}
 		}
 	}
@@ -1043,7 +703,7 @@ void order_independent_display(struct Scene_viewer_rendering_data *rendering_dat
 	double *projection_matrix, double *modelview_matrix,
 	enum Scene_viewer_blending_mode blending_mode)
 /*******************************************************************************
-LAST MODIFIED : 14 April 2003
+LAST MODIFIED : 2 May 2005
 
 DESCRIPTION :
 Actually preforms the rendering pass.
@@ -1059,9 +719,9 @@ Actually preforms the rendering pass.
 	/* glViewport(0, 0, data->viewport_width, data->viewport_height); */
 
 	/* Copy the image that is already drawn into the back layer */
-	glBindTexture(GL_TEXTURE_RECTANGLE_NV,
+	glBindTexture(GL_TEXTURE_RECTANGLE_ARB,
 		data->rgba_layer_texture_id[data->number_of_layers - 1]);
-	glCopyTexSubImage2D(GL_TEXTURE_RECTANGLE_NV, 0, 0, 0, 0, 0,
+	glCopyTexSubImage2D(GL_TEXTURE_RECTANGLE_ARB, 0, 0, 0, 0, 0,
 		data->viewport_width, data->viewport_height);
 
 	/* Always create the textures with this, use the blending mode
@@ -1071,16 +731,54 @@ Actually preforms the rendering pass.
 	glDepthMask(GL_TRUE);
 	glLightModeli(GL_LIGHT_MODEL_TWO_SIDE, 1);
 	glLightModeli(GL_LIGHT_MODEL_COLOR_CONTROL_EXT, GL_SEPARATE_SPECULAR_COLOR_EXT);
-	glEnable(GL_REGISTER_COMBINERS_NV);
 
+	USE_PARAMETER(rendering_data);
+	USE_PARAMETER(data);
+	USE_PARAMETER(projection_matrix);
+	USE_PARAMETER(modelview_matrix);
+	
 	for(layer = 0; layer < data->number_of_layers - 1 ; layer++) 
 	{
+		/* Recompile the materials for order_independent_transaprency */
+		{
+			struct Material_order_independent_transparency material_data;
+			
+			material_data.layer = layer + 1;
+			
+			Scene_for_each_material(Scene_viewer_get_scene(data->scene_viewer),
+				compile_Graphical_material_for_order_independent_transparency,
+				(void *)&material_data);
+		}
+
 		render_scene_from_camera_view(layer, rendering_data, data,
 			projection_matrix, modelview_matrix);
 	}
+
 	draw_sorted_transparency(data, blending_mode);
 
-	/* glCallList(data->rc_sum_display_list); */
+	/* Recompile the materials back to the original state */
+	{
+		struct Material_order_independent_transparency material_data;
+	 
+		material_data.layer = 0;
+		
+		Scene_for_each_material(Scene_viewer_get_scene(data->scene_viewer),
+			compile_Graphical_material_for_order_independent_transparency,
+			(void *)&material_data);
+	}
+
+#if defined (DEBUG)
+	{
+		FILE *out;
+		glReadPixels(0, 0, data->viewport_width, data->viewport_height, GL_DEPTH_COMPONENT,
+			GL_UNSIGNED_INT, data->zbuffer);
+		out = fopen("depth.raw", "w");
+		fwrite(data->zbuffer, sizeof(GLuint), data->viewport_width * data->viewport_height,
+			out);
+		fclose(out);
+	}
+#endif /* defined (DEBUG) */
+
 #else /* defined (ORDER_INDEPENDENT_CAPABLE) */
 	USE_PARAMETER(rendering_data);
 	USE_PARAMETER(data);
@@ -1095,7 +793,7 @@ Actually preforms the rendering pass.
 int order_independent_finalise(
 	struct Scene_viewer_order_independent_transparency_data **data_address)
 /*******************************************************************************
-LAST MODIFIED : 14 April 2003
+LAST MODIFIED : 2 May 2005
 
 DESCRIPTION :
 Frees the memory associated with the <data_address> and sets <data_address> to NULL.
@@ -1122,35 +820,6 @@ Frees the memory associated with the <data_address> and sets <data_address> to N
 		if (data->ztex_texture_id)
 		{
 			glDeleteTextures(1, &data->ztex_texture_id);
-		}
-		if (data->simple_1x1_uhilo_texture_id)
-		{
-			glDeleteTextures(1, &data->simple_1x1_uhilo_texture_id);
-		}
-
-		if (data->rc_composite_display_list)
-		{
-			glDeleteLists(data->rc_composite_display_list, 1);
-		}
-		if (data->rc_composite_alphaone_display_list)
-		{
-			glDeleteLists(data->rc_composite_alphaone_display_list, 1);
-		}
-		if (data->rc_sum__peel_display_list)
-		{
-			glDeleteLists(data->rc_sum__peel_display_list, 1);
-		}
-		if (data->rc_sum_display_list)
-		{
-			glDeleteLists(data->rc_sum_display_list, 1);
-		}
-		if (data->rc_highlight_adds_alpha_display_list)
-		{
-			glDeleteLists(data->rc_highlight_adds_alpha_display_list, 1);
-		}
-		if (data->rc_highlight_adds_alpha__peel_display_list)
-		{
-			glDeleteLists(data->rc_highlight_adds_alpha__peel_display_list, 1);
 		}
 
 		DEALLOCATE(*data_address);

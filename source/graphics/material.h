@@ -62,6 +62,17 @@ struct Graphical_material_Texture_change_data
 	struct LIST(Graphical_material) *changed_material_list;
 };
 
+struct Material_order_independent_transparency
+/*******************************************************************************
+LAST MODIFIED : 2 May 2005
+
+DESCRIPTION :
+Data for compiling materials specially for order independent transparency.
+==============================================================================*/
+{
+	int layer;
+}; /* struct Material_order_independent_transparency */
+
 /*
 Global functions
 ----------------
@@ -396,6 +407,17 @@ cannot start writing to a display list when one is currently being written to.
 ???RC The behaviour of materials is set up to take advantage of pre-computed
 display lists. To switch to direct rendering make this routine do nothing and
 execute_Graphical_material should just call direct_render_Graphical_material.
+==============================================================================*/
+
+int compile_Graphical_material_for_order_independent_transparency(
+	struct Graphical_material *material, 
+	void *material_order_independent_data_void);
+/*******************************************************************************
+LAST MODIFIED : 2 May 2005
+
+DESCRIPTION :
+Recompile each of the <materials> which have already been compiled so that they
+will work with order_independent_transparency. 
 ==============================================================================*/
 
 int execute_Graphical_material(struct Graphical_material *material);

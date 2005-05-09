@@ -1344,44 +1344,12 @@ the extensions succeed, false if not.
 			}
 		}
 #endif /* GL_VERSION_1_4 */
-#if defined GL_EXT_texture3D
-		else if (!strcmp(extension_name, "GL_EXT_texture3D"))
+#if defined GL_ARB_depth_texture
+		else if (!strcmp(extension_name, "GL_ARB_depth_texture"))
 		{
-			if (255 != GLEXTENSIONFLAG(GL_EXT_texture3D))
+			if (255 != GLEXTENSIONFLAG(GL_ARB_depth_texture))
 			{
-				return_code = GLEXTENSIONFLAG(GL_EXT_texture3D);
-			}
-			else
-			{
-				if (query_gl_extension(extension_name))
-				{
-					/* We are using the non EXT version of these functions as this simplifies
-						the code where they are used, and the SGI implementation while currently
-						only OpenGL 1.1 supplies both glTexImage3D and glTexImage3DEXT */
-					if (GRAPHICS_LIBRARY_ASSIGN_HANDLE(glTexImage3D, PFNGLTEXIMAGE3DPROC)
-						Graphics_library_get_function_ptr("glTexImage3D"))
-					{
-						return_code = 1;
-					}
-					else
-					{
-						return_code = 0;
-					}
-				}
-				else
-				{
-					return_code = 0;
-				}
-				GLEXTENSIONFLAG(GL_EXT_texture3D) = return_code;
-			}
-		}
-#endif /* GL_EXT_texture3D */
-#if defined GL_EXT_abgr
-		else if (!strcmp(extension_name, "GL_EXT_abgr"))
-		{
-			if (255 != GLEXTENSIONFLAG(GL_EXT_abgr))
-			{
-				return_code = GLEXTENSIONFLAG(GL_EXT_abgr);
+				return_code = GLEXTENSIONFLAG(GL_ARB_depth_texture);
 			}
 			else
 			{
@@ -1393,66 +1361,10 @@ the extensions succeed, false if not.
 				{
 					return_code = 0;
 				}
-				GLEXTENSIONFLAG(GL_EXT_abgr) = return_code;
+				GLEXTENSIONFLAG(GL_ARB_depth_texture) = return_code;
 			}
 		}
-#endif /* GL_EXT_texture3D */
-#if defined GL_ARB_texture_compression
-		else if (!strcmp(extension_name, "GL_ARB_texture_compression"))
-		{
-			if (255 != GLEXTENSIONFLAG(GL_ARB_texture_compression))
-			{
-				return_code = GLEXTENSIONFLAG(GL_ARB_texture_compression);
-			}
-			else
-			{
-				if (query_gl_extension(extension_name))
-				{
-					return_code = 1;
-				}
-				else
-				{
-					return_code = 0;
-				}
-				GLEXTENSIONFLAG(GL_ARB_texture_compression) = return_code;
-			}
-		}
-#endif /* GL_ARB_texture_compression */
-#if defined GL_ARB_vertex_program
-		else if (!strcmp(extension_name, "GL_ARB_vertex_program"))
-		{
-			if (255 != GLEXTENSIONFLAG(GL_ARB_vertex_program))
-			{
-				return_code = GLEXTENSIONFLAG(GL_ARB_vertex_program);
-			}
-			else
-			{
-				if (query_gl_extension(extension_name))
-				{
-					if ((GRAPHICS_LIBRARY_ASSIGN_HANDLE(glGenProgramsARB, PFNGLGENPROGRAMSARBPROC)
-						Graphics_library_get_function_ptr("glGenProgramsARB")) &&
-						(GRAPHICS_LIBRARY_ASSIGN_HANDLE(glBindProgramARB, PFNGLBINDPROGRAMARBPROC)
-						Graphics_library_get_function_ptr("glBindProgramARB")) &&
-						(GRAPHICS_LIBRARY_ASSIGN_HANDLE(glProgramStringARB, PFNGLPROGRAMSTRINGARBPROC)
-						Graphics_library_get_function_ptr("glProgramStringARB")) &&
-						(GRAPHICS_LIBRARY_ASSIGN_HANDLE(glDeleteProgramsARB, PFNGLDELETEPROGRAMSARBPROC)
-						Graphics_library_get_function_ptr("glDeleteProgramsARB")))
-					{
-						return_code = 1;
-					}
-					else
-					{
-						return_code = 0;
-					}
-				}
-				else
-				{
-					return_code = 0;
-				}
-				GLEXTENSIONFLAG(GL_ARB_vertex_program) = return_code;
-			}
-		}
-#endif /* GL_ARB_vertex_program */
+#endif /* GL_ARB_depth_texture */
 #if defined GL_ARB_fragment_program
 		else if (!strcmp(extension_name, "GL_ARB_fragment_program"))
 		{
@@ -1488,6 +1400,181 @@ the extensions succeed, false if not.
 			}
 		}
 #endif /* GL_ARB_fragment_program */
+#if defined GL_ARB_fragment_program_shadow
+		else if (!strcmp(extension_name, "GL_ARB_fragment_program_shadow"))
+		{
+			if (255 != GLEXTENSIONFLAG(GL_ARB_fragment_program_shadow))
+			{
+				return_code = GLEXTENSIONFLAG(GL_ARB_fragment_program_shadow);
+			}
+			else
+			{
+				if (query_gl_extension(extension_name))
+				{
+					return_code = 1;
+				}
+				else
+				{
+					return_code = 0;
+				}
+				GLEXTENSIONFLAG(GL_ARB_fragment_program_shadow) = return_code;
+			}
+		}
+#endif /* GL_ARB_fragment_program_shadow */
+#if defined GL_ARB_texture_compression
+		else if (!strcmp(extension_name, "GL_ARB_texture_compression"))
+		{
+			if (255 != GLEXTENSIONFLAG(GL_ARB_texture_compression))
+			{
+				return_code = GLEXTENSIONFLAG(GL_ARB_texture_compression);
+			}
+			else
+			{
+				if (query_gl_extension(extension_name))
+				{
+					return_code = 1;
+				}
+				else
+				{
+					return_code = 0;
+				}
+				GLEXTENSIONFLAG(GL_ARB_texture_compression) = return_code;
+			}
+		}
+#endif /* GL_ARB_texture_compression */
+#if defined GL_ARB_texture_rectangle
+		else if (!strcmp(extension_name, "GL_ARB_texture_rectangle"))
+		{
+			if (255 != GLEXTENSIONFLAG(GL_ARB_texture_rectangle))
+			{
+				return_code = GLEXTENSIONFLAG(GL_ARB_texture_rectangle);
+			}
+			else
+			{
+				/* These extensions are equivalent so at runtime we will be 
+					happy to have the EXT version */
+				if (query_gl_extension(extension_name) || 
+					query_gl_extension("GL_EXT_texture_rectangle"))
+				{
+					return_code = 1;
+				}
+				else
+				{
+					return_code = 0;
+				}
+				GLEXTENSIONFLAG(GL_ARB_texture_rectangle) = return_code;
+			}
+		}
+#endif /* GL_ARB_texture_rectangle */
+#if defined GL_ARB_vertex_program
+		else if (!strcmp(extension_name, "GL_ARB_vertex_program"))
+		{
+			if (255 != GLEXTENSIONFLAG(GL_ARB_vertex_program))
+			{
+				return_code = GLEXTENSIONFLAG(GL_ARB_vertex_program);
+			}
+			else
+			{
+				if (query_gl_extension(extension_name))
+				{
+					if ((GRAPHICS_LIBRARY_ASSIGN_HANDLE(glGenProgramsARB, PFNGLGENPROGRAMSARBPROC)
+						Graphics_library_get_function_ptr("glGenProgramsARB")) &&
+						(GRAPHICS_LIBRARY_ASSIGN_HANDLE(glBindProgramARB, PFNGLBINDPROGRAMARBPROC)
+						Graphics_library_get_function_ptr("glBindProgramARB")) &&
+						(GRAPHICS_LIBRARY_ASSIGN_HANDLE(glProgramStringARB, PFNGLPROGRAMSTRINGARBPROC)
+						Graphics_library_get_function_ptr("glProgramStringARB")) &&
+						(GRAPHICS_LIBRARY_ASSIGN_HANDLE(glDeleteProgramsARB, PFNGLDELETEPROGRAMSARBPROC)
+						Graphics_library_get_function_ptr("glDeleteProgramsARB")))
+					{
+						return_code = 1;
+					}
+					else
+					{
+						return_code = 0;
+					}
+				}
+				else
+				{
+					return_code = 0;
+				}
+				GLEXTENSIONFLAG(GL_ARB_vertex_program) = return_code;
+			}
+		}
+#endif /* GL_ARB_vertex_program */
+#if defined GL_ARB_shadow
+		else if (!strcmp(extension_name, "GL_ARB_shadow"))
+		{
+			if (255 != GLEXTENSIONFLAG(GL_ARB_shadow))
+			{
+				return_code = GLEXTENSIONFLAG(GL_ARB_shadow);
+			}
+			else
+			{
+				if (query_gl_extension(extension_name))
+				{
+					return_code = 1;
+				}
+				else
+				{
+					return_code = 0;
+				}
+				GLEXTENSIONFLAG(GL_ARB_shadow) = return_code;
+			}
+		}
+#endif /* GL_ARB_shadow */
+#if defined GL_EXT_abgr
+		else if (!strcmp(extension_name, "GL_EXT_abgr"))
+		{
+			if (255 != GLEXTENSIONFLAG(GL_EXT_abgr))
+			{
+				return_code = GLEXTENSIONFLAG(GL_EXT_abgr);
+			}
+			else
+			{
+				if (query_gl_extension(extension_name))
+				{
+					return_code = 1;
+				}
+				else
+				{
+					return_code = 0;
+				}
+				GLEXTENSIONFLAG(GL_EXT_abgr) = return_code;
+			}
+		}
+#endif /* GL_EXT_texture3D */
+#if defined GL_EXT_texture3D
+		else if (!strcmp(extension_name, "GL_EXT_texture3D"))
+		{
+			if (255 != GLEXTENSIONFLAG(GL_EXT_texture3D))
+			{
+				return_code = GLEXTENSIONFLAG(GL_EXT_texture3D);
+			}
+			else
+			{
+				if (query_gl_extension(extension_name))
+				{
+					/* We are using the non EXT version of these functions as this simplifies
+						the code where they are used, and the SGI implementation while currently
+						only OpenGL 1.1 supplies both glTexImage3D and glTexImage3DEXT */
+					if (GRAPHICS_LIBRARY_ASSIGN_HANDLE(glTexImage3D, PFNGLTEXIMAGE3DPROC)
+						Graphics_library_get_function_ptr("glTexImage3D"))
+					{
+						return_code = 1;
+					}
+					else
+					{
+						return_code = 0;
+					}
+				}
+				else
+				{
+					return_code = 0;
+				}
+				GLEXTENSIONFLAG(GL_EXT_texture3D) = return_code;
+			}
+		}
+#endif /* GL_EXT_texture3D */
 		else
 		{
 			display_message(ERROR_MESSAGE,  "Graphics_library_load_extension.  "

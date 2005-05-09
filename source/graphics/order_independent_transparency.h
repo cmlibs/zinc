@@ -25,7 +25,7 @@ Returns true if the current display is capable of order independent transparency
 ==============================================================================*/
 
 struct Scene_viewer_order_independent_transparency_data *
-   order_independent_initialise(void);
+   order_independent_initialise(struct Scene_viewer *scene_viewer);
 /*******************************************************************************
 LAST MODIFIED : 14 April 2003
 

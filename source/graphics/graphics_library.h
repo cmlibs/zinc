@@ -295,21 +295,33 @@ the extensions succeed, false if not.
 #if defined (GL_VERSION_1_4)
   GRAPHICS_LIBRARY_INITIALISE_GLEXTENSIONFLAG(GL_VERSION_1_4);
 #endif /* defined (GL_VERSION_1_4) */
-#if defined (GL_EXT_texture3D)
-  GRAPHICS_LIBRARY_INITIALISE_GLEXTENSIONFLAG(GL_EXT_texture3D);
-#endif /* defined (GL_EXT_texture3D) */
-#if defined (GL_EXT_abgr)
-  GRAPHICS_LIBRARY_INITIALISE_GLEXTENSIONFLAG(GL_EXT_abgr);
-#endif /* defined (GL_EXT_abgr) */
+#if defined (GL_ARB_depth_texture)
+  GRAPHICS_LIBRARY_INITIALISE_GLEXTENSIONFLAG(GL_ARB_depth_texture);
+#endif /* defined (GL_ARB_depth_texture) */
+#if defined (GL_ARB_fragment_program)
+  GRAPHICS_LIBRARY_INITIALISE_GLEXTENSIONFLAG(GL_ARB_fragment_program);
+#endif /* defined (GL_ARB_fragment_program) */
+#if defined (GL_ARB_fragment_program_shadow)
+  GRAPHICS_LIBRARY_INITIALISE_GLEXTENSIONFLAG(GL_ARB_fragment_program_shadow);
+#endif /* defined (GL_ARB_fragment_program_shadow) */
+#if defined (GL_ARB_texture_rectangle)
+  GRAPHICS_LIBRARY_INITIALISE_GLEXTENSIONFLAG(GL_ARB_texture_rectangle);
+#endif /* defined (GL_ARB_texture_rectangle) */
 #if defined (GL_ARB_texture_compression)
   GRAPHICS_LIBRARY_INITIALISE_GLEXTENSIONFLAG(GL_ARB_texture_compression);
 #endif /* defined (GL_ARB_texture_compression) */
 #if defined (GL_ARB_vertex_program)
   GRAPHICS_LIBRARY_INITIALISE_GLEXTENSIONFLAG(GL_ARB_vertex_program);
 #endif /* defined (GL_ARB_vertex_program) */
-#if defined (GL_ARB_fragment_program)
-  GRAPHICS_LIBRARY_INITIALISE_GLEXTENSIONFLAG(GL_ARB_fragment_program);
-#endif /* defined (GL_ARB_fragment_program) */
+#if defined (GL_ARB_shadow)
+  GRAPHICS_LIBRARY_INITIALISE_GLEXTENSIONFLAG(GL_ARB_shadow);
+#endif /* defined (GL_ARB_shadow) */
+#if defined (GL_EXT_abgr)
+  GRAPHICS_LIBRARY_INITIALISE_GLEXTENSIONFLAG(GL_EXT_abgr);
+#endif /* defined (GL_EXT_abgr) */
+#if defined (GL_EXT_texture3D)
+  GRAPHICS_LIBRARY_INITIALISE_GLEXTENSIONFLAG(GL_EXT_texture3D);
+#endif /* defined (GL_EXT_texture3D) */
 
 /* Extension function handles */
 #if defined (GRAPHICS_LIBRARY_USE_EXTENSION_FUNCTION_HANDLES)

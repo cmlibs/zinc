@@ -704,6 +704,16 @@ DESCRIPTION :
 Wrapper for FIRST_OBJECT_IN_LIST_THAT function for Scene_object.
 ==============================================================================*/
 
+int Scene_for_each_material(struct Scene *scene,
+	MANAGER_ITERATOR_FUNCTION(Graphical_material) *iterator_function,
+	void *user_data);
+/*******************************************************************************
+LAST MODIFIED : 3 May 2005
+
+DESCRIPTION :
+Iterates through every material used by the scene.
+==============================================================================*/
+
 PROTOTYPE_OBJECT_FUNCTIONS(Scene_picked_object);
 PROTOTYPE_LIST_FUNCTIONS(Scene_picked_object);
 

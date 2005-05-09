@@ -62,10 +62,21 @@ DESCRIPTION :
 Enumerates the main different types of vertex/fragment program for materials
 ==============================================================================*/
 {
-	MATERIAL_PROGRAM_PER_PIXEL_LIGHTING = 1,
-	MATERIAL_PROGRAM_PER_PIXEL_TEXTURING = 2,
-	MATERIAL_PROGRAM_BUMP_MAPPING = 3,
-	MATERIAL_PROGRAM_BUMP_MAPPING_TEXTURING = 4
+	/* This first one is a standard Gouraud Shaded material, included here so 
+		that it can be peeled in order independent transparency */
+	MATERIAL_PROGRAM_GOURAUD_SHADING = 1,
+	MATERIAL_PROGRAM_PER_PIXEL_LIGHTING = 2,
+	MATERIAL_PROGRAM_PER_PIXEL_TEXTURING = 6,
+	MATERIAL_PROGRAM_BUMP_MAPPING = 10,
+	MATERIAL_PROGRAM_BUMP_MAPPING_TEXTURING = 14,
+
+	/* These classes modify the above programs and so must be bit independent */
+	MATERIAL_PROGRAM_CLASS_GOURAUD_SHADING = 1,
+	MATERIAL_PROGRAM_CLASS_PER_PIXEL_LIGHTING = 2,
+	MATERIAL_PROGRAM_CLASS_COLOUR_TEXTURE = 4,
+	MATERIAL_PROGRAM_CLASS_BUMP_MAP_TEXTURE = 8,
+	MATERIAL_PROGRAM_CLASS_ORDER_INDEPENDENT_FIRST_LAYER = 512,
+	MATERIAL_PROGRAM_CLASS_ORDER_INDEPENDENT_PEEL_LAYER = 1024
 }; /* enum Material_program_type */
 
 struct Material_program
@@ -290,366 +301,501 @@ be shared by multiple materials using the same program.
 #endif /* defined (TESTING_PROGRAM_STRINGS) */
 		if (!material_program->compiled)
 		{
-			switch (material_program->type)
-			{
-				case MATERIAL_PROGRAM_PER_PIXEL_LIGHTING:
-				case MATERIAL_PROGRAM_PER_PIXEL_TEXTURING:
-				case MATERIAL_PROGRAM_BUMP_MAPPING:
-				case MATERIAL_PROGRAM_BUMP_MAPPING_TEXTURING:
-				{
 #if defined GL_ARB_vertex_program && defined GL_ARB_fragment_program
-					if (Graphics_library_check_extension(GL_ARB_vertex_program) &&
-						 Graphics_library_check_extension(GL_ARB_fragment_program))
-					{
+			if (Graphics_library_check_extension(GL_ARB_vertex_program) &&
+				Graphics_library_check_extension(GL_ARB_fragment_program))
+			{
 #if ! defined (TESTING_PROGRAM_STRINGS)
-						char *fragment_program_string, *vertex_program_string;
-						int error;
-						
-						error = 0;
-						
-						vertex_program_string = duplicate_string("!!ARBvp1.0\n");
-						append_string(&vertex_program_string, 
-							"ATTRIB normal = vertex.normal;\n"
-							"ATTRIB position = vertex.position;\n"
-							, &error);
-						if ((MATERIAL_PROGRAM_BUMP_MAPPING == material_program->type)
-							|| (MATERIAL_PROGRAM_BUMP_MAPPING_TEXTURING == material_program->type))
-						{
-							append_string(&vertex_program_string, 
-								"ATTRIB tangent = vertex.texcoord[1];\n"
-								, &error);
-						}
-						append_string(&vertex_program_string, 
-							"PARAM c0[4] = { state.matrix.mvp };\n"
-							"PARAM c1[4] = { state.matrix.modelview };\n"
-							"PARAM eyeCameraPos = {0, 0, 0, 0};\n"
-							"PARAM eyeLightPos = state.light[0].position;\n"
+				char *fragment_program_string, *vertex_program_string;
+				int error;
+				const GLubyte *error_msg;
+				
+				error = 0;
+				if (MATERIAL_PROGRAM_CLASS_GOURAUD_SHADING & material_program->type)
+				{
+					vertex_program_string = duplicate_string("!!ARBvp1.0\n"
+						"ATTRIB normal = vertex.normal;\n"
+						"ATTRIB position = vertex.position;\n"
+						"PARAM c0[4] = { state.matrix.mvp };\n"
+						"PARAM c1[4] = { state.matrix.modelview };\n"
+						"PARAM c2[4] = { state.matrix.modelview.invtrans };\n"
+						"PARAM eyeCameraPos = {0, 0, 0, 0};\n"
+						"PARAM eyeLightPos = state.light[0].position;\n"
+						"PARAM two = {2.0, 2.0, 2.0, 2.0};\n"
+						"PARAM m_one = {-1.0, -1.0, -1.0, -1.0};\n"
+						"\n"
+						"TEMP eyeVertex;\n"
+						"TEMP eyeNormal;\n"
+						"TEMP viewVec, lightVec, Len, reflVec, finalCol, attenuation, lightContrib;\n"
+						"\n"
+						"#Vertex position in eyespace\n"
+						"DP4 eyeVertex.x, c1[0], position;\n"
+						"DP4 eyeVertex.y, c1[1], position;\n"
+						"DP4 eyeVertex.z, c1[2], position;\n"
+						"\n"
+						"DP4 eyeNormal.x, c2[0], normal;\n"
+						"DP4 eyeNormal.y, c2[1], normal;\n"
+						"DP4 eyeNormal.z, c2[2], normal;\n"
+						"\n"
+						"DP3 eyeNormal.w, eyeNormal, eyeNormal;\n"
+						"RSQ eyeNormal.w, eyeNormal.w;\n"
+						"MUL eyeNormal.xyz, eyeNormal.w, eyeNormal;\n"
+						"\n"
+						"SUB viewVec, eyeCameraPos, eyeVertex;\n"
+						"DP3 viewVec.w, viewVec, viewVec;\n"
+						"RSQ viewVec.w, viewVec.w;\n"
+						"MUL viewVec.xyz, viewVec.w, viewVec;\n"
+						"\n"
+						"SUB lightVec, eyeLightPos, eyeVertex;\n"
+						"#MOV lightVec, state.light[0].position;\n"
+						"\n"
+						"#Normalize lightvec and viewvec.\n"
+						"DP3		Len.w, lightVec, lightVec;\n"
+						"RSQ		lightVec.w, Len.w;\n"
+						"MUL		lightVec.xyz, lightVec, lightVec.w;\n"
+						"\n"
+						"#Calculate attenuation.\n"
+						"MAD		attenuation, state.light[0].attenuation.z, Len.w, state.light[0].attenuation.x;\n"
+						"RCP		Len, lightVec.w;\n"
+						"MAD		attenuation, Len.w, state.light[0].attenuation.y, attenuation.x;\n"
+						"RCP		attenuation.x, attenuation.x;\n"
+						"\n"
+						"#Diffuse\n"
+						"DP3	   lightContrib.x, eyeNormal, lightVec;\n"
+						"ABS      lightContrib.x, lightContrib.x;\n"
+						"\n"
+						"#Specular\n"
+						"# Phong:\n"
+						"#DP3		reflVec, lightVec, eyeNormal;\n"
+						"#MUL		reflVec, reflVec, two;\n"
+						"#MAD		reflVec, reflVec.x, eyeNormal, -lightVec;\n"
+						"#DP3	lightContrib.y, reflVec, viewVec;\n"
+						"\n"
+						"DP3      lightContrib.y, eyeNormal, state.light[0].half;\n"
+						"\n"
+						"MOV		lightContrib.w, state.material.shininess.x;\n"
+						"\n"
+						"#Accelerates lighting computations\n"
+						"LIT	lightContrib, lightContrib;\n"
+						"\n"
+						"MAD		finalCol, lightContrib.y, vertex.color, state.lightprod[0].ambient;\n"
+						"MAD		finalCol, lightContrib.z, state.lightprod[0].specular, finalCol;\n"
+						"MAD		finalCol, finalCol, attenuation.x, state.material.emission;\n"
+						"#ADD		result.color.xyz, finalCol, state.lightmodel.scenecolor;\n"
+						"\n"
+						"MAD		finalCol, state.material.ambient, state.lightmodel.ambient, finalCol;\n"
+						"\n"
+						"MOV finalCol.w, state.material.diffuse.w;\n"
+						"\n"
+						"DP4 result.texcoord[1].x, c0[0], position;\n"
+						"DP4 result.texcoord[1].y, c0[1], position;\n"
+						"DP4 result.texcoord[1].z, c0[2], position;\n"
+						"DP4 result.texcoord[1].w, c0[3], position;\n"
+						"\n"
+						"MOV result.color, finalCol;\n"
+						"MOV result.color.back, finalCol;\n"
+						"#MOV result.color.secondary,  {1, 1, 1, 1};\n"
+						"#MOV result.color.back.secondary,  {0, 0, 0, 0};\n"
+						"DP4 result.position.x, c0[0], position;\n"
+						"DP4 result.position.y, c0[1], position;\n"
+						"DP4 result.position.z, c0[2], position;\n"
+						"DP4 result.position.w, c0[3], position;\n"
+						"\n"
+						"END\n");
 
-							"TEMP eyeVertex;\n"
-							"TEMP viewVec;\n"
-							, &error);
-						if ((MATERIAL_PROGRAM_BUMP_MAPPING == material_program->type)
-							|| (MATERIAL_PROGRAM_BUMP_MAPPING_TEXTURING == material_program->type))
-						{
-							append_string(&vertex_program_string, 
-								"PARAM c3[4] = { state.matrix.modelview.inverse };\n"
-								"TEMP lightVec;\n"
-								"TEMP objectLight;\n"
-								"TEMP cameraVec;\n"
-								"TEMP objectCamera;\n"
-								"TEMP binormal;\n"
-								, &error);
-						}
-						else
-						{
-							append_string(&vertex_program_string, 
-								"PARAM c2[4] = { state.matrix.modelview.invtrans };\n"
-								"TEMP eyeNormal;\n"
-								, &error);
-						}
-
-						append_string(&vertex_program_string, 
-							"#Vertex position in eyespace\n"
-							"DP4 eyeVertex.x, c1[0], position;\n"
-							"DP4 eyeVertex.y, c1[1], position;\n"
-							"DP4 eyeVertex.z, c1[2], position;\n"
-							, &error);								
-
-						if ((MATERIAL_PROGRAM_PER_PIXEL_TEXTURING == material_program->type)
-							|| (MATERIAL_PROGRAM_BUMP_MAPPING == material_program->type)
-							|| (MATERIAL_PROGRAM_BUMP_MAPPING_TEXTURING == material_program->type))
-						{
-							append_string(&vertex_program_string, 
-								"MOV result.texcoord[0], vertex.texcoord[0];\n"
-								, &error);								
-						}
-
-						if ((MATERIAL_PROGRAM_BUMP_MAPPING == material_program->type)
-							|| (MATERIAL_PROGRAM_BUMP_MAPPING_TEXTURING == material_program->type))
-						{
-							append_string(&vertex_program_string, 
-								"MUL binormal.xyz, tangent.zxyz, normal.yzxy;\n"
-								"MAD binormal.xyz, tangent.yzxy, normal.zxyz, -binormal.xyzx;\n"
-
-								"SUB lightVec, eyeLightPos, eyeVertex;\n"
-								
-								"DP3 objectLight.x, c3[0], lightVec;\n"
-								"DP3 objectLight.y, c3[1], lightVec;\n"
-								"DP3 objectLight.z, c3[2], lightVec;\n"
-
-								"DP3 result.texcoord[1].x, tangent, objectLight;\n"
-								"DP3 result.texcoord[1].y, binormal, objectLight;\n"
-								"DP3 result.texcoord[1].z, normal, objectLight;\n"
-
-								"SUB cameraVec, eyeCameraPos, eyeVertex;\n"
-								"DP3 objectCamera.x, c3[0], cameraVec;\n"
-								"DP3 objectCamera.y, c3[1], cameraVec;\n"
-								"DP3 objectCamera.z, c3[2], cameraVec;\n"
-
-								"DP3 result.texcoord[2].x, tangent, objectCamera;\n"
-								"DP3 result.texcoord[2].y, binormal, objectCamera;\n"
-								"DP3 result.texcoord[2].z, normal, objectCamera;\n"
-								, &error);
-						}
-						else
-						{
-							append_string(&vertex_program_string, 
-								"DP4 eyeNormal.x, c2[0], normal;\n"
-								"DP4 eyeNormal.y, c2[1], normal;\n"
-								"DP4 eyeNormal.z, c2[2], normal;\n"
-								"DP3 eyeNormal.w, eyeNormal, eyeNormal;\n"
-								"RSQ eyeNormal.w, eyeNormal.w;\n"
-								"MUL eyeNormal.xyz, eyeNormal.w, eyeNormal;\n"
-
-								"SUB viewVec, eyeCameraPos, eyeVertex;\n"
-								"DP3 viewVec.w, viewVec, viewVec;\n"
-								"RSQ viewVec.w, viewVec.w;\n"
-								"MUL viewVec.xyz, viewVec.w, viewVec;\n"
-
-								"SUB result.texcoord[1], eyeLightPos, eyeVertex;\n"
-								"MOV result.texcoord[2], viewVec;\n"
-								"MOV result.texcoord[3], eyeNormal;\n"
-								, &error);
-						}
-
-						append_string(&vertex_program_string, 
-							"MOV result.color, vertex.color;\n"
-							"MOV result.color.back, vertex.color;\n"
-							"MOV result.color.secondary,  {1, 1, 1, 1};\n"
-							"MOV result.color.back.secondary,  {0, 0, 0, 0};\n"
-							"DP4 result.position.x, c0[0], position;\n"
-							"DP4 result.position.y, c0[1], position;\n"
-							"DP4 result.position.z, c0[2], position;\n"
-							"DP4 result.position.w, c0[3], position;\n"
-
-							"END\n"
-							, &error);
-								
-						fragment_program_string = duplicate_string("!!ARBfp1.0\n");
+					fragment_program_string = duplicate_string("!!ARBfp1.0\n");
+					if (MATERIAL_PROGRAM_CLASS_ORDER_INDEPENDENT_PEEL_LAYER & material_program->type)
+					{
 						append_string(&fragment_program_string, 
-							"TEMP lightVec, viewVec, reflVec, normal, attenuation, Len, finalCol, lightContrib, reverse, tex, tex2;\n"
+							"OPTION ARB_fragment_program_shadow;\n"
+							"PARAM texturesize = program.env[0];\n"
+
+							"TEMP tex4, kill, tex4coord;\n"
 							"PARAM two = {2.0, 2.0, 2.0, 2.0};\n"
-							"PARAM m_one = {-1.0, -1.0, -1.0, -1.0};\n"
-
-							"#Set up reverse vector based on secondary colour\n"
-							"MAD      reverse, two, fragment.color.secondary.x, m_one;\n"
+							"PARAM one = {1.0, 1.0, 1.0, 1.0};\n"
+							"#PARAM minus_one = {-1.0, -1.0, -1.0, -1.0};\n"
 							, &error);
+					}
 
+					append_string(&fragment_program_string, 
+							"TEMP eyespaceCoord, perspective;\n"
+							"PARAM point_five = {0.5, 0.5, 0.5, 0.5};\n"
 
-						if ((MATERIAL_PROGRAM_PER_PIXEL_TEXTURING == material_program->type)
-							|| (MATERIAL_PROGRAM_BUMP_MAPPING_TEXTURING == material_program->type))
-						{
-							append_string(&fragment_program_string, 
-								/* Load the colour texture */
-								"TEX		tex, fragment.texcoord[0], texture[0], 2D;\n"
+							"MOV      eyespaceCoord, fragment.texcoord[1];\n"
+							"RCP      perspective.w, eyespaceCoord.w;\n"
+							"MUL      eyespaceCoord, eyespaceCoord, perspective.w;\n"
+							"MAD      eyespaceCoord, eyespaceCoord, point_five, point_five;\n"
 							, &error);
-						}
-
-						if ((MATERIAL_PROGRAM_BUMP_MAPPING == material_program->type)
-							|| (MATERIAL_PROGRAM_BUMP_MAPPING_TEXTURING == material_program->type))
-						{
-							/* Normal comes from second texture but still uses primary texture coordinates*/
-							append_string(&fragment_program_string, 
-								"TEX		tex2, fragment.texcoord[0], texture[1], 2D;\n"
-
-								"#Expand the range of the normal texture\n"
-								"MAD      normal, two, tex2, m_one;\n"
-
-								"#Reverse the texture normal direction component if required\n"
-								"MUL      normal.z, reverse.z, normal.z;\n"
-								, &error);
-						}
-						else
-						{
-							/* Normal is stored in texcoord[3] */
-							append_string(&fragment_program_string, 
-								"#Normalize the normal.\n"
-								"DP3		normal.w, fragment.texcoord[3], fragment.texcoord[3];\n"
-								"RSQ		normal.w, normal.w;\n"
-								"MUL		normal.xyz, fragment.texcoord[3], normal.w;\n"
-
-								"#Reverse the normal if required\n"
-								"MUL      normal, reverse, normal;\n"
-								, &error);
-						}
+						
+					if (MATERIAL_PROGRAM_CLASS_ORDER_INDEPENDENT_PEEL_LAYER & material_program->type)
+					{
 						append_string(&fragment_program_string, 
-							"#Normalize lightvec and viewvec.\n"
-							"DP3		Len.w, fragment.texcoord[1], fragment.texcoord[1];\n"
-							"RSQ		lightVec.w, Len.w;\n"
-							"MUL		lightVec.xyz, fragment.texcoord[1], lightVec.w;\n"
-
-							"DP3		viewVec.w, fragment.texcoord[2], fragment.texcoord[2];\n"
-							"RSQ		viewVec.w, viewVec.w;\n"
-							"MUL		viewVec.xyz, fragment.texcoord[2], viewVec.w;\n"
-
-							"#Calculate attenuation.\n"
-							"MAD		attenuation, state.light[0].attenuation.z, Len.w, state.light[0].attenuation.x;\n"
-							"RCP		Len, lightVec.w;\n"
-							"MAD		attenuation, Len.w, state.light[0].attenuation.y, attenuation.x;\n"
-							"RCP		attenuation.x, attenuation.x;\n"
-
-							"#Diffuse\n"
-							"DP3_SAT	   lightContrib.x, normal, lightVec;\n"
+							"#MOV      tex4coord, one;\n"
+							"MOV      tex4coord, eyespaceCoord.xyzx;\n"
+							"MUL      tex4coord, tex4coord, texturesize;\n"
+							"#MUL      tex4coord, eyespaceCoord, two;\n"
+							"#MAD      tex4coord, eyespaceCoord, point_five, point_five;\n"
 							"\n"
-							"#Specular\n"
-							"# Phong:\n"
-							"DP3		reflVec, lightVec, normal;\n"
-							"MUL		reflVec, reflVec, two;\n"
-							"MAD		reflVec, reflVec, normal, -lightVec;\n"
+							"MOV      tex4.x, eyespaceCoord.zzzz;\n"
+							"TEX		tex4.x, tex4coord, texture[3], SHADOWRECT;\n"
 							"\n"
-							"DP3_SAT	lightContrib.y, reflVec, viewVec;\n"
-
-							"MOV		lightContrib.w, state.material.shininess.x;\n"
-
-							"#Accelerates lighting computations\n"
-							"LIT	lightContrib, lightContrib;\n"
-
-							"MAD		finalCol, lightContrib.y, fragment.color, state.lightprod[0].ambient;\n"
-							"MAD		finalCol, lightContrib.z, state.lightprod[0].specular, finalCol;\n"
-							"MAD		finalCol, finalCol, attenuation.x, state.material.emission;\n"
-
-							"#Ambient lighting contribution;\n"
-							"MAD		finalCol, fragment.color, state.lightmodel.ambient, finalCol;\n"
+							"#SUB      kill, eyespaceCoord.zzzz, tex4.rrrr;\n"
+							"#CMP      kill, kill, minus_one, one;\n"
+							"#MUL      kill, kill, small;\n"
+							"#MOV      kill, eyespaceCoord.zzzz;\n"
+							"\n"
+							"ADD      kill.x, tex4.x, -0.5;\n"
+							"KIL      kill.x;\n"
 							, &error);
+					}
 
-
-						if ((MATERIAL_PROGRAM_PER_PIXEL_TEXTURING == material_program->type)
-							|| (MATERIAL_PROGRAM_BUMP_MAPPING_TEXTURING == material_program->type))
-						{
-							append_string(&fragment_program_string, 
-								"MUL		finalCol, finalCol, tex;\n"
-								, &error);
-						}
-
-						append_string(&fragment_program_string, 
-							"MOV		result.color.xyz, finalCol;\n"
-							"MOV		result.color.w, state.material.diffuse.w;\n"
-							"END"
+					append_string(&fragment_program_string, 
+						"MOV      result.color.xyzw, fragment.color.rgba;\n"
+						"MOV		 result.depth.z, eyespaceCoord.z;\n"
+						"\n"
+						"#MOV      result.color.xyz, tex4coord.zzzz;\n"
+						"#MOV      result.color.xyz, tex4.xxxx;\n"
+						"\n"
+						"END\n", &error);
+				}
+				else if (MATERIAL_PROGRAM_CLASS_PER_PIXEL_LIGHTING & material_program->type)
+				{
+					vertex_program_string = duplicate_string("!!ARBvp1.0\n");
+					append_string(&vertex_program_string, 
+						"ATTRIB normal = vertex.normal;\n"
+						"ATTRIB position = vertex.position;\n"
+						, &error);
+					if (MATERIAL_PROGRAM_CLASS_BUMP_MAP_TEXTURE & material_program->type)
+					{
+						append_string(&vertex_program_string, 
+							"ATTRIB tangent = vertex.texcoord[1];\n"
 							, &error);
+					}
+					append_string(&vertex_program_string, 
+						"PARAM c0[4] = { state.matrix.mvp };\n"
+						"PARAM c1[4] = { state.matrix.modelview };\n"
+						"PARAM eyeCameraPos = {0, 0, 0, 0};\n"
+						"PARAM eyeLightPos = state.light[0].position;\n"
 
-						if (!material_program->vertex_program)
-						{
-							glGenProgramsARB(1, &material_program->vertex_program);
-						}
-						glBindProgramARB(GL_VERTEX_PROGRAM_ARB, material_program->vertex_program);
-						glProgramStringARB(GL_VERTEX_PROGRAM_ARB, GL_PROGRAM_FORMAT_ASCII_ARB,
-							strlen(vertex_program_string), vertex_program_string);
-						DEALLOCATE(vertex_program_string);
-
-						if (!material_program->fragment_program)
-						{
-							glGenProgramsARB(1, &material_program->fragment_program);
-						}
-						glBindProgramARB(GL_FRAGMENT_PROGRAM_ARB, material_program->fragment_program);
-						glProgramStringARB(GL_FRAGMENT_PROGRAM_ARB, GL_PROGRAM_FORMAT_ASCII_ARB,
-							strlen(fragment_program_string), fragment_program_string);
-						DEALLOCATE(fragment_program_string);
-
-#else /* ! defined (TESTING_PROGRAM_STRINGS) */
-#define MAX_PROGRAM (20000)
-						char vertex_program_string[MAX_PROGRAM], fragment_program_string[MAX_PROGRAM];
-						{
-							FILE *program_file;
-							int count;
-
-							if (program_file = fopen("test.vp", "r"))
-							{
-								count = fread(vertex_program_string, 1, MAX_PROGRAM - 1, program_file);
- 								vertex_program_string[count] = 0;
-								if (count > MAX_PROGRAM - 2)
-								{
-									display_message(ERROR_MESSAGE, "Material_program_compile.  "
-										"Short read on test.vp, need to increase MAX_PROGRAM.");
-								}
-								fclose (program_file);
-							}
-							else
-							{
-								display_message(ERROR_MESSAGE, "Material_program_compile.  "
-									"Unable to open file test.vp.");
-							}
-
-							if (program_file = fopen("test.fp", "r"))
-							{
-								count = fread(fragment_program_string, 1, MAX_PROGRAM - 1, program_file);
- 								fragment_program_string[count] = 0;
-								if (count > MAX_PROGRAM - 2)
-								{
-									display_message(ERROR_MESSAGE, "Material_program_compile.  "
-										"Short read on test.fp, need to increase MAX_PROGRAM.");
-								}
-								fclose (program_file);
-							}
-							else
-							{
-								display_message(ERROR_MESSAGE, "Material_program_compile.  "
-									"Unable to open file test.fp.");
-							}
-						}
-
-						if (!material_program->vertex_program)
-						{
-							glGenProgramsARB(1, &material_program->vertex_program);
-						}
-
-						glBindProgramARB(GL_VERTEX_PROGRAM_ARB, material_program->vertex_program);
-						glProgramStringARB(GL_VERTEX_PROGRAM_ARB, GL_PROGRAM_FORMAT_ASCII_ARB,
-							strlen(vertex_program_string), vertex_program_string);
-
-						if (!material_program->fragment_program)
-						{
-							glGenProgramsARB(1, &material_program->fragment_program);
-						}
-
-						glBindProgramARB(GL_FRAGMENT_PROGRAM_ARB, material_program->fragment_program);
-						glProgramStringARB(GL_FRAGMENT_PROGRAM_ARB, GL_PROGRAM_FORMAT_ASCII_ARB,
-							strlen(fragment_program_string), fragment_program_string);
-
-						material_program->compiled = 1;
-
-#endif /* ! defined (TESTING_PROGRAM_STRINGS) */
-
-						if (!material_program->display_list)
-						{
-							material_program->display_list = glGenLists(/*number_of_lists*/1);
-						}
-
-						glNewList(material_program->display_list, GL_COMPILE);
-
-						glEnable(GL_VERTEX_PROGRAM_ARB);
-						glBindProgramARB(GL_VERTEX_PROGRAM_ARB,
-							material_program->vertex_program);
-					
-						glEnable(GL_FRAGMENT_PROGRAM_ARB);
-						glBindProgramARB(GL_FRAGMENT_PROGRAM_ARB,
-							material_program->fragment_program);
-
-						glEnable(GL_VERTEX_PROGRAM_TWO_SIDE_ARB);
-
-						glEndList();
-
-						material_program->compiled = 1;
+						"TEMP eyeVertex;\n"
+						"TEMP viewVec;\n"
+						, &error);
+					if (MATERIAL_PROGRAM_CLASS_BUMP_MAP_TEXTURE & material_program->type)
+					{
+						append_string(&vertex_program_string, 
+							"PARAM c3[4] = { state.matrix.modelview.inverse };\n"
+							"TEMP lightVec;\n"
+							"TEMP objectLight;\n"
+							"TEMP cameraVec;\n"
+							"TEMP objectCamera;\n"
+							"TEMP binormal;\n"
+							, &error);
 					}
 					else
 					{
-						display_message(ERROR_MESSAGE, "Support for per pixel lighting and "
-							"bump mapping requires the "
-							"GL_ARB_vertex_program and GL_ARB_fragment_program extensions "
-							"which are not available in this OpenGL implementation.");
+						append_string(&vertex_program_string, 
+							"PARAM c2[4] = { state.matrix.modelview.invtrans };\n"
+							"TEMP eyeNormal;\n"
+							, &error);
 					}
-#else /* defined GL_ARB_vertex_program && defined GL_ARB_fragment_program */
-					display_message(ERROR_MESSAGE, "Support for per pixel lighting and "
-						"bump mapping requires the "
-						"GL_ARB_vertex_program and GL_ARB_fragment_program extensions "
-						"which were not compiled into this version.");
-#endif /* defined GL_ARB_vertex_program && defined GL_ARB_fragment_program */
-				} break;
-				default:
+
+					append_string(&vertex_program_string, 
+						"#Vertex position in eyespace\n"
+						"DP4 eyeVertex.x, c1[0], position;\n"
+						"DP4 eyeVertex.y, c1[1], position;\n"
+						"DP4 eyeVertex.z, c1[2], position;\n"
+						, &error);								
+
+					if ((MATERIAL_PROGRAM_CLASS_BUMP_MAP_TEXTURE & material_program->type) ||
+						(MATERIAL_PROGRAM_CLASS_COLOUR_TEXTURE & material_program->type))
+					{
+						append_string(&vertex_program_string, 
+							"MOV result.texcoord[0], vertex.texcoord[0];\n"
+							, &error);								
+					}
+
+					if (MATERIAL_PROGRAM_CLASS_BUMP_MAP_TEXTURE & material_program->type)
+					{
+						append_string(&vertex_program_string, 
+							"MUL binormal.xyz, tangent.zxyz, normal.yzxy;\n"
+							"MAD binormal.xyz, tangent.yzxy, normal.zxyz, -binormal.xyzx;\n"
+
+							"SUB lightVec, eyeLightPos, eyeVertex;\n"
+								
+							"DP3 objectLight.x, c3[0], lightVec;\n"
+							"DP3 objectLight.y, c3[1], lightVec;\n"
+							"DP3 objectLight.z, c3[2], lightVec;\n"
+
+							"DP3 result.texcoord[1].x, tangent, objectLight;\n"
+							"DP3 result.texcoord[1].y, binormal, objectLight;\n"
+							"DP3 result.texcoord[1].z, normal, objectLight;\n"
+
+							"SUB cameraVec, eyeCameraPos, eyeVertex;\n"
+							"DP3 objectCamera.x, c3[0], cameraVec;\n"
+							"DP3 objectCamera.y, c3[1], cameraVec;\n"
+							"DP3 objectCamera.z, c3[2], cameraVec;\n"
+
+							"DP3 result.texcoord[2].x, tangent, objectCamera;\n"
+							"DP3 result.texcoord[2].y, binormal, objectCamera;\n"
+							"DP3 result.texcoord[2].z, normal, objectCamera;\n"
+							, &error);
+					}
+					else
+					{
+						append_string(&vertex_program_string, 
+							"DP4 eyeNormal.x, c2[0], normal;\n"
+							"DP4 eyeNormal.y, c2[1], normal;\n"
+							"DP4 eyeNormal.z, c2[2], normal;\n"
+							"DP3 eyeNormal.w, eyeNormal, eyeNormal;\n"
+							"RSQ eyeNormal.w, eyeNormal.w;\n"
+							"MUL eyeNormal.xyz, eyeNormal.w, eyeNormal;\n"
+
+							"SUB viewVec, eyeCameraPos, eyeVertex;\n"
+							"DP3 viewVec.w, viewVec, viewVec;\n"
+							"RSQ viewVec.w, viewVec.w;\n"
+							"MUL viewVec.xyz, viewVec.w, viewVec;\n"
+
+							"SUB result.texcoord[1], eyeLightPos, eyeVertex;\n"
+							"MOV result.texcoord[2], viewVec;\n"
+							"MOV result.texcoord[3], eyeNormal;\n"
+							, &error);
+					}
+
+					append_string(&vertex_program_string, 
+						"MOV result.color, vertex.color;\n"
+						"MOV result.color.back, vertex.color;\n"
+						"MOV result.color.secondary,  {1, 1, 1, 1};\n"
+						"MOV result.color.back.secondary,  {0, 0, 0, 0};\n"
+						"DP4 result.position.x, c0[0], position;\n"
+						"DP4 result.position.y, c0[1], position;\n"
+						"DP4 result.position.z, c0[2], position;\n"
+						"DP4 result.position.w, c0[3], position;\n"
+
+						"END\n"
+						, &error);
+								
+					fragment_program_string = duplicate_string("!!ARBfp1.0\n");
+					append_string(&fragment_program_string, 
+						"TEMP lightVec, viewVec, reflVec, normal, attenuation, Len, finalCol, lightContrib, reverse, tex, tex2;\n"
+						"PARAM two = {2.0, 2.0, 2.0, 2.0};\n"
+						"PARAM m_one = {-1.0, -1.0, -1.0, -1.0};\n"
+
+						"#Set up reverse vector based on secondary colour\n"
+						"MAD      reverse, two, fragment.color.secondary.x, m_one;\n"
+						, &error);
+
+
+					if (MATERIAL_PROGRAM_CLASS_COLOUR_TEXTURE & material_program->type)
+					{
+						append_string(&fragment_program_string, 
+							/* Load the colour texture */
+							"TEX		tex, fragment.texcoord[0], texture[0], 2D;\n"
+							, &error);
+					}
+
+					if (MATERIAL_PROGRAM_CLASS_BUMP_MAP_TEXTURE & material_program->type)
+					{
+						/* Normal comes from second texture but still uses primary texture coordinates*/
+						append_string(&fragment_program_string, 
+							"TEX		tex2, fragment.texcoord[0], texture[1], 2D;\n"
+
+							"#Expand the range of the normal texture\n"
+							"MAD      normal, two, tex2, m_one;\n"
+
+							"#Reverse the texture normal direction component if required\n"
+							"MUL      normal.z, reverse.z, normal.z;\n"
+							, &error);
+					}
+					else
+					{
+						/* Normal is stored in texcoord[3] */
+						append_string(&fragment_program_string, 
+							"#Normalize the normal.\n"
+							"DP3		normal.w, fragment.texcoord[3], fragment.texcoord[3];\n"
+							"RSQ		normal.w, normal.w;\n"
+							"MUL		normal.xyz, fragment.texcoord[3], normal.w;\n"
+
+							"#Reverse the normal if required\n"
+							"MUL      normal, reverse, normal;\n"
+							, &error);
+					}
+					append_string(&fragment_program_string, 
+						"#Normalize lightvec and viewvec.\n"
+						"DP3		Len.w, fragment.texcoord[1], fragment.texcoord[1];\n"
+						"RSQ		lightVec.w, Len.w;\n"
+						"MUL		lightVec.xyz, fragment.texcoord[1], lightVec.w;\n"
+
+						"DP3		viewVec.w, fragment.texcoord[2], fragment.texcoord[2];\n"
+						"RSQ		viewVec.w, viewVec.w;\n"
+						"MUL		viewVec.xyz, fragment.texcoord[2], viewVec.w;\n"
+
+						"#Calculate attenuation.\n"
+						"MAD		attenuation, state.light[0].attenuation.z, Len.w, state.light[0].attenuation.x;\n"
+						"RCP		Len, lightVec.w;\n"
+						"MAD		attenuation, Len.w, state.light[0].attenuation.y, attenuation.x;\n"
+						"RCP		attenuation.x, attenuation.x;\n"
+
+						"#Diffuse\n"
+						"DP3_SAT	   lightContrib.x, normal, lightVec;\n"
+						"\n"
+						"#Specular\n"
+						"# Phong:\n"
+						"DP3		reflVec, lightVec, normal;\n"
+						"MUL		reflVec, reflVec, two;\n"
+						"MAD		reflVec, reflVec, normal, -lightVec;\n"
+						"\n"
+						"DP3_SAT	lightContrib.y, reflVec, viewVec;\n"
+
+						"MOV		lightContrib.w, state.material.shininess.x;\n"
+
+						"#Accelerates lighting computations\n"
+						"LIT	lightContrib, lightContrib;\n"
+
+						"MAD		finalCol, lightContrib.y, fragment.color, state.lightprod[0].ambient;\n"
+						"MAD		finalCol, lightContrib.z, state.lightprod[0].specular, finalCol;\n"
+						"MAD		finalCol, finalCol, attenuation.x, state.material.emission;\n"
+
+						"#Ambient lighting contribution;\n"
+						"MAD		finalCol, fragment.color, state.lightmodel.ambient, finalCol;\n"
+						, &error);
+					/* The Ambient lighting contribution is using the fragment.color which
+						is derived from the diffuse component rather than the ambient one.
+						Should probably pass the ambient material colour through as a different
+						colour */
+
+					if (MATERIAL_PROGRAM_CLASS_COLOUR_TEXTURE & material_program->type)
+					{
+						append_string(&fragment_program_string, 
+							"MUL		finalCol, finalCol, tex;\n"
+							, &error);
+					}
+
+					append_string(&fragment_program_string, 
+						"MOV		result.color.xyz, finalCol;\n"
+						"MOV		result.color.w, state.material.diffuse.w;\n"
+						"END"
+						, &error);
+
+				}
+
+				if (!material_program->vertex_program)
 				{
-					display_message(ERROR_MESSAGE, "Material_program_compile.  "
-						"Unknown material program type.");
-				} break;			
+					glGenProgramsARB(1, &material_program->vertex_program);
+				}
+				glBindProgramARB(GL_VERTEX_PROGRAM_ARB, material_program->vertex_program);
+				glProgramStringARB(GL_VERTEX_PROGRAM_ARB, GL_PROGRAM_FORMAT_ASCII_ARB,
+					strlen(vertex_program_string), vertex_program_string);
+				error_msg = glGetString(GL_PROGRAM_ERROR_STRING_ARB);
+				DEALLOCATE(vertex_program_string);
+				
+				if (!material_program->fragment_program)
+				{
+					glGenProgramsARB(1, &material_program->fragment_program);
+				}
+				glBindProgramARB(GL_FRAGMENT_PROGRAM_ARB, material_program->fragment_program);
+				glProgramStringARB(GL_FRAGMENT_PROGRAM_ARB, GL_PROGRAM_FORMAT_ASCII_ARB,
+					strlen(fragment_program_string), fragment_program_string);
+				error_msg = glGetString(GL_PROGRAM_ERROR_STRING_ARB);
+				DEALLOCATE(fragment_program_string);
+				
+#else /* ! defined (TESTING_PROGRAM_STRINGS) */
+#define MAX_PROGRAM (20000)
+					char vertex_program_string[MAX_PROGRAM], fragment_program_string[MAX_PROGRAM];
+					{
+						FILE *program_file;
+						int count;
+
+						if (program_file = fopen("test.vp", "r"))
+						{
+							count = fread(vertex_program_string, 1, MAX_PROGRAM - 1, program_file);
+							vertex_program_string[count] = 0;
+							if (count > MAX_PROGRAM - 2)
+							{
+								display_message(ERROR_MESSAGE, "Material_program_compile.  "
+									"Short read on test.vp, need to increase MAX_PROGRAM.");
+							}
+							fclose (program_file);
+						}
+						else
+						{
+							display_message(ERROR_MESSAGE, "Material_program_compile.  "
+								"Unable to open file test.vp.");
+						}
+
+						if (program_file = fopen("test.fp", "r"))
+						{
+							count = fread(fragment_program_string, 1, MAX_PROGRAM - 1, program_file);
+							fragment_program_string[count] = 0;
+							if (count > MAX_PROGRAM - 2)
+							{
+								display_message(ERROR_MESSAGE, "Material_program_compile.  "
+									"Short read on test.fp, need to increase MAX_PROGRAM.");
+							}
+							fclose (program_file);
+						}
+						else
+						{
+							display_message(ERROR_MESSAGE, "Material_program_compile.  "
+								"Unable to open file test.fp.");
+						}
+					}
+
+					if (!material_program->vertex_program)
+					{
+						glGenProgramsARB(1, &material_program->vertex_program);
+					}
+
+					glBindProgramARB(GL_VERTEX_PROGRAM_ARB, material_program->vertex_program);
+					glProgramStringARB(GL_VERTEX_PROGRAM_ARB, GL_PROGRAM_FORMAT_ASCII_ARB,
+						strlen(vertex_program_string), vertex_program_string);
+
+					if (!material_program->fragment_program)
+					{
+						glGenProgramsARB(1, &material_program->fragment_program);
+					}
+
+					glBindProgramARB(GL_FRAGMENT_PROGRAM_ARB, material_program->fragment_program);
+					glProgramStringARB(GL_FRAGMENT_PROGRAM_ARB, GL_PROGRAM_FORMAT_ASCII_ARB,
+						strlen(fragment_program_string), fragment_program_string);
+
+					material_program->compiled = 1;
+					
+#endif /* ! defined (TESTING_PROGRAM_STRINGS) */
+					
+					if (!material_program->display_list)
+					{
+						material_program->display_list = glGenLists(/*number_of_lists*/1);
+					}
+
+					glNewList(material_program->display_list, GL_COMPILE);
+
+					glEnable(GL_VERTEX_PROGRAM_ARB);
+					glBindProgramARB(GL_VERTEX_PROGRAM_ARB,
+						material_program->vertex_program);
+					
+					glEnable(GL_FRAGMENT_PROGRAM_ARB);
+					glBindProgramARB(GL_FRAGMENT_PROGRAM_ARB,
+						material_program->fragment_program);
+
+					glEnable(GL_VERTEX_PROGRAM_TWO_SIDE_ARB);
+
+					glEndList();
+
+					material_program->compiled = 1;
 			}
+			else
+			{
+				display_message(ERROR_MESSAGE, "Support for per pixel lighting and "
+					"bump mapping requires the "
+					"GL_ARB_vertex_program and GL_ARB_fragment_program extensions "
+					"which are not available in this OpenGL implementation.");
+			}
+#else /* defined GL_ARB_vertex_program && defined GL_ARB_fragment_program */
+			display_message(ERROR_MESSAGE, "Support for per pixel lighting and "
+				"bump mapping requires the "
+				"GL_ARB_vertex_program and GL_ARB_fragment_program extensions "
+				"which were not compiled into this version.");
+#endif /* defined GL_ARB_vertex_program && defined GL_ARB_fragment_program */
 		}
 #else /* defined (OPENGL_API) */
 		display_message(ERROR_MESSAGE,
@@ -667,682 +813,6 @@ be shared by multiple materials using the same program.
 
 	return (return_code);
 } /* Material_program_compile */
-
-
-#if defined (OLD_CODE)
-/* SAB Just want to commit all the other bits of code that I used while gettting this
-	going into CVS at least once. */
-				case MATERIAL_PROGRAM_PER_PIXEL_BUMP_MAPPING:
-				{
-#if defined GL_ARB_vertex_program && defined GL_ARB_fragment_program
-					if (Graphics_library_check_extension(GL_ARB_vertex_program) &&
-						 Graphics_library_check_extension(GL_ARB_fragment_program))
-					{
-						char vertex_program_string[] =
-							"!!ARBvp1.0\n"
-							"ATTRIB normal = vertex.normal;\n"
-							"ATTRIB position = vertex.position;\n"
-							"ATTRIB tangent = vertex.texcoord[1];\n"
-							"PARAM c0[4] = { state.matrix.mvp };\n"
-							"PARAM c1[4] = { state.matrix.modelview };\n"
-							"PARAM c2[4] = { state.matrix.modelview.invtrans };\n"
-							"PARAM c3[4] = { state.matrix.modelview.inverse };\n"
-							"PARAM eyeCameraPos = {0, 0, 100, 0};\n"
-							"PARAM eyeLightPos = state.light[0].position;\n"
-							"TEMP eyeVertex;\n"
-							"TEMP binormal;\n"
-							"TEMP lightVec;\n"
-							"TEMP objectLight;\n"
-							"TEMP cameraVec;\n"
-							"TEMP objectCamera;\n"
-							"\n"
-							"#Vertex position in eyespace\n"
-							"DP4 eyeVertex.x, c1[0], position;\n"
-							"DP4 eyeVertex.y, c1[1], position;\n"
-							"DP4 eyeVertex.z, c1[2], position;\n"
-							"\n"
-							"ADD lightVec, eyeLightPos, -eyeVertex;\n"
-							"DP4 objectLight.x, c3[0], lightVec;\n"
-							"DP4 objectLight.y, c3[1], lightVec;\n"
-							"DP4 objectLight.z, c3[2], lightVec;\n"
-							"#\n"
-							"MUL binormal.xyz, tangent.zxyz, normal.yzxy;\n"
-							"MAD binormal.xyz, tangent.yzxy, normal.zxyz, -binormal.xyzx;\n"
-							"\n"
-							"DP3 result.texcoord[1].x, tangent.xyzx, objectLight.xyzx;\n"
-							"DP3 result.texcoord[1].y, binormal.xyzx, objectLight.xyzx;\n"
-							"DP3 result.texcoord[1].z, normal.xyzx, objectLight.xyzx;\n"
-							"\n"
-							"ADD cameraVec, eyeCameraPos, -eyeVertex;\n"
-							"DP4 objectCamera.x, c3[0], cameraVec;\n"
-							"DP4 objectCamera.y, c3[1], cameraVec;\n"
-							"DP4 objectCamera.z, c3[2], cameraVec;\n"
-							"\n"
-							"DP3 result.texcoord[2].x, tangent.xyzx, objectCamera.xyzx;\n"
-							"DP3 result.texcoord[2].y, binormal.xyzx, objectCamera.xyzx;\n"
-							"DP3 result.texcoord[2].z, normal.xyzx, objectCamera.xyzx;\n"
-							"\n"
-							"MOV result.texcoord[0], vertex.texcoord[0];\n"
-							"MOV result.texcoord[3], tangent;\n"
-							"MOV result.color, vertex.color;\n"
-							"MOV result.color.back, vertex.color;\n"
-							"MOV result.color.secondary,  {1, 1, 1, 1};\n"
-							"MOV result.color.back.secondary,  {0, 0, 0, 0};\n"
-							"DP4 result.position.x, c0[0], position;\n"
-							"DP4 result.position.y, c0[1], position;\n"
-							"DP4 result.position.z, c0[2], position;\n"
-							"DP4 result.position.w, c0[3], position;\n"
-							"\n"
-							"END\n";
-						char fragment_program_string[] =
-							"TEMP lightVec, viewVec, reflVec, normal, attenuation, Len, finalCol, lightContrib, reverse, tex, tex2;\n"
-							"PARAM two = {2.0, 2.0, 2.0, 2.0};\n"
-							"PARAM m_one = {-1.0, -1.0, -1.0, -1.0};\n"
-							"\n"
-							"TEX		tex, fragment.texcoord[0], texture[0], 2D;\n"
-							"TEX		tex2, fragment.texcoord[0], texture[1], 2D;\n"
-							"\n"
-							"#Normalize normal, lightvec and viewvec.\n"
-							"DP3		Len.w, fragment.texcoord[1], fragment.texcoord[1];\n"
-							"RSQ		lightVec.w, Len.w;\n"
-							"MUL		lightVec.xyz, fragment.texcoord[1], lightVec.w;\n"
-							"\n"
-							"DP3		viewVec.w, fragment.texcoord[2], fragment.texcoord[2];\n"
-							"RSQ		viewVec.w, viewVec.w;\n"
-							"MUL		viewVec.xyz, fragment.texcoord[2], viewVec.w;\n"
-							"\n"
-							"#Reverse the normal for the back faces based on the secondary colour\n"
-							"MAD      reverse, two, fragment.color.secondary.x, m_one;\n"
-							"#MUL      normal, reverse, normal;\n"
-							"\n"
-							"#Calculate attenuation.\n"
-							"MAD		attenuation, state.light[0].attenuation.z, Len.w, state.light[0].attenuation.x;\n"
-							"RCP		Len, lightVec.w;\n"
-							"MAD		attenuation, Len.w, state.light[0].attenuation.y, attenuation.x;\n"
-							"RCP		attenuation.x, attenuation.x;\n"
-							"\n"
-							"#Expand the range of the normal texture\n"
-							"MAD      tex2, two, tex2, m_one;\n"
-							"\n"
-							"#Reverse the texture normal direction component\n"
-							"MUL      tex2.z, reverse.z, tex2.z;\n"
-							"\n"
-							"#Diffuse\n"
-							"DP3_SAT	   lightContrib.x, tex2, lightVec;\n"
-							"\n"
-							"#Specular\n"
-							"# Phong:\n"
-							"DP3		reflVec, lightVec, tex2;\n"
-							"MUL		reflVec, reflVec, two;\n"
-							"MAD		reflVec, reflVec, tex2, -lightVec;\n"
-							"\n"
-							"DP3_SAT	lightContrib.y, reflVec, viewVec;\n"
-							"\n"
-							"# Blinn:\n"
-							"#	ADD		reflVec, lightVec, viewVec;	# reflVec == Half-angle.\n"
-							"#	DP3		reflVec.w, reflVec, reflVec;\n"
-							"#	RSQ		reflVec.w, reflVec.w;\n"
-							"#	MUL		reflVec.xyz, reflVec, reflVec.w;\n"
-							"#	DP3		lightContrib.y, reflVec, normal;\n"
-							"\n"
-							"MOV		lightContrib.w, state.material.shininess.x;\n"
-							"\n"
-							"#Accelerates lighting computations\n"
-							"LIT	lightContrib, lightContrib;\n"
-							"\n"
-							"MAD		finalCol, lightContrib.y, fragment.color, state.lightprod[0].ambient;\n"
-							"\n"
-							"# Enable this line for textured models\n"
-							"MUL		finalCol, finalCol, tex;	# Texture?\n"
-							"\n"
-							"MAD		finalCol, lightContrib.z, state.lightprod[0].specular, finalCol;\n"
-							"MAD		finalCol, finalCol, attenuation.x, state.material.emission;\n"
-							"#MOV      finalCol, fragment.color.secondary;\n"
-							"#MOV      finalCol, fragment.color;\n"
-							"#MOV      finalCol, normal;\n"
-							"MOV      result.color.xyz, finalCol;\n"
-							"ADD		result.color.xyz, finalCol, state.lightmodel.scenecolor;\n"
-							"MOV		result.color.w, state.material.diffuse.w;\n"
-							"END\n"
-
-							if (!material_program->display_list)
-							{
-								material_program->display_list = glGenLists(/*number_of_lists*/1);
-							}
-
-						glNewList(material_program->display_list, GL_COMPILE);
-
-						glEnable(GL_VERTEX_PROGRAM_ARB);
-						glBindProgramARB(GL_VERTEX_PROGRAM_ARB,
-							material_program->vertex_program);
-					
-						glEnable(GL_FRAGMENT_PROGRAM_ARB);
-						glBindProgramARB(GL_FRAGMENT_PROGRAM_ARB,
-							material_program->fragment_program);
-
-						glEnable(GL_VERTEX_PROGRAM_TWO_SIDE_ARB);
-
-						glEndList();
-					}
-					else
-					{
-						display_message(ERROR_MESSAGE, "Material_program_compile.  "
-							"Support for PER_PIXEL_LIGHTING with bump mapping requires the "
-							"GL_ARB_vertex_program and GL_ARB_fragment_program extensions.");
-					}
-#else /* defined GL_ARB_vertex_program && defined GL_ARB_fragment_program */
-					display_message(ERROR_MESSAGE, "Material_program_compile.  "
-						"Support for PER_PIXEL_LIGHTING with bump mapping was not compiled into this executable.");
-#endif /* defined GL_ARB_vertex_program && defined GL_ARB_fragment_program */
-				} break;
-						char vertex_program_string[] =
-							"!!ARBvp1.0\n"
-							"ATTRIB normal = vertex.normal;\n"
-							"ATTRIB position = vertex.position;\n"
-							"PARAM c0[4] = { state.matrix.mvp };\n"
-							"PARAM c1[4] = { state.matrix.modelview };\n"
-							"PARAM c2[4] = { state.matrix.modelview.invtrans };\n"
-							"PARAM eyeCameraPos = {0, 0, 100, 0};\n"
-							"PARAM eyeLightPos = state.light[0].position;\n"
-							"TEMP eyeVertex;\n"
-							"TEMP eyeNormal;\n"
-							"\n"
-							"#Vertex position in eyespace\n"
-							"DP4 eyeVertex.x, c1[0], position;\n"
-							"DP4 eyeVertex.y, c1[1], position;\n"
-							"DP4 eyeVertex.z, c1[2], position;\n"
-							"\n"
-							"DP4 eyeNormal.x, c2[0], normal;\n"
-							"DP4 eyeNormal.y, c2[1], normal;\n"
-							"DP4 eyeNormal.z, c2[2], normal;\n"
-							"DP3 eyeNormal.w, eyeNormal, eyeNormal;\n"
-							"RSQ eyeNormal.w, eyeNormal.w;\n"
-							"MUL eyeNormal.xyz, eyeNormal.w, eyeNormal;\n"
-							"#MOV eyeNormal, normal;\n"
-							"\n"
-							"MOV result.texcoord[0], vertex.texcoord[0];\n"
-							"SUB result.texcoord[1], eyeLightPos, eyeVertex;\n"
-							"SUB result.texcoord[2], eyeCameraPos, eyeVertex;\n"
-							"MOV result.texcoord[3], eyeNormal;\n"
-							"MOV result.color, vertex.color;\n"
-							"MOV result.color.back, vertex.color;\n"
-							"MOV result.color.secondary,  {1, 1, 1, 1};\n"
-							"MOV result.color.back.secondary,  {0, 0, 0, 0};\n"
-							"DP4 result.position.x, c0[0], position;\n"
-							"DP4 result.position.y, c0[1], position;\n"
-							"DP4 result.position.z, c0[2], position;\n"
-							"DP4 result.position.w, c0[3], position;\n"
-							"\n"
-							"END\n";
-						char fragment_program_string[] =
-							"!!ARBfp1.0\n"
-							"TEMP lightVec, viewVec, reflVec, normal, attenuation, Len, finalCol, lightContrib, reverse, tex, tex2;\n"
-							"PARAM two = {2.0, 2.0, 2.0, 2.0};\n"
-							"PARAM m_one = {-1.0, -1.0, -1.0, -1.0};\n"
-							"PARAM c2[4] = { state.matrix.modelview.invtrans };\n"
-							"\n"
-							"TEX		tex, fragment.texcoord[0], texture[0], 2D;\n"
-							"TEX		tex2, fragment.texcoord[0], texture[1], 2D;\n"
-							"\n"
-							"#Normalize normal, lightvec and viewvec.\n"
-							"DP3		Len.w, fragment.texcoord[1], fragment.texcoord[1];\n"
-							"RSQ		lightVec.w, Len.w;\n"
-							"MUL		lightVec.xyz, fragment.texcoord[1], lightVec.w;\n"
-							"\n"
-							"DP3		viewVec.w, fragment.texcoord[2], fragment.texcoord[2];\n"
-							"RSQ		viewVec.w, viewVec.w;\n"
-							"MUL		viewVec.xyz, fragment.texcoord[2], viewVec.w;\n"
-							"\n"
-							"DP3		normal.w, fragment.texcoord[3], fragment.texcoord[3];\n"
-							"RSQ		normal.w, normal.w;\n"
-							"MUL		normal.xyz, fragment.texcoord[3], normal.w;\n"
-							"\n"
-							"#Reverse the normal for the back faces based on the secondary colour\n"
-							"MAD      reverse, two, fragment.color.secondary.x, m_one;\n"
-							"MUL      normal, reverse, normal;\n"
-							"\n"
-							"MAD     tex2, two, tex2, m_one;\n"
-							"DP4     tex2.x, c2[0], tex2;\n"
-							"DP4     tex2.y, c2[1], tex2;\n"
-							"DP4     tex2.z, c2[2], tex2;\n"
-							"ADD     normal, tex2, normal;\n"
-							"DP3		normal.w, normal, normal;\n"
-							"RSQ		normal.w, normal.w;\n"
-							"MUL		normal.xyz, normal, normal.w;\n"
-							"\n"
-							"#Calculate attenuation.\n"
-							if (non_linear_attenuation)
-							"MAD		attenuation, state.light[0].attenuation.z, Len.w, state.light[0].attenuation.x;\n"
-							"RCP		Len, lightVec.w;\n"
-							"MAD		attenuation, Len.w, state.light[0].attenuation.y, attenuation.x;\n"
-							"RCP		attenuation.x, attenuation.x;\n"
-							"\n"
-							"#Diffuse\n"
-							"DP3_SAT	   lightContrib.x, normal, lightVec;\n"
-							"\n"
-							"#Specular\n"
-							"# Phong:\n"
-							"DP3		reflVec, lightVec, normal;\n"
-							"MUL		reflVec, reflVec, two;\n"
-							"MAD		reflVec, reflVec, normal, -lightVec;\n"
-							"\n"
-							"DP3_SAT	lightContrib.y, reflVec, viewVec;\n"
-							"\n"
-							"# Blinn:\n"
-							"#	ADD		reflVec, lightVec, viewVec;	# reflVec == Half-angle.\n"
-							"#	DP3		reflVec.w, reflVec, reflVec;\n"
-							"#	RSQ		reflVec.w, reflVec.w;\n"
-							"#	MUL		reflVec.xyz, reflVec, reflVec.w;\n"
-							"#	DP3		lightContrib.y, reflVec, normal;\n"
-							"\n"
-							"MOV		lightContrib.w, state.material.shininess.x;\n"
-							"\n"
-							"#Accelerates lighting computations\n"
-							"LIT	lightContrib, lightContrib;\n"
-							"\n"
-							"MAD		finalCol, lightContrib.y, fragment.color, state.lightprod[0].ambient;\n"
-							"\n"
-							if (material_program->type == MATERIAL_PROGRAM_PER_PIXEL_TEXTURING)
-							{
-								"MUL		finalCol, finalCol, tex;\n"
-							}
-							"MAD		finalCol, lightContrib.z, state.lightprod[0].specular, finalCol;\n"
-							"MAD		finalCol, finalCol, attenuation.x, state.material.emission;\n"
-							"#MOV      finalCol, fragment.color.secondary;\n"
-							"#MOV      finalCol, fragment.color;\n"
-							"MOV      result.color.xyz, finalCol;\n"
-							"ADD		result.color.xyz, finalCol, state.lightmodel.scenecolor;\n"
-							"MOV		result.color.w, state.material.diffuse.w;\n"
-							"END\n";
-
-							"!!ARBvp1.0\n"
-							"ATTRIB normal = vertex.normal;\n"
-							"ATTRIB position = vertex.position;\n"
-								"ATTRIB tangent = vertex.texcoord[1];\n"
-								"PARAM c0[4] = { state.matrix.mvp };\n"
-								"PARAM c1[4] = { state.matrix.modelview };\n"
-								"PARAM c2[4] = { state.matrix.modelview.invtrans };\n"
-								"PARAM eyeCameraPos = {0, 0, 100, 0};\n"
-								"PARAM eyeLightPos = state.light[0].position;\n"
-								"TEMP eyeVertex;\n"
-								"TEMP eyeNormal;\n"
-								"TEMP binormal;\n"
-								"TEMP lightVec;\n"
-							"#Vertex position in eyespace\n"
-							"DP4 eyeVertex.x, c1[0], position;\n"
-							"DP4 eyeVertex.y, c1[1], position;\n"
-							"DP4 eyeVertex.z, c1[2], position;\n"
-							"\n"
-							"#Calculate binormal as crossproduct of normal and tangent and rotate the light vec\n"
-							"ADD lightVec, eyeLightPos, -eyeVertex;\n"
-							"DP3 result.texcoord[1].x, tangent.xyzx, lightVec.xyzx;\n"
-							"MUL binormal.xyz, tangent.zxyz, normal.yzxy;\n"
-							"MAD binormal.xyz, tangent.yzxy, normal.zxyz, -binormal.xyzx;\n"
-							"DP3 result.texcoord[1].y, binormal.xyzx, lightVec.xyzx;\n"
-							"DP3 result.texcoord[1].z, normal.xyzx, lightVec.xyzx;\n"
-							"\n"
-							"\n"
-							"MOV result.texcoord[0], vertex.texcoord[0];\n"
-							"SUB result.texcoord[2], eyeCameraPos, eyeVertex;\n"
-							"MOV result.color, vertex.color;\n"
-							"MOV result.color.back, vertex.color;\n"
-							"MOV result.color.secondary,  {1, 1, 1, 1};\n"
-							"MOV result.color.back.secondary,  {0, 0, 0, 0};\n"
-							"DP4 result.position.x, c0[0], position;\n"
-							"DP4 result.position.y, c0[1], position;\n"
-							"DP4 result.position.z, c0[2], position;\n"
-							"DP4 result.position.w, c0[3], position;\n"
-							"\n"
-							"END\n";
-						char fragment_program_string[] =
-							"!!ARBfp1.0\n"
-							"TEMP lightVec, viewVec, reflVec, normal, attenuation, Len, finalCol, lightContrib, reverse, tex, tex2;\n"
-							"PARAM two = {2.0, 2.0, 2.0, 2.0};\n"
-							"PARAM m_one = {-1.0, -1.0, -1.0, -1.0};\n"
-							"PARAM c2[4] = { state.matrix.modelview.invtrans };\n"
-							"\n"
-							"TEX		tex, fragment.texcoord[0], texture[0], 2D;\n"
-							"TEX		tex2, fragment.texcoord[0], texture[1], 2D;\n"
-							"\n"
-							"#Normalize normal, lightvec and viewvec.\n"
-							"DP3		Len.w, fragment.texcoord[1], fragment.texcoord[1];\n"
-							"RSQ		lightVec.w, Len.w;\n"
-							"MUL		lightVec.xyz, fragment.texcoord[1], lightVec.w;\n"
-							"\n"
-							"DP3		viewVec.w, fragment.texcoord[2], fragment.texcoord[2];\n"
-							"RSQ		viewVec.w, viewVec.w;\n"
-							"MUL		viewVec.xyz, fragment.texcoord[2], viewVec.w;\n"
-							"\n"
-							"DP3		normal.w, fragment.texcoord[3], fragment.texcoord[3];\n"
-							"RSQ		normal.w, normal.w;\n"
-							"MUL		normal.xyz, fragment.texcoord[3], normal.w;\n"
-							"\n"
-							"#Reverse the normal for the back faces based on the secondary colour\n"
-							"MAD      reverse, two, fragment.color.secondary.x, m_one;\n"
-							"MUL      normal, reverse, normal;\n"
-							"\n"
-							"MAD     tex2, two, tex2, m_one;\n"
-							"\n"
-							"#Calculate attenuation.\n"
-							"MAD		attenuation, state.light[0].attenuation.z, Len.w, state.light[0].attenuation.x;\n"
-							"RCP		Len, lightVec.w;\n"
-							"MAD		attenuation, Len.w, state.light[0].attenuation.y, attenuation.x;\n"
-							"RCP		attenuation.x, attenuation.x;\n"
-							"\n"
-							"#Diffuse\n"
-							"DP3_SAT	   lightContrib.x, tex2, lightVec;\n"
-							"\n"
-							"#Specular\n"
-							"# Phong:\n"
-							"DP3		reflVec, lightVec, tex2;\n"
-							"MUL		reflVec, reflVec, two;\n"
-							"MAD		reflVec, reflVec, normal, -lightVec;\n"
-							"\n"
-							"DP3_SAT	lightContrib.y, reflVec, viewVec;\n"
-							"\n"
-							"# Blinn:\n"
-							"#	ADD		reflVec, lightVec, viewVec;	# reflVec == Half-angle.\n"
-							"#	DP3		reflVec.w, reflVec, reflVec;\n"
-							"#	RSQ		reflVec.w, reflVec.w;\n"
-							"#	MUL		reflVec.xyz, reflVec, reflVec.w;\n"
-							"#	DP3		lightContrib.y, reflVec, normal;\n"
-							"\n"
-							"MOV		lightContrib.w, state.material.shininess.x;\n"
-							"\n"
-							"#Accelerates lighting computations\n"
-							"LIT	lightContrib, lightContrib;\n"
-							"\n"
-							"MAD		finalCol, lightContrib.y, fragment.color, state.lightprod[0].ambient;\n"
-							"\n"
-							"# Enable this line for textured models\n"
-							"#MUL		finalCol, finalCol, tex;	# Texture?\n"
-							"\n"
-							"MAD		finalCol, lightContrib.z, state.lightprod[0].specular, finalCol;\n"
-							"MAD		finalCol, finalCol, attenuation.x, state.material.emission;\n"
-							"#MOV      finalCol, fragment.color.secondary;\n"
-							"#MOV      finalCol, fragment.color;\n"
-							"MOV      result.color.xyz, finalCol;\n"
-							"ADD		result.color.xyz, finalCol, state.lightmodel.scenecolor;\n"
-							"MOV		result.color.w, state.material.diffuse.w;\n"
-							"END\n";
-
-#if defined NEW_CODE && defined GL_NV_vertex_program && defined GL_NV_register_combiners2
-						static int cube_map_normal(int i, int cubesize, float *map)
-							{
-								int x, y;
-								float s, t, sc, tc, *v, sum;
-
-								v = map;
-								for (x = 0 ; x < cubesize ; x++)
-								{
-									for (y = 0 ; y < cubesize ; y++)
-									{
-										s = ((float)(x) + 0.5) / (float)(cubesize);
-										t = ((float)(y) + 0.5) / (float)(cubesize);
-										sc = s * 2.0 - 1.0;
-										tc = t * 2.0 - 1.0;
-
-										switch (i) 
-										{
-											case 0:
-												v[0] = 1.0;
-												v[1] = -tc;
-												v[2] = -sc;
-												v[3] = 1.0;
-												break;
-											case 1:
-												v[0] = -1.0;
-												v[1] = -tc;
-												v[2] = sc;
-												v[3] = 1.0;
-												break;
-											case 2:
-												v[0] = sc;
-												v[1] = 1.0;
-												v[2] = tc;
-												v[3] = 1.0;
-												break;
-											case 3:
-												v[0] = sc;
-												v[1] = -1.0;
-												v[2] = -tc;
-												v[3] = 1.0;
-												break;
-											case 4:
-												v[0] = sc;
-												v[1] = -tc;
-												v[2] = 1.0;
-												v[3] = 1.0;
-												break;
-											case 5:
-												v[0] = -sc;
-												v[1] = -tc;
-												v[2] = -1.0;
-												v[3] = 1.0;
-												break;
-										}
-										/* Normalize the first 3 components */
-										sum = v[0] * v[0] + v[1] * v[1] + v[2] * v[2];
-										sum = 1.0 / sqrt(sum);
-										v[0] *= sum;
-										v[1] *= sum;
-										v[2] *= sum;
-										v += 4;
-									}
-								}
-								return 1;
-							}
-
-						/* This version is not working correctly yet. */
-						if (Graphics_library_check_extension(GL_NV_vertex_program) &&
-						 Graphics_library_check_extension(GL_NV_register_combiners2))
-						{
-							char vertex_program_string[] =
-								"!!VP1.0\n" 
-								"MOV o[TEX0].xyz, v[8].xyzx;\n"
-								"MOV o[COL0].xyz, v[3].xyzx;\n"
-								"DP4 o[TEX3].x, c[8], v[2].xyzx;\n"
-								"DP4 o[TEX3].y, c[9], v[2].xyzx;\n"
-								"DP4 o[TEX3].z, c[10], v[2].xyzx;\n"
-								"DP4 R2.x, c[4], v[0];\n"
-								"DP4 R2.y, c[5], v[0];\n"
-								"DP4 R2.z, c[6], v[0];\n"
-								"DP4 R2.w, c[7], v[0];\n"
-								"ADD R1.yzw, c[12].xyzx, -R2.xxyz;\n"
-								"MOV o[TEX1].xyz, R1.yzwy;\n"
-								"DP3 R0.x, R1.yzwy, R1.yzwy;\n"
-								"RSQ R1.x, R0.x;\n"
-								"ADD R0.yzw, c[13].xyzz, -R2.xxyz;\n"
-								"DP3 R0.x, R0.yzwy, R0.yzwy;\n"
-								"RSQ R0.x, R0.x;\n"
-								"MUL R0.xyz, R0.x, R0.yzwy;\n"
-								"MAD R0.yzw, R1.x, R1.yyzw, R0.xxyz;\n"
-								"DP3 R0.x, R0.yzwy, R0.yzwy;\n"
-								"RSQ R0.x, R0.x;\n"
-								"MUL o[TEX2].xyz, R0.x, R0.yzwy;\n"
-								"DP4 o[HPOS].x, c[0], v[0];\n"
-								"DP4 o[HPOS].y, c[1], v[0];\n"
-								"DP4 o[HPOS].z, c[2], v[0];\n"
-								"DP4 o[HPOS].w, c[3], v[0];\n"
-								"END";
-
-							if (!material_program->nv_vertex_program)
-							{
-								glGenProgramsNV(1, &material_program->nv_vertex_program);
-								glLoadProgramNV(GL_VERTEX_PROGRAM_NV, material_program->nv_vertex_program,
-									strlen(vertex_program_string), vertex_program_string);
-							}
-							
-							if (!material_program->display_list)
-							{
-								material_program->display_list = glGenLists(/*number_of_lists*/1);
-							}
-							
-							glNewList(material_program->display_list, GL_COMPILE);
-							
-							glEnable(GL_VERTEX_PROGRAM_NV);
-							glBindProgramNV(GL_VERTEX_PROGRAM_NV,
-								material_program->nv_vertex_program);
-							glTrackMatrixNV(GL_VERTEX_PROGRAM_NV, 0, GL_MODELVIEW_PROJECTION_NV, GL_IDENTITY_NV);
-							glTrackMatrixNV(GL_VERTEX_PROGRAM_NV, 4, GL_MODELVIEW, GL_IDENTITY_NV);
-							glTrackMatrixNV(GL_VERTEX_PROGRAM_NV, 8, GL_MODELVIEW, GL_INVERSE_TRANSPOSE_NV);
-							glProgramLocalParameter4dARB(GL_VERTEX_PROGRAM_NV, 12, 0.0, 0.0, 100.0, 0.0);
-							glProgramLocalParameter4dARB(GL_VERTEX_PROGRAM_NV, 13, 0.0, 100.0, 100.0, 0.0);
-
-							{
-								glEnable(GL_REGISTER_COMBINERS_NV);
-								glEnable(GL_PER_STAGE_CONSTANTS_NV);
-								glEnable(GL_TEXTURE_SHADER_NV);
-								glActiveTextureARB(GL_TEXTURE0);
-								glTexEnvi(GL_TEXTURE_SHADER_NV, GL_SHADER_OPERATION_NV, GL_TEXTURE_CUBE_MAP);
-								glActiveTextureARB(GL_TEXTURE1);
-								glTexEnvi(GL_TEXTURE_SHADER_NV, GL_SHADER_OPERATION_NV, GL_TEXTURE_CUBE_MAP);
-								glActiveTextureARB(GL_TEXTURE2);
-								glTexEnvi(GL_TEXTURE_SHADER_NV, GL_SHADER_OPERATION_NV, GL_TEXTURE_CUBE_MAP);
-								glActiveTextureARB(GL_TEXTURE3);
-								glTexEnvi(GL_TEXTURE_SHADER_NV, GL_SHADER_OPERATION_NV, GL_TEXTURE_CUBE_MAP);
-								glActiveTextureARB(GL_TEXTURE0);
-
-#if defined (OLD_CODE)
-								glCombinerParameteriNV(GL_NUM_GENERAL_COMBINERS_NV, 1);
-								glCombinerInputNV(GL_COMBINER0_NV, GL_RGB, GL_VARIABLE_A_NV, GL_TEXTURE3, GL_SIGNED_IDENTITY_NV, GL_RGB);
-								glCombinerInputNV(GL_COMBINER0_NV, GL_RGB, GL_VARIABLE_B_NV, GL_FALSE, GL_UNSIGNED_INVERT_NV, GL_RGB);
-								glCombinerInputNV(GL_COMBINER0_NV, GL_RGB, GL_VARIABLE_C_NV, GL_FALSE, GL_UNSIGNED_IDENTITY_NV, GL_RGB);
-								glCombinerInputNV(GL_COMBINER0_NV, GL_RGB, GL_VARIABLE_D_NV, GL_FALSE, GL_UNSIGNED_IDENTITY_NV, GL_RGB);
-								glCombinerOutputNV(GL_COMBINER0_NV, GL_RGB, GL_PRIMARY_COLOR_NV, GL_DISCARD_NV, GL_DISCARD_NV, GL_SCALE_BY_TWO_NV, GL_BIAS_BY_NEGATIVE_ONE_HALF_NV, GL_FALSE, GL_FALSE, GL_FALSE);
-								glCombinerInputNV(GL_COMBINER0_NV, GL_ALPHA, GL_VARIABLE_A_NV, GL_FALSE, GL_UNSIGNED_IDENTITY_NV, GL_ALPHA);
-								glCombinerInputNV(GL_COMBINER0_NV, GL_ALPHA, GL_VARIABLE_B_NV, GL_FALSE, GL_UNSIGNED_IDENTITY_NV, GL_ALPHA);
-								glCombinerInputNV(GL_COMBINER0_NV, GL_ALPHA, GL_VARIABLE_C_NV, GL_FALSE, GL_UNSIGNED_IDENTITY_NV, GL_ALPHA);
-								glCombinerInputNV(GL_COMBINER0_NV, GL_ALPHA, GL_VARIABLE_D_NV, GL_FALSE, GL_UNSIGNED_IDENTITY_NV, GL_ALPHA);
-								glCombinerOutputNV(GL_COMBINER0_NV, GL_ALPHA, GL_DISCARD_NV, GL_DISCARD_NV, GL_DISCARD_NV, GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
-								glCombinerParameteriNV(GL_COLOR_SUM_CLAMP_NV, 0);
-								glFinalCombinerInputNV(GL_VARIABLE_A_NV, GL_FALSE, GL_UNSIGNED_IDENTITY_NV, GL_RGB);
-								glFinalCombinerInputNV(GL_VARIABLE_B_NV, GL_FALSE, GL_UNSIGNED_IDENTITY_NV, GL_RGB);
-								glFinalCombinerInputNV(GL_VARIABLE_C_NV, GL_FALSE, GL_UNSIGNED_IDENTITY_NV, GL_RGB);
-								glFinalCombinerInputNV(GL_VARIABLE_D_NV, GL_PRIMARY_COLOR_NV, GL_UNSIGNED_IDENTITY_NV, GL_RGB);
-								glFinalCombinerInputNV(GL_VARIABLE_E_NV, GL_FALSE, GL_UNSIGNED_IDENTITY_NV, GL_RGB);
-								glFinalCombinerInputNV(GL_VARIABLE_F_NV, GL_FALSE, GL_UNSIGNED_IDENTITY_NV, GL_RGB);
-								glFinalCombinerInputNV(GL_VARIABLE_G_NV, GL_FALSE, GL_UNSIGNED_INVERT_NV, GL_ALPHA);
-#endif /* defined (OLD_CODE) */
-
-
-								glCombinerParameteriNV(GL_NUM_GENERAL_COMBINERS_NV, 5);
-								glCombinerInputNV(GL_COMBINER0_NV, GL_RGB, GL_VARIABLE_A_NV, GL_TEXTURE2, GL_EXPAND_NORMAL_NV, GL_RGB);
-								glCombinerInputNV(GL_COMBINER0_NV, GL_RGB, GL_VARIABLE_B_NV, GL_TEXTURE3, GL_EXPAND_NORMAL_NV, GL_RGB);
-								glCombinerInputNV(GL_COMBINER0_NV, GL_RGB, GL_VARIABLE_C_NV, GL_TEXTURE1, GL_EXPAND_NORMAL_NV, GL_RGB);
-								glCombinerInputNV(GL_COMBINER0_NV, GL_RGB, GL_VARIABLE_D_NV, GL_TEXTURE3, GL_EXPAND_NORMAL_NV, GL_RGB);
-								glCombinerOutputNV(GL_COMBINER0_NV, GL_RGB, GL_PRIMARY_COLOR_NV, GL_SECONDARY_COLOR_NV, GL_DISCARD_NV, GL_FALSE, GL_FALSE, GL_TRUE, GL_TRUE, GL_FALSE);
-								glCombinerInputNV(GL_COMBINER0_NV, GL_ALPHA, GL_VARIABLE_A_NV, GL_FALSE, GL_UNSIGNED_IDENTITY_NV, GL_ALPHA);
-								glCombinerInputNV(GL_COMBINER0_NV, GL_ALPHA, GL_VARIABLE_B_NV, GL_FALSE, GL_UNSIGNED_IDENTITY_NV, GL_ALPHA);
-								glCombinerInputNV(GL_COMBINER0_NV, GL_ALPHA, GL_VARIABLE_C_NV, GL_FALSE, GL_UNSIGNED_IDENTITY_NV, GL_ALPHA);
-								glCombinerInputNV(GL_COMBINER0_NV, GL_ALPHA, GL_VARIABLE_D_NV, GL_FALSE, GL_UNSIGNED_IDENTITY_NV, GL_ALPHA);
-								glCombinerOutputNV(GL_COMBINER0_NV, GL_ALPHA, GL_DISCARD_NV, GL_DISCARD_NV, GL_DISCARD_NV, GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
-								glCombinerInputNV(GL_COMBINER1_NV, GL_ALPHA, GL_VARIABLE_A_NV, GL_PRIMARY_COLOR_NV, GL_UNSIGNED_IDENTITY_NV, GL_BLUE);
-								glCombinerInputNV(GL_COMBINER1_NV, GL_ALPHA, GL_VARIABLE_B_NV, GL_PRIMARY_COLOR_NV, GL_UNSIGNED_IDENTITY_NV, GL_BLUE);
-								glCombinerInputNV(GL_COMBINER1_NV, GL_ALPHA, GL_VARIABLE_C_NV, GL_FALSE, GL_UNSIGNED_IDENTITY_NV, GL_ALPHA);
-								glCombinerInputNV(GL_COMBINER1_NV, GL_ALPHA, GL_VARIABLE_D_NV, GL_FALSE, GL_UNSIGNED_IDENTITY_NV, GL_ALPHA);
-								glCombinerOutputNV(GL_COMBINER1_NV, GL_ALPHA, GL_PRIMARY_COLOR_NV, GL_DISCARD_NV, GL_DISCARD_NV, GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
-								glCombinerInputNV(GL_COMBINER1_NV, GL_RGB, GL_VARIABLE_A_NV, GL_FALSE, GL_UNSIGNED_IDENTITY_NV, GL_ALPHA);
-								glCombinerInputNV(GL_COMBINER1_NV, GL_RGB, GL_VARIABLE_B_NV, GL_FALSE, GL_UNSIGNED_IDENTITY_NV, GL_ALPHA);
-								glCombinerInputNV(GL_COMBINER1_NV, GL_RGB, GL_VARIABLE_C_NV, GL_FALSE, GL_UNSIGNED_IDENTITY_NV, GL_ALPHA);
-								glCombinerInputNV(GL_COMBINER1_NV, GL_RGB, GL_VARIABLE_D_NV, GL_FALSE, GL_UNSIGNED_IDENTITY_NV, GL_ALPHA);
-								glCombinerOutputNV(GL_COMBINER1_NV, GL_RGB, GL_DISCARD_NV, GL_DISCARD_NV, GL_DISCARD_NV, GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
-								glCombinerInputNV(GL_COMBINER2_NV, GL_ALPHA, GL_VARIABLE_A_NV, GL_PRIMARY_COLOR_NV, GL_SIGNED_IDENTITY_NV, GL_ALPHA);
-								glCombinerInputNV(GL_COMBINER2_NV, GL_ALPHA, GL_VARIABLE_B_NV, GL_PRIMARY_COLOR_NV, GL_SIGNED_IDENTITY_NV, GL_ALPHA);
-								glCombinerInputNV(GL_COMBINER2_NV, GL_ALPHA, GL_VARIABLE_C_NV, GL_FALSE, GL_UNSIGNED_IDENTITY_NV, GL_ALPHA);
-								glCombinerInputNV(GL_COMBINER2_NV, GL_ALPHA, GL_VARIABLE_D_NV, GL_FALSE, GL_UNSIGNED_IDENTITY_NV, GL_ALPHA);
-								glCombinerOutputNV(GL_COMBINER2_NV, GL_ALPHA, GL_PRIMARY_COLOR_NV, GL_DISCARD_NV, GL_DISCARD_NV, GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
-								glCombinerInputNV(GL_COMBINER2_NV, GL_RGB, GL_VARIABLE_A_NV, GL_FALSE, GL_UNSIGNED_IDENTITY_NV, GL_ALPHA);
-								glCombinerInputNV(GL_COMBINER2_NV, GL_RGB, GL_VARIABLE_B_NV, GL_FALSE, GL_UNSIGNED_IDENTITY_NV, GL_ALPHA);
-								glCombinerInputNV(GL_COMBINER2_NV, GL_RGB, GL_VARIABLE_C_NV, GL_FALSE, GL_UNSIGNED_IDENTITY_NV, GL_ALPHA);
-								glCombinerInputNV(GL_COMBINER2_NV, GL_RGB, GL_VARIABLE_D_NV, GL_FALSE, GL_UNSIGNED_IDENTITY_NV, GL_ALPHA);
-								glCombinerOutputNV(GL_COMBINER2_NV, GL_RGB, GL_DISCARD_NV, GL_DISCARD_NV, GL_DISCARD_NV, GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
-								glCombinerInputNV(GL_COMBINER3_NV, GL_ALPHA, GL_VARIABLE_A_NV, GL_PRIMARY_COLOR_NV, GL_SIGNED_IDENTITY_NV, GL_ALPHA);
-								glCombinerInputNV(GL_COMBINER3_NV, GL_ALPHA, GL_VARIABLE_B_NV, GL_PRIMARY_COLOR_NV, GL_SIGNED_IDENTITY_NV, GL_ALPHA);
-								glCombinerInputNV(GL_COMBINER3_NV, GL_ALPHA, GL_VARIABLE_C_NV, GL_FALSE, GL_UNSIGNED_IDENTITY_NV, GL_ALPHA);
-								glCombinerInputNV(GL_COMBINER3_NV, GL_ALPHA, GL_VARIABLE_D_NV, GL_FALSE, GL_UNSIGNED_IDENTITY_NV, GL_ALPHA);
-								glCombinerOutputNV(GL_COMBINER3_NV, GL_ALPHA, GL_PRIMARY_COLOR_NV, GL_DISCARD_NV, GL_DISCARD_NV, GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
-								glCombinerInputNV(GL_COMBINER3_NV, GL_RGB, GL_VARIABLE_A_NV, GL_FALSE, GL_UNSIGNED_IDENTITY_NV, GL_ALPHA);
-								glCombinerInputNV(GL_COMBINER3_NV, GL_RGB, GL_VARIABLE_B_NV, GL_FALSE, GL_UNSIGNED_IDENTITY_NV, GL_ALPHA);
-								glCombinerInputNV(GL_COMBINER3_NV, GL_RGB, GL_VARIABLE_C_NV, GL_FALSE, GL_UNSIGNED_IDENTITY_NV, GL_ALPHA);
-								glCombinerInputNV(GL_COMBINER3_NV, GL_RGB, GL_VARIABLE_D_NV, GL_FALSE, GL_UNSIGNED_IDENTITY_NV, GL_ALPHA);
-								glCombinerOutputNV(GL_COMBINER3_NV, GL_RGB, GL_DISCARD_NV, GL_DISCARD_NV, GL_DISCARD_NV, GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
-								glCombinerInputNV(GL_COMBINER4_NV, GL_RGB, GL_VARIABLE_A_NV, GL_SECONDARY_COLOR_NV, GL_SIGNED_IDENTITY_NV, GL_RGB);
-								glCombinerInputNV(GL_COMBINER4_NV, GL_RGB, GL_VARIABLE_B_NV, GL_CONSTANT_COLOR0_NV, GL_SIGNED_IDENTITY_NV, GL_RGB);
-								glCombinerInputNV(GL_COMBINER4_NV, GL_RGB, GL_VARIABLE_C_NV, GL_PRIMARY_COLOR_NV, GL_SIGNED_IDENTITY_NV, GL_ALPHA);
-								glCombinerInputNV(GL_COMBINER4_NV, GL_RGB, GL_VARIABLE_D_NV, GL_CONSTANT_COLOR1_NV, GL_SIGNED_IDENTITY_NV, GL_RGB);
-								glCombinerOutputNV(GL_COMBINER4_NV, GL_RGB, GL_DISCARD_NV, GL_DISCARD_NV, GL_PRIMARY_COLOR_NV, GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
-								glCombinerInputNV(GL_COMBINER4_NV, GL_ALPHA, GL_VARIABLE_A_NV, GL_FALSE, GL_UNSIGNED_IDENTITY_NV, GL_ALPHA);
-								glCombinerInputNV(GL_COMBINER4_NV, GL_ALPHA, GL_VARIABLE_B_NV, GL_FALSE, GL_UNSIGNED_IDENTITY_NV, GL_ALPHA);
-								glCombinerInputNV(GL_COMBINER4_NV, GL_ALPHA, GL_VARIABLE_C_NV, GL_FALSE, GL_UNSIGNED_IDENTITY_NV, GL_ALPHA);
-								glCombinerInputNV(GL_COMBINER4_NV, GL_ALPHA, GL_VARIABLE_D_NV, GL_FALSE, GL_UNSIGNED_IDENTITY_NV, GL_ALPHA);
-								glCombinerOutputNV(GL_COMBINER4_NV, GL_ALPHA, GL_DISCARD_NV, GL_DISCARD_NV, GL_DISCARD_NV, GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
-								glCombinerParameteriNV(GL_COLOR_SUM_CLAMP_NV, 0);
-								glFinalCombinerInputNV(GL_VARIABLE_A_NV, GL_FALSE, GL_UNSIGNED_IDENTITY_NV, GL_RGB);
-								glFinalCombinerInputNV(GL_VARIABLE_B_NV, GL_FALSE, GL_UNSIGNED_IDENTITY_NV, GL_RGB);
-								glFinalCombinerInputNV(GL_VARIABLE_C_NV, GL_FALSE, GL_UNSIGNED_IDENTITY_NV, GL_RGB);
-								glFinalCombinerInputNV(GL_VARIABLE_D_NV, GL_PRIMARY_COLOR_NV, GL_UNSIGNED_IDENTITY_NV, GL_RGB);
-								glFinalCombinerInputNV(GL_VARIABLE_E_NV, GL_FALSE, GL_UNSIGNED_IDENTITY_NV, GL_RGB);
-								glFinalCombinerInputNV(GL_VARIABLE_F_NV, GL_FALSE, GL_UNSIGNED_IDENTITY_NV, GL_RGB);
-								glFinalCombinerInputNV(GL_VARIABLE_G_NV, GL_FALSE, GL_UNSIGNED_INVERT_NV, GL_ALPHA);
-
-								{
-									GLfloat const1[] = {0.0, 0.0, 0.0, 0.0};
-									GLfloat const2[] = {0.0, 0.0, 0.0, 0.0};
-									GLfloat const3[] = {0.6, 0.6, 0.6, 0.6};
-									GLfloat const4[] = {0.9, 0.9, 0.9, 0.9};
-									glCombinerStageParameterfvNV(GL_COMBINER4_NV, GL_CONSTANT_COLOR0_NV, const1);
-									glCombinerStageParameterfvNV(GL_COMBINER4_NV, GL_CONSTANT_COLOR1_NV, const2);
-									glCombinerStageParameterfvNV(GL_COMBINER4_NV, GL_CONSTANT_COLOR0_NV, const3);
-									glCombinerStageParameterfvNV(GL_COMBINER4_NV, GL_CONSTANT_COLOR1_NV, const4);
-								}
-								{
-#define normal_cube_map_size (128)
-									float cube_map[4 * normal_cube_map_size * normal_cube_map_size];
-
-									glEnable(GL_TEXTURE_CUBE_MAP);
-									glBindTexture(GL_TEXTURE_CUBE_MAP, 17);
-									cube_map_normal(0, normal_cube_map_size, cube_map);
-									glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X, 0, 32856, normal_cube_map_size, normal_cube_map_size, 0, GL_RGBA, GL_FLOAT, cube_map);
-									cube_map_normal(1, normal_cube_map_size, cube_map);
-									glTexImage2D(GL_TEXTURE_CUBE_MAP_NEGATIVE_X, 0, 32856, normal_cube_map_size, normal_cube_map_size, 0, GL_RGBA, GL_FLOAT, cube_map);
-									cube_map_normal(2, normal_cube_map_size, cube_map);
-									glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_Y, 0, 32856, normal_cube_map_size, normal_cube_map_size, 0, GL_RGBA, GL_FLOAT, cube_map);
-									cube_map_normal(3, normal_cube_map_size, cube_map);
-									glTexImage2D(GL_TEXTURE_CUBE_MAP_NEGATIVE_Y, 0, 32856, normal_cube_map_size, normal_cube_map_size, 0, GL_RGBA, GL_FLOAT, cube_map);
-									cube_map_normal(4, normal_cube_map_size, cube_map);
-									glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_Z, 0, 32856, normal_cube_map_size, normal_cube_map_size, 0, GL_RGBA, GL_FLOAT, cube_map);
-									cube_map_normal(5, normal_cube_map_size, cube_map);
-									glTexImage2D(GL_TEXTURE_CUBE_MAP_NEGATIVE_Z, 0, 32856, normal_cube_map_size, normal_cube_map_size, 0, GL_RGBA, GL_FLOAT, cube_map);
-									glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, 9729);
-									glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, 9729);
-									glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, 33071);
-									glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, 33071);
-									glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, 33071);
-
-									glEnable(GL_TEXTURE_CUBE_MAP);
-									glActiveTextureARB(GL_TEXTURE1);
-									glBindTexture(GL_TEXTURE_CUBE_MAP, 17);
-									glActiveTextureARB(GL_TEXTURE0);
-									glBindTexture(GL_TEXTURE_CUBE_MAP, 17);
-									glActiveTextureARB(GL_TEXTURE2);
-									glBindTexture(GL_TEXTURE_CUBE_MAP, 17);
-									glActiveTextureARB(GL_TEXTURE3);
-									glBindTexture(GL_TEXTURE_CUBE_MAP, 17);
-								}
-							} 
-							
-							glEndList();
-						}
-						else
-						{
-							display_message(ERROR_MESSAGE, "Material_program_compile.  "
-								"Support for PER_PIXEL_LIGHTING requires either "
-								"(GL_ARB_vertex_program and GL_ARB_fragment_program) or "
-								"(GL_NV_vertex_program and GL_NV_register_combiners2) extensions.");
-						}
-#endif /* defined GL_NV_vertex_program && defined GL_NV_register_combiners2 */
-#endif /* defined (OLD_CODE) */
 
 #if defined (OPENGL_API)
 static int Material_program_execute(struct Material_program *material_program)
@@ -3346,6 +2816,110 @@ execute_Graphical_material should just call direct_render_Graphical_material.
 			{
 				material->compile_status = GRAPHICS_COMPILED;
 			}
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"compile_Graphical_material.  Missing material");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* compile_Graphical_material */
+
+int compile_Graphical_material_for_order_independent_transparency(
+	struct Graphical_material *material, 
+	void *material_order_independent_data_void)
+/*******************************************************************************
+LAST MODIFIED : 2 May 2005
+
+DESCRIPTION :
+Recompile each of the <materials> which have already been compiled so that they
+will work with order_independent_transparency. 
+==============================================================================*/
+{
+	enum Material_program_type modified_type;
+	int return_code;
+	struct Material_order_independent_transparency *data;
+	struct Material_package *material_package;
+	struct Material_program *unmodified_program;
+
+	ENTER(compile_Graphical_material);
+
+	if (material && (data = (struct Material_order_independent_transparency *)
+			material_order_independent_data_void))
+	{
+		material_package = material->package;
+		return_code = 1;
+		/* Only do the materials that have been compiled already as the scene
+			is compiled so presumably uncompiled materials are not used. */
+		if ((GRAPHICS_COMPILED == material->compile_status) &&
+			material->display_list)
+		{
+#if defined (OPENGL_API)
+			unmodified_program = material->program;
+			if (material->program)
+			{
+				modified_type = material->program->type;
+			}
+			else
+			{
+				modified_type = MATERIAL_PROGRAM_CLASS_GOURAUD_SHADING;
+			}
+			if (data->layer == 1)
+			{
+				/* The first layer does not peel */
+				modified_type |= MATERIAL_PROGRAM_CLASS_ORDER_INDEPENDENT_FIRST_LAYER;
+			}
+			else if (data->layer > 1)
+			{
+				/* The rest of the layers should peel */
+				modified_type |= MATERIAL_PROGRAM_CLASS_ORDER_INDEPENDENT_PEEL_LAYER;
+			}
+			/*
+			else
+			{
+			      Reset the material to its original state.  Could
+					try to avoid this compile if we are about to render
+					with order_independent_transparency again but need more
+					compilation states then.
+			} */
+
+			if (modified_type != MATERIAL_PROGRAM_CLASS_GOURAUD_SHADING)
+			{
+				if (!(material->program = FIND_BY_IDENTIFIER_IN_LIST(
+					Material_program,type)(modified_type, 
+						material_package->material_program_list)))
+				{
+					if (material->program = ACCESS(Material_program)(
+						CREATE(Material_program)(modified_type)))
+					{
+						ADD_OBJECT_TO_LIST(Material_program)(material->program,
+							material_package->material_program_list);
+					}
+					else
+					{
+						return_code = 0;
+					}
+				}
+				if (!material->program->compiled)
+				{
+					Material_program_compile(material->program);
+				}
+			}
+
+			glNewList(material->display_list,GL_COMPILE);
+			direct_render_Graphical_material(material);
+			glEndList();
+
+			material->program = unmodified_program;
+#else /* defined (OPENGL_API) */
+				display_message(ERROR_MESSAGE,
+					"compile_Graphical_material.  Not defined for this API");
+				return_code = 0;
+#endif /* defined (OPENGL_API) */
 		}
 	}
 	else

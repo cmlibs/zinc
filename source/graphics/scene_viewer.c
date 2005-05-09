@@ -2118,7 +2118,7 @@ and then again with only semi transparent objects not changing the depth buffer.
 		if (!scene_viewer->order_independent_transparency_data)
 		{
 			scene_viewer->order_independent_transparency_data = 
-				order_independent_initialise();
+				order_independent_initialise(scene_viewer);
 		}
 
 		if (scene_viewer->order_independent_transparency_data)

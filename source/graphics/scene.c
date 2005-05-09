@@ -5209,6 +5209,37 @@ Wrapper for FIRST_OBJECT_IN_LIST_THAT function for Scene_object.
 	return (return_object);
 } /* first_Scene_object_in_Scene_that */
 
+int Scene_for_each_material(struct Scene *scene,
+	MANAGER_ITERATOR_FUNCTION(Graphical_material) *iterator_function,
+	void *user_data)
+/*******************************************************************************
+LAST MODIFIED : 3 May 2005
+
+DESCRIPTION :
+Iterates through every material used by the scene.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(Scene_for_each_material);
+	if (scene && iterator_function && scene->graphical_material_manager)
+	{
+		/* Could be smarter if there was a reduced number used by the 
+			scene, however for now just do every material in the manager */
+		return_code = FOR_EACH_OBJECT_IN_MANAGER(Graphical_material)(
+			iterator_function, user_data,scene->graphical_material_manager);
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Scene_for_each_material.  Invalid arguments.");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Scene_for_each_material */
+
 struct Scene_picked_object *CREATE(Scene_picked_object)(int hit_no)
 /*******************************************************************************
 LAST MODIFIED : 15 July 1999
