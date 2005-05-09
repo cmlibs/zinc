@@ -591,6 +591,7 @@ Initialises the order independent transparency extension.
 		data = (struct Scene_viewer_order_independent_transparency_data *)NULL;
 	}
 #else /* defined (ORDER_INDEPENDENT_CAPABLE) */
+	USE_PARAMETER(scene_viewer);
 	data = (struct Scene_viewer_order_independent_transparency_data *)NULL;
 #endif /* defined (ORDER_INDEPENDENT_CAPABLE) */
 

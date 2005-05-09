@@ -308,7 +308,9 @@ be shared by multiple materials using the same program.
 #if ! defined (TESTING_PROGRAM_STRINGS)
 				char *fragment_program_string, *vertex_program_string;
 				int error;
+#if defined (DEBUG)
 				const GLubyte *error_msg;
+#endif /* defined (DEBUG) */
 				
 				error = 0;
 				if (MATERIAL_PROGRAM_CLASS_GOURAUD_SHADING & material_program->type)
@@ -685,7 +687,9 @@ be shared by multiple materials using the same program.
 				glBindProgramARB(GL_VERTEX_PROGRAM_ARB, material_program->vertex_program);
 				glProgramStringARB(GL_VERTEX_PROGRAM_ARB, GL_PROGRAM_FORMAT_ASCII_ARB,
 					strlen(vertex_program_string), vertex_program_string);
+#if defined (DEBUG)
 				error_msg = glGetString(GL_PROGRAM_ERROR_STRING_ARB);
+#endif /* defined (DEBUG) */
 				DEALLOCATE(vertex_program_string);
 				
 				if (!material_program->fragment_program)
@@ -695,7 +699,9 @@ be shared by multiple materials using the same program.
 				glBindProgramARB(GL_FRAGMENT_PROGRAM_ARB, material_program->fragment_program);
 				glProgramStringARB(GL_FRAGMENT_PROGRAM_ARB, GL_PROGRAM_FORMAT_ASCII_ARB,
 					strlen(fragment_program_string), fragment_program_string);
+#if defined (DEBUG)
 				error_msg = glGetString(GL_PROGRAM_ERROR_STRING_ARB);
+#endif /* defined (DEBUG) */
 				DEALLOCATE(fragment_program_string);
 				
 #else /* ! defined (TESTING_PROGRAM_STRINGS) */
