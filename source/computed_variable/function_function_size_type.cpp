@@ -1,7 +1,7 @@
 //******************************************************************************
 // FILE : function_function_size_type.cpp
 //
-// LAST MODIFIED : 14 January 2005
+// LAST MODIFIED : 28 April 2005
 //
 // DESCRIPTION :
 //==============================================================================
@@ -11,6 +11,11 @@
 #include "computed_variable/function_function_size_type.hpp"
 #include "computed_variable/function_variable.hpp"
 #include "computed_variable/function_variable_value_function_size_type.hpp"
+
+#if defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
+#else // defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
+#include "computed_variable/function_derivative.hpp"
+#endif // defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
 
 // module classes
 // ==============
@@ -69,7 +74,7 @@ static bool
 
 class Function_variable_function_size_type : public Function_variable
 //******************************************************************************
-// LAST MODIFIED : 13 August 2004
+// LAST MODIFIED : 28 April 2005
 //
 // DESCRIPTION :
 //==============================================================================
@@ -102,6 +107,15 @@ class Function_variable_function_size_type : public Function_variable
 			return (Function_variable_handle(new Function_variable_function_size_type(
 				*this)));
 		};
+#if defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
+#else // defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
+		Function_handle derivative(
+			const std::list<Function_variable_handle>& independent_variables)
+		{
+			return (Function_handle(new Function_derivatnew_identity(
+				Function_variable_handle(this),independent_variables)));
+		};
+#endif // defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
 		string_handle get_string_representation()
 		{
 			string_handle return_string(0);
