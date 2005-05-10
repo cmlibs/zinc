@@ -1,7 +1,7 @@
 //******************************************************************************
 // FILE : function_variable_union.cpp
 //
-// LAST MODIFIED : 30 March 2005
+// LAST MODIFIED : 7 April 2005
 //
 // DESCRIPTION :
 //==============================================================================
@@ -29,7 +29,7 @@ bool repeat_atomic_variable(
 	const std::list<Function_variable_handle>::iterator& variables_list_iterator,
 	const Function_variable_iterator& atomic_variable_iterator)
 //******************************************************************************
-// LAST MODIFIED : 5 October 2004
+// LAST MODIFIED : 7 April 2005
 //
 // DESCRIPTION :
 // Determines if (*atomic_variable_iterator) appears before it in the union.
@@ -51,9 +51,9 @@ bool repeat_atomic_variable(
 			!(repeat=equivalent(*local_atomic_variable_iterator,
 			*atomic_variable_iterator)))
 		{
-			local_atomic_variable_iterator++;
+			++local_atomic_variable_iterator;
 		}
-		local_variables_list_iterator++;
+		++local_variables_list_iterator;
 	}
 
 	return (repeat);
@@ -62,7 +62,7 @@ bool repeat_atomic_variable(
 class Function_variable_iterator_representation_atomic_union: public
 	Function_variable_iterator_representation
 //******************************************************************************
-// LAST MODIFIED : 12 March 2004
+// LAST MODIFIED : 7 April 2005
 //
 // DESCRIPTION :
 //==============================================================================
@@ -85,7 +85,7 @@ class Function_variable_iterator_representation_atomic_union: public
 						((*variables_list_iterator)->begin_atomic)())==
 						((*variables_list_iterator)->end_atomic)()))
 					{
-						variables_list_iterator++;
+						++variables_list_iterator;
 					}
 					if (variables_list_iterator==(source->variables_list).end())
 					{
@@ -123,7 +123,7 @@ class Function_variable_iterator_representation_atomic_union: public
 			{
 				do
 				{
-					atomic_variable_iterator++;
+					++atomic_variable_iterator;
 				} while ((atomic_variable_iterator!=
 					((*variables_list_iterator)->end_atomic)())&&
 					repeat_atomic_variable(source->variables_list,
@@ -133,7 +133,7 @@ class Function_variable_iterator_representation_atomic_union: public
 				{
 					do
 					{
-						variables_list_iterator++;
+						++variables_list_iterator;
 						if (variables_list_iterator!=(source->variables_list).end())
 						{
 							atomic_variable_iterator=
@@ -143,7 +143,7 @@ class Function_variable_iterator_representation_atomic_union: public
 								repeat_atomic_variable(source->variables_list,
 								variables_list_iterator,atomic_variable_iterator))
 							{
-								atomic_variable_iterator++;
+								++atomic_variable_iterator;
 							}
 						}
 					} while ((variables_list_iterator!=(source->variables_list).end())&&
@@ -176,7 +176,7 @@ class Function_variable_iterator_representation_atomic_union: public
 				{
 					do
 					{
-						variables_list_iterator--;
+						--variables_list_iterator;
 						atomic_variable_iterator=((*variables_list_iterator)->end_atomic)();
 					} while ((variables_list_iterator!=(source->variables_list).begin())&&
 						(atomic_variable_iterator==
@@ -195,7 +195,7 @@ class Function_variable_iterator_representation_atomic_union: public
 			{
 				do
 				{
-					atomic_variable_iterator--;
+					--atomic_variable_iterator;
 					done= !repeat_atomic_variable(source->variables_list,
 						variables_list_iterator,atomic_variable_iterator);
 				} while ((atomic_variable_iterator!=
@@ -206,7 +206,7 @@ class Function_variable_iterator_representation_atomic_union: public
 						(atomic_variable_iterator==
 						((*variables_list_iterator)->begin_atomic)()))
 					{
-						variables_list_iterator--;
+						--variables_list_iterator;
 						atomic_variable_iterator=((*variables_list_iterator)->end_atomic)();
 					}
 					if ((variables_list_iterator==(source->variables_list).begin())&&
@@ -315,7 +315,7 @@ Function_variable_union::Function_variable_union(
 
 Function_variable_handle Function_variable_union::clone() const
 //******************************************************************************
-// LAST MODIFIED : 11 January 2005
+// LAST MODIFIED : 7 April 2005
 //
 // DESCRIPTION :
 //==============================================================================
@@ -340,8 +340,8 @@ Function_variable_handle Function_variable_union::clone() const
 			{
 				local_variables_list.push_back(Function_variable_handle(0));
 			}
-			iterator++;
-			i--;
+			++iterator;
+			--i;
 		}
 	}
 	if (result=Function_variable_union_handle(new Function_variable_union(
@@ -357,7 +357,7 @@ Function_variable_handle Function_variable_union::clone() const
 #if defined (EVALUATE_RETURNS_VALUE)
 Function_handle Function_variable_union::evaluate()
 //******************************************************************************
-// LAST MODIFIED : 23 February 2005
+// LAST MODIFIED : 7 April 2005
 //
 // DESCRIPTION :
 //==============================================================================
@@ -443,7 +443,7 @@ Function_handle Function_variable_union::evaluate()
 					}
 					atomic_variable_index_list.push_back(atomic_variable_index);
 				}
-				atomic_variable_index++;
+				++atomic_variable_index;
 			}
 			if (!first)
 			{
@@ -485,12 +485,12 @@ Function_handle Function_variable_union::evaluate()
 					for (
 						atomic_variable_index_iterator=atomic_variable_index_list.begin();
 						atomic_variable_index_iterator!=atomic_variable_index_iterator_end;
-						atomic_variable_index_iterator++)
+						++atomic_variable_index_iterator)
 					{
 						while (atomic_variable_index!= *atomic_variable_index_iterator)
 						{
-							atomic_variable_index++;
-							atomic_part_iterator++;
+							++atomic_variable_index;
+							++atomic_part_iterator;
 						}
 						part_list.push_back((*atomic_part_iterator)->get_value());
 					}
@@ -508,20 +508,20 @@ Function_handle Function_variable_union::evaluate()
 							atomic_variable_index_iterator=atomic_variable_index_list.begin();
 							atomic_variable_index_iterator!=
 							atomic_variable_index_iterator_end;
-							atomic_variable_index_iterator++)
+							++atomic_variable_index_iterator)
 						{
 							while (atomic_variable_index!= *atomic_variable_index_iterator)
 							{
-								atomic_variable_index++;
-								column++;
+								++atomic_variable_index;
+								++column;
 								if (column>part_number_of_columns)
 								{
 									column=1;
-									row++;
+									++row;
 								}
 							}
 							new_matrix(i,0)=(*part_matrix)(row,column);
-							i++;
+							++i;
 						}
 						part_matrix_list.push_back(
 							boost::intrusive_ptr< Function_matrix<Scalar> >(
@@ -557,7 +557,7 @@ Function_handle Function_variable_union::evaluate()
 					{
 						result_matrix(result_row,result_column)=
 							(*part_matrix)(part_row,part_column);
-						result_column++;
+						++result_column;
 						if (result_column>=result_number_of_columns)
 						{
 							++result_row;
@@ -594,7 +594,7 @@ bool Function_variable_union::evaluate()
 Function_handle Function_variable_union::evaluate_derivative(
 	std::list<Function_variable_handle>& independent_variables)
 //******************************************************************************
-// LAST MODIFIED : 25 February 2005
+// LAST MODIFIED : 7 April 2005
 //
 // DESCRIPTION :
 //==============================================================================
@@ -663,7 +663,7 @@ Function_handle Function_variable_union::evaluate_derivative(
 						}
 						atomic_variable_index_list.push_back(atomic_variable_index);
 					}
-					atomic_variable_index++;
+					++atomic_variable_index;
 				}
 				++atomic_variable_iterator;
 			}
@@ -688,13 +688,13 @@ Function_handle Function_variable_union::evaluate_derivative(
 					while (j>0)
 					{
 						atomic_variable_index=(*atomic_variable_index_iterator)+1;
-						for (column=1;column<=result_number_of_columns;column++)
+						for (column=1;column<=result_number_of_columns;++column)
 						{
 							new_matrix(row,column-1)=(*part)(atomic_variable_index,column);
 						}
-						row++;
+						++row;
 						++atomic_variable_index_iterator;
-						j--;
+						--j;
 					}
 					part_list.push_back(boost::intrusive_ptr< Function_matrix<Scalar> >(
 						new Function_matrix<Scalar>(new_matrix)));
@@ -734,13 +734,13 @@ Function_handle Function_variable_union::evaluate_derivative(
 					{
 						part_column=1;
 						for (result_column=0;result_column<result_number_of_columns;
-							result_column++)
+							++result_column)
 						{
 							result_matrix(result_row,result_column)=
 								part_matrix(part_row,part_column);
-							part_column++;
+							++part_column;
 						}
-						result_row++;
+						++result_row;
 					}
 					--j;
 					++part_iterator;
@@ -771,7 +771,7 @@ Function_handle Function_variable_union::derivative(
 
 string_handle Function_variable_union::get_string_representation()
 //******************************************************************************
-// LAST MODIFIED : 12 March 2004
+// LAST MODIFIED : 7 April 2005
 //
 // DESCRIPTION :
 // ???DB.  Overload << instead of get_string_representation?
@@ -794,8 +794,8 @@ string_handle Function_variable_union::get_string_representation()
 				out << *temp_string;
 				delete temp_string;
 			}
-			variable_iterator++;
-			i--;
+			++variable_iterator;
+			--i;
 			if (i>0)
 			{
 				out << ",";
@@ -870,7 +870,7 @@ void Function_variable_union::add_dependent_function(
 #endif // defined (CIRCULAR_SMART_POINTERS)
 	dependent_function)
 //******************************************************************************
-// LAST MODIFIED : 7 December 2004
+// LAST MODIFIED : 7 April 2005
 //
 // DESCRIPTION :
 //==============================================================================
@@ -878,7 +878,7 @@ void Function_variable_union::add_dependent_function(
 	std::list<Function_variable_handle>::iterator iterator,iterator_end;
 
 	iterator_end=variables_list.end();
-	for (iterator=variables_list.begin();iterator!=iterator_end;iterator++)
+	for (iterator=variables_list.begin();iterator!=iterator_end;++iterator)
 	{
 		(*iterator)->add_dependent_function(dependent_function);
 	}
@@ -892,7 +892,7 @@ void Function_variable_union::remove_dependent_function(
 #endif // defined (CIRCULAR_SMART_POINTERS)
 	dependent_function)
 //******************************************************************************
-// LAST MODIFIED : 7 December 2004
+// LAST MODIFIED : 7 April 2005
 //
 // DESCRIPTION :
 //==============================================================================
@@ -900,7 +900,7 @@ void Function_variable_union::remove_dependent_function(
 	std::list<Function_variable_handle>::iterator iterator,iterator_end;
 
 	iterator_end=variables_list.end();
-	for (iterator=variables_list.begin();iterator!=iterator_end;iterator++)
+	for (iterator=variables_list.begin();iterator!=iterator_end;++iterator)
 	{
 		(*iterator)->remove_dependent_function(dependent_function);
 	}
