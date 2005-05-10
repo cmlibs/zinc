@@ -1,7 +1,7 @@
 //******************************************************************************
 // FILE : function_variable_exclusion.hpp
 //
-// LAST MODIFIED : 7 December 2004
+// LAST MODIFIED : 9 May 2005
 //
 // DESCRIPTION :
 // One variable, A, excluding another variable, B, ie A intersect not(B).  The
@@ -14,12 +14,13 @@
 
 class Function_variable_exclusion : public Function_variable
 //******************************************************************************
-// LAST MODIFIED : 7 December 2004
+// LAST MODIFIED : 9 May 2005
 //
 // DESCRIPTION :
 // Complement with a specified "universe" ie universe intersect not(exclusion)
 //==============================================================================
 {
+	friend class Function_derivatnew_exclusion;
 	friend class Function_variable_iterator_representation_atomic_exclusion;
 	template<class Value_type_1,class Value_type_2>
 		friend bool equivalent(boost::intrusive_ptr<Value_type_1> const &,
@@ -34,6 +35,13 @@ class Function_variable_exclusion : public Function_variable
 	// inherited
 	public:
 		Function_variable_handle clone() const;
+#if defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
+#else // defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
+		// derivative creates a new Function which calculates the value of this
+		//   variable differentiated with respect to the <independent_variables>
+		virtual Function_handle derivative(
+			const std::list<Function_variable_handle>& independent_variables);
+#endif // defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
 		string_handle get_string_representation();
 		Function_variable_iterator begin_atomic() const;
 		Function_variable_iterator end_atomic() const;

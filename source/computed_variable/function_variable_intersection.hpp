@@ -1,7 +1,7 @@
 //******************************************************************************
 // FILE : function_variable_intersection.hpp
 //
-// LAST MODIFIED : 7 December 2004
+// LAST MODIFIED : 9 May 2005
 //
 // DESCRIPTION :
 // A intersection of variables.  The list of atomic specifiers [begin_atomic(),
@@ -16,12 +16,13 @@
 
 class Function_variable_intersection : public Function_variable
 //******************************************************************************
-// LAST MODIFIED : 7 December 2004
+// LAST MODIFIED : 9 May 2005
 //
 // DESCRIPTION :
 // A intersection of other variable(s).
 //==============================================================================
 {
+	friend class Function_derivatnew_intersection;
 	friend class Function_variable_iterator_representation_atomic_intersection;
 	template<class Value_type_1,class Value_type_2>
 		friend bool equivalent(boost::intrusive_ptr<Value_type_1> const &,
@@ -40,6 +41,13 @@ class Function_variable_intersection : public Function_variable
 	// inherited
 	public:
 		Function_variable_handle clone() const;
+#if defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
+#else // defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
+		// derivative creates a new Function which calculates the value of this
+		//   variable differentiated with respect to the <independent_variables>
+		virtual Function_handle derivative(
+			const std::list<Function_variable_handle>& independent_variables);
+#endif // defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
 		string_handle get_string_representation();
 		Function_variable_iterator begin_atomic() const;
 		Function_variable_iterator end_atomic() const;

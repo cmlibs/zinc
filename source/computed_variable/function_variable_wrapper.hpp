@@ -1,7 +1,7 @@
 //******************************************************************************
 // FILE : function_variable_wrapper.hpp
 //
-// LAST MODIFIED : 18 August 2004
+// LAST MODIFIED : 10 May 2005
 //
 // DESCRIPTION :
 // A variable that is a wrapper for another variable eg. the input/output
@@ -19,12 +19,13 @@ typedef boost::intrusive_ptr<Function_variable_wrapper>
 
 class Function_variable_wrapper : public Function_variable
 //******************************************************************************
-// LAST MODIFIED : 18 August 2004
+// LAST MODIFIED : 10 May 2005
 //
 // DESCRIPTION :
 // An identifier for another variable.
 //==============================================================================
 {
+	friend class Function_derivatnew_wrapper;
 	friend class Function_variable_iterator_representation_atomic_wrapper;
 	template<class Value_type_1,class Value_type_2>
 		friend bool equivalent(boost::intrusive_ptr<Value_type_1> const &,
@@ -38,6 +39,13 @@ class Function_variable_wrapper : public Function_variable
 	// inherited
 	public:
 		virtual Function_variable_handle clone() const;
+#if defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
+#else // defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
+		// derivative creates a new Function which calculates the value of this
+		//   variable differentiated with respect to the <independent_variables>
+		virtual Function_handle derivative(
+			const std::list<Function_variable_handle>& independent_variables);
+#endif // defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
 		virtual Function_variable_value_handle value();
 		virtual bool set_value(Function_handle value);
 		virtual bool rset_value(Function_handle value);
