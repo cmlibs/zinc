@@ -23,7 +23,7 @@ extern "C"
 //???DB.  Function_derivatnew_finite_element doesn't currently handle
 //  composite independent variables.  Would have to fall back to
 //  Function_derivatnew.  End up slower?
-//#define USE_Function_derivatnew_finite_element
+#define USE_Function_derivatnew_finite_element
 
 class Function_element : public Function
 //******************************************************************************
