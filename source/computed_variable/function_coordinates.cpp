@@ -1,7 +1,7 @@
 //******************************************************************************
 // FILE : function_coordinates.cpp
 //
-// LAST MODIFIED : 1 March 2005
+// LAST MODIFIED : 9 May 2005
 //
 // DESCRIPTION :
 //==============================================================================
@@ -14,6 +14,11 @@
 #include "computed_variable/function_variable_matrix.hpp"
 #include "computed_variable/function_variable_value_scalar.hpp"
 
+#if defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
+#else // defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
+#include "computed_variable/function_derivative.hpp"
+#endif // defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
+
 // module typedefs
 // ===============
 
@@ -23,18 +28,92 @@ typedef boost::intrusive_ptr< Function_variable_matrix<Scalar> >
 // module classes
 // ==============
 
-// class Function_variable_matrix_rectangular_cartesian
-// ----------------------------------------------------
-
 // forward declaration so that can use _handle
 class Function_variable_matrix_rectangular_cartesian;
 typedef boost::intrusive_ptr<Function_variable_matrix_rectangular_cartesian>
 	Function_variable_matrix_rectangular_cartesian_handle;
 
+#if defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
+#else // defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
+// class Function_derivatnew_matrix_rectangular_cartesian
+// --------------------------------------------
+
+class Function_derivatnew_matrix_rectangular_cartesian :
+	public Function_derivatnew
+//******************************************************************************
+// LAST MODIFIED : 27 April 2005
+//
+// DESCRIPTION :
+//==============================================================================
+{
+	public:
+		// for construction exception
+		class Construction_exception {};
+		// for evaluation exception
+		class Evaluation_exception {};
+		// constructor
+		Function_derivatnew_matrix_rectangular_cartesian(
+			const Function_variable_handle& dependent_variable,
+			const std::list<Function_variable_handle>& independent_variables);
+		// destructor
+		~Function_derivatnew_matrix_rectangular_cartesian();
+	// inherited
+	private:
+#if defined (EVALUATE_RETURNS_VALUE)
+		virtual Function_handle evaluate(Function_variable_handle atomic_variable);
+#else // defined (EVALUATE_RETURNS_VALUE)
+		virtual bool evaluate(Function_variable_handle atomic_variable);
+#endif // defined (EVALUATE_RETURNS_VALUE)
+	private:
+		// copy operations are private and undefined to prevent copying
+		void operator=(const Function&);
+};
+
+Function_derivatnew_matrix_rectangular_cartesian::
+	Function_derivatnew_matrix_rectangular_cartesian(
+	const Function_variable_handle& dependent_variable,
+	const std::list<Function_variable_handle>& independent_variables):
+	Function_derivatnew(dependent_variable,independent_variables)
+//******************************************************************************
+// LAST MODIFIED : 27 April 2005
+//
+// DESCRIPTION :
+// Constructor.
+//==============================================================================
+{
+	if (boost::dynamic_pointer_cast<
+		Function_variable_matrix_rectangular_cartesian,Function_variable>(
+		dependent_variable)&&boost::dynamic_pointer_cast<
+		Function_prolate_spheroidal_to_rectangular_cartesian,Function>(
+		dependent_variable->function()))
+	{
+		// do nothing
+	}
+	else
+	{
+		throw Function_derivatnew_matrix_rectangular_cartesian::
+			Construction_exception();
+	}
+}
+
+Function_derivatnew_matrix_rectangular_cartesian::
+	~Function_derivatnew_matrix_rectangular_cartesian(){}
+//******************************************************************************
+// LAST MODIFIED : 27 April 2005
+//
+// DESCRIPTION :
+// Destructor.
+//==============================================================================
+#endif // defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
+
+
+// class Function_variable_matrix_rectangular_cartesian
+// ----------------------------------------------------
+
 class Function_variable_matrix_rectangular_cartesian :
 	public Function_variable_matrix<Scalar>
 //******************************************************************************
-// LAST MODIFIED : 1 March 2005
+// LAST MODIFIED : 18 April 2005
 //
 // DESCRIPTION :
 //==============================================================================
@@ -101,6 +180,16 @@ class Function_variable_matrix_rectangular_cartesian :
 			return (Function_variable_handle(
 				new Function_variable_matrix_rectangular_cartesian(*this)));
 		};
+#if defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
+#else // defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
+		virtual Function_handle derivative(
+			const std::list<Function_variable_handle>& independent_variables)
+		{
+			return (Function_handle(
+				new Function_derivatnew_matrix_rectangular_cartesian(
+				Function_variable_handle(this),independent_variables)));
+		};
+#endif // defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
 		string_handle get_string_representation()
 		{
 			string_handle return_string(0);
@@ -291,7 +380,7 @@ typedef boost::intrusive_ptr<Function_variable_matrix_prolate_spheroidal>
 class Function_variable_matrix_prolate_spheroidal :
 	public Function_variable_matrix<Scalar>
 //******************************************************************************
-// LAST MODIFIED : 1 March 2005
+// LAST MODIFIED : 27 April 2005
 //
 // DESCRIPTION :
 // component  number
@@ -360,6 +449,15 @@ class Function_variable_matrix_prolate_spheroidal :
 			return (Function_variable_handle(
 				new Function_variable_matrix_prolate_spheroidal(*this)));
 		};
+#if defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
+#else // defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
+		Function_handle derivative(
+			const std::list<Function_variable_handle>& independent_variables)
+		{
+			return (Function_handle(new Function_derivatnew_identity(
+				Function_variable_handle(this),independent_variables)));
+		};
+#endif // defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
 		string_handle get_string_representation()
 		{
 			string_handle return_string(0);
@@ -476,7 +574,7 @@ typedef boost::intrusive_ptr<Function_variable_matrix_focus>
 
 class Function_variable_matrix_focus : public Function_variable_matrix<Scalar>
 //******************************************************************************
-// LAST MODIFIED : 1 March 2005
+// LAST MODIFIED : 18 April 2005
 //
 // DESCRIPTION :
 //==============================================================================
@@ -501,6 +599,15 @@ class Function_variable_matrix_focus : public Function_variable_matrix<Scalar>
 			return (Function_variable_handle(
 				new Function_variable_matrix_focus(*this)));
 		};
+#if defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
+#else // defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
+		Function_handle derivative(
+			const std::list<Function_variable_handle>& independent_variables)
+		{
+			return (Function_handle(new Function_derivatnew_identity(
+				Function_variable_handle(this),independent_variables)));
+		}
+#endif // defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
 		string_handle get_string_representation()
 		{
 			string_handle return_string(0);
@@ -569,6 +676,688 @@ class Function_variable_matrix_focus : public Function_variable_matrix<Scalar>
 			const Function_variable_matrix_focus& variable):
 			Function_variable_matrix<Scalar>(variable){};
 };
+
+#if defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
+#else // defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
+bool calculate_prolate_spheroidal_to_rectangular_cartesian_derivative(
+	Scalar& derivative,Function_size_type rectangular_cartesian_component,
+	Function_size_type lambda_derivative_order,
+	Function_size_type mu_derivative_order,
+	Function_size_type theta_derivative_order,
+	Function_size_type focus_derivative_order,
+	Scalar cosh_lambda,Scalar sinh_lambda,Scalar cos_mu,Scalar sin_mu,
+	Scalar cos_theta,Scalar sin_theta,Scalar focus)
+//******************************************************************************
+// LAST MODIFIED : 28 April 2005
+//
+// DESCRIPTION :
+// For transforming from prolate spheroidal to cartesian coordinates.
+// x = focus*cosh(lambda)*cos(mu)
+// y = focus*sinh(lambda)*sin(mu)*cos(theta)
+// z = focus*sinh(lambda)*sin(mu)*sin(theta)
+//
+// ???DB.  in-line or make into a macro?
+//==============================================================================
+{
+	bool result(false);
+
+	if ((1<=rectangular_cartesian_component)&&
+		(rectangular_cartesian_component<=3))
+	{
+		result=true;
+		if (focus_derivative_order<2)
+		{
+			if (0==focus_derivative_order)
+			{
+				derivative=focus;
+			}
+			else
+			{
+				derivative=1;
+			}
+			switch (rectangular_cartesian_component)
+			{
+				case 1:
+				// x = focus*cosh(lambda)*cos(mu)
+				{
+					if (0==theta_derivative_order)
+					{
+						if (0==lambda_derivative_order%2)
+						{
+							derivative *= cosh_lambda;
+						}
+						else
+						{
+							derivative *= sinh_lambda;
+						}
+						if (0==mu_derivative_order%2)
+						{
+							derivative *= cos_mu;
+						}
+						else
+						{
+							derivative *= sin_mu;
+						}
+						if (1==((mu_derivative_order+1)%4)/2)
+						{
+							derivative= -derivative;
+						}
+					}
+					else
+					{
+						derivative=0;
+					}
+				} break;
+				case 2:
+				// y = focus*sinh(lambda)*sin(mu)*cos(theta)
+				{
+					if (0==lambda_derivative_order%2)
+					{
+						derivative *= sinh_lambda;
+					}
+					else
+					{
+						derivative *= cosh_lambda;
+					}
+					if (0==mu_derivative_order%2)
+					{
+						derivative *= sin_mu;
+					}
+					else
+					{
+						derivative *= cos_mu;
+					}
+					if (1==(mu_derivative_order%4)/2)
+					{
+						derivative= -derivative;
+					}
+					if (0==theta_derivative_order%2)
+					{
+						derivative *= cos_theta;
+					}
+					else
+					{
+						derivative *= sin_theta;
+					}
+					if (1==((theta_derivative_order+1)%4)/2)
+					{
+						derivative= -derivative;
+					}
+				} break;
+				case 3:
+				// z = focus*sinh(lambda)*sin(mu)*sin(theta)
+				{
+					if (0==lambda_derivative_order%2)
+					{
+						derivative *= sinh_lambda;
+					}
+					else
+					{
+						derivative *= cosh_lambda;
+					}
+					if (0==mu_derivative_order%2)
+					{
+						derivative *= sin_mu;
+					}
+					else
+					{
+						derivative *= cos_mu;
+					}
+					if (1==(mu_derivative_order%4)/2)
+					{
+						derivative= -derivative;
+					}
+					if (0==theta_derivative_order%2)
+					{
+						derivative *= sin_theta;
+					}
+					else
+					{
+						derivative *= cos_theta;
+					}
+					if (1==(theta_derivative_order%4)/2)
+					{
+						derivative= -derivative;
+					}
+				} break;
+			}
+		}
+		else
+		{
+			derivative=0;
+		}
+	}
+
+	return (result);
+}
+
+#if defined (EVALUATE_RETURNS_VALUE)
+Function_handle
+#else // defined (EVALUATE_RETURNS_VALUE)
+bool
+#endif // defined (EVALUATE_RETURNS_VALUE)
+	Function_derivatnew_matrix_rectangular_cartesian::evaluate(
+	Function_variable_handle
+#if defined (EVALUATE_RETURNS_VALUE)
+	atomic_variable
+#else // defined (EVALUATE_RETURNS_VALUE)
+#endif // defined (EVALUATE_RETURNS_VALUE)
+	)
+//******************************************************************************
+// LAST MODIFIED : 9 May 2005
+//
+// DESCRIPTION :
+//==============================================================================
+{
+#if defined (EVALUATE_RETURNS_VALUE)
+	Function_handle result(0);
+#else // defined (EVALUATE_RETURNS_VALUE)
+	bool result=true;
+#endif // defined (EVALUATE_RETURNS_VALUE)
+
+	if (!evaluated())
+	{
+		Function_prolate_spheroidal_to_rectangular_cartesian_handle
+			function_prolate_spheroidal_to_rectangular_cartesian;
+		Function_variable_matrix_rectangular_cartesian_handle
+			dependent_variable_rectangular_cartesian;
+
+#if defined (EVALUATE_RETURNS_VALUE)
+#else // defined (EVALUATE_RETURNS_VALUE)
+		result=false;
+#endif // defined (EVALUATE_RETURNS_VALUE)
+		if ((dependent_variable_rectangular_cartesian=boost::dynamic_pointer_cast<
+			Function_variable_matrix_rectangular_cartesian,Function_variable>(
+			dependent_variable))&&
+			(function_prolate_spheroidal_to_rectangular_cartesian=
+			boost::dynamic_pointer_cast<
+			Function_prolate_spheroidal_to_rectangular_cartesian,Function>(
+			dependent_variable->function())))
+		{
+			bool zero_derivative;
+			Function_size_type rectangular_cartesian_component=
+				dependent_variable_rectangular_cartesian->row(),
+				number_of_dependent_values=dependent_variable->
+				number_differentiable();
+			Function_size_type focus_derivative_order,lambda_derivative_order,
+				mu_derivative_order,theta_derivative_order;
+			Function_variable_matrix_focus_handle variable_focus;
+			Function_variable_matrix_prolate_spheroidal_handle
+				variable_prolate_spheroidal;
+			Scalar focus=function_prolate_spheroidal_to_rectangular_cartesian->
+				focus_value(),
+				lambda=function_prolate_spheroidal_to_rectangular_cartesian->
+				lambda_value(),
+				mu=function_prolate_spheroidal_to_rectangular_cartesian->mu_value(),
+				theta=function_prolate_spheroidal_to_rectangular_cartesian->
+				theta_value();
+			Scalar cosh_lambda=cosh((double)lambda),cos_mu=cos((double)mu),
+				cos_theta=cos((double)theta),sinh_lambda=sinh((double)lambda),
+				sin_mu=sin((double)mu),sin_theta=sin((double)theta);
+			std::list<Function_variable_handle>::const_iterator
+				independent_variable_iterator;
+			std::list<Matrix> matrices;
+			std::list< std::list<Function_variable_handle> >
+				matrix_independent_variables;
+			std::vector<Function_variable_iterator>
+				atomic_independent_variable_iterators(independent_variables.size());
+
+			for (independent_variable_iterator=independent_variables.begin();
+				independent_variable_iterator!=independent_variables.end();
+				++independent_variable_iterator)
+			{
+				Function_variable_handle independent_variable=
+					*independent_variable_iterator;
+				Function_size_type number_of_independent_values=independent_variable->
+					number_differentiable();
+				std::list<Matrix>::iterator matrix_iterator,last;
+				std::list< std::list<Function_variable_handle> >::iterator
+					matrix_independent_variables_iterator;
+
+				// calculate the derivative of dependent variable with respect to
+				//   independent variable and add to matrix list
+				{
+					Function_size_type column;
+					Function_variable_iterator
+						atomic_independent_variable_iterator(0);
+					Matrix new_matrix(number_of_dependent_values,
+						number_of_independent_values);
+					std::list<Function_variable_handle> new_matrix_independent_variables;
+
+					new_matrix_independent_variables.push_back(independent_variable);
+					column=0;
+					for (atomic_independent_variable_iterator=independent_variable->
+						begin_atomic();atomic_independent_variable_iterator!=
+						independent_variable->end_atomic();
+						++atomic_independent_variable_iterator)
+					{
+						Function_variable_handle atomic_independent_variable=
+							*atomic_independent_variable_iterator;
+
+						if (1==atomic_independent_variable->number_differentiable())
+						{
+							zero_derivative=true;
+							lambda_derivative_order=0;
+							mu_derivative_order=0;
+							theta_derivative_order=0;
+							focus_derivative_order=0;
+							if ((variable_prolate_spheroidal=boost::dynamic_pointer_cast<
+								Function_variable_matrix_prolate_spheroidal,Function_variable>(
+								*atomic_independent_variable_iterator))&&
+								equivalent(function_prolate_spheroidal_to_rectangular_cartesian,
+								variable_prolate_spheroidal->function()))
+							{
+								switch (variable_prolate_spheroidal->row())
+								{
+									case 1:
+									{
+										lambda_derivative_order=1;
+										zero_derivative=false;
+									} break;
+									case 2:
+									{
+										mu_derivative_order=1;
+										zero_derivative=false;
+									} break;
+									case 3:
+									{
+										theta_derivative_order=1;
+										zero_derivative=false;
+									} break;
+								}
+							}
+							else if ((variable_focus=boost::dynamic_pointer_cast<
+								Function_variable_matrix_focus,Function_variable>(
+								*atomic_independent_variable_iterator))&&
+								equivalent(function_prolate_spheroidal_to_rectangular_cartesian,
+								variable_focus->function()))
+							{
+								focus_derivative_order=1;
+								zero_derivative=false;
+							}
+							if (zero_derivative)
+							{
+								new_matrix(0,column)=0;
+								if (0==rectangular_cartesian_component)
+								{
+									new_matrix(1,column)=0;
+									new_matrix(2,column)=0;
+								}
+							}
+							else
+							{
+								if (0==rectangular_cartesian_component)
+								{
+									calculate_prolate_spheroidal_to_rectangular_cartesian_derivative(
+										new_matrix(0,column),1,
+										lambda_derivative_order,mu_derivative_order,
+										theta_derivative_order,focus_derivative_order,
+										cosh_lambda,sinh_lambda,cos_mu,sin_mu,cos_theta,sin_theta,
+										focus);
+									calculate_prolate_spheroidal_to_rectangular_cartesian_derivative(
+										new_matrix(1,column),2,
+										lambda_derivative_order,mu_derivative_order,
+										theta_derivative_order,focus_derivative_order,
+										cosh_lambda,sinh_lambda,cos_mu,sin_mu,cos_theta,sin_theta,
+										focus);
+									calculate_prolate_spheroidal_to_rectangular_cartesian_derivative(
+										new_matrix(2,column),3,
+										lambda_derivative_order,mu_derivative_order,
+										theta_derivative_order,focus_derivative_order,
+										cosh_lambda,sinh_lambda,cos_mu,sin_mu,cos_theta,sin_theta,
+										focus);
+								}
+								else
+								{
+									calculate_prolate_spheroidal_to_rectangular_cartesian_derivative(
+										new_matrix(0,column),
+										rectangular_cartesian_component,
+										lambda_derivative_order,mu_derivative_order,
+										theta_derivative_order,focus_derivative_order,
+										cosh_lambda,sinh_lambda,cos_mu,sin_mu,cos_theta,sin_theta,
+										focus);
+								}
+							}
+							++column;
+						}
+					}
+					matrices.push_back(new_matrix);
+					matrix_independent_variables.push_back(
+						new_matrix_independent_variables);
+				}
+				last=matrices.end();
+				--last;
+				matrix_independent_variables_iterator=
+					matrix_independent_variables.begin();
+				for (matrix_iterator=matrices.begin();matrix_iterator!=last;
+					++matrix_iterator)
+				{
+					bool no_derivative;
+					Function_size_type column,i,new_matrix_derivative_order;
+					Matrix& matrix= *matrix_iterator;
+					Matrix new_matrix((matrix.size1)(),
+						number_of_independent_values*(matrix.size2)());
+					std::list<Function_variable_handle> new_matrix_independent_variables;
+					std::list<Function_variable_handle>::iterator
+						new_matrix_independent_variables_iterator;
+
+					new_matrix_independent_variables=
+						*matrix_independent_variables_iterator;
+					new_matrix_independent_variables.push_back(independent_variable);
+					new_matrix_derivative_order=new_matrix_independent_variables.size();
+					new_matrix_independent_variables_iterator=
+						new_matrix_independent_variables.begin();
+					i=0;
+					no_derivative=false;
+					lambda_derivative_order=0;
+					mu_derivative_order=0;
+					theta_derivative_order=0;
+					focus_derivative_order=0;
+					while ((new_matrix_independent_variables_iterator!=
+						new_matrix_independent_variables.end())&&!no_derivative)
+					{
+						atomic_independent_variable_iterators[i]=
+							(*new_matrix_independent_variables_iterator)->begin_atomic();
+						while ((atomic_independent_variable_iterators[i]!=
+							(*new_matrix_independent_variables_iterator)->end_atomic())&&
+							(1!=(*(atomic_independent_variable_iterators[i]))->
+							number_differentiable()))
+						{
+							++atomic_independent_variable_iterators[i];
+						}
+						if (atomic_independent_variable_iterators[i]==
+							(*new_matrix_independent_variables_iterator)->end_atomic())
+						{
+							no_derivative=true;
+						}
+						else
+						{
+							if ((variable_prolate_spheroidal=boost::dynamic_pointer_cast<
+								Function_variable_matrix_prolate_spheroidal,Function_variable>(
+								*atomic_independent_variable_iterators[i]))&&
+								equivalent(function_prolate_spheroidal_to_rectangular_cartesian,
+								variable_prolate_spheroidal->function()))
+							{
+								switch (variable_prolate_spheroidal->row())
+								{
+									case 1:
+									{
+										++lambda_derivative_order;
+									} break;
+									case 2:
+									{
+										++mu_derivative_order;
+									} break;
+									case 3:
+									{
+										++theta_derivative_order;
+									} break;
+								}
+							}
+							else if ((variable_focus=boost::dynamic_pointer_cast<
+								Function_variable_matrix_focus,Function_variable>(
+								*atomic_independent_variable_iterators[i]))&&
+								equivalent(function_prolate_spheroidal_to_rectangular_cartesian,
+								variable_focus->function()))
+							{
+								++focus_derivative_order;
+							}
+							++new_matrix_independent_variables_iterator;
+						}
+						++i;
+					}
+					if (new_matrix_independent_variables_iterator==
+						new_matrix_independent_variables.end())
+					{
+						column=0;
+						do
+						{
+							if (new_matrix_derivative_order==lambda_derivative_order+
+								mu_derivative_order+theta_derivative_order+
+								focus_derivative_order)
+							{
+								if (0==rectangular_cartesian_component)
+								{
+									calculate_prolate_spheroidal_to_rectangular_cartesian_derivative(
+										new_matrix(0,column),1,
+										lambda_derivative_order,mu_derivative_order,
+										theta_derivative_order,focus_derivative_order,
+										cosh_lambda,sinh_lambda,cos_mu,sin_mu,cos_theta,sin_theta,
+										focus);
+									calculate_prolate_spheroidal_to_rectangular_cartesian_derivative(
+										new_matrix(1,column),2,
+										lambda_derivative_order,mu_derivative_order,
+										theta_derivative_order,focus_derivative_order,
+										cosh_lambda,sinh_lambda,cos_mu,sin_mu,cos_theta,sin_theta,
+										focus);
+									calculate_prolate_spheroidal_to_rectangular_cartesian_derivative(
+										new_matrix(2,column),3,
+										lambda_derivative_order,mu_derivative_order,
+										theta_derivative_order,focus_derivative_order,
+										cosh_lambda,sinh_lambda,cos_mu,sin_mu,cos_theta,sin_theta,
+										focus);
+								}
+								else
+								{
+									calculate_prolate_spheroidal_to_rectangular_cartesian_derivative(
+										new_matrix(0,column),
+										rectangular_cartesian_component,
+										lambda_derivative_order,mu_derivative_order,
+										theta_derivative_order,focus_derivative_order,
+										cosh_lambda,sinh_lambda,cos_mu,sin_mu,cos_theta,sin_theta,
+										focus);
+								}
+							}
+							else
+							{
+								new_matrix(0,column)=0;
+								if (0==rectangular_cartesian_component)
+								{
+									new_matrix(1,column)=0;
+									new_matrix(2,column)=0;
+								}
+							}
+							// move to next column
+							i=new_matrix_independent_variables.size();
+							new_matrix_independent_variables_iterator=
+								new_matrix_independent_variables.end();
+							if (i>0)
+							{
+								--i;
+								--new_matrix_independent_variables_iterator;
+								if ((variable_prolate_spheroidal=boost::dynamic_pointer_cast<
+									Function_variable_matrix_prolate_spheroidal,
+									Function_variable>(
+									*atomic_independent_variable_iterators[i]))&&equivalent(
+									function_prolate_spheroidal_to_rectangular_cartesian,
+									variable_prolate_spheroidal->function()))
+								{
+									switch (variable_prolate_spheroidal->row())
+									{
+										case 1:
+										{
+											--lambda_derivative_order;
+										} break;
+										case 2:
+										{
+											--mu_derivative_order;
+										} break;
+										case 3:
+										{
+											--theta_derivative_order;
+										} break;
+									}
+								}
+								else if ((variable_focus=boost::dynamic_pointer_cast<
+									Function_variable_matrix_focus,Function_variable>(
+									*atomic_independent_variable_iterators[i]))&&equivalent(
+									function_prolate_spheroidal_to_rectangular_cartesian,
+									variable_focus->function()))
+								{
+									--focus_derivative_order;
+								}
+								++atomic_independent_variable_iterators[i];
+								while ((atomic_independent_variable_iterators[i]!=
+									(*new_matrix_independent_variables_iterator)->end_atomic())&&
+									(1!=(*(atomic_independent_variable_iterators[i]))->
+									number_differentiable()))
+								{
+									++atomic_independent_variable_iterators[i];
+								}
+								while ((i>0)&&
+									((*new_matrix_independent_variables_iterator)->end_atomic()==
+									atomic_independent_variable_iterators[i]))
+								{
+									atomic_independent_variable_iterators[i]=
+										(*new_matrix_independent_variables_iterator)->
+										begin_atomic();
+									while ((atomic_independent_variable_iterators[i]!=
+										(*new_matrix_independent_variables_iterator)->
+										end_atomic())&&
+										(1!=(*(atomic_independent_variable_iterators[i]))->
+										number_differentiable()))
+									{
+										++atomic_independent_variable_iterators[i];
+									}
+									if ((variable_prolate_spheroidal=boost::dynamic_pointer_cast<
+										Function_variable_matrix_prolate_spheroidal,
+										Function_variable>(
+										*atomic_independent_variable_iterators[i]))&&equivalent(
+										function_prolate_spheroidal_to_rectangular_cartesian,
+										variable_prolate_spheroidal->function()))
+									{
+										switch (variable_prolate_spheroidal->row())
+										{
+											case 1:
+											{
+												++lambda_derivative_order;
+											} break;
+											case 2:
+											{
+												++mu_derivative_order;
+											} break;
+											case 3:
+											{
+												++theta_derivative_order;
+											} break;
+										}
+									}
+									else if ((variable_focus=boost::dynamic_pointer_cast<
+										Function_variable_matrix_focus,Function_variable>(
+										*atomic_independent_variable_iterators[i]))&&equivalent(
+										function_prolate_spheroidal_to_rectangular_cartesian,
+										variable_focus->function()))
+									{
+										++focus_derivative_order;
+									}
+									--i;
+									if ((variable_prolate_spheroidal=boost::dynamic_pointer_cast<
+										Function_variable_matrix_prolate_spheroidal,
+										Function_variable>(
+										*atomic_independent_variable_iterators[i]))&&equivalent(
+										function_prolate_spheroidal_to_rectangular_cartesian,
+										variable_prolate_spheroidal->function()))
+									{
+										switch (variable_prolate_spheroidal->row())
+										{
+											case 1:
+											{
+												--lambda_derivative_order;
+											} break;
+											case 2:
+											{
+												--mu_derivative_order;
+											} break;
+											case 3:
+											{
+												--theta_derivative_order;
+											} break;
+										}
+									}
+									else if ((variable_focus=boost::dynamic_pointer_cast<
+										Function_variable_matrix_focus,Function_variable>(
+										*atomic_independent_variable_iterators[i]))&&equivalent(
+										function_prolate_spheroidal_to_rectangular_cartesian,
+										variable_focus->function()))
+									{
+										--focus_derivative_order;
+									}
+									++atomic_independent_variable_iterators[i];
+									--new_matrix_independent_variables_iterator;
+									while ((atomic_independent_variable_iterators[i]!=
+										(*new_matrix_independent_variables_iterator)->
+										end_atomic())&&
+										(1!=(*(atomic_independent_variable_iterators[i]))->
+										number_differentiable()))
+									{
+										++atomic_independent_variable_iterators[i];
+									}
+								}
+								if ((*new_matrix_independent_variables_iterator)->end_atomic()!=
+									atomic_independent_variable_iterators[i])
+								{
+									if ((variable_prolate_spheroidal=boost::dynamic_pointer_cast<
+										Function_variable_matrix_prolate_spheroidal,
+										Function_variable>(
+										*atomic_independent_variable_iterators[i]))&&equivalent(
+										function_prolate_spheroidal_to_rectangular_cartesian,
+										variable_prolate_spheroidal->function()))
+									{
+										switch (variable_prolate_spheroidal->row())
+										{
+											case 1:
+											{
+												++lambda_derivative_order;
+											} break;
+											case 2:
+											{
+												++mu_derivative_order;
+											} break;
+											case 3:
+											{
+												++theta_derivative_order;
+											} break;
+										}
+									}
+									else if ((variable_focus=boost::dynamic_pointer_cast<
+										Function_variable_matrix_focus,Function_variable>(
+										*atomic_independent_variable_iterators[i]))&&equivalent(
+										function_prolate_spheroidal_to_rectangular_cartesian,
+										variable_focus->function()))
+									{
+										++focus_derivative_order;
+									}
+								}
+							}
+							++column;
+						} while ((new_matrix_independent_variables.front())->end_atomic()!=
+							atomic_independent_variable_iterators[0]);
+					}
+					matrices.push_back(new_matrix);
+					matrix_independent_variables.push_back(
+						new_matrix_independent_variables);
+					++matrix_independent_variables_iterator;
+				}
+			}
+			derivative_matrix=Derivative_matrix(matrices);
+			set_evaluated();
+#if defined (EVALUATE_RETURNS_VALUE)
+#else // defined (EVALUATE_RETURNS_VALUE)
+			result=true;
+#endif // defined (EVALUATE_RETURNS_VALUE)
+		}
+	}
+#if defined (EVALUATE_RETURNS_VALUE)
+	if (evaluated())
+	{
+		result=get_value(atomic_variable);
+	}
+#else // defined (EVALUATE_RETURNS_VALUE)
+#endif // defined (EVALUATE_RETURNS_VALUE)
+
+	return (result);
+}
+#endif // defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
 
 
 // global classes
@@ -968,22 +1757,36 @@ bool
 }
 
 bool Function_prolate_spheroidal_to_rectangular_cartesian::evaluate_derivative(
-	Scalar& derivative,Function_variable_handle atomic_variable,
-	std::list<Function_variable_handle>& atomic_independent_variables)
+	Scalar&
+#if defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
+	derivative
+#else // defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
+#endif // defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
+	,Function_variable_handle
+#if defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
+	atomic_variable
+#else // defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
+#endif // defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
+	,std::list<Function_variable_handle>&
+#if defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
+	atomic_independent_variables
+#else // defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
+#endif // defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
+	)
 //******************************************************************************
-// LAST MODIFIED : 1 September 2004
+// LAST MODIFIED : 28 April 2005
 //
 // DESCRIPTION :
 //==============================================================================
 {
-	bool result;
+	bool result(false);
+#if defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
 	Function_variable_matrix_focus_handle atomic_variable_focus;
 	Function_variable_matrix_prolate_spheroidal_handle
 		atomic_variable_prolate_spheroidal;
 	Function_variable_matrix_rectangular_cartesian_handle
 		atomic_variable_rectangular_cartesian;
 
-	result=false;
 	if (this)
 	{
 		if ((atomic_variable_prolate_spheroidal=boost::dynamic_pointer_cast<
@@ -1064,15 +1867,15 @@ bool Function_prolate_spheroidal_to_rectangular_cartesian::evaluate_derivative(
 					{
 						case 1:
 						{
-							lambda_derivative_order++;
+							++lambda_derivative_order;
 						} break;
 						case 2:
 						{
-							mu_derivative_order++;
+							++mu_derivative_order;
 						} break;
 						case 3:
 						{
-							theta_derivative_order++;
+							++theta_derivative_order;
 						} break;
 						default:
 						{
@@ -1085,7 +1888,7 @@ bool Function_prolate_spheroidal_to_rectangular_cartesian::evaluate_derivative(
 					*independent_variable_iterator))&&
 					equivalent(Function_handle(this),variable_focus->function()))
 				{
-					focus_derivative_order++;
+					++focus_derivative_order;
 					if (1<focus_derivative_order)
 					{
 						zero_derivative=true;
@@ -1095,8 +1898,8 @@ bool Function_prolate_spheroidal_to_rectangular_cartesian::evaluate_derivative(
 				{
 					zero_derivative=true;
 				}
-				independent_variable_iterator++;
-				i--;
+				++independent_variable_iterator;
+				--i;
 			}
 			if (zero_derivative)
 			{
@@ -1487,6 +2290,12 @@ bool Function_prolate_spheroidal_to_rectangular_cartesian::evaluate_derivative(
 			}
 		}
 	}
+#else // defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
+	// should not come here - handled by
+	//   Function_derivatnew_matrix_rectangular_cartesian::evaluate
+	Assert(false,std::logic_error(
+		"Function_prolate_spheroidal_to_rectangular_cartesian::evaluate_derivative.  Should not come here"));
+#endif // defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
 
 	return (result);
 }
