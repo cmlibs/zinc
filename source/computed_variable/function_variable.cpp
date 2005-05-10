@@ -1,7 +1,7 @@
 //******************************************************************************
 // FILE : function_variable.cpp
 //
-// LAST MODIFIED : 23 February 2005
+// LAST MODIFIED : 14 April 2005
 //
 // DESCRIPTION :
 // See function_variable.hpp
@@ -436,7 +436,7 @@ Function_variable_value_handle Function_variable::value()
 #if defined (EVALUATE_RETURNS_VALUE)
 Function_handle Function_variable::evaluate()
 //******************************************************************************
-// LAST MODIFIED : 11 November 2004
+// LAST MODIFIED : 7 April 2005
 //
 // DESCRIPTION :
 //???DB.  Merge atomic_results functions ie. join scalars onto vectors?
@@ -463,7 +463,7 @@ Function_handle Function_variable::evaluate()
 			{
 				atomic_results.push_back(atomic_result);
 			}
-			atomic_iterator++;
+			++atomic_iterator;
 		}
 		if (0<(number_of_atomic_results=atomic_results.size()))
 		{
@@ -479,8 +479,8 @@ Function_handle Function_variable::evaluate()
 				*results_iterator)))
 			{
 				results_matrix(i,0)=(*matrix_function)(1,1);
-				i++;
-				results_iterator++;
+				++i;
+				++results_iterator;
 			}
 			if (i<number_of_atomic_results)
 			{
@@ -498,7 +498,7 @@ Function_handle Function_variable::evaluate()
 #else // defined (EVALUATE_RETURNS_VALUE)
 bool Function_variable::evaluate()
 //******************************************************************************
-// LAST MODIFIED : 14 January 2005
+// LAST MODIFIED : 7 April 2005
 //
 // DESCRIPTION :
 //???DB.  Merge atomic_results functions ie. join scalars onto vectors?
@@ -517,9 +517,7 @@ bool Function_variable::evaluate()
 				std::logic_error(
 				"Function_variable::evaluate().  Atomic variable missing function()"));
 			result=((*atomic_iterator)->function())->evaluate(*atomic_iterator);
-			//???DB.  prefix doesn't need a clone
-			atomic_iterator++;
-//			++atomic_iterator;
+			++atomic_iterator;
 		}
 	}
 
@@ -566,7 +564,7 @@ Function_handle Function_variable::evaluate(Function_variable_handle input,
 Function_handle Function_variable::evaluate_derivative(
 	std::list<Function_variable_handle>& independent_variables)
 //******************************************************************************
-// LAST MODIFIED : 23 February 2005
+// LAST MODIFIED : 7 April 2005
 //
 // DESCRIPTION :
 //==============================================================================
@@ -588,7 +586,7 @@ Function_handle Function_variable::evaluate_derivative(
 		{
 			number_of_columns *=
 				(*independent_variables_iterator)->number_differentiable();
-			independent_variables_iterator++;
+			++independent_variables_iterator;
 		}
 		if ((0<number_of_rows)&&(0<number_of_columns))
 		{
@@ -633,7 +631,7 @@ Function_handle Function_variable::evaluate_derivative(
 							(1!=(*(atomic_independent_variable_iterators[i]))->
 							number_differentiable()))
 						{
-							atomic_independent_variable_iterators[i]++;
+							++atomic_independent_variable_iterators[i];
 						}
 						if (atomic_independent_variable_iterators[i]==
 							atomic_independent_variable_end_iterators[i])
@@ -642,9 +640,9 @@ Function_handle Function_variable::evaluate_derivative(
 						}
 						else
 						{
-							independent_variables_iterator++;
+							++independent_variables_iterator;
 						}
-						i++;
+						++i;
 					}
 					if (!no_derivative)
 					{
@@ -657,7 +655,7 @@ Function_handle Function_variable::evaluate_derivative(
 							i=order;
 							while (i>0)
 							{
-								i--;
+								--i;
 								new_matrix_atomic_independent_variables.push_front(
 									*(atomic_independent_variable_iterators[i]));
 							}
@@ -669,15 +667,15 @@ Function_handle Function_variable::evaluate_derivative(
 							independent_variables_iterator=independent_variables_iterator_end;
 							if (i>0)
 							{
-								i--;
-								independent_variables_iterator--;
-								atomic_independent_variable_iterators[i]++;
+								--i;
+								--independent_variables_iterator;
+								++atomic_independent_variable_iterators[i];
 								while ((atomic_independent_variable_iterators[i]!=
 									atomic_independent_variable_end_iterators[i])&&
 									(1!=(*(atomic_independent_variable_iterators[i]))->
 									number_differentiable()))
 								{
-									atomic_independent_variable_iterators[i]++;
+									++atomic_independent_variable_iterators[i];
 								}
 								while ((i>0)&&
 									(atomic_independent_variable_end_iterators[i]==
@@ -690,27 +688,27 @@ Function_handle Function_variable::evaluate_derivative(
 										(1!=(*(atomic_independent_variable_iterators[i]))->
 										number_differentiable()))
 									{
-										atomic_independent_variable_iterators[i]++;
+										++atomic_independent_variable_iterators[i];
 									}
-									i--;
-									atomic_independent_variable_iterators[i]++;
-									independent_variables_iterator--;
+									--i;
+									++atomic_independent_variable_iterators[i];
+									--independent_variables_iterator;
 									while ((atomic_independent_variable_iterators[i]!=
 										atomic_independent_variable_end_iterators[i])&&
 										(1!=(*(atomic_independent_variable_iterators[i]))->
 										number_differentiable()))
 									{
-										atomic_independent_variable_iterators[i]++;
+										++atomic_independent_variable_iterators[i];
 									}
 								}
 							}
-							column++;
+							++column;
 						} while (atomic_independent_variable_end_iterators[i]!=
 							atomic_independent_variable_iterators[0]);
 					}
-					row++;
+					++row;
 				}
-				atomic_dependent_variable_iterator++;
+				++atomic_dependent_variable_iterator;
 			}
 			result=Function_handle(new Function_matrix<Scalar>(new_matrix));
 		}
@@ -775,6 +773,8 @@ Function_handle Function_variable::evaluate_derivative(
 	return (result);
 }
 #else // defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
+#if defined (OLD_CODE)
+//???DB.  Force into sub-class
 Function_handle Function_variable::derivative(
 	const std::list<Function_variable_handle>& independent_variables)
 //******************************************************************************
@@ -800,11 +800,12 @@ Function_handle Function_variable::derivative(
 	return (Function_handle(new Function_derivatnew(
 		Function_variable_handle(this),independent_variables)));
 }
+#endif // defined (OLD_CODE)
 #endif // defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
 
 bool Function_variable::set_value(Function_handle value)
 //******************************************************************************
-// LAST MODIFIED : 19 May 2004
+// LAST MODIFIED : 7 April 2005
 //
 // DESCRIPTION :
 //==============================================================================
@@ -837,17 +838,17 @@ bool Function_variable::set_value(Function_handle value)
 				*atomic_variable_iterator,*atomic_value_iterator))
 			{
 				result=true;
-				atomic_value_iterator++;
+				++atomic_value_iterator;
 			}
-			atomic_variable_iterator++;
+			++atomic_variable_iterator;
 #else // defined (CHANGE_ELEMENT_DIMENSION)
 			if (((*atomic_variable_iterator)->function())->set_value(
 				*atomic_variable_iterator,*atomic_value_iterator))
 			{
 				result=true;
 			}
-			atomic_variable_iterator++;
-			atomic_value_iterator++;
+			++atomic_variable_iterator;
+			++atomic_value_iterator;
 #endif // defined (CHANGE_ELEMENT_DIMENSION)
 		}
 	}
@@ -857,7 +858,7 @@ bool Function_variable::set_value(Function_handle value)
 
 bool Function_variable::rset_value(Function_handle value)
 //******************************************************************************
-// LAST MODIFIED : 19 May 2004
+// LAST MODIFIED : 7 April 2005
 //
 // DESCRIPTION :
 // Setting from back to front
@@ -891,18 +892,18 @@ bool Function_variable::rset_value(Function_handle value)
 			if (((*atomic_variable_iterator)->function())->set_value(
 				*atomic_variable_iterator,*atomic_value_iterator))
 			{
-				atomic_value_iterator++;
+				++atomic_value_iterator;
 				result=true;
 			}
-			atomic_variable_iterator++;
+			++atomic_variable_iterator;
 #else // defined (CHANGE_ELEMENT_DIMENSION)
 			if (((*atomic_variable_iterator)->function())->set_value(
 				*atomic_variable_iterator,*atomic_value_iterator))
 			{
 				result=true;
 			}
-			atomic_variable_iterator++;
-			atomic_value_iterator++;
+			++atomic_variable_iterator;
+			++atomic_value_iterator;
 #endif // defined (CHANGE_ELEMENT_DIMENSION)
 		}
 	}
@@ -913,7 +914,7 @@ bool Function_variable::rset_value(Function_handle value)
 #if defined (OLD_CODE)
 Function_handle Function_variable::get_value() const
 //******************************************************************************
-// LAST MODIFIED : 11 November 2004
+// LAST MODIFIED : 7 April 2005
 //
 // DESCRIPTION :
 //???DB.  Merge atomic_results functions ie. join scalars onto vectors?
@@ -939,7 +940,7 @@ Function_handle Function_variable::get_value() const
 			{
 				atomic_results.push_back(atomic_result);
 			}
-			atomic_iterator++;
+			++atomic_iterator;
 		}
 		if (0<atomic_results.size())
 		{
@@ -952,7 +953,7 @@ Function_handle Function_variable::get_value() const
 #else // defined (OLD_CODE)
 Function_handle Function_variable::get_value() const
 //******************************************************************************
-// LAST MODIFIED : 11 November 2004
+// LAST MODIFIED : 7 April 2005
 //
 // DESCRIPTION :
 //???DB.  Merge atomic_results functions ie. join scalars onto vectors?
@@ -979,7 +980,7 @@ Function_handle Function_variable::get_value() const
 			{
 				atomic_results.push_back(atomic_result);
 			}
-			atomic_iterator++;
+			++atomic_iterator;
 		}
 		if (0<(number_of_atomic_results=atomic_results.size()))
 		{
@@ -995,8 +996,8 @@ Function_handle Function_variable::get_value() const
 				*results_iterator)))
 			{
 				results_matrix(i,0)=(*matrix_function)(1,1);
-				i++;
-				results_iterator++;
+				++i;
+				++results_iterator;
 			}
 			if (i<number_of_atomic_results)
 			{
@@ -1055,7 +1056,7 @@ Function_size_type Function_variable::number_differentiable()
 
 bool Function_variable::operator==(const Function_variable& variable) const
 //******************************************************************************
-// LAST MODIFIED : 18 March 2004
+// LAST MODIFIED : 7 April 2005
 //
 // DESCRIPTION :
 //==============================================================================
@@ -1069,7 +1070,7 @@ bool Function_variable::operator==(const Function_variable& variable) const
 
 #if defined (OLD_CODE)
 	//???DB.  More complicated than this
-	call_count++;
+	++call_count;
 	Assert(1==call_count,std::logic_error("Function_variable::operator==.  "
 		"Infinite recursion resulting from testing equality of source variable in "
 		"Function_variable_iterator_representation::equality"));
@@ -1081,8 +1082,8 @@ bool Function_variable::operator==(const Function_variable& variable) const
 		(iterator_2!=variable.end_atomic()))
 	{
 		result=(*iterator_1)->equality_atomic(*iterator_2);
-		iterator_1++;
-		iterator_2++;
+		++iterator_1;
+		++iterator_2;
 	}
 	if (result)
 	{
@@ -1090,7 +1091,7 @@ bool Function_variable::operator==(const Function_variable& variable) const
 	}
 #if defined (OLD_CODE)
 	//???DB.  More complicated than this
-	call_count--;
+	--call_count;
 #endif // defined (OLD_CODE)
 
 	return (result);
@@ -1114,7 +1115,7 @@ Scalar Function_variable::norm() const
 Function_variable_handle Function_variable::operator-(
 	const Function_variable& second) const
 //******************************************************************************
-// LAST MODIFIED : 11 November 2004
+// LAST MODIFIED : 7 April 2005
 //
 // DESCRIPTION :
 // This is the default and returns a zero handle (failure).
@@ -1138,9 +1139,9 @@ Function_variable_handle Function_variable::operator-(
 			Function_size_type i,j;
 			Matrix result_matrix(number_of_rows,number_of_columns);
 
-			for (i=1;i<=number_of_rows;i++)
+			for (i=1;i<=number_of_rows;++i)
 			{
-				for (j=1;j<=number_of_columns;j++)
+				for (j=1;j<=number_of_columns;++j)
 				{
 					result_matrix(i-1,j-1)=(*first_matrix)(i,j)-(*second_matrix)(i,j);
 				}
@@ -1206,7 +1207,7 @@ Function_variable_handle Function_variable::operator+=(const Function_variable&)
 Function_variable_handle Function_variable::operator+=(
 	const Function_variable& second)
 //******************************************************************************
-// LAST MODIFIED : 12 November 2004
+// LAST MODIFIED : 7 April 2005
 //
 // DESCRIPTION :
 //==============================================================================
@@ -1229,9 +1230,9 @@ Function_variable_handle Function_variable::operator+=(
 			Function_size_type i,j;
 			Matrix result_matrix(number_of_rows,number_of_columns);
 
-			for (i=1;i<=number_of_rows;i++)
+			for (i=1;i<=number_of_rows;++i)
 			{
-				for (j=1;j<=number_of_columns;j++)
+				for (j=1;j<=number_of_columns;++j)
 				{
 					result_matrix(i-1,j-1)=(*first_matrix)(i,j)+(*second_matrix)(i,j);
 				}
@@ -1336,27 +1337,27 @@ Function_variable::~Function_variable()
 
 void intrusive_ptr_add_ref(Function_variable *variable)
 //******************************************************************************
-// LAST MODIFIED : 11 February 2004
+// LAST MODIFIED : 7 April 2005
 //
 // DESCRIPTION :
 //==============================================================================
 {
 	if (variable)
 	{
-		(variable->reference_count)++;
+		++(variable->reference_count);
 	}
 }
 
 void intrusive_ptr_release(Function_variable *variable)
 //******************************************************************************
-// LAST MODIFIED : 11 February 2004
+// LAST MODIFIED : 7 April 2005
 //
 // DESCRIPTION :
 //==============================================================================
 {
 	if (variable)
 	{
-		(variable->reference_count)--;
+		--(variable->reference_count);
 		if (variable->reference_count<=0)
 		{
 			delete variable;
