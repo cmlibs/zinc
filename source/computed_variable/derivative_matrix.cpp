@@ -1,7 +1,7 @@
 //******************************************************************************
 // FILE : derivative_matrix.cpp
 //
-// LAST MODIFIED : 4 April 2005
+// LAST MODIFIED : 11 April 2005
 //
 // DESCRIPTION :
 //==============================================================================
@@ -35,7 +35,7 @@ Derivative_matrix::Derivative_matrix():std::list<Matrix>(),
 Derivative_matrix::Derivative_matrix(const std::list<Matrix>& matrices):
 	std::list<Matrix>(matrices)
 //******************************************************************************
-// LAST MODIFIED : 11 January 2005
+// LAST MODIFIED : 11 April 2005
 //
 // DESCRIPTION :
 // Constructor.
@@ -51,7 +51,7 @@ Derivative_matrix::Derivative_matrix(const std::list<Matrix>& matrices):
 	while ((i>1)&&(0==i%2))
 	{
 		i /= 2;
-		order++;
+		++order;
 	}
 	if ((1==i)&&(0<order))
 	{
@@ -69,8 +69,8 @@ Derivative_matrix::Derivative_matrix(const std::list<Matrix>& matrices):
 		{
 			numbers_of_independent_values[i]=iterator->size2();
 			valid=(iterator->size1()==number_of_dependent_values);
-			iterator++;
-			for (j=0;j<i;j++)
+			++iterator;
+			for (j=0;j<i;++j)
 			{
 				independent_variables[j]=false;
 			}
@@ -79,7 +79,7 @@ Derivative_matrix::Derivative_matrix(const std::list<Matrix>& matrices):
 			while (valid&&independent_variables[i])
 			{
 				number_of_independent_values=1;
-				for (j=0;j<=i;j++)
+				for (j=0;j<=i;++j)
 				{
 					if (independent_variables[j])
 					{
@@ -88,16 +88,16 @@ Derivative_matrix::Derivative_matrix(const std::list<Matrix>& matrices):
 				}
 				valid=((iterator->size1()==number_of_dependent_values)&&
 					(iterator->size2()==number_of_independent_values));
-				iterator++;
+				++iterator;
 				j=0;
 				while ((j<order)&&independent_variables[j])
 				{
 					independent_variables[j]=false;
-					j++;
+					++j;
 				}
 				independent_variables[j]=true;
 			}
-			i++;
+			++i;
 		}
 		delete [] independent_variables;
 	}
@@ -152,7 +152,7 @@ Derivative_matrix::~Derivative_matrix()
 Derivative_matrix Derivative_matrix::operator*(
 	const Derivative_matrix& derivative_g) const
 //******************************************************************************
-// LAST MODIFIED : 4 April 2005
+// LAST MODIFIED : 11 April 2005
 //
 // DESCRIPTION :
 // This function implements the chain rule for differentiation.
@@ -230,7 +230,7 @@ Derivative_matrix Derivative_matrix::operator*(
 		while ((i<order)&&(valid=(numbers_of_independent_values[i]==
 			derivative_g.number_of_dependent_values)))
 		{
-			i++;
+			++i;
 		}
 	}
 	if (valid)
@@ -275,15 +275,15 @@ Derivative_matrix Derivative_matrix::operator*(
 				if (number_of_matrices<=derivative_g.size())
 				{
 					numbers_of_independent_values[i]=matrix_g->size2();
-					for (j=number_of_matrices;j>0;j--)
+					for (j=number_of_matrices;j>0;--j)
 					{
 						Matrix new_matrix(number_of_rows,matrix_g->size2());
 
 						matrices_result.push_back(new_matrix);
-						matrix_g++;
+						++matrix_g;
 					}
 					number_of_matrices *= 2;
-					i++;
+					++i;
 				}
 				else
 				{
@@ -317,11 +317,11 @@ Derivative_matrix Derivative_matrix::operator*(
 							{
 								index_g[order_result]=0;
 								mapping_result[order_result]=i;
-								order_result++;
+								++order_result;
 								number_of_columns_result *= numbers_of_independent_values[i];
 							}
 							j /= 2;
-							i++;
+							++i;
 						}
 						// calculate the values for the derivative
 						column_number_result=0;
@@ -338,7 +338,7 @@ Derivative_matrix Derivative_matrix::operator*(
 								//   multiplied together.  There are j+1 derivatives of g and
 								//   their orders have to sum to the order of the derivative of
 								//   result (order_result)
-								for (l=0;l<j;l++)
+								for (l=0;l<j;++l)
 								{
 									product_orders[l]=1;
 								}
@@ -359,15 +359,15 @@ Derivative_matrix Derivative_matrix::operator*(
 									q=0;
 									do
 									{
-										for (p=0;p<product_orders[l];p++)
+										for (p=0;p<product_orders[l];++p)
 										{
 											mapping_g[r]=r;
 											order_g[r]=product_orders[l];
 											sub_order_g[r]=q;
-											r++;
-											q++;
+											++r;
+											++q;
 										}
-										l++;
+										++l;
 									} while ((l<=j)&&(product_orders[l]==product_orders[l-1]));
 								}
 								// loop over the possible ways of dividing the order_result
@@ -400,15 +400,15 @@ Derivative_matrix Derivative_matrix::operator*(
 										q=0;
 										do
 										{
-											for (p=0;p<product_orders[l];p++)
+											for (p=0;p<product_orders[l];++p)
 											{
 												mapping_g[r]=r;
 												order_g[r]=product_orders[l];
 												sub_order_g[r]=q;
-												r++;
-												q++;
+												++r;
+												++q;
 											}
-											l++;
+											++l;
 										} while ((l<=j)&&(product_orders[l]==product_orders[l-1]));
 									}
 #endif // defined (OLD_CODE)
@@ -418,7 +418,7 @@ Derivative_matrix Derivative_matrix::operator*(
 									//   derivatives of the same order
 #if defined (OLD_CODE)
 									r=0;
-									for (l=0;l<=j;l++)
+									for (l=0;l<=j;++l)
 									{
 										// initialize the value position within the partial
 										//   derivative of f
@@ -427,7 +427,7 @@ Derivative_matrix Derivative_matrix::operator*(
 										//   partial derivative of g
 										matrix_g=derivative_g.begin();
 										offset_g=1;
-										for (p=0;p<order_result;p++)
+										for (p=0;p<order_result;++p)
 										{
 											q=mapping_g[p];
 											// is the same partial derivative within the partial
@@ -442,29 +442,29 @@ Derivative_matrix Derivative_matrix::operator*(
 												not_used[p]=true;
 											}
 											//???DB.  matrix_g += offset_g;
-											for (s=offset_g;s>0;s--)
+											for (s=offset_g;s>0;--s)
 											{
-												matrix_g++;
+												++matrix_g;
 											}
 											offset_g *= 2;
 										}
-										matrix_g--;
-										for (p=order_result;p>0;p--)
+										--matrix_g;
+										for (p=order_result;p>0;--p)
 										{
 											offset_g /= 2;
 											if (not_used[p-1])
 											{
 												//???DB.  matrix_g -= offset_g;
-												for (s=offset_g;s>0;s--)
+												for (s=offset_g;s>0;--s)
 												{
-													matrix_g--;
+													--matrix_g;
 												}
 											}
 										}
 										matrices_g[l]=matrix_g;
 										// second the index of the value
 										column_numbers_g[l]=0;
-										for (p=0;p<order_result;p++)
+										for (p=0;p<order_result;++p)
 										{
 											if (!not_used[p])
 											{
@@ -476,7 +476,7 @@ Derivative_matrix Derivative_matrix::operator*(
 										//   partial derivatives of the same order
 										if ((l<j)&&(product_orders[l]==product_orders[l+1]))
 										{
-											r++;
+											++r;
 										}
 										else
 										{
@@ -488,17 +488,17 @@ Derivative_matrix Derivative_matrix::operator*(
 									l=j+1;
 									while (l>0)
 									{
-										l--;
+										--l;
 										// initialize the value position within the partial
 										//   derivative of f
 										index_f[l]=0;
 										// determine which independent variables are used in the
 										//   partial derivative of g
-										matrix_g=derivative_g.begin();
-										matrix_g--;
+										matrix_g=derivative_g.end();
+										--matrix_g;
 										offset_g=1;
 #if defined (OLD_CODE)
-										for (p=0;p<order;p++)
+										for (p=0;p<order;++p)
 										{
 											offset_g *= 2;
 										}
@@ -507,54 +507,54 @@ Derivative_matrix Derivative_matrix::operator*(
 										q=product_orders[l];
 										while (p>0)
 										{
-											p--;
+											--p;
 											offset_g /= 2;
 											if ((q>0)&&(p==mapping_result[mapping_g[r]]))
 											{
 												column_numbers_g[l]=numbers_of_independent_values[p]*
 													column_numbers_g[l]+index_g[mapping_g[r]];
-												q--;
-												r--;
+												--q;
+												--r;
 											}
 											else
 											{
 												//???DB.  matrix_g -= offset_g;
-												for (s=offset_g;s>0;s--)
+												for (s=offset_g;s>0;--s)
 												{
-													matrix_g--;
+													--matrix_g;
 												}
 											}
 										}
 #else // defined (OLD_CODE)
 										q=product_orders[l];
 										column_numbers_g[l]=0;
-										for (p=0;p<order;p++)
+										for (p=0;p<order;++p)
 										{
 											offset_g *= 2;
 											if ((q>0)&&(p==mapping_result[mapping_g[r-q+1]]))
 											{
 												column_numbers_g[l]=numbers_of_independent_values[p]*
 													column_numbers_g[l]+index_g[mapping_g[r-q+1]];
-												q--;
+												--q;
 											}
 										}
 										p=order;
 										q=product_orders[l];
 										while (p>0)
 										{
-											p--;
+											--p;
 											offset_g /= 2;
 											if ((q>0)&&(p==mapping_result[mapping_g[r]]))
 											{
-												q--;
-												r--;
+												--q;
+												--r;
 											}
 											else
 											{
 												//???DB.  matrix_g -= offset_g;
-												for (s=offset_g;s>0;s--)
+												for (s=offset_g;s>0;--s)
 												{
-													matrix_g--;
+													--matrix_g;
 												}
 											}
 										}
@@ -575,20 +575,20 @@ Derivative_matrix Derivative_matrix::operator*(
 										{
 											product *=
 												(*matrices_g[l])(index_f[l],column_numbers_g[l]);
-											l++;
+											++l;
 										}
 										// add to sum
 										sum += product;
 										// increment to next value for derivative in matrix_f and
 										//   matrix_g
-										k++;
+										++k;
 										l=j;
-										index_f[l]++;
+										++index_f[l];
 										while ((l>0)&&(index_f[l]>=number_of_intermediate_values))
 										{
 											index_f[l]=0;
-											l--;
-											index_f[l]++;
+											--l;
+											++index_f[l];
 										}
 									}
 									// move to the next choice for the j+1 sets
@@ -612,7 +612,7 @@ Derivative_matrix Derivative_matrix::operator*(
 									while ((l>0)&&!found)
 									{
 										p=q;
-										l--;
+										--l;
 										q=mapping_g[l];
 										// check if there is a value further on with a greater index
 										//   (unrestricted permutations)
@@ -650,11 +650,11 @@ Derivative_matrix Derivative_matrix::operator*(
 									if (found)
 									{
 										// mark as unused the values after l
-										for (p=0;p<order_result;p++)
+										for (p=0;p<order_result;++p)
 										{
 											not_used[p]=false;
 										}
-										for (p=l;p<order_result;p++)
+										for (p=l;p<order_result;++p)
 										{
 											not_used[mapping_g[p]]=true;
 										}
@@ -665,7 +665,7 @@ Derivative_matrix Derivative_matrix::operator*(
 										//   than mapping_g[l]
 										do
 										{
-											p++;
+											++p;
 											if (not_used[p])
 											{
 												if (order_g[p]==order_g[q])
@@ -690,11 +690,11 @@ Derivative_matrix Derivative_matrix::operator*(
 										mapping_g[l]=p;
 										not_used[p]=false;
 										// put the unused values in increasing order after l
-										for (p=0;p<order_result;p++)
+										for (p=0;p<order_result;++p)
 										{
 											if (not_used[p])
 											{
-												l++;
+												++l;
 												mapping_g[l]=p;
 											}
 										}
@@ -709,21 +709,21 @@ Derivative_matrix Derivative_matrix::operator*(
 										while ((l>0)&&
 											(product_orders[l]==product_orders[l-1]))
 										{
-											l--;
+											--l;
 										}
 										if (l>0)
 										{
-											(product_orders[l])--;
+											--(product_orders[l]);
 											while ((l>0)&&
 												(product_orders[l]==product_orders[l-1]))
 											{
-												l--;
+												--l;
 											}
 											if (l>0)
 											{
 												// have found a new choice of set sizes re-initialize
 												//   the variable assignment
-												(product_orders[l-1])++;
+												++(product_orders[l-1]);
 												// initialize the variable assigment
 												r=0;
 												s=0;
@@ -732,15 +732,15 @@ Derivative_matrix Derivative_matrix::operator*(
 													q=0;
 													do
 													{
-														for (p=0;p<product_orders[s];p++)
+														for (p=0;p<product_orders[s];++p)
 														{
 															mapping_g[r]=r;
 															order_g[r]=product_orders[s];
 															sub_order_g[r]=q;
-															r++;
-															q++;
+															++r;
+															++q;
 														}
-														s++;
+														++s;
 													} while ((s<=j)&&
 														(product_orders[s]==product_orders[s-1]));
 												}
@@ -750,33 +750,33 @@ Derivative_matrix Derivative_matrix::operator*(
 								} while (l>0);
 								offset_f *= 2;
 								//???DB.  matrix_f += offset_f;
-								for (s=offset_f;s>0;s--)
+								for (s=offset_f;s>0;--s)
 								{
-									matrix_f++;
+									++matrix_f;
 								}
-								j++;
+								++j;
 							}
 							(*matrix_result)(row_number,column_number_result)=sum;
 							// increment to next value for derivative in matrix_g
 							j=order_result-1;
-							index_g[j]++;
+							++index_g[j];
 							k=mapping_result[j];
 							while ((j>0)&&(index_g[j]>=numbers_of_independent_values[k]))
 							{
 								index_g[j]=0;
-								j--;
+								--j;
 								k=mapping_result[j];
-								index_g[j]++;
+								++index_g[j];
 							}
 							// increment to next column in derivative (matrix) of result
-							column_number_result++;
+							++column_number_result;
 						}
 						// increment to next derivative (matrix)
-						index_result++;
-						matrix_result++;
+						++index_result;
+						++matrix_result;
 					}
 					// increment to next row
-					row_number++;
+					++row_number;
 				}
 			}
 			else
@@ -810,7 +810,7 @@ Derivative_matrix Derivative_matrix::operator*(
 
 Derivative_matrix Derivative_matrix::inverse()
 //******************************************************************************
-// LAST MODIFIED : 4 April 2005
+// LAST MODIFIED : 11 April 2005
 //
 // DESCRIPTION :
 // Compute the composition inverse from the chain rule and the relation
@@ -924,7 +924,7 @@ Derivative_matrix Derivative_matrix::inverse()
 		while ((i<order)&&
 			(valid=(number_of_dependent_values==numbers_of_independent_values[i])))
 		{
-			i++;
+			++i;
 		}
 	}
 	if (valid)
@@ -962,9 +962,9 @@ Derivative_matrix Derivative_matrix::inverse()
 
 			// calculate first order derivative
 			matrix_inverse.resize(number_of_rows,number_of_rows);
-			for (i=0;i<number_of_rows;i++)
+			for (i=0;i<number_of_rows;++i)
 			{
-				for (j=0;j<number_of_rows;j++)
+				for (j=0;j<number_of_rows;++j)
 				{
 					if (i==j)
 					{
@@ -993,7 +993,7 @@ Derivative_matrix Derivative_matrix::inverse()
 
 				matrix_new.resize(number_of_rows,number_of_columns_result);
 				// calculate order_result derivative
-				for (i=0;i<=order_result;i++)
+				for (i=0;i<=order_result;++i)
 				{
 					index_g[i]=0;
 				}
@@ -1016,7 +1016,7 @@ Derivative_matrix Derivative_matrix::inverse()
 							//   multiplied together.  There are j+1 derivatives of g and
 							//   their orders have to sum to the order of the derivative
 							//   of result (order_result)
-							for (l=0;l<j;l++)
+							for (l=0;l<j;++l)
 							{
 								product_orders[l]=1;
 							}
@@ -1038,15 +1038,15 @@ Derivative_matrix Derivative_matrix::inverse()
 								q=0;
 								do
 								{
-									for (p=0;p<product_orders[l];p++)
+									for (p=0;p<product_orders[l];++p)
 									{
 										mapping_g[r]=r;
 										order_g[r]=product_orders[l];
 										sub_order_g[r]=q;
-										r++;
-										q++;
+										++r;
+										++q;
 									}
-									l++;
+									++l;
 								} while ((l<=j)&&
 									(product_orders[l]==product_orders[l-1]));
 							}
@@ -1081,15 +1081,15 @@ Derivative_matrix Derivative_matrix::inverse()
 									q=0;
 									do
 									{
-										for (p=0;p<product_orders[l];p++)
+										for (p=0;p<product_orders[l];++p)
 										{
 											mapping_g[r]=r;
 											order_g[r]=product_orders[l];
 											sub_order_g[r]=q;
-											r++;
-											q++;
+											++r;
+											++q;
 										}
-										l++;
+										++l;
 									} while ((l<=j)&&
 										(product_orders[l]==product_orders[l-1]));
 								}
@@ -1099,7 +1099,7 @@ Derivative_matrix Derivative_matrix::inverse()
 								// r is the number of the partial derivative within partial
 								//   derivatives of the same order
 								r=0;
-								for (l=0;l<=j;l++)
+								for (l=0;l<=j;++l)
 								{
 									// initialize the value position within the partial
 									//   derivative of f
@@ -1108,7 +1108,7 @@ Derivative_matrix Derivative_matrix::inverse()
 									//   partial derivative of g
 									matrix_g=begin();
 									offset_g=1;
-									for (p=0;p<order_result;p++)
+									for (p=0;p<order_result;++p)
 									{
 										q=mapping_g[p];
 										// is the same partial derivative within the partial
@@ -1123,29 +1123,29 @@ Derivative_matrix Derivative_matrix::inverse()
 											not_used[p]=true;
 										}
 										//???DB.  matrix_g += offset_g;
-										for (s=offset_g;s>0;s--)
+										for (s=offset_g;s>0;--s)
 										{
-											matrix_g++;
+											++matrix_g;
 										}
 										offset_g *= 2;
 									}
-									matrix_g--;
-									for (p=order_result;p>0;p--)
+									--matrix_g;
+									for (p=order_result;p>0;--p)
 									{
 										offset_g /= 2;
 										if (not_used[p-1])
 										{
 											//???DB.  matrix_g -= offset_g;
-											for (s=offset_g;s>0;s--)
+											for (s=offset_g;s>0;--s)
 											{
-												matrix_g--;
+												--matrix_g;
 											}
 										}
 									}
 									matrices_g[l]=matrix_g;
 									// second the index of the value
 									column_numbers_g[l]=0;
-									for (p=0;p<order_result;p++)
+									for (p=0;p<order_result;++p)
 									{
 										if (!not_used[p])
 										{
@@ -1159,7 +1159,7 @@ Derivative_matrix Derivative_matrix::inverse()
 									//   within partial derivatives of the same order
 									if ((l<j)&&(product_orders[l]==product_orders[l+1]))
 									{
-										r++;
+										++r;
 									}
 									else
 									{
@@ -1179,20 +1179,20 @@ Derivative_matrix Derivative_matrix::inverse()
 									{
 										product *=
 											(*matrices_g[l])(index_f[l],column_numbers_g[l]);
-										l++;
+										++l;
 									}
 									// add to sum
 									sum += product;
 									// increment to next value for derivative in matrix_f and
 									//   matrix_g
-									k++;
+									++k;
 									l=j;
-									index_f[l]++;
+									++index_f[l];
 									while ((l>0)&&(index_f[l]>=number_of_rows))
 									{
 										index_f[l]=0;
-										l--;
-										index_f[l]++;
+										--l;
+										++index_f[l];
 									}
 								}
 								// move to the next choice for the j+1 sets
@@ -1216,7 +1216,7 @@ Derivative_matrix Derivative_matrix::inverse()
 								while ((l>0)&&!found)
 								{
 									p=q;
-									l--;
+									--l;
 									q=mapping_g[l];
 									// check if there is a value further on with a greater
 									//   index (unrestricted permutations)
@@ -1254,11 +1254,11 @@ Derivative_matrix Derivative_matrix::inverse()
 								if (found)
 								{
 									// mark as unused the values after l
-									for (p=0;p<order_result;p++)
+									for (p=0;p<order_result;++p)
 									{
 										not_used[p]=false;
 									}
-									for (p=l;p<order_result;p++)
+									for (p=l;p<order_result;++p)
 									{
 										not_used[mapping_g[p]]=true;
 									}
@@ -1269,7 +1269,7 @@ Derivative_matrix Derivative_matrix::inverse()
 									//   than mapping_g[l]
 									do
 									{
-										p++;
+										++p;
 										if (not_used[p])
 										{
 											if (order_g[p]==order_g[q])
@@ -1294,11 +1294,11 @@ Derivative_matrix Derivative_matrix::inverse()
 									mapping_g[l]=p;
 									not_used[p]=false;
 									// put the unused values in increasing order after l
-									for (p=0;p<order_result;p++)
+									for (p=0;p<order_result;++p)
 									{
 										if (not_used[p])
 										{
-											l++;
+											++l;
 											mapping_g[l]=p;
 										}
 									}
@@ -1313,21 +1313,21 @@ Derivative_matrix Derivative_matrix::inverse()
 									while ((l>0)&&
 										(product_orders[l]==product_orders[l-1]))
 									{
-										l--;
+										--l;
 									}
 									if (l>0)
 									{
-										(product_orders[l])--;
+										--(product_orders[l]);
 										while ((l>0)&&
 											(product_orders[l]==product_orders[l-1]))
 										{
-											l--;
+											--l;
 										}
 										if (l>0)
 										{
 											// have found a new choice of set sizes re-initialize
 											//   the variable assignment
-											(product_orders[l-1])++;
+											++(product_orders[l-1]);
 											// initialize the variable assigment
 											r=0;
 											s=0;
@@ -1336,15 +1336,15 @@ Derivative_matrix Derivative_matrix::inverse()
 												q=0;
 												do
 												{
-													for (p=0;p<product_orders[s];p++)
+													for (p=0;p<product_orders[s];++p)
 													{
 														mapping_g[r]=r;
 														order_g[r]=product_orders[s];
 														sub_order_g[r]=q;
-														r++;
-														q++;
+														++r;
+														++q;
 													}
-													s++;
+													++s;
 												} while ((s<=j)&&
 													(product_orders[s]==product_orders[s-1]));
 											}
@@ -1354,46 +1354,46 @@ Derivative_matrix Derivative_matrix::inverse()
 							} while (l>0);
 							offset_f *= 2;
 							//???DB.  matrix_f += offset_f;
-							for (s=offset_f;s>0;s--)
+							for (s=offset_f;s>0;--s)
 							{
-								matrix_f++;
+								++matrix_f;
 							}
-							j++;
+							++j;
 						}
 						matrix_new(row_number,column_number_result)= -sum;
 						// increment to next row
-						row_number++;
+						++row_number;
 					}
 					// increment to next value for derivative in matrix_g
 					j=order_result-1;
-					index_g[j]++;
+					++index_g[j];
 //							k=mapping_result[j];
 //							while ((j>0)&&(index_g[j]>=numbers_of_independent_values[k]))
 					while ((j>0)&&(index_g[j]>=number_of_rows))
 					{
 						index_g[j]=0;
-						j--;
+						--j;
 //								k=mapping_result[j];
-						index_g[j]++;
+						++index_g[j];
 					}
 					// increment to next column in derivative (matrix) of result
-					column_number_result++;
+					++column_number_result;
 				}
 				// "multiply" by inverse of first order derivative order_result times
 				number_of_steps=1;
 				step=column_number_result/number_of_rows;
-				for (k=order_result;k>0;k--)
+				for (k=order_result;k>0;--k)
 				{
 					Matrix matrix_temp(number_of_rows,number_of_rows);
 
-					for (l=0;l<number_of_steps;l++)
+					for (l=0;l<number_of_steps;++l)
 					{
-						for (p=0;p<step;p++)
+						for (p=0;p<step;++p)
 						{
 							offset=l*number_of_rows*step+p;
-							for (j=0;j<number_of_rows;j++)
+							for (j=0;j<number_of_rows;++j)
 							{
-								for (i=0;i<number_of_rows;i++)
+								for (i=0;i<number_of_rows;++i)
 								{
 									matrix_temp(i,j)=matrix_new(i,offset);
 								}
@@ -1401,12 +1401,12 @@ Derivative_matrix Derivative_matrix::inverse()
 							}
 							// multiply matrix_temp by matrix_inverse and put back
 							offset=l*number_of_rows*step+p;
-							for (j=0;j<number_of_rows;j++)
+							for (j=0;j<number_of_rows;++j)
 							{
-								for (i=0;i<number_of_rows;i++)
+								for (i=0;i<number_of_rows;++i)
 								{
 									sum=0;
-									for (q=0;q<number_of_rows;q++)
+									for (q=0;q<number_of_rows;++q)
 									{
 										sum += matrix_temp(i,q)*matrix_inverse(q,j);
 									}
@@ -1423,7 +1423,7 @@ Derivative_matrix Derivative_matrix::inverse()
 				k=matrices_result.size();
 				matrices_result.push_back(matrix_inverse);
 				matrix_orders[k]=0;
-				for (i=0;i<k;i++)
+				for (i=0;i<k;++i)
 				{
 					matrix_orders[i+k+1]=matrix_orders[i]+1;
 					matrices_result.push_back(order_matrices[matrix_orders[i+k+1]]);

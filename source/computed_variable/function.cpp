@@ -1,7 +1,7 @@
 //******************************************************************************
 // FILE : function.cpp
 //
-// LAST MODIFIED : 7 December 2004
+// LAST MODIFIED : 7 April 2005
 //
 // DESCRIPTION :
 // See function.hpp
@@ -137,7 +137,7 @@ static Function_size_type
 Function::Function():evaluated_private(false),reference_count(0),
 	dependent_functions(0)
 //******************************************************************************
-// LAST MODIFIED : 25 November 2004
+// LAST MODIFIED : 7 April 2005
 //
 // DESCRIPTION :
 // Constructor.
@@ -145,15 +145,15 @@ Function::Function():evaluated_private(false),reference_count(0),
 {
 #if defined (DEBUG)
 	//???debug
-	total_number_of_functions++;
-	current_number_of_functions++;
+	++total_number_of_functions;
+	++current_number_of_functions;
 #endif // defined (DEBUG)
 }
 
 Function::Function(const Function&):evaluated_private(false),reference_count(0),
 	dependent_functions(0)
 //******************************************************************************
-// LAST MODIFIED : 25 November 2004
+// LAST MODIFIED : 7 April 2005
 //
 // DESCRIPTION :
 // Copy constructor.
@@ -161,14 +161,14 @@ Function::Function(const Function&):evaluated_private(false),reference_count(0),
 {
 #if defined (DEBUG)
 	//???debug
-	total_number_of_functions++;
-	current_number_of_functions++;
+	++total_number_of_functions;
+	++current_number_of_functions;
 #endif // defined (DEBUG)
 }
 
 Function::~Function()
 //******************************************************************************
-// LAST MODIFIED : 11 February 2004
+// LAST MODIFIED : 7 April 2005
 //
 // DESCRIPTION :
 // Destructor.
@@ -177,7 +177,7 @@ Function::~Function()
 	// do nothing
 #if defined (DEBUG)
 	//???debug
-	current_number_of_functions--;
+	--current_number_of_functions;
 	if (0==current_number_of_functions)
 	{
 		std::cout << "total_number_of_functions=" << total_number_of_functions << std::endl;
@@ -189,27 +189,27 @@ Function::~Function()
 
 void intrusive_ptr_add_ref(Function *function)
 //******************************************************************************
-// LAST MODIFIED : 11 February 2004
+// LAST MODIFIED : 7 April 2005
 //
 // DESCRIPTION :
 //==============================================================================
 {
 	if (function)
 	{
-		(function->reference_count)++;
+		++(function->reference_count);
 	}
 }
 
 void intrusive_ptr_release(Function *function)
 //******************************************************************************
-// LAST MODIFIED : 11 February 2004
+// LAST MODIFIED : 7 April 2005
 //
 // DESCRIPTION :
 //==============================================================================
 {
 	if (function)
 	{
-		(function->reference_count)--;
+		--(function->reference_count);
 		if (function->reference_count<=0)
 		{
 			delete function;
@@ -219,7 +219,7 @@ void intrusive_ptr_release(Function *function)
 
 bool Function::evaluated() const
 //******************************************************************************
-// LAST MODIFIED : 25 November 2004
+// LAST MODIFIED : 7 April 2005
 //
 // DESCRIPTION :
 // Returns true if the function has been evaluated and false otherwise.
@@ -227,10 +227,10 @@ bool Function::evaluated() const
 {
 #if defined (DEBUG)
 	//???debug
-	total_number_of_evaluated++;
+	++total_number_of_evaluated;
 	if (evaluated_private)
 	{
-		number_of_evaluated_true++;
+		++number_of_evaluated_true;
 	}
 #endif // defined (DEBUG)
 	return (evaluated_private);
@@ -244,7 +244,7 @@ void Function::add_dependent_function(
 #endif // defined (CIRCULAR_SMART_POINTERS)
 	dependent_function)
 //******************************************************************************
-// LAST MODIFIED : 6 December 2004
+// LAST MODIFIED : 7 April 2005
 //
 // DESCRIPTION :
 // Adds <dependent_function> to the list of functions that have to be
@@ -267,8 +267,8 @@ void Function::add_dependent_function(
 			//   force equivalent), but here want pointer comparison
 			while ((i>0)&&(get_pointer(*iterator)!=get_pointer(dependent_function)))
 			{
-				iterator++;
-				i--;
+				++iterator;
+				--i;
 			}
 		}
 		if (0==i)
@@ -294,7 +294,7 @@ void Function::remove_dependent_function(
 #endif // defined (CIRCULAR_SMART_POINTERS)
 	dependent_function)
 //******************************************************************************
-// LAST MODIFIED : 6 December 2004
+// LAST MODIFIED : 7 April 2005
 //
 // DESCRIPTION :
 // Removes <dependent_function> from the list of functions that have to be
@@ -335,9 +335,9 @@ void Function::remove_dependent_function(
 				}
 				else
 				{
-					iterator++;
+					++iterator;
 				}
-				i--;
+				--i;
 			}
 		}
 	}
@@ -356,7 +356,7 @@ void Function::set_evaluated()
 
 void Function::set_not_evaluated()
 //******************************************************************************
-// LAST MODIFIED : 6 December 2004
+// LAST MODIFIED : 7 April 2005
 //
 // DESCRIPTION :
 // Sets this function and its dependent functions to not evaluated.
@@ -378,8 +378,8 @@ void Function::set_not_evaluated()
 		while (i>0)
 		{
 			(*iterator)->set_not_evaluated();
-			iterator++;
-			i--;
+			++iterator;
+			--i;
 		}
 	}
 }

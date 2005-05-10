@@ -1,7 +1,7 @@
 //******************************************************************************
 // FILE : function_composite.cpp
 //
-// LAST MODIFIED : 13 January 2005
+// LAST MODIFIED : 7 April 2005
 //
 // DESCRIPTION :
 //???DB.  Should make a Matrix if it can?  Changes type in constructors?
@@ -46,7 +46,7 @@ Function_composite::Function_composite(
 	std::list<Function_handle>& functions_list):Function(),
 	functions_list(functions_list)
 //******************************************************************************
-// LAST MODIFIED : 6 December 2004
+// LAST MODIFIED : 7 April 2005
 //
 // DESCRIPTION :
 // Constructor.
@@ -64,16 +64,16 @@ Function_composite::Function_composite(
 		while (valid&&(i>0))
 		{
 			valid=(0!= *iterator);
-			i--;
-			iterator++;
+			--i;
+			++iterator;
 		}
 		if (valid)
 		{
 			iterator=(this->functions_list).begin();
-			for (i=(this->functions_list).size();i>0;i--)
+			for (i=(this->functions_list).size();i>0;--i)
 			{
 				(*iterator)->add_dependent_function(this);
-				iterator++;
+				++iterator;
 			}
 		}
 	}
@@ -85,7 +85,7 @@ Function_composite::Function_composite(
 
 Function_composite::~Function_composite()
 //******************************************************************************
-// LAST MODIFIED : 6 December 2004
+// LAST MODIFIED : 7 April 2005
 //
 // DESCRIPTION :
 // Destructor.
@@ -98,17 +98,17 @@ Function_composite::~Function_composite()
 	std::list<Function_handle>::iterator iterator;
 	
 	iterator=functions_list.begin();
-	for (i=functions_list.size();i>0;i--)
+	for (i=functions_list.size();i>0;--i)
 	{
 		(*iterator)->remove_dependent_function(this);
-		iterator++;
+		++iterator;
 	}
 #endif // defined (CIRCULAR_SMART_POINTERS)
 }
 
 string_handle Function_composite::get_string_representation()
 //******************************************************************************
-// LAST MODIFIED : 5 Auguat 2004
+// LAST MODIFIED : 7 April 2005
 //
 // DESCRIPTION :
 //==============================================================================
@@ -129,8 +129,8 @@ string_handle Function_composite::get_string_representation()
 				out << *temp_string;
 				delete temp_string;
 			}
-			function_iterator++;
-			i--;
+			++function_iterator;
+			--i;
 			if (i>0)
 			{
 				out << ",";
@@ -145,7 +145,7 @@ string_handle Function_composite::get_string_representation()
 
 Function_variable_handle Function_composite::input()
 //******************************************************************************
-// LAST MODIFIED : 5 August 2004
+// LAST MODIFIED : 7 April 2005
 //
 // DESCRIPTION :
 //==============================================================================
@@ -154,13 +154,13 @@ Function_variable_handle Function_composite::input()
 	std::list<Function_variable_handle> variables_list(0);
 	Function_size_type i;
 
-	for (i=functions_list.size();i>0;i--)
+	for (i=functions_list.size();i>0;--i)
 	{
 		if (*function_iterator)
 		{
 			variables_list.push_back((*function_iterator)->input());
 		}
-		function_iterator++;
+		++function_iterator;
 	}
 
 	return (Function_variable_handle(new Function_variable_union(
@@ -169,7 +169,7 @@ Function_variable_handle Function_composite::input()
 
 Function_variable_handle Function_composite::output()
 //******************************************************************************
-// LAST MODIFIED : 5 August 2004
+// LAST MODIFIED : 7 April 2005
 //
 // DESCRIPTION :
 //==============================================================================
@@ -178,13 +178,13 @@ Function_variable_handle Function_composite::output()
 	std::list<Function_variable_handle> variables_list(0);
 	Function_size_type i;
 
-	for (i=functions_list.size();i>0;i--)
+	for (i=functions_list.size();i>0;--i)
 	{
 		if (*function_iterator)
 		{
 			variables_list.push_back((*function_iterator)->output());
 		}
-		function_iterator++;
+		++function_iterator;
 	}
 
 	return (Function_variable_handle(new Function_variable_composite(
@@ -193,7 +193,7 @@ Function_variable_handle Function_composite::output()
 
 bool Function_composite::operator==(const Function& function) const
 //******************************************************************************
-// LAST MODIFIED : 13 August 2004
+// LAST MODIFIED : 7 April 2005
 //
 // DESCRIPTION :
 // Equality operator.
@@ -220,8 +220,8 @@ bool Function_composite::operator==(const Function& function) const
 				(function_iterator_2!=function_iterator_2_end)&&
 				equivalent(*function_iterator_1,*function_iterator_2))
 			{
-				function_iterator_1++;
-				function_iterator_2++;
+				++function_iterator_1;
+				++function_iterator_2;
 			}
 			result=((function_iterator_1==function_iterator_1_end)&&
 				(function_iterator_2==function_iterator_2_end));
@@ -239,7 +239,7 @@ bool Function_composite::operator==(const Function& function) const
 Function_handle Function_composite::evaluate(
 	Function_variable_handle atomic_variable)
 //******************************************************************************
-// LAST MODIFIED : 10 March 2004
+// LAST MODIFIED : 7 April 2005
 //
 // DESCRIPTION :
 //==============================================================================
@@ -254,8 +254,8 @@ Function_handle Function_composite::evaluate(
 		{
 			result=(*function_iterator)->evaluate(atomic_variable);
 		}
-		i--;
-		function_iterator++;
+		--i;
+		++function_iterator;
 	}
 
 	return (result);
@@ -263,7 +263,7 @@ Function_handle Function_composite::evaluate(
 #else // defined (EVALUATE_RETURNS_VALUE)
 bool Function_composite::evaluate(Function_variable_handle atomic_variable)
 //******************************************************************************
-// LAST MODIFIED : 13 January 2005
+// LAST MODIFIED : 7 April 2005
 //
 // DESCRIPTION :
 //==============================================================================
@@ -278,8 +278,8 @@ bool Function_composite::evaluate(Function_variable_handle atomic_variable)
 		{
 			result=(*function_iterator)->evaluate(atomic_variable);
 		}
-		i--;
-		function_iterator++;
+		--i;
+		++function_iterator;
 	}
 
 	return (result);
@@ -290,7 +290,7 @@ bool Function_composite::evaluate_derivative(Scalar& derivative,
 	Function_variable_handle atomic_variable,
 	std::list<Function_variable_handle>& atomic_independent_variables)
 //******************************************************************************
-// LAST MODIFIED : 10 March 2004
+// LAST MODIFIED : 7 April 2005
 //
 // DESCRIPTION :
 //==============================================================================
@@ -307,8 +307,8 @@ bool Function_composite::evaluate_derivative(Scalar& derivative,
 			result=(*function_iterator)->evaluate_derivative(derivative,
 				atomic_variable,atomic_independent_variables);
 		}
-		i--;
-		function_iterator++;
+		--i;
+		++function_iterator;
 	}
 
 	return (result);
@@ -317,7 +317,7 @@ bool Function_composite::evaluate_derivative(Scalar& derivative,
 bool Function_composite::set_value(Function_variable_handle atomic_variable,
 	Function_variable_handle atomic_value)
 //******************************************************************************
-// LAST MODIFIED : 10 March 2004
+// LAST MODIFIED : 7 April 2005
 //
 // DESCRIPTION :
 //==============================================================================
@@ -333,8 +333,8 @@ bool Function_composite::set_value(Function_variable_handle atomic_variable,
 		{
 			result=(*function_iterator)->set_value(atomic_variable,atomic_value);
 		}
-		i--;
-		function_iterator++;
+		--i;
+		++function_iterator;
 	}
 
 	return (result);
@@ -343,7 +343,7 @@ bool Function_composite::set_value(Function_variable_handle atomic_variable,
 Function_handle Function_composite::get_value(
 	Function_variable_handle atomic_variable)
 //******************************************************************************
-// LAST MODIFIED : 22 June 2004
+// LAST MODIFIED : 7 April 2005
 //
 // DESCRIPTION :
 //==============================================================================
@@ -358,8 +358,8 @@ Function_handle Function_composite::get_value(
 		{
 			result=(*function_iterator)->get_value(atomic_variable);
 		}
-		i--;
-		function_iterator++;
+		--i;
+		++function_iterator;
 	}
 
 	return (result);
@@ -369,7 +369,7 @@ Function_composite::Function_composite(
 	const Function_composite& function_composite):Function(),
 	functions_list(function_composite.functions_list)
 //******************************************************************************
-// LAST MODIFIED : 6 December 2004
+// LAST MODIFIED : 7 April 2005
 //
 // DESCRIPTION :
 // Copy constructor.
@@ -379,17 +379,17 @@ Function_composite::Function_composite(
 	std::list<Function_handle>::iterator iterator;
 
 	iterator=functions_list.begin();
-	for (i=functions_list.size();i>0;i--)
+	for (i=functions_list.size();i>0;--i)
 	{
 		(*iterator)->add_dependent_function(this);
-		iterator++;
+		++iterator;
 	}
 }
 
 Function_composite& Function_composite::operator=(
 	const Function_composite& function_composite)
 //******************************************************************************
-// LAST MODIFIED : 6 December 2004
+// LAST MODIFIED : 7 April 2005
 //
 // DESCRIPTION :
 // Assignment operator.
@@ -400,16 +400,16 @@ Function_composite& Function_composite::operator=(
 	std::list<Function_handle>::iterator iterator;
 
 	const_iterator=function_composite.functions_list.begin();
-	for (i=function_composite.functions_list.size();i>0;i--)
+	for (i=function_composite.functions_list.size();i>0;--i)
 	{
 		(*const_iterator)->add_dependent_function(this);
-		const_iterator++;
+		++const_iterator;
 	}
 	iterator=functions_list.begin();
-	for (i=functions_list.size();i>0;i--)
+	for (i=functions_list.size();i>0;--i)
 	{
 		(*iterator)->remove_dependent_function(this);
-		iterator++;
+		++iterator;
 	}
 	functions_list=function_composite.functions_list;
 
