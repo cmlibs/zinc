@@ -1,7 +1,7 @@
 //******************************************************************************
 // FILE : function_composition.cpp
 //
-// LAST MODIFIED : 24 January 2005
+// LAST MODIFIED : 21 April 2005
 //
 // DESCRIPTION :
 //==============================================================================
@@ -37,7 +37,7 @@ typedef boost::intrusive_ptr<Function_variable_composition>
 
 class Function_derivatnew_composition : public Function_derivatnew
 //******************************************************************************
-// LAST MODIFIED : 24 January 2005
+// LAST MODIFIED : 21 April 2005
 //
 // DESCRIPTION :
 //==============================================================================
@@ -59,6 +59,9 @@ class Function_derivatnew_composition : public Function_derivatnew
 		virtual bool evaluate(Function_variable_handle atomic_variable);
 #endif // defined (EVALUATE_RETURNS_VALUE)
 	private:
+		// copy operations are private and undefined to prevent copying
+		void operator=(const Function&);
+	private:
 		Function_derivatnew_handle derivative_f,derivative_g;
 };
 #endif // defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
@@ -69,7 +72,7 @@ class Function_derivatnew_composition : public Function_derivatnew
 
 class Function_variable_composition : public Function_variable_wrapper
 //******************************************************************************
-// LAST MODIFIED : 23 January 2005
+// LAST MODIFIED : 7 April 2005
 //
 // DESCRIPTION :
 // If <working_variable> is NULL then this wraps the <output_variable> of
@@ -105,7 +108,7 @@ class Function_variable_composition : public Function_variable_wrapper
 					while ((atomic_variable_iterator!=end_atomic_variable_iterator)&&
 						!equivalent(*atomic_variable_iterator,atomic_output_variable))
 					{
-						atomic_variable_iterator++;
+						++atomic_variable_iterator;
 					}
 					if (atomic_variable_iterator!=end_atomic_variable_iterator)
 					{
@@ -292,8 +295,8 @@ class Function_variable_composition : public Function_variable_wrapper
 					{
 						valid_independent_variables=false;
 					}
-					independent_variables_iterator++;
-					i--;
+					++independent_variables_iterator;
+					--i;
 				}
 				//???debug
 //				valid_independent_variables=true;
@@ -359,7 +362,7 @@ class Function_variable_composition : public Function_variable_wrapper
 								valid=false;
 							}
 						}
-						atomic_iterator++;
+						++atomic_iterator;
 					}
 					if (valid)
 					{
@@ -383,8 +386,8 @@ class Function_variable_composition : public Function_variable_wrapper
 							valid=false;
 						}
 					}
-					independent_variables_iterator++;
-					i--;
+					++independent_variables_iterator;
+					--i;
 				}
 				if (valid)
 #endif // defined (OLD_CODE)
@@ -549,7 +552,7 @@ Function_derivatnew_composition::Function_derivatnew_composition(
 	const std::list<Function_variable_handle>& independent_variables):
 	Function_derivatnew(dependent_variable,independent_variables)
 //******************************************************************************
-// LAST MODIFIED : 30 March 2005
+// LAST MODIFIED : 20 April 2005
 //
 // DESCRIPTION :
 // Constructor.
@@ -628,7 +631,7 @@ Function_derivatnew_composition::Function_derivatnew_composition(
 						valid=false;
 					}
 				}
-				atomic_iterator++;
+				++atomic_iterator;
 			}
 			if (valid)
 			{
@@ -652,8 +655,8 @@ Function_derivatnew_composition::Function_derivatnew_composition(
 					valid=false;
 				}
 			}
-			independent_variables_iterator++;
-			i--;
+			++independent_variables_iterator;
+			--i;
 		}
 		if (valid)
 		{
@@ -678,7 +681,9 @@ Function_derivatnew_composition::Function_derivatnew_composition(
 			if (local_derivative_f&&local_derivative_g)
 			{
 				derivative_g=local_derivative_g;
+				derivative_g->add_dependent_function(this);
 				derivative_f=local_derivative_f;
+				derivative_f->add_dependent_function(this);
 			}
 			else
 			{
@@ -696,13 +701,27 @@ Function_derivatnew_composition::Function_derivatnew_composition(
 	}
 }
 
-Function_derivatnew_composition::~Function_derivatnew_composition(){}
+Function_derivatnew_composition::~Function_derivatnew_composition()
 //******************************************************************************
-// LAST MODIFIED : 24 January 2005
+// LAST MODIFIED : 21 April 2005
 //
 // DESCRIPTION :
 // Destructor.
 //==============================================================================
+{
+#if defined (CIRCULAR_SMART_POINTERS)
+	// do nothing
+#else // defined (CIRCULAR_SMART_POINTERS)
+	if (derivative_f)
+	{
+		derivative_f->remove_dependent_function(this);
+	}
+	if (derivative_g)
+	{
+		derivative_g->remove_dependent_function(this);
+	}
+#endif // defined (CIRCULAR_SMART_POINTERS)
+}
 
 #if defined (EVALUATE_RETURNS_VALUE)
 Function_handle Function_derivatnew_composition::evaluate(
@@ -955,6 +974,7 @@ bool Function_composition::operator==(const Function& function) const
 	return (result);
 }
 
+#if defined (OLD_CODE)
 #if defined (EVALUATE_RETURNS_VALUE)
 Function_handle
 #else // defined (EVALUATE_RETURNS_VALUE)
@@ -978,6 +998,36 @@ bool
 	return (false);
 #endif // defined (EVALUATE_RETURNS_VALUE)
 }
+#else // defined (OLD_CODE)
+#if defined (EVALUATE_RETURNS_VALUE)
+Function_handle
+#else // defined (EVALUATE_RETURNS_VALUE)
+bool
+#endif // defined (EVALUATE_RETURNS_VALUE)
+	Function_composition::evaluate(Function_variable_handle atomic_variable)
+//******************************************************************************
+// LAST MODIFIED : 13 April 2005
+//
+// DESCRIPTION :
+//==============================================================================
+{
+#if defined (EVALUATE_RETURNS_VALUE)
+	Function_handle result(0);
+#else // defined (EVALUATE_RETURNS_VALUE)
+	bool result(true);
+#endif // defined (EVALUATE_RETURNS_VALUE)
+	Function_variable_composition_handle atomic_variable_composition;
+
+	if ((atomic_variable_composition=boost::dynamic_pointer_cast<
+		Function_variable_composition,Function_variable>(atomic_variable))&&
+		equivalent(Function_handle(this),atomic_variable_composition->function()))
+	{
+		result=(atomic_variable_composition->evaluate)();
+	}
+	
+	return (result);
+}
+#endif // defined (OLD_CODE)
 
 bool Function_composition::evaluate_derivative(Scalar& derivative,
 	Function_variable_handle atomic_dependent_variable,
