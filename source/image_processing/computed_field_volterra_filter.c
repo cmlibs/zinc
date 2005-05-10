@@ -355,11 +355,11 @@ Perform image enhancement on the image cache.
 {
         char *storage;
 	FE_value *data_index, *result_index, *kernel, *max;
-	int filter_size, i, j, k,m;
+	int filter_size, i, j, k;
 	int return_code, kernel_size, storage_size;
 	int *offsets;
 	int radius;
-	int image_step, kernel_step;
+	/* int image_step, kernel_step;*/
 
 	ENTER(Image_cache_volterra_filter);
 	if (image && (image->dimension > 0) && (image->depth > 0))
@@ -404,7 +404,8 @@ Perform image enhancement on the image cache.
 			{
 			        offsets[j] = 0;
 			}
-			for(j = 0; j < kernel_size; j++)
+			Filter_offsets(offsets, image->dimension, radius, image->sizes, image->depth);
+			/*for(j = 0; j < kernel_size; j++)
 			{
 			        kernel_step = 1;
 				image_step = 1;
@@ -415,7 +416,7 @@ Perform image enhancement on the image cache.
 					kernel_step *= filter_size;
 					image_step *= image->sizes[m];
 				}
-			}
+			}*/
 			for (i = 0; i < storage_size / image->depth; i++)
 			{
 			        for(k = 0; k < image->depth; k++)

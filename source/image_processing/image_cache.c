@@ -488,4 +488,36 @@ int Image_cache_get_native_resolution(struct Image_cache *image,
 	return (return_code);
 }/* Image_cache_get_native_resolution */
 
+int Filter_offsets(int *offsets, int dimension, int radius, int *sizes, int depth)
+/*************************************************************************************
+    LAST MODIFIED: 11 May 2005
+    DESCRIPTION: Gets the offsets of the image coordinates.
 
+=====================================================================================*/
+{
+        int i, m, k, filter_size, kernel_size, return_code;
+        int kernel_step, image_step;
+       
+        ENTER(Filter_offsets);
+	return_code = 1;
+	filter_size = 2 * radius + 1;
+	kernel_size = 1;
+	for (i = 0 ; i < dimension ; i++)
+	{
+		kernel_size *= filter_size;
+	}
+	for(i = 0; i < kernel_size; i++)
+	{
+		kernel_step = 1;
+		image_step = 1;
+		for(m = 0; m < dimension; m++)
+		{
+		        k = (i/kernel_step) % filter_size;
+			offsets[i] += (k - radius) * image_step * depth;
+			kernel_step *= filter_size;
+			image_step *= sizes[m];
+		}
+	}
+	LEAVE;
+	return (return_code);
+}/* Filter_offsets */

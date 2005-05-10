@@ -354,9 +354,9 @@ DESCRIPTION : Implement region labeling on image cache. The image must be black-
 {
 	char *storage;
 	FE_value *data_index, *result_index, *data_index1, max, min, label_index;
-	int i, j, m, return_code, storage_size, k;
+	int i, j, return_code, storage_size, k;
 	int n, l, radius, filter_size, kernel_size;
-	int *hist, *offsets, kernel_step, image_step;
+	int *hist, *offsets;
 
 	ENTER(Image_cache_region_label);
 	if (image && (image->dimension == 2) && (image->depth > 0))
@@ -385,7 +385,7 @@ DESCRIPTION : Implement region labeling on image cache. The image must be black-
 			{
 			        offsets[j] = 0;
 			}
-			for(j = 0; j < kernel_size; j++)
+			/*for(j = 0; j < kernel_size; j++)
 			{
 			        kernel_step = 1;
 				image_step = 1;
@@ -396,7 +396,8 @@ DESCRIPTION : Implement region labeling on image cache. The image must be black-
 					kernel_step *= filter_size;
 					image_step *= image->sizes[m];
 				}
-			}
+			}*/
+			Filter_offsets(offsets, image->dimension, radius, image->sizes, image->depth);
 			result_index = (FE_value *)storage;
 			for (i = 0 ; i < storage_size ; i++)
 			{

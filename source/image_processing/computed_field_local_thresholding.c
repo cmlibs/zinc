@@ -359,8 +359,8 @@ Perform local adaptive thresholding on the image cache.
 {
 	char *storage;
 	FE_value *data_index, *result_index, *Lmean;
-	int filter_size, i, j, k, m, *offsets, return_code, kernel_size, storage_size;
-	int kernel_step, image_step;
+	int filter_size, i, j, k, *offsets, return_code, kernel_size, storage_size;
+	/*int kernel_step, image_step;*/
 
 	ENTER(Image_cache_local_thresholding);
 	if (image && (image->dimension > 0) && (image->depth > 0))
@@ -393,7 +393,7 @@ Perform local adaptive thresholding on the image cache.
 			{
 				offsets[j] = 0;
 			}
-			for(j = 0; j < kernel_size; j++)
+			/*for(j = 0; j < kernel_size; j++)
 			{
 			        kernel_step = 1;
 				image_step = 1;
@@ -404,7 +404,8 @@ Perform local adaptive thresholding on the image cache.
 					kernel_step *= filter_size;
 					image_step *= image->sizes[m];
 				}
-			}
+			}*/
+			Filter_offsets(offsets, image->dimension, radius, image->sizes, image->depth);
 			data_index = (FE_value *)image->data;
 			result_index = (FE_value *)storage;
 			for (i = 0 ; return_code && i < storage_size / image->depth ; i++)

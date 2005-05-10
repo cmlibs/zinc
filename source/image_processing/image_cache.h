@@ -101,4 +101,12 @@ int Image_cache_get_native_resolution(struct Image_cache *image,
 
 =====================================================================================*/
 
+int Filter_offsets(int *offsets, int dimension, int radius, int *sizes, int depth);
+/*************************************************************************************
+    LAST MODIFIED: 11 May 2005
+    DESCRIPTION: Gets the offsets of the image coordinates.
+
+=====================================================================================*/
+
 #endif /* !defined (IMAGE_CACHE_H) */
+

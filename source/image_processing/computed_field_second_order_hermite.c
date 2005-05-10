@@ -368,12 +368,12 @@ Perform orientation detection bsed on hermite filter.
 {
 	char *storage;
 	FE_value *data_index, *result_index, *max;
-	int i, j, k, m, storage_size;
+	int i, j, k, storage_size;
 	FE_value  *Di, *g_kernel, g1, g2, g3;
 	int filter_size;
 	int *offsets;
 	int radius, center;
-	int image_step, kernel_step;
+	/* int image_step, kernel_step;*/
 	int return_code, kernel_size;
 	FE_value theta, x, y, sum;
 
@@ -443,7 +443,7 @@ Perform orientation detection bsed on hermite filter.
 			{
 				offsets[j] = 0;
 			}
-			for(j = 0; j < kernel_size; j++)
+			/*for(j = 0; j < kernel_size; j++)
 			{
 			        kernel_step = 1;
 				image_step = 1;
@@ -454,7 +454,8 @@ Perform orientation detection bsed on hermite filter.
 					kernel_step *= filter_size;
 					image_step *= image->sizes[m];
 				}
-			}
+			}*/
+			Filter_offsets(offsets, image->dimension, radius, image->sizes, image->depth);
 			for (i = 0 ; i < storage_size / image->depth ; i++)
 			{
 				for (k = 0 ; k < image->depth ; k++)

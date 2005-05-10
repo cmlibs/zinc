@@ -365,7 +365,7 @@ Perform a Sobel filter operation on the image cache.
 	int filter_size;
 	int *offsets;
 	int pass;
-	int image_step, kernel_step;
+	int kernel_step;
 	int return_code, kernel_size;
 
 	ENTER(Image_cache_sobel_filter);
@@ -408,7 +408,7 @@ Perform a Sobel filter operation on the image cache.
 			{
 			        energy_max[k] = 0.0;
 			}
-			kernel_step = 1;
+			/*kernel_step = 1;
 			image_step = 1;
 			for (i = 0 ; i < image->dimension ; i++)
 			{
@@ -419,7 +419,8 @@ Perform a Sobel filter operation on the image cache.
 				}
 				kernel_step *= filter_size;
 				image_step *= image->sizes[i];
-			}
+			}*/
+			Filter_offsets(offsets, image->dimension, radius, image->sizes, image->depth);
 			for (pass = 0 ; pass < image->dimension ; pass++)
 			{
 				for (j = 0 ; j < kernel_size ; j++)
