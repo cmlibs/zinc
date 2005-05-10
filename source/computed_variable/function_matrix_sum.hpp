@@ -1,7 +1,7 @@
 //******************************************************************************
 // FILE : function_matrix_sum.hpp
 //
-// LAST MODIFIED : 13 January 2005
+// LAST MODIFIED : 22 April 2005
 //
 // DESCRIPTION :
 //==============================================================================
@@ -19,7 +19,7 @@ class Function_variable_matrix_sum;
 EXPORT template<typename Value_type>
 class Function_matrix_sum : public Function_matrix<Value_type>
 //******************************************************************************
-// LAST MODIFIED : 13 January 2005
+// LAST MODIFIED : 22 April 2005
 //
 // DESCRIPTION :
 // Output is the sum of two matrix variables.  Input is the union of the matrix
@@ -30,6 +30,7 @@ class Function_matrix_sum : public Function_matrix<Value_type>
 		friend bool equivalent(boost::intrusive_ptr<Value_type_1> const &,
 		boost::intrusive_ptr<Value_type_2> const &);
 	friend class Function_variable_matrix_sum<Value_type>;
+	friend class Function_derivatnew_matrix_sum;
 	public:
 		// for construction exception
 		class Invalid_summand {};

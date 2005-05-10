@@ -1,7 +1,7 @@
 //******************************************************************************
 // FILE : function_linear_span.hpp
 //
-// LAST MODIFIED : 13 January 2005
+// LAST MODIFIED : 29 April 2005
 //
 // DESCRIPTION :
 //==============================================================================
@@ -18,7 +18,7 @@ typedef boost::intrusive_ptr<Function_linear_span> Function_linear_span_handle;
 
 class Function_linear_span : public Function_matrix<Scalar>
 //******************************************************************************
-// LAST MODIFIED : 13 January 2005
+// LAST MODIFIED : 29 April 2005
 //
 // DESCRIPTION :
 // Evaluates to a vector whose entries are the result of evaluating the spanned
@@ -30,6 +30,7 @@ class Function_linear_span : public Function_matrix<Scalar>
 		friend bool equivalent(boost::intrusive_ptr<Value_type_1> const &,
 		boost::intrusive_ptr<Value_type_2> const &);
 	friend class Function_variable_linear_span;
+	friend class Function_derivatnew_linear_span;
 	public:
 		// for construction exception
 		class Construction_exception {};

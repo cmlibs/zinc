@@ -1,7 +1,7 @@
 //******************************************************************************
 // FILE : function_matrix_product.hpp
 //
-// LAST MODIFIED : 13 January 2005
+// LAST MODIFIED : 21 April 2005
 //
 // DESCRIPTION :
 //==============================================================================
@@ -19,7 +19,7 @@ class Function_variable_matrix_product;
 EXPORT template<typename Value_type>
 class Function_matrix_product : public Function_matrix<Value_type>
 //******************************************************************************
-// LAST MODIFIED : 13 January 2005
+// LAST MODIFIED : 21 April 2005
 //
 // DESCRIPTION :
 // Output is the product of two matrix variables.  Input is the union of the
@@ -30,6 +30,7 @@ class Function_matrix_product : public Function_matrix<Value_type>
 		friend bool equivalent(boost::intrusive_ptr<Value_type_1> const &,
 		boost::intrusive_ptr<Value_type_2> const &);
 	friend class Function_variable_matrix_product<Value_type>;
+	friend class Function_derivatnew_matrix_product;
 	public:
 		// for construction exception
 		class Invalid_multiplier_multiplicand {};

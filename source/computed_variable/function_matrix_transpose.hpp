@@ -1,7 +1,7 @@
 //******************************************************************************
 // FILE : function_matrix_transpose.hpp
 //
-// LAST MODIFIED : 13 January 2005
+// LAST MODIFIED : 26 April 2005
 //
 // DESCRIPTION :
 //==============================================================================
@@ -19,7 +19,7 @@ class Function_variable_matrix_transpose;
 EXPORT template<typename Value_type>
 class Function_matrix_transpose : public Function_matrix<Value_type>
 //******************************************************************************
-// LAST MODIFIED : 13 January 2005
+// LAST MODIFIED : 26 April 2005
 //
 // DESCRIPTION :
 // Output is the transpose of the matrix variable.  Input is the matrix
@@ -30,6 +30,7 @@ class Function_matrix_transpose : public Function_matrix<Value_type>
 		friend bool equivalent(boost::intrusive_ptr<Value_type_1> const &,
 		boost::intrusive_ptr<Value_type_2> const &);
 	friend class Function_variable_matrix_transpose<Value_type>;
+	friend class Function_derivatnew_matrix_transpose;
 	public:
 		// for construction exception
 		class Invalid_matrix {};

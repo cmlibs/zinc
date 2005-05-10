@@ -1,7 +1,7 @@
 //******************************************************************************
 // FILE : function_matrix_divide_by_scalar.hpp
 //
-// LAST MODIFIED : 6 March 2005
+// LAST MODIFIED : 21 April 2005
 //
 // DESCRIPTION :
 //==============================================================================
@@ -19,7 +19,7 @@ class Function_variable_matrix_divide_by_scalar;
 EXPORT template<typename Value_type>
 class Function_matrix_divide_by_scalar : public Function_matrix<Value_type>
 //******************************************************************************
-// LAST MODIFIED : 6 March 2005
+// LAST MODIFIED : 21 April 2005
 //
 // DESCRIPTION :
 // Output is the dividend (has matrix value) divided by the divisor (has 1x1
@@ -30,6 +30,7 @@ class Function_matrix_divide_by_scalar : public Function_matrix<Value_type>
 		friend bool equivalent(boost::intrusive_ptr<Value_type_1> const &,
 		boost::intrusive_ptr<Value_type_2> const &);
 	friend class Function_variable_matrix_divide_by_scalar<Value_type>;
+	friend class Function_derivatnew_matrix_divide_by_scalar;
 	public:
 		// for construction exception
 		class Invalid_dividend_divisor {};

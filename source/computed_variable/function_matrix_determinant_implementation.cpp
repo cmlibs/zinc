@@ -1,7 +1,7 @@
 //******************************************************************************
 // FILE : function_matrix_determinant_implementation.cpp
 //
-// LAST MODIFIED : 28 February 2005
+// LAST MODIFIED : 20 April 2005
 //
 // DESCRIPTION :
 //==============================================================================
@@ -24,7 +24,7 @@ EXPORT template<typename Value_type>
 class Function_variable_matrix_determinant :
 	public Function_variable_matrix<Value_type>
 //******************************************************************************
-// LAST MODIFIED : 28 February 2005
+// LAST MODIFIED : 20 April 2005
 //
 // DESCRIPTION :
 //==============================================================================
@@ -143,10 +143,12 @@ class Function_variable_matrix_determinant :
 			return (result);
 		};
 #endif // defined (EVALUATE_RETURNS_VALUE)
-		Function_handle evaluate_derivative(std::list<Function_variable_handle>&)
-		{
-			return (0);
-		};
+#if defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
+		Function_handle evaluate_derivative(std::list<Function_variable_handle>&);
+#else // defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
+		virtual Function_handle derivative(
+			const std::list<Function_variable_handle>&);
+#endif // defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
 		//???DB.  Should operator() and get_entry do an evaluate?
 		boost::intrusive_ptr< Function_variable_matrix<Value_type> > operator()(
 			Function_size_type row=1,Function_size_type column=1) const

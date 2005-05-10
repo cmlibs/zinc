@@ -1,7 +1,7 @@
 //******************************************************************************
 // FILE : function_matrix_dot_product.hpp
 //
-// LAST MODIFIED : 13 January 2005
+// LAST MODIFIED : 12 April 2005
 //
 // DESCRIPTION :
 //==============================================================================
@@ -14,12 +14,15 @@
 #include "computed_variable/function_variable_matrix.hpp"
 
 template<typename Value_type>
+class Function_derivatnew_matrix_dot_product;
+
+template<typename Value_type>
 class Function_variable_matrix_dot_product;
 
 EXPORT template<typename Value_type>
 class Function_matrix_dot_product : public Function_matrix<Value_type>
 //******************************************************************************
-// LAST MODIFIED : 13 January 2005
+// LAST MODIFIED : 12 April 2005
 //
 // DESCRIPTION :
 // Output is the dot product of two matrix variables (sum of products of
@@ -29,6 +32,7 @@ class Function_matrix_dot_product : public Function_matrix<Value_type>
 	template<class Value_type_1,class Value_type_2>
 		friend bool equivalent(boost::intrusive_ptr<Value_type_1> const &,
 		boost::intrusive_ptr<Value_type_2> const &);
+	friend class Function_derivatnew_matrix_dot_product<Value_type>;
 	friend class Function_variable_matrix_dot_product<Value_type>;
 	public:
 		// for construction exception
