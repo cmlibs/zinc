@@ -1,7 +1,7 @@
 //******************************************************************************
 // FILE : function_matrix_trace_implementation.cpp
 //
-// LAST MODIFIED : 28 February 2005
+// LAST MODIFIED : 26 April 2005
 //
 // DESCRIPTION :
 //==============================================================================
@@ -24,7 +24,7 @@ EXPORT template<typename Value_type>
 class Function_variable_matrix_trace :
 	public Function_variable_matrix<Value_type>
 //******************************************************************************
-// LAST MODIFIED : 28 February 2005
+// LAST MODIFIED : 26 April 2005
 //
 // DESCRIPTION :
 //==============================================================================
@@ -70,7 +70,7 @@ class Function_variable_matrix_trace :
 					Value_type sum;
 
 					sum=0;
-					for (i=1;i<=number_of_rows;i++)
+					for (i=1;i<=number_of_rows;++i)
 					{
 						sum += (*matrix)(i,i);
 					}
@@ -93,7 +93,7 @@ class Function_variable_matrix_trace :
 						Value_type sum;
 
 						sum=0;
-						for (i=1;i<=number_of_rows;i++)
+						for (i=1;i<=number_of_rows;++i)
 						{
 							sum += (*matrix)(i,i);
 						}
@@ -136,7 +136,7 @@ class Function_variable_matrix_trace :
 					Value_type sum;
 
 					sum=0;
-					for (i=1;i<=number_of_rows;i++)
+					for (i=1;i<=number_of_rows;++i)
 					{
 						sum += (*matrix)(i,i);
 					}
@@ -160,7 +160,7 @@ class Function_variable_matrix_trace :
 						Value_type sum;
 
 						sum=0;
-						for (i=1;i<=number_of_rows;i++)
+						for (i=1;i<=number_of_rows;++i)
 						{
 							sum += (*matrix)(i,i);
 						}
@@ -175,10 +175,12 @@ class Function_variable_matrix_trace :
 			return (result);
 		};
 #endif // defined (EVALUATE_RETURNS_VALUE)
-		Function_handle evaluate_derivative(std::list<Function_variable_handle>&)
-		{
-			return (0);
-		};
+#if defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
+		Function_handle evaluate_derivative(std::list<Function_variable_handle>&);
+#else // defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
+		virtual Function_handle derivative(
+			const std::list<Function_variable_handle>&);
+#endif // defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
 		//???DB.  Should operator() and get_entry do an evaluate?
 		boost::intrusive_ptr< Function_variable_matrix<Value_type> > operator()(
 			Function_size_type row=1,Function_size_type column=1) const
@@ -384,7 +386,7 @@ EXPORT template<typename Value_type>
 Function_handle Function_matrix_trace<Value_type>::evaluate(
 	Function_variable_handle atomic_variable)
 //******************************************************************************
-// LAST MODIFIED : 10 September 2004
+// LAST MODIFIED : 7 April 2005
 //
 // DESCRIPTION :
 //==============================================================================
@@ -412,7 +414,7 @@ Function_handle Function_matrix_trace<Value_type>::evaluate(
 			(temp_variable->evaluate())&&(temp_variable->get_entry(value)))
 		{
 			sum += value;
-			i++;
+			++i;
 		}
 		if (i>number_of_rows);
 		{

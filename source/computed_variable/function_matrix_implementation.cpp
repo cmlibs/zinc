@@ -1,7 +1,7 @@
 //******************************************************************************
 // FILE : function_matrix_implementation.cpp
 //
-// LAST MODIFIED : 1 March 2005
+// LAST MODIFIED : 18 April 2005
 //
 // DESCRIPTION :
 //???DB.  Should be linear transformation (with Function_variable_matrix as an
@@ -23,11 +23,19 @@ namespace lapack = boost::numeric::bindings::lapack;
 #include "computed_variable/function_variable_matrix.hpp"
 #include "computed_variable/function_variable_value_specific.hpp"
 
+#if defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
+#else // defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
+#include "computed_variable/function_derivative.hpp"
+#endif // defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
+
 #define Function_matrix_INPUT_AND_OUTPUT_ARE_DISTINCT
 
 #if defined (Function_matrix_INPUT_AND_OUTPUT_ARE_DISTINCT)
 // module classes
 // ==============
+
+//???DB.  Testing
+class Function_derivatnew_identity;
 
 // class Function_variable_matrix_input
 // ------------------------------------
@@ -36,7 +44,7 @@ EXPORT template<typename Value_type>
 class Function_variable_matrix_input :
 	public Function_variable_matrix<Value_type>
 //******************************************************************************
-// LAST MODIFIED : 1 March 2005
+// LAST MODIFIED : 15 April 2005
 //
 // DESCRIPTION :
 //==============================================================================
@@ -58,6 +66,15 @@ class Function_variable_matrix_input :
 			return (Function_variable_handle(
 				new Function_variable_matrix_input<Value_type>(*this)));
 		};
+#if defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
+#else // defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
+		Function_handle derivative(
+			const std::list<Function_variable_handle>& independent_variables)
+		{
+			return (Function_handle(new Function_derivatnew_identity(
+				Function_variable_handle(this),independent_variables)));
+		}
+#endif // defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
 		//???DB.  Should operator() and get_entry do an evaluate?
 		boost::intrusive_ptr< Function_variable_matrix<Value_type> > operator()(
 			Function_size_type row=1,Function_size_type column=1) const
@@ -88,7 +105,7 @@ EXPORT template<typename Value_type>
 class Function_variable_matrix_output :
 	public Function_variable_matrix<Value_type>
 //******************************************************************************
-// LAST MODIFIED : 1 March 2005
+// LAST MODIFIED : 18 April 2005
 //
 // DESCRIPTION :
 //==============================================================================
@@ -110,6 +127,15 @@ class Function_variable_matrix_output :
 			return (Function_variable_handle(
 				new Function_variable_matrix_output<Value_type>(*this)));
 		};
+#if defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
+#else // defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
+		Function_handle derivative(
+			const std::list<Function_variable_handle>& independent_variables)
+		{
+			return (Function_handle(new Function_derivatnew_identity(
+				Function_variable_handle(this),independent_variables)));
+		}
+#endif // defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
 		//???DB.  Should operator() and get_entry do an evaluate?
 		boost::intrusive_ptr< Function_variable_matrix<Value_type> > operator()(
 			Function_size_type row=1,Function_size_type column=1) const
@@ -247,7 +273,7 @@ bool Function_matrix<Value_type>::operator==(const Function&
 #endif // defined (OLD_CODE)
 	) const
 //******************************************************************************
-// LAST MODIFIED : 26 January 2005
+// LAST MODIFIED : 7 April 2005
 //
 // DESCRIPTION :
 // Equality operator.
@@ -272,11 +298,11 @@ bool Function_matrix<Value_type>::operator==(const Function&
 				result=true;
 				while (result&&(number_of_rows>0))
 				{
-					number_of_rows--;
+					--number_of_rows;
 					j=number_of_columns;
 					while (result&&(j>0))
 					{
-						j--;
+						--j;
 						result=(values(number_of_rows,j)==
 							function_matrix.values(number_of_rows,j));
 					}
@@ -334,7 +360,7 @@ boost::intrusive_ptr< Function_matrix<Value_type> >
 	Function_size_type row_high,Function_size_type column_low,
 	Function_size_type column_high) const
 //******************************************************************************
-// LAST MODIFIED : 6 August 2004
+// LAST MODIFIED : 7 April 2005
 //
 // DESCRIPTION :
 // Returns the specified sub-matrix.
@@ -350,9 +376,9 @@ boost::intrusive_ptr< Function_matrix<Value_type> >
 		ublas::matrix<Value_type,ublas::column_major>
 			temp_matrix(number_of_rows,number_of_columns);
 
-		for (i=0;i<number_of_rows;i++)
+		for (i=0;i<number_of_rows;++i)
 		{
-			for (j=0;j<number_of_columns;j++)
+			for (j=0;j<number_of_columns;++j)
 			{
 				temp_matrix(i,j)=values(i+row_low-1,j+column_low-1);
 			}

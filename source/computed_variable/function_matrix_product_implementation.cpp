@@ -1,7 +1,7 @@
 //******************************************************************************
 // FILE : function_matrix_product_implementation.cpp
 //
-// LAST MODIFIED : 28 February 2005
+// LAST MODIFIED : 21 April 2005
 //
 // DESCRIPTION :
 //==============================================================================
@@ -25,7 +25,7 @@ EXPORT template<typename Value_type>
 class Function_variable_matrix_product :
 	public Function_variable_matrix<Value_type>
 //******************************************************************************
-// LAST MODIFIED : 28 February 2005
+// LAST MODIFIED : 21 April 2005
 //
 // DESCRIPTION :
 //==============================================================================
@@ -88,12 +88,12 @@ class Function_variable_matrix_product :
 
 					function_matrix_product->values.resize(number_of_rows,
 						number_of_columns);
-					for (i=1;i<=number_of_rows;i++)
+					for (i=1;i<=number_of_rows;++i)
 					{
-						for (j=1;j<=number_of_columns;j++)
+						for (j=1;j<=number_of_columns;++j)
 						{
 							sum=0;
-							for (k=1;k<=number_in_sum;k++)
+							for (k=1;k<=number_in_sum;++k)
 							{
 								sum += (*multiplier)(i,k)*(*multiplicand)(k,j);
 							}
@@ -112,7 +112,7 @@ class Function_variable_matrix_product :
 							ublas::matrix<Value_type,ublas::column_major>
 								result_matrix(number_of_rows,1);
 
-							for (i=0;i<number_of_rows;i++)
+							for (i=0;i<number_of_rows;++i)
 							{
 								result_matrix(i,0)=(function_matrix_product->values)(
 									i,column_private-1);
@@ -128,7 +128,7 @@ class Function_variable_matrix_product :
 							ublas::matrix<Value_type,ublas::column_major>
 								result_matrix(1,number_of_columns);
 
-							for (j=0;j<number_of_columns;j++)
+							for (j=0;j<number_of_columns;++j)
 							{
 								result_matrix(0,j)=(function_matrix_product->values)(
 									row_private-1,j);
@@ -171,12 +171,12 @@ class Function_variable_matrix_product :
 
 						function_matrix_product->values.resize(number_of_rows,
 							number_of_columns);
-						for (i=1;i<=number_of_rows;i++)
+						for (i=1;i<=number_of_rows;++i)
 						{
-							for (j=1;j<=number_of_columns;j++)
+							for (j=1;j<=number_of_columns;++j)
 							{
 								sum=0;
-								for (k=1;k<=number_in_sum;k++)
+								for (k=1;k<=number_in_sum;++k)
 								{
 									sum += (*multiplier)(i,k)*(*multiplicand)(k,j);
 								}
@@ -229,12 +229,12 @@ class Function_variable_matrix_product :
 
 					function_matrix_product->values.resize(number_of_rows,
 						number_of_columns);
-					for (i=1;i<=number_of_rows;i++)
+					for (i=1;i<=number_of_rows;++i)
 					{
-						for (j=1;j<=number_of_columns;j++)
+						for (j=1;j<=number_of_columns;++j)
 						{
 							sum=0;
-							for (k=1;k<=number_in_sum;k++)
+							for (k=1;k<=number_in_sum;++k)
 							{
 								sum += (*multiplier)(i,k)*(*multiplicand)(k,j);
 							}
@@ -270,12 +270,12 @@ class Function_variable_matrix_product :
 
 						function_matrix_product->values.resize(number_of_rows,
 							number_of_columns);
-						for (i=1;i<=number_of_rows;i++)
+						for (i=1;i<=number_of_rows;++i)
 						{
-							for (j=1;j<=number_of_columns;j++)
+							for (j=1;j<=number_of_columns;++j)
 							{
 								sum=0;
-								for (k=1;k<=number_in_sum;k++)
+								for (k=1;k<=number_in_sum;++k)
 								{
 									sum += (*multiplier)(i,k)*(*multiplicand)(k,j);
 								}
@@ -292,10 +292,12 @@ class Function_variable_matrix_product :
 			return (result);
 		};
 #endif // defined (EVALUATE_RETURNS_VALUE)
-		Function_handle evaluate_derivative(std::list<Function_variable_handle>&)
-		{
-			return (0);
-		};
+#if defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
+		Function_handle evaluate_derivative(std::list<Function_variable_handle>&);
+#else // defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
+		virtual Function_handle derivative(
+			const std::list<Function_variable_handle>&);
+#endif // defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
 		//???DB.  Should operator() and get_entry do an evaluate?
 		boost::intrusive_ptr< Function_variable_matrix<Value_type> > operator()(
 			Function_size_type row=1,Function_size_type column=1) const
@@ -534,7 +536,7 @@ EXPORT template<typename Value_type>
 Function_handle Function_matrix_product<Value_type>::evaluate(
 	Function_variable_handle atomic_variable)
 //******************************************************************************
-// LAST MODIFIED : 22 September 2004
+// LAST MODIFIED : 7 April 2005
 //
 // DESCRIPTION :
 //==============================================================================
@@ -582,15 +584,15 @@ Function_handle Function_matrix_product<Value_type>::evaluate(
 					copy_number_of_columns=number_of_columns;
 				}
 				values.resize(number_of_rows,number_of_columns);
-				for (i=0;i<number_of_rows;i++)
+				for (i=0;i<number_of_rows;++i)
 				{
-					for (j=0;j<number_of_columns;j++)
+					for (j=0;j<number_of_columns;++j)
 					{
 						values(i,j)=save_values(i,j);
 					}
 				}
 			}
-			for (i=1;i<=number_in_sum;i++)
+			for (i=1;i<=number_in_sum;++i)
 			{
 				sum += (*multiplier)(row,i)*(*multiplicand)(i,column);
 			}

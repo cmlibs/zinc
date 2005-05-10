@@ -1,32 +1,126 @@
 //******************************************************************************
 // FILE : function_linear_span.cpp
 //
-// LAST MODIFIED : 1 March 2005
+// LAST MODIFIED : 29 April 2005
 //
 // DESCRIPTION :
+// ???DB.  Need to be able to turn off change notification so that can change
+//   spanning variable, calculate and then set back to original?
 //==============================================================================
 
 #include <sstream>
 
-#if defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
-#else // defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
-#include "computed_variable/function_derivative.hpp"
-#endif // defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
 #include "computed_variable/function_linear_span.hpp"
 #include "computed_variable/function_matrix.hpp"
 #include "computed_variable/function_variable.hpp"
 #include "computed_variable/function_variable_exclusion.hpp"
 #include "computed_variable/function_variable_matrix.hpp"
 
+#if defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
+#else // defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
+#include "computed_variable/function_derivative.hpp"
+#endif // defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
+
 // module classes
 // ==============
+
+#if defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
+#else // defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
+// class Function_derivatnew_linear_span
+// ---------------------------------
+
+class Function_derivatnew_linear_span : public Function_derivatnew
+//******************************************************************************
+// LAST MODIFIED : 28 April 2005
+//
+// DESCRIPTION :
+//==============================================================================
+{
+	public:
+		// for construction exception
+		class Construction_exception {};
+		// constructor
+		Function_derivatnew_linear_span(
+			const Function_variable_handle& dependent_variable,
+			const std::list<Function_variable_handle>& independent_variables);
+		// destructor
+		~Function_derivatnew_linear_span();
+	// inherited
+	private:
+		virtual
+#if defined (EVALUATE_RETURNS_VALUE)
+			Function_handle
+#else // defined (EVALUATE_RETURNS_VALUE)
+			bool
+#endif // defined (EVALUATE_RETURNS_VALUE)
+			evaluate(Function_variable_handle atomic_variable);
+	private:
+		Function_derivatnew_handle spanned_derivative;
+};
+
+Function_derivatnew_linear_span::Function_derivatnew_linear_span(
+	const Function_variable_handle& dependent_variable,
+	const std::list<Function_variable_handle>& independent_variables):
+	Function_derivatnew(dependent_variable,independent_variables)
+//******************************************************************************
+// LAST MODIFIED : 28 April 2005
+//
+// DESCRIPTION :
+// Constructor.
+//==============================================================================
+{
+	boost::intrusive_ptr<Function_linear_span> function_linear_span;
+	boost::intrusive_ptr<Function_variable_linear_span> variable_linear_span;
+
+	if ((variable_linear_span=boost::dynamic_pointer_cast<
+		Function_variable_linear_span,Function_variable>(
+		dependent_variable))&&(function_linear_span=
+		boost::dynamic_pointer_cast<Function_linear_span,Function>(
+		dependent_variable->function())))
+	{
+		if (spanned_derivative=boost::dynamic_pointer_cast<Function_derivatnew,
+			Function>(function_linear_span->spanned_variable_private->derivative(
+			independent_variables)))
+		{
+			spanned_derivative->add_dependent_function(this);
+		}
+		else
+		{
+			throw Function_derivatnew_linear_span::Construction_exception();
+		}
+	}
+	else
+	{
+		throw Function_derivatnew_linear_span::Construction_exception();
+	}
+}
+
+Function_derivatnew_linear_span::~Function_derivatnew_linear_span()
+//******************************************************************************
+// LAST MODIFIED : 28 April 2005
+//
+// DESCRIPTION :
+// Destructor.
+//==============================================================================
+{
+#if defined (CIRCULAR_SMART_POINTERS)
+	// do nothing
+#else // defined (CIRCULAR_SMART_POINTERS)
+	if (spanned_derivative)
+	{
+		spanned_derivative->remove_dependent_function(this);
+	}
+#endif // defined (CIRCULAR_SMART_POINTERS)
+}
+#endif // defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
+
 
 // class Function_variable_linear_span
 // -----------------------------------
 
 class Function_variable_linear_span : public Function_variable_matrix<Scalar>
 //******************************************************************************
-// LAST MODIFIED : 1 March 2005
+// LAST MODIFIED : 28 April 2005
 //
 // DESCRIPTION :
 // Evaluates to a vector.
@@ -121,16 +215,16 @@ class Function_variable_linear_span : public Function_variable_matrix<Scalar>
 								while (valid&&
 									(spanning_variable_iterator!=spanning_variable_iterator_end))
 								{
-									for (i=1;i<=number_of_spanned_rows;i++)
+									for (i=1;i<=number_of_spanned_rows;++i)
 									{
-										for (j=1;j<=number_of_spanned_columns;j++)
+										for (j=1;j<=number_of_spanned_columns;++j)
 										{
 											result_matrix(k,0)=(*spanned_value)(i,j);
-											k++;
+											++k;
 										}
 									}
 									(*spanning_variable_iterator)->set_value(zero_value);
-									spanning_variable_iterator++;
+									++spanning_variable_iterator;
 									if (spanning_variable_iterator!=
 										spanning_variable_iterator_end)
 									{
@@ -245,16 +339,16 @@ class Function_variable_linear_span : public Function_variable_matrix<Scalar>
 								while (valid&&(spanning_variable_iterator!=
 									spanning_variable_iterator_end))
 								{
-									for (i=1;i<=number_of_spanned_rows;i++)
+									for (i=1;i<=number_of_spanned_rows;++i)
 									{
-										for (j=1;j<=number_of_spanned_columns;j++)
+										for (j=1;j<=number_of_spanned_columns;++j)
 										{
 											result_matrix(k,0)=(*spanned_value)(i,j);
-											k++;
+											++k;
 										}
 									}
 									(*spanning_variable_iterator)->set_value(zero_value);
-									spanning_variable_iterator++;
+									++spanning_variable_iterator;
 									if (spanning_variable_iterator!=
 										spanning_variable_iterator_end)
 									{
@@ -349,16 +443,16 @@ class Function_variable_linear_span : public Function_variable_matrix<Scalar>
 								while (result&&
 									(spanning_variable_iterator!=spanning_variable_iterator_end))
 								{
-									for (i=1;i<=number_of_spanned_rows;i++)
+									for (i=1;i<=number_of_spanned_rows;++i)
 									{
-										for (j=1;j<=number_of_spanned_columns;j++)
+										for (j=1;j<=number_of_spanned_columns;++j)
 										{
 											result_matrix(k,0)=(*spanned_value)(i,j);
-											k++;
+											++k;
 										}
 									}
 									(*spanning_variable_iterator)->set_value(zero_value);
-									spanning_variable_iterator++;
+									++spanning_variable_iterator;
 									if (spanning_variable_iterator!=
 										spanning_variable_iterator_end)
 									{
@@ -465,16 +559,16 @@ class Function_variable_linear_span : public Function_variable_matrix<Scalar>
 								while (result&&(spanning_variable_iterator!=
 									spanning_variable_iterator_end))
 								{
-									for (i=1;i<=number_of_spanned_rows;i++)
+									for (i=1;i<=number_of_spanned_rows;++i)
 									{
-										for (j=1;j<=number_of_spanned_columns;j++)
+										for (j=1;j<=number_of_spanned_columns;++j)
 										{
 											result_matrix(k,0)=(*spanned_value)(i,j);
-											k++;
+											++k;
 										}
 									}
 									(*spanning_variable_iterator)->set_value(zero_value);
-									spanning_variable_iterator++;
+									++spanning_variable_iterator;
 									if (spanning_variable_iterator!=
 										spanning_variable_iterator_end)
 									{
@@ -504,8 +598,10 @@ class Function_variable_linear_span : public Function_variable_matrix<Scalar>
 			return (result);
 		};
 #endif // defined (EVALUATE_RETURNS_VALUE)
+#if defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
 		Function_handle evaluate_derivative(
 			std::list<Function_variable_handle>& independent_variables)
+#if defined (OLD_CODE)
 		{
 			boost::intrusive_ptr< Function_matrix<Scalar> > spanned_derivative;
 			Function_linear_span_handle function_linear_span=
@@ -578,16 +674,16 @@ class Function_variable_linear_span : public Function_variable_matrix<Scalar>
 							while (valid&&
 								(spanning_variable_iterator!=spanning_variable_iterator_end))
 							{
-								for (i=1;i<=number_of_spanned_values;i++)
+								for (i=1;i<=number_of_spanned_values;++i)
 								{
-									for (j=1;j<=number_of_derivatives;j++)
+									for (j=1;j<=number_of_derivatives;++j)
 									{
 										result_matrix(k,j-1)=(*spanned_derivative)(i,j);
 									}
-									k++;
+									++k;
 								}
 								(*spanning_variable_iterator)->set_value(zero_value);
-								spanning_variable_iterator++;
+								++spanning_variable_iterator;
 								if (spanning_variable_iterator!=spanning_variable_iterator_end)
 								{
 									(*spanning_variable_iterator)->set_value(one_value);
@@ -650,7 +746,7 @@ class Function_variable_linear_span : public Function_variable_matrix<Scalar>
 								number_of_derivatives))
 							{
 								k=1+(row_private-1)%number_of_spanned_values;
-								for (j=1;j<=number_of_derivatives;j++)
+								for (j=1;j<=number_of_derivatives;++j)
 								{
 									result_matrix(0,j-1)=(*spanned_derivative)(k,j);
 								}
@@ -664,7 +760,17 @@ class Function_variable_linear_span : public Function_variable_matrix<Scalar>
 			}
 
 			return (result);
-		};
+		}
+#endif // defined (OLD_CODE)
+		;
+#else // defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
+		Function_handle derivative(
+			const std::list<Function_variable_handle>& independent_variables)
+		{
+			return (Function_handle(new Function_derivatnew_linear_span(
+				Function_variable_handle(this),independent_variables)));
+		}
+#endif // defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
 		string_handle get_string_representation()
 		{
 			Function_linear_span_handle function_linear_span=
@@ -711,6 +817,275 @@ class Function_variable_linear_span : public Function_variable_matrix<Scalar>
 			const Function_variable_linear_span& variable_linear_span):
 			Function_variable_matrix<Scalar>(variable_linear_span){};
 };
+
+#if defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
+Function_handle Function_variable_linear_span::evaluate_derivative(
+	std::list<Function_variable_handle>& independent_variables)
+#else // defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
+#if defined (EVALUATE_RETURNS_VALUE)
+Function_handle
+#else // defined (EVALUATE_RETURNS_VALUE)
+bool
+#endif // defined (EVALUATE_RETURNS_VALUE)
+	Function_derivatnew_linear_span::evaluate(
+	Function_variable_handle
+#if defined (EVALUATE_RETURNS_VALUE)
+	atomic_variable
+#else // defined (EVALUATE_RETURNS_VALUE)
+#endif // defined (EVALUATE_RETURNS_VALUE)
+	)
+#endif // defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
+//******************************************************************************
+// LAST MODIFIED : 29 April 2005
+//
+// DESCRIPTION :
+//==============================================================================
+{
+#if defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE) || defined (EVALUATE_RETURNS_VALUE)
+	Function_handle result(0);
+#else // defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE) || defined (EVALUATE_RETURNS_VALUE)
+	bool result(true);
+#endif // defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE) || defined (EVALUATE_RETURNS_VALUE)
+
+#if defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
+#else // defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
+	if (!evaluated())
+#endif // defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
+	{
+		Function_linear_span_handle function_linear_span;
+		Function_handle spanning_value;
+		Function_size_type number_of_derivatives,number_of_spanned_values,
+			number_of_spanning_values;
+		Function_variable_handle spanned_variable,spanning_variable;
+#if defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
+#else // defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
+		boost::intrusive_ptr<Function_variable_linear_span> variable_linear_span;
+#endif // defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
+
+#if defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
+#else // defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
+		result=false;
+#endif // defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
+		if (
+#if defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
+#else // defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
+			(variable_linear_span=boost::dynamic_pointer_cast<
+			Function_variable_linear_span,Function_variable>(dependent_variable))&&
+#endif // defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
+			(function_linear_span=boost::dynamic_pointer_cast<Function_linear_span,
+			Function>(
+#if defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
+#else // defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
+			dependent_variable->
+#endif // defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
+			function()))&&
+			(spanned_variable=function_linear_span->spanned_variable_private)&&
+			(spanning_variable=function_linear_span->spanning_variable_private)&&
+			(spanning_value=spanning_variable->get_value())&&
+			(0<(number_of_spanning_values=spanning_variable->
+			number_differentiable())))
+		{
+			Matrix basis_matrix(number_of_spanning_values,1);
+#if defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
+#else // defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
+			Function_size_type row_private=variable_linear_span->row();
+#endif // defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
+
+			basis_matrix.clear();
+			basis_matrix(0,0)=1;
+			if (spanning_variable->set_value(Function_handle(
+				new Function_matrix<Scalar>(basis_matrix))))
+			{
+#if defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
+				boost::intrusive_ptr< Function_matrix<Scalar> > spanned_derivative;
+#else // defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
+				Function_variable_handle spanned_derivative_output;
+#endif // defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
+
+				if (
+#if defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
+					(spanned_derivative=boost::dynamic_pointer_cast<
+					Function_matrix<Scalar>,Function>(spanned_variable->
+					evaluate_derivative(independent_variables)))&&
+					(0<(number_of_spanned_values=
+					spanned_derivative->number_of_rows()))&&
+					(0<(number_of_derivatives=spanned_derivative->number_of_columns()))
+#else // defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
+					(spanned_derivative_output=spanned_derivative->output())&&
+					(spanned_derivative_output->evaluate())&&
+					(0<(number_of_spanned_values=
+					(spanned_derivative->derivative_matrix).front().size1()))
+#endif // defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
+					)
+				{
+					Function_size_type j,k;
+
+					if (0==row_private)
+					{
+						bool valid;
+						Matrix temp_matrix(1,1);
+						boost::intrusive_ptr< Function_matrix<Scalar> >
+							one_value(new Function_matrix<Scalar>(temp_matrix)),
+							zero_value(new Function_matrix<Scalar>(temp_matrix));
+						Function_size_type i;
+						Function_variable_iterator spanning_variable_iterator,
+							spanning_variable_iterator_end;
+#if defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
+						Matrix result_matrix(
+							number_of_spanning_values*number_of_spanned_values,
+							number_of_derivatives);
+#else // defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
+						Function_size_type km,m;
+						std::list<Matrix> matrices;
+						std::list<Matrix>::iterator matrix_iterator,result_matrix_iterator;
+#endif // defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
+
+#if defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
+#else // defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
+						derivative_matrix.clear();
+						matrix_iterator=(spanned_derivative->derivative_matrix).begin();
+						for (m=(spanned_derivative->derivative_matrix).size();m>0;--m)
+						{
+							Matrix& matrix_derivative= *matrix_iterator;
+							Matrix result_matrix(
+								number_of_spanning_values*number_of_spanned_values,
+								(number_of_derivatives=matrix_derivative.size2()));
+
+							matrices.push_back(result_matrix);
+							matrix_iterator++;
+						}
+#endif // defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
+						//???DB.  Where I'm up to
+						valid=true;
+						(*one_value)(1,1)=1;
+						(*zero_value)(1,1)=0;
+						spanning_variable_iterator=spanning_variable->begin_atomic();
+						spanning_variable_iterator_end=spanning_variable->end_atomic();
+						k=0;
+						while (valid&&
+							(spanning_variable_iterator!=spanning_variable_iterator_end))
+						{
+#if defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
+							for (i=1;i<=number_of_spanned_values;++i)
+							{
+								for (j=1;j<=number_of_derivatives;++j)
+								{
+									result_matrix(k,j-1)=(*spanned_derivative)(i,j);
+								}
+								++k;
+							}
+#else // defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
+							matrix_iterator=(spanned_derivative->derivative_matrix).begin();
+							result_matrix_iterator=matrices.begin();
+							for (m=matrices.size();m>0;--m)
+							{
+								Matrix& matrix_derivative= *matrix_iterator;
+								Matrix& result_matrix= *result_matrix_iterator;
+
+								number_of_derivatives=matrix_derivative.size2();
+								km=k;
+								for (i=0;i<number_of_spanned_values;++i)
+								{
+									for (j=0;j<number_of_derivatives;++j)
+									{
+										result_matrix(km,j)=matrix_derivative(i,j);
+									}
+									++km;
+								}
+								matrix_iterator++;
+								result_matrix_iterator++;
+							}
+							k += number_of_spanned_values;
+#endif // defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
+							(*spanning_variable_iterator)->set_value(zero_value);
+							++spanning_variable_iterator;
+							if (spanning_variable_iterator!=spanning_variable_iterator_end)
+							{
+								(*spanning_variable_iterator)->set_value(one_value);
+								valid=
+#if defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
+									(spanned_derivative=boost::dynamic_pointer_cast<
+									Function_matrix<Scalar>,Function>(
+									spanned_variable->evaluate_derivative(
+									independent_variables)))&&
+									(spanned_derivative->number_of_rows()==
+									number_of_spanned_values)&&
+									(spanned_derivative->number_of_columns()==
+									number_of_derivatives)
+#else // defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
+									(spanned_derivative_output->evaluate())
+#endif // defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
+									;
+							}
+						}
+						if (valid)
+						{
+#if defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
+							result=
+								Function_handle(new Function_matrix<Scalar>(result_matrix));
+#else // defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
+							derivative_matrix=Derivative_matrix(matrices);
+							result=true;
+#endif // defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
+						}
+					}
+					else
+					{
+#if defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
+						Matrix result_matrix(1,number_of_derivatives);
+#else // defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
+#endif // defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
+
+						k=(row_private-1)/number_of_spanned_values;
+						basis_matrix(0,0)=0;
+						basis_matrix(k,0)=1;
+						if ((spanning_variable->set_value(Function_handle(
+							new Function_matrix<Scalar>(basis_matrix))))&&
+#if defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
+							(spanned_derivative=boost::dynamic_pointer_cast<
+							Function_matrix<Scalar>,Function>(
+							spanned_variable->evaluate_derivative(independent_variables)))&&
+							(spanned_derivative->number_of_rows()==
+							number_of_spanned_values)&&
+							(spanned_derivative->number_of_columns()==
+							number_of_derivatives)
+#else // defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
+							(spanned_derivative_output->evaluate())
+#endif // defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
+							)
+						{
+#if defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
+							k=1+(row_private-1)%number_of_spanned_values;
+							for (j=1;j<=number_of_derivatives;++j)
+							{
+								result_matrix(0,j-1)=(*spanned_derivative)(k,j);
+							}
+							result=
+								Function_handle(new Function_matrix<Scalar>(result_matrix));
+#else // defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
+							derivative_matrix=spanned_derivative->derivative_matrix;
+							result=true;
+#endif // defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
+						}
+					}
+				}
+				spanning_variable->set_value(spanning_value);
+			}
+		}
+	}
+#if defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
+#else // defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
+#if defined (EVALUATE_RETURNS_VALUE)
+	if (evaluated())
+	{
+		result=get_value(atomic_variable);
+	}
+#else // defined (EVALUATE_RETURNS_VALUE)
+#endif // defined (EVALUATE_RETURNS_VALUE)
+#endif // defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
+
+	return (result);
+}
 
 // global classes
 // ==============
@@ -887,7 +1262,7 @@ bool Function_linear_span::evaluate_derivative(Scalar& derivative,
 	Function_variable_handle atomic_variable,
 	std::list<Function_variable_handle>& atomic_independent_variables)
 //******************************************************************************
-// LAST MODIFIED : 10 November 2004
+// LAST MODIFIED : 28 April 2005
 //
 // DESCRIPTION :
 //==============================================================================
@@ -905,15 +1280,33 @@ bool Function_linear_span::evaluate_derivative(Scalar& derivative,
 		(0<atomic_variable_linear_span->column())&&
 		(0<atomic_independent_variables.size()))
 	{
-		boost::intrusive_ptr< Function_matrix<Scalar> > derivative_matrix=
-			boost::dynamic_pointer_cast<Function_matrix<Scalar>,Function>(
-			atomic_variable_linear_span->evaluate_derivative(
-			atomic_independent_variables));
+		boost::intrusive_ptr< Function_matrix<Scalar> > derivative_value;
+#if defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
+#else // defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
+		Function_derivatnew_handle derivative_function;
+		Function_variable_handle derivative_variable;
+#endif // defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
 
-		if (derivative_matrix)
+		if (
+#if defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
+			(derivative_value=boost::dynamic_pointer_cast<
+			Function_matrix<Scalar>,Function>(atomic_variable_linear_span->
+			evaluate_derivative(atomic_independent_variables)))&&
+#else // defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
+			(derivative_function=boost::dynamic_pointer_cast<Function_derivatnew,
+			Function>(atomic_variable_linear_span->derivative(
+			atomic_independent_variables)))&&(derivative_variable=
+			derivative_function->output())&&(derivative_variable->evaluate())&&
+			(derivative_variable=derivative_function->matrix(
+			atomic_independent_variables))&&
+			(derivative_value=boost::dynamic_pointer_cast<Function_matrix<Scalar>,
+			Function>(derivative_variable->get_value()))&&
+#endif // defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
+			(1==derivative_value->number_of_rows())&&
+			(1==derivative_value->number_of_columns()))
 		{
+			derivative=(*derivative_value)(1,1);
 			result=true;
-			derivative=(*derivative_matrix)(1,1);
 		}
 	}
 

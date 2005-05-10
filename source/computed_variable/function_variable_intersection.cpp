@@ -1,7 +1,7 @@
 //******************************************************************************
 // FILE : function_variable_intersection.cpp
 //
-// LAST MODIFIED : 11 January 2005
+// LAST MODIFIED : 10 May 2005
 //
 // DESCRIPTION :
 //==============================================================================
@@ -14,8 +14,262 @@
 
 #include "computed_variable/function_variable_intersection.hpp"
 
+#if defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
+#else // defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
+#include "computed_variable/function_derivative.hpp"
+#endif // defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
+
 // module classes
 // ==============
+
+#if defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
+#else // defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
+// class Function_derivatnew_intersection
+// --------------------------------------
+
+class Function_derivatnew_intersection : public Function_derivatnew
+//******************************************************************************
+// LAST MODIFIED : 9 May 2005
+//
+// DESCRIPTION :
+//==============================================================================
+{
+	public:
+		// for construction exception
+		class Construction_exception {};
+		// constructor
+		Function_derivatnew_intersection(
+			const Function_variable_handle& dependent_variable,
+			const std::list<Function_variable_handle>& independent_variables);
+		// destructor
+		~Function_derivatnew_intersection();
+	// inherited
+	private:
+#if defined (EVALUATE_RETURNS_VALUE)
+		virtual Function_handle evaluate(Function_variable_handle atomic_variable);
+#else // defined (EVALUATE_RETURNS_VALUE)
+		virtual bool evaluate(Function_variable_handle atomic_variable);
+#endif // defined (EVALUATE_RETURNS_VALUE)
+	private:
+		Function_derivatnew_handle first_variable_derivative;
+};
+
+Function_derivatnew_intersection::Function_derivatnew_intersection(
+	const Function_variable_handle& dependent_variable,
+	const std::list<Function_variable_handle>& independent_variables):
+	Function_derivatnew(dependent_variable,independent_variables)
+//******************************************************************************
+// LAST MODIFIED : 9 May 2005
+//
+// DESCRIPTION :
+// Constructor.
+//==============================================================================
+{
+	Function_variable_intersection_handle variable_intersection;
+
+	if (variable_intersection=boost::dynamic_pointer_cast<
+		Function_variable_intersection,Function_variable>(dependent_variable))
+	{
+		Function_variable_handle first_variable;
+
+		if ((first_variable=(variable_intersection->variables_list).front())&&
+			(first_variable_derivative=boost::dynamic_pointer_cast<
+			Function_derivatnew,Function>(first_variable->derivative(
+			independent_variables))))
+		{
+			first_variable_derivative->add_dependent_function(this);
+		}
+		else
+		{
+			throw Function_derivatnew_intersection::Construction_exception();
+		}
+	}
+	else
+	{
+		throw Function_derivatnew_intersection::Construction_exception();
+	}
+}
+
+Function_derivatnew_intersection::~Function_derivatnew_intersection()
+//******************************************************************************
+// LAST MODIFIED : 9 May 2005
+//
+// DESCRIPTION :
+// Destructor.
+//==============================================================================
+{
+#if defined (CIRCULAR_SMART_POINTERS)
+	// do nothing
+#else // defined (CIRCULAR_SMART_POINTERS)
+	if (first_variable_derivative)
+	{
+		first_variable_derivative->remove_dependent_function(this);
+	}
+#endif // defined (CIRCULAR_SMART_POINTERS)
+}
+
+#if defined (EVALUATE_RETURNS_VALUE)
+Function_handle
+#else // defined (EVALUATE_RETURNS_VALUE)
+bool
+#endif // defined (EVALUATE_RETURNS_VALUE)
+	Function_derivatnew_intersection::evaluate(
+	Function_variable_handle
+#if defined (EVALUATE_RETURNS_VALUE)
+	atomic_variable
+#else // defined (EVALUATE_RETURNS_VALUE)
+#endif // defined (EVALUATE_RETURNS_VALUE)
+	)
+//******************************************************************************
+// LAST MODIFIED : 10 May 2005
+//
+// DESCRIPTION :
+//==============================================================================
+{
+#if defined (EVALUATE_RETURNS_VALUE)
+	Function_handle result(0);
+#else // defined (EVALUATE_RETURNS_VALUE)
+	bool result(true);
+#endif // defined (EVALUATE_RETURNS_VALUE)
+
+	if (!evaluated())
+	{
+		Function_variable_intersection_handle dependent_variable_intersection;
+
+#if defined (EVALUATE_RETURNS_VALUE)
+#else // defined (EVALUATE_RETURNS_VALUE)
+		result=false;
+#endif // defined (EVALUATE_RETURNS_VALUE)
+		if (dependent_variable_intersection=boost::dynamic_pointer_cast<
+			Function_variable_intersection,Function_variable>(dependent_variable))
+		{
+			Function_variable_handle first_derivative_output;
+
+			derivative_matrix.clear();
+			if ((first_derivative_output=first_variable_derivative->output())&&
+				(first_derivative_output->evaluate()))
+			{
+				Derivative_matrix&
+					first_variable_derivative_matrix=first_variable_derivative->
+					derivative_matrix;
+				Function_size_type
+					result_number_of_matrices=first_variable_derivative_matrix.size(),
+					result_number_of_rows,row,first_variable_number_of_rows=
+					(first_variable_derivative_matrix.front()).size1();
+				Function_variable_handle intersection_variable;
+				Function_variable_iterator intersection_atomic_variable_iterator,
+					intersection_atomic_variable_iterator_end,
+					first_variable_atomic_variable_iterator,
+					first_variable_atomic_variable_iterator_end;
+				std::list<Function_variable_handle>::iterator
+					intersection_variable_iterator,intersection_variable_iterator_begin,
+					intersection_variable_iterator_end;
+				std::vector<Function_size_type>
+					first_variable_row_mapping(first_variable_number_of_rows);
+
+				// count number of rows and set up mapping
+				result_number_of_rows=0;
+				row=0;
+				intersection_variable_iterator_begin=
+					(dependent_variable_intersection->variables_list).begin();
+				intersection_variable_iterator_end=
+					(dependent_variable_intersection->variables_list).end();
+				first_variable_atomic_variable_iterator=
+					((dependent_variable_intersection->variables_list).front())->
+					begin_atomic();
+				first_variable_atomic_variable_iterator_end=
+					((dependent_variable_intersection->variables_list).front())->
+					end_atomic();
+				while (first_variable_atomic_variable_iterator!=
+					first_variable_atomic_variable_iterator_end)
+				{
+					intersection_variable_iterator=intersection_variable_iterator_begin;
+					do
+					{
+						intersection_variable_iterator++;
+						if (intersection_variable= *intersection_variable_iterator)
+						{
+							intersection_atomic_variable_iterator=
+								intersection_variable->begin_atomic();
+							intersection_atomic_variable_iterator_end=
+								intersection_variable->end_atomic();
+							while ((intersection_atomic_variable_iterator!=
+								intersection_atomic_variable_iterator_end)&&
+								!equivalent(*intersection_atomic_variable_iterator,
+								*first_variable_atomic_variable_iterator))
+							{
+								++intersection_atomic_variable_iterator;
+							}
+						}
+					} while ((intersection_variable_iterator!=
+						intersection_variable_iterator_end)&&
+						(intersection_atomic_variable_iterator!=
+						intersection_atomic_variable_iterator_end));
+					if (intersection_variable_iterator==
+						intersection_variable_iterator_end)
+					{
+						first_variable_row_mapping[row]=result_number_of_rows;
+						++result_number_of_rows;
+					}
+					else
+					{
+						first_variable_row_mapping[row]=first_variable_number_of_rows;
+					}
+					++first_variable_atomic_variable_iterator;
+					++row;
+				}
+				if (0<result_number_of_rows)
+				{
+					Function_size_type i,j,k;
+					std::list<Matrix> matrices;
+					std::list<Matrix>::iterator first_variable_matrix_iterator;
+
+					k=result_number_of_matrices;
+					first_variable_matrix_iterator=
+						first_variable_derivative_matrix.begin();
+					while (k>0)
+					{
+						Matrix& first_variable_matrix= *first_variable_matrix_iterator;
+						Function_size_type number_of_columns=first_variable_matrix.size2();
+						Matrix result_matrix(result_number_of_rows,number_of_columns);
+
+						for (i=0;i<first_variable_number_of_rows;++i)
+						{
+							if ((row=first_variable_row_mapping[i])<
+								first_variable_number_of_rows)
+							{
+								for (k=0;k<number_of_columns;++k)
+								{
+									result_matrix(row,j)=first_variable_matrix(i,j);
+								}
+							}
+						}
+						matrices.push_back(result_matrix);
+						++first_variable_matrix_iterator;
+						--k;
+					}
+					derivative_matrix=Derivative_matrix(matrices);
+					set_evaluated();
+#if defined (EVALUATE_RETURNS_VALUE)
+#else // defined (EVALUATE_RETURNS_VALUE)
+					result=true;
+#endif // defined (EVALUATE_RETURNS_VALUE)
+				}
+			}
+		}
+	}
+#if defined (EVALUATE_RETURNS_VALUE)
+	if (evaluated())
+	{
+		result=get_value(atomic_variable);
+	}
+#else // defined (EVALUATE_RETURNS_VALUE)
+#endif // defined (EVALUATE_RETURNS_VALUE)
+
+	return (result);
+}
+#endif // defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
+
 
 // class Function_variable_iterator_representation_atomic_intersection
 // -------------------------------------------------------------------
@@ -24,7 +278,7 @@ bool intersect_atomic_variable(
 	const std::list<Function_variable_handle>& variables_list,
 	const Function_variable_iterator& atomic_variable_iterator)
 //******************************************************************************
-// LAST MODIFIED : 13 August 2004
+// LAST MODIFIED : 7 April 2005
 //
 // DESCRIPTION :
 // Determines if (*atomic_variable_iterator) is in all the variables.
@@ -49,10 +303,10 @@ bool intersect_atomic_variable(
 			!(repeat=equivalent(*local_atomic_variable_iterator,
 			*atomic_variable_iterator)))
 		{
-			local_atomic_variable_iterator++;
+			++local_atomic_variable_iterator;
 		}
 		intersect= !repeat;
-		local_variables_list_iterator++;
+		++local_variables_list_iterator;
 		while (intersect&&(local_variables_list_iterator!=variables_list.end()))
 		{
 			intersect=false;
@@ -63,9 +317,9 @@ bool intersect_atomic_variable(
 				!(intersect=equivalent(*local_atomic_variable_iterator,
 				*atomic_variable_iterator)))
 			{
-				local_atomic_variable_iterator++;
+				++local_atomic_variable_iterator;
 			}
-			local_variables_list_iterator++;
+			++local_variables_list_iterator;
 		}
 	}
 
@@ -75,7 +329,7 @@ bool intersect_atomic_variable(
 class Function_variable_iterator_representation_atomic_intersection: public
 	Function_variable_iterator_representation
 //******************************************************************************
-// LAST MODIFIED : 18 March 2004
+// LAST MODIFIED : 7 April 2005
 //
 // DESCRIPTION :
 //==============================================================================
@@ -103,7 +357,7 @@ class Function_variable_iterator_representation_atomic_intersection: public
 							!intersect_atomic_variable(source->variables_list,
 							atomic_variable_iterator))
 						{
-							atomic_variable_iterator++;
+							++atomic_variable_iterator;
 						}
 						if (atomic_variable_iterator==
 							(*local_variables_list_iterator)->end_atomic())
@@ -147,7 +401,7 @@ class Function_variable_iterator_representation_atomic_intersection: public
 					end_atomic();
 				do
 				{
-					atomic_variable_iterator++;
+					++atomic_variable_iterator;
 				} while ((atomic_variable_iterator!=end_atomic_variable_iterator)&&
 					!intersect_atomic_variable(source->variables_list,
 					atomic_variable_iterator));
@@ -186,7 +440,7 @@ class Function_variable_iterator_representation_atomic_intersection: public
 				while ((atomic_variable_iterator!=begin_atomic_variable_iterator)&&
 					!intersect)
 				{
-					atomic_variable_iterator--;
+					--atomic_variable_iterator;
 					intersect=intersect_atomic_variable(source->variables_list,
 						atomic_variable_iterator);
 				}
@@ -291,7 +545,7 @@ Function_variable_intersection::Function_variable_intersection(
 
 Function_variable_handle Function_variable_intersection::clone() const
 //******************************************************************************
-// LAST MODIFIED : 11 January 2005
+// LAST MODIFIED : 7 April 2005
 //
 // DESCRIPTION :
 //==============================================================================
@@ -316,8 +570,8 @@ Function_variable_handle Function_variable_intersection::clone() const
 			{
 				local_variables_list.push_back(Function_variable_handle(0));
 			}
-			iterator++;
-			i--;
+			++iterator;
+			--i;
 		}
 	}
 	if (result=Function_variable_intersection_handle(
@@ -329,9 +583,24 @@ Function_variable_handle Function_variable_intersection::clone() const
 	return (result);
 }
 
+#if defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
+#else // defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
+Function_handle Function_variable_intersection::derivative(
+	const std::list<Function_variable_handle>& independent_variables)
+//******************************************************************************
+// LAST MODIFIED : 10 May 2005
+//
+// DESCRIPTION :
+//==============================================================================
+{
+	return (Function_handle(new Function_derivatnew_intersection(
+		Function_variable_handle(this),independent_variables)));
+}
+#endif // defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
+
 string_handle Function_variable_intersection::get_string_representation()
 //******************************************************************************
-// LAST MODIFIED : 18 March 2004
+// LAST MODIFIED : 7 April 2005
 //
 // DESCRIPTION :
 // ???DB.  Overload << instead of get_string_representation?
@@ -354,8 +623,8 @@ string_handle Function_variable_intersection::get_string_representation()
 				out << *temp_string;
 				delete temp_string;
 			}
-			variable_iterator++;
-			i--;
+			++variable_iterator;
+			--i;
 			if (i>0)
 			{
 				out << ",";
@@ -430,7 +699,7 @@ void Function_variable_intersection::add_dependent_function(
 #endif // defined (CIRCULAR_SMART_POINTERS)
 	dependent_function)
 //******************************************************************************
-// LAST MODIFIED : 7 December 2004
+// LAST MODIFIED : 7 April 2005
 //
 // DESCRIPTION :
 //==============================================================================
@@ -438,7 +707,7 @@ void Function_variable_intersection::add_dependent_function(
 	std::list<Function_variable_handle>::iterator iterator,iterator_end;
 
 	iterator_end=variables_list.end();
-	for (iterator=variables_list.begin();iterator!=iterator_end;iterator++)
+	for (iterator=variables_list.begin();iterator!=iterator_end;++iterator)
 	{
 		(*iterator)->add_dependent_function(dependent_function);
 	}
@@ -452,7 +721,7 @@ void Function_variable_intersection::remove_dependent_function(
 #endif // defined (CIRCULAR_SMART_POINTERS)
 	dependent_function)
 //******************************************************************************
-// LAST MODIFIED : 7 December 2004
+// LAST MODIFIED : 7 April 2005
 //
 // DESCRIPTION :
 //==============================================================================
@@ -460,7 +729,7 @@ void Function_variable_intersection::remove_dependent_function(
 	std::list<Function_variable_handle>::iterator iterator,iterator_end;
 
 	iterator_end=variables_list.end();
-	for (iterator=variables_list.begin();iterator!=iterator_end;iterator++)
+	for (iterator=variables_list.begin();iterator!=iterator_end;++iterator)
 	{
 		(*iterator)->remove_dependent_function(dependent_function);
 	}

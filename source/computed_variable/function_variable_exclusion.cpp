@@ -1,7 +1,7 @@
 //******************************************************************************
 // FILE : function_variable_exclusion.cpp
 //
-// LAST MODIFIED : 7 December 2004
+// LAST MODIFIED : 9 May 2005
 //
 // DESCRIPTION :
 //==============================================================================
@@ -14,8 +14,238 @@
 
 #include "computed_variable/function_variable_exclusion.hpp"
 
+#if defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
+#else // defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
+#include "computed_variable/function_derivative.hpp"
+#endif // defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
+
 // module classes
 // ==============
+
+#if defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
+#else // defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
+// class Function_derivatnew_exclusion
+// -----------------------------------
+
+class Function_derivatnew_exclusion : public Function_derivatnew
+//******************************************************************************
+// LAST MODIFIED : 9 May 2005
+//
+// DESCRIPTION :
+//==============================================================================
+{
+	public:
+		// for construction exception
+		class Construction_exception {};
+		// constructor
+		Function_derivatnew_exclusion(
+			const Function_variable_handle& dependent_variable,
+			const std::list<Function_variable_handle>& independent_variables);
+		// destructor
+		~Function_derivatnew_exclusion();
+	// inherited
+	private:
+#if defined (EVALUATE_RETURNS_VALUE)
+		virtual Function_handle evaluate(Function_variable_handle atomic_variable);
+#else // defined (EVALUATE_RETURNS_VALUE)
+		virtual bool evaluate(Function_variable_handle atomic_variable);
+#endif // defined (EVALUATE_RETURNS_VALUE)
+	private:
+		Function_derivatnew_handle universe_derivative;
+};
+
+Function_derivatnew_exclusion::Function_derivatnew_exclusion(
+	const Function_variable_handle& dependent_variable,
+	const std::list<Function_variable_handle>& independent_variables):
+	Function_derivatnew(dependent_variable,independent_variables)
+//******************************************************************************
+// LAST MODIFIED : 9 May 2005
+//
+// DESCRIPTION :
+// Constructor.
+//==============================================================================
+{
+	Function_variable_exclusion_handle variable_exclusion;
+
+	if (variable_exclusion=boost::dynamic_pointer_cast<
+		Function_variable_exclusion,Function_variable>(dependent_variable))
+	{
+		if ((universe_derivative=boost::dynamic_pointer_cast<
+			Function_derivatnew,Function>(variable_exclusion->universe->derivative(
+			independent_variables))))
+		{
+			universe_derivative->add_dependent_function(this);
+		}
+		else
+		{
+			throw Function_derivatnew_exclusion::Construction_exception();
+		}
+	}
+	else
+	{
+		throw Function_derivatnew_exclusion::Construction_exception();
+	}
+}
+
+Function_derivatnew_exclusion::~Function_derivatnew_exclusion()
+//******************************************************************************
+// LAST MODIFIED : 9 May 2005
+//
+// DESCRIPTION :
+// Destructor.
+//==============================================================================
+{
+#if defined (CIRCULAR_SMART_POINTERS)
+	// do nothing
+#else // defined (CIRCULAR_SMART_POINTERS)
+	if (universe_derivative)
+	{
+		universe_derivative->remove_dependent_function(this);
+	}
+#endif // defined (CIRCULAR_SMART_POINTERS)
+}
+
+#if defined (EVALUATE_RETURNS_VALUE)
+Function_handle
+#else // defined (EVALUATE_RETURNS_VALUE)
+bool
+#endif // defined (EVALUATE_RETURNS_VALUE)
+	Function_derivatnew_exclusion::evaluate(
+	Function_variable_handle
+#if defined (EVALUATE_RETURNS_VALUE)
+	atomic_variable
+#else // defined (EVALUATE_RETURNS_VALUE)
+#endif // defined (EVALUATE_RETURNS_VALUE)
+	)
+//******************************************************************************
+// LAST MODIFIED : 9 May 2005
+//
+// DESCRIPTION :
+//==============================================================================
+{
+#if defined (EVALUATE_RETURNS_VALUE)
+	Function_handle result(0);
+#else // defined (EVALUATE_RETURNS_VALUE)
+	bool result(true);
+#endif // defined (EVALUATE_RETURNS_VALUE)
+
+	if (!evaluated())
+	{
+		Function_variable_exclusion_handle dependent_variable_exclusion;
+
+#if defined (EVALUATE_RETURNS_VALUE)
+#else // defined (EVALUATE_RETURNS_VALUE)
+		result=false;
+#endif // defined (EVALUATE_RETURNS_VALUE)
+		if (dependent_variable_exclusion=boost::dynamic_pointer_cast<
+			Function_variable_exclusion,Function_variable>(dependent_variable))
+		{
+			Function_variable_handle universe_output;
+
+			derivative_matrix.clear();
+			if ((universe_output=universe_derivative->output())&&
+				(universe_output->evaluate()))
+			{
+				Derivative_matrix&
+					universe_derivative_matrix=universe_derivative->derivative_matrix;
+				Function_size_type
+					result_number_of_matrices=universe_derivative_matrix.size(),
+					result_number_of_rows,row,
+					universe_number_of_rows=(universe_derivative_matrix.front()).size1();
+				Function_variable_iterator exclusion_atomic_variable_iterator,
+					exclusion_atomic_variable_iterator_begin,
+					exclusion_atomic_variable_iterator_end,
+					universe_atomic_variable_iterator,
+					universe_atomic_variable_iterator_end;
+				std::vector<Function_size_type>
+					universe_row_mapping(universe_number_of_rows);
+
+				// count number of rows and set up mapping
+				result_number_of_rows=0;
+				row=0;
+				exclusion_atomic_variable_iterator_begin=
+					dependent_variable_exclusion->exclusion->begin_atomic();
+				exclusion_atomic_variable_iterator_end=
+					dependent_variable_exclusion->exclusion->end_atomic();
+				universe_atomic_variable_iterator=
+					dependent_variable_exclusion->universe->begin_atomic();
+				universe_atomic_variable_iterator_end=
+					dependent_variable_exclusion->universe->end_atomic();
+				while (universe_atomic_variable_iterator!=
+					universe_atomic_variable_iterator_end)
+				{
+					exclusion_atomic_variable_iterator=
+						exclusion_atomic_variable_iterator_begin;
+					while ((exclusion_atomic_variable_iterator!=
+						exclusion_atomic_variable_iterator_end)&&
+						!equivalent(*exclusion_atomic_variable_iterator,
+						*universe_atomic_variable_iterator))
+					{
+						++exclusion_atomic_variable_iterator;
+					}
+					if (exclusion_atomic_variable_iterator!=
+						exclusion_atomic_variable_iterator_end)
+					{
+						universe_row_mapping[row]=result_number_of_rows;
+						++result_number_of_rows;
+					}
+					else
+					{
+						universe_row_mapping[row]=universe_number_of_rows;
+					}
+					++universe_atomic_variable_iterator;
+					++row;
+				}
+				if (0<result_number_of_rows)
+				{
+					Function_size_type i,j,k;
+					std::list<Matrix> matrices;
+					std::list<Matrix>::iterator universe_matrix_iterator;
+
+					k=result_number_of_matrices;
+					universe_matrix_iterator=universe_derivative_matrix.begin();
+					while (k>0)
+					{
+						Matrix& universe_matrix= *universe_matrix_iterator;
+						Function_size_type number_of_columns=universe_matrix.size2();
+						Matrix result_matrix(result_number_of_rows,number_of_columns);
+
+						for (i=0;i<universe_number_of_rows;++i)
+						{
+							if ((row=universe_row_mapping[i])<universe_number_of_rows)
+							{
+								for (k=0;k<number_of_columns;++k)
+								{
+									result_matrix(row,j)=universe_matrix(i,j);
+								}
+							}
+						}
+						matrices.push_back(result_matrix);
+						++universe_matrix_iterator;
+						--k;
+					}
+					derivative_matrix=Derivative_matrix(matrices);
+					set_evaluated();
+#if defined (EVALUATE_RETURNS_VALUE)
+#else // defined (EVALUATE_RETURNS_VALUE)
+					result=true;
+#endif // defined (EVALUATE_RETURNS_VALUE)
+				}
+			}
+		}
+	}
+#if defined (EVALUATE_RETURNS_VALUE)
+	if (evaluated())
+	{
+		result=get_value(atomic_variable);
+	}
+#else // defined (EVALUATE_RETURNS_VALUE)
+#endif // defined (EVALUATE_RETURNS_VALUE)
+
+	return (result);
+}
+#endif // defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
+
 
 // class Function_variable_iterator_representation_atomic_exclusion
 // ----------------------------------------------------------------
@@ -24,7 +254,7 @@ bool include_atomic_variable(Function_variable_handle universe,
 	Function_variable_handle exclusion,
 	const Function_variable_iterator& atomic_variable_iterator)
 //******************************************************************************
-// LAST MODIFIED : 13 August 2004
+// LAST MODIFIED : 7 April 2005
 //
 // DESCRIPTION :
 // Determines if (*atomic_variable_iterator) appears in the universe-exclusion.
@@ -40,7 +270,7 @@ bool include_atomic_variable(Function_variable_handle universe,
 		(include= !equivalent(*local_atomic_variable_iterator,
 		*atomic_variable_iterator)))
 	{
-		local_atomic_variable_iterator++;
+		++local_atomic_variable_iterator;
 	}
 	if (include)
 	{
@@ -48,7 +278,7 @@ bool include_atomic_variable(Function_variable_handle universe,
 		while ((local_atomic_variable_iterator!=exclusion->end_atomic())&&(include=
 			!equivalent(*local_atomic_variable_iterator,*atomic_variable_iterator)))
 		{
-			local_atomic_variable_iterator++;
+			++local_atomic_variable_iterator;
 		}
 	}
 
@@ -58,7 +288,7 @@ bool include_atomic_variable(Function_variable_handle universe,
 class Function_variable_iterator_representation_atomic_exclusion: public
 	Function_variable_iterator_representation
 //******************************************************************************
-// LAST MODIFIED : 19 March 2004
+// LAST MODIFIED : 7 April 2005
 //
 // DESCRIPTION :
 //==============================================================================
@@ -78,7 +308,7 @@ class Function_variable_iterator_representation_atomic_exclusion: public
 						!include_atomic_variable(source->universe,source->exclusion,
 						atomic_variable_iterator))
 					{
-						atomic_variable_iterator++;
+						++atomic_variable_iterator;
 					}
 					if (atomic_variable_iterator==source->universe->end_atomic())
 					{
@@ -116,7 +346,7 @@ class Function_variable_iterator_representation_atomic_exclusion: public
 			{
 				do
 				{
-					atomic_variable_iterator++;
+					++atomic_variable_iterator;
 				} while ((atomic_variable_iterator!=source->universe->end_atomic())&&
 					!include_atomic_variable(source->universe,source->exclusion,
 					atomic_variable_iterator));
@@ -145,7 +375,7 @@ class Function_variable_iterator_representation_atomic_exclusion: public
 
 				do
 				{
-					atomic_variable_iterator--;
+					--atomic_variable_iterator;
 					include=include_atomic_variable(source->universe,source->exclusion,
 						atomic_variable_iterator);
 				} while ((atomic_variable_iterator!=source->universe->begin_atomic())&&
@@ -244,6 +474,21 @@ Function_variable_handle Function_variable_exclusion::clone() const
 
 	return (result);
 }
+
+#if defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
+#else // defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
+Function_handle Function_variable_exclusion::derivative(
+	const std::list<Function_variable_handle>& independent_variables)
+//******************************************************************************
+// LAST MODIFIED : 6 May 2005
+//
+// DESCRIPTION :
+//==============================================================================
+{
+	return (Function_handle(new Function_derivatnew_exclusion(
+		Function_variable_handle(this),independent_variables)));
+}
+#endif // defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
 
 string_handle Function_variable_exclusion::get_string_representation()
 //******************************************************************************

@@ -1,7 +1,7 @@
 //******************************************************************************
 // FILE : function_variable_matrix_implementation.cpp
 //
-// LAST MODIFIED : 1 March 2005
+// LAST MODIFIED : 19 April 2005
 //
 // DESCRIPTION :
 //==============================================================================
@@ -23,7 +23,7 @@ EXPORT template<typename Value_type>
 class Function_variable_iterator_representation_atomic_matrix :
 	public Function_variable_iterator_representation
 //******************************************************************************
-// LAST MODIFIED : 1 September 2004
+// LAST MODIFIED : 7 April 2005
 //
 // DESCRIPTION :
 //==============================================================================
@@ -88,13 +88,13 @@ class Function_variable_iterator_representation_atomic_matrix :
 			{
 				if (0==variable->column_private)
 				{
-					(atomic_variable->column_private)++;
+					++(atomic_variable->column_private);
 					if (atomic_variable->column_private>(variable->number_of_columns)())
 					{
 						if (0==variable->row_private)
 						{
 							(atomic_variable->column_private)=1;
-							(atomic_variable->row_private)++;
+							++(atomic_variable->row_private);
 							if (atomic_variable->row_private>(variable->number_of_rows)())
 							{
 								// end
@@ -112,7 +112,7 @@ class Function_variable_iterator_representation_atomic_matrix :
 				{
 					if (0==variable->row_private)
 					{
-						(atomic_variable->row_private)++;
+						++(atomic_variable->row_private);
 						if (atomic_variable->row_private>(variable->number_of_rows)())
 						{
 							// end
@@ -136,13 +136,13 @@ class Function_variable_iterator_representation_atomic_matrix :
 				{
 					if (0==variable->column_private)
 					{
-						(atomic_variable->column_private)--;
+						--(atomic_variable->column_private);
 						if (atomic_variable->column_private<1)
 						{
 							if (0==variable->row_private)
 							{
 								atomic_variable->column_private=(variable->number_of_columns)();
-								(atomic_variable->row_private)--;
+								--(atomic_variable->row_private);
 								if (atomic_variable->row_private<1)
 								{
 									// end
@@ -160,7 +160,7 @@ class Function_variable_iterator_representation_atomic_matrix :
 					{
 						if (0==variable->row_private)
 						{
-							(atomic_variable->row_private)--;
+							--(atomic_variable->row_private);
 							if (atomic_variable->row_private<1)
 							{
 								// end
@@ -369,7 +369,7 @@ EXPORT template<typename Value_type>
 #if defined (EVALUATE_RETURNS_VALUE)
 Function_handle Function_variable_matrix<Value_type>::evaluate()
 //******************************************************************************
-// LAST MODIFIED : 3 September 2004
+// LAST MODIFIED : 7 April 2005
 //
 // DESCRIPTION :
 //==============================================================================
@@ -406,7 +406,7 @@ Function_handle Function_variable_matrix<Value_type>::evaluate()
 					valid=((temp_variable=(*this)(row_private,j+1))&&
 						(function_local->evaluate)(temp_variable)&&
 						(temp_variable->get_entry(temp_matrix(0,j))));
-					j++;
+					++j;
 				}
 				if (valid)
 				{
@@ -432,7 +432,7 @@ Function_handle Function_variable_matrix<Value_type>::evaluate()
 					valid=((temp_variable=(*this)(i+1,column_private))&&
 						(function_local->evaluate)(temp_variable)&&
 						(temp_variable->get_entry(temp_matrix(i,0))));
-					i++;
+					++i;
 				}
 				if (valid)
 				{
@@ -459,9 +459,9 @@ Function_handle Function_variable_matrix<Value_type>::evaluate()
 						valid=((temp_variable=(*this)(i+1,j+1))&&
 							(function_local->evaluate)(temp_variable)&&
 							(temp_variable->get_entry(temp_matrix(i,j))));
-						j++;
+						++j;
 					}
-					i++;
+					++i;
 				}
 				if (valid)
 				{
@@ -476,7 +476,7 @@ Function_handle Function_variable_matrix<Value_type>::evaluate()
 #else // defined (EVALUATE_RETURNS_VALUE)
 bool Function_variable_matrix<Value_type>::evaluate()
 //******************************************************************************
-// LAST MODIFIED : 13 January 2005
+// LAST MODIFIED : 7 April 2005
 //
 // DESCRIPTION :
 //==============================================================================
@@ -505,7 +505,7 @@ bool Function_variable_matrix<Value_type>::evaluate()
 				{
 					result=(temp_variable=(*this)(row_private,j+1))&&
 						(function_local->evaluate)(temp_variable);
-					j++;
+					++j;
 				}
 			}
 		}
@@ -523,7 +523,7 @@ bool Function_variable_matrix<Value_type>::evaluate()
 				{
 					result=(temp_variable=(*this)(i+1,column_private))&&
 						(function_local->evaluate)(temp_variable);
-					i++;
+					++i;
 				}
 			}
 			else
@@ -542,9 +542,9 @@ bool Function_variable_matrix<Value_type>::evaluate()
 					{
 						result=(temp_variable=(*this)(i+1,j+1))&&
 							(function_local->evaluate)(temp_variable);
-						j++;
+						++j;
 					}
-					i++;
+					++i;
 				}
 			}
 		}
@@ -554,10 +554,26 @@ bool Function_variable_matrix<Value_type>::evaluate()
 }
 #endif // defined (EVALUATE_RETURNS_VALUE)
 
+#if defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
+#else // defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
+EXPORT template<typename Value_type>
+Function_handle Function_variable_matrix<Value_type>::derivative(
+	const std::list<Function_variable_handle>&)
+//******************************************************************************
+// LAST MODIFIED : 19 April 2005
+//
+// DESCRIPTION :
+//==============================================================================
+{
+	throw std::logic_error("Function_variable_matrix<Value_type>::derivative.  "
+		"Should not come here");
+}
+#endif // defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
+
 EXPORT template<typename Value_type>
 Function_handle Function_variable_matrix<Value_type>::get_value() const
 //******************************************************************************
-// LAST MODIFIED : 3 September 2004
+// LAST MODIFIED : 7 April 2005
 //
 // DESCRIPTION :
 //==============================================================================
@@ -590,7 +606,7 @@ Function_handle Function_variable_matrix<Value_type>::get_value() const
 			{
 				valid=((temp_variable=(*this)(row_private,j+1))&&
 					(temp_variable->get_entry(temp_matrix(0,j))));
-				j++;
+				++j;
 			}
 			if (valid)
 			{
@@ -615,7 +631,7 @@ Function_handle Function_variable_matrix<Value_type>::get_value() const
 			{
 				valid=((temp_variable=(*this)(i+1,column_private))&&
 					(temp_variable->get_entry(temp_matrix(i,0))));
-				i++;
+				++i;
 			}
 			if (valid)
 			{
@@ -641,9 +657,9 @@ Function_handle Function_variable_matrix<Value_type>::get_value() const
 				{
 					valid=((temp_variable=(*this)(i+1,j+1))&&
 						(temp_variable->get_entry(temp_matrix(i,j))));
-					j++;
+					++j;
 				}
-				i++;
+				++i;
 			}
 			if (valid)
 			{
@@ -755,7 +771,7 @@ Function_size_type Function_variable_matrix<Value_type>::number_differentiable()
 EXPORT template<typename Value_type>
 Scalar Function_variable_matrix<Value_type>::norm() const
 //******************************************************************************
-// LAST MODIFIED : 6 August 2004
+// LAST MODIFIED : 7 April 2005
 //
 // DESCRIPTION :
 //==============================================================================
@@ -786,9 +802,9 @@ Scalar Function_variable_matrix<Value_type>::norm() const
 			{
 				valid=false;
 			}
-			j++;
+			++j;
 		}
-		i++;
+		++i;
 	}
 	if (valid)
 	{
@@ -806,7 +822,7 @@ EXPORT template<typename Value_type>
 Function_variable_handle Function_variable_matrix<Value_type>::operator-(
 	const Function_variable& second) const
 //******************************************************************************
-// LAST MODIFIED : 17 August 2004
+// LAST MODIFIED : 7 April 2005
 //
 // DESCRIPTION :
 //==============================================================================
@@ -851,9 +867,9 @@ Function_variable_handle Function_variable_matrix<Value_type>::operator-(
 					{
 						valid=false;
 					}
-					j++;
+					++j;
 				}
-				i++;
+				++i;
 			}
 			if (valid&&(temp_function=new Function_matrix<Value_type>(temp_matrix)))
 			{
@@ -900,15 +916,15 @@ Function_variable_handle Function_variable_matrix<Value_type>::operator-(
 						(variable_value->set(value_2,*second_iterator)))
 					{
 						temp_matrix(i,j)=value_1-value_2;
-						second_iterator++;
+						++second_iterator;
 					}
 					else
 					{
 						valid=false;
 					}
-					j++;
+					++j;
 				}
-				i++;
+				++i;
 			}
 			if (valid&&(second_iterator==second_iterator_end)&&
 				(temp_function=new Function_matrix<Value_type>(temp_matrix)))

@@ -1,7 +1,7 @@
 //******************************************************************************
 // FILE : function_variable_composite.cpp
 //
-// LAST MODIFIED : 30 March 2005
+// LAST MODIFIED : 9 May 2005
 //
 // DESCRIPTION :
 //==============================================================================
@@ -16,8 +16,284 @@
 #include "computed_variable/function_matrix.hpp"
 #include "computed_variable/function_variable_composite.hpp"
 
+#if defined (USE_FUNCTION_VARIABLE_COMPOSITE_EVALUATE)
+#if defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
+#else // defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
+#include "computed_variable/function_derivative.hpp"
+#endif // defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
+#endif // defined (USE_FUNCTION_VARIABLE_COMPOSITE_EVALUATE)
+
 // module classes
 // ==============
+
+#if defined (USE_FUNCTION_VARIABLE_COMPOSITE_EVALUATE)
+#if defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
+#else // defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
+// class Function_derivatnew_composite
+// -----------------------------------
+
+class Function_derivatnew_composite : public Function_derivatnew
+//******************************************************************************
+// LAST MODIFIED : 13 April 2005
+//
+// DESCRIPTION :
+//==============================================================================
+{
+	public:
+		// for construction exception
+		class Construction_exception {};
+		// constructor
+		Function_derivatnew_composite(
+			const Function_variable_handle& dependent_variable,
+			const std::list<Function_variable_handle>& independent_variables);
+		// destructor
+		~Function_derivatnew_composite();
+	// inherited
+	private:
+#if defined (EVALUATE_RETURNS_VALUE)
+		virtual Function_handle evaluate(Function_variable_handle atomic_variable);
+#else // defined (EVALUATE_RETURNS_VALUE)
+		virtual bool evaluate(Function_variable_handle atomic_variable);
+#endif // defined (EVALUATE_RETURNS_VALUE)
+	private:
+		std::list<Function_derivatnew_handle> derivatives_list;
+};
+
+Function_derivatnew_composite::Function_derivatnew_composite(
+	const Function_variable_handle& dependent_variable,
+	const std::list<Function_variable_handle>& independent_variables):
+	Function_derivatnew(dependent_variable,independent_variables)
+//******************************************************************************
+// LAST MODIFIED : 9 May 2005
+//
+// DESCRIPTION :
+// Constructor.
+//==============================================================================
+{
+	Function_composite_handle function_composite;
+	Function_variable_composite_handle variable_composite;
+	Function_variable_handle variable_composite_wrapped;
+
+	if (variable_composite=boost::dynamic_pointer_cast<
+		Function_variable_composite,Function_variable>(dependent_variable))
+	{
+		bool valid;
+		Function_derivatnew_handle derivative;
+		Function_size_type i;
+		std::list<Function_variable_handle>::iterator variables_iterator;
+
+		valid=true;
+		i=(variable_composite->variables_list).size();
+		variables_iterator=(variable_composite->variables_list).begin();
+		while (valid&&(i>0))
+		{
+			if (derivative=boost::dynamic_pointer_cast<Function_derivatnew,
+				Function>((*variables_iterator)->derivative(independent_variables)))
+			{
+				derivatives_list.push_back(derivative);
+			}
+			else
+			{
+				valid=false;
+			}
+			++variables_iterator;
+			--i;
+		}
+		if (valid)
+		{
+			std::list<Function_derivatnew_handle>::iterator derivative_iterator;
+
+			i=derivatives_list.size();
+			derivative_iterator=derivatives_list.begin();
+			while (i>0)
+			{
+				(*derivative_iterator)->add_dependent_function(this);
+				--i;
+				++derivative_iterator;
+			}
+		}
+		else
+		{
+			throw Function_derivatnew_composite::Construction_exception();
+		}
+	}
+	else
+	{
+		throw Function_derivatnew_composite::Construction_exception();
+	}
+}
+
+Function_derivatnew_composite::~Function_derivatnew_composite()
+//******************************************************************************
+// LAST MODIFIED : 9 May 2005
+//
+// DESCRIPTION :
+// Destructor.
+//==============================================================================
+{
+#if defined (CIRCULAR_SMART_POINTERS)
+	// do nothing
+#else // defined (CIRCULAR_SMART_POINTERS)
+	Function_size_type i;
+	std::list<Function_derivatnew_handle>::iterator derivative_iterator;
+
+	i=derivatives_list.size();
+	derivative_iterator=derivatives_list.begin();
+	while (i>0)
+	{
+		(*derivative_iterator)->remove_dependent_function(this);
+		--i;
+		++derivative_iterator;
+	}
+#endif // defined (CIRCULAR_SMART_POINTERS)
+}
+
+#if defined (EVALUATE_RETURNS_VALUE)
+Function_handle
+#else // defined (EVALUATE_RETURNS_VALUE)
+bool
+#endif // defined (EVALUATE_RETURNS_VALUE)
+	Function_derivatnew_composite::evaluate(
+	Function_variable_handle atomic_variable)
+//******************************************************************************
+// LAST MODIFIED : 14 April 2005
+//
+// DESCRIPTION :
+//==============================================================================
+{
+#if defined (EVALUATE_RETURNS_VALUE)
+	Function_handle result(0);
+#else // defined (EVALUATE_RETURNS_VALUE)
+	bool result(true);
+#endif // defined (EVALUATE_RETURNS_VALUE)
+
+	if (
+#if defined (EVALUATE_RETURNS_VALUE)
+#else // defined (EVALUATE_RETURNS_VALUE)
+		equivalent(Function_handle(this),atomic_variable->function())&&
+#endif // defined (EVALUATE_RETURNS_VALUE)
+		!evaluated())
+	{
+		bool first,valid;
+		Function_derivatnew_handle part;
+		Function_size_type i,j,k,l,result_number_of_matrices,result_number_of_rows;
+		Function_variable_handle part_output;
+		std::list<Function_derivatnew_handle>::iterator part_iterator;
+		std::list< std::list<Matrix>::iterator > part_matrix_iterators;
+#if defined (OLD_CODE)
+		Function_size_type order;
+		std::vector<Function_size_type> numbers_of_independent_values;
+#endif // defined (OLD_CODE)
+
+#if defined (EVALUATE_RETURNS_VALUE)
+#else // defined (EVALUATE_RETURNS_VALUE)
+		result=false;
+#endif // defined (EVALUATE_RETURNS_VALUE)
+		valid=true;
+		first=true;
+		i=derivatives_list.size();
+		part_iterator=derivatives_list.begin();
+		result_number_of_rows=0;
+		while (valid&&(i>0))
+		{
+			if ((part= *part_iterator)&&(part_output=part->output())&&
+				(part_output->evaluate()))
+			{
+				Derivative_matrix& part_derivative_matrix=part->derivative_matrix;
+
+				if (first)
+				{
+					first=false;
+					result_number_of_matrices=part_derivative_matrix.size();
+#if defined (OLD_CODE)
+					order=part_derivative_matrix.order;
+					numbers_of_independent_values=
+						part_derivative_matrix.numbers_of_independent_values;
+#endif // defined (OLD_CODE)
+				}
+				else
+				{
+#if defined (OLD_CODE)
+					valid=(order==part_derivative_matrix.order)&&
+						(result_number_of_matrices==part_derivative_matrix.size());
+					j=order;
+					while (valid&&(j>0))
+					{
+						j--;
+						valid=(numbers_of_independent_values[j]==
+							part_derivative_matrix.numbers_of_independent_values[j]);
+					}
+#else // defined (OLD_CODE)
+					valid=(result_number_of_matrices==part_derivative_matrix.size());
+#endif // defined (OLD_CODE)
+				}
+				part_matrix_iterators.push_back(part_derivative_matrix.begin());
+				result_number_of_rows += part_derivative_matrix.front().size1();
+			}
+			else
+			{
+				valid=false;
+			}
+			i--;
+			part_iterator++;
+		}
+		if (valid)
+		{
+			std::list<Matrix> matrices;
+			derivative_matrix.clear();
+			for (i=result_number_of_matrices;i>0;i--)
+			{
+				std::list< std::list<Matrix>::iterator >::iterator
+					part_matrix_iterators_iterator=part_matrix_iterators.begin();
+				Function_size_type result_number_of_columns=
+					(*part_matrix_iterators_iterator)->size2(),result_row_number;;
+				Matrix matrix(result_number_of_rows,result_number_of_columns);
+
+				result_row_number=0;
+				for (j=part_matrix_iterators.size();j>0;j--)
+				{
+					Matrix& part_matrix= **part_matrix_iterators_iterator;
+					Function_size_type part_number_of_rows=part_matrix.size1();
+
+					for (k=0;k<part_number_of_rows;k++)
+					{
+						for (l=0;l<result_number_of_columns;l++)
+						{
+							matrix(result_row_number,l)=part_matrix(k,l);
+						}
+						result_row_number++;
+					}
+					(*part_matrix_iterators_iterator)++;
+					part_matrix_iterators_iterator++;
+				}
+				matrices.push_back(matrix);
+			}
+			try
+			{
+				derivative_matrix=Derivative_matrix(matrices);
+				set_evaluated();
+#if defined (EVALUATE_RETURNS_VALUE)
+#else // defined (EVALUATE_RETURNS_VALUE)
+				result=true;
+#endif // defined (EVALUATE_RETURNS_VALUE)
+			}
+			catch (Derivative_matrix::Construction_exception)
+			{
+				// do nothing
+			}
+		}
+	}
+#if defined (EVALUATE_RETURNS_VALUE)
+	//???DB.  To be done
+	//???DB.  Has to find the appropriate derivative and row
+	//???DB.  How does get_value work?
+#endif // defined (EVALUATE_RETURNS_VALUE)
+
+	return (result);
+}
+#endif // defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
+#endif // defined (USE_FUNCTION_VARIABLE_COMPOSITE_EVALUATE)
+
 
 // class Function_variable_iterator_representation_atomic_composite
 // ----------------------------------------------------------------
@@ -25,7 +301,7 @@
 class Function_variable_iterator_representation_atomic_composite: public
 	Function_variable_iterator_representation
 //******************************************************************************
-// LAST MODIFIED : 17 March 2004
+// LAST MODIFIED : 7 April 2005
 //
 // DESCRIPTION :
 //==============================================================================
@@ -48,7 +324,7 @@ class Function_variable_iterator_representation_atomic_composite: public
 						((*variables_list_iterator)->begin_atomic)())==
 						((*variables_list_iterator)->end_atomic)()))
 					{
-						variables_list_iterator++;
+						++variables_list_iterator;
 					}
 					if (variables_list_iterator==(source->variables_list).end())
 					{
@@ -85,15 +361,13 @@ class Function_variable_iterator_representation_atomic_composite: public
 		{
 			if (variables_list_iterator!=(source->variables_list).end())
 			{
-				//???DB.  prefix doesn't need a clone
-				atomic_variable_iterator++;
-//				++atomic_variable_iterator;
+				++atomic_variable_iterator;
 				if (atomic_variable_iterator==
 					((*variables_list_iterator)->end_atomic)())
 				{
 					do
 					{
-						variables_list_iterator++;
+						++variables_list_iterator;
 					} while (
 						(variables_list_iterator!=(source->variables_list).end())&&
 						((atomic_variable_iterator=
@@ -119,7 +393,7 @@ class Function_variable_iterator_representation_atomic_composite: public
 				{
 					do
 					{
-						variables_list_iterator--;
+						--variables_list_iterator;
 						atomic_variable_iterator=((*variables_list_iterator)->end_atomic)();
 					} while ((variables_list_iterator!=
 						(source->variables_list).begin())&&
@@ -135,7 +409,7 @@ class Function_variable_iterator_representation_atomic_composite: public
 					}
 					else
 					{
-						atomic_variable_iterator--;
+						--atomic_variable_iterator;
 					}
 				}
 				else
@@ -146,7 +420,7 @@ class Function_variable_iterator_representation_atomic_composite: public
 			}
 			else
 			{
-				atomic_variable_iterator--;
+				--atomic_variable_iterator;
 			}
 		};
 		// equality
@@ -267,7 +541,7 @@ Function_variable_composite::Function_variable_composite(
 	std::list<Function_variable_handle>& variables_list):
 	Function_variable(Function_handle(0)),variables_list(0)
 //******************************************************************************
-// LAST MODIFIED : 5 August 2004
+// LAST MODIFIED : 7 April 2005
 //
 // DESCRIPTION :
 // Constructor.  Needs to "flatten" the <variables_list> ie. expand any
@@ -280,7 +554,7 @@ Function_variable_composite::Function_variable_composite(
 	// "flatten" the <variables_list>.  Does not need to be recursive because
 	//   composite variables have flat lists
 	variable_iterator=variables_list.begin();
-	for (i=variables_list.size();i>0;i--)
+	for (i=variables_list.size();i>0;--i)
 	{
 		if (*variable_iterator)
 		{
@@ -299,7 +573,7 @@ Function_variable_composite::Function_variable_composite(
 				(this->variables_list).push_back(*variable_iterator);
 			}
 		}
-		variable_iterator++;
+		++variable_iterator;
 	}
 }
 #else // defined (COMPOSITE_FLATTENING)
@@ -329,7 +603,7 @@ Function_variable_composite::Function_variable_composite(
 
 Function_variable_handle Function_variable_composite::clone() const
 //******************************************************************************
-// LAST MODIFIED : 11 January 2005
+// LAST MODIFIED : 7 April 2005
 //
 // DESCRIPTION :
 //==============================================================================
@@ -354,8 +628,8 @@ Function_variable_handle Function_variable_composite::clone() const
 			{
 				local_variables_list.push_back(Function_variable_handle(0));
 			}
-			iterator++;
-			i--;
+			++iterator;
+			--i;
 		}
 	}
 	if (result=Function_variable_composite_handle(new Function_variable_composite(
@@ -371,7 +645,7 @@ Function_variable_handle Function_variable_composite::clone() const
 #if defined (EVALUATE_RETURNS_VALUE)
 Function_handle Function_variable_composite::evaluate()
 //******************************************************************************
-// LAST MODIFIED : 21 February 2005
+// LAST MODIFIED : 7 April 2005
 //
 // DESCRIPTION :
 //==============================================================================
@@ -454,7 +728,7 @@ Function_handle Function_variable_composite::evaluate()
 					{
 						result_matrix(result_row,result_column)=
 							(*part_matrix)(part_row,part_column);
-						result_column++;
+						++result_column;
 						if (result_column>=result_number_of_columns)
 						{
 							++result_row;
@@ -477,13 +751,27 @@ Function_handle Function_variable_composite::evaluate()
 #else // defined (EVALUATE_RETURNS_VALUE)
 bool Function_variable_composite::evaluate()
 //******************************************************************************
-// LAST MODIFIED : 30 March 2005
+// LAST MODIFIED : 13 April 2005
 //
 // DESCRIPTION :
-// ???DB.  To be done?
 //==============================================================================
 {
-	return (false);
+	bool result=true;
+	Function_size_type i=variables_list.size();
+	std::list<Function_variable_handle>::iterator variable_iterator=
+		variables_list.begin();
+
+	while (i>0)
+	{
+		if (!((*variable_iterator)->evaluate()))
+		{
+			result=false;
+		}
+		--i;
+		++variable_iterator;
+	}
+
+	return (result);
 }
 #endif // defined (EVALUATE_RETURNS_VALUE)
 
@@ -492,7 +780,7 @@ bool Function_variable_composite::evaluate()
 Function_handle Function_variable_composite::evaluate_derivative(
 	std::list<Function_variable_handle>& independent_variables)
 //******************************************************************************
-// LAST MODIFIED : 21 February 2005
+// LAST MODIFIED : 7 April 2005
 //
 // DESCRIPTION :
 //==============================================================================
@@ -551,7 +839,7 @@ Function_handle Function_variable_composite::evaluate_derivative(
 				std::vector< std::list<Matrix>::iterator >
 					part_matrix_iterators(number_of_parts);
 
-				for (i=0;i<number_of_parts;i++)
+				for (i=0;i<number_of_parts;++i)
 				{
 					part_matrix_iterators[i]=(*part_iterator)->matrices.begin();
 					++part_iterator;
@@ -574,12 +862,12 @@ Function_handle Function_variable_composite::evaluate_derivative(
 							for (part_row=0;part_row<part_number_of_rows;++part_row)
 							{
 								for (result_column=0;result_column<result_number_of_columns;
-									result_column++)
+									++result_column)
 								{
 									result_matrix(result_row,result_column)=
 										part_matrix(part_row,result_column);
 								}
-								result_row++;
+								++result_row;
 							}
 						}
 						else
@@ -587,10 +875,10 @@ Function_handle Function_variable_composite::evaluate_derivative(
 							valid=false;
 						}
 						++part_matrix_iterators[j];
-						j++;
+						++j;
 					}
 					result_matrices.push_back(result_matrix);
-					i--;
+					--i;
 				}
 				if (valid)
 				{
@@ -609,7 +897,7 @@ Function_handle Function_variable_composite::evaluate_derivative(
 Function_handle Function_variable_composite::evaluate_derivative(
 	std::list<Function_variable_handle>& independent_variables)
 //******************************************************************************
-// LAST MODIFIED : 21 February 2005
+// LAST MODIFIED : 7 April 2005
 //
 // DESCRIPTION :
 //==============================================================================
@@ -671,13 +959,13 @@ Function_handle Function_variable_composite::evaluate_derivative(
 					{
 						part_column=1;
 						for (result_column=0;result_column<result_number_of_columns;
-							result_column++)
+							++result_column)
 						{
 							result_matrix(result_row,result_column)=
 								part_matrix(part_row,part_column);
-							part_column++;
+							++part_column;
 						}
-						result_row++;
+						++result_row;
 					}
 					--j;
 					++part_iterator;
@@ -691,24 +979,22 @@ Function_handle Function_variable_composite::evaluate_derivative(
 }
 #else // defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
 Function_handle Function_variable_composite::derivative(
-	const std::list<Function_variable_handle>&
-//	independent_variables
-	)
+	const std::list<Function_variable_handle>& independent_variables)
 //******************************************************************************
-// LAST MODIFIED : 30 March 2005
+// LAST MODIFIED : 14 April 2005
 //
 // DESCRIPTION :
-// ???DB.  To be done?
 //==============================================================================
 {
-	return (Function_handle(0));
+	return (Function_handle(new Function_derivatnew_composite(
+		Function_variable_handle(this),independent_variables)));
 }
 #endif // defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
 #endif // defined (USE_FUNCTION_VARIABLE_COMPOSITE_EVALUATE)
 
 string_handle Function_variable_composite::get_string_representation()
 //******************************************************************************
-// LAST MODIFIED : 5 August 2004
+// LAST MODIFIED : 7 April 2005
 //
 // DESCRIPTION :
 // ???DB.  Overload << instead of get_string_representation?
@@ -732,8 +1018,8 @@ string_handle Function_variable_composite::get_string_representation()
 				out << *temp_string;
 				delete temp_string;
 			}
-			variable_iterator++;
-			i--;
+			++variable_iterator;
+			--i;
 			if (i>0)
 			{
 				out << ",";
@@ -848,7 +1134,7 @@ void Function_variable_composite::add_dependent_function(
 #endif // defined (CIRCULAR_SMART_POINTERS)
 	dependent_function)
 //******************************************************************************
-// LAST MODIFIED : 7 December 2004
+// LAST MODIFIED : 7 April 2005
 //
 // DESCRIPTION :
 //==============================================================================
@@ -856,7 +1142,7 @@ void Function_variable_composite::add_dependent_function(
 	std::list<Function_variable_handle>::iterator iterator,iterator_end;
 
 	iterator_end=variables_list.end();
-	for (iterator=variables_list.begin();iterator!=iterator_end;iterator++)
+	for (iterator=variables_list.begin();iterator!=iterator_end;++iterator)
 	{
 		(*iterator)->add_dependent_function(dependent_function);
 	}
@@ -870,7 +1156,7 @@ void Function_variable_composite::remove_dependent_function(
 #endif // defined (CIRCULAR_SMART_POINTERS)
 	dependent_function)
 //******************************************************************************
-// LAST MODIFIED : 7 December 2004
+// LAST MODIFIED : 7 April 2005
 //
 // DESCRIPTION :
 //==============================================================================
@@ -878,7 +1164,7 @@ void Function_variable_composite::remove_dependent_function(
 	std::list<Function_variable_handle>::iterator iterator,iterator_end;
 
 	iterator_end=variables_list.end();
-	for (iterator=variables_list.begin();iterator!=iterator_end;iterator++)
+	for (iterator=variables_list.begin();iterator!=iterator_end;++iterator)
 	{
 		(*iterator)->remove_dependent_function(dependent_function);
 	}
@@ -887,7 +1173,7 @@ void Function_variable_composite::remove_dependent_function(
 bool Function_variable_composite::equality_atomic(
 	const Function_variable_handle& variable) const
 //******************************************************************************
-// LAST MODIFIED : 13 August 2004
+// LAST MODIFIED : 7 April 2005
 //
 // DESCRIPTION :
 //==============================================================================
@@ -913,8 +1199,8 @@ bool Function_variable_composite::equality_atomic(
 			(variable_iterator_2!=variable_iterator_2_end)&&
 			equivalent(*variable_iterator_1,*variable_iterator_2))
 		{
-			variable_iterator_1++;
-			variable_iterator_2++;
+			++variable_iterator_1;
+			++variable_iterator_2;
 		}
 		result=((variable_iterator_1==variable_iterator_1_end)&&
 			(variable_iterator_2==variable_iterator_2_end));

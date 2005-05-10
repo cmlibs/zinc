@@ -1,7 +1,7 @@
 //******************************************************************************
 // FILE : function_variable_wrapper.cpp
 //
-// LAST MODIFIED : 22 November 2004
+// LAST MODIFIED : 10 May 2005
 //
 // DESCRIPTION :
 //==============================================================================
@@ -11,8 +11,165 @@
 #include "computed_variable/function.hpp"
 #include "computed_variable/function_variable_wrapper.hpp"
 
+#if defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
+#else // defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
+#include "computed_variable/function_derivative.hpp"
+#endif // defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
+
 // module classes
 // ==============
+
+#if defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
+#else // defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
+// class Function_derivatnew_wrapper
+// ---------------------------------
+
+class Function_derivatnew_wrapper : public Function_derivatnew
+//******************************************************************************
+// LAST MODIFIED : 10 May 2005
+//
+// DESCRIPTION :
+//==============================================================================
+{
+	public:
+		// for construction exception
+		class Construction_exception {};
+		// constructor
+		Function_derivatnew_wrapper(
+			const Function_variable_handle& dependent_variable,
+			const std::list<Function_variable_handle>& independent_variables);
+		// destructor
+		~Function_derivatnew_wrapper();
+	// inherited
+	private:
+#if defined (EVALUATE_RETURNS_VALUE)
+		virtual Function_handle evaluate(Function_variable_handle atomic_variable);
+#else // defined (EVALUATE_RETURNS_VALUE)
+		virtual bool evaluate(Function_variable_handle atomic_variable);
+#endif // defined (EVALUATE_RETURNS_VALUE)
+	private:
+		Function_derivatnew_handle wrapped_derivative;
+};
+
+Function_derivatnew_wrapper::Function_derivatnew_wrapper(
+	const Function_variable_handle& dependent_variable,
+	const std::list<Function_variable_handle>& independent_variables):
+	Function_derivatnew(dependent_variable,independent_variables)
+//******************************************************************************
+// LAST MODIFIED : 10 May 2005
+//
+// DESCRIPTION :
+// Constructor.
+//==============================================================================
+{
+	Function_variable_wrapper_handle variable_wrapper;
+
+	if (variable_wrapper=boost::dynamic_pointer_cast<
+		Function_variable_wrapper,Function_variable>(dependent_variable))
+	{
+		Function_variable_handle wrapped_variable;
+
+		if ((wrapped_variable=variable_wrapper->get_wrapped())&&
+			(wrapped_derivative=boost::dynamic_pointer_cast<
+			Function_derivatnew,Function>(wrapped_variable->derivative(
+			independent_variables))))
+		{
+			wrapped_derivative->add_dependent_function(this);
+		}
+		else
+		{
+			throw Function_derivatnew_wrapper::Construction_exception();
+		}
+	}
+	else
+	{
+		throw Function_derivatnew_wrapper::Construction_exception();
+	}
+}
+
+Function_derivatnew_wrapper::~Function_derivatnew_wrapper()
+//******************************************************************************
+// LAST MODIFIED : 10 May 2005
+//
+// DESCRIPTION :
+// Destructor.
+//==============================================================================
+{
+#if defined (CIRCULAR_SMART_POINTERS)
+	// do nothing
+#else // defined (CIRCULAR_SMART_POINTERS)
+	if (wrapped_derivative)
+	{
+		wrapped_derivative->remove_dependent_function(this);
+	}
+#endif // defined (CIRCULAR_SMART_POINTERS)
+}
+
+#if defined (EVALUATE_RETURNS_VALUE)
+Function_handle
+#else // defined (EVALUATE_RETURNS_VALUE)
+bool
+#endif // defined (EVALUATE_RETURNS_VALUE)
+	Function_derivatnew_wrapper::evaluate(
+	Function_variable_handle
+#if defined (EVALUATE_RETURNS_VALUE)
+	atomic_variable
+#else // defined (EVALUATE_RETURNS_VALUE)
+#endif // defined (EVALUATE_RETURNS_VALUE)
+	)
+//******************************************************************************
+// LAST MODIFIED : 10 May 2005
+//
+// DESCRIPTION :
+//==============================================================================
+{
+#if defined (EVALUATE_RETURNS_VALUE)
+	Function_handle result(0);
+#else // defined (EVALUATE_RETURNS_VALUE)
+	bool result(true);
+#endif // defined (EVALUATE_RETURNS_VALUE)
+
+	if (!evaluated())
+	{
+		Function_variable_wrapper_handle dependent_variable_wrapper;
+
+#if defined (EVALUATE_RETURNS_VALUE)
+#else // defined (EVALUATE_RETURNS_VALUE)
+		result=false;
+#endif // defined (EVALUATE_RETURNS_VALUE)
+		if (dependent_variable_wrapper=boost::dynamic_pointer_cast<
+			Function_variable_wrapper,Function_variable>(dependent_variable))
+		{
+			Function_variable_handle wrapped_output;
+
+			derivative_matrix.clear();
+			if ((wrapped_output=wrapped_derivative->output())&&
+				(wrapped_output->evaluate()))
+			{
+				//???DB.  Should be able to get away without doing this assignment, but
+				//  not sure how to do get_value (overloaded).  Need to know about
+				//  Function_variable_derivatnew?
+				derivative_matrix=wrapped_derivative->derivative_matrix;
+				set_evaluated();
+#if defined (EVALUATE_RETURNS_VALUE)
+#else // defined (EVALUATE_RETURNS_VALUE)
+				result=true;
+#endif // defined (EVALUATE_RETURNS_VALUE)
+			}
+		}
+	}
+#if defined (EVALUATE_RETURNS_VALUE)
+	if (evaluated())
+	{
+		result=get_value(atomic_variable);
+	}
+#else // defined (EVALUATE_RETURNS_VALUE)
+#endif // defined (EVALUATE_RETURNS_VALUE)
+
+	return (result);
+}
+#endif // defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
+
 
 // class Function_variable_iterator_representation_atomic_wrapper
 // --------------------------------------------------------------
@@ -20,7 +177,7 @@
 class Function_variable_iterator_representation_atomic_wrapper:
 	public Function_variable_iterator_representation
 //******************************************************************************
-// LAST MODIFIED : 18 August 2004
+// LAST MODIFIED : 7 April 2005
 //
 // DESCRIPTION :
 //==============================================================================
@@ -77,7 +234,7 @@ class Function_variable_iterator_representation_atomic_wrapper:
 		{
 			if (atomic_variable)
 			{
-				atomic_iterator++;
+				++atomic_iterator;
 				if (atomic_iterator!=atomic_iterator_end)
 				{
 					atomic_variable->working_variable= *atomic_iterator;
@@ -95,7 +252,7 @@ class Function_variable_iterator_representation_atomic_wrapper:
 			{
 				if (atomic_iterator!=atomic_iterator_begin)
 				{
-					atomic_iterator--;
+					--atomic_iterator;
 					atomic_variable->working_variable= *atomic_iterator;
 				}
 				else
@@ -117,7 +274,7 @@ class Function_variable_iterator_representation_atomic_wrapper:
 						if (atomic_iterator_begin!=atomic_iterator_end)
 						{
 							atomic_iterator=atomic_iterator_end;
-							atomic_iterator--;
+							--atomic_iterator;
 							atomic_variable->working_variable= *atomic_iterator;
 						}
 						else
@@ -201,6 +358,21 @@ Function_variable_handle Function_variable_wrapper::clone() const
 
 	return (result);
 }
+
+#if defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
+#else // defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
+Function_handle Function_variable_wrapper::derivative(
+	const std::list<Function_variable_handle>& independent_variables)
+//******************************************************************************
+// LAST MODIFIED : 10 May 2005
+//
+// DESCRIPTION :
+//==============================================================================
+{
+	return (Function_handle(new Function_derivatnew_wrapper(
+		Function_variable_handle(this),independent_variables)));
+}
+#endif // defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
 
 Function_variable_value_handle Function_variable_wrapper::value()
 //******************************************************************************

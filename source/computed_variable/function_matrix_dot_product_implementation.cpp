@@ -1,7 +1,7 @@
 //******************************************************************************
 // FILE : function_matrix_dot_product_implementation.cpp
 //
-// LAST MODIFIED : 28 February 2005
+// LAST MODIFIED : 12 April 2005
 //
 // DESCRIPTION :
 //==============================================================================
@@ -13,6 +13,11 @@
 #include "computed_variable/function_variable_matrix.hpp"
 #include "computed_variable/function_variable_union.hpp"
 #include "computed_variable/function_variable_value_specific.hpp"
+#if defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
+#else // defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
+#include "computed_variable/function_variable_composite.hpp"
+#include "computed_variable/function_derivative.hpp"
+#endif // defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
 
 
 // module classes
@@ -21,11 +26,46 @@
 // class Function_variable_matrix_dot_product
 // ------------------------------------------
 
+#if defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
+#else // defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
+// class Function_derivatnew_matrix_dot_product
+// --------------------------------------------
+
+EXPORT template<typename Value_type>
+class Function_derivatnew_matrix_dot_product : public Function_derivatnew
+//******************************************************************************
+// LAST MODIFIED : 12 April 2005
+//
+// DESCRIPTION :
+//==============================================================================
+{
+	public:
+		// for construction exception
+		class Construction_exception {};
+		// constructor
+		Function_derivatnew_matrix_dot_product(
+			const Function_variable_handle& dependent_variable,
+			const std::list<Function_variable_handle>& independent_variables);
+		// destructor
+		~Function_derivatnew_matrix_dot_product();
+	// inherited
+	private:
+#if defined (EVALUATE_RETURNS_VALUE)
+		virtual Function_handle evaluate(Function_variable_handle atomic_variable);
+#else // defined (EVALUATE_RETURNS_VALUE)
+		virtual bool evaluate(Function_variable_handle atomic_variable);
+#endif // defined (EVALUATE_RETURNS_VALUE)
+	private:
+		Function_variable_handle intermediate_variable;
+		Function_derivatnew_handle derivative_g;
+};
+#endif // defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
+
 EXPORT template<typename Value_type>
 class Function_variable_matrix_dot_product :
 	public Function_variable_matrix<Value_type>
 //******************************************************************************
-// LAST MODIFIED : 28 February 2005
+// LAST MODIFIED : 12 April 2005
 //
 // DESCRIPTION :
 //==============================================================================
@@ -78,9 +118,9 @@ class Function_variable_matrix_dot_product :
 					Value_type sum;
 
 					sum=0;
-					for (i=1;i<=number_of_rows;i++)
+					for (i=1;i<=number_of_rows;++i)
 					{
-						for (j=1;j<=number_of_columns;j++)
+						for (j=1;j<=number_of_columns;++j)
 						{
 							sum += (*variable_1)(i,j)*(*variable_2)(i,j);
 						}
@@ -111,9 +151,9 @@ class Function_variable_matrix_dot_product :
 						Value_type sum;
 
 						sum=0;
-						for (i=1;i<=number_of_rows;i++)
+						for (i=1;i<=number_of_rows;++i)
 						{
-							for (j=1;j<=number_of_columns;j++)
+							for (j=1;j<=number_of_columns;++j)
 							{
 								sum += (*variable_1)(i,j)*(*variable_2)(i,j);
 							}
@@ -165,9 +205,9 @@ class Function_variable_matrix_dot_product :
 					Value_type sum;
 
 					sum=0;
-					for (i=1;i<=number_of_rows;i++)
+					for (i=1;i<=number_of_rows;++i)
 					{
-						for (j=1;j<=number_of_columns;j++)
+						for (j=1;j<=number_of_columns;++j)
 						{
 							sum += (*variable_1)(i,j)*(*variable_2)(i,j);
 						}
@@ -200,9 +240,9 @@ class Function_variable_matrix_dot_product :
 						Value_type sum;
 
 						sum=0;
-						for (i=1;i<=number_of_rows;i++)
+						for (i=1;i<=number_of_rows;++i)
 						{
-							for (j=1;j<=number_of_columns;j++)
+							for (j=1;j<=number_of_columns;++j)
 							{
 								sum += (*variable_1)(i,j)*(*variable_2)(i,j);
 							}
@@ -218,10 +258,20 @@ class Function_variable_matrix_dot_product :
 			return (result);
 		};
 #endif // defined (EVALUATE_RETURNS_VALUE)
+#if defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
 		Function_handle evaluate_derivative(std::list<Function_variable_handle>&)
 		{
 			return (0);
 		};
+#else // defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
+		Function_handle derivative(
+			const std::list<Function_variable_handle>& independent_variables)
+		{
+			return (Function_handle(
+				new Function_derivatnew_matrix_dot_product<Value_type>(
+				Function_variable_handle(this),independent_variables)));
+		}
+#endif // defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
 		//???DB.  Should operator() and get_entry do an evaluate?
 		boost::intrusive_ptr< Function_variable_matrix<Value_type> > operator()(
 			Function_size_type row=1,Function_size_type column=1) const
@@ -247,6 +297,87 @@ class Function_variable_matrix_dot_product :
 			const Function_variable_matrix_dot_product<Value_type>& variable):
 			Function_variable_matrix<Value_type>(variable){};
 };
+
+
+#if defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
+#else // defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
+// class Function_derivatnew_matrix_dot_product
+// --------------------------------------------
+
+EXPORT template<typename Value_type>
+Function_derivatnew_matrix_dot_product<Value_type>::
+	Function_derivatnew_matrix_dot_product(
+	const Function_variable_handle& dependent_variable,
+	const std::list<Function_variable_handle>& independent_variables):
+	Function_derivatnew(dependent_variable,independent_variables)
+//******************************************************************************
+// LAST MODIFIED : 12 April 2005
+//
+// DESCRIPTION :
+// Constructor.
+//==============================================================================
+{
+	boost::intrusive_ptr< Function_matrix_dot_product<Value_type> >
+		function_matrix_dot_product;
+	boost::intrusive_ptr< Function_variable_matrix_dot_product<Value_type> >
+		variable_matrix_dot_product;
+
+	if ((variable_matrix_dot_product=boost::dynamic_pointer_cast<
+		Function_variable_matrix_dot_product<Value_type>,Function_variable>(
+		dependent_variable))&&
+		(function_matrix_dot_product=boost::dynamic_pointer_cast<
+		Function_matrix_dot_product<Value_type>,Function>(
+		dependent_variable->function())))
+	{
+		if (!((intermediate_variable=Function_variable_handle(
+			new Function_variable_composite(
+			function_matrix_dot_product->variable_1_private,
+			function_matrix_dot_product->variable_2_private)))&&
+			(derivative_g=boost::dynamic_pointer_cast<Function_derivatnew,
+			Function>(intermediate_variable->derivative(independent_variables)))))
+		{
+			throw Function_derivatnew_matrix_dot_product::Construction_exception();
+		}
+	}
+	else
+	{
+		throw Function_derivatnew_matrix_dot_product::Construction_exception();
+	}
+}
+
+EXPORT template<typename Value_type>
+Function_derivatnew_matrix_dot_product<Value_type>::
+	~Function_derivatnew_matrix_dot_product(){}
+//******************************************************************************
+// LAST MODIFIED : 12 April 2005
+//
+// DESCRIPTION :
+// Destructor.
+//==============================================================================
+
+EXPORT template<typename Value_type>
+#if defined (EVALUATE_RETURNS_VALUE)
+Function_handle
+#else // defined (EVALUATE_RETURNS_VALUE)
+bool
+#endif // defined (EVALUATE_RETURNS_VALUE)
+	Function_derivatnew_matrix_dot_product<Value_type>::evaluate(
+	Function_variable_handle)
+//******************************************************************************
+// LAST MODIFIED : 12 April 2005
+//
+// DESCRIPTION :
+//==============================================================================
+{
+	return (
+#if defined (EVALUATE_RETURNS_VALUE)
+		Function_handle(0);
+#else // defined (EVALUATE_RETURNS_VALUE)
+		false
+#endif // defined (EVALUATE_RETURNS_VALUE)
+		);
+}
+#endif // defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
 
 
 // global classes
