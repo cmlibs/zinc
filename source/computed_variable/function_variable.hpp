@@ -1,7 +1,7 @@
 //******************************************************************************
 // FILE : function_variable.hpp
 //
-// LAST MODIFIED : 23 January 2005
+// LAST MODIFIED : 14 April 2005
 //
 // DESCRIPTION :
 // An abstract class for specifying input/independent and output/dependent
@@ -114,7 +114,7 @@ class Function_variable_iterator:
 
 class Function_variable
 //******************************************************************************
-// LAST MODIFIED : 23 January 2005
+// LAST MODIFIED : 14 April 2005
 //
 // DESCRIPTION :
 // A specification for an input/independent and/or output/dependent variable of
@@ -156,7 +156,7 @@ class Function_variable
 		// derivative creates a new Function which calculates the value of this
 		//   variable differentiated with respect to the <independent_variables>
 		virtual Function_handle derivative(
-			const std::list<Function_variable_handle>& independent_variables);
+			const std::list<Function_variable_handle>& independent_variables)=0;
 #endif // defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
 		// set_value changes the variable to have the <value> in the same order as
 		//   evaluate.  Returns true if the variable is changed and false otherwise
