@@ -1,7 +1,7 @@
 //******************************************************************************
 // FILE : function_variable_element_xi.cpp
 //
-// LAST MODIFIED : 22 November 2004
+// LAST MODIFIED : 7 April 2005
 //
 // DESCRIPTION :
 //==============================================================================
@@ -71,7 +71,7 @@ bool Function_variable_element_xi_set_element_function(
 class Function_variable_iterator_representation_atomic_element_xi:
 	public Function_variable_iterator_representation
 //******************************************************************************
-// LAST MODIFIED : 13 August 2004
+// LAST MODIFIED : 7 April 2005
 //
 // DESCRIPTION :
 //==============================================================================
@@ -163,7 +163,7 @@ class Function_variable_iterator_representation_atomic_element_xi:
 						"Function_variable_iterator_representation_atomic_element_xi::"
 						"increment.  Atomic variable should not have element and xi both "
 						"false"));
-					variable_index++;
+					++variable_index;
 				}
 				if (atomic_variable)
 				{
@@ -219,7 +219,7 @@ class Function_variable_iterator_representation_atomic_element_xi:
 					}
 					else
 					{
-						variable_index--;
+						--variable_index;
 						if (variable_index<(variable->indices).size())
 						{
 							atomic_variable->indices[0]=(variable->indices)[variable_index];
@@ -251,7 +251,7 @@ class Function_variable_iterator_representation_atomic_element_xi:
 						{
 							variable_index=variable->number_differentiable();
 							atomic_variable->indices[0]=variable_index;
-							variable_index--;
+							--variable_index;
 						}
 						atomic_variable->value_private=Function_variable_value_handle(
 							new Function_variable_value_scalar(
@@ -449,7 +449,7 @@ bool Function_variable_element_xi::equality_atomic(
 			result=true;
 			while (result&&(i>0))
 			{
-				i--;
+				--i;
 				if (!(indices[i]==(variable_element_xi->indices)[i]))
 				{
 					result=false;
@@ -463,7 +463,7 @@ bool Function_variable_element_xi::equality_atomic(
 
 static void remove_repeated_indices(ublas::vector<Function_size_type>& indices)
 //******************************************************************************
-// LAST MODIFIED : 22 November 2004
+// LAST MODIFIED : 7 April 2005
 //
 // DESCRIPTION :
 //==============================================================================
@@ -473,23 +473,23 @@ static void remove_repeated_indices(ublas::vector<Function_size_type>& indices)
 	Function_size_type i,j,number_of_unique_indices;
 
 	number_of_unique_indices=0;
-	for (i=0;i<number_of_indices;i++)
+	for (i=0;i<number_of_indices;++i)
 	{
 		j=0;
 		while ((j<number_of_unique_indices)&&(indices[i]!=unique_indices[j]))
 		{
-			j++;
+			++j;
 		}
 		if (j==number_of_unique_indices)
 		{
 			unique_indices[j]=indices[i];
-			number_of_unique_indices++;
+			++number_of_unique_indices;
 		}
 	}
 	if (number_of_indices!=number_of_unique_indices)
 	{
 		indices.resize(number_of_unique_indices);
-		for (i=0;i<number_of_unique_indices;i++)
+		for (i=0;i<number_of_unique_indices;++i)
 		{
 			indices[i]=unique_indices[i];
 		}
@@ -609,7 +609,7 @@ Function_variable_handle Function_variable_element_xi::operator-(
 			if (increment_array&&xi_array)
 			{
 				struct FE_element *increment_element;
-				for (i=0;i<number_of_values;i++)
+				for (i=0;i<number_of_values;++i)
 				{
 					increment_array[i]=(FE_value)second_vector(i,1);
 					xi_array[i]=(FE_value)xi[i];
@@ -621,7 +621,7 @@ Function_variable_handle Function_variable_element_xi::operator-(
 					if (result=Function_element_xi_handle(new Function_element_xi(
 						increment_element,xi)))
 					{
-						for (i=0;i<number_of_values;i++)
+						for (i=0;i<number_of_values;++i)
 						{
 							(result->xi)[i]=(Scalar)(xi_array[i]);
 						}
@@ -644,7 +644,7 @@ Function_variable_handle Function_variable_element_xi::operator-(
 Function_variable_handle Function_variable_element_xi::operator+=(
 	const Function_variable& second)
 //******************************************************************************
-// LAST MODIFIED : 9 August 2004
+// LAST MODIFIED : 7 April 2005
 //
 // DESCRIPTION :
 //==============================================================================
@@ -679,9 +679,9 @@ Function_variable_handle Function_variable_element_xi::operator+=(
 					Function_variable>(*element_xi_iterator))&&
 					(element_xi_variable->get_element)(increment_element))
 				{
-					for (i=0;i<number_of_values;i++)
+					for (i=0;i<number_of_values;++i)
 					{
-						element_xi_iterator++;
+						++element_xi_iterator;
 						if ((*element_xi_iterator)&&(element_xi_variable=
 							boost::dynamic_pointer_cast<Function_variable_element_xi,
 							Function_variable>(*element_xi_iterator))&&
@@ -701,7 +701,7 @@ Function_variable_handle Function_variable_element_xi::operator+=(
 						Function_element_xi_handle element_xi;
 						Vector xi_vector(number_of_values);
 
-						for (i=0;i<number_of_values;i++)
+						for (i=0;i<number_of_values;++i)
 						{
 							xi_vector[i]=(Scalar)(xi_array[i]);
 						}
