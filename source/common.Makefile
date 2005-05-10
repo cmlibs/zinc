@@ -189,6 +189,8 @@ ifeq ($(SYSNAME),Linux)
 #       FORTRAN = efc -c -W1 -w95 -cm -auto -fpp0 -stack_temps
 #    else
       # gcc
+			# for profiling
+      #CC = gcc -c -std=gnu99 -pg
       CC = gcc -c -std=gnu99
       CPP = g++ -c
       CPP_FLAGS =
@@ -197,6 +199,8 @@ ifeq ($(SYSNAME),Linux)
    MAKEDEPEND = gcc -MM -MG
    CPREPROCESS = gcc -E -P
    ifneq ($(STATIC_LINK),true)
+			# for profiling
+      #LINK = gcc -pg
       LINK = gcc
       # LINK = egcs -shared -L/usr/X11R6/lib -v */
       # LINK = gcc -L/usr/X11R6/lib -v */
