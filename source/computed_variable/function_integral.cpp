@@ -1,7 +1,7 @@
 //******************************************************************************
 // FILE : function_integral.cpp
 //
-// LAST MODIFIED : 30 March 2005
+// LAST MODIFIED : 7 April 2005
 //
 // DESCRIPTION :
 //???DB.  Need more memory management for Integration_scheme
@@ -96,7 +96,7 @@ class Quadrature_scheme
 										valid_basis=false;
 									} break;
 								}
-								xi_number++;
+								++xi_number;
 							}
 							if (valid_basis&&(xi_number>=dimension)&&
 								(points=new Vector[number_of_points]))
@@ -104,16 +104,16 @@ class Quadrature_scheme
 								success=true;
 								weights.resize(number_of_points);
 								weights[0]=(Scalar)1;
-								for (j=0;j<number_of_points;j++)
+								for (j=0;j<number_of_points;++j)
 								{
 									points[j].resize(dimension);
 								}
-								for (i=0;i<dimension;i++)
+								for (i=0;i<dimension;++i)
 								{
 									points[0][i]=(Scalar)0.5;
 								}
 								number_of_points=1;
-								for (i=0;i<dimension;i++)
+								for (i=0;i<dimension;++i)
 								{
 									FE_basis_get_xi_basis_type(exactly_integrated_basis,i,
 										&basis_type);
@@ -122,19 +122,19 @@ class Quadrature_scheme
 										case LINEAR_LAGRANGE:
 										{
 											/* 1 weight.  Do nothing */
-											for (j=0;j<number_of_points;j++)
+											for (j=0;j<number_of_points;++j)
 											{
 												points[j][i]=(Scalar)0.5;
 											}
 										} break;
 										case QUADRATIC_LAGRANGE:
 										{
-											for (j=0;j<number_of_points;j++)
+											for (j=0;j<number_of_points;++j)
 											{
 												weights[j] *= (Scalar)0.5;
 												weights[j+number_of_points]=
 													weights[j];
-												for (k=0;k<i;k++)
+												for (k=0;k<i;++k)
 												{
 													points[j+number_of_points][k]=points[j][k];
 												}
@@ -147,13 +147,13 @@ class Quadrature_scheme
 										case CUBIC_HERMITE:
 										case CUBIC_LAGRANGE:
 										{
-											for (j=0;j<number_of_points;j++)
+											for (j=0;j<number_of_points;++j)
 											{
 												weights[j+number_of_points]=
 													weights[j]*(Scalar)0.444444444444444;
 												weights[j] *= (Scalar)0.277777777777778;
 												weights[j+2*number_of_points]=weights[j];
-												for (k=0;k<i;k++)
+												for (k=0;k<i;++k)
 												{
 													points[j+number_of_points][k]=points[j][k];
 													points[j+2*number_of_points][k]=points[j][k];
@@ -213,7 +213,7 @@ class Quadrature_scheme
 		{
 			Function_size_type i;
 
-			for (i=0;i<number_of_points;i++)
+			for (i=0;i<number_of_points;++i)
 			{
 				points[i]=scheme.points[i];
 			}
@@ -363,7 +363,7 @@ struct Integrate_over_element_data
 int integrate_over_element(struct FE_element *element,
 	void *integrate_over_element_data_void)
 //******************************************************************************
-// LAST MODIFIED : 22 March 2005
+// LAST MODIFIED : 7 April 2005
 //
 // DESCRIPTION :
 //==============================================================================
@@ -519,9 +519,9 @@ int integrate_over_element(struct FE_element *element,
 											Matrix result_matrix(temp_number_of_rows,
 												temp_number_of_columns);
 
-											for (i=0;i<temp_number_of_rows;i++)
+											for (i=0;i<temp_number_of_rows;++i)
 											{
-												for (j=0;j<temp_number_of_columns;j++)
+												for (j=0;j<temp_number_of_columns;++j)
 												{
 													result_matrix(i,j)=multiplier*temp_matrix(i,j);
 												}
@@ -542,9 +542,9 @@ int integrate_over_element(struct FE_element *element,
 												temp_number_of_columns);
 
 											k=column-1;
-											for (i=0;i<temp_number_of_rows;i++)
+											for (i=0;i<temp_number_of_rows;++i)
 											{
-												for (j=0;j<temp_number_of_columns;j++)
+												for (j=0;j<temp_number_of_columns;++j)
 												{
 													result_matrix(i,j)=multiplier*temp_matrix(k,j);
 												}
@@ -569,13 +569,13 @@ int integrate_over_element(struct FE_element *element,
 												temp_number_of_columns);
 
 											k=(row-1)*number_of_columns;
-											for (i=0;i<temp_number_of_rows;i++)
+											for (i=0;i<temp_number_of_rows;++i)
 											{
-												for (j=0;j<temp_number_of_columns;j++)
+												for (j=0;j<temp_number_of_columns;++j)
 												{
 													result_matrix(i,j)=multiplier*temp_matrix(k,j);
 												}
-												k++;
+												++k;
 											}
 											matrices.push_back(result_matrix);
 											++matrix_iterator;
@@ -591,7 +591,7 @@ int integrate_over_element(struct FE_element *element,
 											Matrix result_matrix(1,temp_number_of_columns);
 
 											k=(row-1)*number_of_columns+column-1;
-											for (j=0;j<temp_number_of_columns;j++)
+											for (j=0;j<temp_number_of_columns;++j)
 											{
 												result_matrix(0,j)=multiplier*temp_matrix(k,j);
 											}
@@ -618,9 +618,9 @@ int integrate_over_element(struct FE_element *element,
 								{
 									result_matrix.resize(number_of_rows,number_of_columns);
 
-									for (i=0;i<number_of_rows;i++)
+									for (i=0;i<number_of_rows;++i)
 									{
-										for (j=0;j<number_of_columns;j++)
+										for (j=0;j<number_of_columns;++j)
 										{
 											result_matrix(i,j)=multiplier*(*integrand)(i+1,j+1);
 										}
@@ -630,7 +630,7 @@ int integrate_over_element(struct FE_element *element,
 								{
 									result_matrix.resize(number_of_rows,1);
 
-									for (i=0;i<number_of_rows;i++)
+									for (i=0;i<number_of_rows;++i)
 									{
 										result_matrix(i,0)=multiplier*(*integrand)(i+1,column);
 									}
@@ -642,7 +642,7 @@ int integrate_over_element(struct FE_element *element,
 								{
 									result_matrix.resize(1,number_of_columns);
 
-									for (j=0;j<number_of_columns;j++)
+									for (j=0;j<number_of_columns;++j)
 									{
 										result_matrix(0,j)=multiplier*(*integrand)(row,j+1);
 									}
@@ -661,7 +661,7 @@ int integrate_over_element(struct FE_element *element,
 				{
 					return_code=0;
 				}
-				point_number++;
+				++point_number;
 			}
 			data->element_xi_input=element_xi_input;
 			data->integrand_output=integrand_output;
@@ -749,9 +749,9 @@ int integrate_over_element(struct FE_element *element,
 										if ((temp_number_of_rows==temp_matrix.size1())&&
 											(temp_number_of_columns==temp_matrix.size2()))
 										{
-											for (i=0;i<temp_number_of_rows;i++)
+											for (i=0;i<temp_number_of_rows;++i)
 											{
-												for (j=0;j<temp_number_of_columns;j++)
+												for (j=0;j<temp_number_of_columns;++j)
 												{
 													result_matrix(i,j) += multiplier*temp_matrix(i,j);
 												}
@@ -780,9 +780,9 @@ int integrate_over_element(struct FE_element *element,
 											(temp_number_of_columns==temp_matrix.size2()))
 										{
 											k=column-1;
-											for (i=0;i<temp_number_of_rows;i++)
+											for (i=0;i<temp_number_of_rows;++i)
 											{
-												for (j=0;j<temp_number_of_columns;j++)
+												for (j=0;j<temp_number_of_columns;++j)
 												{
 													result_matrix(i,j) += multiplier*temp_matrix(k,j);
 												}
@@ -815,13 +815,13 @@ int integrate_over_element(struct FE_element *element,
 											(temp_number_of_columns==temp_matrix.size2()))
 										{
 											k=(row-1)*number_of_columns;
-											for (i=0;i<temp_number_of_rows;i++)
+											for (i=0;i<temp_number_of_rows;++i)
 											{
-												for (j=0;j<temp_number_of_columns;j++)
+												for (j=0;j<temp_number_of_columns;++j)
 												{
 													result_matrix(i,j) += multiplier*temp_matrix(k,j);
 												}
-												k++;
+												++k;
 											}
 										}
 										else
@@ -846,7 +846,7 @@ int integrate_over_element(struct FE_element *element,
 											(temp_number_of_columns==temp_matrix.size2()))
 										{
 											k=(row-1)*number_of_columns+column-1;
-											for (j=0;j<temp_number_of_columns;j++)
+											for (j=0;j<temp_number_of_columns;++j)
 											{
 												result_matrix(0,j) += multiplier*temp_matrix(k,j);
 											}
@@ -880,9 +880,9 @@ int integrate_over_element(struct FE_element *element,
 							{
 								if (0==column)
 								{
-									for (i=0;i<number_of_rows;i++)
+									for (i=0;i<number_of_rows;++i)
 									{
-										for (j=0;j<number_of_columns;j++)
+										for (j=0;j<number_of_columns;++j)
 										{
 											result_matrix(i,j) += multiplier*(*integrand)(i+1,j+1);
 										}
@@ -890,7 +890,7 @@ int integrate_over_element(struct FE_element *element,
 								}
 								else
 								{
-									for (i=0;i<number_of_rows;i++)
+									for (i=0;i<number_of_rows;++i)
 									{
 										result_matrix(i,0) += multiplier*(*integrand)(i+1,column);
 									}
@@ -900,7 +900,7 @@ int integrate_over_element(struct FE_element *element,
 							{
 								if (0==column)
 								{
-									for (j=0;j<number_of_columns;j++)
+									for (j=0;j<number_of_columns;++j)
 									{
 										result_matrix(0,j) += multiplier*(*integrand)(row,j+1);
 									}
@@ -918,7 +918,7 @@ int integrate_over_element(struct FE_element *element,
 			{
 				return_code=0;
 			}
-			point_number++;
+			++point_number;
 		}
 	}
 
@@ -927,7 +927,7 @@ int integrate_over_element(struct FE_element *element,
 
 class Function_variable_integral : public Function_variable_matrix<Scalar>
 //******************************************************************************
-// LAST MODIFIED : 21 March 2005
+// LAST MODIFIED : 7 April 2005
 //
 // DESCRIPTION :
 //==============================================================================
@@ -1002,7 +1002,7 @@ class Function_variable_integral : public Function_variable_matrix<Scalar>
 								Matrix sub_matrix(number_of_rows,1);
 								
 								j=column_private-1;
-								for (i=0;i<number_of_rows;i++)
+								for (i=0;i<number_of_rows;++i)
 								{
 									sub_matrix(i,0)=result_matrix(i,j);
 								}
@@ -1015,7 +1015,7 @@ class Function_variable_integral : public Function_variable_matrix<Scalar>
 									Matrix sub_matrix(1,number_of_columns);
 									
 									i=row_private-1;
-									for (j=0;j<number_of_columns;j++)
+									for (j=0;j<number_of_columns;++j)
 									{
 										sub_matrix(0,j)=result_matrix(i,j);
 									}
@@ -1074,7 +1074,7 @@ class Function_variable_integral : public Function_variable_matrix<Scalar>
 								Matrix sub_matrix(number_of_rows,1);
 								
 								j=column_private-1;
-								for (i=0;i<number_of_rows;i++)
+								for (i=0;i<number_of_rows;++i)
 								{
 									sub_matrix(i,0)=result_matrix(i,j);
 								}
@@ -1087,7 +1087,7 @@ class Function_variable_integral : public Function_variable_matrix<Scalar>
 									Matrix sub_matrix(1,number_of_columns);
 									
 									i=row_private-1;
-									for (j=0;j<number_of_columns;j++)
+									for (j=0;j<number_of_columns;++j)
 									{
 										sub_matrix(0,j)=result_matrix(i,j);
 									}
@@ -1242,9 +1242,9 @@ class Function_variable_integral : public Function_variable_matrix<Scalar>
 								Matrix sub_matrix(number_of_rows,number_of_derivatives);
 
 								k=column_private-1;
-								for (i=0;i<number_of_rows;i++)
+								for (i=0;i<number_of_rows;++i)
 								{
-									for (j=0;j<number_of_derivatives;j++)
+									for (j=0;j<number_of_derivatives;++j)
 									{
 										sub_matrix(i,j)=result_matrix(k,j);
 									}
@@ -1259,13 +1259,13 @@ class Function_variable_integral : public Function_variable_matrix<Scalar>
 									Matrix sub_matrix(number_of_columns,number_of_derivatives);
 
 									k=(row_private-1)*number_of_columns;
-									for (i=0;i<number_of_columns;i++)
+									for (i=0;i<number_of_columns;++i)
 									{
-										for (j=0;j<number_of_derivatives;j++)
+										for (j=0;j<number_of_derivatives;++j)
 										{
 											sub_matrix(i,j)=result_matrix(k,j);
 										}
-										k++;
+										++k;
 									}
 									result=Function_handle(
 										new Function_matrix<Scalar>(sub_matrix));
@@ -1275,7 +1275,7 @@ class Function_variable_integral : public Function_variable_matrix<Scalar>
 									Matrix sub_matrix(1,number_of_derivatives);
 
 									k=(row_private-1)*number_of_columns+column_private-1;
-									for (j=0;j<number_of_derivatives;j++)
+									for (j=0;j<number_of_derivatives;++j)
 									{
 										sub_matrix(0,j)=result_matrix(k,j);
 									}

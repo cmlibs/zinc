@@ -1,7 +1,7 @@
 //******************************************************************************
 // FILE : function_matrix.cpp
 //
-// LAST MODIFIED : 14 September 2004
+// LAST MODIFIED : 7 April 2005
 //
 // DESCRIPTION :
 //==============================================================================
@@ -48,7 +48,7 @@ boost::intrusive_ptr< Function_matrix<Scalar> >
 template<>
 bool Function_matrix<Scalar>::determinant(Scalar& det)
 //******************************************************************************
-// LAST MODIFIED : 14 September 2004
+// LAST MODIFIED : 7 April 2005
 //
 // DESCRIPTION :
 // Zero for a non-square matrix.
@@ -67,7 +67,7 @@ bool Function_matrix<Scalar>::determinant(Scalar& det)
 		lapack::getrf(A,ipiv);
 		result=true;
 		det=1;
-		for (i=0;i<size_A;i++)
+		for (i=0;i<size_A;++i)
 		{
 			if (i+1==(Function_size_type)ipiv[i])
 			{

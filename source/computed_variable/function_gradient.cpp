@@ -1,7 +1,7 @@
 //******************************************************************************
 // FILE : function_gradient.cpp
 //
-// LAST MODIFIED : 3 December 2004
+// LAST MODIFIED : 7 April 2005
 //
 // DESCRIPTION :
 // ***Not used***
@@ -87,7 +87,7 @@ class Function_variable_iterator_representation_atomic_gradient:
 
 class Function_variable_gradient : public Function_variable
 //******************************************************************************
-// LAST MODIFIED : 23 November 2004
+// LAST MODIFIED : 7 April 2005
 //
 // DESCRIPTION :
 //==============================================================================
@@ -126,7 +126,7 @@ class Function_variable_gradient : public Function_variable
 					while ((atomic_dependent_iterator!=end_atomic_dependent_iterator)&&
 						(1!=(*atomic_dependent_iterator)->number_differentiable()))
 					{
-						atomic_dependent_iterator++;
+						++atomic_dependent_iterator;
 					}
 					atomic_independent_iterator=
 						function_gradient->independent_variable_private->begin_atomic();
@@ -136,24 +136,24 @@ class Function_variable_gradient : public Function_variable
 						(atomic_independent_iterator!=end_atomic_independent_iterator)&&
 						(1!=(*atomic_independent_iterator)->number_differentiable()))
 					{
-						atomic_independent_iterator++;
+						++atomic_independent_iterator;
 					}
 					while ((atomic_dependent_iterator!=end_atomic_dependent_iterator)&&
 						(atomic_independent_iterator!=end_atomic_independent_iterator)&&
 						!equivalent(*atomic_dependent_iterator,atomic_dependent_variable))
 					{
-						atomic_dependent_iterator++;
+						++atomic_dependent_iterator;
 						while ((atomic_dependent_iterator!=end_atomic_dependent_iterator)&&
 							(1!=(*atomic_dependent_iterator)->number_differentiable()))
 						{
-							atomic_dependent_iterator++;
+							++atomic_dependent_iterator;
 						}
-						atomic_independent_iterator++;
+						++atomic_independent_iterator;
 						while (
 							(atomic_independent_iterator!=end_atomic_independent_iterator)&&
 							(1!=(*atomic_independent_iterator)->number_differentiable()))
 						{
-							atomic_independent_iterator++;
+							++atomic_independent_iterator;
 						}
 					}
 					if ((atomic_dependent_iterator!=end_atomic_dependent_iterator)&&
@@ -205,7 +205,7 @@ class Function_variable_gradient : public Function_variable
 					while ((atomic_dependent_iterator!=end_atomic_dependent_iterator)&&
 						(1!=(*atomic_dependent_iterator)->number_differentiable()))
 					{
-						atomic_dependent_iterator++;
+						++atomic_dependent_iterator;
 					}
 					atomic_independent_iterator=independent_variable->begin_atomic();
 					end_atomic_independent_iterator=independent_variable->end_atomic();
@@ -213,7 +213,7 @@ class Function_variable_gradient : public Function_variable
 						(atomic_independent_iterator!=end_atomic_independent_iterator)&&
 						(1!=(*atomic_independent_iterator)->number_differentiable()))
 					{
-						atomic_independent_iterator++;
+						++atomic_independent_iterator;
 					}
 					valid=true;
 					while (valid&&
@@ -231,19 +231,19 @@ class Function_variable_gradient : public Function_variable
 							(1==derivative_value->number_of_columns()))
 						{
 							derivative_values.push_back(derivative_value);
-							atomic_dependent_iterator++;
+							++atomic_dependent_iterator;
 							while (
 								(atomic_dependent_iterator!=end_atomic_dependent_iterator)&&
 								(1!=(*atomic_dependent_iterator)->number_differentiable()))
 							{
-								atomic_dependent_iterator++;
+								++atomic_dependent_iterator;
 							}
-							atomic_independent_iterator++;
+							++atomic_independent_iterator;
 							while (
 								(atomic_independent_iterator!=end_atomic_independent_iterator)&&
 								(1!=(*atomic_independent_iterator)->number_differentiable()))
 							{
-								atomic_independent_iterator++;
+								++atomic_independent_iterator;
 							}
 						}
 						else
@@ -262,10 +262,10 @@ class Function_variable_gradient : public Function_variable
 							derivative_value_iterator;
 
 						derivative_value_iterator=derivative_values.begin();
-						for (i=0;i<number_of_derivative_values;i++)
+						for (i=0;i<number_of_derivative_values;++i)
 						{
 							result_matrix(i,0)=(**derivative_value_iterator)(1,1);
-							derivative_value_iterator++;
+							++derivative_value_iterator;
 						}
 						result=Function_handle(new Function_matrix<Scalar>(result_matrix));
 					}
@@ -313,7 +313,7 @@ class Function_variable_gradient : public Function_variable
 					while ((atomic_dependent_iterator!=end_atomic_dependent_iterator)&&
 						(1!=(*atomic_dependent_iterator)->number_differentiable()))
 					{
-						atomic_dependent_iterator++;
+						++atomic_dependent_iterator;
 					}
 					atomic_independent_iterator=independent_variable->begin_atomic();
 					end_atomic_independent_iterator=independent_variable->end_atomic();
@@ -321,7 +321,7 @@ class Function_variable_gradient : public Function_variable
 						(atomic_independent_iterator!=end_atomic_independent_iterator)&&
 						(1!=(*atomic_independent_iterator)->number_differentiable()))
 					{
-						atomic_independent_iterator++;
+						++atomic_independent_iterator;
 					}
 					valid=true;
 					while (valid&&
@@ -340,19 +340,19 @@ class Function_variable_gradient : public Function_variable
 							derivative_value->number_of_columns())))
 						{
 							derivative_values.push_back(derivative_value);
-							atomic_dependent_iterator++;
+							++atomic_dependent_iterator;
 							while (
 								(atomic_dependent_iterator!=end_atomic_dependent_iterator)&&
 								(1!=(*atomic_dependent_iterator)->number_differentiable()))
 							{
-								atomic_dependent_iterator++;
+								++atomic_dependent_iterator;
 							}
-							atomic_independent_iterator++;
+							++atomic_independent_iterator;
 							while (
 								(atomic_independent_iterator!=end_atomic_independent_iterator)&&
 								(1!=(*atomic_independent_iterator)->number_differentiable()))
 							{
-								atomic_independent_iterator++;
+								++atomic_independent_iterator;
 							}
 						}
 						else
@@ -374,13 +374,13 @@ class Function_variable_gradient : public Function_variable
 							derivative_value_iterator;
 
 						derivative_value_iterator=derivative_values.begin();
-						for (i=0;i<number_of_rows;i++)
+						for (i=0;i<number_of_rows;++i)
 						{
-							for (j=0;j<number_of_columns;j++)
+							for (j=0;j<number_of_columns;++j)
 							{
 								result_matrix(i,j)=(**derivative_value_iterator)(1,j+1);
 							}
-							derivative_value_iterator++;
+							++derivative_value_iterator;
 						}
 						result=Function_handle(new Function_matrix<Scalar>(result_matrix));
 					}
@@ -558,7 +558,7 @@ Function_variable_iterator_representation_atomic_gradient::
 	atomic_independent_iterator(0),atomic_independent_iterator_begin(0),
 	atomic_independent_iterator_end(0)
 //******************************************************************************
-// LAST MODIFIED : 26 August 2004
+// LAST MODIFIED : 7 April 2005
 //
 // DESCRIPTION :
 // Constructor.  If <begin> then the constructed iterator points to the first
@@ -609,7 +609,7 @@ Function_variable_iterator_representation_atomic_gradient::
 				while ((atomic_dependent_iterator!=atomic_dependent_iterator_end)&&
 					(1!=(*atomic_dependent_iterator)->number_differentiable()))
 				{
-					atomic_dependent_iterator++;
+					++atomic_dependent_iterator;
 				}
 				if (atomic_dependent_iterator!=atomic_dependent_iterator_end)
 				{
@@ -649,7 +649,7 @@ Function_variable_iterator_representation_atomic_gradient::
 							atomic_independent_iterator_end)&&
 							(1!=(*atomic_independent_iterator)->number_differentiable()))
 						{
-							atomic_independent_iterator++;
+							++atomic_independent_iterator;
 						}
 						if (atomic_independent_iterator!=atomic_independent_iterator_end)
 						{
@@ -729,7 +729,7 @@ Function_variable_iterator_representation_atomic_gradient::
 
 void Function_variable_iterator_representation_atomic_gradient::increment()
 //******************************************************************************
-// LAST MODIFIED : 25 August 2004
+// LAST MODIFIED : 7 April 2005
 //
 // DESCRIPTION :
 // Increments the iterator to the next atomic variable.  NULL <atomic_variable>
@@ -738,17 +738,17 @@ void Function_variable_iterator_representation_atomic_gradient::increment()
 {
 	if (atomic_variable)
 	{
-		atomic_dependent_iterator++;
+		++atomic_dependent_iterator;
 		while ((atomic_dependent_iterator!=atomic_dependent_iterator_end)&&
 			(1!=(*atomic_dependent_iterator)->number_differentiable()))
 		{
-			atomic_dependent_iterator++;
+			++atomic_dependent_iterator;
 		}
-		atomic_independent_iterator++;
+		++atomic_independent_iterator;
 		while ((atomic_independent_iterator!=atomic_independent_iterator_end)&&
 			(1!=(*atomic_independent_iterator)->number_differentiable()))
 		{
-			atomic_independent_iterator++;
+			++atomic_independent_iterator;
 		}
 		if ((atomic_dependent_iterator!=atomic_dependent_iterator_end)&&
 			(atomic_independent_iterator!=atomic_independent_iterator_end))
@@ -775,7 +775,7 @@ void Function_variable_iterator_representation_atomic_gradient::increment()
 
 void Function_variable_iterator_representation_atomic_gradient::decrement()
 //******************************************************************************
-// LAST MODIFIED : 26 August 2004
+// LAST MODIFIED : 7 April 2005
 //
 // DESCRIPTION :
 // Decrements the iterator to the next atomic variable.  NULL <atomic_variable>
@@ -787,17 +787,17 @@ void Function_variable_iterator_representation_atomic_gradient::decrement()
 		if ((atomic_dependent_iterator!=atomic_dependent_iterator_begin)&&
 			(atomic_independent_iterator!=atomic_independent_iterator_begin))
 		{
-			atomic_dependent_iterator--;
+			--atomic_dependent_iterator;
 			while ((atomic_dependent_iterator!=atomic_dependent_iterator_begin)&&
 				(1!=(*atomic_dependent_iterator)->number_differentiable()))
 			{
-				atomic_dependent_iterator--;
+				--atomic_dependent_iterator;
 			}
-			atomic_independent_iterator--;
+			--atomic_independent_iterator;
 			while ((atomic_independent_iterator!=atomic_independent_iterator_begin)&&
 				(1!=(*atomic_independent_iterator)->number_differentiable()))
 			{
-				atomic_independent_iterator--;
+				--atomic_independent_iterator;
 			}
 			if ((1==(*atomic_dependent_iterator)->number_differentiable())&&
 				(1==(*atomic_independent_iterator)->number_differentiable()))
@@ -859,11 +859,11 @@ void Function_variable_iterator_representation_atomic_gradient::decrement()
 					(atomic_dependent_iterator_begin!=atomic_dependent_iterator_end))
 				{
 					atomic_dependent_iterator=atomic_dependent_iterator_end;
-					atomic_dependent_iterator--;
+					--atomic_dependent_iterator;
 					while ((atomic_dependent_iterator!=atomic_dependent_iterator_begin)&&
 						(1!=(*atomic_dependent_iterator)->number_differentiable()))
 					{
-						atomic_dependent_iterator--;
+						--atomic_dependent_iterator;
 					}
 					if (1==(*atomic_dependent_iterator)->number_differentiable())
 					{
@@ -899,12 +899,12 @@ void Function_variable_iterator_representation_atomic_gradient::decrement()
 							atomic_independent_iterator_end))
 						{
 							atomic_independent_iterator=atomic_independent_iterator_end;
-							atomic_independent_iterator--;
+							--atomic_independent_iterator;
 							while ((atomic_independent_iterator!=
 								atomic_independent_iterator_begin)&&
 								(1!=(*atomic_independent_iterator)->number_differentiable()))
 							{
-								atomic_independent_iterator--;
+								--atomic_independent_iterator;
 							}
 							if (1==(*atomic_independent_iterator)->number_differentiable())
 							{
