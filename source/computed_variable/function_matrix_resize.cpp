@@ -1,7 +1,7 @@
 //******************************************************************************
 // FILE : function_matrix_resize.cpp
 //
-// LAST MODIFIED : 22 April 2005
+// LAST MODIFIED : 11 May 2005
 //
 // DESCRIPTION :
 //==============================================================================
@@ -259,7 +259,7 @@ bool
 	)
 #endif // defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
 //******************************************************************************
-// LAST MODIFIED : 22 April 2005
+// LAST MODIFIED : 11 May 2005
 //
 // DESCRIPTION :
 //==============================================================================
@@ -277,7 +277,6 @@ bool
 	{
 		boost::intrusive_ptr< Function_matrix_resize<Scalar> >
 			function_matrix_resize;
-		Function_size_type order;
 
 #if defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
 #else // defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
@@ -295,7 +294,7 @@ bool
 #else // defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
 			dependent_variable->
 #endif // defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
-			function()))&&(0<(order=independent_variables.size())))
+			function()))&&(0<independent_variables.size()))
 		{
 			boost::intrusive_ptr< Function_matrix<Scalar> > matrix;
 			Function_size_type number_of_columns,number_of_independent_values,
