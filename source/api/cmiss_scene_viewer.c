@@ -241,6 +241,92 @@ chosen.
 } /* create_Cmiss_scene_viewer_gtk */
 #endif /* create_Cmiss_scene_viewer_gtk */
 
+#if defined (WIN32_USER_INTERFACE)
+Cmiss_scene_viewer_id create_Cmiss_scene_viewer_win32(
+	HWND hWnd,
+	enum Cmiss_scene_viewer_buffering_mode buffer_mode,
+	enum Cmiss_scene_viewer_stereo_mode stereo_mode,
+	int minimum_colour_buffer_depth, int minimum_depth_buffer_depth,
+	int minimum_accumulation_buffer_depth)
+/*******************************************************************************
+LAST MODIFIED : 2 September 2004
+
+DESCRIPTION :
+Creates a Cmiss_scene_viewer by creating a graphics buffer on the specified 
+<hWnd> window handle.
+If <minimum_colour_buffer_depth>, <minimum_depth_buffer_depth> or 
+<minimum_accumulation_buffer_depth> are not zero then they are used to filter
+out the possible visuals selected for graphics_buffers.  If they are zero then 
+the accumulation_buffer_depth are not tested and the maximum colour buffer depth is
+chosen.
+==============================================================================*/
+{
+	enum Graphics_buffer_buffering_mode graphics_buffer_buffering_mode;
+	enum Graphics_buffer_stereo_mode graphics_buffer_stereo_mode;
+	struct Graphics_buffer *graphics_buffer;
+	struct Cmiss_scene_viewer *scene_viewer;
+
+	ENTER(create_Cmiss_scene_viewer_win32);
+	/* Not implemented yet */
+	USE_PARAMETER(minimum_colour_buffer_depth);
+	USE_PARAMETER(minimum_accumulation_buffer_depth);
+	USE_PARAMETER(minimum_depth_buffer_depth);
+	if (cmiss_scene_viewer_data)
+	{
+		if (CMISS_SCENE_VIEWER_ANY_BUFFERING_MODE==buffer_mode)
+		{
+			graphics_buffer_buffering_mode = GRAPHICS_BUFFER_ANY_BUFFERING_MODE;
+		}
+		else if (CMISS_SCENE_VIEWER_SINGLE_BUFFERING==buffer_mode)
+		{
+			graphics_buffer_buffering_mode = GRAPHICS_BUFFER_SINGLE_BUFFERING;
+		}
+		else
+		{
+			graphics_buffer_buffering_mode = GRAPHICS_BUFFER_DOUBLE_BUFFERING;
+		}
+		if (CMISS_SCENE_VIEWER_ANY_STEREO_MODE==stereo_mode)
+		{
+			graphics_buffer_stereo_mode = GRAPHICS_BUFFER_ANY_STEREO_MODE;
+		}
+		else if (CMISS_SCENE_VIEWER_STEREO==stereo_mode)
+		{
+			graphics_buffer_stereo_mode = GRAPHICS_BUFFER_STEREO;
+		}
+		else
+		{
+			graphics_buffer_stereo_mode = GRAPHICS_BUFFER_MONO;
+		}
+		graphics_buffer = create_Graphics_buffer_win32(
+			cmiss_scene_viewer_data->graphics_buffer_package, hWnd,
+			graphics_buffer_buffering_mode, graphics_buffer_stereo_mode,
+			minimum_colour_buffer_depth, minimum_depth_buffer_depth,
+			minimum_accumulation_buffer_depth);
+		scene_viewer = CREATE(Scene_viewer)(graphics_buffer,
+			cmiss_scene_viewer_data->background_colour,
+			cmiss_scene_viewer_data->light_manager,
+			cmiss_scene_viewer_data->default_light,
+			cmiss_scene_viewer_data->light_model_manager,
+			cmiss_scene_viewer_data->default_light_model,
+			cmiss_scene_viewer_data->scene_manager, cmiss_scene_viewer_data->scene,
+			cmiss_scene_viewer_data->texture_manager,
+			cmiss_scene_viewer_data->user_interface);
+		Scene_viewer_set_interactive_tool(scene_viewer,
+			cmiss_scene_viewer_data->default_interactive_tool);
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"create_Cmiss_scene_viewer_win32.  "
+			"The Cmiss_scene_viewer data must be initialised before any scene "
+			"viewers can be created.");
+		scene_viewer=(struct Cmiss_scene_viewer *)NULL;
+	}
+	LEAVE;
+
+	return (scene_viewer);
+}
+#endif /* defined (WIN32_USER_INTERFACE) */
+
 int Cmiss_scene_viewer_get_near_and_far_plane(Cmiss_scene_viewer_id scene_viewer,
 	double *near_plane, double *far_plane)
 /*******************************************************************************

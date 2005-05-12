@@ -1,30 +1,35 @@
 /*******************************************************************************
 FILE : graphics_library.c
 
-LAST MODIFIED : 5 December 2001
+LAST MODIFIED : 5 May 2005
 
 DESCRIPTION :
 Functions for interfacing with the graphics library.
 ==============================================================================*/
 #if defined (OPENGL_API)
-#if defined (UNIX)
-#include <dlfcn.h>
-#endif /* defined (UNIX) */
-#include <math.h>
-#include <string.h>
-#include <stdio.h>
-#if defined (MOTIF) /* switch (USER_INTERFACE) */
-#include <X11/Xlib.h>
-#include <GL/glu.h>
-#define GLX_GLXEXT_PROTOTYPES
-#include <GL/glx.h>
-#elif defined (GTK_USER_INTERFACE) /* switch (USER_INTERFACE) */
-#include <gtk/gtk.h>
-#if ! defined (WIN32_SYSTEM)
-/* SAB The WIN32 system currently uses GTK GL AREA for open GL. */
-#include <gtk/gtkgl.h>
-#endif /* ! defined (WIN32_SYSTEM) */
-#endif /* switch (USER_INTERFACE) */
+#  if defined (UNIX)
+#    include <dlfcn.h>
+#  endif /* defined (UNIX) */
+#  include <math.h>
+#  include <string.h>
+#  include <stdio.h>
+#  if defined (MOTIF) /* switch (USER_INTERFACE) */
+#    include <X11/Xlib.h>
+#    include <GL/glu.h>
+#    define GLX_GLXEXT_PROTOTYPES
+#    include <GL/glx.h>
+#  elif defined (GTK_USER_INTERFACE) /* switch (USER_INTERFACE) */
+#    include <gtk/gtk.h>
+#    if ( GTK_MAJOR_VERSION < 2 ) || defined (WIN32_SYSTEM)
+/* SAB When compiling GTK with WIN32 currently uses GTK GL AREA for open GL. */
+#      define GTK_USE_GTKGLAREA
+#    endif /* ( GTK_MAJOR_VERSION < 2 ) || defined (WIN32_SYSTEM)*/
+#    if defined (GTK_USE_GTKGLAREA)
+#      include <gtkgl/gtkglarea.h>
+#    else /* defined (GTK_USE_GTKGLAREA) */
+#      include <gtk/gtkgl.h>
+#    endif /* defined (GTK_USE_GTKGLAREA) */
+#  endif /* switch (USER_INTERFACE) */
 #endif /* defined (OPENGL_API) */
 #include "general/debug.h"
 #define GRAPHICS_LIBRARY_C

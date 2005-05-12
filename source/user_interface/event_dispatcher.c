@@ -23,6 +23,7 @@ This provides an object which interfaces between a event_dispatcher and Cmgui
 #include <Xm/Xm.h>
 #elif defined (WIN32_USER_INTERFACE) /* switch (USER_INTERFACE) */
 #include <windows.h>
+#include "general/callback.h"
 #elif defined (USE_GTK_MAIN_STEP) /* switch (USER_INTERFACE) */
 #include <gtk/gtk.h>
 #endif /* switch (USER_INTERFACE) */
@@ -32,6 +33,7 @@ Module types
 ------------
 */
 
+#if !defined(WIN32_USER_INTERFACE)
 struct Event_dispatcher_simple_descriptor_data
 /*******************************************************************************
 LAST MODIFIED : 13 November 2002
@@ -78,6 +80,7 @@ Contains all information necessary for a descriptor callback.
 PROTOTYPE_OBJECT_FUNCTIONS(Event_dispatcher_descriptor_callback);
 DECLARE_LIST_TYPES(Event_dispatcher_descriptor_callback);
 FULL_DECLARE_INDEXED_LIST_TYPE(Event_dispatcher_descriptor_callback);
+#endif /* !defined(WIN32_USER_INTERFACE) */
 
 struct Event_dispatcher_timeout_callback
 /*******************************************************************************
@@ -132,6 +135,26 @@ PROTOTYPE_OBJECT_FUNCTIONS(Event_dispatcher_idle_callback);
 DECLARE_LIST_TYPES(Event_dispatcher_idle_callback);
 FULL_DECLARE_INDEXED_LIST_TYPE(Event_dispatcher_idle_callback);
 
+#if defined (WIN32_USER_INTERFACE)
+struct Event_dispatcher_win32_socket
+{
+	int access_count;
+	SOCKET socket;
+	void *read_cb_data, *write_cb_data;
+	Event_dispatcher_win32_socket_callback read_cb, write_cb;
+	int wantevents;
+};
+
+DECLARE_LIST_TYPES(Event_dispatcher_win32_socket);
+DECLARE_OBJECT_FUNCTIONS(Event_dispatcher_win32_socket);
+FULL_DECLARE_INDEXED_LIST_TYPE(Event_dispatcher_win32_socket);
+DECLARE_INDEXED_LIST_MODULE_FUNCTIONS(Event_dispatcher_win32_socket,
+	socket,SOCKET,compare_int);
+DECLARE_INDEXED_LIST_FUNCTIONS(Event_dispatcher_win32_socket);
+DECLARE_FIND_BY_IDENTIFIER_IN_INDEXED_LIST_FUNCTION(Event_dispatcher_win32_socket,
+	socket,SOCKET,compare_int)
+#endif /* defined (WIN32_USER_INTERFACE) */
+
 struct Event_dispatcher
 /*******************************************************************************
 LAST MODIFIED : 4 June 2002
@@ -140,7 +163,11 @@ DESCRIPTION :
 ==============================================================================*/
 {
 	int continue_flag;
+#if defined(WIN32_USER_INTERFACE)
+	struct LIST(Event_dispatcher_win32_socket) *socket_list;
+#else
 	struct LIST(Event_dispatcher_descriptor_callback) *descriptor_list;
+#endif
 	struct LIST(Event_dispatcher_timeout_callback) *timeout_list;
 	struct LIST(Event_dispatcher_idle_callback) *idle_list;
 #if defined (USE_XTAPP_CONTEXT)
@@ -153,12 +180,285 @@ DESCRIPTION :
 	int special_idle_callback_pending;
 	struct Event_dispatcher_idle_callback *special_idle_callback;
 #endif /* defined (USE_XTAPP_CONTEXT) */
+#if defined (WIN32_USER_INTERFACE)
+	HWND networkWindowHandle;
+#endif /* defined (WIN32_USER_INTERFACE) */
 };
 
 /*
 Module functions
 ----------------
 */
+#if defined(WIN32_USER_INTERFACE)
+
+static LRESULT CALLBACK Event_dispatcher_handle_win32_network_event(HWND hwnd,
+	UINT uMsg, WPARAM wParam, LPARAM lParam)
+/*******************************************************************************
+LAST MODIFIED : 16 February 2005
+
+DESCRIPTION :
+Processes window events on the network-only window.
+==============================================================================*/
+{
+	struct Event_dispatcher *dispatcher;
+	struct Event_dispatcher_win32_socket *sockrec;
+	SOCKET sock;
+	LRESULT ret = 0;
+
+	ENTER(Event_dispatcher_handle_win32_network_event);
+	if (hwnd != NULL && uMsg == UWM_NETWORK)
+	{
+		dispatcher = (struct Event_dispatcher*)GetWindowLong(hwnd, 0);
+		sock = (SOCKET)wParam;
+		sockrec = FIND_BY_IDENTIFIER_IN_LIST
+			(Event_dispatcher_win32_socket, socket)
+			(sock, dispatcher->socket_list);
+		if (sockrec)
+		{
+			switch (WSAGETSELECTEVENT(lParam))
+			{
+			case FD_READ:
+			case FD_CLOSE:
+				if (sockrec->read_cb != NULL)
+					sockrec->read_cb(sock, sockrec->read_cb_data);
+				break;
+			case FD_WRITE:
+				if (sockrec->write_cb != NULL)
+					sockrec->write_cb(sock, sockrec->write_cb_data);
+				break;
+			}
+		}
+	}
+	else
+	  ret = DefWindowProc(hwnd, uMsg, wParam, lParam);
+	LEAVE;
+
+	return (ret);
+}
+
+static int Event_dispatcher_ensure_network_window(struct Event_dispatcher *dispatcher)
+/*******************************************************************************
+LAST MODIFIED : 16 February 2005
+
+DESCRIPTION :
+Ensures that dispatcher->networkWindowHandle is set.
+==============================================================================*/
+{
+	int ret;
+	HINSTANCE hInstance;
+	WNDCLASS class_data;
+
+	ENTER(Event_dispatcher_ensure_network_window);
+	if (dispatcher->networkWindowHandle == NULL)
+	{
+		hInstance = GetModuleHandle(NULL);
+		class_data.style = CS_CLASSDC;
+		class_data.lpfnWndProc = Event_dispatcher_handle_win32_network_event;
+		class_data.cbClsExtra = 0;
+		class_data.cbWndExtra = sizeof(dispatcher);
+		class_data.hInstance = hInstance;
+		class_data.hIcon = NULL;
+		class_data.hCursor = NULL;
+		class_data.hbrBackground = NULL;
+		class_data.lpszMenuName = NULL;
+		class_data.lpszClassName = "cmgui_networkonly_class";
+		/* Don't worry if it fails, it may have already been registered. */
+		RegisterClass(&class_data);
+		dispatcher->networkWindowHandle =
+			CreateWindow("cmgui_networkonly_class",
+				"This is supposed to be an invisible window!",
+				0,
+				0, 0, 0, 0,
+				NULL,
+				NULL,
+				hInstance,
+				NULL
+			);
+		if (dispatcher->networkWindowHandle != NULL)
+		{
+			/* XXX FIXME for 64 bit windows */
+			SetWindowLong(dispatcher->networkWindowHandle, 0,
+				(LONG)dispatcher);
+			ret = 1;
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,
+				"DESTROY(Event_dispatcher_ensure_network_window).  "
+				"Can't create a network-only window.");
+			ret = 0;
+		}
+	}
+	else
+		ret = 1;
+
+	LEAVE;
+	return (ret);
+}
+
+static struct Event_dispatcher_win32_socket *CREATE(Event_dispatcher_win32_socket)
+(SOCKET skt)
+{
+	struct Event_dispatcher_win32_socket *sock = NULL;
+
+	ENTER(Event_dispatcher_win32_socket);
+
+	ALLOCATE(sock, struct Event_dispatcher_win32_socket, 1);
+	if (sock != NULL)
+	{
+		sock->access_count = 0;
+		sock->socket = skt;
+		sock->read_cb = NULL;
+		sock->write_cb = NULL;
+		sock->wantevents = 0;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"CREATE(Event_dispatcher_win32_socket).  "
+			"Can't create a socket structure.");
+	}
+
+	LEAVE;
+
+	return (sock);
+}
+
+int DESTROY(Event_dispatcher_win32_socket)(struct Event_dispatcher_win32_socket **obj)
+{
+  ENTER(DESTROY(Event_dispatcher_win32_socket));
+  memset(*obj, 0xDE, sizeof(**obj));
+  DEALLOCATE(*obj);
+  *obj = NULL;
+  LEAVE;
+
+  return (1);
+}
+
+int Event_dispatcher_set_socket_read_callback(struct Event_dispatcher *dispatcher,
+	SOCKET sock,
+	Event_dispatcher_win32_socket_callback socket_cb,
+	void *user_data)
+{
+	int ret = 1;
+	struct Event_dispatcher_win32_socket *sockrec;
+
+	ENTER(Event_dispatcher_set_socket_read_callback);
+
+	if (Event_dispatcher_ensure_network_window(dispatcher))
+	{
+		/* Find the socket in the indexed list(tree)... */
+		sockrec = FIND_BY_IDENTIFIER_IN_LIST
+			(Event_dispatcher_win32_socket, socket)
+			(sock, dispatcher->socket_list);
+		if (sockrec == NULL && socket_cb)
+		{
+			sockrec = CREATE(Event_dispatcher_win32_socket)(sock);
+			ADD_OBJECT_TO_LIST(Event_dispatcher_win32_socket)
+				(sockrec, dispatcher->socket_list);
+		}
+		if (sockrec != NULL)
+		{
+			sockrec->read_cb_data = user_data;
+			if (!((sockrec->read_cb==NULL) ^ (socket_cb == NULL)))
+				sockrec->read_cb = socket_cb;
+			else if (!socket_cb)
+			{
+				sockrec->wantevents &= ~(FD_READ | FD_CLOSE);
+				WSAAsyncSelect(sock,
+					dispatcher->networkWindowHandle,
+					sockrec->wantevents ? UWM_NETWORK : 0,
+					sockrec->wantevents);
+				sockrec->read_cb = socket_cb;
+				if (!sockrec->wantevents)
+					REMOVE_OBJECT_FROM_LIST
+						(Event_dispatcher_win32_socket)
+						(sockrec, dispatcher->socket_list);
+			}
+			else
+			{
+				sockrec->read_cb = socket_cb;
+				sockrec->wantevents |= (FD_READ | FD_CLOSE);
+				WSAAsyncSelect(sock,
+					dispatcher->networkWindowHandle,
+					UWM_NETWORK, sockrec->wantevents);
+			}
+		}
+		else if (socket_cb)
+		{
+			display_message(ERROR_MESSAGE,
+				"Event_dispatcher_set_socket_read_callback.  "
+				"Can't create a socket structure.");
+		}
+	}
+	else
+		ret = 0;
+
+	LEAVE;
+	return (ret);
+}
+
+int Event_dispatcher_set_socket_write_callback(struct Event_dispatcher *dispatcher,
+	SOCKET sock,
+	Event_dispatcher_win32_socket_callback socket_cb,
+	void *user_data)
+{
+	int ret;
+	struct Event_dispatcher_win32_socket *sockrec;
+
+	ENTER(Event_dispatcher_set_socket_write_callback);
+
+	if (Event_dispatcher_ensure_network_window(dispatcher))
+	{
+		/* Find the socket in the indexed list(tree)... */
+		sockrec = FIND_BY_IDENTIFIER_IN_LIST
+			(Event_dispatcher_win32_socket, socket)
+			(sock, dispatcher->socket_list);
+		if (sockrec == NULL && socket_cb)
+		{
+			sockrec = CREATE(Event_dispatcher_win32_socket)(sock);
+			ADD_OBJECT_TO_LIST(Event_dispatcher_win32_socket)
+				(sockrec, dispatcher->socket_list);
+		}
+		if (sockrec != NULL)
+		{
+			sockrec->write_cb_data = user_data;
+			if (!((sockrec->write_cb==NULL) ^ (socket_cb == NULL)))
+				sockrec->write_cb = socket_cb;
+			else if (!socket_cb)
+			{
+				sockrec->wantevents &= ~FD_WRITE;
+				WSAAsyncSelect(sock,
+					dispatcher->networkWindowHandle,
+					UWM_NETWORK, sockrec->wantevents);
+				sockrec->write_cb = socket_cb;
+				if (!sockrec->wantevents)
+					REMOVE_OBJECT_FROM_LIST
+						(Event_dispatcher_win32_socket)
+						(sockrec, dispatcher->socket_list);
+			}
+			else
+			{
+				sockrec->wantevents |= FD_WRITE;
+				sockrec->write_cb = socket_cb;
+				WSAAsyncSelect(sock,
+					dispatcher->networkWindowHandle,
+					UWM_NETWORK, sockrec->wantevents);
+			}
+		}
+		else if (socket_cb)
+		{
+			display_message(ERROR_MESSAGE,
+				"Event_dispatcher_set_socket_read_callback.  "
+				"Can't create a socket structure.");
+		}
+	}
+	else
+		ret = 0;
+
+	LEAVE;
+	return (ret);
+}
+#else /* defined(WIN32_USER_INTERFACE) */
 
 static struct Event_dispatcher_descriptor_callback *CREATE(Event_dispatcher_descriptor_callback)(
 #if defined (USE_GENERIC_EVENT_DISPATCHER)
@@ -451,6 +751,7 @@ DECLARE_OBJECT_FUNCTIONS(Event_dispatcher_descriptor_callback)
 DECLARE_INDEXED_LIST_FUNCTIONS(Event_dispatcher_descriptor_callback)
 DECLARE_FIND_BY_IDENTIFIER_IN_INDEXED_LIST_FUNCTION(Event_dispatcher_descriptor_callback, \
 	self,struct Event_dispatcher_descriptor_callback *,compare_pointer)
+#endif /* defined (WIN32_USER_INTERFACE) else */
 
 static struct Event_dispatcher_timeout_callback *CREATE(Event_dispatcher_timeout_callback)(
 	unsigned long timeout_s, unsigned long timeout_ns, 
@@ -907,6 +1208,45 @@ DESCRIPTION :
 } /* Event_dispatcher_gtk_idle_callback */
 #endif /* defined (USE_GTK_MAIN_STEP) */
 
+#if defined (WIN32_USER_INTERFACE)
+int Event_dispatcher_win32_idle_callback(
+	void *idle_callback_void)
+/*******************************************************************************
+LAST MODIFIED : 9 August 2004
+
+DESCRIPTION :
+==============================================================================*/
+{
+	int return_code;
+	struct Event_dispatcher_idle_callback *idle_callback;
+
+	ENTER(Event_dispatcher_win32_idle_callback);
+	if (idle_callback = (struct Event_dispatcher_idle_callback *)idle_callback_void)
+	{
+		if (idle_callback->idle_function &&
+		    (*idle_callback->idle_function)(idle_callback->user_data))
+		{
+			display_message(ERROR_MESSAGE,
+				"Event_dispatcher_win32_idle_callback.  Callback function failed.");
+			return_code = 0;
+		}
+		else
+		{
+			return_code = 1;
+		}
+		DEACCESS(Event_dispatcher_idle_callback)(&idle_callback);
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Event_dispatcher_win32_idle_callback.  Invalid arguments.");
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Event_dispatcher_win32_idle_callback */
+#endif /* defined (WIN32_USER_INTERFACE) */
+
 /*
 Global functions
 ----------------
@@ -926,8 +1266,13 @@ Creates a connection to a event_dispatcher of the specified type.
 
 	if (ALLOCATE(event_dispatcher, struct Event_dispatcher, 1))
 	{
+#if defined (WIN32_USER_INTERFACE)
+		event_dispatcher->socket_list = 
+			CREATE(LIST(Event_dispatcher_win32_socket))();
+#else /* defined (WIN32_USER_INTERFACE) */
 		event_dispatcher->descriptor_list = 
 			CREATE(LIST(Event_dispatcher_descriptor_callback))();
+#endif /* defined (WIN32_USER_INTERFACE) */
 		event_dispatcher->timeout_list = 
 			CREATE(LIST(Event_dispatcher_timeout_callback))();
 		event_dispatcher->idle_list = 
@@ -940,6 +1285,9 @@ Creates a connection to a event_dispatcher of the specified type.
 			(struct Event_dispatcher_idle_callback *)NULL;
 #endif /* defined (USE_XTAPP_CONTEXT) */
 		event_dispatcher->continue_flag = 1;
+#if defined(WIN32_USER_INTERFACE)
+		event_dispatcher->networkWindowHandle = (HWND)NULL;
+#endif /* defined(WIN32_USER_INTERFACE) */
 	}
 	else
 	{
@@ -967,11 +1315,19 @@ Destroys a Event_dispatcher object
 	if (event_dispatcher_address && (event_dispatcher = *event_dispatcher_address))
 	{
 		return_code=1;
+#if defined (WIN32_USER_INTERFACE)
+		if (event_dispatcher->socket_list)
+		{
+			DESTROY(LIST(Event_dispatcher_win32_socket))
+				(&event_dispatcher->socket_list);
+		}
+#else /* defined (WIN32_USER_INTERFACE) */
 		if (event_dispatcher->descriptor_list)
 		{
 			DESTROY(LIST(Event_dispatcher_descriptor_callback))
 				(&event_dispatcher->descriptor_list);
 		}
+#endif /* defined (WIN32_USER_INTERFACE) */
 		if (event_dispatcher->timeout_list)
 		{
 			DESTROY(LIST(Event_dispatcher_timeout_callback))
@@ -1053,6 +1409,7 @@ DESCRIPTION :
 } /* Event_dispatcher_add_descriptor_callback */
 #endif /* defined (USE_GENERIC_EVENT_DISPATCHER) */
 
+#if !defined(WIN32_USER_INTERFACE)
 struct Event_dispatcher_descriptor_callback *Event_dispatcher_add_simple_descriptor_callback(
 	struct Event_dispatcher *event_dispatcher, int file_descriptor,
 	Event_dispatcher_simple_descriptor_callback_function *callback_function,
@@ -1178,6 +1535,8 @@ DESCRIPTION :
 
 	return (return_code);
 } /* Event_dispatcher_remove_descriptor_callback */
+
+#endif /* defined(WIN32_USER_INTERFACE) */
 
 #if defined (USE_XTAPP_CONTEXT)
 struct Event_dispatcher_timeout_callback *Event_dispatcher_add_timeout_callback(
@@ -1452,6 +1811,23 @@ DESCRIPTION :
 				idle_callback->gtk_idle_id = gtk_idle_add(
 					Event_dispatcher_gtk_idle_callback, idle_callback);
 			}
+#elif defined (WIN32_SYSTEM)
+			else
+			{
+				if(!(PostMessage(WindowFromDC((HDC)Graphics_buffer_get_hdc(
+						Scene_viewer_get_graphics_buffer((struct Scene_viewer *)user_data))),
+						UWM_IDLE, 0, (LPARAM)idle_callback)))
+				{
+					display_message(ERROR_MESSAGE,
+						"Event_dispatcher_add_idle_event_callback.  "
+						"Could not post idle_callback message.");
+					idle_callback = (struct Event_dispatcher_idle_callback *)NULL;
+				}
+				else
+				{
+					ACCESS(Event_dispatcher_idle_callback)(idle_callback);
+				}
+			}
 #endif /* defined (USE_XTAPP_CONTEXT) */
 		}
 		else
@@ -1543,6 +1919,7 @@ DESCRIPTION :
 #elif defined (USE_GTK_MAIN_STEP)
 		gtk_idle_remove(callback_id->gtk_idle_id);
 #endif /* defined (USE_XTAPP_CONTEXT) */
+		callback_id->idle_function = NULL;
 		return_code = REMOVE_OBJECT_FROM_LIST(Event_dispatcher_idle_callback)
 			(callback_id, event_dispatcher->idle_list);
 	}

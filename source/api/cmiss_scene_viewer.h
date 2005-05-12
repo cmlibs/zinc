@@ -13,6 +13,9 @@ scenes.
 #if defined (GTK_USER_INTERFACE)
 #include <gtk/gtk.h>
 #endif /* defined (GTK_USER_INTERFACE) */
+#if defined (WIN32_USER_INTERFACE)
+#include <windows.h>
+#endif /* defined (WIN32_USER_INTERFACE) */
 #include "general/object.h"
 
 /*
@@ -147,6 +150,27 @@ chosen.
 ==============================================================================*/
 #endif /* defined (GTK_USER_INTERFACE) */
 
+#if defined (WIN32_USER_INTERFACE)
+Cmiss_scene_viewer_id create_Cmiss_scene_viewer_win32(
+	HWND hWnd,
+	enum Cmiss_scene_viewer_buffering_mode buffer_mode,
+	enum Cmiss_scene_viewer_stereo_mode stereo_mode,
+	int minimum_colour_buffer_depth, int minimum_depth_buffer_depth,
+	int minimum_accumulation_buffer_depth);
+/*******************************************************************************
+LAST MODIFIED : 19 September 2002
+
+DESCRIPTION :
+Creates a Cmiss_scene_viewer by creating a graphics buffer on the specified 
+<hWnd> window handle.
+If <minimum_colour_buffer_depth>, <minimum_depth_buffer_depth> or 
+<minimum_accumulation_buffer_depth> are not zero then they are used to filter
+out the possible visuals selected for graphics_buffers.  If they are zero then 
+the accumulation_buffer_depth are not tested and the maximum colour buffer depth is
+chosen.
+==============================================================================*/
+#endif /* defined (WIN32_USER_INTERFACE) */
+
 int DESTROY(Cmiss_scene_viewer)(Cmiss_scene_viewer_id *scene_viewer_id_address);
 /*******************************************************************************
 LAST MODIFIED : 10 September 2002
@@ -180,7 +204,7 @@ the up vector is orthogonal to the view direction - so projection is not skew.
 ==============================================================================*/
 
 int Cmiss_scene_viewer_get_near_and_far_plane(Cmiss_scene_viewer_id scene_viewer,
-	double *near, double *far);
+	double *near_plane, double *far_plane);
 /*******************************************************************************
 LAST MODIFIED : 13 September 2002
 
@@ -190,7 +214,7 @@ clip plane in the <scene_viewer>.
 ==============================================================================*/
 
 int Cmiss_scene_viewer_set_near_and_far_plane(Cmiss_scene_viewer_id scene_viewer,
-	double near, double far);
+	double near_plane, double far_plane);
 /*******************************************************************************
 LAST MODIFIED : 13 September 2002
 

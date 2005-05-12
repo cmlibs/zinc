@@ -14,6 +14,7 @@ registered file descriptors to the correct callbacks.
 #if defined (USE_XTAPP_CONTEXT) /* switch (USER_INTERFACE) */
 #include <Xm/Xm.h>
 #elif defined (WIN32_USER_INTERFACE) /* switch (USER_INTERFACE) */
+#include <windows.h>
 #elif defined (USE_GTK_MAIN_STEP) /* switch (USER_INTERFACE) */
 #elif 1 /* switch (USER_INTERFACE) */
 /* This is the default code, it is an event dispatcher designed to run 
@@ -267,4 +268,30 @@ LAST MODIFIED : 4 June 2002
 DESCRIPTION :
 ==============================================================================*/
 #endif /* defined (USE_XTAPP_CONTEXT) */
+
+#if defined WIN32_USER_INTERFACE
+typedef void (*Event_dispatcher_win32_socket_callback)(SOCKET,void*);
+int Event_dispatcher_set_socket_read_callback(struct Event_dispatcher *dispatcher,
+	SOCKET socket,
+	Event_dispatcher_win32_socket_callback socket_cb, void *user_data);
+/*******************************************************************************
+LAST MODIFIED : 16 February 2005
+
+DESCRIPTION :
+Sets a callback that is called when the socket is ready to read. Pass NULL
+as <socket_cb> to cancel the callback. The callback is also called if the
+socket has been closed.
+==============================================================================*/
+
+int Event_dispatcher_set_socket_write_callback(struct Event_dispatcher *dispatcher,
+	SOCKET socket,
+	Event_dispatcher_win32_socket_callback socket_cb, void *user_data);
+/*******************************************************************************
+LAST MODIFIED : 16 February 2005
+
+DESCRIPTION :
+Sets a callback that is called when the socket is ready to write. Pass NULL
+as <socket_cb> to cancel the callback.
+==============================================================================*/
+#endif /* defined (WIN32_USER_INTERFACE) */
 #endif /* !defined (EVENT_DISPATCHER_H) */

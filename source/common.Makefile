@@ -14,6 +14,9 @@ ifndef SYSNAME
   ifeq ($(SYSNAME),)
     $(error error with shell command uname)
   endif
+  ifeq ($(SYSNAME),MINGW32_NT-5.1)
+    SYSNAME=win32
+  endif
 endif
 
 ifndef NODENAME
@@ -276,12 +279,12 @@ ifeq ($(SYSNAME),win32)
    # CC = gcc -c -mno-cygwin -fnative-struct */
    CC = gcc -c -mno-cygwin -mms-bitfields
    # CC = gcc -c -mno-cygwin -mms-bitfields -D_LIB -D_MT -D_FILE_OFFSET_BITS=64
-   CPP = gcc -c -mno-cygwin -mms-bitfields
+   CPP = g++ -c -mno-cygwin -mms-bitfields
    CPP_FLAGS =
    FORTRAN = f77 -c
    MAKEDEPEND = gcc -MM -MG
    CPREPROCESS = 
-   LINK = gcc -mno-cygwin -fnative-struct -mms-bitfields
+   LINK = g++ -mno-cygwin -fnative-struct -mms-bitfields
    ifeq ($(filter-out CONSOLE_USER_INTERFACE GTK_USER_INTERFACE,$(USER_INTERFACE)),)
       LINK += -mconsole 
    else # $(USER_INTERFACE) == CONSOLE_USER_INTERFACE || $(USER_INTERFACE) == GTK_USER_INTERFACE
@@ -475,7 +478,7 @@ ifdef CMISS_ROOT_DEFINED
       SOURCE_RC=$(PRODUCT_SOURCE_PATH)/$*.rc; \
 	fi ; \
 	set -x ; \
-	windres -o $(OBJECT_PATH)/$*.res -O coff $${SOURCE_RC}
+	windres -I`dirname $${SOURCE_RC}` -o $(OBJECT_PATH)/$*.res -O coff $${SOURCE_RC}
 else # CMISS_ROOT_DEFINED
 	set -x ; \
    windres -o $(OBJECT_PATH)/$*.res -O coff $*.rc
@@ -557,6 +560,9 @@ define BuildSharedLibraryTarget
 	cd $(OBJECT_PATH) ; \
 	rm -f product_object ; \
 	ln -s $(PRODUCT_OBJECT_PATH) product_object ; \
-	$(LINK) -shared -o $(1).tmp $(ALL_FLAGS) `cat $(1).list` $(4) -Wl,-soname,$(5) && \
-	mv $(1).tmp $(2)/$(1) ;
+	if [ $(SO_LIB_SUFFIX) == ".dll" ]; then \
+		$(LINK) -shared -o $(1).dll  $(ALL_FLAGS) -Wl,--out-implib,$(1).dll.a -Wl,--kill-at -Wl,--output-def,$(1).def -Wl,--whole-archive `cat $(1).list`  -Wl,--no-whole-archive $(4) $(6) && cp $(1).dll $(2)/$(1).dll && cp $(1).dll.a $(2)/$(1).dll.a && cp $(1).def $(2)/$(1).def; \
+	else \
+		$(LINK) -shared -o $(1).tmp $(ALL_FLAGS) `cat $(1).list` $(4) -Wl,-soname,$(5) && mv $(1).tmp $(2)/$(1) ; \
+	fi
 endef

@@ -37,8 +37,8 @@ Main program for the CMISS Graphical User Interface
 {
 	int return_code;
 #if defined (WIN32_USER_INTERFACE)
-	int argc = 1;
-	char *argv[] = {"cmgui_win32"};
+	int argc = 1, i;
+	char **argv, *p, *q;
 #endif /* defined (WIN32_USER_INTERFACE) */
 	struct Cmiss_command_data *command_data;
 
@@ -46,12 +46,39 @@ Main program for the CMISS Graphical User Interface
 	ENTER(main);
 #else /* !defined (WIN32_USER_INTERFACE) */
 	ENTER(WinMain);
+
+	for (p = command_line; p != NULL && *p != 0;)
+	{
+		p = strchr(p, ' ');
+		if (p != NULL)
+			p++;
+		argc++;
+	}
+
+	argv = malloc(sizeof(*argv) * argc);
+
+	argv[0] = "cmgui";
+
+	for (i = 1, p = command_line; p != NULL && *p != 0;)
+	{
+		q = strchr(p, ' ');
+		if (q != NULL)
+			*q++ = 0;
+		if (p != NULL)
+			argv[i++] = p;
+		p = q;
+	}
 #endif /* !defined (WIN32_USER_INTERFACE) */
 
 	/* display the version */
 	display_message(INFORMATION_MESSAGE, VERSION "\n");
 
+#if !defined (WIN32_USER_INTERFACE)
 	if (command_data = CREATE(Cmiss_command_data)(argc, argv, VERSION))
+#else /* !defined (WIN32_USER_INTERFACE) */
+	if (command_data = CREATE(Cmiss_command_data)(argc, argv, VERSION, 
+                           current_instance, previous_instance, command_line, initial_main_window_state))
+#endif /* !defined (WIN32_USER_INTERFACE) */
 	{
 		Cmiss_command_data_main_loop(command_data);
 		DESTROY(Cmiss_command_data)(&command_data);

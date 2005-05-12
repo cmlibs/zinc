@@ -14,6 +14,9 @@ This should only be included in cmgui.c and command/cmiss.c
 #include "command/command.h"
 #include "general/io_stream.h"
 #include "region/cmiss_region.h"
+#if defined (WIN32_USER_INTERFACE)
+#include <windows.h>
+#endif /* defined (WIN32_USER_INTERFACE) */
 
 /*
 Global types
@@ -59,8 +62,14 @@ Sets the <command_string> in the command box of the CMISS command_window, ready
 for editing or entering. If there is no command_window, does nothing.
 ==============================================================================*/
 
+#if !defined (WIN32_USER_INTERFACE)
 struct Cmiss_command_data *CREATE(Cmiss_command_data)(int argc,char *argv[],
 	char *version_string);
+#else /* !defined (WIN32_USER_INTERFACE) */
+struct Cmiss_command_data *CREATE(Cmiss_command_data)(int argc,char *argv[],
+	char *version_string, HINSTANCE current_instance, 
+        HINSTANCE previous_instance, LPSTR command_line,int initial_main_window_state);
+#endif /* !defined (WIN32_USER_INTERFACE) */
 /*******************************************************************************
 LAST MODIFIED : 19 December 2002
 
@@ -120,4 +129,14 @@ LAST MODIFIED : 16 September 2004
 DESCRIPTION :
 Returns the io_stream_package structure from the <command_data>
 ==============================================================================*/
+
+struct Cmiss_fdio_package* Cmiss_command_data_get_fdio_package(
+	struct Cmiss_command_data *command_data);
+/*******************************************************************************
+LAST MODIFIED : 10 March 2005
+
+DESCRIPTION :
+Gets an Fdio_package for this <command_data>
+==============================================================================*/
+
 #endif /* !defined (COMMAND_CMISS_H) */

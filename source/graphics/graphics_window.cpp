@@ -57,6 +57,9 @@ interest and set scene_viewer values directly.
 #include "time/time_keeper.h"
 #include "user_interface/confirmation.h"
 #include "user_interface/printer.h"
+#if defined (WIN32_USER_INTERFACE)
+#include <windows.h>
+#endif /* defined (WIN32_USER_INTERFACE) */
 
 /*
 Module constants
@@ -94,6 +97,8 @@ Contains information for a graphics window.
 	Widget window_shell,main_window;
 #elif defined (GTK_USER_INTERFACE)
 	GtkWidget *shell_window;
+#elif defined (WIN32_USER_INTERFACE)
+        HWND hWnd;
 #endif /* defined (GTK_USER_INTERFACE) */
 	/* scene_viewers and their parameters: */
 	enum Graphics_window_layout_mode layout_mode;
@@ -2492,7 +2497,6 @@ view angle, interest point etc.
 Global functions
 ----------------
 */
-
 struct Graphics_window *CREATE(Graphics_window)(char *name,
 	enum Graphics_window_buffering_mode buffering_mode,
 	enum Graphics_window_stereo_mode stereo_mode,
@@ -3114,6 +3118,134 @@ it.
 				display_message(ERROR_MESSAGE,
 					"CREATE(Graphics_window).  Unable to get main window.");
 				window = (struct Graphics_window *)NULL;
+			}
+#elif defined (WIN32_USER_INTERFACE) /* switch (USER_INTERFACE) */
+			BOOL win32_return_code;
+			static char *class_name="Graphics_window";
+			WNDCLASS class_information;
+
+			/* check if the class is registered */
+			win32_return_code=GetClassInfo(User_interface_get_instance(user_interface),
+				class_name,&class_information);
+
+			if (win32_return_code==FALSE)
+			{
+				/* register class */
+				class_information.cbClsExtra=0;
+				class_information.cbWndExtra=sizeof(struct Graphics_window *);
+				class_information.hbrBackground=(HBRUSH)(COLOR_WINDOW+1);
+				class_information.hCursor=LoadCursor(NULL,IDC_ARROW);
+				class_information.hIcon=LoadIcon(
+					User_interface_get_instance(user_interface),
+					"Command_window_icon");
+				class_information.hInstance=User_interface_get_instance(
+					user_interface);
+				class_information.lpfnWndProc=DefWindowProc;
+				class_information.lpszClassName=class_name;
+				class_information.style=CS_OWNDC;
+				class_information.lpszMenuName=NULL;
+				if (RegisterClass(&class_information))
+				{
+					win32_return_code=TRUE;
+				}
+			}
+
+			/* create the window */
+			if (win32_return_code!=FALSE)
+			{
+				if (window->hWnd=CreateWindow(class_name, window_title,
+					WS_CAPTION | WS_POPUPWINDOW | WS_VISIBLE | WS_SIZEBOX,
+					0, 0, window->default_viewing_width, window->default_viewing_height,
+					NULL, NULL, User_interface_get_instance(user_interface), NULL))
+				{
+					if (graphics_buffer = create_Graphics_buffer_win32(
+						graphics_buffer_package,
+						window->hWnd,
+						graphics_buffer_buffering_mode, graphics_buffer_stereo_mode,
+						minimum_colour_buffer_depth, minimum_depth_buffer_depth,
+						minimum_accumulation_buffer_depth))
+					{
+					       SetWindowLongPtr(window->hWnd, 0, (LONG_PTR)graphics_buffer);
+
+						/* create one Scene_viewers */
+						window->number_of_scene_viewers = 1;
+						if (ALLOCATE(window->scene_viewer_array,
+							struct Scene_viewer *,
+							window->number_of_scene_viewers))
+						{
+							pane_no = 0;
+							if (window->scene_viewer_array[pane_no] = 
+								 CREATE(Scene_viewer)(graphics_buffer,
+								 background_colour, light_manager,default_light,
+								 light_model_manager,default_light_model,
+								 scene_manager, window->scene,
+								 texture_manager, user_interface))
+							{
+								Scene_viewer_set_interactive_tool(
+									window->scene_viewer_array[pane_no],
+									window->interactive_tool);
+								/* get scene_viewer transform callbacks to allow
+									synchronising of views in multiple panes */
+								Scene_viewer_add_sync_callback(
+									window->scene_viewer_array[pane_no],
+									Graphics_window_Scene_viewer_view_changed,
+									window);
+								Scene_viewer_set_translation_rate(
+									window->scene_viewer_array[pane_no], 2.0);
+								Scene_viewer_set_tumble_rate(
+									window->scene_viewer_array[pane_no], 1.5);
+								Scene_viewer_set_zoom_rate(
+									window->scene_viewer_array[pane_no], 2.0);
+
+								/* set the initial layout */
+								Graphics_window_set_layout_mode(window,
+									GRAPHICS_WINDOW_LAYOUT_SIMPLE);
+								/* give the window its default size */
+								Graphics_window_set_viewing_area_size(window,
+									window->default_viewing_width,
+									window->default_viewing_height);
+								/* initial view is of all of the current scene */
+								Graphics_window_view_all(window);
+
+								return_code = 1;
+							}
+							else
+							{
+								display_message(ERROR_MESSAGE,
+									"CREATE(Graphics_window).  "
+									"Could not create scene_viewer.");
+								DESTROY(Graphics_window)(&window);
+								window = (struct Graphics_window *)NULL;
+							}
+						}
+						else
+						{
+							display_message(ERROR_MESSAGE,
+								"CREATE(Graphics_window).  "
+								"Could not allocate memory for scene viewer array.");
+							DESTROY(Graphics_window)(&window);
+							window = (struct Graphics_window *)NULL;
+						}
+					}
+					else
+					{
+						display_message(ERROR_MESSAGE,
+							"CREATE(Graphics_window).  "
+							"Could not create graphics buffer.");
+						DESTROY(Graphics_window)(&window);
+						window = (struct Graphics_window *)NULL;
+					}
+				}
+				else
+				{
+					display_message(ERROR_MESSAGE,
+						"CREATE(Graphics_window).  Could not create window");
+				}
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE,
+					"CREATE(Graphics_window).  Unable to register class information");
 			}
 #endif /* switch (USER_INTERFACE) */
 		}

@@ -12,6 +12,9 @@ The public interface to the some of the internal functions of cmiss.
 #include "api/cmiss_computed_field.h"
 /* If this is going to be in the API then it needs to have an interface there */
 #include "general/object.h"
+#if defined (WIN32_USER_INTERFACE)
+#include <windows.h>
+#endif /* defined (WIN32_USER_INTERFACE) */
 
 /*
 Global types
@@ -30,8 +33,14 @@ Global functions
 ----------------
 */
 
+#if !defined (WIN32_USER_INTERFACE)
 struct Cmiss_command_data *CREATE(Cmiss_command_data)(int argc,char *argv[],
 	char *version_string);
+#else /* !defined (WIN32_USER_INTERFACE) */
+struct Cmiss_command_data *CREATE(Cmiss_command_data)(int argc,char *argv[],
+	char *version_string, HINSTANCE current_instance, 
+        HINSTANCE previous_instance, LPSTR command_line,int initial_main_window_state);
+#endif /* !defined (WIN32_USER_INTERFACE) */
 /*******************************************************************************
 LAST MODIFIED : 13 August 2002
 

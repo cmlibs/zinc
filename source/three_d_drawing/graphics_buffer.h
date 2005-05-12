@@ -38,7 +38,8 @@ enum Graphics_buffer_type
 	GRAPHICS_BUFFER_GLX_PIXMAP_TYPE, /* Non shared offscreen, no good for our display lists but
 											  can be used for find_xi_special buffer */
 	GRAPHICS_BUFFER_GTKGLAREA_TYPE,
-	GRAPHICS_BUFFER_GTKGLEXT_TYPE
+	GRAPHICS_BUFFER_GTKGLEXT_TYPE,
+	GRAPHICS_BUFFER_WIN32_TYPE
 };
 
 enum Graphics_buffer_buffering_mode
@@ -100,7 +101,8 @@ Global functions
 ----------------
 */
 
-#if defined (MOTIF) || defined (GTK_USER_INTERFACE)
+
+#if defined (MOTIF) || defined (GTK_USER_INTERFACE) || defined (WIN32_USER_INTERFACE)
 struct Graphics_buffer_package *CREATE(Graphics_buffer_package)(
 	struct User_interface *user_interface);
 /*******************************************************************************
@@ -110,9 +112,9 @@ DESCRIPTION :
 Creates a Graphics_buffer_package which enables Graphics_buffers created from
 it to share graphics contexts.
 ==============================================================================*/
-#endif /* defined (MOTIF) || defined (GTK_USER_INTERFACE) */
+#endif /* defined (MOTIF) || defined (GTK_USER_INTERFACE) || defined (WIN32_USER_INTERFACE) */
 
-#if defined (MOTIF) || defined (GTK_USER_INTERFACE)
+#if defined (MOTIF) || defined (GTK_USER_INTERFACE) || defined (WIN32_USER_INTERFACE)
 int DESTROY(Graphics_buffer_package)(struct Graphics_buffer_package **package_ptr);
 /*******************************************************************************
 LAST MODIFIED : 5 May 2004
@@ -120,9 +122,9 @@ LAST MODIFIED : 5 May 2004
 DESCRIPTION :
 Closes the Graphics buffer package
 ==============================================================================*/
-#endif /* defined (MOTIF) || defined (GTK_USER_INTERFACE) */
+#endif /* defined (MOTIF) || defined (GTK_USER_INTERFACE) || defined (WIN32_USER_INTERFACE) */
 
-#if defined (MOTIF) || defined (GTK_USER_INTERFACE)
+#if defined (MOTIF) || defined (GTK_USER_INTERFACE) || defined (WIN32_USER_INTERFACE)
 int Graphics_buffer_package_set_override_visual_id(
 	struct Graphics_buffer_package *graphics_buffer_package,
 	int override_visual_id);
@@ -132,11 +134,26 @@ LAST MODIFIED : 21 May 2004
 DESCRIPTION :
 Sets a particular visual to be used by all graphics buffers.
 ==============================================================================*/
-#endif /* defined (MOTIF) || defined (GTK_USER_INTERFACE) */
+#endif /* defined (MOTIF) || defined (GTK_USER_INTERFACE) || defined (WIN32_USER_INTERFACE)*/
 
 PROTOTYPE_OBJECT_FUNCTIONS(Graphics_buffer);
 
-#if defined (MOTIF) || defined (GTK_USER_INTERFACE)
+#if defined (GTK_USER_INTERFACE)
+struct Graphics_buffer *create_Graphics_buffer_gtkgl(
+	struct Graphics_buffer_package *graphics_buffer_package,
+	GtkContainer *parent,
+	enum Graphics_buffer_buffering_mode buffering_mode,
+	enum Graphics_buffer_stereo_mode stereo_mode,
+	int minimum_colour_buffer_depth, int minimum_depth_buffer_depth, 
+	int minimum_accumulation_buffer_depth);
+/*******************************************************************************
+LAST MODIFIED : 2 June 2004
+
+DESCRIPTION :
+==============================================================================*/
+#endif /* defined (GTK_USER_INTERFACE) */
+
+#if defined (MOTIF) || defined (GTK_USER_INTERFACE) || defined (WIN32_USER_INTERFACE)
 struct Graphics_buffer *create_Graphics_buffer_offscreen(
 	struct Graphics_buffer_package *graphics_buffer_package,
 	int width, int height,
@@ -149,9 +166,9 @@ LAST MODIFIED : 6 May 2004
 
 DESCRIPTION :
 ==============================================================================*/
-#endif /* defined (MOTIF) || defined (GTK_USER_INTERFACE) */
+#endif /* defined (MOTIF) || defined (GTK_USER_INTERFACE) || defined (WIN32_USER_INTERFACE) */
 
-#if defined (MOTIF) || defined (GTK_USER_INTERFACE)
+#if defined (MOTIF) || defined (GTK_USER_INTERFACE) || defined (WIN32_USER_INTERFACE)
 struct Graphics_buffer *create_Graphics_buffer_shared_offscreen(
 	struct Graphics_buffer_package *graphics_buffer_package,
 	int width, int height,
@@ -164,9 +181,9 @@ LAST MODIFIED : 6 May 2004
 
 DESCRIPTION :
 ==============================================================================*/
-#endif /* defined (MOTIF) || defined (GTK_USER_INTERFACE) */
+#endif /* defined (MOTIF) || defined (GTK_USER_INTERFACE) || defined (WIN32_USER_INTERFACE) */
 
-#if defined (MOTIF) || defined (GTK_USER_INTERFACE)
+#if defined (MOTIF) || defined (GTK_USER_INTERFACE) || defined (WIN32_USER_INTERFACE)
 struct Graphics_buffer *create_Graphics_buffer_offscreen_from_buffer(
 	int width, int height, struct Graphics_buffer *buffer_to_match);
 /*******************************************************************************
@@ -174,7 +191,22 @@ LAST MODIFIED : 6 May 2004
 
 DESCRIPTION :
 ==============================================================================*/
-#endif /* defined (MOTIF) || defined (GTK_USER_INTERFACE) */
+#endif /* defined (MOTIF) || defined (GTK_USER_INTERFACE) || defined (WIN32_USER_INTERFACE) */
+
+#if defined (WIN32_USER_INTERFACE)
+struct Graphics_buffer *create_Graphics_buffer_win32(
+	struct Graphics_buffer_package *graphics_buffer_package,
+	HWND hWnd,
+	enum Graphics_buffer_buffering_mode buffering_mode,
+	enum Graphics_buffer_stereo_mode stereo_mode,
+	int minimum_colour_buffer_depth, int minimum_depth_buffer_depth, 
+	int minimum_accumulation_buffer_depth);
+/*******************************************************************************
+LAST MODIFIED : 9 August 2004
+
+DESCRIPTION :
+==============================================================================*/
+#endif /* defined (WIN32_USER_INTERFACE) */
 
 #if defined (MOTIF)
 struct Graphics_buffer *create_Graphics_buffer_X3d(
@@ -201,21 +233,6 @@ LAST MODIFIED : 6 May 2004
 DESCRIPTION :
 ==============================================================================*/
 #endif /* defined (MOTIF) */
-
-#if defined (GTK_USER_INTERFACE)
-struct Graphics_buffer *create_Graphics_buffer_gtkgl(
-	struct Graphics_buffer_package *graphics_buffer_package,
-	GtkContainer *parent,
-	enum Graphics_buffer_buffering_mode buffering_mode,
-	enum Graphics_buffer_stereo_mode stereo_mode,
-	int minimum_colour_buffer_depth, int minimum_depth_buffer_depth, 
-	int minimum_accumulation_buffer_depth);
-/*******************************************************************************
-LAST MODIFIED : 2 June 2004
-
-DESCRIPTION :
-==============================================================================*/
-#endif /* defined (GTK_USER_INTERFACE) */
 
 int Graphics_buffer_make_current(struct Graphics_buffer *buffer);
 /*******************************************************************************

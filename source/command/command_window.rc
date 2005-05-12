@@ -20,14 +20,18 @@
 #define IDM_HELPTOPICS            50013
 #define IDM_ABOUT                 50014
 
+#define IDI_CMISS_ICON           100000
+
 #if defined RC_INVOKED
 /////////////////////////////////////////////////////////////////////////////
 //
 // Icon
 //
 
-Command_window_icon ICON "command/icon1.ico"
-Command_window_icon_small ICON "command/icon1.ico"
+#if defined MISSING_ICON_FILE_FOUND
+Command_window_icon ICON "icon1.ico"
+Command_window_icon_small ICON "icon1.ico"
+#endif /* defined MISSING_ICON_FILE_FOUND */
 
 /////////////////////////////////////////////////////////////////////////////
 //
@@ -100,5 +104,7 @@ FONT 12, "MS Sans Serif"
  EDITTEXT IDC_COMMAND_ENTRY, 0, 100, 250, 18, WS_BORDER 
  EDITTEXT IDC_COMMAND_OUTPUT_PANE, 0, 118, 250, 117, ES_MULTILINE | ES_AUTOVSCROLL | NOT WS_TABSTOP | WS_BORDER | WS_VSCROLL | WS_HSCROLL
 }
+
+IDI_CMISS_ICON ICON "cmgui.ico"
 #endif /* defined RC_INVOKED */
 

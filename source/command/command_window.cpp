@@ -991,31 +991,32 @@ DESCRIPTION:
 					{
 						SendMessage(window, 
 							IDOK, 
-							(WPARAM) 0,       // line 0 
+							(WPARAM) 0,  /* line 0 */
 							(LPARAM) 0); 						
 					}
 				}
-				/*				case EN_CHANGE:
+#if defined (OLD_CODE)
+				case EN_CHANGE:
 				{
 					char buffer[1000];
 					int length;
 					
 					length = (WORD) SendMessage(control_window, 
-                        EM_LINELENGTH, 
-                        (WPARAM) 0, 
-                        (LPARAM) 0); 
+						EM_LINELENGTH, 
+						(WPARAM) 0, 
+						(LPARAM) 0); 
 					*((LPWORD)buffer) = 999;
 					SendMessage(control_window, 
 						EM_GETLINE, 
-						(WPARAM) 0,       // line 0 
+						(WPARAM) 0,   /* line 0 */
 						(LPARAM) buffer); 
 					buffer[length] = 0;
 					MessageBox(window, 
-                        buffer, 
-                        "Did it work?", 
-                        MB_OK); 
-
-								} break;*/
+						buffer, 
+						"Did it work?", 
+						MB_OK); 
+				} break;
+#endif /* defined (OLD_CODE) */
 			}
 		} break;
 	}
@@ -1830,9 +1831,17 @@ Create the structures and retrieve the command window from the uil file.
 				/* create the window */
 				if (TRUE==win32_return_code)
 				{
+#if defined (OLD_CODE)
 					if (command_window->dialog=CreateDialogParam(
 						User_interface_get_instance(user_interface),
 						"Command_window",(HWND)NULL,Command_window_dialog_proc,
+						(LPARAM)command_window))
+#endif /* defined (OLD_CODE) */
+					if (command_window->dialog=CreateDialogParam(
+						GetModuleHandle("libcmgui.dll"),
+						"Command_window",
+						(HWND)NULL,
+						Command_window_dialog_proc,
 						(LPARAM)command_window))
 					{
 						command_window->command_history = GetDlgItem(command_window->dialog,
@@ -1845,9 +1854,32 @@ Create the structures and retrieve the command window from the uil file.
 					}
 					else
 					{
+						TCHAR szBuf[80]; 
+						LPVOID lpMsgBuf;
+						DWORD dw = GetLastError(); 
+
+						FormatMessage(
+							FORMAT_MESSAGE_ALLOCATE_BUFFER | 
+							FORMAT_MESSAGE_FROM_SYSTEM,
+							NULL,
+							dw,
+							MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
+							(LPTSTR) &lpMsgBuf,
+							0, NULL );
+
+						wsprintf(szBuf, 
+							"failed with error %d: %s", 
+							dw, lpMsgBuf); 
+ 
+						MessageBox(NULL, szBuf, "Error", MB_OK); 
+
+#if defined (OLD_CODE)
+						LocalFree(lpMsgBuf);
+						ExitProcess(dw); 
 						display_message(ERROR_MESSAGE,
 							"CREATE(Command_window).  Could not create dialog");
 						DEALLOCATE(command_window);
+#endif /* defined (OLD_CODE) */
 					}
 				}
 				else
@@ -2361,6 +2393,7 @@ Writes the <message> to the <command_window>.
 	
 	ENTER(write_command_window);
 	return_code=0;
+
 	if (command_window)
 	{
 #if defined (MOTIF) /* switch (USER_INTERFACE) */

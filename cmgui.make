@@ -54,7 +54,11 @@ cmgui-debug :
 #Separating these rules allow the command line options to propogate and
 #variables that are not defined not to propogate.
 cmgui cmgui-debug cmgui-static cmgui-static-debug cmgui64 cmgui64-debug : USER_INTERFACE_OPTION=USER_INTERFACE=$(USER_INTERFACE)
+ifeq ($(SYSNAME),win32)
+cmgui cmgui-debug cmgui-static cmgui-static-debug cmgui64 cmgui64-debug : USER_INTERFACE=WIN32_USER_INTERFACE
+else # SYSNAME == win32
 cmgui cmgui-debug cmgui-static cmgui-static-debug cmgui64 cmgui64-debug : USER_INTERFACE=MOTIF_USER_INTERFACE
+endif # SYSNAME == win32
 cmgui-static cmgui-static-debug : STATIC_LINK_OPTION=STATIC_LINK=$(STATIC_LINK)
 cmgui-static cmgui-static-debug : STATIC_LINK=true
 cmgui cmgui-static cmgui64 cmgui-console cmgui-gtk : DEBUG_OPTION=DEBUG=$(DEBUG)

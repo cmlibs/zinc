@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : graphics_buffer.c
 
-LAST MODIFIED : 6 May 2004
+LAST MODIFIED : 6 May 2005
 
 DESCRIPTION :
 This provides a Cmgui interface to the OpenGL contexts of many types.
@@ -38,6 +38,10 @@ This provides a Cmgui interface to the OpenGL contexts of many types.
 #include "three_d_drawing/graphics_buffer.h"
 #include "user_interface/message.h"
 #include "user_interface/user_interface.h"
+#if defined (WIN32_USER_INTERFACE)
+#include <GL/gl.h>
+#include <windows.h>
+#endif /* defined (WIN32_USER_INTERFACE) */
 
 /* #define DEBUG */
 #if defined (DEBUG)
@@ -72,7 +76,17 @@ This provides a Cmgui interface to the OpenGL contexts of many types.
 #undef GLX_SGIX_dmbuffer
 #endif /* ! defined (SGI) */
 
+/*
+Module types
+------------
+*/
+
 enum Graphics_buffer_class
+/*******************************************************************************
+LAST MODIFIED : 10 March 2005
+
+DESCRIPTION :
+==============================================================================*/
 {
 	GRAPHICS_BUFFER_ONSCREEN_CLASS, /* A normal graphics buffer */
 	GRAPHICS_BUFFER_OFFSCREEN_SHARED_CLASS, /* Try to create an offscreen buffer with 
@@ -80,11 +94,6 @@ enum Graphics_buffer_class
 	GRAPHICS_BUFFER_OFFSCREEN_CLASS  /* Try to create an offscreen buffer,
 													 don't worry whether it shares context or not */
 };
-
-/*
-Module types
-------------
-*/
 
 struct Graphics_buffer_package
 /*******************************************************************************
@@ -106,7 +115,6 @@ DESCRIPTION :
 	  GdkGLContext *share_glcontext;
 #  endif /* defined (GTK_USE_GTKGLAREA) */
 #endif /* defined (GTK_USER_INTERFACE) */
-
 };
 
 FULL_DECLARE_CMISS_CALLBACK_TYPES(Graphics_buffer_callback, \
@@ -184,12 +192,22 @@ DESCRIPTION :
 	   GdkGLDrawable *gldrawable;
 #   endif /* ! defined (GTK_USER_GLAREA) */
 #endif /* defined (GTK_USER_INTERFACE) */
+#if defined (WIN32_USER_INTERFACE)
+	HWND hWnd;
+	HDC hDC;
+	HGLRC hRC;
+#endif /* defined (WIN32_USER_INTERFACE) */
 };
 
 /*
 Module functions
 ----------------
 */
+
+#if defined (WIN32_USER_INTERFACE)
+static LRESULT CALLBACK Graphics_buffer_callback_proc(HWND window, UINT message_identifier,
+	WPARAM first_message, LPARAM second_message);
+#endif /* defined (WIN32_USER_INTERFACE) */
 
 DEFINE_CMISS_CALLBACK_MODULE_FUNCTIONS(Graphics_buffer_callback)
 
@@ -203,7 +221,7 @@ DEFINE_CMISS_CALLBACK_FUNCTIONS(Graphics_buffer_input_callback, \
 
 DECLARE_OBJECT_FUNCTIONS(Graphics_buffer)
 
-#if defined (MOTIF) || defined (GTK_USER_INTERFACE)
+#if defined (MOTIF) || defined (GTK_USER_INTERFACE) || defined (WIN32_USER_INTERFACE)
 static struct Graphics_buffer *CREATE(Graphics_buffer)(
 	struct Graphics_buffer_package *package)
 /*******************************************************************************
@@ -293,7 +311,7 @@ contained in the this module only.
 	LEAVE;
 	return (buffer);
 } /* CREATE(Graphics_buffer) */
-#endif /* defined (MOTIF) || defined (GTK_USER_INTERFACE) */
+#endif /* defined (MOTIF) || defined (GTK_USER_INTERFACE) || defined (WIN32_USER_INTERFACE) */
 
 #if defined (MOTIF)
 static void Graphics_buffer_X3d_initialize_callback(Widget graphics_buffer_widget,
@@ -1992,21 +2010,14 @@ if there are no more initialise events pending.
 		graphics_buffer->glcontext = gtk_widget_get_gl_context(graphics_buffer->glarea);
 		if (!graphics_buffer->package->share_glcontext)
 		{
-/*
-			graphics_buffer->package->share_glcontext = graphics_buffer->glcontext;
-*/
-                       /* This context is owned by the widget, so we can't keep a
-                        * reference to it past the life of the widget, and we
-                        * certainly can't destroy it. So instead, make a copy of
-                        * it. The choice of glarea as the GLDrawable is arbitrary.
-                        */
-                       graphics_buffer->package->share_glcontext =
-                               gtk_widget_create_gl_context(
-                                       graphics_buffer->glarea,
-                                       graphics_buffer->glcontext,
-                                       TRUE,
-                                       GDK_GL_RGBA_TYPE
-                               );
+			/* This context is owned by the widget, so we can't keep a
+			 * reference to it past the life of the widget, and we
+			 * certainly can't destroy it. So instead, make a copy of
+			 * it. The choice of glarea as the GLDrawable is arbitrary.
+			 */
+			graphics_buffer->package->share_glcontext =
+				gtk_widget_create_gl_context(graphics_buffer->glarea,
+				graphics_buffer->glcontext, TRUE, GDK_GL_RGBA_TYPE);
 		}
 		graphics_buffer->gldrawable = gtk_widget_get_gl_drawable(graphics_buffer->glarea);
 #endif /* defined (GTK_USER_INTERFACE) */
@@ -2167,6 +2178,105 @@ returned to the scene.
 	return(TRUE);
 } /* Graphics_buffer_gtkglarea_button_callback */
 #endif /* defined (GTK_USER_INTERFACE) */
+
+#if defined (WIN32_USER_INTERFACE)
+static int Graphics_buffer_win32_button_callback(
+	int *button_event, struct Graphics_buffer *graphics_buffer, WPARAM wParam, LPARAM lParam)
+/*******************************************************************************
+LAST MODIFIED : 11 July 2002
+
+DESCRIPTION :
+The callback for mouse button input in the graphics_buffer window. The
+resulting behaviour depends on the <graphics_buffer> input_mode. In Transform mode
+mouse clicks and drags are converted to transformation; in Select mode OpenGL
+picking is performed with picked objects and mouse click and drag information
+returned to the scene.
+==============================================================================*/
+{
+	int return_code;
+	struct Graphics_buffer_input input;
+
+	ENTER(Graphics_buffer_win32_button_callback);
+
+	return_code = 1;
+	input.type = GRAPHICS_BUFFER_INVALID_INPUT;
+	switch(*button_event)
+	{
+		case WM_LBUTTONDOWN:
+		{
+			input.button_number = 1;
+			input.type = GRAPHICS_BUFFER_BUTTON_PRESS;
+		} break;
+		case WM_LBUTTONUP:
+		{
+			input.button_number = 1;
+			input.type = GRAPHICS_BUFFER_BUTTON_RELEASE;
+		} break;
+		case WM_RBUTTONDOWN:
+		{
+			input.button_number = 3;
+			input.type = GRAPHICS_BUFFER_BUTTON_PRESS;
+		} break;
+		case WM_RBUTTONUP:
+		{
+			input.button_number = 3;
+			input.type = GRAPHICS_BUFFER_BUTTON_RELEASE;
+		} break;
+		case WM_MBUTTONDOWN:
+		{
+			input.button_number = 2;
+			input.type = GRAPHICS_BUFFER_BUTTON_PRESS;
+		} break;
+		case WM_MBUTTONUP:
+		{
+			input.button_number = 2;
+			input.type = GRAPHICS_BUFFER_BUTTON_RELEASE;
+		} break;
+		case WM_MOUSEMOVE:
+		{
+			input.button_number = 0;
+			input.type = GRAPHICS_BUFFER_MOTION_NOTIFY;
+		} break;
+		default:
+		{
+			display_message(ERROR_MESSAGE,
+				"Graphics_buffer_button_button_callback.  Unknown button event");
+			return_code=0;
+			/* This event type is not being passed on */
+		} break;
+	}
+	input.key_code = 0;
+	input.position_x = GET_X_LPARAM(lParam);
+	input.position_y = GET_Y_LPARAM(lParam);
+	input.input_modifier = (enum Graphics_buffer_input_modifier)0;
+	if (MK_SHIFT == wParam)
+	{
+		input.input_modifier |= GRAPHICS_BUFFER_INPUT_MODIFIER_SHIFT;
+	}
+	if (MK_CONTROL == wParam)
+	{
+		input.input_modifier |= GRAPHICS_BUFFER_INPUT_MODIFIER_CONTROL;
+	}
+	if (GetKeyState(VK_MENU) < 0)
+	{
+		input.input_modifier |= GRAPHICS_BUFFER_INPUT_MODIFIER_ALT;
+	}
+/*
+	if (MK_XBUTTON1 == wParam)
+	{
+		input.input_modifier |= GRAPHICS_BUFFER_INPUT_MODIFIER_BUTTON1;
+	}
+*/
+	if (return_code)
+	{
+		CMISS_CALLBACK_LIST_CALL(Graphics_buffer_input_callback)(
+			graphics_buffer->input_callback_list, graphics_buffer, &input);
+	}
+	LEAVE;
+
+	return(TRUE);
+} /* Graphics_buffer_win32_button_callback */
+#endif /* defined (WIN32_USER_INTERFACE) */
 
 #if defined (GTK_USER_INTERFACE)
 static gboolean Graphics_buffer_gtkglarea_key_callback(GtkWidget *widget,
@@ -2329,7 +2439,7 @@ Global functions
 ----------------
 */
 
-#if defined (MOTIF) || defined (GTK_USER_INTERFACE)
+#if defined (MOTIF) || defined (GTK_USER_INTERFACE) || defined (WIN32_USER_INTERFACE)
 struct Graphics_buffer_package *CREATE(Graphics_buffer_package)(
 	struct User_interface *user_interface)
 /*******************************************************************************
@@ -2420,9 +2530,9 @@ Closes the Graphics buffer package
 
 	return (return_code);
 } /* DESTROY(Graphics_buffer_package) */
-#endif /* defined (MOTIF) || defined (GTK_USER_INTERFACE) */
+#endif /* defined (MOTIF) || defined (GTK_USER_INTERFACE) || defined (WIN32_USER_INTERFACE) */
 
-#if defined (MOTIF) || defined (GTK_USER_INTERFACE)
+#if defined (MOTIF) || defined (GTK_USER_INTERFACE) || defined (WIN32_USER_INTERFACE)
 int Graphics_buffer_package_set_override_visual_id(
 	struct Graphics_buffer_package *graphics_buffer_package,
 	int override_visual_id)
@@ -2453,7 +2563,7 @@ Sets a particular visual to be used by all graphics buffers.
 } /* Graphics_buffer_package_set_override_visual_id */
 #endif /* defined (MOTIF) || defined (GTK_USER_INTERFACE) */
 
-#if defined (MOTIF) || defined (GTK_USER_INTERFACE)
+#if defined (MOTIF) || defined (GTK_USER_INTERFACE) || defined (WIN32_USER_INTERFACE)
 struct Graphics_buffer *create_Graphics_buffer_offscreen(
 	struct Graphics_buffer_package *graphics_buffer_package,
 	int width, int height,
@@ -2508,9 +2618,9 @@ DESCRIPTION :
 
 	return (buffer);
 } /* create_Graphics_buffer_offscreen */
-#endif /* defined (MOTIF) || defined (GTK_USER_INTERFACE) */
+#endif /* defined (MOTIF) || defined (GTK_USER_INTERFACE) || defined (WIN32_USER_INTERFACE) */
 
-#if defined (MOTIF) || defined (GTK_USER_INTERFACE)
+#if defined (MOTIF) || defined (GTK_USER_INTERFACE) || defined (WIN32_USER_INTERFACE)
 struct Graphics_buffer *create_Graphics_buffer_shared_offscreen(
 	struct Graphics_buffer_package *graphics_buffer_package,
 	int width, int height,
@@ -2565,9 +2675,9 @@ DESCRIPTION :
 
 	return (buffer);
 } /* create_Graphics_buffer_offscreen */
-#endif /* defined (MOTIF) || defined (GTK_USER_INTERFACE) */
+#endif /* defined (MOTIF) || defined (GTK_USER_INTERFACE) || defined (WIN32_USER_INTERFACE) */
 
-#if defined (MOTIF) || defined (GTK_USER_INTERFACE)
+#if defined (MOTIF) || defined (GTK_USER_INTERFACE) || defined (WIN32_USER_INTERFACE)
 struct Graphics_buffer *create_Graphics_buffer_offscreen_from_buffer(
 	int width, int height, struct Graphics_buffer *buffer_to_match)
 /*******************************************************************************
@@ -2614,7 +2724,7 @@ DESCRIPTION :
 
 	return (buffer);
 } /* create_Graphics_buffer_offscreen_from_buffer */
-#endif /* defined (MOTIF) || defined (GTK_USER_INTERFACE) */
+#endif /* defined (MOTIF) || defined (GTK_USER_INTERFACE) || defined (WIN32_USER_INTERFACE) */
 
 #if defined (MOTIF)
 struct Graphics_buffer *create_Graphics_buffer_X3d(
@@ -3051,6 +3161,228 @@ DESCRIPTION :
 #endif /* ! defined (GTK_USE_GTKGLAREA) */
 #endif /* defined (GTK_USER_INTERFACE) */
 
+#if defined (WIN32_USER_INTERFACE)
+struct Graphics_buffer *create_Graphics_buffer_win32(
+	struct Graphics_buffer_package *graphics_buffer_package,
+	HWND hWnd,
+	enum Graphics_buffer_buffering_mode buffering_mode,
+	enum Graphics_buffer_stereo_mode stereo_mode,
+	int minimum_colour_buffer_depth, int minimum_depth_buffer_depth, 
+	int minimum_accumulation_buffer_depth)
+/*******************************************************************************
+LAST MODIFIED : 9 August 2004
+
+DESCRIPTION :
+==============================================================================*/
+{
+	PIXELFORMATDESCRIPTOR pfd;
+	int accumulation_colour_size;
+	int format;
+	struct Graphics_buffer *buffer;
+
+	ENTER(create_Graphics_buffer_win32);
+
+	if (buffer = CREATE(Graphics_buffer)(graphics_buffer_package))
+	{
+                SetWindowLongPtr(hWnd, GWL_WNDPROC, (LONG)Graphics_buffer_callback_proc);
+		SetWindowLongPtr(hWnd, GWL_USERDATA, (LONG)buffer);
+
+		buffer->type = GRAPHICS_BUFFER_WIN32_TYPE;
+
+		buffer->hWnd=hWnd;
+
+		/* get the device context (DC) */
+		buffer->hDC=GetDC(hWnd);
+
+	   /* set the pixel format for the DC */
+		ZeroMemory( &pfd, sizeof( pfd ) );
+		pfd.nSize = sizeof( pfd );
+		pfd.nVersion = 1;
+		pfd.dwFlags = PFD_DRAW_TO_WINDOW | PFD_SUPPORT_OPENGL | PFD_DOUBLEBUFFER;
+		pfd.iPixelType = PFD_TYPE_RGBA;
+		pfd.iLayerType = PFD_MAIN_PLANE;
+ 
+		if (minimum_colour_buffer_depth)
+		{
+			pfd.cColorBits = minimum_colour_buffer_depth;
+
+		}
+		pfd.cAlphaBits = 8;
+		if (minimum_depth_buffer_depth)
+		{
+			pfd.cDepthBits = minimum_depth_buffer_depth;
+		}
+		if (minimum_accumulation_buffer_depth)
+		{
+
+			accumulation_colour_size = minimum_accumulation_buffer_depth / 4;
+			pfd.cAccumRedBits = accumulation_colour_size;
+			pfd.cAccumGreenBits = accumulation_colour_size;
+			pfd.cAccumBlueBits = accumulation_colour_size;
+			pfd.cAccumAlphaBits = accumulation_colour_size;
+		}
+		if((format = ChoosePixelFormat( buffer->hDC, &pfd )))
+		{
+			if(SetPixelFormat( buffer->hDC, format, &pfd ))
+			{
+				/* create and enable the render context (RC) */
+				if(buffer->hRC = wglCreateContext( buffer->hDC ))
+				{
+					wglShareLists(wglGetCurrentContext(), buffer->hRC);
+
+					if(!wglMakeCurrent(buffer->hDC,buffer->hRC))
+					{
+						display_message(ERROR_MESSAGE,"create_Graphics_buffer_win32.  "
+							"Unable enable the render context.");
+						DESTROY(Graphics_buffer)(&buffer);
+						buffer = (struct Graphics_buffer *)NULL;
+					}
+				}
+				else
+				{
+					display_message(ERROR_MESSAGE,"create_Graphics_buffer_win32.  "
+						"Unable to create the render context.");
+					DESTROY(Graphics_buffer)(&buffer);
+					buffer = (struct Graphics_buffer *)NULL;
+				}
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE,"create_Graphics_buffer_win32.  "
+					"Unable to set pixel format.");
+				DESTROY(Graphics_buffer)(&buffer);
+				buffer = (struct Graphics_buffer *)NULL;
+			}
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,"create_Graphics_buffer_win32.  "
+				"Unable to set choose format.");
+			DESTROY(Graphics_buffer)(&buffer);
+			buffer = (struct Graphics_buffer *)NULL;
+		}	
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"create_Graphics_buffer_win32.  "
+			"Unable to create generic Graphics_buffer.");
+		buffer = (struct Graphics_buffer *)NULL;
+	}
+	LEAVE;
+
+	return (buffer);
+} /* create_Graphics_buffer_win32 */
+#endif /* defined (WIN32_USER_INTERFACE) */
+
+#if defined (WIN32_USER_INTERFACE)
+static LRESULT CALLBACK Graphics_buffer_callback_proc(HWND window,
+	UINT message_identifier,WPARAM first_message,LPARAM second_message)
+/*******************************************************************************
+LAST MODIFIED : 9 August 2004
+
+DESCRIPTION:
+==============================================================================*/
+{
+	LRESULT return_code;
+	static PAINTSTRUCT ps;
+
+	ENTER(Graphics_buffer_callback_proc);
+
+	return_code=FALSE;
+        struct Graphics_buffer *graphics_buffer = (struct Graphics_buffer *)GetWindowLongPtr(window, GWL_USERDATA);
+
+	switch (message_identifier)
+	{
+		case WM_CREATE:
+		{
+			return_code=TRUE;
+		}
+		case WM_DESTROY:
+		{
+			PostQuitMessage(0);
+			return_code=TRUE;
+		} break;
+		case WM_PAINT:
+		{
+			BeginPaint(window, &ps);
+			CMISS_CALLBACK_LIST_CALL(Graphics_buffer_callback)(
+				graphics_buffer->expose_callback_list, graphics_buffer, NULL);
+			EndPaint(window, &ps);
+			return_code=TRUE;
+		} break;
+		case WM_SIZING:
+		{
+			BeginPaint(window, &ps);
+			CMISS_CALLBACK_LIST_CALL(Graphics_buffer_callback)(
+			graphics_buffer->resize_callback_list, graphics_buffer, NULL);
+			EndPaint(window, &ps);
+			return_code=TRUE;
+		} break;
+		case UWM_IDLE:
+		{
+			Event_dispatcher_win32_idle_callback((void *)second_message);
+			return_code=TRUE;
+		} break;
+		case WM_LBUTTONDOWN:
+		{
+			Graphics_buffer_win32_button_callback(&message_identifier,
+				graphics_buffer, first_message, second_message);
+			SetCapture(window);
+			return_code=TRUE;
+		} break;
+		case WM_LBUTTONUP:
+		{
+			Graphics_buffer_win32_button_callback(&message_identifier,
+				graphics_buffer, first_message, second_message);
+			ReleaseCapture();
+			return_code=TRUE;
+		} break;
+		case WM_RBUTTONDOWN:
+		{
+			Graphics_buffer_win32_button_callback(&message_identifier,
+				graphics_buffer, first_message, second_message);
+			SetCapture(window);
+			return_code=TRUE;
+		} break;
+		case WM_RBUTTONUP:
+		{
+			Graphics_buffer_win32_button_callback(&message_identifier,
+				graphics_buffer, first_message, second_message);
+			ReleaseCapture();
+			return_code=TRUE;
+		} break;
+		case WM_MBUTTONDOWN:
+		{
+			Graphics_buffer_win32_button_callback(&message_identifier,
+				graphics_buffer, first_message, second_message);
+			SetCapture(window);
+			return_code=TRUE;
+		} break;
+		case WM_MBUTTONUP:
+		{
+			Graphics_buffer_win32_button_callback(&message_identifier,
+				graphics_buffer, first_message, second_message);
+			ReleaseCapture();
+			return_code=TRUE;
+		} break;
+		case WM_MOUSEMOVE:
+		{
+			Graphics_buffer_win32_button_callback(&message_identifier,
+				graphics_buffer, first_message, second_message);
+			return_code=TRUE;
+		} break;
+		default:
+		{
+			return_code=DefWindowProc(window,message_identifier,first_message,
+				second_message);
+		} break;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Graphics_buffer_callback_proc */
+#endif /* defined (WIN32_USER_INTERFACE) */
+
 int Graphics_buffer_make_current(struct Graphics_buffer *buffer)
 /*******************************************************************************
 LAST MODIFIED : 2 July 2002
@@ -3103,6 +3435,13 @@ DESCRIPTION :
 			} break;
 #endif /* defined (GTK_USE_GTKGLAREA) */
 #endif /* defined (GTK_USER_INTERFACE) */
+#if defined (WIN32_USER_INTERFACE)
+			case GRAPHICS_BUFFER_WIN32_TYPE:
+			{
+				wglMakeCurrent( buffer->hDC, buffer->hRC );
+				return_code = 1;
+			} break;
+#endif /* defined (WIN32_USER_INTERFACE) */
 			default:
 			{
 				display_message(ERROR_MESSAGE,"Graphics_buffer_make_current.  "
@@ -3160,6 +3499,13 @@ Returns the visual id used by the graphics buffer.
 			} break;
 #endif /* defined (GTK_USE_GTKGLAREA) */
 #endif /* defined (GTK_USER_INTERFACE) */
+#if defined (WIN32_USER_INTERFACE)
+			case GRAPHICS_BUFFER_WIN32_TYPE:
+			{
+				*visual_id = 0;
+				return_code = 0;
+			} break;
+#endif /* defined (WIN32_USER_INTERFACE) */
 			default:
 			{
 				display_message(ERROR_MESSAGE,"Graphics_buffer_get_visual_id.  "
@@ -3435,6 +3781,24 @@ Returns the buffering mode used by the graphics buffer.
 			} break;
 #endif /* defined (GTK_USE_GTKGLAREA) */
 #endif /* defined (GTK_USER_INTERFACE) */
+#if defined (WIN32_USER_INTERFACE)
+			case GRAPHICS_BUFFER_WIN32_TYPE:
+			{
+				PIXELFORMATDESCRIPTOR pfd;
+				int iPixelFormat;
+				iPixelFormat = GetPixelFormat(buffer->hDC);
+				DescribePixelFormat(buffer->hDC, iPixelFormat, sizeof(PIXELFORMATDESCRIPTOR), &pfd);
+				/* Should be able to get this out of the pfd somehow ? Just setting for now. */
+				*buffering_mode = GRAPHICS_BUFFER_DOUBLE_BUFFERING;
+#if defined (OLD_CODE)
+				if(pfd.dwFlags = PFD_DRAW_TO_WINDOW | PFD_SUPPORT_OPENGL | PFD_DOUBLEBUFFER;)
+				{
+					*buffering_mode = GRAPHICS_BUFFER_DOUBLE_BUFFERING;
+				}
+#endif /* defined (OLD_CODE) */
+				return_code = 1;
+			} break;
+#endif /* defined (WIN32_USER_INTERFACE) */
 			default:
 			{
 				display_message(ERROR_MESSAGE,"Graphics_buffer_get_buffering_mode.  "
@@ -3513,6 +3877,14 @@ Returns the stereo mode used by the graphics buffer.
 			} break;
 #endif /* defined (GTK_USE_GTKGLAREA) */
 #endif /* defined (GTK_USER_INTERFACE) */
+#if defined (WIN32_USER_INTERFACE)
+			case GRAPHICS_BUFFER_WIN32_TYPE:
+			{
+				*stereo_mode = GRAPHICS_BUFFER_MONO;
+				return_code = 1;
+			} break;
+#endif /* defined (WIN32_USER_INTERFACE) */
+
 			default:
 			{
 				display_message(ERROR_MESSAGE,"Graphics_buffer_get_stereo_mode.  "
@@ -3531,6 +3903,22 @@ Returns the stereo mode used by the graphics buffer.
 
 	return (return_code);
 } /* Graphics_buffer_get_stereo_mode */
+
+#if defined (WIN32_USER_INTERFACE)
+HDC Graphics_buffer_get_hdc(struct Graphics_buffer *buffer)
+/*******************************************************************************
+LAST MODIFIED : 9 August 2004
+
+DESCRIPTION :
+Returns the device context of buffer represented by <buffer>.
+==============================================================================*/
+{
+	ENTER(Graphics_buffer_get_hdc);
+	LEAVE;
+
+	return(buffer->hDC);
+}
+#endif /*defined (WIN32_USER_INTERFACE) */
 
 int Graphics_buffer_swap_buffers(struct Graphics_buffer *buffer)
 /*******************************************************************************
@@ -3581,6 +3969,13 @@ DESCRIPTION :
 			} break;
 #endif /* defined (GTK_USE_GTKGLAREA) */
 #endif /* defined (GTK_USER_INTERFACE) */
+#if defined (WIN32_USER_INTERFACE)
+			case GRAPHICS_BUFFER_WIN32_TYPE:
+			{
+				SwapBuffers(buffer->hDC);
+				return_code = 1;
+			} break;
+#endif /* defined (WIN32_USER_INTERFACE) */
 			default:
 			{
 				display_message(ERROR_MESSAGE,"Graphics_buffer_swap_buffers.  "
@@ -3685,6 +4080,22 @@ Returns the width of buffer represented by <buffer>.
 			} break;
 #endif /* defined (GTK_USE_GTKGLAREA) */
 #endif /* defined (GTKGLAREA) */
+#if defined (WIN32_USER_INTERFACE)
+			case GRAPHICS_BUFFER_WIN32_TYPE:
+			{
+				RECT rect;
+				if(GetWindowRect(WindowFromDC(buffer->hDC), &rect))
+				{
+					width = rect.right - rect.left;
+				}
+				else
+				{
+					display_message(ERROR_MESSAGE,"Graphics_buffer_get_width.  "
+						"Failed to get window rectangle");				
+					width = 0;				
+				}
+			} break;
+#endif /* defined (WIN32_USER_INTERFACE) */
 			default:
 			{
 				display_message(ERROR_MESSAGE,"Graphics_buffer_get_width.  "
@@ -3792,6 +4203,22 @@ Returns the height of buffer represented by <buffer>.
 			} break;
 #endif /* defined (GTK_USE_GTKGLAREA) */
 #endif /* defined (GTKGLAREA) */
+#if defined (WIN32_USER_INTERFACE)
+			case GRAPHICS_BUFFER_WIN32_TYPE:
+			{
+				RECT rect;
+				if(GetWindowRect(WindowFromDC(buffer->hDC), &rect))
+				{
+					height = rect.bottom - rect.top;
+				}
+				else
+				{
+					display_message(ERROR_MESSAGE,"Graphics_buffer_get_width.  "
+						"Failed to get window rectangle");				
+					height = 0;				
+				}
+			} break;
+#endif /* defined (WIN32_USER_INTERFACE) */
 			default:
 			{
 				display_message(ERROR_MESSAGE,"Graphics_buffer_get_height.  "
@@ -3997,6 +4424,12 @@ into unmanaged or invisible widgets.
 			} break;
 #endif /* defined (GTK_USE_GTKGLAREA) */
 #endif /* defined (GTK_USER_INTERFACE) */
+#if defined (WIN32_USER_INTERFACE)
+			case GRAPHICS_BUFFER_WIN32_TYPE:
+			{
+				return_code = 1;
+			} break;
+#endif /* defined (WIN32_USER_INTERFACE) */
 			default:
 			{
 				display_message(ERROR_MESSAGE,"Graphics_buffer_is_visible.  "
@@ -4052,6 +4485,14 @@ Activates the graphics <buffer>.
 			} break;
 #endif /* defined (GTK_USE_GTKGLAREA) */
 #endif /* defined (GTK_USER_INTERFACE) */
+#if defined (WIN32_USER_INTERFACE)
+			case GRAPHICS_BUFFER_WIN32_TYPE:
+			{
+
+				return_code = 1;
+			} break;
+#endif /* defined (WIN32_USER_INTERFACE) */
+
 			default:
 			{
 				display_message(ERROR_MESSAGE,"Graphics_buffer_awaken.  "
@@ -4316,6 +4757,11 @@ x==============================================================================*
 			DESTROY(LIST(CMISS_CALLBACK_ITEM(Graphics_buffer_input_callback)))(
 				&buffer->input_callback_list);
 		}
+#if defined (WIN32_USER_INTERFACE)
+		wglMakeCurrent(NULL, NULL);
+		wglDeleteContext(buffer->hRC);
+		ReleaseDC(buffer->hWnd, buffer->hDC);
+#endif /* defined (WIN32_USER_INTERFACE) */
 
 		DEALLOCATE(*buffer_ptr);
 		*buffer_ptr = (struct Graphics_buffer *)NULL;
@@ -4380,3 +4826,9 @@ memory.
 	return (return_code);
 } /* query_glx_extension */
 #endif /* defined (OPENGL_API) && defined (MOTIF) */
+
+
+
+
+
+

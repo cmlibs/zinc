@@ -119,6 +119,7 @@ Create the structures and retrieve the command window from the uil file.
 			console->command_prompt = (char *)NULL;
 			console->execute_command=execute_command;
 			console->event_dispatcher=event_dispatcher;
+#if !defined(WIN32_USER_INTERFACE)
 			if (!(console->console_callback = Event_dispatcher_add_simple_descriptor_callback(
 				event_dispatcher, file_descriptor,
 				Console_callback, (void *)console)))
@@ -128,6 +129,7 @@ Create the structures and retrieve the command window from the uil file.
 				DEALLOCATE(console);
 				console=(struct Console *)NULL;
 			}
+#endif /* !defined(WIN32_USER_INTERFACE) */
 		}
 		else
 		{
@@ -159,8 +161,10 @@ DESCRIPTION:
 
 	if (console_pointer && (console = *console_pointer))
 	{
+#if !defined(WIN32_USER_INTERFACE)
 		Event_dispatcher_remove_descriptor_callback(console->event_dispatcher,
 			console->console_callback);
+#endif
 		DEALLOCATE(*console_pointer);
 		return_code = 1;
 	}

@@ -11,6 +11,12 @@ Macro definition for lists of callbacks between objects.
 #include "general/list.h"
 #include "general/object.h"
 
+#if defined (WIN32_USER_INTERFACE)
+#include <windows.h>
+#define UWM_IDLE	(WM_APP + 1)
+#define UWM_NETWORK     (WM_APP + 2)
+#endif /* (WIN32_USER_INTERFACE) */
+
 /*
 Global Types
 ------------
