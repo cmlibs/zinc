@@ -359,8 +359,8 @@ Perform a local averaging operation on the image cache.
 {
 	char *storage;
 	FE_value *data_index, *result_index, *kernel, local_mean, *max_mean;
-	int filter_size, i, j, k, m, *offsets, return_code, kernel_size, storage_size;
-	int kernel_step, image_step;
+	int filter_size, i, j, k, *offsets, return_code, kernel_size, storage_size;
+	/*int kernel_step, image_step;*/
 
 
 	ENTER(Image_cache_local_mean_smooth);
@@ -401,7 +401,7 @@ Perform a local averaging operation on the image cache.
 			}
 			data_index = (FE_value *)image->data;
 			result_index = (FE_value *)storage;
-			for(j = 0; j < kernel_size; j++)
+			/*for(j = 0; j < kernel_size; j++)
 			{
 			        kernel_step = 1;
 				image_step = 1;
@@ -412,7 +412,8 @@ Perform a local averaging operation on the image cache.
 					kernel_step *= filter_size;
 					image_step *= image->sizes[m];
 				}
-			}
+			}*/
+			Filter_offsets(offsets, image->dimension, radius, image->sizes, image->depth);
 			for (i = 0; i < storage_size / image->depth; i++)
 			{
 			        for(k = 0; k < image->depth; k++)

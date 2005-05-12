@@ -356,8 +356,8 @@ Perform a image_contour extraction operation on the image cache.
 {
 	char *storage;
 	FE_value *data_index, *result_index, *kernel, *maxcol, *pixcolor;
-	int filter_size, i, j, k, m, *offsets, return_code;
-	int image_step, kernel_step;
+	int filter_size, i, j, k, *offsets, return_code;
+	/*int image_step, kernel_step;*/
 	int kernel_size, radius, storage_size;
 
 	ENTER(Image_cache_image_contour);
@@ -394,7 +394,7 @@ Perform a image_contour extraction operation on the image cache.
 			{
 				offsets[j] = 0;
 			}
-			for(j = 0; j < kernel_size; j++)
+			/* for(j = 0; j < kernel_size; j++)
 			{
 			        kernel_step = 1;
 				image_step = 1;
@@ -405,8 +405,8 @@ Perform a image_contour extraction operation on the image cache.
 					kernel_step *= filter_size;
 					image_step *= image->sizes[m];
 				}
-			}
-
+			} */
+                        Filter_offsets(offsets, image->dimension, radius, image->sizes, image->depth);
 			data_index = (FE_value *)image->data;
 			result_index = (FE_value *)storage;
 			for (i = 0 ; return_code && i < storage_size / image->depth ; i++)
