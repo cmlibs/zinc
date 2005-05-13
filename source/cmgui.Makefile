@@ -278,7 +278,8 @@ else # ! IMAGEMAGICK
    IMAGEMAGICK_PATH = $(CMISS_ROOT)/image_libraries
    IMAGEMAGICK_INC = -I$(IMAGEMAGICK_PATH)/include/$(LIB_ARCH_DIR)
    IMAGEMAGICK_LIB = $(IMAGEMAGICK_PATH)/lib/$(LIB_ARCH_DIR)/libMagick.a $(IMAGEMAGICK_PATH)/lib/$(LIB_ARCH_DIR)/libtiff.a $(IMAGEMAGICK_PATH)/lib/$(LIB_ARCH_DIR)/libpng.a $(IMAGEMAGICK_PATH)/lib/$(LIB_ARCH_DIR)/libjpeg.a $(IMAGEMAGICK_PATH)/lib/$(LIB_ARCH_DIR)/libbz2.a $(IMAGEMAGICK_PATH)/lib/$(LIB_ARCH_DIR)/libz.a
-   ifneq ($(OPERATING_SYSTEM),win32)
+   ifneq ($(filter-out win32 aix,$(OPERATING_SYSTEM)),)
+      #OPERATING_SYSTEM != win32 && OPERATING_SYSTEM != aix
       IMAGEMAGICK_LIB += $(IMAGEMAGICK_PATH)/lib/$(LIB_ARCH_DIR)/libltdl.a
    endif
 ifdef USE_XML2
