@@ -307,18 +307,41 @@ HELP_LIB =
 HELP_SRCS = \
 	help/help_interface.c
 
+# MOTIF_USER_INTERFACE or GTK_USER_INTERFACE
+ifeq ($(filter-out MOTIF_USER_INTERFACE GTK_USER_INTERFACE,$(USER_INTERFACE)),)
+  ifeq ($(SYSNAME),Linux)
+    #Don't put the system X_LIB into the compiler if we are cross compiling
+    GCC_LIBC = $(shell gcc -print-libgcc-file-name)
+    GLIBC_CROSS_COMPILE = $(CMISS_ROOT)/cross-compile/i386-glibc21-linux
+    ifeq ($(GCC_LIBC:$(GLIBC_CROSS_COMPILE)%=),)
+      #We are cross compiling
+      X_INC += -I$(GLIBC_CROSS_COMPILE)/include
+      X_LIB = $(GLIBC_CROSS_COMPILE)/lib
+    else
+      X_INC += -I/usr/X11R6/include
+      ifeq ($(INSTRUCTION),x86_64)
+        X_LIB = /usr/X11R6/lib64
+      else
+        X_LIB = /usr/X11R6/lib
+      endif
+    endif
+  endif
+  ifeq ($(SYSNAME),AIX)
+    X_LIB = /usr/X11R6/lib
+  endif
+endif
+
 USER_INTERFACE_INC = 
 USER_INTERFACE_LIB =
 USER_INTERFACE_INC = 
 USER_INTERFACE_LIB =
 ifeq ($(USER_INTERFACE),MOTIF_USER_INTERFACE)
    ifeq ($(SYSNAME),Linux)
-      ifneq ($(wildcard /usr/local/Mesa/include),)
-         USER_INTERFACE_INC += -I/usr/local/Mesa/include
+      USER_INTERFACE_INC += -I$(X_INC)
+	   ifneq ($(wildcard $(CMISS_ROOT)/mesa/include/$(LIB_ARCH_DIR)),)
+         USER_INTERFACE_INC += -I$(CMISS_ROOT)/mesa/include/$(LIB_ARCH_DIR)
       endif
-      USER_INTERFACE_INC += -I/usr/X11R6/include
-      X_LIB = /usr/X11R6/lib
-      USER_INTERFACE_LIB += -L$(X_LIB)
+      USER_INTERFACE_LIB += $(patsubst %,-L%,$(firstword $(wildcard $(CMISS_ROOT)/mesa/lib/$(LIB_ARCH_DIR) $(X_LIB))))
 
       ifneq ($(STATIC_LINK),true)
          #I am statically linking Motif so that it does not have to be installed at runtime.
