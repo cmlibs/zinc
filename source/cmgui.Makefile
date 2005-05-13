@@ -928,6 +928,7 @@ IMAGE_PROCESSING_SRCS = \
 	image_processing/computed_field_bvc_decomp.c \
 	image_processing/computed_field_canny_filter.c \
 	image_processing/computed_field_color_based_segment.c \
+	image_processing/computed_field_convolution_filter.c \
 	image_processing/computed_field_cube_plugin_all.c \
 	image_processing/computed_field_dilate_filter.c \
 	image_processing/computed_field_edge_detection.c \
@@ -955,6 +956,7 @@ IMAGE_PROCESSING_SRCS = \
 	image_processing/computed_field_image_tv_restoration.c \
 	image_processing/computed_field_iteration_threshold.c \
 	image_processing/computed_field_k_nearest_mean.c \
+	image_processing/computed_field_kernel_matrix.c \
 	image_processing/computed_field_local_frequency.c \
 	image_processing/computed_field_local_histogram_features.c \
 	image_processing/computed_field_local_mean_smooth.c \
