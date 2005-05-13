@@ -100,6 +100,13 @@ ifdef USE_UNEMAP_3D
 endif
 OPTIONS = $(TARGET_OPTION) $(USER_INTERFACE_OPTION) $(STATIC_LINK_OPTION) $(DEBUG_OPTION) $(ABI_OPTION) $(MEMORYCHECK_OPTION) $(USE_UNEMAP_NODES_OPTION) $(USE_UNEMAP_3D_OPTION)
 
+#Force the use of the cross compiler for cmiss on Linux.
+ifeq ($(SYSNAME),Linux)
+   ifeq ($(USER),cmiss)
+      MAKE=i386-glibc21-linux-cross-make
+   endif
+endif
+
 unemap unemap-debug unemap-debug-memorycheck unemap-static unemap-static-debug unemap-nodes unemap-3d unemap-3d-debug unemap64 unemap64-debug utilities :
 	cd source ; \
 	$(MAKE) -f $(SUBMAKEFILE) $(OPTIONS) ;
