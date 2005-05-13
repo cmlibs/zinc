@@ -55,7 +55,7 @@ class Function_variable_matrix_determinant :
 				function_matrix_determinant;
 
 			if (function_matrix_determinant=boost::dynamic_pointer_cast<
-				Function_matrix_determinant<Value_type>,Function>(function()))
+				Function_matrix_determinant<Value_type>,Function>(this->function()))
 			{
 #if defined (BEFORE_CACHING)
 				boost::intrusive_ptr< Function_matrix<Value_type> > matrix;
@@ -105,7 +105,7 @@ class Function_variable_matrix_determinant :
 				function_matrix_determinant;
 
 			if (function_matrix_determinant=boost::dynamic_pointer_cast<
-				Function_matrix_determinant<Value_type>,Function>(function()))
+				Function_matrix_determinant<Value_type>,Function>(this->function()))
 			{
 #if defined (BEFORE_CACHING)
 				boost::intrusive_ptr< Function_matrix<Value_type> > matrix;
@@ -158,8 +158,8 @@ class Function_variable_matrix_determinant :
 			boost::intrusive_ptr< Function_variable_matrix<Value_type> > result(0);
 
 			if ((function_matrix_determinant=boost::dynamic_pointer_cast<
-				Function_matrix_determinant<Value_type>,Function>(function_private))&&
-				(row<=number_of_rows())&&(column<=number_of_columns()))
+				Function_matrix_determinant<Value_type>,Function>(this->function_private))&&
+				(row<=this->number_of_rows())&&(column<=this->number_of_columns()))
 			{
 				result=boost::intrusive_ptr< Function_variable_matrix<Value_type> >(
 					new Function_variable_matrix_determinant<Value_type>(
@@ -435,11 +435,11 @@ bool Function_matrix_determinant<Value_type>::set_value(
 		boost::dynamic_pointer_cast<Function_variable_value_specific<Value_type>,
 		Function_variable_value>(atomic_value->value())))
 	{
-		result=value_type->set(values(0,0),atomic_value);
+		result=value_type->set(this->values(0,0),atomic_value);
 	}
 	if (result)
 	{
-		set_not_evaluated();
+		this->set_not_evaluated();
 	}
 	else
 	{
@@ -524,7 +524,7 @@ Function_matrix_determinant<Value_type>&
 		matrix_private->remove_dependent_function(this);
 	}
 	matrix_private=function_matrix_determinant.matrix_private;
-	values=function_matrix_determinant.values;
+	this->values=function_matrix_determinant.values;
 
 	return (*this);
 }

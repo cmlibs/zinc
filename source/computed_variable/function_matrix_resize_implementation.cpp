@@ -65,7 +65,7 @@ class Function_variable_matrix_resize :
 				function_matrix_resize;
 
 			if (function_matrix_resize=boost::dynamic_pointer_cast<
-				Function_matrix_resize<Value_type>,Function>(function()))
+				Function_matrix_resize<Value_type>,Function>(this->function()))
 			{
 #if defined (BEFORE_CACHING)
 				Function_size_type number_of_columns,number_of_columns_input,
@@ -156,8 +156,8 @@ class Function_variable_matrix_resize :
 						(matrix->number_of_rows())))&&(0<(number_of_columns=
 						function_matrix_resize->number_of_columns_private))&&
 						(0==size%number_of_columns)&&
-						(row_private<=(number_of_rows=size/number_of_columns))&&
-						(column_private<=number_of_columns))
+						(this->row_private<=(number_of_rows=size/number_of_columns))&&
+						(this->column_private<=number_of_columns))
 					{
 						Function_size_type i,j,k;
 
@@ -178,7 +178,7 @@ class Function_variable_matrix_resize :
 				}
 				if (function_matrix_resize->evaluated())
 				{
-					result=get_value();
+					result=this->get_value();
 				}
 #endif // defined (BEFORE_CACHING)
 			}
@@ -284,8 +284,8 @@ class Function_variable_matrix_resize :
 			boost::intrusive_ptr< Function_variable_matrix<Value_type> > result(0);
 
 			if ((function_matrix_resize=boost::dynamic_pointer_cast<
-				Function_matrix_resize<Value_type>,Function>(function_private))&&
-				(row<=number_of_rows())&&(column<=number_of_columns()))
+				Function_matrix_resize<Value_type>,Function>(this->function_private))&&
+				(row<=this->number_of_rows())&&(column<=this->number_of_columns()))
 			{
 				result=boost::intrusive_ptr< Function_variable_matrix<Value_type> >(
 					new Function_variable_matrix_resize<Value_type>(
@@ -530,7 +530,7 @@ bool Function_matrix_resize<Value_type>::set_value(
 	}
 	if (result)
 	{
-		set_not_evaluated();
+		this->set_not_evaluated();
 	}
 	else
 	{
@@ -609,16 +609,16 @@ Function_matrix_resize<Value_type>&
 {
 	number_of_columns_private=
 		function_matrix_resize.number_of_columns_private;
-	if (function_matrix_determinant.matrix_private)
+	if (this->function_matrix_determinant.matrix_private)
 	{
-		function_matrix_determinant.matrix_private->add_dependent_function(this);
+		this->function_matrix_determinant.matrix_private->add_dependent_function(this);
 	}
 	if (matrix_private)
 	{
 		matrix_private->remove_dependent_function(this);
 	}
 	matrix_private=function_matrix_resize.matrix_private;
-	values=function_matrix_resize.values;
+	this->values=function_matrix_resize.values;
 
 	return (*this);
 }

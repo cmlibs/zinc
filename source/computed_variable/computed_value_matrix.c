@@ -402,7 +402,7 @@ The calling program must not DESTROY the returned <*matrix_address>.
 	ENTER(Cmiss_value_matrix_get_type);
 	return_code=0;
 	/* check arguments */
-	if (value&&CMISS_VALUE_IS_TYPE(matrix)&&matrix_address)
+	if (value&&CMISS_VALUE_IS_TYPE(matrix)(value)&&matrix_address)
 	{
 		data=(struct Cmiss_value_matrix_type_specific_data *)
 			Cmiss_value_get_type_specific_data(value);

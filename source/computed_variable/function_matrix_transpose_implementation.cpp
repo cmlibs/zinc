@@ -65,7 +65,7 @@ class Function_variable_matrix_transpose :
 				function_matrix_transpose;
 
 			if (function_matrix_transpose=boost::dynamic_pointer_cast<
-				Function_matrix_transpose<Value_type>,Function>(function()))
+				Function_matrix_transpose<Value_type>,Function>(this->function()))
 			{
 #if defined (BEFORE_CACHING)
 				Function_size_type number_of_columns,number_of_rows;
@@ -143,8 +143,8 @@ class Function_variable_matrix_transpose :
 
 					if ((matrix=boost::dynamic_pointer_cast<Function_matrix<Value_type>,
 						Function>(function_matrix_transpose->matrix_private->evaluate()))&&
-						(row_private<=(number_of_rows=matrix->number_of_columns()))&&
-						(column_private<=(number_of_columns=matrix->number_of_rows())))
+						(this->row_private<=(number_of_rows=matrix->number_of_columns()))&&
+						(this->column_private<=(number_of_columns=matrix->number_of_rows())))
 					{
 						Function_size_type i,j;
 
@@ -162,7 +162,7 @@ class Function_variable_matrix_transpose :
 				}
 				if (function_matrix_transpose->evaluated())
 				{
-					result=get_value();
+					result=this->get_value();
 				}
 #endif // defined (BEFORE_CACHING)
 			}
@@ -252,8 +252,8 @@ class Function_variable_matrix_transpose :
 			boost::intrusive_ptr< Function_variable_matrix<Value_type> > result(0);
 
 			if ((function_matrix_transpose=boost::dynamic_pointer_cast<
-				Function_matrix_transpose<Value_type>,Function>(function_private))&&
-				(row<=number_of_rows())&&(column<=number_of_columns()))
+				Function_matrix_transpose<Value_type>,Function>(this->function_private))&&
+				(row<=this->number_of_rows())&&(column<=this->number_of_columns()))
 			{
 				result=boost::intrusive_ptr< Function_variable_matrix<Value_type> >(
 					new Function_variable_matrix_transpose<Value_type>(
@@ -495,7 +495,7 @@ bool Function_matrix_transpose<Value_type>::set_value(
 	}
 	if (result)
 	{
-		set_not_evaluated();
+		this->set_not_evaluated();
 	}
 	else
 	{
@@ -580,7 +580,7 @@ Function_matrix_transpose<Value_type>&
 		matrix_private->remove_dependent_function(this);
 	}
 	matrix_private=function_matrix_transpose.matrix_private;
-	values=function_matrix_transpose.values;
+	this->values=function_matrix_transpose.values;
 
 	return (*this);
 }

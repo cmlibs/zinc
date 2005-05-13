@@ -83,8 +83,8 @@ class Function_variable_matrix_input :
 			boost::intrusive_ptr< Function_variable_matrix<Value_type> > result(0);
 
 			if ((function_matrix=boost::dynamic_pointer_cast<
-				Function_matrix<Value_type>,Function>(function_private))&&
-				(row<=number_of_rows())&&(column<=number_of_columns()))
+				Function_matrix<Value_type>,Function>(this->function_private))&&
+				(row<=this->number_of_rows())&&(column<=this->number_of_columns()))
 			{
 				result=boost::intrusive_ptr< Function_variable_matrix<Value_type> >(
 					new Function_variable_matrix_input<Value_type>(function_matrix,row,
@@ -144,8 +144,8 @@ class Function_variable_matrix_output :
 			boost::intrusive_ptr< Function_variable_matrix<Value_type> > result(0);
 
 			if ((function_matrix=boost::dynamic_pointer_cast<
-				Function_matrix<Value_type>,Function>(function_private))&&
-				(row<=number_of_rows())&&(column<=number_of_columns()))
+				Function_matrix<Value_type>,Function>(this->function_private))&&
+				(row<=this->number_of_rows())&&(column<=this->number_of_columns()))
 			{
 				result=boost::intrusive_ptr< Function_variable_matrix<Value_type> >(
 					new Function_variable_matrix_output<Value_type>(function_matrix,row,

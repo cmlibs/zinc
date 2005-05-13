@@ -55,7 +55,7 @@ class Function_variable_matrix_trace :
 				function_matrix_trace;
 
 			if (function_matrix_trace=boost::dynamic_pointer_cast<
-				Function_matrix_trace<Value_type>,Function>(function()))
+				Function_matrix_trace<Value_type>,Function>(this->function()))
 			{
 #if defined (BEFORE_CACHING)
 				Function_size_type number_of_rows;
@@ -190,8 +190,8 @@ class Function_variable_matrix_trace :
 			boost::intrusive_ptr< Function_variable_matrix<Value_type> > result(0);
 
 			if ((function_matrix_trace=boost::dynamic_pointer_cast<
-				Function_matrix_trace<Value_type>,Function>(function_private))&&
-				(row<=number_of_rows())&&(column<=number_of_columns()))
+				Function_matrix_trace<Value_type>,Function>(this->function_private))&&
+				(row<=this->number_of_rows())&&(column<=this->number_of_columns()))
 			{
 				result=boost::intrusive_ptr< Function_variable_matrix<Value_type> >(
 					new Function_variable_matrix_trace<Value_type>(
@@ -473,11 +473,11 @@ bool Function_matrix_trace<Value_type>::set_value(
 		boost::dynamic_pointer_cast<Function_variable_value_specific<Value_type>,
 		Function_variable_value>(atomic_value->value())))
 	{
-		result=value_type->set(values(0,0),atomic_value);
+		result=value_type->set(this->values(0,0),atomic_value);
 	}
 	if (result)
 	{
-		set_not_evaluated();
+		this->set_not_evaluated();
 	}
 	else
 	{

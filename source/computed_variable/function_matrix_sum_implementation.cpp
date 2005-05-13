@@ -64,7 +64,7 @@ class Function_variable_matrix_sum : public Function_variable_matrix<Value_type>
 				function_matrix_sum;
 
 			if (function_matrix_sum=boost::dynamic_pointer_cast<
-				Function_matrix_sum<Value_type>,Function>(function()))
+				Function_matrix_sum<Value_type>,Function>(this->function()))
 			{
 #if defined (BEFORE_CACHING)
 				Function_size_type number_of_columns,number_of_rows;
@@ -152,9 +152,9 @@ class Function_variable_matrix_sum : public Function_variable_matrix<Value_type>
 						evaluate()))&&(summand_2=boost::dynamic_pointer_cast<
 						Function_matrix<Value_type>,Function>(function_matrix_sum->
 						summand_2_private->evaluate()))&&
-						(row_private<=(number_of_rows=summand_1->number_of_rows()))&&
+						(this->row_private<=(number_of_rows=summand_1->number_of_rows()))&&
 						(number_of_rows==summand_2->number_of_rows())&&
-						(column_private<=
+						(this->column_private<=
 						(number_of_columns=summand_1->number_of_columns()))&&
 						(number_of_columns==summand_2->number_of_columns()))
 					{
@@ -175,7 +175,7 @@ class Function_variable_matrix_sum : public Function_variable_matrix<Value_type>
 				}
 				if (function_matrix_sum->evaluated())
 				{
-					result=get_value();
+					result=this->get_value();
 				}
 #endif // defined (BEFORE_CACHING)
 			}
@@ -279,8 +279,8 @@ class Function_variable_matrix_sum : public Function_variable_matrix<Value_type>
 			boost::intrusive_ptr< Function_variable_matrix<Value_type> > result(0);
 
 			if ((function_matrix_sum=boost::dynamic_pointer_cast<
-				Function_matrix_sum<Value_type>,Function>(function_private))&&
-				(row<=number_of_rows())&&(column<=number_of_columns()))
+				Function_matrix_sum<Value_type>,Function>(this->function_private))&&
+				(row<=this->number_of_rows())&&(column<=this->number_of_columns()))
 			{
 				result=boost::intrusive_ptr< Function_variable_matrix<Value_type> >(
 					new Function_variable_matrix_sum<Value_type>(function_matrix_sum,row,
@@ -592,7 +592,7 @@ bool Function_matrix_sum<Value_type>::set_value(
 	}
 	if (result)
 	{
-		set_not_evaluated();
+		this->set_not_evaluated();
 	}
 	else
 	{
@@ -704,7 +704,7 @@ Function_matrix_sum<Value_type>& Function_matrix_sum<Value_type>::operator=(
 		summand_2_private->remove_dependent_function(this);
 	}
 	summand_2_private=function_matrix_sum.summand_2_private;
-	values=function_matrix_sum.values;
+	this->values=function_matrix_sum.values;
 
 	return (*this);
 }

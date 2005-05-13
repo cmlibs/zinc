@@ -65,7 +65,7 @@ class Function_variable_matrix_divide_by_scalar :
 				function_matrix_divide_by_scalar;
 
 			if (function_matrix_divide_by_scalar=boost::dynamic_pointer_cast<
-				Function_matrix_divide_by_scalar<Value_type>,Function>(function()))
+				Function_matrix_divide_by_scalar<Value_type>,Function>(this->function()))
 			{
 #if defined (BEFORE_CACHING)
 				boost::intrusive_ptr< Function_matrix<Value_type> > dividend,divisor;
@@ -156,8 +156,8 @@ class Function_variable_matrix_divide_by_scalar :
 						evaluate()))&&(divisor=boost::dynamic_pointer_cast<Function_matrix<
 						Value_type>,Function>(function_matrix_divide_by_scalar->
 						divisor_private->evaluate()))&&
-						(row_private<=(number_of_rows=dividend->number_of_rows()))&&
-						(column_private<=
+						(this->row_private<=(number_of_rows=dividend->number_of_rows()))&&
+						(this->column_private<=
 						(number_of_columns=dividend->number_of_columns()))&&
 						(1==divisor->number_of_rows())&&(1==divisor->number_of_columns())&&
 						(0!=(divisor_value=(*divisor)(1,1))))
@@ -181,7 +181,7 @@ class Function_variable_matrix_divide_by_scalar :
 				}
 				if (function_matrix_divide_by_scalar->evaluated())
 				{
-					result=get_value();
+					result=this->get_value();
 				}
 #endif // defined (BEFORE_CACHING)
 			}
@@ -295,8 +295,8 @@ class Function_variable_matrix_divide_by_scalar :
 
 			if ((function_matrix_divide_by_scalar=boost::dynamic_pointer_cast<
 				Function_matrix_divide_by_scalar<Value_type>,Function>(
-				function_private))&&
-				(row<=number_of_rows())&&(column<=number_of_columns()))
+				this->function_private))&&
+				(row<=this->number_of_rows())&&(column<=this->number_of_columns()))
 			{
 				result=boost::intrusive_ptr< Function_variable_matrix<Value_type> >(
 					new Function_variable_matrix_divide_by_scalar<Value_type>(
@@ -574,7 +574,7 @@ bool Function_matrix_divide_by_scalar<Value_type>::set_value(
 	}
 	if (result)
 	{
-		set_not_evaluated();
+		this->set_not_evaluated();
 	}
 	else
 	{
@@ -691,7 +691,7 @@ Function_matrix_divide_by_scalar<Value_type>&
 		dividend_private->remove_dependent_function(this);
 	}
 	dividend_private=function_matrix_divide_by_scalar.dividend_private;
-	values=function_matrix_divide_by_scalar.values;
+	this->values=function_matrix_divide_by_scalar.values;
 
 	return (*this);
 }
