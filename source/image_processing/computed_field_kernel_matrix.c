@@ -642,7 +642,7 @@ although its cache may be lost.
 		}
 		/* 1. make dynamic allocations for any new type-specific data */
 		number_of_source_fields = 0;
-		data = (struct Computed_field_bvc_decomp_type_specific_data *)NULL;
+		data = (struct Computed_field_kernel_matrix_type_specific_data *)NULL;
 		if ( ALLOCATE(data, struct Computed_field_kernel_matrix_type_specific_data,1) &&
 		         ALLOCATE(data->a, FE_value, matrix_size))
 		{
