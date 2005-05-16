@@ -519,7 +519,7 @@ Evaluate the fields cache at the node.
 				node, time);
 			/* 2. Perform image processing operation */
 			return_code = Image_cache_convolution_filter(data->image,
-				field->source_fields[2]->values, field->number_of_components);
+				field->source_fields[2]->values, field->source_fields[2]->number_of_components);
 		}
 		/* 3. Evaluate texture coordinates and copy image to field */
 		Computed_field_evaluate_cache_at_node(field->source_fields[1],
@@ -570,7 +570,7 @@ Evaluate the fields cache at the node.
 				element, xi, time, top_level_element, /*calculate_derivatives*/0);
 			/* 2. Perform image processing operation */
 			return_code = Image_cache_convolution_filter(data->image,
-				field->source_fields[2]->values, field->number_of_components);
+				field->source_fields[2]->values, field->source_fields[2]->number_of_components);
 		}
 		/* 3. Evaluate texture coordinates and copy image to field */
 		Computed_field_evaluate_cache_in_element(field->source_fields[1],
