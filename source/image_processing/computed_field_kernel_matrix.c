@@ -764,16 +764,14 @@ contents to be modified.
 	char low_string[] = "low_pass", high_string[] = "high_pass";
 	char unsharp_string[] = "unsharp_masking", gaussian_string[] = "gaussian";
 	struct Computed_field *field;
-	struct Computed_field_kernel_matrix_package 
-		*computed_field_kernel_matrix_package;
+	/*struct Computed_field_kernel_matrix_package 
+		*computed_field_kernel_matrix_package;*/
 	struct Option_table *option_table;
 	struct Set_names_from_list_data filter_name;
 
 	ENTER(define_Computed_field_type_kernel_matrix);
-	if (state && (field = (struct Computed_field *)field_void) &&
-		(computed_field_kernel_matrix_package=
-			(struct Computed_field_kernel_matrix_package *)
-			computed_field_kernel_matrix_package_void))
+	USE_PARAMETER(computed_field_kernel_matrix_package_void);
+	if (state && (field = (struct Computed_field *)field_void))
 	{
 		return_code=1;
 		dimension = 0;
