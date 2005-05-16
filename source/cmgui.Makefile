@@ -543,7 +543,10 @@ ifeq ($(USER_INTERFACE),GTK_USER_INTERFACE)
    endif # $(SYSNAME) != win32
 endif # $(USER_INTERFACE) == GTK_USER_INTERFACE
 
-MATRIX_LIB = -L$(CMISS_ROOT)/linear_solvers/lib/$(LIB_ARCH_DIR) -llapack-debug -lblas-debug
+MATRIX_LIB = -L$(CMISS_ROOT)/linear_solvers/lib/$(LIB_ARCH_DIR) -llapack-debug
+ifneq ($(OPERATING_SYSTEM),aix)
+   MATRIX_LIB += -lblas-debug
+endif # $(OPERATING_SYSTEM) != aix
 ifeq ($(SYSNAME:IRIX%=),)
    MATRIX_LIB = -lscs
 endif # SYSNAME == IRIX%
