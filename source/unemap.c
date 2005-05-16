@@ -687,6 +687,7 @@ Main program for unemap
 		graphics_buffer_package = CREATE(Graphics_buffer_package)(user_interface);
 		texture_manager=CREATE_MANAGER(Texture)();	
 		fe_basis_manager=CREATE_MANAGER(FE_basis)();
+		element_shape_list=CREATE(LIST(FE_element_shape))();
 
 		root_cmiss_region = ACCESS(Cmiss_region)(CREATE(Cmiss_region)());
 		/* add FE_region to root_cmiss_region */
