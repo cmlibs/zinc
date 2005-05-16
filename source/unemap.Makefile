@@ -18,11 +18,9 @@ ifndef CMGUI_DEV_ROOT
    CMGUI_DEV_ROOT = $(PWD:/source=)
 endif # ! CMGUI_DEV_ROOT
 
-ifdef CMISS_ROOT
-   CMISS_ROOT_DEFINED = true
-else # CMISS_ROOT
+ifndef CMISS_ROOT
    CMISS_ROOT = $(CMGUI_DEV_ROOT)
-endif # CMISS_ROOT
+endif # ! defined CMISS_ROOT
 
 SOURCE_PATH=$(CMGUI_DEV_ROOT)/source
 PRODUCT_PATH=$(CMISS_ROOT)/cmgui
@@ -38,30 +36,27 @@ endif
 
 COMMONMAKEFILE := common.Makefile
 COMMONMAKEFILE_FOUND = $(wildcard $(COMMONMAKEFILE))
-ifdef CMISS_ROOT_DEFINED
-   ifeq ($(COMMONMAKEFILE_FOUND),)
-      COMMONMAKEFILE := $(PRODUCT_SOURCE_PATH)/$(COMMONMAKEFILE)
-   endif # $(COMMONMAKEFILE_FOUND) ==
-endif # CMISS_ROOT_DEFINED
 include $(COMMONMAKEFILE)
 
-ifeq ($(filter CONSOLE_USER_INTERFACE GTK_USER_INTERFACE,$(USER_INTERFACE)),)
-   MIRAGE = true
+ifeq ($(filter CONSOLE_USER_INTERFACE GTK_USER_INTERFACE WIN32_USER_INTERFACE,$(USER_INTERFACE)),)
    UNEMAP = true
    ifneq ($(SYSNAME),AIX)
       CELL = true
    endif # SYSNAME == AIX
    LINK_CMISS = true
-endif # $(USER_INTERFACE) != CONSOLE_USER_INTERFACE && $(USER_INTERFACE) != GTK_USER_INTERFACE
+else # $(USER_INTERFACE) == CONSOLE_USER_INTERFACE && $(USER_INTERFACE) != GTK_USER_INTERFACE  && $(USER_INTERFACE) != WIN32_USER_INTERFACE
+   LINK_CMISS = false
+endif # $(USER_INTERFACE) ==/!= CONSOLE_USER_INTERFACE && $(USER_INTERFACE) != GTK_USER_INTERFACE  && $(USER_INTERFACE) != WIN32_USER_INTERFACE
 PERL_INTERPRETER = true
-ifneq ($(SYSNAME),win32)
+ifneq ($(OPERATING_SYSTEM),win32)
    IMAGEMAGICK = true
+   USE_XML2 = true
 endif # SYSNAME != win32
-ifeq ($(SYSNAME),win32)
+ifeq ($(OPERATING_SYSTEM),win32)
    ifeq ($(filter CONSOLE_USER_INTERFACE GTK_USER_INTERFACE,$(USER_INTERFACE)),)
       WIN32_USER_INTERFACE = true 
    endif # $(USER_INTERFACE) != CONSOLE_USER_INTERFACE && $(USER_INTERFACE) != GTK_USER_INTERFACE
-endif # SYSNAME == win32
+endif # OPERATING_SYSTEM == win32
 
 ifdef USE_UNEMAP_NODES
    ifndef USE_UNEMAP_3D
@@ -124,7 +119,7 @@ endif # SYSNAME == AIX
 ifeq ($(SYSNAME),win32)
    TARGET_FILETYPE_SUFFIX = .exe
 endif # SYSNAME == win32
-ifeq ($(SYSNAME:CYGWIN%=),)
+ifeq ($(SYSNAME),CYGWIN%=)
    TARGET_FILETYPE_SUFFIX = .exe
 endif # SYSNAME == CYGWIN%=
 
@@ -153,11 +148,7 @@ Building $(BIN_TARGET) for $(LIB_ARCH_DIR)
 endif
 $(warning $(BUILDING_MESSAGE))
 
-ifdef CMISS_ROOT_DEFINED
-   VPATH=$(BIN_PATH):$(UTILITIES_PATH):$(OBJECT_PATH):$(UIDH_PATH):$(PRODUCT_SOURCE_PATH):$(PRODUCT_OBJECT_PATH):$(PRODUCT_UIDH_PATH)
-else # CMISS_ROOT_DEFINED
-   VPATH=$(BIN_PATH):$(UTILITIES_PATH):$(OBJECT_PATH):$(UIDH_PATH)
-endif # CMISS_ROOT_DEFINED
+VPATH=$(BIN_PATH):$(UTILITIES_PATH):$(OBJECT_PATH):$(UIDH_PATH)
 
 SOURCE_DIRECTORY_INC = -I$(SOURCE_PATH) -I$(PRODUCT_SOURCE_PATH)
 
@@ -193,12 +184,40 @@ ifeq ($(USER_INTERFACE), GTK_USER_INTERFACE)
       # Our generic main loop is not implemented in Win32 so we use the GTK main step
       USER_INTERFACE_DEFINES = -DGTK_USER_INTERFACE -DUSE_GTK_MAIN_STEP
    else # $(SYSNAME) == win32
-      USER_INTERFACE_DEFINES = -DGTK_USER_INTERFACE
+      ifneq ($(USE_GTKMAIN),true)
+         USER_INTERFACE_DEFINES = -DGTK_USER_INTERFACE 
+      else 
+         USER_INTERFACE_DEFINES = -DGTK_USER_INTERFACE -DUSE_GTK_MAIN_STEP
+      endif # $(USE_GTKMAIN) != true 
    endif # $(SYSNAME) == win32
 endif # $(USER_INTERFACE) == GTK_USER_INTERFACE
 ifeq ($(USER_INTERFACE), CONSOLE_USER_INTERFACE)
   USER_INTERFACE = -DCONSOLE_USER_INTERFACE
 endif # $(USER_INTERFACE) == CONSOLE_USER_INTERFACE
+
+# MOTIF_USER_INTERFACE or GTK_USER_INTERFACE
+ifeq ($(filter-out MOTIF_USER_INTERFACE GTK_USER_INTERFACE,$(USER_INTERFACE)),)
+  ifeq ($(SYSNAME),Linux)
+    #Don't put the system X_LIB into the compiler if we are cross compiling
+    GCC_LIBC = $(shell gcc -print-libgcc-file-name)
+    GLIBC_CROSS_COMPILE = $(CMISS_ROOT)/cross-compile/i386-glibc21-linux
+    ifeq ($(GCC_LIBC:$(GLIBC_CROSS_COMPILE)%=),)
+      #We are cross compiling
+      X_INC += -I$(GLIBC_CROSS_COMPILE)/include
+      X_LIB = $(GLIBC_CROSS_COMPILE)/lib
+    else
+      X_INC += -I/usr/X11R6/include
+      ifeq ($(INSTRUCTION),x86_64)
+        X_LIB = /usr/X11R6/lib64
+      else
+        X_LIB = /usr/X11R6/lib
+      endif
+    endif
+  endif
+  ifeq ($(SYSNAME),AIX)
+    X_LIB = /usr/X11R6/lib
+  endif
+endif
 
 GRAPHICS_LIBRARY_DEFINES = -DOPENGL_API
 GRAPHICS_LIB =
@@ -228,12 +247,12 @@ ifdef USE_UNEMAP_3D
       ifneq ($(wildcard $(CMISS_ROOT)/mesa/include/$(LIB_ARCH_DIR)),)
          GRAPHICS_INC += -I$(CMISS_ROOT)/mesa/include/$(LIB_ARCH_DIR)
       endif
-      GRAPHICS_LIB += $(patsubst %,-L%,$(firstword $(wildcard $(CMISS_ROOT)/mesa/lib/$(LIB_ARCH_DIR) /usr/X11R6/lib)))
-      ifeq ($(SYSNAME),win32)
+      GRAPHICS_LIB += $(patsubst %,-L%,$(firstword $(wildcard $(CMISS_ROOT)/mesa/lib/$(LIB_ARCH_DIR) $(XLIB))))
+      ifeq ($(OPERATING_SYSTEM),win32)
          GRAPHICS_LIB += -lopengl32 -lglu32
-      else # $(SYSNAME) == win32
+      else # $(OPERATING_SYSTEM) == win32
          GRAPHICS_LIB += -lGL -lGLU
-      endif # $(SYSNAME) == win32 
+      endif # $(OPERATING_SYSTEM) == win32 
    endif # $(USER_INTERFACE) != GTK_USER_INTERFACE
 endif # USE_UNEMAP_3D
 
@@ -287,9 +306,9 @@ STEREO_DISPLAY_DEFINES = -DSTEREO
 # POSTSCRIPT_DEFINES = -DFEEDBACK_POSTSCRIPT
 POSTSCRIPT_DEFINES =
 
-#  By default some names are "mangled" to get external names <= 32 characters
-#  NAME_DEFINES =
-NAME_DEFINES = -DFULL_NAMES
+#  SHORT_NAMES were created to support OS's where external names <= 32 characters
+#  NAME_DEFINES = -DSHORT_NAMES
+NAME_DEFINES =
 
 #  Temporary flags that are used during development
 TEMPORARY_DEVELOPMENT_FLAGS =
@@ -311,41 +330,12 @@ HELP_LIB =
 HELP_SRCS = \
 	help/help_interface.c
 
-# MOTIF_USER_INTERFACE or GTK_USER_INTERFACE
-ifeq ($(filter-out MOTIF_USER_INTERFACE GTK_USER_INTERFACE,$(USER_INTERFACE)),)
-  ifeq ($(SYSNAME),Linux)
-    #Don't put the system X_LIB into the compiler if we are cross compiling
-    GCC_LIBC = $(shell gcc -print-libgcc-file-name)
-    GLIBC_CROSS_COMPILE = $(CMISS_ROOT)/cross-compile/i386-glibc21-linux
-    ifeq ($(GCC_LIBC:$(GLIBC_CROSS_COMPILE)%=),)
-      #We are cross compiling
-      X_INC += -I$(GLIBC_CROSS_COMPILE)/include
-      X_LIB = $(GLIBC_CROSS_COMPILE)/lib
-    else
-      X_INC += -I/usr/X11R6/include
-      ifeq ($(INSTRUCTION),x86_64)
-        X_LIB = /usr/X11R6/lib64
-      else
-        X_LIB = /usr/X11R6/lib
-      endif
-    endif
-  endif
-  ifeq ($(SYSNAME),AIX)
-    X_LIB = /usr/X11R6/lib
-  endif
-endif
-
-USER_INTERFACE_INC = 
-USER_INTERFACE_LIB =
 USER_INTERFACE_INC = 
 USER_INTERFACE_LIB =
 ifeq ($(USER_INTERFACE),MOTIF_USER_INTERFACE)
    ifeq ($(SYSNAME),Linux)
-      USER_INTERFACE_INC += -I$(X_INC)
-	   ifneq ($(wildcard $(CMISS_ROOT)/mesa/include/$(LIB_ARCH_DIR)),)
-         USER_INTERFACE_INC += -I$(CMISS_ROOT)/mesa/include/$(LIB_ARCH_DIR)
-      endif
-      USER_INTERFACE_LIB += $(patsubst %,-L%,$(firstword $(wildcard $(CMISS_ROOT)/mesa/lib/$(LIB_ARCH_DIR) $(X_LIB))))
+      USER_INTERFACE_INC += $(X_INC)
+      USER_INTERFACE_LIB += -L$(X_LIB)
 
       ifneq ($(STATIC_LINK),true)
          #I am statically linking Motif so that it does not have to be installed at runtime.
@@ -379,7 +369,7 @@ ifeq ($(USER_INTERFACE),MOTIF_USER_INTERFACE)
 endif # $(USER_INTERFACE) == MOTIF_USER_INTERFACE
 ifeq ($(USER_INTERFACE),GTK_USER_INTERFACE)
    ifeq ($(SYSNAME),Linux)
-      X_LIB = /usr/X11R6/lib
+      USER_INTERFACE_INC += $(X_INC)
       USER_INTERFACE_LIB += -L$(X_LIB)
    endif
    ifeq ($(SYSNAME:CYGWIN%=),)
@@ -387,17 +377,17 @@ ifeq ($(USER_INTERFACE),GTK_USER_INTERFACE)
       USER_INTERFACE_LIB += -L$(X_LIB)
    endif # SYSNAME == CYGWIN%=
    ifneq ($(SYSNAME),win32)
-      #USE_GTK2 = true
+      USE_GTK2 = true
       ifeq ($(USE_GTK2),true)
-         USER_INTERFACE_INC += $(shell "/home/blackett/bin/pkg-config gtkgl-2.0 gtk+-2.0 --cflags")
+         USER_INTERFACE_INC += $(shell pkg-config gtkglext-1.0 gtk+-2.0 --cflags)
          ifneq ($(STATIC_LINK),true)
-            USER_INTERFACE_LIB += $(shell "/home/blackett/bin/pkg-config gtkgl-2.0 gtk+-2.0 --libs")
+            USER_INTERFACE_LIB += $(shell pkg-config gtkglext-1.0 gtk+-2.0 --libs)
          else # $(STATIC_LINK) != true
-            USER_INTERFACE_LIB += -L/home/blackett/lib -lgtkgl-2.0 -lgtk-x11-2.0 -lgdk-x11-2.0 -latk-1.0 -lgdk_pixbuf-2.0 -lm -lpangox-1.0 -lpango-1.0 -lgobject-2.0 -lgmodule-2.0 -ldl -lglib-2.0 -L/usr/local/Mesa/lib -lGLU -lGL
+            USER_INTERFACE_LIB += -L/home/blackett/lib -lgtkglext-x11-1.0 -lgtk-x11-2.0 -lgdk-x11-2.0 -latk-1.0 -lgdk_pixbuf-2.0 -lm -lpangox-1.0 -lpango-1.0 -lgobject-2.0 -lgmodule-2.0 -ldl -lglib-2.0 -L$(CMISS_ROOT)/mesa/lib/$(LIB_ARCH_DIR) -lGLU -lGL
          endif # $(STATIC_LINK) != true
       else # $(USE_GTK2) == true
          USER_INTERFACE_INC +=  -I/usr/include/gtk-1.2 -I/usr/include/glib-1.2 -I/usr/lib/glib/include/
-         USER_INTERFACE_LIB +=  -lgtkgl -L/usr/local/Mesa/lib -lGLU -lGL -lgtk -lgdk -lgmodule -lglib -ldl -lXi -lXext -lX11
+         USER_INTERFACE_LIB +=  -lgtkgl -L$(CMISS_ROOT)/mesa/lib/$(LIB_ARCH_DIR) -lGLU -lGL -lgtk -lgdk -lgmodule -lglib -ldl -lXi -lXext -lX11
       endif # $(USE_GTK2) == true
    else # $(SYSNAME) != win32
       # SAB It seems that ld currently requires (version 2.13.90 20021005) the 
@@ -413,16 +403,19 @@ ifeq ($(USER_INTERFACE),GTK_USER_INTERFACE)
 endif # $(USER_INTERFACE) == GTK_USER_INTERFACE
 
 ifdef USE_UNEMAP_3D
+   MATRIX_LIB = -L$(CMISS_ROOT)/linear_solvers/lib/$(LIB_ARCH_DIR) -llapack-debug -lblas-debug
    ifeq ($(SYSNAME:IRIX%=),)
-	   MATRIX_LIB = -lscs
-   else # ($(SYSNAME:IRIX%=),)
-      MATRIX_LIB = -L$(CMISS_ROOT)/linear_solvers/lib/$(LIB_ARCH_DIR) -llapack-debug -lblas-debug
-   endif # ($(SYSNAME:IRIX%=),)
+      MATRIX_LIB = -lscs
+   endif # SYSNAME == IRIX%
+   ifeq ($(SYSNAME),Linux)
+      ifneq (,$(wildcard /usr/lib/libscs.*))# have IRIX libscs
+         MATRIX_LIB = -lscs
+      endif# libscs
+   endif# Linux
    ifeq ($(SYSNAME),AIX)
       MATRIX_LIB += -lxlf90
    endif # SYSNAME == AIX
 endif # USE_UNEMAP_3D
-
 
 ifeq ($(SYSNAME:IRIX%=),)
    LIB = -lPW -lftn -lm -lC -lCio -lpthread 
@@ -432,7 +425,13 @@ ifeq ($(SYSNAME),Linux)
       #For the dynamic link we really need to statically link the c++ as this
       #seems to be particularly variable between distributions.
       ifdef USE_UNEMAP_3D
-         LIB = -lg2c -lm -ldl -lc -lpthread /usr/lib/libcrypt.a -lstdc++
+         LIBSTDC++ = $(shell g++ --print-file-name=libstdc++.a)
+         #Link g2c statically as this only comes with g77 which many people don't have
+         LIBG2C = $(shell g++ --print-file-name=libg2c.a)
+         LIB = $(LIBG2C) $(LIBSTDC++) -lcrypt -lm -ldl -lc -lpthread
+         # For the shared object libraries the stdc++ is included several times, do thsi
+         # dynamically.
+         SOLIB_LIB = $(LIBG2C) -lstdc++ -lcrypt -lm -ldl -lc -lpthread
       else # USE_UNEMAP_3D
          LIB = -lm -ldl -lc -lpthread /usr/lib/libcrypt.a 
       endif # USE_UNEMAP_3D
@@ -1548,18 +1547,8 @@ DEPEND_FILES_OBJECT_PATH = $(DEPEND_FILES:%.d=$(OBJECT_PATH)/%.d)
 DEPEND_FILES_OBJECT_FOUND = $(wildcard $(DEPEND_FILES_OBJECT_PATH))
 DEPEND_FILES_OBJECT_NOTFOUND = $(filter-out $(DEPEND_FILES_OBJECT_FOUND),$(DEPEND_FILES_OBJECT_PATH))
 DEPEND_FILES_MISSING_PART1 = $(DEPEND_FILES_OBJECT_NOTFOUND:$(OBJECT_PATH)/%.d=%.d)
-#Look for missing files in the PRODUCT_OBJECT_PATH
-ifdef CMISS_ROOT_DEFINED
-   DEPEND_FILES_PRODUCT_PATH = $(DEPEND_FILES_MISSING_PART1:%.d=$(PRODUCT_OBJECT_PATH)/%.d)
-   DEPEND_FILES_PRODUCT_FOUND = $(wildcard $(DEPEND_FILES_PRODUCT_PATH))
-   DEPEND_FILES_PRODUCT_NOTFOUND = $(filter-out $(DEPEND_FILES_PRODUCT_FOUND),$(DEPEND_FILES_PRODUCT_PATH))
-
-   DEPEND_FILES_MISSING = $(DEPEND_FILES_PRODUCT_NOTFOUND:$(PRODUCT_OBJECT_PATH)/%.d=%.d)
-   DEPEND_FILES_INCLUDE = $(DEPEND_FILES_OBJECT_FOUND) $(DEPEND_FILES_PRODUCT_FOUND) $(DEPEND_FILES_MISSING)
-else
-   DEPEND_FILES_MISSING = $(DEPEND_FILES_MISSING_PART1)
-   DEPEND_FILES_INCLUDE = $(DEPEND_FILES_OBJECT_FOUND) $(DEPEND_FILES_MISSING)
-endif
+DEPEND_FILES_MISSING = $(DEPEND_FILES_MISSING_PART1)
+DEPEND_FILES_INCLUDE = $(DEPEND_FILES_OBJECT_FOUND) $(DEPEND_FILES_MISSING)
 
 #Touch a dummy include so that this makefile is reloaded and therefore the new .ds
 $(DEPENDFILE) : $(DEPEND_FILES_MISSING)
