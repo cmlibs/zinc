@@ -24709,7 +24709,7 @@ The number_in_xi must currently be unset for this <xi_number>.
 		element_field_component->map.element_grid_based.number_in_xi &&
 		(0 <= xi_number) &&
 		FE_basis_get_dimension(element_field_component->basis, &dimension) &&
-		(xi_number < dimension) && (0 < number_in_xi) && (0 ==
+		(xi_number < dimension) && (0 <= number_in_xi) && (0 ==
 			element_field_component->map.element_grid_based.number_in_xi[xi_number]))
 	{
 		element_field_component->map.element_grid_based.number_in_xi[xi_number] =
@@ -27164,11 +27164,26 @@ Sets values appropriately if element_dimension = top_level_element_dimension.
 		}
 		/* calculate offset in grid_point_number for adjacent points in each xi
 			 direction on the top_level_element */
-		top_level_grid_offset_in_xi[0]=1;
+		if (top_level_number_in_xi[0] > 0)
+		{
+			top_level_grid_offset_in_xi[0]=1;
+		}
+		else
+		{
+			top_level_grid_offset_in_xi[0]=0;
+		}
 		for (i=1;i<top_level_element_dimension;i++)
 		{
-			top_level_grid_offset_in_xi[i]=
-				top_level_grid_offset_in_xi[i-1]*(top_level_number_in_xi[i-1]+1);
+			if (top_level_number_in_xi[i] > 0)
+			{
+				top_level_grid_offset_in_xi[i]=
+					top_level_grid_offset_in_xi[i-1]*(top_level_number_in_xi[i-1]+1);
+			}
+			else
+			{
+				top_level_grid_offset_in_xi[i]=
+					top_level_grid_offset_in_xi[i-1]*(top_level_number_in_xi[i-1]);
+			}
 		}
 		if (element_dimension == top_level_element_dimension)
 		{
@@ -27208,15 +27223,6 @@ Sets values appropriately if element_dimension = top_level_element_dimension.
 					}
 				}
 				temp_element_to_top_level += (element_dimension+1);
-			}
-		}
-		for (i=0;(i<element_dimension)&&return_code;i++)
-		{
-			if ((0==grid_offset_in_xi[i])||(0==number_in_xi[i]))
-			{
-				display_message(ERROR_MESSAGE,
-					"calculate_grid_field_offsets.  Invalid number_in_xi");
-				return_code=0;
 			}
 		}
 	}
@@ -35536,7 +35542,14 @@ the derivatives will start at the first position of <jacobian>.
 									 i, and xi_coordinate = fractional xi value in grid cell */
 								if (1==xi_coordinate)
 								{
-									xi_offset=number_in_xi[i]-1;
+									if (number_in_xi[i] > 0)
+									{
+										xi_offset=number_in_xi[i]-1;
+									}
+									else
+									{
+										xi_offset=0;
+									}
 								}
 								else
 								{
@@ -37919,7 +37932,7 @@ Should only be called for unmanaged elements.
 								number_of_values = 1;
 								for (j = 0; (j < dimension) && return_code; j++)
 								{
-									if (0 < this_number_in_xi[j])
+									if (0 <= this_number_in_xi[j])
 									{
 										number_of_values *= (this_number_in_xi[j] + 1);
 									}
