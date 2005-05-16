@@ -18,11 +18,9 @@ ifndef CMGUI_DEV_ROOT
    CMGUI_DEV_ROOT = $(PWD:/source=)
 endif # ! CMGUI_DEV_ROOT
 
-ifdef CMISS_ROOT
-   CMISS_ROOT_DEFINED = true
-else # CMISS_ROOT
+ifndef CMISS_ROOT
    CMISS_ROOT = $(CMGUI_DEV_ROOT)
-endif # CMISS_ROOT
+endif # ! defined CMISS_ROOT
 
 SOURCE_PATH=$(CMGUI_DEV_ROOT)/source
 PRODUCT_PATH=$(CMISS_ROOT)/cmgui
@@ -38,11 +36,6 @@ endif
 
 COMMONMAKEFILE := common.Makefile
 COMMONMAKEFILE_FOUND = $(wildcard $(COMMONMAKEFILE))
-ifdef CMISS_ROOT_DEFINED
-   ifeq ($(COMMONMAKEFILE_FOUND),)
-      COMMONMAKEFILE := $(PRODUCT_SOURCE_PATH)/$(COMMONMAKEFILE)
-   endif # $(COMMONMAKEFILE_FOUND) ==
-endif # CMISS_ROOT_DEFINED
 include $(COMMONMAKEFILE)
 
 ifeq ($(filter CONSOLE_USER_INTERFACE GTK_USER_INTERFACE WIN32_USER_INTERFACE,$(USER_INTERFACE)),)
@@ -146,11 +139,7 @@ Building $(BIN_TARGET) for $(LIB_ARCH_DIR)
 endif
 $(warning $(BUILDING_MESSAGE))
 
-ifdef CMISS_ROOT_DEFINED
-   VPATH=$(BIN_PATH):$(UTILITIES_PATH):$(OBJECT_PATH):$(UIDH_PATH):$(PRODUCT_SOURCE_PATH):$(PRODUCT_OBJECT_PATH):$(PRODUCT_UIDH_PATH)
-else # CMISS_ROOT_DEFINED
-   VPATH=$(BIN_PATH):$(UTILITIES_PATH):$(OBJECT_PATH):$(UIDH_PATH)
-endif # CMISS_ROOT_DEFINED
+VPATH=$(BIN_PATH):$(UTILITIES_PATH):$(OBJECT_PATH):$(UIDH_PATH)
 
 SOURCE_DIRECTORY_INC = -I$(SOURCE_PATH) -I$(PRODUCT_SOURCE_PATH)
 
@@ -1290,15 +1279,7 @@ ifeq ($(SYSNAME:IRIX%=),)
 			@if [ -f $(OBJECT_PATH)/$(EXPORTS_FILE).c ]; then \
 				rm $(OBJECT_PATH)/$(EXPORTS_FILE).c; \
 			fi
-      ifdef CMISS_ROOT_DEFINED
-			if [ -f $(SRC_EXPORTS_FILE) ]; then \
-				cp $(SRC_EXPORTS_FILE) $(OBJECT_PATH)/$(EXPORTS_FILE).c; \
-			else \
-				cp $(PRODUCT_SOURCE_PATH)/$(SRC_EXPORTS_FILE) $(OBJECT_PATH)/$(EXPORTS_FILE).c; \
-			fi
-      else # CMISS_ROOT_DEFINED
 			cp $(SRC_EXPORTS_FILE) $(OBJECT_PATH)/$(EXPORTS_FILE).c
-      endif # CMISS_ROOT_DEFINED
 			cd $(OBJECT_PATH) ; $(CPREPROCESS) $(ALL_DEFINES) $(EXPORTS_FILE).c
 			cp $(OBJECT_PATH)/$(EXPORTS_FILE).i $(OBJECT_PATH)/$(EXPORTS_FILE)
    else # $(EXPORT_EVERYTHING) != true
@@ -1330,22 +1311,14 @@ ifeq ($(SYSNAME),Linux)
 					@if [ -f $(OBJECT_PATH)/$(SRC_EXPORTS_FILE).list.c ]; then \
 						rm $(OBJECT_PATH)/$(SRC_EXPORTS_FILE).list.c; \
 					fi
-            ifdef CMISS_ROOT_DEFINED
-					if [ -f $(SRC_EXPORTS_FILE) ]; then \
-						cp -f $(SRC_EXPORTS_FILE) $(OBJECT_PATH)/$(SRC_EXPORTS_FILE).list.c; \
-					else \
-						cp -f $(PRODUCT_SOURCE_PATH)/$(SRC_EXPORTS_FILE) $(OBJECT_PATH)/$(SRC_EXPORTS_FILE).list.c; \
-					fi
-            else # CMISS_ROOT_DEFINED
 					cp -f $(SRC_EXPORTS_FILE) $(OBJECT_PATH)/$(SRC_EXPORTS_FILE).list.c
-            endif # CMISS_ROOT_DEFINED
-				$(CPREPROCESS) $(ALL_DEFINES) $(OBJECT_PATH)/$(SRC_EXPORTS_FILE).list.c -o $(OBJECT_PATH)/$(EXPORTS_FILE).E
-				echo > $(OBJECT_PATH)/$(EXPORTS_FILE)	"CMISS_EXP_1.0 {"
-				echo >> $(OBJECT_PATH)/$(EXPORTS_FILE)	"global:"
-				sed -n -e 's/\([^ ]\+\)/  \1;/p' < $(OBJECT_PATH)/$(EXPORTS_FILE).E >> $(OBJECT_PATH)/$(EXPORTS_FILE)
-				echo >> $(OBJECT_PATH)/$(EXPORTS_FILE)	"local:"
-				echo >> $(OBJECT_PATH)/$(EXPORTS_FILE)	"  *;"
-				echo >> $(OBJECT_PATH)/$(EXPORTS_FILE)	"};"
+					$(CPREPROCESS) $(ALL_DEFINES) $(OBJECT_PATH)/$(SRC_EXPORTS_FILE).list.c -o $(OBJECT_PATH)/$(EXPORTS_FILE).E
+					echo > $(OBJECT_PATH)/$(EXPORTS_FILE)	"CMISS_EXP_1.0 {"
+					echo >> $(OBJECT_PATH)/$(EXPORTS_FILE)	"global:"
+					sed -n -e 's/\([^ ]\+\)/  \1;/p' < $(OBJECT_PATH)/$(EXPORTS_FILE).E >> $(OBJECT_PATH)/$(EXPORTS_FILE)
+					echo >> $(OBJECT_PATH)/$(EXPORTS_FILE)	"local:"
+					echo >> $(OBJECT_PATH)/$(EXPORTS_FILE)	"  *;"
+					echo >> $(OBJECT_PATH)/$(EXPORTS_FILE)	"};"
          else # NEW_BINUTILS
             # So this is the nastier fix which works until ld is fixed,
             # basically I create a shared object which requires the 
@@ -1364,25 +1337,17 @@ ifeq ($(SYSNAME),Linux)
 					@if [ -f $(OBJECT_PATH)/$(SRC_EXPORTS_FILE).list.c ]; then \
 						rm $(OBJECT_PATH)/$(SRC_EXPORTS_FILE).list.c; \
 					fi
-            ifdef CMISS_ROOT_DEFINED
-					if [ -f $(SRC_EXPORTS_FILE) ]; then \
-						cp -f $(SRC_EXPORTS_FILE) $(OBJECT_PATH)/$(SRC_EXPORTS_FILE).list.c; \
-					else \
-						cp -f $(PRODUCT_SOURCE_PATH)/$(SRC_EXPORTS_FILE) $(OBJECT_PATH)/$(SRC_EXPORTS_FILE).list.c; \
-					fi
-            else # CMISS_ROOT_DEFINED
 					cp -f $(SRC_EXPORTS_FILE) $(OBJECT_PATH)/$(SRC_EXPORTS_FILE).list.c
-            endif # CMISS_ROOT_DEFINED
-				$(CPREPROCESS) $(ALL_DEFINES) $(OBJECT_PATH)/$(SRC_EXPORTS_FILE).list.c -o $(OBJECT_PATH)/$(EXPORTS_FILE).E
-				echo > $(OBJECT_PATH)/$(EXPORTS_FILE).c	"#define lt_preloaded_symbols some_other_symbol"
-				echo >> $(OBJECT_PATH)/$(EXPORTS_FILE).c	"#define dynamic_ptr void *"
-				sed -n -e 's/\([^ ]\+\)/extern char \1;/p' < $(OBJECT_PATH)/$(EXPORTS_FILE).E >> $(OBJECT_PATH)/$(EXPORTS_FILE).c
-				echo >> $(OBJECT_PATH)/$(EXPORTS_FILE).c	"#undef lt_preloaded_symbols"
-				echo >> $(OBJECT_PATH)/$(EXPORTS_FILE).c	"const struct { const char *name; dynamic_ptr address; }"
-				echo >> $(OBJECT_PATH)/$(EXPORTS_FILE).c	"lt_preloaded_symbols[] = {"
-				sed -n -e 's/\([^ ]\+\)/  {\"\1\", (dynamic_ptr) \&\1},/p' < $(OBJECT_PATH)/$(EXPORTS_FILE).E >> $(OBJECT_PATH)/$(EXPORTS_FILE).c
-				echo >> $(OBJECT_PATH)/$(EXPORTS_FILE).c	"{0, (dynamic_ptr) 0} };"
-				$(LINK) -shared -o $(OBJECT_PATH)/$(EXPORTS_FILE) -Wl,-soname,$(EXPORTS_SONAME) $(OBJECT_PATH)/$(EXPORTS_FILE).c
+					$(CPREPROCESS) $(ALL_DEFINES) $(OBJECT_PATH)/$(SRC_EXPORTS_FILE).list.c -o $(OBJECT_PATH)/$(EXPORTS_FILE).E
+					echo > $(OBJECT_PATH)/$(EXPORTS_FILE).c	"#define lt_preloaded_symbols some_other_symbol"
+					echo >> $(OBJECT_PATH)/$(EXPORTS_FILE).c	"#define dynamic_ptr void *"
+					sed -n -e 's/\([^ ]\+\)/extern char \1;/p' < $(OBJECT_PATH)/$(EXPORTS_FILE).E >> $(OBJECT_PATH)/$(EXPORTS_FILE).c
+					echo >> $(OBJECT_PATH)/$(EXPORTS_FILE).c	"#undef lt_preloaded_symbols"
+					echo >> $(OBJECT_PATH)/$(EXPORTS_FILE).c	"const struct { const char *name; dynamic_ptr address; }"
+					echo >> $(OBJECT_PATH)/$(EXPORTS_FILE).c	"lt_preloaded_symbols[] = {"
+					sed -n -e 's/\([^ ]\+\)/  {\"\1\", (dynamic_ptr) \&\1},/p' < $(OBJECT_PATH)/$(EXPORTS_FILE).E >> $(OBJECT_PATH)/$(EXPORTS_FILE).c
+					echo >> $(OBJECT_PATH)/$(EXPORTS_FILE).c	"{0, (dynamic_ptr) 0} };"
+					$(LINK) -shared -o $(OBJECT_PATH)/$(EXPORTS_FILE) -Wl,-soname,$(EXPORTS_SONAME) $(OBJECT_PATH)/$(EXPORTS_FILE).c
          endif # NEW_BINUTILS
       else # $(EXPORT_EVERYTHING) != true
          EXPORTS_FILE = cmgui.dummy
@@ -1691,18 +1656,8 @@ DEPEND_FILES_OBJECT_PATH = $(DEPEND_FILES:%.d=$(OBJECT_PATH)/%.d)
 DEPEND_FILES_OBJECT_FOUND = $(wildcard $(DEPEND_FILES_OBJECT_PATH))
 DEPEND_FILES_OBJECT_NOTFOUND = $(filter-out $(DEPEND_FILES_OBJECT_FOUND),$(DEPEND_FILES_OBJECT_PATH))
 DEPEND_FILES_MISSING_PART1 = $(DEPEND_FILES_OBJECT_NOTFOUND:$(OBJECT_PATH)/%.d=%.d)
-#Look for missing files in the PRODUCT_OBJECT_PATH
-ifdef CMISS_ROOT_DEFINED
-   DEPEND_FILES_PRODUCT_PATH = $(DEPEND_FILES_MISSING_PART1:%.d=$(PRODUCT_OBJECT_PATH)/%.d)
-   DEPEND_FILES_PRODUCT_FOUND = $(wildcard $(DEPEND_FILES_PRODUCT_PATH))
-   DEPEND_FILES_PRODUCT_NOTFOUND = $(filter-out $(DEPEND_FILES_PRODUCT_FOUND),$(DEPEND_FILES_PRODUCT_PATH))
-
-   DEPEND_FILES_MISSING = $(DEPEND_FILES_PRODUCT_NOTFOUND:$(PRODUCT_OBJECT_PATH)/%.d=%.d)
-   DEPEND_FILES_INCLUDE = $(DEPEND_FILES_OBJECT_FOUND) $(DEPEND_FILES_PRODUCT_FOUND) $(DEPEND_FILES_MISSING)
-else
-   DEPEND_FILES_MISSING = $(DEPEND_FILES_MISSING_PART1)
-   DEPEND_FILES_INCLUDE = $(DEPEND_FILES_OBJECT_FOUND) $(DEPEND_FILES_MISSING)
-endif
+DEPEND_FILES_MISSING = $(DEPEND_FILES_MISSING_PART1)
+DEPEND_FILES_INCLUDE = $(DEPEND_FILES_OBJECT_FOUND) $(DEPEND_FILES_MISSING)
 
 #Touch a dummy include so that this makefile is reloaded and therefore the new .ds
 $(DEPENDFILE) : $(DEPEND_FILES_INCLUDE)
