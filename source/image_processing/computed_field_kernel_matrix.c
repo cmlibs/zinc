@@ -642,6 +642,7 @@ although its cache may be lost.
 		}
 		/* 1. make dynamic allocations for any new type-specific data */
 		number_of_source_fields = 0;
+		data = (struct Computed_field_bvc_decomp_type_specific_data *)NULL;
 		if ( ALLOCATE(data, struct Computed_field_kernel_matrix_type_specific_data,1) &&
 		         ALLOCATE(data->a, FE_value, matrix_size))
 		{
@@ -680,6 +681,14 @@ although its cache may be lost.
 		}
 		else
 		{
+		        if (data)
+			{
+				if (data->a)
+				{
+					DEALLOCATE(data->a);
+				}
+				DEALLOCATE(data);
+			}
 			display_message(ERROR_MESSAGE,
 				"Computed_field_set_type_kernel_matrix.  Not enough memory");
 			return_code=0;
@@ -829,6 +838,7 @@ contents to be modified.
 			}
 			DESTROY(Option_table)(&option_table);
 		}
+		DEALLOCATE(filter.tokens);
 	}
 	else
 	{
