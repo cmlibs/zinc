@@ -696,7 +696,7 @@ DESCRIPTION :
 ==============================================================================*/
 {
 	int return_code;
-	struct Computed_field_convolution_filter_type_specific_data *data;
+	/* struct Computed_field_convolution_filter_type_specific_data *data;*/
 
 	ENTER(List_Computed_field_convolution_filter);
 	if (field && (field->type_string==computed_field_convolution_filter_type_string)
