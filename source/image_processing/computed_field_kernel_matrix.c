@@ -838,7 +838,7 @@ contents to be modified.
 			}
 			DESTROY(Option_table)(&option_table);
 		}
-		DEALLOCATE(filter.tokens);
+		DEALLOCATE(filter_name.tokens);
 	}
 	else
 	{
