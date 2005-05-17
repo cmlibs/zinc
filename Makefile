@@ -146,7 +146,7 @@ ifeq ($(SYSNAME),AIX)
 all : cmgui cmgui-debug cmgui64 cmgui64-debug
 endif # SYSNAME == AIX
 ifeq ($(SYSNAME),win32)
-all : cmgui-gtk
+all : cmgui cmgui-debug cmgui-gtk
 endif # SYSNAME == win32
 ifeq ($(SYSNAME),CYGWIN%=)
 all :
