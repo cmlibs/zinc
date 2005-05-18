@@ -1118,13 +1118,13 @@ the <field>. These parameters will be used in image processing.
 		(struct Computed_field_wiener_filter_type_specific_data *)
 		field->type_specific_data) && data->image)
 	{
+	        return_code = 1;
 		Image_cache_get_native_resolution(data->image,
 			dimension, sizes, minimums, maximums);
 		/* Texture_coordinate_field from source fields */
 		if (*texture_coordinate_field)
 		{
-		        /* nothing to do, just use the texture coordinate field of the 
-			source field as the default texture coordinate field. */
+		        REACCESS(Computed_field)(&(*texture_coordinate_field), field->source_fields[0]); 
 		}
 		else
 		{

@@ -801,13 +801,13 @@ the <field>. These parameters will be used in image processing.
 		(struct Computed_field_steerable_filter_type_specific_data *)
 		field->type_specific_data) && data->image)
 	{
+	        return_code = 1;
 		Image_cache_get_native_resolution(data->image,
 			dimension, sizes, minimums, maximums);
 		/* Texture_coordinate_field from source fields */
 		if (*texture_coordinate_field)
 		{
-			/* DEACCESS(Computed_field)(&(*texture_coordinate_field));
-			*texture_coordinate_field = ACCESS(Computed_field)(field->source_fields[1]); */
+			REACCESS(Computed_field)(&(*texture_coordinate_field), field->source_fields[1]); 
 		}
 		else
 		{
