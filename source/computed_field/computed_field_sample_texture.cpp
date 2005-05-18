@@ -447,7 +447,7 @@ the <field>. These parameters will be used in image processing.
 		(struct Computed_field_sample_texture_type_specific_data *)
 		field->type_specific_data) && data->texture)
 	{
-	        
+	        return_code = 1;
 		Texture_get_size(data->texture, &w, &h, &d);
 		Texture_get_dimension(data->texture,dimension);
 		if ((*sizes) && (*minimums) && (*maximums))
