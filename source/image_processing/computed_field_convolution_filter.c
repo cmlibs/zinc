@@ -669,8 +669,7 @@ the <field>. These parameters will be used in image processing.
 		/* Texture_coordinate_field from source fields */
 		if (*texture_coordinate_field)
 		{
-			/* DEACCESS(Computed_field)(&(*texture_coordinate_field));*/
-			*texture_coordinate_field = REACCESS(Computed_field)(field->source_fields[1]);
+			REACCESS(Computed_field)(&(*texture_coordinate_field), field->source_fields[1]);
 		}
 		else
 		{
