@@ -15565,7 +15565,7 @@ Which tool that is being modified is passed in <node_tool_void>.
 	char *dialog_string, *region_path;
 	int create_enabled,define_enabled,edit_enabled,motion_update_enabled,
 		return_code,select_enabled, streaming_create_enabled,
-		surface_element_create;
+		constrain_to_surface;
 	struct Cmiss_command_data *command_data;
 	struct Cmiss_region *root_region;
 	struct Computed_field *coordinate_field, *command_field;
@@ -15595,7 +15595,7 @@ Which tool that is being modified is passed in <node_tool_void>.
 		motion_update_enabled=0;
 		select_enabled=1;
 		streaming_create_enabled = 0;
-		surface_element_create = 0;
+		constrain_to_surface = 0;
 		command_field=(struct Computed_field *)NULL;
 		region_path = (char *)NULL;
 		if (node_tool)
@@ -15608,8 +15608,8 @@ Which tool that is being modified is passed in <node_tool_void>.
 			select_enabled=Node_tool_get_select_enabled(node_tool);
 			streaming_create_enabled =
 				Node_tool_get_streaming_create_enabled(node_tool);
-			surface_element_create =
-				Node_tool_get_surface_element_create(node_tool);
+			constrain_to_surface =
+				Node_tool_get_constrain_to_surface(node_tool);
 			command_field=Node_tool_get_command_field(node_tool);
 			Node_tool_get_region_path(node_tool, &region_path);
 		}
@@ -15632,6 +15632,9 @@ Which tool that is being modified is passed in <node_tool_void>.
 		set_coordinate_field_data.conditional_function_user_data=(void *)NULL;
 		Option_table_add_entry(option_table,"coordinate_field",&coordinate_field,
 			&set_coordinate_field_data,set_Computed_field_conditional);
+		/* constrain_to_surfaces/no_constrain_to_surfaces */
+		Option_table_add_switch(option_table,"constrain_to_surfaces","no_constrain_to_surfaces",
+			&constrain_to_surface);
 		/* create/no_create */
 		Option_table_add_switch(option_table,"create","no_create",&create_enabled);
 		/* define/no_define */
@@ -15653,9 +15656,6 @@ Which tool that is being modified is passed in <node_tool_void>.
 		/* streaming_create/no_streaming_create */
 		Option_table_add_switch(option_table, "streaming_create",
 			"no_streaming_create", &streaming_create_enabled);
-		/* surface_element_create/no_surface_element_create */
-		Option_table_add_switch(option_table,"surface_element_create","no_surface_element_no_create",
-			&surface_element_create);
 		/* command_field */
 		set_command_field_data.computed_field_manager=
 			Computed_field_package_get_computed_field_manager(
@@ -15685,7 +15685,7 @@ Which tool that is being modified is passed in <node_tool_void>.
 				Node_tool_set_select_enabled(node_tool,select_enabled);
 				Node_tool_set_define_enabled(node_tool,define_enabled);
 				Node_tool_set_create_enabled(node_tool,create_enabled);
-				Node_tool_set_surface_element_create(node_tool,surface_element_create);
+				Node_tool_set_constrain_to_surface(node_tool,constrain_to_surface);
 				Node_tool_set_motion_update_enabled(node_tool,motion_update_enabled);
 
 				if (dialog_string == dialog_strings[0])

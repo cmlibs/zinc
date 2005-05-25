@@ -99,7 +99,7 @@ changes in node position and derivatives etc.
 	int streaming_create_enabled;
 	/* if create is enabled this option will force the nodes to be created on a surface
 		rather than between near and far */
-	int surface_element_create;
+	int constrain_to_surface;
 	enum Node_tool_edit_mode edit_mode;
 	struct Computed_field *coordinate_field, *command_field;
 	struct FE_node *template_node;
@@ -117,7 +117,7 @@ changes in node position and derivatives etc.
 	Display *display;
 	struct Cmiss_region_chooser *cmiss_region_chooser;
 	Widget coordinate_field_form,coordinate_field_widget,create_button,
-		surface_element_create_button,define_button,edit_button,
+		constrain_to_surface_button,define_button,edit_button,
 		motion_update_button,node_group_form,node_group_widget,select_button,
 		streaming_create_button,command_field_button,command_field_form,
 		command_field_widget;
@@ -166,10 +166,10 @@ to its position between these two planes.
 		the whole active group is looped over this node is ignored */
 	struct FE_node *last_picked_node;
 
-	/* Fields that allow surface_element_create to work correctly,
+	/* Fields that allow constrain_to_surface to work correctly,
 		only the last picked node will be updated as this is the only one
 		we know the element for */
-	int surface_element_create;
+	int constrain_to_surface;
 	struct FE_element *nearest_element;
 	struct Computed_field *nearest_element_coordinate_field;
 }; /* struct FE_node_edit_information */
@@ -188,7 +188,7 @@ Module functions
 #if defined (MOTIF)
 DECLARE_DIALOG_IDENTIFY_FUNCTION(node_tool,Node_tool,coordinate_field_form)
 DECLARE_DIALOG_IDENTIFY_FUNCTION(node_tool,Node_tool,create_button)
-DECLARE_DIALOG_IDENTIFY_FUNCTION(node_tool,Node_tool,surface_element_create_button)
+DECLARE_DIALOG_IDENTIFY_FUNCTION(node_tool,Node_tool,constrain_to_surface_button)
 DECLARE_DIALOG_IDENTIFY_FUNCTION(node_tool,Node_tool,define_button)
 DECLARE_DIALOG_IDENTIFY_FUNCTION(node_tool,Node_tool,edit_button)
 DECLARE_DIALOG_IDENTIFY_FUNCTION(node_tool,Node_tool,motion_update_button)
@@ -528,7 +528,7 @@ applied to multiple nodes.
 			}
 			if (return_code)
 			{
-				if (edit_info->surface_element_create && edit_info->nearest_element &&
+				if (edit_info->constrain_to_surface && edit_info->nearest_element &&
 					 edit_info->nearest_element_coordinate_field)
 				{
 					constraint_data.element = edit_info->nearest_element;
@@ -1503,7 +1503,7 @@ ie. streaming in response to interactive events = user drags.
 #endif /* defined (MOTIF) */
 
 #if defined (MOTIF)
-static void Node_tool_surface_element_create_button_CB(Widget widget,
+static void Node_tool_constrain_to_surface_button_CB(Widget widget,
 	void *node_tool_void,void *call_data)
 /*******************************************************************************
 LAST MODIFIED : 18 April 2005
@@ -1515,20 +1515,20 @@ elements or just halfway between near and far.
 {
 	struct Node_tool *node_tool;
 
-	ENTER(Node_tool_surface_element_create_button_CB);
+	ENTER(Node_tool_constrain_to_surface_button_CB);
 	USE_PARAMETER(call_data);
 	if (node_tool=(struct Node_tool *)node_tool_void)
 	{
-		Node_tool_set_surface_element_create(node_tool,
+		Node_tool_set_constrain_to_surface(node_tool,
 			XmToggleButtonGadgetGetState(widget));
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Node_tool_surface_element_create_button_CB.  Invalid argument(s)");
+			"Node_tool_constrain_to_surface_button_CB.  Invalid argument(s)");
 	}
 	LEAVE;
-} /* Node_tool_surface_element_create_button_CB */
+} /* Node_tool_constrain_to_surface_button_CB */
 #endif /* defined (MOTIF) */
 
 #if defined (MOTIF)
@@ -1836,7 +1836,7 @@ release.
 									(struct Cmiss_region *)NULL,&scene_picked_object,
 									&gt_element_group,&gt_element_settings);
 							}
-							if (node_tool->surface_element_create)
+							if (node_tool->constrain_to_surface)
 							{
 								nearest_element=Scene_picked_object_list_get_nearest_element(
 									scene_picked_object_list,(struct Cmiss_region *)NULL,
@@ -1844,7 +1844,7 @@ release.
 									/*select_lines_enabled*/0, &scene_picked_object2,
 									&gt_element_group_element,&gt_element_settings_element);
 								/* Reject the previously picked node if the element is nearer */
-								if (picked_node)
+								if (picked_node && nearest_element)
 								{
 									if (Scene_picked_object_get_nearest(scene_picked_object) >
 										Scene_picked_object_get_nearest(scene_picked_object2))
@@ -1917,7 +1917,7 @@ release.
 									}
 									/* If we are creating on elements and no element was selected then 
 										don't create */
-									if (!node_tool->surface_element_create || nearest_element)
+									if (!node_tool->constrain_to_surface || nearest_element)
 									{
 										if (picked_node=Node_tool_create_node_at_interaction_volume(
 											node_tool,scene,interaction_volume,nearest_element,
@@ -1980,7 +1980,7 @@ release.
 						}
 						if (node_tool->last_picked_node)
 						{
-							if (node_tool->surface_element_create)
+							if (node_tool->constrain_to_surface)
 							{
 								if (scene_picked_object_list=
 									Scene_pick_objects(scene,interaction_volume))
@@ -2006,7 +2006,7 @@ release.
 								node_tool->streaming_create_enabled &&
 								(INTERACTIVE_EVENT_MOTION_NOTIFY == event_type))
 							{
-								if (!node_tool->surface_element_create || nearest_element)
+								if (!node_tool->constrain_to_surface || nearest_element)
 								{
 									if (picked_node = Node_tool_create_node_at_interaction_volume(
 											 node_tool, scene, interaction_volume, nearest_element,
@@ -2037,7 +2037,7 @@ release.
 								edit_info.fe_region=node_tool->fe_region;
 								edit_info.time=Time_keeper_get_time(
 									node_tool->time_keeper);
-								edit_info.surface_element_create = node_tool->surface_element_create;
+								edit_info.constrain_to_surface = node_tool->constrain_to_surface;
 								edit_info.nearest_element = nearest_element;
 								edit_info.nearest_element_coordinate_field = 
 									nearest_element_coordinate_field;
@@ -2387,8 +2387,8 @@ used to represent them. <element_manager> should be NULL if <use_data> is true.
 			DIALOG_IDENTIFY(node_tool,create_button)},
 		{"node_tool_id_streaming_btn",(XtPointer)
 			DIALOG_IDENTIFY(node_tool,streaming_create_button)},
-		{"node_tool_id_surface_create_btn",(XtPointer)
-		   DIALOG_IDENTIFY(node_tool,surface_element_create_button)},
+		{"node_tool_id_constrain_srf_btn",(XtPointer)
+		   DIALOG_IDENTIFY(node_tool,constrain_to_surface_button)},
 		{"node_tool_id_node_group_form",(XtPointer)
 			DIALOG_IDENTIFY(node_tool,node_group_form)},
 		{"node_tool_id_coord_field_form",(XtPointer)
@@ -2409,8 +2409,8 @@ used to represent them. <element_manager> should be NULL if <use_data> is true.
 		 (XtPointer)Node_tool_create_button_CB},
 		{"node_tool_streaming_btn_CB",
 		 (XtPointer)Node_tool_streaming_create_button_CB},
-		{"node_tool_surface_create_btn_CB",
-		 (XtPointer)Node_tool_surface_element_create_button_CB},
+		{"node_tool_constrain_srf_btn_CB",
+		 (XtPointer)Node_tool_constrain_to_surface_button_CB},
 		{"node_tool_command_field_btn_CB",
 		 (XtPointer)Node_tool_command_field_button_CB},
 		{"node_tool_destroy_selected_CB",
@@ -2459,7 +2459,7 @@ used to represent them. <element_manager> should be NULL if <use_data> is true.
 			node_tool->define_enabled=0;
 			node_tool->create_enabled=0;
  			node_tool->streaming_create_enabled=0;
- 			node_tool->surface_element_create=0;
+ 			node_tool->constrain_to_surface=0;
 			node_tool->edit_mode=NODE_TOOL_EDIT_AUTOMATIC;
 			node_tool->coordinate_field =
 				FIRST_OBJECT_IN_MANAGER_THAT(Computed_field)(
@@ -2509,7 +2509,7 @@ used to represent them. <element_manager> should be NULL if <use_data> is true.
 			node_tool->node_group_widget=(Widget)NULL;
 			node_tool->select_button=(Widget)NULL;
 			node_tool->streaming_create_button=(Widget)NULL;
-			node_tool->surface_element_create_button=(Widget)NULL;
+			node_tool->constrain_to_surface_button=(Widget)NULL;
 			node_tool->command_field_button=(Widget)NULL;
 			node_tool->command_field_form=(Widget)NULL;
 			node_tool->command_field_widget=(Widget)NULL;
@@ -2621,8 +2621,8 @@ used to represent them. <element_manager> should be NULL if <use_data> is true.
 										/*state*/node_tool->streaming_create_enabled,
 										/*notify*/False);
 									XmToggleButtonGadgetSetState(
-										node_tool->surface_element_create_button,
-										/*state*/node_tool->surface_element_create,
+										node_tool->constrain_to_surface_button,
+										/*state*/node_tool->constrain_to_surface,
 										/*notify*/False);
 									XmToggleButtonGadgetSetState(node_tool->command_field_button,
 										/*state*/False, /*notify*/False);
@@ -3557,7 +3557,7 @@ created as the user drags the mouse around.
 	return (return_code);
 } /* Node_tool_set_streaming_create_enabled */
 
-int Node_tool_get_surface_element_create(struct Node_tool *node_tool)
+int Node_tool_get_constrain_to_surface(struct Node_tool *node_tool)
 /*******************************************************************************
 LAST MODIFIED : 18 April 2005
 
@@ -3566,26 +3566,26 @@ Returns flag controlling, if create_enabled, whether new nodes will be created
 on the closest surface element or just halfway between near and far.
 ==============================================================================*/
 {
-	int surface_element_create;
+	int constrain_to_surface;
 
-	ENTER(Node_tool_get_surface_element_create);
+	ENTER(Node_tool_get_constrain_to_surface);
 	if (node_tool)
 	{
-		surface_element_create = node_tool->surface_element_create;
+		constrain_to_surface = node_tool->constrain_to_surface;
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Node_tool_get_surface_element_create.  Invalid argument(s)");
-		surface_element_create = 0;
+			"Node_tool_get_constrain_to_surface.  Invalid argument(s)");
+		constrain_to_surface = 0;
 	}
 	LEAVE;
 
-	return (surface_element_create);
-} /* Node_tool_get_surface_element_create */
+	return (constrain_to_surface);
+} /* Node_tool_get_constrain_to_surface */
 
-int Node_tool_set_surface_element_create(struct Node_tool *node_tool,
-	int surface_element_create)
+int Node_tool_set_constrain_to_surface(struct Node_tool *node_tool,
+	int constrain_to_surface)
 /*******************************************************************************
 LAST MODIFIED : 18 April 2005
 
@@ -3599,20 +3599,20 @@ on the closest surface element or just halfway between near and far.
 	int button_state;
 #endif /* defined (MOTIF) */
 
-	ENTER(Node_tool_set_surface_element_create);
+	ENTER(Node_tool_set_constrain_to_surface);
 	if (node_tool)
 	{
-		if (surface_element_create)
+		if (constrain_to_surface)
 		{
 			/* make sure value of flag is exactly 1 */
-			surface_element_create = 1;
+			constrain_to_surface = 1;
 		}
-		if (surface_element_create != node_tool->surface_element_create)
+		if (constrain_to_surface != node_tool->constrain_to_surface)
 		{
-			node_tool->surface_element_create = surface_element_create;
+			node_tool->constrain_to_surface = constrain_to_surface;
 #if defined (MOTIF)
 			/* make sure button shows current state */
-			if (XmToggleButtonGadgetGetState(node_tool->surface_element_create_button))
+			if (XmToggleButtonGadgetGetState(node_tool->constrain_to_surface_button))
 			{
 				button_state = 1;
 			}
@@ -3620,10 +3620,10 @@ on the closest surface element or just halfway between near and far.
 			{
 				button_state = 0;
 			}
-			if (button_state != node_tool->surface_element_create)
+			if (button_state != node_tool->constrain_to_surface)
 			{
-				XmToggleButtonGadgetSetState(node_tool->surface_element_create_button,
-					/*state*/node_tool->surface_element_create, /*notify*/False);
+				XmToggleButtonGadgetSetState(node_tool->constrain_to_surface_button,
+					/*state*/node_tool->constrain_to_surface, /*notify*/False);
 			}
 #endif /* defined (MOTIF) */
 		}
@@ -3632,13 +3632,13 @@ on the closest surface element or just halfway between near and far.
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Node_tool_set_surface_element_create.  Invalid argument(s)");
+			"Node_tool_set_constrain_to_surface.  Invalid argument(s)");
 		return_code = 0;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* Node_tool_set_surface_element_create */
+} /* Node_tool_set_constrain_to_surface */
 
 struct Computed_field *Node_tool_get_command_field(
 	struct Node_tool *node_tool)

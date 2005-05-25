@@ -258,19 +258,19 @@ Sets flag controlling, if create_enabled, whether a stream of nodes is
 created as the user drags the mouse around.
 ==============================================================================*/
 
-int Node_tool_get_surface_element_create(struct Node_tool *node_tool);
+int Node_tool_get_constrain_to_surface(struct Node_tool *node_tool);
 /*******************************************************************************
-LAST MODIFIED : 18 April 2005
+LAST MODIFIED : 26 May 2005
 
 DESCRIPTION :
 Returns flag controlling, if create_enabled, whether new nodes will be created
 on the closest surface element or just halfway between near and far.
 ==============================================================================*/
 
-int Node_tool_set_surface_element_create(struct Node_tool *node_tool,
-	int surface_element_create);
+int Node_tool_set_constrain_to_surface(struct Node_tool *node_tool,
+	int constrain_to_surface);
 /*******************************************************************************
-LAST MODIFIED : 18 April 2005
+LAST MODIFIED : 26 May 2005
 
 DESCRIPTION :
 Sets flag controlling, if create_enabled, whether new nodes will be created
