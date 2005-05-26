@@ -224,8 +224,8 @@ ifeq ($(SYSNAME),Linux)
       COMPILE_DEFINES = -DREPORT_GL_ERRORS -DUSE_PARAMETER_ON
       COMPILE_FLAGS = -fPIC
       # A bug with gcc on esp56 stops -Wformat from working */
-      STRICT_FLAGS = -W -Wall -Wno-parentheses -Wno-switch -Wno-format -Werror
-      CPP_STRICT_FLAGS = -W -Wall -Wno-parentheses -Wno-switch -Wno-format -Werror
+      STRICT_FLAGS = -W -Wall -Wno-parentheses -Wno-switch -Werror
+      CPP_STRICT_FLAGS = -W -Wall -Wno-parentheses -Wno-switch -Wno-unused-parameter -Werror
       DIGITAL_MEDIA_NON_STRICT_FLAGS = 
       DIGITAL_MEDIA_NON_STRICT_FLAGS_PATTERN = NONE # Must specify a pattern that doesn't match */
       TARGET_TYPE_FLAGS =
@@ -361,82 +361,32 @@ endif # SYSNAME == win32
 	@if [ ! -d $(OBJECT_PATH)/$(*D) ]; then \
 		mkdir -p $(OBJECT_PATH)/$(*D); \
 	fi
-ifdef CMISS_ROOT_DEFINED
-	@if [ -f $*.c ]; then \
-	   case $*.c in  \
-	      $(DIGITAL_MEDIA_NON_STRICT_FLAGS_PATTERN) ) \
-	         set -x ; $(CC) -o $(OBJECT_PATH)/$*.o $(ALL_FLAGS) $(STRICT_FLAGS) $(DIGITAL_MEDIA_NON_STRICT_FLAGS) $*.c;; \
-	      * ) \
-	         set -x ; $(CC) -o $(OBJECT_PATH)/$*.o $(ALL_FLAGS) $(STRICT_FLAGS) $*.c;; \
-	   esac ; \
-	else \
-	   case $*.c in  \
-	      $(DIGITAL_MEDIA_NON_STRICT_FLAGS_PATTERN) ) \
-	         set -x ; $(CC) -o $(OBJECT_PATH)/$*.o $(ALL_FLAGS) $(STRICT_FLAGS) $(DIGITAL_MEDIA_NON_STRICT_FLAGS) $(PRODUCT_SOURCE_PATH)/$*.c;; \
-	      * ) \
-		      set -x ; $(CC) -o $(OBJECT_PATH)/$*.o $(ALL_FLAGS) $(STRICT_FLAGS) $(PRODUCT_SOURCE_PATH)/$*.c;; \
-	   esac ; \
-	fi
-else # CMISS_ROOT_DEFINED
 	@case $*.c in  \
 	   $(DIGITAL_MEDIA_NON_STRICT_FLAGS_PATTERN) ) \
 	      set -x ; $(CC) -o $(OBJECT_PATH)/$*.o $(ALL_FLAGS) $(STRICT_FLAGS) $(DIGITAL_MEDIA_NON_STRICT_FLAGS) $*.c;; \
 	   * ) \
 	      set -x ; $(CC) -o $(OBJECT_PATH)/$*.o $(ALL_FLAGS) $(STRICT_FLAGS) $*.c;; \
 	esac ;
-endif # CMISS_ROOT_DEFINED
 
 %.o: %.cpp %.d
 	@if [ ! -d $(OBJECT_PATH)/$(*D) ]; then \
 		mkdir -p $(OBJECT_PATH)/$(*D); \
 	fi
-ifdef CMISS_ROOT_DEFINED
-	@if [ -f $*.cpp ]; then \
-	   case $*.cpp in  \
-	      $(DIGITAL_MEDIA_NON_STRICT_FLAGS_PATTERN) ) \
-            set -x ; $(CPP) -o $(OBJECT_PATH)/$*.o $(ALL_FLAGS) $(CPP_FLAGS) $(CPP_STRICT_FLAGS) $(DIGITAL_MEDIA_NON_STRICT_FLAGS) $*.cpp;; \
-	      * ) \
-	   	   set -x ; $(CPP) -o $(OBJECT_PATH)/$*.o $(ALL_FLAGS) $(CPP_FLAGS) $(CPP_STRICT_FLAGS) $*.cpp;; \
-	   esac ; \
-	else \
-	   case $*.cpp in  \
-	      $(DIGITAL_MEDIA_NON_STRICT_FLAGS_PATTERN) ) \
-	        set -x ; $(CPP) -o $(OBJECT_PATH)/$*.o $(ALL_FLAGS) $(CPP_FLAGS) $(CPP_STRICT_FLAGS) $(DIGITAL_MEDIA_NON_STRICT_FLAGS) $(PRODUCT_SOURCE_PATH)/$*.cpp;; \
-	      * ) \
-	        set -x ; $(CPP) -o $(OBJECT_PATH)/$*.o $(ALL_FLAGS) $(CPP_FLAGS) $(CPP_STRICT_FLAGS) $(PRODUCT_SOURCE_PATH)/$*.cpp;; \
-	   esac ; \
-	fi
-else # CMISS_ROOT_DEFINED
-	case $*.cpp in  \
+	@case $*.cpp in  \
 		$(DIGITAL_MEDIA_NON_STRICT_FLAGS_PATTERN) ) \
 	  set -x ; $(CPP) -o $(OBJECT_PATH)/$*.o $(ALL_FLAGS) $(CPP_FLAGS) $(CPP_STRICT_FLAGS) $(DIGITAL_MEDIA_NON_STRICT_FLAGS) $*.cpp;; \
 	  * ) \
 	  set -x ; $(CPP) -o $(OBJECT_PATH)/$*.o $(ALL_FLAGS) $(CPP_FLAGS) $(CPP_STRICT_FLAGS) $*.cpp;; \
 	esac ;
-endif # CMISS_ROOT_DEFINED)
 
 %.o: %.f %.d
 	@if [ ! -d $(OBJECT_PATH)/$(*D) ]; then \
 		mkdir -p $(OBJECT_PATH)/$(*D); \
 	fi
-ifdef CMISS_ROOT_DEFINED
-	@if [ -f $*.f ]; then \
-	   case $*.f in  \
-	      * ) \
-	        set -x ; $(FORTRAN) $(OPTIMISATION_FLAGS) $(TARGET_TYPE_FLAGS) -o $(OBJECT_PATH)/$*.o $(SOURCE_DIRECTORY_INC) $*.f ;; \
-	   esac ; \
-	else \
-	   case $*.f in  \
-	      * ) \
-	        set -x ; $(FORTRAN) $(OPTIMISATION_FLAGS) $(TARGET_TYPE_FLAGS) -o $(OBJECT_PATH)/$*.o $(SOURCE_DIRECTORY_INC) $(PRODUCT_SOURCE_PATH)/$*.f ;; \
-	   esac ; \
-	fi
-else # CMISS_ROOT_DEFINED
-	case $*.f in  \
+	@case $*.f in  \
 		* ) \
 	  set -x ; $(FORTRAN) $(OPTIMISATION_FLAGS) $(TARGET_TYPE_FLAGS) -o $(OBJECT_PATH)/$*.o $(SOURCE_DIRECTORY_INC) $*.f ;; \
 	esac ;
-endif # CMISS_ROOT_DEFINED
 
 $(OBJECT_PATH)/%.c : $(SOURCE_PATH)/%.c
 
@@ -471,33 +421,15 @@ ifeq ($(USER_INTERFACE),WIN32_USER_INTERFACE)
 	@if [ ! -d $(OBJECT_PATH)/$(*D) ]; then \
 		mkdir -p $(OBJECT_PATH)/$(*D); \
 	fi
-ifdef CMISS_ROOT_DEFINED
-	if [ -f $*.rc ]; then \
-      SOURCE_RC=$*.rc; \
-	else \
-      SOURCE_RC=$(PRODUCT_SOURCE_PATH)/$*.rc; \
-	fi ; \
-	set -x ; \
-	windres -I`dirname $${SOURCE_RC}` -o $(OBJECT_PATH)/$*.res -O coff $${SOURCE_RC}
-else # CMISS_ROOT_DEFINED
 	set -x ; \
    windres -o $(OBJECT_PATH)/$*.res -O coff $*.rc
-endif # CMISS_ROOT_DEFINED)
 endif # $(USER_INTERFACE) == WIN32_USER_INTERFACE
 
 ifeq ($(USER_INTERFACE),MOTIF_USER_INTERFACE)
 
 UID2UIDH = uid2uidh
-UID2UIDH_BIN := $(wildcard $(UTILITIES_PATH)/$(UID2UIDH))
-ifeq ($(UID2UID_BIN),)
-   ifdef CMISS_ROOT_DEFINED
-	   UID2UIDH_BIN := $(wildcard $(PRODUCT_UTILITIES_PATH)/$(UID2UIDH))
-   endif # CMISS_ROOT_DEFINED
-endif # $(UID2UIDH_BIN) ==
-ifeq ($(UID2UIDH_BIN),)
-   #If it still isn't found then assume we will build a local one.
-   UID2UIDH_BIN := $(UTILITIES_PATH)/$(UID2UIDH)
-else
+UID2UIDH_BIN := $(UTILITIES_PATH)/$(UID2UIDH)
+ifneq ($(wildcard $(UID2UIDH_BIN),)
    UID2UIDH_FOUND = true
 endif
 
