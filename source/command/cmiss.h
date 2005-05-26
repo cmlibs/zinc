@@ -139,4 +139,12 @@ DESCRIPTION :
 Gets an Fdio_package for this <command_data>
 ==============================================================================*/
 
+struct Cmiss_idle_package* Cmiss_command_data_get_idle_package(
+	struct Cmiss_command_data *command_data);
+/*******************************************************************************
+LAST MODIFIED : 21 March 2005
+
+DESCRIPTION :
+Gets an Idle_package for this <command_data>
+==============================================================================*/
 #endif /* !defined (COMMAND_CMISS_H) */

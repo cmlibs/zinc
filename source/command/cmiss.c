@@ -247,6 +247,7 @@ Functions for executing cmiss commands.
 #include "unemap/unemap_command.h"
 #endif /* defined (UNEMAP) */
 #include "user_interface/fd_io.h"
+#include "user_interface/idle.h"
 
 /*
 Module types
@@ -25340,6 +25341,29 @@ Gets an Fdio_package for this <command_data>
 	LEAVE;
 
 	return (fdio_package);
+}
+
+Idle_package_id Cmiss_command_data_get_idle_package(
+	struct Cmiss_command_data *command_data
+)
+/*******************************************************************************
+LAST MODIFIED : 21 March 2005
+
+DESCRIPTION :
+Gets an Idle_package for this <command_data>
+==============================================================================*/
+{
+	struct Idle_package *idle_package;
+
+	ENTER(Cmiss_command_data_get_idle_package);
+	idle_package = (struct Idle_package *)NULL;
+	if (command_data)
+	{
+		idle_package = CREATE(Idle_package)(command_data->event_dispatcher);
+	}
+	LEAVE;
+
+	return (idle_package);
 }
 
 struct MANAGER(Computed_field) *Cmiss_command_data_get_computed_field_manager(
