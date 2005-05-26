@@ -33,7 +33,7 @@ Module types
 ------------
 */
 
-#if !defined(WIN32_USER_INTERFACE)
+#if defined (USE_GENERIC_EVENT_DISPATCHER)
 struct Event_dispatcher_descriptor_callback
 /*******************************************************************************
 LAST MODIFIED : 13 November 2002
@@ -51,20 +51,15 @@ Contains all information necessary for a descriptor callback.
 	   DEALLOCATES this user_data.
          */
 	int deallocate_user_data_on_destroy;
-#if defined (USE_GENERIC_EVENT_DISPATCHER)
 	Event_dispatcher_descriptor_query_function *query_callback;
 	Event_dispatcher_descriptor_check_function *check_callback;
 	Event_dispatcher_descriptor_dispatch_function *dispatch_callback;
-#endif /* defined (USE_GENERIC_EVENT_DISPATCHER) */
-#if defined (USE_XTAPP_CONTEXT)
-	XtInputId xt_input_id;
-#endif /* defined (USE_XTAPP_CONTEXT) */
 }; /* struct Event_dispatcher_descriptor_callback */
 
 PROTOTYPE_OBJECT_FUNCTIONS(Event_dispatcher_descriptor_callback);
 DECLARE_LIST_TYPES(Event_dispatcher_descriptor_callback);
 FULL_DECLARE_INDEXED_LIST_TYPE(Event_dispatcher_descriptor_callback);
-#endif /* !defined(WIN32_USER_INTERFACE) */
+#endif /* defined (USE_GENERIC_EVENT_DISPATCHER) */
 
 struct Event_dispatcher_timeout_callback
 /*******************************************************************************
@@ -314,12 +309,11 @@ Ensures that dispatcher->networkWindowHandle is set.
 }
 #else /* defined(WIN32_USER_INTERFACE) */
 
-static struct Event_dispatcher_descriptor_callback *CREATE(Event_dispatcher_descriptor_callback)(
 #if defined (USE_GENERIC_EVENT_DISPATCHER)
+static struct Event_dispatcher_descriptor_callback *CREATE(Event_dispatcher_descriptor_callback)(
 	Event_dispatcher_descriptor_query_function *query_function,
 	Event_dispatcher_descriptor_check_function *check_function,
 	Event_dispatcher_descriptor_dispatch_function *dispatch_function,
-#endif /* defined (USE_GENERIC_EVENT_DISPATCHER) */
 	void *user_data)
 /*******************************************************************************
 LAST MODIFIED : 4 March 2002
@@ -335,18 +329,13 @@ Create a single object that belongs to a specific file descriptor.
 	if (ALLOCATE(callback, struct Event_dispatcher_descriptor_callback, 1))
 	{
 		callback->self = callback;
-#if defined (USE_GENERIC_EVENT_DISPATCHER)
 		callback->query_callback = query_function;
 		callback->check_callback = check_function;
 		callback->dispatch_callback = dispatch_function;
-#endif /* defined (USE_GENERIC_EVENT_DISPATCHER) */
 		callback->user_data = user_data;
-		callback->pending = 0;
+		callback->pending = 1;
 		callback->deallocate_user_data_on_destroy = 0;
 		callback->access_count = 0;
-#if defined (USE_XTAPP_CONTEXT)
-		callback->xt_input_id = (XtInputId)NULL;
-#endif /* defined (USE_XTAPP_CONTEXT) */
 	}
 	else
 	{
@@ -395,6 +384,7 @@ Destroys the object associated with the file descriptor.
 
 	return (return_code);
 } /* DESTROY(Event_dispatcher_descriptor_callback) */
+#endif /* defined (USE_GENERIC_EVENT_DISPATCHER) */
 
 #if defined (USE_GENERIC_EVENT_DISPATCHER)
 static int Event_dispatcher_descriptor_do_query_callback(
@@ -498,12 +488,14 @@ An iterator function that finds a pending callback.
 } /* Event_dispatcher_descriptor_callback_is_pending */
 #endif /* defined (USE_GENERIC_EVENT_DISPATCHER) */
 
+#if defined (USE_GENERIC_EVENT_DISPATCHER)
 DECLARE_INDEXED_LIST_MODULE_FUNCTIONS(Event_dispatcher_descriptor_callback, \
 	self,struct Event_dispatcher_descriptor_callback *,compare_pointer)
 DECLARE_OBJECT_FUNCTIONS(Event_dispatcher_descriptor_callback)
 DECLARE_INDEXED_LIST_FUNCTIONS(Event_dispatcher_descriptor_callback)
 DECLARE_FIND_BY_IDENTIFIER_IN_INDEXED_LIST_FUNCTION(Event_dispatcher_descriptor_callback, \
 	self,struct Event_dispatcher_descriptor_callback *,compare_pointer)
+#endif /* defined (USE_GENERIC_EVENT_DISPATCHER) */
 #endif /* defined (WIN32_USER_INTERFACE) else */
 
 static struct Event_dispatcher_timeout_callback *CREATE(Event_dispatcher_timeout_callback)(
@@ -967,10 +959,11 @@ Creates a connection to a event_dispatcher of the specified type.
 #if defined (WIN32_USER_INTERFACE)
 		event_dispatcher->socket_list = 
 			CREATE(LIST(Fdio))();
-#else /* defined (WIN32_USER_INTERFACE) */
+#endif /* defined (WIN32_USER_INTERFACE) */
+#if defined (USE_GENERIC_EVENT_DISPATCHER)
 		event_dispatcher->descriptor_list = 
 			CREATE(LIST(Event_dispatcher_descriptor_callback))();
-#endif /* defined (WIN32_USER_INTERFACE) */
+#endif /* defined (USE_GENERIC_EVENT_DISPATCHER) */
 		event_dispatcher->timeout_list = 
 			CREATE(LIST(Event_dispatcher_timeout_callback))();
 		event_dispatcher->idle_list = 
@@ -1019,13 +1012,14 @@ Destroys a Event_dispatcher object
 			DESTROY(LIST(Fdio))
 				(&event_dispatcher->socket_list);
 		}
-#else /* defined (WIN32_USER_INTERFACE) */
+#endif /* defined (WIN32_USER_INTERFACE) */
+#if defined (USE_GENERIC_EVENT_DISPATCHER)
 		if (event_dispatcher->descriptor_list)
 		{
 			DESTROY(LIST(Event_dispatcher_descriptor_callback))
 				(&event_dispatcher->descriptor_list);
 		}
-#endif /* defined (WIN32_USER_INTERFACE) */
+#endif /* defined (USE_GENERIC_EVENT_DISPATCHER) */
 		if (event_dispatcher->timeout_list)
 		{
 			DESTROY(LIST(Event_dispatcher_timeout_callback))
@@ -2529,7 +2523,7 @@ previously set will be cancelled.
 
 	return (1);
 } /* Fdio_set_write_callback (glib version) */
-#elif defined(XTAPP_CONTEXT)
+#elif defined(USE_XTAPP_CONTEXT)
 
 Fdio_id Event_dispatcher_create_Fdio(struct Event_dispatcher *dispatcher,
 	Cmiss_native_socket_t descriptor)
