@@ -332,9 +332,8 @@ ifeq ($(SYSNAME:CYGWIN%=),)# CYGWIN
       OPTIMISATION_FLAGS = -g
       COMPILE_DEFINES = -DREPORT_GL_ERRORS -DUSE_PARAMETER_ON
       COMPILE_FLAGS = 
-      # A bug with gcc on esp56 stops -Wformat from working */
-      STRICT_FLAGS = -W -Wall -Wno-parentheses -Wno-switch -Wno-format -Werror
-      CPP_STRICT_FLAGS = -W -Wall -Wno-parentheses -Wno-switch -Wno-format -Werror
+      STRICT_FLAGS = -W -Wall -Wno-parentheses -Wno-switch -Werror
+      CPP_STRICT_FLAGS = -W -Wall -Wno-parentheses -Wno-switch -Wno-undefined-parameter -Werror
       DIGITAL_MEDIA_NON_STRICT_FLAGS = 
       DIGITAL_MEDIA_NON_STRICT_FLAGS_PATTERN = NONE # Must specify a pattern that doesn't match */
       TARGET_TYPE_FLAGS =
@@ -429,7 +428,7 @@ ifeq ($(USER_INTERFACE),MOTIF_USER_INTERFACE)
 
 UID2UIDH = uid2uidh
 UID2UIDH_BIN := $(UTILITIES_PATH)/$(UID2UIDH)
-ifneq ($(wildcard $(UID2UIDH_BIN),)
+ifneq ($(wildcard $(UID2UIDH_BIN)),)
    UID2UIDH_FOUND = true
 endif
 
