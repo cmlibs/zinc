@@ -780,7 +780,7 @@ int Scene_viewer_get_zoom_rate(struct Scene_viewer *scene_viewer,
 LAST MODIFIED : 14 February 2005
 
 DESCRIPTION :
-Gets the scene viewer zoom rate.
+Gets the scene viewer tumble rate.
 ==============================================================================*/
 
 int Scene_viewer_set_zoom_rate(struct Scene_viewer *scene_viewer,
