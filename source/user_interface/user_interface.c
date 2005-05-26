@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : user_interface.c
 
-LAST MODIFIED : 24 July 2002
+LAST MODIFIED : 26 May 2005
 
 DESCRIPTION :
 Functions for opening and closing the user interface.
@@ -469,8 +469,15 @@ This function is called to process X connections.
 
 #if defined (MOTIF)
 #if ! defined (USE_XTAPP_CONTEXT)
-static int User_interface_additional_X_callback(int file_descriptor, 
-	void *user_interface_void)
+struct additional_X_connection
+{
+	Fdio_id fdio;
+	struct User_interface *user_interface;
+	Cmiss_native_socket_t fd;
+};
+
+static int User_interface_additional_X_callback(Fdio_id fdio,
+	void *axc_void)
 /*******************************************************************************
 LAST MODIFIED : 6 March 2002
 
@@ -479,12 +486,15 @@ This function is called to process X connections.
 ==============================================================================*/
 {
 	int return_code;
-	struct User_interface *user_interface;
+	struct additional_X_connection *axc;
 
 	ENTER(User_interface_X_callback);
-	if (user_interface=(struct User_interface *)user_interface_void)
+	USE_PARAMETER(fdio);
+
+	if ((axc=(struct additional_X_connection *)axc_void))
 	{
-		XProcessInternalConnection(user_interface->display, file_descriptor);
+		XProcessInternalConnection(axc->user_interface->display,
+			axc->fd);
 		return_code = 1;
 	}
 	else
@@ -512,29 +522,44 @@ DESCRIPTION :
 This function is called to register and deregister X connections.
 ==============================================================================*/
 {
-	struct Event_dispatcher_descriptor_callback *handler;
+	Fdio_id fdio;
+	struct additional_X_connection *axc;
 	struct User_interface *user_interface;
 
 	ENTER(User_interface_X_connection_callback);
 	USE_PARAMETER(display);
-	if (user_interface=(struct User_interface *)user_interface_void)
+	if ((user_interface=(struct User_interface *)user_interface_void))
 	{
 		switch (opening)
 		{
 			case True:
 			{
-				if (handler = Event_dispatcher_add_simple_descriptor_callback(
-					user_interface->event_dispatcher, file_descriptor,
-					User_interface_additional_X_callback, user_interface_void))
+				fdio = Event_dispatcher_create_Fdio(
+					user_interface->event_dispatcher,
+					file_descriptor);
+				if (!fdio)
 				{
-					*watch_data = (void *)handler;
+					*watch_data = NULL;
+				}
+				else
+				{
+					ALLOCATE(axc,
+						struct additional_X_connection, 1);
+					axc->fdio = fdio;
+					axc->user_interface = user_interface;
+					axc->fd = file_descriptor;
+					*watch_data = (void*)axc;
+					Fdio_set_read_callback(fdio,
+						User_interface_additional_X_callback,
+						user_interface_void);
 				}
 			} break;
 			case False:
 			{
-				handler = (struct Event_dispatcher_descriptor_callback *)*watch_data;
-				Event_dispatcher_remove_descriptor_callback(
-					user_interface->event_dispatcher, handler);
+				axc = (struct additional_X_connection*)*watch_data;
+
+				DESTROY(Fdio)(&axc->fdio);
+				DEALLOCATE(axc);
 			} break;
 			default:
 			{

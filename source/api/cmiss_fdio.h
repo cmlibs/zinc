@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : api/cmiss_io.h
 
-LAST MODIFIED : 15 February, 2005
+LAST MODIFIED : 26 May 2005
 
 DESCRIPTION :
 The public interface to the Cmiss_IO object.
@@ -54,6 +54,13 @@ the application is notified by the operating system of a closure event.
 
 Cmiss_fdio_id Cmiss_fdio_package_create_Cmiss_fdio(Cmiss_fdio_package_id package,
 	Cmiss_native_socket_t descriptor);
+/*******************************************************************************
+LAST MODIFIED : 28 February 2005
+
+DESCRIPTION :
+Creates and Cmiss_fdio object which can be used to add callbacks to the 
+<descriptor>.
+==============================================================================*/
 
 int DESTROY(Cmiss_fdio)(Cmiss_fdio_id* handle);
 /*******************************************************************************
@@ -65,9 +72,9 @@ descriptor itself must still be closed. This should be called as soon as the
 application is notified by the operating system of a closure event.
 ==============================================================================*/
 
-typedef void (*Cmiss_fdio_callback)(Cmiss_fdio_id handle, void *user_data);
+typedef int (*Cmiss_fdio_callback)(Cmiss_fdio_id handle, void *user_data);
 /*******************************************************************************
-LAST MODIFIED : 14 February 2005
+LAST MODIFIED : 26 May 2005
 
 DESCRIPTION :
 The type used for all I/O callbacks.

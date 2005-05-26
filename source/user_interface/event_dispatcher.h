@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : event_dispatcher.h
 
-LAST MODIFIED : 5 March 2002
+LAST MODIFIED : 26 May 2005
 
 DESCRIPTION :
 Routines for managing the main event loop in cmiss and dispatching events on
@@ -23,6 +23,8 @@ registered file descriptors to the correct callbacks.
 #include <general/time.h>
 #define USE_GENERIC_EVENT_DISPATCHER
 #endif /* switch (USER_INTERFACE) */
+
+#include "user_interface/fd_io.h"
 
 /*
 Global types
@@ -52,15 +54,6 @@ DESCRIPTION :
 	int max_timeout_ns;
 };
 #endif /* defined (USE_GENERIC_EVENT_DISPATCHER) */
-
-typedef int Event_dispatcher_simple_descriptor_callback_function(
-	int file_descriptor, void *user_data);
-/*******************************************************************************
-LAST MODIFIED : 13 November 2002
-
-DESCRIPTION :
-
-==============================================================================*/
 
 #if defined (USE_GENERIC_EVENT_DISPATCHER)
 typedef int Event_dispatcher_descriptor_query_function(
@@ -141,18 +134,6 @@ DESCRIPTION :
 Destroys an Event_dispatcher object
 ==============================================================================*/
 
-struct Event_dispatcher_descriptor_callback *Event_dispatcher_add_simple_descriptor_callback(
-	struct Event_dispatcher *event_dispatcher, int file_descriptor,
-	Event_dispatcher_simple_descriptor_callback_function *callback_function,
-	void *user_data); 
-/*******************************************************************************
-LAST MODIFIED : 13 November 2002
-
-DESCRIPTION :
-A simple descriptor callback used when only a single read <file_descriptor> is 
-required to be tested for the callback.
-==============================================================================*/
-
 #if defined (USE_GENERIC_EVENT_DISPATCHER)
 struct Event_dispatcher_descriptor_callback *Event_dispatcher_add_descriptor_callback(
 	struct Event_dispatcher *event_dispatcher,
@@ -165,9 +146,8 @@ LAST MODIFIED : 13 November 2002
 
 DESCRIPTION :
 This function is only implemented when using the GENERIC_EVENT_DISPATCHER.
-When using Xt or Gtk as the main loop only 
-Event_dispatcher_add_simple_descriptor_callback is fully implemented.
-In these cases callbacks added using this function will just be ignored.
+Using this interface to get a read or write callback is deprecated, you should
+instead use the fdio API(api/cmiss_fdio.h).
 ==============================================================================*/
 #endif /* defined (USE_GENERIC_EVENT_DISPATCHER) */
 
@@ -178,8 +158,19 @@ int Event_dispatcher_remove_descriptor_callback(
 LAST MODIFIED : 13 November 2002
 
 DESCRIPTION :
-Remove the <callback_id> created by either Event_dispatcher_add_descriptor_callback
-or Event_dispatcher_add_simple_descriptor_callback from the <event_dispatcher>.
+Remove the <callback_id> created by Event_dispatcher_add_descriptor_callback
+from the <event_dispatcher>.
+==============================================================================*/
+
+Fdio_id Event_dispatcher_create_Fdio(struct Event_dispatcher *event_dispatcher,
+	Cmiss_native_socket_t descriptor);
+/*******************************************************************************
+LAST MODIFIED : 16 May 2005
+
+DESCRIPTION :
+Create a file-descriptor I/O object from an event dispatcher and a descriptor.
+Note that Cmiss_native_socket_t may be a file-descriptor int if you are on a
+*nix platform, or a SOCKET type on Win32.
 ==============================================================================*/
 
 struct Event_dispatcher_timeout_callback *Event_dispatcher_add_timeout_callback_at_time(
@@ -269,29 +260,4 @@ DESCRIPTION :
 ==============================================================================*/
 #endif /* defined (USE_XTAPP_CONTEXT) */
 
-#if defined WIN32_USER_INTERFACE
-typedef void (*Event_dispatcher_win32_socket_callback)(SOCKET,void*);
-int Event_dispatcher_set_socket_read_callback(struct Event_dispatcher *dispatcher,
-	SOCKET socket,
-	Event_dispatcher_win32_socket_callback socket_cb, void *user_data);
-/*******************************************************************************
-LAST MODIFIED : 16 February 2005
-
-DESCRIPTION :
-Sets a callback that is called when the socket is ready to read. Pass NULL
-as <socket_cb> to cancel the callback. The callback is also called if the
-socket has been closed.
-==============================================================================*/
-
-int Event_dispatcher_set_socket_write_callback(struct Event_dispatcher *dispatcher,
-	SOCKET socket,
-	Event_dispatcher_win32_socket_callback socket_cb, void *user_data);
-/*******************************************************************************
-LAST MODIFIED : 16 February 2005
-
-DESCRIPTION :
-Sets a callback that is called when the socket is ready to write. Pass NULL
-as <socket_cb> to cancel the callback.
-==============================================================================*/
-#endif /* defined (WIN32_USER_INTERFACE) */
 #endif /* !defined (EVENT_DISPATCHER_H) */

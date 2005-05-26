@@ -34,7 +34,8 @@ DESCRIPTION :
 {
 	char *command_prompt;
 	struct Event_dispatcher *event_dispatcher;
-	struct Event_dispatcher_descriptor_callback *console_callback;
+	Cmiss_native_socket_t fd;
+	Fdio_id console_fdio;
 	struct Execute_command *execute_command;
 }; /* struct Console */
 
@@ -43,7 +44,7 @@ Module functions
 ----------------
 */
 
-int Console_callback(int file_descriptor, void *console_void)
+static int Console_callback(Fdio_id fdio, void *console_void)
 /*******************************************************************************
 LAST MODIFIED : 27 June 2002
 
@@ -59,9 +60,12 @@ This function is called to process stdin from a console.
 	struct Console *console;
 
 	ENTER(Console_callback);
+
+	USE_PARAMETER(fdio);
+
 	if (console=(struct Console *)console_void)
 	{
-		length = read(file_descriptor, buffer, MAX_CONSOLE_BUFFER);
+		length = read(console->fd, buffer, MAX_CONSOLE_BUFFER);
 		if (length)
 		{
 			/* Look for control codes */
@@ -75,7 +79,7 @@ This function is called to process stdin from a console.
 				for (i = 0 ; i < prompt_length ; i++)
 				{
 					/* Put the prompt out to the terminal as if it had been typed in */
-					ioctl(file_descriptor, TIOCSTI, console->command_prompt + i);
+					ioctl(console->fd, TIOCSTI, console->command_prompt + i);
 				}
 #else
 				printf("%s", console->command_prompt);
@@ -118,18 +122,21 @@ Create the structures and retrieve the command window from the uil file.
 		{
 			console->command_prompt = (char *)NULL;
 			console->execute_command=execute_command;
-			console->event_dispatcher=event_dispatcher;
-#if !defined(WIN32_USER_INTERFACE)
-			if (!(console->console_callback = Event_dispatcher_add_simple_descriptor_callback(
-				event_dispatcher, file_descriptor,
-				Console_callback, (void *)console)))
+			console->event_dispatcher = event_dispatcher;
+			console->fd = file_descriptor;
+			console->console_fdio =
+				Event_dispatcher_create_Fdio(event_dispatcher, file_descriptor);
+
+			if (!console->console_fdio)
 			{
 				display_message(ERROR_MESSAGE,
 					"CREATE(Console).  Unable to register callback for console.");
 				DEALLOCATE(console);
 				console=(struct Console *)NULL;
 			}
-#endif /* !defined(WIN32_USER_INTERFACE) */
+
+			Fdio_set_read_callback(console->console_fdio, Console_callback,
+				(void*)console);
 		}
 		else
 		{
@@ -161,10 +168,7 @@ DESCRIPTION:
 
 	if (console_pointer && (console = *console_pointer))
 	{
-#if !defined(WIN32_USER_INTERFACE)
-		Event_dispatcher_remove_descriptor_callback(console->event_dispatcher,
-			console->console_callback);
-#endif
+		DESTROY(Fdio)(&console->console_fdio);
 		DEALLOCATE(*console_pointer);
 		return_code = 1;
 	}

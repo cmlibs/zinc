@@ -43,7 +43,7 @@ Io_device structure.
 	char *file_descriptor_flags;
 	struct Interpreter *interpreter;
 	struct User_interface *user_interface;
-	struct Event_dispatcher_descriptor_callback *callback_id;
+	Fdio_id fdio;
 #endif /* defined (SELECT_DESCRIPTORS) */
 	int access_count;
 };
@@ -62,7 +62,7 @@ Module functions
 DECLARE_INDEXED_LIST_MODULE_FUNCTIONS(Io_device,name,char *,strcmp)
 
 #if defined (SELECT_DESCRIPTORS)
-static int Io_device_descriptor_callback(int filehandle, void *device_void)
+static int Io_device_descriptor_callback(Fdio_id fdio, void *device_void)
 /*******************************************************************************
 LAST MODIFIED : 16 May 2001
 
@@ -77,7 +77,7 @@ Called when this device has file descriptors that are waiting.
 	struct Io_device *device;
 
 	ENTER(Io_device_descriptor_callback);
-	USE_PARAMETER(filehandle);
+	USE_PARAMETER(fdio);
 	if ((device = (struct Io_device *)device_void))
 	{
 #if defined (DEBUG)
@@ -146,7 +146,7 @@ Allocates memory and assigns fields for a device.
 			device->perl_action = (char *)NULL;
 			device->file_descriptor_flags = (char *)NULL;
 			device->interpreter = (struct Interpreter *)NULL;
-			device->callback_id = (struct Event_dispatcher_descriptor_callback *)NULL;
+			device->fdio = (Fdio_id)NULL;
 #endif /* defined (SELECT_DESCRIPTORS) */
 			strcpy(device->name,name);
 		}
@@ -199,11 +199,9 @@ and sets <*device> to NULL.
 			{
 				DEALLOCATE(device->file_descriptor_flags);
 			}
-			if (device->callback_id)
+			if (device->fdio)
 			{
-				Event_dispatcher_remove_descriptor_callback(
-					User_interface_get_event_dispatcher(device->user_interface),
-					device->callback_id);
+				DESTROY(Fdio)(&device->fdio);
 			}
 #endif /* defined (SELECT_DESCRIPTORS) */
 			DEALLOCATE(*device_ptr);
@@ -301,9 +299,12 @@ between the start and end detection are assumed to belong to the <device>.
 					if (-1 != fcntl(i, F_GETFD))
 					{
 						printf ("Adding Io_device callback %d\n", i);
-						device->callback_id = Event_dispatcher_add_simple_descriptor_callback(
+						device->fdio = Event_dispatcher_create_Fdio(
 							User_interface_get_event_dispatcher(device->user_interface),
-							i, Io_device_descriptor_callback, (void *)device);
+							i);
+						Fdio_set_read_callback(device->fdio,
+							Io_device_descriptor_callback,
+							(void *)device);
 					}
 				}
 			}
