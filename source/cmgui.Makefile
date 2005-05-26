@@ -1048,7 +1048,8 @@ USER_INTERFACE_SRCS = \
 	user_interface/filedir.c \
 	user_interface/message.c \
 	user_interface/user_interface.c \
-	user_interface/idle.c
+	user_interface/idle.c \
+	user_interface/timer.c
 USER_INTERFACE_INTERFACE_SRCS = \
 	user_interface/call_work_procedures.c \
 	user_interface/printer.c
