@@ -248,6 +248,7 @@ Functions for executing cmiss commands.
 #endif /* defined (UNEMAP) */
 #include "user_interface/fd_io.h"
 #include "user_interface/idle.h"
+#include "user_interface/timer.h"
 
 /*
 Module types
@@ -25364,6 +25365,29 @@ Gets an Idle_package for this <command_data>
 	LEAVE;
 
 	return (idle_package);
+}
+
+Timer_package_id Cmiss_command_data_get_timer_package(
+	struct Cmiss_command_data *command_data
+)
+/*******************************************************************************
+LAST MODIFIED : 11 April 2005
+
+DESCRIPTION :
+Gets a Timer_package for this <command_data>
+==============================================================================*/
+{
+	struct Timer_package *timer_package;
+
+	ENTER(Cmiss_command_data_get_timer_package);
+	timer_package = (struct Timer_package *)NULL;
+	if (command_data)
+	{
+		timer_package = CREATE(Timer_package)(command_data->event_dispatcher);
+	}
+	LEAVE;
+
+	return (timer_package);
 }
 
 struct MANAGER(Computed_field) *Cmiss_command_data_get_computed_field_manager(
