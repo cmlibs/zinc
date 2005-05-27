@@ -158,7 +158,7 @@ static void process_keyboard(
 #endif /* defined (WIN32_SYSTEM) */
 #if defined (UNIX)
 static int process_keyboard(
-	int source, void *dummy_client_data
+	Fdio_id fdio, void *dummy_client_data
 #endif /* defined (UNIX) */
 	)
 {
@@ -166,7 +166,7 @@ static int process_keyboard(
 	int return_code;
 
 	USE_PARAMETER(dummy_client_data);
-	USE_PARAMETER(source);
+	USE_PARAMETER(fdio);
 	scanf("%c",&option);
 	if (isalnum(option))
 	{
@@ -878,13 +878,17 @@ Global functions
 int main(void)
 {
 	int return_code;
+#if defined (UNIX)
+	Fdio_id fdio_handle;
+#endif /* defined (UNIX) */
 
 	return_code=1;
 #if defined (UNIX)
 	if (event_dispatcher=CREATE(Event_dispatcher)())
 	{
-		if (Event_dispatcher_add_simple_descriptor_callback(event_dispatcher,
-			fileno(stdin),process_keyboard,NULL))
+		if ((fdio_handle=Event_dispatcher_create_Fdio(event_dispatcher,
+			fileno(stdin)))&&
+			Fdio_set_read_callback(fdio_handle, process_keyboard, NULL))
 		{
 			print_menu();
 			Event_dispatcher_main_loop(event_dispatcher);

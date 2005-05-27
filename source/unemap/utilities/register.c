@@ -694,7 +694,7 @@ static void process_keyboard(
 #endif /* defined (WIN32_SYSTEM) */
 #if defined (UNIX)
 static int process_keyboard(
-	int source, void *process_keyboard_data_void
+	Fdio_id fdio, void *process_keyboard_data_void
 #endif /* defined (UNIX) */
 	)
 {
@@ -743,7 +743,7 @@ static int process_keyboard(
 #endif /* defined (CALIBRATE_SQUARE_WAVE) */
 
 #if defined (UNIX)
-	USE_PARAMETER(source);
+	USE_PARAMETER(fdio);
 	process_keyboard_data=
 		(struct Process_keyboard_data *)process_keyboard_data_void;
 #endif /* defined (UNIX) */
@@ -6564,6 +6564,9 @@ int main(void)
 	short int *samples;
 	unsigned long number_of_samples,sampling_delay;
 	struct Process_keyboard_data process_keyboard_data;
+#if defined (UNIX)
+	Fdio_id fdio_handle;
+#endif /* defined (UNIX) */
 
 	/* initialize */
 	return_code=1;
@@ -6639,9 +6642,10 @@ int main(void)
 				process_keyboard_data.number_of_channels=number_of_channels;
 				process_keyboard_data.number_of_samples=number_of_samples;
 #if defined (UNIX)
-				if (Event_dispatcher_add_simple_descriptor_callback(
-					event_dispatcher, fileno(stdin),
-					process_keyboard, &process_keyboard_data))
+				if ((fdio_handle=Event_dispatcher_create_Fdio(event_dispatcher,
+					fileno(stdin)))&&
+					Fdio_set_read_callback(fdio_handle, process_keyboard,
+					(void *)&process_keyboard_data))
 				{
 #endif /* defined (UNIX) */
 					print_menu(channel_number,number_of_channels);
