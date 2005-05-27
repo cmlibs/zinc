@@ -112,10 +112,8 @@ endif # SYSNAME == CYGWIN%=
 TARGET_SUFFIX = $(TARGET_ABI_SUFFIX)$(TARGET_USER_INTERFACE_SUFFIX)$(MAINLOOP_SUFFIX)$(TARGET_STATIC_LINK_SUFFIX)$(TARGET_DEBUG_SUFFIX)$(TARGET_MEMORYCHECK_SUFFIX)
 BIN_TARGET = $(TARGET_EXECUTABLE_BASENAME)$(TARGET_SUFFIX)$(TARGET_FILETYPE_SUFFIX)
 OBJECT_PATH=$(CMGUI_DEV_ROOT)/object/$(LIB_ARCH_DIR)/$(TARGET_EXECUTABLE_BASENAME)$(TARGET_USER_INTERFACE_SUFFIX)$(MAINLOOP_SUFFIX)$(TARGET_DEBUG_SUFFIX)
-PRODUCT_OBJECT_PATH=$(PRODUCT_PATH)/object/$(LIB_ARCH_DIR)/$(TARGET_EXECUTABLE_BASENAME)$(TARGET_USER_INTERFACE_SUFFIX)$(MAINLOOP_SUFFIX)$(TARGET_DEBUG_SUFFIX)
 ifeq ($(USER_INTERFACE), MOTIF_USER_INTERFACE)
    UIDH_PATH=$(CMGUI_DEV_ROOT)/uidh/$(LIB_ARCH_DIR)/$(TARGET_EXECUTABLE_BASENAME)
-   PRODUCT_UIDH_PATH=$(PRODUCT_PATH)/uidh/$(LIB_ARCH_DIR)/$(TARGET_EXECUTABLE_BASENAME)
 endif # $(USER_INTERFACE) == MOTIF_USER_INTERFACE
 
 ifeq ($(findstring lib,$(TARGET)),lib)
@@ -141,7 +139,7 @@ $(warning $(BUILDING_MESSAGE))
 
 VPATH=$(BIN_PATH):$(UTILITIES_PATH):$(OBJECT_PATH):$(UIDH_PATH)
 
-SOURCE_DIRECTORY_INC = -I$(SOURCE_PATH) -I$(PRODUCT_SOURCE_PATH)
+SOURCE_DIRECTORY_INC = -I$(SOURCE_PATH)
 
 ifeq ($(SYSNAME:IRIX%=),)
    PLATFORM_DEFINES = -DSGI -Dmips -DCMGUI 
@@ -1256,13 +1254,8 @@ $(OBJECT_PATH)/version.o.h : $(OBJS) cmgui.Makefile
 	sed 's/"//;s/./#define VERSION "CMISS(cmgui) version 001.002.000  &/;s/.$$/&\\nCopyright 1996-2004, Auckland UniServices Ltd."/' < date.h >> $(OBJECT_PATH)/version.o.h
 
 $(MAIN_OBJ) : $(MAIN_SRC) $(OBJECT_PATH)/version.o.h $(INTERPRETER_LIB)
-	@if [ -f $*.c ]; then \
-		set -x; \
-		cat $(OBJECT_PATH)/version.o.h $*.c > $(OBJECT_PATH)/$*.o.c ; \
-	else \
-		set -x; \
-		cat $(OBJECT_PATH)/version.o.h $(PRODUCT_SOURCE_PATH)/$*.c > $(OBJECT_PATH)/$*.o.c ; \
-	fi
+	@set -x; \
+	cat $(OBJECT_PATH)/version.o.h $*.c > $(OBJECT_PATH)/$*.o.c ;
 	$(CC) -o $(OBJECT_PATH)/$*.o $(ALL_FLAGS) $(OBJECT_PATH)/$*.o.c;
 
 # We want to limit the dynamic symbols in the final executable so that
@@ -1580,11 +1573,7 @@ ifeq ($(MEMORYCHECK),true)
 		if [ ! -d $(OBJECT_PATH)/general ]; then \
 			mkdir -p $(OBJECT_PATH)/general; \
 		fi
-		if [ -f general/debug.c ]; then \
-			$(CC) -o $(OBJECT_PATH)/general/debug_memory_check.o $(ALL_FLAGS) -DMEMORY_CHECKING general/debug.c; \
-		else \
-			$(CC) -o $(OBJECT_PATH)/general/debug_memory_check.o $(ALL_FLAGS) -DMEMORY_CHECKING $(PRODUCT_PATH)/general/debug.c; \
-		fi
+		$(CC) -o $(OBJECT_PATH)/general/debug_memory_check.o $(ALL_FLAGS) -DMEMORY_CHECKING general/debug.c;
 
    general/debug_memory_check.d : general/debug.c general/debug.h
 		@if [ ! -d $(OBJECT_PATH)/$(*D) ]; then \

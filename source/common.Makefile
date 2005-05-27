@@ -223,7 +223,6 @@ ifeq ($(SYSNAME),Linux)
       OPTIMISATION_FLAGS = -g
       COMPILE_DEFINES = -DREPORT_GL_ERRORS -DUSE_PARAMETER_ON
       COMPILE_FLAGS = -fPIC
-      # A bug with gcc on esp56 stops -Wformat from working */
       STRICT_FLAGS = -W -Wall -Wno-parentheses -Wno-switch -Werror
       CPP_STRICT_FLAGS = -W -Wall -Wno-parentheses -Wno-switch -Wno-unused-parameter -Werror
       DIGITAL_MEDIA_NON_STRICT_FLAGS = 
@@ -261,8 +260,8 @@ ifeq ($(SYSNAME),AIX)
    endif # DEBUG != true
    COMPILE_FLAGS = 
    COMPILE_DEFINES = 
-   STRICT_FLAGS = 
-   CPP_STRICT_FLAGS = 
+   STRICT_FLAGS =  -W -Wall -Wno-parentheses -Wno-switch -Werror
+   CPP_STRICT_FLAGS = -W -Wall -Wno-parentheses -Wno-switch -Wno-unused-parameter -Werror
    DIGITAL_MEDIA_NON_STRICT_FLAGS = 
    DIGITAL_MEDIA_NON_STRICT_FLAGS_PATTERN = NONE # Must specify a pattern that doesn't match
    ifeq ($(ABI),64)
@@ -394,17 +393,17 @@ ifdef NO_MAKE_DEPEND
 	@:
 else # NO_MAKE_DEPEND
 %.d :
-	if [ ! -d $(OBJECT_PATH)/$(subst $(PRODUCT_OBJECT_PATH)/,,$(subst $(OBJECT_PATH)/,,$(*D))) ]; then \
-		mkdir -p $(OBJECT_PATH)/$(subst $(PRODUCT_OBJECT_PATH)/,,$(subst $(OBJECT_PATH)/,,$(*D))) ; \
+	if [ ! -d $(OBJECT_PATH)/$(subst $(OBJECT_PATH)/,,$(*D)) ]; then \
+		mkdir -p $(OBJECT_PATH)/$(subst $(OBJECT_PATH)/,,$(*D)) ; \
 	fi
-	@stem_name=$(subst $(PRODUCT_OBJECT_PATH)/,,$(subst $(OBJECT_PATH)/,,$*)); \
-   source_name=$(firstword $(wildcard $(SOURCE_PATH)/$(subst $(PRODUCT_OBJECT_PATH)/,,$(subst $(OBJECT_PATH)/,,$*)).c $(SOURCE_PATH)/$(subst $(PRODUCT_OBJECT_PATH)/,,$(subst $(OBJECT_PATH)/,,$*)).cpp $(PRODUCT_SOURCE_PATH)/$(subst $(PRODUCT_OBJECT_PATH)/,,$(subst $(OBJECT_PATH)/,,$*)).c $(PRODUCT_SOURCE_PATH)/$(subst $(PRODUCT_OBJECT_PATH)/,,$(subst $(OBJECT_PATH)/,,$*)).cpp)) ; \
+	@stem_name=$(subst $(OBJECT_PATH)/,,$*); \
+   source_name=$(firstword $(wildcard $(SOURCE_PATH)/$(subst $(OBJECT_PATH)/,,$*).c $(SOURCE_PATH)/$(subst $(OBJECT_PATH)/,,$*).cpp)) ; \
 	set -x ; $(MAKEDEPEND) $(ALL_FLAGS) $(STRICT_FLAGS) $${source_name} 2> /dev/null | \
-	sed -e "s%^.*\.o%$${stem_name}.o $(OBJECT_PATH)/$${stem_name}.d%;s%$(SOURCE_PATH)/%%g;s%$(PRODUCT_SOURCE_PATH)/%%g;s%/usr/local/.*\.h%%g" > $(OBJECT_PATH)/$${stem_name}.d ;
+	sed -e "s%^.*\.o%$${stem_name}.o $(OBJECT_PATH)/$${stem_name}.d%;s%$(SOURCE_PATH)/%%g" > $(OBJECT_PATH)/$${stem_name}.d ;
 ifeq ($(USER_INTERFACE), MOTIF_USER_INTERFACE)
    # Fix up the uidh references
-	@stem_name=$(subst $(PRODUCT_OBJECT_PATH),,$(subst $(OBJECT_PATH)/,,$*)); \
-	sed -e 's%$(UIDH_PATH)/%%g;s%$(PRODUCT_UIDH_PATH)/%%g' $(OBJECT_PATH)/$${stem_name}.d > $(OBJECT_PATH)/$${stem_name}.d2 ; \
+	@stem_name=$(subst $(OBJECT_PATH)/,,$*); \
+	sed -e 's%$(UIDH_PATH)/%%g' $(OBJECT_PATH)/$${stem_name}.d > $(OBJECT_PATH)/$${stem_name}.d2 ; \
 	mv $(OBJECT_PATH)/$${stem_name}.d2 $(OBJECT_PATH)/$${stem_name}.d
 endif # $(USER_INTERFACE) == MOTIF_USER_INTERFACE
 endif # NO_MAKE_DEPEND
@@ -457,8 +456,6 @@ define BuildNormalTarget
 	fi
 	$(BUILD_OBJECT_LIST)
 	cd $(OBJECT_PATH) ; \
-	rm -f product_object ; \
-	ln -s $(PRODUCT_OBJECT_PATH) product_object ; \
 	$(LINK) -o $(1).tmp $(ALL_FLAGS) `cat $(1).list` $(4) && \
 	mv $(1).tmp $(2)/$(1) ;
 endef
@@ -473,8 +470,6 @@ define BuildStaticLibraryTarget
 	fi
 	$(BUILD_OBJECT_LIST)
 	cd $(OBJECT_PATH) ; \
-	rm -f product_object ; \
-	ln -s $(PRODUCT_OBJECT_PATH) product_object ; \
 	ar $(AR_FLAGS) cr $(1).tmp `cat $(1).list` && \
 	mv $(1).tmp $(2)/$(1) ;
 endef
@@ -489,8 +484,6 @@ define BuildSharedLibraryTarget
 	fi
 	$(BUILD_OBJECT_LIST)
 	cd $(OBJECT_PATH) ; \
-	rm -f product_object ; \
-	ln -s $(PRODUCT_OBJECT_PATH) product_object ; \
 	if [ $(SO_LIB_SUFFIX) == ".dll" ]; then \
 		$(LINK) -shared -o $(1).dll  $(ALL_FLAGS) -Wl,--out-implib,$(1).dll.a -Wl,--kill-at -Wl,--output-def,$(1).def -Wl,--whole-archive `cat $(1).list`  -Wl,--no-whole-archive $(4) $(6) && cp $(1).dll $(2)/$(1).dll && cp $(1).dll.a $(2)/$(1).dll.a && cp $(1).def $(2)/$(1).def; \
 	else \
