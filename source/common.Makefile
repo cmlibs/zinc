@@ -260,8 +260,8 @@ ifeq ($(SYSNAME),AIX)
    endif # DEBUG != true
    COMPILE_FLAGS = 
    COMPILE_DEFINES = 
-   STRICT_FLAGS =  -W -Wall -Wno-parentheses -Wno-switch -Werror
-   CPP_STRICT_FLAGS = -W -Wall -Wno-parentheses -Wno-switch -Wno-unused-parameter -Werror
+   STRICT_FLAGS = 
+   CPP_STRICT_FLAGS = 
    DIGITAL_MEDIA_NON_STRICT_FLAGS = 
    DIGITAL_MEDIA_NON_STRICT_FLAGS_PATTERN = NONE # Must specify a pattern that doesn't match
    ifeq ($(ABI),64)
