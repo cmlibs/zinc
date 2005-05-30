@@ -61,8 +61,8 @@ cmgui cmgui-debug cmgui-static cmgui-static-debug cmgui64 cmgui64-debug : USER_I
 endif # SYSNAME == win32
 cmgui-static cmgui-static-debug : STATIC_LINK_OPTION=STATIC_LINK=$(STATIC_LINK)
 cmgui-static cmgui-static-debug : STATIC_LINK=true
-cmgui cmgui-static cmgui64 cmgui-console cmgui-gtk cmgui-gtkmain-gtk : DEBUG_OPTION=DEBUG=$(DEBUG)
-cmgui cmgui-static cmgui64 cmgui-console cmgui-gtk cmgui-gtkmain-gtk : DEBUG=false
+cmgui cmgui-static cmgui64 cmgui-console cmgui-gtk cmgui-gtk-gtkmain : DEBUG_OPTION=DEBUG=$(DEBUG)
+cmgui cmgui-static cmgui64 cmgui-console cmgui-gtk cmgui-gtk-gtkmain : DEBUG=false
 cmgui-debug cmgui-debug-memorycheck cmgui-static-debug cmgui64-debug cmgui-gtk-debug cmgui-gtk-gtkmain-debug : DEBUG_OPTION=DEBUG=$(DEBUG)
 cmgui-debug cmgui-debug-memorycheck cmgui-static-debug cmgui64-debug cmgui-gtk-debug cmgui-gtk-gtkmain-debug : DEBUG=true
 cmgui64 cmgui64-debug utilities64 : ABI_OPTION=ABI=$(ABI)
@@ -71,10 +71,10 @@ cmgui-debug-memorycheck : MEMORYCHECK_OPTION=MEMORYCHECK=$(MEMORYCHECK)
 cmgui-debug-memorycheck : MEMORYCHECK=true
 cmgui-console : USER_INTERFACE_OPTION=USER_INTERFACE=$(USER_INTERFACE)
 cmgui-console : USER_INTERFACE=CONSOLE_USER_INTERFACE
-cmgui-gtk cmgui-gtk-debug cmgui-gtkmain-gtk cmgui-gtk-gtkmain-debug : USER_INTERFACE_OPTION=USER_INTERFACE=$(USER_INTERFACE)
-cmgui-gtk cmgui-gtk-debug cmgui-gtkmain-gtk cmgui-gtk-gtkmain-debug : USER_INTERFACE=GTK_USER_INTERFACE
-cmgui-gtkmain-gtk cmgui-gtk-gtkmain-debug : USE_GTKMAIN_OPTION=USE_GTKMAIN=$(USE_GTKMAIN)
-cmgui-gtkmain-gtk cmgui-gtk-gtkmain-debug : USE_GTKMAIN=true
+cmgui-gtk cmgui-gtk-debug cmgui-gtk-gtkmain cmgui-gtk-gtkmain-debug : USER_INTERFACE_OPTION=USER_INTERFACE=$(USER_INTERFACE)
+cmgui-gtk cmgui-gtk-debug cmgui-gtk-gtkmain cmgui-gtk-gtkmain-debug : USER_INTERFACE=GTK_USER_INTERFACE
+cmgui-gtk-gtkmain cmgui-gtk-gtkmain-debug : USE_GTKMAIN_OPTION=USE_GTKMAIN=$(USE_GTKMAIN)
+cmgui-gtk-gtkmain cmgui-gtk-gtkmain-debug : USE_GTKMAIN=true
 
 utilities utilities64 : TARGET_OPTION=utilities
 utilities utilities64 : force
@@ -106,7 +106,7 @@ ifeq ($(SYSNAME),Linux)
    endif
 endif
 
-cmgui cmgui-debug cmgui-debug-memorycheck cmgui-static cmgui-static-debug cmgui64 cmgui64-debug cmgui-console cmgui-gtk cmgui-gtk-debug utilities cmgui-gtkmain-gtk cmgui-gtk-gtkmain-debug :
+cmgui cmgui-debug cmgui-debug-memorycheck cmgui-static cmgui-static-debug cmgui64 cmgui64-debug cmgui-console cmgui-gtk cmgui-gtk-debug utilities cmgui-gtk-gtkmain cmgui-gtk-gtkmain-debug :
 		cd source ; \
 		$(MAKE) -f $(SUBMAKEFILE) $(OPTIONS) ;
 
