@@ -138,7 +138,7 @@ cmgui-gtk-gtkmain-debug-lib :
 cmgui-gtk-gtkmain-static-lib :
 	$(MAKE) -f $(MAKEFILE) cmgui-gtk-gtkmain TARGET=static_lib ;
 cmgui-gtk-gtkmain-debug-static-lib:
-	$(MAKE) -f $(MAKEFILE) cmgui-gtk-gtkmain--debug TARGET=static_lib ;
+	$(MAKE) -f $(MAKEFILE) cmgui-gtk-gtkmain-debug TARGET=static_lib ;
 
 .NOTPARALLEL:
 
