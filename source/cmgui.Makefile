@@ -380,7 +380,7 @@ else # ! CELL
 endif # ! CELL 
 
 ifeq ($(USER_INTERFACE), MOTIF_USER_INTERFACE)
-   UIDH_INC = -I$(UIDH_PATH) -I$(PRODUCT_UIDH_PATH)
+   UIDH_INC = -I$(UIDH_PATH)
 endif # $(USER_INTERFACE) == MOTIF_USER_INTERFACE
 
 EXTERNAL_INPUT_DEFINES =
@@ -1589,7 +1589,7 @@ ifeq ($(MEMORYCHECK),true)
 		sed -e 's%^.*\.o%$*.o $(OBJECT_PATH)/$*.d%;s%$(SOURCE_PATH)/%%g;s%$(PRODUCT_SOURCE_PATH)/%%g' > $(OBJECT_PATH)/$*.d ;
    ifeq ($(USER_INTERFACE), MOTIF_USER_INTERFACE)
       # Fix up the uidh references
-		sed -e 's%$(UIDH_PATH)/%%g;s%$(PRODUCT_UIDH_PATH)/%%g' $(OBJECT_PATH)/$*.d > $(OBJECT_PATH)/$*.d2
+		sed -e 's%$(UIDH_PATH)/%%g' $(OBJECT_PATH)/$*.d > $(OBJECT_PATH)/$*.d2
 		mv $(OBJECT_PATH)/$*.d2 $(OBJECT_PATH)/$*.d
    endif # $(USER_INTERFACE) == MOTIF_USER_INTERFACE
 endif # $(MEMORYCHECK) == true
