@@ -558,7 +558,56 @@ The <bicubic> method using bicubic interpolating (spline filter) to generate a n
 				{
 				        case 1: 
 						{
-						        int j, k, d, org_step;
+						        if (image->dimension == 2)
+							{
+							        int x, y, k, n, xctr, yctr;
+								
+								for (y = 0; y < output_sizes[1]; y++)
+								{
+								        for (x = 0; x < output_sizes[0]; x++)
+									{
+									        xctr = (int)(((FE_value)x * ((FE_value)image->sizes[0] - 1.0) / ((FE_value)output_sizes[0]-1.0)));
+						                                yctr = (int)(((FE_value)y * ((FE_value)image->sizes[1] - 1.0) / ((FE_value)output_sizes[1]-1.0)));
+
+										n = yctr * (FE_value)image->sizes[0];
+										n += xctr;
+										
+										for (k = 0; k< image->depth; k++)
+										{
+										        result_index[k] = *(data_index + n * image->depth + k);
+										}
+										result_index += image->depth;
+									}
+								}
+							}
+							else if (image->dimension == 3)
+							{
+							        int x, y, z, n, k, xctr, yctr, zctr;
+								
+								for (z = 0; z < output_sizes[2]; z++)
+								{
+								        for (y = 0; y< output_sizes[1]; y++)
+									{
+									        for (x =0; x < output_sizes[0]; x++)
+										{
+			                                                                 xctr = (int)(((FE_value)x * ((FE_value)image->sizes[0] - 1.0) / ((FE_value)output_sizes[0]-1.0)));
+						                                         yctr = (int)(((FE_value)y * ((FE_value)image->sizes[1] - 1.0) / ((FE_value)output_sizes[1]-1.0)));
+						                                         zctr = (int)(((FE_value)z * ((FE_value)image->sizes[2] - 1.0) / ((FE_value)output_sizes[2]-1.0)));
+										         n = yctr* (FE_value)image->sizes[0];
+										         n += xctr;
+										         n += zctr* (FE_value)image->sizes[0] * (FE_value)image->sizes[1];
+										         
+										         for (k = 0; k< image->depth; k++)
+										         {
+										                  result_index[k] = *(data_index + n * image->depth + k);
+										         }
+										         result_index += image->depth;
+										}
+									}
+								}
+								
+							}
+							/*int j, k, d, org_step;
 							FE_value n;
 					        	for (i = 0; i < out_storage_size/image->depth; i++)
 					        	{
@@ -577,7 +626,7 @@ The <bicubic> method using bicubic interpolating (spline filter) to generate a n
 							        	result_index[k] = *(data_index + ((int)n) * image->depth + k);
 								}
 								result_index += image->depth;	      
-					        	}
+					        	}*/
 					        	break;
 						}
 					case 2: 
