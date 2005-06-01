@@ -474,22 +474,22 @@ the <field>. These parameters will be used in image processing.
 			{
 			        (*sizes)[0] = w;
 				(*sizes)[1] = h;
-				(*minimums)[0]=data->minimum;
-				(*minimums)[1]=data->minimum;
-				(*maximums)[0]=data->maximum;
-				(*maximums)[1]=data->maximum;
+				(*minimums)[0]=0.0;
+				(*minimums)[1]=0.0;
+				(*maximums)[0]=1.0;
+				(*maximums)[1]=1.0;
 			}
 			else if (*dimension == 3)
 			{
 			        (*sizes)[0] = w;
 				(*sizes)[1] = h;
 				(*sizes)[2] = d;
-				(*minimums)[0]=data->minimum;
-				(*minimums)[1]=data->minimum;
-				(*minimums)[2]=data->minimum;
-				(*maximums)[0]=data->maximum;
-				(*maximums)[1]=data->maximum;
-				(*maximums)[2]=data->maximum;
+				(*minimums)[0]=0.0;
+				(*minimums)[1]=0.0;
+				(*minimums)[2]=0.0;
+				(*maximums)[0]=1.0;
+				(*maximums)[1]=1.0;
+				(*maximums)[2]=1.0;
 			}
 		}
 		/* Texture_coordinate_field from source fields */
