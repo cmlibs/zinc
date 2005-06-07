@@ -201,7 +201,9 @@ Copy the type specific data used by this type.
 		source_field->type_specific_data))
 	{
 		if (ALLOCATE(destination,
-			struct Computed_field_image_mask_type_specific_data, 1))
+			struct Computed_field_image_mask_type_specific_data, 1) &&
+			ALLOCATE(destination->left_bottom, int, source->dimension) &&
+			ALLOCATE(destination->mask_width_height, int, source->dimension))
 		{
 			destination->dimension = source->dimension;
 			for (i = 0 ; i < source->dimension ; i++)

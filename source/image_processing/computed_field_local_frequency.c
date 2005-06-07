@@ -201,7 +201,9 @@ Copy the type specific data used by this type.
 		source_field->type_specific_data))
 	{
 		if (ALLOCATE(destination,
-			struct Computed_field_local_frequency_type_specific_data, 1))
+			struct Computed_field_local_frequency_type_specific_data, 1) &&
+			ALLOCATE(destination->angle_from_u_axis,FE_value, 2) &&
+			ALLOCATE(destination->centre_frequency,FE_value, 2))
 		{
 			destination->sigma = source->sigma;
 			destination->angle_from_u_axis[0] = source->angle_from_u_axis[0];

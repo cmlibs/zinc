@@ -201,7 +201,9 @@ Copy the type specific data used by this type.
 		source_field->type_specific_data))
 	{
 		if (ALLOCATE(destination,
-			struct Computed_field_steerable_filter_type_specific_data, 1))
+			struct Computed_field_steerable_filter_type_specific_data, 1) &&
+			ALLOCATE(destination->angle_from_x_axis, int, 2) &&
+			ALLOCATE(destination->angle_from_z_axis, int, 2))
 		{
 			destination->sigma = source->sigma;
 			for (i = 0 ; i < 2 ; i++)

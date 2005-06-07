@@ -211,7 +211,10 @@ Copy the type specific data used by this type.
 		source_field->type_specific_data))
 	{
 		if (ALLOCATE(destination,
-			struct Computed_field_stereology_measures_type_specific_data, 1))
+			struct Computed_field_stereology_measures_type_specific_data, 1) &&
+			ALLOCATE(destination->input_sizes, int, source->dimension) &&
+			ALLOCATE(destination->output_sizes,int, source->dimension) &&
+			ALLOCATE(destination->results.tokens, struct Set_names_from_list_token, source->results.number_of_tokens))
 		{
 			destination->number_of_dirs = source->number_of_dirs;
 			destination->radius = source->radius;
@@ -223,7 +226,7 @@ Copy the type specific data used by this type.
 				destination->results.tokens[i].string = source->results.tokens[i].string;
 				destination->results.tokens[i].index = source->results.tokens[i].index;
 			}
-
+                        
 			for (i = 0; i < source->dimension; i++)
 			{
 				destination->input_sizes[i] = source->input_sizes[i];
