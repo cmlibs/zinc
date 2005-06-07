@@ -203,7 +203,9 @@ Copy the type specific data used by this type.
 		source_field->type_specific_data))
 	{
 		if (ALLOCATE(destination,
-			struct Computed_field_image_resample_type_specific_data, 1))
+			struct Computed_field_image_resample_type_specific_data, 1)&&
+			ALLOCATE(destination->input_sizes, int, source->dimension) &&
+			ALLOCATE(destination->output_sizes, int, source->dimension))
 		{
 			destination->dimension = source->dimension;
 			destination->mode = source->mode;
@@ -270,9 +272,27 @@ DESCRIPTION :
 		(struct Computed_field_image_resample_type_specific_data *)
 		field->type_specific_data))
 	{
+		if (data->region)
+		{
+			DEACCESS(Cmiss_region)(&data->region);
+		}
 		if (data->image)
 		{
-			/* data->image->valid = 0; */
+			DEACCESS(Image_cache)(&data->image);
+		}
+		if (data->computed_field_manager && data->computed_field_manager_callback_id)
+		{
+			MANAGER_DEREGISTER(Computed_field)(
+				data->computed_field_manager_callback_id,
+				data->computed_field_manager);
+		}
+		if (data->input_sizes)
+		{
+			DEALLOCATE(data->input_sizes);
+		}
+		if (data->output_sizes)
+		{
+			DEALLOCATE(data->output_sizes);
 		}
 		return_code = 1;
 	}

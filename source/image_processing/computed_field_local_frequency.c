@@ -266,9 +266,27 @@ DESCRIPTION :
 		(struct Computed_field_local_frequency_type_specific_data *)
 		field->type_specific_data))
 	{
+		if (data->region)
+		{
+			DEACCESS(Cmiss_region)(&data->region);
+		}
 		if (data->image)
 		{
-			/* data->image->valid = 0; */
+			DEACCESS(Image_cache)(&data->image);
+		}
+		if (data->computed_field_manager && data->computed_field_manager_callback_id)
+		{
+			MANAGER_DEREGISTER(Computed_field)(
+				data->computed_field_manager_callback_id,
+				data->computed_field_manager);
+		}
+		if (data->centre_frequency)
+		{
+		        DEALLOCATE(data->centre_frequency);
+		}
+		if (data->angle_from_u_axis)
+		{
+		        DEALLOCATE(data->angle_from_u_axis);
 		}
 		return_code = 1;
 	}

@@ -267,9 +267,27 @@ DESCRIPTION :
 		(struct Computed_field_steerable_filter_type_specific_data *)
 		field->type_specific_data))
 	{
+		if (data->region)
+		{
+			DEACCESS(Cmiss_region)(&data->region);
+		}
 		if (data->image)
 		{
-			/* data->image->valid = 0; */
+			DEACCESS(Image_cache)(&data->image);
+		}
+		if (data->computed_field_manager && data->computed_field_manager_callback_id)
+		{
+			MANAGER_DEREGISTER(Computed_field)(
+				data->computed_field_manager_callback_id,
+				data->computed_field_manager);
+		}
+		if (data->angle_from_x_axis)
+		{
+		        DEALLOCATE(data->angle_from_x_axis);
+		}
+		if (data->angle_from_z_axis)
+		{
+		        DEALLOCATE(data->angle_from_z_axis);
 		}
 		return_code = 1;
 	}
