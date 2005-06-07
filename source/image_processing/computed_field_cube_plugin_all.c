@@ -213,7 +213,7 @@ Copy the type specific data used by this type.
 		if (ALLOCATE(destination,
 			struct Computed_field_cube_plugin_all_type_specific_data, 1)
 			&& ALLOCATE(destination->input_sizes, int, source->dimension)
-			&& ALLOCATE(destination->output_sizes), int, source->diemsion)
+			&& ALLOCATE(destination->output_sizes, int, source->diemsion)
 		{
 			destination->number_of_dirs = source->number_of_dirs;
 			destination->radius = source->radius;
