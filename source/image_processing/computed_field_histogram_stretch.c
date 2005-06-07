@@ -250,20 +250,11 @@ DESCRIPTION :
 		(struct Computed_field_histogram_stretch_type_specific_data *)
 		field->type_specific_data))
 	{
-		if (data->region)
-		{
-			DEACCESS(Cmiss_region)(&data->region);
-		}
 		if (data->image)
 		{
-			DEACCESS(Image_cache)(&data->image);
+			/* data->image->valid = 0; */
 		}
-		if (data->computed_field_manager && data->computed_field_manager_callback_id)
-		{
-			MANAGER_DEREGISTER(Computed_field)(
-				data->computed_field_manager_callback_id,
-				data->computed_field_manager);
-		}
+		
 		return_code = 1;
 	}
 	else

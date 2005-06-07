@@ -284,28 +284,9 @@ DESCRIPTION :
 		(struct Computed_field_cube_plugin_all_type_specific_data *)
 		field->type_specific_data))
 	{
-		if (data->region)
-		{
-			DEACCESS(Cmiss_region)(&data->region);
-		}
 		if (data->image)
 		{
-			DEACCESS(Image_cache)(&data->image);
-		}
-		if (data->computed_field_manager && data->computed_field_manager_callback_id)
-		{
-			MANAGER_DEREGISTER(Computed_field)(
-				data->computed_field_manager_callback_id,
-				data->computed_field_manager);
-		}
-
-		if (data->input_sizes)
-		{
-			DEALLOCATE(data->input_sizes);
-		}
-		if (data->output_sizes)
-		{
-			DEALLOCATE(data->output_sizes);
+			/* data->image->valid = 0; */
 		}
 		return_code = 1;
 	}
