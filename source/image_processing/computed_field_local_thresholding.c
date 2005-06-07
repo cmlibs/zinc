@@ -255,8 +255,7 @@ DESCRIPTION :
 		if (data->image)
 		{
 			/* data->image->valid = 0; */
-		}	data->computed_field_manager);
-		}
+		}	
 		return_code = 1;
 	}
 	else
