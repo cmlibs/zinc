@@ -250,9 +250,19 @@ DESCRIPTION :
 		(struct Computed_field_adaptive_adjust_contrast_type_specific_data *)
 		field->type_specific_data))
 	{
+		if (data->region)
+		{
+			DEACCESS(Cmiss_region)(&data->region);
+		}
 		if (data->image)
 		{
-			/* data->image->valid = 0; */
+			DEACCESS(Image_cache)(&data->image);
+		}
+		if (data->computed_field_manager && data->computed_field_manager_callback_id)
+		{
+			MANAGER_DEREGISTER(Computed_field)(
+				data->computed_field_manager_callback_id,
+				data->computed_field_manager);
 		}
 		return_code = 1;
 	}

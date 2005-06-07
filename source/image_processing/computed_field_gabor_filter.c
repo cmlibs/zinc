@@ -204,7 +204,9 @@ Copy the type specific data used by this type.
 		source_field->type_specific_data))
 	{
 		if (ALLOCATE(destination,
-			struct Computed_field_gabor_filter_type_specific_data, 1))
+			struct Computed_field_gabor_filter_type_specific_data, 1)&&
+			ALLOCATE(destination->direction, int, 2) &&
+			ALLOCATE(destination->frequencies, FE_value, 2))
 		{
 			destination->sigma = source->sigma;
 			destination->direction[0] = source->direction[0];
@@ -269,9 +271,27 @@ DESCRIPTION :
 		(struct Computed_field_gabor_filter_type_specific_data *)
 		field->type_specific_data))
 	{
+		if (data->region)
+		{
+			DEACCESS(Cmiss_region)(&data->region);
+		}
 		if (data->image)
 		{
-			/* data->image->valid = 0; */
+			DEACCESS(Image_cache)(&data->image);
+		}
+		if (data->computed_field_manager && data->computed_field_manager_callback_id)
+		{
+			MANAGER_DEREGISTER(Computed_field)(
+				data->computed_field_manager_callback_id,
+				data->computed_field_manager);
+		}
+		if (data->direction)
+		{
+		        DEALLOCATE(data->direction);
+		}
+		if (data->frequencies)
+		{
+		        DEALLOCATE(data->frequencies);
 		}
 		return_code = 1;
 	}
