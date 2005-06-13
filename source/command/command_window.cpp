@@ -2232,7 +2232,7 @@ Sets the value of the <prompt> for the <command_window>.
 		{
 			if (ALLOCATE(command_window->command_prompt,char,2))
 			{
-				sprintf(command_window->command_prompt,"");
+				command_window->command_prompt[0] = 0;
 			}
 			else
 			{
