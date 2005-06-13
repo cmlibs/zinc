@@ -957,6 +957,7 @@ IMAGE_PROCESSING_SRCS = \
 	image_processing/computed_field_local_std.c \
 	image_processing/computed_field_local_thresholding.c \
 	image_processing/computed_field_median_filter.c \
+	image_processing/computed_field_minimal_path.c \
 	image_processing/computed_field_morphology_thinning.c \
 	image_processing/computed_field_power_spectrum.c \
 	image_processing/computed_field_region_label.c \
@@ -985,7 +986,7 @@ INTERACTION_INTERFACE_SRCS = \
 IO_DEVICES_SRCS = \
 	io_devices/conversion.c \
 	io_devices/io_device.c \
-	io_devices/matrix.c 
+	io_devices/matrix.c
 IO_DEVICES_INTERFACE_SRCS = \
 	io_devices/haptic_input_module.cpp \
 	io_devices/input_module.c \
