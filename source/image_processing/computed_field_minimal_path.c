@@ -370,7 +370,7 @@ No special criteria.
 
 
 static int Image_cache_minimal_action(FE_value *potential_data, 
-         int dimension, int *sizes, int start_posi)
+         int dimension, int *sizes, int *start_posi)
 /*******************************************************************************
 LAST MODIFIED : 4 May 2005
 
@@ -378,10 +378,9 @@ DESCRIPTION :
 
 ==============================================================================*/
 {
-	FE_value *storage;
 	FE_value *data_index, *result_index;
-	int  return_code, kernel_size, storage_size;
-	int i, *offsets, trial_num, *dir;
+	int  return_code, storage_size;
+	int i, trial_num;
 	int current, new_start_position;
 	FE_value umin;
 	
@@ -389,200 +388,99 @@ DESCRIPTION :
 	if (potential_data && (dimension >0))
 	{
 	        return_code = 1;
-		kernel_size = 1;
+		
 		storage_size = 1;
 		for (i = 0 ; i < dimension ; i++)
 		{
-			kernel_size *= 3;
 			storage_size *= sizes[i];
 		}
-		if (ALLOCATE(offsets, int, kernel_size) &&
-		        ALLOCATE(storage, FE_value, 4*storage_size) &&
-			ALLOCATE(dir, int, 6))
+		if (ALLOCATE(result_index, FE_value, 4*storage_size))
 		{
                         return_code = 1;
 			trial_num = 0;
-			new_start_position = start_posi;
 			data_index = (FE_value *)potential_data;
-			result_index = (FE_value *)storage;
-			for (i = 0; i < storage_size; i++)
-			{
-			        result_index[0] = Infinite;/* initial potential*/
-				result_index[1] = 1.0; /*label as far */
-				result_index[2] = 0.0; /* label as non trial */
-				result_index[3] = 0.0; /* label as non alive */
-				if (i == new_start_position)
-				{
-				       result_index[0] = 0.0;
-				       result_index[2] = 1.0; /* label as trial */
-				}
-				result_index += 4;
-			}
-			trial_num++;
-			result_index = (FE_value *)storage;
-			Filter_offsets(offsets, dimension, 1, sizes, 4);
+			//result_index = (FE_value *)storage;
+			
 			if (dimension == 2)
 			{
 				FE_value u, v, u1, v1, s, delta;
-				dir[0] = offsets[1];
-				dir[1] = offsets[7];
-				dir[2] = offsets[3];
-				dir[3] = offsets[5];
+				int new_start_x, new_start_y;
+				int x, y, pos, j;
+				int offset[4][2] = {{-1, 0}, {1, 0}, {0, -1}, {0, 1}};
 				
-				result_index[new_start_position * 4 + 2] = 0.0;
-				result_index[new_start_position * 4 + 3] = 1.0;
-				
-				trial_num--;
-				for (i = 0; i < 4; i++)
+				new_start_x = start_posi[0];
+				new_start_y = start_posi[1];
+				new_start_position = new_start_y * sizes[0] + new_start_x;
+				for (i = 0; i < storage_size; i++)
 				{
-				/* the point corresponding to direction dir[i] */
-				if ((result_index+new_start_position *4 + dir[i]>=(FE_value *)storage)&&
-				          (result_index+new_start_position *4 + dir[i] < 
-					  (FE_value *)storage + storage_size * 4))
-				{
-				        if (result_index[new_start_position *4 + dir[i] + 1] == Infinite)
+			        	result_index[4*i+0] = Infinite;/* initial potential*/
+					result_index[4*i+1] = 1.0; /*label as far */
+					result_index[4*i+2] = 0.0; /* label as non trial */
+					result_index[4*i+3] = 0.0; /* label as non alive */
+					if (i == new_start_position)
 					{
-					        result_index[new_start_position *4 + dir[i] + 2] = 1.0;
-						trial_num++;  
+				        	result_index[4*i+0] = 0.0;
+						result_index[4*i+1] = 0.0;
+				        	result_index[4*i+2] = 1.0; /* label as trial */
 					}
-					
-					if (result_index[new_start_position *4 + dir[i] + 3] == 0.0)
-					{
-					        current = new_start_position * 4 + dir[i];
-						if ((result_index + current + offsets[1]>=(FE_value *)storage) &&
-				                    (result_index + current + offsets[1] < 
-						    (FE_value *)storage + storage_size * 4))
-						{
-						        u = result_index[current + offsets[1]];
-						}
-						else
-						{
-						        u = Infinite;
-						}
-						if ((result_index + current + offsets[7]>=(FE_value *)storage) &&
-				                    (result_index + current + offsets[7] < 
-						    (FE_value *)storage + storage_size * 4))
-						{
-						        u = my_Min(u,result_index[current + offsets[7]]);
-						}
-						else
-						{
-						        u = my_Min(u,Infinite);
-						}
-						if ((result_index + current + offsets[3]>=(FE_value *)storage) &&
-				                    (result_index + current + offsets[3] < 
-						    (FE_value *)storage + storage_size * 4))
-						{
-						        v = result_index[current + offsets[3]];
-						}
-						else
-						{
-						        v = Infinite;
-						}
-						if ((result_index + current + offsets[5]>=(FE_value *)storage) &&
-				                    (result_index + current + offsets[5] < 
-						    (FE_value *)storage + storage_size * 4))
-						{
-						        v = my_Min(v,result_index[current + offsets[5]]);
-						}
-						else
-						{
-						        v = my_Min(v,Infinite);
-						}
-						u1 = my_Min (u,v);
-						v1 = my_Max (u,v);
-						delta = 2.0 * *(data_index + current / 4) * *(data_index + current / 4) 
-						          - (u1- v1) * (u1-v1);
-						if (delta >= 0.0)
-						{
-						        s = (u1 + v1 + sqrt(delta))/2.0;
-							if (s >= v1)
-							{
-						        	result_index[current] = s;
-							}
-							else
-							{
-								result_index[current] = u1 + *(data_index + current/4);
-							}
-						}
-						else
-						{
-						        result_index[current] = u1 + *(data_index + current/4);
-						}
-					} 
 				}
-				}
+				trial_num++;
 				
 				/* loop */
-				if (trial_num > 0)
+				while (trial_num > 0)
 				{
-				        umin = Infinite;
-					for (i = 0; i < storage_size; i++)
-					{
-					        if (result_index[2] == 1.0)
-						{
-						       umin = my_Min(umin,result_index[0]);
-						}
-						result_index += 4;
-					}
-					for (i = storage_size - 1; i >= 0; i--)
-					{
-					        result_index -= 4;
-						if (result_index[0] == umin)
-						new_start_position = i;
-						break;
-					}
-					result_index = (FE_value *)storage;
-					result_index[new_start_position * 4 + 2] = 0.0;
-				        result_index[new_start_position * 4 + 3] = 1.0;
+					result_index[new_start_position * 4 + 2] = 0.0; /*remove from the trial list*/
+				        result_index[new_start_position * 4 + 3] = 1.0; /*add to the alive list*/
 					
 					trial_num--;
 					for (i = 0; i < 4; i++)
 					{
-					/* the point corresponding to direction dir[i]*/
-					if ((result_index+new_start_position *4 + dir[i]>=(FE_value *)storage)&&
-				             (result_index+new_start_position *4 + dir[i] < (FE_value *)storage + storage_size * 4))
-					{
-				        	if (result_index[new_start_position *4 + dir[i] + 1] == Infinite)
+				        	x = new_start_x + offset[i][0];
+						y = new_start_y + offset[i][1];
+						if (x < 0 || x >= sizes[0] || y < 0 || y >= sizes[1])
 						{
-					        	result_index[new_start_position *4 + dir[i] + 2] = 1.0;
+					        	continue;
+						}
+				        	current = (y * sizes[0] + x)*4;
+				        	if (result_index[current + 1] == 1.0)
+						{
+						        result_index[current + 1] = 0.0;
+					        	result_index[current + 2] = 1.0;
 							trial_num++;  
 						}
-						
-						if (result_index[new_start_position *4 + dir[i] + 3] == 0.0)
+						if (result_index[current + 3] == 0.0)
 						{
-					        	current = new_start_position * 4 + dir[i];
-							if ((result_index + current + offsets[1]>=(FE_value *)storage) &&
-				                              (result_index + current + offsets[1] < (FE_value *)storage + storage_size * 4))
+							if ((y-1)>=0)
 							{
-						        	u = result_index[current + offsets[1]];
+						        	pos = ((y-1)*sizes[0] + x)*4;
+						        	u = result_index[pos];
 							}
 							else
 							{
 						        	u = Infinite;
 							}
-							if ((result_index + current + offsets[7]>=(FE_value *)storage) &&
-				                             (result_index + current + offsets[7] < (FE_value *)storage + storage_size * 4))
+							if ((y + 1) < sizes[1])
 							{
-						        	u = my_Min(u,result_index[current + offsets[7]]);
+						        	pos = ((y+1)*sizes[0] + x)*4;
+						        	u = my_Min(u,result_index[pos]);
 							}
 							else
 							{
 						        	u = my_Min(u,Infinite);
 							}
-							if ((result_index + current + offsets[3]>=(FE_value *)storage) &&
-				                             (result_index + current + offsets[3] < (FE_value *)storage + storage_size * 4))
+							if ((x -1)>=0)
 							{
-						        	v = result_index[current + offsets[3]];
+						        	pos = (y*sizes[0] + x-1)*4;
+						        	v = result_index[pos];
 							}
 							else
 							{
 						        	v = Infinite;
 							}
-							if ((result_index + current + offsets[5]>=(FE_value *)storage) &&
-				                             (result_index + current + offsets[5] < (FE_value *)storage + storage_size * 4))
+							if ((x+1)< sizes[0])
 							{
-						        	v = my_Min(v,result_index[current + offsets[5]]);
+						        	pos = (y*sizes[0] + x+1)*4;
+						        	v = my_Min(v,result_index[pos]);
 							}
 							else
 							{
@@ -590,140 +488,23 @@ DESCRIPTION :
 							}
 							u1 = my_Min (u,v);
 							v1 = my_Max (u,v);
-							delta = 2.0 * *(data_index + current / 4) * *(data_index + current / 4) - (u1- v1) * (u1-v1);
-							if (delta >= 0.0)
-							{
-						        	s = (u1 + v1 + sqrt(delta))/2.0;
-							        if (s >= v1)
-							        {
-						        	        result_index[current] = s;
-							        }
-							        else
-							        {
-								        result_index[current] = u1 + *(data_index + current/4);
-							        }
-							}
-							else
+							if (v1 == Infinite)
 							{
 						        	result_index[current] = u1 + *(data_index + current/4);
 							}
-						} 
-					}
-					}
-				}	
-			}
-			else if (dimension == 3)
-			{
-			        
-				FE_value u, v, w, u1, v1, w1, s, s1, delta, delta1;
-				dir[0] = offsets[4];
-				dir[1] = offsets[22];
-				dir[2] = offsets[10];
-				dir[3] = offsets[16];
-				dir[4] = offsets[12];
-				dir[5] = offsets[14];
-				
-				result_index[new_start_position * 4 + 2] = 0.0;
-				result_index[new_start_position * 4 + 3] = 1.0;
-				
-				trial_num--;
-				for (i = 0; i < 6; i++)
-				{
-				/* the point corresponding to direction dir[i]*/
-				if ((result_index+new_start_position *4 + dir[i]>=(FE_value *)storage)&&
-				          (result_index+new_start_position *4 + dir[i] <
-					   (FE_value *)storage + storage_size * 4))
-				{
-				        if (result_index[new_start_position *4 + dir[i] + 1] == Infinite)
-					{
-					        result_index[new_start_position *4 + dir[i] + 2] = 1.0;
-						trial_num++;  
-					}
-					
-					if (result_index[new_start_position *4 + dir[i] + 3] == 0.0)
-					{
-					        current = new_start_position * 4 + dir[i];
-						if ((result_index + current + offsets[4]>=(FE_value *)storage) &&
-				                    (result_index + current + offsets[4] < (FE_value *)storage + storage_size * 4))
-						{
-						        u = result_index[current + offsets[4]];
-						}
-						else
-						{
-						        u = Infinite;
-						}
-						if ((result_index + current + offsets[22]>=(FE_value *)storage) &&
-				                    (result_index + current + offsets[22] < (FE_value *)storage + storage_size * 4))
-						{
-						        u = my_Min(u,result_index[current + offsets[22]]);
-						}
-						else
-						{
-						        u = my_Min(u,Infinite);
-						}
-						if ((result_index + current + offsets[10]>=(FE_value *)storage) &&
-				                    (result_index + current + offsets[10] < (FE_value *)storage + storage_size * 4))
-						{
-						        v = result_index[current + offsets[10]];
-						}
-						else
-						{
-						        v = Infinite;
-						}
-						if ((result_index + current + offsets[16]>=(FE_value *)storage) &&
-				                    (result_index + current + offsets[16] < (FE_value *)storage + storage_size * 4))
-						{
-						        v = my_Min(v,result_index[current + offsets[16]]);
-						}
-						else
-						{
-						        v = my_Min(v,Infinite);
-						}
-						
-						if ((result_index + current + offsets[12]>=(FE_value *)storage) &&
-				                    (result_index + current + offsets[12] < (FE_value *)storage + storage_size * 4))
-						{
-						        w = result_index[current + offsets[12]];
-						}
-						else
-						{
-						        w = Infinite;
-						}
-						if ((result_index + current + offsets[14]>=(FE_value *)storage) &&
-				                    (result_index + current + offsets[14] < (FE_value *)storage + storage_size * 4))
-						{
-						        w = my_Min(w,result_index[current + offsets[14]]);
-						}
-						else
-						{
-						        w = my_Min(w,Infinite);
-						}
-						u1 = my_Min(my_Min (u,v),w);
-						w1 = my_Max(my_Max (u,v), w);
-						v1 = (u + v + w) - u1 - w1; /*u1 <= v1 <= w1*/
-						delta = 3.0 * *(data_index + current / 4) * *(data_index + current / 4);
-						delta += 2.0 * (u1 * v1 + u1*w1 + v1*w1);
-						delta -= 2.0 *(u1*u1 + v1*v1 + w1*w1);
-						if (delta >= 0.0)
-						{
-						        s = (u1 + v1 + w1 + sqrt(delta))/3.0;
-							if (s >= w1)
-							{
-							        result_index[current] = s;
-							}
 							else
 							{
-							        delta1 = 2.0 * *(data_index + current / 4) * *(data_index + current / 4) - (u1- v1) * (u1-v1);
-								if (delta1 >= 0.0)
+								delta = 2.0 * *(data_index + current / 4) * *(data_index + current / 4) - (u1- v1) * (u1-v1);
+								if (delta >= 0.0)
 								{
-								        s1 = (u1 + v1 + sqrt(delta1))/2.0;
-									if (s1 >= v1)
+						        		s = (u1 + v1 + sqrt(delta))/2.0;
+									if (s >= v1)
 									{
-						        		        result_index[current] = s1;
+						        			result_index[current] = s;
 									}
 									else
 									{
-									        result_index[current] = u1 + *(data_index + current/4);
+										result_index[current] = u1 + *(data_index + current/4);
 									}
 								}
 								else
@@ -732,150 +513,190 @@ DESCRIPTION :
 								}
 							}
 						}
-						else
-						{
-						        delta1 = 2.0 * *(data_index + current / 4) * *(data_index + current / 4) - (u1- v1) * (u1-v1);
-							if (delta1 >= 0.0)
-							{
-								s1 = (u1 + v1 + sqrt(delta1))/2.0;
-								if (s1 >= v1)
-								{
-						        		result_index[current] = s1;
-								}
-								else
-								{
-									result_index[current] = u1 + *(data_index + current/4);
-								}
-							}
-							else
-							{
-						        	result_index[current] = u1 + *(data_index + current/4);
-							}
-						}
-					} 
-				} 
-				}
-				
-				/* loop */
-				if (trial_num > 0)
-				{
-				        umin = Infinite;
+					}
+					umin = Infinite;
 					for (i = 0; i < storage_size; i++)
 					{
-					        if (result_index[2] == 1.0)
+					        if (result_index[4*i+2] == 1.0)
 						{
-						       umin = my_Min(umin,result_index[0]);
+						       umin = my_Min(umin,result_index[4*i]);
 						}
-						result_index += 4;
 					}
-					for (i = storage_size - 1; i >= 0; i--)
+					if (umin < Infinite)
 					{
-					        result_index -= 4;
-						if (result_index[0] == umin)
-						new_start_position = i;
-						break;
+						for (j = 0; j < sizes[1]; j++)
+						{
+					        	for (i = 0; i < sizes[0]; i++)
+							{
+						        	if (result_index[4*(j*sizes[0]+i)+2]==1.0 &&
+							       result_index[4*(j*sizes[0]+i)] == umin)
+								{
+							         	new_start_x = i;
+								 	new_start_y = j;
+								 	new_start_position = new_start_y * sizes[0] + new_start_x;
+								 	break;
+								}
+							}
+						
+						}
 					}
-					result_index = (FE_value *)storage;
+					 
+				}
+				
+			}
+			else if (dimension == 3)
+			{
+			        
+				FE_value u, v, w, u1, v1, w1, s, s1, delta, delta1;
+				int new_start_x, new_start_y, new_start_z;
+				int x, y, z, pos, j, k;
+				int offset[6][3] = {{0, 0, -1}, {0, 0, 1}, {0, -1, 0}, {0, 1, 0}, {-1, 0, 0}, {1, 0, 0}};
+				new_start_x = start_posi[0];
+				new_start_y = start_posi[1];
+				new_start_z = start_posi[2];
+				new_start_position = new_start_z * sizes[0] *sizes[1] + new_start_y * sizes[0] + new_start_x;
+				for (i = 0; i < storage_size; i++)
+				{
+			        	result_index[4*i+0] = Infinite;/* initial potential*/
+					result_index[4*i+1] = 1.0; /*label as far */
+					result_index[4*i+2] = 0.0; /* label as non trial */
+					result_index[4*i+3] = 0.0; /* label as non alive */
+					if (i == new_start_position)
+					{
+				        	result_index[4*i+0] = 0.0;
+						result_index[4*i+1] = 0.0;
+				        	result_index[4*i+2] = 1.0; /* label as trial */
+					}
+				}
+				trial_num++;
+				while (trial_num > 0)
+				{
 					result_index[new_start_position * 4 + 2] = 0.0;
-				        result_index[new_start_position * 4 + 3] = 1.0;
-					
+					result_index[new_start_position * 4 + 3] = 1.0;
 					trial_num--;
+				
 					for (i = 0; i < 6; i++)
 					{
-					/* the point corresponding to direction dir[i] */
-					if ((result_index+new_start_position *4 + dir[i]>=(FE_value *)storage)&&
-				          (result_index+new_start_position *4 + dir[i] < (FE_value *)storage + storage_size * 4))
-					{
-				        	if (result_index[new_start_position *4 + dir[i] + 1] == Infinite)
+				        	x = new_start_x + offset[i][0];
+						y = new_start_y + offset[i][1];
+						z = new_start_z + offset[i][2];
+						if (x < 0 || x >= sizes[0] || y < 0 || y >= sizes[1] || z < 0 || z >= sizes[2])
 						{
-					        	result_index[new_start_position *4 + dir[i] + 2] = 1.0;
+					        	continue;
+						}	
+				        	current = (z * sizes[0]*sizes[1] + y * sizes[0] + x)*4;
+				        	if (result_index[current + 1] == 1.0)
+						{
+						        result_index[current + 1] = 0.0;
+					        	result_index[current + 2] = 1.0;
 							trial_num++;  
 						}
-						
-						if (result_index[new_start_position *4 + dir[i] + 3] == 0.0)
+						if (result_index[current + 3] == 0.0)
 						{
-					        	current = new_start_position * 4 + dir[i];
-							if ((result_index + current + offsets[4]>=(FE_value *)storage) &&
-				                   	 (result_index + current + offsets[4] < (FE_value *)storage + storage_size * 4))
+					        	if ((z-1)>=0)
 							{
-						        	u = result_index[current + offsets[4]];
+						        	pos = ((z-1)*sizes[0] * sizes[1] + y* sizes[0] + x)*4;
+						        	u = result_index[pos];
 							}
 							else
 							{
 						        	u = Infinite;
 							}
-							if ((result_index + current + offsets[22]>=(FE_value *)storage) &&
-				                    	(result_index + current + offsets[22] < (FE_value *)storage + storage_size * 4))
+							if ((z + 1) < sizes[2])
 							{
-						        	u = my_Min(u,result_index[current + offsets[22]]);
+						        	pos = ((z+1)*sizes[0] * sizes[1] + y* sizes[0] + x)*4;
+						        	u = my_Min(u,result_index[pos]);
 							}
 							else
 							{
 						        	u = my_Min(u,Infinite);
 							}
-							if ((result_index + current + offsets[10]>=(FE_value *)storage) &&
-				                    	(result_index + current + offsets[10] < (FE_value *)storage + storage_size * 4))
+					        	if ((y-1)>=0)
 							{
-						        	v = result_index[current + offsets[10]];
+						        	pos = (z*sizes[0] * sizes[1] + (y-1)* sizes[0] + x)*4;
+						        	v = result_index[pos];
 							}
 							else
 							{
 						        	v = Infinite;
 							}
-							if ((result_index + current + offsets[16]>=(FE_value *)storage) &&
-				                    	(result_index + current + offsets[16] < (FE_value *)storage + storage_size * 4))
+							if ((y + 1) < sizes[1])
 							{
-						        	v = my_Min(v,result_index[current + offsets[16]]);
+						        	pos = (z*sizes[0] * sizes[1] + (y+1)* sizes[0] + x)*4;
+						        	v = my_Min(v,result_index[pos]);
 							}
 							else
 							{
 						        	v = my_Min(v,Infinite);
 							}
-						
-							if ((result_index + current + offsets[12]>=(FE_value *)storage) &&
-				                    	(result_index + current + offsets[12] < (FE_value *)storage + storage_size * 4))
+							if ((x -1)>0)
 							{
-						        	w = result_index[current + offsets[12]];
+						        	pos = (y*sizes[0] + x-1)*4;
+						        	w = result_index[pos];
 							}
 							else
 							{
 						        	w = Infinite;
 							}
-							if ((result_index + current + offsets[14]>=(FE_value *)storage) &&
-				                    	(result_index + current + offsets[14] < (FE_value *)storage + storage_size * 4))
+							if ((x+1)< sizes[0])
 							{
-						        	w = my_Min(w,result_index[current + offsets[14]]);
+						        	pos = (y*sizes[0] + x+1)*4;
+						        	w = my_Min(w,result_index[pos]);
 							}
 							else
 							{
 						        	w = my_Min(w,Infinite);
 							}
 							u1 = my_Min(my_Min (u,v),w);
-							w1 = my_Max(my_Max (u,v), w);
+							w1 = my_Max(my_Max (u,v),w);
 							v1 = (u + v + w) - u1 - w1; /*u1 <= v1 <= w1*/
-							delta = 3.0 * *(data_index + current / 4) * *(data_index + current / 4);
-							delta += 2.0 * (u1 * v1 + u1*w1 + v1*w1);
-							delta -= 2.0 *(u1*u1 + v1*v1 + w1*w1);
-							if (delta >= 0.0)
+							
+							if (w1 < Infinite)
 							{
-						        	s = (u1 + v1 + w1 + sqrt(delta))/3.0;
-								if (s >= w1)
+								delta = 3.0 * *(data_index + current / 4) * *(data_index + current / 4);
+								delta += 2.0 * (u1 * v1 + u1*w1 + v1*w1);
+								delta -= 2.0 *(u1*u1 + v1*v1 + w1*w1);
+								if (delta >= 0.0)
 								{
-							        	result_index[current] = s;
-								}
-								else
-								{
-							        	delta1 = 2.0 * *(data_index + current / 4) * *(data_index + current / 4) - (u1- v1) * (u1-v1);
-									if (delta1 >= 0.0)
+						        		s = (u1 + v1 + w1 + sqrt(delta))/3.0;
+									if (s >= w1)
 									{
-								        	s1 = (u1 + v1 + sqrt(delta1))/2.0;
-										if (s1 >= v1)
+							        		result_index[current] = s;
+									}
+									else
+									{
+							        		delta1 = 2.0 * *(data_index + current / 4) * *(data_index + current / 4) - (u1- v1) * (u1-v1);
+										if (delta1 >= 0.0)
 										{
-						        		        	result_index[current] = s1;
+								        		s1 = (u1 + v1 + sqrt(delta1))/2.0;
+											if (s1 >= v1)
+											{
+						        		        		result_index[current] = s1;
+											}
+											else
+											{
+									        		result_index[current] = u1 + *(data_index + current/4);
+											}
 										}
 										else
 										{
-									        	result_index[current] = u1 + *(data_index + current/4);
+						        				result_index[current] = u1 + *(data_index + current/4);
+										}
+									}
+								}
+								else
+								{
+						        		delta1 = 2.0 * *(data_index + current / 4) * *(data_index + current / 4) - (u1- v1) * (u1-v1);
+									if (delta1 >= 0.0)
+									{
+										s1 = (u1 + v1 + sqrt(delta1))/2.0;
+										if (s1 >= v1)
+										{
+						        				result_index[current] = s1;
+										}
+										else
+										{
+											result_index[current] = u1 + *(data_index + current/4);
 										}
 									}
 									else
@@ -884,9 +705,9 @@ DESCRIPTION :
 									}
 								}
 							}
-							else
+							else if (v1 < Infinite)
 							{
-						        	delta1 = 2.0 * *(data_index + current / 4) * *(data_index + current / 4) - (u1- v1) * (u1-v1);
+							        delta1 = 2.0 * *(data_index + current / 4) * *(data_index + current / 4) - (u1- v1) * (u1-v1);
 								if (delta1 >= 0.0)
 								{
 									s1 = (u1 + v1 + sqrt(delta1))/2.0;
@@ -902,23 +723,51 @@ DESCRIPTION :
 								else
 								{
 						        		result_index[current] = u1 + *(data_index + current/4);
+								} 
+							}
+							else
+							{
+							        result_index[current] = u1 + *(data_index + current/4);
+							}
+						}
+					}
+				        umin = Infinite;
+					for (i = 0; i < storage_size; i++)
+					{
+					        if (result_index[4*i + 2] == 1.0)
+						{
+							umin = my_Min(umin,result_index[4*i]);
+						}
+					}
+					if (umin < Infinite)
+					{
+						for (k = 0; k < sizes[2]; k++)
+						{
+					        	for (j = 0; j <sizes[1]; j++)
+							{
+						        	for(i = 0; i < sizes[0]; i++)
+								{
+							        	if (result_index[4*(k*sizes[0]*sizes[1]+j*sizes[0]+i)+2]==1.0 &&
+							              result_index[4*(k*sizes[0]*sizes[1]+j*sizes[0]+i)] == umin) 
+									{
+								        	new_start_x = i;
+										new_start_y = j;
+										new_start_z = k;
+										new_start_position = new_start_z * sizes[0] *sizes[1] + new_start_y * sizes[0] + new_start_x;
+										break;
+									}      
 								}
 							}
-						} 
+						}
 					}
-					}    
-				
 				}
 				
 			}
 			for (i = 0; i < storage_size; i++)
 			{
-			        potential_data[i] = result_index[0];
-				result_index += 4;     
+			        potential_data[i] = result_index[4*i]; 
 			}
-			DEALLOCATE(offsets);
-			DEALLOCATE(storage);
-			DEALLOCATE(dir);	
+			DEALLOCATE(result_index);
 		}
 		else
 		{
@@ -995,7 +844,7 @@ DESCRIPTION :
 			}
 			data_index = (FE_value *)image->data;
 			return_code = Image_cache_minimal_action(potential_data, 
-			                  image->dimension, image->sizes, start_ps);
+			                  image->dimension, image->sizes, start_position);
 			if (return_code)
 			{
 				if (image->dimension == 2)
@@ -1005,7 +854,7 @@ DESCRIPTION :
 					int current, previous;
 					x = (FE_value)end_position[0];
 					y = (FE_value)end_position[1];
-					while ((x != (FE_value)start_position[0]) || (y != (FE_value)start_position[1]))
+					while (((int)x != start_position[0]) || ((int)y != start_position[1]))
 					{
 					        /*calculate the gradient of action function*/
 					        current = (int)x + (int)y * image->sizes[0];
@@ -1028,6 +877,7 @@ DESCRIPTION :
 						g_y = potential_data[current] - potential_data[previous];
 						x -= it_step * g_x;
 						y -= it_step * g_y;
+						//printf("%d %d\n",(int)x,(int)y);
 					}
 					current = start_position[0] + start_position[1] * image->sizes[0];
 					for (k =0 ; k < image->depth; k++)
@@ -1044,7 +894,8 @@ DESCRIPTION :
 					x = (FE_value)end_position[0];
 					y = (FE_value)end_position[1];
 					z = (FE_value)end_position[2];
-					while ((x != (FE_value)start_position[0]) || (y != (FE_value)start_position[1]) || (z != (FE_value)start_position[2]))
+					while (((int)x != start_position[0]) || ((int)y != start_position[1])
+					         || ((int)z != start_position[2]))
 					{
 					        /*calculate the gradient of action function*/
 					        current = (int)x + (int)y * image->sizes[0] + (int)z * image->sizes[0] * image->sizes[1];
