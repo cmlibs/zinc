@@ -1233,6 +1233,92 @@ DESCRIPTION :
 	return (timeout_callback);
 } /* Event_dispatcher_add_timeout_callback_at_time */
 #else /* defined (USE_XTAPP_CONTEXT) */
+
+#if defined (WIN32_USER_INTERFACE)
+
+static void CALLBACK Event_dispatcher_process_win32_timeout(
+	HWND hWnd, UINT msg, UINT TimerID, DWORD Time)
+/*******************************************************************************
+LAST MODIFIED : 13 June 2005
+
+DESCRIPTION :
+Processes a Win32 timer.
+==============================================================================*/
+{
+  struct Event_dispatcher_timeout_callback *timeout_callback;
+
+  ENTER(Event_dispatcher_process_win32_timeout);
+
+  /* Our timers are one-shot, Win32 timers recur... */
+  KillTimer(hWnd, TimerID);
+
+  timeout_callback = (struct Event_dispatcher_timeout_callback*)TimerID;
+  (*timeout_callback->timeout_function)(
+	timeout_callback->user_data);
+  
+  DESTROY(Event_dispatcher_timeout_callback)(&timeout_callback);
+
+  LEAVE;
+}
+
+struct Event_dispatcher_timeout_callback *Event_dispatcher_add_timeout_callback_at_time(
+	struct Event_dispatcher *event_dispatcher, unsigned long timeout_s, unsigned long timeout_ns,
+	Event_dispatcher_timeout_function *timeout_function, void *user_data)
+/*******************************************************************************
+LAST MODIFIED : 13 June 2005
+
+DESCRIPTION :
+Set a timeout on Win32...
+==============================================================================*/
+{
+	struct Event_dispatcher_timeout_callback *timeout_callback;
+	ULONGLONG system_time, event_time, event_time_delta_millis;
+  
+	ENTER(Event_dispatcher_register_descriptor_callback);
+
+	if (event_dispatcher && timeout_function)
+	{
+		if (timeout_callback = CREATE(Event_dispatcher_timeout_callback)(
+			timeout_s, timeout_ns, timeout_function, user_data))
+		{
+			GetSystemTimeAsFileTime((FILETIME *)&system_time);
+		  
+			event_time = timeout_s * 10000000 + timeout_ns / 100;
+			if (system_time < event_time)
+				event_time_delta_millis = (event_time - system_time) * 10000;
+			else
+				event_time_delta_millis = 0;
+
+			Event_dispatcher_ensure_network_window(event_dispatcher);
+		  
+			SetTimer(event_dispatcher->networkWindowHandle,
+				(ULONG)timeout_callback,
+				(ULONG)event_time_delta_millis,
+				Event_dispatcher_process_win32_timeout
+				);
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,
+				"Event_dispatcher_add_timeout_callback_at_time.  "
+				"Could not create timeout_callback object.");
+			timeout_callback = (struct Event_dispatcher_timeout_callback *)NULL;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Event_dispatcher_add_timeout_callback_at_time.  Invalid arguments.");
+		timeout_callback = (struct Event_dispatcher_timeout_callback *)NULL;
+	}
+
+	LEAVE;
+
+	return timeout_callback;
+}
+
+#else /* defined (WIN32_USER_INTERFACE) */
+
 struct Event_dispatcher_timeout_callback *Event_dispatcher_add_timeout_callback_at_time(
 	struct Event_dispatcher *event_dispatcher, unsigned long timeout_s, unsigned long timeout_ns,
 	Event_dispatcher_timeout_function *timeout_function, void *user_data)
@@ -1276,6 +1362,7 @@ DESCRIPTION :
 
 	return (timeout_callback);
 } /* Event_dispatcher_add_timeout_callback_at_time */
+#endif /* defined(WIN32_USER_INTERFACE) else */
 
 struct Event_dispatcher_timeout_callback *Event_dispatcher_add_timeout_callback(
 	struct Event_dispatcher *event_dispatcher, unsigned long timeout_s, unsigned long timeout_ns,
@@ -1342,8 +1429,13 @@ DESCRIPTION :
 #if defined (USE_XTAPP_CONTEXT)
 		XtRemoveTimeOut(callback_id->xt_timeout_id);
 #endif /* defined (USE_XTAPP_CONTEXT) */
+#if defined (WIN32_USER_INTERFACE)
+		return_code = 1;
+		KillTimer(event_dispatcher->networkWindowHandle, (ULONG)callback_id);
+#else /* defined(WIN32_USER_INTERFACE) */
 		return_code = REMOVE_OBJECT_FROM_LIST(Event_dispatcher_timeout_callback)
 			(callback_id, event_dispatcher->timeout_list);
+#endif /* defined(WIN32_USER_INTERFACE) else */
 	}
 	else
 	{
@@ -1406,8 +1498,8 @@ DESCRIPTION :
 #elif defined (WIN32_SYSTEM)
 			else
 			{
-				if(!(PostMessage(WindowFromDC((HDC)Graphics_buffer_get_hdc(
-						Scene_viewer_get_graphics_buffer((struct Scene_viewer *)user_data))),
+				Event_dispatcher_ensure_network_window(event_dispatcher);
+				if(!(PostMessage(event_dispatcher->networkWindowHandle,
 						UWM_IDLE, 0, (LPARAM)idle_callback)))
 				{
 					display_message(ERROR_MESSAGE,
