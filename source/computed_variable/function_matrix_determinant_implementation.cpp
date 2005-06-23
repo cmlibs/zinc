@@ -13,6 +13,10 @@
 #include "computed_variable/function_variable_matrix.hpp"
 #include "computed_variable/function_variable_value_specific.hpp"
 
+#if !defined (ONE_TEMPLATE_DEFINITION_IMPLEMENTED)
+#include "computed_variable/function_matrix_implementation.cpp"
+#endif // !defined (ONE_TEMPLATE_DEFINITION_IMPLEMENTED)
+
 
 // module classes
 // ==============
