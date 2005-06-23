@@ -1,16 +1,21 @@
 //******************************************************************************
 // FILE : function_matrix.cpp
 //
-// LAST MODIFIED : 7 April 2005
+// LAST MODIFIED : 11 May 2005
 //
 // DESCRIPTION :
 //==============================================================================
 
+#if defined (OLD_CODE)
 #if defined (ONE_TEMPLATE_DEFINITION_IMPLEMENTED)
 #include "computed_variable/function_matrix_implementation.cpp"
 #else // defined (ONE_TEMPLATE_DEFINITION_IMPLEMENTED)
 #include "computed_variable/function_matrix.hpp"
 #endif // defined (ONE_TEMPLATE_DEFINITION_IMPLEMENTED)
+#endif // defined (OLD_CODE)
+
+#include "computed_variable/function_matrix.hpp"
+#include "computed_variable/function_matrix_implementation.cpp"
 
 template<>
 boost::intrusive_ptr< Function_matrix<Scalar> >

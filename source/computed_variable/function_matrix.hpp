@@ -80,8 +80,10 @@ class Function_matrix : public Function
 		ublas::matrix<Value_type,ublas::column_major> values;
 };
 
+#if defined (OLD_CODE)
 #if !defined (ONE_TEMPLATE_DEFINITION_IMPLEMENTED)
 #include "computed_variable/function_matrix_implementation.cpp"
 #endif // !defined (ONE_TEMPLATE_DEFINITION_IMPLEMENTED)
+#endif // defined (OLD_CODE)
 
 #endif /* !defined (__FUNCTION_MATRIX_HPP__) */
