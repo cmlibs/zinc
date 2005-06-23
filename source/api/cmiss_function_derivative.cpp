@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : api/cmiss_function_derivative.cpp
 
-LAST MODIFIED : 17 January 2005
+LAST MODIFIED : 11 May 2005
 
 DESCRIPTION :
 The public interface to the Cmiss_function derivative object.
@@ -10,6 +10,7 @@ The public interface to the Cmiss_function derivative object.
 #include <new>
 #include "api/cmiss_function_derivative.h"
 #include "computed_variable/function_derivative.hpp"
+#include "computed_variable/function_variable.hpp"
 
 /*
 Global functions
