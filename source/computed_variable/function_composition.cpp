@@ -1,7 +1,7 @@
 //******************************************************************************
 // FILE : function_composition.cpp
 //
-// LAST MODIFIED : 21 April 2005
+// LAST MODIFIED : 12 May 2005
 //
 // DESCRIPTION :
 //==============================================================================
@@ -9,11 +9,6 @@
 #include <sstream>
 
 #include "computed_variable/function_composition.hpp"
-#if defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
-#else // defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
-#include "computed_variable/function_derivative.hpp"
-#endif // defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
-#include "computed_variable/function_derivative_matrix.hpp"
 #include "computed_variable/function_matrix.hpp"
 #include "computed_variable/function_variable.hpp"
 #include "computed_variable/function_variable_intersection.hpp"
@@ -21,6 +16,12 @@
 #include "computed_variable/function_variable_composite.hpp"
 #include "computed_variable/function_variable_value_scalar.hpp"
 #include "computed_variable/function_variable_wrapper.hpp"
+
+#if defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
+#else // defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
+#include "computed_variable/function_derivative.hpp"
+#endif // defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
+#include "computed_variable/function_derivative_matrix.hpp"
 
 // module classes
 // ==============
