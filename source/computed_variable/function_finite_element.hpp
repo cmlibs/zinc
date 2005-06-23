@@ -19,10 +19,6 @@ extern "C"
 #include "computed_variable/function.hpp"
 #include "computed_variable/function_variable.hpp"
 
-//???DB.  Testing.
-//???DB.  Function_derivatnew_finite_element doesn't currently handle
-//  composite independent variables.  Would have to fall back to
-//  Function_derivatnew.  End up slower?
 #define USE_Function_derivatnew_finite_element
 
 class Function_element : public Function
