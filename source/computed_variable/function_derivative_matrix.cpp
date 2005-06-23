@@ -1,22 +1,28 @@
 //******************************************************************************
 // FILE : function_derivative_matrix.cpp
 //
-// LAST MODIFIED : 28 April 2005
+// LAST MODIFIED : 12 May 2005
 //
 // DESCRIPTION :
 //==============================================================================
 
 #include <sstream>
 
-#if defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
-#else // defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
-#include "computed_variable/function_derivative.hpp"
-#endif // defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
 #include "computed_variable/function_derivative_matrix.hpp"
 #include "computed_variable/function_matrix.hpp"
 #include "computed_variable/function_variable_composite.hpp"
 #include "computed_variable/function_variable_matrix.hpp"
 #include "computed_variable/function_variable_value_scalar.hpp"
+
+#if defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
+#else // defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
+#include "computed_variable/function_derivative.hpp"
+#include "computed_variable/function_identity.hpp"
+#endif // defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
+
+#if !defined (ONE_TEMPLATE_DEFINITION_IMPLEMENTED)
+#include "computed_variable/function_matrix_implementation.cpp"
+#endif // !defined (ONE_TEMPLATE_DEFINITION_IMPLEMENTED)
 
 // module typedefs
 // ===============
