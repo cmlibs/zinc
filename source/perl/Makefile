@@ -55,8 +55,7 @@ main :
 	$(call InstallPerlArchModules, $(PERL))
 
 ifeq ($(SYSNAME),Linux)
-   PERL_EXECUTABLES = $(wildcard ${CMISS_ROOT}/perl/bin-5.?.?-i386-linux*/perl)
-   PERL_EXECUTABLES += $(wildcard ${CMISS_ROOT}/perl/bin-5.?.?-i686-linux*/perl)	
+   PERL_EXECUTABLES = $(wildcard ${CMISS_ROOT}/perl/lib/5.?.?/i[36]86-linux*/bin/perl)
 endif
 ifeq ($(filter-out IRIX%,$(SYSNAME)),)# SGI
    PERL_EXECUTABLES += $(wildcard ${CMISS_ROOT}/perl/bin-5.?.?-irix*/perl)
