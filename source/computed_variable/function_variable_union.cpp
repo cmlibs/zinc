@@ -1,7 +1,7 @@
 //******************************************************************************
 // FILE : function_variable_union.cpp
 //
-// LAST MODIFIED : 7 April 2005
+// LAST MODIFIED : 17 May 2005
 //
 // DESCRIPTION :
 //==============================================================================
@@ -18,11 +18,15 @@
 #include "computed_variable/function_matrix.hpp"
 #endif // defined (USE_FUNCTION_VARIABLE_UNION_EVALUATE)
 
+#if defined (USE_FUNCTION_VARIABLE_UNION_EVALUATE)
+#if defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
+#else // defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
+#include "computed_variable/function_derivative.hpp"
+#endif // defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
+#endif // defined (USE_FUNCTION_VARIABLE_UNION_EVALUATE)
+
 // module classes
 // ==============
-
-// class Function_variable_iterator_representation_atomic_union
-// ------------------------------------------------------------
 
 bool repeat_atomic_variable(
 	const std::list<Function_variable_handle>& variables_list,
@@ -58,6 +62,313 @@ bool repeat_atomic_variable(
 
 	return (repeat);
 }
+
+#if defined (USE_FUNCTION_VARIABLE_UNION_EVALUATE)
+#if defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
+#else // defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
+// class Function_derivatnew_union
+// -------------------------------
+
+class Function_derivatnew_union : public Function_derivatnew
+//******************************************************************************
+// LAST MODIFIED : 16 May 2005
+//
+// DESCRIPTION :
+//==============================================================================
+{
+	public:
+		// for construction exception
+		class Construction_exception {};
+		// constructor
+		Function_derivatnew_union(
+			const Function_variable_handle& dependent_variable,
+			const std::list<Function_variable_handle>& independent_variables);
+		// destructor
+		~Function_derivatnew_union();
+	// inherited
+	private:
+#if defined (EVALUATE_RETURNS_VALUE)
+		virtual Function_handle evaluate(Function_variable_handle atomic_variable);
+#else // defined (EVALUATE_RETURNS_VALUE)
+		virtual bool evaluate(Function_variable_handle atomic_variable);
+#endif // defined (EVALUATE_RETURNS_VALUE)
+	private:
+		std::list<Function_derivatnew_handle> derivatives_list;
+};
+
+Function_derivatnew_union::Function_derivatnew_union(
+	const Function_variable_handle& dependent_variable,
+	const std::list<Function_variable_handle>& independent_variables):
+	Function_derivatnew(dependent_variable,independent_variables)
+//******************************************************************************
+// LAST MODIFIED : 17 May 2005
+//
+// DESCRIPTION :
+// Constructor.
+//==============================================================================
+{
+	Function_variable_union_handle variable_union;
+	Function_variable_handle variable_union_wrapped;
+
+	if (variable_union=boost::dynamic_pointer_cast<
+		Function_variable_union,Function_variable>(dependent_variable))
+	{
+		bool valid;
+		Function_derivatnew_handle derivative;
+		Function_size_type i;
+		std::list<Function_variable_handle>::iterator variables_iterator;
+
+		valid=true;
+		i=(variable_union->variables_list).size();
+		variables_iterator=(variable_union->variables_list).begin();
+		while (valid&&(i>0))
+		{
+			if (derivative=boost::dynamic_pointer_cast<Function_derivatnew,
+				Function>((*variables_iterator)->derivative(independent_variables)))
+			{
+				derivatives_list.push_back(derivative);
+			}
+			else
+			{
+				valid=false;
+			}
+			++variables_iterator;
+			--i;
+		}
+		if (valid)
+		{
+			std::list<Function_derivatnew_handle>::iterator derivative_iterator;
+
+			i=derivatives_list.size();
+			derivative_iterator=derivatives_list.begin();
+			while (i>0)
+			{
+				(*derivative_iterator)->add_dependent_function(this);
+				--i;
+				++derivative_iterator;
+			}
+		}
+		else
+		{
+			throw Function_derivatnew_union::Construction_exception();
+		}
+	}
+	else
+	{
+		throw Function_derivatnew_union::Construction_exception();
+	}
+}
+
+Function_derivatnew_union::~Function_derivatnew_union()
+//******************************************************************************
+// LAST MODIFIED : 16 May 2005
+//
+// DESCRIPTION :
+// Destructor.
+//==============================================================================
+{
+#if defined (CIRCULAR_SMART_POINTERS)
+	// do nothing
+#else // defined (CIRCULAR_SMART_POINTERS)
+	Function_size_type i;
+	std::list<Function_derivatnew_handle>::iterator derivative_iterator;
+
+	i=derivatives_list.size();
+	derivative_iterator=derivatives_list.begin();
+	while (i>0)
+	{
+		(*derivative_iterator)->remove_dependent_function(this);
+		--i;
+		++derivative_iterator;
+	}
+#endif // defined (CIRCULAR_SMART_POINTERS)
+}
+
+#if defined (EVALUATE_RETURNS_VALUE)
+Function_handle
+#else // defined (EVALUATE_RETURNS_VALUE)
+bool
+#endif // defined (EVALUATE_RETURNS_VALUE)
+	Function_derivatnew_union::evaluate(
+	Function_variable_handle
+#if defined (EVALUATE_RETURNS_VALUE)
+	atomic_variable
+#else // defined (EVALUATE_RETURNS_VALUE)
+#endif // defined (EVALUATE_RETURNS_VALUE)
+	)
+//******************************************************************************
+// LAST MODIFIED : 17 May 2005
+//
+// DESCRIPTION :
+//==============================================================================
+{
+#if defined (EVALUATE_RETURNS_VALUE)
+	Function_handle result(0);
+#else // defined (EVALUATE_RETURNS_VALUE)
+	bool result(true);
+#endif // defined (EVALUATE_RETURNS_VALUE)
+
+	if (!evaluated())
+	{
+		Function_variable_union_handle dependent_variable_union;
+
+#if defined (EVALUATE_RETURNS_VALUE)
+#else // defined (EVALUATE_RETURNS_VALUE)
+		result=false;
+#endif // defined (EVALUATE_RETURNS_VALUE)
+		if (dependent_variable_union=boost::dynamic_pointer_cast<
+			Function_variable_union,Function_variable>(dependent_variable))
+		{
+			bool first,valid;
+			Function_derivatnew_handle part_derivative;
+			Function_size_type i,j,k,l,part_matrix_row,result_number_of_matrices,
+				result_number_of_rows;
+			Function_variable_handle part_derivative_output;
+			Function_variable_iterator atomic_variable_iterator,
+				atomic_variable_iterator_end;
+			std::list<Function_derivatnew_handle>::iterator part_derivative_iterator;
+			std::list<Function_size_type> rows_list;
+			std::list<Function_size_type>::iterator rows_list_iterator;
+			std::list<Function_variable_handle>&
+				variables_list=dependent_variable_union->variables_list;
+			std::list<Function_variable_handle>::iterator variable_iterator;
+			std::list< std::list<Matrix>::iterator > part_matrix_iterators;
+
+			i=derivatives_list.size();
+			valid=(i==variables_list.size());
+			first=true;
+			part_derivative_iterator=derivatives_list.begin();
+			variable_iterator=variables_list.begin();
+			result_number_of_rows=0;
+			while (valid&&(i>0))
+			{
+				Function_variable_handle variable= *variable_iterator;
+
+				if ((part_derivative= *part_derivative_iterator)&&
+					(part_derivative_output=part_derivative->output())&&
+					(part_derivative_output->evaluate()))
+				{
+					Derivative_matrix&
+						part_derivative_matrix=part_derivative->derivative_matrix;
+
+					if (first)
+					{
+						first=false;
+						result_number_of_matrices=part_derivative_matrix.size();
+						result_number_of_rows=part_derivative_matrix.front().size1();
+						rows_list.push_back(result_number_of_rows);
+						for (part_matrix_row=0;part_matrix_row<result_number_of_rows;
+							part_matrix_row++)
+						{
+							rows_list.push_back(part_matrix_row);
+						}
+					}
+					else
+					{
+						if (valid=
+							(result_number_of_matrices==part_derivative_matrix.size()))
+						{
+							rows_list.push_back(0);
+							rows_list_iterator=rows_list.end();
+							--rows_list_iterator;
+							part_matrix_row=0;
+							atomic_variable_iterator_end=variable->end_atomic();
+							for (atomic_variable_iterator=variable->begin_atomic();
+								atomic_variable_iterator!=atomic_variable_iterator_end;
+								++atomic_variable_iterator)
+							{
+								if (1==(*atomic_variable_iterator)->number_differentiable())
+								{
+									if (!repeat_atomic_variable(variables_list,variable_iterator,
+										atomic_variable_iterator))
+									{
+										rows_list.push_back(part_matrix_row);
+										++(*rows_list_iterator);
+										++result_number_of_rows;
+									}
+									++part_matrix_row;
+								}
+							}
+						}
+					}
+					part_matrix_iterators.push_back(part_derivative_matrix.begin());
+				}
+				else
+				{
+					valid=false;
+				}
+				--i;
+				++part_derivative_iterator;
+				++variable_iterator;
+			}
+			//???DB.  Where I'm up to
+			if (valid)
+			{
+				std::list<Matrix> matrices;
+
+				derivative_matrix.clear();
+				for (k=result_number_of_matrices;k>0;--k)
+				{
+					std::list< std::list<Matrix>::iterator >::iterator
+						part_matrix_iterators_iterator=part_matrix_iterators.begin();
+					Function_size_type result_number_of_columns=
+						(*part_matrix_iterators_iterator)->size2(),result_row_number;
+					Matrix matrix(result_number_of_rows,result_number_of_columns);
+
+					result_row_number=0;
+					rows_list_iterator=rows_list.begin();
+					while (result_row_number<result_number_of_rows)
+					{
+						Matrix& part_matrix= **part_matrix_iterators_iterator;
+
+						l= *rows_list_iterator;
+						++rows_list_iterator;
+						while (l>0)
+						{
+							i= *rows_list_iterator;
+							++rows_list_iterator;
+							for (j=0;j<result_number_of_columns;++j)
+							{
+								matrix(result_row_number,j)=part_matrix(i,j);
+							}
+							l--;
+							++result_row_number;
+						}
+						(*part_matrix_iterators_iterator)++;
+						part_matrix_iterators_iterator++;
+					}
+					matrices.push_back(matrix);
+				}
+				try
+				{
+					derivative_matrix=Derivative_matrix(matrices);
+					set_evaluated();
+#if defined (EVALUATE_RETURNS_VALUE)
+#else // defined (EVALUATE_RETURNS_VALUE)
+					result=true;
+#endif // defined (EVALUATE_RETURNS_VALUE)
+				}
+				catch (Derivative_matrix::Construction_exception)
+				{
+					// do nothing
+				}
+			}
+		}
+	}
+#if defined (EVALUATE_RETURNS_VALUE)
+	//???DB.  To be done
+	//???DB.  Has to find the appropriate derivative and row
+	//???DB.  How does get_value work?
+#endif // defined (EVALUATE_RETURNS_VALUE)
+
+	return (result);
+}
+#endif // defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
+#endif // defined (USE_FUNCTION_VARIABLE_UNION_EVALUATE)
+
+
+// class Function_variable_iterator_representation_atomic_union
+// ------------------------------------------------------------
 
 class Function_variable_iterator_representation_atomic_union: public
 	Function_variable_iterator_representation
@@ -580,13 +891,27 @@ Function_handle Function_variable_union::evaluate()
 #else // defined (EVALUATE_RETURNS_VALUE)
 bool Function_variable_union::evaluate()
 //******************************************************************************
-// LAST MODIFIED : 30 March 2005
+// LAST MODIFIED : 16 May 2005
 //
 // DESCRIPTION :
-// ???DB.  To be done?
 //==============================================================================
 {
-	return (false);
+	bool result=true;
+	Function_size_type i=variables_list.size();
+	std::list<Function_variable_handle>::iterator variable_iterator=
+		variables_list.begin();
+
+	while (i>0)
+	{
+		if (!((*variable_iterator)->evaluate()))
+		{
+			result=false;
+		}
+		--i;
+		++variable_iterator;
+	}
+
+	return (result);
 }
 #endif // defined (EVALUATE_RETURNS_VALUE)
 
@@ -754,17 +1079,15 @@ Function_handle Function_variable_union::evaluate_derivative(
 }
 #else // defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
 Function_handle Function_variable_union::derivative(
-	const std::list<Function_variable_handle>&
-//	independent_variables
-	)
+	const std::list<Function_variable_handle>& independent_variables)
 //******************************************************************************
-// LAST MODIFIED : 30 March 2005
+// LAST MODIFIED : 17 May 2005
 //
 // DESCRIPTION :
-// ???DB.  To be done
 //==============================================================================
 {
-	return (Function_handle(0));
+	return (Function_handle(new Function_derivatnew_union(
+		Function_variable_handle(this),independent_variables)));
 }
 #endif // defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
 #endif // defined (USE_FUNCTION_VARIABLE_UNION_EVALUATE)

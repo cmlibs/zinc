@@ -1,7 +1,7 @@
 //******************************************************************************
 // FILE : function_matrix_sum.cpp
 //
-// LAST MODIFIED : 22 April 2005
+// LAST MODIFIED : 23 May 2005
 //
 // DESCRIPTION :
 //==============================================================================
@@ -298,7 +298,7 @@ bool
 	)
 #endif // defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
 //******************************************************************************
-// LAST MODIFIED : 22 April 2005
+// LAST MODIFIED : 23 May 2005
 //
 // DESCRIPTION :
 //==============================================================================
@@ -453,7 +453,11 @@ bool
 							matrix_iterator_2++;
 						}
 						derivative_matrix=Derivative_matrix(matrices);
+						set_evaluated();
+#if defined (EVALUATE_RETURNS_VALUE)
+#else // defined (EVALUATE_RETURNS_VALUE)
 						result=true;
+#endif // defined (EVALUATE_RETURNS_VALUE)
 #endif // defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
 					}
 					else
@@ -501,7 +505,11 @@ bool
 							matrix_iterator_2++;
 						}
 						derivative_matrix=Derivative_matrix(matrices);
+						set_evaluated();
+#if defined (EVALUATE_RETURNS_VALUE)
+#else // defined (EVALUATE_RETURNS_VALUE)
 						result=true;
+#endif // defined (EVALUATE_RETURNS_VALUE)
 #endif // defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
 					}
 				}
@@ -553,7 +561,11 @@ bool
 							matrix_iterator_2++;
 						}
 						derivative_matrix=Derivative_matrix(matrices);
+						set_evaluated();
+#if defined (EVALUATE_RETURNS_VALUE)
+#else // defined (EVALUATE_RETURNS_VALUE)
 						result=true;
+#endif // defined (EVALUATE_RETURNS_VALUE)
 #endif // defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
 					}
 					else
@@ -593,7 +605,11 @@ bool
 							matrix_iterator_2++;
 						}
 						derivative_matrix=Derivative_matrix(matrices);
+						set_evaluated();
+#if defined (EVALUATE_RETURNS_VALUE)
+#else // defined (EVALUATE_RETURNS_VALUE)
 						result=true;
+#endif // defined (EVALUATE_RETURNS_VALUE)
 #endif // defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
 					}
 				}

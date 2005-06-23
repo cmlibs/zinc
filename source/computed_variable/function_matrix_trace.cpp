@@ -1,7 +1,7 @@
 //******************************************************************************
 // FILE : function_matrix_trace.cpp
 //
-// LAST MODIFIED : 26 April 2005
+// LAST MODIFIED : 23 May 2005
 //
 // DESCRIPTION :
 //==============================================================================
@@ -214,7 +214,7 @@ bool
 	)
 #endif // defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
 //******************************************************************************
-// LAST MODIFIED : 26 April 2005
+// LAST MODIFIED : 23 May 2005
 //
 // DESCRIPTION :
 //==============================================================================
@@ -323,7 +323,11 @@ bool
 					matrix_iterator++;
 				}
 				derivative_matrix=Derivative_matrix(matrices);
+				set_evaluated();
+#if defined (EVALUATE_RETURNS_VALUE)
+#else // defined (EVALUATE_RETURNS_VALUE)
 				result=true;
+#endif // defined (EVALUATE_RETURNS_VALUE)
 #endif // defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
 			}
 		}

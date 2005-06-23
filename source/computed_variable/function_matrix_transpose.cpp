@@ -1,7 +1,7 @@
 //******************************************************************************
 // FILE : function_matrix_transpose.cpp
 //
-// LAST MODIFIED : 26 April 2005
+// LAST MODIFIED : 23 May 2005
 //
 // DESCRIPTION :
 //==============================================================================
@@ -269,7 +269,7 @@ bool
 	)
 #endif // defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
 //******************************************************************************
-// LAST MODIFIED : 26 April 2005
+// LAST MODIFIED : 23 May 2005
 //
 // DESCRIPTION :
 //==============================================================================
@@ -393,6 +393,7 @@ bool
 
 						derivative_matrix.clear();
 						matrix_iterator=(matrix_derivative->derivative_matrix).begin();
+						number_of_dependent_values=matrix_iterator->size1();
 						for (k=(matrix_derivative->derivative_matrix).size();k>0;--k)
 						{
 							Matrix& derivative= *matrix_iterator;
@@ -412,7 +413,11 @@ bool
 							matrix_iterator++;
 						}
 						derivative_matrix=Derivative_matrix(matrices);
+						set_evaluated();
+#if defined (EVALUATE_RETURNS_VALUE)
+#else // defined (EVALUATE_RETURNS_VALUE)
 						result=true;
+#endif // defined (EVALUATE_RETURNS_VALUE)
 #endif // defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
 					}
 					else
@@ -455,7 +460,11 @@ bool
 							matrix_iterator++;
 						}
 						derivative_matrix=Derivative_matrix(matrices);
+						set_evaluated();
+#if defined (EVALUATE_RETURNS_VALUE)
+#else // defined (EVALUATE_RETURNS_VALUE)
 						result=true;
+#endif // defined (EVALUATE_RETURNS_VALUE)
 #endif // defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
 					}
 				}
@@ -502,7 +511,11 @@ bool
 							matrix_iterator++;
 						}
 						derivative_matrix=Derivative_matrix(matrices);
+						set_evaluated();
+#if defined (EVALUATE_RETURNS_VALUE)
+#else // defined (EVALUATE_RETURNS_VALUE)
 						result=true;
+#endif // defined (EVALUATE_RETURNS_VALUE)
 #endif // defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
 					}
 					else
@@ -537,7 +550,11 @@ bool
 							matrix_iterator++;
 						}
 						derivative_matrix=Derivative_matrix(matrices);
+						set_evaluated();
+#if defined (EVALUATE_RETURNS_VALUE)
+#else // defined (EVALUATE_RETURNS_VALUE)
 						result=true;
+#endif // defined (EVALUATE_RETURNS_VALUE)
 #endif // defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
 					}
 				}

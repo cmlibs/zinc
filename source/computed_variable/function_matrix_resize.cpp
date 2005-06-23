@@ -1,7 +1,7 @@
 //******************************************************************************
 // FILE : function_matrix_resize.cpp
 //
-// LAST MODIFIED : 11 May 2005
+// LAST MODIFIED : 23 May 2005
 //
 // DESCRIPTION :
 //==============================================================================
@@ -259,7 +259,7 @@ bool
 	)
 #endif // defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
 //******************************************************************************
-// LAST MODIFIED : 11 May 2005
+// LAST MODIFIED : 23 May 2005
 //
 // DESCRIPTION :
 //==============================================================================
@@ -277,6 +277,11 @@ bool
 	{
 		boost::intrusive_ptr< Function_matrix_resize<Scalar> >
 			function_matrix_resize;
+#if defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
+#else // defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
+		boost::intrusive_ptr< Function_variable_matrix_resize<Scalar> >
+			function_variable_matrix_resize;
+#endif // defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
 
 #if defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
 #else // defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
@@ -285,8 +290,9 @@ bool
 		if (
 #if defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
 #else // defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
-			boost::dynamic_pointer_cast<Function_variable_matrix_resize<Scalar>,
-			Function_variable>(dependent_variable)&&
+			(function_variable_matrix_resize=boost::dynamic_pointer_cast<
+			Function_variable_matrix_resize<Scalar>,Function_variable>(
+			dependent_variable))&&
 #endif // defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
 			(function_matrix_resize=boost::dynamic_pointer_cast<
 			Function_matrix_resize<Scalar>,Function>(
@@ -319,8 +325,28 @@ bool
 				(0<(number_of_columns=
 				function_matrix_resize->number_of_columns_private))&&
 				(0==size%number_of_columns)&&
-				(row_private<=(number_of_rows=size/number_of_columns))&&
-				(column_private<=number_of_columns)&&
+				(
+#if defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
+#else // defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
+				(
+#endif // defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
+				row_private
+#if defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
+#else // defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
+				=function_variable_matrix_resize->row())
+#endif // defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
+				<=(number_of_rows=size/number_of_columns))&&
+				(
+#if defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
+#else // defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
+				(
+#endif // defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
+				column_private
+#if defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
+#else // defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
+				=function_variable_matrix_resize->column())
+#endif // defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
+				<=number_of_columns)&&
 #if defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
 				(derivative=boost::dynamic_pointer_cast<Function_matrix<Scalar>,
 				Function>(function_matrix_resize->matrix_private->
@@ -393,7 +419,11 @@ bool
 							matrix_iterator++;
 						}
 						derivative_matrix=Derivative_matrix(matrices);
+						set_evaluated();
+#if defined (EVALUATE_RETURNS_VALUE)
+#else // defined (EVALUATE_RETURNS_VALUE)
 						result=true;
+#endif // defined (EVALUATE_RETURNS_VALUE)
 #endif // defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
 					}
 				}
@@ -440,7 +470,11 @@ bool
 							matrix_iterator++;
 						}
 						derivative_matrix=Derivative_matrix(matrices);
+						set_evaluated();
+#if defined (EVALUATE_RETURNS_VALUE)
+#else // defined (EVALUATE_RETURNS_VALUE)
 						result=true;
+#endif // defined (EVALUATE_RETURNS_VALUE)
 #endif // defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
 					}
 					else
@@ -475,7 +509,11 @@ bool
 							matrix_iterator++;
 						}
 						derivative_matrix=Derivative_matrix(matrices);
+						set_evaluated();
+#if defined (EVALUATE_RETURNS_VALUE)
+#else // defined (EVALUATE_RETURNS_VALUE)
 						result=true;
+#endif // defined (EVALUATE_RETURNS_VALUE)
 #endif // defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
 					}
 				}

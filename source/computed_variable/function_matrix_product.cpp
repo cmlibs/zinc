@@ -1,7 +1,7 @@
 //******************************************************************************
 // FILE : function_matrix_product.cpp
 //
-// LAST MODIFIED : 21 April 2005
+// LAST MODIFIED : 25 May 2005
 //
 // DESCRIPTION :
 //
@@ -374,7 +374,7 @@ Function_derivatnew_matrix_product::Function_derivatnew_matrix_product(
 	const std::list<Function_variable_handle>& independent_variables):
 	Function_derivatnew(dependent_variable,independent_variables)
 //******************************************************************************
-// LAST MODIFIED : 21 April 2005
+// LAST MODIFIED : 25 May 2005
 //
 // DESCRIPTION :
 // Constructor.
@@ -382,8 +382,11 @@ Function_derivatnew_matrix_product::Function_derivatnew_matrix_product(
 {
 	boost::intrusive_ptr< Function_matrix_product<Scalar> >
 		function_matrix_product;
+#if defined (OLD_CODE)
 	boost::intrusive_ptr< Function_variable_matrix<Scalar> > multiplicand,
 		multiplier;
+#endif // defined (OLD_CODE)
+	boost::intrusive_ptr< Function_matrix<Scalar> > multiplicand,multiplier;
 	boost::intrusive_ptr< Function_variable_matrix_product<Scalar> >
 		variable_matrix_product;
 
@@ -391,11 +394,20 @@ Function_derivatnew_matrix_product::Function_derivatnew_matrix_product(
 		Function_variable_matrix_product<Scalar>,Function_variable>(
 		dependent_variable))&&(function_matrix_product=
 		boost::dynamic_pointer_cast<Function_matrix_product<Scalar>,
-		Function>(dependent_variable->function()))&&(multiplicand=
+		Function>(dependent_variable->function()))&&
+#if defined (OLD_CODE)
+		(multiplicand=
 		boost::dynamic_pointer_cast<Function_variable_matrix<Scalar>,
 		Function_variable>(function_matrix_product->multiplicand_private))&&
 		(multiplier=boost::dynamic_pointer_cast<Function_variable_matrix<Scalar>,
-		Function_variable>(function_matrix_product->multiplier_private)))
+		Function_variable>(function_matrix_product->multiplier_private))
+#endif // defined (OLD_CODE)
+		(function_matrix_product->multiplicand_private->evaluate)()&&
+		(multiplicand=boost::dynamic_pointer_cast<Function_matrix<Scalar>,
+		Function>(function_matrix_product->multiplicand_private->get_value()))&&
+		(function_matrix_product->multiplier_private->evaluate)()&&
+		(multiplier=boost::dynamic_pointer_cast<Function_matrix<Scalar>,
+		Function>(function_matrix_product->multiplier_private->get_value())))
 	{
 		bool valid;
 		Function_variable_handle intermediate_variable(0);
@@ -575,7 +587,7 @@ bool
 	)
 #endif // defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
 //******************************************************************************
-// LAST MODIFIED : 21 April 2005
+// LAST MODIFIED : 23 May 2005
 //
 // DESCRIPTION :
 //==============================================================================
@@ -939,7 +951,11 @@ bool
 						{
 							derivative_matrix=
 								temp_derivative_matrix*(derivative_g->derivative_matrix);
+							set_evaluated();
+#if defined (EVALUATE_RETURNS_VALUE)
+#else // defined (EVALUATE_RETURNS_VALUE)
 							result=true;
+#endif // defined (EVALUATE_RETURNS_VALUE)
 						}
 					}
 					catch (Derivative_matrix::Construction_exception)

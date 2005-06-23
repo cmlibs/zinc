@@ -1,7 +1,7 @@
 //******************************************************************************
 // FILE : function_matrix_implementation.cpp
 //
-// LAST MODIFIED : 18 April 2005
+// LAST MODIFIED : 16 May 2005
 //
 // DESCRIPTION :
 //???DB.  Should be linear transformation (with Function_variable_matrix as an
@@ -25,7 +25,7 @@ namespace lapack = boost::numeric::bindings::lapack;
 
 #if defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
 #else // defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
-#include "computed_variable/function_derivative.hpp"
+#include "computed_variable/function_identity.hpp"
 #endif // defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
 
 #define Function_matrix_INPUT_AND_OUTPUT_ARE_DISTINCT
@@ -33,9 +33,6 @@ namespace lapack = boost::numeric::bindings::lapack;
 #if defined (Function_matrix_INPUT_AND_OUTPUT_ARE_DISTINCT)
 // module classes
 // ==============
-
-//???DB.  Testing
-class Function_derivatnew_identity;
 
 // class Function_variable_matrix_input
 // ------------------------------------
@@ -101,11 +98,48 @@ class Function_variable_matrix_input :
 };
 
 
+#if defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
+#else // defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
+// class Function_derivatnew_matrix_output
+// ---------------------------------------
+
+EXPORT template<typename Value_type>
+class Function_derivatnew_matrix_output : public Function_derivatnew
+//******************************************************************************
+// LAST MODIFIED : 16 May 2005
+//
+// DESCRIPTION :
+// ???DB.  Same as Function_derivatnew_identity except for equivalent.
+//==============================================================================
+{
+	public:
+		// for construction exception
+		class Construction_exception {};
+		// constructor
+		Function_derivatnew_matrix_output(
+			const Function_variable_handle& dependent_variable,
+			const std::list<Function_variable_handle>& independent_variables);
+		// destructor
+		~Function_derivatnew_matrix_output();
+	// inherited
+	private:
+#if defined (EVALUATE_RETURNS_VALUE)
+		virtual Function_handle evaluate(Function_variable_handle atomic_variable);
+#else // defined (EVALUATE_RETURNS_VALUE)
+		virtual bool evaluate(Function_variable_handle atomic_variable);
+#endif // defined (EVALUATE_RETURNS_VALUE)
+};
+#endif // defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
+
+
+// class Function_variable_matrix_output
+// -------------------------------------
+
 EXPORT template<typename Value_type>
 class Function_variable_matrix_output :
 	public Function_variable_matrix<Value_type>
 //******************************************************************************
-// LAST MODIFIED : 18 April 2005
+// LAST MODIFIED : 16 May 2005
 //
 // DESCRIPTION :
 //==============================================================================
@@ -132,7 +166,7 @@ class Function_variable_matrix_output :
 		Function_handle derivative(
 			const std::list<Function_variable_handle>& independent_variables)
 		{
-			return (Function_handle(new Function_derivatnew_identity(
+			return (Function_handle(new Function_derivatnew_matrix_output<Value_type>(
 				Function_variable_handle(this),independent_variables)));
 		}
 #endif // defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
@@ -160,6 +194,272 @@ class Function_variable_matrix_output :
 			const Function_variable_matrix_output<Value_type>& variable):
 			Function_variable_matrix<Value_type>(variable){};
 };
+
+
+#if defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
+#else // defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
+// class Function_derivatnew_matrix_output
+// ---------------------------------------
+
+EXPORT template<typename Value_type>
+Function_derivatnew_matrix_output<Value_type>::
+	Function_derivatnew_matrix_output(
+	const Function_variable_handle& dependent_variable,
+	const std::list<Function_variable_handle>& independent_variables):
+	Function_derivatnew(dependent_variable,independent_variables){}
+//******************************************************************************
+// LAST MODIFIED : 16 May 2005
+//
+// DESCRIPTION :
+// Constructor.
+//==============================================================================
+
+EXPORT template<typename Value_type>
+Function_derivatnew_matrix_output<Value_type>::
+	~Function_derivatnew_matrix_output(){}
+//******************************************************************************
+// LAST MODIFIED : 16 May 2005
+//
+// DESCRIPTION :
+// Destructor.
+//==============================================================================
+
+EXPORT template<typename Value_type>
+#if defined (EVALUATE_RETURNS_VALUE)
+Function_handle
+#else // defined (EVALUATE_RETURNS_VALUE)
+bool
+#endif // defined (EVALUATE_RETURNS_VALUE)
+	Function_derivatnew_matrix_output<Value_type>::evaluate(
+	Function_variable_handle
+#if defined (EVALUATE_RETURNS_VALUE)
+	atomic_variable
+#else // defined (EVALUATE_RETURNS_VALUE)
+#endif // defined (EVALUATE_RETURNS_VALUE)
+	)
+//******************************************************************************
+// LAST MODIFIED : 16 May 2005
+//
+// DESCRIPTION :
+//==============================================================================
+{
+#if defined (EVALUATE_RETURNS_VALUE)
+	Function_handle result(0);
+#else // defined (EVALUATE_RETURNS_VALUE)
+	bool result(true);
+#endif // defined (EVALUATE_RETURNS_VALUE)
+
+	if (!evaluated())
+	{
+		Function_size_type number_of_dependent_values=dependent_variable->
+			number_differentiable();
+		std::list<Function_variable_handle>::const_iterator
+			independent_variable_iterator;
+		std::list<Matrix> matrices;
+
+#if defined (EVALUATE_RETURNS_VALUE)
+#else // defined (EVALUATE_RETURNS_VALUE)
+		result=false;
+#endif // defined (EVALUATE_RETURNS_VALUE)
+		for (independent_variable_iterator=independent_variables.begin();
+			independent_variable_iterator!=independent_variables.end();
+			++independent_variable_iterator)
+		{
+			Function_variable_handle independent_variable=
+				*independent_variable_iterator;
+			Function_size_type number_of_independent_values=independent_variable->
+				number_differentiable();
+			std::list<Matrix>::iterator matrix_iterator,last;
+
+			// calculate the derivative of dependent variable with respect to
+			//   independent variable and add to matrix list
+			{
+				Function_size_type column,row;
+				Function_variable_iterator atomic_dependent_variable_iterator,
+					atomic_dependent_variable_iterator_end,
+					atomic_independent_variable_iterator,
+					atomic_independent_variable_iterator_begin,
+					atomic_independent_variable_iterator_end;
+				Matrix new_matrix(number_of_dependent_values,
+					number_of_independent_values);
+
+				atomic_dependent_variable_iterator_end=dependent_variable->
+					end_atomic();
+				atomic_independent_variable_iterator_begin=independent_variable->
+					begin_atomic();
+				atomic_independent_variable_iterator_end=independent_variable->
+					end_atomic();
+				row=0;
+				for (atomic_dependent_variable_iterator=dependent_variable->
+					begin_atomic();atomic_dependent_variable_iterator!=
+					atomic_dependent_variable_iterator_end;
+					++atomic_dependent_variable_iterator)
+				{
+					Function_variable_handle atomic_dependent_variable=
+						*atomic_dependent_variable_iterator;
+
+					if (1==atomic_dependent_variable->number_differentiable())
+					{
+						boost::intrusive_ptr< Function_variable_matrix<Value_type> >
+							atomic_dependent_variable_matrix,
+							atomic_independent_variable_matrix;
+
+#if defined (DEBUG)
+						//???debug
+						std::cout << *atomic_dependent_variable->get_string_representation() << " " << std::endl;
+						//???debug
+						std::cout << "  " << typeid(*atomic_dependent_variable).name() << std::endl;
+#endif // defined (DEBUG)
+						if (atomic_dependent_variable_matrix=boost::dynamic_pointer_cast<
+							Function_variable_matrix_output<Value_type>,Function_variable>(
+							atomic_dependent_variable))
+						{
+							column=0;
+							for (atomic_independent_variable_iterator=
+								atomic_independent_variable_iterator_begin;
+								atomic_independent_variable_iterator!=
+								atomic_independent_variable_iterator_end;
+								atomic_independent_variable_iterator++)
+							{
+								Function_variable_handle atomic_independent_variable=
+									*atomic_independent_variable_iterator;
+
+								if (1==atomic_independent_variable->number_differentiable())
+								{
+									if (((atomic_independent_variable_matrix=
+										boost::dynamic_pointer_cast<Function_variable_matrix_input<
+										Value_type>,Function_variable>(
+										atomic_independent_variable))||
+										(atomic_independent_variable_matrix=
+										boost::dynamic_pointer_cast<Function_variable_matrix_output<
+										Value_type>,Function_variable>(
+										atomic_independent_variable)))&&
+										equivalent(atomic_dependent_variable_matrix->function(),
+										atomic_independent_variable_matrix->function())&&
+										(atomic_dependent_variable_matrix->row()==
+										atomic_independent_variable_matrix->row())&&
+										(atomic_dependent_variable_matrix->column()==
+										atomic_independent_variable_matrix->column()))
+									{
+										new_matrix(row,column)=1;
+									}
+									else
+									{
+										new_matrix(row,column)=0;
+									}
+									++column;
+								}
+							}
+							++row;
+						}
+						else if (atomic_dependent_variable_matrix=
+							boost::dynamic_pointer_cast<Function_variable_matrix_input<
+							Value_type>,Function_variable>(atomic_dependent_variable))
+						{
+							column=0;
+							for (atomic_independent_variable_iterator=
+								atomic_independent_variable_iterator_begin;
+								atomic_independent_variable_iterator!=
+								atomic_independent_variable_iterator_end;
+								atomic_independent_variable_iterator++)
+							{
+								Function_variable_handle atomic_independent_variable=
+									*atomic_independent_variable_iterator;
+
+								if (1==atomic_independent_variable->number_differentiable())
+								{
+									if ((atomic_independent_variable_matrix=
+										boost::dynamic_pointer_cast<Function_variable_matrix_input<
+										Value_type>,Function_variable>(
+										atomic_independent_variable))&&
+										equivalent(atomic_dependent_variable_matrix->function(),
+										atomic_independent_variable_matrix->function())&&
+										(atomic_dependent_variable_matrix->row()==
+										atomic_independent_variable_matrix->row())&&
+										(atomic_dependent_variable_matrix->column()==
+										atomic_independent_variable_matrix->column()))
+									{
+										new_matrix(row,column)=1;
+									}
+									else
+									{
+										new_matrix(row,column)=0;
+									}
+									++column;
+								}
+							}
+							++row;
+						}
+					}
+#if defined (OLD_CODE)
+					{
+						column=0;
+						for (atomic_independent_variable_iterator=
+							atomic_independent_variable_iterator_begin;
+							atomic_independent_variable_iterator!=
+							atomic_independent_variable_iterator_end;
+							atomic_independent_variable_iterator++)
+						{
+							Function_variable_handle atomic_independent_variable=
+								*atomic_independent_variable_iterator;
+
+							if (1==atomic_independent_variable->number_differentiable())
+							{
+#if defined (DEBUG)
+								//???debug
+								std::cout << row << " " << column << " " << *atomic_dependent_variable->get_string_representation() << " " << *atomic_independent_variable->get_string_representation() << std::endl;
+								//???debug
+								std::cout << "  " << typeid(atomic_dependent_variable->function()).name() << " " << typeid(atomic_independent_variable->function()).name() << std::endl;
+#endif // defined (DEBUG)
+								if (equivalent(atomic_dependent_variable,
+									atomic_independent_variable))
+								{
+									new_matrix(row,column)=1;
+								}
+								else
+								{
+									new_matrix(row,column)=0;
+								}
+								++column;
+							}
+						}
+						++row;
+					}
+#endif // defined (OLD_CODE)
+				}
+				matrices.push_back(new_matrix);
+			}
+			last=matrices.end();
+			--last;
+			for (matrix_iterator=matrices.begin();matrix_iterator!=last;
+				++matrix_iterator)
+			{
+				Matrix& matrix= *matrix_iterator;
+				Matrix new_matrix((matrix.size1)(),
+					number_of_independent_values*(matrix.size2)());
+
+				new_matrix.clear();
+				matrices.push_back(new_matrix);
+			}
+		}
+		derivative_matrix=Derivative_matrix(matrices);
+		set_evaluated();
+#if defined (EVALUATE_RETURNS_VALUE)
+#else // defined (EVALUATE_RETURNS_VALUE)
+		result=true;
+#endif // defined (EVALUATE_RETURNS_VALUE)
+	}
+#if defined (EVALUATE_RETURNS_VALUE)
+	if (evaluated())
+	{
+		result=get_value(atomic_variable);
+	}
+#else // defined (EVALUATE_RETURNS_VALUE)
+#endif // defined (EVALUATE_RETURNS_VALUE)
+
+	return (result);
+}
+#endif // defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
 #endif // defined (Function_matrix_INPUT_AND_OUTPUT_ARE_DISTINCT)
 
 

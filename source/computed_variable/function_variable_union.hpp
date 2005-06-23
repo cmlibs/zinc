@@ -1,7 +1,7 @@
 //******************************************************************************
 // FILE : function_variable_union.hpp
 //
-// LAST MODIFIED : 23 February 2005
+// LAST MODIFIED : 17 May 2005
 //
 // DESCRIPTION :
 // A union of variables.  The list of atomic specifiers [begin_atomic(),
@@ -19,12 +19,13 @@
 
 class Function_variable_union : public Function_variable
 //******************************************************************************
-// LAST MODIFIED : 23 February 2005
+// LAST MODIFIED : 17 May 2005
 //
 // DESCRIPTION :
 // A union of other variable(s).
 //==============================================================================
 {
+	friend class Function_derivatnew_union;
 	friend class Function_variable_iterator_representation_atomic_union;
 	template<class Value_type_1,class Value_type_2>
 		friend bool equivalent(boost::intrusive_ptr<Value_type_1> const &,

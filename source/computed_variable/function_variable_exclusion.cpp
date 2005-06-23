@@ -183,7 +183,7 @@ bool
 					{
 						++exclusion_atomic_variable_iterator;
 					}
-					if (exclusion_atomic_variable_iterator!=
+					if (exclusion_atomic_variable_iterator==
 						exclusion_atomic_variable_iterator_end)
 					{
 						universe_row_mapping[row]=result_number_of_rows;
@@ -214,7 +214,7 @@ bool
 						{
 							if ((row=universe_row_mapping[i])<universe_number_of_rows)
 							{
-								for (k=0;k<number_of_columns;++k)
+								for (j=0;j<number_of_columns;++j)
 								{
 									result_matrix(row,j)=universe_matrix(i,j);
 								}
