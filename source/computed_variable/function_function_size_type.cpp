@@ -1,7 +1,7 @@
 //******************************************************************************
 // FILE : function_function_size_type.cpp
 //
-// LAST MODIFIED : 28 April 2005
+// LAST MODIFIED : 11 May 2005
 //
 // DESCRIPTION :
 //==============================================================================
@@ -15,6 +15,7 @@
 #if defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
 #else // defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
 #include "computed_variable/function_derivative.hpp"
+#include "computed_variable/function_identity.hpp"
 #endif // defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
 
 // module classes
