@@ -1,7 +1,7 @@
 //******************************************************************************
 // FILE : function_linear_span.cpp
 //
-// LAST MODIFIED : 29 April 2005
+// LAST MODIFIED : 23 May 2005
 //
 // DESCRIPTION :
 // ???DB.  Need to be able to turn off change notification so that can change
@@ -836,7 +836,7 @@ bool
 	)
 #endif // defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
 //******************************************************************************
-// LAST MODIFIED : 29 April 2005
+// LAST MODIFIED : 23 May 2005
 //
 // DESCRIPTION :
 //==============================================================================
@@ -1025,6 +1025,10 @@ bool
 								Function_handle(new Function_matrix<Scalar>(result_matrix));
 #else // defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
 							derivative_matrix=Derivative_matrix(matrices);
+							set_evaluated();
+#if defined (EVALUATE_RETURNS_VALUE)
+#else // defined (EVALUATE_RETURNS_VALUE)
+#endif // defined (EVALUATE_RETURNS_VALUE)
 							result=true;
 #endif // defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
 						}

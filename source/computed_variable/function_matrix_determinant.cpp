@@ -1,7 +1,7 @@
 //******************************************************************************
 // FILE : function_matrix_determinant.cpp
 //
-// LAST MODIFIED : 21 April 2005
+// LAST MODIFIED : 23 May 2005
 //
 // DESCRIPTION :
 //==============================================================================
@@ -365,7 +365,7 @@ bool
 	)
 #endif // defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
 //******************************************************************************
-// LAST MODIFIED : 20 April 2005
+// LAST MODIFIED : 23 May 2005
 //
 // DESCRIPTION :
 //==============================================================================
@@ -604,7 +604,11 @@ bool
 
 						derivative_matrix=
 							temp_derivative_matrix*(matrix_derivative->derivative_matrix);
+						set_evaluated();
+#if defined (EVALUATE_RETURNS_VALUE)
+#else // defined (EVALUATE_RETURNS_VALUE)
 						result=true;
+#endif // defined (EVALUATE_RETURNS_VALUE)
 					}
 					catch (Derivative_matrix::Construction_exception)
 					{
