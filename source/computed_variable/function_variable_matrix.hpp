@@ -52,7 +52,7 @@ class Function_variable_matrix : public Function_variable
 		virtual Function_variable_handle clone() const;
 		virtual string_handle get_string_representation();
 #if defined (EVALUATE_RETURNS_VALUE)
-		virtual Function_handle evaluate(void);
+		virtual Function_handle evaluate();
 #else // defined (EVALUATE_RETURNS_VALUE)
 		virtual bool evaluate();
 #endif // defined (EVALUATE_RETURNS_VALUE)
