@@ -1,7 +1,7 @@
 //******************************************************************************
 // FILE : function_variable.hpp
 //
-// LAST MODIFIED : 14 April 2005
+// LAST MODIFIED : 27 June 2005
 //
 // DESCRIPTION :
 // An abstract class for specifying input/independent and output/dependent
@@ -114,7 +114,7 @@ class Function_variable_iterator:
 
 class Function_variable
 //******************************************************************************
-// LAST MODIFIED : 14 April 2005
+// LAST MODIFIED : 27 June 2005
 //
 // DESCRIPTION :
 // A specification for an input/independent and/or output/dependent variable of
@@ -135,7 +135,7 @@ class Function_variable
 		// evaluate creates a new Function which is the variable's value with the
 		//   specified <input> replaced by the given <value>.  For a dependent
 		//   variable, this will involve evaluating the variable's function
-		virtual Function_handle evaluate();
+		virtual Function_handle evaluate(void);
 		virtual Function_handle evaluate(Function_variable_handle input,
 			Function_handle value);
 #else // defined (EVALUATE_RETURNS_VALUE)
