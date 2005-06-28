@@ -60,6 +60,7 @@ Functions for executing cmiss commands.
 #include "image_processing/computed_field_cube_plugin_all.h"
 #include "image_processing/computed_field_dijkstra_path.h"
 #include "image_processing/computed_field_dilate_filter.h"
+#include "image_processing/computed_field_dijkstra_path.h"
 #include "image_processing/computed_field_edge_detection.h"
 #include "image_processing/computed_field_edge_direction.h"
 #include "image_processing/computed_field_erode_filter.h"

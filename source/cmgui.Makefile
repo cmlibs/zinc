@@ -927,6 +927,7 @@ IMAGE_PROCESSING_SRCS = \
 	image_processing/computed_field_cube_plugin_all.c \
 	image_processing/computed_field_dijkstra_path.c \
 	image_processing/computed_field_dilate_filter.c \
+	image_processing/computed_field_dijkstra_path.c \
 	image_processing/computed_field_edge_detection.c \
 	image_processing/computed_field_edge_direction.c \
 	image_processing/computed_field_erode_filter.c \
