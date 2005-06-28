@@ -1,12 +1,14 @@
 //******************************************************************************
 // FILE : function_matrix.hpp
 //
-// LAST MODIFIED : 23 February 2005
+// LAST MODIFIED : 28 June 2005
 //
 // DESCRIPTION :
 //==============================================================================
 #if !defined (__FUNCTION_MATRIX_HPP__)
 #define __FUNCTION_MATRIX_HPP__
+
+//#define DO_NOT_EXPLICITLY_INCLUDE_function_matrix_implementation
 
 #include <list>
 #include <utility>
@@ -80,10 +82,10 @@ class Function_matrix : public Function
 		ublas::matrix<Value_type,ublas::column_major> values;
 };
 
-#if defined (OLD_CODE)
+#if defined (DO_NOT_EXPLICITLY_INCLUDE_function_matrix_implementation)
 #if !defined (ONE_TEMPLATE_DEFINITION_IMPLEMENTED)
 #include "computed_variable/function_matrix_implementation.cpp"
 #endif // !defined (ONE_TEMPLATE_DEFINITION_IMPLEMENTED)
-#endif // defined (OLD_CODE)
+#endif // defined (DO_NOT_EXPLICITLY_INCLUDE_function_matrix_implementation)
 
 #endif /* !defined (__FUNCTION_MATRIX_HPP__) */
