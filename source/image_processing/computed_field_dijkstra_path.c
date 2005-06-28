@@ -1035,12 +1035,10 @@ DESCRIPTION :
 ==============================================================================*/
 {
 	int return_code;
-	struct Computed_field_dijkstra_path_type_specific_data *data;
+	/* struct Computed_field_dijkstra_path_type_specific_data *data;*/
 
 	ENTER(List_Computed_field_dijkstra_path);
-	if (field && (field->type_string==computed_field_dijkstra_path_type_string)
-		&& (data = (struct Computed_field_dijkstra_path_type_specific_data *)
-		field->type_specific_data))
+	if (field && (field->type_string==computed_field_dijkstra_path_type_string))
 	{
 		display_message(INFORMATION_MESSAGE,
 			"    source field : %s\n",field->source_fields[0]->name);
