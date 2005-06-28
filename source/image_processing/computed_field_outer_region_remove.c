@@ -388,6 +388,13 @@ DESCRIPTION : Implement region labeling on image cache. The image must be black-
 					{
 				        	x = 0;
 				        	ps = z * image->sizes[0] * image->sizes[1] + y*image->sizes[0] + x;
+						for (k = 0; k < image->depth; k++)
+						{
+						        result_index[ps*image->depth + k] = 0.0;
+							
+						}
+						x = 1;
+				        	ps = z * image->sizes[0] * image->sizes[1] + y*image->sizes[0] + x;
 				        	while ((x < image->sizes[0]) && *(data_index + ps*image->depth) == 1.0)
 				        	{
 				                	for (k = 0; k < image->depth; k++)
@@ -396,6 +403,7 @@ DESCRIPTION : Implement region labeling on image cache. The image must be black-
 							
 							}
 							x++;
+							ps = z * image->sizes[0] * image->sizes[1] + y*image->sizes[0] + x;
 				        	}
 					}
 				}
@@ -405,6 +413,13 @@ DESCRIPTION : Implement region labeling on image cache. The image must be black-
 					{
 				        	x = image->sizes[0] -1;
 				        	ps = z * image->sizes[0] * image->sizes[1] + y*image->sizes[0] + x;
+						for (k = 0; k < image->depth; k++)
+						{
+						        result_index[ps*image->depth + k] = 0.0;
+							
+						}
+						x = image->sizes[0] -2;
+				        	ps = z * image->sizes[0] * image->sizes[1] + y*image->sizes[0] + x;
 				        	while ((x >= 0) && *(data_index + ps*image->depth) == 1.0)
 				        	{
 				                	for (k = 0; k < image->depth; k++)
@@ -413,6 +428,7 @@ DESCRIPTION : Implement region labeling on image cache. The image must be black-
 							
 							}
 							x--;
+							ps = z * image->sizes[0] * image->sizes[1] + y*image->sizes[0] + x;
 				        	}
 					}
 				}
@@ -422,9 +438,16 @@ DESCRIPTION : Implement region labeling on image cache. The image must be black-
 			        int x, y;
 			        for (y = 0; y < image->sizes[1]; y++)
 				{
-					x = 0;
+				        x = 0;
+				        ps = y*image->sizes[0] + x;
+				        for (k = 0; k < image->depth; k++)
+					{
+						result_index[ps*image->depth + k] = 0.0;
+							
+					}
+					x = 1;
 					ps = y*image->sizes[0] + x;
-					while ((x < image->sizes[0]) && *(data_index + ps*image->depth) == 1.0)
+					while ((x < image->sizes[0])&&*(data_index + ps*image->depth) == 1.0)
 					{
 				        	for (k = 0; k < image->depth; k++)
 						{
@@ -432,13 +455,21 @@ DESCRIPTION : Implement region labeling on image cache. The image must be black-
 							
 						}
 						x++;
+						ps = y*image->sizes[0] + x;
 				        }
 				}
 				for (y = 0; y < image->sizes[1]; y++)
 				{
 				        x = image->sizes[0] -1;
 				        ps = y*image->sizes[0] + x;
-				        while ((x >= 0) && *(data_index + ps*image->depth) == 1.0)
+				        for (k = 0; k < image->depth; k++)
+					{
+						result_index[ps*image->depth + k] = 0.0;
+							
+					}
+				        x = image->sizes[0] -2;
+				        ps = y*image->sizes[0] + x;
+				        while ((x >= 0)&& *(data_index + ps*image->depth) == 1.0)
 				        {
 				        	for (k = 0; k < image->depth; k++)
 						{
@@ -446,6 +477,7 @@ DESCRIPTION : Implement region labeling on image cache. The image must be black-
 							
 						}
 						x--;
+						ps = y*image->sizes[0] + x;
 				        }
 				}
 				
