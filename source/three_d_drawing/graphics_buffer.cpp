@@ -69,12 +69,10 @@ This provides a Cmgui interface to the OpenGL contexts of many types.
 #define USE_GLX_FBCONFIG 1
 #endif /* defined (GLX_VERSION_1_3) */
 #endif /* !defined (AIX) */
-#if ! defined (SGI)
-/* Despite being in the Mesa headers we do not want to use the SGI FB extensions on systems
-   other than SGI, the GLX versions are preferable. */
+/* Despite being in the Mesa headers we do not want to use the SGI FB extensions at all,
+   the GLX versions are preferable. */
 #undef GLX_SGIX_pbuffer
 #undef GLX_SGIX_dmbuffer
-#endif /* ! defined (SGI) */
 
 /*
 Module types
