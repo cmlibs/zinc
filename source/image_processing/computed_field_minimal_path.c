@@ -370,7 +370,7 @@ No special criteria.
 
 
 static int Image_cache_minimal_action(FE_value *potential_data, 
-         int dimension, int *sizes, int *start_posi)
+         int dimension, int *sizes, int *start_posi, int *end_posi)
 /*******************************************************************************
 LAST MODIFIED : 4 May 2005
 
@@ -433,6 +433,10 @@ DESCRIPTION :
 				        result_index[new_start_position * 4 + 3] = 1.0; /*add to the alive list*/
 					
 					trial_num--;
+					if (new_start_x == end_posi[0] && new_start_y == end_posi[1])
+					{
+					        break;
+					}
 					for (i = 0; i < 4; i++)
 					{
 				        	x = new_start_x + offset[i][0];
@@ -514,16 +518,16 @@ DESCRIPTION :
 							}
 						}
 					}
-					umin = Infinite;
-					for (i = 0; i < storage_size; i++)
+					if (trial_num > 0)
 					{
-					        if (result_index[4*i+2] == 1.0)
+						umin = Infinite;
+						for (i = 0; i < storage_size; i++)
 						{
-						       umin = my_Min(umin,result_index[4*i]);
+					        	if (result_index[4*i+2] == 1.0)
+							{
+						       	umin = my_Min(umin,result_index[4*i]);
+							}
 						}
-					}
-					if (umin < Infinite)
-					{
 						for (j = 0; j < sizes[1]; j++)
 						{
 					        	for (i = 0; i < sizes[0]; i++)
@@ -574,7 +578,7 @@ DESCRIPTION :
 					result_index[new_start_position * 4 + 2] = 0.0;
 					result_index[new_start_position * 4 + 3] = 1.0;
 					trial_num--;
-				
+					
 					for (i = 0; i < 6; i++)
 					{
 				        	x = new_start_x + offset[i][0];
@@ -839,30 +843,69 @@ DESCRIPTION :
 			                    *(data_index + end_ps * image->depth))/2.0;
 			for (i = 0; i < data_size; i++)
 			{
-			        potential_data[i] = fabs(*data_index - start_end_value) + 1.0;
+			        potential_data[i] = fabs(*data_index - start_end_value)*256.0 + 25.0;
 				data_index += image->depth;
 			}
 			data_index = (FE_value *)image->data;
 			return_code = Image_cache_minimal_action(potential_data, 
-			                  image->dimension, image->sizes, start_position);
+			                  image->dimension, image->sizes, start_position, end_position);
 			if (return_code)
 			{
 				if (image->dimension == 2)
 				{
-				        FE_value x, y;
-					FE_value g_x, g_y;
-					int current, previous;
-					x = (FE_value)end_position[0];
-					y = (FE_value)end_position[1];
-					while (((int)x != start_position[0]) || ((int)y != start_position[1]))
+				        int x, y, x1, y1, pos;
+					/*FE_value g_x, g_y;*/
+					int current;
+					/*int offset[4][2] = {{-1, 0}, {1, 0}, {0, -1}, {0, 1}};*/
+					int offset[8][2] = { {-1, -1}, {-1, 1}, {1, -1}, {1, 1}, {-1, 0}, {0, 1}, {1, 0}, {0, -1} };
+					FE_value min_a;
+					x = end_position[0];
+					y = end_position[1];
+					current = x + y * image->sizes[0];
+					for (k = 0; k < image->depth; k++)
+					{
+						result_index[current*image->depth + k] = 0.0;
+					}
+					result_index[current*image->depth] = 1.0;
+					while ((x != start_position[0]) || (y != start_position[1]))
 					{
 					        /*calculate the gradient of action function*/
-					        current = (int)x + (int)y * image->sizes[0];
+						min_a = Infinite;
+						for (i = 0; i < 8; i++)
+						{
+						        x1 = x + offset[i][0];
+							y1 = y + offset[i][1];
+							if (x1 < 0 || x1 >= image->sizes[0] || y1 < 0 || y1 >= image->sizes[1])
+							{
+					        		continue;
+							}
+							pos = x1 + y1 * image->sizes[0];
+							min_a = my_Min(min_a,potential_data[pos]);
+						}
+						for (i = 0; i < 8; i++)
+						{
+						        x1 = x + offset[i][0];
+							y1 = y + offset[i][1];
+							if (x1 < 0 || x1 >= image->sizes[0] || y1 < 0 || y1 >= image->sizes[1])
+							{
+					        		continue;
+							}
+							pos = x1 + y1 * image->sizes[0];
+							if (potential_data[pos] == min_a)
+							{
+							        x = x1;
+								y = y1;
+								break;
+							}
+						}
+						current = x + y * image->sizes[0];
 						for (k = 0; k < image->depth; k++)
 						{
 						       result_index[current*image->depth + k] = 0.0;
 						}
 						result_index[current*image->depth] = 1.0;
+						
+						/*{
 						previous = current - 1;
 						if (((int)x -1) < 0)
 						{
@@ -877,14 +920,8 @@ DESCRIPTION :
 						g_y = potential_data[current] - potential_data[previous];
 						x -= it_step * g_x;
 						y -= it_step * g_y;
-						//printf("%d %d\n",(int)x,(int)y);
+						}*/
 					}
-					current = start_position[0] + start_position[1] * image->sizes[0];
-					for (k =0 ; k < image->depth; k++)
-					{
-					        result_index[current*image->depth + k] = 0.0;
-					}
-					result_index[current*image->depth] = 1.0;
 				}
 				else if (image->dimension == 3)
 				{

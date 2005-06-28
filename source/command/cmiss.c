@@ -58,6 +58,7 @@ Functions for executing cmiss commands.
 #include "image_processing/computed_field_color_based_segment.h"
 #include "image_processing/computed_field_convolution_filter.h"
 #include "image_processing/computed_field_cube_plugin_all.h"
+#include "image_processing/computed_field_dijkstra_path.h"
 #include "image_processing/computed_field_dilate_filter.h"
 #include "image_processing/computed_field_edge_detection.h"
 #include "image_processing/computed_field_edge_direction.h"
@@ -93,6 +94,7 @@ Functions for executing cmiss commands.
 #include "image_processing/computed_field_median_filter.h"
 #include "image_processing/computed_field_minimal_path.h"
 #include "image_processing/computed_field_morphology_thinning.h"
+#include "image_processing/computed_field_outer_region_remove.h"
 #include "image_processing/computed_field_power_spectrum.h"
 #include "image_processing/computed_field_region_label.h"
 #include "image_processing/computed_field_region_maximum.h"
@@ -24382,6 +24384,9 @@ Initialise all the subcomponents of cmgui and create the Cmiss_command_data
 				Computed_field_register_types_cube_plugin_all(
 					command_data->computed_field_package,
 					command_data->root_region, command_data->graphics_buffer_package);
+				Computed_field_register_types_dijkstra_path(
+					command_data->computed_field_package,
+					command_data->root_region, command_data->graphics_buffer_package);
 				Computed_field_register_types_dilate_filter(
 					command_data->computed_field_package,
 					command_data->root_region, command_data->graphics_buffer_package);
@@ -24482,6 +24487,9 @@ Initialise all the subcomponents of cmgui and create the Cmiss_command_data
 					command_data->computed_field_package,
 					command_data->root_region, command_data->graphics_buffer_package);
 				Computed_field_register_types_morphology_thinning(
+					command_data->computed_field_package,
+					command_data->root_region, command_data->graphics_buffer_package);
+				Computed_field_register_types_outer_region_remove(
 					command_data->computed_field_package,
 					command_data->root_region, command_data->graphics_buffer_package);
 				Computed_field_register_types_power_spectrum(

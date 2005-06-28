@@ -925,6 +925,7 @@ IMAGE_PROCESSING_SRCS = \
 	image_processing/computed_field_color_based_segment.c \
 	image_processing/computed_field_convolution_filter.c \
 	image_processing/computed_field_cube_plugin_all.c \
+	image_processing/computed_field_dijkstra_path.c \
 	image_processing/computed_field_dilate_filter.c \
 	image_processing/computed_field_edge_detection.c \
 	image_processing/computed_field_edge_direction.c \
@@ -960,6 +961,7 @@ IMAGE_PROCESSING_SRCS = \
 	image_processing/computed_field_median_filter.c \
 	image_processing/computed_field_minimal_path.c \
 	image_processing/computed_field_morphology_thinning.c \
+	image_processing/computed_field_outer_region_remove.c \
 	image_processing/computed_field_power_spectrum.c \
 	image_processing/computed_field_region_label.c \
 	image_processing/computed_field_region_maximum.c \

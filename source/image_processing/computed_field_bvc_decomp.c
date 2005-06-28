@@ -362,6 +362,102 @@ DESCRIPTION :
 No special criteria.
 ==============================================================================*/
 
+int orthogonal_projection(struct Image_cache *image, 
+            FE_value mean, double tou, double lambda, 
+	    FE_value *q1_index, FE_value *q2_index, FE_value *v_index)
+{
+        FE_value *data_index;
+	int x, y, storage_size, return_code;
+	FE_value *delta1, *delta2, *diff, norm;
+	
+	storage_size = image->sizes[0] * image->sizes[1];
+	if (ALLOCATE(diff, FE_value, storage_size) &&
+			ALLOCATE(delta1, FE_value, storage_size) &&
+			ALLOCATE(delta2, FE_value, storage_size) )
+	{
+	        return_code = 1;
+	        data_index = (FE_value *)image->data;
+        	for (y = 0; y < image->sizes[1]; y++)
+		{
+			for (x = 0; x < image->sizes[0]; x++)
+			{
+				if ((y > 0) && (y < (image->sizes[1] - 1)))
+				{
+					diff[y*image->sizes[0] + x] = q2_index[y*image->sizes[0] + x] - q2_index[(y-1)*image->sizes[0] + x];
+				}
+				else if (y == 0)
+				{
+					diff[y*image->sizes[0] + x] = q2_index[y*image->sizes[0] + x];
+				}
+				else if (y == (image->sizes[1] - 1))
+				{
+					diff[y*image->sizes[0] + x] = - q2_index[(y-1)*image->sizes[0] + x];
+				}
+				if ((x > 0) && (x < (image->sizes[0] - 1)))
+				{
+					diff[y*image->sizes[0] + x] += q1_index[y*image->sizes[0] + x] - q1_index[y*image->sizes[0] + x -1];
+				}
+				else if (x == 0)
+				{
+					diff[y*image->sizes[0] + x] += q1_index[y*image->sizes[0] + x];
+				}
+				else if (x == (image->sizes[0] - 1))
+				{
+					diff[y*image->sizes[0] + x] += - q1_index[y*image->sizes[0] + x - 1];
+				}
+				diff[y*image->sizes[0] + x] -= ((*data_index - mean) - v_index[y*image->sizes[0] + x])  / lambda;
+				data_index += image->depth;
+			}
+		}
+		for (y = 0; y < image->sizes[1]; y++)
+		{
+			for (x = 0; x < image->sizes[0]; x++)
+			{
+				if ( y < (image->sizes[1] -1))
+				{
+					delta2[y*image->sizes[0] + x] = diff[(y+1)*image->sizes[0] + x] - diff[y*image->sizes[0] + x];
+				}
+				else
+				{
+					delta2[y*image->sizes[0] + x] = 0.0;
+				}
+				if ( x < (image->sizes[0] -1))
+				{
+					delta1[y*image->sizes[0] + x] = diff[y*image->sizes[0] + x + 1] - diff[y*image->sizes[0] + x];
+				}
+				else
+				{
+					delta1[y*image->sizes[0] + x] = 0.0;
+				}
+			}
+		} 
+		for (y = 0; y < image->sizes[1]; y++)
+		{
+			for (x = 0; x < image->sizes[0]; x++)
+			{
+				q1_index[y*image->sizes[0] + x] += tou * delta1[y*image->sizes[0] + x];
+				q2_index[y*image->sizes[0] + x] += tou * delta2[y*image->sizes[0] + x];
+				norm = sqrt(delta1[y*image->sizes[0] + x] * delta1[y*image->sizes[0] + x] + delta2[y*image->sizes[0] + x] * delta2[y*image->sizes[0] + x]);
+				q1_index[y*image->sizes[0] + x] /= (1.0 + tou * norm);
+				q2_index[y*image->sizes[0] + x] /= (1.0 + tou * norm);  
+			}
+		}
+	        DEALLOCATE(diff);
+		DEALLOCATE(delta1);
+		DEALLOCATE(delta2);
+	}
+	else
+	{
+	        display_message(ERROR_MESSAGE,
+			"orthogonal_projection.  "
+			"Not enough memory.");
+		return_code = 0;
+	}
+	
+	return (return_code);				
+}/* orthogonal_projection */
+
+
 static int Image_cache_bvc_decomp(struct Image_cache *image, char *result, int number_of_iterations,
             double tou, double lambda, double mu)
 /*******************************************************************************
@@ -381,13 +477,13 @@ REFERENCE: J._F. Aujol, et al., "Image decomposition into a bounded variation co
 ==============================================================================*/
 {
 	char *storage;
-	FE_value *data_index, *result_index, *diff;
-	FE_value *u_index, *v_index, *p1_index, *p2_index, *q1_index, *q2_index;
+	FE_value *data_index, *result_index;
+	FE_value *u_index, *v_index, *q1_index, *q2_index;
 	int i, k, return_code, x, y;
 	int c, n, flag;
 	int storage_size;
-	FE_value norm, min, max, mean;
-	FE_value *delta1, *delta2;
+	FE_value min, max, mean;
+	/*FE_value *delta1, *delta2, *diff;*/
 
 	ENTER(Image_cache_bvc_decomp);
 	if (image && (image->dimension > 0) && (image->depth > 0))
@@ -407,13 +503,8 @@ REFERENCE: J._F. Aujol, et al., "Image decomposition into a bounded variation co
 		}
 		if (ALLOCATE(u_index, FE_value, (storage_size/image->depth)) &&
 			ALLOCATE(v_index, FE_value, (storage_size/image->depth)) &&
-			ALLOCATE(p1_index, FE_value, (storage_size/image->depth)) &&
-			ALLOCATE(p2_index, FE_value, (storage_size/image->depth)) &&
 			ALLOCATE(q1_index, FE_value, (storage_size/image->depth)) &&
 			ALLOCATE(q2_index, FE_value, (storage_size/image->depth)) &&
-			ALLOCATE(diff, FE_value, (storage_size/image->depth)) &&
-			ALLOCATE(delta1, FE_value, (storage_size/image->depth)) &&
-			ALLOCATE(delta2, FE_value, (storage_size/image->depth)) &&
 			ALLOCATE(storage, char, storage_size * sizeof(FE_value)))
 		{
 			result_index = (FE_value *)storage;
@@ -449,77 +540,10 @@ REFERENCE: J._F. Aujol, et al., "Image decomposition into a bounded variation co
 				        q1_index[i] = 0.0;
 					q2_index[i] = 0.0;
 				}
-				for (c = 0; c < 500; c++)
+				for (c = 0; c < number_of_iterations; c++)
 				{ 
-				        for (y = 0; y < image->sizes[1]; y++)
-					{
-					        for (x = 0; x < image->sizes[0]; x++)
-						{
-						        if ((y > 0) && (y < (image->sizes[1] - 1)))
-							{
-							        diff[y*image->sizes[0] + x] = q2_index[y*image->sizes[0] + x] - q2_index[(y-1)*image->sizes[0] + x];
-							}
-							else if (y == 0)
-							{
-							        diff[y*image->sizes[0] + x] = q2_index[y*image->sizes[0] + x];
-							}
-							else
-							{
-							        diff[y*image->sizes[0] + x] = - q2_index[(y-1)*image->sizes[0] + x];
-							}
-							if ((x > 0) && (x < (image->sizes[0] - 1)))
-							{
-							        diff[y*image->sizes[0] + x] += q1_index[y*image->sizes[0] + x] - q1_index[y*image->sizes[0] + x -1];
-							}
-							else if (x == 0)
-							{
-							        diff[y*image->sizes[0] + x] += q1_index[y*image->sizes[0] + x];
-							}
-							else
-							{
-							        diff[y*image->sizes[0] + x] += - q1_index[y*image->sizes[0] + x - 1];
-							}
-							diff[y*image->sizes[0] + x] -= ((*data_index - mean) - v_index[y*image->sizes[0] + x])  / lambda;
-							/*diff[y*image->sizes[0] + x] -= (*data_index - v_index[y*image->sizes[0] + x])/ lambda;*/
-							data_index += image->depth;
-						}
-					}
-					for (y = 0; y < image->sizes[1]; y++)
-					{
-					        for (x = 0; x < image->sizes[0]; x++)
-						{
-						        if ( y < (image->sizes[1] -1))
-							{
-							        delta2[y*image->sizes[0] + x] = diff[(y+1)*image->sizes[0] + x] - diff[y*image->sizes[0] + x];
-							}
-							else
-							{
-							        delta2[y*image->sizes[0] + x] = 0.0;
-							}
-							if ( x < (image->sizes[0] -1))
-							{
-							        delta1[y*image->sizes[0] + x] = diff[y*image->sizes[0] + x + 1] - diff[y*image->sizes[0] + x];
-							}
-							else
-							{
-							        delta1[y*image->sizes[0] + x] = 0.0;
-							}
-						}
-					} 
-					for (y = 0; y < image->sizes[1]; y++)
-					{
-					        for (x = 0; x < image->sizes[0]; x++)
-						{
-						        q1_index[y*image->sizes[0] + x] += tou * delta1[y*image->sizes[0] + x];
-							q2_index[y*image->sizes[0] + x] += tou * delta2[y*image->sizes[0] + x];
-							norm = sqrt(delta1[y*image->sizes[0] + x] * delta1[y*image->sizes[0] + x] + delta2[y*image->sizes[0] + x] * delta2[y*image->sizes[0] + x]);
-							q1_index[y*image->sizes[0] + x] /= (1.0 + tou * norm);
-							q2_index[y*image->sizes[0] + x] /= (1.0 + tou * norm);
-							
-							/* data_index -= image->depth; */  
-						}
-					}
-					data_index = (FE_value *)image->data;     
+				        orthogonal_projection(image, mean, tou, lambda, 
+	                                       q1_index, q2_index, v_index);  
 				}
 				for (y = 0; y < image->sizes[1]; y++)
 				{
@@ -533,7 +557,7 @@ REFERENCE: J._F. Aujol, et al., "Image decomposition into a bounded variation co
 						{
 							u_index[y*image->sizes[0] + x] = q2_index[y*image->sizes[0] + x];
 						}
-						else
+						else if (y == (image->sizes[1] - 1))
 						{
 							u_index[y*image->sizes[0] + x] = - q2_index[(y-1)*image->sizes[0] + x];
 						}
@@ -545,7 +569,7 @@ REFERENCE: J._F. Aujol, et al., "Image decomposition into a bounded variation co
 						{
 						        u_index[y*image->sizes[0] + x] += q1_index[y*image->sizes[0] + x];
 						}
-						else
+						else if (x == (image->sizes[0] - 1))
 						{
 							u_index[y*image->sizes[0] + x] += - q1_index[y*image->sizes[0] + x - 1];
 						}
@@ -559,80 +583,13 @@ REFERENCE: J._F. Aujol, et al., "Image decomposition into a bounded variation co
 				data_index = (FE_value *)image->data;
 				for (i = 0; i < storage_size/image->depth; i++)
 				{
-				        p1_index[i] = 0.0;
-					p2_index[i] = 0.0;
+				        q1_index[i] = 0.0;
+					q2_index[i] = 0.0;
 				}
-				for (c = 0; c < 500; c++)
+				for (c = 0; c < number_of_iterations; c++)
 				{ 
-				        for (y = 0; y < image->sizes[1]; y++)
-					{
-					        for (x = 0; x < image->sizes[0]; x++)
-						{
-						        if ((y > 0) && (y < (image->sizes[1] - 1)))
-							{
-							        diff[y*image->sizes[0] + x] = p2_index[y*image->sizes[0] + x] - p2_index[(y-1)*image->sizes[0] + x];
-							}
-							else if (y == 0)
-							{
-							        diff[y*image->sizes[0] + x] = p2_index[y*image->sizes[0] + x];
-							}
-							else
-							{
-							        diff[y*image->sizes[0] + x] = - p2_index[(y-1)*image->sizes[0] + x];
-							}
-							if ((x > 0) && (x < (image->sizes[0] - 1)))
-							{
-							        diff[y*image->sizes[0] + x] += p1_index[y*image->sizes[0] + x] - p1_index[y*image->sizes[0] + x -1];
-							}
-							else if (x == 0)
-							{
-							        diff[y*image->sizes[0] + x] += p1_index[y*image->sizes[0] + x];
-							}
-							else
-							{
-							        diff[y*image->sizes[0] + x] += - p1_index[y*image->sizes[0] + x - 1];
-							}
-							diff[y*image->sizes[0] + x] -= ((*data_index - mean) - u_index[y*image->sizes[0] + x])  / mu;
-							/*diff[y*image->sizes[0] + x] -= (*data_index - u_index[y*image->sizes[0] + x])  / mu;*/
-							data_index += image->depth;
-						}
-					}
-					for (y = 0; y < image->sizes[1]; y++)
-					{
-					        for (x = 0; x < image->sizes[0]; x++)
-						{
-						        if ( y < (image->sizes[1] -1))
-							{
-							        delta2[y*image->sizes[0] + x] = diff[(y+1)*image->sizes[0] + x] - diff[y*image->sizes[0] + x];
-							}
-							else
-							{
-							        delta2[y*image->sizes[0] + x] = 0.0;
-							}
-							if ( x < (image->sizes[0] -1))
-							{
-							        delta1[y*image->sizes[0] + x] = diff[y*image->sizes[0] + x + 1] - diff[y*image->sizes[0] + x];
-							}
-							else
-							{
-							        delta1[y*image->sizes[0] + x] = 0.0;
-							}
-						}
-					} 
-					for (y = 0; y < image->sizes[1]; y++)
-					{
-					        for (x = 0; x < image->sizes[0]; x++)
-						{
-						        p1_index[y*image->sizes[0] + x] += tou * delta1[y*image->sizes[0] + x];
-							p2_index[y*image->sizes[0] + x] += tou * delta2[y*image->sizes[0] + x];
-							norm = sqrt(delta1[y*image->sizes[0] + x] * delta1[y*image->sizes[0] + x] + delta2[y*image->sizes[0] + x] * delta2[y*image->sizes[0] + x]);
-							p1_index[y*image->sizes[0] + x] /= (1.0 + tou * norm);
-							p2_index[y*image->sizes[0] + x] /= (1.0 + tou * norm);
-							
-							/* data_index -= image->depth; */  
-						}
-					}
-					data_index = (FE_value *)image->data;     
+				        orthogonal_projection(image, mean, tou, mu, 
+	                                       q1_index, q2_index, u_index);   
 				}
 				for (y = 0; y < image->sizes[1]; y++)
 				{
@@ -640,27 +597,27 @@ REFERENCE: J._F. Aujol, et al., "Image decomposition into a bounded variation co
 					{
 						if ((y > 0) && (y < (image->sizes[1] - 1)))
 						{
-							v_index[y*image->sizes[0] + x] = p2_index[y*image->sizes[0] + x] - p2_index[(y-1)*image->sizes[0] + x];
+							v_index[y*image->sizes[0] + x] = q2_index[y*image->sizes[0] + x] - q2_index[(y-1)*image->sizes[0] + x];
 						}
 						else if (y == 0)
 						{
-							v_index[y*image->sizes[0] + x] = p2_index[y*image->sizes[0] + x];
+							v_index[y*image->sizes[0] + x] = q2_index[y*image->sizes[0] + x];
 						}
-						else
+						else if (y == (image->sizes[1] - 1))
 						{
-							v_index[y*image->sizes[0] + x] = - p2_index[(y-1)*image->sizes[0] + x];
+							v_index[y*image->sizes[0] + x] = - q2_index[(y-1)*image->sizes[0] + x];
 						}
 						if ((x > 0) && (x < (image->sizes[0] - 1)))
 						{
-							v_index[y*image->sizes[0] + x] += p1_index[y*image->sizes[0] + x] - p1_index[y*image->sizes[0] + x -1];
+							v_index[y*image->sizes[0] + x] += q1_index[y*image->sizes[0] + x] - q1_index[y*image->sizes[0] + x -1];
 						}
 						else if (x == 0)
 						{
-						        v_index[y*image->sizes[0] + x] += p1_index[y*image->sizes[0] + x];
+						        v_index[y*image->sizes[0] + x] += q1_index[y*image->sizes[0] + x];
 						}
-						else
+						else if (x == (image->sizes[0] - 1))
 						{
-							v_index[y*image->sizes[0] + x] += - p1_index[y*image->sizes[0] + x - 1];
+							v_index[y*image->sizes[0] + x] += - q1_index[y*image->sizes[0] + x - 1];
 						}
 						v_index[y*image->sizes[0] + x] *= mu;
 					}
@@ -765,13 +722,9 @@ REFERENCE: J._F. Aujol, et al., "Image decomposition into a bounded variation co
 			{
 				DEALLOCATE(storage);
 			}
-			DEALLOCATE(delta1);
-			DEALLOCATE(delta2);
-			DEALLOCATE(diff);
+			
 			DEALLOCATE(u_index);
 			DEALLOCATE(v_index);
-                        DEALLOCATE(p1_index);
-			DEALLOCATE(p2_index);
 			DEALLOCATE(q1_index);
 			DEALLOCATE(q2_index);
 		}
