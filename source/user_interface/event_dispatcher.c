@@ -200,8 +200,16 @@ DECLARE_FIND_BY_IDENTIFIER_IN_INDEXED_LIST_FUNCTION(Fdio,
 Module functions
 ----------------
 */
-#if defined(WIN32_USER_INTERFACE)
+#if defined (WIN32_USER_INTERFACE)
+static int Event_dispatcher_win32_idle_callback(void *idle_callback_void);
+/*******************************************************************************
+LAST MODIFIED : 9 August 2004
 
+DESCRIPTION :
+==============================================================================*/
+#endif /* defined (WIN32_USER_INTERFACE) */
+
+#if defined (WIN32_USER_INTERFACE)
 static LRESULT CALLBACK Event_dispatcher_handle_win32_network_event(HWND hwnd,
 	UINT uMsg, WPARAM wParam, LPARAM lParam)
 /*******************************************************************************
@@ -903,7 +911,7 @@ DESCRIPTION :
 #endif /* defined (USE_GTK_MAIN_STEP) */
 
 #if defined (WIN32_USER_INTERFACE)
-int Event_dispatcher_win32_idle_callback(
+static int Event_dispatcher_win32_idle_callback(
 	void *idle_callback_void)
 /*******************************************************************************
 LAST MODIFIED : 9 August 2004
@@ -1252,7 +1260,8 @@ Processes a Win32 timer.
   struct Event_dispatcher_timeout_callback *timeout_callback;
 
   ENTER(Event_dispatcher_process_win32_timeout);
-
+  USE_PARAMETER(msg);
+  USE_PARAMETER(Time);
   /* Our timers are one-shot, Win32 timers recur... */
   KillTimer(hWnd, TimerID);
 

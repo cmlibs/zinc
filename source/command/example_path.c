@@ -261,6 +261,8 @@ be DEALLOCATED by the calling function.
 #else /* defined (UNIX) */
 		display_message(ERROR_MESSAGE,"resolve_example_path.  "
 			"Not implemented yet.");
+		USE_PARAMETER(comfile_name);
+		USE_PARAMETER(requirements);
 		return_string = (char *)NULL;		
 #endif /* defined (UNIX) */
 	}

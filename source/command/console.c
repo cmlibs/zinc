@@ -56,8 +56,11 @@ This function is called to process stdin from a console.
 #define KILL_KEYCODE '\025'
 #define MAX_CONSOLE_BUFFER (1000)
 	char buffer[MAX_CONSOLE_BUFFER];
-	int i, length, prompt_length, return_code;
+	int length, prompt_length, return_code;
 	struct Console *console;
+#if defined (UNIX)
+	int i;
+#endif /* defined (UNIX) */
 
 	ENTER(Console_callback);
 

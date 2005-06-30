@@ -975,6 +975,7 @@ DESCRIPTION:
 ==============================================================================*/
 {
 	ENTER(Command_window_WM_COMMAND_handler);
+	USE_PARAMETER(control_window);
 	switch (item_control_accelerator_id)
 	{
 		case IDCANCEL:
@@ -1602,6 +1603,7 @@ Create the structures and retrieve the command window from the uil file.
 	BOOL win32_return_code;
 	static char *class_name="Command_window";
 	WNDCLASSEX class_information;
+	USE_PARAMETER(version_id_string);
 #elif defined (GTK_USER_INTERFACE) /* switch (USER_INTERFACE) */
 #if GTK_MAJOR_VERSION >= 2
 	GtkTextIter end_iterator;

@@ -1657,7 +1657,9 @@ Open the <user_interface>.
 	struct User_interface *user_interface;
 
 	ENTER(CREATE(User_interface));
-	/* check arguments */
+#if defined (WIN32_USER_INTERFACE)
+	USE_PARAMETER(previous_instance);
+#endif /* defined (WIN32_USER_INTERFACE) */
 	if (ALLOCATE(user_interface, struct User_interface, 1))
 	{
 #if defined (MOTIF)

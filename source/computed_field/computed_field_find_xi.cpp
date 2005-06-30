@@ -592,6 +592,7 @@ Stores cache data for the Computed_field_find_element_xi_special routine.
 } /* Expand_element_range */
 #endif /* defined (GRAPHICS_BUFFER_USE_OFFSCREEN_BUFFERS) */
 
+#if defined (GRAPHICS_BUFFER_USE_OFFSCREEN_BUFFERS)
 static int Render_element_as_texture(struct FE_element *element, void *data_void)
 /*******************************************************************************
 LAST MODIFIED : 20 June 2000
@@ -684,6 +685,7 @@ Stores cache data for the Computed_field_find_element_xi_special routine.
 	
 	return (return_code);
 } /* Render_element_as_texture */
+#endif /* defined (GRAPHICS_BUFFER_USE_OFFSCREEN_BUFFERS) */
 
 int Computed_field_find_element_xi_special(struct Computed_field *field, 
 	struct Computed_field_find_element_xi_cache **cache_ptr,
@@ -740,7 +742,7 @@ sequential element_xi lookup should now be performed.
 	USE_PARAMETER(element_dimension);
 	USE_PARAMETER(xi);
 	USE_PARAMETER(search_region);
-	USE_PARAMETER(user_interface);
+	USE_PARAMETER(graphics_buffer_package);
 	USE_PARAMETER(hint_minimums);
 	USE_PARAMETER(hint_maximums);
 	USE_PARAMETER(hint_resolution);

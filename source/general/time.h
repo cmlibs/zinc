@@ -14,7 +14,6 @@ Defines the gettimeofday and relevant structure for UNIX and WIN32_SYSTEM
 #include <sys/times.h>
 #elif defined (WIN32_SYSTEM) /* switch (OPERATING_SYSTEM) */
 #include <windows.h>
-typedef long time_t;
 int gettimeofday(struct timeval *time, void *timezone);
 typedef long clock_t;
 struct tms 

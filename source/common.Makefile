@@ -291,15 +291,21 @@ ifeq ($(SYSNAME),win32)
    endif # $(USER_INTERFACE) == CONSOLE_USER_INTERFACE || $(USER_INTERFACE) == GTK_USER_INTERFACE
    ifneq ($(DEBUG),true)
       OPTIMISATION_FLAGS = -O2
+      COMPILE_DEFINES = -DOPTIMISED
+      COMPILE_FLAGS =
+      STRICT_FLAGS = -Werror
+      CPP_STRICT_FLAGS = -Werror
+      DIGITAL_MEDIA_NON_STRICT_FLAGS = 
+      DIGITAL_MEDIA_NON_STRICT_FLAGS_PATTERN = NONE # Must specify a pattern that doesn't match
    else # DEBUG != true
       OPTIMISATION_FLAGS = -g
+      COMPILE_DEFINES = -DREPORT_GL_ERRORS -DUSE_PARAMETER_ON
+      COMPILE_FLAGS =
+      STRICT_FLAGS = -W -Wall -Wno-parentheses -Wno-switch -Werror
+      CPP_STRICT_FLAGS = -W -Wall -Wno-parentheses -Wno-switch -Wno-unused-parameter -Werror
+      DIGITAL_MEDIA_NON_STRICT_FLAGS = 
+      DIGITAL_MEDIA_NON_STRICT_FLAGS_PATTERN = NONE # Must specify a pattern that doesn't match */
    endif # DEBUG != true
-   COMPILE_FLAGS = 
-   COMPILE_DEFINES = 
-   STRICT_FLAGS = 
-   CPP_STRICT_FLAGS = 
-   DIGITAL_MEDIA_NON_STRICT_FLAGS = 
-   DIGITAL_MEDIA_NON_STRICT_FLAGS_PATTERN = NONE # Must specify a pattern that doesn't match
    TARGET_TYPE_FLAGS =
    TARGET_TYPE_DEFINES =
 endif # SYSNAME == win32

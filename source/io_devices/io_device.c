@@ -228,7 +228,10 @@ Initialises the device to check for active file descriptors.  Useful for
 connecting to external "devices" such as Sockets or widget toolkits.
 ==============================================================================*/
 {
-	int i, return_code;
+#if defined (SELECT_DESCRIPTORS)
+	int i;
+#endif /* defined (SELECT_DESCRIPTORS) */
+	int return_code;
 
 	ENTER(Io_device_start_detection);
 	if (device && user_interface)
@@ -283,7 +286,10 @@ Finalises the detection of active file desriptors.  All descriptors activated
 between the start and end detection are assumed to belong to the <device>.
 ==============================================================================*/
 {
-	int i, return_code;
+#if defined (SELECT_DESCRIPTORS)
+	int i;
+#endif /* defined (SELECT_DESCRIPTORS) */
+	int return_code;
 
 	ENTER(Io_device_end_detection);
 	if (device)
@@ -363,7 +369,9 @@ The string <perl_action> is called "eval"ed in the <interpreter> whenever the
 			return_code=0;
 		}
 #else /* defined (SELECT_DESCRIPTORS) */
-		return_code = 1;
+		USE_PARAMETER(interpreter);
+		display_message(ERROR_MESSAGE,"Io_device_set_perl_action.  Not implemented for this platform.");
+		return_code = 0;
 #endif /* defined (SELECT_DESCRIPTORS) */
 	}
 	else

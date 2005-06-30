@@ -128,7 +128,10 @@ DESCRIPTION :
 Sends a string to the stdin pipe of a Child_process.
 ==============================================================================*/
 {
-	int length, return_code;
+#if defined (UNIX)
+	int length;
+#endif /* defined (UNIX) */
+	int return_code;
 
 	ENTER(Child_process_send_string_to_stdin);
 	if (child_process)
@@ -138,6 +141,7 @@ Sends a string to the stdin pipe of a Child_process.
 		write(child_process->stdin_filedes, (void *)string, length);
 		return_code=1;
 #else /* defined (UNIX) */
+		USE_PARAMETER(string);
 		display_message(ERROR_MESSAGE,"Child_process_send_string_to_stdin.  "
 			"Not implemented outside UNIX yet.");
 		return_code=0;
@@ -243,6 +247,7 @@ isn't recieved in the <timeout> limit then the function returns NULL.
 			return_string = (char *)NULL;
 		}
 #else /* defined (UNIX) */
+		USE_PARAMETER(timeout);
 		display_message(ERROR_MESSAGE,"Child_process_get_line_from_stdout.  "
 			"Not implemented outside UNIX yet.");
 		return_string = (char *)NULL;

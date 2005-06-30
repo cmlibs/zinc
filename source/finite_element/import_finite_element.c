@@ -7,9 +7,7 @@ DESCRIPTION :
 Functions for importing finite element data from a file into the graphical
 interface to CMISS.
 ==============================================================================*/
-#if defined (UNIX)
 #include <ctype.h>
-#endif /* defined (UNIX) */
 #include <math.h>
 #include "finite_element/finite_element.h"
 #include "finite_element/finite_element_region.h"
