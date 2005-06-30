@@ -3179,7 +3179,8 @@ DESCRIPTION :
 	struct Graphics_buffer *buffer;
 
 	ENTER(create_Graphics_buffer_win32);
-
+	USE_PARAMETER(buffering_mode);
+	USE_PARAMETER(stereo_mode);
 	if (buffer = CREATE(Graphics_buffer)(graphics_buffer_package))
 	{
                 SetWindowLongPtr(hWnd, GWL_WNDPROC, (LONG)Graphics_buffer_callback_proc);
@@ -3561,7 +3562,8 @@ Returns the depth of the colour buffer used by the graphics buffer.
 			default:
 			{
 				display_message(ERROR_MESSAGE,"Graphics_buffer_get_colour_buffer_depth.  "
-					"Graphics_bufffer type unknown or not supported.");				
+					"Graphics_bufffer type unknown or not supported.");
+				*colour_buffer_depth = 0;
 				return_code = 0;
 			} break;
 		}
@@ -3620,7 +3622,8 @@ Returns the depth of the depth buffer used by the graphics buffer.
 			default:
 			{
 				display_message(ERROR_MESSAGE,"Graphics_buffer_get_depth_buffer_depth.  "
-					"Graphics_bufffer type unknown or not supported.");				
+					"Graphics_bufffer type unknown or not supported.");
+				*depth_buffer_depth = 0;
 				return_code = 0;
 			} break;
 		}
@@ -3699,7 +3702,8 @@ Returns the depth of the accumulation buffer used by the graphics buffer.
 			default:
 			{
 				display_message(ERROR_MESSAGE,"Graphics_buffer_get_accumulation_buffer_depth.  "
-					"Graphics_bufffer type unknown or not supported.");				
+					"Graphics_bufffer type unknown or not supported.");
+				*accumulation_buffer_depth = 0;
 				return_code = 0;
 			} break;
 		}

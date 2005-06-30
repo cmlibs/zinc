@@ -7211,10 +7211,14 @@ scene viewer on screen.
 ==============================================================================*/
 {
 	int number_of_components, return_code;
+#if defined (MOTIF) || defined (GTK_USER_INTERFACE)
 	struct Graphics_buffer *offscreen_buffer;
+#endif /* defined (MOTIF) || defined (GTK_USER_INTERFACE) */
 
 	ENTER(Scene_viewer_get_frame_pixels);
-
+#if defined (WIN32_USER_INTERFACE)
+	USE_PARAMETER(force_onscreen);
+#endif /* defined (WIN32_USER_INTERFACE) */
 	if (scene_viewer && width && height)
 	{
 #if defined (MOTIF) || defined (GTK_USER_INTERFACE)

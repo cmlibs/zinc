@@ -1190,7 +1190,10 @@ DESCRIPTION :
 Finds and loads gl function symbols at runtime.
 ==============================================================================*/
 {
-	void *function_ptr, *symbol_table;
+	void *function_ptr;
+#if defined (UNIX)
+	void *symbol_table;
+#endif /* defined (UNIX) */
 
 	ENTER(Graphics_library_get_function_ptr);
 	if (function_name)
