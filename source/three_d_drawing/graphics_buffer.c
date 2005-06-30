@@ -3316,11 +3316,6 @@ DESCRIPTION:
 			EndPaint(window, &ps);
 			return_code=TRUE;
 		} break;
-		case UWM_IDLE:
-		{
-			Event_dispatcher_win32_idle_callback((void *)second_message);
-			return_code=TRUE;
-		} break;
 		case WM_LBUTTONDOWN:
 		{
 			Graphics_buffer_win32_button_callback(&message_identifier,

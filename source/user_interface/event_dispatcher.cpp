@@ -240,9 +240,13 @@ Processes window events on the network-only window.
 			}
 		}
 	}
+        else if (uMsg == UWM_IDLE)
+        {
+		Event_dispatcher_win32_idle_callback((void *)lParam);
+		ret = TRUE;
+        }
 	else
-	  ret = DefWindowProc(hwnd, uMsg, wParam, lParam);
-
+		ret = TRUE;
 	LEAVE;
 
 	return (ret);
@@ -1282,10 +1286,12 @@ Set a timeout on Win32...
 			timeout_s, timeout_ns, timeout_function, user_data))
 		{
 			GetSystemTimeAsFileTime((FILETIME *)&system_time);
-		  
-			event_time = timeout_s * 10000000 + timeout_ns / 100;
+		 
+ 			/* Change the epoch to avoid overflow... */
+ 			system_time -= 119603304000000000LL;
+			event_time = (ULONGLONG)timeout_s * 10000000L + (ULONGLONG)timeout_ns / 100L;
 			if (system_time < event_time)
-				event_time_delta_millis = (event_time - system_time) * 10000;
+				event_time_delta_millis = (event_time - system_time) / 10000;
 			else
 				event_time_delta_millis = 0;
 
@@ -1385,11 +1391,12 @@ DESCRIPTION :
 	{
 #if defined (WIN32_SYSTEM)
 		GetSystemTimeAsFileTime((FILETIME *)&system_time);
+ 		system_time -= 119603304000000000LL;
 		timeout_callback = Event_dispatcher_add_timeout_callback_at_time(
 			event_dispatcher, timeout_s +
-			(unsigned long)(system_time/(ULONGLONG)10000000), 
+			(unsigned long)(system_time/10000000L),
 			timeout_ns +
-			100*(unsigned long)(system_time%(ULONGLONG)10000000), 
+			100*(unsigned long)(system_time%10000000L),
 			timeout_function, user_data);
 #else /* defined (WIN32_SYSTEM) */
 		gettimeofday(&timeofday, NULL);
