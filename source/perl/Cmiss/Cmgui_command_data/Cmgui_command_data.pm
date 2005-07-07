@@ -123,6 +123,36 @@ sub get_cmiss_root_region
   }
 }
 
+sub get_element_selection
+{
+  my ($self, %args) = @_;
+  my @objref;
+
+  if (defined $self)
+  {
+	 return(command_data_get_element_selection($self));
+  }
+  else
+  {
+	 croak "Missing cmgui_command_data.";
+  }
+}
+
+sub get_node_selection
+{
+  my ($self, %args) = @_;
+  my @objref;
+
+  if (defined $self)
+  {
+	 return(command_data_get_node_selection($self));
+  }
+  else
+  {
+	 croak "Missing cmgui_command_data.";
+  }
+}
+
 sub DESTROY
 {
   if ($actually_destroy_command_data)
