@@ -156,4 +156,22 @@ LAST MODIFIED : 11 April 2005
 DESCRIPTION :
 Gets a Timer_package for this <command_data>
 ==============================================================================*/
+
+struct FE_element_selection *Cmiss_command_data_get_element_selection(
+	struct Cmiss_command_data *command_data);
+/*******************************************************************************
+LAST MODIFIED : 4 July 2005
+
+DESCRIPTION :
+Returns the selected_element object from the <command_data>.
+==============================================================================*/
+
+struct FE_node_selection *Cmiss_command_data_get_node_selection(
+	struct Cmiss_command_data *command_data);
+/*******************************************************************************
+LAST MODIFIED : 4 July 2005
+
+DESCRIPTION :
+Returns the selected_node object from the <command_data>.
+==============================================================================*/
 #endif /* !defined (COMMAND_CMISS_H) */
