@@ -6849,6 +6849,14 @@ parsed settings. Note that the settings are ACCESSed once on valid return.
 							g_element_command_data->glyph_list);
 					}
 					ACCESS(GT_object)(glyph);
+					if (orientation_scale_field)
+					{
+						ACCESS(Computed_field)(orientation_scale_field);
+					}
+					if (variable_scale_field)
+					{
+						ACCESS(Computed_field)(variable_scale_field);
+					}
 					number_of_components = 3;
 					visibility = settings->visibility;
 
@@ -7116,6 +7124,14 @@ parsed settings. Note that the settings are ACCESSed once on valid return.
 							g_element_command_data->glyph_list);
 					}
 					ACCESS(GT_object)(glyph);
+					if (orientation_scale_field)
+					{
+						ACCESS(Computed_field)(orientation_scale_field);
+					}
+					if (variable_scale_field)
+					{
+						ACCESS(Computed_field)(variable_scale_field);
+					}
 					number_of_components = 3;
 					visibility = settings->visibility;
 
@@ -8305,6 +8321,14 @@ parsed settings. Note that the settings are ACCESSed once on valid return.
 					g_element_command_data->glyph_list);
 			}
 			ACCESS(GT_object)(glyph);
+			if (orientation_scale_field)
+			{
+				ACCESS(Computed_field)(orientation_scale_field);
+			}
+			if (variable_scale_field)
+			{
+				ACCESS(Computed_field)(variable_scale_field);
+			}
 			GT_element_settings_get_xi_discretization(settings,
 				&xi_discretization_mode, &xi_point_density_field);
 			if (xi_point_density_field)
