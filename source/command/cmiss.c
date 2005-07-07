@@ -1946,6 +1946,126 @@ Executes a GFX CREATE ELEMENT_POINTS command.
 	return (return_code);
 } /* gfx_create_element_points */
 
+struct Interpreter_command_element_selection_callback_data
+{
+	char *perl_action;
+	struct Interpreter *interpreter;
+}; /* struct Interpreter_command_element_selection_callback_data */
+
+static void interpreter_command_element_selection_callback(
+	struct FE_element_selection *element_selection,
+	struct FE_element_selection_changes *element_selection_changes,
+	void *data_void)
+/*******************************************************************************
+LAST MODIFIED : 4 July 2005
+
+DESCRIPTION :
+==============================================================================*/
+{
+	char *callback_result;
+	int return_code;
+	struct Interpreter_command_element_selection_callback_data *data;
+
+	ENTER(interpreter_command_element_selection_callback);
+
+	if (element_selection && element_selection_changes && 
+		(data = (struct Interpreter_command_element_selection_callback_data *)data_void))
+	{
+		callback_result = (char *)NULL;
+		interpreter_evaluate_string(data->interpreter,
+			  data->perl_action, &callback_result, &return_code);
+		if (callback_result)
+		{
+			DEALLOCATE(callback_result);
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"interpreter_command_element_selection_callback.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return;
+} /* interpreter_command_element_selection_callback */
+
+static int gfx_create_element_selection_callback(struct Parse_state *state,
+	void *dummy_to_be_modified,void *command_data_void)
+/*******************************************************************************
+LAST MODIFIED : 4 July 2005
+
+DESCRIPTION :
+Executes a GFX CREATE ELEMENT_SELECTION_CALLBACK command.
+==============================================================================*/
+{
+	char *perl_action;
+	int return_code;
+	struct Cmiss_command_data *command_data;
+	struct Interpreter_command_element_selection_callback_data *data;
+	struct Option_table *option_table;
+
+	ENTER(gfx_create_element_selection_callback);
+	USE_PARAMETER(dummy_to_be_modified);
+	if (state && (command_data = (struct Cmiss_command_data *)command_data_void))
+	{
+		perl_action = (char *)NULL;
+		
+		option_table=CREATE(Option_table)();
+		/* perl_action */
+		Option_table_add_entry(option_table,"perl_action", &perl_action, (void *)1,
+			set_name);
+		return_code = Option_table_multi_parse(option_table,state);
+		DESTROY(Option_table)(&option_table);
+		if (return_code)
+		{
+			if (!perl_action)
+			{
+				display_message(ERROR_MESSAGE,
+					"gfx_create_element_selection_callback.  "
+					"Specify a perl_action.");
+				return_code=0;
+			}
+			if (return_code)
+			{
+				if (ALLOCATE(data, struct Interpreter_command_element_selection_callback_data, 1))
+				{
+					data->perl_action = duplicate_string(perl_action);
+					data->interpreter = command_data->interpreter;
+
+					FE_element_selection_add_callback(
+						command_data->element_selection,
+						interpreter_command_element_selection_callback,
+						(void *)data);
+
+					/* Should add these callbacks to a list in the command data so that 
+						they can be cleaned up when quitting and retrieved for a destroy command */
+				}
+				else
+				{
+					display_message(ERROR_MESSAGE,
+						"gfx_create_element_selection_callback.  "
+						"Unable to allocate callback data.");
+					return_code=0;
+				}
+			}
+		}
+		if (perl_action)
+		{
+			DEALLOCATE(perl_action);
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"gfx_create_element_selection_callback.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* gfx_create_element_selection_callback */
+
 static int gfx_create_group(struct Parse_state *state,
 	void *use_nodes, void *root_region_void)
 /*******************************************************************************
@@ -3668,6 +3788,126 @@ graphics objects, and produces a new object
 
 	return (return_code);
 } /* gfx_create_morph */
+
+struct Interpreter_command_node_selection_callback_data
+{
+	char *perl_action;
+	struct Interpreter *interpreter;
+}; /* struct Interpreter_command_node_selection_callback_data */
+
+static void interpreter_command_node_selection_callback(
+	struct FE_node_selection *node_selection,
+	struct FE_node_selection_changes *node_selection_changes,
+	void *data_void)
+/*******************************************************************************
+LAST MODIFIED : 4 July 2005
+
+DESCRIPTION :
+==============================================================================*/
+{
+	char *callback_result;
+	int return_code;
+	struct Interpreter_command_node_selection_callback_data *data;
+
+	ENTER(interpreter_command_node_selection_callback);
+
+	if (node_selection && node_selection_changes && 
+		(data = (struct Interpreter_command_node_selection_callback_data *)data_void))
+	{
+		callback_result = (char *)NULL;
+		interpreter_evaluate_string(data->interpreter,
+			  data->perl_action, &callback_result, &return_code);
+		if (callback_result)
+		{
+			DEALLOCATE(callback_result);
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"interpreter_command_node_selection_callback.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return;
+} /* interpreter_command_node_selection_callback */
+
+static int gfx_create_node_selection_callback(struct Parse_state *state,
+	void *dummy_to_be_modified,void *command_data_void)
+/*******************************************************************************
+LAST MODIFIED : 4 July 2005
+
+DESCRIPTION :
+Executes a GFX CREATE NODE_SELECTION_CALLBACK command.
+==============================================================================*/
+{
+	char *perl_action;
+	int return_code;
+	struct Cmiss_command_data *command_data;
+	struct Interpreter_command_node_selection_callback_data *data;
+	struct Option_table *option_table;
+
+	ENTER(gfx_create_node_selection_callback);
+	USE_PARAMETER(dummy_to_be_modified);
+	if (state && (command_data = (struct Cmiss_command_data *)command_data_void))
+	{
+		perl_action = (char *)NULL;
+		
+		option_table=CREATE(Option_table)();
+		/* perl_action */
+		Option_table_add_entry(option_table,"perl_action", &perl_action, (void *)1,
+			set_name);
+		return_code = Option_table_multi_parse(option_table,state);
+		DESTROY(Option_table)(&option_table);
+		if (return_code)
+		{
+			if (!perl_action)
+			{
+				display_message(ERROR_MESSAGE,
+					"gfx_create_node_selection_callback.  "
+					"Specify a perl_action.");
+				return_code=0;
+			}
+			if (return_code)
+			{
+				if (ALLOCATE(data, struct Interpreter_command_node_selection_callback_data, 1))
+				{
+					data->perl_action = duplicate_string(perl_action);
+					data->interpreter = command_data->interpreter;
+
+					FE_node_selection_add_callback(
+						command_data->node_selection,
+						interpreter_command_node_selection_callback,
+						(void *)data);
+
+					/* Should add these callbacks to a list in the command data so that 
+						they can be cleaned up when quitting and retrieved for a destroy command */
+				}
+				else
+				{
+					display_message(ERROR_MESSAGE,
+						"gfx_create_node_selection_callback.  "
+						"Unable to allocate callback data.");
+					return_code=0;
+				}
+			}
+		}
+		if (perl_action)
+		{
+			DEALLOCATE(perl_action);
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"gfx_create_node_selection_callback.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* gfx_create_node_selection_callback */
 
 #if defined (MOTIF)
 static int gfx_create_node_viewer(struct Parse_state *state,
@@ -8607,6 +8847,8 @@ Executes a GFX CREATE command.
 #endif /* defined (MOTIF) */
 				Option_table_add_entry(option_table,"element_points",NULL,
 					command_data_void,gfx_create_element_points);
+				Option_table_add_entry(option_table,"element_selection_callback",NULL,
+					command_data_void,gfx_create_element_selection_callback);
 #if defined (MOTIF)
 				create_emoter_slider_data.execute_command=command_data->execute_command;
 				create_emoter_slider_data.root_region=
@@ -8682,6 +8924,8 @@ Executes a GFX CREATE command.
 					(void *)command_data->root_region, gfx_create_group);
 				Option_table_add_entry(option_table,"node_points",/*use_data*/(void *)0,
 					command_data_void,gfx_create_node_points);
+				Option_table_add_entry(option_table,"node_selection_callback",NULL,
+					command_data_void,gfx_create_node_selection_callback);
 #if defined (MOTIF)
 				Option_table_add_entry(option_table,"node_viewer",NULL,
 					command_data_void,gfx_create_node_viewer);
@@ -19578,7 +19822,7 @@ Can also write individual element groups with the <group> option.
 				(FE_WRITE_COMPLETE_GROUP != write_criterion))
 			{
 				display_message(WARNING_MESSAGE,
-					"gfx_write_nodes.  Must specify fields to use %s",
+					"gfx_write_elements.  Must specify fields to use %s",
 					write_criterion_string);
 				return_code = 0;
 				
@@ -25424,4 +25668,48 @@ Returns the root region from the <command_data>.
 
 	return (computed_field_manager);
 } /* Cmiss_command_data_get_computed_field_manager */
+
+struct FE_element_selection *Cmiss_command_data_get_element_selection(
+	struct Cmiss_command_data *command_data)
+/*******************************************************************************
+LAST MODIFIED : 4 July 2005
+
+DESCRIPTION :
+Returns the selected_element object from the <command_data>.
+==============================================================================*/
+{
+	struct FE_element_selection *element_selection;
+
+	ENTER(Cmiss_command_data_get_element_selection);
+	element_selection=(struct FE_element_selection *)NULL;
+	if (command_data)
+	{
+		element_selection = command_data->element_selection;
+	}
+	LEAVE;
+
+	return (element_selection);
+} /* Cmiss_command_data_get_element_selection */
+
+struct FE_node_selection *Cmiss_command_data_get_node_selection(
+	struct Cmiss_command_data *command_data)
+/*******************************************************************************
+LAST MODIFIED : 4 July 2005
+
+DESCRIPTION :
+Returns the selected_node object from the <command_data>.
+==============================================================================*/
+{
+	struct FE_node_selection *node_selection;
+
+	ENTER(Cmiss_command_data_get_node_selection);
+	node_selection=(struct FE_node_selection *)NULL;
+	if (command_data)
+	{
+		node_selection = command_data->node_selection;
+	}
+	LEAVE;
+
+	return (node_selection);
+} /* Cmiss_command_data_get_node_selection */
 
