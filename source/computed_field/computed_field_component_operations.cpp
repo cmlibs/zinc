@@ -5816,7 +5816,6 @@ already) and allows its contents to be modified.
 			{
 				DEACCESS(Computed_field)(&source_field);
 			}
-			DESTROY(Option_table)(&option_table);
 		}
 		DEALLOCATE(weights);
 	}
