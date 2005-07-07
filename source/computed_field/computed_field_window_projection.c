@@ -272,27 +272,29 @@ DESCRIPTION :
 				}
 				else if (data->projection_type == INVERSE_NDC_PROJECTION)
 				{
-					LU_decompose(/* dimension */4, total_projection_matrix,
-						lu_index, &lu_d,/*singular_tolerance*/1.0e-12);
-					for (i = 0 ; i < 4 ; i++)
+					if (LU_decompose(/* dimension */4, total_projection_matrix,
+						lu_index, &lu_d,/*singular_tolerance*/1.0e-12))
 					{
-						for (j = 0 ; j < 4 ; j++)
+						for (i = 0 ; i < 4 ; i++)
 						{
-							data->projection_matrix[i * 4 + j] = 0.0;
+							for (j = 0 ; j < 4 ; j++)
+							{
+								data->projection_matrix[i * 4 + j] = 0.0;
+							}
+							data->projection_matrix[i * 4 + i] = 1.0;
+							LU_backsubstitute(/* dimension */4, total_projection_matrix,
+								lu_index, data->projection_matrix + i * 4);
 						}
-						data->projection_matrix[i * 4 + i] = 1.0;
-						LU_backsubstitute(/* dimension */4, total_projection_matrix,
-							lu_index, data->projection_matrix + i * 4);
-					}
-					/* transpose */
-					for (i = 0 ; i < 4 ; i++)
-					{
-						for (j = i + 1 ; j < 4 ; j++)
+						/* transpose */
+						for (i = 0 ; i < 4 ; i++)
 						{
-							lu_d = data->projection_matrix[i * 4 + j];
-							data->projection_matrix[i * 4 + j] =
-								data->projection_matrix[j * 4 + i];
-							data->projection_matrix[j * 4 + i] = lu_d;
+							for (j = i + 1 ; j < 4 ; j++)
+							{
+								lu_d = data->projection_matrix[i * 4 + j];
+								data->projection_matrix[i * 4 + j] =
+									data->projection_matrix[j * 4 + i];
+								data->projection_matrix[j * 4 + i] = lu_d;
+							}
 						}
 					}
 				}
@@ -365,27 +367,29 @@ DESCRIPTION :
 					}
 					else if (data->projection_type == INVERSE_VIEWPORT_PROJECTION)
 					{
-						LU_decompose(/* dimension */4, viewport_matrix,
-							lu_index, &lu_d,/*singular_tolerance*/1.0e-12);
-						for (i = 0 ; i < 4 ; i++)
+						if (LU_decompose(/* dimension */4, viewport_matrix,
+							lu_index, &lu_d,/*singular_tolerance*/1.0e-12))
 						{
-							for (j = 0 ; j < 4 ; j++)
+							for (i = 0 ; i < 4 ; i++)
 							{
-								data->projection_matrix[i * 4 + j] = 0.0;
+								for (j = 0 ; j < 4 ; j++)
+								{
+									data->projection_matrix[i * 4 + j] = 0.0;
+								}
+								data->projection_matrix[i * 4 + i] = 1.0;
+								LU_backsubstitute(/* dimension */4, viewport_matrix,
+									lu_index, data->projection_matrix + i * 4);
 							}
-							data->projection_matrix[i * 4 + i] = 1.0;
-							LU_backsubstitute(/* dimension */4, viewport_matrix,
-								lu_index, data->projection_matrix + i * 4);
-						}
-						/* transpose */
-						for (i = 0 ; i < 4 ; i++)
-						{
-							for (j = i + 1 ; j < 4 ; j++)
+							/* transpose */
+							for (i = 0 ; i < 4 ; i++)
 							{
-								lu_d = data->projection_matrix[i * 4 + j];
-								data->projection_matrix[i * 4 + j] =
-									data->projection_matrix[j * 4 + i];
-								data->projection_matrix[j * 4 + i] = lu_d;
+								for (j = i + 1 ; j < 4 ; j++)
+								{
+									lu_d = data->projection_matrix[i * 4 + j];
+									data->projection_matrix[i * 4 + j] =
+										data->projection_matrix[j * 4 + i];
+									data->projection_matrix[j * 4 + i] = lu_d;
+								}
 							}
 						}
 					}
@@ -483,28 +487,30 @@ DESCRIPTION :
 								}
 								else if (data->projection_type == INVERSE_TEXTURE_PROJECTION)
 								{
-									LU_decompose(/* dimension */4, texture_projection_matrix,
-										lu_index, &lu_d,/*singular_tolerance*/1.0e-12);
-									for (i = 0 ; i < 4 ; i++)
+									if (LU_decompose(/* dimension */4, texture_projection_matrix,
+										lu_index, &lu_d,/*singular_tolerance*/1.0e-12))
 									{
-										for (j = 0 ; j < 4 ; j++)
+										for (i = 0 ; i < 4 ; i++)
 										{
-											data->projection_matrix[i * 4 + j] = 0.0;
+											for (j = 0 ; j < 4 ; j++)
+											{
+												data->projection_matrix[i * 4 + j] = 0.0;
+											}
+											data->projection_matrix[i * 4 + i] = 1.0;
+											LU_backsubstitute(/* dimension */4, 
+												texture_projection_matrix,
+												lu_index, data->projection_matrix + i * 4);
 										}
-										data->projection_matrix[i * 4 + i] = 1.0;
-										LU_backsubstitute(/* dimension */4, 
-											texture_projection_matrix,
-											lu_index, data->projection_matrix + i * 4);
-									}
-									/* transpose */
-									for (i = 0 ; i < 4 ; i++)
-									{
-										for (j = i + 1 ; j < 4 ; j++)
+										/* transpose */
+										for (i = 0 ; i < 4 ; i++)
 										{
-											lu_d = data->projection_matrix[i * 4 + j];
-											data->projection_matrix[i * 4 + j] =
-												data->projection_matrix[j * 4 + i];
-											data->projection_matrix[j * 4 + i] = lu_d;
+											for (j = i + 1 ; j < 4 ; j++)
+											{
+												lu_d = data->projection_matrix[i * 4 + j];
+												data->projection_matrix[i * 4 + j] =
+													data->projection_matrix[j * 4 + i];
+												data->projection_matrix[j * 4 + i] = lu_d;
+											}
 										}
 									}
 								}
