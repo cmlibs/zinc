@@ -147,8 +147,17 @@ as the <data> field or any of its source fields.
 						for (i = 0 ; i < number_of_xi ; i++)
 						{
 							data->xi[i] = xi_points[0][i];
+							last_xi[i] = xi_points[0][i];
 						}
 						DEALLOCATE(xi_points);
+					}
+					else
+					{
+						for (i = 0 ; i < number_of_xi ; i++)
+						{
+							data->xi[i] = 0.5;
+							last_xi[i] = 0.5;
+						}
 					}
 					converged = 0;
 					iterations = 0;
