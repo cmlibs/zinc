@@ -227,9 +227,9 @@ ifeq ($(SYSNAME),Linux)
       CPP_STRICT_FLAGS = -W -Wall -Wno-parentheses -Wno-switch -Wno-unused-parameter -Werror
       DIGITAL_MEDIA_NON_STRICT_FLAGS = 
       DIGITAL_MEDIA_NON_STRICT_FLAGS_PATTERN = NONE # Must specify a pattern that doesn't match */
-      TARGET_TYPE_FLAGS =
-      TARGET_TYPE_DEFINES =
    endif # DEBUG != true
+   TARGET_TYPE_FLAGS =
+   TARGET_TYPE_DEFINES =
    ifeq ($(MACHNAME),ia64)
       TARGET_TYPE_DEFINES = -DO64
       # To work around errors of the form:
@@ -280,7 +280,7 @@ ifeq ($(SYSNAME),win32)
    # CC = gcc -c -mno-cygwin -mms-bitfields -D_LIB -D_MT -D_FILE_OFFSET_BITS=64
    CPP = g++ -c -mno-cygwin -mms-bitfields
    CPP_FLAGS =
-   FORTRAN = f77 -c
+   FORTRAN = f77 -c -mno-cygwin -mms-bitfields
    MAKEDEPEND = gcc -MM -MG
    CPREPROCESS = 
    LINK = g++ -mno-cygwin -fnative-struct -mms-bitfields
