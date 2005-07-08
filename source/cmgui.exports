@@ -43,6 +43,8 @@ destroy_Cmiss_value
 access_Cmiss_value
 deaccess_Cmiss_value
 Cmiss_command_data_get_root_region
+Cmiss_command_data_get_node_selection
+Cmiss_command_data_get_element_selection
 Cmiss_command_data_main_loop
 Cmiss_value_get_type_id_string
 Cmiss_value_get_string
@@ -78,6 +80,8 @@ Cmiss_region_begin_change_API
 Cmiss_region_merge_Cmiss_element
 Cmiss_region_merge_Cmiss_node
 Cmiss_region_end_change_API
+FE_element_selection_get_element_list
+FE_node_selection_get_node_list
 FE_region_get_basis_manager
 FE_region_get_FE_field_from_name
 FE_region_get_FE_node_from_identifier
@@ -106,11 +110,15 @@ deaccess_FE_node
 create_FE_node_field_creator
 destroy_FE_node_field_creator
 Cmiss_node_get_identifier
+list_for_each_FE_node
+list_number_FE_node
 create_Cmiss_element_with_line_shape
 access_FE_element
 deaccess_FE_element
 Cmiss_element_get_identifier
 Cmiss_element_set_node
+list_for_each_FE_element
+list_number_FE_element
 
 create_IO_stream_package
 destroy_IO_stream_package
