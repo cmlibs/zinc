@@ -405,7 +405,7 @@ int orthogonal_projection(struct Image_cache *image,
 				{
 					diff[y*image->sizes[0] + x] += - q1_index[y*image->sizes[0] + x - 1];
 				}
-				diff[y*image->sizes[0] + x] -= ((*data_index - mean) - v_index[y*image->sizes[0] + x])  / lambda;
+				diff[y*image->sizes[0] + x] -= ((*data_index - mean)*255.0 - v_index[y*image->sizes[0] + x])  / lambda;
 				data_index += image->depth;
 			}
 		}
@@ -525,7 +525,8 @@ REFERENCE: J._F. Aujol, et al., "Image decomposition into a bounded variation co
 			data_index = (FE_value *)image->data;
 			for (i = 0; i < storage_size/image->depth; i++)
 			{
-			        u_index[i] = (*data_index - mean);
+			        //u_index[i] = (*data_index - mean);
+				u_index[i] = 0.0;
 				v_index[i] = 0.0;
 				data_index += image->depth;
 			}
@@ -533,60 +534,30 @@ REFERENCE: J._F. Aujol, et al., "Image decomposition into a bounded variation co
 			result_index = (FE_value *)storage;
 			for (n = 0; n < number_of_iterations; n++)
 			{
-			        /*1. Fixed v, search for u using orthogonal operator:
-				     u = f - v - P_{G}(f-v) */
-				for (i = 0; i < storage_size/image->depth; i++)
-				{
-				        q1_index[i] = 0.0;
-					q2_index[i] = 0.0;
-				}
-				for (c = 0; c < number_of_iterations; c++)
-				{ 
-				        orthogonal_projection(image, mean, tou, lambda, 
-	                                       q1_index, q2_index, v_index);  
-				}
-				for (y = 0; y < image->sizes[1]; y++)
-				{
-					for (x = 0; x < image->sizes[0]; x++)
-					{
-						if ((y > 0) && (y < (image->sizes[1] - 1)))
-						{
-							u_index[y*image->sizes[0] + x] = q2_index[y*image->sizes[0] + x] - q2_index[(y-1)*image->sizes[0] + x];
-						}
-						else if (y == 0)
-						{
-							u_index[y*image->sizes[0] + x] = q2_index[y*image->sizes[0] + x];
-						}
-						else if (y == (image->sizes[1] - 1))
-						{
-							u_index[y*image->sizes[0] + x] = - q2_index[(y-1)*image->sizes[0] + x];
-						}
-						if ((x > 0) && (x < (image->sizes[0] - 1)))
-						{
-							u_index[y*image->sizes[0] + x] += q1_index[y*image->sizes[0] + x] - q1_index[y*image->sizes[0] + x -1];
-						}
-						else if (x == 0)
-						{
-						        u_index[y*image->sizes[0] + x] += q1_index[y*image->sizes[0] + x];
-						}
-						else if (x == (image->sizes[0] - 1))
-						{
-							u_index[y*image->sizes[0] + x] += - q1_index[y*image->sizes[0] + x - 1];
-						}
-						u_index[y*image->sizes[0] + x] = (*data_index - mean)- v_index[y*image->sizes[0] + x] - lambda * u_index[y*image->sizes[0] + x];
-						/*u_index[y*image->sizes[0] + x] = *data_index - v_index[y*image->sizes[0] + x] - u_index[y*image->sizes[0] + x];*/
-						data_index += image->depth;
-					}
-				}
-				/*2. Fixed u, search for v using orthogonal operator:
+			        /*1. Fixed u, search for v using orthogonal operator:
 				        v = P_{G}(f - u)*/
-				data_index = (FE_value *)image->data;
-				for (i = 0; i < storage_size/image->depth; i++)
+				/*for (i = 0; i < storage_size/image->depth; i++)
+				{
+				        if (((*data_index-mean)*255.0-u_index[i])> mu*lambda)
+					{
+					         v_index[i] = (*data_index-mean)*255.0-u_index[i] - mu*lambda;
+					}
+					else if (((*data_index-mean)*255.0-u_index[i])< (-1.0*mu*lambda))
+					{
+					         v_index[i] = (*data_index-mean)*255.0-u_index[i] + mu*lambda;
+					}
+					else
+					{
+					         v_index[i] = 0.0;
+					}
+				}*/
+				
+			        for (i = 0; i < storage_size/image->depth; i++)
 				{
 				        q1_index[i] = 0.0;
 					q2_index[i] = 0.0;
 				}
-				for (c = 0; c < number_of_iterations; c++)
+				for (c = 0; c < 200; c++)
 				{ 
 				        orthogonal_projection(image, mean, tou, mu, 
 	                                       q1_index, q2_index, u_index);   
@@ -622,6 +593,53 @@ REFERENCE: J._F. Aujol, et al., "Image decomposition into a bounded variation co
 						v_index[y*image->sizes[0] + x] *= mu;
 					}
 				}
+			        /*2. Fixed v, search for u using orthogonal operator:
+				     u = f - v - P_{G}(f-v) */
+				for (i = 0; i < storage_size/image->depth; i++)
+				{
+				        q1_index[i] = 0.0;
+					q2_index[i] = 0.0;
+				}
+				for (c = 0; c < 200; c++)
+				{ 
+				        orthogonal_projection(image, mean, tou, lambda, 
+	                                       q1_index, q2_index, v_index);  
+				}
+				for (y = 0; y < image->sizes[1]; y++)
+				{
+					for (x = 0; x < image->sizes[0]; x++)
+					{
+						if ((y > 0) && (y < (image->sizes[1] - 1)))
+						{
+							u_index[y*image->sizes[0] + x] = q2_index[y*image->sizes[0] + x] - q2_index[(y-1)*image->sizes[0] + x];
+						}
+						else if (y == 0)
+						{
+							u_index[y*image->sizes[0] + x] = q2_index[y*image->sizes[0] + x];
+						}
+						else if (y == (image->sizes[1] - 1))
+						{
+							u_index[y*image->sizes[0] + x] = - q2_index[(y-1)*image->sizes[0] + x];
+						}
+						if ((x > 0) && (x < (image->sizes[0] - 1)))
+						{
+							u_index[y*image->sizes[0] + x] += q1_index[y*image->sizes[0] + x] - q1_index[y*image->sizes[0] + x -1];
+						}
+						else if (x == 0)
+						{
+						        u_index[y*image->sizes[0] + x] += q1_index[y*image->sizes[0] + x];
+						}
+						else if (x == (image->sizes[0] - 1))
+						{
+							u_index[y*image->sizes[0] + x] += - q1_index[y*image->sizes[0] + x - 1];
+						}
+						u_index[y*image->sizes[0] + x] = (*data_index - mean)*255.0- v_index[y*image->sizes[0] + x] - lambda * u_index[y*image->sizes[0] + x];
+						/*u_index[y*image->sizes[0] + x] = *data_index - v_index[y*image->sizes[0] + x] - u_index[y*image->sizes[0] + x];*/
+						data_index += image->depth;
+					}
+				}
+				data_index = (FE_value *)image->data;
+				
 			}
 			if (strcmp(result,"bounded_variation") == 0)
 			{
@@ -644,15 +662,15 @@ REFERENCE: J._F. Aujol, et al., "Image decomposition into a bounded variation co
 			        case 1 :
 				        for (i = 0 ; i < storage_size / image->depth ; i++)
 					{
-						max = my_Max(max, mean + u_index[i]);
-						min = my_Min(min, mean + u_index[i]);
+						max = my_Max(max, mean*225.0 + u_index[i]);
+						min = my_Min(min, mean*255.0 + u_index[i]);
 						
 					}
 					for (i = 0 ; return_code && i < storage_size / image->depth ; i++)
 					{
 						for (k = 0 ; k < image->depth ; k++)
 						{
-                                        		result_index[k] = (mean + u_index[i] -min)/(max-min);
+                                        		result_index[k] = (mean*255.0 + u_index[i] -min)/(max-min);
 							/*result_index[k] = (mean*255.0 + u_index[i])/255.0;*/
 						}
 						result_index += image->depth;
@@ -676,14 +694,14 @@ REFERENCE: J._F. Aujol, et al., "Image decomposition into a bounded variation co
 				case 3 :
 				        for (i = 0 ; i < storage_size / image->depth ; i++)
 					{
-						max = my_Max(max, (mean + u_index[i] + v_index[i]));
-						min = my_Min(min, (mean + u_index[i] + v_index[i]));
+						max = my_Max(max, (mean*255.0 + u_index[i] + v_index[i]));
+						min = my_Min(min, (mean*255.0 + u_index[i] + v_index[i]));
 					}
 					for (i = 0 ; return_code && i < storage_size / image->depth ; i++)
 					{
 						for (k = 0 ; k < image->depth ; k++)
 						{
-                                        		result_index[k] = ((mean + u_index[i] + v_index[i])-min)/(max-min);
+                                        		result_index[k] = ((mean*255.0 + u_index[i] + v_index[i])-min)/(max-min);
 						}
 						result_index += image->depth;
 					}
@@ -691,8 +709,8 @@ REFERENCE: J._F. Aujol, et al., "Image decomposition into a bounded variation co
 				case 4:
 				        for (i = 0 ; i < storage_size / image->depth ; i++)
 					{
-						max = my_Max(max, fabs(*data_index - (mean + u_index[i] + v_index[i])));
-						min = my_Min(min, fabs(*data_index - (mean + u_index[i] + v_index[i])));
+						max = my_Max(max, fabs(255.0*(*data_index) - (mean*255.0 + u_index[i] + v_index[i])));
+						min = my_Min(min, fabs(255.0*(*data_index) - (mean*255.0 + u_index[i] + v_index[i])));
 						data_index += image->depth;
 					}
 					data_index = (FE_value *)image->data;
@@ -700,7 +718,7 @@ REFERENCE: J._F. Aujol, et al., "Image decomposition into a bounded variation co
 					{
 						for (k = 0 ; k < image->depth ; k++)
 						{
-                                        		result_index[k] = (fabs(*data_index - (mean + u_index[i] + v_index[i]))-min)/(max-min);
+                                        		result_index[k] = (fabs((*data_index)*255.0 - (mean*255.0 + u_index[i] + v_index[i]))-min)/(max-min);
 						}
 						result_index += image->depth;
 						data_index += image->depth;
