@@ -4089,7 +4089,7 @@ struct Rig *read_configuration(FILE *input_file,
 #endif /* defined (UNEMAP_USE_3D)*/
 	)
 /*******************************************************************************
-LAST MODIFIED : 21 July 2004
+LAST MODIFIED : 4 August 2005
 
 DESCRIPTION :
 Assumes that the <input_file> has been opened, the <file_type> (binary or text)
@@ -4110,7 +4110,7 @@ pointer to the rig if successful and NULL if unsuccessful.
 	struct Device **device,**electrodes;
 	struct Device_list_item *device_item,**device_item_address,*device_list,
 		*last_device_item;
-	struct Page_list_item **last_page_item;
+	struct Page_list_item **last_page_item,*page_item;
 	struct Region_list_item **region_item_address;
 	struct Rig *rig;
 #if defined (DEVICE_EXPRESSIONS)
@@ -4802,9 +4802,10 @@ pointer to the rig if successful and NULL if unsuccessful.
 								(('s'==string[4])||('S'==string[4]))))
 							{
 								/* read in the pages */
+								fscanf(input_file," ");
 								last_page_item= &(rig->page_list);
 								/* read the first page name */
-								if (read_string(input_file,"s",&name))
+								if (read_string(input_file,"[^\n :,]",&name))
 								{
 									if (trimmed_string=trim_string(name))
 									{
@@ -4814,115 +4815,140 @@ pointer to the rig if successful and NULL if unsuccessful.
 									fscanf(input_file," %c",&separator);
 									while (!feof(input_file)&&rig&&(':'==separator))
 									{
-										/* add another item to the page list */
-										if (*last_page_item=create_Page_list_item(
-											(struct Page *)NULL,(struct Page_list_item *)NULL))
+										/* check for an existing page with the same name */
+										page_item=rig->page_list;
+										while (page_item&&strcmp(name,page_item->page->name))
 										{
-											/* create the page */
-											if ((*last_page_item)->page=create_Page(name,
-												(struct Device_list_item *)NULL))
+											page_item=page_item->next;
+										}
+										if (!page_item)
+										{
+											/* add another item to the page list */
+											if (*last_page_item=create_Page_list_item(
+												(struct Page *)NULL,(struct Page_list_item *)NULL))
 											{
-												/* read the list of devices */
-												fscanf(input_file," ");
-												separator=',';
-												device_item_address=
-													&((*last_page_item)->page->device_list);
-												last_device_item=(struct Device_list_item *)NULL;
-												while (!feof(input_file)&&rig&&(separator!=':'))
+												/* create the page */
+												if ((*last_page_item)->page=create_Page(name,
+													(struct Device_list_item *)NULL))
 												{
-													if (read_string(input_file,"[^\n :,]",&dummy))
+													/* read the list of devices */
+													fscanf(input_file," ");
+													separator=',';
+													device_item_address=
+														&((*last_page_item)->page->device_list);
+													last_device_item=(struct Device_list_item *)NULL;
+													while (!feof(input_file)&&rig&&(separator!=':'))
 													{
-														if (separator!=',')
+														if (read_string(input_file,"[^\n :,]",&dummy))
 														{
-															if (ALLOCATE(name,char,strlen(dummy)+2))
+															if (separator!=',')
 															{
-																name[0]=separator;
-																name[1]='\0';
-																strcat(name,dummy);
-																DEALLOCATE(dummy);
+																if (ALLOCATE(name,char,strlen(dummy)+2))
+																{
+																	name[0]=separator;
+																	name[1]='\0';
+																	strcat(name,dummy);
+																	DEALLOCATE(dummy);
+																}
 															}
-														}
-														else
-														{
-															name=dummy;
-														} /* end if */
-														if (name)
-														{
-															fscanf(input_file," %c ",&separator);
-															if (separator!=':')
+															else
 															{
-																/* look for the device with the specified
-																	name */
-																device=rig->devices;
-																number_of_devices=rig->number_of_devices;
-																finished=0;
-																while ((number_of_devices>0)&&!finished)
+																name=dummy;
+															}
+															if (name)
+															{
+																fscanf(input_file,"%c ",&separator);
+																if ((','!=separator)&&(':'!=separator))
 																{
-																	if (!strcmp(name,
-																		(*device)->description->name))
+																	fscanf(input_file,"%c",&separator);
+																	if ((','==separator)||(':'==separator))
 																	{
-																		finished=1;
+																		fscanf(input_file," ");
 																	}
-																	else
-																	{
-																		device++;
-																	} /* end if */
-																	number_of_devices--;
-																} /* end while */
-																if (finished)
+																}
+																if (separator!=':')
 																{
-																	if (last_device_item=create_Device_list_item(
-																		*device,last_device_item,
-																		(struct Device_list_item *)NULL))
+																	/* look for the device with the specified
+																		name */
+																	device=rig->devices;
+																	number_of_devices=rig->number_of_devices;
+																	finished=0;
+																	while ((number_of_devices>0)&&!finished)
 																	{
-																		*device_item_address=last_device_item;
-																		device_item_address=
-																			&(last_device_item->next);
+																		if (!strcmp(name,
+																			(*device)->description->name))
+																		{
+																			finished=1;
+																		}
+																		else
+																		{
+																			device++;
+																		} 
+																		number_of_devices--;
+																	}
+																	if (finished)
+																	{
+																		if (last_device_item=
+																			create_Device_list_item(*device,
+																			last_device_item,
+																			(struct Device_list_item *)NULL))
+																		{
+																			*device_item_address=last_device_item;
+																			device_item_address=
+																				&(last_device_item->next);
+																		}
+																		else
+																		{
+																			display_message(ERROR_MESSAGE,
+									"read_configuration.  Could not create device item for page");
+																			destroy_Rig(&rig);
+																		}
 																	}
 																	else
 																	{
 																		display_message(ERROR_MESSAGE,
-									"read_configuration.  Could not create device item for page");
-																		destroy_Rig(&rig);
-																	} /* end if */
-																} /* end if */
-																else
-																{
-																	display_message(ERROR_MESSAGE,
 														"read_configuration.  Invalid device %s in page %s",
-																		name,(*last_page_item)->page->name);
-																	/*??? important error for user,
-																		should continue */
-																} /* end if */
-															} /* end if */
+																			name,(*last_page_item)->page->name);
+																		/*??? important error for user,
+																			should continue */
+																	}
+																}
+															}
+															else
+															{
+																display_message(ERROR_MESSAGE,
+									"read_configuration.  Could not create device name for page");
+																destroy_Rig(&rig);
+															}
 														}
 														else
 														{
 															display_message(ERROR_MESSAGE,
-									"read_configuration.  Could not create device name for page");
+																"read_configuration.  "
+																"Could not create device name for page");
 															destroy_Rig(&rig);
-														} /* end if */
+														}
 													}
-													else
-													{
-														display_message(ERROR_MESSAGE,
-									"read_configuration.  Could not create device name for page");
-														destroy_Rig(&rig);
-													} /* end if */
-												} /* end while */
+												}
+												else
+												{
+													display_message(ERROR_MESSAGE,
+														"read_configuration.  Could not create page");
+													destroy_Rig(&rig);
+												}
+												last_page_item= &((*last_page_item)->next);
 											}
 											else
 											{
-												display_message(ERROR_MESSAGE,
-													"read_configuration.  Could not create page");
+												display_message(ERROR_MESSAGE,"read_configuration.  "
+													"Could not create page list item");
 												destroy_Rig(&rig);
 											}
-											last_page_item= &((*last_page_item)->next);
 										}
 										else
 										{
-											display_message(ERROR_MESSAGE,
-												"read_configuration.  Could not create page list item");
+											display_message(ERROR_MESSAGE,"read_configuration.  "
+												"Different pages with the same name /%s/",name);
 											destroy_Rig(&rig);
 										}
 									}
