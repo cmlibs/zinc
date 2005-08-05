@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : page_window.c
 
-LAST MODIFIED : 19 October 2004
+LAST MODIFIED : 4 August 2005
 
 DESCRIPTION :
 
@@ -110,6 +110,7 @@ TO DO:
 #include <Xm/Xm.h>
 #include <Xm/ArrowB.h>
 #include <Xm/MwmUtil.h>
+#include <Xm/PushBG.h>
 #include <Xm/ToggleB.h>
 #include <Mrm/MrmPublic.h>
 #include <Mrm/MrmDecls.h>
@@ -165,7 +166,7 @@ DESCRIPTION :
 
 struct Page_window
 /*******************************************************************************
-LAST MODIFIED : 14 August 2003
+LAST MODIFIED : 22 July 2005
 
 DESCRIPTION :
 The page window object.
@@ -174,9 +175,12 @@ The page window object.
 #if defined (MOTIF)
 	Widget activation,shell,window;
 	Widget auto_range_button,calibrate_button,close_button,experiment_checkbox,
-		full_range_button,isolate_checkbox,pacing_button,sample_checkbox,
-		scrolling_checkbox,start_all_stimulators_button,stimulate_checkbox,
-		stimulator_checkbox,stop_all_stimulators_button,test_checkbox;
+		full_range_button,isolate_checkbox,pacing_button,pages_pull_down_menu,
+		sample_checkbox,scrolling_checkbox,set_scrolling_button,
+		start_all_stimulators_button,stimulate_checkbox,stimulator_checkbox,
+		stop_all_stimulators_button,test_checkbox;
+	int number_of_pages;
+	WidgetList pages;
 	struct
 	{
 		Widget form,value;
@@ -1148,6 +1152,60 @@ Finds the id of the page scrolling checkbox.
 	}
 	LEAVE;
 } /* identify_page_scrolling_checkbo */
+#endif /* defined (MOTIF) */
+
+#if defined (MOTIF)
+static void identify_page_set_scrolling_but(Widget *widget_id,
+	XtPointer page_window_structure,XtPointer call_data)
+/*******************************************************************************
+LAST MODIFIED : 21 July 2005
+
+DESCRIPTION :
+Finds the id of the page set scrolling button.
+==============================================================================*/
+{
+	struct Page_window *page;
+
+	ENTER(identify_page_set_scrolling_but);
+	USE_PARAMETER(call_data);
+	if (page=(struct Page_window *)page_window_structure)
+	{
+		page->set_scrolling_button= *widget_id;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"identify_page_set_scrolling_but.  page window missing");
+	}
+	LEAVE;
+} /* identify_page_set_scrolling_but */
+#endif /* defined (MOTIF) */
+
+#if defined (MOTIF)
+static void identify_page_pages_pull_down_m(Widget *widget_id,
+	XtPointer page_window_structure,XtPointer call_data)
+/*******************************************************************************
+LAST MODIFIED : 2 August 2005
+
+DESCRIPTION :
+Finds the id of the page set scrolling button.
+==============================================================================*/
+{
+	struct Page_window *page;
+
+	ENTER(identify_page_pages_pull_down_m);
+	USE_PARAMETER(call_data);
+	if (page=(struct Page_window *)page_window_structure)
+	{
+		page->pages_pull_down_menu= *widget_id;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"identify_page_pages_pull_down_m.  page window missing");
+	}
+	LEAVE;
+} /* identify_page_pages_pull_down_m */
 #endif /* defined (MOTIF) */
 
 #if defined (MOTIF)
@@ -3799,7 +3857,7 @@ Updates the settings for the stimulating buttons.
 static void change_display_device_number(struct Page_window *page_window,
 	int device_number)
 /*******************************************************************************
-LAST MODIFIED : 13 November 2000
+LAST MODIFIED : 4 August 2005
 
 DESCRIPTION :
 ==============================================================================*/
@@ -3843,8 +3901,6 @@ DESCRIPTION :
 		}
 		if (i<page_window->number_of_scrolling_devices)
 		{
-			/* to make sure that current signal is at the top */
-			remove_scrolling_device(page_window,device);
 #if defined (MOTIF)
 			XmToggleButtonSetState(page_window->scrolling_checkbox,True,
 				False);
@@ -3856,6 +3912,7 @@ DESCRIPTION :
 		}
 		else
 		{
+			add_scrolling_device(page_window,device);
 #if defined (MOTIF)
 			XmToggleButtonSetState(page_window->scrolling_checkbox,False,
 				False);
@@ -3865,7 +3922,6 @@ DESCRIPTION :
 				BST_UNCHECKED);
 #endif /* defined (WIN32_USER_INTERFACE) */
 		}
-		add_scrolling_device(page_window,device);
 		update_stimulating_settings(page_window);
 #if defined (OLD_CODE)
 		/* update means that the size of the signal will change if the gain
@@ -5703,6 +5759,202 @@ Assumes that the calibration file is normalized.
 	return (return_code);
 } /* page_read_calibration_file */
 
+#if defined (MOTIF)
+static void set_page_scrolling(Widget widget,XtPointer user_data,
+	XtPointer call_data)
+/*******************************************************************************
+LAST MODIFIED : 4 August 2005
+
+DESCRIPTION :
+==============================================================================*/
+{
+	int i;
+	struct Device_list_item *device_item;
+	struct Page *page;
+	struct Page_window *page_window;
+
+	ENTER(set_page_scrolling);
+	USE_PARAMETER(call_data);
+	XtVaGetValues(widget,XmNuserData,(XtPointer)&page_window,NULL);
+	if (page_window&&(page=(struct Page *)user_data))
+	{
+		while (0<page_window->number_of_scrolling_devices)
+		{
+			remove_scrolling_device(page_window,(page_window->scrolling_devices)[0]);
+		}
+		device_item=page->device_list;
+		if (device_item)
+		{
+			while (device_item->next)
+			{
+				device_item=device_item->next;
+			}
+			while (device_item)
+			{
+				add_scrolling_device(page_window,device_item->device);
+				device_item=device_item->previous;
+			}
+		}
+		/* check if it is a scrolling device */
+		i=0;
+		while ((i<page_window->number_of_scrolling_devices)&&
+			(page_window->display_device!=(page_window->scrolling_devices)[i]))
+		{
+			i++;
+		}
+		if (i<page_window->number_of_scrolling_devices)
+		{
+#if defined (MOTIF)
+			XmToggleButtonSetState(page_window->scrolling_checkbox,True,
+				False);
+#endif /* defined (MOTIF) */
+#if defined (WIN32_USER_INTERFACE)
+			CheckDlgButton(page_window->window,SCROLLING_CHECKBOX,
+				BST_CHECKED);
+#endif /* defined (WIN32_USER_INTERFACE) */
+		}
+		else
+		{
+#if defined (MOTIF)
+			XmToggleButtonSetState(page_window->scrolling_checkbox,False,
+				False);
+#endif /* defined (MOTIF) */
+#if defined (WIN32_USER_INTERFACE)
+			CheckDlgButton(page_window->window,SCROLLING_CHECKBOX,
+				BST_UNCHECKED);
+#endif /* defined (WIN32_USER_INTERFACE) */
+		}
+		change_display_device_number(page_window,
+			page_window->display_device_number);
+	}
+	LEAVE;
+} /* set_page_scrolling */
+#endif /* defined (MOTIF) */
+
+int update_pages_menu(struct Page_window *page_window)
+/*******************************************************************************
+LAST MODIFIED : 22 July 2005
+
+DESCRIPTION :
+Updates the pages menu to be consistent with the current rig.
+==============================================================================*/
+{
+	WidgetList pages;
+	int number_of_pages,return_code;
+#define NUMBER_OF_ATTRIBUTES 3
+	Arg attributes[NUMBER_OF_ATTRIBUTES];
+	struct Page_list_item *page_item;
+	struct Page *page=(struct Page *)NULL;
+	struct Rig *rig;
+
+	ENTER(update_pages_menu);
+	return_code=0;
+	if (page_window)
+	{
+		/* remove the current entries from the pages menu */
+		if (((number_of_pages=page_window->number_of_pages)>0)&&
+			(pages=page_window->pages))
+		{
+			while (number_of_pages>0)
+			{
+				XtUnmanageChild(*pages);
+				XtDestroyWidget(*pages);
+				pages++;
+				number_of_pages--;
+			}
+			DEALLOCATE(page_window->pages);
+			page_window->number_of_pages=0;
+			return_code=1;
+		}
+		else
+		{
+			return_code=1;
+		}
+		if (return_code)
+		{
+			if ((rig= *(page_window->rig_address))&&(page_item=rig->page_list))
+			{
+				number_of_pages=0;
+				do
+				{
+					number_of_pages++;
+					page_item=page_item->next;
+				} while (page_item);
+				/* put the pages for the new rig into the option menu */
+				if (ALLOCATE(pages,Widget,number_of_pages))
+				{
+					page_window->number_of_pages=number_of_pages;
+					page_window->pages=pages;
+					XtSetArg(attributes[2],XmNuserData,(XtPointer)page_window);
+					XtSetArg(attributes[1],XmNfontList,
+						User_interface_get_button_fontlist(page_window->user_interface));
+					page_item=rig->page_list;
+					while (page_item&&return_code)
+					{
+						page=page_item->page;
+						XtSetArg(attributes[0],XmNlabelString,
+							(XtPointer)XmStringCreate(page->name,XmSTRING_DEFAULT_CHARSET));
+						if (*pages=XmCreatePushButtonGadget(
+							page_window->pages_pull_down_menu,page->name,
+							attributes,NUMBER_OF_ATTRIBUTES))
+						{
+							XtAddCallback(*pages,XmNactivateCallback,set_page_scrolling,
+								(XtPointer)page);
+							XtManageChild(*pages);
+							page_item=page_item->next;
+							pages++;
+						}
+						else
+						{
+							display_message(ERROR_MESSAGE,
+			"update_pages_menu.  Could not create page PushButtonGadget");
+							return_code=0;
+						}
+					}
+					if (return_code)
+					{
+						XtSetSensitive(page_window->set_scrolling_button,True);
+#if defined (OLD_CODE)
+/*???DB.  Copied from regions option menu.  What needs doing here? */
+						XtVaSetValues(page_window->page_choice,
+							XmNmenuHistory,current_page,
+							NULL);
+						page_window->current_page=current_page;
+						XtManageChild(page_window->page_choice);
+#endif /* defined (OLD_CODE) */
+					}
+					else
+					{
+						display_message(ERROR_MESSAGE,
+			"update_pages_menu.  Could not create page PushButtonGadget");
+						return_code=0;
+						/*???What about destroying PushButtons already created ? */
+						DEALLOCATE(page_window->pages);
+						page_window->number_of_pages=0;
+					}
+				}
+				else
+				{
+					display_message(ERROR_MESSAGE,
+				"update_pages_menu.  Insufficient memory for page list");
+					return_code=0;
+				}
+			}
+			else
+			{
+				XtSetSensitive(page_window->set_scrolling_button,False);
+#if defined (OLD_CODE)
+/*???DB.  Copied from regions option menu.  What needs doing here? */
+				XtUnmanageChild(page_window->page_choice);
+#endif /* defined (OLD_CODE) */
+			}
+		}
+	}
+	LEAVE;
+
+	return (return_code);
+} /* update_pages_menu */
+
 static int start_experiment(struct Page_window *page_window)
 /*******************************************************************************
 LAST MODIFIED : 17 August 2003
@@ -6047,6 +6299,8 @@ Called to start experiment on the <page_window>.
 								"No device with a valid channel number in the rig");
 							page_window->display_device_number= -1;
 						}
+						/* add pages to set_scrolling_menu */
+						update_pages_menu(page_window);
 					}
 				}
 				if (*(page_window->rig_address))
@@ -10093,7 +10347,7 @@ struct Page_window *create_Page_window(struct Page_window **address,
 	struct Mapping_window **mapping_window_address,int pointer_sensitivity,
 	char *signal_file_extension_write,struct User_interface *user_interface)
 /*******************************************************************************
-LAST MODIFIED : 14 August 2003
+LAST MODIFIED : 22 July 2005
 
 DESCRIPTION :
 This function allocates the memory for a page window and sets the fields to the
@@ -10164,6 +10418,10 @@ as a standalone application.
 		{"identify_page_scrolling_area",(XtPointer)identify_page_scrolling_area},
 		{"identify_page_scrolling_checkbo",
 			(XtPointer)identify_page_scrolling_checkbo},
+		{"identify_page_set_scrolling_but",
+			(XtPointer)identify_page_set_scrolling_but},
+		{"identify_page_pages_pull_down_m",
+			(XtPointer)identify_page_pages_pull_down_m},
 		{"identify_page_start_all_stimula",
 			(XtPointer)identify_page_start_all_stimula},
 		{"identify_page_stimulate_checkbo",
@@ -10508,6 +10766,8 @@ as a standalone application.
 				(page_window->maximum).value=(Widget)NULL;
 				(page_window->minimum).form=(Widget)NULL;
 				(page_window->minimum).value=(Widget)NULL;
+				page_window->number_of_pages=0;
+				page_window->pages=(Widget *)NULL;
 				page_window->pacing_button=(Widget)NULL;
 				page_window->sample_checkbox=(Widget)NULL;
 				(page_window->save).button=(Widget)NULL;
@@ -10515,6 +10775,7 @@ as a standalone application.
 				(page_window->save).value=(Widget)NULL;
 				page_window->scrolling_area=(Widget)NULL;
 				page_window->scrolling_checkbox=(Widget)NULL;
+				page_window->set_scrolling_button=(Widget)NULL;
 				page_window->start_all_stimulators_button=(Widget)NULL;
 				page_window->stimulate_checkbox=(Widget)NULL;
 				page_window->stimulator_checkbox=(Widget)NULL;
@@ -10832,6 +11093,7 @@ as a standalone application.
 							}
 							XtSetSensitive(page_window->auto_range_button,False);
 							XtSetSensitive(page_window->full_range_button,False);
+							XtSetSensitive(page_window->set_scrolling_button,False);
 							switch (page_window->unemap_hardware_version)
 							{
 								case UnEmap_1V2:

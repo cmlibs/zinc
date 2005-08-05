@@ -1,7 +1,7 @@
 !*******************************************************************************
 ! FILE : page_window.uil
 !
-! LAST MODIFIED : 8 August 2002
+! LAST MODIFIED : 2 August 2005
 !
 ! DESCRIPTION :
 ! The widgets/gadgets for a page window in the acquisition work area.
@@ -68,6 +68,8 @@ procedure
 	identify_page_save_number_of_sa;
 	identify_page_scrolling_area;
 	identify_page_scrolling_checkbo;
+	identify_page_set_scrolling_but;
+	identify_page_pages_pull_down_m;
 	identify_page_start_all_stimula;
 	identify_page_stimulate_checkbo;
 	identify_page_stimulator_checkb;
@@ -575,6 +577,7 @@ object
 			{
 			XmPushButtonGadget page_auto_range_button;
 			XmPushButtonGadget page_full_range_button;
+			XmMenuBar page_set_scrolling_menu_bar;
 			XmPushButtonGadget page_start_all_stimulators_butt;
 			XmPushButtonGadget page_stop_all_stimulators_butto;
 			XmPushButtonGadget page_pacing_button;
@@ -644,6 +647,73 @@ object
 				};
 			};
 		};
+!So that can have pull down menu of pages to be set scrolling
+	page_set_scrolling_menu_bar : XmMenuBar 
+		{
+		arguments
+			{
+			XmNborderWidth = 0;
+			XmNorientation = XmHORIZONTAL;
+			XmNspacing = widget_spacing;
+			XmNentryAlignment = XmALIGNMENT_CENTER;
+			XmNpacking = XmPACK_TIGHT;
+			XmNmarginHeight = 0;
+			XmNmarginWidth = 0;
+			XmNshadowThickness = 0;
+			XmNleftAttachment = XmATTACH_WIDGET;
+			XmNleftOffset = widget_spacing;
+			XmNleftWidget = XmPushButtonGadget page_full_range_button;
+			XmNrightAttachment = XmATTACH_NONE;
+			XmNtopAttachment = XmATTACH_FORM;
+			XmNtopOffset = 0;
+			XmNbottomAttachment = XmATTACH_FORM;
+			XmNbottomOffset = 0;
+			XmNtraversalOn = false;
+			!SAB I have disabled the menu from being a tab group
+			!	  because I have not installed the accelerators in menus
+			};
+		controls
+			{
+			XmCascadeButtonGadget page_set_scrolling_button;
+			};
+		};
+	page_set_scrolling_button : XmCascadeButtonGadget
+		{
+		arguments
+			{
+			XmNlabelString = 
+			compound_string("Set scrolling");
+			XmNfontList = button_font;
+			};
+		controls
+			{
+			XmPulldownMenu page_set_scrolling_menu;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedures
+				{
+				identify_page_set_scrolling_but(page_window_structure);
+				};
+			};
+		};
+	page_set_scrolling_menu : XmPulldownMenu 
+		{
+		arguments
+			{
+			XmNborderWidth = 1;
+			};
+		controls
+			{
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedures
+				{
+				identify_page_pages_pull_down_m(page_window_structure);
+				};
+			};
+		};
 !Clicking this button starts all stimulators
 	page_start_all_stimulators_butt: XmPushButtonGadget
 		{
@@ -656,7 +726,7 @@ object
 			XmNhighlightThickness = 0;
 			XmNleftAttachment = XmATTACH_WIDGET;
 			XmNleftOffset = widget_spacing;
-			XmNleftWidget = XmPushButtonGadget page_full_range_button;
+			XmNleftWidget = XmMenuBar page_set_scrolling_menu_bar;
 			XmNrightAttachment = XmATTACH_NONE;
 			XmNrightOffset = 0;
 			XmNtopAttachment = XmATTACH_FORM;
@@ -720,7 +790,7 @@ object
 			XmNhighlightThickness = 0;
 			XmNleftAttachment = XmATTACH_WIDGET;
 			XmNleftOffset = widget_spacing;
-			XmNleftWidget = XmPushButtonGadget page_full_range_button;
+			XmNleftWidget = XmMenuBar page_set_scrolling_menu_bar;
 			XmNrightAttachment = XmATTACH_NONE;
 			XmNrightOffset = 0;
 			XmNtopAttachment = XmATTACH_FORM;
