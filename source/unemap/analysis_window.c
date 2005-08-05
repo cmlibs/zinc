@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : analysis_window.c
 
-LAST MODIFIED : 22 July 2004
+LAST MODIFIED : 19 July 2005
 
 DESCRIPTION :
 ==============================================================================*/
@@ -5824,7 +5824,7 @@ c.f analysis_set_highlight_max, analysis_set_highlight_min
 
 int update_analysis_window_buffer_range_menu(struct Analysis_window *analysis)
 /*******************************************************************************
-LAST MODIFIED : 13 April 2004
+LAST MODIFIED : 19 July 2005
 
 DESCRIPTION :
 Updates the analysis buffer range menu to be consistent with the current rig.
@@ -5853,6 +5853,7 @@ Updates the analysis buffer range menu to be consistent with the current rig.
 			else
 			{
 				/* sprintf(value_string,""); */
+				value_string[0]='\0';
 			}
 			XtVaSetValues((analysis->interval).buffer_range.start_time_text,
 				XmNvalue,value_string,NULL);
@@ -5867,6 +5868,7 @@ Updates the analysis buffer range menu to be consistent with the current rig.
 			else
 			{
 				/* sprintf(value_string,""); */
+				value_string[0]='\0';
 			}
 			XtVaSetValues((analysis->interval).buffer_range.end_time_text,
 				XmNvalue,value_string,NULL);
@@ -5876,6 +5878,7 @@ Updates the analysis buffer range menu to be consistent with the current rig.
 		else
 		{
 			/* sprintf(value_string,""); */
+			value_string[0]='\0';
 			XtVaSetValues((analysis->interval).buffer_range.start_sample_number_text,
 				XmNvalue,value_string,NULL);
 			XtVaSetValues((analysis->interval).buffer_range.start_time_text,
