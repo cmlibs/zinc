@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : pacing_window.c
 
-LAST MODIFIED : 26 May 2004
+LAST MODIFIED : 5 August 2005
 
 DESCRIPTION :
 ==============================================================================*/
@@ -29,13 +29,15 @@ DESCRIPTION :
 #include "user_interface/message.h"
 #include "user_interface/user_interface.h"
 
+//#define BEFORE_MOVED_VALIDITY_CHECK
+
 /*
 Module types
 ------------
 */
 struct Pacing_window
 /*******************************************************************************
-LAST MODIFIED : 22 May 2004
+LAST MODIFIED : 12 July 2005
 
 DESCRIPTION :
 The window associated with the set up button.
@@ -49,6 +51,15 @@ The window associated with the set up button.
 		sn_length_change,sn_length_change_save,sn_length_change_factor,
 		sn_length_change_factor_save,sn_length_decrement_threshold_pairs,
 		sn_s1_pause;
+#if defined (BEFORE_MOVED_VALIDITY_CHECK)
+#else // defined (BEFORE_MOVED_VALIDITY_CHECK)
+	/* an array that is <number_of_pacing_channels>*(<number_of_stimulus_types>+1)
+		long.  For each pacing channel there are <number_of_stimulus_types>+1
+		consecutive ints.  The first is the channel number, then there is one for
+		each Si - 0 means that the channel does not have the stimulus, otherwise it
+		does */
+	int *pacing_channels_si;
+#endif // defined (BEFORE_MOVED_VALIDITY_CHECK)
 	int decrement_threshold_pair_number,last_decrement_threshold_pairs,
 		number_of_pacing_channels,number_of_return_channels,
 		number_of_stimulus_types,number_of_stimulus_types_save,*number_of_si,
@@ -71,6 +82,10 @@ The window associated with the set up button.
 	Widget s_number_decrement,s_number_increment,s_number_label;
 	Widget number_of_si_decrement,number_of_si_increment,number_of_si_label,
 		number_of_si_value,si_form,si_length_value;
+#if defined (BEFORE_MOVED_VALIDITY_CHECK)
+#else // defined (BEFORE_MOVED_VALIDITY_CHECK)
+	Widget si_electrodes_value;
+#endif // defined (BEFORE_MOVED_VALIDITY_CHECK)
 	Widget pacing_electrodes_form,pacing_electrodes_value;
 	Widget return_electrodes_form,return_electrodes_value;
 	Widget sn_length_form,sn_length_value;
@@ -460,6 +475,7 @@ Called to change the control_width.
 	return (return_code);
 } /* change_control_width */
 
+#if defined (BEFORE_MOVED_VALIDITY_CHECK)
 static int set_channels_from_string(char *electrodes,struct Rig *rig,
 	int number_of_restricted_channels,int *restricted_channels,
 	char **electrodes_result_address,int *number_of_channels_address,
@@ -704,11 +720,361 @@ Parses the <return_electrodes> string to get the return channels for the
 
 	return (return_code);
 } /* set_return_channels_from_string */
+#else /* defined (BEFORE_MOVED_VALIDITY_CHECK) */
+static int set_channels_from_string(char *electrodes,struct Rig *rig,
+	char **electrodes_result_address,int *number_of_channels_address,
+	int **channels_address)
+/*******************************************************************************
+LAST MODIFIED : 12 July 2005
+
+DESCRIPTION :
+Parses the <electrodes> string to get the channels for the <rig>.
+==============================================================================*/
+{
+	char *electrodes_result,*electrodes_result_temp;
+	int channel_number,*channels,*channels_temp,electrodes_result_length,found,i,
+		number_of_channels,number_of_characters,number_of_devices,position,
+		return_code;
+	struct Device **device;
+
+	ENTER(set_channels_from_string);
+	return_code=0;
+	/* check arguments */
+	if (electrodes&&rig&&electrodes_result_address&&number_of_channels_address&&
+		channels_address)
+	{
+		return_code=1;
+		DEALLOCATE(*electrodes_result_address);
+		DEALLOCATE(*channels_address);
+		*number_of_channels_address=0;
+		channels=(int *)NULL;
+		number_of_channels=0;
+		electrodes_result=(char *)NULL;
+		electrodes_result_length=0;
+		position=0;
+		number_of_characters=0;
+		sscanf(electrodes+position,"%*[ ,]%n",&number_of_characters);
+		if (0<number_of_characters)
+		{
+			position=number_of_characters;
+		}
+		while (return_code&&electrodes[position])
+		{
+			number_of_characters=0;
+			sscanf(electrodes+position,"%*[^ ,]%n",&number_of_characters);
+			if (0<number_of_characters)
+			{
+				device=rig->devices;
+				number_of_devices=rig->number_of_devices;
+				found=0;
+				while (!found&&(0<number_of_devices))
+				{
+					if ((ELECTRODE==(*device)->description->type)&&
+						(number_of_characters==(int)strlen((*device)->description->name))&&
+						(0==strncmp(electrodes+position,(*device)->description->name,
+						number_of_characters)))
+					{
+						found=1;
+					}
+					else
+					{
+						device++;
+						number_of_devices--;
+					}
+				}
+				if (found)
+				{
+					/* check that don't already have channel */
+					i=0;
+					while ((i<number_of_channels)&&(channels[i]!=
+						(*device)->channel->number))
+					{
+						i++;
+					}
+					if (i>=number_of_channels)
+					{
+						channel_number=(*device)->channel->number;
+						if (REALLOCATE(channels_temp,channels,int,number_of_channels+1)&&
+							REALLOCATE(electrodes_result_temp,electrodes_result,char,
+							electrodes_result_length+number_of_characters+2))
+						{
+							channels=channels_temp;
+							channels[number_of_channels]=channel_number;
+							number_of_channels++;
+							electrodes_result=electrodes_result_temp;
+							if (number_of_channels>1)
+							{
+								electrodes_result[electrodes_result_length]=',';
+								electrodes_result_length++;
+							}
+							strncpy(electrodes_result+electrodes_result_length,
+								electrodes+position,number_of_characters);
+							electrodes_result_length += number_of_characters;
+							electrodes_result[electrodes_result_length]='\0';
+						}
+						else
+						{
+							if (channels_temp)
+							{
+								channels=channels_temp;
+							}
+							return_code=0;
+						}
+					}
+				}
+				position += number_of_characters;
+				number_of_characters=0;
+				sscanf(electrodes+position,"%*[ ,]%n",&number_of_characters);
+				if (0<number_of_characters)
+				{
+					position += number_of_characters;
+				}
+			}
+			else
+			{
+				return_code=0;
+			}
+		}
+		*number_of_channels_address=number_of_channels;
+		*channels_address=channels;
+		*electrodes_result_address=electrodes_result;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"set_channels_from_string.  Invalid argument(s).  %p %p %p %p %p",
+			electrodes,rig,electrodes_result_address,number_of_channels_address,
+			channels_address);
+	}
+	LEAVE;
+
+	return (return_code);
+} /* set_channels_from_string */
+
+static int update_si_electrodes_value(struct Pacing_window *pacing_window)
+/*******************************************************************************
+LAST MODIFIED : 12 July 2005
+
+DESCRIPTION :
+Update si_electrodes_value text widget.
+==============================================================================*/
+{
+	char *new_value,*pacing_electrodes;
+	int deallocate_new_value,first,i,number_of_characters,
+		number_of_stimulus_types,*pacing_channel_si,position,return_code;
+
+	ENTER(update_si_electrodes_value);
+	return_code=0;
+	/* check argument */
+	if (pacing_window)
+	{
+		pacing_electrodes=pacing_window->pacing_electrodes;
+		pacing_channel_si=pacing_window->pacing_channels_si;
+		number_of_stimulus_types=pacing_window->number_of_stimulus_types;
+		deallocate_new_value=0;
+		if (pacing_electrodes&&pacing_channel_si&&ALLOCATE(new_value,char,
+			strlen(pacing_electrodes)+1))
+		{
+			deallocate_new_value=1;
+			strcpy(new_value,"");
+			first=1;
+			position=0;
+			number_of_characters=0;
+			sscanf(pacing_electrodes+position,"%*[ ,]%n",&number_of_characters);
+			if (0<number_of_characters)
+			{
+				position=number_of_characters;
+			}
+			pacing_channel_si += (pacing_window->stimulus_number);
+			for (i=pacing_window->number_of_pacing_channels;i>0;i--)
+			{
+				number_of_characters=0;
+				sscanf(pacing_electrodes+position,"%*[^ ,]%n",&number_of_characters);
+				if (*pacing_channel_si)
+				{
+					if (!first)
+					{
+						strcat(new_value,",");
+					}
+					else
+					{
+						first=0;
+					}
+					strncat(new_value,pacing_electrodes+position,
+						number_of_characters);
+				}
+				position += number_of_characters;
+				pacing_channel_si += number_of_stimulus_types+1;
+				number_of_characters=0;
+				sscanf(pacing_electrodes+position,"%*[ ,]%n",&number_of_characters);
+				if (0<number_of_characters)
+				{
+					position += number_of_characters;
+				}
+			}
+		}
+		else
+		{
+			new_value="";
+		}
+		XtVaSetValues(pacing_window->si_electrodes_value,
+			XmNcursorPosition,strlen(new_value),
+			XmNvalue,new_value,
+			NULL);
+		if (deallocate_new_value)
+		{
+			DEALLOCATE(new_value);
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"update_si_electrodes_value.  Missing pacing_window");
+	}
+	LEAVE;
+
+	return (return_code);
+} /* update_si_electrodes_value */
+
+static int check_pacing_return_stimulator_consistency(
+	struct Pacing_window *pacing_window)
+/*******************************************************************************
+LAST MODIFIED : 5 August 2005
+
+DESCRIPTION :
+Checks that pacing and return channels are on different stimulators.  Checks
+that pacing channels on the same stimulator have the same Si's.  Returns
+non-zero for consistent and zero for inconsistent.
+==============================================================================*/
+{
+	int i,j,number_of_pacing_channels,number_of_return_channels,
+		number_of_stimulators,number_of_stimulus_types,*pacing_channels,
+		*pacing_channel_si,*pacing_channel_si_1,*pacing_channel_si_2,
+		*pacing_stimulator_to_channel_index,*return_channels,return_code,
+		stimulator_number;
+
+	ENTER(check_pacing_return_stimulator_consistency);
+	return_code=0;
+	/* check argument */
+	if (pacing_window&&unemap_get_number_of_stimulators(&number_of_stimulators))
+	{
+		number_of_pacing_channels=pacing_window->number_of_pacing_channels;
+		pacing_channels=pacing_window->pacing_channels;
+		pacing_channel_si=pacing_window->pacing_channels_si;
+		number_of_return_channels=pacing_window->number_of_return_channels;
+		return_channels=pacing_window->return_channels;
+		number_of_stimulus_types=pacing_window->number_of_stimulus_types;
+		if (0<number_of_stimulators)
+		{
+			ALLOCATE(pacing_stimulator_to_channel_index,int,number_of_stimulators);
+			if (ALLOCATE(pacing_stimulator_to_channel_index,int,
+				number_of_stimulators))
+			{
+				return_code=1;
+				for (i=0;i<number_of_stimulators;i++)
+				{
+					pacing_stimulator_to_channel_index[i]= -1;
+				}
+				/* check that pacing channels on the same stimulator have the same
+					Si's */
+				i=0;
+				while (return_code&&(i<number_of_pacing_channels))
+				{
+					stimulator_number=number_of_stimulators;
+					while ((stimulator_number>0)&&!unemap_channel_valid_for_stimulator(
+						stimulator_number,pacing_channels[i]))
+					{
+						stimulator_number--;
+					}
+					if (0<stimulator_number)
+					{
+						stimulator_number--;
+						if (0<=pacing_stimulator_to_channel_index[stimulator_number])
+						{
+							pacing_channel_si_1=pacing_channel_si+
+								i*(number_of_stimulus_types+1)+1;
+							pacing_channel_si_2=pacing_channel_si+
+								pacing_stimulator_to_channel_index[stimulator_number]*
+								(number_of_stimulus_types+1)+1;
+							j=number_of_stimulus_types;
+							while ((j>0)&&
+								(((0== *pacing_channel_si_1)&&(0== *pacing_channel_si_2))||
+								((0!= *pacing_channel_si_1)&&(0!= *pacing_channel_si_2))))
+							{
+								j--;
+								pacing_channel_si_1++;
+								pacing_channel_si_2++;
+							}
+							if (j>0)
+							{
+								return_code=0;
+							}
+						}
+						else
+						{
+							pacing_stimulator_to_channel_index[stimulator_number]=i;
+						}
+					}
+					else
+					{
+						return_code=0;
+					}
+					i++;
+				}
+				/* check that pacing and return channels are on different stimulators */
+				i=0;
+				while (return_code&&(i<number_of_return_channels))
+				{
+					stimulator_number=number_of_stimulators;
+					while ((stimulator_number>0)&&!unemap_channel_valid_for_stimulator(
+						stimulator_number,return_channels[i]))
+					{
+						stimulator_number--;
+					}
+					if (0<stimulator_number)
+					{
+						if (0<=pacing_stimulator_to_channel_index[stimulator_number-1])
+						{
+							return_code=0;
+						}
+					}
+					else
+					{
+						return_code=0;
+					}
+					i++;
+				}
+			}
+			DEALLOCATE(pacing_stimulator_to_channel_index);
+		}
+		else
+		{
+			if ((0==number_of_pacing_channels)&&(0==number_of_return_channels))
+			{
+				return_code=1;
+			}
+		}
+		if (!return_code)
+		{
+			display_message(ERROR_MESSAGE,"Different signals for the same stimulator"
+				".  Check pacing and return electrodes");
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"check_pacing_return_stimulator_consistency.  Missing pacing_window");
+	}
+	LEAVE;
+
+	return (return_code);
+} /* check_pacing_return_stimulator_consistency */
+#endif /* defined (BEFORE_MOVED_VALIDITY_CHECK) */
 
 static int set_numbers_of_stimuli_from_string(
 	struct Pacing_window *pacing_window,char *numbers_of_stimuli)
 /*******************************************************************************
-LAST MODIFIED : 25 May 2003
+LAST MODIFIED : 12 July 2005
 
 DESCRIPTION :
 Parses the <numbers_of_stimuli> string to get the values for the
@@ -716,7 +1082,13 @@ Parses the <numbers_of_stimuli> string to get the values for the
 ==============================================================================*/
 {
 	float *si_length;
+#if defined (BEFORE_MOVED_VALIDITY_CHECK)
 	int i,number_of_characters,*number_of_si,position,return_code,stimulus_number;
+#else // defined (BEFORE_MOVED_VALIDITY_CHECK)
+	int i,j,number_of_characters,number_of_pacing_channels,*number_of_si,
+		*pacing_channel_si,*pacing_channel_si_old,*pacing_channels_si,position,
+		return_code,step,stimulus_number;
+#endif // defined (BEFORE_MOVED_VALIDITY_CHECK)
 
 	ENTER(set_numbers_of_stimuli_from_string);
 	return_code=0;
@@ -726,6 +1098,7 @@ Parses the <numbers_of_stimuli> string to get the values for the
 	{
 		ALLOCATE(number_of_si,int,pacing_window->number_of_stimulus_types);
 		ALLOCATE(si_length,float,pacing_window->number_of_stimulus_types);
+#if defined (BEFORE_MOVED_VALIDITY_CHECK)
 		if (number_of_si&&si_length)
 		{
 			DEALLOCATE(pacing_window->number_of_si);
@@ -795,6 +1168,120 @@ Parses the <numbers_of_stimuli> string to get the values for the
 			DEALLOCATE(number_of_si);
 			DEALLOCATE(si_length);
 		}
+#else // defined (BEFORE_MOVED_VALIDITY_CHECK)
+		number_of_pacing_channels=pacing_window->number_of_pacing_channels;
+		pacing_channels_si=(int *)NULL;
+		if (0<number_of_pacing_channels)
+		{
+			ALLOCATE(pacing_channels_si,int,number_of_pacing_channels*
+				(1+pacing_window->number_of_stimulus_types));
+		}
+		if (number_of_si&&si_length&&
+			((0==number_of_pacing_channels)||pacing_channels_si))
+		{
+			DEALLOCATE(pacing_window->number_of_si);
+			pacing_window->number_of_si=number_of_si;
+			if (pacing_window->number_of_stimulus_types<
+				pacing_window->number_of_stimulus_types_save)
+			{
+				for (i=0;i<pacing_window->number_of_stimulus_types;i++)
+				{
+					si_length[i]=(pacing_window->si_length)[i];
+				}
+				step=(pacing_window->number_of_stimulus_types_save)-
+					(pacing_window->number_of_stimulus_types);
+				pacing_channel_si=pacing_channels_si;
+				pacing_channel_si_old=pacing_window->pacing_channels_si;
+				for (i=number_of_pacing_channels;i>0;i--)
+				{
+					for (j=pacing_window->number_of_stimulus_types;j>=0;j--)
+					{
+						*pacing_channel_si= *pacing_channel_si_old;
+						pacing_channel_si++;
+						pacing_channel_si_old++;
+					}
+					pacing_channel_si_old += step;
+				}
+			}
+			else
+			{
+				for (i=0;i<pacing_window->number_of_stimulus_types_save;i++)
+				{
+					si_length[i]=(pacing_window->si_length)[i];
+				}
+				for (i=pacing_window->number_of_stimulus_types_save;
+					i<pacing_window->number_of_stimulus_types;i++)
+				{
+					si_length[i]=si_length[i-1];
+				}
+				step=(pacing_window->number_of_stimulus_types)-
+					(pacing_window->number_of_stimulus_types_save);
+				pacing_channel_si=pacing_channels_si;
+				pacing_channel_si_old=pacing_window->pacing_channels_si;
+				for (i=number_of_pacing_channels;i>0;i--)
+				{
+					for (j=pacing_window->number_of_stimulus_types_save;j>=0;j--)
+					{
+						*pacing_channel_si= *pacing_channel_si_old;
+						pacing_channel_si++;
+						pacing_channel_si_old++;
+					}
+					for (j=step;j>0;j--)
+					{
+						*pacing_channel_si=1;
+						pacing_channel_si++;
+					}
+				}
+			}
+			DEALLOCATE(pacing_window->si_length);
+			pacing_window->si_length=si_length;
+			DEALLOCATE(pacing_window->pacing_channels_si);
+			pacing_window->pacing_channels_si=pacing_channels_si;
+			pacing_window->number_of_stimulus_types_save=
+				pacing_window->number_of_stimulus_types;
+			stimulus_number=0;
+			position=0;
+			number_of_characters=0;
+			sscanf(numbers_of_stimuli+position,"%*[ ,]%n",&number_of_characters);
+			position += number_of_characters;
+			return_code=1;
+			while (return_code&&numbers_of_stimuli[position]&&
+				(stimulus_number<pacing_window->number_of_stimulus_types))
+			{
+				if (1==sscanf(numbers_of_stimuli+position,"%d%n",
+					number_of_si+stimulus_number,&number_of_characters))
+				{
+					position += number_of_characters;
+					stimulus_number++;
+					sscanf(numbers_of_stimuli+position,"%*[ ,]%n",&number_of_characters);
+					position += number_of_characters;
+				}
+				else
+				{
+					return_code=0;
+				}
+			}
+			if (0==stimulus_number)
+			{
+				number_of_si[stimulus_number]=9;
+				stimulus_number++;
+			}
+			while (stimulus_number<pacing_window->number_of_stimulus_types)
+			{
+				number_of_si[stimulus_number]=number_of_si[stimulus_number-1];
+				stimulus_number++;
+			}
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,"set_numbers_of_stimuli_from_string.  "
+				"Could not ALLOCATE number_of_si (%p) or si_length (%p) "
+				"or pacing_channels_si (%p)",number_of_si,si_length,pacing_channels_si);
+			DEALLOCATE(number_of_si);
+			DEALLOCATE(si_length);
+			DEALLOCATE(pacing_channels_si);
+		}
+#endif // defined (BEFORE_MOVED_VALIDITY_CHECK)
 	}
 	else
 	{
@@ -810,7 +1297,7 @@ Parses the <numbers_of_stimuli> string to get the values for the
 static int set_stimuli_lengths_from_string(
 	struct Pacing_window *pacing_window,char *stimuli_lengths)
 /*******************************************************************************
-LAST MODIFIED : 15 August 2003
+LAST MODIFIED : 12 July 2005
 
 DESCRIPTION :
 Parses the <stimuli_lengths> string to get the values for the
@@ -818,7 +1305,13 @@ Parses the <stimuli_lengths> string to get the values for the
 ==============================================================================*/
 {
 	float *si_length;
+#if defined (BEFORE_MOVED_VALIDITY_CHECK)
 	int i,number_of_characters,*number_of_si,position,return_code,stimulus_number;
+#else // defined (BEFORE_MOVED_VALIDITY_CHECK)
+	int i,j,number_of_characters,number_of_pacing_channels,*number_of_si,
+		*pacing_channel_si,*pacing_channel_si_old,*pacing_channels_si,position,
+		return_code,step,stimulus_number;
+#endif // defined (BEFORE_MOVED_VALIDITY_CHECK)
 
 	ENTER(set_stimuli_lengths_from_string);
 	return_code=0;
@@ -828,6 +1321,7 @@ Parses the <stimuli_lengths> string to get the values for the
 	{
 		ALLOCATE(number_of_si,int,pacing_window->number_of_stimulus_types);
 		ALLOCATE(si_length,float,pacing_window->number_of_stimulus_types);
+#if defined (BEFORE_MOVED_VALIDITY_CHECK)
 		if (number_of_si&&si_length)
 		{
 			if (pacing_window->number_of_stimulus_types<
@@ -911,6 +1405,134 @@ Parses the <stimuli_lengths> string to get the values for the
 			DEALLOCATE(number_of_si);
 			DEALLOCATE(si_length);
 		}
+#else // defined (BEFORE_MOVED_VALIDITY_CHECK)
+		number_of_pacing_channels=pacing_window->number_of_pacing_channels;
+		pacing_channels_si=(int *)NULL;
+		if (0<number_of_pacing_channels)
+		{
+			ALLOCATE(pacing_channels_si,int,number_of_pacing_channels*
+				(1+pacing_window->number_of_stimulus_types));
+		}
+		if (number_of_si&&si_length&&
+			((0==number_of_pacing_channels)||pacing_channels_si))
+		{
+			if (pacing_window->number_of_stimulus_types<
+				pacing_window->number_of_stimulus_types_save)
+			{
+				for (i=0;i<pacing_window->number_of_stimulus_types;i++)
+				{
+					number_of_si[i]=(pacing_window->number_of_si)[i];
+				}
+				step=(pacing_window->number_of_stimulus_types_save)-
+					(pacing_window->number_of_stimulus_types);
+				pacing_channel_si=pacing_channels_si;
+				pacing_channel_si_old=pacing_window->pacing_channels_si;
+				for (i=number_of_pacing_channels;i>0;i--)
+				{
+					for (j=pacing_window->number_of_stimulus_types;j>=0;j--)
+					{
+						*pacing_channel_si= *pacing_channel_si_old;
+						pacing_channel_si++;
+						pacing_channel_si_old++;
+					}
+					pacing_channel_si_old += step;
+				}
+			}
+			else
+			{
+				for (i=0;i<pacing_window->number_of_stimulus_types_save;i++)
+				{
+					number_of_si[i]=(pacing_window->number_of_si)[i];
+				}
+				for (i=pacing_window->number_of_stimulus_types_save;
+					i<pacing_window->number_of_stimulus_types;i++)
+				{
+					si_length[i]=si_length[i-1];
+				}
+				step=(pacing_window->number_of_stimulus_types)-
+					(pacing_window->number_of_stimulus_types_save);
+				pacing_channel_si=pacing_channels_si;
+				pacing_channel_si_old=pacing_window->pacing_channels_si;
+				for (i=number_of_pacing_channels;i>0;i--)
+				{
+					for (j=pacing_window->number_of_stimulus_types_save;j>=0;j--)
+					{
+						*pacing_channel_si= *pacing_channel_si_old;
+						pacing_channel_si++;
+						pacing_channel_si_old++;
+					}
+					for (j=step;j>0;j--)
+					{
+						*pacing_channel_si=1;
+						pacing_channel_si++;
+					}
+				}
+			}
+			DEALLOCATE(pacing_window->number_of_si);
+			pacing_window->number_of_si=number_of_si;
+			DEALLOCATE(pacing_window->si_length);
+			pacing_window->si_length=si_length;
+			DEALLOCATE(pacing_window->pacing_channels_si);
+			pacing_window->pacing_channels_si=pacing_channels_si;
+			pacing_window->number_of_stimulus_types_save=
+				pacing_window->number_of_stimulus_types;
+			stimulus_number=0;
+			position=0;
+			number_of_characters=0;
+			sscanf(stimuli_lengths+position,"%*[ ,]%n",&number_of_characters);
+			position += number_of_characters;
+			return_code=1;
+			while (return_code&&stimuli_lengths[position]&&
+				(stimulus_number<pacing_window->number_of_stimulus_types))
+			{
+				if (1==sscanf(stimuli_lengths+position,"%f%n",
+					si_length+stimulus_number,&number_of_characters))
+				{
+					/* must be a multiple of the resolution and longer than the control
+						width */
+					if (si_length[stimulus_number]<(pacing_window->control_width)+
+						(pacing_window->resolution))
+					{
+						si_length[stimulus_number]=(pacing_window->control_width)+
+							(pacing_window->resolution);
+					}
+					else
+					{
+						si_length[stimulus_number]=(pacing_window->resolution)*
+							(float)floor(si_length[stimulus_number]/
+							(pacing_window->resolution)+0.5);
+					}
+					position += number_of_characters;
+					stimulus_number++;
+					sscanf(stimuli_lengths+position,"%*[ ,]%n",&number_of_characters);
+					position += number_of_characters;
+				}
+				else
+				{
+					return_code=0;
+				}
+			}
+			if (0==stimulus_number)
+			{
+				si_length[stimulus_number]=500;
+				stimulus_number++;
+			}
+			while (stimulus_number<pacing_window->number_of_stimulus_types)
+			{
+				si_length[stimulus_number]=si_length[stimulus_number-1];
+				stimulus_number++;
+			}
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,"set_stimuli_lengths_from_string..  "
+				"Could not ALLOCATE number_of_si (%p) or si_length (%p) "
+				"or pacing_channels_si (%p)",number_of_si,si_length,pacing_channels_si);
+			DEALLOCATE(number_of_si);
+			DEALLOCATE(si_length);
+			DEALLOCATE(pacing_channels_si);
+		}
+#endif // defined (BEFORE_MOVED_VALIDITY_CHECK)
 	}
 	else
 	{
@@ -1196,13 +1818,19 @@ Finds the id of the pacing electrodes value in the pacing window.
 static void ch_pacing_electrodes_value(Widget *widget_id,
 	XtPointer pacing_window_structure,XtPointer call_data)
 /*******************************************************************************
-LAST MODIFIED : 15 October 2001
+LAST MODIFIED : 4 July 2005
 
 DESCRIPTION :
 Called when the pacing electrodes widget is changed.
 ==============================================================================*/
 {
 	char *new_value,*pacing_electrodes;
+#if defined (BEFORE_MOVED_VALIDITY_CHECK)
+#else /* defined (BEFORE_MOVED_VALIDITY_CHECK) */
+	int i,j,number_of_pacing_channels_old,number_of_stimulus_types,
+		*pacing_channel,*pacing_channels_si_new,*pacing_channel_si_new,
+		*pacing_channel_si_old;
+#endif /* defined (BEFORE_MOVED_VALIDITY_CHECK) */
 	struct Pacing_window *pacing_window;
 	XmAnyCallbackStruct *text_data
 
@@ -1219,7 +1847,61 @@ Called when the pacing electrodes widget is changed.
 				XtVaGetValues(pacing_window->pacing_electrodes_value,
 					XmNvalue,&new_value,
 					NULL);
+#if defined (BEFORE_MOVED_VALIDITY_CHECK)
 				set_pacing_channels_from_string(pacing_window,new_value);
+#else /* defined (BEFORE_MOVED_VALIDITY_CHECK) */
+				number_of_pacing_channels_old=pacing_window->number_of_pacing_channels;
+				number_of_stimulus_types=pacing_window->number_of_stimulus_types;
+				set_channels_from_string(new_value,*(pacing_window->rig_address),
+					&(pacing_window->pacing_electrodes),
+					&(pacing_window->number_of_pacing_channels),
+					&(pacing_window->pacing_channels));
+				/* update pacing_channels_si */
+				pacing_channels_si_new=(int *)NULL;
+				if ((0<pacing_window->number_of_pacing_channels)&&
+					ALLOCATE(pacing_channels_si_new,int,
+					(pacing_window->number_of_pacing_channels)*
+					(1+number_of_stimulus_types)))
+				{
+					pacing_channel=pacing_window->pacing_channels;
+					pacing_channel_si_new=pacing_channels_si_new;
+					for (i=pacing_window->number_of_pacing_channels;i>0;i--)
+					{
+						*pacing_channel_si_new= *pacing_channel;
+						pacing_channel_si_old=pacing_window->pacing_channels_si;
+						j=number_of_pacing_channels_old;
+						while ((j>0)&&(*pacing_channel_si_old!= *pacing_channel_si_new))
+						{
+							j--;
+							pacing_channel_si_old += number_of_stimulus_types+1;
+						}
+						pacing_channel_si_new++;
+						pacing_channel_si_old++;
+						if (j>0)
+						{
+							for (j=number_of_stimulus_types;j>0;j--)
+							{
+								*pacing_channel_si_new= *pacing_channel_si_old;
+								pacing_channel_si_new++;
+								pacing_channel_si_old++;
+							}
+						}
+						else
+						{
+							for (j=number_of_stimulus_types;j>0;j--)
+							{
+								*pacing_channel_si_new=1;
+								pacing_channel_si_new++;
+							}
+							pacing_channel_si_old += number_of_stimulus_types;
+						}
+						pacing_channel++;
+					}
+				}
+				DEALLOCATE(pacing_window->pacing_channels_si);
+				pacing_window->pacing_channels_si=pacing_channels_si_new;
+				update_si_electrodes_value(pacing_window);
+#endif /* defined (BEFORE_MOVED_VALIDITY_CHECK) */
 			}
 			if (!(pacing_electrodes=pacing_window->pacing_electrodes))
 			{
@@ -1298,7 +1980,7 @@ Finds the id of the return_ electrodes value in the pacing window.
 static void ch_pacing_return_electrodes_val(Widget *widget_id,
 	XtPointer pacing_window_structure,XtPointer call_data)
 /*******************************************************************************
-LAST MODIFIED : 11 November 2001
+LAST MODIFIED : 4 July 2005
 
 DESCRIPTION :
 Called when the return electrodes widget is changed.
@@ -1321,7 +2003,14 @@ Called when the return electrodes widget is changed.
 				XtVaGetValues(pacing_window->return_electrodes_value,
 					XmNvalue,&new_value,
 					NULL);
+#if defined (BEFORE_MOVED_VALIDITY_CHECK)
 				set_return_channels_from_string(pacing_window,new_value);
+#else /* defined (BEFORE_MOVED_VALIDITY_CHECK) */
+				set_channels_from_string(new_value,*(pacing_window->rig_address),
+					&(pacing_window->return_electrodes),
+					&(pacing_window->number_of_return_channels),
+					&(pacing_window->return_channels));
+#endif /* defined (BEFORE_MOVED_VALIDITY_CHECK) */
 			}
 			if (!(return_electrodes=pacing_window->return_electrodes))
 			{
@@ -2365,7 +3054,7 @@ Updates after a change to the number of cycles for a stimulus type.
 
 static int change_stimulus_number(struct Pacing_window *pacing_window)
 /*******************************************************************************
-LAST MODIFIED : 25 May 2003
+LAST MODIFIED : 12 July 2005
 
 DESCRIPTION :
 Updates after a change to the number of stimulus types.
@@ -2431,6 +3120,10 @@ Updates after a change to the number of stimulus types.
 			NULL);
 		return_code=change_number_of_si(pacing_window);
 		return_code=change_si_length(pacing_window);
+#if defined (BEFORE_MOVED_VALIDITY_CHECK)
+#else // defined (BEFORE_MOVED_VALIDITY_CHECK)
+		return_code=update_si_electrodes_value(pacing_window);
+#endif // defined (BEFORE_MOVED_VALIDITY_CHECK)
 #endif /* defined (MOTIF) */
 	}
 	else
@@ -2837,6 +3530,410 @@ Called when the length of si widget is changed.
 } /* ch_pacing_si_length_value */
 #endif /* defined (MOTIF) */
 
+#if defined (BEFORE_MOVED_VALIDITY_CHECK)
+#else // defined (BEFORE_MOVED_VALIDITY_CHECK)
+#if defined (MOTIF)
+static void id_pacing_si_electrodes_value(Widget *widget_id,
+	XtPointer pacing_window_structure,XtPointer call_data)
+/*******************************************************************************
+LAST MODIFIED : 30 June 2005
+
+DESCRIPTION :
+Finds the id of the electrodes of Si beats value in the pacing window.
+==============================================================================*/
+{
+	struct Pacing_window *pacing_window;
+
+	ENTER(id_pacing_si_electrodes_value);
+	USE_PARAMETER(call_data);
+	if (pacing_window=(struct Pacing_window *)pacing_window_structure)
+	{
+		pacing_window->si_electrodes_value= *widget_id;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"id_pacing_si_electrodes_value.  Missing pacing_window_structure");
+	}
+	LEAVE;
+} /* id_pacing_si_electrodes_value */
+#endif /* defined (MOTIF) */
+
+#if defined (MOTIF)
+static void ch_pacing_si_electrodes_value(Widget *widget_id,
+	XtPointer pacing_window_structure,XtPointer call_data)
+/*******************************************************************************
+LAST MODIFIED : 5 August 2005
+
+DESCRIPTION :
+Called when the electrodes of si widget is changed.
+==============================================================================*/
+{
+	char *new_pacing_electrodes,*new_pacing_electrodes_temp,*pacing_electrodes,
+		*pacing_electrodes_si;
+	int found,i,j,new_number_of_pacing_channels,*new_pacing_channels_si,
+		*new_pacing_channels_si_temp,number_of_characters,number_of_characters_si,
+		number_of_devices,number_of_stimulus_types,offset,*pacing_channel,
+		pacing_channel_index,position,position_si,valid;
+	struct Device **device;
+	struct Pacing_window *pacing_window;
+	struct Rig *rig;
+	XmAnyCallbackStruct *text_data
+
+	ENTER(ch_pacing_si_electrodes_value);
+	USE_PARAMETER(widget_id);
+	if ((text_data=(XmAnyCallbackStruct *)call_data)&&
+		((XmCR_ACTIVATE==text_data->reason)||
+		(XmCR_LOSING_FOCUS==text_data->reason)))
+	{
+		if (pacing_window=(struct Pacing_window *)pacing_window_structure)
+		{
+			if (!(pacing_window->pacing))
+			{
+				XtVaGetValues(pacing_window->si_electrodes_value,
+					XmNvalue,&pacing_electrodes_si,
+					NULL);
+				XtVaGetValues(pacing_window->pacing_electrodes_value,
+					XmNvalue,&pacing_electrodes,
+					NULL);
+				number_of_stimulus_types=pacing_window->number_of_stimulus_types;
+				/* check for new pacing electrodes */
+				new_number_of_pacing_channels=pacing_window->number_of_pacing_channels;
+				if (ALLOCATE(new_pacing_channels_si,int,new_number_of_pacing_channels*
+					(1+number_of_stimulus_types)))
+				{
+					memcpy(new_pacing_channels_si,pacing_window->pacing_channels_si,
+						sizeof(int)*new_number_of_pacing_channels*
+						(1+number_of_stimulus_types));
+					for (pacing_channel_index=0;
+						pacing_channel_index<new_number_of_pacing_channels;
+						pacing_channel_index++)
+					{
+						new_pacing_channels_si[pacing_channel_index*
+							(1+number_of_stimulus_types)+
+							(pacing_window->stimulus_number)]=0;
+					}
+					new_pacing_electrodes=(char *)NULL;
+					valid=1;
+					position_si=0;
+					number_of_characters_si=0;
+					sscanf(pacing_electrodes_si+position_si,"%*[ ,]%n",
+						&number_of_characters_si);
+					if (0<number_of_characters_si)
+					{
+						position_si=number_of_characters_si;
+					}
+					while (valid&&pacing_electrodes_si[position_si])
+					{
+						number_of_characters_si=0;
+						sscanf(pacing_electrodes_si+position_si,"%*[^ ,]%n",
+							&number_of_characters_si);
+						if (0<number_of_characters_si)
+						{
+							found=0;
+							pacing_channel_index=0;
+							position=0;
+							number_of_characters=0;
+							sscanf(pacing_electrodes+position,"%*[ ,]%n",
+								&number_of_characters);
+							if (0<number_of_characters)
+							{
+								position=number_of_characters;
+							}
+							while (valid&&pacing_electrodes[position]&&!found)
+							{
+								number_of_characters=0;
+								sscanf(pacing_electrodes+position,"%*[^ ,]%n",
+									&number_of_characters);
+								if (0<number_of_characters)
+								{
+									if ((number_of_characters_si==number_of_characters)&&
+										(0==strncmp(pacing_electrodes_si+position_si,
+										pacing_electrodes+position,number_of_characters_si)))
+									{
+										found=1;
+									}
+									else
+									{
+										pacing_channel_index++;
+									}
+									position += number_of_characters;
+									number_of_characters=0;
+									sscanf(pacing_electrodes+position,"%*[ ,]%n",
+										&number_of_characters);
+									if (0<number_of_characters)
+									{
+										position += number_of_characters;
+									}
+								}
+								else
+								{
+									valid=0;
+								}
+							}
+							if (found)
+							{
+								new_pacing_channels_si[pacing_channel_index*
+									(1+number_of_stimulus_types)+
+									(pacing_window->stimulus_number)]=1;
+							}
+							else
+							{
+								if ((pacing_window->rig_address)&&
+									(rig= *(pacing_window->rig_address)))
+								{
+									device=rig->devices;
+									number_of_devices=rig->number_of_devices;
+									found=0;
+									while (!found&&(0<number_of_devices))
+									{
+										if ((ELECTRODE==(*device)->description->type)&&
+											(number_of_characters_si==
+											(int)strlen((*device)->description->name))&&
+											(0==strncmp(pacing_electrodes_si+position_si,
+											(*device)->description->name,number_of_characters_si)))
+										{
+											found=1;
+										}
+										else
+										{
+											device++;
+											number_of_devices--;
+										}
+									}
+									if (found)
+									{
+										if (REALLOCATE(new_pacing_channels_si_temp,
+											new_pacing_channels_si,int,
+											(new_number_of_pacing_channels+1)*
+											(number_of_stimulus_types+1)))
+										{
+											new_pacing_channels_si=new_pacing_channels_si_temp;
+											new_pacing_channels_si_temp +=
+												new_number_of_pacing_channels*
+												(number_of_stimulus_types+1);
+											*new_pacing_channels_si_temp=(*device)->channel->number;
+											new_pacing_channels_si_temp++;
+											for (j=(pacing_window->stimulus_number)-1;j>0;j--)
+											{
+												*new_pacing_channels_si_temp=0;
+												new_pacing_channels_si_temp++;
+											}
+											*new_pacing_channels_si_temp=1;
+											new_pacing_channels_si_temp++;
+											for (j=number_of_stimulus_types-
+												(pacing_window->stimulus_number);j>0;j--)
+											{
+												*new_pacing_channels_si_temp=0;
+												new_pacing_channels_si_temp++;
+											}
+											new_number_of_pacing_channels++;
+											if (!new_pacing_electrodes)
+											{
+												if (ALLOCATE(new_pacing_electrodes,char,
+													strlen(pacing_electrodes)+1))
+												{
+													strcpy(new_pacing_electrodes,pacing_electrodes);
+												}
+												else
+												{
+													valid=0;
+												}
+											}
+											if (new_pacing_electrodes&&REALLOCATE(
+												new_pacing_electrodes_temp,new_pacing_electrodes,char,
+												strlen(new_pacing_electrodes)+number_of_characters_si+
+												2))
+											{
+												new_pacing_electrodes=new_pacing_electrodes_temp;
+												strcat(new_pacing_electrodes,",");
+												strncat(new_pacing_electrodes,
+													pacing_electrodes_si+position_si,
+													number_of_characters_si);
+											}
+											else
+											{
+												valid=0;
+											}
+										}
+										else
+										{
+											valid=0;
+										}
+									}
+								}
+								else
+								{
+									valid=0;
+								}
+							}
+							position_si += number_of_characters_si;
+							number_of_characters_si=0;
+							sscanf(pacing_electrodes_si+position_si,"%*[ ,]%n",
+								&number_of_characters_si);
+							if (0<number_of_characters_si)
+							{
+								position_si += number_of_characters_si;
+							}
+						}
+						else
+						{
+							valid=0;
+						}
+					}
+					if (valid)
+					{
+						/* check for pacing electrodes that are no longer used */
+						offset=0;
+						new_pacing_channels_si_temp=new_pacing_channels_si;
+						if (new_pacing_electrodes)
+						{
+							new_pacing_electrodes_temp=new_pacing_electrodes;
+						}
+						else
+						{
+							new_pacing_electrodes_temp=pacing_electrodes;
+						}
+						position=0;
+						number_of_characters=0;
+						sscanf(new_pacing_electrodes_temp+position,"%*[ ,]%n",
+							&number_of_characters);
+						if (0<number_of_characters)
+						{
+							position=number_of_characters;
+						}
+						i=new_number_of_pacing_channels;
+						while (valid&&(i>0))
+						{
+							number_of_characters=0;
+							sscanf(new_pacing_electrodes_temp+position,"%*[^ ,]%n",
+								&number_of_characters);
+							j=number_of_stimulus_types;
+							while ((j>0)&&(0==new_pacing_channels_si_temp[j]))
+							{
+								j--;
+							}
+							if (0==j)
+							{
+								if (0==offset)
+								{
+									if (!new_pacing_electrodes)
+									{
+										if (ALLOCATE(new_pacing_electrodes,char,
+											strlen(pacing_electrodes)+1))
+										{
+											strncpy(new_pacing_electrodes,pacing_electrodes,position);
+										}
+										else
+										{
+											valid=0;
+										}
+									}
+									position_si=position;
+								}
+								offset += number_of_stimulus_types+1;
+								new_number_of_pacing_channels--;
+							}
+							else
+							{
+								new_pacing_channels_si_temp += number_of_stimulus_types+1;
+								if (0<offset)
+								{
+									for (j=0;j<number_of_characters;j++)
+									{
+										new_pacing_electrodes[position_si]=
+											new_pacing_electrodes_temp[position+j];
+										position_si++;
+									}
+									new_pacing_electrodes[position_si]=',';
+									position_si++;
+								}
+							}
+							if ((0<offset)&&(i>1))
+							{
+								for (j=number_of_stimulus_types;j>=0;j--)
+								{
+									new_pacing_channels_si_temp[j]=
+										new_pacing_channels_si_temp[offset+j];
+								}
+							}
+							i--;
+							position += number_of_characters;
+							number_of_characters=0;
+							sscanf(new_pacing_electrodes_temp+position,"%*[ ,]%n",
+								&number_of_characters);
+							if (0<number_of_characters)
+							{
+								position += number_of_characters;
+							}
+						}
+						if (valid)
+						{
+							if (0<offset)
+							{
+								if (position_si>0)
+								{
+									position_si--;
+								}
+								new_pacing_electrodes[position_si]='\0';
+							}
+							if (new_pacing_electrodes)
+							{
+								/* change pacing electrodes */
+								if (REALLOCATE(pacing_channel,pacing_window->pacing_channels,
+									int,new_number_of_pacing_channels))
+								{
+									pacing_window->pacing_channels=pacing_channel;
+									pacing_window->number_of_pacing_channels=
+										new_number_of_pacing_channels;
+									new_pacing_channels_si_temp=new_pacing_channels_si;
+									for (i=new_number_of_pacing_channels;i>0;i--)
+									{
+										*pacing_channel= *new_pacing_channels_si_temp;
+										new_pacing_channels_si_temp += number_of_stimulus_types+1;
+										pacing_channel++;
+									}
+									DEALLOCATE(pacing_window->pacing_channels_si);
+									pacing_window->pacing_channels_si=new_pacing_channels_si;
+									XtVaSetValues(pacing_window->pacing_electrodes_value,
+										XmNcursorPosition,strlen(new_pacing_electrodes),
+										XmNvalue,new_pacing_electrodes,
+										NULL);
+									DEALLOCATE(pacing_window->pacing_electrodes);
+									pacing_window->pacing_electrodes=new_pacing_electrodes;
+								}
+								else
+								{
+									valid=0;
+								}
+							}
+							else
+							{
+								DEALLOCATE(pacing_window->pacing_channels_si);
+								pacing_window->pacing_channels_si=new_pacing_channels_si;
+							}
+						}
+					}
+					if (!valid)
+					{
+						DEALLOCATE(new_pacing_channels_si);
+						DEALLOCATE(new_pacing_electrodes);
+					}
+				}
+			}
+			update_si_electrodes_value(pacing_window);
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,
+				"ch_pacing_si_electrodes_value.  Missing pacing_window_structure");
+		}
+	}
+	LEAVE;
+} /* ch_pacing_si_electrodes_value */
+#endif /* defined (MOTIF) */
+#endif // defined (BEFORE_MOVED_VALIDITY_CHECK)
+
 #if defined (MOTIF)
 static void id_pacing_number_of_s_types_for(Widget *widget_id,
 	XtPointer pacing_window_structure,XtPointer call_data)
@@ -2921,7 +4018,7 @@ window.
 
 static int change_number_of_stimulus_types(struct Pacing_window *pacing_window)
 /*******************************************************************************
-LAST MODIFIED : 25 May 2003
+LAST MODIFIED : 12 July 2005
 
 DESCRIPTION :
 Updates after a change to the number of stimulus types.
@@ -2931,7 +4028,12 @@ Updates after a change to the number of stimulus types.
 	char value_string[101];
 #endif /* defined (MOTIF) */
 	float *si_length;
+#if defined (BEFORE_MOVED_VALIDITY_CHECK)
 	int i,*number_of_si,return_code;
+#else // defined (BEFORE_MOVED_VALIDITY_CHECK)
+	int i,j,number_of_pacing_channels,*number_of_si,*pacing_channel_si,
+		*pacing_channel_si_old,*pacing_channels_si,return_code,step;
+#endif // defined (BEFORE_MOVED_VALIDITY_CHECK)
 
 	ENTER(change_number_of_stimulus_types);
 	return_code=0;
@@ -2967,6 +4069,7 @@ Updates after a change to the number of stimulus types.
 #endif /* defined (MOTIF) */
 		ALLOCATE(number_of_si,int,pacing_window->number_of_stimulus_types);
 		ALLOCATE(si_length,float,pacing_window->number_of_stimulus_types);
+#if defined (BEFORE_MOVED_VALIDITY_CHECK)
 		if (number_of_si&&si_length)
 		{
 			if (pacing_window->number_of_stimulus_types>
@@ -3004,6 +4107,88 @@ Updates after a change to the number of stimulus types.
 			DEALLOCATE(number_of_si);
 			DEALLOCATE(si_length);
 		}
+#else // defined (BEFORE_MOVED_VALIDITY_CHECK)
+		number_of_pacing_channels=pacing_window->number_of_pacing_channels;
+		pacing_channels_si=(int *)NULL;
+		if (0<number_of_pacing_channels)
+		{
+			ALLOCATE(pacing_channels_si,int,number_of_pacing_channels*
+				(1+pacing_window->number_of_stimulus_types));
+		}
+		if (number_of_si&&si_length&&
+			((0==number_of_pacing_channels)||pacing_channels_si))
+		{
+			if (pacing_window->number_of_stimulus_types>
+				pacing_window->number_of_stimulus_types_save)
+			{
+				for (i=0;i<pacing_window->number_of_stimulus_types_save;i++)
+				{
+					number_of_si[i]=(pacing_window->number_of_si)[i];
+					si_length[i]=(pacing_window->si_length)[i];
+				}
+				for (i=pacing_window->number_of_stimulus_types_save;
+					i<pacing_window->number_of_stimulus_types;i++)
+				{
+					number_of_si[i]=number_of_si[i-1];
+					si_length[i]=si_length[i-1];
+				}
+				step=(pacing_window->number_of_stimulus_types)-
+					(pacing_window->number_of_stimulus_types_save);
+				pacing_channel_si=pacing_channels_si;
+				pacing_channel_si_old=pacing_window->pacing_channels_si;
+				for (i=number_of_pacing_channels;i>0;i--)
+				{
+					for (j=pacing_window->number_of_stimulus_types_save;j>=0;j--)
+					{
+						*pacing_channel_si= *pacing_channel_si_old;
+						pacing_channel_si++;
+						pacing_channel_si_old++;
+					}
+					for (j=step;j>0;j--)
+					{
+						*pacing_channel_si=1;
+						pacing_channel_si++;
+					}
+				}
+			}
+			else
+			{
+				for (i=0;i<pacing_window->number_of_stimulus_types;i++)
+				{
+					number_of_si[i]=(pacing_window->number_of_si)[i];
+					si_length[i]=(pacing_window->si_length)[i];
+				}
+				step=(pacing_window->number_of_stimulus_types_save)-
+					(pacing_window->number_of_stimulus_types);
+				pacing_channel_si=pacing_channels_si;
+				pacing_channel_si_old=pacing_window->pacing_channels_si;
+				for (i=number_of_pacing_channels;i>0;i--)
+				{
+					for (j=pacing_window->number_of_stimulus_types;j>=0;j--)
+					{
+						*pacing_channel_si= *pacing_channel_si_old;
+						pacing_channel_si++;
+						pacing_channel_si_old++;
+					}
+					pacing_channel_si_old += step;
+				}
+			}
+			DEALLOCATE(pacing_window->number_of_si);
+			pacing_window->number_of_si=number_of_si;
+			DEALLOCATE(pacing_window->si_length);
+			pacing_window->si_length=si_length;
+			DEALLOCATE(pacing_window->pacing_channels_si);
+			pacing_window->pacing_channels_si=pacing_channels_si;
+			pacing_window->number_of_stimulus_types_save=
+				pacing_window->number_of_stimulus_types;
+		}
+		else
+		{
+			DEALLOCATE(number_of_si);
+			DEALLOCATE(si_length);
+			DEALLOCATE(pacing_channels_si);
+		}
+#endif // defined (BEFORE_MOVED_VALIDITY_CHECK)
 		pacing_window->sn_length=(pacing_window->si_length)[
 			(pacing_window->number_of_stimulus_types)-1];
 		update_sn_length_label(pacing_window);
@@ -3597,23 +4782,113 @@ Finds the id of the restitution time pace button in the pacing window.
 } /* id_pacing_restitution_time_pace */
 #endif /* defined (MOTIF) */
 
+#if defined (BEFORE_MOVED_VALIDITY_CHECK)
+#else /* defined (BEFORE_MOVED_VALIDITY_CHECK) */
+static int set_pacing_voltcurs(float *pacing_voltcurs,float control_voltcur,
+	int number_of_control_voltcurs,int number_of_stimulus_types,
+	int *number_of_si,int *number_of_si_voltcurs,int *si_on,
+	int number_of_sn_s1_voltcurs)
+/*******************************************************************************
+LAST MODIFIED : 12 July 2005
+
+DESCRIPTION :
+Sets the voltages/currents for stimulus pacing.  Returns the number of
+voltages/currents set.
+==============================================================================*/
+{
+	float control_voltcur_si,*pacing_voltcur;
+	int i,j,k,number_of_pacing_voltages;
+
+	ENTER(set_pacing_voltcurs);
+	number_of_pacing_voltages=0;
+	if ((pacing_voltcur=pacing_voltcurs)&&number_of_si&&number_of_si_voltcurs)
+	{
+		for (i=number_of_sn_s1_voltcurs;i>0;i--)
+		{
+			*pacing_voltcur=0;
+			pacing_voltcur++;
+		}
+		for (i=0;i<number_of_stimulus_types-1;i++)
+		{
+			if (!si_on||si_on[i])
+			{
+				control_voltcur_si=control_voltcur;
+			}
+			else
+			{
+				control_voltcur_si=0;
+			}
+			for (j=0;j<number_of_si[i];j++)
+			{
+				if ((i>0)||(j>0))
+				{
+					for (k=number_of_si_voltcurs[i]-number_of_control_voltcurs;k>0;k--)
+					{
+						*pacing_voltcur=0;
+						pacing_voltcur++;
+					}
+				}
+				for (k=number_of_control_voltcurs;k>0;k--)
+				{
+					*pacing_voltcur=control_voltcur_si;
+					pacing_voltcur++;
+				}
+			}
+		}
+		if (!si_on||si_on[i])
+		{
+			control_voltcur_si=control_voltcur;
+		}
+		else
+		{
+			control_voltcur_si=0;
+		}
+		for (j=number_of_si[i];j>0;j--)
+		{
+			for (k=number_of_si_voltcurs[i]-number_of_control_voltcurs;k>0;k--)
+			{
+				*pacing_voltcur=0;
+				pacing_voltcur++;
+			}
+			for (k=number_of_control_voltcurs;k>0;k--)
+			{
+				*pacing_voltcur=control_voltcur_si;
+				pacing_voltcur++;
+			}
+		}
+		number_of_pacing_voltages=pacing_voltcur-pacing_voltcurs;
+	}
+	LEAVE;
+
+	return (number_of_pacing_voltages);
+}
+#endif /* defined (BEFORE_MOVED_VALIDITY_CHECK) */
+
 static int restitution_time_pace(struct Pacing_window *pacing_window)
 /*******************************************************************************
-LAST MODIFIED : 22 May 2004
+LAST MODIFIED : 12 July 2005
 
 DESCRIPTION :
 Restarts the restitution time pacing.
 ==============================================================================*/
 {
+#if defined (BEFORE_MOVED_VALIDITY_CHECK)
 	float *pacing_voltcur,voltcurs_per_second;
 	int i,j,k,number_of_control_voltcurs,number_of_pacing_voltcurs,
 		number_of_si_voltcurs,number_of_sn_s1_voltcurs,return_code;
+#else // defined (BEFORE_MOVED_VALIDITY_CHECK)
+	float *pacing_voltcur,resolution,voltcurs_per_second;
+	int finished,i,number_of_control_voltcurs,number_of_pacing_voltcurs,
+		*number_of_si_voltcurs,number_of_sn_s1_voltcurs,number_of_stimulus_types,
+		pacing_channel,*pacing_channel_si,return_code;
+#endif // defined (BEFORE_MOVED_VALIDITY_CHECK)
 
 	ENTER(restitution_time_pace);
 	return_code=0;
 	unemap_stop_stimulating(0);
 	if (pacing_window)
 	{
+#if defined (BEFORE_MOVED_VALIDITY_CHECK)
 		number_of_control_voltcurs=(int)((pacing_window->control_width)/
 			(pacing_window->resolution)+0.5);
 		number_of_sn_s1_voltcurs=(int)((pacing_window->sn_s1_pause)/
@@ -3797,6 +5072,174 @@ Restarts the restitution time pacing.
 			}
 			pacing_window->pacing=0;
 		}
+#else /* defined (BEFORE_MOVED_VALIDITY_CHECK) */
+		finished=0;
+		if (check_pacing_return_stimulator_consistency(pacing_window))
+		{
+			number_of_stimulus_types=pacing_window->number_of_stimulus_types;
+			if (ALLOCATE(number_of_si_voltcurs,int,number_of_stimulus_types))
+			{
+				resolution=pacing_window->resolution;
+				voltcurs_per_second=(float)1000./resolution;
+				/* calculate the number of voltages or currents in the waveform */
+				number_of_control_voltcurs=(int)((pacing_window->control_width)/
+					resolution+0.5);
+				number_of_sn_s1_voltcurs=(int)((pacing_window->sn_s1_pause)/
+					resolution+0.5);
+				number_of_pacing_voltcurs=number_of_sn_s1_voltcurs;
+				for (i=0;i<number_of_stimulus_types-1;i++)
+				{
+					number_of_si_voltcurs[i]=(int)(((pacing_window->si_length)[i])/
+						resolution+0.5);
+					number_of_pacing_voltcurs += (pacing_window->number_of_si)[i]*
+						number_of_si_voltcurs[i];
+				}
+				number_of_si_voltcurs[i]=
+					(int)((pacing_window->sn_length)/resolution+0.5);
+				number_of_pacing_voltcurs += (pacing_window->number_of_si)[i]*
+					number_of_si_voltcurs[i];
+				number_of_pacing_voltcurs += number_of_control_voltcurs+1;
+				if (REALLOCATE(pacing_voltcur,pacing_window->pacing_voltcurs,float,
+					number_of_pacing_voltcurs))
+				{
+					pacing_window->pacing_voltcurs=pacing_voltcur;
+					if (0<pacing_window->number_of_pacing_channels)
+					{
+						pacing_channel_si=pacing_window->pacing_channels_si;
+						for (i=pacing_window->number_of_pacing_channels;i>0;i--)
+						{
+							pacing_channel= *pacing_channel_si;
+							unemap_set_channel_stimulating(pacing_channel,1);
+							pacing_channel_si++;
+							/* set up waveform */
+							number_of_pacing_voltcurs=set_pacing_voltcurs(
+								pacing_window->pacing_voltcurs,pacing_window->control_voltcur,
+								number_of_control_voltcurs,number_of_stimulus_types,
+								pacing_window->number_of_si,number_of_si_voltcurs,
+								pacing_channel_si,number_of_sn_s1_voltcurs);
+							(pacing_window->pacing_voltcurs)[number_of_pacing_voltcurs]=0;
+							number_of_pacing_voltcurs++;
+							pacing_channel_si += number_of_stimulus_types;
+							if (pacing_window->constant_current_stimulation)
+							{
+								unemap_load_current_stimulating(1,&pacing_channel,
+									number_of_pacing_voltcurs,voltcurs_per_second,
+									pacing_window->pacing_voltcurs,(unsigned int)1,
+									(Unemap_stimulation_end_callback *)NULL,(void *)NULL);
+							}
+							else
+							{
+								unemap_load_voltage_stimulating(1,&pacing_channel,
+									number_of_pacing_voltcurs,voltcurs_per_second,
+									pacing_window->pacing_voltcurs,(unsigned int)1,
+									(Unemap_stimulation_end_callback *)NULL,(void *)NULL);
+							}
+						}
+					}
+					if (0<pacing_window->number_of_return_channels)
+					{
+						for (i=0;i<pacing_window->number_of_return_channels;i++)
+						{
+							unemap_set_channel_stimulating(
+								(pacing_window->return_channels)[i],1);
+						}
+						if (pacing_window->negative_return_signal)
+						{
+							/* set up waveform */
+							number_of_pacing_voltcurs=set_pacing_voltcurs(
+								pacing_window->pacing_voltcurs,
+								-(pacing_window->control_voltcur),number_of_control_voltcurs,
+								number_of_stimulus_types,pacing_window->number_of_si,
+								number_of_si_voltcurs,(int *)NULL,number_of_sn_s1_voltcurs);
+							(pacing_window->pacing_voltcurs)[number_of_pacing_voltcurs]=0;
+							number_of_pacing_voltcurs++;
+							if (pacing_window->constant_current_stimulation)
+							{
+								unemap_load_current_stimulating(
+									pacing_window->number_of_return_channels,
+									pacing_window->return_channels,number_of_pacing_voltcurs,
+									voltcurs_per_second,pacing_window->pacing_voltcurs,
+									(unsigned int)1,(Unemap_stimulation_end_callback *)NULL,
+									(void *)NULL);
+							}
+							else
+							{
+								unemap_load_voltage_stimulating(
+									pacing_window->number_of_return_channels,
+									pacing_window->return_channels,number_of_pacing_voltcurs,
+									voltcurs_per_second,pacing_window->pacing_voltcurs,
+									(unsigned int)1,(Unemap_stimulation_end_callback *)NULL,
+									(void *)NULL);
+							}
+						}
+						else
+						{
+							if (pacing_window->constant_current_stimulation)
+							{
+								unemap_load_current_stimulating(
+									pacing_window->number_of_return_channels,
+									pacing_window->return_channels,(int)0,(float)0,(float *)NULL,
+									(unsigned int)0,(Unemap_stimulation_end_callback *)NULL,
+									(void *)NULL);
+							}
+							else
+							{
+								unemap_load_voltage_stimulating(
+									pacing_window->number_of_return_channels,
+									pacing_window->return_channels,(int)0,(float)0,(float *)NULL,
+									(unsigned int)0,(Unemap_stimulation_end_callback *)NULL,
+									(void *)NULL);
+							}
+						}
+					}
+					/* start pacing */
+					unemap_start_stimulating();
+					if (0==pacing_window->pacing)
+					{
+						/* print information to standard out */
+						printf("Restitution Pacing on\n");
+					}
+					pacing_window->pacing=1;
+					/* print information to standard out */
+					for (i=0;i<number_of_stimulus_types-1;i++)
+					{
+						printf("S%d.  Cycle length = %g.  Number of stimulations = %d\n",
+							i+1,(pacing_window->si_length)[i],
+							(pacing_window->number_of_si)[i]);
+					}
+					printf("S%d.  Cycle length = %g.  Number of stimulations = %d\n",
+						i+1,pacing_window->sn_length,(pacing_window->number_of_si)[i]);
+					printf("S%d length change = %g ms\n",number_of_stimulus_types,
+						pacing_window->sn_length_change);
+					printf("Length factor = %g\n",pacing_window->sn_length_change_factor);
+					printf("Control width = %g ms\n",pacing_window->control_width);
+					return_code=1;
+				}
+				else
+				{
+					finished=1;
+				}
+				DEALLOCATE(number_of_si_voltcurs);
+			}
+			else
+			{
+				finished=1;
+			}
+		}
+		else
+		{
+			finished=1;
+		}
+		if (finished)
+		{
+			if (pacing_window->pacing)
+			{
+				/* print information to standard out */
+				printf("Restitution Pacing off\n");
+			}
+			pacing_window->pacing=0;
+		}
+#endif /* defined (BEFORE_MOVED_VALIDITY_CHECK) */
 	}
 	else
 	{
@@ -4499,15 +5942,22 @@ Called when the restitution curve pacing ends.
 
 static int restitution_curve_pace(void *pacing_window_void)
 /*******************************************************************************
-LAST MODIFIED : 22 May 2004
+LAST MODIFIED : 12 July 2004
 
 DESCRIPTION :
 Does one stimulus train in the restitution curve creation.
 ==============================================================================*/
 {
+#if defined (BEFORE_MOVED_VALIDITY_CHECK)
 	float *pacing_voltcurs,voltcurs_per_second;
 	int finished,j,k,l,number_of_control_voltcurs,number_of_pacing_voltcurs,
 		number_of_si_pacing_voltcurs,number_of_sn_s1_pacing_voltcurs,return_code;
+#else // defined (BEFORE_MOVED_VALIDITY_CHECK)
+	float *pacing_voltcurs,resolution,voltcurs_per_second;
+	int finished,l,number_of_control_voltcurs,number_of_pacing_voltcurs,
+		number_of_sn_s1_voltcurs,*number_of_si_voltcurs,number_of_stimulus_types,
+		pacing_channel,*pacing_channel_si,return_code;
+#endif // defined (BEFORE_MOVED_VALIDITY_CHECK)
 	struct Pacing_window *pacing_window;
 
 	ENTER(restitution_curve_pace);
@@ -4527,9 +5977,10 @@ Does one stimulus train in the restitution curve creation.
 				(pacing_window->decrement_threshold_pairs)[
 				2*(pacing_window->decrement_threshold_pair_number)+1])))
 			{
+				pacing_window->last_decrement_threshold_pairs=0;
+#if defined (BEFORE_MOVED_VALIDITY_CHECK)
 				number_of_control_voltcurs=(int)((pacing_window->control_width)/
 					(pacing_window->resolution)+0.5);
-				pacing_window->last_decrement_threshold_pairs=0;
 				number_of_sn_s1_pacing_voltcurs=(int)((pacing_window->sn_s1_pause)/
 					(pacing_window->resolution)+0.5);
 				number_of_pacing_voltcurs=number_of_sn_s1_pacing_voltcurs+
@@ -4752,6 +6203,212 @@ Does one stimulus train in the restitution curve creation.
 				{
 					finished=1;
 				}
+#else /* defined (BEFORE_MOVED_VALIDITY_CHECK) */
+				if (check_pacing_return_stimulator_consistency(pacing_window))
+				{
+					number_of_stimulus_types=pacing_window->number_of_stimulus_types;
+					if (ALLOCATE(number_of_si_voltcurs,int,number_of_stimulus_types))
+					{
+						resolution=pacing_window->resolution;
+						voltcurs_per_second=(float)1000./resolution;
+						/* calculate the number of voltages or currents in the waveform */
+						number_of_control_voltcurs=(int)((pacing_window->control_width)/
+							resolution+0.5);
+						number_of_sn_s1_voltcurs=(int)((pacing_window->sn_s1_pause)/
+							resolution+0.5);
+						number_of_pacing_voltcurs=number_of_sn_s1_voltcurs+
+							(int)((pacing_window->sn_length_decrement_threshold_pairs)/
+							resolution+0.5)*(pacing_window->number_of_si)[
+							number_of_stimulus_types-1];
+						for (l=0;l<number_of_stimulus_types-1;l++)
+						{
+							number_of_si_voltcurs[l]=(int)(((pacing_window->si_length)[l])/
+								resolution+0.5);
+							number_of_pacing_voltcurs += number_of_si_voltcurs[l]*
+								(pacing_window->number_of_si)[l];
+						}
+						number_of_si_voltcurs[l]=
+							(int)((pacing_window->sn_length_decrement_threshold_pairs)/
+							resolution+0.5);
+						number_of_pacing_voltcurs += (pacing_window->number_of_si)[l]*
+							number_of_si_voltcurs[l];
+						number_of_pacing_voltcurs += number_of_control_voltcurs+1;
+						if (REALLOCATE(pacing_voltcurs,pacing_window->pacing_voltcurs,
+							float,number_of_pacing_voltcurs))
+						{
+							pacing_window->pacing_voltcurs=pacing_voltcurs;
+							(pacing_window->sn_length_count_decrement_threshold_pairs)++;
+							/* print information to standard out */
+							printf("%d) S%d length = %g ms\n",
+								pacing_window->sn_length_count_decrement_threshold_pairs,
+								pacing_window->number_of_stimulus_types,
+								pacing_window->sn_length_decrement_threshold_pairs);
+							pacing_window->sn_length_decrement_threshold_pairs -=
+								(pacing_window->decrement_threshold_pairs)[
+								2*(pacing_window->decrement_threshold_pair_number)];
+							/* must be a multiple of the resolution and longer than the
+								control width */
+							if (pacing_window->sn_length_decrement_threshold_pairs<
+								(pacing_window->control_width)+resolution)
+							{
+								pacing_window->sn_length_decrement_threshold_pairs=
+									(pacing_window->control_width)+resolution;
+							}
+							else
+							{
+								pacing_window->sn_length_decrement_threshold_pairs=
+									resolution*(float)floor((pacing_window->
+									sn_length_decrement_threshold_pairs)/resolution+0.5);
+							}
+							if (pacing_window->sn_length_decrement_threshold_pairs<=
+								(pacing_window->decrement_threshold_pairs)[
+								2*(pacing_window->decrement_threshold_pair_number)+1])
+							{
+								pacing_window->sn_length_decrement_threshold_pairs=
+									(pacing_window->decrement_threshold_pairs)[
+									2*(pacing_window->decrement_threshold_pair_number)+1];
+								/* must be a multiple of the resolution and longer than the
+									control width */
+								if (pacing_window->sn_length_decrement_threshold_pairs<
+									(pacing_window->control_width)+resolution)
+								{
+									pacing_window->sn_length_decrement_threshold_pairs=
+										(pacing_window->control_width)+resolution;
+								}
+								else
+								{
+									pacing_window->sn_length_decrement_threshold_pairs=
+										resolution*(float)floor((pacing_window->
+										sn_length_decrement_threshold_pairs)/resolution+0.5);
+								}
+								(pacing_window->decrement_threshold_pair_number)++;
+								if (pacing_window->decrement_threshold_pair_number==
+									pacing_window->number_of_decrement_threshold_pairs)
+								{
+									pacing_window->last_decrement_threshold_pairs=1;
+								}
+							}
+							if (0<number_of_pacing_voltcurs)
+							{
+								/* set up pacing */
+								if (0<pacing_window->number_of_pacing_channels)
+								{
+									pacing_channel_si=pacing_window->pacing_channels_si;
+									for (l=pacing_window->number_of_pacing_channels;l>0;l--)
+									{
+										pacing_channel= *pacing_channel_si;
+										unemap_set_channel_stimulating(pacing_channel,1);
+										pacing_channel_si++;
+										/* set up waveform */
+										number_of_pacing_voltcurs=set_pacing_voltcurs(
+											pacing_window->pacing_voltcurs,
+											pacing_window->control_voltcur,
+											number_of_control_voltcurs,number_of_stimulus_types,
+											pacing_window->number_of_si,number_of_si_voltcurs,
+											pacing_channel_si,number_of_sn_s1_voltcurs);
+										(pacing_window->pacing_voltcurs)[number_of_pacing_voltcurs]=
+											0;
+										number_of_pacing_voltcurs++;
+										pacing_channel_si += number_of_stimulus_types;
+										if (pacing_window->constant_current_stimulation)
+										{
+											unemap_load_current_stimulating(1,&pacing_channel,
+												number_of_pacing_voltcurs,voltcurs_per_second,
+												pacing_window->pacing_voltcurs,(unsigned int)1,
+												restitution_curve_pace,pacing_window_void);
+										}
+										else
+										{
+											unemap_load_voltage_stimulating(1,&pacing_channel,
+												number_of_pacing_voltcurs,voltcurs_per_second,
+												pacing_window->pacing_voltcurs,(unsigned int)1,
+												restitution_curve_pace,pacing_window_void);
+										}
+									}
+								}
+								if (0<pacing_window->number_of_return_channels)
+								{
+									for (l=0;l<pacing_window->number_of_return_channels;l++)
+									{
+										unemap_set_channel_stimulating(
+											(pacing_window->return_channels)[l],1);
+									}
+									if (pacing_window->negative_return_signal)
+									{
+										/* set up waveform */
+										number_of_pacing_voltcurs=set_pacing_voltcurs(
+											pacing_window->pacing_voltcurs,
+											-(pacing_window->control_voltcur),
+											number_of_control_voltcurs,number_of_stimulus_types,
+											pacing_window->number_of_si,number_of_si_voltcurs,
+											(int *)NULL,number_of_sn_s1_voltcurs);
+										(pacing_window->pacing_voltcurs)[number_of_pacing_voltcurs]=
+											0;
+										number_of_pacing_voltcurs++;
+										if (pacing_window->constant_current_stimulation)
+										{
+											unemap_load_current_stimulating(
+												pacing_window->number_of_return_channels,
+												pacing_window->return_channels,
+												number_of_pacing_voltcurs,voltcurs_per_second,
+												pacing_window->pacing_voltcurs,(unsigned int)1,
+												(Unemap_stimulation_end_callback *)NULL,(void *)NULL);
+										}
+										else
+										{
+											unemap_load_voltage_stimulating(
+												pacing_window->number_of_return_channels,
+												pacing_window->return_channels,
+												number_of_pacing_voltcurs,voltcurs_per_second,
+												pacing_window->pacing_voltcurs,(unsigned int)1,
+												(Unemap_stimulation_end_callback *)NULL,(void *)NULL);
+										}
+									}
+									else
+									{
+										if (pacing_window->constant_current_stimulation)
+										{
+											unemap_load_current_stimulating(
+												pacing_window->number_of_return_channels,
+												pacing_window->return_channels,(int)0,(float)0,
+												(float *)NULL,(unsigned int)0,
+												(Unemap_stimulation_end_callback *)NULL,(void *)NULL);
+										}
+										else
+										{
+											unemap_load_voltage_stimulating(
+												pacing_window->number_of_return_channels,
+												pacing_window->return_channels,(int)0,(float)0,
+												(float *)NULL,(unsigned int)0,
+												(Unemap_stimulation_end_callback *)NULL,(void *)NULL);
+										}
+									}
+								}
+								/* start pacing */
+								unemap_start_stimulating();
+								return_code=1;
+							}
+							else
+							{
+								finished=1;
+							}
+							DEALLOCATE(number_of_si_voltcurs);
+						}
+						else
+						{
+							finished=1;
+						}
+					}
+					else
+					{
+						finished=1;
+					}
+				}
+				else
+				{
+					finished=1;
+				}
+#endif /* defined (BEFORE_MOVED_VALIDITY_CHECK) */
 			}
 			else
 			{
@@ -4788,18 +6445,28 @@ Does one stimulus train in the restitution curve creation.
 static void ch_pacing_restitution_curve_pac(Widget widget,
 	XtPointer pacing_window_structure,XtPointer call_data)
 /*******************************************************************************
-LAST MODIFIED : 22 May 2004
+LAST MODIFIED : 12 July 2005
 
 DESCRIPTION :
 Called when the restitution curve pace button is toggled.
 ==============================================================================*/
 {
 	Boolean status;
+#if defined (BEFORE_MOVED_VALIDITY_CHECK)
 	float *pacing_voltcurs,sn_length,voltcurs_per_second;
 	int decrement_threshold_pair_number,j,k,l,last,number_of_control_voltcurs,
 		number_of_pacing_voltcurs,number_of_si_pacing_voltcurs,
 		number_of_sn_pacing_voltcurs,number_of_sn_s1_pacing_voltcurs,return_code,
 		sn_length_count,software_version;
+#else // defined (BEFORE_MOVED_VALIDITY_CHECK)
+	float *pacing_voltcur,*pacing_voltcurs,resolution,sn_length,
+		voltcurs_per_second;
+	int decrement_threshold_pair_number,finished,j,l,last,
+		number_of_control_voltcurs,number_of_pacing_voltcurs,*number_of_si_voltcurs,
+		number_of_sn_pacing_voltcurs,number_of_sn_s1_voltcurs,
+		number_of_stimulus_types,pacing_channel,*pacing_channel_si,return_code,
+		sn_length_count,software_version;
+#endif // defined (BEFORE_MOVED_VALIDITY_CHECK)
 	struct Pacing_window *pacing_window;
 
 	ENTER(ch_pacing_restitution_curve_pac);
@@ -4849,6 +6516,7 @@ Called when the restitution curve pace button is toggled.
 			else
 			{
 				/* no stimulation end callbacks */
+#if defined (BEFORE_MOVED_VALIDITY_CHECK)
 				number_of_control_voltcurs=(int)((pacing_window->control_width)/
 					(pacing_window->resolution)+0.5);
 				number_of_sn_s1_pacing_voltcurs=(int)((pacing_window->sn_s1_pause)/
@@ -5081,6 +6749,295 @@ Called when the restitution curve pace button is toggled.
 					status=False;
 					XtVaSetValues(widget,XmNset,status,NULL);
 				}
+#else /* defined (BEFORE_MOVED_VALIDITY_CHECK) */
+				finished=0;
+				if (check_pacing_return_stimulator_consistency(pacing_window))
+				{
+					number_of_stimulus_types=pacing_window->number_of_stimulus_types;
+					if (ALLOCATE(number_of_si_voltcurs,int,number_of_stimulus_types))
+					{
+						resolution=pacing_window->resolution;
+						voltcurs_per_second=(float)1000./resolution;
+						/* calculate the number of voltages or currents in the waveform */
+						number_of_control_voltcurs=(int)((pacing_window->control_width)/
+							resolution+0.5);
+						number_of_sn_s1_voltcurs=(int)((pacing_window->sn_s1_pause)/
+							resolution+0.5);
+						number_of_sn_pacing_voltcurs=0;
+						for (l=0;l<number_of_stimulus_types-1;l++)
+						{
+							number_of_si_voltcurs[l]=(int)(((pacing_window->si_length)[l])/
+								resolution+0.5);
+							number_of_sn_pacing_voltcurs += (pacing_window->number_of_si)[l]*
+								number_of_si_voltcurs[l];
+						}
+						number_of_pacing_voltcurs=number_of_sn_s1_voltcurs;
+						sn_length=(pacing_window->si_length)[number_of_stimulus_types-1];
+						decrement_threshold_pair_number=0;
+						last=0;
+						sn_length_count=0;
+						while (last||(decrement_threshold_pair_number<
+							pacing_window->number_of_decrement_threshold_pairs))
+						{
+							while (last||((decrement_threshold_pair_number<
+								pacing_window->number_of_decrement_threshold_pairs)&&
+								(sn_length>(pacing_window->decrement_threshold_pairs)[
+								2*decrement_threshold_pair_number+1])))
+							{
+								number_of_pacing_voltcurs += number_of_sn_pacing_voltcurs+
+									(int)(sn_length/resolution+0.5)*(pacing_window->number_of_si)[
+									number_of_stimulus_types-1]+number_of_sn_s1_voltcurs;
+								/* print information to standard out */
+								sn_length_count++;
+								printf("%d) S%d length = %g ms\n",sn_length_count,
+									pacing_window->number_of_stimulus_types,sn_length);
+								sn_length -= (pacing_window->decrement_threshold_pairs)[
+									2*decrement_threshold_pair_number];
+								/* must be a multiple of the resolution and longer than the
+									control width */
+								if (sn_length<(pacing_window->control_width)+resolution)
+								{
+									sn_length=(pacing_window->control_width)+resolution;
+								}
+								else
+								{
+									sn_length=resolution*(float)floor(sn_length/resolution+0.5);
+								}
+								last=0;
+							}
+							if (decrement_threshold_pair_number<
+								pacing_window->number_of_decrement_threshold_pairs)
+							{
+								sn_length=(pacing_window->decrement_threshold_pairs)[
+									2*decrement_threshold_pair_number+1];
+								if (decrement_threshold_pair_number+1==
+									pacing_window->number_of_decrement_threshold_pairs)
+								{
+									last=1;
+								}
+							}
+							decrement_threshold_pair_number++;
+						}
+						if ((0<number_of_pacing_voltcurs)&&REALLOCATE(pacing_voltcurs,
+							pacing_window->pacing_voltcurs,float,number_of_pacing_voltcurs))
+						{
+							pacing_window->pacing_voltcurs=pacing_voltcur;
+							/* set control sensitivity */
+							XtSetSensitive(pacing_window->restitution_time_pace_toggle,False);
+							XtSetSensitive(pacing_window->basic_cycle_length_pace_toggle,
+								False);
+							if (0<pacing_window->number_of_pacing_channels)
+							{
+								pacing_channel_si=pacing_window->pacing_channels_si;
+								for (l=pacing_window->number_of_pacing_channels;l>0;l--)
+								{
+									pacing_channel= *pacing_channel_si;
+									unemap_set_channel_stimulating(pacing_channel,1);
+									pacing_channel_si++;
+									/* set up waveform */
+									pacing_voltcur=pacing_window->pacing_voltcurs;
+									sn_length=
+										(pacing_window->si_length)[number_of_stimulus_types-1];
+									decrement_threshold_pair_number=0;
+									last=0;
+									sn_length_count=0;
+									while (last||(decrement_threshold_pair_number<
+										pacing_window->number_of_decrement_threshold_pairs))
+									{
+										while (last||((decrement_threshold_pair_number<
+											pacing_window->number_of_decrement_threshold_pairs)&&
+											(sn_length>(pacing_window->decrement_threshold_pairs)[
+											2*decrement_threshold_pair_number+1])))
+										{
+											number_of_si_voltcurs[number_of_stimulus_types-1]=
+												(int)(sn_length/resolution+0.5);
+											pacing_voltcur += set_pacing_voltcurs(pacing_voltcur,
+												pacing_window->control_voltcur,
+												number_of_control_voltcurs,number_of_stimulus_types,
+												pacing_window->number_of_si,number_of_si_voltcurs,
+												pacing_channel_si,number_of_sn_s1_voltcurs);
+											sn_length -= (pacing_window->decrement_threshold_pairs)[
+												2*decrement_threshold_pair_number];
+											/* must be a multiple of the resolution and longer than
+												the control width */
+											if (sn_length<(pacing_window->control_width)+resolution)
+											{
+												sn_length=(pacing_window->control_width)+resolution;
+											}
+											else
+											{
+												sn_length=
+													resolution*(float)floor(sn_length/resolution+0.5);
+											}
+											last=0;
+										}
+										if (decrement_threshold_pair_number<
+											pacing_window->number_of_decrement_threshold_pairs)
+										{
+											sn_length=(pacing_window->decrement_threshold_pairs)[
+												2*decrement_threshold_pair_number+1];
+											if (decrement_threshold_pair_number+1==
+												pacing_window->number_of_decrement_threshold_pairs)
+											{
+												last=1;
+											}
+										}
+										decrement_threshold_pair_number++;
+									}
+									for (j=number_of_sn_s1_voltcurs;j>0;j--)
+									{
+										*pacing_voltcurs=0;
+										pacing_voltcurs++;
+									}
+									number_of_pacing_voltcurs=pacing_voltcur-
+										(pacing_window->pacing_voltcurs);
+									if (pacing_window->constant_current_stimulation)
+									{
+										unemap_load_current_stimulating(1,&pacing_channel,
+											number_of_pacing_voltcurs,voltcurs_per_second,
+											pacing_window->pacing_voltcurs,(unsigned int)1,
+											(Unemap_stimulation_end_callback *)NULL,(void *)NULL);
+									}
+									else
+									{
+										unemap_load_voltage_stimulating(1,&pacing_channel,
+											number_of_pacing_voltcurs,voltcurs_per_second,
+											pacing_window->pacing_voltcurs,(unsigned int)1,
+											(Unemap_stimulation_end_callback *)NULL,(void *)NULL);
+									}
+									pacing_channel_si += number_of_stimulus_types;
+								}
+							}
+							if (0<pacing_window->number_of_return_channels)
+							{
+								for (l=0;l<pacing_window->number_of_return_channels;l++)
+								{
+									unemap_set_channel_stimulating(
+										(pacing_window->return_channels)[l],1);
+								}
+								if (pacing_window->negative_return_signal)
+								{
+									/* set up waveform */
+									pacing_voltcur=pacing_window->pacing_voltcurs;
+									sn_length=
+										(pacing_window->si_length)[number_of_stimulus_types-1];
+									decrement_threshold_pair_number=0;
+									last=0;
+									sn_length_count=0;
+									while (last||(decrement_threshold_pair_number<
+										pacing_window->number_of_decrement_threshold_pairs))
+									{
+										while (last||((decrement_threshold_pair_number<
+											pacing_window->number_of_decrement_threshold_pairs)&&
+											(sn_length>(pacing_window->decrement_threshold_pairs)[
+											2*decrement_threshold_pair_number+1])))
+										{
+											number_of_si_voltcurs[number_of_stimulus_types-1]=
+												(int)(sn_length/resolution+0.5);
+											pacing_voltcur += set_pacing_voltcurs(pacing_voltcur,
+												-(pacing_window->control_voltcur),
+												number_of_control_voltcurs,number_of_stimulus_types,
+												pacing_window->number_of_si,number_of_si_voltcurs,
+												(int *)NULL,number_of_sn_s1_voltcurs);
+											sn_length -= (pacing_window->decrement_threshold_pairs)[
+												2*decrement_threshold_pair_number];
+											/* must be a multiple of the resolution and longer than
+												the control width */
+											if (sn_length<(pacing_window->control_width)+resolution)
+											{
+												sn_length=(pacing_window->control_width)+resolution;
+											}
+											else
+											{
+												sn_length=
+													resolution*(float)floor(sn_length/resolution+0.5);
+											}
+											last=0;
+										}
+										if (decrement_threshold_pair_number<
+											pacing_window->number_of_decrement_threshold_pairs)
+										{
+											sn_length=(pacing_window->decrement_threshold_pairs)[
+												2*decrement_threshold_pair_number+1];
+											if (decrement_threshold_pair_number+1==
+												pacing_window->number_of_decrement_threshold_pairs)
+											{
+												last=1;
+											}
+										}
+										decrement_threshold_pair_number++;
+									}
+									for (j=number_of_sn_s1_voltcurs;j>0;j--)
+									{
+										*pacing_voltcurs=0;
+										pacing_voltcurs++;
+									}
+									number_of_pacing_voltcurs=pacing_voltcur-
+										(pacing_window->pacing_voltcurs);
+									if (pacing_window->constant_current_stimulation)
+									{
+										unemap_load_current_stimulating(
+											pacing_window->number_of_return_channels,
+											pacing_window->return_channels,number_of_pacing_voltcurs,
+											voltcurs_per_second,pacing_window->pacing_voltcurs,
+											(unsigned int)1,(Unemap_stimulation_end_callback *)NULL,
+											(void *)NULL);
+									}
+									else
+									{
+										unemap_load_voltage_stimulating(
+											pacing_window->number_of_return_channels,
+											pacing_window->return_channels,number_of_pacing_voltcurs,
+											voltcurs_per_second,pacing_window->pacing_voltcurs,
+											(unsigned int)1,(Unemap_stimulation_end_callback *)NULL,
+											(void *)NULL);
+									}
+								}
+								else
+								{
+									if (pacing_window->constant_current_stimulation)
+									{
+										unemap_load_current_stimulating(
+											pacing_window->number_of_return_channels,
+											pacing_window->return_channels,(int)0,(float)0,
+											(float *)NULL,(unsigned int)0,
+											(Unemap_stimulation_end_callback *)NULL,(void *)NULL);
+									}
+									else
+									{
+										unemap_load_voltage_stimulating(
+											pacing_window->number_of_return_channels,
+											pacing_window->return_channels,(int)0,(float)0,
+											(float *)NULL,(unsigned int)0,
+											(Unemap_stimulation_end_callback *)NULL,(void *)NULL);
+									}
+								}
+							}
+							/* start pacing */
+							unemap_start_stimulating();
+							pacing_window->pacing=1;
+						}
+						else
+						{
+							finished=1;
+						}
+						DEALLOCATE(number_of_si_voltcurs);
+					}
+					else
+					{
+						finished=1;
+					}
+				}
+				else
+				{
+					finished=1;
+				}
+				if (finished)
+				{
+					status=False;
+					XtVaSetValues(widget,XmNset,status,NULL);
+				}
+#endif /* defined (BEFORE_MOVED_VALIDITY_CHECK) */
 			}
 		}
 		else
@@ -5151,7 +7108,7 @@ static struct Pacing_window *create_Pacing_window(
 #endif /* defined (MOTIF) */
 	struct User_interface *user_interface)
 /*******************************************************************************
-LAST MODIFIED : 26 May 2004
+LAST MODIFIED : 12 July 2005
 
 DESCRIPTION :
 Allocates the memory for a pacing window.  Retrieves the necessary widgets and
@@ -5224,6 +7181,11 @@ initializes the appropriate fields.
 		{"decrement_number_of_si",(XtPointer)decrement_number_of_si},
 		{"id_pacing_si_length_value",(XtPointer)id_pacing_si_length_value},
 		{"ch_pacing_si_length_value",(XtPointer)ch_pacing_si_length_value},
+#if defined (BEFORE_MOVED_VALIDITY_CHECK)
+#else // defined (BEFORE_MOVED_VALIDITY_CHECK)
+		{"id_pacing_si_electrodes_value",(XtPointer)id_pacing_si_electrodes_value},
+		{"ch_pacing_si_electrodes_value",(XtPointer)ch_pacing_si_electrodes_value},
+#endif // defined (BEFORE_MOVED_VALIDITY_CHECK)
 		{"id_pacing_number_of_s_types_for",
 		(XtPointer)id_pacing_number_of_s_types_for},
 		{"id_pacing_number_of_s_types_lab",
@@ -5568,6 +7530,11 @@ initializes the appropriate fields.
 	};
 #endif /* defined (MOTIF) */
 	struct Pacing_window *pacing_window;
+#if defined (BEFORE_MOVED_VALIDITY_CHECK)
+#else /* defined (BEFORE_MOVED_VALIDITY_CHECK) */
+	int i,j,number_of_stimulus_types,*pacing_channel,*pacing_channels_si_new,
+		*pacing_channel_si_new;
+#endif /* defined (BEFORE_MOVED_VALIDITY_CHECK) */
 
 	ENTER(create_Pacing_window);
 	pacing_window=(struct Pacing_window *)NULL;
@@ -5604,6 +7571,10 @@ initializes the appropriate fields.
 				pacing_window->stimulus_number=1;
 				pacing_window->number_of_si=(int *)NULL;
 				pacing_window->si_length=(float *)NULL;
+#if defined (BEFORE_MOVED_VALIDITY_CHECK)
+#else // defined (BEFORE_MOVED_VALIDITY_CHECK)
+				pacing_window->pacing_channels_si=(int *)NULL;
+#endif // defined (BEFORE_MOVED_VALIDITY_CHECK)
 				pacing_window->number_of_stimulus_types_save=0;
 				pacing_window->sn_increment=0;
 				pacing_window->sn_increment_save=0;
@@ -5646,6 +7617,10 @@ initializes the appropriate fields.
 				pacing_window->number_of_si_decrement=(Widget)NULL;
 				pacing_window->number_of_si_increment=(Widget)NULL;
 				pacing_window->si_length_value=(Widget)NULL;
+#if defined (BEFORE_MOVED_VALIDITY_CHECK)
+#else // defined (BEFORE_MOVED_VALIDITY_CHECK)
+				pacing_window->si_electrodes_value=(Widget)NULL;
+#endif // defined (BEFORE_MOVED_VALIDITY_CHECK)
 				pacing_window->pacing_electrodes_form=(Widget)NULL;
 				pacing_window->pacing_electrodes_value=(Widget)NULL;
 				pacing_window->return_electrodes_form=(Widget)NULL;
@@ -5705,7 +7680,38 @@ initializes the appropriate fields.
 					XtNumber(pacing_electrodes_resources),NULL);
 				/* NB.  XtVaGetApplicationResources does not allocate memory for
 					pacing_electrodes, so it does not need to be free'd */
+#if defined (BEFORE_MOVED_VALIDITY_CHECK)
 				set_pacing_channels_from_string(pacing_window,pacing_electrodes);
+#else /* defined (BEFORE_MOVED_VALIDITY_CHECK) */
+				set_channels_from_string(pacing_electrodes,
+					*(pacing_window->rig_address),
+					&(pacing_window->pacing_electrodes),
+					&(pacing_window->number_of_pacing_channels),
+					&(pacing_window->pacing_channels));
+				number_of_stimulus_types=pacing_window->number_of_stimulus_types;
+				/* update pacing_channels_si */
+				pacing_channels_si_new=(int *)NULL;
+				if ((0<pacing_window->number_of_pacing_channels)&&
+					ALLOCATE(pacing_channels_si_new,int,
+					(pacing_window->number_of_pacing_channels)*
+					(1+number_of_stimulus_types)))
+				{
+					pacing_channel=pacing_window->pacing_channels;
+					pacing_channel_si_new=pacing_channels_si_new;
+					for (i=pacing_window->number_of_pacing_channels;i>0;i--)
+					{
+						*pacing_channel_si_new= *pacing_channel;
+						pacing_channel_si_new++;
+						for (j=number_of_stimulus_types;j>0;j--)
+						{
+							*pacing_channel_si_new=1;
+							pacing_channel_si_new++;
+						}
+						pacing_channel++;
+					}
+				}
+				pacing_window->pacing_channels_si=pacing_channels_si_new;
+#endif /* defined (BEFORE_MOVED_VALIDITY_CHECK) */
 				return_electrodes=(char *)NULL;
 				XtVaGetApplicationResources(
 					User_interface_get_application_shell(user_interface),
@@ -5713,7 +7719,15 @@ initializes the appropriate fields.
 					XtNumber(return_electrodes_resources),NULL);
 				/* NB.  XtVaGetApplicationResources does not allocate memory for
 					return_electrodes, so it does not need to be free'd */
+#if defined (BEFORE_MOVED_VALIDITY_CHECK)
 				set_return_channels_from_string(pacing_window,return_electrodes);
+#else /* defined (BEFORE_MOVED_VALIDITY_CHECK) */
+				set_channels_from_string(return_electrodes,
+					*(pacing_window->rig_address),
+					&(pacing_window->return_electrodes),
+					&(pacing_window->number_of_return_channels),
+					&(pacing_window->return_channels));
+#endif /* defined (BEFORE_MOVED_VALIDITY_CHECK) */
 				XtVaGetApplicationResources(
 					User_interface_get_application_shell(user_interface),
 					&constant_current_stimulation,constant_current_stimulation_resources,
