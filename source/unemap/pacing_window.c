@@ -4866,7 +4866,7 @@ voltages/currents set.
 
 static int restitution_time_pace(struct Pacing_window *pacing_window)
 /*******************************************************************************
-LAST MODIFIED : 12 July 2005
+LAST MODIFIED : 5 August 2005
 
 DESCRIPTION :
 Restarts the restitution time pacing.
@@ -6445,7 +6445,7 @@ Does one stimulus train in the restitution curve creation.
 static void ch_pacing_restitution_curve_pac(Widget widget,
 	XtPointer pacing_window_structure,XtPointer call_data)
 /*******************************************************************************
-LAST MODIFIED : 12 July 2005
+LAST MODIFIED : 5 August 2005
 
 DESCRIPTION :
 Called when the restitution curve pace button is toggled.
@@ -6459,12 +6459,12 @@ Called when the restitution curve pace button is toggled.
 		number_of_sn_pacing_voltcurs,number_of_sn_s1_pacing_voltcurs,return_code,
 		sn_length_count,software_version;
 #else // defined (BEFORE_MOVED_VALIDITY_CHECK)
-	float *pacing_voltcur,*pacing_voltcurs,resolution,sn_length,
+	float *pacing_voltcur,resolution,sn_length,
 		voltcurs_per_second;
 	int decrement_threshold_pair_number,finished,j,l,last,
 		number_of_control_voltcurs,number_of_pacing_voltcurs,*number_of_si_voltcurs,
 		number_of_sn_pacing_voltcurs,number_of_sn_s1_voltcurs,
-		number_of_stimulus_types,pacing_channel,*pacing_channel_si,return_code,
+		number_of_stimulus_types,pacing_channel,*pacing_channel_si,
 		sn_length_count,software_version;
 #endif // defined (BEFORE_MOVED_VALIDITY_CHECK)
 	struct Pacing_window *pacing_window;
@@ -6477,7 +6477,6 @@ Called when the restitution curve pace button is toggled.
 		XtVaGetValues(widget,XmNset,&status,NULL);
 		if (True==status)
 		{
-			return_code=0;
 			/* print information to standard out */
 			printf("Restitution Curve Pacing start with\n");
 			for (l=0;l<pacing_window->number_of_stimulus_types;l++)
@@ -6517,6 +6516,7 @@ Called when the restitution curve pace button is toggled.
 			{
 				/* no stimulation end callbacks */
 #if defined (BEFORE_MOVED_VALIDITY_CHECK)
+				return_code=0;
 				number_of_control_voltcurs=(int)((pacing_window->control_width)/
 					(pacing_window->resolution)+0.5);
 				number_of_sn_s1_pacing_voltcurs=(int)((pacing_window->sn_s1_pause)/
@@ -6818,7 +6818,7 @@ Called when the restitution curve pace button is toggled.
 							}
 							decrement_threshold_pair_number++;
 						}
-						if ((0<number_of_pacing_voltcurs)&&REALLOCATE(pacing_voltcurs,
+						if ((0<number_of_pacing_voltcurs)&&REALLOCATE(pacing_voltcur,
 							pacing_window->pacing_voltcurs,float,number_of_pacing_voltcurs))
 						{
 							pacing_window->pacing_voltcurs=pacing_voltcur;
@@ -6886,8 +6886,8 @@ Called when the restitution curve pace button is toggled.
 									}
 									for (j=number_of_sn_s1_voltcurs;j>0;j--)
 									{
-										*pacing_voltcurs=0;
-										pacing_voltcurs++;
+										*pacing_voltcur=0;
+										pacing_voltcur++;
 									}
 									number_of_pacing_voltcurs=pacing_voltcur-
 										(pacing_window->pacing_voltcurs);
@@ -6969,8 +6969,8 @@ Called when the restitution curve pace button is toggled.
 									}
 									for (j=number_of_sn_s1_voltcurs;j>0;j--)
 									{
-										*pacing_voltcurs=0;
-										pacing_voltcurs++;
+										*pacing_voltcur=0;
+										pacing_voltcur++;
 									}
 									number_of_pacing_voltcurs=pacing_voltcur-
 										(pacing_window->pacing_voltcurs);
