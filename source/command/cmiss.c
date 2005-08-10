@@ -131,6 +131,7 @@ Functions for executing cmiss commands.
 #include "element/element_point_tool.h"
 #include "element/element_point_viewer.h"
 #include "element/element_tool.h"
+#include "emoter/emoter_dialog.h"
 #endif /* defined (MOTIF) */
 #include "finite_element/export_finite_element.h"
 #include "finite_element/finite_element.h"
@@ -228,7 +229,6 @@ Functions for executing cmiss commands.
 #include "region/cmiss_region.h"
 #include "selection/any_object_selection.h"
 #if defined (MOTIF)
-#include "slider/emoter_dialog.h"
 #include "three_d_drawing/movie_extensions.h"
 #include "three_d_drawing/graphics_buffer.h"
 #include "time/time_editor_dialog.h"
@@ -24783,9 +24783,6 @@ Initialise all the subcomponents of cmgui and create the Cmiss_command_data
 				command_data->computed_field_package);
 		}
 
-#if defined (MIRAGE)
-		/*	command_data->digitiser_window_manager=CREATE(MANAGER(Digitiser_window))();*/
-#endif /* defined (MIRAGE) */
 #if defined (MOTIF)
 		/* now set up the conversion routines */
 		/*???DB.  Can this be put elsewhere ? */
@@ -25026,9 +25023,6 @@ Initialise all the subcomponents of cmgui and create the Cmiss_command_data
 #if defined (UNEMAP)
 					strcat(version_id_string,"unemap ");
 #endif /* defined (UNEMAP) */
-#if defined (MIRAGE)
-					strcat(version_id_string,"mirage ");
-#endif /* defined (MIRAGE) */
 
 #if defined (MOTIF) || defined (WIN32_USER_INTERFACE) || defined (GTK_USER_INTERFACE)
 					if (console_mode)
