@@ -19,6 +19,7 @@ group of nodes
 #include "command/command.h"
 	/*???DB.  For Execute_command */
 #include "command/parser.h"
+#include "emoter/em_cmgui.h"
 #include "finite_element/import_finite_element.h"
 #include "general/debug.h"
 #include "general/geometry.h"
@@ -28,16 +29,14 @@ group of nodes
 #include "graphics/movie_graphics.h"
 #include "graphics/scene.h"
 #include "graphics/scene_viewer.h"
-#include "mirage/em_cmgui.h"
-	/*???DB.  For EM analysis - move out of mirage ? */
-#include "slider/emoter_dialog.h"
-#include "slider/emoter_dialog.uidh"
 #include "three_d_drawing/movie_extensions.h"
 #include "user_interface/confirmation.h"
 #include "user_interface/message.h"
 #include "user_interface/gui_dialog_macros.h"
 #include "curve/control_curve.h"
 #include "curve/control_curve_editor_dialog.h"
+#include "emoter/emoter_dialog.h"
+#include "emoter/emoter_dialog.uidh"
 
 /*
 Module constants
