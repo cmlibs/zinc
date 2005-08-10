@@ -285,9 +285,9 @@ endif # USE_XML2
    endif # SYSNAME == AIX
 endif # ! IMAGEMAGICK
 
-MIRAGE_SRCS = \
-	mirage/em_cmgui.c \
-	slider/emoter_dialog.c
+EMOTER_SRCS = \
+	emoter/em_cmgui.c \
+	emoter/emoter_dialog.c
 
 ifndef PERL_INTERPRETER
    INTERPRETER_INC =
@@ -1107,6 +1107,7 @@ ifeq ($(USER_INTERFACE),MOTIF_USER_INTERFACE)
 	   $(CURVE_INTERFACE_SRCS) \
 	   $(DOF3_INTERFACE_SRCS) \
 	   $(ELEMENT_INTERFACE_SRCS) \
+		$(EMOTER_SRCS) \
 	   $(FINITE_ELEMENT_INTERFACE_SRCS) \
 	   $(GENERAL_INTERFACE_SRCS) \
 	   $(GRAPHICS_INTERFACE_SRCS) \
@@ -1115,7 +1116,6 @@ ifeq ($(USER_INTERFACE),MOTIF_USER_INTERFACE)
 	   $(LINK_INTERFACE_SRCS) \
 	   $(MATERIAL_INTERFACE_SRCS) \
 	   $(MENU_INTERFACE_SRCS) \
-		$(MIRAGE_SRCS) \
 	   $(MOTIF_INTERFACE_SRCS) \
 	   $(NODE_INTERFACE_SRCS) \
 	   $(PROMPT_INTERFACE_SRCS) \
@@ -1170,90 +1170,7 @@ ifdef UIDH_PATH
 endif # UIDH_PATH
 
 clobber : clean
-	-rm $(BIN_PATH)/Target
-
-transfer :
-	tar -cvf - \
-	../*.make readme.* *.make *.imake *.c version.o.h Cmgui \
-	*.mms *.sed *.com *.opt *.ico \
-	application/*.c application/*.h application/*.uil \
-	choose/*.c choose/*.h choose/*.uil \
-	colour/*.c colour/*.h colour/*.uil \
-	comfile/*.c comfile/*.h comfile/*.rc comfile/*.uil \
-	computed_field/*.c computed_field/*.h computed_field/*.rc computed_field/*.uil \
-	computed_variable/*.c computed_variable/*.h computed_variable/*.rc computed_variable/*.uil \
-	curve/*.c curve/*.h curve/*.uil \
-	data/*.c data/*.h data/*.uil \
-	database/*.c database/*.h database/*.uil \
-	dof3/*.c dof3/*.h dof3/*.uil \
-	element/*.c element/*.h element/*.uil \
-	general/*.c general/*.h general/*.uil \
-	help/*.c help/*.h help/*.uil \
-	interaction/*.c interaction/*.cpp interaction/*.h interaction/*.uil \
-	io_devices/*.c io_devices/*.cpp io_devices/*.h io_devices/*.uil \
-	link/*.c link/*.h link/*.uil \
-	material/*.c material/*.h material/*.uil \
-	menu/*.c menu/*.h menu/*.uil \
-	mirage/*.c mirage/*.h mirage/*.uil \
-	node/*.c node/*.h node/*.uil \
-	projection/*.c projection/*.h projection/*.uil \
-	prompt/*.c prompt/*.h prompt/*.uil \
-	select/*.c select/*.h select/*.uil \
-	selection/*.c selection/*.h selection/*.uil \
-	slider/*.c slider/*.h slider/*.uil \
-	three_d_drawing/Makefile three_d_drawing/*.c three_d_drawing/*.h \
-	time/*.c time/*.h time/*.uil \
-	transformation/*.c transformation/*.h transformation/*.uil \
-	unemap/drawing_2d.c unemap/drawing_2d.h \
-	user_interface/*.c user_interface/*.h user_interface/*.uil \
-	utilities/*.c utilities/*.h utilities/*.uil \
-	view/*.c view/*.h view/*.uil \
-	| gzip > cmgui_tar1.gz
-	tar -cvf - \
-	cell/*.c cell/*.h cell/*.uil \
-	cell/cell_model_routines/*.f cell/cell_model_routines/*.inc \
-	cell/integrator_routines/*.f \
-	hypertext_help/*.c hypertext_help/*.h hypertext_help/Makefile \
-	hypertext_help/*.mms \
-	unemap/*.c unemap/*.h unemap/*.uil unemap/*.rc \
-	unemap/utilities/Makefile unemap/utilities/*.c unemap/utilities/*.h  \
-	unemap/utilities/*.uil unemap/utilities/*.rc \
-	unemap/default_torso/*.ex* \
-	unemap_hardware_service/*.c unemap_hardware_service/*.h \
-	unemap_hardware_service/*.uil unemap_hardware_service/*.rc \
-	xvg/README xvg/custom/*.c xvg/custom/*.f xvg/include/*.h xvg/cmgui/*.uil \
-	xvg/cmgui/*.c xvg/cmgui/*.px xvg/cmgui/*.h \
-	| gzip > cmgui_tar2.gz
-	tar -cvf - \
-	command/*.c command/*.h command/*.rc command/*.uil \
-	finite_element/*.c finite_element/*.h finite_element/*.uil \
-	graphics/Makefile graphics/*.c graphics/*.h graphics/*.rc graphics/*.uil \
-	graphics/*.cpp graphics/marchg.dat graphics/mcubes.dat \
-	html_widget/*.xbm html_widget/*.c html_widget/*.h html_widget/Makefile \
-	html_widget/*.mms \
-	socket/*.c socket/*.h \
-	| gzip > cmgui_tar3.gz
-	tar -cvf - \
-	$(XML_PATH)/expat_lib/lib/* $(XML_PATH)/expat_lib/include/*.h \
-	$(UTILITIES_PATH)/uid2uidh $(UTILITIES_PATH)/uid2uidh_linux \
-	$(WORMHOLE_PATH)/lib/* $(WORMHOLE_PATH)/source/wormhole.h \
-	$(INTERPRETER_PATH)/source/*.c $(INTERPRETER_PATH)/source/*.h \
-	$(INTERPRETER_PATH)/source/*.f90 $(INTERPRETER_PATH)/source/*.pm \
-	| gzip > cmgui_tar4.gz
-	tar -cvf - \
-	$(INTERPRETER_PATH)/generated/mips3-n32-debug/*.a \
-	| gzip > cmgui_tar5.gz
-
-compare :
-	mv cmgui_tar tmp
-	(cd tmp; tar -xvf cmgui_tar > tar.list 2>&1; \
-sed "s/./diff/;s/,.*/ >> out.diff/;h;G;G;s/\n//2;s%>> out\.diffdiff %tmp/%;s/diff/echo FILE:/" \
-<tar.list >compare.script; rm tar.list)
-	mv tmp/cmgui_tar .
-	sh tmp/compare.script
-
-descrip.mms : Makefile descrip_mms.sed
-	sed -f descrip_mms.sed < Makefile > descrip.mms
+	-rm $(BIN_PATH)/$(BIN_TARGET)
 
 $(OBJECT_PATH)/version.o.h : $(OBJS) cmgui.Makefile
 	if [ ! -d $(OBJECT_PATH) ]; then \
