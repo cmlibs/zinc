@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : pacing_window.c
 
-LAST MODIFIED : 5 August 2005
+LAST MODIFIED : 9 August 2005
 
 DESCRIPTION :
 ==============================================================================*/
@@ -3563,7 +3563,7 @@ Finds the id of the electrodes of Si beats value in the pacing window.
 static void ch_pacing_si_electrodes_value(Widget *widget_id,
 	XtPointer pacing_window_structure,XtPointer call_data)
 /*******************************************************************************
-LAST MODIFIED : 5 August 2005
+LAST MODIFIED : 9 August 2005
 
 DESCRIPTION :
 Called when the electrodes of si widget is changed.
@@ -3598,23 +3598,35 @@ Called when the electrodes of si widget is changed.
 					NULL);
 				number_of_stimulus_types=pacing_window->number_of_stimulus_types;
 				/* check for new pacing electrodes */
+				valid=0;
 				new_number_of_pacing_channels=pacing_window->number_of_pacing_channels;
-				if (ALLOCATE(new_pacing_channels_si,int,new_number_of_pacing_channels*
-					(1+number_of_stimulus_types)))
+				if (0<new_number_of_pacing_channels)
 				{
-					memcpy(new_pacing_channels_si,pacing_window->pacing_channels_si,
-						sizeof(int)*new_number_of_pacing_channels*
-						(1+number_of_stimulus_types));
-					for (pacing_channel_index=0;
-						pacing_channel_index<new_number_of_pacing_channels;
-						pacing_channel_index++)
+					if (ALLOCATE(new_pacing_channels_si,int,new_number_of_pacing_channels*
+						(1+number_of_stimulus_types)))
 					{
-						new_pacing_channels_si[pacing_channel_index*
-							(1+number_of_stimulus_types)+
-							(pacing_window->stimulus_number)]=0;
+						memcpy(new_pacing_channels_si,pacing_window->pacing_channels_si,
+							sizeof(int)*new_number_of_pacing_channels*
+							(1+number_of_stimulus_types));
+						for (pacing_channel_index=0;
+							pacing_channel_index<new_number_of_pacing_channels;
+							pacing_channel_index++)
+						{
+							new_pacing_channels_si[pacing_channel_index*
+								(1+number_of_stimulus_types)+
+								(pacing_window->stimulus_number)]=0;
+						}
+						valid=1;
 					}
-					new_pacing_electrodes=(char *)NULL;
+				}
+				else
+				{
+					new_pacing_channels_si=(int *)NULL;
 					valid=1;
+				}
+				if (valid)
+				{
+					new_pacing_electrodes=(char *)NULL;
 					position_si=0;
 					number_of_characters_si=0;
 					sscanf(pacing_electrodes_si+position_si,"%*[ ,]%n",
@@ -3727,7 +3739,6 @@ Called when the electrodes of si widget is changed.
 												*new_pacing_channels_si_temp=0;
 												new_pacing_channels_si_temp++;
 											}
-											new_number_of_pacing_channels++;
 											if (!new_pacing_electrodes)
 											{
 												if (ALLOCATE(new_pacing_electrodes,char,
@@ -3746,10 +3757,14 @@ Called when the electrodes of si widget is changed.
 												2))
 											{
 												new_pacing_electrodes=new_pacing_electrodes_temp;
-												strcat(new_pacing_electrodes,",");
+												if (0<new_number_of_pacing_channels)
+												{
+													strcat(new_pacing_electrodes,",");
+												}
 												strncat(new_pacing_electrodes,
 													pacing_electrodes_si+position_si,
 													number_of_characters_si);
+												new_number_of_pacing_channels++;
 											}
 											else
 											{
@@ -6312,17 +6327,37 @@ Does one stimulus train in the restitution curve creation.
 										pacing_channel_si += number_of_stimulus_types;
 										if (pacing_window->constant_current_stimulation)
 										{
-											unemap_load_current_stimulating(1,&pacing_channel,
-												number_of_pacing_voltcurs,voltcurs_per_second,
-												pacing_window->pacing_voltcurs,(unsigned int)1,
-												restitution_curve_pace,pacing_window_void);
+											if (1==l)
+											{
+												unemap_load_current_stimulating(1,&pacing_channel,
+													number_of_pacing_voltcurs,voltcurs_per_second,
+													pacing_window->pacing_voltcurs,(unsigned int)1,
+													restitution_curve_pace,pacing_window_void);
+											}
+											else
+											{
+												unemap_load_current_stimulating(1,&pacing_channel,
+													number_of_pacing_voltcurs,voltcurs_per_second,
+													pacing_window->pacing_voltcurs,(unsigned int)1,
+													(Unemap_stimulation_end_callback *)NULL,(void *)NULL);
+											}
 										}
 										else
 										{
-											unemap_load_voltage_stimulating(1,&pacing_channel,
-												number_of_pacing_voltcurs,voltcurs_per_second,
-												pacing_window->pacing_voltcurs,(unsigned int)1,
-												restitution_curve_pace,pacing_window_void);
+											if (1==l)
+											{
+												unemap_load_voltage_stimulating(1,&pacing_channel,
+													number_of_pacing_voltcurs,voltcurs_per_second,
+													pacing_window->pacing_voltcurs,(unsigned int)1,
+													restitution_curve_pace,pacing_window_void);
+											}
+											else
+											{
+												unemap_load_voltage_stimulating(1,&pacing_channel,
+													number_of_pacing_voltcurs,voltcurs_per_second,
+													pacing_window->pacing_voltcurs,(unsigned int)1,
+													(Unemap_stimulation_end_callback *)NULL,(void *)NULL);
+											}
 										}
 									}
 								}
