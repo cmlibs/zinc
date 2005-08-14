@@ -55,6 +55,7 @@ Functions for executing cmiss commands.
 #include "image_processing/computed_field_binomial_filter.h"
 #include "image_processing/computed_field_bvc_decomp.h"
 #include "image_processing/computed_field_canny_filter.h"
+#include "image_processing/computed_field_chan_contour.h"
 #include "image_processing/computed_field_color_based_segment.h"
 #include "image_processing/computed_field_convolution_filter.h"
 #include "image_processing/computed_field_cube_plugin_all.h"
@@ -24617,6 +24618,9 @@ Initialise all the subcomponents of cmgui and create the Cmiss_command_data
 					command_data->computed_field_package,
 					command_data->root_region, command_data->graphics_buffer_package);
 				Computed_field_register_types_canny_filter(
+					command_data->computed_field_package,
+					command_data->root_region, command_data->graphics_buffer_package);
+				Computed_field_register_types_chan_contour(
 					command_data->computed_field_package,
 					command_data->root_region, command_data->graphics_buffer_package);
 				Computed_field_register_types_color_based_segment(

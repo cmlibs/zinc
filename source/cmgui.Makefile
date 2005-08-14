@@ -922,6 +922,7 @@ IMAGE_PROCESSING_SRCS = \
 	image_processing/computed_field_binomial_filter.c \
 	image_processing/computed_field_bvc_decomp.c \
 	image_processing/computed_field_canny_filter.c \
+	image_processing/computed_field_chan_contour.c \
 	image_processing/computed_field_color_based_segment.c \
 	image_processing/computed_field_convolution_filter.c \
 	image_processing/computed_field_cube_plugin_all.c \
