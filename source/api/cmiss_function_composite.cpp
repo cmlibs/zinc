@@ -1,10 +1,11 @@
-FILE : api/cmiss_function_composite.cpp
-
-LAST MODIFIED : 29 November 2004
-
-DESCRIPTION :
-The public interface to the Cmiss_function composite object.
-==============================================================================*/
+//******************************************************************************
+//FILE : api/cmiss_function_composite.cpp
+//
+//LAST MODIFIED : 29 November 2004
+//
+//DESCRIPTION :
+//The public interface to the Cmiss_function composite object.
+//==============================================================================*/
 /* ***** BEGIN LICENSE BLOCK *****
  * Version: MPL 1.1/GPL 2.0/LGPL 2.1
  *
