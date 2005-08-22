@@ -30,6 +30,10 @@ ifndef USER_INTERFACE
    USER_INTERFACE=MOTIF_USER_INTERFACE
 endif
 
+ifndef GRAPHICS_API
+   GRAPHICS_API=OPENGL_GRAPHICS
+endif
+
 ifndef STATIC_LINK
    STATIC_LINK=false
 endif
@@ -39,11 +43,11 @@ COMMONMAKEFILE_FOUND = $(wildcard $(COMMONMAKEFILE))
 include $(COMMONMAKEFILE)
 
 ifeq ($(filter CONSOLE_USER_INTERFACE GTK_USER_INTERFACE WIN32_USER_INTERFACE,$(USER_INTERFACE)),)
-   UNEMAP = true
-   LINK_CMISS = true
-else # $(USER_INTERFACE) == CONSOLE_USER_INTERFACE && $(USER_INTERFACE) != GTK_USER_INTERFACE  && $(USER_INTERFACE) != WIN32_USER_INTERFACE
-   LINK_CMISS = false
+   ifneq ($(wildcard $(SOURCE_PATH)/unemap_application/unemap_package.h),)
+      UNEMAP = true
+   endif
 endif # $(USER_INTERFACE) ==/!= CONSOLE_USER_INTERFACE && $(USER_INTERFACE) != GTK_USER_INTERFACE  && $(USER_INTERFACE) != WIN32_USER_INTERFACE
+LINK_CMISS = false
 PERL_INTERPRETER = true
 IMAGEMAGICK = true
 USE_XML2 = true
@@ -68,6 +72,13 @@ endif # $(USER_INTERFACE) == CONSOLE_USER_INTERFACE
 ifeq ($(USER_INTERFACE), GTK_USER_INTERFACE)
    TARGET_USER_INTERFACE_SUFFIX := -gtk
 endif # $(USER_INTERFACE) == GTK_USER_INTERFACE
+
+ifeq ($(GRAPHICS_API), OPENGL_GRAPHICS)
+   TARGET_GRAPHICS_API_SUFFIX =
+endif # $(GRAPHICS_API) == OPENGL_GRAPHICS
+ifeq ($(GRAPHICS_API), NO3D_GRAPHICS)
+   TARGET_GRAPHICS_API_SUFFIX = -no3dgraphics
+endif # $(GRAPHICS_API) == NO3D_GRAPHICS
 
 ifneq ($(STATIC_LINK),true)
    TARGET_STATIC_LINK_SUFFIX =
@@ -115,9 +126,9 @@ ifeq ($(SYSNAME),CYGWIN%=)
    TARGET_FILETYPE_SUFFIX = .exe
 endif # SYSNAME == CYGWIN%=
 
-TARGET_SUFFIX = $(TARGET_ABI_SUFFIX)$(TARGET_USER_INTERFACE_SUFFIX)$(MAINLOOP_SUFFIX)$(TARGET_STATIC_LINK_SUFFIX)$(TARGET_DEBUG_SUFFIX)$(TARGET_PROFILE_SUFFIX)$(TARGET_MEMORYCHECK_SUFFIX)
+TARGET_SUFFIX = $(TARGET_ABI_SUFFIX)$(TARGET_GRAPHICS_API_SUFFIX)$(TARGET_USER_INTERFACE_SUFFIX)$(MAINLOOP_SUFFIX)$(TARGET_STATIC_LINK_SUFFIX)$(TARGET_DEBUG_SUFFIX)$(TARGET_PROFILE_SUFFIX)$(TARGET_MEMORYCHECK_SUFFIX)
 BIN_TARGET = $(TARGET_EXECUTABLE_BASENAME)$(TARGET_SUFFIX)$(TARGET_FILETYPE_SUFFIX)
-OBJECT_PATH=$(CMGUI_DEV_ROOT)/object/$(LIB_ARCH_DIR)/$(TARGET_EXECUTABLE_BASENAME)$(TARGET_USER_INTERFACE_SUFFIX)$(MAINLOOP_SUFFIX)$(TARGET_DEBUG_SUFFIX)$(TARGET_PROFILE_SUFFIX)
+OBJECT_PATH=$(CMGUI_DEV_ROOT)/object/$(LIB_ARCH_DIR)/$(TARGET_EXECUTABLE_BASENAME)$(TARGET_GRAPHICS_API_SUFFIX)$(TARGET_USER_INTERFACE_SUFFIX)$(MAINLOOP_SUFFIX)$(TARGET_DEBUG_SUFFIX)$(TARGET_PROFILE_SUFFIX)
 ifeq ($(USER_INTERFACE), MOTIF_USER_INTERFACE)
    UIDH_PATH=$(CMGUI_DEV_ROOT)/uidh/$(LIB_ARCH_DIR)/$(TARGET_EXECUTABLE_BASENAME)
 endif # $(USER_INTERFACE) == MOTIF_USER_INTERFACE
@@ -132,7 +143,7 @@ $(BIN_TARGET) :
 
 ifdef MAKECMDGOALS
    define BUILDING_MESSAGE
-Making $(MAKECMDGOALS) for version $(BIN_TARGET)
+Making $(MAKECMDGOALS) for $(BIN_TARGET) and $(LIB_ARCH_DIR)
 
    endef
 else
@@ -145,7 +156,7 @@ $(warning $(BUILDING_MESSAGE))
 
 VPATH=$(BIN_PATH):$(UTILITIES_PATH):$(OBJECT_PATH):$(UIDH_PATH)
 
-SOURCE_DIRECTORY_INC = -I$(SOURCE_PATH)
+SOURCE_DIRECTORY_INC = -I$(SOURCE_PATH) -I$(SOURCE_PATH)/unemap
 
 ifeq ($(SYSNAME:IRIX%=),)
    PLATFORM_DEFINES = -DSGI -Dmips -DCMGUI 
@@ -214,40 +225,43 @@ ifeq ($(filter-out MOTIF_USER_INTERFACE GTK_USER_INTERFACE,$(USER_INTERFACE)),)
   endif
 endif
 
-GRAPHICS_LIBRARY_DEFINES = -DOPENGL_API
+GRAPHICS_LIBRARY_DEFINES =
 GRAPHICS_LIB =
 GRAPHICS_INC =
-ifeq ($(USER_INTERFACE), MOTIF_USER_INTERFACE)
-   ifeq ($(SYSNAME:IRIX%=),)
-      GRAPHICS_LIBRARY_DEFINES += -DDM_BUFFERS
-      ifneq ($(ABI),64)
-         GRAPHICS_LIBRARY_DEFINES += -DSGI_MOVIE_FILE -DSGI_DIGITAL_MEDIA
-         GRAPHICS_LIB += -delay_load -lmoviefile -delay_load -ldmedia
-      endif # ABI != 64
-   endif # SYSNAME == IRIX%=
-   ifeq ($(SYSNAME),Linux)
-      GRAPHICS_LIBRARY_DEFINES += -DDM_BUFFERS
-   endif # SYSNAME == Linux
-   ifeq ($(SYSNAME),AIX)
-      GRAPHICS_LIBRARY_DEFINES += -DDM_BUFFERS
-   endif # SYSNAME == AIX
-   ifeq ($(SYSNAME:CYGWIN%=),)
-      GRAPHICS_LIBRARY_DEFINES += -DDM_BUFFERS
-   endif # SYSNAME == CYGWIN%=
-endif # $(USER_INTERFACE) == MOTIF_USER_INTERFACE
+ifeq ($(GRAPHICS_API), OPENGL_GRAPHICS)
+   GRAPHICS_LIBRARY_DEFINES = -DOPENGL_API
+   ifeq ($(USER_INTERFACE), MOTIF_USER_INTERFACE)
+      ifeq ($(SYSNAME:IRIX%=),)
+         GRAPHICS_LIBRARY_DEFINES += -DDM_BUFFERS
+         ifneq ($(ABI),64)
+            GRAPHICS_LIBRARY_DEFINES += -DSGI_MOVIE_FILE -DSGI_DIGITAL_MEDIA
+            GRAPHICS_LIB += -delay_load -lmoviefile -delay_load -ldmedia
+         endif # ABI != 64
+      endif # SYSNAME == IRIX%=
+      ifeq ($(SYSNAME),Linux)
+         GRAPHICS_LIBRARY_DEFINES += -DDM_BUFFERS
+      endif # SYSNAME == Linux
+      ifeq ($(SYSNAME),AIX)
+         GRAPHICS_LIBRARY_DEFINES += -DDM_BUFFERS
+      endif # SYSNAME == AIX
+      ifeq ($(SYSNAME:CYGWIN%=),)
+         GRAPHICS_LIBRARY_DEFINES += -DDM_BUFFERS
+      endif # SYSNAME == CYGWIN%=
+   endif # $(USER_INTERFACE) == MOTIF_USER_INTERFACE
 
-ifneq ($(USER_INTERFACE), GTK_USER_INTERFACE)
-#For GTK_USER_INTERFACE the OpenGL comes from the GTK_LIBRARIES automatically
-   ifneq ($(wildcard $(CMISS_ROOT)/mesa/include/$(LIB_ARCH_DIR)),)
-      GRAPHICS_INC += -I$(CMISS_ROOT)/mesa/include/$(LIB_ARCH_DIR)
-   endif
-   GRAPHICS_LIB += $(patsubst %,-L%,$(firstword $(wildcard $(CMISS_ROOT)/mesa/lib/$(LIB_ARCH_DIR) $(X_LIB))))
-   ifeq ($(OPERATING_SYSTEM),win32)
-      GRAPHICS_LIB += -lopengl32 -lglu32
-   else # $(OPERATING_SYSTEM) == win32
-      GRAPHICS_LIB += -lGL -lGLU
-   endif # $(OPERATING_SYSTEM) == win32 
-endif # $(USER_INTERFACE) != GTK_USER_INTERFACE
+   ifneq ($(USER_INTERFACE), GTK_USER_INTERFACE)
+   #For GTK_USER_INTERFACE the OpenGL comes from the GTK_LIBRARIES automatically
+      ifneq ($(wildcard $(CMISS_ROOT)/mesa/include/$(LIB_ARCH_DIR)),)
+         GRAPHICS_INC += -I$(CMISS_ROOT)/mesa/include/$(LIB_ARCH_DIR)
+      endif
+      GRAPHICS_LIB += $(patsubst %,-L%,$(firstword $(wildcard $(CMISS_ROOT)/mesa/lib/$(LIB_ARCH_DIR) $(X_LIB))))
+      ifeq ($(OPERATING_SYSTEM),win32)
+         GRAPHICS_LIB += -lopengl32 -lglu32
+      else # $(OPERATING_SYSTEM) == win32
+         GRAPHICS_LIB += -lGL -lGLU
+      endif # $(OPERATING_SYSTEM) == win32 
+   endif # $(USER_INTERFACE) != GTK_USER_INTERFACE
+endif
 
 ifeq ($(LINK_CMISS),false)
    CONNECTIVITY_DEFINES =
@@ -310,45 +324,45 @@ else # ! PERL_INTERPRETER
    endif # $(OPERATING_SYSTEM) == win32
 endif # ! PERL_INTERPRETER
 
-ifndef UNEMAP
+ifneq ($(UNEMAP), true)
    UNEMAP_DEFINES =
    UNEMAP_SRCS =
-else # ! UNEMAP
+else # UNEMAP != true
    # for all nodal stuff UNEMAP_DEFINES = -DUNEMAP -DSPECTRAL_TOOLS -DUNEMAP_USE_NODES 
    UNEMAP_DEFINES = -DUNEMAP -DSPECTRAL_TOOLS -DUNEMAP_USE_3D -DNOT_ACQUISITION_ONLY
    UNEMAP_SRCS = \
-	   unemap/acquisition.c \
-	   unemap/acquisition_window.c \
-	   unemap/acquisition_work_area.c \
-	   unemap/analysis.c \
-	   unemap/analysis_calculate.c \
-	   unemap/analysis_drawing.c \
-	   unemap/analysis_window.c \
-	   unemap/analysis_work_area.c \
-	   unemap/bard.c \
-	   unemap/beekeeper.c \
-	   unemap/cardiomapp.c \
-	   unemap/delaunay.c \
-	   unemap/edf.c \
-	   unemap/eimaging_time_dialog.c \
-	   unemap/drawing_2d.c \
-	   unemap/interpolate.c \
-	   unemap/map_dialog.c \
-	   unemap/mapping.c \
-	   unemap/mapping_window.c \
-	   unemap/neurosoft.c \
-	   unemap/pacing_window.c \
-	   unemap/page_window.c \
-	   unemap/rig.c \
-	   unemap/rig_node.c \
-	   unemap/setup_dialog.c \
-	   unemap/spectral_methods.c \
-	   unemap/system_window.c \
-	   unemap/trace_window.c \
-	   unemap/unemap_command.c \
-	   unemap/unemap_hardware_client.c \
-	   unemap/unemap_package.c 
-endif # ! UNEMAP
+	   unemap_application/acquisition.c \
+	   unemap_application/acquisition_window.c \
+	   unemap_application/acquisition_work_area.c \
+	   unemap_application/analysis.c \
+	   unemap_application/analysis_calculate.c \
+	   unemap_application/analysis_drawing.c \
+	   unemap_application/analysis_window.c \
+	   unemap_application/analysis_work_area.c \
+	   unemap_application/bard.c \
+	   unemap_application/beekeeper.c \
+	   unemap_application/cardiomapp.c \
+	   unemap_application/delaunay.c \
+	   unemap_application/edf.c \
+	   unemap_application/eimaging_time_dialog.c \
+	   unemap_application/drawing_2d.c \
+	   unemap_application/interpolate.c \
+	   unemap_application/map_dialog.c \
+	   unemap_application/mapping.c \
+	   unemap_application/mapping_window.c \
+	   unemap_application/neurosoft.c \
+	   unemap_application/pacing_window.c \
+	   unemap_application/page_window.c \
+	   unemap_application/rig.c \
+	   unemap_application/rig_node.c \
+	   unemap_application/setup_dialog.c \
+	   unemap_application/spectral_methods.c \
+	   unemap_application/system_window.c \
+	   unemap_application/trace_window.c \
+	   unemap_application/unemap_command.c \
+	   unemap_application/unemap_hardware_client.c \
+	   unemap_application/unemap_package.c 
+endif # UNEMAP != true
 
 ifndef CELL
    CELL_DEFINES =
@@ -458,10 +472,6 @@ TEMPORARY_DEVELOPMENT_FLAGS =
 # TEMPORARY_DEVELOPMENT_FLAGS = -DSELECT_ELEMENTS -DMERGE_TIMES -DPETURB_LINES -DDEPTH_OF_FIELD -DBLEND_NODAL_VALUES -DNEW_SPECTRUM
 # TEMPORARY_DEVELOPMENT_FLAGS = -DSELECT_ELEMENTS -DMERGE_TIMES -DPETURB_LINES -DDEPTH_OF_FIELD -DDO_NOT_ADD_DETAIL -DBLEND_NODAL_VALUES -DALLOW_MORPH_UNEQUAL_POINTSETS
 # TEMPORARY_DEVELOPMENT_FLAGS = -DWINDOWS_DEV_FLAG
-
-VIDEO_DEFINES =
-VIDEO_LIB =
-VIDEO_SRCS =
 
 HELP_DEFINES = -DNETSCAPE_HELP
 HELP_INCLUDE =
@@ -612,7 +622,7 @@ ALL_DEFINES = $(COMPILE_DEFINES) $(TARGET_TYPE_DEFINES) \
 	$(PLATFORM_DEFINES) $(OPERATING_SYSTEM_DEFINES) $(USER_INTERFACE_DEFINES) \
 	$(STEREO_DISPLAY_DEFINES) $(CONNECTIVITY_DEFINES) \
 	$(EXTERNAL_INPUT_DEFINES) \
-	$(GRAPHICS_LIBRARY_DEFINES) $(VIDEO_DEFINES) $(HELP_DEFINES) \
+	$(GRAPHICS_LIBRARY_DEFINES) $(HELP_DEFINES) \
 	$(POSTSCRIPT_DEFINES) $(NAME_DEFINES) $(TEMPORARY_DEVELOPMENT_FLAGS) \
 	$(UNEMAP_DEFINES) \
 	$(CELL_DEFINES) $(MOVIE_FILE_DEFINES) $(INTERPRETER_DEFINES)\
@@ -627,7 +637,7 @@ ALL_FLAGS = $(OPTIMISATION_FLAGS) $(COMPILE_FLAGS) $(TARGET_TYPE_FLAGS) \
 
 ALL_LIB = $(GRAPHICS_LIB) $(USER_INTERFACE_LIB) $(HAPTIC_LIB) \
 	$(WORMHOLE_LIB) $(INTERPRETER_LIB) $(IMAGEMAGICK_LIB) \
-	$(VIDEO_LIB) $(EXTERNAL_INPUT_LIB) $(HELP_LIB) \
+	$(EXTERNAL_INPUT_LIB) $(HELP_LIB) \
 	$(MOVIE_FILE_LIB) $(XML_LIB) $(XML2_LIB) $(MEMORYCHECK_LIB) $(MATRIX_LIB) \
 	$(LIB)
 
@@ -661,7 +671,6 @@ API_SRCS = \
 	api/cmiss_function_variable_intersection.cpp \
 	api/cmiss_function_variable_union.cpp \
 	api/cmiss_region.c \
-	api/cmiss_scene_viewer.c \
 	api/cmiss_time_sequence.c \
 	api/cmiss_value_derivative_matrix.c \
 	api/cmiss_value_element_xi.c \
@@ -687,6 +696,10 @@ API_SRCS = \
 	api/cmiss_variable_new_matrix.cpp \
 	api/cmiss_variable_new_scalar.cpp \
 	api/cmiss_variable_new_vector.cpp
+ifeq ($(GRAPHICS_API), OPENGL_GRAPHICS)
+   API_SRCS = \
+	   api/cmiss_scene_viewer.c
+endif
 API_INTERFACE_SRCS = \
 	api/cmiss_graphics_window.c
 CHOOSE_INTERFACE_SRCS = \
@@ -696,14 +709,17 @@ CHOOSE_INTERFACE_SRCS = \
 	choose/choose_fe_field.c \
 	choose/choose_field_component.c \
 	choose/choose_graphical_material.c \
-	choose/choose_gt_object.c \
-	choose/choose_scene.c \
 	choose/choose_spectrum.c \
 	choose/choose_texture.c \
 	choose/choose_volume_texture.c \
 	choose/chooser.c \
 	choose/text_choose_fe_element.c \
 	choose/text_choose_fe_node.c
+ifeq ($(GRAPHICS_API), OPENGL_GRAPHICS)
+   CHOOSE_INTERFACE_SRCS += \
+	choose/choose_gt_object.c \
+	choose/choose_scene.c
+endif
 COLOUR_INTERFACE_SRCS = \
 	colour/colour_editor.c \
 	colour/edit_var.c 
@@ -712,11 +728,14 @@ COMFILE_SRCS = \
 COMFILE_INTERFACE_SRCS = \
 	comfile/comfile_window.c 
 COMMAND_SRCS = \
-	command/cmiss.c \
 	command/command.c \
 	command/console.c \
 	command/example_path.c \
 	command/parser.c
+ifeq ($(GRAPHICS_API), OPENGL_GRAPHICS)
+COMMAND_SRCS += \
+	command/cmiss.c
+endif
 COMMAND_INTERFACE_SRCS = \
 	command/command_window.c
 COMPUTED_FIELD_SRCS = \
@@ -876,24 +895,15 @@ GRAPHICS_SRCS = \
 	graphics/element_point_ranges.c \
 	graphics/environment_map.c \
 	graphics/glyph.c \
-	graphics/graphical_element.c \
-	graphics/graphics_library.c \
-	graphics/graphics_object.c \
 	graphics/import_graphics_object.c \
 	graphics/iso_field_calculation.c \
 	graphics/laguer.c \
-	graphics/light.c \
-	graphics/light_model.c \
 	graphics/material.c \
-	graphics/makegtobj.c \
 	graphics/mcubes.c \
 	graphics/order_independent_transparency.c \
 	graphics/renderbinarywavefront.c \
-	graphics/rendergl.c \
 	graphics/rendervrml.c \
 	graphics/renderwavefront.c \
-	graphics/scene.c \
-	graphics/scene_viewer.c \
 	graphics/selected_graphic.c \
 	graphics/spectrum.c \
 	graphics/spectrum_settings.c \
@@ -902,19 +912,34 @@ GRAPHICS_SRCS = \
 	graphics/transform_tool.c \
 	graphics/userdef_objects.c \
 	graphics/volume_texture.c
+ifeq ($(GRAPHICS_API), OPENGL_GRAPHICS)
+   GRAPHICS_SRCS += \
+	   graphics/graphical_element.c \
+		graphics/graphics_library.c \
+		graphics/graphics_object.c \
+		graphics/light.c \
+		graphics/light_model.c \
+		graphics/makegtobj.c \
+		graphics/rendergl.c \
+		graphics/scene.c \
+		graphics/scene_viewer.c
+endif
 GRAPHICS_INTERFACE_SRCS = \
 	graphics/graphical_element_editor.c \
-	graphics/graphics_window.c \
-	graphics/movie_graphics.c \
-	graphics/scene_editor.c \
-	graphics/settings_editor.c \
-	graphics/spectrum_editor.c \
-	graphics/spectrum_editor_dialog.c \
-	graphics/spectrum_editor_settings.c \
-	graphics/texture_graphics.c \
-	graphics/texturemap.c \
-	graphics/volume_texture_editor.c \
-	graphics/volume_texture_editor_dialog.c
+	graphics/movie_graphics.c
+ifeq ($(GRAPHICS_API), OPENGL_GRAPHICS)
+   GRAPHICS_INTERFACE_SRCS += \
+		graphics/graphics_window.c \
+      graphics/scene_editor.c \
+	   graphics/settings_editor.c \
+		graphics/spectrum_editor.c \
+		graphics/spectrum_editor_dialog.c \
+		graphics/spectrum_editor_settings.c \
+		graphics/texture_graphics.c \
+		graphics/texturemap.c \
+		graphics/volume_texture_editor.c \
+		graphics/volume_texture_editor_dialog.c
+endif
 IMAGE_PROCESSING_SRCS = \
 	image_processing/computed_field_adaptive_adjust_contrast.c \
 	image_processing/computed_field_adjust_contrast.c \
@@ -1002,15 +1027,16 @@ else # LINK_CMISS
    LINK_INTERFACE_SRCS =  \
 	   link/cmiss.c
 endif # LINK_CMISS
-MATERIAL_INTERFACE_SRCS =  \
-	material/material_editor.c \
-	material/material_editor_dialog.c
+MATERIAL_INTERFACE_SRCS =
+ifeq ($(GRAPHICS_API), OPENGL_GRAPHICS)
+   MATERIAL_INTERFACE_SRCS +=  \
+		material/material_editor.c \
+		material/material_editor_dialog.c
+endif
 MATRIX_SRCS =  \
 	matrix/factor.c \
 	matrix/matrix.c \
 	matrix/matrix_blas.c
-MENU_INTERFACE_SRCS =  \
-	menu/menu_window.c
 MOTIF_INTERFACE_SRCS =  \
 	motif/image_utilities.c
 NODE_SRCS = \
@@ -1020,8 +1046,6 @@ NODE_INTERFACE_SRCS = \
 	node/node_field_viewer_widget.c \
 	node/node_viewer.c \
 	node/node_viewer_widget.c
-PROMPT_INTERFACE_SRCS =\
-	prompt/prompt_window.c
 REGION_SRCS = \
    region/cmiss_region.c \
    region/cmiss_region_write_info.c
@@ -1038,8 +1062,12 @@ SELECTION_SRCS = \
 	selection/element_point_ranges_selection.c \
 	selection/element_selection.c \
 	selection/node_selection.c
-THREE_D_DRAWING_SRCS = \
-	three_d_drawing/graphics_buffer.c
+
+THREE_D_DRAWING_SRCS =
+ifeq ($(GRAPHICS_API), OPENGL_GRAPHICS)
+	THREE_D_DRAWING_SRCS += \
+		three_d_drawing/graphics_buffer.c
+endif
 THREE_D_DRAWING_INTERFACE_SRCS = \
 	three_d_drawing/movie_extensions.c \
 	three_d_drawing/ThreeDDraw.c
@@ -1116,19 +1144,15 @@ ifeq ($(USER_INTERFACE),MOTIF_USER_INTERFACE)
 	   $(IO_DEVICES_INTERFACE_SRCS) \
 	   $(LINK_INTERFACE_SRCS) \
 	   $(MATERIAL_INTERFACE_SRCS) \
-	   $(MENU_INTERFACE_SRCS) \
 	   $(MOTIF_INTERFACE_SRCS) \
 	   $(NODE_INTERFACE_SRCS) \
-	   $(PROMPT_INTERFACE_SRCS) \
 	   $(REGION_INTERFACE_SRCS) \
 	   $(SELECT_INTERFACE_SRCS) \
 	   $(SLIDER_INTERFACE_SRCS) \
 	   $(THREE_D_DRAWING_INTERFACE_SRCS) \
 	   $(TIME_INTERFACE_SRCS) \
 	   $(TRANSFORMATION_INTERFACE_SRCS) \
-	   $(UNEMAP_SRCS) \
 	   $(USER_INTERFACE_INTERFACE_SRCS) \
-	   $(VIDEO_SRCS) \
 	   $(VIEW_INTERFACE_SRCS)
 endif # $(USER_INTERFACE) == MOTIF_USER_INTERFACE
 ifeq ($(USER_INTERFACE),GTK_USER_INTERFACE)
@@ -1161,6 +1185,8 @@ else # $(MEMORYCHECK) != true
    OBJS = $(OBJSC:.f=.o)
 endif # $(MEMORYCHECK) != true
 
+UNEMAP_OBJS = $(UNEMAP_SRCS:.c=.o)
+
 MAIN_SRC = cmgui.c
 MAIN_OBJ = $(MAIN_SRC:.c=.o)
 
@@ -1173,7 +1199,7 @@ endif # UIDH_PATH
 clobber : clean
 	-rm $(BIN_PATH)/$(BIN_TARGET)
 
-$(OBJECT_PATH)/version.o.h : $(OBJS) cmgui.Makefile
+$(OBJECT_PATH)/version.o.h : $(OBJS) $(UNEMAP_OBJS) cmgui.Makefile
 	if [ ! -d $(OBJECT_PATH) ]; then \
 		mkdir -p $(OBJECT_PATH); \
 	fi	
@@ -1295,8 +1321,8 @@ ifeq ($(SYSNAME),win32)
    endif # $(USER_INTERFACE) != GTK_USER_INTERFACE
 endif # $(SYSNAME) == win32
 
-$(BIN_TARGET) : $(OBJS) $(COMPILED_RESOURCE_FILES) $(MAIN_OBJ) $(OBJECT_PATH)/$(EXPORTS_FILE)
-	$(call BuildNormalTarget,$(BIN_TARGET),$(BIN_PATH),$(OBJS) $(MAIN_OBJ),$(ALL_LIB) $(INTERPRETER_LINK_FLAGS) $(EXPORTS_LINK_FLAGS) $(COMPILED_RESOURCE_FILES))
+$(BIN_TARGET) : $(OBJS) $(UNEMAP_OBJS) $(COMPILED_RESOURCE_FILES) $(MAIN_OBJ) $(OBJECT_PATH)/$(EXPORTS_FILE)
+	$(call BuildNormalTarget,$(BIN_TARGET),$(BIN_PATH),$(OBJS) $(UNEMAP_OBJS) $(MAIN_OBJ),$(ALL_LIB) $(INTERPRETER_LINK_FLAGS) $(EXPORTS_LINK_FLAGS) $(COMPILED_RESOURCE_FILES))
 
 SO_LIB_SUFFIX = .so
 ifeq ($(SYSNAME:IRIX%=),)
@@ -1454,7 +1480,7 @@ $(SO_LIB_COMPUTED_VARIABLE_FINITE_ELEMENT_TARGET) : $(LIB_COMPUTED_VARIABLE_FINI
 
 SO_ALL_LIB = $(GRAPHICS_LIB) $(USER_INTERFACE_LIB) $(HAPTIC_LIB) \
 	$(WORMHOLE_LIB) $(IMAGEMAGICK_LIB) \
-	$(VIDEO_LIB) $(EXTERNAL_INPUT_LIB) $(HELP_LIB) \
+	$(EXTERNAL_INPUT_LIB) $(HELP_LIB) \
 	$(MOVIE_FILE_LIB) $(XML_LIB) $(MEMORYCHECK_LIB) \
 	$(SOLIB_LIB)
 
@@ -1568,7 +1594,7 @@ TabsToSpaces: $(TABS_TO_SPACES_OBJS)
 
 DEPENDFILE = $(OBJECT_PATH)/$(BIN_TARGET).depend
 
-DEPEND_FILES = $(OBJS:%.o=%.d) $(MAIN_OBJ:%.o=%.d) $(UID2UIDH_OBJS:%.o=%.d) $(SPACES_TO_TABS_OBJS:%.o=%.d) $(TABS_TO_SPACES_OBJS:%.o=%.d)
+DEPEND_FILES = $(OBJS:%.o=%.d) $(UNEMAP_OBJS:%.o=%.d) $(MAIN_OBJ:%.o=%.d) $(UID2UIDH_OBJS:%.o=%.d) $(SPACES_TO_TABS_OBJS:%.o=%.d) $(TABS_TO_SPACES_OBJS:%.o=%.d)
 #Look in the OBJECT_PATH
 DEPEND_FILES_OBJECT_PATH = $(DEPEND_FILES:%.d=$(OBJECT_PATH)/%.d)
 DEPEND_FILES_OBJECT_FOUND = $(wildcard $(DEPEND_FILES_OBJECT_PATH))
