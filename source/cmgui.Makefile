@@ -697,7 +697,7 @@ API_SRCS = \
 	api/cmiss_variable_new_scalar.cpp \
 	api/cmiss_variable_new_vector.cpp
 ifeq ($(GRAPHICS_API), OPENGL_GRAPHICS)
-   API_SRCS = \
+   API_SRCS += \
 	   api/cmiss_scene_viewer.c
 endif
 API_INTERFACE_SRCS = \
