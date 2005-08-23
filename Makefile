@@ -152,6 +152,8 @@ cmgui-no3dgraphics-static-lib :
 	$(MAKE) -f $(MAKEFILE) cmgui-no3dgraphics TARGET=static_lib ;
 cmgui-no3dgraphics-debug-static-lib:
 	$(MAKE) -f $(MAKEFILE) cmgui-no3dgraphics-debug TARGET=static_lib ;
+cmgui-no3dgraphics-debug-memorycheck-static-lib:
+	$(MAKE) -f $(MAKEFILE) cmgui-no3dgraphics-debug-memorycheck TARGET=static_lib ;
 
 .NOTPARALLEL:
 
