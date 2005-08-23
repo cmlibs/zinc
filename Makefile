@@ -77,7 +77,7 @@ cmgui-gtk cmgui-gtk-debug cmgui-gtk-gtkmain cmgui-gtk-gtkmain-debug : USER_INTER
 cmgui-gtk-gtkmain cmgui-gtk-gtkmain-debug : USE_GTKMAIN_OPTION=USE_GTKMAIN=$(USE_GTKMAIN)
 cmgui-gtk-gtkmain cmgui-gtk-gtkmain-debug : USE_GTKMAIN=true
 cmgui-no3dgraphics cmgui-no3dgraphics-debug : GRAPHICS_API_OPTION=GRAPHICS_API=$(GRAPHICS_API)
-cmgui-no3dgraphics cmgui-no3dgraphics-debug : GRAPHICS_API=NO3DGRAPHICS
+cmgui-no3dgraphics cmgui-no3dgraphics-debug : GRAPHICS_API=NO3D_GRAPHICS
 
 utilities utilities64 : TARGET_OPTION=utilities
 utilities utilities64 : force
