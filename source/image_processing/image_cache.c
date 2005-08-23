@@ -52,8 +52,6 @@
 #include "user_interface/message.h"
 #include "image_processing/image_cache.h"
 
-
-
 struct Image_cache *CREATE(Image_cache)(void)
 /*******************************************************************************
 LAST MODIFIED : 2 December 2003
@@ -142,7 +140,7 @@ Frees memory/deaccess mapping at <*mapping_address>.
 DECLARE_OBJECT_FUNCTIONS(Image_cache)
 
 int Image_cache_update_dimension(struct Image_cache *image,
-	int dimension, int depth, int *sizes, FE_value *minimums, FE_value *maximums)
+	int dimension, int depth, int *sizes)
 /*******************************************************************************
 LAST MODIFIED : 2 December 2003
 
@@ -192,8 +190,8 @@ Resizes the dynamic storage in the cache for the specified <dimension> and
 		for (i = 0 ; i < image->dimension ; i++)
 		{
 			image->sizes[i] = sizes[i];
-			image->minimums[i] = minimums[i];
-			image->maximums[i] = maximums[i];
+			image->minimums[i] = 0.0;
+			image->maximums[i] = 1.0;
 		}
 		image->valid = 0;
 	}
@@ -249,7 +247,6 @@ Resizes the dynamic data storage in the cache.
 int Image_cache_update_from_fields(struct Image_cache *image,
 	struct Computed_field *source_field,
 	struct Computed_field *texture_coordinate_field,
-	int element_dimension,
 	struct Cmiss_region *region, struct Graphics_buffer_package *graphics_buffer_package)
 /*******************************************************************************
 LAST MODIFIED : 12 May 2004
@@ -258,10 +255,7 @@ DESCRIPTION :
 Creates an Image_cache, <image> that represents the source field by evaluating the
 <source_field> at each pixel and using the element_xi from find_element_xi on
 the <texture_coordinate_field>.  The <image> is created with the specified
-<dimension> and the corresponding vectors of number of pixels <sizes> and
-<minimums> and <maximums> for the texture coordinate ranges.
-An <element_dimension> of 0 searches in elements of all dimension, any other
-value searches just elements of that dimension.
+<dimension> and the corresponding vectors of number of pixels <sizes> .
 ==============================================================================*/
 {
 	FE_value *data_index, *texture_coordinates, xi[MAXIMUM_ELEMENT_XI_DIMENSIONS];
@@ -309,11 +303,11 @@ value searches just elements of that dimension.
 					texture_coordinate_field, &texture_coordinate_field->find_element_xi_cache,
 					texture_coordinates,
 					number_of_texture_coordinate_components, &element, xi,
-					region, element_dimension, graphics_buffer_package,
+					region, /*element_dimension*/0, graphics_buffer_package,
 					image->minimums, image->maximums, sizes_floats) ||
 					Computed_field_find_element_xi(texture_coordinate_field,
 					texture_coordinates, number_of_texture_coordinate_components,
-					&element, xi, element_dimension, region, /*propagate_field*/0,
+					&element, xi, /*element_dimension*/0, region, /*propagate_field*/0,
 					/*find_nearest_location*/0))
 				{
 					if (element)
@@ -471,7 +465,7 @@ int Image_cache_evaluate_field(struct Image_cache *image, struct Computed_field 
 }/* Image_cache_evaluate_field */
 
 int Image_cache_get_native_resolution(struct Image_cache *image,
-		int *dimension, int **sizes, FE_value **minimums, FE_value **maximums)
+		int *dimension, int **sizes)
 /*************************************************************************************
     LAST MODIFIED: 04 February 2005
     DESCRIPTION: Gets the resolution of the input image.
@@ -484,20 +478,16 @@ int Image_cache_get_native_resolution(struct Image_cache *image,
 	{
 	        return_code = 1;
 		*dimension = image->dimension;
-		if ((*sizes) && (*minimums) && (*maximums))
+		if ((*sizes))
 		{
-		        if (!(REALLOCATE(*sizes, *sizes, int, image->dimension) &&
-			        REALLOCATE(*minimums, *minimums, FE_value, image->dimension) &&
-				REALLOCATE(*maximums, *maximums, FE_value, image->dimension)))
+		        if (!(REALLOCATE(*sizes, *sizes, int, image->dimension)))
 		        {
 				return_code = 0;
 			}
 		}
 		else
 		{
-			if (!(ALLOCATE(*sizes, int, image->dimension) &&
-				ALLOCATE(*minimums, FE_value, image->dimension) &&
-				ALLOCATE(*maximums, FE_value, image->dimension)))
+			if (!(ALLOCATE(*sizes, int, image->dimension)))
 			{
 				return_code = 0;
 			}
@@ -507,8 +497,6 @@ int Image_cache_get_native_resolution(struct Image_cache *image,
 			for (i = 0; i < image->dimension; i++)
 			{
 				(*sizes)[i] = image->sizes[i];
-				(*minimums)[i]=image->minimums[i];
-				(*maximums)[i]=image->maximums[i];
 			}
 		}
 	}

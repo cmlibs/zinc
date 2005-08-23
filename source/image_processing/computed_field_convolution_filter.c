@@ -72,7 +72,7 @@ A container for objects required to define fields in this module.
 struct Computed_field_convolution_filter_type_specific_data
 {
 	float cached_time;
-	int element_dimension;
+	/*int element_dimension;*/
 	struct Cmiss_region *region;
 	struct Graphics_buffer_package *graphics_buffer_package;
 	struct Image_cache *image;
@@ -229,7 +229,7 @@ Copy the type specific data used by this type.
 		{
 			destination->cached_time = source->cached_time;
 			destination->region = ACCESS(Cmiss_region)(source->region);
-			destination->element_dimension = source->element_dimension;
+			/*destination->element_dimension = source->element_dimension;*/
 			destination->graphics_buffer_package = source->graphics_buffer_package;
 			destination->computed_field_manager = source->computed_field_manager;
 			destination->computed_field_manager_callback_id =
@@ -241,8 +241,7 @@ Copy the type specific data used by this type.
 				destination->image = ACCESS(Image_cache)(CREATE(Image_cache)());
 				Image_cache_update_dimension(destination->image,
 					source->image->dimension, source->image->depth,
-					source->image->sizes, source->image->minimums,
-					source->image->maximums);
+					source->image->sizes);
 			}
 			else
 			{
@@ -548,7 +547,7 @@ Evaluate the fields cache at the node.
 		if (!data->image->valid)
 		{
 			return_code = Image_cache_update_from_fields(data->image, field->source_fields[0],
-				field->source_fields[1], data->element_dimension, data->region,
+				field->source_fields[1],  data->region,
 				data->graphics_buffer_package);
 			return_code = Computed_field_evaluate_cache_at_node(field->source_fields[2],
 				node, time);
@@ -599,7 +598,7 @@ Evaluate the fields cache at the node.
 		if (!data->image->valid)
 		{
 			return_code = Image_cache_update_from_fields(data->image, field->source_fields[0],
-				field->source_fields[1], data->element_dimension, data->region,
+				field->source_fields[1], data->region,
 				data->graphics_buffer_package);
 			return_code = Computed_field_evaluate_cache_in_element(field->source_fields[2],
 				element, xi, time, top_level_element, /*calculate_derivatives*/0);
@@ -680,7 +679,7 @@ Not implemented yet.
 ==============================================================================*/
 
 int Computed_field_convolution_filter_get_native_resolution(struct Computed_field *field,
-        int *dimension, int **sizes, FE_value **minimums, FE_value **maximums,
+        int *dimension, int **sizes, 
 	struct Computed_field **texture_coordinate_field)
 /*******************************************************************************
 LAST MODIFIED : 4 February 2005
@@ -700,7 +699,7 @@ the <field>. These parameters will be used in image processing.
 		field->type_specific_data) && data->image)
 	{
 		Image_cache_get_native_resolution(data->image,
-			dimension, sizes, minimums, maximums);
+			dimension, sizes);
 		/* Texture_coordinate_field from source fields */
 		if (*texture_coordinate_field)
 		{
@@ -806,14 +805,6 @@ Returns allocated command string for reproducing field. Includes type.
 		sprintf(temp_string, " sizes %d %d",
 		                    data->image->sizes[0], data->image->sizes[1]);
 		append_string(&command_string, temp_string, &error);
-
-		sprintf(temp_string, " minimums %f %f",
-		                    data->image->minimums[0], data->image->minimums[1]);
-		append_string(&command_string, temp_string, &error);
-
-		sprintf(temp_string, " maximums %f %f",
-		                    data->image->maximums[0], data->image->maximums[1]);
-		append_string(&command_string, temp_string, &error);
 	}
 	else
 	{
@@ -838,8 +829,8 @@ int Computed_field_set_type_convolution_filter(struct Computed_field *field,
 	struct Computed_field *source_field,
 	struct Computed_field *texture_coordinate_field,
 	struct Computed_field *kernel_matrix_field,
-	int dimension, int *sizes, FE_value *minimums, FE_value *maximums,
-	int element_dimension, struct MANAGER(Computed_field) *computed_field_manager,
+	int dimension, int *sizes, 
+	struct MANAGER(Computed_field) *computed_field_manager,
 	struct Cmiss_region *region, struct Graphics_buffer_package *graphics_buffer_package)
 /*******************************************************************************
 LAST MODIFIED : 17 May 2005
@@ -872,7 +863,7 @@ although its cache may be lost.
 			ALLOCATE(data, struct Computed_field_convolution_filter_type_specific_data, 1) &&
 			(data->image = ACCESS(Image_cache)(CREATE(Image_cache)())) &&
 			Image_cache_update_dimension(
-			data->image, dimension, depth, sizes, minimums, maximums) &&
+			data->image, dimension, depth, sizes) &&
 			Image_cache_update_data_storage(data->image))
 		{
 			/* 2. free current type-specific data */
@@ -885,7 +876,7 @@ although its cache may be lost.
 			source_fields[2]=ACCESS(Computed_field)(kernel_matrix_field);
 			field->source_fields=source_fields;
 			field->number_of_source_fields=number_of_source_fields;
-			data->element_dimension = element_dimension;
+			/*data->element_dimension = element_dimension;*/
 			data->region = ACCESS(Cmiss_region)(region);
 			data->graphics_buffer_package = graphics_buffer_package;
 			data->computed_field_manager = computed_field_manager;
@@ -928,8 +919,7 @@ int Computed_field_get_type_convolution_filter(struct Computed_field *field,
 	struct Computed_field **source_field,
 	struct Computed_field **texture_coordinate_field,
 	struct Computed_field **kernel_matrix_field,
-	int *dimension, int **sizes, FE_value **minimums,
-	FE_value **maximums, int *element_dimension)
+	int *dimension, int **sizes)
 /*******************************************************************************
 LAST MODIFIED : 17 May 2005
 
@@ -947,9 +937,7 @@ parameters defining it are returned.
 		field->type_specific_data) && data->image)
 	{
 		*dimension = data->image->dimension;
-		if (ALLOCATE(*sizes, int, *dimension)
-			&& ALLOCATE(*minimums, FE_value, *dimension)
-			&& ALLOCATE(*maximums, FE_value, *dimension))
+		if (ALLOCATE(*sizes, int, *dimension))
 		{
 			*source_field = field->source_fields[0];
 			*texture_coordinate_field = field->source_fields[1];
@@ -957,10 +945,7 @@ parameters defining it are returned.
 			for (i = 0 ; i < *dimension ; i++)
 			{
 				(*sizes)[i] = data->image->sizes[i];
-				(*minimums)[i] = data->image->minimums[i];
-				(*maximums)[i] = data->image->maximums[i];
 			}
-			*element_dimension = data->element_dimension;
 			return_code=1;
 		}
 		else
@@ -992,8 +977,7 @@ already) and allows its contents to be modified.
 ==============================================================================*/
 {
 	char *current_token;
-	FE_value *minimums, *maximums;
-	int dimension, element_dimension,  return_code, *sizes;
+	int dimension,  return_code, *sizes;
 	struct Computed_field *field, *source_field, *texture_coordinate_field,
 		*kernel_matrix_field;
 	struct Computed_field_convolution_filter_package
@@ -1014,9 +998,6 @@ already) and allows its contents to be modified.
 		kernel_matrix_field = (struct Computed_field *)NULL;
 		dimension = 0;
 		sizes = (int *)NULL;
-		minimums = (FE_value *)NULL;
-		maximums = (FE_value *)NULL;
-		element_dimension = 0;
 		/* field */
 		set_source_field_data.computed_field_manager =
 			computed_field_convolution_filter_package->computed_field_manager;
@@ -1041,7 +1022,7 @@ already) and allows its contents to be modified.
 		{
 			return_code = Computed_field_get_type_convolution_filter(field,
 				&source_field, &texture_coordinate_field, &kernel_matrix_field,
-				&dimension, &sizes, &minimums, &maximums, &element_dimension);
+				&dimension, &sizes);
 		}
 		if (return_code)
 		{
@@ -1066,18 +1047,9 @@ already) and allows its contents to be modified.
 				/* dimension */
 				Option_table_add_int_positive_entry(option_table, "dimension",
 					&dimension);
-				/* element_dimension */
-				Option_table_add_int_non_negative_entry(option_table, "element_dimension",
-					&element_dimension);
 				/* field */
 				Option_table_add_Computed_field_conditional_entry(option_table,
 					"field", &source_field, &set_source_field_data);
-				/* maximums */
-				Option_table_add_FE_value_vector_entry(option_table,
-					"maximums", maximums, &dimension);
-				/* minimums */
-				Option_table_add_FE_value_vector_entry(option_table,
-					"minimums", minimums, &dimension);
 				/* sizes */
 				Option_table_add_int_vector_entry(option_table,
 					"sizes", sizes, &dimension);
@@ -1104,9 +1076,7 @@ already) and allows its contents to be modified.
 						&dimension);
 					if (return_code = Option_table_parse(option_table, state))
 					{
-						if (!(REALLOCATE(sizes, sizes, int, dimension) &&
-							REALLOCATE(minimums, minimums, FE_value, dimension) &&
-							REALLOCATE(maximums, maximums, FE_value, dimension)))
+						if (!(REALLOCATE(sizes, sizes, int, dimension)))
 						{
 							return_code = 0;
 						}
@@ -1124,18 +1094,9 @@ already) and allows its contents to be modified.
 			if (return_code&&state->current_token)
 			{
 				option_table = CREATE(Option_table)();
-				/* element_dimension */
-				Option_table_add_int_non_negative_entry(option_table, "element_dimension",
-					&element_dimension);
 				/* field */
 				Option_table_add_Computed_field_conditional_entry(option_table,
 					"field", &source_field, &set_source_field_data);
-				/* maximums */
-				Option_table_add_FE_value_vector_entry(option_table,
-					"maximums", maximums, &dimension);
-				/* minimums */
-				Option_table_add_FE_value_vector_entry(option_table,
-					"minimums", minimums, &dimension);
 				/* sizes */
 				Option_table_add_int_vector_entry(option_table,
 					"sizes", sizes, &dimension);
@@ -1153,14 +1114,14 @@ already) and allows its contents to be modified.
 			if ((dimension < 1) && source_field)
 			{
 			        return_code = Computed_field_get_native_resolution(source_field,
-				     &dimension,&sizes,&minimums,&maximums,&texture_coordinate_field);
+				     &dimension,&sizes,&texture_coordinate_field);
 			}
 			/* no errors,not asking for help */
 			if (return_code)
 			{
 				return_code = Computed_field_set_type_convolution_filter(field,
 					source_field, texture_coordinate_field, kernel_matrix_field,
-					dimension,sizes, minimums, maximums, element_dimension,
+					dimension,sizes,
 					computed_field_convolution_filter_package->computed_field_manager,
 					computed_field_convolution_filter_package->root_region,
 					computed_field_convolution_filter_package->graphics_buffer_package);
@@ -1191,14 +1152,6 @@ already) and allows its contents to be modified.
 			if (sizes)
 			{
 				DEALLOCATE(sizes);
-			}
-			if (minimums)
-			{
-				DEALLOCATE(minimums);
-			}
-			if (maximums)
-			{
-				DEALLOCATE(maximums);
 			}
 		}
 	}

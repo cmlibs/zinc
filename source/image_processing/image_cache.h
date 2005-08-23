@@ -3,7 +3,8 @@
 
   LAST MODIFIED: 18 February 2004
 
-  DESCRIPTION: Define Image_cache structure and implement basic operation on Image_cache
+  DESCRIPTION: Define Image_cache structure and implement basic 
+              operation on Image_cache
 ==================================================================*/
 /* ***** BEGIN LICENSE BLOCK *****
  * Version: MPL 1.1/GPL 2.0/LGPL 2.1
@@ -89,7 +90,7 @@ Frees memory/deaccess mapping at <*mapping_address>.
 PROTOTYPE_OBJECT_FUNCTIONS(Image_cache);
 
 int Image_cache_update_dimension(struct Image_cache *image,
-	int dimension, int depth, int *sizes, FE_value *minimums, FE_value *maximums);
+	int dimension, int depth, int *sizes);
 /*******************************************************************************
 LAST MODIFIED : 2 December 2003
 
@@ -107,7 +108,6 @@ Resizes the dynamic data storage in the cache.
 int Image_cache_update_from_fields(struct Image_cache *image,
 	struct Computed_field *source_field,
 	struct Computed_field *texture_coordinate_field,
-	int element_dimension,
 	struct Cmiss_region *region,
 	struct Graphics_buffer_package *graphics_buffer_package);
 /*******************************************************************************
@@ -129,7 +129,7 @@ int Image_cache_evaluate_field(struct Image_cache *image, struct Computed_field 
 =================================================================================*/
 
 int Image_cache_get_native_resolution(struct Image_cache *image,
-		int *dimension, int **sizes, FE_value **minimums, FE_value **maximums);
+		int *dimension, int **sizes);
 /*************************************************************************************
     LAST MODIFIED: 04 February 2005
     DESCRIPTION: Gets the resolution of the input image.

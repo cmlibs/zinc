@@ -1,7 +1,7 @@
 /******************************************************************
   FILE: computed_field_power_spectrum.c
 
-  LAST MODIFIED: 2 August 2004
+  LAST MODIFIED: 22 August 2005
 
   DESCRIPTION: Compute the power spectral of an image
 ==================================================================*/
@@ -55,7 +55,7 @@
 
 struct Computed_field_power_spectrum_package
 /*******************************************************************************
-LAST MODIFIED : 2 August 2004
+LAST MODIFIED : 22 August 2005
 
 DESCRIPTION :
 A container for objects required to define fields in this module.
@@ -70,7 +70,7 @@ A container for objects required to define fields in this module.
 struct Computed_field_power_spectrum_type_specific_data
 {
 	float cached_time;
-	int element_dimension;
+	/*int element_dimension;*/
 	struct Cmiss_region *region;
 	struct Graphics_buffer_package *graphics_buffer_package;
 	struct Image_cache *image;
@@ -82,7 +82,7 @@ static char computed_field_power_spectrum_type_string[] = "power_spectrum";
 
 int Computed_field_is_type_power_spectrum(struct Computed_field *field)
 /*******************************************************************************
-LAST MODIFIED : 2 August 2004
+LAST MODIFIED : 22 August 2005
 
 DESCRIPTION :
 ==============================================================================*/
@@ -160,7 +160,7 @@ we know to invalidate the image cache.
 static int Computed_field_power_spectrum_clear_type_specific(
 	struct Computed_field *field)
 /*******************************************************************************
-LAST MODIFIED : 2 August 2004
+LAST MODIFIED : 22 August 2005
 
 DESCRIPTION :
 Clear the type specific data used by this type.
@@ -206,7 +206,7 @@ Clear the type specific data used by this type.
 static void *Computed_field_power_spectrum_copy_type_specific(
 	struct Computed_field *source_field, struct Computed_field *destination_field)
 /*******************************************************************************
-LAST MODIFIED : 2 August 2004
+LAST MODIFIED : 22 August 2005
 
 DESCRIPTION :
 Copy the type specific data used by this type.
@@ -225,7 +225,7 @@ Copy the type specific data used by this type.
 		{
 			destination->cached_time = source->cached_time;
 			destination->region = ACCESS(Cmiss_region)(source->region);
-			destination->element_dimension = source->element_dimension;
+			/*destination->element_dimension = source->element_dimension;*/
 			destination->graphics_buffer_package = source->graphics_buffer_package;
 			destination->computed_field_manager = source->computed_field_manager;
 			destination->computed_field_manager_callback_id =
@@ -237,8 +237,7 @@ Copy the type specific data used by this type.
 				destination->image = ACCESS(Image_cache)(CREATE(Image_cache)());
 				Image_cache_update_dimension(destination->image,
 					source->image->dimension, source->image->depth,
-					source->image->sizes, source->image->minimums,
-					source->image->maximums);
+					source->image->sizes);
 			}
 			else
 			{
@@ -268,7 +267,7 @@ Copy the type specific data used by this type.
 int Computed_field_power_spectrum_clear_cache_type_specific
    (struct Computed_field *field)
 /*******************************************************************************
-LAST MODIFIED : 2 August 2004
+LAST MODIFIED : 22 August 2005
 
 DESCRIPTION :
 ==============================================================================*/
@@ -302,7 +301,7 @@ DESCRIPTION :
 static int Computed_field_power_spectrum_type_specific_contents_match(
 	struct Computed_field *field, struct Computed_field *other_computed_field)
 /*******************************************************************************
-LAST MODIFIED : 2 August 2004
+LAST MODIFIED : 22 August 2005
 
 DESCRIPTION :
 Compare the type specific data
@@ -343,7 +342,7 @@ Compare the type specific data
 #define Computed_field_power_spectrum_is_defined_in_element \
 	Computed_field_default_is_defined_in_element
 /*******************************************************************************
-LAST MODIFIED : 2 August 2004
+LAST MODIFIED : 22 August 2005
 
 DESCRIPTION :
 Check the source fields using the default.
@@ -352,7 +351,7 @@ Check the source fields using the default.
 #define Computed_field_power_spectrum_is_defined_at_node \
 	Computed_field_default_is_defined_at_node
 /*******************************************************************************
-LAST MODIFIED : 2 August 2004
+LAST MODIFIED : 22 August 2005
 
 DESCRIPTION :
 Check the source fields using the default.
@@ -361,7 +360,7 @@ Check the source fields using the default.
 #define Computed_field_power_spectrum_has_numerical_components \
 	Computed_field_default_has_numerical_components
 /*******************************************************************************
-LAST MODIFIED : 2 August 2004
+LAST MODIFIED : 22 August 2005
 
 DESCRIPTION :
 Window projection does have numerical components.
@@ -370,7 +369,7 @@ Window projection does have numerical components.
 #define Computed_field_power_spectrum_not_in_use \
 	(Computed_field_not_in_use_function)NULL
 /*******************************************************************************
-LAST MODIFIED : 2 August 2004
+LAST MODIFIED : 22 August 2005
 
 DESCRIPTION :
 No special criteria.
@@ -380,7 +379,7 @@ No special criteria.
 int FFT_1D(FE_value *Xr, FE_value *Xi, FE_value *Yr, FE_value *Yi,
          int dir, int data_size)
 /****************************************************************************
-      LAST MODIFIED: 2 August 2004
+      LAST MODIFIED: 22 August 2005
 
       DESCRIPTION: Implement 1D fast Fourier transform
 ============================================================================*/
@@ -499,7 +498,7 @@ int FFT_1D(FE_value *Xr, FE_value *Xi, FE_value *Yr, FE_value *Yi,
 int FFT_2D(FE_value *in_re, FE_value *in_im, FE_value *out_re, FE_value *out_im,
          int dir, int xsize, int ysize)
 /****************************************************************************
-      LAST MODIFIED: 2 August 2004
+      LAST MODIFIED: 22 August 2005
 
       DESCRIPTION: Implement 2D fast Fourier transform
 ============================================================================*/
@@ -587,7 +586,7 @@ int FFT_2D(FE_value *in_re, FE_value *in_im, FE_value *out_re, FE_value *out_im,
 
 static int Image_cache_power_spectrum(struct Image_cache *image)
 /*******************************************************************************
-LAST MODIFIED : 2 August 2004
+LAST MODIFIED : 22 August 2005
 
 DESCRIPTION : Implement FFT on image cache.
 
@@ -751,7 +750,7 @@ DESCRIPTION : Implement FFT on image cache.
 static int Computed_field_power_spectrum_evaluate_cache_at_node(
 	struct Computed_field *field, struct FE_node *node, FE_value time)
 /*******************************************************************************
-LAST MODIFIED : 2 August 2004
+LAST MODIFIED : 22 August 2005
 
 DESCRIPTION :
 Evaluate the fields cache at the node.
@@ -769,7 +768,7 @@ Evaluate the fields cache at the node.
 		if (!data->image->valid)
 		{
 			return_code = Image_cache_update_from_fields(data->image, field->source_fields[0],
-				field->source_fields[1], data->element_dimension, data->region,
+				field->source_fields[1],  data->region,
 				data->graphics_buffer_package);
 			/* 2. Perform image processing operation */
 			return_code = Image_cache_power_spectrum(data->image);
@@ -796,7 +795,7 @@ static int Computed_field_power_spectrum_evaluate_cache_in_element(
 	struct Computed_field *field, struct FE_element *element, FE_value *xi,
 	FE_value time, struct FE_element *top_level_element,int calculate_derivatives)
 /*******************************************************************************
-LAST MODIFIED : 2 August 2004
+LAST MODIFIED : 22 August 2005
 
 DESCRIPTION :
 Evaluate the fields cache at the node.
@@ -817,7 +816,7 @@ Evaluate the fields cache at the node.
 		if (!data->image->valid)
 		{
 			return_code = Image_cache_update_from_fields(data->image, field->source_fields[0],
-				field->source_fields[1], data->element_dimension, data->region,
+				field->source_fields[1],  data->region,
 				data->graphics_buffer_package);
 			/* 2. Perform image processing operation */
 			return_code = Image_cache_power_spectrum(data->image);
@@ -843,7 +842,7 @@ Evaluate the fields cache at the node.
 #define Computed_field_power_spectrum_evaluate_as_string_at_node \
 	Computed_field_default_evaluate_as_string_at_node
 /*******************************************************************************
-LAST MODIFIED : 2 August 2004
+LAST MODIFIED : 22 August 2005
 
 DESCRIPTION :
 Print the values calculated in the cache.
@@ -852,7 +851,7 @@ Print the values calculated in the cache.
 #define Computed_field_power_spectrum_evaluate_as_string_in_element \
 	Computed_field_default_evaluate_as_string_in_element
 /*******************************************************************************
-LAST MODIFIED : 2 August 2004
+LAST MODIFIED : 22 August 2005
 
 DESCRIPTION :
 Print the values calculated in the cache.
@@ -861,7 +860,7 @@ Print the values calculated in the cache.
 #define Computed_field_power_spectrum_set_values_at_node \
    (Computed_field_set_values_at_node_function)NULL
 /*******************************************************************************
-LAST MODIFIED : 2 August 2004
+LAST MODIFIED : 22 August 2005
 
 DESCRIPTION :
 Not implemented yet.
@@ -870,7 +869,7 @@ Not implemented yet.
 #define Computed_field_power_spectrum_set_values_in_element \
    (Computed_field_set_values_in_element_function)NULL
 /*******************************************************************************
-LAST MODIFIED : 2 August 2004
+LAST MODIFIED : 22 August 2005
 
 DESCRIPTION :
 Not implemented yet.
@@ -879,7 +878,7 @@ Not implemented yet.
 #define Computed_field_power_spectrum_get_native_discretization_in_element \
 	Computed_field_default_get_native_discretization_in_element
 /*******************************************************************************
-LAST MODIFIED : 2 August 2004
+LAST MODIFIED : 22 August 2005
 
 DESCRIPTION :
 Inherit result from first source field.
@@ -888,14 +887,14 @@ Inherit result from first source field.
 #define Computed_field_power_spectrum_find_element_xi \
    (Computed_field_find_element_xi_function)NULL
 /*******************************************************************************
-LAST MODIFIED : 2 August 2004
+LAST MODIFIED : 22 August 2005
 
 DESCRIPTION :
 Not implemented yet.
 ==============================================================================*/
 
 int Computed_field_power_spectrum_get_native_resolution(struct Computed_field *field,
-        int *dimension, int **sizes, FE_value **minimums, FE_value **maximums,
+        int *dimension, int **sizes,
 	struct Computed_field **texture_coordinate_field)
 /*******************************************************************************
 LAST MODIFIED : 4 February 2005
@@ -916,7 +915,7 @@ the <field>. These parameters will be used in image processing.
 	{
 	        return_code = 1;
 		Image_cache_get_native_resolution(data->image,
-			dimension, sizes, minimums, maximums);
+			dimension, sizes);
 		/* Texture_coordinate_field from source fields */
 		if (*texture_coordinate_field)
 		{
@@ -1010,15 +1009,6 @@ Returns allocated command string for reproducing field. Includes type.
 		sprintf(temp_string, " sizes %d %d",
 		                    data->image->sizes[0],data->image->sizes[1]);
 		append_string(&command_string, temp_string, &error);
-
-		sprintf(temp_string, " minimums %f %f",
-		                    data->image->minimums[0], data->image->minimums[1]);
-		append_string(&command_string, temp_string, &error);
-
-		sprintf(temp_string, " maximums %f %f",
-		                    data->image->maximums[0], data->image->maximums[1]);
-		append_string(&command_string, temp_string, &error);
-
 	}
 	else
 	{
@@ -1042,8 +1032,8 @@ Works out whether time influences the field.
 int Computed_field_set_type_power_spectrum(struct Computed_field *field,
 	struct Computed_field *source_field,
 	struct Computed_field *texture_coordinate_field,
-	int dimension, int *sizes, FE_value *minimums, FE_value *maximums,
-	int element_dimension, struct MANAGER(Computed_field) *computed_field_manager,
+	int dimension, int *sizes, 
+	struct MANAGER(Computed_field) *computed_field_manager,
 	struct Cmiss_region *region, struct Graphics_buffer_package *graphics_buffer_package)
 /*******************************************************************************
 LAST MODIFIED : Mar 18 2004
@@ -1052,10 +1042,7 @@ DESCRIPTION :
 Converts <field> to type COMPUTED_FIELD_power_spectrum with the supplied
 fields, <source_field> and <texture_coordinate_field>.  The <sigma> specifies
 half the width and height of the filter window.  The <dimension> is the
-size of the <sizes>, <minimums> and <maximums> vectors and should be less than
-or equal to the number of components in the <texture_coordinate_field>.
-If function fails, field is guaranteed to be unchanged from its original state,
-although its cache may be lost.
+size of the <sizes>.
 ==============================================================================*/
 {
 	int depth, number_of_source_fields, return_code;
@@ -1076,7 +1063,7 @@ although its cache may be lost.
 			ALLOCATE(data, struct Computed_field_power_spectrum_type_specific_data, 1) &&
 			(data->image = ACCESS(Image_cache)(CREATE(Image_cache)())) &&
 			Image_cache_update_dimension(
-			data->image, dimension, depth, sizes, minimums, maximums) &&
+			data->image, dimension, depth, sizes) &&
 			Image_cache_update_data_storage(data->image))
 		{
 			/* 2. free current type-specific data */
@@ -1088,7 +1075,7 @@ although its cache may be lost.
 			source_fields[1]=ACCESS(Computed_field)(texture_coordinate_field);
 			field->source_fields=source_fields;
 			field->number_of_source_fields=number_of_source_fields;
-			data->element_dimension = element_dimension;
+			/*data->element_dimension = element_dimension;*/
 			data->region = ACCESS(Cmiss_region)(region);
 			data->graphics_buffer_package = graphics_buffer_package;
 			data->computed_field_manager = computed_field_manager;
@@ -1130,8 +1117,7 @@ although its cache may be lost.
 int Computed_field_get_type_power_spectrum(struct Computed_field *field,
 	struct Computed_field **source_field,
 	struct Computed_field **texture_coordinate_field,
-	int *dimension, int **sizes, FE_value **minimums,
-	FE_value **maximums, int *element_dimension)
+	int *dimension, int **sizes)
 /*******************************************************************************
 LAST MODIFIED : 17 December 2003
 
@@ -1149,19 +1135,14 @@ parameters defining it are returned.
 		field->type_specific_data) && data->image)
 	{
 		*dimension = data->image->dimension;
-		if (ALLOCATE(*sizes, int, *dimension)
-			&& ALLOCATE(*minimums, FE_value, *dimension)
-			&& ALLOCATE(*maximums, FE_value, *dimension))
+		if (ALLOCATE(*sizes, int, *dimension))
 		{
 			*source_field = field->source_fields[0];
 			*texture_coordinate_field = field->source_fields[1];
 			for (i = 0 ; i < *dimension ; i++)
 			{
 				(*sizes)[i] = data->image->sizes[i];
-				(*minimums)[i] = data->image->minimums[i];
-				(*maximums)[i] = data->image->maximums[i];
 			}
-			*element_dimension = data->element_dimension;
 			return_code=1;
 		}
 		else
@@ -1193,8 +1174,7 @@ already) and allows its contents to be modified.
 ==============================================================================*/
 {
 	char *current_token;
-	FE_value *minimums, *maximums;
-	int dimension, element_dimension, return_code, *sizes;
+	int dimension, return_code, *sizes;
 	struct Computed_field *field, *source_field, *texture_coordinate_field;
 	struct Computed_field_power_spectrum_package
 		*computed_field_power_spectrum_package;
@@ -1213,10 +1193,6 @@ already) and allows its contents to be modified.
 		texture_coordinate_field = (struct Computed_field *)NULL;
 		dimension = 0;
 		sizes = (int *)NULL;
-		minimums = (FE_value *)NULL;
-		maximums = (FE_value *)NULL;
-		element_dimension = 0;
-
 		/* field */
 		set_source_field_data.computed_field_manager =
 			computed_field_power_spectrum_package->computed_field_manager;
@@ -1235,7 +1211,7 @@ already) and allows its contents to be modified.
 		{
 			return_code = Computed_field_get_type_power_spectrum(field,
 				&source_field, &texture_coordinate_field,
-				&dimension, &sizes, &minimums, &maximums, &element_dimension);
+				&dimension, &sizes);
 		}
 		if (return_code)
 		{
@@ -1257,18 +1233,9 @@ already) and allows its contents to be modified.
 				/* dimension */
 				Option_table_add_int_positive_entry(option_table, "dimension",
 					&dimension);
-				/* element_dimension */
-				Option_table_add_int_non_negative_entry(option_table, "element_dimension",
-					&element_dimension);
 				/* field */
 				Option_table_add_Computed_field_conditional_entry(option_table,
 					"field", &source_field, &set_source_field_data);
-				/* maximums */
-				Option_table_add_FE_value_vector_entry(option_table,
-					"maximums", maximums, &dimension);
-				/* minimums */
-				Option_table_add_FE_value_vector_entry(option_table,
-					"minimums", minimums, &dimension);
 				/* sizes */
 				Option_table_add_int_vector_entry(option_table,
 					"sizes", sizes, &dimension);
@@ -1291,9 +1258,7 @@ already) and allows its contents to be modified.
 						&dimension);
 					if (return_code = Option_table_parse(option_table, state))
 					{
-						if (!(REALLOCATE(sizes, sizes, int, dimension) &&
-							REALLOCATE(minimums, minimums, FE_value, dimension) &&
-							REALLOCATE(maximums, maximums, FE_value, dimension)))
+						if (!(REALLOCATE(sizes, sizes, int, dimension)))
 						{
 							return_code = 0;
 						}
@@ -1311,18 +1276,9 @@ already) and allows its contents to be modified.
 			if (return_code&&state->current_token)
 			{
 				option_table = CREATE(Option_table)();
-				/* element_dimension */
-				Option_table_add_int_non_negative_entry(option_table, "element_dimension",
-					&element_dimension);
 				/* field */
 				Option_table_add_Computed_field_conditional_entry(option_table,
 					"field", &source_field, &set_source_field_data);
-				/* maximums */
-				Option_table_add_FE_value_vector_entry(option_table,
-					"maximums", maximums, &dimension);
-				/* minimums */
-				Option_table_add_FE_value_vector_entry(option_table,
-					"minimums", minimums, &dimension);
 				/* sizes */
 				Option_table_add_int_vector_entry(option_table,
 					"sizes", sizes, &dimension);
@@ -1336,14 +1292,13 @@ already) and allows its contents to be modified.
 			if ((dimension < 1) && source_field)
 			{
 			        return_code = Computed_field_get_native_resolution(source_field,
-				     &dimension,&sizes,&minimums,&maximums,&texture_coordinate_field);
+				     &dimension,&sizes, &texture_coordinate_field);
 			}
 			/* no errors,not asking for help */
 			if (return_code)
 			{
 				return_code = Computed_field_set_type_power_spectrum(field,
-					source_field, texture_coordinate_field, dimension,
-					sizes, minimums, maximums, element_dimension,
+					source_field, texture_coordinate_field, dimension, sizes, 
 					computed_field_power_spectrum_package->computed_field_manager,
 					computed_field_power_spectrum_package->root_region,
 					computed_field_power_spectrum_package->graphics_buffer_package);
@@ -1370,14 +1325,6 @@ already) and allows its contents to be modified.
 			if (sizes)
 			{
 				DEALLOCATE(sizes);
-			}
-			if (minimums)
-			{
-				DEALLOCATE(minimums);
-			}
-			if (maximums)
-			{
-				DEALLOCATE(maximums);
 			}
 		}
 	}

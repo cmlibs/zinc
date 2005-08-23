@@ -79,7 +79,7 @@ struct Computed_field_image_resample_type_specific_data
 	int *input_sizes;/* the sizes of the original image */
 	int *output_sizes;/* the sizes of desired output image */
 	float cached_time;
-	int element_dimension;
+	/*int element_dimension;*/
 	struct Cmiss_region *region;
 	struct Graphics_buffer_package *graphics_buffer_package;
 	struct Image_cache *image;
@@ -251,7 +251,7 @@ Copy the type specific data used by this type.
 			}
 			destination->cached_time = source->cached_time;
 			destination->region = ACCESS(Cmiss_region)(source->region);
-			destination->element_dimension = source->element_dimension;
+			/*destination->element_dimension = source->element_dimension;*/
 			destination->graphics_buffer_package = source->graphics_buffer_package;
 			destination->computed_field_manager = source->computed_field_manager;
 			destination->computed_field_manager_callback_id =
@@ -263,8 +263,7 @@ Copy the type specific data used by this type.
 				destination->image = ACCESS(Image_cache)(CREATE(Image_cache)());
 				Image_cache_update_dimension(destination->image,
 					source->image->dimension, source->image->depth,
-					source->input_sizes, source->image->minimums,
-					source->image->maximums);
+					source->input_sizes);
 			}
 			else
 			{
@@ -842,10 +841,9 @@ Evaluate the fields cache at the node.
 		{
 		        Image_cache_update_dimension(data->image,
 				data->dimension, data->image->depth,
-				data->input_sizes, data->image->minimums,
-				data->image->maximums);
+				data->input_sizes);
 			return_code = Image_cache_update_from_fields(data->image, field->source_fields[0],
-				field->source_fields[1], data->element_dimension, data->region,
+				field->source_fields[1],  data->region,
 				data->graphics_buffer_package);
 			/* 2. Perform image processing operation */
 
@@ -894,7 +892,7 @@ Evaluate the fields cache at the node.
 		if (!data->image->valid)
 		{
 			return_code = Image_cache_update_from_fields(data->image, field->source_fields[0],
-				field->source_fields[1], data->element_dimension, data->region,
+				field->source_fields[1],  data->region,
 				data->graphics_buffer_package);
 			/* 2. Perform image processing operation */
 			return_code = Image_cache_image_resample(data->image, 
@@ -973,7 +971,7 @@ Not implemented yet.
 ==============================================================================*/
 
 int Computed_field_image_resample_get_native_resolution(struct Computed_field *field,
-        int *dimension, int **sizes, FE_value **minimums, FE_value **maximums,
+        int *dimension, int **sizes, 
 	struct Computed_field **texture_coordinate_field)
 /*******************************************************************************
 LAST MODIFIED : 4 February 2005
@@ -993,12 +991,11 @@ the <field>. These parameters will be used in image processing.
 		field->type_specific_data) && data->image)
 	{
 		Image_cache_get_native_resolution(data->image,
-			dimension, sizes, minimums, maximums);
+			dimension, sizes);
 		/* Texture_coordinate_field from source fields */
 		if (*texture_coordinate_field)
 		{
-			/* DEACCESS(Computed_field)(&(*texture_coordinate_field));
-			*texture_coordinate_field = ACCESS(Computed_field)(field->source_fields[1]); */
+			REACCESS(Computed_field)(&(*texture_coordinate_field), field->source_fields[1]);
 		}
 		else
 		{
@@ -1100,14 +1097,6 @@ Returns allocated command string for reproducing field. Includes type.
 		                    data->output_sizes[0],data->output_sizes[1],data->output_sizes[2]);
 		append_string(&command_string, temp_string, &error);
 
-		sprintf(temp_string, " minimums %f %f %f ",
-		                    data->image->minimums[0],data->image->minimums[1], data->image->minimums[2]);
-		append_string(&command_string, temp_string, &error);
-
-		sprintf(temp_string, " maximums %f %f %f ",
-		                    data->image->maximums[0],data->image->maximums[1],data->image->maximums[2]);
-		append_string(&command_string, temp_string, &error);
-
 	}
 	else
 	{
@@ -1133,8 +1122,8 @@ int Computed_field_set_type_image_resample(struct Computed_field *field,
 	struct Computed_field *texture_coordinate_field,
 	int dimension, 
 	int nearest_index, int bicubic_index, 
-	int *input_sizes, int *output_sizes, FE_value *minimums, FE_value *maximums,
-	int element_dimension, struct MANAGER(Computed_field) *computed_field_manager,
+	int *input_sizes, int *output_sizes,
+	struct MANAGER(Computed_field) *computed_field_manager,
 	struct Cmiss_region *region, struct Graphics_buffer_package *graphics_buffer_package)
 /*******************************************************************************
 LAST MODIFIED : 4 May 2005
@@ -1142,10 +1131,7 @@ LAST MODIFIED : 4 May 2005
 DESCRIPTION :
 Converts <field> to type COMPUTED_FIELD_image_resample with the supplied
 fields, <source_field> and <texture_coordinate_field>.  The <dimension> is the
-size of the <sizes>, <minimums> and <maximums> vectors and should be less than
-or equal to the number of components in the <texture_coordinate_field>.
-If function fails, field is guaranteed to be unchanged from its original state,
-although its cache may be lost.
+size of the <sizes>.
 ==============================================================================*/
 {
 	int depth, number_of_source_fields, return_code, i;
@@ -1168,7 +1154,7 @@ although its cache may be lost.
 			ALLOCATE(data->output_sizes, int, dimension) &&
 			(data->image = ACCESS(Image_cache)(CREATE(Image_cache)())) &&
 			Image_cache_update_dimension(
-			data->image, dimension, depth, input_sizes, minimums, maximums) &&
+			data->image, dimension, depth, input_sizes) &&
 			Image_cache_update_data_storage(data->image))
 		{
 			/* 2. free current type-specific data */
@@ -1195,7 +1181,7 @@ although its cache may be lost.
 				data->input_sizes[i] = input_sizes[i];
 				data->output_sizes[i] = output_sizes[i];
 			}
-			data->element_dimension = element_dimension;
+			/*data->element_dimension = element_dimension;*/
 			data->region = ACCESS(Cmiss_region)(region);
 			data->graphics_buffer_package = graphics_buffer_package;
 			data->computed_field_manager = computed_field_manager;
@@ -1239,8 +1225,7 @@ int Computed_field_get_type_image_resample(struct Computed_field *field,
 	struct Computed_field **texture_coordinate_field,
 	int *dimension, 
 	int *nearest_index, int *bicubic_index, 
-	int **input_sizes, int **output_sizes, FE_value **minimums,
-	FE_value **maximums, int *element_dimension)
+	int **input_sizes, int **output_sizes)
 /*******************************************************************************
 LAST MODIFIED : 4 May 2005
 
@@ -1259,9 +1244,7 @@ parameters defining it are returned.
 	{
 		*dimension = data->image->dimension;
 		if (ALLOCATE(*input_sizes, int, *dimension)
-			&& ALLOCATE(*output_sizes, int, *dimension)
-			&& ALLOCATE(*minimums, FE_value, *dimension)
-			&& ALLOCATE(*maximums, FE_value, *dimension))
+			&& ALLOCATE(*output_sizes, int, *dimension))
 		{
 			*source_field = field->source_fields[0];
 			*texture_coordinate_field = field->source_fields[1];
@@ -1269,8 +1252,6 @@ parameters defining it are returned.
 			{
 				(*input_sizes)[i] = data->input_sizes[i];
 				(*output_sizes)[i] = data->output_sizes[i];
-				(*minimums)[i] = data->image->minimums[i];
-				(*maximums)[i] = data->image->maximums[i];
 			}
 			*nearest_index = *bicubic_index  = 0;
 			if (strcmp(data->mode, "nearest") == 0)
@@ -1281,7 +1262,6 @@ parameters defining it are returned.
 			{
 				*bicubic_index = 1;
 			}
-			*element_dimension = data->element_dimension;
 			return_code=1;
 		}
 		else
@@ -1314,8 +1294,7 @@ already) and allows its contents to be modified.
 {
         char *current_token;
 	char nearest_string[] = "nearest", bicubic_string[] = "bicubic";
-	FE_value *minimums, *maximums;
-	int dimension, element_dimension, return_code, *input_sizes, *output_sizes;
+	int dimension, return_code, *input_sizes, *output_sizes;
 	
 	struct Computed_field *field, *source_field, *texture_coordinate_field;
 	struct Computed_field_image_resample_package
@@ -1337,9 +1316,6 @@ already) and allows its contents to be modified.
 		dimension = 0;
 		input_sizes = (int *)NULL;
 		output_sizes = (int *)NULL;
-		minimums = (FE_value *)NULL;
-		maximums = (FE_value *)NULL;
-		element_dimension = 0;
 		/* field */
 		set_source_field_data.computed_field_manager =
 			computed_field_image_resample_package->computed_field_manager;
@@ -1367,7 +1343,7 @@ already) and allows its contents to be modified.
 			return_code = Computed_field_get_type_image_resample(field,
 				&source_field, &texture_coordinate_field, &dimension,  
 				&mode.tokens[0].index, &mode.tokens[1].index, 
-				&input_sizes, &output_sizes, &minimums, &maximums, &element_dimension);
+				&input_sizes, &output_sizes);
 		}
 		if (return_code)
 		{
@@ -1389,9 +1365,6 @@ already) and allows its contents to be modified.
 				/* dimension */
 				Option_table_add_int_positive_entry(option_table, "dimension",
 					&dimension);
-				/* element_dimension */
-				Option_table_add_int_non_negative_entry(option_table, "element_dimension",
-					&element_dimension);
 				/* field */
 				Option_table_add_Computed_field_conditional_entry(option_table,
 					"field", &source_field, &set_source_field_data);
@@ -1401,12 +1374,6 @@ already) and allows its contents to be modified.
 				/* input_sizes */
 				Option_table_add_int_vector_entry(option_table,
 					"input_sizes", input_sizes, &dimension);
-				/* maximums */
-				Option_table_add_FE_value_vector_entry(option_table,
-					"maximums", maximums, &dimension);
-				/* minimums */
-				Option_table_add_FE_value_vector_entry(option_table,
-					"minimums", minimums, &dimension);
 				/* output_sizes */
 				Option_table_add_int_vector_entry(option_table,
 					"output_sizes", output_sizes, &dimension);
@@ -1431,9 +1398,7 @@ already) and allows its contents to be modified.
 					if (return_code = Option_table_parse(option_table, state))
 					{
 						if (!(REALLOCATE(input_sizes, input_sizes, int, dimension) &&
-							REALLOCATE(output_sizes, output_sizes, int, dimension) &&
-							REALLOCATE(minimums, minimums, FE_value, dimension) &&
-							REALLOCATE(maximums, maximums, FE_value, dimension)))
+							REALLOCATE(output_sizes, output_sizes, int, dimension)))
 						{
 							return_code = 0;
 						}
@@ -1452,9 +1417,6 @@ already) and allows its contents to be modified.
 			if (return_code&&state->current_token)
 			{
 				option_table = CREATE(Option_table)();
-				/* element_dimension */
-				Option_table_add_int_non_negative_entry(option_table, "element_dimension",
-					&element_dimension);
 				/* field */
 				Option_table_add_Computed_field_conditional_entry(option_table,
 					"field", &source_field, &set_source_field_data);
@@ -1464,12 +1426,6 @@ already) and allows its contents to be modified.
 				/* input_sizes */
 				Option_table_add_int_vector_entry(option_table,
 					"input_sizes", input_sizes, &dimension);
-				/* maximums */
-				Option_table_add_FE_value_vector_entry(option_table,
-					"maximums", maximums, &dimension);
-				/* minimums */
-				Option_table_add_FE_value_vector_entry(option_table,
-					"minimums", minimums, &dimension);
 				/* output_sizes */
 				Option_table_add_int_vector_entry(option_table,
 					"output_sizes", output_sizes, &dimension);
@@ -1480,10 +1436,10 @@ already) and allows its contents to be modified.
 				return_code=Option_table_multi_parse(option_table,state);
 				DESTROY(Option_table)(&option_table);
 			}
-			if (source_field && (!input_sizes || !maximums || !texture_coordinate_field))
+			if (source_field && (!input_sizes ||!texture_coordinate_field))
 			{
 			        return_code = Computed_field_get_native_resolution(source_field,
-				     &dimension,&input_sizes,&minimums,&maximums,&texture_coordinate_field);
+				     &dimension,&input_sizes,&texture_coordinate_field);
 			}
 			
 			/* no errors,not asking for help */
@@ -1491,7 +1447,7 @@ already) and allows its contents to be modified.
 			{
 				return_code = Computed_field_set_type_image_resample(field,
 					source_field, texture_coordinate_field, dimension, mode.tokens[0].index, mode.tokens[1].index,
-					input_sizes, output_sizes, minimums, maximums, element_dimension,
+					input_sizes, output_sizes, 
 					computed_field_image_resample_package->computed_field_manager,
 					computed_field_image_resample_package->root_region,
 					computed_field_image_resample_package->graphics_buffer_package);
@@ -1522,14 +1478,6 @@ already) and allows its contents to be modified.
 			if (output_sizes)
 			{
 				DEALLOCATE(output_sizes);
-			}
-			if (minimums)
-			{
-				DEALLOCATE(minimums);
-			}
-			if (maximums)
-			{
-				DEALLOCATE(maximums);
 			}
 		}
 		DEALLOCATE(mode.tokens);
