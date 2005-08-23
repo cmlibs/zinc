@@ -462,7 +462,7 @@ Not implemented yet.
 
 
 int Computed_field_sample_texture_get_native_resolution(struct Computed_field *field,
-        int *dimension, int **sizes, FE_value **minimums, FE_value **maximums,
+        int *dimension, int **sizes,
 	struct Computed_field **texture_coordinate_field)
 /*******************************************************************************
 LAST MODIFIED : 4 February 2005
@@ -485,20 +485,16 @@ the <field>. These parameters will be used in image processing.
 	        return_code = 1;
 		Texture_get_size(data->texture, &w, &h, &d);
 		Texture_get_dimension(data->texture,dimension);
-		if ((*sizes) && (*minimums) && (*maximums))
+		if ((*sizes))
 		{
-		        if (!(REALLOCATE(*sizes, *sizes, int, *dimension) &&
-			        REALLOCATE(*minimums, *minimums, FE_value, *dimension) &&
-				REALLOCATE(*maximums, *maximums, FE_value, *dimension)))
+		        if (!(REALLOCATE(*sizes, *sizes, int, *dimension) ))
 		        {
 				return_code = 0;
 			}
 		}
 		else
 		{
-			if (!(ALLOCATE(*sizes, int, *dimension) &&
-				ALLOCATE(*minimums, FE_value, *dimension) &&
-				ALLOCATE(*maximums, FE_value, *dimension)))
+			if (!(ALLOCATE(*sizes, int, *dimension)))
 			{
 				return_code = 0;
 			}
@@ -509,22 +505,12 @@ the <field>. These parameters will be used in image processing.
 			{
 			        (*sizes)[0] = w;
 				(*sizes)[1] = h;
-				(*minimums)[0]=0.0;
-				(*minimums)[1]=0.0;
-				(*maximums)[0]=1.0;
-				(*maximums)[1]=1.0;
 			}
 			else if (*dimension == 3)
 			{
 			        (*sizes)[0] = w;
 				(*sizes)[1] = h;
 				(*sizes)[2] = d;
-				(*minimums)[0]=0.0;
-				(*minimums)[1]=0.0;
-				(*minimums)[2]=0.0;
-				(*maximums)[0]=1.0;
-				(*maximums)[1]=1.0;
-				(*maximums)[2]=1.0;
 			}
 		}
 		/* Texture_coordinate_field from source fields */

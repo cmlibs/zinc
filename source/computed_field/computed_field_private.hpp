@@ -88,7 +88,7 @@ typedef char* (*Computed_field_get_command_string_function)(
 	struct Computed_field *field);
 typedef int (*Computed_field_has_multiple_times_function)(struct Computed_field *field);
 typedef int (*Computed_field_get_native_resolution_function)(struct Computed_field *field,
-        int *dimension, int **sizes, FE_value **minimums, FE_value **maximums,
+        int *dimension, int **sizes,
 	struct Computed_field **texture_coordinate_field);
 	
 /* Used by the register_type_function, Computed_field_type_data and 

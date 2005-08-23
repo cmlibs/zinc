@@ -3226,7 +3226,7 @@ The calling function must not deallocate the returned string.
 } /* Computed_field_get_type_string */
 
 int Computed_field_get_native_resolution(struct Computed_field *field,
-        int *dimension, int **sizes, FE_value **minimums, FE_value **maximums,
+        int *dimension, int **sizes, 
 	struct Computed_field **texture_coordinate_field)
 /*******************************************************************************
 LAST MODIFIED : 20 January 2005
@@ -3246,7 +3246,7 @@ the <field>. These parameters will be used in image processing.
 		if (field->computed_field_get_native_resolution_function)
 		{
 			return_code = field->computed_field_get_native_resolution_function(
-				field, dimension, sizes, minimums, maximums, 
+				field, dimension, sizes, 
 				texture_coordinate_field);
 		}
 		else

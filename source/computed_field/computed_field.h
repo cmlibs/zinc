@@ -486,7 +486,7 @@ Returns 0 with no errors if the field is not grid-based.
 ==============================================================================*/
 
 int Computed_field_get_native_resolution(struct Computed_field *field,
-        int *dimension, int **sizes, FE_value **minimums, FE_value **maximums,
+        int *dimension, int **sizes, 
 	struct Computed_field **texture_coordinate_field);
 /*******************************************************************************
 LAST MODIFIED : 03 February 2005
