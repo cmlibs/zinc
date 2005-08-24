@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : userdef_objects.c
 
-LAST MODIFIED : 15 October 2001
+LAST MODIFIED : 24 August 2005
 
 DESCRIPTION :
 Data structures and functions for user defined graphical objects.
@@ -268,14 +268,13 @@ DESCRIPTION :
 
 static int render_hair(void *hair_struct)
 /*******************************************************************************
-LAST MODIFIED : 26 February 1996
+LAST MODIFIED : 24 August 2005
 
 DESCRIPTION :
 Render a hair.
 ==============================================================================*/
 {
 	int return_code;
-	struct Userdef_hair *hair;
 #if defined (GL_API) || defined (OPENGL_API)
 	int s,j,k,hairnum,hairoff;
 	float eyelashx[3],eyelashy[3],eyelashz[3];
@@ -285,10 +284,15 @@ Render a hair.
 	float dummynorm[3] = {0,1,0};
 #endif /* defined (GL_API) */
 	float vec1[3],vec2[3],vec3[3];
+	struct Userdef_hair *hair;
 #endif
 
 	ENTER(render_hair);
-	if (hair=(struct Userdef_hair *)hair_struct)
+	if (
+#if defined (GL_API) || defined (OPENGL_API)
+		hair=(struct Userdef_hair *)
+#endif /* defined (GL_API) || defined (OPENGL_API) */
+		hair_struct)
 	{
 #if defined (GL_API) || defined (OPENGL_API)
 		seed = 0.5;
