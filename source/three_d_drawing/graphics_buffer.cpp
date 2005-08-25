@@ -3229,34 +3229,51 @@ DESCRIPTION :
 		buffer->hDC=GetDC(hWnd);
 
 	   /* set the pixel format for the DC */
-		ZeroMemory( &pfd, sizeof( pfd ) );
+		ZeroMemory( &pfd, sizeof( PIXELFORMATDESCRIPTOR ) );
 		pfd.nSize = sizeof( pfd );
 		pfd.nVersion = 1;
 		pfd.dwFlags = PFD_DRAW_TO_WINDOW | PFD_SUPPORT_OPENGL | PFD_DOUBLEBUFFER;
 		pfd.iPixelType = PFD_TYPE_RGBA;
 		pfd.iLayerType = PFD_MAIN_PLANE;
- 
+   
+		
 		if (minimum_colour_buffer_depth)
 		{
-			pfd.cColorBits = minimum_colour_buffer_depth;
-
+/*			pfd.cColorBits = minimum_colour_buffer_depth;
+*/
 		}
-		pfd.cAlphaBits = 8;
+		
+
+		
 		if (minimum_depth_buffer_depth)
 		{
-			pfd.cDepthBits = minimum_depth_buffer_depth;
+/*			pfd.cDepthBits = minimum_depth_buffer_depth;
+*/
 		}
+		
+
+		
 		if (minimum_accumulation_buffer_depth)
 		{
-
+/*
 			accumulation_colour_size = minimum_accumulation_buffer_depth / 4;
 			pfd.cAccumRedBits = accumulation_colour_size;
 			pfd.cAccumGreenBits = accumulation_colour_size;
 			pfd.cAccumBlueBits = accumulation_colour_size;
 			pfd.cAccumAlphaBits = accumulation_colour_size;
+*/
 		}
+		
+                /* setting these to get an accelerated visual on the ATI chipset */
+		pfd.cColorBits =    24;           // color mode
+		pfd.cDepthBits =    24;           // depth buffer size
+		pfd.cStencilBits =  8;         // stencil buffer
+		//pfd.cAccumBits =    0;           // accumulation buffer
+		//pfd.cAlphaBits = 0;
+
 		if((format = ChoosePixelFormat( buffer->hDC, &pfd )))
 		{
+
 			if(SetPixelFormat( buffer->hDC, format, &pfd ))
 			{
 				/* create and enable the render context (RC) */
