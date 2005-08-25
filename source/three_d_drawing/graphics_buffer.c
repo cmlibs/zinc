@@ -3209,7 +3209,7 @@ DESCRIPTION :
 ==============================================================================*/
 {
 	PIXELFORMATDESCRIPTOR pfd;
-	int accumulation_colour_size;
+	/* int accumulation_colour_size; */
 	int format;
 	struct Graphics_buffer *buffer;
 
