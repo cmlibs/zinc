@@ -254,7 +254,6 @@ Functions for executing cmiss commands.
 #endif /* defined (LINK_CMISS) */
 #if defined (MOTIF)
 #include "material/material_editor_dialog.h"
-#include "menu/menu_window.h"
 #endif /* defined (MOTIF) */
 #include "node/node_operations.h"
 #include "node/node_tool.h"
