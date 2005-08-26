@@ -1,0 +1,32 @@
+# **************************************************************************
+# FILE : README
+#
+# LAST MODIFIED : 26 August 2005
+# ==========================================================================
+
+This software is the cmgui part of CMISS.
+It is released under the Mozilla Public License v1.1
+
+Further information, help pages, a tracker and a wiki is available at 
+http://dev.cmiss.org/cmgui/
+
+This software was originally developed at The University of Auckland and 
+the Copyright held by Auckland UniServices Ltd.
+This development has been for over 15 years and this release is under ongoing
+development.
+
+The strengths of this development are field storage including many finite element
+basis types, 3D visualisation and a mathematical field abstraction layer. 
+
+It includes some modules which are being deprecated and phased out, and some
+which under active development.
+In particular most of the graphical interface was developed in Motif.  The 
+win32 port includes 3D windows and will run scripts developed for cmgui but 
+does not include any of the interface components at this point.
+The code is being redesigned so that rather than being an overall application
+it is a core library used by multiple applications, this includes the starting
+of a defined api directory, the building of perl and python interfaces and the
+inclusion of the 3D windows in Linux and win32 in a mozilla component.
+The computed_variable directory contains several experimental redevelopments
+of the concepts of the mathematical field abstraction layer represented by the
+computed_fields module.

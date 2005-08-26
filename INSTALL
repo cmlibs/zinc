@@ -1,0 +1,36 @@
+# **************************************************************************
+# FILE : INSTALL
+#
+# LAST MODIFIED : 26 August 2005
+# ==========================================================================
+
+This software is the cmgui part of CMISS.
+It is released under the Mozilla Public License v1.1
+
+Further information, help pages, a tracker and a wiki is available at 
+http://dev.cmiss.org/cmgui/
+
+Dependencies:
+Required:
+Motif:  Except for the gtk and win32 versions which have no interactive
+user interface motif is required (and therefore X).
+OpenGL: The 3D graphics is built on OpenGL.
+
+Optional but recommended:
+Perl Interpreter: By embedding a perl interpreter, perl commands and control
+constructs can be mixed with the 'gfx' cmgui commands.
+Imagemagick: For loading and saving images.  Without this the image formats
+are restricted to SGI rgb format.
+
+A debug executable 'cmgui-debug' should be able to be built by running GNU make in
+the cmgui directory.  make -f cmgui.make
+If successful it will make an executable in bin/ARCH/.
+An optimised executable is made with the target 'cmgui'.  make -f cmgui.make cmgui
+
+On AIX and IRIX there is a known problem with bootstrapping the creation of 
+the uidh files.  To make these once you will need to specify these uidh files as 
+targets when required by the compile, make -f cmgui.make TARGET=comfile/comfile_window.uidh
+
+There is currently no install target, this will be developed as part of the 
+reengineering to a library code platform.
+

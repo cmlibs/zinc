@@ -297,11 +297,7 @@ endif # USE_XML2
    ifeq ($(SYSNAME),AIX)
       IMAGEMAGICK_LIB += /usr/lib/libiconv.a
    endif # SYSNAME == AIX
-endif # ! IMAGEMAGICK
-
-EMOTER_SRCS = \
-	emoter/em_cmgui.c \
-	emoter/emoter_dialog.c
+fendif # ! IMAGEMAGICK
 
 ifndef PERL_INTERPRETER
    INTERPRETER_INC =
@@ -845,6 +841,9 @@ ELEMENT_INTERFACE_SRCS = \
 	element/element_point_viewer.c \
 	element/element_point_viewer_widget.c \
 	element/element_tool.c
+EMOTER_SRCS = \
+	emoter/em_cmgui.c \
+	emoter/emoter_dialog.c
 FINITE_ELEMENT_SRCS = \
 	finite_element/export_finite_element.c \
 	finite_element/finite_element.c \
