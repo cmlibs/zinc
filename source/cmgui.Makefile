@@ -297,7 +297,7 @@ endif # USE_XML2
    ifeq ($(SYSNAME),AIX)
       IMAGEMAGICK_LIB += /usr/lib/libiconv.a
    endif # SYSNAME == AIX
-fendif # ! IMAGEMAGICK
+endif # ! IMAGEMAGICK
 
 ifndef PERL_INTERPRETER
    INTERPRETER_INC =
