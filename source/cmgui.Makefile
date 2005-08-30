@@ -943,6 +943,7 @@ IMAGE_PROCESSING_SRCS = \
 	image_processing/computed_field_adaptive_adjust_contrast.c \
 	image_processing/computed_field_adjust_contrast.c \
 	image_processing/computed_field_adjusted_gaussian.c \
+	image_processing/computed_field_arithmetic_operators.c \
 	image_processing/computed_field_binomial_filter.c \
 	image_processing/computed_field_bvc_decomp.c \
 	image_processing/computed_field_canny_filter.c \
