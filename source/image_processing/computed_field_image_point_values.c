@@ -75,6 +75,7 @@ struct Computed_field_image_point_values_type_specific_data
 {
 	float cached_time;
 	char *data_file_name;
+	double resolution;
 	struct Cmiss_region *region;
 	struct Graphics_buffer_package *graphics_buffer_package;
 	struct Image_cache *image;
@@ -228,6 +229,7 @@ Copy the type specific data used by this type.
 			destination->cached_time = source->cached_time;
 			destination->region = ACCESS(Cmiss_region)(source->region);
 			destination->data_file_name = source->data_file_name;
+			destination->resolution = source->resolution;
 			destination->graphics_buffer_package = source->graphics_buffer_package;
 			destination->computed_field_manager = source->computed_field_manager;
 			destination->computed_field_manager_callback_id =
@@ -377,7 +379,8 @@ DESCRIPTION :
 No special criteria.
 ==============================================================================*/
 
-static int Image_cache_image_point_values(struct Image_cache *image, char *data_file_name)
+static int Image_cache_image_point_values(struct Image_cache *image,
+        double resolution, char *data_file_name)
 /*******************************************************************************
 LAST MODIFIED : 18 February 2004
 
@@ -435,9 +438,9 @@ Perform a image_point_values extraction operation on the image cache.
         				if(data == "Node:")
         				{
                 				fscanf(fp, "%d %f %f %f", &node_n,&x,&y,&z);
-	        				coord_index[0] = x;
-	        				coord_index[1] = y;
-	        				coord_index[2] = z;
+	        				coord_index[0] = x/resolution;
+	        				coord_index[1] = y/resolution;
+	        				coord_index[2] = z/resolution;
 	        				coord_index += 3;
         				}
 				}
@@ -526,7 +529,7 @@ Evaluate the fields cache at the node.
 				field->source_fields[1], data->region,
 				data->graphics_buffer_package);
 			/* 2. Perform image processing operation */
-			return_code = Image_cache_image_point_values(data->image, data->data_file_name);
+			return_code = Image_cache_image_point_values(data->image, data->resolution, data->data_file_name);
 		}
 		/* 3. Evaluate texture coordinates and copy image to field */
 		Computed_field_evaluate_cache_at_node(field->source_fields[1],
@@ -574,7 +577,7 @@ Evaluate the fields cache at the node.
 				field->source_fields[1], data->region,
 				data->graphics_buffer_package);
 			/* 2. Perform image processing operation */
-			return_code = Image_cache_image_point_values(data->image, data->data_file_name);
+			return_code = Image_cache_image_point_values(data->image,data->resolution, data->data_file_name);
 		}
 		/* 3. Evaluate texture coordinates and copy image to field */
 		Computed_field_evaluate_cache_in_element(field->source_fields[1],
@@ -711,6 +714,8 @@ DESCRIPTION :
 			"    texture coordinate field : %s\n",field->source_fields[1]->name);
 		display_message(INFORMATION_MESSAGE,
 			"    output_file_name : %s\n", data->data_file_name);
+		display_message(INFORMATION_MESSAGE,
+			"    resolution : %f\n", data->resolution);
 		return_code = 1;
 	}
 	else
@@ -770,6 +775,9 @@ Returns allocated command string for reproducing field. Includes type.
 		sprintf(temp_string, " data_file_name %s ",
 		                  data->data_file_name);
 		append_string(&command_string, temp_string, &error);
+		sprintf(temp_string, " resolution %f ",
+		                  data->resolution);
+		append_string(&command_string, temp_string, &error);
 	}
 	else
 	{
@@ -793,7 +801,7 @@ Works out whether time influences the field.
 int Computed_field_set_type_image_point_values(struct Computed_field *field,
 	struct Computed_field *source_field,
 	struct Computed_field *texture_coordinate_field,
-	int dimension, int *sizes, char *data_file_name,
+	int dimension, int *sizes, char *data_file_name, double resolution,
 	struct MANAGER(Computed_field) *computed_field_manager,
 	struct Cmiss_region *region, struct Graphics_buffer_package *graphics_buffer_package)
 /*******************************************************************************
@@ -836,6 +844,7 @@ size of the <sizes>.
 			field->source_fields=source_fields;
 			field->number_of_source_fields=number_of_source_fields;
 			data->data_file_name = data_file_name;
+			data->resolution = resolution;
 			data->region = ACCESS(Cmiss_region)(region);
 			data->graphics_buffer_package = graphics_buffer_package;
 			data->computed_field_manager = computed_field_manager;
@@ -877,7 +886,7 @@ size of the <sizes>.
 int Computed_field_get_type_image_point_values(struct Computed_field *field,
 	struct Computed_field **source_field,
 	struct Computed_field **texture_coordinate_field,
-	int *dimension, int **sizes, char **data_file_name)
+	int *dimension, int **sizes, char **data_file_name, double *resolution)
 /*******************************************************************************
 LAST MODIFIED : 18 February 2004
 
@@ -896,6 +905,7 @@ parameters defining it are returned.
 	{
 		*dimension = data->image->dimension;
 		*data_file_name = data->data_file_name;
+		*resolution = data->resolution;
 		if (ALLOCATE(*sizes, int, *dimension))
 		{
 			*source_field = field->source_fields[0];
@@ -935,6 +945,7 @@ already) and allows its contents to be modified.
 ==============================================================================*/
 {
 	char *current_token, *data_file_name;
+	double resolution;
 	int dimension, return_code, *sizes;
 	struct Computed_field *field, *source_field, *texture_coordinate_field;
 	struct Computed_field_image_point_values_package
@@ -973,7 +984,7 @@ already) and allows its contents to be modified.
 		{
 			return_code = Computed_field_get_type_image_point_values(field,
 				&source_field, &texture_coordinate_field, &dimension,
-				&sizes, &data_file_name);
+				&sizes, &data_file_name, &resolution);
 		}
 		if (return_code)
 		{
@@ -1001,6 +1012,9 @@ already) and allows its contents to be modified.
 				/* field */
 				Option_table_add_Computed_field_conditional_entry(option_table,
 					"field", &source_field, &set_source_field_data);
+				/* resolution */
+				Option_table_add_double_entry(option_table, "resolution",
+					&resolution);
 				/* sizes */
 				Option_table_add_int_vector_entry(option_table,
 					"sizes", sizes, &dimension);
@@ -1047,6 +1061,9 @@ already) and allows its contents to be modified.
 				/* field */
 				Option_table_add_Computed_field_conditional_entry(option_table,
 					"field", &source_field, &set_source_field_data);
+				/* resolution */
+				Option_table_add_double_entry(option_table, "resolution",
+					&resolution);
 				/* sizes */
 				Option_table_add_int_vector_entry(option_table,
 					"sizes", sizes, &dimension);
@@ -1067,7 +1084,7 @@ already) and allows its contents to be modified.
 			{
 				return_code = Computed_field_set_type_image_point_values(field,
 					source_field, texture_coordinate_field, 
-					dimension,sizes,data_file_name, 
+					dimension,sizes,data_file_name, resolution,
 					computed_field_image_point_values_package->computed_field_manager,
 					computed_field_image_point_values_package->root_region,
 					computed_field_image_point_values_package->graphics_buffer_package);
