@@ -399,7 +399,7 @@ Perform a image_point_values extraction operation on the image cache.
 	int X, Y, Z, ps;
 	char data[100];
 	int data_t = 0;
-	int node_n;
+	char node_n[20];
 	char filename[80];
 	ENTER(Image_cache_image_point_values);
 	if (image && (image->dimension > 0) && (image->depth > 0))
@@ -437,7 +437,7 @@ Perform a image_point_values extraction operation on the image cache.
         				fscanf(fp,"%s", data);
         				if(data == "Node:")
         				{
-                				fscanf(fp, "%d %f %f %f", &node_n,&x,&y,&z);
+                				fscanf(fp, "%s %f %f %f", node_n,&x,&y,&z);
 	        				coord_index[0] = x/resolution;
 	        				coord_index[1] = y/resolution;
 	        				coord_index[2] = z/resolution;
