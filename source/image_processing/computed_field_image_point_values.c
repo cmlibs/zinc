@@ -416,7 +416,7 @@ Perform a image_point_values extraction operation on the image cache.
 		        while (!feof(fp))
 			{
         			fscanf(fp,"%s", data);
-        			if(data == "Node:")
+        			if(strcmp(data,"Node:") == 0)
         			{
                 			data_t++;
         			}
@@ -435,7 +435,7 @@ Perform a image_point_values extraction operation on the image cache.
 				while (!feof(fp))
 				{
         				fscanf(fp,"%s", data);
-        				if(data == "Node:")
+        				if(strcmp(data,"Node:") == 0)
         				{
                 				fscanf(fp, "%s %f %f %f", node_n,&x,&y,&z);
 	        				coord_index[0] = x/resolution;
