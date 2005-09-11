@@ -462,8 +462,8 @@ define BuildNormalTarget
 	fi
 	$(BUILD_OBJECT_LIST)
 	cd $(OBJECT_PATH) ; \
-	$(LINK) -o $(1).tmp $(ALL_FLAGS) `cat $(1).list` $(4) && \
-	mv $(1).tmp $(2)/$(1) ;
+	$(LINK) -o $(1).tmp$$$$ $(ALL_FLAGS) `cat $(1).list` $(4) && \
+	mv $(1).tmp$$$$ $(2)/$(1) ;
 endef
 
 define BuildStaticLibraryTarget
@@ -476,8 +476,8 @@ define BuildStaticLibraryTarget
 	fi
 	$(BUILD_OBJECT_LIST)
 	cd $(OBJECT_PATH) ; \
-	ar $(AR_FLAGS) cr $(1).tmp `cat $(1).list` && \
-	mv $(1).tmp $(2)/$(1) ;
+	ar $(AR_FLAGS) cr $(1).tmp$$$$ `cat $(1).list` && \
+	mv $(1).tmp$$$$ $(2)/$(1) ;
 endef
 
 define BuildSharedLibraryTarget
@@ -493,6 +493,6 @@ define BuildSharedLibraryTarget
 	if [ $(SO_LIB_SUFFIX) == ".dll" ]; then \
 		$(LINK) -shared -o $(1).dll  $(ALL_FLAGS) -Wl,--out-implib,$(1).dll.a -Wl,--kill-at -Wl,--output-def,$(1).def -Wl,--whole-archive `cat $(1).list`  -Wl,--no-whole-archive $(4) $(6) && cp $(1).dll $(2)/$(1).dll && cp $(1).dll.a $(2)/$(1).dll.a && cp $(1).def $(2)/$(1).def; \
 	else \
-		$(LINK) -shared -o $(1).tmp $(ALL_FLAGS) `cat $(1).list` $(4) -Wl,-soname,$(5) && mv $(1).tmp $(2)/$(1) ; \
+		$(LINK) -shared -o $(1).tmp$$$$ $(ALL_FLAGS) `cat $(1).list` $(4) -Wl,-soname,$(5) && mv $(1).tmp$$$$ $(2)/$(1) ; \
 	fi
 endef
