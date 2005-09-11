@@ -966,6 +966,7 @@ already) and allows its contents to be modified.
 		dimension = 0;
 		sizes = (int *)NULL;
 		data_file_name = (char *)NULL;
+		resolution = 1;
 		/* field */
 		set_source_field_data.computed_field_manager =
 			computed_field_image_point_values_package->computed_field_manager;
