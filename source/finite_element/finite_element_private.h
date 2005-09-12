@@ -316,6 +316,28 @@ DESCRIPTION :
 Returns the node field list contained in the <node_field_info>.
 ==============================================================================*/
 
+int FE_node_field_info_add_node_field(
+	struct FE_node_field_info *fe_node_field_info, 
+	struct FE_node_field *new_node_field, int new_number_of_values);
+/*******************************************************************************
+LAST MODIFIED : 24 August 2005
+
+DESCRIPTION :
+Adds the <new_node_field> to the list in the <fe_node_field_info> and updates the
+<new_number_of_values>.  This should only be done if object requesting the change
+is known to be the only object using this field info.
+==============================================================================*/
+
+int FE_node_field_info_used_only_once(
+	struct FE_node_field_info *fe_node_field_info);
+/*******************************************************************************
+LAST MODIFIED : 24 August 2005
+
+DESCRIPTION :
+Returns 1 if the <node_field_info> access count indicates that it is being used
+by only one external object.
+==============================================================================*/
+
 int FE_node_field_info_get_number_of_values(
 	struct FE_node_field_info *fe_node_field_info);
 /*******************************************************************************

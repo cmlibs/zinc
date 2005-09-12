@@ -102,6 +102,26 @@ shared between elements.
 If <element_field_list> is omitted, an empty list is assumed.
 ==============================================================================*/
 
+int FE_region_get_FE_node_field_info_adding_new_field(
+	struct FE_region *fe_region, struct FE_node_field_info **node_field_info_address, 
+	struct FE_node_field *new_node_field, int new_number_of_values);
+/*******************************************************************************
+LAST MODIFIED : 24 August 2005
+
+DESCRIPTION :
+Updates the pointer to <node_field_info_address> to point to a node_field info
+which appends to the fields in <node_field_info_address> one <new_node_field>.
+The node_field_info returned in <node_field_info_address> will be for the
+<new_number_of_values>.
+The <fe_region> maintains an internal list of these structures so they can be 
+shared between nodes.  This function allows a fast path when adding a single 
+field.  If the node_field passed in is only referenced by one external object
+then it is assumed that this function can modify it rather than copying.  If 
+there are more references then the object is copied and then modified.
+This function handles the access and deaccess of the <node_field_info_address>
+as if it is just updating then there is nothing to do.
+==============================================================================*/
+
 int FE_region_remove_FE_element_field_info(struct FE_region *fe_region,
 	struct FE_element_field_info *fe_element_field_info);
 /*******************************************************************************

@@ -969,6 +969,72 @@ If <node_field_list> is omitted, an empty list is assumed.
 	return (fe_node_field_info);
 } /* FE_region_get_FE_node_field_info */
 
+int FE_region_get_FE_node_field_info_adding_new_field(
+	struct FE_region *fe_region, struct FE_node_field_info **node_field_info_address, 
+	struct FE_node_field *new_node_field, int new_number_of_values)
+/*******************************************************************************
+LAST MODIFIED : 24 August 2005
+
+DESCRIPTION :
+Updates the pointer to <node_field_info_address> to point to a node_field info
+which appends to the fields in <node_field_info_address> one <new_node_field>.
+The node_field_info returned in <node_field_info_address> will be for the
+<new_number_of_values>.
+The <fe_region> maintains an internal list of these structures so they can be 
+shared between nodes.  This function allows a fast path when adding a single 
+field.  If the node_field passed in is only referenced by one external object
+then it is assumed that this function can modify it rather than copying.  If 
+there are more references then the object is copied and then modified.
+This function handles the access and deaccess of the <node_field_info_address>
+as if it is just updating then there is nothing to do.
+==============================================================================*/
+{
+	int return_code;
+	struct FE_node_field_info *existing_node_field_info, *new_node_field_info;
+	struct LIST(FE_node_field) *node_field_list;
+
+	ENTER(FE_region_get_FE_node_field_info_adding_new_field);
+	if (fe_region && node_field_info_address && 
+		(existing_node_field_info = *node_field_info_address))
+	{
+		return_code = 1;
+		if (FE_node_field_info_used_only_once(existing_node_field_info))
+		{
+			FE_node_field_info_add_node_field(existing_node_field_info,
+				new_node_field, new_number_of_values);
+		}
+		else
+		{
+			/* Need to copy after all */
+			node_field_list = CREATE_LIST(FE_node_field)();
+			if (COPY_LIST(FE_node_field)(node_field_list,
+					FE_node_field_info_get_node_field_list(existing_node_field_info)))
+			{
+				/* add the new node field */
+				if (ADD_OBJECT_TO_LIST(FE_node_field)(new_node_field, node_field_list))
+				{
+					/* create the new node information */
+					if (new_node_field_info = FE_region_get_FE_node_field_info(
+							fe_region, new_number_of_values, node_field_list))
+					{
+						REACCESS(FE_node_field_info)(node_field_info_address,
+							new_node_field_info);
+					}
+				}
+			}
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"FE_region_get_FE_node_field_info_adding_new_field.  Invalid argument(s)");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* FE_region_get_FE_node_field_info_adding_new_field */
+
 static struct FE_node_field_info *FE_region_clone_FE_node_field_info(
 	struct FE_region *fe_region, struct FE_node_field_info *fe_node_field_info)
 /*******************************************************************************

@@ -1101,6 +1101,58 @@ by merging the two time_sequences supplied.
 	return (fe_time_sequence);
 } /* get_FE_time_sequence_matching_time_series */
 
+enum FE_time_sequence_mapping FE_time_sequences_mapping(
+	struct FE_time_sequence *source_sequence,
+	struct FE_time_sequence *destination_sequence)
+/*******************************************************************************
+LAST MODIFIED : 13 July 2005
+
+DESCRIPTION :
+Attempts to deduce a mapping that goes from the <source_sequence> to the 
+<destination_sequence> and returns an enumerator describing that mapping.
+If the change isn't recognised then it will return 
+FE_TIME_SEQUENCE_MAPPING_UNKNOWN;
+==============================================================================*/
+{
+	enum FE_time_sequence_mapping mapping;
+	
+	ENTER(FE_time_sequences_mapping);
+	if (source_sequence && destination_sequence)
+	{
+		/* Could add some caching to this test by keeping a list of known mappings
+			with the source and/or destination sequence, however need to be careful that
+			the source or destination sequence hasn't changed on us */
+		mapping = FE_TIME_SEQUENCE_MAPPING_UNKNOWN;
+		/* Using a char based memcmp for speed.  I think that
+			it is OK to misrepresent these FE_values as chars
+			as so long as we have a consistent order it is OK,
+			if we wanted different representations of the same
+			number to match we would have to compare FE_values
+			instead. */
+		if ((source_sequence->number_of_times == destination_sequence->number_of_times)
+			&& !memcmp(source_sequence->times, destination_sequence->times,
+				source_sequence->number_of_times * sizeof(FE_value)))
+		{
+			mapping = FE_TIME_SEQUENCE_MAPPING_IDENTICAL;
+		}
+		else if ((source_sequence->number_of_times < destination_sequence->number_of_times)
+			&& !memcmp(source_sequence->times, destination_sequence->times,
+				source_sequence->number_of_times * sizeof(FE_value)))
+		{
+			mapping = FE_TIME_SEQUENCE_MAPPING_APPEND;			
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"FE_time_sequences_mapping.  Invalid argument(s)");
+		mapping = FE_TIME_SEQUENCE_MAPPING_UNKNOWN;
+	}
+	LEAVE;
+
+	return (mapping);
+} /* FE_time_sequences_mapping */
+
 int FE_time_sequence_package_has_FE_time_sequence(struct FE_time_sequence_package *fe_time,
 	struct FE_time_sequence *fe_time_sequence)
 /*******************************************************************************

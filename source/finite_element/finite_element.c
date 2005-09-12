@@ -1737,9 +1737,6 @@ in memory. If pointers weren't DWORD aligned get bus errors on SGIs.
 		source_number_of_times = FE_time_sequence_get_number_of_times(
 			source_time_sequence);
 		/* Copy the values into the correct places */
-		/* Will need to make some sort of cache structure based on the
-			two time versions so that we know exactly how to copy these 
-			values quickly */
 		for (source_time_index = 0 ; source_time_index < source_number_of_times
 			 ; source_time_index++)
 		{
@@ -2069,7 +2066,8 @@ are non NULL then the value storage correspond to an arrays of values at those
 times.
 ==============================================================================*/
 {
-	int i,return_code;
+	enum FE_time_sequence_mapping time_sequence_mapping;
+	int destination_number_of_times, i, return_code, source_number_of_times;
 
 	ENTER(copy_value_storage_array);
 	if (destination&&(0<number_of_values)&&source)
@@ -2086,25 +2084,50 @@ times.
 				src = source;
 				value_size=get_Value_storage_size(value_type,
 					destination_time_sequence);
-				for (i=0;(i<number_of_values)&&return_code;i++)
+				time_sequence_mapping = 
+					FE_time_sequences_mapping(source_time_sequence, destination_time_sequence);
+				switch (time_sequence_mapping)
 				{
-					if (!(allocate_time_values_storage_array(value_type,
-						destination_time_sequence,dest)&&
-						copy_time_sequence_values_storage_array(src,value_type,
-						source_time_sequence,destination_time_sequence,dest)))
+					case FE_TIME_SEQUENCE_MAPPING_IDENTICAL:
+					case FE_TIME_SEQUENCE_MAPPING_APPEND:
 					{
-						display_message(ERROR_MESSAGE,
-							"copy_value_storage_array.  Failed to copy array");
-						if (0<i)
+						destination_number_of_times = FE_time_sequence_get_number_of_times(destination_time_sequence);
+						source_number_of_times = FE_time_sequence_get_number_of_times(source_time_sequence);
+						destination_number_of_times = (destination_number_of_times + 30) - 
+							(destination_number_of_times % 30);
+						for (i=0;(i<number_of_values)&&return_code;i++)
 						{
-							/* free any arrays allocated to date */
-							free_value_storage_array(destination,value_type,
-								destination_time_sequence,i);
+							REALLOCATE(*(void **)dest, *(void **)src, char, destination_number_of_times *
+								get_Value_storage_size(value_type, (struct FE_time_sequence *)NULL));
+							*(void **)src = 0x0;
+							dest += value_size;
+							src += value_size;
+						}
+					} break;
+					default:
+					{
+						/* Fallback default implementation */
+						for (i=0;(i<number_of_values)&&return_code;i++)
+						{
+							if (!(allocate_time_values_storage_array(value_type,
+								destination_time_sequence,dest)&&
+								copy_time_sequence_values_storage_array(src,value_type,
+								source_time_sequence,destination_time_sequence,dest)))
+							{
+								display_message(ERROR_MESSAGE,
+									"copy_value_storage_array.  Failed to copy array");
+								if (0<i)
+								{
+									/* free any arrays allocated to date */
+									free_value_storage_array(destination,value_type,
+										destination_time_sequence,i);
+								}
+								return_code = 0;
+							}
+							dest += value_size;
+							src += value_size;
+						}
 					}
-						return_code = 0;
-					}
-					dest += value_size;
-					src += value_size;
 				}
 			}
 			else
@@ -2836,59 +2859,6 @@ Returns true if a node field exactly matching <node_field> is found in
 
 	return (return_code);
 } /* FE_node_field_is_in_list */
-
-static int FE_node_field_add_to_list_no_field_duplication(
-	struct FE_node_field *node_field, void *node_field_list_void)
-/*******************************************************************************
-LAST MODIFIED : 4 October 2002
-
-DESCRIPTION :
-Adds <node_field> to <node_field_list>, but fails and reports an error if
-the field in <node_field> is already used in the list.
-==============================================================================*/
-{
-	int return_code;
-	struct LIST(FE_node_field) *node_field_list;
-
-	ENTER(FE_node_field_add_to_list_no_field_duplication);
-	if (node_field && (node_field->field) &&
-		(node_field_list = (struct LIST(FE_node_field) *)node_field_list_void))
-	{
-		if (FIND_BY_IDENTIFIER_IN_LIST(FE_node_field, field)(
-			node_field->field, node_field_list))
-		{
-			display_message(ERROR_MESSAGE,
-				"FE_node_field_add_to_list_no_field_duplication.  "
-				"Field %s is used more than once in node field list",
-				node_field->field->name);
-			return_code = 0;
-		}
-		else
-		{
-			if (ADD_OBJECT_TO_LIST(FE_node_field)(node_field, node_field_list))
-			{
-				return_code=1;
-			}
-			else
-			{
-				display_message(ERROR_MESSAGE,
-					"FE_node_field_add_to_list_no_field_duplication.  "
-					"Could not add field %s to list",
-					node_field->field->name);
-				return_code = 0;
-			}
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"FE_node_field_add_to_list_no_field_duplication.  Invalid argument(s)");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* FE_node_field_add_to_list_no_field_duplication */
 
 static int FE_node_field_get_number_of_values(struct FE_node_field *node_field)
 /*******************************************************************************
@@ -4007,10 +3977,9 @@ common object.
 				 would prevent the FE_region from being destroyed. */
 			fe_node_field_info->fe_region = fe_region;
 			fe_node_field_info->access_count = 0;
-			if (fe_node_field_info->node_field_list &&	((!fe_node_field_list) ||
-				FOR_EACH_OBJECT_IN_LIST(FE_node_field)(
-					FE_node_field_add_to_list_no_field_duplication,
-					(void *)fe_node_field_info->node_field_list, fe_node_field_list)))
+			if (fe_node_field_info->node_field_list && ((!fe_node_field_list) ||
+					COPY_LIST(FE_node_field)(fe_node_field_info->node_field_list,
+							fe_node_field_list)))
 			{
 				fe_node_field_info->values_storage_size =
 					get_FE_node_field_list_values_storage_size(
@@ -4418,6 +4387,85 @@ Returns the number of values expected for the <node_field_info>.
 
 	return (number_of_values);
 } /* FE_node_field_info_get_number_of_values */
+
+int FE_node_field_info_add_node_field(
+	struct FE_node_field_info *fe_node_field_info, 
+	struct FE_node_field *new_node_field, int new_number_of_values)
+/*******************************************************************************
+LAST MODIFIED : 24 August 2005
+
+DESCRIPTION :
+Adds the <new_node_field> to the list in the <fe_node_field_info> and updates the
+<new_number_of_values>.  This should only be done if object requesting the change
+is known to be the only object using this field info.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(FE_node_field_info_add_node_field);
+	if (fe_node_field_info)
+	{
+		if (ADD_OBJECT_TO_LIST(FE_node_field)(new_node_field, 
+				fe_node_field_info->node_field_list))
+		{
+			fe_node_field_info->number_of_values = new_number_of_values;
+			FE_node_field_add_values_storage_size(
+				new_node_field, (void *)&fe_node_field_info->values_storage_size);
+			return_code = 1;
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,
+				"FE_node_field_info_add_node_field.  Unable to add field to list");
+			return_code = 0;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"FE_node_field_info_add_node_field.  Invalid argument(s)");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* FE_node_field_info_add_node_field */
+
+int FE_node_field_info_used_only_once(
+	struct FE_node_field_info *fe_node_field_info)
+/*******************************************************************************
+LAST MODIFIED : 24 August 2005
+
+DESCRIPTION :
+Returns 1 if the <node_field_info> access count indicates that it is being used
+by only one external object.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(FE_node_field_info_used_only_once);
+	if (fe_node_field_info)
+	{
+		/* Once plus the access by the FE_region into its list == 2 */
+		if (fe_node_field_info->access_count <= 2)
+		{
+			return_code = 1;
+		}
+		else
+		{
+			return_code = 0;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"FE_node_field_info_used_only_once.  Invalid argument(s)");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* FE_node_field_info_used_only_once */
 
 int FE_node_field_log_FE_field_change(
 	struct FE_node_field *node_field, void *fe_field_change_log_void)
@@ -6569,9 +6617,55 @@ obtained from the node_field_component for the field at the node.
 						}
 						else
 						{
+							return_code = 0;
 							display_message(ERROR_MESSAGE,"global_to_element_map_values.  "
 								"Invalid standard node to element map");
-							return_code=0;
+							if (standard_node_map)
+							{
+								if (number_of_map_values>0)
+								{
+									if ((0<=standard_node_map->node_index)&&
+										(standard_node_map->node_index<number_of_element_nodes))
+									{
+										if (node)
+										{
+											if (node->values_storage)
+											{
+											}
+											else
+											{
+												display_message(ERROR_MESSAGE,"global_to_element_map_values.  "
+													"Node %d used in element %d has no fields defined.",
+													node->cm_node_identifier, element->cm.number);
+											}
+										}
+										else
+										{
+											display_message(ERROR_MESSAGE,"global_to_element_map_values.  "
+												"Node reference missing for element %d.",
+												element->cm.number);
+										}
+									}
+									else
+									{
+										display_message(ERROR_MESSAGE,"global_to_element_map_values.  "
+											"Node element map specifies a node index out of range for element %d.",
+											element->cm.number);
+									}
+								}
+								else
+								{
+									display_message(ERROR_MESSAGE,"global_to_element_map_values.  "
+										"No map values for element %d.",
+										element->cm.number);
+								}
+							}
+							else
+							{
+								display_message(ERROR_MESSAGE,"global_to_element_map_values.  "
+									"No standard node map for element %d.",
+									element->cm.number);
+							}
 						}
 					}
 					if (return_code)
@@ -15989,21 +16083,21 @@ Defines a field at a node (does not assign values)
 {
 	enum FE_nodal_value_type **component_nodal_value_types;
 	enum Value_type value_type;
-	int *component_number_of_derivatives,*component_number_of_versions,i,j,
+	int *component_number_of_derivatives,*component_number_of_versions,
+		existing_values_storage_size, existing_number_of_values, i,j,
 		new_values_storage_size,number_of_values,number_of_times,
 		number_of_values_in_component,return_code,size;
 	struct FE_node_field *node_field;
 	struct FE_node_field_component *component;
-	struct FE_node_field_info *existing_node_field_info, *new_node_field_info;
+	struct FE_node_field_info *node_field_info;
 	struct FE_region *fe_region;
-	struct LIST(FE_node_field) *node_field_list;
 	Value_storage *new_value;
 
 	ENTER(define_FE_field_at_node);
 	return_code = 0;
 	if (node && field && (fe_region = FE_field_get_FE_region(field)) &&
-		(existing_node_field_info = node->fields) &&
-		(existing_node_field_info->fe_region == fe_region) &&
+		(node_field_info = node->fields) &&
+		(node_field_info->fe_region == fe_region) &&
 		(component_number_of_derivatives =
 			fe_node_field_creator->numbers_of_derivatives) &&
 		(component_number_of_versions =
@@ -16016,7 +16110,7 @@ Defines a field at a node (does not assign values)
 		return_code = 1;
 		/* check if the field is already defined at the node */
 		if (FIND_BY_IDENTIFIER_IN_LIST(FE_node_field,field)(field,
-			existing_node_field_info->node_field_list))
+			node_field_info->node_field_list))
 		{
 			display_message(ERROR_MESSAGE,
 				"define_FE_field_at_node.  Field %s already defined at node %d",
@@ -16030,7 +16124,7 @@ Defines a field at a node (does not assign values)
 		if (INDEXED_FE_FIELD==field->fe_field_type)
 		{
 			if (!FIND_BY_IDENTIFIER_IN_LIST(FE_node_field,field)(field->indexer_field,
-				existing_node_field_info->node_field_list))
+				node_field_info->node_field_list))
 			{
 				display_message(ERROR_MESSAGE,"define_FE_field_at_node.  "
 					"Indexer field %s for field %s not defined at node %d",
@@ -16053,7 +16147,7 @@ Defines a field at a node (does not assign values)
 					number_of_times = FE_time_sequence_get_number_of_times(
 						fe_time_sequence);
 				}
-				number_of_values = existing_node_field_info->number_of_values;
+				number_of_values = node_field_info->number_of_values;
 				if (GENERAL_FE_FIELD == field->fe_field_type)
 				{
 					i = field->number_of_components;
@@ -16064,7 +16158,7 @@ Defines a field at a node (does not assign values)
 						/*???DB.  Inline assign_FE_node_field_component and get rid of
 							it ? */
 						return_code = assign_FE_node_field_component(component,
-							existing_node_field_info->values_storage_size +
+							node_field_info->values_storage_size +
 							new_values_storage_size,
 							*component_number_of_derivatives,
 							*component_number_of_versions,
@@ -16082,262 +16176,233 @@ Defines a field at a node (does not assign values)
 				}
 				if (return_code)
 				{
-					/* duplicate the existing node field information */					
-					node_field_list = CREATE_LIST(FE_node_field)();
-					if (COPY_LIST(FE_node_field)(node_field_list,
-						existing_node_field_info->node_field_list))
+					existing_values_storage_size = node_field_info->values_storage_size;
+					existing_number_of_values = node_field_info->number_of_values;
+					if (FE_region_get_FE_node_field_info_adding_new_field(fe_region,
+							&node_field_info, node_field, number_of_values))
 					{
-						/* add the new node field */
-						if (ADD_OBJECT_TO_LIST(FE_node_field)(node_field, node_field_list))
+						if (GENERAL_FE_FIELD == field->fe_field_type)
 						{
-							/* create the new node information */
-							if (new_node_field_info = FE_region_get_FE_node_field_info(
-								fe_region, number_of_values, node_field_list))
+							ADJUST_VALUE_STORAGE_SIZE(new_values_storage_size);
+							if (REALLOCATE(new_value, node->values_storage, Value_storage,
+									node_field_info->values_storage_size +
+									new_values_storage_size))
 							{
-								/* access now, deaccess at end to clean up if fails */
-								ACCESS(FE_node_field_info)(new_node_field_info);
-								if (GENERAL_FE_FIELD == field->fe_field_type)
+								node->values_storage = new_value;
+								/* initialize new values */
+								new_value += existing_values_storage_size;
+								for (i = number_of_values -
+										  (existing_number_of_values); i > 0; i--)
 								{
-									ADJUST_VALUE_STORAGE_SIZE(new_values_storage_size);
-									if (REALLOCATE(new_value, node->values_storage, Value_storage,
-										existing_node_field_info->values_storage_size +
-										new_values_storage_size))
+									if (fe_time_sequence)
 									{
-										node->values_storage = new_value;
-										/* initialize new values */
-										new_value += existing_node_field_info->values_storage_size;
-										for (i = number_of_values -
-											(existing_node_field_info->number_of_values); i > 0; i--)
+										switch (value_type)
 										{
-											if (fe_time_sequence)
+											case FE_VALUE_VALUE:
 											{
-												switch (value_type)
+												FE_value *array;
+
+												/* Allocate the array */
+												if (ALLOCATE(array, FE_value, number_of_times))
 												{
-													case FE_VALUE_VALUE:
+													for (j = 0 ; j < number_of_times ; j++)
 													{
-														FE_value *array;
-
-														/* Allocate the array */
-														if (ALLOCATE(array, FE_value, number_of_times))
-														{
-															for (j = 0 ; j < number_of_times ; j++)
-															{
-																array[j] = FE_VALUE_INITIALIZER;
-															}
-															/* Store the pointer to the array
-																in the values storage */
-															*((FE_value **)new_value) = array;
-															new_value += size;
-														}
-														else
-														{
-															display_message(ERROR_MESSAGE,
-																"define_FE_field_at_node.  "
-																"Unable to allocate FE value time array");
-															return_code = 0;
-														}
-													} break;
-													case SHORT_VALUE:
-													{
-														short *array;
-
-														/* Allocate the array */
-														if (ALLOCATE(array,short,number_of_times))
-														{
-															for (j = 0 ; j < number_of_times ; j++)
-															{
-																array[j] = 0;
-															}
-															/* Store the pointer to the array
-																in the values storage */
-															*((short **)new_value) = array;
-															new_value += size;
-														}
-														else
-														{
-															display_message(ERROR_MESSAGE,
-																"define_FE_field_at_node.  "
-																"Unable to allocate short time array");
-															return_code = 0;
-														}
-													} break;
-													default:
-													case  UNKNOWN_VALUE:
-													{
-														display_message(ERROR_MESSAGE,
-															"define_FE_field_at_node.  Time values for this "
-															"field type not implemented");
-														return_code = 0;
-													} break;
+														array[j] = FE_VALUE_INITIALIZER;
+													}
+													/* Store the pointer to the array
+														in the values storage */
+													*((FE_value **)new_value) = array;
+													new_value += size;
 												}
-											}
-											else
+												else
+												{
+													display_message(ERROR_MESSAGE,
+														"define_FE_field_at_node.  "
+														"Unable to allocate FE value time array");
+													return_code = 0;
+												}
+											} break;
+											case SHORT_VALUE:
 											{
-												switch (value_type)
-												{
-													case ELEMENT_XI_VALUE:
-													{											
-														*((struct FE_element **)new_value) =
-															(struct FE_element *)NULL;
-														new_value += sizeof(struct FE_element *);
-														for (j = 0; j < MAXIMUM_ELEMENT_XI_DIMENSIONS; j++)
-														{
-															*((FE_value *)new_value) = FE_VALUE_INITIALIZER;
-															new_value += sizeof(FE_value);
-														}
-													} break;
-													case FE_VALUE_VALUE:
-													{																					
-														*((FE_value *)new_value) = FE_VALUE_INITIALIZER;
-														new_value += size;
-													} break;
-													case UNSIGNED_VALUE:
-													{																					
-														*((unsigned *)new_value) = 0;
-														new_value += size;
-													} break;	
-													case INT_VALUE:
-													{																			
-														*((int *)new_value) = 0;
-														new_value += size;
-													} break;
-													case DOUBLE_VALUE:
-													{																							
-														*((double *)new_value) = 0;
-														new_value += size;
-													} break;	
-													case FLT_VALUE:
-													{																						
-														*((float *)new_value) = 0;
-														new_value += size;
-													} break;
-													case SHORT_VALUE:
-													{
-														display_message(ERROR_MESSAGE,
-															"define_FE_field_at_node.  SHORT_VALUE: Code not "
-															"written yet. Beware alignmemt problems!");
-														return_code = 0;
-													} break;
-													case DOUBLE_ARRAY_VALUE:
-													{	
-														double *array = (double *)NULL;
-														double **array_address;
-														int zero = 0;										
-														/* copy number of array values to values_storage*/
-														*((int *)new_value) = zero;
-														/* copy pointer to array values to values_storage */
-														array_address =
-															(double **)(new_value + sizeof(int));
-														*array_address = array;
-														new_value += size;
-													} break;																			
-													case FE_VALUE_ARRAY_VALUE:
-													{	
-														FE_value *array = (FE_value *)NULL;
-														FE_value **array_address;
-														int zero = 0;
-														*((int *)new_value) = zero;													
-														array_address =
-															(FE_value **)(new_value + sizeof(int));
-														*array_address = array;	
-														new_value += size;
-													} break;
-													case FLT_ARRAY_VALUE:
-													{	
-														float *array = (float *)NULL;	
-														float **array_address;
-														int zero = 0;
-														*((int *)new_value) = zero;												
-														array_address = (float **)(new_value + sizeof(int));
-														*array_address = array;	
-														new_value += size;
-													} break;		
-													case SHORT_ARRAY_VALUE:
-													{	
-														short *array = (short *)NULL;	
-														short **array_address;
-														int zero = 0;
-														*((int *)new_value) = zero;												
-														array_address = (short **)(new_value + sizeof(int));
-														*array_address = array;	
-														new_value += size;
-													} break;									
-													case  INT_ARRAY_VALUE:
-													{	
-														int *array = (int *)NULL;	
-														int **array_address;
-														int zero = 0;
-														*((int *)new_value) = zero;												
-														array_address = (int **)(new_value + sizeof(int));
-														*array_address = array;	
-														new_value += size;
-													} break;															
-													case  UNSIGNED_ARRAY_VALUE:
-													{	
-														unsigned *array = (unsigned *)NULL;	
-														unsigned **array_address;
-														int zero = 0;
-														*((int *)new_value) = zero;												
-														array_address =
-															(unsigned **)(new_value + sizeof(int));
-														*array_address = array;	
-														new_value += size;
-													} break;
-													case STRING_VALUE:
-													{	
-														char **string_address;
+												short *array;
 
-														string_address = (char **)(new_value);
-														*string_address = (char *)NULL;	
-														new_value += size;
-													} break;	
-													case  UNKNOWN_VALUE:
+												/* Allocate the array */
+												if (ALLOCATE(array,short,number_of_times))
+												{
+													for (j = 0 ; j < number_of_times ; j++)
 													{
-														display_message(ERROR_MESSAGE,
-															"define_FE_field_at_node.  UNKNOWN_VALUE");
-														return_code = 0;
-													} break;
+														array[j] = 0;
+													}
+													/* Store the pointer to the array
+														in the values storage */
+													*((short **)new_value) = array;
+													new_value += size;
 												}
-											}
+												else
+												{
+													display_message(ERROR_MESSAGE,
+														"define_FE_field_at_node.  "
+														"Unable to allocate short time array");
+													return_code = 0;
+												}
+											} break;
+											default:
+											case  UNKNOWN_VALUE:
+											{
+												display_message(ERROR_MESSAGE,
+													"define_FE_field_at_node.  Time values for this "
+													"field type not implemented");
+												return_code = 0;
+											} break;
 										}
 									}
 									else
 									{
-										display_message(ERROR_MESSAGE, "define_FE_field_at_node.  "
-											"Could not reallocate nodal values");
-										return_code = 0;
+										switch (value_type)
+										{
+											case ELEMENT_XI_VALUE:
+											{											
+												*((struct FE_element **)new_value) =
+													(struct FE_element *)NULL;
+												new_value += sizeof(struct FE_element *);
+												for (j = 0; j < MAXIMUM_ELEMENT_XI_DIMENSIONS; j++)
+												{
+													*((FE_value *)new_value) = FE_VALUE_INITIALIZER;
+													new_value += sizeof(FE_value);
+												}
+											} break;
+											case FE_VALUE_VALUE:
+											{																					
+												*((FE_value *)new_value) = FE_VALUE_INITIALIZER;
+												new_value += size;
+											} break;
+											case UNSIGNED_VALUE:
+											{																					
+												*((unsigned *)new_value) = 0;
+												new_value += size;
+											} break;	
+											case INT_VALUE:
+											{																			
+												*((int *)new_value) = 0;
+												new_value += size;
+											} break;
+											case DOUBLE_VALUE:
+											{																							
+												*((double *)new_value) = 0;
+												new_value += size;
+											} break;	
+											case FLT_VALUE:
+											{																						
+												*((float *)new_value) = 0;
+												new_value += size;
+											} break;
+											case SHORT_VALUE:
+											{
+												display_message(ERROR_MESSAGE,
+													"define_FE_field_at_node.  SHORT_VALUE: Code not "
+													"written yet. Beware alignmemt problems!");
+												return_code = 0;
+											} break;
+											case DOUBLE_ARRAY_VALUE:
+											{	
+												double *array = (double *)NULL;
+												double **array_address;
+												int zero = 0;										
+												/* copy number of array values to values_storage*/
+												*((int *)new_value) = zero;
+												/* copy pointer to array values to values_storage */
+												array_address =
+													(double **)(new_value + sizeof(int));
+												*array_address = array;
+												new_value += size;
+											} break;																			
+											case FE_VALUE_ARRAY_VALUE:
+											{	
+												FE_value *array = (FE_value *)NULL;
+												FE_value **array_address;
+												int zero = 0;
+												*((int *)new_value) = zero;													
+												array_address =
+													(FE_value **)(new_value + sizeof(int));
+												*array_address = array;	
+												new_value += size;
+											} break;
+											case FLT_ARRAY_VALUE:
+											{	
+												float *array = (float *)NULL;	
+												float **array_address;
+												int zero = 0;
+												*((int *)new_value) = zero;												
+												array_address = (float **)(new_value + sizeof(int));
+												*array_address = array;	
+												new_value += size;
+											} break;		
+											case SHORT_ARRAY_VALUE:
+											{	
+												short *array = (short *)NULL;	
+												short **array_address;
+												int zero = 0;
+												*((int *)new_value) = zero;												
+												array_address = (short **)(new_value + sizeof(int));
+												*array_address = array;	
+												new_value += size;
+											} break;									
+											case  INT_ARRAY_VALUE:
+											{	
+												int *array = (int *)NULL;	
+												int **array_address;
+												int zero = 0;
+												*((int *)new_value) = zero;												
+												array_address = (int **)(new_value + sizeof(int));
+												*array_address = array;	
+												new_value += size;
+											} break;															
+											case  UNSIGNED_ARRAY_VALUE:
+											{	
+												unsigned *array = (unsigned *)NULL;	
+												unsigned **array_address;
+												int zero = 0;
+												*((int *)new_value) = zero;												
+												array_address =
+													(unsigned **)(new_value + sizeof(int));
+												*array_address = array;	
+												new_value += size;
+											} break;
+											case STRING_VALUE:
+											{	
+												char **string_address;
+
+												string_address = (char **)(new_value);
+												*string_address = (char *)NULL;	
+												new_value += size;
+											} break;	
+											case  UNKNOWN_VALUE:
+											{
+												display_message(ERROR_MESSAGE,
+													"define_FE_field_at_node.  UNKNOWN_VALUE");
+												return_code = 0;
+											} break;
+										}
 									}
 								}
-								if (return_code)
-								{
-									REACCESS(FE_node_field_info)(&(node->fields),
-										new_node_field_info);
-								}
-								DEACCESS(FE_node_field_info)(&new_node_field_info);
 							}
 							else
 							{
 								display_message(ERROR_MESSAGE, "define_FE_field_at_node.  "
-									"Could not get node field information");
-								/* don't need to destroy node_field because it will be
-									destroyed when the corresponding list is destroyed */
+									"Could not reallocate nodal values");
 								return_code = 0;
 							}
 						}
+						if (return_code)
+						{
+							/* Already handled the accessing in FE_region_get_FE_node_field_info_adding_new_field */
+							node->fields = node_field_info;
+						}
 						else
 						{
-							display_message(ERROR_MESSAGE,
-								"define_FE_field_at_node.  Could not add node field to list");
-							return_code = 0;
+							DEACCESS(FE_node_field_info)(&node_field_info);
 						}
 					}
-					else
-					{
-						display_message(ERROR_MESSAGE,
-							"define_FE_field_at_node.  Error duplicating node field lists");
-						return_code = 0;
-					}
-					DESTROY(LIST(FE_node_field))(&node_field_list);
 				}
 				DEACCESS(FE_node_field)(&node_field);
 			}
@@ -35571,8 +35636,14 @@ the derivatives will start at the first position of <jacobian>.
 						while (return_code&&(i<number_of_xi_coordinates))
 						{
 							xi_coordinate=xi_coordinates[i];
-							if ((0<=xi_coordinate)&&(xi_coordinate<=1))
+							if (0>xi_coordinate)
 							{
+								xi_coordinate = 0.0;
+							}
+							if (xi_coordinate>1)
+							{
+								xi_coordinate = 1.0;
+							}
 								/* get xi_offset = lower grid number for cell in xi_coordinate
 									 i, and xi_coordinate = fractional xi value in grid cell */
 								if (1==xi_coordinate)
@@ -35633,13 +35704,7 @@ the derivatives will start at the first position of <jacobian>.
 									*basis_value *= temp;
 								}
 								m *= 2;
-							}
-							else
-							{
-								display_message(ERROR_MESSAGE,
-									"calculate_FE_element_field.  Xi must be from 0 to 1");
-								return_code=0;
-							}
+							
 							i++;
 						}
 						if (return_code)

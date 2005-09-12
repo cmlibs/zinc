@@ -83,6 +83,20 @@ DECLARE_LIST_TYPES(FE_time_sequence);
 
 DECLARE_MANAGER_TYPES(FE_time_sequence);
 
+enum FE_time_sequence_mapping 
+/*******************************************************************************
+LAST MODIFIED : 9 November 2001
+
+DESCRIPTION :
+Some simple mappings between time_sequences that can be used to accelerate
+copying and merging operations.
+==============================================================================*/
+{
+	FE_TIME_SEQUENCE_MAPPING_UNKNOWN,
+	FE_TIME_SEQUENCE_MAPPING_IDENTICAL,
+	FE_TIME_SEQUENCE_MAPPING_APPEND
+};
+
 /*
 Global functions
 ----------------
@@ -227,6 +241,19 @@ the time array bracketing the supplied <time>, the <xi> value is set between 0
 and 1 to indicate what fraction of the way between <time_index_one> and 
 <time_index_two> the value is found.  Returns 0 if time is outside the range
 of the time index array.
+==============================================================================*/
+
+enum FE_time_sequence_mapping FE_time_sequences_mapping(
+	struct FE_time_sequence *source_sequence,
+	struct FE_time_sequence *destination_sequence);
+/*******************************************************************************
+LAST MODIFIED : 13 July 2005
+
+DESCRIPTION :
+Attempts to deduce a mapping that goes from the <source_sequence> to the 
+<destination_sequence> and returns an enumerator describing that mapping.
+If the change isn't recognised then it will return 
+FE_TIME_SEQUENCE_MAPPING_UNKNOWN;
 ==============================================================================*/
 
 int FE_time_sequence_package_has_FE_time_sequence(
