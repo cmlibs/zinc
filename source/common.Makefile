@@ -446,11 +446,10 @@ endif
 	$(UID2UIDH_BIN) $(UIDH_PATH)/$*.uid $(UIDH_PATH)/$*.uidh
 endif # $(USER_INTERFACE) == MOTIF_USER_INTERFACE
 
-ifeq ($(SYSNAME:IRIX%=),)
-   BUILD_OBJECT_LIST = (ls $(3) 2>&1 | sed "s%Cannot access %product_object/%;s%: No such file or directory%%;s%UX:ls: ERROR: %%" > $(1).list$$$$) 
-else # SYSNAME != IRIX%
-   BUILD_OBJECT_LIST = (LC_ALL=C ls $(3) 2>&1 | sed "s%ls: %product_object/%;s%: No such file or directory%%" > $(1).list$$$$) 
-endif # SYSNAME ==/!= IRIX%
+#Ensure something is defined for TMPDIR
+ifeq ($(TMPDIR),)
+  TMPDIR = .
+endif
 
 define BuildNormalTarget
 	echo 'Building $(2)/$(1)'
@@ -461,10 +460,10 @@ define BuildNormalTarget
 		mkdir -p $(2) ; \
 	fi
 	cd $(OBJECT_PATH) && \
-	$(BUILD_OBJECT_LIST) && \
-	$(LINK) -o $(1).tmp$$$$ $(ALL_FLAGS) `cat $(1).list$$$$` $(4) && \
+	(echo $(3) 2>&1 > $(1).list$$$$) && \
+	$(LINK) -o $(TMPDIR)/$(1).tmp$$$$ $(ALL_FLAGS) `cat $(1).list$$$$` $(4) && \
    rm $(1).list$$$$ && \
-	mv $(1).tmp$$$$ $(2)/$(1) ;
+	mv $(TMPDIR)/$(1).tmp$$$$ $(2)/$(1) ;
 endef
 
 define BuildStaticLibraryTarget
@@ -476,10 +475,10 @@ define BuildStaticLibraryTarget
 		mkdir -p $(dir $(2)/$(1)) ; \
 	fi
 	cd $(OBJECT_PATH) && \
-	$(BUILD_OBJECT_LIST) && \
-	ar $(AR_FLAGS) cr $(1).tmp$$$$ `cat $(1).list$$$$` && \
+	(echo $(3) 2>&1 > $(1).list$$$$) && \
+	ar $(AR_FLAGS) cr $(TMPDIR)/$(1).tmp$$$$ `cat $(1).list$$$$` && \
    rm $(1).list$$$$ && \
-	mv $(1).tmp$$$$ $(2)/$(1) ;
+	mv $(TMPDIR)/$(1).tmp$$$$ $(2)/$(1) ;
 endef
 
 define BuildSharedLibraryTarget
@@ -491,7 +490,7 @@ define BuildSharedLibraryTarget
 		mkdir -p $(dir $(2)/$(1)) ; \
 	fi
 	cd $(OBJECT_PATH) && \
-	$(BUILD_OBJECT_LIST) && \
+	(echo $(3) 2>&1 > $(1).list$$$$) && \
 	if [ $(SO_LIB_SUFFIX) == ".dll" ]; then \
 		$(LINK) -shared -o $(1).dll  $(ALL_FLAGS) -Wl,--out-implib,$(1).dll.a -Wl,--kill-at -Wl,--output-def,$(1).def -Wl,--whole-archive `cat $(1).list$$$$`  -Wl,--no-whole-archive $(4) $(6) && cp $(1).dll $(2)/$(1).dll && cp $(1).dll.a $(2)/$(1).dll.a && cp $(1).def $(2)/$(1).def; \
 	else \
