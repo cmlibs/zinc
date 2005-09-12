@@ -2067,7 +2067,7 @@ times.
 ==============================================================================*/
 {
 	enum FE_time_sequence_mapping time_sequence_mapping;
-	int destination_number_of_times, i, return_code, source_number_of_times;
+	int destination_number_of_times, i, return_code;
 
 	ENTER(copy_value_storage_array);
 	if (destination&&(0<number_of_values)&&source)
@@ -2092,7 +2092,7 @@ times.
 					case FE_TIME_SEQUENCE_MAPPING_APPEND:
 					{
 						destination_number_of_times = FE_time_sequence_get_number_of_times(destination_time_sequence);
-						source_number_of_times = FE_time_sequence_get_number_of_times(source_time_sequence);
+						/* Probably should use some exponential growing increment in the size of allocation */
 						destination_number_of_times = (destination_number_of_times + 30) - 
 							(destination_number_of_times % 30);
 						for (i=0;(i<number_of_values)&&return_code;i++)
