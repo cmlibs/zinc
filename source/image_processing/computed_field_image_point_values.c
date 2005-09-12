@@ -75,6 +75,7 @@ struct Computed_field_image_point_values_type_specific_data
 {
 	float cached_time;
 	char *data_file_name;
+	char *output_file_name;
 	double resolution;
 	struct Cmiss_region *region;
 	struct Graphics_buffer_package *graphics_buffer_package;
@@ -229,6 +230,7 @@ Copy the type specific data used by this type.
 			destination->cached_time = source->cached_time;
 			destination->region = ACCESS(Cmiss_region)(source->region);
 			destination->data_file_name = source->data_file_name;
+			destination->output_file_name = source->output_file_name;
 			destination->resolution = source->resolution;
 			destination->graphics_buffer_package = source->graphics_buffer_package;
 			destination->computed_field_manager = source->computed_field_manager;
@@ -380,7 +382,7 @@ No special criteria.
 ==============================================================================*/
 
 static int Image_cache_image_point_values(struct Image_cache *image,
-        double resolution, char *data_file_name)
+        double resolution, char *data_file_name, char *output_file_name)
 /*******************************************************************************
 LAST MODIFIED : 18 February 2004
 
@@ -392,79 +394,68 @@ Perform a image_point_values extraction operation on the image cache.
 	FE_value *data_index, *result_index;
 	int i, k, return_code;
 	int storage_size;
-	FILE *fp;
-        FE_value *coords;
-	FE_value *coord_index;
-	FE_value x, y, z;
+	FILE *fp, *fp1;
+        
+	FE_value x, y, z, value;
 	int X, Y, Z, ps;
 	char data[100];
-	int data_t = 0;
+	
 	char node_n[20];
 	char filename[80];
+	char filename1[80];
 	ENTER(Image_cache_image_point_values);
 	if (image && (image->dimension > 0) && (image->depth > 0))
 	{
 		return_code = 1;
-		for (i = 0; i < 80; i++)
+		/* Allocate a new storage block for our data */
+		        
+		storage_size = image->depth;
+		for (i = 0 ; i < image->dimension ; i++)
 		{
-		        filename[i] = *data_file_name;
-			data_file_name++;
+			storage_size *= image->sizes[i];
 		}
-		fp = fopen(filename, "r");
-		if (fp != NULL)
+		if ( ALLOCATE(storage, char, storage_size * sizeof(FE_value)))
 		{
-		        while (!feof(fp))
+			for (i = 0; i < 80; i++)
 			{
-        			fscanf(fp,"%s", data);
-        			if(strcmp(data,"Node:") == 0)
-        			{
-                			data_t++;
-        			}
+		        	filename[i] = *data_file_name;
+				filename1[i] = *output_file_name;
+				data_file_name++;
+				output_file_name++;
 			}
-			fseek(fp, 0, SEEK_SET);
-			/* Allocate a new storage block for our data */
-		        storage_size = image->depth;
-		        for (i = 0 ; i < image->dimension ; i++)
-		        {
-			        storage_size *= image->sizes[i];
-		        }
-			if (ALLOCATE(coords, FE_value, data_t * 3) &&  ALLOCATE(storage, char, storage_size * sizeof(FE_value)))
+			for (i = 0 ; i < storage_size ; i++)
 			{
-				coord_index = coords;
-
-				while (!feof(fp))
+				*result_index = 0.0;
+				result_index++;
+			}
+			data_index = (FE_value *)image->data;
+			result_index = (FE_value *)storage;
+			fp = fopen(filename, "r");
+			fp1 = fopen(filename1, "wa");
+			if ((fp != NULL) && (fp1 != NULL))
+			{
+		        	while (!feof(fp))
 				{
         				fscanf(fp,"%s", data);
         				if(strcmp(data,"Node:") == 0)
         				{
-                				fscanf(fp, "%s %f %f %f", node_n,&x,&y,&z);
-	        				coord_index[0] = x/resolution;
-	        				coord_index[1] = y/resolution;
-	        				coord_index[2] = z/resolution;
-	        				coord_index += 3;
+				        	fscanf(fp, "%s %f %f %f", node_n,&x,&y,&z);
+						X = (int)(x/resolution);
+						Y = (int)(y/resolution);
+						Z = (int)(z/resolution);
+						ps = image->depth * (Z * image->sizes[0]*image->sizes[1] + Y * image->sizes[0] + X);
+						value = *(data_index + ps);
+						for (k = 0; k < image->depth; k++)
+						{
+				        		result_index[ps + k] = *(data_index + ps + k);
+						}
+                				fprintf(fp1,"Node: %s\n",node_n);
+						fprintf(fp1," %f %f %f\n",x, y, z);
+						fprintf(fp1," %f", value);
         				}
 				}
 				fclose(fp);
-				result_index = (FE_value *)storage;
-				for (i = 0 ; i < storage_size ; i++)
-				{
-					*result_index = 0.0;
-					result_index++;
-				}
-				data_index = (FE_value *)image->data;
-				result_index = (FE_value *)storage;
-				coord_index = coords;
-				for (i = 0; i < data_t; i++)
-				{
-			        	X = (int)(*coord_index);
-					Y = (int)(*(coord_index+1));
-					Z = (int)(*(coord_index+2));
-					ps = image->depth * (Z * image->sizes[0]*image->sizes[1] + Y * image->sizes[0] + X);
-					for (k = 0; k < image->depth; k++)
-					{
-				        	result_index[ps + k] = *(data_index + ps + k);
-					}
-				}
+				fclose(fp1);
 			
 				if (return_code)
 				{
@@ -476,22 +467,21 @@ Perform a image_point_values extraction operation on the image cache.
 				{
 					DEALLOCATE(storage);
 				}
-				DEALLOCATE(coords);
+			
 			}
 			else
 			{
-			        display_message(ERROR_MESSAGE, "Image_cache_image_point_values.  "
-			            "Can't allocate memory.");
-		                return_code=0; 
+		        	display_message(ERROR_MESSAGE, "Image_cache_image_point_values.  "
+			             "Can't open the data points file.");
+		        	return_code=0; 
 			}
 		}
 		else
 		{
-		        display_message(ERROR_MESSAGE, "Image_cache_image_point_values.  "
-			"Can't open the data points file.");
+			display_message(ERROR_MESSAGE, "Image_cache_image_point_values.  "
+			            "Can't allocate memory.");
 		        return_code=0; 
 		}
-		
 	}
 	else
 	{
@@ -529,7 +519,7 @@ Evaluate the fields cache at the node.
 				field->source_fields[1], data->region,
 				data->graphics_buffer_package);
 			/* 2. Perform image processing operation */
-			return_code = Image_cache_image_point_values(data->image, data->resolution, data->data_file_name);
+			return_code = Image_cache_image_point_values(data->image, data->resolution, data->data_file_name, data->output_file_name);
 		}
 		/* 3. Evaluate texture coordinates and copy image to field */
 		Computed_field_evaluate_cache_at_node(field->source_fields[1],
@@ -577,7 +567,7 @@ Evaluate the fields cache at the node.
 				field->source_fields[1], data->region,
 				data->graphics_buffer_package);
 			/* 2. Perform image processing operation */
-			return_code = Image_cache_image_point_values(data->image,data->resolution, data->data_file_name);
+			return_code = Image_cache_image_point_values(data->image,data->resolution, data->data_file_name, data->output_file_name);
 		}
 		/* 3. Evaluate texture coordinates and copy image to field */
 		Computed_field_evaluate_cache_in_element(field->source_fields[1],
@@ -713,7 +703,9 @@ DESCRIPTION :
 		display_message(INFORMATION_MESSAGE,
 			"    texture coordinate field : %s\n",field->source_fields[1]->name);
 		display_message(INFORMATION_MESSAGE,
-			"    output_file_name : %s\n", data->data_file_name);
+			"    data_file_name : %s\n", data->data_file_name);
+		display_message(INFORMATION_MESSAGE,
+			"    output_file_name : %s\n", data->output_file_name);
 		display_message(INFORMATION_MESSAGE,
 			"    resolution : %f\n", data->resolution);
 		return_code = 1;
@@ -775,6 +767,9 @@ Returns allocated command string for reproducing field. Includes type.
 		sprintf(temp_string, " data_file_name %s ",
 		                  data->data_file_name);
 		append_string(&command_string, temp_string, &error);
+		sprintf(temp_string, " output_file_name %s ",
+		                  data->output_file_name);
+		append_string(&command_string, temp_string, &error);
 		sprintf(temp_string, " resolution %f ",
 		                  data->resolution);
 		append_string(&command_string, temp_string, &error);
@@ -801,7 +796,8 @@ Works out whether time influences the field.
 int Computed_field_set_type_image_point_values(struct Computed_field *field,
 	struct Computed_field *source_field,
 	struct Computed_field *texture_coordinate_field,
-	int dimension, int *sizes, char *data_file_name, double resolution,
+	int dimension, int *sizes, char *data_file_name, 
+	char *output_file_name, double resolution,
 	struct MANAGER(Computed_field) *computed_field_manager,
 	struct Cmiss_region *region, struct Graphics_buffer_package *graphics_buffer_package)
 /*******************************************************************************
@@ -844,6 +840,7 @@ size of the <sizes>.
 			field->source_fields=source_fields;
 			field->number_of_source_fields=number_of_source_fields;
 			data->data_file_name = data_file_name;
+			data->output_file_name = output_file_name;
 			data->resolution = resolution;
 			data->region = ACCESS(Cmiss_region)(region);
 			data->graphics_buffer_package = graphics_buffer_package;
@@ -886,7 +883,8 @@ size of the <sizes>.
 int Computed_field_get_type_image_point_values(struct Computed_field *field,
 	struct Computed_field **source_field,
 	struct Computed_field **texture_coordinate_field,
-	int *dimension, int **sizes, char **data_file_name, double *resolution)
+	int *dimension, int **sizes, 
+	char **data_file_name, char **output_file_name, double *resolution)
 /*******************************************************************************
 LAST MODIFIED : 18 February 2004
 
@@ -905,6 +903,7 @@ parameters defining it are returned.
 	{
 		*dimension = data->image->dimension;
 		*data_file_name = data->data_file_name;
+		*output_file_name = data->output_file_name;
 		*resolution = data->resolution;
 		if (ALLOCATE(*sizes, int, *dimension))
 		{
@@ -944,7 +943,7 @@ Converts <field> into type COMPUTED_FIELD_image_point_values (if it is not
 already) and allows its contents to be modified.
 ==============================================================================*/
 {
-	char *current_token, *data_file_name;
+	char *current_token, *data_file_name, *output_file_name;
 	double resolution;
 	int dimension, return_code, *sizes;
 	struct Computed_field *field, *source_field, *texture_coordinate_field;
@@ -985,7 +984,7 @@ already) and allows its contents to be modified.
 		{
 			return_code = Computed_field_get_type_image_point_values(field,
 				&source_field, &texture_coordinate_field, &dimension,
-				&sizes, &data_file_name, &resolution);
+				&sizes, &data_file_name, &output_file_name, &resolution);
 		}
 		if (return_code)
 		{
@@ -1010,6 +1009,9 @@ already) and allows its contents to be modified.
 				/* data_file_name */
 				Option_table_add_name_entry(option_table,
 					"data_file_name", &data_file_name);
+				/* output_file_name */
+				Option_table_add_name_entry(option_table,
+					"output_file_name", &output_file_name);
 				/* field */
 				Option_table_add_Computed_field_conditional_entry(option_table,
 					"field", &source_field, &set_source_field_data);
@@ -1059,6 +1061,9 @@ already) and allows its contents to be modified.
 				/* data_file_name */
 				Option_table_add_name_entry(option_table,
 					"data_file_name", &data_file_name);
+				/* output_file_name */
+				Option_table_add_name_entry(option_table,
+					"output_file_name", &output_file_name);
 				/* field */
 				Option_table_add_Computed_field_conditional_entry(option_table,
 					"field", &source_field, &set_source_field_data);
@@ -1085,7 +1090,7 @@ already) and allows its contents to be modified.
 			{
 				return_code = Computed_field_set_type_image_point_values(field,
 					source_field, texture_coordinate_field, 
-					dimension,sizes,data_file_name, resolution,
+					dimension,sizes,data_file_name, output_file_name, resolution,
 					computed_field_image_point_values_package->computed_field_manager,
 					computed_field_image_point_values_package->root_region,
 					computed_field_image_point_values_package->graphics_buffer_package);
