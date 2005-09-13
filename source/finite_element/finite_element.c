@@ -16203,7 +16203,7 @@ Defines a field at a node (does not assign values)
 												FE_value *array;
 
 												/* Allocate the array */
-												if (ALLOCATE(array, char, sizeof(FE_value) * number_of_times))
+												if (ALLOCATE((char *)array, char, sizeof(FE_value) * number_of_times))
 												{
 													for (j = 0 ; j < number_of_times ; j++)
 													{
@@ -16227,7 +16227,7 @@ Defines a field at a node (does not assign values)
 												short *array;
 
 												/* Allocate the array */
-												if (ALLOCATE(array,char,sizeof(short) * number_of_times))
+												if (ALLOCATE((char *)array,char,sizeof(short) * number_of_times))
 												{
 													for (j = 0 ; j < number_of_times ; j++)
 													{
