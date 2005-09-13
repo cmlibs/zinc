@@ -16200,18 +16200,20 @@ Defines a field at a node (does not assign values)
 										{
 											case FE_VALUE_VALUE:
 											{
-												FE_value *array;
-
+												char *array;
+												FE_value *fe_array;
+												
 												/* Allocate the array */
-												if (ALLOCATE(((char *)array), char, sizeof(FE_value) * number_of_times))
+												if (ALLOCATE(array, char, sizeof(FE_value) * number_of_times))
 												{
+													fe_array = (FE_value *)array;
 													for (j = 0 ; j < number_of_times ; j++)
 													{
 														array[j] = FE_VALUE_INITIALIZER;
 													}
 													/* Store the pointer to the array
 														in the values storage */
-													*((FE_value **)new_value) = array;
+													*new_value = array;
 													new_value += size;
 												}
 												else
@@ -16224,18 +16226,20 @@ Defines a field at a node (does not assign values)
 											} break;
 											case SHORT_VALUE:
 											{
-												short *array;
+												char *array;
+												short *short_array;
 
 												/* Allocate the array */
-												if (ALLOCATE(((char *)array),char,sizeof(short) * number_of_times))
+												if (ALLOCATE(array,char,sizeof(short) * number_of_times))
 												{
+													short_array = (short *)array;
 													for (j = 0 ; j < number_of_times ; j++)
 													{
-														array[j] = 0;
+														short_array[j] = 0;
 													}
 													/* Store the pointer to the array
 														in the values storage */
-													*((short **)new_value) = array;
+													*new_value = array;
 													new_value += size;
 												}
 												else
