@@ -16209,11 +16209,11 @@ Defines a field at a node (does not assign values)
 													fe_array = (FE_value *)array;
 													for (j = 0 ; j < number_of_times ; j++)
 													{
-														array[j] = FE_VALUE_INITIALIZER;
+														fe_array[j] = FE_VALUE_INITIALIZER;
 													}
 													/* Store the pointer to the array
 														in the values storage */
-													*new_value = array;
+													*((char **)new_value) = array;
 													new_value += size;
 												}
 												else
@@ -16239,7 +16239,7 @@ Defines a field at a node (does not assign values)
 													}
 													/* Store the pointer to the array
 														in the values storage */
-													*new_value = array;
+													*((char **)new_value) = array;
 													new_value += size;
 												}
 												else
