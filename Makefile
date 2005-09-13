@@ -62,12 +62,12 @@ cmgui cmgui-debug cmgui-static cmgui-static-debug cmgui64 cmgui64-debug : USER_I
 endif # SYSNAME == win32
 cmgui-static cmgui-static-debug : STATIC_LINK_OPTION=STATIC_LINK=$(STATIC_LINK)
 cmgui-static cmgui-static-debug : STATIC_LINK=true
-cmgui cmgui-static cmgui64 cmgui-console cmgui-gtk cmgui-gtk-gtkmain cmgui-no3dgraphics : DEBUG_OPTION=DEBUG=$(DEBUG)
-cmgui cmgui-static cmgui64 cmgui-console cmgui-gtk cmgui-gtk-gtkmain cmgui-no3dgraphics : DEBUG=false
-cmgui-debug cmgui-debug-memorycheck cmgui-static-debug cmgui64-debug cmgui-gtk-debug cmgui-gtk-gtkmain-debug cmgui-no3dgraphics-debug : DEBUG_OPTION=DEBUG=$(DEBUG)
-cmgui-debug cmgui-debug-memorycheck cmgui-static-debug cmgui64-debug cmgui-gtk-debug cmgui-gtk-gtkmain-debug cmgui-no3dgraphics-debug cmgui-no3dgraphics-debug-memorycheck : DEBUG=true
-cmgui64 cmgui64-debug utilities64 : ABI_OPTION=ABI=$(ABI)
-cmgui64 cmgui64-debug utilities64 : ABI=64
+cmgui cmgui-static cmgui64 cmgui-console cmgui-gtk cmgui-gtk-gtkmain cmgui-no3dgraphics cmgui64-no3dgraphics : DEBUG_OPTION=DEBUG=$(DEBUG)
+cmgui cmgui-static cmgui64 cmgui-console cmgui-gtk cmgui-gtk-gtkmain cmgui-no3dgraphics cmgui64-no3dgraphics : DEBUG=false
+cmgui-debug cmgui-debug-memorycheck cmgui-static-debug cmgui64-debug cmgui-gtk-debug cmgui-gtk-gtkmain-debug cmgui-no3dgraphics-debug cmgui-no3dgraphics-debug-memorycheck cmgui64-no3dgraphics-debug : DEBUG_OPTION=DEBUG=$(DEBUG)
+cmgui-debug cmgui-debug-memorycheck cmgui-static-debug cmgui64-debug cmgui-gtk-debug cmgui-gtk-gtkmain-debug cmgui-no3dgraphics-debug cmgui-no3dgraphics-debug-memorycheck cmgui64-no3dgraphics-debug : DEBUG=true
+cmgui64 cmgui64-debug cmgui64-no3dgraphics cmgui64-no3dgraphics-debug utilities64 : ABI_OPTION=ABI=$(ABI)
+cmgui64 cmgui64-debug cmgui64-no3dgraphics cmgui64-no3dgraphics-debug utilities64 : ABI=64
 cmgui-debug-memorycheck cmgui-no3dgraphics-debug-memorycheck : MEMORYCHECK_OPTION=MEMORYCHECK=$(MEMORYCHECK)
 cmgui-debug-memorycheck cmgui-no3dgraphics-debug-memorycheck : MEMORYCHECK=true
 cmgui-console : USER_INTERFACE_OPTION=USER_INTERFACE=$(USER_INTERFACE)
@@ -76,8 +76,8 @@ cmgui-gtk cmgui-gtk-debug cmgui-gtk-gtkmain cmgui-gtk-gtkmain-debug : USER_INTER
 cmgui-gtk cmgui-gtk-debug cmgui-gtk-gtkmain cmgui-gtk-gtkmain-debug : USER_INTERFACE=GTK_USER_INTERFACE
 cmgui-gtk-gtkmain cmgui-gtk-gtkmain-debug : USE_GTKMAIN_OPTION=USE_GTKMAIN=$(USE_GTKMAIN)
 cmgui-gtk-gtkmain cmgui-gtk-gtkmain-debug : USE_GTKMAIN=true
-cmgui-no3dgraphics cmgui-no3dgraphics-debug cmgui-no3dgraphics-debug-memorycheck: GRAPHICS_API_OPTION=GRAPHICS_API=$(GRAPHICS_API)
-cmgui-no3dgraphics cmgui-no3dgraphics-debug cmgui-no3dgraphics-debug-memorycheck: GRAPHICS_API=NO3D_GRAPHICS
+cmgui-no3dgraphics cmgui-no3dgraphics-debug cmgui-no3dgraphics-debug-memorycheck cmgui64-no3dgraphics cmgui64-no3dgraphics-debug : GRAPHICS_API_OPTION=GRAPHICS_API=$(GRAPHICS_API)
+cmgui-no3dgraphics cmgui-no3dgraphics-debug cmgui-no3dgraphics-debug-memorycheck cmgui64-no3dgraphics cmgui64-no3dgraphics-debug : GRAPHICS_API=NO3D_GRAPHICS
 
 utilities utilities64 : TARGET_OPTION=utilities
 utilities utilities64 : force
@@ -115,7 +115,7 @@ ifeq ($(SYSNAME),Linux)
    endif
 endif
 
-cmgui cmgui-debug cmgui-debug-memorycheck cmgui-static cmgui-static-debug cmgui64 cmgui64-debug cmgui-console cmgui-gtk cmgui-gtk-debug utilities cmgui-gtk-gtkmain cmgui-gtk-gtkmain-debug cmgui-no3dgraphics cmgui-no3dgraphics-debug cmgui-no3dgraphics-debug-memorycheck :
+cmgui cmgui-debug cmgui-debug-memorycheck cmgui-static cmgui-static-debug cmgui64 cmgui64-debug cmgui-console cmgui-gtk cmgui-gtk-debug utilities cmgui-gtk-gtkmain cmgui-gtk-gtkmain-debug cmgui-no3dgraphics cmgui-no3dgraphics-debug cmgui-no3dgraphics-debug-memorycheck cmgui64-no3dgraphics cmgui64-no3dgraphics-debug :
 		cd source ; \
 		$(MAKE) -f $(SUBMAKEFILE) $(OPTIONS) ;
 
@@ -154,17 +154,21 @@ cmgui-no3dgraphics-debug-static-lib:
 	$(MAKE) -f $(MAKEFILE) cmgui-no3dgraphics-debug TARGET=static_lib ;
 cmgui-no3dgraphics-debug-memorycheck-static-lib:
 	$(MAKE) -f $(MAKEFILE) cmgui-no3dgraphics-debug-memorycheck TARGET=static_lib ;
+cmgui64-no3dgraphics-static-lib :
+	$(MAKE) -f $(MAKEFILE) cmgui64-no3dgraphics TARGET=static_lib ;
+cmgui64-no3dgraphics-debug-static-lib:
+	$(MAKE) -f $(MAKEFILE) cmgui64-no3dgraphics-debug TARGET=static_lib ;
 
 .NOTPARALLEL:
 
 ifeq ($(SYSNAME:IRIX%=),)
-all : cmgui cmgui-debug cmgui64 cmgui-console cmgui-debug-memorycheck cmgui-static-lib cmgui-debug-static-lib cmgui-no3dgraphics-static-lib cmgui-no3dgraphics-debug-static-lib cmgui-no3dgraphics-debug-memorycheck-static-lib
+all : cmgui cmgui-debug cmgui64 cmgui-console cmgui-debug-memorycheck cmgui-static-lib cmgui-debug-static-lib cmgui-no3dgraphics-static-lib cmgui-no3dgraphics-debug-static-lib cmgui-no3dgraphics-debug-memorycheck-static-lib cmgui64-no3dgraphics-static-lib
 endif # SYSNAME == IRIX%=
 ifeq ($(SYSNAME),Linux)
 all : cmgui cmgui-debug cmgui-debug-memorycheck cmgui-static cmgui-static-debug cmgui-console cmgui-static-lib cmgui-debug-static-lib cmgui-gtk cmgui-gtk-debug cmgui-gtk-lib cmgui-gtk-debug-lib cmgui-gtk-static-lib cmgui-gtk-debug-static-lib cmgui-gtk-gtkmain-lib cmgui-gtk-gtkmain-debug-lib cmgui-gtk-gtkmain-static-lib cmgui-gtk-gtkmain-debug-static-lib cmgui-no3dgraphics-static-lib cmgui-no3dgraphics-debug-static-lib cmgui-no3dgraphics-debug-memorycheck-static-lib
 endif # SYSNAME == Linux
 ifeq ($(SYSNAME),AIX)
-all : cmgui cmgui-debug cmgui64 cmgui64-debug cmgui-no3dgraphics-static-lib cmgui-no3dgraphics-debug-static-lib
+all : cmgui cmgui-debug cmgui64 cmgui64-debug cmgui-no3dgraphics-static-lib cmgui-no3dgraphics-debug-static-lib cmgui64-no3dgraphics-static-lib
 endif # SYSNAME == AIX
 ifeq ($(SYSNAME),win32)
 all : cmgui cmgui-debug cmgui-gtk
