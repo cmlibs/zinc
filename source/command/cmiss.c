@@ -71,6 +71,7 @@ Functions for executing cmiss commands.
 #include "command/example_path.h"
 #include "command/parser.h"
 #include "computed_field/computed_field.h"
+#include "computed_field/computed_field_arithmetic_operators.h"
 #include "computed_field/computed_field_component_operations.h"
 #include "computed_field/computed_field_compose.h"
 #include "computed_field/computed_field_composite.h"
@@ -82,11 +83,22 @@ Functions for executing cmiss commands.
 #include "computed_field/computed_field_find_xi.h"
 #include "computed_field/computed_field_finite_element.h"
 #include "computed_field/computed_field_fibres.h"
-
+#include "computed_field/computed_field_integration.h"
+#include "computed_field/computed_field_lookup.h"
+#include "computed_field/computed_field_matrix_operations.h"
+#include "computed_field/computed_field_sample_texture.h"
+#include "computed_field/computed_field_set.h"
+#include "computed_field/computed_field_time.h"
+#include "computed_field/computed_field_trigonometry.h"
+#include "computed_field/computed_field_update.h"
+#include "computed_field/computed_field_vector_operations.h"
+#if defined (MOTIF) || defined (GTK_USER_INTERFACE) || defined (WIN32_USER_INTERFACE) 
+#include "computed_field/computed_field_window_projection.h"
+#endif /* defined (MOTIF) || defined (GTK_USER_INTERFACE) || defined (WIN32_USER_INTERFACE) */
+#include "computed_field/computed_field_wrappers.h"
 #include "image_processing/computed_field_adaptive_adjust_contrast.h"
 #include "image_processing/computed_field_adjust_contrast.h"
 #include "image_processing/computed_field_adjusted_gaussian.h"
-#include "image_processing/computed_field_arithmetic_operators.h"
 #include "image_processing/computed_field_binomial_filter.h"
 #include "image_processing/computed_field_bvc_decomp.h"
 #include "image_processing/computed_field_canny_filter.h"
@@ -147,20 +159,6 @@ Functions for executing cmiss commands.
 #include "image_processing/computed_field_wavelet_decomp.h"
 #include "image_processing/computed_field_wavelet_reconstruct.h"
 #include "image_processing/computed_field_wiener_filter.h"
-
-#include "computed_field/computed_field_integration.h"
-#include "computed_field/computed_field_lookup.h"
-#include "computed_field/computed_field_matrix_operations.h"
-#include "computed_field/computed_field_sample_texture.h"
-#include "computed_field/computed_field_set.h"
-#include "computed_field/computed_field_time.h"
-#include "computed_field/computed_field_trigonometry.h"
-#include "computed_field/computed_field_update.h"
-#include "computed_field/computed_field_vector_operations.h"
-#if defined (MOTIF) || defined (GTK_USER_INTERFACE) || defined (WIN32_USER_INTERFACE) 
-#include "computed_field/computed_field_window_projection.h"
-#endif /* defined (MOTIF) || defined (GTK_USER_INTERFACE) || defined (WIN32_USER_INTERFACE) */
-#include "computed_field/computed_field_wrappers.h"
 #if defined (MOTIF)
 #include "element/element_creator.h"
 #endif /* defined (MOTIF) */
