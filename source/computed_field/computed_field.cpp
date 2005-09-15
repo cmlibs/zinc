@@ -3265,6 +3265,44 @@ the <field>. These parameters will be used in image processing.
 	return (return_code);
 } /* Computed_field_get_native_resolution */
 
+int Computed_field_default_get_native_resolution(struct Computed_field *field,
+        int *dimension, int **sizes, 
+	struct Computed_field **texture_coordinate_field)
+/*******************************************************************************
+LAST MODIFIED : 15 September 2005
+
+DESCRIPTION :
+Inherits its result from the first source field -- if any.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(Computed_field_default_get_native_resolution);
+	if (field&&dimension&&sizes&&texture_coordinate_field)
+	{
+		if (field->source_fields && (0 < field->number_of_source_fields))
+		{
+			return_code=Computed_field_get_native_resolution(
+				field->source_fields[0],dimension, sizes, 
+				texture_coordinate_field);
+		}
+		else
+		{
+			return_code = 0;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Computed_field_default_get_native_resolution.  "
+			"Invalid argument(s)");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Computed_field_default_get_native_resolution */
+
 int Computed_field_has_numerical_components(struct Computed_field *field,
 	void *dummy_void)
 /*******************************************************************************

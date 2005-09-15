@@ -516,6 +516,16 @@ DESCRIPTION :
 Inherits its result from the first source field.
 ==============================================================================*/
 
+int Computed_field_default_get_native_resolution(struct Computed_field *field,
+        int *dimension, int **sizes, 
+	struct Computed_field **texture_coordinate_field);
+/*******************************************************************************
+LAST MODIFIED : 15 September 2005
+
+DESCRIPTION :
+Inherits its result from the first source field -- if any.
+==============================================================================*/
+
 int Computed_field_extract_rc(struct Computed_field *field,
 	int element_dimension,FE_value *rc_coordinates,FE_value *rc_derivatives);
 /*******************************************************************************
