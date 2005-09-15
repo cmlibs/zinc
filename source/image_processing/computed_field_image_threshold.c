@@ -637,47 +637,14 @@ DESCRIPTION :
 Not implemented yet.
 ==============================================================================*/
 
-int Computed_field_image_threshold_get_native_resolution(struct Computed_field *field,
-        int *dimension, int **sizes, 
-	struct Computed_field **texture_coordinate_field)
+#define Computed_field_image_threshold_get_native_resolution \
+	Computed_field_default_get_native_resolution
 /*******************************************************************************
-LAST MODIFIED : 4 February 2005
+LAST MODIFIED : 15 September 2005
 
 DESCRIPTION :
-Gets the <dimension>, <sizes>, <minimums>, <maximums> and <texture_coordinate_field> from
-the <field>. These parameters will be used in image processing.
-
+Inherit result from first source field.
 ==============================================================================*/
-{       
-        int return_code;
-	struct Computed_field_image_threshold_type_specific_data *data;
-	
-	ENTER(Computed_field_image_threshold_get_native_resolution);
-	if (field && (data =
-		(struct Computed_field_image_threshold_type_specific_data *)
-		field->type_specific_data) && data->image)
-	{
-		Image_cache_get_native_resolution(data->image,
-			dimension, sizes);
-		/* Texture_coordinate_field from source fields */
-		if (*texture_coordinate_field)
-		{
-			REACCESS(Computed_field)(&(*texture_coordinate_field), field->source_fields[1]);
-		}
-		else
-		{
-		        *texture_coordinate_field = ACCESS(Computed_field)(field->source_fields[1]);
-		}	 
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_image_threshold_get_native_resolution.  Missing field");
-		return_code=0;
-	}
-
-	return (return_code);
-} /* Computed_field_image_threshold_get_native_resolution */
 
 static int list_Computed_field_image_threshold(
 	struct Computed_field *field)
