@@ -958,23 +958,8 @@ Returns allocated command string for reproducing field. Includes type.
 			append_string(&command_string, field_name, &error);
 			DEALLOCATE(field_name);
 		}
-		append_string(&command_string, " texture_coordinate_field ", &error);
-		if (GET_NAME(Computed_field)(field->source_fields[1], &field_name))
-		{
-			make_valid_token(&field_name);
-			append_string(&command_string, field_name, &error);
-			DEALLOCATE(field_name);
-		}
-		sprintf(temp_string, " dimension %d", data->image->dimension);
-		append_string(&command_string, temp_string, &error);
-
 		sprintf(temp_string, " sigma %f", data->sigma);
 		append_string(&command_string, temp_string, &error);
-
-		sprintf(temp_string, " sizes %d %d",
-		                    data->image->sizes[0],data->image->sizes[1]);
-		append_string(&command_string, temp_string, &error);
-
 	}
 	else
 	{
@@ -1201,52 +1186,15 @@ already) and allows its contents to be modified.
 					strcmp(PARSER_RECURSIVE_HELP_STRING,current_token))))
 			{
 				option_table = CREATE(Option_table)();
-				/* dimension */
-				Option_table_add_int_positive_entry(option_table, "dimension",
-					&dimension);
 				/* field */
 				Option_table_add_Computed_field_conditional_entry(option_table,
 					"field", &source_field, &set_source_field_data);
 				/* sigma */
 				Option_table_add_double_entry(option_table,
 					"sigma", &sigma);
-				/* sizes */
-				Option_table_add_int_vector_entry(option_table,
-					"sizes", sizes, &dimension);
-				/* texture_coordinate_field */
-				Option_table_add_Computed_field_conditional_entry(option_table,
-					"texture_coordinate_field", &texture_coordinate_field,
-					&set_texture_coordinate_field_data);
 				return_code=Option_table_multi_parse(option_table,state);
 				DESTROY(Option_table)(&option_table);
 			}
-			/* parse the dimension ... */
-			if (return_code && (current_token = state->current_token))
-			{
-				/* ... only if the "dimension" token is next */
-				if (fuzzy_string_compare(current_token, "dimension"))
-				{
-					option_table = CREATE(Option_table)();
-					/* dimension */
-					Option_table_add_int_positive_entry(option_table, "dimension",
-						&dimension);
-					if (return_code = Option_table_parse(option_table, state))
-					{
-						if (!(REALLOCATE(sizes, sizes, int, dimension)))
-						{
-							return_code = 0;
-						}
-					}
-					DESTROY(Option_table)(&option_table);
-				}
-			}
-			/*if (return_code && (dimension < 1))
-			{
-				display_message(ERROR_MESSAGE,
-					"define_Computed_field_type_scale.  Must specify a dimension first.");
-				return_code = 0;
-			}*/
-			/* parse the rest of the table */
 			if (return_code&&state->current_token)
 			{
 				option_table = CREATE(Option_table)();
@@ -1256,13 +1204,6 @@ already) and allows its contents to be modified.
 				/* sigma */
 				Option_table_add_double_entry(option_table,
 					"sigma", &sigma);
-				/* sizes */
-				Option_table_add_int_vector_entry(option_table,
-					"sizes", sizes, &dimension);
-				/* texture_coordinate_field */
-				Option_table_add_Computed_field_conditional_entry(option_table,
-					"texture_coordinate_field", &texture_coordinate_field,
-					&set_texture_coordinate_field_data);
 				return_code=Option_table_multi_parse(option_table,state);
 				DESTROY(Option_table)(&option_table);
 			}
