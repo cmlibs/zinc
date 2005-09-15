@@ -326,7 +326,7 @@ Not implemented yet.
 ==============================================================================*/
 
 #define Computed_field_power_get_native_resolution \
-	(Computed_field_get_native_resolution_function)NULL
+	Computed_field_default_get_native_resolution
 
 static int list_Computed_field_power(
 	struct Computed_field *field)
@@ -866,7 +866,7 @@ Not implemented yet.
 ==============================================================================*/
 
 #define Computed_field_multiply_components_get_native_resolution \
-	(Computed_field_get_native_resolution_function)NULL
+	Computed_field_default_get_native_resolution
 
 
 static int list_Computed_field_multiply_components(
@@ -1409,7 +1409,7 @@ Not implemented yet.
 ==============================================================================*/
 
 #define Computed_field_divide_components_get_native_resolution \
-	(Computed_field_get_native_resolution_function)NULL
+	Computed_field_default_get_native_resolution
 
 static int list_Computed_field_divide_components(
 	struct Computed_field *field)
@@ -1949,7 +1949,7 @@ Not implemented yet.
 ==============================================================================*/
 
 #define Computed_field_add_get_native_resolution \
-	(Computed_field_get_native_resolution_function)NULL
+	Computed_field_default_get_native_resolution
 
 static int list_Computed_field_add(
 	struct Computed_field *field)
@@ -2618,7 +2618,7 @@ Inherit result from first source field.
 ==============================================================================*/
 
 #define Computed_field_scale_get_native_resolution \
-	(Computed_field_get_native_resolution_function)NULL
+	Computed_field_default_get_native_resolution
 
 static int Computed_field_scale_find_element_xi(struct Computed_field *field,
 	FE_value *values, int number_of_values, struct FE_element **element, 
@@ -3420,7 +3420,7 @@ Not implemented yet.
 ==============================================================================*/
 
 #define Computed_field_clamp_maximum_get_native_resolution \
-	(Computed_field_get_native_resolution_function)NULL
+	Computed_field_default_get_native_resolution
 
 static int list_Computed_field_clamp_maximum(
 	struct Computed_field *field)
@@ -4151,7 +4151,7 @@ Not implemented yet.
 ==============================================================================*/
 
 #define Computed_field_clamp_minimum_get_native_resolution \
-	(Computed_field_get_native_resolution_function)NULL
+	Computed_field_default_get_native_resolution
 
 static int list_Computed_field_clamp_minimum(
 	struct Computed_field *field)
@@ -4837,7 +4837,7 @@ Inherit result from first source field.
 ==============================================================================*/
 
 #define Computed_field_offset_get_native_resolution \
-	(Computed_field_get_native_resolution_function)NULL
+	Computed_field_default_get_native_resolution
 
 static int Computed_field_offset_find_element_xi(struct Computed_field *field,
 	FE_value *values, int number_of_values, struct FE_element **element, 
@@ -5517,7 +5517,7 @@ Not implemented yet.
 ==============================================================================*/
 
 #define Computed_field_sum_components_get_native_resolution \
-	(Computed_field_get_native_resolution_function)NULL
+	Computed_field_default_get_native_resolution
 
 static int list_Computed_field_sum_components(
 	struct Computed_field *field)
@@ -6230,7 +6230,7 @@ Not implemented yet.
 ==============================================================================*/
 
 #define Computed_field_edit_mask_get_native_resolution \
-	(Computed_field_get_native_resolution_function)NULL
+	Computed_field_default_get_native_resolution
 
 static int list_Computed_field_edit_mask(
 	struct Computed_field *field)

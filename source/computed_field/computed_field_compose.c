@@ -495,7 +495,7 @@ Not implemented yet.
 ==============================================================================*/
 
 #define Computed_field_compose_get_native_resolution \
-	(Computed_field_get_native_resolution_function)NULL
+	Computed_field_default_get_native_resolution
 
 static int list_Computed_field_compose(
 	struct Computed_field *field)
