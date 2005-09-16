@@ -24536,6 +24536,8 @@ Initialise all the subcomponents of cmgui and create the Cmiss_command_data
 			(struct Computed_field_finite_element_package *)NULL;
 		if (command_data->computed_field_package)
 		{
+		        Computed_field_register_types_arithmetic_operators(
+				command_data->computed_field_package);
 			Computed_field_register_types_coordinate(
 				command_data->computed_field_package);
 			Computed_field_register_types_component_operations(
@@ -24634,8 +24636,6 @@ Initialise all the subcomponents of cmgui and create the Cmiss_command_data
 				Computed_field_register_types_adjusted_gaussian(
 					command_data->computed_field_package,
 					command_data->root_region, command_data->graphics_buffer_package);
-				Computed_field_register_types_arithmetic_operators(
-					command_data->computed_field_package);
 				Computed_field_register_types_binomial_filter(
 					command_data->computed_field_package,
 					command_data->root_region, command_data->graphics_buffer_package);
