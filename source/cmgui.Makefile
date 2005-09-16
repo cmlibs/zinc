@@ -738,6 +738,7 @@ COMMAND_INTERFACE_SRCS = \
 	command/command_window.c
 COMPUTED_FIELD_SRCS = \
 	computed_field/computed_field.c \
+	computed_field/computed_field_arithmetic_operators.c \
 	computed_field/computed_field_component_operations.c \
 	computed_field/computed_field_compose.c \
 	computed_field/computed_field_composite.c \
@@ -945,7 +946,6 @@ IMAGE_PROCESSING_SRCS = \
 	image_processing/computed_field_adaptive_adjust_contrast.c \
 	image_processing/computed_field_adjust_contrast.c \
 	image_processing/computed_field_adjusted_gaussian.c \
-	image_processing/computed_field_arithmetic_operators.c \
 	image_processing/computed_field_binomial_filter.c \
 	image_processing/computed_field_bvc_decomp.c \
 	image_processing/computed_field_canny_filter.c \
