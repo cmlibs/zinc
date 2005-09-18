@@ -785,7 +785,7 @@ Returns allocated command string for reproducing field. Includes type.
 {
 	char *command_string, *field_name;
 	int error;
-	struct Computed_field_adaptive_adjust_contrast_type_specific_data *data;
+	/*struct Computed_field_adaptive_adjust_contrast_type_specific_data *data;*/
 
 	ENTER(Computed_field_adaptive_adjust_contrast_get_command_string);
 	command_string = (char *)NULL;
