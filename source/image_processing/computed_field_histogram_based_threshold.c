@@ -786,13 +786,10 @@ Returns allocated command string for reproducing field. Includes type.
 {
 	char *command_string, *field_name;
 	int error;
-	struct Computed_field_histogram_based_threshold_type_specific_data *data;
-
+	
 	ENTER(Computed_field_histogram_based_threshold_get_command_string);
 	command_string = (char *)NULL;
-	if (field && (field->type_string==computed_field_histogram_based_threshold_type_string)
-		&& (data = (struct Computed_field_histogram_based_threshold_type_specific_data *)
-		field->type_specific_data))
+	if (field && (field->type_string==computed_field_histogram_based_threshold_type_string))
 	{
 		error = 0;
 		append_string(&command_string,
