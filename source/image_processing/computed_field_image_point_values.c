@@ -400,7 +400,7 @@ Perform a image_point_values extraction operation on the image cache.
 	int X, Y, Z, ps;
 	char data[100];
 	
-	char node_n[20];
+	char node_n[20], c_e, c_f[10], c_g[5];
 	char filename[80];
 	char filename1[80];
 	ENTER(Image_cache_image_point_values);
@@ -439,10 +439,10 @@ Perform a image_point_values extraction operation on the image cache.
         				fscanf(fp,"%s", data);
         				if(strcmp(data,"Node:") == 0)
         				{
-				        	fscanf(fp, "%s %f %f %f", node_n,&x,&y,&z);
-						X = (int)(x/resolution);
-						Y = (int)(y/resolution);
-						Z = (int)(z/resolution);
+				        	fscanf(fp, "%s %s %s %s %f %f %f", node_n,&c_e, c_f, c_g, &x,&y,&z);
+						X = (int)(x*(FE_value)(image->sizes[0])/resolution);
+						Y = (int)(y*(FE_value)(image->sizes[1])/resolution);
+						Z = (int)(z*(FE_value)(image->sizes[2])/resolution);
 						ps = image->depth * (Z * image->sizes[0]*image->sizes[1] + Y * image->sizes[0] + X);
 						value = *(data_index + ps);
 						for (k = 0; k < image->depth; k++)
