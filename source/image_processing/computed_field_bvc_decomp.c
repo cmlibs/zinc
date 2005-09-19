@@ -1294,8 +1294,7 @@ already) and allows its contents to be modified.
 	struct Computed_field_bvc_decomp_package
 		*computed_field_bvc_decomp_package;
 	struct Option_table *option_table;
-	struct Set_Computed_field_conditional_data set_source_field_data,
-		set_texture_coordinate_field_data;
+	struct Set_Computed_field_conditional_data set_source_field_data;
         struct Set_names_from_list_data result;
 	
 	ENTER(define_Computed_field_type_bvc_decomp);
@@ -1320,12 +1319,7 @@ already) and allows its contents to be modified.
 		set_source_field_data.conditional_function =
 			Computed_field_has_numerical_components;
 		set_source_field_data.conditional_function_user_data = (void *)NULL;
-		/* texture_coordinate_field */
-		set_texture_coordinate_field_data.computed_field_manager =
-			computed_field_bvc_decomp_package->computed_field_manager;
-		set_texture_coordinate_field_data.conditional_function =
-			Computed_field_has_numerical_components;
-		set_texture_coordinate_field_data.conditional_function_user_data = (void *)NULL;
+		
                 /* results, define a list of results */
 		result.number_of_tokens = 4;
 		ALLOCATE(result.tokens, struct Set_names_from_list_token, 4);
