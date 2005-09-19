@@ -741,13 +741,10 @@ Returns allocated command string for reproducing field. Includes type.
 {
 	char *command_string, *field_name;
 	int error;
-	struct Computed_field_image_contour_type_specific_data *data;
-
+	
 	ENTER(Computed_field_image_contour_get_command_string);
 	command_string = (char *)NULL;
-	if (field && (field->type_string==computed_field_image_contour_type_string)
-		&& (data = (struct Computed_field_image_contour_type_specific_data *)
-		field->type_specific_data))
+	if (field && (field->type_string==computed_field_image_contour_type_string))
 	{
 		error = 0;
 		append_string(&command_string,
@@ -928,8 +925,7 @@ already) and allows its contents to be modified.
 	struct Computed_field_image_contour_package
 		*computed_field_image_contour_package;
 	struct Option_table *option_table;
-	struct Set_Computed_field_conditional_data set_source_field_data,
-		set_texture_coordinate_field_data;
+	struct Set_Computed_field_conditional_data set_source_field_data;
 
 	ENTER(define_Computed_field_type_image_contour);
 	if (state&&(field=(struct Computed_field *)field_void)&&
@@ -948,13 +944,7 @@ already) and allows its contents to be modified.
 		set_source_field_data.conditional_function =
 			Computed_field_has_numerical_components;
 		set_source_field_data.conditional_function_user_data = (void *)NULL;
-		/* texture_coordinate_field */
-		set_texture_coordinate_field_data.computed_field_manager =
-			computed_field_image_contour_package->computed_field_manager;
-		set_texture_coordinate_field_data.conditional_function =
-			Computed_field_has_numerical_components;
-		set_texture_coordinate_field_data.conditional_function_user_data = (void *)NULL;
-
+		
 		if (computed_field_image_contour_type_string ==
 			Computed_field_get_type_string(field))
 		{

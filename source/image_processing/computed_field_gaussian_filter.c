@@ -942,8 +942,7 @@ already) and allows its contents to be modified.
 	struct Computed_field_gaussian_filter_package
 		*computed_field_gaussian_filter_package;
 	struct Option_table *option_table;
-	struct Set_Computed_field_conditional_data set_source_field_data,
-		set_texture_coordinate_field_data;
+	struct Set_Computed_field_conditional_data set_source_field_data;
 
 	ENTER(define_Computed_field_type_gaussian_filter);
 	if (state&&(field=(struct Computed_field *)field_void)&&
@@ -963,13 +962,7 @@ already) and allows its contents to be modified.
 		set_source_field_data.conditional_function =
 			Computed_field_has_numerical_components;
 		set_source_field_data.conditional_function_user_data = (void *)NULL;
-		/* texture_coordinate_field */
-		set_texture_coordinate_field_data.computed_field_manager =
-			computed_field_gaussian_filter_package->computed_field_manager;
-		set_texture_coordinate_field_data.conditional_function =
-			Computed_field_has_numerical_components;
-		set_texture_coordinate_field_data.conditional_function_user_data = (void *)NULL;
-
+		
 		if (computed_field_gaussian_filter_type_string ==
 			Computed_field_get_type_string(field))
 		{

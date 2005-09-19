@@ -1024,7 +1024,7 @@ already) and allows its contents to be modified.
 		*computed_field_gabor_filter_package;
 	struct Option_table *option_table;
 	struct Set_Computed_field_conditional_data set_source_field_data,
-		set_texture_coordinate_field_data;
+	          set_texture_coordinate_field_data;
 
 	ENTER(define_Computed_field_type_gabor_filter);
 	if (state&&(field=(struct Computed_field *)field_void)&&
@@ -1053,6 +1053,7 @@ already) and allows its contents to be modified.
 			Computed_field_has_numerical_components;
 		set_texture_coordinate_field_data.conditional_function_user_data = (void *)NULL;
 
+		
 		if (computed_field_gabor_filter_type_string ==
 			Computed_field_get_type_string(field))
 		{
