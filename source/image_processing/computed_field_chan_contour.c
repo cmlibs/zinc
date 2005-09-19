@@ -1178,7 +1178,7 @@ already) and allows its contents to be modified.
 	struct Computed_field_chan_contour_package
 		*computed_field_chan_contour_package;
 	struct Option_table *option_table;
-	struct Set_Computed_field_conditional_data set_source_field_data,;
+	struct Set_Computed_field_conditional_data set_source_field_data;
 
 	ENTER(define_Computed_field_type_chan_contour);
 	if (state&&(field=(struct Computed_field *)field_void)&&
