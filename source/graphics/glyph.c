@@ -260,7 +260,7 @@ varying component of the label_bounds is drawn.
 		if (fabs_length > 1e-12)
 		{
 			minor_grid_size = fabs_length / 200.0;
-			log_scale = round(log10(minor_grid_size * 2.0));
+			log_scale = ceil(-0.5 + log10(minor_grid_size * 2.0));
 			minor_grid_size = pow(10, log_scale) / 2.0;
 			grid_scale = 500.0 * coordinate_scaling[0] / fabs_length;
 
