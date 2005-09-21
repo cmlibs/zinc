@@ -617,7 +617,7 @@ in that region.
 		previous_total_stepped_B,sin_angle,step_size,stream_vector_values[9],
 		temp,total_stepped,vector[3],vector_magnitude;
 	GTDATA *stream_datum,*tmp_stream_data;
-	int add_point,allocated_number_of_points,element_dimension,
+	int add_point,allocated_number_of_points,calculate_curl,element_dimension,
 		i,keep_tracking,number_of_coordinate_components,
 		number_of_stream_vector_components,return_code;
 	struct FE_element *previous_element_A, *previous_element_B;
@@ -646,6 +646,7 @@ in that region.
 		number_of_points&&stream_points&&stream_vectors&&stream_normals&&
 		((STREAM_NO_DATA==data_type)|| stream_data))
 	{
+		calculate_curl = 1;
 		return_code=1;
 		/* clear coordinates in case coordinate field is not 3 component */
 		coordinates[0]=0.0;
@@ -687,10 +688,31 @@ in that region.
 								for calculation of curl. Calculate coordinates first, since
 								may be required for evaluating the stream_vector_field. */
 							return_code=Computed_field_evaluate_in_element(coordinate_field,
-								*element,xi,time,(struct FE_element *)NULL,coordinates,dx_dxi)&&
-								Computed_field_evaluate_in_element(stream_vector_field,
-								*element,xi,time,(struct FE_element *)NULL,stream_vector_values,
-								dv_dxi);
+								*element,xi,time,(struct FE_element *)NULL,coordinates,dx_dxi);
+							if (return_code)
+							{
+								if (calculate_curl)
+								{
+									if (!Computed_field_evaluate_in_element(stream_vector_field,
+										*element,xi,time,(struct FE_element *)NULL,stream_vector_values,
+										dv_dxi))
+									{
+										Computed_field_evaluate_in_element(stream_vector_field,
+											*element,xi,time,(struct FE_element *)NULL,stream_vector_values,
+											(FE_value *)NULL);
+										calculate_curl = 0;
+										display_message(WARNING_MESSAGE,
+											"Stream vector field derivatives are unavailable, "
+											"continuing but not integrating the curl.");
+									}
+								}
+								else
+								{
+									Computed_field_evaluate_in_element(stream_vector_field,
+										*element,xi,time,(struct FE_element *)NULL,stream_vector_values,
+										(FE_value *)NULL);
+								}
+							}
 						} break;
 						case 6:
 						case 9:
@@ -793,19 +815,26 @@ in that region.
 								{
 									case 3:
 									{
-										/* evaluate the curl, and its component along vector */
-										if (invert_FE_value_matrix3(dx_dxi,dxi_dx)&&
-											multiply_FE_value_matrix3(dv_dxi,dxi_dx,dv_dx))
+										if (calculate_curl)
 										{
-											curl[0] = dv_dx[7] - dv_dx[5];
-											curl[1] = dv_dx[2] - dv_dx[6];
-											curl[2] = dv_dx[3] - dv_dx[1];
-											curl_component=(curl[0]*vector[0]+curl[1]*vector[1]+
-												curl[2]*vector[2])/vector_magnitude;
+											/* evaluate the curl, and its component along vector */
+											if (invert_FE_value_matrix3(dx_dxi,dxi_dx)&&
+												multiply_FE_value_matrix3(dv_dxi,dxi_dx,dv_dx))
+											{
+												curl[0] = dv_dx[7] - dv_dx[5];
+												curl[1] = dv_dx[2] - dv_dx[6];
+												curl[2] = dv_dx[3] - dv_dx[1];
+												curl_component=(curl[0]*vector[0]+curl[1]*vector[1]+
+													curl[2]*vector[2])/vector_magnitude;
+											}
+											else
+											{
+												curl_component=0.0;
+											}
 										}
 										else
 										{
-											curl_component=0.0;
+											curl_component = 0.0;
 										}
 										if (0.0==total_stepped)
 										{
