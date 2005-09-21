@@ -422,11 +422,11 @@ fields used here.
 					vector = node_to_glyph_set_data->label_bounds_vector;
 					for (i = 0 ; i < values ; i++)
 					{
-						for (k = 0 ; k < node_to_glyph_set_data->label_bounds_dimension ; k++)
+						for (k = 0 ; k < dimension ; k++)
 						{
 							vector[k] = (*point)[k];
 						}
-						for (j = 0 ; j < node_to_glyph_set_data->label_bounds_dimension; j++)
+						for (j = 0 ; j < dimension; j++)
 						{
 							if (i & node_to_glyph_set_data->label_bounds_bit_pattern[j])
 							{
@@ -434,21 +434,21 @@ fields used here.
 								{
 									case 0:
 									{
-										for (k = 0 ; k < node_to_glyph_set_data->label_bounds_dimension ; k++)
+										for (k = 0 ; k < dimension ; k++)
 										{
 											vector[k] += (*axis1)[k] * (*scale)[0];
 										}
 									} break;
 									case 1:
 									{
-										for (k = 0 ; k < node_to_glyph_set_data->label_bounds_dimension ; k++)
+										for (k = 0 ; k < dimension ; k++)
 										{
 											vector[k] += (*axis2)[k] * (*scale)[1];
 										}
 									} break;
 									case 2:
 									{
-										for (k = 0 ; k < node_to_glyph_set_data->label_bounds_dimension ; k++)
+										for (k = 0 ; k < dimension ; k++)
 										{
 											vector[k] += (*axis3)[k] * (*scale)[2];
 										}
