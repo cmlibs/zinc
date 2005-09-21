@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : settings_editor.c
 
-LAST MODIFIED : 2 April 2003
+LAST MODIFIED : 21 February 2005
 
 DESCRIPTION :
 Provides the widgets to manipulate element group settings.
@@ -989,7 +989,7 @@ DESCRIPTION :
 Callback for change of iso_scalar field.
 ==============================================================================*/
 {
-	double *iso_values;
+	double decimation_threshold, *iso_values;
 	int number_of_iso_values;
 	struct Computed_field *scalar_field;
 	struct Settings_editor *settings_editor;
@@ -1000,10 +1000,12 @@ Callback for change of iso_scalar field.
 		&&scalar_field_void)
 	{
 		GT_element_settings_get_iso_surface_parameters(
-			settings_editor->current_settings,&scalar_field,&number_of_iso_values,&iso_values);
+			settings_editor->current_settings,&scalar_field,&number_of_iso_values,
+			&iso_values,&decimation_threshold);
 		scalar_field=(struct Computed_field *)scalar_field_void;
 		if (GT_element_settings_set_iso_surface_parameters(
-			settings_editor->current_settings,scalar_field,number_of_iso_values,iso_values))
+			settings_editor->current_settings,scalar_field,number_of_iso_values,
+			iso_values,decimation_threshold))
 		{
 			/* inform the client of the change */
 			settings_editor_update(settings_editor);
@@ -1028,7 +1030,7 @@ Called when entry is made into the iso_value text field.
 ==============================================================================*/
 {
 	char *text_entry, temp_string[50], *vector_temp_string;
-	double *current_iso_values, *iso_values;
+	double *current_iso_values, decimation_threshold, *iso_values;
 	int allocated_length, changed_value, error, i, length, number_of_iso_values,
 		offset, valid_value;
 	struct Computed_field *scalar_field;
@@ -1045,7 +1047,7 @@ Called when entry is made into the iso_value text field.
 		{
 			GT_element_settings_get_iso_surface_parameters(
 				settings_editor->current_settings,&scalar_field,&number_of_iso_values,
-				&current_iso_values);
+				&current_iso_values, &decimation_threshold);
 			/* Get the text string */
 			XtVaGetValues(widget,XmNvalue,&text_entry,NULL);
 			if (text_entry)
@@ -1084,7 +1086,7 @@ Called when entry is made into the iso_value text field.
 					number_of_iso_values = i;
 					GT_element_settings_set_iso_surface_parameters(
 						settings_editor->current_settings,scalar_field,
-						number_of_iso_values, iso_values);
+						number_of_iso_values, iso_values, decimation_threshold);
 					/* inform the client of the change */
 					settings_editor_update(settings_editor);
 				}
@@ -3826,7 +3828,7 @@ Changes the currently chosen settings.
 ==============================================================================*/
 {
 	char *name, temp_string[50], *vector_temp_string;
-	double *iso_values;
+	double decimation_threshold,*iso_values;
 	enum Graphics_select_mode select_mode;
 	enum GT_element_settings_type settings_type;
 	enum Streamline_type streamline_type;
@@ -3834,7 +3836,8 @@ Changes the currently chosen settings.
 	enum Xi_discretization_mode xi_discretization_mode;
 	float constant_radius,scale_factor,streamline_length,
 		streamline_width;
-	int error,field_set,i,line_width,number_of_iso_values,return_code,reverse_track;
+	int error,field_set,i,line_width,number_of_iso_values,return_code,
+		reverse_track;
 	struct Callback_data callback;
 	struct Computed_field *coordinate_field, *data_field, *iso_scalar_field,
 		*label_field, *radius_scalar_field, *stream_vector_field,
@@ -3951,7 +3954,8 @@ Changes the currently chosen settings.
 							/* iso_surfaces */
 							if ((GT_ELEMENT_SETTINGS_ISO_SURFACES==settings_type)&&
 								GT_element_settings_get_iso_surface_parameters(new_settings,
-									&iso_scalar_field,&number_of_iso_values,&iso_values)&&iso_scalar_field)
+									&iso_scalar_field,&number_of_iso_values,&iso_values,
+									&decimation_threshold)&&iso_scalar_field)
 							{
 								CHOOSE_OBJECT_SET_OBJECT(Computed_field)(
 									settings_editor->iso_scalar_field_widget,

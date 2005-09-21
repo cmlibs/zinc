@@ -77,6 +77,11 @@ The possible coordinate systems.  Values specified to correspond to CMISS
 	RECTANGULAR_CARTESIAN=1,
 	SPHERICAL_POLAR=3,
 	/*TIME_SERIES=7,*/
+	/* NORMALISED_WINDOW_COORDINATES is a rectangular coordinate system
+		but indicates that it should be fixed relative to the window viewport 
+		rather than in model cordinate space.  The convention is that it goes
+		from -1 to 1 in x and y screen space and 0 to 1 in depth. */
+	NORMALISED_WINDOW_COORDINATES=9,
 	UNKNOWN_COORDINATE_SYSTEM=0
 }; /* enum Coordinate_system_type */
 

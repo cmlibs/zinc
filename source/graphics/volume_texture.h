@@ -401,7 +401,7 @@ DESCRIPTION :
 	double cut_isovalue;
 	double cutting_plane[4];
 	int closed_surface;
-	int decimation;
+	double decimation_threshold;
 	/*???DB.  Added option for reading in nodal scalars rather than calculating
 		from cell values */
 	int calculate_nodal_values;

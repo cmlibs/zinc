@@ -129,7 +129,7 @@ DESCRIPTION :
 	int hollow_mode_on;
 	int cop_mode_on;
 	int env_mode_on;
-	int decimation;
+	int decimation_level;
 	int detail_mode;
 	int set_input_limits;
 	int input_move_model;

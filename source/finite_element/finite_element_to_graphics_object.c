@@ -99,11 +99,14 @@ Used with iterators for building glyph sets from nodes.
 ==============================================================================*/
 {
 	char **label;
-	FE_value base_size[3], centre[3], scale_factors[3], time;
+	float *label_bounds;
+	FE_value base_size[3], centre[3], *label_bounds_vector, scale_factors[3], time;
 	GTDATA *data;
-	int n_data_components, *name;
-	struct Computed_field *coordinate_field, *data_field, *label_field,
-		*orientation_scale_field, *variable_scale_field;
+	int *label_bounds_bit_pattern, label_bounds_components, label_bounds_dimension,
+		label_bounds_values, n_data_components, *name;
+	struct Computed_field *coordinate_field, *data_field, *label_field, 
+		*label_bounds_field, *orientation_scale_field, *variable_scale_field;
+	struct FE_node *label_bounds_node;
 	Triple *point, *axis1, *axis2, *axis3, *scale;
 }; /* struct Node_to_glyph_set_data */
 
@@ -283,12 +286,12 @@ fields used here.
 ==============================================================================*/
 {
 	FE_value a[3], b[3], c[3], coordinates[3], orientation_scale[9], size[3],
-		time, variable_scale[3];
+		time, variable_scale[3], *vector;
 	struct Computed_field **current_field_address, *coordinate_field, *data_field,
 		*label_field, *orientation_scale_field, *required_fields[4],
 		*variable_scale_field;
-	int j, number_of_fields, number_of_orientation_scale_components,
-		number_of_variable_scale_components, return_code;
+	int dimension, i, j, k, number_of_fields, number_of_orientation_scale_components,
+		number_of_variable_scale_components, return_code, values;
 	struct Node_to_glyph_set_data *node_to_glyph_set_data;
 	Triple *axis1, *axis2, *axis3, *point, *scale;
 
@@ -409,6 +412,80 @@ fields used here.
 				if (node_to_glyph_set_data->label_field)
 				{
 					(node_to_glyph_set_data->label)++;
+				}
+				/* Record the value of the label field at the bounds of the glyph size
+					into a tensor so that they can be used for adding grids and axes to the glyph */
+				if (node_to_glyph_set_data->label_bounds)
+				{
+					dimension = node_to_glyph_set_data->label_bounds_dimension;
+					values = node_to_glyph_set_data->label_bounds_values;
+					vector = node_to_glyph_set_data->label_bounds_vector;
+					for (i = 0 ; i < values ; i++)
+					{
+						for (k = 0 ; k < node_to_glyph_set_data->label_bounds_dimension ; k++)
+						{
+							vector[k] = (*point)[k];
+						}
+						for (j = 0 ; j < node_to_glyph_set_data->label_bounds_dimension; j++)
+						{
+							if (i & node_to_glyph_set_data->label_bounds_bit_pattern[j])
+							{
+								switch (j)
+								{
+									case 0:
+									{
+										for (k = 0 ; k < node_to_glyph_set_data->label_bounds_dimension ; k++)
+										{
+											vector[k] += (*axis1)[k] * (*scale)[0];
+										}
+									} break;
+									case 1:
+									{
+										for (k = 0 ; k < node_to_glyph_set_data->label_bounds_dimension ; k++)
+										{
+											vector[k] += (*axis2)[k] * (*scale)[1];
+										}
+									} break;
+									case 2:
+									{
+										for (k = 0 ; k < node_to_glyph_set_data->label_bounds_dimension ; k++)
+										{
+											vector[k] += (*axis3)[k] * (*scale)[2];
+										}
+									} break;
+								}
+							}
+						}
+						/* Need to set the node number correctly in case this is used
+							by the computed fields */
+						set_FE_node_identifier(node_to_glyph_set_data->label_bounds_node,
+							get_FE_node_identifier(node));
+						/* Set the coordinate field and evaluate the label field */
+						if (Computed_field_set_values_at_node(coordinate_field,
+							node_to_glyph_set_data->label_bounds_node, time,
+							vector))
+						{
+							/* We need to explicitly clear the label_field cache as if
+								we are caching computed_field manager messages then the 
+								changes to the coordinate field will not be notified to
+								the label field yet. */
+							Computed_field_clear_cache(node_to_glyph_set_data->label_bounds_field);
+							if (!(Computed_field_evaluate_at_node(
+								node_to_glyph_set_data->label_bounds_field,
+								node_to_glyph_set_data->label_bounds_node, time,
+							   node_to_glyph_set_data->label_bounds)))
+							{
+								display_message(WARNING_MESSAGE,
+									"node_to_glyph_set.  Unable evaluate label field when evaluating label bounds.");
+							}
+						}
+						else
+						{
+							display_message(WARNING_MESSAGE,
+								"node_to_glyph_set.  Unable to set coordinate field when evaluating label bounds.");
+						}
+						node_to_glyph_set_data->label_bounds += node_to_glyph_set_data->label_bounds_components;
+					}
 				}
 			}
 			else
@@ -1123,19 +1200,23 @@ Notes:
 ==============================================================================*/
 {
 	char **labels;
+	float *label_bounds;
+	FE_value *label_bounds_vector;
 	GTDATA *data;
-	int i, n_data_components, *names, number_of_fields, number_of_points,
-		return_code;
+	int coordinate_dimension, i, *label_bounds_bit_pattern, label_bounds_components,
+		label_bounds_dimension, label_bounds_values, n_data_components, *names,
+		number_of_fields, number_of_points, return_code;
 	struct GT_glyph_set *glyph_set;
 	struct Node_to_glyph_set_data node_to_glyph_set_data;
 	Triple *axis1_list, *axis2_list, *axis3_list, *point_list, *scale_list;
-	struct Computed_field *required_fields[4];
+	struct Computed_field *label_bounds_field, *required_fields[4];
 	struct Computed_fields_of_node *computed_fields_of_node;
+	struct FE_node *label_bounds_node;
 
 	ENTER(create_GT_glyph_set_from_FE_region_nodes);
 	glyph_set = (struct GT_glyph_set *)NULL;
 	if (fe_region && coordinate_field&&
-		(3>=Computed_field_get_number_of_components(coordinate_field))&&
+		(3>=(coordinate_dimension=Computed_field_get_number_of_components(coordinate_field)))&&
 		((!orientation_scale_field) ||
 			(9 >= Computed_field_get_number_of_components(orientation_scale_field)))&&
 		glyph && centre && base_size && scale_factors &&
@@ -1212,6 +1293,8 @@ Notes:
 					n_data_components = 0;
 					data = (GTDATA *)NULL;
 					names = (int *)NULL;
+					label_bounds_dimension = 0;
+					label_bounds = (float *)NULL;
 					if (data_field)
 					{
 						n_data_components =
@@ -1221,10 +1304,35 @@ Notes:
 					if (label_field)
 					{
 						ALLOCATE(labels, char *, number_of_points);
-						/* clear labels array pointers so new glyph_set not corrupted */
-						for (i=0;i<number_of_points;i++)
+					}
+					if (Graphics_object_get_glyph_labels_function(glyph))
+					{
+						if (label_field)
 						{
-							labels[i] = (char *)NULL;
+							label_bounds_field = label_field;
+						}
+						else
+						{
+							label_bounds_field = coordinate_field;
+						}
+
+						label_bounds_dimension = coordinate_dimension;
+						label_bounds_values = pow(2, label_bounds_dimension);
+						label_bounds_components = Computed_field_get_number_of_components(label_bounds_field);
+						ALLOCATE(label_bounds, float, number_of_points * label_bounds_values *
+							label_bounds_components);
+						/* Duplicate the first node in the list to use to evaluate label field */
+						label_bounds_node = ACCESS(FE_node)(CREATE(FE_node)(1,
+							(struct FE_region *)NULL, FE_region_get_first_FE_node_that(fe_region,
+								(LIST_CONDITIONAL_FUNCTION(FE_node) *)NULL, NULL)));
+						/* Temporary space for evaluating the label field */
+						ALLOCATE(label_bounds_vector, FE_value, coordinate_dimension);
+						/* Prcompute bit pattern for label values */
+						ALLOCATE(label_bounds_bit_pattern, int, label_bounds_dimension);
+						label_bounds_bit_pattern[0] = 1;
+						for (i = 1 ; i < label_bounds_dimension ; i++)
+						{
+							label_bounds_bit_pattern[i] = 2 * label_bounds_bit_pattern[i - 1];
 						}
 					}
 					if (GRAPHICS_NO_SELECT != select_mode)
@@ -1240,7 +1348,9 @@ Notes:
 						ALLOCATE(scale_list, Triple, number_of_points) &&
 						(glyph_set=CREATE(GT_glyph_set)(number_of_points,point_list,
 							axis1_list,axis2_list,axis3_list,scale_list,glyph,labels,
-							n_data_components,data,/*object_name*/0,names)))
+							n_data_components,data,
+							label_bounds_dimension,label_bounds_components,label_bounds,
+							/*object_name*/0,names)))
 					{
 						/* set up information for the iterator */
 						for (i = 0; i < 3; i++)
@@ -1265,6 +1375,14 @@ Notes:
 						node_to_glyph_set_data.label_field = label_field;
 						node_to_glyph_set_data.name = names;
 						node_to_glyph_set_data.time = time;
+						node_to_glyph_set_data.label_bounds_bit_pattern = label_bounds_bit_pattern;
+						node_to_glyph_set_data.label_bounds_components = label_bounds_components;
+						node_to_glyph_set_data.label_bounds_dimension = label_bounds_dimension;
+						node_to_glyph_set_data.label_bounds_field = label_bounds_field;
+						node_to_glyph_set_data.label_bounds_node = label_bounds_node;
+						node_to_glyph_set_data.label_bounds_values = label_bounds_values;
+						node_to_glyph_set_data.label_bounds_vector = label_bounds_vector;
+						node_to_glyph_set_data.label_bounds = label_bounds;
 						switch (select_mode)
 						{
 							case GRAPHICS_DRAW_SELECTED:
@@ -1302,6 +1420,12 @@ Notes:
 						if (label_field)
 						{
 							Computed_field_clear_cache(label_field);
+						}
+						if (label_bounds)
+						{
+							DEALLOCATE(label_bounds_vector);
+							DEALLOCATE(label_bounds_bit_pattern);
+							DEACCESS(FE_node)(&label_bounds_node);
 						}
 						if (!return_code)
 						{
@@ -3376,6 +3500,9 @@ faces.
 	struct Graphical_material *material;
 	struct GT_voltex *voltex;
 	struct VT_iso_vertex *vertex_list;
+#if defined (DEBUG)
+	int bad_triangle;
+#endif /* defined (DEBUG) */
 
 	double *iso_poly_cop;
 	float *texturemap_coord;
@@ -3759,6 +3886,13 @@ faces.
 										vertex_list[i].ptrs[j]=(vtexture->mc_iso_surface->
 											compiled_vertex_list[i]->triangle_ptrs)[j]->
 											triangle_index;
+#if defined (DEBUG)
+										/*???debug */
+										if (-1 == vertex_list[i].ptrs[j])
+										{
+											printf("Invalid ptr index = %d\n");
+										}
+#endif /* defined (DEBUG) */										
 									}
 									vertex_list[i].data_index = 0;
 									vertex_list[i].blur=0;
@@ -4293,7 +4427,7 @@ faces.
 												{
 													vectorsum[k] += result[k];
 												}
-#if defined (OLD_CODE)
+#if defined (DEBUG)
 												if (fabs(vector1[0]*vector1[0]+vector1[1]*vector1[1]+
 													vector1[2]*vector1[2]) < 1e-8)
 												{
@@ -4309,7 +4443,7 @@ faces.
 												{
 													bad_triangle = 1;
 												}
-#endif /* defined (OLD_CODE) */
+#endif /* defined (DEBUG) */
 											}
 											/* now set normal as the average & normalize */
 											rmag=sqrt((double)(vectorsum[0]*vectorsum[0]+
@@ -4610,11 +4744,6 @@ the position of the point, with appropriate coordinate conversion.
 								data_density_field, local_element,
 								xi,time,(struct FE_element *)NULL,
 								density_data,(FE_value *)NULL);
-
-#if defined (DEBUG)
-							printf("create_FE_nodes_on_GT_voltex_surface.  colour %f\n",
-								texture_data[0]);
-#endif /* defined (DEBUG) */
 
 							/* Evaluate area of triangle in real space */
 							aaa = triangle_list2[3*i];
@@ -5017,6 +5146,7 @@ Note:
 				(glyph_set = CREATE(GT_glyph_set)(points_to_draw, point_list,
 					axis1_list, axis2_list, axis3_list, scale_list, glyph, labels,
 					n_data_components, data,
+					/*label_bounds_dimension*/0, /*label_bounds_components*/0, /*label_bounds*/(float *)NULL,
 					CM_element_information_to_graphics_name(&cm), names)))
 			{
 				point = point_list;
@@ -5554,7 +5684,7 @@ Generates clipped voltex from <volume texture> and <clip_function> over
 						texture->coordinate_field,texture->mc_iso_surface,isovalue_list,
 						texture->closed_surface,
 						1 /*(texture->cutting_plane_on)||(texture->hollow_mode_on)*/,
-						texture->decimation))
+						texture->decimation_threshold))
 					{
 						texture->recalculate=0;
 						/* set polygon materials from texture data */
@@ -6246,7 +6376,7 @@ printf("generate_clipped_GT_voltex_from_FE_element failed\n");
 int element_to_iso_scalar(struct FE_element *element,
 	void *element_to_iso_scalar_data_void)
 /*******************************************************************************
-LAST MODIFIED : 14 March 2003
+LAST MODIFIED : 21 February 2005
 
 DESCRIPTION :
 Computes iso-surfaces/lines/points graphics from <element>.
@@ -6299,15 +6429,10 @@ Computes iso-surfaces/lines/points graphics from <element>.
 								element_to_iso_scalar_data->surface_data_density_field,
 								element_to_iso_scalar_data->surface_data_coordinate_field,
 								element_to_iso_scalar_data->texture_coordinate_field,
-								number_in_xi,
+								number_in_xi, /*decimation_threshold*/0.0,
 								element_to_iso_scalar_data->graphics_object,
 								element_to_iso_scalar_data->render_type,
 								element_to_iso_scalar_data->surface_data_fe_region);
-						}
-						else
-						{
-							display_message(WARNING_MESSAGE,
-								"Cannot add iso_lines of 2-D element to voltex");
 						}
 					} break;
 					case g_POLYLINE:
@@ -6323,11 +6448,6 @@ Computes iso-surfaces/lines/points graphics from <element>.
 								number_in_xi[0],number_in_xi[1],top_level_element,
 								element_to_iso_scalar_data->graphics_object,
 								/*graphics_object_time*/0.0);
-						}
-						else
-						{
-							display_message(WARNING_MESSAGE,
-								"Cannot add iso_surfaces of 3-D element to polyline");
 						}
 					} break;
 					default:
@@ -6364,11 +6484,11 @@ int create_iso_surfaces_from_FE_element(struct FE_element *element,
 	struct Computed_field *surface_data_density_field,
 	struct Computed_field *surface_data_coordinate_field,
 	struct Computed_field *texture_coordinate_field,
-	int *number_in_xi,
+	int *number_in_xi, double decimation_threshold,
 	struct GT_object *graphics_object,enum Render_type render_type,
 	struct FE_region *surface_data_fe_region)
 /*******************************************************************************
-LAST MODIFIED : 15 May 2003
+LAST MODIFIED : 21 February 2005
 
 DESCRIPTION :
 Converts a 3-D element into an iso_surface (via a volume_texture).
@@ -6613,7 +6733,7 @@ Converts a 3-D element into an iso_surface (via a volume_texture).
 							volume_texture->cutting_plane[2]=0;
 							volume_texture->cutting_plane[3]=0;
 							volume_texture->closed_surface=0;
-							volume_texture->decimation=0;
+							volume_texture->decimation_threshold=decimation_threshold;
 							/* set the xi ranges */
 							(volume_texture->ximin)[0]=0;
 							(volume_texture->ximax)[0]=1;

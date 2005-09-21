@@ -1327,7 +1327,7 @@ printf("2 n_scalar_fields = %d\n", n_scalar_fields);
 				current_texture->mc_iso_surface,
 				isovalue_list,texture_window->closed_surface,
 				(texture_window->cutting_plane_on)||(texture_window->hollow_mode_on),
-				texture_window->decimation);
+				/*decimation_threshold*/0.0);
 			/* set polygon materials from texture data */
 
 

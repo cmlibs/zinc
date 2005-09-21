@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : element_group_settings.h
 
-LAST MODIFIED : 18 February 2005
+LAST MODIFIED : 21 February 2005
 
 DESCRIPTION :
 GT_element_settings structure and routines for describing and manipulating the
@@ -658,9 +658,9 @@ finite_element/finite_element_to_graphics object for explanation of how the
 
 int GT_element_settings_get_iso_surface_parameters(
 	struct GT_element_settings *settings,struct Computed_field **iso_scalar_field,
-	int *number_of_iso_values, double **iso_values);
+	int *number_of_iso_values, double **iso_values, double *decimation_threshold);
 /*******************************************************************************
-LAST MODIFIED : 18 February 2005
+LAST MODIFIED : 21 February 2005
 
 DESCRIPTION :
 Returns parameters for a set of iso_surfaces: iso_scalar_field = iso_values.
@@ -670,9 +670,9 @@ For settings_type GT_ELEMENT_SETTINGS_ISO_SURFACES only.
 
 int GT_element_settings_set_iso_surface_parameters(
 	struct GT_element_settings *settings,struct Computed_field *iso_scalar_field,
-	int number_of_iso_values, double *iso_values);
+	int number_of_iso_values, double *iso_values, double decimation_threshold);
 /*******************************************************************************
-LAST MODIFIED : 18 February 2005
+LAST MODIFIED : 21 February 2005
 
 DESCRIPTION :
 Sets parameters for a set of iso_surfaces: iso_scalar_field = iso_values.

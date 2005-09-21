@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : mcubes.h
 
-LAST MODIFIED : 18 February 1998
+LAST MODIFIED : 11 April 2005
 
 DESCRIPTION :
 ==============================================================================*/
@@ -122,9 +122,10 @@ Loads the pntr & data tables
 int marching_cubes(struct VT_scalar_field **scalar_field,int n_scalar_fields,
 	struct VT_vector_field *coordinate_field,
 	struct MC_iso_surface *mc_iso_surface,
-	double *isovalue,int closed_surface,int cutting_plane_on,int decimate);
+	double *isovalue,int closed_surface,int cutting_plane_on,
+	double decimation_tolerance);
 /*******************************************************************************
-LAST MODIFIED : 24 February 1997
+LAST MODIFIED : 11 April 2005
 
 DESCRIPTION :
 The modified marching cubes algorithm for constructing isosurfaces.  This

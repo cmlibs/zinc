@@ -68,11 +68,12 @@ int draw_glyphsetGL(int number_of_points,Triple *point_list, Triple *axis1_list,
 	Triple *axis2_list, Triple *axis3_list, Triple *scale_list,
 	struct GT_object *glyph, char **labels,
 	int number_of_data_components, GTDATA *data, int *names,
+	int label_bounds_dimension, int label_bounds_components, float *label_bounds,
 	struct Graphical_material *material, struct Spectrum *spectrum,
 	int draw_selected, int some_selected,
 	struct Multi_range *selected_name_ranges)
 /*******************************************************************************
-LAST MODIFIED : 16 November 2000
+LAST MODIFIED : 19 September 2005
 
 DESCRIPTION :
 Draws graphics object <glyph> at <number_of_points> points given by the
@@ -89,10 +90,12 @@ are selected, or all points if <selected_name_ranges> is NULL.
 ==============================================================================*/
 {
 	char **label;
+	float *label_bound;
 	GLfloat f, f0, f1, transformation[16], x, y, z;
+	Graphics_object_glyph_labels_function glyph_labels_function;
 	GTDATA *datum;
-	int draw_all, i, j, mirror_mode, *name, name_selected, number_of_glyphs,
-		return_code;
+	int draw_all, i, j, mirror_mode, *name, name_selected, label_bounds_per_glyph,
+		number_of_glyphs, return_code;
 	struct GT_object *temp_glyph;
 	struct Spectrum_render_data *render_data;
 	Triple *axis1, *axis2, *axis3, *point, *scale, temp_axis1, temp_axis2,
@@ -143,6 +146,11 @@ are selected, or all points if <selected_name_ranges> is NULL.
 					glPushName(0);
 				}
 				label=labels;
+				label_bound = label_bounds;
+				if (label_bounds)
+				{
+					label_bounds_per_glyph = pow(2, label_bounds_dimension);
+				}
 				/* try to draw points and lines faster */
 				if (0 == strcmp(glyph->name, "point"))
 				{
@@ -518,6 +526,11 @@ are selected, or all points if <selected_name_ranges> is NULL.
 									glCallList(temp_glyph->display_list);
 									temp_glyph = GT_object_get_next_object(temp_glyph);
 								}
+								if (glyph_labels_function = Graphics_object_get_glyph_labels_function(glyph))
+								{
+									return_code = (*glyph_labels_function)(*scale,
+										label_bounds_dimension, label_bounds_components, label_bound);
+								}
 								/* restore the original modelview matrix */
 								glPopMatrix();
 							}
@@ -536,10 +549,15 @@ are selected, or all points if <selected_name_ranges> is NULL.
 						{
 							name++;
 						}
+						if (label_bounds)
+						{
+							label_bound += label_bounds_components * label_bounds_per_glyph;
+						}
 					}
 					/* output label at each point, if supplied */
-					if (label=labels)
+					if ((label=labels) && !label_bounds)
 					{
+						/* Default is to draw the label value at the origin */
 						name=names;
 						/* disable lighting so rendered in flat diffuse colour */
 						/*???RC glPushAttrib and glPopAttrib are *very* slow */
@@ -550,7 +568,7 @@ are selected, or all points if <selected_name_ranges> is NULL.
 						for (i=0;i<number_of_points;i++)
 						{
 							if (draw_all||((name_selected=Multi_range_is_value_in_range(
-								selected_name_ranges,*name))&&draw_selected)||
+													 selected_name_ranges,*name))&&draw_selected)||
 								((!name_selected)&&(!draw_selected))&&(*label))
 							{
 								if (names)
@@ -565,8 +583,9 @@ are selected, or all points if <selected_name_ranges> is NULL.
 								{
 									spectrum_renderGL_value(spectrum,material,render_data,datum);
 								}
-								glRasterPos3f(x,y,z);
-								wrapperPrintText(*label);
+									/* Default is to draw the label value near the origin */
+									glRasterPos3f(x,y,z);
+									wrapperPrintText(*label);
 							}
 							/* advance pointers */
 							point++;

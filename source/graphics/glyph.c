@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : glyph.c
 
-LAST MODIFIED : 10 June 2004
+LAST MODIFIED : 19 September 2005
 
 DESCRIPTION :
 Glyphs are GT_objects which contain simple geometric shapes such as
@@ -61,6 +61,7 @@ reference graphical materials or spectrums.
 #include "general/debug.h"
 #include "graphics/glyph.h"
 #include "graphics/graphics_object.h"
+#include "graphics/makegtobj.h"
 #include "user_interface/message.h"
 
 /*
@@ -154,6 +155,253 @@ suitable for using with GT_surfaces of type g_SH_DISCONTINUOUS_STRIP.
 
 	return (return_code);
 } /* construct_tube */
+
+static int tick_mark_get_grid_spacing(FE_value *minor_grid_size,
+	int *minor_grids_per_major,FE_value scale,int min_minor_grid_pixels,
+	int min_major_grid_pixels)
+/*******************************************************************************
+LAST MODIFIED : 19 September 2005
+
+DESCRIPTION :
+Returns the spacing of minor and major (major include labels in this case) grids
+that cross the drawing area. From an initial, desired <minor_grid_spacing>, this
+is enlarged by multiplying by 2,2.5,2 (to give 2x,5x,10x,20x the original value)
+until the grid is spaced apart by at least <min_minor_grid_pixels> on the
+screen. FE_Value values are multiplied by <scale> to give pixel values.
+A suitable number of minor_grids_per_major is then calculated, ensuring that
+major grid lines are spaced apart by at least <min_major_grid_pixels>.
+Copied from the control curve editor.
+==============================================================================*/
+{
+	int return_code,j;
+
+	ENTER(tick_mark_get_grid_spacing);
+	if (*minor_grid_size&&(0< *minor_grid_size)&&minor_grids_per_major&&
+		(0.0!=scale))
+	{
+		j=1;
+		while (fabs(scale*(*minor_grid_size)) < min_minor_grid_pixels)
+		{
+			if (j=(j+1)%3)
+			{
+				*minor_grid_size *= 2.0;
+			}
+			else
+			{
+				*minor_grid_size *= 2.5;
+			}
+		}
+		*minor_grids_per_major=1;
+		if (0==j)
+		{
+			j=1;
+			if (fabs(scale*(*minor_grids_per_major)*(*minor_grid_size))<
+				min_major_grid_pixels)
+			{
+				*minor_grids_per_major *= 2;
+			}
+		}
+		while (fabs(scale*(*minor_grids_per_major)*(*minor_grid_size))<
+			min_major_grid_pixels)
+		{
+			if (j=(j+1)%2)
+			{
+				*minor_grids_per_major *= 5;
+			}
+			else
+			{
+				*minor_grids_per_major *= 2;
+			}
+		}
+		return_code=1;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"tick_mark_get_grid_spacing.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* tick_mark_get_grid_spacing */
+
+static int draw_glyph_axes_ticks(Triple coordinate_scaling, 
+	int label_bounds_dimension, int label_bounds_components, float *label_bounds)
+/*******************************************************************************
+LAST MODIFIED : 19 September 2005
+
+DESCRIPTION :
+Renders the label_bounds as ticks along the first axis.  An assumption is made
+that the label values have some alignment with the axis so only the first 
+varying component of the label_bounds is drawn.
+==============================================================================*/
+{
+	char *name = "axes_ticks_temporary", **label_strings;
+	FE_value grid_scale, minor_grid_size;
+	int first, j, last, minor_grids_per_major, number_of_major_ticks, number_of_ticks,
+		return_code;
+	float axis1_scale, axis2_scale, fabs_length, length, log_scale;
+	struct GT_object *graphics_object;
+	struct GT_pointset *label_set;
+	struct GT_polyline *polyline;
+	Triple *label_string_locations, *points, *vertex;
+
+	ENTER(draw_glyph_axes_ticks);
+	if ((label_bounds_dimension > 0) && (label_bounds_components > 0)
+		&& label_bounds)
+	{
+		return_code=1;
+
+		length = label_bounds[label_bounds_dimension] -
+			label_bounds[0];
+		fabs_length = fabs(length);
+
+		if (fabs_length > 1e-12)
+		{
+			minor_grid_size = fabs_length / 200.0;
+			log_scale = round(log10(minor_grid_size * 2.0));
+			minor_grid_size = pow(10, log_scale) / 2.0;
+			grid_scale = 500.0 * coordinate_scaling[0] / fabs_length;
+
+			minor_grids_per_major = 5;
+			tick_mark_get_grid_spacing(&minor_grid_size,
+				&minor_grids_per_major, grid_scale, 5, 50);
+			
+			first=ceil(label_bounds[0] / minor_grid_size);
+			last=floor(label_bounds[label_bounds_dimension] / minor_grid_size);
+		}
+		else
+		{
+			length = 1e-12;
+			minor_grid_size = 0.1;
+			grid_scale = 50.0 * coordinate_scaling[0];
+
+			minor_grids_per_major = 5;
+  			tick_mark_get_grid_spacing(&minor_grid_size,
+				&minor_grids_per_major, grid_scale, 5, 50);
+
+			first = ceil(label_bounds[0] / minor_grid_size);
+			last = first;
+		}								
+		if (first > last)
+		{
+			j = last;
+			last = first;
+			first = j;
+		}
+		number_of_ticks = last - first + 1;
+
+		polyline=(struct GT_polyline *)NULL;
+		if (ALLOCATE(points, Triple, 2 * number_of_ticks) && 
+			ALLOCATE(label_string_locations, Triple, number_of_ticks) &&
+			ALLOCATE(label_strings, char *, number_of_ticks))
+		{
+			number_of_major_ticks = 0;
+			vertex=points;
+			for (j=first;j<=last;j++)
+			{
+				if (number_of_ticks > 1)
+				{
+					axis1_scale = ((float)j * minor_grid_size - label_bounds[0]) / length;
+				}
+				else
+				{
+					axis1_scale = 0.0;
+				}
+				if (0==(j % minor_grids_per_major))
+				{
+					axis2_scale = 0.05;
+				}
+				else
+				{
+					axis2_scale = 0.01;
+				}
+				(*vertex)[0] = axis1_scale;
+				(*vertex)[1] = - axis2_scale;
+				(*vertex)[2] = 0.0;
+				vertex++;
+
+				(*vertex)[0] = axis1_scale;
+				(*vertex)[1] = + axis2_scale;
+				(*vertex)[2] = 0.0;
+				if (0==(j % minor_grids_per_major))
+				{
+					label_string_locations[number_of_major_ticks][0] = (*vertex)[0];
+					label_string_locations[number_of_major_ticks][1] = (*vertex)[1];
+					label_string_locations[number_of_major_ticks][2] = (*vertex)[2];
+					if (ALLOCATE(label_strings[number_of_major_ticks], char, 50))
+					{
+						sprintf(label_strings[number_of_major_ticks], "%1g",
+							(float)j * minor_grid_size);
+					}
+					
+					number_of_major_ticks++;
+					
+				}
+				vertex++;
+			}
+			if (polyline=CREATE(GT_polyline)(g_PLAIN_DISCONTINUOUS,/*line_width=default*/0,
+				number_of_ticks,points,/*normalpoints*/(Triple *)NULL,g_NO_DATA,(GTDATA *)NULL))
+			{
+				if (graphics_object=CREATE(GT_object)(name,g_POLYLINE,
+						(struct Graphical_material *)NULL))
+				{
+					if (GT_OBJECT_ADD(GT_polyline)(graphics_object,/*time*/0.0,polyline))
+					{
+						makegtobject(graphics_object,/*time*/0,/*draw_selected*/0);
+						DESTROY(GT_object)(&graphics_object);
+					}
+					else
+					{
+						DESTROY(GT_polyline)(&polyline);
+						return_code = 0;
+					}
+				}
+			}
+			else
+			{
+				DEALLOCATE(points);
+			}
+			if (label_set = CREATE(GT_pointset)(number_of_major_ticks, label_string_locations,
+				label_strings, g_NO_MARKER, /*marker_size*/0 , /*n_data_components*/0,
+				(GTDATA *)NULL, /*names*/(int *)NULL))
+			{
+				if (graphics_object=CREATE(GT_object)(name,g_POINTSET,
+					(struct Graphical_material *)NULL))
+				{
+					if (GT_OBJECT_ADD(GT_pointset)(graphics_object,/*time*/0.0,label_set))
+					{
+						makegtobject(graphics_object,/*time*/0,/*draw_selected*/0);
+						DESTROY(GT_object)(&graphics_object);
+					}
+					else
+					{
+						DESTROY(GT_pointset)(&label_set);
+						return_code = 0;
+					}
+				}
+			}
+			else
+			{
+				DEALLOCATE(label_string_locations);
+				for (j = 0 ; j < number_of_major_ticks ; j++)
+				{
+					DEALLOCATE(label_strings[number_of_major_ticks]);
+				}
+				DEALLOCATE(label_strings);
+			}
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"draw_glyph_axes_ticks.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* draw_glyph_axes_ticks */
 
 /*
 Global functions
@@ -1661,6 +1909,11 @@ Creates a list of standard glyphs for the cmgui and unemap applications.
 		mirror_glyph = glyph;
 		if (glyph=make_glyph_mirror("mirror_line",mirror_glyph))
 		{
+			ADD_OBJECT_TO_LIST(GT_object)(glyph,glyph_list);
+		}
+		if (glyph=make_glyph_line("line_ticks"))
+		{
+			Graphics_object_set_glyph_labels_function(glyph, draw_glyph_axes_ticks);
 			ADD_OBJECT_TO_LIST(GT_object)(glyph,glyph_list);
 		}
 		if (glyph=make_glyph_point("point",g_POINT_MARKER,0))

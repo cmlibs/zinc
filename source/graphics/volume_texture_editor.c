@@ -3439,7 +3439,7 @@ printf("initializing texture\n");
 		texture->grid_spacing = NULL;
 		texture->hollow_mode_on=0;
 		texture->closed_surface=0;
-		texture->decimation=0;
+		texture->decimation_threshold=0.0;
 		texture->calculate_nodal_values=1;
 		texture->recalculate=1;
 		texture->cutting_plane_on=0;
@@ -4230,17 +4230,16 @@ toggles whether triangle decimation used
 	USE_PARAMETER(cbs);
 	if (texture_window=(struct Texture_window *)client_data)
 	{
-		texture_window->decimation= !texture_window->decimation;
-		texture_window->current_texture->decimation=texture_window->decimation;
-/*???debug */
-if (texture_window->decimation)
-{
-	printf("decimation mode on\n");
-}
-else
-{
-	printf("decimation mode off\n");
-}
+		if (!texture_window->decimation_level)
+		{
+			texture_window->decimation_level = 1;
+			texture_window->current_texture->decimation_threshold = 0.1;
+		}
+		else
+		{
+			texture_window->decimation_level = 0;
+			texture_window->current_texture->decimation_threshold = 0.0;
+		}
 	}
 	else
 	{
@@ -5282,7 +5281,7 @@ printf("texture_window=%p\n",texture_window);
 					texture_window->isovalue = 0;
 					texture_window->closed_surface=0;
 					texture_window->shaded_surfaces=1;
-					texture_window->decimation=0;
+					texture_window->decimation_level=0;
 					texture_window->detail_mode=0;
 					texture_window->normals=0;
 					texture_window->cutting_plane_on=0;

@@ -688,11 +688,11 @@ int create_iso_surfaces_from_FE_element(struct FE_element *element,
 	struct Computed_field *surface_data_density_field,
 	struct Computed_field *surface_data_coordinate_field,
 	struct Computed_field *texture_coordinate_field,
-	int *number_in_xi,
+	int *number_in_xi, double decimation_threshold,
 	struct GT_object *graphics_object,enum Render_type render_type,
 	struct FE_region *surface_data_fe_region);
 /*******************************************************************************
-LAST MODIFIED : 14 March 2003
+LAST MODIFIED : 21 February 2005
 
 DESCRIPTION :
 Converts a 3-D element into an iso_surface (via a volume_texture).

@@ -466,7 +466,7 @@ the list of all volume textures.
 			texture->cutting_plane_on=0;
 			texture->cut_isovalue=0;
 			texture->closed_surface=0;
-			texture->decimation=0;
+			texture->decimation_threshold=0.0;
 			texture->disable_volume_functions=0;
 			/*???DB.  Should do more initialization of values */
 		}
@@ -2175,7 +2175,7 @@ Syntax: MANAGER_COPY_WITH_IDENTIFIER(VT_volume_texture,name)(destination,source)
 												(destination->cutting_plane)[3]=
 													(source->cutting_plane)[3];
 												destination->closed_surface=source->closed_surface;
-												destination->decimation=source->decimation;
+												destination->decimation_threshold=source->decimation_threshold;
 												destination->calculate_nodal_values=
 													source->calculate_nodal_values;
 												destination->recalculate=source->recalculate;
@@ -3236,7 +3236,7 @@ printf("isovalue = %lf\n",texture->isovalue);
 							texture->cutting_plane[2]=0;
 							texture->cutting_plane[3]=0;
 							texture->closed_surface=0;
-							texture->decimation=0;
+							texture->decimation_threshold=0.01;
 							/* load any curves if present */
 							temp_string = (char *)NULL;
 							while (IO_stream_read_string(in_file,"s",&temp_string)&&
@@ -3784,7 +3784,7 @@ printf("texture->ximin = %lf %lf %lf, texture->ximax = %lf %lf %lf\n",
 			texture->cutting_plane[2]=0;
 			texture->cutting_plane[3]=0;
 			texture->closed_surface=0;
-			texture->decimation=0;
+			texture->decimation_threshold=0.01;
 			texture->grid_spacing= NULL;
 			return_code = 1;
 			/* now read in obj data from file and convert to isosurface */
@@ -4996,7 +4996,7 @@ Creates/Updates isosurface for basic volume_texture
 		marching_cubes(scalar_field_list,n_scalar_fields,texture->coordinate_field,
 			texture->mc_iso_surface,isovalue_list,texture->closed_surface,
 			(texture->cutting_plane_on)||(texture->hollow_mode_on),
-			texture->decimation);
+			texture->decimation_threshold);
 		/* set polygon materials from texture data */
 		calculate_mc_material(texture,texture->mc_iso_surface);
 		for (i=0;i<texture->mc_iso_surface->n_triangles;i++)

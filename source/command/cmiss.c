@@ -1022,9 +1022,10 @@ a single point in 3-D space with an axes glyph.
 
 				if (point_list && axis1_list && axis2_list && axis3_list &&
 					scale_list && (glyph_set = CREATE(GT_glyph_set)(/*number_of_points*/1,
-						point_list, axis1_list, axis2_list, axis3_list, scale_list, glyph,
-						/*labels*/(char **)NULL, /*n_data_components*/0,
-						/*data*/(GTDATA *)NULL, /*object_name*/0, /*names*/(int *)NULL)))
+					point_list, axis1_list, axis2_list, axis3_list, scale_list, glyph,
+					/*labels*/(char **)NULL, /*n_data_components*/0, /*data*/(GTDATA *)NULL,
+					/*label_bounds_dimension*/0, /*label_bounds_components*/0, /*label_bounds*/(float *)NULL,
+					/*object_name*/0, /*names*/(int *)NULL)))
 				{
 					(*point_list)[0] = axis_origin[0];
 					(*point_list)[1] = axis_origin[1];

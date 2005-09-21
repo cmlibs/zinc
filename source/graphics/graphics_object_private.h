@@ -115,6 +115,8 @@ the glyph_set to be identified in picking for node position/vector editing.
 	struct GT_object *glyph;
 	int n_data_components;
 	GTDATA *data;
+	int label_bounds_dimension, label_bounds_components;
+	float *label_bounds;
 	/* store integer object_name eg. element number from which this object came */
 	int object_name;
 	/* have auxiliary_object_name for marking glyph_set for editing purposes; this
@@ -392,14 +394,22 @@ Graphical object data structure.
 		between <times> and is constant before the first and after the last */
 	int number_of_times;
 	float *times;
+
+	enum GT_coordinate_system coordinate_system;
+
 	union GT_primitive_list *primitive_lists;
 #if defined (OPENGL_API)
 	GLuint display_list;
 #endif /* defined (OPENGL_API) */
 	/* enumeration indicates whether the graphics display list is up to date */
 	enum Graphics_compile_status compile_status;
+
+	/* Custom per compile code for graphics_objects used as glyphs. */
+	Graphics_object_glyph_labels_function glyph_labels_function;
+
 	/*???temporary*/
 	int glyph_mirror_mode;
+
 	int access_count;
 };
 

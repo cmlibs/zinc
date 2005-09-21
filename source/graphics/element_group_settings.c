@@ -113,7 +113,7 @@ finite element group rendition.
 	/* for iso_surfaces only */
 	struct Computed_field *iso_scalar_field;
 	int number_of_iso_values;
-	double *iso_values;
+	double *iso_values, decimation_threshold;
 	/* SAB Surface data on iso_surfaces added for text access only */
 	struct Computed_field *surface_data_density_field;
 	struct Computed_field *surface_data_coordinate_field;
@@ -686,6 +686,7 @@ Allocates memory and assigns fields for a struct GT_element_settings.
 			settings->iso_scalar_field=(struct Computed_field *)NULL;
 			settings->number_of_iso_values=0;
 			settings->iso_values=(double *)NULL;
+			settings->decimation_threshold = 0.0;
 			settings->surface_data_density_field = (struct Computed_field *)NULL;
 			settings->surface_data_coordinate_field = (struct Computed_field *)NULL;
 			settings->surface_data_region_path = (char *)NULL;
@@ -983,7 +984,7 @@ graphics_object is NOT copied; destination->graphics_object is cleared.
 		{
 			GT_element_settings_set_iso_surface_parameters(destination,
 				source->iso_scalar_field,source->number_of_iso_values,
-				source->iso_values);
+				source->iso_values, source->decimation_threshold);
 			REACCESS(Computed_field)(&(destination->surface_data_coordinate_field),
 				source->surface_data_coordinate_field);
 			REACCESS(Computed_field)(&(destination->surface_data_density_field),
@@ -2108,9 +2109,9 @@ finite_element/finite_element_to_graphics object for explanation of how the
 
 int GT_element_settings_get_iso_surface_parameters(
 	struct GT_element_settings *settings,struct Computed_field **iso_scalar_field,
-	int *number_of_iso_values, double **iso_values)
+	int *number_of_iso_values, double **iso_values, double *decimation_threshold)
 /*******************************************************************************
-LAST MODIFIED : 18 February 2005
+LAST MODIFIED : 21 February 2005
 
 DESCRIPTION :
 Returns parameters for the iso_surface: iso_scalar_field = iso_value.
@@ -2121,9 +2122,11 @@ For settings_type GT_ELEMENT_SETTINGS_ISO_SURFACES only.
 
 	ENTER(GT_element_settings_get_iso_surface_parameters);
 	if (settings&&iso_scalar_field&&number_of_iso_values&&iso_values&&
+		decimation_threshold&&
 		(GT_ELEMENT_SETTINGS_ISO_SURFACES==settings->settings_type))
 	{
 		*iso_scalar_field=settings->iso_scalar_field;
+		*decimation_threshold=settings->decimation_threshold;
 		if (0 < settings->number_of_iso_values)
 		{
 			if (ALLOCATE(*iso_values, double, settings->number_of_iso_values))
@@ -2163,9 +2166,9 @@ For settings_type GT_ELEMENT_SETTINGS_ISO_SURFACES only.
 
 int GT_element_settings_set_iso_surface_parameters(
 	struct GT_element_settings *settings,struct Computed_field *iso_scalar_field,
-	int number_of_iso_values, double *iso_values)
+	int number_of_iso_values, double *iso_values, double decimation_threshold)
 /*******************************************************************************
-LAST MODIFIED : 18 February 2005
+LAST MODIFIED : 21 February 2005
 
 DESCRIPTION :
 Sets parameters for the iso_surface: iso_scalar_field = iso_value.
@@ -2182,6 +2185,7 @@ CREATE to define a valid iso_surface.
 	{
 		return_code=1;
 		REACCESS(Computed_field)(&(settings->iso_scalar_field),iso_scalar_field);
+		settings->decimation_threshold = decimation_threshold;
 		if (0 < number_of_iso_values)
 		{
 			if (REALLOCATE(settings->iso_values, settings->iso_values, double,
@@ -4218,6 +4222,7 @@ settings describe EXACTLY the same geometry.
 		{
 			return_code=(settings->number_of_iso_values==
 				second_settings->number_of_iso_values)&&
+				(settings->decimation_threshold==second_settings->decimation_threshold)&&
 				(settings->iso_scalar_field==second_settings->iso_scalar_field)&&
 				(settings->surface_data_coordinate_field
 					==second_settings->surface_data_coordinate_field)&&
@@ -4737,6 +4742,12 @@ if no coordinate field. Currently only write if we have a field.
 			{
 				sprintf(temp_string, " %g", settings->iso_values[i]);
 				append_string(&settings_string,temp_string,&error);				
+			}
+			if (settings->decimation_threshold > 0.0)
+			{
+				sprintf(temp_string," decimation_threshold %g",
+					settings->decimation_threshold);
+				append_string(&settings_string,temp_string,&error);
 			}
  			if (settings->surface_data_coordinate_field)
 			{
@@ -5498,7 +5509,7 @@ Converts a finite element into a graphics object with the supplied settings.
 													settings->surface_data_density_field,
 													settings->surface_data_coordinate_field,
 													settings->texture_coordinate_field,
-													number_in_xi,
+													number_in_xi, settings->decimation_threshold,
 													settings->graphics_object, settings->render_type,
 													settings->surface_data_fe_region);
 											}
@@ -5511,11 +5522,6 @@ Converts a finite element into a graphics object with the supplied settings.
 											DESTROY(GT_voltex)(&voltex);
 										}
 									}
-								}
-								else
-								{
-									display_message(WARNING_MESSAGE,
-										"Cannot add iso_lines of 2-D element to voltex");
 								}
 							} break;
 							case g_POLYLINE:
@@ -5565,11 +5571,6 @@ Converts a finite element into a graphics object with the supplied settings.
 											DESTROY(GT_polyline)(&polyline);
 										}
 									}
-								}
-								else
-								{
-									display_message(WARNING_MESSAGE,
-										"Cannot add iso_surfaces of 3-D element to polyline");
 								}
 							} break;
 							default:
@@ -5841,6 +5842,7 @@ The graphics object is stored with with the settings it was created from.
 	enum GT_object_type graphics_object_type;
 	int return_code;
 	struct Computed_field *coordinate_field;
+	struct Coordinate_system *coordinate_system;
 	struct FE_element *first_element;
 	struct FE_region *fe_region;
 	struct GT_element_settings_to_graphics_object_data *settings_to_object_data;
@@ -6036,6 +6038,12 @@ The graphics object is stored with with the settings it was created from.
 					if (settings->graphics_object)
 					{
 						settings->selected_graphics_changed=1;
+						coordinate_system = Computed_field_get_coordinate_system(coordinate_field);
+						if (NORMALISED_WINDOW_COORDINATES == coordinate_system->type)
+						{
+							GT_object_set_coordinate_system(settings->graphics_object,
+								g_NDC_COORDINATES);
+						}
 						/* need settings for FE_element_to_graphics_object routine */
 						settings_to_object_data->settings=settings;
 						switch (settings->settings_type)
@@ -7935,7 +7943,7 @@ parsed settings. Note that the settings are ACCESSed once on valid return.
 int gfx_modify_g_element_iso_surfaces(struct Parse_state *state,
 	void *modify_g_element_data_void,void *g_element_command_data_void)
 /*******************************************************************************
-LAST MODIFIED : 20 March 2001
+LAST MODIFIED : 21 February 2005
 
 DESCRIPTION :
 Executes a GFX MODIFY G_ELEMENT ISO_SURFACES command.
@@ -7945,11 +7953,12 @@ parsed settings. Note that the settings are ACCESSed once on valid return.
 {
 	char *render_type_string,*select_mode_string,
 		*surface_data_region_path,*use_element_type_string, **valid_strings;
-	double iso_value_default, *iso_values;
+	double decimation_threshold,iso_value_default, *iso_values;
 	enum Graphics_select_mode select_mode;
 	enum Render_type render_type;
 	enum Use_element_type use_element_type;
-	int number_of_iso_values,number_of_valid_strings,return_code, visibility;
+	int number_of_iso_values,number_of_valid_strings,
+		return_code,visibility;
 	struct Computed_field *scalar_field;
 	struct Cmiss_region *surface_data_region;
 	struct Modify_g_element_data *modify_g_element_data;
@@ -8013,7 +8022,8 @@ parsed settings. Note that the settings are ACCESSed once on valid return.
 					}
 					/* must start with valid iso_scalar_field: */
 					GT_element_settings_get_iso_surface_parameters(settings,
-						&scalar_field, &number_of_iso_values, &iso_values);
+						&scalar_field, &number_of_iso_values, &iso_values,
+						&decimation_threshold);
 					if (!scalar_field)
 					{
 						if (scalar_field=FIRST_OBJECT_IN_MANAGER_THAT(Computed_field)(
@@ -8021,7 +8031,8 @@ parsed settings. Note that the settings are ACCESSed once on valid return.
 						{
 							iso_value_default = 0.0;
 							GT_element_settings_set_iso_surface_parameters(settings,
-								scalar_field,/*number_of_iso_values*/1, &iso_value_default);
+								scalar_field,/*number_of_iso_values*/1, &iso_value_default,
+								decimation_threshold);
 						}
 					}
 					visibility = settings->visibility;
@@ -8046,6 +8057,9 @@ parsed settings. Note that the settings are ACCESSed once on valid return.
 					set_data_field_data.conditional_function_user_data=(void *)NULL;
 					Option_table_add_entry(option_table,"data",&(settings->data_field),
 						&set_data_field_data,set_Computed_field_conditional);
+					/* decimation_threshold */
+					Option_table_add_double_entry(option_table, "decimation_threshold",
+						&(settings->decimation_threshold));
 					/* delete */
 					Option_table_add_entry(option_table,"delete",
 						&(modify_g_element_data->delete_flag),NULL,set_char_flag);

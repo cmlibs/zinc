@@ -745,26 +745,12 @@ Sets the coordinate system (including focus for prolate spheroidal and oblate
 spheroidal).
 ==============================================================================*/
 {
-	char *current_token,cylindrical_polar_flag,fibre_flag,oblate_spheroidal_flag,
+	char *current_token,cylindrical_polar_flag,fibre_flag,
+		normalised_window_coordinates_flag,oblate_spheroidal_flag,
 		prolate_spheroidal_flag,spherical_polar_flag,read_focus,
 		rectangular_cartesian_flag;
 	int return_code;
-	static struct Modifier_entry
-		option_table[]=
-		{
-			{"cylindrical_polar",NULL,NULL,set_char_flag},
-			{"fibre",NULL,NULL,set_char_flag},
-			{"oblate_spheroidal",NULL,NULL,set_char_flag},
-			{"prolate_spheroidal",NULL,NULL,set_char_flag},
-			{"rectangular_cartesian",NULL,NULL,set_char_flag},
-			{"spherical_polar",NULL,NULL,set_char_flag},
-			{NULL,NULL,NULL,NULL}
-		},
-		focus_option_table[]=
-		{
-			{"focus",NULL,NULL,set_float_positive},
-			{NULL,NULL,NULL,NULL}
-		};
+	struct Option_table *focus_option_table, *option_table;
 	struct Coordinate_system *coordinate_system,coordinate_system_copy;
 
 	ENTER(set_Coordinate_system);
@@ -776,17 +762,24 @@ spheroidal).
 		{
 			cylindrical_polar_flag=0;
 			fibre_flag=0;
+			normalised_window_coordinates_flag=0;
 			oblate_spheroidal_flag=0;
 			prolate_spheroidal_flag=0;
 			rectangular_cartesian_flag=0;
 			spherical_polar_flag=0;
-			(option_table[0]).to_be_modified= &cylindrical_polar_flag;
-			(option_table[1]).to_be_modified= &fibre_flag;
-			(option_table[2]).to_be_modified= &oblate_spheroidal_flag;
-			(option_table[3]).to_be_modified= &prolate_spheroidal_flag;
-			(option_table[4]).to_be_modified= &rectangular_cartesian_flag;
-			(option_table[5]).to_be_modified= &spherical_polar_flag;
-			if (return_code=process_option(state,option_table))
+			option_table = CREATE(Option_table)();
+			Option_table_add_char_flag_entry(option_table, "cylindrical_polar", &cylindrical_polar_flag);
+			Option_table_add_char_flag_entry(option_table, "fibre", &fibre_flag);
+			Option_table_add_char_flag_entry(option_table, "normalised_window_coordinates",
+				&normalised_window_coordinates_flag);
+			Option_table_add_char_flag_entry(option_table, "oblate_spheroidal", &oblate_spheroidal_flag);
+			Option_table_add_char_flag_entry(option_table, "prolate_spheroidal", &prolate_spheroidal_flag);
+			Option_table_add_char_flag_entry(option_table, "rectangular_cartesian", &rectangular_cartesian_flag);
+			Option_table_add_char_flag_entry(option_table, "spherical_polar", &spherical_polar_flag);
+			return_code=Option_table_parse(option_table, state);
+			DESTROY(Option_table)(&option_table);
+
+			if (return_code)
 			{
 				read_focus=0;
 				coordinate_system_copy.parameters.focus=(float)1.0;
@@ -797,6 +790,11 @@ spheroidal).
 				else if (fibre_flag)
 				{
 					coordinate_system_copy.type=FIBRE;
+				}
+				else if (normalised_window_coordinates_flag)
+				{
+					coordinate_system_copy.type=NORMALISED_WINDOW_COORDINATES;
+					read_focus=1;
 				}
 				else if (oblate_spheroidal_flag)
 				{
@@ -828,9 +826,12 @@ spheroidal).
 						(!(strcmp(PARSER_HELP_STRING,current_token)&&
 							strcmp(PARSER_RECURSIVE_HELP_STRING,current_token))))
 					{
-						(focus_option_table[0]).to_be_modified=
-							&coordinate_system_copy.parameters.focus;
-						return_code=process_option(state,focus_option_table);
+						focus_option_table = CREATE(Option_table)();
+						Option_table_add_entry(focus_option_table,
+							"focus", &coordinate_system_copy.parameters.focus,
+							NULL,set_float_positive);
+						return_code=Option_table_parse(focus_option_table, state);
+						DESTROY(Option_table)(&focus_option_table);
 					}
 				}
 				if (return_code)
@@ -894,6 +895,10 @@ The calling function must not deallocate the returned string.
 		case FIBRE:
 		{
 			coordinate_system_type_string="fibre";
+		} break;
+		case NORMALISED_WINDOW_COORDINATES:
+		{
+			coordinate_system_type_string="normalised_window_coordinates";
 		} break;
 		case NOT_APPLICABLE:
 		{
@@ -1085,6 +1090,7 @@ Calculate the <jacobian> if not NULL.
 		switch (source_coordinate_system->type)
 		{
 			case RECTANGULAR_CARTESIAN:
+			case NORMALISED_WINDOW_COORDINATES:
 			{
 				switch (destination_coordinate_system->type)
 				{
@@ -1111,6 +1117,7 @@ Calculate the <jacobian> if not NULL.
 							&destination_values[2],jacobian);
 					} break;
 					case RECTANGULAR_CARTESIAN:
+					case NORMALISED_WINDOW_COORDINATES:
 					{
 						/* just do a copy */
 						memcpy(destination_values,source_values,
@@ -1136,6 +1143,7 @@ Calculate the <jacobian> if not NULL.
 				switch (destination_coordinate_system->type)
 				{
 					case RECTANGULAR_CARTESIAN:
+					case NORMALISED_WINDOW_COORDINATES:
 					{
 						return_code=cylindrical_polar_to_cartesian(source_values[0],
 							source_values[1],source_values[2],
@@ -1177,6 +1185,7 @@ Calculate the <jacobian> if not NULL.
 				switch (destination_coordinate_system->type)
 				{
 					case RECTANGULAR_CARTESIAN:
+					case NORMALISED_WINDOW_COORDINATES:
 					{
 						return_code=spherical_polar_to_cartesian(source_values[0],
 							source_values[1],source_values[2],
@@ -1237,6 +1246,7 @@ Calculate the <jacobian> if not NULL.
 				switch (destination_coordinate_system->type)
 				{
 					case RECTANGULAR_CARTESIAN:
+					case NORMALISED_WINDOW_COORDINATES:
 					{
 						return_code=prolate_spheroidal_to_cartesian(source_values[0],
 							source_values[1],source_values[2],

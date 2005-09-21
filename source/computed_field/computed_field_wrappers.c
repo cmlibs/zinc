@@ -63,8 +63,13 @@ COMPUTED_FIELD_RC_COORDINATE wrapper for it if it is not.
 Notes:
 Used to ensure RC coordinate fields are passed to graphics functions.
 Must call Computed_field_end_wrap to clean up the returned field after use.
+The NORMALISED_WINDOW_COORDINATES system is a rectangular cartesian system
+but indicates that the graphics objects produced should be displayed in the 
+window coordinates rather than the model 3D coordinates and so are also not
+wrapped.
 ==============================================================================*/
 {
+	enum Coordinate_system_type type;
 	struct Computed_field *wrapper_field;
 	struct Coordinate_system rc_coordinate_system;
 
@@ -72,8 +77,8 @@ Must call Computed_field_end_wrap to clean up the returned field after use.
 	if (coordinate_field&&(3>=
 		Computed_field_get_number_of_components(coordinate_field)))
 	{
-		if (RECTANGULAR_CARTESIAN==get_coordinate_system_type(
-			Computed_field_get_coordinate_system(coordinate_field)))
+		type = get_coordinate_system_type(Computed_field_get_coordinate_system(coordinate_field));
+		if ((RECTANGULAR_CARTESIAN==type)||(NORMALISED_WINDOW_COORDINATES==type))
 		{
 			wrapper_field=ACCESS(Computed_field)(coordinate_field);
 		}

@@ -3,7 +3,7 @@
 /*******************************************************************************
 FILE : mcubes.c
 
-LAST MODIFIED : 2 May 2002
+LAST MODIFIED : 11 April 2005
 
 DESCRIPTION :
 Modified Marching cubes isosurface generating algorithm based on David
@@ -65,13 +65,18 @@ algorithm described in Kenwright. (arrays are shifted by -1)
 #include <stdio.h>
 #include <math.h>
 
-/*???debug */
-#if defined (UNIX)
-#include <sys/times.h>
-#endif
+/* #define DEBUG */
 
+#if defined (DEBUG)
+#  if defined (UNIX)
+#    include <sys/times.h>
+#  endif
+#endif /* defined (DEBUG) */
+
+#include "general/compare.h"
 #include "general/debug.h"
 #include "general/matrix_vector.h"
+#include "general/indexed_list_private.h"
 #include "graphics/volume_texture.h"
 #include "graphics/mcubes.h"
 #include "graphics/complex.h"
@@ -955,6 +960,7 @@ Destroy mc_triangle
 		v=triangle->vertices[i];
 		/* search through vertex list and delete entry - if no other entries,
 			delete vertex */
+		delete_index = -1;
 		for (j=0;j < v->n_triangle_ptrs; j++)
 		{
 			if (v->triangle_ptrs[j]==triangle)
@@ -962,37 +968,45 @@ Destroy mc_triangle
 				delete_index=j;
 			}
 		}
-		if (1==v->n_triangle_ptrs)
+		if (delete_index != -1)
 		{
-			mc_iso_surface->n_vertices--;
-			/* delete vertex as this is the last one */
-			DEALLOCATE(v->triangle_ptrs);
-			DEALLOCATE(v);
-		}
-		else
-		{
-			/* copy shortened list minus current triangle */
-			k=0;
-			if (ALLOCATE(temp_triangle_ptrs,struct MC_triangle *,
-				v->n_triangle_ptrs-1))
+			if (1==v->n_triangle_ptrs)
 			{
-				for (j=0;j<v->n_triangle_ptrs;j++)
-				{
-					/* leave out one to be deleted */
-					if (j!=delete_index)
-					{
-						temp_triangle_ptrs[k]=v->triangle_ptrs[j];
-						k++;
-					}
-				}
+				mc_iso_surface->n_vertices--;
+				/* delete vertex as this is the last one */
 				DEALLOCATE(v->triangle_ptrs);
-				v->triangle_ptrs=temp_triangle_ptrs;
-				v->n_triangle_ptrs--;
+				DEALLOCATE(v);
 			}
 			else
 			{
-				display_message(ERROR_MESSAGE,"destroy_mc_triangle.  Alloc failed");
+				/* copy shortened list minus current triangle */
+				k=0;
+				if (ALLOCATE(temp_triangle_ptrs,struct MC_triangle *,
+						v->n_triangle_ptrs-1))
+				{
+					for (j=0;j<v->n_triangle_ptrs;j++)
+					{
+						/* leave out one to be deleted */
+						if (j!=delete_index)
+						{
+							temp_triangle_ptrs[k]=v->triangle_ptrs[j];
+							k++;
+						}
+					}
+					DEALLOCATE(v->triangle_ptrs);
+					v->triangle_ptrs=temp_triangle_ptrs;
+					v->n_triangle_ptrs--;
+				}
+				else
+				{
+					display_message(ERROR_MESSAGE,"destroy_mc_triangle.  Alloc failed");
+				}
 			}
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,"destroy_mc_triangle.  "
+				"Triangle not found in one of its vertices triangle lists.");
 		}
 	}
 	DEALLOCATE(triangle);
@@ -2023,614 +2037,1237 @@ resultant triangles are stored in module global clipped_triangle_list.
 	} /* if nclip */
 } /* recurse_clip */
 
-static int add_triangle_to_vertex_ptrlist(struct MC_vertex *vertex,
-	struct MC_triangle *triangle)
+/* Predeclare the Decimation_cost as we have a circular dependency */
+struct Decimation_cost;
+DECLARE_LIST_TYPES(Decimation_cost);
+PROTOTYPE_OBJECT_FUNCTIONS(Decimation_cost);
+PROTOTYPE_LIST_FUNCTIONS(Decimation_cost);
+
+struct Decimation_quadric
 /*******************************************************************************
-LAST MODIFIED : 18 February 1998
+LAST MODIFIED : 23 February 2005
 
 DESCRIPTION :
-Adds the given triangle in the triangle pointer list of the given vertex.
+Stores an MC_vertex and its Decimation_quadric
 ==============================================================================*/
 {
-	int k,return_code;
-	struct MC_triangle **temp_triangle_ptrs;
+	struct MC_vertex *vertex;
+	double matrix[10];
+	struct LIST(Decimation_cost) *dependent_cost_list;
+	int access_count;
+};
 
-	ENTER(add_triangle_to_vertex_ptrlist);
-	return_code=0;
-	if (vertex&&triangle)
+static struct Decimation_quadric *CREATE(Decimation_quadric)(void)
+/*******************************************************************************
+LAST MODIFIED : 28 February 2005
+
+DESCRIPTION :
+==============================================================================*/
+{
+	struct Decimation_quadric *quadric;
+
+	ENTER(CREATE(Decimation_quadric));
+	if (ALLOCATE(quadric, struct Decimation_quadric, 1))
 	{
-		if (ALLOCATE(temp_triangle_ptrs,struct MC_triangle *,
-			vertex->n_triangle_ptrs+1))
+		quadric->vertex = (struct MC_vertex *)NULL;
+		quadric->matrix[0] = 0.0;
+		quadric->matrix[1] = 0.0;
+		quadric->matrix[2] = 0.0;
+		quadric->matrix[3] = 0.0;
+		quadric->matrix[4] = 0.0;
+		quadric->matrix[5] = 0.0;
+		quadric->matrix[6] = 0.0;
+		quadric->matrix[7] = 0.0;
+		quadric->matrix[8] = 0.0;
+		quadric->matrix[9] = 0.0;
+		quadric->dependent_cost_list = CREATE(LIST(Decimation_cost))();
+		quadric->access_count = 0;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"CREATE(Decimation_quadric).  "
+			"Unable to allocate memory for memory_quadric list structure");
+		quadric = (struct Decimation_quadric *)NULL;
+	}
+	LEAVE;
+	
+	return (quadric);
+} /* CREATE(Decimation_quadric) */
+
+int DESTROY(Decimation_quadric)(struct Decimation_quadric **quadric_address)
+/*******************************************************************************
+LAST MODIFIED : 28 February 2000
+
+DESCRIPTION :
+==============================================================================*/
+{
+	int return_code;
+	struct Decimation_quadric *quadric;
+
+	ENTER(DESTROY(Decimation_quadric));
+	if (quadric_address && (quadric = *quadric_address))
+	{
+		if (quadric->access_count <= 0)
 		{
-			for (k=0;k<vertex->n_triangle_ptrs;k++)
-			{
-				temp_triangle_ptrs[k]=vertex->triangle_ptrs[k];
-			}
-			temp_triangle_ptrs[k]=triangle;
-			vertex->n_triangle_ptrs++;
-			DEALLOCATE(vertex->triangle_ptrs);
-			vertex->triangle_ptrs=temp_triangle_ptrs;
-			return_code=1;
+			DESTROY(LIST(Decimation_cost))(&quadric->dependent_cost_list);
+			DEALLOCATE(*quadric_address);
+			return_code = 1;
 		}
 		else
 		{
 			display_message(ERROR_MESSAGE,
-				"add_triangle_to_vertex_ptrlist.  Insufficient memory");
+				"DESTROY(Decimation_quadric).  Destroy called when access count > 0.");
+			*quadric_address = (struct Decimation_quadric *)NULL;
+			return_code = 0;
 		}
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"add_triangle_to_vertex_ptrlist.  Invalid argument(s)");
+			"DESTROY(Decimation_quadric).  Invalid arguments.");
+		return_code = 0;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* add_triangle_to_vertex_ptrlist */
+} /* DESTROY(Decimation_quadric) */
 
-static void remove_triangle_from_vertex_ptrlist( struct MC_vertex *vertex,
-	struct MC_triangle *triangle )
+DECLARE_LIST_TYPES(Decimation_quadric);
+
+PROTOTYPE_OBJECT_FUNCTIONS(Decimation_quadric);
+PROTOTYPE_LIST_FUNCTIONS(Decimation_quadric);
+PROTOTYPE_FIND_BY_IDENTIFIER_IN_LIST_FUNCTION(Decimation_quadric,vertex,struct MC_vertex *);
+
+DECLARE_OBJECT_FUNCTIONS(Decimation_quadric)
+FULL_DECLARE_INDEXED_LIST_TYPE(Decimation_quadric);
+DECLARE_INDEXED_LIST_MODULE_FUNCTIONS(Decimation_quadric,vertex,struct MC_vertex *,compare_pointer)
+DECLARE_INDEXED_LIST_FUNCTIONS(Decimation_quadric)
+DECLARE_FIND_BY_IDENTIFIER_IN_INDEXED_LIST_FUNCTION(Decimation_quadric,vertex,
+	struct MC_vertex *, compare_pointer)
+
+struct Decimation_cost
 /*******************************************************************************
-LAST MODIFIED : 30 January 1998
+LAST MODIFIED : 23 February 2005
 
 DESCRIPTION :
-Finds the pointer to the given triangle in the vertex's triangle pointer list
-and removes it.  Reports an error if the triangle is not found.
+Stores an MC_vertex and its Decimation_quadric
 ==============================================================================*/
 {
-	int found, k;
+	struct Decimation_quadric *quadric1;
+	struct Decimation_quadric *quadric2;
+	double coord[3];
+	double cost;
+	struct Decimation_cost *self;  /* Need a self pointer so the compare can use
+												 additional fields as well as the cost */
+	int invalid_cost_counter; /* Count the number of times this cost has been 
+										  selected as optimal but the cost is rejected due
+										  to inverting triangles */
+	int access_count;
+};
 
-	k = 0;
-	found = 0;
-	while ( k < vertex->n_triangle_ptrs && !found)
+int compare_decimation_cost(struct Decimation_cost *cost1,
+	struct Decimation_cost *cost2)
+/*******************************************************************************
+LAST MODIFIED : 28 February 2005
+
+DESCRIPTION :
+Sorts decimation_cost objects, first by the cost and then by the self pointer
+itself just to get a unique ordering.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(compare_double);
+	if (cost1->cost < cost2->cost)
 	{
-		if ( vertex->triangle_ptrs[k] == triangle )
-		{
-			found = 1;
-		}
-		else
-		{
-			k++;
-		}
-	}
-	if ( found )
-	{
-		vertex->n_triangle_ptrs--;
-		while ( k < vertex->n_triangle_ptrs )
-		{
-			vertex->triangle_ptrs[k] = vertex->triangle_ptrs[k+1];
-			k++;
-		}
+		return_code = -1;
 	}
 	else
 	{
-		display_message(ERROR_MESSAGE,"remove_triangle_from_vertex_ptrlist.  Triangle ptr %d not found in vertex %d.", triangle->triangle_index, vertex->vertex_index );
-	}
-} /* remove_triangle_from_vertex_ptrlist */
-
-static void retriangulate(struct MC_iso_surface *iso_surface,int i,
-	int n_triangles,struct MC_vertex *i_vertex, struct MC_triangle **triangles,
-	int *ordered_triangles, int *central_vertex,
-	struct MC_triangle **new_triangles, int *new_triangle_count,
-	struct MC_triangle **discarded_triangles, int *discarded_triangle_count)
-/*******************************************************************************
-LAST MODIFIED : 1 November 1999
-
-DESCRIPTION :
-Retriangulates hole, removing vertex.
-==============================================================================*/
-{
-	/* loop splitting */
-	double a,max_aspect, temp_aspect, tempv1[3], tempv2[3], tempv3[3], tempv4[3];
-	int j, k, max_aspect_index, pair_central_vertex,
-		recurse_central_vertex[MAXPTRS], rc_count;
-	struct MC_triangle *pair_triangle, *recurse_triangles[MAXPTRS], *triangle;
-	struct MC_vertex *temp_vertices[3], *vertex1, *vertex2;
-
-	/* SAB Could do better with the ordered triangles (keep pointers rather than
-		integer indexes or sort the triangles)*/
-
-	/* retriangulate */
-	/* 1:  make loop of vertices */
-	/* 2: step through and find maximum aspect ratio for split line */
-	max_aspect_index=0;
-	max_aspect=0;
-
-	if (n_triangles<3)
-	{
-		display_message(ERROR_MESSAGE,
-			"retriangluate.  Less than three triangles!");
-		return;
-	}
-
-	if (n_triangles==3)
-	{
-		/* finished - just remove central vertex */
-		/* printf("retriangulate: removing central vertex %d\n",i); */
-
-		triangle = triangles[ordered_triangles[0]];
-		new_triangles[*new_triangle_count] = triangle;
-		(*new_triangle_count)++;
-		*discarded_triangle_count = 2;
-		discarded_triangles[0] = triangles[ordered_triangles[1]];
-		discarded_triangles[1] = triangles[ordered_triangles[2]];
-
-		/* SAB Here I am just replacing the old triangle vertices with the
-			new ones without adjusting the Cell, the texture_coord,
-			materials, env_map etc. */
-		triangle->vertices[0] =
-			triangle->vertices[(central_vertex[ordered_triangles[0]]+1) % 3];
-		triangle->vertices[1] =
-			discarded_triangles[0]->vertices[(central_vertex[ordered_triangles[1]]+1) % 3];
-		triangle->vertices[2] =
-			discarded_triangles[1]->vertices[(central_vertex[ordered_triangles[2]]+1) % 3];
-
-		remove_triangle_from_vertex_ptrlist( triangle->vertices[0],
-			discarded_triangles[1] );
-		remove_triangle_from_vertex_ptrlist( triangle->vertices[1],
-			discarded_triangles[0] );
-		remove_triangle_from_vertex_ptrlist( triangle->vertices[2],
-			discarded_triangles[0] );
-		remove_triangle_from_vertex_ptrlist( triangle->vertices[2],
-			discarded_triangles[1] );
-		add_triangle_to_vertex_ptrlist( triangle->vertices[2],
-			triangle );
-
-		/* debug
-			As the vertex is about to be deleted hopefully it would have no effect
-			if these pointers were not updated.
-			Check that only the three final triangles belong to the vertex */
-		remove_triangle_from_vertex_ptrlist( i_vertex, triangle );
-		remove_triangle_from_vertex_ptrlist( i_vertex, discarded_triangles[0] );
-		remove_triangle_from_vertex_ptrlist( i_vertex, discarded_triangles[1] );
-		if ( i_vertex->n_triangle_ptrs != 0 )
+		if (cost1->cost > cost2->cost)
 		{
-			display_message(ERROR_MESSAGE, "central vertex still has associated triangles!");
-		}
-
-		triangle->vertex_index[0] =
-			triangle->vertices[0]->vertex_index;
-		triangle->vertex_index[1] =
-			triangle->vertices[1]->vertex_index;
-		triangle->vertex_index[2] =
-			triangle->vertices[2]->vertex_index;
-
-		return;
-	}
-
-	for ( j = 0 ; j < n_triangles ; j++ )
-	{
-
-		vertex1 = triangles[ordered_triangles[j]]->vertices
-			[(central_vertex[ordered_triangles[j]]+1) % 3];
-		if ( j == n_triangles-1)
-		{
-			vertex2 = triangles[ordered_triangles[0]]->vertices
-				[(central_vertex[ordered_triangles[0]]+2) % 3];
+			return_code = 1;
 		}
 		else
 		{
-			vertex2 = triangles[ordered_triangles[j+1]]->vertices
-				[(central_vertex[ordered_triangles[j+1]]+2) % 3];
-		}
-
-		/* calculate aspect ratio by dividing distance of vertice from line with edge length */
-		for ( k=0 ; k<3 ; k++)
-		{
-			tempv1[k] = i_vertex->coord[k] - vertex1->coord[k];
-			tempv2[k] = i_vertex->coord[k] - vertex2->coord[k];
-			tempv3[k] = vertex2->coord[k] - vertex1->coord[k];
-		}
-		a = dot_product3(tempv1,tempv2) / (norm3(tempv3) * norm3(tempv3));
-
-		for (k=0;k<3;k++)
-		{
-			tempv4[k] = tempv1[k] + a*(tempv2[k] - tempv1[k]) - i_vertex->coord[k];
-		}
-		temp_aspect=norm3(tempv4) / norm3(tempv3);
-			/* printf("aspect[%d]=%lf\n",j,temp_aspect); */
-		if (temp_aspect > max_aspect)
-		{
-			max_aspect=temp_aspect;
-			max_aspect_index=j;
-		}
-	}
-
-	triangle = triangles[ordered_triangles[max_aspect_index]];
-	if ( max_aspect_index == n_triangles-1 )
-	{
-		pair_triangle = triangles[ordered_triangles[0]];
-		pair_central_vertex = central_vertex[ordered_triangles[0]];
-	}
-	else
-	{
-		pair_triangle = triangles[ordered_triangles[max_aspect_index+1]];
-		pair_central_vertex = central_vertex[ordered_triangles[max_aspect_index+1]];
-	}
-
-	new_triangles[*new_triangle_count] = triangle;
-	(*new_triangle_count)++;
-
-	temp_vertices[0] =
-		triangle->vertices[(central_vertex[ordered_triangles[max_aspect_index]]+1) % 3];
-	temp_vertices[1] =
-			triangle->vertices[(central_vertex[ordered_triangles[max_aspect_index]]+2) % 3];
-	temp_vertices[2] =
-		pair_triangle->vertices[(pair_central_vertex+2) % 3];
-
-	add_triangle_to_vertex_ptrlist( temp_vertices[2], triangle );
-	remove_triangle_from_vertex_ptrlist( i_vertex, triangle );
-
-	/* now replace ordered triangle list triangle pair with new triangle and recurse */
-	/* eliminate last clockwise triangle and move one vertex */
-
-	pair_triangle->vertices
-		[(pair_central_vertex+1) % 3] =
-		triangle->vertices
-		[(central_vertex[ordered_triangles[max_aspect_index]]+1) % 3];
-	pair_triangle->vertex_index
-		[(pair_central_vertex+1) % 3] =
-		pair_triangle->vertices
-		[(pair_central_vertex+1) % 3]->vertex_index;
-	add_triangle_to_vertex_ptrlist( temp_vertices[0], pair_triangle );
-	remove_triangle_from_vertex_ptrlist( temp_vertices[1], pair_triangle );
-
-	triangle->vertices[0] = temp_vertices[0];
-	triangle->vertices[1] = temp_vertices[1];
-	triangle->vertices[2] = temp_vertices[2];
-	triangle->vertex_index[0] = triangle->vertices[0]->vertex_index;
-	triangle->vertex_index[1] = triangle->vertices[1]->vertex_index;
-	triangle->vertex_index[2] = triangle->vertices[2]->vertex_index;
-
-	/* debug */
-	/*	printf ("triangle to keep %d\n", triangle->triangle_index );
-	printf("vertices\n");
-	for ( j = 0 ; j < 3 ; j++ )
-	{
-		printf("  %d  >  ", triangle->vertices[j]->vertex_index );
-		for (k=0; k <triangle->vertices[j]->n_triangle_ptrs ; k++)
-		{
-			printf ("%d ", triangle->vertices[j]->triangle_ptrs[k]->triangle_index );
-		}
-		printf("\n");
-	}
-	printf ("triangle still to retriangulate %d\n", pair_triangle->triangle_index  );
-	printf("vertices\n");
-	for ( j = 0 ; j < 3 ; j++ )
-	{
-		printf("  %d  >  ", pair_triangle->vertices[j]->vertex_index);
-		for (k=0; k <pair_triangle->vertices[j]->n_triangle_ptrs ; k++)
-		{
-			printf ("%d ", pair_triangle->vertices[j]->triangle_ptrs[k]->triangle_index );
-		}
-		printf("\n");
-	}
-	*/
-
-	/* reconstruct list for recursion leaving out max_aspect_index triangle
-		which is now part of the new triangle list */
-	rc_count=0;
-	for (j=0;j<n_triangles;j++)
-	{
-		if (j != max_aspect_index)
-		{
-			recurse_triangles[rc_count] = triangles[ordered_triangles[j]];
-			recurse_central_vertex[rc_count] = central_vertex[ordered_triangles[j]];
-			rc_count++;
-		}
-	}
-
-	for (j=0;j<rc_count;j++)
-	{
-		triangles[j]=recurse_triangles[j];
-		central_vertex[j]=recurse_central_vertex[j];
-	}
-
-	/* only had to order once so now store again */
-	for (j=0;j<n_triangles /* -1 */;j++)
-	{
-		ordered_triangles[j]=j;
-	}
-
-	retriangulate(iso_surface,i,n_triangles-1, i_vertex, triangles,
-		ordered_triangles,central_vertex, new_triangles, new_triangle_count,
-		discarded_triangles, discarded_triangle_count);
-
-} /* retriangulate */
-
-static void decimate_triangles(struct MC_iso_surface *iso_surface,
-	double threshold_distance,int decimation_level)
-/*******************************************************************************
-LAST MODIFIED : 1 November 1999
-
-DESCRIPTION :
-Decimates triangle mesh
-==============================================================================*/
-{
-	int central_vertex[MAXPTRS], counter, found, i, initial_edge,
-		discarded_triangle_count, j, k,n_triangles,
-		new_vertex_index, new_triangle_count, new_triangle_index,
-		ordered_triangles[MAXPTRS], simple_vertex,
-		test_edge, z;
-	struct MC_triangle *discarded_triangles[MAXPTRS], *new_triangles[MAXPTRS],
-		**new_triangle_position, **old_triangle_position, **temp_triangle_ptrs,
-		*triangle, *triangles[MAXPTRS];
-	struct MC_vertex *i_vertex, **new_vertex_position, **old_vertex_position;
-
-	double cross[3],magnitude,total_area,vertex_distance,
-		v1[3],v2[3],x0[3],x1[3],x2[3],na[3],xc[3],vx[3];
-
-	/* the decimation criteria  - dependent on size of model I guess - will have to send as a parameter */
-	/*
-		double threshold_distance=0.005;
-		int decimation_level=4;
-		*/
-
-	for (z=0;z<decimation_level;z++)
-	{
-		/************** Loop through all vertices in isosurface *************/
-		for (i=0;i< iso_surface->n_vertices ;i++)
-		{
-			i_vertex = iso_surface->compiled_vertex_list[i];
-			/**********   step one - classify vertices    **********/
-			/* Gather and order triangles around vertex[i] */
-			n_triangles = i_vertex->n_triangle_ptrs;
-
-			/* printf("n_triangles=%d\n",n_triangles); */
-			counter=0;
-			/* get triangles associated with vertices */
-			/* triangle_index_count = n_triangles; */
-
-			for (j=0;j<n_triangles;j++)
+			if (cost1 < cost2)
 			{
-				central_vertex[j]=4;
-				triangle = i_vertex->triangle_ptrs[j];
-				triangles[j] = triangle;
-				for (k=0;k<3;k++)
+				return_code = -1;
+			}
+			else
+			{
+				if (cost1 > cost2)
 				{
-					/* debug */
-					/* printf("For vertex %d triangles[triangle %d][vertex %d]<triangle index %d> = vertex index %d\n",
-						i, j, k, i_vertex->triangle_ptrs[j]->triangle_index,
-						triangles[j]->vertices[k]->vertex_index); */
-
-					/* find triangle index for central vertex */
-					if (triangles[j]->vertices[k]->vertex_index == i)
-					{
-						central_vertex[j] = k;
-					}
+					return_code = 1;
 				}
-				if ( central_vertex[j] == 4 )
+				else
 				{
-					display_message(ERROR_MESSAGE, "decimate_triangles.  Central vertex not found on triangle in i_vertex list");
-					printf("decimate_triangles.  Central vertex not found on triangle in i_vertex list\n");
+					return_code = 0;
 				}
 			}
-			/* look for simple classification */
-			/* look for clockwise triangle sharing edge (all edges examined share
-				the central_vertex */
+		}
+	}
+	LEAVE;
 
-			simple_vertex=0;
-			initial_edge=triangles[0]->vertices[(central_vertex[0]+1) % 3]->vertex_index;
-			ordered_triangles[counter]=0;
-			counter++;
-			test_edge=triangles[0]->vertices[(central_vertex[0]+2) % 3]->vertex_index;
-			found=1;
+	return (return_code);
+} /* compare_decimation_cost */
 
-			while (found && !simple_vertex && counter < n_triangles)
+static struct Decimation_cost *CREATE(Decimation_cost)(void)
+/*******************************************************************************
+LAST MODIFIED : 28 February 2005
+
+DESCRIPTION :
+==============================================================================*/
+{
+	struct Decimation_cost *cost;
+
+	ENTER(CREATE(Decimation_cost));
+	if (ALLOCATE(cost, struct Decimation_cost, 1))
+	{
+		cost->quadric1 = (struct Decimation_quadric *)NULL;
+		cost->quadric2 = (struct Decimation_quadric *)NULL;
+		cost->cost = 0.0;
+		cost->self = cost;
+		cost->invalid_cost_counter = 0;
+		cost->access_count = 0;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"CREATE(Decimation_cost).  "
+			"Unable to allocate memory for memory_cost list structure");
+		cost = (struct Decimation_cost *)NULL;
+	}
+	LEAVE;
+	
+	return (cost);
+} /* CREATE(Decimation_cost) */
+
+int DESTROY(Decimation_cost)(struct Decimation_cost **cost_address)
+/*******************************************************************************
+LAST MODIFIED : 28 February 2005
+
+DESCRIPTION :
+==============================================================================*/
+{
+	int return_code;
+	struct Decimation_cost *cost;
+
+	ENTER(DESTROY(Decimation_cost));
+	if (cost_address && (cost = *cost_address))
+	{
+		if (cost->access_count <= 0)
+		{
+			if (cost->quadric1)
 			{
-				found=0;
+				DEACCESS(Decimation_quadric)(&cost->quadric1);
+			}
+			if (cost->quadric2)
+			{
+				DEACCESS(Decimation_quadric)(&cost->quadric2);
+			}
+			DEALLOCATE(*cost_address);
+			return_code = 1;
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,
+				"DESTROY(Decimation_cost).  Destroy called when access count > 0.");
+			*cost_address = (struct Decimation_cost *)NULL;
+			return_code = 0;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"DESTROY(Decimation_cost).  Invalid arguments.");
+		return_code = 0;
+	}
+	LEAVE;
 
-				for ( j=0 ; j<n_triangles && !found ; j++)
+	return (return_code);
+} /* DESTROY(Decimation_cost) */
+
+PROTOTYPE_FIND_BY_IDENTIFIER_IN_LIST_FUNCTION(Decimation_cost,self,
+	struct Decimation_cost *);
+
+DECLARE_OBJECT_FUNCTIONS(Decimation_cost)
+FULL_DECLARE_INDEXED_LIST_TYPE(Decimation_cost);
+DECLARE_INDEXED_LIST_MODULE_FUNCTIONS(Decimation_cost,self,
+	struct Decimation_cost *,compare_decimation_cost)
+DECLARE_INDEXED_LIST_FUNCTIONS(Decimation_cost)
+DECLARE_FIND_BY_IDENTIFIER_IN_INDEXED_LIST_FUNCTION(Decimation_cost,self,
+	struct Decimation_cost *,compare_decimation_cost)
+
+static int Decimation_cost_has_quadric(struct Decimation_cost *cost,
+	void *quadric_void)
+/*******************************************************************************
+LAST MODIFIED : 28 February 2005
+
+DESCRIPTION :
+Returns 1 if the <cost> structure references the specified <quadric_void>.
+==============================================================================*/
+{
+	int return_code;
+
+	if (cost)
+	{
+		if ((cost->quadric1 == (struct Decimation_quadric *)quadric_void) ||
+			(cost->quadric2 == (struct Decimation_quadric *)quadric_void))
+		{
+			return_code = 1;
+		}
+		else
+		{
+			return_code = 0;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Decimation_cost_has_quadric.  Invalid arguments.");
+		return_code = 0;
+	}
+
+	LEAVE;
+
+	return (return_code);
+} /* calculate_decimation_cost */
+
+static int check_triangles_are_not_inverted(struct MC_vertex *vertex,
+   struct MC_vertex *other_vertex, double *new_coord)
+/*******************************************************************************
+LAST MODIFIED : 18 March 2005
+
+DESCRIPTION :
+Checks to see if collapsing <vertex> and <other_vertex> to location <new_coord>
+will cause any of the triangles involving <vertex> to invert.  Returns true
+if no triangles are inverted and false if any of them are.  If a triangle has
+both <vertex> and <other_vertex> then it is expected it will collapse and be
+removed, so it is not checked.  Test again with the vertices in the other order
+if you want to check the triangle lists of both vertices.
+==============================================================================*/
+{
+	double a[3], b[3], v1[3], v2[3], v3[4];
+	int collapsing_triangle, j, k, number_of_triangles, return_code;
+	struct MC_vertex *vertexb, *vertexc;
+
+	return_code = 1;
+	number_of_triangles = vertex->n_triangle_ptrs;
+	for (j = 0 ; return_code && (j < number_of_triangles) ; j++)
+	{
+		collapsing_triangle = 0;
+		if (vertex == vertex->triangle_ptrs[j]->vertices[0])
+		{
+			if ((other_vertex == vertex->triangle_ptrs[j]->vertices[1])
+				|| (other_vertex == vertex->triangle_ptrs[j]->vertices[2]))
+			{
+				collapsing_triangle = 1;
+			}
+			else
+			{
+				vertexb = vertex->triangle_ptrs[j]->vertices[1];
+				vertexc = vertex->triangle_ptrs[j]->vertices[2];
+			}
+		}
+		else if (vertex == vertex->triangle_ptrs[j]->vertices[1])
+		{
+			if ((other_vertex == vertex->triangle_ptrs[j]->vertices[0])
+				|| (other_vertex == vertex->triangle_ptrs[j]->vertices[2]))
+			{
+				collapsing_triangle = 1;
+			}
+			else
+			{
+				vertexb = vertex->triangle_ptrs[j]->vertices[0];
+				vertexc = vertex->triangle_ptrs[j]->vertices[2];
+			}
+		}
+		else
+		{
+			if ((other_vertex == vertex->triangle_ptrs[j]->vertices[0])
+				|| (other_vertex == vertex->triangle_ptrs[j]->vertices[1]))
+			{
+				collapsing_triangle = 1;
+			}
+			else
+			{
+				vertexb = vertex->triangle_ptrs[j]->vertices[0];
+				vertexc = vertex->triangle_ptrs[j]->vertices[1];
+			}
+		}
+		if (!collapsing_triangle)
+		{
+			/* Calculate current normal and proposed normal */
+			for (k = 0 ; k < 3 ; k++)
+			{
+				v1[k] = vertexb->coord[k] - vertexc->coord[k];
+				v2[k] = vertex->coord[k] - vertexc->coord[k];
+				v3[k] = new_coord[k] - vertexc->coord[k];
+			}
+			cross_product3(v1, v2, a);
+			cross_product3(v1, v3, b);
+
+			if (dot_product3(a, b) < -1.0e-12)
+			{
+				return_code = 0;
+			}
+		}
+	}
+
+	return (return_code);
+}
+
+static int Decimation_cost_calculate_cost(struct Decimation_cost *cost,
+	void *dummy_void)
+/*******************************************************************************
+LAST MODIFIED : 28 February 2005
+
+DESCRIPTION :
+Calculates the cost of a collapse based on the quadrics.  If <collapsing_cost>
+is not NULL then it must also point to a valid Decimation_cost structure, which
+is being removed from the mesh due to an edge collapse.
+==============================================================================*/
+{
+	double a, b, c, d, edge_matrix[16], edge_matrix_lu[16], length, rhs[4], vTq[4];
+	int i, lu_index[4], return_code;
+	struct Decimation_quadric *quadric, *quadric2;
+
+	USE_PARAMETER(dummy_void);
+
+	quadric = cost->quadric1;
+	quadric2 = cost->quadric2;
+
+	length = (quadric->vertex->coord[0] - quadric2->vertex->coord[0]) *
+		(quadric->vertex->coord[0] - quadric2->vertex->coord[0]) +
+		(quadric->vertex->coord[1] - quadric2->vertex->coord[1]) *
+		(quadric->vertex->coord[1] - quadric2->vertex->coord[1]) +
+		(quadric->vertex->coord[2] - quadric2->vertex->coord[2]) *
+		(quadric->vertex->coord[2] - quadric2->vertex->coord[2]) ;
+	if (length > 0.0)
+	{
+		length = sqrt(length);
+		/* Expand out the quadric to its full matrix replacing the
+			bottom row with an identity row and perform an
+			LU decompose and backsub with a [0 0 0 1] rhs. */
+		edge_matrix[0] = quadric->matrix[0] + quadric2->matrix[0];
+		edge_matrix[1] = quadric->matrix[1] + quadric2->matrix[1];
+		edge_matrix[2] = quadric->matrix[2] + quadric2->matrix[2];
+		edge_matrix[3] = quadric->matrix[3] + quadric2->matrix[3];
+	
+		edge_matrix[4] = edge_matrix[1];
+		edge_matrix[5] = quadric->matrix[4] + quadric2->matrix[4];
+		edge_matrix[6] = quadric->matrix[5] + quadric2->matrix[5];
+		edge_matrix[7] = quadric->matrix[6] + quadric2->matrix[6];
+	
+		edge_matrix[8] = edge_matrix[2];
+		edge_matrix[9] = edge_matrix[6];
+		edge_matrix[10] = quadric->matrix[7] + quadric2->matrix[7];
+		edge_matrix[11] = quadric->matrix[8] + quadric2->matrix[8];
+	
+		edge_matrix[12] = edge_matrix[3];
+		edge_matrix[13] = edge_matrix[7];
+		edge_matrix[14] = edge_matrix[11];
+		edge_matrix[15] = quadric->matrix[9] + quadric2->matrix[9];
+	
+		for (i = 0 ; i < 12 ; i++)
+		{
+			edge_matrix_lu[i] = edge_matrix[i];
+		}
+		edge_matrix_lu[12] = 0.0;
+		edge_matrix_lu[13] = 0.0;
+		edge_matrix_lu[14] = 0.0;
+		edge_matrix_lu[15] = 1.0;
+
+		rhs[0] = 0.0;
+		rhs[1] = 0.0;
+		rhs[2] = 0.0;
+		rhs[3] = 1.0;
+
+		/* Use a low tolerance to singular matrices */
+		if ((cost->invalid_cost_counter == 0) && 
+			LU_decompose(/*n*/4, edge_matrix_lu, lu_index, &d,/*singular_tolerance*/1.0e-5))
+		{
+			LU_backsubstitute(/*n*/4, edge_matrix_lu, lu_index, rhs);
+								
+			cost->coord[0] = rhs[0];
+			cost->coord[1] = rhs[1];
+			cost->coord[2] = rhs[2];
+								
+			/* error = vT Q v; */
+			multiply_matrix(/*m*/1, /*s*/4, /*n*/4, rhs, edge_matrix, vTq);
+			/* Actually a dot product really */
+			multiply_matrix(/*m*/1, /*s*/4, /*4*/1, vTq, rhs, &cost->cost);
+								
+			return_code = 1;
+		}
+		else
+		{
+			if (cost->invalid_cost_counter == 0)
+			{
+				cost->invalid_cost_counter = 1;
+			}
+
+			/* Try positions of vertex1 and vertex2 and (vertex1+vertex2)/2 */
+			rhs[0] = (quadric->vertex->coord[0] + quadric2->vertex->coord[0]) / 2.0;
+			rhs[1] = (quadric->vertex->coord[1] + quadric2->vertex->coord[1]) / 2.0;
+			rhs[2] = (quadric->vertex->coord[2] + quadric2->vertex->coord[2]) / 2.0;
+			rhs[3] = 1.0;
+			cost->coord[0] = rhs[0];
+			cost->coord[1] = rhs[1];
+			cost->coord[2] = rhs[2];
+			/* error = vT Q v; */
+			multiply_matrix(/*m*/1, /*s*/4, /*n*/4, rhs, edge_matrix, vTq);
+			/* Actually a dot product really */
+			multiply_matrix(/*m*/1, /*s*/4, /*4*/1, vTq, rhs, &a);
+
+			rhs[0] = quadric->vertex->coord[0];
+			rhs[1] = quadric->vertex->coord[1];
+			rhs[2] = quadric->vertex->coord[2];
+			rhs[3] = 1.0;
+			/* error = vT Q v; */
+			multiply_matrix(/*m*/1, /*s*/4, /*n*/4, rhs, edge_matrix, vTq);
+			/* Actually a dot product really */
+			multiply_matrix(/*m*/1, /*s*/4, /*4*/1, vTq, rhs, &b);
+
+			rhs[0] = quadric2->vertex->coord[0];
+			rhs[1] = quadric2->vertex->coord[1];
+			rhs[2] = quadric2->vertex->coord[2];
+			rhs[3] = 1.0;
+			/* error = vT Q v; */
+			multiply_matrix(/*m*/1, /*s*/4, /*n*/4, rhs, edge_matrix, vTq);
+			/* Actually a dot product really */
+			multiply_matrix(/*m*/1, /*s*/4, /*4*/1, vTq, rhs, &c);
+
+			switch (cost->invalid_cost_counter)
+			{
+				case 1:
 				{
-					if (test_edge==triangles[j]->vertices[(central_vertex[j]+1)%3]->vertex_index)
+					/* Find the least value */
+					cost->cost = a;
+					if (b < cost->cost)
 					{
-						found=1;
-
-						test_edge=triangles[j]->vertices[(central_vertex[j]+2)%3]->vertex_index;
-
-						ordered_triangles[counter] = j;
-						counter++;
+						cost->cost = b;
+						cost->coord[0] = quadric->vertex->coord[0];
+						cost->coord[1] = quadric->vertex->coord[1];
+						cost->coord[2] = quadric->vertex->coord[2];
 					}
-				}
-				if (test_edge==initial_edge)
-				{
-					if (counter != n_triangles)
+					if (c < cost->cost)
 					{
-						display_message(ERROR_MESSAGE, "decimate_triangles.  n_triangles is %d but only %d triangles in sequence", n_triangles, counter );
-						printf("Error: counter %d : n_triangles %d\n",counter,n_triangles);
-						simple_vertex=0;
-						/* Set found = 0 to break loop */
-						found = 0;
+						cost->cost = c;
+						cost->coord[0] = quadric2->vertex->coord[0];
+						cost->coord[1] = quadric2->vertex->coord[1];
+						cost->coord[2] = quadric2->vertex->coord[2];
+					}
+				} break;
+				case 2:
+				{
+					/* Find the middle value */
+					if (((a <= b) && (b < c)) || (c <= b) && (b < a)) 
+					{
+						cost->cost = b;
+						cost->coord[0] = quadric->vertex->coord[0];
+						cost->coord[1] = quadric->vertex->coord[1];
+						cost->coord[2] = quadric->vertex->coord[2];
+					}
+					else if (((a <= c) && (c < b)) || (b <= c) && (c < a)) 
+					{
+						cost->cost = c;
+						cost->coord[0] = quadric2->vertex->coord[0];
+						cost->coord[1] = quadric2->vertex->coord[1];
+						cost->coord[2] = quadric2->vertex->coord[2];
 					}
 					else
 					{
-						simple_vertex=1;
-						/*  printf("simple vertex %d\n",i); */
+						cost->cost = a;
 					}
+				} break;
+				case 3:
+				{
+					/* Find the maximum value */
+					cost->cost = a;
+					if (b >= cost->cost)
+					{
+						cost->cost = b;
+						cost->coord[0] = quadric->vertex->coord[0];
+						cost->coord[1] = quadric->vertex->coord[1];
+						cost->coord[2] = quadric->vertex->coord[2];
+					}
+					if (c >= cost->cost)
+					{
+						cost->cost = c;
+						cost->coord[0] = quadric2->vertex->coord[0];
+						cost->coord[1] = quadric2->vertex->coord[1];
+						cost->coord[2] = quadric2->vertex->coord[2];
+					}
+				} break;
+				default:
+				{
+					/* Not an error, just no more options */
+					cost->cost = 0;
+					return_code = 0;
 				}
 			}
-
-				/*	i_vertex->class=simple_vertex;*/
-			i_vertex->vt_class=simple_vertex;
-
-				/* step 2: evaluate decimation criteria */
-				/* examine simple vertex  for feature edges here (not implemented yet) */
-			if ( simple_vertex )
-			{
-				na[0] = 0;
-				na[1] = 0;
-				na[2] = 0;
-				xc[0] = 0;
-				xc[1] = 0;
-				xc[2] = 0;
-				total_area = 0;
-
-				/* debug */
-				/* printf("n_triangles=%d\n", n_triangles);
-				for (j=0;j<n_triangles;j++)
-				{
-					printf("ordered_triangles[%d]=%d\n",j,ordered_triangles[j]);
-				}
-				*/
-
-				for (j=0;j<n_triangles;j++)
-				{
-					/* area */
-					for (k=0;k<3;k++)
-					{
-						v1[k] = triangles[j]->vertices[0]->coord[k] -
-							triangles[j]->vertices[1]->coord[k];
-						v2[k] = triangles[j]->vertices[0]->coord[k] -
-							triangles[j]->vertices[2]->coord[k];
-
-						x0[k] = triangles[j]->vertices[0]->coord[k];
-						x1[k] = triangles[j]->vertices[1]->coord[k];
-						x2[k] = triangles[j]->vertices[2]->coord[k];
-					}
-					cross_product3(v1,v2,cross);
-					magnitude=norm3(cross);
-
-					for (k=0;k<3;k++)
-					{
-						na[k] += cross[k];
-						xc[k] += magnitude * (x0[k] + x1[k] + x2[k]) / 3.0;
-					}
-					total_area += magnitude;
-				}
-				for (k=0;k<3;k++)
-				{
-					na[k] /= total_area;
-					xc[k] /= total_area;
-					vx[k] = i_vertex->coord[k] - xc[k];
-				}
-				magnitude = norm3(na);
-				for ( k=0 ; k<3 ; k++ )
-				{
-					na[k] /= magnitude;
-				}
-				vertex_distance = fabs( dot_product3(na,vx) );
-
-				/* debug */
-				/*  printf("vertex_distance[%d]=%lf\n",i,vertex_distance); */
-
-				new_triangle_count = 0;
-				discarded_triangle_count = 0;
-
-				if (vertex_distance < threshold_distance)
-				{
-					retriangulate(iso_surface, i, n_triangles, i_vertex,
-										triangles, ordered_triangles, central_vertex,
-										new_triangles, &new_triangle_count,
-										discarded_triangles, &discarded_triangle_count);
-
-					for ( j = 0 ; j < discarded_triangle_count ; j++ )
-					{
-						discarded_triangles[j]->triangle_index = -1;
-					}
-
-					i_vertex->vertex_index = -1;
-
-				}
-			} /* if simple_vertex */
-		} /* i */
-
-		/*--------------- clean out and renumber vertex and triangle lists ------------------*/
-
-		/* renumber vertices and delete triangle ptrs for reconstruction */
-		new_vertex_position = iso_surface->compiled_vertex_list;
-		new_vertex_index = 0;
-		old_vertex_position = iso_surface->compiled_vertex_list;
-		for ( i = 0 ; i < iso_surface->n_vertices ; i++ )
-		{
-			if ( (*old_vertex_position)->vertex_index != -1 )
-			{
-				/* Keep this vertex */
-				*new_vertex_position = *old_vertex_position;
-
-				/* Update vertex index */
-				(*new_vertex_position)->vertex_index = new_vertex_index;
-
-				new_vertex_position++;
-				new_vertex_index++;
-			}
-			else
-			{
-				/* Free the memory for this vertex */
-				if ( (*old_vertex_position)->triangle_ptrs )
-				{
-					DEALLOCATE ( (*old_vertex_position)->triangle_ptrs );
-				}
-				DEALLOCATE ( *old_vertex_position );
-			}
-			old_vertex_position++;
 		}
 
+		/* Non dimensionalise the cost by normalising it against the edge length */
+		cost->cost /= length;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"Decimation_cost_calculate_cost.  "
+			"Vertices are at the same location.");
+		return_code = 0;
+	}
+	
+	LEAVE;
+	
+	return (return_code);
+} /* Decimation_cost_calculate_cost */
 
-		/* renumber triangles, update vertex_index array and then add this
-		triangle to its triangle_ptrs of each of its vertices */
+static void decimate_triangles(struct MC_iso_surface *iso_surface,
+	double threshold_distance)
+/*******************************************************************************
+LAST MODIFIED : 11 April 2005
 
-		new_triangle_position = iso_surface->compiled_triangle_list;
-		new_triangle_index = 0;
-		old_triangle_position = iso_surface->compiled_triangle_list;
-		for ( i = 0 ; i < iso_surface->n_triangles ; i++ )
+DESCRIPTION :
+Decimates triangle mesh
+Implementing edge collapses following Garland and Heckbert 
+"Surface Simplification Using Quadric Error Metrics" SIGGRAPH 97
+
+Currently this routine will allow collapsed triangles which have hanging nodes.
+The storage of the could be generalised to allow it to work on triangular meshes
+other than just MC_iso_surfaces, maybe graphics objects.  The normals probably
+are not being updated properly either (if the collapsed triangles were fixed then
+the normals should be calclated after this step rather than before).  The data
+structures, Decimation_quadrics (vertices) and Decimation_cost (edges) should be
+better merged with the rest of the storage and so lists could be used instead of
+the current arrays of triangle pointers.
+The decimation_cost could include a penalty according to the rate at which the 
+data variables vary along the edge, so that where a display data value is varying
+fastest the edge is less likely to collapse.
+==============================================================================*/
+{
+	double a[3], boundary_weight, d, q[3], v1[3], v2[3];
+	int add_triangle, allocated_edges, compacting_triangles, compacting_vertices,
+		edge_count, *edges_counts, found, i, j, k, l, n_cell_triangles,
+		*new_edges_counts, number_of_edges, number_of_planes,
+		number_of_triangles, remove_triangle, triangle_index, triangles_removed,
+		vertex_index;
+	struct Decimation_cost *cost, *update_cost;
+	struct Decimation_quadric *independent_quadric, *quadric, *quadric2;
+	struct LIST(Decimation_cost) *cost_list, *pre_cost_list;
+	struct LIST(Decimation_quadric) *quadric_list;
+	struct MC_vertex **edges_list, **new_edges_list, **new_vertex_list_ptr,
+		*vertex, *vertex2, *vertex3, **vertex_list_ptr;
+	struct MC_triangle **edges_triangles, **new_edges_triangles,
+		**new_triangle_list_ptr, **triangle_list_ptr, **temp_triangle_ptr;
+
+	/* 1. Computed Q quadric matrices for each vertex */
+	quadric_list = CREATE(LIST(Decimation_quadric))();
+
+	/* For each vertex calculate Q, by summing Kp for each plane */
+	for (i = 0 ; i < iso_surface->n_vertices ; i++)
+	{
+		if (quadric = CREATE(Decimation_quadric)())
 		{
-			if ( (*old_triangle_position)->triangle_index != -1 )
+			vertex = iso_surface->compiled_vertex_list[i];
+			quadric->vertex = vertex;
+
+			number_of_planes = vertex->n_triangle_ptrs;
+			for (j = 0 ; j < number_of_planes ; j++)
 			{
-				/* Keep this triangle */
-				*new_triangle_position = *old_triangle_position;
-
-				/* Update the vertex index from the vertex pointers */
-				(*new_triangle_position)->vertex_index[0] =
-					(*new_triangle_position)->vertices[0]->vertex_index;
-				(*new_triangle_position)->vertex_index[1] =
-					(*new_triangle_position)->vertices[1]->vertex_index;
-				(*new_triangle_position)->vertex_index[2] =
-					(*new_triangle_position)->vertices[2]->vertex_index;
-
-				/* Update triangle index */
-				(*new_triangle_position)->triangle_index = new_triangle_index;
-
-				new_triangle_position++;
-				new_triangle_index++;
-			}
-			else
-			{
-				/* Remove from cell list */
-				found = 0;
-				j = 0;
-				n_triangles = (*old_triangle_position)->cell_ptr->n_triangles
-					[(*old_triangle_position)->triangle_list_index];
-				temp_triangle_ptrs = (*old_triangle_position)->cell_ptr->triangle_list
-					[(*old_triangle_position)->triangle_list_index];
-				while ( !found && j < n_triangles )
+				/* Calculate the plane equation for this triangle */
+				for (k = 0 ; k < 3 ; k++)
 				{
-					if ( *temp_triangle_ptrs == *old_triangle_position )
-					{
-						found = 1;
-						*temp_triangle_ptrs = (struct MC_triangle *)NULL;
-					}
-					temp_triangle_ptrs++;
-					j++;
+					/* Just calculate the plane using the vertices in the triangle list */ 
+					v1[k] = vertex->triangle_ptrs[j]->vertices[1]->coord[k] -
+						vertex->triangle_ptrs[j]->vertices[0]->coord[k];
+					v2[k] = vertex->triangle_ptrs[j]->vertices[2]->coord[k] -
+						vertex->triangle_ptrs[j]->vertices[0]->coord[k];
+					q[k] = vertex->coord[k];
 				}
-				if ( !found )
+				cross_product3(v1, v2, a);
+				if (1.0e-8 > norm3(a))
 				{
-					display_message(ERROR_MESSAGE,
-										"decimate_triangles.   Triangle %x not found in cell list", *old_triangle_position);
+					display_message(ERROR_MESSAGE,"decimate_triangles.  "
+						"Triangle has no area.");
 				}
-				/* Free memory */
-				DEALLOCATE ( *old_triangle_position );
+				else
+				{
+					normalize3(a);
+					d = - dot_product3(a, q);
+
+					quadric->matrix[0] += a[0] * a[0];
+					quadric->matrix[1] += a[0] * a[1];
+					quadric->matrix[2] += a[0] * a[2];
+					quadric->matrix[3] += a[0] * d;
+					quadric->matrix[4] += a[1] * a[1];
+					quadric->matrix[5] += a[1] * a[2];
+					quadric->matrix[6] += a[1] * d;
+					quadric->matrix[7] += a[2] * a[2];
+					quadric->matrix[8] += a[2] * d;
+					quadric->matrix[9] += d * d;
+				}
 			}
-			old_triangle_position++;
 		}
+		else
+		{
+			display_message(ERROR_MESSAGE,"decimate_triangles.  "
+				"Unable to allocate quadric storage memory.");
+		}
+		ADD_OBJECT_TO_LIST(Decimation_quadric)(quadric, quadric_list);
+	}
 
-		/***** !!!!!!!!!! will have to update material pointers etc. !!!!!!!! *****/
-		/* printf("Decimation (level %d) : n_vertices (before/after)=%d / %d\n",
-				z,iso_surface->n_vertices,new_vertex_index);*/
-		/* printf("Triangle decimation: <before/after> :=%d / %d\n",iso_surface->n_triangles,new_triangle_index); */
+	/* 2. Find the edges eligible for contraction and for each boundary
+	 edge add the plane perpendicular to the plane of triangle which runs along
+	 the edge into the quadrics for each vertex */
+	pre_cost_list = CREATE(LIST(Decimation_cost))();
+	allocated_edges = 40;
+	ALLOCATE(edges_list, struct MC_vertex *, allocated_edges);
+	ALLOCATE(edges_counts, int, allocated_edges);
+	ALLOCATE(edges_triangles, struct MC_triangle *, allocated_edges);
+	for (i = 0 ; i < iso_surface->n_vertices ; i++)
+	{
+		vertex = iso_surface->compiled_vertex_list[i];
+		if (quadric = FIND_BY_IDENTIFIER_IN_LIST(Decimation_quadric,
+			vertex)(vertex, quadric_list))
+		{
+			number_of_edges = vertex->n_triangle_ptrs;
+			if (number_of_edges > allocated_edges)
+			{
+				if (REALLOCATE(new_edges_list, edges_list, struct MC_vertex *, allocated_edges + 20) &&
+					REALLOCATE(new_edges_counts, edges_counts, int, allocated_edges + 20) &&
+					REALLOCATE(new_edges_triangles, edges_triangles, struct MC_triangle *, allocated_edges + 20))
+				{
+					edges_list = new_edges_list;
+					edges_counts = new_edges_counts;
+					edges_triangles = new_edges_triangles;
+					allocated_edges += 20;
+				}
+			}
+			edge_count = 0;
+			for (j = 0 ; j < number_of_edges ; j++)
+			{
+				/* Check the vertices for previous triangles so that we don't
+					add each edge for possibly two trianges to the same vertex,
+					by counting our encounters for each vertex we can then find the
+					boundary edges */
+			
+				for (k = 0 ; k < 3 ; k++)
+				{
+					if (vertex != vertex->triangle_ptrs[j]->vertices[k])
+					{
+						vertex2 = vertex->triangle_ptrs[j]->vertices[k];
+						/* A simple search seems OK as this list should be < 15 */
+						found = 0;
+						l = 0;
+						while (!found && (l < edge_count))
+						{
+							if (vertex2 == edges_list[l])
+							{
+								found = 1;
+								edges_counts[l]++;
+							}
+							l++;
+						}
+						if (!found)
+						{
+							if (edge_count >= allocated_edges)
+							{
+								if (REALLOCATE(new_edges_list, edges_list, struct MC_vertex *, allocated_edges + 20) &&
+									REALLOCATE(new_edges_counts, edges_counts, int, allocated_edges + 20) &&
+									REALLOCATE(new_edges_triangles, edges_triangles, struct MC_triangle *, allocated_edges + 20))
+								{
+									edges_list = new_edges_list;
+									edges_counts = new_edges_counts;
+									edges_triangles = new_edges_triangles;
+									allocated_edges += 20;
+								}
+							}
+							
+							edges_list[edge_count] = vertex2;
+							edges_counts[edge_count] = 1;
+							edges_triangles[edge_count] = vertex->triangle_ptrs[j];
+							edge_count++;
+								
+							if (vertex->vertex_index < vertex2->vertex_index)
+							{
+								/* Only create costs for the vertices which have a larger
+									pointer so that we don't get each edge from both ends */
+								if (cost = CREATE(Decimation_cost)())
+								{
+									cost->quadric1 = ACCESS(Decimation_quadric)(quadric);
+									if (quadric2 = FIND_BY_IDENTIFIER_IN_LIST(Decimation_quadric,
+											vertex)(vertex2, quadric_list))
+									{
+										cost->quadric2 = ACCESS(Decimation_quadric)(quadric2);
 
-		iso_surface->n_vertices=new_vertex_index;
-		iso_surface->n_triangles=new_triangle_index;
-	} /* decimation_level */
+										/* Put this into a temproray list as we are still updating
+											the quadrics with the edge penalties and we should not
+											have any objects in a list when we update its cost as
+											this is the identifier for the list. */
+										cost->cost = 0.0;
+										ADD_OBJECT_TO_LIST(Decimation_cost)(cost, pre_cost_list);
+									}
+									else
+									{
+										display_message(ERROR_MESSAGE,"decimate_triangles.  "
+											"Unable to find quadric for second vertex.");
+									}
+								}
+								else
+								{
+									display_message(ERROR_MESSAGE,"decimate_triangles.  "
+										"Unable to allocate cost storage memory.");
+								}
+							}
+						}
+					}
+				}
+			}
+			for (j = 0 ; j < edge_count ; j++)
+			{
+				/* Only if only 1 triangle has this vertex and only when the 
+					vertex2 pointer is less than the quadric1 ptr so that we only
+					do this from one end. */
+				if ((edges_counts[j] == 1) && (vertex->vertex_index < edges_list[j]->vertex_index))
+				{
+					/* This is a boundary edge, add a new plane into the quadrics of both
+						vertices */
+					vertex2 = edges_list[j];
+					quadric2 = FIND_BY_IDENTIFIER_IN_LIST(Decimation_quadric,
+						vertex)(vertex2, quadric_list);
+					if (vertex == edges_triangles[j]->vertices[0])
+					{
+						if (vertex2 == edges_triangles[j]->vertices[1])
+						{
+							vertex3 = edges_triangles[j]->vertices[2];
+						}
+						else
+						{
+							vertex3 = edges_triangles[j]->vertices[1];
+						}
+					}
+					else if (vertex == edges_triangles[j]->vertices[1])
+					{
+						if (vertex2 == edges_triangles[j]->vertices[0])
+						{
+							vertex3 = edges_triangles[j]->vertices[2];
+						}
+						else
+						{
+							vertex3 = edges_triangles[j]->vertices[0];
+						}
+					}
+					else
+					{
+						if (vertex2 == edges_triangles[j]->vertices[0])
+						{
+							vertex3 = edges_triangles[j]->vertices[1];
+						}
+						else
+						{
+							vertex3 = edges_triangles[j]->vertices[0];
+						}
+					}
+
+					/* Calculate the plane equation for this triangle */
+					for (k = 0 ; k < 3 ; k++)
+					{
+						v1[k] = vertex3->coord[k] - vertex->coord[k];
+						v2[k] = vertex2->coord[k] - vertex->coord[k];
+						q[k] = vertex->coord[k];
+					}
+					d = dot_product3(v1, v2);
+					d /= norm3(v2);
+					d /= norm3(v2);
+					for (k = 0 ; k < 3 ; k++)
+					{
+						a[k] = v1[k] - d * v2[k];
+					}
+					if (1.0e-8 > norm3(a))
+					{
+						display_message(ERROR_MESSAGE,"decimate_triangles.  "
+							"Triangle has no area.");
+					}
+					else
+					{
+						normalize3(a);
+						d = - dot_product3(a, q);
+						boundary_weight = 1e6;
+
+						quadric->matrix[0] += boundary_weight * a[0] * a[0];
+						quadric->matrix[1] += boundary_weight * a[0] * a[1];
+						quadric->matrix[2] += boundary_weight * a[0] * a[2];
+						quadric->matrix[3] += boundary_weight * a[0] * d;
+						quadric->matrix[4] += boundary_weight * a[1] * a[1];
+						quadric->matrix[5] += boundary_weight * a[1] * a[2];
+						quadric->matrix[6] += boundary_weight * a[1] * d;
+						quadric->matrix[7] += boundary_weight * a[2] * a[2];
+						quadric->matrix[8] += boundary_weight * a[2] * d;
+						quadric->matrix[9] += boundary_weight * d * d;
+
+						quadric2->matrix[0] += boundary_weight * a[0] * a[0];
+						quadric2->matrix[1] += boundary_weight * a[0] * a[1];
+						quadric2->matrix[2] += boundary_weight * a[0] * a[2];
+						quadric2->matrix[3] += boundary_weight * a[0] * d;
+						quadric2->matrix[4] += boundary_weight * a[1] * a[1];
+						quadric2->matrix[5] += boundary_weight * a[1] * a[2];
+						quadric2->matrix[6] += boundary_weight * a[1] * d;
+						quadric2->matrix[7] += boundary_weight * a[2] * a[2];
+						quadric2->matrix[8] += boundary_weight * a[2] * d;
+						quadric2->matrix[9] += boundary_weight * d * d;
+					}
+				
+					
+				}
+			}
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,"decimate_triangles.  "
+				"Unable to find quadric for first vertex.");
+		}
+	}
+	DEALLOCATE(edges_list);
+	DEALLOCATE(edges_counts);
+	DEALLOCATE(edges_triangles);
+
+	/* 3. For each edge compute optimal contraction target v and
+		therefore the cost of contracting that pair */
+	cost_list = CREATE(LIST(Decimation_cost))();
+	while (cost = FIRST_OBJECT_IN_LIST_THAT(Decimation_cost)(
+		(LIST_CONDITIONAL_FUNCTION(Decimation_cost) *)NULL, (void *)NULL,
+		pre_cost_list))
+	{
+		ACCESS(Decimation_cost)(cost);
+
+		REMOVE_OBJECT_FROM_LIST(Decimation_cost)(cost, pre_cost_list);
+
+		if (Decimation_cost_calculate_cost(cost, (void *)NULL))
+		{
+			/* Add this cost into the list of each vertex */
+			ADD_OBJECT_TO_LIST(Decimation_cost)(cost, 
+				cost->quadric1->dependent_cost_list);
+			ADD_OBJECT_TO_LIST(Decimation_cost)(cost, 
+				cost->quadric2->dependent_cost_list);
+			
+			ADD_OBJECT_TO_LIST(Decimation_cost)(cost, cost_list);
+		}
+		DEACCESS(Decimation_cost)(&cost);
+	}
+	DESTROY(LIST(Decimation_cost))(&pre_cost_list);
+
+	/* 4. Remove the minimum cost pair and collapse the edge */
+	triangles_removed = 0;
+	while ((cost = FIRST_OBJECT_IN_LIST_THAT(Decimation_cost)(
+		(LIST_CONDITIONAL_FUNCTION(Decimation_cost) *)NULL, (void *)NULL,
+		cost_list)) && (cost->cost < threshold_distance))
+	{
+		quadric = cost->quadric1;
+		vertex = quadric->vertex;
+		quadric2 = cost->quadric2;
+		vertex2 = quadric2->vertex;
+
+		if (check_triangles_are_not_inverted(vertex, vertex2, cost->coord) &&
+			 check_triangles_are_not_inverted(vertex2, vertex, cost->coord))
+		{
+			/* Move vertex 1 to the optimal contraction */
+			for (i = 0 ; i < 3 ; i++)
+			{
+				quadric->vertex->coord[i] = cost->coord[i];
+			}
+			/* We approximate the new quadric by the sum of the old ones, the
+				same quadric we used for the edge */
+			for (i = 0 ; i < 10 ; i++)
+			{
+				quadric->matrix[i] += quadric2->matrix[i];
+			}
+			/* Replace all references to quadric2 with quadric1, or if quadric1
+				is already in the triangle then this triangle has collapsed so
+				it can be removed */
+			number_of_triangles = vertex2->n_triangle_ptrs;
+			for (i = 0 ; i < number_of_triangles ; i++)
+			{
+				remove_triangle = 0;
+				for (j = 0 ; j < 3 ; j++)
+				{
+					if (vertex2->triangle_ptrs[i]->vertices[j] == vertex)
+					{
+						remove_triangle = 1;
+					}
+				}
+				if (remove_triangle)
+				{
+					/* We can defer all the rest of the update to the clean
+						up at the bottom because we are using the Decimation_quadric
+						and Decimation_cost structures to store our mesh for this purpose */
+					vertex2->triangle_ptrs[i]->triangle_index = -1;
+				}
+				else
+				{
+					add_triangle = 0;
+					for (j = 0 ; j < 3 ; j++)
+					{
+						if (vertex2->triangle_ptrs[i]->vertices[j] == vertex2)
+						{
+							vertex2->triangle_ptrs[i]->vertices[j] = vertex;
+							add_triangle++;
+						}
+					}
+#if defined (DEBUG)
+					if (add_triangle != 1)
+					{
+						display_message(ERROR_MESSAGE,"decimate_triangles.  "
+							"Repeated vertex or valid vertex not found in triangle.");					
+					}
+#endif /* defined (DEBUG) */
+					/* Add this into the triangle pointers of the first vertex */
+					REALLOCATE(vertex->triangle_ptrs, vertex->triangle_ptrs,
+						struct MC_triangle *, vertex->n_triangle_ptrs + 1);
+					vertex->triangle_ptrs[vertex->n_triangle_ptrs] = 
+						vertex2->triangle_ptrs[i];
+					vertex->n_triangle_ptrs++;	
+				}
+			}
+
+			/* Now we must find each edge cost that involves either vertex and
+				update its cost. */
+			REMOVE_OBJECT_FROM_LIST(Decimation_cost)(cost, quadric->dependent_cost_list);
+			REMOVE_OBJECT_FROM_LIST(Decimation_cost)(cost, quadric2->dependent_cost_list);
+
+			/* Shuffle all the costs into the second list */
+			while (update_cost = FIRST_OBJECT_IN_LIST_THAT(Decimation_cost)(
+						 (LIST_CONDITIONAL_FUNCTION(Decimation_cost) *)NULL, (void *)NULL,
+						 quadric->dependent_cost_list))
+			{
+				ADD_OBJECT_TO_LIST(Decimation_cost)(update_cost, quadric2->dependent_cost_list);
+				REMOVE_OBJECT_FROM_LIST(Decimation_cost)(update_cost, quadric->dependent_cost_list);
+			}
+			/* Now for each cost in the second list we remove it from the main list,
+				recalculate it's cost and then add it back in to the second list */
+			while (update_cost = FIRST_OBJECT_IN_LIST_THAT(Decimation_cost)(
+						 (LIST_CONDITIONAL_FUNCTION(Decimation_cost) *)NULL, (void *)NULL,
+						 quadric2->dependent_cost_list))
+			{
+				if (update_cost->quadric1 == cost->quadric1)
+				{
+					/* Other vertex should be independent vertex */
+					independent_quadric = update_cost->quadric2;
+				}
+				else if (update_cost->quadric1 == cost->quadric2)
+				{
+					/* Change the quadric1 in the update cost to the new
+						vertex and the other vertex is the independent one */
+					REACCESS(Decimation_quadric)(&update_cost->quadric1, cost->quadric1);
+					independent_quadric = update_cost->quadric2;
+				}
+				else if (update_cost->quadric2 == cost->quadric1)
+				{
+					/* Other vertex should be independent vertex */
+					independent_quadric = update_cost->quadric1;
+				}
+				else if (update_cost->quadric2 == cost->quadric2)
+				{
+					/* Change the quadric1 in the update cost to the new
+						vertex and the other vertex is the independent one */
+					REACCESS(Decimation_quadric)(&update_cost->quadric2, cost->quadric1);
+					independent_quadric = update_cost->quadric1;
+				}
+#if defined (DEBUG)
+				else
+				{
+					display_message(ERROR_MESSAGE,"decimate_triangles.  "
+						"Unable to find expected vertex in dependent_cost_list.");
+				}
+#endif /* defined (DEBUG) */
+
+				ACCESS(Decimation_cost)(update_cost);
+				REMOVE_OBJECT_FROM_LIST(Decimation_cost)(update_cost, cost_list);
+				REMOVE_OBJECT_FROM_LIST(Decimation_cost)(update_cost, quadric2->dependent_cost_list);
+				REMOVE_OBJECT_FROM_LIST(Decimation_cost)(update_cost,
+					independent_quadric->dependent_cost_list);
+
+#if defined (DEBUG)
+				if (update_cost->access_count > 1)
+				{
+					display_message(ERROR_MESSAGE,"decimate_triangles.  "
+						"Update cost is still acessed by something.");
+				}
+#endif /* defined (DEBUG) */
+
+				if (!(FIRST_OBJECT_IN_LIST_THAT(Decimation_cost)(Decimation_cost_has_quadric,
+							(void *)independent_quadric, quadric->dependent_cost_list)))
+				{
+					/* Reset the invalid counter */
+					update_cost->invalid_cost_counter = 0;
+					/* Here we can change the cost as no lists are referencing it,
+						if this is not a duplicate, update it and put it back in the lists */
+					Decimation_cost_calculate_cost(update_cost, (void *)NULL);
+				
+					ADD_OBJECT_TO_LIST(Decimation_cost)(update_cost, cost_list);
+				
+					ADD_OBJECT_TO_LIST(Decimation_cost)(update_cost, quadric->dependent_cost_list);
+					ADD_OBJECT_TO_LIST(Decimation_cost)(update_cost,
+						independent_quadric->dependent_cost_list);
+				}
+
+				DEACCESS(Decimation_cost)(&update_cost);
+			}
+
+			vertex2->vertex_index = -1;
+			triangles_removed++;
+			
+			REMOVE_OBJECT_FROM_LIST(Decimation_cost)(cost, cost_list);
+		}
+		else
+		{
+			cost->invalid_cost_counter++;
+
+			ACCESS(Decimation_cost)(cost);
+			REMOVE_OBJECT_FROM_LIST(Decimation_cost)(cost, cost_list);
+			REMOVE_OBJECT_FROM_LIST(Decimation_cost)(cost, quadric->dependent_cost_list);
+			REMOVE_OBJECT_FROM_LIST(Decimation_cost)(cost, quadric2->dependent_cost_list);
+			
+			if (Decimation_cost_calculate_cost(cost, (void *)NULL))
+			{
+				ADD_OBJECT_TO_LIST(Decimation_cost)(cost, cost_list);
+				ADD_OBJECT_TO_LIST(Decimation_cost)(cost, quadric->dependent_cost_list);
+				ADD_OBJECT_TO_LIST(Decimation_cost)(cost, quadric2->dependent_cost_list);
+			}
+			DEACCESS(Decimation_cost)(&cost);
+		}
+	}
+
+	/* Need to undo the circular references before destroying the list to enable
+		everything to clean up */
+	while (cost = FIRST_OBJECT_IN_LIST_THAT(Decimation_cost)(
+		(LIST_CONDITIONAL_FUNCTION(Decimation_cost) *)NULL, (void *)NULL,
+		cost_list))
+	{
+		REMOVE_OBJECT_FROM_LIST(Decimation_cost)(cost, cost->quadric1->dependent_cost_list);
+		REMOVE_OBJECT_FROM_LIST(Decimation_cost)(cost, cost->quadric2->dependent_cost_list);
+		REMOVE_OBJECT_FROM_LIST(Decimation_cost)(cost, cost_list);
+	}
+	DESTROY(LIST(Decimation_cost))(&cost_list);
+	DESTROY(LIST(Decimation_quadric))(&quadric_list);
+
+	/* Recreate the compiled_vertex_list and compiled_triangle_list */
+	vertex_list_ptr = iso_surface->compiled_vertex_list;
+	new_vertex_list_ptr = iso_surface->compiled_vertex_list;
+	vertex_index = 0;
+	for (i = 0 ; i < iso_surface->n_vertices ; i++)
+	{
+		if (-1 != (*vertex_list_ptr)->vertex_index)
+		{
+			if (compacting_vertices)
+			{
+				*new_vertex_list_ptr = *vertex_list_ptr;
+				(*vertex_list_ptr)->vertex_index = vertex_index;
+			}
+
+			triangle_list_ptr = (*vertex_list_ptr)->triangle_ptrs;
+			new_triangle_list_ptr = (*vertex_list_ptr)->triangle_ptrs;
+			triangle_index = 0;
+			compacting_triangles = 0;
+			for (j = 0 ; j < (*vertex_list_ptr)->n_triangle_ptrs ; j++)
+			{
+				if (-1 != (*triangle_list_ptr)->triangle_index)
+				{
+					if (compacting_triangles)
+					{
+						*new_triangle_list_ptr = *triangle_list_ptr;
+					}
+					triangle_index++;
+					new_triangle_list_ptr++;
+				}
+				else
+				{
+					compacting_triangles = 1;
+				}
+				triangle_list_ptr++;
+			}
+			(*vertex_list_ptr)->n_triangle_ptrs = triangle_index;
+
+			vertex_index++;
+			new_vertex_list_ptr++;
+		}
+		else
+		{
+			/* Delete vertex */
+			DEALLOCATE((*vertex_list_ptr)->triangle_ptrs);
+			DEALLOCATE(*vertex_list_ptr);
+			compacting_vertices = 1;
+		}
+		vertex_list_ptr++;
+	}
+	iso_surface->n_vertices = vertex_index;
+	REALLOCATE(iso_surface->compiled_vertex_list, iso_surface->compiled_vertex_list,
+		struct MC_vertex *, iso_surface->n_vertices);
+
+	triangle_list_ptr = iso_surface->compiled_triangle_list;
+	new_triangle_list_ptr = iso_surface->compiled_triangle_list;
+	triangle_index = 0;
+	compacting_triangles = 0;
+	for (i = 0 ; i < iso_surface->n_triangles ; i++)
+	{
+		if (-1 != (*triangle_list_ptr)->triangle_index)
+		{
+			for (j = 0 ; j < 3 ; j++)
+			{
+				(*triangle_list_ptr)->vertex_index[j] = 
+					(*triangle_list_ptr)->vertices[j]->vertex_index;
+#if defined (DEBUG)
+				if ((*triangle_list_ptr)->vertex_index[j] == -1)
+				{
+					display_message(ERROR_MESSAGE,"decimate_triangles.  "
+						"Valid triangle references a destroyed vertex.");
+				}
+#endif /* defined (DEBUG) */
+			}
+			if (compacting_triangles)
+			{
+				*new_triangle_list_ptr = *triangle_list_ptr;
+				(*triangle_list_ptr)->triangle_index = triangle_index;
+			}
+			triangle_index++;
+			new_triangle_list_ptr++;
+		}
+		else
+		{
+			compacting_triangles = 1;
+
+			/* Remove from cell list */
+			found = 0;
+			j = 0;
+			n_cell_triangles = (*triangle_list_ptr)->cell_ptr->n_triangles
+				[(*triangle_list_ptr)->triangle_list_index];
+			temp_triangle_ptr = (*triangle_list_ptr)->cell_ptr->triangle_list
+				[(*triangle_list_ptr)->triangle_list_index];
+			while (!found && (j < n_cell_triangles))
+			{
+				if (*temp_triangle_ptr == *triangle_list_ptr)
+				{
+					found = 1;
+					*temp_triangle_ptr = (struct MC_triangle *)NULL;
+				}
+				temp_triangle_ptr++;
+				j++;
+			}
+			if ( !found )
+			{
+				display_message(ERROR_MESSAGE,
+					"decimate_triangles.   Triangle %x not found in cell list", *triangle_list_ptr);
+			}
+			/* Free memory */
+			DEALLOCATE (*triangle_list_ptr);
+		}
+		triangle_list_ptr++;
+	}
+	iso_surface->n_triangles = triangle_index;
+	REALLOCATE(iso_surface->compiled_triangle_list, iso_surface->compiled_triangle_list,
+		struct MC_triangle *, iso_surface->n_triangles);
+
 } /* decimate_triangles */
 
 /*
@@ -2641,9 +3278,10 @@ Global functions
 int marching_cubes(struct VT_scalar_field **scalar_field,int n_scalar_fields,
 	struct VT_vector_field *coordinate_field,
 	struct MC_iso_surface *mc_iso_surface,
-	double *isovalue,int closed_surface,int cutting_plane_on,int decimation)
+	double *isovalue,int closed_surface,int cutting_plane_on,
+	double decimation_tolerance)
 /*******************************************************************************
-LAST MODIFIED : 1 November 1999
+LAST MODIFIED : 11 April 2005
 
 DESCRIPTION :
 The modified marching cubes algorithm for constructing isosurfaces.  This
@@ -2656,76 +3294,76 @@ intersections with the boundary.
 ==============================================================================*/
 {
 	int return_code;
-/*???debug */
+	/*???debug */
 #if defined (UNIX)
 #if defined (DEBUG)
-struct tms buffer;
-double real_time1,real_time2,real_time3,real_time4,cpu_time1,cpu_time2,
-	cpu_time3,cpu_time4;
+	struct tms buffer;
+	double real_time1,real_time2,real_time3,real_time4,cpu_time1,cpu_time2,
+		cpu_time3,cpu_time4;
 #endif /* defined (DEBUG) */
-/* clock_ticks=100 */
+	/* clock_ticks=100 */
 #endif
-/* mc array size=2 bigger than standard array nx,ny,nz to account for closed surfaces */
-int mcnx, mcny, mcnz;
-int x_min, x_max, y_min, y_max, z_min, z_max;
-int list_index;
-int a_count, a_count2;
-int a,b;
-int nx,ny,nz;
-int i,j,k,m,n,nn,ii;
-/* the mc case (1-256) */
-int icase[MAX_SCALAR_FIELDS];
-int iambig[MAX_SCALAR_FIELDS],npolyg[MAX_SCALAR_FIELDS];
-/* size of mesh */
+	/* mc array size=2 bigger than standard array nx,ny,nz to account for closed surfaces */
+	int mcnx, mcny, mcnz;
+	int x_min, x_max, y_min, y_max, z_min, z_max;
+	int list_index;
+	int a_count, a_count2;
+	int a,b;
+	int nx,ny,nz;
+	int i,j,k,m,n,nn,ii;
+	/* the mc case (1-256) */
+	int icase[MAX_SCALAR_FIELDS];
+	int iambig[MAX_SCALAR_FIELDS],npolyg[MAX_SCALAR_FIELDS];
+	/* size of mesh */
 
-/* pointer to table values */
-int ipntr[MAX_SCALAR_FIELDS];
-int istep[MAX_SCALAR_FIELDS],iedge[MAX_SCALAR_FIELDS];
-/* nodes on either side of contour */
-int node1,node2;
-/* scalar value at ambiguous node */
-double cnrscl;
-double sdiff;
-double acc=0.000001;
-/* normalised contour value */
-double p;
-/* coords of contour/edge intersection */
-double xw,yw,zw;
-/* normals */
-float rmagf;
-/* scalar gradients at nodes */
-/*static double dx[8],dy[8],dz[8];*/
-/* returned double contour gradient */
-double grads;
-/* triangle vertex variables */
-double v[6][3],v_out[MAX_SCALAR_FIELDS][MAX_INTERSECTION][3][3],
-	v_out2[MAX_SCALAR_FIELDS][MAX_INTERSECTION][3][3];
-double coord[3];
-/* number of triangles after triangle clipped */
-int n_triangles[MAX_SCALAR_FIELDS],n_triangles2;
-int clip_flag;
-/* temp storage for polygons generated by iso surface routine
-before reordering as vertex/triangle list */
+	/* pointer to table values */
+	int ipntr[MAX_SCALAR_FIELDS];
+	int istep[MAX_SCALAR_FIELDS],iedge[MAX_SCALAR_FIELDS];
+	/* nodes on either side of contour */
+	int node1,node2;
+	/* scalar value at ambiguous node */
+	double cnrscl;
+	double sdiff;
+	double acc=0.000001;
+	/* normalised contour value */
+	double p;
+	/* coords of contour/edge intersection */
+	double xw,yw,zw;
+	/* normals */
+	float rmagf;
+	/* scalar gradients at nodes */
+	/*static double dx[8],dy[8],dz[8];*/
+	/* returned double contour gradient */
+	double grads;
+	/* triangle vertex variables */
+	double v[6][3],v_out[MAX_SCALAR_FIELDS][MAX_INTERSECTION][3][3],
+		v_out2[MAX_SCALAR_FIELDS][MAX_INTERSECTION][3][3];
+	double coord[3];
+	/* number of triangles after triangle clipped */
+	int n_triangles[MAX_SCALAR_FIELDS],n_triangles2;
+	int clip_flag;
+	/* temp storage for polygons generated by iso surface routine
+		before reordering as vertex/triangle list */
 
-/* lists specific to border faces */
-/*int n_xi_face_polys[6]={0,0,0,0,0,0};*/
+	/* lists specific to border faces */
+	/*int n_xi_face_polys[6]={0,0,0,0,0,0};*/
 
-/* added detail */
-int edge[3],edge_total,ihmax,mm,n_temp_triangles,res;
-double h[3],hmax,temp_vout[MAX_INTERSECTION*4][3][3];
-struct Triangle **clip_triangles;
-struct Triangle *new_triangle;
-int border_flag=0;
-/* variables for calc normals */
-float vector1[3],vector2[3],result[3],vectorsum[3],vertex0[3],vertex1[3],
-	vertex2[3];
+	/* added detail */
+	int edge[3],edge_total,ihmax,mm,n_temp_triangles,res;
+	double h[3],hmax,temp_vout[MAX_INTERSECTION*4][3][3];
+	struct Triangle **clip_triangles;
+	struct Triangle *new_triangle;
+	int border_flag=0;
+	/* variables for calc normals */
+	float vector1[3],vector2[3],result[3],vectorsum[3],vertex0[3],vertex1[3],
+		vertex2[3];
 
-double maxc[3],minc[3],tempc;
+	double maxc[3],minc[3],tempc;
 
-/* centre of projection for mapped textures */
-struct MC_cell *mc_cell;
-struct MC_triangle *mc_triangle;
-float mc_vertices[3][3];
+	/* centre of projection for mapped textures */
+	struct MC_cell *mc_cell;
+	struct MC_triangle *mc_triangle;
+	float mc_vertices[3][3];
 
 	ENTER(marching_cubes);
 #if defined (DEBUG)
@@ -2773,164 +3411,164 @@ float mc_vertices[3][3];
 		printf("nx,ny,nz=%d, %d, %d\n",nx,ny,nz);
 #endif /* defined (DEBUG) */
 
-/* !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!temp MC */
-if (closed_surface)
-{
-	if (mc_iso_surface->active_block[0]<0)
-	{
-		mc_iso_surface->active_block[0]=0;
-	}
-	if (mc_iso_surface->active_block[1]>nx)
-	{
-		mc_iso_surface->active_block[1]=nx;
-	}
-	if (mc_iso_surface->active_block[2]<0)
-	{
-		mc_iso_surface->active_block[2]=0;
-	}
-	if (mc_iso_surface->active_block[3]>ny)
-	{
-		mc_iso_surface->active_block[3]=ny;
-	}
-	if (mc_iso_surface->active_block[4]<0)
-	{
-		mc_iso_surface->active_block[4]=0;
-	}
-	if (mc_iso_surface->active_block[5]>nz)
-	{
-		mc_iso_surface->active_block[5]=nz;
-	}
-}
-else
-{
-	if (mc_iso_surface->active_block[0]<=0)
-	{
-		mc_iso_surface->active_block[0]=1;
-	}
-	if (mc_iso_surface->active_block[1]>nx)
-	{
-		mc_iso_surface->active_block[1]=nx;
-	}
-	if (mc_iso_surface->active_block[2]<=0)
-	{
-		mc_iso_surface->active_block[2]=1;
-	}
-	if (mc_iso_surface->active_block[3]>ny)
-	{
-		mc_iso_surface->active_block[3]=ny;
-	}
-	if (mc_iso_surface->active_block[4]<=0)
-	{
-		mc_iso_surface->active_block[4]=1;
-	}
-	if (mc_iso_surface->active_block[5]>nz)
-	{
-		mc_iso_surface->active_block[5]=nz;
-	}
-}
-/*printf("mc_active_block=(%d, %d), (%d, %d), (%d, %d)\n", mc_iso_surface->active_block[0],
-		mc_iso_surface->active_block[1], mc_iso_surface->active_block[2], mc_iso_surface->active_block[3],
-		mc_iso_surface->active_block[4], mc_iso_surface->active_block[5]);*/
-/*
-mc_iso_surface->active_block[0]=1-closed_surface;
-mc_iso_surface->active_block[1]=nx+closed_surface;
-mc_iso_surface->active_block[2]=1-closed_surface;
-mc_iso_surface->active_block[3]=ny+closed_surface;
-mc_iso_surface->active_block[4]=1-closed_surface;
-mc_iso_surface->active_block[5]=nz+closed_surface;
-*/
-
-if (coordinate_field->dimension[0] !=scalar_field[0]->dimension[0]
-	|| coordinate_field->dimension[1] !=scalar_field[0]->dimension[1]
-	|| coordinate_field->dimension[2] !=scalar_field[0]->dimension[2] )
-	{
-	printf("ERROR - coordinate field does not match scalar field\n");
-	}
-
-if (cutting_plane_on)
-	{
-	for (i=0;i<n_scalar_fields;i++)
+		/* !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!temp MC */
+		if (closed_surface)
 		{
-		if (scalar_field[i]->dimension[0] !=scalar_field[0]->dimension[0]
-		|| scalar_field[i]->dimension[1] !=scalar_field[0]->dimension[1]
-		|| scalar_field[i]->dimension[2] !=scalar_field[0]->dimension[2] )
+			if (mc_iso_surface->active_block[0]<0)
 			{
-			printf("ERROR - scalar field[%d] does not match scalar field[0]\n",i);
+				mc_iso_surface->active_block[0]=0;
+			}
+			if (mc_iso_surface->active_block[1]>nx)
+			{
+				mc_iso_surface->active_block[1]=nx;
+			}
+			if (mc_iso_surface->active_block[2]<0)
+			{
+				mc_iso_surface->active_block[2]=0;
+			}
+			if (mc_iso_surface->active_block[3]>ny)
+			{
+				mc_iso_surface->active_block[3]=ny;
+			}
+			if (mc_iso_surface->active_block[4]<0)
+			{
+				mc_iso_surface->active_block[4]=0;
+			}
+			if (mc_iso_surface->active_block[5]>nz)
+			{
+				mc_iso_surface->active_block[5]=nz;
 			}
 		}
-	}
-
-
-x_min=mc_iso_surface->active_block[0];
-x_max=mc_iso_surface->active_block[1];
-y_min=mc_iso_surface->active_block[2];
-y_max=mc_iso_surface->active_block[3];
-z_min=mc_iso_surface->active_block[4];
-z_max=mc_iso_surface->active_block[5];
-if (closed_surface)
-{
-		if (1==x_min)
-	x_min=0;
-		if (1==y_min)
-	y_min=0;
-		if (1==z_min)
-	z_min=0;
-		if (nx==x_max)
-	x_max +=1;
-		if (ny==y_max)
-	y_max +=1;
-		if (nz==z_max)
-	z_max +=1;
-		nx++;
-		ny++;
-		nz++;
-		/*x0=y0=z0=0;*/
-}
-
-/* store bounds of cube (for closed surface squishing) */
-if (closed_surface)
-	{
-	rqc(coordinate_field,nx-1,ny-1,nz-1,maxc);
-	rqc(coordinate_field,0,0,0,minc);
-	/* deal with different +ve axis dirn */
-	for (i=0;i<3;i++)
+		else
 		{
-/*???debug */
-/*printf("min=%g, max=%g\n",minc[i],maxc[i]);*/
-		if (maxc[i] < minc[i])
+			if (mc_iso_surface->active_block[0]<=0)
 			{
-			tempc=minc[i];
-			minc[i]=maxc[i];
-			maxc[i]=tempc;
+				mc_iso_surface->active_block[0]=1;
+			}
+			if (mc_iso_surface->active_block[1]>nx)
+			{
+				mc_iso_surface->active_block[1]=nx;
+			}
+			if (mc_iso_surface->active_block[2]<=0)
+			{
+				mc_iso_surface->active_block[2]=1;
+			}
+			if (mc_iso_surface->active_block[3]>ny)
+			{
+				mc_iso_surface->active_block[3]=ny;
+			}
+			if (mc_iso_surface->active_block[4]<=0)
+			{
+				mc_iso_surface->active_block[4]=1;
+			}
+			if (mc_iso_surface->active_block[5]>nz)
+			{
+				mc_iso_surface->active_block[5]=nz;
 			}
 		}
-	}
+		/*printf("mc_active_block=(%d, %d), (%d, %d), (%d, %d)\n", mc_iso_surface->active_block[0],
+		  mc_iso_surface->active_block[1], mc_iso_surface->active_block[2], mc_iso_surface->active_block[3],
+		  mc_iso_surface->active_block[4], mc_iso_surface->active_block[5]);*/
+		/*
+		  mc_iso_surface->active_block[0]=1-closed_surface;
+		  mc_iso_surface->active_block[1]=nx+closed_surface;
+		  mc_iso_surface->active_block[2]=1-closed_surface;
+		  mc_iso_surface->active_block[3]=ny+closed_surface;
+		  mc_iso_surface->active_block[4]=1-closed_surface;
+		  mc_iso_surface->active_block[5]=nz+closed_surface;
+		*/
 
-/* delete mc active block first */
-for (k=z_min;k<=z_max;k++)
-	{
-	for (j=y_min;j<=y_max;j++)
+		if (coordinate_field->dimension[0] !=scalar_field[0]->dimension[0]
+			|| coordinate_field->dimension[1] !=scalar_field[0]->dimension[1]
+			|| coordinate_field->dimension[2] !=scalar_field[0]->dimension[2] )
 		{
-		for (i=x_min;i<=x_max;i++)
+			printf("ERROR - coordinate field does not match scalar field\n");
+		}
+
+		if (cutting_plane_on)
+		{
+			for (i=0;i<n_scalar_fields;i++)
 			{
-			/* clear mc_cell triangles and vertices! */
-			if (mc_iso_surface->mc_cells !=NULL)
+				if (scalar_field[i]->dimension[0] !=scalar_field[0]->dimension[0]
+					|| scalar_field[i]->dimension[1] !=scalar_field[0]->dimension[1]
+					|| scalar_field[i]->dimension[2] !=scalar_field[0]->dimension[2] )
+				{
+					printf("ERROR - scalar field[%d] does not match scalar field[0]\n",i);
+				}
+			}
+		}
+
+
+		x_min=mc_iso_surface->active_block[0];
+		x_max=mc_iso_surface->active_block[1];
+		y_min=mc_iso_surface->active_block[2];
+		y_max=mc_iso_surface->active_block[3];
+		z_min=mc_iso_surface->active_block[4];
+		z_max=mc_iso_surface->active_block[5];
+		if (closed_surface)
+		{
+			if (1==x_min)
+				x_min=0;
+			if (1==y_min)
+				y_min=0;
+			if (1==z_min)
+				z_min=0;
+			if (nx==x_max)
+				x_max +=1;
+			if (ny==y_max)
+				y_max +=1;
+			if (nz==z_max)
+				z_max +=1;
+			nx++;
+			ny++;
+			nz++;
+			/*x0=y0=z0=0;*/
+		}
+
+		/* store bounds of cube (for closed surface squishing) */
+		if (closed_surface)
+		{
+			rqc(coordinate_field,nx-1,ny-1,nz-1,maxc);
+			rqc(coordinate_field,0,0,0,minc);
+			/* deal with different +ve axis dirn */
+			for (i=0;i<3;i++)
 			{
-			if (mc_iso_surface->mc_cells[i+j*mcnx+k*mcnx*mcny] !=NULL)
+				/*???debug */
+				/*printf("min=%g, max=%g\n",minc[i],maxc[i]);*/
+				if (maxc[i] < minc[i])
+				{
+					tempc=minc[i];
+					minc[i]=maxc[i];
+					maxc[i]=tempc;
+				}
+			}
+		}
+
+		/* delete mc active block first */
+		for (k=z_min;k<=z_max;k++)
+		{
+			for (j=y_min;j<=y_max;j++)
+			{
+				for (i=x_min;i<=x_max;i++)
+				{
+					/* clear mc_cell triangles and vertices! */
+					if (mc_iso_surface->mc_cells !=NULL)
 					{
-					destroy_mc_triangle_list(mc_iso_surface->mc_cells[i+j*mcnx+k*mcnx*mcny],
-				mc_iso_surface->mc_cells[i+j*mcnx+k*mcnx*mcny]->triangle_list,
-					mc_iso_surface->mc_cells[i+j*mcnx+k*mcnx*mcny]->n_triangles,  n_scalar_fields, mc_iso_surface);
-					mc_iso_surface->mc_cells[i+j*mcnx+k*mcnx*mcny]->triangle_list=NULL;
-					mc_iso_surface->mc_cells[i+j*mcnx+k*mcnx*mcny]->n_triangles=NULL;
-					mc_cell=mc_iso_surface->mc_cells[i+j*mcnx+k*mcnx*mcny];
-					DEALLOCATE(mc_cell);
-					mc_iso_surface->mc_cells[i+j*mcnx+k*mcnx*mcny]=NULL;
+						if (mc_iso_surface->mc_cells[i+j*mcnx+k*mcnx*mcny] !=NULL)
+						{
+							destroy_mc_triangle_list(mc_iso_surface->mc_cells[i+j*mcnx+k*mcnx*mcny],
+								mc_iso_surface->mc_cells[i+j*mcnx+k*mcnx*mcny]->triangle_list,
+								mc_iso_surface->mc_cells[i+j*mcnx+k*mcnx*mcny]->n_triangles,  n_scalar_fields, mc_iso_surface);
+							mc_iso_surface->mc_cells[i+j*mcnx+k*mcnx*mcny]->triangle_list=NULL;
+							mc_iso_surface->mc_cells[i+j*mcnx+k*mcnx*mcny]->n_triangles=NULL;
+							mc_cell=mc_iso_surface->mc_cells[i+j*mcnx+k*mcnx*mcny];
+							DEALLOCATE(mc_cell);
+							mc_iso_surface->mc_cells[i+j*mcnx+k*mcnx*mcny]=NULL;
+						}
 					}
-			}
+				}
 			}
 		}
-	}
 #if defined (DEBUG)
 		/*???debug */
 		printf("2: #MC TRIANGLES=%d  #MC VERTICES=%d\n",mc_iso_surface->n_triangles,
@@ -2979,8 +3617,8 @@ for (k=z_min;k<=z_max;k++)
 						fc[n][7]=rqs(scalar_field[n],i,j,k);
 #if defined (DEBUG)
 						/*???debug */
-						printf("%d %d %d %d  %g %g %g %g %g %g %g %g\n",i,j,k,n,fc[n][0],
-							fc[n][1],fc[n][2],fc[n][3],fc[n][4],fc[n][5],fc[n][6],fc[n][7]);
+						/* printf("%d %d %d %d  %g %g %g %g %g %g %g %g\n",i,j,k,n,fc[n][0], */
+/* 							fc[n][1],fc[n][2],fc[n][3],fc[n][4],fc[n][5],fc[n][6],fc[n][7]); */
 #endif /* defined (DEBUG) */
 					}
 					/* get coords */
@@ -3083,10 +3721,10 @@ for (k=z_min;k<=z_max;k++)
 					{
 #if defined (DEBUG)
 						/*???debug */
-						printf("%d %d %d clip_flag\n",i,j,k);
+						/* printf("%d %d %d clip_flag\n",i,j,k); */
 #endif /* defined (DEBUG) */
 						/* see if cell has alternative polygon
-						configurations */
+							configurations */
 						for (m=0;m<n_scalar_fields;m++)
 						{
 							iambig[m]=mctbl[1 -1][icase[m] -1];
@@ -3175,11 +3813,11 @@ for (k=z_min;k<=z_max;k++)
 									}
 									/* only store if triangle has area */
 									if (vectors_equal(v_out[a][n_triangles[a]][0],
-										v_out[a][n_triangles[a]][1],AREA_ACC)||
+											v_out[a][n_triangles[a]][1],AREA_ACC)||
 										vectors_equal(v_out[a][n_triangles[a]][1],
-										v_out[a][n_triangles[a]][2],AREA_ACC)||
+											v_out[a][n_triangles[a]][2],AREA_ACC)||
 										vectors_equal(v_out[a][n_triangles[a]][0],
-										v_out[a][n_triangles[a]][2],AREA_ACC))
+											v_out[a][n_triangles[a]][2],AREA_ACC))
 									{
 #if defined (DEBUG)
 #endif /* defined (DEBUG) */
@@ -3195,12 +3833,12 @@ for (k=z_min;k<=z_max;k++)
 								} /* if border_flag !=6 or 7 */
 							} /*m*/
 #if !defined (DO_NOT_ADD_DETAIL)
-/*???MS.  Detail begin */
-/***************************** add detail ************************************/
+							/*???MS.  Detail begin */
+							/***************************** add detail ************************************/
 							if (mc_iso_surface->detail_map)
 							{
 								for (res=0;res<mc_iso_surface->detail_map[i+j*mcnx+k*mcnx*mcny];
-									res++)
+									  res++)
 								{
 									n_temp_triangles=0;
 									for (m=0;m<n_triangles[a];m++)
@@ -3285,17 +3923,17 @@ for (k=z_min;k<=z_max;k++)
 										}
 										/* 2. check iboundary internal */
 										if (internal_boundary(v[0],v[1],xc,yc,zc,i,j,k,
-											mc_iso_surface->detail_map,mcnx,mcny,mcnz,res))
+												mc_iso_surface->detail_map,mcnx,mcny,mcnz,res))
 										{
 											edge[0]=1;
 										}
 										if (internal_boundary(v[1],v[2],xc,yc,zc,i,j,k,
-											mc_iso_surface->detail_map,mcnx,mcny,mcnz,res))
+												mc_iso_surface->detail_map,mcnx,mcny,mcnz,res))
 										{
 											edge[1]=1;
 										}
 										if (internal_boundary(v[2],v[0],xc,yc,zc,i,j,k,
-											mc_iso_surface->detail_map,mcnx,mcny,mcnz,res))
+												mc_iso_surface->detail_map,mcnx,mcny,mcnz,res))
 										{
 											edge[2]=1;
 										}
@@ -3316,7 +3954,7 @@ for (k=z_min;k<=z_max;k++)
 												for (nn=0;nn<3;nn++)
 												{
 													temp_vout[n_temp_triangles][n][nn]=
-													v[detail_table[edge_total][n+1+mm*3]][nn];
+														v[detail_table[edge_total][n+1+mm*3]][nn];
 												}
 											}
 											n_temp_triangles++;
@@ -3335,7 +3973,7 @@ for (k=z_min;k<=z_max;k++)
 									n_triangles[a]=n_temp_triangles;
 								} /* detail */
 							}
-/*???MS.  Detail end */
+							/*???MS.  Detail end */
 #endif /* !defined (DO_NOT_ADD_DETAIL) */
 						} /* a */
 						/* output in poly lists */
@@ -3349,8 +3987,8 @@ for (k=z_min;k<=z_max;k++)
 							/* create mc_cell if not already created */
 #if defined (DEBUG)
 							/*???debug */
-							printf("----------- Allocating MC_cell %d %d %d --------------\n",
-								i,j,k);
+							/* printf("----------- Allocating MC_cell %d %d %d --------------\n", */
+/* 								i,j,k); */
 #endif /* defined (DEBUG) */
 							if (mc_iso_surface->mc_cells[i+j*mcnx+k*mcnx*mcny] !=NULL)
 							{
@@ -3390,8 +4028,8 @@ for (k=z_min;k<=z_max;k++)
 									mc_cell->index[2]=k;
 									/* cell(i,j,k)=mc_cells[i+j*mcnx+k*mcnx*mcny] */
 									if (ALLOCATE(mc_cell->triangle_list,struct MC_triangle **,
-										n_scalar_fields+6)&&ALLOCATE(mc_cell->n_triangles,int,
-										n_scalar_fields+6))
+											n_scalar_fields+6)&&ALLOCATE(mc_cell->n_triangles,int,
+												n_scalar_fields+6))
 									{
 										for (ii=0;ii < n_scalar_fields+6;ii++)
 										{
@@ -3435,7 +4073,7 @@ for (k=z_min;k<=z_max;k++)
 											/* have intersecting isosurfaces in cell, so clip */
 											/* assemble all clipping triangles in list */
 											if ((0<n_triangles[b])&&ALLOCATE(clip_triangles,
-												struct Triangle *,n_triangles[b]))
+													struct Triangle *,n_triangles[b]))
 											{
 												for (n=0;n<n_triangles[b];n++)
 												{
@@ -3551,7 +4189,7 @@ for (k=z_min;k<=z_max;k++)
 									}
 									else
 									{
-									printf("########## error border_flag=%d\n",border_flag);
+										printf("########## error border_flag=%d\n",border_flag);
 									}
 								}
 								for (m=0;m<n_triangles2;m++)
@@ -3605,7 +4243,7 @@ for (k=z_min;k<=z_max;k++)
 			mc_iso_surface->n_triangles,mc_iso_surface->n_vertices);
 #endif /* defined (DEBUG) */
 		if ((mc_iso_surface->n_triangles>0)&&((return_code=
-			compile_mc_vertex_triangle_lists(mc_iso_surface,closed_surface))>0))
+					compile_mc_vertex_triangle_lists(mc_iso_surface,closed_surface))>0))
 		{
 			/* create vertex list */
 #if defined (OLD_CODE)
@@ -3615,143 +4253,143 @@ for (k=z_min;k<=z_max;k++)
 
 #if defined (DEBUG)
 #if defined (UNIX)
-real_time3=((double)times(&buffer))/100.0;
-cpu_time3= ((double)buffer.tms_utime)/100.0;
+			real_time3=((double)times(&buffer))/100.0;
+			cpu_time3= ((double)buffer.tms_utime)/100.0;
 #endif
 #endif /* defined (DEBUG) */
 
 #ifdef CHECKLISTS
-printf("Checking lists....\n");
-for (i=0;i<mc_iso_surface->n_triangles;i++)
-{
-		if (mc_iso_surface->compiled_triangle_list[i]->triangle_index < 0 ||
-	mc_iso_surface->compiled_triangle_list[i]->triangle_index > mc_iso_surface->n_triangles)
-	{
-			printf ("Index error in triangle_list[%d], triangle_index=%d\n", i,
-		mc_iso_surface->compiled_triangle_list[i]->triangle_index);
-	}
-}
-for (i=0;i<mc_iso_surface->n_vertices;i++)
-{
-		if (mc_iso_surface->compiled_vertex_list[i]->vertex_index < 0 ||
-	mc_iso_surface->compiled_vertex_list[i]->vertex_index > mc_iso_surface->n_vertices)
-	{
-			printf ("Index error in vertex_list[%d], vertex_index=%d\n", i,
-		mc_iso_surface->compiled_vertex_list[i]->vertex_index);
-	}
-}
-for (i=0;i<mc_iso_surface->n_triangles;i++)
-{
-	for(j=0;j<3;j++)
-	{
-		if (mc_iso_surface->compiled_triangle_list[i]->vertex_index[j] < 0 ||
-	mc_iso_surface->compiled_triangle_list[i]->vertex_index[j] > mc_iso_surface->n_vertices)
-	{
-			printf ("Index error in compiled_triangle_list[%d]->vertex_index[%d]\n", i,j,
-		mc_iso_surface->compiled_triangle_list[i]->vertex_index[j]);
-	}
-		}
-}
+			printf("Checking lists....\n");
+			for (i=0;i<mc_iso_surface->n_triangles;i++)
+			{
+				if (mc_iso_surface->compiled_triangle_list[i]->triangle_index < 0 ||
+					mc_iso_surface->compiled_triangle_list[i]->triangle_index > mc_iso_surface->n_triangles)
+				{
+					printf ("Index error in triangle_list[%d], triangle_index=%d\n", i,
+						mc_iso_surface->compiled_triangle_list[i]->triangle_index);
+				}
+			}
+			for (i=0;i<mc_iso_surface->n_vertices;i++)
+			{
+				if (mc_iso_surface->compiled_vertex_list[i]->vertex_index < 0 ||
+					mc_iso_surface->compiled_vertex_list[i]->vertex_index > mc_iso_surface->n_vertices)
+				{
+					printf ("Index error in vertex_list[%d], vertex_index=%d\n", i,
+						mc_iso_surface->compiled_vertex_list[i]->vertex_index);
+				}
+			}
+			for (i=0;i<mc_iso_surface->n_triangles;i++)
+			{
+				for(j=0;j<3;j++)
+				{
+					if (mc_iso_surface->compiled_triangle_list[i]->vertex_index[j] < 0 ||
+						mc_iso_surface->compiled_triangle_list[i]->vertex_index[j] > mc_iso_surface->n_vertices)
+					{
+						printf ("Index error in compiled_triangle_list[%d]->vertex_index[%d]\n", i,j,
+							mc_iso_surface->compiled_triangle_list[i]->vertex_index[j]);
+					}
+				}
+			}
 
-/*printf("Done.\n");*/
+			/*printf("Done.\n");*/
 #endif
-a_count=0;
-for (a=0;a<n_scalar_fields+6;a++)
-{
-a_count2=0;
+			a_count=0;
+			for (a=0;a<n_scalar_fields+6;a++)
+			{
+				a_count2=0;
 
-		for (i=0;i<mcnx*mcny*mcnz;i++)
-		{
-		if (mc_iso_surface->mc_cells[i])
-	{
-	a_count +=mc_iso_surface->mc_cells[i]->n_triangles[a];
-	a_count2 +=mc_iso_surface->mc_cells[i]->n_triangles[a];
-	}
-		}
-if (a < 6)
-{
-		mc_iso_surface->xi_face_poly_index[a]=a_count;
-/*    printf("xi_face_poly_index[%d]=%d\n", a, a_count);*/
-}
-
-/*if (a>=6)
-{
-		printf("# Triangles field[%d]=%d\n",a,  a_count2);
-}*/
-}
-
-
-		/* Calculate mc normals */
-/*???debug */
-/*printf("Calculating MC normals....\n");*/
-		if(mc_iso_surface->compiled_vertex_list && mc_iso_surface->compiled_triangle_list)
-		{
-		for (i=0;i<mc_iso_surface->n_vertices;i++)
-		{
-	for (k=0;k<3;k++)
-	{
-			vectorsum[k]=0;
-	}
-	for (j=0;j<mc_iso_surface->compiled_vertex_list[i]->n_triangle_ptrs;j++)
-	{
-			mc_triangle=mc_iso_surface->compiled_vertex_list[i]->triangle_ptrs[j];
-			for (k=0;k<3;k++)
+				for (i=0;i<mcnx*mcny*mcnz;i++)
 				{
-					vertex0[k]=mc_triangle->vertices[0]->coord[k];
-					vertex1[k]=mc_triangle->vertices[1]->coord[k];
-					vertex2[k]=mc_triangle->vertices[2]->coord[k];
-
-					vector1[k]=vertex1[k]-vertex0[k];
-					vector2[k]=vertex2[k]-vertex0[k];
+					if (mc_iso_surface->mc_cells[i])
+					{
+						a_count +=mc_iso_surface->mc_cells[i]->n_triangles[a];
+						a_count2 +=mc_iso_surface->mc_cells[i]->n_triangles[a];
+					}
 				}
-				cross_product_float3(vector1, vector2, result);
-				normalize_float3(result);
-				for (k=0;k<3;k++)
+				if (a < 6)
 				{
-					vectorsum[k] +=result[k];
+					mc_iso_surface->xi_face_poly_index[a]=a_count;
+					/*    printf("xi_face_poly_index[%d]=%d\n", a, a_count);*/
 				}
-	}
-	/* now set normal as the average & normalize */
-	rmagf=(float)sqrt((double)(vectorsum[0]*vectorsum[0]+
-			vectorsum[1]*vectorsum[1]+vectorsum[2]*vectorsum[2]));
-	for (k=0;k<3;k++)
-	{
-			mc_iso_surface->compiled_vertex_list[i]->normal[k]=
-					-vectorsum[k]/rmagf;
-		/*???Mark.  This should be + */
-	}
-		} /* i */
-		}
-/*???debug */
-/*printf("Done.\n");*/
+
+				/*if (a>=6)
+				  {
+				  printf("# Triangles field[%d]=%d\n",a,  a_count2);
+				  }*/
+			}
 
 
-if (decimation)
-	{
-	decimate_triangles(mc_iso_surface, 0.01, 3);
-	}
+			/* Calculate mc normals */
+			/*???debug */
+			/*printf("Calculating MC normals....\n");*/
+			if(mc_iso_surface->compiled_vertex_list && mc_iso_surface->compiled_triangle_list)
+			{
+				for (i=0;i<mc_iso_surface->n_vertices;i++)
+				{
+					for (k=0;k<3;k++)
+					{
+						vectorsum[k]=0;
+					}
+					for (j=0;j<mc_iso_surface->compiled_vertex_list[i]->n_triangle_ptrs;j++)
+					{
+						mc_triangle=mc_iso_surface->compiled_vertex_list[i]->triangle_ptrs[j];
+						for (k=0;k<3;k++)
+						{
+							vertex0[k]=mc_triangle->vertices[0]->coord[k];
+							vertex1[k]=mc_triangle->vertices[1]->coord[k];
+							vertex2[k]=mc_triangle->vertices[2]->coord[k];
+
+							vector1[k]=vertex1[k]-vertex0[k];
+							vector2[k]=vertex2[k]-vertex0[k];
+						}
+						cross_product_float3(vector1, vector2, result);
+						normalize_float3(result);
+						for (k=0;k<3;k++)
+						{
+							vectorsum[k] +=result[k];
+						}
+					}
+					/* now set normal as the average & normalize */
+					rmagf=(float)sqrt((double)(vectorsum[0]*vectorsum[0]+
+							vectorsum[1]*vectorsum[1]+vectorsum[2]*vectorsum[2]));
+					for (k=0;k<3;k++)
+					{
+						mc_iso_surface->compiled_vertex_list[i]->normal[k]=
+							-vectorsum[k]/rmagf;
+						/*???Mark.  This should be + */
+					}
+				} /* i */
+			}
+			/*???debug */
+			/*printf("Done.\n");*/
+
+
+			if (decimation_tolerance > 0.0)
+			{
+				decimate_triangles(mc_iso_surface, decimation_tolerance);
+			}
 
 #if defined (DEBUG)
 #if defined (UNIX)
-/*???debug */
-real_time4=((double)times(&buffer))/100.0;
-cpu_time4= ((double)buffer.tms_utime)/100.0;
-/*printf("***************  Isosurface Timing Diagnostics **************\n");
-printf("Marching cubes:			Real=%lf    CPU=%lf\n",real_time2-real_time1,cpu_time2-cpu_time1);
-printf("Compile Vertex/Triangle lists:	Real=%lf    CPU=%lf\n",real_time3-real_time2,cpu_time3-cpu_time2);
-printf("Normal calculation:		Real=%lf    CPU=%lf\n",real_time4-real_time3,cpu_time4-cpu_time3);
-printf("_____________________________________________________________\n");
-printf("Total time:            Real=%lf    CPU=%lf\n",real_time4-real_time1,cpu_time4-cpu_time1);
-printf("Total number of polygons produced: %d\n",mc_iso_surface->n_triangles);
-printf("Total number of vertices produced: %d\n",mc_iso_surface->n_vertices);
-printf("************************************************************\n\n");*/
-/*
-timefile=fopen("timefile","a");
-fprintf(timefile,"# polys   t_mc  t_vtlist  t_normal  t_total\n");
-fprintf(timefile,"%d %lf %lf %lf %lf\n",
-iso_surface->n_triangles, cpu_time2-cpu_time1, cpu_time3-cpu_time2, cpu_time4-cpu_time3, cpu_time4-cpu_time1);
-fclose(timefile);
-*/
+			/*???debug */
+			real_time4=((double)times(&buffer))/100.0;
+			cpu_time4= ((double)buffer.tms_utime)/100.0;
+			/*printf("***************  Isosurface Timing Diagnostics **************\n");
+			  printf("Marching cubes:			Real=%lf    CPU=%lf\n",real_time2-real_time1,cpu_time2-cpu_time1);
+			  printf("Compile Vertex/Triangle lists:	Real=%lf    CPU=%lf\n",real_time3-real_time2,cpu_time3-cpu_time2);
+			  printf("Normal calculation:		Real=%lf    CPU=%lf\n",real_time4-real_time3,cpu_time4-cpu_time3);
+			  printf("_____________________________________________________________\n");
+			  printf("Total time:            Real=%lf    CPU=%lf\n",real_time4-real_time1,cpu_time4-cpu_time1);
+			  printf("Total number of polygons produced: %d\n",mc_iso_surface->n_triangles);
+			  printf("Total number of vertices produced: %d\n",mc_iso_surface->n_vertices);
+			  printf("************************************************************\n\n");*/
+			/*
+			  timefile=fopen("timefile","a");
+			  fprintf(timefile,"# polys   t_mc  t_vtlist  t_normal  t_total\n");
+			  fprintf(timefile,"%d %lf %lf %lf %lf\n",
+			  iso_surface->n_triangles, cpu_time2-cpu_time1, cpu_time3-cpu_time2, cpu_time4-cpu_time3, cpu_time4-cpu_time1);
+			  fclose(timefile);
+			*/
 #endif /* defined (UNIX) */
 #endif /* defined (DEBUG) */
 
@@ -4875,7 +5513,7 @@ Fills mcubes detail map 0: leave same 1+: increase trianglular resolution
 #if defined (DEBUG)
 		/*???debug */
 		printf("mc_iso->detail_map = %p\n", mc_iso_surface->detail_map);
-		printf("mcnx = %d mcny = %d mcnz = %d\n", mcnx, mcny, mcnz);
+		printf("mcnx = %d mcny = %d \n", mcnx, mcny);
 #endif /* defined (DEBUG) */
 		for (i=0;i<3;i++)
 		{

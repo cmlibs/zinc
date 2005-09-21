@@ -56,6 +56,7 @@ int draw_glyphsetGL(int number_of_points,Triple *point_list, Triple *axis1_list,
 	Triple *axis2_list, Triple *axis3_list, Triple *scale_list,
 	struct GT_object *glyph, char **labels,
 	int number_of_data_components, GTDATA *data, int *names,
+	int label_bounds_dimension, int label_bounds_components, float *label_bounds,
 	struct Graphical_material *material, struct Spectrum *spectrum,
 	int draw_selected, int some_selected,
 	struct Multi_range *selected_name_ranges);

@@ -1108,6 +1108,7 @@ this gets tricky when done on all axes consistently.
 				if (glyph_set = CREATE(GT_glyph_set)(number_of_points, point_list,
 					axis1_list, axis2_list, axis3_list, scale_list, initial->glyph,
 					labels, initial->n_data_components, data,
+					/*label_bounds_dimension*/0, /*label_bounds_components*/0, /*label_bounds*/(float *)NULL,
 					nearest_glyph_set->object_name, names))
 				{
 #if defined (OLD_CODE)
@@ -2240,9 +2241,10 @@ struct GT_glyph_set *CREATE(GT_glyph_set)(int number_of_points,
 	Triple *point_list, Triple *axis1_list, Triple *axis2_list,
 	Triple *axis3_list, Triple *scale_list, struct GT_object *glyph,
 	char **labels, int n_data_components, GTDATA *data,
+	int label_bounds_dimension, int label_bounds_components, float *label_bounds,
 	int object_name, int *names)
 /*******************************************************************************
-LAST MODIFIED : 16 November 2000
+LAST MODIFIED : 16 September 2005
 
 DESCRIPTION :
 Allocates memory and assigns fields for a GT_glyph_set. The glyph set shows
@@ -2278,7 +2280,11 @@ and are deallocated by its DESTROY function.
 			glyph_set->glyph = ACCESS(GT_object)(glyph);
 			glyph_set->labels = labels;
 			glyph_set->n_data_components = n_data_components;
-			glyph_set->data = data;
+ 			glyph_set->data = data;
+			glyph_set->label_bounds_dimension = label_bounds_dimension;
+			glyph_set->label_bounds_components = label_bounds_components;
+			glyph_set->label_bounds = label_bounds;
+
 			glyph_set->object_name = object_name;
 			glyph_set->auxiliary_object_name = 0;
 			glyph_set->names = names;
@@ -2330,6 +2336,10 @@ Frees the frees the memory for <**glyph_set_address> and sets
 				labels++;
 			}
 			DEALLOCATE(glyph_set->labels);
+		}
+		if (glyph_set->label_bounds)
+		{
+			DEALLOCATE(glyph_set->label_bounds);
 		}
 		if (glyph_set->data)
 		{
@@ -3774,6 +3784,8 @@ Allocates memory and assigns fields for a graphics object.
 			object->primitive_lists = (union GT_primitive_list *)NULL;
 			object->update_callback_list =
 				(struct Graphics_object_callback_data *)NULL;
+			object->coordinate_system = g_MODEL_COORDINATES;
+			object->glyph_labels_function = (Graphics_object_glyph_labels_function)NULL;
 			object->access_count = 0;
 			return_code = 1;
 			switch (object_type)
@@ -6164,6 +6176,63 @@ Sets the glyph_mirror_mode of the <graphics_object> to true or false.
 	return (return_code);
 } /* GT_object_set_glyph_mirror_mode */
 
+Graphics_object_glyph_labels_function Graphics_object_get_glyph_labels_function(
+	struct GT_object *graphics_object)
+/*******************************************************************************
+LAST MODIFIED : 19 September 2005
+
+DESCRIPTION :
+Gets the glyph_labels_function of the <graphics_object>.
+This function enables a custom, per compile, labelling for a graphics object 
+==============================================================================*/
+{
+	Graphics_object_glyph_labels_function glyph_labels_function;
+
+	ENTER(GT_object_get_glyph_labels_function);
+	if (graphics_object)
+	{
+		glyph_labels_function = graphics_object->glyph_labels_function;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"GT_object_set_glyph_labels_function.  Invalid argument(s)");
+		glyph_labels_function = 0;
+	}
+	LEAVE;
+
+	return (glyph_labels_function);
+} /* GT_object_get_glyph_labels_function */
+
+int Graphics_object_set_glyph_labels_function(struct GT_object *graphics_object,
+	Graphics_object_glyph_labels_function glyph_labels_function)
+/*******************************************************************************
+LAST MODIFIED : 19 September 2005
+
+DESCRIPTION :
+Sets the glyph_labels_function of the <graphics_object>.
+This function enables a custom, per compile, labelling for a graphics object 
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(GT_object_set_glyph_labels_function);
+	if (graphics_object)
+	{
+		graphics_object->glyph_labels_function = glyph_labels_function;
+		return_code = 1;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"GT_object_set_glyph_labels_function.  Invalid argument(s)");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* GT_object_set_glyph_labels_function */
+
 int GT_object_clear_selected_graphic_list(struct GT_object *graphics_object)
 /*******************************************************************************
 LAST MODIFIED : 18 February 2000
@@ -6563,6 +6632,61 @@ Sets the spectrum of all the GT_objects in a list.
 
 	return (return_code);
 } /* set_GT_object_list_Spectrum */
+
+enum GT_coordinate_system GT_object_get_coordinate_system(
+	struct GT_object *graphics_object)
+/*******************************************************************************
+LAST MODIFIED : 9 June 2005
+
+DESCRIPTION :
+Gets the graphical coordinate system of a GT_object.
+==============================================================================*/
+{
+	enum GT_coordinate_system coordinate_system;
+
+	ENTER(GT_object_get_coordinate_system);
+	if (graphics_object)
+	{
+		coordinate_system = graphics_object->coordinate_system;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"GT_object_get_coordinate_system.  Invalid graphics object");
+		coordinate_system = g_MODEL_COORDINATES;
+	}
+	LEAVE;
+
+	return (coordinate_system);
+} /* GT_object_get_coordinate_system */
+
+int GT_object_set_coordinate_system(struct GT_object *graphics_object,
+	enum GT_coordinate_system coordinate_system)
+/*******************************************************************************
+LAST MODIFIED : 9 June 2005
+
+DESCRIPTION :
+Sets the graphical coordinate system of a GT_object.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(GT_object_set_coordinate_system);
+	if (graphics_object)
+	{
+		graphics_object->coordinate_system = coordinate_system;
+		return_code=1;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"GT_object_set_coordinate_system.  Invalid graphics object");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* GT_object_set_coordinate_system */
 
 int GT_object_list_contents(struct GT_object *graphics_object,void *dummy_void)
 /*******************************************************************************

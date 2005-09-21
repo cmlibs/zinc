@@ -283,6 +283,30 @@ DESCRIPTION :
 	g_DERIVATIVE_MARKER
 } gtMarkerType;
 
+enum GT_coordinate_system
+/*******************************************************************************
+LAST MODIFIED : 9 June 2005
+
+DESCRIPTION :
+Set the reference graphical coordinate system for the underlying objects.
+==============================================================================*/
+{
+	g_MODEL_COORDINATES,
+	g_NDC_COORDINATES
+}; /* enum GT_coordinate_system */
+
+typedef int (*Graphics_object_glyph_labels_function)(Triple coordinate_scaling,
+	int label_bounds_dimension, int label_bounds_components, float *label_bounds);
+/*******************************************************************************
+LAST MODIFIED : 19 September 2005
+
+DESCRIPTION :
+Used for rendering a per compile custom addon to a glyph, such as a grid or tick
+marks showing the scale of the glyph.
+<coordinate_scaling> gives a representative size for determining the number of 
+ticks.
+==============================================================================*/
+
 struct GT_glyph_set;
 struct GT_nurbs;
 struct GT_point;
@@ -539,9 +563,10 @@ struct GT_glyph_set *CREATE(GT_glyph_set)(int number_of_points,
 	Triple *point_list, Triple *axis1_list, Triple *axis2_list,
 	Triple *axis3_list, Triple *scale_list, struct GT_object *glyph,
 	char **labels, int n_data_components, GTDATA *data,
+	int label_bounds_dimension, int label_bounds_components, float *label_bounds,
 	int object_name, int *names);
 /*******************************************************************************
-LAST MODIFIED : 16 November 2000
+LAST MODIFIED : 16 September 2005
 
 DESCRIPTION :
 Allocates memory and assigns fields for a GT_glyph_set. The glyph set shows
@@ -1251,6 +1276,36 @@ Sets the glyph_mirror_mode of the <graphics_object> to true or false.
 ???RC temporary until we have a separate struct Glyph.
 ==============================================================================*/
 
+Graphics_object_glyph_labels_function GT_object_get_glyph_labels_function(
+	struct GT_object *graphics_object);
+/*******************************************************************************
+LAST MODIFIED : 19 September 2005
+
+DESCRIPTION :
+Gets the glyph_labels_function of the <graphics_object>.
+This function enables a custom, per compile, labelling for a graphics object 
+==============================================================================*/
+
+int Graphics_object_set_glyph_labels_function(struct GT_object *graphics_object,
+	Graphics_object_glyph_labels_function glyph_labels_function);
+/*******************************************************************************
+LAST MODIFIED : 19 September 2005
+
+DESCRIPTION :
+Sets the glyph_labels_function of the <graphics_object>.
+This function enables a custom, per compile, labelling for a graphics object 
+==============================================================================*/
+
+Graphics_object_glyph_labels_function Graphics_object_get_glyph_labels_function(
+	struct GT_object *graphics_object);
+/*******************************************************************************
+LAST MODIFIED : 19 September 2005
+
+DESCRIPTION :
+Gets the glyph_labels_function of the <graphics_object>.
+This function enables a custom, per compile, labelling for a graphics object 
+==============================================================================*/
+
 int GT_object_clear_selected_graphic_list(struct GT_object *graphics_object);
 /*******************************************************************************
 LAST MODIFIED : 18 February 2000
@@ -1353,6 +1408,24 @@ LAST MODIFIED : 18 October 1997
 
 DESCRIPTION :
 Sets the spectrum of all the GT_objects in a list.
+==============================================================================*/
+
+enum GT_coordinate_system GT_object_get_coordinate_system(
+	struct GT_object *graphics_object);
+/*******************************************************************************
+LAST MODIFIED : 9 June 2005
+
+DESCRIPTION :
+Gets the graphical coordinate system of a GT_object.
+==============================================================================*/
+
+int GT_object_set_coordinate_system(struct GT_object *graphics_object,
+	enum GT_coordinate_system coordinate_system);
+/*******************************************************************************
+LAST MODIFIED : 9 June 2005
+
+DESCRIPTION :
+Sets the graphical coordinate system of a GT_object.
 ==============================================================================*/
 
 int GT_object_list_contents(struct GT_object *graphics_object,void *dummy_void);

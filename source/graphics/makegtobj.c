@@ -105,6 +105,31 @@ un-selected graphics are drawn.
 		{
 			material = get_GT_object_default_material(object);
 		}
+		switch (object->coordinate_system)
+		{
+			case g_MODEL_COORDINATES:
+			{
+				/* Do nothing */
+			} break;
+			case g_NDC_COORDINATES:
+			{
+				/* Push the current model matrix and eset the model matrix to identity */
+				glMatrixMode(GL_PROJECTION);
+				glPushMatrix();
+				glLoadIdentity();
+				glOrtho(-1.0,1.0,-1.0,1.0,1.0,101.0);
+				glMatrixMode(GL_MODELVIEW);
+				glPushMatrix();
+				glLoadIdentity();
+				gluLookAt(/*eye*/0.0,0.0,2.0, /*lookat*/0.0,0.0,0.0,
+					/*up*/0.0,1.0,0.0);
+			} break;
+			default:
+			{
+				display_message(ERROR_MESSAGE,"makegtobject.  Invalid object coordinate system.");
+				return_code=0;				
+			} break;
+		}
 		number_of_times = GT_object_get_number_of_times(object);
 		if (0 < number_of_times)
 		{
@@ -221,6 +246,7 @@ un-selected graphics are drawn.
 										interpolate_glyph_set->n_data_components,
 										interpolate_glyph_set->data,
 										interpolate_glyph_set->names,
+										/*label_bounds_dimension*/0, /*label_bounds_components*/0, /*label_bounds*/(float *)NULL,
 										material,spectrum,
 										draw_selected,name_selected,selected_name_ranges);
 									DESTROY(GT_glyph_set)(&interpolate_glyph_set);
@@ -248,7 +274,8 @@ un-selected graphics are drawn.
 									glyph_set->scale_list, glyph_set->glyph,
 									glyph_set->labels, glyph_set->n_data_components,
 									glyph_set->data, glyph_set->names,
-									material, spectrum,
+									glyph_set->label_bounds_dimension, glyph_set->label_bounds_components,
+									glyph_set->label_bounds, material, spectrum,
 									draw_selected, name_selected, selected_name_ranges);
 								glyph_set=glyph_set->ptrnext;
 							}
@@ -877,6 +904,21 @@ un-selected graphics are drawn.
 					return_code=0;
 				} break;
 			}
+		}
+		switch (object->coordinate_system)
+		{
+			case g_MODEL_COORDINATES:
+			{
+				/* Do nothing */
+			} break;
+			case g_NDC_COORDINATES:
+			{
+				/* Pop the model matrix stack */
+				glMatrixMode(GL_PROJECTION);
+				glPopMatrix();
+				glMatrixMode(GL_MODELVIEW);
+				glPopMatrix();
+			} break;
 		}
 	}
 	else
