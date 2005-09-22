@@ -3236,7 +3236,7 @@ printf("isovalue = %lf\n",texture->isovalue);
 							texture->cutting_plane[2]=0;
 							texture->cutting_plane[3]=0;
 							texture->closed_surface=0;
-							texture->decimation_threshold=0.01;
+							texture->decimation_threshold=0.0;
 							/* load any curves if present */
 							temp_string = (char *)NULL;
 							while (IO_stream_read_string(in_file,"s",&temp_string)&&
@@ -3784,7 +3784,7 @@ printf("texture->ximin = %lf %lf %lf, texture->ximax = %lf %lf %lf\n",
 			texture->cutting_plane[2]=0;
 			texture->cutting_plane[3]=0;
 			texture->closed_surface=0;
-			texture->decimation_threshold=0.01;
+			texture->decimation_threshold=0.0;
 			texture->grid_spacing= NULL;
 			return_code = 1;
 			/* now read in obj data from file and convert to isosurface */
