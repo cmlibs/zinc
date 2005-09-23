@@ -13,7 +13,9 @@ http://dev.cmiss.org/cmgui/
 Dependencies:
 Required:
 Motif:  Except for the gtk and win32 versions which have no interactive
-user interface motif is required (and therefore X).
+user interface, motif is required (and therefore X).  The lesstif implementation
+of Motif is insufficient as the uil compiler is incomplete, instead use the
+OpenMotif implementation.
 OpenGL: The 3D graphics is built on OpenGL.
 
 Optional but recommended:

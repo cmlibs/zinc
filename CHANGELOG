@@ -1,0 +1,20 @@
+# **************************************************************************
+# FILE : CHANGELOG
+#
+# LAST MODIFIED : 19 September 2005
+# ==========================================================================
+
+This software is the cmgui part of CMISS.
+It is released under the Mozilla Public License v1.1
+
+Further information, help pages, a tracker and a wiki is available at 
+http://dev.cmiss.org/cmgui/
+
+v2.0.1
+Added glyph functionality to create graph axes
+Added first pass at iso_surface_decimation.
+Added a new coordinate system where objects are displayed relative to screen coordinates.
+v2.0.0
+First open source release.  License updated to Mozilla Public License.
+Lots of tidying up.
+Added README, INSTALL, RELEASE_NOTES and CHANGELOG.
