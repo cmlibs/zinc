@@ -1,7 +1,7 @@
 # **************************************************************************
 # FILE : RELEASE_NOTES
 #
-# LAST MODIFIED : 26 August 2005
+# LAST MODIFIED : 23 September 2005
 # ==========================================================================
 
 This software is the cmgui part of CMISS.
@@ -10,4 +10,5 @@ It is released under the Mozilla Public License v1.1
 Further information, help pages, a tracker and a wiki is available at 
 http://dev.cmiss.org/cmgui/
 
-This is the first Open Source release.
+The sourceforge project is at http://sourceforge.net/projects/cmiss/
+
