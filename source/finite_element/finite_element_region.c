@@ -1022,6 +1022,7 @@ as if it is just updating then there is nothing to do.
 					}
 				}
 			}
+			DESTROY(LIST(FE_node_field))(&node_field_list);
 		}
 	}
 	else
