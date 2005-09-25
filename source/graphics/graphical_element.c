@@ -2161,6 +2161,10 @@ Returns true if <gt_element_group> contains settings which depend on time.
 	{
 		data.default_coordinate_depends_on_time = 0;
 		data.time_dependent = 0;
+		if (!gt_element_group->default_coordinate_field)
+		{
+			GT_element_group_update_default_coordinate(gt_element_group);
+		}
 		if (gt_element_group->default_coordinate_field)
 		{
 			if (Computed_field_has_multiple_times(
