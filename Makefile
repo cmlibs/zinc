@@ -110,8 +110,10 @@ OPTIONS = $(TARGET_OPTION) $(USER_INTERFACE_OPTION) $(STATIC_LINK_OPTION) $(DEBU
 
 #Force the use of the cross compiler for cmiss on Linux.
 ifeq ($(SYSNAME),Linux)
-   ifeq ($(USER),cmiss)
-      MAKE=i386-glibc21-linux-cross-make
+   ifeq ($(MACHNAME),i686)
+      ifeq ($(USER),cmiss)
+         MAKE=i386-glibc21-linux-cross-make
+      endif
    endif
 endif
 
