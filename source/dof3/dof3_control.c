@@ -121,8 +121,8 @@ Finds the id of the buttons on the control widget.
 	/* find out which control widget we are in */
 	if (button_type==control_coord_item_button_ID)
 	{
-		XtVaGetValues(XtParent(w),XmNuserData,&temp_control,NULL);
 		XtVaGetValues(w,XmNuserData,&button_num,NULL);
+		XtVaGetValues(XtParent(w),XmNuserData,&temp_control,NULL);
 		temp_control->coord[button_num]=w;
 	}
 	else
