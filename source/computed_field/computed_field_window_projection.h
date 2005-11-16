@@ -43,6 +43,38 @@ DESCRIPTION :
 #if !defined (COMPUTED_FIELD_WINDOW_PROJECTION_H)
 #define COMPUTED_FIELD_WINDOW_PROJECTION_H
 
+#include "graphics/scene_viewer.h"
+
+enum Computed_field_window_projection_type
+{
+	NDC_PROJECTION,
+	TEXTURE_PROJECTION,
+	VIEWPORT_PROJECTION,
+	INVERSE_NDC_PROJECTION,
+	INVERSE_TEXTURE_PROJECTION,
+	INVERSE_VIEWPORT_PROJECTION
+};
+
+struct MANAGER(Graphics_window);
+
+int Computed_field_set_type_window_projection(struct Computed_field *field,
+	struct Computed_field *source_field, struct Scene_viewer *scene_viewer,
+	char *graphics_window_name, int pane_number,
+	enum Computed_field_window_projection_type projection_type,
+	struct MANAGER(Computed_field) *computed_field_manager);
+/*******************************************************************************
+LAST MODIFIED : 29 September 2005
+
+DESCRIPTION :
+Converts <field> to type COMPUTED_FIELD_WINDOW_PROJECTION, returning the 
+<source_field> with each component multiplied by the perspective transformation
+of the <scene_viewer>.  The <graphics_window_name> and <pane_number> are stored
+so that the command to reproduce this field can be written out.
+The <computed_field_manager> is notified by the <field> if the <scene_viewer> closes.
+If function fails, field is guaranteed to be unchanged from its original state,
+although its cache may be lost.
+==============================================================================*/
+
 int Computed_field_register_type_window_projection(
 	struct Computed_field_package *computed_field_package, 
 	struct MANAGER(Graphics_window) *graphics_window_manager);

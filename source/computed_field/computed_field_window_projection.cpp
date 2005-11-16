@@ -53,16 +53,6 @@ equivalent to the scene_viewer assigned to it.
 #include "user_interface/message.h"
 #include "computed_field/computed_field_window_projection.h"
 
-enum Computed_field_window_projection_type
-{
-	NDC_PROJECTION,
-	TEXTURE_PROJECTION,
-	VIEWPORT_PROJECTION,
-	INVERSE_NDC_PROJECTION,
-	INVERSE_TEXTURE_PROJECTION,
-	INVERSE_VIEWPORT_PROJECTION
-};
-
 struct Computed_field_window_projection_package 
 {
 	struct MANAGER(Computed_field) *computed_field_manager;
@@ -71,11 +61,10 @@ struct Computed_field_window_projection_package
 
 struct Computed_field_window_projection_type_specific_data
 {
+	/* Hold onto the graphics window name so we can write out the command. */
+	char *graphics_window_name;
 	double *projection_matrix;
 	enum Computed_field_window_projection_type projection_type;
-	/* Hold onto the graphics window so we can write out the command, 
-	   assume that the scene_viewer will callback when this is destroyed. */
-	struct Graphics_window *graphics_window;
 	int pane_number;
 	/* The scene_viewer is not accessed by the computed field so that we
 		can still destroy the window and so the computed field responds to
@@ -84,7 +73,7 @@ struct Computed_field_window_projection_type_specific_data
 	/* This flag indicates if the field has registered for callbacks with the
 		scene_viewer */
 	int scene_viewer_callback_flag;
-	struct Computed_field_window_projection_package *package;
+	struct MANAGER(Computed_field) *computed_field_manager;
 };
 
 static char computed_field_window_projection_type_string[] = "window_projection";
@@ -189,7 +178,7 @@ that the computed field has changed.
 			DEALLOCATE(data->projection_matrix);
 			data->projection_matrix = (double *)NULL;
 		}
-		Computed_field_changed(field, data->package->computed_field_manager);
+		Computed_field_changed(field, data->computed_field_manager);
 	}
 	else
 	{
@@ -225,10 +214,10 @@ Clear the scene viewer reference when it is no longer valid.
 			  (void *)field);
 			data->scene_viewer_callback_flag = 0;
 		}
-		data->graphics_window = (struct Graphics_window *)NULL;
+		data->graphics_window_name = (char *)NULL;
 		data->pane_number = 0;
 		data->scene_viewer = (struct Scene_viewer *)NULL;
-		Computed_field_changed(field, data->package->computed_field_manager);
+		Computed_field_changed(field, data->computed_field_manager);
 	}
 	else
 	{
@@ -687,10 +676,10 @@ Copy the type specific data used by this type.
 					Computed_field_window_projection_scene_viewer_destroy_callback,
 					(void *)destination_field);
 			}
-			destination->graphics_window = source->graphics_window;
+			destination->graphics_window_name = duplicate_string(source->graphics_window_name);
 			destination->pane_number = source->pane_number;
 			destination->projection_type = source->projection_type;
-			destination->package = source->package;
+			destination->computed_field_manager = source->computed_field_manager;
 			destination->scene_viewer_callback_flag = 0;
 		}
 		else
@@ -742,7 +731,7 @@ Compare the type specific data
 		(struct Computed_field_window_projection_type_specific_data *)
 		other_computed_field->type_specific_data))
 	{
-		if ((data->graphics_window == other_data->graphics_window) &&
+		if ((!strcmp(data->graphics_window_name, other_data->graphics_window_name)) &&
 			(data->scene_viewer == other_data->scene_viewer) &&
 			(data->pane_number == other_data->pane_number) &&
 			(data->projection_type == other_data->projection_type))
@@ -1206,7 +1195,6 @@ LAST MODIFIED : 6 October 2000
 DESCRIPTION :
 ==============================================================================*/
 {
-	char *window_name;
 	int return_code;
 	struct Computed_field_window_projection_type_specific_data *data;
 
@@ -1218,12 +1206,8 @@ DESCRIPTION :
 		return_code = 1;
 		display_message(INFORMATION_MESSAGE,"    source field : %s\n",
 			field->source_fields[0]->name);
-		if (GET_NAME(Graphics_window)(data->graphics_window, &window_name))
-		{
-			display_message(INFORMATION_MESSAGE,"    window : %s\n",
-				window_name);
-			DEALLOCATE(window_name);
-		}
+		display_message(INFORMATION_MESSAGE,"    window : %s\n",
+			data->graphics_window_name);
 		display_message(INFORMATION_MESSAGE,"    pane number : %d\n",
 			data->pane_number + 1);
 		display_message(INFORMATION_MESSAGE,"    projection type : %s\n",
@@ -1249,7 +1233,7 @@ DESCRIPTION :
 Returns allocated command string for reproducing field. Includes type.
 ==============================================================================*/
 {
-	char *command_string, *field_name, temp_string[40], *window_name;
+	char *command_string, *field_name, temp_string[40];
 	int error;
 	struct Computed_field_window_projection_type_specific_data *data;
 
@@ -1270,12 +1254,7 @@ Returns allocated command string for reproducing field. Includes type.
 			DEALLOCATE(field_name);
 		}
 		append_string(&command_string, " window ", &error);
-		if (GET_NAME(Graphics_window)(data->graphics_window, &window_name))
-		{
-			make_valid_token(&window_name);
-			append_string(&command_string, window_name, &error);
-			DEALLOCATE(window_name);
-		}
+		append_string(&command_string, data->graphics_window_name, &error);
 		sprintf(temp_string, " pane_number %d ", data->pane_number + 1);
 		append_string(&command_string, temp_string, &error);
 		append_string(&command_string,
@@ -1302,16 +1281,19 @@ Works out whether time influences the field.
 ==============================================================================*/
 
 int Computed_field_set_type_window_projection(struct Computed_field *field,
-	struct Computed_field *source_field, struct Graphics_window *graphics_window,
-	int pane_number, enum Computed_field_window_projection_type projection_type,
-	struct Computed_field_window_projection_package *package)
+	struct Computed_field *source_field, struct Scene_viewer *scene_viewer,
+	char *graphics_window_name, int pane_number,
+	enum Computed_field_window_projection_type projection_type,
+	struct MANAGER(Computed_field) *computed_field_manager)
 /*******************************************************************************
-LAST MODIFIED : 4 July 2000
+LAST MODIFIED : 29 September 2005
 
 DESCRIPTION :
 Converts <field> to type COMPUTED_FIELD_WINDOW_PROJECTION, returning the 
 <source_field> with each component multiplied by the perspective transformation
-of the <graphics_window>.
+of the <scene_viewer>.  The <graphics_window_name> and <pane_number> are stored
+so that the command to reproduce this field can be written out.
+The <computed_field_manager> is notified by the <field> if the <scene_viewer> closes.
 If function fails, field is guaranteed to be unchanged from its original state,
 although its cache may be lost.
 ==============================================================================*/
@@ -1319,20 +1301,16 @@ although its cache may be lost.
 	int number_of_source_fields,return_code;
 	struct Computed_field **source_fields;
 	struct Computed_field_window_projection_type_specific_data *data;
-	struct Scene_viewer *scene_viewer;
 
 	ENTER(Computed_field_set_type_window_projection);
-	if (field&&source_field&&
-		Computed_field_has_3_components(source_field, NULL)
-		&&graphics_window)
+	if (field && source_field && Computed_field_has_3_components(source_field, NULL)
+		&& scene_viewer)
 	{
 		return_code=1;
 		/* 1. make dynamic allocations for any new type-specific data */
 		number_of_source_fields=1;
 		if (ALLOCATE(source_fields,struct Computed_field *,number_of_source_fields)&&
-			ALLOCATE(data,struct Computed_field_window_projection_type_specific_data, 1)&&
-			(scene_viewer = Graphics_window_get_Scene_viewer(graphics_window, 
-			pane_number)))
+			ALLOCATE(data,struct Computed_field_window_projection_type_specific_data, 1))
 		{
 			/* 2. free current type-specific data */
 			Computed_field_clear_type(field);
@@ -1345,7 +1323,7 @@ although its cache may be lost.
 			field->type_specific_data = (void *)data;
 			data->projection_matrix = (double *)NULL;
 			/* Not accessed, responds to destroy callback instead */
-			data->graphics_window = graphics_window;
+			data->graphics_window_name = duplicate_string(graphics_window_name);
 			data->pane_number = pane_number;
 			data->scene_viewer = scene_viewer;
 			Scene_viewer_add_destroy_callback(scene_viewer, 
@@ -1353,7 +1331,7 @@ although its cache may be lost.
 				(void *)field);
 			data->projection_type = projection_type;
 			data->scene_viewer_callback_flag = 0;
-			data->package = package;
+			data->computed_field_manager = computed_field_manager;
 
 			/* Set all the methods */
 			COMPUTED_FIELD_ESTABLISH_METHODS(window_projection);
@@ -1376,8 +1354,9 @@ although its cache may be lost.
 } /* Computed_field_set_type_window_projection */
 
 int Computed_field_get_type_window_projection(struct Computed_field *field,
-	struct Computed_field **source_field, struct Graphics_window **graphics_window,
-	int *pane_number, enum Computed_field_window_projection_type *projection_type)
+	struct Computed_field **source_field, struct Scene_viewer **scene_viewer,
+	char **graphics_window_name, int *pane_number, 
+	enum Computed_field_window_projection_type *projection_type)
 /*******************************************************************************
 LAST MODIFIED : 4 July 2000
 
@@ -1394,11 +1373,12 @@ Use function Computed_field_get_type to determine the field type.
 	if (field&&(field->type_string==computed_field_window_projection_type_string)
 		&&(data = 
 		(struct Computed_field_window_projection_type_specific_data *)
-		field->type_specific_data)&&source_field&&graphics_window&&
-	   pane_number&&projection_type)
+		field->type_specific_data) && source_field && scene_viewer && 
+		graphics_window_name && pane_number && projection_type)
 	{
 		*source_field = field->source_fields[0];
-		*graphics_window = data->graphics_window;
+		*scene_viewer = data->scene_viewer;
+		*graphics_window_name = duplicate_string(data->graphics_window_name);
 		*pane_number = data->pane_number;
 		*projection_type = data->projection_type;
 		return_code=1;
@@ -1424,7 +1404,7 @@ Converts <field> into type COMPUTED_FIELD_WINDOW_PROJECTION (if it is not
 already) and allows its contents to be modified.
 ==============================================================================*/
 {
-	char *projection_type_string;
+	char *graphics_window_name, *projection_type_string;
 	enum Computed_field_window_projection_type projection_type;
 	int pane_number, return_code;
 	struct Computed_field *field,*source_field;
@@ -1433,6 +1413,7 @@ already) and allows its contents to be modified.
 	struct Graphics_window *graphics_window;
 	struct Option_table *option_table;
 	struct Set_Computed_field_conditional_data set_source_field_data;
+	struct Scene_viewer *scene_viewer;
 	static char *projection_type_strings[] =
 	{
 	  "ndc_projection",
@@ -1459,8 +1440,14 @@ already) and allows its contents to be modified.
 			Computed_field_get_type_string(field))
 		{
 			return_code=Computed_field_get_type_window_projection(field,
-				&source_field, &graphics_window, &pane_number, &projection_type);
+				&source_field, &scene_viewer, &graphics_window_name, &pane_number, &projection_type);
 			pane_number++;
+			if (graphics_window_name)
+			{
+				graphics_window = FIND_BY_IDENTIFIER_IN_MANAGER(Graphics_window,name)(graphics_window_name,
+					computed_field_window_projection_package->graphics_window_manager);
+				DEALLOCATE(graphics_window_name);
+			}
 		}
 		if (return_code)
 		{
@@ -1530,11 +1517,18 @@ already) and allows its contents to be modified.
 					return_code = 0;
 				}
 			}
+			if (!(scene_viewer = Graphics_window_get_Scene_viewer(graphics_window, 
+				pane_number - 1)))
+			{
+				return_code = 0;
+			}
 			if (return_code)
 			{
+				GET_NAME(Graphics_window)(graphics_window, &graphics_window_name);
 				return_code = Computed_field_set_type_window_projection(field,
-					source_field, graphics_window, pane_number - 1, projection_type,
-					computed_field_window_projection_package);
+					source_field, scene_viewer, graphics_window_name, pane_number,
+					projection_type, computed_field_window_projection_package->computed_field_manager);
+				DEALLOCATE(graphics_window_name);
 			}
 			if (!return_code)
 			{
