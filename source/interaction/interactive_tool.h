@@ -60,9 +60,11 @@ content of the global selections and objects with text input.
 Global types
 ------------
 */
+struct Graphics_buffer;
 
 typedef void Interactive_event_handler(void *device_id,
-	struct Interactive_event *event,void *user_data);
+	struct Interactive_event *event,void *user_data,
+	struct Graphics_buffer *graphics_buffer);
 typedef int Interactive_tool_bring_up_dialog_function(void *user_data);
 typedef struct Cmgui_image *Interactive_tool_get_icon_function(
 	struct Colour *foreground, struct Colour *background, void *user_data);
@@ -146,9 +148,10 @@ not DEALLOCATE this pointer.
 
 int Interactive_tool_handle_interactive_event(
 	struct Interactive_tool *interactive_tool,void *device_id,
-	struct Interactive_event *interactive_event);
+	struct Interactive_event *interactive_event,
+	struct Graphics_buffer *graphics_buffer);
 /*******************************************************************************
-LAST MODIFIED : 10 April 2000
+LAST MODIFIED : 18 November 2005
 
 DESCRIPTION :
 Passes the <interactive_event> from <device_id> to the tool wrapped by the

@@ -1981,6 +1981,7 @@ Called when the label field toggle button value changes.
 {
 	int field_set;
 	struct Computed_field *label_field,*start_field;
+	struct Graphics_font *font;
 	struct Settings_editor *settings_editor;
 
 	ENTER(settings_editor_label_button_CB);
@@ -1988,8 +1989,10 @@ Called when the label field toggle button value changes.
 	USE_PARAMETER(reason);
 	if (settings_editor=(struct Settings_editor *)settings_editor_void)
 	{
-		start_field=label_field=
-			GT_element_settings_get_label_field(settings_editor->current_settings);
+		GT_element_settings_get_label_field(settings_editor->current_settings, 
+			&label_field, &font);
+		start_field = label_field;
+			
 		if (label_field)
 		{
 			label_field=(struct Computed_field *)NULL;
@@ -2001,10 +2004,10 @@ Called when the label field toggle button value changes.
 				settings_editor->label_field_widget);
 		}
 		GT_element_settings_set_label_field(settings_editor->current_settings,
-			label_field);
+			label_field, font);
 		/* set status of label field button and widgets */
-		label_field=
-			GT_element_settings_get_label_field(settings_editor->current_settings);
+		GT_element_settings_get_label_field(settings_editor->current_settings,
+			&label_field, &font);
 		field_set=((struct Computed_field *)NULL != label_field);
 		XtVaSetValues(settings_editor->label_field_button,
 			XmNset,field_set,NULL);
@@ -2032,7 +2035,8 @@ DESCRIPTION :
 Callback for change of label field.
 ==============================================================================*/
 {
-	struct Computed_field *label_field;
+	struct Computed_field *label_field, *old_label_field;
+	struct Graphics_font *font;
 	struct Settings_editor *settings_editor;
 
 	ENTER(settings_editor_update_label_field);
@@ -2044,10 +2048,16 @@ Callback for change of label field.
 		if (XtIsSensitive(settings_editor->label_field_widget))
 		{
 			label_field=(struct Computed_field *)label_field_void;
-			GT_element_settings_set_label_field(
-				settings_editor->current_settings,label_field);
-			/* inform the client of the change */
-			settings_editor_update(settings_editor);
+			GT_element_settings_get_label_field(
+				settings_editor->current_settings,
+				&old_label_field, &font);
+			if (old_label_field != label_field)
+			{
+				GT_element_settings_set_label_field(
+					settings_editor->current_settings, label_field, font);
+				/* inform the client of the change */
+				settings_editor_update(settings_editor);
+			}
 		}
 	}
 	else
@@ -3845,6 +3855,7 @@ Changes the currently chosen settings.
 	struct Element_discretization discretization;
 	struct FE_element *seed_element;
 	struct FE_field *native_discretization_field;
+	struct Graphics_font *font;
 	struct Settings_editor *settings_editor;
 	struct Spectrum *spectrum;
 	Triple seed_xi;
@@ -4044,7 +4055,8 @@ Changes the currently chosen settings.
 								(GT_ELEMENT_SETTINGS_DATA_POINTS==settings_type)||
 								(GT_ELEMENT_SETTINGS_ELEMENT_POINTS==settings_type))
 							{
-								label_field=GT_element_settings_get_label_field(new_settings);
+								GT_element_settings_get_label_field(new_settings,
+									&label_field, &font);
 								field_set=((struct Computed_field *)NULL != label_field);
 								XtVaSetValues(settings_editor->label_field_button,
 									XmNset,field_set,NULL);

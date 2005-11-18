@@ -936,6 +936,7 @@ Global functions
 
 struct Spectrum_editor *CREATE(Spectrum_editor)(
 	Widget parent, struct Spectrum *spectrum,
+	struct Graphics_font *font,
 	struct Graphics_buffer_package *graphics_buffer_package,
 	struct User_interface *user_interface,
 	struct LIST(GT_object) *glyph_list,
@@ -1195,7 +1196,7 @@ Creates a spectrum_editor widget.
 												spectrum_editor->tick_labels_graphics_object);
 											if (tick_labels = CREATE(GT_pointset)(1,
 												points, strings, g_NO_MARKER, 0.0,
-												g_NO_DATA, (GTDATA *)NULL, (int *)NULL))
+													g_NO_DATA, (GTDATA *)NULL, (int *)NULL, font))
 											{
 												GT_OBJECT_ADD(GT_pointset)(
 													spectrum_editor->tick_labels_graphics_object, 0,

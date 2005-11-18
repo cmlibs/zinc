@@ -2310,12 +2310,12 @@ access this function.
 			rendering_data.rendering_double_buffered = double_buffer;
 
 			build_Scene(scene_viewer->scene);
-			compile_Scene(scene_viewer->scene);
+			compile_Scene(scene_viewer->scene, scene_viewer->graphics_buffer);
 
 			if (scene_viewer->overlay_scene)
 			{
 				build_Scene(scene_viewer->overlay_scene);
-				compile_Scene(scene_viewer->overlay_scene);
+				compile_Scene(scene_viewer->overlay_scene, scene_viewer->graphics_buffer);
 			}
 
 			rendering_data.render_callstack = CREATE(LIST(Scene_viewer_render_object))();
@@ -2738,7 +2738,7 @@ Rotates the scene_viewer when the tumble is active.
 				ACCESS(Interactive_event)(interactive_event);
 				Interactive_tool_handle_interactive_event(
 					scene_viewer->interactive_tool,(void *)scene_viewer,
-					interactive_event);
+					interactive_event, scene_viewer->graphics_buffer);
 				DEACCESS(Interactive_event)(&interactive_event);
 				DEACCESS(Interaction_volume)(&interaction_volume);
 			}
@@ -3108,6 +3108,7 @@ scene_viewer.
 						scene_viewer->window_projection_matrix[j*4+i];
 				}
 			}
+
 			interaction_volume=create_Interaction_volume_ray_frustum(
 				temp_modelview_matrix,temp_projection_matrix,
 				viewport_left,viewport_bottom,viewport_width,viewport_height,
@@ -3117,7 +3118,8 @@ scene_viewer.
 				button_number,input_modifier,interaction_volume,scene_viewer->scene);
 			ACCESS(Interactive_event)(interactive_event);
 			return_code=Interactive_tool_handle_interactive_event(
-				scene_viewer->interactive_tool,(void *)scene_viewer,interactive_event);
+				scene_viewer->interactive_tool,(void *)scene_viewer,interactive_event,
+				scene_viewer->graphics_buffer);
 			DEACCESS(Interactive_event)(&interactive_event);
 			DEACCESS(Interaction_volume)(&interaction_volume);
 		}

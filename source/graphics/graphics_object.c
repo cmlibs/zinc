@@ -58,6 +58,7 @@ gtObject/gtWindow management routines.
 #include "general/mystring.h"
 #include "general/object.h"
 #include "graphics/auxiliary_graphics_types.h"
+#include "graphics/font.h"
 #include "graphics/graphics_object.h"
 #include "graphics/makegtobj.h"
 #include "graphics/material.h"
@@ -1107,7 +1108,7 @@ this gets tricky when done on all axes consistently.
 			{
 				if (glyph_set = CREATE(GT_glyph_set)(number_of_points, point_list,
 					axis1_list, axis2_list, axis3_list, scale_list, initial->glyph,
-					labels, initial->n_data_components, data,
+					initial->font, labels, initial->n_data_components, data,
 					/*label_bounds_dimension*/0, /*label_bounds_components*/0, /*label_bounds*/(float *)NULL,
 					nearest_glyph_set->object_name, names))
 				{
@@ -1290,7 +1291,7 @@ Creates a new GT_pointset which is the interpolation of two GT_pointsets.
 			{
 				if (point_set=CREATE(GT_pointset)(initial->n_pts,point,text,
 					initial->marker_type,marker_size,initial->n_data_components,data,
-					morph_names))
+						morph_names,initial->font))
 				{
 #if defined (OLD_CODE)
 /*???DB.  Have to be recursive on destroy_ and morph_ or neither */
@@ -1774,7 +1775,7 @@ Creates a new gtObject which is the interpolation of two gtObjects.
 		(initial->default_material == final->default_material)*/)
 	{
 		if (graphics_object=CREATE(GT_object)(name,initial->object_type,
-			initial->default_material))
+				initial->default_material))
 		{
 			return_code = 1;
 			for (i = 0; (i < number_of_times) && return_code; i++)
@@ -2240,11 +2241,11 @@ DECLARE_FIND_BY_IDENTIFIER_IN_INDEXED_LIST_FUNCTION(GT_object,name,char *, \
 struct GT_glyph_set *CREATE(GT_glyph_set)(int number_of_points,
 	Triple *point_list, Triple *axis1_list, Triple *axis2_list,
 	Triple *axis3_list, Triple *scale_list, struct GT_object *glyph,
-	char **labels, int n_data_components, GTDATA *data,
+	struct Graphics_font *font, char **labels, int n_data_components, GTDATA *data,
 	int label_bounds_dimension, int label_bounds_components, float *label_bounds,
 	int object_name, int *names)
 /*******************************************************************************
-LAST MODIFIED : 16 September 2005
+LAST MODIFIED : 18 November 2005
 
 DESCRIPTION :
 Allocates memory and assigns fields for a GT_glyph_set. The glyph set shows
@@ -2278,6 +2279,7 @@ and are deallocated by its DESTROY function.
 			glyph_set->axis3_list = axis3_list;
 			glyph_set->scale_list = scale_list;
 			glyph_set->glyph = ACCESS(GT_object)(glyph);
+			glyph_set->font = ACCESS(Graphics_font)(font);
 			glyph_set->labels = labels;
 			glyph_set->n_data_components = n_data_components;
  			glyph_set->data = data;
@@ -2327,6 +2329,7 @@ Frees the frees the memory for <**glyph_set_address> and sets
 		DEALLOCATE(glyph_set->axis3_list);
 		DEALLOCATE(glyph_set->scale_list);
 		DEACCESS(GT_object)(&(glyph_set->glyph));
+		DEACCESS(Graphics_font)(&(glyph_set->font));
 		if (labels = glyph_set->labels)
 		{
 			for (i = glyph_set->number_of_points; 0 < i; i--)
@@ -2754,9 +2757,9 @@ texture coordinates.
 
 struct GT_point *CREATE(GT_point)(Triple *position,char *text,
 	gtMarkerType marker_type,float marker_size,int n_data_components,
-	int object_name, GTDATA *data)
+	int object_name, GTDATA *data, struct Graphics_font *font)
 /*******************************************************************************
-LAST MODIFIED : 22 January 2003
+LAST MODIFIED : 18 November 2005
 
 DESCRIPTION :
 Allocates memory and assigns fields for a GT_point.  When the <marker_type> is
@@ -2779,6 +2782,7 @@ derivative in that xi direction.
 			point->marker_size=marker_size;
 			point->n_data_components=n_data_components;
 			point->data=data;
+			point->font = ACCESS(Graphics_font)(font);
 			point->object_name = object_name;
 			point->ptrnext=(struct GT_point *)NULL;
 		}
@@ -2821,6 +2825,7 @@ Frees the frees the memory for <**point> and sets <*point> to NULL.
 			{
 				DEALLOCATE((*point)->data);
 			}
+			DEACCESS(Graphics_font)(&((*point)->font));
 			DEALLOCATE(*point);
 		}
 		return_code=1;
@@ -2864,9 +2869,9 @@ Sets the integer identifier used by the graphics to distinguish this object.
 
 struct GT_pointset *CREATE(GT_pointset)(int n_pts,Triple *pointlist,char **text,
 	gtMarkerType marker_type,float marker_size,int n_data_components,GTDATA *data,
-	int *names)
+	int *names, struct Graphics_font *font)
 /*******************************************************************************
-LAST MODIFIED : 22 January 2003
+LAST MODIFIED : 18 November 2005
 
 DESCRIPTION :
 Allocates memory and assigns fields for a GT_pointset.  When the <marker_type>
@@ -2879,7 +2884,7 @@ point it is assumed that there isn't a derivative in that xi direction.
 	struct GT_pointset *point_set;
 
 	ENTER(CREATE(GT_pointset));
-	if (pointlist)
+	if (pointlist && (text && font) || (!text && !font))
 	{
 		if (ALLOCATE(point_set,struct GT_pointset,1))
 		{
@@ -2890,6 +2895,14 @@ point it is assumed that there isn't a derivative in that xi direction.
 			point_set->marker_size=marker_size;
 			point_set->n_data_components=n_data_components;
 			point_set->data=data;
+			if (font)
+			{
+				point_set->font = ACCESS(Graphics_font)(font);
+			}
+			else
+			{
+				point_set->font = (struct Graphics_font *)NULL;
+			}
 			point_set->ptrnext=(struct GT_pointset *)NULL;
 			point_set->object_name = 0;
 			point_set->names=names;
@@ -2940,6 +2953,10 @@ Frees the frees the memory for <**pointset> and sets <*pointset> to NULL.
 			if ((*pointset)->names)
 			{
 				DEALLOCATE((*pointset)->names);
+			}
+			if ((*pointset)->font)
+			{
+				DEACCESS(Graphics_font)(&((*pointset)->font));
 			}
 			DEALLOCATE(*pointset);
 		}
@@ -4011,22 +4028,23 @@ Compiles display list of any Graphical_materials used by the voltexes in
 	return (return_code);
 } /* compile_GT_voltex_materials */
 
-int compile_GT_object(struct GT_object *graphics_object_list,void *time_void)
+int compile_GT_object(struct GT_object *graphics_object_list, float time,
+	struct Graphics_buffer *graphics_buffer)
 /*******************************************************************************
-LAST MODIFIED : 17 March 2003
+LAST MODIFIED : 18 November 2005
 
 DESCRIPTION :
 Rebuilds the display list for each uncreated or morphing graphics object in the
-<graphics_object_list>, a simple linked list. The object is compiled at the time
-pointed to by <time_void>.
+<graphics_object_list>, a simple linked list. The object is compiled at the 
+<time>.  The <buffer> is used to obtain appropriate contexts with the 
+windowing system, used so far for compiling the font.
 ==============================================================================*/
 {
-	float *time;
 	int i, return_code;
 	struct GT_object *glyph, *graphics_object;
 
 	ENTER(compile_GT_object);
-	if (graphics_object_list&&(time = (float *)time_void))
+	if (graphics_object_list)
 	{
 		return_code = 1;
 		for (graphics_object=graphics_object_list;graphics_object != NULL;
@@ -4051,23 +4069,54 @@ pointed to by <time_void>.
 					{
 						struct GT_glyph_set *glyph_set;
 
-						/* find first glyph and compile it */
-						/*???RC later may have to compile all of them if different */
 						if (graphics_object->primitive_lists)
 						{
 							glyph = (struct GT_object *)NULL;
-							for (i = 0; (i < graphics_object->number_of_times) && (!glyph);
-								i++)
+							for (i = 0 ; i < graphics_object->number_of_times ; i++)
 							{
 								if (glyph_set =
 									graphics_object->primitive_lists[i].gt_glyph_set.first)
 								{
-									glyph = glyph_set->glyph;
+									compile_GT_object(glyph_set->glyph, time, graphics_buffer);
+									Graphics_font_compile(glyph_set->font, graphics_buffer);
 								}
 							}
-							if (glyph)
+						}
+					} break;
+					case g_POINT:
+					{
+						struct GT_point *point;
+
+						if (graphics_object->primitive_lists)
+						{
+							glyph = (struct GT_object *)NULL;
+							for (i = 0 ; i < graphics_object->number_of_times ; i++)
 							{
-								compile_GT_object(glyph, time_void);
+								if (point =
+									graphics_object->primitive_lists[i].gt_point.first)
+								{
+									Graphics_font_compile(point->font, graphics_buffer);
+								}
+							}
+						}
+					} break;
+					case g_POINTSET:
+					{
+						struct GT_pointset *point_set;
+
+						if (graphics_object->primitive_lists)
+						{
+							glyph = (struct GT_object *)NULL;
+							for (i = 0 ; i < graphics_object->number_of_times ; i++)
+							{
+								if (point_set =
+									graphics_object->primitive_lists[i].gt_pointset.first)
+								{
+									if (point_set->font)
+									{
+										Graphics_font_compile(point_set->font, graphics_buffer);
+									}
+								}
 							}
 						}
 					} break;
@@ -4093,7 +4142,7 @@ pointed to by <time_void>.
 								{
 									execute_Graphical_material(
 										graphics_object->selected_material);
-									makegtobject(graphics_object,*time,/*draw_selected*/1);
+									makegtobject(graphics_object, time, /*draw_selected*/1);
 								}
 							}
 							else
@@ -4109,7 +4158,7 @@ pointed to by <time_void>.
 							{
 								execute_Graphical_material(graphics_object->default_material);
 							}
-							makegtobject(graphics_object,*time,/*draw_selected*/0);
+							makegtobject(graphics_object, time, /*draw_selected*/0);
 						}
 						execute_Graphical_material((struct Graphical_material *)NULL);
 						glEndList();
@@ -4138,7 +4187,7 @@ pointed to by <time_void>.
 	return (return_code);
 } /* compile_GT_object */
 
-int execute_GT_object(struct GT_object *graphics_object_list,void *time_void)
+int execute_GT_object(struct GT_object *graphics_object_list, float time)
 /*******************************************************************************
 LAST MODIFIED : 27 June 2000
 
@@ -4153,7 +4202,8 @@ graphics object, starting at zero for the first
 	struct GT_object *graphics_object;
 
 	ENTER(execute_GT_object);
-	if (graphics_object_list && time_void)
+	USE_PARAMETER(time);
+	if (graphics_object_list)
 	{
 		return_code=1;
 		if (graphics_object_list->nextobject)

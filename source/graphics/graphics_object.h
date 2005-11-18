@@ -84,6 +84,10 @@ Global types
 ------------
 */
 
+struct Graphical_material;
+struct Graphics_buffer;
+struct Graphics_font;
+
 typedef enum
 /*******************************************************************************
 LAST MODIFIED : 16 February 1996
@@ -296,9 +300,10 @@ Set the reference graphical coordinate system for the underlying objects.
 }; /* enum GT_coordinate_system */
 
 typedef int (*Graphics_object_glyph_labels_function)(Triple coordinate_scaling,
-	int label_bounds_dimension, int label_bounds_components, float *label_bounds);
+	int label_bounds_dimension, int label_bounds_components, float *label_bounds,
+	struct Graphics_font *font);
 /*******************************************************************************
-LAST MODIFIED : 19 September 2005
+LAST MODIFIED : 18 November 2005
 
 DESCRIPTION :
 Used for rendering a per compile custom addon to a glyph, such as a grid or tick
@@ -562,11 +567,11 @@ PROTOTYPE_FIND_BY_IDENTIFIER_IN_LIST_FUNCTION(GT_object,name,char *);
 struct GT_glyph_set *CREATE(GT_glyph_set)(int number_of_points,
 	Triple *point_list, Triple *axis1_list, Triple *axis2_list,
 	Triple *axis3_list, Triple *scale_list, struct GT_object *glyph,
-	char **labels, int n_data_components, GTDATA *data,
+	struct Graphics_font *font, char **labels, int n_data_components, GTDATA *data,
 	int label_bounds_dimension, int label_bounds_components, float *label_bounds,
 	int object_name, int *names);
 /*******************************************************************************
-LAST MODIFIED : 16 September 2005
+LAST MODIFIED : 18 November 2005
 
 DESCRIPTION :
 Allocates memory and assigns fields for a GT_glyph_set. The glyph set shows
@@ -698,9 +703,9 @@ texture coordinates.
 
 struct GT_point *CREATE(GT_point)(Triple *position,char *text,
 	gtMarkerType marker_type,float marker_size,int n_data_components,
-	int object_name, GTDATA *data);
+	int object_name, GTDATA *data, struct Graphics_font *font);
 /*******************************************************************************
-LAST MODIFIED : 22 January 2003
+LAST MODIFIED : 18 November 2005
 
 DESCRIPTION :
 Allocates memory and assigns fields for a GT_point.  When the <marker_type> is
@@ -729,9 +734,9 @@ Sets the integer identifier used by the graphics to distinguish this object.
 
 struct GT_pointset *CREATE(GT_pointset)(int n_pts,Triple *pointlist,char **text,
 	gtMarkerType marker_type,float marker_size,int n_data_components,GTDATA *data,
-	int *names);
+	int *names, struct Graphics_font *font);
 /*******************************************************************************
-LAST MODIFIED : 22 January 2003
+LAST MODIFIED : 18 November 2005
 
 DESCRIPTION :
 Allocates memory and assigns fields for a GT_pointset.  When the <marker_type>
@@ -954,7 +959,7 @@ Sets the integer identifier used by the graphics to distinguish this object.
 struct GT_object *CREATE(GT_object)(char *name,enum GT_object_type object_type,
 	struct Graphical_material *default_material);
 /*******************************************************************************
-LAST MODIFIED : 10 March 1999
+LAST MODIFIED : 18 November 2005
 
 DESCRIPTION :
 Allocates memory and assigns fields for a graphics object.
@@ -969,19 +974,21 @@ Frees the memory for the fields of <**object>, frees the memory for <**object>
 and sets <*object> to NULL.
 ==============================================================================*/
 
-int compile_GT_object(struct GT_object *graphics_object_list,void *time_void);
+int compile_GT_object(struct GT_object *graphics_object_list, float time,
+	struct Graphics_buffer *graphics_buffer);
 /*******************************************************************************
-LAST MODIFIED : 5 July 1999
+LAST MODIFIED : 18 November 2005
 
 DESCRIPTION :
 Rebuilds the display list for each uncreated or morphing graphics object in the
-<graphics_object_list>, a simple linked list. The object is compiled at the time
-pointed to by <time_void>.
+<graphics_object_list>, a simple linked list. The object is compiled at the 
+<time>.  The <buffer> is used to obtain appropriate contexts with the 
+windowing system, used so far for compiling the font.
 ==============================================================================*/
 
-int execute_GT_object(struct GT_object *graphics_object_list,void *time_void);
+int execute_GT_object(struct GT_object *graphics_object_list, float time);
 /*******************************************************************************
-LAST MODIFIED : 5 July 1999
+LAST MODIFIED : 18 November 2005
 
 DESCRIPTION :
 Rebuilds the display list for each uncreated or morphing graphics object in the

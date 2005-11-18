@@ -61,6 +61,7 @@ Global Functions
 
 struct Spectrum_editor *CREATE(Spectrum_editor)(
 	Widget parent, struct Spectrum *spectrum,
+	struct Graphics_font *font,
 	struct Graphics_buffer_package *graphics_buffer_package,
 	struct User_interface *user_interface,
 	struct LIST(GT_object) *glyph_list,

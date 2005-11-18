@@ -380,7 +380,9 @@ Called when scene is changed.
 static struct Spectrum_editor_dialog *CREATE(Spectrum_editor_dialog)(
 	struct Spectrum_editor_dialog **spectrum_editor_dialog_address,
 	Widget parent, struct MANAGER(Spectrum) *spectrum_manager,
-	struct Spectrum *init_data, struct Graphics_buffer_package *graphics_buffer_package,
+	struct Spectrum *init_data, 
+	struct Graphics_font *font, 
+	struct Graphics_buffer_package *graphics_buffer_package,
 	struct User_interface *user_interface,
 	struct LIST(GT_object) *glyph_list,
 	struct MANAGER(Graphical_material) *graphical_material_manager,
@@ -388,7 +390,7 @@ static struct Spectrum_editor_dialog *CREATE(Spectrum_editor_dialog)(
 	struct MANAGER(Texture) *texture_manager,
 	struct MANAGER(Scene) *scene_manager)
 /*******************************************************************************
-LAST MODIFIED : 12 August 2002
+LAST MODIFIED : 18 November 2005
 
 DESCRIPTION :
 Creates a dialog widget that allows the user to edit the properties of any of
@@ -503,7 +505,8 @@ the spectrums contained in the global list.
 								if (!(spectrum_editor_dialog->spectrum_editor =
 									CREATE(Spectrum_editor)(
 										spectrum_editor_dialog->editor_form,
-										(struct Spectrum *)NULL,graphics_buffer_package,
+										(struct Spectrum *)NULL, font,
+										graphics_buffer_package,
 										user_interface, glyph_list,
 										graphical_material_manager, light_manager,
 										spectrum_manager, texture_manager)))
@@ -766,14 +769,16 @@ Set the <spectrum> for the <spectrum_editor_dialog>.
 int bring_up_spectrum_editor_dialog(
 	struct Spectrum_editor_dialog **spectrum_editor_dialog_address,
 	Widget parent, struct MANAGER(Spectrum) *spectrum_manager,
-	struct Spectrum *spectrum, struct Graphics_buffer_package *graphics_buffer_package,
+	struct Spectrum *spectrum, 
+	struct Graphics_font *font,
+	struct Graphics_buffer_package *graphics_buffer_package,
 	struct User_interface *user_interface, struct LIST(GT_object) *glyph_list,
 	struct MANAGER(Graphical_material) *graphical_material_manager,
 	struct MANAGER(Light) *light_manager,
 	struct MANAGER(Texture) *texture_manager,
 	struct MANAGER(Scene) *scene_manager)
 /*******************************************************************************
-LAST MODIFIED : 6 May 2004
+LAST MODIFIED : 18 November 2005
 
 DESCRIPTION :
 If there is a spectrum_editor dialog in existence, then de-iconify it and
@@ -796,7 +801,7 @@ bring it to the front, otherwise create a new one.
 		else
 		{
 			if (CREATE(Spectrum_editor_dialog)(spectrum_editor_dialog_address,parent,
-				spectrum_manager, spectrum, graphics_buffer_package,
+				spectrum_manager, spectrum, font, graphics_buffer_package,
 				user_interface, glyph_list,
 				graphical_material_manager, light_manager,
 				texture_manager, scene_manager))

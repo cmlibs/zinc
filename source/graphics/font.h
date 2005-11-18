@@ -1,10 +1,10 @@
 /*******************************************************************************
-FILE : spectrum_editor_dialog.h
+FILE : graphics_font.h
 
-LAST MODIFIED : 6 May 2004
+LAST MODIFIED : 17 November 2005
 
 DESCRIPTION :
-Header description for spectrum_editor_dialog widget.
+This provides a Cmgui interface to the OpenGL contexts of many types.
 ==============================================================================*/
 /* ***** BEGIN LICENSE BLOCK *****
  * Version: MPL 1.1/GPL 2.0/LGPL 2.1
@@ -41,69 +41,61 @@ Header description for spectrum_editor_dialog widget.
  * the terms of any one of the MPL, the GPL or the LGPL.
  *
  * ***** END LICENSE BLOCK ***** */
-#if !defined (SPECTRUM_EDITOR_DIALOG_H)
-#define SPECTRUM_EDITOR_DIALOG_H
+#if !defined (GRAPHICS_FONT_H)
+#define GRAPHICS_FONT_H
 
+#include "general/callback.h"
+#include "general/object.h"
 #include "user_interface/user_interface.h"
 
+
 /*
-Global Types
+Global types
 ------------
 */
 
-struct Spectrum_editor_dialog;
+struct Graphics_font;
+
+struct Graphics_buffer;
 
 /*
-Global Functions
+Global functions
 ----------------
 */
 
-int bring_up_spectrum_editor_dialog(
-	struct Spectrum_editor_dialog **spectrum_editor_dialog_address,
-	Widget parent, struct MANAGER(Spectrum) *spectrum_manager,
-	struct Spectrum *spectrum, 
-	struct Graphics_font *font,
-	struct Graphics_buffer_package *graphics_buffer_package,
-	struct User_interface *user_interface, struct LIST(GT_object) *glyph_list,
-	struct MANAGER(Graphical_material) *graphical_material_manager,
-	struct MANAGER(Light) *light_manager,
-	struct MANAGER(Texture) *texture_manager,
-	struct MANAGER(Scene) *scene_manager);
+PROTOTYPE_OBJECT_FUNCTIONS(Graphics_font);
+
+PROTOTYPE_GET_OBJECT_NAME_FUNCTION(Graphics_font);
+
+struct Graphics_font *CREATE(Graphics_font)(char *font_name);
 /*******************************************************************************
-LAST MODIFIED : 18 November 2005
+LAST MODIFIED : 17 November 2005
 
 DESCRIPTION :
-If there is a spectrum_editor dialog in existence, then de-iconify it and
-bring it to the front, otherwise create a new one.
 ==============================================================================*/
 
-int DESTROY(Spectrum_editor_dialog)(
-	struct Spectrum_editor_dialog **spectrum_editor_dialog_address);
+int DESTROY(Graphics_font)(struct Graphics_font **font_address);
 /*******************************************************************************
-LAST MODIFIED : 12 August 2002
+LAST MODIFIED : 17 November 2005
 
 DESCRIPTION :
-Destroy the <*spectrum_editor_dialog_address> and sets
-<*spectrum_editor_dialog_address> to NULL.
 ==============================================================================*/
 
-struct Spectrum *spectrum_editor_dialog_get_spectrum(
-	struct Spectrum_editor_dialog *spectrum_editor_dialog);
+int Graphics_font_compile(struct Graphics_font *font,
+	struct Graphics_buffer *buffer);
 /*******************************************************************************
-LAST MODIFIED : 12 August 2002
+LAST MODIFIED : 17 November 2005
 
 DESCRIPTION :
-Returns the spectrum edited by the <spectrum_editor_dialog>.
+Compiles the specified <font> so it can be used by the graphics.  The 
+<buffer> is required as the Win32 API requires a window context.
 ==============================================================================*/
 
-int spectrum_editor_dialog_set_spectrum(
-	struct Spectrum_editor_dialog *spectrum_editor_dialog,
-	struct Spectrum *spectrum);
+int Graphics_font_rendergl_text(struct Graphics_font *font, char *text);
 /*******************************************************************************
-LAST MODIFIED : 12 August 2002
+LAST MODIFIED : 17 November 2005
 
 DESCRIPTION :
-Set the <spectrum> for the <spectrum_editor_dialog>.
 ==============================================================================*/
+#endif /* !defined (GRAPHICS_FONT_H) */
 
-#endif

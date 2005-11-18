@@ -49,6 +49,7 @@ Routines which construct graphics objects. (but do not depend on finite elements
 #include "graphics/spectrum_settings.h"
 #include "user_interface/message.h"
 #include "user_interface/user_interface.h"
+#include "graphics/defined_graphics_objects.h"
 
 /*
 Global functions
@@ -60,9 +61,10 @@ int create_Spectrum_colour_bar(struct GT_object **graphics_object_address,
 	Triple side_axis,float bar_length,float bar_radius,float extend_length,
 	int tick_divisions,float tick_length,char *number_format,
 	struct Graphical_material *bar_material,
-	struct Graphical_material *tick_label_material)
+	struct Graphical_material *tick_label_material,
+	struct Graphics_font *font)
 /*******************************************************************************
-LAST MODIFIED : 13 October 2000
+LAST MODIFIED : 18 November 2005
 
 DESCRIPTION :
 Creates a coloured bar with annotation for displaying the scale of <spectrum>.
@@ -190,7 +192,7 @@ graphics_objects that don't come from finite_elements?
 			{
 				/* new colour_bar: create and link the bar, ticks and labels */
 				if ((bar_graphics_object=
-					CREATE(GT_object)(name,g_SURFACE,bar_material))&&
+						CREATE(GT_object)(name,g_SURFACE,bar_material))&&
 					(tick_graphics_object=
 						CREATE(GT_object)("ticks",g_POLYLINE,tick_label_material))&&
 					(label_graphics_object=
@@ -414,7 +416,7 @@ graphics_objects that don't come from finite_elements?
 				}
 				return_code=((pointset=
 					CREATE(GT_pointset)(number_of_ticks,points,labels,g_NO_MARKER,0.0,
-						/*n_data_components*/0,(GTDATA *)NULL,(int *)NULL)) &&
+						/*n_data_components*/0,(GTDATA *)NULL,(int *)NULL, font)) &&
 					set_GT_object_default_material(label_graphics_object,
 						tick_label_material) &&
 					GT_OBJECT_ADD(GT_pointset)(label_graphics_object,time,pointset));

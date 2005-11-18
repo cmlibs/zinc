@@ -445,19 +445,20 @@ the group.
 ==============================================================================*/
 
 int compile_GT_element_group(struct GT_element_group *gt_element_group,
-	float time);
+	float time, struct Graphics_buffer *graphics_buffer);
 /*******************************************************************************
-LAST MODIFIED : 5 July 1999
+LAST MODIFIED : 18 November 2005
 
 DESCRIPTION :
 Rebuilds the display list for graphical_element_group. 
-The object is compiled at the time pointed to by <time_void>.
+The object is compiled at the <time>.  The <graphics_buffer> is used to 
+provide a operating system dependent rendering contexts.
 ==============================================================================*/
 
 int execute_GT_element_group(struct GT_element_group *gt_element_group,
 	float time);
 /*******************************************************************************
-LAST MODIFIED : 5 July 1999
+LAST MODIFIED : 27 June 2000
 
 DESCRIPTION :
 ==============================================================================*/

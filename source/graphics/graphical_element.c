@@ -2229,16 +2229,18 @@ the group.
 } /* build_GT_element_group  */
 
 int compile_GT_element_group(struct GT_element_group *gt_element_group,
-	float time)
+	float time, struct Graphics_buffer *graphics_buffer)
 /*******************************************************************************
-LAST MODIFIED : 7 July 2001
+LAST MODIFIED : 18 November 2005
 
 DESCRIPTION :
 Rebuilds the display list for graphical_element_group. 
-The object is compiled at the time pointed to by <time_void>.
+The object is compiled at the <time>.  The <graphics_buffer> is used to 
+provide a operating system dependent rendering contexts.
 ==============================================================================*/
 {
 	int return_code;
+	struct GT_element_settings_compile_data data;
 
 	ENTER(compile_GT_element_group);
 	if (gt_element_group)
@@ -2246,9 +2248,12 @@ The object is compiled at the time pointed to by <time_void>.
 		return_code = 1;
 		if (!gt_element_group->display_list_current)
 		{
+			data.time = time;
+			data.graphics_buffer = graphics_buffer;
+
 			/* compile visible graphics objects in the graphical element */
 			FOR_EACH_OBJECT_IN_LIST(GT_element_settings)(
-				GT_element_settings_compile_visible_settings, (void *)&time,
+				GT_element_settings_compile_visible_settings, (void *)&data,
 				gt_element_group->list_of_settings);
 			if (gt_element_group->display_list ||
 				(gt_element_group->display_list = glGenLists(1)))
@@ -2265,20 +2270,20 @@ The object is compiled at the time pointed to by <time_void>.
 			}
 			else
 			{
-				display_message(ERROR_MESSAGE, "compile_GT_object.  Failed");
+				display_message(ERROR_MESSAGE, "compile_GT_element_group.  Failed");
 				return_code = 0;
 			}
 		}
 	}
 	else
 	{
-		display_message(ERROR_MESSAGE, "compile_GT_object.  Invalid argument(s)");
+		display_message(ERROR_MESSAGE, "compile_GT_element_group.  Invalid argument(s)");
 		return_code = 0;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* compile_GT_object */
+} /* compile_GT_element_group */
 
 int execute_GT_element_group(struct GT_element_group *gt_element_group,
 	float time)

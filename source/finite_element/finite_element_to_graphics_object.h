@@ -243,6 +243,7 @@ If the dimension is less than 3, <exterior> and <face_number> may be used.
 		*label_field, *orientation_scale_field, *xi_point_density_field;
 	struct FE_field *native_discretization_field;
 	struct FE_region *fe_region;
+	struct Graphics_font *font;
 	struct GT_object *glyph,*graphics_object;
 	Triple exact_xi;
 }; /* struct Element_to_glyph_set_data */
@@ -364,11 +365,12 @@ struct GT_glyph_set *create_GT_glyph_set_from_FE_element(
 	FE_value *base_size, FE_value *centre, FE_value *scale_factors,
 	struct Computed_field *orientation_scale_field,
 	struct Computed_field *variable_scale_field,
-	struct Computed_field *data_field, struct Computed_field *label_field,
+	struct Computed_field *data_field, 
+	struct Graphics_font *font, struct Computed_field *label_field,
 	enum Graphics_select_mode select_mode, int element_selected,
 	struct Multi_range *selected_ranges, int *point_numbers, FE_value time);
 /*******************************************************************************
-LAST MODIFIED : 3 December 2001
+LAST MODIFIED : 18 November 2005
 
 DESCRIPTION :
 Converts a finite element into a set of glyphs displaying information
@@ -405,11 +407,12 @@ struct GT_glyph_set *create_GT_glyph_set_from_FE_region_nodes(
 	FE_value *base_size, FE_value *centre, FE_value *scale_factors,
 	FE_value time, struct Computed_field *orientation_scale_field,
 	struct Computed_field *variable_scale_field,
-	struct Computed_field *data_field, struct Computed_field *label_field,
+	struct Computed_field *data_field,
+	struct Graphics_font *font, struct Computed_field *label_field,
 	enum Graphics_select_mode select_mode,
 	struct LIST(FE_node) *selected_node_list);
 /*******************************************************************************
-LAST MODIFIED : 13 March 2003
+LAST MODIFIED : 18 November 2005
 
 DESCRIPTION :
 Creates a GT_glyph_set displaying a <glyph> of at least <base_size>, with the

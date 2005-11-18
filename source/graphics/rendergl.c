@@ -50,6 +50,7 @@ GL rendering calls - API specific.
 #endif /* defined (OPENGL_API) */
 #include "general/debug.h"
 #include "graphics/auxiliary_graphics_types.h"
+#include "graphics/font.h"
 #include "graphics/graphics_library.h"
 #include "graphics/graphics_object.h"
 #include "graphics/light_model.h"
@@ -69,11 +70,11 @@ int draw_glyphsetGL(int number_of_points,Triple *point_list, Triple *axis1_list,
 	struct GT_object *glyph, char **labels,
 	int number_of_data_components, GTDATA *data, int *names,
 	int label_bounds_dimension, int label_bounds_components, float *label_bounds,
-	struct Graphical_material *material, struct Spectrum *spectrum,
-	int draw_selected, int some_selected,
+	struct Graphical_material *material, struct Spectrum *spectrum, 
+	struct Graphics_font *font, int draw_selected, int some_selected,
 	struct Multi_range *selected_name_ranges)
 /*******************************************************************************
-LAST MODIFIED : 19 September 2005
+LAST MODIFIED : 17 November 2005
 
 DESCRIPTION :
 Draws graphics object <glyph> at <number_of_points> points given by the
@@ -185,7 +186,7 @@ are selected, or all points if <selected_name_ranges> is NULL.
 								if (labels && *label)
 								{
 									glRasterPos3f(x, y, z);
-									wrapperPrintText(*label);
+									Graphics_font_rendergl_text(font, *label);
 								}
 							}
 							/* advance pointers */
@@ -259,7 +260,7 @@ are selected, or all points if <selected_name_ranges> is NULL.
 								if (labels && *label)
 								{
 									glRasterPos3f(x,y,z);
-									wrapperPrintText(*label);
+									Graphics_font_rendergl_text(font, *label);
 								}
 								glBegin(GL_LINES);
 								glVertex3f(x,y,z);
@@ -353,7 +354,7 @@ are selected, or all points if <selected_name_ranges> is NULL.
 								if (labels && *label)
 								{
 									glRasterPos3f(x,y,z);
-									wrapperPrintText(*label);
+									Graphics_font_rendergl_text(font, *label);
 								}
 								glBegin(GL_LINES);
 								/* x-line */
@@ -529,7 +530,8 @@ are selected, or all points if <selected_name_ranges> is NULL.
 								if (glyph_labels_function = Graphics_object_get_glyph_labels_function(glyph))
 								{
 									return_code = (*glyph_labels_function)(*scale,
-										label_bounds_dimension, label_bounds_components, label_bound);
+										label_bounds_dimension, label_bounds_components, label_bound,
+										font);
 								}
 								/* restore the original modelview matrix */
 								glPopMatrix();
@@ -583,9 +585,10 @@ are selected, or all points if <selected_name_ranges> is NULL.
 								{
 									spectrum_renderGL_value(spectrum,material,render_data,datum);
 								}
-									/* Default is to draw the label value near the origin */
-									glRasterPos3f(x,y,z);
-									wrapperPrintText(*label);
+
+								/* Default is to draw the label value near the origin */
+								glRasterPos3f(x,y,z);
+								Graphics_font_rendergl_text(font, *label);
 							}
 							/* advance pointers */
 							point++;
@@ -636,9 +639,10 @@ are selected, or all points if <selected_name_ranges> is NULL.
 int draw_pointsetGL(int n_pts,Triple *point_list,char **text,
 	gtMarkerType marker_type,float marker_size,int *names,
 	int number_of_data_components, GTDATA *data,
-	struct Graphical_material *material, struct Spectrum *spectrum)
+	struct Graphical_material *material, struct Spectrum *spectrum,
+	struct Graphics_font *font)
 /*******************************************************************************
-LAST MODIFIED : 9 June 1999
+LAST MODIFIED : 18 November 2005
 
 DESCRIPTION :
 ???RC.  21/12/97 The optional names are supplied to allow identification of the
@@ -799,7 +803,7 @@ simultaneously.
 						datum += number_of_data_components;
 					}
 					glRasterPos3f(x,y,z);
-					wrapperPrintText(*text_string);
+					Graphics_font_rendergl_text(font, *text_string);
 					text_string++;
 				}
 			}

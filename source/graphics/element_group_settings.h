@@ -159,6 +159,7 @@ Subset of command data passed to g_element modify routines.
 ==============================================================================*/
 {
 	struct Graphical_material *default_material;
+	struct Graphics_font *default_font;
 	struct LIST(GT_object *) glyph_list;
 	struct MANAGER(Computed_field) *computed_field_manager;
 	struct Cmiss_region *region;
@@ -300,6 +301,18 @@ Data to pass to GT_element_settings_update_time_behaviour.
 	int default_coordinate_depends_on_time;
 	/* flag set by settings if any of the settings depend on time */
 	int time_dependent;
+};
+
+struct GT_element_settings_compile_data
+/*******************************************************************************
+LAST MODIFIED : 6 December 2001
+
+DESCRIPTION :
+Data to pass to GT_element_settings_update_time_behaviour.
+==============================================================================*/
+{
+	float time;
+	struct Graphics_buffer *graphics_buffer;
 };
 
 /*
@@ -680,10 +693,10 @@ For settings_type GT_ELEMENT_SETTINGS_ISO_SURFACES only - must call this after
 CREATE to define a valid iso_surface.
 ==============================================================================*/
 
-struct Computed_field *GT_element_settings_get_label_field(
-	struct GT_element_settings *settings);
+int GT_element_settings_get_label_field(struct GT_element_settings *settings,
+	struct Computed_field **label_field, struct Graphics_font **font);
 /*******************************************************************************
-LAST MODIFIED : 28 June 1999
+LAST MODIFIED : 18 November 2005
 
 DESCRIPTION :
 Returns the label_field used by <settings>. For settings types
@@ -692,9 +705,10 @@ GT_ELEMENT_SETTINGS_ELEMENT_POINTS only.
 ==============================================================================*/
 
 int GT_element_settings_set_label_field(
-	struct GT_element_settings *settings,struct Computed_field *name_field);
+	struct GT_element_settings *settings,struct Computed_field *label_field,
+	struct Graphics_font *font);
 /*******************************************************************************
-LAST MODIFIED : 28 June 1999
+LAST MODIFIED : 18 November 2005
 
 DESCRIPTION :
 Sets the <label_field> used by <settings>. For settings types
@@ -1317,13 +1331,14 @@ Must call GT_element_settings_to_graphics_object afterwards to complete.
 ==============================================================================*/
 
 int GT_element_settings_compile_visible_settings(
-	struct GT_element_settings *settings,void *dummy_void);
+	struct GT_element_settings *settings, void *compile_data);
 /*******************************************************************************
-LAST MODIFIED : 12 June 1998
+LAST MODIFIED : 18 November 2005
 
 DESCRIPTION :
 If the settings visibility flag is set and it has a graphics_object, the
-graphics_object is compiled.
+graphics_object is compiled. <compile_data> must point to a filled in
+struct GT_element_settings_compile_data.
 ==============================================================================*/
 
 int GT_element_settings_execute_visible_settings(

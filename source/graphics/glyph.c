@@ -227,9 +227,10 @@ Copied from the control curve editor.
 } /* tick_mark_get_grid_spacing */
 
 static int draw_glyph_axes_ticks(Triple coordinate_scaling, 
-	int label_bounds_dimension, int label_bounds_components, float *label_bounds)
+	int label_bounds_dimension, int label_bounds_components, float *label_bounds,
+	struct Graphics_font *font)
 /*******************************************************************************
-LAST MODIFIED : 19 September 2005
+LAST MODIFIED : 18 November 2005
 
 DESCRIPTION :
 Renders the label_bounds as ticks along the first axis.  An assumption is made
@@ -365,10 +366,10 @@ varying component of the label_bounds is drawn.
 			}
 			if (label_set = CREATE(GT_pointset)(number_of_major_ticks, label_string_locations,
 				label_strings, g_NO_MARKER, /*marker_size*/0 , /*n_data_components*/0,
-				(GTDATA *)NULL, /*names*/(int *)NULL))
+					(GTDATA *)NULL, /*names*/(int *)NULL, font))
 			{
 				if (graphics_object=CREATE(GT_object)(name,g_POINTSET,
-					(struct Graphical_material *)NULL))
+						(struct Graphical_material *)NULL))
 				{
 					if (GT_OBJECT_ADD(GT_pointset)(graphics_object,/*time*/0.0,label_set))
 					{
@@ -462,7 +463,7 @@ from the shaft.
 		if (polyline)
 		{
 			if (glyph=CREATE(GT_object)(name,g_POLYLINE,
-				(struct Graphical_material *)NULL))
+					(struct Graphical_material *)NULL))
 			{
 				if (!GT_OBJECT_ADD(GT_polyline)(glyph,/*time*/0.0,polyline))
 				{
@@ -521,7 +522,7 @@ the arrow points in.
 		(0<shaft_length)&&(1>shaft_length))
 	{
 		if (glyph=CREATE(GT_object)(name,g_SURFACE,
-			(struct Graphical_material *)NULL))
+				(struct Graphical_material *)NULL))
 		{
 			for (i=0;(i<4)&&glyph;i++)
 			{
@@ -607,9 +608,10 @@ the arrow points in.
 } /* make_glyph_arrow_solid */
 
 struct GT_object *make_glyph_axes(char *name, int make_solid, float head_length,
-	float half_head_width,char **labels, float label_offset)
+	float half_head_width,char **labels, float label_offset,
+	struct Graphics_font *font)
 /*******************************************************************************
-LAST MODIFIED : 10 June 2004
+LAST MODIFIED : 18 November 2005
 
 DESCRIPTION :
 Creates a graphics object named <name> consisting of three axis arrows heading
@@ -775,7 +777,7 @@ The length and width of the arrow heads are specified by the final parameters.
 				points[2][2]=1.0+label_offset;
 				strcpy(text[2],labels[2]);
 				if (pointset=CREATE(GT_pointset)(3,points,text,g_NO_MARKER,0.0,
-					g_NO_DATA,(GTDATA *)NULL,(int *)NULL))
+						g_NO_DATA,(GTDATA *)NULL,(int *)NULL, font))
 				{
 					if (labels_object=CREATE(GT_object)(glyph_name,g_POINTSET,
 						(struct Graphical_material *)NULL))
@@ -1562,7 +1564,7 @@ The point will be drawn with the given <marker_type> and <marker_size>.
 			(*points)[1]=0.0;
 			(*points)[2]=0.0;
 			if (!(pointset=CREATE(GT_pointset)(1,points,(char **)NULL,marker_type,
-				marker_size,g_NO_DATA,(GTDATA *)NULL,(int *)NULL)))
+				marker_size,g_NO_DATA,(GTDATA *)NULL,(int *)NULL, (struct Graphics_font *)NULL)))
 			{
 				DEALLOCATE(points);
 			}
@@ -1792,9 +1794,9 @@ twice <number_of_segments_down> look remotely spherical.
 	return (glyph);
 } /* make_glyph_sphere */
 
-struct LIST(GT_object) *make_standard_glyphs(void)
+struct LIST(GT_object) *make_standard_glyphs(struct Graphics_font *font)
 /*******************************************************************************
-LAST MODIFIED : 16 July 2002
+LAST MODIFIED : 18 November 2005
 
 DESCRIPTION :
 Creates a list of standard glyphs for the cmgui and unemap applications.
@@ -1828,28 +1830,28 @@ Creates a list of standard glyphs for the cmgui and unemap applications.
 		{
 			ADD_OBJECT_TO_LIST(GT_object)(glyph,glyph_list);
 		}
-		if (glyph=make_glyph_axes("axes_xyz",/*make_solid*/0,0.1,0.025,labels_xyz, 0.1))
+		if (glyph=make_glyph_axes("axes_xyz",/*make_solid*/0,0.1,0.025,labels_xyz, 0.1,font))
 		{
 			ADD_OBJECT_TO_LIST(GT_object)(glyph,glyph_list);
 		}
-		if (glyph=make_glyph_axes("axes_fsn",/*make_solid*/0,0.1,0.025,labels_fsn, 0.1))
+		if (glyph=make_glyph_axes("axes_fsn",/*make_solid*/0,0.1,0.025,labels_fsn, 0.1,font))
 		{
 			ADD_OBJECT_TO_LIST(GT_object)(glyph,glyph_list);
 		}
-		if (glyph=make_glyph_axes("axes_123",/*make_solid*/0,0.1,0.025,labels_123, 0.1))
+		if (glyph=make_glyph_axes("axes_123",/*make_solid*/0,0.1,0.025,labels_123, 0.1,font))
 		{
 			ADD_OBJECT_TO_LIST(GT_object)(glyph,glyph_list);
 		}
-		if (glyph=make_glyph_axes("axes",/*make_solid*/0,0.1,0.025,(char **)NULL, 0.1))
+		if (glyph=make_glyph_axes("axes",/*make_solid*/0,0.1,0.025,(char **)NULL, 0.1,font))
 		{
 			ADD_OBJECT_TO_LIST(GT_object)(glyph,glyph_list);
 		}
-		if (glyph=make_glyph_axes("axes_solid",/*make_solid*/1,0.1,0.025,(char **)NULL, 0.1))
+		if (glyph=make_glyph_axes("axes_solid",/*make_solid*/1,0.1,0.025,(char **)NULL, 0.1,font))
 		{
 			ADD_OBJECT_TO_LIST(GT_object)(glyph,glyph_list);
 		}
 		if (glyph=make_glyph_axes("axes_solid_xyz",/*make_solid*/1,0.1,0.025,
-			labels_xyz, 0.1))
+			labels_xyz, 0.1,font))
 		{
 			ADD_OBJECT_TO_LIST(GT_object)(glyph,glyph_list);
 		}

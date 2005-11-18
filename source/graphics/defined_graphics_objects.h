@@ -54,9 +54,10 @@ int create_Spectrum_colour_bar(struct GT_object **graphics_object_address,
 	Triple side_axis,float bar_length,float bar_radius,float extend_length,
 	int tick_divisions,float tick_length,char *number_format,
 	struct Graphical_material *bar_material,
-	struct Graphical_material *tick_label_material);
+	struct Graphical_material *tick_label_material,
+	struct Graphics_font *font);
 /*******************************************************************************
-LAST MODIFIED : 13 October 2000
+LAST MODIFIED : 18 November 2005
 
 DESCRIPTION :
 Creates a coloured bar with annotation for displaying the scale of <spectrum>.

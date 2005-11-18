@@ -247,7 +247,7 @@ un-selected graphics are drawn.
 										interpolate_glyph_set->data,
 										interpolate_glyph_set->names,
 										/*label_bounds_dimension*/0, /*label_bounds_components*/0, /*label_bounds*/(float *)NULL,
-										material,spectrum,
+										material, spectrum, glyph_set->font,
 										draw_selected,name_selected,selected_name_ranges);
 									DESTROY(GT_glyph_set)(&interpolate_glyph_set);
 								}
@@ -275,7 +275,7 @@ un-selected graphics are drawn.
 									glyph_set->labels, glyph_set->n_data_components,
 									glyph_set->data, glyph_set->names,
 									glyph_set->label_bounds_dimension, glyph_set->label_bounds_components,
-									glyph_set->label_bounds, material, spectrum,
+									glyph_set->label_bounds, material, spectrum, glyph_set->font,
 									draw_selected, name_selected, selected_name_ranges);
 								glyph_set=glyph_set->ptrnext;
 							}
@@ -304,7 +304,7 @@ un-selected graphics are drawn.
 							point->marker_type,
 							point->marker_size, /*names*/(int *)NULL, 
 							point->n_data_components, point->data,
-							material,spectrum);
+							material,spectrum, point->font);
 						return_code=1;
 					}
 					else
@@ -347,7 +347,7 @@ un-selected graphics are drawn.
 										interpolate_point_set->marker_size, point_set->names,
 										interpolate_point_set->n_data_components,
 										interpolate_point_set->data,
-										material,spectrum);
+										material,spectrum, point_set->font);
 									DESTROY(GT_pointset)(&interpolate_point_set);
 								}
 								point_set=point_set->ptrnext;
@@ -361,7 +361,7 @@ un-selected graphics are drawn.
 								draw_pointsetGL(point_set->n_pts,point_set->pointlist,
 									point_set->text,point_set->marker_type,point_set->marker_size,
 									point_set->names,point_set->n_data_components,point_set->data,
-									material,spectrum);
+									material,spectrum, point_set->font);
 								point_set=point_set->ptrnext;
 							}
 						}

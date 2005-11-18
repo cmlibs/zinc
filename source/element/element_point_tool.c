@@ -224,9 +224,10 @@ Callback for change of command_field.
 } /* Element_point_tool_update_command_field */
 
 static void Element_point_tool_interactive_event_handler(void *device_id,
-	struct Interactive_event *event,void *element_point_tool_void)
+	struct Interactive_event *event,void *element_point_tool_void,
+	struct Graphics_buffer *graphics_buffer)
 /*******************************************************************************
-LAST MODIFIED : 5 July 2002
+LAST MODIFIED : 18 November 2005
 
 DESCRIPTION :
 Input handler for input from devices. <device_id> is a unique address enabling
@@ -267,7 +268,7 @@ release.
 					if (1==Interactive_event_get_button_number(event))
 					{
 						if (scene_picked_object_list=
-							Scene_pick_objects(scene,interaction_volume))
+							Scene_pick_objects(scene,interaction_volume,graphics_buffer))
 						{
 							element_point_tool->picked_element_point_was_unselected=0;
 							if (picked_element_point=
@@ -281,7 +282,7 @@ release.
 								if (element_point_tool->command_field)
 								{
 									if (Element_point_ranges_get_identifier(
-										picked_element_point, &element_point_ranges_identifier))
+											 picked_element_point, &element_point_ranges_identifier))
 									{
 										if (Computed_field_is_defined_in_element(
 											element_point_tool->command_field,
@@ -422,7 +423,7 @@ release.
 								if (INTERACTIVE_EVENT_BUTTON_RELEASE==event_type)
 								{
 									if (scene_picked_object_list=
-										Scene_pick_objects(scene,temp_interaction_volume))
+										Scene_pick_objects(scene,temp_interaction_volume,graphics_buffer))
 									{
 										if (element_point_ranges_list=
 											Scene_picked_object_list_get_picked_element_points(

@@ -1810,9 +1810,10 @@ Attempts to undefine all the nodes currently in the global selection.
 #endif /* defined (MOTIF) */
 
 static void Node_tool_interactive_event_handler(void *device_id,
-	struct Interactive_event *event,void *node_tool_void)
+	struct Interactive_event *event,void *node_tool_void,
+	struct Graphics_buffer *graphics_buffer)
 /*******************************************************************************
-LAST MODIFIED : 4 July 2002
+LAST MODIFIED : 18 November 2005
 
 DESCRIPTION :
 Input handler for input from devices. <device_id> is a unique address enabling
@@ -1860,7 +1861,7 @@ release.
 					if (1==Interactive_event_get_button_number(event))
 					{
 						if (scene_picked_object_list=
-							Scene_pick_objects(scene,interaction_volume))
+							Scene_pick_objects(scene,interaction_volume,graphics_buffer))
 						{
 							picked_node=(struct FE_node *)NULL;
 							nearest_element = (struct FE_element *)NULL;
@@ -2018,7 +2019,7 @@ release.
 							if (node_tool->constrain_to_surface)
 							{
 								if (scene_picked_object_list=
-									Scene_pick_objects(scene,interaction_volume))
+									Scene_pick_objects(scene,interaction_volume,graphics_buffer))
 								{
 									if (nearest_element=Scene_picked_object_list_get_nearest_element(
 										scene_picked_object_list,(struct Cmiss_region *)NULL,
@@ -2226,7 +2227,7 @@ release.
 								if (INTERACTIVE_EVENT_BUTTON_RELEASE==event_type)
 								{
 									if (scene_picked_object_list=
-										Scene_pick_objects(scene,temp_interaction_volume))
+										Scene_pick_objects(scene,temp_interaction_volume,graphics_buffer))
 									{
 										if (node_list=Scene_picked_object_list_get_picked_nodes(
 											scene_picked_object_list,node_tool->use_data))

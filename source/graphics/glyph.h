@@ -85,9 +85,10 @@ the arrow points in.
 ==============================================================================*/
 
 struct GT_object *make_glyph_axes(char *name, int make_solid, float head_length,
-	float half_head_width,char **labels, float label_offset);
+	float half_head_width,char **labels, float label_offset,
+	struct Graphics_font *font);
 /*******************************************************************************
-LAST MODIFIED : 10 June 2004
+LAST MODIFIED : 18 November 2005
 
 DESCRIPTION :
 Creates a graphics object named <name> consisting of three axis arrows heading
@@ -201,9 +202,9 @@ into the unit cube spanning from -0.5 to +0.5 across all axes. Parameter
 twice <number_of_segments_down> look remotely spherical.
 ==============================================================================*/
 
-struct LIST(GT_object) *make_standard_glyphs(void);
+struct LIST(GT_object) *make_standard_glyphs(struct Graphics_font *font);
 /*******************************************************************************
-LAST MODIFIED : 16 July 2002
+LAST MODIFIED : 18 November 2005
 
 DESCRIPTION :
 Creates a list of standard glyphs for the cmgui and unemap applications.

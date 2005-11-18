@@ -6,6 +6,42 @@ LAST MODIFIED : 6 May 2005
 DESCRIPTION :
 This provides a Cmgui interface to the OpenGL contexts of many types.
 ******************************************************************************/
+/* ***** BEGIN LICENSE BLOCK *****
+ * Version: MPL 1.1/GPL 2.0/LGPL 2.1
+ *
+ * The contents of this file are subject to the Mozilla Public License Version
+ * 1.1 (the "License"); you may not use this file except in compliance with
+ * the License. You may obtain a copy of the License at
+ * http://www.mozilla.org/MPL/
+ *
+ * Software distributed under the License is distributed on an "AS IS" basis,
+ * WITHOUT WARRANTY OF ANY KIND, either express or implied. See the License
+ * for the specific language governing rights and limitations under the
+ * License.
+ *
+ * The Original Code is cmgui.
+ *
+ * The Initial Developer of the Original Code is
+ * Auckland Uniservices Ltd, Auckland, New Zealand.
+ * Portions created by the Initial Developer are Copyright (C) 2005
+ * the Initial Developer. All Rights Reserved.
+ *
+ * Contributor(s):
+ *
+ * Alternatively, the contents of this file may be used under the terms of
+ * either the GNU General Public License Version 2 or later (the "GPL"), or
+ * the GNU Lesser General Public License Version 2.1 or later (the "LGPL"),
+ * in which case the provisions of the GPL or the LGPL are applicable instead
+ * of those above. If you wish to allow use of your version of this file only
+ * under the terms of either the GPL or the LGPL, and not to allow others to
+ * use your version of this file under the terms of the MPL, indicate your
+ * decision by deleting the provisions above and replace them with the notice
+ * and other provisions required by the GPL or the LGPL. If you do not delete
+ * the provisions above, a recipient may use your version of this file under
+ * the terms of any one of the MPL, the GPL or the LGPL.
+ *
+ * ***** END LICENSE BLOCK ***** */
+
 #if defined (MOTIF)
 #if defined (SGI)
 /* Not compiling in as not being actively used and only available on O2's and
@@ -31,6 +67,10 @@ This provides a Cmgui interface to the OpenGL contexts of many types.
 #include <gtk/gtkgl.h>
 #endif /* defined (GTK_USE_GTKGLAREA) */
 #endif /* defined (GTK_USER_INTERFACE) */
+#if defined (WIN32_USER_INTERFACE)
+#include <GL/gl.h>
+#include <windows.h>
+#endif /* defined (WIN32_USER_INTERFACE) */
 #include "general/callback_private.h"
 #include "general/debug.h"
 #include "general/indexed_list_private.h"
@@ -38,10 +78,6 @@ This provides a Cmgui interface to the OpenGL contexts of many types.
 #include "three_d_drawing/graphics_buffer.h"
 #include "user_interface/message.h"
 #include "user_interface/user_interface.h"
-#if defined (WIN32_USER_INTERFACE)
-#include <GL/gl.h>
-#include <windows.h>
-#endif /* defined (WIN32_USER_INTERFACE) */
 
 /* #define DEBUG */
 #if defined (DEBUG)
@@ -85,41 +121,6 @@ LAST MODIFIED : 10 March 2005
 
 DESCRIPTION :
 ==============================================================================*/
-/* ***** BEGIN LICENSE BLOCK *****
- * Version: MPL 1.1/GPL 2.0/LGPL 2.1
- *
- * The contents of this file are subject to the Mozilla Public License Version
- * 1.1 (the "License"); you may not use this file except in compliance with
- * the License. You may obtain a copy of the License at
- * http://www.mozilla.org/MPL/
- *
- * Software distributed under the License is distributed on an "AS IS" basis,
- * WITHOUT WARRANTY OF ANY KIND, either express or implied. See the License
- * for the specific language governing rights and limitations under the
- * License.
- *
- * The Original Code is cmgui.
- *
- * The Initial Developer of the Original Code is
- * Auckland Uniservices Ltd, Auckland, New Zealand.
- * Portions created by the Initial Developer are Copyright (C) 2005
- * the Initial Developer. All Rights Reserved.
- *
- * Contributor(s):
- *
- * Alternatively, the contents of this file may be used under the terms of
- * either the GNU General Public License Version 2 or later (the "GPL"), or
- * the GNU Lesser General Public License Version 2.1 or later (the "LGPL"),
- * in which case the provisions of the GPL or the LGPL are applicable instead
- * of those above. If you wish to allow use of your version of this file only
- * under the terms of either the GPL or the LGPL, and not to allow others to
- * use your version of this file under the terms of the MPL, indicate your
- * decision by deleting the provisions above and replace them with the notice
- * and other provisions required by the GPL or the LGPL. If you do not delete
- * the provisions above, a recipient may use your version of this file under
- * the terms of any one of the MPL, the GPL or the LGPL.
- *
- * ***** END LICENSE BLOCK ***** */
 {
 	GRAPHICS_BUFFER_ONSCREEN_CLASS, /* A normal graphics buffer */
 	GRAPHICS_BUFFER_OFFSCREEN_SHARED_CLASS, /* Try to create an offscreen buffer with 
@@ -2849,6 +2850,36 @@ DESCRIPTION :
 } /* create_Graphics_buffer_X3d_from_buffer */
 #endif /* defined (MOTIF) */
 
+#if defined (MOTIF)
+Widget Graphics_buffer_X3d_get_widget(struct Graphics_buffer *buffer)
+/*******************************************************************************
+LAST MODIFIED : 17 November 2005
+
+DESCRIPTION :
+Private routine to facilitate the compilation of Graphics fonts with only
+a Graphics_buffer.
+==============================================================================*/
+{
+	Widget widget;
+
+	ENTER(Graphics_buffer_X3d_get_widget);
+
+	if (buffer)
+	{
+		widget = buffer->drawing_widget;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"Graphics_buffer_X3d_get_widget.  "
+			"Unable to create generic Graphics_buffer.");				
+		widget = (Widget)NULL;
+	}
+	LEAVE;
+
+	return (widget);
+} /* Graphics_buffer_X3d_get_widget */
+#endif /* defined (MOTIF) */
+
 #if defined (GTK_USER_INTERFACE)
 #if defined (GTK_USE_GTKGLAREA)
 struct Graphics_buffer *create_Graphics_buffer_gtkgl(
@@ -3429,6 +3460,50 @@ DESCRIPTION:
 } /* Graphics_buffer_callback_proc */
 #endif /* defined (WIN32_USER_INTERFACE) */
 
+#if defined (WIN32_USER_INTERFACE)
+int Graphics_buffer_win32_use_font_bitmaps(struct Graphics_buffer *buffer, 
+	HFONT font, int first_bitmap, int number_of_bitmaps, int display_list_offset)
+/*******************************************************************************
+LAST MODIFIED : 17 November 2005
+
+DESCRIPTION :
+==============================================================================*/
+{
+  	int return_code;
+	
+	ENTER(Graphics_buffer_win32_use_font_bitmaps);
+	
+	if (buffer)
+	{
+		switch (buffer->type)
+		{
+			case GRAPHICS_BUFFER_WIN32_TYPE:
+			{
+				SelectObject(buffer->hdc, font);
+				wglUseFontBitmaps(buffer->hdc, first_bitmap, number_of_bitmaps,
+					display_list_offset);
+				return_code = 1;
+			} break;
+			default:
+			{
+				display_message(ERROR_MESSAGE,"Graphics_buffer_win32_use_font_bitmaps.  "
+					"This function should only be used with WIN32 type buffers.");				
+				return_code = 0;
+			} break;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"Graphics_buffer_win32_use_font_bitmaps.  "
+			"Graphics_bufffer missing.");				
+		return_code = 0;
+	}
+	LEAVE;
+	
+	return (return_code);
+} /* Graphics_buffer_win32_use_font_bitmaps */
+#endif /* defined (WIN32_USER_INTERFACE) */
+
 int Graphics_buffer_make_current(struct Graphics_buffer *buffer)
 /*******************************************************************************
 LAST MODIFIED : 2 July 2002
@@ -3952,22 +4027,6 @@ Returns the stereo mode used by the graphics buffer.
 
 	return (return_code);
 } /* Graphics_buffer_get_stereo_mode */
-
-#if defined (WIN32_USER_INTERFACE)
-HDC Graphics_buffer_get_hdc(struct Graphics_buffer *buffer)
-/*******************************************************************************
-LAST MODIFIED : 9 August 2004
-
-DESCRIPTION :
-Returns the device context of buffer represented by <buffer>.
-==============================================================================*/
-{
-	ENTER(Graphics_buffer_get_hdc);
-	LEAVE;
-
-	return(buffer->hDC);
-}
-#endif /*defined (WIN32_USER_INTERFACE) */
 
 int Graphics_buffer_swap_buffers(struct Graphics_buffer *buffer)
 /*******************************************************************************

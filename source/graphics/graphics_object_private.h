@@ -117,6 +117,7 @@ the glyph_set to be identified in picking for node position/vector editing.
 	GTDATA *data;
 	int label_bounds_dimension, label_bounds_components;
 	float *label_bounds;
+	struct Graphics_font *font;
 	/* store integer object_name eg. element number from which this object came */
 	int object_name;
 	/* have auxiliary_object_name for marking glyph_set for editing purposes; this
@@ -183,6 +184,7 @@ DESCRIPTION :
 	float marker_size;
 	int n_data_components;
 	GTDATA *data;
+	struct Graphics_font *font;
 
 	/* store integer object_name eg. node number from which this object came */
 	int object_name;
@@ -205,7 +207,7 @@ DESCRIPTION :
 	float marker_size;
 	int n_data_components;
 	GTDATA *data;
-	struct GT_pointset *ptrnext;
+	struct Graphics_font *font;
 
 	/* store integer object_name eg. element number from which this object came */
 	int object_name;
@@ -213,6 +215,7 @@ DESCRIPTION :
 	/* names are usually node numbers (they were accessed nodes, but this
 		 prevented the nodes from being destroyed) */
 	int *names;
+	struct GT_pointset *ptrnext;
 }; /* struct GT_pointset */
 
 struct GT_polyline

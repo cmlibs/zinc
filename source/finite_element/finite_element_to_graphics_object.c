@@ -1173,11 +1173,12 @@ struct GT_glyph_set *create_GT_glyph_set_from_FE_region_nodes(
 	FE_value *base_size, FE_value *centre, FE_value *scale_factors,
 	FE_value time, struct Computed_field *orientation_scale_field,
 	struct Computed_field *variable_scale_field,
-	struct Computed_field *data_field, struct Computed_field *label_field,
+	struct Computed_field *data_field,
+	struct Graphics_font *font, struct Computed_field *label_field,
 	enum Graphics_select_mode select_mode,
 	struct LIST(FE_node) *selected_node_list)
 /*******************************************************************************
-LAST MODIFIED : 13 March 2003
+LAST MODIFIED : 18 November 2005
 
 DESCRIPTION :
 Creates a GT_glyph_set displaying a <glyph> of at least <base_size>, with the
@@ -1347,7 +1348,7 @@ Notes:
 						ALLOCATE(axis3_list, Triple, number_of_points) &&
 						ALLOCATE(scale_list, Triple, number_of_points) &&
 						(glyph_set=CREATE(GT_glyph_set)(number_of_points,point_list,
-							axis1_list,axis2_list,axis3_list,scale_list,glyph,labels,
+							axis1_list,axis2_list,axis3_list,scale_list,glyph,font,labels,
 							n_data_components,data,
 							label_bounds_dimension,label_bounds_components,label_bounds,
 							/*object_name*/0,names)))
@@ -4999,7 +5000,8 @@ struct GT_glyph_set *create_GT_glyph_set_from_FE_element(
 	FE_value *base_size, FE_value *centre, FE_value *scale_factors,
 	struct Computed_field *orientation_scale_field,
 	struct Computed_field *variable_scale_field,
-	struct Computed_field *data_field, struct Computed_field *label_field,
+	struct Computed_field *data_field, 
+	struct Graphics_font *font, struct Computed_field *label_field,
 	enum Graphics_select_mode select_mode, int element_selected,
 	struct Multi_range *selected_ranges, int *point_numbers, FE_value time)
 /*******************************************************************************
@@ -5144,8 +5146,8 @@ Note:
 				ALLOCATE(axis3_list, Triple, points_to_draw) &&
 				ALLOCATE(scale_list, Triple, points_to_draw) &&
 				(glyph_set = CREATE(GT_glyph_set)(points_to_draw, point_list,
-					axis1_list, axis2_list, axis3_list, scale_list, glyph, labels,
-					n_data_components, data,
+					axis1_list, axis2_list, axis3_list, scale_list, glyph, font,
+					labels, n_data_components, data,
 					/*label_bounds_dimension*/0, /*label_bounds_components*/0, /*label_bounds*/(float *)NULL,
 					CM_element_information_to_graphics_name(&cm), names)))
 			{
@@ -6232,6 +6234,7 @@ fields defined over it.
 						element_to_glyph_set_data->orientation_scale_field,
 						element_to_glyph_set_data->variable_scale_field,
 						element_to_glyph_set_data->data_field,
+						element_to_glyph_set_data->font,
 						element_to_glyph_set_data->label_field,
 						element_to_glyph_set_data->select_mode,
 						/*element_selected*/0,

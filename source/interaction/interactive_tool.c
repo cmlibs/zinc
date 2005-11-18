@@ -434,9 +434,10 @@ type specific data.
 
 int Interactive_tool_handle_interactive_event(
 	struct Interactive_tool *interactive_tool,void *device_id,
-	struct Interactive_event *interactive_event)
+	struct Interactive_event *interactive_event,
+	struct Graphics_buffer *graphics_buffer)
 /*******************************************************************************
-LAST MODIFIED : 10 April 2000
+LAST MODIFIED : 18 November 2005
 
 DESCRIPTION :
 Passes the <interactive_event> from <device_id> to the tool wrapped by the
@@ -451,7 +452,7 @@ Passes the <interactive_event> from <device_id> to the tool wrapped by the
 		if (interactive_tool->interactive_event_handler)
 		{
 			(interactive_tool->interactive_event_handler)(device_id,interactive_event,
-				interactive_tool->tool_data);
+				interactive_tool->tool_data, graphics_buffer);
 		}
 		return_code=1;
 	}

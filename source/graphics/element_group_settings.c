@@ -64,6 +64,7 @@ appearance of graphical finite element groups.
 #include "finite_element/finite_element_to_streamlines.h"
 #include "graphics/auxiliary_graphics_types.h"
 #include "graphics/element_group_settings.h"
+#include "graphics/font.h"
 #include "graphics/graphics_object.h"
 #include "graphics/scene.h"
 #include "user_interface/message.h"
@@ -156,6 +157,8 @@ finite element group rendition.
 	struct Computed_field *data_field;
 	struct Spectrum *spectrum;
 	int autorange_spectrum_flag;
+	/* for glyphsets */
+	struct Graphics_font *font;
 	/* for surfaces */
 	enum Render_type render_type;
 	/* for lines, a non zero line width overrides the default */
@@ -744,6 +747,8 @@ Allocates memory and assigns fields for a struct GT_element_settings.
 			settings->data_field=(struct Computed_field *)NULL;
 			settings->spectrum=(struct Spectrum *)NULL;
 			settings->autorange_spectrum_flag = 0;
+			/* for glyphsets */
+			settings->font = (struct Graphics_font *)NULL;
 			/* for surfaces and volumes */
 			settings->render_type = RENDER_TYPE_SHADED;
 			/* for streamlines only */
@@ -896,6 +901,10 @@ Frees the memory for the fields of <**settings_ptr>, frees the memory for
 			if (settings->spectrum)
 			{
 				DEACCESS(Spectrum)(&(settings->spectrum));
+			}
+			if (settings->font)
+			{
+				DEACCESS(Graphics_font)(&(settings->font));
 			}
 			if (settings->seed_element)
 			{
@@ -1092,6 +1101,7 @@ graphics_object is NOT copied; destination->graphics_object is cleared.
 		REACCESS(Graphical_material)(&(destination->selected_material),
 			source->selected_material);
 		destination->autorange_spectrum_flag = source->autorange_spectrum_flag;
+		REACCESS(Graphics_font)(&(destination->font), source->font);
 
 		/* ensure destination graphics object is cleared */
 		REACCESS(GT_object)(&(destination->graphics_object),
@@ -2226,18 +2236,18 @@ CREATE to define a valid iso_surface.
 	return (return_code);
 } /* GT_element_settings_set_iso_surface_parameters */
 
-struct Computed_field *GT_element_settings_get_label_field(
-	struct GT_element_settings *settings)
+int GT_element_settings_get_label_field(struct GT_element_settings *settings,
+	struct Computed_field **label_field, struct Graphics_font **font)
 /*******************************************************************************
-LAST MODIFIED : 28 June 1999
+LAST MODIFIED : 18 November 2005
 
 DESCRIPTION :
-Returns the label_field used by <settings>. For settings types
+Returns the label_field and font used by <settings>. For settings types
 GT_ELEMENT_SETTINGS_NODE_POINTS, GT_ELEMENT_SETTINGS_DATA_POINTS and
 GT_ELEMENT_SETTINGS_ELEMENT_POINTS only.
 ==============================================================================*/
 {
-	struct Computed_field *label_field;
+	int return_code;
 
 	ENTER(GT_element_settings_get_label_field);
 	if (settings&&
@@ -2245,23 +2255,26 @@ GT_ELEMENT_SETTINGS_ELEMENT_POINTS only.
 			(GT_ELEMENT_SETTINGS_DATA_POINTS==settings->settings_type)||
 			(GT_ELEMENT_SETTINGS_ELEMENT_POINTS==settings->settings_type)))
 	{
-		label_field=settings->label_field;
+		*label_field = settings->label_field;
+		*font = settings->font;
+		return_code = 1;
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
 			"GT_element_settings_get_label_field.  Invalid argument(s)");
-		label_field=(struct Computed_field *)NULL;
+		return_code = 0;
 	}
 	LEAVE;
 
-	return (label_field);
+	return (return_code);
 } /* GT_element_settings_get_label_field */
 
 int GT_element_settings_set_label_field(
-	struct GT_element_settings *settings,struct Computed_field *label_field)
+	struct GT_element_settings *settings,struct Computed_field *label_field,
+	struct Graphics_font *font)
 /*******************************************************************************
-LAST MODIFIED : 28 June 1999
+LAST MODIFIED : 18 November 2005
 
 DESCRIPTION :
 Sets the <label_field> used by <settings>. For settings types
@@ -2278,7 +2291,8 @@ as a string and displayed beside the glyph.
 			(GT_ELEMENT_SETTINGS_DATA_POINTS==settings->settings_type)||
 			(GT_ELEMENT_SETTINGS_ELEMENT_POINTS==settings->settings_type))))
 	{
-		REACCESS(Computed_field)(&(settings->label_field),label_field);
+		REACCESS(Computed_field)(&(settings->label_field), label_field);
+		REACCESS(Graphics_font)(&(settings->font), font);
 		return_code=1;
 	}
 	else
@@ -4475,6 +4489,7 @@ Returns true if <settings1> and <settings2> would product identical graphics.
 			(settings1->selected_material == settings2->selected_material) &&
 			(settings1->data_field == settings2->data_field) &&
 			(settings1->spectrum == settings2->spectrum) &&
+			(settings1->font == settings2->font) &&
 			(settings1->render_type == settings2->render_type) &&
 			(settings1->texture_coordinate_field ==
 				settings2->texture_coordinate_field) &&
@@ -4826,6 +4841,12 @@ if no coordinate field. Currently only write if we have a field.
 				sprintf(temp_string," centre %g,%g,%g",settings->glyph_centre[0],
 					settings->glyph_centre[1],settings->glyph_centre[2]);
 				append_string(&settings_string,temp_string,&error);
+				append_string(&settings_string," font ",&error);
+				if (GET_NAME(Graphics_font)(settings->font, &name))
+				{
+					append_string(&settings_string,name,&error);
+					DEALLOCATE(name);
+				}
 				if (settings->label_field)
 				{
 					if (GET_NAME(Computed_field)(settings->label_field,&name))
@@ -5667,7 +5688,7 @@ Converts a finite element into a graphics object with the supplied settings.
 										settings->glyph, base_size, centre, scale_factors,
 										settings_to_object_data->wrapper_orientation_scale_field,
 										settings->variable_scale_field, settings->data_field,
-										settings->label_field, settings->select_mode,
+										settings->font, settings->label_field, settings->select_mode,
 										element_selected, ranges, top_level_xi_point_numbers,
 										settings_to_object_data->time)))
 								{
@@ -6080,7 +6101,7 @@ The graphics object is stored with with the settings it was created from.
 									settings_to_object_data->time,
 									settings_to_object_data->wrapper_orientation_scale_field,
 									settings->variable_scale_field, settings->data_field,
-									settings->label_field, settings->select_mode,
+									settings->font, settings->label_field, settings->select_mode,
 									selected_node_list);
 								/* NOT an error if no glyph_set produced == empty group */
 								if (glyph_set)
@@ -6563,9 +6584,9 @@ Must call GT_element_settings_to_graphics_object afterwards to complete.
 } /* GT_element_settings_selected_data_change */
 
 int GT_element_settings_compile_visible_settings(
-	struct GT_element_settings *settings, void *time_void)
+	struct GT_element_settings *settings, void *compile_data_void)
 /*******************************************************************************
-LAST MODIFIED : 5 August 2002
+LAST MODIFIED : 18 November 2005
 
 DESCRIPTION :
 If the settings visibility flag is set and it has a graphics_object, the
@@ -6573,13 +6594,15 @@ graphics_object is compiled.
 ==============================================================================*/
 {
 	int return_code;
-	
+	struct GT_element_settings_compile_data *data;
+
 	ENTER(GT_element_settings_compile_visible_graphics_object);
-	if (settings)
+	if (settings && (data = (struct GT_element_settings_compile_data *)compile_data_void))
 	{
 		if (settings->graphics_object && settings->visibility)
 		{
-			return_code = compile_GT_object(settings->graphics_object,time_void);
+			return_code = compile_GT_object(settings->graphics_object,
+				data->time, data->graphics_buffer);
 		}
 		else
 		{
@@ -6620,7 +6643,7 @@ is put out as a name to identify the object in OpenGL picking.
 			/* use position in list as name for GL picking */
 			glLoadName((GLuint)settings->position);
 #endif /* defined (OPENGL_API) */
-			return_code=execute_GT_object(settings->graphics_object, time_void);
+			return_code=execute_GT_object(settings->graphics_object, *(float *)time_void);
 		}
 		else
 		{
@@ -6827,12 +6850,13 @@ If return_code is 1, returns the completed Modify_g_element_data with the
 parsed settings. Note that the settings are ACCESSed once on valid return.
 ==============================================================================*/
 {
-	char *glyph_scaling_mode_string, *select_mode_string, **valid_strings;
+	char *font_name, *glyph_scaling_mode_string, *select_mode_string, **valid_strings;
 	enum Glyph_scaling_mode glyph_scaling_mode;
 	enum Graphics_select_mode select_mode;
 	int number_of_components,number_of_valid_strings,return_code,
 		visibility;
 	struct Computed_field *orientation_scale_field, *variable_scale_field;
+	struct Graphics_font *new_font;
 	struct GT_element_settings *settings;
 	struct GT_object *glyph;
 	struct G_element_command_data *g_element_command_data;
@@ -6881,6 +6905,12 @@ parsed settings. Note that the settings are ACCESSed once on valid return.
 								"default_selected",
 								g_element_command_data->graphical_material_manager));
 					}
+					if (!settings->font)
+					{
+						settings->font = ACCESS(Graphics_font)(
+							g_element_command_data->default_font);
+					}
+					font_name = (char *)NULL;
 					orientation_scale_field = (struct Computed_field *)NULL;
 					variable_scale_field = (struct Computed_field *)NULL;
 					GT_element_settings_get_glyph_parameters(settings,
@@ -6932,6 +6962,9 @@ parsed settings. Note that the settings are ACCESSed once on valid return.
 					/* delete */
 					Option_table_add_entry(option_table,"delete",
 						&(modify_g_element_data->delete_flag),NULL,set_char_flag);
+					/* font */
+					Option_table_add_name_entry(option_table, "font",
+						&font_name);
 					/* glyph */
 					Option_table_add_entry(option_table,"glyph",&glyph,
 						g_element_command_data->glyph_list,set_Graphics_object);
@@ -7020,6 +7053,10 @@ parsed settings. Note that the settings are ACCESSed once on valid return.
 								g_element_command_data->default_spectrum);
 						}
 						settings->visibility = visibility;
+						if (font_name && (new_font = CREATE(Graphics_font)(font_name)))
+						{
+							REACCESS(Graphics_font)(&settings->font, new_font);
+						}
 						if (glyph)
 						{
 							STRING_TO_ENUMERATOR(Glyph_scaling_mode)(
@@ -7046,6 +7083,10 @@ parsed settings. Note that the settings are ACCESSed once on valid return.
 					{
 						/* parse error, help */
 						DEACCESS(GT_element_settings)(&(modify_g_element_data->settings));
+					}
+					if (font_name)
+					{
+						DEALLOCATE(font_name);
 					}
 					if (glyph)
 					{
@@ -7103,11 +7144,12 @@ If return_code is 1, returns the completed Modify_g_element_data with the
 parsed settings. Note that the settings are ACCESSed once on valid return.
 ==============================================================================*/
 {
-	char *glyph_scaling_mode_string, *select_mode_string, **valid_strings;
+	char *font_name, *glyph_scaling_mode_string, *select_mode_string, **valid_strings;
 	enum Glyph_scaling_mode glyph_scaling_mode;
 	enum Graphics_select_mode select_mode;
 	int number_of_components,number_of_valid_strings,return_code,visibility;
 	struct Computed_field *orientation_scale_field, *variable_scale_field;
+	struct Graphics_font *new_font;
 	struct GT_element_settings *settings;
 	struct GT_object *glyph;
 	struct G_element_command_data *g_element_command_data;
@@ -7156,6 +7198,12 @@ parsed settings. Note that the settings are ACCESSed once on valid return.
 								"default_selected",
 								g_element_command_data->graphical_material_manager));
 					}
+					if (!settings->font)
+					{
+						settings->font = ACCESS(Graphics_font)(
+							g_element_command_data->default_font);
+					}
+					font_name = (char *)NULL;
 					orientation_scale_field = (struct Computed_field *)NULL;
 					variable_scale_field = (struct Computed_field *)NULL;
 					GT_element_settings_get_glyph_parameters(settings,
@@ -7207,6 +7255,9 @@ parsed settings. Note that the settings are ACCESSed once on valid return.
 					/* delete */
 					Option_table_add_entry(option_table,"delete",
 						&(modify_g_element_data->delete_flag),NULL,set_char_flag);
+					/* font */
+					Option_table_add_name_entry(option_table, "font",
+						&font_name);
 					/* glyph */
 					Option_table_add_entry(option_table,"glyph",&glyph,
 						g_element_command_data->glyph_list,set_Graphics_object);
@@ -7295,6 +7346,10 @@ parsed settings. Note that the settings are ACCESSed once on valid return.
 								g_element_command_data->default_spectrum);
 						}
 						settings->visibility = visibility;
+						if (font_name && (new_font = CREATE(Graphics_font)(font_name)))
+						{
+							REACCESS(Graphics_font)(&settings->font, new_font);
+						}
 						if (glyph)
 						{
 							STRING_TO_ENUMERATOR(Glyph_scaling_mode)(
@@ -7321,6 +7376,10 @@ parsed settings. Note that the settings are ACCESSed once on valid return.
 					{
 						/* parse error, help */
 						DEACCESS(GT_element_settings)(&(modify_g_element_data->settings));
+					}
+					if (font_name)
+					{
+						DEALLOCATE(font_name);
 					}
 					if (glyph)
 					{
@@ -8302,7 +8361,7 @@ If return_code is 1, returns the completed Modify_g_element_data with the
 parsed settings. Note that the settings are ACCESSed once on valid return.
 ==============================================================================*/
 {
-	char *glyph_scaling_mode_string,  *select_mode_string,
+	char *font_name, *glyph_scaling_mode_string,  *select_mode_string,
 		*use_element_type_string,	**valid_strings, *xi_discretization_mode_string;
 	enum Glyph_scaling_mode glyph_scaling_mode;
 	enum Graphics_select_mode select_mode;
@@ -8312,6 +8371,7 @@ parsed settings. Note that the settings are ACCESSed once on valid return.
 	struct Computed_field *orientation_scale_field, *variable_scale_field,
 		*xi_point_density_field;
 	struct FE_region *fe_region;
+	struct Graphics_font *new_font;
 	struct GT_element_settings *settings;
 	struct GT_object *glyph;
 	struct G_element_command_data *g_element_command_data;
@@ -8358,6 +8418,12 @@ parsed settings. Note that the settings are ACCESSed once on valid return.
 						"default_selected",
 						g_element_command_data->graphical_material_manager));
 			}
+			if (!settings->font)
+			{
+				settings->font = ACCESS(Graphics_font)(
+					g_element_command_data->default_font);
+			}
+			font_name = (char *)NULL;
 			orientation_scale_field = (struct Computed_field *)NULL;
 			variable_scale_field = (struct Computed_field *)NULL;
 			xi_point_density_field = (struct Computed_field *)NULL;
@@ -8371,6 +8437,7 @@ parsed settings. Note that the settings are ACCESSed once on valid return.
 				glyph = FIND_BY_IDENTIFIER_IN_LIST(GT_object,name)("point",
 					g_element_command_data->glyph_list);
 			}
+			font_name = (char *)NULL;
 			ACCESS(GT_object)(glyph);
 			if (orientation_scale_field)
 			{
@@ -8446,6 +8513,9 @@ parsed settings. Note that the settings are ACCESSed once on valid return.
 			/* face */
 			Option_table_add_entry(option_table,"face",&(settings->face),
 				NULL,set_exterior);
+			/* font */
+			Option_table_add_name_entry(option_table, "font",
+				&font_name);
 			/* glyph */
 			Option_table_add_entry(option_table,"glyph",&glyph,
 				g_element_command_data->glyph_list,set_Graphics_object);
@@ -8571,6 +8641,14 @@ parsed settings. Note that the settings are ACCESSed once on valid return.
 					&use_element_type);
 				GT_element_settings_set_use_element_type(settings,
 					use_element_type);
+				if (font_name && (new_font = CREATE(Graphics_font)(font_name)))
+				{
+					REACCESS(Graphics_font)(&settings->font, new_font);
+				}
+				if (font_name)
+				{
+					DEALLOCATE(font_name);
+				}
 				if (glyph)
 				{
 					STRING_TO_ENUMERATOR(Glyph_scaling_mode)(

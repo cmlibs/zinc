@@ -265,6 +265,9 @@ Functions for executing cmiss commands.
 #if defined (MOTIF)
 #include "three_d_drawing/movie_extensions.h"
 #include "three_d_drawing/graphics_buffer.h"
+#endif /* defined (MOTIF) */
+#include "graphics/font.h"
+#if defined (MOTIF)
 #include "time/time_editor_dialog.h"
 #endif /* defined (MOTIF) */
 #include "time/time_keeper.h"
@@ -355,6 +358,7 @@ DESCRIPTION :
 	struct MANAGER(Light_model) *light_model_manager;
 	struct Light_model *default_light_model;
 	struct Material_package *material_package;
+	struct Graphics_font *default_font;
 #if defined (SGI_MOVIE_FILE) && defined (MOTIF)
 	struct MANAGER(Movie_graphics) *movie_graphics_manager;
 #endif /* defined (SGI_MOVIE_FILE) && defined (MOTIF) */
@@ -730,11 +734,12 @@ Executes a GFX CREATE ANNOTATION command. Creates a graphics object containing
 a single point in 3-D space with a text string drawn beside it.
 ==============================================================================*/
 {
-	char *annotation_text,*graphics_object_name,**text;
+	char *annotation_text,*font_name,*graphics_object_name,**text;
 	float time;
 	int number_of_components,return_code;
 	struct Cmiss_command_data *command_data;
 	struct Graphical_material *material;
+	struct Graphics_font *font;
 	struct GT_object *graphics_object;
 	struct GT_pointset *point_set;
 	struct Option_table *option_table;
@@ -756,11 +761,15 @@ a single point in 3-D space with a text string drawn beside it.
 			position[2]=0.0;
 			annotation_text = duplicate_string("\"annotation text\"");
 			time=0.0;
+			font_name = (char *)NULL;
 
 			option_table=CREATE(Option_table)();
 			/* as */
 			Option_table_add_entry(option_table,"as",&graphics_object_name,
 				(void *)1,set_name);
+			/* font */
+			Option_table_add_name_entry(option_table, "font",
+				&font_name);
 			/* material */
 			Option_table_add_set_Material_entry(option_table, "material", &material,
 				command_data->material_package);
@@ -827,8 +836,12 @@ a single point in 3-D space with a text string drawn beside it.
 							(*pointlist)[0]=position[0];
 							(*pointlist)[1]=position[1];
 							(*pointlist)[2]=position[2];
+							if (!(font_name && (font = ACCESS(Graphics_font)(CREATE(Graphics_font)(font_name)))))
+							{
+								font = ACCESS(Graphics_font)(command_data->default_font);
+							}
 							if ((point_set=CREATE(GT_pointset)(1,pointlist,text,g_NO_MARKER,
-								0.0,g_NO_DATA,(GTDATA *)NULL,(int *)NULL))&&
+								0.0,g_NO_DATA,(GTDATA *)NULL,(int *)NULL,font))&&
 								GT_OBJECT_ADD(GT_pointset)(graphics_object,time,point_set))
 							{
 								return_code = 1;
@@ -837,6 +850,7 @@ a single point in 3-D space with a text string drawn beside it.
 							{
 								return_code = 0;
 							}
+							DEACCESS(Graphics_font)(&font);
 						}
 						else
 						{
@@ -989,7 +1003,7 @@ a single point in 3-D space with an axes glyph.
 			else
 			{
 				if (!((graphics_object = CREATE(GT_object)(graphics_object_name,
-					g_GLYPH_SET, material)) &&
+								g_GLYPH_SET, material)) &&
 					ADD_OBJECT_TO_LIST(GT_object)(graphics_object,
 						command_data->graphics_object_list)))
 				{
@@ -1021,7 +1035,7 @@ a single point in 3-D space with an axes glyph.
 
 				if (point_list && axis1_list && axis2_list && axis3_list &&
 					scale_list && (glyph_set = CREATE(GT_glyph_set)(/*number_of_points*/1,
-					point_list, axis1_list, axis2_list, axis3_list, scale_list, glyph,
+					point_list, axis1_list, axis2_list, axis3_list, scale_list, glyph, command_data->default_font,
 					/*labels*/(char **)NULL, /*n_data_components*/0, /*data*/(GTDATA *)NULL,
 					/*label_bounds_dimension*/0, /*label_bounds_components*/0, /*label_bounds*/(float *)NULL,
 					/*object_name*/0, /*names*/(int *)NULL)))
@@ -1190,7 +1204,7 @@ with tick marks and labels for showing the scale of a spectrum.
 				if (create_Spectrum_colour_bar(&graphics_object,
 					graphics_object_name,spectrum,bar_centre,bar_axis,side_axis,
 					bar_length,bar_radius,extend_length,tick_divisions,tick_length,
-					number_format,material,label_material))
+					number_format,material,label_material,command_data->default_font))
 				{
 					ACCESS(GT_object)(graphics_object);
 					if (IS_OBJECT_IN_LIST(GT_object)(graphics_object,
@@ -1848,6 +1862,7 @@ Executes a GFX CREATE ELEMENT_POINTS command.
 			}
 			if (return_code)
 			{
+				element_to_glyph_set_data.font = command_data->default_font;
 				element_to_glyph_set_data.time=time;
 				element_to_glyph_set_data.xi_discretization_mode =
 					xi_discretization_mode;
@@ -2494,7 +2509,7 @@ Executes a GFX CREATE FLOW_PARTICLES command.
 					if (ALLOCATE(new_particle_positions,Triple,number_of_particles) &&
 						(pointset=CREATE(GT_pointset)(number_of_particles,
 							new_particle_positions,(char **)NULL,	g_POINT_MARKER,
-							1,g_NO_DATA,(GTDATA *) NULL,(int *)NULL)))
+							1,g_NO_DATA,(GTDATA *) NULL,(int *)NULL,command_data->default_font)))
 					{
 						element_to_particle_data.pointlist= &new_particle_positions;
 						element_to_particle_data.index=0;
@@ -4454,7 +4469,7 @@ If <use_data> is set, creating data points, otherwise creating node points.
 				if (glyph_set = create_GT_glyph_set_from_FE_region_nodes(fe_region,
 					rc_coordinate_field, glyph, base_size, centre, scale_factors, time,
 					wrapper_orientation_scale_field, variable_scale_field,
-					data_field, label_field, GRAPHICS_NO_SELECT,
+					data_field, command_data->default_font, label_field, GRAPHICS_NO_SELECT,
 					(struct LIST(FE_node) *)NULL))
 				{
 					if (!GT_OBJECT_ADD(GT_glyph_set)(graphics_object,time,glyph_set))
@@ -10826,6 +10841,7 @@ Invokes the graphical spectrum group editor.
 				&(command_data->spectrum_editor_dialog),
 				User_interface_get_application_shell(command_data->user_interface),
 				command_data->spectrum_manager, spectrum,
+				command_data->default_font,
 				command_data->graphics_buffer_package, command_data->user_interface,
 				command_data->glyph_list,
 				Material_package_get_material_manager(command_data->material_package), command_data->light_manager,
@@ -14226,6 +14242,7 @@ Parameter <help_mode> should be NULL when calling this function.
 
 				g_element_command_data.default_material =
 					Material_package_get_default_material(command_data->material_package);
+				g_element_command_data.default_font = command_data->default_font;
 				g_element_command_data.glyph_list = command_data->glyph_list;
 				g_element_command_data.computed_field_manager =
 					Computed_field_package_get_computed_field_manager(
@@ -24401,6 +24418,7 @@ Initialise all the subcomponents of cmgui and create the Cmiss_command_data
 				Graphical_material_set_alpha(material, 1.0);
 			}
 		}
+		command_data->default_font = ACCESS(Graphics_font)(CREATE(Graphics_font)("default"));
 		number_of_startup_materials = sizeof(startup_materials) /
 			sizeof(struct Startup_material_definition);
 		for (i = 0; i < number_of_startup_materials; i++)
@@ -24508,7 +24526,7 @@ Initialise all the subcomponents of cmgui and create the Cmiss_command_data
 		command_data->device_list=CREATE(LIST(Io_device))();
 #endif /* defined (SELECT_DESCRIPTORS) */
 
-		command_data->glyph_list = make_standard_glyphs();
+		command_data->glyph_list = make_standard_glyphs(command_data->default_font);
 
 		/* global list of selected objects */
 		command_data->any_object_selection=CREATE(Any_object_selection)();
@@ -25371,6 +25389,7 @@ Clean up the command_data, deallocating all the associated memory and resources.
 		DEACCESS(Spectrum)(&(command_data->default_spectrum));
 		DESTROY(MANAGER(Spectrum))(&command_data->spectrum_manager);
 		DEACCESS(Material_package)(&command_data->material_package);
+		DEACCESS(Graphics_font)(&command_data->default_font);
 		DESTROY(MANAGER(VT_volume_texture))(&command_data->volume_texture_manager);
 		DESTROY(MANAGER(Texture))(&command_data->texture_manager);
 		DESTROY(MANAGER(Environment_map))(&command_data->environment_map_manager);				

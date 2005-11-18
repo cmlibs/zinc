@@ -475,5 +475,27 @@ memory.
 ???SAB.  Taken directly from above
 ==============================================================================*/
 #endif /* defined (OPENGL_API) && defined (MOTIF) */
-#endif /* !defined (GRAPHICS_BUFFER_H) */
 
+#if defined (WIN32_USER_INTERFACE)
+int Graphics_buffer_win32_use_font_bitmaps(struct Graphics_buffer *buffer,
+	HFONT font, int first_bitmap, int number_of_bitmaps, int display_list_offset);
+/*******************************************************************************
+LAST MODIFIED : 17 November 2005
+
+DESCRIPTION :
+Function provided for compiling graphics_fonts as a graphics context is 
+required in the win32 case.
+==============================================================================*/
+#endif /* defined (WIN32_USER_INTERFACE) */
+
+#if defined (MOTIF)
+Widget Graphics_buffer_X3d_get_widget(struct Graphics_buffer *buffer);
+/*******************************************************************************
+LAST MODIFIED : 17 November 2005
+
+DESCRIPTION :
+Private routine to facilitate the compilation of Graphics fonts with only
+a Graphics_buffer.
+==============================================================================*/
+#endif /* defined (MOTIF) */
+#endif /* !defined (GRAPHICS_BUFFER_H) */

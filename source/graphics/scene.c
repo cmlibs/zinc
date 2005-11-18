@@ -829,9 +829,9 @@ linked list contained in the scene_object.
 } /* build_Scene_object */
 
 static int compile_Scene_object(struct Scene_object *scene_object,
-	void *dummy_void)
+	void *graphics_buffer_void)
 /*******************************************************************************
-LAST MODIFIED : 31 May 2001
+LAST MODIFIED : 18 November 2005
 
 DESCRIPTION :
 Rebuilds the display list for each uncreated or morphing graphics_object in the
@@ -840,10 +840,11 @@ linked list contained in the scene_object.
 {
 	float time;
 	int return_code;
+	struct Graphics_buffer *graphics_buffer;
 
 	ENTER(compile_Scene_object);
-	USE_PARAMETER(dummy_void);
-	if (scene_object)
+	if (scene_object && 
+		(graphics_buffer = (struct Graphics_buffer *)graphics_buffer_void))
 	{
 		return_code=1;
 		/* only compile visible objects */
@@ -861,7 +862,8 @@ linked list contained in the scene_object.
 					{
 						time = 0.0;
 					}
-					return_code=compile_GT_object(scene_object->gt_object,(void *)&time);
+					return_code=compile_GT_object(scene_object->gt_object,
+						time, graphics_buffer);
 				} break;
 				case SCENE_OBJECT_GRAPHICAL_ELEMENT_GROUP:
 				{
@@ -873,11 +875,13 @@ linked list contained in the scene_object.
 					{
 						time = 0.0;
 					}
-					return_code=compile_GT_element_group(scene_object->gt_element_group,time);
+					return_code=compile_GT_element_group(scene_object->gt_element_group,
+						time, graphics_buffer);
 				} break;
 				case SCENE_OBJECT_SCENE:
 				{
-					return_code=compile_Scene(scene_object->child_scene);
+					return_code=compile_Scene(scene_object->child_scene,
+						graphics_buffer);
 				} break;
 			}
 		}
@@ -941,7 +945,7 @@ from 1 to assist conversion back to graphics_object addresses in picking.
 					{
 						time = 0.0;
 					}
-					return_code=execute_GT_object(scene_object->gt_object,(void *)&time);
+					return_code=execute_GT_object(scene_object->gt_object, time);
 				} break;
 				case SCENE_OBJECT_GRAPHICAL_ELEMENT_GROUP:
 				{
@@ -6452,9 +6456,10 @@ Scene_picked_objects to pass to clients of the scene, eg. node editor.
 } /* Scene_input */
 
 struct LIST(Scene_picked_object) *Scene_pick_objects(struct Scene *scene,
-	struct Interaction_volume *interaction_volume)
+	struct Interaction_volume *interaction_volume,
+	struct Graphics_buffer *graphics_buffer)
 /*******************************************************************************
-LAST MODIFIED : 24 October 2001
+LAST MODIFIED : 18 November 2005
 
 DESCRIPTION :
 Returns a list of all the graphical entities in the <interaction_volume> of
@@ -6480,9 +6485,7 @@ understood for the type of <interaction_volume> passed.
 	{
 		if (scene_picked_object_list=CREATE(LIST(Scene_picked_object))())
 		{
-			/* need to build and compile scene as graphics object may not exist yet
-				 for picking */
-			if (build_Scene(scene) && compile_Scene(scene))
+			if (build_Scene(scene) && compile_Scene(scene, graphics_buffer))
 			{
 				select_buffer=(GLuint *)NULL;
 				num_hits=-1;
@@ -6636,7 +6639,7 @@ understood for the type of <interaction_volume> passed.
 			else
 			{
 				display_message(ERROR_MESSAGE,
-					"Scene_pick_objects.  No current X3d drawing widget");
+					"Scene_pick_objects.  Unable to compile scene.");
 			}
 		}
 		else
@@ -7027,13 +7030,14 @@ this function must be called before compile_Scene.
 	return (return_code);
 } /* build_Scene */
 
-int compile_Scene(struct Scene *scene)
+int compile_Scene(struct Scene *scene, struct Graphics_buffer *graphics_buffer)
 /*******************************************************************************
-LAST MODIFIED : 13 March 2002
+LAST MODIFIED : 18 November 2005
 
 DESCRIPTION :
 Assembles the display list containing the whole scene. Before that, however, it
 compiles the display lists of objects that will be executed in the scene.
+The <graphics_buffer> is used to provide rendering contexts.
 Note that lights are not included in the scene and must be handled separately!
 Must also call build_Scene before this functions.
 ==============================================================================*/
@@ -7048,7 +7052,7 @@ Must also call build_Scene before this functions.
 		{
 			/* compile objects in the scene */
 			FOR_EACH_OBJECT_IN_LIST(Scene_object)(compile_Scene_object,
-				NULL,scene->scene_object_list);
+				(void *)graphics_buffer, scene->scene_object_list);
 			/* compile lights in the scene */
 			FOR_EACH_OBJECT_IN_LIST(Light)(compile_Light,(void *)NULL,
 				scene->list_of_lights);

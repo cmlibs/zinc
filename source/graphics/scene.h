@@ -1067,9 +1067,10 @@ Scene_picked_objects to pass to clients of the scene, eg. node editor.
 ==============================================================================*/
 
 struct LIST(Scene_picked_object) *Scene_pick_objects(struct Scene *scene,
-	struct Interaction_volume *interaction_volume);
+	struct Interaction_volume *interaction_volume,
+	struct Graphics_buffer *graphics_buffer);
 /*******************************************************************************
-LAST MODIFIED : 26 April 2000
+LAST MODIFIED : 18 November 2005
 
 DESCRIPTION :
 Returns a list of all the graphical entities in the <interaction_volume> of
@@ -1144,13 +1145,14 @@ before the scene is output to OpenGL, VRML and wavefront objs. In particular,
 this function must be called before compile_Scene.
 ==============================================================================*/
 
-int compile_Scene(struct Scene *scene);
+int compile_Scene(struct Scene *scene, struct Graphics_buffer *graphics_buffer);
 /*******************************************************************************
 LAST MODIFIED : 31 May 2001
 
 DESCRIPTION :
 Assembles the display list containing the whole scene. Before that, however, it
 compiles the display lists of objects that will be executed in the scene.
+The <graphics_buffer> is used to provide rendering contexts.
 Note that lights are not included in the scene and must be handled separately!
 Must also call build_Scene before this functions.
 ==============================================================================*/

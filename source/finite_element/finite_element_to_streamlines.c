@@ -1737,7 +1737,8 @@ Creates a <GT_pointset> streampoint which can be manipulated with the mouse.
 				(*point)[1]=coordinates[1];
 				(*point)[2]=coordinates[2];
 				if (!(point_set=CREATE(GT_pointset)(1, point,(char **)NULL,
-					g_PLUS_MARKER,point_size,g_NO_DATA,(GTDATA *)NULL,(int *)NULL)))
+					g_PLUS_MARKER,point_size,g_NO_DATA,(GTDATA *)NULL,(int *)NULL,
+					(struct Graphics_font *)NULL)))
 				{
 					display_message(ERROR_MESSAGE,
 						"create_interactive_streampoint.  Unable to create pointset");
@@ -1859,7 +1860,8 @@ created with the given timestamp.
 		if (ALLOCATE(particle_positions,Triple,number_of_points))
 		{
 			if ((pointset=CREATE(GT_pointset)(number_of_points,particle_positions,
-				(char **)NULL,g_POINT_MARKER,1,g_NO_DATA,(GTDATA *)NULL,(int *)NULL))&&
+				(char **)NULL,g_POINT_MARKER,1,g_NO_DATA,(GTDATA *)NULL,(int *)NULL,
+				(struct Graphics_font *)NULL))&&
 				GT_OBJECT_ADD(GT_pointset)(point->graphics_object,time,pointset))
 			{
 				/* copy point positions and then point to new position space */

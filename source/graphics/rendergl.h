@@ -58,10 +58,10 @@ int draw_glyphsetGL(int number_of_points,Triple *point_list, Triple *axis1_list,
 	int number_of_data_components, GTDATA *data, int *names,
 	int label_bounds_dimension, int label_bounds_components, float *label_bounds,
 	struct Graphical_material *material, struct Spectrum *spectrum,
-	int draw_selected, int some_selected,
+	struct Graphics_font *font, int draw_selected, int some_selected,
 	struct Multi_range *selected_name_ranges);
 /*******************************************************************************
-LAST MODIFIED : 16 November 2000
+LAST MODIFIED : 17 November 2005
 
 DESCRIPTION :
 Draws graphics object <glyph> at <number_of_points> points given by the
@@ -80,9 +80,10 @@ are selected, or all points if <selected_name_ranges> is NULL.
 int draw_pointsetGL(int n_pts,Triple *point_list,char **text,
 	gtMarkerType marker_type,float marker_size,int *names,
 	int number_of_data_components, GTDATA *data,
-	struct Graphical_material *material, struct Spectrum *spectrum);
+	struct Graphical_material *material, struct Spectrum *spectrum,
+	struct Graphics_font *font);
 /*******************************************************************************
-LAST MODIFIED : 9 June 1999
+LAST MODIFIED : 18 November 2005
 
 DESCRIPTION :
 ???RC.  21/12/97 The optional names are supplied to allow identification of the
