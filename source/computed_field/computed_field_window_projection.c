@@ -1517,10 +1517,13 @@ already) and allows its contents to be modified.
 					return_code = 0;
 				}
 			}
-			if (!(scene_viewer = Graphics_window_get_Scene_viewer(graphics_window, 
-				pane_number - 1)))
+			if (return_code)
 			{
-				return_code = 0;
+				if (!(scene_viewer = Graphics_window_get_Scene_viewer(graphics_window, 
+					pane_number - 1)))
+				{
+					return_code = 0;
+				}
 			}
 			if (return_code)
 			{
