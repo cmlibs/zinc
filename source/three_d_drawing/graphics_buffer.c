@@ -3479,8 +3479,8 @@ DESCRIPTION :
 		{
 			case GRAPHICS_BUFFER_WIN32_TYPE:
 			{
-				SelectObject(buffer->hdc, font);
-				wglUseFontBitmaps(buffer->hdc, first_bitmap, number_of_bitmaps,
+				SelectObject(buffer->hDC, font);
+				wglUseFontBitmaps(buffer->hDC, first_bitmap, number_of_bitmaps,
 					display_list_offset);
 				return_code = 1;
 			} break;
