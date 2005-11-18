@@ -42,16 +42,27 @@ This provides a Cmgui interface to the font contexts of many types.
  *
  * ***** END LICENSE BLOCK ***** */
 
+#if defined (OPENGL_API)
+#define GL_GLEXT_PROTOTYPES
+#include <GL/gl.h>
+#include <GL/glu.h>
+#if defined (WIN32_SYSTEM)
+#include <GL/glext.h>
+/* SAB On Win32 I think you have to load all OpenGL 1.2, 1.3 etc functions
+	as extensions and keep pointer references to them.  I haven't done this
+	yet so we will undefine the version symbols */
+#undef GL_NV_vertex_program
+#undef GL_NV_register_combiners2
+#endif /* defined (WIN32_SYSTEM) */
+#endif
 #if defined (MOTIF)
 #if defined (SGI)
 /* Not compiling in as not being actively used and only available on O2's and
    cannot compile against Mesa without function pointer tables. */
 /* #include <dmedia/dm_buffer.h> */
 #endif /* defined (SGI) */
-#define GL_GLEXT_PROTOTYPES
 #define GLX_GLXEXT_PROTOTYPES
 #include <GL/glx.h>
-#include <GL/gl.h>
 #include <X11/Xlib.h>
 #include <X11/Intrinsic.h>
 #include "three_d_drawing/ThreeDDraw.h"
@@ -68,7 +79,6 @@ This provides a Cmgui interface to the font contexts of many types.
 #endif /* defined (GTK_USE_GTKGLAREA) */
 #endif /* defined (GTK_USER_INTERFACE) */
 #if defined (WIN32_USER_INTERFACE)
-#include <GL/gl.h>
 #include <windows.h>
 #endif /* defined (WIN32_USER_INTERFACE) */
 #include "general/debug.h"
