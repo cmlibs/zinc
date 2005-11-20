@@ -78,6 +78,7 @@ DESCRIPTION :
 ==============================================================================*/
 {
 #if defined (UNIX)
+	char *arguments[2];
 	int stdin_filedes[2], stdout_filedes[2];
 	pid_t process_id;
 #endif /* defined (UNIX) */
@@ -111,7 +112,9 @@ DESCRIPTION :
 						dup2(stdin_filedes[0],STDIN_FILENO);
 						dup2(stdout_filedes[1],STDOUT_FILENO);
 						/* Execute the filename */
-						execlp(filename, (char *)0);
+						arguments[0] = filename;
+						arguments[1] = (char *)NULL;
+						execlp(filename, (char *)arguments);
 						/* The execlp should never return as the process gets overlayed */
 						display_message(ERROR_MESSAGE,"CREATE(Child_process). Exec error!");
 						exit(EXIT_FAILURE);
