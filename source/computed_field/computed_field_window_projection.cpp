@@ -214,7 +214,10 @@ Clear the scene viewer reference when it is no longer valid.
 			  (void *)field);
 			data->scene_viewer_callback_flag = 0;
 		}
-		data->graphics_window_name = (char *)NULL;
+		if (data->graphics_window_name)
+		{
+			DEALLOCATE(data->graphics_window_name);
+		}
 		data->pane_number = 0;
 		data->scene_viewer = (struct Scene_viewer *)NULL;
 		Computed_field_changed(field, data->computed_field_manager);
@@ -632,6 +635,10 @@ Clear the type specific data used by this type.
 			Scene_viewer_remove_destroy_callback(data->scene_viewer, 
 				Computed_field_window_projection_scene_viewer_destroy_callback,
 				(void *)field);
+		}
+		if (data->graphics_window_name)
+		{
+			DEALLOCATE(data->graphics_window_name);
 		}
 		DEALLOCATE(field->type_specific_data);
 		return_code = 1;
