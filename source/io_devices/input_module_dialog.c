@@ -413,7 +413,7 @@ static gtMatrix transform_matrix={
 								if (*pointset_address =
 									CREATE(GT_pointset)(3, points, (char **)NULL,
 									marker_type, point_size, g_NO_DATA, (GTDATA *)NULL,
-									(int *)NULL), (struct Graphics_font *)NULL)
+									(int *)NULL, (struct Graphics_font *)NULL))
 								{
 									GT_OBJECT_ADD(GT_pointset)(
 										input_module_dialog->graphics_object, time,
