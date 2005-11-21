@@ -4041,7 +4041,7 @@ windowing system, used so far for compiling the font.
 ==============================================================================*/
 {
 	int i, return_code;
-	struct GT_object *glyph, *graphics_object;
+	struct GT_object *graphics_object;
 
 	ENTER(compile_GT_object);
 	if (graphics_object_list)
@@ -4071,7 +4071,6 @@ windowing system, used so far for compiling the font.
 
 						if (graphics_object->primitive_lists)
 						{
-							glyph = (struct GT_object *)NULL;
 							for (i = 0 ; i < graphics_object->number_of_times ; i++)
 							{
 								if (glyph_set =
@@ -4089,7 +4088,6 @@ windowing system, used so far for compiling the font.
 
 						if (graphics_object->primitive_lists)
 						{
-							glyph = (struct GT_object *)NULL;
 							for (i = 0 ; i < graphics_object->number_of_times ; i++)
 							{
 								if (point =
@@ -4106,7 +4104,6 @@ windowing system, used so far for compiling the font.
 
 						if (graphics_object->primitive_lists)
 						{
-							glyph = (struct GT_object *)NULL;
 							for (i = 0 ; i < graphics_object->number_of_times ; i++)
 							{
 								if (point_set =
