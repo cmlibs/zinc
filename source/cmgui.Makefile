@@ -1222,6 +1222,7 @@ ifeq ($(SYSNAME:IRIX%=),)
       # The .link extension prevents the makefile predecessor cycle 
       EXPORTS_FILE = cmgui.exports.link
       SRC_EXPORTS_FILE = cmgui.exports
+      EXPORTS_DEPEND = $(OBJECT_PATH)/$(EXPORTS_FILE)
       EXPORTS_LINK_FLAGS = -Wl,-exports_file,$(EXPORTS_FILE)
       $(OBJECT_PATH)/$(EXPORTS_FILE) :	$(SRC_EXPORTS_FILE)
 			@if [ ! -d $(OBJECT_PATH) ]; then \
@@ -1254,6 +1255,7 @@ ifeq ($(SYSNAME),Linux)
             #   the irix file does not yet */
             EXPORTS_FILE = cmgui_ld_version.script
             SRC_EXPORTS_FILE = cmgui.exports
+            EXPORTS_DEPEND = $(OBJECT_PATH)/$(EXPORTS_FILE)
             EXPORTS_LINK_FLAGS = -Wl,--export-dynamic,--version-script,$(EXPORTS_FILE)
             $(OBJECT_PATH)/$(EXPORTS_FILE) :	$(SRC_EXPORTS_FILE)
 					@if [ ! -d $(OBJECT_PATH) ]; then \
@@ -1280,6 +1282,7 @@ ifeq ($(SYSNAME),Linux)
             EXPORTS_FILE = cmgui_symbols.so
             EXPORTS_SONAME = libcmgui.so # If we are going to put this in the executable lets give it a generic name 
             SRC_EXPORTS_FILE = cmgui.exports
+            EXPORTS_DEPEND = $(OBJECT_PATH)/$(EXPORTS_FILE)
             EXPORTS_LINK_FLAGS = $(EXPORTS_FILE) -Wl,-soname,$(EXPORTS_SONAME)
             $(OBJECT_PATH)/$(EXPORTS_FILE) :	$(SRC_EXPORTS_FILE)
 					@if [ ! -d $(OBJECT_PATH) ]; then \
@@ -1324,7 +1327,7 @@ ifeq ($(SYSNAME),win32)
    endif # $(USER_INTERFACE) != GTK_USER_INTERFACE
 endif # $(SYSNAME) == win32
 
-$(BIN_TARGET) : $(OBJS) $(UNEMAP_OBJS) $(COMPILED_RESOURCE_FILES) $(MAIN_OBJ) $(OBJECT_PATH)/$(EXPORTS_FILE)
+$(BIN_TARGET) : $(OBJS) $(UNEMAP_OBJS) $(COMPILED_RESOURCE_FILES) $(MAIN_OBJ) $(EXPORTS_DEPEND)
 	$(call BuildNormalTarget,$(BIN_TARGET),$(BIN_PATH),$(OBJS) $(UNEMAP_OBJS) $(MAIN_OBJ),$(ALL_LIB) $(INTERPRETER_LINK_FLAGS) $(EXPORTS_LINK_FLAGS) $(COMPILED_RESOURCE_FILES))
 
 SO_LIB_SUFFIX = .so
