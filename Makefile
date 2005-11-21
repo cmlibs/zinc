@@ -168,7 +168,7 @@ all : cmgui cmgui-debug cmgui64 cmgui-console cmgui-debug-memorycheck cmgui-stat
 endif # SYSNAME == IRIX%=
 ifeq ($(SYSNAME),Linux)
    ifeq ($(MACHNAME),x86_64)
-all : cmgui cmgui-debug cmgui-debug-memorycheck
+all : cmgui cmgui-debug cmgui-debug-memorycheck cmgui-static-lib cmgui-debug-static-lib cmgui-no3dgraphics-static-lib cmgui-no3dgraphics-debug-static-lib cmgui-no3dgraphics-debug-memorycheck-static-lib
    else # MACHNAME == x86_64
 all : cmgui cmgui-debug cmgui-debug-memorycheck cmgui-static cmgui-static-debug cmgui-console cmgui-static-lib cmgui-debug-static-lib cmgui-gtk cmgui-gtk-debug cmgui-gtk-lib cmgui-gtk-debug-lib cmgui-gtk-static-lib cmgui-gtk-debug-static-lib cmgui-gtk-gtkmain-lib cmgui-gtk-gtkmain-debug-lib cmgui-gtk-gtkmain-static-lib cmgui-gtk-gtkmain-debug-static-lib cmgui-no3dgraphics-static-lib cmgui-no3dgraphics-debug-static-lib cmgui-no3dgraphics-debug-memorycheck-static-lib
    endif # MACHNAME == x86_64
