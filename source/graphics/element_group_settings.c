@@ -2289,7 +2289,8 @@ as a string and displayed beside the glyph.
 	if (settings&&((!label_field)||
 		((GT_ELEMENT_SETTINGS_NODE_POINTS==settings->settings_type)||
 			(GT_ELEMENT_SETTINGS_DATA_POINTS==settings->settings_type)||
-			(GT_ELEMENT_SETTINGS_ELEMENT_POINTS==settings->settings_type))))
+			(GT_ELEMENT_SETTINGS_ELEMENT_POINTS==settings->settings_type))) &&
+		(!label_field || font))
 	{
 		REACCESS(Computed_field)(&(settings->label_field), label_field);
 		REACCESS(Graphics_font)(&(settings->font), font);
@@ -4841,11 +4842,14 @@ if no coordinate field. Currently only write if we have a field.
 				sprintf(temp_string," centre %g,%g,%g",settings->glyph_centre[0],
 					settings->glyph_centre[1],settings->glyph_centre[2]);
 				append_string(&settings_string,temp_string,&error);
-				append_string(&settings_string," font ",&error);
-				if (GET_NAME(Graphics_font)(settings->font, &name))
+				if (settings->font)
 				{
-					append_string(&settings_string,name,&error);
-					DEALLOCATE(name);
+					append_string(&settings_string," font ",&error);
+					if (GET_NAME(Graphics_font)(settings->font, &name))
+					{
+						append_string(&settings_string,name,&error);
+						DEALLOCATE(name);
+					}
 				}
 				if (settings->label_field)
 				{
