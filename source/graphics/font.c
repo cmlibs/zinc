@@ -253,6 +253,14 @@ Compiles the specified <font> so it can be used by the graphics.  The
 #if defined (WIN32_USER_INTERFACE)
 	HFONT win32_font;
 #endif /* defined (WIN32_USER_INTERFACE) */
+#if defined (GTK_USER_INTERFACE)
+#if GTK_MAJOR_VERSION >= 2
+	gint font_height;
+	PangoFontDescription *font_desc;
+	PangoFont *pango_font;
+	PangoFontMetrics *font_metrics;
+#endif /* GTK_MAJOR_VERSION >= 2 */
+#endif /* defined (GTK_USER_INTERFACE) */
 	int return_code;
 
 	ENTER(Graphics_font_compile);
@@ -312,17 +320,48 @@ Compiles the specified <font> so it can be used by the graphics.  The
 				} break;
 #endif /* defined (MOTIF) */
 #if defined (GTK_USER_INTERFACE)
-#if defined (GTK_USE_GTKGLAREA)
 				case GRAPHICS_BUFFER_GTKGLAREA_TYPE:
 				{
+		         /* Not implemented */
+					display_message(WARNING_MESSAGE,"wrapperInitText.  "
+						"Text display is not implemented for Gtk prior to version 2.");
 					return_code = 0;
-				} break;
-#else /* defined (GTK_USE_GTKGLAREA) */
+				}
 				case GRAPHICS_BUFFER_GTKGLEXT_TYPE:
 				{
+#if GTK_MAJOR_VERSION >= 2
+					if (!strcmp(font->name,"default"))
+					{
+						font_desc = pango_font_description_from_string ("courier 12");
+					}
+					else
+					{
+						font_desc = pango_font_description_from_string (font->name);
+					}
+
+					pango_font = gdk_gl_font_use_pango_font (font_desc, font->first_bitmap, 
+						font->number_of_bitmaps, font->display_list_offset);
+					if (pango_font == NULL)
+					{
+						display_message(WARNING_MESSAGE,"wrapperInitText.  "
+							"Text display is not implemented for Gtk prior to version 2.");
+					}
+					
+					font_metrics = pango_font_get_metrics (pango_font, NULL);
+					
+					font_height = pango_font_metrics_get_ascent (font_metrics) +
+						pango_font_metrics_get_descent (font_metrics);
+					font_height = PANGO_PIXELS (font_height);
+					
+					pango_font_description_free (font_desc);
+					pango_font_metrics_unref (font_metrics);
+#else /* GTK_MAJOR_VERSION >= 2 */
+		         /* Not implemented */
+					display_message(WARNING_MESSAGE,"wrapperInitText.  "
+						"Text display is not implemented for Gtk prior to version 2.");
 					return_code = 0;
+#endif /* GTK_MAJOR_VERSION >= 2 */
 				} break;
-#endif /* defined (GTK_USE_GTKGLAREA) */
 #endif /* defined (GTK_USER_INTERFACE) */
 #if defined (WIN32_USER_INTERFACE)
 				case GRAPHICS_BUFFER_WIN32_TYPE:
