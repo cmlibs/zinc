@@ -624,9 +624,6 @@ in that region.
 	Triple *stream_point,*stream_vector,*stream_normal,*tmp_triples;
 
 	ENTER(track_streamline_from_FE_element);
-	/*	step_size of zero indicates first step */
-	step_size = 0;
-	total_stepped = 0.0;
 	if (element&&(*element)&&FE_element_is_top_level(*element, NULL)&&
 		(element_dimension = get_FE_element_dimension(*element))&&
 		((3 == element_dimension) || (2 == element_dimension)) &&
@@ -646,6 +643,11 @@ in that region.
 		number_of_points&&stream_points&&stream_vectors&&stream_normals&&
 		((STREAM_NO_DATA==data_type)|| stream_data))
 	{
+		/*	step_size of zero indicates first step */
+		step_size = 0;
+		total_stepped = 0.0;
+		previous_total_stepped_A = 0.0;
+
 		calculate_curl = 1;
 		return_code=1;
 		/* clear coordinates in case coordinate field is not 3 component */
