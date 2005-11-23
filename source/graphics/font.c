@@ -320,16 +320,17 @@ Compiles the specified <font> so it can be used by the graphics.  The
 				} break;
 #endif /* defined (MOTIF) */
 #if defined (GTK_USER_INTERFACE)
+#  if defined GTK_USE_GTKGLAREA
 				case GRAPHICS_BUFFER_GTKGLAREA_TYPE:
 				{
 		         /* Not implemented */
 					display_message(WARNING_MESSAGE,"wrapperInitText.  "
-						"Text display is not implemented for Gtk prior to version 2.");
+						"Text display is not implemented for Gtk prior to version 2 or for gtkglarea.");
 					return_code = 0;
-				}
+				} break;
+#  else /* ! defined GTK_USE_GTKGLAREA */
 				case GRAPHICS_BUFFER_GTKGLEXT_TYPE:
 				{
-#if GTK_MAJOR_VERSION >= 2
 					if (!strcmp(font->name,"default"))
 					{
 						font_desc = pango_font_description_from_string ("courier 12");
@@ -355,13 +356,8 @@ Compiles the specified <font> so it can be used by the graphics.  The
 					
 					pango_font_description_free (font_desc);
 					pango_font_metrics_unref (font_metrics);
-#else /* GTK_MAJOR_VERSION >= 2 */
-		         /* Not implemented */
-					display_message(WARNING_MESSAGE,"wrapperInitText.  "
-						"Text display is not implemented for Gtk prior to version 2.");
-					return_code = 0;
-#endif /* GTK_MAJOR_VERSION >= 2 */
 				} break;
+#  endif /* ! defined GTK_USE_GTKGLAREA */
 #endif /* defined (GTK_USER_INTERFACE) */
 #if defined (WIN32_USER_INTERFACE)
 				case GRAPHICS_BUFFER_WIN32_TYPE:
