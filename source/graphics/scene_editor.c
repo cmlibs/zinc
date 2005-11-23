@@ -1924,6 +1924,7 @@ struct Scene_editor *CREATE(Scene_editor)(
 	struct Cmiss_region *root_region,
 	struct MANAGER(Graphical_material) *graphical_material_manager,
 	struct Graphical_material *default_material,
+	struct Graphics_font *default_font,
 	struct LIST(GT_object) *glyph_list,
 	struct MANAGER(Spectrum) *spectrum_manager,
 	struct Spectrum *default_spectrum,
@@ -2266,7 +2267,8 @@ Note on successful return the dialog is put at <*scene_editor_address>.
 				scene_editor->child_form,
 				(struct GT_element_group *)NULL,
 				computed_field_package, root_region,
-				graphical_material_manager, default_material, glyph_list,
+				graphical_material_manager, default_material, 
+				default_font, glyph_list,
 				spectrum_manager, default_spectrum,
 				volume_texture_manager, user_interface);
 			XtUnmanageChild(scene_editor->graphical_element_editor);

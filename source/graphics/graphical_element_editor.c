@@ -119,6 +119,7 @@ Contains all the information carried by the graphical element editor widget.
 	struct Computed_field_package *computed_field_package;
 	struct GT_element_group *edit_gt_element_group;
 	struct Graphical_material *default_material;
+	struct Graphics_font *default_font;
 	struct LIST(GT_object) *glyph_list;
 	struct MANAGER(Graphical_material) *graphical_material_manager;
 	void *material_manager_callback_id;
@@ -1429,6 +1430,8 @@ Add button press: create new settings of the current type.
 				/* set materials for all settings */
 				GT_element_settings_set_material(settings,
 					gelem_editor->default_material);
+				GT_element_settings_set_label_field(settings,
+					(struct Computed_field *)NULL, gelem_editor->default_font);
 				GT_element_settings_set_selected_material(settings,
 					FIND_BY_IDENTIFIER_IN_MANAGER(Graphical_material,name)(
 						"default_selected",gelem_editor->graphical_material_manager));
@@ -1846,6 +1849,7 @@ Widget create_graphical_element_editor_widget(Widget *gelem_editor_widget,
 	struct Cmiss_region *root_region,
 	struct MANAGER(Graphical_material) *graphical_material_manager,
 	struct Graphical_material *default_material,
+	struct Graphics_font *default_font,
 	struct LIST(GT_object) *glyph_list,
 	struct MANAGER(Spectrum) *spectrum_manager,
 	struct Spectrum *default_spectrum,
@@ -1932,7 +1936,7 @@ Creates a graphical_element_editor widget.
 		(computed_field_manager = Computed_field_package_get_computed_field_manager(
 			computed_field_package)) && root_region &&
 		(root_fe_region = Cmiss_region_get_FE_region(root_region)) &&
-		graphical_material_manager&&default_material&&glyph_list&&
+		graphical_material_manager&&default_material&&default_font&&glyph_list&&
 		spectrum_manager&&default_spectrum&&volume_texture_manager&&user_interface)
 	{
 		if (MrmOpenHierarchy_base64_string(graphical_element_editor_uidh,
@@ -1949,6 +1953,7 @@ Creates a graphical_element_editor widget.
 				gelem_editor->glyph_list=glyph_list;
 				gelem_editor->graphical_material_manager=graphical_material_manager;
 				gelem_editor->default_material=default_material;
+				gelem_editor->default_font = default_font;
 				gelem_editor->material_manager_callback_id=(void *)NULL;
 				gelem_editor->default_spectrum=default_spectrum;
 				gelem_editor->spectrum_manager=spectrum_manager;

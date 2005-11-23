@@ -2268,7 +2268,7 @@ and are deallocated by its DESTROY function.
 
 	ENTER(CREATE(GT_glyph_set));
 	if ((0 < number_of_points) && point_list && axis1_list && axis2_list &&
-		axis3_list && scale_list && glyph)
+		axis3_list && scale_list && glyph && (!labels || font))
 	{
 		if (ALLOCATE(glyph_set,struct GT_glyph_set,1))
 		{
@@ -2279,7 +2279,14 @@ and are deallocated by its DESTROY function.
 			glyph_set->axis3_list = axis3_list;
 			glyph_set->scale_list = scale_list;
 			glyph_set->glyph = ACCESS(GT_object)(glyph);
-			glyph_set->font = ACCESS(Graphics_font)(font);
+			if (font)
+			{
+				glyph_set->font = ACCESS(Graphics_font)(font);
+			}
+			else
+			{
+				glyph_set->font = (struct Graphics_font *)NULL;
+			}
 			glyph_set->labels = labels;
 			glyph_set->n_data_components = n_data_components;
  			glyph_set->data = data;
@@ -2329,7 +2336,10 @@ Frees the frees the memory for <**glyph_set_address> and sets
 		DEALLOCATE(glyph_set->axis3_list);
 		DEALLOCATE(glyph_set->scale_list);
 		DEACCESS(GT_object)(&(glyph_set->glyph));
-		DEACCESS(Graphics_font)(&(glyph_set->font));
+		if (glyph_set->font)
+		{
+			DEACCESS(Graphics_font)(&(glyph_set->font));
+		}
 		if (labels = glyph_set->labels)
 		{
 			for (i = glyph_set->number_of_points; 0 < i; i--)
@@ -2772,7 +2782,7 @@ derivative in that xi direction.
 	struct GT_point *point;
 
 	ENTER(CREATE(GT_point));
-	if (position)
+	if (position && (!text || font))
 	{
 		if (ALLOCATE(point,struct GT_point,1))
 		{
@@ -2782,7 +2792,14 @@ derivative in that xi direction.
 			point->marker_size=marker_size;
 			point->n_data_components=n_data_components;
 			point->data=data;
-			point->font = ACCESS(Graphics_font)(font);
+			if (font)
+			{
+				point->font = ACCESS(Graphics_font)(font);
+			}
+			else
+			{
+				point->font = (struct Graphics_font *)NULL;
+			}
 			point->object_name = object_name;
 			point->ptrnext=(struct GT_point *)NULL;
 		}
@@ -2884,7 +2901,7 @@ point it is assumed that there isn't a derivative in that xi direction.
 	struct GT_pointset *point_set;
 
 	ENTER(CREATE(GT_pointset));
-	if (pointlist && (text && font) || (!text && !font))
+	if (pointlist && (!text || font))
 	{
 		if (ALLOCATE(point_set,struct GT_pointset,1))
 		{
@@ -4077,7 +4094,10 @@ windowing system, used so far for compiling the font.
 									graphics_object->primitive_lists[i].gt_glyph_set.first)
 								{
 									compile_GT_object(glyph_set->glyph, time, graphics_buffer);
-									Graphics_font_compile(glyph_set->font, graphics_buffer);
+									if (glyph_set->font)
+									{
+										Graphics_font_compile(glyph_set->font, graphics_buffer);
+									}
 								}
 							}
 						}
@@ -4093,7 +4113,10 @@ windowing system, used so far for compiling the font.
 								if (point =
 									graphics_object->primitive_lists[i].gt_point.first)
 								{
-									Graphics_font_compile(point->font, graphics_buffer);
+									if (point->font)
+									{
+										Graphics_font_compile(point->font, graphics_buffer);
+									}
 								}
 							}
 						}

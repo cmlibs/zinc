@@ -10781,6 +10781,7 @@ Executes a GFX EDIT_SCENE command.  Brings up the Scene_editor.
 						command_data->root_region,
 						Material_package_get_material_manager(command_data->material_package),
 						Material_package_get_default_material(command_data->material_package),
+						command_data->default_font,
 						command_data->glyph_list,
 						command_data->spectrum_manager,
 						command_data->default_spectrum,

@@ -66,13 +66,14 @@ struct Scene_editor *CREATE(Scene_editor)(
 	struct Cmiss_region *root_region,
 	struct MANAGER(Graphical_material) *graphical_material_manager,
 	struct Graphical_material *default_material,
+	struct Graphics_font *default_font,
 	struct LIST(GT_object) *glyph_list,
 	struct MANAGER(Spectrum) *spectrum_manager,
 	struct Spectrum *default_spectrum,
 	struct MANAGER(VT_volume_texture) *volume_texture_manager,
 	struct User_interface *user_interface);
 /*******************************************************************************
-LAST MODIFIED : 3 March 2003
+LAST MODIFIED : 24 November 2005
 
 DESCRIPTION :
 Note on successful return the dialog is put at <*scene_editor_address>.
