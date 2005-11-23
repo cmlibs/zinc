@@ -137,7 +137,7 @@ DESCRIPTION :
 		font->first_bitmap = 0;
 		font->number_of_bitmaps = 0;
 
-		font->display_list_offset = -1;
+		font->display_list_offset = 0;
 
 		font->offset_x = 0;
 		font->offset_y = 0;
@@ -171,6 +171,10 @@ DESCRIPTION :
 		if (font->name)
 		{
 			DEALLOCATE(font->name);
+		}
+		if (font->display_list_offset)
+		{
+			glDeleteLists(font->display_list_offset, font->number_of_bitmaps);
 		}
 
 		DEALLOCATE(*font_address);
@@ -254,122 +258,126 @@ Compiles the specified <font> so it can be used by the graphics.  The
 	ENTER(Graphics_font_compile);
 	if (font && buffer)
 	{
-		font->first_bitmap = 0;
-		font->number_of_bitmaps = 256;
-		font->display_list_offset = glGenLists (256);
-
-		/* Can have multiple types compiled in at the same time (X and gtk) */
-		switch (Graphics_buffer_get_type(buffer))
+		return_code = 1;
+		if (!font->display_list_offset)
 		{
-#if defined (MOTIF)
-			case GRAPHICS_BUFFER_GLX_X3D_TYPE:
-#  if defined (USE_GLX_PBUFFER) || defined (GLX_SGIX_dmbuffer) || defined (GLX_SGIX_pbuffer)
-			case GRAPHICS_BUFFER_GLX_PBUFFER_TYPE:
-#  endif /* defined (USE_GLX_PBUFFER) || defined (GLX_SGIX_dmbuffer) || defined (GLX_SGIX_pbuffer) */
-			case GRAPHICS_BUFFER_GLX_PIXMAP_TYPE:
+			font->first_bitmap = 0;
+			font->number_of_bitmaps = 256;
+			font->display_list_offset = glGenLists (font->number_of_bitmaps);
+
+			/* Can have multiple types compiled in at the same time (X and gtk) */
+			switch (Graphics_buffer_get_type(buffer))
 			{
-				widget = Graphics_buffer_X3d_get_widget(buffer);
-				application_shell = widget;
-				while (widget = XtParent(widget))
+#if defined (MOTIF)
+				case GRAPHICS_BUFFER_GLX_X3D_TYPE:
+#  if defined (USE_GLX_PBUFFER) || defined (GLX_SGIX_dmbuffer) || defined (GLX_SGIX_pbuffer)
+				case GRAPHICS_BUFFER_GLX_PBUFFER_TYPE:
+#  endif /* defined (USE_GLX_PBUFFER) || defined (GLX_SGIX_dmbuffer) || defined (GLX_SGIX_pbuffer) */
+				case GRAPHICS_BUFFER_GLX_PIXMAP_TYPE:
 				{
+					widget = Graphics_buffer_X3d_get_widget(buffer);
 					application_shell = widget;
-				}
-				XtVaGetApplicationResources(application_shell,
-					&text_defaults, resources, XtNumber(resources), NULL);
-				if (!strcmp(font->name,"default"))
-				{
-					x_font = text_defaults.graphics_font;
-				}
-				else
-				{
-					if (!(x_font = XLoadQueryFont(XtDisplay(application_shell), font->name)))
+					while (widget = XtParent(widget))
 					{
-						display_message(WARNING_MESSAGE,
-							"Unable to get specified font \"%s\", falling back to system font.",
-							font->name);
+						application_shell = widget;
+					}
+					XtVaGetApplicationResources(application_shell,
+						&text_defaults, resources, XtNumber(resources), NULL);
+					if (!strcmp(font->name,"default"))
+					{
 						x_font = text_defaults.graphics_font;
 					}
-				}
-				if (x_font)
-				{
-					glXUseXFont(x_font->fid, font->first_bitmap,
-						font->number_of_bitmaps, font->display_list_offset);
-					return_code = 1;
-				}
-				else
-				{
-					display_message(ERROR_MESSAGE,"Graphics_font.  "
-						"Unable to get any font.");
-					return_code = 0;
-				}
-			} break;
+					else
+					{
+						if (!(x_font = XLoadQueryFont(XtDisplay(application_shell), font->name)))
+						{
+							display_message(WARNING_MESSAGE,
+								"Unable to get specified font \"%s\", falling back to system font.",
+								font->name);
+							x_font = text_defaults.graphics_font;
+						}
+					}
+					if (x_font)
+					{
+						glXUseXFont(x_font->fid, font->first_bitmap,
+							font->number_of_bitmaps, font->display_list_offset);
+						return_code = 1;
+					}
+					else
+					{
+						display_message(ERROR_MESSAGE,"Graphics_font.  "
+							"Unable to get any font.");
+						return_code = 0;
+					}
+				} break;
 #endif /* defined (MOTIF) */
 #if defined (GTK_USER_INTERFACE)
 #if defined (GTK_USE_GTKGLAREA)
-			case GRAPHICS_BUFFER_GTKGLAREA_TYPE:
-			{
-				return_code = 0;
-			} break;
+				case GRAPHICS_BUFFER_GTKGLAREA_TYPE:
+				{
+					return_code = 0;
+				} break;
 #else /* defined (GTK_USE_GTKGLAREA) */
-			case GRAPHICS_BUFFER_GTKGLEXT_TYPE:
-			{
-				return_code = 0;
-			} break;
+				case GRAPHICS_BUFFER_GTKGLEXT_TYPE:
+				{
+					return_code = 0;
+				} break;
 #endif /* defined (GTK_USE_GTKGLAREA) */
 #endif /* defined (GTK_USER_INTERFACE) */
 #if defined (WIN32_USER_INTERFACE)
-			case GRAPHICS_BUFFER_WIN32_TYPE:
-			{
-				if (!strcmp(font->name,"default"))
+				case GRAPHICS_BUFFER_WIN32_TYPE:
 				{
-					win32_font = GetStockObject(DEFAULT_GUI_FONT);
-				}
-				else
-				{
-					if (!(win32_font = CreateFont(
-						20,               /* height of font */
-						0,                /* average character width */
-						0,                /* angle of escapement */
-						0,                /* base-line orientation angle */
-						FW_NORMAL,        /* font weight */
-						FALSE,            /* italic attribute option */
-						FALSE,            /* underline attribute option */
-						FALSE,            /* strikeout attribute option */
-						ANSI_CHARSET,     /* character set identifier */
-						OUT_DEFAULT_PRECIS, /* output precision */
-						CLIP_DEFAULT_PRECIS,  /* clipping precision */
-						DEFAULT_QUALITY,  /* output quality */
-						DEFAULT_PITCH | FF_DONTCARE, /* pitch and family */
-						font->name   /* typeface name */
-						)))
+					if (!strcmp(font->name,"default"))
 					{
-						display_message(WARNING_MESSAGE,
-							"Unable to get specified font \"%s\", falling back to system font.",
-							font->name);
 						win32_font = GetStockObject(DEFAULT_GUI_FONT);
 					}
-				}
-				if (win32_font)
-				{
-					Graphics_buffer_win32_use_font_bitmaps(buffer,
-						win32_font, font->first_bitmap, font->number_of_bitmaps, 
-						font->display_list_offset);
-					return_code = 1;
-				}
-				else
+					else
+					{
+						if (!(win32_font = CreateFont(
+									20,               /* height of font */
+									0,                /* average character width */
+									0,                /* angle of escapement */
+									0,                /* base-line orientation angle */
+									FW_NORMAL,        /* font weight */
+									FALSE,            /* italic attribute option */
+									FALSE,            /* underline attribute option */
+									FALSE,            /* strikeout attribute option */
+									ANSI_CHARSET,     /* character set identifier */
+									OUT_DEFAULT_PRECIS, /* output precision */
+									CLIP_DEFAULT_PRECIS,  /* clipping precision */
+									DEFAULT_QUALITY,  /* output quality */
+									DEFAULT_PITCH | FF_DONTCARE, /* pitch and family */
+									font->name   /* typeface name */
+									)))
+						{
+							display_message(WARNING_MESSAGE,
+								"Unable to get specified font \"%s\", falling back to system font.",
+								font->name);
+							win32_font = GetStockObject(DEFAULT_GUI_FONT);
+						}
+					}
+					if (win32_font)
+					{
+						Graphics_buffer_win32_use_font_bitmaps(buffer,
+							win32_font, font->first_bitmap, font->number_of_bitmaps, 
+							font->display_list_offset);
+						return_code = 1;
+					}
+					else
+					{
+						display_message(ERROR_MESSAGE,"Graphics_font.  "
+							"Unable to get any font.");
+						return_code = 0;
+					}
+				} break;
+#endif /* defined (WIN32_USER_INTERFACE) */
+				default:
 				{
 					display_message(ERROR_MESSAGE,"Graphics_font.  "
-						"Unable to get any font.");
+						"Graphics_bufffer type unknown or not supported.");				
 					return_code = 0;
-				}
-			} break;
-#endif /* defined (WIN32_USER_INTERFACE) */
-			default:
-			{
-				display_message(ERROR_MESSAGE,"Graphics_font.  "
-					"Graphics_bufffer type unknown or not supported.");				
-				return_code = 0;
-			} break;
+				} break;
+			}
 		}
 	}
 	else
