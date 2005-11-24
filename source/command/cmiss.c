@@ -4601,6 +4601,7 @@ Executes a GFX CREATE SCENE command.
 							Scene_enable_graphics(scene,command_data->glyph_list,
 								Material_package_get_material_manager(command_data->material_package),
 								Material_package_get_default_material(command_data->material_package),
+								command_data->default_font,
 								command_data->light_manager,
 								command_data->spectrum_manager,
 								command_data->default_spectrum,
@@ -24854,7 +24855,8 @@ Initialise all the subcomponents of cmgui and create the Cmiss_command_data
 			{
 				Scene_enable_graphics(command_data->default_scene,command_data->glyph_list,
 					Material_package_get_material_manager(command_data->material_package),
-					Material_package_get_default_material(command_data->material_package),command_data->light_manager,
+					Material_package_get_default_material(command_data->material_package),
+					command_data->default_font, command_data->light_manager,
 					command_data->spectrum_manager,command_data->default_spectrum,
 					command_data->texture_manager);
 				Scene_set_graphical_element_mode(command_data->default_scene,

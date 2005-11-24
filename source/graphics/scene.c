@@ -76,6 +76,7 @@ November 1997. Created from Scene description part of Drawing.
 #include "graphics/auxiliary_graphics_types.h"
 #include "graphics/element_group_settings.h"
 #include "graphics/graphics_library.h"
+#include "graphics/font.h"
 #include "graphics/glyph.h"
 #include "graphics/graphics_object.h"
 #include "graphics/graphical_element.h"
@@ -189,6 +190,7 @@ Stores the collections of objects that make up a 3-D graphical model.
 	struct LIST(GT_object) *glyph_list;
 	struct MANAGER(Graphical_material) *graphical_material_manager;
 	struct Graphical_material *default_material;
+	struct Graphics_font *default_font;
 	void *graphical_material_manager_callback_id;
 	struct MANAGER(Light) *light_manager;
 	struct LIST(Light) *list_of_lights;
@@ -4406,6 +4408,7 @@ from the default versions of these functions.
 				(struct MANAGER(Graphical_material) *)NULL;
 			scene->graphical_material_manager_callback_id=(void *)NULL;
 			scene->default_material=(struct Graphical_material *)NULL;
+			scene->default_font=(struct Graphics_font *)NULL;
 			scene->light_manager=(struct MANAGER(Light) *)NULL;
 			scene->light_manager_callback_id=(void *)NULL;
 			scene->spectrum_manager=(struct MANAGER(Spectrum) *)NULL;
@@ -4596,12 +4599,13 @@ int Scene_enable_graphics(struct Scene *scene,
 	struct LIST(GT_object) *glyph_list,
 	struct MANAGER(Graphical_material) *graphical_material_manager,
 	struct Graphical_material *default_material,
+	struct Graphics_font *default_font,
 	struct MANAGER(Light) *light_manager,
 	struct MANAGER(Spectrum) *spectrum_manager,
 	struct Spectrum *default_spectrum,
 	struct MANAGER(Texture) *texture_manager)
 /*******************************************************************************
-LAST MODIFIED : 11 July 2000
+LAST MODIFIED : 24 November 2005
 
 DESCRIPTION :
 The scene is initially incapable of generating any graphics, since it does not
@@ -4616,7 +4620,7 @@ NOTE: The light_manager is not currently used by the scene.
 
 	ENTER(Scene_enable_graphics);
 	if (scene&&glyph_list&&graphical_material_manager&&default_material&&
-		light_manager&&spectrum_manager&&default_spectrum&&texture_manager)
+		default_font&&light_manager&&spectrum_manager&&default_spectrum&&texture_manager)
 	{
 		if (scene->graphical_material_manager)
 		{
@@ -4628,6 +4632,7 @@ NOTE: The light_manager is not currently used by the scene.
 			scene->glyph_list=glyph_list;
 			scene->graphical_material_manager=graphical_material_manager;
 			scene->default_material=ACCESS(Graphical_material)(default_material);
+			scene->default_font=ACCESS(Graphics_font)(default_font);
 			scene->light_manager=light_manager;
 			scene->spectrum_manager=spectrum_manager;
 			scene->default_spectrum=ACCESS(Spectrum)(default_spectrum);
@@ -4693,6 +4698,10 @@ Removes links to all objects required to display graphics.
 		if (scene->default_material)
 		{
 			DEACCESS(Graphical_material)(&(scene->default_material));
+		}
+		if (scene->default_font)
+		{
+			DEACCESS(Graphics_font)(&(scene->default_font));
 		}
 		if (scene->default_spectrum)
 		{
@@ -5052,7 +5061,7 @@ PROTOTYPE_MANAGER_COPY_WITHOUT_IDENTIFIER_FUNCTION(Scene,name)
 		if (source->graphical_material_manager)
 		{
 			Scene_enable_graphics(destination,source->glyph_list,
-				source->graphical_material_manager,source->default_material,
+				source->graphical_material_manager,source->default_material,source->default_font,
 				source->light_manager,source->spectrum_manager,source->default_spectrum,
 				source->texture_manager);
 		}
@@ -7576,7 +7585,9 @@ GT_element_group and therefore have the same rendition.
 								CREATE(GT_element_settings)(GT_ELEMENT_SETTINGS_LINES))
 							{
 								GT_element_settings_set_material(settings,
-									scene->default_material);
+									scene->default_material);	
+								GT_element_settings_set_label_field(settings,
+									(struct Computed_field *)NULL, scene->default_font);	
 								GT_element_settings_set_selected_material(settings,
 									FIND_BY_IDENTIFIER_IN_MANAGER(Graphical_material,name)(
 										"default_selected", scene->graphical_material_manager));
@@ -7627,6 +7638,8 @@ GT_element_group and therefore have the same rendition.
 										}
 										GT_element_settings_set_material(settings,
 											scene->default_material);
+										GT_element_settings_set_label_field(settings,
+											(struct Computed_field *)NULL, scene->default_font);	
 										GT_element_settings_set_selected_material(settings,
 											FIND_BY_IDENTIFIER_IN_MANAGER(Graphical_material,name)(
 												"default_selected", scene->graphical_material_manager));

@@ -603,12 +603,13 @@ int Scene_enable_graphics(struct Scene *scene,
 	struct LIST(GT_object) *glyph_list,
 	struct MANAGER(Graphical_material) *graphical_material_manager,
 	struct Graphical_material *default_material,
+	struct Graphics_font *default_font,
 	struct MANAGER(Light) *light_manager,
 	struct MANAGER(Spectrum) *spectrum_manager,
 	struct Spectrum *default_spectrum,
 	struct MANAGER(Texture) *texture_manager);
 /*******************************************************************************
-LAST MODIFIED : 12 February 1999
+LAST MODIFIED : 24 November 2005
 
 DESCRIPTION :
 The scene is initially incapable of generating any graphics, since it does not

@@ -1222,7 +1222,7 @@ Creates a spectrum_editor widget.
 										spectrum_editor->spectrum_editor_scene = CREATE(Scene)("spectrum_editor_scene");
 										Scene_enable_graphics( spectrum_editor->spectrum_editor_scene,
 											glyph_list, graphical_material_manager, 
-											spectrum_editor->editor_material, light_manager,
+											spectrum_editor->editor_material, font, light_manager,
 											spectrum_manager, default_scene_spectrum, 
 											texture_manager);
 										viewer_light = CREATE(Light)("spectrum_editor_light");
