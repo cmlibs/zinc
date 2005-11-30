@@ -209,7 +209,6 @@ Functions for executing cmiss commands.
 #include "graphics/renderalias.h"
 #endif /* defined (NEW_ALIAS) */
 #endif /* defined (MOTIF) */
-#include "graphics/renderbinarywavefront.h"
 #include "graphics/rendervrml.h"
 #include "graphics/renderwavefront.h"
 #include "graphics/scene.h"
@@ -223,15 +222,9 @@ Functions for executing cmiss commands.
 #endif /* defined (MOTIF) */
 #include "graphics/spectrum_settings.h"
 #include "graphics/texture.h"
-#if defined (MOTIF)
-#include "graphics/texturemap.h"
-#endif /* defined (MOTIF) */
 #include "graphics/transform_tool.h"
 #include "graphics/userdef_objects.h"
 #include "graphics/volume_texture.h"
-#if defined (MOTIF)
-#include "graphics/volume_texture_editor.h"
-#endif /* defined (MOTIF) */
 #if defined (GTK_USER_INTERFACE)
 #include "gtk/gtk_cmiss_scene_viewer.h"
 #endif /* defined (GTK_USER_INTERFACE) */
@@ -2809,7 +2802,8 @@ Invokes the grid field calculator dialog.
 					&(command_data->control_curve_editor_dialog),
 					command_data->root_region,
 					command_data->control_curve_manager,
-					command_data->user_interface);
+					command_data->user_interface,
+					command_data->graphics_buffer_package);
 			}
 		}
 		else
@@ -7154,142 +7148,6 @@ Executes a GFX CREATE TEXTURE command.
 } /* gfx_create_texture */
 
 #if defined (MOTIF)
-static int gfx_create_texture_map(struct Parse_state *state,
-	void *dummy_to_be_modified,void *command_data_void)
-/*******************************************************************************
-LAST MODIFIED : 28 February 2003
-
-DESCRIPTION :
-Executes a GFX CREATE TEXMAP command.
-==============================================================================*/
-{
-	char *in_file_name,*out_file_name;
-	double xi_max[3];
-	int return_code;
-	struct Computed_field *coordinate_field;
-	struct Cmiss_command_data *command_data;
-	struct Element_discretization extent;
-	struct FE_element *seed_element;
-	struct Graphics_window *window;
-	struct Option_table *option_table;
-	struct Set_Computed_field_conditional_data set_coordinate_field_data;
-
-	ENTER(gfx_create_texture_map);
-	USE_PARAMETER(dummy_to_be_modified);
-	if (state && (command_data = (struct Cmiss_command_data *)command_data_void))
-	{
-		/* initialise defaults */
-		if (ALLOCATE(out_file_name,char,11))
-		{
-			strcpy(out_file_name,"texmap.rgb");
-		}
-		in_file_name=(char *)NULL;
-		seed_element=(struct FE_element *)NULL;
-		extent.number_in_xi1=1;
-		extent.number_in_xi2=1;
-		extent.number_in_xi3=1;
-		if (window=FIRST_OBJECT_IN_MANAGER_THAT(Graphics_window)(
-			(MANAGER_CONDITIONAL_FUNCTION(Graphics_window) *)NULL,
-			(void *)NULL,command_data->graphics_window_manager))
-		{
-			ACCESS(Graphics_window)(window);
-		}
-		coordinate_field=(struct Computed_field *)NULL;
-
-		option_table=CREATE(Option_table)();
-		/* as */
-		Option_table_add_entry(option_table,"as",&out_file_name,
-			(void *)1,set_name);
-		/* coordinate */
-		set_coordinate_field_data.computed_field_manager=
-			Computed_field_package_get_computed_field_manager(
-				command_data->computed_field_package);
-		set_coordinate_field_data.conditional_function=
-			Computed_field_has_up_to_3_numerical_components;
-		set_coordinate_field_data.conditional_function_user_data=(void *)NULL;
-		Option_table_add_entry(option_table,"coordinate",&coordinate_field,
-			&set_coordinate_field_data,set_Computed_field_conditional);
-		/* extent */
-		Option_table_add_entry(option_table, "extent", &extent,
-			(void *)(command_data->user_interface), set_Element_discretization);
-		/* from */
-		Option_table_add_entry(option_table,"from",&in_file_name,
-			(void *)1,set_name);
-		/* seed element */
-		Option_table_add_entry(option_table, "seed_element",
-			&seed_element, Cmiss_region_get_FE_region(command_data->root_region),
-			set_FE_element_dimension_3_FE_region);
-		/* window */
-		Option_table_add_entry(option_table,"window",&window,
-			command_data->graphics_window_manager, set_Graphics_window);
-
-		return_code=Option_table_multi_parse(option_table,state);
-		/* no errors, not asking for help */
-		if (return_code)
-		{
-			if (window)
-			{
-				if (seed_element)
-				{
-					xi_max[0]=(double)(extent.number_in_xi1);
-					xi_max[1]=(double)(extent.number_in_xi2);
-					xi_max[2]=(double)(extent.number_in_xi3);
-					if (in_file_name&&out_file_name&&coordinate_field)
-					{
-						generate_textureimage_from_FE_element(window,in_file_name,
-							out_file_name,seed_element,xi_max,coordinate_field);
-					}
-					else
-					{
-						display_message(WARNING_MESSAGE,"Missing option(s)");
-					}
-				}
-				else
-				{
-					display_message(WARNING_MESSAGE,"Missing seed element");
-				}
-			}
-			else
-			{
-				display_message(ERROR_MESSAGE,"Must have a graphics window");
-				return_code=0;
-			}
-		} /* parse error, help */
-		DESTROY(Option_table)(&option_table);
-		if (coordinate_field)
-		{
-			DEACCESS(Computed_field)(&coordinate_field);
-		}
-		if (window)
-		{
-			DEACCESS(Graphics_window)(&window);
-		}
-		if (in_file_name)
-		{
-			DEALLOCATE(in_file_name);
-		}
-		if (out_file_name)
-		{
-			DEALLOCATE(out_file_name);
-		}
-		if (seed_element)
-		{
-			DEACCESS(FE_element)(&seed_element);
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"gfx_create_texture_map.  Invalid argument(s)");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* gfx_create_texture_map */
-#endif /* defined (MOTIF) */
-
-#if defined (MOTIF)
 static int gfx_create_time_editor(struct Parse_state *state,
 	void *dummy_to_be_modified,void *command_data_void)
 /*******************************************************************************
@@ -7578,583 +7436,6 @@ Executes a GFX CREATE OBJECT command.
 	return (return_code);
 } /* gfx_create_userdef */
 #endif /* defined (MOTIF) */
-
-#if defined (MOTIF)
-static int gfx_create_volume_editor(struct Parse_state *state,
-	void *dummy_to_be_modified,void *command_data_void)
-/*******************************************************************************
-LAST MODIFIED : 14 June 1999
-
-DESCRIPTION :
-Executes a GFX CREATE VOLUME_EDITOR command.
-==============================================================================*/
-{
-	char *current_token;
-	int return_code;
-	struct Cmiss_command_data *command_data;
-
-	ENTER(gfx_create_volume_editor);
-	USE_PARAMETER(dummy_to_be_modified);
-	if (state)
-	{
-		if (current_token=state->current_token)
-		{
-			if (strcmp(PARSER_HELP_STRING,current_token)&&
-				strcmp(PARSER_RECURSIVE_HELP_STRING,current_token))
-			{
-				display_message(ERROR_MESSAGE,"Unknown option: %s",current_token);
-				display_parse_state_location(state);
-				return_code=0;
-			}
-			else
-			{
-				return_code=1;
-			}
-		}
-		else
-		{
-			if (command_data=(struct Cmiss_command_data *)command_data_void)
-			{
-				create_texture_edit_window(
-					Material_package_get_default_material(command_data->material_package),
-					Material_package_get_material_manager(command_data->material_package),
-					command_data->environment_map_manager,command_data->texture_manager,
-					&(command_data->material_editor_dialog), 
-					command_data->graphics_buffer_package,
-					command_data->io_stream_package,
-					command_data->user_interface);
-				return_code=1;
-			}
-			else
-			{
-				display_message(ERROR_MESSAGE,
-					"gfx_create_volume_editor.  Missing command_data");
-				return_code=0;
-			}
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,"gfx_create_volume_editor.  Missing state");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* gfx_create_volume_editor */
-#endif /* defined (MOTIF) */
-
-static int gfx_create_volumes(struct Parse_state *state,
-	void *dummy_to_be_modified,void *command_data_void)
-/*******************************************************************************
-LAST MODIFIED : 28 February 2002
-
-DESCRIPTION :
-Executes a GFX CREATE VOLUMES command.
-==============================================================================*/
-{
-	char *graphics_object_name, *region_path, *render_type_string,
-		*surface_data_region_path, **valid_strings;
-	enum Render_type render_type;
-	float time;
-	int displacement_map_xi_direction,number_of_valid_strings, return_code;
-	struct Clipping *clipping;
-	struct Cmiss_command_data *command_data;
-	struct Cmiss_region *region, *surface_data_region;
-	struct Computed_field *coordinate_field, *data_field,
-		*displacement_map_field, *surface_data_coordinate_field,
-		*surface_data_density_field, *blur_field;
-	struct Element_to_volume_data element_to_volume_data;
-	struct FE_element *seed_element;
-	struct FE_region *fe_region, *surface_data_fe_region;
-	struct Graphical_material *material;
-	struct GT_object *graphics_object;
-	struct Option_table *option_table;
-	struct Set_Computed_field_conditional_data set_coordinate_field_data,
-		set_data_field_data, set_displacement_map_field_data, 
-		set_surface_data_coordinate_field_data, set_surface_data_density_field_data,
-		set_blur_field_data;
-	struct Spectrum *spectrum;
-	struct VT_volume_texture *volume_texture;
-
-	ENTER(gfx_create_volumes);
-	USE_PARAMETER(dummy_to_be_modified);
-	if (state && (command_data = (struct Cmiss_command_data *)command_data_void))
-	{
-		/* initialise defaults */
-		graphics_object_name = duplicate_string("volumes");
-		Cmiss_region_get_root_region_path(&region_path);
-		clipping=(struct Clipping *)NULL;
-		coordinate_field=(struct Computed_field *)NULL;
-		data_field=(struct Computed_field *)NULL;
-		seed_element=(struct FE_element *)NULL;
-		material=
-			ACCESS(Graphical_material)(Material_package_get_default_material(command_data->material_package));
-		spectrum=ACCESS(Spectrum)(command_data->default_spectrum);
-		surface_data_region_path = (char *)NULL;
-		surface_data_coordinate_field = (struct Computed_field *)NULL;
-		surface_data_density_field=(struct Computed_field *)NULL;
-		time=0;
-		volume_texture=(struct VT_volume_texture *)NULL;
-		displacement_map_field = (struct Computed_field *)NULL;
-		displacement_map_xi_direction=3;
-		blur_field = (struct Computed_field *)NULL;
-
-		option_table=CREATE(Option_table)();
-		/* as */
-		Option_table_add_entry(option_table,"as",&graphics_object_name,
-			(void *)1,set_name);
-		/* clipping */
-		Option_table_add_entry(option_table,"clipping",&clipping,
-			NULL,set_Clipping);
-		/* coordinate */
-		set_coordinate_field_data.computed_field_manager=
-			Computed_field_package_get_computed_field_manager(
-				command_data->computed_field_package);
-		set_coordinate_field_data.conditional_function=
-			Computed_field_has_up_to_3_numerical_components;
-		set_coordinate_field_data.conditional_function_user_data=(void *)NULL;
-		Option_table_add_entry(option_table,"coordinate",&coordinate_field,
-			&set_coordinate_field_data,set_Computed_field_conditional);
-		/* data */
-		set_data_field_data.computed_field_manager=
-			Computed_field_package_get_computed_field_manager(
-				command_data->computed_field_package);
-		set_data_field_data.conditional_function=
-			Computed_field_has_numerical_components;
-		set_data_field_data.conditional_function_user_data=(void *)NULL;
-		Option_table_add_entry(option_table,"data",&data_field,
-			&set_data_field_data,set_Computed_field_conditional);
-		/* displacement_map_field */
-		set_displacement_map_field_data.computed_field_manager=
-			Computed_field_package_get_computed_field_manager(
-				command_data->computed_field_package);
-		set_displacement_map_field_data.conditional_function=
-			Computed_field_has_up_to_4_numerical_components;
-		set_displacement_map_field_data.conditional_function_user_data=
-			(void *)NULL;
-		Option_table_add_entry(option_table,"displacement_map_field",
-			&displacement_map_field,&set_displacement_map_field_data,
-			set_Computed_field_conditional);
-		/* displacement_map_xi_direction */
-		Option_table_add_entry(option_table,"displacement_map_xi_direction",
-			&displacement_map_xi_direction,NULL,set_int_positive);
-		/* from */
-		Option_table_add_entry(option_table, "from", &region_path,
-			command_data->root_region, set_Cmiss_region_path);
-		/* material */
-		Option_table_add_set_Material_entry(option_table, "material", &material,
-			command_data->material_package);
-		/* render_type */
-		render_type = RENDER_TYPE_SHADED;
-		render_type_string = ENUMERATOR_STRING(Render_type)(render_type);
-		valid_strings = ENUMERATOR_GET_VALID_STRINGS(Render_type)(
-			&number_of_valid_strings,
-			(ENUMERATOR_CONDITIONAL_FUNCTION(Render_type) *)NULL, (void *)NULL);
-		Option_table_add_enumerator(option_table, number_of_valid_strings,
-			valid_strings, &render_type_string);
-		DEALLOCATE(valid_strings);
-		/* seed_element */
-		Option_table_add_entry(option_table, "seed_element",
-			&seed_element, Cmiss_region_get_FE_region(command_data->root_region),
-			set_FE_element_dimension_3_FE_region);
-		/* smooth_field */
-		set_blur_field_data.computed_field_manager=
-			Computed_field_package_get_computed_field_manager(
-				command_data->computed_field_package);
-		set_blur_field_data.conditional_function=
-			Computed_field_has_up_to_4_numerical_components;
-		set_blur_field_data.conditional_function_user_data=(void *)NULL;
-		Option_table_add_entry(option_table,"smooth_field",
-			&blur_field,&set_blur_field_data,set_Computed_field_conditional);
-		/* spectrum */
-		Option_table_add_entry(option_table,"spectrum",&spectrum,
-			command_data->spectrum_manager,set_Spectrum);
-		/* surface_data_coordinate */
-		set_surface_data_coordinate_field_data.computed_field_manager=
-			Computed_field_package_get_computed_field_manager(
-				command_data->computed_field_package);
-		set_surface_data_coordinate_field_data.conditional_function=
-			Computed_field_has_up_to_3_numerical_components;
-		set_surface_data_coordinate_field_data.conditional_function_user_data =
-			(void *)NULL;
-		Option_table_add_entry(option_table,"surface_data_coordinate",
-			&surface_data_coordinate_field,
-			&set_surface_data_coordinate_field_data,set_Computed_field_conditional);
-		/* surface_data_density */
-		set_surface_data_density_field_data.computed_field_manager=
-			Computed_field_package_get_computed_field_manager(
-				command_data->computed_field_package);
-		set_surface_data_density_field_data.conditional_function=
-			Computed_field_has_up_to_4_numerical_components;
-		set_surface_data_density_field_data.conditional_function_user_data=
-			(void *)NULL;
-		Option_table_add_entry(option_table,"surface_data_density",
-			&surface_data_density_field,&set_surface_data_density_field_data,
-			set_Computed_field_conditional);
-		/* surface_data_group */
-		Option_table_add_entry(option_table, "surface_data_group",
-			&surface_data_region_path,
-			command_data->data_root_region, set_Cmiss_region_path);
-		/* time */
-		Option_table_add_entry(option_table,"time",&time,NULL,set_float);
-		/* vtexture */
-		Option_table_add_entry(option_table,"vtexture",
-			&volume_texture,command_data->volume_texture_manager,
-			set_VT_volume_texture);
-		return_code=Option_table_multi_parse(option_table,state);
-		if (return_code)
-		{
-			if (!(Cmiss_region_get_region_from_path(command_data->root_region,
-				region_path, &region) &&
-				(fe_region = Cmiss_region_get_FE_region(region))))
-			{
-				display_message(ERROR_MESSAGE,
-					"gfx_create_iso_surfaces.  Invalid region");
-				return_code = 0;
-			}
-			surface_data_fe_region = (struct FE_region *)NULL;
-			if (surface_data_region_path)
-			{
-				if (!(Cmiss_region_get_region_from_path(command_data->data_root_region,
-					surface_data_region_path, &surface_data_region) &&
-					(surface_data_fe_region =
-						Cmiss_region_get_FE_region(surface_data_region))))
-				{
-					display_message(ERROR_MESSAGE,
-						"gfx_create_iso_surfaces.  Invalid surface_data_region");
-					return_code = 0;
-				}
-			}
-			if ((surface_data_fe_region && (!surface_data_density_field)) ||
-				((!surface_data_fe_region) && surface_data_density_field))
-			{
-				display_message(ERROR_MESSAGE,"gfx_create_volumes.  Must supply a "
-					"surface_data_density_field with a surface_data_group");
-				return_code = 0;
-			}
-			if (!coordinate_field)
-			{
-				display_message(WARNING_MESSAGE, "Must specify a coordinate field");
-				return_code = 0;
-			}
-		}
-
-		/* no errors, not asking for help */
-		if (return_code)
-		{
-			if (graphics_object=FIND_BY_IDENTIFIER_IN_LIST(GT_object,name)(
-				graphics_object_name,command_data->graphics_object_list))
-			{
-				if (g_VOLTEX==GT_object_get_type(graphics_object))
-				{
-					if (GT_object_has_time(graphics_object,time))
-					{
-						display_message(WARNING_MESSAGE,
-							"Overwriting time %g in graphics object '%s'",time,
-							graphics_object_name);
-						return_code = GT_object_remove_primitives_at_time(
-							graphics_object, time,
-							(GT_object_primitive_object_name_conditional_function *)NULL,
-							(void *)NULL);
-					}
-				}
-				else
-				{
-					display_message(ERROR_MESSAGE,
-						"Object of different type named '%s' already exists",
-						graphics_object_name);
-					return_code=0;
-				}
-			}
-			else
-			{
-				if ((graphics_object=CREATE(GT_object)(graphics_object_name,
-					g_VOLTEX,material))&&
-					ADD_OBJECT_TO_LIST(GT_object)(graphics_object,
-						command_data->graphics_object_list))
-				{
-					return_code=1;
-				}
-				else
-				{
-					display_message(ERROR_MESSAGE,
-						"gfx_create_volumes.  Could not create graphics object");
-					DESTROY(GT_object)(&graphics_object);
-					return_code=0;
-				}
-			}
-#if defined (OLD_CODE)
-			if (return_code && surface_data_group)
-			{
-				return_code = 1;
-				MANAGED_GROUP_BEGIN_CACHE(FE_node)(surface_data_group);
-
-				/* Remove all the current data from the group */
-				while(return_code&&(data_to_destroy=FIRST_OBJECT_IN_GROUP_THAT(FE_node)
-					((GROUP_CONDITIONAL_FUNCTION(FE_node) *)NULL, (void *)NULL,
-						surface_data_group)))
-				{
-					return_code = REMOVE_OBJECT_FROM_GROUP(FE_node)(
-						data_to_destroy, surface_data_group);
-					if (MANAGED_OBJECT_NOT_IN_USE(FE_node)(data_to_destroy,
-						command_data->data_manager))
-					{
-						return_code = REMOVE_OBJECT_FROM_MANAGER(FE_node)(data_to_destroy,
-							command_data->data_manager);
-					}
-				}
-				if(!return_code)
-				{
-					display_message(ERROR_MESSAGE,
-						"gfx_create_volumes.  Unable to remove all data from data_group");
-					MANAGED_GROUP_END_CACHE(FE_node)(surface_data_group);
-				}
-			}
-#endif /* defined (OLD_CODE) */
-			if (return_code)
-			{
-				if (surface_data_fe_region)
-				{
-					FE_region_begin_change(surface_data_fe_region);
-				}
-				element_to_volume_data.coordinate_field=
-					Computed_field_begin_wrap_coordinate_field(coordinate_field);
-				element_to_volume_data.data_field=data_field;
-				element_to_volume_data.graphics_object=graphics_object;
-				element_to_volume_data.time=time;
-				STRING_TO_ENUMERATOR(Render_type)(render_type_string, &render_type);
-				element_to_volume_data.render_type = render_type;
-				element_to_volume_data.volume_texture=volume_texture;
-				element_to_volume_data.texture_coordinate_field=
-					(struct Computed_field *)NULL;
-				element_to_volume_data.displacement_map_field =
-					displacement_map_field;
-				element_to_volume_data.displacement_map_xi_direction =
-					displacement_map_xi_direction;
-				element_to_volume_data.surface_data_coordinate_field = 
-					surface_data_coordinate_field;
-				element_to_volume_data.surface_data_density_field = 
-					surface_data_density_field;
-				element_to_volume_data.surface_data_fe_region = 
-					surface_data_fe_region;
-				element_to_volume_data.blur_field= blur_field;
-				element_to_volume_data.clipping=clipping;
-				if (seed_element)
-				{
-					return_code=element_to_volume(seed_element,
-						(void *)&element_to_volume_data);
-				}
-				else
-				{
-					/* no seed element specified, use all elements in the fe_region as
-						 seeds */
-					return_code = FE_region_for_each_FE_element(fe_region,
-						element_to_volume, (void *)&element_to_volume_data);
-				}
-				if (return_code)
-				{
-					if (!GT_object_has_time(graphics_object,time))
-					{
-						/* add a NULL voltex to make an empty time */
-						GT_OBJECT_ADD(GT_voltex)(graphics_object,time,
-							(struct GT_voltex *)NULL);
-					}
-					if (data_field)
-					{
-						return_code=set_GT_object_Spectrum(graphics_object,spectrum);
-					}
-				}
-				else
-				{
-					display_message(WARNING_MESSAGE,"No volumes created");
-					if (0==GT_object_get_number_of_times(graphics_object))
-					{
-						REMOVE_OBJECT_FROM_LIST(GT_object)(graphics_object,
-							command_data->graphics_object_list);
-					}
-				}
-				Computed_field_end_wrap(
-					&(element_to_volume_data.coordinate_field));
-				if (surface_data_fe_region)
-				{
-					FE_region_end_change(surface_data_fe_region);
-				}
-			}
-		} /* parse error, help */
-		DESTROY(Option_table)(&option_table);
-		/* DEACCESS blur and displacement map stuff ? */
-		if (coordinate_field)
-		{
-			DEACCESS(Computed_field)(&coordinate_field);
-		}
-		if (data_field)
-		{
-			DEACCESS(Computed_field)(&data_field);
-		}
-		DEACCESS(Graphical_material)(&material);
-		DEACCESS(Spectrum)(&spectrum);
-		if (clipping)
-		{
-			DESTROY(Clipping)(&clipping);
-		}
-		DEALLOCATE(graphics_object_name);
-		if (seed_element)
-		{
-			DEACCESS(FE_element)(&seed_element);
-		}
-		if (surface_data_coordinate_field)
-		{
-			DEACCESS(Computed_field)(&surface_data_coordinate_field);
-		}
-		if (surface_data_density_field)
-		{
-			DEACCESS(Computed_field)(&surface_data_density_field);
-		}
-		if (surface_data_region_path)
-		{
-			DEALLOCATE(surface_data_region_path);
-		}
-		if (volume_texture)
-		{
-			DEACCESS(VT_volume_texture)(&volume_texture);
-		}
-		if (displacement_map_field)
-		{
-			DEACCESS(Computed_field)(&displacement_map_field);
-		}
-		if (blur_field)
-		{
-			DEACCESS(Computed_field)(&blur_field);
-		}
-		DEALLOCATE(region_path);
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,"gfx_create_volumes.  Invalid argument(s)");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* gfx_create_volumes */
-
-static int gfx_create_volume_texture(struct Parse_state *state,
-	void *dummy_to_be_modified,void *command_data_void)
-/*******************************************************************************
-LAST MODIFIED : 7 January 2003
-
-DESCRIPTION :
-Executes a GFX CREATE VTEXTURE command.
-==============================================================================*/
-{
-	char *current_token;
-	int return_code;
-	struct Cmiss_command_data *command_data;
-	struct Modify_VT_volume_texture_data modify_VT_volume_texture_data;
-	struct VT_volume_texture *volume_texture;
-
-	ENTER(gfx_create_volume_texture);
-	USE_PARAMETER(dummy_to_be_modified);
-	if (state)
-	{
-		if (current_token=state->current_token)
-		{
-			if (strcmp(PARSER_HELP_STRING,current_token)&&
-				strcmp(PARSER_RECURSIVE_HELP_STRING,current_token))
-			{
-				if (command_data=(struct Cmiss_command_data *)command_data_void)
-				{
-					if (!FIND_BY_IDENTIFIER_IN_MANAGER(VT_volume_texture,name)(
-						current_token,command_data->volume_texture_manager))
-					{
-						if (volume_texture=CREATE(VT_volume_texture)(current_token))
-						{
-							shift_Parse_state(state,1);
-							if (state->current_token)
-							{
-								modify_VT_volume_texture_data.io_stream_package =
-									command_data->io_stream_package;
-								modify_VT_volume_texture_data.graphical_material_manager=
-									Material_package_get_material_manager(command_data->material_package);
-								modify_VT_volume_texture_data.environment_map_manager=
-									command_data->environment_map_manager;
-								modify_VT_volume_texture_data.volume_texture_manager=
-									command_data->volume_texture_manager;
-								modify_VT_volume_texture_data.example_directory_address =
-									&(command_data->example_directory);
-								return_code=modify_VT_volume_texture(state,
-									(void *)volume_texture,
-									(void *)(&modify_VT_volume_texture_data));
-							}
-							else
-							{
-								return_code=1;
-							}
-							ADD_OBJECT_TO_MANAGER(VT_volume_texture)(volume_texture,
-								command_data->volume_texture_manager);
-						}
-						else
-						{
-							display_message(ERROR_MESSAGE,
-								"gfx_create_volume_texture.  Error creating volume texture");
-							return_code=0;
-						}
-					}
-					else
-					{
-						display_message(ERROR_MESSAGE,"Volume texture already exists: %s",
-							current_token);
-						display_parse_state_location(state);
-						return_code=0;
-					}
-				}
-				else
-				{
-					display_message(ERROR_MESSAGE,
-						"gfx_create_volume_texture.  Missing command_data_void");
-					return_code=0;
-				}
-			}
-			else
-			{
-				if (command_data=(struct Cmiss_command_data *)command_data_void)
-				{
-					modify_VT_volume_texture_data.graphical_material_manager=
-						Material_package_get_material_manager(command_data->material_package);
-					modify_VT_volume_texture_data.environment_map_manager=
-						command_data->environment_map_manager;
-					modify_VT_volume_texture_data.volume_texture_manager=
-						command_data->volume_texture_manager;
-					modify_VT_volume_texture_data.example_directory_address =
-						&(command_data->example_directory);
-					return_code=modify_VT_volume_texture(state,(void *)NULL,
-						(void *)(&modify_VT_volume_texture_data));
-				}
-				else
-				{
-					display_message(ERROR_MESSAGE,
-						"gfx_create_volume_texture.  Missing command_data_void");
-					return_code=0;
-				}
-			}
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,"Missing volume texture name");
-			display_parse_state_location(state);
-			return_code=0;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,"gfx_create_volume_texture.  Missing state");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* gfx_create_volume_texture */
 
 #if defined (MOTIF) || defined (GTK_USER_INTERFACE) || defined (WIN32_USER_INTERFACE)
 static int gfx_create_window(struct Parse_state *state,
@@ -8992,24 +8273,12 @@ Executes a GFX CREATE command.
 					command_data_void,gfx_create_streamlines);
 				Option_table_add_entry(option_table,"surfaces",NULL,
 					command_data_void,gfx_create_surfaces);
-#if defined (MOTIF)
-				Option_table_add_entry(option_table,"texmap",NULL,
-					command_data_void,gfx_create_texture_map);
-#endif /* defined (MOTIF) */
 				Option_table_add_entry(option_table,"texture",NULL,
 					command_data_void,gfx_create_texture);
 #if defined (MOTIF)
 				Option_table_add_entry(option_table,"time_editor",NULL,
 					command_data_void,gfx_create_time_editor);
 #endif /* defined (MOTIF) */
-				Option_table_add_entry(option_table,"volumes",NULL,
-					command_data_void,gfx_create_volumes);
-#if defined (MOTIF)
-				Option_table_add_entry(option_table,"vt_editor",NULL,
-					command_data_void,gfx_create_volume_editor);
-#endif /* defined (MOTIF) */
-				Option_table_add_entry(option_table,"vtexture",NULL,
-					command_data_void,gfx_create_volume_texture);
 #if defined (MOTIF) || defined (GTK_USER_INTERFACE) || defined (WIN32_USER_INTERFACE)
 				Option_table_add_entry(option_table,"window",NULL,
 					command_data_void,gfx_create_window);
@@ -11607,14 +10876,13 @@ DESCRIPTION :
 Executes a GFX EXPORT WAVEFRONT command.
 ==============================================================================*/
 {
-	char binary,*file_name,full_comments,*scene_object_name,*temp_filename;
+	char *file_name,full_comments,*scene_object_name,*temp_filename;
 	int frame_number, number_of_frames, return_code, version;
 	struct Cmiss_command_data *command_data;
 	struct Scene *scene;
 	struct Scene_object *scene_object;
 	static struct Modifier_entry option_table[]=
 	{
- 		{"binary",NULL,NULL,set_char_flag},
 		{"file",NULL,(void *)1,set_name},
 		{"frame_number",NULL,NULL,set_int_non_negative},
 		{"full_comments",NULL,NULL,set_char_flag},
@@ -11633,7 +10901,6 @@ Executes a GFX EXPORT WAVEFRONT command.
 		if (command_data=(struct Cmiss_command_data *)command_data_void)
 		{
 			/* initialize defaults */
- 			binary=0;
 			file_name=(char *)NULL;
 			frame_number = 0;
 			full_comments=0;
@@ -11641,15 +10908,14 @@ Executes a GFX EXPORT WAVEFRONT command.
 			scene=ACCESS(Scene)(command_data->default_scene);
 			scene_object_name=(char *)NULL;
  			version=3;
- 			(option_table[0]).to_be_modified= &binary;
-			(option_table[1]).to_be_modified= &file_name;
-			(option_table[2]).to_be_modified= &frame_number;
-			(option_table[3]).to_be_modified= &full_comments;
-			(option_table[4]).to_be_modified= &scene_object_name;
- 			(option_table[5]).to_be_modified= &number_of_frames;
-			(option_table[6]).to_be_modified= &scene;
-			(option_table[6]).user_data=command_data->scene_manager;
- 			(option_table[7]).to_be_modified= &version;
+			(option_table[0]).to_be_modified= &file_name;
+			(option_table[1]).to_be_modified= &frame_number;
+			(option_table[2]).to_be_modified= &full_comments;
+			(option_table[3]).to_be_modified= &scene_object_name;
+ 			(option_table[4]).to_be_modified= &number_of_frames;
+			(option_table[5]).to_be_modified= &scene;
+			(option_table[5]).user_data=command_data->scene_manager;
+ 			(option_table[6]).to_be_modified= &version;
 			return_code=process_multiple_options(state,option_table);
 			/* no errors, not asking for help */
 			if (return_code)
@@ -11695,38 +10961,8 @@ Executes a GFX EXPORT WAVEFRONT command.
 				}
 				if (file_name)
 				{
-					if (binary)
- 					{
-						if (!scene_object)
-						{
-							if (1==Scene_get_number_of_scene_objects(scene))
-							{
-								scene_object = first_Scene_object_in_Scene_that(scene,
-									(LIST_CONDITIONAL_FUNCTION(Scene_object) *)NULL, NULL);
-								if (!Scene_object_has_gt_object(scene_object,
-									(struct GT_object *)NULL))
-								{
-									scene_object = (struct Scene_object *)NULL;
-									display_message(ERROR_MESSAGE,"gfx_export_wavefront."
-										"Can only export one object or settings at a time with binary wavefront");
-									return_code=0;									
-								}
-							}
-							else
-							{
-								display_message(ERROR_MESSAGE,"gfx_export_wavefront."
-									"Can only export one object or settings at a time with binary wavefront");
-								return_code=0;								
-							}
-						}
- 						return_code=export_to_binary_wavefront(file_name,scene_object,
-							number_of_frames,version,frame_number);
- 					}
- 					else
- 					{
- 						return_code=export_to_wavefront(file_name,scene,scene_object,
-							full_comments);
- 					}
+					return_code=export_to_wavefront(file_name,scene,scene_object,
+						full_comments);
 				}
 			} /* parse error,help */
 			DEACCESS(Scene)(&scene);
@@ -13467,95 +12703,6 @@ Executes a GFX LIST TRANSFORMATION.
 	return (return_code);
 } /* gfx_list_transformation */
 
-static int iterator_list_VT_volume_texture(struct VT_volume_texture *texture,
-	void *dummy_user_data)
-/*******************************************************************************
-LAST MODIFIED : 16 June 1999
-
-DESCRIPTION :
-Iterator function version of list_VT_volume_texture
-???DB.  Move to volume_texture.c ?
-==============================================================================*/
-{
-	int return_code;
-
-	ENTER(iterator_list_VT_volume_texture);
-	USE_PARAMETER(dummy_user_data);
-	return_code=list_VT_volume_texture(texture);
-	LEAVE;
-
-	return (return_code);
-} /* iterator_list_VT_volume_texture */
-
-static int gfx_list_volume_texture(struct Parse_state *state,
-	void *dummy_to_be_modified,void *volume_texture_manager_void)
-/*******************************************************************************
-LAST MODIFIED : 2 August 1998
-
-DESCRIPTION :
-Executes a GFX LIST VTEXTURE.
-==============================================================================*/
-{
-	char *current_token;
-	int return_code;
-	struct VT_volume_texture *texture;
-	struct MANAGER(VT_volume_texture) *volume_texture_manager;
-
-	ENTER(gfx_list_volume_texture);
-	USE_PARAMETER(dummy_to_be_modified);
-	if (state)
-	{
-		if (volume_texture_manager=
-			(struct MANAGER(VT_volume_texture) *)volume_texture_manager_void)
-		{
-			if (current_token=state->current_token)
-			{
-				if (strcmp(PARSER_HELP_STRING,current_token)&&
-					strcmp(PARSER_RECURSIVE_HELP_STRING,current_token))
-				{
-					if (texture=FIND_BY_IDENTIFIER_IN_MANAGER(VT_volume_texture,name)(
-						current_token,volume_texture_manager))
-					{
-						return_code=list_VT_volume_texture(texture);
-					}
-					else
-					{
-						display_message(ERROR_MESSAGE,"Unknown volume texture: %s",
-							current_token);
-						return_code=0;
-					}
-				}
-				else
-				{
-					display_message(INFORMATION_MESSAGE," VOLUME_TEXTURE_NAME");
-					return_code=1;
-				}
-			}
-			else
-			{
-				return_code=FOR_EACH_OBJECT_IN_MANAGER(VT_volume_texture)(
-					iterator_list_VT_volume_texture,(void *)NULL,
-					volume_texture_manager);
-			}
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"gfx_list_volume_texture.  Missing volume_texture_manager_void");
-			return_code=0;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"gfx_list_volume_texture.  Missing state");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* gfx_list_volume_texture */
-
 #if defined (SGI_MOVIE_FILE)
 static int gfx_list_movie_graphics(struct Parse_state *state,
 	void *dummy_to_be_modified,void *movie_graphics_manager_void)
@@ -13807,9 +12954,6 @@ Executes a GFX LIST command.
 			/* transformation */
 			Option_table_add_entry(option_table, "transformation", NULL,
 				command_data_void, gfx_list_transformation);
-			/* volume texture */
-			Option_table_add_entry(option_table, "vtexture", NULL,
-				command_data->volume_texture_manager, gfx_list_volume_texture);
 #if defined (MOTIF) || defined (GTK_USER_INTERFACE) || defined (WIN32_USER_INTERFACE)
 			/* graphics window */
 			Option_table_add_entry(option_table, "window", NULL,
@@ -14300,10 +13444,6 @@ Parameter <help_mode> should be NULL when calling this function.
 				Option_table_add_entry(option_table, "surfaces",
 					(void *)&modify_g_element_data, (void *)&g_element_command_data,
 					gfx_modify_g_element_surfaces);
-				/* volumes */
-				Option_table_add_entry(option_table, "volumes",
-					(void *)&modify_g_element_data, (void *)&g_element_command_data,
-					gfx_modify_g_element_volumes);
 
 				return_code = Option_table_parse(option_table, state);
 				if (return_code && (modify_g_element_data.settings))
@@ -15450,8 +14590,6 @@ Executes a GFX MODIFY command.
 					command_data->volume_texture_manager;
 				modify_VT_volume_texture_data.example_directory_address =
 					&(command_data->example_directory);
-				Option_table_add_entry(option_table,"vtexture",NULL, 
-					(void *)(&modify_VT_volume_texture_data), modify_VT_volume_texture);
 #if defined (MOTIF) || defined (GTK_USER_INTERFACE) || defined (WIN32_USER_INTERFACE)
 				/* window */
 				modify_graphics_window_data.graphics_window_manager=
@@ -24407,6 +23545,23 @@ Initialise all the subcomponents of cmgui and create the Cmiss_command_data
 		command_data->texture_manager=CREATE(MANAGER(Texture))();
 		/* volume texture manager */
 		command_data->volume_texture_manager=CREATE(MANAGER(VT_volume_texture))();
+		/* spectrum manager */
+		if (command_data->spectrum_manager=CREATE(MANAGER(Spectrum))())
+		{
+			if (command_data->default_spectrum=CREATE(Spectrum)("default"))
+			{
+				Spectrum_set_simple_type(command_data->default_spectrum,
+					BLUE_TO_RED_SPECTRUM);
+				Spectrum_set_minimum_and_maximum(command_data->default_spectrum,0,1);
+				/* ACCESS so can never be destroyed */
+				ACCESS(Spectrum)(command_data->default_spectrum);
+				if (!ADD_OBJECT_TO_MANAGER(Spectrum)(command_data->default_spectrum,
+						 command_data->spectrum_manager))
+				{
+					DEACCESS(Spectrum)(&(command_data->default_spectrum));
+				}
+			}
+		}
 		/* create Material package and CMGUI default materials */
 		if (command_data->material_package = ACCESS(Material_package)(CREATE(Material_package)
 			(command_data->texture_manager)))
@@ -24450,23 +23605,6 @@ Initialise all the subcomponents of cmgui and create the Cmiss_command_data
 					material))
 				{
 					DESTROY(Graphical_material)(&material);
-				}
-			}
-		}
-		/* spectrum manager */
-		if (command_data->spectrum_manager=CREATE(MANAGER(Spectrum))())
-		{
-			if (command_data->default_spectrum=CREATE(Spectrum)("default"))
-			{
-				Spectrum_set_simple_type(command_data->default_spectrum,
-					BLUE_TO_RED_SPECTRUM);
-				Spectrum_set_minimum_and_maximum(command_data->default_spectrum,0,1);
-				/* ACCESS so can never be destroyed */
-				ACCESS(Spectrum)(command_data->default_spectrum);
-				if (!ADD_OBJECT_TO_MANAGER(Spectrum)(command_data->default_spectrum,
-						 command_data->spectrum_manager))
-				{
-					DEACCESS(Spectrum)(&(command_data->default_spectrum));
 				}
 			}
 		}

@@ -2129,71 +2129,6 @@ to say which parent element they should be evaluated on as necessary.
 	if (element && (2 == get_FE_element_dimension(element)) &&
 		(3 >= Computed_field_get_number_of_components(coordinate_field)))
 	{
-#if defined (OLD_CODE)
-		collapsed_nodes=0;
-		number_of_polygon_vertices=0;
-		polygon_xi2_zero=0;
-		modified_reverse_normals=reverse_normals;
-		/* check for polygon */
-		switch (*(element->shape->type))
-		{
-			case POLYGON_SHAPE:
-			{
-				/* polygon */
-				number_of_polygon_vertices=(element->shape->type)[1];
-				number_of_points_in_xi1=((number_of_segments_in_xi1_requested)/
-					number_of_polygon_vertices+1)*number_of_polygon_vertices+1;
-				polygon_xi2_zero=1;
-				number_of_points_in_xi2=number_of_segments_in_xi2_requested+1;
-				number_of_points=number_of_points_in_xi1*number_of_points_in_xi2;
-				polygon_type=g_QUADRILATERAL;
-			} break;
-			case SIMPLEX_SHAPE:
-			{
-				/* simplex */
-				if (number_of_segments_in_xi1_requested >
-					number_of_segments_in_xi2_requested)
-				{
-					number_of_points_in_xi1=number_of_segments_in_xi1_requested+1;
-					number_of_points_in_xi2=number_of_segments_in_xi1_requested+1;
-				}
-				else
-				{
-					number_of_points_in_xi1=number_of_segments_in_xi2_requested+1;
-					number_of_points_in_xi2=number_of_segments_in_xi2_requested+1;
-				}
-				number_of_points=
-					(number_of_points_in_xi1*(number_of_points_in_xi1+1))/2;
-				polygon_type=g_TRIANGLE;
-				/* to get the surface colouring right, the points need to be given in a
-					certain order to GL_TRIANGLE_STRIP.  To keep the lighting correct,
-					the normals need to be reversed */
-				if (reverse_normals)
-				{
-					modified_reverse_normals=0;
-				}
-				else
-				{
-					modified_reverse_normals=1;
-				}
-			} break;
-			default:
-			{
-				number_of_points_in_xi1=number_of_segments_in_xi1_requested+1;
-				/* check for bi-quadratic Lagrange with collapse along xi2=0 */
-				/*???DB.  Extend ? */
-				if ((element->information)&&(9==element->information->number_of_nodes)&&
-					(get_FE_node_identifier((element->information->nodes)[0])==
-						get_FE_node_identifier((element->information->nodes)[2])))
-				{
-					collapsed_nodes=1;
-				}
-				number_of_points_in_xi2=number_of_segments_in_xi2_requested+1;
-				number_of_points=number_of_points_in_xi1*number_of_points_in_xi2;
-				polygon_type=g_QUADRILATERAL;
-			} break;
-		}
-#endif /* defined (OLD_CODE) */
 		/* allocate memory for the surface */
 		sorder = 4;
 		torder = 4;
@@ -2288,69 +2223,6 @@ to say which parent element they should be evaluated on as necessary.
 			
 		if (nurbs)
 		{
-#if defined (OLD_CODE)
-			/* calculate the xi coordinates and store in "normals" */
-			point_a=points+number_of_points;
-			point_b=point_a;
-			distance=(FE_value)(number_of_points_in_xi1-1);
-			if (SIMPLEX_SHAPE== *(element->shape->type))
-			{
-				for (i=0;i<number_of_points_in_xi1;i++)
-				{
-					(*point_a)[0]=(float)i/distance;
-					point_a++;
-				}
-				for (j=number_of_points_in_xi2-1;j>0;j--)
-				{
-					for (i=0;i<j;i++)
-					{
-						(*point_a)[0]=(*point_b)[0];
-						point_a++;
-						point_b++;
-					}
-					point_b++;
-				}
-				point=points+number_of_points;
-				distance=(float)(number_of_points_in_xi2-1);
-				for (j=0;j<number_of_points_in_xi2;j++)
-				{
-					xi2=(float)j/distance;
-					for (i=number_of_points_in_xi1-j;i>0;i--)
-					{
-						(*point)[1]=xi2;
-						point++;
-					}
-				}
-			}
-			else
-			{
-				for (i=0;i<number_of_points_in_xi1;i++)
-				{
-					(*point_a)[0]=(float)i/distance;
-					point_a++;
-				}
-				for (j=1;j<number_of_points_in_xi2;j++)
-				{
-					for (i=0;i<number_of_points_in_xi1;i++)
-					{
-						(*point_a)[0]=(*point_b)[0];
-						point_a++;
-						point_b++;
-					}
-				}
-				point=points+number_of_points;
-				distance=(float)(number_of_points_in_xi2-1);
-				for (j=0;j<number_of_points_in_xi2;j++)
-				{
-					xi2=(float)j/distance;
-					for (i=0;i<number_of_points_in_xi1;i++)
-					{
-						(*point)[1]=xi2;
-						point++;
-					}
-				}
-			}
-#endif /* defined (OLD_CODE) */
 			/* Assuming a HERMITE nurb definition at the moment */
 			if(sorder == 4 && torder == 4)
 			{
@@ -2477,197 +2349,6 @@ to say which parent element they should be evaluated on as necessary.
 			}
 			/* clear Computed_field caches so elements not accessed */
 			Computed_field_clear_cache(coordinate_field);
-#if defined (OLD_CODE)
-			if (nurbs)
-			{
-				/* for collapsed nodes on xi2=0, copy normals from next row */
-				/*???DB.  Extend ? */
-				if (collapsed_nodes)
-				{
-					normal=points+number_of_points;
-					for (i=number_of_points_in_xi1;i>0;i--)
-					{
-						(*normal)[0]=(*(normal+number_of_points_in_xi1))[0];
-						(*normal)[1]=(*(normal+number_of_points_in_xi1))[1];
-						(*normal)[2]=(*(normal+number_of_points_in_xi1))[2];
-						normal++;
-					}
-				}
-				/* for polygons, calculate the normals for the xi2=0 edge */
-				if (number_of_polygon_vertices>=3)
-				{
-					/* fix the normal in the centre by copying it from the next row of
-						points */
-					normal=points+number_of_points;
-					for (i=number_of_points_in_xi1;i>0;i--)
-					{
-						(*normal)[0]=(*(normal+number_of_points_in_xi1))[0];
-						(*normal)[1]=(*(normal+number_of_points_in_xi1))[1];
-						(*normal)[2]=(*(normal+number_of_points_in_xi1))[2];
-						normal++;
-					}
-				}
-				/* normalize the normals */
-				normal=points+number_of_points;
-				if (modified_reverse_normals)
-				{
-					for (i=number_of_points;i>0;i--)
-					{
-						normal_1=(*normal)[0];
-						normal_2=(*normal)[1];
-						normal_3=(*normal)[2];
-						if (0<(distance=normal_1*normal_1+normal_2*normal_2+
-							normal_3*normal_3))
-						{
-							distance=sqrt(distance);
-							(*normal)[0]= -normal_1/distance;
-							(*normal)[1]= -normal_2/distance;
-							(*normal)[2]= -normal_3/distance;
-						}
-						normal++;
-					}
-				}
-				else
-				{
-					for (i=number_of_points;i>0;i--)
-					{
-						normal_1=(*normal)[0];
-						normal_2=(*normal)[1];
-						normal_3=(*normal)[2];
-						if (0<(distance=normal_1*normal_1+normal_2*normal_2+
-							normal_3*normal_3))
-						{
-							distance=sqrt(distance);
-							(*normal)[0]=normal_1/distance;
-							(*normal)[1]=normal_2/distance;
-							(*normal)[2]=normal_3/distance;
-						}
-						normal++;
-					}
-				}
-				/* calculate the texture coordinates */
-				/*???DB.  Should be able to use scale factors, but don't know for
-				  linear.  Locate in structure ? */
-				/*???DB.  Shouldn't use Triples for texture coordinates because
-				  onlytwo */
-				point=points;
-				point_s=point;
-				point_t=point;
-				texture_coordinate=points+(2*number_of_points);
-				texture_coordinate_s=texture_coordinate;
-				texture_coordinate_t=texture_coordinate;
-				(*texture_coordinate)[0]=0.;
-				(*texture_coordinate)[1]=0.;
-				if (SIMPLEX_SHAPE== *(element->shape->type))
-				{
-					for (j=number_of_points_in_xi1-1;j>0;j--)
-					{
-						point++;
-						texture_coordinate++;
-						coordinate_1=(*point)[0]-(*point_s)[0];
-						coordinate_2=(*point)[1]-(*point_s)[1];
-						coordinate_3=(*point)[2]-(*point_s)[2];
-						(*texture_coordinate)[0]=(*texture_coordinate_s)[0]+
-							sqrt(coordinate_1*coordinate_1+coordinate_2*coordinate_2+
-								coordinate_3*coordinate_3);
-						(*texture_coordinate)[1]=0.;
-						point_s++;
-						texture_coordinate_s++;
-					}
-					for (i=number_of_points_in_xi2-1;i>0;i--)
-					{
-						point++;
-						texture_coordinate++;
-						point_s++;
-						texture_coordinate_s++;
-						(*texture_coordinate)[0]=0.;
-						coordinate_1=(*point)[0]-(*point_t)[0];
-						coordinate_2=(*point)[1]-(*point_t)[1];
-						coordinate_3=(*point)[2]-(*point_t)[2];
-						(*texture_coordinate)[1]=(*texture_coordinate_t)[1]+
-							sqrt(coordinate_1*coordinate_1+coordinate_2*coordinate_2+
-								coordinate_3*coordinate_3);
-						point_t++;
-						texture_coordinate_t++;
-						for (j=i-1;j>0;j--)
-						{
-							point++;
-							texture_coordinate++;
-							coordinate_1=(*point)[0]-(*point_s)[0];
-							coordinate_2=(*point)[1]-(*point_s)[1];
-							coordinate_3=(*point)[2]-(*point_s)[2];
-							(*texture_coordinate)[0]=(*texture_coordinate_s)[0]+
-								sqrt(coordinate_1*coordinate_1+coordinate_2*coordinate_2+
-									coordinate_3*coordinate_3);
-							coordinate_1=(*point)[0]-(*point_t)[0];
-							coordinate_2=(*point)[1]-(*point_t)[1];
-							coordinate_3=(*point)[2]-(*point_t)[2];
-							(*texture_coordinate)[1]=(*texture_coordinate_t)[1]+
-								sqrt(coordinate_1*coordinate_1+coordinate_2*coordinate_2+
-									coordinate_3*coordinate_3);
-							point_s++;
-							texture_coordinate_s++;
-						}
-						point_t++;
-						texture_coordinate_t++;
-					}
-				}
-				else
-				{
-					for (j=number_of_points_in_xi1-1;j>0;j--)
-					{
-						point++;
-						texture_coordinate++;
-						coordinate_1=(*point)[0]-(*point_s)[0];
-						coordinate_2=(*point)[1]-(*point_s)[1];
-						coordinate_3=(*point)[2]-(*point_s)[2];
-						(*texture_coordinate)[0]=(*texture_coordinate_s)[0]+
-							sqrt(coordinate_1*coordinate_1+coordinate_2*coordinate_2+
-								coordinate_3*coordinate_3);
-						(*texture_coordinate)[1]=0.;
-						point_s++;
-						texture_coordinate_s++;
-					}
-					for (i=number_of_points_in_xi2-1;i>0;i--)
-					{
-						point++;
-						texture_coordinate++;
-						point_s++;
-						texture_coordinate_s++;
-						(*texture_coordinate)[0]=0.;
-						coordinate_1=(*point)[0]-(*point_t)[0];
-						coordinate_2=(*point)[1]-(*point_t)[1];
-						coordinate_3=(*point)[2]-(*point_t)[2];
-						(*texture_coordinate)[1]=(*texture_coordinate_t)[1]+
-							sqrt(coordinate_1*coordinate_1+coordinate_2*coordinate_2+
-								coordinate_3*coordinate_3);
-						point_t++;
-						texture_coordinate_t++;
-						for (j=number_of_points_in_xi1-1;j>0;j--)
-						{
-							point++;
-							texture_coordinate++;
-							coordinate_1=(*point)[0]-(*point_s)[0];
-							coordinate_2=(*point)[1]-(*point_s)[1];
-							coordinate_3=(*point)[2]-(*point_s)[2];
-							(*texture_coordinate)[0]=(*texture_coordinate_s)[0]+
-								sqrt(coordinate_1*coordinate_1+coordinate_2*coordinate_2+
-									coordinate_3*coordinate_3);
-							coordinate_1=(*point)[0]-(*point_t)[0];
-							coordinate_2=(*point)[1]-(*point_t)[1];
-							coordinate_3=(*point)[2]-(*point_t)[2];
-							(*texture_coordinate)[1]=(*texture_coordinate_t)[1]+
-								sqrt(coordinate_1*coordinate_1+coordinate_2*coordinate_2+
-									coordinate_3*coordinate_3);
-							point_s++;
-							texture_coordinate_s++;
-							point_t++;
-							texture_coordinate_t++;
-						}
-					}
-				}
-			}
-#endif /* defined (OLD_CODE) */
 		}
 	}
 	else
@@ -3465,10 +3146,9 @@ struct GT_voltex *create_GT_voltex_from_FE_element(struct FE_element *element,
 	struct Computed_field *coordinate_field,struct Computed_field *data_field,
 	struct VT_volume_texture *vtexture, enum Render_type render_type,
 	struct Computed_field *displacement_field, int displacement_map_xi_direction,
-	struct Computed_field *blur_field, struct Computed_field *texture_coordinate_field,
-	FE_value time)
+	struct Computed_field *texture_coordinate_field, FE_value time)
 /*******************************************************************************
-LAST MODIFIED : 13 March 2003
+LAST MODIFIED : 10 November 2005
 
 DESCRIPTION :
 Creates a <GT_voltex> from a 3-D finite <element> <block> and volume texture
@@ -3484,35 +3164,29 @@ faces.
 {
 	enum GT_voltex_type voltex_type;
 	FE_value *coordinate_field_derivatives,coordinate_1,coordinate_2,coordinate_3,
-		*data,distance,minimum_distance,xi[3],xi_step[3],xi_stepsize[3],
+		distance,minimum_distance,xi[3],xi_step[3],xi_stepsize[3],
 		/*???DB.  Merge */
-		rmag,vector1[3],vector2[3],result[3],vectorsum[3],vertex0[3],vertex1[3],
+		rmag,vector1[3],vector2[3],result[3],vertex0[3],vertex1[3],
 		vertex2[3];
 	FE_value colour_data[4];
-	int *adjacency_table,data_index,*deform,i,ii,j,jj,k,kk,m,n_iso_polys,
+	int *adjacency_table,*deform,i,ii,j,jj,k,kk,m,n_iso_polys,
 		n_data_components,number_of_elements,number_of_faces,n_xi_rep[3],return_code,
 		/*???DB.  Merge ?  Better names ? */
-		a,aaa,b,bbb,c,ccc,n_xi[3],index,triangle,v_count,n_vertices,
-		*triangle_list,*triangle_list2,acc_triangle_index,
+		a,aaa,b,bbb,c,ccc,n_xi[3],index,v_count,n_vertices,
 		*dont_draw;
 	struct CM_element_information cm;
-	struct Environment_map *environment_map;
 	struct FE_element **element_block,**element_block_ptr;
-	struct Graphical_material *material;
 	struct GT_voltex *voltex;
-	struct VT_iso_vertex *vertex_list;
+	struct VT_iso_triangle **triangle_list;
+	struct VT_iso_vertex **vertex_list;
 #if defined (DEBUG)
 	int bad_triangle;
 #endif /* defined (DEBUG) */
 
-	double *iso_poly_cop;
-	float *texturemap_coord;
-	int *texturemap_index;
 	int tex_x_i,tex_y_i,tex_width_texels,tex_height_texels,
 		tex_number_of_components;
 	double intensity1,intensity2,intensity3;
 	int outside_block;
-	int vectorsumc, blur = 1;
 
 	ENTER(create_GT_voltex_from_FE_element);
 #if defined (DEBUG)
@@ -3523,8 +3197,6 @@ faces.
 	if (element && (3 == get_FE_element_dimension(element)) && vtexture &&
 		coordinate_field&&
 		Computed_field_has_3_components(coordinate_field,NULL)&&
-		((!blur_field)||
-			Computed_field_has_up_to_4_numerical_components(blur_field,NULL))&&
 		((!displacement_field)||
 			Computed_field_has_up_to_4_numerical_components(displacement_field,NULL)))
 	{
@@ -3566,19 +3238,6 @@ faces.
 					/* MACRO TEXTURES : spread over several elements */
 					/* round to nearest integer above if non integer (eg 1->1,1.2 ->2) */
 					n_xi[i]=(int)ceil(vtexture->ximax[i]);
-#if defined (OLD_CODE)
-					/* SAB 2003 I don't really want this to repeat when I subdivide an element 
-						so that the computation is spread out */
-					/* MICRO TEXTURES : repeated within one element */
-					/* if texture is to be repeated then calc # of repetitions for each
-						value */
-					if (vtexture->ximax[i] < 1.0)
-					{
-						n_xi_rep[i]=(int) floor(0.5+1.0/vtexture->ximax[i]);
-						xi_stepsize[i]=(double) (1.0/((double)n_xi_rep[i]));
-					}
-					else
-#endif /* defined (OLD_CODE) */
 					{
 						n_xi_rep[i]=1;
 						xi_stepsize[i]=1.0;
@@ -3645,67 +3304,15 @@ faces.
 								return_code=0;
 							}
 						}
-#if defined (DONT_DRAW)
-						i=number_of_elements;
-						while (return_code&&(i>0))
-						{
-							element_ptr=element_block[i-1];
-							if (element_ptr)
-							{
-								/* calculate whether element has face visible by checking each
-									of its faces for the number of parents. If 1 => external.
-									If > 1 => internal */
-								for (j=(*element_block_ptr)->shape->number_of_faces;j>0;)
-								{
-									j--;
-									if (NUMBER_IN_LIST(FE_element_parent)(
-										((*element_block_ptr)->faces)[j]->parent_list) > 1)
-									{
-										/* this face is internal => dont draw it: record
-											iso_poly_indices not to draw between */
-										*dont_draw_ptr=1;
-									}
-									else
-									{
-										*dont_draw_ptr=0;
-									}
-									dont_draw_ptr++;
-								}
-							}
-							else
-							{
-								*dont_draw_ptr=0;
-								dont_draw_ptr++;
-							}
-							i--;
-						}
-#endif /* defined (DONT_DRAW) */
 						if (return_code)
 						{
 							/* allocate memory for the VOLTEX */
 							n_iso_polys = vtexture->mc_iso_surface->n_triangles;
 							n_vertices = vtexture->mc_iso_surface->n_vertices;
-							ALLOCATE(triangle_list, int, 3*n_iso_polys);
-							ALLOCATE(triangle_list2, int, 3*n_iso_polys);
-							ALLOCATE(iso_poly_cop, double, 3*n_iso_polys*3);
-							ALLOCATE(texturemap_coord, float, 3*n_iso_polys*3);
-							ALLOCATE(texturemap_index, int, 3*n_iso_polys);
-							ALLOCATE(vertex_list, struct VT_iso_vertex,
+							ALLOCATE(triangle_list, struct VT_iso_triangle *, n_iso_polys);
+							ALLOCATE(vertex_list, struct VT_iso_vertex *,
 								n_vertices*n_xi_rep[0]*n_xi_rep[1]*n_xi_rep[2]);
-							/*???DB.  n_iso_polys=n_xi_rep[0]*n_xi_rep[1]*n_xi_rep[2] */
-							if (data_field)
-							{
-								ALLOCATE(data, GTDATA, n_vertices*n_xi_rep[0]*n_xi_rep[1]*
-									n_xi_rep[2]*n_data_components);
-							}
-							else
-							{
-								n_data_components = 0;
-								data = (GTDATA *)NULL;
-							}
-							if (!(triangle_list && triangle_list2 && iso_poly_cop &&
-								texturemap_coord && texturemap_index && vertex_list &&
-								((!data_field) || data)))
+							if (!(triangle_list && vertex_list))
 							{
 								display_message(ERROR_MESSAGE,
 									"create_GT_voltex_from_FE_element.  "
@@ -3736,11 +3343,8 @@ faces.
 							}
 							if (return_code)
 							{
-								if (!(voltex = CREATE(GT_voltex)(n_iso_polys ,n_vertices,
-									triangle_list2, vertex_list, iso_poly_cop,
-									texturemap_coord, texturemap_index,
-									n_xi_rep[0]*n_xi_rep[1]*n_xi_rep[2] ,n_data_components,
-									data, voltex_type)))
+								if (!(voltex = CREATE(GT_voltex)(n_vertices, vertex_list, 
+											n_iso_polys, triangle_list, n_data_components, voltex_type)))
 								{
 									display_message(ERROR_MESSAGE,
 										"create_GT_voltex_from_FE_element.  "
@@ -3751,15 +3355,7 @@ faces.
 							if (!voltex)
 							{
 								DEALLOCATE(triangle_list);
-								DEALLOCATE(triangle_list2);
-								DEALLOCATE(iso_poly_cop);
-								DEALLOCATE(texturemap_coord);
-								DEALLOCATE(texturemap_index);
 								DEALLOCATE(vertex_list);
-								if (data)
-								{
-									DEALLOCATE(data);
-								}
 							}
 							if (voltex)
 							{
@@ -3769,137 +3365,41 @@ faces.
 								GT_voltex_set_integer_identifier(voltex,
 									CM_element_information_to_graphics_name(&cm));
 
-								/*???Mark.  THIS CODE NEEDS TO BE DOCTORED.  begin */
-								/* copy volume texture values into triangle_list */
-								/* acceptable triangle index */
-								acc_triangle_index=0;
-#if defined (DEBUG)
-								/*???debug */
-								printf("create_GT_voltex_from_FE_element.  copying %d polys\n",
-									n_iso_polys);
-#endif /* defined (DEBUG) */
+								/* Create vertices */
+								for (i=0;i<n_vertices;i++)
+								{
+									vertex_list[i] = CREATE(VT_iso_vertex)();
+									vertex_list[i]->index = i;
+								}
+
+								/* Create triangles */
 								for (i=0;i<n_iso_polys;i++)
 								{
+									triangle_list[i] = CREATE(VT_iso_triangle)();
+									triangle_list[i]->index = i;
 									/* need this list for calculating normals from surrounds */
 									for (j=0;j<3;j++)
 									{
-										triangle_list[3*i+j]=vtexture->mc_iso_surface->
-											compiled_triangle_list[i]->vertex_index[j];
-#if defined (DEBUG)
-										/*???debug */
-										if (triangle_list[3*i+j] > n_vertices)
-										{
-											printf("n_xirep = %d %d %d\n",n_xi_rep[0],n_xi_rep[1],
-												n_xi_rep[2]);
-											printf("######### ERROR:triangle_list[3*%d+%d] > %d\n",i,
-												j,n_vertices);
-										}
-#endif /* defined (DEBUG) */
+										triangle_list[i]->vertices[j] = vertex_list[vtexture->mc_iso_surface->
+											compiled_triangle_list[i]->vertex_index[j]];
 									}
 								}
-								for (i=0;i<n_iso_polys;i++)
-								{
-									/* dont use polys on face */
-									/*???RC This comment has a preservation orfer on it */
-									/*???Mark.  This needs to be redone - have to think of way of
-									  doing this properly - want to only copy triangles not on
-									  face ! taint triangle_list and do to that? so if triangle
-									  list see bit of paper */
-									/*???Mark.  fix this! */
-#if defined (OLD_CODE)
-									if (((i>=0)&&(i<vtexture->iso_surface->xi_face_poly_index[0])&&(dont_draw[0]!=1))||
-										((i>=vtexture->mc_iso_surface->xi_face_poly_index[0])&&
-											(i<vtexture->mc_iso_surface->xi_face_poly_index[1])&&
-											(dont_draw[1]!=1))||
-										((i>=vtexture->mc_iso_surface->xi_face_poly_index[1])&&
-											(i<vtexture->mc_iso_surface->xi_face_poly_index[2])&&
-											(dont_draw[2]!=1))||
-										((i>=vtexture->mc_iso_surface->xi_face_poly_index[2])&&
-											(i<vtexture->mc_iso_surface->xi_face_poly_index[3])&&
-											(dont_draw[3]!=1))||
-										((i>=vtexture->mc_iso_surface->xi_face_poly_index[3])&&
-											(i<vtexture->mc_iso_surface->xi_face_poly_index[4])&&
-											(dont_draw[4]!=1))||
-										((i>=vtexture->mc_iso_surface->xi_face_poly_index[4])&&
-											(i<vtexture->mc_iso_surface->xi_face_poly_index[5])&&
-											(dont_draw[5]!=1)))
-									{
-#endif /* defined (OLD_CODE) */
 
-										for (j = 0; j < 3; j++)
-										{
-											triangle_list2[3*acc_triangle_index+j]=
-												vtexture->mc_iso_surface->
-												compiled_triangle_list[i]->vertex_index[j];
-											if (material = vtexture->mc_iso_surface->
-												compiled_triangle_list[i]->material[j])
-											{
-												GT_voltex_set_triangle_vertex_material(voltex,
-													acc_triangle_index, j, material);
-											}
-											if (environment_map = vtexture->mc_iso_surface->
-												compiled_triangle_list[i]->env_map[j])
-											{
-												GT_voltex_set_triangle_vertex_environment_map(voltex,
-													acc_triangle_index, j, environment_map);
-											}
-											texturemap_index[3*acc_triangle_index+j]=
-												vtexture->mc_iso_surface->
-												compiled_triangle_list[i]->env_map_index[j];
-											texturemap_coord[3*(3*acc_triangle_index+0)+j]=
-												vtexture->mc_iso_surface->
-												compiled_triangle_list[i]->texture_coord[0][j];
-											texturemap_coord[3*(3*acc_triangle_index+1)+j]=
-												vtexture->mc_iso_surface->
-												compiled_triangle_list[i]->texture_coord[1][j];
-											texturemap_coord[3*(3*acc_triangle_index+2)+j]=
-												vtexture->mc_iso_surface->
-												compiled_triangle_list[i]->texture_coord[2][j];
-											iso_poly_cop[3*(3*acc_triangle_index+0)+j]=
-												vtexture->mc_iso_surface->
-												compiled_triangle_list[i]->iso_poly_cop[0][j];
-											iso_poly_cop[3*(3*acc_triangle_index+1)+j]=
-												vtexture->mc_iso_surface->
-												compiled_triangle_list[i]->iso_poly_cop[1][j];
-											iso_poly_cop[3*(3*acc_triangle_index+2)+j]=
-												vtexture->mc_iso_surface->
-												compiled_triangle_list[i]->iso_poly_cop[2][j];
-										}
-										acc_triangle_index++;
-#if defined (OLD_CODE)
-										/* Not necessary while the number of triangles is not 
-											changing */
-										voltex->n_iso_polys=acc_triangle_index;
-									}
-#endif /* defined (OLD_CODE) */
-								}
-#if defined (DEBUG)
-								/*???debug */
-								printf("n_iso_polys = %d acc_triangle_index = %d\n",n_iso_polys,
-									acc_triangle_index);
-#endif /* defined (DEBUG) */
+								/* Put pointers back to triangles into vertices */
 								for (i=0;i<n_vertices;i++)
 								{
-									vertex_list[i].n_ptrs=(vtexture->mc_iso_surface->
+									vertex_list[i]->number_of_triangles = (vtexture->mc_iso_surface->
 										compiled_vertex_list)[i]->n_triangle_ptrs;
-									for (j=0;j<vertex_list[i].n_ptrs;j++)
+									ALLOCATE(vertex_list[i]->triangles, struct VT_iso_triangle *, 
+										vertex_list[i]->number_of_triangles);
+									for (j=0;j<vertex_list[i]->number_of_triangles;j++)
 									{
-										vertex_list[i].ptrs[j]=(vtexture->mc_iso_surface->
+										vertex_list[i]->triangles[j] = triangle_list[(vtexture->mc_iso_surface->
 											compiled_vertex_list[i]->triangle_ptrs)[j]->
-											triangle_index;
-#if defined (DEBUG)
-										/*???debug */
-										if (-1 == vertex_list[i].ptrs[j])
-										{
-											printf("Invalid ptr index = %d\n");
-										}
-#endif /* defined (DEBUG) */										
+											triangle_index];
 									}
-									vertex_list[i].data_index = 0;
-									vertex_list[i].blur=0;
 								}
-								data_index = 0;
-								/*???Mark.  THIS CODE NEEDS TO BE DOCTORED.  end */
+
 								/* calculate the points in the specified coordinate system */
 								v_count=0;
 								ii=n_xi_rep[0];
@@ -3937,32 +3437,6 @@ faces.
 												a=(int)(floor(((float)xi[0])));
 												b=(int)(floor(((float)xi[1])));
 												c=(int)(floor(((float)xi[2])));
-#if defined (OLD_CODE)
-												if (a>n_xi[0]-1)
-												{
-													a=n_xi[0]-1;
-												}
-												if (b>n_xi[1]-1)
-												{
-													b=n_xi[1]-1;
-												}
-												if (c>n_xi[2]-1)
-												{
-													c=n_xi[2]-1;
-												}
-												if (a < 0)
-												{
-													a = 0;
-												}
-												if (b < 0)
-												{
-													b = 0;
-												}
-												if (c < 0)
-												{
-													c = 0;
-												}
-#endif /* defined (OLD_CODE) */
 												/* if a vertex is outside of the element block, then
 													do not deform it */
 												outside_block=0;
@@ -4128,37 +3602,27 @@ faces.
 															texture_coordinate_field,
 															element_block[c*n_xi[0]*n_xi[1]+b*n_xi[0]+a],
 															xi,time,(struct FE_element *)NULL,
-															vertex_list[i+n_vertices*v_count].texture_coordinates,
+															vertex_list[i+n_vertices*v_count]->texture_coordinates,
 															(FE_value *)NULL);
 														if (tex_number_of_components < 3)
 														{
-															vertex_list[i+n_vertices*v_count].texture_coordinates[2]
+															vertex_list[i+n_vertices*v_count]->texture_coordinates[2]
 																= 0;
 															if (tex_number_of_components < 2)
 															{
-																vertex_list[i+n_vertices*v_count].texture_coordinates[1]
+																vertex_list[i+n_vertices*v_count]->texture_coordinates[1]
 																	= 0;
 															}
 														}
 													}
-													if (blur_field)
+													else
 													{
-														if ((xi[0]+a==0)||(xi[0]+a==n_xi[0])||
-															(xi[1]+b==0)||(xi[1]+b==n_xi[1]))
-														{
-															/* Don't touch the boundary */
-															vertex_list[i+n_vertices*v_count].blur = 0;
-														}
-														else
-														{
-															Computed_field_evaluate_in_element(
-																blur_field,
-																element_block[c*n_xi[0]*n_xi[1]+b*n_xi[0]+a],
-																xi,time,(struct FE_element *)NULL,
-																colour_data,(FE_value *)NULL);
-															vertex_list[i+n_vertices*v_count].blur =
-																(unsigned char)colour_data[0];
-														}
+														vertex_list[i+n_vertices*v_count]->texture_coordinates[0] =
+															vertex_list[i+n_vertices*v_count]->coordinates[0];
+														vertex_list[i+n_vertices*v_count]->texture_coordinates[1] =
+															vertex_list[i+n_vertices*v_count]->coordinates[1];
+														vertex_list[i+n_vertices*v_count]->texture_coordinates[2] =
+															vertex_list[i+n_vertices*v_count]->coordinates[2];
 													}
 													/* coordinate_n_value contains the blended matrix
 														(M.G (m=blending (eg Cubic Hermite),G=geometry)
@@ -4175,7 +3639,7 @@ faces.
 														coordinate_field,
 														element_block[c*n_xi[0]*n_xi[1]+b*n_xi[0]+a],
 														xi,time,(struct FE_element *)NULL,
-														(FE_value *)(vertex_list[index].coord),
+														(FE_value *)(vertex_list[index]->coordinates),
 														coordinate_field_derivatives))
 													{
 														/* record original xi values of these for 2 & 3d
@@ -4231,22 +3695,18 @@ faces.
 																	coordinate_field_derivatives[4]-
 																	coordinate_field_derivatives[1]*
 																	coordinate_field_derivatives[3];
-																vertex_list[index].coord[0] += coordinate_1*intensity1;
-																vertex_list[index].coord[1] += coordinate_2*intensity1;
-																vertex_list[index].coord[2] += coordinate_3*intensity1;
+																vertex_list[index]->coordinates[0] += coordinate_1*intensity1;
+																vertex_list[index]->coordinates[1] += coordinate_2*intensity1;
+																vertex_list[index]->coordinates[2] += coordinate_3*intensity1;
 															}
 														}
 														if (data_field)
 														{
-															if (Computed_field_evaluate_in_element(data_field,
+															if (!(ALLOCATE(vertex_list[index]->data, float, n_data_components) &&
+																Computed_field_evaluate_in_element(data_field,
 																element_block[c*n_xi[0]*n_xi[1]+b*n_xi[0]+a],
 																xi,time,(struct FE_element *)NULL,
-																data+data_index, (FE_value *)NULL))
-															{
-																vertex_list[index].data_index = data_index;
-																data_index+=n_data_components;
-															}
-															else
+																vertex_list[index]->data, (FE_value *)NULL)))
 															{
 																display_message(ERROR_MESSAGE,
 																	"create_GT_voltex_from_FE_element.  Error calculating data field");
@@ -4264,13 +3724,13 @@ faces.
 												else
 												{
 													index=i+n_vertices*v_count;
-													vertex_list[index].coord[0]=((vtexture->
+													vertex_list[index]->coordinates[0]=((vtexture->
 														mc_iso_surface->compiled_vertex_list)[i]->
 														coord)[0];
-													vertex_list[index].coord[1]=((vtexture->
+													vertex_list[index]->coordinates[1]=((vtexture->
 														mc_iso_surface->compiled_vertex_list)[i]->
 														coord)[1];
-													vertex_list[index].coord[2]=((vtexture->
+													vertex_list[index]->coordinates[2]=((vtexture->
 														mc_iso_surface->compiled_vertex_list)[i]->
 														coord)[2];
 												}
@@ -4287,243 +3747,46 @@ faces.
 									ii--;
 								} /* ii */
 								if (voltex)
-									/* SAB Code from Mark Sagar */
 								{
-									/* now calculate vertex normals in cartesian space by
-										averaging normals of surrounding faces */
-									/*???DB.  Can the normals be transformed ? */
-									/* ii repeats over fixed triangle vertex list, pointing to
-										current vertex_list+n_vertices for repeating textures */
-									acc_triangle_index = 0;
-									for (ii=0;ii< n_xi_rep[0]*n_xi_rep[1]*n_xi_rep[2];ii++)
+									/* Put normalised triangle contributions into each vertex 
+										but do not normalise the sums as we will accumlate adjacent 
+										iso_surfaces into the voltex and then normalise once all 
+										elements have been considered */
+									for (i = 0 ; i < n_iso_polys ; i++) /* triangles (ignoring repetitions) */
 									{
-										if (texture_coordinate_field)
+										for (k = 0 ; k < 3 ; k++) /* coordinates */
 										{
-											for (i=0;i<n_iso_polys;i++)
+											vertex0[k] = triangle_list[i]->vertices[0]->coordinates[k];
+											vertex1[k] = triangle_list[i]->vertices[1]->coordinates[k];
+											vertex2[k] = triangle_list[i]->vertices[2]->coordinates[k];
+											vector1[k] = vertex1[k]-vertex0[k];
+											vector2[k] = vertex2[k]-vertex0[k];
+										}
+										cross_product_float3(vector1,vector2,result);
+										rmag=sqrt((double)(result[0]*result[0]+
+												result[1]*result[1]+result[2]*result[2]));
+#if defined (OLD_CODE)
+										/* Alternatively allow the area of the triangle to contribute to it's weighting? */
+										rmag = 1.0;
+#endif /* defined (OLD_CODE) */
+										if (rmag > 1e-10)
+										{
+											for (j = 0 ; j < 3 ; j++) /* triangle vertices */
 											{
-												for (j=0;j<3;j++)
+												for (k = 0 ; k < 3 ; k++) /* coordinates */
 												{
-													texturemap_index[3*acc_triangle_index+j]=0;
-													texturemap_coord[3*(3*acc_triangle_index+j)+0]=
-														vertex_list[triangle_list[i*3+j]+
-															n_vertices*ii].texture_coordinates[0];
-													texturemap_coord[3*(3*acc_triangle_index+j)+1]=
-														vertex_list[triangle_list[i*3+j]+
-															n_vertices*ii].texture_coordinates[1];
-													texturemap_coord[3*(3*acc_triangle_index+j)+2]=
-														vertex_list[triangle_list[i*3+j]+
-															n_vertices*ii].texture_coordinates[2];
+													triangle_list[i]->vertices[j]->normal[k] +=
+														result[k] / rmag;
 												}
-												acc_triangle_index++;
 											}
 										}
-
-										/* Blurring values */
-										if (displacement_field) 
-										{
-											do
-											{
-												blur=0;
-												for (i=0;i<n_vertices;i++)
-												{
-													if (vertex_list[i].blur > 0)
-													{
-														if (vertex_list[i].blur > 1)
-														{
-															/* i.e. more blurring to do */
-															blur=1;
-														}
-														vertex_list[i].blur--;
-														for (k=0;k<3;k++)
-														{
-															vectorsum[k]=0;
-														}
-														vectorsumc=0;
-														for (j=0;j<vertex_list[i].n_ptrs;j++)
-														{
-															triangle=vertex_list[i].ptrs[j];
-																
-															for (k=0;k<3;k++)
-															{
-																vertex0[k]=vertex_list[ii*n_vertices+
-																	triangle_list[triangle*3+0]].coord[k];
-																vertex1[k]=vertex_list[ii*n_vertices+
-																	triangle_list[triangle*3+1]].coord[k];
-																vertex2[k]=vertex_list[ii*n_vertices+
-																	triangle_list[triangle*3+2]].coord[k];
-																/* set vertex to be the average of its neighbours */
-															}
-															if (!(vertex0[0] == vertex_list[ii*n_vertices+i].coord[0] &&
-																vertex0[1] == vertex_list[ii*n_vertices+i].coord[1] &&
-																vertex0[2] == vertex_list[ii*n_vertices+i].coord[2]))
-															{
-																for (k=0;k<3;k++)
-																{
-																	vectorsum[k] += vertex0[k]; 
-																}
-																vectorsumc++;
-															}
-																
-															if (!(vertex1[0] == vertex_list[ii*n_vertices+i].coord[0] &&
-																vertex1[1] == vertex_list[ii*n_vertices+i].coord[1] &&
-																vertex1[2] == vertex_list[ii*n_vertices+i].coord[2]))
-															{
-																for (k=0;k<3;k++)
-																{
-																	vectorsum[k] += vertex1[k];
-																}
-																vectorsumc++;
-															}
-																
-															if (!(vertex2[0] == vertex_list[ii*n_vertices+i].coord[0] &&
-																vertex2[1] == vertex_list[ii*n_vertices+i].coord[1] &&
-																vertex2[2] == vertex_list[ii*n_vertices+i].coord[2]))
-															{
-																for (k=0;k<3;k++)
-																{
-																	vectorsum[k] += vertex2[k];
-																}
-																vectorsumc++;
-															}
-																
-																
-														}
-														for (k=0;k<3;k++)
-														{
-															if (vectorsumc !=0)
-															{
-																vertex_list[ii*n_vertices+i].coord[k]=vectorsum[k]/vectorsumc;
-															}
-														}
-													}
-													
-												} /* i */
-											} while (blur);
-										}
-										
-										for (i=0;i<n_vertices;i++)
-										{
-											for (k=0;k<3;k++)
-											{
-												vectorsum[k]=0;
-											}
-											for (j=0;j<vertex_list[i].n_ptrs;j++)
-											{
-												triangle=vertex_list[i].ptrs[j];
-												for (k=0;k<3;k++)
-												{
-													vertex0[k]=vertex_list[ii*n_vertices+
-														triangle_list[triangle*3+0]].coord[k];
-													vertex1[k]=vertex_list[ii*n_vertices+
-														triangle_list[triangle*3+1]].coord[k];
-													vertex2[k]=vertex_list[ii*n_vertices+
-														triangle_list[triangle*3+2]].coord[k];
-													vector1[k]=vertex1[k]-vertex0[k];
-													vector2[k]=vertex2[k]-vertex0[k];
-												}
-												cross_product_float3(vector1,vector2,result);
-												rmag=sqrt((double)(result[0]*result[0]+
-													result[1]*result[1]+result[2]*result[2]));
-												for (k=0;k<3;k++)
-												{
-													vectorsum[k] += result[k];
-												}
-#if defined (DEBUG)
-												if (fabs(vector1[0]*vector1[0]+vector1[1]*vector1[1]+
-													vector1[2]*vector1[2]) < 1e-8)
-												{
-													bad_triangle = 1;
-												}
-												if (fabs(vector2[0]*vector2[0]+vector2[1]*vector2[1]+
-													vector2[2]*vector2[2]) < 1e-8)
-												{
-													bad_triangle = 1;
-												}
-												if (fabs(result[0]*result[0]+result[1]*result[1]+
-													result[2]*result[2]) < 1e-8)
-												{
-													bad_triangle = 1;
-												}
-#endif /* defined (DEBUG) */
-											}
-											/* now set normal as the average & normalize */
-											rmag=sqrt((double)(vectorsum[0]*vectorsum[0]+
-												vectorsum[1]*vectorsum[1]+vectorsum[2]*vectorsum[2]));
-											if (rmag > 1e-10)
-											{
-												for (k=0;k<3;k++)
-												{
-													vertex_list[ii*n_vertices+i].normal[k]=
-														-vectorsum[k]/rmag;
-													/*???Mark.  This should be + */
-												}
-											}
-											else
-											{
-												vertex_list[ii*n_vertices+i].normal[0]=1.0;
-												vertex_list[ii*n_vertices+i].normal[1]=0.0;
-												vertex_list[ii*n_vertices+i].normal[2]=0.0;
-											}
-#if defined (DEBUG)
-											if (bad_triangle)
-											{
-												printf ("\nVertex %d\n", i);
-												printf (" coord %f %f %f\n",
-													vertex_list[i].coord[0],
-													vertex_list[i].coord[1],
-													vertex_list[i].coord[2]);			
-												printf (" normal %f %f %f\n",
-													vertex_list[i].normal[0],
-													vertex_list[i].normal[1],
-													vertex_list[i].normal[2]);			
-												printf (" Triangles\n");
-												for (j=0;j<vertex_list[i].n_ptrs;j++)
-												{
-													triangle=vertex_list[i].ptrs[j];
-													printf ("  (%f %f %f),",
-														vertex_list[ii*n_vertices+triangle_list[triangle*3+0]].coord[0],
-														vertex_list[ii*n_vertices+triangle_list[triangle*3+0]].coord[1],
-														vertex_list[ii*n_vertices+triangle_list[triangle*3+0]].coord[2]);
-													printf ("  (%f %f %f),\n\t",
-														vertex_list[ii*n_vertices+triangle_list[triangle*3+1]].coord[0],
-														vertex_list[ii*n_vertices+triangle_list[triangle*3+1]].coord[1],
-														vertex_list[ii*n_vertices+triangle_list[triangle*3+1]].coord[2]);
-													printf ("  (%f %f %f)\n",
-														vertex_list[ii*n_vertices+triangle_list[triangle*3+2]].coord[0],
-														vertex_list[ii*n_vertices+triangle_list[triangle*3+2]].coord[1],
-														vertex_list[ii*n_vertices+triangle_list[triangle*3+2]].coord[2]);
-													for (k=0;k<3;k++)
-													{
-														vertex0[k]=vertex_list[ii*n_vertices+
-															triangle_list[triangle*3+0]].coord[k];
-														vertex1[k]=vertex_list[ii*n_vertices+
-															triangle_list[triangle*3+1]].coord[k];
-														vertex2[k]=vertex_list[ii*n_vertices+
-															triangle_list[triangle*3+2]].coord[k];
-														vector1[k]=vertex1[k]-vertex0[k];
-														vector2[k]=vertex2[k]-vertex0[k];
-													}
-													cross_product_float3(vector1,vector2,result);
-													printf ("  Normal (%f %f %f)\n",
-														result[0], result[1], result[2]);
-												}				
-												vertex_list[ii*n_vertices+i].normal[0]=1.0;
-												vertex_list[ii*n_vertices+i].normal[1]=0.0;
-												vertex_list[ii*n_vertices+i].normal[2]=0.0;
-											}
-#endif /* defined (DEBUG) */
-										} /* i */
-									} /* ii */
+									}
 								}
 							
 								Computed_field_clear_cache(coordinate_field);
 								if(data_field)
 								{
 									Computed_field_clear_cache(data_field);
-								}
-								if(blur_field)
-								{
-									Computed_field_clear_cache(blur_field);
 								}
 								if(texture_coordinate_field)
 								{
@@ -4533,7 +3796,6 @@ faces.
 								{
 									Computed_field_clear_cache(displacement_field);
 								}
-								DEALLOCATE(triangle_list);
 							}
 						}
 						else
@@ -4608,15 +3870,16 @@ the position of the point, with appropriate coordinate conversion.
 {
 	FE_value area, coordinate_1, coordinate_2, coordinate_3,
 		density_data[4], expected_number, position[3], xi1, xi2, xi[3];
-	int aaa, *adjacency_table, bbb, ccc,i, j, k, m, node_number, n_iso_polys, 
-		number_of_elements, n_xi[3], number_of_points, return_code, *triangle_list2;
+	int *adjacency_table, i, j, k, m, node_number, n_iso_polys, 
+		number_of_elements, n_xi[3], number_of_points, return_code;
 	struct Computed_field *rc_data_coordinate_field;
 	struct Coordinate_system rect_cart_coords;
 	struct FE_element **element_block,**element_block_ptr,*local_element;
 	struct FE_node *new_node, *template_node;
 	struct FE_field *fe_coordinate_field, *fe_element_xi_field;
 	struct LIST(FE_field) *fe_coordinate_field_list;
-	struct VT_iso_vertex *vertex_list;
+	struct VT_iso_triangle *triangle, **triangle_list;
+	struct VT_iso_vertex **vertex_list;
 	struct FE_node_field_creator *coordinate_node_field_creator,
 		*element_xi_node_field_creator;
 	char *element_xi_component_names[1]=
@@ -4717,7 +3980,7 @@ the position of the point, with appropriate coordinate conversion.
 					if (return_code)
 					{
 						n_iso_polys=vtexture->mc_iso_surface->n_triangles;
-						triangle_list2 = GT_voltex_get_triangle_list(voltex);
+						triangle_list = GT_voltex_get_triangle_list(voltex);
 						vertex_list = GT_voltex_get_vertex_list(voltex);
 										
 						for ( i = 0 ; return_code && (i < n_iso_polys) ; i++)
@@ -4728,12 +3991,12 @@ the position of the point, with appropriate coordinate conversion.
 							xi[2] = 0.0;
 							for (j=0;j<3;j++)
 							{
-								xi[0] += ((vtexture->mc_iso_surface->
-									compiled_vertex_list)[triangle_list2[3*i+j]]->coord)[0];
-								xi[1] += ((vtexture->mc_iso_surface->
-									compiled_vertex_list)[triangle_list2[3*i+j]]->coord)[1];
-								xi[2] += ((vtexture->mc_iso_surface->
-									compiled_vertex_list)[triangle_list2[3*i+j]]->coord)[2];
+								xi[0] += vtexture->mc_iso_surface->
+									compiled_triangle_list[i]->vertices[j]->coord[0];
+								xi[1] += vtexture->mc_iso_surface->
+									compiled_triangle_list[i]->vertices[j]->coord[1];
+								xi[2] += vtexture->mc_iso_surface->
+									compiled_triangle_list[i]->vertices[j]->coord[2];
 							}
 							xi[0] /= 3.0;
 							xi[1] /= 3.0;
@@ -4747,30 +4010,28 @@ the position of the point, with appropriate coordinate conversion.
 								density_data,(FE_value *)NULL);
 
 							/* Evaluate area of triangle in real space */
-							aaa = triangle_list2[3*i];
-							bbb = triangle_list2[3*i + 1];
-							ccc = triangle_list2[3*i + 2];
+							triangle = triangle_list[i];
 							coordinate_1 = sqrt(
-								(vertex_list[aaa].coord[0] - vertex_list[bbb].coord[0]) *
-								(vertex_list[aaa].coord[0] - vertex_list[bbb].coord[0]) +
-								(vertex_list[aaa].coord[1] - vertex_list[bbb].coord[1]) *
-								(vertex_list[aaa].coord[1] - vertex_list[bbb].coord[1]) +
-								(vertex_list[aaa].coord[2] - vertex_list[bbb].coord[2]) *
-								(vertex_list[aaa].coord[2] - vertex_list[bbb].coord[2]));
+								(triangle->vertices[0]->coordinates[0] - triangle->vertices[0]->coordinates[0]) *
+								(triangle->vertices[0]->coordinates[0] - triangle->vertices[1]->coordinates[0]) +
+								(triangle->vertices[0]->coordinates[1] - triangle->vertices[1]->coordinates[1]) *
+								(triangle->vertices[0]->coordinates[1] - triangle->vertices[1]->coordinates[1]) +
+								(triangle->vertices[0]->coordinates[2] - triangle->vertices[1]->coordinates[2]) *
+								(triangle->vertices[0]->coordinates[2] - triangle->vertices[1]->coordinates[2]));
 							coordinate_2 = sqrt(
-								(vertex_list[bbb].coord[0] - vertex_list[ccc].coord[0]) *
-								(vertex_list[bbb].coord[0] - vertex_list[ccc].coord[0]) +
-								(vertex_list[bbb].coord[1] - vertex_list[ccc].coord[1]) *
-								(vertex_list[bbb].coord[1] - vertex_list[ccc].coord[1]) +
-								(vertex_list[bbb].coord[2] - vertex_list[ccc].coord[2]) *
-								(vertex_list[bbb].coord[2] - vertex_list[ccc].coord[2]));
+								(triangle->vertices[1]->coordinates[0] - triangle->vertices[2]->coordinates[0]) *
+								(triangle->vertices[1]->coordinates[0] - triangle->vertices[2]->coordinates[0]) +
+								(triangle->vertices[1]->coordinates[1] - triangle->vertices[2]->coordinates[1]) *
+								(triangle->vertices[1]->coordinates[1] - triangle->vertices[2]->coordinates[1]) +
+								(triangle->vertices[1]->coordinates[2] - triangle->vertices[2]->coordinates[2]) *
+								(triangle->vertices[1]->coordinates[2] - triangle->vertices[2]->coordinates[2]));
 							coordinate_3 = sqrt(
-								(vertex_list[ccc].coord[0] - vertex_list[aaa].coord[0]) *
-								(vertex_list[ccc].coord[0] - vertex_list[aaa].coord[0]) +
-								(vertex_list[ccc].coord[1] - vertex_list[aaa].coord[1]) *
-								(vertex_list[ccc].coord[1] - vertex_list[aaa].coord[1]) +
-								(vertex_list[ccc].coord[2] - vertex_list[aaa].coord[2]) *
-								(vertex_list[ccc].coord[2] - vertex_list[aaa].coord[2]));
+								(triangle->vertices[2]->coordinates[0] - triangle->vertices[0]->coordinates[0]) *
+								(triangle->vertices[2]->coordinates[0] - triangle->vertices[0]->coordinates[0]) +
+								(triangle->vertices[2]->coordinates[1] - triangle->vertices[0]->coordinates[1]) *
+								(triangle->vertices[2]->coordinates[1] - triangle->vertices[0]->coordinates[1]) +
+								(triangle->vertices[2]->coordinates[2] - triangle->vertices[0]->coordinates[2]) *
+								(triangle->vertices[2]->coordinates[2] - triangle->vertices[0]->coordinates[2]));
 							area = 0.5 * ( coordinate_1 + coordinate_2 + coordinate_3 );
 							area = sqrt ( area * (area - coordinate_1) *
 								(area - coordinate_2) * (area - coordinate_3));
@@ -4795,35 +4056,35 @@ the position of the point, with appropriate coordinate conversion.
 								}
 
 								xi[0] = vtexture->mc_iso_surface->
-									compiled_vertex_list[triangle_list2[3*i+0]]->coord[0]
+									compiled_triangle_list[i]->vertices[0]->coord[0]
 									+ xi1 * (vtexture->mc_iso_surface->
-										compiled_vertex_list[triangle_list2[3*i+1]]->coord[0]
+										compiled_triangle_list[i]->vertices[1]->coord[0]
 										- vtexture->mc_iso_surface->
-										compiled_vertex_list[triangle_list2[3*i+0]]->coord[0])
+										compiled_triangle_list[i]->vertices[0]->coord[0])
 									+ xi2 * (vtexture->mc_iso_surface->
-										compiled_vertex_list[triangle_list2[3*i+2]]->coord[0]
+										compiled_triangle_list[i]->vertices[2]->coord[0]
 										- vtexture->mc_iso_surface->
-										compiled_vertex_list[triangle_list2[3*i+0]]->coord[0]);
+										compiled_triangle_list[i]->vertices[0]->coord[0]);
 								xi[1] = vtexture->mc_iso_surface->
-									compiled_vertex_list[triangle_list2[3*i+0]]->coord[1]
+									compiled_triangle_list[i]->vertices[0]->coord[1]
 									+ xi1 * (vtexture->mc_iso_surface->
-										compiled_vertex_list[triangle_list2[3*i+1]]->coord[1]
+										compiled_triangle_list[i]->vertices[1]->coord[1]
 										- vtexture->mc_iso_surface->
-										compiled_vertex_list[triangle_list2[3*i+0]]->coord[1])
+										compiled_triangle_list[i]->vertices[0]->coord[1])
 									+ xi2 * (vtexture->mc_iso_surface->
-										compiled_vertex_list[triangle_list2[3*i+2]]->coord[1]
+										compiled_triangle_list[i]->vertices[2]->coord[1]
 										- vtexture->mc_iso_surface->
-										compiled_vertex_list[triangle_list2[3*i+0]]->coord[1]);
+										compiled_triangle_list[i]->vertices[0]->coord[1]);
 								xi[2] = vtexture->mc_iso_surface->
-									compiled_vertex_list[triangle_list2[3*i+0]]->coord[2]
+									compiled_triangle_list[i]->vertices[0]->coord[2]
 									+ xi1 * (vtexture->mc_iso_surface->
-										compiled_vertex_list[triangle_list2[3*i+1]]->coord[2]
+										compiled_triangle_list[i]->vertices[1]->coord[2]
 										- vtexture->mc_iso_surface->
-										compiled_vertex_list[triangle_list2[3*i+0]]->coord[2])
+										compiled_triangle_list[i]->vertices[0]->coord[2])
 									+ xi2 * (vtexture->mc_iso_surface->
-										compiled_vertex_list[triangle_list2[3*i+2]]->coord[2]
+										compiled_triangle_list[i]->vertices[2]->coord[2]
 										- vtexture->mc_iso_surface->
-										compiled_vertex_list[triangle_list2[3*i+0]]->coord[2]);
+										compiled_triangle_list[i]->vertices[0]->coord[2]);
 
 								Set_element_and_local_xi(element_block, n_xi, xi, &local_element);
 
@@ -5541,10 +4802,9 @@ struct GT_voltex *generate_clipped_GT_voltex_from_FE_element(
 	struct Computed_field *coordinate_field,struct Computed_field *data_field,
 	struct VT_volume_texture *texture, enum Render_type render_type,
 	struct Computed_field *displacement_map_field, int displacement_map_xi_direction,
-	struct Computed_field *blur_field, struct Computed_field *texture_coordinate_field,
-	FE_value time)
+	struct Computed_field *texture_coordinate_field, FE_value time)
 /*******************************************************************************
-LAST MODIFIED : 3 December 2001
+LAST MODIFIED : 10 November 2005
 
 DESCRIPTION :
 Generates clipped voltex from <volume texture> and <clip_function> over
@@ -5552,12 +4812,11 @@ Generates clipped voltex from <volume texture> and <clip_function> over
 ==============================================================================*/
 {
 	int i,nx,ny,nz;
-	int n_scalar_fields,face_index;
+	int n_scalar_fields;
 	struct VT_scalar_field *scalar_field_list[MAX_SCALAR_FIELDS];
 	double isovalue_list[MAX_SCALAR_FIELDS];
 	double vector[3];
 	struct VT_vector_field *new_field;
-	struct MC_triangle *triangle;
 	struct GT_voltex *voltex;
 
 	ENTER(generate_clipped_GT_voltex_from_FE_element);
@@ -5568,10 +4827,7 @@ Generates clipped voltex from <volume texture> and <clip_function> over
 			nx=texture->dimension[0]+1;
 			ny=texture->dimension[1]+1;
 			nz=texture->dimension[2]+1;
-			/* calculate scalar field using filter */
-			/* at present this also calculates a regular grid coordinate field  - in
-				future may want to use irregular grid coordinates) */
-			if (update_scalars(texture,texture->cutting_plane))
+			if (update_scalars(texture))
 			{
 				scalar_field_list[0]=texture->scalar_field;
 				isovalue_list[0]=texture->isovalue;
@@ -5658,16 +4914,6 @@ Generates clipped voltex from <volume texture> and <clip_function> over
 						texture->hollow_isovalue*texture->isovalue;
 					n_scalar_fields++;
 				}
-				if (texture->mc_iso_surface)
-				{
-					/* calculate detail map here */
-					calculate_detail_map(texture,texture->mc_iso_surface);
-				}
-				else
-				{
-					display_message(ERROR_MESSAGE,
-						"generate_clipped_GT_voltex_from_FE_element.  Missing mc_iso_surface");
-				}
 #if defined (DEBUG)
 				/*???debug */
 				printf("Clipped Marching cubes: isovalue=%lf : n_scalar_fields=%d : mode [hollow=%d] [closed=%d] [clip=%d]\n",
@@ -5685,125 +4931,13 @@ Generates clipped voltex from <volume texture> and <clip_function> over
 					if (marching_cubes(scalar_field_list,n_scalar_fields,
 						texture->coordinate_field,texture->mc_iso_surface,isovalue_list,
 						texture->closed_surface,
-						1 /*(texture->cutting_plane_on)||(texture->hollow_mode_on)*/,
-						texture->decimation_threshold))
+						1 /*(texture->cutting_plane_on)||(texture->hollow_mode_on)*/))
 					{
 						texture->recalculate=0;
-						/* set polygon materials from texture data */
-						if (calculate_mc_material(texture,texture->mc_iso_surface))
-						{
-							for (i=0;i<texture->mc_iso_surface->n_triangles;i++)
-							{
-								triangle = texture->mc_iso_surface->compiled_triangle_list[i];
-								face_index = triangle->triangle_list_index + 1;
-								if (face_index > 0 && face_index <= 6)
-								{
-									/* special case - texture projection on actual face */
-									mc_face_cube_map_function(&(triangle->env_map_index[0]),
-										triangle->texture_coord[0],
-										triangle->vertices[0],
-										triangle->iso_poly_cop[0],face_index,
-										texture->ximin,texture->ximax);
-									mc_face_cube_map_function(&(triangle->env_map_index[1]),
-										triangle->texture_coord[1],
-										triangle->vertices[1],
-										triangle->iso_poly_cop[1],face_index,
-										texture->ximin,texture->ximax);
-									mc_face_cube_map_function(&(triangle->env_map_index[2]),
-										triangle->texture_coord[2],
-										triangle->vertices[2],
-										triangle->iso_poly_cop[2],face_index,
-										texture->ximin,texture->ximax);
-								}
-								else
-								{
-									/* general case */
-									mc_cube_map_function(&(triangle->env_map_index[0]),
-										triangle->texture_coord[0],
-										triangle->vertices[0],
-										triangle->iso_poly_cop[0],
-										texture->ximin,texture->ximax);
-									mc_cube_map_function(&(triangle->env_map_index[1]),
-										triangle->texture_coord[1],
-										triangle->vertices[1],
-										triangle->iso_poly_cop[1],
-										texture->ximin,texture->ximax);
-									mc_cube_map_function(&(triangle->env_map_index[2]),
-										triangle->texture_coord[2],
-										triangle->vertices[2],
-										triangle->iso_poly_cop[2],
-										texture->ximin,texture->ximax);
-								}
-							}
-
-#if defined (OLD_CODE)
-							/* calculate projected texture */
-							for (i=0;i<texture->iso_surface->n_iso_polys;i++)
-							{
-								face_index = 0;
-								if (i<texture->iso_surface->xi_face_poly_index[0])
-									face_index = 1;
-								else if (i<texture->iso_surface->xi_face_poly_index[1])
-									face_index = 2;
-								else if (i<texture->iso_surface->xi_face_poly_index[2])
-									face_index = 3;
-								else if (i<texture->iso_surface->xi_face_poly_index[3])
-									face_index = 4;
-								else if (i<texture->iso_surface->xi_face_poly_index[4])
-									face_index = 5;
-								else if (i<texture->iso_surface->xi_face_poly_index[5])
-									face_index = 6;
-								if (face_index)
-								{
-									/* special case - texture projection on actual face */
-									face_cube_map_function(&(texture->texturemap_index[3*i]),
-										texture->texturemap_coord[3*i],
-										&(texture->iso_surface->vertex_list[texture->iso_surface->
-										triangle_list[i][0]]),&(texture->iso_poly_cop[i*3][0]),
-										face_index,texture->ximin,texture->ximax);
-									face_cube_map_function(&(texture->texturemap_index[3*i+1]),
-										texture->texturemap_coord[3*i+1],
-										&(texture->iso_surface->vertex_list[texture->iso_surface->
-										triangle_list[i][1]]),&(texture->iso_poly_cop[i*3+1][0]),
-										face_index,texture->ximin,texture->ximax);
-									face_cube_map_function(&(texture->texturemap_index[3*i+2]),
-										texture->texturemap_coord[3*i+2],
-										&(texture->iso_surface->vertex_list[texture->iso_surface->
-										triangle_list[i][2]]),&(texture->iso_poly_cop[i*3+2][0]),
-										face_index,texture->ximin,texture->ximax);
-								}
-								else
-								{
-									/* general case */
-									cube_map_function(&(texture->texturemap_index[3*i]),
-										texture->texturemap_coord[3*i],
-										&(texture->iso_surface->vertex_list[texture->iso_surface->
-										triangle_list[i][0]]),&(texture->iso_poly_cop[i*3][0]),
-										texture->ximin,texture->ximax);
-									cube_map_function(&(texture->texturemap_index[3*i+1]),
-										texture->texturemap_coord[3*i+1],
-										&(texture->iso_surface->vertex_list[texture->iso_surface->
-										triangle_list[i][1]]),&(texture->iso_poly_cop[i*3+1][0]),
-										texture->ximin,texture->ximax);
-									cube_map_function(&(texture->texturemap_index[3*i+2]),
-										texture->texturemap_coord[3*i+2],
-										&(texture->iso_surface->vertex_list[texture->iso_surface->
-										triangle_list[i][2]]),&(texture->iso_poly_cop[i*3+2][0]),
-										texture->ximin,texture->ximax);
-								}
-							}
-#endif /* defined (OLD_CODE) */
-							voltex=create_GT_voltex_from_FE_element(element,
-								coordinate_field,data_field,texture,render_type,
-								displacement_map_field, displacement_map_xi_direction,
-								blur_field, texture_coordinate_field, time);
-						}
-						else
-						{
-							display_message(ERROR_MESSAGE,
-			"generate_clipped_GT_voltex_from_FE_element.  Error calculate_materials");
-							voltex=(struct GT_voltex *)NULL;
-						}
+						voltex=create_GT_voltex_from_FE_element(element,
+							coordinate_field,data_field,texture,render_type,
+							displacement_map_field, displacement_map_xi_direction,
+							texture_coordinate_field, time);
 					}
 					else
 					{
@@ -5822,7 +4956,7 @@ Generates clipped voltex from <volume texture> and <clip_function> over
 					voltex=create_GT_voltex_from_FE_element(element,coordinate_field,
 						data_field, texture, render_type,
 						displacement_map_field, displacement_map_xi_direction,
-						blur_field, texture_coordinate_field, time);
+						texture_coordinate_field, time);
 #if defined (DEBUG)
 					/*???debug */
 					printf("After create GT Voltex (2)\n");
@@ -5846,7 +4980,7 @@ Generates clipped voltex from <volume texture> and <clip_function> over
 			voltex=create_GT_voltex_from_FE_element(element,
 				coordinate_field, data_field, texture, render_type,
 				displacement_map_field, displacement_map_xi_direction,
-				blur_field, texture_coordinate_field, time);
+				texture_coordinate_field, time);
 		}
 	}
 	else
@@ -6314,7 +5448,6 @@ Converts a 3-D element into a volume.
 				element_to_volume_data->render_type,
 				element_to_volume_data->displacement_map_field,
 				element_to_volume_data->displacement_map_xi_direction,
-				element_to_volume_data->blur_field,
 				element_to_volume_data->texture_coordinate_field,
 				element_to_volume_data->time))
 			{
@@ -6351,12 +5484,6 @@ Converts a 3-D element into a volume.
 			{
 				/* the element has been totally clipped */
 				return_code=1;
-#if defined (OLD_CODE)
-/*???debug */
-printf("generate_clipped_GT_voltex_from_FE_element failed\n");
-				DESTROY(GT_object)(&(element_to_volume_data->graphics_object));
-				return_code=0;
-#endif /* defined (OLD_CODE) */
 			}
 		}
 		else
@@ -6670,14 +5797,7 @@ Converts a 3-D element into an iso_surface (via a volume_texture).
 					{
 						cell=cell_block+i;
 						cell_list[i]=cell;
-						(cell->cop)[0]=0.5;
-						(cell->cop)[1]=0.5;
-						(cell->cop)[2]=0.5;
-						cell->material=(struct Graphical_material *)NULL;
 						cell->scalar_value=1.0;
-						cell->env_map=(struct Environment_map *)NULL;
-						cell->detail=0;
-						cell->interpolation_fn=0;
 						i++;
 					}
 					if (i==number_of_volume_texture_cells)
@@ -6700,11 +5820,6 @@ Converts a 3-D element into an iso_surface (via a volume_texture).
 							{
 								node=node_block+i;
 								node_list[i]=node;
-								(node->cop)[0]=0.5;
-								(node->cop)[1]=0.5;
-								(node->cop)[2]=0.5;
-								node->material=(struct Graphical_material *)NULL;
-								node->dominant_material=(struct Graphical_material *)NULL;
 								node->scalar_value=(double)scalar_value;
 								/*???RC no clipping function for now */
 								node->clipping_fn_value=(double)1.0;
@@ -6771,12 +5886,11 @@ Converts a 3-D element into an iso_surface (via a volume_texture).
 							volume_texture->disable_volume_functions=0;
 							if (iso_surface_voltex=generate_clipped_GT_voltex_from_FE_element(
 									 clipping,element,coordinate_field,data_field,
-									 volume_texture,render_type,NULL,0,NULL,texture_coordinate_field,
+									 volume_texture,render_type,NULL,0,texture_coordinate_field,
 									 time))
 							{
-								if (return_code=GT_OBJECT_ADD(GT_voltex)(
-										 graphics_object,
-										 /*time*/0,iso_surface_voltex))
+								if (return_code=GT_object_merge_GT_voltex(graphics_object,
+										iso_surface_voltex))
 								{
 									if (surface_data_fe_region && surface_data_density_field)
 									{

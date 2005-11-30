@@ -545,10 +545,9 @@ struct GT_voltex *create_GT_voltex_from_FE_element(struct FE_element *element,
 	struct Computed_field *coordinate_field,struct Computed_field *data_field,
 	struct VT_volume_texture *vtexture, enum Render_type render_type,
 	struct Computed_field *displacement_field, int displacement_map_xi_direction,
-	struct Computed_field *blur_field,
 	struct Computed_field *texture_coordinate_field, FE_value time);
 /*******************************************************************************
-LAST MODIFIED : 3 December 2001
+LAST MODIFIED : 10 November 2005
 
 DESCRIPTION :
 Creates a <GT_voltex> from a 3-D finite <element> <block> and volume texture
@@ -600,10 +599,9 @@ struct GT_voltex *generate_clipped_GT_voltex_from_FE_element(
 	struct Computed_field *coordinate_field,struct Computed_field *field_scalar,
 	struct VT_volume_texture *texture, enum Render_type render_type,
 	struct Computed_field *displacement_map_field, int displacement_map_xi_direction,
-	struct Computed_field *blur_field, 
 	struct Computed_field *texture_coordinate_field, FE_value time);
 /*******************************************************************************
-LAST MODIFIED : 3 December 2001
+LAST MODIFIED : 10 November 2005
 
 DESCRIPTION :
 Generates clipped voltex from <volume texture> and <clip_function> over
