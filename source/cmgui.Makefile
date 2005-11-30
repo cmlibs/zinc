@@ -881,6 +881,7 @@ GENERAL_SRCS = \
 	general/multi_range.c \
 	general/myio.c \
 	general/mystring.c \
+	general/octree.c \
 	general/photogrammetry.c \
 	general/statistics.c \
 	general/time.c \
@@ -891,6 +892,7 @@ GRAPHICS_SRCS = \
 	graphics/auxiliary_graphics_types.c \
 	graphics/colour.c \
 	graphics/complex.c \
+	graphics/decimate_voltex.c \
 	graphics/defined_graphics_objects.c \
 	graphics/element_group_settings.c \
 	graphics/element_point_ranges.c \
@@ -902,7 +904,6 @@ GRAPHICS_SRCS = \
 	graphics/material.c \
 	graphics/mcubes.c \
 	graphics/order_independent_transparency.c \
-	graphics/renderbinarywavefront.c \
 	graphics/rendervrml.c \
 	graphics/renderwavefront.c \
 	graphics/selected_graphic.c \
@@ -921,7 +922,6 @@ ifeq ($(GRAPHICS_API), OPENGL_GRAPHICS)
 		graphics/graphics_object.c \
 		graphics/light.c \
 		graphics/light_model.c \
-		graphics/makegtobj.c \
 		graphics/rendergl.c \
 		graphics/scene.c \
 		graphics/scene_viewer.c
@@ -936,11 +936,7 @@ ifeq ($(GRAPHICS_API), OPENGL_GRAPHICS)
 	   graphics/settings_editor.c \
 		graphics/spectrum_editor.c \
 		graphics/spectrum_editor_dialog.c \
-		graphics/spectrum_editor_settings.c \
-		graphics/texture_graphics.c \
-		graphics/texturemap.c \
-		graphics/volume_texture_editor.c \
-		graphics/volume_texture_editor_dialog.c
+		graphics/spectrum_editor_settings.c
 endif
 IMAGE_PROCESSING_SRCS = \
 	image_processing/computed_field_adaptive_adjust_contrast.c \
