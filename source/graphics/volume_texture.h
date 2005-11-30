@@ -88,12 +88,9 @@ MC_cells.
 	int vertex_index;
 	/* vertex position */
 	float coord[3];
-	/* vertex normal - calculated from surrounding normals */
-	float normal[3];
 	/* back pointers to triangles containing vertices */
 	int n_triangle_ptrs;
 	struct MC_triangle **triangle_ptrs;
-	int vt_class;
 }; /* struct MC_vertex */
 
 struct MC_triangle
@@ -109,13 +106,6 @@ can be shared by adjacent cells with differing materials.
 	/* identifiers for creating array */
 	int triangle_index;
 	int vertex_index[3];
-	/* texture map coordinates u,v,w */
-	float texture_coord[3][3];
-	/* material and environmentt map information */
-	struct Graphical_material *material[3];
-	int env_map_index[3];
-	struct Environment_map *env_map[3];
-	double iso_poly_cop[3][3];
 	/* index describing which MC_cell triangle list this
 	triangle belongs to */
 	int triangle_list_index;
@@ -212,6 +202,8 @@ DESCRIPTION :
 	double *vector;
 }; /* struct VT_vector_field */
 
+struct VT_iso_triangle;
+
 struct VT_iso_vertex
 /*******************************************************************************
 LAST MODIFIED : 21 October 1997
@@ -219,19 +211,27 @@ LAST MODIFIED : 21 October 1997
 DESCRIPTION :
 ==============================================================================*/
 {
-	float coord[3];
+	float coordinates[3];
 	float normal[3];
-	/* Just kept here so we can store this value and then poke it into the
-		texture coordinates array if it depends on a field */
 	float texture_coordinates[3];
-	int n_ptrs;
-	int ptrs[MAXPTRS];
-	int vt_class;
-	int data_index;
-	unsigned char blur;
-	/* mapping function? */
+
+	int number_of_triangles;
+	struct VT_iso_triangle **triangles;
+
+	float *data;
+
+	/* Integer index indicating where this vertex is in the list, useful
+		for serialising */
+	int index;
 }; /* struct VT_iso_vertex */
 
+struct VT_iso_triangle
+{
+	struct VT_iso_vertex *vertices[3];
+	/* Integer index indicating where this triangle is in the list, useful
+		for serialising */
+	int index;
+};
 
 struct VT_texture_curve
 /*******************************************************************************
@@ -277,10 +277,6 @@ DESCRIPTION :
 	double clipping_fn_value;
 	/* the gradient of the scalar field at each node */
 	double scalar_gradient[3];
-	struct Graphical_material *material;
-	struct Graphical_material *dominant_material;
-	/* centre of projection */
-	double cop[3];
 	/* if active flag, use scalar value directly */
 	int active;
 	/* nodes may be used to represent FE nodes for mesh generation in this
@@ -303,21 +299,6 @@ DESCRIPTION :
 ==============================================================================*/
 {
 	int index;
-#if defined (OLD_CODE)
-/*???DB.  Not used */
-	/* list of nodes forming 3d texture cell (like a finite element but in a
-		structured grid) arranged in order of increasing xi1,2,3 */
-	struct VT_texture_node *texture_node_list;
-#endif /* defined (OLD_CODE) */
-	/* the material can be cell based */
-	struct Graphical_material *material;
-	struct Environment_map *env_map;
-	/* centre of projection */
-	double cop[3];
-	/* number of recursions for cell detail */
-	int detail;
-	/* function giving instructions on how cell is rendered */
-	int interpolation_fn;
 	/* the scalar value for isosurface construction */
 	double scalar_value;
 }; /* struct VT_texture_cell */
@@ -473,71 +454,6 @@ PROTOTYPE_MANAGER_FUNCTIONS(VT_volume_texture);
 
 PROTOTYPE_MANAGER_IDENTIFIER_FUNCTIONS(VT_volume_texture,name,char *);
 
-int modify_VT_volume_texture(struct Parse_state *parse_state,void *texture_void,
-	void *modify_VT_volume_texture_data_void);
-/*******************************************************************************
-LAST MODIFIED : 20 June 1996
-
-DESCRIPTION :
-Modifies the properties of a volume texture.
-???DB.  Doesn't do help properly ?
-==============================================================================*/
-
-int list_VT_volume_texture(struct VT_volume_texture *texture);
-/*******************************************************************************
-LAST MODIFIED : 28 February 1994
-
-DESCRIPTION :
-Writes the properties of the <texture> to the command window.
-==============================================================================*/
-
-int set_VT_volume_texture(struct Parse_state *state,void *texture_address_void,
-	void *dummy_user_data);
-/*******************************************************************************
-LAST MODIFIED : 19 June 1996
-
-DESCRIPTION :
-Modifier function to set the volume texture from a command.
-==============================================================================*/
-
-int read_volume_texture_from_file(struct VT_volume_texture *texture,
-	struct IO_stream *in_file,
-	struct MANAGER(Graphical_material) *graphical_material_manager,
-	struct MANAGER(Environment_map) *environment_map_manager);
-/*******************************************************************************
-LAST MODIFIED : 6 December 2004
-
-DESCRIPTION :
-Reads the volume <texture> from the <in_file>.
-???DB.  Memory deallocation on failure needs tidying
-==============================================================================*/
-
-int read_volume_texture_from_obj_file(struct VT_volume_texture *texture,
-	struct IO_stream *in_file,
-	struct MANAGER(Graphical_material) *graphical_material_manager,
-	struct MANAGER(Environment_map) *environment_map_manager,int deformable);
-/*******************************************************************************
-LAST MODIFIED : 6 December 2004
-
-DESCRIPTION :
-Reads the volume <texture> from the obj <in_file>.
-
-Parses an Alias/Wavefront .obj file and creates a triangulated surface which is
-stored as an isosurface so that it can treated as a surface generated from a
-volume texture.  This allows wrinkling,  deformation by FE's etc.  It is
-important to maintain the connectivities and vertex indices so that .obj files
-can be exported with only vertex positions changed.
-==============================================================================*/
-
-int write_volume_texture_to_file(struct VT_volume_texture *texture,
-	FILE *out_file);
-/*******************************************************************************
-LAST MODIFIED : 24 November 1994
-
-DESCRIPTION :
-Writes the volume <texture> to a <out_file>.
-==============================================================================*/
-
 void generate_isosurface(struct VT_volume_texture *texture);
 /*******************************************************************************
 LAST MODIFIED : 13 November 1994
@@ -570,4 +486,43 @@ LAST MODIFIED : 19 June 1996
 DESCRIPTION :
 Modifier function to set the clipping from a command.
 ==============================================================================*/
+
+struct VT_iso_vertex *CREATE(VT_iso_vertex)(void);
+/*******************************************************************************
+LAST MODIFIED : 9 November 2005
+
+DESCRIPTION :
+==============================================================================*/
+
+int DESTROY(VT_iso_vertex)(struct VT_iso_vertex **vertex_address);
+/*******************************************************************************
+LAST MODIFIED : 9 November 2005
+
+DESCRIPTION :
+Frees the memory for the volume vertex and sets <*vertex_address> to NULL.
+==============================================================================*/
+
+int VT_iso_vertex_normalise_normal(struct VT_iso_vertex *vertex);
+/*******************************************************************************
+LAST MODIFIED : 28 October 2005
+
+DESCRIPTION :
+Normalisess the normal for the vertex.
+==============================================================================*/
+
+struct VT_iso_triangle *CREATE(VT_iso_triangle)(void);
+/*******************************************************************************
+LAST MODIFIED : 9 November 2005
+
+DESCRIPTION :
+==============================================================================*/
+
+int DESTROY(VT_iso_triangle)(struct VT_iso_triangle **triangle_address);
+/*******************************************************************************
+LAST MODIFIED : 9 November 2005
+
+DESCRIPTION :
+Frees the memory for the volume triangle and sets <*triangle_address> to NULL.
+==============================================================================*/
+
 #endif

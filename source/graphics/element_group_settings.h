@@ -303,18 +303,6 @@ Data to pass to GT_element_settings_update_time_behaviour.
 	int time_dependent;
 };
 
-struct GT_element_settings_compile_data
-/*******************************************************************************
-LAST MODIFIED : 6 December 2001
-
-DESCRIPTION :
-Data to pass to GT_element_settings_update_time_behaviour.
-==============================================================================*/
-{
-	float time;
-	struct Graphics_buffer *graphics_buffer;
-};
-
 /*
 Global functions
 ----------------
@@ -734,6 +722,24 @@ LAST MODIFIED : 5 June 1998
 DESCRIPTION :
 Sets the <material> used by <settings>. Must set the material for each new
 settings created.
+==============================================================================*/
+
+struct Graphical_material *GT_element_settings_get_secondary_material(
+	struct GT_element_settings *settings);
+/*******************************************************************************
+LAST MODIFIED : 30 September 2005
+
+DESCRIPTION :
+Returns the secondary_material used by <settings>.
+==============================================================================*/
+
+int GT_element_settings_set_secondary_material(struct GT_element_settings *settings,
+	struct Graphical_material *material);
+/*******************************************************************************
+LAST MODIFIED : 30 September 2005
+
+DESCRIPTION :
+Sets the <secondary_material> used by <settings>.
 ==============================================================================*/
 
 struct Graphical_material *GT_element_settings_get_selected_material(
@@ -1342,9 +1348,9 @@ struct GT_element_settings_compile_data.
 ==============================================================================*/
 
 int GT_element_settings_execute_visible_settings(
-	struct GT_element_settings *settings,void *dummy_void);
+	struct GT_element_settings *settings, void *context_void);
 /*******************************************************************************
-LAST MODIFIED : 12 June 1998
+LAST MODIFIED : 12 October 2005
 
 DESCRIPTION :
 If the settings visibility flag is set and it has a graphics_object, the
@@ -1475,17 +1481,6 @@ LAST MODIFIED : 19 August 1998
 
 DESCRIPTION :
 Executes a GFX MODIFY G_ELEMENT ELEMENT_POINTS command.
-If return_code is 1, returns the completed Modify_g_element_data with the
-parsed settings. Note that the settings are ACCESSed once on valid return.
-==============================================================================*/
-
-int gfx_modify_g_element_volumes(struct Parse_state *state,
-	void *modify_g_element_data_void,void *g_element_command_data_void);
-/*******************************************************************************
-LAST MODIFIED : 27 July 1998
-
-DESCRIPTION :
-Executes a GFX MODIFY G_ELEMENT VOLUMES command.
 If return_code is 1, returns the completed Modify_g_element_data with the
 parsed settings. Note that the settings are ACCESSed once on valid return.
 ==============================================================================*/

@@ -323,8 +323,15 @@ rendering.
 			settings_to_object_data.selected_element_list =
 				FE_element_selection_get_element_list(
 					gt_element_group->element_selection);
-			settings_to_object_data.selected_data_list =
-				FE_node_selection_get_node_list(gt_element_group->data_selection);
+			if (gt_element_group->data_selection)
+			{
+				settings_to_object_data.selected_data_list =
+					FE_node_selection_get_node_list(gt_element_group->data_selection);
+			}
+			else
+			{
+				settings_to_object_data.selected_data_list = (struct LIST(FE_node) *)NULL;
+			}
 			settings_to_object_data.selected_node_list =
 				FE_node_selection_get_node_list(gt_element_group->node_selection);
 
@@ -1461,8 +1468,7 @@ Returns the circle discretization of the gt_element_group.
 } /* GT_element_group_get_circle_discretization */
 
 int GT_element_group_set_circle_discretization(
-	struct GT_element_group *gt_element_group,int circle_discretization,
-	struct User_interface *user_interface)
+	struct GT_element_group *gt_element_group,int circle_discretization)
 /*******************************************************************************
 LAST MODIFIED : 7 June 2001
 
@@ -1473,8 +1479,7 @@ Sets the circle discretization of the gt_element_group.
 	int return_code;
 
 	ENTER(GT_element_group_set_circle_discretization);
-	if (gt_element_group &&
-		check_Circle_discretization(&circle_discretization, user_interface))
+	if (gt_element_group)
 	{
 		return_code = 1;
 		if (circle_discretization != gt_element_group->circle_discretization)
@@ -1606,10 +1611,9 @@ Returns the element discretization of the gt_element_group.
 
 int GT_element_group_set_element_discretization(
 	struct GT_element_group *gt_element_group,
-	struct Element_discretization *element_discretization,
-	struct User_interface *user_interface)
+	struct Element_discretization *element_discretization)
 /*******************************************************************************
-LAST MODIFIED : 7 June 2001
+LAST MODIFIED : 28 September 2005
 
 DESCRIPTION :
 Sets the element discretization of the gt_element_group.
@@ -1618,8 +1622,7 @@ Sets the element discretization of the gt_element_group.
 	int return_code;
 
 	ENTER(GT_element_group_set_element_discretization);
-	if (gt_element_group && element_discretization &&
-		check_Element_discretization(element_discretization, user_interface))
+	if (gt_element_group && element_discretization)
 	{
 		return_code = 1;
 		if ((gt_element_group->element_discretization.number_in_xi1 !=
@@ -1810,9 +1813,9 @@ actual GT_element_group.
 			GT_element_group_set_default_coordinate_field(destination,
 				source->default_coordinate_field);
 			GT_element_group_set_circle_discretization(destination,
-				source->circle_discretization,(struct User_interface *)NULL);
+				source->circle_discretization);
 			GT_element_group_set_element_discretization(destination,
-				&(source->element_discretization),(struct User_interface *)NULL);
+				&(source->element_discretization));
 			GT_element_group_set_native_discretization_field(destination,
 				source->native_discretization_field);
 			/* make copy of source settings without graphics objects */
@@ -2229,7 +2232,7 @@ the group.
 } /* build_GT_element_group  */
 
 int compile_GT_element_group(struct GT_element_group *gt_element_group,
-	float time, struct Graphics_buffer *graphics_buffer)
+	struct GT_object_compile_context *context)
 /*******************************************************************************
 LAST MODIFIED : 18 November 2005
 
@@ -2240,7 +2243,6 @@ provide a operating system dependent rendering contexts.
 ==============================================================================*/
 {
 	int return_code;
-	struct GT_element_settings_compile_data data;
 
 	ENTER(compile_GT_element_group);
 	if (gt_element_group)
@@ -2248,12 +2250,9 @@ provide a operating system dependent rendering contexts.
 		return_code = 1;
 		if (!gt_element_group->display_list_current)
 		{
-			data.time = time;
-			data.graphics_buffer = graphics_buffer;
-
 			/* compile visible graphics objects in the graphical element */
 			FOR_EACH_OBJECT_IN_LIST(GT_element_settings)(
-				GT_element_settings_compile_visible_settings, (void *)&data,
+				GT_element_settings_compile_visible_settings, (void *)context,
 				gt_element_group->list_of_settings);
 			if (gt_element_group->display_list ||
 				(gt_element_group->display_list = glGenLists(1)))
@@ -2263,7 +2262,7 @@ provide a operating system dependent rendering contexts.
 				glPushName(0);
 				FOR_EACH_OBJECT_IN_LIST(GT_element_settings)(
 					GT_element_settings_execute_visible_settings,
-					(void *)&time, gt_element_group->list_of_settings);
+					NULL, gt_element_group->list_of_settings);
 				glPopName();
 				glEndList();
 				gt_element_group->display_list_current = 1;

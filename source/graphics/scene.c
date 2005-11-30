@@ -212,6 +212,12 @@ Stores the collections of objects that make up a 3-D graphical model.
 #if defined (OPENGL_API)
 	/* display list identifier for the scene */
 	GLuint display_list,fast_changing_display_list;
+	/* objects compiled within the context of this scene will execute these
+		display lists if the want to switch to ndc coordinate system and when
+		they want to switch back. These are overridden when picking to ensure that
+		the correct objects are selected. */
+	GLuint ndc_display_list;
+	GLuint end_ndc_display_list;
 #endif /* defined (OPENGL_API) */
 	/* enumeration indicates whether the graphics display list is up to date */
 	enum Graphics_compile_status compile_status;
@@ -842,6 +848,7 @@ linked list contained in the scene_object.
 {
 	float time;
 	int return_code;
+	struct GT_object_compile_context *context;
 	struct Graphics_buffer *graphics_buffer;
 
 	ENTER(compile_Scene_object);
@@ -864,8 +871,14 @@ linked list contained in the scene_object.
 					{
 						time = 0.0;
 					}
-					return_code=compile_GT_object(scene_object->gt_object,
-						time, graphics_buffer);
+					context = CREATE(GT_object_compile_context)(time, graphics_buffer
+#if defined (OPENGL_API)
+						, scene_object->scene->ndc_display_list,
+						scene_object->scene->end_ndc_display_list
+#endif /* defined (OPENGL_API) */
+						);					
+					return_code=compile_GT_object(scene_object->gt_object, context);
+					DESTROY(GT_object_compile_context)(&context);
 				} break;
 				case SCENE_OBJECT_GRAPHICAL_ELEMENT_GROUP:
 				{
@@ -877,8 +890,15 @@ linked list contained in the scene_object.
 					{
 						time = 0.0;
 					}
+			  context = CREATE(GT_object_compile_context)(time, graphics_buffer
+#if defined (OPENGL_API)
+						, scene_object->scene->ndc_display_list,
+						scene_object->scene->end_ndc_display_list
+#endif /* defined (OPENGL_API) */
+						);
 					return_code=compile_GT_element_group(scene_object->gt_element_group,
-						time, graphics_buffer);
+						context);
+					DESTROY(GT_object_compile_context)(&context);
 				} break;
 				case SCENE_OBJECT_SCENE:
 				{
@@ -947,7 +967,7 @@ from 1 to assist conversion back to graphics_object addresses in picking.
 					{
 						time = 0.0;
 					}
-					return_code=execute_GT_object(scene_object->gt_object, time);
+					return_code=execute_GT_object(scene_object->gt_object);
 				} break;
 				case SCENE_OBJECT_GRAPHICAL_ELEMENT_GROUP:
 				{
@@ -1718,9 +1738,9 @@ root region.
 		if ((SCENE_OBJECT_GRAPHICAL_ELEMENT_GROUP == scene_object->type) && (
 			(!Cmiss_region_contains_Cmiss_region(scene->root_region,
 				GT_element_group_get_Cmiss_region(scene_object->gt_element_group))) ||
-			(!Cmiss_region_contains_Cmiss_region(scene->data_root_region,
+			(scene->data_root_region &&(!Cmiss_region_contains_Cmiss_region(scene->data_root_region,
 				GT_element_group_get_data_Cmiss_region(
-					scene_object->gt_element_group)))))
+					scene_object->gt_element_group))))))
 		{
 			return_code = 1;
 		}
@@ -1767,10 +1787,11 @@ associated data_Cmiss_region.
 				Cmiss_region_get_child_region_name(scene->root_region,
 					/*child_number*/i, &child_region_name))
 			{
+				data_child_region = (struct Cmiss_region *)NULL;
 				/* don't build until we have both child_region and data_child_region */
 				if ((!Scene_has_Cmiss_region(scene, child_region)) &&
-					(data_child_region = Cmiss_region_get_child_region_from_name(
-						scene->data_root_region, child_region_name)))
+					(!scene->data_root_region || (data_child_region = Cmiss_region_get_child_region_from_name(
+					scene->data_root_region, child_region_name))))
 				{
 					Scene_add_graphical_element_group(scene, child_region,
 						data_child_region, /*position*/0, child_region_name);
@@ -1841,8 +1862,10 @@ Callback from <root_region> informing of <changes>.
 							Cmiss_region_get_child_region_name(root_region,
 							child_number, &child_region_name))
 						{
-							if (data_child_region = Cmiss_region_get_child_region_from_name(
-								scene->data_root_region, child_region_name))
+							data_child_region = (struct Cmiss_region *)NULL;
+							if (!scene->data_root_region || 
+								(data_child_region = Cmiss_region_get_child_region_from_name(
+								scene->data_root_region, child_region_name)))
 							{
 								return_code = Scene_add_graphical_element_group(scene, child_region,
 									data_child_region, /*position*/0, child_region_name);
@@ -4408,7 +4431,7 @@ from the default versions of these functions.
 				(struct MANAGER(Graphical_material) *)NULL;
 			scene->graphical_material_manager_callback_id=(void *)NULL;
 			scene->default_material=(struct Graphical_material *)NULL;
-			scene->default_font=(struct Graphics_font *)NULL;
+			scene->default_font = (struct Graphics_font *)NULL;
 			scene->light_manager=(struct MANAGER(Light) *)NULL;
 			scene->light_manager_callback_id=(void *)NULL;
 			scene->spectrum_manager=(struct MANAGER(Spectrum) *)NULL;
@@ -4423,6 +4446,8 @@ from the default versions of these functions.
 			/* display list index and current flag: */
 			scene->display_list = 0;
 			scene->fast_changing_display_list = 0;
+			scene->ndc_display_list = 0;
+			scene->end_ndc_display_list = 0;
 			scene->compile_status = GRAPHICS_NOT_COMPILED;
 			/* input callback handling information: */
 			scene->input_callback.procedure=(Scene_input_callback_procedure *)NULL;
@@ -4500,6 +4525,14 @@ Closes the scene and disposes of the scene data structure.
 			if (scene->fast_changing_display_list)
 			{
 				glDeleteLists(scene->fast_changing_display_list,1);
+			}
+			if (scene->ndc_display_list)
+			{
+				glDeleteLists(scene->ndc_display_list,1);
+			}
+			if (scene->end_ndc_display_list)
+			{
+				glDeleteLists(scene->end_ndc_display_list,1);
 			}
 			DESTROY(LIST(Scene_object))(&(scene->scene_object_list));
 			DESTROY(LIST(Light))(&(scene->list_of_lights));
@@ -4876,9 +4909,8 @@ material and spectrum.
 
 	ENTER(Scene_set_graphical_element_mode);
 	if (scene && ((GRAPHICAL_ELEMENT_NONE == graphical_element_mode) || (
-		computed_field_manager && root_region && data_root_region &&
-		element_point_ranges_selection && element_selection &&
-		node_selection && data_selection)))
+		computed_field_manager && root_region && element_point_ranges_selection && 
+		element_selection && node_selection)))
 	{
 		return_code = 1;
 		Scene_begin_cache(scene);
@@ -4896,12 +4928,13 @@ material and spectrum.
 			{
 				if (GRAPHICAL_ELEMENT_NONE != scene->graphical_element_mode)
 				{
-					/* remove region callbacks */
 					Cmiss_region_remove_callback(scene->root_region,
 						Scene_Cmiss_region_change, (void *)scene);
-					/* remove region callbacks */
-					Cmiss_region_remove_callback(scene->data_root_region,
-						Scene_Cmiss_region_change, (void *)scene);
+					if (scene->data_root_region)
+					{
+						Cmiss_region_remove_callback(scene->data_root_region,
+							Scene_Cmiss_region_change, (void *)scene);
+					}
 				}
 				scene->graphical_element_mode = graphical_element_mode;
 				scene->computed_field_manager = (struct MANAGER(Computed_field) *)NULL;
@@ -4951,8 +4984,11 @@ material and spectrum.
 						/* add region callbacks */
 						Cmiss_region_add_callback(root_region,
 							Scene_Cmiss_region_change, (void *)scene);
-						Cmiss_region_add_callback(data_root_region,
-							Scene_Cmiss_region_change, (void *)scene);
+						if (data_root_region)
+						{
+							Cmiss_region_add_callback(data_root_region,
+								Scene_Cmiss_region_change, (void *)scene);
+						}
 					}
 					else
 					{
@@ -6496,6 +6532,7 @@ understood for the type of <interaction_volume> passed.
 		{
 			if (build_Scene(scene) && compile_Scene(scene, graphics_buffer))
 			{
+
 				select_buffer=(GLuint *)NULL;
 				num_hits=-1;
 				while (0>num_hits)
@@ -6516,6 +6553,29 @@ understood for the type of <interaction_volume> passed.
 								opengl_projection_matrix[j*4+i] = projection_matrix[i*4+j];
 							}
 						}
+
+						/* Override the ndc_display_list */
+						glNewList(scene->ndc_display_list, GL_COMPILE);
+						/* Push the current model matrix and reset the model matrix to identity */
+#if defined (OLD_CODE)
+						glMatrixMode(GL_PROJECTION);
+						glPushMatrix();
+						glLoadIdentity();
+						glOrtho(-1.0,1.0,-1.0,1.0,1.0,101.0);
+#endif /* defined (OLD_CODE) */
+						glMatrixMode(GL_MODELVIEW);
+						glPushMatrix();
+						glLoadIdentity();
+						gluLookAt(/*eye*/0.0,0.0,2.0, /*lookat*/0.0,0.0,0.0,
+							/*up*/0.0,1.0,0.0);
+						glEndList();
+
+						glNewList(scene->end_ndc_display_list, GL_COMPILE);
+						/* Pop the model matrix stack */
+						glMatrixMode(GL_MODELVIEW);
+						glPopMatrix();
+						glEndList();
+
 						glSelectBuffer(select_buffer_size,select_buffer);
 						glRenderMode(GL_SELECT);
 						glMatrixMode(GL_PROJECTION);
@@ -6642,6 +6702,29 @@ understood for the type of <interaction_volume> passed.
 							select_buffer_size += SELECT_BUFFER_SIZE_INCREMENT;
 						}
 						DEALLOCATE(select_buffer);
+
+						/* Reset the ndc_display_list */
+						glNewList(scene->ndc_display_list, GL_COMPILE);
+						/* Push the current model matrix and reset the model matrix to identity */
+						glMatrixMode(GL_PROJECTION);
+						glPushMatrix();
+						glLoadIdentity();
+						glOrtho(-1.0,1.0,-1.0,1.0,1.0,101.0);
+						glMatrixMode(GL_MODELVIEW);
+						glPushMatrix();
+						glLoadIdentity();
+						gluLookAt(/*eye*/0.0,0.0,2.0, /*lookat*/0.0,0.0,0.0,
+							/*up*/0.0,1.0,0.0);
+						glEndList();
+
+						glNewList(scene->end_ndc_display_list, GL_COMPILE);
+						/* Pop the model matrix stack */
+						glMatrixMode(GL_PROJECTION);
+						glPopMatrix();
+						glMatrixMode(GL_MODELVIEW);
+						glPopMatrix();
+						glEndList();
+
 					}
 				}
 			}
@@ -7054,11 +7137,48 @@ Must also call build_Scene before this functions.
 	int fast_changing, return_code;
 
 	ENTER(compile_Scene);
-	if (scene && scene->graphical_material_manager)
+	if (scene)
 	{
 		return_code = 1;
 		if (GRAPHICS_COMPILED != scene->compile_status)
 		{
+			if (scene->ndc_display_list || (scene->ndc_display_list = glGenLists(1)))
+			{
+				glNewList(scene->ndc_display_list, GL_COMPILE);
+				/* Push the current model matrix and reset the model matrix to identity */
+				glMatrixMode(GL_PROJECTION);
+				glPushMatrix();
+				glLoadIdentity();
+				glOrtho(-1.0,1.0,-1.0,1.0,1.0,101.0);
+				glMatrixMode(GL_MODELVIEW);
+				glPushMatrix();
+				glLoadIdentity();
+				gluLookAt(/*eye*/0.0,0.0,2.0, /*lookat*/0.0,0.0,0.0,
+					/*up*/0.0,1.0,0.0);
+				glEndList();
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE,
+					"compile_Scene.  Could not generate display list");
+				return_code = 0;
+			}
+			if (scene->end_ndc_display_list || (scene->end_ndc_display_list = glGenLists(1)))
+			{
+				glNewList(scene->end_ndc_display_list, GL_COMPILE);
+				/* Pop the model matrix stack */
+				glMatrixMode(GL_PROJECTION);
+				glPopMatrix();
+				glMatrixMode(GL_MODELVIEW);
+				glPopMatrix();
+				glEndList();
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE,
+					"compile_Scene.  Could not generate display list");
+				return_code = 0;
+			}
 			/* compile objects in the scene */
 			FOR_EACH_OBJECT_IN_LIST(Scene_object)(compile_Scene_object,
 				(void *)graphics_buffer, scene->scene_object_list);
@@ -7569,14 +7689,14 @@ GT_element_group and therefore have the same rendition.
 						read_circle_discretization_defaults(&default_value,
 							scene->user_interface);
 						GT_element_group_set_circle_discretization(gt_element_group,
-							default_value, scene->user_interface);
+							default_value);
 						read_element_discretization_defaults(&default_value,
 							scene->user_interface);
 						element_discretization.number_in_xi1 = default_value;
 						element_discretization.number_in_xi2 = default_value;
 						element_discretization.number_in_xi3 = default_value;
 						GT_element_group_set_element_discretization(gt_element_group,
-							&element_discretization, scene->user_interface);
+							&element_discretization);
 
 						if (GRAPHICAL_ELEMENT_LINES == scene->graphical_element_mode)
 						{
@@ -9409,9 +9529,9 @@ updates graphics of settings affected by the changes (probably all).
 						}
 					}
 					GT_element_group_set_circle_discretization(gt_element_group,
-						circle_discretization, scene->user_interface);
+						circle_discretization);
 					GT_element_group_set_element_discretization(gt_element_group,
-						&element_discretization, scene->user_interface);
+						&element_discretization);
 					if (default_coordinate_field)
 					{
 						GT_element_group_set_default_coordinate_field(gt_element_group,

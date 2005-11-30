@@ -237,10 +237,9 @@ Returns the circle discretization of the gt_element_group.
 ==============================================================================*/
 
 int GT_element_group_set_circle_discretization(
-	struct GT_element_group *gt_element_group,int circle_discretization,
-	struct User_interface *user_interface);
+	struct GT_element_group *gt_element_group, int circle_discretization);
 /*******************************************************************************
-LAST MODIFIED : 3 March 1999
+LAST MODIFIED : 28 September 2005
 
 DESCRIPTION :
 Sets the circle discretization of the gt_element_group.
@@ -278,10 +277,9 @@ Returns the element discretization of the gt_element_group.
 
 int GT_element_group_set_element_discretization(
 	struct GT_element_group *gt_element_group,
-	struct Element_discretization *element_discretization,
-	struct User_interface *user_interface);
+	struct Element_discretization *element_discretization);
 /*******************************************************************************
-LAST MODIFIED : 3 March 1999
+LAST MODIFIED : 28 September 2005
 
 DESCRIPTION :
 Sets the element discretization of the gt_element_group.
@@ -445,7 +443,7 @@ the group.
 ==============================================================================*/
 
 int compile_GT_element_group(struct GT_element_group *gt_element_group,
-	float time, struct Graphics_buffer *graphics_buffer);
+	struct GT_object_compile_context *context);
 /*******************************************************************************
 LAST MODIFIED : 18 November 2005
 

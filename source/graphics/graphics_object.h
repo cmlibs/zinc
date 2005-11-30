@@ -299,19 +299,6 @@ Set the reference graphical coordinate system for the underlying objects.
 	g_NDC_COORDINATES
 }; /* enum GT_coordinate_system */
 
-typedef int (*Graphics_object_glyph_labels_function)(Triple coordinate_scaling,
-	int label_bounds_dimension, int label_bounds_components, float *label_bounds,
-	struct Graphics_font *font);
-/*******************************************************************************
-LAST MODIFIED : 18 November 2005
-
-DESCRIPTION :
-Used for rendering a per compile custom addon to a glyph, such as a grid or tick
-marks showing the scale of the glyph.
-<coordinate_scaling> gives a representative size for determining the number of 
-ticks.
-==============================================================================*/
-
 struct GT_glyph_set;
 struct GT_nurbs;
 struct GT_point;
@@ -322,9 +309,24 @@ struct GT_userdef;
 struct GT_voltex;
 
 struct GT_object;
+struct GT_object_compile_context;
 
 typedef int(*Graphics_object_callback)(struct GT_object *graphics_object,
 	void *user_data);
+
+typedef int (*Graphics_object_glyph_labels_function)(Triple coordinate_scaling,
+	int label_bounds_dimension, int label_bounds_components, float *label_bounds,
+	struct Graphical_material *material, struct Graphical_material *secondary_material,
+	struct Graphics_font *font, struct GT_object_compile_context *context);
+/*******************************************************************************
+LAST MODIFIED : 18 November 2005
+
+DESCRIPTION :
+Used for rendering a per compile custom addon to a glyph, such as a grid or tick
+marks showing the scale of the glyph.
+<coordinate_scaling> gives a representative size for determining the number of 
+ticks.
+==============================================================================*/
 
 struct Graphics_object_callback_data
 {
@@ -863,12 +865,12 @@ DESCRIPTION :
 Frees the memory for <**userdef> and its fields and sets <*userdef> to NULL.
 ==============================================================================*/
 
-struct GT_voltex *CREATE(GT_voltex)(int n_iso_polys, int n_vertices,
-	int *triangle_list, struct VT_iso_vertex *vertex_list, double *iso_poly_cop,
-	float *texturemap_coord, int *texturemap_index,int n_rep,
-	int n_data_components, GTDATA *data, enum GT_voltex_type voltex_type);
+struct GT_voltex *CREATE(GT_voltex)(
+	int number_of_vertices,  struct VT_iso_vertex **vertex_list,
+	int number_of_triangles, struct VT_iso_triangle **triangle_list,
+	int n_data_components, enum GT_voltex_type voltex_type);
 /*******************************************************************************
-LAST MODIFIED : 8 August 2002
+LAST MODIFIED : 10 November 2005
 
 DESCRIPTION :
 Allocates memory and assigns fields for a graphics volume texture.
@@ -892,29 +894,6 @@ DESCRIPTION :
 Sets the integer identifier used by the graphics to distinguish this object.
 ==============================================================================*/
 
-int GT_voltex_set_triangle_vertex_environment_map(struct GT_voltex *voltex,
-	int triangle_number, int triangle_vertex_number,
-	struct Environment_map *environment_map);
-/*******************************************************************************
-LAST MODIFIED : 8 August 2002
-
-DESCRIPTION :
-Sets the environment map used for vertex <vertex_number> in <voltex> to
-<environment_map>. Handles conversion to an indexed look-up into a non-repeating
-environment_map array.
-==============================================================================*/
-
-int GT_voltex_set_triangle_vertex_material(struct GT_voltex *voltex,
-	int triangle_number, int triangle_vertex_number,
-	struct Graphical_material *material);
-/*******************************************************************************
-LAST MODIFIED : 7 August 2002
-
-DESCRIPTION :
-Sets the material used for vertex <vertex_number> in <voltex> to <material>.
-Handles conversion to an indexed look-up into a non-repeating material array.
-==============================================================================*/
-
 int GT_voltex_get_number_of_triangles(struct GT_voltex *voltex);
 /*******************************************************************************
 LAST MODIFIED : 18 June 2004
@@ -923,9 +902,9 @@ DESCRIPTION :
 Returns the number of polygons used in the GT_voltex.
 ==============================================================================*/
 
-int *GT_voltex_get_triangle_list(struct GT_voltex *voltex);
+struct VT_iso_triangle **GT_voltex_get_triangle_list(struct GT_voltex *voltex);
 /*******************************************************************************
-LAST MODIFIED : 18 June 2004
+LAST MODIFIED : 10 November 2005
 
 DESCRIPTION :
 Returns the internal pointer to the triangles used in the GT_voltex.
@@ -939,9 +918,9 @@ DESCRIPTION :
 Returns the number of vertices used in the GT_voltex.
 ==============================================================================*/
 
-struct VT_iso_vertex *GT_voltex_get_vertex_list(struct GT_voltex *voltex);
+struct VT_iso_vertex **GT_voltex_get_vertex_list(struct GT_voltex *voltex);
 /*******************************************************************************
-LAST MODIFIED : 18 June 2004
+LAST MODIFIED : 10 November 2005
 
 DESCRIPTION :
 Returns the internal pointer to the list of vertices used in the GT_voltex.
@@ -974,8 +953,8 @@ Frees the memory for the fields of <**object>, frees the memory for <**object>
 and sets <*object> to NULL.
 ==============================================================================*/
 
-int compile_GT_object(struct GT_object *graphics_object_list, float time,
-	struct Graphics_buffer *graphics_buffer);
+int compile_GT_object(struct GT_object *graphics_object_list,
+	struct GT_object_compile_context *context);
 /*******************************************************************************
 LAST MODIFIED : 18 November 2005
 
@@ -986,7 +965,7 @@ Rebuilds the display list for each uncreated or morphing graphics object in the
 windowing system, used so far for compiling the font.
 ==============================================================================*/
 
-int execute_GT_object(struct GT_object *graphics_object_list, float time);
+int execute_GT_object(struct GT_object *graphics_object_list);
 /*******************************************************************************
 LAST MODIFIED : 18 November 2005
 
@@ -1246,6 +1225,35 @@ PROTOTYPE_GT_OBJECT_EXTRACT_FIRST_PRIMITIVES_AT_TIME_FUNCTION(GT_polyline);
 PROTOTYPE_GT_OBJECT_EXTRACT_FIRST_PRIMITIVES_AT_TIME_FUNCTION(GT_surface);
 PROTOTYPE_GT_OBJECT_EXTRACT_FIRST_PRIMITIVES_AT_TIME_FUNCTION(GT_voltex);
 
+int GT_object_merge_GT_voltex(struct GT_object *graphics_object,
+	struct GT_voltex *voltex);
+/*******************************************************************************
+LAST MODIFIED : 26 October 2005
+
+DESCRIPTION :
+If <graphics_object> does not already contain a GT_voltex then the <voltex> is
+added in the normal way.  If a GT_voltex is already contained in the 
+<graphics_object> then the new <voltex> is merged into the existing one and 
+any co-located vertices are merged, stitching the two voltexes together.
+==============================================================================*/
+
+int GT_object_decimate_GT_voltex(struct GT_object *graphics_object,
+	double threshold_distance);
+/*******************************************************************************
+LAST MODIFIED : 11 November 2005
+
+DESCRIPTION :
+==============================================================================*/
+
+int GT_object_normalise_GT_voltex_normals(struct GT_object *graphics_object);
+/*******************************************************************************
+LAST MODIFIED : 28 October 2005
+
+DESCRIPTION :
+If a GT_voltex is contained in the <graphics_object> then normals are 
+normalised for each of the VT_iso_vertices using the surrounding triangles.
+==============================================================================*/
+
 enum Graphics_select_mode GT_object_get_select_mode(
 	struct GT_object *graphics_object);
 /*******************************************************************************
@@ -1365,6 +1373,24 @@ DESCRIPTION :
 Sets the default_material of a GT_object.
 ==============================================================================*/
 
+struct Graphical_material *get_GT_object_secondary_material(
+	struct GT_object *graphics_object);
+/*******************************************************************************
+LAST MODIFIED : 30 September 2005
+
+DESCRIPTION :
+Gets the secondary_material of a GT_object.
+==============================================================================*/
+
+int set_GT_object_secondary_material(struct GT_object *graphics_object,
+	struct Graphical_material *material);
+/*******************************************************************************
+LAST MODIFIED : 30 September 2005
+
+DESCRIPTION :
+Sets the secondary_material of a GT_object.
+==============================================================================*/
+
 int GT_object_set_name(struct GT_object *graphics_object, char *name);
 /*******************************************************************************
 LAST MODIFIED : 30 April 2003
@@ -1476,4 +1502,26 @@ If <mirror> is true, then the axes are pointed in the opposite direction.
 If <reverse> is true, then the point is shifted to the end of each axis if the
 scale is negative for that axis.
 ==============================================================================*/
+
+struct GT_object_compile_context *CREATE(GT_object_compile_context)(
+	float time, struct Graphics_buffer *graphics_buffer
+#if defined (OPENGL_API)
+	, unsigned int ndc_display_list, unsigned int end_ndc_display_list
+#endif /* defined (OPENGL_API) */
+	);
+/*******************************************************************************
+LAST MODIFIED : 12 October 2005
+
+DESCRIPTION :
+Creates a GT_object_compile_context structure.
+==============================================================================*/
+
+int DESTROY(GT_object_compile_context)(struct GT_object_compile_context **context);
+/*******************************************************************************
+LAST MODIFIED : 12 October 2005
+
+DESCRIPTION :
+Frees the memory for <**context> and sets <*context> to NULL.
+==============================================================================*/
+
 #endif /* !defined (GRAPHICS_OBJECT_H) */

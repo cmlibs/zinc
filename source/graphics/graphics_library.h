@@ -61,18 +61,12 @@ Functions and structures for interfacing with the graphics library.
 #include <GL/glu.h>
 #if defined (WIN32_SYSTEM)
 #include <GL/glext.h>
-/* SAB On Win32 I think you have to load all OpenGL 1.2, 1.3 etc functions
-	as extensions and keep pointer references to them.  I haven't done this
-	yet so we will undefine the version symbols */
 #undef GL_NV_vertex_program
 #undef GL_NV_register_combiners2
 #endif /* defined (WIN32_SYSTEM) */
 #endif
-#if defined (DECPHIGS_API)
-#include <phigs.h>
-#endif
-#if defined (graPHIGS_API)
-#include "phigs.h"
+#if defined (GTK_USER_INTERFACE)
+  #undef GL_VERSION_1_3
 #endif
 #include "graphics/texture.h"
 
@@ -395,6 +389,10 @@ the extensions succeed, false if not.
 #      define glProgramStringARB (GLHANDLE(glProgramStringARB))
        GRAPHICS_LIBRARY_EXTERN PFNGLDELETEPROGRAMSARBPROC GLHANDLE(glDeleteProgramsARB);
 #      define glDeleteProgramsARB (GLHANDLE(glDeleteProgramsARB))
+       GRAPHICS_LIBRARY_EXTERN PFNGLPROGRAMENVPARAMETER4FARBPROC GLHANDLE(glProgramEnvParameter4fARB);
+#      define glProgramEnvParameter4fARB (GLHANDLE(glProgramEnvParameter4fARB))
+       GRAPHICS_LIBRARY_EXTERN PFNGLPROGRAMENVPARAMETER4FVARBPROC GLHANDLE(glProgramEnvParameter4fvARB);
+#      define glProgramEnvParameter4fvARB (GLHANDLE(glProgramEnvParameter4fvARB))
 #    endif /* defined (GL_ARB_vertex_program) || defined (GL_ARB_fragment_program) */
 #  else  /* defined (APIENTRY) */
      /* We don't have types for the functions so we will not use any extensions */

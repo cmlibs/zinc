@@ -57,11 +57,13 @@ gtObject/gtWindow management routines.
 #include "general/indexed_list_private.h"
 #include "general/mystring.h"
 #include "general/object.h"
+#include "general/octree.h"
 #include "graphics/auxiliary_graphics_types.h"
+#include "graphics/decimate_voltex.h"
 #include "graphics/font.h"
 #include "graphics/graphics_object.h"
-#include "graphics/makegtobj.h"
 #include "graphics/material.h"
+#include "graphics/rendergl.h"
 #include "graphics/spectrum.h"
 #include "graphics/volume_texture.h"
 #include "user_interface/message.h"
@@ -3365,12 +3367,12 @@ Frees the memory for <**userdef> and its fields and sets <*userdef> to NULL.
 	return (return_code);
 } /* DESTROY(GT_userdef) */
 
-struct GT_voltex *CREATE(GT_voltex)(int n_iso_polys, int n_vertices,
-	int *triangle_list, struct VT_iso_vertex *vertex_list, double *iso_poly_cop,
-	float *texturemap_coord, int *texturemap_index,int n_rep,
-	int n_data_components, GTDATA *data, enum GT_voltex_type voltex_type)
+struct GT_voltex *CREATE(GT_voltex)(
+	int number_of_vertices, struct VT_iso_vertex **vertex_list,
+	int number_of_triangles, struct VT_iso_triangle **triangle_list,
+	int n_data_components, enum GT_voltex_type voltex_type)
 /*******************************************************************************
-LAST MODIFIED : 8 August 2002
+LAST MODIFIED : 11 November 2005
 
 DESCRIPTION :
 Allocates memory and assigns fields for a graphics volume texture.
@@ -3379,111 +3381,66 @@ Allocates memory and assigns fields for a graphics volume texture.
 	struct GT_voltex *voltex;
 
 	ENTER(CREATE(GT_voltex));
-#if defined (DEBUG)
-	/*???debug */
-	printf("%d %p %p %p\n",n_iso_polys,triangle_list,iso_poly_material,
-		vertex_list);
-#endif /* defined (DEBUG) */
-#if defined (OLD_CODE)
-	/*???MS.  Allow creation of empty voltexs in volume_texture_editor.c */
-  if ((n_iso_polys>0)&&triangle_list&&
-		vertex_list&&iso_poly_cop&&texturemap_coord&&texturemap_index)
+  if (number_of_vertices && vertex_list &&
+	  number_of_triangles && triangle_list)
 	{
-#endif /* defined (OLD_CODE) */
 		if (ALLOCATE(voltex,struct GT_voltex,1))
 		{
-			voltex->n_iso_polys=n_iso_polys;
-			voltex->n_vertices=n_vertices;
-			voltex->n_rep=n_rep;
-			voltex->triangle_list=triangle_list;
-			voltex->vertex_list=vertex_list;
-			voltex->number_of_per_vertex_materials = 0;
-			voltex->per_vertex_materials = (struct Graphical_material **)NULL;
-			voltex->iso_poly_material_index = (int *)NULL;
-			voltex->number_of_per_vertex_environment_maps = 0;
-			voltex->per_vertex_environment_maps = (struct Environment_map **)NULL;
-			voltex->iso_poly_environment_map_index = (int *)NULL;
-			voltex->iso_poly_cop=iso_poly_cop;
-			voltex->texturemap_coord=texturemap_coord;
-			voltex->texturemap_index=texturemap_index;
+			voltex->number_of_vertices = number_of_vertices;
+			voltex->vertex_list = vertex_list;
+			voltex->number_of_triangles = number_of_triangles;
+			voltex->triangle_list = triangle_list;
+			voltex->vertex_octree = (struct Octree *)NULL;
 			voltex->object_name=0;
 			voltex->ptrnext=(struct GT_voltex *)NULL;
 			voltex->n_data_components=n_data_components;
-			voltex->data=data;
-			voltex->voltex_type=voltex_type;
+			voltex->voltex_type = voltex_type;
 		}
 		else
 		{
 			display_message(ERROR_MESSAGE, "CREATE(GT_voltex).  Insufficient memory");
 		}
-#if defined (OLD_CODE)
 	}
   else
 	{
 		display_message(ERROR_MESSAGE, "CREATE(GT_voltex).  Invalid argument(s)");
 		voltex = (struct GT_voltex *)NULL;
 	}
-#endif /* defined (OLD_CODE) */
 	LEAVE;
 
 	return (voltex);
 } /* CREATE(GT_voltex) */
 
-int DESTROY(GT_voltex)(struct GT_voltex **voltex)
+int DESTROY(GT_voltex)(struct GT_voltex **voltex_address)
 /*******************************************************************************
-LAST MODIFIED : 8 March 2002
+LAST MODIFIED : 26 October 2005
 
 DESCRIPTION :
-Frees the memory for <**voltex> and sets <*voltex> to NULL.
-???DB.  Free memory for fields ?
+Frees the memory for <**voltex_address> and sets <*voltex_address> to NULL.
 ==============================================================================*/
 {
-	int i, number, return_code;
+	int i, return_code;
+	struct GT_voltex *voltex;
 
 	ENTER(DESTROY(GT_voltex));
-	if (voltex)
+	if (voltex_address && (voltex = *voltex_address))
 	{
-		if (*voltex)
+		for (i = 0 ; i < voltex->number_of_triangles ; i++)
 		{
-			if (0 < (number = (*voltex)->number_of_per_vertex_materials))
-			{
-				for (i = 0; i < number; i++)
-				{
-					if ((*voltex)->per_vertex_materials[i])
-					{
-						DEACCESS(Graphical_material)(&((*voltex)->per_vertex_materials[i]));
-					}
-				}
-				DEALLOCATE((*voltex)->per_vertex_materials);
-			}
-			DEALLOCATE((*voltex)->iso_poly_material_index);
-
-			if (0 < (number = (*voltex)->number_of_per_vertex_environment_maps))
-			{
-				for (i = 0; i < number; i++)
-				{
-					if ((*voltex)->per_vertex_environment_maps[i])
-					{
-						DEACCESS(Environment_map)(
-							&((*voltex)->per_vertex_environment_maps[i]));
-					}
-				}
-				DEALLOCATE((*voltex)->per_vertex_environment_maps);
-			}
-			DEALLOCATE((*voltex)->iso_poly_environment_map_index);
-
-			DEALLOCATE((*voltex)->triangle_list);
-			DEALLOCATE((*voltex)->vertex_list);
-			DEALLOCATE((*voltex)->texturemap_coord);
-			DEALLOCATE((*voltex)->texturemap_index);
-			/*???DB.  Problem with memory leak ? */
-			DEALLOCATE((*voltex)->iso_poly_cop);
-			if((*voltex)->data)
-			{
-				DEALLOCATE((*voltex)->data);
-			}
-			DEALLOCATE(*voltex);
+			DESTROY(VT_iso_triangle)(voltex->triangle_list + i);
 		}
+		DEALLOCATE(voltex->triangle_list);
+		for (i = 0 ; i < voltex->number_of_vertices ; i++)
+		{
+			DESTROY(VT_iso_vertex)(voltex->vertex_list + i);
+		}
+		DEALLOCATE(voltex->vertex_list);
+		if (voltex->vertex_octree)
+		{
+			DESTROY(Octree)(&voltex->vertex_octree);
+		}
+
+		DEALLOCATE(*voltex_address);
 		return_code=1;
 	}
 	else
@@ -3523,173 +3480,6 @@ Sets the integer identifier used by the graphics to distinguish this object.
 	return (return_code);
 } /* GT_voltex_set_integer_identifier */
 
-int GT_voltex_set_triangle_vertex_environment_map(struct GT_voltex *voltex,
-	int triangle_number, int triangle_vertex_number,
-	struct Environment_map *environment_map)
-/*******************************************************************************
-LAST MODIFIED : 8 August 2002
-
-DESCRIPTION :
-Sets the environment map used for vertex <vertex_number> in <voltex> to
-<environment_map>. Handles conversion to an indexed look-up into a non-repeating
-environment_map array.
-==============================================================================*/
-{
-	int i, j, number_of_vertices, return_code, vertex_number;
-	struct Environment_map **temp_environment_maps;
-
-	ENTER(GT_voltex_set_triangle_vertex_environment_map);
-	return_code = 1;
-	if (voltex &&
-		(0 <= triangle_number) && (triangle_number < voltex->n_iso_polys) &&
-		(0 <= triangle_vertex_number) && (triangle_vertex_number < 3) &&
-		environment_map)
-	{
-		vertex_number = triangle_number*3 + triangle_vertex_number;
-		number_of_vertices = voltex->n_iso_polys*3;
-		/* find or make space for environment_map in per_vertex_environment_maps */
-		j = 0;
-		while ((j < voltex->number_of_per_vertex_environment_maps) &&
-			(environment_map != voltex->per_vertex_environment_maps[j]))
-		{
-			j++;
-		}
-		if (j == voltex->number_of_per_vertex_environment_maps)
-		{
-			if (REALLOCATE(temp_environment_maps, voltex->per_vertex_environment_maps,
-				struct Environment_map *, j + 1))
-			{
-				temp_environment_maps[j] =
-					ACCESS(Environment_map)(environment_map);
-				voltex->per_vertex_environment_maps = temp_environment_maps;
-				voltex->number_of_per_vertex_environment_maps = j + 1;
-			}
-			else
-			{
-				display_message(ERROR_MESSAGE,
-					"GT_voltex_set_triangle_vertex_environment_map.  "
-					"Could not reallocate per-vertex environment_maps");
-				return_code = 0;
-			}
-		}
-		if ((int *)NULL == voltex->iso_poly_environment_map_index)
-		{
-			if (ALLOCATE(voltex->iso_poly_environment_map_index, int,
-				number_of_vertices))
-			{
-				/* clear indices to 0 = default environment_map */
-				for (i = 0; i < number_of_vertices; i++)
-				{
-					voltex->iso_poly_environment_map_index[i] = 0;
-				}
-			}
-			else
-			{
-				display_message(ERROR_MESSAGE,
-					"GT_voltex_set_triangle_vertex_environment_map.  "
-					"Could not allocate environment_map indices");
-				return_code = 0;
-			}
-		}
-		if (return_code)
-		{
-			/* index 0 is used for the default environment_map, hence start at 1 */
-			voltex->iso_poly_environment_map_index[vertex_number] = j + 1;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"GT_voltex_set_triangle_vertex_environment_map.  Invalid argument(s)");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* GT_voltex_set_triangle_vertex_environment_map */
-
-int GT_voltex_set_triangle_vertex_material(struct GT_voltex *voltex,
-	int triangle_number, int triangle_vertex_number,
-	struct Graphical_material *material)
-/*******************************************************************************
-LAST MODIFIED : 7 August 2002
-
-DESCRIPTION :
-Sets the material used for vertex <vertex_number> in <voltex> to <material>.
-Handles conversion to an indexed look-up into a non-repeating material array.
-==============================================================================*/
-{
-	int i, j, number_of_vertices, return_code, vertex_number;
-	struct Graphical_material **temp_materials;
-
-	ENTER(GT_voltex_set_triangle_vertex_material);
-	return_code = 1;
-	if (voltex &&
-		(0 <= triangle_number) && (triangle_number < voltex->n_iso_polys) &&
-		(0 <= triangle_vertex_number) && (triangle_vertex_number < 3) &&
-		material)
-	{
-		vertex_number = triangle_number*3 + triangle_vertex_number;
-		number_of_vertices = voltex->n_iso_polys*3;
-		/* find or make space for material in per_vertex_materials */
-		j = 0;
-		while ((j < voltex->number_of_per_vertex_materials) &&
-			(material != voltex->per_vertex_materials[j]))
-		{
-			j++;
-		}
-		if (j == voltex->number_of_per_vertex_materials)
-		{
-			if (REALLOCATE(temp_materials, voltex->per_vertex_materials,
-				struct Graphical_material *, j + 1))
-			{
-				temp_materials[j] = ACCESS(Graphical_material)(material);
-				voltex->per_vertex_materials = temp_materials;
-				voltex->number_of_per_vertex_materials = j + 1;
-			}
-			else
-			{
-				display_message(ERROR_MESSAGE,
-					"GT_voltex_set_triangle_vertex_material.  "
-					"Could not reallocate per-vertex materials");
-				return_code = 0;
-			}
-		}
-		if ((int *)NULL == voltex->iso_poly_material_index)
-		{
-			if (ALLOCATE(voltex->iso_poly_material_index, int, number_of_vertices))
-			{
-				/* clear indices to 0 = default material */
-				for (i = 0; i < number_of_vertices; i++)
-				{
-					voltex->iso_poly_material_index[i] = 0;
-				}
-			}
-			else
-			{
-				display_message(ERROR_MESSAGE,
-					"GT_voltex_set_triangle_vertex_material.  "
-					"Could not allocate material indices");
-				return_code = 0;
-			}
-		}
-		if (return_code)
-		{
-			/* index 0 is used for the default material, hence start at 1 */
-			voltex->iso_poly_material_index[vertex_number] = j + 1;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"GT_voltex_set_triangle_vertex_material.  Invalid argument(s)");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* GT_voltex_set_triangle_vertex_material */
-
 int GT_voltex_get_number_of_triangles(struct GT_voltex *voltex)
 /*******************************************************************************
 LAST MODIFIED : 18 June 2004
@@ -3703,7 +3493,7 @@ Returns the number of polygons used in the GT_voltex.
 	ENTER(GT_voltex_get_number_of_triangles);
 	if (voltex)
 	{
-		number_of_triangles = voltex->n_iso_polys;
+		number_of_triangles = voltex->number_of_triangles;
 	}
 	else
 	{
@@ -3716,15 +3506,15 @@ Returns the number of polygons used in the GT_voltex.
 	return (number_of_triangles);
 } /* GT_voltex_get_number_of_triangles */
 
-int *GT_voltex_get_triangle_list(struct GT_voltex *voltex)
+struct VT_iso_triangle **GT_voltex_get_triangle_list(struct GT_voltex *voltex)
 /*******************************************************************************
-LAST MODIFIED : 18 June 2004
+LAST MODIFIED : 10 November 2005
 
 DESCRIPTION :
 Returns the internal pointer to the triangles used in the GT_voltex.
 ==============================================================================*/
 {
-	int *triangle_list;
+	struct VT_iso_triangle **triangle_list;
 
 	ENTER(GT_voltex_get_number_of_polygons);
 	if (voltex)
@@ -3735,7 +3525,7 @@ Returns the internal pointer to the triangles used in the GT_voltex.
 	{
 		display_message(ERROR_MESSAGE,
 			"GT_voltex_get_triangle_list.  Invalid argument(s)");
-		triangle_list = (int *)NULL;
+		triangle_list = (struct VT_iso_triangle **)NULL;
 	}
 	LEAVE;
 
@@ -3755,7 +3545,7 @@ Sets the integer identifier used by the graphics to distinguish this object.
 	ENTER(GT_voltex_get_number_of_vertices);
 	if (voltex)
 	{
-		number_of_vertices = voltex->n_vertices;
+		number_of_vertices = voltex->number_of_vertices;
 	}
 	else
 	{
@@ -3768,15 +3558,15 @@ Sets the integer identifier used by the graphics to distinguish this object.
 	return (number_of_vertices);
 } /* GT_voltex_get_number_of_vertices */
 
-struct VT_iso_vertex *GT_voltex_get_vertex_list(struct GT_voltex *voltex)
+struct VT_iso_vertex **GT_voltex_get_vertex_list(struct GT_voltex *voltex)
 /*******************************************************************************
-LAST MODIFIED : 18 June 2004
+LAST MODIFIED : 10 November 2005
 
 DESCRIPTION :
 Returns the internal pointer to the list of vertices used in the GT_voltex.
 ==============================================================================*/
 {
-	struct VT_iso_vertex *vertex_list;
+	struct VT_iso_vertex **vertex_list;
 
 	ENTER(GT_voltex_get_vertex_list);
 	if (voltex)
@@ -3787,7 +3577,7 @@ Returns the internal pointer to the list of vertices used in the GT_voltex.
 	{
 		display_message(ERROR_MESSAGE,
 			"GT_voltex_get_vertex_list.  Invalid argument(s)");
-		vertex_list = (struct VT_iso_vertex *)NULL;
+		vertex_list = (struct VT_iso_vertex **)NULL;
 	}
 	LEAVE;
 
@@ -3858,6 +3648,7 @@ Allocates memory and assigns fields for a graphics object.
 					object->default_material=(struct Graphical_material *)NULL;
 				}
 				object->selected_material=(struct Graphical_material *)NULL;
+				object->secondary_material=(struct Graphical_material *)NULL;
 				object->nextobject=(gtObject *)NULL;
 				object->spectrum=(struct Spectrum *)NULL;
 				object->number_of_times=0;
@@ -3940,6 +3731,10 @@ and sets <*object> to NULL.
 			{
 				DEACCESS(Graphical_material)(&(object->selected_material));
 			}
+			if (object->secondary_material)
+			{
+				DEACCESS(Graphical_material)(&(object->secondary_material));
+			}
 			if (object->spectrum)
 			{
 				DEACCESS(Spectrum)(&(object->spectrum));
@@ -3977,84 +3772,15 @@ and sets <*object> to NULL.
 	return (return_code);
 } /* DESTROY(GT_object) */
 
-int compile_GT_voltex_materials(struct GT_object *graphics_object)
-/*******************************************************************************
-LAST MODIFIED : 17 March 2003
-
-DESCRIPTION :
-Compiles display list of any Graphical_materials used by the voltexes in
-<graphics_object>.
-==============================================================================*/
-{
-	int i, j, k, number_of_times, return_code;
-	struct Environment_map *environment_map;
-	union GT_primitive_list *primitive_list;
-	struct GT_voltex *voltex;
-
-	ENTER(compile_GT_voltex_materials);
-	if (graphics_object && (g_VOLTEX == graphics_object->object_type))
-	{
-		return_code = 1;
-		number_of_times = graphics_object->number_of_times;
-		if ((0 == number_of_times) || graphics_object->primitive_lists)
-		{
-			for (j = 0; j < number_of_times; j++)
-			{
-				primitive_list = graphics_object->primitive_lists + j;
-				voltex = primitive_list->gt_voltex.first;
-				while (voltex)
-				{
-					for (k = 0; k < voltex->number_of_per_vertex_environment_maps; k++)
-					{
-						if (environment_map = voltex->per_vertex_environment_maps[k])
-						{
-							for (i = 0; i < 6; i++)
-							{
-								if (environment_map->face_material[i])
-								{
-									compile_Graphical_material(environment_map->face_material[i],
-										(void *)NULL);
-								}
-							}
-						}
-					}
-					for (i = 0; i < voltex->number_of_per_vertex_materials; i++)
-					{
-						compile_Graphical_material(voltex->per_vertex_materials[i],
-							(void *)NULL);
-					}
-					voltex = voltex->ptrnext;
-				}
-			}
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"compile_GT_voltex_materials.  Invalid primitive_lists");
-			return_code = 0;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"compile_GT_voltex_materials.  Invalid argument(s)");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* compile_GT_voltex_materials */
-
-int compile_GT_object(struct GT_object *graphics_object_list, float time,
-	struct Graphics_buffer *graphics_buffer)
+int compile_GT_object(struct GT_object *graphics_object_list, 
+	struct GT_object_compile_context *context)
 /*******************************************************************************
 LAST MODIFIED : 18 November 2005
 
 DESCRIPTION :
 Rebuilds the display list for each uncreated or morphing graphics object in the
-<graphics_object_list>, a simple linked list. The object is compiled at the 
-<time>.  The <buffer> is used to obtain appropriate contexts with the 
-windowing system, used so far for compiling the font.
+<graphics_object_list>, a simple linked list. The object is compiled using the
+supplied <compile_context>.
 ==============================================================================*/
 {
 	int i, return_code;
@@ -4080,6 +3806,11 @@ windowing system, used so far for compiling the font.
 					compile_Graphical_material(graphics_object->selected_material,
 						(void *)NULL);
 				}
+				if (graphics_object->secondary_material)
+				{
+					compile_Graphical_material(graphics_object->secondary_material,
+						(void *)NULL);
+				}
 				switch (graphics_object->object_type)
 				{
 					case g_GLYPH_SET:
@@ -4093,10 +3824,10 @@ windowing system, used so far for compiling the font.
 								if (glyph_set =
 									graphics_object->primitive_lists[i].gt_glyph_set.first)
 								{
-									compile_GT_object(glyph_set->glyph, time, graphics_buffer);
+									compile_GT_object(glyph_set->glyph, context);
 									if (glyph_set->font)
 									{
-										Graphics_font_compile(glyph_set->font, graphics_buffer);
+										Graphics_font_compile(glyph_set->font, context->graphics_buffer);
 									}
 								}
 							}
@@ -4115,7 +3846,7 @@ windowing system, used so far for compiling the font.
 								{
 									if (point->font)
 									{
-										Graphics_font_compile(point->font, graphics_buffer);
+										Graphics_font_compile(point->font, context->graphics_buffer);
 									}
 								}
 							}
@@ -4134,15 +3865,11 @@ windowing system, used so far for compiling the font.
 								{
 									if (point_set->font)
 									{
-										Graphics_font_compile(point_set->font, graphics_buffer);
+										Graphics_font_compile(point_set->font, context->graphics_buffer);
 									}
 								}
 							}
 						}
-					} break;
-					case g_VOLTEX:
-					{
-						compile_GT_voltex_materials(graphics_object);
 					} break;
 				}
 				if (GRAPHICS_NOT_COMPILED == graphics_object->compile_status)
@@ -4154,6 +3881,7 @@ windowing system, used so far for compiling the font.
 						if ((GRAPHICS_SELECT_ON == graphics_object->select_mode) ||
 							(GRAPHICS_DRAW_SELECTED == graphics_object->select_mode))
 						{
+							context->draw_selected = 1;
 							if (graphics_object->selected_material)
 							{
 								if (FIRST_OBJECT_IN_LIST_THAT(Selected_graphic)(
@@ -4162,7 +3890,7 @@ windowing system, used so far for compiling the font.
 								{
 									execute_Graphical_material(
 										graphics_object->selected_material);
-									makegtobject(graphics_object, time, /*draw_selected*/1);
+									render_GT_object_opengl(graphics_object,context);
 								}
 							}
 							else
@@ -4174,11 +3902,12 @@ windowing system, used so far for compiling the font.
 						}
 						if (GRAPHICS_DRAW_SELECTED != graphics_object->select_mode)
 						{
+							context->draw_selected = 0;
 							if (graphics_object->default_material)
 							{
 								execute_Graphical_material(graphics_object->default_material);
 							}
-							makegtobject(graphics_object, time, /*draw_selected*/0);
+							render_GT_object_opengl(graphics_object, context);
 						}
 						execute_Graphical_material((struct Graphical_material *)NULL);
 						glEndList();
@@ -4207,9 +3936,9 @@ windowing system, used so far for compiling the font.
 	return (return_code);
 } /* compile_GT_object */
 
-int execute_GT_object(struct GT_object *graphics_object_list, float time)
+int execute_GT_object(struct GT_object *graphics_object_list)
 /*******************************************************************************
-LAST MODIFIED : 27 June 2000
+LAST MODIFIED : 22 November 2005
 
 DESCRIPTION :
 Rebuilds the display list for each uncreated or morphing graphics object in the
@@ -4222,7 +3951,6 @@ graphics object, starting at zero for the first
 	struct GT_object *graphics_object;
 
 	ENTER(execute_GT_object);
-	USE_PARAMETER(time);
 	if (graphics_object_list)
 	{
 		return_code=1;
@@ -4315,6 +4043,10 @@ objects interested in this GT_object will be notified that is has changed.
 
 	if (graphics_object)
 	{
+		if (graphics_object->nextobject)
+		{
+			GT_object_changed(graphics_object->nextobject);
+		}
 		graphics_object->compile_status = GRAPHICS_NOT_COMPILED;
 		return_code = GT_object_inform_clients(graphics_object);
 	}
@@ -4356,7 +4088,10 @@ change to any material in use in the linked graphics objects.
 					graphics_object->default_material, changed_material_list))) ||
 				(graphics_object->selected_material &&
 					((!changed_material_list) || IS_OBJECT_IN_LIST(Graphical_material)(
-						graphics_object->selected_material, changed_material_list))))
+						graphics_object->selected_material, changed_material_list))) ||
+				(graphics_object->secondary_material &&
+					((!changed_material_list) || IS_OBJECT_IN_LIST(Graphical_material)(
+						graphics_object->secondary_material, changed_material_list))))
 			{
 				if (graphics_object->spectrum)
 				{
@@ -5214,11 +4949,11 @@ will produce the range of all the graphics objects.
 						voltex = primitive_list->gt_voltex.first;
 						while (voltex)
 						{
-							number_of_positions=(voltex->n_vertices);
+							number_of_positions=(voltex->number_of_vertices);
 							i = 0;
 							if ((0<number_of_positions))
 							{
-								position = (Triple *)voltex->vertex_list->coord;
+								position = (Triple *)voltex->vertex_list[0]->coordinates;
 								if (*first)
 								{
 									minimum[0]=(*position)[0];
@@ -5232,7 +4967,7 @@ will produce the range of all the graphics objects.
 								}
 								while (number_of_positions>0)
 								{
-									position = (Triple *)voltex->vertex_list[i].coord;
+									position = (Triple *)voltex->vertex_list[i]->coordinates;
 									i++;
 									temp=(*position)[0];
 									if (temp<minimum[0])
@@ -5324,7 +5059,7 @@ for combining several spectrums.
 	struct GT_polyline *polyline;
 	struct GT_surface *surface;
 	struct GT_voltex *voltex;
-	struct VT_iso_vertex *vertex;
+	struct VT_iso_vertex **vertex;
 	union GT_primitive_list *primitive_list;
 
 	ENTER(get_graphics_object_data_range);
@@ -5543,24 +5278,24 @@ for combining several spectrums.
 						voltex = primitive_list->gt_voltex.first;
 						if (first && voltex)
 						{
-							minimum = voltex->data[voltex->vertex_list->data_index];
+							minimum = voltex->vertex_list[0]->data[0];
 							maximum = minimum;
 							first = 0;
 						}
 						while (voltex)
 						{
-							vertex=voltex->vertex_list;
-							for (i=(voltex->n_vertices)*(voltex->n_rep);i>0;i--)
+							vertex = voltex->vertex_list;
+							for (i=voltex->number_of_vertices;i>0;i--)
 							{
-								if (voltex->data[vertex->data_index]<minimum)
+								if ((*vertex)->data[0] < minimum)
 								{
-									minimum = voltex->data[vertex->data_index];
+									minimum = (*vertex)->data[0];
 								}
 								else
 								{
-									if (voltex->data[vertex->data_index]>maximum)
+									if ((*vertex)->data[0] > maximum)
 									{
-										maximum = voltex->data[vertex->data_index];
+										maximum = (*vertex)->data[0];
 									}
 								}
 								vertex++;
@@ -6131,6 +5866,336 @@ Version for objects using the auxiliary_object_name in place of object_name. \
 DECLARE_GT_OBJECT_EXTRACT_FIRST_PRIMITIVES_AT_TIME_AUXILIARY_FUNCTION( \
 	GT_glyph_set,g_GLYPH_SET,gt_glyph_set)
 
+static int GT_voltex_merge_GT_voltex(struct GT_voltex *existing_voltex,
+	struct GT_voltex *voltex)
+/*******************************************************************************
+LAST MODIFIED : 26 October 2005
+
+DESCRIPTION :
+Merge the vertices from <voltex> into <existing_voltex>.  These can be the
+same voltex in which case shared vertices will be merged.
+==============================================================================*/
+{
+	int *collapse_list, i, j, k, number_of_triangles, return_code, vertex_count;
+	struct Octree_object *neighbour, *octree_vertex;
+	struct LIST(Octree_object) *neighbours;
+	struct VT_iso_vertex *existing_vertex, *vertex; 
+
+	ENTER(GT_voltex_merge_GT_voltex);
+	return_code = 1;
+
+	ALLOCATE(collapse_list, int, voltex->number_of_vertices);
+	neighbours = CREATE(LIST(Octree_object))();
+	if (existing_voltex == voltex)
+	{
+		vertex_count = 0;
+	}
+	else
+	{
+		vertex_count = existing_voltex->number_of_vertices;
+		REALLOCATE(existing_voltex->vertex_list, 
+			existing_voltex->vertex_list, struct VT_iso_vertex *, 
+			vertex_count + voltex->number_of_vertices);
+	}
+	for (i = 0 ; i < voltex->number_of_vertices ; i++)
+	{
+		vertex = voltex->vertex_list[i];
+		Octree_add_objects_near_coordinate_to_list(
+			existing_voltex->vertex_octree,
+			/*dimension*/3, vertex->coordinates,
+			/*radius*/0.001, neighbours);
+		if (0 == NUMBER_IN_LIST(Octree_object)(neighbours))
+		{
+			octree_vertex = CREATE(Octree_object)(/*dimension*/3,
+				vertex->coordinates);
+			if ((existing_voltex != voltex) || (vertex_count < i))
+			{
+				existing_voltex->vertex_list[vertex_count] = vertex;
+				vertex->index = vertex_count;
+			}
+
+#if defined (DEBUG)
+			/* Move the points so that if they aren't using the same vertex from adjacent triangles
+				then they won't stay connected */
+			existing_voltex->vertex_list[vertex_count]->coordinates[0] += (float)vertex_count / 1000.0;
+			existing_voltex->vertex_list[vertex_count]->coordinates[1] += (float)vertex_count / 1000.0;
+			existing_voltex->vertex_list[vertex_count]->coordinates[2] += (float)vertex_count / 1000.0;
+#endif /* defined (DEBUG) */
+
+			Octree_object_set_user_data(octree_vertex, (void *)(vertex_count));
+			Octree_add_object(existing_voltex->vertex_octree,
+				octree_vertex);
+			collapse_list[i] = vertex_count;
+			vertex_count++;
+		}
+		else
+		{
+			/* Just collapse this vertex to the first one */
+			neighbour = FIRST_OBJECT_IN_LIST_THAT(Octree_object)(
+				(LIST_CONDITIONAL_FUNCTION(Octree_object) *)NULL,
+				(void *)NULL, neighbours);
+			collapse_list[i] = (int)Octree_object_get_user_data(neighbour);
+			REMOVE_ALL_OBJECTS_FROM_LIST(Octree_object)(neighbours);
+
+			/* Need to merge triangle pointer lists so we can decimate */
+			existing_vertex = existing_voltex->vertex_list[collapse_list[i]];
+
+			number_of_triangles = existing_vertex->number_of_triangles;
+			if (REALLOCATE(existing_vertex->triangles, existing_vertex->triangles,
+					struct VT_iso_triangle *, number_of_triangles + vertex->number_of_triangles))
+			{
+				for (j = 0 ; j < vertex->number_of_triangles ;j++)
+				{
+					for (k = 0 ; k < 3 ; k++)
+					{
+						if (vertex->triangles[j]->vertices[k] == vertex)
+						{
+							vertex->triangles[j]->vertices[k] = existing_vertex;
+						}
+					}
+					existing_vertex->triangles[number_of_triangles + j] = vertex->triangles[j];
+				}
+				existing_vertex->number_of_triangles += vertex->number_of_triangles;
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE, "GT_voltex_merge_GT_voltex.  "
+					"Unable to allocate triangle pointer array.");
+			}
+
+			/* Just add normals as they haven't been normalised yet and so their
+				magnitudes indicate the number of triangle contributing to the vector */
+			existing_vertex->normal[0] += vertex->normal[0];
+			existing_vertex->normal[1] += vertex->normal[1];
+			existing_vertex->normal[2] += vertex->normal[2];
+
+			/* Just keep the original data value for now.  Could try and accumulate
+				and then average them out later. */
+
+			/* No longer need this vertex */
+			DESTROY(VT_iso_vertex)(&vertex);
+		}
+	}
+	/* Update triangle pointers */
+	if (existing_voltex != voltex)
+	{
+		REALLOCATE(existing_voltex->triangle_list, 
+			existing_voltex->triangle_list, struct VT_iso_triangle *, 
+			existing_voltex->number_of_triangles + voltex->number_of_triangles);
+		for (i = 0 ; i < voltex->number_of_triangles ; i++)
+		{
+			existing_voltex->triangle_list[i + existing_voltex->number_of_triangles]
+				= voltex->triangle_list[i];
+			existing_voltex->triangle_list[i]->index += existing_voltex->number_of_triangles;
+		}
+		existing_voltex->number_of_triangles += voltex->number_of_triangles;
+
+		voltex->number_of_vertices = 0;
+		DEALLOCATE(voltex->vertex_list);
+		voltex->number_of_triangles = 0;
+		DEALLOCATE(voltex->triangle_list);
+	}
+	REALLOCATE(existing_voltex->vertex_list, 
+		existing_voltex->vertex_list, struct VT_iso_vertex *, 
+		vertex_count);
+	existing_voltex->number_of_vertices = vertex_count;
+	DEALLOCATE(collapse_list);
+	DESTROY(LIST(Octree_object))(&neighbours);
+
+	LEAVE;
+
+	return (return_code);
+}
+
+int GT_object_merge_GT_voltex(struct GT_object *graphics_object,
+	struct GT_voltex *voltex)
+/*******************************************************************************
+LAST MODIFIED : 26 October 2005
+
+DESCRIPTION :
+If <graphics_object> does not already contain a GT_voltex then the <voltex> is
+added in the normal way.  If a GT_voltex is already contained in the 
+<graphics_object> then the new <voltex> is merged into the existing one and 
+any co-located vertices are merged, stitching the two voltexes together.
+==============================================================================*/
+{
+	int return_code, time_number;
+	struct GT_voltex *existing_voltex;
+
+	ENTER(GT_object_merge_GT_voltex);
+	if (graphics_object && (g_VOLTEX == graphics_object->object_type) && voltex)
+	{
+		if (0 < (time_number = GT_object_get_time_number(graphics_object,
+			/*time*/0)))
+		{
+			if (graphics_object->primitive_lists)
+			{
+				existing_voltex = graphics_object->primitive_lists[time_number - 1].
+					gt_voltex.first;
+				return_code = GT_voltex_merge_GT_voltex(existing_voltex,
+ 					voltex);
+				DESTROY(GT_voltex)(&voltex);
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE,
+					"GT_object_merge_GT_voltex.  Invalid primitive_lists");
+			}
+		}
+		else
+		{
+			if (!voltex->vertex_octree)
+			{
+				voltex->vertex_octree = CREATE(Octree)();
+				/* Merge the voltex with itself to match colocated vertices */
+				GT_voltex_merge_GT_voltex(voltex, voltex);
+			}
+			return_code=GT_OBJECT_ADD(GT_voltex)(graphics_object, /*time*/0,
+				voltex);
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"GT_object_merge_GT_voltex.  Invalid argument(s)");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* GT_object_merge_GT_voltex */
+
+int GT_object_decimate_GT_voltex(struct GT_object *graphics_object,
+	double threshold_distance)
+/*******************************************************************************
+LAST MODIFIED : 11 November 2005
+
+DESCRIPTION :
+==============================================================================*/
+{
+	int return_code, time_number;
+	struct GT_voltex *voltex;
+
+	ENTER(GT_object_decimate_GT_voltex);
+	if (graphics_object && (g_VOLTEX == graphics_object->object_type))
+	{
+		if (0 < (time_number = GT_object_get_time_number(graphics_object,
+			/*time*/0)))
+		{
+			if (graphics_object->primitive_lists)
+			{
+				voltex = graphics_object->primitive_lists[time_number - 1].
+					gt_voltex.first;
+				while (voltex)
+				{
+					GT_voltex_decimate_triangles(voltex, threshold_distance);
+					voltex = voltex->ptrnext;
+				}
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE,
+					"GT_object_decimate_GT_voltex.  Invalid primitive_lists");
+			}
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,
+				"GT_object_decimate_GT_voltex.  Graphics object does not contain a voltex.");
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"GT_object_decimate_GT_voltex.  Invalid argument(s)");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* GT_object_decimate_GT_voltex */
+
+static int GT_voltex_normalise_normals(struct GT_voltex *voltex)
+/*******************************************************************************
+LAST MODIFIED : 28 October 2005
+
+DESCRIPTION :
+If a GT_voltex is contained in the <graphics_object> then normals are 
+calculated for each of the VT_iso_vertices using the surrounding triangles.
+==============================================================================*/
+{
+	int i, return_code;
+
+	ENTER(GT_voltex_normalise_normals);
+	if (voltex)
+	{
+		for (i = 0 ; i < voltex->number_of_vertices ; i++)
+		{
+			VT_iso_vertex_normalise_normal(voltex->vertex_list[i]);
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"GT_voltex_normalise_normals.  Invalid argument(s)");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* GT_voltex_normalise_normals */
+
+int GT_object_normalise_GT_voltex_normals(struct GT_object *graphics_object)
+/*******************************************************************************
+LAST MODIFIED : 28 October 2005
+
+DESCRIPTION :
+If a GT_voltex is contained in the <graphics_object> then normals are 
+normalised for each of the VT_iso_vertices using the surrounding triangles.
+==============================================================================*/
+{
+	int return_code, time_number;
+	struct GT_voltex *voltex;
+
+	ENTER(GT_object_normalise_GT_voltex_normals);
+	if (graphics_object && (g_VOLTEX == graphics_object->object_type))
+	{
+		if (0 < (time_number = GT_object_get_time_number(graphics_object,
+			/*time*/0)))
+		{
+			if (graphics_object->primitive_lists)
+			{
+				voltex = graphics_object->primitive_lists[time_number - 1].
+					gt_voltex.first;
+				while (voltex)
+				{
+					GT_voltex_normalise_normals(voltex);
+					voltex = voltex->ptrnext;
+				}
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE,
+					"GT_object_normalise_GT_voltex_normals.  Invalid primitive_lists");
+			}
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,
+				"GT_object_normalise_GT_voltex_normals.  Graphics object does not contain a voltex.");
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"GT_object_normalise_GT_voltex_normals.  Invalid argument(s)");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* GT_object_normalise_GT_voltex_normals */
+
 enum Graphics_select_mode GT_object_get_select_mode(
 	struct GT_object *graphics_object)
 /*******************************************************************************
@@ -6495,6 +6560,68 @@ Sets the default_material of a GT_object.
 
 	return (return_code);
 } /* set_GT_object_default_material */
+
+struct Graphical_material *get_GT_object_secondary_material
+	(struct GT_object *graphics_object)
+/*******************************************************************************
+LAST MODIFIED : 4 June 1999
+
+DESCRIPTION :
+Gets the secondary_material of a GT_object.
+==============================================================================*/
+{
+	struct Graphical_material *material;
+
+	ENTER(get_GT_object_secondary_material);
+	if (graphics_object)
+	{
+		material = graphics_object->secondary_material;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"get_GT_object_secondary_material.  Invalid graphics object");
+		material = (struct Graphical_material *)NULL;
+	}
+	LEAVE;
+
+	return (material);
+} /* get_GT_object_secondary_material */
+
+int set_GT_object_secondary_material(struct GT_object *graphics_object,
+	struct Graphical_material *material)
+/*******************************************************************************
+LAST MODIFIED : 20 February 2000
+
+DESCRIPTION :
+Sets the secondary_material of a GT_object.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(set_GT_object_secondary_material);
+	if (graphics_object)
+	{
+		/* SAB Allow NULL material as this is what is required in glyphs where
+			the material changes with the data */
+		if (material != graphics_object->secondary_material)
+		{
+			REACCESS(Graphical_material)(&(graphics_object->secondary_material),
+				material);
+			GT_object_changed(graphics_object);
+		}
+	  return_code=1;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"set_GT_object_secondary_material.  Invalid graphics object");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* set_GT_object_secondary_material */
 
 int GT_object_set_name(struct GT_object *graphics_object, char *name)
 /*******************************************************************************
@@ -7030,3 +7157,68 @@ scale is negative for that axis.
 
 	return (return_code);
 } /* resolve_glyph_axes */
+
+struct GT_object_compile_context *CREATE(GT_object_compile_context)(
+	float time, struct Graphics_buffer *graphics_buffer
+#if defined (OPENGL_API)
+	, unsigned int ndc_display_list, unsigned int end_ndc_display_list
+#endif /* defined (OPENGL_API) */
+)
+/*******************************************************************************
+LAST MODIFIED : 22 November 2005
+
+DESCRIPTION :
+Creates a GT_object_compile_context structure.
+==============================================================================*/
+{
+	struct GT_object_compile_context *context;
+
+	ENTER(CREATE(GT_object_compile_context));
+	if (ALLOCATE(context,struct GT_object_compile_context,1))
+	{
+		context->time = time;
+		context->graphics_buffer = graphics_buffer;
+		context->draw_selected = 0;
+#if defined (OPENGL_API)
+		context->ndc_display_list = ndc_display_list;
+		context->end_ndc_display_list = end_ndc_display_list;
+#endif /* defined (OPENGL_API) */
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"CREATE(GT_object_compile_context).  Not enough memory");
+	}
+	LEAVE;
+
+	return (context);
+} /* CREATE(GT_object_compile_context) */
+
+int DESTROY(GT_object_compile_context)(struct GT_object_compile_context **context)
+/*******************************************************************************
+LAST MODIFIED : 12 October 2005
+
+DESCRIPTION :
+Frees the memory for <**context> and sets <*context> to NULL.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(DESTROY(GT_object_compile_context));
+	if (context)
+	{
+		if (*context)
+		{
+			DEALLOCATE(*context);
+		}
+		return_code=1;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"DESTROY(GT_object_compile_context).  Invalid argument");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* DESTROY(GT_object_compile_context) */
+

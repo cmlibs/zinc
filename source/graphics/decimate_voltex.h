@@ -1,10 +1,9 @@
 /*******************************************************************************
-FILE : rendergl.h
+FILE : decimate_voltex.h
 
-LAST MODIFIED : 28 November 2003
+LAST MODIFIED : 11 November 2005
 
 DESCRIPTION :
-Header file for rendergl.c, GL rendering calls (API specific)
 ==============================================================================*/
 /* ***** BEGIN LICENSE BLOCK *****
  * Version: MPL 1.1/GPL 2.0/LGPL 2.1
@@ -41,24 +40,32 @@ Header file for rendergl.c, GL rendering calls (API specific)
  * the terms of any one of the MPL, the GPL or the LGPL.
  *
  * ***** END LICENSE BLOCK ***** */
-#if !defined (RENDERGL_H)
-#define RENDERGL_H
+#if !defined (DECIMATE_VOLTEX_H)
+#define DECIMATE_VOLTEX_H
 
-#include "graphics/graphics_object.h"
-#include "general/multi_range.h"
+struct GT_voltex;
 
-/*
-Global functions
-----------------
-*/
-
-int render_GT_object_opengl(gtObject *object, struct GT_object_compile_context *context);
+int GT_voltex_decimate_triangles(struct GT_voltex *voltex, 
+	double threshold_distance);
 /*******************************************************************************
-LAST MODIFIED : 22 November 2005
+LAST MODIFIED : 11 November 2005
 
 DESCRIPTION :
-Convert graphical object into API object.
-The <context> is used to control how the object is compiled.
+Decimates triangle mesh
+Implementing edge collapses following Garland and Heckbert 
+"Surface Simplification Using Quadric Error Metrics" SIGGRAPH 97
+
+Currently this routine will allow collapsed triangles which have hanging nodes.
+The storage of the could be generalised to allow it to work on triangular meshes
+other than just VT_voltex, maybe finite elements.  The normals probably
+are not being updated properly either (if the collapsed triangles were fixed then
+the normals should be calclated after this step rather than before).  The data
+structures, Decimation_quadrics (vertices) and Decimation_cost (edges) should be
+better merged with the rest of the storage and so lists could be used instead of
+the current arrays of triangle pointers.
+The decimation_cost could include a penalty according to the rate at which the 
+data variables vary along the edge, so that where a display data value is varying
+fastest the edge is less likely to collapse.
 ==============================================================================*/
 
-#endif /* !defined (RENDERGL_H) */
+#endif /* !defined (DECIMATE_VOLTEX_H) */

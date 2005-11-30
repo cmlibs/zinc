@@ -61,7 +61,7 @@ reference graphical materials or spectrums.
 #include "general/debug.h"
 #include "graphics/glyph.h"
 #include "graphics/graphics_object.h"
-#include "graphics/makegtobj.h"
+#include "graphics/rendergl.h"
 #include "user_interface/message.h"
 
 /*
@@ -157,8 +157,8 @@ suitable for using with GT_surfaces of type g_SH_DISCONTINUOUS_STRIP.
 } /* construct_tube */
 
 static int tick_mark_get_grid_spacing(FE_value *minor_grid_size,
-	int *minor_grids_per_major,FE_value scale,int min_minor_grid_pixels,
-	int min_major_grid_pixels)
+	int *minor_grids_per_major,FE_value scale, FE_value min_minor_grid,
+	FE_value min_major_grid)
 /*******************************************************************************
 LAST MODIFIED : 19 September 2005
 
@@ -180,7 +180,7 @@ Copied from the control curve editor.
 		(0.0!=scale))
 	{
 		j=1;
-		while (fabs(scale*(*minor_grid_size)) < min_minor_grid_pixels)
+		while (fabs(scale*(*minor_grid_size)) < min_minor_grid)
 		{
 			if (j=(j+1)%3)
 			{
@@ -196,13 +196,13 @@ Copied from the control curve editor.
 		{
 			j=1;
 			if (fabs(scale*(*minor_grids_per_major)*(*minor_grid_size))<
-				min_major_grid_pixels)
+				min_major_grid)
 			{
 				*minor_grids_per_major *= 2;
 			}
 		}
 		while (fabs(scale*(*minor_grids_per_major)*(*minor_grid_size))<
-			min_major_grid_pixels)
+			min_major_grid)
 		{
 			if (j=(j+1)%2)
 			{
@@ -226,63 +226,82 @@ Copied from the control curve editor.
 	return (return_code);
 } /* tick_mark_get_grid_spacing */
 
-static int draw_glyph_axes_ticks(Triple coordinate_scaling, 
+static int draw_glyph_axes_general(Triple coordinate_scaling, 
 	int label_bounds_dimension, int label_bounds_components, float *label_bounds,
-	struct Graphics_font *font)
+	int primary_axis_number, int label_bounds_component,
+	float major_cross_min, float major_cross_max,
+	float minor_cross_min, float minor_cross_max, FE_value minor_grid_size,
+	int minor_grids_per_major, FE_value min_minor_grid, FE_value min_major_grid,
+	struct Graphical_material *material, struct Graphical_material *secondary_material,
+	struct Graphics_font *font, struct GT_object_compile_context *context)
 /*******************************************************************************
-LAST MODIFIED : 18 November 2005
+LAST MODIFIED : 22 November 2005
 
 DESCRIPTION :
-Renders the label_bounds as ticks along the first axis.  An assumption is made
-that the label values have some alignment with the axis so only the first 
-varying component of the label_bounds is drawn.
+Renders the label_bounds as lines and labels.  
 ==============================================================================*/
 {
 	char *name = "axes_ticks_temporary", **label_strings;
-	FE_value grid_scale, minor_grid_size;
-	int first, j, last, minor_grids_per_major, number_of_major_ticks, number_of_ticks,
-		return_code;
-	float axis1_scale, axis2_scale, fabs_length, length, log_scale;
+	FE_value grid_scale;
+	int first, j, label_bounds_offset, last, number_of_major_lines, 
+		number_of_minor_lines, number_of_labels, number_of_ticks, return_code;
+	float axis_position, fabs_length, length, log_scale;
 	struct GT_object *graphics_object;
 	struct GT_pointset *label_set;
 	struct GT_polyline *polyline;
-	Triple *label_string_locations, *points, *vertex;
+	Triple *label_string_locations, *label_vertex, *major_linepoints, *major_vertex, 
+		*minor_linepoints, *minor_vertex;
 
-	ENTER(draw_glyph_axes_ticks);
-	if ((label_bounds_dimension > 0) && (label_bounds_components > 0)
-		&& label_bounds)
+	ENTER(draw_glyph_axes_general);
+	if ((label_bounds_dimension > 0) && (label_bounds_components > 0) && label_bounds)
 	{
 		return_code=1;
 
-		length = label_bounds[label_bounds_dimension] -
-			label_bounds[0];
+		switch(primary_axis_number)
+		{
+			case 0:
+			default:
+			{
+				label_bounds_offset = label_bounds_dimension;
+			} break;
+			case 1:
+			{
+				label_bounds_offset = 2 * label_bounds_dimension;
+			} break;
+			case 2:
+			{
+				label_bounds_offset = 4 * label_bounds_dimension;
+			} break;
+		}
+
+		length = label_bounds[label_bounds_offset + label_bounds_component] -
+			label_bounds[label_bounds_component];
 		fabs_length = fabs(length);
 
 		if (fabs_length > 1e-12)
 		{
-			minor_grid_size = fabs_length / 200.0;
+			minor_grid_size *= fabs_length;
 			log_scale = ceil(-0.5 + log10(minor_grid_size * 2.0));
 			minor_grid_size = pow(10, log_scale) / 2.0;
-			grid_scale = 500.0 * coordinate_scaling[0] / fabs_length;
+			grid_scale = coordinate_scaling[0] / fabs_length;
 
-			minor_grids_per_major = 5;
 			tick_mark_get_grid_spacing(&minor_grid_size,
-				&minor_grids_per_major, grid_scale, 5, 50);
+				&minor_grids_per_major, grid_scale, min_minor_grid, min_major_grid);
 			
-			first=ceil(label_bounds[0] / minor_grid_size);
-			last=floor(label_bounds[label_bounds_dimension] / minor_grid_size);
+			first=ceil(label_bounds[label_bounds_component] / minor_grid_size);
+			last=floor(label_bounds[label_bounds_offset + label_bounds_component]
+				/ minor_grid_size);
 		}
 		else
 		{
 			length = 1e-12;
-			minor_grid_size = 0.1;
-			grid_scale = 50.0 * coordinate_scaling[0];
+			grid_scale = 0.01 * coordinate_scaling[0];
 
 			minor_grids_per_major = 5;
   			tick_mark_get_grid_spacing(&minor_grid_size,
-				&minor_grids_per_major, grid_scale, 5, 50);
+				&minor_grids_per_major, grid_scale, min_minor_grid, min_major_grid);
 
-			first = ceil(label_bounds[0] / minor_grid_size);
+			first = ceil(label_bounds[label_bounds_component] / minor_grid_size);
 			last = first;
 		}								
 		if (first > last)
@@ -293,64 +312,143 @@ varying component of the label_bounds is drawn.
 		}
 		number_of_ticks = last - first + 1;
 
-		polyline=(struct GT_polyline *)NULL;
-		if (ALLOCATE(points, Triple, 2 * number_of_ticks) && 
+		number_of_minor_lines = 0;
+		number_of_major_lines = 0;
+		number_of_labels = 0;
+		/* This is too much memory but saves us working it out in advance */
+		if (ALLOCATE(major_linepoints, Triple, 2 * number_of_ticks) && 
+			ALLOCATE(minor_linepoints, Triple, 2 * number_of_ticks) && 
 			ALLOCATE(label_string_locations, Triple, number_of_ticks) &&
 			ALLOCATE(label_strings, char *, number_of_ticks))
 		{
-			number_of_major_ticks = 0;
-			vertex=points;
+			minor_vertex = minor_linepoints;
+			major_vertex = major_linepoints;
+			label_vertex = label_string_locations;
 			for (j=first;j<=last;j++)
 			{
 				if (number_of_ticks > 1)
 				{
-					axis1_scale = ((float)j * minor_grid_size - label_bounds[0]) / length;
+					axis_position = ((float)j * minor_grid_size - label_bounds[label_bounds_component]) / length;
 				}
 				else
 				{
-					axis1_scale = 0.0;
+					axis_position = 0.0;
 				}
 				if (0==(j % minor_grids_per_major))
 				{
-					axis2_scale = 0.05;
-				}
-				else
-				{
-					axis2_scale = 0.01;
-				}
-				(*vertex)[0] = axis1_scale;
-				(*vertex)[1] = - axis2_scale;
-				(*vertex)[2] = 0.0;
-				vertex++;
-
-				(*vertex)[0] = axis1_scale;
-				(*vertex)[1] = + axis2_scale;
-				(*vertex)[2] = 0.0;
-				if (0==(j % minor_grids_per_major))
-				{
-					label_string_locations[number_of_major_ticks][0] = (*vertex)[0];
-					label_string_locations[number_of_major_ticks][1] = (*vertex)[1];
-					label_string_locations[number_of_major_ticks][2] = (*vertex)[2];
-					if (ALLOCATE(label_strings[number_of_major_ticks], char, 50))
+					/* Major */
+					switch (primary_axis_number)
 					{
-						sprintf(label_strings[number_of_major_ticks], "%1g",
+						case 0:
+						default:
+						{
+							(*major_vertex)[0] = axis_position;
+							(*major_vertex)[1] = major_cross_min;
+							(*major_vertex)[2] = 0.0;
+							major_vertex++;
+							(*major_vertex)[0] = axis_position;
+							(*major_vertex)[1] = major_cross_max;
+							(*major_vertex)[2] = 0.0;
+							major_vertex++;
+							(*label_vertex)[0] = axis_position;
+							(*label_vertex)[1] = 0.0;
+							(*label_vertex)[2] = 0.0;
+							label_vertex++;
+						} break;
+						case 1:
+						{
+							(*major_vertex)[0] = major_cross_min;
+							(*major_vertex)[1] = axis_position;
+							(*major_vertex)[2] = 0.0;
+							major_vertex++;
+							(*major_vertex)[0] = major_cross_max;
+							(*major_vertex)[1] = axis_position;
+							(*major_vertex)[2] = 0.0;
+							major_vertex++;
+							(*label_vertex)[0] = 0.0;
+							(*label_vertex)[1] = axis_position;
+							(*label_vertex)[2] = 0.0;
+							label_vertex++;
+						} break;
+						case 2:
+						{
+							(*major_vertex)[0] = major_cross_min;
+							(*major_vertex)[1] = 0.0;
+							(*major_vertex)[2] = axis_position;
+							major_vertex++;
+							(*major_vertex)[0] = major_cross_max;
+							(*major_vertex)[1] = 0.0;
+							(*major_vertex)[2] = axis_position;
+							major_vertex++;
+							(*label_vertex)[0] = 0.0;
+							(*label_vertex)[1] = 0.0;
+							(*label_vertex)[2] = axis_position;
+							label_vertex++;
+						} break;
+					}
+					number_of_major_lines++;
+
+					if (ALLOCATE(label_strings[number_of_labels], char, 50))
+					{
+						sprintf(label_strings[number_of_labels], "%1g",
 							(float)j * minor_grid_size);
 					}
-					
-					number_of_major_ticks++;
-					
+					number_of_labels++;
 				}
-				vertex++;
+				else
+				{
+					/* Minor */
+					switch (primary_axis_number)
+					{
+						case 0:
+						default:
+						{
+							(*minor_vertex)[0] = axis_position;
+							(*minor_vertex)[1] = minor_cross_min;
+							(*minor_vertex)[2] = 0.0;
+							minor_vertex++;
+							(*minor_vertex)[0] = axis_position;
+							(*minor_vertex)[1] = minor_cross_max;
+							(*minor_vertex)[2] = 0.0;
+							minor_vertex++;
+						} break;
+						case 1:
+						{
+							(*minor_vertex)[0] = minor_cross_min;
+							(*minor_vertex)[1] = axis_position;
+							(*minor_vertex)[2] = 0.0;
+							minor_vertex++;
+							(*minor_vertex)[0] = minor_cross_max;
+							(*minor_vertex)[1] = axis_position;
+							(*minor_vertex)[2] = 0.0;
+							minor_vertex++;
+						} break;
+						case 2:
+						{
+							(*minor_vertex)[0] = minor_cross_min;
+							(*minor_vertex)[1] = 0.0;
+							(*minor_vertex)[2] = axis_position;
+							minor_vertex++;
+							(*minor_vertex)[0] = minor_cross_max;
+							(*minor_vertex)[1] = 0.0;
+							(*minor_vertex)[2] = axis_position;
+							minor_vertex++;
+						} break;
+					}
+					number_of_minor_lines++;
+				}
 			}
+			execute_Graphical_material(material);
 			if (polyline=CREATE(GT_polyline)(g_PLAIN_DISCONTINUOUS,/*line_width=default*/0,
-				number_of_ticks,points,/*normalpoints*/(Triple *)NULL,g_NO_DATA,(GTDATA *)NULL))
+				number_of_major_lines, major_linepoints,/*normalpoints*/(Triple *)NULL,g_NO_DATA,(GTDATA *)NULL))
 			{
 				if (graphics_object=CREATE(GT_object)(name,g_POLYLINE,
+						/*use the default material, must be before graphics which specify a material*/
 						(struct Graphical_material *)NULL))
 				{
 					if (GT_OBJECT_ADD(GT_polyline)(graphics_object,/*time*/0.0,polyline))
 					{
-						makegtobject(graphics_object,/*time*/0,/*draw_selected*/0);
+						render_GT_object_opengl(graphics_object, context);
 						DESTROY(GT_object)(&graphics_object);
 					}
 					else
@@ -362,18 +460,17 @@ varying component of the label_bounds is drawn.
 			}
 			else
 			{
-				DEALLOCATE(points);
+				DEALLOCATE(major_linepoints);
 			}
-			if (label_set = CREATE(GT_pointset)(number_of_major_ticks, label_string_locations,
-				label_strings, g_NO_MARKER, /*marker_size*/0 , /*n_data_components*/0,
-					(GTDATA *)NULL, /*names*/(int *)NULL, font))
+			if (label_set = CREATE(GT_pointset)(number_of_labels, label_string_locations,
+				label_strings, g_NO_MARKER, /*marker_size*/0, /*n_data_components*/0,
+				(GTDATA *)NULL, /*names*/(int *)NULL, font))
 			{
-				if (graphics_object=CREATE(GT_object)(name,g_POINTSET,
-						(struct Graphical_material *)NULL))
+				if (graphics_object=CREATE(GT_object)(name, g_POINTSET, material))
 				{
 					if (GT_OBJECT_ADD(GT_pointset)(graphics_object,/*time*/0.0,label_set))
 					{
-						makegtobject(graphics_object,/*time*/0,/*draw_selected*/0);
+						render_GT_object_opengl(graphics_object, context);
 						DESTROY(GT_object)(&graphics_object);
 					}
 					else
@@ -386,13 +483,122 @@ varying component of the label_bounds is drawn.
 			else
 			{
 				DEALLOCATE(label_string_locations);
-				for (j = 0 ; j < number_of_major_ticks ; j++)
+				for (j = 0 ; j < number_of_labels ; j++)
 				{
-					DEALLOCATE(label_strings[number_of_major_ticks]);
+					DEALLOCATE(label_strings[j]);
 				}
 				DEALLOCATE(label_strings);
 			}
+
+			/* The material in the GT_object is not executed with makegtobj */
+			execute_Graphical_material(secondary_material);
+			if (polyline=CREATE(GT_polyline)(g_PLAIN_DISCONTINUOUS,/*line_width=default*/0,
+				number_of_minor_lines, minor_linepoints,/*normalpoints*/(Triple *)NULL,g_NO_DATA,(GTDATA *)NULL))
+			{
+				if (graphics_object=CREATE(GT_object)(name,g_POLYLINE, secondary_material))
+				{
+					if (GT_OBJECT_ADD(GT_polyline)(graphics_object,/*time*/0.0,polyline))
+					{
+						render_GT_object_opengl(graphics_object, context);
+						DESTROY(GT_object)(&graphics_object);
+					}
+					else
+					{
+						DESTROY(GT_polyline)(&polyline);
+						return_code = 0;
+					}
+				}
+			}
+			else
+			{
+				DEALLOCATE(minor_linepoints);
+			}
 		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"draw_glyph_axes_general.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* draw_glyph_axes_general */
+
+static int draw_glyph_axes_ticks(Triple coordinate_scaling, 
+	int label_bounds_dimension, int label_bounds_components, float *label_bounds,
+	struct Graphical_material *material, struct Graphical_material *secondary_material,
+	struct Graphics_font *font, struct GT_object_compile_context *context)
+/*******************************************************************************
+LAST MODIFIED : 22 November 2005
+
+DESCRIPTION :
+Renders the label_bounds as a grid in the first two axis directions.  
+An assumption is made that the label values have some alignment with the axis 
+so only the first component of the label_bounds is drawn.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(draw_glyph_axes_ticks);
+	if ((label_bounds_dimension > 0) && (label_bounds_components > 0)
+		&& label_bounds)
+	{
+		return_code = draw_glyph_axes_general(coordinate_scaling, 
+			label_bounds_dimension, label_bounds_components, label_bounds,
+			/*primary_axis_number*/0, /*label_bounds_component*/0,
+			/*major_cross_min*/-0.05, /*major_cross_max*/0.05,
+			/*minor_cross_min*/-0.01, /*minor_cross_max*/0.01,
+			/*minor_grid_size*/0.01, /*minor_grids_per_major*/5,
+			/*min_minor_grid*/0.01, /*min_major_grid*/0.1,
+			material, secondary_material, font, context);
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"draw_glyph_axes_ticks.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* draw_glyph_axes_ticks */
+
+static int draw_glyph_grid_lines(Triple coordinate_scaling, 
+	int label_bounds_dimension, int label_bounds_components, float *label_bounds,
+	struct Graphical_material *material, struct Graphical_material *secondary_material,
+	struct Graphics_font *font, struct GT_object_compile_context *context)
+/*******************************************************************************
+LAST MODIFIED : 22 November 2005
+
+DESCRIPTION :
+Renders the label_bounds as a grid in the first two axis directions.  
+It is assumed that the label values have some alignment with the axes so only
+the first component of the label_bounds is drawn along the first axis and the 
+second component on the second axis.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(draw_glyph_axes_ticks);
+	if ((label_bounds_dimension > 0) && (label_bounds_components > 0)
+		&& label_bounds)
+	{
+		return_code = draw_glyph_axes_general(coordinate_scaling, 
+			label_bounds_dimension, label_bounds_components, label_bounds,
+			/*primary_axis_number*/0, /*label_bounds_component*/0,
+			/*major_cross_min*/-0.01, /*major_cross_max*/1.01,
+			/*minor_cross_min*/-0.01, /*minor_cross_max*/1.01,
+			/*minor_grid_size*/0.01, /*minor_grids_per_major*/2,
+			/*min_minor_grid*/0.1, /*min_major_grid*/0.2,
+			material, secondary_material, font, context);
+		return_code = draw_glyph_axes_general(coordinate_scaling, 
+			label_bounds_dimension, label_bounds_components, label_bounds,
+			/*primary_axis_number*/1, /*label_bounds_component*/1,
+			/*major_cross_min*/-0.01, /*major_cross_max*/1.01,
+			/*minor_cross_min*/-0.01, /*minor_cross_max*/1.01,
+			/*minor_grid_size*/0.01, /*minor_grids_per_major*/2,
+			/*min_minor_grid*/0.1, /*min_major_grid*/0.2,
+			material, secondary_material, font, context);
 	}
 	else
 	{
@@ -1902,6 +2108,13 @@ Creates a list of standard glyphs for the cmgui and unemap applications.
 		}
 		if (glyph=make_glyph_sphere("diamond",4,2))
 		{
+			ADD_OBJECT_TO_LIST(GT_object)(glyph,glyph_list);
+		}
+		if (glyph=make_glyph_axes("grid_lines",
+				/*make_solid*/0, /*head_length*/0.0, /*half_head_width*/0.0,
+				/*labels*/(char **)NULL, /*label_offset*/0.1, font))
+		{
+			Graphics_object_set_glyph_labels_function(glyph, draw_glyph_grid_lines);
 			ADD_OBJECT_TO_LIST(GT_object)(glyph,glyph_list);
 		}
 		if (glyph=make_glyph_line("line"))

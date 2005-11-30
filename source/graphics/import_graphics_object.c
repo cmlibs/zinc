@@ -49,6 +49,7 @@ Functions for reading graphics object data from a file.
 #include <string.h>
 #include "general/debug.h"
 #include "general/io_stream.h"
+#include "general/matrix_vector.h"
 #include "general/mystring.h"
 #include "graphics/graphics_library.h"
 #include "graphics/graphics_object.h"
@@ -62,72 +63,6 @@ Module functions
 ----------------
 */
 #define FLOAT_ZERO_TOLERANCE (1e-8)
-
-static int normalize(float vector[3])
-/*******************************************************************************
-LAST MODIFIED : 27 December 1995
-
-DESCRIPTION :
-Normalizes the given <vector>.
-???DB.  Move to geometry.c ?
-==============================================================================*/
-{
-	float norm;
-	int return_code;
-
-	ENTER(normalize);
-	if (vector)
-	{
-		if ((norm=vector[0]*vector[0]+vector[1]*vector[1]+vector[2]*vector[2])>0)
-		{
-			norm=(float)sqrt((double)norm);
-			if (norm > FE_VALUE_ZERO_TOLERANCE)
-			{
-				vector[0] /= norm;
-				vector[1] /= norm;
-				vector[2] /= norm;
-			}
-		}
-		return_code=1;
-	}
-	else
-	{
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* normalize */
-
-static int normalized_crossproduct(float vector_1[3],float vector_2[3],
-	float result[3])
-/*******************************************************************************
-LAST MODIFIED : 28 December 1995
-
-DESCRIPTION :
-Calculates the normalized cross product of <vector_1> and <vector_2> and puts
-it in <result>.
-???DB.  Move to geometry.c ?
-==============================================================================*/
-{
-	int return_code;
-
-	ENTER(normalized_crossproduct);
-	if (vector_1&&vector_2&&result)
-	{
-		result[0]=vector_1[1]*vector_2[2] - vector_2[1]*vector_1[2];
-		result[1]=vector_1[2]*vector_2[0] - vector_2[2]*vector_1[0];
-		result[2]=vector_1[0]*vector_2[1] - vector_1[1]*vector_2[0];
-		return_code=normalize(result);
-	}
-	else
-	{
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* normalized_crossproduct */
 
 static int file_read_GT_object_type(struct IO_stream *file,
 	enum GT_object_type *object_type)
@@ -856,6 +791,8 @@ DESCRIPTION :
 	return (return_code);
 } /* file_read_graphics_objects */
 
+#define MAX_OBJ_VERTICES (128)
+
 int file_read_voltex_graphics_object_from_obj(char *file_name,
 	struct IO_stream_package *io_stream_package,
 	char *graphics_object_name, enum Render_type render_type,
@@ -863,261 +800,599 @@ int file_read_voltex_graphics_object_from_obj(char *file_name,
 	struct Graphical_material *default_material,
 	struct LIST(GT_object) *object_list)
 /*******************************************************************************
-LAST MODIFIED : 19 March 2003
+LAST MODIFIED : 23 November 2005
 
 DESCRIPTION :
 ==============================================================================*/
 {
-	double *iso_poly_cop;
+	char face_word[MAX_OBJ_VERTICES][128], objname[100], *text, *word, matname[128];
 	enum GT_voltex_type voltex_type;
-	float *texturemap_coord;
-	int acc_triangle_index, i, j, k, n_iso_polys, n_triangles, n_vertices, 
-		return_code, *texturemap_index, triangle, *triangle_list;
 	FE_value rmag, result[3], vector1[3], vector2[3], vectorsum[3], vertex0[3],
 		vertex1[3], vertex2[3];
-	struct IO_stream *file;
-	gtObject *obj;
-	char objname[100];
-	struct Environment_map *environment_map;
-	struct Graphical_material *material;
+	float *new_coordinate_vertices, *coordinate_vertices,
+		*new_normal_vertices, *normal_vertices, *new_texture_vertices, *texture_vertices;
+	int face_index,face_vertex[MAX_OBJ_VERTICES][3], i, j, k, line_number, 
+		number_of_triangles,  number_of_vertices, n_face_vertices,  n_obj_coordinate_vertices,
+		n_obj_normal_vertices, n_obj_texture_vertices, return_code, *vertex_reindex, warning_multiple_normals;
+	gtObject *new_obj, *next_obj, *obj;
+	struct Graphical_material *scanned_material;
 	struct GT_voltex *voltex;
-	struct VT_volume_texture *vtexture;
-	struct VT_iso_vertex *vertex_list;
+	struct IO_stream *file;
+	struct VT_iso_vertex *vertex, **vertex_list;
+	struct VT_iso_triangle *triangle, **triangle_list;
 
 	ENTER(file_read_voltex_graphics_objects_from_obj);
-#if defined (DEBUG)
-	/*???debug*/
-	printf("ENTER(file_read_voltex_graphics_object_from_obj\n");
-#endif /* defined (DEBUG) */
 	return_code = 1;
-	if (file_name)
+	if (file_name && graphical_material_manager)
 	{
 		if((file = CREATE(IO_stream)(io_stream_package))
 			&& (IO_stream_open_for_read(file, file_name)))
 		{
-			if(vtexture = CREATE(VT_volume_texture)("temp_read_volume"))
+			if(graphics_object_name)
 			{
-				if(read_volume_texture_from_obj_file(vtexture,
-					file, graphical_material_manager,
-					(struct MANAGER(Environment_map) *)NULL, 0))
+				sprintf(objname, "%s", graphics_object_name);
+			}
+			else
+			{
+				sprintf(objname, "%s", file_name);
+			}
+			if(obj=FIND_BY_IDENTIFIER_IN_LIST(GT_object,name)(
+					objname, object_list))
+			{
+				next_obj = obj;
+				while (next_obj)
 				{
-					n_vertices = vtexture->mc_iso_surface->n_vertices;
-					n_triangles = vtexture->mc_iso_surface->n_triangles;
-					n_iso_polys = n_triangles;
-
-					if (ALLOCATE(triangle_list, int, 3*n_triangles)
-						&& ALLOCATE(iso_poly_cop,double,3*n_triangles*3)
-						&& ALLOCATE(texturemap_coord,float,3*n_triangles*3)
-						&& ALLOCATE(texturemap_index,int,3*n_triangles)
-						&& ALLOCATE(vertex_list,struct VT_iso_vertex, n_vertices))
+					if (g_VOLTEX==GT_object_get_type(next_obj))
 					{
-						if(graphics_object_name)
+						if (GT_object_has_time(next_obj, time))
 						{
-							sprintf(objname, "%s", graphics_object_name);
-						}
-						else
-						{
-							sprintf(objname, "%s", file_name);
-						}
-						if(obj=FIND_BY_IDENTIFIER_IN_LIST(GT_object,name)(
-							objname, object_list))
-						{
-							if (g_VOLTEX==GT_object_get_type(obj))
-							{
-								if (GT_object_has_time(obj, time))
-								{
-									display_message(WARNING_MESSAGE,
-										"Overwriting time %g in graphics object '%s'",
-										time, objname);
-									return_code = GT_object_remove_primitives_at_time(obj, time,
-										(GT_object_primitive_object_name_conditional_function *)NULL,
-										(void *)NULL);
-								}
-							}
-							else
-							{
-								display_message(ERROR_MESSAGE,
-									"Object of different type named '%s' already exists",
-									objname);
-								return_code=0;
-							}
-						}
-						else
-						{
-							obj=CREATE(GT_object)(objname, g_VOLTEX, default_material);
-							if (obj)
-							{
-								ADD_OBJECT_TO_LIST(GT_object)(obj, object_list);
-							}
-						}
-						switch (render_type)
-						{
-							case RENDER_TYPE_SHADED:
-							{
-								voltex_type = g_VOLTEX_SHADED_TEXMAP;
-							} break;
-							case RENDER_TYPE_WIREFRAME:
-							{
-								voltex_type = g_VOLTEX_WIREFRAME_SHADED_TEXMAP;
-							} break;
-							default:
-							{
-								display_message(ERROR_MESSAGE,
-									"file_read_voltex_graphics_object_from_obj.  "
-									"Unknown render type");
-								return_code = 0;
-							} break;
-						}
-						if (return_code)
-						{
-							voltex = CREATE(GT_voltex)(n_triangles, n_vertices,
-								triangle_list, vertex_list, 
-								iso_poly_cop, texturemap_coord, texturemap_index, /*n_rep*/1,
-								/*n_data_components*/0, (GTDATA *)NULL, voltex_type);
-							if (voltex)
-							{
-								acc_triangle_index=0;
-								for (i=0;i<n_iso_polys;i++)
-								{
-									for (j=0;j<3;j++)
-									{
-										triangle_list[3*acc_triangle_index+j]=
-											vtexture->mc_iso_surface->
-											compiled_triangle_list[i]->vertex_index[j];
-										if (material = vtexture->mc_iso_surface->
-											compiled_triangle_list[i]->material[j])
-										{
-											GT_voltex_set_triangle_vertex_material(voltex,
-												acc_triangle_index, j, material);
-										}
-										if (environment_map = vtexture->mc_iso_surface->
-											compiled_triangle_list[i]->env_map[j])
-										{
-											GT_voltex_set_triangle_vertex_environment_map(voltex,
-												acc_triangle_index, j, environment_map);
-										}
-										texturemap_index[3*acc_triangle_index+j]=
-											vtexture->mc_iso_surface->
-											compiled_triangle_list[i]->env_map_index[j];
-										texturemap_coord[3*(3*acc_triangle_index+0)+j]=
-											vtexture->mc_iso_surface->
-											compiled_triangle_list[i]->texture_coord[0][j];
-										texturemap_coord[3*(3*acc_triangle_index+1)+j]=
-											vtexture->mc_iso_surface->
-											compiled_triangle_list[i]->texture_coord[1][j];
-										texturemap_coord[3*(3*acc_triangle_index+2)+j]=
-											vtexture->mc_iso_surface->
-											compiled_triangle_list[i]->texture_coord[2][j];
-										iso_poly_cop[3*(3*acc_triangle_index+0)+j]=
-											vtexture->mc_iso_surface->
-											compiled_triangle_list[i]->iso_poly_cop[0][j];
-										iso_poly_cop[3*(3*acc_triangle_index+1)+j]=
-											vtexture->mc_iso_surface->
-											compiled_triangle_list[i]->iso_poly_cop[1][j];
-										iso_poly_cop[3*(3*acc_triangle_index+2)+j]=
-											vtexture->mc_iso_surface->
-											compiled_triangle_list[i]->iso_poly_cop[2][j];
-									}
-									acc_triangle_index++;
-								}
-								for (i=0;i<n_vertices;i++)
-								{
-									vertex_list[i].n_ptrs=(vtexture->mc_iso_surface->
-										compiled_vertex_list)[i]->n_triangle_ptrs;
-									for (j=0;j<vertex_list[i].n_ptrs;j++)
-									{
-										vertex_list[i].ptrs[j]=(vtexture->mc_iso_surface->
-											compiled_vertex_list[i]->triangle_ptrs)[j]->
-											triangle_index;
-									}
-									vertex_list[i].coord[0] = ((vtexture->mc_iso_surface->
-										compiled_vertex_list)[i]->coord)[0];
-									vertex_list[i].coord[1] = ((vtexture->mc_iso_surface->
-										compiled_vertex_list)[i]->coord)[1];
-									vertex_list[i].coord[2] = ((vtexture->mc_iso_surface->
-										compiled_vertex_list)[i]->coord)[2];
-								}
-								/* now calculate vertex normals in cartesian space by
-									averaging normals of surrounding faces */
-								/*???DB.  Can the normals be transformed ? */
-								for (i=0;i<n_vertices;i++)
-								{
-									for (k=0;k<3;k++)
-									{
-										vectorsum[k]=0;
-									}
-									if (vertex_list[i].n_ptrs > MAXPTRS)
-									{
-										vertex_list[i].n_ptrs = MAXPTRS;
-										display_message(ERROR_MESSAGE,
-											"file_read_voltex_graphics_object_from_obj.  "
-											"More than %d vertices connected to vertex %d, unable to read correctly.",
-											MAXPTRS, i);
-									}
-									for (j=0;j<vertex_list[i].n_ptrs;j++)
-									{
-										triangle=vertex_list[i].ptrs[j];
-										for (k=0;k<3;k++)
-										{
-											vertex0[k]=vertex_list[triangle_list[triangle*3+0]].coord[k];
-											vertex1[k]=vertex_list[triangle_list[triangle*3+1]].coord[k];
-											vertex2[k]=vertex_list[triangle_list[triangle*3+2]].coord[k];
-											vector1[k]=vertex1[k]-vertex0[k];
-											vector2[k]=vertex2[k]-vertex0[k];
-										}
-										normalized_crossproduct(vector1,vector2,result);
-										for (k=0;k<3;k++)
-										{
-											vectorsum[k] += result[k];
-										}
-									}
-									/* now set normal as the average & normalize */
-									rmag=sqrt((double)(vectorsum[0]*vectorsum[0]+
-										vectorsum[1]*vectorsum[1]+vectorsum[2]*vectorsum[2]));
-									if (rmag < FE_VALUE_ZERO_TOLERANCE)
-									{
-										/* If the magnitude is zero then just copy the normal values */
-										rmag = 1.0;
-									}
-									for (k=0;k<3;k++)
-									{
-										vertex_list[i].normal[k]=-vectorsum[k]/rmag;
-										/*???Mark.  This should be + */
-									}
-								} /* i */
-								GT_OBJECT_ADD(GT_voltex)(obj, time, voltex);
-							}
-							else
-							{
-								display_message(ERROR_MESSAGE,
-									"file_read_voltex_graphics_object_from_obj.  "
-									"Unable create GT_voltex");
-								return_code=0;
-							}
+							display_message(WARNING_MESSAGE,
+								"Overwriting time %g in graphics object '%s'",
+								time, objname);
+							return_code = GT_object_remove_primitives_at_time(next_obj, time,
+								(GT_object_primitive_object_name_conditional_function *)NULL,
+								(void *)NULL);
 						}
 					}
 					else
 					{
 						display_message(ERROR_MESSAGE,
-							"file_read_voltex_graphics_object_from_obj.  "
-							"Unable to ALLOCATE GT_voltex data");
-						return_code = 0;
+							"Object of different type named '%s' already exists",
+							objname);
+						return_code=0;
 					}
+					next_obj = GT_object_get_next_object(next_obj);
+				}
+			}
+			else
+			{
+				obj=CREATE(GT_object)(objname, g_VOLTEX, default_material);
+				if (obj)
+				{
+					ADD_OBJECT_TO_LIST(GT_object)(obj, object_list);
+				}
+			}
+			switch (render_type)
+			{
+				case RENDER_TYPE_SHADED:
+				{
+					voltex_type = g_VOLTEX_SHADED_TEXMAP;
+				} break;
+				case RENDER_TYPE_WIREFRAME:
+				{
+					voltex_type = g_VOLTEX_WIREFRAME_SHADED_TEXMAP;
+				} break;
+				default:
+				{
+					display_message(ERROR_MESSAGE,
+						"file_read_voltex_graphics_object_from_obj.  "
+						"Unknown render type");
+					return_code = 0;
+				} break;
+			}
+				
+			if (return_code)
+			{
+				warning_multiple_normals = 0;
+				/* default material is NULL so that it gets controlled by the graphics_object */
+				scanned_material=(struct Graphical_material *)NULL;
+			
+				number_of_vertices = 0;
+				number_of_triangles = 0;
+				n_obj_coordinate_vertices = 0;
+				n_obj_texture_vertices = 0;
+				n_obj_normal_vertices = 0;
+				vertex_list = (struct VT_iso_vertex **)NULL;
+				triangle_list = (struct VT_iso_triangle **)NULL;
+				coordinate_vertices = (float *)NULL;
+				texture_vertices = (float *)NULL;
+				normal_vertices = (float *)NULL;
+				vertex_reindex = (int *)NULL;
+
+				while ((!IO_stream_end_of_stream(file))&&
+					IO_stream_read_string(file,"[^\n]",&text)&&
+					IO_stream_getc(file))
+				{
+					line_number++;
+
+					/* parse line */
+					word=strtok(text," \t\n");
+					if (word)
+					{
+						if (0==strcmp(word,"#"))
+						{
+							/* Comment */
+						}
+						else if (0==strcmp(word,"g"))
+						{
+							/* Group */
+						}
+						else if (0==strcmp(word,"g\n"))
+						{
+							/* Group default */
+						}
+						else if (0==strcmp(word,"s"))
+						{
+							/* Smooth */
+						}
+						else if (0==strcmp(word,"usemtl"))
+						{
+							word=strtok(NULL," \n");
+							if (word)
+							{
+								/* Add the voltex we currently have and reset the vertex and triangle lists */
+								if (voltex = CREATE(GT_voltex)(number_of_vertices, vertex_list,
+									number_of_triangles, triangle_list,
+									/*n_data_components*/0, voltex_type))
+								{
+									return_code = GT_OBJECT_ADD(GT_voltex)(obj, time, voltex);
+								}
+								else
+								{
+									display_message(ERROR_MESSAGE,
+										"file_read_voltex_graphics_object_from_obj.  "
+										"Unable create GT_voltex when changing material");
+									return_code=0;
+								}
+								number_of_vertices = 0;
+								number_of_triangles = 0;
+								vertex_list = (struct VT_iso_vertex **)NULL;
+								triangle_list = (struct VT_iso_triangle **)NULL;
+
+								/* print material name */
+								strncpy(matname, word, strlen(word));
+								matname[strlen(word)] = 0;
+								scanned_material=FIND_BY_IDENTIFIER_IN_MANAGER(
+									Graphical_material,name)(matname,
+										graphical_material_manager);
+								if (!(scanned_material ||
+										fuzzy_string_compare_same_length(matname,"NONE")))
+								{
+									if((scanned_material = CREATE(Graphical_material)
+											(matname)) && 
+										(ADD_OBJECT_TO_MANAGER(Graphical_material)
+											(scanned_material, graphical_material_manager)))
+									{
+										/* OK */
+									}
+									else
+									{
+										scanned_material = (struct Graphical_material *)NULL;
+									}
+								}
+								
+								if (new_obj = GT_object_get_next_object(obj))
+								{
+									/* Could check that the materials match although I don't know
+										what to do if they don't */
+									obj = new_obj;
+								}
+								else
+								{
+									/* Make a new obj using the new material */
+									new_obj = CREATE(GT_object)(objname, g_VOLTEX, scanned_material);
+									GT_object_set_next_object(obj, new_obj);
+									obj = new_obj;
+								}
+							}
+							else
+							{
+								printf("Error: Missing material\n");
+							}
+						}
+						else if (0==strcmp(word,"mtllib"))
+						{
+							/* Material library */
+						}
+						else if (0==strcmp(word, "v"))
+						{
+							/* process vertices */
+							if(REALLOCATE(new_coordinate_vertices, coordinate_vertices, float, 
+									3 * (n_obj_coordinate_vertices + 1)) &&
+								REALLOCATE(vertex_reindex, vertex_reindex, int, 
+									(n_obj_coordinate_vertices + 1)))
+							{
+								coordinate_vertices = new_coordinate_vertices;
+								
+								vertex_reindex[n_obj_coordinate_vertices] = -1;
+								new_coordinate_vertices = coordinate_vertices + 3 * n_obj_coordinate_vertices;
+								i=0;
+								while (word=strtok(NULL," "))
+								{
+									new_coordinate_vertices[i]=atof(word);
+									i++;
+								}
+								while (i < 3)
+								{
+									new_coordinate_vertices[i]=0;
+									i++;
+								}
+								n_obj_coordinate_vertices++;
+							}
+						}
+						else if (0==strcmp(word,"vt"))
+						{
+							/* process texture vertices */
+							if(REALLOCATE(new_texture_vertices, texture_vertices, float, 
+									3 * (n_obj_texture_vertices + 1)))
+							{
+								texture_vertices = new_texture_vertices;
+								
+								new_texture_vertices = texture_vertices + 3 * n_obj_texture_vertices;
+								i=0;
+								while (word=strtok(NULL," "))
+								{
+									new_texture_vertices[i]=atof(word);
+									i++;
+								}
+								while (i < 3)
+								{
+									new_texture_vertices[i]=0;
+									i++;
+								}
+								n_obj_texture_vertices++;
+							}							
+						}
+						else if (0==strcmp(word,"vn"))
+						{
+							/* process vertex normals */
+							if(REALLOCATE(new_normal_vertices, normal_vertices, float, 
+									3 * (n_obj_normal_vertices + 1)))
+							{
+								normal_vertices = new_normal_vertices;
+								
+								new_normal_vertices = normal_vertices + 3 * n_obj_normal_vertices;
+								i=0;
+								while (word=strtok(NULL," "))
+								{
+									new_normal_vertices[i]=atof(word);
+									i++;
+								}
+								while (i < 3)
+								{
+									new_normal_vertices[i]=0;
+									i++;
+								}
+
+								n_obj_normal_vertices++;
+							}
+						}
+						else if (0==strcmp(word,"f"))
+						{
+							/* process faces */
+							/* SAB This should be improved, it thinks that there is
+								an extra face when there is a blank on the end of a
+								line */
+							n_face_vertices=0;
+							while (word=strtok(NULL," "))
+							{
+								if (n_face_vertices<MAX_OBJ_VERTICES)
+								{
+									strcpy(face_word[n_face_vertices],word);
+								}
+								n_face_vertices++;
+							}
+							if (n_face_vertices>MAX_OBJ_VERTICES)
+							{
+								n_face_vertices=MAX_OBJ_VERTICES;
+								display_message(ERROR_MESSAGE,
+									"read_volume_texture_from_file.  Exceeded MAX_OBJ_VERTICES");
+								/*???debug */
+								printf("Error: exceeded MAX_OBJ_VERTICES\n");
+							}
+							for (i=0;i<n_face_vertices;i++)
+							{
+								face_vertex[i][0]=0;
+								face_vertex[i][1]=0;
+								face_vertex[i][2]=0;
+								if (!strstr(face_word[i],"/"))
+								{
+									face_vertex[i][0]=atoi(face_word[i]);
+								}
+								else
+								{
+									if (strstr(face_word[i],"//"))
+									{
+										if (word=strtok(face_word[i],"//"))
+										{
+											face_vertex[i][0]=atoi(word);
+											if(word=strtok(NULL,"//"))
+											{
+												face_vertex[i][1]=0;
+												face_vertex[i][2]=atoi(word);
+												word=strtok(NULL,"/");
+											}
+										}
+										else
+										{
+											face_vertex[i][0]=atoi(face_word[i]);
+										}
+									}
+									else
+									{
+										if (word=strtok(face_word[i], "/"))
+										{
+											face_vertex[i][0]=atoi(word);
+											if (word=strtok(NULL,"/"))
+											{
+												face_vertex[i][1]=atoi(word);
+												if(word=strtok(NULL,"/"))
+												{
+													face_vertex[i][2]=atoi(word);
+												}
+											}
+										}
+										else
+										{
+											face_vertex[i][0]=atoi(face_word[i]);
+										}
+									}
+								}
+							}
+							if (n_face_vertices >= 3)
+							{
+								for (k=1;k<n_face_vertices-1;k++)
+								{
+									/* fan from face_vertex[0] */
+									if ((triangle = CREATE(VT_iso_triangle)()) &&
+										REALLOCATE(triangle_list, triangle_list, struct VT_iso_triangle *, number_of_triangles + 1))
+									{
+										triangle_list[number_of_triangles] = triangle;
+										triangle->index = number_of_triangles + 1;
+										for (i=0;i<3;i++)
+										{
+											/* NB: we subtract 1 from the obj file
+												vertex index for consistency with C
+												arrays */
+											if(i==0)
+											{
+												face_index = 0;
+											}
+											else
+											{
+												face_index = i+k-1;
+											}
+											if((face_vertex[face_index][0] > 0) &&
+												(face_vertex[face_index][0] <= n_obj_coordinate_vertices))
+											{
+												/* Only generating new vertices when they are used.
+													Could also add code where coordinate vertices are duplicated
+													to support multiple texture coordinates or normals */
+												if (-1 == vertex_reindex[face_vertex[face_index][0] - 1])
+												{
+													/* Create a new vertex */
+													if ((vertex = CREATE(VT_iso_vertex)()) &&
+														REALLOCATE(vertex_list, vertex_list, struct VT_iso_vertex *, number_of_vertices + 1))
+													{
+														vertex_list[number_of_vertices] = vertex;
+														vertex->index = number_of_vertices + 1;
+												
+														vertex->coordinates[0] = 
+															coordinate_vertices[3 * (face_vertex[face_index][0] - 1)];
+														vertex->coordinates[1] = 
+															coordinate_vertices[3 * (face_vertex[face_index][0] - 1) + 1];
+														vertex->coordinates[2] = 
+															coordinate_vertices[3 * (face_vertex[face_index][0] - 1) + 2];
+
+														vertex_reindex[face_vertex[face_index][0] - 1] = number_of_vertices;
+
+														number_of_vertices++;
+													}
+													else
+													{
+														display_message(WARNING_MESSAGE,
+															"read_volume_texture_from_file: "
+															" Unable to create vertex.");
+														return_code = 0;
+													}
+												}
+												else
+												{
+													vertex = vertex_list[vertex_reindex[face_vertex[face_index][0] - 1]];
+												}
+
+												triangle->vertices[i] = vertex;
+
+												if (REALLOCATE(vertex->triangles, vertex->triangles,
+														struct VT_iso_triangle *, vertex->number_of_triangles + 1))
+												{
+													vertex->triangles[vertex->number_of_triangles] = 
+														triangle;
+													vertex->number_of_triangles++;
+												}
+												else
+												{
+													display_message(WARNING_MESSAGE,
+														"read_volume_texture_from_file: "
+														" Unable to reallocate triangle list");
+													return_code = 0;
+												}
+											}
+											else
+											{
+												display_message(WARNING_MESSAGE,
+													"read_volume_texture_from_file: vertex"
+													" %d not defined when used", face_vertex[face_index][0]);
+												vertex = (struct VT_iso_vertex *)NULL;
+												return_code = 0;
+											}
+
+											if(vertex && face_vertex[face_index][1])
+											{
+												if((face_vertex[face_index][1] > 0) &&
+													(face_vertex[face_index][1] <= n_obj_texture_vertices))
+												{
+													vertex->texture_coordinates[0] = 
+														texture_vertices[3 * (face_vertex[face_index][1] - 1)];
+													vertex->texture_coordinates[1] = 
+														texture_vertices[3 * (face_vertex[face_index][1] - 1) + 1];
+													vertex->texture_coordinates[2] = 
+														texture_vertices[3 * (face_vertex[face_index][1] - 1) + 2];
+												}
+												else
+												{
+													display_message(WARNING_MESSAGE,
+														"read_volume_texture_from_file: normal vertex"
+														" %d not defined when used", face_vertex[face_index][1]);
+													return_code = 0;
+
+												}
+											}
+
+											if(vertex && face_vertex[face_index][2])
+											{
+												if((face_vertex[face_index][2] > 0) &&
+													(face_vertex[face_index][2] <= n_obj_normal_vertices))
+												{
+													if(vertex->normal[0] || vertex->normal[1]
+														|| vertex->normal[2])
+													{
+														if ((vertex->normal[0] != 
+																normal_vertices[3 * (face_vertex[face_index][2] - 1)])
+															|| (vertex->normal[1] != 
+																normal_vertices[3 * (face_vertex[face_index][2] - 1) + 1])
+															|| (vertex->normal[2] != 
+																normal_vertices[3 * (face_vertex[face_index][2] - 1) + 2]))
+														{
+															if(!warning_multiple_normals)
+															{
+																display_message(WARNING_MESSAGE,
+																	"read_volume_texture_from_file: multiple normals defined"
+																	" for vertices, first normals used");
+																warning_multiple_normals = 1;
+															}
+														}
+													}
+													else
+													{
+														vertex->normal[0] = normal_vertices[3 * (face_vertex[face_index][2] - 1)];
+														vertex->normal[1] = normal_vertices[3 * (face_vertex[face_index][2] - 1) + 1];
+														vertex->normal[2] = normal_vertices[3 * (face_vertex[face_index][2] - 1) + 2];
+													}
+												}
+												else
+												{
+													display_message(WARNING_MESSAGE,
+														"read_volume_texture_from_file: normal vertex"
+														" %d not defined when used", face_vertex[face_index][1]);
+													return_code = 0;
+												}
+											}
+										}
+										number_of_triangles++;
+									}
+									else
+									{
+										display_message(ERROR_MESSAGE,
+											"read_volume_texture_from_file: Could not allocate vertex");
+										return_code = 0;
+									}
+								}
+							}
+							else
+							{
+								display_message(WARNING_MESSAGE,
+									"Less than 3 vertices in face");
+							}
+						}
+					}
+					DEALLOCATE(text);
+				}
+
+				if (coordinate_vertices)
+				{
+					DEALLOCATE(coordinate_vertices);
+				}
+				if (normal_vertices)
+				{
+					DEALLOCATE(normal_vertices);
+				}
+				if (texture_vertices)
+				{
+					DEALLOCATE(texture_vertices);
+				}
+			}
+			if (return_code)
+			{
+				if (0 == n_obj_normal_vertices)
+				{
+					/* now calculate vertex normals in cartesian space by
+						averaging normals of surrounding faces */
+					for (i=0;i<number_of_vertices;i++)
+					{
+						for (k=0;k<3;k++)
+						{
+							vectorsum[k]=0;
+						}
+						for (j=0;j<vertex_list[i]->number_of_triangles;j++)
+						{
+							triangle=vertex_list[i]->triangles[j];
+							for (k=0;k<3;k++)
+							{
+								vertex0[k]=triangle->vertices[0]->coordinates[k];
+								vertex1[k]=triangle->vertices[1]->coordinates[k];
+								vertex2[k]=triangle->vertices[2]->coordinates[k];
+								vector1[k]=vertex1[k]-vertex0[k];
+								vector2[k]=vertex2[k]-vertex0[k];
+							}
+							cross_product_float3(vector1, vector2, result);
+							normalize_float3(result);
+							for (k=0;k<3;k++)
+							{
+								vectorsum[k] += result[k];
+							}
+						}
+						/* now set normal as the average & normalize */
+						rmag=sqrt((double)(vectorsum[0]*vectorsum[0]+
+								vectorsum[1]*vectorsum[1]+vectorsum[2]*vectorsum[2]));
+						if (rmag < FE_VALUE_ZERO_TOLERANCE)
+						{
+							/* If the magnitude is zero then just copy the normal values */
+							rmag = 1.0;
+						}
+						for (k=0;k<3;k++)
+						{
+							vertex_list[i]->normal[k] = vectorsum[k]/rmag;
+						}
+					}
+				}
+			}
+
+			if (return_code)
+			{
+				if (voltex = CREATE(GT_voltex)(number_of_vertices, vertex_list,
+						number_of_triangles, triangle_list,
+						/*n_data_components*/0, voltex_type))
+				{
+					return_code = GT_OBJECT_ADD(GT_voltex)(obj, time, voltex);
 				}
 				else
 				{
 					display_message(ERROR_MESSAGE,
 						"file_read_voltex_graphics_object_from_obj.  "
-						"Unable to read obj file");
-					return_code = 0;
+						"Unable create GT_voltex");
+					return_code=0;
 				}
-				DESTROY(VT_volume_texture)(&vtexture);
-			}
-			else
-			{
-				return_code=0;
-				display_message(ERROR_MESSAGE,
-					"file_read_voltex_graphics_object_from_obj.  Unable to create temporary volume texture");
 			}
 			IO_stream_close(file);
 			DESTROY(IO_stream)(&file);			
@@ -1135,10 +1410,6 @@ DESCRIPTION :
 		display_message(ERROR_MESSAGE,
 			"file_read_voltex_graphics_object_from_obj.  Invalid argument(s)");
 	}
-#if defined (DEBUG)
-	/*???debug */
-	printf("LEAVE(file_read_voltex_graphics_object_from_obj)\n");
-#endif /* defined (DEBUG) */
 	LEAVE;
 
 	return (return_code);

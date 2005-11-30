@@ -655,173 +655,90 @@ DESCRIPTION :
 } /* draw_surface_wavefront */
 
 static int drawvoltexwavefront(FILE *out_file, int full_comments,
-	int n_iso_polys,int *triangle_list,
-	struct VT_iso_vertex *vertex_list,int n_vertices,int n_rep,
-	struct Graphical_material **per_vertex_materials,
-	int *iso_poly_material_index,
-	struct Environment_map **per_vertex_environment_maps,
-	int *iso_poly_environment_map_index,
-	double *iso_poly_cop,
-	float *texturemap_coord,int *texturemap_index,int number_of_data_components,
+	int number_of_vertices, struct VT_iso_vertex **vertex_list,
+	int number_of_triangles, struct VT_iso_triangle **triangle_list,
+	int number_of_data_components,
 	struct Graphical_material *default_material, struct Spectrum *spectrum)
 /*******************************************************************************
-LAST MODIFIED : 8 August 2002
+LAST MODIFIED : 10 November 2005
 
 DESCRIPTION :
 ==============================================================================*/
 {
-	float vt[3][3];
-	int i,ii,j,k,return_code;
-	struct Environment_map *environment_map;
-	struct Graphical_material *last_material,*next_material;
+	int i,return_code;
 
 	ENTER(drawvoltexwavefront);
 	/* Keep a similar interface to all the other render implementations */
 	USE_PARAMETER(number_of_data_components);
-	USE_PARAMETER(iso_poly_cop);
 	USE_PARAMETER(default_material);
 	USE_PARAMETER(spectrum);
 	return_code=0;
-	if (triangle_list && vertex_list &&
-		((!iso_poly_material_index) || per_vertex_materials) &&
-		((!iso_poly_environment_map_index) || per_vertex_environment_maps) &&
-		texturemap_coord&&texturemap_index&&(0<n_rep)&&(0<n_iso_polys))
+	if (triangle_list && vertex_list && (0<number_of_triangles))
 	{
-		last_material=(struct Graphical_material *)NULL;
-		for (ii=0;ii<n_rep;ii++)
+		if ( full_comments )
+		{
+			fprintf(out_file,"#vertex list\n");
+		}
+		for (i=0;i<number_of_vertices;i++)
 		{
 			if ( full_comments )
 			{
-				fprintf(out_file,"#vertex list\n");
+				fprintf(out_file,"#vertex %d\n",i+1);
 			}
-			for (i=0;i<n_vertices;i++)
-			{
-				if ( full_comments )
-				{
-					fprintf(out_file,"#vertex %d\n",i+1);
-				}
-				fprintf(out_file,"v %lf %lf %lf\n",vertex_list[i].coord[0],
-					vertex_list[i].coord[1],vertex_list[i].coord[2]);
-			}
+			fprintf(out_file,"v %lf %lf %lf\n",vertex_list[i]->coordinates[0],
+				vertex_list[i]->coordinates[1],vertex_list[i]->coordinates[2]);
+		}
+		if ( full_comments )
+		{
+			fprintf(out_file,"#texture vertices %d\n",number_of_vertices+1);
+		}
+		for (i=0;i<number_of_vertices;i++)
+		{
 			if ( full_comments )
 			{
-				fprintf(out_file,"#texture vertices %d\n",n_vertices+1);
+				fprintf(out_file,"#vertex %d\n",i+1);
 			}
-			for (i=0;i<n_iso_polys;i++)
-			{
-				if ( full_comments )
-				{
-					fprintf(out_file,"#polygon %d\n",i);
-				}
-				j=0;
-				for (k=0;k<3;k++)
-				{
-					/*	v[j][k]=vertex_list[triangle_list[i*3+0]+n_vertices*ii].coord[k]; */
-					vt[j][k]=texturemap_coord[3*(3*i+0)+k];
-					/* vn[j][k]=vertex_list[triangle_list[i*3+0]+n_vertices*ii].normal[k]; */
-				}
-				j=1;
-				for (k=0;k<3;k++)
-				{
-					/* v[j][k]=vertex_list[triangle_list[i*3+2]+n_vertices*ii].coord[k]; */
-					vt[j][k]=texturemap_coord[3*(3*i+1)+k];
-					/* vn[j][k]=vertex_list[triangle_list[i*3+2]+n_vertices*ii].normal[k]; */
-				}
-				j=2;
-				for(k=0;k<3;k++)
-				{
-					/* v[j][k]=vertex_list[triangle_list[i*3+1]+n_vertices*ii].coord[k]; */
-					vt[j][k]=texturemap_coord[3*(3*i+2)+k];
-					/* vn[j][k]=vertex_list[triangle_list[i*3+1]+n_vertices*ii].normal[k]; */
-				}
-				/* print to obj file */
-				/* Note these vertices are probbaly excessive - It puts out a differnt one for each vertex,
-				* which is cool if different textures are defined on different polygons,  but less than
-				* efficient if only one big texture map is used. To think about...
-				*/
-				for (j=0;j<3;j++)
-				{
-					fprintf(out_file,"vt	%f %f %f\n",vt[j][0],vt[j][1],vt[j][2]);
-				}
-			} /* for i */
+			fprintf(out_file,"vt %lf %lf %lf\n",vertex_list[i]->texture_coordinates[0],
+				vertex_list[i]->texture_coordinates[1],vertex_list[i]->texture_coordinates[2]);
+		}
+		if ( full_comments )
+		{
+			fprintf(out_file,"#normal list\n");
+		}
+		for (i=0;i<number_of_vertices;i++)
+		{
 			if ( full_comments )
 			{
-				fprintf(out_file,"#normal list\n");
+				fprintf(out_file,"#normal %d\n",i+1);
 			}
-			for (i=0;i<n_vertices;i++)
+			fprintf(out_file,"vn %lf %lf %lf\n",-(vertex_list[i]->normal[0]),
+				-(vertex_list[i]->normal[1]),-(vertex_list[i]->normal[2]));
+		}
+		for (i=0;i<number_of_triangles;i++)
+		{
+			if ( full_comments )
 			{
-				if ( full_comments )
-				{
-					fprintf(out_file,"#normal %d\n",i+1);
-				}
-				fprintf(out_file,"vn %lf %lf %lf\n",-(vertex_list[i].normal[0]),
-					-(vertex_list[i].normal[1]),-(vertex_list[i].normal[2]));
+				fprintf(out_file,"# polygon %d\n",i+1);
 			}
-			for (i=0;i<n_iso_polys;i++)
-			{
-				if ( full_comments )
-				{
-					fprintf(out_file,"# polygon %d\n",i+1);
-				}
-				/* if an environment map exists use it in preference to a material */
-				/*???MS.  What am I doing with these crazy index orders? */
-				/* I don't know how to implement a different material on each
-					 vertex so I only evaluate environment map at the first vertex */
-				if (iso_poly_environment_map_index &&
-					iso_poly_environment_map_index[i*3])
-				{
-					if (environment_map = per_vertex_environment_maps[
-						iso_poly_environment_map_index[i*3] - 1])
-					{
-						next_material =
-							environment_map->face_material[texturemap_index[i*3]];
-					}
-				}
-				else
-				{
-					if (iso_poly_material_index && iso_poly_material_index[i*3])
-					{
-						next_material =
-							per_vertex_materials[iso_poly_material_index[i*3] - 1];
-					}
-				}
-				if (!next_material)
-				{
-					next_material = default_material;
-				}
-				if (next_material != last_material)
-				{
-					fprintf(out_file, "usemtl %s\n",
-						Graphical_material_name(next_material));
-					last_material = next_material;
-				}
-				fprintf(out_file,"f   %d/%d/%d  %d/%d/%d  %d/%d/%d\n",
-					triangle_list[i*3+0]+file_vertex_index+1,
-					3*i+0+file_texture_vertex_index+1,
-					triangle_list[i*3+0]+file_normal_vertex_index+1,
-					triangle_list[i*3+1]+file_vertex_index+1,
-					3*i+1+file_texture_vertex_index+1,
-					triangle_list[i*3+1]+file_normal_vertex_index+1,
-					triangle_list[i*3+2]+file_vertex_index+1,
-					3*i+2+file_texture_vertex_index+1,
-					triangle_list[i*3+2]+file_normal_vertex_index+1);
-			} /* for i */
-			file_vertex_index += n_vertices;
-			file_normal_vertex_index += n_vertices;
-			file_texture_vertex_index += 3 * n_iso_polys;
-		} /* for ii */
+			fprintf(out_file,"f   %d/%d/%d  %d/%d/%d  %d/%d/%d\n",
+				triangle_list[i]->vertices[0]->index+file_vertex_index+1,
+				triangle_list[i]->vertices[0]->index+file_texture_vertex_index+1,
+				triangle_list[i]->vertices[0]->index+file_normal_vertex_index+1,
+				triangle_list[i]->vertices[1]->index+file_vertex_index+1,
+				triangle_list[i]->vertices[1]->index+file_texture_vertex_index+1,
+				triangle_list[i]->vertices[1]->index+file_normal_vertex_index+1,
+				triangle_list[i]->vertices[2]->index+file_vertex_index+1,
+				triangle_list[i]->vertices[2]->index+file_texture_vertex_index+1,
+				triangle_list[i]->vertices[2]->index+file_normal_vertex_index+1);
+		} /* for i */
+		file_vertex_index += number_of_vertices;
+		file_normal_vertex_index += number_of_vertices;
+		file_texture_vertex_index += number_of_vertices;
 	}
 	else
 	{
-		if ((0<n_rep)&&(0<n_iso_polys))
-		{
-			display_message(ERROR_MESSAGE,"drawvoltexwavefront.  Invalid argument(s)");
-			return_code=0;
-		}
-		else
-		{
-			return_code=1;
-		}
+		display_message(ERROR_MESSAGE,"drawvoltexwavefront.  Invalid argument(s)");
+		return_code=0;
 	}
 	LEAVE;
 
@@ -1086,14 +1003,9 @@ Convert graphical object into Wavefront object file.
 						while (voltex)
 						{
 							drawvoltexwavefront(wavefront_file, full_comments,
-								voltex->n_iso_polys,voltex->triangle_list,
-								voltex->vertex_list,voltex->n_vertices,voltex->n_rep,
-								voltex->per_vertex_materials,
-								voltex->iso_poly_material_index,
-								voltex->per_vertex_environment_maps,
-								voltex->iso_poly_environment_map_index,
-								voltex->iso_poly_cop, voltex->texturemap_coord,
-								voltex->texturemap_index,voltex->n_data_components,
+								voltex->number_of_vertices, voltex->vertex_list,
+								voltex->number_of_triangles, voltex->triangle_list,
+								voltex->n_data_components, 
 								object->default_material, object->spectrum);
 							voltex=voltex->ptrnext;
 						}

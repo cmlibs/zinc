@@ -1426,7 +1426,11 @@ the extensions succeed, false if not.
 						(GRAPHICS_LIBRARY_ASSIGN_HANDLE(glProgramStringARB, PFNGLPROGRAMSTRINGARBPROC)
 						Graphics_library_get_function_ptr("glProgramStringARB")) &&
 						(GRAPHICS_LIBRARY_ASSIGN_HANDLE(glDeleteProgramsARB, PFNGLDELETEPROGRAMSARBPROC)
-						Graphics_library_get_function_ptr("glDeleteProgramsARB")))
+						Graphics_library_get_function_ptr("glDeleteProgramsARB")) &&
+						(GRAPHICS_LIBRARY_ASSIGN_HANDLE(glProgramEnvParameter4fARB, PFNGLPROGRAMENVPARAMETER4FARBPROC)
+						Graphics_library_get_function_ptr("glProgramEnvParameter4fARB")) &&
+						(GRAPHICS_LIBRARY_ASSIGN_HANDLE(glProgramEnvParameter4fvARB, PFNGLPROGRAMENVPARAMETER4FVARBPROC)
+						Graphics_library_get_function_ptr("glProgramEnvParameter4fvARB")))
 					{
 						return_code = 1;
 					}
@@ -1527,7 +1531,11 @@ the extensions succeed, false if not.
 						(GRAPHICS_LIBRARY_ASSIGN_HANDLE(glProgramStringARB, PFNGLPROGRAMSTRINGARBPROC)
 						Graphics_library_get_function_ptr("glProgramStringARB")) &&
 						(GRAPHICS_LIBRARY_ASSIGN_HANDLE(glDeleteProgramsARB, PFNGLDELETEPROGRAMSARBPROC)
-						Graphics_library_get_function_ptr("glDeleteProgramsARB")))
+						Graphics_library_get_function_ptr("glDeleteProgramsARB")) &&
+						(GRAPHICS_LIBRARY_ASSIGN_HANDLE(glProgramEnvParameter4fARB, PFNGLPROGRAMENVPARAMETER4FARBPROC)
+						Graphics_library_get_function_ptr("glProgramEnvParameter4fARB")) &&
+						(GRAPHICS_LIBRARY_ASSIGN_HANDLE(glProgramEnvParameter4fvARB, PFNGLPROGRAMENVPARAMETER4FVARBPROC)
+						Graphics_library_get_function_ptr("glProgramEnvParameter4fvARB")))
 					{
 						return_code = 1;
 					}

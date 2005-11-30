@@ -122,10 +122,9 @@ Loads the pntr & data tables
 int marching_cubes(struct VT_scalar_field **scalar_field,int n_scalar_fields,
 	struct VT_vector_field *coordinate_field,
 	struct MC_iso_surface *mc_iso_surface,
-	double *isovalue,int closed_surface,int cutting_plane_on,
-	double decimation_tolerance);
+	double *isovalue,int closed_surface,int cutting_plane_on);
 /*******************************************************************************
-LAST MODIFIED : 11 April 2005
+LAST MODIFIED : 28 October 2005
 
 DESCRIPTION :
 The modified marching cubes algorithm for constructing isosurfaces.  This
@@ -137,9 +136,9 @@ closed_surface, the iso surface generated contains closed surfaces along
 intersections with the boundary.
 ==============================================================================*/
 
-int update_scalars(struct VT_volume_texture *t,double *cutting_plane);
+int update_scalars(struct VT_volume_texture *t);
 /*******************************************************************************
-LAST MODIFIED : 5 October 1996
+LAST MODIFIED : 27 October 2005
 
 DESCRIPTION :
 Calculates scalar values at nodes from the average of the surrounding cell
@@ -168,75 +167,6 @@ LAST MODIFIED : 24 February 1997
 DESCRIPTION :
 Destroy triangle list for a mc_cell, which includes (n_scalar_fields + 6)
 independent triangle lists
-==============================================================================*/
-
-int calculate_mc_material(struct VT_volume_texture *texture,
-	struct MC_iso_surface *mc_iso_surface);
-/*******************************************************************************
-LAST MODIFIED : 18 February 1998
-
-DESCRIPTION :
-Calculates the material/colour field to accompany the isosurface (ie allocates
-colours to the polygons)
-==============================================================================*/
-
-void cube_map_function(int *index,float *texturemap_coord,
-	struct VT_iso_vertex *vertex,double cop[3],double ximin[3],double ximax[3]);
-/*******************************************************************************
-LAST MODIFIED : 7 January 1998
-
-DESCRIPTION :
-==============================================================================*/
-
-void face_cube_map_function(int *index,float texturemap_coord[3],
-	struct VT_iso_vertex *vertex,double cop[3],int face_index,
-	double ximin[3],double ximax[3]);
-/*******************************************************************************
-LAST MODIFIED : 7 January 1998
-
-DESCRIPTION :
-==============================================================================*/
-
-void mc_cube_map_function(int *index,float *texturemap_coord,
-	struct MC_vertex *vertex,double cop[3],double ximin[3],double ximax[3]);
-/*******************************************************************************
-LAST MODIFIED : 7 January 1998
-
-DESCRIPTION :
-==============================================================================*/
-
-void mc_face_cube_map_function(int *index,float texturemap_coord[3],
-	struct MC_vertex *vertex,double cop[3],int face_index,double ximin[3],
-	double ximax[3]);
-/*******************************************************************************
-LAST MODIFIED : 7 January 1998
-
-DESCRIPTION :
-==============================================================================*/
-
-void general_cube_map_function(int *index,float *texturemap_coord,
-	float *vertex_coords,double cop[3],double ximin[3],double ximax[3]);
-/*******************************************************************************
-LAST MODIFIED : 7 January 1998
-
-DESCRIPTION :
-Calculates u,v texture map values for a vertex. Third texture coordinate set to
-zero (in anticipation of SGI 3d texture mapping potential combination).
-
-Calculates intersection from a centre of projection through a vertex onto the
-surface of a cube - returns u,v coords on surface, and index (1-6) of
-intersected surface.
-==============================================================================*/
-
-void general_face_cube_map_function(int *index,float texturemap_coord[3],
-	float *vertex_coords,double cop[3],int face_index,double ximin[3],
-	double ximax[3]);
-/*******************************************************************************
-LAST MODIFIED : 7 January 1998
-
-DESCRIPTION :
-Calculates u,v texture map values for a vertex on a face.  This varies from the
-general case in that face values are fixed as the projection is made onto them.
 ==============================================================================*/
 
 void clean_mc_iso_surface(int n_scalar_fields, 

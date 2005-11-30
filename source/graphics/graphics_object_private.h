@@ -288,43 +288,29 @@ User defined graphics object primitive type. Contains three parameters:
 
 struct GT_voltex
 /*******************************************************************************
-LAST MODIFIED : 8 March 2002
+LAST MODIFIED : 9 November 2005
 
 DESCRIPTION :
-???MS.  Initial simple structure - only deal with a fixed isosurface
 ==============================================================================*/
 {
-	/* # triangles */
-	int n_iso_polys;
-	/* # unique vertices */
-	int n_vertices;
-	/* # repetitions of texture */
-	int n_rep;
-	/* list of indices into vertex table */
-	int *triangle_list;
-	/* deformed vertex list */
-	struct VT_iso_vertex *vertex_list;
-	/* non-repeating list of per-vertex materials with access_count */
-	int number_of_per_vertex_materials;
-	struct Graphical_material **per_vertex_materials;
-	/* materials assigned to vertices */
-	int *iso_poly_material_index;
-	/* non-repeating list of per-vertex environment_maps with access_count */
-	int number_of_per_vertex_environment_maps;
-	struct Environment_map **per_vertex_environment_maps;
-	/* environment_maps assigned to vertices */
-	int *iso_poly_environment_map_index;
-	/* cop for cells */
-	double *iso_poly_cop;
-	float *texturemap_coord;
-	int *texturemap_index;
+	int number_of_vertices;
+	struct VT_iso_vertex **vertex_list;
+
+	int number_of_triangles;
+	struct VT_iso_triangle **triangle_list;
+
+	/* octree of vertex locations, used to accelerate stitching,
+		NULL is not being used.  The user_data in this octree points
+		to struct VT_iso_vertex objects. */
+	struct Octree *vertex_octree;
+
 	int n_data_components;
-	/* This array stores all the data values,
-		each vertex has an index pointing into this array */
-	GTDATA *data;
+
 	/* store integer object_name eg. element number from which this object came */
 	int object_name;
+
 	struct GT_voltex *ptrnext;
+
 	/* voltex type */
 	enum GT_voltex_type voltex_type;
 }; /* struct GT_voltex */
@@ -388,7 +374,8 @@ Graphical object data structure.
 	/* either colour or material */
 	gtAttributeType default_att;
 	int default_colourindex;
-	struct Graphical_material *default_material,*selected_material;
+	struct Graphical_material *default_material, *secondary_material, 
+		*selected_material;
 	struct Graphics_object_callback_data *update_callback_list;
 	/* spectrum */
 	struct Spectrum *spectrum;
@@ -414,6 +401,26 @@ Graphical object data structure.
 	int glyph_mirror_mode;
 
 	int access_count;
+};
+
+struct GT_object_compile_context
+/*******************************************************************************
+LAST MODIFIED : 12 October 2005
+
+DESCRIPTION :
+Data used to control the compilation fo the GT_object.
+==============================================================================*/
+{ 
+	float time;
+	struct Graphics_buffer *graphics_buffer;
+	int draw_selected;
+
+#if defined (OPENGL_API)
+	/* Execute this display list to shift to the ndc coordinate system */
+	GLuint ndc_display_list;
+	/* Execute this display list to return to the standard coordinate system */
+	GLuint end_ndc_display_list;
+#endif /* defined (OPENGL_API) */
 };
 
 #endif /* ! defined (GRAPHICS_OBJECT_PRIVATE_H) */

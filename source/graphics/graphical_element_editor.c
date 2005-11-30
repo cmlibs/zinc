@@ -1180,7 +1180,7 @@ Called when entry is made into the element discretization text field.
 							old_element_discretization.number_in_xi3)) &&
 					GT_element_group_set_element_discretization(
 						gelem_editor->edit_gt_element_group,
-						&element_discretization, gelem_editor->user_interface))
+						&element_discretization))
 				{
 					/* inform the client of the changes */
 					graphical_element_editor_update(gelem_editor);
@@ -1238,8 +1238,7 @@ Called when entry is made into the circle discretization text field.
 			if ((circle_discretization != GT_element_group_get_circle_discretization(
 				gelem_editor->edit_gt_element_group)) &&
 				GT_element_group_set_circle_discretization(
-					gelem_editor->edit_gt_element_group, circle_discretization,
-					gelem_editor->user_interface))
+					gelem_editor->edit_gt_element_group, circle_discretization))
 			{
 				/* inform the client of the changes */
 				graphical_element_editor_update(gelem_editor);

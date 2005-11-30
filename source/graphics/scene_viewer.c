@@ -1353,9 +1353,13 @@ This function determines whether to draw the main scene or whether to just
 update the fastchanging objects.
 ==============================================================================*/
 {
+#if defined (OLD_CODE)
 	GLdouble obj_x,obj_y,obj_z;
+#endif /* defined (OLD_CODE) */
 	int return_code;
+#if defined (OLD_CODE)
 	static GLint viewport[4]={0,0,1,1};
+#endif /* defined (OLD_CODE) */
 	struct Scene_viewer *scene_viewer;
 
 	ENTER(Scene_viewer_handle_fastchanging);
@@ -1394,6 +1398,7 @@ update the fastchanging objects.
 			/* do not write into the depth buffer */
 			glDepthMask(GL_FALSE);
 
+#if defined (OLD_CODE)
 			if (rendering_data->rendering_double_buffered)
 			{
 				/* for OpenGL window z coordinates, 0.0=near_plane, 1.0=far */
@@ -1423,6 +1428,7 @@ update the fastchanging objects.
 				glDrawBuffer(GL_FRONT);
 				glEnable(GL_BLEND);
 			}
+#endif /* defined (OLD_CODE) */
 			execute_Scene_fast_changing(scene_viewer->scene);
 			glFlush();
 			scene_viewer->first_fast_change=0;
@@ -2294,6 +2300,10 @@ access this function.
 			Graphics_buffer_is_visible(scene_viewer->graphics_buffer);
 		if (do_render)
 		{
+			/* Calculate the transformations before doing the callback list */
+			Scene_viewer_calculate_transformation(scene_viewer,
+				rendering_data.viewport_width,rendering_data.viewport_height);
+
 			/* Send the transform callback before compiling scene if the flag is set */
 			if (scene_viewer->transform_flag)
 			{
@@ -2330,10 +2340,6 @@ access this function.
 			}
 			else
 			{
-				/* in picking mode the transformations are left unchanged */
-				Scene_viewer_calculate_transformation(scene_viewer,
-					rendering_data.viewport_width,rendering_data.viewport_height);
-
 				if (SCENE_VIEWER_PIXEL_BUFFER==scene_viewer->buffering_mode)
 				{
 					render_object = CREATE(Scene_viewer_render_object)(
@@ -4448,13 +4454,6 @@ Must call this in DESTROY function.
 				scene_viewer->light_model_manager_callback_id,
 				scene_viewer->light_model_manager);
 			scene_viewer->light_model_manager_callback_id=(void *)NULL;
-		}
-		if (scene_viewer->scene_manager_callback_id)
-		{
-			MANAGER_DEREGISTER(Scene)(
-				scene_viewer->scene_manager_callback_id,
-				scene_viewer->scene_manager);
-			scene_viewer->scene_manager_callback_id=(void *)NULL;
 		}
 		if (scene_viewer->scene_manager_callback_id)
 		{

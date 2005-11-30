@@ -1998,14 +1998,11 @@ DESCRIPTION :
 	return (return_code);
 } /* draw_surface_vrml */
 
-static int draw_voltex_vrml(FILE *vrml_file,int n_iso_polys,int *triangle_list,
-	struct VT_iso_vertex *vertex_list,int n_vertices,int n_rep,
-	struct Graphical_material **per_vertex_materials,
-	int *iso_poly_material_index,
-	struct Environment_map **per_vertex_environment_maps,
-	int *iso_poly_environment_map_index,
-	float *texturemap_coord,int *texturemap_index,int number_of_data_components,
-	GTDATA *data,struct Graphical_material *default_material,
+static int draw_voltex_vrml(FILE *vrml_file,
+	int number_of_vertices, struct VT_iso_vertex **vertex_list, 
+	int number_of_triangles, struct VT_iso_triangle **triangle_list,
+	int number_of_data_components,
+	struct Graphical_material *default_material,
 	struct Spectrum *spectrum,
 	struct LIST(VRML_prototype) *vrml_prototype_list)
 /*******************************************************************************
@@ -2014,252 +2011,64 @@ LAST MODIFIED : 8 August 2002
 DESCRIPTION :
 ==============================================================================*/
 {
-	int i, ii, poly_materials, return_code, total_num_vertices;
-	struct Environment_map *environment_map;
-	struct Graphical_material *last_material, *next_material;
+	int i, return_code;
 
 	ENTER(draw_voltex_vrml);
 	/* default return code */
 	return_code=0;
-	if (triangle_list && vertex_list &&
-		((!iso_poly_material_index) || per_vertex_materials) &&
-		((!iso_poly_environment_map_index) || per_vertex_environment_maps) &&
-		texturemap_coord&&texturemap_index&&(0<n_rep)&&(0<n_iso_polys))
+	if (triangle_list && vertex_list && (0<number_of_triangles))
 	{
-		last_material=(struct Graphical_material *)NULL;
-		/* determine if environment map or per-vertex materials in use */
-		poly_materials = 0;
-		for (i=0;i<n_iso_polys;i++)
+		/* more efficient case: no separate materials per polygon */
+		fprintf(vrml_file, "Shape {\n");
+		fprintf(vrml_file, "  appearance\n");
+		if (default_material)
 		{
-			if (iso_poly_environment_map_index &&
-				iso_poly_environment_map_index[i*3])
-			{
-				if ((environment_map = per_vertex_environment_maps[
-					iso_poly_environment_map_index[i*3] - 1]) &&
-					environment_map->face_material[texturemap_index[i*3]])
-				{
-					poly_materials = 1;
-				}
-			}
-			else
-			{
-				if (iso_poly_material_index && iso_poly_material_index[i*3])
-				{
-					poly_materials = 1;
-				}
-			}
-		}
-		if (poly_materials)
-		{
-			for (ii=0;ii<n_rep;ii++)
-			{
-				for (i=0;i<n_iso_polys;i++)
-				{
-					/* if an environment map exists use it in preference to a material */
-					next_material = default_material;
-					if (iso_poly_environment_map_index &&
-						iso_poly_environment_map_index[i*3])
-					{
-						if (environment_map = per_vertex_environment_maps[
-							iso_poly_environment_map_index[i*3] - 1])
-						{
-							next_material =
-								environment_map->face_material[texturemap_index[i*3]];
-						}
-					}
-					else
-					{
-						if (iso_poly_material_index && iso_poly_material_index[i*3])
-						{
-							next_material =
-								per_vertex_materials[iso_poly_material_index[i*3] - 1];
-						}
-					}
-					if (!next_material)
-					{
-						next_material = default_material;
-					}
-					if (next_material != last_material)
-					{
-						last_material = next_material;
-					}
-
-					fprintf(vrml_file,"Shape {\n");
-					fprintf(vrml_file,"  appearance\n");
-					if (next_material)
-					{
-						fprintf(vrml_file,"Appearance {\n");
-						fprintf(vrml_file,"  material\n");
-						activate_material_vrml(vrml_file, next_material,
-							vrml_prototype_list,
-							/*no_define*/0,/*emissive_only*/0);
-						fprintf(vrml_file,"} #Appearance\n");
-					}
-					else
-					{
-						fprintf(vrml_file,"IS surface_appearance\n");
-					}
-					fprintf(vrml_file,"  geometry IndexedFaceSet {\n");
-					fprintf(vrml_file,"    solid FALSE\n");
-					fprintf(vrml_file,"    coord Coordinate {\n");
-					fprintf(vrml_file,"      point [\n");
-					fprintf(vrml_file,"        %f %f %f,\n",
-						vertex_list[triangle_list[i*3+0]+n_vertices*ii].coord[0],
-						vertex_list[triangle_list[i*3+0]+n_vertices*ii].coord[1],
-						vertex_list[triangle_list[i*3+0]+n_vertices*ii].coord[2]);
-					fprintf(vrml_file,"       %f %f %f,\n",
-						vertex_list[triangle_list[i*3+2]+n_vertices*ii].coord[0],
-						vertex_list[triangle_list[i*3+2]+n_vertices*ii].coord[1],
-						vertex_list[triangle_list[i*3+2]+n_vertices*ii].coord[2]);
-					fprintf(vrml_file,"        %f %f %f,\n",
-						vertex_list[triangle_list[i*3+1]+n_vertices*ii].coord[0],
-						vertex_list[triangle_list[i*3+1]+n_vertices*ii].coord[1],
-						vertex_list[triangle_list[i*3+1]+n_vertices*ii].coord[2]);
-					fprintf(vrml_file,"      ]\n");
-					fprintf(vrml_file,"    }\n");
-#if defined (OLD_CODE)
-					fprintf(vrml_file,"    normal Normal {\n");
-					fprintf(vrml_file,"      vector [\n");
-					fprintf(vrml_file,"        %f %f %f,\n",
-						vertex_list[triangle_list[i*3+0]+n_vertices*ii].normal[0],
-						vertex_list[triangle_list[i*3+0]+n_vertices*ii].normal[1],
-						vertex_list[triangle_list[i*3+0]+n_vertices*ii].normal[2]);
-					fprintf(vrml_file,"        %f %f %f,\n",
-						vertex_list[triangle_list[i*3+2]+n_vertices*ii].normal[0],
-						vertex_list[triangle_list[i*3+2]+n_vertices*ii].normal[1],
-						vertex_list[triangle_list[i*3+2]+n_vertices*ii].normal[2]);
-					fprintf(vrml_file,"        %f %f %f,\n",
-						vertex_list[triangle_list[i*3+1]+n_vertices*ii].normal[0],
-						vertex_list[triangle_list[i*3+1]+n_vertices*ii].normal[1],
-						vertex_list[triangle_list[i*3+1]+n_vertices*ii].normal[2]);
-					fprintf(vrml_file,"      ]\n");
-					fprintf(vrml_file,"    }\n");
-#endif /* defined (OLD_CODE) */
-#if defined (VRML_TEXTURES)
-					/*???SAB.  Not supported yet */
-					glTexCoord2fv(&(texturemap_coord[3*(3*i+0)]));
-
-					next_material = default_material;
-					if (iso_poly_environment_map_index &&
-						iso_poly_environment_map_index[i*3+2])
-					{
-						if (environment_map = per_vertex_environment_maps[
-							iso_poly_environment_map_index[i*3+2] - 1])
-						{
-							next_material =
-								environment_map->face_material[texturemap_index[i*3+2]];
-						}
-					}
-					else
-					{
-						if (iso_poly_material_index && iso_poly_material_index[i*3+2])
-						{
-							next_material =
-								per_vertex_materials[iso_poly_material_index[i*3+2] - 1];
-						}
-					}
-					if (!next_material)
-					{
-						next_material = default_material;
-					}
-					if (next_material != last_material)
-					{
-						execute_Graphical_material(next_material);
-						last_material=next_material;
-					}
-#endif /* defined (VRML_TEXTURES) */
-					if (spectrum&&number_of_data_components&&data)
-					{
-						spectrum_start_rendervrml(vrml_file,spectrum,last_material);
-						spectrum_rendervrml_value(vrml_file,spectrum,last_material,
-							number_of_data_components,
-							data+vertex_list[triangle_list[i*3+0]+n_vertices*ii].data_index);
-						spectrum_rendervrml_value(vrml_file,spectrum,last_material,
-							number_of_data_components,
-							data+vertex_list[triangle_list[i*3+2]+n_vertices*ii].data_index);
-						spectrum_rendervrml_value(vrml_file,spectrum,last_material,
-							number_of_data_components,
-							data+vertex_list[triangle_list[i*3+1]+n_vertices*ii].data_index);
-						spectrum_end_rendervrml(vrml_file,spectrum);
-					}
-					fprintf(vrml_file,"    coordIndex [\n");
-					fprintf(vrml_file,"      0,2,1,-1\n");
-					fprintf(vrml_file,"    ]\n");
-					fprintf(vrml_file,"  } #IndexedFaceSet\n");
-					fprintf(vrml_file,"} #Shape\n");
-				}
-			}
+			fprintf(vrml_file, "Appearance {\n");
+			fprintf(vrml_file, "  material\n");
+			activate_material_vrml(vrml_file, default_material,
+				vrml_prototype_list, /*no_define*/0, /*emissive_only*/0);
+			fprintf(vrml_file, "} #Appearance\n");
 		}
 		else
 		{
-			/* more efficient case: no separate materials per polygon */
-			total_num_vertices = n_rep * n_vertices;
-			fprintf(vrml_file, "Shape {\n");
-			fprintf(vrml_file, "  appearance\n");
-			if (default_material)
-			{
-				fprintf(vrml_file, "Appearance {\n");
-				fprintf(vrml_file, "  material\n");
-				activate_material_vrml(vrml_file, default_material,
-					vrml_prototype_list, /*no_define*/0, /*emissive_only*/0);
-				fprintf(vrml_file, "} #Appearance\n");
-			}
-			else
-			{
-				fprintf(vrml_file, "IS surface_appearance\n");
-			}
-			fprintf(vrml_file,"  geometry IndexedFaceSet {\n");
-			fprintf(vrml_file,"    solid FALSE\n");
-			fprintf(vrml_file,"    coord Coordinate {\n");
-			fprintf(vrml_file,"      point [\n");
-			for (i = 0; i < total_num_vertices; i++)
-			{
-				fprintf(vrml_file,"        %f %f %f,\n",
-					vertex_list[i].coord[0],
-					vertex_list[i].coord[1],
-					vertex_list[i].coord[2]);
-			}
-			fprintf(vrml_file,"      ]\n");
-			fprintf(vrml_file,"    }\n");
-			if (spectrum && number_of_data_components && data)
-			{
-				spectrum_start_rendervrml(vrml_file, spectrum, default_material);
-				for (i = 0; i < total_num_vertices; i++)
-				{
-					spectrum_rendervrml_value(vrml_file, spectrum, default_material,
-						number_of_data_components, data + vertex_list[i].data_index);
-				}
-				spectrum_end_rendervrml(vrml_file, spectrum);
-			}
-			fprintf(vrml_file,"    coordIndex [\n");
-			for (ii = 0; ii < n_rep; ii++)
-			{
-				for (i = 0; i < n_iso_polys; i++)
-				{
-					fprintf(vrml_file,"      %d,%d,%d,-1\n",
-						triangle_list[i*3+0]+n_vertices*ii,
-						triangle_list[i*3+2]+n_vertices*ii,
-						triangle_list[i*3+1]+n_vertices*ii);
-				}
-			}
-			fprintf(vrml_file,"    ]\n");
-			fprintf(vrml_file,"  } #IndexedFaceSet\n");
-			fprintf(vrml_file,"} #Shape\n");
+			fprintf(vrml_file, "IS surface_appearance\n");
 		}
-		return_code = 1;
-	}
-	else
-	{
-		if ((0<n_rep)&&(0<n_iso_polys))
+		fprintf(vrml_file,"  geometry IndexedFaceSet {\n");
+		fprintf(vrml_file,"    solid FALSE\n");
+		fprintf(vrml_file,"    coord Coordinate {\n");
+		fprintf(vrml_file,"      point [\n");
+		for (i = 0; i < number_of_vertices; i++)
 		{
-			display_message(ERROR_MESSAGE,"draw_voltex_vrml.  Invalid argument(s)");
-			return_code=0;
+			fprintf(vrml_file,"        %f %f %f,\n",
+				vertex_list[i]->coordinates[0],
+				vertex_list[i]->coordinates[1],
+				vertex_list[i]->coordinates[2]);
 		}
-		else
+		fprintf(vrml_file,"      ]\n");
+		fprintf(vrml_file,"    }\n");
+		if (spectrum && number_of_data_components)
 		{
-			return_code=1;
+			spectrum_start_rendervrml(vrml_file, spectrum, default_material);
+			for (i = 0; i < number_of_vertices; i++)
+			{
+				spectrum_rendervrml_value(vrml_file, spectrum, default_material,
+					number_of_data_components, vertex_list[i]->data);
+			}
+			spectrum_end_rendervrml(vrml_file, spectrum);
 		}
+		fprintf(vrml_file,"    coordIndex [\n");
+		for (i = 0; i < number_of_triangles; i++)
+		{
+			fprintf(vrml_file,"      %d,%d,%d,-1\n",
+				triangle_list[i]->vertices[0]->index,
+				triangle_list[i]->vertices[2]->index,
+				triangle_list[i]->vertices[1]->index);
+		}
+		fprintf(vrml_file,"    ]\n");
+		fprintf(vrml_file,"  } #IndexedFaceSet\n");
+		fprintf(vrml_file,"} #Shape\n");
 	}
+	return_code = 1;
 	LEAVE;
 
 	return (return_code);
@@ -2644,15 +2453,10 @@ Only writes the geometry field.
 						}
 						while (voltex)
 						{
-							draw_voltex_vrml(vrml_file,voltex->n_iso_polys,
-								voltex->triangle_list,voltex->vertex_list,voltex->n_vertices,
-								voltex->n_rep,
-								voltex->per_vertex_materials,
-								voltex->iso_poly_material_index,
-								voltex->per_vertex_environment_maps,
-								voltex->iso_poly_environment_map_index,
-								voltex->texturemap_coord,
-								voltex->texturemap_index,voltex->n_data_components,voltex->data,
+							draw_voltex_vrml(vrml_file,
+								voltex->number_of_vertices, voltex->vertex_list,
+								voltex->number_of_triangles, voltex->triangle_list,
+								voltex->n_data_components,
 								object->default_material,object->spectrum,
 								vrml_prototype_list);
 							voltex=voltex->ptrnext;

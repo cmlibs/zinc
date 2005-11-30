@@ -393,8 +393,7 @@ static int draw_voltex_wavefront(struct Binary_wavefront_data *data,
 	int *iso_poly_material_index,
 	struct Environment_map **per_vertex_environment_maps,
 	int *iso_poly_environment_map_index,
-	double *iso_poly_cop,
-	float *texturemap_coord,int *texturemap_index,int n_data_components,
+	double *iso_poly_cop, int n_data_components,
 	struct Graphical_material *default_material, struct Spectrum *spectrum)
 /*******************************************************************************
 LAST MODIFIED : 8 August 2002
@@ -405,7 +404,6 @@ DESCRIPTION :
 	float vt[3][3], *u_texture_index, *v_texture_index;
 	int i,ii,j,k,return_code, *connection_index, *polygon_index, *texture_index;
 	struct Environment_map *environment_map;
-	struct Graphical_material *last_material,*next_material;
 	struct vertex *point_index;
 
 	ENTER(draw_voltex_wavefront);
@@ -419,9 +417,8 @@ DESCRIPTION :
 	if (triangle_list && vertex_list &&
 		((!iso_poly_material_index) || per_vertex_materials) &&
 		((!iso_poly_environment_map_index) || per_vertex_environment_maps) &&
-		texturemap_coord&&texturemap_index&&(0<n_rep)&&(0<n_iso_polys))
+		(0<n_rep)&&(0<n_iso_polys))
 	{
-		last_material=(struct Graphical_material *)NULL;
 		for (ii=0;ii<n_rep;ii++)
 		{
 			REALLOCATE(data->vertices, data->vertices, struct vertex, data->number_of_vertices + n_vertices);
@@ -442,70 +439,12 @@ DESCRIPTION :
 			v_texture_index = data->v_texture_coordinates + data->number_of_texture_coordinates;
 			for (i=0;i<n_iso_polys;i++)
 			{
-				/* if an environment map exists use it in preference to a material */
-				/*???MS.  What am I doing with these crazy index orders? */
-				/*???RC.  Don't do anything with these materials here anyway! */
-				if (iso_poly_environment_map_index &&
-					iso_poly_environment_map_index[i*3])
-				{
-					if (environment_map = per_vertex_environment_maps[
-						iso_poly_environment_map_index[i*3] - 1])
-					{
-						next_material =
-							environment_map->face_material[texturemap_index[i*3]];
-					}
-				}
-				else
-				{
-					if (iso_poly_material_index && iso_poly_material_index[i*3])
-					{
-						next_material =
-							per_vertex_materials[iso_poly_material_index[i*3] - 1];
-					}
-				}
-				if (!next_material)
-				{
-					next_material = default_material;
-				}
-				if (next_material != last_material)
-				{
-					last_material = next_material;
-				}
-
 				j=0;
 				for (k=0;k<3;k++)
 				{
 					/*	v[j][k]=vertex_list[triangle_list[i*3+0]+n_vertices*ii].coord[k]; */
 					vt[j][k]=texturemap_coord[3*(3*i+0)+k];
 					/* vn[j][k]=vertex_list[triangle_list[i*3+0]+n_vertices*ii].normal[k]; */
-				}
-
-				next_material = default_material;
-				if (iso_poly_environment_map_index &&
-					iso_poly_environment_map_index[i*3+2])
-				{
-					if (environment_map = per_vertex_environment_maps[
-						iso_poly_environment_map_index[i*3+2] - 1])
-					{
-						next_material =
-							environment_map->face_material[texturemap_index[i*3+2]];
-					}
-				}
-				else
-				{
-					if (iso_poly_material_index && iso_poly_material_index[i*3+2])
-					{
-						next_material =
-							per_vertex_materials[iso_poly_material_index[i*3+2] - 1];
-					}
-				}
-				if (!next_material)
-				{
-					next_material = default_material;
-				}
-				if (next_material != last_material)
-				{
-					last_material=next_material;
 				}
 
 				j=1;
@@ -516,33 +455,6 @@ DESCRIPTION :
 					/* vn[j][k]=vertex_list[triangle_list[i*3+2]+n_vertices*ii].normal[k]; */
 				}
 
-				next_material=default_material;
-				if (iso_poly_environment_map_index &&
-					iso_poly_environment_map_index[i*3+1])
-				{
-					if (environment_map = per_vertex_environment_maps[
-						iso_poly_environment_map_index[i*3+1] - 1])
-					{
-						next_material =
-							environment_map->face_material[texturemap_index[i*3+1]];
-					}
-				}
-				else
-				{
-					if (iso_poly_material_index && iso_poly_material_index[i*3+1])
-					{
-						next_material =
-							per_vertex_materials[iso_poly_material_index[i*3+1] - 1];
-					}
-				}
-				if (!next_material)
-				{
-					next_material = default_material;
-				}
-				if (next_material != last_material)
-				{
-					last_material = next_material;
-				}
 
 				j=2;
 				for(k=0;k<3;k++)
@@ -786,8 +698,7 @@ Convert graphical object into Wavefront object file.
 								voltex->iso_poly_material_index,
 								voltex->per_vertex_environment_maps,
 								voltex->iso_poly_environment_map_index,
-								voltex->iso_poly_cop, voltex->texturemap_coord,
-								voltex->texturemap_index,voltex->n_data_components,
+								voltex->iso_poly_cop, voltex->n_data_components,
 								object->default_material, object->spectrum);
 							voltex=voltex->ptrnext;
 						}

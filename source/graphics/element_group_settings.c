@@ -139,7 +139,6 @@ finite element group rendition.
 	/* SAB Added for text access only */
 	struct Computed_field *displacement_map_field;
 	int displacement_map_xi_direction;
-	struct Computed_field *blur_field;
 	/* for settings starting in a particular element */
 	struct FE_element *seed_element;
 	/* for settings requiring an exact xi location */
@@ -153,7 +152,8 @@ finite element group rendition.
 	/* appearance settings */
 	/* for all graphic types */
 	int visibility;
-	struct Graphical_material *material,*selected_material;
+	struct Graphical_material *material, *selected_material,
+		*secondary_material;
 	struct Computed_field *data_field;
 	struct Spectrum *spectrum;
 	int autorange_spectrum_flag;
@@ -725,7 +725,6 @@ Allocates memory and assigns fields for a struct GT_element_settings.
 			settings->volume_texture=(struct VT_volume_texture *)NULL;
 			settings->displacement_map_field=(struct Computed_field *)NULL;
 			settings->displacement_map_xi_direction = 12;
-			settings->blur_field=(struct Computed_field *)NULL;
 			/* for settings starting in a particular element */
 			settings->seed_element=(struct FE_element *)NULL;
 			/* for settings requiring an exact xi location */
@@ -743,6 +742,7 @@ Allocates memory and assigns fields for a struct GT_element_settings.
 			/* for all graphic types */
 			settings->visibility=1;
 			settings->material=(struct Graphical_material *)NULL;
+			settings->secondary_material=(struct Graphical_material *)NULL;
 			settings->selected_material=(struct Graphical_material *)NULL;
 			settings->data_field=(struct Computed_field *)NULL;
 			settings->spectrum=(struct Spectrum *)NULL;
@@ -869,10 +869,6 @@ Frees the memory for the fields of <**settings_ptr>, frees the memory for
 			{
 				DEACCESS(Computed_field)(&(settings->displacement_map_field));
 			}
-			if (settings->blur_field)
-			{
-				DEACCESS(Computed_field)(&(settings->blur_field));
-			}
 			if (settings->xi_point_density_field)
 			{
 				DEACCESS(Computed_field)(&(settings->xi_point_density_field));
@@ -889,6 +885,10 @@ Frees the memory for the fields of <**settings_ptr>, frees the memory for
 			if (settings->material)
 			{
 				DEACCESS(Graphical_material)(&(settings->material));
+			}
+			if (settings->secondary_material)
+			{
+				DEACCESS(Graphical_material)(&(settings->secondary_material));
 			}
 			if (settings->selected_material)
 			{
@@ -1065,8 +1065,6 @@ graphics_object is NOT copied; destination->graphics_object is cleared.
 			source->volume_texture);
 		REACCESS(Computed_field)(&(destination->displacement_map_field),
 			source->displacement_map_field);
-		REACCESS(Computed_field)(&(destination->blur_field),
-			source->blur_field);
 		/* for settings starting in a particular element */
 		REACCESS(FE_element)(&(destination->seed_element),
 			source->seed_element);
@@ -1087,6 +1085,8 @@ graphics_object is NOT copied; destination->graphics_object is cleared.
 		destination->visibility=source->visibility;
 		destination->line_width = source->line_width;
 		REACCESS(Graphical_material)(&(destination->material),source->material);
+		REACCESS(Graphical_material)(&(destination->secondary_material),
+			source->secondary_material);
 		GT_element_settings_set_render_type(destination,source->render_type);
 		if (GT_ELEMENT_SETTINGS_STREAMLINES==source->settings_type)
 		{
@@ -2363,6 +2363,62 @@ settings created.
 	return (return_code);
 } /* GT_element_settings_set_material */
 
+struct Graphical_material *GT_element_settings_get_secondary_material(
+	struct GT_element_settings *settings)
+/*******************************************************************************
+LAST MODIFIED : 30 September 2005
+
+DESCRIPTION :
+Returns the secondary_material used by <settings>.
+==============================================================================*/
+{
+	struct Graphical_material *material;
+
+	ENTER(GT_element_settings_get_secondary_material);
+	if (settings)
+	{
+		material=settings->secondary_material;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"GT_element_settings_get_secondary_material.  Invalid argument(s)");
+		material=(struct Graphical_material *)NULL;
+	}
+	LEAVE;
+
+	return (material);
+} /* GT_element_settings_get_secondary_material */
+
+int GT_element_settings_set_secondary_material(struct GT_element_settings *settings,
+	struct Graphical_material *material)
+/*******************************************************************************
+LAST MODIFIED : 30 September 2005
+
+DESCRIPTION :
+Sets the <secondary_material> used by <settings>.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(GT_element_settings_set_secondary_material);
+	if (settings&&material)
+	{
+		return_code=1;
+		REACCESS(Graphical_material)(&(settings->secondary_material),
+			material);
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"GT_element_settings_set_secondary_material.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* GT_element_settings_set_secondary_material */
+
 struct Graphical_material *GT_element_settings_get_selected_material(
 	struct GT_element_settings *settings)
 /*******************************************************************************
@@ -3212,11 +3268,6 @@ group are time dependent.
 		{
 			time_dependent = 1;
 		}
-		if (settings->blur_field && 
-			Computed_field_has_multiple_times(settings->blur_field))
-		{
-			time_dependent = 1;
-		}
 		if (settings->stream_vector_field && 
 			Computed_field_has_multiple_times(settings->stream_vector_field))
 		{
@@ -3489,10 +3540,7 @@ used if the settings has no coodinate field of its own.
 		else if ((GT_ELEMENT_SETTINGS_VOLUMES == settings->settings_type)&&
 			(settings->displacement_map_field &&
 				Computed_field_or_ancestor_satisfies_condition(
-					settings->displacement_map_field, conditional_function, user_data)) ||
-			(settings->blur_field &&
-				Computed_field_or_ancestor_satisfies_condition(
-					settings->blur_field, conditional_function, user_data)))
+					settings->displacement_map_field, conditional_function, user_data)))
 		{
 			return_code = 1;
 		}
@@ -4316,8 +4364,7 @@ settings describe EXACTLY the same geometry.
 				(settings->displacement_map_field==
 					second_settings->displacement_map_field)&&
 				(settings->displacement_map_xi_direction==
-					second_settings->displacement_map_xi_direction)&&
-				(settings->blur_field==second_settings->blur_field);
+					second_settings->displacement_map_xi_direction);
 		}
 		/* for settings starting in a particular element */
 		if (return_code&&((GT_ELEMENT_SETTINGS_VOLUMES==settings->settings_type)||
@@ -4486,6 +4533,7 @@ Returns true if <settings1> and <settings2> would product identical graphics.
 			GT_element_settings_same_geometry(settings1, (void *)settings2) &&
 			(settings1->visibility == settings2->visibility) &&
 			(settings1->material == settings2->material) &&
+			(settings1->secondary_material == settings2->secondary_material) &&
 			(settings1->line_width == settings2->line_width) &&
 			(settings1->selected_material == settings2->selected_material) &&
 			(settings1->data_field == settings2->data_field) &&
@@ -4553,6 +4601,12 @@ any trivial differences are fixed up in the graphics_obejct.
 				{
 					set_GT_object_default_material(settings->graphics_object,
 						settings->material);
+				}
+				if (settings->secondary_material !=
+					matching_settings->secondary_material)
+				{
+					set_GT_object_secondary_material(settings->graphics_object,
+						settings->secondary_material);
 				}
 				if (settings->selected_material !=
 					matching_settings->selected_material)
@@ -5000,22 +5054,6 @@ if no coordinate field. Currently only write if we have a field.
 					settings->displacement_map_xi_direction);
 				append_string(&settings_string,temp_string,&error);
 			}
-			if (settings->blur_field)
-			{
-				if (GET_NAME(Computed_field)(settings->blur_field,&name))
-				{
-					/* put quotes around name if it contains special characters */
-					make_valid_token(&name);
-					append_string(&settings_string," blur_field ",&error);
-					append_string(&settings_string,name,&error);
-					DEALLOCATE(name);
-				}
-				else
-				{
-					DEALLOCATE(settings_string);
-					error=1;
-				}
-			}
 		}
 		/* for settings starting in a particular element */
 		if ((GT_ELEMENT_SETTINGS_VOLUMES==settings->settings_type)||
@@ -5087,6 +5125,15 @@ if no coordinate field. Currently only write if we have a field.
 				/* put quotes around name if it contains special characters */
 				make_valid_token(&name);
 				append_string(&settings_string," material ",&error);
+				append_string(&settings_string,name,&error);
+				DEALLOCATE(name);
+			}
+			if (settings->secondary_material&&
+				GET_NAME(Graphical_material)(settings->secondary_material,&name))
+			{
+				/* put quotes around name if it contains special characters */
+				make_valid_token(&name);
+				append_string(&settings_string," secondary_material ",&error);
 				append_string(&settings_string,name,&error);
 				DEALLOCATE(name);
 			}
@@ -5746,7 +5793,7 @@ Converts a finite element into a graphics object with the supplied settings.
 									settings->volume_texture, settings->render_type,
 									settings->displacement_map_field,
 									settings->displacement_map_xi_direction,
-									settings->blur_field,settings->texture_coordinate_field,
+									settings->texture_coordinate_field,
 									settings_to_object_data->time)))
 							{
 								if (!GT_OBJECT_ADD(GT_voltex)(
@@ -6042,6 +6089,11 @@ The graphics object is stored with with the settings it was created from.
 									settings->material);
 								GT_object_set_select_mode(settings->graphics_object,
 									settings->select_mode);
+								if (settings->secondary_material)
+								{
+									set_GT_object_secondary_material(settings->graphics_object,
+										settings->secondary_material);
+								}
 								if (settings->selected_material)
 								{
 									set_GT_object_selected_material(settings->graphics_object,
@@ -6136,6 +6188,14 @@ The graphics object is stored with with the settings it was created from.
 								}
 								return_code = FE_region_for_each_FE_element(fe_region,
 									FE_element_to_graphics_object, settings_to_object_data_void);
+								/* Decimate */
+								if (settings->decimation_threshold > 0.0)
+								{
+									GT_object_decimate_GT_voltex(settings->graphics_object,
+										settings->decimation_threshold);
+								}
+								/* Normalise normals now that the entire mesh has been calculated */
+								GT_object_normalise_GT_voltex_normals(settings->graphics_object);
 							} break;
 							case GT_ELEMENT_SETTINGS_VOLUMES:
 							{
@@ -6588,7 +6648,7 @@ Must call GT_element_settings_to_graphics_object afterwards to complete.
 } /* GT_element_settings_selected_data_change */
 
 int GT_element_settings_compile_visible_settings(
-	struct GT_element_settings *settings, void *compile_data_void)
+	struct GT_element_settings *settings, void *context_void)
 /*******************************************************************************
 LAST MODIFIED : 18 November 2005
 
@@ -6598,15 +6658,14 @@ graphics_object is compiled.
 ==============================================================================*/
 {
 	int return_code;
-	struct GT_element_settings_compile_data *data;
+	struct GT_object_compile_context *context;
 
 	ENTER(GT_element_settings_compile_visible_graphics_object);
-	if (settings && (data = (struct GT_element_settings_compile_data *)compile_data_void))
+	if (settings && (context = (struct GT_object_compile_context *)context_void))
 	{
 		if (settings->graphics_object && settings->visibility)
 		{
-			return_code = compile_GT_object(settings->graphics_object,
-				data->time, data->graphics_buffer);
+			return_code = compile_GT_object(settings->graphics_object, context);
 		}
 		else
 		{
@@ -6626,9 +6685,9 @@ graphics_object is compiled.
 } /* GT_element_settings_compile_visible_settings */
 
 int GT_element_settings_execute_visible_settings(
-	struct GT_element_settings *settings, void *time_void)
+	struct GT_element_settings *settings, void *dummy_void)
 /*******************************************************************************
-LAST MODIFIED : 28 June 1999
+LAST MODIFIED : 12 October 2005
 
 DESCRIPTION :
 If the settings visibility flag is set and it has a graphics_object, the
@@ -6639,6 +6698,7 @@ is put out as a name to identify the object in OpenGL picking.
 	int return_code;
 	
 	ENTER(GT_element_settings_execute_visible_settings);
+	USE_PARAMETER(dummy_void);
 	if (settings)
 	{
 		if (settings->graphics_object && settings->visibility)
@@ -6647,7 +6707,7 @@ is put out as a name to identify the object in OpenGL picking.
 			/* use position in list as name for GL picking */
 			glLoadName((GLuint)settings->position);
 #endif /* defined (OPENGL_API) */
-			return_code=execute_GT_object(settings->graphics_object, *(float *)time_void);
+			return_code=execute_GT_object(settings->graphics_object);
 		}
 		else
 		{
@@ -6732,8 +6792,12 @@ Second argument is a struct GT_element_settings_Graphical_material_change_data.
 	{
 		if (IS_OBJECT_IN_LIST(Graphical_material)(
 			settings->material, material_change_data->changed_material_list) ||
-			IS_OBJECT_IN_LIST(Graphical_material)(settings->selected_material,
-				material_change_data->changed_material_list))
+			(settings->secondary_material &&
+				IS_OBJECT_IN_LIST(Graphical_material)(settings->secondary_material,
+					material_change_data->changed_material_list)) ||
+			(settings->selected_material && 
+				IS_OBJECT_IN_LIST(Graphical_material)(settings->selected_material,
+					material_change_data->changed_material_list)))
 		{
 			if (settings->graphics_object)
 			{
@@ -8714,208 +8778,6 @@ parsed settings. Note that the settings are ACCESSed once on valid return.
 
 	return (return_code);
 } /* gfx_modify_g_element_element_points */
-
-int gfx_modify_g_element_volumes(struct Parse_state *state,
-	void *modify_g_element_data_void,void *g_element_command_data_void)
-/*******************************************************************************
-LAST MODIFIED : 14 March 2003
-
-DESCRIPTION :
-Executes a GFX MODIFY G_ELEMENT VOLUMES command.
-If return_code is 1, returns the completed Modify_g_element_data with the
-parsed settings. Note that the settings are ACCESSed once on valid return.
-==============================================================================*/
-{
-	char *select_mode_string,**valid_strings;
-	enum Graphics_select_mode select_mode;
-	int number_of_valid_strings,return_code, visibility;
-	struct FE_region *fe_region;
-	struct GT_element_settings *settings;
-	struct G_element_command_data *g_element_command_data;
-	struct Modify_g_element_data *modify_g_element_data;
-	struct Option_table *option_table;
-	struct VT_volume_texture *volume_texture;
-	struct Set_Computed_field_conditional_data set_coordinate_field_data,
-		set_data_field_data, set_displacement_map_field_data,
-		set_blur_field_data;
-
-	ENTER(gfx_modify_g_element_volumes);
-	if (state && (g_element_command_data =
-		(struct G_element_command_data *)g_element_command_data_void) &&
-		(modify_g_element_data =
-			(struct Modify_g_element_data *)modify_g_element_data_void) &&
-		(fe_region = Cmiss_region_get_FE_region(g_element_command_data->region)))
-	{
-		/* create the gt_element_settings: */
-		settings = CREATE(GT_element_settings)(GT_ELEMENT_SETTINGS_VOLUMES);
-		/* if we are specifying the name then copy the existings settings values so
-			we can modify from these rather than the default */
-		if (modify_g_element_data->settings)
-		{
-			if (GT_ELEMENT_SETTINGS_VOLUMES ==modify_g_element_data->settings->settings_type)
-			{
-				GT_element_settings_copy_without_graphics_object(settings, modify_g_element_data->settings); 
-			}
-			DEACCESS(GT_element_settings)(&modify_g_element_data->settings);
-		}
-		if (settings)
-		{
-			/* access since deaccessed in gfx_modify_g_element */
-			modify_g_element_data->settings = ACCESS(GT_element_settings)(settings);
-			/* set essential parameters not set by CREATE function */
-			if (!GT_element_settings_get_material(settings))
-			{
-				GT_element_settings_set_material(settings,
-					g_element_command_data->default_material);
-			}
-			if (!GT_element_settings_get_selected_material(settings))
-			{
-				GT_element_settings_set_selected_material(settings,
-					FIND_BY_IDENTIFIER_IN_MANAGER(Graphical_material,name)(
-						"default_selected",
-						g_element_command_data->graphical_material_manager));
-			}
-			/* must have a volume texture */
-			if (!GT_element_settings_get_volume_texture(settings))
-			{
-				if (volume_texture=FIRST_OBJECT_IN_MANAGER_THAT(VT_volume_texture)(
-					(MANAGER_CONDITIONAL_FUNCTION(VT_volume_texture) *)NULL,
-					(void *)NULL,g_element_command_data->volume_texture_manager))
-				{
-					GT_element_settings_set_volume_texture(settings,volume_texture);
-				}
-			}
-			visibility = settings->visibility;
-			option_table=CREATE(Option_table)();
-			/* as */
-			Option_table_add_entry(option_table,"as",&(settings->name),
-				(void *)1,set_name);
-			/* coordinate */
-			set_coordinate_field_data.computed_field_manager=
-				g_element_command_data->computed_field_manager;
-			set_coordinate_field_data.conditional_function=
-				Computed_field_has_up_to_3_numerical_components;
-			set_coordinate_field_data.conditional_function_user_data=(void *)NULL;
-			Option_table_add_entry(option_table,"coordinate",
-				&(settings->coordinate_field),&set_coordinate_field_data,
-				set_Computed_field_conditional);
-			/* data */
-			set_data_field_data.computed_field_manager=
-				g_element_command_data->computed_field_manager;
-			set_data_field_data.conditional_function=
-				Computed_field_has_numerical_components;
-			set_data_field_data.conditional_function_user_data=(void *)NULL;
-			Option_table_add_entry(option_table,"data",&(settings->data_field),
-				&set_data_field_data,set_Computed_field_conditional);
-			/* delete */
-			Option_table_add_entry(option_table,"delete",
-				&(modify_g_element_data->delete_flag),NULL,set_char_flag);
-			/* displacement_map_field */
-			set_displacement_map_field_data.computed_field_manager=
-				g_element_command_data->computed_field_manager;
-			set_displacement_map_field_data.conditional_function=
-				Computed_field_has_up_to_4_numerical_components;
-			set_displacement_map_field_data.conditional_function_user_data=
-				(void *)NULL;
-			Option_table_add_entry(option_table,"displacement_map_field",
-				&(settings->displacement_map_field),
-				&set_displacement_map_field_data,
-				set_Computed_field_conditional);
-			/* displacement_map_xi_direction */
-			Option_table_add_entry(option_table,"displacement_map_xi_direction",
-				&(settings->displacement_map_xi_direction),NULL,set_int_positive);
-			/* material */
-			Option_table_add_entry(option_table,"material",&(settings->material),
-				g_element_command_data->graphical_material_manager,
-				set_Graphical_material);
-			/* position */
-			Option_table_add_entry(option_table,"position",
-				&(modify_g_element_data->position),NULL,set_int_non_negative);
-			/* scene */
-			Option_table_add_entry(option_table,"scene",
-				&(modify_g_element_data->scene),
-				g_element_command_data->scene_manager,set_Scene);
-			/* seed_element */
-			Option_table_add_entry(option_table, "seed_element",
-				&(settings->seed_element), fe_region,
-				set_FE_element_top_level_FE_region);
-			/* select_mode */
-			select_mode = GT_element_settings_get_select_mode(settings);
-			select_mode_string =
-				ENUMERATOR_STRING(Graphics_select_mode)(select_mode);
-			valid_strings = ENUMERATOR_GET_VALID_STRINGS(Graphics_select_mode)(
-				&number_of_valid_strings,
-				(ENUMERATOR_CONDITIONAL_FUNCTION(Graphics_select_mode) *)NULL,
-				(void *)NULL);
-			Option_table_add_enumerator(option_table,number_of_valid_strings,
-				valid_strings,&select_mode_string);
-			DEALLOCATE(valid_strings);
-			/* selected_material */
-			Option_table_add_entry(option_table,"selected_material",
-				&(settings->selected_material),
-				g_element_command_data->graphical_material_manager,
-				set_Graphical_material);
-			/* smooth_field */
-			set_blur_field_data.computed_field_manager=
-				g_element_command_data->computed_field_manager;
-			set_blur_field_data.conditional_function=
-				Computed_field_has_up_to_4_numerical_components;
-			set_blur_field_data.conditional_function_user_data=(void *)NULL;
-			Option_table_add_entry(option_table,"smooth_field",
-				&(settings->blur_field),&set_blur_field_data,
-				set_Computed_field_conditional);
-			/* spectrum */
-			Option_table_add_entry(option_table,"spectrum",
-				&(settings->spectrum),g_element_command_data->spectrum_manager,
-				set_Spectrum);
-			/* visible/invisible */
-			Option_table_add_switch(option_table, "visible", "invisible", &visibility);
-			/* vtexture */
-			Option_table_add_entry(option_table,"vtexture",
-				&(settings->volume_texture),
-				g_element_command_data->volume_texture_manager,
-				set_VT_volume_texture);
-			if (return_code=Option_table_multi_parse(option_table,state))
-			{
-				if (settings->data_field&&!settings->spectrum)
-				{
-					settings->spectrum=ACCESS(Spectrum)(
-						g_element_command_data->default_spectrum);
-				}
-				settings->visibility = visibility;
-				if ((struct VT_volume_texture *)NULL==settings->volume_texture)
-				{
-					display_message(WARNING_MESSAGE,"No volume texture specified");
-					return_code=0;
-				}
-				STRING_TO_ENUMERATOR(Graphics_select_mode)(select_mode_string,
-					&select_mode);
-				GT_element_settings_set_select_mode(settings, select_mode);
-			}
-			DESTROY(Option_table)(&option_table);
-			if (!return_code)
-			{
-				/* parse error, help */
-				DEACCESS(GT_element_settings)(&(modify_g_element_data->settings));
-			}
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"gfx_modify_g_element_volumes.  Could not create settings");
-			return_code=0;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"gfx_modify_g_element_volumes.  Invalid argument(s)");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* gfx_modify_g_element_volumes */
 
 int gfx_modify_g_element_streamlines(struct Parse_state *state,
 	void *modify_g_element_data_void,void *g_element_command_data_void)
