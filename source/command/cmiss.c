@@ -2802,8 +2802,7 @@ Invokes the grid field calculator dialog.
 					&(command_data->control_curve_editor_dialog),
 					command_data->root_region,
 					command_data->control_curve_manager,
-					command_data->user_interface,
-					command_data->graphics_buffer_package);
+					command_data->user_interface);
 			}
 		}
 		else
