@@ -14489,7 +14489,6 @@ Executes a GFX MODIFY command.
 	struct Modify_light_data modify_light_data;
 	struct Modify_light_model_data modify_light_model_data;
 	struct Modify_scene_data modify_scene_data;
-	struct Modify_VT_volume_texture_data modify_VT_volume_texture_data;
 	struct Option_table *option_table;
 
 	ENTER(execute_command_gfx_modify);
@@ -14578,17 +14577,6 @@ Executes a GFX MODIFY command.
 				/* texture */
 				Option_table_add_entry(option_table,"texture",NULL, 
 					(void *)command_data, gfx_modify_Texture);
-				/* vtexture */
-				modify_VT_volume_texture_data.io_stream_package =
-					command_data->io_stream_package;
-				modify_VT_volume_texture_data.graphical_material_manager=
-					Material_package_get_material_manager(command_data->material_package);
-				modify_VT_volume_texture_data.environment_map_manager=
-					command_data->environment_map_manager;
-				modify_VT_volume_texture_data.volume_texture_manager=
-					command_data->volume_texture_manager;
-				modify_VT_volume_texture_data.example_directory_address =
-					&(command_data->example_directory);
 #if defined (MOTIF) || defined (GTK_USER_INTERFACE) || defined (WIN32_USER_INTERFACE)
 				/* window */
 				modify_graphics_window_data.graphics_window_manager=

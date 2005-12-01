@@ -5876,7 +5876,7 @@ Merge the vertices from <voltex> into <existing_voltex>.  These can be the
 same voltex in which case shared vertices will be merged.
 ==============================================================================*/
 {
-	int *collapse_list, i, j, k, number_of_triangles, return_code, vertex_count;
+	int i, j, k, number_of_triangles, return_code, vertex_count;
 	struct Octree_object *neighbour, *octree_vertex;
 	struct LIST(Octree_object) *neighbours;
 	struct VT_iso_vertex *existing_vertex, *vertex; 
@@ -5884,7 +5884,6 @@ same voltex in which case shared vertices will be merged.
 	ENTER(GT_voltex_merge_GT_voltex);
 	return_code = 1;
 
-	ALLOCATE(collapse_list, int, voltex->number_of_vertices);
 	neighbours = CREATE(LIST(Octree_object))();
 	if (existing_voltex == voltex)
 	{
@@ -5922,10 +5921,9 @@ same voltex in which case shared vertices will be merged.
 			existing_voltex->vertex_list[vertex_count]->coordinates[2] += (float)vertex_count / 1000.0;
 #endif /* defined (DEBUG) */
 
-			Octree_object_set_user_data(octree_vertex, (void *)(vertex_count));
+			Octree_object_set_user_data(octree_vertex, (void *)vertex);
 			Octree_add_object(existing_voltex->vertex_octree,
 				octree_vertex);
-			collapse_list[i] = vertex_count;
 			vertex_count++;
 		}
 		else
@@ -5934,11 +5932,8 @@ same voltex in which case shared vertices will be merged.
 			neighbour = FIRST_OBJECT_IN_LIST_THAT(Octree_object)(
 				(LIST_CONDITIONAL_FUNCTION(Octree_object) *)NULL,
 				(void *)NULL, neighbours);
-			collapse_list[i] = (int)Octree_object_get_user_data(neighbour);
+			existing_vertex = (struct VT_iso_vertex *) Octree_object_get_user_data(neighbour);
 			REMOVE_ALL_OBJECTS_FROM_LIST(Octree_object)(neighbours);
-
-			/* Need to merge triangle pointer lists so we can decimate */
-			existing_vertex = existing_voltex->vertex_list[collapse_list[i]];
 
 			number_of_triangles = existing_vertex->number_of_triangles;
 			if (REALLOCATE(existing_vertex->triangles, existing_vertex->triangles,
@@ -5999,7 +5994,6 @@ same voltex in which case shared vertices will be merged.
 		existing_voltex->vertex_list, struct VT_iso_vertex *, 
 		vertex_count);
 	existing_voltex->number_of_vertices = vertex_count;
-	DEALLOCATE(collapse_list);
 	DESTROY(LIST(Octree_object))(&neighbours);
 
 	LEAVE;
