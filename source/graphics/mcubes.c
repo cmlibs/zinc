@@ -787,7 +787,7 @@ DESCRIPTION :
 Add mc_triangle to mc_cell list and add new vertex if unique
 ==============================================================================*/
 {
-	int n, nn, jj, kk, i_min, i_max, j_min, j_max, k_min, k_max, found;
+	int n, nn, jj, kk, found;
 	/* pointers to vertices */
 	struct MC_vertex *v[3];
 	struct MC_triangle *triangle,**temp_triangle_ptrs,**temp_triangle_list;
@@ -802,59 +802,10 @@ Add mc_triangle to mc_cell list and add new vertex if unique
   USE_PARAMETER(z_max);
   USE_PARAMETER(mcnz);
   USE_PARAMETER(n_scalar_fields);
-	i_min=i_max=i;
-	j_min=j_max=j;
-	k_min=k_max=k;
-	if (i>0)
-	{
-		i_min=i-1;
-	}
-	if (i < mc_iso_surface->dimension[0]+1)
-	{
-		i_max=i+1;
-	}
-	if (j>0)
-	{
-		j_min=j-1;
-	}
-	if (j < mc_iso_surface->dimension[1]+1)
-	{
-		j_max=j+1;
-	}
-	if (k>0)
-	{
-		k_min=k-1;
-	}
-	if (k < mc_iso_surface->dimension[2]+1)
-	{
-		k_max=k+1;
-	}
 	/* step through each vertex */
 	for (n=0;n<3;n++)
 	{
 		found=0;
-#if defined (OLD_CODE)
-		for (kk=k_min;kk<=k_max;kk++)
-		{
-			for (jj=j_min;jj<=j_max;jj++)
-			{
-				for (ii=i_min;ii<=i_max;ii++)
-				{
-					if ((NULL !=mc_iso_surface->mc_cells[ii+mcnx*jj+mcnx*mcny*kk])&&
-						!found)
-					{
-						v[n]=check_mc_vertex(
-							mc_iso_surface->mc_cells[ii+mcnx*jj+mcnx*mcny*kk],mc_vertices[n],
-							a);
-						if (NULL !=v[n])
-						{
-							found=1;
-						}
-					}
-				}
-			}
-		}
-#endif /* defined (OLD_CODE) */
 		USE_PARAMETER(jj);
 		USE_PARAMETER(kk);
 		USE_PARAMETER(check_mc_vertex);
