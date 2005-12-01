@@ -3879,7 +3879,6 @@ the position of the point, with appropriate coordinate conversion.
 	struct FE_field *fe_coordinate_field, *fe_element_xi_field;
 	struct LIST(FE_field) *fe_coordinate_field_list;
 	struct VT_iso_triangle *triangle, **triangle_list;
-	struct VT_iso_vertex **vertex_list;
 	struct FE_node_field_creator *coordinate_node_field_creator,
 		*element_xi_node_field_creator;
 	char *element_xi_component_names[1]=
@@ -3981,7 +3980,6 @@ the position of the point, with appropriate coordinate conversion.
 					{
 						n_iso_polys=vtexture->mc_iso_surface->n_triangles;
 						triangle_list = GT_voltex_get_triangle_list(voltex);
-						vertex_list = GT_voltex_get_vertex_list(voltex);
 										
 						for ( i = 0 ; return_code && (i < n_iso_polys) ; i++)
 						{
