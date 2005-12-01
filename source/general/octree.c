@@ -275,6 +275,7 @@ doubling and adding more and more branches.
 
 	if (trunk && *trunk && object)
 	{
+		return_code = 1;
 		if ((*trunk)->branch_array)
 		{
 			/* Need to add branches doubling the existing one until we enclose the 
