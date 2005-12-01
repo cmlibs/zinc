@@ -565,8 +565,8 @@ Global functions
 ----------------
 */
 
-DECLARE_OBJECT_FUNCTIONS(Octree_object);
-DECLARE_LIST_FUNCTIONS(Octree_object);
+DECLARE_OBJECT_FUNCTIONS(Octree_object)
+DECLARE_LIST_FUNCTIONS(Octree_object)
 
 struct Octree *CREATE(Octree)(void)
 /*******************************************************************************
