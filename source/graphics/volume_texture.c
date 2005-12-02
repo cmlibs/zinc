@@ -266,11 +266,9 @@ DESCRIPTION :
 Frees the memory for the volume texture and sets <*texture_address> to NULL.
 ==============================================================================*/
 {
-	int i,n_cells,n_nodes,number_of_scalar_fields,return_code;
+	int i,number_of_scalar_fields,return_code;
 	struct VT_node_group *node_group;
-	struct VT_texture_cell **cell;
 	struct VT_texture_curve *curve,*curve_next;
-	struct VT_texture_node **node;
 	struct VT_volume_texture *texture;
 
 	ENTER(DESTROY(VT_volume_texture));
@@ -292,17 +290,13 @@ Frees the memory for the volume texture and sets <*texture_address> to NULL.
 					}
 					DEALLOCATE(texture->texture_curve_list);
 				}
-				if (cell=texture->texture_cell_list)
+				if (texture->texture_cell_list)
 				{
-					n_cells=(texture->dimension[0])*(texture->dimension[1])*
-						(texture->dimension[2]);
 					DEALLOCATE(*texture->texture_cell_list);
 					DEALLOCATE(texture->texture_cell_list);
 				}
-				if (node=texture->global_texture_node_list)
+				if (texture->global_texture_node_list)
 				{
-					n_nodes=(texture->dimension[0]+1)*(texture->dimension[1]+1)*
-						(texture->dimension[2]+1);
 					DEALLOCATE(*texture->global_texture_node_list);
 					DEALLOCATE(texture->global_texture_node_list);
 				}
