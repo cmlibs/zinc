@@ -1323,6 +1323,10 @@ DESCRIPTION :
 				{
 					DEALLOCATE(coordinate_vertices);
 				}
+				if (vertex_reindex)
+				{
+					DEALLOCATE(vertex_reindex);
+				}
 				if (normal_vertices)
 				{
 					DEALLOCATE(normal_vertices);
