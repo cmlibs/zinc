@@ -62,6 +62,7 @@ struct Computed_field_compose_package
 struct Computed_field_compose_type_specific_data
 {
 	char *region_path;
+	int find_nearest;
 	struct Cmiss_region *region;
 };
 
@@ -201,6 +202,7 @@ Compare the type specific data.
 		other_computed_field->type_specific_data))
 	{
 		if ((data->region == other_data->region) &&
+			(data->find_nearest == other_data->find_nearest) &&
 			(!strcmp(data->region_path, other_data->region_path)))
 		{
 			return_code = 1;
@@ -258,7 +260,7 @@ DESCRIPTION :
 					field->source_fields[1], field->source_fields[0]->values,
 					field->source_fields[0]->number_of_components, &element, xi,
 					/*element_dimension=all*/0,data->region, /*propagate_field*/0,
-					/*find_nearest_location*/0) && element)
+					data->find_nearest) && element)
 				{
 					/* calculate the third source_field at this new location */
 					return_code = Computed_field_is_defined_in_element(
@@ -330,7 +332,7 @@ Evaluate the fields cache at the node.
 				field->source_fields[0]->values,
 				field->source_fields[0]->number_of_components,
 					  &compose_element, compose_xi, /*element_dimension=all*/0,
-						data->region, /*propagate_field*/0, /*find_nearest_location*/0))
+						data->region, /*propagate_field*/0, data->find_nearest))
 				&& compose_element)
 			{
 				/* calculate the third source_field at this new location */
@@ -401,7 +403,7 @@ Evaluate the fields cache at the node.
 				field->source_fields[0]->values,
 				field->source_fields[0]->number_of_components,
 					  &compose_element, compose_xi, /*element_dimension=all*/0,
-						data->region, /*propagate_field*/0, /*find_nearest_location*/0))
+						data->region, /*propagate_field*/0, data->find_nearest))
 				&& compose_element)
 			{
 				/* calculate the third source_field at this new location */
@@ -524,6 +526,14 @@ DESCRIPTION :
 		display_message(INFORMATION_MESSAGE,"    calculate values field :");
 		display_message(INFORMATION_MESSAGE," %s\n",
 			field->source_fields[2]->name);
+		if (data->find_nearest)
+		{
+			display_message(INFORMATION_MESSAGE,"    find nearest match\n");
+		}
+		else
+		{
+			display_message(INFORMATION_MESSAGE,"    find exact match\n");
+		}
 	}
 	else
 	{
@@ -586,6 +596,10 @@ Returns allocated command string for reproducing field. Includes type.
 			append_string(&command_string, field_name, &error);
 			DEALLOCATE(field_name);
 		}
+		if (data->find_nearest)
+		{
+			append_string(&command_string, " find_nearest", &error);
+		}
 	}
 	else
 	{
@@ -610,9 +624,10 @@ int Computed_field_set_type_compose(struct Computed_field *field,
 	struct Computed_field *texture_coordinate_field,
 	struct Computed_field *find_element_xi_field,
 	struct Computed_field *calculate_values_field,
-	struct Cmiss_region *search_region, char *region_path)
+	struct Cmiss_region *search_region, char *region_path,
+	int find_nearest)
 /*******************************************************************************
-LAST MODIFIED : 7 January 2003
+LAST MODIFIED : 6 December 2005
 
 DESCRIPTION :
 Converts <field> to type COMPUTED_FIELD_COMPOSE, this field allows you to
@@ -662,6 +677,7 @@ name the string used to select the <search_region>.
 					field->type_specific_data = (void *)data;
 					data->region = ACCESS(Cmiss_region)(search_region);
 					data->region_path = region_path_copy;
+					data->find_nearest = find_nearest;
 
 					/* Set all the methods */
 					COMPUTED_FIELD_ESTABLISH_METHODS(compose);
@@ -705,9 +721,10 @@ int Computed_field_get_type_compose(struct Computed_field *field,
 	struct Computed_field **texture_coordinate_field,
 	struct Computed_field **find_element_xi_field,
 	struct Computed_field **calculate_values_field,
-	struct Cmiss_region **search_region, char **region_path)
+	struct Cmiss_region **search_region, char **region_path,
+	int *find_nearest)
 /*******************************************************************************
-LAST MODIFIED : 23 January 2002
+LAST MODIFIED : 6 December 2005
 
 DESCRIPTION :
 If the field is of type COMPUTED_FIELD_COMPOSE, the function returns the three
@@ -730,6 +747,7 @@ internally used path.
 		*calculate_values_field = field->source_fields[2];
 		*search_region = data->region;
 		*region_path = data->region_path;
+		*find_nearest = data->find_nearest;
 		return_code = 1;
 	}
 	else
@@ -753,14 +771,14 @@ Converts <field> into type COMPUTED_FIELD_COMPOSE (if it is not
 already) and allows its contents to be modified.
 ==============================================================================*/
 {
-	char *old_region_path, *search_region_path;
-	int return_code;
+	char find_nearest_flag, find_exact_flag, *old_region_path, *search_region_path;
+	int find_nearest, return_code;
 	struct Computed_field *field, *calculate_values_field,*find_element_xi_field,
 		*texture_coordinates_field;
 	struct Computed_field_compose_package *computed_field_compose_package;
 	struct Coordinate_system *coordinate_system_ptr;
 	struct Cmiss_region *search_region;
-	struct Option_table *option_table;
+	struct Option_table *find_option_table, *option_table;
 	struct Set_Computed_field_conditional_data set_calculate_values_field_data,
 		set_find_element_xi_field_data, set_texture_coordinates_field_data;
 
@@ -777,13 +795,18 @@ already) and allows its contents to be modified.
 		calculate_values_field = (struct Computed_field *)NULL;
 		find_element_xi_field = (struct Computed_field *)NULL;
 		texture_coordinates_field = (struct Computed_field *)NULL;
+		find_nearest_flag = 0;
+		find_exact_flag = 0;
+		/* Maintain the existing behaviour as the default */
+		find_nearest = 0;
 		/* get valid parameters for composite field */
 		if (computed_field_compose_type_string ==
 			Computed_field_get_type_string(field))
 		{
 			return_code = Computed_field_get_type_compose(field, 
 				&calculate_values_field, &find_element_xi_field,
-				&texture_coordinates_field, &search_region, &old_region_path);
+				&texture_coordinates_field, &search_region, &old_region_path,
+				&find_nearest);
 		}
 		if (old_region_path)
 		{
@@ -830,6 +853,12 @@ already) and allows its contents to be modified.
 			Option_table_add_entry(option_table, "find_element_xi_field", 
 				&find_element_xi_field, &set_find_element_xi_field_data, 
 				set_Computed_field_conditional);
+			find_option_table=CREATE(Option_table)();
+			Option_table_add_char_flag_entry(find_option_table,"find_nearest",
+				&find_nearest_flag);
+			Option_table_add_char_flag_entry(find_option_table,"find_exact",
+				&find_exact_flag);
+			Option_table_add_suboption_table(option_table, find_option_table);
 			/* group */
 			Option_table_add_set_Cmiss_region_path(option_table, "group", 
 				 computed_field_compose_package->root_region, &search_region_path);
@@ -865,9 +894,27 @@ already) and allows its contents to be modified.
 			}
 			if (return_code)
 			{
+				if (find_nearest_flag && find_exact_flag)
+				{
+					display_message(ERROR_MESSAGE, 
+						"Specify only one of find_nearest and find_exact");
+					return_code = 0;
+				}
+				if (find_nearest_flag)
+				{
+					find_nearest = 1;
+				}
+				else if (find_exact_flag)
+				{
+					find_nearest = 0;
+				}
+			}
+			if (return_code)
+			{
 				if (return_code=Computed_field_set_type_compose(field,
 					texture_coordinates_field, find_element_xi_field,
-					calculate_values_field, search_region, search_region_path))
+						calculate_values_field, search_region, search_region_path,
+						find_nearest))
 				{
 					/* Set default coordinate system */
 					/* Inherit from third source field */

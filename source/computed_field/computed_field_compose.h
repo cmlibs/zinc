@@ -59,9 +59,10 @@ int Computed_field_set_type_compose(struct Computed_field *field,
 	struct Computed_field *texture_coordinate_field,
 	struct Computed_field *find_element_xi_field,
 	struct Computed_field *calculate_values_field,
-	struct Cmiss_region *search_region, char *region_path);
+	struct Cmiss_region *search_region, char *region_path,
+	int find_nearest);
 /*******************************************************************************
-LAST MODIFIED : 13 March 2003
+LAST MODIFIED : 6 December 2005
 
 DESCRIPTION :
 Converts <field> to type COMPUTED_FIELD_COMPOSE, this field allows you to
@@ -76,9 +77,10 @@ int Computed_field_get_type_compose(struct Computed_field *field,
 	struct Computed_field **texture_coordinate_field,
 	struct Computed_field **find_element_xi_field,
 	struct Computed_field **calculate_values_field,
-	struct Cmiss_region **search_region, char **region_path);
+	struct Cmiss_region **search_region, char **region_path,
+	int *find_nearest);
 /*******************************************************************************
-LAST MODIFIED : 13 March 2003
+LAST MODIFIED : 6 December 2005
 
 DESCRIPTION :
 If the field is of type COMPUTED_FIELD_COMPOSE, the function returns the three
