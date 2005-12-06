@@ -2060,9 +2060,9 @@ DESCRIPTION :
 		for (i = 0; i < number_of_triangles; i++)
 		{
 			fprintf(vrml_file,"      %d,%d,%d,-1\n",
-				triangle_list[i]->vertices[0]->index,
-				triangle_list[i]->vertices[2]->index,
-				triangle_list[i]->vertices[1]->index);
+				triangle_list[i]->vertices[0]->index - 1,
+				triangle_list[i]->vertices[2]->index - 1,
+				triangle_list[i]->vertices[1]->index - 1);
 		}
 		fprintf(vrml_file,"    ]\n");
 		fprintf(vrml_file,"  } #IndexedFaceSet\n");
