@@ -1158,7 +1158,7 @@ DESCRIPTION :
 										REALLOCATE(triangle_list, triangle_list, struct VT_iso_triangle *, number_of_triangles + 1))
 									{
 										triangle_list[number_of_triangles] = triangle;
-										triangle->index = number_of_triangles + 1;
+										triangle->index = number_of_triangles;
 										for (i=0;i<3;i++)
 										{
 											/* NB: we subtract 1 from the obj file
@@ -1185,7 +1185,7 @@ DESCRIPTION :
 														REALLOCATE(vertex_list, vertex_list, struct VT_iso_vertex *, number_of_vertices + 1))
 													{
 														vertex_list[number_of_vertices] = vertex;
-														vertex->index = number_of_vertices + 1;
+														vertex->index = number_of_vertices;
 												
 														vertex->coordinates[0] = 
 															coordinate_vertices[3 * (face_vertex[face_index][0] - 1)];
