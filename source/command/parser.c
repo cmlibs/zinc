@@ -1485,6 +1485,56 @@ The <on_string> and <off_string> should be static, eg. passed in quotes.
 	return (return_code);
 } /* Option_table_add_switch */
 
+int Option_table_is_valid(struct Option_table *option_table)
+/*******************************************************************************
+LAST MODIFIED : 4 November 2005
+
+DESCRIPTION :
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(Option_table_is_valid);
+	if (option_table)
+	{
+		return_code = option_table->valid;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Option_table_is_valid.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Option_table_is_valid */
+
+int Option_table_set_invalid(struct Option_table *option_table)
+/*******************************************************************************
+LAST MODIFIED : 4 November 2005
+
+DESCRIPTION :
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(Option_table_set_invalid);
+	if (option_table)
+	{
+		option_table->valid = 0;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Option_table_set_invalid.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Option_table_set_invalid */
+
 int set_enumerator_string(struct Parse_state *state,
 	void *enumerator_string_address_void,void *enumerator_string_value_void)
 /*******************************************************************************

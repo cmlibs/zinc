@@ -253,6 +253,20 @@ an <off_string> token that invokes unset_int_switch with <value_address>;
 The <on_string> and <off_string> should be static, eg. passed in quotes.
 ==============================================================================*/
 
+int Option_table_is_valid(struct Option_table *option_table);
+/*******************************************************************************
+LAST MODIFIED : 4 November 2005
+
+DESCRIPTION :
+==============================================================================*/
+
+int Option_table_set_invalid(struct Option_table *option_table);
+/*******************************************************************************
+LAST MODIFIED : 4 November 2005
+
+DESCRIPTION :
+==============================================================================*/
+
 int Option_table_parse(struct Option_table *option_table,
 	struct Parse_state *state);
 /*******************************************************************************

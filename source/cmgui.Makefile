@@ -904,6 +904,7 @@ GRAPHICS_SRCS = \
 	graphics/material.c \
 	graphics/mcubes.c \
 	graphics/order_independent_transparency.c \
+	graphics/render_to_finite_elements.c \
 	graphics/rendervrml.c \
 	graphics/renderwavefront.c \
 	graphics/selected_graphic.c \

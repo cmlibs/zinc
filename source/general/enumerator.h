@@ -78,6 +78,9 @@ Global types
 typedef int (ENUMERATOR_CONDITIONAL_FUNCTION(enumerator_type)) \
 	(enum enumerator_type enumerator_value, void *user_data)
 
+/* Decalared here as used in prototypes */
+struct Option_table;
+
 /*
 Global functions
 ----------------
@@ -148,10 +151,27 @@ with a true return_code. Otherwise a false return_code is returned, without
 an error message, for the calling function to handle.
 ==============================================================================*/
 
+#define OPTION_TABLE_ADD_ENUMERATOR( enumerator_type ) \
+	Option_table_add_enumerator_ ## enumerator_type
+
+#define PROTOTYPE_OPTION_TABLE_ADD_ENUMERATOR_FUNCTION( enumerator_type ) \
+	int OPTION_TABLE_ADD_ENUMERATOR(enumerator_type)(struct Option_table *option_table, \
+   enum enumerator_type *enumerator)
+/*******************************************************************************
+LAST MODIFIED : 4 November 2005
+
+DESCRIPTION :
+If <enumerator_string> matches the ENUMERATOR_STRING(enumerator_type) for any
+enumerator_value, returns the enumerator_value in *<enumerator_value_address>,
+with a true return_code. Otherwise a false return_code is returned, without 
+an error message, for the calling function to handle.
+==============================================================================*/
+
 #define PROTOTYPE_ENUMERATOR_FUNCTIONS( enumerator_type ) \
 DECLARE_ENUMERATOR_CONDITIONAL_FUNCTION_TYPE(enumerator_type); \
 PROTOTYPE_ENUMERATOR_GET_VALID_STRINGS_FUNCTION(enumerator_type); \
 PROTOTYPE_ENUMERATOR_STRING_FUNCTION(enumerator_type); \
-PROTOTYPE_STRING_TO_ENUMERATOR_FUNCTION(enumerator_type)
+PROTOTYPE_STRING_TO_ENUMERATOR_FUNCTION(enumerator_type); \
+PROTOTYPE_OPTION_TABLE_ADD_ENUMERATOR_FUNCTION( enumerator_type )
 
 #endif /* !defined (ENUMERATOR_H) */

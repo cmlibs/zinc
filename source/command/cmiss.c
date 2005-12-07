@@ -209,6 +209,7 @@ Functions for executing cmiss commands.
 #include "graphics/renderalias.h"
 #endif /* defined (NEW_ALIAS) */
 #endif /* defined (MOTIF) */
+#include "graphics/render_to_finite_elements.h"
 #include "graphics/rendervrml.h"
 #include "graphics/renderwavefront.h"
 #include "graphics/scene.h"
@@ -8117,6 +8118,113 @@ Executes a DETACH command.
 	return (return_code);
 } /* execute_command_detach */
 #endif /* defined (SELECT_DESCRIPTORS) */
+
+static int execute_command_gfx_convert(struct Parse_state *state,
+	void *dummy_to_be_modified, void *command_data_void)
+/*******************************************************************************
+LAST MODIFIED : 7 December 2005
+
+DESCRIPTION :
+Executes a GFX CREATE command.
+==============================================================================*/
+{
+	char *region_path;
+	enum Render_to_finite_elements_mode render_mode;
+	int return_code;
+	struct Computed_field *coordinate_field;
+	struct Cmiss_command_data *command_data;
+	struct Cmiss_region *region;
+	struct FE_region *fe_region;
+	struct Scene *scene;
+	struct Set_Computed_field_conditional_data set_coordinate_field_data;
+	struct Option_table *option_table;
+
+	ENTER(execute_command_gfx_convert);
+	USE_PARAMETER(dummy_to_be_modified);
+	if (state)
+	{
+		if (command_data=(struct Cmiss_command_data *)command_data_void)
+		{
+			Cmiss_region_get_root_region_path(&region_path);
+			coordinate_field=(struct Computed_field *)NULL;
+			scene = (struct Scene *)NULL;
+			render_mode = RENDER_TO_FINITE_ELEMENTS_LINEAR_PRODUCT;
+
+			option_table=CREATE(Option_table)();
+			/* coordinate */
+			set_coordinate_field_data.computed_field_manager=
+				Computed_field_package_get_computed_field_manager(
+					command_data->computed_field_package);
+			set_coordinate_field_data.conditional_function=
+				Computed_field_has_up_to_3_numerical_components;
+			set_coordinate_field_data.conditional_function_user_data=(void *)NULL;
+			Option_table_add_entry(option_table,"coordinate",&coordinate_field,
+				&set_coordinate_field_data,set_Computed_field_conditional);
+			/* render_to_finite_elements_mode */
+			OPTION_TABLE_ADD_ENUMERATOR(Render_to_finite_elements_mode)(option_table,
+				&render_mode);
+			/* region */
+			Option_table_add_entry(option_table, "region", &region_path,
+				command_data->root_region, set_Cmiss_region_path);
+			/* scene */
+			Option_table_add_entry(option_table, "scene", &scene,
+				command_data->scene_manager, set_Scene_including_sub_objects);
+			
+			return_code=Option_table_multi_parse(option_table,state);
+			DESTROY(Option_table)(&option_table);
+
+			if (return_code)
+			{
+				if (!scene)
+				{
+					display_message(ERROR_MESSAGE,
+						"gfx_convert.  Must specify a scene.");
+					return_code = 0;
+				}
+				if (!coordinate_field)
+				{
+					display_message(ERROR_MESSAGE,
+						"gfx_convert.  Must specify a coordinate field to define on the new nodes and elements.");
+					return_code = 0;
+				}
+				fe_region = (struct FE_region *)NULL;
+				if (!(Cmiss_region_get_region_from_path(command_data->root_region,
+					region_path, &region) &&
+					(fe_region = Cmiss_region_get_FE_region(region))))
+				{
+					display_message(ERROR_MESSAGE,
+						"gfx_convert.  Invalid region");
+					return_code = 0;
+				}
+			}
+
+			if (return_code)
+			{
+				 return_code = render_to_finite_elements(scene, fe_region,
+					 render_mode, coordinate_field);
+			}
+			if (scene)
+			{
+				DEACCESS(Scene)(&scene);
+			}
+
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,
+				"execute_command_gfx_convert.  Missing command_data");
+			return_code=0;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"execute_command_gfx_convert.  Missing state");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* execute_command_gfx_convert */
 
 static int execute_command_gfx_create(struct Parse_state *state,
 	void *dummy_to_be_modified,void *command_data_void)
@@ -19568,6 +19676,8 @@ Executes a GFX command.
 			option_table=CREATE(Option_table)();
 			Option_table_add_entry(option_table, "change_identifier", NULL,
 				command_data_void, gfx_change_identifier);
+			Option_table_add_entry(option_table, "convert", NULL,
+				command_data_void, execute_command_gfx_convert);
 			Option_table_add_entry(option_table, "create", NULL,
 				command_data_void, execute_command_gfx_create);
 #if defined (MOTIF) || (GTK_USER_INTERFACE) || defined (WIN32_USER_INTERFACE)
