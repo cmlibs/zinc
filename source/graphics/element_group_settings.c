@@ -7964,8 +7964,8 @@ If return_code is 1, returns the completed Modify_g_element_data with the
 parsed settings. Note that the settings are ACCESSed once on valid return.
 ==============================================================================*/
 {
-	char *render_type_string,*select_mode_string,
-		*surface_data_region_path,*use_element_type_string, **valid_strings;
+	char *render_type_string,*select_mode_string, *use_element_type_string,
+		**valid_strings;
 	double decimation_threshold,iso_value_default, *iso_values;
 	enum Graphics_select_mode select_mode;
 	enum Render_type render_type;
@@ -8170,7 +8170,6 @@ parsed settings. Note that the settings are ACCESSed once on valid return.
 						GT_element_settings_set_render_type(settings, render_type);
 					}
 					DESTROY(Option_table)(&option_table);
-					DEALLOCATE(surface_data_region_path);
 					if (!return_code)
 					{
 						/* parse error, help */
