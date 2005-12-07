@@ -164,13 +164,10 @@ Data for converting a 3-D element into a volume.
 	struct Computed_field *blur_field;
 	struct Computed_field *coordinate_field;
 	struct Computed_field *data_field;
-	struct Computed_field *surface_data_density_field;
-	struct Computed_field *surface_data_coordinate_field;
 	struct Computed_field *texture_coordinate_field;
 	struct Computed_field *displacement_map_field;
 	int displacement_map_xi_direction;
 	struct FE_time *fe_time;
-	struct FE_region *surface_data_fe_region;
 	struct GT_object *graphics_object;
 	struct FE_region *fe_region;
 	enum Render_type render_type;
@@ -193,15 +190,12 @@ Data for converting a 3-D element into an iso_surface (via a volume_texture).
 	int face_number;
 	struct Clipping *clipping;
 	struct Computed_field *coordinate_field, *data_field, *scalar_field;
-	struct Computed_field *surface_data_coordinate_field;
 	struct Computed_field *texture_coordinate_field;
-	struct Computed_field *surface_data_density_field;
 	int number_in_xi[MAXIMUM_ELEMENT_XI_DIMENSIONS];
 	struct FE_field *native_discretization_field;
 	struct GT_object *graphics_object;
 	enum Render_type render_type;
 	struct FE_region *fe_region;
-	struct FE_region *surface_data_fe_region;
 	struct FE_time *fe_time;
 }; /* struct Element_to_iso_surface_data */
 
@@ -564,25 +558,6 @@ seed points distributed on the surface randomly but with density due to the
 texture_map.
 ==============================================================================*/
 
-int create_FE_nodes_on_GT_voltex_surface(struct GT_voltex *voltex,
-	struct FE_element *element, struct Computed_field *coordinate_field,
-	struct VT_volume_texture *vtexture, struct FE_region *fe_region,
-	struct Computed_field *data_density_field,
-	struct Computed_field *data_coordinate_field, FE_value time);
-/*******************************************************************************
-LAST MODIFIED : 13 March 2003
-
-DESCRIPTION :
-This function takes a <voltex> and the corresponding <vtexture> and creates
-a randomly placed set of FE_nodes over the surface the <voltex> describes.
-The vtexture is used to define an element_xi field at each of the data_points.
-These can then be used to draw axes or gradient vectors over the surface of an
-isosurface or to create hair streamlines starting from the surface of a volume
-texture. If the <data_coordinate_field> is supplied, it - ie. the FE_field it is
-calculated from -  will be defined at the data points, and the field is given
-the position of the point, with appropriate coordinate conversion.
-==============================================================================*/
-
 struct VT_vector_field *interpolate_vector_field_on_FE_element(double ximax[3],
 	struct FE_element *element,struct Computed_field *coordinate_field,
 	struct VT_vector_field *vector_field, FE_value time);
@@ -686,14 +661,11 @@ int create_iso_surfaces_from_FE_element(struct FE_element *element,
 	double iso_value, FE_value time,struct Clipping *clipping,
 	struct Computed_field *coordinate_field,
 	struct Computed_field *data_field,struct Computed_field *scalar_field,
-	struct Computed_field *surface_data_density_field,
-	struct Computed_field *surface_data_coordinate_field,
 	struct Computed_field *texture_coordinate_field,
 	int *number_in_xi, double decimation_threshold,
-	struct GT_object *graphics_object,enum Render_type render_type,
-	struct FE_region *surface_data_fe_region);
+	struct GT_object *graphics_object,enum Render_type render_type);
 /*******************************************************************************
-LAST MODIFIED : 21 February 2005
+LAST MODIFIED : 8 December 2005
 
 DESCRIPTION :
 Converts a 3-D element into an iso_surface (via a volume_texture).

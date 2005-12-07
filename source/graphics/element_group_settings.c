@@ -115,11 +115,6 @@ finite element group rendition.
 	struct Computed_field *iso_scalar_field;
 	int number_of_iso_values;
 	double *iso_values, decimation_threshold;
-	/* SAB Surface data on iso_surfaces added for text access only */
-	struct Computed_field *surface_data_density_field;
-	struct Computed_field *surface_data_coordinate_field;
-	char *surface_data_region_path;
-	struct FE_region *surface_data_fe_region;
 	/* for node_points, data_points and element_points only */
 	struct GT_object *glyph;
 	enum Glyph_scaling_mode glyph_scaling_mode;
@@ -690,10 +685,6 @@ Allocates memory and assigns fields for a struct GT_element_settings.
 			settings->number_of_iso_values=0;
 			settings->iso_values=(double *)NULL;
 			settings->decimation_threshold = 0.0;
-			settings->surface_data_density_field = (struct Computed_field *)NULL;
-			settings->surface_data_coordinate_field = (struct Computed_field *)NULL;
-			settings->surface_data_region_path = (char *)NULL;
-			settings->surface_data_fe_region = (struct FE_region *)NULL;
 			/* for node_points, data_points and element_points only */
 			settings->glyph=(struct GT_object *)NULL;
 			settings->glyph_scaling_mode = GLYPH_SCALING_GENERAL;
@@ -826,22 +817,6 @@ Frees the memory for the fields of <**settings_ptr>, frees the memory for
 			if (settings->iso_values)
 			{
 				DEALLOCATE(settings->iso_values);
-			}
-			if (settings->surface_data_density_field)
-			{
-				DEACCESS(Computed_field)(&(settings->surface_data_density_field));
-			}
-			if (settings->surface_data_coordinate_field)
-			{
-				DEACCESS(Computed_field)(&(settings->surface_data_coordinate_field));
-			}
-			if (settings->surface_data_region_path)
-			{
-				DEALLOCATE(settings->surface_data_region_path);
-			}
-			if (settings->surface_data_fe_region)
-			{
-				DEACCESS(FE_region)(&(settings->surface_data_fe_region));
 			}
 			if (settings->glyph)
 			{
@@ -994,21 +969,6 @@ graphics_object is NOT copied; destination->graphics_object is cleared.
 			GT_element_settings_set_iso_surface_parameters(destination,
 				source->iso_scalar_field,source->number_of_iso_values,
 				source->iso_values, source->decimation_threshold);
-			REACCESS(Computed_field)(&(destination->surface_data_coordinate_field),
-				source->surface_data_coordinate_field);
-			REACCESS(Computed_field)(&(destination->surface_data_density_field),
-				source->surface_data_density_field);
-			if (destination->surface_data_region_path)
-			{
-				DEALLOCATE(destination->surface_data_region_path);
-			}
-			if (source->surface_data_region_path)
-			{
-				destination->surface_data_region_path = duplicate_string(
-					source->surface_data_region_path);
-			}
-			REACCESS(FE_region)(&(destination->surface_data_fe_region),
-				source->surface_data_fe_region);
 		}
 		else
 		{
@@ -3499,13 +3459,7 @@ used if the settings has no coodinate field of its own.
 		else if ((GT_ELEMENT_SETTINGS_ISO_SURFACES == settings->settings_type) &&
 			(settings->iso_scalar_field &&
 			Computed_field_or_ancestor_satisfies_condition(
-				settings->iso_scalar_field, conditional_function, user_data))||
-			(settings->surface_data_coordinate_field &&
-			Computed_field_or_ancestor_satisfies_condition(
-				settings->surface_data_coordinate_field, conditional_function, user_data))||
-			(settings->surface_data_density_field &&
-			Computed_field_or_ancestor_satisfies_condition(
-				settings->surface_data_density_field, conditional_function, user_data)))
+				settings->iso_scalar_field, conditional_function, user_data)))
 		{
 			return_code = 1;
 		}
@@ -4286,13 +4240,7 @@ settings describe EXACTLY the same geometry.
 			return_code=(settings->number_of_iso_values==
 				second_settings->number_of_iso_values)&&
 				(settings->decimation_threshold==second_settings->decimation_threshold)&&
-				(settings->iso_scalar_field==second_settings->iso_scalar_field)&&
-				(settings->surface_data_coordinate_field
-					==second_settings->surface_data_coordinate_field)&&
-				(settings->surface_data_density_field
-					==second_settings->surface_data_density_field)&&
-				(settings->surface_data_fe_region
-					==second_settings->surface_data_fe_region);
+				(settings->iso_scalar_field==second_settings->iso_scalar_field);
 			i = 0;
 			while (return_code && (i < settings->number_of_iso_values))
 			{
@@ -4818,59 +4766,6 @@ if no coordinate field. Currently only write if we have a field.
 				sprintf(temp_string," decimation_threshold %g",
 					settings->decimation_threshold);
 				append_string(&settings_string,temp_string,&error);
-			}
- 			if (settings->surface_data_coordinate_field)
-			{
-				if (GET_NAME(Computed_field)(settings->surface_data_coordinate_field,
-					&name))
-				{
-					/* put quotes around name if it contains special characters */
-					make_valid_token(&name);
-					append_string(&settings_string," surface_data_coordinate_field ",
-						&error);
-					append_string(&settings_string,name,&error);
-					DEALLOCATE(name);
-				}
-				else
-				{
-					DEALLOCATE(settings_string);
-					error=1;
-				}
-			}
- 			if (settings->surface_data_density_field)
-			{
-				if (GET_NAME(Computed_field)(settings->surface_data_density_field,
-					&name))
-				{
-					/* put quotes around name if it contains special characters */
-					make_valid_token(&name);
-					append_string(&settings_string," surface_data_density_field ",
-						&error);
-					append_string(&settings_string,name,&error);
-					DEALLOCATE(name);
-				}
-				else
-				{
-					DEALLOCATE(settings_string);
-					error=1;
-				}
-			}
- 			if (settings->surface_data_region_path)
-			{
-				if (name = duplicate_string(settings->surface_data_region_path))
-				{
-					/* put quotes around name if it contains special characters */
-					make_valid_token(&name);
-					append_string(&settings_string," surface_data_region ",
-						&error);
-					append_string(&settings_string,name,&error);
-					DEALLOCATE(name);
-				}
-				else
-				{
-					DEALLOCATE(settings_string);
-					error=1;
-				}
 			}
 		}
 		/* for node_points, data_points and element_points only */
@@ -5578,12 +5473,9 @@ Converts a finite element into a graphics object with the supplied settings.
 													(struct Clipping *)NULL,
 													settings_to_object_data->rc_coordinate_field,
 													settings->data_field, settings->iso_scalar_field,
-													settings->surface_data_density_field,
-													settings->surface_data_coordinate_field,
 													settings->texture_coordinate_field,
 													number_in_xi, settings->decimation_threshold,
-													settings->graphics_object, settings->render_type,
-													settings->surface_data_fe_region);
+													settings->graphics_object, settings->render_type);
 											}
 										}
 									}
@@ -6180,12 +6072,6 @@ The graphics object is stored with with the settings it was created from.
 							} break;
 							case GT_ELEMENT_SETTINGS_ISO_SURFACES:
 							{
-								if (settings->surface_data_fe_region &&
-									settings->surface_data_density_field)
-								{
-									FE_region_clear(settings->surface_data_fe_region,
-										/*destroy in master(total_annihilation)*/1);
-								}
 								return_code = FE_region_for_each_FE_element(fe_region,
 									FE_element_to_graphics_object, settings_to_object_data_void);
 								/* Decimate */
@@ -8087,16 +7973,13 @@ parsed settings. Note that the settings are ACCESSed once on valid return.
 	int number_of_iso_values,number_of_valid_strings,
 		return_code,visibility;
 	struct Computed_field *scalar_field;
-	struct Cmiss_region *surface_data_region;
 	struct Modify_g_element_data *modify_g_element_data;
-	struct FE_region *surface_data_fe_region;
 	struct GT_element_settings *settings;
 	struct G_element_command_data *g_element_command_data;
 	struct MANAGER(Computed_field) *computed_field_manager;
 	struct Option_table *option_table;
 	struct Set_Computed_field_conditional_data set_coordinate_field_data,
 		set_data_field_data,set_iso_scalar_field_data,
-		set_surface_data_density_field,set_surface_data_coordinate_field,
 		set_texture_coordinate_field_data;
 
 	ENTER(gfx_modify_g_element_iso_surfaces);
@@ -8137,15 +8020,6 @@ parsed settings. Note that the settings are ACCESSed once on valid return.
 							FIND_BY_IDENTIFIER_IN_MANAGER(Graphical_material,name)(
 								"default_selected",
 								g_element_command_data->graphical_material_manager));
-					}
-					if (settings->surface_data_region_path)
-					{
-						surface_data_region_path =
-							duplicate_string(settings->surface_data_region_path);
-					}
-					else
-					{
-						Cmiss_region_get_root_region_path(&surface_data_region_path);
 					}
 					/* must start with valid iso_scalar_field: */
 					GT_element_settings_get_iso_surface_parameters(settings,
@@ -8244,32 +8118,6 @@ parsed settings. Note that the settings are ACCESSed once on valid return.
 						&(settings->selected_material),
 						g_element_command_data->graphical_material_manager,
 						set_Graphical_material);
-					/* surface_data_coordinate_field */
-					set_surface_data_coordinate_field.computed_field_manager=
-						g_element_command_data->computed_field_manager;
-					set_surface_data_coordinate_field.conditional_function=
-						Computed_field_has_up_to_3_numerical_components;
-					set_surface_data_coordinate_field.conditional_function_user_data=
-						(void *)NULL;
-					Option_table_add_entry(option_table,"surface_data_coordinate_field",
-						&(settings->surface_data_coordinate_field),
-						&set_surface_data_coordinate_field,
-						set_Computed_field_conditional);
-					/* surface_data_density_field */
-					set_surface_data_density_field.computed_field_manager=
-						g_element_command_data->computed_field_manager;
-					set_surface_data_density_field.conditional_function=
-						Computed_field_has_up_to_3_numerical_components;
-					set_surface_data_density_field.conditional_function_user_data=
-						(void *)NULL;
-					Option_table_add_entry(option_table,"surface_data_density_field",
-						&(settings->surface_data_density_field),
-						&set_surface_data_density_field,
-						set_Computed_field_conditional);
-					/* surface_data_region */
-					Option_table_add_entry(option_table, "surface_data_region",
-						&surface_data_region_path,
-						g_element_command_data->data_root_region, set_Cmiss_region_path);
 					/* spectrum */
 					Option_table_add_entry(option_table,"spectrum",
 						&(settings->spectrum),g_element_command_data->spectrum_manager,
@@ -8320,63 +8168,6 @@ parsed settings. Note that the settings are ACCESSed once on valid return.
 						GT_element_settings_set_select_mode(settings, select_mode);
 						STRING_TO_ENUMERATOR(Render_type)(render_type_string, &render_type);
 						GT_element_settings_set_render_type(settings, render_type);
-						if (settings->surface_data_coordinate_field ||
-							settings->surface_data_density_field)
-						{
-							if (Cmiss_region_get_region_from_path(
-								g_element_command_data->data_root_region,
-								surface_data_region_path, &surface_data_region) &&
-								(surface_data_fe_region = Cmiss_region_get_FE_region(
-								surface_data_region)))
-							{
-								if (settings->surface_data_coordinate_field &&
-									settings->surface_data_density_field)
-								{
-									REACCESS(FE_region)(&settings->surface_data_fe_region,
-										surface_data_fe_region);
-									if (settings->surface_data_region_path)
-									{
-										DEALLOCATE(settings->surface_data_region_path);
-									}
-									settings->surface_data_region_path = 
-										duplicate_string(surface_data_region_path);
-								}
-								else
-								{
-									display_message(ERROR_MESSAGE,
-										"gfx_modify_g_element_iso_surfaces.  "
-										"For surface data you must specify both a surface_data_coordinate_field and a surface_data_density_field");
-									return_code = 0;
-									if (settings->surface_data_coordinate_field)
-									{
-										DEACCESS(Computed_field)
-											(&(settings->surface_data_coordinate_field));
-									}
-									if (settings->surface_data_density_field)
-									{
-										DEACCESS(Computed_field)
-											(&(settings->surface_data_density_field));
-									}
-								}
-							}
-							else
-							{
-								display_message(ERROR_MESSAGE,
-									"gfx_modify_g_element_iso_surfaces.  Invalid region %s",
-									surface_data_region_path);
-								return_code = 0;
-								if (settings->surface_data_coordinate_field)
-								{
-									DEACCESS(Computed_field)
-										(&(settings->surface_data_coordinate_field));
-								}
-								if (settings->surface_data_density_field)
-								{
-									DEACCESS(Computed_field)
-										(&(settings->surface_data_density_field));
-								}
-							}
-						}
 					}
 					DESTROY(Option_table)(&option_table);
 					DEALLOCATE(surface_data_region_path);
