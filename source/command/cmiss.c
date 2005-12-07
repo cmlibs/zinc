@@ -3209,14 +3209,8 @@ Executes a GFX CREATE ISO_SURFACES command.
 			element_to_iso_scalar_data.scalar_field=scalar_field;
 			element_to_iso_scalar_data.graphics_object=graphics_object;
 			element_to_iso_scalar_data.clipping=clipping;
-			element_to_iso_scalar_data.surface_data_coordinate_field = 
-				surface_data_coordinate_field;
 			element_to_iso_scalar_data.texture_coordinate_field = 
 				(struct Computed_field *)NULL;
-			element_to_iso_scalar_data.surface_data_density_field = 
-				surface_data_density_field;
-			element_to_iso_scalar_data.surface_data_fe_region = 
-				surface_data_fe_region;
 			element_to_iso_scalar_data.time=time;
 			element_to_iso_scalar_data.number_in_xi[0]=
 				discretization.number_in_xi1;
