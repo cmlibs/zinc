@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : octree.c
 
-LAST MODIFIED : 20 October 2005
+LAST MODIFIED : 8 December 2005
 
 DESCRIPTION :
 ==============================================================================*/
@@ -638,6 +638,7 @@ DESCRIPTION :
 Adds the specified <object> into the <octree>
 ==============================================================================*/
 {
+	FE_value delta, maximum_width, sizes[OCTREE_DIMENSION];
 	int contained, i, return_code;
 
 	ENTER(Octree_add_object);
@@ -670,6 +671,32 @@ Adds the specified <object> into the <octree>
 		if (!contained)
 		{
 			return_code = Octree_branch_expand(&octree->tree, object);
+		}
+		if (octree->tree->object_list && 
+			(NUMBER_IN_LIST(Octree_object)(octree->tree->object_list) == OCTREE_THRESHOLD))
+		{
+			/* When it is full regularise the shape of this first branch before we split
+				so that we don't have any very thin or zero widths */
+			sizes[0] = octree->tree->coordinate_maximums[0] - octree->tree->coordinate_maximums[0];
+			maximum_width = sizes[0];
+			for (i = 1 ; i < OCTREE_DIMENSION ; i++)
+			{
+				sizes[i] = octree->tree->coordinate_maximums[i] - octree->tree->coordinate_maximums[i];
+				if (sizes[i] > maximum_width)
+				{
+					maximum_width = sizes[i];
+				}
+			}
+			if (maximum_width < 1e-5)
+			{
+				maximum_width = 1.0;
+			}
+			for (i = 0 ; i < OCTREE_DIMENSION ; i++)
+			{
+				delta = (maximum_width - sizes[i]) / 2.0;
+				octree->tree->coordinate_minimums[i] -= delta;
+				octree->tree->coordinate_maximums[i] += delta;
+			}
 		}
 		if (return_code)
 		{
