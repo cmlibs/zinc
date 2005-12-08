@@ -78,6 +78,17 @@ struct Render_node
 	float *data;
 };
 
+struct Render_to_finite_elements_data
+{
+	enum Render_to_finite_elements_mode render_mode;
+	int node_offset;
+	int element_offset;
+	struct FE_region *fe_region;
+ 	struct FE_node *template_node;
+	struct Computed_field *coordinate_field;
+	struct FE_field *fe_coordinate_field;
+}; /* struct Render_to_finite_elements_data */
+
 /*
 Module functions
 ----------------
@@ -92,6 +103,7 @@ PROTOTYPE_ENUMERATOR_STRING_FUNCTION(Render_to_finite_elements_mode)
 	{
 		case RENDER_TO_FINITE_ELEMENTS_LINEAR_PRODUCT:
 		{
+
 			enumerator_string = "render_linear_product_elements";
 		} break;
 		case RENDER_TO_FINITE_ELEMENTS_SURFACE_NODE_CLOUD:
@@ -110,9 +122,8 @@ PROTOTYPE_ENUMERATOR_STRING_FUNCTION(Render_to_finite_elements_mode)
 
 DEFINE_DEFAULT_ENUMERATOR_FUNCTIONS(Render_to_finite_elements_mode)
 
-static struct FE_node *FE_region_add_node(struct FE_region *fe_region,
-	struct FE_node *template_node, FE_value time,
-	struct Computed_field *coordinate_field, float *coordinates)
+static struct FE_node *FE_region_add_node(struct Render_to_finite_elements_data *data, 
+	FE_value time, float *coordinates)
 /*******************************************************************************
 LAST MODIFIED : 8 December 2005
 
@@ -126,18 +137,19 @@ Generates a finite_element node at the specified location
 	ENTER(FE_region_add_node);
 
 	return_node = (struct FE_node *)NULL;
-	if (fe_region)
+	if (data->fe_region)
 	{
-		node_number = FE_region_get_next_FE_node_identifier(fe_region, /*offset*/1);
-				
+		node_number = FE_region_get_next_FE_node_identifier(data->fe_region, data->node_offset);
+		data->node_offset = node_number + 1;
+
 		if (node = CREATE(FE_node)(node_number,
-				(struct FE_region *)NULL, template_node))
+				(struct FE_region *)NULL, data->template_node))
 		{	
 			ACCESS(FE_node)(node);
-			if (Computed_field_set_values_at_node(coordinate_field,
+			if (Computed_field_set_values_at_node(data->coordinate_field,
 					node, time, coordinates))
 			{
-				if (FE_region_merge_FE_node(fe_region, node))
+				if (FE_region_merge_FE_node(data->fe_region, node))
 				{
 					return_node = node;
 				}
@@ -169,11 +181,8 @@ Generates a finite_element node at the specified location
 } /* FE_region_add_node */
 
 static int Render_node_create(struct Render_node *render_node,
-	struct FE_region *fe_region,
-	enum Render_to_finite_elements_mode render_mode,
-	struct FE_node *template_node, FE_value time,
-	struct Computed_field *coordinate_field, float *coordinates, 
-	int number_of_data_components, float *data)
+	struct Render_to_finite_elements_data *data, FE_value time,
+	float *coordinates, int number_of_data_components, float *data_values)
 /*******************************************************************************
 LAST MODIFIED : 8 December 2005
 
@@ -189,9 +198,9 @@ Generates a finite_element node at the specified location
 	render_node->coordinates = (float *)NULL;
 	render_node->data = (float *)NULL;
 	return_code = 1;
-	if (fe_region)
+	if (data->fe_region)
 	{
-		switch (render_mode)
+		switch (data->render_mode)
 		{	
 			case RENDER_TO_FINITE_ELEMENTS_SURFACE_NODE_CLOUD:
 			{
@@ -199,13 +208,12 @@ Generates a finite_element node at the specified location
 				render_node->coordinates = coordinates;
 				if (number_of_data_components)
 				{
-					render_node->data = data;
+					render_node->data = data_values;
 				}
 			} break;
 			default:
 			{
-				render_node->fe_node = FE_region_add_node(fe_region,
-					template_node, time, coordinate_field, coordinates);
+				render_node->fe_node = FE_region_add_node(data, time, coordinates);
 			} break;
 		}
 	}
@@ -214,10 +222,8 @@ Generates a finite_element node at the specified location
 	return (return_code);
 } /* Render_node_create */
 
-static int FE_region_add_triangle(struct FE_region *fe_region,
-	enum Render_to_finite_elements_mode render_mode,
-	struct FE_field *fe_coordinate_field, struct FE_node *template_node, FE_value time,
-	struct Computed_field *coordinate_field, int number_of_data_components,
+static int FE_region_add_triangle(struct Render_to_finite_elements_data *data,
+	FE_value time, int number_of_data_components,
 	struct Render_node *node1, struct Render_node *node2, struct Render_node *node3)
 /*******************************************************************************
 LAST MODIFIED : 8 December 2005
@@ -235,9 +241,9 @@ to the <render_mode>
 	ENTER(FE_region_add_triangle);
 
 	return_code = 0;
-	if (fe_region)
+	if (data->fe_region)
 	{
-		switch (render_mode)
+		switch (data->render_mode)
 		{
 			case RENDER_TO_FINITE_ELEMENTS_SURFACE_NODE_CLOUD:
 			{
@@ -291,8 +297,7 @@ to the <render_mode>
 						position[i] = node1->coordinates[i]
 							+ xi1 * side1[i] + xi2 * side2[i];
 					}
-					if (!FE_region_add_node(fe_region,
-							template_node, time, coordinate_field, position))
+					if (!FE_region_add_node(data, time, position))
 					{
 						return_code = 0;
 					}
@@ -302,18 +307,21 @@ to the <render_mode>
 			{
 				if (node1 && node1->fe_node && node2 && node2->fe_node && node3 && node3->fe_node)
 				{
-					element_number = FE_region_get_next_FE_element_identifier(fe_region, CM_ELEMENT, /*offset*/1);
+					element_number = FE_region_get_next_FE_element_identifier(data->fe_region, CM_ELEMENT,
+						data->element_offset);
+					data->element_offset = element_number + 1;
 
-					element = create_FE_element_with_line_shape(element_number, fe_region, /*dimension*/2);
+					element = create_FE_element_with_line_shape(element_number, data->fe_region, /*dimension*/2);
 
-					FE_element_define_tensor_product_basis(element, /*dimension*/2, LINEAR_LAGRANGE, fe_coordinate_field);
+					FE_element_define_tensor_product_basis(element, /*dimension*/2, LINEAR_LAGRANGE,
+						data->fe_coordinate_field);
 
 					set_FE_element_node(element, /*Node index*/0, node1->fe_node);
 					set_FE_element_node(element, /*Node index*/1, node1->fe_node);
 					set_FE_element_node(element, /*Node index*/2, node2->fe_node);
 					set_FE_element_node(element, /*Node index*/3, node3->fe_node);
 							
-					if (!(return_code = FE_region_merge_FE_element_and_faces_and_nodes(fe_region, element)))
+					if (!(return_code = FE_region_merge_FE_element_and_faces_and_nodes(data->fe_region, element)))
 					{
 						display_message(ERROR_MESSAGE,"FE_region_add_triangle.  "
 							"Unable to merge triangle into fe_region.");
@@ -338,10 +346,8 @@ to the <render_mode>
 	return (return_code);
 } /* FE_region_add_triangle */
 
-static int FE_region_add_square(struct FE_region *fe_region,
-	enum Render_to_finite_elements_mode render_mode,
-	struct FE_field *fe_coordinate_field, struct FE_node *template_node, FE_value time,
-	struct Computed_field *coordinate_field,  int number_of_data_components,
+static int FE_region_add_square(struct Render_to_finite_elements_data *data,
+	FE_value time, int number_of_data_components,
 	struct Render_node *node1, struct Render_node *node2, struct Render_node *node3, struct Render_node *node4)
 /*******************************************************************************
 LAST MODIFIED : 8 December 2005
@@ -359,17 +365,15 @@ xi1=0,xi2=0 ; xi1=1,xi2=0 ; xi1=0,xi2=1 ; xi1=1,xi2=1
 	ENTER(FE_region_add_square);
 
 	return_code=0;
-	if (fe_region)
+	if (data->fe_region)
 	{
-		switch (render_mode)
+		switch (data->render_mode)
 		{
 			default:
 			{
-				return_code = FE_region_add_triangle(fe_region, render_mode, 
-					fe_coordinate_field, template_node, time, coordinate_field, number_of_data_components,
+				return_code = FE_region_add_triangle(data, time, number_of_data_components,
 					node1, node2, node3) &&
-					FE_region_add_triangle(fe_region, render_mode, 
-					fe_coordinate_field, template_node, time, coordinate_field, number_of_data_components,
+					FE_region_add_triangle(data, time, number_of_data_components,
 					node2, node3, node4);
 			} break;
 		}
@@ -379,12 +383,10 @@ xi1=0,xi2=0 ; xi1=1,xi2=0 ; xi1=0,xi2=1 ; xi1=1,xi2=1
 	return (return_code);
 } /* FE_region_add_square */
 
-static int render_surface_to_finite_elements(struct FE_region *fe_region,
-	struct FE_node *template_node, struct Computed_field *coordinate_field,
-	struct FE_field *fe_coordinate_field, FE_value time,
-	enum Render_to_finite_elements_mode render_mode,
+static int render_surface_to_finite_elements(
+	struct Render_to_finite_elements_data *data, FE_value time,
 	Triple *surfpts, Triple *normalpts,
-	Triple *texturepts, int number_of_data_components, GTDATA *data,
+	Triple *texturepts, int number_of_data_components, GTDATA *data_values,
 	int npts1,
 	int npts2,enum GT_surface_type surface_type,gtPolygonType polygon_type)
 /*******************************************************************************
@@ -429,13 +431,12 @@ DESCRIPTION :
 		if (return_code)
 		{
 			triple = surfpts;
-			data_ptr = data;
+			data_ptr = data_values;
 			if (ALLOCATE(nodes, struct Render_node, number_of_points))
 			{
 				for (i = 0 ; return_code && (i < number_of_points) ; i++)
 				{
-					if (!(Render_node_create(&nodes[i], fe_region, render_mode,
-						 template_node, time, coordinate_field, *triple, 
+					if (!(Render_node_create(&nodes[i], data, time, *triple, 
 						 number_of_data_components, data_ptr)))
 					{
 						display_message(ERROR_MESSAGE,
@@ -474,8 +475,7 @@ DESCRIPTION :
 								{
 									for (i=0;i<npts1-1;i++)
 									{
- 										FE_region_add_square(fe_region, render_mode,
-											fe_coordinate_field, template_node, time, coordinate_field, number_of_data_components,
+ 										FE_region_add_square(data, time, number_of_data_components,
 											&nodes[index], &nodes[index+1], &nodes[index+npts1], &nodes[index+npts1+1]);
 										index++;
 									}
@@ -489,18 +489,15 @@ DESCRIPTION :
 								index_2=index_1+npts1;
 								for (i=npts1-1;i>0;i--)
 								{
-									FE_region_add_triangle(fe_region, render_mode,
-											fe_coordinate_field, template_node, time, coordinate_field, number_of_data_components,
+									FE_region_add_triangle(data, time, number_of_data_components,
 										&nodes[index_1], &nodes[index_1+1], &nodes[index_2]);
 									index_1++;
 									for (j=i-1;j>0;j--)
 									{
-										FE_region_add_triangle(fe_region, render_mode,
-											fe_coordinate_field, template_node, time, coordinate_field, number_of_data_components, 
+										FE_region_add_triangle(data, time, number_of_data_components, 
 											&nodes[index_1], &nodes[index_2+1], &nodes[index_2]);
 										index_2++;
-										FE_region_add_triangle(fe_region, render_mode,
-											fe_coordinate_field, template_node, time, coordinate_field, number_of_data_components,
+										FE_region_add_triangle(data, time, number_of_data_components,
 											&nodes[index_1], &nodes[index_1+1], &nodes[index_2]);
 										index_1++;
 									}
@@ -542,10 +539,8 @@ DESCRIPTION :
 	return (return_code);
 } /* render_surface_to_finite_elements */
 
-static int render_voltex_to_finite_elements(struct FE_region *fe_region,
-	struct FE_node *template_node, struct Computed_field *coordinate_field,
-	struct FE_field *fe_coordinate_field, FE_value time,
-	enum Render_to_finite_elements_mode render_mode,
+static int render_voltex_to_finite_elements(
+	struct Render_to_finite_elements_data *data, FE_value time,
 	int number_of_vertices, struct VT_iso_vertex **vertex_list, 
 	int number_of_triangles, struct VT_iso_triangle **triangle_list,
 	int number_of_data_components)
@@ -567,8 +562,8 @@ DESCRIPTION :
 		{
 			for (i = 0 ; return_code && (i < number_of_vertices) ; i++)
 			{
-				if (!(Render_node_create(&nodes[i], fe_region, render_mode,
-					template_node, time, coordinate_field, vertex_list[i]->coordinates,
+				if (!(Render_node_create(&nodes[i], data, time, 
+					vertex_list[i]->coordinates,
 					number_of_data_components, vertex_list[i]->data)))
 				{
 					display_message(ERROR_MESSAGE,
@@ -581,8 +576,7 @@ DESCRIPTION :
 			{
 				for (i = 0 ; return_code && (i < number_of_triangles) ; i++)
 				{
-					return_code = FE_region_add_triangle(fe_region, render_mode,
-						fe_coordinate_field, template_node, time, coordinate_field, number_of_data_components,
+					return_code = FE_region_add_triangle(data, time, number_of_data_components,
 						&nodes[triangle_list[i]->vertices[0]->index],
 						&nodes[triangle_list[i]->vertices[1]->index],
 						&nodes[triangle_list[i]->vertices[2]->index]);
@@ -605,10 +599,8 @@ DESCRIPTION :
 } /* render_voltex_to_finite_elements */
 
 static int Graphics_object_render_to_finite_elements(
-	struct GT_object *object, double time, struct FE_region *fe_region,
- 	struct FE_node *template_node, struct Computed_field *coordinate_field,
-	struct FE_field *fe_coordinate_field,	
-	enum Render_to_finite_elements_mode render_mode)
+	struct GT_object *object, double time, 
+	struct Render_to_finite_elements_data *data)
 /*******************************************************************************
 LAST MODIFIED : 8 December 2005
 
@@ -629,7 +621,7 @@ DESCRIPTION :
 
 	ENTER(Graphics_object_render_to_finite_elements);
 	return_code=1;
-	if (object && fe_region)
+	if (object && data->fe_region)
 	{
 		number_of_times = object->number_of_times;
 		if (0 < number_of_times)
@@ -870,9 +862,7 @@ DESCRIPTION :
 								if (interpolate_surface=morph_GT_surface(proportion,
 									surface,surface_2))
 								{
-									render_surface_to_finite_elements(fe_region,
-										template_node, coordinate_field,
-										fe_coordinate_field, time, render_mode,
+									render_surface_to_finite_elements(data, time,
 										interpolate_surface->pointlist,
 										interpolate_surface->normallist,
 										interpolate_surface->texturelist,
@@ -890,9 +880,7 @@ DESCRIPTION :
 						{
 							while (surface)
 							{
-								render_surface_to_finite_elements(fe_region,
-									template_node, coordinate_field,
-									fe_coordinate_field, time, render_mode,
+								render_surface_to_finite_elements(data, time,
 									surface->pointlist,
 									surface->normallist,surface->texturelist,
 									surface->n_data_components,surface->data,
@@ -915,9 +903,7 @@ DESCRIPTION :
 					{
 						while (voltex)
 						{
-							render_voltex_to_finite_elements(fe_region,
-								template_node, coordinate_field,
-								fe_coordinate_field, time, render_mode,
+							render_voltex_to_finite_elements(data, time,
 								voltex->number_of_vertices, voltex->vertex_list,
 								voltex->number_of_triangles, voltex->triangle_list,
 								voltex->n_data_components);
@@ -949,15 +935,6 @@ DESCRIPTION :
 	return (return_code);
 } /* Graphics_object_render_to_finite_elements */
 
-struct Render_to_finite_elements_data
-{
-	enum Render_to_finite_elements_mode render_mode;
-	struct FE_region *fe_region;
- 	struct FE_node *template_node;
-	struct Computed_field *coordinate_field;
-	struct FE_field *fe_coordinate_field;
-}; /* struct Render_to_finite_elements_data */
-
 static int Graphics_object_render_to_finite_elements_iterator(
 	struct GT_object *gt_object, double time, void *data_void)
 /*******************************************************************************
@@ -978,8 +955,7 @@ DESCRIPTION :
 			case g_SURFACE:
 			{
 				return_code = Graphics_object_render_to_finite_elements(gt_object,
-					time, data->fe_region, data->template_node, data->coordinate_field,
-					data->fe_coordinate_field, data->render_mode);
+					time, data);
 			} break;
 			case g_POINT:
 			case g_POINTSET:
@@ -1029,6 +1005,8 @@ Renders the visible objects as finite elements into the specified <fe_region>.
 		return_code = build_Scene(scene);
 
 		data.render_mode = render_mode;
+		data.element_offset = 1;
+		data.node_offset = 1;
 		data.fe_region = fe_region;
 		data.coordinate_field = coordinate_field;
 		data.fe_coordinate_field = (struct FE_field *)NULL;
