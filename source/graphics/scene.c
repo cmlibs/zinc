@@ -8990,6 +8990,7 @@ work on these sub_elements.  These created scenes are not added to the manager.
 ==============================================================================*/
 {
 	char *current_token, *index, *next_index, *string_copy;
+	FE_value time;
 	int return_code;
 	gtMatrix transformation;
 	struct GT_element_group *gt_element_group;
@@ -9074,6 +9075,16 @@ work on these sub_elements.  These created scenes are not added to the manager.
 											case SCENE_OBJECT_GRAPHICAL_ELEMENT_GROUP:
 											{
 												gt_element_group = Scene_object_get_graphical_element_group(scene_object);
+												/* Ensure the graphical_element_group has been built */
+												if (scene_object->time_object)
+												{
+													time = Time_object_get_current_time(scene_object->time_object);
+												}
+												else
+												{
+													time = 0.0;
+												}
+												build_GT_element_group(gt_element_group, time, scene_object->name);
 												/* Use the same name so that output using the name is correct */
 												if (scene = CREATE(Scene)(scene->name))
 												{
