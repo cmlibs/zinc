@@ -1012,6 +1012,13 @@ Renders the visible objects as finite elements into the specified <fe_region>.
 		data.fe_coordinate_field = (struct FE_field *)NULL;
 		data.template_node = (struct FE_node *)NULL;
 
+		if (render_mode == RENDER_TO_FINITE_ELEMENTS_SURFACE_NODE_CLOUD)
+		{
+			/* Set a random seed so that testing generates the same cloud
+				each time */
+			CMGUI_SEED_RANDOM(10000);
+		}
+
 		FE_region_begin_change(fe_region);
 		FE_region_begin_define_faces(fe_region);
 

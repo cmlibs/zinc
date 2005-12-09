@@ -187,6 +187,9 @@ Stores an VT_iso_vertex and its Decimation_quadric
 	int invalid_cost_counter; /* Count the number of times this cost has been 
 										  selected as optimal but the cost is rejected due
 										  to inverting triangles */
+	/* Add an index for sorting these costs without using the pointer
+		so that the decimation is repeatable for testing */
+	int index;
 	int access_count;
 };
 
@@ -202,7 +205,7 @@ itself just to get a unique ordering.
 {
 	int return_code;
 
-	ENTER(compare_double);
+	ENTER(compare_decimation_cost);
 	if (cost1->cost < cost2->cost)
 	{
 		return_code = -1;
@@ -215,13 +218,13 @@ itself just to get a unique ordering.
 		}
 		else
 		{
-			if (cost1 < cost2)
+			if (cost1->index < cost2->index)
 			{
 				return_code = -1;
 			}
 			else
 			{
-				if (cost1 > cost2)
+				if (cost1->index > cost2->index)
 				{
 					return_code = 1;
 				}
@@ -237,7 +240,7 @@ itself just to get a unique ordering.
 	return (return_code);
 } /* compare_decimation_cost */
 
-static struct Decimation_cost *CREATE(Decimation_cost)(void)
+static struct Decimation_cost *CREATE(Decimation_cost)(int index)
 /*******************************************************************************
 LAST MODIFIED : 28 February 2005
 
@@ -254,6 +257,7 @@ DESCRIPTION :
 		cost->cost = 0.0;
 		cost->self = cost;
 		cost->invalid_cost_counter = 0;
+		cost->index = index;
 		cost->access_count = 0;
 	}
 	else
@@ -672,7 +676,7 @@ fastest the edge is less likely to collapse.
 {
 	double a[3], boundary_weight, d, q[3], v1[3], v2[3];
 	int add_triangle, allocated_edges, compacting_triangles, compacting_vertices,
-		edge_count, *edges_counts, found, i, j, k, l,
+		cost_index, edge_count, *edges_counts, found, i, j, k, l,
 		*new_edges_counts, number_of_edges, number_of_planes,
 		number_of_triangles, remove_triangle, return_code, triangle_index,
 		triangles_removed, vertex_index;
@@ -748,6 +752,7 @@ fastest the edge is less likely to collapse.
 	 edge add the plane perpendicular to the plane of triangle which runs along
 	 the edge into the quadrics for each vertex */
 	pre_cost_list = CREATE(LIST(Decimation_cost))();
+	cost_index = 1;
 	allocated_edges = 40;
 	ALLOCATE(edges_list, struct VT_iso_vertex *, allocated_edges);
 	ALLOCATE(edges_counts, int, allocated_edges);
@@ -816,19 +821,24 @@ fastest the edge is less likely to collapse.
 							edges_triangles[edge_count] = vertex->triangles[j];
 							edge_count++;
 								
-							if (vertex < vertex2)
+							if (vertex->index < vertex2->index)
 							{
 								/* Only create costs for the vertices which have a larger
 									pointer so that we don't get each edge from both ends */
-								if (cost = CREATE(Decimation_cost)())
+								/* Reorder the bits in the index so that we don't favour work
+									in the order they are created, but haven't swapped every bit */
+								if (cost = CREATE(Decimation_cost)(((cost_index & 0xf) << 28) +
+										((cost_index & 0xf0) << 20) + ((cost_index & 0xff00) << 8) 
+										+ ((cost_index & 0xff0000) >> 8) + ((cost_index & 0xff000000) >> 24)))
 								{
+									cost_index++;
 									cost->quadric1 = ACCESS(Decimation_quadric)(quadric);
 									if (quadric2 = FIND_BY_IDENTIFIER_IN_LIST(Decimation_quadric,
 											vertex)(vertex2, quadric_list))
 									{
 										cost->quadric2 = ACCESS(Decimation_quadric)(quadric2);
 
-										/* Put this into a temproray list as we are still updating
+										/* Put this into a temporary list as we are still updating
 											the quadrics with the edge penalties and we should not
 											have any objects in a list when we update its cost as
 											this is the identifier for the list. */
@@ -856,7 +866,7 @@ fastest the edge is less likely to collapse.
 				/* Only if only 1 triangle has this vertex and only when the 
 					vertex2 pointer is less than the quadric1 ptr so that we only
 					do this from one end. */
-				if ((edges_counts[j] == 1) && (vertex < edges_list[j]))
+				if ((edges_counts[j] == 1) && (vertex->index < edges_list[j]->index))
 				{
 					/* This is a boundary edge, add a new plane into the quadrics of both
 						vertices */
