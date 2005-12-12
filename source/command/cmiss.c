@@ -18568,9 +18568,9 @@ Executes a GFX SET command.
 				command_data_void, gfx_set_FE_nodal_value);
 			Option_table_add_entry(option_table, "order", NULL,
 				command_data_void, gfx_set_scene_order);
-#if defined (MOTIF)
 			Option_table_add_entry(option_table, "point_size", &global_point_size,
 				NULL, set_float_positive);
+#if defined (MOTIF)
 			Option_table_add_entry(option_table, "resolution", NULL,
 				command_data->graphics_window_manager, set_graphics_window_resolution);
 #endif /* defined (MOTIF) */
