@@ -990,3 +990,29 @@ Writes the view in the scene_viewer to the specified filename.
 
 	return (return_code);
 } /* Cmiss_scene_viewer_write_image_to_file */
+
+int Cmiss_scene_viewer_get_NDC_info(Cmiss_scene_viewer_id scene_viewer,
+	double *NDC_left,double *NDC_top,double *NDC_width,double *NDC_height)
+/*******************************************************************************
+LAST MODIFIED : 15 November 2005
+
+DESCRIPTION :
+Gets the NDC information.
+==============================================================================*/
+{
+  return Scene_viewer_get_NDC_info((struct Scene_viewer*)scene_viewer, NDC_left, NDC_top,
+                                   NDC_width, NDC_height);
+}
+
+int Cmiss_scene_viewer_set_NDC_info(Cmiss_scene_viewer_id scene_viewer,
+	double NDC_left,double NDC_top,double NDC_width,double NDC_height)
+/*******************************************************************************
+LAST MODIFIED : 15 November 2005
+
+DESCRIPTION :
+Gets the NDC information.
+==============================================================================*/
+{
+  return Scene_viewer_set_NDC_info((struct Scene_viewer*)scene_viewer, NDC_left, NDC_top,
+                                   NDC_width, NDC_height);
+}

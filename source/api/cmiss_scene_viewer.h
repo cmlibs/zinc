@@ -616,4 +616,24 @@ If <preferred_width>, <preferred_height>, <preferred_antialias> or
 default values for just this write.  The width and height cannot be overridden
 when the <force_onscreen> flag is set.
 ==============================================================================*/
+
+int Cmiss_scene_viewer_get_NDC_info(Cmiss_scene_viewer_id scene_viewer,
+	double *NDC_left,double *NDC_top,double *NDC_width,double *NDC_height);
+/*******************************************************************************
+LAST MODIFIED : 15 November 2005
+
+DESCRIPTION :
+Gets the NDC information.
+==============================================================================*/
+
+
+int Cmiss_scene_viewer_set_NDC_info(Cmiss_scene_viewer_id scene_viewer,
+	double NDC_left,double NDC_top,double NDC_width,double NDC_height);
+/*******************************************************************************
+LAST MODIFIED : 15 November 2005
+
+DESCRIPTION :
+Gets the NDC information.
+==============================================================================*/
+
 #endif /* __CMISS_SCENE_VIEWER_H__ */
