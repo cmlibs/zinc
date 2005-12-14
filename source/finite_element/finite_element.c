@@ -106,6 +106,7 @@ if (new_values_storage_size % 8) \
 /* do nothing */
 #endif /* defined (O64) */
 
+#define VALUE_STORAGE_NUMBER_OF_TIMES_BLOCK (30)
 /*
 Module types
 ------------
@@ -1897,13 +1898,15 @@ the appropriate value size to transfer time value arrays from <source> with
 } /* copy_time_sequence_values_storage_arrays */
 
 static int allocate_time_values_storage_array(enum Value_type value_type, 
-	struct FE_time_sequence *destination_time_sequence, Value_storage *dest)
+	struct FE_time_sequence *destination_time_sequence, Value_storage *dest,
+	int initialise_storage)
 /************************************************************************
 LAST MODIFIED : 21 November 2001
 
 DESCRIPTION
 Allocate an array of type value_type with size determined by the 
-destination_time_sequence.
+destination_time_sequence.  If <initialise_storage> is true then the
+values in the array are set to the zero.
 
 NOTE:
 For time types, the contents of values_storage is:
@@ -1913,13 +1916,13 @@ Assumes that sizeof(int) = 1 DWORD, so that the pointers are a DWORD aligned
 in memory. If pointers weren't DWORD aligned get bus errors on SGIs.
 =======================================================================*/
 {
-	int destination_number_of_times,return_code;
+	int number_of_times,j,return_code;
 	
 	ENTER(allocate_time_values_storage_array);	
 	if (dest)
 	{	
 		return_code = 1;
-		destination_number_of_times = FE_time_sequence_get_number_of_times(
+		number_of_times = FE_time_sequence_get_number_of_times(
 			destination_time_sequence);
 		/* Allocate the array */
 		switch (value_type)
@@ -1928,8 +1931,15 @@ in memory. If pointers weren't DWORD aligned get bus errors on SGIs.
 			{
 				double *dest_array,**array_address;				
 				/* allocate the dest array */
-				if (ALLOCATE(dest_array,double,destination_number_of_times))
+				if (ALLOCATE(dest_array,double,number_of_times))
 				{
+					if (initialise_storage)
+					{
+						for (j = 0 ; j < number_of_times ; j++)
+						{
+							dest_array[j] = 0.0;
+						}
+					}
 					/* copy the address of the new array into the dest values_storage*/	
 					array_address = (double **)dest;
 					*array_address = dest_array;					
@@ -1945,8 +1955,15 @@ in memory. If pointers weren't DWORD aligned get bus errors on SGIs.
 			{
 				FE_value *dest_array,**array_address;
 				/* allocate the dest array */
-				if (ALLOCATE(dest_array,FE_value,destination_number_of_times))
+				if (ALLOCATE(dest_array,FE_value,number_of_times))
 				{
+					if (initialise_storage)
+					{
+						for (j = 0 ; j < number_of_times ; j++)
+						{
+							dest_array[j] = FE_VALUE_INITIALIZER;
+						}
+					}
 					/* copy the address of the new array into the dest values_storage*/	
 					array_address = (FE_value **)dest;
 					*array_address = dest_array;					
@@ -1962,8 +1979,15 @@ in memory. If pointers weren't DWORD aligned get bus errors on SGIs.
 			{
 				float *dest_array,**array_address;
 				/* allocate the dest array */
-				if (ALLOCATE(dest_array,float,destination_number_of_times))
+				if (ALLOCATE(dest_array,float,number_of_times))
 				{
+					if (initialise_storage)
+					{
+						for (j = 0 ; j < number_of_times ; j++)
+						{
+							dest_array[j] = 0.0f;
+						}
+					}
 					/* copy the address of the new array into the dest values_storage*/	
 					array_address = (float **)dest;
 					*array_address = dest_array;					
@@ -1979,8 +2003,15 @@ in memory. If pointers weren't DWORD aligned get bus errors on SGIs.
 			{
 				short *dest_array,**array_address;
 				/* allocate the dest array */
-				if (ALLOCATE(dest_array,short,destination_number_of_times))
+				if (ALLOCATE(dest_array,short,number_of_times))
 				{
+					if (initialise_storage)
+					{
+						for (j = 0 ; j < number_of_times ; j++)
+						{
+							dest_array[j] = 0;
+						}
+					}
 					/* copy the address of the new array into the dest values_storage*/	
 					array_address = (short **)dest;
 					*array_address = dest_array;					
@@ -1996,27 +2027,17 @@ in memory. If pointers weren't DWORD aligned get bus errors on SGIs.
 			{
 				int *dest_array,**array_address;
 				/* allocate the dest array */
-				if (ALLOCATE(dest_array,int,destination_number_of_times))
+				if (ALLOCATE(dest_array,int,number_of_times))
 				{
+					if (initialise_storage)
+					{
+						for (j = 0 ; j < number_of_times ; j++)
+						{
+							dest_array[j] = 0;
+						}
+					}
 					/* copy the address of the new array into the dest values_storage*/	
 					array_address = (int **)dest;
-					*array_address = dest_array;					
-				}
-				else
-				{	
-					display_message(ERROR_MESSAGE,
-						"allocate_time_values_storage_array. Out of memory");
-					return_code = 0;
-				}
-			} break;
-			case UNSIGNED_ARRAY_VALUE:
-			{
-				unsigned *dest_array,**array_address;
-				/* allocate the dest array */
-				if (ALLOCATE(dest_array,unsigned,destination_number_of_times))
-				{
-					/* copy the address of the new array into the dest values_storage*/	
-					array_address = (unsigned **)dest;
 					*array_address = dest_array;					
 				}
 				else
@@ -2093,12 +2114,14 @@ times.
 					{
 						destination_number_of_times = FE_time_sequence_get_number_of_times(destination_time_sequence);
 						/* Probably should use some exponential growing increment in the size of allocation */
-						destination_number_of_times = (destination_number_of_times + 30) - 
-							(destination_number_of_times % 30);
+						destination_number_of_times = (destination_number_of_times + VALUE_STORAGE_NUMBER_OF_TIMES_BLOCK) - 
+							(destination_number_of_times % VALUE_STORAGE_NUMBER_OF_TIMES_BLOCK);
 						for (i=0;(i<number_of_values)&&return_code;i++)
 						{
 							REALLOCATE(*(void **)dest, *(void **)src, char, destination_number_of_times *
 								get_Value_storage_size(value_type, (struct FE_time_sequence *)NULL));
+							/* Set the src to NULL first and then set the destination in case source and
+								destination are the same */
 							*(void **)src = 0x0;
 							dest += value_size;
 							src += value_size;
@@ -2110,9 +2133,9 @@ times.
 						for (i=0;(i<number_of_values)&&return_code;i++)
 						{
 							if (!(allocate_time_values_storage_array(value_type,
-								destination_time_sequence,dest)&&
-								copy_time_sequence_values_storage_array(src,value_type,
-								source_time_sequence,destination_time_sequence,dest)))
+										destination_time_sequence,dest,/*initialise_storage*/0)&&
+									copy_time_sequence_values_storage_array(src,value_type,
+										source_time_sequence,destination_time_sequence,dest)))
 							{
 								display_message(ERROR_MESSAGE,
 									"copy_value_storage_array.  Failed to copy array");
@@ -2122,12 +2145,12 @@ times.
 									free_value_storage_array(destination,value_type,
 										destination_time_sequence,i);
 								}
-								return_code = 0;
+									return_code = 0;
 							}
 							dest += value_size;
 							src += value_size;
 						}
-					}
+					} break;
 				}
 			}
 			else
@@ -2140,148 +2163,148 @@ times.
 		else
 		{
 			switch (value_type)
-			{			
-				case DOUBLE_VALUE:
-				{
-					double *src,*dest;
-
-					src = (double *)source;
-					dest = (double *)destination;
-					for (i=0;i<number_of_values;i++)
+				{			
+					case DOUBLE_VALUE:
 					{
-						*dest = *src;
-						dest++;
-						src++;
-					}
-				} break;
-				case ELEMENT_XI_VALUE:
-				{
-					int i,j;
-					Value_storage *src,*dest;
+						double *src,*dest;
 
-					src = source;
-					dest = destination;
-					for (i=0;i<number_of_values;i++)
-					{
-						/* copy accessed element pointer */
-						if (*((struct FE_element **)src))
+						src = (double *)source;
+						dest = (double *)destination;
+						for (i=0;i<number_of_values;i++)
 						{
-							(*(struct FE_element **)dest)
-								= ACCESS(FE_element)(*((struct FE_element **)src));
+							*dest = *src;
+							dest++;
+							src++;
 						}
-						else
+					} break;
+					case ELEMENT_XI_VALUE:
+					{
+						int i,j;
+						Value_storage *src,*dest;
+
+						src = source;
+						dest = destination;
+						for (i=0;i<number_of_values;i++)
 						{
-							(*(struct FE_element **)dest) = (struct FE_element *)NULL;
-						}
-						dest += sizeof(struct FE_element *);
-						src += sizeof(struct FE_element *);
-						/* copy the xi location */
-						for (j=0;j<MAXIMUM_ELEMENT_XI_DIMENSIONS;j++)
-						{
-							*((FE_value *)dest) = *((FE_value *)src);
-							dest += sizeof(FE_value);
-							src += sizeof(FE_value);
-						}
-					}
-				} break;
-				case FE_VALUE_VALUE:
-				{
-					FE_value *src,*dest;
-
-					src = (FE_value *)source;
-					dest = (FE_value *)destination;
-					for (i=0;i<number_of_values;i++)
-					{
-						*dest = *src;
-						dest++;
-						src++;
-					}
-				} break;
-				case FLT_VALUE:
-				{
-					float *src,*dest;
-
-					src = (float *)source;
-					dest = (float *)destination;
-					for (i=0;i<number_of_values;i++)
-					{
-						*dest = *src;
-						dest++;
-						src++;
-					}
-				} break;	
-				case SHORT_VALUE:
-				{
-					display_message(ERROR_MESSAGE,"copy_value_storage_array.  "
-						"SHORT_VALUE: Haven't written code yet. Beware pointer alignment problems!");
-					return_code = 0;
-				} break;
-				case INT_VALUE:
-				{
-					int *src,*dest;
-
-					src = (int *)source;
-					dest = (int *)destination;
-					for (i=0;i<number_of_values;i++)
-					{
-						*dest = *src;
-						dest++;
-						src++;
-					}
-				} break;	
-				case UNSIGNED_VALUE:
-				{
-					unsigned *src,*dest;
-
-					src = (unsigned *)source;
-					dest = (unsigned *)destination;
-					for (i=0;i<number_of_values;i++)
-					{
-						*dest = *src;
-						dest++;
-						src++;
-					}
-				} break;	
-				case DOUBLE_ARRAY_VALUE:
-				case FE_VALUE_ARRAY_VALUE:
-				case FLT_ARRAY_VALUE:	
-				case SHORT_ARRAY_VALUE:
-				case INT_ARRAY_VALUE:
-				case UNSIGNED_ARRAY_VALUE:
-				case STRING_VALUE:
-				{
-					int value_size;
-					Value_storage *src,*dest;
-
-					dest = destination;
-					src = source;
-					value_size=get_Value_storage_size(value_type,
-						(struct FE_time_sequence *)NULL);
-					for (i=0;(i<number_of_values)&&return_code;i++)
-					{
-						if (!allocate_and_copy_values_storage_array(src,value_type,dest))
-						{
-							display_message(ERROR_MESSAGE,
-								"copy_value_storage_array.  Failed to copy array");
-							if (0<i)
+							/* copy accessed element pointer */
+							if (*((struct FE_element **)src))
 							{
-								/* free any arrays allocated to date */
-								free_value_storage_array(destination,value_type,
-									(struct FE_time_sequence *)NULL,i);
+								(*(struct FE_element **)dest)
+									= ACCESS(FE_element)(*((struct FE_element **)src));
 							}
-							return_code = 0;
+							else
+							{
+								(*(struct FE_element **)dest) = (struct FE_element *)NULL;
+							}
+							dest += sizeof(struct FE_element *);
+							src += sizeof(struct FE_element *);
+							/* copy the xi location */
+							for (j=0;j<MAXIMUM_ELEMENT_XI_DIMENSIONS;j++)
+							{
+								*((FE_value *)dest) = *((FE_value *)src);
+								dest += sizeof(FE_value);
+								src += sizeof(FE_value);
+							}
 						}
-						dest += value_size;
-						src += value_size;
-					}
-				} break;
-				default:
-				{
-					display_message(ERROR_MESSAGE,
-						"copy_value_storage_array.  Unknown value_type");
-					return_code = 0;
-				} break;
-			}
+					} break;
+					case FE_VALUE_VALUE:
+					{
+						FE_value *src,*dest;
+
+						src = (FE_value *)source;
+						dest = (FE_value *)destination;
+						for (i=0;i<number_of_values;i++)
+						{
+							*dest = *src;
+							dest++;
+							src++;
+						}
+					} break;
+					case FLT_VALUE:
+					{
+						float *src,*dest;
+
+						src = (float *)source;
+						dest = (float *)destination;
+						for (i=0;i<number_of_values;i++)
+						{
+							*dest = *src;
+							dest++;
+							src++;
+						}
+					} break;	
+					case SHORT_VALUE:
+					{
+						display_message(ERROR_MESSAGE,"copy_value_storage_array.  "
+							"SHORT_VALUE: Haven't written code yet. Beware pointer alignment problems!");
+						return_code = 0;
+					} break;
+					case INT_VALUE:
+					{
+						int *src,*dest;
+
+						src = (int *)source;
+						dest = (int *)destination;
+						for (i=0;i<number_of_values;i++)
+						{
+							*dest = *src;
+							dest++;
+							src++;
+						}
+					} break;	
+					case UNSIGNED_VALUE:
+					{
+						unsigned *src,*dest;
+
+						src = (unsigned *)source;
+						dest = (unsigned *)destination;
+						for (i=0;i<number_of_values;i++)
+						{
+							*dest = *src;
+							dest++;
+							src++;
+						}
+					} break;	
+					case DOUBLE_ARRAY_VALUE:
+					case FE_VALUE_ARRAY_VALUE:
+					case FLT_ARRAY_VALUE:	
+					case SHORT_ARRAY_VALUE:
+					case INT_ARRAY_VALUE:
+					case UNSIGNED_ARRAY_VALUE:
+					case STRING_VALUE:
+					{
+						int value_size;
+						Value_storage *src,*dest;
+
+						dest = destination;
+						src = source;
+						value_size=get_Value_storage_size(value_type,
+							(struct FE_time_sequence *)NULL);
+						for (i=0;(i<number_of_values)&&return_code;i++)
+						{
+							if (!allocate_and_copy_values_storage_array(src,value_type,dest))
+							{
+								display_message(ERROR_MESSAGE,
+									"copy_value_storage_array.  Failed to copy array");
+								if (0<i)
+								{
+									/* free any arrays allocated to date */
+									free_value_storage_array(destination,value_type,
+										(struct FE_time_sequence *)NULL,i);
+								}
+								return_code = 0;
+							}
+							dest += value_size;
+							src += value_size;
+						}
+					} break;
+					default:
+					{
+						display_message(ERROR_MESSAGE,
+							"copy_value_storage_array.  Unknown value_type");
+						return_code = 0;
+					} break;
+				}
 		}
 	}
 	else
@@ -2897,7 +2920,7 @@ for all components.
 static int FE_node_field_set_FE_time_sequence(struct FE_node_field *node_field,
 	struct FE_time_sequence *time_sequence)
 /*******************************************************************************
-LAST MODIFIED : 3 December 2001
+LAST MODIFIED : 13 December 2005
 
 DESCRIPTION :
 Sets the fe_time_sequence for this object.  If this FE_node_field is being
@@ -16071,6 +16094,87 @@ Up to the calling routine to deallocate the returned char string!
 	return (return_code);
 } /* GET_NAME(FE_node) */
 
+int FE_region_get_FE_node_field_info_adding_new_times(
+	struct FE_region *fe_region, struct FE_node_field_info **node_field_info_address, 
+	struct FE_node_field *new_node_field)
+/*******************************************************************************
+LAST MODIFIED : 13 December 2005
+
+DESCRIPTION :
+Updates the pointer to <node_field_info_address> to point to a node_field info
+which appends to the fields in <node_field_info_address> one <new_node_field>.
+The node_field_info returned in <node_field_info_address> will be for the
+<new_number_of_values>.
+The <fe_region> maintains an internal list of these structures so they can be 
+shared between nodes.  This function allows a fast path when adding a single 
+field.  If the node_field passed in is only referenced by one external object
+then it is assumed that this function can modify it rather than copying.  If 
+there are more references then the object is copied and then modified.
+This function handles the access and deaccess of the <node_field_info_address>
+as if it is just updating then there is nothing to do.
+==============================================================================*/
+{
+	int return_code;
+	struct FE_node_field *node_field;
+	struct FE_node_field_info *existing_node_field_info, *new_node_field_info;
+	struct LIST(FE_node_field) *node_field_list;
+
+	ENTER(FE_region_get_FE_node_field_info_adding_new_times);
+	if (fe_region && node_field_info_address && 
+		(existing_node_field_info = *node_field_info_address))
+	{
+		return_code = 1;
+		if (node_field = FIND_BY_IDENTIFIER_IN_LIST(FE_node_field,field)(new_node_field->field,
+			existing_node_field_info->node_field_list))
+		{
+			if (FE_node_field_info_used_only_once(existing_node_field_info))
+			{
+				FE_node_field_set_FE_time_sequence(node_field, new_node_field->time_sequence);
+				/* Should check there isn't a node_field equivalent to this modified one
+					already in the list, and if there is use that instead */
+			}
+			else
+			{
+				/* Need to copy after all */
+				node_field_list = CREATE_LIST(FE_node_field)();
+				if (COPY_LIST(FE_node_field)(node_field_list, existing_node_field_info->node_field_list))
+				{
+					/* Find the correct node field in the new list */
+					if (node_field = FIND_BY_IDENTIFIER_IN_LIST(FE_node_field,field)(
+						new_node_field->field, node_field_list))
+					{
+						/* Update the time sequence */
+						FE_node_field_set_FE_time_sequence(node_field, new_node_field->time_sequence);
+						/* create the new node information, number_of_values has not changed */
+						if (new_node_field_info = FE_region_get_FE_node_field_info(
+								 fe_region, existing_node_field_info->number_of_values, node_field_list))
+						{
+							REACCESS(FE_node_field_info)(node_field_info_address,
+								new_node_field_info);
+						}
+					}
+				}
+				DESTROY(LIST(FE_node_field))(&node_field_list);
+			}
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,
+				"FE_region_get_FE_node_field_info_adding_new_times.  Field not already defined.");
+			return_code = 0;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"FE_region_get_FE_node_field_info_adding_new_field.  Invalid argument(s)");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* FE_region_get_FE_node_field_info_adding_new_field */
+
 int define_FE_field_at_node(struct FE_node *node, struct FE_field *field,
 	struct FE_time_sequence *fe_time_sequence, 
 	struct FE_node_field_creator *fe_node_field_creator)
@@ -16082,16 +16186,21 @@ Defines a field at a node (does not assign values)
 ==============================================================================*/
 {
 	enum FE_nodal_value_type **component_nodal_value_types;
+	enum FE_time_sequence_mapping time_sequence_mapping;
 	enum Value_type value_type;
 	int *component_number_of_derivatives,*component_number_of_versions,
 		existing_values_storage_size, existing_number_of_values, i,j,
-		new_values_storage_size,number_of_values,number_of_times,
-		number_of_values_in_component,return_code,size;
-	struct FE_node_field *node_field;
+		new_number_of_times,new_values_storage_size,number_of_values,number_of_times,
+		number_of_values_in_component,return_code,size,value_size;
+	struct FE_node_field *existing_node_field, *merged_node_field, *new_node_field,
+		*node_field;
 	struct FE_node_field_component *component;
 	struct FE_node_field_info *node_field_info;
 	struct FE_region *fe_region;
-	Value_storage *new_value;
+	struct FE_time_sequence *existing_time_sequence;
+	struct LIST(FE_node_field) *new_node_field_list;
+	struct Merge_FE_node_field_into_list_data merge_data;
+	Value_storage *new_value, *storage;
 
 	ENTER(define_FE_field_at_node);
 	return_code = 0;
@@ -16108,73 +16217,138 @@ Defines a field at a node (does not assign values)
 		value_type = field->value_type;
 		size = get_Value_storage_size(value_type, fe_time_sequence);
 		return_code = 1;
-		/* check if the field is already defined at the node */
-		if (FIND_BY_IDENTIFIER_IN_LIST(FE_node_field,field)(field,
-			node_field_info->node_field_list))
+
+		/* create the node field */
+		if (node_field = CREATE(FE_node_field)(field))
 		{
-			display_message(ERROR_MESSAGE,
-				"define_FE_field_at_node.  Field %s already defined at node %d",
-				field->name, node->cm_node_identifier);
-			return_code = 0;
-		}
-		/* no longer perform following check since it prevents us from reading in
-			 indexed fields when the indexer is not in the same header */
-#if defined (OLD_CODE)
-		/* if indexed field, check that the indexer field is defined at the node */
-		if (INDEXED_FE_FIELD==field->fe_field_type)
-		{
-			if (!FIND_BY_IDENTIFIER_IN_LIST(FE_node_field,field)(field->indexer_field,
-				node_field_info->node_field_list))
+			/* access now, deaccess at end to clean up if fails */
+			ACCESS(FE_node_field)(node_field);
+			if (fe_time_sequence)
 			{
-				display_message(ERROR_MESSAGE,"define_FE_field_at_node.  "
-					"Indexer field %s for field %s not defined at node %d",
-					field->indexer_field->name,field->name,node->cm_node_identifier);
-				return_code=0;
+				FE_node_field_set_FE_time_sequence(node_field, 
+					fe_time_sequence);
+				number_of_times = FE_time_sequence_get_number_of_times(
+					fe_time_sequence);
 			}
-		}
-#endif /* defined (OLD_CODE) */
-		if (return_code)
-		{
-			/* create the node field */
-			if (node_field = CREATE(FE_node_field)(field))
+			number_of_values = node_field_info->number_of_values;
+			if (GENERAL_FE_FIELD == field->fe_field_type)
 			{
-				/* access now, deaccess at end to clean up if fails */
-				ACCESS(FE_node_field)(node_field);
-				if (fe_time_sequence)
+				i = field->number_of_components;
+				component = node_field->components;
+				new_values_storage_size = 0;
+				while (return_code && (i > 0))
 				{
-					FE_node_field_set_FE_time_sequence(node_field, 
-						fe_time_sequence);
-					number_of_times = FE_time_sequence_get_number_of_times(
-						fe_time_sequence);
+					/*???DB.  Inline assign_FE_node_field_component and get rid of
+					  it ? */
+					return_code = assign_FE_node_field_component(component,
+						node_field_info->values_storage_size +
+						new_values_storage_size,
+						*component_number_of_derivatives,
+						*component_number_of_versions,
+						*component_nodal_value_types);
+					number_of_values_in_component = (*component_number_of_versions) *
+						(1+(*component_number_of_derivatives));
+					number_of_values += number_of_values_in_component;
+					new_values_storage_size += number_of_values_in_component*size;
+					component_number_of_derivatives++;
+					component_number_of_versions++;
+					component_nodal_value_types++;
+					component++;
+					i--;
 				}
-				number_of_values = node_field_info->number_of_values;
-				if (GENERAL_FE_FIELD == field->fe_field_type)
+			}
+			if (return_code)
+			{
+				if (existing_node_field=FIND_BY_IDENTIFIER_IN_LIST(FE_node_field,field)(
+					field,node_field_info->node_field_list))
 				{
-					i = field->number_of_components;
-					component = node_field->components;
-					new_values_storage_size = 0;
-					while (return_code && (i > 0))
+					existing_time_sequence = ACCESS(FE_time_sequence)(existing_node_field->time_sequence);
+
+					/* Check they are consistent or we are only adding times */
+					/* Need to copy node field list in case it is modified  */
+					new_node_field_list = CREATE_LIST(FE_node_field)();
+					if (COPY_LIST(FE_node_field)(new_node_field_list,
+							node_field_info->node_field_list))
 					{
-						/*???DB.  Inline assign_FE_node_field_component and get rid of
-							it ? */
-						return_code = assign_FE_node_field_component(component,
-							node_field_info->values_storage_size +
-							new_values_storage_size,
-							*component_number_of_derivatives,
-							*component_number_of_versions,
-							*component_nodal_value_types);
-						number_of_values_in_component = (*component_number_of_versions) *
-							(1+(*component_number_of_derivatives));
-						number_of_values += number_of_values_in_component;
-						new_values_storage_size += number_of_values_in_component*size;
-						component_number_of_derivatives++;
-						component_number_of_versions++;
-						component_nodal_value_types++;
-						component++;
-						i--;
+						merge_data.requires_merged_storage = 0;
+						merge_data.values_storage_size = 0;
+						merge_data.number_of_values = node_field_info->number_of_values;
+						merge_data.list = new_node_field_list;
+						if (merge_FE_node_field_into_list(node_field, (void *)(&merge_data)))
+						{
+							if (merge_data.requires_merged_storage)
+							{
+								/* Time sequences are different or it would have failed */
+								/* get the node_field_info for the new list */
+								merged_node_field = FIND_BY_IDENTIFIER_IN_LIST(FE_node_field,field)(
+									field, new_node_field_list);
+								FE_region_get_FE_node_field_info_adding_new_times(
+									node_field_info->fe_region, &node->fields,
+									merged_node_field);
+								new_node_field=FIND_BY_IDENTIFIER_IN_LIST(FE_node_field,field)(
+									field, node->fields->node_field_list);
+								/* Update values storage, similar to copy_value_storage_array but
+								   we are updating existing storage and need to initialise the new values */
+								/* Offsets must not have changed so we can use the existing_node_field */
+								storage = node->values_storage + existing_node_field->components->value;
+								value_size=get_Value_storage_size(value_type, new_node_field->time_sequence);
+								time_sequence_mapping = 
+									FE_time_sequences_mapping(existing_time_sequence, new_node_field->time_sequence);
+								switch (time_sequence_mapping)
+								{
+									case FE_TIME_SEQUENCE_MAPPING_IDENTICAL:
+									case FE_TIME_SEQUENCE_MAPPING_APPEND:
+									{
+										new_number_of_times = FE_time_sequence_get_number_of_times(new_node_field->time_sequence);
+										/* Probably should use some exponential growing increment in the size of allocation */
+										new_number_of_times = (new_number_of_times + VALUE_STORAGE_NUMBER_OF_TIMES_BLOCK) - 
+											(new_number_of_times % VALUE_STORAGE_NUMBER_OF_TIMES_BLOCK);
+										for (i=0;(i<number_of_values)&&return_code;i++)
+										{
+											REALLOCATE(*(void **)storage, *(void **)storage, char, new_number_of_times *
+												get_Value_storage_size(value_type, (struct FE_time_sequence *)NULL));
+											storage += value_size;
+										}
+									} break;
+									default:
+									{
+										/* Need a temporary pointer as we will be allocating the new
+											memory, copying the existing values and then replacing the 
+											pointer with the new value */
+										void *temp_storage;
+										
+										/* Fallback default implementation */
+										for (i=0;(i<number_of_values)&&return_code;i++)
+										{
+											if (!(allocate_time_values_storage_array(value_type,
+														new_node_field->time_sequence,(Value_storage *)&temp_storage,/*initialise_storage*/1)&&
+													copy_time_sequence_values_storage_array(storage,value_type,
+														existing_time_sequence,new_node_field->time_sequence,(Value_storage *)&temp_storage)))
+											{
+												display_message(ERROR_MESSAGE,
+													"copy_value_storage_array.  Failed to copy array");
+												return_code = 0;
+											}
+											/* Must free the src array now otherwise we will lose any reference to it */
+											free_value_storage_array(storage,value_type,existing_time_sequence,1);
+											/* Update the value storage with the new pointer */
+											*(void **)storage = temp_storage;
+											storage += value_size;
+										}
+									} break;
+								}
+							}
+							/* else existing time sequence includes new times so do nothing */
+						}
+						else
+						{
+							display_message(ERROR_MESSAGE, "define_FE_field_at_node.  "
+								"Field already defined incompatibly at node.");
+						}
 					}
+					DEACCESS(FE_time_sequence)(&existing_time_sequence);
 				}
-				if (return_code)
+				else
 				{
 					existing_values_storage_size = node_field_info->values_storage_size;
 					existing_number_of_values = node_field_info->number_of_values;
@@ -16196,69 +16370,9 @@ Defines a field at a node (does not assign values)
 								{
 									if (fe_time_sequence)
 									{
-										switch (value_type)
-										{
-											case FE_VALUE_VALUE:
-											{
-												char *array;
-												FE_value *fe_array;
-												
-												/* Allocate the array */
-												if (ALLOCATE(array, char, sizeof(FE_value) * number_of_times))
-												{
-													fe_array = (FE_value *)array;
-													for (j = 0 ; j < number_of_times ; j++)
-													{
-														fe_array[j] = FE_VALUE_INITIALIZER;
-													}
-													/* Store the pointer to the array
-														in the values storage */
-													*((char **)new_value) = array;
-													new_value += size;
-												}
-												else
-												{
-													display_message(ERROR_MESSAGE,
-														"define_FE_field_at_node.  "
-														"Unable to allocate FE value time array");
-													return_code = 0;
-												}
-											} break;
-											case SHORT_VALUE:
-											{
-												char *array;
-												short *short_array;
-
-												/* Allocate the array */
-												if (ALLOCATE(array,char,sizeof(short) * number_of_times))
-												{
-													short_array = (short *)array;
-													for (j = 0 ; j < number_of_times ; j++)
-													{
-														short_array[j] = 0;
-													}
-													/* Store the pointer to the array
-														in the values storage */
-													*((char **)new_value) = array;
-													new_value += size;
-												}
-												else
-												{
-													display_message(ERROR_MESSAGE,
-														"define_FE_field_at_node.  "
-														"Unable to allocate short time array");
-													return_code = 0;
-												}
-											} break;
-											default:
-											case  UNKNOWN_VALUE:
-											{
-												display_message(ERROR_MESSAGE,
-													"define_FE_field_at_node.  Time values for this "
-													"field type not implemented");
-												return_code = 0;
-											} break;
-										}
+										allocate_time_values_storage_array(value_type,
+											fe_time_sequence, new_value, /*initialise_storage*/1);
+										new_value += size;
 									}
 									else
 									{
@@ -16408,14 +16522,14 @@ Defines a field at a node (does not assign values)
 						}
 					}
 				}
-				DEACCESS(FE_node_field)(&node_field);
 			}
-			else
-			{
-				display_message(ERROR_MESSAGE,
-					"define_FE_field_at_node.  Could not create node_field");
-				return_code = 0;
-			}
+			DEACCESS(FE_node_field)(&node_field);
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,
+				"define_FE_field_at_node.  Could not create node_field");
+			return_code = 0;
 		}
 	}
 	else
