@@ -16190,7 +16190,7 @@ Defines a field at a node (does not assign values)
 	enum Value_type value_type;
 	int *component_number_of_derivatives,*component_number_of_versions,
 		existing_values_storage_size, existing_number_of_values, i,j,
-		new_number_of_times,new_values_storage_size,number_of_values,number_of_times,
+		new_number_of_times,new_values_storage_size,number_of_values,
 		number_of_values_in_component,return_code,size,value_size;
 	struct FE_node_field *existing_node_field, *merged_node_field, *new_node_field,
 		*node_field;
@@ -16226,8 +16226,6 @@ Defines a field at a node (does not assign values)
 			if (fe_time_sequence)
 			{
 				FE_node_field_set_FE_time_sequence(node_field, 
-					fe_time_sequence);
-				number_of_times = FE_time_sequence_get_number_of_times(
 					fe_time_sequence);
 			}
 			number_of_values = node_field_info->number_of_values;
