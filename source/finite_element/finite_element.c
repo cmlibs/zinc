@@ -2120,8 +2120,6 @@ times.
 						{
 							REALLOCATE(*(void **)dest, *(void **)src, char, destination_number_of_times *
 								get_Value_storage_size(value_type, (struct FE_time_sequence *)NULL));
-							/* Set the src to NULL first and then set the destination in case source and
-								destination are the same */
 							*(void **)src = 0x0;
 							dest += value_size;
 							src += value_size;
@@ -2924,8 +2922,11 @@ LAST MODIFIED : 13 December 2005
 
 DESCRIPTION :
 Sets the fe_time_sequence for this object.  If this FE_node_field is being
-accessed more than once it will fail as there will be other nodes that would
-then have mismatched node_fields and values_storage.
+accessed more than once it will fail as there will be other Node_field_infos
+and therefore nodes that would then have mismatched node_fields and values_storage.
+Should only be doing this if the Node_field_info that this belongs to is only
+being used by one node otherwise you would have to update the values_storage
+for all nodes using the Node_field_info.
 ==============================================================================*/
 {
 	int return_code;
@@ -16115,7 +16116,7 @@ as if it is just updating then there is nothing to do.
 ==============================================================================*/
 {
 	int return_code;
-	struct FE_node_field *node_field;
+	struct FE_node_field *node_field, *node_field_copy;
 	struct FE_node_field_info *existing_node_field_info, *new_node_field_info;
 	struct LIST(FE_node_field) *node_field_list;
 
@@ -16129,7 +16130,22 @@ as if it is just updating then there is nothing to do.
 		{
 			if (FE_node_field_info_used_only_once(existing_node_field_info))
 			{
-				FE_node_field_set_FE_time_sequence(node_field, new_node_field->time_sequence);
+				if (node_field->access_count > 1)
+				{
+					/* Need to copy this node_field */
+					node_field_copy = copy_create_FE_node_field_with_offset(node_field,
+						/*value_offset*/0);
+					REMOVE_OBJECT_FROM_LIST(FE_node_field)(node_field,
+						existing_node_field_info->node_field_list);
+					/* Update the time sequence */
+					FE_node_field_set_FE_time_sequence(node_field_copy, new_node_field->time_sequence);
+					ADD_OBJECT_TO_LIST(FE_node_field)(node_field_copy,
+						existing_node_field_info->node_field_list);
+				}
+				else
+				{
+					FE_node_field_set_FE_time_sequence(node_field, new_node_field->time_sequence);
+				}
 				/* Should check there isn't a node_field equivalent to this modified one
 					already in the list, and if there is use that instead */
 			}
@@ -16143,11 +16159,15 @@ as if it is just updating then there is nothing to do.
 					if (node_field = FIND_BY_IDENTIFIER_IN_LIST(FE_node_field,field)(
 						new_node_field->field, node_field_list))
 					{
+						node_field_copy = copy_create_FE_node_field_with_offset(node_field,
+							/*value_offset*/0);
+						REMOVE_OBJECT_FROM_LIST(FE_node_field)(node_field, node_field_list);
 						/* Update the time sequence */
-						FE_node_field_set_FE_time_sequence(node_field, new_node_field->time_sequence);
+						FE_node_field_set_FE_time_sequence(node_field_copy, new_node_field->time_sequence);
+						ADD_OBJECT_TO_LIST(FE_node_field)(node_field_copy, node_field_list);
 						/* create the new node information, number_of_values has not changed */
 						if (new_node_field_info = FE_region_get_FE_node_field_info(
-								 fe_region, existing_node_field_info->number_of_values, node_field_list))
+							fe_region, existing_node_field_info->number_of_values, node_field_list))
 						{
 							REACCESS(FE_node_field_info)(node_field_info_address,
 								new_node_field_info);
@@ -16189,9 +16209,9 @@ Defines a field at a node (does not assign values)
 	enum FE_time_sequence_mapping time_sequence_mapping;
 	enum Value_type value_type;
 	int *component_number_of_derivatives,*component_number_of_versions,
-		existing_values_storage_size, existing_number_of_values, i,j,
+		existing_values_storage_size, i,j,
 		new_number_of_times,new_values_storage_size,number_of_values,
-		number_of_values_in_component,return_code,size,value_size;
+		number_of_values_in_component,return_code,size,total_number_of_values,value_size;
 	struct FE_node_field *existing_node_field, *merged_node_field, *new_node_field,
 		*node_field;
 	struct FE_node_field_component *component;
@@ -16212,7 +16232,8 @@ Defines a field at a node (does not assign values)
 		(component_number_of_versions =
 			fe_node_field_creator->numbers_of_versions) &&
 		(component_nodal_value_types =
-			fe_node_field_creator->nodal_value_types))
+			fe_node_field_creator->nodal_value_types) &&
+		(field->number_of_components == fe_node_field_creator->number_of_components))
 	{
 		value_type = field->value_type;
 		size = get_Value_storage_size(value_type, fe_time_sequence);
@@ -16228,7 +16249,7 @@ Defines a field at a node (does not assign values)
 				FE_node_field_set_FE_time_sequence(node_field, 
 					fe_time_sequence);
 			}
-			number_of_values = node_field_info->number_of_values;
+			number_of_values = 0;
 			if (GENERAL_FE_FIELD == field->fe_field_type)
 			{
 				i = field->number_of_components;
@@ -16260,7 +16281,14 @@ Defines a field at a node (does not assign values)
 				if (existing_node_field=FIND_BY_IDENTIFIER_IN_LIST(FE_node_field,field)(
 					field,node_field_info->node_field_list))
 				{
-					existing_time_sequence = ACCESS(FE_time_sequence)(existing_node_field->time_sequence);
+					if (existing_node_field->time_sequence)
+					{
+						existing_time_sequence = ACCESS(FE_time_sequence)(existing_node_field->time_sequence);
+					}
+					else
+					{
+						existing_time_sequence = (struct FE_time_sequence *)NULL;
+					}
 
 					/* Check they are consistent or we are only adding times */
 					/* Need to copy node field list in case it is modified  */
@@ -16295,6 +16323,10 @@ Defines a field at a node (does not assign values)
 								switch (time_sequence_mapping)
 								{
 									case FE_TIME_SEQUENCE_MAPPING_IDENTICAL:
+									{
+										/* Do nothing, in fact we shouldn't get here as the merge_data.requires_merged_storage
+											should be false in this case */
+									} break;
 									case FE_TIME_SEQUENCE_MAPPING_APPEND:
 									{
 										new_number_of_times = FE_time_sequence_get_number_of_times(new_node_field->time_sequence);
@@ -16344,14 +16376,17 @@ Defines a field at a node (does not assign values)
 								"Field already defined incompatibly at node.");
 						}
 					}
-					DEACCESS(FE_time_sequence)(&existing_time_sequence);
+					if (existing_time_sequence)
+					{
+						DEACCESS(FE_time_sequence)(&existing_time_sequence);
+					}
 				}
 				else
 				{
 					existing_values_storage_size = node_field_info->values_storage_size;
-					existing_number_of_values = node_field_info->number_of_values;
+					total_number_of_values = node_field_info->number_of_values + number_of_values;
 					if (FE_region_get_FE_node_field_info_adding_new_field(fe_region,
-							&node_field_info, node_field, number_of_values))
+							&node_field_info, node_field, total_number_of_values))
 					{
 						if (GENERAL_FE_FIELD == field->fe_field_type)
 						{
@@ -16363,8 +16398,7 @@ Defines a field at a node (does not assign values)
 								node->values_storage = new_value;
 								/* initialize new values */
 								new_value += existing_values_storage_size;
-								for (i = number_of_values -
-										  (existing_number_of_values); i > 0; i--)
+								for (i = number_of_values ; i > 0 ; i--)
 								{
 									if (fe_time_sequence)
 									{
