@@ -636,4 +636,31 @@ DESCRIPTION :
 Gets the NDC information.
 ==============================================================================*/
 
+int Cmiss_scene_viewer_get_viewing_volume(Cmiss_scene_viewer_id scene_viewer,
+	double *left,double *right,double *bottom,double *top,double *near,
+	double *far);
+/*******************************************************************************
+LAST MODIFIED : 18 November 1997
+
+DESCRIPTION :
+Gets the viewing volume of the Scene_viewer.
+==============================================================================*/
+
+int Cmiss_scene_viewer_set_viewing_volume(Cmiss_scene_viewer_id scene_viewer,
+	double left,double right,double bottom,double top,double near,double far);
+/*******************************************************************************
+LAST MODIFIED : 15 December 1997
+
+DESCRIPTION :
+Sets the viewing volume of the Scene_viewer. Unless the viewing volume is the
+same shape as the window, taking into account the aspect, the Scene_viewer will
+enlarge it to maintain the desired aspect ratio. Hence, the values specified
+represent the minimum viewing volume. The left, right, bottom and top values
+are at the lookat point, not on the near plane as OpenGL assumes. This gives a
+similar sized viewing_volume for both parallel and perspective projections.
+The viewing volume can be made unsymmetric to create special effects such as
+rendering a higher resolution image in parts.
+==============================================================================*/
+
+
 #endif /* __CMISS_SCENE_VIEWER_H__ */
