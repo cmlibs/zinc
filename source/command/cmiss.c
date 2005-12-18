@@ -8201,7 +8201,14 @@ Executes a GFX CREATE command.
 			{
 				DEACCESS(Scene)(&scene);
 			}
-
+			if (coordinate_field)
+			{
+				DEACCESS(Computed_field)(&coordinate_field);
+			}
+			if (region_path)
+			{
+				DEALLOCATE(region_path);
+			}
 		}
 		else
 		{
