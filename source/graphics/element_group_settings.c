@@ -7966,13 +7966,10 @@ parsed settings. Note that the settings are ACCESSed once on valid return.
 {
 	char *render_type_string,*select_mode_string, *use_element_type_string,
 		**valid_strings;
-	double decimation_threshold,iso_value_default, *iso_values;
 	enum Graphics_select_mode select_mode;
 	enum Render_type render_type;
 	enum Use_element_type use_element_type;
-	int number_of_iso_values,number_of_valid_strings,
-		return_code,visibility;
-	struct Computed_field *scalar_field;
+	int number_of_valid_strings,return_code,visibility;
 	struct Modify_g_element_data *modify_g_element_data;
 	struct GT_element_settings *settings;
 	struct G_element_command_data *g_element_command_data;
@@ -8022,19 +8019,11 @@ parsed settings. Note that the settings are ACCESSed once on valid return.
 								g_element_command_data->graphical_material_manager));
 					}
 					/* must start with valid iso_scalar_field: */
-					GT_element_settings_get_iso_surface_parameters(settings,
-						&scalar_field, &number_of_iso_values, &iso_values,
-						&decimation_threshold);
-					if (!scalar_field)
+					if (!settings->iso_scalar_field)
 					{
-						if (scalar_field=FIRST_OBJECT_IN_MANAGER_THAT(Computed_field)(
-							Computed_field_is_scalar,(void *)NULL,computed_field_manager))
-						{
-							iso_value_default = 0.0;
-							GT_element_settings_set_iso_surface_parameters(settings,
-								scalar_field,/*number_of_iso_values*/1, &iso_value_default,
-								decimation_threshold);
-						}
+						settings->iso_scalar_field=ACCESS(Computed_field)
+							(FIRST_OBJECT_IN_MANAGER_THAT(Computed_field)(
+							Computed_field_is_scalar,(void *)NULL,computed_field_manager));
 					}
 					visibility = settings->visibility;
 					option_table=CREATE(Option_table)();
