@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : finite_element.c
 
-LAST MODIFIED : 4 March 2005
+LAST MODIFIED : 20 December 2005
 
 DESCRIPTION :
 Functions for manipulating finite element structures.
@@ -2071,6 +2071,161 @@ in memory. If pointers weren't DWORD aligned get bus errors on SGIs.
 	return (return_code);
 } /* allocate_time_values_storage_array */
 
+static int reallocate_time_values_storage_array(enum Value_type value_type, 
+	int new_number_of_values, Value_storage *new_array,
+	Value_storage *previous_array, 
+	int initialise_storage, int previous_number_of_values)
+/************************************************************************
+LAST MODIFIED : 20 December 2005
+
+DESCRIPTION
+Reallocate an array of type value_type with number_of_values.  If 
+<initialise_storage> is true then the values from
+<previous_number_of_values> + 1 to <new_number_of_values> are set to zero.
+The routine will potentially overallocate the array to accelerate when
+these arrays are expanded out one value at a time, many times over.
+=======================================================================*/
+{
+	int allocate_number_of_values, j, return_code;
+	
+	ENTER(allocate_time_values_storage_array);	
+	if (new_array && previous_array)
+	{	
+		return_code = 1;
+
+		allocate_number_of_values = (new_number_of_values + VALUE_STORAGE_NUMBER_OF_TIMES_BLOCK) - 
+			(new_number_of_values % VALUE_STORAGE_NUMBER_OF_TIMES_BLOCK);		
+		switch (value_type)
+		{
+			case DOUBLE_VALUE:
+			{
+				double *array;
+				if (REALLOCATE(array,*(double **)previous_array,double,allocate_number_of_values))
+				{
+					if (initialise_storage)
+					{
+						for (j = previous_number_of_values ; j < new_number_of_values ; j++)
+						{
+							array[j] = 0.0;
+						}
+					}
+					*(double **)new_array = array;
+				}
+				else
+				{	
+					display_message(ERROR_MESSAGE,
+						"allocate_time_values_storage_array. Out of memory");
+					return_code = 0;
+				}
+			} break; 
+			case FE_VALUE_VALUE:
+			{
+				FE_value *array;
+				if (REALLOCATE(array,*(FE_value **)previous_array,FE_value,allocate_number_of_values))
+				{
+					if (initialise_storage)
+					{
+						for (j = previous_number_of_values ; j < new_number_of_values ; j++)
+						{
+							array[j] = FE_VALUE_INITIALIZER;
+						}
+					}
+					*(FE_value **)new_array = array;
+				}
+				else
+				{	
+					display_message(ERROR_MESSAGE,
+						"allocate_time_values_storage_array. Out of memory");
+					return_code = 0;
+				}
+			} break;
+			case FLT_VALUE:
+			{
+				float *array;
+				if (REALLOCATE(array,*(float **)previous_array,float,allocate_number_of_values))
+				{
+					if (initialise_storage)
+					{
+						for (j = previous_number_of_values ; j < new_number_of_values ; j++)
+						{
+							array[j] = 0.0f;
+						}
+					}
+					*(float **)new_array = array;
+				}
+				else
+				{	
+					display_message(ERROR_MESSAGE,
+						"allocate_time_values_storage_array. Out of memory");
+					return_code = 0;
+				}
+			} break;
+			case SHORT_VALUE:
+			{
+				short *array;
+				if (REALLOCATE(array,*(short **)previous_array,short,allocate_number_of_values))
+				{
+					if (initialise_storage)
+					{
+						for (j = previous_number_of_values ; j < new_number_of_values ; j++)
+						{
+							array[j] = 0;
+						}
+					}
+					*(short **)new_array = array;
+				}
+				else
+				{	
+					display_message(ERROR_MESSAGE,
+						"allocate_time_values_storage_array. Out of memory");
+					return_code = 0;
+				}
+			} break; 
+			case INT_VALUE:
+			{
+				int *array;
+				if (REALLOCATE(array,*(int **)previous_array,int,allocate_number_of_values))
+				{
+					if (initialise_storage)
+					{
+						for (j = previous_number_of_values ; j < new_number_of_values ; j++)
+						{
+							array[j] = 0;
+						}
+					}
+					*(int **)new_array = array;
+				}
+				else
+				{
+					display_message(ERROR_MESSAGE,
+						"allocate_time_values_storage_array. Out of memory");
+					return_code = 0;
+				}
+			} break;
+			case STRING_VALUE:
+			{
+				display_message(ERROR_MESSAGE,
+					"allocate_time_values_storage_array. String type not implemented for multiple times yet.");
+				return_code = 0;				
+			} break;		
+			default:
+			{	
+				display_message(ERROR_MESSAGE,
+					"allocate_time_values_storage_array. Invalid type");
+				return_code = 0;
+			} break;
+		} /*switch (the_value_type) */
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"allocate_time_values_storage_array."
+			"Invalid arguments");
+		return_code = 0;
+	}
+	LEAVE;
+	return (return_code);
+} /* allocate_time_values_storage_array */
+
 static int copy_value_storage_array(Value_storage *destination,
 	enum Value_type value_type, struct FE_time_sequence *destination_time_sequence,
 	struct FE_time_sequence *source_time_sequence,int number_of_values,
@@ -2113,13 +2268,11 @@ times.
 					case FE_TIME_SEQUENCE_MAPPING_APPEND:
 					{
 						destination_number_of_times = FE_time_sequence_get_number_of_times(destination_time_sequence);
-						/* Probably should use some exponential growing increment in the size of allocation */
-						destination_number_of_times = (destination_number_of_times + VALUE_STORAGE_NUMBER_OF_TIMES_BLOCK) - 
-							(destination_number_of_times % VALUE_STORAGE_NUMBER_OF_TIMES_BLOCK);
 						for (i=0;(i<number_of_values)&&return_code;i++)
 						{
-							REALLOCATE(*(void **)dest, *(void **)src, char, destination_number_of_times *
-								get_Value_storage_size(value_type, (struct FE_time_sequence *)NULL));
+							reallocate_time_values_storage_array(value_type, 
+								destination_number_of_times, dest, src,
+								/*initialise_storage*/0, /*previous_number_of_values*/0);
 							*(void **)src = 0x0;
 							dest += value_size;
 							src += value_size;
@@ -2161,148 +2314,148 @@ times.
 		else
 		{
 			switch (value_type)
-				{			
-					case DOUBLE_VALUE:
-					{
-						double *src,*dest;
+			{			
+				case DOUBLE_VALUE:
+				{
+					double *src,*dest;
 
-						src = (double *)source;
-						dest = (double *)destination;
-						for (i=0;i<number_of_values;i++)
+					src = (double *)source;
+					dest = (double *)destination;
+					for (i=0;i<number_of_values;i++)
+					{
+						*dest = *src;
+						dest++;
+						src++;
+					}
+				} break;
+				case ELEMENT_XI_VALUE:
+				{
+					int i,j;
+					Value_storage *src,*dest;
+
+					src = source;
+					dest = destination;
+					for (i=0;i<number_of_values;i++)
+					{
+						/* copy accessed element pointer */
+						if (*((struct FE_element **)src))
 						{
-							*dest = *src;
-							dest++;
-							src++;
+							(*(struct FE_element **)dest)
+								= ACCESS(FE_element)(*((struct FE_element **)src));
 						}
-					} break;
-					case ELEMENT_XI_VALUE:
-					{
-						int i,j;
-						Value_storage *src,*dest;
-
-						src = source;
-						dest = destination;
-						for (i=0;i<number_of_values;i++)
+						else
 						{
-							/* copy accessed element pointer */
-							if (*((struct FE_element **)src))
+							(*(struct FE_element **)dest) = (struct FE_element *)NULL;
+						}
+						dest += sizeof(struct FE_element *);
+						src += sizeof(struct FE_element *);
+						/* copy the xi location */
+						for (j=0;j<MAXIMUM_ELEMENT_XI_DIMENSIONS;j++)
+						{
+							*((FE_value *)dest) = *((FE_value *)src);
+							dest += sizeof(FE_value);
+							src += sizeof(FE_value);
+						}
+					}
+				} break;
+				case FE_VALUE_VALUE:
+				{
+					FE_value *src,*dest;
+
+					src = (FE_value *)source;
+					dest = (FE_value *)destination;
+					for (i=0;i<number_of_values;i++)
+					{
+						*dest = *src;
+						dest++;
+						src++;
+					}
+				} break;
+				case FLT_VALUE:
+				{
+					float *src,*dest;
+
+					src = (float *)source;
+					dest = (float *)destination;
+					for (i=0;i<number_of_values;i++)
+					{
+						*dest = *src;
+						dest++;
+						src++;
+					}
+				} break;	
+				case SHORT_VALUE:
+				{
+					display_message(ERROR_MESSAGE,"copy_value_storage_array.  "
+						"SHORT_VALUE: Haven't written code yet. Beware pointer alignment problems!");
+					return_code = 0;
+				} break;
+				case INT_VALUE:
+				{
+					int *src,*dest;
+
+					src = (int *)source;
+					dest = (int *)destination;
+					for (i=0;i<number_of_values;i++)
+					{
+						*dest = *src;
+						dest++;
+						src++;
+					}
+				} break;	
+				case UNSIGNED_VALUE:
+				{
+					unsigned *src,*dest;
+
+					src = (unsigned *)source;
+					dest = (unsigned *)destination;
+					for (i=0;i<number_of_values;i++)
+					{
+						*dest = *src;
+						dest++;
+						src++;
+					}
+				} break;	
+				case DOUBLE_ARRAY_VALUE:
+				case FE_VALUE_ARRAY_VALUE:
+				case FLT_ARRAY_VALUE:	
+				case SHORT_ARRAY_VALUE:
+				case INT_ARRAY_VALUE:
+				case UNSIGNED_ARRAY_VALUE:
+				case STRING_VALUE:
+				{
+					int value_size;
+					Value_storage *src,*dest;
+
+					dest = destination;
+					src = source;
+					value_size=get_Value_storage_size(value_type,
+						(struct FE_time_sequence *)NULL);
+					for (i=0;(i<number_of_values)&&return_code;i++)
+					{
+						if (!allocate_and_copy_values_storage_array(src,value_type,dest))
+						{
+							display_message(ERROR_MESSAGE,
+								"copy_value_storage_array.  Failed to copy array");
+							if (0<i)
 							{
-								(*(struct FE_element **)dest)
-									= ACCESS(FE_element)(*((struct FE_element **)src));
+								/* free any arrays allocated to date */
+								free_value_storage_array(destination,value_type,
+									(struct FE_time_sequence *)NULL,i);
 							}
-							else
-							{
-								(*(struct FE_element **)dest) = (struct FE_element *)NULL;
-							}
-							dest += sizeof(struct FE_element *);
-							src += sizeof(struct FE_element *);
-							/* copy the xi location */
-							for (j=0;j<MAXIMUM_ELEMENT_XI_DIMENSIONS;j++)
-							{
-								*((FE_value *)dest) = *((FE_value *)src);
-								dest += sizeof(FE_value);
-								src += sizeof(FE_value);
-							}
+							return_code = 0;
 						}
-					} break;
-					case FE_VALUE_VALUE:
-					{
-						FE_value *src,*dest;
-
-						src = (FE_value *)source;
-						dest = (FE_value *)destination;
-						for (i=0;i<number_of_values;i++)
-						{
-							*dest = *src;
-							dest++;
-							src++;
-						}
-					} break;
-					case FLT_VALUE:
-					{
-						float *src,*dest;
-
-						src = (float *)source;
-						dest = (float *)destination;
-						for (i=0;i<number_of_values;i++)
-						{
-							*dest = *src;
-							dest++;
-							src++;
-						}
-					} break;	
-					case SHORT_VALUE:
-					{
-						display_message(ERROR_MESSAGE,"copy_value_storage_array.  "
-							"SHORT_VALUE: Haven't written code yet. Beware pointer alignment problems!");
-						return_code = 0;
-					} break;
-					case INT_VALUE:
-					{
-						int *src,*dest;
-
-						src = (int *)source;
-						dest = (int *)destination;
-						for (i=0;i<number_of_values;i++)
-						{
-							*dest = *src;
-							dest++;
-							src++;
-						}
-					} break;	
-					case UNSIGNED_VALUE:
-					{
-						unsigned *src,*dest;
-
-						src = (unsigned *)source;
-						dest = (unsigned *)destination;
-						for (i=0;i<number_of_values;i++)
-						{
-							*dest = *src;
-							dest++;
-							src++;
-						}
-					} break;	
-					case DOUBLE_ARRAY_VALUE:
-					case FE_VALUE_ARRAY_VALUE:
-					case FLT_ARRAY_VALUE:	
-					case SHORT_ARRAY_VALUE:
-					case INT_ARRAY_VALUE:
-					case UNSIGNED_ARRAY_VALUE:
-					case STRING_VALUE:
-					{
-						int value_size;
-						Value_storage *src,*dest;
-
-						dest = destination;
-						src = source;
-						value_size=get_Value_storage_size(value_type,
-							(struct FE_time_sequence *)NULL);
-						for (i=0;(i<number_of_values)&&return_code;i++)
-						{
-							if (!allocate_and_copy_values_storage_array(src,value_type,dest))
-							{
-								display_message(ERROR_MESSAGE,
-									"copy_value_storage_array.  Failed to copy array");
-								if (0<i)
-								{
-									/* free any arrays allocated to date */
-									free_value_storage_array(destination,value_type,
-										(struct FE_time_sequence *)NULL,i);
-								}
-								return_code = 0;
-							}
-							dest += value_size;
-							src += value_size;
-						}
-					} break;
-					default:
-					{
-						display_message(ERROR_MESSAGE,
-							"copy_value_storage_array.  Unknown value_type");
-						return_code = 0;
-					} break;
-				}
+						dest += value_size;
+						src += value_size;
+					}
+				} break;
+				default:
+				{
+					display_message(ERROR_MESSAGE,
+						"copy_value_storage_array.  Unknown value_type");
+					return_code = 0;
+				} break;
+			}
 		}
 	}
 	else
@@ -16209,9 +16362,9 @@ Defines a field at a node (does not assign values)
 	enum FE_time_sequence_mapping time_sequence_mapping;
 	enum Value_type value_type;
 	int *component_number_of_derivatives,*component_number_of_versions,
-		existing_values_storage_size, i,j,
-		new_number_of_times,new_values_storage_size,number_of_values,
-		number_of_values_in_component,return_code,size,total_number_of_values,value_size;
+		existing_values_storage_size, i, j, new_number_of_times, new_values_storage_size,
+		number_of_values, number_of_values_in_component, previous_number_of_times,
+		return_code,size,total_number_of_values,value_size;
 	struct FE_node_field *existing_node_field, *merged_node_field, *new_node_field,
 		*node_field;
 	struct FE_node_field_component *component;
@@ -16329,14 +16482,13 @@ Defines a field at a node (does not assign values)
 									} break;
 									case FE_TIME_SEQUENCE_MAPPING_APPEND:
 									{
+										previous_number_of_times = FE_time_sequence_get_number_of_times(existing_time_sequence);
 										new_number_of_times = FE_time_sequence_get_number_of_times(new_node_field->time_sequence);
-										/* Probably should use some exponential growing increment in the size of allocation */
-										new_number_of_times = (new_number_of_times + VALUE_STORAGE_NUMBER_OF_TIMES_BLOCK) - 
-											(new_number_of_times % VALUE_STORAGE_NUMBER_OF_TIMES_BLOCK);
 										for (i=0;(i<number_of_values)&&return_code;i++)
 										{
-											REALLOCATE(*(void **)storage, *(void **)storage, char, new_number_of_times *
-												get_Value_storage_size(value_type, (struct FE_time_sequence *)NULL));
+											reallocate_time_values_storage_array(value_type, 
+												new_number_of_times, storage, storage,
+												/*initialise_storage*/1, previous_number_of_times);
 											storage += value_size;
 										}
 									} break;
