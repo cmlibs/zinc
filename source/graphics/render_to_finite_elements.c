@@ -1049,6 +1049,7 @@ Renders the visible objects as finite elements into the specified <fe_region>.
 			{
 				return_code = 0;
 			}
+			DESTROY_LIST(FE_field)(&fe_coordinate_field_list);
 		}
 		else
 		{
