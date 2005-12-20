@@ -5487,17 +5487,10 @@ Converts a 3-D element into an iso_surface (via a volume_texture).
 							display_message(ERROR_MESSAGE,
 								"create_iso_surfaces_from_FE_element.  "
 								"Could not allocate memory for volume_texture nodes");
-							while (i>0)
-							{
-								i--;
-								DEALLOCATE(node_list[i]);
-							}
-							i=number_of_volume_texture_cells;
-							while (i>0)
-							{
-								i--;
-								DEALLOCATE(cell_list[i]);
-							}
+							DEALLOCATE(cell_list);
+							DEALLOCATE(node_list);
+							DEALLOCATE(cell_block);
+							DEALLOCATE(node_block);
 							return_code=0;
 						}
 					}
@@ -5506,11 +5499,10 @@ Converts a 3-D element into an iso_surface (via a volume_texture).
 						display_message(ERROR_MESSAGE,
 							"create_iso_surfaces_from_FE_element.  "
 							"Could not allocate memory for volume_texture cells");
-						while (i>0)
-						{
-							i--;
-							DEALLOCATE(cell_list[i]);
-						}
+						DEALLOCATE(cell_list);
+						DEALLOCATE(node_list);
+						DEALLOCATE(cell_block);
+						DEALLOCATE(node_block);
 						return_code=0;
 					}
 				}
