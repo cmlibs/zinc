@@ -89,7 +89,9 @@ widgets are terminated, and so the whole structure does not need to be destroyed
 #include <Xm/ToggleBG.h>
 #include "dof3/dof3_input.h"
 #if defined (EXT_INPUT)
+static char dof3_input_uidh[] =
 #include "dof3/dof3_input.uidh"
+	;
 #endif /* defined (EXT_INPUT) */
 #include "dof3/dof3_control.h"
 #include "dof3/dof3.h"
@@ -408,7 +410,7 @@ item.
 	ENTER(create_input_widget);
 #if defined (EXT_INPUT)
 	return_widget=(Widget)NULL;
-	if (MrmOpenHierarchy_base64_string(dof3_input_uidh,
+	if (MrmOpenHierarchy_binary_string(dof3_input_uidh, sizeof(dof3_input_uidh),
 		&dof3_input_hierarchy,&dof3_input_hierarchy_open))
 	{
 		/* allocate memory */
