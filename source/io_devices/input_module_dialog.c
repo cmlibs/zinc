@@ -58,7 +58,9 @@ data is accepted - pos,tangent,normal.
 #include "graphics/scene.h"
 #include "io_devices/input_module_dialog.h"
 #if defined (EXT_INPUT)
+static char input_module_dialog_uidh[] =
 #include "io_devices/input_module_dialog.uidh"
+	;
 #endif /* defined (EXT_INPUT) */
 #include "io_devices/input_module_widget.h"
 #include "io_devices/input_module.h"
@@ -1953,7 +1955,7 @@ Allows the user to control the input_module.
 
 	ENTER(create_input_module_dialog);
 	return_widget = (Widget)NULL;
-	if (MrmOpenHierarchy_base64_string(input_module_dialog_uidh,
+	if (MrmOpenHierarchy_binary_string(input_module_dialog_uidh, sizeof(input_module_dialog_uidh),
 		&input_module_dialog_hierarchy,&input_module_dialog_hierarchy_open))
 	{
 		/* allocate memory */

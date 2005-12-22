@@ -50,7 +50,9 @@ devices are displayed on the menu.
 #include "general/debug.h"
 #include "io_devices/input_module_widget.h"
 #if defined (EXT_INPUT)
+static char input_module_widget_uidh[] =
 #include "io_devices/input_module_widget.uidh"
+	;
 #endif /* defined (EXT_INPUT) */
 #include "user_interface/message.h"
 #include "user_interface/user_interface.h"
@@ -357,7 +359,7 @@ certain client.
 	ENTER(create_input_module_widget);
 	return_widget = (Widget)NULL;
 #if defined (EXT_INPUT)
-	if (MrmOpenHierarchy_base64_string(input_module_widget_uidh,
+	if (MrmOpenHierarchy_binary_string(input_module_widget_uidh, sizeof(input_module_widget_uidh),
 		&input_module_widget_hierarchy,&input_module_widget_hierarchy_open))
 	{
 		/* allocate memory */
