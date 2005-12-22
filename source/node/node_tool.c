@@ -67,7 +67,9 @@ Scene input.
 #include "node/node_operations.h"
 #include "node/node_tool.h"
 #if defined (MOTIF)
+static char node_tool_uidh[] =
 #include "node/node_tool.uidh"
+	;
 #include "motif/image_utilities.h"
 #include "region/cmiss_region_chooser.h"
 #endif /* defined (MOTIF) */
@@ -693,9 +695,6 @@ stored in the <edit_info>.
 					coordinates[1] += edit_info->delta2;
 					coordinates[2] += edit_info->delta3;
 
-					/*???RC following function currently copies all FE_fields in node,
-					  not just those affected, and therefore sends less efficient
-					  change message */
 					if (!Computed_field_set_values_at_node(edit_info->coordinate_field,
 						node,edit_info->time, coordinates))
 					{
@@ -2326,7 +2325,7 @@ Fetches the appropriate icon for the interactive tool.
 	if ((node_tool=(struct Node_tool *)node_tool_void))
 	{
 #if defined (MOTIF)
-		if (MrmOpenHierarchy_base64_string(node_tool_uidh,
+		if (MrmOpenHierarchy_binary_string(node_tool_uidh,sizeof(node_tool_uidh),
 			&node_tool_hierarchy,&node_tool_hierarchy_open))
 		{
 			if (node_tool->use_data)
@@ -2553,7 +2552,7 @@ used to represent them. <element_manager> should be NULL if <use_data> is true.
 			node_tool->window_shell=(Widget)NULL;
 
 			/* make the dialog shell */
-			if (MrmOpenHierarchy_base64_string(node_tool_uidh,
+			if (MrmOpenHierarchy_binary_string(node_tool_uidh,sizeof(node_tool_uidh),
 				&node_tool_hierarchy,&node_tool_hierarchy_open))
 			{
 				if (node_tool->window_shell=

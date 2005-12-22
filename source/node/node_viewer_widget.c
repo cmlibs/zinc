@@ -50,7 +50,9 @@ Note the node passed to this widget should be a non-managed local copy.
 #include "general/debug.h"
 #include "node/node_field_viewer_widget.h"
 #include "node/node_viewer_widget.h"
+static char node_viewer_widget_uidh[] =
 #include "node/node_viewer_widget.uidh"
+	;
 #include "user_interface/gui_dialog_macros.h"
 #include "user_interface/message.h"
 #include "user_interface/user_interface.h"
@@ -313,7 +315,7 @@ parent dialog to make changes global.
 	if (node_viewer_widget_address && parent && computed_field_package &&
 		user_interface)
 	{
-		if (MrmOpenHierarchy_base64_string(node_viewer_widget_uidh,
+		if (MrmOpenHierarchy_binary_string(node_viewer_widget_uidh,sizeof(node_viewer_widget_uidh),
 			&node_viewer_hierarchy,&node_viewer_hierarchy_open))
 		{
 			/* allocate memory */

@@ -49,7 +49,9 @@ This module creates a time_editor_dialog.
 #include "time/time_keeper.h"
 #include "time/time_editor.h"
 #include "time/time_editor_dialog.h"
+static char time_editor_dialog_uidh[] =
 #include "time/time_editor_dialog.uidh"
+	;
 #include "user_interface/message.h"
 
 /*
@@ -183,7 +185,7 @@ Creates a dialog widget that allows the user to edit time.
 	/* check arguments */
 	if (parent&&user_interface)
 	{
-		if (MrmOpenHierarchy_base64_string(time_editor_dialog_uidh,
+		if (MrmOpenHierarchy_binary_string(time_editor_dialog_uidh,sizeof(time_editor_dialog_uidh),
 			&time_editor_dialog_hierarchy,&time_editor_dialog_hierarchy_open))
 		{
 			/* allocate memory */

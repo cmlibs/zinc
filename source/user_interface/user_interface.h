@@ -380,15 +380,15 @@ communication with other applications.
 #endif /* defined (MOTIF) */
 
 #if defined (MOTIF)
-int MrmOpenHierarchy_base64_string(char *base64_string,
+int MrmOpenHierarchy_binary_string(char *binary_string, int string_length,
 	MrmHierarchy *hierarchy,int *hierarchy_open);
 /*******************************************************************************
-LAST MODIFIED : 16 April 1999
+LAST MODIFIED : 23 December 2005
 
 DESCRIPTION :
-This wrapper allows the passing of the <base64_string> which is intended to
-contain a uid file converted to base64.  This function converts it back to
-binary and writes a temporary file which is read using the normal 
+This wrapper allows the passing of the <binary_string> which contains a uid file.
+<string_length> is required as the binary string may contain NULL characters.
+This function writes it to a temporary file which is read using the normal 
 MrmOpenHierarchy.
 This allows the uid binaries to be kept inside the executable rather than bound
 at run time!
@@ -399,17 +399,17 @@ success and 0 for failure.
 #endif /* defined (MOTIF) */
 
 #if defined (MOTIF)
-int MrmOpenHierarchy_base64_multiple_strings(int number_of_strings, 
-	char **base64_strings,
+int MrmOpenHierarchy_binary_multiple_strings(int number_of_strings, 
+	char **binary_strings, int *string_lengths,
 	MrmHierarchy *hierarchy,int *hierarchy_open);
 /*******************************************************************************
-LAST MODIFIED : 19 April 1999
+LAST MODIFIED : 23 December 2005
 
 DESCRIPTION :
-This wrapper allows the passing of an array of <base64_strings> which are 
-intended to contain a uid files converted to base64.  
-This function converts it back to
-binary and writes a temporary file which is read using the normal 
+This wrapper allows the passing of an array of <binary_strings> which are 
+intended to contain a uid files.  
+The <string_lengths> are required as the binary string may contain NULL characters.
+This function writes a temporary file which is read using the normal 
 MrmOpenHierarchy.
 This allows the uid binaries to be kept inside the executable rather than bound
 at run time!

@@ -52,7 +52,9 @@ Eventually use to store parameters for the transform function.
 #include "interaction/interactive_tool_private.h"
 #include "graphics/transform_tool.h"
 #if defined (MOTIF)
+static char transform_tool_uidh[] =
 #include "graphics/transform_tool.uidh"
+	;
 #endif /* defined (MOTIF) */
 #include "user_interface/message.h"
 
@@ -120,7 +122,7 @@ Fetches the appropriate icon for the interactive tool.
 	if ((transform_tool=(struct Transform_tool *)transform_tool_void))
 	{
 #if defined (MOTIF)
-		if (MrmOpenHierarchy_base64_string(transform_tool_uidh,
+		if (MrmOpenHierarchy_binary_string(transform_tool_uidh,sizeof(transform_tool_uidh),
 			&transform_tool_hierarchy,&transform_tool_hierarchy_open))
 		{
 			display = transform_tool->display;

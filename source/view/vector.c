@@ -50,7 +50,9 @@ and the returned value is a global one.
 #include "user_interface/message.h"
 #include "user_interface/user_interface.h"
 #include "view/vector.h"
+static char vector_uidh[] =
 #include "view/vector.uidh"
+	;
 
 /*
 Module variables
@@ -276,7 +278,7 @@ Creates a vector widget that gets a position and orientation from the user.
 
 	ENTER(create_vector_widget);
 	return_widget = (Widget)NULL;
-	if (MrmOpenHierarchy_base64_string(vector_uidh,
+	if (MrmOpenHierarchy_binary_string(vector_uidh,sizeof(vector_uidh),
 		&vector_hierarchy,&vector_hierarchy_open))
 	{
 		/* allocate memory */

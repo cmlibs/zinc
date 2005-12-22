@@ -50,7 +50,9 @@ coordinate system, and the returned value is a global one.
 #include "graphics/material.h"
 #include "material/material_editor.h"
 #include "material/material_editor_dialog.h"
+static char material_editor_dialog_uidh[] =
 #include "material/material_editor_dialog.uidh"
+	;
 #include "select/select_graphical_material.h"
 #include "user_interface/message.h"
 
@@ -333,7 +335,7 @@ the materials contained in the global list.
 	if (material_editor_dialog_address && graphical_material_manager &&
 		texture_manager && user_interface)
 	{
-		if (MrmOpenHierarchy_base64_string(material_editor_dialog_uidh,
+		if (MrmOpenHierarchy_binary_string(material_editor_dialog_uidh,sizeof(material_editor_dialog_uidh),
 			&material_editor_dialog_hierarchy,&material_editor_dialog_hierarchy_open))
 		{
 			/* allocate memory */

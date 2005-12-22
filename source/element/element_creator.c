@@ -51,7 +51,9 @@ selections. Elements are created in this way while dialog is open.
 #include "choose/choose_fe_field.h"
 #include "region/cmiss_region_chooser.h"
 #include "element/element_creator.h"
+static char element_creator_uidh[] =
 #include "element/element_creator.uidh"
+	;
 #include "finite_element/finite_element.h"
 #include "general/debug.h"
 #include "user_interface/gui_dialog_macros.h"
@@ -714,7 +716,7 @@ Creates an Element_creator.
 	if (element_creator_address && root_region && initial_region_path &&
 		element_selection && node_selection && user_interface)
 	{
-		if (MrmOpenHierarchy_base64_string(element_creator_uidh,
+		if (MrmOpenHierarchy_binary_string(element_creator_uidh,sizeof(element_creator_uidh),
 			&element_creator_hierarchy, &element_creator_hierarchy_open))
 		{
 			if (ALLOCATE(element_creator, struct Element_creator, 1))

@@ -52,7 +52,9 @@ Management routines for the comfile window.
 #include "general/debug.h"
 #include "comfile/comfile_window.h"
 #if defined (MOTIF)
+static char comfile_window_uidh[] =
 #include "comfile/comfile_window.uidh"
+	;
 #endif /* defined (MOTIF) */
 #include "command/command.h"
 #include "general/indexed_list_private.h"
@@ -503,7 +505,7 @@ resource manager hierarchy.
 	{
 		IO_stream_close(comfile);
 		DESTROY(IO_stream)(&comfile);
-		if (MrmOpenHierarchy_base64_string(comfile_window_uidh,
+		if (MrmOpenHierarchy_binary_string(comfile_window_uidh,sizeof(comfile_window_uidh),
 			&comfile_window_hierarchy,&comfile_window_hierarchy_open))
 		{
 			/* create the structure */

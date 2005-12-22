@@ -61,7 +61,9 @@ Provides the widgets to manipulate graphical element group settings.
 #include "graphics/element_group_settings.h"
 #include "graphics/graphical_element.h"
 #include "graphics/graphical_element_editor.h"
+static char graphical_element_editor_uidh[] =
 #include "graphics/graphical_element_editor.uidh"
+	;
 #include "graphics/graphics_object.h"
 #include "graphics/settings_editor.h"
 #include "user_interface/gui_dialog_macros.h"
@@ -1938,7 +1940,7 @@ Creates a graphical_element_editor widget.
 		graphical_material_manager&&default_material&&default_font&&glyph_list&&
 		spectrum_manager&&default_spectrum&&volume_texture_manager&&user_interface)
 	{
-		if (MrmOpenHierarchy_base64_string(graphical_element_editor_uidh,
+		if (MrmOpenHierarchy_binary_string(graphical_element_editor_uidh,sizeof(graphical_element_editor_uidh),
 			&gelem_editor_hierarchy,&gelem_editor_hierarchy_open))
 		{
 			/* allocate memory */

@@ -54,7 +54,9 @@ Widgets for editing a graphical material.
 #include "graphics/graphics_library.h"
 #include "graphics/material.h"
 #include "material/material_editor.h"
+static char material_editor_uidh[] =
 #include "material/material_editor.uidh"
+	;
 #include "user_interface/message.h"
 
 /*
@@ -837,7 +839,7 @@ Creates a Material_editor.
 	material_editor = (struct Material_editor *)NULL;
 	if (parent && texture_manager && user_interface)
 	{
-		if (MrmOpenHierarchy_base64_string(material_editor_uidh,
+		if (MrmOpenHierarchy_binary_string(material_editor_uidh,sizeof(material_editor_uidh),
 			&material_editor_hierarchy,&material_editor_hierarchy_open))
 		{
 			/* allocate memory */

@@ -1545,32 +1545,6 @@ ifeq ($(MEMORYCHECK),true)
    endif # $(USER_INTERFACE) == MOTIF_USER_INTERFACE
 endif # $(MEMORYCHECK) == true
 
-ifeq ($(USER_INTERFACE),MOTIF_USER_INTERFACE)
-
-   utilities : $(UID2UIDH_BIN)
-
-   #Only have the rules to build it if it doesn't exist, so that if it is
-   #found but the objects are in another version that won't force other
-   #version to rebuild.
-   ifneq ($(UID2UIDH_FOUND),true)
-      UID2UIDH_SRCS = \
-	      utilities/uid2uidh.c
-
-      UID2UIDH_LIB =
-      ifeq ($(SYSNAME:IRIX%=),)
-         UID2UIDH_LIB += -lgen
-      endif # SYSNAME == IRIX%=
-
-      UID2UIDH_OBJSA = $(UID2UIDH_SRCS:.c=.o)
-      UID2UIDH_OBJSB = $(UID2UIDH_OBJSA:.cpp=.o)
-      UID2UIDH_OBJS = $(UID2UIDH_OBJSB:.f=.o)
-      BUILD_UID2UIDH = $(call BuildNormalTarget,$(UID2UIDH),$(UTILITIES_PATH),$(UID2UIDH_OBJS),$(UID2UIDH_LIB))
-
-      $(UID2UIDH_BIN): $(UID2UIDH_OBJS)
-			$(BUILD_UID2UIDH)
-   endif # $(UID2UIDH_FOUND != true
-endif # $(USER_INTERFACE) == MOTIF_USER_INTERFACE
-
 utilities : SpacesToTabs TabsToSpaces
 
 SPACES_TO_TABS_SRCS = \
@@ -1597,7 +1571,7 @@ TabsToSpaces: $(TABS_TO_SPACES_OBJS)
 
 DEPENDFILE = $(OBJECT_PATH)/$(BIN_TARGET).depend
 
-DEPEND_FILES = $(OBJS:%.o=%.d) $(UNEMAP_OBJS:%.o=%.d) $(MAIN_OBJ:%.o=%.d) $(UID2UIDH_OBJS:%.o=%.d) $(SPACES_TO_TABS_OBJS:%.o=%.d) $(TABS_TO_SPACES_OBJS:%.o=%.d)
+DEPEND_FILES = $(OBJS:%.o=%.d) $(UNEMAP_OBJS:%.o=%.d) $(MAIN_OBJ:%.o=%.d) $(SPACES_TO_TABS_OBJS:%.o=%.d) $(TABS_TO_SPACES_OBJS:%.o=%.d)
 #Look in the OBJECT_PATH
 DEPEND_FILES_OBJECT_PATH = $(DEPEND_FILES:%.d=$(OBJECT_PATH)/%.d)
 DEPEND_FILES_OBJECT_FOUND = $(wildcard $(DEPEND_FILES_OBJECT_PATH))

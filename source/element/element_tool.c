@@ -51,7 +51,9 @@ Interactive tool for selecting elements with mouse and other devices.
 #include "computed_field/computed_field_finite_element.h"
 #include "element/element_operations.h"
 #include "element/element_tool.h"
+static char element_tool_uidh[] =
 #include "element/element_tool.uidh"
+	;
 #include "finite_element/finite_element_discretization.h"
 #include "finite_element/finite_element_region.h"
 #include "general/debug.h"
@@ -652,7 +654,7 @@ and as a child of <parent>.
 	ENTER(Element_tool_get_icon);
 	if ((element_tool=(struct Element_tool *)element_tool_void))
 	{
-		if (MrmOpenHierarchy_base64_string(element_tool_uidh,
+		if (MrmOpenHierarchy_binary_string(element_tool_uidh,sizeof(element_tool_uidh),
 			&element_tool_hierarchy,&element_tool_hierarchy_open))
 		{
 			display = element_tool->display;
@@ -753,7 +755,7 @@ Selects elements in <element_selection> in response to interactive_events.
 			Computed_field_package_get_computed_field_manager(computed_field_package))
 		&&rubber_band_material&&user_interface&&execute_command)
 	{
-		if (MrmOpenHierarchy_base64_string(element_tool_uidh,
+		if (MrmOpenHierarchy_binary_string(element_tool_uidh,sizeof(element_tool_uidh),
 			&element_tool_hierarchy,&element_tool_hierarchy_open))
 		{
 			if (ALLOCATE(element_tool,struct Element_tool,1))

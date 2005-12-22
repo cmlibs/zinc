@@ -54,7 +54,9 @@ and the returned value is a global one.
 #include "view/coord.h"
 #include "view/coord_trans.h"
 #include "view/poi.h"
+static char poi_uidh[] =
 #include "view/poi.uidh"
+	;
 #include "view/vector.h"
 #include "user_interface/message.h"
 #include "user_interface/user_interface.h"
@@ -495,7 +497,7 @@ Creates a poi widget that gets a position and orientation from the user.
 
 	ENTER(create_poi_widget);
 	return_widget = (Widget)NULL;
-	if (MrmOpenHierarchy_base64_string(poi_uidh,
+	if (MrmOpenHierarchy_binary_string(poi_uidh,sizeof(poi_uidh),
 		&poi_hierarchy,&poi_hierarchy_open))
 	{
 		/* allocate memory */

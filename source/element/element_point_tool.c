@@ -50,7 +50,9 @@ Interactive tool for selecting element/grid points with mouse and other devices.
 #include "computed_field/computed_field.h"
 #include "computed_field/computed_field_finite_element.h"
 #include "element/element_point_tool.h"
+static char element_point_tool_uidh[] =
 #include "element/element_point_tool.uidh"
+	;
 #include "finite_element/finite_element_discretization.h"
 #include "general/debug.h"
 #include "graphics/scene.h"
@@ -513,7 +515,7 @@ Fetches an icon for the Element_point tool.
 	ENTER(Element_point_tool_get_icon);
 	if ((element_point_tool=(struct Element_point_tool *)element_point_tool_void))
 	{
-		if (MrmOpenHierarchy_base64_string(element_point_tool_uidh,
+		if (MrmOpenHierarchy_binary_string(element_point_tool_uidh,sizeof(element_point_tool_uidh),
 			&element_point_tool_hierarchy,&element_point_tool_hierarchy_open))
 		{
 			display = element_point_tool->display;
@@ -598,7 +600,7 @@ Creates an Element_point_tool with Interactive_tool in
 			Computed_field_package_get_computed_field_manager(computed_field_package))
 		&&rubber_band_material&&user_interface&&execute_command)
 	{
-		if (MrmOpenHierarchy_base64_string(element_point_tool_uidh,
+		if (MrmOpenHierarchy_binary_string(element_point_tool_uidh,sizeof(element_point_tool_uidh),
 			&element_point_tool_hierarchy,&element_point_tool_hierarchy_open))
 		{
 			if (ALLOCATE(element_point_tool,struct Element_point_tool,1))

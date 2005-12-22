@@ -49,7 +49,9 @@ this dialog.
 #include "general/debug.h"
 #include "node/node_viewer_widget.h"
 #include "node/node_viewer.h"
+static char node_viewer_uidh[] =
 #include "node/node_viewer.uidh"
+	;
 #include "user_interface/gui_dialog_macros.h"
 #include "user_interface/message.h"
 #include "user_interface/user_interface.h"
@@ -459,7 +461,7 @@ Since both nodes and data can depend on embedded fields, the
 	if (node_viewer_address && dialog_title && region && node_selection &&
 		computed_field_package && user_interface)
 	{
-		if (MrmOpenHierarchy_base64_string(node_viewer_uidh,
+		if (MrmOpenHierarchy_binary_string(node_viewer_uidh,sizeof(node_viewer_uidh),
 			&node_viewer_hierarchy,&node_viewer_hierarchy_open))
 		{
 			/* allocate memory */

@@ -71,7 +71,9 @@ group of nodes
 #include "curve/control_curve.h"
 #include "curve/control_curve_editor_dialog.h"
 #include "emoter/emoter_dialog.h"
+static char emoter_dialog_uidh[] =
 #include "emoter/emoter_dialog.uidh"
+	;
 
 /*
 Module constants
@@ -5522,7 +5524,7 @@ Create emoter controls.
 	ENTER(create_emoter_dialog);
 
 	return_widget = (Widget)NULL;
-	if (MrmOpenHierarchy_base64_string(emoter_dialog_uidh,
+	if (MrmOpenHierarchy_binary_string(emoter_dialog_uidh,sizeof(emoter_dialog_uidh),
 		&emoter_dialog_hierarchy,&emoter_dialog_hierarchy_open))
 	{
 		/* allocate memory */

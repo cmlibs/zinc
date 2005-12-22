@@ -53,7 +53,9 @@ Provides the widgets to manipulate spectrum settings.
 #include "graphics/scene_viewer.h"
 #include "graphics/spectrum.h"
 #include "graphics/spectrum_editor.h"
+static char spectrum_editor_uidh[] =
 #include "graphics/spectrum_editor.uidh"
+	;
 #include "graphics/spectrum_editor_settings.h"
 #include "graphics/spectrum_settings.h"
 #include "three_d_drawing/graphics_buffer.h"
@@ -1008,7 +1010,7 @@ Creates a spectrum_editor widget.
 	spectrum_editor = (struct Spectrum_editor *)NULL;
 	if (parent && user_interface)
 	{
-		if (MrmOpenHierarchy_base64_string(spectrum_editor_uidh,
+		if (MrmOpenHierarchy_binary_string(spectrum_editor_uidh,sizeof(spectrum_editor_uidh),
 			&spectrum_editor_hierarchy,&spectrum_editor_hierarchy_open))
 		{
 			/* allocate memory */

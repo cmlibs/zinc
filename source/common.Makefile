@@ -431,11 +431,7 @@ endif # $(USER_INTERFACE) == WIN32_USER_INTERFACE
 
 ifeq ($(USER_INTERFACE),MOTIF_USER_INTERFACE)
 
-UID2UIDH = uid2uidh
-UID2UIDH_BIN := $(UTILITIES_PATH)/$(UID2UIDH)
-ifneq ($(wildcard $(UID2UIDH_BIN)),)
-   UID2UIDH_FOUND = true
-endif
+UID2UIDH = utilities/uid2uidh.pl
 
 %.uidh : %.uil $(UID2UIDH_BIN)
 	@if [ ! -d $(UIDH_PATH)/$(*D) ]; then \
@@ -443,12 +439,16 @@ endif
 	fi
 	set -x ; \
 	$(UIL) -o $(UIDH_PATH)/$*.uid $*.uil && \
-	$(UID2UIDH_BIN) $(UIDH_PATH)/$*.uid $(UIDH_PATH)/$*.uidh
+	perl $(UID2UIDH) $(UIDH_PATH)/$*.uid $(UIDH_PATH)/$*.uidh
 endif # $(USER_INTERFACE) == MOTIF_USER_INTERFACE
 
 #Ensure something is defined for TMPDIR
 ifeq ($(TMPDIR),)
-  TMPDIR = .
+  ifneq ($(wildcard /tmp), )
+    TMPDIR = /tmp
+  else
+    TMPDIR = .
+  endif
 endif
 
 define BuildNormalTarget

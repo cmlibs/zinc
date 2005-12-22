@@ -57,7 +57,9 @@ Management routines for the main command window.
 #include "general/debug.h"
 #include "command/command_window.h"
 #if defined (MOTIF)
+static char command_window_uidh[] =
 #include "command/command_window.uidh"
+	;
 #endif /* defined (MOTIF) */
 #if defined (WIN32_USER_INTERFACE)
 #include "command/command_window.rc"
@@ -1660,7 +1662,7 @@ Create the structures and retrieve the command window from the uil file.
 			command_window->out_file=(FILE *)NULL;
 			command_window->out_file_mode=OUTFILE_INVALID;
 #if defined (MOTIF) /* switch (USER_INTERFACE) */
-			if (MrmOpenHierarchy_base64_string(command_window_uidh,
+			if (MrmOpenHierarchy_binary_string(command_window_uidh,sizeof(command_window_uidh),
 				&command_window_hierarchy,&command_window_hierarchy_open))
 			{
 

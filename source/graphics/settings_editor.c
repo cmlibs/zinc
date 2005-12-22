@@ -67,7 +67,9 @@ Provides the widgets to manipulate element group settings.
 #include "graphics/material.h"
 #include "graphics/spectrum.h"
 #include "graphics/settings_editor.h"
+static char settings_editor_uidh[] =
 #include "graphics/settings_editor.uidh"
+	;
 #include "user_interface/gui_dialog_macros.h"
 #include "user_interface/message.h"
 #include "user_interface/user_interface.h"
@@ -3240,7 +3242,7 @@ Creates a settings_editor widget.
 		graphical_material_manager && glyph_list && spectrum_manager &&
 		volume_texture_manager && user_interface)
 	{
-		if (MrmOpenHierarchy_base64_string(settings_editor_uidh,
+		if (MrmOpenHierarchy_binary_string(settings_editor_uidh,sizeof(settings_editor_uidh),
 			&settings_editor_hierarchy,&settings_editor_hierarchy_open))
 		{
 			/* allocate memory */

@@ -55,7 +55,9 @@ Provides the widgets to manipulate element group settings.
 #include "graphics/spectrum.h"
 #include "graphics/spectrum_settings.h"
 #include "graphics/spectrum_editor_settings.h"
+static char spectrum_editor_settings_uidh[] =
 #include "graphics/spectrum_editor_settings.uidh"
+	;
 #include "user_interface/gui_dialog_macros.h"
 #include "user_interface/message.h"
 #include "user_interface/user_interface.h"
@@ -1017,7 +1019,7 @@ Creates a spectrum_editor_settings widget.
 	/* check arguments */
 	if (spectrum_editor_settings_widget&&parent)
 	{
-		if (MrmOpenHierarchy_base64_string(spectrum_editor_settings_uidh,
+		if (MrmOpenHierarchy_binary_string(spectrum_editor_settings_uidh,sizeof(spectrum_editor_settings_uidh),
 			&spectrum_editor_settings_hierarchy,&spectrum_editor_settings_hierarchy_open))
 		{
 			/* allocate memory */

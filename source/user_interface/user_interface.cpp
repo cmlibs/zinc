@@ -231,62 +231,6 @@ Module functions
 */
 
 #if defined (MOTIF)
-#if defined (BYTE_ORDER)
-#if (1234==BYTE_ORDER)
-static int glibc_version_greater_than_2_2_4(void)
-/*******************************************************************************
-LAST MODIFIED : 26 November 2002
-
-DESCRIPTION :
-Need to read the glibc version so that we can determine if we need to 
-swap the endianness of values going into a64l
-==============================================================================*/
-{
-#if __GLIBC__ >= 2
-	char *version_string;
-	int major_version, minor_version, minor_sub_version;
-#endif /* __GLIBC__ >= 2 */
-	static int return_code = -1;
-
-	ENTER(get_glibc_version);
-
-	/* This gets called a lot so lets make it fast */
-	if (return_code == -1)
-	{
-#if __GLIBC__ >= 2
-		version_string = (char *)gnu_get_libc_version();
-		if (sscanf(version_string, "%d.%d.%d", &major_version, &minor_version, 
-			&minor_sub_version))
-		{
-			
-			if ((major_version > 2) ||
-				((major_version == 2) && (minor_version > 2)) ||
-				((major_version == 2) && (minor_version == 2) && (minor_sub_version > 4)))
-			{
-				return_code = 1;
-			}
-			else
-			{
-				return_code = 0;
-			}
-		}
-		else
-		{
-			return_code = 0;
-		}
-#else /* __GLIBC__ >= 2 */
-		return_code = 0;
-#endif/* __GLIBC__ >= 2 */
-	}
-	LEAVE;
-	
-	return (return_code);
-} /* get_glibc_version */
-#endif /* (1234==BYTE_ORDER) */
-#endif /* defined (BYTE_ORDER) */
-#endif /* defined (MOTIF) */
-
-#if defined (MOTIF)
 #if ! defined (USE_XTAPP_CONTEXT)
 static int User_interface_X_query_callback(
 	struct Event_dispatcher_descriptor_set *descriptor_set, void *user_interface_void)
@@ -2710,15 +2654,15 @@ To clear out the callback pass NULL the <property_notify_callback> and
 #endif /* defined (MOTIF) */
 
 #if defined (MOTIF)
-int MrmOpenHierarchy_base64_string(char *base64_string,
+int MrmOpenHierarchy_binary_string(char *binary_string, int string_length,
 	MrmHierarchy *hierarchy,int *hierarchy_open)
 /*******************************************************************************
-LAST MODIFIED : 25 November 1999
+LAST MODIFIED : 23 December 2005
 
 DESCRIPTION :
-This wrapper allows the passing of the <base64_string> which is intended to
-contain a uid file converted to base64.  This function converts it back to
-binary and writes a temporary file which is read using the normal 
+This wrapper allows the passing of the <binary_string> which contains a uid file.
+<string_length> is required as the binary string may contain NULL characters.
+This function writes it to a temporary file which is read using the normal 
 MrmOpenHierarchy.
 This allows the uid binaries to be kept inside the executable rather than bound
 at run time!
@@ -2727,14 +2671,13 @@ constructed and the <hierarchy> for those files opened.  1 is returned for
 success and 0 for failure.
 ==============================================================================*/
 {
-	char *ptr_temp_uid_name,temp_uid_name[L_tmpnam],*total_uid;
+	char *ptr_temp_uid_name,temp_uid_name[L_tmpnam];
 	FILE *uid_file;
-	int i,j,return_code,string_length;
-	long uid_long_data;
+	int return_code;
 
-	ENTER(MrmOpenHierarchy_base64_string);
+	ENTER(MrmOpenHierarchy_binary_string);
 	/* check arguments */
-	if (base64_string&&hierarchy&&hierarchy_open)
+	if (binary_string&&hierarchy&&hierarchy_open)
 	{
 		if (*hierarchy_open)
 		{
@@ -2742,51 +2685,9 @@ success and 0 for failure.
 		}
 		else
 		{
-			string_length=strlen(base64_string);
-			if (tmpnam(temp_uid_name) && (uid_file=fopen(temp_uid_name, "w"))
-			  && ALLOCATE(total_uid, char, string_length))
+			if (tmpnam(temp_uid_name) && (uid_file=fopen(temp_uid_name, "w")))
 			{
-#if defined (DEBUG)
-				printf("MrmOpenHierarchy_base64_string.  %s\n", temp_uid_name);
-#endif /* defined (DEBUG) */
-				j=0;
-				for (i=0;i<string_length-1;i+=6)
-				{
-#if defined (BYTE_ORDER)
-#if (1234==BYTE_ORDER)
-					if (glibc_version_greater_than_2_2_4())
-					{
-						/* Don't need to swap now */
-						uid_long_data=a64l(base64_string + i);
-					}
-					else
-					{
-						char tmp_string[6];
-						tmp_string[0]=base64_string[i + 5];
-						tmp_string[1]=base64_string[i + 4];
-						tmp_string[2]=base64_string[i + 3];
-						tmp_string[3]=base64_string[i + 2];
-						tmp_string[4]=base64_string[i + 1];
-						tmp_string[5]=base64_string[i];
-						uid_long_data=a64l(tmp_string);
-					}
-#else /* (1234==BYTE_ORDER) */
-					uid_long_data=a64l(base64_string + i);
-#endif /* (1234==BYTE_ORDER) */
-#else /* defined (BYTE_ORDER) */
-					uid_long_data=a64l(base64_string + i);
-#endif /* defined (BYTE_ORDER) */
-					total_uid[j]=(char)(255 & uid_long_data);
-					j++;
-					total_uid[j]=(char)(255 & (uid_long_data >> 8));
-					j++;
-					total_uid[j]=(char)(255 & (uid_long_data >> 16));
-					j++;
-					total_uid[j]=(char)(255 & (uid_long_data >> 24));
-					j++;
-				}
-				fwrite(total_uid,1,4*string_length/6,uid_file);
-				DEALLOCATE(total_uid);
+				fwrite(binary_string,1,string_length,uid_file);
 				fclose(uid_file);
 				ptr_temp_uid_name=temp_uid_name;
 				if (MrmSUCCESS==MrmOpenHierarchy(1, &ptr_temp_uid_name,
@@ -2794,7 +2695,7 @@ success and 0 for failure.
 				{
 #if defined (DEBUG)
 					printf(
-						"MrmOpenHierarchy_base64_string.  opened temp file hierachy\n");
+						"MrmOpenHierarchy_binary_string.  opened temp file hierachy\n");
 #endif /* defined (DEBUG) */
 					*hierarchy_open=1;
 					return_code=1;
@@ -2802,7 +2703,7 @@ success and 0 for failure.
 				else
 				{
 					display_message(ERROR_MESSAGE,
-						"MrmOpenHierarchy_base64_string.  Could not open hierarchy from internal string");
+						"MrmOpenHierarchy_binary_string.  Could not open hierarchy from internal string");
 					return_code=0;
 				}
 				
@@ -2813,27 +2714,28 @@ success and 0 for failure.
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"MrmOpenHierarchy_base64_string.  Invalid argument(s)");
+			"MrmOpenHierarchy_binary_string.  Invalid argument(s)");
 		return_code=0;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* MrmOpenHierarchy_base64_string */
+} /* MrmOpenHierarchy_binary_string */
 #endif /* defined (MOTIF) */
 
 #if defined (MOTIF)
-int MrmOpenHierarchy_base64_multiple_strings(int number_of_strings, 
-	char **base64_strings,
+int MrmOpenHierarchy_binary_multiple_strings(int number_of_strings, 
+	char **binary_strings, int *string_lengths,
 	MrmHierarchy *hierarchy,int *hierarchy_open)
 /*******************************************************************************
-LAST MODIFIED : 19 April 1999
+LAST MODIFIED : 23 December 2005
 
 DESCRIPTION :
-This wrapper allows the passing of an array of <base64_strings> which are 
-intended to contain uid files converted to base64.  
-This function converts them all back to binary and writes a temporary files
-which are read using the normal MrmOpenHierarchy.
+This wrapper allows the passing of an array of <binary_strings> which are 
+intended to contain a uid files.  
+The <string_lengths> are required as the binary string may contain NULL characters.
+This function writes a temporary file which is read using the normal 
+MrmOpenHierarchy.
 This allows the uid binaries to be kept inside the executable rather than bound
 at run time!
 If <*hierarchy_open> then 1 is returned, otherwise the full <uid_file_names> are
@@ -2841,14 +2743,13 @@ constructed and the <hierarchy> for those files opened.  1 is returned for
 success and 0 for failure.
 ==============================================================================*/
 {
-	char **temp_uid_names,*total_uid;
+	char **temp_uid_names;
 	FILE *uid_file;
-	int i,j,k,length,max_string_length,return_code;
-	long uid_long_data;
+	int k,length,return_code;
 
-	ENTER(MrmOpenHierarchy_base64_multiple_strings);
+	ENTER(MrmOpenHierarchy_binary_multiple_strings);
 	/* check arguments */
-	if (base64_strings&&(number_of_strings > 0)&&hierarchy&&hierarchy_open)
+	if (binary_strings&&(number_of_strings > 0)&&hierarchy&&hierarchy_open)
 	{
 		if (*hierarchy_open)
 		{
@@ -2859,92 +2760,43 @@ success and 0 for failure.
 			return_code=1;
 			if (ALLOCATE(temp_uid_names, char *, number_of_strings))
 			{
-				max_string_length=0;
 				for (k=0;k<number_of_strings && return_code;k++)
 				{
-					length=strlen(base64_strings[k]);
-					if (ALLOCATE(temp_uid_names[k], char, L_tmpnam) 
-						&& tmpnam(temp_uid_names[k]))
-					{
-						if (length > max_string_length)
-						{
-							max_string_length=length;
-						}
-					}
-					else
+					if (!(ALLOCATE(temp_uid_names[k], char, L_tmpnam) 
+						&& tmpnam(temp_uid_names[k])))
 					{
 						display_message(ERROR_MESSAGE,
-							"MrmOpenHierarchy_base64_multiple_strings.  Unable to allocate temp filename memory.");
+							"MrmOpenHierarchy_binary_multiple_strings.  Unable to allocate temp filename memory.");
 						return_code=0;
 					}
 				}
 				if (return_code)
 				{
-					if (ALLOCATE(total_uid, char, max_string_length))
+					for (k=0;k<number_of_strings && return_code;k++)
 					{
-						for (k=0;k<number_of_strings && return_code;k++)
+						if (uid_file=fopen(temp_uid_names[k], "w"))
 						{
-							if (uid_file=fopen(temp_uid_names[k], "w"))
-							{
-								j=0;
-								length=strlen(base64_strings[k]);
-								for (i=0;i<length-1;i+=6)
-								{
-#if defined (BYTE_ORDER)
-#if (1234==BYTE_ORDER)
-									if (glibc_version_greater_than_2_2_4())
-									{
-										/* Don't need to swap now */
-										uid_long_data=a64l(base64_strings[k] + i);
-									}
-									else
-									{
-										char tmp_string[6];
-										tmp_string[0]=base64_strings[k][i + 5];
-										tmp_string[1]=base64_strings[k][i + 4];
-										tmp_string[2]=base64_strings[k][i + 3];
-										tmp_string[3]=base64_strings[k][i + 2];
-										tmp_string[4]=base64_strings[k][i + 1];
-										tmp_string[5]=base64_strings[k][i];
-										uid_long_data=a64l(tmp_string);
-									}
-#else /* (1234==BYTE_ORDER) */
-									uid_long_data=a64l(base64_strings[k] + i);
-#endif /* (1234==BYTE_ORDER) */
-#else /* defined (BYTE_ORDER) */
-									uid_long_data=a64l(base64_strings[k] + i);
-#endif /* defined (BYTE_ORDER) */
-									total_uid[j]=(char)(255 & uid_long_data);
-									j++;
-									total_uid[j]=(char)(255 & (uid_long_data >> 8));
-									j++;
-									total_uid[j]=(char)(255 & (uid_long_data >> 16));
-									j++;
-									total_uid[j]=(char)(255 & (uid_long_data >> 24));
-									j++;
-								}
-								fwrite(total_uid, 1, 4*length/6,
-									uid_file);
-								fclose(uid_file);
-							}
-							else
-							{
-								display_message(ERROR_MESSAGE,
-									"MrmOpenHierarchy_base64_multiple_strings.  Unable to open temporary file %s",
-									temp_uid_names[k]);
-								return_code=0;
-							}
+							length=string_lengths[k];
+							fwrite(binary_strings[k], 1, length,
+								uid_file);
+							fclose(uid_file);
 						}
-						DEALLOCATE(total_uid);
+						else
+						{
+							display_message(ERROR_MESSAGE,
+								"MrmOpenHierarchy_binary_multiple_strings.  Unable to open temporary file %s",
+								temp_uid_names[k]);
+							return_code=0;
+						}
 					}
-				
+					
 					if (return_code)
 					{
 						if (MrmSUCCESS==MrmOpenHierarchy(number_of_strings, temp_uid_names,
-							NULL,hierarchy))
+								NULL,hierarchy))
 						{
 #if defined (DEBUG)
-							printf("MrmOpenHierarchy_base64_multiple_strings.  opened temp file hierachy\n");
+							printf("MrmOpenHierarchy_binary_multiple_strings.  opened temp file hierachy\n");
 #endif /* defined (DEBUG) */
 							*hierarchy_open=1;
 							return_code=1;
@@ -2952,7 +2804,7 @@ success and 0 for failure.
 						else
 						{
 							display_message(ERROR_MESSAGE,
-								"MrmOpenHierarchy_base64_multiple_strings.  Could not open hierarchy from internal string");
+								"MrmOpenHierarchy_binary_multiple_strings.  Could not open hierarchy from internal string");
 							return_code=0;
 						}
 						
@@ -2968,7 +2820,7 @@ success and 0 for failure.
 			else
 			{
 				display_message(ERROR_MESSAGE,
-					"MrmOpenHierarchy_base64_multiple_strings.  Could not allocate temp name pointer array");
+					"MrmOpenHierarchy_binary_multiple_strings.  Could not allocate temp name pointer array");
 				return_code=0;
 			}
 		}
@@ -2976,13 +2828,13 @@ success and 0 for failure.
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"MrmOpenHierarchy_base64_multiple_strings.  Invalid argument(s)");
+			"MrmOpenHierarchy_binary_multiple_strings.  Invalid argument(s)");
 		return_code=0;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* MrmOpenHierarchy_base64_multiple_strings */
+} /* MrmOpenHierarchy_binary_multiple_strings */
 #endif /* defined (MOTIF) */
 
 #if defined (MOTIF)

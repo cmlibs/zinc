@@ -51,7 +51,9 @@ Note the element passed to this widget should be a non-managed local copy.
 #include "general/debug.h"
 #include "element/element_point_field_viewer_widget.h"
 #include "element/element_point_viewer_widget.h"
+static char element_point_viewer_widget_uidh[] =
 #include "element/element_point_viewer_widget.uidh"
+	;
 #include "user_interface/gui_dialog_macros.h"
 #include "user_interface/message.h"
 #include "user_interface/user_interface.h"
@@ -344,7 +346,7 @@ changes global.
 			Element_point_ranges_identifier_element_point_number_is_valid(
 				initial_element_point_identifier,initial_element_point_number)))
 	{
-		if (MrmOpenHierarchy_base64_string(element_point_viewer_widget_uidh,
+		if (MrmOpenHierarchy_binary_string(element_point_viewer_widget_uidh,sizeof(element_point_viewer_widget_uidh),
 			&element_point_viewer_hierarchy,&element_point_viewer_hierarchy_open))
 		{
 			/* allocate memory */

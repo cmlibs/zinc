@@ -51,7 +51,9 @@ two control and one input widget.
 #endif
 #include "general/debug.h"
 #include "transformation/transformation_editor.h"
+static char transformation_editor_uidh[] =
 #include "transformation/transformation_editor.uidh"
+	;
 #include "user_interface/message.h"
 #include "user_interface/user_interface.h"
 #include "view/coord.h"
@@ -448,7 +450,7 @@ and a translation only.
 	return_widget = (Widget)NULL;
 	if (transformation_editor_widget_address && parent)
 	{
-		if (MrmOpenHierarchy_base64_string(transformation_editor_uidh,
+		if (MrmOpenHierarchy_binary_string(transformation_editor_uidh,sizeof(transformation_editor_uidh),
 			&transformation_editor_hierarchy, &transformation_editor_hierarchy_open))
 		{
 			/* allocate memory */

@@ -72,7 +72,9 @@ interest and set scene_viewer values directly.
 #include "graphics/colour.h"
 #include "graphics/graphics_window.h"
 #if defined (MOTIF)
+static char graphics_window_uidh[] = 
 #include "graphics/graphics_window.uidh"
+	;
 #endif /* defined (MOTIF) */
 #include "graphics/light.h"
 #include "graphics/light_model.h"
@@ -2762,7 +2764,7 @@ it.
 			window->ortho_front_button=(Widget)NULL;
 			window->interactive_toolbar_form=(Widget)NULL;
 			window->interactive_toolbar_widget=(Widget)NULL;
-			if (MrmOpenHierarchy_base64_string(graphics_window_uidh,
+			if (MrmOpenHierarchy_binary_string(graphics_window_uidh,sizeof(graphics_window_uidh),
 					 &graphics_window_hierarchy,&graphics_window_hierarchy_open))
 			{
 				/* create a shell for the window */

@@ -57,7 +57,9 @@ New version using macros to handle different object types.
 #include "general/debug.h"
 #include "select/select.h"
 #if !defined (NO_SELECT_UIDH)
+static char select_uidh[] =
 #include "select/select.uidh"
+	;
 #endif /* !defined (NO_SELECT_UIDH) */
 #include "user_interface/gui_dialog_macros.h"
 #include "user_interface/message.h"
@@ -1255,7 +1257,7 @@ upon its name. \
 \
 	ENTER(CREATE_SELECT_WIDGET(object_type)); \
 	return_widget=(Widget)NULL; \
-	if (MrmOpenHierarchy_base64_string(select_uidh, \
+	if (MrmOpenHierarchy_binary_string(select_uidh,sizeof(select_uidh), \
 		&select_hierarchy,&select_hierarchy_open)) \
 	{ \
 		/* allocate memory */ \
