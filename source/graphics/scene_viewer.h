@@ -114,6 +114,8 @@ and the functions given their public names.
 #define Scene_viewer_set_tumble_rate Cmiss_scene_viewer_set_tumble_rate
 #define Scene_viewer_get_zoom_rate Cmiss_scene_viewer_get_zoom_rate
 #define Scene_viewer_set_zoom_rate Cmiss_scene_viewer_set_zoom_rate
+#define Scene_viewer_get_viewing_volume Cmiss_scene_viewer_get_viewing_volume
+#define Scene_viewer_set_viewing_volume Cmiss_scene_viewer_set_viewing_volume
 
 /*
 Global types
