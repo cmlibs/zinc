@@ -48,7 +48,9 @@ Form set aside for the actual element group editor.
 #include "curve/control_curve.h"
 #include "curve/control_curve_editor.h"
 #include "curve/control_curve_editor_dialog.h"
+static char control_curve_editor_dialog_uidh[] =
 #include "curve/control_curve_editor_dialog.uidh"
+	;
 #if defined (OLD_CODE)
 #include "user_interface/confirmation.h"
 #endif /* defined (OLD_CODE) */
@@ -484,7 +486,7 @@ DESCRIPTION :
 	if (control_curve_editor_dialog_address&&parent&&control_curve_manager&&
 		user_interface)
 	{
-		if (MrmOpenHierarchy_base64_string(control_curve_editor_dialog_uidh,
+		if (MrmOpenHierarchy_binary_string(control_curve_editor_dialog_uidh, sizeof(control_curve_editor_dialog_uidh),
 			&control_curve_editor_dialog_hierarchy,
 			&control_curve_editor_dialog_hierarchy_open))
 		{

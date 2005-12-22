@@ -52,7 +52,9 @@ Provides the widgets to modify Control_curve structures.
 #include "choose/choose_field_component.h"
 #include "curve/control_curve.h"
 #include "curve/control_curve_editor.h"
+static char control_curve_editor_uidh[] =
 #include "curve/control_curve_editor.uidh"
+	;
 #include "user_interface/gui_dialog_macros.h"
 #include "user_interface/message.h"
 #include "user_interface/user_interface.h"
@@ -3713,7 +3715,7 @@ Creates a control_curve_editor widget.
 	return_widget=(Widget)NULL;
 	if (curve_editor_widget&&parent&&user_interface)
 	{
-		if (MrmOpenHierarchy_base64_string(control_curve_editor_uidh,
+		if (MrmOpenHierarchy_binary_string(control_curve_editor_uidh, sizeof(control_curve_editor_uidh),
 			&curve_editor_hierarchy,&curve_editor_hierarchy_open))
 		{
 			/* allocate memory */

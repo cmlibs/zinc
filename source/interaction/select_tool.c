@@ -44,7 +44,9 @@ mouse and other devices.
  * ***** END LICENSE BLOCK ***** */
 #include "command/command.h"
 #include "interaction/select_tool.h"
+static char select_tool_uidh[] =
 #include "interaction/select_tool.uidh"
+	;
 #include "general/debug.h"
 #include "graphics/scene.h"
 #include "interaction/interaction_graphics.h"
@@ -301,7 +303,7 @@ and as a child of <parent>.
 	ENTER(Select_tool_get_icon);
 	if ((select_tool=(struct Select_tool *)select_tool_void))
 	{
-		if (MrmOpenHierarchy_base64_string(select_tool_uidh,
+		if (MrmOpenHierarchy_binary_string(select_tool_uidh, sizeof(select_tool_uidh),
 			&select_tool_hierarchy,&select_tool_hierarchy_open))
 		{
 			display = select_tool->display;
