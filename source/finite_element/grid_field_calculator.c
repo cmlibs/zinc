@@ -58,7 +58,9 @@ control curve variation over coordinates - usually xi_texture_coordinates.
 #include "computed_field/computed_field_vector_operations.h"
 #include "finite_element/finite_element.h"
 #include "finite_element/grid_field_calculator.h"
+static char grid_field_calculator_uidh[] =
 #include "finite_element/grid_field_calculator.uidh"
+	;
 #include "user_interface/gui_dialog_macros.h"
 #include "user_interface/message.h"
 
@@ -929,7 +931,7 @@ control curve variation over coordinates - usually integration.
 		control_curve_manager&&region&&user_interface&&
 		control_curve_editor_dialog_address)
 	{
-		if (MrmOpenHierarchy_base64_string(grid_field_calculator_uidh,
+		if (MrmOpenHierarchy_binary_string(grid_field_calculator_uidh, sizeof(grid_field_calculator_uidh),
 			&grid_field_calculator_hierarchy,
 			&grid_field_calculator_hierarchy_open))
 		{

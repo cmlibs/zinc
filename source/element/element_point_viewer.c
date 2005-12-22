@@ -57,7 +57,9 @@ selected element point, or set it if entered in this dialog.
 #include "computed_field/computed_field_value_index_ranges.h"
 #include "element/element_point_viewer_widget.h"
 #include "element/element_point_viewer.h"
+static char element_point_viewer_uidh[] =
 #include "element/element_point_viewer.uidh"
+	;
 #include "finite_element/finite_element_discretization.h"
 #include "finite_element/finite_element_to_graphics_object.h"
 #include "general/debug.h"
@@ -2041,7 +2043,7 @@ fields.
 		(computed_field_manager = Computed_field_package_get_computed_field_manager(
 			computed_field_package)) && user_interface)
 	{
-		if (MrmOpenHierarchy_base64_string(element_point_viewer_uidh,
+		if (MrmOpenHierarchy_binary_string(element_point_viewer_uidh, sizeof(element_point_viewer_uidh),
 			&element_point_viewer_hierarchy,&element_point_viewer_hierarchy_open))
 		{
 			/* allocate memory */
