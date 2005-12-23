@@ -80,11 +80,11 @@ data.
 /* For read(), write(), close() */
 #include <stdlib.h>
 #include <string.h>
+#if defined (EXT_INPUT)
 #include <fcntl.h>
 #include <errno.h>
-#if !defined (VMS)
 #include <termio.h>
-#endif
+#endif /* defined (EXT_INPUT) */
 #include <sys/types.h>
 #include <X11/Xlib.h>
 /*???DB.  Other conditions eg SPACEBALL ? */
@@ -701,33 +701,27 @@ Initialises the faro arm via the RS232C, and gets initial data.
 					{
 						case 9600:
 						{
-							Setup.c_cflag=CS8|CREAD|CLOCAL;
-							Setup.c_ospeed=B9600;
+							Setup.c_cflag=CS8|CREAD|CLOCAL|B9600;
 						} break;
 						case 19200:
 						{
-							Setup.c_cflag=CS8|CREAD|CLOCAL;
-							Setup.c_ospeed=B19200;
+							Setup.c_cflag=CS8|CREAD|CLOCAL|B19200;
 						} break;
 						case 38400:
 						{
-							Setup.c_cflag=CS8|CREAD|CLOCAL;
-							Setup.c_ospeed=B38400;
+							Setup.c_cflag=CS8|CREAD|CLOCAL|B38400;
 						} break;
 						case 57600:
 						{
-							Setup.c_cflag=CS8|CREAD|CLOCAL;
-							Setup.c_ospeed=B57600;
+							Setup.c_cflag=CS8|CREAD|CLOCAL|B57600;
 						} break;
 						case 115200:
 						{
-							Setup.c_cflag=CS8|CREAD|CLOCAL;
-							Setup.c_ospeed=B115200;
+							Setup.c_cflag=CS8|CREAD|CLOCAL|B115200;
 						} break;
 						default:
 						{
-							Setup.c_cflag=CS8|CREAD|CLOCAL;
-							Setup.c_ospeed=B9600;
+							Setup.c_cflag=CS8|CREAD|CLOCAL|B9600;
 							display_message(WARNING_MESSAGE,
 							"input_module_faro_init.  Unknown baud rate - set to 9600.");
 						} break;
