@@ -238,7 +238,11 @@ ifeq ($(SYSNAME),Linux)
    endif
 endif # SYSNAME == Linux
 ifeq ($(SYSNAME),AIX)
-   UIL = uil
+   ifneq ($(ABI),64)
+      UIL = uil
+   else # ABI != 64
+      UIL = uil64
+   endif # ABI != 64
    CC = xlc -c
    CPP = xlc -qnolm -c
    CPP_FLAGS = -qrtti
