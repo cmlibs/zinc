@@ -285,7 +285,7 @@ ifeq ($(SYSNAME),win32)
    CPP = g++ -c -mno-cygwin -mms-bitfields
    CPP_FLAGS =
    FORTRAN = f77 -c -mno-cygwin -mms-bitfields
-   MAKEDEPEND = gcc -MM -MG
+   MAKEDEPEND = gcc -MM -MG -mno-cygwin
    CPREPROCESS = 
    LINK = g++ -mno-cygwin -fnative-struct -mms-bitfields
    ifeq ($(filter-out CONSOLE_USER_INTERFACE GTK_USER_INTERFACE,$(USER_INTERFACE)),)
