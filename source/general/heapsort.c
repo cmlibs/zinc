@@ -45,8 +45,8 @@ Created because qsort didn't seem to be working properly in TurboC.
 #include "general/heapsort.h"
 #include "general/debug.h"
 
-void heapsort(void *base,size_t count,size_t size,
-	int (*compare)(void *,void *))
+int heapsort(void *base,size_t count,size_t size,
+	int (*compare)(const void *,const void *))
 /*******************************************************************************
 LAST MODIFIED : 2 November 1995
 
@@ -125,4 +125,6 @@ Vetterling.
 		DEALLOCATE(raa);
 	}
 	LEAVE;
+
+	return(1);
 } /* heapsort */

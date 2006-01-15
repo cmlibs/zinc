@@ -43,8 +43,8 @@ Created because qsort didn't seem to be working properly in TurboC.
  * ***** END LICENSE BLOCK ***** */
 #include <stddef.h>
 
-void heapsort(void *base,size_t count,size_t size,
-	int (*compare)(void *,void *));
+int heapsort(void *base,size_t count,size_t size,
+	int (*compare)(const void *,const void *));
 /*******************************************************************************
 LAST MODIFIED : 5 October 1991
 

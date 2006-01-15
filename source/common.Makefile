@@ -119,6 +119,13 @@ ifeq ($(SYSNAME:CYGWIN%=),)# CYGWIN
   INSTRUCTION = i686
   OPERATING_SYSTEM = cygwin
 endif
+ifeq ($(SYSNAME),Darwin)
+  INSTRUCTION = ppc
+  ifndef ABI
+    ABI = 32
+  endif
+  OPERATING_SYSTEM = darwin
+endif
 
 BIN_ARCH_DIR = $(INSTRUCTION)-$(OPERATING_SYSTEM)
 ifdef ABI
@@ -349,6 +356,67 @@ ifeq ($(SYSNAME:CYGWIN%=),)# CYGWIN
       TARGET_TYPE_DEFINES =
    endif # DEBUG != true
 endif # SYSNAME == CYGWIN%=
+ifeq ($(SYSNAME),Darwin)
+   OPENMOTIF_DIR = /usr/OpenMotif-2.1.31-22i
+   UIL = $(OPENMOTIF_DIR)/bin/uil
+#    ifeq ($(MACHNAME),ia64)
+#       # Using Intel compilers
+#       CC = ecc -c
+#       CPP = $(CC)
+#       # turn on warnings,
+#       # suppress messages about non-standard fortran (including REAL*8,
+#       # more than 19 continuation lines),
+#       # suppress comment messages (including obsolescent alternate return),
+#       # auto arrays (as well as scalars), no aliasing,
+#       # no preprocessing, temporary arrays on stack if possible.
+#       FORTRAN = efc -c -W1 -w95 -cm -auto -fpp0 -stack_temps
+#    else
+      # gcc
+			# for profiling
+      #CC = gcc -c -std=gnu99 -pg
+      CC = gcc -c -std=gnu99
+      CPP = g++ -c
+      CPP_FLAGS =
+      FORTRAN = g77 -c -fno-second-underscore
+#    endif
+   MAKEDEPEND = gcc -MM -MG
+   CPREPROCESS = gcc -E -P
+   ifneq ($(STATIC_LINK),true)
+			# for profiling
+      #LINK = gcc -pg
+      LINK = gcc
+      # LINK = egcs -shared -L/usr/X11R6/lib -v */
+      # LINK = gcc -L/usr/X11R6/lib -v */
+   else # STATIC_LINK) != true
+      LINK = gcc -static
+      # LINK = g++ --no-demangle -rdynamic -L/usr/X11R6/lib*/
+   endif # STATIC_LINK) != true
+   ifneq ($(DEBUG),true)
+      OPTIMISATION_FLAGS = -O
+      COMPILE_DEFINES = -DOPTIMISED
+      COMPILE_FLAGS = -fPIC
+      STRICT_FLAGS = -Werror
+      CPP_STRICT_FLAGS = -Werror
+      DIGITAL_MEDIA_NON_STRICT_FLAGS = 
+      DIGITAL_MEDIA_NON_STRICT_FLAGS_PATTERN = NONE # Must specify a pattern that doesn't match
+   else  # DEBUG != true
+      OPTIMISATION_FLAGS = -g
+      COMPILE_DEFINES = -DREPORT_GL_ERRORS -DUSE_PARAMETER_ON
+      COMPILE_FLAGS = -fPIC
+      STRICT_FLAGS = -W -Wall -Wno-parentheses -Wno-switch -Werror
+      CPP_STRICT_FLAGS = -W -Wall -Wno-parentheses -Wno-switch -Wno-unused-parameter -Werror
+      DIGITAL_MEDIA_NON_STRICT_FLAGS = 
+      DIGITAL_MEDIA_NON_STRICT_FLAGS_PATTERN = NONE # Must specify a pattern that doesn't match */
+   endif # DEBUG != true
+   TARGET_TYPE_FLAGS =
+   TARGET_TYPE_DEFINES =
+   ifeq ($(MACHNAME),ia64)
+      TARGET_TYPE_DEFINES = -DO64
+      # To work around errors of the form:
+      # /home/hunter/gui/cmgui/source/api/cmiss_core.c:60: relocation truncated to fit: PCREL21B display_message
+      LINK += -Wl,-relax
+   endif
+endif # SYSNAME == Darwin
 
 #Always look in cmgui utilities so that gx finds it.
 PRODUCT_UTILITIES_PATH=$(CMISS_ROOT)/cmgui/utilities/$(BIN_ARCH_DIR)

@@ -47,13 +47,16 @@ checking.
 #define VALUE_H
 
 #if defined (UNIX)
-#if defined (CYGWIN)
-/*#include <w32api/winnt.h>*/
-#define MINSHORT  0x8000
-#define MAXSHORT  0x7fff
-#else /* defined (CYGWIN) */
-#include <values.h>
-#endif /* defined (CYGWIN) */
+#  if defined (CYGWIN)
+   /*#include <w32api/winnt.h>*/
+#    define MINSHORT  0x8000
+#    define MAXSHORT  0x7fff
+#  else /* defined (CYGWIN) */
+#    if defined (DARWIN)
+#    else /* defined (DARWIN) */
+#      include <values.h>
+#    endif /* defined (DARWIN) */
+#  endif /* defined (CYGWIN) */
 #endif /* defined (UNIX) */
 
 /*

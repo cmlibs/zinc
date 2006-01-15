@@ -178,6 +178,10 @@ ifeq ($(SYSNAME:CYGWIN%=),)
    PLATFORM_DEFINES = -DGENERIC_PC -DCMGUI 
    OPERATING_SYSTEM_DEFINES = -DUNIX -DCYGWIN
 endif # SYSNAME == CYGWIN%=
+ifeq ($(SYSNAME),Darwin)
+   PLATFORM_DEFINES =  -DCMGUI 
+   OPERATING_SYSTEM_DEFINES = -DUNIX -DDARWIN
+endif # SYSNAME == Darwin
 
 ifeq ($(USER_INTERFACE), MOTIF_USER_INTERFACE)
    USER_INTERFACE_DEFINES = -DMOTIF
@@ -507,13 +511,18 @@ ifeq ($(USER_INTERFACE),MOTIF_USER_INTERFACE)
          USER_INTERFACE_LIB += -lMrm -lXm -lXp -lXt -lX11 -lXmu -lXext -lSM -lICE
       endif # STATIC_LINK != true
    else # SYSNAME == Linux
+      ifeq ($(SYSNAME),Darwin)
+         #OPENMOTIF_DIR set in common.Makefile
+         USER_INTERFACE_INC += -I$(OPENMOTIF_DIR)/include
+         USER_INTERFACE_LIB += $(OPENMOTIF_DIR)/lib/libMrm.a $(OPENMOTIF_DIR)/lib/libXm.a -L/usr/X11R6/lib -lXp
+      endif # SYSNAME == Darwin
       ifeq ($(SYSNAME:CYGWIN%=),)
          USER_INTERFACE_INC += -I/usr/X11R6/include
          X_LIB = /usr/X11R6/lib
          USER_INTERFACE_LIB += -L$(X_LIB)
          USER_INTERFACE_LIB += -lMrm -lXm -lXp -lXt -lX11 -lXmu -lXext -lSM -lICE
       else # SYSNAME == CYGWIN%=
-         USER_INTERFACE_LIB += -lMrm -lXm -lXt -lX11 -lXmu -lXext
+         USER_INTERFACE_LIB += -lXt -lX11 -lXmu -lXext
          ifeq ($(SYSNAME:IRIX%=),)
             USER_INTERFACE_LIB += -lSgm
          endif # SYSNAME == IRIX%=
@@ -598,6 +607,9 @@ endif # SYSNAME == AIX
 ifeq ($(SYSNAME),win32)
    LIB = -lws2_32 -lg2c -lgdi32  -lwinspool -lcomdlg32 -ladvapi32 -lshell32 -lole32 -loleaut32 -lnetapi32 -luuid -lwsock32 -lmpr -lwinmm -lversion -lodbc32 -lstdc++
 endif # SYSNAME == win32
+ifeq ($(SYSNAME),Darwin)
+      LIB = /usr/local/g77/lib/libg2c.a -lm -ldl -lpthread -liconv -lstdc++
+endif # SYSNAME == Darwin
 
 ifeq ($(SYSNAME:IRIX%=),)
    BOOST_INC = -I$(CMISS_ROOT)/boost-1.30.2 -I$(CMISS_ROOT)/boost-1.30.2/boost/compatibility/cpp_c_headers
@@ -614,6 +626,9 @@ endif # SYSNAME == win32
 ifeq ($(SYSNAME),CYGWIN%=)
    BOOST_INC = -I$(CMISS_ROOT)/boost-1.30.2
 endif # SYSNAME == CYGWIN%=
+ifeq ($(SYSNAME),Darwin)
+   BOOST_INC = -I$(CMISS_ROOT)/boost-1.30.2
+endif # SYSNAME == Darwin
 
 ALL_DEFINES = $(COMPILE_DEFINES) $(TARGET_TYPE_DEFINES) \
 	$(PLATFORM_DEFINES) $(OPERATING_SYSTEM_DEFINES) $(USER_INTERFACE_DEFINES) \
