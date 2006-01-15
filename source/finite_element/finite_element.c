@@ -5248,7 +5248,7 @@ of <matrix_1> and <matrix_2>.  All matricies are assumed to be stored row-wise.
 	return (product);
 } /* tensor_product */
 
-static int sort_integers(void *number_1_address,void *number_2_address)
+static int sort_integers(const void *number_1_address, const void *number_2_address)
 /*******************************************************************************
 LAST MODIFIED : 10 May 2001
 
@@ -5280,7 +5280,7 @@ DESCRIPTION :
 	return (return_code);
 } /* sort_integers */
 
-static int sort_basis_functions(void *tuple_1_void,void *tuple_2_void)
+static int sort_basis_functions(const void *tuple_1_void,const void *tuple_2_void)
 /*******************************************************************************
 LAST MODIFIED : 13 May 2001
 
