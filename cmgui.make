@@ -183,7 +183,7 @@ ifeq ($(SYSNAME),CYGWIN%=)
 all :
 endif # SYSNAME == CYGWIN%=
 ifeq ($(SYSNAME),Darwin)
-all : cmgui cmgui-debug cmgui-static-lib
+all : cmgui cmgui-debug cmgui-static-lib cmgui-no3dgraphics-static-lib cmgui-no3dgraphics-debug-static-lib
 endif # SYSNAME == Darwin
 
 update :
