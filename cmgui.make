@@ -182,6 +182,9 @@ endif # SYSNAME == win32
 ifeq ($(SYSNAME),CYGWIN%=)
 all :
 endif # SYSNAME == CYGWIN%=
+ifeq ($(SYSNAME),Darwin)
+all : cmgui cmgui-debug cmgui-static-lib
+endif # SYSNAME == Darwin
 
 update :
 	$(CMISS_ROOT)/bin/cmissmake cmgui;
