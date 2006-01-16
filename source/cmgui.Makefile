@@ -514,19 +514,20 @@ ifeq ($(USER_INTERFACE),MOTIF_USER_INTERFACE)
       ifeq ($(SYSNAME),Darwin)
          #OPENMOTIF_DIR set in common.Makefile
          USER_INTERFACE_INC += -I$(OPENMOTIF_DIR)/include
-         USER_INTERFACE_LIB += $(OPENMOTIF_DIR)/lib/libMrm.a $(OPENMOTIF_DIR)/lib/libXm.a -L/usr/X11R6/lib -lXp
+         USER_INTERFACE_LIB += $(OPENMOTIF_DIR)/lib/libMrm.a $(OPENMOTIF_DIR)/lib/libXm.a -L/usr/X11R6/lib -lXp -lXt -lX11 -lXmu -lXext
+      else # SYSNAME == Darwin
+         ifeq ($(SYSNAME:CYGWIN%=),)
+            USER_INTERFACE_INC += -I/usr/X11R6/include
+            X_LIB = /usr/X11R6/lib
+            USER_INTERFACE_LIB += -L$(X_LIB)
+            USER_INTERFACE_LIB += -lMrm -lXm -lXp -lXt -lX11 -lXmu -lXext -lSM -lICE
+         else # SYSNAME == CYGWIN%=
+            USER_INTERFACE_LIB += -lMrm -lXm -lXt -lX11 -lXmu -lXext
+            ifeq ($(SYSNAME:IRIX%=),)
+               USER_INTERFACE_LIB += -lSgm
+            endif # SYSNAME == IRIX%=
+         endif # SYSNAME == CYGWIN%=
       endif # SYSNAME == Darwin
-      ifeq ($(SYSNAME:CYGWIN%=),)
-         USER_INTERFACE_INC += -I/usr/X11R6/include
-         X_LIB = /usr/X11R6/lib
-         USER_INTERFACE_LIB += -L$(X_LIB)
-         USER_INTERFACE_LIB += -lMrm -lXm -lXp -lXt -lX11 -lXmu -lXext -lSM -lICE
-      else # SYSNAME == CYGWIN%=
-         USER_INTERFACE_LIB += -lXt -lX11 -lXmu -lXext
-         ifeq ($(SYSNAME:IRIX%=),)
-            USER_INTERFACE_LIB += -lSgm
-         endif # SYSNAME == IRIX%=
-      endif # SYSNAME == CYGWIN%=
    endif # SYSNAME == Linux
 endif # $(USER_INTERFACE) == MOTIF_USER_INTERFACE
 ifeq ($(USER_INTERFACE),GTK_USER_INTERFACE)
