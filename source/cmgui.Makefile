@@ -898,10 +898,13 @@ GENERAL_SRCS = \
 	general/myio.c \
 	general/mystring.c \
 	general/octree.c \
-	general/photogrammetry.c \
 	general/statistics.c \
 	general/time.c \
 	general/value.c 
+ifeq ($(GRAPHICS_API), OPENGL_GRAPHICS)
+   GENERAL_SRCS += \
+      general/photogrammetry.c
+endif
 GENERAL_INTERFACE_SRCS = \
 	general/postscript.c
 GRAPHICS_SRCS = \
