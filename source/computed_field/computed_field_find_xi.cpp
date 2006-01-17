@@ -44,7 +44,6 @@ lookup of the element.
  * ***** END LICENSE BLOCK ***** */
 #include <stdio.h>
 #include <math.h>
-#include <GL/gl.h>
 
 #include "general/debug.h"
 #include "general/image_utilities.h"
@@ -57,6 +56,10 @@ lookup of the element.
 #include "graphics/texture.h"
 #include "three_d_drawing/graphics_buffer.h"
 #include "user_interface/message.h"
+
+#if defined (GRAPHICS_BUFFER_USE_OFFSCREEN_BUFFERS)
+#include <GL/gl.h>
+#endif /* defined (GRAPHICS_BUFFER_USE_OFFSCREEN_BUFFERS) */
 
 struct Render_element_data
 {
