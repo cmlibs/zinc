@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : io_device.c
 
-LAST MODIFIED : 27 January 2005
+LAST MODIFIED : 17 January 2006
 
 DESCRIPTION :
 ==============================================================================*/
@@ -45,6 +45,7 @@ DESCRIPTION :
 #include <fcntl.h>
 #endif /* defined (SELECT_DESCRIPTORS) */
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include "general/debug.h"
 #include "general/indexed_list_private.h"
@@ -78,7 +79,7 @@ Io_device structure.
 	char *file_descriptor_flags;
 	struct Interpreter *interpreter;
 	struct User_interface *user_interface;
-	Fdio_id fdio;
+	struct LIST(Fdio) *fdio_list;
 #endif /* defined (SELECT_DESCRIPTORS) */
 	int access_count;
 };
@@ -130,7 +131,9 @@ Called when this device has file descriptors that are waiting.
 			  device->perl_action, &callback_result, &return_code);
 		  if (callback_result)
 		  {
-			  DEALLOCATE(callback_result);
+			  /* This was not created with ALLLOCATE so not using DEALLOCATE to free it
+				  otherwise our memorycheck macros complain. */
+			  free(callback_result);
 		  }
 	  }
 #endif /* defined (PERL_INTERPRETER) */
@@ -181,7 +184,7 @@ Allocates memory and assigns fields for a device.
 			device->perl_action = (char *)NULL;
 			device->file_descriptor_flags = (char *)NULL;
 			device->interpreter = (struct Interpreter *)NULL;
-			device->fdio = (Fdio_id)NULL;
+			device->fdio_list = (struct LIST(Fdio) *)NULL;
 #endif /* defined (SELECT_DESCRIPTORS) */
 			strcpy(device->name,name);
 		}
@@ -234,9 +237,9 @@ and sets <*device> to NULL.
 			{
 				DEALLOCATE(device->file_descriptor_flags);
 			}
-			if (device->fdio)
+			if (device->fdio_list)
 			{
-				DESTROY(Fdio)(&device->fdio);
+				DESTROY(LIST(Fdio))(&device->fdio_list);
 			}
 #endif /* defined (SELECT_DESCRIPTORS) */
 			DEALLOCATE(*device_ptr);
@@ -322,6 +325,7 @@ between the start and end detection are assumed to belong to the <device>.
 ==============================================================================*/
 {
 #if defined (SELECT_DESCRIPTORS)
+	Fdio_id new_fdio;
 	int i;
 #endif /* defined (SELECT_DESCRIPTORS) */
 	int return_code;
@@ -340,10 +344,15 @@ between the start and end detection are assumed to belong to the <device>.
 					if (-1 != fcntl(i, F_GETFD))
 					{
 						printf ("Adding Io_device callback %d\n", i);
-						device->fdio = Event_dispatcher_create_Fdio(
+						if (!device->fdio_list)
+						{
+							device->fdio_list = CREATE(LIST(Fdio))();
+						}
+						new_fdio = Event_dispatcher_create_Fdio(
 							User_interface_get_event_dispatcher(device->user_interface),
 							i);
-						Fdio_set_read_callback(device->fdio,
+						ADD_OBJECT_TO_LIST(Fdio)(new_fdio, device->fdio_list);
+						Fdio_set_read_callback(new_fdio,
 							Io_device_descriptor_callback,
 							(void *)device);
 					}

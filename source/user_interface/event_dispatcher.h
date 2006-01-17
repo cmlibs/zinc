@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : event_dispatcher.h
 
-LAST MODIFIED : 26 May 2005
+LAST MODIFIED : 17 January 2006
 
 DESCRIPTION :
 Routines for managing the main event loop in cmiss and dispatching events on
@@ -46,6 +46,7 @@ registered file descriptors to the correct callbacks.
 #define EVENT_DISPATCHER_H
 
 #include "general/object.h"
+#include "general/list.h"
 #if defined (USE_XTAPP_CONTEXT) /* switch (USER_INTERFACE) */
 #include <Xm/Xm.h>
 #elif defined (WIN32_USER_INTERFACE) /* switch (USER_INTERFACE) */
@@ -149,10 +150,15 @@ LAST MODIFIED : 5 March 2002
 DESCRIPTION :
 ==============================================================================*/
 
+DECLARE_LIST_TYPES(Fdio);
+
 /*
 Global functions
 ----------------
 */
+
+PROTOTYPE_OBJECT_FUNCTIONS(Fdio);
+PROTOTYPE_LIST_FUNCTIONS(Fdio);
 
 struct Event_dispatcher *CREATE(Event_dispatcher)(void);
 /*******************************************************************************

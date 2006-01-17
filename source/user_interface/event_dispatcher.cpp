@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : event_dispatcher.c
 
-LAST MODIFIED : 26 May 2005
+LAST MODIFIED : 17 January 2006
 
 DESCRIPTION :
 This provides an object which interfaces between a event_dispatcher and Cmgui
@@ -193,7 +193,7 @@ Contains data for a callback function in the I/O callback API.
 
 struct Fdio
 /*******************************************************************************
-LAST MODIFIED : 28 February, 2005
+LAST MODIFIED : 17 January 2006
 
 DESCRIPTION :
 This structure is equivalent to a filedescriptor/socket, and holds all the
@@ -211,17 +211,15 @@ read from or written to.
 	int ready_to_read, ready_to_write;
 #elif defined(WIN32_USER_INTERFACE)
 	int wantevents;
-	int access_count;
 #elif defined(USE_GTK_MAIN_STEP)
 	GIOChannel* iochannel;
 	guint read_source_tag, write_source_tag;
 #elif defined(XTAPP_CONTEXT)
 	XtInputId read_input, write_input;
 #endif /* defined(USE_GENERIC_EVENT_DISPATCHER) */
+	int access_count;
 };
 
-#if defined (WIN32_USER_INTERFACE)
-DECLARE_LIST_TYPES(Fdio);
 DECLARE_OBJECT_FUNCTIONS(Fdio);
 FULL_DECLARE_INDEXED_LIST_TYPE(Fdio);
 DECLARE_INDEXED_LIST_MODULE_FUNCTIONS(Fdio,
@@ -229,7 +227,6 @@ DECLARE_INDEXED_LIST_MODULE_FUNCTIONS(Fdio,
 DECLARE_INDEXED_LIST_FUNCTIONS(Fdio);
 DECLARE_FIND_BY_IDENTIFIER_IN_INDEXED_LIST_FUNCTION(Fdio,
 	descriptor,Cmiss_native_socket_t,compare_int)
-#endif /* defined (WIN32_USER_INTERFACE) */
 
 /*
 Module functions
@@ -2109,6 +2106,7 @@ Creates a new Fdio, given an event dispatcher.
 		memset(io, 0, sizeof(*io));
 		io->event_dispatcher = dispatcher;
 		io->descriptor = descriptor;
+		io->access_count = 0;
 		if (!(io->callback = Event_dispatcher_add_descriptor_callback(
 			io->event_dispatcher,
 			Fdio_event_dispatcher_query_function,
@@ -2336,6 +2334,7 @@ Creates a new Fdio, given an event dispatcher and a descriptor.
 		memset(io, 0, sizeof(*io));
 		io->event_dispatcher = dispatcher;
 		io->descriptor = descriptor;
+		io->access_count = 0;
 		ADD_OBJECT_TO_LIST(Fdio)
 			(io, dispatcher->socket_list);
 
@@ -2488,6 +2487,7 @@ Creates a new Fdio, given an event dispatcher and a descriptor.
 		memset(io, 0, sizeof(*io));
 		io->event_dispatcher = dispatcher;
 		io->descriptor = descriptor;
+		io->access_count = 0;
 	}
 	else
 	{
@@ -2686,6 +2686,7 @@ Creates a new Fdio, given an event dispatcher and a descriptor.
 		memset(io, 0, sizeof(*io));
 		io->event_dispatcher = dispatcher;
 		io->descriptor = descriptor;
+		io->access_count = 0;
 	}
 	else
 	{
