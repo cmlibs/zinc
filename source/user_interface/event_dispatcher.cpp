@@ -220,11 +220,11 @@ read from or written to.
 	int access_count;
 };
 
-DECLARE_OBJECT_FUNCTIONS(Fdio);
+DECLARE_OBJECT_FUNCTIONS(Fdio)
 FULL_DECLARE_INDEXED_LIST_TYPE(Fdio);
 DECLARE_INDEXED_LIST_MODULE_FUNCTIONS(Fdio,
-	descriptor,Cmiss_native_socket_t,compare_int);
-DECLARE_INDEXED_LIST_FUNCTIONS(Fdio);
+	descriptor,Cmiss_native_socket_t,compare_int)
+DECLARE_INDEXED_LIST_FUNCTIONS(Fdio)
 DECLARE_FIND_BY_IDENTIFIER_IN_INDEXED_LIST_FUNCTION(Fdio,
 	descriptor,Cmiss_native_socket_t,compare_int)
 
