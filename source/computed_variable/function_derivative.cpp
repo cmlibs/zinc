@@ -2746,48 +2746,63 @@ class Function_variable_derivatnew :
 #else // defined (EVALUATE_RETURNS_VALUE)
 		bool evaluate()
 		{
-			Function_derivatnew_handle function_derivatnew=
-				boost::dynamic_pointer_cast<Function_derivatnew,Function>(
-				function());
-			Function_size_type i;
-			Function_variable_handle local_dependent_variable;
-			std::list<Function_variable_handle>::iterator
-				partial_independent_variable_iterator;
+#if defined (NEW_CODE)
+//???DB.  Not sure if this is first thing to do.  Worried if inputs change
+//  dimension.  Worried about changing other callers of
+//  Function_variable_matrix<double>::evaluate()
+			//???DB.  Can be very expensive to calculate number_of_rows and
+			//  number_of_columns, so only do once?  What happens if change from
+			//  3-D to 2-D element for input?
+			//???DB.  Need other callers of
+			//  Function_variable_matrix<double>::evaluate()
+			if ((0==number_of_rows_private)&&(0==number_of_columns_private))
+			{
+#endif // defined (NEW_CODE)
+				Function_derivatnew_handle function_derivatnew=
+					boost::dynamic_pointer_cast<Function_derivatnew,Function>(
+					function());
+				Function_size_type i;
+				Function_variable_handle local_dependent_variable;
+				std::list<Function_variable_handle>::iterator
+					partial_independent_variable_iterator;
 
-			// recalculate number of rows and columns
-			//???DB.  Added evaluate() so that number_differentiable will be right.
-			//  Fixes one problem, but there ends up being a variable which is not
-			//  a variable_composition and uses Function_variable::evaluate.
-			//  Function_composition::evaluate is called an throws an exception
-			if (function_derivatnew&&
-				(local_dependent_variable=function_derivatnew->dependent_variable)&&
-				(local_dependent_variable->evaluate()))
-			{
-				number_of_rows_private=local_dependent_variable->
-					number_differentiable();
-			}
-			else
-			{
-				number_of_rows_private=0;
-			}
-			i=partial_independent_variables.size();
-			if (0<i)
-			{
-				number_of_columns_private=1;
-				partial_independent_variable_iterator=
-					partial_independent_variables.begin();
-				while (i>0)
+				// recalculate number of rows and columns
+				//???DB.  Added evaluate() so that number_differentiable will be right.
+				//  Fixes one problem, but there ends up being a variable which is not
+				//  a variable_composition and uses Function_variable::evaluate.
+				//  Function_composition::evaluate is called an throws an exception
+				if (function_derivatnew&&
+					(local_dependent_variable=function_derivatnew->dependent_variable)&&
+					(local_dependent_variable->evaluate()))
 				{
-					number_of_columns_private *=
-						(*partial_independent_variable_iterator)->number_differentiable();
-					++partial_independent_variable_iterator;
-					--i;
+					number_of_rows_private=local_dependent_variable->
+						number_differentiable();
 				}
+				else
+				{
+					number_of_rows_private=0;
+				}
+				i=partial_independent_variables.size();
+				if (0<i)
+				{
+					number_of_columns_private=1;
+					partial_independent_variable_iterator=
+						partial_independent_variables.begin();
+					while (i>0)
+					{
+						number_of_columns_private *=
+							(*partial_independent_variable_iterator)->number_differentiable();
+						++partial_independent_variable_iterator;
+						--i;
+					}
+				}
+				else
+				{
+					number_of_columns_private=0;
+				}
+#if defined (NEW_CODE)
 			}
-			else
-			{
-				number_of_columns_private=0;
-			}
+#endif // defined (NEW_CODE)
 
 			return (Function_variable_matrix<Scalar>::evaluate());
 		};
