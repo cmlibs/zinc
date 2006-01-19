@@ -199,9 +199,11 @@ ifeq ($(SYSNAME),Linux)
 #       FORTRAN = efc -c -W1 -w95 -cm -auto -fpp0 -stack_temps
 #    else
       # gcc
-			# for profiling
+      # for profiling
       #CC = gcc -c -std=gnu99 -pg
       CC = gcc -c -std=gnu99
+      # for profiling
+      #CPP = g++ -c -pg
       CPP = g++ -c
       CPP_FLAGS =
       FORTRAN = g77 -c -fno-second-underscore
@@ -209,7 +211,7 @@ ifeq ($(SYSNAME),Linux)
    MAKEDEPEND = gcc -MM -MG
    CPREPROCESS = gcc -E -P
    ifneq ($(STATIC_LINK),true)
-			# for profiling
+      # for profiling
       #LINK = gcc -pg
       LINK = gcc
       # LINK = egcs -shared -L/usr/X11R6/lib -v */
@@ -372,7 +374,7 @@ ifeq ($(SYSNAME),Darwin)
 #       FORTRAN = efc -c -W1 -w95 -cm -auto -fpp0 -stack_temps
 #    else
       # gcc
-			# for profiling
+      # for profiling
       #CC = gcc -c -std=gnu99 -pg
 		# -fno-common so that it doesn't use common blocks and they symbols will get exported into a library	
       CC = gcc -c -std=gnu99 -fno-common
@@ -383,7 +385,7 @@ ifeq ($(SYSNAME),Darwin)
    MAKEDEPEND = gcc -MM -MG
    CPREPROCESS = gcc -E -P
    ifneq ($(STATIC_LINK),true)
-			# for profiling
+      # for profiling
       #LINK = gcc -pg
       LINK = gcc -Wl,-Y,20 
       # LINK = egcs -shared -L/usr/X11R6/lib -v */
