@@ -374,7 +374,8 @@ ifeq ($(SYSNAME),Darwin)
       # gcc
 			# for profiling
       #CC = gcc -c -std=gnu99 -pg
-      CC = gcc -c -std=gnu99
+		# -fno-common so that it doesn't use common blocks and they symbols will get exported into a library	
+      CC = gcc -c -std=gnu99 -fno-common
       CPP = g++ -c
       CPP_FLAGS =
       FORTRAN = g77 -c -fno-second-underscore
@@ -384,7 +385,7 @@ ifeq ($(SYSNAME),Darwin)
    ifneq ($(STATIC_LINK),true)
 			# for profiling
       #LINK = gcc -pg
-      LINK = gcc
+      LINK = gcc -Wl,-Y,20 
       # LINK = egcs -shared -L/usr/X11R6/lib -v */
       # LINK = gcc -L/usr/X11R6/lib -v */
    else # STATIC_LINK) != true
@@ -418,8 +419,6 @@ ifeq ($(SYSNAME),Darwin)
    endif
 endif # SYSNAME == Darwin
 
-#Always look in cmgui utilities so that gx finds it.
-PRODUCT_UTILITIES_PATH=$(CMISS_ROOT)/cmgui/utilities/$(BIN_ARCH_DIR)
 UTILITIES_PATH=$(CMGUI_DEV_ROOT)/utilities/$(BIN_ARCH_DIR)
 
 # DSO Link command
