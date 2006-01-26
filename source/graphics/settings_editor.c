@@ -1065,7 +1065,7 @@ Called when entry is made into the iso_value text field.
 					if (i >= allocated_length)
 					{
 						REALLOCATE(iso_values, iso_values, double, 
-							allocated_length += VARIABLE_LENGTH_ALLOCATION_STEP);
+							allocated_length + VARIABLE_LENGTH_ALLOCATION_STEP);
 						allocated_length += VARIABLE_LENGTH_ALLOCATION_STEP;
 					}
 					if (0 < sscanf(text_entry+offset,"%lg%n",&iso_values[i], &length))
@@ -1083,7 +1083,7 @@ Called when entry is made into the iso_value text field.
 					}
 				}
 				XtFree(text_entry);
-				if (changed_value)
+				if (changed_value || (number_of_iso_values != i))
 				{
 					number_of_iso_values = i;
 					GT_element_settings_set_iso_surface_parameters(
