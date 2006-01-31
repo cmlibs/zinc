@@ -4841,7 +4841,12 @@ x==============================================================================*
 			}
 #endif /* defined (MOTIF) */
 #if defined (GTK_USER_INTERFACE)
-#if defined (GTK_USE_GTKGLAREA)
+#if ! defined (GTK_USE_GTKGLAREA)
+                if (buffer->glconfig)
+                {
+                  g_object_unref(buffer->glconfig);
+                  buffer->glconfig = NULL;
+                }
 #endif /* defined (GTK_USE_GTKGLAREA) */
 #endif /* defined (GTK_USER_INTERFACE) */
 
