@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : computed_field_lookup.c
 
-LAST MODIFIED : 10 March 2004
+LAST MODIFIED : 27 January 2006
 
 DESCRIPTION :
 Defines fields for looking up values at given locations.
@@ -59,12 +59,52 @@ struct Computed_field_lookup_package
 
 struct Computed_field_nodal_lookup_type_specific_data
 {
-  struct Cmiss_region *nodal_lookup_region;
-  int nodal_lookup_node_identifier;
+	struct Cmiss_region *nodal_lookup_region;
+	int nodal_lookup_node_identifier;
 	struct FE_node *nodal_lookup_node;
+	struct Computed_field_lookup_package *lookup_package;
 };
 
 static char computed_field_nodal_lookup_type_string[] = "nodal_lookup";
+
+static void Computed_field_nodal_lookup_FE_region_change(struct FE_region *fe_region,
+	struct FE_region_changes *changes, void *computed_field_void)
+/*******************************************************************************
+LAST MODIFIED : 27 January 2006
+
+DESCRIPTION :
+If the node we are looking at changes generate a computed field change message.
+==============================================================================*/
+{
+	enum CHANGE_LOG_CHANGE(FE_node) change;
+	struct Computed_field *field;
+	struct Computed_field_nodal_lookup_type_specific_data *data;
+
+	ENTER(Computed_field_FE_region_change);
+	USE_PARAMETER(fe_region);
+	if (changes && (field = (struct Computed_field *)computed_field_void) && (data = 
+        (struct Computed_field_nodal_lookup_type_specific_data *)
+			field->type_specific_data))
+	{
+		/* I'm not sure if we could also check if we depend on an FE_field change
+			and so reduce the total number of changes? */
+		if (CHANGE_LOG_QUERY(FE_node)(changes->fe_node_changes,
+				data->nodal_lookup_node, &change))
+		{
+			if (change | CHANGE_LOG_OBJECT_CHANGED(FE_node))
+			{
+				Computed_field_changed(field,
+					data->lookup_package->computed_field_manager);
+			}
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Computed_field_FE_region_change.  Invalid argument(s)");
+	}
+	LEAVE;
+} /* Computed_field_FE_region_change */
 
 int Computed_field_is_type_nodal_lookup(struct Computed_field *field)
 /*******************************************************************************
@@ -108,6 +148,9 @@ Clear the type specific data used by this type.
 		(struct Computed_field_nodal_lookup_type_specific_data *)
 		field->type_specific_data))
 	{
+		FE_region_remove_callback(Cmiss_region_get_FE_region(data->nodal_lookup_region),
+			Computed_field_nodal_lookup_FE_region_change, 
+			(void *)field);
 		if (data->nodal_lookup_region)
 		{
 			DEACCESS(Cmiss_region)(&(data->nodal_lookup_region));
@@ -116,6 +159,7 @@ Clear the type specific data used by this type.
 		{
 			DEACCESS(FE_node)(&(data->nodal_lookup_node));
 		}
+
 		DEALLOCATE(field->type_specific_data);
 		return_code = 1;
 	}
@@ -152,6 +196,7 @@ Copy the type specific data used by this type.
 			destination->nodal_lookup_region = ACCESS(Cmiss_region)(source->nodal_lookup_region);
 			destination->nodal_lookup_node_identifier = source->nodal_lookup_node_identifier;
 			destination->nodal_lookup_node = ACCESS(FE_node)(source->nodal_lookup_node);
+			destination->lookup_package = source->lookup_package;
 		}
 		else
 		{
@@ -564,9 +609,10 @@ Always has multiple times.
 
 int Computed_field_set_type_nodal_lookup(struct Computed_field *field,
 	struct Computed_field *source_field,struct Cmiss_region *region,
-  int nodal_lookup_node_identifier)
+	int nodal_lookup_node_identifier, 
+	struct Computed_field_lookup_package *lookup_package)
 /*******************************************************************************
-LAST MODIFIED : 29 September 2003
+LAST MODIFIED : 27 January 2006
 
 DESCRIPTION :
 Converts <field> to type COMPUTED_FIELD_NODAL_LOOKUP with the supplied
@@ -608,12 +654,17 @@ than using the current node the <nodal_lookup_node_identifier> node is used.
           ACCESS(FE_node)(FE_region_get_FE_node_from_identifier(fe_region,
                             nodal_lookup_node_identifier));
         data->nodal_lookup_node_identifier=nodal_lookup_node_identifier;
+		  data->lookup_package = lookup_package;
+
+		  FE_region_add_callback(fe_region, Computed_field_nodal_lookup_FE_region_change, 
+			  (void *)field);
       }
       else
       {
         data->nodal_lookup_region = (struct Cmiss_region *)NULL;
         data->nodal_lookup_node = (struct FE_node *)NULL;
         data->nodal_lookup_node_identifier = 0;
+		  data->lookup_package = (struct Computed_field_lookup_package *)NULL;
       }
 
 			/* Set all the methods */
@@ -639,9 +690,10 @@ than using the current node the <nodal_lookup_node_identifier> node is used.
 
 int Computed_field_get_type_nodal_lookup(struct Computed_field *field,
   struct Computed_field **nodal_lookup_field,struct Cmiss_region **nodal_lookup_region,
-  int *nodal_lookup_node_identifier)
+	int *nodal_lookup_node_identifier,
+	struct Computed_field_lookup_package **lookup_package)
 /*******************************************************************************
-LAST MODIFIED : 10 October 2003
+LAST MODIFIED : 27 January 2006
 
 DESCRIPTION :
 If the field is of type COMPUTED_FIELD_NODAL_LOOKUP, the function returns the source
@@ -657,9 +709,10 @@ Note that nothing returned has been ACCESSed.
 		(data = (struct Computed_field_nodal_lookup_type_specific_data *)
 		field->type_specific_data))
 	{
-    *nodal_lookup_field = field->source_fields[0];
-    *nodal_lookup_region = data->nodal_lookup_region;
-    *nodal_lookup_node_identifier = data->nodal_lookup_node_identifier;
+		*nodal_lookup_field = field->source_fields[0];
+		*nodal_lookup_region = data->nodal_lookup_region;
+		*nodal_lookup_node_identifier = data->nodal_lookup_node_identifier;
+		*lookup_package = data->lookup_package;
 		return_code = 1;
 	}
 	else
@@ -685,7 +738,8 @@ already) and allows its contents to be modified.
 {
 	int return_code;
 	struct Computed_field *field,**source_fields;
-	struct Computed_field_lookup_package *computed_field_lookup_package;
+	struct Computed_field_lookup_package *computed_field_lookup_package,
+		*lookup_package_dummy;
 	struct Option_table *option_table;
 	struct Set_Computed_field_conditional_data set_source_field_data;
   int node_identifier;
@@ -710,7 +764,7 @@ already) and allows its contents to be modified.
 				Computed_field_get_type_string(field))
 			{
 				return_code=Computed_field_get_type_nodal_lookup(field, 
-					source_fields,&dummy_region,&node_identifier);
+					source_fields,&dummy_region,&node_identifier,&lookup_package_dummy);
 			}
 			if (return_code)
 			{
@@ -739,7 +793,7 @@ already) and allows its contents to be modified.
 				{
 					return_code = Computed_field_set_type_nodal_lookup(field,
 						source_fields[0],computed_field_lookup_package->root_region,
-						node_identifier);
+						node_identifier, computed_field_lookup_package);
 				}
 				else
 				{

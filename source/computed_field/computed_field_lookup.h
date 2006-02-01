@@ -46,6 +46,8 @@ Implements computed fields for lookups.
 
 #include "region/cmiss_region.h"
 
+struct Computed_field_lookup_package;
+
 int Computed_field_register_types_lookup(
 	struct Computed_field_package *computed_field_package,
 	struct Cmiss_region *root_region);
@@ -57,9 +59,10 @@ DESCRIPTION :
 
 int Computed_field_set_type_nodal_lookup(struct Computed_field *field,
 	struct Computed_field *source_field,struct Cmiss_region *region,
-  int lookup_node_identifier);
+  int lookup_node_identifier, 
+	struct Computed_field_lookup_package *lookup_package);
 /*******************************************************************************
-LAST MODIFIED : 16 December 2002
+LAST MODIFIED : 27 January 2006
 
 DESCRIPTION :
 Converts <field> to type COMPUTED_FIELD_LOOKUP with the supplied
@@ -69,9 +72,10 @@ than using the current node the <lookup_node_identifier> node is used.
 
 int Computed_field_get_type_nodal_lookup(struct Computed_field *field,
   struct Computed_field **lookup_field,struct Cmiss_region **lookup_region,
-  int *lookup_node_identifier);
+  int *lookup_node_identifier,
+	struct Computed_field_lookup_package **lookup_package);
 /*******************************************************************************
-LAST MODIFIED : 10 October 2003
+LAST MODIFIED : 27 January 2006
 
 DESCRIPTION :
 If the field is of type COMPUTED_FIELD_LOOKUP, the function returns the source
