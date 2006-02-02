@@ -6890,7 +6890,7 @@ Modifies the properties of a texture.
 							{
 								if (cmgui_image = Cmgui_image_read(cmgui_image_information))
 								{
-									Texture_set_image(texture, cmgui_image,
+									return_code = Texture_set_image(texture, cmgui_image,
 										image_data.image_file_name, file_number_pattern,
 										file_number_series_data.start,
 										file_number_series_data.start, /*increment*/1,
@@ -6904,14 +6904,14 @@ Modifies the properties of a texture.
 										"gfx modify texture:  Could not read image file");
 									return_code = 0;
 								}
-								if (0 != file_number_series_data.increment)
+								if (return_code && (0 != file_number_series_data.increment))
 								{
 									number_of_file_names = 1 + (file_number_series_data.stop -
 										file_number_series_data.start) /
 										file_number_series_data.increment;
 									file_number = file_number_series_data.start + 
 										file_number_series_data.increment;
-									for (i = 1 ; i < number_of_file_names ; i++)
+									for (i = 1 ; return_code && (i < number_of_file_names) ; i++)
 									{
 										Cmgui_image_information_set_file_name_series(
 											cmgui_image_information,
@@ -6920,13 +6920,28 @@ Modifies the properties of a texture.
 											/*end*/file_number, /*increment*/1);
 										if (cmgui_image = Cmgui_image_read(cmgui_image_information))
 										{
-											Texture_add_image(texture, cmgui_image,
+											return_code = Texture_add_image(texture, cmgui_image,
 												image_data.crop_left_margin, image_data.crop_bottom_margin,
 												image_data.crop_width, image_data.crop_height);
 											DESTROY(Cmgui_image)(&cmgui_image);
 										}
+										else
+										{
+											display_message(ERROR_MESSAGE,
+												"gfx modify texture:  Could not read image file");
+											return_code = 0;
+										}
 										file_number += file_number_series_data.increment;
 									}
+								}
+								if (! return_code)
+								{
+									/* Set a NULL image into texture so that an incomplete set isn't displayed */
+									Texture_allocate_image(texture, /*image_width*/1, /*image_height*/1,
+										/*image_depth*/1, TEXTURE_RGB, /*number_of_bytes_per_component*/1,
+										"INCOMPLETEDTEXTURE");
+									display_message(ERROR_MESSAGE,  "gfx modify texture:  "
+										"Unable to read images into texture, setting it to black.");
 								}
 							}
 							DESTROY(Cmgui_image_information)(&cmgui_image_information);
