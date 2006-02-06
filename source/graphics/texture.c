@@ -820,16 +820,16 @@ currently implemented for the expensive linear filter.
 					destination = image;
 					for (i = 0; i < depth_texels; i++)
 					{
-						i_base = texture->image + (int)((0.5 + (float)i)*i_factor) *
-							texture->height_texels*source_row_width_bytes;
+						i_base = texture->image + (long int)((0.5 + (double)i)*(double)i_factor) *
+							texture->height_texels * source_row_width_bytes;
 						for (j = 0; j < height_texels; j++)
 						{
-							j_base = i_base + (int)((0.5 + (float)j)*j_factor) *
+							j_base = i_base + (long int)((0.5 + (double)j)*(double)j_factor) *
 								source_row_width_bytes;
 							for (k = 0; k < width_texels; k++)
 							{
 								source = j_base +
-									(int)((0.5 + (float)k)*k_factor) * bytes_per_pixel;
+									(long int)((0.5 + (double)k)*(double)k_factor) * bytes_per_pixel;
 								for (n = 0; n < bytes_per_pixel; n++)
 								{
 									*destination = *source;
@@ -2984,6 +2984,8 @@ in size.
 			destination += width_bytes;
 			source += source_width_bytes;
 		}
+		/* display list needs to be compiled again */
+		texture->display_list_current = 0;
 		return_code = 1;
 	}
 	else
@@ -3100,7 +3102,8 @@ Adds <cmgui_image> into <texture> making a 3D image from 2D images.
 			image_padding_bytes =
 				padded_width_bytes*(texture_height - final_height);
 			if (REALLOCATE(texture_image, texture->image, unsigned char,
-				texture_depth*texture_height*padded_width_bytes))
+					(long int)texture_depth*(long int)texture_height*
+					(long int)padded_width_bytes))
 			{
 				destination = texture_image + texture->original_depth_texels *
 					padded_width_bytes * texture_height;
