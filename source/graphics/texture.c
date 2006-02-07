@@ -3148,7 +3148,7 @@ Adds <cmgui_image> into <texture> making a 3D image from 2D images.
 			else
 			{
 				display_message(ERROR_MESSAGE,
-					"Texture_set_image.  Could not allocate texture image");
+					"Texture_add_image.  Could not allocate texture image");
 				return_code = 0;
 			}
 		}
