@@ -3844,6 +3844,14 @@ Sets the layout mode in effect on the <window>.
 							Scene_viewer_set_interactive_tool(
 								window->scene_viewer_array[pane_no],
 								window->interactive_tool);
+							if (Interactive_tool_is_Transform_tool(window->interactive_tool))
+							{
+								Scene_viewer_set_input_mode(window->scene_viewer_array[pane_no],SCENE_VIEWER_TRANSFORM);
+							}
+							else
+							{
+								Scene_viewer_set_input_mode(window->scene_viewer_array[pane_no],SCENE_VIEWER_SELECT);
+							}
 							/* get scene_viewer transform callbacks to allow
 								synchronising of views in multiple panes */
 							Scene_viewer_add_sync_callback(
