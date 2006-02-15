@@ -722,7 +722,7 @@ Note that this function makes changes to the OpenGL rendering matrices in some
 modes, so push/pop them if you want them preserved.
 ==============================================================================*/
 {
-	double dx,dy,dz,premultiply_matrix[16],factor;
+	double dx,dy,dz,postmultiply_matrix[16],factor;
 	int return_code,i;
 
 	ENTER(Scene_viewer_calculate_transformation);
@@ -763,16 +763,16 @@ modes, so push/pop them if you want them preserved.
 		/* the projection matrix converts the viewing volume into the Normalised
 			 Device Coordinates (NDCs) ranging from -1 to +1 in each coordinate
 			 direction. Need to scale this range to fit the viewport/window by
-			 premultiplying with a matrix. First start with identity: Note that
+			 postmultiplying with a matrix. First start with identity: Note that
 			 numbers go down columns first in OpenGL matrices */
 		for (i=1;i<15;i++)
 		{
-			premultiply_matrix[i] = 0.0;
+			postmultiply_matrix[i] = 0.0;
 		}
-		premultiply_matrix[ 0] = 1.0;
-		premultiply_matrix[ 5] = 1.0;
-		premultiply_matrix[10] = 1.0;
-		premultiply_matrix[15] = 1.0;
+		postmultiply_matrix[ 0] = 1.0;
+		postmultiply_matrix[ 5] = 1.0;
+		postmultiply_matrix[10] = 1.0;
+		postmultiply_matrix[15] = 1.0;
 		switch (scene_viewer->viewport_mode)
 		{
 			case SCENE_VIEWER_ABSOLUTE_VIEWPORT:
@@ -780,15 +780,15 @@ modes, so push/pop them if you want them preserved.
 				/* absolute viewport: NDC volume is placed in the position
 					 described by the NDC_info relative to user viewport
 					 coordinates - as with the background texture */
-				premultiply_matrix[0] *= scene_viewer->NDC_width*
+				postmultiply_matrix[0] *= scene_viewer->NDC_width*
 					scene_viewer->user_viewport_pixels_per_unit_x/viewport_width;
-				premultiply_matrix[3] = -1.0+
+				postmultiply_matrix[5] *= scene_viewer->NDC_height*
+					scene_viewer->user_viewport_pixels_per_unit_y/viewport_height;
+				postmultiply_matrix[12] = -1.0+
 					((scene_viewer->user_viewport_pixels_per_unit_x)/viewport_width)*
 					((scene_viewer->NDC_width)+
 						2.0*(scene_viewer->NDC_left-scene_viewer->user_viewport_left));
-				premultiply_matrix[5] *= scene_viewer->NDC_height*
-					scene_viewer->user_viewport_pixels_per_unit_y/viewport_height;
-				premultiply_matrix[7] =1.0+
+				postmultiply_matrix[13] =1.0+
 					((scene_viewer->user_viewport_pixels_per_unit_y)/viewport_height)*
 					(-(scene_viewer->NDC_height)+
 						2.0*(scene_viewer->NDC_top-scene_viewer->user_viewport_top));
@@ -803,13 +803,13 @@ modes, so push/pop them if you want them preserved.
 					(double)viewport_height/(double)viewport_width)
 				{
 					/* make NDC represent a wider viewing volume. */
-					premultiply_matrix[0] *= (scene_viewer->NDC_width*viewport_height/
+					postmultiply_matrix[0] *= (scene_viewer->NDC_width*viewport_height/
 						(scene_viewer->NDC_height*viewport_width));
 				}
 				else
 				{
 					/* make NDC represent a taller viewing volume */
-					premultiply_matrix[5] *= (scene_viewer->NDC_height*viewport_width/
+					postmultiply_matrix[5] *= (scene_viewer->NDC_height*viewport_width/
 						(scene_viewer->NDC_width*viewport_height));
 				}
 			} break;
@@ -823,7 +823,7 @@ modes, so push/pop them if you want them preserved.
 				*/
 			} break;
 		}
-		multiply_matrix(4,4,4,premultiply_matrix,scene_viewer->projection_matrix,
+		multiply_matrix(4,4,4,scene_viewer->projection_matrix,postmultiply_matrix,
 			scene_viewer->window_projection_matrix);
 
 		/* 3. Calculate and store modelview_matrix - no need in CUSTOM mode */
