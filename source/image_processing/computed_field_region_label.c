@@ -515,7 +515,7 @@ DESCRIPTION : Implement region labeling on image cache. The image must be black-
 			        	result_index -= image->depth;
 				}
 			}
-			ALLOCATE(hist, int, label_index);
+			ALLOCATE(hist, int, (unsigned int)label_index);
 			for (k = 1; k <= label_index; k++)
 			{
 			        for ( i = 0; i < storage_size / image->depth; i++)
