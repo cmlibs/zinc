@@ -3010,11 +3010,11 @@ Adds <cmgui_image> into <texture> making a 3D image from 2D images.
 ==============================================================================*/
 {
 	static unsigned char fill_byte = 0;
-	int bytes_per_pixel, dimension, padded_width_bytes,
-		final_bottom, final_depth, final_height, final_left, final_width,
-		i, image_height, image_width, k, number_of_bytes_per_component,
-		number_of_components, number_of_images, image_padding_bytes,
-		return_code, texture_depth, texture_height, texture_width;
+	int bytes_per_pixel, dimension, final_bottom, final_height, 
+		final_left, final_width, i, image_height, image_width, k, number_of_bytes_per_component,
+		number_of_components, number_of_images, return_code;
+	long int final_depth, padded_width_bytes, image_padding_bytes,
+		texture_depth, texture_height, texture_width;
 	unsigned char *texture_image;
 	unsigned char *destination;
 
@@ -3102,10 +3102,10 @@ Adds <cmgui_image> into <texture> making a 3D image from 2D images.
 			image_padding_bytes =
 				padded_width_bytes*(texture_height - final_height);
 			if (REALLOCATE(texture_image, texture->image, unsigned char,
-					(long int)texture_depth*(long int)texture_height*
-					(long int)padded_width_bytes))
+					texture_depth*texture_height*
+					padded_width_bytes))
 			{
-				destination = texture_image + texture->original_depth_texels *
+				destination = texture_image + (long int)texture->original_depth_texels *
 					padded_width_bytes * texture_height;
 				i = 0;
 				for (k = texture->original_depth_texels ;

@@ -99,7 +99,7 @@ Keeps a record of where a block of memory was allocated
 ==============================================================================*/
 {
 	char *filename_line, *type;
-	int count,size;
+	unsigned long int count,size;
 	void *ptr;
 	int access_count;
 }; /* struct Memory_block */
@@ -229,8 +229,8 @@ struct List_memory_data
 	int count;
 	int show_pointers;
 	int show_structures;
-	int total;
-	int *count_total;
+	unsigned long int total;
+	unsigned long int *count_total;
 }; /* struct List_memory_data */
 
 static int list_memory_block(struct Memory_block *block,
@@ -252,7 +252,7 @@ DESCRIPTION :
 		{
 			if (!list_memory_data->count||(block->count==list_memory_data->count))
 			{
-				printf("%s @ %x size %d type %s\n",block->filename_line,block->ptr,
+				printf("%s @ %x size %ld type %s\n",block->filename_line,block->ptr,
 					block->size, block->type);
 			}
 			list_memory_data->count_total[block->count] += block->size;
@@ -262,7 +262,7 @@ DESCRIPTION :
 		{
 			if (!list_memory_data->count||(block->count==list_memory_data->count))
 			{
-				printf("%s size %d type %s\n",block->filename_line,block->size,
+				printf("%s size %ld type %s\n",block->filename_line,block->size,
 					block->type);
 			}
 			list_memory_data->count_total[block->count] += block->size;
@@ -336,7 +336,8 @@ Module variables
 /* to prevent recursion when display_message uses allocate, deallocate or
 	reallocate */
 static int display_message_call_in_progress=0;
-static int check_memory_output_on=0,maximum_count=1,total_allocated_memory=0;
+static int check_memory_output_on=0,maximum_count=1;
+static unsigned long int total_allocated_memory=0;
 static struct LIST(Memory_block) *memory_block_list =
    (struct LIST(Memory_block) *)NULL;
 #endif /* defined (MEMORY_CHECKING) */
@@ -371,7 +372,7 @@ is swallowed with the call USE_PARAMETER(dummy_void); at the start of function.
 #endif /* defined (USE_PARAMETER_ON) */
 
 #if !defined (OPTIMISED)
-char *allocate(unsigned size,char *filename,int line, char *type)
+char *allocate(unsigned long int size,char *filename,int line, char *type)
 /*******************************************************************************
 LAST MODIFIED : 26 November 2001
 
@@ -381,7 +382,7 @@ Wrapper for allocate which keeps track of allocated memory.
 {
 	char *result;
 #if defined (MEMORY_CHECKING)
-	int previous_total_allocated_memory;
+	unsigned long int previous_total_allocated_memory;
 	struct Memory_block *new_block;
 #endif /* defined (MEMORY_CHECKING) */
 
@@ -402,7 +403,7 @@ Wrapper for allocate which keeps track of allocated memory.
 				display_message_call_in_progress=1;
 #endif /* defined (MEMORY_CHECKING) */
 				display_message(ERROR_MESSAGE,
-					"allocate.  Insufficient memory.  Size=%d",size);
+					"allocate.  Insufficient memory.  Size=%ld",size);
 #if defined (MEMORY_CHECKING)
 				display_message_call_in_progress=0;
 			}
@@ -418,7 +419,7 @@ Wrapper for allocate which keeps track of allocated memory.
 				total_allocated_memory += size;
 				if (check_memory_output_on)
 				{
-					display_message(INFORMATION_MESSAGE,"%d +%d %d %s %d\n",
+					display_message(INFORMATION_MESSAGE,"%ld +%ld %ld %s %d\n",
 						previous_total_allocated_memory,size,total_allocated_memory,
 						filename,line);
 				}
@@ -475,7 +476,7 @@ Wrapper for deallocate which keeps track of allocated memory.
 ==============================================================================*/
 {
 #if defined (MEMORY_CHECKING)
-	int previous_total_allocated_memory;
+	unsigned long int previous_total_allocated_memory;
 	struct Memory_block *block;
 #endif /* defined (MEMORY_CHECKING) */
 
@@ -497,7 +498,7 @@ Wrapper for deallocate which keeps track of allocated memory.
 				total_allocated_memory -= block->size;
 				if (check_memory_output_on)
 				{
-					display_message(INFORMATION_MESSAGE,"%d -%d %d %s %d\n",
+					display_message(INFORMATION_MESSAGE,"%ld -%ld %ld %s %d\n",
 						previous_total_allocated_memory,block->size,total_allocated_memory,
 						filename,line);
 				}
@@ -520,7 +521,7 @@ Wrapper for deallocate which keeps track of allocated memory.
 	LEAVE;
 } /* deallocate */
 
-char *reallocate(char *ptr,unsigned size,char *filename,int line, char *type)
+char *reallocate(char *ptr,unsigned long int size,char *filename,int line, char *type)
 /*******************************************************************************
 LAST MODIFIED : 19 November 2001
 
@@ -530,7 +531,7 @@ Wrapper for reallocate which keeps track of allocated memory.
 {
 	char *result;
 #if defined (MEMORY_CHECKING)
-	int previous_size,previous_total_allocated_memory;
+	unsigned long int previous_size,previous_total_allocated_memory;
 	struct Memory_block *block,*new_block;
 #endif /* defined (MEMORY_CHECKING) */
 
@@ -580,7 +581,7 @@ Wrapper for reallocate which keeps track of allocated memory.
 				display_message_call_in_progress=1;
 #endif /* defined (MEMORY_CHECKING) */
 				display_message(ERROR_MESSAGE,
-					"reallocate.  Insufficient memory.  Size=%d",size);
+					"reallocate.  Insufficient memory.  Size=%ld",size);
 #if defined (MEMORY_CHECKING)
 				display_message_call_in_progress=0;
 			}
@@ -609,7 +610,7 @@ Wrapper for reallocate which keeps track of allocated memory.
 				total_allocated_memory += size;
 				if (check_memory_output_on)
 				{
-					display_message(INFORMATION_MESSAGE,"%d -%d +%d %d %s %d\n",
+					display_message(INFORMATION_MESSAGE,"%ld -%ld +%ld %ld %s %d\n",
 						previous_total_allocated_memory,previous_size,size,
 						total_allocated_memory,filename,line);
 				}
@@ -688,7 +689,7 @@ actual object type and then the appropriate list function is called.
 
 	ENTER(list_memory);
 #if defined (MEMORY_CHECKING)
-	if (ALLOCATE(list_memory_data.count_total, int, maximum_count + 1))
+	if (ALLOCATE(list_memory_data.count_total, unsigned long int, maximum_count + 1))
 	{
 		for (i = 0 ; i < (maximum_count + 1) ; i++)
 		{
@@ -711,12 +712,12 @@ actual object type and then the appropriate list function is called.
 		{
 			for (i = 1 ; i < maximum_count + 1 ; i++)
 			{
-				printf("  Allocated memory with count %3d: %12d\n", i, 
+				printf("  Allocated memory with count %3d: %12ld\n", i, 
 					list_memory_data.count_total[i]);
 			}
 		}
 		DEALLOCATE(list_memory_data.count_total);
-		printf("Total allocated memory:            %12d\n", list_memory_data.total);
+		printf("Total allocated memory:            %12ld\n", list_memory_data.total);
 		if (increment_counter)
 		{
 			maximum_count++;

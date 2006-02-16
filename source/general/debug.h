@@ -178,7 +178,7 @@ is swallowed with the call USE_PARAMETER(dummy_void); at the start of function.
 #endif /* defined (USE_PARAMETER_ON) */
 
 #if !defined (OPTIMISED)
-char *allocate(unsigned size,char *file_name,int line_number,char *type);
+char *allocate(unsigned long int size,char *file_name,int line_number,char *type);
 /*******************************************************************************
 LAST MODIFIED : 7 January 1998
 
@@ -194,7 +194,7 @@ DESCRIPTION :
 Wrapper for free.
 ==============================================================================*/
 
-char *reallocate(char *ptr,unsigned size,char *file_name,int line_number,
+char *reallocate(char *ptr,unsigned long int size,char *file_name,int line_number,
 	char *type);
 /*******************************************************************************
 LAST MODIFIED : 7 January 1998
