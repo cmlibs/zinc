@@ -3474,10 +3474,12 @@ is constant from the half texel location to the edge.
 ==============================================================================*/
 {
 	double local_xi[3], max_v, pos[3], weight, weight_i, weight_j, weight_k, v;
-	int bytes_per_pixel, component_max, dimension, high_offset[3], i, j, k,
-		low_offset[3], max_i, max_j, max_k, n, number_of_bytes_per_component,
-		number_of_components, offset, offset_i, offset_j, offset_k,
-		original_size[3], return_code, row_width_bytes, size[3], v_i, x_i, y_i, z_i;
+	int bytes_per_pixel, component_max, dimension, i, j, k,
+		max_i, max_j, max_k, n, number_of_bytes_per_component,
+		number_of_components, original_size[3], return_code, row_width_bytes,
+		size[3];
+	long int high_offset[3], low_offset[3], offset, offset_i, offset_j, offset_k,
+		v_i, x_i, y_i, z_i;
 	unsigned char *pixel_ptr;
 	unsigned short short_value;
 
@@ -3595,14 +3597,14 @@ is constant from the half texel location to the edge.
 							v = pos[i];
 							if ((0.5 <= v) && (v < max_v))
 							{
-								v_i = (int)(v - 0.5);
+								v_i = (long int)(v - 0.5);
 								local_xi[i] = v - 0.5 - (double)v_i;
 								low_offset[i] = v_i*offset;
 								high_offset[i] = (v_i + 1)*offset;
 							}
 							else
 							{
-								low_offset[i] = (original_size[i] - 1)*offset;
+								low_offset[i] = (long int)(original_size[i] - 1)*offset;
 								high_offset[i] = 0;
 								if (v < 0.5)
 								{
@@ -3613,7 +3615,7 @@ is constant from the half texel location to the edge.
 									local_xi[i] = 0.0;
 								}
 							}
-							offset *= size[i];
+							offset *= (long int)size[i];
 						}
 					} break;
 					case TEXTURE_REPEAT_WRAP:
@@ -3624,14 +3626,14 @@ is constant from the half texel location to the edge.
 							v = pos[i];
 							if ((0.5 <= v) && (v < max_v))
 							{
-								v_i = (int)(v - 0.5);
+								v_i = (long int)(v - 0.5);
 								local_xi[i] = v - 0.5 - (double)v_i;
 								low_offset[i] = v_i*offset;
 								high_offset[i] = (v_i + 1)*offset;
 							}
 							else
 							{
-								low_offset[i] = (size[i] - 1)*offset;
+								low_offset[i] = (long int)(size[i] - 1)*offset;
 								high_offset[i] = 0;
 								if (v < 0.5)
 								{
@@ -3642,7 +3644,7 @@ is constant from the half texel location to the edge.
 									local_xi[i] = v - max_v;
 								}
 							}
-							offset *= size[i];
+							offset *= (long int)size[i];
 						}
 					} break;
 				}
@@ -3768,8 +3770,8 @@ is constant from the half texel location to the edge.
 						z_i--;
 					}
 				}
-				offset = (z_i*texture->height_texels + y_i)*row_width_bytes +
-					x_i*bytes_per_pixel;
+				offset = (z_i*(long int)texture->height_texels + y_i)*(long int)row_width_bytes +
+					x_i*(long int)bytes_per_pixel;
 				pixel_ptr = texture->image + offset;
 				for (n = 0; n < number_of_components; n++)
 				{
