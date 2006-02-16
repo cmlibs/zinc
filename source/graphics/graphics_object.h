@@ -868,9 +868,10 @@ Frees the memory for <**userdef> and its fields and sets <*userdef> to NULL.
 struct GT_voltex *CREATE(GT_voltex)(
 	int number_of_vertices,  struct VT_iso_vertex **vertex_list,
 	int number_of_triangles, struct VT_iso_triangle **triangle_list,
-	int n_data_components, enum GT_voltex_type voltex_type);
+	int n_data_components, int n_texture_coordinates,
+	enum GT_voltex_type voltex_type);
 /*******************************************************************************
-LAST MODIFIED : 10 November 2005
+LAST MODIFIED : 17 February 2006
 
 DESCRIPTION :
 Allocates memory and assigns fields for a graphics volume texture.

@@ -305,6 +305,7 @@ DESCRIPTION :
 	struct Octree *vertex_octree;
 
 	int n_data_components;
+	int n_texture_coordinates;
 
 	/* store integer object_name eg. element number from which this object came */
 	int object_name;

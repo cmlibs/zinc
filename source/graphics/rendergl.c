@@ -1628,7 +1628,7 @@ DESCRIPTION :
 
 static int draw_voltexGL(int number_of_vertices, struct VT_iso_vertex **vertex_list,
 	int number_of_triangles, struct VT_iso_triangle **triangle_list,
-	int number_of_data_components,
+	int number_of_data_components, int number_of_texture_coordinates,
 	struct Graphical_material *default_material, struct Spectrum *spectrum)
 /*******************************************************************************
 LAST MODIFIED : 11 November 2005
@@ -1672,7 +1672,10 @@ preference to normal materials.
 						spectrum_renderGL_value(spectrum,default_material,render_data,
 							vertex->data);
 					}
-					glTexCoord3fv(vertex->texture_coordinates);
+					if (number_of_texture_coordinates)
+					{
+						glTexCoord3fv(vertex->texture_coordinates);
+					}
 					glNormal3fv(vertex->normal);
 					glVertex3fv(vertex->coordinates);
 				}
@@ -2057,7 +2060,8 @@ The <context> is used to control how the object is compiled.
 								}
 								draw_voltexGL(voltex->number_of_vertices, voltex->vertex_list,
 									voltex->number_of_triangles, voltex->triangle_list,
-									voltex->n_data_components, material,spectrum);
+									voltex->n_data_components, voltex->n_texture_coordinates,
+									material,spectrum);
 							}
 							voltex=voltex->ptrnext;
 						}

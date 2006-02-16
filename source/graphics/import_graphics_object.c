@@ -813,7 +813,8 @@ DESCRIPTION :
 		*new_normal_vertices, *normal_vertices, *new_texture_vertices, *texture_vertices;
 	int face_index,face_vertex[MAX_OBJ_VERTICES][3], i, j, k, line_number, 
 		number_of_triangles,  number_of_vertices, n_face_vertices,  n_obj_coordinate_vertices,
-		n_obj_normal_vertices, n_obj_texture_vertices, return_code, *vertex_reindex, warning_multiple_normals;
+		n_obj_normal_vertices, n_obj_texture_vertices, n_texture_coordinates, return_code,
+		*vertex_reindex, warning_multiple_normals;
 	gtObject *new_obj, *next_obj, *obj;
 	struct Graphical_material *scanned_material;
 	struct GT_voltex *voltex;
@@ -902,6 +903,7 @@ DESCRIPTION :
 				n_obj_coordinate_vertices = 0;
 				n_obj_texture_vertices = 0;
 				n_obj_normal_vertices = 0;
+				n_texture_coordinates = 0;  /* The number of texture coordinates per vertex */
 				vertex_list = (struct VT_iso_vertex **)NULL;
 				triangle_list = (struct VT_iso_triangle **)NULL;
 				coordinate_vertices = (float *)NULL;
@@ -943,7 +945,7 @@ DESCRIPTION :
 								/* Add the voltex we currently have and reset the vertex and triangle lists */
 								if (voltex = CREATE(GT_voltex)(number_of_vertices, vertex_list,
 									number_of_triangles, triangle_list,
-									/*n_data_components*/0, voltex_type))
+									/*n_data_components*/0, n_texture_coordinates, voltex_type))
 								{
 									return_code = GT_OBJECT_ADD(GT_voltex)(obj, time, voltex);
 								}
@@ -956,6 +958,7 @@ DESCRIPTION :
 								}
 								number_of_vertices = 0;
 								number_of_triangles = 0;
+								n_texture_coordinates = 0;
 								vertex_list = (struct VT_iso_vertex **)NULL;
 								triangle_list = (struct VT_iso_triangle **)NULL;
 
@@ -1248,11 +1251,13 @@ DESCRIPTION :
 														texture_vertices[3 * (face_vertex[face_index][1] - 1) + 1];
 													vertex->texture_coordinates[2] = 
 														texture_vertices[3 * (face_vertex[face_index][1] - 1) + 2];
+
+													n_texture_coordinates = 3;
 												}
 												else
 												{
 													display_message(WARNING_MESSAGE,
-														"read_volume_texture_from_file: normal vertex"
+														"read_volume_texture_from_file: texture vertex"
 														" %d not defined when used", face_vertex[face_index][1]);
 													return_code = 0;
 
@@ -1386,7 +1391,7 @@ DESCRIPTION :
 			{
 				if (voltex = CREATE(GT_voltex)(number_of_vertices, vertex_list,
 						number_of_triangles, triangle_list,
-						/*n_data_components*/0, voltex_type))
+						/*n_data_components*/0, n_texture_coordinates, voltex_type))
 				{
 					return_code = GT_OBJECT_ADD(GT_voltex)(obj, time, voltex);
 				}

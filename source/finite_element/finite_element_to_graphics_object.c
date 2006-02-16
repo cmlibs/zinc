@@ -3183,8 +3183,8 @@ faces.
 	int bad_triangle;
 #endif /* defined (DEBUG) */
 
-	int tex_x_i,tex_y_i,tex_width_texels,tex_height_texels,
-		tex_number_of_components;
+	int displacement_number_of_components, tex_x_i, tex_y_i, tex_width_texels,
+		tex_height_texels, tex_number_of_components;
 	double intensity1,intensity2,intensity3;
 	int outside_block;
 
@@ -3200,6 +3200,15 @@ faces.
 		((!displacement_field)||
 			Computed_field_has_up_to_4_numerical_components(displacement_field,NULL)))
 	{
+		if (texture_coordinate_field)
+		{
+			tex_number_of_components = Computed_field_get_number_of_components(
+				texture_coordinate_field);
+		}
+		else
+		{
+			tex_number_of_components = 0;
+		}
 		if (vtexture->mc_iso_surface->n_triangles)
 		{
 			if (displacement_field&&((12==displacement_map_xi_direction)||
@@ -3344,7 +3353,8 @@ faces.
 							if (return_code)
 							{
 								if (!(voltex = CREATE(GT_voltex)(n_vertices, vertex_list, 
-											n_iso_polys, triangle_list, n_data_components, voltex_type)))
+											n_iso_polys, triangle_list, n_data_components, 
+											tex_number_of_components, voltex_type)))
 								{
 									display_message(ERROR_MESSAGE,
 										"create_GT_voltex_from_FE_element.  "
@@ -3542,7 +3552,7 @@ faces.
 													/* displacement map */
 													if (displacement_field)
 													{
-														tex_number_of_components=
+														displacement_number_of_components=
 															Computed_field_get_number_of_components(
 																displacement_field);
 														Computed_field_evaluate_in_element(
@@ -3553,10 +3563,10 @@ faces.
 														intensity1 = colour_data[0];
 														intensity2 = 0;
 														intensity3 = 0;
-														if (tex_number_of_components > 1)
+														if (displacement_number_of_components > 1)
 														{
 															intensity2 = colour_data[1];
-															if (tex_number_of_components > 2)
+															if (displacement_number_of_components > 2)
 															{
 																intensity3 = colour_data[2];
 															}
@@ -3595,9 +3605,6 @@ faces.
 													/* texture coordinates */
 													if (texture_coordinate_field)
 													{
-														tex_number_of_components=
-															Computed_field_get_number_of_components(
-																texture_coordinate_field);
 														Computed_field_evaluate_in_element(
 															texture_coordinate_field,
 															element_block[c*n_xi[0]*n_xi[1]+b*n_xi[0]+a],
