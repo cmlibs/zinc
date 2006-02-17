@@ -199,8 +199,9 @@ int compare_decimation_cost(struct Decimation_cost *cost1,
 LAST MODIFIED : 28 February 2005
 
 DESCRIPTION :
-Sorts decimation_cost objects, first by the cost and then by the self pointer
-itself just to get a unique ordering.
+Sorts decimation_cost objects, first by the cost and then by an index which is
+bit shifted so that it doesn't number objects created sequentially close to each
+other.
 ==============================================================================*/
 {
 	int return_code;
@@ -254,6 +255,9 @@ DESCRIPTION :
 	{
 		cost->quadric1 = (struct Decimation_quadric *)NULL;
 		cost->quadric2 = (struct Decimation_quadric *)NULL;
+		cost->coordinates[0] = 0.0;
+		cost->coordinates[1] = 0.0;
+		cost->coordinates[2] = 0.0;
 		cost->cost = 0.0;
 		cost->self = cost;
 		cost->invalid_cost_counter = 0;
@@ -472,6 +476,8 @@ Calculates the cost of a collapse based on the quadrics.
 		(quadric->vertex->coordinates[2] - quadric2->vertex->coordinates[2]) ;
 	if (length > 0.0)
 	{
+		return_code = 1;
+
 		length = sqrt(length);
 		/* Expand out the quadric to its full matrix replacing the
 			bottom row with an identity row and perform an
@@ -524,8 +530,7 @@ Calculates the cost of a collapse based on the quadrics.
 			multiply_matrix(/*m*/1, /*s*/4, /*n*/4, rhs, edge_matrix, vTq);
 			/* Actually a dot product really */
 			multiply_matrix(/*m*/1, /*s*/4, /*4*/1, vTq, rhs, &cost->cost);
-								
-			return_code = 1;
+
 		}
 		else
 		{
@@ -638,6 +643,7 @@ Calculates the cost of a collapse based on the quadrics.
 
 		/* Non dimensionalise the cost by normalising it against the edge length */
 		cost->cost /= length;
+
 	}
 	else
 	{
@@ -737,6 +743,7 @@ fastest the edge is less likely to collapse.
 					quadric->matrix[7] += a[2] * a[2];
 					quadric->matrix[8] += a[2] * d;
 					quadric->matrix[9] += d * d;
+
 				}
 			}
 		}
@@ -1192,6 +1199,7 @@ fastest the edge is less likely to collapse.
 	vertex_list_ptr = voltex->vertex_list;
 	new_vertex_list_ptr = voltex->vertex_list;
 	vertex_index = 0;
+	compacting_vertices = 0;
 	for (i = 0 ; i < voltex->number_of_vertices ; i++)
 	{
 		if (-1 != (*vertex_list_ptr)->index)
