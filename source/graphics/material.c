@@ -1151,6 +1151,7 @@ package after it has been destroyed.
 		{
 			material->package = (struct Material_package *)NULL;
 		}
+		return_code = 1;
 	}
 	else
 	{
