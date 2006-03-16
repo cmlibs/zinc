@@ -2476,6 +2476,7 @@ used to represent them. <element_manager> should be NULL if <use_data> is true.
 			node_tool->execute_command=execute_command;
 			node_tool->interactive_tool_manager=interactive_tool_manager;
 			node_tool->root_region=root_region;
+			node_tool->region=(struct Cmiss_region *)NULL;
 			node_tool->use_data = use_data;
 			node_tool->node_selection=node_selection;
 			node_tool->computed_field_package=computed_field_package;
