@@ -168,6 +168,7 @@ Functions for executing cmiss commands.
 #include "element/element_tool.h"
 #include "emoter/emoter_dialog.h"
 #endif /* defined (MOTIF) */
+#include "finite_element/export_cm_files.h"
 #include "finite_element/export_finite_element.h"
 #include "finite_element/finite_element.h"
 #include "finite_element/finite_element_region.h"
@@ -10824,6 +10825,153 @@ Executes a GFX EXPORT ALIAS command.
 	return (return_code);
 } /* gfx_export_alias */
 
+static int gfx_export_cm(struct Parse_state *state,
+	void *dummy_to_be_modified,void *command_data_void)
+/*******************************************************************************
+LAST MODIFIED : 22 March 2006
+
+DESCRIPTION :
+Executes a GFX EXPORT CM command.
+==============================================================================*/
+{
+	char *ipbase_filename, *ipcoor_filename, *ipelem_filename, *ipnode_filename,
+		*region_path; 
+	FILE *ipbase_file, *ipcoor_file, *ipelem_file, *ipnode_file;
+	int return_code;
+	struct Cmiss_command_data *command_data;
+	struct FE_field *coordinate_field;
+	struct Option_table *option_table;
+	struct Set_FE_field_conditional_FE_region_data coordinate_field_data;
+
+	ENTER(gfx_export_cm);
+	USE_PARAMETER(dummy_to_be_modified);
+	if (state && (command_data = (struct Cmiss_command_data *)command_data_void))
+	{
+		coordinate_field = (struct FE_field *)NULL;
+		ipbase_filename = (char *)NULL;
+		ipcoor_filename = (char *)NULL;
+		ipelem_filename = (char *)NULL;
+		ipnode_filename = (char *)NULL;
+		region_path = (char *)NULL;
+
+		option_table = CREATE(Option_table)();
+		/* field */
+		coordinate_field_data.conditional_function =
+			(LIST_CONDITIONAL_FUNCTION(FE_field) *)NULL;
+		coordinate_field_data.user_data = (void *)NULL;
+		coordinate_field_data.fe_region =
+			Cmiss_region_get_FE_region(command_data->root_region);
+		Option_table_add_entry(option_table, "field",
+			&coordinate_field,
+			(void *)&coordinate_field_data,
+			set_FE_field_conditional_FE_region);
+		/* ipcoor_filename */
+		Option_table_add_entry(option_table, "ipcoor_filename", &ipcoor_filename,
+			NULL, set_name);
+		/* ipbase_filename */
+		Option_table_add_entry(option_table, "ipbase_filename", &ipbase_filename,
+			NULL, set_name);
+		/* ipnode_filename */
+		Option_table_add_entry(option_table, "ipnode_filename", &ipnode_filename,
+			NULL, set_name);
+		/* ipelem_filename */
+		Option_table_add_entry(option_table, "ipelem_filename", &ipelem_filename,
+			NULL, set_name);
+		/* region */
+		Option_table_add_entry(option_table, "region", &region_path,
+			command_data->data_root_region, set_Cmiss_region_path);
+
+		if (return_code = Option_table_multi_parse(option_table,state))
+		{
+			if (!region_path)
+			{
+				display_message(ERROR_MESSAGE, "You must specify a region to export.");
+				return_code = 0;
+			}
+			if (!(ipcoor_filename && ipbase_filename && ipnode_filename && ipelem_filename))
+			{
+				display_message(ERROR_MESSAGE,
+					"You must specify all of ipcoor_filename, ipbase_filename, ipnode_filename and ipelem_filename.");
+				return_code = 0;
+			}
+			if (!coordinate_field)
+			{
+				display_message(ERROR_MESSAGE,
+					"You must specify an FE_field as the coordinate field to export.");
+				return_code = 0;
+			}
+			if (return_code)
+			{
+				if (!(ipcoor_file = fopen(ipcoor_filename, "w")))
+				{
+					display_message(ERROR_MESSAGE,
+						"Unable to open ipcoor_filename %s.", ipcoor_filename);
+					return_code = 0;
+				}
+				if (!(ipbase_file = fopen(ipbase_filename, "w")))
+				{
+					display_message(ERROR_MESSAGE,
+						"Unable to open ipbase_filename %s.", ipbase_filename);
+					return_code = 0;
+				}
+				if (!(ipnode_file = fopen(ipnode_filename, "w")))
+				{
+					display_message(ERROR_MESSAGE,
+						"Unable to open ipnode_filename %s.", ipnode_filename);
+					return_code = 0;
+				}
+				if (!(ipelem_file = fopen(ipelem_filename, "w")))
+				{
+					display_message(ERROR_MESSAGE,
+						"Unable to open ipelem_filename %s.", ipelem_filename);
+					return_code = 0;
+				}
+			}
+			if (return_code)
+			{
+				write_cm_files(ipcoor_file, ipbase_file,
+					ipnode_file, ipelem_file,
+					command_data->root_region, region_path,
+					coordinate_field);
+				fclose(ipcoor_file);
+				fclose(ipbase_file);
+				fclose(ipnode_file);
+				fclose(ipelem_file);
+			}
+		}
+		DESTROY(Option_table)(&option_table);
+		if (region_path)
+		{
+			DEALLOCATE(region_path);
+		}
+		if (ipbase_filename)
+		{
+			DEALLOCATE(ipbase_filename);
+		}
+		if (ipcoor_filename)
+		{
+			DEALLOCATE(ipcoor_filename);
+		}
+		if (ipelem_filename)
+		{
+			DEALLOCATE(ipelem_filename);
+		}
+		if (ipnode_filename)
+		{
+			DEALLOCATE(ipnode_filename);
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE, "gfx_export_cm.  Invalid argument(s)");
+		return_code = 0;
+	}
+
+	LEAVE;
+
+	return (return_code);
+} /* gfx_export_cm */
+
 static int gfx_export_iges(struct Parse_state *state,void *dummy_to_be_modified,
 	void *command_data_void)
 /*******************************************************************************
@@ -11134,6 +11282,8 @@ Executes a GFX EXPORT command.
 		option_table = CREATE(Option_table)();
 		Option_table_add_entry(option_table,"alias",NULL,
 			command_data_void, gfx_export_alias);
+		Option_table_add_entry(option_table,"cm",NULL,
+			command_data_void, gfx_export_cm);
 		Option_table_add_entry(option_table,"iges",NULL,
 			command_data_void, gfx_export_iges);
 #if defined (OLD_CODE)

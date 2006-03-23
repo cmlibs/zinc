@@ -863,6 +863,7 @@ EMOTER_SRCS = \
 	emoter/em_cmgui.c \
 	emoter/emoter_dialog.c
 FINITE_ELEMENT_SRCS = \
+	finite_element/export_cm_files.c \
 	finite_element/export_finite_element.c \
 	finite_element/finite_element.c \
 	finite_element/finite_element_adjacent_elements.c \
