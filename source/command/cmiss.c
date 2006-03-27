@@ -4686,9 +4686,8 @@ Executes a GFX CREATE SNAKE command.
 
 		option_table = CREATE(Option_table)();
 		/* coordinate */
-		set_coordinate_field_data.conditional_function =
-			FE_field_is_coordinate_field;
-		set_coordinate_field_data.user_data = (void *)NULL;
+		set_coordinate_field_data.conditional_function = FE_field_has_value_type;
+		set_coordinate_field_data.user_data = (void *)FE_VALUE_VALUE;
 		set_coordinate_field_data.fe_region =
 			Cmiss_region_get_FE_region(command_data->root_region);
 		Option_table_add_entry(option_table, "coordinate",
