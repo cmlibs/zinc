@@ -198,14 +198,6 @@ typedef struct User_interface User_settings;
 Module variables
 ----------------
 */
-#if defined (OLD_CODE)
-/*???DB.  Have been moved into struct User_interface */
-#if defined (MOTIF)
-Cursor busy_cursor=(Cursor)NULL;
-#endif /* defined (MOTIF) */
-struct Shell_list_item *shell_list=(struct Shell_list_item *)NULL;
-struct Shell_stack_item *active_shell_stack=(struct Shell_stack_item *)NULL;
-#endif /* defined (OLD_CODE) */
 
 #if defined (MOTIF)
 #if defined (EXT_INPUT)
@@ -2006,6 +1998,8 @@ DESCRIPTION :
 			XFreePixmap(user_interface->display,user_interface->no_cascade_pixmap);
 			user_interface->no_cascade_pixmap=XmUNSPECIFIED_PIXMAP;
 		}
+		XFreeCursor(user_interface->display, user_interface->busy_cursor);
+
 		XRemoveConnectionWatch(user_interface->display, 
 			User_interface_X_connection_callback, (XPointer)user_interface);
 		XtCloseDisplay(user_interface->display);
