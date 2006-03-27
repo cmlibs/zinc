@@ -159,13 +159,6 @@ Cleaned this up from view/coord_trans.c
 ==============================================================================*/
 
 #if defined (OPENGL_API)
-void wrapperReadMatrix(GLenum matrixName,gtMatrix *theMatrix);
-/*******************************************************************************
-LAST MODIFIED : 13 February 1995
-
-DESCRIPTION :
-==============================================================================*/
-
 void wrapperLoadCurrentMatrix(gtMatrix *theMatrix);
 /*******************************************************************************
 LAST MODIFIED : 13 February 1995
@@ -176,56 +169,6 @@ DESCRIPTION :
 void wrapperMultiplyCurrentMatrix(gtMatrix *theMatrix);
 /*******************************************************************************
 LAST MODIFIED : 13 February 1995
-
-DESCRIPTION :
-==============================================================================*/
-
-void wrapperWindow(float left,float right,float bottom,float top,float near,
-	float far);
-/*******************************************************************************
-LAST MODIFIED : 13 February 1995
-
-DESCRIPTION :
-==============================================================================*/
-
-void wrapperPolarview(float A,float B,float C,float D);
-/*******************************************************************************
-LAST MODIFIED : 13 February 1995
-
-DESCRIPTION :
-==============================================================================*/
-
-void wrapperPerspective(float A,float B,float C,float D);
-/*******************************************************************************
-LAST MODIFIED : 13 February 1995
-
-DESCRIPTION :
-==============================================================================*/
-
-void wrapperOrtho(float a,float b,float c,float d,float e,float f);
-/*******************************************************************************
-LAST MODIFIED : 13 February 1995
-
-DESCRIPTION :
-==============================================================================*/
-
-void wrapperOrtho2D(float a,float b,float c,float d);
-/*******************************************************************************
-LAST MODIFIED : 13 February 1995
-
-DESCRIPTION :
-==============================================================================*/
-
-void wrapperPrintText(char *theText);
-/*******************************************************************************
-LAST MODIFIED : 13 February 1995
-
-DESCRIPTION :
-==============================================================================*/
-
-void wrapperInitText(struct User_interface *user_interface);
-/*******************************************************************************
-LAST MODIFIED : 14 November 1996
 
 DESCRIPTION :
 ==============================================================================*/
