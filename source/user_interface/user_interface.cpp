@@ -2006,6 +2006,8 @@ DESCRIPTION :
 			XFreePixmap(user_interface->display,user_interface->no_cascade_pixmap);
 			user_interface->no_cascade_pixmap=XmUNSPECIFIED_PIXMAP;
 		}
+		XRemoveConnectionWatch(user_interface->display, 
+			User_interface_X_connection_callback, (XPointer)user_interface);
 		XtCloseDisplay(user_interface->display);
 		XtDestroyApplicationContext(user_interface->application_context);
 #if ! defined (USE_XTAPP_CONTEXT)
