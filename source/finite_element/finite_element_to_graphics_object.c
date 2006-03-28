@@ -528,8 +528,8 @@ but are indirectly connected (e.g. mesh with slit)
 	{
 		return_code=1;
 		/* if already visited, skip */
-		if (!((i<n_xi[0]) && (j<n_xi[1]) && (k<n_xi[2]) 
-				&& element_block[k*n_xi[0]*n_xi[1]+j*n_xi[0]+i]))
+		if ((i<n_xi[0]) && (j<n_xi[1]) && (k<n_xi[2]) 
+				&& !element_block[k*n_xi[0]*n_xi[1]+j*n_xi[0]+i])
 		{
 			/* add element to block */
 			element_block[k*n_xi[0]*n_xi[1]+j*n_xi[0]+i]=element;
