@@ -505,6 +505,8 @@ be either the minimum or maximum value as appropriate.
 
 		first_time = fe_time_sequence->times[0];
 		last_time = fe_time_sequence->times[number_of_times-1];
+		time_low=0;
+		time_high=0;
 		if ((time >= first_time) && (time <= last_time))
 		{
 			/*Initial est. of the array index, assuming times evenly spaced, no gaps */	
@@ -519,8 +521,6 @@ be either the minimum or maximum value as appropriate.
 			{
 				array_index = 0;
 			}
-			time_low=0;
-			time_high=0;
 			done=0;
 			index_low=0;
 			index_high=number_of_times-1;
