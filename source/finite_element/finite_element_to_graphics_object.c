@@ -528,8 +528,8 @@ but are indirectly connected (e.g. mesh with slit)
 	{
 		return_code=1;
 		/* if already visited, skip */
-		if (!(element_block[k*n_xi[0]*n_xi[1]+j*n_xi[0]+i])&&(i<n_xi[0])&&
-			(j<n_xi[1])&&(k<n_xi[2]))
+		if (!((i<n_xi[0]) && (j<n_xi[1]) && (k<n_xi[2]) 
+				&& element_block[k*n_xi[0]*n_xi[1]+j*n_xi[0]+i]))
 		{
 			/* add element to block */
 			element_block[k*n_xi[0]*n_xi[1]+j*n_xi[0]+i]=element;
@@ -5403,6 +5403,7 @@ Converts a 3-D element into an iso_surface (via a volume_texture).
 								node->scalar_value=(double)scalar_value;
 								/*???RC no clipping function for now */
 								node->clipping_fn_value=(double)1.0;
+								node->active = 0;
 								i++;
 							}
 							else
