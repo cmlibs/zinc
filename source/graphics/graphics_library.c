@@ -95,6 +95,7 @@ Sets up the default light, material and light model for the graphics library.
 	ENTER(initialize_graphics_library);
 
 	return_code=1;
+	USE_PARAMETER(user_interface);
 	if (!initialized)
 	{
 #if defined (OPENGL_API)
