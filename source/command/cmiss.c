@@ -16944,7 +16944,7 @@ Executes a GFX UNSELECT command.
 					(fe_region = Cmiss_region_get_FE_region(region)) &&
 					Cmiss_region_get_region_from_path(command_data->data_root_region,
 						region_path, &data_region) &&
-					(data_fe_region = Cmiss_region_get_FE_region(region))))
+					(data_fe_region = Cmiss_region_get_FE_region(data_region))))
 				{
 					display_message(ERROR_MESSAGE, "gfx select:  Invalid region");
 					return_code = 0;
