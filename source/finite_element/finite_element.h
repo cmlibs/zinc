@@ -3234,6 +3234,14 @@ LAST MODIFIED : 9 June 1999
 Find the first time based field at a node
 ==============================================================================*/
 
+int ensure_FE_field_is_in_list(struct FE_field *field, void *field_list_void);
+/*******************************************************************************
+LAST MODIFIED : 29 March 2006
+
+DESCRIPTION :
+Iterator function for adding <field> to <field_list> if not currently in it.
+==============================================================================*/
+
 int set_FE_field(struct Parse_state *state,void *field_address_void,
 	void *fe_field_list_void);
 /*******************************************************************************

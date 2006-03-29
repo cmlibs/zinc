@@ -13100,6 +13100,40 @@ list we will be looking at will not be global but will belong to the region.
 	return (return_code);
 } /* FE_field_has_multiple_times */
 
+int ensure_FE_field_is_in_list(struct FE_field *field, void *field_list_void)
+/*******************************************************************************
+LAST MODIFIED : 29 March 2006
+
+DESCRIPTION :
+Iterator function for adding <field> to <field_list> if not currently in it.
+==============================================================================*/
+{
+	int return_code;
+	struct LIST(FE_field) *field_list;
+
+	ENTER(ensure_FE_field_is_in_list);
+	if (field&&(field_list=(struct LIST(FE_field) *)field_list_void))
+	{
+		if (!IS_OBJECT_IN_LIST(FE_field)(field,field_list))
+		{
+			return_code=ADD_OBJECT_TO_LIST(FE_field)(field,field_list);
+		}
+		else
+		{
+			return_code=1;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"ensure_FE_field_is_in_list.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* ensure_FE_field_is_in_list */
+
 int set_FE_field(struct Parse_state *state,void *field_address_void,
 	void *fe_field_list_void)
 /*******************************************************************************
