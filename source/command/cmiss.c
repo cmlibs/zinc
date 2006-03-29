@@ -4664,41 +4664,93 @@ DESCRIPTION :
 Executes a GFX CREATE SNAKE command.
 ==============================================================================*/
 {
-	char *region_path;
+	char *absorb_string, *region_path;
 	float density_factor, stiffness;
-	int number_of_elements, return_code;
+	int i, number_of_elements, number_of_fitting_fields, 
+		previous_state_index, return_code;
 	struct Cmiss_command_data *command_data;
 	struct Cmiss_region *region;
-	struct FE_field *coordinate_field;
+	struct Computed_field *coordinate_field, **fitting_fields;
 	struct FE_region *fe_region;
 	struct Option_table *option_table;
-	struct Set_FE_field_conditional_FE_region_data set_coordinate_field_data;
+	struct Set_Computed_field_conditional_data set_coordinate_field_data,
+		set_fitting_field_data;
+	struct Set_Computed_field_array_data set_fitting_field_array_data;
 
 	ENTER(gfx_create_snake);
 	USE_PARAMETER(dummy_to_be_modified);
 	if (state && (command_data = (struct Cmiss_command_data *)command_data_void))
 	{
 		region_path = (char *)NULL;
-		coordinate_field = (struct FE_field *)NULL;
+		coordinate_field = (struct Computed_field *)NULL;
 		density_factor = 0.0;
 		number_of_elements = 1;
 		stiffness = 0.0;
 
+		absorb_string = (char *)NULL;
+		number_of_fitting_fields = 1;
+		previous_state_index = state->current_index;
+
+		option_table = CREATE(Option_table)();
+		/* number_of_fitting_fields */
+		Option_table_add_entry(option_table, "number_of_fitting_fields",
+			&number_of_fitting_fields, NULL, set_int_positive);
+		/* absorb everything else */
+		Option_table_add_entry(option_table, NULL,
+			&absorb_string, NULL, set_name);
+		return_code = Option_table_multi_parse(option_table, state);
+		DESTROY(Option_table)(&option_table);
+		if (absorb_string)
+		{
+			DEALLOCATE(absorb_string);
+		}
+		/* Return back to where we were */
+		shift_Parse_state(state, previous_state_index - state->current_index);
+
+		if (number_of_fitting_fields)
+		{
+			ALLOCATE(fitting_fields, struct Computed_field *, number_of_fitting_fields);
+			for (i = 0; i < number_of_fitting_fields; i++)
+			{
+				fitting_fields[i] = (struct Computed_field *)NULL;
+			}
+		}
+		else
+		{
+			fitting_fields = (struct Computed_field **)NULL;
+		}
+		
 		option_table = CREATE(Option_table)();
 		/* coordinate */
-		set_coordinate_field_data.conditional_function = FE_field_has_value_type;
-		set_coordinate_field_data.user_data = (void *)FE_VALUE_VALUE;
-		set_coordinate_field_data.fe_region =
-			Cmiss_region_get_FE_region(command_data->root_region);
+		set_coordinate_field_data.conditional_function = 
+			Computed_field_has_numerical_components;
+		set_coordinate_field_data.conditional_function_user_data = (void *)NULL;
+		set_coordinate_field_data.computed_field_manager =
+			Computed_field_package_get_computed_field_manager(
+				command_data->computed_field_package);
 		Option_table_add_entry(option_table, "coordinate",
 			&coordinate_field, (void *)&set_coordinate_field_data,
-			set_FE_field_conditional_FE_region);
+			set_Computed_field_conditional);
 		/* density_factor */
 		Option_table_add_entry(option_table, "density_factor",
 			&density_factor, NULL, set_float_0_to_1_inclusive);
 		/* destination_group */
 		Option_table_add_entry(option_table, "destination_group", &region_path,
 			command_data->root_region, set_Cmiss_region_path);
+		/* fitting_fields */
+		set_fitting_field_data.conditional_function =
+			Computed_field_has_numerical_components;
+		set_fitting_field_data.conditional_function_user_data = (void *)NULL;
+		set_fitting_field_data.computed_field_manager =
+			Computed_field_package_get_computed_field_manager(
+				command_data->computed_field_package);
+		set_fitting_field_array_data.number_of_fields = number_of_fitting_fields;
+		set_fitting_field_array_data.conditional_data = &set_fitting_field_data;
+		Option_table_add_entry(option_table, "fitting_fields", fitting_fields,
+			&set_fitting_field_array_data, set_Computed_field_array);
+		/* number_of_fitting_fields */
+		Option_table_add_entry(option_table, "number_of_fitting_fields",
+			&number_of_fitting_fields, NULL, set_int_positive);
 		/* number_of_elements */
 		Option_table_add_entry(option_table, "number_of_elements",
 			&number_of_elements, NULL, set_int_positive);
@@ -4727,8 +4779,8 @@ Executes a GFX CREATE SNAKE command.
 			if (return_code)
 			{
 				return_code = create_FE_element_snake_from_data_points(
-					fe_region,
-					coordinate_field,
+					fe_region, coordinate_field,
+					number_of_fitting_fields, fitting_fields,
 					FE_node_selection_get_node_list(command_data->data_selection),
 					number_of_elements,
 					density_factor,
@@ -4738,7 +4790,17 @@ Executes a GFX CREATE SNAKE command.
 		DESTROY(Option_table)(&option_table);
 		if (coordinate_field)
 		{
-			DEACCESS(FE_field)(&coordinate_field);
+			DEACCESS(Computed_field)(&coordinate_field);
+		}
+		if (fitting_fields)
+		{				
+			for (i = 0; i < number_of_fitting_fields; i++)
+			{
+				if (fitting_fields[i])
+				{
+					DEACCESS(Computed_field)(&fitting_fields[i]);
+				}
+			}
 		}
 		if (region_path)
 		{

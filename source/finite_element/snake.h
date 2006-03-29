@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : snake.h
 
-LAST MODIFIED : 14 January 2003
+LAST MODIFIED : 29 March 2006
 
 DESCRIPTION :
 Functions for making a snake of 1-D cubic Hermite elements from a chain of
@@ -46,21 +46,24 @@ data points.
 #define SNAKE_H
 
 int create_FE_element_snake_from_data_points(
-	struct FE_region *fe_region,
-	struct FE_field *coordinate_field,
+	struct FE_region *fe_region, struct Computed_field *coordinate_field,
+	int number_of_fitting_fields, struct Computed_field **fitting_fields,
 	struct LIST(FE_node) *data_list,
-	int number_of_elements,
-	FE_value density_factor,
-	FE_value stiffness);
+	int number_of_elements, FE_value density_factor, FE_value stiffness);
 /*******************************************************************************
-LAST MODIFIED : 14 January 2003
+LAST MODIFIED : 29 March 2006
 
 DESCRIPTION :
 Creates a snake out of <number_of_elements> 1-D cubic Hermite elements in
 <element_manager> and <element_group>, nodes in <node_manager> and the node
 group of the same name in <node_group_manager>. The snake follows the data in
-<data_field>, using the same <coordinate_field> in the elements as the data.
-<data_list> is unmodified by this function.
+<data_list>. <data_list> is unmodified by this function.
+The <fitting_fields> which must be defined on the data are fitted and
+defined on the created elements.  The <coordinate_field> is used to determine
+distances between points.  The <density_factor> can vary from 0 to 1.
+When <density_factor> is 0 then the elements are spread out to have the same
+length in this coordinate field, when the <density_factor> is 1 then the
+elements will each correspond to an equal proportion of the data points.
 A positive value of <stiffness> penalises solutions with large second
 derivatives; helps make smooth snakes from few data points.
 ==============================================================================*/

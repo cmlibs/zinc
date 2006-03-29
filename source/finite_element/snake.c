@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : snake.c
 
-LAST MODIFIED : 27 March 2003
+LAST MODIFIED : 29 March 2006
 
 DESCRIPTION :
 Functions for making a snake of 1-D cubic Hermite elements from a chain of
@@ -44,6 +44,8 @@ data points.
  * ***** END LICENSE BLOCK ***** */
 #include <math.h>
 #include <stdio.h>
+#include "computed_field/computed_field.h"
+#include "computed_field/computed_field_finite_element.h"
 #include "finite_element/finite_element.h"
 #include "finite_element/finite_element_region.h"
 #include "finite_element/snake.h"
@@ -77,68 +79,129 @@ number_of_coordinate_components per node.
 Set node_number to zero before passing.
 ==============================================================================*/
 {
-	FE_value *coordinates, *lengths;
+	FE_value *fitting_field_values;
+	/* Space to evaluate the coordinate field and keep the previous value */
+	FE_value *coordinates;
+	FE_value *lengths;
 	int node_number;
-	struct FE_field *coordinate_field;
+	struct Computed_field *coordinate_field;
+	struct LIST(FE_field) *fe_field_list;
+	struct FE_node *current_node;
 };
+
+static int FE_field_evaluate_snake_position(struct FE_field *field,
+	void *accumulate_data_void)
+/*******************************************************************************
+LAST MODIFIED : 29 March 2006
+
+DESCRIPTION :
+Evaluates the <field> into the <fitting_field_values>.
+==============================================================================*/
+{
+	int i, number_of_components, return_code;
+	struct FE_node_accumulate_length_data *accumulate_data;
+
+	ENTER(FE_node_accumulate_length);
+	if (field && (accumulate_data =
+		(struct FE_node_accumulate_length_data *)accumulate_data_void))
+	{
+		return_code = 1;
+		number_of_components = get_FE_field_number_of_components(field);
+		for (i = 0; (i < number_of_components) && return_code; i++)
+		{
+			if (get_FE_nodal_FE_value_value(accumulate_data->current_node,
+				field, /*component_number*/i, /*version*/0,
+				FE_NODAL_VALUE, /*time*/0, accumulate_data->fitting_field_values))
+			{
+				accumulate_data->fitting_field_values++;
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE,
+					"FE_field_evaluate_snake_position.  Field %s component not defined at node or data %d",
+					get_FE_field_name(field), 
+					get_FE_node_identifier(accumulate_data->current_node));
+				return_code = 0;
+			}
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"FE_field_evaluate_snake_position.  Invalid argument(s)");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* FE_field_evaluate_snake_position */
 
 static int FE_node_accumulate_length(struct FE_node *node,
 	void *accumulate_data_void)
 /*******************************************************************************
-LAST MODIFIED : 9 May 2001
+LAST MODIFIED : 29 March 2006
 
 DESCRIPTION :
 Calculates the coordinates and length from the first node.
 ==============================================================================*/
 {
-	FE_value *coordinates, distance, *last_coordinates, *lengths, sum;
+	double sum;
+	FE_value *coordinates, distance, *fitting_field_values, *lengths;
 	int i, node_number, number_of_components, return_code;
 	struct FE_node_accumulate_length_data *accumulate_data;
-	struct FE_field *coordinate_field;
+	struct Computed_field *coordinate_field;
 
 	ENTER(FE_node_accumulate_length);
 	if (node && (accumulate_data =
 		(struct FE_node_accumulate_length_data *)accumulate_data_void) &&
 		(coordinates = accumulate_data->coordinates) &&
+		(fitting_field_values = accumulate_data->fitting_field_values) &&
 		(lengths = accumulate_data->lengths) &&
 		(0 <= (node_number = accumulate_data->node_number)) &&
 		(coordinate_field = accumulate_data->coordinate_field) &&
 		(1 < (number_of_components =
-			get_FE_field_number_of_components(coordinate_field))))
+			Computed_field_get_number_of_components(coordinate_field))))
 	{
-		coordinates += node_number*number_of_components;
-		return_code = 1;
-		for (i = 0; (i < number_of_components) && return_code; i++)
-		{
-			if (!get_FE_nodal_FE_value_value(node, coordinate_field,
-				/*component_number*/i, /*version*/0,
-				FE_NODAL_VALUE, /*time*/0, coordinates + i))
-			{
-				display_message(ERROR_MESSAGE,
-					"FE_node_accumulate_length.  Field component not defined at node");
-				return_code = 0;
-			}
-		}
+		accumulate_data->current_node = node;
+		return_code = FOR_EACH_OBJECT_IN_LIST(FE_field)(
+			FE_field_evaluate_snake_position, accumulate_data_void,
+			accumulate_data->fe_field_list);
+
 		if (return_code)
 		{
-			if (0 == node_number)
+			if (Computed_field_evaluate_at_node(coordinate_field, node,
+				/*time*/0.0, coordinates))
 			{
-				lengths[0] = 0.0;
+				if (0 == node_number)
+				{
+					lengths[0] = 0.0;
+					for (i = 0; i < number_of_components; i++)
+					{
+					coordinates[i + number_of_components] = coordinates[i];
+					}
+				}
+				else
+				{
+					sum = 0.0;
+					for (i = 0; i < number_of_components; i++)
+					{
+						distance = (coordinates[i] - coordinates[i + number_of_components]);
+						coordinates[i + number_of_components] = coordinates[i];
+						sum += distance*distance;
+					}
+					distance = sqrt(sum);
+					lengths[node_number] = lengths[node_number - 1] + distance;
+				}
 			}
 			else
 			{
-				last_coordinates = coordinates - number_of_components;
-				sum = 0.0;
-				for (i = 0; i < number_of_components; i++)
-				{
-					distance = (coordinates[i] - last_coordinates[i]);
-					sum += distance*distance;
-				}
-				distance = sqrt(sum);
-				lengths[node_number] = lengths[node_number - 1] + distance;
+				display_message(ERROR_MESSAGE,
+					"FE_node_accumulate_length.  Unable to evaluate coordinate field.");
+				return_code = 0;
 			}
 			(accumulate_data->node_number)++;
 		}
+		accumulate_data->current_node = (struct FE_node *)NULL;
 	}
 	else
 	{
@@ -319,24 +382,25 @@ and <nodal_value_types> for each component, and only 1 version.
 } /* define_FE_field_at_node_simple */
 
 struct FE_element *create_1d_hermite_element(struct FE_region *fe_region,
-	struct FE_field *fe_field)
+	int number_of_fields, struct FE_field **field_array)
 /*******************************************************************************
-LAST MODIFIED : 19 March 2003
+LAST MODIFIED : 29 March 2006
 
 DESCRIPTION :
-Creates and returns a 1-D line element with <fe_field> defined using a 1-D cubic
+Creates and returns a 1-D line element with <field_array> defined using a 1-D cubic
 Hermite basis over it.
 ==============================================================================*/
 {
 	int basis_type[2] = {1, CUBIC_HERMITE};
 	int shape_type[1] = {LINE_SHAPE};
-	int i, j, n, number_of_components, number_of_nodes, number_of_scale_factors,
-		return_code;
+	int i, j, maximum_number_of_components, n, number_of_components, 
+		number_of_nodes, number_of_scale_factors, return_code;
 	struct CM_element_information cm;
 	struct FE_basis *element_basis;
 	struct FE_element *element;
 	struct FE_element_field_component *component, **components;
 	struct FE_element_shape *element_shape;
+	struct FE_field *fe_field;
 	struct MANAGER(FE_basis) *basis_manager;
 	struct Standard_node_to_element_map *standard_node_map;
 
@@ -374,18 +438,29 @@ Hermite basis over it.
 					}
 				}
 
-				number_of_components = get_FE_field_number_of_components(fe_field);
-				if (ALLOCATE(components, struct FE_element_field_component *,
-					number_of_components))
+				maximum_number_of_components = get_FE_field_number_of_components(
+					field_array[0]);
+				for (i = 0 ; i < number_of_fields ; i++)
 				{
-					for (n = 0; n < number_of_components; n++)
+					number_of_components = get_FE_field_number_of_components(
+						field_array[i]);
+					if (number_of_components > maximum_number_of_components)
+					{
+						maximum_number_of_components = number_of_components;
+					}
+				}
+				
+				if (ALLOCATE(components, struct FE_element_field_component *,
+						maximum_number_of_components))
+				{
+					for (n = 0; n < maximum_number_of_components; n++)
 					{
 						components[n] = (struct FE_element_field_component *)NULL;
 					}
-					for (n = 0; (n < number_of_components) && element; n++)
+					for (n = 0; (n < maximum_number_of_components) && element; n++)
 					{
 						if (component = CREATE(FE_element_field_component)(
-							STANDARD_NODE_TO_ELEMENT_MAP, number_of_nodes,
+								 STANDARD_NODE_TO_ELEMENT_MAP, number_of_nodes,
 							element_basis, (FE_element_field_component_modify)NULL))
 						{
 							for (j = 0; j < number_of_nodes; j++)
@@ -425,11 +500,14 @@ Hermite basis over it.
 					}
 					if (return_code)
 					{
-						if (!define_FE_field_at_element(element, fe_field, components))
+						for (i = 0 ; (i < number_of_fields) && return_code ; i++)
 						{
-							display_message(ERROR_MESSAGE,"create_1d_hermite_element.  "
-								"Could not define field on element");
-							return_code = 0;
+							if (!define_FE_field_at_element(element, field_array[i], components))
+							{
+								display_message(ERROR_MESSAGE,"create_1d_hermite_element.  "
+									"Could not define field on element");
+								return_code = 0;
+							}
 						}
 					}
 					else
@@ -437,7 +515,7 @@ Hermite basis over it.
 						display_message(ERROR_MESSAGE,
 							"create_1d_hermite_element.  Could not create components");
 					}
-					for (n = 0; n < number_of_components; n++)
+					for (n = 0; n < maximum_number_of_components; n++)
 					{
 						DESTROY(FE_element_field_component)(&(components[n]));
 					}
@@ -487,27 +565,68 @@ Hermite basis over it.
 	return (element);
 } /* create_1d_hermite_element */
 
+struct FE_field_initialise_array_data
+{
+	int number_of_components;
+	int fe_field_index;
+	struct FE_field **fe_field_array;
+}; /* struct FE_field_initialise_array_data */
+
+static int FE_field_initialise_array(struct FE_field *field,
+	void *fe_field_initialise_array_data_void)
+/*******************************************************************************
+LAST MODIFIED : 29 March 2006
+
+DESCRIPTION :
+Iterator function for adding <field> to <field_list> if not currently in it.
+==============================================================================*/
+{
+	int return_code;
+	struct FE_field_initialise_array_data *data;
+
+	ENTER(FE_field_initialise_array);
+	if (field && (data = (struct FE_field_initialise_array_data *)fe_field_initialise_array_data_void))
+	{
+		data->number_of_components += get_FE_field_number_of_components(field);
+		data->fe_field_array[data->fe_field_index] = field;
+		data->fe_field_index++;
+		return_code=1;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"FE_field_initialise_array.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* FE_field_initialise_array */
+
 /*
 Global functions
 ----------------
 */
 
 int create_FE_element_snake_from_data_points(
-	struct FE_region *fe_region,
-	struct FE_field *coordinate_field,
+	struct FE_region *fe_region, struct Computed_field *coordinate_field,
+	int number_of_fitting_fields, struct Computed_field **fitting_fields,
 	struct LIST(FE_node) *data_list,
-	int number_of_elements,
-	FE_value density_factor,
-	FE_value stiffness)
+	int number_of_elements, FE_value density_factor, FE_value stiffness)
 /*******************************************************************************
-LAST MODIFIED : 27 March 2003
+LAST MODIFIED : 29 March 2006
 
 DESCRIPTION :
 Creates a snake out of <number_of_elements> 1-D cubic Hermite elements in
 <element_manager> and <element_group>, nodes in <node_manager> and the node
 group of the same name in <node_group_manager>. The snake follows the data in
-<data_field>, using the same <coordinate_field> in the elements as the data.
-<data_list> is unmodified by this function.
+<data_list>. <data_list> is unmodified by this function.
+The <fitting_fields> which must be defined on the data are fitted and
+defined on the created elements.  The <coordinate_field> is used to determine
+distances between points.  The <density_factor> can vary from 0 to 1.
+When <density_factor> is 0 then the elements are spread out to have the same
+length in this coordinate field, when the <density_factor> is 1 then the
+elements will each correspond to an equal proportion of the data points.
 A positive value of <stiffness> penalises solutions with large second
 derivatives; helps make smooth snakes from few data points.
 ==============================================================================*/
@@ -517,56 +636,104 @@ derivatives; helps make smooth snakes from few data points.
 		*stiffness_offset, weight;
 	enum FE_nodal_value_type hermite_1d_nodal_value_types[2] =
 		{FE_NODAL_VALUE, FE_NODAL_D_DS1};
-	FE_value *coordinates, density_multiplier, length_multiplier, *lengths,
-		*this_coordinate, xi;
-	int element_number, i, *indx, j, m, n, node_number, number_of_components,
-		number_of_data, number_of_rows, return_code, row, start_row;
+	FE_value *coordinates, *fitting_field_values, density_multiplier,
+		length_multiplier, *lengths, *value, xi;
+	int component, element_number, i, *indx, j, local_components, m, n, node_number, 
+		number_of_components, number_of_coordinate_components, number_of_data,
+		number_of_fe_fields, number_of_rows, return_code, row, start_row;
 	struct CM_element_information cm;
 	struct FE_element *element, *template_element;
 	struct FE_node **nodes, *template_node;
-	struct FE_node_accumulate_length_data accumulate_data;
+ 	struct FE_node_accumulate_length_data accumulate_data;
+ 	struct FE_field_initialise_array_data initialise_array_data;
+	struct FE_field **fe_field_array;
+	struct LIST(FE_field) *fe_field_list, *additional_fe_field_list;
 
 	ENTER(create_FE_element_snake_from_data_points);
-	if (fe_region && coordinate_field && data_list &&
+	if (fe_region && coordinate_field && 
+		(number_of_fitting_fields > 0) && fitting_fields && data_list &&
 		(0 < number_of_elements) &&
 		(0.0 <= density_factor) && (1.0 >= density_factor) &&
 		(0.0 <= (double_stiffness = (double)stiffness)))
 	{
 		return_code = 1;
-		number_of_components = get_FE_field_number_of_components(coordinate_field);
-		coordinates = (FE_value *)NULL;
-		lengths = (FE_value *)NULL;
-		stiffness_matrix = (double *)NULL;
-		force_vectors = (double *)NULL;
-		indx = (int *)NULL;
-		/* 1. Make table of lengths from first data point up to last */
-		if (1 < (number_of_data = NUMBER_IN_LIST(FE_node)(data_list)))
+
+		fe_field_list = Computed_field_get_defining_FE_field_list(fitting_fields[0]);
+		for (i = 1 ; i < number_of_fitting_fields ; i++)
 		{
-			if (ALLOCATE(lengths, FE_value, number_of_data) &&
-				ALLOCATE(coordinates, FE_value, number_of_components*number_of_data))
+			additional_fe_field_list = Computed_field_get_defining_FE_field_list(fitting_fields[i]);
+			FOR_EACH_OBJECT_IN_LIST(FE_field)(ensure_FE_field_is_in_list,
+				(void *)fe_field_list, additional_fe_field_list);
+			DESTROY(LIST(FE_field))(&additional_fe_field_list);
+		}
+		
+		number_of_fe_fields = NUMBER_IN_LIST(FE_field)(fe_field_list);
+		if (ALLOCATE(fe_field_array, struct FE_field *, number_of_fe_fields))
+		{
+			initialise_array_data.number_of_components = 0;
+			initialise_array_data.fe_field_index = 0;
+			initialise_array_data.fe_field_array = fe_field_array;
+			FOR_EACH_OBJECT_IN_LIST(FE_field)(FE_field_initialise_array,
+				(void *)&initialise_array_data, fe_field_list);
+			number_of_components = initialise_array_data.number_of_components;
+
+			number_of_coordinate_components = Computed_field_get_number_of_components(coordinate_field);
+
+			fitting_field_values = (FE_value *)NULL;
+			lengths = (FE_value *)NULL;
+			coordinates = (FE_value *)NULL;
+			stiffness_matrix = (double *)NULL;
+			force_vectors = (double *)NULL;
+			indx = (int *)NULL;
+			/* 1. Make table of lengths from first data point up to last */
+			if (0 < number_of_components)
 			{
-				accumulate_data.coordinates = coordinates;
-				accumulate_data.lengths = lengths;
-				accumulate_data.node_number = 0;
-				accumulate_data.coordinate_field = coordinate_field;
-				if (FOR_EACH_OBJECT_IN_LIST(FE_node)(FE_node_accumulate_length,
-					(void *)&accumulate_data, data_list))
+				if (1 < (number_of_data = NUMBER_IN_LIST(FE_node)(data_list)))
 				{
-					if (0.0 < lengths[number_of_data - 1])
+					if (ALLOCATE(lengths, FE_value, number_of_data) &&
+						ALLOCATE(fitting_field_values, FE_value, number_of_components*number_of_data) &&
+						ALLOCATE(coordinates, FE_value, 2 * number_of_coordinate_components))
 					{
-						if ((0.0 >= stiffness) &&
-							((2 + number_of_elements*2) > number_of_data))
+						accumulate_data.fitting_field_values = fitting_field_values;
+						accumulate_data.lengths = lengths;
+						accumulate_data.coordinates = coordinates;
+						accumulate_data.node_number = 0;
+						accumulate_data.coordinate_field = coordinate_field;
+						accumulate_data.fe_field_list = fe_field_list;
+						if (FOR_EACH_OBJECT_IN_LIST(FE_node)(FE_node_accumulate_length,
+								(void *)&accumulate_data, data_list))
+						{
+							if (0.0 < lengths[number_of_data - 1])
+							{
+								if ((0.0 >= stiffness) &&
+									((2 + number_of_elements*2) > number_of_data))
+								{
+									display_message(ERROR_MESSAGE,
+										"create_FE_element_snake_from_data_points.  "
+										"Not enough data; add more data or a stiffness");
+									return_code = 0;
+								}
+							}
+							else
+							{
+								display_message(ERROR_MESSAGE,
+									"create_FE_element_snake_from_data_points.  Zero length");
+								return_code = 0;
+							}
+						}
+						else
 						{
 							display_message(ERROR_MESSAGE,
 								"create_FE_element_snake_from_data_points.  "
-								"Not enough data; add more data or a stiffness");
+								"Could not calculate lengths");
 							return_code = 0;
 						}
 					}
 					else
 					{
 						display_message(ERROR_MESSAGE,
-							"create_FE_element_snake_from_data_points.  Zero length");
+							"create_FE_element_snake_from_data_points.  "
+							"Could not allocate lengths");
 						return_code = 0;
 					}
 				}
@@ -574,7 +741,7 @@ derivatives; helps make smooth snakes from few data points.
 				{
 					display_message(ERROR_MESSAGE,
 						"create_FE_element_snake_from_data_points.  "
-						"Could not calculate lengths");
+						"Not enough data points");
 					return_code = 0;
 				}
 			}
@@ -582,7 +749,7 @@ derivatives; helps make smooth snakes from few data points.
 			{
 				display_message(ERROR_MESSAGE,
 					"create_FE_element_snake_from_data_points.  "
-					"Could not allocate lengths");
+					"No values to fit for defining FE_fields of fitting_fields list.");
 				return_code = 0;
 			}
 		}
@@ -590,7 +757,7 @@ derivatives; helps make smooth snakes from few data points.
 		{
 			display_message(ERROR_MESSAGE,
 				"create_FE_element_snake_from_data_points.  "
-				"Not enough data points");
+				"Unable to allocate fe_field array.");
 			return_code = 0;
 		}
 		if (return_code)
@@ -651,6 +818,7 @@ derivatives; helps make smooth snakes from few data points.
 					pos++;
 				}
 				/* assemble the stiffness matrix and force_vectors */
+				value = fitting_field_values;
 				for (i = 0; i < number_of_data; i++)
 				{
 					element_number = (int)lengths[i];
@@ -666,7 +834,6 @@ derivatives; helps make smooth snakes from few data points.
 					}
 					start_row = element_number*2;
 					calculate_Hermite_basis_1d(xi, phi);
-					this_coordinate = coordinates + i*number_of_components;
 					for (m = 0; m < 4; m++)
 					{
 						phi_m = phi[m];
@@ -679,9 +846,10 @@ derivatives; helps make smooth snakes from few data points.
 						}
 						for (n = 0; n < number_of_components; n++)
 						{
-							force_vectors[n*number_of_rows + row] += phi_m*this_coordinate[n];
+							force_vectors[n*number_of_rows + row] += phi_m * value[n];
 						}
 					}
+					value += number_of_components;
 				}
 				/* add stiffness penalising second derivatives, if non-zero */
 				if (0.0 < double_stiffness)
@@ -780,13 +948,11 @@ derivatives; helps make smooth snakes from few data points.
 				if (template_node = CREATE(FE_node)(/*node_number*/0, fe_region,
 					/*template_node*/(struct FE_node *)NULL))
 				{
-					if (!define_FE_field_at_node_simple(template_node, coordinate_field,
-						/*number_of_derivatives*/1, hermite_1d_nodal_value_types))
+					for (n = 0 ; return_code && (n < number_of_fe_fields) ; n++)
 					{
-						display_message(ERROR_MESSAGE,
-							"create_FE_element_snake_from_data_points.  "
-							"Could not define coordinate field at template_node");
-						return_code = 0;
+						return_code = define_FE_field_at_node_simple(template_node,
+							fe_field_array[n], 
+							/*number_of_derivatives*/1, hermite_1d_nodal_value_types);
 					}
 				}
 				else
@@ -809,19 +975,25 @@ derivatives; helps make smooth snakes from few data points.
 						template_node))
 					{
 						/* set the coordinate and derivatives */
-						for (n = 0; (n < number_of_components) && return_code; n++)
+						component = 0;
+						for (n = 0; (n < number_of_fe_fields) && return_code; n++)
 						{
-							if (!(set_FE_nodal_FE_value_value(nodes[j], coordinate_field,
-								/*component_number*/n, /*version*/0, FE_NODAL_VALUE,
-								/*time*/0, force_vectors[n*number_of_rows + j*2]) &&
-								set_FE_nodal_FE_value_value(nodes[j], coordinate_field,
-									/*component_number*/n,/*version*/0, FE_NODAL_D_DS1, /*time*/0, 
-									force_vectors[n*number_of_rows + j*2 + 1])))
+							local_components = get_FE_field_number_of_components(fe_field_array[n]);
+							for (i = 0 ; (i < local_components) && return_code ; i++)
 							{
-								display_message(ERROR_MESSAGE,
-									"create_FE_element_snake_from_data_points.  "
-									"Could not set coordinates or derivatives");
-								return_code = 0;
+								if (!(set_FE_nodal_FE_value_value(nodes[j], fe_field_array[n],
+									/*component_number*/i, /*version*/0, FE_NODAL_VALUE,
+									/*time*/0, force_vectors[component*number_of_rows + j*2]) &&
+									set_FE_nodal_FE_value_value(nodes[j], fe_field_array[n],
+									/*component_number*/i,/*version*/0, FE_NODAL_D_DS1, /*time*/0, 
+									force_vectors[component*number_of_rows + j*2 + 1])))
+								{
+									display_message(ERROR_MESSAGE,
+										"create_FE_element_snake_from_data_points.  "
+										"Could not set coordinates or derivatives");
+									return_code = 0;
+								}
+								component++;
 							}
 						}
 						if (return_code)
@@ -845,8 +1017,8 @@ derivatives; helps make smooth snakes from few data points.
 				}
 				if (return_code)
 				{
-					if (template_element =
-						create_1d_hermite_element(fe_region, coordinate_field))
+					if (template_element = create_1d_hermite_element(fe_region,
+						number_of_fe_fields, fe_field_array))
 					{
 						cm.type = CM_ELEMENT;
 						cm.number = 1;
@@ -916,13 +1088,17 @@ derivatives; helps make smooth snakes from few data points.
 			}
 			FE_region_end_change(fe_region);
 		}
-		if (coordinates)
+		if (fitting_field_values)
 		{
-			DEALLOCATE(coordinates);
+			DEALLOCATE(fitting_field_values);
 		}
 		if (lengths)
 		{
 			DEALLOCATE(lengths);
+		}
+		if (coordinates)
+		{
+			DEALLOCATE(coordinates);
 		}
 		if (stiffness_matrix)
 		{
