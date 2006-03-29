@@ -399,7 +399,6 @@ Hermite basis over it.
 	struct FE_element *element;
 	struct FE_element_field_component *component, **components;
 	struct FE_element_shape *element_shape;
-	struct FE_field *fe_field;
 	struct MANAGER(FE_basis) *basis_manager;
 	struct Standard_node_to_element_map *standard_node_map;
 
