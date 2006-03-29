@@ -146,7 +146,7 @@ Calculates the coordinates and length from the first node.
 ==============================================================================*/
 {
 	double sum;
-	FE_value *coordinates, distance, *fitting_field_values, *lengths;
+	FE_value *coordinates, distance, *lengths;
 	int i, node_number, number_of_components, return_code;
 	struct FE_node_accumulate_length_data *accumulate_data;
 	struct Computed_field *coordinate_field;
@@ -155,7 +155,6 @@ Calculates the coordinates and length from the first node.
 	if (node && (accumulate_data =
 		(struct FE_node_accumulate_length_data *)accumulate_data_void) &&
 		(coordinates = accumulate_data->coordinates) &&
-		(fitting_field_values = accumulate_data->fitting_field_values) &&
 		(lengths = accumulate_data->lengths) &&
 		(0 <= (node_number = accumulate_data->node_number)) &&
 		(coordinate_field = accumulate_data->coordinate_field) &&
@@ -407,7 +406,7 @@ Hermite basis over it.
 	ENTER(create_1d_hermite_element);
 	element = (struct FE_element *)NULL;
 	if (fe_region && (basis_manager = FE_region_get_basis_manager(fe_region)) &&
-		fe_field)
+		(0 < number_of_fields) && field_array)
 	{
 		return_code = 1;
 
