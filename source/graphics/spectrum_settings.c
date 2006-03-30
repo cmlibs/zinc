@@ -281,6 +281,7 @@ Allocates memory and assigns fields for a struct Spectrum_settings.
 		settings->number_of_bands = 10;
 		settings->black_band_proportion = 200;
 		settings->active=1;
+		settings->position = 0;
 #if defined (OPENGL_API)
 		settings->texture_id=0;
 #endif /* defined (OPENGL_API) */
