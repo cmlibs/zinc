@@ -64,6 +64,7 @@ Spectrum functions and support code.
 Module types
 ------------
 */
+
 struct Spectrum
 /*******************************************************************************
 LAST MODIFIED : 14 May 1998
@@ -76,6 +77,9 @@ Spectrum type is private.
 	char *name;
 	int clear_colour_before_settings;
 	struct LIST(Spectrum_settings) *list_of_settings;
+	
+	struct Texture *colour_lookup_texture;
+
 	/* the number of structures that point to this spectrum.  The spectrum
 		cannot be destroyed while this is greater than 0 */
 	int access_count;
@@ -175,6 +179,9 @@ PROTOTYPE_MANAGER_COPY_WITHOUT_IDENTIFIER_FUNCTION(Spectrum,name)
 		destination->clear_colour_before_settings = 
 			source->clear_colour_before_settings;
 
+		REACCESS(Texture)(&destination->colour_lookup_texture,
+			source->colour_lookup_texture);
+
 		/* empty original list_of_settings */
 		REMOVE_ALL_OBJECTS_FROM_LIST(Spectrum_settings)(
 			destination->list_of_settings);
@@ -182,6 +189,7 @@ PROTOTYPE_MANAGER_COPY_WITHOUT_IDENTIFIER_FUNCTION(Spectrum,name)
 		FOR_EACH_OBJECT_IN_LIST(Spectrum_settings)(
 			Spectrum_settings_copy_and_put_in_list,
 			(void *)destination->list_of_settings,source->list_of_settings);
+
 		return_code=1;		
 	}
 	else
@@ -748,7 +756,8 @@ If <number_of_bands>==0, simply removes any existing contour band settings.
 	}
 	LEAVE;
 	return (return_code);
-}/* Spectrum_overlay_contours() */
+} /* Spectrum_overlay_contours() */
+
 int Spectrum_add_settings(struct Spectrum *spectrum,
 	struct Spectrum_settings *settings,int position)
 /*******************************************************************************
@@ -2128,6 +2137,7 @@ Allocates memory and assigns fields for a Spectrum object.
 			spectrum->minimum=0;
 			spectrum->clear_colour_before_settings = 1;
 			spectrum->access_count=0;
+			spectrum->colour_lookup_texture = (struct Texture *)NULL;
 			if (spectrum->list_of_settings=CREATE(LIST(Spectrum_settings))())
 			{
 				if (name)
@@ -2210,3 +2220,163 @@ Frees the memory for the fields of <**spectrum>, frees the memory for
 } /* DESTROY(Spectrum) */
 
 DECLARE_DEFAULT_GET_OBJECT_NAME_FUNCTION(Spectrum)
+
+static int Spectrum_render_colour_lookup(struct Spectrum *spectrum)
+/*******************************************************************************
+LAST MODIFIED : 23 May 2005
+
+DESCRIPTION :
+Rebuilds the display_list for <spectrum> if it is not current.
+==============================================================================*/
+{
+	int i, j, k, number_of_values, return_code;
+	FE_value alpha, data[3], range;
+	struct Colour black = {0,0,0};
+	struct Graphical_material *material;
+	unsigned char *colour_table, *colour_table_ptr;
+
+	ENTER(Spectrum_render_colour_lookup);
+	if (spectrum)
+	{
+		number_of_values = 32;
+
+		if (ALLOCATE(colour_table, unsigned char, number_of_values * number_of_values * number_of_values))
+		{
+			colour_table_ptr = colour_table;
+
+			if (material = CREATE(Graphical_material)("value_to_rgb_material"))
+			{
+				range = spectrum->maximum - spectrum->minimum;
+				for (i = 0 ; i < number_of_values ; i++)
+				{
+					data[0] = spectrum->minimum + range * (FE_value)i / (FE_value)number_of_values;
+						
+					for (j = 0 ; j < number_of_values ; j++)
+					{
+						data[1] = spectrum->minimum + range * (FE_value)j / (FE_value)number_of_values;
+						for (k = 0 ; k < number_of_values ; k++)
+						{
+							data[2] = spectrum->minimum + range * (FE_value)k / (FE_value)number_of_values;
+								
+							Graphical_material_set_diffuse(material, &black);
+							Graphical_material_set_alpha(material, 1.0);
+
+							if (return_code = spectrum_render_value_on_material(spectrum,
+									material, /*number_of_data_components*/3, data))
+							{
+								Graphical_material_get_alpha(material, &alpha);
+								*colour_table_ptr = alpha * 255.0;
+								colour_table_ptr++;
+							}
+						}
+					}
+				}
+				DESTROY(Graphical_material)(&material);
+					
+				{
+					struct Texture *texture;
+
+					if (spectrum->colour_lookup_texture)
+					{
+						DEACCESS(Texture)(&spectrum->colour_lookup_texture);
+					}
+					texture = CREATE(Texture)("spectrum_texture");
+					Texture_allocate_image(texture, number_of_values, number_of_values,
+						number_of_values, TEXTURE_LUMINANCE, 
+						/*number_of_bytes_per_component*/1, "bob");
+
+					colour_table_ptr = colour_table;
+					for (i = 0 ; i < number_of_values ; i++)
+					{
+						Texture_set_image_block(texture,
+							/*left*/0, /*bottom*/0, number_of_values, number_of_values, 
+							/*depth_plane*/i, number_of_values, (void *)colour_table_ptr);
+						colour_table_ptr += number_of_values * number_of_values;
+					}
+
+					spectrum->colour_lookup_texture = ACCESS(Texture)(texture);
+				}
+
+				return_code = 1;
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE,
+					"spectrum_value_to_rgb.  Unable to create temporary material");
+				return_code=0;
+			}
+			DEALLOCATE(colour_table);
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,
+				"compile_Graphical_spectrum.  Could not allocate temporary storage.");
+			return_code = 0;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Spectrum_render_colour_lookup.  Missing spectrum");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Spectrum_render_colour_lookup */
+
+int Spectrum_compile_colour_lookup(struct Spectrum *spectrum)
+/*******************************************************************************
+LAST MODIFIED : 10 May 2005
+
+DESCRIPTION :
+Rebuilds the display_list for <spectrum> if it is not current.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(Spectrum_compile_colour_lookup);
+	if (spectrum)
+	{
+		Spectrum_render_colour_lookup(spectrum);
+		
+		return_code = compile_Texture(spectrum->colour_lookup_texture, NULL);
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Spectrum_compile_colour_lookup.  Missing spectrum");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Spectrum_compile_colour_lookup */
+
+int Spectrum_execute_colour_lookup(struct Spectrum *spectrum)
+/*******************************************************************************
+LAST MODIFIED : 10 May 2005
+
+DESCRIPTION :
+Activates <spectrum> by calling its display list. If the display list is not
+current, an error is reported.
+If a NULL <spectrum> is supplied, spectrums are disabled.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(Spectrum_execute_colour_lookup);
+	return_code=0;
+	if (spectrum)
+	{
+		return_code = execute_Texture(spectrum->colour_lookup_texture);
+	}
+	else
+	{
+		return_code=1;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Spectrum_execute_colour_lookup */
+
