@@ -292,6 +292,7 @@ Remove the reference to the manager from the object \
 	if (object) \
 	{ \
       object->object_manager = (struct MANAGER(object_type) *)NULL; \
+		return_code = 1; \
 	} \
 	else \
 	{ \
