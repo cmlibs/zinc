@@ -122,6 +122,14 @@ Sets up the image library. Must be called before using any image I/O
 functions, ie. at the start of the program.
 ==============================================================================*/
 
+int Close_image_environment(void);
+/*******************************************************************************
+LAST MODIFIED : 31 March 2006
+
+DESCRIPTION :
+Called to finialise the use of the image environment
+==============================================================================*/
+
 PROTOTYPE_ENUMERATOR_FUNCTIONS(Image_file_format);
 
 char *Image_file_format_extension(enum Image_file_format image_file_format);

@@ -24883,6 +24883,8 @@ Clean up the command_data, deallocating all the associated memory and resources.
 		coord_widget_finish();
 #endif /* defined (MOTIF) */
 
+		Close_image_environment();
+
 		DESTROY(Execute_command)(&command_data->execute_command);
 		DESTROY(Execute_command)(&command_data->set_command);
 

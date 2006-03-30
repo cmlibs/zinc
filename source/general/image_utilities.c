@@ -798,6 +798,30 @@ functions, ie. at the start of the program.
 	return (return_code);
 } /* Open_image_environment */
 
+int Close_image_environment(void)
+/*******************************************************************************
+LAST MODIFIED : 31 March 2006
+
+DESCRIPTION :
+Called to finialise the use of the image environment
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(Close_image_environment);
+
+#if defined (IMAGEMAGICK)
+#if ! defined (SGI)
+	DestroyMagick();
+#endif /* ! defined (SGI) */
+#endif /* defined (IMAGEMAGICK) */
+	return_code = 1;
+
+	LEAVE;
+
+	return (return_code);
+} /* Close_image_environment */
+
 PROTOTYPE_ENUMERATOR_STRING_FUNCTION(Image_file_format)
 {
 	char *enumerator_string;
