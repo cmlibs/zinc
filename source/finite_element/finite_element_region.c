@@ -1002,6 +1002,8 @@ as if it is just updating then there is nothing to do.
 		{
 			FE_node_field_info_add_node_field(existing_node_field_info,
 				new_node_field, new_number_of_values);
+			/* Should check there isn't a node_field equivalent to this modified one
+				already in the list, and if there is use that instead */
 		}
 		else
 		{
@@ -4961,11 +4963,11 @@ against.
 		get_FE_element_number_of_faces(element, &number_of_faces))
 	{
 		return_code = 1;
+		new_faces = 0;
 		for (face_number = 0; (face_number < number_of_faces) && return_code;
 			face_number++)
 		{
 			face = (struct FE_element *)NULL;
-			new_faces = 0;
 			if ((return_code = get_FE_element_face(element, face_number, &face)) &&
 				(!face) && master_fe_region->element_type_node_sequence_list)
 			{
