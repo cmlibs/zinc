@@ -528,7 +528,7 @@ DESCRIPTION :
 		if (ALLOCATE(shape_vector,FE_value,
 			Control_curve_get_number_of_components(slider->mode_curve)))
 		{
-			if (Control_curve_get_values_at_parameter( slider->mode_curve, 
+			if (Curve_get_values_at_parameter( slider->mode_curve, 
 				slider_time, shape_vector, (FE_value *)NULL))
 			{
 				if ( slider->solid_body_motion )
@@ -3096,6 +3096,7 @@ Both or either of <sequence_filename> or <existing_mode_curve> can be NULL.
 				emoter_slider->number_of_emoter_markers = 0;
 				emoter_slider->number_of_timebase_curves = 0;
 				emoter_slider->solid_body_motion = 0;
+				emoter_slider->slider_position = -1;
 
 				start_time = 0;
 				end_time = 0;
