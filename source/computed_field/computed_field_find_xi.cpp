@@ -719,8 +719,8 @@ Stores cache data for the Computed_field_find_element_xi_special routine.
 					/*time*/0,(struct FE_element *)NULL, data->values, (FE_value *)NULL);
 				glVertex2fv(data->values);
 			}
-			return_code = 1;
 		}
+		return_code = 1;
 	}
 	else
 	{
