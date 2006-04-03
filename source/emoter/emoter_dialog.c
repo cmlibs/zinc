@@ -528,7 +528,7 @@ DESCRIPTION :
 		if (ALLOCATE(shape_vector,FE_value,
 			Control_curve_get_number_of_components(slider->mode_curve)))
 		{
-			if (Curve_get_values_at_parameter( slider->mode_curve, 
+			if (Control_curve_get_values_at_parameter( slider->mode_curve, 
 				slider_time, shape_vector, (FE_value *)NULL))
 			{
 				if ( slider->solid_body_motion )
