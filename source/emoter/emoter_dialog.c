@@ -1052,8 +1052,20 @@ slider
 			combine_slider = (emoter_slider->combine_sliders[j])->slider;
 			if ( temp_var = (emoter_slider->combine_sliders[j])->timebase_curve)
 			{
-				if (combine_slider->timebase_curves)
+				/* Check the combine_slider is still active.
+				   Would be preferable to have removed this reference to an invalid slider
+ 				   but this is quite expensive. The present fix does not stop the combine
+               slider from attempts to evaluate it. */
+				i = 0;
+				while ((i < emoter_slider->shared->number_of_sliders) &&
+					(combine_slider != emoter_slider->shared->sliders[i]))
 				{
+					i++;
+				}
+				if ((i < emoter_slider->shared->number_of_sliders) &&
+					(combine_slider->timebase_curves))
+				{
+					/* This pointer still exists in the global list so is valid */
 					i = 0;
 					while ( i < combine_slider->number_of_timebase_curves
 						&& temp_var != combine_slider->timebase_curves[i])
