@@ -819,6 +819,9 @@ sequential element_xi lookup should now be performed.
 		find_element_xi_data.found_number_of_xi = 0;
 		find_element_xi_data.found_derivatives = (FE_value *)NULL;
 		find_element_xi_data.tolerance = 1e-06;
+		find_element_xi_data.find_nearest_location = 0; /* Find exact location */
+		find_element_xi_data.nearest_element = (struct FE_element *)NULL;
+		find_element_xi_data.nearest_element_distance_squared = 0.0;
 		if (ALLOCATE(find_element_xi_data.found_values, FE_value, number_of_values))
 		{
 			if (*cache_ptr)
