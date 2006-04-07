@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : computed_field_finite_element.c
 
-LAST MODIFIED : 28 October 2004
+LAST MODIFIED : 7 April 2006
 
 DESCRIPTION :
 Implements a number of basic component wise operations on computed fields.
@@ -64,7 +64,7 @@ Implements a number of basic component wise operations on computed fields.
 #endif /* defined (DEBUG) */
 
 /*
-Global types
+Module types
 ------------
 */
 struct Computed_field_finite_element_package
@@ -5047,6 +5047,43 @@ Returns the list of FE_fields that <field> depends on.
 
 	return (fe_field_list);
 } /* Computed_field_get_defining_FE_field_list */
+
+struct LIST(FE_field)
+	*Computed_field_array_get_defining_FE_field_list(
+		int number_of_fields, struct Computed_field **field_array)
+/*******************************************************************************
+LAST MODIFIED : 5 April 2006
+
+DESCRIPTION :
+Returns the compiled list of FE_fields that are required by any of
+the <number_of_fields> fields in <field_array>.
+==============================================================================*/
+{
+	int i;
+	struct LIST(FE_field) *additional_fe_field_list, *fe_field_list;
+
+	ENTER(Computed_field_get_defining_FE_field_list);
+	fe_field_list = (struct LIST(FE_field) *)NULL;
+	if ((0 < number_of_fields) && field_array)
+	{
+		fe_field_list = Computed_field_get_defining_FE_field_list(field_array[0]);
+		for (i = 1 ; i < number_of_fields ; i++)
+		{
+			additional_fe_field_list = Computed_field_get_defining_FE_field_list(field_array[i]);
+			FOR_EACH_OBJECT_IN_LIST(FE_field)(ensure_FE_field_is_in_list,
+				(void *)fe_field_list, additional_fe_field_list);
+			DESTROY(LIST(FE_field))(&additional_fe_field_list);
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Computed_field_array_get_defining_FE_field_list.  Invalid argument(s)");
+	}
+	LEAVE;
+
+	return (fe_field_list);
+} /* Computed_field_array_get_defining_FE_field_list */
 
 int Computed_field_is_type_cmiss_number(struct Computed_field *field)
 /*******************************************************************************

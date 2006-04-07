@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : computed_field_finite_element.h
 
-LAST MODIFIED : 2 April 2002
+LAST MODIFIED : 6 April 2006
 
 DESCRIPTION :
 Implements computed fields which interface to finite element fields.
@@ -145,6 +145,17 @@ LAST MODIFIED : 2 April 2003
 
 DESCRIPTION :
 Returns the list of FE_fields that <field> depends on.
+==============================================================================*/
+
+struct LIST(FE_field)
+	*Computed_field_array_get_defining_FE_field_list(
+		int number_of_fields, struct Computed_field **field_array);
+/*******************************************************************************
+LAST MODIFIED : 5 April 2006
+
+DESCRIPTION :
+Returns the compiled list of FE_fields that are required by any of
+the <number_of_fields> fields in <field_array>.
 ==============================================================================*/
 
 int Computed_field_is_type_cmiss_number(struct Computed_field *field);
