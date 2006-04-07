@@ -867,6 +867,7 @@ FINITE_ELEMENT_SRCS = \
 	finite_element/export_finite_element.c \
 	finite_element/finite_element.c \
 	finite_element/finite_element_adjacent_elements.c \
+	finite_element/finite_element_conversion.c \
 	finite_element/finite_element_discretization.c \
 	finite_element/finite_element_region.c \
 	finite_element/finite_element_time.c \

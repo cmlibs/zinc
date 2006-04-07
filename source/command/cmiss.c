@@ -171,6 +171,7 @@ Functions for executing cmiss commands.
 #include "finite_element/export_cm_files.h"
 #include "finite_element/export_finite_element.h"
 #include "finite_element/finite_element.h"
+#include "finite_element/finite_element_conversion.h"
 #include "finite_element/finite_element_region.h"
 #include "finite_element/finite_element_to_graphics_object.h"
 #include "finite_element/finite_element_to_iges.h"
@@ -8190,10 +8191,166 @@ Executes a DETACH command.
 } /* execute_command_detach */
 #endif /* defined (SELECT_DESCRIPTORS) */
 
-static int execute_command_gfx_convert(struct Parse_state *state,
+static int gfx_convert_elements(struct Parse_state *state,
 	void *dummy_to_be_modified, void *command_data_void)
 /*******************************************************************************
-LAST MODIFIED : 7 December 2005
+LAST MODIFIED : 5 April 2006
+
+DESCRIPTION :
+Executes a GFX CONVERT ELEMENETS command.
+==============================================================================*/
+{
+	char *absorb_string, *destination_region_path, *source_region_path;
+	enum Convert_finite_elements_mode conversion_mode;
+	int i, number_of_fields, previous_state_index, return_code;
+	struct Cmiss_command_data *command_data;
+	struct Cmiss_region *region;
+	struct Computed_field **fields;
+	struct FE_region *destination_fe_region, *source_fe_region;
+	struct Set_Computed_field_conditional_data set_field_data;
+	struct Set_Computed_field_array_data set_field_array_data;
+	struct Option_table *option_table;
+
+	ENTER(gfx_convert_elements);
+	USE_PARAMETER(dummy_to_be_modified);
+	if (state)
+	{
+		if (command_data=(struct Cmiss_command_data *)command_data_void)
+		{
+			Cmiss_region_get_root_region_path(&source_region_path);
+			Cmiss_region_get_root_region_path(&destination_region_path);
+			fields = (struct Computed_field **)NULL;
+			conversion_mode = CONVERT_TO_FINITE_ELEMENTS_HERMITE_2D_PRODUCT;
+			
+			absorb_string = (char *)NULL;
+			number_of_fields = 1;
+			previous_state_index = state->current_index;
+			
+			option_table = CREATE(Option_table)();
+			/* number_of_fields */
+			Option_table_add_entry(option_table, "number_of_fields",
+				&number_of_fields, NULL, set_int_positive);
+			/* absorb everything else */
+			Option_table_add_entry(option_table, NULL,
+				&absorb_string, NULL, set_name);
+			return_code = Option_table_multi_parse(option_table, state);
+			DESTROY(Option_table)(&option_table);
+			if (absorb_string)
+			{
+				DEALLOCATE(absorb_string);
+			}
+			/* Return back to where we were */
+			shift_Parse_state(state, previous_state_index - state->current_index);
+			
+			if (number_of_fields)
+			{
+				ALLOCATE(fields, struct Computed_field *, number_of_fields);
+				for (i = 0; i < number_of_fields; i++)
+				{
+					fields[i] = (struct Computed_field *)NULL;
+				}
+			}
+			else
+			{
+				fields = (struct Computed_field **)NULL;
+			}
+		
+			option_table=CREATE(Option_table)();
+			/* destination_region */
+			Option_table_add_entry(option_table, "destination_region", &destination_region_path,
+				command_data->root_region, set_Cmiss_region_path);
+			/* fields */
+			set_field_data.conditional_function =
+				Computed_field_has_numerical_components;
+			set_field_data.conditional_function_user_data = (void *)NULL;
+			set_field_data.computed_field_manager =
+				Computed_field_package_get_computed_field_manager(
+					command_data->computed_field_package);
+			set_field_array_data.number_of_fields = number_of_fields;
+			set_field_array_data.conditional_data = &set_field_data;
+			Option_table_add_entry(option_table, "fields", fields,
+				&set_field_array_data, set_Computed_field_array);
+			/* number_of_fields */
+			Option_table_add_entry(option_table, "number_of_fields",
+				&number_of_fields, NULL, set_int_positive);
+			/* conversion_mode */
+			OPTION_TABLE_ADD_ENUMERATOR(Convert_finite_elements_mode)(option_table,
+				&conversion_mode);
+			/* source_region */
+			Option_table_add_entry(option_table, "source_region", &source_region_path,
+				command_data->root_region, set_Cmiss_region_path);
+			
+			return_code=Option_table_multi_parse(option_table,state);
+			DESTROY(Option_table)(&option_table);
+
+			if (return_code)
+			{
+				destination_fe_region = (struct FE_region *)NULL;
+				if (!(Cmiss_region_get_region_from_path(command_data->root_region,
+					destination_region_path, &region) &&
+					(destination_fe_region = Cmiss_region_get_FE_region(region))))
+				{
+					display_message(ERROR_MESSAGE,
+						"gfx_convert.  Invalid destination_region");
+					return_code = 0;
+				}
+				source_fe_region = (struct FE_region *)NULL;
+				if (!(Cmiss_region_get_region_from_path(command_data->root_region,
+					source_region_path, &region) &&
+					(source_fe_region = Cmiss_region_get_FE_region(region))))
+				{
+					display_message(ERROR_MESSAGE,
+						"gfx_convert.  Invalid destination_region");
+					return_code = 0;
+				}
+			}
+
+			if (return_code)
+			{
+				return_code = finite_element_conversion(source_fe_region,
+					destination_fe_region, conversion_mode,
+					number_of_fields, fields);
+			}
+			if (fields)
+			{				
+				for (i = 0; i < number_of_fields; i++)
+				{
+					if (fields[i])
+					{
+						DEACCESS(Computed_field)(&fields[i]);
+					}
+				}
+			}
+			if (destination_region_path)
+			{
+				DEALLOCATE(destination_region_path);
+			}
+			if (source_region_path)
+			{
+				DEALLOCATE(source_region_path);
+			}
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,
+				"gfx_convert_elements.  Missing command_data");
+			return_code=0;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"gfx_convert_elements.  Missing state");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* gfx_convert_elements */
+
+static int gfx_convert_graphics(struct Parse_state *state,
+	void *dummy_to_be_modified, void *command_data_void)
+/*******************************************************************************
+LAST MODIFIED : 5 April 2006
 
 DESCRIPTION :
 Executes a GFX CREATE command.
@@ -8210,7 +8367,7 @@ Executes a GFX CREATE command.
 	struct Set_Computed_field_conditional_data set_coordinate_field_data;
 	struct Option_table *option_table;
 
-	ENTER(execute_command_gfx_convert);
+	ENTER(gfx_convert_graphics);
 	USE_PARAMETER(dummy_to_be_modified);
 	if (state)
 	{
@@ -8255,7 +8412,8 @@ Executes a GFX CREATE command.
 				if (!coordinate_field)
 				{
 					display_message(ERROR_MESSAGE,
-						"gfx_convert.  Must specify a coordinate field to define on the new nodes and elements.");
+						"gfx_convert_graphics.  "
+						"Must specify a coordinate field to define on the new nodes and elements.");
 					return_code = 0;
 				}
 				fe_region = (struct FE_region *)NULL;
@@ -8290,19 +8448,54 @@ Executes a GFX CREATE command.
 		else
 		{
 			display_message(ERROR_MESSAGE,
-				"execute_command_gfx_convert.  Missing command_data");
+				"gfx_convert_graphics.  Missing command_data");
 			return_code=0;
 		}
 	}
 	else
 	{
-		display_message(ERROR_MESSAGE,"execute_command_gfx_convert.  Missing state");
+		display_message(ERROR_MESSAGE,"gfx_convert_graphics.  Missing state");
 		return_code=0;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* execute_command_gfx_convert */
+} /* gfx_convert_graphics */
+
+static int gfx_convert(struct Parse_state *state,
+	void *dummy_to_be_modified,void *command_data_void)
+/*******************************************************************************
+LAST MODIFIED : 5 April 2006
+
+DESCRIPTION :
+Executes a GFX CONVERT command.
+==============================================================================*/
+{
+	int return_code;
+	struct Option_table *option_table;
+
+	ENTER(gfx_convert);
+	USE_PARAMETER(dummy_to_be_modified);
+	if (state && command_data_void)
+	{
+		option_table = CREATE(Option_table)();
+		Option_table_add_entry(option_table,"elements",NULL,
+			command_data_void, gfx_convert_elements);
+		Option_table_add_entry(option_table,"graphics",NULL,
+			command_data_void, gfx_convert_graphics);
+		return_code = Option_table_parse(option_table,state);
+		DESTROY(Option_table)(&option_table);
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"gfx_convert.  Invalid argument(s)");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* gfx_convert */
 
 static int execute_command_gfx_create(struct Parse_state *state,
 	void *dummy_to_be_modified,void *command_data_void)
@@ -19904,7 +20097,7 @@ Executes a GFX command.
 			Option_table_add_entry(option_table, "change_identifier", NULL,
 				command_data_void, gfx_change_identifier);
 			Option_table_add_entry(option_table, "convert", NULL,
-				command_data_void, execute_command_gfx_convert);
+				command_data_void, gfx_convert);
 			Option_table_add_entry(option_table, "create", NULL,
 				command_data_void, execute_command_gfx_create);
 #if defined (MOTIF) || (GTK_USER_INTERFACE) || defined (WIN32_USER_INTERFACE)
