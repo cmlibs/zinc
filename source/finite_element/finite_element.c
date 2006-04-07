@@ -17027,6 +17027,62 @@ is undefined!
 	return (return_code);
 } /* undefine_FE_field_at_node */
 
+int define_FE_field_at_node_simple(struct FE_node *node, struct FE_field *field,
+	int number_of_derivatives, enum FE_nodal_value_type *derivative_value_types)
+/*******************************************************************************
+LAST MODIFIED : 19 September 2002
+
+DESCRIPTION :
+Defines <field> at <node> using the same <number_of_derivatives>
+and <nodal_value_types> for each component, and only 1 version.
+==============================================================================*/
+{
+	int j, n, number_of_components, return_code;
+	struct FE_node_field_creator *node_field_creator;
+
+	ENTER(define_FE_field_at_node_simple);
+	if (node && field &&
+		(0 < (number_of_components = get_FE_field_number_of_components(field))) &&
+		(0 <= number_of_derivatives) && derivative_value_types)
+	{
+		return_code = 1;
+		if(node_field_creator = CREATE(FE_node_field_creator)(number_of_components))
+		{
+			for (n = 0; n < number_of_components; n++)
+			{
+				for (j = 0 ; j < number_of_derivatives ; j++)
+				{
+					FE_node_field_creator_define_derivative(node_field_creator, 
+						/*component_number*/n, derivative_value_types[j]);
+				}
+			}
+			if (!define_FE_field_at_node(node, field, (struct FE_time_sequence *)NULL,
+				node_field_creator))
+			{
+				display_message(ERROR_MESSAGE, "define_FE_field_at_node_simple.  "
+					"Could not define field at node");
+				return_code = 0;
+			}
+			DESTROY(FE_node_field_creator)(&(node_field_creator));
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,
+				"define_FE_field_at_node_simple.  ");
+			return_code = 0;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"define_FE_field_at_node_simple.  Invalid argument(s)");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* define_FE_field_at_node_simple */
+
 int for_FE_field_at_node(struct FE_field *field,
 	FE_node_field_iterator_function *iterator,void *user_data,
 	struct FE_node *node)

@@ -323,63 +323,6 @@ Returns second derivatives of 1-D Hermite basis functions at <xi> in [0.0, 1.0].
 	return (return_code);
 } /* calculate_Hermite_basis_1d_second_derivatives */
 
-int define_FE_field_at_node_simple(struct FE_node *node, struct FE_field *field,
-	int number_of_derivatives, enum FE_nodal_value_type *nodal_value_types)
-/*******************************************************************************
-LAST MODIFIED : 19 September 2002
-
-DESCRIPTION :
-Defines <field> at <node> using the same <number_of_derivatives>
-and <nodal_value_types> for each component, and only 1 version.
-???RC Function could be used in other modules; move to finite_element.c?
-==============================================================================*/
-{
-	int j, n, number_of_components, return_code;
-	struct FE_node_field_creator *node_field_creator;
-
-	ENTER(define_FE_field_at_node_simple);
-	if (node && field &&
-		(0 < (number_of_components = get_FE_field_number_of_components(field))) &&
-		(0 <= number_of_derivatives) && nodal_value_types)
-	{
-		return_code = 1;
-		if(node_field_creator = CREATE(FE_node_field_creator)(number_of_components))
-		{
-			for (n = 0; n < number_of_components; n++)
-			{
-				for (j = 0 ; j < number_of_derivatives ; j++)
-				{
-					FE_node_field_creator_define_derivative(node_field_creator, 
-						/*component_number*/n, nodal_value_types[j + 1]);
-				}
-			}
-			if (!define_FE_field_at_node(node, field, (struct FE_time_sequence *)NULL,
-				node_field_creator))
-			{
-				display_message(ERROR_MESSAGE, "define_FE_field_at_node_simple.  "
-					"Could not define field at node");
-				return_code = 0;
-			}
-			DESTROY(FE_node_field_creator)(&(node_field_creator));
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"define_FE_field_at_node_simple.  ");
-			return_code = 0;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"define_FE_field_at_node_simple.  Invalid argument(s)");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* define_FE_field_at_node_simple */
-
 struct FE_element *create_1d_hermite_element(struct FE_region *fe_region,
 	int number_of_fields, struct FE_field **field_array)
 /*******************************************************************************
@@ -632,8 +575,8 @@ derivatives; helps make smooth snakes from few data points.
 	double d, d2phi_dxi2[4], d2phi_dxi2_m, dxi_ds, dxi_ds_4, double_stiffness,
 		double_xi, *force_vectors, phi[4], phi_m, *pos, *stiffness_matrix,
 		*stiffness_offset, weight;
-	enum FE_nodal_value_type hermite_1d_nodal_value_types[2] =
-		{FE_NODAL_VALUE, FE_NODAL_D_DS1};
+	enum FE_nodal_value_type hermite_1d_nodal_value_types[] =
+		{FE_NODAL_D_DS1};
 	FE_value *coordinates, *fitting_field_values, density_multiplier,
 		length_multiplier, *lengths, *value, xi;
 	int component, element_number, i, *indx, j, local_components, m, n, node_number, 
@@ -645,7 +588,7 @@ derivatives; helps make smooth snakes from few data points.
  	struct FE_node_accumulate_length_data accumulate_data;
  	struct FE_field_initialise_array_data initialise_array_data;
 	struct FE_field **fe_field_array;
-	struct LIST(FE_field) *fe_field_list, *additional_fe_field_list;
+	struct LIST(FE_field) *fe_field_list;
 
 	ENTER(create_FE_element_snake_from_data_points);
 	if (fe_region && coordinate_field && 
@@ -656,14 +599,8 @@ derivatives; helps make smooth snakes from few data points.
 	{
 		return_code = 1;
 
-		fe_field_list = Computed_field_get_defining_FE_field_list(fitting_fields[0]);
-		for (i = 1 ; i < number_of_fitting_fields ; i++)
-		{
-			additional_fe_field_list = Computed_field_get_defining_FE_field_list(fitting_fields[i]);
-			FOR_EACH_OBJECT_IN_LIST(FE_field)(ensure_FE_field_is_in_list,
-				(void *)fe_field_list, additional_fe_field_list);
-			DESTROY(LIST(FE_field))(&additional_fe_field_list);
-		}
+		fe_field_list = Computed_field_array_get_defining_FE_field_list(
+			number_of_fitting_fields, fitting_fields);
 		
 		number_of_fe_fields = NUMBER_IN_LIST(FE_field)(fe_field_list);
 		if (ALLOCATE(fe_field_array, struct FE_field *, number_of_fe_fields))
