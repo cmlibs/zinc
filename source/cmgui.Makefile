@@ -335,7 +335,7 @@ ifneq ($(UNEMAP), true)
    UNEMAP_SRCS =
 else # UNEMAP != true
    # for all nodal stuff UNEMAP_DEFINES = -DUNEMAP -DSPECTRAL_TOOLS -DUNEMAP_USE_NODES 
-   UNEMAP_DEFINES = -I$(UNEMAP_SOURCE_PATH) -DUNEMAP -DSPECTRAL_TOOLS -DUNEMAP_USE_3D -DNOT_ACQUISITION_ONLY
+   UNEMAP_DEFINES = -DUNEMAP -DSPECTRAL_TOOLS -DUNEMAP_USE_3D -DNOT_ACQUISITION_ONLY
    UNEMAP_SRCS = \
 	   unemap_application/acquisition.c \
 	    unemap_application/acquisition_window.c \
