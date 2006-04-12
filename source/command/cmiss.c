@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : cmiss.c
 
-LAST MODIFIED : 22 August 2005
+LAST MODIFIED : 12 April 2006
 
 DESCRIPTION :
 Functions for executing cmiss commands.
@@ -279,11 +279,13 @@ Functions for executing cmiss commands.
 #if defined (PERL_INTERPRETER)
 #include "perl_interpreter.h"
 #endif /* defined (PERL_INTERPRETER) */
+#if defined (UNEMAP)
+#include "unemap_application/unemap_command.h"
+#endif /* defined (UNEMAP) */
 #include "user_interface/fd_io.h"
 #include "user_interface/idle.h"
 #include "user_interface/timer.h"
 #include "command/cmiss.h"
-#include "command/cmiss_unemap_link.h"
 
 /*
 Module types
@@ -397,9 +399,9 @@ DESCRIPTION :
 #if defined (WIN32_USER_INTERFACE)
 	HINSTANCE hInstance;
 #endif /* defined (WIN32_USER_INTERFACE) */
+#if defined (UNEMAP)
 	struct Unemap_command_data *unemap_command_data;
-	Execute_unemap_command_function execute_unemap_command_function;
-	Destroy_unemap_command_function destroy_unemap_command_function;
+#endif /* defined (UNEMAP) */
 }; /* struct Cmiss_command_data */
 
 typedef struct
@@ -22885,13 +22887,12 @@ DESCRIPTION:
 					/* system */
 					Option_table_add_entry(option_table, "system", NULL, command_data_void,
 						execute_command_system);
-					if (command_data->unemap_command_data)
-					{
-						/* unemap */
-						Option_table_add_entry(option_table, "unemap", NULL,
-							(void *)command_data->unemap_command_data,
-							command_data->execute_unemap_command_function);
-					}
+#if defined (UNEMAP)
+					/* unemap */
+					Option_table_add_entry(option_table, "unemap", NULL,
+						(void *)command_data->unemap_command_data,
+						execute_command_unemap);
+#endif /* defined (UNEMAP) */
 					/* default */
 					Option_table_add_entry(option_table, "", NULL, command_data_void,
 						execute_command_cm);
@@ -23073,13 +23074,12 @@ Execute a <command_string>. If there is a command
 					/* system */
 					Option_table_add_entry(option_table, "system", NULL, command_data_void,
 						execute_command_system);
-					if (command_data->unemap_command_data)
-					{
-						/* unemap */
-						Option_table_add_entry(option_table, "unemap", NULL,
-							(void *)command_data->unemap_command_data,
-							execute_command_unemap);
-					}
+#if defined (UNEMAP)
+					/* unemap */
+					Option_table_add_entry(option_table, "unemap", NULL,
+						(void *)command_data->unemap_command_data,
+						execute_command_unemap);
+#endif /* defined (UNEMAP) */
 					/* default */
 					Option_table_add_entry(option_table, "", NULL, command_data_void,
 						execute_command_cm);
@@ -23706,9 +23706,9 @@ Initialise all the subcomponents of cmgui and create the Cmiss_command_data
 		/*???RC.  Temporary - should allow more than one */
 #endif /* defined (MOTIF) */
 		command_data->command_console = (struct Console *)NULL;
+#if defined (UNEMAP)
 		command_data->unemap_command_data=(struct Unemap_command_data *)NULL;
-		command_data->execute_unemap_command_function=(Execute_unemap_command_function)NULL;
-		command_data->destroy_unemap_command_function=(Destroy_unemap_command_function)NULL;
+#endif /* defined (UNEMAP) */
 #if defined (CELL)
 		command_data->cell_interface = (struct Cell_interface *)NULL;
 #endif /* defined (CELL) */
@@ -24637,6 +24637,42 @@ Initialise all the subcomponents of cmgui and create the Cmiss_command_data
 		Execute_command_set_command_function(command_data->set_command,
 			cmiss_set_command, (void *)command_data);
 
+#if defined (UNEMAP)
+		command_data->unemap_command_data = CREATE(Unemap_command_data)(
+			command_data->event_dispatcher,
+			command_data->execute_command,
+			command_data->user_interface,
+#if defined (MOTIF)
+			command_data->node_tool,
+			command_data->transform_tool,
+#endif /* defined (MOTIF) */
+			command_data->glyph_list,
+			command_data->computed_field_package,
+			command_data->basis_manager,
+			command_data->root_region,
+			command_data->data_root_region,
+			command_data->graphics_buffer_package,
+			Material_package_get_material_manager(command_data->material_package),
+			Material_package_get_default_material(command_data->material_package),
+			command_data->default_font,
+			command_data->io_stream_package,
+			command_data->interactive_tool_manager,
+			command_data->light_manager,
+			command_data->default_light,
+			command_data->light_model_manager,
+			command_data->default_light_model,
+			command_data->texture_manager,
+			command_data->scene_manager,
+			command_data->spectrum_manager,
+			command_data->element_point_ranges_selection,
+			command_data->element_selection,
+			command_data->data_selection,
+			command_data->node_selection,
+			(struct System_window *)NULL,
+			command_data->default_time_keeper
+			);
+#endif /* defined (UNEMAP) */
+
 		/* initialize random number generator */
 		if (-1 == non_random)
 		{
@@ -24918,10 +24954,9 @@ Clean up the command_data, deallocating all the associated memory and resources.
 			DESTROY(Cell_interface)(&command_data->cell_interface);
 		}
 #endif /* defined (CELL) */
-		if (command_data->unemap_command_data && command_data->destroy_unemap_command_function)
-		{
-			(*command_data->destroy_unemap_command_function)(&command_data->unemap_command_data);
-		}
+#if defined (UNEMAP)
+		DESTROY(Unemap_command_data)(&command_data->unemap_command_data);
+#endif /* defined (UNEMAP) */
 #if defined (MOTIF)
 		/* viewers */
 		if (command_data->data_viewer)
@@ -25373,71 +25408,4 @@ Returns the selected_node object from the <command_data>.
 
 	return (node_selection);
 } /* Cmiss_command_data_get_node_selection */
-
-int Cmiss_command_data_create_unemap(struct Cmiss_command_data *command_data,
-	Create_unemap_command_function create_function,
-	Execute_unemap_command_function execute_function,
-	Destroy_unemap_command_function destroy_function)
-/*******************************************************************************
-LAST MODIFIED : 17 August 2005
-
-DESCRIPTION :
-Registers the <create_function>, <execute_function> and <destroy_function> 
-with the <command_data>.
-This allows unemap to operate integrated into cmgui.  The <create_function> will
-be called immediately by this function, and the <destroy_function> handle kept
-to be called when the Cmiss_command_data is being destroyed.
-==============================================================================*/
-{
-	int return_code;
-
-	ENTER(Cmiss_command_data_create_unemap);
-
-	if (command_data && create_function && execute_function && destroy_function)
-	{
-		command_data->unemap_command_data = (*create_function)(
-			command_data->event_dispatcher,
-			command_data->execute_command,
-			command_data->user_interface,
-#if defined (MOTIF)
-			command_data->node_tool,
-			command_data->transform_tool,
-#endif /* defined (MOTIF) */
-			command_data->glyph_list,
-			command_data->computed_field_package,
-			command_data->basis_manager,
-			command_data->root_region,
-			command_data->data_root_region,
-			command_data->graphics_buffer_package,
-			Material_package_get_material_manager(command_data->material_package),
-			Material_package_get_default_material(command_data->material_package),
-			command_data->io_stream_package,
-			command_data->interactive_tool_manager,
-			command_data->light_manager,
-			command_data->default_light,
-			command_data->light_model_manager,
-			command_data->default_light_model,
-			command_data->texture_manager,
-			command_data->scene_manager,
-			command_data->spectrum_manager,
-			command_data->element_point_ranges_selection,
-			command_data->element_selection,
-			command_data->data_selection,
-			command_data->node_selection,
-			(struct System_window *)NULL,
-			command_data->default_time_keeper
-			);
-		command_data->execute_unemap_command_function = execute_function;
-		command_data->destroy_unemap_command_function = destroy_function;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,"Cmiss_command_data_create_unemap.  "
-			"Invalid arguments");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Cmiss_command_data_create_unemap */
 

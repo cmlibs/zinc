@@ -54,11 +54,11 @@ cmgui-debug :
 
 #Separating these rules allow the command line options to propogate and
 #variables that are not defined not to propogate.
-cmgui cmgui-debug cmgui-static cmgui-static-debug cmgui64 cmgui64-debug : USER_INTERFACE_OPTION=USER_INTERFACE=$(USER_INTERFACE)
+cmgui cmgui-debug cmgui-static cmgui-static-debug cmgui64 cmgui64-debug cmgui-unemap cmgui-debug-unemap : USER_INTERFACE_OPTION=USER_INTERFACE=$(USER_INTERFACE)
 ifeq ($(SYSNAME),win32)
 cmgui cmgui-debug cmgui-static cmgui-static-debug cmgui64 cmgui64-debug : USER_INTERFACE=WIN32_USER_INTERFACE
 else # SYSNAME == win32
-cmgui cmgui-debug cmgui-static cmgui-static-debug cmgui64 cmgui64-debug : USER_INTERFACE=MOTIF_USER_INTERFACE
+cmgui cmgui-debug cmgui-static cmgui-static-debug cmgui64 cmgui64-debug cmgui-unemap cmgui-debug-unemap : USER_INTERFACE=MOTIF_USER_INTERFACE
 endif # SYSNAME == win32
 cmgui-static cmgui-static-debug : STATIC_LINK_OPTION=STATIC_LINK=$(STATIC_LINK)
 cmgui-static cmgui-static-debug : STATIC_LINK=true
@@ -78,6 +78,8 @@ cmgui-gtk-gtkmain cmgui-gtk-gtkmain-debug : USE_GTKMAIN_OPTION=USE_GTKMAIN=$(USE
 cmgui-gtk-gtkmain cmgui-gtk-gtkmain-debug : USE_GTKMAIN=true
 cmgui-no3dgraphics cmgui-no3dgraphics-debug cmgui-no3dgraphics-debug-memorycheck cmgui64-no3dgraphics cmgui64-no3dgraphics-debug : GRAPHICS_API_OPTION=GRAPHICS_API=$(GRAPHICS_API)
 cmgui-no3dgraphics cmgui-no3dgraphics-debug cmgui-no3dgraphics-debug-memorycheck cmgui64-no3dgraphics cmgui64-no3dgraphics-debug : GRAPHICS_API=NO3D_GRAPHICS
+cmgui-unemap cmgui-unemap-debug : UNEMAP_OPTION=UNEMAP=$(UNEMAP)
+cmgui-unemap cmgui-unemap-debug : UNEMAP=true
 
 utilities utilities64 : TARGET_OPTION=utilities
 utilities utilities64 : force
@@ -106,7 +108,7 @@ endif
 ifdef GRAPHICS_API
    GRAPHICS_API_OPTION = GRAPHICS_API=$(GRAPHICS_API)
 endif
-OPTIONS = $(TARGET_OPTION) $(USER_INTERFACE_OPTION) $(STATIC_LINK_OPTION) $(DEBUG_OPTION) $(PROFILE_OPTION) $(ABI_OPTION) $(MEMORYCHECK_OPTION) $(USE_GTKMAIN_OPTION) $(GRAPHICS_API_OPTION)
+OPTIONS = $(TARGET_OPTION) $(USER_INTERFACE_OPTION) $(STATIC_LINK_OPTION) $(DEBUG_OPTION) $(PROFILE_OPTION) $(ABI_OPTION) $(MEMORYCHECK_OPTION) $(USE_GTKMAIN_OPTION) $(GRAPHICS_API_OPTION) $(UNEMAP_OPTION)
 
 #Force the use of the cross compiler for cmiss on Linux.
 ifeq ($(SYSNAME),Linux)
@@ -117,7 +119,7 @@ ifeq ($(SYSNAME),Linux)
    endif
 endif
 
-cmgui cmgui-debug cmgui-debug-memorycheck cmgui-static cmgui-static-debug cmgui64 cmgui64-debug cmgui-console cmgui-gtk cmgui-gtk-debug utilities cmgui-gtk-gtkmain cmgui-gtk-gtkmain-debug cmgui-no3dgraphics cmgui-no3dgraphics-debug cmgui-no3dgraphics-debug-memorycheck cmgui64-no3dgraphics cmgui64-no3dgraphics-debug :
+cmgui cmgui-debug cmgui-debug-memorycheck cmgui-static cmgui-static-debug cmgui64 cmgui64-debug cmgui-console cmgui-gtk cmgui-gtk-debug utilities cmgui-gtk-gtkmain cmgui-gtk-gtkmain-debug cmgui-no3dgraphics cmgui-no3dgraphics-debug cmgui-no3dgraphics-debug-memorycheck cmgui64-no3dgraphics cmgui64-no3dgraphics-debug cmgui-unemap cmgui-unemap-debug :
 		cd source ; \
 		$(MAKE) -f $(SUBMAKEFILE) $(OPTIONS) ;
 
@@ -170,7 +172,7 @@ ifeq ($(SYSNAME),Linux)
    ifeq ($(MACHNAME),x86_64)
 all : cmgui cmgui-debug cmgui-debug-memorycheck cmgui-static-lib cmgui-debug-static-lib cmgui-no3dgraphics-static-lib cmgui-no3dgraphics-debug-static-lib cmgui-no3dgraphics-debug-memorycheck-static-lib
    else # MACHNAME == x86_64
-all : cmgui cmgui-debug cmgui-debug-memorycheck cmgui-static cmgui-static-debug cmgui-console cmgui-static-lib cmgui-debug-static-lib cmgui-gtk cmgui-gtk-debug cmgui-gtk-lib cmgui-gtk-debug-lib cmgui-gtk-static-lib cmgui-gtk-debug-static-lib cmgui-gtk-gtkmain-lib cmgui-gtk-gtkmain-debug-lib cmgui-gtk-gtkmain-static-lib cmgui-gtk-gtkmain-debug-static-lib cmgui-no3dgraphics-static-lib cmgui-no3dgraphics-debug-static-lib cmgui-no3dgraphics-debug-memorycheck-static-lib
+all : cmgui cmgui-debug cmgui-debug-memorycheck cmgui-static cmgui-static-debug cmgui-console cmgui-static-lib cmgui-debug-static-lib cmgui-gtk cmgui-gtk-debug cmgui-gtk-lib cmgui-gtk-debug-lib cmgui-gtk-static-lib cmgui-gtk-debug-static-lib cmgui-gtk-gtkmain-lib cmgui-gtk-gtkmain-debug-lib cmgui-gtk-gtkmain-static-lib cmgui-gtk-gtkmain-debug-static-lib cmgui-no3dgraphics-static-lib cmgui-no3dgraphics-debug-static-lib cmgui-no3dgraphics-debug-memorycheck-static-lib cmgui-unemap
    endif # MACHNAME == x86_64
 endif # SYSNAME == Linux
 ifeq ($(SYSNAME),AIX)

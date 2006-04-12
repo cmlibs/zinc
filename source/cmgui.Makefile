@@ -43,9 +43,10 @@ COMMONMAKEFILE_FOUND = $(wildcard $(COMMONMAKEFILE))
 include $(COMMONMAKEFILE)
 
 ifeq ($(filter CONSOLE_USER_INTERFACE GTK_USER_INTERFACE WIN32_USER_INTERFACE,$(USER_INTERFACE)),)
-   ifneq ($(wildcard $(SOURCE_PATH)/unemap_application/unemap_package.h),)
-      UNEMAP = true
-   endif
+   #For built in unemap override on the command line or change to true.
+   #The source directories unemap_application and unemap_hardware_service
+   #must be softlinked into the cmgui source directory.
+	UNEMAP = false
 endif # $(USER_INTERFACE) ==/!= CONSOLE_USER_INTERFACE && $(USER_INTERFACE) != GTK_USER_INTERFACE  && $(USER_INTERFACE) != WIN32_USER_INTERFACE
 LINK_CMISS = false
 PERL_INTERPRETER = true
@@ -110,6 +111,12 @@ else # $(USE_GTKMAIN) != true
    MAINLOOP_SUFFIX = -gtkmain
 endif # $(USE_GTKMAIN) != true 
 
+ifneq ($(UNEMAP),true)
+   UNEMAP_SUFFIX =
+else # $(USE_GTKMAIN) != true
+   UNEMAP_SUFFIX = -unemap
+endif # $(USE_GTKMAIN) != true 
+
 ifeq ($(SYSNAME:IRIX%=),)
    TARGET_FILETYPE_SUFFIX =
 endif # SYSNAME == IRIX%=
@@ -126,9 +133,9 @@ ifeq ($(SYSNAME),CYGWIN%=)
    TARGET_FILETYPE_SUFFIX = .exe
 endif # SYSNAME == CYGWIN%=
 
-TARGET_SUFFIX = $(TARGET_ABI_SUFFIX)$(TARGET_GRAPHICS_API_SUFFIX)$(TARGET_USER_INTERFACE_SUFFIX)$(MAINLOOP_SUFFIX)$(TARGET_STATIC_LINK_SUFFIX)$(TARGET_DEBUG_SUFFIX)$(TARGET_PROFILE_SUFFIX)$(TARGET_MEMORYCHECK_SUFFIX)
+TARGET_SUFFIX = $(TARGET_ABI_SUFFIX)$(TARGET_GRAPHICS_API_SUFFIX)$(TARGET_USER_INTERFACE_SUFFIX)$(UNEMAP_SUFFIX)$(MAINLOOP_SUFFIX)$(TARGET_STATIC_LINK_SUFFIX)$(TARGET_DEBUG_SUFFIX)$(TARGET_PROFILE_SUFFIX)$(TARGET_MEMORYCHECK_SUFFIX)
 BIN_TARGET = $(TARGET_EXECUTABLE_BASENAME)$(TARGET_SUFFIX)$(TARGET_FILETYPE_SUFFIX)
-OBJECT_PATH=$(CMGUI_DEV_ROOT)/object/$(LIB_ARCH_DIR)/$(TARGET_EXECUTABLE_BASENAME)$(TARGET_GRAPHICS_API_SUFFIX)$(TARGET_USER_INTERFACE_SUFFIX)$(MAINLOOP_SUFFIX)$(TARGET_DEBUG_SUFFIX)$(TARGET_PROFILE_SUFFIX)
+OBJECT_PATH=$(CMGUI_DEV_ROOT)/object/$(LIB_ARCH_DIR)/$(TARGET_EXECUTABLE_BASENAME)$(TARGET_GRAPHICS_API_SUFFIX)$(TARGET_USER_INTERFACE_SUFFIX)$(UNEMAP_SUFFIX)$(MAINLOOP_SUFFIX)$(TARGET_DEBUG_SUFFIX)$(TARGET_PROFILE_SUFFIX)
 ifeq ($(USER_INTERFACE), MOTIF_USER_INTERFACE)
    UIDH_PATH=$(CMGUI_DEV_ROOT)/uidh/$(LIB_ARCH_DIR)/$(TARGET_EXECUTABLE_BASENAME)
 endif # $(USER_INTERFACE) == MOTIF_USER_INTERFACE
@@ -156,7 +163,7 @@ $(warning $(BUILDING_MESSAGE))
 
 VPATH=$(BIN_PATH):$(UTILITIES_PATH):$(OBJECT_PATH):$(UIDH_PATH)
 
-SOURCE_DIRECTORY_INC = -I$(SOURCE_PATH) -I$(SOURCE_PATH)/unemap
+SOURCE_DIRECTORY_INC = -I$(SOURCE_PATH)
 
 ifeq ($(SYSNAME:IRIX%=),)
    PLATFORM_DEFINES = -DSGI -Dmips -DCMGUI 
@@ -291,7 +298,7 @@ else # ! IMAGEMAGICK
    IMAGEMAGICK_LIB = $(IMAGEMAGICK_PATH)/lib/$(LIB_ARCH_DIR)/libMagick.a $(IMAGEMAGICK_PATH)/lib/$(LIB_ARCH_DIR)/libtiff.a $(IMAGEMAGICK_PATH)/lib/$(LIB_ARCH_DIR)/libpng.a $(IMAGEMAGICK_PATH)/lib/$(LIB_ARCH_DIR)/libjpeg.a $(IMAGEMAGICK_PATH)/lib/$(LIB_ARCH_DIR)/libbz2.a $(IMAGEMAGICK_PATH)/lib/$(LIB_ARCH_DIR)/libz.a
    ifeq ($(LIB_ARCH_DIR),i686-linux)
       #When this first appeared it seemed to be configured for most versions, now it seems to be configured for very few.
-      IMAGEMAGICK_LIB += $(IMAGEMAGICK_PATH)/lib/$(LIB_ARCH_DIR)/libltdl.a
+      #IMAGEMAGICK_LIB += $(IMAGEMAGICK_PATH)/lib/$(LIB_ARCH_DIR)/libltdl.a
    endif
 ifdef USE_XML2
    IMAGEMAGICK_LIB += $(IMAGEMAGICK_PATH)/lib/$(LIB_ARCH_DIR)/libxml2.a
@@ -328,39 +335,39 @@ ifneq ($(UNEMAP), true)
    UNEMAP_SRCS =
 else # UNEMAP != true
    # for all nodal stuff UNEMAP_DEFINES = -DUNEMAP -DSPECTRAL_TOOLS -DUNEMAP_USE_NODES 
-   UNEMAP_DEFINES = -DUNEMAP -DSPECTRAL_TOOLS -DUNEMAP_USE_3D -DNOT_ACQUISITION_ONLY
+   UNEMAP_DEFINES = -I$(UNEMAP_SOURCE_PATH) -DUNEMAP -DSPECTRAL_TOOLS -DUNEMAP_USE_3D -DNOT_ACQUISITION_ONLY
    UNEMAP_SRCS = \
 	   unemap_application/acquisition.c \
-	   unemap_application/acquisition_window.c \
-	   unemap_application/acquisition_work_area.c \
-	   unemap_application/analysis.c \
-	   unemap_application/analysis_calculate.c \
-	   unemap_application/analysis_drawing.c \
-	   unemap_application/analysis_window.c \
-	   unemap_application/analysis_work_area.c \
-	   unemap_application/bard.c \
-	   unemap_application/beekeeper.c \
-	   unemap_application/cardiomapp.c \
-	   unemap_application/delaunay.c \
-	   unemap_application/edf.c \
-	   unemap_application/eimaging_time_dialog.c \
-	   unemap_application/drawing_2d.c \
-	   unemap_application/interpolate.c \
-	   unemap_application/map_dialog.c \
-	   unemap_application/mapping.c \
-	   unemap_application/mapping_window.c \
-	   unemap_application/neurosoft.c \
-	   unemap_application/pacing_window.c \
-	   unemap_application/page_window.c \
-	   unemap_application/rig.c \
-	   unemap_application/rig_node.c \
-	   unemap_application/setup_dialog.c \
-	   unemap_application/spectral_methods.c \
-	   unemap_application/system_window.c \
-	   unemap_application/trace_window.c \
-	   unemap_application/unemap_command.c \
-	   unemap_application/unemap_hardware_client.c \
-	   unemap_application/unemap_package.c 
+	    unemap_application/acquisition_window.c \
+	    unemap_application/acquisition_work_area.c \
+	    unemap_application/analysis.c \
+	    unemap_application/analysis_calculate.c \
+	    unemap_application/analysis_drawing.c \
+	    unemap_application/analysis_window.c \
+	    unemap_application/analysis_work_area.c \
+	    unemap_application/bard.c \
+	    unemap_application/beekeeper.c \
+	    unemap_application/cardiomapp.c \
+	    unemap_application/delaunay.c \
+	    unemap_application/edf.c \
+	    unemap_application/eimaging_time_dialog.c \
+	    unemap_application/drawing_2d.c \
+	    unemap_application/interpolate.c \
+	    unemap_application/map_dialog.c \
+	    unemap_application/mapping.c \
+	    unemap_application/mapping_window.c \
+	    unemap_application/neurosoft.c \
+	    unemap_application/pacing_window.c \
+	    unemap_application/page_window.c \
+	    unemap_application/rig.c \
+	    unemap_application/rig_node.c \
+	    unemap_application/setup_dialog.c \
+	    unemap_application/spectral_methods.c \
+	    unemap_application/system_window.c \
+	    unemap_application/trace_window.c \
+	    unemap_application/unemap_command.c \
+	    unemap_application/unemap_hardware_client.c \
+	    unemap_application/unemap_package.c 
 endif # UNEMAP != true
 
 ifndef CELL
