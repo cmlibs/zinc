@@ -1,7 +1,7 @@
 # **************************************************************************
 # FILE : CHANGELOG
 #
-# LAST MODIFIED : 19 September 2005
+# LAST MODIFIED : 12 April 2006
 # ==========================================================================
 
 This software is the cmgui part of CMISS.
@@ -10,6 +10,18 @@ It is released under the Mozilla Public License v1.1
 Further information, help pages, a tracker and a wiki is available at 
 http://www.cmiss.org/cmgui/
 
+v2.1
+Fix comfile script: cmgui-2.1/fixcom.pl
+Added support for fitting multiple fields with "gfx create snake"
+Began "gfx export cm" to write files for the old cm.
+Added gfx convert elements (and changed the old gfx convert to be gfx convert graphics) which converts one form of elements to another. The only conversion I have implemented so far is the conversion of any 2D element surfaces to true toplevel 2D bicubic hermite elements. The cross-derivatives are not correct and need to think about how to fix this.
+v2.0.2
+Fixed gfx unselect data.
+Fixed contour bands on iso_surfaces.
+Fixed code for allocation of large arrays to use long ints where necessary.
+Added code so that node changes propogate through a nodal_lookup computed field to a computed_field change.
+Fixed a couple of bugs in cmgui with the scene editor and an iso_values list.
+Many minor fixes of leaks or use of uninitialised values as detected by the new valgrind testing.
 v2.0.1
 Added glyph functionality to create graph axes
 Added first pass at iso_surface_decimation.
