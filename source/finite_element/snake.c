@@ -601,7 +601,8 @@ derivatives; helps make smooth snakes from few data points.
 
 		fe_field_list = Computed_field_array_get_defining_FE_field_list(
 			number_of_fitting_fields, fitting_fields);
-		
+		fe_field_array = (struct FE_field **)NULL;
+
 		number_of_fe_fields = NUMBER_IN_LIST(FE_field)(fe_field_list);
 		if (ALLOCATE(fe_field_array, struct FE_field *, number_of_fe_fields))
 		{
@@ -1048,6 +1049,10 @@ derivatives; helps make smooth snakes from few data points.
 			DEALLOCATE(indx);
 		}
 		DESTROY(LIST(FE_field))(&fe_field_list);
+		if (fe_field_array)
+		{
+			DEALLOCATE(fe_field_array);
+		}
 	}
 	else
 	{

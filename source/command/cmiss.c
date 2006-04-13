@@ -4804,6 +4804,7 @@ Executes a GFX CREATE SNAKE command.
 					DEACCESS(Computed_field)(&fitting_fields[i]);
 				}
 			}
+			DEALLOCATE(fitting_fields);
 		}
 		if (region_path)
 		{
