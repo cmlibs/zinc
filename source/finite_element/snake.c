@@ -1047,6 +1047,7 @@ derivatives; helps make smooth snakes from few data points.
 		{
 			DEALLOCATE(indx);
 		}
+		DESTROY(LIST(FE_field))(&fe_field_list);
 	}
 	else
 	{
