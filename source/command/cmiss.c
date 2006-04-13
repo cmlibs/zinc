@@ -4685,30 +4685,36 @@ Executes a GFX CREATE SNAKE command.
 	if (state && (command_data = (struct Cmiss_command_data *)command_data_void))
 	{
 		region_path = (char *)NULL;
+		number_of_fitting_fields = 1;
 		coordinate_field = (struct Computed_field *)NULL;
 		density_factor = 0.0;
 		number_of_elements = 1;
 		stiffness = 0.0;
 
-		absorb_string = (char *)NULL;
-		number_of_fitting_fields = 1;
-		previous_state_index = state->current_index;
-
-		option_table = CREATE(Option_table)();
-		/* number_of_fitting_fields */
-		Option_table_add_entry(option_table, "number_of_fitting_fields",
-			&number_of_fitting_fields, NULL, set_int_positive);
-		/* absorb everything else */
-		Option_table_add_entry(option_table, NULL,
-			&absorb_string, NULL, set_name);
-		return_code = Option_table_multi_parse(option_table, state);
-		DESTROY(Option_table)(&option_table);
-		if (absorb_string)
+		if (strcmp(PARSER_HELP_STRING,state->current_token)&&
+			strcmp(PARSER_RECURSIVE_HELP_STRING,state->current_token))
 		{
-			DEALLOCATE(absorb_string);
+			/* Skip this preprocessing if we are just getting the help */
+			absorb_string = (char *)NULL;
+			number_of_fitting_fields = 1;
+			previous_state_index = state->current_index;
+
+			option_table = CREATE(Option_table)();
+			/* number_of_fitting_fields */
+			Option_table_add_entry(option_table, "number_of_fitting_fields",
+				&number_of_fitting_fields, NULL, set_int_positive);
+			/* absorb everything else */
+			Option_table_add_entry(option_table, NULL,
+				&absorb_string, NULL, set_name);
+			return_code = Option_table_multi_parse(option_table, state);
+			DESTROY(Option_table)(&option_table);
+			if (absorb_string)
+			{
+				DEALLOCATE(absorb_string);
+			}
+			/* Return back to where we were */
+			shift_Parse_state(state, previous_state_index - state->current_index);
 		}
-		/* Return back to where we were */
-		shift_Parse_state(state, previous_state_index - state->current_index);
 
 		if (number_of_fitting_fields)
 		{
@@ -8223,27 +8229,33 @@ Executes a GFX CONVERT ELEMENETS command.
 			Cmiss_region_get_root_region_path(&source_region_path);
 			Cmiss_region_get_root_region_path(&destination_region_path);
 			fields = (struct Computed_field **)NULL;
+			number_of_fields = 1;
 			conversion_mode = CONVERT_TO_FINITE_ELEMENTS_HERMITE_2D_PRODUCT;
 			
-			absorb_string = (char *)NULL;
-			number_of_fields = 1;
-			previous_state_index = state->current_index;
-			
-			option_table = CREATE(Option_table)();
-			/* number_of_fields */
-			Option_table_add_entry(option_table, "number_of_fields",
-				&number_of_fields, NULL, set_int_positive);
-			/* absorb everything else */
-			Option_table_add_entry(option_table, NULL,
-				&absorb_string, NULL, set_name);
-			return_code = Option_table_multi_parse(option_table, state);
-			DESTROY(Option_table)(&option_table);
-			if (absorb_string)
+			if (strcmp(PARSER_HELP_STRING,state->current_token)&&
+				strcmp(PARSER_RECURSIVE_HELP_STRING,state->current_token))
 			{
-				DEALLOCATE(absorb_string);
+				/* Skip this preprocessing if we are just getting the help */
+				absorb_string = (char *)NULL;
+				number_of_fields = 1;
+				previous_state_index = state->current_index;
+				
+				option_table = CREATE(Option_table)();
+				/* number_of_fields */
+				Option_table_add_entry(option_table, "number_of_fields",
+					&number_of_fields, NULL, set_int_positive);
+				/* absorb everything else */
+				Option_table_add_entry(option_table, NULL,
+					&absorb_string, NULL, set_name);
+				return_code = Option_table_multi_parse(option_table, state);
+				DESTROY(Option_table)(&option_table);
+				if (absorb_string)
+				{
+					DEALLOCATE(absorb_string);
+				}
+				/* Return back to where we were */
+				shift_Parse_state(state, previous_state_index - state->current_index);
 			}
-			/* Return back to where we were */
-			shift_Parse_state(state, previous_state_index - state->current_index);
 			
 			if (number_of_fields)
 			{
@@ -8323,6 +8335,7 @@ Executes a GFX CONVERT ELEMENETS command.
 						DEACCESS(Computed_field)(&fields[i]);
 					}
 				}
+				DEALLOCATE(fields);
 			}
 			if (destination_region_path)
 			{
