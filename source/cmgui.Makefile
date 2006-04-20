@@ -217,7 +217,12 @@ ifeq ($(filter-out MOTIF_USER_INTERFACE GTK_USER_INTERFACE,$(USER_INTERFACE)),)
   ifeq ($(SYSNAME),Linux)
     #Don't put the system X_LIB into the compiler if we are cross compiling
     GCC_LIBC = $(shell gcc -print-libgcc-file-name)
-    GLIBC_CROSS_COMPILE = /product/cmiss/cross-compile/i386-glibc21-linux
+    #Temproarily we are using both
+    ifeq ($(USER_INTERFACE), GTK_USER_INTERFACE)
+      GLIBC_CROSS_COMPILE = /product/cmiss/cross-compile/i386-glibc21-linux
+    else
+      GLIBC_CROSS_COMPILE = /hpc/cmiss/cross-compile/i386-glibc23-linux
+    endif
     ifeq ($(GCC_LIBC:$(GLIBC_CROSS_COMPILE)%=),)
       #We are cross compiling
       X_INC += -I$(GLIBC_CROSS_COMPILE)/include
