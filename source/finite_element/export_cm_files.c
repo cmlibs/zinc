@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : export_cm_files.c
 
-LAST MODIFIED : 22 March 2006
+LAST MODIFIED : 21 April 2006
 
 DESCRIPTION :
 Functions for exporting finite element data to a file.
@@ -391,7 +391,10 @@ struct FE_node_write_cm_check_node_values_data
 	int number_of_components;
 	int number_of_derivatives[MAXIMUM_ELEMENT_XI_DIMENSIONS];
 	int has_versions[MAXIMUM_ELEMENT_XI_DIMENSIONS];
+	int number_of_nodes_with_versions;
+	int maximum_number_of_derivatives;
 	FILE *ipnode_file;
+	FILE *ipmap_file;
 }; /* struct FE_node_write_cm_check_node_values_data */
 
 static int FE_node_write_cm_check_node_values(
@@ -406,13 +409,14 @@ each component.
 Also sets a flag if any of components of the field have versions.
 ==============================================================================*/
 {
-	int i, return_code;
+	int has_versions, i, return_code;
 	struct FE_node_write_cm_check_node_values_data *data;
 
 	ENTER(FE_node_write_cm_check_node_values);
 	if (node && (data = (struct FE_node_write_cm_check_node_values_data *)data_void))
 	{
 		return_code = 1;
+		has_versions = 0;
 		if (FE_field_is_defined_at_node(data->field,node))
 		{
 			if (data->number_of_nodes)
@@ -432,7 +436,8 @@ Also sets a flag if any of components of the field have versions.
 					if (1 != get_FE_node_field_component_number_of_versions(
 							 node, data->field, i))
 					{
-						data->has_versions[i] = 1;
+						data->has_versions[i]++;
+						has_versions = 1;
 					}
 				}
 			}
@@ -447,11 +452,16 @@ Also sets a flag if any of components of the field have versions.
 					if (1 != get_FE_node_field_component_number_of_versions(
 							 node, data->field, i))
 					{
-						data->has_versions[i] = 1;
+						data->has_versions[i]++;
+						has_versions = 1;
 					}
 				}
 			}
 			data->number_of_nodes++;
+			if (has_versions)
+			{
+				data->number_of_nodes_with_versions++;
+			}
 		}
 	}
 	else
@@ -537,8 +547,220 @@ Writes the node to an ipnode file.
 	return (return_code);
 } /* write_cm_FE_node */
 
-static int write_ipnode_file(FILE *ipnode_file, struct FE_region *region,
-	struct FE_field *field)
+static int write_cm_FE_nodal_mapping(
+	struct FE_node *node, void *data_void)
+/*******************************************************************************
+LAST MODIFIED : 21 April 2006
+
+DESCRIPTION :
+Writes the node to an ipmap file.
+==============================================================================*/
+{
+	char *value_strings[] = {" 1", " 2", "s 1 & 2", " 3", "s 1 & 3", "s 2 & 3",
+		"s 1, 2 & 3"};
+	enum FE_nodal_value_type value_type[] = {FE_NODAL_D_DS1,
+		FE_NODAL_D_DS2, FE_NODAL_D2_DS1DS2, FE_NODAL_D_DS3, FE_NODAL_D2_DS1DS3,
+		FE_NODAL_D2_DS2DS3, FE_NODAL_D3_DS1DS2DS3};
+	FE_value diff, sum, *values;
+	int component_number_of_versions, i, inverse_match, inverse_match_version,
+		j, k, m, n, map_derivatives, match_version, match, node_number,
+		number_of_versions, return_code;
+	struct FE_node_write_cm_check_node_values_data *data;
+
+	ENTER(FE_node_write_cm_check_node_mappings);
+	if (node && (data = (struct FE_node_write_cm_check_node_values_data *)data_void))
+	{
+		return_code = 1;
+		map_derivatives = 1;
+		if (FE_field_is_defined_at_node(data->field, node))
+		{
+			/* Does this node have any versions?
+			   We can only apply our rules for derivatives if all the components
+				have the same number of versions */
+			number_of_versions = get_FE_node_field_component_number_of_versions(node, data->field, /*version 1*/0);
+			for (i = 1 ; i < data->number_of_components ; i++)
+			{
+				component_number_of_versions = get_FE_node_field_component_number_of_versions(node, data->field, i);
+				if (number_of_versions != component_number_of_versions)
+				{
+					map_derivatives = 0;
+					/* Just see if we have any versions and if so map positions */
+					if (number_of_versions < component_number_of_versions)
+					{
+						number_of_versions = component_number_of_versions;
+					}
+				}
+			}
+
+			if (1 < number_of_versions)
+			{
+				node_number = get_FE_node_identifier(node);
+				fprintf(data->ipmap_file, " Node number [    1]:     %d\n",
+					node_number);
+
+				if (map_derivatives)
+				{
+					/* Store the values for all versions and components and derivatives */
+					ALLOCATE(values, FE_value, number_of_versions *
+						data->number_of_components * data->maximum_number_of_derivatives);
+					
+					for (i = 0 ; i < data->number_of_components ; i++)
+					{
+						for (j = 0 ; j < number_of_versions ; j++)
+						{
+							for (k = 0 ; k < data->number_of_derivatives[i] ; k++)
+							{
+								get_FE_nodal_FE_value_value(node, data->field, /*component_number*/i, 
+									/*version*/j,
+									value_type[k], /*time*/0.0, values + 
+									j * data->number_of_components * data->maximum_number_of_derivatives
+									+ i * data->maximum_number_of_derivatives + k);
+							}
+							for ( ; k < data->maximum_number_of_derivatives ; k++)
+							{
+								values[j * data->number_of_components * data->maximum_number_of_derivatives
+									+ i * data->maximum_number_of_derivatives + k] = 0.0;
+							}
+						}
+					}
+				}
+					
+				for (i = 0 ; i < data->number_of_components ; i++)
+				{
+					fprintf(data->ipmap_file, " For the Xj(%d) coordinate:\n", i + 1);
+					component_number_of_versions = get_FE_node_field_component_number_of_versions(node, data->field, i);
+
+					/* We don't map out the first version */
+					fprintf(data->ipmap_file, " For version number%2d:\n", 1);
+					
+					fprintf(data->ipmap_file, " Is the nodal position mapped out [N]: N\n");
+
+					for (k = 0 ; k < data->number_of_derivatives[i] ; k++)
+					{
+						fprintf(data->ipmap_file, " Is the derivative wrt direction%s is mapped out [N]: N\n",
+							value_strings[k]);
+					}
+
+					/* Other versions match always for the position and then
+						if the derivatives are the same */
+					for (j = 1 ; j < component_number_of_versions ; j++)
+					{
+						fprintf(data->ipmap_file, " For version number%2d:\n", j + 1);
+
+						fprintf(data->ipmap_file, " Is the nodal position mapped out [N]: Y\n");
+						fprintf(data->ipmap_file, " Enter node, version, direction, derivative numbers to map to [1,1,1,1]: %d 1 %d 1\n", node_number, i + 1);
+						fprintf(data->ipmap_file, " Enter the mapping coefficient [1]: 0.10000E+01\n");
+
+						for (k = 0 ; k < data->number_of_derivatives[i] ; k++)
+						{
+							if (map_derivatives &&
+								/* Only try for first deriavites */
+								((k == 0) || (k == 1) || (k == 3)))
+							{
+								/* Look back to see if there is any derivative in the same
+									or opposite direction */
+								match_version = 0;
+								inverse_match_version = 0;
+								for (m = 0 ; !match_version && !inverse_match_version &&
+									 (m < j) ; m++)
+								{
+									/* Check all components, this means we are doing
+										this check repeatedly for each component unnecessarily
+										but that is easier than storing the mappings */
+									match = 1;
+									inverse_match = 1;
+									n = 0;
+									while ((match || inverse_match) 
+										&& n < data->number_of_components)
+									{
+										diff = values[/*this version*/j *
+											data->number_of_components * 
+											data->maximum_number_of_derivatives + 
+											n * data->maximum_number_of_derivatives + k]
+											- values[/*other version*/m *
+											data->number_of_components * 
+											data->maximum_number_of_derivatives + 
+												n * data->maximum_number_of_derivatives + k];
+										sum = values[/*this version*/j *
+											data->number_of_components * 
+											data->maximum_number_of_derivatives + 
+											n * data->maximum_number_of_derivatives + k]
+											+ values[/*other version*/m *
+											data->number_of_components * 
+											data->maximum_number_of_derivatives + 
+												n * data->maximum_number_of_derivatives + k];
+										if ((diff > 1e-8) || (diff < -1e-8))
+										{
+											match = 0;
+										}
+										if ((sum > 1e-8) || (sum < -1e-8))
+										{
+											inverse_match = 0;
+										}
+										n++;
+									}
+									if (match)
+									{
+										match_version = m + 1;
+									}
+									if (inverse_match)
+									{
+										inverse_match_version = m + 1;
+									}
+								}
+								if (match_version)
+								{
+									fprintf(data->ipmap_file, " Is the derivative wrt direction%s is mapped out [N]: Y\n",
+											  value_strings[k]);
+									fprintf(data->ipmap_file, " Enter node, version, direction, derivative numbers to map to [1,1,1,1]: %d %d %d %d\n", 
+										node_number, match_version,
+										i + 1, k + 2);  /* k + 1 for nodal value + 1 for array start at 1 */
+									fprintf(data->ipmap_file, " Enter the mapping coefficient [1]: 0.10000E+01\n");
+								}
+								else if (inverse_match_version)
+								{
+									fprintf(data->ipmap_file, " Is the derivative wrt direction%s is mapped out [N]: Y\n",
+											  value_strings[k]);
+									fprintf(data->ipmap_file, " Enter node, version, direction, derivative numbers to map to [1,1,1,1]: %d %d %d %d\n", 
+										node_number, inverse_match_version,
+										i + 1, k + 2);
+									fprintf(data->ipmap_file, " Enter the mapping coefficient [1]: -0.10000E+01\n");
+								}
+								else
+								{
+									fprintf(data->ipmap_file, " Is the derivative wrt direction%s is mapped out [N]: N\n",
+											  value_strings[k]);
+								}
+							}
+							else
+							{
+								fprintf(data->ipmap_file, " Is the derivative wrt direction%s is mapped out [N]: N\n",
+											  value_strings[k]);
+							}
+						}
+					}
+				}
+				fprintf(data->ipmap_file, "\n");
+				if (map_derivatives)
+				{
+					DEALLOCATE(values);
+				}
+			}
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"write_cm_FE_nodal_mapping.  Missing element_field");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* write_cm_FE_nodal_mapping */
+
+static int write_ipnode_file(FILE *ipnode_file, FILE *ipmap_file, 
+	struct FE_region *region, struct FE_field *field)
 /*******************************************************************************
 LAST MODIFIED : 22 March 2006
 
@@ -565,10 +787,23 @@ Writes text for an <ipbase_file> to support <field>.
 			cm_node_data.number_of_derivatives[i] = -1;
 			cm_node_data.has_versions[i] = 0;
 		}
+		cm_node_data.number_of_nodes_with_versions = 0;
+		cm_node_data.maximum_number_of_derivatives = 0;
 		cm_node_data.ipnode_file = ipnode_file;
+		cm_node_data.ipmap_file = ipmap_file;
 		if (return_code = FE_region_for_each_FE_node(region,
 				FE_node_write_cm_check_node_values, (void *)&cm_node_data))
 		{
+			for (i = 0 ; i < cm_node_data.number_of_components ; i++)
+			{
+				if (cm_node_data.number_of_derivatives[i] > 
+					cm_node_data.maximum_number_of_derivatives)
+				{
+					cm_node_data.maximum_number_of_derivatives =
+						cm_node_data.number_of_derivatives[i];
+				}
+			}
+
 			fprintf(ipnode_file, " The number of nodes is [1]: %d\n", 
 				cm_node_data.number_of_nodes);
 			fprintf(ipnode_file, " Number of coordinates [3]: %d\n",
@@ -594,6 +829,19 @@ Writes text for an <ipbase_file> to support <field>.
 
 			return_code = FE_region_for_each_FE_node(region,
 				write_cm_FE_node, (void *)&cm_node_data);
+
+			if (ipmap_file)
+			{
+				fprintf(ipmap_file, " CMISS Version 2.0  ipmap File Version 1\n");
+				fprintf(ipmap_file, " Heading: cmgui generated file\n\n"); 
+
+				fprintf(ipmap_file, " Define node position mapping [N]? y\n");
+				fprintf(ipmap_file, " The number of nodes with special mappings is [    1]: %d\n",
+					cm_node_data.number_of_nodes_with_versions);
+
+				return_code = FE_region_for_each_FE_node(region,
+					write_cm_FE_nodal_mapping, (void *)&cm_node_data);
+			}
 		}
 		else
 		{
@@ -860,13 +1108,14 @@ Writes text for an <ipbase_file> to support <field>.
 } /* write_ipelem_file */
 
 static int write_cm_FE_region(FILE *ipcoor_file, FILE *ipbase_file,
-	FILE *ipnode_file, FILE *ipelem_file,
+	FILE *ipnode_file, FILE *ipelem_file, FILE *ipmap_file,
 	struct FE_region *fe_region, struct FE_field *field)
 /*******************************************************************************
-LAST MODIFIED : 22 March 2006
+LAST MODIFIED : 21 April 2006
 
 DESCRIPTION :
-Writes <field> of <fe_region> to the <output_file>.
+Writes <field> of <fe_region> to the <output_file>.  The <ipmap_file> is 
+optional, all the others are required.
 ==============================================================================*/
 {
 	int return_code;
@@ -885,7 +1134,8 @@ Writes <field> of <fe_region> to the <output_file>.
 		}
 		if (return_code)
 		{
-			return_code = write_ipnode_file(ipnode_file, fe_region, field);
+			return_code = write_ipnode_file(ipnode_file, ipmap_file,
+				fe_region, field);
 		}
 		if (return_code)
 		{
@@ -919,15 +1169,16 @@ Global functions
 */
 
 int write_cm_files(FILE *ipcoor_file, FILE *ipbase_file,
-	FILE *ipnode_file, FILE *ipelem_file,
+	FILE *ipnode_file, FILE *ipelem_file, FILE *ipmap_file,
 	struct Cmiss_region *root_region, char *write_path,
 	struct FE_field *field)
 /*******************************************************************************
-LAST MODIFIED : 22 March 2006
+LAST MODIFIED : 21 April 2006
 
 DESCRIPTION :
 Writes the set of <ipcoor_file>, <ipbase_file>, <ipnode_file> and <ipelem_file>
-that defines elements of <field> in <write_path>.
+that defines elements of <field> in <write_path>.  The <ipmap_file> is 
+optional, all the others are required.
 ==============================================================================*/
 {
 	int number_of_children, return_code;
@@ -945,7 +1196,7 @@ that defines elements of <field> in <write_path>.
 		if (fe_region = Cmiss_region_get_FE_region(write_region))
 		{
 			return_code = write_cm_FE_region(ipcoor_file, ipbase_file,
-				ipnode_file, ipelem_file, fe_region, field);
+				ipnode_file, ipelem_file, ipmap_file, fe_region, field);
 		}
 		else
 		{

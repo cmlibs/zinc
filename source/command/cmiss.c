@@ -11105,8 +11105,8 @@ Executes a GFX EXPORT CM command.
 ==============================================================================*/
 {
 	char *ipbase_filename, *ipcoor_filename, *ipelem_filename, *ipnode_filename,
-		*region_path; 
-	FILE *ipbase_file, *ipcoor_file, *ipelem_file, *ipnode_file;
+		*ipmap_filename, *region_path; 
+	FILE *ipbase_file, *ipcoor_file, *ipelem_file, *ipmap_file, *ipnode_file;
 	int return_code;
 	struct Cmiss_command_data *command_data;
 	struct FE_field *coordinate_field;
@@ -11121,6 +11121,7 @@ Executes a GFX EXPORT CM command.
 		ipbase_filename = (char *)NULL;
 		ipcoor_filename = (char *)NULL;
 		ipelem_filename = (char *)NULL;
+		ipmap_filename = (char *)NULL;
 		ipnode_filename = (char *)NULL;
 		region_path = (char *)NULL;
 
@@ -11140,6 +11141,9 @@ Executes a GFX EXPORT CM command.
 			NULL, set_name);
 		/* ipbase_filename */
 		Option_table_add_entry(option_table, "ipbase_filename", &ipbase_filename,
+			NULL, set_name);
+		/* ipmap_filename */
+		Option_table_add_entry(option_table, "ipmap_filename", &ipmap_filename,
 			NULL, set_name);
 		/* ipnode_filename */
 		Option_table_add_entry(option_table, "ipnode_filename", &ipnode_filename,
@@ -11196,17 +11200,34 @@ Executes a GFX EXPORT CM command.
 						"Unable to open ipelem_filename %s.", ipelem_filename);
 					return_code = 0;
 				}
+				if (ipmap_filename)
+				{
+					if (!(ipmap_file = fopen(ipmap_filename, "w")))
+					{
+						display_message(ERROR_MESSAGE,
+							"Unable to open ipmap_filename %s.", ipmap_filename);
+						return_code = 0;
+					}
+				}
+				else
+				{
+					ipmap_file = (FILE *)NULL;
+				}
 			}
 			if (return_code)
 			{
 				write_cm_files(ipcoor_file, ipbase_file,
-					ipnode_file, ipelem_file,
+					ipnode_file, ipelem_file, ipmap_file,
 					command_data->root_region, region_path,
 					coordinate_field);
 				fclose(ipcoor_file);
 				fclose(ipbase_file);
 				fclose(ipnode_file);
 				fclose(ipelem_file);
+				if (ipmap_file)
+				{
+					fclose(ipmap_file);
+				}
 			}
 		}
 		DESTROY(Option_table)(&option_table);
@@ -11225,6 +11246,10 @@ Executes a GFX EXPORT CM command.
 		if (ipelem_filename)
 		{
 			DEALLOCATE(ipelem_filename);
+		}
+		if (ipmap_filename)
+		{
+			DEALLOCATE(ipmap_filename);
 		}
 		if (ipnode_filename)
 		{

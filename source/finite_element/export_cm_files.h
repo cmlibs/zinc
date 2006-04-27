@@ -56,15 +56,16 @@ Global/Public functions
 */
 
 int write_cm_files(FILE *ipcoor_file, FILE *ipbase_file,
-	FILE *ipnode_file, FILE *ipelem_file,
+	FILE *ipnode_file, FILE *ipelem_file, FILE *ipmap_file,
 	struct Cmiss_region *root_region, char *write_path,
 	struct FE_field *field);
 /*******************************************************************************
-LAST MODIFIED : 22 March 2006
+LAST MODIFIED : 21 April 2006
 
 DESCRIPTION :
 Writes the set of <ipcoor_file>, <ipbase_file>, <ipnode_file> and <ipelem_file>
-that defines elements of <field> in <write_path>.
+that defines elements of <field> in <write_path>.  The <ipmap_file> is 
+optional, all the others are required.
 ==============================================================================*/
 
 #endif /* !defined (EXPORT_CM_FILES_H) */
