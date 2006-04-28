@@ -114,8 +114,7 @@ OPTIONS = $(TARGET_OPTION) $(USER_INTERFACE_OPTION) $(STATIC_LINK_OPTION) $(DEBU
 ifeq ($(SYSNAME),Linux)
    ifeq ($(MACHNAME),i686)
       ifeq ($(USER),cmiss)
-cmgui cmgui-debug cmgui-debug-memorycheck cmgui-static cmgui-static-debug cmgui64 cmgui64-debug cmgui-console utilities cmgui-no3dgraphics cmgui-no3dgraphics-debug cmgui-no3dgraphics-debug-memorycheck cmgui-unemap cmgui-unemap-debug : MAKE=i386-glibc23-linux-cross-make
-cmgui-gtk cmgui-gtk-debug cmgui-gtk-gtkmain cmgui-gtk-gtkmain-debug : MAKE=i386-glibc21-linux-cross-make
+         MAKE=i386-glibc23-linux-cross-make
       endif
    endif
 endif
