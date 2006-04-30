@@ -217,12 +217,7 @@ ifeq ($(filter-out MOTIF_USER_INTERFACE GTK_USER_INTERFACE,$(USER_INTERFACE)),)
   ifeq ($(SYSNAME),Linux)
     #Don't put the system X_LIB into the compiler if we are cross compiling
     GCC_LIBC = $(shell gcc -print-libgcc-file-name)
-    #Temproarily we are using both
-    ifeq ($(USER_INTERFACE), GTK_USER_INTERFACE)
-      GLIBC_CROSS_COMPILE = /product/cmiss/cross-compile/i386-glibc21-linux
-    else
-      GLIBC_CROSS_COMPILE = /hpc/cmiss/cross-compile/i386-glibc23-linux
-    endif
+    GLIBC_CROSS_COMPILE = /hpc/cmiss/cross-compile/i386-glibc23-linux
     ifeq ($(GCC_LIBC:$(GLIBC_CROSS_COMPILE)%=),)
       #We are cross compiling
       X_INC += -I$(GLIBC_CROSS_COMPILE)/include
@@ -508,7 +503,8 @@ ifeq ($(USER_INTERFACE),MOTIF_USER_INTERFACE)
 
       ifneq ($(STATIC_LINK),true)
          #I am statically linking Motif so that it does not have to be installed at runtime.
-         USER_INTERFACE_LIB += $(X_LIB)/libMrm.a $(X_LIB)/libXm.a -lXp -lXt -lX11 -lXmu -lXext -lICE
+         #Debian distributions are marking libXp as deprecated, although Motif still requires it, so it isn't installed by default to lets link it statically too.
+         USER_INTERFACE_LIB += $(X_LIB)/libMrm.a $(X_LIB)/libXm.a $(X_LIB)/libXp.a -lXt -lX11 -lXmu -lXext -lICE
       else # STATIC_LINK != true
          #Mandrake 8.2 static libs are incompatible, this works around it by
          #comparing the size of the symbols and forcing Xmu to preload its
