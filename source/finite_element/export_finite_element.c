@@ -1798,24 +1798,27 @@ Notes:
 			/* write the nodes */
 			if (get_FE_element_number_of_nodes(element, &number_of_nodes))
 			{
-				fprintf(output_file, " Nodes:\n");
-				for (i = 0; i < number_of_nodes; i++)
+				if (0 < number_of_nodes)
 				{
-					if (0 <= output_node_indices[i])
+					fprintf(output_file, " Nodes:\n");
+					for (i = 0; i < number_of_nodes; i++)
 					{
-						if (get_FE_element_node(element, i, &node))
+						if (0 <= output_node_indices[i])
 						{
-							fprintf(output_file, " %d", get_FE_node_identifier(node));
-						}
-						else
-						{
-							display_message(ERROR_MESSAGE,
-								"write_FE_element.  Missing node");
-							return_code = 0;
+							if (get_FE_element_node(element, i, &node))
+							{
+								fprintf(output_file, " %d", get_FE_node_identifier(node));
+							}
+							else
+							{
+								display_message(ERROR_MESSAGE,
+									"write_FE_element.  Missing node");
+								return_code = 0;
+							}
 						}
 					}
+					fprintf(output_file, "\n");
 				}
-				fprintf(output_file, "\n");
 			}
 			else
 			{
@@ -1829,29 +1832,32 @@ Notes:
 			if (get_FE_element_number_of_scale_factors(element,
 				&total_number_of_scale_factors))
 			{
-				fprintf(output_file," Scale factors:\n");
-				number_of_scale_factors=0;
-				/* output in columns if FE_VALUE_MAX_OUTPUT_COLUMNS > 0 */
-				for (i = 0; i < total_number_of_scale_factors; i++)
+				if (0 < total_number_of_scale_factors)
 				{
-					if (0 <= output_scale_factor_indices[i])
+					fprintf(output_file," Scale factors:\n");
+					number_of_scale_factors=0;
+					/* output in columns if FE_VALUE_MAX_OUTPUT_COLUMNS > 0 */
+					for (i = 0; i < total_number_of_scale_factors; i++)
 					{
-						number_of_scale_factors++;
-						get_FE_element_scale_factor(element, i, &scale_factor);
-						fprintf(output_file, " %"FE_VALUE_STRING, scale_factor);
-						if ((0<FE_VALUE_MAX_OUTPUT_COLUMNS)&&
-							(0==(number_of_scale_factors%FE_VALUE_MAX_OUTPUT_COLUMNS)))
+						if (0 <= output_scale_factor_indices[i])
 						{
-							fprintf(output_file,"\n");
+							number_of_scale_factors++;
+							get_FE_element_scale_factor(element, i, &scale_factor);
+							fprintf(output_file, " %"FE_VALUE_STRING, scale_factor);
+							if ((0<FE_VALUE_MAX_OUTPUT_COLUMNS)&&
+								(0==(number_of_scale_factors%FE_VALUE_MAX_OUTPUT_COLUMNS)))
+							{
+								fprintf(output_file,"\n");
+							}
 						}
 					}
-				}
-				/* add extra carriage return for not multiple of
-					 FE_VALUE_MAX_OUTPUT_COLUMNS values */
-				if ((0 >= FE_VALUE_MAX_OUTPUT_COLUMNS) ||
-					(0 != (number_of_scale_factors % FE_VALUE_MAX_OUTPUT_COLUMNS)))
-				{
-					fprintf(output_file,"\n");
+					/* add extra carriage return for not multiple of
+						FE_VALUE_MAX_OUTPUT_COLUMNS values */
+					if ((0 >= FE_VALUE_MAX_OUTPUT_COLUMNS) ||
+						(0 != (number_of_scale_factors % FE_VALUE_MAX_OUTPUT_COLUMNS)))
+					{
+						fprintf(output_file,"\n");
+					}
 				}
 			}
 			else
