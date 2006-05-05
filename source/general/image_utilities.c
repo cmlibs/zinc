@@ -6089,17 +6089,20 @@ DESCRIPTION :
 Extracts parameters from <magick_image> that matter for a Cmgui_image
 ==============================================================================*/
 {
+	ExceptionInfo magick_exception;
 	int return_code;
 
 	ENTER(get_magick_image_parameters);
 	if (magick_image && width && height && number_of_components &&
 		number_of_bytes_per_component)
 	{
+		GetExceptionInfo(&magick_exception);
 		*width = (int)magick_image->columns;
 		*height = (int)magick_image->rows;
 		if (magick_image->matte)
 		{
-			if (magick_image->colorspace == GRAYColorspace)
+			if ((magick_image->colorspace == GRAYColorspace) ||
+				(IsGrayImage(magick_image, &magick_exception)))
 			{
 				/* monochrome intensity with alpha */
 				*number_of_components = 2;
@@ -6112,7 +6115,8 @@ Extracts parameters from <magick_image> that matter for a Cmgui_image
 		}
 		else
 		{
-			if (magick_image->colorspace == GRAYColorspace)
+			if ((magick_image->colorspace == GRAYColorspace) ||
+				(IsGrayImage(magick_image, &magick_exception)))
 			{
 				/* monochrome intensity only */
 				*number_of_components = 1;
