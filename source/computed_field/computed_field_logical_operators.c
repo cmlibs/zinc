@@ -288,7 +288,7 @@ Not implemented yet.
 DEFINE_DEFAULT_LIST_COMPUTED_FIELD_FUNCTION(or, "source fields", "values")
 
 DEFINE_DEFAULT_COMPUTED_FIELD_GET_COMMAND_STRING_FUNCTION(or, \
-	"fields", "values");
+	"fields", "values")
 
 #define Computed_field_or_has_multiple_times \
 	Computed_field_default_has_multiple_times
@@ -723,10 +723,10 @@ Not implemented yet.
 #define Computed_field_and_get_native_resolution \
 	(Computed_field_get_native_resolution_function)NULL
 
-DEFINE_DEFAULT_LIST_COMPUTED_FIELD_FUNCTION(and, "source fields", "values");
+DEFINE_DEFAULT_LIST_COMPUTED_FIELD_FUNCTION(and, "source fields", "values")
 
 DEFINE_DEFAULT_COMPUTED_FIELD_GET_COMMAND_STRING_FUNCTION(and, \
-	"fields", "values");
+	"fields", "values")
 
 #define Computed_field_and_has_multiple_times \
 	Computed_field_default_has_multiple_times
@@ -1172,10 +1172,10 @@ Not implemented yet.
 #define Computed_field_xor_get_native_resolution \
 	(Computed_field_get_native_resolution_function)NULL
 
-DEFINE_DEFAULT_LIST_COMPUTED_FIELD_FUNCTION(xor, "source fields", "values");
+DEFINE_DEFAULT_LIST_COMPUTED_FIELD_FUNCTION(xor, "source fields", "values")
 
 DEFINE_DEFAULT_COMPUTED_FIELD_GET_COMMAND_STRING_FUNCTION(xor, \
-	"fields", "values");
+	"fields", "values")
 
 #define Computed_field_xor_has_multiple_times \
 	Computed_field_default_has_multiple_times
@@ -1609,10 +1609,10 @@ Not implemented yet.
 #define Computed_field_equal_to_get_native_resolution \
 	(Computed_field_get_native_resolution_function)NULL
 
-DEFINE_DEFAULT_LIST_COMPUTED_FIELD_FUNCTION(equal_to, "source fields", "values");
+DEFINE_DEFAULT_LIST_COMPUTED_FIELD_FUNCTION(equal_to, "source fields", "values")
 
 DEFINE_DEFAULT_COMPUTED_FIELD_GET_COMMAND_STRING_FUNCTION(equal_to, \
-	"fields", "values");
+	"fields", "values")
 
 #define Computed_field_equal_to_has_multiple_times \
 	Computed_field_default_has_multiple_times
@@ -2046,10 +2046,10 @@ Not implemented yet.
 #define Computed_field_less_than_get_native_resolution \
 	(Computed_field_get_native_resolution_function)NULL
 
-DEFINE_DEFAULT_LIST_COMPUTED_FIELD_FUNCTION(less_than, "source fields", "values");
+DEFINE_DEFAULT_LIST_COMPUTED_FIELD_FUNCTION(less_than, "source fields", "values")
 
 DEFINE_DEFAULT_COMPUTED_FIELD_GET_COMMAND_STRING_FUNCTION(less_than, \
-	"fields", "values");
+	"fields", "values")
 
 #define Computed_field_less_than_has_multiple_times \
 	Computed_field_default_has_multiple_times
@@ -2483,10 +2483,10 @@ Not implemented yet.
 #define Computed_field_greater_than_get_native_resolution \
 	(Computed_field_get_native_resolution_function)NULL
 
-DEFINE_DEFAULT_LIST_COMPUTED_FIELD_FUNCTION(greater_than, "source fields", "values");
+DEFINE_DEFAULT_LIST_COMPUTED_FIELD_FUNCTION(greater_than, "source fields", "values")
 
 DEFINE_DEFAULT_COMPUTED_FIELD_GET_COMMAND_STRING_FUNCTION(greater_than, \
-	"fields", "values");
+	"fields", "values")
 
 #define Computed_field_greater_than_has_multiple_times \
 	Computed_field_default_has_multiple_times
