@@ -4661,7 +4661,7 @@ Executes a GFX CREATE SCENE command.
 static int gfx_create_snake(struct Parse_state *state,
 	void *dummy_to_be_modified,void *command_data_void)
 /*******************************************************************************
-LAST MODIFIED : 28 February 2003
+LAST MODIFIED : 3 May 2006
 
 DESCRIPTION :
 Executes a GFX CREATE SNAKE command.
@@ -4673,11 +4673,12 @@ Executes a GFX CREATE SNAKE command.
 		previous_state_index, return_code;
 	struct Cmiss_command_data *command_data;
 	struct Cmiss_region *region;
-	struct Computed_field *coordinate_field, **fitting_fields;
+	struct Computed_field *coordinate_field, **fitting_fields,
+		*weight_field;
 	struct FE_region *fe_region;
 	struct Option_table *option_table;
 	struct Set_Computed_field_conditional_data set_coordinate_field_data,
-		set_fitting_field_data;
+		set_fitting_field_data, set_weight_field_data;
 	struct Set_Computed_field_array_data set_fitting_field_array_data;
 
 	ENTER(gfx_create_snake);
@@ -4687,6 +4688,7 @@ Executes a GFX CREATE SNAKE command.
 		region_path = (char *)NULL;
 		number_of_fitting_fields = 1;
 		coordinate_field = (struct Computed_field *)NULL;
+		weight_field = (struct Computed_field *)NULL;
 		density_factor = 0.0;
 		number_of_elements = 1;
 		stiffness = 0.0;
@@ -4766,6 +4768,16 @@ Executes a GFX CREATE SNAKE command.
 		/* stiffness */
 		Option_table_add_entry(option_table, "stiffness",
 			&stiffness, NULL, set_float_non_negative);
+		/* weight_field */
+		set_weight_field_data.conditional_function = 
+			Computed_field_is_scalar;
+		set_weight_field_data.conditional_function_user_data = (void *)NULL;
+		set_weight_field_data.computed_field_manager =
+			Computed_field_package_get_computed_field_manager(
+				command_data->computed_field_package);
+		Option_table_add_entry(option_table, "weight_field",
+			&weight_field, (void *)&set_weight_field_data,
+			set_Computed_field_conditional);
 		return_code = Option_table_multi_parse(option_table, state);
 		/* no errors, not asking for help */
 		if (return_code)
@@ -4788,7 +4800,7 @@ Executes a GFX CREATE SNAKE command.
 			if (return_code)
 			{
 				return_code = create_FE_element_snake_from_data_points(
-					fe_region, coordinate_field,
+					fe_region, coordinate_field, weight_field,
 					number_of_fitting_fields, fitting_fields,
 					FE_node_selection_get_node_list(command_data->data_selection),
 					number_of_elements,
@@ -4800,6 +4812,10 @@ Executes a GFX CREATE SNAKE command.
 		if (coordinate_field)
 		{
 			DEACCESS(Computed_field)(&coordinate_field);
+		}
+		if (weight_field)
+		{
+			DEACCESS(Computed_field)(&weight_field);
 		}
 		if (fitting_fields)
 		{				
