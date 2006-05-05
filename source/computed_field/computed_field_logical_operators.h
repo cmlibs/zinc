@@ -1,10 +1,10 @@
 /*******************************************************************************
-FILE : computed_field_adjusted_gaussian.h
+FILE : computed_field_logical_operators.h
 
 LAST MODIFIED : 30 August 2005
 
 DESCRIPTION :
-Implements arithmetic operations on computed fields.
+Implements logical operations on computed fields.
 ==============================================================================*/
 /* ***** BEGIN LICENSE BLOCK *****
  * Version: MPL 1.1/GPL 2.0/LGPL 2.1
@@ -41,10 +41,10 @@ Implements arithmetic operations on computed fields.
  * the terms of any one of the MPL, the GPL or the LGPL.
  *
  * ***** END LICENSE BLOCK ***** */
-#if !defined (COMPUTED_FIELD_ARITHMETIC_OPERATORS_H)
-#define COMPUTED_FIELD_ARITHMETIC_OPERATORS_H
+#if !defined (COMPUTED_FIELD_LOGICAL_OPERATORS_H)
+#define COMPUTED_FIELD_LOGICAL_OPERATORS_H
 
-int Computed_field_register_types_arithmetic_operators(
+int Computed_field_register_types_logical_operators(
 	struct Computed_field_package *computed_field_package);
 /*******************************************************************************
 LAST MODIFIED : 30 August 2005
@@ -52,4 +52,4 @@ LAST MODIFIED : 30 August 2005
 DESCRIPTION :
 ==============================================================================*/
 
-#endif /* !defined (COMPUTED_FIELD_ARITHMETIC_OPERATORS_H) */
+#endif /* !defined (COMPUTED_FIELD_LOGICAL_OPERATORS_H) */

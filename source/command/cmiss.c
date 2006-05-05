@@ -71,7 +71,6 @@ Functions for executing cmiss commands.
 #include "command/example_path.h"
 #include "command/parser.h"
 #include "computed_field/computed_field.h"
-#include "computed_field/computed_field_arithmetic_operators.h"
 #include "computed_field/computed_field_component_operations.h"
 #include "computed_field/computed_field_compose.h"
 #include "computed_field/computed_field_composite.h"
@@ -84,6 +83,7 @@ Functions for executing cmiss commands.
 #include "computed_field/computed_field_finite_element.h"
 #include "computed_field/computed_field_fibres.h"
 #include "computed_field/computed_field_integration.h"
+#include "computed_field/computed_field_logical_operators.h"
 #include "computed_field/computed_field_lookup.h"
 #include "computed_field/computed_field_matrix_operations.h"
 #include "computed_field/computed_field_sample_texture.h"
@@ -19495,7 +19495,7 @@ of the curve, eg. "name" -> name.curve.com name.curve.exnode name.curve.exelem
 	};
 	struct Control_curve *curve;
 
-	ENTER(gfx_write_Control_curve);
+	ENTER(gfx_write_Curve);
 	USE_PARAMETER(dummy_to_be_modified);
 	if (state&&(command_data=(struct Cmiss_command_data *)command_data_void))
 	{
@@ -24250,8 +24250,6 @@ Initialise all the subcomponents of cmgui and create the Cmiss_command_data
 			(struct Computed_field_finite_element_package *)NULL;
 		if (command_data->computed_field_package)
 		{
-		        Computed_field_register_types_arithmetic_operators(
-				command_data->computed_field_package);
 			Computed_field_register_types_coordinate(
 				command_data->computed_field_package);
 			Computed_field_register_types_component_operations(
@@ -24277,6 +24275,8 @@ Initialise all the subcomponents of cmgui and create the Cmiss_command_data
 			Computed_field_register_types_external(
 				command_data->computed_field_package);
 			Computed_field_register_types_fibres(
+				command_data->computed_field_package);
+			Computed_field_register_types_logical_operators(
 				command_data->computed_field_package);
 			if (command_data->root_region)
 			{

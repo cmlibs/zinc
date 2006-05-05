@@ -551,4 +551,133 @@ Note the order of derivatives:
 3. All the <element_dimension> derivatives of component 3.
 ==============================================================================*/
 
+#define Computed_field_is_type(filter) Computed_field_is_type_ ## filter
+
+#define DEFINE_DEFAULT_COMPUTED_FIELD_IS_TYPE_FUNCTION(filter) \
+int Computed_field_is_type(filter)(struct Computed_field *field) \
+/******************************************************************************* \
+LAST MODIFIED : 7 November 2005 \
+\
+DESCRIPTION : \
+==============================================================================*/ \
+{ \
+	int return_code; \
+\
+	ENTER(Computed_field_is_type_ ## filter); \
+	if (field) \
+	{ \
+		return_code = \
+		  (field->type_string == computed_field_ ## filter ## _type_string); \
+	} \
+	else \
+	{ \
+		display_message(ERROR_MESSAGE, \
+			"Computed_field_is_type_" #filter ".  Missing field"); \
+		return_code = 0; \
+	} \
+\
+	return (return_code); \
+} /* Computed_field_is_type_ ## filter */
+
+#define DEFINE_DEFAULT_LIST_COMPUTED_FIELD_FUNCTION(filter,field_string,value_string) \
+int list_Computed_field_ ## filter(struct Computed_field *field) \
+/******************************************************************************* \
+LAST MODIFIED : 3 May 2006 \
+\
+DESCRIPTION : \
+==============================================================================*/ \
+{ \
+	int i, return_code;									\
+\
+	ENTER(list_Computed_field_ ## filter); \
+	if (field) \
+	{ \
+		if (0 < field->number_of_source_fields) \
+		{ \
+			display_message(INFORMATION_MESSAGE,	\
+				"    " #field_string " :");									 \
+			for (i = 0 ; i < field->number_of_source_fields ; i++)	 \
+			{																			 \
+				display_message(INFORMATION_MESSAGE,						 \
+					" %s", field->source_fields[i]->name);					 \
+			}																			 \
+			display_message(INFORMATION_MESSAGE, "\n");					 \
+		} \
+		if (0 < field->number_of_source_values) \
+		{ \
+			display_message(INFORMATION_MESSAGE,	\
+				"    " #value_string " :");									 \
+			for (i = 0 ; i < field->number_of_source_values ; i++)	 \
+			{																			 \
+				display_message(INFORMATION_MESSAGE,						 \
+					" %g", field->source_values[i]);							 \
+			}																			 \
+			display_message(INFORMATION_MESSAGE, "\n");					 \
+		} \
+		return_code = 1; \
+	} \
+	else \
+	{ \
+		display_message(ERROR_MESSAGE, \
+			"list_Computed_field_" #filter ".  Missing field"); \
+		return_code = 0; \
+	} \
+\
+	return (return_code); \
+} /* list_Computed_field_ ## filter */
+
+#define Computed_field_get_command_string(filter) \
+	Computed_field_ ## filter ## _get_command_string
+
+#define DEFINE_DEFAULT_COMPUTED_FIELD_GET_COMMAND_STRING_FUNCTION( \
+	filter,field_string,value_string) \
+static char *Computed_field_get_command_string(filter)(struct Computed_field *field) \
+/******************************************************************************* \
+LAST MODIFIED : 3 May 2006 \
+\
+DESCRIPTION : \
+==============================================================================*/ \
+{ \
+	char *command_string, *field_name, temp_string[40]; \
+	int error, i;								  \
+\
+	ENTER(Computed_field_get_command_string(filter));	\
+	command_string = (char *)NULL; \
+	if (field) \
+	{ \
+		error = 0; \
+		append_string(&command_string, \
+			computed_field_ ## filter ## _type_string, &error); \
+		if (0 < field->number_of_source_fields) \
+		{ \
+			append_string(&command_string, " " #field_string " ", &error); \
+			for (i = 0 ; i < field->number_of_source_fields ; i++) \
+			{ \
+				if (GET_NAME(Computed_field)(field->source_fields[i], &field_name)) \
+				{ \
+					make_valid_token(&field_name); \
+					append_string(&command_string, field_name, &error); \
+					DEALLOCATE(field_name); \
+				} \
+			} \
+		} \
+		if (0 < field->number_of_source_values) \
+		{ \
+			append_string(&command_string, " " #value_string, &error); \
+			for (i = 0 ; i < field->number_of_source_values ; i++) \
+			{ \
+				sprintf(temp_string, " %g", field->source_values[i]); \
+				append_string(&command_string, temp_string, &error); \
+			} \
+		} \
+	} \
+	else \
+	{ \
+		display_message(ERROR_MESSAGE, \
+			"Computed_field_" #filter "_get_command_string.  Missing field"); \
+	} \
+\
+	return (command_string); \
+} /* Computed_field_ ## filter ## get_command_string */
+
 #endif /* !defined (COMPUTED_FIELD_PRIVATE_H) */
