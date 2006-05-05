@@ -6981,7 +6981,8 @@ Modifies the properties of a texture.
 									return_code = Texture_set_image(texture, cmgui_image,
 										image_data.image_file_name, file_number_pattern,
 										file_number_series_data.start,
-										file_number_series_data.start, /*increment*/1,
+										file_number_series_data.stop,
+										file_number_series_data.increment,
 										image_data.crop_left_margin, image_data.crop_bottom_margin,
 										image_data.crop_width, image_data.crop_height);
 									DESTROY(Cmgui_image)(&cmgui_image);
