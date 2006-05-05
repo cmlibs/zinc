@@ -47,6 +47,7 @@ data points.
 
 int create_FE_element_snake_from_data_points(
 	struct FE_region *fe_region, struct Computed_field *coordinate_field,
+	struct Computed_field *weight_field,
 	int number_of_fitting_fields, struct Computed_field **fitting_fields,
 	struct LIST(FE_node) *data_list,
 	int number_of_elements, FE_value density_factor, FE_value stiffness);
@@ -60,7 +61,9 @@ group of the same name in <node_group_manager>. The snake follows the data in
 <data_list>. <data_list> is unmodified by this function.
 The <fitting_fields> which must be defined on the data are fitted and
 defined on the created elements.  The <coordinate_field> is used to determine
-distances between points.  The <density_factor> can vary from 0 to 1.
+distances between points.  If specified, the <weight_field> is evaluated at 
+each data point and used to weight the varying importance of that data point.
+The <density_factor> can vary from 0 to 1.
 When <density_factor> is 0 then the elements are spread out to have the same
 length in this coordinate field, when the <density_factor> is 1 then the
 elements will each correspond to an equal proportion of the data points.

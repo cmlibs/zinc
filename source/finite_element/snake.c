@@ -69,7 +69,7 @@ Module functions
 
 struct FE_node_accumulate_length_data
 /*******************************************************************************
-LAST MODIFIED : 9 May 2001
+LAST MODIFIED : 3 May 2006
 
 DESCRIPTION :
 User data for FE_node_accumulate_length function.
@@ -80,11 +80,13 @@ Set node_number to zero before passing.
 ==============================================================================*/
 {
 	FE_value *fitting_field_values;
+	FE_value *weights;
 	/* Space to evaluate the coordinate field and keep the previous value */
 	FE_value *coordinates;
 	FE_value *lengths;
 	int node_number;
 	struct Computed_field *coordinate_field;
+	struct Computed_field *weight_field;
 	struct LIST(FE_field) *fe_field_list;
 	struct FE_node *current_node;
 };
@@ -139,7 +141,7 @@ Evaluates the <field> into the <fitting_field_values>.
 static int FE_node_accumulate_length(struct FE_node *node,
 	void *accumulate_data_void)
 /*******************************************************************************
-LAST MODIFIED : 29 March 2006
+LAST MODIFIED : 3 May 2006
 
 DESCRIPTION :
 Calculates the coordinates and length from the first node.
@@ -176,7 +178,7 @@ Calculates the coordinates and length from the first node.
 					lengths[0] = 0.0;
 					for (i = 0; i < number_of_components; i++)
 					{
-					coordinates[i + number_of_components] = coordinates[i];
+						coordinates[i + number_of_components] = coordinates[i];
 					}
 				}
 				else
@@ -198,8 +200,18 @@ Calculates the coordinates and length from the first node.
 					"FE_node_accumulate_length.  Unable to evaluate coordinate field.");
 				return_code = 0;
 			}
-			(accumulate_data->node_number)++;
 		}
+		if (return_code && accumulate_data->weight_field)
+		{
+			if (!Computed_field_evaluate_at_node(accumulate_data->weight_field,
+				node, /*time*/0.0, &accumulate_data->weights[node_number]))
+			{
+				display_message(ERROR_MESSAGE, "FE_node_accumulate_length.  "
+					"Unable to evaluate weight field.");
+				return_code = 0;
+			}
+		}
+		accumulate_data->node_number++;
 		accumulate_data->current_node = (struct FE_node *)NULL;
 	}
 	else
@@ -551,11 +563,12 @@ Global functions
 
 int create_FE_element_snake_from_data_points(
 	struct FE_region *fe_region, struct Computed_field *coordinate_field,
+	struct Computed_field *weight_field,
 	int number_of_fitting_fields, struct Computed_field **fitting_fields,
 	struct LIST(FE_node) *data_list,
 	int number_of_elements, FE_value density_factor, FE_value stiffness)
 /*******************************************************************************
-LAST MODIFIED : 29 March 2006
+LAST MODIFIED : 3 May 2006
 
 DESCRIPTION :
 Creates a snake out of <number_of_elements> 1-D cubic Hermite elements in
@@ -564,7 +577,9 @@ group of the same name in <node_group_manager>. The snake follows the data in
 <data_list>. <data_list> is unmodified by this function.
 The <fitting_fields> which must be defined on the data are fitted and
 defined on the created elements.  The <coordinate_field> is used to determine
-distances between points.  The <density_factor> can vary from 0 to 1.
+distances between points.  If specified, the <weight_field> is evaluated at 
+each data point and used to weight the varying importance of that data point.
+The <density_factor> can vary from 0 to 1.
 When <density_factor> is 0 then the elements are spread out to have the same
 length in this coordinate field, when the <density_factor> is 1 then the
 elements will each correspond to an equal proportion of the data points.
@@ -578,7 +593,7 @@ derivatives; helps make smooth snakes from few data points.
 	enum FE_nodal_value_type hermite_1d_nodal_value_types[] =
 		{FE_NODAL_D_DS1};
 	FE_value *coordinates, *fitting_field_values, density_multiplier,
-		length_multiplier, *lengths, *value, xi;
+		length_multiplier, *lengths, *value, *weights, xi;
 	int component, element_number, i, *indx, j, local_components, m, n, node_number, 
 		number_of_components, number_of_coordinate_components, number_of_data,
 		number_of_fe_fields, number_of_rows, return_code, row, start_row;
@@ -618,6 +633,7 @@ derivatives; helps make smooth snakes from few data points.
 			fitting_field_values = (FE_value *)NULL;
 			lengths = (FE_value *)NULL;
 			coordinates = (FE_value *)NULL;
+			weights = (FE_value *)NULL;
 			stiffness_matrix = (double *)NULL;
 			force_vectors = (double *)NULL;
 			indx = (int *)NULL;
@@ -628,13 +644,16 @@ derivatives; helps make smooth snakes from few data points.
 				{
 					if (ALLOCATE(lengths, FE_value, number_of_data) &&
 						ALLOCATE(fitting_field_values, FE_value, number_of_components*number_of_data) &&
-						ALLOCATE(coordinates, FE_value, 2 * number_of_coordinate_components))
+						ALLOCATE(coordinates, FE_value, 2 * number_of_coordinate_components)
+						&& (!weight_field || ALLOCATE(weights, FE_value, number_of_data)))
 					{
 						accumulate_data.fitting_field_values = fitting_field_values;
 						accumulate_data.lengths = lengths;
 						accumulate_data.coordinates = coordinates;
+						accumulate_data.weights = weights;
 						accumulate_data.node_number = 0;
 						accumulate_data.coordinate_field = coordinate_field;
+						accumulate_data.weight_field = weight_field;
 						accumulate_data.fe_field_list = fe_field_list;
 						if (FOR_EACH_OBJECT_IN_LIST(FE_node)(FE_node_accumulate_length,
 								(void *)&accumulate_data, data_list))
@@ -755,6 +774,7 @@ derivatives; helps make smooth snakes from few data points.
 				}
 				/* assemble the stiffness matrix and force_vectors */
 				value = fitting_field_values;
+				weight = 1.0;
 				for (i = 0; i < number_of_data; i++)
 				{
 					element_number = (int)lengths[i];
@@ -770,6 +790,10 @@ derivatives; helps make smooth snakes from few data points.
 					}
 					start_row = element_number*2;
 					calculate_Hermite_basis_1d(xi, phi);
+					if (weight_field)
+					{
+						weight = weights[i];
+					}
 					for (m = 0; m < 4; m++)
 					{
 						phi_m = phi[m];
@@ -778,11 +802,12 @@ derivatives; helps make smooth snakes from few data points.
 							stiffness_matrix + row*number_of_rows + start_row;
 						for (n = 0; n < 4; n++)
 						{
-							stiffness_offset[n] += phi_m*phi[n];
+							stiffness_offset[n] += weight * phi_m * phi[n];
 						}
 						for (n = 0; n < number_of_components; n++)
 						{
-							force_vectors[n*number_of_rows + row] += phi_m * value[n];
+							force_vectors[n*number_of_rows + row] += 
+								weight * phi_m * value[n];
 						}
 					}
 					value += number_of_components;
@@ -1035,6 +1060,10 @@ derivatives; helps make smooth snakes from few data points.
 		if (coordinates)
 		{
 			DEALLOCATE(coordinates);
+		}
+		if (weights)
+		{
+			DEALLOCATE(weights);
 		}
 		if (stiffness_matrix)
 		{
