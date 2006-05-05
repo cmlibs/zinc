@@ -504,7 +504,7 @@ ifeq ($(USER_INTERFACE),MOTIF_USER_INTERFACE)
       ifneq ($(STATIC_LINK),true)
          #I am statically linking Motif so that it does not have to be installed at runtime.
          #Debian distributions are marking libXp as deprecated, although Motif still requires it, so it isn't installed by default to lets link it statically too.
-         USER_INTERFACE_LIB += $(X_LIB)/libMrm.a $(X_LIB)/libXm.a $(X_LIB)/libXp.a -lXt -lX11 -lXmu -lXext -lICE
+         USER_INTERFACE_LIB += -Wl,-Bstatic -lMrm -lXm -lXp -Wl,-Bdynamic -lXt -lX11 -lXmu -lXext -lICE
       else # STATIC_LINK != true
          #Mandrake 8.2 static libs are incompatible, this works around it by
          #comparing the size of the symbols and forcing Xmu to preload its
@@ -761,7 +761,6 @@ COMMAND_INTERFACE_SRCS = \
 	command/command_window.c
 COMPUTED_FIELD_SRCS = \
 	computed_field/computed_field.c \
-	computed_field/computed_field_arithmetic_operators.c \
 	computed_field/computed_field_component_operations.c \
 	computed_field/computed_field_compose.c \
 	computed_field/computed_field_composite.c \
@@ -774,6 +773,7 @@ COMPUTED_FIELD_SRCS = \
 	computed_field/computed_field_find_xi.c \
 	computed_field/computed_field_finite_element.c \
 	computed_field/computed_field_integration.c \
+	computed_field/computed_field_logical_operators.c \
 	computed_field/computed_field_lookup.c \
 	computed_field/computed_field_matrix_operations.c \
 	computed_field/computed_field_sample_texture.c \
