@@ -442,13 +442,13 @@ It is up to the calling function to deallocate the returned values.
 ==============================================================================*/
 
 int Computed_field_set_values_in_element(struct Computed_field *field,
-	struct FE_element *element,int *number_in_xi, FE_value time,
+	struct FE_element *element, FE_value *xi, FE_value time,
 	FE_value *values);
 /*******************************************************************************
-LAST MODIFIED : 21 April 2005
+LAST MODIFIED : 14 October 2005
 
 DESCRIPTION :
-Sets the <values> of the computed <field> over the <element>. Only certain
+Sets the <values> of the computed <field> at <xi> in the <element>. Only certain
 computed field types allow their values to be set. Fields that deal directly
 with FE_fields eg. FINITE_ELEMENT fall into this category, as do the various
 transformations, RC_COORDINATE, RC_VECTOR, OFFSET, SCALE, etc. which convert
@@ -459,14 +459,6 @@ example, the 'vector' field in this case - coordinates should not change. This
 process continues until the actual FE_field values in the element are changed or
 a field is reached for which its calculation is not reversible, or is not
 supported yet.
-
-<number_in_xi> has the number of grid cells in each xi direction of <element>,
-such that there is one more grid point in each direction than this number. Grid
-points are evenly spaced in xi. There are as many <values> as there are grid
-points X number_of_components, cycling fastest through number of grid points in
-xi1, number of grid points in xi2 etc. and lastly components.
-
-???RC Note that some functions are not reversible in this way.
 ==============================================================================*/
 
 int Computed_field_get_native_discretization_in_element(

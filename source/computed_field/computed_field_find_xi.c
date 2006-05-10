@@ -113,9 +113,10 @@ matches the <field> in this structure or one of its source fields.
 	int find_nearest_location;
 	struct FE_element *nearest_element;
 	double nearest_element_distance_squared;
+	int start_with_data_xi;
 }; /* Computed_field_iterative_find_element_xi_data */
 
-#define MAX_FIND_XI_ITERATIONS 10
+#define MAX_FIND_XI_ITERATIONS 50
 
 static int Computed_field_iterative_element_conditional(
 	struct FE_element *element, void *data_void)
@@ -172,29 +173,39 @@ as the <data> field or any of its source fields.
 				{
 					values = data->found_values;
 					derivatives = data->found_derivatives;
-					/* Find a good estimate of the centre to start with */
-					for (i = 0 ; i < number_of_xi ; i++)
-					{
-						/* I want just one location in the middle */
-						number_in_xi[i] = 1;
-					}
-					if (get_FE_element_shape(element, &shape) &&
-						FE_element_shape_get_xi_points_cell_centres(shape, 
-						number_in_xi, number_of_xi_points_created, &xi_points))
+					get_FE_element_shape(element, &shape);
+					if (data->start_with_data_xi)
 					{
 						for (i = 0 ; i < number_of_xi ; i++)
 						{
-							data->xi[i] = xi_points[0][i];
-							last_xi[i] = xi_points[0][i];
+							last_xi[i] = data->xi[i];
 						}
-						DEALLOCATE(xi_points);
 					}
 					else
 					{
+						/* Find a good estimate of the centre to start with */
 						for (i = 0 ; i < number_of_xi ; i++)
 						{
-							data->xi[i] = 0.5;
-							last_xi[i] = 0.5;
+							/* I want just one location in the middle */
+							number_in_xi[i] = 1;
+						}
+						if (FE_element_shape_get_xi_points_cell_centres(shape, 
+								number_in_xi, number_of_xi_points_created, &xi_points))
+						{
+							for (i = 0 ; i < number_of_xi ; i++)
+							{
+								data->xi[i] = xi_points[0][i];
+								last_xi[i] = xi_points[0][i];
+							}
+							DEALLOCATE(xi_points);
+						}
+						else
+						{
+							for (i = 0 ; i < number_of_xi ; i++)
+							{
+								data->xi[i] = 0.5;
+								last_xi[i] = 0.5;
+							}
 						}
 					}
 					converged = 0;
@@ -256,7 +267,7 @@ as the <data> field or any of its source fields.
 										return_code = 0;
 										for (i = 0; i < number_of_xi; i++)
 										{
-											if (data->xi[i] != last_xi[i])
+											if (fabs(data->xi[i] - last_xi[i]) > data->tolerance)
 											{
 												return_code = 1;
 											}
@@ -322,6 +333,12 @@ as the <data> field or any of its source fields.
 							data->nearest_element_distance_squared = sum;
 						}
 					}
+#if defined (DEBUG)
+					display_message(INFORMATION_MESSAGE,
+						"Computed_field_iterative_element_conditional.  "
+						"Converged %d iterations %d\n", converged, iterations);
+#endif /* defined (DEBUG) */
+
 				}
 			}
 			else
@@ -503,22 +520,33 @@ ultimate parent finite_element field.
 				find_element_xi_data.number_of_values = number_of_values;
 				find_element_xi_data.found_number_of_xi = 0;
 				find_element_xi_data.found_derivatives = (FE_value *)NULL;
-				find_element_xi_data.tolerance = 1e-06;
+				find_element_xi_data.tolerance = 1e-05;
 				find_element_xi_data.find_nearest_location = find_nearest_location;
 				find_element_xi_data.nearest_element = (struct FE_element *)NULL;
 				find_element_xi_data.nearest_element_distance_squared = 0.0;
+				find_element_xi_data.start_with_data_xi = 0;
 
 				if (search_region)
 				{
 					*element = (struct FE_element *)NULL;
 
 					/* Try the cached element first if it is in the group */
-					if (field->element && FE_region_contains_FE_element
-						(fe_region, field->element) &&
-						Computed_field_iterative_element_conditional(
-							field->element, (void *)&find_element_xi_data))
+					if (cache->element && FE_region_contains_FE_element
+						(fe_region, cache->element))
 					{
-						*element = field->element;
+						/* Start with the xi that worked before too */
+						number_of_xi = get_FE_element_dimension(cache->element);
+						for (i = 0 ; i < number_of_xi ; i++)
+						{
+							find_element_xi_data.xi[i] = cache->xi[i];
+						}
+						find_element_xi_data.start_with_data_xi = 1;
+						if (Computed_field_iterative_element_conditional(
+							cache->element, (void *)&find_element_xi_data))
+						{
+							*element = cache->element;
+						}
+						find_element_xi_data.start_with_data_xi = 0;
 					}
 					/* Now try every element */
 					if (!*element)
@@ -822,6 +850,7 @@ sequential element_xi lookup should now be performed.
 		find_element_xi_data.find_nearest_location = 0; /* Find exact location */
 		find_element_xi_data.nearest_element = (struct FE_element *)NULL;
 		find_element_xi_data.nearest_element_distance_squared = 0.0;
+		find_element_xi_data.start_with_data_xi = 0;
 		if (ALLOCATE(find_element_xi_data.found_values, FE_value, number_of_values))
 		{
 			if (*cache_ptr)
@@ -1154,6 +1183,7 @@ Stores cache data for the find_xi routines.
 #if defined (GRAPHICS_BUFFER_USE_OFFSCREEN_BUFFERS)
 	  cache->graphics_buffer = (struct Graphics_buffer *)NULL;
 #endif /* defined (GRAPHICS_BUFFER_USE_OFFSCREEN_BUFFERS) */
+	  cache->element = (struct FE_element *)NULL;
 	  cache->valid_values = 0;
 	  cache->number_of_values = 0;
 	  cache->values = (FE_value *)NULL;

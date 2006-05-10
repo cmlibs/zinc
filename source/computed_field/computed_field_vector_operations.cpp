@@ -2228,72 +2228,48 @@ Sets the <values> of the computed <field> at <node>.
 } /* Computed_field_magnitude_set_values_at_node */
 
 static int Computed_field_magnitude_set_values_in_element(
-	struct Computed_field *field, struct FE_element *element,int *number_in_xi,
+	struct Computed_field *field, struct FE_element *element,FE_value *xi,
 	FE_value time, FE_value *values)
 /*******************************************************************************
-LAST MODIFIED : 28 October 2004
+LAST MODIFIED : 12 October 2005
 
 DESCRIPTION :
 Sets the <values> of the computed <field> over the <element>.
 ==============================================================================*/
 {
 	FE_value magnitude,*source_values;
-	int element_dimension,i,j,k,number_of_points,return_code,
-		source_number_of_components,zero_warning;
+	int j,k,return_code,source_number_of_components;
 
 	ENTER(Computed_field_magnitude_set_values_in_element);
-	if (field && element && number_in_xi && values)
+	if (field && element && xi && values)
 	{
 		return_code=1;
-		element_dimension=get_FE_element_dimension(element);
-		number_of_points=1;
-		for (i=0;(i<element_dimension)&&return_code;i++)
-		{
-			if (0<number_in_xi[i])
-			{
-				number_of_points *= (number_in_xi[i]+1);
-			}
-			else
-			{
-				display_message(ERROR_MESSAGE,
-					"Computed_field_magnitude_set_values_in_element.  "
-					"number_in_xi must be positive");
-				return_code=0;
-			}
-		}
-		if (return_code)
+		if (ALLOCATE(source_values, FE_value,
+			field->source_fields[0]->number_of_components))
 		{
 			/* need current field values to "magnify" */
-			if (Computed_field_get_values_in_element(field->source_fields[0],
-					 element,number_in_xi,time,&source_values))
+			if (Computed_field_evaluate_in_element(field->source_fields[0],
+					element, xi, time, /*top_level*/(struct FE_element *)NULL,
+					source_values, /*derivatives*/(FE_value *)NULL))
 			{
 				source_number_of_components =
 					field->source_fields[0]->number_of_components;
-				zero_warning=0;
-				for (j=0;j<number_of_points;j++)
+				/* if the source field is not a zero vector, set its magnitude to
+					the given value */
+				magnitude = 0.0;
+				for (k=0;k<source_number_of_components;k++)
 				{
-					/* if the source field is not a zero vector, set its magnitude to
-						 the given value */
-					magnitude = 0.0;
+					magnitude += source_values[k] * source_values[k];
+				}
+				if (0.0 < magnitude)
+				{
+					magnitude = values[j] / sqrt(magnitude);
 					for (k=0;k<source_number_of_components;k++)
 					{
-						magnitude += source_values[k*number_of_points+j]*
-							source_values[k*number_of_points+j];
-					}
-					if (0.0 < magnitude)
-					{
-						magnitude = values[j] / sqrt(magnitude);
-						for (k=0;k<source_number_of_components;k++)
-						{
-							source_values[k*number_of_points+j] *= magnitude;
-						}
-					}
-					else
-					{
-						zero_warning=1;
+						source_values[k] *= magnitude;
 					}
 				}
-				if (zero_warning)
+				else
 				{
 					/* not an error; just a warning */
 					display_message(WARNING_MESSAGE,
@@ -2301,8 +2277,7 @@ Sets the <values> of the computed <field> over the <element>.
 						field->name);
 				}
 				return_code=Computed_field_set_values_in_element(
-					field->source_fields[0],element,number_in_xi,time,source_values);
-				DEALLOCATE(source_values);
+					field->source_fields[0],element,xi,time,source_values);
 			}
 			else
 			{
@@ -2311,6 +2286,7 @@ Sets the <values> of the computed <field> over the <element>.
 					"Could not evaluate source field for %s.",field->name);
 				return_code=0;
 			}
+			DEALLOCATE(source_values);
 		}
 	}
 	else

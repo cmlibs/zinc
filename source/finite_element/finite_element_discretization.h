@@ -80,6 +80,19 @@ Note the actual number and layout is dependent on the <element_shape>; see
 comments for simplex and polygons shapes for more details.
 ==============================================================================*/
 
+int FE_element_shape_get_indices_for_xi_location_in_cell_corners(
+	struct FE_element_shape *element_shape, int *number_in_xi,
+	FE_value *xi, int *indices);
+/*******************************************************************************
+LAST MODIFIED : 18 October 2005
+
+DESCRIPTION :
+Determines if <xi> cooresponds to a location on the corners of uniform cells
+across the <element_shape> according to <number_in_xi>.
+If so, returns 1 and sets the <indices> to match.
+Otherwise the routine returns 0.
+==============================================================================*/
+
 int FE_element_get_xi_points_cell_random(struct FE_element *element,
 	enum Xi_discretization_mode xi_discretization_mode, int *number_in_xi,
 	struct Computed_field *coordinate_field, struct Computed_field *density_field,

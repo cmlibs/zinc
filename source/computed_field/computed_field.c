@@ -2219,13 +2219,6 @@ It is up to the calling function to DEALLOCATE the returned string.
 				"Computed_field_evaluate_as_string_in_element.  "
 				"No function defined.");
 		}
-		if (!return_string)
-		{
-			display_message(ERROR_MESSAGE,
-				"Computed_field_evaluate_as_string_in_element.  Failed");
-			/* clear the cache since values may be half set */
-			Computed_field_clear_cache(field);
-		}
 	}
 	else
 	{
@@ -2290,13 +2283,6 @@ Computed_field_evaluate_cache_in_element.
 				sprintf(tmp_string,"%g",field->values[component_number]);
 				return_string=duplicate_string(tmp_string);
 			}
-		}
-		if (!return_string)
-		{
-			display_message(ERROR_MESSAGE,
-				"Computed_field_default_evaluate_as_string_in_element.  Failed");
-			/* clear the cache since values may be half set */
-			Computed_field_clear_cache(field);
 		}
 	}
 	else
@@ -2369,13 +2355,6 @@ number_of_components
 					destination++;
 				}
 			}
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"Computed_field_evaluate_in_element.  Failed for %s",field->name);
-			/* clear the cache since values may be half set */
-			Computed_field_clear_cache(field);
 		}
 	}
 	else
@@ -2554,11 +2533,6 @@ It is up to the calling function to DEALLOCATE the returned string.
 				"Computed_field_evaluate_as_string_at_node.  "
 				"No function defined.");
 		}
-		if (!return_string)
-		{
-			/* clear the cache since values may be half set */
-			Computed_field_clear_cache(field);
-		}
 	}
 	else
 	{
@@ -2703,13 +2677,6 @@ It is up to the calling function to DEALLOCATE the returned string.
 				return_string=duplicate_string(tmp_string);
 			}
 		}
-		if (!return_string)
-		{
-			display_message(ERROR_MESSAGE,
-				"Computed_field_default_evaluate_as_string_at_node.  Failed");
-			/* clear the cache since values may be half set */
-			Computed_field_clear_cache(field);
-		}
 	}
 	else
 	{
@@ -2753,13 +2720,6 @@ number_of_components.
 			{
 				values[i]=field->values[i];
 			}
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"Computed_field_evaluate_at_node.  Failed");
-			/* clear the cache since values may be half set */
-			Computed_field_clear_cache(field);
 		}
 	}
 	else
@@ -2918,13 +2878,13 @@ It is up to the calling function to deallocate the returned values.
 } /* Computed_field_get_values_in_element */
 
 int Computed_field_set_values_in_element(struct Computed_field *field,
-	struct FE_element *element,int *number_in_xi, FE_value time,
+	struct FE_element *element, FE_value *xi, FE_value time,
 	FE_value *values)
 /*******************************************************************************
-LAST MODIFIED : 21 April 2005
+LAST MODIFIED : 14 October 2005
 
 DESCRIPTION :
-Sets the <values> of the computed <field> over the <element>. Only certain
+Sets the <values> of the computed <field> at <xi> in the <element>. Only certain
 computed field types allow their values to be set. Fields that deal directly
 with FE_fields eg. FINITE_ELEMENT fall into this category, as do the various
 transformations, RC_COORDINATE, RC_VECTOR, OFFSET, SCALE, etc. which convert
@@ -2935,24 +2895,18 @@ example, the 'vector' field in this case - coordinates should not change. This
 process continues until the actual FE_field values in the element are changed or
 a field is reached for which its calculation is not reversible, or is not
 supported yet.
-
-<number_in_xi> has the number of grid cells in each xi direction of <element>,
-such that there is one more grid point in each direction than this number. Grid
-points are evenly spaced in xi. There are as many <values> as there are grid
-points X number_of_components, cycling fastest through number of grid points in
-xi1, number of grid points in xi2 etc. and lastly components.
 ==============================================================================*/
 {
 	int return_code;
 
 	ENTER(Computed_field_set_values_in_element);
-	if (field && element && number_in_xi && values)
+	if (field && element && xi && values)
 	{
 		if (field->computed_field_set_values_in_element_function)
 		{
 			if (!(return_code = 
 					 field->computed_field_set_values_in_element_function(
-						 field, element, number_in_xi, time, values)))
+						 field, element, xi, time, values)))
 			{
 				display_message(ERROR_MESSAGE,
 					"Computed_field_set_values_in_element.  "

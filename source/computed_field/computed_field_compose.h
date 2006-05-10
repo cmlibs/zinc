@@ -60,9 +60,10 @@ int Computed_field_set_type_compose(struct Computed_field *field,
 	struct Computed_field *find_element_xi_field,
 	struct Computed_field *calculate_values_field,
 	struct Cmiss_region *search_region, char *region_path,
-	int find_nearest);
+	int find_nearest, int use_point_five_when_out_of_bounds,
+	int element_dimension);
 /*******************************************************************************
-LAST MODIFIED : 6 December 2005
+LAST MODIFIED : 9 May 2006
 
 DESCRIPTION :
 Converts <field> to type COMPUTED_FIELD_COMPOSE, this field allows you to
@@ -71,6 +72,10 @@ to then calculate a corresponding element/xi and finally calculate values using
 this element/xi and a third field.  You can then evaluate values on a "host"
 mesh for any points "contained" inside.  The <search_element_group> is the group
 from which any returned element_xi will belong.
+If <use_point_five_when_out_of_bounds> is true then if the texture_coordinate_field
+values cannot be found in the find_element_xi_field, then instead of returning
+failure, the values will be set to 0.5 and returned as success.
+Only elements that have dimension equals <element_dimension> will be searched.
 ==============================================================================*/
 
 int Computed_field_get_type_compose(struct Computed_field *field,
@@ -78,7 +83,8 @@ int Computed_field_get_type_compose(struct Computed_field *field,
 	struct Computed_field **find_element_xi_field,
 	struct Computed_field **calculate_values_field,
 	struct Cmiss_region **search_region, char **region_path,
-	int *find_nearest);
+	int *find_nearest, int *use_point_five_when_out_of_bounds,
+	int *element_dimension);
 /*******************************************************************************
 LAST MODIFIED : 6 December 2005
 

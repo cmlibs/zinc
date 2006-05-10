@@ -520,77 +520,39 @@ Sets the <values> of the computed <field> at <node>.
 } /* Computed_field_coordinate_transformation_set_values_at_node */
 
 static int Computed_field_coordinate_transformation_set_values_in_element(
-	struct Computed_field *field, struct FE_element *element,int *number_in_xi,
+	struct Computed_field *field, struct FE_element *element,FE_value *xi,
 	FE_value time, FE_value *values)
 /*******************************************************************************
-LAST MODIFIED : 28 October 2004
+LAST MODIFIED : 12 October 2005
 
 DESCRIPTION :
 Sets the <values> of the computed <field> over the <element>.
 ==============================================================================*/
 {
-	FE_value local_field_coordinates[3], source_field_coordinates[3],
-		*source_values;
-	int element_dimension,i,j,k,number_of_points,return_code;
+	FE_value *source_values;
+	int return_code;
 
 	ENTER(Computed_field_coordinate_transformation_set_values_in_element);
-	if (field && element && number_in_xi && values)
+	if (field && element && xi && values)
 	{
 		return_code=1;
-		element_dimension=get_FE_element_dimension(element);
-		number_of_points=1;
-		for (i=0;(i<element_dimension)&&return_code;i++)
+		/* 3 values for non-rc coordinate system */
+		if (ALLOCATE(source_values,FE_value,3))
 		{
-			if (0<number_in_xi[i])
+			/* convert RC values back into source coordinate system */
+			if (convert_Coordinate_system(&(field->coordinate_system),
+					3,values,&(field->source_fields[0]->coordinate_system),
+					field->source_fields[0]->number_of_components,
+					source_values,/*jacobian*/(float *)NULL))
 			{
-				number_of_points *= (number_in_xi[i]+1);
+				return_code=Computed_field_set_values_in_element(
+					field->source_fields[0],element,xi,time,source_values);
 			}
-			else
-			{
-				display_message(ERROR_MESSAGE,
-					"Computed_field_coordinate_transformation_set_values_in_element.  "
-					"number_in_xi must be positive");
-				return_code=0;
-			}
+			DEALLOCATE(source_values);
 		}
-		if (return_code)
+		else
 		{
-			/* 3 values for non-rc coordinate system */
-			if (ALLOCATE(source_values,FE_value,number_of_points*3))
-			{
-				for (j=0;(j<number_of_points)&&return_code;j++)
-				{
-					for (k=0;k<3;k++)
-					{
-						local_field_coordinates[k]=values[k*number_of_points+j];
-					}
-					/* convert RC values back into source coordinate system */
-					if (convert_Coordinate_system(&(field->coordinate_system),
-						3,local_field_coordinates,&(field->source_fields[0]->coordinate_system),
-						field->source_fields[0]->number_of_components,
-						source_field_coordinates,/*jacobian*/(float *)NULL))
-					{
-						for (k=0;k<3;k++)
-						{
-							source_values[k*number_of_points+j]=source_field_coordinates[k];
-						}
-					}
-					else
-					{
-						return_code=0;
-					}
-				}
-				if (return_code)
-				{
-					return_code=Computed_field_set_values_in_element(
-						field->source_fields[0],element,number_in_xi,time,source_values);
-				}
-				DEALLOCATE(source_values);
-			}
-			else
-			{
-				return_code=0;
-			}
+			return_code=0;
 		}
 	}
 	else
@@ -1233,7 +1195,7 @@ Sets the <values> of the computed <field> at <node>.
 } /* Computed_field_vector_coordinate_transformation_set_values_at_node */
 
 static int Computed_field_vector_coordinate_transformation_set_values_in_element(
-	struct Computed_field *field, struct FE_element *element,int *number_in_xi,
+	struct Computed_field *field, struct FE_element *element,FE_value *xi,
 	FE_value time, FE_value *values)
 /*******************************************************************************
 LAST MODIFIED : 28 October 2004
@@ -1243,102 +1205,78 @@ Sets the <values> of the computed <field> over the <element>.
 ==============================================================================*/
 {
 	FE_value *source_values;
-	int element_dimension,i,j,k,number_of_points,return_code;
+	int i,k,return_code;
 	FE_value jacobian[9],non_rc_coordinates[3],
 		rc_coordinates[3],*rc_coordinate_values,sum;
 	int coordinates_per_vector,m,number_of_vectors;
 	struct Computed_field *rc_coordinate_field;
 	
 	ENTER(Computed_field_vector_coordinate_transformation_set_values_in_element);
-	if (field && element && number_in_xi && values)
+	if (field && element && xi && values)
 	{
 		return_code=1;
-		element_dimension=get_FE_element_dimension(element);
-		number_of_points=1;
-		for (i=0;(i<element_dimension)&&return_code;i++)
+		if (rc_coordinate_field=Computed_field_begin_wrap_coordinate_field(
+				 field->source_fields[1]))
 		{
-			if (0<number_in_xi[i])
+			if (ALLOCATE(rc_coordinate_values, FE_value, rc_coordinate_field->number_of_components)
+				&& ALLOCATE(source_values,FE_value,field->source_fields[0]->number_of_components))
 			{
-				number_of_points *= (number_in_xi[i]+1);
-			}
-			else
-			{
-				display_message(ERROR_MESSAGE,
-					"Computed_field_vector_coordinate_transformation_set_values_in_element.  "
-					"number_in_xi must be positive");
-				return_code=0;
-			}
-		}
-
-		if (return_code)
-		{
-			if (rc_coordinate_field=Computed_field_begin_wrap_coordinate_field(
-				field->source_fields[1]))
-			{
-				if (Computed_field_get_values_in_element(rc_coordinate_field,
-					element,number_in_xi, time, &rc_coordinate_values))
+				if (Computed_field_evaluate_in_element(rc_coordinate_field,
+						element, xi, time, /*top_level*/(struct FE_element *)NULL,
+						rc_coordinate_values, /*derivatives*/(FE_value *)NULL))
 				{
-					/* 3 values for non-rc coordinate system */
-					if (ALLOCATE(source_values,FE_value,
-						number_of_points*field->source_fields[0]->number_of_components))
+					for (k=0;k<3;k++)
 					{
-						for (j=0;(j<number_of_points)&&return_code;j++)
-						{
-							for (k=0;k<3;k++)
-							{
-								rc_coordinates[k]=
-									rc_coordinate_values[k*number_of_points+j];
-							}
-							/* need jacobian at current coordinate position for
-								converting to coordinate system of source vector field
-								(=source_fields[0]) */
-							if (convert_Coordinate_system(&(field->coordinate_system),
-								3,rc_coordinates,&field->source_fields[0]->coordinate_system,
-								3,non_rc_coordinates,jacobian))
-							{
-								number_of_vectors=field->number_of_components/3;
-								coordinates_per_vector=
-									field->source_fields[0]->number_of_components/
-									number_of_vectors;
-								for (i=0;i<number_of_vectors;i++)
-								{
-									for (m=0;m<coordinates_per_vector;m++)
-									{
-										sum=0.0;
-										for (k=0;k<3;k++)
-										{
-											sum +=
-												jacobian[m*3+k]*values[(i*3+k)*number_of_points+j];
-										}
-										source_values[(i*coordinates_per_vector+m)*
-											number_of_points+j]=sum;
-									}
-								}
-							}
-							else
-							{
-								return_code=0;
-							}
-						}
-						if (return_code)
-						{
-							return_code=Computed_field_set_values_in_element(
-								field->source_fields[0],element,number_in_xi,time,source_values);
-						}
-						DEALLOCATE(source_values);
+						rc_coordinates[k]=
+							rc_coordinate_values[k];
 					}
-					DEALLOCATE(rc_coordinate_values);
+					/* need jacobian at current coordinate position for
+						converting to coordinate system of source vector field
+						(=source_fields[0]) */
+					if (convert_Coordinate_system(&(field->coordinate_system),
+							3,rc_coordinates,&field->source_fields[0]->coordinate_system,
+							3,non_rc_coordinates,jacobian))
+					{
+						number_of_vectors=field->number_of_components/3;
+						coordinates_per_vector=
+							field->source_fields[0]->number_of_components/
+							number_of_vectors;
+						for (i=0;i<number_of_vectors;i++)
+						{
+							for (m=0;m<coordinates_per_vector;m++)
+							{
+								sum=0.0;
+								for (k=0;k<3;k++)
+								{
+									sum +=
+										jacobian[m*3+k]*values[(i*3+k)];
+								}
+								source_values[i*coordinates_per_vector+m]=sum;
+							}
+						}
+					}
+					else
+					{
+						return_code=0;
+					}
 				}
-				else
+				if (return_code)
 				{
-					return_code=0;
+					return_code=Computed_field_set_values_in_element(
+						field->source_fields[0],element,xi,time,source_values);
 				}
-				Computed_field_end_wrap(&rc_coordinate_field);
+				DEALLOCATE(source_values);
+				DEALLOCATE(rc_coordinate_values);
 			}
 			else
 			{
 				return_code=0;
 			}
+			Computed_field_end_wrap(&rc_coordinate_field);
+		}
+		else
+		{
+			return_code=0;
 		}
 	}
 	else

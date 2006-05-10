@@ -309,8 +309,8 @@ data, and then changes the correct value in the array structure.
 	char *field_value_string,*value_string;
 	FE_value time,value,*values,*xi;
 	int component_number,dimension,element_point_number,i,int_value,*int_values,
-		number_in_xi[MAXIMUM_ELEMENT_XI_DIMENSIONS],number_of_grid_values,
-		return_code;
+		number_in_xi[MAXIMUM_ELEMENT_XI_DIMENSIONS],
+		number_of_grid_values,return_code;
 	XtPointer user_data;
 	struct Computed_field *field;
 	struct Element_point_field_viewer_widget_struct *element_point_field_viewer;
@@ -382,17 +382,31 @@ data, and then changes the correct value in the array structure.
 						{
 							if (1==sscanf(value_string,"%g",&value))
 							{
-								if (Computed_field_get_values_in_element(field,element,
-									number_in_xi,time,&values))
+								if (ALLOCATE(values, FE_value, Computed_field_get_number_of_components(field)))
 								{
-									/* change the value for this component */
-									values[component_number*number_of_grid_values+
-										element_point_number]=value;
-									return_code=Computed_field_set_values_in_element(
-										field,element,number_in_xi,time,values);
+									if (Computed_field_evaluate_in_element(
+											 field, element, xi, time, 
+											 /*top_level*/(struct FE_element *)NULL,
+											 values, /*derivative*/(FE_value *)NULL))
+									{
+										values[component_number] = value;
+										return_code=Computed_field_set_values_in_element(
+											field, element, xi, time, values);
+									}
+									else
+									{
+										display_message(ERROR_MESSAGE,
+											"element_point_field_viewer_value_CB.  "
+											"Unable to evaluate field component values");
+									}
 									DEALLOCATE(values);
 								}
-								/* note must clear cache so correct values are shown */
+								else
+								{
+									display_message(ERROR_MESSAGE,
+										"element_point_field_viewer_value_CB.  "
+										"Unable to allocate temporary storage.");
+								}
 								Computed_field_clear_cache(field);
 							}
 						}

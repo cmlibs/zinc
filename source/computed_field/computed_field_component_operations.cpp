@@ -2528,73 +2528,49 @@ DESCRIPTION :
 } /* Computed_field_scale_set_values_at_node */
 
 static int Computed_field_scale_set_values_in_element(struct Computed_field *field,
-	struct FE_element *element,int *number_in_xi,FE_value time,FE_value *values)
+	struct FE_element *element,FE_value *xi, FE_value time,FE_value *values)
 /*******************************************************************************
-LAST MODIFIED : 14 July 2000
+LAST MODIFIED : 14 October 2005
 
 DESCRIPTION :
 ==============================================================================*/
 {
 	FE_value scale_value, *source_values;
-	int element_dimension, i, j, k, number_of_points, offset,return_code;
+	int k, return_code;
 
 	ENTER(Computed_field_scale_set_values_in_element);
-	if (field && element && number_in_xi && values)
+	if (field && element && xi && values)
 	{
 		return_code=1;
-		element_dimension=get_FE_element_dimension(element);
-		number_of_points=1;
-		for (i=0;(i<element_dimension)&&return_code;i++)
+		/* reverse the scaling */
+		if (ALLOCATE(source_values,FE_value,field->number_of_components))
 		{
-			if (0<number_in_xi[i])
+			for (k=0;(k<field->number_of_components)&&return_code;k++)
 			{
-				number_of_points *= (number_in_xi[i]+1);
-			}
-			else
-			{
-				display_message(ERROR_MESSAGE,
-					"Computed_field_scale_set_values_in_element.  "
-					"number_in_xi must be positive");
-				return_code = 0;
-			}
-		}
-		if (return_code)
-		{
-			/* reverse the scaling */
-			if (ALLOCATE(source_values,FE_value,
-				number_of_points*field->number_of_components))
-			{
-				for (k=0;(k<field->number_of_components)&&return_code;k++)
+				scale_value=field->source_values[k];
+				if (0.0 != scale_value)
 				{
-					offset=k*number_of_points;
-					scale_value=field->source_values[k];
-					if (0.0 != scale_value)
-					{
-						for (j=0;j<number_of_points;j++)
-						{
-							source_values[offset+j] = values[offset+j] / scale_value;
-						}
-					}
-					else
-					{
-						display_message(ERROR_MESSAGE,
-							"Computed_field_scale_set_values_in_element.  "
-							"Cannot invert scale field %s with zero scale factor",
-							field->name);
-						return_code = 0;
-					}
+					source_values[k] = values[k] / scale_value;	
+				}
+				else
+				{
+					display_message(ERROR_MESSAGE,
+						"Computed_field_scale_set_values_in_element.  "
+						"Cannot invert scale field %s with zero scale factor",
+						field->name);
+					return_code = 0;
 				}
 				if (return_code)
 				{
 					return_code=Computed_field_set_values_in_element(
-						field->source_fields[0],element,number_in_xi,time,source_values);
+						field->source_fields[0],element,xi,time,source_values);
 				}
-				DEALLOCATE(source_values);
 			}
-			else
-			{
-				return_code = 0;
-			}
+			DEALLOCATE(source_values);
+		}
+		else
+		{
+			return_code = 0;
 		}
 	}
 	else
@@ -3327,67 +3303,42 @@ DESCRIPTION :
 } /* Computed_field_clamp_maximum_set_values_at_node */
 
 static int Computed_field_clamp_maximum_set_values_in_element(struct Computed_field *field,
-	struct FE_element *element,int *number_in_xi,FE_value time,FE_value *values)
+	struct FE_element *element, FE_value *xi,FE_value time,FE_value *values)
 /*******************************************************************************
-LAST MODIFIED : 14 July 2000
+LAST MODIFIED : 14 October 2005
 
 DESCRIPTION :
 ==============================================================================*/
 {
 	FE_value max, *source_values;
-	int element_dimension, i, j, k, number_of_points, return_code;
+	int k, return_code;
 
 	ENTER(Computed_field_clamp_maximum_set_values_in_element);
-	if (field && element && number_in_xi && values)
+	if (field && element && xi && values)
 	{
 		return_code=1;
-		element_dimension = get_FE_element_dimension(element);
-		number_of_points=1;
-		for (i=0;(i<element_dimension)&&return_code;i++)
+		/* clamps to limits of maximums when setting values too */
+		if (ALLOCATE(source_values,FE_value,field->number_of_components))
 		{
-			if (0<number_in_xi[i])
+			for (k=0;k<field->number_of_components;k++)
 			{
-				number_of_points *= (number_in_xi[i]+1);
-			}
-			else
-			{
-				display_message(ERROR_MESSAGE,
-					"Computed_field_clamp_maximum_set_values_in_element.  "
-					"number_in_xi must be positive");
-				return_code = 0;
-			}
-		}
-		if (return_code)
-		{
-			/* clamps to limits of maximums when setting values too */
-			if (ALLOCATE(source_values,FE_value,
-				number_of_points*field->number_of_components))
-			{
-				i=0;
-				for (k=0;k<field->number_of_components;k++)
+				max=field->source_values[k];
+				if (values[k] > max)
 				{
-					max=field->source_values[k];
-					for (j=0;j<number_of_points;j++)
-					{
-						if (values[i] > max)
-						{
-							source_values[i] = max;
-						}
-						else
-						{
-							source_values[i] = values[i];
-						}
-						i++;
-					}
+					source_values[k] = max;
 				}
-				return_code=Computed_field_set_values_in_element(
-					field->source_fields[0],element,number_in_xi,time,source_values);
-				DEALLOCATE(source_values);
+				else
+				{
+					source_values[k] = values[k];
+				}
 			}
-			else
-			{
-				return_code = 0;
-			}
+			return_code=Computed_field_set_values_in_element(
+				field->source_fields[0],element,xi,time,source_values);
+			DEALLOCATE(source_values);
+		}
+		else
+		{
+			return_code = 0;
 		}
 	}
 	else
@@ -4058,67 +4009,42 @@ DESCRIPTION :
 } /* Computed_field_clamp_minimum_set_values_at_node */
 
 static int Computed_field_clamp_minimum_set_values_in_element(struct Computed_field *field,
-	struct FE_element *element,int *number_in_xi,FE_value time,FE_value *values)
+	struct FE_element *element,FE_value *xi,FE_value time,FE_value *values)
 /*******************************************************************************
-LAST MODIFIED : 14 July 2000
+LAST MODIFIED : 14 October 2005
 
 DESCRIPTION :
 ==============================================================================*/
 {
 	FE_value min, *source_values;
-	int element_dimension, i, j, k, number_of_points, return_code;
+	int k, return_code;
 
 	ENTER(Computed_field_clamp_minimum_set_values_in_element);
-	if (field && element && number_in_xi && values)
+	if (field && element && xi && values)
 	{
 		return_code=1;
-		element_dimension = get_FE_element_dimension(element);
-		number_of_points=1;
-		for (i=0;(i<element_dimension)&&return_code;i++)
+		/* clamps to limits of minimums when setting values too */
+		if (ALLOCATE(source_values,FE_value,field->number_of_components))
 		{
-			if (0<number_in_xi[i])
+			for (k=0;k<field->number_of_components;k++)
 			{
-				number_of_points *= (number_in_xi[i]+1);
-			}
-			else
-			{
-				display_message(ERROR_MESSAGE,
-					"Computed_field_clamp_minimum_set_values_in_element.  "
-					"number_in_xi must be positive");
-				return_code = 0;
-			}
-		}
-		if (return_code)
-		{
-			/* clamps to limits of minimums when setting values too */
-			if (ALLOCATE(source_values,FE_value,
-				number_of_points*field->number_of_components))
-			{
-				i=0;
-				for (k=0;k<field->number_of_components;k++)
+				min=field->source_values[k];
+				if (values[k] < min)
 				{
-					min=field->source_values[k];
-					for (j=0;j<number_of_points;j++)
-					{
-						if (values[i] < min)
-						{
-							source_values[i] = min;
-						}
-						else
-						{
-							source_values[i] = values[i];
-						}
-						i++;
-					}
+					source_values[k] = min;
 				}
-				return_code=Computed_field_set_values_in_element(
-					field->source_fields[0],element,number_in_xi,time,source_values);
-				DEALLOCATE(source_values);
+				else
+				{
+					source_values[k] = values[k];
+				}
 			}
-			else
-			{
-				return_code = 0;
-			}
+			return_code=Computed_field_set_values_in_element(
+				field->source_fields[0],element,xi,time,source_values);
+			DEALLOCATE(source_values);
+		}
+		else
+		{
+			return_code = 0;
 		}
 	}
 	else
@@ -4761,59 +4687,34 @@ DESCRIPTION :
 } /* Computed_field_offset_set_values_at_node */
 
 static int Computed_field_offset_set_values_in_element(struct Computed_field *field,
-	struct FE_element *element,int *number_in_xi,FE_value time,FE_value *values)
+	struct FE_element *element,FE_value *xi,FE_value time,FE_value *values)
 /*******************************************************************************
-LAST MODIFIED : 14 July 2000
+LAST MODIFIED : 14 October 2005
 
 DESCRIPTION :
 ==============================================================================*/
 {
-	FE_value offset_value, *source_values;
-	int element_dimension, i, j, k, number_of_points, offset,return_code;
+	FE_value *source_values;
+	int k, return_code;
 
 	ENTER(Computed_field_offset_set_values_in_element);
-	if (field && element && number_in_xi && values)
+	if (field && element && xi && values)
 	{
 		return_code=1;
-		element_dimension = get_FE_element_dimension(element);
-		number_of_points=1;
-		for (i=0;(i<element_dimension)&&return_code;i++)
+		/* reverse the offset */
+		if (ALLOCATE(source_values,FE_value,field->number_of_components))
 		{
-			if (0<number_in_xi[i])
+			for (k=0;k<field->number_of_components;k++)
 			{
-				number_of_points *= (number_in_xi[i]+1);
+				source_values[k] = values[k] - field->source_values[k];
 			}
-			else
-			{
-				display_message(ERROR_MESSAGE,
-					"Computed_field_offset_set_values_in_element.  "
-					"number_in_xi must be positive");
-				return_code = 0;
-			}
+			return_code=Computed_field_set_values_in_element(
+				field->source_fields[0],element,xi,time,source_values);
+			DEALLOCATE(source_values);
 		}
-		if (return_code)
+		else
 		{
-			/* reverse the offset */
-			if (ALLOCATE(source_values,FE_value,
-				number_of_points*field->number_of_components))
-			{
-				for (k=0;k<field->number_of_components;k++)
-				{
-					offset=k*number_of_points;
-					offset_value=field->source_values[k];
-					for (j=0;j<number_of_points;j++)
-					{
-						source_values[offset+j] = values[offset+j] - offset_value;
-					}
-				}
-				return_code=Computed_field_set_values_in_element(
-					field->source_fields[0],element,number_in_xi,time,source_values);
-				DEALLOCATE(source_values);
-			}
-			else
-			{
-				return_code = 0;
-			}
+			return_code = 0;
 		}
 	}
 	else
@@ -6141,7 +6042,7 @@ DESCRIPTION :
 } /* Computed_field_edit_mask_set_values_at_node */
 
 static int Computed_field_edit_mask_set_values_in_element(
-	struct Computed_field *field, struct FE_element *element, int *number_in_xi,
+	struct Computed_field *field, struct FE_element *element, FE_value *xi,
 	FE_value time, FE_value *values)
 /*******************************************************************************
 LAST MODIFIED : 18 December 2001
@@ -6150,54 +6051,35 @@ DESCRIPTION :
 ==============================================================================*/
 {
 	FE_value *source_values;
-	int element_dimension, i, j, k, number_of_points, offset, return_code;
+	int k, return_code;
 
 	ENTER(Computed_field_edit_mask_set_values_in_element);
-	if (field && element && number_in_xi && values)
+	if (field && element && xi && values)
 	{
 		return_code = 1;
-		element_dimension = get_FE_element_dimension(element);
-		number_of_points = 1;
-		for (i = 0; (i < element_dimension) && return_code; i++)
-		{
-			if (0 < number_in_xi[i])
-			{
-				number_of_points *= (number_in_xi[i] + 1);
-			}
-			else
-			{
-				display_message(ERROR_MESSAGE,
-					"Computed_field_edit_mask_set_values_in_element.  "
-					"number_in_xi must be positive");
-				return_code = 0;
-			}
-		}
-		if (return_code)
+		if (ALLOCATE(source_values, FE_value, field->source_fields[0]->number_of_components))
 		{
 			/* need current field values to partially set */
-			if (Computed_field_get_values_in_element(field->source_fields[0],
-				element, number_in_xi, time, &source_values))
+			if (Computed_field_evaluate_in_element(field->source_fields[0],
+					element, xi, time, /*top_level*/(struct FE_element *)NULL,
+					source_values, /*derivatives*/(FE_value *)NULL))
 			{
 				/* insert the components with mask on into this array */
 				for (k = 0; k < field->number_of_components; k++)
 				{
 					if (field->source_values[k])
 					{
-						offset = k*number_of_points;
-						for (j=0;j<number_of_points;j++)
-						{
-							source_values[offset + j] = values[offset + j];
-						}
+						source_values[k] = values[k];
 					}
 				}
 				return_code = Computed_field_set_values_in_element(
-					field->source_fields[0], element, number_in_xi, time, source_values);
-				DEALLOCATE(source_values);
+					field->source_fields[0], element, xi, time, source_values);
 			}
 			else
 			{
 				return_code = 0;
 			}
+			DEALLOCATE(source_values);
 		}
 	}
 	else

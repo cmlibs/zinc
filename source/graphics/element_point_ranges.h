@@ -142,16 +142,17 @@ Field_value_index_ranges_set_grid_values.
 	/* the list of field components ranges being set - not needed in
 		 Field_value_index_ranges_set_grid_values */
 	struct LIST(Field_value_index_ranges) *field_component_ranges_list;
-	/* the element points being set. Note values are modified in element_copy by
+	/* the element points being set. Note values are modified in element by
 		 Field_value_index_ranges_set_grid_values */
 	struct Element_point_ranges_identifier *destination_identifier;
 	struct Multi_range *destination_element_point_numbers;
-	struct FE_element *element_copy;
+	struct FE_element *element;
 	/* the FE_region the elements belong to */
 	struct FE_region *fe_region;
-	/* set following to 1 before calling - after calling, if set can report that
-		 some element points were not at native/grid discretizations */
-	int all_points_native;
+	/* set following to 0 before calling - after calling, can compare to
+	 see how many eligible points there were and how many were successfully set. */
+	int number_of_points;
+	int number_of_points_set;
 };
 
 /*

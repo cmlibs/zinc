@@ -1012,6 +1012,98 @@ comments for simplex and polygons shapes for more details.
 	return (return_code);
 } /* FE_element_shape_get_xi_points_cell_corners */
 
+#define TOLERANCE 0.0001
+#define WITHIN_TOLERANCE(value1, value2) \
+	((value1 < value2 + TOLERANCE) && (value1 > value2 - TOLERANCE))
+
+int FE_element_shape_get_indices_for_xi_location_in_cell_corners(
+	struct FE_element_shape *element_shape, int *number_in_xi,
+	FE_value *xi, int *indices)
+/*******************************************************************************
+LAST MODIFIED : 18 October 2005
+
+DESCRIPTION :
+Determines if <xi> cooresponds to a location on the corners of uniform cells
+across the <element_shape> according to <number_in_xi>.
+If so, returns 1 and sets the <indices> to match.
+Otherwise the routine returns 0.
+==============================================================================*/
+{
+	enum FE_element_shape_category element_shape_category;
+	int element_dimension, i, line_direction, linked_xi_directions[2],
+		number_of_polygon_sides, number_of_xi_points, return_code;
+
+	ENTER(FE_element_shape_get_indices_for_xi_location_in_cell_corners);
+	if (element_shape && get_FE_element_shape_dimension(element_shape,
+		&element_dimension) && (0 < element_dimension) && number_in_xi
+		&& xi && indices)
+	{
+		return_code = 1;
+		number_of_xi_points = 0;
+		/* check the number_in_xi */
+		for (i = 0; (i < element_dimension) && return_code ; i++)
+		{
+			if (1 > number_in_xi[i])
+			{
+				display_message(ERROR_MESSAGE,
+					"FE_element_shape_get_indices_for_xi_location_in_cell_corners.  "
+					"Non-positive number_in_xi");
+				return_code = 0;
+			}
+		}
+		/* extract useful information about the element_shape */
+		if (!categorize_FE_element_shape(element_shape, &element_shape_category,
+			&number_of_polygon_sides, linked_xi_directions, &line_direction))
+		{
+			display_message(ERROR_MESSAGE,
+				"FE_element_shape_get_indices_for_xi_location_in_cell_corners.  "
+				"Could not categorize element_shape");
+			return_code = 0;
+		}
+		if (return_code)
+		{
+			/* calculate number_of_xi_points */
+			switch (element_shape_category)
+			{
+				case ELEMENT_CATEGORY_1D_LINE:
+				case ELEMENT_CATEGORY_2D_SQUARE:
+				case ELEMENT_CATEGORY_3D_CUBE:
+				{
+					for (i = 0 ; i < element_dimension ; i++)
+					{
+						indices[i] = (int)(number_in_xi[i] * xi[i]);
+						if (!WITHIN_TOLERANCE((float)indices[i] / (float)number_in_xi[i], xi[i]))
+						{
+							return_code = 0;
+						}
+					}
+				} break;
+				case ELEMENT_CATEGORY_2D_TRIANGLE:
+				case ELEMENT_CATEGORY_2D_POLYGON:
+				case ELEMENT_CATEGORY_3D_TETRAHEDRON:
+				case ELEMENT_CATEGORY_3D_TRIANGLE_LINE:
+				case ELEMENT_CATEGORY_3D_POLYGON_LINE:
+				default:
+				{
+					display_message(ERROR_MESSAGE,
+						"FE_element_shape_get_indices_for_xi_location_in_cell_corners.  "
+						"Unknown element shape");
+					return_code = 0;
+				} break;
+			}
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"FE_element_shape_get_indices_for_xi_location_in_cell_corners.  Invalid argument(s)");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* FE_element_shape_get_indices_for_xi_location_in_cell_corners */
+
 #define XI_POINTS_REALLOCATE_SIZE 50
 
 static int FE_element_add_xi_points_1d_line_cell_random(

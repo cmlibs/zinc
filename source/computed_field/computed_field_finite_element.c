@@ -47,6 +47,8 @@ Implements a number of basic component wise operations on computed fields.
 #include "computed_field/computed_field_find_xi.h"
 #include "computed_field/computed_field_private.h"
 #include "computed_field/computed_field_set.h"
+#include "finite_element/finite_element.h"
+#include "finite_element/finite_element_discretization.h"
 #include "finite_element/finite_element_region.h"
 #include "finite_element/finite_element_time.h"
 #include "general/debug.h"
@@ -79,10 +81,6 @@ DESCRIPTION :
 	struct FE_region *fe_region;
 }; /* struct Computed_field_finite_element_package */
 
-/*
-Module types
-------------
-*/
 struct Computed_field_finite_element_type_specific_data
 /*******************************************************************************
 LAST MODIFIED : 21 January 2002
@@ -979,26 +977,34 @@ Sets the <values> of the computed <field> at <node>.
 } /* Computed_field_finite_element_set_values_at_node */
 
 static int Computed_field_finite_element_set_values_in_element(
-	struct Computed_field *field, struct FE_element *element,int *number_in_xi,
+	struct Computed_field *field, struct FE_element *element, FE_value *xi,
 	FE_value time, FE_value *values)
 /*******************************************************************************
-LAST MODIFIED : 17 July 2000
+LAST MODIFIED : 18 October 2005
 
 DESCRIPTION :
 Sets the <values> of the computed <field> over the <element>.
 ==============================================================================*/
 {
 	enum Value_type value_type;
-	int element_dimension,grid_map_number_in_xi[MAXIMUM_ELEMENT_XI_DIMENSIONS],
+	FE_value *grid_values;
+	int element_dimension, i, k, grid_map_number_in_xi[MAXIMUM_ELEMENT_XI_DIMENSIONS],
+		indices[MAXIMUM_ELEMENT_XI_DIMENSIONS], *grid_int_values, offset,
+		return_code;
+	struct Computed_field_finite_element_type_specific_data *data;
+	struct FE_element_shape *element_shape;
+#if defined (OLD_CODE)
+	enum Value_type value_type;
+	int grid_map_number_in_xi[MAXIMUM_ELEMENT_XI_DIMENSIONS],
 		i,*int_values,j,k,number_of_points,offset,return_code;
 	struct Computed_field_finite_element_type_specific_data *data;
+#endif /* defined (OLD_CODE) */
 
 	ENTER(Computed_field_finite_element_set_values_in_element);
-	if (field&&element&&number_in_xi&&values && (data = 
+	if (field && element && xi && values && (data = 
 		(struct Computed_field_finite_element_type_specific_data *)
 		field->type_specific_data))
 	{
-		return_code=1;
 		if (time != 0)
 		{
 			display_message(WARNING_MESSAGE,
@@ -1006,93 +1012,85 @@ Sets the <values> of the computed <field> over the <element>.
 				"This function is not implemented for time.");
 			return_code = 0;
 		}
-		element_dimension=get_FE_element_dimension(element);
-		number_of_points=1;
-		for (i=0;(i<element_dimension)&&return_code;i++)
+		element_dimension = get_FE_element_dimension(element);
+		if (FE_element_field_is_grid_based(element,data->fe_field))
 		{
-			if (0<number_in_xi[i])
+			return_code=1;
+			if (get_FE_element_field_grid_map_number_in_xi(element,
+				data->fe_field, grid_map_number_in_xi) &&
+				get_FE_element_shape(element, &element_shape) &&
+				FE_element_shape_get_indices_for_xi_location_in_cell_corners(
+					element_shape, grid_map_number_in_xi, xi, indices))
 			{
-				number_of_points *= (number_in_xi[i]+1);
-			}
-			else
-			{
-				display_message(ERROR_MESSAGE,
-					"Computed_field_finite_element_set_values_in_element.  "
-					"number_in_xi must be positive");
-				return_code=0;
-			}
-		}
-		if (return_code)
-		{
-			if (FE_element_field_is_grid_based(element,data->fe_field)&&
-				get_FE_element_field_grid_map_number_in_xi(element,
-					data->fe_field,grid_map_number_in_xi))
-			{
-				for (i=0;(i<element_dimension)&&return_code;i++)
+				offset = indices[element_dimension - 1];
+				for (i = element_dimension - 2 ; i >= 0 ; i--)
 				{
-					if (number_in_xi[i] != grid_map_number_in_xi[i])
-					{
-						display_message(ERROR_MESSAGE,
-							"Computed_field_set_values_in_element.  "
-							"Finite element has different grid number_in_xi");
-						return_code=0;
-					}
+					offset = offset * (grid_map_number_in_xi[i] + 1) + indices[i];
 				}
-				if (return_code)
+				value_type=get_FE_field_value_type(data->fe_field);
+				switch (value_type)
 				{
-					value_type=get_FE_field_value_type(data->fe_field);
-					switch (value_type)
+					case FE_VALUE_VALUE:
 					{
-						case FE_VALUE_VALUE:
+						for (k = 0 ; (k < field->number_of_components) && return_code ; k++)
 						{
-							for (k=0;(k<field->number_of_components)&&return_code;k++)
+							if (get_FE_element_field_component_grid_FE_value_values(element,
+								data->fe_field, k, &grid_values))
 							{
+								grid_values[offset] = values[k];
 								if (!set_FE_element_field_component_grid_FE_value_values(
-									element,data->fe_field,k,values+k*number_of_points))
+									element, data->fe_field, k, grid_values))
 								{
 									display_message(ERROR_MESSAGE,
 										"Computed_field_finite_element_set_values_in_element.  "
 										"Unable to set finite element grid FE_value values");
 									return_code=0;
 								}
-							}
-						} break;
-						case INT_VALUE:
-						{
-							if (ALLOCATE(int_values,int,number_of_points))
-							{
-								for (k=0;(k<field->number_of_components)&&return_code;k++)
-								{
-									offset=k*number_of_points;
-									for (j=0;j<number_of_points;j++)
-									{
-										/*???RC this conversion could be a little dodgy */
-										int_values[j]=(int)(values[offset+j]);
-									}
-									if (!set_FE_element_field_component_grid_int_values(
-										element,data->fe_field,k,int_values))
-									{
-										display_message(ERROR_MESSAGE,
-											"Computed_field_finite_element_set_values_in_element.  "
-											"Unable to set finite element grid int values");
-										return_code=0;
-									}
-								}
-								DEALLOCATE(int_values);
+								DEALLOCATE(grid_values);
 							}
 							else
 							{
+								display_message(ERROR_MESSAGE,
+									"Computed_field_finite_element_set_values_in_element.  "
+									"Unable to get old grid FE_value values");
 								return_code=0;
 							}
-						} break;
-						default:
+						}
+					} break;
+					case INT_VALUE:
+					{
+						for (k = 0 ; (k < field->number_of_components) && return_code ; k++)
 						{
-							display_message(ERROR_MESSAGE,
-								"Computed_field_finite_element_set_values_in_element.  "
-								"Unsupported value_type for finite_element field");
-							return_code=0;
-						} break;
-					}
+							if (get_FE_element_field_component_grid_int_values(element,
+								data->fe_field, k, &grid_int_values))
+							{
+								grid_int_values[offset] = (int)values[k];
+								if (!set_FE_element_field_component_grid_int_values(
+									element, data->fe_field, k, grid_int_values))
+								{
+									display_message(ERROR_MESSAGE,
+										"Computed_field_finite_element_set_values_in_element.  "
+										"Unable to set finite element grid FE_value values");
+									return_code=0;
+								}
+								DEALLOCATE(grid_int_values);
+							}
+							else
+							{
+								display_message(ERROR_MESSAGE,
+									"Computed_field_finite_element_set_values_in_element.  "
+									"Unable to get old grid FE_value values");
+								return_code=0;
+							}
+						}
+					} break;
+					default:
+					{
+						display_message(ERROR_MESSAGE,
+							"Computed_field_finite_element_set_values_in_element.  "
+							"Unsupported value_type for finite_element field");
+						return_code=0;
+					} break;
 				}
 			}
 			else
@@ -1103,6 +1101,11 @@ Sets the <values> of the computed <field> over the <element>.
 					field->name);
 				return_code=0;
 			}
+		}
+		else if (FE_element_field_is_standard_node_based(element, data->fe_field))
+		{
+			return_code=1;
+			
 		}
 		if (!return_code)
 		{

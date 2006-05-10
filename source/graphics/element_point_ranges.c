@@ -1698,165 +1698,62 @@ If field and element_point_ranges not identically grid-based, clear
 <all_points_native> flag.
 ==============================================================================*/
 {
-	FE_value *destination_values,*source_values,value;
-	int consistent_grid,destination_number_of_grid_values,dimension,i,j,int_value,
-		*int_values,number_in_xi[MAXIMUM_ELEMENT_XI_DIMENSIONS],offset,
-		number_of_components,return_code,source_number_of_grid_values;
+	FE_value *values, xi[MAXIMUM_ELEMENT_XI_DIMENSIONS];
+	int grid_point_number, return_code, start, stop;
 	struct Computed_field *field;
+	struct Element_point_ranges_identifier *destination_identifier, *source_identifier;
 	struct Element_point_ranges_set_grid_values_data *set_grid_values_data;
-	struct FE_element *destination_element,*source_element;
-	struct FE_field *fe_field;
+	struct FE_element *destination_element, *source_element;
 	struct Multi_range *components;
 
 	ENTER(Field_value_index_ranges_set_grid_values);
 	if (field_value_index_ranges&&
 		(field=Field_value_index_ranges_get_field(field_value_index_ranges))&&
-		(number_of_components=Computed_field_get_number_of_components(field))&&
 		(components=Field_value_index_ranges_get_ranges(field_value_index_ranges))&&
 		(set_grid_values_data=(struct Element_point_ranges_set_grid_values_data *)
 			set_grid_values_data_void)&&
-		set_grid_values_data->source_identifier&&
-		(source_element=set_grid_values_data->source_identifier->element)&&
-		set_grid_values_data->destination_identifier&&
-		(destination_element=set_grid_values_data->element_copy)&&
+		(source_identifier = set_grid_values_data->source_identifier) &&
+		(source_element = source_identifier->element)&&
+		(destination_identifier = set_grid_values_data->destination_identifier) &&
+		(destination_element=set_grid_values_data->element)&&
 		set_grid_values_data->destination_element_point_numbers)
 	{
-		/* check constistency of source element point is a grid point */
-		if ((XI_DISCRETIZATION_CELL_CORNERS==
-			set_grid_values_data->source_identifier->xi_discretization_mode)&&
-			Computed_field_get_native_discretization_in_element(field,
-				source_element,number_in_xi))
+		if (FE_element_get_numbered_xi_point(
+				 source_element, source_identifier->xi_discretization_mode,
+				 source_identifier->number_in_xi, source_identifier->exact_xi,
+				 /*coordinate_field*/(struct Computed_field *)NULL,
+				 /*density_field*/(struct Computed_field *)NULL,
+				 set_grid_values_data->source_element_point_number, xi, /*time*/0)
+			&& ALLOCATE(values, FE_value, Computed_field_get_number_of_components(field))
+			&& Computed_field_evaluate_in_element(field,
+				source_element, xi, /*time*/0, /*top_level*/(struct FE_element *)NULL,
+				values, /*derivative*/(FE_value *)NULL))
 		{
-			return_code=1;
-			dimension=get_FE_element_dimension(source_element);
-			/* check native discretization matches that of source_identifier,
-				 also calculate source number of grid point values */
-			source_number_of_grid_values=1;
-			for (i=0;i<dimension;i++)
+			start = 0;
+			stop = 0;
+			while (Multi_range_get_next_start_value(
+				set_grid_values_data->destination_element_point_numbers, start, &start) 
+				&& Multi_range_get_next_stop_value(
+				set_grid_values_data->destination_element_point_numbers, stop, &stop))
 			{
-				if (set_grid_values_data->source_identifier->number_in_xi[i] !=
-					number_in_xi[i])
+				for (grid_point_number = start ; grid_point_number <= stop ; grid_point_number++)
 				{
-					return_code=0;
-				}
-				source_number_of_grid_values *= (number_in_xi[i]+1);
-			}
-		}
-		else
-		{
-			return_code=0;
-		}
-		if (return_code)
-		{
-			if ((XI_DISCRETIZATION_CELL_CORNERS==
-				set_grid_values_data->destination_identifier->xi_discretization_mode)&&
-				Computed_field_get_native_discretization_in_element(field,
-					destination_element,number_in_xi))
-			{
-				consistent_grid=1;
-				dimension=get_FE_element_dimension(destination_element);
-				/* check native discretization matches that of destination_identifier,
-					 also calculate destination number of grid point values */
-				destination_number_of_grid_values=1;
-				for (i=0;i<dimension;i++)
-				{
-					if (set_grid_values_data->destination_identifier->number_in_xi[i] !=
-						number_in_xi[i])
+					set_grid_values_data->number_of_points++;
+					if (FE_element_get_numbered_xi_point(
+							 destination_element, destination_identifier->xi_discretization_mode,
+							 destination_identifier->number_in_xi, destination_identifier->exact_xi,
+							 /*coordinate_field*/(struct Computed_field *)NULL,
+							 /*density_field*/(struct Computed_field *)NULL,
+							 grid_point_number, xi, /*time*/0)
+						&& Computed_field_set_values_in_element(field,
+							destination_element, xi, /*time*/0, values))
 					{
-						consistent_grid=0;
-					}
-					destination_number_of_grid_values *= (number_in_xi[i]+1);
-				}
-			}
-			else
-			{
-				consistent_grid=0;
-			}
-			if (consistent_grid)
-			{
-				if (Computed_field_is_type_finite_element(field)&&
-					Computed_field_get_type_finite_element(field,&fe_field)&&
-					(INT_VALUE==get_FE_field_value_type(fe_field)))
-				{
-					for (i=0;(i<number_of_components)&&return_code;i++)
-					{
-						if (Multi_range_is_value_in_range(components,i))
-						{
-							/* handle integer value_type separately */
-							if (return_code=get_FE_element_field_component_grid_int_values(
-								source_element,fe_field,/*component_number*/i,&int_values))
-							{
-								int_value=
-									int_values[set_grid_values_data->source_element_point_number];
-								DEALLOCATE(int_values);
-								if (return_code=get_FE_element_field_component_grid_int_values(
-									destination_element,fe_field,/*component_number*/i,
-									&int_values))
-								{
-									for (j=0;j<destination_number_of_grid_values;j++)
-									{
-										if (Multi_range_is_value_in_range(set_grid_values_data->
-											destination_element_point_numbers,j))
-										{
-											int_values[j]=int_value;
-										}
-									}
-									return_code=set_FE_element_field_component_grid_int_values(
-										destination_element,fe_field,/*component_number*/i,
-										int_values);
-									DEALLOCATE(int_values);
-								}
-							}
-						}
+						set_grid_values_data->number_of_points_set++;
 					}
 				}
-				else
-				{
-					if (return_code=Computed_field_get_values_in_element(field,
-						source_element,set_grid_values_data->
-						source_identifier->number_in_xi,/*time*/0,&source_values))
-					{
-						if (return_code=Computed_field_get_values_in_element(field,
-								destination_element,number_in_xi,/*time*/0,
-								&destination_values))
-						{
-							for (i=0;(i<number_of_components)&&return_code;i++)
-							{
-								if (Multi_range_is_value_in_range(components,i))
-								{
-									value=source_values[i*source_number_of_grid_values+
-										set_grid_values_data->source_element_point_number];
-									offset=i*destination_number_of_grid_values;
-									for (j=0;j<destination_number_of_grid_values;j++)
-									{
-										if (Multi_range_is_value_in_range(set_grid_values_data->
-											destination_element_point_numbers,j))
-										{
-											destination_values[offset+j]=value;
-										}
-									}
-								}
-							}
-							return_code=Computed_field_set_values_in_element(field,
-								destination_element,number_in_xi,/*time*/0,destination_values);
-							DEALLOCATE(destination_values);
-						}
-						DEALLOCATE(source_values);
-					}
-					/* clear field cache so elements not accessed by it */
-					Computed_field_clear_cache(field);
-				}
 			}
-			else
-			{
-				/* clear flag to allow problem to be reported later */
-				set_grid_values_data->all_points_native=0;
-			}
-			if (!return_code)
-			{
-				display_message(ERROR_MESSAGE,
-					"Field_value_index_ranges_set_grid_values.  Failed");
-			}
+			/* clear field cache so elements not accessed by it */
+			Computed_field_clear_cache(field);
 		}
 		else
 		{
@@ -1885,15 +1782,13 @@ LAST MODIFIED : 27 March 2003
 DESCRIPTION :
 Last parameter is a struct Element_point_ranges_set_grid_values_data. Sets the
 listed field components in <element_point_ranges> to the values taken from
-<source_identifier><element_point_number>. Works on a local element_copy, then
-uses a manager_modify to make changes global.
+<source_identifier><element_point_number>..
 ==============================================================================*/
 {
 	int return_code;
-	struct CM_element_information element_identifier;
 	struct Element_point_ranges_identifier element_point_ranges_identifier;
 	struct Element_point_ranges_set_grid_values_data *set_grid_values_data;
-	struct FE_element *element, *element_copy;
+	struct FE_element *element;
 
 	ENTER(Element_point_ranges_set_grid_values);
 	if (element_point_ranges&&
@@ -1906,41 +1801,32 @@ uses a manager_modify to make changes global.
 		/* make local element_copy from that in element_point_ranges */
 		if (Element_point_ranges_get_identifier(element_point_ranges,
 			&element_point_ranges_identifier) &&
-			(element = element_point_ranges_identifier.element) &&
-			get_FE_element_identifier(element, &element_identifier) &&
-			(element_copy = CREATE(FE_element)(&element_identifier,
-				(struct FE_element_shape *)NULL, (struct FE_region *)NULL, element)))
+			(element = element_point_ranges_identifier.element))
 		{
+			FE_region_begin_change(set_grid_values_data->fe_region);
 			/* access element_copy to be safe from ACCESS/DEACCESS cycles in
 				 computed field evaluations */
-			set_grid_values_data->element_copy = ACCESS(FE_element)(element_copy);
+			set_grid_values_data->element = ACCESS(FE_element)(element);
 			/* pass element_point_ranges to compare discretizations */
 			set_grid_values_data->destination_identifier=
 				&element_point_ranges_identifier;
 			set_grid_values_data->destination_element_point_numbers=
 				Element_point_ranges_get_ranges(element_point_ranges);
-			/* set values in the local element_copy */
-			if (return_code = FOR_EACH_OBJECT_IN_LIST(Field_value_index_ranges)(
+			/* set values in the element */
+			if (!(return_code = FOR_EACH_OBJECT_IN_LIST(Field_value_index_ranges)(
 				Field_value_index_ranges_set_grid_values,set_grid_values_data_void,
-				set_grid_values_data->field_component_ranges_list))
-			{
-				if (!FE_region_merge_FE_element(set_grid_values_data->fe_region,
-					element_copy))
-				{
-					return_code = 0;
-				}
-			}
-			if (!return_code)
+				set_grid_values_data->field_component_ranges_list)))
 			{
 				display_message(ERROR_MESSAGE,
 					"Element_point_ranges_set_grid_values.  Could not set values");
 			}
-			DEACCESS(FE_element)(&(set_grid_values_data->element_copy));
+			DEACCESS(FE_element)(&(set_grid_values_data->element));
+			FE_region_end_change(set_grid_values_data->fe_region);
 		}
 		else
 		{
 			display_message(ERROR_MESSAGE,"Element_point_ranges_set_grid_values.  "
-				"Could not make local copy of element");
+				"Invalid element");
 			return_code=0;
 		}
 	}

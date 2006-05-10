@@ -511,7 +511,7 @@ value for it in <values> will be used.
 } /* Computed_field_composite_set_values_at_node */
 
 static int Computed_field_composite_set_values_in_element(
-	struct Computed_field *field, struct FE_element *element,int *number_in_xi,
+	struct Computed_field *field, struct FE_element *element, FE_value *xi,
 	FE_value time, FE_value *values)
 /*******************************************************************************
 LAST MODIFIED : 28 October 2004
@@ -521,69 +521,55 @@ Sets the <values> of the computed <field> over the <element>.
 ==============================================================================*/
 {
 	FE_value *source_values;
-	int element_dimension, i, number_of_points, return_code, source_field_number;
+	int i, return_code, source_field_number;
 	struct Computed_field_composite_type_specific_data *data;
 	
 	ENTER(Computed_field_composite_set_values_in_element);
-	if (field && element && number_in_xi && values && (data =
+	if (field && element && xi && values && (data =
 		(struct Computed_field_composite_type_specific_data *)
 		field->type_specific_data))
 	{
 		return_code=1;
-		element_dimension=get_FE_element_dimension(element);
-		number_of_points=1;
-		for (i=0;(i<element_dimension)&&return_code;i++)
+		/* go through each source field, getting current values, changing values
+			for components that are used in the composite field, then setting the
+			whole field in one hit */
+		for (source_field_number=0;
+			  (source_field_number<field->number_of_source_fields)&&return_code;
+			  source_field_number++)
 		{
-			if (0<number_in_xi[i])
+			if (ALLOCATE(source_values,FE_value,field->number_of_components))
 			{
-				number_of_points *= (number_in_xi[i]+1);
-			}
-			else
-			{
-				display_message(ERROR_MESSAGE,
-					"Computed_field_composite_set_values_in_element.  "
-					"number_in_xi must be positive");
-				return_code=0;
-			}
-		}
-		if (return_code)
-		{
-			/* go through each source field, getting current values, changing values
-				 for components that are used in the composite field, then setting the
-				 whole field in one hit */
-			for (source_field_number=0;
-				(source_field_number<field->number_of_source_fields)&&return_code;
-				source_field_number++)
-			{
-				if (Computed_field_get_values_in_element(
-					field->source_fields[source_field_number],element,number_in_xi,
-					time, &source_values))
+				if (Computed_field_evaluate_in_element(
+						 field->source_fields[source_field_number],element,xi,
+						 time, /*top_level*/(struct FE_element *)NULL, source_values,
+						 /*derivatives*/(FE_value *)NULL))
 				{
 					for (i=0;i<field->number_of_components;i++)
 					{
 						if (source_field_number == data->source_field_numbers[i])
 						{
-							memcpy(
-								source_values + data->source_value_numbers[i]*number_of_points,
-								values + i*number_of_points,
-								number_of_points*sizeof(FE_value));
+							source_values[data->source_value_numbers[i]] = values[i];
 						}
 					}
 					return_code=Computed_field_set_values_in_element(
-						field->source_fields[source_field_number],element,number_in_xi,
+						field->source_fields[source_field_number],element,xi,
 						time,source_values);
-					DEALLOCATE(source_values);
 				}
 				else
 				{
 					return_code=0;
 				}
+				DEALLOCATE(source_values);
 			}
-			if (!return_code)
+			else
 			{
-				display_message(ERROR_MESSAGE,
-					"Computed_field_composite_set_values_in_element.  Failed");
+				return_code = 0;
 			}
+		}
+		if (!return_code)
+		{
+			display_message(ERROR_MESSAGE,
+				"Computed_field_composite_set_values_in_element.  Failed");
 		}
 	}
 	else

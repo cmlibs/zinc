@@ -1713,15 +1713,17 @@ Furthermore, if the <element_point_viewer>
 								element_point_viewer->fe_region;
 							/* if following flag is cleared it means that some of the selected
 								 element points are not grid points */
-							set_grid_values_data.all_points_native=1;
+							set_grid_values_data.number_of_points = 0;
+							set_grid_values_data.number_of_points_set = 0;
 							FE_region_begin_change(element_point_viewer->fe_region);
 							return_code=FOR_EACH_OBJECT_IN_LIST(Element_point_ranges)(
 								Element_point_ranges_set_grid_values,
 								(void *)&set_grid_values_data,element_point_ranges_list);
-							if (!set_grid_values_data.all_points_native)
+							if (set_grid_values_data.number_of_points != set_grid_values_data.number_of_points_set)
 							{
 								display_message(WARNING_MESSAGE,
-									"Values only set at element points on grid");
+									"Values only set at %d element locations out of %d specified.",
+									set_grid_values_data.number_of_points_set, set_grid_values_data.number_of_points);
 							}
 							FE_region_end_change(element_point_viewer->fe_region);
 						}

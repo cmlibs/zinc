@@ -64,6 +64,8 @@ struct Computed_field_compose_type_specific_data
 	char *region_path;
 	int find_nearest;
 	struct Cmiss_region *region;
+	int use_point_five_when_out_of_bounds;
+	int element_dimension;
 };
 
 static char computed_field_compose_type_string[] = "compose";
@@ -259,8 +261,8 @@ DESCRIPTION :
 				if (Computed_field_find_element_xi(
 					field->source_fields[1], field->source_fields[0]->values,
 					field->source_fields[0]->number_of_components, &element, xi,
-					/*element_dimension=all*/0,data->region, /*propagate_field*/0,
-					data->find_nearest) && element)
+					data->element_dimension, data->region,
+					/*propagate_field*/0, data->find_nearest) && element)
 				{
 					/* calculate the third source_field at this new location */
 					return_code = Computed_field_is_defined_in_element(
@@ -331,7 +333,7 @@ Evaluate the fields cache at the node.
 			if ((return_code = Computed_field_find_element_xi(field->source_fields[1],
 				field->source_fields[0]->values,
 				field->source_fields[0]->number_of_components,
-					  &compose_element, compose_xi, /*element_dimension=all*/0,
+					  &compose_element, compose_xi, data->element_dimension,
 						data->region, /*propagate_field*/0, data->find_nearest))
 				&& compose_element)
 			{
@@ -347,12 +349,19 @@ Evaluate the fields cache at the node.
 			}
 			else
 			{
-				/* Actually don't fail here, just make the values constant so that
-					people can compose outside the valid range */
-				return_code = 1;
-				for (i=0;i<field->number_of_components;i++)
+				if (data->use_point_five_when_out_of_bounds)
 				{
-					field->values[i]=0.5;
+					/* Actually don't fail here, just make the values constant so that
+						people can compose outside the valid range */
+					return_code = 1;
+					for (i=0;i<field->number_of_components;i++)
+					{
+						field->values[i]=0.5;
+					}
+				}
+				else
+				{
+					return_code = 0;
 				}
 			}
 		}
@@ -402,7 +411,7 @@ Evaluate the fields cache at the node.
 			if ((return_code = Computed_field_find_element_xi(field->source_fields[1],
 				field->source_fields[0]->values,
 				field->source_fields[0]->number_of_components,
-					  &compose_element, compose_xi, /*element_dimension=all*/0,
+					  &compose_element, compose_xi, data->element_dimension,
 						data->region, /*propagate_field*/0, data->find_nearest))
 				&& compose_element)
 			{
@@ -419,14 +428,21 @@ Evaluate the fields cache at the node.
 			}
 			else
 			{
-				/* Actually don't fail here, just make the values constant so that
-					people can compose outside the valid range */
-				return_code = 1;
-				for (i=0;i<field->number_of_components;i++)
+				if (data->use_point_five_when_out_of_bounds)
 				{
-					field->values[i]=0.5;
+					/* Actually don't fail here, just make the values constant so that
+						people can compose outside the valid range */
+					return_code = 1;
+					for (i=0;i<field->number_of_components;i++)
+					{
+						field->values[i]=0.5;
+					}
+					field->derivatives_valid = 0;
 				}
-				field->derivatives_valid = 0;
+				else
+				{
+					return_code = 0;
+				}
 			}
 		}
 	}
@@ -534,6 +550,18 @@ DESCRIPTION :
 		{
 			display_message(INFORMATION_MESSAGE,"    find exact match\n");
 		}
+		if (data->use_point_five_when_out_of_bounds)
+		{
+			display_message(INFORMATION_MESSAGE,"    use point five when out of bounds\n");
+		}
+		if (data->element_dimension)
+		{
+			display_message(INFORMATION_MESSAGE,"    only element dimension %d\n");
+		}
+		else
+		{
+			display_message(INFORMATION_MESSAGE,"    element dimension all\n");
+		}			
 	}
 	else
 	{
@@ -555,7 +583,7 @@ DESCRIPTION :
 Returns allocated command string for reproducing field. Includes type.
 ==============================================================================*/
 {
-	char *command_string, *group_name, *field_name;
+	char *command_string, *group_name, *field_name, temp_string[40];
 	int error;
 	struct Computed_field_compose_type_specific_data *data;
 
@@ -600,6 +628,12 @@ Returns allocated command string for reproducing field. Includes type.
 		{
 			append_string(&command_string, " find_nearest", &error);
 		}
+		if (data->use_point_five_when_out_of_bounds)
+		{
+			append_string(&command_string, " use_point_five_when_out_of_bounds", &error);
+		}
+		sprintf(temp_string, " element_dimension %d", data->element_dimension);
+		append_string(&command_string, temp_string, &error);
 	}
 	else
 	{
@@ -625,9 +659,10 @@ int Computed_field_set_type_compose(struct Computed_field *field,
 	struct Computed_field *find_element_xi_field,
 	struct Computed_field *calculate_values_field,
 	struct Cmiss_region *search_region, char *region_path,
-	int find_nearest)
+	int find_nearest, int use_point_five_when_out_of_bounds,
+	int element_dimension)
 /*******************************************************************************
-LAST MODIFIED : 6 December 2005
+LAST MODIFIED : 9 May 2006
 
 DESCRIPTION :
 Converts <field> to type COMPUTED_FIELD_COMPOSE, this field allows you to
@@ -636,6 +671,10 @@ to then calculate a corresponding element/xi and finally calculate values using
 this element/xi and a third field.  You can then evaluate values on a "host"
 mesh for any points "contained" inside.  The <search_element_group> is the group
 from which any returned element_xi will belong.
+If <use_point_five_when_out_of_bounds> is true then if the texture_coordinate_field
+values cannot be found in the find_element_xi_field, then instead of returning
+failure, the values will be set to 0.5 and returned as success.
+Only elements that have dimension equals <element_dimension> will be searched.
 The <region_path> string is supplied so that the commands listed can correctly
 name the string used to select the <search_region>.
 ==============================================================================*/
@@ -678,6 +717,9 @@ name the string used to select the <search_region>.
 					data->region = ACCESS(Cmiss_region)(search_region);
 					data->region_path = region_path_copy;
 					data->find_nearest = find_nearest;
+					data->use_point_five_when_out_of_bounds = 
+						use_point_five_when_out_of_bounds;
+					data->element_dimension = element_dimension;
 
 					/* Set all the methods */
 					COMPUTED_FIELD_ESTABLISH_METHODS(compose);
@@ -722,7 +764,8 @@ int Computed_field_get_type_compose(struct Computed_field *field,
 	struct Computed_field **find_element_xi_field,
 	struct Computed_field **calculate_values_field,
 	struct Cmiss_region **search_region, char **region_path,
-	int *find_nearest)
+	int *find_nearest, int *use_point_five_when_out_of_bounds,
+	int *element_dimension)
 /*******************************************************************************
 LAST MODIFIED : 6 December 2005
 
@@ -748,6 +791,8 @@ internally used path.
 		*search_region = data->region;
 		*region_path = data->region_path;
 		*find_nearest = data->find_nearest;
+		*use_point_five_when_out_of_bounds = data->use_point_five_when_out_of_bounds;
+		*element_dimension = data->element_dimension;
 		return_code = 1;
 	}
 	else
@@ -771,14 +816,17 @@ Converts <field> into type COMPUTED_FIELD_COMPOSE (if it is not
 already) and allows its contents to be modified.
 ==============================================================================*/
 {
-	char find_nearest_flag, find_exact_flag, *old_region_path, *search_region_path;
-	int find_nearest, return_code;
+	char fail_when_out_of_bounds_flag, find_nearest_flag, find_exact_flag,
+		*old_region_path, *search_region_path, use_point_five_when_out_of_bounds_flag;
+	int element_dimension, find_nearest, return_code,
+		use_point_five_when_out_of_bounds;
 	struct Computed_field *field, *calculate_values_field,*find_element_xi_field,
 		*texture_coordinates_field;
 	struct Computed_field_compose_package *computed_field_compose_package;
 	struct Coordinate_system *coordinate_system_ptr;
 	struct Cmiss_region *search_region;
-	struct Option_table *find_option_table, *option_table;
+	struct Option_table *find_option_table, *option_table,
+		*out_of_bounds_option_table;
 	struct Set_Computed_field_conditional_data set_calculate_values_field_data,
 		set_find_element_xi_field_data, set_texture_coordinates_field_data;
 
@@ -797,6 +845,10 @@ already) and allows its contents to be modified.
 		texture_coordinates_field = (struct Computed_field *)NULL;
 		find_nearest_flag = 0;
 		find_exact_flag = 0;
+		use_point_five_when_out_of_bounds_flag = 0;
+		fail_when_out_of_bounds_flag = 0;
+		use_point_five_when_out_of_bounds = 0;
+		element_dimension = 0;
 		/* Maintain the existing behaviour as the default */
 		find_nearest = 0;
 		/* get valid parameters for composite field */
@@ -806,7 +858,8 @@ already) and allows its contents to be modified.
 			return_code = Computed_field_get_type_compose(field, 
 				&calculate_values_field, &find_element_xi_field,
 				&texture_coordinates_field, &search_region, &old_region_path,
-				&find_nearest);
+				&find_nearest, &use_point_five_when_out_of_bounds,
+				&element_dimension);
 		}
 		if (old_region_path)
 		{
@@ -843,6 +896,14 @@ already) and allows its contents to be modified.
 			Option_table_add_entry(option_table, "calculate_values_field", 
 				&calculate_values_field, &set_calculate_values_field_data, 
 				set_Computed_field_conditional);
+			Option_table_add_int_non_negative_entry(option_table,"element_dimension",
+				&element_dimension);
+			find_option_table=CREATE(Option_table)();
+			Option_table_add_char_flag_entry(find_option_table,"find_nearest",
+				&find_nearest_flag);
+			Option_table_add_char_flag_entry(find_option_table,"find_exact",
+				&find_exact_flag);
+			Option_table_add_suboption_table(option_table, find_option_table);
 			/* find_element_xi_field */
 			set_find_element_xi_field_data.computed_field_manager =
 				computed_field_compose_package->computed_field_manager;
@@ -854,7 +915,7 @@ already) and allows its contents to be modified.
 				&find_element_xi_field, &set_find_element_xi_field_data, 
 				set_Computed_field_conditional);
 			find_option_table=CREATE(Option_table)();
-			Option_table_add_char_flag_entry(find_option_table,"find_nearest",
+ 			Option_table_add_char_flag_entry(find_option_table,"find_nearest",
 				&find_nearest_flag);
 			Option_table_add_char_flag_entry(find_option_table,"find_exact",
 				&find_exact_flag);
@@ -872,6 +933,15 @@ already) and allows its contents to be modified.
 			Option_table_add_entry(option_table, "texture_coordinates_field", 
 				&texture_coordinates_field, &set_texture_coordinates_field_data, 
 				set_Computed_field_conditional);
+			out_of_bounds_option_table=CREATE(Option_table)();
+			/* use_point_five_when_out_of_bounds */
+ 			Option_table_add_char_flag_entry(out_of_bounds_option_table,
+				"use_point_five_when_out_of_bounds",
+				&use_point_five_when_out_of_bounds_flag);
+ 			Option_table_add_char_flag_entry(out_of_bounds_option_table,
+				"fail_when_out_of_bounds",
+				&fail_when_out_of_bounds_flag);
+			Option_table_add_suboption_table(option_table, out_of_bounds_option_table);
 			return_code = Option_table_multi_parse(option_table, state);
 			/* no errors,not asking for help */
 			if (return_code)
@@ -908,13 +978,30 @@ already) and allows its contents to be modified.
 				{
 					find_nearest = 0;
 				}
+				if (use_point_five_when_out_of_bounds_flag &&
+					fail_when_out_of_bounds_flag)
+				{
+					display_message(ERROR_MESSAGE, 
+						"Specify only one of use_point_five_when_out_of_bounds "
+						"and fail_when_out_of_bounds");
+					return_code = 0;
+				}
+				if (use_point_five_when_out_of_bounds_flag)
+				{
+					use_point_five_when_out_of_bounds = 1;
+				}
+				else if (fail_when_out_of_bounds_flag)
+				{
+					use_point_five_when_out_of_bounds = 0;
+				}
 			}
 			if (return_code)
 			{
 				if (return_code=Computed_field_set_type_compose(field,
 					texture_coordinates_field, find_element_xi_field,
 						calculate_values_field, search_region, search_region_path,
-						find_nearest))
+						find_nearest, use_point_five_when_out_of_bounds,
+						element_dimension))
 				{
 					/* Set default coordinate system */
 					/* Inherit from third source field */

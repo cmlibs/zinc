@@ -76,7 +76,7 @@ typedef int (*Computed_field_set_values_at_node_function)(
 	struct Computed_field *field,struct FE_node *node,FE_value time,FE_value *values);
 typedef int (*Computed_field_set_values_in_element_function)(
 	struct Computed_field *field,struct FE_element *element,
-	int *number_in_xi,FE_value time,FE_value *values);
+	FE_value *xi,FE_value time,FE_value *values);
 typedef int (*Computed_field_get_native_discretization_in_element_function)(
 	struct Computed_field *field,struct FE_element *element,int *number_in_xi);
 typedef int (*Computed_field_find_element_xi_function)(

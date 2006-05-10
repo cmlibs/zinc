@@ -257,7 +257,7 @@ LAST MODIFIED : 11 October 2001
 DESCRIPTION :
 ==============================================================================*/
 {
-	int selected_count, success_count;
+	int selected_count, success_count, xi[MAXIMUM_ELEMENT_XI_DIMENSIONS];
 	FE_value time;
 	struct Computed_field *source_field;
 	struct Computed_field *destination_field;
@@ -273,10 +273,10 @@ LAST MODIFIED : 15 October 2001
 DESCRIPTION :
 ==============================================================================*/
 {
-	FE_value *new_value, *new_values, *temp_values, *value, *values;
+	FE_value *values, xi[MAXIMUM_ELEMENT_XI_DIMENSIONS];
 	int can_select_individual_points, destination_field_is_grid_based,
-		element_selected, i, j, k, offset, number_of_components, number_of_ranges,
-		number_of_xi_points, return_code, start, stop, success;
+		element_selected, grid_point_number, i, number_of_ranges,
+		return_code, start, stop;
 	struct Computed_field_update_element_values_from_source_data *data;
 	struct Element_point_ranges *element_point_ranges;
 	struct Element_point_ranges_identifier element_point_ranges_identifier;
@@ -343,97 +343,57 @@ DESCRIPTION :
 			}
 			else
 			{
-				element_point_ranges = (struct Element_point_ranges *)NULL;
+				element_point_ranges_identifier.element = element;
+				element_point_ranges_identifier.top_level_element = element;
+				element_point_ranges_identifier.xi_discretization_mode =
+					XI_DISCRETIZATION_CELL_CORNERS;
+				/* already set the number_in_xi, above */
+				element_point_ranges = CREATE(Element_point_ranges)(
+					&element_point_ranges_identifier);
 			}
 			if (element_selected)
 			{
 				data->selected_count++;
 				if (destination_field_is_grid_based &&
-					Computed_field_is_defined_in_element(data->source_field, element))
+					Computed_field_is_defined_in_element(data->source_field, element)
+					&& ALLOCATE(values, FE_value, Computed_field_get_number_of_components(data->source_field)))
 				{
-					if (Computed_field_get_values_in_element(data->source_field, element,
-						element_point_ranges_identifier.number_in_xi, data->time, &values))
+					if (element_point_ranges)
 					{
-						/* if individual grid points to be updated, need to evaluate
-							 the current field values and overwrite the selected ones */
-						if (element_point_ranges)
+						selected_ranges = 
+							Element_point_ranges_get_ranges(element_point_ranges);
+						
+						number_of_ranges =
+							Multi_range_get_number_of_ranges(selected_ranges);
+						for (i = 0; i < number_of_ranges; i++)
 						{
-							if (Computed_field_get_values_in_element(
-								data->destination_field, element,
-								element_point_ranges_identifier.number_in_xi, data->time,
-								&temp_values))
+							if (Multi_range_get_range(selected_ranges, i, &start, &stop))
 							{
-								/* make values point at the current values */
-								new_values = values;
-								values = temp_values;
-
-								success = 1;
-								value = values;
-								new_value = new_values;
-								FE_element_get_xi_points(element,
-									element_point_ranges_identifier.xi_discretization_mode,
-									element_point_ranges_identifier.number_in_xi,
-									element_point_ranges_identifier.exact_xi,
-									/*coordinate_field*/(struct Computed_field *)NULL,
-									/*density_field*/(struct Computed_field *)NULL,
-									&number_of_xi_points,
-									/*xi_points_address*/(Triple **)NULL, data->time);
-								number_of_components = Computed_field_get_number_of_components(
-									data->destination_field);
-								selected_ranges = 
-									Element_point_ranges_get_ranges(element_point_ranges);
-
-								number_of_ranges =
-									Multi_range_get_number_of_ranges(selected_ranges);
-								for (i = 0; i < number_of_ranges; i++)
+								for (grid_point_number = start ; grid_point_number <= stop ; grid_point_number++)
 								{
-									if (Multi_range_get_range(selected_ranges, i, &start, &stop)
-										&& (stop < number_of_xi_points))
+									if (FE_element_get_numbered_xi_point(
+											 element, element_point_ranges_identifier.xi_discretization_mode,
+											 element_point_ranges_identifier.number_in_xi, element_point_ranges_identifier.exact_xi,
+											 /*coordinate_field*/(struct Computed_field *)NULL,
+											 /*density_field*/(struct Computed_field *)NULL,
+											 grid_point_number, xi, /*time*/0))
 									{
-										for (j = 0; j < number_of_components; j++)
+										if (Computed_field_evaluate_in_element(data->source_field, 
+												element,
+												xi, data->time, /*top_level*/(struct FE_element *)NULL,
+												values, /*derivative*/(FE_value *)NULL))
 										{
-											offset = j*number_of_xi_points + start;
-											value = values + offset;
-											new_value = new_values + offset;
-											for (k = start; k <= stop; k++)
-											{
-												*value = *new_value;
-												value++;
-												new_value++;
-											}
-										}									
+											Computed_field_set_values_in_element(data->source_field, 
+												element,
+												xi, data->time, values);
+										}
 									}
-									else
-									{
-										display_message(ERROR_MESSAGE,
-											"Computed_field_update_element_values_from_source_sub.  "
-											"Invalid element point ranges");
-										success = 0;
-									}
-								}
-								DEALLOCATE(new_values);
-							}
-							else
-							{
-								success = 0;
+								}									
 							}
 						}
-						else
-						{
-							success = 1;
-						}
-						if (success)
-						{
-							if (Computed_field_set_values_in_element(
-								data->destination_field, element,
-								element_point_ranges_identifier.number_in_xi, data->time,
-								values))
-							{
-								data->success_count++;
-							}
-						}
-						DEALLOCATE(values);
 					}
+					data->success_count++;
+					DEALLOCATE(values);
 				}
 			}
 		}
