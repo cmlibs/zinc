@@ -1704,12 +1704,14 @@ If field and element_point_ranges not identically grid-based, clear
 	struct Element_point_ranges_identifier *destination_identifier, *source_identifier;
 	struct Element_point_ranges_set_grid_values_data *set_grid_values_data;
 	struct FE_element *destination_element, *source_element;
-	struct Multi_range *components;
 
 	ENTER(Field_value_index_ranges_set_grid_values);
 	if (field_value_index_ranges&&
 		(field=Field_value_index_ranges_get_field(field_value_index_ranges))&&
-		(components=Field_value_index_ranges_get_ranges(field_value_index_ranges))&&
+		/*(components=Field_value_index_ranges_get_ranges(field_value_index_ranges))&&
+		 You used to be able to set just some components, but that requires evaluating
+		the old values so you can set the new ones and I (Shane) am not sure it is 
+		useful.*/
 		(set_grid_values_data=(struct Element_point_ranges_set_grid_values_data *)
 			set_grid_values_data_void)&&
 		(source_identifier = set_grid_values_data->source_identifier) &&
