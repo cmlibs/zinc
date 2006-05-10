@@ -1031,7 +1031,7 @@ Otherwise the routine returns 0.
 {
 	enum FE_element_shape_category element_shape_category;
 	int element_dimension, i, line_direction, linked_xi_directions[2],
-		number_of_polygon_sides, number_of_xi_points, return_code;
+		number_of_polygon_sides, return_code;
 
 	ENTER(FE_element_shape_get_indices_for_xi_location_in_cell_corners);
 	if (element_shape && get_FE_element_shape_dimension(element_shape,
@@ -1039,7 +1039,6 @@ Otherwise the routine returns 0.
 		&& xi && indices)
 	{
 		return_code = 1;
-		number_of_xi_points = 0;
 		/* check the number_in_xi */
 		for (i = 0; (i < element_dimension) && return_code ; i++)
 		{
@@ -1062,7 +1061,6 @@ Otherwise the routine returns 0.
 		}
 		if (return_code)
 		{
-			/* calculate number_of_xi_points */
 			switch (element_shape_category)
 			{
 				case ELEMENT_CATEGORY_1D_LINE:
