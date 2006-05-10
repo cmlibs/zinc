@@ -2238,7 +2238,7 @@ Sets the <values> of the computed <field> over the <element>.
 ==============================================================================*/
 {
 	FE_value magnitude,*source_values;
-	int j,k,return_code,source_number_of_components;
+	int k,return_code,source_number_of_components;
 
 	ENTER(Computed_field_magnitude_set_values_in_element);
 	if (field && element && xi && values)
@@ -2263,7 +2263,7 @@ Sets the <values> of the computed <field> over the <element>.
 				}
 				if (0.0 < magnitude)
 				{
-					magnitude = values[j] / sqrt(magnitude);
+					magnitude = values[0] / sqrt(magnitude);
 					for (k=0;k<source_number_of_components;k++)
 					{
 						source_values[k] *= magnitude;
