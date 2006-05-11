@@ -4543,6 +4543,74 @@ If <use_data> is set, creating data points, otherwise creating node points.
 	return (return_code);
 } /* gfx_create_node_points */
 
+static int gfx_create_region(struct Parse_state *state,
+	void *dummy, void *root_region_void)
+/*******************************************************************************
+LAST MODIFIED : 9 December 2005
+
+DESCRIPTION :
+Executes a GFX CREATE REGION command.
+==============================================================================*/
+{
+	char *name;
+	int return_code;
+	struct Cmiss_region *region, *root_region;
+	struct FE_region *fe_region;
+	struct LIST(FE_element_shape) *element_shape_list;
+	struct MANAGER(FE_basis) *basis_manager;
+
+	ENTER(gfx_create_region);
+	USE_PARAMETER(dummy);
+	if (state && (root_region = (struct Cmiss_region *)root_region_void))
+	{
+		name = (char *)NULL;
+		if (set_name(state, (void *)&name, (void *)1))
+		{
+			return_code = 1;
+			if (name && Cmiss_region_get_region_from_path(root_region, name, &region) &&
+				region)
+			{
+				display_message(ERROR_MESSAGE,
+					"gfx_create_region.  Region '%s' already exists", name);
+				return_code = 0;
+			}
+			if (return_code)
+			{
+				if ((region = CREATE(Cmiss_region)())
+					&& (basis_manager=CREATE_MANAGER(FE_basis)())
+					&& (element_shape_list=CREATE(LIST(FE_element_shape))()))
+				{
+					ACCESS(Cmiss_region)(region);
+					if (fe_region = CREATE(FE_region)(/*master_fe_region*/(struct FE_region *)NULL,
+						basis_manager, element_shape_list))
+					{
+						ACCESS(FE_region)(fe_region);
+						return_code = return_code &&
+							Cmiss_region_attach_FE_region(region, fe_region) &&
+							Cmiss_region_add_child_region(root_region, region, name,
+								/*child_position*/-1);
+						DEACCESS(FE_region)(&fe_region);
+					}
+					DEACCESS(Cmiss_region)(&region);
+				}
+			}
+		}
+		if (name)
+		{
+			DEALLOCATE(name);
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"gfx_create_region.  Invalid argument(s)");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* gfx_create_region */
+
 static int gfx_create_scene(struct Parse_state *state,
 	void *dummy_to_be_modified,void *command_data_void)
 /*******************************************************************************
@@ -6080,7 +6148,7 @@ value searches just elements of that dimension.
 										red = 0.5;
 										green = 0.5;
 										blue = 0.5;
-										alpha = 1.0;
+										alpha = 0.0;
 										field_evaluate_error_count++;
 									}
 								}
@@ -8674,6 +8742,8 @@ Executes a GFX CREATE command.
 				Option_table_add_entry(option_table,"object",NULL,
 					command_data_void,gfx_create_userdef);
 #endif /* defined (MOTIF) */
+				Option_table_add_entry(option_table, "region", NULL,
+					(void *)command_data->root_region, gfx_create_region);
 				Option_table_add_entry(option_table,"scene",NULL,
 					command_data_void,gfx_create_scene);
 				Option_table_add_entry(option_table, "snake", NULL,
@@ -16782,7 +16852,7 @@ Executes a GFX SELECT command.
 ==============================================================================*/
 {
 	char all_flag,data_flag,elements_flag,faces_flag,grid_points_flag,
-		lines_flag,nodes_flag, *region_path, selected_flag;
+		lines_flag,nodes_flag, *region_path, selected_flag, verbose_flag;
 	FE_value time;
 	int return_code;
 	struct Computed_field *conditional_field;
@@ -16839,6 +16909,7 @@ Executes a GFX SELECT command.
 			{
 				time = 0.0;
 			}
+			verbose_flag = 0;
 
 			option_table=CREATE(Option_table)();
 			/* all */
@@ -16885,6 +16956,9 @@ Executes a GFX SELECT command.
 			/* points */
 			Option_table_add_entry(option_table,"points",&element_point_ranges,
 				(void *)fe_region, set_Element_point_ranges);
+			/* verbose */
+			Option_table_add_char_flag_entry(option_table,"verbose",
+				&verbose_flag);
 			/* default option: multi range */
 			Option_table_add_entry(option_table, (char *)NULL, (void *)multi_range,
 				NULL, set_Multi_range);
@@ -16925,9 +16999,12 @@ Executes a GFX SELECT command.
 							FE_node_select_in_FE_node_selection,
 							(void *)command_data->data_selection, node_list))
 						{
-							display_message(INFORMATION_MESSAGE,
-								"Selected %d data points.\n",
-								NUMBER_IN_LIST(FE_node)(node_list));
+							if (verbose_flag)
+							{
+								display_message(INFORMATION_MESSAGE,
+									"Selected %d data points.\n",
+									NUMBER_IN_LIST(FE_node)(node_list));
+							}
 						}
 						else
 						{
@@ -16957,9 +17034,12 @@ Executes a GFX SELECT command.
 							FE_element_select_in_FE_element_selection,
 							(void *)command_data->element_selection, element_list))
 						{
-							display_message(INFORMATION_MESSAGE,
-								"Selected %d elements.\n",
-								NUMBER_IN_LIST(FE_element)(element_list));
+							if (verbose_flag)
+							{
+								display_message(INFORMATION_MESSAGE,
+									"Selected %d elements.\n",
+									NUMBER_IN_LIST(FE_element)(element_list));
+							}
 						}
 						else
 						{
@@ -16983,9 +17063,12 @@ Executes a GFX SELECT command.
 							FE_element_select_in_FE_element_selection,
 							(void *)command_data->element_selection, element_list))
 						{
-							display_message(INFORMATION_MESSAGE,
-								"Selected %d faces.\n",
-								NUMBER_IN_LIST(FE_element)(element_list));
+							if (verbose_flag)
+							{
+								display_message(INFORMATION_MESSAGE,
+									"Selected %d faces.\n",
+									NUMBER_IN_LIST(FE_element)(element_list));
+							}
 						}
 						else
 						{
@@ -17053,9 +17136,12 @@ Executes a GFX SELECT command.
 							FE_element_select_in_FE_element_selection,
 							(void *)command_data->element_selection, element_list))
 						{
-							display_message(INFORMATION_MESSAGE,
-								"Selected %d lines.\n",
-								NUMBER_IN_LIST(FE_element)(element_list));
+							if (verbose_flag)
+							{
+								display_message(INFORMATION_MESSAGE,
+									"Selected %d lines.\n",
+									NUMBER_IN_LIST(FE_element)(element_list));
+							}
 						}
 						else
 						{
@@ -17079,9 +17165,12 @@ Executes a GFX SELECT command.
 							FE_node_select_in_FE_node_selection,
 							(void *)command_data->node_selection, node_list))
 						{
-							display_message(INFORMATION_MESSAGE,
-								"Selected %d nodes.\n",
-								NUMBER_IN_LIST(FE_node)(node_list));
+							if (verbose_flag)
+							{
+								display_message(INFORMATION_MESSAGE,
+									"Selected %d nodes.\n",
+									NUMBER_IN_LIST(FE_node)(node_list));
+							}
 						}
 						else
 						{
