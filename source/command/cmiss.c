@@ -17225,7 +17225,7 @@ Executes a GFX UNSELECT command.
 ==============================================================================*/
 {
 	char all_flag,data_flag,elements_flag,faces_flag,grid_points_flag,
-		lines_flag,nodes_flag, *region_path,selected_flag;
+		lines_flag,nodes_flag, *region_path,selected_flag,verbose_flag;
 	FE_value time;
 	int return_code;
 	struct Computed_field *conditional_field;
@@ -17281,6 +17281,7 @@ Executes a GFX UNSELECT command.
 			{
 				time = 0.0;
 			}
+			verbose_flag = 0;
 
 			option_table=CREATE(Option_table)();
 			/* all */
@@ -17327,6 +17328,9 @@ Executes a GFX UNSELECT command.
 			/* points */
 			Option_table_add_entry(option_table,"points",&element_point_ranges,
 				(void *)fe_region, set_Element_point_ranges);
+			/* verbose */
+			Option_table_add_char_flag_entry(option_table,"verbose",
+				&verbose_flag);
 			/* default option: multi range */
 			Option_table_add_entry(option_table, (char *)NULL, (void *)multi_range,
 				NULL, set_Multi_range);
@@ -17367,9 +17371,12 @@ Executes a GFX UNSELECT command.
 							FE_node_unselect_in_FE_node_selection,
 							(void *)command_data->data_selection, node_list))
 						{
-							display_message(INFORMATION_MESSAGE,
-								"Unselected %d data points.\n",
-								NUMBER_IN_LIST(FE_node)(node_list));
+							if (verbose_flag)
+							{
+								display_message(INFORMATION_MESSAGE,
+									"Unselected %d data points.\n",
+									NUMBER_IN_LIST(FE_node)(node_list));
+							}
 						}
 						else
 						{
@@ -17399,9 +17406,12 @@ Executes a GFX UNSELECT command.
 							FE_element_unselect_in_FE_element_selection,
 							(void *)command_data->element_selection, element_list))
 						{
-							display_message(INFORMATION_MESSAGE,
-								"Unselected %d elements.\n",
-								NUMBER_IN_LIST(FE_element)(element_list));
+							if (verbose_flag)
+							{
+								display_message(INFORMATION_MESSAGE,
+									"Unselected %d elements.\n",
+									NUMBER_IN_LIST(FE_element)(element_list));
+							}
 						}
 						else
 						{
@@ -17425,9 +17435,12 @@ Executes a GFX UNSELECT command.
 							FE_element_unselect_in_FE_element_selection,
 							(void *)command_data->element_selection, element_list))
 						{
-							display_message(INFORMATION_MESSAGE,
-								"Unselected %d faces.\n",
-								NUMBER_IN_LIST(FE_element)(element_list));
+							if (verbose_flag)
+							{
+								display_message(INFORMATION_MESSAGE,
+									"Unselected %d faces.\n",
+									NUMBER_IN_LIST(FE_element)(element_list));
+							}
 						}
 						else
 						{
@@ -17495,9 +17508,12 @@ Executes a GFX UNSELECT command.
 							FE_element_unselect_in_FE_element_selection,
 							(void *)command_data->element_selection, element_list))
 						{
-							display_message(INFORMATION_MESSAGE,
-								"Unselected %d lines.\n",
-								NUMBER_IN_LIST(FE_element)(element_list));
+							if (verbose_flag)
+							{
+								display_message(INFORMATION_MESSAGE,
+									"Unselected %d lines.\n",
+									NUMBER_IN_LIST(FE_element)(element_list));
+							}
 						}
 						else
 						{
@@ -17521,9 +17537,12 @@ Executes a GFX UNSELECT command.
 							FE_node_unselect_in_FE_node_selection,
 							(void *)command_data->node_selection, node_list))
 						{
-							display_message(INFORMATION_MESSAGE,
-								"Unselected %d nodes.\n",
-								NUMBER_IN_LIST(FE_node)(node_list));
+							if (verbose_flag)
+							{
+								display_message(INFORMATION_MESSAGE,
+									"Unselected %d nodes.\n",
+									NUMBER_IN_LIST(FE_node)(node_list));
+							}
 						}
 						else
 						{
