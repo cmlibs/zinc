@@ -4566,32 +4566,36 @@ Executes a GFX CREATE REGION command.
 		name = (char *)NULL;
 		if (set_name(state, (void *)&name, (void *)1))
 		{
-			return_code = 1;
-			if (name && Cmiss_region_get_region_from_path(root_region, name, &region) &&
-				region)
+			if (strcmp(PARSER_HELP_STRING,state->current_token)&&
+				strcmp(PARSER_RECURSIVE_HELP_STRING,state->current_token))
 			{
-				display_message(ERROR_MESSAGE,
-					"gfx_create_region.  Region '%s' already exists", name);
-				return_code = 0;
-			}
-			if (return_code)
-			{
-				if ((region = CREATE(Cmiss_region)())
-					&& (basis_manager=CREATE_MANAGER(FE_basis)())
-					&& (element_shape_list=CREATE(LIST(FE_element_shape))()))
+				return_code = 1;
+				if (name && Cmiss_region_get_region_from_path(root_region, name, &region) &&
+					region)
 				{
-					ACCESS(Cmiss_region)(region);
-					if (fe_region = CREATE(FE_region)(/*master_fe_region*/(struct FE_region *)NULL,
-						basis_manager, element_shape_list))
+					display_message(ERROR_MESSAGE,
+						"gfx_create_region.  Region '%s' already exists", name);
+					return_code = 0;
+				}
+				if (return_code)
+				{
+					if ((region = CREATE(Cmiss_region)())
+						&& (basis_manager=CREATE_MANAGER(FE_basis)())
+						&& (element_shape_list=CREATE(LIST(FE_element_shape))()))
 					{
-						ACCESS(FE_region)(fe_region);
-						return_code = return_code &&
-							Cmiss_region_attach_FE_region(region, fe_region) &&
-							Cmiss_region_add_child_region(root_region, region, name,
-								/*child_position*/-1);
-						DEACCESS(FE_region)(&fe_region);
+						ACCESS(Cmiss_region)(region);
+						if (fe_region = CREATE(FE_region)(/*master_fe_region*/(struct FE_region *)NULL,
+								basis_manager, element_shape_list))
+						{
+							ACCESS(FE_region)(fe_region);
+							return_code = return_code &&
+								Cmiss_region_attach_FE_region(region, fe_region) &&
+								Cmiss_region_add_child_region(root_region, region, name,
+									/*child_position*/-1);
+							DEACCESS(FE_region)(&fe_region);
+						}
+						DEACCESS(Cmiss_region)(&region);
 					}
-					DEACCESS(Cmiss_region)(&region);
 				}
 			}
 		}
