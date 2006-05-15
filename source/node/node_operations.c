@@ -323,7 +323,7 @@ Up to the calling function to destroy the returned node list.
 			data.node_selection_list = FE_node_selection_get_node_list(node_selection);
 			/* Seems odd to specify an empty node_ranges but I have
 				maintained the previous behaviour */
-			if (data.node_ranges &&
+			if (node_ranges &&
 				(0 < (number_of_ranges = Multi_range_get_number_of_ranges(node_ranges))))
 			{
 				data.node_ranges = node_ranges;
