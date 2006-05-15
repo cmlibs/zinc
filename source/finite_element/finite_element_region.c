@@ -992,18 +992,31 @@ as if it is just updating then there is nothing to do.
 	int return_code;
 	struct FE_node_field_info *existing_node_field_info, *new_node_field_info;
 	struct LIST(FE_node_field) *node_field_list;
+	struct FE_region *master_fe_region;
 
 	ENTER(FE_region_get_FE_node_field_info_adding_new_field);
 	if (fe_region && node_field_info_address && 
 		(existing_node_field_info = *node_field_info_address))
 	{
 		return_code = 1;
+		master_fe_region = fe_region;
+		while (master_fe_region->master_fe_region)
+		{
+			master_fe_region = master_fe_region->master_fe_region;
+		}
 		if (FE_node_field_info_used_only_once(existing_node_field_info))
 		{
 			FE_node_field_info_add_node_field(existing_node_field_info,
 				new_node_field, new_number_of_values);
-			/* Should check there isn't a node_field equivalent to this modified one
-				already in the list, and if there is use that instead */
+			if (new_node_field_info =
+				FIRST_OBJECT_IN_LIST_THAT(FE_node_field_info)(
+					FE_node_field_info_has_matching_FE_node_field_list,
+					(void *)FE_node_field_info_get_node_field_list(existing_node_field_info),
+					master_fe_region->fe_node_field_info_list))
+			{
+				REACCESS(FE_node_field_info)(node_field_info_address,
+					new_node_field_info);
+			}
 		}
 		else
 		{
@@ -1017,7 +1030,7 @@ as if it is just updating then there is nothing to do.
 				{
 					/* create the new node information */
 					if (new_node_field_info = FE_region_get_FE_node_field_info(
-							fe_region, new_number_of_values, node_field_list))
+						master_fe_region, new_number_of_values, node_field_list))
 					{
 						REACCESS(FE_node_field_info)(node_field_info_address,
 							new_node_field_info);
