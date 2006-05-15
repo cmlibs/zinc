@@ -174,6 +174,110 @@ Upon return <node_list> contains all the nodes that could not be destroyed.
 } /* destroy_listed_nodes */
 #endif /* defined (OLD_CODE) */
 
+struct FE_node_fe_region_selection_ranges_condition_data
+/*******************************************************************************
+LAST MODIFIED : 15 May 2006
+
+DESCRIPTION :
+==============================================================================*/
+{
+	struct FE_region *fe_region;
+	int selected_flag;
+	struct LIST(FE_node) *node_selection_list;
+	struct Multi_range *node_ranges;
+	struct Computed_field *conditional_field;
+	FE_value conditional_field_time;
+	struct LIST(FE_node) *node_list;
+}; /* struct FE_node_fe_region_selection_ranges_condition_data */
+
+static int FE_node_add_if_selection_ranges_condition(struct FE_node *node,
+	void *data_void)
+/*******************************************************************************
+LAST MODIFIED : 15 May 2006
+
+DESCRIPTION :
+==============================================================================*/
+{
+	int return_code, selected;
+	struct FE_node_fe_region_selection_ranges_condition_data *data;
+
+	ENTER(FE_node_fe_region_ranges_condition);
+	if (node && 
+		(data = (struct FE_node_fe_region_selection_ranges_condition_data *)data_void))
+	{
+		return_code = 1;
+		selected = 1;
+		if (selected && data->selected_flag)
+		{
+			selected = IS_OBJECT_IN_LIST(FE_node)(node, data->node_selection_list);
+		}
+		if (selected && data->node_ranges)
+		{
+			selected = FE_node_is_in_Multi_range(node, data->node_ranges);
+		}
+		if (selected && data->conditional_field)
+		{
+			selected = Computed_field_is_true_at_node(data->conditional_field,
+				node, data->conditional_field_time);
+		}
+		if (selected)
+		{
+			return_code = ADD_OBJECT_TO_LIST(FE_node)(node, data->node_list);
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"FE_node_set_FE_node_field_info.  Invalid argument(s)");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* FE_node_set_FE_node_field_info */
+
+static int FE_node_add_if_fe_region_ranges_condition(struct FE_node *node,
+	void *data_void)
+/*******************************************************************************
+LAST MODIFIED : 15 May 2006
+
+DESCRIPTION :
+==============================================================================*/
+{
+	int return_code, selected;
+	struct FE_node_fe_region_selection_ranges_condition_data *data;
+
+	ENTER(FE_node_fe_region_ranges_condition);
+	if (node && 
+		(data = (struct FE_node_fe_region_selection_ranges_condition_data *)data_void))
+	{
+		return_code = 1;
+		selected = FE_region_contains_FE_node(data->fe_region, node);
+		if (selected && data->node_ranges)
+		{
+			selected = FE_node_is_in_Multi_range(node, data->node_ranges);
+		}
+		if (selected && data->conditional_field)
+		{
+			selected = Computed_field_is_true_at_node(data->conditional_field,
+				node, data->conditional_field_time);
+		}
+		if (selected)
+		{
+			return_code = ADD_OBJECT_TO_LIST(FE_node)(node, data->node_list);
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"FE_node_set_FE_node_field_info.  Invalid argument(s)");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* FE_node_set_FE_node_field_info */
+
 struct LIST(FE_node) *
 	FE_node_list_from_fe_region_selection_ranges_condition(
 		struct FE_region *fe_region, struct FE_node_selection *node_selection,
@@ -192,48 +296,97 @@ Creates and returns an node list that is the intersection of:
 Up to the calling function to destroy the returned node list.
 ==============================================================================*/
 {
-	int return_code;
-	struct Computed_field_conditional_data conditional_data;
-	struct LIST(FE_node) *node_list;
+	int i, node_number, nodes_in_region, nodes_in_selection, nodes_in_ranges,
+		number_of_ranges, return_code, selected, start, stop;
+	struct FE_node *node;
+	struct FE_node_fe_region_selection_ranges_condition_data data;
 
 	ENTER(FE_node_list_from_fe_region_selection_ranges_condition);
-	node_list = (struct LIST(FE_node) *)NULL;
+	data.node_list = (struct LIST(FE_node) *)NULL;
 	if (fe_region && ((!selected_flag) || node_selection))
 	{
-		if (node_list = CREATE(LIST(FE_node))())
+		if (data.node_list = CREATE(LIST(FE_node))())
 		{
-			/* start with the list of nodes from fe_region */
-			if (return_code = FE_region_for_each_FE_node(fe_region,
-				add_FE_node_to_list, (void *)node_list))
+			nodes_in_region = FE_region_get_number_of_FE_nodes(fe_region);
+			if (selected_flag)
 			{
-				if (selected_flag)
+				nodes_in_selection = NUMBER_IN_LIST(FE_node)
+					(FE_node_selection_get_node_list(node_selection));
+			}
+			if (node_ranges)
+			{
+				nodes_in_ranges = Multi_range_get_total_number_in_ranges(node_ranges);
+			}
+
+			data.fe_region = fe_region;
+			data.selected_flag = selected_flag;
+			data.node_selection_list = FE_node_selection_get_node_list(node_selection);
+			/* Seems odd to specify an empty node_ranges but I have
+				maintained the previous behaviour */
+			if (data.node_ranges &&
+				(0 < (number_of_ranges = Multi_range_get_number_of_ranges(node_ranges))))
+			{
+				data.node_ranges = node_ranges;
+			}
+			else
+			{
+				data.node_ranges = (struct Multi_range *)NULL;
+			}
+			data.conditional_field = conditional_field;
+			data.conditional_field_time = time;
+
+			if (data.node_ranges
+				&& (nodes_in_ranges < nodes_in_region)
+				&& (!selected_flag || (nodes_in_ranges < nodes_in_selection)))
+			{
+				return_code = 1;
+				for (i = 0 ; i < number_of_ranges ; i++)
 				{
-					return_code = REMOVE_OBJECTS_FROM_LIST_THAT(FE_node)(
-						FE_node_is_not_in_list,
-						(void *)FE_node_selection_get_node_list(node_selection),
-						node_list);
+					Multi_range_get_range(node_ranges, i, &start, &stop);
+					for (node_number = start ; node_number <= stop ; node_number++)
+					{
+						if (node = FE_region_get_FE_node_from_identifier(
+								 fe_region, node_number))
+						{
+							selected = 1;
+							if (data.selected_flag)
+							{
+								if (!FIND_BY_IDENTIFIER_IN_LIST(FE_node,cm_node_identifier)
+									(node_number, data.node_selection_list))
+								{
+									selected = 0;
+								}
+							}
+							if (selected && conditional_field)
+							{
+								selected = Computed_field_is_true_at_node(conditional_field,
+									node, time);
+							}
+							if (selected)
+							{
+								ADD_OBJECT_TO_LIST(FE_node)(node, data.node_list);
+							}
+						}
+					}
 				}
-				if (node_ranges &&
-					(0 < Multi_range_get_number_of_ranges(node_ranges)))
-				{
-					return_code = REMOVE_OBJECTS_FROM_LIST_THAT(FE_node)(
-						FE_node_is_not_in_Multi_range, (void *)node_ranges, node_list);
-				}
-				if (conditional_field)
-				{
-					conditional_data.conditional_field = conditional_field;
-					conditional_data.time = time;
-					return_code = REMOVE_OBJECTS_FROM_LIST_THAT(FE_node)(
-						FE_node_Computed_field_is_not_true_iterator, 
-						(void *)&conditional_data, node_list);
-				}
+			}
+			else if (selected_flag && (nodes_in_selection < nodes_in_region))
+			{
+				return_code = FOR_EACH_OBJECT_IN_LIST(FE_node)(
+					FE_node_add_if_fe_region_ranges_condition,
+					(void *)&data, data.node_selection_list);
+			}
+			else
+			{
+				return_code =  FE_region_for_each_FE_node(fe_region,
+					FE_node_add_if_selection_ranges_condition, (void *)&data);
 			}
 			if (!return_code)
 			{
 				display_message(ERROR_MESSAGE,
 					"FE_node_list_from_fe_region_selection_ranges_condition.  "
 					"Error building list");
-				DESTROY(LIST(FE_node))(&node_list);
+				DESTROY(LIST(FE_node))(&data.node_list);
 			}
 		}
 		else
@@ -251,7 +404,7 @@ Up to the calling function to destroy the returned node list.
 	}
 	LEAVE;
 
-	return (node_list);
+	return (data.node_list);
 } /* FE_node_list_from_fe_region_selection_ranges_condition */
 
 struct FE_node_values_number
