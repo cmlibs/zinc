@@ -211,11 +211,13 @@ If <reverse_track> is true, the reverse of vector field is tracked.
 ==============================================================================*/
 {
 	int element_dimension,face_number,i,return_code,vector_dimension;
-	FE_value deltaxi[MAXIMUM_ELEMENT_XI_DIMENSIONS],deltaxiA[MAXIMUM_ELEMENT_XI_DIMENSIONS],
+	FE_value coordinate_point_error, coordinate_point_vector, coordinate_tolerance,
+		deltaxi[MAXIMUM_ELEMENT_XI_DIMENSIONS],deltaxiA[MAXIMUM_ELEMENT_XI_DIMENSIONS],
 		deltaxiC[MAXIMUM_ELEMENT_XI_DIMENSIONS], deltaxiD[MAXIMUM_ELEMENT_XI_DIMENSIONS],
 		deltaxiE[MAXIMUM_ELEMENT_XI_DIMENSIONS], 
 		dxdxi[MAXIMUM_ELEMENT_XI_DIMENSIONS*MAXIMUM_ELEMENT_XI_DIMENSIONS], error, fraction,
-		increment_xi[MAXIMUM_ELEMENT_XI_DIMENSIONS], local_step_size, tolerance, 
+		increment_xi[MAXIMUM_ELEMENT_XI_DIMENSIONS], local_step_size,
+		point1[3], point2[3], point3[3], tolerance, 
 		vector[MAXIMUM_ELEMENT_XI_DIMENSIONS*MAXIMUM_ELEMENT_XI_DIMENSIONS], 
 		xiA[MAXIMUM_ELEMENT_XI_DIMENSIONS], xiB[MAXIMUM_ELEMENT_XI_DIMENSIONS], 
 		xiC[MAXIMUM_ELEMENT_XI_DIMENSIONS], xiD[MAXIMUM_ELEMENT_XI_DIMENSIONS],
@@ -225,17 +227,28 @@ If <reverse_track> is true, the reverse of vector field is tracked.
 	ENTER(update_adaptive_imp_euler);
 	/* clear coordinates in case fewer than 3 components */
 	element_dimension = get_FE_element_dimension(*element);
-	/* It is expected that the coordinate dimension and vector dimension match,
-		the vector field may have extra components related to the cross directions */
+	/* It is expected that the coordinate dimension and vector dimension match as
+		far as tracking is concerned,
+		the vector field may have extra components related to the cross directions
+	   which are used to orient stream ribbons and tubes */
 	vector_dimension = Computed_field_get_number_of_components(coordinate_field);
-	point[0]=0.0;
-	point[1]=0.0;
-	point[2]=0.0;
+	point1[0]=0.0;
+	point1[1]=0.0;
+	point1[2]=0.0;
+	point2[0]=0.0;
+	point2[1]=0.0;
+	point2[2]=0.0;
+	point3[0]=0.0;
+	point3[1]=0.0;
+	point3[2]=0.0;
 	tolerance=1.0e-4;
 	error=1.0;
+	coordinate_point_error = 1.0;
+	coordinate_tolerance = 1.0e-1;  /* We are tolerating a greater error in the coordinate
+											  positions so long as the tracking is valid */
 	local_step_size = *step_size;
 	return_code=Computed_field_evaluate_in_element(coordinate_field,*element,xi,
-		time,(struct FE_element *)NULL,point,dxdxi)&&
+		time,(struct FE_element *)NULL,point1,dxdxi)&&
 		Computed_field_evaluate_in_element(stream_vector_field,
 		*element,xi,time,(struct FE_element *)NULL,vector,(FE_value *)NULL);
 	if (reverse_track)
@@ -274,7 +287,7 @@ If <reverse_track> is true, the reverse of vector field is tracked.
 		if (return_code)
 		{
 			return_code=Computed_field_evaluate_in_element(coordinate_field, *element, xiA,
-				time,(struct FE_element *)NULL,point,dxdxi)&&
+				time,(struct FE_element *)NULL,point3,dxdxi)&&
 				Computed_field_evaluate_in_element(stream_vector_field,
 				*element,xiA,time,(struct FE_element *)NULL,vector,(FE_value *)NULL);
 			if (reverse_track)
@@ -321,7 +334,8 @@ If <reverse_track> is true, the reverse of vector field is tracked.
 			}
 		}
 	}
-	while ((error>tolerance)&&return_code)
+	while (((error>tolerance)||(coordinate_point_error>coordinate_tolerance))
+		&&return_code)
 	{
 		for (i = 0 ; i < element_dimension ; i++)
 		{
@@ -333,7 +347,7 @@ If <reverse_track> is true, the reverse of vector field is tracked.
 		if (return_code)
 		{
 			return_code=Computed_field_evaluate_in_element(coordinate_field,*element,xiC,
-				time,(struct FE_element *)NULL,point,dxdxi)&&
+				time,(struct FE_element *)NULL,point2,dxdxi)&&
 				Computed_field_evaluate_in_element(stream_vector_field,
 				*element,xiC,time,(struct FE_element *)NULL,vector,(FE_value *)NULL);
 			if (reverse_track)
@@ -367,7 +381,7 @@ If <reverse_track> is true, the reverse of vector field is tracked.
 			if (return_code)
 			{
 				return_code=Computed_field_evaluate_in_element(coordinate_field,*element,
-					xiD,time,(struct FE_element *)NULL,point,dxdxi)&&
+					xiD,time,(struct FE_element *)NULL,point2,dxdxi)&&
 					Computed_field_evaluate_in_element(stream_vector_field,*element,
 						xiD,time,(struct FE_element *)NULL,vector,(FE_value *)NULL);
 				if (reverse_track)
@@ -396,7 +410,7 @@ If <reverse_track> is true, the reverse of vector field is tracked.
 			if (return_code)
 			{
 				return_code=Computed_field_evaluate_in_element(coordinate_field,*element,
-					xiE,time,(struct FE_element *)NULL,point,dxdxi)&&
+					xiE,time,(struct FE_element *)NULL,point3,dxdxi)&&
 					Computed_field_evaluate_in_element(stream_vector_field,*element,
 						xiE,time,(struct FE_element *)NULL,vector,(FE_value *)NULL);
 				if (reverse_track)
@@ -440,6 +454,17 @@ If <reverse_track> is true, the reverse of vector field is tracked.
 		}
 		if (return_code)
 		{
+			/* Calculate halfway coordinate position from start and end */
+			coordinate_point_error = 0.0;
+			for (i = 0 ; i < vector_dimension ; i++)
+			{
+				coordinate_point_vector = point2[i] - 
+					(point1[i] * fraction + point3[i]) / (1.0 + fraction);
+				coordinate_point_error += coordinate_point_vector * 
+					coordinate_point_vector;
+			}
+			coordinate_point_error = sqrt(coordinate_point_error);
+
 			error=sqrt((xiF[0]-xiB[0])*(xiF[0]-xiB[0])+
 				(xiF[1]-xiB[1])*(xiF[1]-xiB[1])+(xiF[2]-xiB[2])*(xiF[2]-xiB[2]));
 			if ((local_step_size*sqrt(deltaxiC[0]*deltaxiC[0]+
@@ -448,7 +473,8 @@ If <reverse_track> is true, the reverse of vector field is tracked.
 				error=0.0;
 			}
 		}
-		if ((error>tolerance)&&return_code)
+		if (((error>tolerance)||(coordinate_point_error>coordinate_tolerance))&&
+			return_code)
 		{
 			local_step_size /= 2.0;
 			xiB[0]=xiD[0];
@@ -486,6 +512,9 @@ If <reverse_track> is true, the reverse of vector field is tracked.
 		xi[0]=xiF[0];
 		xi[1]=xiF[1];
 		xi[2]=xiF[2];
+		point[0] = point3[0];
+		point[1] = point3[1];
+		point[2] = point3[2];
 	}
 	LEAVE;
 
