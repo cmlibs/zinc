@@ -210,8 +210,8 @@ size control and the improved euler method.  The function updates the <total_ste
 If <reverse_track> is true, the reverse of vector field is tracked.
 ==============================================================================*/
 {
-	int element_dimension,face_number,i,return_code,vector_dimension;
-	FE_value coordinate_point_error, coordinate_point_vector, coordinate_tolerance,
+	int element_dimension,face_number,i,j,return_code,vector_dimension;
+	FE_value coordinate_length, coordinate_point_error, coordinate_point_vector, coordinate_tolerance,
 		deltaxi[MAXIMUM_ELEMENT_XI_DIMENSIONS],deltaxiA[MAXIMUM_ELEMENT_XI_DIMENSIONS],
 		deltaxiC[MAXIMUM_ELEMENT_XI_DIMENSIONS], deltaxiD[MAXIMUM_ELEMENT_XI_DIMENSIONS],
 		deltaxiE[MAXIMUM_ELEMENT_XI_DIMENSIONS], 
@@ -244,13 +244,26 @@ If <reverse_track> is true, the reverse of vector field is tracked.
 	tolerance=1.0e-4;
 	error=1.0;
 	coordinate_point_error = 1.0;
-	coordinate_tolerance = 1.0e-1;  /* We are tolerating a greater error in the coordinate
+	coordinate_tolerance = 1.0e-2;  /* We are tolerating a greater error in the coordinate
 											  positions so long as the tracking is valid */
 	local_step_size = *step_size;
 	return_code=Computed_field_evaluate_in_element(coordinate_field,*element,xi,
 		time,(struct FE_element *)NULL,point1,dxdxi)&&
 		Computed_field_evaluate_in_element(stream_vector_field,
 		*element,xi,time,(struct FE_element *)NULL,vector,(FE_value *)NULL);
+
+	/* Get a length scale estimate */
+	coordinate_length = 0;
+	for (i = 0 ; i < vector_dimension ; i++)
+	{
+		for (j = 0 ; j < element_dimension ; j++)
+		{
+			coordinate_length += dxdxi[i + j * vector_dimension] * 
+				dxdxi[i + j * vector_dimension];
+		}
+	}
+	coordinate_length = sqrt(coordinate_length / (FE_value)element_dimension);
+
 	if (reverse_track)
 	{
 		for (i = 0 ; i < vector_dimension ; i++)
@@ -454,7 +467,9 @@ If <reverse_track> is true, the reverse of vector field is tracked.
 		}
 		if (return_code)
 		{
-			/* Calculate halfway coordinate position from start and end */
+			/* Calculate halfway coordinate position from start and end, 
+			 error is deviation from halfway point divided by length from
+			start to end to normalise it. */
 			coordinate_point_error = 0.0;
 			for (i = 0 ; i < vector_dimension ; i++)
 			{
@@ -463,7 +478,8 @@ If <reverse_track> is true, the reverse of vector field is tracked.
 				coordinate_point_error += coordinate_point_vector * 
 					coordinate_point_vector;
 			}
-			coordinate_point_error = sqrt(coordinate_point_error);
+			coordinate_point_error = sqrt(coordinate_point_error) / 
+				coordinate_length;
 
 			error=sqrt((xiF[0]-xiB[0])*(xiF[0]-xiB[0])+
 				(xiF[1]-xiB[1])*(xiF[1]-xiB[1])+(xiF[2]-xiB[2])*(xiF[2]-xiB[2]));
