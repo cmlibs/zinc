@@ -8673,8 +8673,6 @@ Executes a GFX CREATE command.
 					command_data->graphics_window_manager;
 				create_emoter_slider_data.graphics_buffer_package=
 					command_data->graphics_buffer_package;
-				create_emoter_slider_data.control_curve_manager=
-					command_data->control_curve_manager;
 				create_emoter_slider_data.scene_manager=command_data->scene_manager;
 				create_emoter_slider_data.io_stream_package =
 					command_data->io_stream_package;
@@ -23487,12 +23485,13 @@ Executes the comfile specified on the command line.
 
 struct Cmgui_command_line_options
 /*******************************************************************************
-LAST MODIFIED : 1 August 2002
+LAST MODIFIED : 19 May 2006
 
 DESCRIPTION :
 Command line options to be parsed by read_cmgui_command_line_options.
 ==============================================================================*/
 {
+	char backend_mode_flag;
 	char batch_mode_flag;
 	char cm_start_flag;
 	char *cm_epath_directory_name;
@@ -23634,6 +23633,9 @@ Parses command line options from <state>.
 		Option_table_add_entry(option_table, "-background", NULL,
 			(void *)" X11_COLOUR_NAME", ignore_entry_and_next_token);
 #endif /* defined (MOTIF) */
+		/* -backend */
+		Option_table_add_entry(option_table, "-backend",
+			&(command_line_options->backend_mode_flag), NULL, set_char_flag);
 		/* -batch */
 		Option_table_add_entry(option_table, "-batch",
 			&(command_line_options->batch_mode_flag), NULL, set_char_flag);
@@ -23734,7 +23736,7 @@ Initialise all the subcomponents of cmgui and create the Cmiss_command_data
 		version_id_string[100],*version_ptr,version_temp[20];
 	float default_light_direction[3]={0.0,-0.5,-1.0};
 	int i, number_of_startup_materials, return_code;
-	int batch_mode, console_mode, command_list, no_display, non_random,
+	int backend_mode, batch_mode, console_mode, command_list, no_display, non_random,
 		start_cm, start_mycm, visual_id, write_help;
 #if defined (F90_INTERPRETER) || defined (PERL_INTERPRETER)
 	int status;
@@ -23957,6 +23959,7 @@ Initialise all the subcomponents of cmgui and create the Cmiss_command_data
 
 		/* set default values for command-line modifiable options */
 		/* Note User_interface will not be created if command_list selected */
+		backend_mode = 0;
 		batch_mode = 0;
 		command_list = 0;
 		console_mode = 0;
@@ -23992,6 +23995,7 @@ Initialise all the subcomponents of cmgui and create the Cmiss_command_data
 		/* parse commmand line options */
 
 		/* put command line options into structure for parsing & extract below */
+		command_line_options.backend_mode_flag = (char)backend_mode;
 		command_line_options.batch_mode_flag = (char)batch_mode;
 		command_line_options.cm_start_flag = (char)start_cm;
 		command_line_options.cm_epath_directory_name = cm_examples_directory;
@@ -24027,6 +24031,7 @@ Initialise all the subcomponents of cmgui and create the Cmiss_command_data
 			return_code = 0;
 		}
 		/* copy command line options to local vars for use and easy clean-up */
+		backend_mode = (int)command_line_options.backend_mode_flag;
 		batch_mode = (int)command_line_options.batch_mode_flag;
 		start_cm = command_line_options.cm_start_flag;
 		cm_examples_directory = command_line_options.cm_epath_directory_name;
@@ -24894,49 +24899,52 @@ Initialise all the subcomponents of cmgui and create the Cmiss_command_data
 						}
 					}
 
-#if defined (MOTIF) || defined (WIN32_USER_INTERFACE) || defined (GTK_USER_INTERFACE)
-					if (console_mode)
+					if (!backend_mode)
 					{
+#if defined (MOTIF) || defined (WIN32_USER_INTERFACE) || defined (GTK_USER_INTERFACE)
+						if (console_mode)
+						{
 #endif /* defined (MOTIF) || defined (WIN32_USER_INTERFACE) || defined (GTK_USER_INTERFACE) */
-						if (!(command_data->command_console = CREATE(Console)(
-									command_data->execute_command,
-									command_data->event_dispatcher, /*stdin*/0)))
-						{
-							display_message(ERROR_MESSAGE,"main.  "
-								"Unable to create console.");
-						}
-#if defined (MOTIF) || defined (WIN32_USER_INTERFACE) || defined (GTK_USER_INTERFACE)
-					}
-					else
-					{
-						if (command_window=CREATE(Command_window)(command_data->execute_command,
-								 command_data->user_interface,version_id_string))
-						{
-							command_data->command_window=command_window;
-							if (!batch_mode)
+							if (!(command_data->command_console = CREATE(Console)(
+										command_data->execute_command,
+										command_data->event_dispatcher, /*stdin*/0)))
 							{
-								/* set up messages */
-								set_display_message_function(ERROR_MESSAGE,
-									display_error_message,command_window);
-								set_display_message_function(INFORMATION_MESSAGE,
-									display_information_message,command_window);
-								set_display_message_function(WARNING_MESSAGE,
-									display_warning_message,command_window);
-#if defined (PERL_INTERPRETER)
-								redirect_interpreter_output(command_data->interpreter, &return_code);
-#endif /* defined (PERL_INTERPRETER) */
+								display_message(ERROR_MESSAGE,"main.  "
+									"Unable to create console.");
 							}
-#if defined (MOTIF)
-							XSetErrorHandler(x_error_handler);
-#endif /* defined (MOTIF) */
+#if defined (MOTIF) || defined (WIN32_USER_INTERFACE) || defined (GTK_USER_INTERFACE)
 						}
 						else
 						{
-							display_message(ERROR_MESSAGE,"Unable to create command window");
-							return_code=0;
+							if (command_window=CREATE(Command_window)(command_data->execute_command,
+									command_data->user_interface,version_id_string))
+							{
+								command_data->command_window=command_window;
+								if (!batch_mode)
+								{
+									/* set up messages */
+									set_display_message_function(ERROR_MESSAGE,
+										display_error_message,command_window);
+									set_display_message_function(INFORMATION_MESSAGE,
+										display_information_message,command_window);
+									set_display_message_function(WARNING_MESSAGE,
+										display_warning_message,command_window);
+#if defined (PERL_INTERPRETER)
+									redirect_interpreter_output(command_data->interpreter, &return_code);
+#endif /* defined (PERL_INTERPRETER) */
+								}
+#if defined (MOTIF)
+								XSetErrorHandler(x_error_handler);
+#endif /* defined (MOTIF) */
+							}
+							else
+							{
+								display_message(ERROR_MESSAGE,"Unable to create command window");
+								return_code=0;
+							}
 						}
-					}
 #endif /* defined (MOTIF) || defined (WIN32_USER_INTERFACE) || defined (GTK_USER_INTERFACE) */
+					}
 #if defined (MOTIF)
 				}
 				else
