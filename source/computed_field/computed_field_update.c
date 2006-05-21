@@ -275,8 +275,8 @@ DESCRIPTION :
 {
 	FE_value *values, xi[MAXIMUM_ELEMENT_XI_DIMENSIONS];
 	int can_select_individual_points, destination_field_is_grid_based,
-		element_selected, grid_point_number, i, number_of_ranges,
-		return_code, start, stop;
+		element_selected, grid_point_number, i, maximum_element_point_number,
+		number_of_ranges, return_code, start, stop;
 	struct Computed_field_update_element_values_from_source_data *data;
 	struct Element_point_ranges *element_point_ranges;
 	struct Element_point_ranges_identifier element_point_ranges_identifier;
@@ -320,36 +320,49 @@ DESCRIPTION :
 				element_selected = 1;
 				can_select_individual_points = 1;
 			}
-			if (can_select_individual_points &&
-				destination_field_is_grid_based &&
-				data->element_point_ranges_selection)
+			if (destination_field_is_grid_based)
 			{
-				element_point_ranges_identifier.element = element;
-				element_point_ranges_identifier.top_level_element = element;
-				element_point_ranges_identifier.xi_discretization_mode =
-					XI_DISCRETIZATION_CELL_CORNERS;
-				/* already set the number_in_xi, above */
-				if (element_point_ranges = FIND_BY_IDENTIFIER_IN_LIST(
-					Element_point_ranges, identifier)(&element_point_ranges_identifier,
-						Element_point_ranges_selection_get_element_point_ranges_list(
-							data->element_point_ranges_selection)))
+				if (can_select_individual_points &&
+					data->element_point_ranges_selection)
 				{
-					element_selected = 1;
+					element_point_ranges_identifier.element = element;
+					element_point_ranges_identifier.top_level_element = element;
+					element_point_ranges_identifier.xi_discretization_mode =
+						XI_DISCRETIZATION_CELL_CORNERS;
+					/* already set the number_in_xi, above */
+					if (element_point_ranges = FIND_BY_IDENTIFIER_IN_LIST(
+							 Element_point_ranges, identifier)(&element_point_ranges_identifier,
+								 Element_point_ranges_selection_get_element_point_ranges_list(
+									 data->element_point_ranges_selection)))
+					{
+						element_selected = 1;
+					}
+					else
+					{
+						element_selected = 0;
+					}
 				}
 				else
 				{
-					element_selected = 0;
+					element_point_ranges_identifier.element = element;
+					element_point_ranges_identifier.top_level_element = element;
+					element_point_ranges_identifier.xi_discretization_mode =
+						XI_DISCRETIZATION_CELL_CORNERS;
+					/* already set the number_in_xi, above */
+					element_point_ranges = CREATE(Element_point_ranges)(
+						&element_point_ranges_identifier);
+					FE_element_get_xi_points(element, 
+						element_point_ranges_identifier.xi_discretization_mode,
+						element_point_ranges_identifier.number_in_xi,
+						element_point_ranges_identifier.exact_xi,
+						/*coordinate_field*/(struct Computed_field *)NULL,
+						/*density_field*/(struct Computed_field *)NULL,
+						&maximum_element_point_number,
+						/*xi_points_address*/(Triple **)NULL,
+						data->time);
+					Element_point_ranges_add_range(element_point_ranges,
+						0, maximum_element_point_number - 1);
 				}
-			}
-			else
-			{
-				element_point_ranges_identifier.element = element;
-				element_point_ranges_identifier.top_level_element = element;
-				element_point_ranges_identifier.xi_discretization_mode =
-					XI_DISCRETIZATION_CELL_CORNERS;
-				/* already set the number_in_xi, above */
-				element_point_ranges = CREATE(Element_point_ranges)(
-					&element_point_ranges_identifier);
 			}
 			if (element_selected)
 			{
@@ -376,14 +389,14 @@ DESCRIPTION :
 											 element_point_ranges_identifier.number_in_xi, element_point_ranges_identifier.exact_xi,
 											 /*coordinate_field*/(struct Computed_field *)NULL,
 											 /*density_field*/(struct Computed_field *)NULL,
-											 grid_point_number, xi, /*time*/0))
+											 grid_point_number, xi, data->time))
 									{
 										if (Computed_field_evaluate_in_element(data->source_field, 
 												element,
 												xi, data->time, /*top_level*/(struct FE_element *)NULL,
 												values, /*derivative*/(FE_value *)NULL))
 										{
-											Computed_field_set_values_in_element(data->source_field, 
+											Computed_field_set_values_in_element(data->destination_field, 
 												element,
 												xi, data->time, values);
 										}
