@@ -55,151 +55,254 @@ Global functions
 ----------------
 */
 
-#if defined (OLD_CODE)
-int destroy_listed_elements(struct LIST(FE_element) *element_list,
-	struct MANAGER(FE_element) *element_manager,
-	struct MANAGER(GROUP(FE_element)) *element_group_manager,
-	struct FE_element_selection *element_selection,
-	struct Element_point_ranges_selection *element_point_ranges_selection)
+struct FE_element_fe_region_selection_ranges_condition_data
 /*******************************************************************************
-LAST MODIFIED : 2 March 2001
+LAST MODIFIED : 15 May 2006
 
 DESCRIPTION :
-Destroys all the elements in <element_list> that are not accessed outside
-<element_manager>, the groups in <element_group_manager>,
-<element_selection> and <element_point_ranges_selection>.
-<element_group_manager>, <element_selection> and
-<element_point_ranges_selection> are optional. Upon return <element_list>
-contains all the elements that could not be destroyed.
-???RC Should really be in its own module.
-Note: currently requires all elements in the <element_list> to be of the same
-CM_element_type, otherwise likely to fail. ???RC Fix this by filtering out
-elements with all parents also in the list?
 ==============================================================================*/
 {
-	int number_of_elements_destroyed, number_of_elements_not_destroyed,
-		return_code;
-	struct Element_point_ranges *element_point_ranges;
-	struct FE_element *element;
-	struct GROUP(FE_element) *element_group;
-	struct LIST(FE_element) *not_destroyed_element_list, *selected_element_list;
-	struct LIST(Element_point_ranges) *selected_element_point_ranges_list;
+	enum CM_element_type cm_element_type;
+	struct FE_region *fe_region;
+	int selected_flag;
+	struct LIST(FE_element) *element_selection_list;
+	struct Multi_range *element_ranges;
+	struct Computed_field *conditional_field;
+	FE_value conditional_field_time;
+	struct LIST(FE_element) *element_list;
+}; /* struct FE_element_fe_region_selection_ranges_condition_data */
 
-	ENTER(destroy_listed_elements);
-	if (element_list && element_manager)
+static int FE_element_add_if_selection_ranges_condition(struct FE_element *element,
+	void *data_void)
+/*******************************************************************************
+LAST MODIFIED : 15 May 2006
+
+DESCRIPTION :
+==============================================================================*/
+{
+	int return_code, selected;
+	struct CM_element_type_Multi_range_data element_data;
+	struct FE_element_fe_region_selection_ranges_condition_data *data;
+
+	ENTER(FE_element_fe_region_ranges_condition);
+	if (element && 
+		(data = (struct FE_element_fe_region_selection_ranges_condition_data *)data_void))
 	{
 		return_code = 1;
-		/* build list of elements that could not be destroyed */
-		not_destroyed_element_list = CREATE(LIST(FE_element))();
-		if (element_group_manager)
+		selected = 1;
+		if (selected && data->selected_flag)
 		{
-			/* remove the elements - and their faces recursively - from all
-				 groups they are in */
-			while (return_code && (element_group =
-				FIRST_OBJECT_IN_MANAGER_THAT(GROUP(FE_element))(
-					FE_element_group_intersects_list, (void *)element_list,
-					element_group_manager)))
-			{
-				MANAGED_GROUP_BEGIN_CACHE(FE_element)(element_group);
-				while (return_code && (element = FIRST_OBJECT_IN_GROUP_THAT(FE_element)(
-					FE_element_is_in_list, (void *)element_list, element_group)))
-				{
-					return_code = remove_FE_element_and_faces_from_group(element,
-						element_group, RECURSIVE_REMOVE_ELEMENT_AND_PARENTLESS_FACES);
-				}
-				MANAGED_GROUP_END_CACHE(FE_element)(element_group);
-			}
+			selected = IS_OBJECT_IN_LIST(FE_element)(element, data->element_selection_list);
 		}
-		if (element_selection)
+		if (selected && data->element_ranges)
 		{
-			/* remove elements - and their faces and lines - from the
-				 global element_selection */
-			FE_element_selection_begin_cache(element_selection);
-			selected_element_list =
-				FE_element_selection_get_element_list(element_selection);
-			while (return_code && (element = FIRST_OBJECT_IN_LIST_THAT(FE_element)(
-				FE_element_is_wholly_within_element_list_tree, (void *)element_list,
-				selected_element_list)))
-			{
-				return_code =
-					FE_element_selection_unselect_element(element_selection, element);
-			}
-			FE_element_selection_end_cache(element_selection);
+			element_data.cm_element_type = data->cm_element_type;
+			element_data.multi_range = data->element_ranges;
+			selected = FE_element_of_CM_element_type_is_in_Multi_range(element,
+				(void *)&element_data);
 		}
-		if (element_point_ranges_selection)
+		if (selected && data->conditional_field)
 		{
-			/* remove all references to elements being removed from the global
-				 element_point_ranges_selection */
-			Element_point_ranges_selection_begin_cache(
-				element_point_ranges_selection);
-			selected_element_point_ranges_list=
-				Element_point_ranges_selection_get_element_point_ranges_list(
-					element_point_ranges_selection);
-			while (return_code&&(element_point_ranges=
-				FIRST_OBJECT_IN_LIST_THAT(Element_point_ranges)(
-					Element_point_ranges_is_wholly_within_element_list_tree,
-					(void *)element_list, selected_element_point_ranges_list)))
-			{
-				return_code =
-					Element_point_ranges_selection_unselect_element_point_ranges(
-						element_point_ranges_selection, element_point_ranges);
-			}
-			Element_point_ranges_selection_end_cache(element_point_ranges_selection);
+			selected = Computed_field_is_true_in_element(data->conditional_field,
+				element, data->conditional_field_time);
 		}
-		/* now remove the elements from the manager */
-		MANAGER_BEGIN_CACHE(FE_element)(element_manager);
-		number_of_elements_destroyed = 0;
-		while (return_code && (element = FIRST_OBJECT_IN_LIST_THAT(FE_element)(
-			(LIST_CONDITIONAL_FUNCTION(FE_element) *)NULL, (void *)NULL,
-			element_list)))
+		if (selected)
 		{
-			/* element cannot be destroyed while it is in a list */
-			if (REMOVE_OBJECT_FROM_LIST(FE_element)(element, element_list))
-			{
-				if (MANAGED_OBJECT_NOT_IN_USE(FE_element)(element, element_manager))
-				{
-					if (return_code =
-						remove_FE_element_and_faces_from_manager(element, element_manager))
-					{
-						number_of_elements_destroyed++;
-					}
-				}
-				else
-				{
-					/* add it to not_destroyed_element_list for reporting */
-					ADD_OBJECT_TO_LIST(FE_element)(element, not_destroyed_element_list);
-				}
-			}
-			else
-			{
-				return_code = 0;
-			}
+			return_code = ADD_OBJECT_TO_LIST(FE_element)(element, data->element_list);
 		}
-		MANAGER_END_CACHE(FE_element)(element_manager);
-		if (0 < (number_of_elements_not_destroyed =
-			NUMBER_IN_LIST(FE_element)(not_destroyed_element_list)))
-		{
-			display_message(WARNING_MESSAGE, "%d element(s) destroyed; "
-				"%d element(s) could not be destroyed because in use",
-				number_of_elements_destroyed,number_of_elements_not_destroyed);
-			return_code = 0;
-		}
-		FOR_EACH_OBJECT_IN_LIST(FE_element)(ensure_FE_element_is_in_list,
-			(void *)element_list, not_destroyed_element_list);
-		DESTROY(LIST(FE_element))(&not_destroyed_element_list);
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"destroy_listed_elements.  Invalid argument(s)");
+			"FE_element_set_FE_element_field_info.  Invalid argument(s)");
 		return_code = 0;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* destroy_listed_elements */
-#endif /* defined (OLD_CODE) */
+} /* FE_element_set_FE_element_field_info */
 
+static int FE_element_add_if_fe_region_ranges_condition(struct FE_element *element,
+	void *data_void)
+/*******************************************************************************
+LAST MODIFIED : 15 May 2006
+
+DESCRIPTION :
+==============================================================================*/
+{
+	int return_code, selected;
+	struct CM_element_type_Multi_range_data element_data;
+	struct FE_element_fe_region_selection_ranges_condition_data *data;
+
+	ENTER(FE_element_fe_region_ranges_condition);
+	if (element && 
+		(data = (struct FE_element_fe_region_selection_ranges_condition_data *)data_void))
+	{
+		return_code = 1;
+		selected = FE_region_contains_FE_element(data->fe_region, element);
+		if (selected && data->element_ranges)
+		{
+			element_data.cm_element_type = data->cm_element_type;
+			element_data.multi_range = data->element_ranges;
+			selected = FE_element_of_CM_element_type_is_in_Multi_range(element,
+				(void *)&element_data);
+		}
+		if (selected && data->conditional_field)
+		{
+			selected = Computed_field_is_true_in_element(data->conditional_field,
+				element, data->conditional_field_time);
+		}
+		if (selected)
+		{
+			return_code = ADD_OBJECT_TO_LIST(FE_element)(element, data->element_list);
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"FE_element_set_FE_element_field_info.  Invalid argument(s)");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* FE_element_set_FE_element_field_info */
+
+struct LIST(FE_element) *
+	FE_element_list_from_fe_region_selection_ranges_condition(
+		struct FE_region *fe_region, enum CM_element_type cm_element_type,
+		struct FE_element_selection *element_selection,
+		int selected_flag, struct Multi_range *element_ranges,
+		struct Computed_field *conditional_field, FE_value time)
+/*******************************************************************************
+LAST MODIFIED : 3 March 2003
+
+DESCRIPTION :
+Creates and returns an element list that is the intersection of:
+- all the elements in <fe_region>;
+- all elements in the <element_selection> if <selected_flag> is set;
+- all elements in the given <element_ranges>, if any.
+- all elements for which the <conditional_field> evaluates as "true"
+  in its centre at the specified <time>
+Up to the calling function to destroy the returned element list.
+==============================================================================*/
+{
+	int i, element_number, elements_in_region, elements_in_selection, elements_in_ranges,
+		number_of_ranges, return_code, selected, start, stop;
+	struct CM_element_information element_id;
+	struct FE_element *element;
+	struct FE_element_fe_region_selection_ranges_condition_data data;
+
+	ENTER(FE_element_list_from_fe_region_selection_ranges_condition);
+	data.element_list = (struct LIST(FE_element) *)NULL;
+	if (fe_region && ((!selected_flag) || element_selection))
+	{
+		if (data.element_list = CREATE(LIST(FE_element))())
+		{
+			elements_in_region = FE_region_get_number_of_FE_elements(fe_region);
+			if (selected_flag)
+			{
+				elements_in_selection = NUMBER_IN_LIST(FE_element)
+					(FE_element_selection_get_element_list(element_selection));
+			}
+			if (element_ranges)
+			{
+				elements_in_ranges = Multi_range_get_total_number_in_ranges(element_ranges);
+			}
+
+			data.fe_region = fe_region;
+			data.cm_element_type = cm_element_type;
+			data.selected_flag = selected_flag;
+			data.element_selection_list = FE_element_selection_get_element_list(element_selection);
+			/* Seems odd to specify an empty element_ranges but I have
+				maintained the previous behaviour */
+			if (element_ranges &&
+				(0 < (number_of_ranges = Multi_range_get_number_of_ranges(element_ranges))))
+			{
+				data.element_ranges = element_ranges;
+			}
+			else
+			{
+				data.element_ranges = (struct Multi_range *)NULL;
+			}
+			data.conditional_field = conditional_field;
+			data.conditional_field_time = time;
+
+			if (data.element_ranges
+				&& (elements_in_ranges < elements_in_region)
+				&& (!selected_flag || (elements_in_ranges < elements_in_selection)))
+			{
+				return_code = 1;
+				for (i = 0 ; i < number_of_ranges ; i++)
+				{
+					Multi_range_get_range(element_ranges, i, &start, &stop);
+					for (element_number = start ; element_number <= stop ; element_number++)
+					{
+						element_id.type = cm_element_type;
+						element_id.number = element_number;
+						if (element = FE_region_get_FE_element_from_identifier(
+								 fe_region, &element_id))
+						{
+							selected = 1;
+							if (data.selected_flag)
+							{
+								if (!FIND_BY_IDENTIFIER_IN_LIST(FE_element,identifier)
+									(&element_id, data.element_selection_list))
+								{
+									selected = 0;
+								}
+							}
+							if (selected && conditional_field)
+							{
+								selected = Computed_field_is_true_in_element(conditional_field,
+									element, time);
+							}
+							if (selected)
+							{
+								ADD_OBJECT_TO_LIST(FE_element)(element, data.element_list);
+							}
+						}
+					}
+				}
+			}
+			else if (selected_flag && (elements_in_selection < elements_in_region))
+			{
+				return_code = FOR_EACH_OBJECT_IN_LIST(FE_element)(
+					FE_element_add_if_fe_region_ranges_condition,
+					(void *)&data, data.element_selection_list);
+			}
+			else
+			{
+				return_code =  FE_region_for_each_FE_element(fe_region,
+					FE_element_add_if_selection_ranges_condition, (void *)&data);
+			}
+			if (!return_code)
+			{
+				display_message(ERROR_MESSAGE,
+					"FE_element_list_from_fe_region_selection_ranges_condition.  "
+					"Error building list");
+				DESTROY(LIST(FE_element))(&data.element_list);
+			}
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,
+				"FE_element_list_from_fe_region_selection_ranges_condition.  "
+				"Could not create list");
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"FE_element_list_from_fe_region_selection_ranges_condition.  "
+			"Invalid argument(s)");
+	}
+	LEAVE;
+
+	return (data.element_list);
+} /* FE_element_list_from_fe_region_selection_ranges_condition */
+
+#if defined (OLD_CODE)
 struct LIST(FE_element) *
 	FE_element_list_from_fe_region_selection_ranges_condition(
 		struct FE_region *fe_region, enum CM_element_type cm_element_type,
@@ -288,6 +391,7 @@ Up to the calling function to destroy the returned element list.
 
 	return (element_list);
 } /* FE_element_list_from_fe_region_selection_ranges_condition */
+#endif /* defined (OLD_CODE) */
 
 struct FE_element_values_number
 /*******************************************************************************
