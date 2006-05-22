@@ -1069,7 +1069,7 @@ Otherwise the routine returns 0.
 				{
 					for (i = 0 ; i < element_dimension ; i++)
 					{
-						indices[i] = (int)(number_in_xi[i] * xi[i]);
+						indices[i] = (int)(number_in_xi[i] * xi[i] + 0.5);
 						if (!WITHIN_TOLERANCE((float)indices[i] / (float)number_in_xi[i], xi[i]))
 						{
 							return_code = 0;
