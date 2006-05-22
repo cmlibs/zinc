@@ -286,6 +286,7 @@ DESCRIPTION :
 	if (element && (data =
 		(struct Computed_field_update_element_values_from_source_data *)data_void))
 	{
+		element_point_ranges = (struct Element_point_ranges *)NULL;
 		return_code = 1;
 		/* trivial rejection to see if element has storage for any grid based field 
 			- no faces or lines */
@@ -330,10 +331,11 @@ DESCRIPTION :
 					element_point_ranges_identifier.xi_discretization_mode =
 						XI_DISCRETIZATION_CELL_CORNERS;
 					/* already set the number_in_xi, above */
-					if (element_point_ranges = FIND_BY_IDENTIFIER_IN_LIST(
+					if (element_point_ranges = ACCESS(Element_point_ranges)(
+							 FIND_BY_IDENTIFIER_IN_LIST(
 							 Element_point_ranges, identifier)(&element_point_ranges_identifier,
 								 Element_point_ranges_selection_get_element_point_ranges_list(
-									 data->element_point_ranges_selection)))
+									 data->element_point_ranges_selection))))
 					{
 						element_selected = 1;
 					}
@@ -349,8 +351,9 @@ DESCRIPTION :
 					element_point_ranges_identifier.xi_discretization_mode =
 						XI_DISCRETIZATION_CELL_CORNERS;
 					/* already set the number_in_xi, above */
-					element_point_ranges = CREATE(Element_point_ranges)(
-						&element_point_ranges_identifier);
+					element_point_ranges = ACCESS(Element_point_ranges)(
+						CREATE(Element_point_ranges)(
+							&element_point_ranges_identifier));
 					FE_element_get_xi_points(element, 
 						element_point_ranges_identifier.xi_discretization_mode,
 						element_point_ranges_identifier.number_in_xi,
@@ -408,6 +411,10 @@ DESCRIPTION :
 					data->success_count++;
 					DEALLOCATE(values);
 				}
+			}
+			if (element_point_ranges)
+			{
+				DEACCESS(Element_point_ranges)(&element_point_ranges);
 			}
 		}
 	}
