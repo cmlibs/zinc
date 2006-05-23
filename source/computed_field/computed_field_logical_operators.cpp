@@ -1919,7 +1919,7 @@ Evaluate the fields cache at the node.
 			for (i = 0 ; i < field->number_of_components ; i++)
 			{
 				field->values[i] = (field->source_fields[0]->values[i]
-					== field->source_fields[1]->values[i]);
+					< field->source_fields[1]->values[i]);
 			}		
 		}
 	}
@@ -1962,7 +1962,7 @@ Evaluate the fields cache at the element.
 			for (i = 0 ; i < field->number_of_components ; i++)
 			{
 				field->values[i] = (field->source_fields[0]->values[i]
-					== field->source_fields[1]->values[i]);
+					< field->source_fields[1]->values[i]);
 			}	
 			if (calculate_derivatives == 0)
 			{
@@ -2356,7 +2356,7 @@ Evaluate the fields cache at the node.
 			for (i = 0 ; i < field->number_of_components ; i++)
 			{
 				field->values[i] = (field->source_fields[0]->values[i]
-					== field->source_fields[1]->values[i]);
+					> field->source_fields[1]->values[i]);
 			}		
 		}
 	}
@@ -2399,7 +2399,7 @@ Evaluate the fields cache at the element.
 			for (i = 0 ; i < field->number_of_components ; i++)
 			{
 				field->values[i] = (field->source_fields[0]->values[i]
-					== field->source_fields[1]->values[i]);
+					> field->source_fields[1]->values[i]);
 			}	
 			if (calculate_derivatives == 0)
 			{
