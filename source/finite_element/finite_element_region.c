@@ -258,6 +258,15 @@ if (0 < fe_region->number_of_clients) \
 	} \
 }
 
+/* Using these macros to conditionally reset the cache based on the 
+	constant change type in the FE_REGION_FE_NODE_CHANGE macro */
+#define FE_NODE_IDENTIFIER_CACHE_UPDATE_CHANGE_LOG_OBJECT_ADDED(type)
+
+#define FE_NODE_IDENTIFIER_CACHE_UPDATE_CHANGE_LOG_OBJECT_NOT_IDENTIFIER_CHANGED(type)
+
+#define FE_NODE_IDENTIFIER_CACHE_UPDATE_CHANGE_LOG_OBJECT_REMOVED(type)	\
+	fe_region->next_fe_node_identifier_cache = 0;
+
 #define FE_REGION_FE_NODE_CHANGE(fe_region, node, change, field_info_node) \
 /***************************************************************************** \
 LAST MODIFIED : 13 February 2003 \
@@ -277,11 +286,7 @@ if (0 < fe_region->number_of_clients) \
 { \
 	struct FE_node_field_info *temp_fe_node_field_info; \
 \
-	if ((change == CHANGE_LOG_OBJECT_REMOVED(FE_node)) \
-		|| (change == CHANGE_LOG_OBJECT_IDENTIFIER_CHANGED(FE_node))) \
-	{ \
-		fe_region->next_fe_node_identifier_cache = 0; \
-	} \
+   FE_NODE_IDENTIFIER_CACHE_UPDATE_ ## change \
 	CHANGE_LOG_OBJECT_CHANGE(FE_node)(fe_region->fe_node_changes, node, change); \
 	temp_fe_node_field_info = FE_node_get_FE_node_field_info(field_info_node); \
 	if (temp_fe_node_field_info != fe_region->last_fe_node_field_info) \
@@ -335,10 +340,22 @@ if (0 < fe_region->number_of_clients) \
 	} \
 }
 
+/* Using these macros to conditionally reset the cache based on the 
+	constant change type in the FE_REGION_FE_ELEMENT_CHANGE macro */
+#define FE_ELEMENT_IDENTIFIER_CACHE_UPDATE_CHANGE_LOG_OBJECT_ADDED(type)
+
+#define FE_ELEMENT_IDENTIFIER_CACHE_UPDATE_CHANGE_LOG_OBJECT_NOT_IDENTIFIER_CHANGED(type)
+
+#define FE_ELEMENT_IDENTIFIER_CACHE_UPDATE_CHANGE_LOG_OBJECT_REMOVED(type)	\
+	/* Don't want to add the overhead of working out which type at this point */ \
+	fe_region->next_fe_element_identifier_cache = 0; \
+	fe_region->next_fe_element_face_identifier_cache = 0; \
+	fe_region->next_fe_element_line_identifier_cache = 0; \
+
 #define FE_REGION_FE_ELEMENT_CHANGE(fe_region, element, change, \
 	field_info_element) \
 /***************************************************************************** \
-LAST MODIFIED : 14 April 2003 \
+LAST MODIFIED : 31 May 2006 \
 \
 DESCRIPTION : \
 If <fe_region> has clients for its change messages, records the <change> to \
@@ -352,14 +369,7 @@ When a element is added or removed, the same element is used for <element> and \
 <field_info_element> should contain the changed fields, consistent with \
 merging it into <element>. \
 ============================================================================*/ \
-if ((change == CHANGE_LOG_OBJECT_REMOVED(FE_element)) \
-	|| (change == CHANGE_LOG_OBJECT_IDENTIFIER_CHANGED(FE_element))) \
-{ \
-	/* Don't want to add the overhead of working out which type at this point */ \
-	fe_region->next_fe_element_identifier_cache = 0; \
-	fe_region->next_fe_element_face_identifier_cache = 0; \
-	fe_region->next_fe_element_line_identifier_cache = 0; \
-} \
+FE_ELEMENT_IDENTIFIER_CACHE_UPDATE_ ## change \
 if (0 < fe_region->number_of_clients) \
 { \
 	CHANGE_LOG_OBJECT_CHANGE(FE_element)(fe_region->fe_element_changes, element, \
