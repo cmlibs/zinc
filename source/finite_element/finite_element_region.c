@@ -223,6 +223,13 @@ DESCRIPTION :
 	struct LIST(FE_region_embedding_usage_count) *embedding_fe_region_list;
 #endif /* defined (EMBEDDING_CODE) */
 
+	/* Keep a record of where we got to searching for valid identifiers.
+		We reset the cache if we delete any items */
+	int next_fe_node_identifier_cache;
+	int next_fe_element_identifier_cache;
+	int next_fe_element_face_identifier_cache;
+	int next_fe_element_line_identifier_cache;
+
 	/* number of objects using this region */
 	int access_count;
 };
@@ -270,6 +277,11 @@ if (0 < fe_region->number_of_clients) \
 { \
 	struct FE_node_field_info *temp_fe_node_field_info; \
 \
+	if ((change == CHANGE_LOG_OBJECT_REMOVED(FE_node)) \
+		|| (change == CHANGE_LOG_OBJECT_IDENTIFIER_CHANGED(FE_node))) \
+	{ \
+		fe_region->next_fe_node_identifier_cache = 0; \
+	} \
 	CHANGE_LOG_OBJECT_CHANGE(FE_node)(fe_region->fe_node_changes, node, change); \
 	temp_fe_node_field_info = FE_node_get_FE_node_field_info(field_info_node); \
 	if (temp_fe_node_field_info != fe_region->last_fe_node_field_info) \
@@ -294,6 +306,7 @@ has changed. \
 ============================================================================*/ \
 if (0 < fe_region->number_of_clients) \
 { \
+	fe_region->next_fe_node_identifier_cache = 0; \
 	CHANGE_LOG_OBJECT_CHANGE(FE_node)(fe_region->fe_node_changes, node, \
 		CHANGE_LOG_OBJECT_IDENTIFIER_CHANGED(FE_node)); \
 	if (0 == fe_region->change_level) \
@@ -339,6 +352,14 @@ When a element is added or removed, the same element is used for <element> and \
 <field_info_element> should contain the changed fields, consistent with \
 merging it into <element>. \
 ============================================================================*/ \
+if ((change == CHANGE_LOG_OBJECT_REMOVED(FE_element)) \
+	|| (change == CHANGE_LOG_OBJECT_IDENTIFIER_CHANGED(FE_element))) \
+{ \
+	/* Don't want to add the overhead of working out which type at this point */ \
+	fe_region->next_fe_element_identifier_cache = 0; \
+	fe_region->next_fe_element_face_identifier_cache = 0; \
+	fe_region->next_fe_element_line_identifier_cache = 0; \
+} \
 if (0 < fe_region->number_of_clients) \
 { \
 	CHANGE_LOG_OBJECT_CHANGE(FE_element)(fe_region->fe_element_changes, element, \
@@ -382,6 +403,10 @@ DESCRIPTION : \
 Use this macro instead of FE_REGION_FE_ELEMENT_CHANGE when only the identifier \
 has changed. \
 ============================================================================*/ \
+/* Don't want to add the overhead of working out which type at this point */ \
+fe_region->next_fe_element_identifier_cache = 0; \
+fe_region->next_fe_element_face_identifier_cache = 0;	\
+fe_region->next_fe_element_line_identifier_cache = 0;	\
 if (0 < fe_region->number_of_clients) \
 { \
 	CHANGE_LOG_OBJECT_CHANGE(FE_element)(fe_region->fe_element_changes, element, \
@@ -1402,6 +1427,11 @@ elements and fields and the <basis_manager> must be supplied in this case.
 			fe_region->embedding_fe_region_list =
 				(struct LIST(FE_region_embedding_usage_count) *)NULL;
 #endif /* defined (EMBEDDING_CODE) */
+
+			fe_region->next_fe_node_identifier_cache = 0;
+			fe_region->next_fe_element_identifier_cache = 0;
+			fe_region->next_fe_element_face_identifier_cache = 0;
+			fe_region->next_fe_element_line_identifier_cache = 0;
 
 			fe_region->access_count = 0;
 			if (!((master_fe_region ||
@@ -2935,10 +2965,22 @@ Returns the next unused node identifier for <fe_region> starting from
 		{
 			identifier = start_identifier;
 		}
+		if (master_fe_region->next_fe_node_identifier_cache)
+		{
+			if (master_fe_region->next_fe_node_identifier_cache > identifier)
+			{
+				identifier = master_fe_region->next_fe_node_identifier_cache;
+			}
+		}
 		while (FIND_BY_IDENTIFIER_IN_LIST(FE_node,cm_node_identifier)(identifier,
 			master_fe_region->fe_node_list))
 		{
 			identifier++;
+		}
+		if (start_identifier < 2)
+		{
+			/* Don't cache the value if we didn't start at the beginning */
+			master_fe_region->next_fe_node_identifier_cache = identifier;
 		}
 	}
 	else
@@ -4356,10 +4398,71 @@ share the same FE_element namespace.
 		{
 			element_identifier.number = start_identifier;
 		}
+		switch (element_type)
+		{
+			case CM_ELEMENT:
+			{
+				if (master_fe_region->next_fe_element_identifier_cache)
+				{
+					if (master_fe_region->next_fe_element_identifier_cache > 
+						element_identifier.number)
+					{
+						element_identifier.number = 
+							master_fe_region->next_fe_element_identifier_cache;
+					}
+				}
+			} break;
+			case CM_FACE:
+			{
+				if (master_fe_region->next_fe_element_face_identifier_cache)
+				{
+					if (master_fe_region->next_fe_element_face_identifier_cache > 
+						element_identifier.number)
+					{
+						element_identifier.number = 
+							master_fe_region->next_fe_element_face_identifier_cache;
+					}
+				}
+			} break;
+			case CM_LINE:
+			{
+				if (master_fe_region->next_fe_element_line_identifier_cache)
+				{
+					if (master_fe_region->next_fe_element_line_identifier_cache > 
+						element_identifier.number)
+					{
+						element_identifier.number = 
+							master_fe_region->next_fe_element_line_identifier_cache;
+					}
+				}
+			} break;
+		}
 		while (FIND_BY_IDENTIFIER_IN_LIST(FE_element,identifier)(
 			&element_identifier, master_fe_region->fe_element_list))
 		{
 			element_identifier.number++;
+		}
+		if (start_identifier < 2)
+		{
+			/* Don't cache the value if we didn't start at the beginning */
+			switch (element_type)
+			{
+				case CM_ELEMENT:
+				{
+					master_fe_region->next_fe_element_identifier_cache =		
+						element_identifier.number;
+				} break;
+				case CM_FACE:
+				{
+					master_fe_region->next_fe_element_face_identifier_cache =
+						element_identifier.number;
+				} break;
+				case CM_LINE:
+				{
+					master_fe_region->next_fe_element_line_identifier_cache = 
+						element_identifier.number;
+				} break;
+			}
 		}
 	}
 	else
