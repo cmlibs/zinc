@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : computed_field_finite_element.c
 
-LAST MODIFIED : 7 April 2006
+LAST MODIFIED : 25 May 2006
 
 DESCRIPTION :
 Implements a number of basic component wise operations on computed fields.
@@ -835,7 +835,7 @@ Print the values calculated in the cache.
 	return (return_string);
 } /* Computed_field_finite_element_evaluate_as_string_at_node */
 
-static char *Computed_field_finite_element_evaluate_as_string_in_element(
+char *Computed_field_finite_element_evaluate_as_string_in_element(
 	struct Computed_field *field,int component_number,struct FE_element *element,
 	FE_value *xi,FE_value time,struct FE_element *top_level_element)
 /*******************************************************************************
@@ -1298,6 +1298,113 @@ Returns allocated command string for reproducing field. Includes type.
 
 	return (command_string);
 } /* Computed_field_finite_element_get_command_string */
+
+int Computed_field_finite_element_set_string_at_node(
+	struct Computed_field *field, int component_number, struct FE_node *node, 
+	FE_value time, char *string)
+/*******************************************************************************
+LAST MODIFIED : 25 May 2006
+
+DESCRIPTION :
+Special function for Computed_field_finite_element fields only.
+Allows the setting of a string if that is the type of field represented.
+==============================================================================*/
+{
+	int return_code;
+	struct Computed_field_finite_element_type_specific_data *data;
+
+	ENTER(Computed_field_finite_element_set_string_at_node);
+	USE_PARAMETER(time);
+	return_code = 0;
+	if (field && Computed_field_is_type_finite_element(field)
+		&& node && (data = 
+		(struct Computed_field_finite_element_type_specific_data *)
+		field->type_specific_data))
+	{
+		if (STRING_VALUE == get_FE_field_value_type(data->fe_field))
+		{
+			return_code = set_FE_nodal_string_value(node,
+				data->fe_field, component_number,/*version*/0,
+				FE_NODAL_VALUE, string);
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,
+				"Computed_field_finite_element_set_string_at_node.  "
+				"Field %s does not store string values.", field->name);
+			return_code =0;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Computed_field_finite_element_set_string_at_node.  "
+			"Invalid arguments or field is not of type finite_element.");
+		return_code =0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Computed_field_finite_element_set_string_at_node */
+
+int Computed_field_finite_element_define_at_node(
+	struct Computed_field *field, struct FE_node *node,
+	struct FE_time_sequence *fe_time_sequence,
+	struct FE_node_field_creator *node_field_creator)
+/*******************************************************************************
+LAST MODIFIED : 25 May 2006
+
+DESCRIPTION :
+Special function for Computed_field_finite_element fields only.
+Defines the field at the specified node.
+<fe_time_sequence> optionally defines multiple times for the <field>.  If it is
+NULL then the field will be defined as constant for all times.
+<node_field_creator> optionally defines different versions and/or derivative types.
+If it is NULL then a single nodal value for each component will be defined.
+==============================================================================*/
+{
+	int return_code;
+	struct Computed_field_finite_element_type_specific_data *data;
+	struct FE_node_field_creator *local_node_field_creator;
+	struct FE_region *fe_region;
+
+	ENTER(Computed_field_finite_element_define_at_node);
+	return_code = 0;
+	if (field && Computed_field_is_type_finite_element(field)
+		&& node && (data = 
+		(struct Computed_field_finite_element_type_specific_data *)
+		field->type_specific_data))
+	{
+		if (node_field_creator)
+		{
+			local_node_field_creator = node_field_creator;
+		}
+		else
+		{
+			local_node_field_creator = CREATE(FE_node_field_creator)(
+				field->number_of_components);
+		}
+		fe_region = FE_node_get_FE_region(node);
+		return_code = FE_region_define_FE_field_at_FE_node(fe_region,
+			node, data->fe_field, fe_time_sequence,
+			local_node_field_creator);
+
+		if (!node_field_creator)
+		{
+			DESTROY(FE_node_field_creator)(&local_node_field_creator);
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Computed_field_finite_element_define_at_node.  "
+			"Invalid arguments or field is not of type finite_element.");
+		return_code =0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Computed_field_finite_element_define_at_node */
 
 static int define_Computed_field_type_finite_element(struct Parse_state *state,
 	void *field_void,void *computed_field_finite_element_package_void)
@@ -5244,6 +5351,46 @@ coordinate type fe_field.
 
 	return (return_code);
 } /* Computed_field_has_coordinate_fe_field */
+
+int Computed_field_has_element_xi_fe_field(struct Computed_field *field,
+	void *dummy)
+/*******************************************************************************
+LAST MODIFIED : 2 June 2006
+
+DESCRIPTION :
+Iterator/conditional function returning true if <field> is a wrapper for an
+element_xi type fe_field.
+==============================================================================*/
+{
+	int return_code;
+	struct Computed_field_finite_element_type_specific_data *data;
+
+	ENTER(Computed_field_has_coordinate_fe_field);
+	USE_PARAMETER(dummy);
+	if (field)
+	{
+		return_code = 0;
+		if (field->type_string == computed_field_finite_element_type_string)
+		{
+			data = (struct Computed_field_finite_element_type_specific_data *)
+				field->type_specific_data;
+			if (data->fe_field && FE_field_has_value_type(data->fe_field,
+					(void *)ELEMENT_XI_VALUE))
+			{
+				return_code = 1;
+			}
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Computed_field_has_element_xi_fe_field.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Computed_field_has_element_xi_fe_field */
 
 int Computed_field_is_scalar_integer(struct Computed_field *field,
 	void *dummy_void)

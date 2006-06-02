@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : computed_field_finite_element.h
 
-LAST MODIFIED : 6 April 2006
+LAST MODIFIED : 25 May 2006
 
 DESCRIPTION :
 Implements computed fields which interface to finite element fields.
@@ -89,6 +89,33 @@ int Computed_field_is_type_finite_element(struct Computed_field *field);
 LAST MODIFIED : 18 July 2000
 
 DESCRIPTION :
+==============================================================================*/
+
+int Computed_field_finite_element_set_string_at_node(
+	struct Computed_field *field, int component_number, struct FE_node *node, 
+	FE_value time, char *string);
+/*******************************************************************************
+LAST MODIFIED : 24 May 2006
+
+DESCRIPTION :
+Special function for Computed_field_finite_element fields only.
+Allows the setting of a string if that is the type of field represented.
+==============================================================================*/
+
+int Computed_field_finite_element_define_at_node(
+	struct Computed_field *field, struct FE_node *node,
+	struct FE_time_sequence *fe_time_sequence,
+	struct FE_node_field_creator *node_field_creator);
+/*******************************************************************************
+LAST MODIFIED : 25 May 2006
+
+DESCRIPTION :
+Special function for Computed_field_finite_element fields only.
+Defines the field at the specified node.
+<fe_time_sequence> optionally defines multiple times for the <field>.  If it is
+NULL then the field will be defined as constant for all times.
+<node_field_creator> optionally defines different versions and/or derivative types.
+If it is NULL then a single nodal value for each component will be defined.
 ==============================================================================*/
 
 int Computed_field_set_type_finite_element(struct Computed_field *field,
@@ -185,6 +212,16 @@ LAST MODIFIED : 4 December 2001
 DESCRIPTION :
 Iterator/conditional function returning true if <field> is a wrapper for a
 coordinate type fe_field.
+==============================================================================*/
+
+int Computed_field_has_element_xi_fe_field(struct Computed_field *field,
+	void *dummy);
+/*******************************************************************************
+LAST MODIFIED : 2 June 2006
+
+DESCRIPTION :
+Iterator/conditional function returning true if <field> is a wrapper for an
+element_xi type fe_field.
 ==============================================================================*/
 
 int Computed_field_is_scalar_integer(struct Computed_field *field,
