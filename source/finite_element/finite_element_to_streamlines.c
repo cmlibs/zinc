@@ -210,7 +210,8 @@ size control and the improved euler method.  The function updates the <total_ste
 If <reverse_track> is true, the reverse of vector field is tracked.
 ==============================================================================*/
 {
-	int element_dimension,face_number,i,j,return_code,vector_dimension;
+	int element_dimension,face_number,i,initial_face_number,j,
+		number_of_permutations, permutation, return_code,vector_dimension;
 	FE_value coordinate_length, coordinate_point_error, coordinate_point_vector, coordinate_tolerance,
 		deltaxi[MAXIMUM_ELEMENT_XI_DIMENSIONS],deltaxiA[MAXIMUM_ELEMENT_XI_DIMENSIONS],
 		deltaxiC[MAXIMUM_ELEMENT_XI_DIMENSIONS], deltaxiD[MAXIMUM_ELEMENT_XI_DIMENSIONS],
@@ -223,6 +224,7 @@ If <reverse_track> is true, the reverse of vector field is tracked.
 		xiC[MAXIMUM_ELEMENT_XI_DIMENSIONS], xiD[MAXIMUM_ELEMENT_XI_DIMENSIONS],
 		xiE[MAXIMUM_ELEMENT_XI_DIMENSIONS], xiF[MAXIMUM_ELEMENT_XI_DIMENSIONS],
 		xi_face[MAXIMUM_ELEMENT_XI_DIMENSIONS];
+	struct FE_element *initial_element;
 
 	ENTER(update_adaptive_imp_euler);
 	/* clear coordinates in case fewer than 3 components */
@@ -330,8 +332,9 @@ If <reverse_track> is true, the reverse of vector field is tracked.
 		{
 			if (0.0 == fraction)
 			{
-				/* Don't go into the loop, so set error and xiF */
+				/* Don't go into the loop, so set error, coordinate_error and xiF */
 				error = 0.0;
+				coordinate_point_error = 0.0;
 				local_step_size = 0.0;
 				for (i = 0 ; i < element_dimension ; i++)
 				{
@@ -503,14 +506,68 @@ If <reverse_track> is true, the reverse of vector field is tracked.
 		*total_stepped += local_step_size;
 		if (face_number != -1)
 		{
+			initial_element = *element;
+			initial_face_number = face_number;
+			xiD[0]=xiF[0];
+			xiD[1]=xiF[1];
+			xiD[2]=xiF[2];
 			/* The last increment should have been the most accurate, if
 				it wants to change then change element if we can */
 			return_code = FE_element_change_to_adjacent_element(element,
-				xiF, (FE_value *)NULL, &face_number, xi_face, fe_region);
+				xiF, (FE_value *)NULL, &face_number, xi_face, fe_region,
+				/*permutation*/0);
 			if (face_number == -1)
 			{
 				/* There is no adjacent element */
 				*keep_tracking = 0;
+			}
+			else
+			{
+				/* Check the new xi coordinates are correct for our 
+					coordinate field and if not try rotating them */
+				return_code=Computed_field_evaluate_in_element(coordinate_field,
+					*element,xiF,time,(struct FE_element *)NULL,point1,(FE_value *)NULL);
+				coordinate_point_error = 0.0;
+				for (i = 0 ; i < vector_dimension ; i++)
+				{
+					coordinate_point_error += (point1[i] - point3[i]) * 
+						(point1[i] - point3[i]);
+				}
+				coordinate_point_error = sqrt(coordinate_point_error) / coordinate_length;
+				number_of_permutations = 
+					FE_element_get_number_of_change_to_adjacent_element_permutations(
+						*element, xiF, face_number);
+				/* We have already tried permutation 0 */
+				permutation = 1;
+				while ((permutation < number_of_permutations) &&
+					(coordinate_point_error > coordinate_tolerance))
+				{
+					*element = initial_element;
+					face_number = initial_face_number;
+					return_code = FE_element_change_to_adjacent_element(element,
+						xiF, (FE_value *)NULL, &face_number, xi_face, fe_region,
+						permutation);
+					return_code=Computed_field_evaluate_in_element(coordinate_field,
+						*element,xiF,time,(struct FE_element *)NULL,point1,(FE_value *)NULL);
+					coordinate_point_error = 0.0;
+					for (i = 0 ; i < vector_dimension ; i++)
+					{
+						coordinate_point_error += (point1[i] - point3[i]) * 
+							(point1[i] - point3[i]);
+					}
+					coordinate_point_error = sqrt(coordinate_point_error) / coordinate_length;
+					permutation++;
+				}
+				if (coordinate_point_error > coordinate_tolerance)
+				{
+					display_message(ERROR_MESSAGE,"track_streamline_from_FE_element.  "
+						"Coordinates don't match after changing elements.");
+					*keep_tracking = 0;
+					*element = initial_element;
+					xiF[0]=xiD[0];
+					xiF[1]=xiD[1];
+					xiF[2]=xiD[2];
+				}
 			}
 		}
 		else
@@ -1132,12 +1189,21 @@ in that region.
 								time,coordinates,&step_size,&total_stepped,&keep_tracking);
 							/* If we haven't gone anywhere and are changing back to the previous
 								element then we are stuck */
-							if ((total_stepped == previous_total_stepped_B) && 
-								(*element == previous_element_B))
+							if (total_stepped == previous_total_stepped_B)
 							{
-								printf("track_streamline_from_FE_element.  "
-									"trapped between two elements with opposing directions\n");
 								add_point = 0;
+								keep_tracking = 0;
+								if ((*element == previous_element_B) &&
+									(*element != previous_element_A))
+								{
+									printf("track_streamline_from_FE_element.  "
+										"trapped between two elements with opposing directions\n");
+								}
+								else
+								{
+									printf("track_streamline_from_FE_element.  "
+										"streamline has stopped progressing.\n");
+								}
 							}
 						}
 						else

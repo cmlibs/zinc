@@ -143,6 +143,11 @@ finite element group rendition.
 	int reverse_track;
 	float streamline_length, streamline_width;
 	enum Streamline_data_type streamline_data_type;
+	/* seed node region */
+	struct FE_region *seed_node_region;
+	char *seed_node_region_path; /* So that we can generate the defining string */
+	/* seed element_xi field */
+	struct Computed_field *seed_node_coordinate_field;
 
 	/* appearance settings */
 	/* for all graphic types */
@@ -728,6 +733,9 @@ Allocates memory and assigns fields for a struct GT_element_settings.
 			settings->reverse_track=0;
 			settings->streamline_length=1.0;
 			settings->streamline_width=1.0;
+			settings->seed_node_region = (struct FE_region *)NULL;
+			settings->seed_node_region_path = (char *)NULL;
+			settings->seed_node_coordinate_field = (struct Computed_field *)NULL;
 
 			/* appearance settings defaults */
 			/* for all graphic types */
@@ -885,6 +893,18 @@ Frees the memory for the fields of <**settings_ptr>, frees the memory for
 			{
 				DEACCESS(FE_element)(&(settings->seed_element));
 			}
+			if (settings->seed_node_region)
+			{
+				DEACCESS(FE_region)(&(settings->seed_node_region));
+			}
+			if (settings->seed_node_region_path)
+			{
+				DEALLOCATE(settings->seed_node_region_path);
+			}
+			if (settings->seed_node_coordinate_field)
+			{
+				DEACCESS(Computed_field)(&(settings->seed_node_coordinate_field));
+			}
 			DEALLOCATE(*settings_ptr);
 			return_code=1;
 		}
@@ -1039,6 +1059,23 @@ graphics_object is NOT copied; destination->graphics_object is cleared.
 		destination->reverse_track=source->reverse_track;
 		destination->streamline_length=source->streamline_length;
 		destination->streamline_width=source->streamline_width;
+		REACCESS(FE_region)(&destination->seed_node_region, 
+			source->seed_node_region);
+		if (destination->seed_node_region_path)
+		{
+			DEALLOCATE(destination->seed_node_region_path);
+		}
+		if (source->seed_node_region_path)
+		{
+			destination->seed_node_region_path = duplicate_string( 
+				source->seed_node_region_path);
+		}
+		else
+		{
+			destination->seed_node_region_path = (char *)NULL;
+		}
+		REACCESS(Computed_field)(&(destination->seed_node_coordinate_field),
+			source->seed_node_coordinate_field);		
 
 		/* copy appearance settings */
 		/* for all graphic types */
@@ -4339,7 +4376,9 @@ settings describe EXACTLY the same geometry.
 				(settings->stream_vector_field==second_settings->stream_vector_field)&&
 				(settings->reverse_track==second_settings->reverse_track)&&
 				(settings->streamline_length==second_settings->streamline_length)&&
-				(settings->streamline_width==second_settings->streamline_width);
+				(settings->streamline_width==second_settings->streamline_width)&&
+				(settings->seed_node_region==second_settings->seed_node_region)&&
+				(settings->seed_node_coordinate_field==second_settings->seed_node_coordinate_field);
 		}
 	}
 	else
@@ -5000,6 +5039,24 @@ if no coordinate field. Currently only write if we have a field.
 			append_string(&settings_string,temp_string,&error);
 			append_string(&settings_string,
 				ENUMERATOR_STRING(Streamline_data_type)(settings->streamline_data_type),&error);
+			if (settings->seed_node_region_path)
+			{
+				sprintf(temp_string," seed_node_region %s", settings->seed_node_region_path);
+				append_string(&settings_string,temp_string,&error);
+			}
+			if (GET_NAME(Computed_field)(settings->seed_node_coordinate_field,&name))
+			{
+				/* put quotes around name if it contains special characters */
+				make_valid_token(&name);
+				append_string(&settings_string," seed_node_coordinate_field ",&error);
+				append_string(&settings_string,name,&error);
+				DEALLOCATE(name);
+			}
+			else
+			{
+				DEALLOCATE(settings_string);
+				error=1;
+			}
 		}
 		append_string(&settings_string," ",&error);
 		append_string(&settings_string,
@@ -5717,7 +5774,7 @@ Converts a finite element into a graphics object with the supplied settings.
 								settings_to_object_data->wrapper_stream_vector_field,
 								settings->reverse_track, settings->streamline_length,
 								settings->streamline_data_type, settings->data_field,
-									settings_to_object_data->time,settings_to_object_data->fe_region))
+								settings_to_object_data->time,settings_to_object_data->fe_region))
 							{
 								if (!GT_OBJECT_ADD(GT_polyline)(settings->graphics_object,
 									time, polyline))
@@ -5789,6 +5846,122 @@ Converts a finite element into a graphics object with the supplied settings.
 
 	return (return_code);
 } /* FE_element_to_graphics_object */
+
+static int GT_element_node_to_streamline(struct FE_node *node,
+	void *settings_to_object_data_void)
+/*******************************************************************************
+LAST MODIFIED : 1 June 2006
+
+DESCRIPTION :
+Creates a node point seeded with the seed_node_coordinate_field at the node.
+==============================================================================*/
+{
+	FE_value coordinates[3], xi[MAXIMUM_ELEMENT_XI_DIMENSIONS];
+	int element_dimension, number_of_components, return_code;
+	struct Computed_field *coordinate_field;
+	struct FE_element *element;
+	struct GT_element_settings *settings;
+	struct GT_element_settings_to_graphics_object_data *settings_to_object_data;
+	struct GT_polyline *polyline;
+	struct GT_surface *surface;
+
+	ENTER(node_to_streamline);
+
+	if (node&&(settings_to_object_data =
+		(struct GT_element_settings_to_graphics_object_data *)
+		settings_to_object_data_void) &&
+		(settings = settings_to_object_data->settings) &&
+		settings->graphics_object)
+	{
+		element_dimension = 3;
+		coordinate_field = settings_to_object_data->default_rc_coordinate_field;
+		if (settings->coordinate_field)
+		{
+			coordinate_field = settings->coordinate_field;
+		}
+		if ((3 >= (number_of_components = Computed_field_get_number_of_components(
+			settings->seed_node_coordinate_field)))
+			&& (number_of_components == Computed_field_get_number_of_components(
+					 coordinate_field)))
+		{
+			/* determine if the element is required */
+			if (Computed_field_is_defined_at_node(settings->seed_node_coordinate_field, node)
+				&& Computed_field_evaluate_at_node(settings->seed_node_coordinate_field, node,
+					settings_to_object_data->time, coordinates)
+				&& Computed_field_find_element_xi(coordinate_field,
+					coordinates, number_of_components, &element, xi,
+					element_dimension, settings_to_object_data->region,
+					/*propagate_field*/0, /*find_nearest_location*/0))
+			{
+				if (STREAM_LINE==settings->streamline_type)
+				{
+					if (polyline=create_GT_polyline_streamline_FE_element(element,
+							xi,coordinate_field,
+							settings_to_object_data->wrapper_stream_vector_field,
+							settings->reverse_track, settings->streamline_length,
+							settings->streamline_data_type, settings->data_field,
+							settings_to_object_data->time,settings_to_object_data->fe_region))
+					{
+						if (!(return_code=GT_OBJECT_ADD(GT_polyline)(
+									settings->graphics_object,
+									/*graphics_object_time*/0,polyline)))
+						{
+							DESTROY(GT_polyline)(&polyline);
+						}
+					}
+					else
+					{
+						return_code=0;
+					}
+				}
+				else if ((settings->streamline_type == STREAM_RIBBON)||
+					(settings->streamline_type == STREAM_EXTRUDED_RECTANGLE)||
+					(settings->streamline_type == STREAM_EXTRUDED_ELLIPSE)||
+					(settings->streamline_type == STREAM_EXTRUDED_CIRCLE))
+				{
+					if (surface=create_GT_surface_streamribbon_FE_element(element,
+							xi,coordinate_field,
+							settings_to_object_data->wrapper_stream_vector_field,
+							settings->reverse_track, settings->streamline_length,
+							settings->streamline_width, settings->streamline_type,
+							settings->streamline_data_type, settings->data_field,
+							settings_to_object_data->time,settings_to_object_data->fe_region))
+					{
+						if (!(return_code=GT_OBJECT_ADD(GT_surface)(
+									settings->graphics_object,
+									/*graphics_object_time*/0,surface)))
+						{
+							DESTROY(GT_surface)(&surface);
+						}
+					}
+					else
+					{
+						return_code=0;
+					}
+				}
+				else
+				{
+					display_message(ERROR_MESSAGE,
+						"GT_element_node_to_streamline.  Unknown streamline type");
+					return_code=0;
+				}
+			}
+		}
+		else
+		{
+			return_code=1;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"GT_element_node_to_streamline.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* node_to_streamline */
 
 int GT_element_settings_to_graphics_object(
 	struct GT_element_settings *settings,void *settings_to_object_data_void)
@@ -6126,6 +6299,13 @@ The graphics object is stored with with the settings it was created from.
 								{
 									return_code = FE_element_to_graphics_object(
 										settings->seed_element, settings_to_object_data_void);
+								}
+								else if (settings->seed_node_region &&
+									settings->seed_node_coordinate_field)
+								{
+									return_code = FE_region_for_each_FE_node(
+										settings->seed_node_region,
+										GT_element_node_to_streamline, settings_to_object_data_void);
 								}
 								else
 								{
@@ -8578,13 +8758,15 @@ parsed settings. Note that the settings are ACCESSed once on valid return.
 	int number_of_components,number_of_valid_strings,return_code,
 		reverse_track_int, visibility;
 	struct Computed_field *stream_vector_field;
+	struct Cmiss_region *seed_node_region;
 	struct FE_region *fe_region;
 	struct GT_element_settings *settings;
 	struct G_element_command_data *g_element_command_data;
 	struct Modify_g_element_data *modify_g_element_data;
 	struct Option_table *option_table;
 	struct Set_Computed_field_conditional_data set_coordinate_field_data,
-		set_data_field_data,set_stream_vector_field_data;
+		set_data_field_data, set_seed_node_coordinate_field_data,
+		set_stream_vector_field_data;
 
 	ENTER(gfx_modify_g_element_streamlines);
 	if (state && (g_element_command_data =
@@ -8700,6 +8882,20 @@ parsed settings. Note that the settings are ACCESSed once on valid return.
 			Option_table_add_entry(option_table, "seed_element",
 				&(settings->seed_element), fe_region,
 				set_FE_element_top_level_FE_region);
+			/* seed_node_region */
+			Option_table_add_entry(option_table, "seed_node_region",
+				&settings->seed_node_region_path,
+				g_element_command_data->root_region, set_Cmiss_region_path);
+			/* seed_node_coordinate_field */
+			set_seed_node_coordinate_field_data.computed_field_manager=
+				g_element_command_data->computed_field_manager;
+			set_seed_node_coordinate_field_data.conditional_function=
+				Computed_field_has_up_to_3_numerical_components;
+			set_seed_node_coordinate_field_data.conditional_function_user_data=
+				(void *)NULL;
+			Option_table_add_entry(option_table,"seed_node_coordinate_field",
+				&(settings->seed_node_coordinate_field),&set_seed_node_coordinate_field_data,
+				set_Computed_field_conditional);
 			/* select_mode */
 			select_mode = GT_element_settings_get_select_mode(settings);
 			select_mode_string =
@@ -8746,6 +8942,27 @@ parsed settings. Note that the settings are ACCESSed once on valid return.
 				{
 					display_message(ERROR_MESSAGE,"Must specify a vector");
 					return_code=0;
+				}
+				if (settings->seed_node_region_path)
+				{
+					if (!(Cmiss_region_get_region_from_path(
+						g_element_command_data->root_region,
+						settings->seed_node_region_path, &seed_node_region) &&
+						REACCESS(FE_region)(&settings->seed_node_region,
+						Cmiss_region_get_FE_region(seed_node_region))))
+					{
+						display_message(ERROR_MESSAGE,
+							"gfx_create_streamlines.  Invalid seed_node_region");
+						return_code = 0;
+					}
+				}
+				if ((settings->seed_node_coordinate_field && (!settings->seed_node_region)) ||
+					((!settings->seed_node_coordinate_field) && settings->seed_node_region))
+				{
+					display_message(ERROR_MESSAGE,
+						"If you specify a seed_node_coordinate_field then you must also specify a "
+						"seed_node_region");
+					return_code = 0;
 				}
 				if (return_code)
 				{

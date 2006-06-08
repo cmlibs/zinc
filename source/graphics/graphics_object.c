@@ -5961,7 +5961,7 @@ same voltex in which case shared vertices will be merged.
 			}
 
 			/* Just add normals as they haven't been normalised yet and so their
-				magnitudes indicate the number of triangle contributing to the vector */
+				magnitudes indicate the number of triangles contributing to the vector */
 			existing_vertex->normal[0] += vertex->normal[0];
 			existing_vertex->normal[1] += vertex->normal[1];
 			existing_vertex->normal[2] += vertex->normal[2];

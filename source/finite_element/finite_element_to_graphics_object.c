@@ -3167,13 +3167,13 @@ faces.
 		distance,minimum_distance,xi[3],xi_step[3],xi_stepsize[3],
 		/*???DB.  Merge */
 		rmag,vector1[3],vector2[3],result[3],vertex0[3],vertex1[3],
-		vertex2[3];
+		vertex2[3], winding_coordinate[3], winding_coordinate_derivatives[9];
 	FE_value colour_data[4];
 	int *adjacency_table,*deform,i,ii,j,jj,k,kk,m,n_iso_polys,
 		n_data_components,number_of_elements,number_of_faces,n_xi_rep[3],return_code,
 		/*???DB.  Merge ?  Better names ? */
 		a,aaa,b,bbb,c,ccc,n_xi[3],index,v_count,n_vertices,
-		*dont_draw;
+		*dont_draw, reverse_winding;
 	struct CM_element_information cm;
 	struct FE_element **element_block,**element_block_ptr;
 	struct GT_voltex *voltex;
@@ -3200,6 +3200,27 @@ faces.
 		((!displacement_field)||
 			Computed_field_has_up_to_4_numerical_components(displacement_field,NULL)))
 	{
+		/* Determine whether xi forms a LH or RH coordinate system in this element */
+		reverse_winding = 0;
+		xi[0] = 0;
+		xi[1] = 0;
+		xi[2] = 0;
+		if (Computed_field_evaluate_in_element(
+				 coordinate_field, element,
+				 xi,time,(struct FE_element *)NULL,
+				 winding_coordinate, winding_coordinate_derivatives))
+		{
+			cross_product_float3(winding_coordinate_derivatives + 0,
+				winding_coordinate_derivatives + 3,result);
+			if ((result[0] * winding_coordinate_derivatives[6] + 
+				result[1] * winding_coordinate_derivatives[7] + 
+				result[2] * winding_coordinate_derivatives[8]) < 0)
+			{
+				reverse_winding = 1;
+			}
+		}
+			
+
 		if (texture_coordinate_field)
 		{
 			tex_number_of_components = Computed_field_get_number_of_components(
@@ -3383,15 +3404,32 @@ faces.
 								}
 
 								/* Create triangles */
-								for (i=0;i<n_iso_polys;i++)
+								if (reverse_winding)
 								{
-									triangle_list[i] = CREATE(VT_iso_triangle)();
-									triangle_list[i]->index = i;
-									/* need this list for calculating normals from surrounds */
-									for (j=0;j<3;j++)
+									for (i=0;i<n_iso_polys;i++)
 									{
-										triangle_list[i]->vertices[j] = vertex_list[vtexture->mc_iso_surface->
-											compiled_triangle_list[i]->vertex_index[j]];
+										triangle_list[i] = CREATE(VT_iso_triangle)();
+										triangle_list[i]->index = i;
+										for (j=0;j<3;j++)
+										{
+											triangle_list[i]->vertices[j] = 
+												vertex_list[vtexture->mc_iso_surface->
+													compiled_triangle_list[i]->vertex_index[2-j]];
+										}
+									}
+								}
+								else
+								{
+									for (i=0;i<n_iso_polys;i++)
+									{
+										triangle_list[i] = CREATE(VT_iso_triangle)();
+										triangle_list[i]->index = i;
+										for (j=0;j<3;j++)
+										{
+											triangle_list[i]->vertices[j] = 
+												vertex_list[vtexture->mc_iso_surface->
+													compiled_triangle_list[i]->vertex_index[j]];
+										}
 									}
 								}
 
@@ -3776,7 +3814,7 @@ faces.
 										/* Alternatively allow the area of the triangle to contribute to it's weighting? */
 										rmag = 1.0;
 #endif /* defined (OLD_CODE) */
-										if (rmag > 1e-10)
+										if (rmag > 1.0e-9)
 										{
 											for (j = 0 ; j < 3 ; j++) /* triangle vertices */
 											{
@@ -5204,13 +5242,14 @@ DESCRIPTION :
 Converts a 3-D element into an iso_surface (via a volume_texture).
 ==============================================================================*/
 {
-	enum FE_element_shape_type shape_type;
+	enum FE_element_shape_type shape_type1, shape_type2, shape_type3;
 	FE_value scalar_value,xi[3];
 	struct FE_element_shape *element_shape;
 	struct GT_voltex *iso_surface_voltex;
 	int cell_limit, *detail_map, i, linked_xi1, linked_xi2, number_of_passes,
-		number_of_polygon_vertices, number_in_xi1, number_in_xi2, number_in_xi3, number_of_volume_texture_cells,
-		number_of_volume_texture_nodes, pass, return_code, xi3_step;
+		number_of_polygon_vertices, number_in_xi1, number_in_xi2, number_in_xi3,
+		number_of_volume_texture_cells, number_of_volume_texture_nodes, 
+		pass, return_code, tetrahedra, xi3_step;
 	struct MC_cell **mc_cell;
 	struct MC_iso_surface *mc_iso_surface;
 	struct VT_texture_cell *cell,*cell_block,**cell_list;
@@ -5233,14 +5272,19 @@ Converts a 3-D element into an iso_surface (via a volume_texture).
 		/*???DB.  Only for linear polygons */
 		/* make sure that polygon vertices land on grid points */
 		/*???DB.  For a polygon the "radial" component has to be second ? */
+		tetrahedra = 0;
 		linked_xi1 = -1;
-		if (get_FE_element_shape_xi_shape_type(element_shape, /*xi_number*/0,
-					&shape_type) && (POLYGON_SHAPE == shape_type))
+		get_FE_element_shape_xi_shape_type(element_shape, /*xi_number*/0,
+			&shape_type1);
+		get_FE_element_shape_xi_shape_type(element_shape, /*xi_number*/1,
+			&shape_type2);
+		get_FE_element_shape_xi_shape_type(element_shape, /*xi_number*/2,
+			&shape_type3);
+		if (POLYGON_SHAPE == shape_type1)
 		{
 			linked_xi1 = 0;
 		}
-		if (get_FE_element_shape_xi_shape_type(element_shape, /*xi_number*/1,
-					&shape_type) && (POLYGON_SHAPE == shape_type))
+		if (POLYGON_SHAPE == shape_type2)
 		{
 			if (0 <= linked_xi1)
 			{
@@ -5273,6 +5317,12 @@ Converts a 3-D element into an iso_surface (via a volume_texture).
 						* number_of_polygon_vertices;
 				}
 			}
+		}
+		/* Check for simplicies */
+		if ((SIMPLEX_SHAPE == shape_type1) && (SIMPLEX_SHAPE == shape_type2)
+			&& (SIMPLEX_SHAPE == shape_type3))
+		{
+			tetrahedra = 1;
 		}
 
 		/* SAB 17 March 2003  To reduce the maximum amount of memory used in generating
@@ -5401,8 +5451,16 @@ Converts a 3-D element into an iso_surface (via a volume_texture).
 								node=node_block+i;
 								node_list[i]=node;
 								node->scalar_value=(double)scalar_value;
-								/*???RC no clipping function for now */
-								node->clipping_fn_value=(double)1.0;
+								if (tetrahedra)
+								{
+									/* Use the clipping function to define the 
+										xi1+xi2+xi3=1 plane */
+									node->clipping_fn_value=(double)-(xi[0]+xi[1]+xi[2]);
+								}
+								else
+								{
+									node->clipping_fn_value=(double)0.0;
+								}
 								node->active = 0;
 								i++;
 							}
@@ -5425,8 +5483,20 @@ Converts a 3-D element into an iso_surface (via a volume_texture).
 							volume_texture->cutting_plane_on=0;
 							/* allow the clipping function to be defined nodally like
 								the scalar field */
-							volume_texture->clipping_field_on=1;
-							volume_texture->cut_isovalue=0;
+							if (tetrahedra)
+							{
+								/* Use the clipping function to define the 
+										xi1+xi2+xi3=1 plane, add a little so that
+										the valid portions of surfaces aligned with
+										the clipping plane are not cut out. */
+								volume_texture->clipping_field_on=1;
+								volume_texture->cut_isovalue=-1.000001;
+							}
+							else
+							{
+								volume_texture->clipping_field_on=0;
+								volume_texture->cut_isovalue=0;
+							}
 							volume_texture->cutting_plane[0]=0;
 							volume_texture->cutting_plane[1]=0;
 							volume_texture->cutting_plane[2]=0;

@@ -4819,11 +4819,22 @@ the <xi_face> are calculated for that face and the <xi> are changed to be
 on the boundary of the element.
 ==============================================================================*/
 
+int FE_element_get_number_of_change_to_adjacent_element_permutations(
+	struct FE_element *element, FE_value *xi, int face_number);
+/*******************************************************************************
+LAST MODIFIED : 8 June 2006
+
+DESCRIPTION :
+Returns the number of permutations known for the changing to the adjacent
+element at face <face_number>.  It would be better to extend FE_element_shape
+to take account of rotations and flipping.
+==============================================================================*/
+
 int FE_element_change_to_adjacent_element(struct FE_element **element_address,
 	FE_value *xi, FE_value *increment, int *face_number, FE_value *xi_face,
-	struct FE_region *fe_region);
+	struct FE_region *fe_region, int permutation);
 /*******************************************************************************
-LAST MODIFIED : 23 June 2004
+LAST MODIFIED : 31 May 2006
 
 DESCRIPTION :
 Steps into the adjacent element through face <face_number>, updating the 
@@ -4834,6 +4845,12 @@ If <increment> is not NULL then it is converted into an equvalent increment
 in the new element.
 If <fe_region> is not NULL then the function will restrict itself to elements
 in that region.
+<permutation> is used to resolve the possible rotation and flipping of the 
+local face xi coordinates between the two parents.
+The shape mapping from parents are reused for all elements of the same shape
+and do not take into account the relative orientation of the parents.  It would
+be better to do so.  The range of possible permutations is from 0 to the value
+returned from FE_element_get_number_of_change_to_adjacent_element_permutations.
 ==============================================================================*/
 
 int FE_element_xi_increment(struct FE_element **element_address,FE_value *xi,

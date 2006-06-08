@@ -163,8 +163,8 @@ Subset of command data passed to g_element modify routines.
 	struct LIST(GT_object *) glyph_list;
 	struct MANAGER(Computed_field) *computed_field_manager;
 	struct Cmiss_region *region;
-	/* data_root_region used for surface data points from isosurfaces */
-	struct Cmiss_region *data_root_region;
+	/* root_region used for seeding streamlines from the nodes in a region */
+	struct Cmiss_region *root_region;
 	struct MANAGER(Graphical_material) *graphical_material_manager;
 	struct MANAGER(Scene) *scene_manager;
 	struct Spectrum *default_spectrum;
@@ -188,6 +188,7 @@ object.
 	/* default_rc_coordinate_field to use if NULL in any settings */
 	struct Computed_field *rc_coordinate_field,*default_rc_coordinate_field,
 		*wrapper_orientation_scale_field,*wrapper_stream_vector_field;
+	struct Cmiss_region *region;
 	struct FE_region *fe_region;
 	struct FE_region *data_fe_region; /*???RC temporary */
 	struct Element_discretization *element_discretization;

@@ -4931,7 +4931,7 @@ face with the same nodes is extremely rapid. add_FE_element_and_faces_to_manager
 uses them to find faces and lines for elements without them, if they exist.
 ==============================================================================*/
 {
-	int i,node_number,*node_numbers,number_of_nodes;
+	int i,node_number,*node_numbers,number_of_nodes,placed,j,k;
 	struct FE_element_type_node_sequence *element_type_node_sequence;
 	struct FE_node **nodes_in_element;
 
@@ -4959,8 +4959,12 @@ uses them to find faces and lines for elements without them, if they exist.
 				{
 					node_number=(nodes_in_element[i])->cm_node_identifier;
 					node_numbers[i]=node_number;
-#if defined (OLD_CODE)
-					/* SAB We do not want to sort these node numbers as the order of the nodes
+					/* SAB Reenabled the matching of differently ordered faces as 
+						detecting the continuity correctly is more important than the 
+						problems with lines matching to different nodes when 
+						inheriting from different parents.
+						OLDCOMMENT 
+						We do not want to sort these node numbers as the order of the nodes
 						determines which ordering the faces are in and if these do not match
 						we will get the lines matched to different pairs of the nodes. */
 					placed=0;
@@ -4981,7 +4985,6 @@ uses them to find faces and lines for elements without them, if they exist.
 					{
 						node_numbers[i]=node_number;
 					}
-#endif /* defined (OLD_CODE) */
 				}
 #if defined (DEBUG)
 				/*???debug*/
@@ -11977,7 +11980,7 @@ static int FE_element_shape_xi_increment(struct FE_element_shape *shape,
 	FE_value *xi,FE_value *increment, FE_value *step_size,
 	int *face_number_address, FE_value *xi_face)
 /*******************************************************************************
-LAST MODIFIED : 9 September 2004
+LAST MODIFIED : 31 May 2006
 
 DESCRIPTION :
 Adds the <increment> to <xi>.  If this moves <xi> outside of the shape, then
@@ -11994,7 +11997,10 @@ on the boundary of the shape.
 	double determinant,*face_matrix,*face_rhs,*face_rhsB,step_size_local;
 	FE_value *face_to_element;
 	int dimension,face_number,i,j,k,*pivot_index,return_code;
-#define SMALL_STEP (1e-12)
+	/* While we are calculating this in doubles all the xi locations are 
+		stored in floats and so when we change_element and are numerically just
+		outside it can be a value as large as this */
+#define SMALL_STEP (1e-4)
 
 	ENTER(FE_element_shape_xi_increment);
 	return_code=0;
@@ -46274,11 +46280,61 @@ on the boundary of the element.
 	return (return_code);
 } /* FE_element_xi_increment_within_element */
 
+int FE_element_get_number_of_change_to_adjacent_element_permutations(
+	struct FE_element *element, FE_value *xi, int face_number)
+/*******************************************************************************
+LAST MODIFIED : 8 June 2006
+
+DESCRIPTION :
+Returns the number of permutations known for the changing to the adjacent
+element at face <face_number>.
+==============================================================================*/
+{
+	int number_of_permutations;
+	struct FE_element *face;
+
+	ENTER(FE_element_get_number_of_change_to_adjacent_element_permutations);
+	USE_PARAMETER(xi);
+	if (element&&(0<get_FE_element_dimension(element))&&
+		(0<=face_number)&&(face_number<element->shape->number_of_faces))
+	{
+		number_of_permutations = 1;
+		if (face=(element->faces)[face_number])
+		{
+			number_of_permutations = 1;
+			switch (face->shape->dimension)
+			{
+				case 1:
+				{
+					number_of_permutations = 2;
+				} break;
+				case 2:
+				{
+					if ((face->shape->type[0] == SIMPLEX_SHAPE)
+						&& (face->shape->type[2] == SIMPLEX_SHAPE))
+					{
+						number_of_permutations = 6;
+					}
+				} break;
+			}
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"FE_element_get_number_of_change_to_adjacent_element_permutations.  "
+			"Invalid argument(s).");
+		number_of_permutations = 0;
+	}
+	LEAVE;
+
+	return (number_of_permutations);
+} /* FE_element_get_number_of_change_to_adjacent_element_permutations */
+
 int FE_element_change_to_adjacent_element(struct FE_element **element_address,
 	FE_value *xi, FE_value *increment, int *face_number, FE_value *xi_face,
-	struct FE_region *fe_region)
+	struct FE_region *fe_region, int permutation)
 /*******************************************************************************
-LAST MODIFIED : 23 June 2004
+LAST MODIFIED : 8 June 2006
 
 DESCRIPTION :
 Steps into the adjacent element through face <face_number>, updating the 
@@ -46289,10 +46345,14 @@ If <increment> is not NULL then it is converted into an equvalent increment
 in the new element.
 If <fe_region> is not NULL then the function will restrict itself to elements
 in that region.
+<permutation> is used to resolve the possible rotation and flipping of the 
+local face xi coordinates between the two parents.
+The shape mapping from parents are reused for all elements of the same shape
+and do not take into account the relative orientation of the parents.
 ==============================================================================*/
 {
 	double dot_product;
-	FE_value *face_to_element,*temp_increment;
+	FE_value *face_to_element,*local_xi_face,*temp_increment;
 	int dimension,i,j,new_face_number,return_code;
 	struct FE_element *element,*face,*new_element;
 	struct FE_element_parent *face_parent;
@@ -46309,6 +46369,7 @@ in that region.
 			ALLOCATE(face_normal,FE_value,dimension);
 			ALLOCATE(temp_increment,FE_value,dimension);
 		}
+		ALLOCATE(local_xi_face,FE_value,dimension-1);
 		if ((!increment) || (face_normal && temp_increment))
 		{
 			face=(element->faces)[*face_number];
@@ -46332,6 +46393,64 @@ in that region.
 						return_code = 1;
 						if (xi)
 						{
+							if (permutation > 0)
+							{
+								/* Try rotating the face_xi coordinates */
+								/* Only implementing the cases required so far and
+									enumerated by FE_element_change_get_number_of_permutations */
+								switch (face->shape->dimension)
+								{
+									case 1:
+									{
+										if (face->shape->type[0] == LINE_SHAPE)
+										{
+											local_xi_face[0] = 1.0 - xi_face[0];
+										}
+									} break;
+									case 2:
+									{
+										if ((face->shape->type[0] == SIMPLEX_SHAPE)
+											&& (face->shape->type[2] == SIMPLEX_SHAPE))
+										{
+											switch (permutation)
+											{
+												case 1:
+												{
+													local_xi_face[0] = xi_face[1];
+													local_xi_face[1] = 1.0 - xi_face[0] - xi_face[1];
+												} break;
+												case 2:
+												{
+													local_xi_face[0] = 1.0 - xi_face[0] - xi_face[1];
+													local_xi_face[1] = xi_face[0];
+												} break;
+												case 3:
+												{
+													local_xi_face[0] = xi_face[1];
+													local_xi_face[1] = xi_face[0];
+												} break;
+												case 4:
+												{
+													local_xi_face[0] = xi_face[0];
+													local_xi_face[1] = 1.0 - xi_face[0] - xi_face[1];
+												} break;
+												case 5:
+												{
+													local_xi_face[0] = 1.0 - xi_face[0] - xi_face[1];
+													local_xi_face[1] = xi_face[1];
+												} break;
+											}
+										}
+									} break;
+								}
+							}
+							else
+							{
+								for (j = 0 ; j < dimension - 1 ; j++)
+								{
+									local_xi_face[j] = xi_face[j];
+								}
+							}
 							face_to_element=(new_element->shape->face_to_element)+
 								(new_face_number*dimension*dimension);
 							for (i=0;i<dimension;i++)
@@ -46340,7 +46459,7 @@ in that region.
 								face_to_element++;
 								for (j=0;j<dimension-1;j++)
 								{
-									xi[i] += (*face_to_element)*xi_face[j];
+									xi[i] += (*face_to_element)*local_xi_face[j];
 									face_to_element++;
 								}
 							}
@@ -46437,6 +46556,7 @@ in that region.
 				DEALLOCATE(temp_increment);
 				DEALLOCATE(face_normal);
 			}
+			DEALLOCATE(local_xi_face);
 		}
 		else
 		{
@@ -46501,7 +46621,7 @@ the <increment> will contain the fraction of the increment not used.
 				{
 					return_code = FE_element_change_to_adjacent_element(&element,
 						local_xi, local_increment, &face_number, xi_face,
-						(struct FE_region *)NULL);
+						(struct FE_region *)NULL, /*permutation*/0);
 					if (face_number == -1)
 					{
 						/* No adjacent face could be found, so stop */

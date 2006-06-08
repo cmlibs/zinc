@@ -14053,7 +14053,7 @@ Parameter <help_mode> should be NULL when calling this function.
 					Computed_field_package_get_computed_field_manager(
 						command_data->computed_field_package);
 				g_element_command_data.region = region;
-				g_element_command_data.data_root_region = command_data->data_root_region;
+				g_element_command_data.root_region = command_data->root_region;
 				g_element_command_data.graphical_material_manager =
 					Material_package_get_material_manager(command_data->material_package);
 				g_element_command_data.scene_manager = command_data->scene_manager;

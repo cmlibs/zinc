@@ -304,6 +304,7 @@ rendering.
 				(struct Computed_field *)NULL;
 			settings_to_object_data.native_discretization_field =
 				gt_element_group->native_discretization_field;
+			settings_to_object_data.region = gt_element_group->cmiss_region;
 			settings_to_object_data.fe_region = gt_element_group->fe_region;
 			settings_to_object_data.data_fe_region = gt_element_group->data_fe_region;
 			element_discretization.number_in_xi1 =
