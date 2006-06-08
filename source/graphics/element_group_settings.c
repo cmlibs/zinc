@@ -5044,18 +5044,21 @@ if no coordinate field. Currently only write if we have a field.
 				sprintf(temp_string," seed_node_region %s", settings->seed_node_region_path);
 				append_string(&settings_string,temp_string,&error);
 			}
-			if (GET_NAME(Computed_field)(settings->seed_node_coordinate_field,&name))
+			if (settings->seed_node_coordinate_field)
 			{
-				/* put quotes around name if it contains special characters */
-				make_valid_token(&name);
-				append_string(&settings_string," seed_node_coordinate_field ",&error);
-				append_string(&settings_string,name,&error);
-				DEALLOCATE(name);
-			}
-			else
-			{
-				DEALLOCATE(settings_string);
-				error=1;
+				if (GET_NAME(Computed_field)(settings->seed_node_coordinate_field,&name))
+				{
+					/* put quotes around name if it contains special characters */
+					make_valid_token(&name);
+					append_string(&settings_string," seed_node_coordinate_field ",&error);
+					append_string(&settings_string,name,&error);
+					DEALLOCATE(name);
+				}
+				else
+				{
+					DEALLOCATE(settings_string);
+					error=1;
+				}
 			}
 		}
 		append_string(&settings_string," ",&error);
