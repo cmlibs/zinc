@@ -388,44 +388,28 @@ Calls Computed_field_clear_cache before clearing the type.
 		field->number_of_source_values=0;
 
 		/* Clear all methods */
-		field->computed_field_clear_type_specific_function = 
-			(Computed_field_clear_type_specific_function)NULL;
-		field->computed_field_copy_type_specific_function =
-			(Computed_field_copy_type_specific_function)NULL;
-		field->computed_field_clear_cache_type_specific_function =
-			(Computed_field_clear_cache_type_specific_function)NULL;
-		field->computed_field_type_specific_contents_match_function = 
-			(Computed_field_type_specific_contents_match_function)NULL;
-		field->computed_field_is_defined_in_element_function =
-			(Computed_field_is_defined_in_element_function)NULL;
-		field->computed_field_is_defined_at_node_function =
-			(Computed_field_is_defined_at_node_function)NULL;
-		field->computed_field_has_numerical_components_function =
-			(Computed_field_has_numerical_components_function)NULL;
-		field->computed_field_not_in_use_function =
-			(Computed_field_not_in_use_function)NULL;
-		field->computed_field_evaluate_cache_at_node_function =
-			(Computed_field_evaluate_cache_at_node_function)NULL; 
-		field->computed_field_evaluate_cache_in_element_function =
-			(Computed_field_evaluate_cache_in_element_function)NULL; 
-		field->computed_field_evaluate_as_string_in_element_function =
-			(Computed_field_evaluate_as_string_in_element_function)NULL; 
-		field->computed_field_evaluate_as_string_at_node_function =
-			(Computed_field_evaluate_as_string_at_node_function)NULL;
-		field->computed_field_set_values_at_node_function =
-			(Computed_field_set_values_at_node_function)NULL;
-		field->computed_field_set_values_in_element_function =
-			(Computed_field_set_values_in_element_function)NULL;
-		field->computed_field_get_native_discretization_in_element_function =	
-			(Computed_field_get_native_discretization_in_element_function)NULL;
-		field->computed_field_find_element_xi_function =	
-			(Computed_field_find_element_xi_function)NULL;
-		field->list_Computed_field_function =
-			(List_Computed_field_function)NULL;
-		field->computed_field_get_command_string_function =
-			(Computed_field_get_command_string_function)NULL;
-		field->computed_field_get_native_resolution_function =	
-			(Computed_field_get_native_resolution_function)NULL;
+		COMPUTED_FIELD_SET_METHODS(
+			field,
+			(Computed_field_clear_type_specific_function)NULL,
+			(Computed_field_copy_type_specific_function)NULL,
+			(Computed_field_clear_cache_type_specific_function)NULL,
+			(Computed_field_type_specific_contents_match_function)NULL,
+			(Computed_field_is_defined_in_element_function)NULL,
+			(Computed_field_is_defined_at_node_function)NULL,
+			(Computed_field_has_numerical_components_function)NULL,
+			(Computed_field_not_in_use_function)NULL,
+			(Computed_field_evaluate_cache_at_node_function)NULL, 
+			(Computed_field_evaluate_cache_in_element_function)NULL, 
+			(Computed_field_evaluate_as_string_at_node_function)NULL,
+			(Computed_field_evaluate_as_string_in_element_function)NULL,
+			(Computed_field_set_values_at_node_function)NULL,
+			(Computed_field_set_values_in_element_function)NULL,
+			(Computed_field_get_native_discretization_in_element_function)NULL,
+			(Computed_field_find_element_xi_function)NULL,
+			(List_Computed_field_function)NULL,
+			(Computed_field_get_command_string_function)NULL,
+			(Computed_field_has_multiple_times_function)NULL,
+			(Computed_field_get_native_resolution_function)NULL);
 	}
 	else
 	{
@@ -530,46 +514,28 @@ COMPUTED_FIELD_INVALID with no components.
 
 			field->find_element_xi_cache = (struct Computed_field_find_element_xi_cache *)NULL;
 
-			field->computed_field_clear_type_specific_function = 
-				(Computed_field_clear_type_specific_function)NULL;
-			field->computed_field_copy_type_specific_function =
-				(Computed_field_copy_type_specific_function)NULL;
-	   	field->computed_field_clear_cache_type_specific_function =
-				(Computed_field_clear_cache_type_specific_function)NULL;
-			field->computed_field_type_specific_contents_match_function = 
-				(Computed_field_type_specific_contents_match_function)NULL;
-			field->computed_field_is_defined_in_element_function =
-				(Computed_field_is_defined_in_element_function)NULL;
-	   	field->computed_field_is_defined_at_node_function =
-				(Computed_field_is_defined_at_node_function)NULL;
-			field->computed_field_has_numerical_components_function =
-				(Computed_field_has_numerical_components_function)NULL;
-			field->computed_field_not_in_use_function =
-				(Computed_field_not_in_use_function)NULL;
-	   	field->computed_field_evaluate_cache_at_node_function =
-				(Computed_field_evaluate_cache_at_node_function)NULL; 
-	   	field->computed_field_evaluate_cache_in_element_function =
-				(Computed_field_evaluate_cache_in_element_function)NULL; 
-	   	field->computed_field_evaluate_as_string_in_element_function =
-				(Computed_field_evaluate_as_string_in_element_function)NULL; 
-	   	field->computed_field_evaluate_as_string_at_node_function =
-				(Computed_field_evaluate_as_string_at_node_function)NULL;
-	   	field->computed_field_set_values_at_node_function =
-				(Computed_field_set_values_at_node_function)NULL;
-	   	field->computed_field_set_values_in_element_function =
-				(Computed_field_set_values_in_element_function)NULL;
-	   	field->computed_field_get_native_discretization_in_element_function =	
-				(Computed_field_get_native_discretization_in_element_function)NULL;
-			field->computed_field_find_element_xi_function =	
-				(Computed_field_find_element_xi_function)NULL;
-			field->list_Computed_field_function =
-				(List_Computed_field_function)NULL;
-			field->computed_field_get_command_string_function =
-				(Computed_field_get_command_string_function)NULL;
-			field->computed_field_has_multiple_times_function =
-				(Computed_field_has_multiple_times_function)NULL;
-			field->computed_field_get_native_resolution_function =	
-			        (Computed_field_get_native_resolution_function)NULL;
+			COMPUTED_FIELD_SET_METHODS(
+				field,
+				(Computed_field_clear_type_specific_function)NULL,
+				(Computed_field_copy_type_specific_function)NULL,
+				(Computed_field_clear_cache_type_specific_function)NULL,
+				(Computed_field_type_specific_contents_match_function)NULL,
+				(Computed_field_is_defined_in_element_function)NULL,
+				(Computed_field_is_defined_at_node_function)NULL,
+				(Computed_field_has_numerical_components_function)NULL,
+				(Computed_field_not_in_use_function)NULL,
+				(Computed_field_evaluate_cache_at_node_function)NULL, 
+				(Computed_field_evaluate_cache_in_element_function)NULL, 
+				(Computed_field_evaluate_as_string_at_node_function)NULL,
+				(Computed_field_evaluate_as_string_in_element_function)NULL,
+				(Computed_field_set_values_at_node_function)NULL,
+				(Computed_field_set_values_in_element_function)NULL,
+				(Computed_field_get_native_discretization_in_element_function)NULL,
+				(Computed_field_find_element_xi_function)NULL,
+				(List_Computed_field_function)NULL,
+				(Computed_field_get_command_string_function)NULL,
+				(Computed_field_has_multiple_times_function)NULL,
+				(Computed_field_get_native_resolution_function)NULL);
 
 			/* for all types of Computed_field calculated from others */
 			field->source_fields = (struct Computed_field **)NULL;
@@ -785,41 +751,30 @@ functions to check if read_only flag is set.
 						&source->coordinate_system);
 
 					destination->component_names = component_names;
+					
+					COMPUTED_FIELD_SET_METHODS(
+						destination,
+						source->computed_field_clear_type_specific_function,
+						source->computed_field_copy_type_specific_function,
+						source->computed_field_clear_cache_type_specific_function,
+						source->computed_field_type_specific_contents_match_function,
+						source->computed_field_is_defined_in_element_function,
+						source->computed_field_is_defined_at_node_function,
+						source->computed_field_has_numerical_components_function,
+						source->computed_field_not_in_use_function,
+						source->computed_field_evaluate_cache_at_node_function,
+						source->computed_field_evaluate_cache_in_element_function,
+						source->computed_field_evaluate_as_string_at_node_function,
+						source->computed_field_evaluate_as_string_in_element_function,
+						source->computed_field_set_values_at_node_function,
+						source->computed_field_set_values_in_element_function,
+						source->computed_field_get_native_discretization_in_element_function,
+						source->computed_field_find_element_xi_function,
+						source->list_Computed_field_function,
+						source->computed_field_get_command_string_function,
+						source->computed_field_has_multiple_times_function,
+						source->computed_field_get_native_resolution_function);
 
-					destination->computed_field_clear_type_specific_function = 
-						source->computed_field_clear_type_specific_function;
-					destination->computed_field_copy_type_specific_function =
-						source->computed_field_copy_type_specific_function;
-					destination->computed_field_type_specific_contents_match_function = 
-						source->computed_field_type_specific_contents_match_function;
-					destination->computed_field_is_defined_in_element_function =
-						source->computed_field_is_defined_in_element_function;
-					destination->computed_field_is_defined_at_node_function =
-						source->computed_field_is_defined_at_node_function;
-					destination->computed_field_has_numerical_components_function =
-						source->computed_field_has_numerical_components_function;
-					destination->computed_field_evaluate_cache_at_node_function =
-						source->computed_field_evaluate_cache_at_node_function;
-					destination->computed_field_evaluate_cache_in_element_function =
-						source->computed_field_evaluate_cache_in_element_function;
-					destination->computed_field_evaluate_as_string_in_element_function =
-						source->computed_field_evaluate_as_string_in_element_function;
-					destination->computed_field_evaluate_as_string_at_node_function =
-						source->computed_field_evaluate_as_string_at_node_function;
-					destination->computed_field_set_values_at_node_function =
-						source->computed_field_set_values_at_node_function;
-					destination->computed_field_set_values_in_element_function =
-						source->computed_field_set_values_in_element_function;
-					destination->computed_field_get_native_discretization_in_element_function =	
-						source->computed_field_get_native_discretization_in_element_function;
-					destination->computed_field_find_element_xi_function =	
-						source->computed_field_find_element_xi_function;
-					destination->list_Computed_field_function =
-						source->list_Computed_field_function;
-					destination->computed_field_get_command_string_function =
-						source->computed_field_get_command_string_function;
-					destination->computed_field_get_native_resolution_function =	
-						source->computed_field_get_native_resolution_function;
 					if (source->type_specific_data)
 					{
 						destination->type_specific_data = type_specific_data;

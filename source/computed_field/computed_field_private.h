@@ -209,56 +209,109 @@ DESCRIPTION :
 	
 }; /* struct Computed_field */
 
+#define COMPUTED_FIELD_SET_METHODS( \
+	field_variable, \
+	Computed_field_field_type_clear_type_specific, \
+	Computed_field_field_type_copy_type_specific, \
+	Computed_field_field_type_clear_cache_type_specific, \
+	Computed_field_field_type_type_specific_contents_match, \
+	Computed_field_field_type_is_defined_in_element, \
+	Computed_field_field_type_is_defined_at_node, \
+	Computed_field_field_type_has_numerical_components, \
+	Computed_field_field_type_not_in_use, \
+	Computed_field_field_type_evaluate_cache_at_node, \
+	Computed_field_field_type_evaluate_cache_in_element, \
+	Computed_field_field_type_evaluate_as_string_at_node, \
+	Computed_field_field_type_evaluate_as_string_in_element, \
+	Computed_field_field_type_set_values_at_node, \
+	Computed_field_field_type_set_values_in_element, \
+	Computed_field_field_type_get_native_discretization_in_element, \
+	Computed_field_field_type_find_element_xi, \
+	list_Computed_field_field_type, \
+	Computed_field_field_type_get_command_string, \
+	Computed_field_field_type_has_multiple_times, \
+	Computed_field_field_type_get_native_resolution \
+	) \
+/***************************************************************************** \
+LAST MODIFIED : 9 June 2006 \
+\
+DESCRIPTION : \
+Set these with a macro to ensure we always set them all. \
+============================================================================*/ \
+field_variable->computed_field_clear_type_specific_function = \
+	Computed_field_field_type_clear_type_specific; \
+field_variable->computed_field_copy_type_specific_function = \
+	Computed_field_field_type_copy_type_specific; \
+field_variable->computed_field_clear_cache_type_specific_function = \
+	Computed_field_field_type_clear_cache_type_specific; \
+field_variable->computed_field_type_specific_contents_match_function = \
+	Computed_field_field_type_type_specific_contents_match; \
+field_variable->computed_field_is_defined_in_element_function = \
+	Computed_field_field_type_is_defined_in_element; \
+field_variable->computed_field_is_defined_at_node_function = \
+	Computed_field_field_type_is_defined_at_node; \
+field_variable->computed_field_has_numerical_components_function = \
+	Computed_field_field_type_has_numerical_components; \
+field_variable->computed_field_not_in_use_function = \
+	Computed_field_field_type_not_in_use; \
+field_variable->computed_field_evaluate_cache_at_node_function = \
+	Computed_field_field_type_evaluate_cache_at_node; \
+field_variable->computed_field_evaluate_cache_in_element_function = \
+	Computed_field_field_type_evaluate_cache_in_element; \
+field_variable->computed_field_evaluate_as_string_at_node_function = \
+	Computed_field_field_type_evaluate_as_string_at_node; \
+field_variable->computed_field_evaluate_as_string_in_element_function = \
+	Computed_field_field_type_evaluate_as_string_in_element; \
+field_variable->computed_field_set_values_at_node_function = \
+	Computed_field_field_type_set_values_at_node; \
+field_variable->computed_field_set_values_in_element_function = \
+	Computed_field_field_type_set_values_in_element; \
+field_variable->computed_field_get_native_discretization_in_element_function = \
+	Computed_field_field_type_get_native_discretization_in_element; \
+field_variable->computed_field_find_element_xi_function = \
+	Computed_field_field_type_find_element_xi; \
+field_variable->list_Computed_field_function = \
+	list_Computed_field_field_type; \
+field_variable->computed_field_get_command_string_function =  \
+	Computed_field_field_type_get_command_string; \
+field_variable->computed_field_has_multiple_times_function =  \
+	Computed_field_field_type_has_multiple_times; \
+field_variable->computed_field_get_native_resolution_function = \
+        Computed_field_field_type_get_native_resolution
+
 #define COMPUTED_FIELD_ESTABLISH_METHODS( field_type ) \
 /***************************************************************************** \
-LAST MODIFIED : 21 January 2002 \
+LAST MODIFIED : 9 June 2006 \
 \
 DESCRIPTION : \
 Each Computed_field_set_type function should call this macro to establish the \
 virtual functions that give the field its particular behaviour; Each function \
 must therefore be defined for each field type, even if it is set to NULL or \
-some default function. \
+some default function. The field_variable is hard coded to 'field' for this \
+macro. \
 ============================================================================*/ \
-field->computed_field_clear_type_specific_function = \
-	Computed_field_ ## field_type ## _clear_type_specific; \
-field->computed_field_copy_type_specific_function = \
-	Computed_field_ ## field_type ## _copy_type_specific; \
-field->computed_field_clear_cache_type_specific_function = \
-	Computed_field_ ## field_type ## _clear_cache_type_specific; \
-field->computed_field_type_specific_contents_match_function = \
-	Computed_field_ ## field_type ## _type_specific_contents_match; \
-field->computed_field_is_defined_in_element_function = \
-	Computed_field_ ## field_type ## _is_defined_in_element; \
-field->computed_field_is_defined_at_node_function = \
-	Computed_field_ ## field_type ## _is_defined_at_node; \
-field->computed_field_has_numerical_components_function = \
-	Computed_field_ ## field_type ## _has_numerical_components; \
-field->computed_field_not_in_use_function = \
-	Computed_field_ ## field_type ## _not_in_use; \
-field->computed_field_evaluate_cache_at_node_function = \
-	Computed_field_ ## field_type ## _evaluate_cache_at_node; \
-field->computed_field_evaluate_cache_in_element_function = \
-	Computed_field_ ## field_type ## _evaluate_cache_in_element; \
-field->computed_field_evaluate_as_string_at_node_function = \
-	Computed_field_ ## field_type ## _evaluate_as_string_at_node; \
-field->computed_field_evaluate_as_string_in_element_function = \
-	Computed_field_ ## field_type ## _evaluate_as_string_in_element; \
-field->computed_field_set_values_at_node_function = \
-	Computed_field_ ## field_type ## _set_values_at_node; \
-field->computed_field_set_values_in_element_function = \
-	Computed_field_ ## field_type ## _set_values_in_element; \
-field->computed_field_get_native_discretization_in_element_function = \
-	Computed_field_ ## field_type ## _get_native_discretization_in_element; \
-field->computed_field_find_element_xi_function = \
-	Computed_field_ ## field_type ## _find_element_xi; \
-field->list_Computed_field_function = \
-	list_Computed_field_ ## field_type; \
-field->computed_field_get_command_string_function =  \
-	Computed_field_ ## field_type ## _get_command_string; \
-field->computed_field_has_multiple_times_function =  \
-	Computed_field_ ## field_type ## _has_multiple_times; \
-field->computed_field_get_native_resolution_function = \
-        Computed_field_ ## field_type ## _get_native_resolution
+	COMPUTED_FIELD_SET_METHODS( \
+	field, \
+	Computed_field_ ## field_type ## _clear_type_specific, \
+	Computed_field_ ## field_type ## _copy_type_specific, \
+	Computed_field_ ## field_type ## _clear_cache_type_specific, \
+	Computed_field_ ## field_type ## _type_specific_contents_match, \
+	Computed_field_ ## field_type ## _is_defined_in_element, \
+	Computed_field_ ## field_type ## _is_defined_at_node, \
+	Computed_field_ ## field_type ## _has_numerical_components, \
+	Computed_field_ ## field_type ## _not_in_use, \
+	Computed_field_ ## field_type ## _evaluate_cache_at_node, \
+	Computed_field_ ## field_type ## _evaluate_cache_in_element, \
+	Computed_field_ ## field_type ## _evaluate_as_string_at_node, \
+	Computed_field_ ## field_type ## _evaluate_as_string_in_element, \
+	Computed_field_ ## field_type ## _set_values_at_node, \
+	Computed_field_ ## field_type ## _set_values_in_element, \
+	Computed_field_ ## field_type ## _get_native_discretization_in_element, \
+	Computed_field_ ## field_type ## _find_element_xi, \
+	list_Computed_field_ ## field_type, \
+	Computed_field_ ## field_type ## _get_command_string, \
+	Computed_field_ ## field_type ## _has_multiple_times, \
+   Computed_field_ ## field_type ## _get_native_resolution )
 
 int Computed_field_changed(struct Computed_field *field,
 	struct MANAGER(Computed_field) *computed_field_manager);
