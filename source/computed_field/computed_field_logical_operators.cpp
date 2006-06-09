@@ -2692,10 +2692,424 @@ already) and allows its contents to be modified.
 	return (return_code);
 } /* define_Computed_field_type_greater_than */
 
+static char computed_field_is_defined_type_string[] = "is_defined";
+
+DEFINE_DEFAULT_COMPUTED_FIELD_IS_TYPE_FUNCTION(is_defined)
+
+#define Computed_field_is_defined_clear_type_specific \
+   Computed_field_default_clear_type_specific
+/*******************************************************************************
+LAST MODIFIED : 9 June 2006
+
+DESCRIPTION :
+No type specific data
+==============================================================================*/
+
+#define Computed_field_is_defined_copy_type_specific \
+   Computed_field_default_copy_type_specific
+/*******************************************************************************
+LAST MODIFIED : 9 June 2006
+
+DESCRIPTION :
+No type specific data
+==============================================================================*/
+
+#define Computed_field_is_defined_clear_cache_type_specific \
+   (Computed_field_clear_cache_type_specific_function)NULL
+/*******************************************************************************
+LAST MODIFIED : 9 June 2006
+
+DESCRIPTION :
+This function is not needed for this type.
+==============================================================================*/
+
+#define Computed_field_is_defined_type_specific_contents_match \
+   Computed_field_default_type_specific_contents_match
+/*******************************************************************************
+LAST MODIFIED : 9 June 2006
+
+DESCRIPTION :
+No type specific data
+==============================================================================*/
+
+int Computed_field_is_defined_is_defined_at_node(struct Computed_field *field,
+	struct FE_node *node)
+/*******************************************************************************
+LAST MODIFIED : 9 June 2006
+
+DESCRIPTION :
+Always returns 1 as the value is whether or not the source field is defined.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(Computed_field_default_is_defined_at_node);
+	if (field && node)
+	{
+		return_code=1;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Computed_field_default_is_defined_at_node.  "
+			"Invalid arguments.");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Computed_field_default_is_defined_at_node */
+
+int Computed_field_is_defined_is_defined_in_element(struct Computed_field *field,
+	struct FE_element *element)
+/*******************************************************************************
+LAST MODIFIED : 9 June 2006
+
+DESCRIPTION :
+Always returns 1 as the value is whether or not the source field is defined.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(Computed_field_is_defined_is_defined_in_element);
+	if (field && element)
+	{
+		return_code=1;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Computed_field_is_defined_is_defined_in_element.  "
+			"Invalid arguments.");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Computed_field_is_defined_is_defined_in_element */
+
+
+#define Computed_field_is_defined_has_numerical_components \
+	Computed_field_default_has_numerical_components
+/*******************************************************************************
+LAST MODIFIED : 9 June 2006
+
+DESCRIPTION :
+==============================================================================*/
+
+#define Computed_field_is_defined_not_in_use \
+	(Computed_field_not_in_use_function)NULL
+/*******************************************************************************
+LAST MODIFIED : 9 June 2006
+
+DESCRIPTION :
+No special criteria.
+==============================================================================*/
+
+static int Computed_field_is_defined_evaluate_cache_at_node(
+	struct Computed_field *field, struct FE_node *node, FE_value time)
+/*******************************************************************************
+LAST MODIFIED : 9 June 2006
+
+DESCRIPTION :
+Evaluate the fields cache at the node.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(Computed_field_is_defined_evaluate_cache_at_node);
+	USE_PARAMETER(time);
+	if (field && node && (field->number_of_source_fields == 1))
+	{
+		/* Calculate the field */
+		field->values[0] = Computed_field_is_defined_at_node(
+			field->source_fields[0], node);
+		return_code = 1;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Computed_field_is_defined_evaluate_cache_at_node.  "
+			"Invalid argument(s)");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Computed_field_is_defined_evaluate_cache_at_node */
+
+static int Computed_field_is_defined_evaluate_cache_in_element(
+	struct Computed_field *field, struct FE_element *element, FE_value *xi,
+	FE_value time, struct FE_element *top_level_element,int calculate_derivatives)
+/*******************************************************************************
+LAST MODIFIED : 9 June 2006
+
+DESCRIPTION :
+Evaluate the fields cache at the element.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(Computed_field_is_defined_evaluate_cache_in_element);
+	USE_PARAMETER(time);
+	USE_PARAMETER(top_level_element);
+	USE_PARAMETER(calculate_derivatives);
+	if (field && element && xi && (field->number_of_source_fields == 1))
+	{
+		/* Calculate the field */
+		field->values[0] = Computed_field_is_defined_in_element(
+			field->source_fields[0], element);
+		return_code = 1;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Computed_field_is_defined_evaluate_cache_in_element.  "
+			"Invalid argument(s)");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Computed_field_is_defined_evaluate_cache_in_element */
+
+#define Computed_field_is_defined_evaluate_as_string_at_node \
+	Computed_field_default_evaluate_as_string_at_node
+/*******************************************************************************
+LAST MODIFIED : 9 June 2006
+
+DESCRIPTION :
+Print the values calculated in the cache.
+==============================================================================*/
+
+#define Computed_field_is_defined_evaluate_as_string_in_element \
+	Computed_field_default_evaluate_as_string_in_element
+/*******************************************************************************
+LAST MODIFIED : 9 June 2006
+
+DESCRIPTION :
+Print the values calculated in the cache.
+==============================================================================*/
+
+#define Computed_field_is_defined_set_values_at_node \
+   (Computed_field_set_values_at_node_function)NULL
+/*******************************************************************************
+LAST MODIFIED : 9 June 2006
+
+DESCRIPTION :
+Not implemented yet.
+==============================================================================*/
+
+#define Computed_field_is_defined_set_values_in_element \
+   (Computed_field_set_values_in_element_function)NULL
+/*******************************************************************************
+LAST MODIFIED : 9 June 2006
+
+DESCRIPTION :
+Not implemented yet.
+==============================================================================*/
+
+#define Computed_field_is_defined_get_native_discretization_in_element \
+	Computed_field_default_get_native_discretization_in_element
+/*******************************************************************************
+LAST MODIFIED : 9 June 2006
+
+DESCRIPTION :
+Inherit result from first source field.
+==============================================================================*/
+
+#define Computed_field_is_defined_find_element_xi \
+   (Computed_field_find_element_xi_function)NULL
+/*******************************************************************************
+LAST MODIFIED : 9 June 2006
+
+DESCRIPTION :
+Not implemented yet.
+==============================================================================*/
+
+#define Computed_field_is_defined_get_native_resolution \
+	(Computed_field_get_native_resolution_function)NULL
+
+DEFINE_DEFAULT_LIST_COMPUTED_FIELD_FUNCTION(is_defined, "source fields", "values")
+
+DEFINE_DEFAULT_COMPUTED_FIELD_GET_COMMAND_STRING_FUNCTION(is_defined, \
+	"fields", "values")
+
+#define Computed_field_is_defined_has_multiple_times \
+	Computed_field_default_has_multiple_times
+/*******************************************************************************
+LAST MODIFIED : 9 June 2006
+
+DESCRIPTION :
+Wis_definedks out whether time influences the field.
+==============================================================================*/
+
+int Computed_field_set_type_is_defined(struct Computed_field *field,
+	struct Computed_field *source_field)
+/*******************************************************************************
+LAST MODIFIED : 9 June 2006
+
+DESCRIPTION :
+Converts <field> to type COMPUTED_FIELD_IS_DEFINED with the supplied
+field, <source_field> .  Number of components is one.
+==============================================================================*/
+{
+	int number_of_source_fields,return_code;
+	struct Computed_field **source_fields;
+
+	ENTER(Computed_field_set_type_is_defined);
+	if (field&&source_field)
+	{
+		return_code=1;
+		/* 1. make dynamic allocations for any new type-specific data */
+		number_of_source_fields=1;
+		if (ALLOCATE(source_fields,struct Computed_field *,number_of_source_fields))
+		{
+			/* 2. free current type-specific data */
+			Computed_field_clear_type(field);
+			/* 3. establish the new type */
+			field->type_string = computed_field_is_defined_type_string;
+			field->number_of_components = 1;
+			source_fields[0]=ACCESS(Computed_field)(source_field);
+			field->source_fields=source_fields;
+			field->number_of_source_fields=number_of_source_fields;			
+			field->type_specific_data = (void *)1;
+
+			/* Set all the methods */
+			COMPUTED_FIELD_ESTABLISH_METHODS(is_defined);
+		}
+		else
+		{
+			DEALLOCATE(source_fields);
+			return_code = 0;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Computed_field_set_type_is_defined.  Invalid argument(s)");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Computed_field_set_type_is_defined */
+
+int Computed_field_get_type_is_defined(struct Computed_field *field,
+	struct Computed_field **source_field)
+/*******************************************************************************
+LAST MODIFIED : 9 June 2006
+
+DESCRIPTION :
+If the field is of type COMPUTED_FIELD_IS_DEFINED, the 
+<source_field>  used by it are returned.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(Computed_field_get_type_is_defined);
+	if (field&&(field->type_string==computed_field_is_defined_type_string))
+	{
+		*source_field = field->source_fields[0];
+		return_code=1;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Computed_field_get_type_is_defined.  Invalid argument(s)");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Computed_field_get_type_is_defined */
+
+static int define_Computed_field_type_is_defined(struct Parse_state *state,
+	void *field_void,void *computed_field_logical_operators_package_void)
+/*******************************************************************************
+LAST MODIFIED : 9 June 2006
+
+DESCRIPTION :
+Converts <field> into type COMPUTED_FIELD_IS_DEFINED (if it is not 
+already) and allows its contents to be modified.
+==============================================================================*/
+{
+	int return_code;
+	struct Computed_field *field,*source_field;
+	struct Computed_field_logical_operators_package 
+		*computed_field_logical_operators_package;
+	struct Option_table *option_table;
+	struct Set_Computed_field_conditional_data set_source_field_data;
+
+	ENTER(define_Computed_field_type_is_defined);
+	if (state&&(field=(struct Computed_field *)field_void)&&
+		(computed_field_logical_operators_package=
+		(struct Computed_field_logical_operators_package *)
+		computed_field_logical_operators_package_void))
+	{
+		return_code=1;
+		source_field = (struct Computed_field *)NULL;
+		if (computed_field_is_defined_type_string ==
+			Computed_field_get_type_string(field))
+		{
+			return_code=Computed_field_get_type_is_defined(field, 
+				&source_field);
+		}
+		if (return_code)
+		{
+			/* must access objects for set functions */
+			if (source_field)
+			{
+				ACCESS(Computed_field)(source_field);
+			}
+			option_table = CREATE(Option_table)();
+			/* field */
+			set_source_field_data.computed_field_manager=
+				computed_field_logical_operators_package->computed_field_manager;
+			set_source_field_data.conditional_function=Computed_field_has_numerical_components;
+			set_source_field_data.conditional_function_user_data=(void *)NULL;
+			Option_table_add_entry(option_table,"field",&source_field,
+				&set_source_field_data,set_Computed_field_conditional);
+			return_code=Option_table_multi_parse(option_table,state);
+			/* no erris_defineds,not asking for help */
+			if (return_code)
+			{
+				return_code = Computed_field_set_type_is_defined(field,
+					source_field);
+			}
+			if (!return_code)
+			{
+				if ((!state->current_token)||
+					(strcmp(PARSER_HELP_STRING,state->current_token)&&
+						strcmp(PARSER_RECURSIVE_HELP_STRING,state->current_token)))
+				{
+					/* erris_defined */
+					display_message(ERROR_MESSAGE,
+						"define_Computed_field_type_is_defined.  Failed");
+				}
+			}
+			if (source_field)
+			{
+				DEACCESS(Computed_field)(&source_field);
+			}
+			DESTROY(Option_table)(&option_table);
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"define_Computed_field_type_is_defined.  Invalid argument(s)");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* define_Computed_field_type_is_defined */
+
 int Computed_field_register_types_logical_operators(
 	struct Computed_field_package *computed_field_package)
 /*******************************************************************************
-LAST MODIFIED : 24 August 2005
+LAST MODIFIED : 9 June 2006
 
 DESCRIPTION :
 ==============================================================================*/
@@ -2733,6 +3147,10 @@ DESCRIPTION :
 		return_code = Computed_field_package_add_type(computed_field_package,
 			computed_field_greater_than_type_string, 
 			define_Computed_field_type_greater_than,
+			&computed_field_logical_operators_package);
+		return_code = Computed_field_package_add_type(computed_field_package,
+			computed_field_is_defined_type_string, 
+			define_Computed_field_type_is_defined,
 			&computed_field_logical_operators_package);
 	}
 	else

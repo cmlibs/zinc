@@ -989,14 +989,82 @@ Compare the type specific data
 	return (return_code);
 } /* Computed_field_integration_type_specific_contents_match */
 
-#define Computed_field_integration_is_defined_in_element \
-	Computed_field_default_is_defined_in_element
+int Computed_field_integration_is_defined_in_element(struct Computed_field *field,
+	struct FE_element *element)
 /*******************************************************************************
-LAST MODIFIED : 26 October 2000
+LAST MODIFIED : 9 June 2006
 
 DESCRIPTION :
-Check the source fields using the default.
+Returns 1 if the all the source fields are defined in the supplied <element> and
+the mapping is defined for this element.
 ==============================================================================*/
+{
+	FE_value element_to_top_level[9];
+	int return_code;
+	struct CM_element_information cm;
+	struct Computed_field_integration_type_specific_data *data;
+	struct FE_element *top_level_element;
+
+	ENTER(Computed_field_default_is_defined_in_element);
+	if (field && element && (data = (struct Computed_field_integration_type_specific_data *)
+		field->type_specific_data))
+	{
+		if (return_code = Computed_field_default_is_defined_in_element(field,
+			element))
+		{
+			if (!data->texture_mapping)
+			{
+				/* Try time 0 */
+				Computed_field_integration_calculate_mapping(field, /*time*/0.0);
+			}
+			else
+			{
+				/* Use the mapping from whatever time */
+			}
+			/* 1. Get top_level_element for types that must be calculated on them */
+			get_FE_element_identifier(element, &cm);
+			if (CM_ELEMENT == cm.type)
+			{
+				top_level_element=element;
+			}
+			else
+			{
+				/* check or get top_level element, 
+					we don't have a top_level element to test with */
+				if (!(top_level_element=FE_element_get_top_level_element_conversion(
+						 element,(struct FE_element *)NULL,(struct LIST(FE_element) *)NULL,
+						 -1,element_to_top_level)))
+				{
+					return_code=0;
+				}
+			}
+			/* 2. Calculate the field */
+			if (return_code && data->texture_mapping)
+			{
+				if (FIND_BY_IDENTIFIER_IN_LIST
+					(Computed_field_element_integration_mapping,element)
+					(top_level_element, data->texture_mapping))
+				{
+					return_code = 1;
+				}
+				else
+				{
+					return_code = 0;
+				}
+			}
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Computed_field_default_is_defined_in_element.  "
+			"Invalid arguments.");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Computed_field_default_is_defined_in_element */
 
 #define Computed_field_integration_is_defined_at_node \
 	(Computed_field_is_defined_at_node_function)NULL
@@ -1004,7 +1072,7 @@ Check the source fields using the default.
 LAST MODIFIED : 26 October 2000
 
 DESCRIPTION :
-integration are not defined at nodes.
+Integration is not defined at nodes.
 ==============================================================================*/
 
 #define Computed_field_integration_has_numerical_components \
