@@ -877,9 +877,12 @@ in that region.
 										/* make normal unit length */
 										magnitude=sqrt(normal[0]*normal[0]+normal[1]*normal[1]+
 											normal[2]*normal[2]);
-										normal[0] /= magnitude;
-										normal[1] /= magnitude;
-										normal[2] /= magnitude;
+										if (0.0<magnitude)
+										{
+											normal[0] /= magnitude;
+											normal[1] /= magnitude;
+											normal[2] /= magnitude;
+										}
 									} break;
 									case 3:
 									{
@@ -890,9 +893,12 @@ in that region.
 										/* make normal2 unit length */
 										magnitude=sqrt(normal2[0]*normal2[0]+normal2[1]*normal2[1]+
 											normal2[2]*normal2[2]);
-										normal2[0] /= magnitude;
-										normal2[1] /= magnitude;
-										normal2[2] /= magnitude;
+										if (0.0<magnitude)
+										{
+											normal2[0] /= magnitude;
+											normal2[1] /= magnitude;
+											normal2[2] /= magnitude;
+										}
 										/* get normal = vector (x) normal2 */
 										normal[0]=vector[1]*normal2[2]-vector[2]*normal2[1];
 										normal[1]=vector[2]*normal2[0]-vector[0]*normal2[2];
@@ -900,9 +906,12 @@ in that region.
 										/* make normal unit length */
 										magnitude=sqrt(normal[0]*normal[0]+normal[1]*normal[1]+
 											normal[2]*normal[2]);
-										normal[0] /= magnitude;
-										normal[1] /= magnitude;
-										normal[2] /= magnitude;
+										if (0.0<magnitude)
+										{
+											normal[0] /= magnitude;
+											normal[1] /= magnitude;
+											normal[2] /= magnitude;
+										}
 									} break;
 									default:
 									{
@@ -1015,9 +1024,12 @@ in that region.
 										/* make normal unit length */
 										magnitude=sqrt(normal[0]*normal[0]+normal[1]*normal[1]+
 											normal[2]*normal[2]);
-										normal[0] /= magnitude;
-										normal[1] /= magnitude;
-										normal[2] /= magnitude;
+										if (0.0<magnitude)
+										{
+											normal[0] /= magnitude;
+											normal[1] /= magnitude;
+											normal[2] /= magnitude;
+										}
 										/* get normal2 = vector (x) normal */
 										normal2[0]=vector[1]*normal[2]-vector[2]*normal[1];
 										normal2[1]=vector[2]*normal[0]-vector[0]*normal[2];
@@ -1025,9 +1037,12 @@ in that region.
 										/* make normal2 unit length */
 										magnitude=sqrt(normal2[0]*normal2[0]+normal2[1]*normal2[1]+
 											normal2[2]*normal2[2]);
-										normal2[0] /= magnitude;
-										normal2[1] /= magnitude;
-										normal2[2] /= magnitude;
+										if (0.0<magnitude)
+										{
+											normal2[0] /= magnitude;
+											normal2[1] /= magnitude;
+											normal2[2] /= magnitude;
+										}
 										/* rotate normals by angle */
 										cos_angle=cos(angle);
 										sin_angle=sin(angle);
@@ -1069,8 +1084,9 @@ in that region.
 										normal2[1]=vector[2]*normal[0]-vector[0]*normal[2];
 										normal2[2]=vector[0]*normal[1]-vector[1]*normal[0];
 										/* make normal2 unit length */
-										if (0.0<(magnitude=sqrt(normal2[0]*normal2[0]+
-														normal2[1]*normal2[1]+normal2[2]*normal2[2])))
+										magnitude=sqrt(normal2[0]*normal2[0]+
+											normal2[1]*normal2[1]+normal2[2]*normal2[2]);
+										if (0.0<magnitude)
 										{
 											normal2[0] /= magnitude;
 											normal2[1] /= magnitude;
@@ -1619,9 +1635,12 @@ in that region.
 										magnitude = sqrt((*normal)[0] * (*normal)[0]
 											+ (*normal)[1] * (*normal)[1]
 											+ (*normal)[2] * (*normal)[2]);
-										(*normal)[0] /= magnitude;
-										(*normal)[1] /= magnitude;
-										(*normal)[2] /= magnitude;
+										if (0.0<magnitude)
+										{
+											(*normal)[0] /= magnitude;
+											(*normal)[1] /= magnitude;
+											(*normal)[2] /= magnitude;
+										}
 										normal++;
 										if (datum)
 										{
