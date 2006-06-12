@@ -936,7 +936,7 @@ Writes the element to an ipelem file.
 			dimension = get_FE_element_dimension(element);
 
 			fprintf(data->ipelem_file, " The number of geometric Xj-coordinates is [3]: %d\n",
-				dimension);
+				data->number_of_components);
 			for (i = 0 ; i < data->number_of_components ; i++)
 			{
 				return_code = FE_element_field_get_component_FE_basis(element, data->field, 
