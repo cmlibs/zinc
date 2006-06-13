@@ -1005,12 +1005,13 @@ in that region.
 													displacement[0]*old_normal[2];
 												normal2[2]=displacement[0]*old_normal[1]-
 													displacement[1]*old_normal[0];
+												magnitude=normal2[0]*normal2[0]+
+													normal2[1]*normal2[1]+normal2[2]*normal2[2];
 											}
-											if (0.0==(magnitude=normal2[0]*normal2[0]+
-													 normal2[1]*normal2[1]+normal2[2]*normal2[2]))
+											if (0.0<magnitude)
 											{
-												printf("temp: alternative normal2 calculation!\n");
-												/* displacement and old_normal are co-linear */
+												/* displacement is zero or displacement and old_normal 
+													are co-linear */
 												/* get normal2 = vector (x) old_normal */
 												normal2[0]=vector[1]*old_normal[2]-vector[2]*old_normal[1];
 												normal2[1]=vector[2]*old_normal[0]-vector[0]*old_normal[2];
