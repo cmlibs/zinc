@@ -11980,7 +11980,7 @@ static int FE_element_shape_xi_increment(struct FE_element_shape *shape,
 	FE_value *xi,FE_value *increment, FE_value *step_size,
 	int *face_number_address, FE_value *xi_face)
 /*******************************************************************************
-LAST MODIFIED : 31 May 2006
+LAST MODIFIED : 16 June 2006
 
 DESCRIPTION :
 Adds the <increment> to <xi>.  If this moves <xi> outside of the shape, then
@@ -12041,7 +12041,7 @@ on the boundary of the shape.
 					pivot_index,face_rhs))
 				{
 					step_size_local=face_rhs[0];
-					if ((step_size_local > -SMALL_STEP) && (step_size_local < SMALL_STEP))
+					if ((step_size_local > -SMALL_STEP) && (step_size_local < SMALL_STEP) && ((FE_value)step_size_local<*step_size))
 					{
 						determinant = 0.0;
 						for (j = 0 ; j < dimension ; j++)

@@ -330,7 +330,7 @@ If <reverse_track> is true, the reverse of vector field is tracked.
 		}
 		if (face_number != -1)
 		{
-			if (0.0 == fraction)
+			if (0.0 >= fraction)
 			{
 				/* Don't go into the loop, so set error, coordinate_error and xiF */
 				error = 0.0;
@@ -544,6 +544,9 @@ If <reverse_track> is true, the reverse of vector field is tracked.
 				{
 					*element = initial_element;
 					face_number = initial_face_number;
+					xiF[0]=xiD[0];
+					xiF[1]=xiD[1];
+					xiF[2]=xiD[2];
 					return_code = FE_element_change_to_adjacent_element(element,
 						xiF, (FE_value *)NULL, &face_number, xi_face, fe_region,
 						permutation);
