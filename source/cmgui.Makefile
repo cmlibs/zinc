@@ -42,16 +42,17 @@ COMMONMAKEFILE := common.Makefile
 COMMONMAKEFILE_FOUND = $(wildcard $(COMMONMAKEFILE))
 include $(COMMONMAKEFILE)
 
-ifeq ($(filter CONSOLE_USER_INTERFACE GTK_USER_INTERFACE WIN32_USER_INTERFACE,$(USER_INTERFACE)),)
-   #For built in unemap override on the command line or change to true.
-   #The source directories unemap_application and unemap_hardware_service
-   #must be softlinked into the cmgui source directory.
-	UNEMAP = false
-endif # $(USER_INTERFACE) ==/!= CONSOLE_USER_INTERFACE && $(USER_INTERFACE) != GTK_USER_INTERFACE  && $(USER_INTERFACE) != WIN32_USER_INTERFACE
+#For built in unemap override on the command line or change to true.
+#The source directories unemap_application and unemap_hardware_service
+#must be softlinked into the cmgui source directory.
+UNEMAP = false
 LINK_CMISS = false
 PERL_INTERPRETER = true
 IMAGEMAGICK = true
 USE_XML2 = true
+#Disable computed variables by default.  To enable override on the command line or change to true.
+USE_COMPUTED_VARIABLES = false
+
 ifeq ($(OPERATING_SYSTEM),win32)
    ifeq ($(filter CONSOLE_USER_INTERFACE GTK_USER_INTERFACE,$(USER_INTERFACE)),)
       WIN32_USER_INTERFACE = true 
@@ -608,24 +609,28 @@ ifeq ($(SYSNAME),Darwin)
       LIB = /usr/local/g77/lib/libg2c.a -lm -ldl -lpthread -liconv -lstdc++
 endif # SYSNAME == Darwin
 
-ifeq ($(SYSNAME:IRIX%=),)
-   BOOST_INC = -I$(CMISS_ROOT)/boost-1.30.2 -I$(CMISS_ROOT)/boost-1.30.2/boost/compatibility/cpp_c_headers
-endif # SYSNAME == IRIX%=
-ifeq ($(SYSNAME),Linux)
-   BOOST_INC = -I$(CMISS_ROOT)/boost-1.30.2
-endif # SYSNAME == Linux
-ifeq ($(SYSNAME),AIX)
-   BOOST_INC = -I$(CMISS_ROOT)/boost-1.30.2
-endif # SYSNAME == AIX
-ifeq ($(SYSNAME),win32)
-   BOOST_INC = -I$(CMISS_ROOT)/boost-1.30.2
-endif # SYSNAME == win32
-ifeq ($(SYSNAME),CYGWIN%=)
-   BOOST_INC = -I$(CMISS_ROOT)/boost-1.30.2
-endif # SYSNAME == CYGWIN%=
-ifeq ($(SYSNAME),Darwin)
-   BOOST_INC = -I$(CMISS_ROOT)/boost-1.30.2
-endif # SYSNAME == Darwin
+ifneq ($(USE_COMPUTED_VARIABLES), true)
+   BOOST_INC =
+else # USE_COMPUTED_VARIABLES != true
+   ifeq ($(SYSNAME:IRIX%=),)
+      BOOST_INC = -I$(CMISS_ROOT)/boost-1.30.2 -I$(CMISS_ROOT)/boost-1.30.2/boost/compatibility/cpp_c_headers
+   endif # SYSNAME == IRIX%=
+   ifeq ($(SYSNAME),Linux)
+      BOOST_INC = -I$(CMISS_ROOT)/boost-1.30.2
+   endif # SYSNAME == Linux
+   ifeq ($(SYSNAME),AIX)
+      BOOST_INC = -I$(CMISS_ROOT)/boost-1.30.2
+   endif # SYSNAME == AIX
+   ifeq ($(SYSNAME),win32)
+      BOOST_INC = -I$(CMISS_ROOT)/boost-1.30.2
+   endif # SYSNAME == win32
+   ifeq ($(SYSNAME),CYGWIN%=)
+      BOOST_INC = -I$(CMISS_ROOT)/boost-1.30.2
+   endif # SYSNAME == CYGWIN%=
+   ifeq ($(SYSNAME),Darwin)
+      BOOST_INC = -I$(CMISS_ROOT)/boost-1.30.2
+   endif # SYSNAME == Darwin
+endif # USE_COMPUTED_VARIABLES != true
 
 ALL_DEFINES = $(COMPILE_DEFINES) $(TARGET_TYPE_DEFINES) \
 	$(PLATFORM_DEFINES) $(OPERATING_SYSTEM_DEFINES) $(USER_INTERFACE_DEFINES) \
@@ -655,6 +660,14 @@ API_SRCS = \
 	api/cmiss_computed_field.c \
 	api/cmiss_core.c \
 	api/cmiss_finite_element.c \
+	api/cmiss_region.c \
+	api/cmiss_time_sequence.c
+ifeq ($(GRAPHICS_API), OPENGL_GRAPHICS)
+   API_SRCS += \
+	   api/cmiss_scene_viewer.c
+endif
+ifeq ($(USE_COMPUTED_VARIABLES), true)
+   API_SRCS += \
 	api/cmiss_function.cpp \
 	api/cmiss_function_composite.cpp \
 	api/cmiss_function_composition.cpp \
@@ -679,8 +692,6 @@ API_SRCS = \
 	api/cmiss_function_variable_exclusion.cpp \
 	api/cmiss_function_variable_intersection.cpp \
 	api/cmiss_function_variable_union.cpp \
-	api/cmiss_region.c \
-	api/cmiss_time_sequence.c \
 	api/cmiss_value_derivative_matrix.c \
 	api/cmiss_value_element_xi.c \
 	api/cmiss_value_fe_value.c \
@@ -705,10 +716,7 @@ API_SRCS = \
 	api/cmiss_variable_new_matrix.cpp \
 	api/cmiss_variable_new_scalar.cpp \
 	api/cmiss_variable_new_vector.cpp
-ifeq ($(GRAPHICS_API), OPENGL_GRAPHICS)
-   API_SRCS += \
-	   api/cmiss_scene_viewer.c
-endif
+endif # USE_COMPUTED_VARIABLES == true
 API_INTERFACE_SRCS = \
 	api/cmiss_graphics_window.c
 CHOOSE_INTERFACE_SRCS = \
@@ -774,6 +782,9 @@ COMPUTED_FIELD_SRCS = \
 	computed_field/computed_field_wrappers.c
 COMPUTED_FIELD_INTERFACE_SRCS = \
 	computed_field/computed_field_window_projection.c
+ifneq ($(USE_COMPUTED_VARIABLES), true)
+COMPUTED_VARIABLE_SRCS =
+else # USE_COMPUTED_VARIABLES != true
 COMPUTED_VARIABLE_SRCS = \
 	computed_variable/computed_value.c \
 	computed_variable/computed_value_derivative_matrix.c \
@@ -837,6 +848,7 @@ COMPUTED_VARIABLE_SRCS = \
 	computed_variable/variable_matrix.cpp \
 	computed_variable/variable_scalar.cpp \
 	computed_variable/variable_vector.cpp
+endif # USE_COMPUTED_VARIABLES != true
 CURVE_SRCS = \
 	curve/control_curve.c
 CURVE_INTERFACE_SRCS = \
@@ -1355,8 +1367,10 @@ endif # SYSNAME == Linux
 
 SO_LIB_GENERAL = cmgui_general
 SO_LIB_FINITE_ELEMENT = cmgui_finite_element
-SO_LIB_COMPUTED_VARIABLE = cmgui_computed_variable
-SO_LIB_COMPUTED_VARIABLE_FINITE_ELEMENT = cmgui_computed_variable_finite_element
+ifeq ($(USE_COMPUTED_VARIABLES), true)
+  SO_LIB_COMPUTED_VARIABLE = cmgui_computed_variable
+  SO_LIB_COMPUTED_VARIABLE_FINITE_ELEMENT = cmgui_computed_variable_finite_element
+endif # USE_COMPUTED_VARIABLES == true
 
 ifeq ($(SYSNAME),win32)
    SO_LIB_SUFFIX = .dll
@@ -1364,34 +1378,46 @@ ifeq ($(SYSNAME),win32)
 
    SO_LIB_GENERAL_TARGET = lib$(SO_LIB_GENERAL)
    SO_LIB_FINITE_ELEMENT_TARGET = lib$(SO_LIB_FINITE_ELEMENT)
-   SO_LIB_COMPUTED_VARIABLE_TARGET = lib$(SO_LIB_COMPUTED_VARIABLE)
-   SO_LIB_COMPUTED_VARIABLE_FINITE_ELEMENT_TARGET = lib$(SO_LIB_COMPUTED_VARIABLE_FINITE_ELEMENT)
+ifeq ($(USE_COMPUTED_VARIABLES), true)
+     SO_LIB_COMPUTED_VARIABLE_TARGET = lib$(SO_LIB_COMPUTED_VARIABLE)
+     SO_LIB_COMPUTED_VARIABLE_FINITE_ELEMENT_TARGET = lib$(SO_LIB_COMPUTED_VARIABLE_FINITE_ELEMENT)
+endif # USE_COMPUTED_VARIABLES == true
 
    SO_LIB_GENERAL_IMPORT = $(SO_LIB_GENERAL_TARGET)$(SO_LIB_IMPORT_LIB_SUFFIX)
    SO_LIB_FINITE_ELEMENT_IMPORT = $(SO_LIB_FINITE_ELEMENT_TARGET)$(SO_LIB_IMPORT_LIB_SUFFIX)
-   SO_LIB_COMPUTED_VARIABLE_IMPORT = $(SO_LIB_COMPUTED_VARIABLE_TARGET)$(SO_LIB_IMPORT_LIB_SUFFIX)
-   SO_LIB_COMPUTED_VARIABLE_FINITE_ELEMENT_IMPORT = $(SO_LIB_COMPUTED_VARIABLE_FINITE_ELEMENT_TARGET)$(SO_LIB_IMPORT_LIB_SUFFIX)
+ifeq ($(USE_COMPUTED_VARIABLES), true)
+     SO_LIB_COMPUTED_VARIABLE_IMPORT = $(SO_LIB_COMPUTED_VARIABLE_TARGET)$(SO_LIB_IMPORT_LIB_SUFFIX)
+     SO_LIB_COMPUTED_VARIABLE_FINITE_ELEMENT_IMPORT = $(SO_LIB_COMPUTED_VARIABLE_FINITE_ELEMENT_TARGET)$(SO_LIB_IMPORT_LIB_SUFFIX)
+endif # USE_COMPUTED_VARIABLES == true
 
    SO_LIB_GENERAL_EXTRA_ARGS = $(IMAGEMAGICK_PATH)/lib/$(LIB_ARCH_DIR)/libz.a $(IMAGEMAGICK_PATH)/lib/$(LIB_ARCH_DIR)/libbz2.a -lg2c
    SO_LIB_FINITE_ELEMENT_EXTRA_ARGS = $(XML2_LIB) $(IMAGEMAGICK_PATH)/lib/$(LIB_ARCH_DIR)/libz.a $(IMAGEMAGICK_PATH)/lib/$(LIB_ARCH_DIR)/libbz2.a -lg2c
-   SO_LIB_COMPUTED_VARIABLE_EXTRA_ARGS = $(MATRIX_LIB) -lg2c
-   SO_LIB_COMPUTED_VARIABLE_FINITE_ELEMENT_EXTRA_ARGS = -lstdc++ -lg2c
+ifeq ($(USE_COMPUTED_VARIABLES), true)
+     SO_LIB_COMPUTED_VARIABLE_EXTRA_ARGS = $(MATRIX_LIB) -lg2c
+     SO_LIB_COMPUTED_VARIABLE_FINITE_ELEMENT_EXTRA_ARGS = -lstdc++ -lg2c
+endif # USE_COMPUTED_VARIABLES == true
 else # $(SYSNAME) == win32
    SO_LIB_GENERAL_TARGET = lib$(SO_LIB_GENERAL)$(SO_LIB_SUFFIX)
    SO_LIB_FINITE_ELEMENT_TARGET = lib$(SO_LIB_FINITE_ELEMENT)$(SO_LIB_SUFFIX)
-   SO_LIB_COMPUTED_VARIABLE_TARGET = lib$(SO_LIB_COMPUTED_VARIABLE)$(SO_LIB_SUFFIX)
-   SO_LIB_COMPUTED_VARIABLE_FINITE_ELEMENT_TARGET = lib$(SO_LIB_COMPUTED_VARIABLE_FINITE_ELEMENT)$(SO_LIB_SUFFIX)
+ifeq ($(USE_COMPUTED_VARIABLES), true)
+     SO_LIB_COMPUTED_VARIABLE_TARGET = lib$(SO_LIB_COMPUTED_VARIABLE)$(SO_LIB_SUFFIX)
+     SO_LIB_COMPUTED_VARIABLE_FINITE_ELEMENT_TARGET = lib$(SO_LIB_COMPUTED_VARIABLE_FINITE_ELEMENT)$(SO_LIB_SUFFIX)
+endif # USE_COMPUTED_VARIABLES == true
 
    SO_LIB_GENERAL_EXTRA_ARGS =
    SO_LIB_FINITE_ELEMENT_EXTRA_ARGS = $(BIN_PATH)/$(SO_LIB_GENERAL_TARGET) $(XML2_LIB) $(IMAGEMAGICK_PATH)/lib/$(LIB_ARCH_DIR)/libz.a $(IMAGEMAGICK_PATH)/lib/$(LIB_ARCH_DIR)/libbz2.a
-   SO_LIB_COMPUTED_VARIABLE_EXTRA_ARGS = $(BIN_PATH)/$(SO_LIB_GENERAL_TARGET) $(MATRIX_LIB)
-   SO_LIB_COMPUTED_VARIABLE_FINITE_ELEMENT_EXTRA_ARGS = $(BIN_PATH)/$(SO_LIB_COMPUTED_VARIABLE_TARGET) $(BIN_PATH)/$(SO_LIB_FINITE_ELEMENT_TARGET) $(BIN_PATH)/$(SO_LIB_GENERAL_TARGET) -lstdc++
+ifeq ($(USE_COMPUTED_VARIABLES), true)
+     SO_LIB_COMPUTED_VARIABLE_EXTRA_ARGS = $(BIN_PATH)/$(SO_LIB_GENERAL_TARGET) $(MATRIX_LIB)
+     SO_LIB_COMPUTED_VARIABLE_FINITE_ELEMENT_EXTRA_ARGS = $(BIN_PATH)/$(SO_LIB_COMPUTED_VARIABLE_TARGET) $(BIN_PATH)/$(SO_LIB_FINITE_ELEMENT_TARGET) $(BIN_PATH)/$(SO_LIB_GENERAL_TARGET) -lstdc++
+endif # USE_COMPUTED_VARIABLES == true
 endif # $(SYSNAME) == win32 else
 
 SO_LIB_GENERAL_SONAME = lib$(SO_LIB_GENERAL)$(SO_LIB_SUFFIX)
 SO_LIB_FINITE_ELEMENT_SONAME = lib$(SO_LIB_FINITE_ELEMENT)$(SO_LIB_SUFFIX)
-SO_LIB_COMPUTED_VARIABLE_SONAME = lib$(SO_LIB_COMPUTED_VARIABLE)$(SO_LIB_SUFFIX)
-SO_LIB_COMPUTED_VARIABLE_FINITE_ELEMENT_SONAME = lib$(SO_LIB_COMPUTED_VARIABLE_FINITE_ELEMENT)$(SO_LIB_SUFFIX)
+ifeq ($(USE_COMPUTED_VARIABLES), true)
+  SO_LIB_COMPUTED_VARIABLE_SONAME = lib$(SO_LIB_COMPUTED_VARIABLE)$(SO_LIB_SUFFIX)
+  SO_LIB_COMPUTED_VARIABLE_FINITE_ELEMENT_SONAME = lib$(SO_LIB_COMPUTED_VARIABLE_FINITE_ELEMENT)$(SO_LIB_SUFFIX)
+endif # USE_COMPUTED_VARIABLES == true
 
 LIB_GENERAL_SRCS = \
 	api/cmiss_core.c \
@@ -1432,6 +1458,7 @@ LIB_FINITE_ELEMENT_OBJS = $(addsuffix .o,$(basename $(LIB_FINITE_ELEMENT_SRCS)))
 $(SO_LIB_FINITE_ELEMENT_TARGET) : $(LIB_FINITE_ELEMENT_OBJS) $(SO_LIB_GENERAL_TARGET) cmgui.Makefile
 	$(call BuildSharedLibraryTarget,$(SO_LIB_FINITE_ELEMENT_TARGET),$(BIN_PATH),$(LIB_FINITE_ELEMENT_OBJS),$(ALL_SO_LINK_FLAGS) $(SO_LIB_FINITE_ELEMENT_EXTRA_ARGS) $(SOLIB_LIB),$(SO_LIB_FINITE_ELEMENT_SONAME),$(BIN_PATH)/$(SO_LIB_GENERAL_IMPORT))
 
+ifeq ($(USE_COMPUTED_VARIABLES), true)
 LIB_COMPUTED_VARIABLE_SRCS = \
 	api/cmiss_function.cpp \
 	api/cmiss_function_composite.cpp \
@@ -1497,6 +1524,7 @@ LIB_COMPUTED_VARIABLE_FINITE_ELEMENT_OBJS = $(addsuffix .o,$(basename $(LIB_COMP
 
 $(SO_LIB_COMPUTED_VARIABLE_FINITE_ELEMENT_TARGET) : $(LIB_COMPUTED_VARIABLE_FINITE_ELEMENT_OBJS) $(SO_LIB_COMPUTED_VARIABLE_TARGET) $(SO_LIB_FINITE_ELEMENT_TARGET) $(SO_LIB_GENERAL_TARGET) cmgui.Makefile
 	$(call BuildSharedLibraryTarget,$(SO_LIB_COMPUTED_VARIABLE_FINITE_ELEMENT_TARGET),$(BIN_PATH),$(LIB_COMPUTED_VARIABLE_FINITE_ELEMENT_OBJS),$(ALL_SO_LINK_FLAGS) $(SO_LIB_COMPUTED_VARIABLE_FINITE_ELEMENT_EXTRA_FLAGS),$(SO_LIB_COMPUTED_VARIABLE_FINITE_ELEMENT_SONAME), $(BIN_PATH)/$(SO_LIB_COMPUTED_VARIABLE_IMPORT) $(BIN_PATH)/$(SO_LIB_FINITE_ELEMENT_IMPORT) $(BIN_PATH)/$(SO_LIB_GENERAL_IMPORT))
+endif # USE_COMPUTED_VARIABLES == true
 
 SO_ALL_LIB = $(GRAPHICS_LIB) $(USER_INTERFACE_LIB) $(HAPTIC_LIB) \
 	$(WORMHOLE_LIB) $(IMAGEMAGICK_LIB) \
@@ -1512,10 +1540,11 @@ endif
 
 SO_LIB_SONAME = lib$(TARGET_EXECUTABLE_BASENAME)$(SO_LIB_SUFFIX)
 
-REMAINING_LIB_SRCS = \
+ifeq ($(USE_COMPUTED_VARIABLES), true)
+  REMAINING_LIB_SRCS = \
 	$(filter-out $(LIB_GENERAL_SRCS) $(LIB_FINITE_ELEMENT_SRCS) $(LIB_COMPUTED_VARIABLE_SRCS) $(LIB_COMPUTED_VARIABLE_FINITE_ELEMENT_SRCS), $(SRCS))
 
-REMAINING_LIB_OBJS = $(addsuffix .o,$(basename $(REMAINING_LIB_SRCS)))
+  REMAINING_LIB_OBJS = $(addsuffix .o,$(basename $(REMAINING_LIB_SRCS)))
 # SAB We are not resolving everything here (i.e. $(ALL_SO_LINK_FLAGS)) as we want to bind
 # to the appropriate interpreter at runtime.  We could settle on a standard interpreter
 # so_name but that would have to be used by the actual external Cmiss::Perl_cmiss
@@ -1525,6 +1554,22 @@ $(SO_LIB_TARGET) : $(REMAINING_LIB_OBJS) $(COMPILED_RESOURCE_FILES) $(OBJECT_PAT
 
 #Make so_lib to be a shorthand for making all the so_libs
 so_lib : $(SO_LIB_GENERAL_TARGET) $(SO_LIB_FINITE_ELEMENT_TARGET) $(SO_LIB_COMPUTED_VARIABLE_TARGET) $(SO_LIB_COMPUTED_VARIABLE_FINITE_ELEMENT_TARGET) $(SO_LIB_TARGET)
+else # USE_COMPUTED)VARIABLES == true
+  REMAINING_LIB_SRCS = \
+	$(filter-out $(LIB_GENERAL_SRCS) $(LIB_FINITE_ELEMENT_SRCS), $(SRCS))
+
+  REMAINING_LIB_OBJS = $(addsuffix .o,$(basename $(REMAINING_LIB_SRCS)))
+# SAB We are not resolving everything here (i.e. $(ALL_SO_LINK_FLAGS)) as we want to bind
+# to the appropriate interpreter at runtime.  We could settle on a standard interpreter
+# so_name but that would have to be used by the actual external Cmiss::Perl_cmiss
+# perl and python modules that are supplying us the connections to their interpreters.
+$(SO_LIB_TARGET) : $(REMAINING_LIB_OBJS) $(COMPILED_RESOURCE_FILES) $(OBJECT_PATH)/$(EXPORTS_FILE) $(SO_LIB_FINITE_ELEMENT_TARGET) $(SO_LIB_GENERAL_TARGET) cmgui.Makefile
+	$(call BuildSharedLibraryTarget,$(SO_LIB_TARGET),$(BIN_PATH),$(REMAINING_LIB_OBJS),$(SO_ALL_LIB) $(COMPILED_RESOURCE_FILES) ,$(SO_LIB_SONAME), $(BIN_PATH)/$(SO_LIB_FINITE_ELEMENT_IMPORT) $(BIN_PATH)/$(SO_LIB_GENERAL_IMPORT))
+
+#Make so_lib to be a shorthand for making all the so_libs
+so_lib : $(SO_LIB_GENERAL_TARGET) $(SO_LIB_FINITE_ELEMENT_TARGET) $(SO_LIB_TARGET)
+endif # USE_COMPUTED)VARIABLES == true
+
 
 STATIC_LIB_SUFFIX = .a
 STATIC_LIB_TARGET = lib$(TARGET_EXECUTABLE_BASENAME)$(STATIC_LIB_SUFFIX)
