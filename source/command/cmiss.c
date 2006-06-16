@@ -15279,6 +15279,7 @@ Executes a GFX MODIFY command.
 	return (return_code);
 } /* execute_command_gfx_modify */
 
+#if defined (SGI_MOVIE_FILE)
 #if defined (MOTIF)
 int gfx_movie(struct Parse_state *state,void *dummy_to_be_modified,
 	void *command_data_void)
@@ -15290,7 +15291,6 @@ DESCRIPTION :
 movie is being created.
 ==============================================================================*/
 {
-#if defined (SGI_MOVIE_FILE)
 	static char *default_movie_name="default";
 	char add_frame,avi,cinepak_avi,cinepak_quicktime,*create_file_name,end,
 		every_frame,force_onscreen,indeo_avi,indeo_quicktime,loop,*movie_name,
@@ -15298,15 +15298,12 @@ movie is being created.
 		rle24_sgi_movie3,skip_frames,sgi_movie3,stop;
 	double speed;
 	int height, width;
-#endif /* defined (SGI_MOVIE_FILE) */
 	int return_code;
 	struct Cmiss_command_data *command_data;
-#if defined (SGI_MOVIE_FILE)
 	struct Movie_graphics *movie;
 	struct Option_table *option_table;
 	struct X3d_movie *x3d_movie;
 	struct Graphics_window *graphics_window;
-#endif /* defined (SGI_MOVIE_FILE) */
 
 	ENTER(gfx_movie);
 	USE_PARAMETER(dummy_to_be_modified);
@@ -15314,7 +15311,6 @@ movie is being created.
 	{
 		if (command_data = (struct Cmiss_command_data *)command_data_void)
 		{
-#if defined (SGI_MOVIE_FILE)
 			/* initialise defaults */
 			if (ALLOCATE(movie_name,char,strlen(default_movie_name)+1))
 			{
@@ -15642,11 +15638,6 @@ movie is being created.
 			{
 				DEALLOCATE(movie_name);
 			}
-#else /* defined (SGI_MOVIE_FILE) */
-			display_message(ERROR_MESSAGE,
-				"gfx_movie.  Movie extensions not available in this compilation");
-			return_code=0;
-#endif /* defined (SGI_MOVIE_FILE) */
 		}
 		else
 		{
@@ -15666,6 +15657,7 @@ movie is being created.
 	return (return_code);
 } /* gfx_movie */
 #endif /* defined (MOTIF) */
+#endif /* defined (SGI_MOVIE_FILE) */
 
 #if defined (MOTIF) || (GTK_USER_INTERFACE) || defined (WIN32_USER_INTERFACE)
 static int execute_command_gfx_node_tool(struct Parse_state *state,
