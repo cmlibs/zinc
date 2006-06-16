@@ -16217,7 +16217,7 @@ user, otherwise the elements file is read.
 				else
 				{
 					display_message(ERROR_MESSAGE,
-						"Could not open node file: %s", file_name);
+						"Could not open element file: %s", file_name);
 					return_code = 0;
 				}
 			}
