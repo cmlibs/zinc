@@ -242,22 +242,7 @@ GRAPHICS_INC =
 ifeq ($(GRAPHICS_API), OPENGL_GRAPHICS)
    GRAPHICS_LIBRARY_DEFINES = -DOPENGL_API
    ifeq ($(USER_INTERFACE), MOTIF_USER_INTERFACE)
-      ifeq ($(SYSNAME:IRIX%=),)
-         GRAPHICS_LIBRARY_DEFINES += -DDM_BUFFERS
-         ifneq ($(ABI),64)
-            GRAPHICS_LIBRARY_DEFINES += -DSGI_MOVIE_FILE -DSGI_DIGITAL_MEDIA
-            GRAPHICS_LIB += -delay_load -lmoviefile -delay_load -ldmedia
-         endif # ABI != 64
-      endif # SYSNAME == IRIX%=
-      ifeq ($(SYSNAME),Linux)
-         GRAPHICS_LIBRARY_DEFINES += -DDM_BUFFERS
-      endif # SYSNAME == Linux
-      ifeq ($(SYSNAME),AIX)
-         GRAPHICS_LIBRARY_DEFINES += -DDM_BUFFERS
-      endif # SYSNAME == AIX
-      ifeq ($(SYSNAME:CYGWIN%=),)
-         GRAPHICS_LIBRARY_DEFINES += -DDM_BUFFERS
-      endif # SYSNAME == CYGWIN%=
+      GRAPHICS_LIBRARY_DEFINES += -DDM_BUFFERS
    endif # $(USER_INTERFACE) == MOTIF_USER_INTERFACE
 
    ifneq ($(USER_INTERFACE), GTK_USER_INTERFACE)
