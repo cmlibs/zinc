@@ -6709,7 +6709,7 @@ understood for the type of <interaction_volume> passed.
 						glMatrixMode(GL_PROJECTION);
 						glPushMatrix();
 						glLoadIdentity();
-						glOrtho(-1.0,1.0,-1.0,1.0,1.0,101.0);
+						glOrtho(-1.0,1.0,-1.0,1.0,1.0,3.0);
 						glMatrixMode(GL_MODELVIEW);
 						glPushMatrix();
 						glLoadIdentity();
@@ -7149,7 +7149,9 @@ Must also call build_Scene before this functions.
 				glMatrixMode(GL_PROJECTION);
 				glPushMatrix();
 				glLoadIdentity();
-				glOrtho(-1.0,1.0,-1.0,1.0,1.0,101.0);
+				/* near = 1.0 and far = 3.0 gives -1 to be the near clipping plane
+					and +1 to be the far clipping plane */
+				glOrtho(-1.0,1.0,-1.0,1.0,1.0,3.0);
 				glMatrixMode(GL_MODELVIEW);
 				glPushMatrix();
 				glLoadIdentity();
