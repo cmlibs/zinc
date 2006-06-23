@@ -1187,6 +1187,75 @@ Directly outputs the commands setting up the <texture>.
 				glTexParameteri(texture_target,GL_TEXTURE_WRAP_R,GL_REPEAT);
 #endif /* defined (GL_VERSION_1_2) || defined (GL_EXT_texture3D) */
 			} break;
+			case TEXTURE_CLAMP_EDGE_WRAP:
+			{
+#if defined (GL_VERSION_1_2)
+				if (Graphics_library_check_extension(GL_VERSION_1_2))
+				{
+					glTexParameteri(texture_target,GL_TEXTURE_WRAP_S,GL_CLAMP_TO_EDGE);
+					glTexParameteri(texture_target,GL_TEXTURE_WRAP_T,GL_CLAMP_TO_EDGE);
+					glTexParameteri(texture_target,GL_TEXTURE_WRAP_R,GL_CLAMP_TO_EDGE);
+				}
+				else
+				{
+					display_message(ERROR_MESSAGE, "direct_render_Texture.  "
+						"Texture wrap mode %s not supported on this hardware.", 
+						ENUMERATOR_STRING(Texture_wrap_mode)(texture->wrap_mode));
+					return_code = 0;
+				}
+#else /* defined (GL_VERSION_1_2) */
+				display_message(ERROR_MESSAGE, "direct_render_Texture.  "
+					"Texture wrap mode %s was not compiled into this executable.", 
+					ENUMERATOR_STRING(Texture_wrap_mode)(texture->wrap_mode));
+				return_code = 0;
+#endif /* defined (GL_VERSION_1_2) */
+			} break;
+			case TEXTURE_CLAMP_BORDER_WRAP:
+			{
+#if defined (GL_VERSION_1_3)
+				if (Graphics_library_check_extension(GL_VERSION_1_3))
+				{
+					glTexParameteri(texture_target,GL_TEXTURE_WRAP_S,GL_CLAMP_TO_BORDER);
+					glTexParameteri(texture_target,GL_TEXTURE_WRAP_T,GL_CLAMP_TO_BORDER);
+					glTexParameteri(texture_target,GL_TEXTURE_WRAP_R,GL_CLAMP_TO_BORDER);
+				}
+				else
+				{
+					display_message(ERROR_MESSAGE, "direct_render_Texture.  "
+						"Texture wrap mode %s not supported on this hardware.", 
+						ENUMERATOR_STRING(Texture_wrap_mode)(texture->wrap_mode));
+					return_code = 0;
+				}
+#else /* defined (GL_VERSION_1_3) */
+				display_message(ERROR_MESSAGE, "direct_render_Texture.  "
+					"Texture wrap mode %s was not compiled into this executable.", 
+					ENUMERATOR_STRING(Texture_wrap_mode)(texture->wrap_mode));
+				return_code = 0;
+#endif /* defined (GL_VERSION_1_3) */
+			} break;
+			case TEXTURE_MIRRORED_REPEAT_WRAP:
+			{
+#if defined (GL_VERSION_1_4)
+				if (Graphics_library_check_extension(GL_VERSION_1_4))
+				{
+					glTexParameteri(texture_target,GL_TEXTURE_WRAP_S,GL_MIRRORED_REPEAT);
+					glTexParameteri(texture_target,GL_TEXTURE_WRAP_T,GL_MIRRORED_REPEAT);
+					glTexParameteri(texture_target,GL_TEXTURE_WRAP_R,GL_MIRRORED_REPEAT);
+				}
+				else
+				{
+					display_message(ERROR_MESSAGE, "direct_render_Texture.  "
+						"Texture wrap mode %s not supported on this hardware.", 
+						ENUMERATOR_STRING(Texture_wrap_mode)(texture->wrap_mode));
+					return_code = 0;
+				}
+#else /* defined (GL_VERSION_1_4) */
+				display_message(ERROR_MESSAGE, "direct_render_Texture.  "
+					"Texture wrap mode %s was not compiled into this executable.", 
+					ENUMERATOR_STRING(Texture_wrap_mode)(texture->wrap_mode));
+				return_code = 0;
+#endif /* defined (GL_VERSION_1_4) */
+			} break;
 		}
 		switch (texture->filter_mode)
 		{
@@ -1648,6 +1717,18 @@ PROTOTYPE_ENUMERATOR_STRING_FUNCTION(Texture_wrap_mode)
 		case TEXTURE_REPEAT_WRAP:
 		{
 			enumerator_string = "repeat_wrap";
+		} break;
+		case TEXTURE_CLAMP_EDGE_WRAP:
+		{
+			enumerator_string = "edge_clamp_wrap";
+		} break;
+		case TEXTURE_CLAMP_BORDER_WRAP:
+		{
+			enumerator_string = "border_clamp_wrap";
+		} break;
+		case TEXTURE_MIRRORED_REPEAT_WRAP:
+		{
+			enumerator_string = "mirrored_repeat_wrap";
 		} break;
 		default:
 		{
@@ -3474,7 +3555,7 @@ is constant from the half texel location to the edge.
 ==============================================================================*/
 {
 	double local_xi[3], max_v, pos[3], weight, weight_i, weight_j, weight_k, v;
-	int bytes_per_pixel, component_max, dimension, i, j, k,
+	int bytes_per_pixel, component_max, dimension, i, in_border, j, k,
 		max_i, max_j, max_k, n, number_of_bytes_per_component,
 		number_of_components, original_size[3], return_code, row_width_bytes,
 		size[3];
@@ -3494,9 +3575,15 @@ is constant from the half texel location to the edge.
 		row_width_bytes=
 			((int)(texture->width_texels*bytes_per_pixel+3)/4)*4;
 
+		in_border = 0;
 		switch (texture->wrap_mode)
 		{
+			/* SAB As far as I can tell we had actually implemented clamp_to_edge for
+				normal clamp, so it is the same. It also behaves differently to the
+			   OpenGL implementation where it uses the original_sizes.  Would be
+				able to simplify this if we allowed non-power-of-2 textures. */
 			case TEXTURE_CLAMP_WRAP:
+			case TEXTURE_CLAMP_EDGE_WRAP:
 			{
 				if ((x < 0.0) || (0.0 == texture->width))
 				{
@@ -3537,6 +3624,53 @@ is constant from the half texel location to the edge.
 					z *= ((double)texture->original_depth_texels / texture->depth);
 				}
 			} break;
+			case TEXTURE_CLAMP_BORDER_WRAP:
+			{
+				/* Technically we should be merging to the border using the 
+					current filter, so this is correct for nearest but the colour 
+					should blend to the border colour 1/2 a pixel outside the texture
+					for linear.  We are also doing clamp to edge for the values inside
+					the texture range rather than blending to the border colour. */
+				if ((x < 0)||(x > texture->width))
+				{
+					x = 0.0;
+					in_border = 1;
+				}
+				else if (0.0 == texture->width)
+				{
+					x = 0.0;
+				}
+				else
+				{
+					x *= ((double)texture->original_width_texels / texture->width);
+				}
+				if ((y < 0)||(y > texture->height))
+				{
+					y = 0.0;
+					in_border = 1;
+				}
+				else if (0.0 == texture->height)
+				{
+					y = 0.0;
+				}
+				else
+				{
+					y *= ((double)texture->original_height_texels / texture->height);
+				}
+				if ((z < 0)||(z > texture->depth))
+				{
+					z = 0.0;
+					in_border = 1;
+				}
+				else if (0.0 == texture->depth)
+				{
+					z = 0.0;
+				}
+				else
+				{
+					z *= ((double)texture->original_depth_texels / texture->depth);
+				}
+			} break;
 			case TEXTURE_REPEAT_WRAP:
 			{
 				/* make x, y and z range from 0.0 to 1.0 over full texture size */
@@ -3570,234 +3704,275 @@ is constant from the half texel location to the edge.
 		{
 			component_max = 255;
 		}
-		switch (texture->filter_mode)
+		if (!in_border)
 		{
-			case TEXTURE_LINEAR_FILTER:
+			switch (texture->filter_mode)
 			{
-				dimension = texture->dimension;
-				pos[0] = x;
-				pos[1] = y;
-				pos[2] = z;
-				size[0] = texture->width_texels;
-				size[1] = texture->height_texels;
-				size[2] = texture->depth_texels;
-				offset = bytes_per_pixel;
-				switch (texture->wrap_mode)
+				case TEXTURE_LINEAR_FILTER:
 				{
-					case TEXTURE_CLAMP_WRAP:
+					dimension = texture->dimension;
+					pos[0] = x;
+					pos[1] = y;
+					pos[2] = z;
+					size[0] = texture->width_texels;
+					size[1] = texture->height_texels;
+					size[2] = texture->depth_texels;
+					offset = bytes_per_pixel;
+					switch (texture->wrap_mode)
 					{
-						/* note we clamp to the original size; not the power-of-2 */
-						original_size[0] = texture->original_width_texels;
-						original_size[1] = texture->original_height_texels;
-						original_size[2] = texture->original_depth_texels;
-						offset = bytes_per_pixel;
-						for (i = 0; i < dimension; i++)
+						case TEXTURE_CLAMP_WRAP:
+						case TEXTURE_CLAMP_EDGE_WRAP:
 						{
-							max_v = (double)original_size[i] - 0.5;
-							v = pos[i];
-							if ((0.5 <= v) && (v < max_v))
+							/* note we clamp to the original size; not the power-of-2 */
+							original_size[0] = texture->original_width_texels;
+							original_size[1] = texture->original_height_texels;
+							original_size[2] = texture->original_depth_texels;
+							offset = bytes_per_pixel;
+							for (i = 0; i < dimension; i++)
 							{
-								v_i = (long int)(v - 0.5);
-								local_xi[i] = v - 0.5 - (double)v_i;
-								low_offset[i] = v_i*offset;
-								high_offset[i] = (v_i + 1)*offset;
-							}
-							else
-							{
-								low_offset[i] = (long int)(original_size[i] - 1)*offset;
-								high_offset[i] = 0;
-								if (v < 0.5)
+								max_v = (double)original_size[i] - 0.5;
+								v = pos[i];
+								if ((0.5 <= v) && (v < max_v))
 								{
-									local_xi[i] = 1.0;
+									v_i = (long int)(v - 0.5);
+									local_xi[i] = v - 0.5 - (double)v_i;
+									low_offset[i] = v_i*offset;
+									high_offset[i] = (v_i + 1)*offset;
 								}
 								else
 								{
-									local_xi[i] = 0.0;
+									/* I think this implements clamp to edge? */
+									low_offset[i] = (long int)(original_size[i] - 1)*offset;
+									high_offset[i] = 0;
+									if (v < 0.5)
+									{
+										local_xi[i] = 1.0;
+									}
+									else
+									{
+										local_xi[i] = 0.0;
+									}
 								}
+								offset *= (long int)size[i];
 							}
-							offset *= (long int)size[i];
-						}
-					} break;
-					case TEXTURE_REPEAT_WRAP:
-					{
-						for (i = 0; i < dimension; i++)
+						} break;
+						case TEXTURE_REPEAT_WRAP:
 						{
-							max_v = (double)size[i] - 0.5;
-							v = pos[i];
-							if ((0.5 <= v) && (v < max_v))
+							for (i = 0; i < dimension; i++)
 							{
-								v_i = (long int)(v - 0.5);
-								local_xi[i] = v - 0.5 - (double)v_i;
-								low_offset[i] = v_i*offset;
-								high_offset[i] = (v_i + 1)*offset;
-							}
-							else
-							{
-								low_offset[i] = (long int)(size[i] - 1)*offset;
-								high_offset[i] = 0;
-								if (v < 0.5)
+								max_v = (double)size[i] - 0.5;
+								v = pos[i];
+								if ((0.5 <= v) && (v < max_v))
 								{
-									local_xi[i] = v + 0.5;
+									v_i = (long int)(v - 0.5);
+									local_xi[i] = v - 0.5 - (double)v_i;
+									low_offset[i] = v_i*offset;
+									high_offset[i] = (v_i + 1)*offset;
 								}
 								else
 								{
-									local_xi[i] = v - max_v;
+									low_offset[i] = (long int)(size[i] - 1)*offset;
+									high_offset[i] = 0;
+									if (v < 0.5)
+									{
+										local_xi[i] = v + 0.5;
+									}
+									else
+									{
+										local_xi[i] = v - max_v;
+									}
 								}
+								offset *= (long int)size[i];
 							}
-							offset *= (long int)size[i];
-						}
-					} break;
-				}
+						} break;
+					}
 
-				max_i = 2;
-				if (1 < dimension)
-				{
-					max_j = 2;
-				}
-				else
-				{
-					max_j = 1;
-				}
-				if (2 < dimension)
-				{
-					max_k = 2;
-				}
-				else
-				{
-					max_k = 1;
-				}
-
-				for (i = 0; i < number_of_components; i++)
-				{
-					values[i] = 0.0;
-				}
-
-				for (k = 0; k < max_k; k++)
-				{
+					max_i = 2;
+					if (1 < dimension)
+					{
+						max_j = 2;
+					}
+					else
+					{
+						max_j = 1;
+					}
 					if (2 < dimension)
 					{
-						if (0 == k)
-						{
-							weight_k = (1.0 - local_xi[2]);
-							offset_k = low_offset[2];
-						}
-						else
-						{
-							weight_k = local_xi[2];
-							offset_k = high_offset[2];
-						}
+						max_k = 2;
 					}
 					else
 					{
-						weight_k = 1.0;
-						offset_k = 0;
+						max_k = 1;
 					}
-					for (j = 0; j < max_j; j++)
+
+					for (i = 0; i < number_of_components; i++)
 					{
-						if (1 < dimension)
+						values[i] = 0.0;
+					}
+
+					for (k = 0; k < max_k; k++)
+					{
+						if (2 < dimension)
 						{
-							if (0 == j)
+							if (0 == k)
 							{
-								weight_j = weight_k*(1.0 - local_xi[1]);
-								offset_j = offset_k + low_offset[1];
+								weight_k = (1.0 - local_xi[2]);
+								offset_k = low_offset[2];
 							}
 							else
 							{
-								weight_j = weight_k*local_xi[1];
-								offset_j = offset_k + high_offset[1];
+								weight_k = local_xi[2];
+								offset_k = high_offset[2];
 							}
 						}
 						else
 						{
-							weight_j = 1.0;
-							offset_j = 0;
+							weight_k = 1.0;
+							offset_k = 0;
 						}
-						for (i = 0; i < max_i; i++)
+						for (j = 0; j < max_j; j++)
 						{
-							if (0 == i)
+							if (1 < dimension)
 							{
-								weight_i = weight_j*(1.0 - local_xi[0]);
-								offset_i = offset_j + low_offset[0];
-							}
-							else
-							{
-								weight_i = weight_j*local_xi[0];
-								offset_i = offset_j + high_offset[0];
-							}
-							pixel_ptr = texture->image + offset_i;
-							weight = weight_i / component_max;
-							for (n = 0; n < number_of_components; n++)
-							{
-								if (2 == number_of_bytes_per_component)
+								if (0 == j)
 								{
-#if (1234==BYTE_ORDER)
-									short_value =
-										(((unsigned short)(*(pixel_ptr + 1))) << 8) - (*pixel_ptr);
-#else /* (1234==BYTE_ORDER) */
-									short_value = 
-										(((unsigned short)(*pixel_ptr)) << 8) - (*(pixel_ptr + 1));
-#endif /* (1234==BYTE_ORDER) */
-									values[n] += (double)short_value * weight;
+									weight_j = weight_k*(1.0 - local_xi[1]);
+									offset_j = offset_k + low_offset[1];
 								}
 								else
 								{
-									values[n] += (double)(*pixel_ptr) * weight;
+									weight_j = weight_k*local_xi[1];
+									offset_j = offset_k + high_offset[1];
 								}
-								pixel_ptr += number_of_bytes_per_component;
+							}
+							else
+							{
+								weight_j = 1.0;
+								offset_j = 0;
+							}
+							for (i = 0; i < max_i; i++)
+							{
+								if (0 == i)
+								{
+									weight_i = weight_j*(1.0 - local_xi[0]);
+									offset_i = offset_j + low_offset[0];
+								}
+								else
+								{
+									weight_i = weight_j*local_xi[0];
+									offset_i = offset_j + high_offset[0];
+								}
+								pixel_ptr = texture->image + offset_i;
+								weight = weight_i / component_max;
+								for (n = 0; n < number_of_components; n++)
+								{
+									if (2 == number_of_bytes_per_component)
+									{
+#if (1234==BYTE_ORDER)
+										short_value =
+											(((unsigned short)(*(pixel_ptr + 1))) << 8) - (*pixel_ptr);
+#else /* (1234==BYTE_ORDER) */
+										short_value = 
+											(((unsigned short)(*pixel_ptr)) << 8) - (*(pixel_ptr + 1));
+#endif /* (1234==BYTE_ORDER) */
+										values[n] += (double)short_value * weight;
+									}
+									else
+									{
+										values[n] += (double)(*pixel_ptr) * weight;
+									}
+									pixel_ptr += number_of_bytes_per_component;
+								}
 							}
 						}
 					}
-				}
-			} break;
-			case TEXTURE_NEAREST_FILTER:
-			{
-				x_i = (int)x;
-				y_i = (int)y;
-				z_i = (int)z;
-				if (TEXTURE_CLAMP_WRAP == texture->wrap_mode)
+				} break;
+				case TEXTURE_NEAREST_FILTER:
 				{
-					/* fix problem of value being exactly on upper boundary */
-					if (x_i == texture->original_width_texels)
+					x_i = (int)x;
+					y_i = (int)y;
+					z_i = (int)z;
+					if (TEXTURE_CLAMP_WRAP == texture->wrap_mode)
 					{
-						x_i--;
+						/* fix problem of value being exactly on upper boundary */
+						if (x_i == texture->original_width_texels)
+						{
+							x_i--;
+						}
+						if (y_i == texture->original_height_texels)
+						{
+							y_i--;
+						}
+						if (z_i == texture->original_depth_texels)
+						{
+							z_i--;
+						}
 					}
-					if (y_i == texture->original_height_texels)
+					offset = (z_i*(long int)texture->height_texels + y_i)*(long int)row_width_bytes +
+						x_i*(long int)bytes_per_pixel;
+					pixel_ptr = texture->image + offset;
+					for (n = 0; n < number_of_components; n++)
 					{
-						y_i--;
-					}
-					if (z_i == texture->original_depth_texels)
-					{
-						z_i--;
-					}
-				}
-				offset = (z_i*(long int)texture->height_texels + y_i)*(long int)row_width_bytes +
-					x_i*(long int)bytes_per_pixel;
-				pixel_ptr = texture->image + offset;
-				for (n = 0; n < number_of_components; n++)
-				{
-					if (2 == number_of_bytes_per_component)
-					{
+						if (2 == number_of_bytes_per_component)
+						{
 #if (1234==BYTE_ORDER)
-						short_value =
-							(((unsigned short)(*(pixel_ptr + 1))) << 8) - (*pixel_ptr);
+							short_value =
+								(((unsigned short)(*(pixel_ptr + 1))) << 8) - (*pixel_ptr);
 #else /* (1234==BYTE_ORDER) */
-						short_value = 
-							(((unsigned short)(*pixel_ptr)) << 8) - (*(pixel_ptr + 1));
+							short_value = 
+								(((unsigned short)(*pixel_ptr)) << 8) - (*(pixel_ptr + 1));
 #endif /* (1234==BYTE_ORDER) */
-						values[n] = (double)short_value / component_max;
+							values[n] = (double)short_value / component_max;
+						}
+						else
+						{
+							values[n] = (double)(*pixel_ptr) / component_max;
+						}
+						pixel_ptr += number_of_bytes_per_component;
 					}
-					else
-					{
-						values[n] = (double)(*pixel_ptr) / component_max;
-					}
-					pixel_ptr += number_of_bytes_per_component;
+				} break;
+				default:
+				{
+					display_message(ERROR_MESSAGE,
+						"Texture_get_pixel_values.  Unknown filter type");
+					return_code = 0;
 				}
-			} break;
-			default:
+			}
+		}
+		else
+		{
+			/* Use border colour */
+			switch (texture->storage)
 			{
-				display_message(ERROR_MESSAGE,
-					"Texture_get_pixel_values.  Unknown filter type");
-				return_code = 0;
+				case TEXTURE_LUMINANCE:
+				{
+					/* Just use the red colour to be efficient */
+					values[0] = (texture->combine_colour).red;
+				} break;
+				case TEXTURE_LUMINANCE_ALPHA:
+				{
+					values[0] = (texture->combine_colour).red;
+					values[1] = texture->combine_alpha;
+				} break;
+				case TEXTURE_RGB:
+				{
+					values[0] = (texture->combine_colour).red;
+					values[1] = (texture->combine_colour).green;
+					values[2] = (texture->combine_colour).blue;
+				} break;
+				case TEXTURE_RGBA:
+				{
+					values[0] = (texture->combine_colour).red;
+					values[1] = (texture->combine_colour).green;
+					values[2] = (texture->combine_colour).blue;
+					values[3] = texture->combine_alpha;
+				} break;
+				default:
+				{
+					display_message(ERROR_MESSAGE,  "Texture_get_pixel_values.  "
+						"Border code not implemented for texture storage.");
+					return_code = 0;
+				} break;
 			}
 		}
 	}
@@ -4245,19 +4420,51 @@ DESCRIPTION :
 Sets how textures coordinates outside [0,1] are handled.
 ==============================================================================*/
 {
+	char *type_string;
 	int return_code;
 
 	ENTER(Texture_set_wrap_mode);
-	if (texture&&((TEXTURE_CLAMP_WRAP==wrap_mode)||
-		(TEXTURE_REPEAT_WRAP==wrap_mode)))
+	if (texture)
 	{
-		if (wrap_mode != texture->wrap_mode)
+		if((TEXTURE_CLAMP_WRAP==wrap_mode)
+			||(TEXTURE_REPEAT_WRAP==wrap_mode)
+#if defined (GL_VERSION_1_2)
+			/* Cannot do the runtime test here as the graphics may not be 
+				initialised yet or we may just want to evaluate the texture as a field */
+			|| (TEXTURE_CLAMP_EDGE_WRAP==wrap_mode)
+#endif /* defined (GL_VERSION_1_2) */
+#if defined (GL_VERSION_1_3)
+			|| (TEXTURE_CLAMP_BORDER_WRAP==wrap_mode)
+#else
+			bob
+#endif /* defined (GL_VERSION_1_3) */
+#if defined (GL_VERSION_1_4)
+			|| (TEXTURE_MIRRORED_REPEAT_WRAP==wrap_mode)
+#endif /* defined (GL_VERSION_1_4) */
+			)
 		{
-			texture->wrap_mode = wrap_mode;
-			/* display list needs to be compiled again */
+			if (wrap_mode != texture->wrap_mode)
+			{
+				texture->wrap_mode = wrap_mode;
+				/* display list needs to be compiled again */
 			texture->display_list_current=0;
+			}
+			return_code=1;
 		}
-		return_code=1;
+		else
+		{
+			if (type_string = ENUMERATOR_STRING(Texture_wrap_mode)(wrap_mode))
+			{
+				display_message(ERROR_MESSAGE,  "Texture_set_wrap_mode.  "
+					"Texture wrap mode %s was not compiled into this executable.", type_string);
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE,
+					"Texture_set_wrap_mode.  Invalid wrap type.");
+			}
+			return_code=0;
+		}
 	}
 	else
 	{
