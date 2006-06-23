@@ -65,9 +65,6 @@ Functions and structures for interfacing with the graphics library.
 #undef GL_NV_register_combiners2
 #endif /* defined (WIN32_SYSTEM) */
 #endif
-#if defined (GTK_USER_INTERFACE)
-  #undef GL_VERSION_1_3
-#endif
 #include "graphics/texture.h"
 
 struct User_interface;
