@@ -279,8 +279,8 @@ Returns element with <name> in <region> if it exists.
 			if ((1==sscanf(name," %d %n",&node_number,&name_length))&&
 				((unsigned int)name_length==strlen(name)))
 			{
-				return_node = FE_region_get_FE_node_from_identifier(fe_region,
-					node_number);
+				return_node = ACCESS(FE_node)(
+					FE_region_get_FE_node_from_identifier(fe_region, node_number));
 			}
 		}
 	}
