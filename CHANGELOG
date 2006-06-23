@@ -10,6 +10,23 @@ It is released under the Mozilla Public License v1.1
 Further information, help pages, a tracker and a wiki is available at 
 http://www.cmiss.org/cmgui/
 
+v2.2
+Removed computed variables by default.  To put it back in change USE_COMPUTED_VARIABLES to true in the makefile or by specifying it on the make command line.
+Added new texture wrap modes edge_clamp_wrap, border_clamp_wrap and
+mirrored_repeat_wrap from recent versions of OpenGL.
+Fixed problems with methods not being fully set correctly for some computed fields.
+Changes to support streamlines in tetrahedral meshes.
+Changes to support isosurface generation in tetrahedral meshes.
+Fixed to grid point evaluation.
+Allowing streamlines to be seeded from the nodes in a region.
+v2.1.1
+Large speed improvements for "gfx select nodes" and "gfx select elements".
+Get regions to cache get_next_element_id so that it can be kept over multiple commands.
+Image resampling improvements.
+Started 'gfx export cm'
+Reenabled automatic monochrome storage of images.
+Added a weighting field to "gfx create snake".
+Added a few more logical operators for less_than, greater_than and equal_to in computed fields. 
 v2.1
 Fix comfile script: cmgui-2.1/fixcom.pl
 Added support for fitting multiple fields with "gfx create snake"
