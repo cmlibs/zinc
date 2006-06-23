@@ -4435,8 +4435,6 @@ Sets how textures coordinates outside [0,1] are handled.
 #endif /* defined (GL_VERSION_1_2) */
 #if defined (GL_VERSION_1_3)
 			|| (TEXTURE_CLAMP_BORDER_WRAP==wrap_mode)
-#else
-			bob
 #endif /* defined (GL_VERSION_1_3) */
 #if defined (GL_VERSION_1_4)
 			|| (TEXTURE_MIRRORED_REPEAT_WRAP==wrap_mode)
