@@ -6799,19 +6799,31 @@ The matching element must exist in either case.
 		get_FE_element_identifier(element, &identifier))
 	{
 		return_code = 1;
-		if (!FIND_BY_IDENTIFIER_IN_LIST(FE_element,identifier)(
-			&identifier, merge_data->fe_region->fe_element_list))
+		/* If we are defining faces and lines on the parent then we need to merge
+			to ensure faces and lines are in the child region too */
+		if (merge_data->master_fe_region->element_type_node_sequence_list
+			|| (!FIND_BY_IDENTIFIER_IN_LIST(FE_element,identifier)(
+			&identifier, merge_data->fe_region->fe_element_list)))
 		{
 			if (add_element = FIND_BY_IDENTIFIER_IN_LIST(FE_element,identifier)(
 				&identifier, merge_data->master_fe_region->fe_element_list))
 			{
-				if (!ADD_OBJECT_TO_LIST(FE_element)(add_element,
-					merge_data->fe_region->fe_element_list))
+				if (merge_data->master_fe_region->element_type_node_sequence_list)
 				{
-					display_message(ERROR_MESSAGE,
-						"FE_element_merge_into_FE_region_with_master.  "
-						"Could not add to list");
-					return_code = 0;
+					/* We are defining faces so add dependent faces and lines too */
+					return_code = FE_region_merge_FE_element_and_faces_private(
+						merge_data->fe_region, add_element);
+				}
+				else
+				{
+					if (!ADD_OBJECT_TO_LIST(FE_element)(add_element,
+							merge_data->fe_region->fe_element_list))
+					{
+						display_message(ERROR_MESSAGE,
+							"FE_element_merge_into_FE_region_with_master.  "
+							"Could not add to list");
+						return_code = 0;
+					}
 				}
 			}
 			else
@@ -7464,7 +7476,7 @@ plus nodes from <fe_region> of the same number as those currently used.
 				{
 					return_code = 0;
 				}
-				if (!FE_region_merge_FE_element(data->fe_region, element))
+				if (!FE_region_merge_FE_element_and_faces_private(data->fe_region, element))
 				{
 					return_code = 0;
 				}

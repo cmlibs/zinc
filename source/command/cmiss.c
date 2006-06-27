@@ -16079,8 +16079,10 @@ If an element file is not specified a file selection box is presented to the
 user, otherwise the elements file is read.
 ==============================================================================*/
 {
-	char *file_name, *region_path;
-	int return_code;
+	char *file_name, generate_faces_and_lines_flag, *region_path, 
+		element_flag, face_flag, line_flag, node_flag;
+	int element_offset, face_offset, line_offset, node_offset,
+		return_code;
 	struct Cmiss_command_data *command_data;
 	struct Cmiss_region *region, *top_region;
 	struct FE_region *fe_region;
@@ -16093,12 +16095,36 @@ user, otherwise the elements file is read.
 	USE_PARAMETER(dummy_to_be_modified);
 	if (state && (command_data = (struct Cmiss_command_data *)command_data_void))
 	{
+		element_flag = 0;
+		element_offset = 0;
+		face_flag = 0;
+		face_offset = 0;
+		generate_faces_and_lines_flag = 0;
+		line_flag = 0;
+		line_offset = 0;
+		node_flag = 0;
+		node_offset = 0;
 		file_name = (char *)NULL;
 		region_path = (char *)NULL;
 		option_table = CREATE(Option_table)();
+		/* element_offset */
+		Option_table_add_entry(option_table, "element_offset", &element_offset,
+			&element_flag, set_int_and_char_flag);
 		/* example */
 		Option_table_add_entry(option_table,CMGUI_EXAMPLE_DIRECTORY_SYMBOL,
 			&file_name, &(command_data->example_directory), set_file_name);
+		/* face_offset */
+		Option_table_add_entry(option_table, "face_offset", &face_offset,
+			&face_flag, set_int_and_char_flag);
+		/* generate_faces_and_lines */
+		Option_table_add_char_flag_entry(option_table, "generate_faces_and_lines",
+			&generate_faces_and_lines_flag);
+		/* line_offset */
+		Option_table_add_entry(option_table, "line_offset", &line_offset,
+			&line_flag, set_int_and_char_flag);
+		/* node_offset */
+		Option_table_add_entry(option_table, "node_offset", &node_offset,
+			&node_flag, set_int_and_char_flag);
 		/* region */
 		Option_table_add_entry(option_table,"region",
 			&region_path, (void *)1, set_name);
@@ -16176,26 +16202,90 @@ user, otherwise the elements file is read.
 						command_data->basis_manager, command_data->element_shape_list,
 						(struct FE_import_time_index *)NULL))
 					{
-						ACCESS(Cmiss_region)(region);
-						if (Cmiss_regions_FE_regions_can_be_merged(
-							top_region, region))
+						if (element_flag || face_flag || line_flag || node_flag)
 						{
-							if (!Cmiss_regions_merge_FE_regions(
-								top_region, region))
+							/* Offset these nodes and elements before merging */
+							if (fe_region = Cmiss_region_get_FE_region(region))
+							{
+								FE_region_begin_change(fe_region);
+								if (element_flag)
+								{
+									if (!FE_region_change_element_identifiers(fe_region,
+											CM_ELEMENT,	element_offset, 
+											(struct Computed_field *)NULL, /*time*/0))
+									{
+										return_code = 0;
+									}
+								}
+								if (face_flag)
+								{
+									if (!FE_region_change_element_identifiers(fe_region,
+											CM_FACE,	face_offset,
+											(struct Computed_field *)NULL, /*time*/0))
+									{
+										return_code = 0;
+									}
+								}
+								if (line_flag)
+								{
+									if (!FE_region_change_element_identifiers(fe_region,
+											CM_LINE,	line_offset,
+											(struct Computed_field *)NULL, /*time*/0))
+									{
+										return_code = 0;
+									}
+								}
+								if (node_flag)
+								{
+									if (!FE_region_change_node_identifiers(fe_region,
+											node_offset,
+											(struct Computed_field *)NULL, /*time*/0))
+									{
+										return_code = 0;
+									}
+								}
+								FE_region_end_change(fe_region);
+							}
+							else
 							{
 								display_message(ERROR_MESSAGE,
-									"Error merging elements from file: %s", file_name);
+									"Unable to get fe_region to offset nodes or elements in file %s.",
+									file_name);
 								return_code = 0;
 							}
 						}
-						else
+						if (return_code)
 						{
-							display_message(ERROR_MESSAGE,
-								"Contents of file %s not compatible with global objects",
-								file_name);
-							return_code = 0;
+							ACCESS(Cmiss_region)(region);
+							if (generate_faces_and_lines_flag)
+							{
+								fe_region = Cmiss_region_get_FE_region(top_region);
+								FE_region_begin_define_faces(fe_region);
+							}
+							if (Cmiss_regions_FE_regions_can_be_merged(
+									 top_region, region))
+							{
+								if (!Cmiss_regions_merge_FE_regions(
+										 top_region, region))
+								{
+									display_message(ERROR_MESSAGE,
+										"Error merging elements from file: %s", file_name);
+									return_code = 0;
+								}
+							}
+							else
+							{
+								display_message(ERROR_MESSAGE,
+									"Contents of file %s not compatible with global objects",
+									file_name);
+								return_code = 0;
+							}
+							if (generate_faces_and_lines_flag)
+							{
+								FE_region_end_define_faces(fe_region);
+							}
+							DEACCESS(Cmiss_region)(&region);
 						}
-						DEACCESS(Cmiss_region)(&region);
 					}
 					else
 					{
@@ -16245,10 +16335,10 @@ otherwise the nodes file is read.
 If the <use_data> flag is set, then read data, otherwise nodes.
 ==============================================================================*/
 {
-	char *file_name, *region_path, time_set_flag;
+	char *file_name, node_offset_flag, *region_path, time_set_flag;
 	double maximum, minimum;
 	float time;
-	int return_code;
+	int node_offset, return_code;
 	struct Cmiss_command_data *command_data;
 	struct Cmiss_region *region, *top_region;
 	struct FE_import_time_index *node_time_index, node_time_index_data;
@@ -16264,6 +16354,8 @@ If the <use_data> flag is set, then read data, otherwise nodes.
 		if (command_data = (struct Cmiss_command_data *)command_data_void)
 		{
 			file_name = (char *)NULL;
+			node_offset_flag = 0;
+			node_offset = 0;
 			region_path = (char *)NULL;
 			time = 0;
 			time_set_flag = 0;
@@ -16272,6 +16364,18 @@ If the <use_data> flag is set, then read data, otherwise nodes.
 			/* example */
 			Option_table_add_entry(option_table,CMGUI_EXAMPLE_DIRECTORY_SYMBOL,
 				&file_name, &(command_data->example_directory), set_file_name);
+			if (!use_data)
+			{
+				/* node_offset */
+				Option_table_add_entry(option_table, "node_offset", &node_offset,
+					&node_offset_flag, set_int_and_char_flag);
+			}
+			else
+			{
+				/* data_offset */
+				Option_table_add_entry(option_table, "data_offset", &node_offset,
+					&node_offset_flag, set_int_and_char_flag);
+			}
 			if (!use_data)
 			{
 				/* region */
@@ -16376,11 +16480,34 @@ If the <use_data> flag is set, then read data, otherwise nodes.
 					{
 						if ((input_file = CREATE(IO_stream)(command_data->io_stream_package))
 							&& (IO_stream_open_for_read(input_file, file_name)))
-				{
+						{
 							if (region = read_exregion_file(input_file,
 								command_data->basis_manager, command_data->element_shape_list,
 								node_time_index))
 							{
+								if (node_offset_flag)
+								{
+									/* Offset these nodes before merging */
+									if (fe_region = Cmiss_region_get_FE_region(region))
+									{
+										FE_region_begin_change(fe_region);
+										if (!FE_region_change_node_identifiers(fe_region,
+												node_offset,
+												(struct Computed_field *)NULL, time))
+										{
+											return_code = 0;
+										}
+								
+										FE_region_end_change(fe_region);
+									}
+									else
+									{
+										display_message(ERROR_MESSAGE,
+											"Unable to get fe_region to offset nodes in file %s.",
+											file_name);
+										return_code = 0;
+									}
+								}
 								ACCESS(Cmiss_region)(region);
 								if (Cmiss_regions_FE_regions_can_be_merged(
 									top_region, region))
@@ -16451,8 +16578,7 @@ If the <use_data> flag is set, then read data, otherwise nodes.
 					}
 				}
 			}
-			DESTROY(Option_table)(&option_table);
-			if (file_name)
+			DESTROY(Option_table)(&option_table);			if (file_name)
 			{
 				DEALLOCATE(file_name);
 			}
