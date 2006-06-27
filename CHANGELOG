@@ -1,7 +1,7 @@
 # **************************************************************************
 # FILE : CHANGELOG
 #
-# LAST MODIFIED : 12 April 2006
+# LAST MODIFIED : 27 June 2006
 # ==========================================================================
 
 This software is the cmgui part of CMISS.
@@ -10,6 +10,11 @@ It is released under the Mozilla Public License v1.1
 Further information, help pages, a tracker and a wiki is available at 
 http://www.cmiss.org/cmgui/
 
+v2.2.1
+Added node_offset/data_offset to gfx read nodes and data respectively.
+Added node_offset, element_offset, face_offset and line offset to gfx read elements.
+Added generate_faces_and_lines to gfx read elements.
+Calcaulate winding order left or right handed at element centres for isosurfaces.
 v2.2
 Removed computed variables by default.  To put it back in change USE_COMPUTED_VARIABLES to true in the makefile or by specifying it on the make command line.
 Added new texture wrap modes edge_clamp_wrap, border_clamp_wrap and
@@ -17,6 +22,8 @@ mirrored_repeat_wrap from recent versions of OpenGL.
 Fixed problems with methods not being fully set correctly for some computed fields.
 Changes to support streamlines in tetrahedral meshes.
 Changes to support isosurface generation in tetrahedral meshes.
+Added code so that triangles for isosurfaces are generated with a consistent winding
+order even in meshes which have inconsistent lefthanded and righthanded coordinate systems.
 Fixed to grid point evaluation.
 Allowing streamlines to be seeded from the nodes in a region.
 v2.1.1

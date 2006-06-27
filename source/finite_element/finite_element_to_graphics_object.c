@@ -3170,18 +3170,21 @@ faces.
 		vertex2[3], winding_coordinate[3], winding_coordinate_derivatives[9];
 	FE_value colour_data[4];
 	int *adjacency_table,*deform,i,ii,j,jj,k,kk,m,n_iso_polys,
-		n_data_components,number_of_elements,number_of_faces,n_xi_rep[3],return_code,
+		n_data_components,number_of_elements,number_of_faces,
+		number_in_xi[3], number_of_xi_points_created[3],n_xi_rep[3],return_code,
 		/*???DB.  Merge ?  Better names ? */
 		a,aaa,b,bbb,c,ccc,n_xi[3],index,v_count,n_vertices,
 		*dont_draw, reverse_winding;
 	struct CM_element_information cm;
 	struct FE_element **element_block,**element_block_ptr;
+	struct FE_element_shape *shape;
 	struct GT_voltex *voltex;
 	struct VT_iso_triangle **triangle_list;
 	struct VT_iso_vertex **vertex_list;
 #if defined (DEBUG)
 	int bad_triangle;
 #endif /* defined (DEBUG) */
+	Triple *xi_points;
 
 	int displacement_number_of_components, tex_x_i, tex_y_i, tex_width_texels,
 		tex_height_texels, tex_number_of_components;
@@ -3202,22 +3205,28 @@ faces.
 	{
 		/* Determine whether xi forms a LH or RH coordinate system in this element */
 		reverse_winding = 0;
-		xi[0] = 0;
-		xi[1] = 0;
-		xi[2] = 0;
-		if (Computed_field_evaluate_in_element(
-				 coordinate_field, element,
-				 xi,time,(struct FE_element *)NULL,
-				 winding_coordinate, winding_coordinate_derivatives))
+		get_FE_element_shape(element, &shape);
+		number_in_xi[0] = 1;
+		number_in_xi[1] = 1;
+		number_in_xi[2] = 1;
+		if (FE_element_shape_get_xi_points_cell_centres(shape, 
+				number_in_xi, number_of_xi_points_created, &xi_points))
 		{
-			cross_product_float3(winding_coordinate_derivatives + 0,
-				winding_coordinate_derivatives + 3,result);
-			if ((result[0] * winding_coordinate_derivatives[6] + 
-				result[1] * winding_coordinate_derivatives[7] + 
-				result[2] * winding_coordinate_derivatives[8]) < 0)
+			if (Computed_field_evaluate_in_element(
+					 coordinate_field, element,
+					 xi_points[0],time,(struct FE_element *)NULL,
+					 winding_coordinate, winding_coordinate_derivatives))
 			{
-				reverse_winding = 1;
+				cross_product_float3(winding_coordinate_derivatives + 0,
+					winding_coordinate_derivatives + 3,result);
+				if ((result[0] * winding_coordinate_derivatives[6] + 
+						result[1] * winding_coordinate_derivatives[7] + 
+						result[2] * winding_coordinate_derivatives[8]) < 0)
+				{
+					reverse_winding = 1;
+				}
 			}
+			DEALLOCATE(xi_points);
 		}
 			
 
