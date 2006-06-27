@@ -196,7 +196,7 @@ Writes text for an <ipbase_file> to support <field>.
 ==============================================================================*/
 {
 	enum FE_basis_type basis_type;
-	int basis_number, dimension, finished,
+	int any_derivatives, basis_number, dimension, finished,
 		has_derivatives[MAXIMUM_ELEMENT_XI_DIMENSIONS], interpolant_index, 
 		node_flags[MAXIMUM_ELEMENT_XI_DIMENSIONS], number_of_gauss_points, 
 		number_of_nodes[MAXIMUM_ELEMENT_XI_DIMENSIONS], return_code, xi_number;
@@ -248,6 +248,7 @@ Writes text for an <ipbase_file> to support <field>.
 			FE_basis_get_dimension(basis, &dimension);
 			fprintf(ipbase_file, " Enter the number of Xi-coordinates [1]: %d\n\n", dimension);
 
+			any_derivatives = 0;
 			for (xi_number = 0 ; return_code && (xi_number < dimension) ; xi_number++)
 			{
 				FE_basis_get_xi_basis_type(basis, xi_number, &basis_type);
@@ -278,6 +279,7 @@ Writes text for an <ipbase_file> to support <field>.
 						number_of_gauss_points = 4;
 						number_of_nodes[xi_number] = 2;
 						has_derivatives[xi_number] = 1;
+						any_derivatives = 1;
 					} break;
 					default:
 					{
@@ -302,7 +304,10 @@ Writes text for an <ipbase_file> to support <field>.
 			}
 			if (return_code)
 			{
-				fprintf(ipbase_file, " Do you want to set cross derivatives to zero [N]? N\n");
+				if (any_derivatives)
+				{
+					fprintf(ipbase_file, " Do you want to set cross derivatives to zero [N]? N\n");
+				}
 				fprintf(ipbase_file, " Enter the node position indices []:");
 				for (xi_number = 0 ; xi_number < dimension ; xi_number++)
 				{
@@ -327,45 +332,51 @@ Writes text for an <ipbase_file> to support <field>.
 					}
 				}
 				fprintf(ipbase_file, "\n");
-				fprintf(ipbase_file, " Enter the derivative order indices []: ");
-				for (xi_number = 0 ; xi_number < dimension ; xi_number++)
+				if (any_derivatives)
 				{
-					node_flags[xi_number] = 1;
-				}
-				finished = 0;
-				while (!finished)
-				{
+					fprintf(ipbase_file, " Enter the derivative order indices []: ");
 					for (xi_number = 0 ; xi_number < dimension ; xi_number++)
 					{
-						if (has_derivatives[xi_number])
+						node_flags[xi_number] = 1;
+					}
+					finished = 0;
+					while (!finished)
+					{
+						for (xi_number = 0 ; xi_number < dimension ; xi_number++)
 						{
-							fprintf(ipbase_file, " %d", node_flags[xi_number]);
+							if (has_derivatives[xi_number])
+							{
+								fprintf(ipbase_file, " %d", node_flags[xi_number]);
+							}
+						}
+						node_flags[0]++;
+						for (xi_number = 0 ; (node_flags[xi_number] > (2 * has_derivatives[xi_number])) && (xi_number < dimension) ;
+							  xi_number++)
+						{
+							node_flags[xi_number] = 1;
+							node_flags[xi_number + 1]++;
+						}
+						if (xi_number == dimension)
+						{
+							finished = 1;
 						}
 					}
-					node_flags[0]++;
-					for (xi_number = 0 ; (node_flags[xi_number] > (2 * has_derivatives[xi_number])) && (xi_number < dimension) ;
-						xi_number++)
-					{
-						node_flags[xi_number] = 1;
-						node_flags[xi_number + 1]++;
-					}
-					if (xi_number == dimension)
-					{
-						finished = 1;
-					}
+					fprintf(ipbase_file, "\n");
 				}
-				fprintf(ipbase_file, "\n");
 				fprintf(ipbase_file, " Enter the number of auxiliary element parameters [0]:  0\n\n");
-				fprintf(ipbase_file, " For basis function type %d scale factors are [6]:\n",
-					basis_number + 1);
-				fprintf(ipbase_file, "   (1) Unit\n");
-				fprintf(ipbase_file, "   (2) Read in - Element based\n");
-				fprintf(ipbase_file, "   (3) Read in - Node based\n");
-				fprintf(ipbase_file, "   (4) Calculated from angle change\n");
-				fprintf(ipbase_file, "   (5) Calculated from arc length\n");
-				fprintf(ipbase_file, "   (6) Calculated from arithmetic mean arc length\n");
-				fprintf(ipbase_file, "   (7) Calculated from harmonic mean arc length\n");
-				fprintf(ipbase_file, "    1\n");
+				if (any_derivatives)
+				{
+					fprintf(ipbase_file, " For basis function type %d scale factors are [6]:\n",
+						basis_number + 1);
+					fprintf(ipbase_file, "   (1) Unit\n");
+					fprintf(ipbase_file, "   (2) Read in - Element based\n");
+					fprintf(ipbase_file, "   (3) Read in - Node based\n");
+					fprintf(ipbase_file, "   (4) Calculated from angle change\n");
+					fprintf(ipbase_file, "   (5) Calculated from arc length\n");
+					fprintf(ipbase_file, "   (6) Calculated from arithmetic mean arc length\n");
+					fprintf(ipbase_file, "   (7) Calculated from harmonic mean arc length\n");
+					fprintf(ipbase_file, "    1\n");
+				}
 			}
 
 			basis_number++;
