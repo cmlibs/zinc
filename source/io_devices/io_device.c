@@ -43,6 +43,7 @@ DESCRIPTION :
 #if defined (SELECT_DESCRIPTORS)
 #include <unistd.h>
 #include <fcntl.h>
+#include <sys/stat.h>
 #endif /* defined (SELECT_DESCRIPTORS) */
 #include <stdio.h>
 #include <stdlib.h>
@@ -285,7 +286,7 @@ connecting to external "devices" such as Sockets or widget toolkits.
 			/* See what file descriptors are open */
 			for (i = 1 ; i < MAXFD ; i++)
 			{
-				if (-1 != fcntl(i, F_GETFD))
+				if (-1 != fcntl(i, F_GETFL))
 				{
 					device->file_descriptor_flags[i] = 1;
 				}
@@ -326,7 +327,8 @@ between the start and end detection are assumed to belong to the <device>.
 {
 #if defined (SELECT_DESCRIPTORS)
 	Fdio_id new_fdio;
-	int i;
+	int i, result;
+	struct stat buffer;
 #endif /* defined (SELECT_DESCRIPTORS) */
 	int return_code;
 
@@ -341,20 +343,25 @@ between the start and end detection are assumed to belong to the <device>.
 			{
 				if (!device->file_descriptor_flags[i])
 				{
-					if (-1 != fcntl(i, F_GETFD))
+					if (-1 != (result = fcntl(i, F_GETFL)))
 					{
-						printf ("Adding Io_device callback %d\n", i);
-						if (!device->fdio_list)
-						{
-							device->fdio_list = CREATE(LIST(Fdio))();
-						}
-						new_fdio = Event_dispatcher_create_Fdio(
-							User_interface_get_event_dispatcher(device->user_interface),
-							i);
-						ADD_OBJECT_TO_LIST(Fdio)(new_fdio, device->fdio_list);
-						Fdio_set_read_callback(new_fdio,
-							Io_device_descriptor_callback,
-							(void *)device);
+						/* Only select sockets */
+						if ((-1 != fstat(i, &buffer)) &&
+							S_ISSOCK(buffer.st_mode))
+				      {
+							printf ("Adding Io_device callback %d flags 0%o\n", i, result);
+							if (!device->fdio_list)
+							{
+								device->fdio_list = CREATE(LIST(Fdio))();
+							}
+							new_fdio = Event_dispatcher_create_Fdio(
+								User_interface_get_event_dispatcher(device->user_interface),
+								i);
+							ADD_OBJECT_TO_LIST(Fdio)(new_fdio, device->fdio_list);
+							Fdio_set_read_callback(new_fdio,
+								Io_device_descriptor_callback,
+								(void *)device);
+				      }
 					}
 				}
 			}
