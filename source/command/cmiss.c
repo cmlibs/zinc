@@ -464,6 +464,13 @@ struct Startup_material_definition
 	 /*specular*/{ 0.10, 0.10, 0.10},
 	 /*alpha*/1.0,
 	 /*shininess*/0.2},
+	{"gray50",
+	 /*ambient*/ { 0.50, 0.50, 0.50},
+	 /*diffuse*/ { 0.50, 0.50, 0.50},
+	 /*emission*/{ 0.50, 0.50, 0.50},
+	 /*specular*/{ 0.50, 0.50, 0.50},
+	 /*alpha*/1.0,
+	 /*shininess*/0.2},
 	{"gold",
 	 /*ambient*/ { 1.00, 0.40, 0.00},
 	 /*diffuse*/ { 1.00, 0.70, 0.00},
@@ -505,6 +512,14 @@ struct Startup_material_definition
 	 /*emission*/{ 0.00, 0.00, 0.00},
 	 /*specular*/{ 0.20, 0.20, 0.30},
 	 /*alpha*/1.0,
+	 /*shininess*/0.2},
+	/* Used as the default fail_material for texture evaluation. */
+	{"transparent_gray50",
+	 /*ambient*/ { 0.50, 0.50, 0.50},
+	 /*diffuse*/ { 0.50, 0.50, 0.50},
+	 /*emission*/{ 0.50, 0.50, 0.50},
+	 /*specular*/{ 0.50, 0.50, 0.50},
+	 /*alpha*/0.0,
 	 /*shininess*/0.2},
 	{"white",
 	 /*ambient*/ { 1.00, 1.00, 1.00},
@@ -6010,9 +6025,10 @@ static int set_Texture_image_from_field(struct Texture *texture,
 	int element_dimension,
 	enum Texture_storage_type storage,
 	int image_width, int image_height, int image_depth,
-	struct Graphics_buffer_package *graphics_buffer_package)
+	struct Graphics_buffer_package *graphics_buffer_package,
+	struct Graphical_material *fail_material)
 /*******************************************************************************
-LAST MODIFIED : 12 May 2004
+LAST MODIFIED : 30 June 2006
 
 DESCRIPTION :
 Creates the image in the format given by sampling the <field> according to the
@@ -6029,13 +6045,14 @@ value searches just elements of that dimension.
 	float hint_minimums[3] = {0.0, 0.0, 0.0};
 	float hint_maximums[3];
 	float hint_resolution[3];
-	float	red, green, blue, alpha, texture_depth, texture_height, texture_width;
+	float	red, green, blue, alpha, fail_alpha, texture_depth, texture_height,
+		texture_width;
 	int bytes_per_pixel, i, image_width_bytes, j, k,
 		number_of_bytes_per_component, number_of_components,
 		number_of_data_components, return_code, tex_number_of_components;
 	unsigned long field_evaluate_error_count, find_element_xi_error_count,
 		spectrum_render_error_count, total_number_of_pixels;
-	struct Colour result;
+	struct Colour result, fail_colour;
 	struct Computed_field_find_element_xi_cache *cache;
 	struct FE_element *element;
 	struct Graphical_material *material;
@@ -6068,6 +6085,8 @@ value searches just elements of that dimension.
 			ALLOCATE(data_values, FE_value,
 				Computed_field_get_number_of_components(field));
 			material = CREATE(Graphical_material)("texture_tmp");
+			Graphical_material_get_diffuse(fail_material, &fail_colour);
+			Graphical_material_get_alpha(fail_material, &fail_alpha);
 			if (image_plane && data_values && material)
 			{
 				hint_resolution[0] = image_width;
@@ -6140,38 +6159,38 @@ value searches just elements of that dimension.
 										}
 										else
 										{
-											red = 0.5;
-											green = 0.5;
-											blue = 0.5;
-											alpha = 1.0;
+											red = fail_colour.red;
+											green = fail_colour.green;
+											blue = fail_colour.blue;
+											alpha = fail_alpha;
 											spectrum_render_error_count++;
 										}
 									}
 									else
 									{
-										red = 0.5;
-										green = 0.5;
-										blue = 0.5;
-										alpha = 0.0;
+										red = fail_colour.red;
+										green = fail_colour.green;
+										blue = fail_colour.blue;
+										alpha = fail_alpha;
 										field_evaluate_error_count++;
 									}
 								}
 								else
 								{
-									red = 0.5;
-									green = 0.5;
-									blue = 0.5;
+									red = fail_colour.red;
+									green = fail_colour.green;
+									blue = fail_colour.blue;
 									/* not in any element; set alpha to zero so invisible */
-									alpha = 0.0;
+									alpha = fail_alpha;
 								}
 							}
 							else
 							{
-								red = 0.5;
-								green = 0.5;
-								blue = 0.5;
+								red = fail_colour.red;
+								green = fail_colour.green;
+								blue = fail_colour.blue;
 								/* error finding element:xi; set alpha to zero so invisible */
-								alpha = 0.0;
+								alpha = fail_alpha;
 								find_element_xi_error_count++;
 							}
 #if defined (DEBUG)
@@ -6388,6 +6407,7 @@ struct Texture_evaluate_image_data
 	int element_dimension; /* where 0 is any dimension */
 	int propagate_field;
 	struct Computed_field *field, *texture_coordinates_field;
+	struct Graphical_material *fail_material;
 	struct Spectrum *spectrum;
 };
 
@@ -6420,6 +6440,9 @@ Modifies the properties of a texture.
 			/* element_group */
 			Option_table_add_entry(option_table, "element_group", &data->region_path,
 				command_data->root_region, set_Cmiss_region_path);
+			/* fail_material */
+			Option_table_add_set_Material_entry(option_table, "fail_material", 
+				&data->fail_material, command_data->material_package);
 			/* field */
 			set_field_data.computed_field_manager=
 				Computed_field_package_get_computed_field_manager(
@@ -6780,12 +6803,23 @@ Modifies the properties of a texture.
 					image_data.crop_height=0;
 
 					evaluate_data.region_path = (char *)NULL;
-					evaluate_data.field = (struct Computed_field *)NULL;
-					evaluate_data.spectrum = (struct Spectrum *)NULL;
 					evaluate_data.element_dimension = 0; /* any dimension */
 					evaluate_data.propagate_field = 1;
+					evaluate_data.field = (struct Computed_field *)NULL;
 					evaluate_data.texture_coordinates_field =
 						(struct Computed_field *)NULL;
+					/* Try for the special transparent gray material first */
+					if (!(evaluate_data.fail_material = 
+						FIND_BY_IDENTIFIER_IN_MANAGER(Graphical_material, name)(
+						"transparent_gray50", Material_package_get_material_manager(
+							command_data->material_package))))
+					{
+						/* Just use the default material */
+						evaluate_data.fail_material = Material_package_get_default_material(
+							command_data->material_package);
+					}
+					ACCESS(Graphical_material)(evaluate_data.fail_material);
+					evaluate_data.spectrum = (struct Spectrum *)NULL;
 
 					file_number_pattern = (char *)NULL;
 					/* increment must be non-zero for following to be "set" */
@@ -7142,7 +7176,8 @@ Modifies the properties of a texture.
 								evaluate_data.element_dimension,
 								specify_format, specify_width, 
 								specify_height, specify_depth,
-								command_data->graphics_buffer_package);
+								command_data->graphics_buffer_package,
+								evaluate_data.fail_material);
 						}
 #if defined (GL_API)
 						texture->index= -(texture->index);
@@ -7166,6 +7201,10 @@ Modifies the properties of a texture.
 					if (evaluate_data.region_path)
 					{
 						DEALLOCATE(evaluate_data.region_path);
+					}
+					if (evaluate_data.fail_material)
+					{
+						DEACCESS(Graphical_material)(&evaluate_data.fail_material);
 					}
 					if (evaluate_data.spectrum)
 					{
