@@ -895,6 +895,8 @@ Copy the type specific data used by this type.
 			destination->fe_region = source->fe_region;
 			destination->texture_mapping = 
 				(struct LIST(Computed_field_element_integration_mapping) *)NULL;
+			destination->find_element_xi_mapping = 
+				(struct Computed_field_element_integration_mapping *)NULL;
 		}
 		else
 		{
@@ -1722,17 +1724,8 @@ although its cache may be lost.
 		{
 			/* Add seed element */
 			get_FE_element_identifier(seed_element, &cm);
-			if ((element=FE_region_get_FE_element_from_identifier(
-				fe_region, &cm)) && (element==seed_element))
-			{
-				data->cached_time = 0;
-				data->seed_element = (struct FE_element *)NULL;
-				data->texture_mapping =
-					(struct LIST(Computed_field_element_integration_mapping) *)NULL;
-				data->find_element_xi_mapping = 
-					(struct Computed_field_element_integration_mapping *)NULL;
-			}
-			else
+			if (!((element=FE_region_get_FE_element_from_identifier(
+						 fe_region, &cm)) && (element==seed_element)))
 			{
 				display_message(ERROR_MESSAGE,
 					"Computed_field_set_type_integration.  "
@@ -1759,6 +1752,7 @@ although its cache may be lost.
 			field->source_fields=source_fields;
 			field->number_of_source_fields=number_of_source_fields;
 			field->type_specific_data = (void *)data;
+			data->cached_time = 0;
 			data->seed_element = ACCESS(FE_element)(seed_element);
 			data->texture_mapping = 
 				(struct LIST(Computed_field_element_integration_mapping) *)NULL;
