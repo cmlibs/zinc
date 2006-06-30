@@ -300,7 +300,7 @@ DESCRIPTION :
 ==============================================================================*/
 {
 	char *cm_examples_directory,*cm_parameters_file_name,*example_directory,
-		*examples_directory,*examples_directory_override,*example_comfile,
+		*examples_directory,*example_comfile,
 		*example_requirements,*help_directory,*help_url;
 #if defined (CELL)
 	struct Cell_interface *cell_interface;
@@ -23730,7 +23730,8 @@ Initialise all the subcomponents of cmgui and create the Cmiss_command_data
 ==============================================================================*/
 {
 	char *cm_examples_directory,*cm_parameters_file_name,*comfile_name,
-		*example_id,*examples_directory,*execute_string,*version_command_id,
+		*example_id,*examples_directory,*examples_environment,*execute_string,
+		*version_command_id,
 		version_id_string[100],*version_ptr,version_temp[20];
 	float default_light_direction[3]={0.0,-0.5,-1.0};
 	int i, number_of_startup_materials, return_code;
@@ -23935,7 +23936,6 @@ Initialise all the subcomponents of cmgui and create the Cmiss_command_data
 		command_data->element_creator=(struct Element_creator *)NULL;
 #endif /* defined (MOTIF) */
 		command_data->examples_directory=(char *)NULL;
-		command_data->examples_directory_override=(char *)NULL;
 		command_data->example_comfile=(char *)NULL;
 		command_data->example_requirements=(char *)NULL;
 		command_data->cm_examples_directory=(char *)NULL;
@@ -24167,13 +24167,14 @@ Initialise all the subcomponents of cmgui and create the Cmiss_command_data
 		if (examples_directory)
 		{
 			command_data->examples_directory = examples_directory;
-			/* We need to keep this extra copy so that we know to DEALLOCATE it
-			   when cleaning up. */
-			command_data->examples_directory_override = examples_directory;
+		}
+		else if (examples_environment = getenv("CMISS_EXAMPLES"))
+		{
+			command_data->examples_directory = duplicate_string(examples_environment);
 		}
 		else
 		{
-			command_data->examples_directory = user_settings.examples_directory;
+			command_data->examples_directory = (char *)NULL;
 		}
 		command_data->cm_examples_directory = cm_examples_directory;
 		command_data->cm_parameters_file_name = cm_parameters_file_name;
@@ -25327,9 +25328,9 @@ Clean up the command_data, deallocating all the associated memory and resources.
 
 		/* clean up command-line options */
 
-		if (command_data->examples_directory_override)
+		if (command_data->examples_directory)
 		{
-			DEALLOCATE(command_data->examples_directory_override);
+			DEALLOCATE(command_data->examples_directory);
 		}
 		if (command_data->cm_examples_directory)
 		{
