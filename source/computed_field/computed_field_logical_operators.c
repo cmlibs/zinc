@@ -1466,6 +1466,7 @@ DESCRIPTION :
 Evaluate the fields cache at the node.
 ==============================================================================*/
 {
+	char *string_one, *string_two;
 	int i, return_code;
 
 	ENTER(Computed_field_equal_to_evaluate_cache_at_node);
@@ -1474,16 +1475,50 @@ Evaluate the fields cache at the node.
       field->source_fields[0]->number_of_components) &&
       (field->source_fields[0]->number_of_components == field->source_fields[1]->number_of_components))
 	{
-		/* 1. Precalculate any source fields that this field depends on */
-		if (return_code = 
-			Computed_field_evaluate_source_fields_cache_at_node(field, node, time))
+		/* If they are both numeric */
+		if (Computed_field_has_numerical_components(field->source_fields[0], NULL) &&
+			Computed_field_has_numerical_components(field->source_fields[1], NULL))
 		{
-			/* 2. Calculate the field */
+			if (return_code = 
+				Computed_field_evaluate_source_fields_cache_at_node(field, node, time))
+			{
+				/* 2. Calculate the field */
+				for (i = 0 ; i < field->number_of_components ; i++)
+				{
+					field->values[i] = (field->source_fields[0]->values[i]
+						== field->source_fields[1]->values[i]);
+				}		
+			}
+		}
+		else
+		{
+			/* Evaluate as strings and do a string comparison */
+			return_code = 1;
 			for (i = 0 ; i < field->number_of_components ; i++)
 			{
-				field->values[i] = (field->source_fields[0]->values[i]
-					== field->source_fields[1]->values[i]);
-			}		
+				string_one = Computed_field_evaluate_as_string_at_node(
+					field->source_fields[0], i,
+					node, time);
+				string_two = Computed_field_evaluate_as_string_at_node(
+					field->source_fields[1], i,
+					node, time);
+				if (string_one && string_two)
+				{
+					field->values[i] = (!strcmp(string_one, string_two));
+				}
+				else
+				{
+					return_code = 0;
+				}
+				if (string_one)
+				{
+					DEALLOCATE(string_one);
+				}
+				if (string_two)
+				{
+					DEALLOCATE(string_two);
+				}
+			}
 		}
 	}
 	else
@@ -1502,30 +1537,76 @@ static int Computed_field_equal_to_evaluate_cache_in_element(
 	struct Computed_field *field, struct FE_element *element, FE_value *xi,
 	FE_value time, struct FE_element *top_level_element,int calculate_derivatives)
 /*******************************************************************************
-LAST MODIFIED : 24 August 2005
+LAST MODIFIED : 6 July 2006
 
 DESCRIPTION :
 Evaluate the fields cache at the element.
 ==============================================================================*/
 {
+	char *string_one, *string_two;
 	int i, return_code;
 
 	ENTER(Computed_field_equal_to_evaluate_cache_in_element);
 	if (field && element && xi && (field->number_of_source_fields == 2) && 
 		(field->number_of_components ==
-                 field->source_fields[0]->number_of_components) &&
-                 (field->source_fields[0]->number_of_components == field->source_fields[1]->number_of_components))
+		field->source_fields[0]->number_of_components) &&
+		(field->source_fields[0]->number_of_components == field->source_fields[1]->number_of_components))
 	{
-		/* 1. Precalculate any source fields that this field depends on */
-		if (return_code = 
-			Computed_field_evaluate_source_fields_cache_in_element(field, element,
-				xi, time, top_level_element, calculate_derivatives))
+		/* If they are both numeric */
+		if (Computed_field_has_numerical_components(field->source_fields[0], NULL) &&
+			Computed_field_has_numerical_components(field->source_fields[1], NULL))
 		{
-			/* 2. Calculate the field */
+			if (return_code = 
+				Computed_field_evaluate_source_fields_cache_in_element(field, element,
+					xi, time, top_level_element, calculate_derivatives))
+			{
+				/* 2. Calculate the field */
+				for (i = 0 ; i < field->number_of_components ; i++)
+				{
+					field->values[i] = (field->source_fields[0]->values[i]
+						== field->source_fields[1]->values[i]);
+				}	
+				if (calculate_derivatives == 0)
+				{
+					field->derivatives_valid = 0;
+				}
+				else
+				{
+					display_message(ERROR_MESSAGE,
+						"Computed_field_equal_to_evaluate_cache_in_element.  "
+						"Cannot calculate derivatives of equal_to");
+					return_code = 0;
+				}
+			}
+		}
+		else
+		{
+			/* Evaluate as strings and do a string comparison */
+			return_code = 1;
 			for (i = 0 ; i < field->number_of_components ; i++)
 			{
-				field->values[i] = (field->source_fields[0]->values[i]
-					== field->source_fields[1]->values[i]);
+				string_one = Computed_field_evaluate_as_string_in_element(
+					field->source_fields[0], i,
+					element, xi, time, top_level_element);
+				string_two = Computed_field_evaluate_as_string_in_element(
+					field->source_fields[1], i,
+					element, xi, time, top_level_element);
+				if (string_one && string_two)
+				{
+					field->values[i] = (!strcmp(string_one, string_two));
+				}
+				else
+				{
+					return_code = 0;
+				}
+				if (string_one)
+				{
+					DEALLOCATE(string_one);
+				}
+				if (string_two)
+				{
+					DEALLOCATE(string_two);
+				}
 			}	
 			if (calculate_derivatives == 0)
 			{
@@ -1534,9 +1615,9 @@ Evaluate the fields cache at the element.
 			else
 			{
 				display_message(ERROR_MESSAGE,
-				"Computed_field_equal_to_evaluate_cache_in_element.  "
-				"Cannot calculate derivatives of equal_to");
-			        return_code = 0;
+					"Computed_field_equal_to_evaluate_cache_in_element.  "
+					"Cannot calculate derivatives of equal_to");
+				return_code = 0;
 			}
 		}
 	}
@@ -1764,7 +1845,8 @@ already) and allows its contents to be modified.
 				/* fields */
 				set_source_field_data.computed_field_manager=
 					computed_field_logical_operators_package->computed_field_manager;
-				set_source_field_data.conditional_function=Computed_field_has_numerical_components;
+				set_source_field_data.conditional_function=
+					(LIST_CONDITIONAL_FUNCTION(Computed_field) *)NULL;
 				set_source_field_data.conditional_function_user_data=(void *)NULL;
 				set_source_field_array_data.number_of_fields=2;
 				set_source_field_array_data.conditional_data= &set_source_field_data;

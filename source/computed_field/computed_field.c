@@ -1270,13 +1270,17 @@ any other fields, this function is recursively called for them.
 	return_code=0;
 	if (field&&element)
 	{
-		if (field->computed_field_evaluate_cache_in_element_function)
+		if (field->computed_field_is_defined_in_element_function)
 		{
-			if (field->computed_field_is_defined_in_element_function)
+			return_code = 
+				field->computed_field_is_defined_in_element_function(
+					field, element);
+		}
+		else
+		{
+			if (!field->computed_field_evaluate_cache_in_element_function)
 			{
-				return_code = 
-					field->computed_field_is_defined_in_element_function(
-						field, element);
+				return_code=0;
 			}
 			else
 			{
@@ -1286,10 +1290,6 @@ any other fields, this function is recursively called for them.
 					field->name);
 				return_code=0;
 			}
-		}
-		else
-		{
-			return_code=0;
 		}
 	}
 	else
@@ -1317,14 +1317,21 @@ Returns 1 if the all the source fields are defined in the supplied <element>.
 	ENTER(Computed_field_default_is_defined_in_element);
 	if (field && element)
 	{
-		return_code=1;
-		for (i=0;(i<field->number_of_source_fields)&&return_code;i++)
+		if (field->computed_field_is_defined_in_element_function)
 		{
-			if (!Computed_field_is_defined_in_element(field->source_fields[i],
-				element))
+			return_code=1;
+			for (i=0;(i<field->number_of_source_fields)&&return_code;i++)
 			{
-				return_code=0;
+				if (!Computed_field_is_defined_in_element(field->source_fields[i],
+						element))
+				{
+					return_code=0;
+				}
 			}
+		}
+		else
+		{
+			return_code=0;
 		}
 	}
 	else
@@ -1486,25 +1493,25 @@ any other fields, this function is recursively called for them.
 	return_code=0;
 	if (field&&node)
 	{	
-		if (field->computed_field_evaluate_cache_at_node_function)
+		if (field->computed_field_is_defined_at_node_function)
 		{
-			if (field->computed_field_is_defined_at_node_function)
+			return_code = field->computed_field_is_defined_at_node_function(
+				field, node);
+		}
+		else
+		{
+			if (!field->computed_field_evaluate_cache_at_node_function)
 			{
-				return_code = field->computed_field_is_defined_at_node_function(
-					field, node);
+				return_code = 0;
 			}
 			else
 			{
 				display_message(ERROR_MESSAGE,
 					"Computed_field_is_defined_at_node.  "
-					"Is_defined_in_node_function for field %s is not defined.",
+					"Is_defined_at_node_function for field %s is not defined.",
 					field->name);
 				return_code=0;
 			}
-		}
-		else
-		{
-			return_code=0;
 		}
 	}
 	else
@@ -1669,14 +1676,21 @@ Returns 1 if all the source fields are defined at the supplied <node>.
 	ENTER(Computed_field_default_is_defined_at_node);
 	if (field && node)
 	{
-		return_code=1;
-		for (i=0;(i<field->number_of_source_fields)&&return_code;i++)
+		if (field->computed_field_evaluate_cache_at_node_function)
 		{
-			if (!Computed_field_is_defined_at_node(field->source_fields[i],
-				node))
+			return_code=1;
+			for (i=0;(i<field->number_of_source_fields)&&return_code;i++)
 			{
-				return_code=0;
+				if (!Computed_field_is_defined_at_node(field->source_fields[i],
+						node))
+				{
+					return_code=0;
+				}
 			}
+		}
+		else
+		{
+			return_code=0;
 		}
 	}
 	else

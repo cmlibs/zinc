@@ -143,7 +143,7 @@ Updates all widgets in the rowcol to make sure they say the correct value.
 	char *cmiss_number_string, *new_value_string, *old_value_string,
 		temp_value_string[VALUE_STRING_SIZE];
 	FE_value *values, time;
-	int element_dimension, i, j, num_children, number_of_components;
+	int element_dimension, i, j, num_children, number_of_components, return_code;
 	struct Computed_field *field;
 	struct CM_element_information cm_identifier;
 	struct FE_field *fe_field;
@@ -164,30 +164,35 @@ Updates all widgets in the rowcol to make sure they say the correct value.
 		/* get children of the rowcol */
 		XtVaGetValues(node_field_viewer->component_rowcol,XmNnumChildren,
 			&num_children,XmNchildren,&child_list,NULL);
+		return_code = 1;
 		if (Computed_field_is_type_finite_element(field))
 		{
-			Computed_field_get_type_finite_element(field, &fe_field);
+			return_code = Computed_field_get_type_finite_element(field, &fe_field);
 		}
 		else
 		{
 			if (Computed_field_is_type_cmiss_number(field))
 			{
-				cmiss_number_string = Computed_field_evaluate_as_string_at_node(field,
-					/*component_number*/-1, node, time);
+				if (!(cmiss_number_string = Computed_field_evaluate_as_string_at_node(field,
+					/*component_number*/-1, node, time)))
+				{
+					return_code = 0;
+				}
 			}
-			else
-			{
+			else if (Computed_field_has_numerical_components(field, NULL))
+			{				
 				if (ALLOCATE(values, FE_value, number_of_components))
 				{
 					if (!Computed_field_evaluate_at_node(field, node, time, values))
 					{
 						DEALLOCATE(values);
+						return_code = 0;
 					}
 					Computed_field_clear_cache(field);
 				}
 			}
 		}
-		if (fe_field || cmiss_number_string || values)
+		if (return_code)
 		{
 			for (i = 0; i < num_children; i++)
 			{
@@ -289,6 +294,11 @@ Updates all widgets in the rowcol to make sure they say the correct value.
 							/* copy and clear cmiss_number_string to avoid allocate */
 							new_value_string = cmiss_number_string;
 							cmiss_number_string = (char *)NULL;
+						}
+						else if (!Computed_field_has_numerical_components(field, NULL))
+						{
+							new_value_string = Computed_field_evaluate_as_string_at_node(
+								field, nodal_value_information->component_number, node, time);
 						}
 						else /* all other types of computed field */
 						{
@@ -517,6 +527,11 @@ data, and then changes the correct value in the array structure.
 					{
 						display_message(WARNING_MESSAGE,
 							"CMISS number cannot be changed here");
+					}
+					else if (!Computed_field_has_numerical_components(field, NULL))
+					{
+						display_message(WARNING_MESSAGE,
+							"Unable to set string values in a computed field.");
 					}
 					else
 					{

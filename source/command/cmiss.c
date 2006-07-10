@@ -88,6 +88,7 @@ Functions for executing cmiss commands.
 #include "computed_field/computed_field_matrix_operations.h"
 #include "computed_field/computed_field_sample_texture.h"
 #include "computed_field/computed_field_set.h"
+#include "computed_field/computed_field_string_constant.h"
 #include "computed_field/computed_field_time.h"
 #include "computed_field/computed_field_trigonometry.h"
 #include "computed_field/computed_field_update.h"
@@ -24468,6 +24469,8 @@ Initialise all the subcomponents of cmgui and create the Cmiss_command_data
 				}
 			}
 			Computed_field_register_types_deformation(
+				command_data->computed_field_package);
+			Computed_field_register_types_string_constant(
 				command_data->computed_field_package);
 
 			if (command_data->root_region)
