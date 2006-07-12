@@ -1374,6 +1374,48 @@ A modifier function to set the texture storage type.
 	return (return_code);
 } /* set_Texture_storage */
 
+static int Texture_update_default_physical_size(struct Texture *texture)
+/*******************************************************************************
+LAST MODIFIED : 13 July 2006
+
+DESCRIPTION :
+If the texture has a pixel dimension of greater than 1 in any particular 
+dimension then the corresponding default physical size is changed from 
+the initial 0 to 1.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(Texture_update_default_physical_size);
+	if (texture)
+	{
+		if (texture->dimension > 1)
+		{
+			if ((texture->dimension > 2) && (texture->depth == 0))
+			{
+				texture->depth = 1;
+			}
+			if (texture->height == 0)
+			{
+				texture->height = 1;
+			}
+		}
+		if ((texture->width_texels > 1) && (texture->width == 0))
+		{
+			texture->width = 1;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE, "Texture_update_default_physical_size.  "
+			"Invalid argument(s)");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Texture_update_default_physical_size */
+
 #if defined (SGI_MOVIE_FILE)
 static int Texture_refresh(struct Texture *texture)
 /*******************************************************************************
@@ -1783,9 +1825,9 @@ of all textures.
 		{
 			/* texture defaults to 1-D since it is a single texel */
 			texture->dimension = 1;
-			texture->depth=1.;
-			texture->height=1.;
-			texture->width=1.;
+			texture->depth=0.;
+			texture->height=0.;
+			texture->width=0.;
 			/* assign image description fields */
 			texture->image_file_name = (char *)NULL;
 			/* file number pattern and ranges for 3-D textures */
@@ -2673,6 +2715,7 @@ Crop and other parameters are cleared.
 			texture->crop_bottom_margin = 0;
 			texture->crop_width = 0;
 			texture->crop_height = 0;
+			Texture_update_default_physical_size(texture);
 			/* display list needs to be compiled again */
 			texture->display_list_current = 0;
 			return_code = 1;
@@ -2994,6 +3037,7 @@ positive. Cropping is not available in the depth direction.
 				texture->crop_bottom_margin = crop_bottom;
 				texture->crop_width = crop_width;
 				texture->crop_height = crop_height;
+				Texture_update_default_physical_size(texture);
 				/* display list needs to be compiled again */
 				texture->display_list_current = 0;
 				return_code = 1;
@@ -3222,6 +3266,7 @@ Adds <cmgui_image> into <texture> making a 3D image from 2D images.
 				texture->width_texels = texture_width;
 				texture->height_texels = texture_height;
 				texture->depth_texels = texture_depth;
+				Texture_update_default_physical_size(texture);
 				/* display list needs to be compiled again */
 				texture->display_list_current = 0;
 				return_code = 1;
