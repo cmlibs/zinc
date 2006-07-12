@@ -290,6 +290,12 @@ the <texture_coordinate_field>.  The <image> is created with the specified
 				texture_coordinates[i] = image->minimums[i];
 				total_number_of_pixels *= image->sizes[i];
 			}
+			/* Need to initialise extra texture coordinates if the xi_texture_coordinate
+				field has more components than our image dimension. */
+			for (; i < number_of_texture_coordinate_components ; i++)
+			{
+				texture_coordinates[i] = 0.0;
+			}
 			data_index = (FE_value *)image->data;
 			field_evaluate_error_count = 0;
 			find_element_xi_error_count = 0;
