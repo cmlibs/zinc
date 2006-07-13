@@ -3719,20 +3719,41 @@ is constant from the half texel location to the edge.
 			case TEXTURE_REPEAT_WRAP:
 			{
 				/* make x, y and z range from 0.0 to 1.0 over full texture size */
-				x *= ((double)texture->original_width_texels /
-					(double)texture->width_texels) / texture->width;
-				x -= floor(x);
-				x *= (double)(texture->width_texels);
+				if ((texture->width_texels == 0.0) || (texture->width == 0.0))
+				{
+					x = 0.0;
+				}
+				else
+				{
+					x *= ((double)texture->original_width_texels /
+						(double)texture->width_texels) / texture->width;
+					x -= floor(x);
+					x *= (double)(texture->width_texels);
+				}
 
-				y *= ((double)texture->original_height_texels /
-					(double)texture->height_texels) / texture->height;
-				y -= floor(y);
-				y *= (double)(texture->height_texels);
+				if ((texture->height_texels == 0.0) || (texture->height == 0.0))
+				{
+					x = 0.0;
+				}
+				else
+				{
+					y *= ((double)texture->original_height_texels /
+						(double)texture->height_texels) / texture->height;
+					y -= floor(y);
+					y *= (double)(texture->height_texels);
+				}
 
-				z *= ((double)texture->original_depth_texels /
-					(double)texture->depth_texels) / texture->depth;
-				z -= floor(z);
-				z *= (double)(texture->depth_texels);
+				if ((texture->depth_texels == 0.0) || (texture->depth == 0.0))
+				{
+					x = 0.0;
+				}
+				else
+				{
+					z *= ((double)texture->original_depth_texels /
+						(double)texture->depth_texels) / texture->depth;
+					z -= floor(z);
+					z *= (double)(texture->depth_texels);
+				}
 			} break;
 			default:
 			{
