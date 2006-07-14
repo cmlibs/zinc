@@ -3733,7 +3733,7 @@ is constant from the half texel location to the edge.
 
 				if ((texture->height_texels == 0.0) || (texture->height == 0.0))
 				{
-					x = 0.0;
+					y = 0.0;
 				}
 				else
 				{
@@ -3745,7 +3745,7 @@ is constant from the half texel location to the edge.
 
 				if ((texture->depth_texels == 0.0) || (texture->depth == 0.0))
 				{
-					x = 0.0;
+					z = 0.0;
 				}
 				else
 				{
