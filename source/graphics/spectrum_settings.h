@@ -45,6 +45,8 @@ appearance of spectrums.
 #if !defined (SPECTRUM_SETTINGS_H)
 #define SPECTRUM_SETTINGS_H
 
+#include "general/enumerator.h"
+
 /*
 Global types
 ------------
