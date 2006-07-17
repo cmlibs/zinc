@@ -5861,7 +5861,6 @@ Creates a node point seeded with the seed_node_coordinate_field at the node.
 {
 	FE_value coordinates[3], xi[MAXIMUM_ELEMENT_XI_DIMENSIONS];
 	int element_dimension, number_of_components, return_code;
-	struct Computed_field *coordinate_field;
 	struct FE_element *element;
 	struct GT_element_settings *settings;
 	struct GT_element_settings_to_graphics_object_data *settings_to_object_data;
@@ -5877,21 +5876,16 @@ Creates a node point seeded with the seed_node_coordinate_field at the node.
 		settings->graphics_object)
 	{
 		element_dimension = 3;
-		coordinate_field = settings_to_object_data->default_rc_coordinate_field;
-		if (settings->coordinate_field)
-		{
-			coordinate_field = settings->coordinate_field;
-		}
 		if ((3 >= (number_of_components = Computed_field_get_number_of_components(
 			settings->seed_node_coordinate_field)))
 			&& (number_of_components == Computed_field_get_number_of_components(
-					 coordinate_field)))
+			settings_to_object_data->rc_coordinate_field)))
 		{
 			/* determine if the element is required */
 			if (Computed_field_is_defined_at_node(settings->seed_node_coordinate_field, node)
 				&& Computed_field_evaluate_at_node(settings->seed_node_coordinate_field, node,
 					settings_to_object_data->time, coordinates)
-				&& Computed_field_find_element_xi(coordinate_field,
+				&& Computed_field_find_element_xi(settings_to_object_data->rc_coordinate_field,
 					coordinates, number_of_components, &element, xi,
 					element_dimension, settings_to_object_data->region,
 					/*propagate_field*/0, /*find_nearest_location*/0))
@@ -5899,7 +5893,7 @@ Creates a node point seeded with the seed_node_coordinate_field at the node.
 				if (STREAM_LINE==settings->streamline_type)
 				{
 					if (polyline=create_GT_polyline_streamline_FE_element(element,
-							xi,coordinate_field,
+							xi,settings_to_object_data->rc_coordinate_field,
 							settings_to_object_data->wrapper_stream_vector_field,
 							settings->reverse_track, settings->streamline_length,
 							settings->streamline_data_type, settings->data_field,
@@ -5923,7 +5917,7 @@ Creates a node point seeded with the seed_node_coordinate_field at the node.
 					(settings->streamline_type == STREAM_EXTRUDED_CIRCLE))
 				{
 					if (surface=create_GT_surface_streamribbon_FE_element(element,
-							xi,coordinate_field,
+							xi,settings_to_object_data->rc_coordinate_field,
 							settings_to_object_data->wrapper_stream_vector_field,
 							settings->reverse_track, settings->streamline_length,
 							settings->streamline_width, settings->streamline_type,
@@ -6016,369 +6010,383 @@ The graphics object is stored with with the settings it was created from.
 				}
 				if (coordinate_field)
 				{
-				/* RC coordinate_field to pass to FE_element_to_graphics_object */
-				if ((settings_to_object_data->rc_coordinate_field=
-					Computed_field_begin_wrap_coordinate_field(coordinate_field)) &&
-					((!settings->orientation_scale_field) ||
-						(settings_to_object_data->wrapper_orientation_scale_field =
-							Computed_field_begin_wrap_orientation_scale_field(
-								settings->orientation_scale_field,
-								settings_to_object_data->rc_coordinate_field))) &&
-					((!settings->stream_vector_field) ||
-						(settings_to_object_data->wrapper_stream_vector_field =
-							Computed_field_begin_wrap_orientation_scale_field(
-								settings->stream_vector_field,
-								settings_to_object_data->rc_coordinate_field))))
-				{
+					/* RC coordinate_field to pass to FE_element_to_graphics_object */
+					if ((settings_to_object_data->rc_coordinate_field=
+							Computed_field_begin_wrap_coordinate_field(coordinate_field)) &&
+						((!settings->orientation_scale_field) ||
+							(settings_to_object_data->wrapper_orientation_scale_field =
+								Computed_field_begin_wrap_orientation_scale_field(
+									settings->orientation_scale_field,
+									settings_to_object_data->rc_coordinate_field))) &&
+						((!settings->stream_vector_field) ||
+							(settings_to_object_data->wrapper_stream_vector_field =
+								Computed_field_begin_wrap_orientation_scale_field(
+									settings->stream_vector_field,
+									settings_to_object_data->rc_coordinate_field))))
+					{
 #if defined (DEBUG)
-					/*???debug*/
-					if (settings_string = GT_element_settings_string(settings,
-						SETTINGS_STRING_COMPLETE_PLUS))
-					{
-						printf("> building %s\n", settings_string);
-						DEALLOCATE(settings_string);
-					}
-#endif /* defined (DEBUG) */
-					settings_to_object_data->existing_graphics =
-						(struct GT_object *)NULL;
-					/* work out the name the graphics object is to have */
-					GET_NAME(GT_element_settings)(settings, &settings_name);
-					if (settings_to_object_data->name_prefix && settings_name &&
-						ALLOCATE(graphics_object_name, char,
-							strlen(settings_to_object_data->name_prefix) +
-							strlen(settings_name) + 4))
-					{
-						sprintf(graphics_object_name, "%s_%s",
-							settings_to_object_data->name_prefix, settings_name);
-						if (settings->graphics_object)
+						/*???debug*/
+						if (settings_string = GT_element_settings_string(settings,
+								SETTINGS_STRING_COMPLETE_PLUS))
 						{
-							/* replace the graphics object name */
-							GT_object_set_name(settings->graphics_object,
-								graphics_object_name);
-							if (GT_object_has_primitives_at_time(settings->graphics_object,
-								time))
-							{
-#if defined (DEBUG)
-								/*???debug*/printf("  EDIT EXISTING GRAPHICS!\n");
+							printf("> building %s\n", settings_string);
+							DEALLOCATE(settings_string);
+						}
 #endif /* defined (DEBUG) */
-								GET_NAME(GT_object)(settings->graphics_object, &existing_name);
-								settings_to_object_data->existing_graphics =
-									CREATE(GT_object)(existing_name,
-										GT_object_get_type(settings->graphics_object),
-										get_GT_object_default_material(settings->graphics_object));
-								DEALLOCATE(existing_name);
-								GT_object_transfer_primitives_at_time(
-									settings_to_object_data->existing_graphics,
-									settings->graphics_object, time);
+						settings_to_object_data->existing_graphics =
+							(struct GT_object *)NULL;
+						/* work out the name the graphics object is to have */
+						GET_NAME(GT_element_settings)(settings, &settings_name);
+						if (settings_to_object_data->name_prefix && settings_name &&
+							ALLOCATE(graphics_object_name, char,
+								strlen(settings_to_object_data->name_prefix) +
+								strlen(settings_name) + 4))
+						{
+							sprintf(graphics_object_name, "%s_%s",
+								settings_to_object_data->name_prefix, settings_name);
+							if (settings->graphics_object)
+							{
+								/* replace the graphics object name */
+								GT_object_set_name(settings->graphics_object,
+									graphics_object_name);
+								if (GT_object_has_primitives_at_time(settings->graphics_object,
+										time))
+								{
+#if defined (DEBUG)
+									/*???debug*/printf("  EDIT EXISTING GRAPHICS!\n");
+#endif /* defined (DEBUG) */
+									GET_NAME(GT_object)(settings->graphics_object, &existing_name);
+									settings_to_object_data->existing_graphics =
+										CREATE(GT_object)(existing_name,
+											GT_object_get_type(settings->graphics_object),
+											get_GT_object_default_material(settings->graphics_object));
+									DEALLOCATE(existing_name);
+									GT_object_transfer_primitives_at_time(
+										settings_to_object_data->existing_graphics,
+										settings->graphics_object, time);
+								}
 							}
+							else
+							{
+								switch (settings->settings_type)
+								{
+									case GT_ELEMENT_SETTINGS_LINES:
+									{
+										graphics_object_type = g_POLYLINE;
+									} break;
+									case GT_ELEMENT_SETTINGS_CYLINDERS:
+									case GT_ELEMENT_SETTINGS_SURFACES:
+									{
+										graphics_object_type = g_SURFACE;
+									} break;
+									case GT_ELEMENT_SETTINGS_ISO_SURFACES:
+									{
+										switch (settings->use_element_type)
+										{
+											case USE_ELEMENTS:
+											{
+												graphics_object_type = g_VOLTEX;
+												if (first_element = FE_region_get_first_FE_element_that(
+														 fe_region, FE_element_is_top_level, (void *)NULL))
+												{
+													if (2 == get_FE_element_dimension(first_element))
+													{
+														graphics_object_type = g_POLYLINE;
+													}
+												}
+											} break;
+											case USE_FACES:
+											{
+												graphics_object_type = g_POLYLINE;
+											} break;
+											case USE_LINES:
+											{
+												display_message(ERROR_MESSAGE,
+													"GT_element_settings_to_graphics_object.  "
+													"USE_LINES not supported for iso_scalar");
+												return_code = 0;
+											} break;
+											default:
+											{
+												display_message(ERROR_MESSAGE,
+													"GT_element_settings_to_graphics_object.  "
+													"Unknown use_element_type");
+												return_code = 0;
+											} break;
+										}
+									} break;
+									case GT_ELEMENT_SETTINGS_NODE_POINTS:
+									case GT_ELEMENT_SETTINGS_DATA_POINTS:
+									case GT_ELEMENT_SETTINGS_ELEMENT_POINTS:
+									{
+										graphics_object_type = g_GLYPH_SET;
+									} break;
+									case GT_ELEMENT_SETTINGS_VOLUMES:
+									{
+										graphics_object_type = g_VOLTEX;
+									} break;
+									case GT_ELEMENT_SETTINGS_STREAMLINES:
+									{
+										if (STREAM_LINE == settings->streamline_type)
+										{
+											graphics_object_type = g_POLYLINE;
+										}
+										else
+										{
+											graphics_object_type = g_SURFACE;
+										}
+									} break;
+									default:
+									{
+										display_message(ERROR_MESSAGE,
+											"GT_element_settings_to_graphics_object.  "
+											"Unknown element settings type");
+										return_code = 0;
+									} break;
+								}
+								if (return_code)
+								{
+									settings->graphics_object = CREATE(GT_object)(
+										graphics_object_name, graphics_object_type,
+										settings->material);
+									GT_object_set_select_mode(settings->graphics_object,
+										settings->select_mode);
+									if (settings->secondary_material)
+									{
+										set_GT_object_secondary_material(settings->graphics_object,
+											settings->secondary_material);
+									}
+									if (settings->selected_material)
+									{
+										set_GT_object_selected_material(settings->graphics_object,
+											settings->selected_material);
+									}
+									ACCESS(GT_object)(settings->graphics_object);
+								}
+							}
+							DEALLOCATE(graphics_object_name);
 						}
 						else
 						{
+							display_message(ERROR_MESSAGE,
+								"GT_element_settings_to_graphics_object.  "
+								"Unable to make graphics object name");
+							return_code = 0;
+						}
+						DEALLOCATE(settings_name);
+						if (settings->graphics_object)
+						{
+							settings->selected_graphics_changed=1;
+							coordinate_system = Computed_field_get_coordinate_system(coordinate_field);
+							if (NORMALISED_WINDOW_COORDINATES == coordinate_system->type)
+							{
+								GT_object_set_coordinate_system(settings->graphics_object,
+									g_NDC_COORDINATES);
+							}
+							/* need settings for FE_element_to_graphics_object routine */
+							settings_to_object_data->settings=settings;
 							switch (settings->settings_type)
 							{
-								case GT_ELEMENT_SETTINGS_LINES:
-								{
-									graphics_object_type = g_POLYLINE;
-								} break;
-								case GT_ELEMENT_SETTINGS_CYLINDERS:
-								case GT_ELEMENT_SETTINGS_SURFACES:
-								{
-									graphics_object_type = g_SURFACE;
-								} break;
-								case GT_ELEMENT_SETTINGS_ISO_SURFACES:
-								{
-									switch (settings->use_element_type)
-									{
-										case USE_ELEMENTS:
-										{
-											graphics_object_type = g_VOLTEX;
-											if (first_element = FE_region_get_first_FE_element_that(
-												fe_region, FE_element_is_top_level, (void *)NULL))
-											{
-												if (2 == get_FE_element_dimension(first_element))
-												{
-													graphics_object_type = g_POLYLINE;
-												}
-											}
-										} break;
-										case USE_FACES:
-										{
-											graphics_object_type = g_POLYLINE;
-										} break;
-										case USE_LINES:
-										{
-											display_message(ERROR_MESSAGE,
-												"GT_element_settings_to_graphics_object.  "
-												"USE_LINES not supported for iso_scalar");
-											return_code = 0;
-										} break;
-										default:
-										{
-											display_message(ERROR_MESSAGE,
-												"GT_element_settings_to_graphics_object.  "
-												"Unknown use_element_type");
-											return_code = 0;
-										} break;
-									}
-								} break;
 								case GT_ELEMENT_SETTINGS_NODE_POINTS:
 								case GT_ELEMENT_SETTINGS_DATA_POINTS:
-								case GT_ELEMENT_SETTINGS_ELEMENT_POINTS:
 								{
-									graphics_object_type = g_GLYPH_SET;
-								} break;
-								case GT_ELEMENT_SETTINGS_VOLUMES:
-								{
-									graphics_object_type = g_VOLTEX;
-								} break;
-								case GT_ELEMENT_SETTINGS_STREAMLINES:
-								{
-									if (STREAM_LINE == settings->streamline_type)
+									/* currently all nodes put together in a single GT_glyph_set,
+										so rebuild all even if editing a single node or element */
+									GT_object_remove_primitives_at_time(
+										settings->graphics_object, time,
+										(GT_object_primitive_object_name_conditional_function *)NULL,
+										(void *)NULL);
+									base_size[0] = (FE_value)(settings->glyph_size[0]);
+									base_size[1] = (FE_value)(settings->glyph_size[1]);
+									base_size[2] = (FE_value)(settings->glyph_size[2]);
+									centre[0] = (FE_value)(settings->glyph_centre[0]);
+									centre[1] = (FE_value)(settings->glyph_centre[1]);
+									centre[2] = (FE_value)(settings->glyph_centre[2]);
+									scale_factors[0] = (FE_value)(settings->glyph_scale_factors[0]);
+									scale_factors[1] = (FE_value)(settings->glyph_scale_factors[1]);
+									scale_factors[2] = (FE_value)(settings->glyph_scale_factors[2]);
+									if (settings->settings_type == GT_ELEMENT_SETTINGS_DATA_POINTS)
 									{
-										graphics_object_type = g_POLYLINE;
+										selected_node_list = settings_to_object_data->selected_data_list;
 									}
 									else
 									{
-										graphics_object_type = g_SURFACE;
+										selected_node_list = settings_to_object_data->selected_node_list;
 									}
-								} break;
-								default:
-								{
-									display_message(ERROR_MESSAGE,
-										"GT_element_settings_to_graphics_object.  "
-										"Unknown element settings type");
-									return_code = 0;
-								} break;
-							}
-							if (return_code)
-							{
-								settings->graphics_object = CREATE(GT_object)(
-									graphics_object_name, graphics_object_type,
-									settings->material);
-								GT_object_set_select_mode(settings->graphics_object,
-									settings->select_mode);
-								if (settings->secondary_material)
-								{
-									set_GT_object_secondary_material(settings->graphics_object,
-										settings->secondary_material);
-								}
-								if (settings->selected_material)
-								{
-									set_GT_object_selected_material(settings->graphics_object,
-										settings->selected_material);
-								}
-								ACCESS(GT_object)(settings->graphics_object);
-							}
-						}
-						DEALLOCATE(graphics_object_name);
-					}
-					else
-					{
-						display_message(ERROR_MESSAGE,
-							"GT_element_settings_to_graphics_object.  "
-							"Unable to make graphics object name");
-						return_code = 0;
-					}
-					DEALLOCATE(settings_name);
-					if (settings->graphics_object)
-					{
-						settings->selected_graphics_changed=1;
-						coordinate_system = Computed_field_get_coordinate_system(coordinate_field);
-						if (NORMALISED_WINDOW_COORDINATES == coordinate_system->type)
-						{
-							GT_object_set_coordinate_system(settings->graphics_object,
-								g_NDC_COORDINATES);
-						}
-						/* need settings for FE_element_to_graphics_object routine */
-						settings_to_object_data->settings=settings;
-						switch (settings->settings_type)
-						{
-							case GT_ELEMENT_SETTINGS_NODE_POINTS:
-							case GT_ELEMENT_SETTINGS_DATA_POINTS:
-							{
-								/* currently all nodes put together in a single GT_glyph_set,
-									 so rebuild all even if editing a single node or element */
-								GT_object_remove_primitives_at_time(
-									settings->graphics_object, time,
-									(GT_object_primitive_object_name_conditional_function *)NULL,
-									(void *)NULL);
-								base_size[0] = (FE_value)(settings->glyph_size[0]);
-								base_size[1] = (FE_value)(settings->glyph_size[1]);
-								base_size[2] = (FE_value)(settings->glyph_size[2]);
-								centre[0] = (FE_value)(settings->glyph_centre[0]);
-								centre[1] = (FE_value)(settings->glyph_centre[1]);
-								centre[2] = (FE_value)(settings->glyph_centre[2]);
-								scale_factors[0] = (FE_value)(settings->glyph_scale_factors[0]);
-								scale_factors[1] = (FE_value)(settings->glyph_scale_factors[1]);
-								scale_factors[2] = (FE_value)(settings->glyph_scale_factors[2]);
-								if (settings->settings_type == GT_ELEMENT_SETTINGS_DATA_POINTS)
-								{
-									selected_node_list = settings_to_object_data->selected_data_list;
-								}
-								else
-								{
-									selected_node_list = settings_to_object_data->selected_node_list;
-								}
-								glyph_set = create_GT_glyph_set_from_FE_region_nodes(
-									fe_region, settings_to_object_data->rc_coordinate_field,
-									settings->glyph, base_size, centre, scale_factors,
-									settings_to_object_data->time,
-									settings_to_object_data->wrapper_orientation_scale_field,
-									settings->variable_scale_field, settings->data_field,
-									settings->font, settings->label_field, settings->select_mode,
-									selected_node_list);
-								/* NOT an error if no glyph_set produced == empty group */
-								if (glyph_set)
-								{
-									if (!GT_OBJECT_ADD(GT_glyph_set)(settings->graphics_object,
-										time,glyph_set))
+									glyph_set = create_GT_glyph_set_from_FE_region_nodes(
+										fe_region, settings_to_object_data->rc_coordinate_field,
+										settings->glyph, base_size, centre, scale_factors,
+										settings_to_object_data->time,
+										settings_to_object_data->wrapper_orientation_scale_field,
+										settings->variable_scale_field, settings->data_field,
+										settings->font, settings->label_field, settings->select_mode,
+										selected_node_list);
+									/* NOT an error if no glyph_set produced == empty group */
+									if (glyph_set)
 									{
-										DESTROY(GT_glyph_set)(&glyph_set);
-										return_code=0;
+										if (!GT_OBJECT_ADD(GT_glyph_set)(settings->graphics_object,
+												time,glyph_set))
+										{
+											DESTROY(GT_glyph_set)(&glyph_set);
+											return_code=0;
+										}
 									}
-								}
-							} break;
-							case GT_ELEMENT_SETTINGS_CYLINDERS:
-							case GT_ELEMENT_SETTINGS_LINES:
-							case GT_ELEMENT_SETTINGS_SURFACES:
-							case GT_ELEMENT_SETTINGS_ELEMENT_POINTS:
-							{
-								return_code = FE_region_for_each_FE_element(fe_region,
-									FE_element_to_graphics_object, settings_to_object_data_void);
-							} break;
-							case GT_ELEMENT_SETTINGS_ISO_SURFACES:
-							{
-								return_code = FE_region_for_each_FE_element(fe_region,
-									FE_element_to_graphics_object, settings_to_object_data_void);
-								/* Decimate */
-								if (settings->decimation_threshold > 0.0)
+								} break;
+								case GT_ELEMENT_SETTINGS_CYLINDERS:
+								case GT_ELEMENT_SETTINGS_LINES:
+								case GT_ELEMENT_SETTINGS_SURFACES:
+								case GT_ELEMENT_SETTINGS_ELEMENT_POINTS:
 								{
-									GT_object_decimate_GT_voltex(settings->graphics_object,
-										settings->decimation_threshold);
-								}
-								/* Normalise normals now that the entire mesh has been calculated */
-								GT_object_normalise_GT_voltex_normals(settings->graphics_object);
-							} break;
-							case GT_ELEMENT_SETTINGS_VOLUMES:
-							{
-								/* does volume texture extend beyond a single element? */
-								if (settings->volume_texture && (
-									(settings->volume_texture->ximin[0] < 0.0) ||
-									(settings->volume_texture->ximin[1] < 0.0) ||
-									(settings->volume_texture->ximin[2] < 0.0) ||
-									(settings->volume_texture->ximax[0] > 1.0) ||
-									(settings->volume_texture->ximax[1] > 1.0) ||
-									(settings->volume_texture->ximax[2] > 1.0)))
+									return_code = FE_region_for_each_FE_element(fe_region,
+										FE_element_to_graphics_object, settings_to_object_data_void);
+								} break;
+								case GT_ELEMENT_SETTINGS_ISO_SURFACES:
 								{
-									/* then must rebuild all graphics */
+									return_code = FE_region_for_each_FE_element(fe_region,
+										
+										FE_element_to_graphics_object, 
+										settings_to_object_data_void);
+									/* If the isosurface is a volume we can decimate and
+										then normalise, otherwise if it is a polyline
+										representing a isolines, skip over. */
+									if (g_VOLTEX == GT_object_get_type(settings->graphics_object))
+									{
+										/* Decimate */
+										if (settings->decimation_threshold > 0.0)
+										{
+											GT_object_decimate_GT_voltex(settings->graphics_object,
+												settings->decimation_threshold);
+										}
+										/* Normalise normals now that the entire mesh has been calculated */
+										GT_object_normalise_GT_voltex_normals(settings->graphics_object);
+									}
+								} break;
+								case GT_ELEMENT_SETTINGS_VOLUMES:
+								{
+									/* does volume texture extend beyond a single element? */
+									if (settings->volume_texture && (
+											 (settings->volume_texture->ximin[0] < 0.0) ||
+											 (settings->volume_texture->ximin[1] < 0.0) ||
+											 (settings->volume_texture->ximin[2] < 0.0) ||
+											 (settings->volume_texture->ximax[0] > 1.0) ||
+											 (settings->volume_texture->ximax[1] > 1.0) ||
+											 (settings->volume_texture->ximax[2] > 1.0)))
+									{
+										/* then must rebuild all graphics */
+										if (settings_to_object_data->existing_graphics)
+										{
+											DESTROY(GT_object)(
+												&(settings_to_object_data->existing_graphics));
+										}
+									}
+									if (settings->seed_element)
+									{
+										return_code = FE_element_to_graphics_object(
+											settings->seed_element, settings_to_object_data_void);
+									}
+									else
+									{
+										return_code = FE_region_for_each_FE_element(fe_region,
+											FE_element_to_graphics_object,
+											settings_to_object_data_void);
+									}
+								} break;
+								case GT_ELEMENT_SETTINGS_STREAMLINES:
+								{
+									/* must always regenerate ALL streamlines since they can cross
+										into other elements */
 									if (settings_to_object_data->existing_graphics)
 									{
 										DESTROY(GT_object)(
 											&(settings_to_object_data->existing_graphics));
 									}
-								}
-								if (settings->seed_element)
+									if (settings->seed_element)
+									{
+										return_code = FE_element_to_graphics_object(
+											settings->seed_element, settings_to_object_data_void);
+									}
+									else if (settings->seed_node_region &&
+										settings->seed_node_coordinate_field)
+									{
+										return_code = FE_region_for_each_FE_node(
+											settings->seed_node_region,
+											GT_element_node_to_streamline, settings_to_object_data_void);
+									}
+									else
+									{
+										return_code = FE_region_for_each_FE_element(fe_region,
+											FE_element_to_graphics_object,
+											settings_to_object_data_void);
+									}
+								} break;
+								default:
 								{
-									return_code = FE_element_to_graphics_object(
-										settings->seed_element, settings_to_object_data_void);
-								}
-								else
-								{
-									return_code = FE_region_for_each_FE_element(fe_region,
-										FE_element_to_graphics_object,
-										settings_to_object_data_void);
-								}
-							} break;
-							case GT_ELEMENT_SETTINGS_STREAMLINES:
+									return_code = 0;
+								} break;
+							} /* end of switch */
+							if (return_code)
 							{
-								/* must always regenerate ALL streamlines since they can cross
-									 into other elements */
-								if (settings_to_object_data->existing_graphics)
+								/* set the spectrum in the graphics object - if required */
+								if ((settings->data_field)||
+									((GT_ELEMENT_SETTINGS_STREAMLINES == settings->settings_type) &&
+										(STREAM_NO_DATA != settings->streamline_data_type)))
 								{
-									DESTROY(GT_object)(
-										&(settings_to_object_data->existing_graphics));
+									set_GT_object_Spectrum(settings->graphics_object,
+										(void *)(settings->spectrum));
 								}
-								if (settings->seed_element)
-								{
-									return_code = FE_element_to_graphics_object(
-										settings->seed_element, settings_to_object_data_void);
-								}
-								else if (settings->seed_node_region &&
-									settings->seed_node_coordinate_field)
-								{
-									return_code = FE_region_for_each_FE_node(
-										settings->seed_node_region,
-										GT_element_node_to_streamline, settings_to_object_data_void);
-								}
-								else
-								{
-									return_code = FE_region_for_each_FE_element(fe_region,
-										FE_element_to_graphics_object,
-										settings_to_object_data_void);
-								}
-							} break;
-							default:
-							{
-								return_code = 0;
-							} break;
-						} /* end of switch */
-						if (return_code)
-						{
-							/* set the spectrum in the graphics object - if required */
-							if ((settings->data_field)||
-								((GT_ELEMENT_SETTINGS_STREAMLINES == settings->settings_type) &&
-									(STREAM_NO_DATA != settings->streamline_data_type)))
-							{
-								set_GT_object_Spectrum(settings->graphics_object,
-									(void *)(settings->spectrum));
+								/* mark display list as needing updating */
+								settings->graphics_changed = 0;
+								GT_object_changed(settings->graphics_object);
 							}
-							/* mark display list as needing updating */
-							settings->graphics_changed = 0;
-							GT_object_changed(settings->graphics_object);
+							else
+							{
+								settings_string = GT_element_settings_string(settings,
+									SETTINGS_STRING_COMPLETE_PLUS);
+								display_message(ERROR_MESSAGE,
+									"GT_element_settings_to_graphics_object.  "
+									"Could not build '%s'",settings_string);
+								DEALLOCATE(settings_string);
+								/* set return_code to 1, so rest of settings can be built */
+								return_code = 1;
+							}
 						}
 						else
 						{
-							settings_string = GT_element_settings_string(settings,
-								SETTINGS_STRING_COMPLETE_PLUS);
 							display_message(ERROR_MESSAGE,
 								"GT_element_settings_to_graphics_object.  "
-								"Could not build '%s'",settings_string);
-							DEALLOCATE(settings_string);
-							/* set return_code to 1, so rest of settings can be built */
-							return_code = 1;
+								"Could not create graphics object");
+							return_code = 0;
+						}
+						if (settings_to_object_data->existing_graphics)
+						{
+							DESTROY(GT_object)(&(settings_to_object_data->existing_graphics));
+						}
+						if (settings->stream_vector_field)
+						{
+							Computed_field_clear_cache(
+								settings_to_object_data->wrapper_stream_vector_field);
+							Computed_field_end_wrap(
+								&(settings_to_object_data->wrapper_stream_vector_field));
+						}
+						if (settings->orientation_scale_field)
+						{
+							Computed_field_end_wrap(
+								&(settings_to_object_data->wrapper_orientation_scale_field));
+						}
+						Computed_field_end_wrap(
+							&(settings_to_object_data->rc_coordinate_field));
+						if (settings->seed_node_coordinate_field)
+						{
+							Computed_field_clear_cache(settings->seed_node_coordinate_field);
 						}
 					}
 					else
 					{
 						display_message(ERROR_MESSAGE,
 							"GT_element_settings_to_graphics_object.  "
-							"Could not create graphics object");
+							"Could not get rc_coordinate_field wrapper");
 						return_code = 0;
 					}
-					if (settings_to_object_data->existing_graphics)
-					{
-						DESTROY(GT_object)(&(settings_to_object_data->existing_graphics));
-					}
-					if (settings->stream_vector_field)
-					{
-						Computed_field_end_wrap(
-							&(settings_to_object_data->wrapper_stream_vector_field));
-					}
-					if (settings->orientation_scale_field)
-					{
-						Computed_field_end_wrap(
-							&(settings_to_object_data->wrapper_orientation_scale_field));
-					}
-					Computed_field_end_wrap(
-						&(settings_to_object_data->rc_coordinate_field));
-				}
-				else
-				{
-					display_message(ERROR_MESSAGE,
-						"GT_element_settings_to_graphics_object.  "
-						"Could not get rc_coordinate_field wrapper");
-					return_code = 0;
-				}
 				}
 			}
 			if (settings->selected_graphics_changed)
