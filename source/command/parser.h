@@ -774,6 +774,16 @@ Adds the given <token> to the <option_table>.  The <vector> is filled in with th
 <number_of_components>.
 ==============================================================================*/
 
+int Option_table_add_float_entry(struct Option_table *option_table,
+	char *token, float *value);
+/*******************************************************************************
+LAST MODIFIED : 28 June 2006
+
+DESCRIPTION :
+Adds the given <token> to the <option_table>.  If the <token> is specified then
+the token following is assigned to <value>.
+==============================================================================*/
+
 int Option_table_add_FE_value_vector_entry(struct Option_table *option_table,
 	char *token, FE_value *vector, int *number_of_components);
 /*******************************************************************************

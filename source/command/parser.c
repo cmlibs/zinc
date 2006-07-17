@@ -5356,6 +5356,35 @@ help mode is entered.
 	return (return_code);
 } /* Option_table_add_int_vector_entry */
 
+int Option_table_add_float_entry(struct Option_table *option_table,
+	char *token, float *value)
+/*******************************************************************************
+LAST MODIFIED : 28 June 2006
+
+DESCRIPTION :
+Adds the given <token> to the <option_table>.  If the <token> is specified then
+the token following is assigned to <value>.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(Option_table_add_float_entry);
+	if (option_table && token && value)
+	{
+		return_code = Option_table_add_entry(option_table, token, (void *)value, NULL,
+			set_float);
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Option_table_add_float_entry.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Option_table_add_float_entry */
+
 int Option_table_add_FE_value_vector_entry(struct Option_table *option_table,
 	char *token, FE_value *vector, int *number_of_components)
 /*******************************************************************************

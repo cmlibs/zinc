@@ -48,6 +48,7 @@ appearance of spectrums.
 #include <stdlib.h>
 #include <stdio.h>
 #include "general/debug.h"
+#include "general/enumerator_private.h"
 #include "general/indexed_list_private.h"
 #include "general/list.h"
 #include "general/compare.h"
@@ -244,6 +245,65 @@ If the settings are of type settings_type, sets settings->settings_changed to 1.
 Global functions
 ----------------
 */
+PROTOTYPE_ENUMERATOR_STRING_FUNCTION(Spectrum_settings_colour_mapping)
+{
+	char *enumerator_string;
+
+	ENTER(ENUMERATOR_STRING(Spectrum_settings_colour_mapping));
+	switch (enumerator_value)
+	{
+		case SPECTRUM_ALPHA:
+		{
+			enumerator_string = "alpha";
+		} break;
+		case SPECTRUM_BANDED:
+		{
+			enumerator_string = "banded";
+		} break;
+		case SPECTRUM_BLUE:
+		{
+			enumerator_string = "blue";
+		} break;
+		case SPECTRUM_GREEN:
+		{
+			enumerator_string = "green";
+		} break;
+		case SPECTRUM_MONOCHROME:
+		{
+			enumerator_string = "monochrome";
+		} break;
+		case SPECTRUM_RAINBOW:
+		{
+			enumerator_string = "rainbow";
+		} break;
+		case SPECTRUM_RED:
+		{
+			enumerator_string = "red";
+		} break;
+		case SPECTRUM_STEP:
+		{
+			enumerator_string = "step";
+		} break;
+		case SPECTRUM_WHITE_TO_BLUE:
+		{
+			enumerator_string = "white_to_blue";
+		} break;
+		case SPECTRUM_WHITE_TO_RED:
+		{
+			enumerator_string = "white_to_red";
+		} break;
+		default:
+		{
+			enumerator_string = (char *)NULL;
+		} break;
+	}
+	LEAVE;
+
+	return (enumerator_string);
+} /* ENUMERATOR_STRING(Spectrum_settings_colour_mapping) */
+
+DEFINE_DEFAULT_ENUMERATOR_FUNCTIONS(Spectrum_settings_colour_mapping)
+
 DECLARE_OBJECT_FUNCTIONS(Spectrum_settings)
 DECLARE_INDEXED_LIST_FUNCTIONS(Spectrum_settings)
 DECLARE_FIND_BY_IDENTIFIER_IN_INDEXED_LIST_FUNCTION(Spectrum_settings, \
@@ -324,8 +384,6 @@ Frees the memory for the fields of <**settings_ptr>, frees the memory for
 			{
 				case SPECTRUM_LINEAR:
 				case SPECTRUM_LOG:
-				case SPECTRUM_BANDED:
-				case SPECTRUM_STEP:
 				{
 					/* Don't need to do anything */
 				} break;
@@ -917,33 +975,17 @@ included in the string. User must remember to DEALLOCATE the name afterwards.
 		{
 			switch (settings->colour_mapping)
 			{
-				case SPECTRUM_RAINBOW:
-				{
-					sprintf(temp_string," rainbow colour_range %g %g",
-						settings->min_value, settings->max_value);
-					append_string(&settings_string,temp_string,&error);	
-				} break;
-				case SPECTRUM_RED:
-				{
-					sprintf(temp_string," red colour_range %g %g",
-						settings->min_value, settings->max_value);
-					append_string(&settings_string,temp_string,&error);	
-				} break;
-				case SPECTRUM_GREEN:
-				{
-					sprintf(temp_string," green colour_range %g %g",
-						settings->min_value, settings->max_value);
-					append_string(&settings_string,temp_string,&error);	
-				} break;
-				case SPECTRUM_BLUE:
-				{
-					sprintf(temp_string," blue colour_range %g %g",
-						settings->min_value, settings->max_value);
-					append_string(&settings_string,temp_string,&error);	
-				} break;
 				case SPECTRUM_ALPHA:
+				case SPECTRUM_BLUE:
+				case SPECTRUM_GREEN:
+				case SPECTRUM_MONOCHROME:
+				case SPECTRUM_RAINBOW:
+				case SPECTRUM_RED:
+				case SPECTRUM_WHITE_TO_BLUE:
+				case SPECTRUM_WHITE_TO_RED:
 				{
-					sprintf(temp_string," alpha colour_range %g %g",
+					sprintf(temp_string," %s colour_range %g %g",
+						ENUMERATOR_STRING(Spectrum_settings_colour_mapping)(settings->colour_mapping),
 						settings->min_value, settings->max_value);
 					append_string(&settings_string,temp_string,&error);	
 				} break;
@@ -959,18 +1001,6 @@ included in the string. User must remember to DEALLOCATE the name afterwards.
 					sprintf(temp_string," step_texture step_value %g",settings->step_value);
 					append_string(&settings_string,temp_string,&error);
 				} break;	
-				case SPECTRUM_WHITE_TO_BLUE:
-				{
-					sprintf(temp_string," white_to_blue colour_range %g %g",
-						settings->min_value, settings->max_value);
-					append_string(&settings_string,temp_string,&error);	
-				} break;	
-				case SPECTRUM_WHITE_TO_RED:
-				{
-					sprintf(temp_string," white_to_red colour_range %g %g",
-						settings->min_value, settings->max_value);
-					append_string(&settings_string,temp_string,&error);	
-				} break;
 			}
 		}
 		if ((SPECTRUM_ALPHA!=settings->colour_mapping)&& 
@@ -2115,6 +2145,7 @@ DESCRIPTION :
 				case SPECTRUM_RAINBOW:
 				case SPECTRUM_RED:
 				case SPECTRUM_GREEN:
+				case SPECTRUM_MONOCHROME:
 				case SPECTRUM_BLUE:	
 				case SPECTRUM_WHITE_TO_BLUE:
 				case SPECTRUM_WHITE_TO_RED:
@@ -2468,6 +2499,7 @@ passed in render data.
 					case SPECTRUM_RAINBOW:
 					case SPECTRUM_RED:
 					case SPECTRUM_GREEN:
+					case SPECTRUM_MONOCHROME:
 					case SPECTRUM_BLUE:	
 					case SPECTRUM_WHITE_TO_BLUE:
 					case SPECTRUM_WHITE_TO_RED:
@@ -2555,7 +2587,12 @@ passed in render data.
 								{
 									colour->blue=value;
 								} break;
-							
+								case SPECTRUM_MONOCHROME:
+								{
+									colour->red=value;
+									colour->green=value;
+									colour->blue=value;
+								} break;							
 								case SPECTRUM_WHITE_TO_BLUE:
 								{
 									colour->blue=1.0;
@@ -2658,6 +2695,7 @@ DESCRIPTION :
 				case SPECTRUM_RAINBOW:
 				case SPECTRUM_RED:
 				case SPECTRUM_GREEN:
+				case SPECTRUM_MONOCHROME:
 				case SPECTRUM_BLUE:
 				case SPECTRUM_ALPHA:
 				case SPECTRUM_WHITE_TO_BLUE:
@@ -2761,56 +2799,15 @@ If return_code is 1, returns the completed Modify_spectrum_data with the
 parsed settings. Note that the settings are ACCESSed once on valid return.
 ==============================================================================*/
 {
-	char alpha,ambient,amb_diff,banded,blue,diffuse,emission,extend_above,
-		extend_below,fix_maximum,fix_minimum,green, rainbow,white_to_blue,
-		white_to_red,red,reverse,specular,step,transparent_above,transparent_below;
+	char ambient,amb_diff,diffuse,emission,extend_above,
+		extend_below,fix_maximum,fix_minimum,reverse,specular,
+		transparent_above,transparent_below;
+	enum Spectrum_settings_colour_mapping colour_mapping;
 	int black_band_int,component,number_of_bands,range_components,return_code;
 	float band_ratio,colour_range[2],step_value,range[2];
 	struct Modify_spectrum_data *modify_spectrum_data;
+	struct Option_table *option_table, *render_option_table;
 	struct Spectrum_settings *settings;
-	static struct Modifier_entry
-		colour_option_table[]=
-	  {
-			{"alpha",NULL,NULL,set_char_flag},
-			{"banded",NULL,NULL,set_char_flag},
-			{"blue",NULL,NULL,set_char_flag},			
-			{"green",NULL,NULL,set_char_flag},
-			{"rainbow",NULL,NULL,set_char_flag},
-			{"red",NULL,NULL,set_char_flag},			
-			{"step_texture",NULL,NULL,set_char_flag},
-			{"white_to_blue",NULL,NULL,set_char_flag},
-			{"white_to_red",NULL,NULL,set_char_flag},					
-			{NULL,NULL,NULL,NULL}			
-		},
-		render_option_table[]=
-	  {
-			{"ambient",NULL,NULL,set_char_flag},
-			{"amb_diff",NULL,NULL,set_char_flag},
-			{"diffuse",NULL,NULL,set_char_flag},
-			{"emission",NULL,NULL,set_char_flag},
-			{"specular",NULL,NULL,set_char_flag},
-			{NULL,NULL,NULL,NULL}
-		},
-		option_table[]=
-		{
-			{"band_ratio",NULL,NULL,set_float},
-			{"colour_range",NULL,NULL,set_float_vector},
-			{"component",NULL,NULL,set_int_positive},
-			{"extend_above",NULL,NULL,set_char_flag},
-			{"extend_below",NULL,NULL,set_char_flag},
-			{"fix_maximum",NULL,NULL,set_char_flag},
-			{"fix_minimum",NULL,NULL,set_char_flag},
-			{"number_of_bands",NULL,NULL,set_int_positive},
-			{"position",NULL,NULL,set_int_non_negative},
-			{"range",NULL,NULL,set_float_vector},
-			{"reverse",NULL,NULL,set_char_flag},
-			{"step_value",NULL,NULL,set_float},
-			{"transparent_above",NULL,NULL,set_char_flag},
-			{"transparent_below",NULL,NULL,set_char_flag},
-			{NULL,NULL,NULL,NULL},
-			{NULL,NULL,NULL,NULL},
-			{NULL,NULL,NULL,NULL}
-		};
 
 	ENTER(gfx_modify_spectrum_settings_linear);
 	USE_PARAMETER(spectrum_command_data_void);
@@ -2827,28 +2824,20 @@ parsed settings. Note that the settings are ACCESSed once on valid return.
 				ACCESS(Spectrum_settings)(modify_spectrum_data->settings);
 
 				Spectrum_settings_set_type(settings,SPECTRUM_LINEAR);
-
-				alpha = 0;
+				
+				colour_mapping = Spectrum_settings_get_colour_mapping(settings);
 				ambient = 0;
 				amb_diff = 0;
-				banded = 0;
 				band_ratio = 0.01;
-				blue = 0;
 				diffuse = 0;
 				emission = 0;
 				extend_above = 0;
 				extend_below = 0;
 				fix_maximum=0;
 				fix_minimum=0;
-				green = 0;
 				number_of_bands = 10;
-				rainbow = 0;
-				white_to_blue = 0;
-				white_to_red = 0;
-				red = 0;
 				reverse = 0;
 				specular = 0;
-				step = 0;
 				step_value = 0.5;
 				transparent_above = 0;
 				transparent_below = 0;
@@ -2859,98 +2848,76 @@ parsed settings. Note that the settings are ACCESSed once on valid return.
 				range[1] = modify_spectrum_data->spectrum_maximum;
 				component = Spectrum_settings_get_component_number(settings);
 
-				(colour_option_table[0]).to_be_modified = &alpha;
-				(colour_option_table[1]).to_be_modified = &banded;
-				(colour_option_table[2]).to_be_modified = &blue;
-				(colour_option_table[3]).to_be_modified = &green;
-				(colour_option_table[4]).to_be_modified = &rainbow;
-				(colour_option_table[5]).to_be_modified = &red;
-				(colour_option_table[6]).to_be_modified = &step;
-				(colour_option_table[7]).to_be_modified = &white_to_blue;
-				(colour_option_table[8]).to_be_modified = &white_to_red;
-				(render_option_table[0]).to_be_modified = &ambient;
-				(render_option_table[1]).to_be_modified = &amb_diff;
-				(render_option_table[2]).to_be_modified = &diffuse;
-				(render_option_table[3]).to_be_modified = &emission;
-				(render_option_table[4]).to_be_modified = &specular;
-				(option_table[0]).to_be_modified = &band_ratio;
-				(option_table[1]).to_be_modified = colour_range;
-				(option_table[1]).user_data = &range_components;
-				(option_table[2]).to_be_modified = &component;
-				(option_table[3]).to_be_modified = &extend_above;
-				(option_table[4]).to_be_modified = &extend_below;
-				(option_table[5]).to_be_modified = &fix_maximum;
-				(option_table[6]).to_be_modified = &fix_minimum;
-				(option_table[7]).to_be_modified = &number_of_bands;
-				(option_table[8]).to_be_modified = &(modify_spectrum_data->position);
-				(option_table[9]).to_be_modified = range;
-				(option_table[9]).user_data = &range_components;
-				(option_table[10]).to_be_modified = &reverse;
-				(option_table[11]).to_be_modified = &step_value;
-				(option_table[12]).to_be_modified = &transparent_above;
-				(option_table[13]).to_be_modified = &transparent_below;
-				(option_table[14]).user_data = colour_option_table;
-				(option_table[15]).user_data = render_option_table;
+				option_table = CREATE(Option_table)();
+				/* band_ratio */
+				Option_table_add_float_entry(option_table, "band_ratio",
+					&band_ratio);
+				/* colour_range */
+				Option_table_add_FE_value_vector_entry(option_table, "colour_range",
+					colour_range, &range_components);
+				/* component */
+				Option_table_add_int_positive_entry(option_table, "component",
+					&component);
+				/* extend_above */
+				Option_table_add_char_flag_entry(option_table, "extend_above",
+					&extend_above);
+				/* extend_below */
+				Option_table_add_char_flag_entry(option_table, "extend_below",
+					&extend_below);
+				/* fix_maximum */
+				Option_table_add_char_flag_entry(option_table, "fix_maximum",
+					&fix_maximum);
+				/* fix_minimum */
+				Option_table_add_char_flag_entry(option_table, "fix_minimum",
+					&fix_minimum);
+				/* number_of_bands */
+				Option_table_add_int_positive_entry(option_table, "number_of_bands",
+					&number_of_bands);
+				/* position */
+				Option_table_add_int_non_negative_entry(option_table, "position",
+					&(modify_spectrum_data->position));
+				/* range */
+				Option_table_add_FE_value_vector_entry(option_table, "range",
+					range, &range_components);
+				/* reverse */
+				Option_table_add_char_flag_entry(option_table, "reverse",
+					&reverse);
+				/* step_value */
+				Option_table_add_float_entry(option_table, "step_value",
+					&step_value);
+				/* transparent_above */
+				Option_table_add_char_flag_entry(option_table, "transparent_above",
+					&transparent_above);
+				/* transparent_below */
+				Option_table_add_char_flag_entry(option_table, "transparent_below",
+					&transparent_below);
+				/* conversion_mode */
+				OPTION_TABLE_ADD_ENUMERATOR(Spectrum_settings_colour_mapping)(
+					option_table, &colour_mapping);
+				/* render_option */
+				render_option_table = CREATE(Option_table)();
+				Option_table_add_char_flag_entry(render_option_table, "ambient",
+					&ambient);
+				Option_table_add_char_flag_entry(render_option_table, "amb_diff",
+					&amb_diff);
+				Option_table_add_char_flag_entry(render_option_table, "diffuse",
+					&diffuse);
+				Option_table_add_char_flag_entry(render_option_table, "emission",
+					&emission);
+				Option_table_add_char_flag_entry(render_option_table, "specular",
+					&specular);
+				Option_table_add_suboption_table(option_table, render_option_table);
 
-				if (!(return_code=process_multiple_options(state,option_table)))
+
+				if (!(return_code=Option_table_multi_parse(option_table,state)))
 				{
 					DEACCESS(Spectrum_settings)(&(modify_spectrum_data->settings));
 				}
+				DESTROY(Option_table)(&option_table);
 				if (return_code)
 				{
-					if (alpha + banded + blue + green + red + rainbow + white_to_blue + white_to_red
-						+ step > 1 )
-					{
-						display_message(ERROR_MESSAGE,"gfx_modify_spectrum_settings_linear.  "
-							"only specify one of alpha, banded, blue, green, red, white_to_blue, "
-							" white_to_red rainbow or step");
-						return_code=0;							
-					}
-					else if (alpha)
-					{
-						Spectrum_settings_set_colour_mapping(settings,
-							SPECTRUM_ALPHA);	
-					}
-					else if (banded)
-					{
-						Spectrum_settings_set_colour_mapping(settings,
-							SPECTRUM_BANDED);	
-					}
-					else if (blue)
-					{
-						Spectrum_settings_set_colour_mapping(settings,
-							SPECTRUM_BLUE);	
-					}
-					else if (green)
-					{
-						Spectrum_settings_set_colour_mapping(settings,
-							SPECTRUM_GREEN);	
-					}
-					else if (red)
-					{
-						Spectrum_settings_set_colour_mapping(settings,
-							SPECTRUM_RED);	
-					}
-					else if (rainbow)
-					{
-						Spectrum_settings_set_colour_mapping(settings,
-							SPECTRUM_RAINBOW);	
-					}	
-					else if (white_to_blue)
-					{
-						Spectrum_settings_set_colour_mapping(settings,
-							SPECTRUM_WHITE_TO_BLUE);	
-					}	
-					else if (white_to_red)
-					{
-						Spectrum_settings_set_colour_mapping(settings,
-							SPECTRUM_WHITE_TO_RED);	
-					}
-					else if (step)
-					{
-						Spectrum_settings_set_colour_mapping(settings,
-							SPECTRUM_STEP);	
-					}
+					Spectrum_settings_set_colour_mapping(settings,
+						colour_mapping);
 				}
 				if ( return_code )
 				{
@@ -3093,59 +3060,15 @@ If return_code is 1, returns the completed Modify_spectrum_data with the
 parsed settings. Note that the settings are ACCESSed once on valid return.
 ==============================================================================*/
 {
-	char alpha,ambient,amb_diff,banded,blue,diffuse,emission,extend_above,
-		extend_below,fix_maximum,fix_minimum,green,left,rainbow,white_to_blue,
-		white_to_red,red,reverse,right,specular,step,transparent_above,transparent_below;
+	char ambient,amb_diff,diffuse,emission,extend_above,
+		extend_below,fix_maximum,fix_minimum,left,reverse,right,
+		specular,transparent_above,transparent_below;
+	enum Spectrum_settings_colour_mapping colour_mapping;
 	int black_band_int,component,number_of_bands,range_components,return_code;
 	float band_ratio,colour_range[2],exaggeration,step_value,range[2];
 	struct Modify_spectrum_data *modify_spectrum_data;
+	struct Option_table *option_table, *render_option_table;
 	struct Spectrum_settings *settings;
-	static struct Modifier_entry
-		colour_option_table[]=
-	  {
-			{"alpha",NULL,NULL,set_char_flag},
-			{"banded",NULL,NULL,set_char_flag},
-			{"blue",NULL,NULL,set_char_flag},
-			{"green",NULL,NULL,set_char_flag},
-			{"rainbow",NULL,NULL,set_char_flag},
-			{"red",NULL,NULL,set_char_flag},			
-			{"step",NULL,NULL,set_char_flag},			
-			{"white_to_blue",NULL,NULL,set_char_flag},
-			{"white_to_red",NULL,NULL,set_char_flag},		
-			{NULL,NULL,NULL,NULL}			
-		},
-		render_option_table[]=
-	  {
-			{"ambient",NULL,NULL,set_char_flag},
-			{"amb_diff",NULL,NULL,set_char_flag},
-			{"diffuse",NULL,NULL,set_char_flag},
-			{"emission",NULL,NULL,set_char_flag},
-			{"specular",NULL,NULL,set_char_flag},
-			{NULL,NULL,NULL,NULL}
-		},
-		option_table[]=
-		{
-			{"band_ratio",NULL,NULL,set_float},
-			{"colour_range",NULL,NULL,set_float_vector},
-			{"component",NULL,NULL,set_int_positive},
-			{"exaggeration",NULL,NULL,set_float},
-			{"extend_above",NULL,NULL,set_char_flag},
-			{"extend_below",NULL,NULL,set_char_flag},
-			{"fix_maximum",NULL,NULL,set_char_flag},
-			{"fix_minimum",NULL,NULL,set_char_flag},
-			{"left",NULL,NULL,set_char_flag},
-			{"number_of_bands",NULL,NULL,set_int_positive},
-			{"position",NULL,NULL,set_int_non_negative},
-			{"range",NULL,NULL,set_float_vector},
-			{"reverse",NULL,NULL,set_char_flag},
-			{"right",NULL,NULL,set_char_flag},
-			{"step_value",NULL,NULL,set_float},
-			{"transparent_above",NULL,NULL,set_char_flag},
-			{"transparent_below",NULL,NULL,set_char_flag},
-			{NULL,NULL,NULL,NULL},
-			{NULL,NULL,NULL,NULL},
-			{NULL,NULL,NULL,NULL}
-		};
 
 	ENTER(gfx_modify_spectrum_settings_log);
 	USE_PARAMETER(spectrum_command_data_void);
@@ -3163,29 +3086,21 @@ parsed settings. Note that the settings are ACCESSed once on valid return.
 
 				Spectrum_settings_set_type(settings,SPECTRUM_LOG);
 
-				alpha = 0;
+				colour_mapping = Spectrum_settings_get_colour_mapping(settings);
 				ambient = 0;
 				amb_diff = 0;
-				banded = 0;
 				band_ratio = 0.01;
-				blue = 0;
 				diffuse = 0;
 				emission = 0;
 				extend_above = 0;
 				extend_below = 0;
 				fix_maximum=0;
 				fix_minimum=0;
-				green = 0;
 				left = 0;
 				number_of_bands = 10;
-				rainbow = 0;
-				white_to_blue = 0;
-				white_to_red = 0;
-				red = 0;
 				reverse = 0;
 				right = 0;
 				specular = 0;
-				step = 0;
 				step_value = 0.5;
 				transparent_above = 0;
 				transparent_below = 0;
@@ -3197,101 +3112,85 @@ parsed settings. Note that the settings are ACCESSed once on valid return.
 				component = Spectrum_settings_get_component_number(settings);
 				exaggeration = Spectrum_settings_get_exaggeration(settings);
 
-				(colour_option_table[0]).to_be_modified = &alpha;
-				(colour_option_table[1]).to_be_modified = &banded;
-				(colour_option_table[2]).to_be_modified = &blue;
-				(colour_option_table[3]).to_be_modified = &green;
-				(colour_option_table[4]).to_be_modified = &rainbow;
-				(colour_option_table[5]).to_be_modified = &red;
-				(colour_option_table[6]).to_be_modified = &step;
-				(colour_option_table[7]).to_be_modified = &white_to_blue;
-				(colour_option_table[8]).to_be_modified = &white_to_red;
-				(render_option_table[0]).to_be_modified = &ambient;
-				(render_option_table[1]).to_be_modified = &amb_diff;
-				(render_option_table[2]).to_be_modified = &diffuse;
-				(render_option_table[3]).to_be_modified = &emission;
-				(render_option_table[4]).to_be_modified = &specular;
-				(option_table[0]).to_be_modified = &band_ratio;
-				(option_table[1]).to_be_modified = colour_range;
-				(option_table[1]).user_data = &range_components;
-				(option_table[2]).to_be_modified = &component;
-				(option_table[3]).to_be_modified = &exaggeration;
-				(option_table[4]).to_be_modified = &extend_above;
-				(option_table[5]).to_be_modified = &extend_below;
-				(option_table[6]).to_be_modified = &fix_maximum;
-				(option_table[7]).to_be_modified = &fix_minimum;
-				(option_table[8]).to_be_modified = &left;
-				(option_table[9]).to_be_modified = &number_of_bands;
-				(option_table[10]).to_be_modified = &(modify_spectrum_data->position);
-				(option_table[11]).to_be_modified = range;
-				(option_table[11]).user_data = &range_components;
-				(option_table[12]).to_be_modified = &reverse;
-				(option_table[13]).to_be_modified = &right;
-				(option_table[14]).to_be_modified = &step_value;
-				(option_table[15]).to_be_modified = &transparent_above;
-				(option_table[16]).to_be_modified = &transparent_below;
-				(option_table[17]).user_data = colour_option_table;
-				(option_table[18]).user_data = render_option_table;
+				option_table = CREATE(Option_table)();
+				/* band_ratio */
+				Option_table_add_float_entry(option_table, "band_ratio",
+					&band_ratio);
+				/* colour_range */
+				Option_table_add_FE_value_vector_entry(option_table, "colour_range",
+					colour_range, &range_components);
+				/* component */
+				Option_table_add_int_positive_entry(option_table, "component",
+					&component);
+				/* exaggeration */
+				Option_table_add_float_entry(option_table, "exaggeration",
+					&exaggeration);
+				/* extend_above */
+				Option_table_add_char_flag_entry(option_table, "extend_above",
+					&extend_above);
+				/* extend_below */
+				Option_table_add_char_flag_entry(option_table, "extend_below",
+					&extend_below);
+				/* fix_maximum */
+				Option_table_add_char_flag_entry(option_table, "fix_maximum",
+					&fix_maximum);
+				/* fix_minimum */
+				Option_table_add_char_flag_entry(option_table, "fix_minimum",
+					&fix_minimum);
+				/* left */
+				Option_table_add_char_flag_entry(option_table, "left",
+					&left);
+				/* number_of_bands */
+				Option_table_add_int_positive_entry(option_table, "number_of_bands",
+					&number_of_bands);
+				/* position */
+				Option_table_add_int_non_negative_entry(option_table, "position",
+					&(modify_spectrum_data->position));
+				/* range */
+				Option_table_add_FE_value_vector_entry(option_table, "range",
+					range, &range_components);
+				/* reverse */
+				Option_table_add_char_flag_entry(option_table, "reverse",
+					&reverse);
+				/* right */
+				Option_table_add_char_flag_entry(option_table, "right",
+					&right);
+				/* step_value */
+				Option_table_add_float_entry(option_table, "step_value",
+					&step_value);
+				/* transparent_above */
+				Option_table_add_char_flag_entry(option_table, "transparent_above",
+					&transparent_above);
+				/* transparent_below */
+				Option_table_add_char_flag_entry(option_table, "transparent_below",
+					&transparent_below);
+				/* conversion_mode */
+				OPTION_TABLE_ADD_ENUMERATOR(Spectrum_settings_colour_mapping)(
+					option_table, &colour_mapping);
+				/* render_option */
+				render_option_table = CREATE(Option_table)();
+				Option_table_add_char_flag_entry(render_option_table, "ambient",
+					&ambient);
+				Option_table_add_char_flag_entry(render_option_table, "amb_diff",
+					&amb_diff);
+				Option_table_add_char_flag_entry(render_option_table, "diffuse",
+					&diffuse);
+				Option_table_add_char_flag_entry(render_option_table, "emission",
+					&emission);
+				Option_table_add_char_flag_entry(render_option_table, "specular",
+					&specular);
+				Option_table_add_suboption_table(option_table, render_option_table);
 
-				if (!(return_code=process_multiple_options(state,option_table)))
+
+				if (!(return_code=Option_table_multi_parse(option_table,state)))
 				{
 					DEACCESS(Spectrum_settings)(&(modify_spectrum_data->settings));
 				}
+				DESTROY(Option_table)(&option_table);
 				if (return_code)
 				{
-					if (alpha + banded + blue + green + red + rainbow + white_to_blue + white_to_red
-						+ step > 1 )
-					{
-						display_message(ERROR_MESSAGE,"gfx_modify_spectrum_settings_log.  "
-							"only specify one of alpha, banded, blue, green, red, rainbow,  "
-							"white_to_blue white_to_red or step");
-						return_code=0;							
-					}
-					else if (alpha)
-					{
-						Spectrum_settings_set_colour_mapping(settings,
-							SPECTRUM_ALPHA);	
-					}
-					else if (banded)
-					{
-						Spectrum_settings_set_colour_mapping(settings,
-							SPECTRUM_BANDED);	
-					}
-					else if (blue)
-					{
-						Spectrum_settings_set_colour_mapping(settings,
-							SPECTRUM_BLUE);	
-					}
-					else if (green)
-					{
-						Spectrum_settings_set_colour_mapping(settings,
-							SPECTRUM_GREEN);	
-					}
-					else if (red)
-					{
-						Spectrum_settings_set_colour_mapping(settings,
-							SPECTRUM_RED);	
-					}
-					else if (rainbow)
-					{
-						Spectrum_settings_set_colour_mapping(settings,
-							SPECTRUM_RAINBOW);	
-					}
-					else if (white_to_blue)
-					{
-						Spectrum_settings_set_colour_mapping(settings,
-							SPECTRUM_WHITE_TO_BLUE);	
-					}	
-					else if (white_to_red)
-					{
-						Spectrum_settings_set_colour_mapping(settings,
-							SPECTRUM_WHITE_TO_RED);	
-					}
-					else if (step)
-					{
-						Spectrum_settings_set_colour_mapping(settings,
-							SPECTRUM_STEP);	
-					}
+					Spectrum_settings_set_colour_mapping(settings,
+						colour_mapping);
 					Spectrum_settings_set_number_of_bands(settings,
 						number_of_bands);
 					black_band_int = (band_ratio * 1000.0 + 0.5);

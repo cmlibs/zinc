@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : spectrum_settings.h
 
-LAST MODIFIED : 14 July 1998
+LAST MODIFIED : 28 June 2006
 
 DESCRIPTION :
 Spectrum_settings structure and routines for describing and manipulating the
@@ -63,18 +63,19 @@ DESCRIPTION :
 
 enum Spectrum_settings_colour_mapping
 /*******************************************************************************
-LAST MODIFIED : 22 September 1998
+LAST MODIFIED : 28 June 2006
 
 DESCRIPTION :
 Map the value into a colour.
 ==============================================================================*/
 {
-	SPECTRUM_RAINBOW,
-	SPECTRUM_RED,
-	SPECTRUM_GREEN,
-	SPECTRUM_BLUE,
 	SPECTRUM_ALPHA,
 	SPECTRUM_BANDED,
+	SPECTRUM_BLUE,
+	SPECTRUM_GREEN,
+	SPECTRUM_MONOCHROME,
+	SPECTRUM_RAINBOW,
+	SPECTRUM_RED,
 	SPECTRUM_STEP,
 	SPECTRUM_WHITE_TO_BLUE,
 	SPECTRUM_WHITE_TO_RED
@@ -173,6 +174,8 @@ Data for formating output with Spectrum_list_contents function.
 Global functions
 ----------------
 */
+PROTOTYPE_ENUMERATOR_FUNCTIONS(Spectrum_settings_colour_mapping);
+
 DECLARE_LIST_TYPES(Spectrum_settings);
 
 PROTOTYPE_OBJECT_FUNCTIONS(Spectrum_settings);
