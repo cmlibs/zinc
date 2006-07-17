@@ -942,19 +942,34 @@ DESCRIPTION :
 							word=strtok(NULL," \n");
 							if (word)
 							{
-								/* Add the voltex we currently have and reset the vertex and triangle lists */
-								if (voltex = CREATE(GT_voltex)(number_of_vertices, vertex_list,
-									number_of_triangles, triangle_list,
-									/*n_data_components*/0, n_texture_coordinates, voltex_type))
+								if (number_of_vertices && vertex_list && 
+									number_of_triangles && triangle_list)
 								{
-									return_code = GT_OBJECT_ADD(GT_voltex)(obj, time, voltex);
+									/* Add the voltex we currently have and reset the vertex and triangle lists */
+									if (voltex = CREATE(GT_voltex)(number_of_vertices, vertex_list,
+											number_of_triangles, triangle_list,
+											/*n_data_components*/0, n_texture_coordinates, voltex_type))
+									{
+										return_code = GT_OBJECT_ADD(GT_voltex)(obj, time, voltex);
+									}
+									else
+									{
+										display_message(ERROR_MESSAGE,
+											"file_read_voltex_graphics_object_from_obj.  "
+											"Unable create GT_voltex when changing material");
+										return_code=0;
+									}
 								}
 								else
 								{
-									display_message(ERROR_MESSAGE,
-										"file_read_voltex_graphics_object_from_obj.  "
-										"Unable create GT_voltex when changing material");
-									return_code=0;
+									if (vertex_list)
+									{
+										DEALLOCATE(vertex_list);
+									}
+									if (triangle_list)
+									{
+										DEALLOCATE(triangle_list);
+									}
 								}
 								number_of_vertices = 0;
 								number_of_triangles = 0;
