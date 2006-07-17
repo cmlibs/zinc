@@ -94,34 +94,6 @@ Module functions
 ----------------
 */
 
-PROTOTYPE_ENUMERATOR_STRING_FUNCTION(Render_to_finite_elements_mode)
-{
-	char *enumerator_string;
-
-	ENTER(ENUMERATOR_STRING(Render_to_finite_elements_mode));
-	switch (enumerator_value)
-	{
-		case RENDER_TO_FINITE_ELEMENTS_LINEAR_PRODUCT:
-		{
-
-			enumerator_string = "render_linear_product_elements";
-		} break;
-		case RENDER_TO_FINITE_ELEMENTS_SURFACE_NODE_CLOUD:
-		{
-			enumerator_string = "render_surface_node_cloud";
-		} break;
-		default:
-		{
-			enumerator_string = (char *)NULL;
-		} break;
-	}
-	LEAVE;
-
-	return (enumerator_string);
-} /* ENUMERATOR_STRING(Render_to_finite_elements_mode) */
-
-DEFINE_DEFAULT_ENUMERATOR_FUNCTIONS(Render_to_finite_elements_mode)
-
 static struct FE_node *FE_region_add_node(struct Render_to_finite_elements_data *data, 
 	FE_value time, float *coordinates)
 /*******************************************************************************
@@ -383,6 +355,230 @@ xi1=0,xi2=0 ; xi1=1,xi2=0 ; xi1=0,xi2=1 ; xi1=1,xi2=1
 	return (return_code);
 } /* FE_region_add_square */
 
+static int FE_region_add_line(struct Render_to_finite_elements_data *data,
+	FE_value time, int number_of_data_components,
+	struct Render_node *node1, struct Render_node *node2)
+/*******************************************************************************
+LAST MODIFIED : 14 July 2006
+
+DESCRIPTION :
+Generates a finite_element representation of the specified line according
+to the <render_mode>
+==============================================================================*/
+{
+	double length, density, expected_number;
+	FE_value position[3], side[3], xi1;
+	int element_number, i, j, number_of_points, return_code;
+	struct FE_element *element;
+
+	ENTER(FE_region_add_line);
+
+	return_code = 0;
+	if (data->fe_region)
+	{
+		switch (data->render_mode)
+		{
+			case RENDER_TO_FINITE_ELEMENTS_SURFACE_NODE_CLOUD:
+			{
+				return_code = 1;
+				for (i = 0 ; i < 3 ; i++)
+				{
+					side[i] = node2->coordinates[i] - node1->coordinates[i];
+				}
+				length = sqrt(side[0] * side[0]
+					+ side[1] * side[1]
+					+ side[2] * side[2]);
+				if (number_of_data_components)
+				{
+					density = (node1->data[0] + node2->data[0]) / 3.0;
+					if (density < 0.0)
+					{
+						density = 0.0;
+					}
+				}
+				else
+				{
+					density = 1.0;
+				}
+				expected_number = length * density;
+				/* get actual_number = sample from Poisson distribution with
+					mean given by expected_number */
+				number_of_points =
+					sample_Poisson_distribution(expected_number);
+				for (j = 0; (j < number_of_points) && return_code; j++)
+				{
+					xi1 = CMGUI_RANDOM(float);
+					for (i = 0 ; i < 3 ; i++)
+					{
+						position[i] = node1->coordinates[i]
+							+ xi1 * side[i];
+					}
+					if (!FE_region_add_node(data, time, position))
+					{
+						return_code = 0;
+					}
+				}
+			} break;
+			case RENDER_TO_FINITE_ELEMENTS_LINEAR_PRODUCT:
+			{
+				if (node1 && node1->fe_node && node2 && node2->fe_node)
+				{
+					element_number = FE_region_get_next_FE_element_identifier(data->fe_region, CM_ELEMENT,
+						data->element_offset);
+					data->element_offset = element_number + 1;
+
+					element = create_FE_element_with_line_shape(element_number, data->fe_region,
+						/*dimension*/1);
+
+					FE_element_define_tensor_product_basis(element, /*dimension*/1,
+						LINEAR_LAGRANGE, data->fe_coordinate_field);
+
+					set_FE_element_node(element, /*Node index*/0, node1->fe_node);
+					set_FE_element_node(element, /*Node index*/1, node2->fe_node);
+							
+					if (!(return_code = FE_region_merge_FE_element_and_faces_and_nodes(data->fe_region, element)))
+					{
+						display_message(ERROR_MESSAGE,"FE_region_add_line.  "
+							"Unable to merge line into fe_region.");
+					}
+				}
+				else
+				{
+					display_message(ERROR_MESSAGE,"FE_region_add_line.  "
+						"Linear product render should have already created the nodes.");
+				}
+			} break;
+			default:
+			{
+				display_message(ERROR_MESSAGE,"FE_region_add_line.  "
+					"Unknown render mode.");
+				return_code = 0;
+			}
+		}
+	}
+	LEAVE;
+
+	return (return_code);
+} /* FE_region_add_line */
+
+static int render_polyline_to_finite_elements(
+	struct Render_to_finite_elements_data *data, FE_value time, 
+	Triple *point_list,
+	int number_of_data_components,GTDATA *data_values,
+	struct Graphical_material *material,struct Spectrum *spectrum,int n_pts,
+	enum GT_polyline_type polyline_type)
+/*******************************************************************************
+LAST MODIFIED : 14 July 2006
+
+DESCRIPTION :
+Writes VRML code to the file handle which represents the given
+continuous polyline. If data or spectrum are NULL they are ignored.  
+==============================================================================*/
+{
+	GTDATA *data_ptr;
+	int i,number_of_points,return_code;
+	struct Render_node *nodes;
+	Triple *triple;
+
+	ENTER(render_polyline_to_finite_elements);
+	if (point_list&&(1<n_pts)&&
+		((g_NO_DATA==number_of_data_components)||(data&&material&&spectrum)))
+	{
+		return_code=1;
+		nodes = (struct Render_node *)NULL;
+		switch (polyline_type)
+		{
+			case g_PLAIN:
+			{
+				number_of_points=n_pts;
+			} break;
+			case g_PLAIN_DISCONTINUOUS:
+			{
+				/* n_pts = number of line segments in this case */
+				number_of_points=2*n_pts;
+			} break;
+			default:
+			{
+				display_message(ERROR_MESSAGE,
+					"render_polyline_to_finite_elements.  Unsupported polyline_type");
+				return_code=0;
+			}
+		}
+		if (return_code)
+		{
+			triple = point_list;
+			data_ptr = data_values;
+			if (ALLOCATE(nodes, struct Render_node, number_of_points))
+			{
+				for (i = 0 ; return_code && (i < number_of_points) ; i++)
+				{
+					if (!(Render_node_create(&nodes[i], data, time, *triple, 
+						 number_of_data_components, data_ptr)))
+					{
+						display_message(ERROR_MESSAGE,
+								"render_voltex_to_finite_elements.  "
+								"Could not set fields at node");
+						return_code = 0;
+					}
+					triple++;
+					if (number_of_data_components)
+					{
+						data_ptr += number_of_data_components;
+					}
+				}
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE,
+					"render_voltex_to_finite_elements.  "
+					"Unable to allocate node array");
+				return_code = 0;
+			}
+		}
+		if (return_code)
+		{
+			switch (polyline_type)
+			{
+				case g_PLAIN:
+				{
+					for (i = 0 ; i < n_pts - 1 ; i++)
+					{
+						FE_region_add_line(data, time, number_of_data_components,
+							&nodes[i], &nodes[i+1]);
+					}
+				} break;
+				case g_PLAIN_DISCONTINUOUS:
+				{
+					for (i=0;i<n_pts;i++)
+					{
+						FE_region_add_line(data, time, number_of_data_components,
+							&nodes[2*i], &nodes[2*i+1]);
+					}
+				} break;
+			}
+		}
+		if (nodes)
+		{
+			DEALLOCATE(nodes);
+		}
+	}
+	else
+	{
+		if (1<n_pts)
+		{
+			display_message(ERROR_MESSAGE,"render_polyline_to_finite_elements.  Invalid argument(s)");
+			return_code=0;
+		}
+		else
+		{
+			return_code=1;
+		}
+	}
+	LEAVE;
+
+	return (return_code);
+} /* render_polyline_to_finite_elements */
+
 static int render_surface_to_finite_elements(
 	struct Render_to_finite_elements_data *data, FE_value time,
 	Triple *surfpts, Triple *normalpts,
@@ -430,6 +626,7 @@ DESCRIPTION :
 		}
 		if (return_code)
 		{
+			nodes = (struct Render_node *)NULL;
 			triple = surfpts;
 			data_ptr = data_values;
 			if (ALLOCATE(nodes, struct Render_node, number_of_points))
@@ -613,8 +810,8 @@ DESCRIPTION :
 	struct GT_glyph_set *interpolate_glyph_set,*glyph_set,*glyph_set_2;
 	struct GT_point *point;
 	struct GT_pointset *interpolate_point_set,*point_set,*point_set_2;
-	struct GT_polyline *interpolate_line,*line,*line_2;
 #endif /* defined (NEW_CODE) */
+	struct GT_polyline *interpolate_line,*line,*line_2;
 	struct GT_surface *interpolate_surface,*surface,*surface_2;
 	struct GT_voltex *voltex;
 	union GT_primitive_list *primitive_list1, *primitive_list2;
@@ -808,6 +1005,7 @@ DESCRIPTION :
 						return_code=0;
 					}
 				} break;
+#endif /* defined (OLD_CODE) */
 				case g_POLYLINE:
 				{
 					if (line = primitive_list1->gt_polyline.first)
@@ -820,7 +1018,8 @@ DESCRIPTION :
 								if (interpolate_line=
 									morph_GT_polyline(proportion,line,line_2))
 								{
-									draw_polyline_vrml(vrml_file,interpolate_line->pointlist,
+									render_polyline_to_finite_elements(data, time,
+										interpolate_line->pointlist,
 										interpolate_line->n_data_components,interpolate_line->data,
 										object->default_material,object->spectrum,
 										interpolate_line->n_pts,interpolate_line->polyline_type);
@@ -834,7 +1033,8 @@ DESCRIPTION :
 						{
 							while (line)
 							{
-								draw_polyline_vrml(vrml_file,line->pointlist,
+								render_polyline_to_finite_elements(data, time,
+									line->pointlist,
 									line->n_data_components,line->data,
 									object->default_material,object->spectrum,
 									line->n_pts,line->polyline_type);
@@ -849,7 +1049,6 @@ DESCRIPTION :
 						return_code=0;
 					}
 				} break;
-#endif /* defined (OLD_CODE) */
 				case g_SURFACE:
 				{
 					if (surface = primitive_list1->gt_surface.first)
@@ -953,13 +1152,13 @@ DESCRIPTION :
 		{
 			case g_VOLTEX:
 			case g_SURFACE:
+			case g_POLYLINE:
 			{
 				return_code = Graphics_object_render_to_finite_elements(gt_object,
 					time, data);
 			} break;
 			case g_POINT:
 			case g_POINTSET:
-			case g_POLYLINE:
 			case g_GLYPH_SET:
 			default:
 			{
@@ -984,6 +1183,35 @@ DESCRIPTION :
 Global functions
 ----------------
 */
+
+PROTOTYPE_ENUMERATOR_STRING_FUNCTION(Render_to_finite_elements_mode)
+{
+	char *enumerator_string;
+
+	ENTER(ENUMERATOR_STRING(Render_to_finite_elements_mode));
+	switch (enumerator_value)
+	{
+		case RENDER_TO_FINITE_ELEMENTS_LINEAR_PRODUCT:
+		{
+
+			enumerator_string = "render_linear_product_elements";
+		} break;
+		case RENDER_TO_FINITE_ELEMENTS_SURFACE_NODE_CLOUD:
+		{
+			enumerator_string = "render_surface_node_cloud";
+		} break;
+		default:
+		{
+			enumerator_string = (char *)NULL;
+		} break;
+	}
+	LEAVE;
+
+	return (enumerator_string);
+} /* ENUMERATOR_STRING(Render_to_finite_elements_mode) */
+
+DEFINE_DEFAULT_ENUMERATOR_FUNCTIONS(Render_to_finite_elements_mode)
+
 int render_to_finite_elements(struct Scene *scene, struct FE_region *fe_region,
 	enum Render_to_finite_elements_mode render_mode, 
 	struct Computed_field *coordinate_field)
