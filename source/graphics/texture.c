@@ -2930,7 +2930,7 @@ positive. Cropping is not available in the depth direction.
 	int bytes_per_pixel, dimension, padded_width_bytes,
 		texture_bottom, texture_left,
 		image_height, image_width, k, number_of_bytes_per_component,
-		number_of_components, number_of_images, image_padding_bytes,
+		number_of_components, number_of_images,
 		return_code, texture_depth, texture_height, texture_width;
 	unsigned char *texture_image;
 	unsigned char *destination;
@@ -3014,8 +3014,6 @@ positive. Cropping is not available in the depth direction.
 			bytes_per_pixel = number_of_components * number_of_bytes_per_component;
 			padded_width_bytes =
 				4*((texture_width*bytes_per_pixel + 3)/4);
-			image_padding_bytes =
-				padded_width_bytes*(texture_height - texture_height);
 			if (ALLOCATE(texture_image, unsigned char,
 				texture_depth*texture_height*padded_width_bytes))
 			{
@@ -3028,12 +3026,6 @@ positive. Cropping is not available in the depth direction.
 						padded_width_bytes, /*number_of_fill_bytes*/1, &fill_byte,
 						destination);
 					destination += padded_width_bytes * texture_height;
-					if (0 < image_padding_bytes)
-					{
-						/* fill the padding rows of the image */
-						memset(destination, fill_byte, image_padding_bytes);
-						destination += image_padding_bytes;
-					}
 				}
 
 				/* assign values in the texture */
@@ -3183,7 +3175,7 @@ Adds <cmgui_image> into <texture> making a 3D image from 2D images.
 	int bytes_per_pixel, dimension, texture_bottom,
 		texture_left, i, image_height, image_width, k, number_of_bytes_per_component,
 		number_of_components, number_of_images, return_code;
-	long int padded_width_bytes, image_padding_bytes,
+	long int padded_width_bytes,
 		texture_depth, texture_height, texture_width;
 	unsigned char *texture_image;
 	unsigned char *destination;
@@ -3263,8 +3255,6 @@ Adds <cmgui_image> into <texture> making a 3D image from 2D images.
 			bytes_per_pixel = number_of_components * number_of_bytes_per_component;
 			padded_width_bytes =
 				4*((texture_width*bytes_per_pixel + 3)/4);
-			image_padding_bytes =
-				padded_width_bytes*(texture_height - texture_height);
 			if (REALLOCATE(texture_image, texture->image, unsigned char,
 					texture_depth*texture_height*
 					padded_width_bytes))
@@ -3282,12 +3272,6 @@ Adds <cmgui_image> into <texture> making a 3D image from 2D images.
 						destination);
 					i++;
 					destination += padded_width_bytes * texture_height;
-					if (0 < image_padding_bytes)
-					{
-						/* fill the padding rows of the image */
-						memset(destination, fill_byte, image_padding_bytes);
-						destination += image_padding_bytes;
-					}
 				}
 				if (texture_depth < texture_depth)
 				{
@@ -3858,7 +3842,14 @@ is constant from the half texel location to the edge.
 										local_xi[i] = 0.0;
 									}
 								}
-								offset *= (long int)size[i];
+								if (i == 0)
+								{
+									offset = row_width_bytes;
+								}
+								else
+								{
+									offset *= (long int)size[i];
+								}
 							}
 						} break;
 						case TEXTURE_REPEAT_WRAP:
@@ -3887,7 +3878,14 @@ is constant from the half texel location to the edge.
 										local_xi[i] = v - max_v;
 									}
 								}
-								offset *= (long int)size[i];
+								if (i == 0)
+								{
+									offset = row_width_bytes;
+								}
+								else
+								{
+									offset *= (long int)size[i];
+								}
 							}
 						} break;
 					}
