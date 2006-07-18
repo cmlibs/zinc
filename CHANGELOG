@@ -1,7 +1,7 @@
 # **************************************************************************
 # FILE : CHANGELOG
 #
-# LAST MODIFIED : 27 June 2006
+# LAST MODIFIED : 18 July 2006
 # ==========================================================================
 
 This software is the cmgui part of CMISS.
@@ -10,11 +10,23 @@ It is released under the Mozilla Public License v1.1
 Further information, help pages, a tracker and a wiki is available at 
 http://www.cmiss.org/cmgui/
 
+v2.2.2
+Support the OpenGL extension GL_ARB_texture_non_power_of_two and delay the 
+expansion of textures that are not power of two till render time so it can be
+avoided when not required.
+Add support for conversion of lines (isolines) to node points in "gfx convert graphics".
+Fix for reading in of wavefront obj files.
+
 v2.2.1
 Added node_offset/data_offset to gfx read nodes and data respectively.
 Added node_offset, element_offset, face_offset and line offset to gfx read elements.
 Added generate_faces_and_lines to gfx read elements.
-Calcaulate winding order left or right handed at element centres for isosurfaces.
+Calculate winding order left or right handed at element centres for isosurfaces.
+Added string_constant computed field.
+Change equal_to computed_field so that it can operate on string values if either
+field is defined but does not have numerical components.
+Use CMISS_EXAMPLES environment variable to determine where the example tree is
+rather than the Cmgui motif/X setting file.
 v2.2
 Removed computed variables by default.  To put it back in change USE_COMPUTED_VARIABLES to true in the makefile or by specifying it on the make command line.
 Added new texture wrap modes edge_clamp_wrap, border_clamp_wrap and
