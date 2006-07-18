@@ -874,6 +874,27 @@ the extensions succeed, false if not.
 			}
 		}
 #endif /* GL_ARB_texture_compression */
+#if defined GL_ARB_texture_non_power_of_two
+		else if (!strcmp(extension_name, "GL_ARB_texture_non_power_of_two"))
+		{
+			if (255 != GLEXTENSIONFLAG(GL_ARB_texture_non_power_of_two))
+			{
+				return_code = GLEXTENSIONFLAG(GL_ARB_texture_non_power_of_two);
+			}
+			else
+			{
+				if (query_gl_extension(extension_name))
+				{
+					return_code = 1;
+				}
+				else
+				{
+					return_code = 0;
+				}
+				GLEXTENSIONFLAG(GL_ARB_texture_non_power_of_two) = return_code;
+			}
+		}
+#endif /* GL_ARB_texture_non_power_of_two */
 #if defined GL_ARB_texture_rectangle
 		else if (!strcmp(extension_name, "GL_ARB_texture_rectangle"))
 		{

@@ -876,6 +876,140 @@ currently implemented for the expensive linear filter.
 #endif /* defined (OPENGL_API) */
 
 #if defined (OPENGL_API)
+static int Texture_expand_to_power_of_two(struct Texture *texture)
+/*******************************************************************************
+LAST MODIFIED : 18 July 2006
+
+DESCRIPTION :
+To support older OpenGL implementations we need to be able to resize texture
+storage to power of two size in each direction.
+==============================================================================*/
+{
+	static unsigned char fill_byte = 0;
+	int bytes_per_pixel, k, j, number_of_components, original_padded_width_bytes, 
+		padded_width_bytes, return_code, width, height, depth;
+	unsigned char *destination, *source, *texture_image;
+
+	ENTER(Texture_expand_to_power_of_two);
+	if (texture && (number_of_components =
+			Texture_storage_type_get_number_of_components(texture->storage)))
+	{
+		return_code = 1;
+		/* Must expand texture to be a power of two */
+		width = 1;
+		while (width < texture->width_texels)
+		{
+			width *= 2;
+		}
+		/* ensure height is a power of 2 */
+		height = 1;
+		while (height < texture->height_texels)
+		{
+			height *= 2;
+		}
+		/* ensure depth is a power of 2 */
+		depth = 1;
+		while (depth < texture->depth_texels)
+		{
+			depth *= 2;
+		}
+		if ((width != texture->width_texels) ||
+			(height != texture->height_texels) ||
+			(depth != texture->depth_texels))
+		{
+			switch (texture->dimension)
+			{
+				case 1:
+				{
+					display_message(WARNING_MESSAGE,
+						"image width is not a power of 2.  "
+						"Extending (%d) to (%d)", texture->width_texels, width);
+				} break;
+				case 2:
+				{
+					display_message(WARNING_MESSAGE,
+						"image width and/or height not powers of 2.  "
+						"Extending (%d,%d) to (%d,%d)",
+						texture->width_texels, texture->height_texels,
+						width, height);
+				} break;
+				case 3:
+				{
+					display_message(WARNING_MESSAGE,
+						"image width, height and/or depth not powers of 2.  "
+						"Extending (%d,%d,%d) to (%d,%d,%d)",
+						texture->width_texels, texture->height_texels, texture->depth_texels,
+						width, height, depth);
+				} break;
+			}
+			bytes_per_pixel = number_of_components * texture->number_of_bytes_per_component;
+			original_padded_width_bytes = 4*((texture->width_texels*bytes_per_pixel + 3)/4);
+			padded_width_bytes = 4*((width*bytes_per_pixel + 3)/4);
+			if (REALLOCATE(texture_image, texture->image, unsigned char,
+					depth*height*padded_width_bytes))
+			{
+				source = texture_image + original_padded_width_bytes * 
+					texture->height_texels * texture->depth_texels;
+				
+				destination = texture_image + padded_width_bytes *
+					height * depth;
+
+				/* Start at the end to try and reduce overlaps */
+				if (depth > texture->depth_texels)
+				{
+					destination -= padded_width_bytes * height * 
+						(depth - texture->depth_texels);
+					memset(destination, fill_byte, 
+						padded_width_bytes * height * 
+						(depth - texture->depth_texels));
+				}
+				for (k = texture->depth_texels - 1; k >= 0 ; k--)
+				{
+					if (height > texture->height_texels)
+					{
+						destination -= padded_width_bytes * 
+							(height - texture->height_texels);
+						memset(destination, fill_byte, 
+							padded_width_bytes * (height - texture->height_texels));
+					}
+
+					for (j = texture->height_texels - 1; j >= 0 ; j--)
+					{
+						source -= original_padded_width_bytes;
+						destination -= padded_width_bytes;
+					
+						/* Use memmove as we may be overlapping */
+						memmove(destination, source, original_padded_width_bytes); 
+
+						if (padded_width_bytes > original_padded_width_bytes)
+						{
+							/* Set the rest of the row to empty */
+							memset(destination + original_padded_width_bytes, 
+								fill_byte, padded_width_bytes - original_padded_width_bytes);
+						}
+					}
+				}
+
+				texture->image = texture_image;
+				texture->width_texels = width;
+				texture->height_texels = height;
+				texture->depth_texels = depth;
+			}
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Texture_expand_to_power_of_two.  Missing texture");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Texture_expand_to_power_of_two */
+#endif /* defined (OPENGL_API)*/
+
+#if defined (OPENGL_API)
 static int direct_render_Texture(struct Texture *texture)
 /*******************************************************************************
 LAST MODIFIED : 22 March 2005
@@ -1007,6 +1141,15 @@ Directly outputs the commands setting up the <texture>.
 			} break;
 			default:
 			{
+#if defined (GL_ARB_texture_non_power_of_two)
+				if (!Graphics_library_check_extension(GL_ARB_texture_non_power_of_two))
+				{
+#endif /* defined (GL_ARB_texture_non_power_of_two) */
+					Texture_expand_to_power_of_two(texture);
+#if defined (GL_ARB_texture_non_power_of_two)
+				}
+#endif /* defined (GL_ARB_texture_non_power_of_two) */
+
 				/* make each row of the image start on a 4-byte boundary */
 				glPixelStorei(GL_UNPACK_ALIGNMENT, 4);
 				Texture_get_type_and_format_from_storage_type(texture->storage,
@@ -2606,7 +2749,7 @@ Crop and other parameters are cleared.
 ==============================================================================*/
 {
 	int bytes_per_pixel, dimension, padded_width_bytes, number_of_components,
-		return_code, texture_depth, texture_height, texture_width;
+		return_code;
 	unsigned char *texture_image;
 
 	ENTER(Texture_allocate_image);
@@ -2616,29 +2759,11 @@ Crop and other parameters are cleared.
 		((1 == number_of_bytes_per_component) ||
 			(2 == number_of_bytes_per_component)))
 	{
-		/* ensure width is a power of 2 */
-		texture_width = 1;
-		while (texture_width < width)
-		{
-			texture_width *= 2;
-		}
-		/* ensure height is a power of 2 */
-		texture_height = 1;
-		while (texture_height < height)
-		{
-			texture_height *= 2;
-		}
-		/* ensure depth is a power of 2 */
-		texture_depth = 1;
-		while (texture_depth < depth)
-		{
-			texture_depth *= 2;
-		}
-		if (1 < texture_depth)
+		if (1 < depth)
 		{
 			dimension = 3;
 		}
-		else if (1 < texture_height)
+		else if (1 < height)
 		{
 			dimension = 2;
 		}
@@ -2646,43 +2771,15 @@ Crop and other parameters are cleared.
 		{
 			dimension = 1;
 		}
-		if ((width != texture_width) ||
-			(height != texture_height) ||
-			(depth != texture_depth))
-		{
-			switch (dimension)
-			{
-				case 1:
-				{
-					display_message(WARNING_MESSAGE,
-						"image width is not a power of 2.  "
-						"Extending (%d) to (%d)", width, texture_width);
-				} break;
-				case 2:
-				{
-					display_message(WARNING_MESSAGE,
-						"image width and/or height not powers of 2.  "
-						"Extending (%d,%d) to (%d,%d)", width, height,
-						texture_width, texture_height);
-				} break;
-				case 3:
-				{
-					display_message(WARNING_MESSAGE,
-						"image width, height and/or depth not powers of 2.  "
-						"Extending (%d,%d,%d) to (%d,%d,%d)", width, height, depth,
-						texture_width, texture_height, texture_depth);
-				} break;
-			}
-		}
 		bytes_per_pixel = number_of_components * number_of_bytes_per_component;
-		padded_width_bytes = 4*((texture_width*bytes_per_pixel + 3)/4);
+		padded_width_bytes = 4*((width*bytes_per_pixel + 3)/4);
 		/* reallocate existing texture image to save effort */
 		if (REALLOCATE(texture_image, texture->image, unsigned char,
-			texture_depth*texture_height*padded_width_bytes))
+			depth*height*padded_width_bytes))
 		{
 			texture->image = texture_image;
 			/* fill the image with zeros */
-			memset(texture_image, 0, texture_depth*texture_height*padded_width_bytes);
+			memset(texture_image, 0, depth*height*padded_width_bytes);
 			/* assign values in the texture */
 			texture->dimension = dimension;
 			texture->storage = storage;
@@ -2692,9 +2789,9 @@ Crop and other parameters are cleared.
 			texture->original_width_texels = width;
 			texture->original_height_texels = height;
 			texture->original_depth_texels = depth;
-			texture->width_texels = texture_width;
-			texture->height_texels = texture_height;
-			texture->depth_texels = texture_depth;
+			texture->width_texels = width;
+			texture->height_texels = height;
+			texture->depth_texels = depth;
 			if (texture->image_file_name)
 			{
 				DEALLOCATE(texture->image_file_name);
@@ -2831,7 +2928,7 @@ positive. Cropping is not available in the depth direction.
 	static unsigned char fill_byte = 0;
 	enum Texture_storage_type storage;
 	int bytes_per_pixel, dimension, padded_width_bytes,
-		final_bottom, final_depth, final_height, final_left, final_width,
+		texture_bottom, texture_left,
 		image_height, image_width, k, number_of_bytes_per_component,
 		number_of_components, number_of_images, image_padding_bytes,
 		return_code, texture_depth, texture_height, texture_width;
@@ -2852,20 +2949,20 @@ positive. Cropping is not available in the depth direction.
 		if ((0 == crop_left) && (0 == crop_width) &&
 			(0 == crop_bottom) && (0 == crop_height))
 		{
-			final_width = image_width;
-			final_height = image_height;
-			final_left = 0;
-			final_bottom = 0;
+			texture_width = image_width;
+			texture_height = image_height;
+			texture_left = 0;
+			texture_bottom = 0;
 		}
 		else if ((0 <= crop_left) && (0 < crop_width) &&
 			(crop_left + crop_width <= image_width) &&
 			(0 <= crop_bottom) && (0 < crop_height) &&
 			(crop_bottom + crop_height <= image_height))
 		{
-			final_width = crop_width;
-			final_height = crop_height;
-			final_left = crop_left;
-			final_bottom = crop_bottom;
+			texture_width = crop_width;
+			texture_height = crop_height;
+			texture_left = crop_left;
+			texture_bottom = crop_bottom;
 		}
 		else
 		{
@@ -2873,7 +2970,7 @@ positive. Cropping is not available in the depth direction.
 				"Texture_set_image.  Invalid cropping parameters");
 			return_code = 0;
 		}
-		final_depth = number_of_images;
+		texture_depth = number_of_images;
 		switch (number_of_components)
 		{
 			case 1:
@@ -2901,24 +2998,6 @@ positive. Cropping is not available in the depth direction.
 		}
 		if (return_code)
 		{
-			/* ensure width is a power of 2 */
-			texture_width = 1;
-			while (texture_width < final_width)
-			{
-				texture_width *= 2;
-			}
-			/* ensure height is a power of 2 */
-			texture_height = 1;
-			while (texture_height < final_height)
-			{
-				texture_height *= 2;
-			}
-			/* ensure depth is a power of 2 */
-			texture_depth = 1;
-			while (texture_depth < final_depth)
-			{
-				texture_depth *= 2;
-			}
 			if (1 < texture_depth)
 			{
 				dimension = 3;
@@ -2931,64 +3010,30 @@ positive. Cropping is not available in the depth direction.
 			{
 				dimension = 1;
 			}
-			if ((final_width != texture_width) ||
-				(final_height != texture_height) ||
-				(final_depth != texture_depth))
-			{
-				switch (dimension)
-				{
-					case 1:
-					{
-						display_message(WARNING_MESSAGE,
-							"image width is not a power of 2.  "
-							"Extending (%d) to (%d)", final_width, texture_width);
-					} break;
-					case 2:
-					{
-						display_message(WARNING_MESSAGE,
-							"image width and/or height not powers of 2.  "
-							"Extending (%d,%d) to (%d,%d)",final_width, final_height,
-							texture_width, texture_height);
-					} break;
-					case 3:
-					{
-						display_message(WARNING_MESSAGE,
-							"image width, height and/or depth not powers of 2.  "
-							"Extending (%d,%d,%d) to (%d,%d,%d)",
-							final_width, final_height, final_depth,
-							texture_width, texture_height, texture_depth);
-					} break;
-				}
-			}
 			/* ensure texture images are row aligned to 4-byte boundary */
 			bytes_per_pixel = number_of_components * number_of_bytes_per_component;
 			padded_width_bytes =
 				4*((texture_width*bytes_per_pixel + 3)/4);
 			image_padding_bytes =
-				padded_width_bytes*(texture_height - final_height);
+				padded_width_bytes*(texture_height - texture_height);
 			if (ALLOCATE(texture_image, unsigned char,
 				texture_depth*texture_height*padded_width_bytes))
 			{
 				destination = texture_image;
-				for (k = 0; (k < final_depth) && return_code; k++)
+				for (k = 0; (k < texture_depth) && return_code; k++)
 				{
 					/* fill image from bottom to top */
 					return_code = Cmgui_image_dispatch(cmgui_image, /*image_number*/k,
-						final_left, final_bottom, final_width, final_height,
+						texture_left, texture_bottom, texture_width, texture_height,
 						padded_width_bytes, /*number_of_fill_bytes*/1, &fill_byte,
 						destination);
-					destination += padded_width_bytes * final_height;
+					destination += padded_width_bytes * texture_height;
 					if (0 < image_padding_bytes)
 					{
 						/* fill the padding rows of the image */
 						memset(destination, fill_byte, image_padding_bytes);
 						destination += image_padding_bytes;
 					}
-				}
-				if (final_depth < texture_depth)
-				{
-					memset(destination, fill_byte, padded_width_bytes *
-						texture_height * (texture_depth - final_depth));
 				}
 
 				/* assign values in the texture */
@@ -2997,9 +3042,9 @@ positive. Cropping is not available in the depth direction.
 				texture->number_of_bytes_per_component =
 					number_of_bytes_per_component;
 				/* original size is intended to specify useful part of texture */
-				texture->original_width_texels = final_width;
-				texture->original_height_texels = final_height;
-				texture->original_depth_texels = final_depth;
+				texture->original_width_texels = texture_width;
+				texture->original_height_texels = texture_height;
+				texture->original_depth_texels = texture_depth;
 				texture->width_texels = texture_width;
 				texture->height_texels = texture_height;
 				texture->depth_texels = texture_depth;
@@ -3135,10 +3180,10 @@ Adds <cmgui_image> into <texture> making a 3D image from 2D images.
 ==============================================================================*/
 {
 	static unsigned char fill_byte = 0;
-	int bytes_per_pixel, dimension, final_bottom, final_height, 
-		final_left, final_width, i, image_height, image_width, k, number_of_bytes_per_component,
+	int bytes_per_pixel, dimension, texture_bottom,
+		texture_left, i, image_height, image_width, k, number_of_bytes_per_component,
 		number_of_components, number_of_images, return_code;
-	long int final_depth, padded_width_bytes, image_padding_bytes,
+	long int padded_width_bytes, image_padding_bytes,
 		texture_depth, texture_height, texture_width;
 	unsigned char *texture_image;
 	unsigned char *destination;
@@ -3157,20 +3202,20 @@ Adds <cmgui_image> into <texture> making a 3D image from 2D images.
 		if ((0 == crop_left) && (0 == crop_width) &&
 			(0 == crop_bottom) && (0 == crop_height))
 		{
-			final_width = image_width;
-			final_height = image_height;
-			final_left = 0;
-			final_bottom = 0;
+			texture_width = image_width;
+			texture_height = image_height;
+			texture_left = 0;
+			texture_bottom = 0;
 		}
 		else if ((0 <= crop_left) && (0 < crop_width) &&
 			(crop_left + crop_width <= image_width) &&
 			(0 <= crop_bottom) && (0 < crop_height) &&
 			(crop_bottom + crop_height <= image_height))
 		{
-			final_width = crop_width;
-			final_height = crop_height;
-			final_left = crop_left;
-			final_bottom = crop_bottom;
+			texture_width = crop_width;
+			texture_height = crop_height;
+			texture_left = crop_left;
+			texture_bottom = crop_bottom;
 		}
 		else
 		{
@@ -3178,7 +3223,7 @@ Adds <cmgui_image> into <texture> making a 3D image from 2D images.
 				"Texture_add_image.  Invalid cropping parameters");
 			return_code = 0;
 		}
-		final_depth = number_of_images + texture->original_depth_texels;
+		texture_depth = number_of_images + texture->original_depth_texels;
 		if (number_of_components != Texture_storage_type_get_number_of_components
 			(texture->storage))
 		{
@@ -3186,13 +3231,13 @@ Adds <cmgui_image> into <texture> making a 3D image from 2D images.
 				"Number of components in new images are not consistent with existing texture.");
 			return_code = 0;
 		}
-		if (final_width != texture->original_width_texels)
+		if (texture_width != texture->original_width_texels)
 		{
 			display_message(ERROR_MESSAGE, "Texture_add_image.  "
 				"Width of new images are not consistent with existing texture.");
 			return_code = 0;
 		}
-		if (final_height != texture->original_height_texels)
+		if (texture_height != texture->original_height_texels)
 		{
 			display_message(ERROR_MESSAGE, "Texture_add_image.  "
 				"Height of new images are not consistent with existing texture.");
@@ -3202,12 +3247,6 @@ Adds <cmgui_image> into <texture> making a 3D image from 2D images.
 		{
 			texture_width = texture->width_texels;
 			texture_height = texture->height_texels;
-			/* ensure depth is a power of 2 */
-			texture_depth = 1;
-			while (texture_depth < final_depth)
-			{
-				texture_depth *= 2;
-			}
 			if (1 < texture_depth)
 			{
 				dimension = 3;
@@ -3225,7 +3264,7 @@ Adds <cmgui_image> into <texture> making a 3D image from 2D images.
 			padded_width_bytes =
 				4*((texture_width*bytes_per_pixel + 3)/4);
 			image_padding_bytes =
-				padded_width_bytes*(texture_height - final_height);
+				padded_width_bytes*(texture_height - texture_height);
 			if (REALLOCATE(texture_image, texture->image, unsigned char,
 					texture_depth*texture_height*
 					padded_width_bytes))
@@ -3234,15 +3273,15 @@ Adds <cmgui_image> into <texture> making a 3D image from 2D images.
 					padded_width_bytes * texture_height;
 				i = 0;
 				for (k = texture->original_depth_texels ;
-					  (k < final_depth) && return_code; k++)
+					  (k < texture_depth) && return_code; k++)
 				{
 					/* fill image from bottom to top */
 					return_code = Cmgui_image_dispatch(cmgui_image, /*image_number*/i,
-						final_left, final_bottom, final_width, final_height,
+						texture_left, texture_bottom, texture_width, texture_height,
 						padded_width_bytes, /*number_of_fill_bytes*/1, &fill_byte,
 						destination);
 					i++;
-					destination += padded_width_bytes * final_height;
+					destination += padded_width_bytes * texture_height;
 					if (0 < image_padding_bytes)
 					{
 						/* fill the padding rows of the image */
@@ -3250,19 +3289,19 @@ Adds <cmgui_image> into <texture> making a 3D image from 2D images.
 						destination += image_padding_bytes;
 					}
 				}
-				if (final_depth < texture_depth)
+				if (texture_depth < texture_depth)
 				{
 					memset(destination, fill_byte, padded_width_bytes *
-						texture_height * (texture_depth - final_depth));
+						texture_height * (texture_depth - texture_depth));
 				}
 
 				/* assign values in the texture */
 				texture->image = texture_image;
 				texture->dimension = dimension;
 				/* original size is intended to specify useful part of texture */
-				texture->original_width_texels = final_width;
-				texture->original_height_texels = final_height;
-				texture->original_depth_texels = final_depth;
+				texture->original_width_texels = texture_width;
+				texture->original_height_texels = texture_height;
+				texture->original_depth_texels = texture_depth;
 				texture->width_texels = texture_width;
 				texture->height_texels = texture_height;
 				texture->depth_texels = texture_depth;

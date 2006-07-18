@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : graphics_library.h
 
-LAST MODIFIED : 12 September 2002
+LAST MODIFIED : 17 July 2006
 
 DESCRIPTION :
 Functions and structures for interfacing with the graphics library.
@@ -274,6 +274,9 @@ the extensions succeed, false if not.
 #if defined (GL_ARB_fragment_program_shadow)
   GRAPHICS_LIBRARY_INITIALISE_GLEXTENSIONFLAG(GL_ARB_fragment_program_shadow);
 #endif /* defined (GL_ARB_fragment_program_shadow) */
+#if defined (GL_ARB_texture_non_power_of_two)
+  GRAPHICS_LIBRARY_INITIALISE_GLEXTENSIONFLAG(GL_ARB_texture_non_power_of_two);
+#endif /* defined (GL_ARB_texture_non_power_of_two) */
 #if defined (GL_ARB_texture_rectangle)
   GRAPHICS_LIBRARY_INITIALISE_GLEXTENSIONFLAG(GL_ARB_texture_rectangle);
 #endif /* defined (GL_ARB_texture_rectangle) */
