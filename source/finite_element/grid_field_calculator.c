@@ -604,7 +604,7 @@ Sets the dialog to look at <grid_field>. Establishes coordinate_field
 {
 	char *curve_name,*field_name;
 	FE_value value;
-	int axis,return_code;
+	int axis, integration_magnitude_coordinates, return_code;
 	struct Computed_field *coordinate_field, *grid_field, *integration_integrand,
 		*integration_coordinate_field;
 	struct Control_curve *constant_1_curve,*curve;
@@ -625,7 +625,8 @@ Sets the dialog to look at <grid_field>. Establishes coordinate_field
 		{
 			if (Computed_field_is_type_integration(coordinate_field)&&
 				Computed_field_get_type_integration(coordinate_field,
-					&seed_element,&integration_integrand,&integration_coordinate_field))
+					&seed_element,&integration_integrand,
+					&integration_magnitude_coordinates, &integration_coordinate_field))
 			{
 				TEXT_CHOOSE_FROM_FE_REGION_SET_OBJECT(FE_element)(
 					grid_calc->seed_element_widget,seed_element);
@@ -650,9 +651,11 @@ Sets the dialog to look at <grid_field>. Establishes coordinate_field
 			{
 				if (coordinate_field=CREATE(Computed_field)("xi_texture_coordinates"))
 				{
+					integration_magnitude_coordinates = 1;
 					if (!(Computed_field_set_type_integration(
 						coordinate_field,seed_element,grid_calc->fe_region,
-						integration_integrand,integration_coordinate_field)&&
+						integration_integrand,
+						integration_magnitude_coordinates,integration_coordinate_field)&&
 						ADD_OBJECT_TO_MANAGER(Computed_field)(coordinate_field,
 							computed_field_manager)))
 					{
@@ -770,6 +773,7 @@ DESCRIPTION :
 Callback for change of coordinate field.
 ==============================================================================*/
 {
+	int integration_magnitude_coordinates;
 	struct Computed_field *coordinate_field, *integration_integrand, 
 		*integration_coordinate_field;
 	struct FE_element *seed_element;
@@ -782,7 +786,8 @@ Callback for change of coordinate field.
 	{
 		if (Computed_field_is_type_integration(coordinate_field)&&
 			Computed_field_get_type_integration(coordinate_field,
-				&seed_element, &integration_integrand, &integration_coordinate_field))
+				&seed_element, &integration_integrand,
+				&integration_magnitude_coordinates, &integration_coordinate_field))
 		{
 			TEXT_CHOOSE_FROM_FE_REGION_SET_OBJECT(FE_element)(
 				grid_calc->seed_element_widget,seed_element);
@@ -807,6 +812,7 @@ DESCRIPTION :
 Callback for change of seed_element.
 ==============================================================================*/
 {
+	int integration_magnitude_coordinates;
 	FE_value value;
 	struct Computed_field *coordinate_field,*integration_integrand,
 		*integration_coordinate_field,*temp_field;
@@ -824,7 +830,8 @@ Callback for change of seed_element.
 			if (Computed_field_is_type_integration(coordinate_field))
 			{
 				Computed_field_get_type_integration(coordinate_field,
-					&seed_element,&integration_integrand,&integration_coordinate_field);
+					&seed_element,&integration_integrand,
+					&integration_magnitude_coordinates,&integration_coordinate_field);
 			}
 			else
 			{
@@ -833,6 +840,7 @@ Callback for change of seed_element.
 							grid_calc->computed_field_package));
 				integration_integrand = CREATE(Computed_field)("constant_1.0");
 				Computed_field_set_type_constant(integration_integrand,1,&value);				
+				integration_magnitude_coordinates = 0;
 			}
 			ACCESS(Computed_field)(integration_integrand);
 			/* this is very inefficient - creates xi mapping twice per element! */
@@ -840,7 +848,7 @@ Callback for change of seed_element.
 			{
 				if (Computed_field_set_type_integration(temp_field,
 					seed_element,grid_calc->fe_region,integration_integrand,
-					integration_coordinate_field))
+					integration_magnitude_coordinates,integration_coordinate_field))
 				{
 					MANAGER_MODIFY_NOT_IDENTIFIER(Computed_field,name)(
 						coordinate_field,temp_field,
