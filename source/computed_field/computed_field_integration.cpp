@@ -151,6 +151,7 @@ COMPUTED_FIELD_CONSTANT with 1 component, returning a value of zero.
 		{
 			mapping_item->values[i] = 0.0;
 		}
+		mapping_item->access_count = 0;
 	}
 	else
 	{
@@ -238,7 +239,8 @@ COMPUTED_FIELD_CONSTANT with 1 component, returning a value of zero.
 		for (i = 0 ; i < number_of_components ; i++)
 		{
 			mapping_item->values[i] = 0.0;
-		}
+		}	
+		mapping_item->access_count = 0;
 	}
 	else
 	{
@@ -271,6 +273,7 @@ Frees memory/deaccess mapping at <*mapping_address>.
 			{
 				DEACCESS(FE_node)(&((*mapping_address)->node_ptr));
 			}
+			DEALLOCATE((*mapping_address)->values);
 			DEALLOCATE(*mapping_address);
 			return_code=1;
 		}
@@ -781,6 +784,10 @@ varying integration and the behaviour is significantly different.
 			/* We would like this to work for xi and other computed fields that
 				have no fe_fields so we use the 'feature' that allows us to pass NULL */
 			fe_field = (struct FE_field *)NULL;
+		}
+		if (fe_field_list)
+		{
+			DESTROY(LIST(FE_field))(&fe_field_list);
 		}
 		if (node_mapping
 			&& get_FE_element_shape(mapping_item->element, &shape)
@@ -1454,10 +1461,13 @@ DESCRIPTION :
 Evaluate the fields cache at the node.
 ==============================================================================*/
 {
+	double dsdxi;
 	FE_value element_to_top_level[9],initial_xi[MAXIMUM_ELEMENT_XI_DIMENSIONS],
 		top_level_xi[MAXIMUM_ELEMENT_XI_DIMENSIONS];
-	int element_dimension, i, j, k, return_code, top_level_element_dimension;
+	int coordinate_dimension, element_dimension, i, j, k, return_code, 
+		top_level_element_dimension;
 	struct CM_element_information cm;
+	struct Computed_field *coordinate_field, *integrand;
 	struct Computed_field_element_integration_mapping *mapping;
 	struct Computed_field_integration_type_specific_data *data;
 
@@ -1467,6 +1477,10 @@ Evaluate the fields cache at the node.
 		field->type_specific_data))
 	{
 		return_code = 1;
+		integrand = field->source_fields[0];
+		coordinate_field = field->source_fields[1];
+		coordinate_dimension = 
+			Computed_field_get_number_of_components(field->source_fields[1]);
 
 		if (!data->texture_mapping)
 		{
@@ -1543,7 +1557,41 @@ Evaluate the fields cache at the node.
 					time, field->values);
 				if (calculate_derivatives)
 				{
-					field->derivatives_valid = 0;
+					/* Evaluate the fields at this location */
+					Computed_field_evaluate_cache_in_element(integrand,
+						element, xi, time, top_level_element,
+						/*calculate_derivatives*/0);
+					Computed_field_evaluate_cache_in_element(coordinate_field,
+						element, xi, time, top_level_element,
+						/*calculate_derivatives*/1);
+					if (data->magnitude_coordinates)
+					{
+						for (k = 0 ; k < element_dimension ; k++)
+						{
+							dsdxi = 0.0;
+							for (j = 0 ; j < coordinate_dimension ; j++)
+							{
+								dsdxi += 
+									coordinate_field->derivatives[j * element_dimension + k] *
+									coordinate_field->derivatives[j * element_dimension + k];
+							}
+							dsdxi = sqrt(dsdxi);
+							field->derivatives[k] = integrand->values[0] * dsdxi;
+						}
+					}
+					else
+					{
+						for (k = 0 ; k < element_dimension ; k++)
+						{
+							field->derivatives[k] = 0;
+							for (j = 0 ; j < coordinate_dimension ; j++)
+							{
+								field->derivatives[k] += integrand->values[0] *
+									coordinate_field->derivatives[j * element_dimension + k];
+							}
+						}
+					}
+					field->derivatives_valid = 1;
 				}
 			}
 			else
@@ -2090,6 +2138,8 @@ although its cache may be lost.
 			data->seed_element = ACCESS(FE_element)(seed_element);
 			data->texture_mapping = 
 				(struct LIST(Computed_field_element_integration_mapping) *)NULL;
+			data->node_mapping = 
+				(struct LIST(Computed_field_node_integration_mapping) *)NULL;
 			data->fe_region = fe_region;
 			data->find_element_xi_mapping=
 				(struct Computed_field_element_integration_mapping *)NULL;
