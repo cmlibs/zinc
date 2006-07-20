@@ -52,21 +52,28 @@ DESCRIPTION :
 
 int Computed_field_set_type_integration(struct Computed_field *field,
 	struct FE_element *seed_element, struct FE_region *fe_region,
-	struct Computed_field *integrand, struct Computed_field *coordinate_field);
+	struct Computed_field *integrand, 
+	int magnitude_coordinates, struct Computed_field *coordinate_field);
 /*******************************************************************************
-LAST MODIFIED : 13 March 2003
+LAST MODIFIED : 19 July 2006
 
 DESCRIPTION :
 Converts <field> to type COMPUTED_FIELD_INTEGRATION.
 The seed element is set to the number given and the mapping calculated.
-Sets the number of components to the dimension of the given element.
-If function fails, field is guaranteed to be unchanged from its original state,
-although its cache may be lost.
+Sets the number of components to be the same as the <integrand> field.
+The <integrand> is the value that is integrated over each element and the
+<coordinate_field> is used to define the arc length differential for each element.
+Currently only two gauss points are supported, a linear integration.
+If <magnitude_coordinates> is false then the resulting field has the same number
+of components as the <coordinate_field> and each component is the integration
+with respect to each of the components, if <magnitude_components> is true then
+the field will have a single component and the magnitude of the <coordinate_field>
+derivatives are used to calculate arc lengths at each gauss pointa.
 =============================================================================*/
 
 int Computed_field_get_type_integration(struct Computed_field *field,
 	struct FE_element **seed_element, struct Computed_field **integrand,
-	struct Computed_field **coordinate_field);
+	int *magnitude_coordinates, struct Computed_field **coordinate_field);
 /*******************************************************************************
 LAST MODIFIED : 26 October 2000
 

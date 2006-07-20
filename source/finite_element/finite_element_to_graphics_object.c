@@ -235,7 +235,7 @@ and can be evaluated at a node. Count returned in
 computed_fields_of_node->number_of_nodes++.
 ==============================================================================*/
 {
-	int computed_fields_all_defined,return_code;
+	int return_code;
 	struct Computed_field **current_field_address;
 	struct Computed_fields_of_node *computed_fields_of_node;
 
@@ -244,25 +244,18 @@ computed_fields_of_node->number_of_nodes++.
 	if (node&&(computed_fields_of_node=(struct Computed_fields_of_node *)user_data))
 	{
 		return_code=1;
-		/* a match here means that fields_of_node->field_node has already been
-			 checked */
-		if (!equivalent_computed_fields_at_nodes(node,computed_fields_of_node->field_node))
-		{
-			/* check for specific fields */
-			current_field_address=computed_fields_of_node->required_fields;
-
-			computed_fields_all_defined =FE_node_computed_fields_defined(node,
-				computed_fields_of_node->num_required_fields,current_field_address);
-		}
-		else
-		{
-			computed_fields_all_defined =1;
-		}
-		if (computed_fields_all_defined)
+		/* check for specific fields.  The old efficiency assumption that 
+			the only thing that can affect this condition is the defined list
+			of FE_fields is a bad one. An alternative way to do this would be to 
+			allocate for all the nodes in the region and then reallocate to the
+			actual size after adding each node, thereby only visiting and 
+			checking each node once. */
+		current_field_address=computed_fields_of_node->required_fields;
+		
+		if (FE_node_computed_fields_defined(node,
+				computed_fields_of_node->num_required_fields,current_field_address))
 		{
 			computed_fields_of_node->number_of_nodes++;
-			/* remember this info for the next one */
-			computed_fields_of_node->field_node=node;
 		}
 	}
 	else

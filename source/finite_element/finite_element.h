@@ -2245,6 +2245,14 @@ DESCRIPTION :
 Returns true if the only thing know about <element_shape> is its dimension.
 ==============================================================================*/
 
+int FE_element_shape_is_line(struct FE_element_shape *element_shape);
+/*******************************************************************************
+LAST MODIFIED : 12 March 2003
+
+DESCRIPTION :
+Returns true if the <element_shape> has only LINE_SHAPE in each dimension.
+==============================================================================*/
+
 struct FE_element_shape *get_FE_element_shape_of_face(
 	struct FE_element_shape *shape,int face_number, struct FE_region *fe_region);
 /*******************************************************************************
