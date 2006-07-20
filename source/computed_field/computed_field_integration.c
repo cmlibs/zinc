@@ -1454,7 +1454,7 @@ DESCRIPTION :
 Evaluate the fields cache at the node.
 ==============================================================================*/
 {
-	FE_value element_to_top_level[9],initial_xi[MAXIMUM_ELEMENT_XI_DIMENSIONS],*temp,
+	FE_value element_to_top_level[9],initial_xi[MAXIMUM_ELEMENT_XI_DIMENSIONS],
 		top_level_xi[MAXIMUM_ELEMENT_XI_DIMENSIONS];
 	int element_dimension, i, j, k, return_code, top_level_element_dimension;
 	struct CM_element_information cm;
@@ -1532,7 +1532,6 @@ Evaluate the fields cache at the node.
 				(top_level_element, data->texture_mapping))
 			{
 				/* Integrate to the specified top_level_xi location */
-				temp=field->derivatives;
 				for (i = 0 ; i < element_dimension ; i++)
 				{
 					initial_xi[i] = 0.0;

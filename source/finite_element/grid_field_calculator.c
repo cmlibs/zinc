@@ -651,7 +651,7 @@ Sets the dialog to look at <grid_field>. Establishes coordinate_field
 			{
 				if (coordinate_field=CREATE(Computed_field)("xi_texture_coordinates"))
 				{
-					integration_magnitude_coordinates = 1;
+					integration_magnitude_coordinates = 0;
 					if (!(Computed_field_set_type_integration(
 						coordinate_field,seed_element,grid_calc->fe_region,
 						integration_integrand,
