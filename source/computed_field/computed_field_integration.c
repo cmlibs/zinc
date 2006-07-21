@@ -1477,10 +1477,6 @@ Evaluate the fields cache at the node.
 		field->type_specific_data))
 	{
 		return_code = 1;
-		integrand = field->source_fields[0];
-		coordinate_field = field->source_fields[1];
-		coordinate_dimension = 
-			Computed_field_get_number_of_components(field->source_fields[1]);
 
 		if (!data->texture_mapping)
 		{
@@ -1538,6 +1534,17 @@ Evaluate the fields cache at the node.
 				return_code=0;
 			}
 		}
+		integrand = field->source_fields[0];
+		coordinate_field = field->source_fields[1];
+		coordinate_dimension = 
+			Computed_field_get_number_of_components(field->source_fields[1]);
+		if (Computed_field_is_type_xi_coordinates(field->source_fields[1], NULL))
+		{
+			/* Unlike the xi field we only deal with top level elements of a 
+				single dimension so we can match that dimension for our number
+				of coordinates */
+			coordinate_dimension = top_level_element_dimension;
+		}
 		/* 2. Calculate the field */
 		if (data->texture_mapping)
 		{
@@ -1583,10 +1590,10 @@ Evaluate the fields cache at the node.
 					{
 						for (k = 0 ; k < element_dimension ; k++)
 						{
-							field->derivatives[k] = 0;
 							for (j = 0 ; j < coordinate_dimension ; j++)
 							{
-								field->derivatives[k] += integrand->values[0] *
+								field->derivatives[j * element_dimension + k] = 
+									integrand->values[0] *
 									coordinate_field->derivatives[j * element_dimension + k];
 							}
 						}
@@ -2126,6 +2133,13 @@ although its cache may be lost.
 			else
 			{
 				field->number_of_components = coordinate_field->number_of_components;
+				if (Computed_field_is_type_xi_coordinates(coordinate_field, NULL))
+				{
+					/* Unlike the xi field we only deal with top level elements of a 
+						single dimension so we can match that dimension for our number
+						of coordinates */
+					field->number_of_components = get_FE_element_dimension(seed_element);
+				}
 			}
 			/* source_fields: 0=integrand, 1=coordinate_field */
 			source_fields[0]=ACCESS(Computed_field)(integrand);
