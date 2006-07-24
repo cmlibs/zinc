@@ -3172,7 +3172,7 @@ Adds <cmgui_image> into <texture> making a 3D image from 2D images.
 ==============================================================================*/
 {
 	static unsigned char fill_byte = 0;
-	int bytes_per_pixel, dimension, texture_bottom,
+	int allocate_texture_depth, bytes_per_pixel, dimension, texture_bottom,
 		texture_left, i, image_height, image_width, k, number_of_bytes_per_component,
 		number_of_components, number_of_images, return_code;
 	long int padded_width_bytes,
@@ -3255,8 +3255,13 @@ Adds <cmgui_image> into <texture> making a 3D image from 2D images.
 			bytes_per_pixel = number_of_components * number_of_bytes_per_component;
 			padded_width_bytes =
 				4*((texture_width*bytes_per_pixel + 3)/4);
+			/* Allocate depth in blocks.  Maybe I should just allow the malloc
+				implementation to do this, however this also worked around a bug
+				that was arising in valgrind where valgrind would crash on the 
+				realloc for some of the examples. */
+			allocate_texture_depth = 5 * ((texture_depth + 4) / 5);
 			if (REALLOCATE(texture_image, texture->image, unsigned char,
-					texture_depth*texture_height*
+					allocate_texture_depth*texture_height*
 					padded_width_bytes))
 			{
 				destination = texture_image + (long int)texture->original_depth_texels *
@@ -3272,11 +3277,6 @@ Adds <cmgui_image> into <texture> making a 3D image from 2D images.
 						destination);
 					i++;
 					destination += padded_width_bytes * texture_height;
-				}
-				if (texture_depth < texture_depth)
-				{
-					memset(destination, fill_byte, padded_width_bytes *
-						texture_height * (texture_depth - texture_depth));
 				}
 
 				/* assign values in the texture */
