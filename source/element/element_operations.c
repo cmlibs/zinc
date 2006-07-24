@@ -508,6 +508,7 @@ DESCRIPTION :
 							"sort_by field could not be evaluated in element");
 						return_code = 0;
 					}
+					DEALLOCATE(xi_points);
 				}
 				else
 				{
