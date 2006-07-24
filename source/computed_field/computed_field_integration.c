@@ -1756,7 +1756,7 @@ DESCRIPTION :
 				/* Check the last successful mapping first */
 				if (data->find_element_xi_mapping&&
 					Computed_field_element_integration_mapping_has_values(
-						data->find_element_xi_mapping, (void *)floor_values))
+						data->find_element_xi_mapping, (void *)&has_values_data))
 				{
 					return_code = 1;
 				}
@@ -1764,7 +1764,7 @@ DESCRIPTION :
 				{
 					/* Find in the list */
 					if (mapping = FIRST_OBJECT_IN_LIST_THAT(Computed_field_element_integration_mapping)
-						(Computed_field_element_integration_mapping_has_values, (void *)floor_values,
+						(Computed_field_element_integration_mapping_has_values, (void *)&has_values_data,
 							data->texture_mapping))
 					{
 						REACCESS(Computed_field_element_integration_mapping)(&(data->find_element_xi_mapping),
