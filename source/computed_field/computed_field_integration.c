@@ -127,6 +127,17 @@ struct Computed_field_integration_type_specific_data
 	struct Computed_field_element_integration_mapping *find_element_xi_mapping;
 };
 
+struct Computed_field_integration_has_values_data
+/*******************************************************************************
+LAST MODIFIED : 25 July 2006
+
+DESCRIPTION :
+==============================================================================*/
+{
+	int number_of_values;
+	float *values;
+}; /* struct Computed_field_integration_has_values_data */
+
 struct Computed_field_element_integration_mapping *CREATE(Computed_field_element_integration_mapping)
 	(struct FE_element *element, int number_of_components)
 /*******************************************************************************
@@ -355,6 +366,13 @@ specified.
 		return_code = 1;
 		element_dimension = get_FE_element_dimension(element);
 		coordinate_dimension = Computed_field_get_number_of_components(coordinate_field);
+		if (Computed_field_is_type_xi_coordinates(coordinate_field, NULL))
+		{
+			/* Unlike the xi field we only deal with top level elements of a 
+				single dimension so we can match that dimension for our number
+				of coordinates */
+			coordinate_dimension = element_dimension;
+		}
 		if (magnitude_coordinates)
 		{
 			values[0] = initial_values[0];
@@ -998,24 +1016,27 @@ DESCRIPTION :
 Compares the user_data values with the offsets in the <mapping>
 ==============================================================================*/
 {
-	FE_value *values;
-	int return_code;
+	int i, return_code;
+	struct Computed_field_integration_has_values_data *data;
 
 	ENTER(Computed_field_element_integration_mapping_has_values);
-	if (mapping && (values = (FE_value *)user_data))
+	if (mapping && (data = 
+			(struct Computed_field_integration_has_values_data *)user_data))
 	{
-		return_code = 0;
-		if ((values[0] == mapping->values[0])&&
-			 (values[1] == mapping->values[1])&&
-			 (values[2] == mapping->values[2]))
+		return_code = 1;
+		for (i = 0 ; return_code && (i < data->number_of_values) ; i++)
 		{
-			return_code=1;
+			if (data->values[i] != mapping->values[i])
+			{
+				return_code = 0;
+			}
 		}
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Computed_field_element_integration_mapping_has_values.  Invalid argument(s)");
+			"Computed_field_element_integration_mapping_has_values.  "
+			"Invalid argument(s)");
 		return_code=0;
 	}
 	LEAVE;
@@ -1553,7 +1574,7 @@ Evaluate the fields cache at the node.
 				(top_level_element, data->texture_mapping))
 			{
 				/* Integrate to the specified top_level_xi location */
-				for (i = 0 ; i < element_dimension ; i++)
+				for (i = 0 ; i < top_level_element_dimension ; i++)
 				{
 					initial_xi[i] = 0.0;
 				}
@@ -1692,6 +1713,7 @@ DESCRIPTION :
 	FE_value floor_values[3];
 	int i, return_code;
 	struct Computed_field_element_integration_mapping *mapping;
+	struct Computed_field_integration_has_values_data has_values_data;
 	struct Computed_field_integration_type_specific_data *data;
 	struct FE_region *fe_region;
 
@@ -1726,10 +1748,8 @@ DESCRIPTION :
 			{
 				floor_values[i] = floor(values[i]);
 			}
-			for ( ; i < 3 ; i++)
-			{
-				floor_values[i] = 0.0;
-			}
+			has_values_data.values = floor_values;
+			has_values_data.number_of_values = number_of_values;
 			if (data->texture_mapping)
 			{
 				return_code=0;
