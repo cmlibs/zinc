@@ -1,14 +1,14 @@
 # **************************************************************************
 # FILE : README
 #
-# LAST MODIFIED : 26 August 2005
+# LAST MODIFIED : 27 July 2006
 # ==========================================================================
 
 This software is the cmgui part of CMISS.
 It is released under the Mozilla Public License v1.1
 
 Further information, help pages, a tracker and a wiki is available at 
-http://dev.cmiss.org/cmgui/
+http://www.cmiss.org/cmgui/
 
 This software was originally developed at The University of Auckland and 
 the Copyright held by Auckland UniServices Ltd.
@@ -27,6 +27,3 @@ The code is being redesigned so that rather than being an overall application
 it is a core library used by multiple applications, this includes the starting
 of a defined api directory, the building of perl and python interfaces and the
 inclusion of the 3D windows in Linux and win32 in a mozilla component.
-The computed_variable directory contains several experimental redevelopments
-of the concepts of the mathematical field abstraction layer represented by the
-computed_fields module.
