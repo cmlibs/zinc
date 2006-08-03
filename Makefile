@@ -40,7 +40,7 @@ else # CMISS_ROOT
    CMISS_ROOT = $(CMGUI_DEV_ROOT)
 endif # CMISS_ROOT
 
-MAKEFILE = cmgui.make
+MAKEFILE = Makefile
 SUBMAKEFILE := cmgui.Makefile
 SUBMAKEFILE_FOUND = $(wildcard source/$(SUBMAKEFILE))
 ifdef CMISS_ROOT_DEFINED
