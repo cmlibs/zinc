@@ -135,7 +135,7 @@ Contains information for a graphics window.
 #elif defined (GTK_USER_INTERFACE)
 	GtkWidget *shell_window;
 #elif defined (WIN32_USER_INTERFACE)
-        HWND hWnd;
+	HWND hWnd;
 #endif /* defined (GTK_USER_INTERFACE) */
 	/* scene_viewers and their parameters: */
 	enum Graphics_window_layout_mode layout_mode;
@@ -3795,7 +3795,7 @@ Sets the layout mode in effect on the <window>.
 			first_scene_viewer = window->scene_viewer_array[0];
 			Scene_viewer_get_lookat_parameters(first_scene_viewer,
 				&(eye[0]),&(eye[1]),&(eye[2]),
-				&(lookat[0]),&(lookat[1]),&(lookat[2]),&(up[0]),&(up[1]),&(up[2]))&&
+				&(lookat[0]),&(lookat[1]),&(lookat[2]),&(up[0]),&(up[1]),&(up[2]));
 			Scene_viewer_get_viewing_volume(first_scene_viewer,
 				&left, &right, &bottom, &top, &near_plane, &far_plane);
 			radius = 0.5*(right - left);
