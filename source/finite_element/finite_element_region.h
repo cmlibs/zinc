@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : finite_element_region.h
 
-LAST MODIFIED : 7 July 2003
+LAST MODIFIED : 8 August 2006
 
 DESCRIPTION :
 Object comprising a single finite element mesh including nodes, elements and
@@ -99,16 +99,18 @@ struct FE_region *CREATE(FE_region)(struct FE_region *master_fe_region,
 	struct MANAGER(FE_basis) *basis_manager,
 	struct LIST(FE_element_shape) *element_shape_list);
 /*******************************************************************************
-LAST MODIFIED : 7 July 2003
+LAST MODIFIED : 8 August 2006
 
 DESCRIPTION :
 Creates a struct FE_region.
-If <master_fe_region> is supplied, the basis_manager is ignored and it, along
-with all fields, nodes and elements the FE_region may address, will belong to
-the master region, and this FE_region will be merely a container for nodes and
-elements.
-In <master_fe_region> is supplied, the FE_region will own all its own nodes,
-elements and fields and the <basis_manager> must be supplied in this case.
+If <master_fe_region> is supplied, the <basis_manager> and <element_shape_list>
+are ignored and along with all fields, nodes and elements the FE_region may address,
+will belong to the master region, and this FE_region will be merely a container
+for nodes and elements.
+If <master_fe_region> is not supplied, the FE_region will own all its own nodes,
+elements and fields.  If <basis_manager> or <element_shape_list> are not 
+supplied then a default empty object will be created for this region.  (Allowing
+them to be specified allows sharing across regions).
 ==============================================================================*/
 
 struct FE_region *create_data_hack_FE_region(

@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : finite_element_region.c
 
-LAST MODIFIED : 21 April 2005
+LAST MODIFIED : 8 August 2006
 
 DESCRIPTION :
 Object comprising a single finite element mesh including nodes, elements and
@@ -172,7 +172,15 @@ DESCRIPTION :
 	struct LIST(FE_node_field_info) *fe_node_field_info_list;
 	struct LIST(FE_element_field_info) *fe_element_field_info_list;
 	struct MANAGER(FE_basis) *basis_manager;
+	/* This flag indicates whether this region explictly created the basis manager
+		and therefore should destroy it when destroyed.  Would prefer to have an
+		access count on the MANAGER but these don't */
+	int region_owns_basis_manager;
 	struct LIST(FE_element_shape) *element_shape_list;
+	/* This flag indicates whether this region explictly created the element_shape_list
+		and therefore should destroy it when destroyed.  Would prefer to have an
+		access count on the LIST(FE_element_shape) but these don't */
+	int region_owns_element_shape_list;
 	/* lists of nodes and elements in this region */
 	struct LIST(FE_node) *fe_node_list;
 	struct LIST(FE_element) *fe_element_list;
@@ -1365,113 +1373,128 @@ LAST MODIFIED : 7 July 2003
 
 DESCRIPTION :
 Creates a struct FE_region.
-If <master_fe_region> is supplied, the basis_manager is ignored and it, along
-with all fields, nodes and elements the FE_region may address, will belong to
-the master region, and this FE_region will be merely a container for nodes and
-elements.
-In <master_fe_region> is supplied, the FE_region will own all its own nodes,
-elements and fields and the <basis_manager> must be supplied in this case.
+If <master_fe_region> is supplied, the <basis_manager> and <element_shape_list>
+are ignored and along with all fields, nodes and elements the FE_region may address,
+will belong to the master region, and this FE_region will be merely a container
+for nodes and elements.
+If <master_fe_region> is not supplied, the FE_region will own all its own nodes,
+elements and fields.  If <basis_manager> or <element_shape_list> are not 
+supplied then a default empty object will be created for this region.  (Allowing
+them to be specified allows sharing across regions).
 ==============================================================================*/
 {
 	struct FE_region *fe_region;
 
 	ENTER(CREATE(FE_region));
 	fe_region = (struct FE_region *)NULL;
-	if (master_fe_region || (basis_manager && element_shape_list))
+	if (ALLOCATE(fe_region, struct FE_region, 1))
 	{
-		if (ALLOCATE(fe_region, struct FE_region, 1))
+		if (master_fe_region)
 		{
-			if (master_fe_region)
+			fe_region->master_fe_region = ACCESS(FE_region)(master_fe_region);
+			fe_region->basis_manager = (struct MANAGER(FE_basis) *)NULL;
+			fe_region->region_owns_basis_manager = 0;
+			fe_region->element_shape_list = (struct LIST(FE_element_shape) *)NULL;
+			fe_region->region_owns_element_shape_list = 0;
+			fe_region->fe_time = (struct FE_time_sequence_package *)NULL;
+			fe_region->fe_field_list = (struct LIST(FE_field) *)NULL;
+			fe_region->fe_node_field_info_list =
+				(struct LIST(FE_node_field_info) *)NULL;
+			fe_region->fe_element_field_info_list =
+				(struct LIST(FE_element_field_info) *)NULL;
+			/* request callbacks from master_fe_region */
+			FE_region_add_callback(master_fe_region,
+				FE_region_master_fe_region_change, (void *)fe_region);
+		}
+		else
+		{
+			fe_region->master_fe_region = (struct FE_region *)NULL;
+			if (basis_manager)
 			{
-				fe_region->master_fe_region = ACCESS(FE_region)(master_fe_region);
-				fe_region->basis_manager = (struct MANAGER(FE_basis) *)NULL;
-				fe_region->element_shape_list = (struct LIST(FE_element_shape) *)NULL;
-				fe_region->fe_time = (struct FE_time_sequence_package *)NULL;
-				fe_region->fe_field_list = (struct LIST(FE_field) *)NULL;
-				fe_region->fe_node_field_info_list =
-					(struct LIST(FE_node_field_info) *)NULL;
-				fe_region->fe_element_field_info_list =
-					(struct LIST(FE_element_field_info) *)NULL;
-				/* request callbacks from master_fe_region */
-				FE_region_add_callback(master_fe_region,
-					FE_region_master_fe_region_change, (void *)fe_region);
+				fe_region->basis_manager = basis_manager;
+				fe_region->region_owns_basis_manager = 0;
 			}
 			else
 			{
-				fe_region->master_fe_region = (struct FE_region *)NULL;
-				fe_region->basis_manager = basis_manager;
-				fe_region->element_shape_list = element_shape_list;
-				fe_region->fe_time = CREATE(FE_time_sequence_package)();
-				fe_region->fe_field_list = CREATE(LIST(FE_field))();
-				fe_region->fe_node_field_info_list = CREATE(LIST(FE_node_field_info))();
-				fe_region->fe_element_field_info_list =
-					CREATE(LIST(FE_element_field_info))();
+				fe_region->basis_manager = CREATE(MANAGER(FE_basis))();
+				fe_region->region_owns_basis_manager = 1;
 			}
-			fe_region->data_hack = 0;
-			fe_region->data_hack_fe_region = (struct FE_region *)NULL;
-			fe_region->cmiss_region = (struct Cmiss_region *)NULL;
-			fe_region->fe_field_info = (struct FE_field_info *)NULL;
-			fe_region->fe_node_list = CREATE(LIST(FE_node))();
-			fe_region->fe_element_list = CREATE(LIST(FE_element))();
+			if (element_shape_list)
+			{
+				fe_region->element_shape_list = element_shape_list;
+				fe_region->region_owns_element_shape_list = 0;
+			}
+			else
+			{
+				fe_region->element_shape_list = CREATE(LIST(FE_element_shape))();
+				fe_region->region_owns_element_shape_list = 1;
+			}
+			fe_region->fe_time = CREATE(FE_time_sequence_package)();
+			fe_region->fe_field_list = CREATE(LIST(FE_field))();
+			fe_region->fe_node_field_info_list = CREATE(LIST(FE_node_field_info))();
+			fe_region->fe_element_field_info_list =
+				CREATE(LIST(FE_element_field_info))();
+		}
+		fe_region->data_hack = 0;
+		fe_region->data_hack_fe_region = (struct FE_region *)NULL;
+		fe_region->cmiss_region = (struct Cmiss_region *)NULL;
+		fe_region->fe_field_info = (struct FE_field_info *)NULL;
+		fe_region->fe_node_list = CREATE(LIST(FE_node))();
+		fe_region->fe_element_list = CREATE(LIST(FE_element))();
 
-			/* change log information */
-			fe_region->change_level = 0;
-			fe_region->number_of_clients = 0;
-			fe_region->change_callback_list =
-				CREATE(LIST(CMISS_CALLBACK_ITEM(FE_region_change)))();
-			fe_region->fe_field_changes = (struct CHANGE_LOG(FE_field) *)NULL;
-			fe_region->fe_node_changes = (struct CHANGE_LOG(FE_node) *)NULL;
-			fe_region->fe_element_changes = (struct CHANGE_LOG(FE_element) *)NULL;
-			fe_region->last_fe_node_field_info = (struct FE_node_field_info *)NULL;
-			fe_region->last_fe_element_field_info =
-				(struct FE_element_field_info *)NULL;
-			FE_region_create_change_logs(fe_region);
+		/* change log information */
+		fe_region->change_level = 0;
+		fe_region->number_of_clients = 0;
+		fe_region->change_callback_list =
+			CREATE(LIST(CMISS_CALLBACK_ITEM(FE_region_change)))();
+		fe_region->fe_field_changes = (struct CHANGE_LOG(FE_field) *)NULL;
+		fe_region->fe_node_changes = (struct CHANGE_LOG(FE_node) *)NULL;
+		fe_region->fe_element_changes = (struct CHANGE_LOG(FE_element) *)NULL;
+		fe_region->last_fe_node_field_info = (struct FE_node_field_info *)NULL;
+		fe_region->last_fe_element_field_info =
+			(struct FE_element_field_info *)NULL;
+		FE_region_create_change_logs(fe_region);
 
-			/* information for defining faces */
-			fe_region->element_type_node_sequence_list =
-				(struct LIST(FE_element_type_node_sequence) *)NULL;
+		/* information for defining faces */
+		fe_region->element_type_node_sequence_list =
+			(struct LIST(FE_element_type_node_sequence) *)NULL;
 
 #if defined (EMBEDDING_CODE)
-			/* embedding information */
-			fe_region->embedded_fe_field_list = (struct LIST(FE_field) *)NULL;
-			fe_region->embedding_fe_region_list =
-				(struct LIST(FE_region_embedding_usage_count) *)NULL;
+		/* embedding information */
+		fe_region->embedded_fe_field_list = (struct LIST(FE_field) *)NULL;
+		fe_region->embedding_fe_region_list =
+			(struct LIST(FE_region_embedding_usage_count) *)NULL;
 #endif /* defined (EMBEDDING_CODE) */
 
-			fe_region->next_fe_node_identifier_cache = 0;
-			fe_region->next_fe_element_identifier_cache = 0;
-			fe_region->next_fe_element_face_identifier_cache = 0;
-			fe_region->next_fe_element_line_identifier_cache = 0;
+		fe_region->next_fe_node_identifier_cache = 0;
+		fe_region->next_fe_element_identifier_cache = 0;
+		fe_region->next_fe_element_face_identifier_cache = 0;
+		fe_region->next_fe_element_line_identifier_cache = 0;
 
-			fe_region->access_count = 0;
-			if (!((master_fe_region ||
-				(fe_region->fe_time &&
-					fe_region->fe_field_list &&
-					fe_region->fe_node_field_info_list &&
-					fe_region->fe_element_field_info_list)) &&
+		fe_region->access_count = 0;
+		if (!((master_fe_region ||
+					(fe_region->fe_time &&
+						fe_region->fe_field_list &&
+						fe_region->fe_node_field_info_list &&
+						fe_region->fe_element_field_info_list)) &&
 				fe_region->fe_node_list &&
 				fe_region->fe_element_list &&
 				fe_region->change_callback_list &&
 				fe_region->fe_field_changes &&
 				fe_region->fe_node_changes &&
 				fe_region->fe_element_changes))
-			{
-				display_message(ERROR_MESSAGE,
-					"CREATE(FE_region).  Could not create objects in region");
-				DESTROY(FE_region)(&fe_region);
-				fe_region = (struct FE_region *)NULL;
-			}
+		{
+			display_message(ERROR_MESSAGE,
+				"CREATE(FE_region).  Could not create objects in region");
+			DESTROY(FE_region)(&fe_region);
+			fe_region = (struct FE_region *)NULL;
 		}
+	}
 		else
 		{
 			display_message(ERROR_MESSAGE,
 				"CREATE(FE_region).  Could not allocate memory");
 		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE, "CREATE(FE_region).  Invalid argument(s)");
-	}
 	LEAVE;
 
 	return (fe_region);
@@ -1600,6 +1623,14 @@ Frees the memory for the FE_region and sets <*fe_region_address> to NULL.
 				/* remove its pointer to this fe_region because being destroyed */
 				FE_field_info_clear_FE_region(fe_region->fe_field_info);
 				DEACCESS(FE_field_info)(&(fe_region->fe_field_info));
+			}
+			if (fe_region->basis_manager && fe_region->region_owns_basis_manager)
+			{
+				DESTROY(MANAGER(FE_basis))(&fe_region->basis_manager);
+			}
+			if (fe_region->element_shape_list && fe_region->region_owns_element_shape_list)
+			{
+				DESTROY(LIST(FE_element_shape))(&fe_region->element_shape_list);
 			}
 			if (fe_region->fe_field_list)
 			{
