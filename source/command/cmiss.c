@@ -2132,16 +2132,16 @@ Executes a GFX CREATE ELEMENT_SELECTION_CALLBACK command.
 static int gfx_create_group(struct Parse_state *state,
 	void *use_nodes, void *root_region_void)
 /*******************************************************************************
-LAST MODIFIED : 17 January 2003
+LAST MODIFIED : 15 August 2006
 
 DESCRIPTION :
 Executes a GFX CREATE GROUP command.
 ==============================================================================*/
 {
-	char *from_region_path, *name;
+	char *from_region_path, *name, *region_path;
 	int return_code;
 	struct CM_element_type_Multi_range_data element_data;
-	struct Cmiss_region *from_region, *region, *root_region;
+	struct Cmiss_region *base_region, *from_region, *region, *root_region;
 	struct FE_region *fe_region, *from_fe_region;
 	struct Multi_range *add_ranges;
 	struct Option_table *option_table;
@@ -2164,6 +2164,7 @@ Executes a GFX CREATE GROUP command.
 			{
 				/* initialise defaults */
 				Cmiss_region_get_root_region_path(&from_region_path);
+				Cmiss_region_get_root_region_path(&region_path);
 				add_ranges = CREATE(Multi_range)();
 				option_table = CREATE(Option_table)();
 				/* add_ranges */
@@ -2172,12 +2173,17 @@ Executes a GFX CREATE GROUP command.
 				/* from */
 				Option_table_add_entry(option_table, "from", &from_region_path,
 					root_region, set_Cmiss_region_path);
+				/* region */
+				Option_table_add_entry(option_table, "region", &region_path,
+					root_region, set_Cmiss_region_path);
 				if (return_code = Option_table_multi_parse(option_table, state))
 				{
+					Cmiss_region_get_region_from_path(root_region, region_path,
+						&base_region);
 					region = CREATE(Cmiss_region)();
 					ACCESS(Cmiss_region)(region);
 					fe_region = CREATE(FE_region)(/*master_fe_region*/
-						Cmiss_region_get_FE_region(root_region),
+						Cmiss_region_get_FE_region(base_region),
 						(struct MANAGER(FE_basis) *)NULL, (struct LIST(FE_element_shape) *)NULL);
 					ACCESS(FE_region)(fe_region);
 					if (0 < Multi_range_get_number_of_ranges(add_ranges))
@@ -2214,7 +2220,7 @@ Executes a GFX CREATE GROUP command.
 					}
 					return_code = return_code &&
 						Cmiss_region_attach_FE_region(region, fe_region) &&
-						Cmiss_region_add_child_region(root_region, region, name,
+						Cmiss_region_add_child_region(base_region, region, name,
 							/*child_position*/-1);
 					DEACCESS(FE_region)(&fe_region);
 					DEACCESS(Cmiss_region)(&region);
@@ -2222,6 +2228,7 @@ Executes a GFX CREATE GROUP command.
 				DESTROY(Option_table)(&option_table);
 				DESTROY(Multi_range)(&add_ranges);
 				DEALLOCATE(from_region_path);
+				DEALLOCATE(region_path);
 			}
 		}
 		if (name)
