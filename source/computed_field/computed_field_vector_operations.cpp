@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : computed_field_vector_operations.c
 
-LAST MODIFIED : 28 October 2004
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 Implements a number of basic vector operations on computed fields.
@@ -41,15 +41,19 @@ Implements a number of basic vector operations on computed fields.
  * the terms of any one of the MPL, the GPL or the LGPL.
  *
  * ***** END LICENSE BLOCK ***** */
+extern "C" {
 #include <math.h>
 #include "computed_field/computed_field.h"
-#include "computed_field/computed_field_private.h"
+}
+#include "computed_field/computed_field_private.hpp"
+extern "C" {
 #include "computed_field/computed_field_set.h"
 #include "general/debug.h"
 #include "general/matrix_vector.h"
 #include "general/mystring.h"
 #include "user_interface/message.h"
 #include "computed_field/computed_field_vector_operations.h"
+}
 
 struct Computed_field_vector_operations_package 
 {
@@ -60,7 +64,7 @@ static char computed_field_normalise_type_string[] = "normalise";
 
 int Computed_field_is_type_normalise(struct Computed_field *field)
 /*******************************************************************************
-LAST MODIFIED : 18 July 2000
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 Compare the type specific data
@@ -88,7 +92,7 @@ Compare the type specific data
 #define Computed_field_normalise_clear_type_specific \
    Computed_field_default_clear_type_specific
 /*******************************************************************************
-LAST MODIFIED : 25 February 2002
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 No type specific data
@@ -97,7 +101,7 @@ No type specific data
 #define Computed_field_normalise_copy_type_specific \
    Computed_field_default_copy_type_specific
 /*******************************************************************************
-LAST MODIFIED : 25 February 2002
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 No type specific data
@@ -106,7 +110,7 @@ No type specific data
 #define Computed_field_normalise_clear_cache_type_specific \
    (Computed_field_clear_cache_type_specific_function)NULL
 /*******************************************************************************
-LAST MODIFIED : 13 July 2000
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 This function is not needed for this type.
@@ -115,25 +119,16 @@ This function is not needed for this type.
 #define Computed_field_normalise_type_specific_contents_match \
    Computed_field_default_type_specific_contents_match
 /*******************************************************************************
-LAST MODIFIED : 25 February 2002
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 No type specific data
 ==============================================================================*/
 
-#define Computed_field_normalise_is_defined_in_element \
-	Computed_field_default_is_defined_in_element
+#define Computed_field_normalise_is_defined_at_location \
+	Computed_field_default_is_defined_at_location
 /*******************************************************************************
-LAST MODIFIED : 11 July 2000
-
-DESCRIPTION :
-Check the source fields using the default.
-==============================================================================*/
-
-#define Computed_field_normalise_is_defined_at_node \
-	Computed_field_default_is_defined_at_node
-/*******************************************************************************
-LAST MODIFIED : 11 July 2000
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 Check the source fields using the default.
@@ -142,7 +137,7 @@ Check the source fields using the default.
 #define Computed_field_normalise_has_numerical_components \
 	Computed_field_default_has_numerical_components
 /*******************************************************************************
-LAST MODIFIED : 11 July 2000
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 Window projection does have numerical components.
@@ -151,83 +146,35 @@ Window projection does have numerical components.
 #define Computed_field_normalise_not_in_use \
 	(Computed_field_not_in_use_function)NULL
 /*******************************************************************************
-LAST MODIFIED : 21 January 2002
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 No special criteria.
 ==============================================================================*/
 
-static int Computed_field_normalise_evaluate_cache_at_node(
-	struct Computed_field *field, struct FE_node *node, FE_value time)
+static int Computed_field_normalise_evaluate_cache_at_location(
+   struct Computed_field *field, Field_location* location)
 /*******************************************************************************
-LAST MODIFIED : 21 November 2001
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
-Evaluate the fields cache at the node.
-==============================================================================*/
-{
-	double size;
-	int i, return_code;
-
-	ENTER(Computed_field_normalise_evaluate_cache_at_node);
-	if (field && node && (field->number_of_source_fields > 0) && 
-		(field->number_of_components == field->source_fields[0]->number_of_components))
-	{
-		/* 1. Precalculate any source fields that this field depends on */
-		if (return_code = 
-			Computed_field_evaluate_source_fields_cache_at_node(field, node, time))
-		{
-			/* 2. Calculate the field */
-			size = 0.0;
-			for (i = 0 ; i < field->number_of_components ; i++)
-			{
-				size += field->source_fields[0]->values[i] *
-					field->source_fields[0]->values[i];
-			}
-			size = sqrt(size);
-			for (i = 0 ; i < field->number_of_components ; i++)
-			{
-				field->values[i] = field->source_fields[0]->values[i] / size;
-			}			
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_normalise_evaluate_cache_at_node.  "
-			"Invalid arguments.");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Computed_field_normalise_evaluate_cache_at_node */
-
-static int Computed_field_normalise_evaluate_cache_in_element(
-	struct Computed_field *field, struct FE_element *element, FE_value *xi,
-	FE_value time, struct FE_element *top_level_element,int calculate_derivatives)
-/*******************************************************************************
-LAST MODIFIED : 11 July 2000
-
-DESCRIPTION :
-Evaluate the fields cache at the node.
+Evaluate the fields cache at the location
 ==============================================================================*/
 {
 	double size;
 	FE_value *derivative, *source_derivative;
 	int i, number_of_xi, return_code;
 
-	ENTER(Computed_field_normalise_evaluate_cache_in_element);
-	if (field && element && xi && (field->number_of_source_fields > 0) && 
+	ENTER(Computed_field_normalise_evaluate_cache_at_location);
+	if (field && location && (field->number_of_source_fields > 0) && 
 		(field->number_of_components == field->source_fields[0]->number_of_components))
 	{
 		/* 1. Precalculate any source fields that this field depends on */
 		if (return_code = 
-			Computed_field_evaluate_source_fields_cache_in_element(field, element,
-				xi, time, top_level_element, calculate_derivatives))
+			Computed_field_evaluate_source_fields_cache_at_location(field, location))
 		{
 			/* 2. Calculate the field */
-			number_of_xi = get_FE_element_dimension(element);
+			number_of_xi = get_FE_element_dimension(field->source_fields[0]->element);
 			size = 0.0;
 			for (i = 0 ; i < field->number_of_components ; i++)
 			{
@@ -239,7 +186,7 @@ Evaluate the fields cache at the node.
 			{
 				field->values[i] = field->source_fields[0]->values[i] / size;
 			}
-			if (calculate_derivatives && field->source_fields[0]->derivatives_valid)
+			if (field->source_fields[0]->derivatives_valid)
 			{
 				derivative = field->derivatives;
 				source_derivative = field->source_fields[0]->derivatives;
@@ -260,46 +207,19 @@ Evaluate the fields cache at the node.
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Computed_field_normalise_evaluate_cache_in_element.  "
+			"Computed_field_normalise_evaluate_cache_at_location.  "
 			"Invalid arguments.");
 		return_code = 0;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* Computed_field_normalise_evaluate_cache_in_element */
+} /* Computed_field_normalise_evaluate_cache_at_location */
 
-#define Computed_field_normalise_evaluate_as_string_at_node \
-	Computed_field_default_evaluate_as_string_at_node
+#define Computed_field_normalise_set_values_at_location \
+   (Computed_field_set_values_at_location_function)NULL
 /*******************************************************************************
-LAST MODIFIED : 11 July 2000
-
-DESCRIPTION :
-Print the values calculated in the cache.
-==============================================================================*/
-
-#define Computed_field_normalise_evaluate_as_string_in_element \
-	Computed_field_default_evaluate_as_string_in_element
-/*******************************************************************************
-LAST MODIFIED : 11 July 2000
-
-DESCRIPTION :
-Print the values calculated in the cache.
-==============================================================================*/
-
-#define Computed_field_normalise_set_values_at_node \
-   (Computed_field_set_values_at_node_function)NULL
-/*******************************************************************************
-LAST MODIFIED : 11 July 2000
-
-DESCRIPTION :
-Not implemented yet.
-==============================================================================*/
-
-#define Computed_field_normalise_set_values_in_element \
-   (Computed_field_set_values_in_element_function)NULL
-/*******************************************************************************
-LAST MODIFIED : 11 July 2000
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 Not implemented yet.
@@ -308,7 +228,7 @@ Not implemented yet.
 #define Computed_field_normalise_get_native_discretization_in_element \
 	Computed_field_default_get_native_discretization_in_element
 /*******************************************************************************
-LAST MODIFIED : 11 July 2000
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 Inherit result from first source field.
@@ -317,7 +237,7 @@ Inherit result from first source field.
 #define Computed_field_normalise_find_element_xi \
    (Computed_field_find_element_xi_function)NULL
 /*******************************************************************************
-LAST MODIFIED : 11 July 2000
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 Not implemented yet.
@@ -329,7 +249,7 @@ Not implemented yet.
 static int list_Computed_field_normalise(
 	struct Computed_field *field)
 /*******************************************************************************
-LAST MODIFIED : 11 July 2000
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 ==============================================================================*/
@@ -357,7 +277,7 @@ DESCRIPTION :
 static char *Computed_field_normalise_get_command_string(
 	struct Computed_field *field)
 /*******************************************************************************
-LAST MODIFIED : 15 January 2002
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 Returns allocated command string for reproducing field. Includes type.
@@ -395,7 +315,7 @@ Returns allocated command string for reproducing field. Includes type.
 #define Computed_field_normalise_has_multiple_times \
 	Computed_field_default_has_multiple_times
 /*******************************************************************************
-LAST MODIFIED : 21 January 2002
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 Works out whether time influences the field.
@@ -404,7 +324,7 @@ Works out whether time influences the field.
 int Computed_field_set_type_normalise(struct Computed_field *field,
 	struct Computed_field *source_field)
 /*******************************************************************************
-LAST MODIFIED : 21 January 2002
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 Converts <field> to type COMPUTED_FIELD_NORMALISE with the supplied
@@ -457,7 +377,7 @@ although its cache may be lost.
 int Computed_field_get_type_normalise(struct Computed_field *field,
 	struct Computed_field **source_field)
 /*******************************************************************************
-LAST MODIFIED : 7 November 2000
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 If the field is of type COMPUTED_FIELD_NORMALISE, the 
@@ -487,7 +407,7 @@ If the field is of type COMPUTED_FIELD_NORMALISE, the
 static int define_Computed_field_type_normalise(struct Parse_state *state,
 	void *field_void,void *computed_field_vector_operations_package_void)
 /*******************************************************************************
-LAST MODIFIED : 18 December 2001
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 Converts <field> into type COMPUTED_FIELD_NORMALISE (if it is not 
@@ -570,7 +490,7 @@ static char computed_field_cross_product_type_string[] = "cross_product";
 
 int Computed_field_is_type_cross_product(struct Computed_field *field)
 /*******************************************************************************
-LAST MODIFIED : 18 July 2000
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 Compare the type specific data
@@ -598,7 +518,7 @@ Compare the type specific data
 #define Computed_field_cross_product_clear_type_specific \
    Computed_field_default_clear_type_specific
 /*******************************************************************************
-LAST MODIFIED : 25 February 2002
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 No type specific data
@@ -607,7 +527,7 @@ No type specific data
 #define Computed_field_cross_product_copy_type_specific \
    Computed_field_default_copy_type_specific
 /*******************************************************************************
-LAST MODIFIED : 25 February 2002
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 No type specific data
@@ -616,7 +536,7 @@ No type specific data
 #define Computed_field_cross_product_clear_cache_type_specific \
    (Computed_field_clear_cache_type_specific_function)NULL
 /*******************************************************************************
-LAST MODIFIED : 13 July 2000
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 This function is not needed for this type.
@@ -625,25 +545,16 @@ This function is not needed for this type.
 #define Computed_field_cross_product_type_specific_contents_match \
    Computed_field_default_type_specific_contents_match
 /*******************************************************************************
-LAST MODIFIED : 25 February 2002
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 No type specific data
 ==============================================================================*/
 
-#define Computed_field_cross_product_is_defined_in_element \
-	Computed_field_default_is_defined_in_element
+#define Computed_field_cross_product_is_defined_at_location \
+	Computed_field_default_is_defined_at_location
 /*******************************************************************************
-LAST MODIFIED : 11 July 2000
-
-DESCRIPTION :
-Check the source fields using the default.
-==============================================================================*/
-
-#define Computed_field_cross_product_is_defined_at_node \
-	Computed_field_default_is_defined_at_node
-/*******************************************************************************
-LAST MODIFIED : 11 July 2000
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 Check the source fields using the default.
@@ -652,7 +563,7 @@ Check the source fields using the default.
 #define Computed_field_cross_product_has_numerical_components \
 	Computed_field_default_has_numerical_components
 /*******************************************************************************
-LAST MODIFIED : 11 July 2000
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 Window projection does have numerical components.
@@ -661,97 +572,31 @@ Window projection does have numerical components.
 #define Computed_field_cross_product_not_in_use \
 	(Computed_field_not_in_use_function)NULL
 /*******************************************************************************
-LAST MODIFIED : 21 January 2002
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 No special criteria.
 ==============================================================================*/
 
-static int Computed_field_cross_product_evaluate_cache_at_node(
-	struct Computed_field *field, struct FE_node *node, FE_value time)
+static int Computed_field_cross_product_evaluate_cache_at_location(
+   struct Computed_field *field, Field_location* location)
 /*******************************************************************************
-LAST MODIFIED : 21 November 2001
-
-DESCRIPTION :
-Evaluate the fields cache at the node.
-==============================================================================*/
-{
-	int return_code;
-
-	ENTER(Computed_field_cross_product_evaluate_cache_at_node);
-	if (field && node && 
-		(field->number_of_source_fields == field->number_of_components - 1))
-	{
-		/* 1. Precalculate any source fields that this field depends on */
-		if (return_code = 
-			Computed_field_evaluate_source_fields_cache_at_node(field, node, time))
-		{
-			/* 2. Calculate the field */
-			switch (field->number_of_components)
-			{
-				case 1:
-				{
-					field->values = 0;
-				} break;
-				case 2:
-				{
-					field->values[0] = -field->source_fields[0]->values[1];
-					field->values[1] = field->source_fields[0]->values[0];
-				} break;
-				case 3:
-				{
-					cross_product_FE_value_vector3(field->source_fields[0]->values,
-						field->source_fields[1]->values, field->values);
-				} break;
-				case 4:
-				{
-					cross_product_FE_value_vector4(field->source_fields[0]->values,
-						field->source_fields[1]->values, 
-						field->source_fields[2]->values, field->values);
-				} break;
-				default:
-				{
-					display_message(ERROR_MESSAGE,
-						"Computed_field_cross_product_evaluate_cache_at_node.  "
-						"Unsupported number of components.");
-					return_code = 0;
-				} break;
-			}
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_cross_product_evaluate_cache_at_node.  "
-			"Invalid arguments.");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Computed_field_cross_product_evaluate_cache_at_node */
-
-static int Computed_field_cross_product_evaluate_cache_in_element(
-	struct Computed_field *field, struct FE_element *element, FE_value *xi,
-	FE_value time, struct FE_element *top_level_element,int calculate_derivatives)
-/*******************************************************************************
-LAST MODIFIED : 11 July 2000
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 Evaluate the fields cache in the element.
 ==============================================================================*/
 {
 	FE_value *derivative, *source_derivative, *temp_vector;
-	int i, j, number_of_xi, return_code;
+	int i, j, number_of_derivatives, return_code;
 
-	ENTER(Computed_field_cross_product_evaluate_cache_in_element);
-	if (field && element && xi &&
+	ENTER(Computed_field_cross_product_evaluate_cache_at_location);
+	if (field && location &&
 		(field->number_of_source_fields == field->number_of_components - 1))
 	{
 		/* 1. Precalculate any source fields that this field depends on */
 		if (return_code = 
-			Computed_field_evaluate_source_fields_cache_in_element(field, element,
-				xi, time, top_level_element, calculate_derivatives))
+			Computed_field_evaluate_source_fields_cache_at_location(field, location))
 		{
 			/* 2. Calculate the field */
 			switch (field->number_of_components)
@@ -784,18 +629,18 @@ Evaluate the fields cache in the element.
 					return_code = 0;
 				} break;
 			}
-			if (calculate_derivatives)
+			number_of_derivatives = location->get_number_of_derivatives();
+			if (0 < number_of_derivatives)
 			{
 				if (ALLOCATE(temp_vector, FE_value, field->number_of_components *
 					field->number_of_components))
 				{
-					number_of_xi = get_FE_element_dimension(element);
 					switch (field->number_of_components)
 					{
 						case 1:
 						{
 							derivative = field->derivatives;
-							for (i = 0 ; i < number_of_xi ; i++)
+							for (i = 0 ; i < number_of_derivatives ; i++)
 							{
 								*derivative = 0;
 								derivative++;
@@ -804,15 +649,15 @@ Evaluate the fields cache in the element.
 						case 2:
 						{
 							derivative = field->derivatives;
-							source_derivative = field->derivatives + number_of_xi;
-							for (i = 0 ; i < number_of_xi ; i++)
+							source_derivative = field->derivatives + number_of_derivatives;
+							for (i = 0 ; i < number_of_derivatives ; i++)
 							{
 								*derivative = -*source_derivative;
 								derivative++;
 								source_derivative++;
 							}
-							source_derivative = field->derivatives + number_of_xi;
-							for (i = 0 ; i < number_of_xi ; i++)
+							source_derivative = field->derivatives + number_of_derivatives;
+							for (i = 0 ; i < number_of_derivatives ; i++)
 							{
 								*derivative = *source_derivative;
 								derivative++;
@@ -821,20 +666,20 @@ Evaluate the fields cache in the element.
 						} break;
 						case 3:
 						{
-							for (j = 0 ; j < number_of_xi ; j++)
+							for (j = 0 ; j < number_of_derivatives ; j++)
 							{
 								for (i = 0 ; i < 3 ; i++)
 								{
 									temp_vector[i] = field->source_fields[0]->
-										derivatives[i * number_of_xi + j];
+										derivatives[i * number_of_derivatives + j];
 									temp_vector[i + 3] = field->source_fields[1]->
-										derivatives[i * number_of_xi + j];
+										derivatives[i * number_of_derivatives + j];
 								}
 								cross_product_FE_value_vector3(temp_vector,
 									field->source_fields[1]->values, temp_vector + 6);
 								for (i = 0 ; i < 3 ; i++)
 								{
-									field->derivatives[i * number_of_xi + j] = 
+									field->derivatives[i * number_of_derivatives + j] = 
 										temp_vector[i + 6];
 								}
 								cross_product_FE_value_vector3(
@@ -842,30 +687,30 @@ Evaluate the fields cache in the element.
 									temp_vector + 3, temp_vector + 6);
 								for (i = 0 ; i < 3 ; i++)
 								{
-									field->derivatives[i * number_of_xi + j] += 
+									field->derivatives[i * number_of_derivatives + j] += 
 										temp_vector[i + 6];
 								}
 							}
 						} break;
 						case 4:
 						{
-							for (j = 0 ; j < number_of_xi ; j++)
+							for (j = 0 ; j < number_of_derivatives ; j++)
 							{
 								for (i = 0 ; i < 4 ; i++)
 								{
 									temp_vector[i] = field->source_fields[0]->
-										derivatives[i * number_of_xi + j];
+										derivatives[i * number_of_derivatives + j];
 									temp_vector[i + 4] = field->source_fields[1]->
-										derivatives[i * number_of_xi + j];
+										derivatives[i * number_of_derivatives + j];
 									temp_vector[i + 8] = field->source_fields[2]->
-										derivatives[i * number_of_xi + j];
+										derivatives[i * number_of_derivatives + j];
 								}
 								cross_product_FE_value_vector4(temp_vector,
 									field->source_fields[1]->values, 
 									field->source_fields[2]->values, temp_vector + 12);
 								for (i = 0 ; i < 4 ; i++)
 								{
-									field->derivatives[i * number_of_xi + j] = 
+									field->derivatives[i * number_of_derivatives + j] = 
 										temp_vector[i + 12];
 								}
 								cross_product_FE_value_vector4(
@@ -873,7 +718,7 @@ Evaluate the fields cache in the element.
 									field->source_fields[2]->values, temp_vector + 12);
 								for (i = 0 ; i < 4 ; i++)
 								{
-									field->derivatives[i * number_of_xi + j] += 
+									field->derivatives[i * number_of_derivatives + j] += 
 										temp_vector[i + 12];
 								}
 								cross_product_FE_value_vector4(
@@ -882,7 +727,7 @@ Evaluate the fields cache in the element.
 									temp_vector + 8, temp_vector + 12);
 								for (i = 0 ; i < 4 ; i++)
 								{
-									field->derivatives[i * number_of_xi + j] += 
+									field->derivatives[i * number_of_derivatives + j] += 
 										temp_vector[i + 12];
 								}
 							}
@@ -925,37 +770,10 @@ Evaluate the fields cache in the element.
 	return (return_code);
 } /* Computed_field_cross_product_evaluate_cache_in_element */
 
-#define Computed_field_cross_product_evaluate_as_string_at_node \
-	Computed_field_default_evaluate_as_string_at_node
+#define Computed_field_cross_product_set_values_at_location \
+   (Computed_field_set_values_at_location_function)NULL
 /*******************************************************************************
-LAST MODIFIED : 11 July 2000
-
-DESCRIPTION :
-Print the values calculated in the cache.
-==============================================================================*/
-
-#define Computed_field_cross_product_evaluate_as_string_in_element \
-	Computed_field_default_evaluate_as_string_in_element
-/*******************************************************************************
-LAST MODIFIED : 11 July 2000
-
-DESCRIPTION :
-Print the values calculated in the cache.
-==============================================================================*/
-
-#define Computed_field_cross_product_set_values_at_node \
-   (Computed_field_set_values_at_node_function)NULL
-/*******************************************************************************
-LAST MODIFIED : 11 July 2000
-
-DESCRIPTION :
-Not implemented yet.
-==============================================================================*/
-
-#define Computed_field_cross_product_set_values_in_element \
-   (Computed_field_set_values_in_element_function)NULL
-/*******************************************************************************
-LAST MODIFIED : 11 July 2000
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 Not implemented yet.
@@ -964,7 +782,7 @@ Not implemented yet.
 #define Computed_field_cross_product_get_native_discretization_in_element \
 	Computed_field_default_get_native_discretization_in_element
 /*******************************************************************************
-LAST MODIFIED : 11 July 2000
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 Inherit result from first source field.
@@ -973,7 +791,7 @@ Inherit result from first source field.
 #define Computed_field_cross_product_find_element_xi \
    (Computed_field_find_element_xi_function)NULL
 /*******************************************************************************
-LAST MODIFIED : 11 July 2000
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 Not implemented yet.
@@ -985,7 +803,7 @@ Not implemented yet.
 static int list_Computed_field_cross_product(
 	struct Computed_field *field)
 /*******************************************************************************
-LAST MODIFIED : 11 July 2000
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 ==============================================================================*/
@@ -1019,7 +837,7 @@ DESCRIPTION :
 static char *Computed_field_cross_product_get_command_string(
 	struct Computed_field *field)
 /*******************************************************************************
-LAST MODIFIED : 15 January 2002
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 Returns allocated command string for reproducing field. Includes type.
@@ -1062,7 +880,7 @@ Returns allocated command string for reproducing field. Includes type.
 #define Computed_field_cross_product_has_multiple_times \
 	Computed_field_default_has_multiple_times
 /*******************************************************************************
-LAST MODIFIED : 21 January 2002
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 Works out whether time influences the field.
@@ -1071,7 +889,7 @@ Works out whether time influences the field.
 int Computed_field_set_type_cross_product(struct Computed_field *field,
 	int dimension, struct Computed_field **source_fields)
 /*******************************************************************************
-LAST MODIFIED : 21 January 2002
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 Converts <field> to type COMPUTED_FIELD_CROSS_PRODUCT with the supplied
@@ -1142,7 +960,7 @@ although its cache may be lost.
 int Computed_field_get_type_cross_product(struct Computed_field *field,
 	int *dimension, struct Computed_field ***source_fields)
 /*******************************************************************************
-LAST MODIFIED : 11 July 2000
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 If the field is of type COMPUTED_FIELD_CROSS_PRODUCT, the 
@@ -1186,7 +1004,7 @@ If the field is of type COMPUTED_FIELD_CROSS_PRODUCT, the
 static int define_Computed_field_type_cross_product(struct Parse_state *state,
 	void *field_void,void *computed_field_vector_operations_package_void)
 /*******************************************************************************
-LAST MODIFIED : 18 December 2001
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 Converts <field> into type COMPUTED_FIELD_CROSS_PRODUCT (if it is not 
@@ -1369,7 +1187,7 @@ static char computed_field_dot_product_type_string[] = "dot_product";
 
 int Computed_field_is_type_dot_product(struct Computed_field *field)
 /*******************************************************************************
-LAST MODIFIED : 18 July 2000
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 Compare the type specific data
@@ -1397,7 +1215,7 @@ Compare the type specific data
 #define Computed_field_dot_product_clear_type_specific \
    Computed_field_default_clear_type_specific
 /*******************************************************************************
-LAST MODIFIED : 25 February 2002
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 No type specific data
@@ -1406,7 +1224,7 @@ No type specific data
 #define Computed_field_dot_product_copy_type_specific \
    Computed_field_default_copy_type_specific
 /*******************************************************************************
-LAST MODIFIED : 25 February 2002
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 No type specific data
@@ -1415,7 +1233,7 @@ No type specific data
 #define Computed_field_dot_product_clear_cache_type_specific \
    (Computed_field_clear_cache_type_specific_function)NULL
 /*******************************************************************************
-LAST MODIFIED : 13 July 2000
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 This function is not needed for this type.
@@ -1424,25 +1242,16 @@ This function is not needed for this type.
 #define Computed_field_dot_product_type_specific_contents_match \
    Computed_field_default_type_specific_contents_match
 /*******************************************************************************
-LAST MODIFIED : 25 February 2002
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 No type specific data
 ==============================================================================*/
 
-#define Computed_field_dot_product_is_defined_in_element \
-	Computed_field_default_is_defined_in_element
+#define Computed_field_dot_product_is_defined_at_location \
+	Computed_field_default_is_defined_at_location
 /*******************************************************************************
-LAST MODIFIED : 11 July 2000
-
-DESCRIPTION :
-Check the source fields using the default.
-==============================================================================*/
-
-#define Computed_field_dot_product_is_defined_at_node \
-	Computed_field_default_is_defined_at_node
-/*******************************************************************************
-LAST MODIFIED : 11 July 2000
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 Check the source fields using the default.
@@ -1451,7 +1260,7 @@ Check the source fields using the default.
 #define Computed_field_dot_product_has_numerical_components \
 	Computed_field_default_has_numerical_components
 /*******************************************************************************
-LAST MODIFIED : 11 July 2000
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 Window projection does have numerical components.
@@ -1460,82 +1269,37 @@ Window projection does have numerical components.
 #define Computed_field_dot_product_not_in_use \
 	(Computed_field_not_in_use_function)NULL
 /*******************************************************************************
-LAST MODIFIED : 21 January 2002
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 No special criteria.
 ==============================================================================*/
 
-static int Computed_field_dot_product_evaluate_cache_at_node(
-	struct Computed_field *field, struct FE_node *node, FE_value time)
+static int Computed_field_dot_product_evaluate_cache_at_location(
+   struct Computed_field *field, Field_location* location)
 /*******************************************************************************
-LAST MODIFIED : 11 July 2000
-
-DESCRIPTION :
-Evaluate the fields cache at the node.
-==============================================================================*/
-{
-	FE_value *temp, *temp2;
-	int i, return_code;
-
-	ENTER(Computed_field_dot_product_evaluate_cache_at_node);
-	if (field && node && (field->number_of_source_fields == 2))
-	{
-		/* 1. Precalculate any source fields that this field depends on */
-		if (return_code = 
-			Computed_field_evaluate_source_fields_cache_at_node(field, node, time))
-		{
-			/* 2. Calculate the field */
-			field->values[0] = 0.0;
-			temp=field->source_fields[0]->values;
-			temp2=field->source_fields[1]->values;
-			for (i=0;i < field->source_fields[0]->number_of_components;i++)
-			{
-				field->values[0] += *temp * *temp2;
-				temp++;
-				temp2++;
-			}
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_dot_product_evaluate_cache_at_node.  "
-			"Invalid arguments.");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Computed_field_dot_product_evaluate_cache_at_node */
-
-static int Computed_field_dot_product_evaluate_cache_in_element(
-	struct Computed_field *field, struct FE_element *element, FE_value *xi,
-	FE_value time, struct FE_element *top_level_element,int calculate_derivatives)
-/*******************************************************************************
-LAST MODIFIED : 11 July 2000
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 Evaluate the fields cache in the element.
 ==============================================================================*/
 {
 	FE_value *temp, *temp2;
-	int element_dimension, i, j, return_code;
+	int i, j, number_of_derivatives, return_code;
 
-	ENTER(Computed_field_dot_product_evaluate_cache_in_element);
-	if (field && element && xi && (field->number_of_source_fields == 2))
+	ENTER(Computed_field_dot_product_evaluate_cache_at_location);
+	if (field && location && (field->number_of_source_fields == 2))
 	{
 		/* 1. Precalculate any source fields that this field depends on */
 		if (return_code = 
-			Computed_field_evaluate_source_fields_cache_in_element(field, element,
-				xi, time, top_level_element, calculate_derivatives))
+			Computed_field_evaluate_source_fields_cache_at_location(field, location))
 		{
 			/* 2. Calculate the field */
-			element_dimension=get_FE_element_dimension(element);
+			number_of_derivatives = location->get_number_of_derivatives();
 			field->values[0] = 0.0;
-			if (calculate_derivatives)
+			if (0 < number_of_derivatives)
 			{
-				for (j=0;j<element_dimension;j++)
+				for (j=0;j<number_of_derivatives;j++)
 				{
 					field->derivatives[j]=0.0;
 				}
@@ -1548,13 +1312,13 @@ Evaluate the fields cache in the element.
 				temp++;
 				temp2++;
 			}
-			if (calculate_derivatives)
+			if (0 < number_of_derivatives)
 			{
 				temp=field->source_fields[0]->values;
 				temp2=field->source_fields[1]->derivatives;
 				for (i=0;i < field->source_fields[0]->number_of_components;i++)
 				{
-					for (j=0;j<element_dimension;j++)
+					for (j=0;j<number_of_derivatives;j++)
 					{
 						field->derivatives[j] += (*temp)*(*temp2);
 						temp2++;
@@ -1565,7 +1329,7 @@ Evaluate the fields cache in the element.
 				temp2=field->source_fields[0]->derivatives;
 				for (i=0;i < field->source_fields[0]->number_of_components;i++)
 				{
-					for (j=0;j<element_dimension;j++)
+					for (j=0;j<number_of_derivatives;j++)
 					{
 						field->derivatives[j] += (*temp)*(*temp2);
 						temp2++;
@@ -1583,46 +1347,19 @@ Evaluate the fields cache in the element.
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Computed_field_dot_product_evaluate_cache_in_element.  "
+			"Computed_field_dot_product_evaluate_cache_at_location.  "
 			"Invalid arguments.");
 		return_code = 0;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* Computed_field_dot_product_evaluate_cache_in_element */
+} /* Computed_field_dot_product_evaluate_cache_at_location */
 
-#define Computed_field_dot_product_evaluate_as_string_at_node \
-	Computed_field_default_evaluate_as_string_at_node
+#define Computed_field_dot_product_set_values_at_location \
+   (Computed_field_set_values_at_location_function)NULL
 /*******************************************************************************
-LAST MODIFIED : 11 July 2000
-
-DESCRIPTION :
-Print the values calculated in the cache.
-==============================================================================*/
-
-#define Computed_field_dot_product_evaluate_as_string_in_element \
-	Computed_field_default_evaluate_as_string_in_element
-/*******************************************************************************
-LAST MODIFIED : 11 July 2000
-
-DESCRIPTION :
-Print the values calculated in the cache.
-==============================================================================*/
-
-#define Computed_field_dot_product_set_values_at_node \
-   (Computed_field_set_values_at_node_function)NULL
-/*******************************************************************************
-LAST MODIFIED : 11 July 2000
-
-DESCRIPTION :
-Not implemented yet.
-==============================================================================*/
-
-#define Computed_field_dot_product_set_values_in_element \
-   (Computed_field_set_values_in_element_function)NULL
-/*******************************************************************************
-LAST MODIFIED : 11 July 2000
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 Not implemented yet.
@@ -1631,7 +1368,7 @@ Not implemented yet.
 #define Computed_field_dot_product_get_native_discretization_in_element \
 	Computed_field_default_get_native_discretization_in_element
 /*******************************************************************************
-LAST MODIFIED : 11 July 2000
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 Inherit result from first source field.
@@ -1640,7 +1377,7 @@ Inherit result from first source field.
 #define Computed_field_dot_product_find_element_xi \
    (Computed_field_find_element_xi_function)NULL
 /*******************************************************************************
-LAST MODIFIED : 11 July 2000
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 Not implemented yet.
@@ -1652,7 +1389,7 @@ Not implemented yet.
 static int list_Computed_field_dot_product(
 	struct Computed_field *field)
 /*******************************************************************************
-LAST MODIFIED : 11 July 2000
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 ==============================================================================*/
@@ -1681,7 +1418,7 @@ DESCRIPTION :
 static char *Computed_field_dot_product_get_command_string(
 	struct Computed_field *field)
 /*******************************************************************************
-LAST MODIFIED : 15 January 2002
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 Returns allocated command string for reproducing field. Includes type.
@@ -1726,7 +1463,7 @@ Returns allocated command string for reproducing field. Includes type.
 #define Computed_field_dot_product_has_multiple_times \
 	Computed_field_default_has_multiple_times
 /*******************************************************************************
-LAST MODIFIED : 21 January 2002
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 Works out whether time influences the field.
@@ -1736,7 +1473,7 @@ int Computed_field_set_type_dot_product(struct Computed_field *field,
 	struct Computed_field *source_field_one,
 	struct Computed_field *source_field_two)
 /*******************************************************************************
-LAST MODIFIED : 21 January 2002
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 Converts <field> to type COMPUTED_FIELD_DOT_PRODUCT with the supplied
@@ -1794,7 +1531,7 @@ int Computed_field_get_type_dot_product(struct Computed_field *field,
 	struct Computed_field **source_field_one,
 	struct Computed_field **source_field_two)
 /*******************************************************************************
-LAST MODIFIED : 7 November 2000
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 If the field is of type COMPUTED_FIELD_DOT_PRODUCT, the 
@@ -1825,7 +1562,7 @@ If the field is of type COMPUTED_FIELD_DOT_PRODUCT, the
 static int define_Computed_field_type_dot_product(struct Parse_state *state,
 	void *field_void,void *computed_field_vector_operations_package_void)
 /*******************************************************************************
-LAST MODIFIED : 18 December 2001
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 Converts <field> into type COMPUTED_FIELD_DOT_PRODUCT (if it is not 
@@ -1932,7 +1669,7 @@ static char computed_field_magnitude_type_string[] = "magnitude";
 
 int Computed_field_is_type_magnitude(struct Computed_field *field)
 /*******************************************************************************
-LAST MODIFIED : 2 October 2000
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 Compare the type specific data
@@ -1960,7 +1697,7 @@ Compare the type specific data
 #define Computed_field_magnitude_clear_type_specific \
    Computed_field_default_clear_type_specific
 /*******************************************************************************
-LAST MODIFIED : 25 February 2002
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 No type specific data
@@ -1969,7 +1706,7 @@ No type specific data
 #define Computed_field_magnitude_copy_type_specific \
    Computed_field_default_copy_type_specific
 /*******************************************************************************
-LAST MODIFIED : 25 February 2002
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 No type specific data
@@ -1978,7 +1715,7 @@ No type specific data
 #define Computed_field_magnitude_clear_cache_type_specific \
    (Computed_field_clear_cache_type_specific_function)NULL
 /*******************************************************************************
-LAST MODIFIED : 13 July 2000
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 This function is not needed for this type.
@@ -1987,25 +1724,16 @@ This function is not needed for this type.
 #define Computed_field_magnitude_type_specific_contents_match \
    Computed_field_default_type_specific_contents_match
 /*******************************************************************************
-LAST MODIFIED : 25 February 2002
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 No type specific data
 ==============================================================================*/
 
-#define Computed_field_magnitude_is_defined_in_element \
-	Computed_field_default_is_defined_in_element
+#define Computed_field_magnitude_is_defined_at_location \
+	Computed_field_default_is_defined_at_location
 /*******************************************************************************
-LAST MODIFIED : 2 October 2000
-
-DESCRIPTION :
-Check the source fields using the default.
-==============================================================================*/
-
-#define Computed_field_magnitude_is_defined_at_node \
-	Computed_field_default_is_defined_at_node
-/*******************************************************************************
-LAST MODIFIED : 2 October 2000
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 Check the source fields using the default.
@@ -2014,7 +1742,7 @@ Check the source fields using the default.
 #define Computed_field_magnitude_has_numerical_components \
 	Computed_field_default_has_numerical_components
 /*******************************************************************************
-LAST MODIFIED : 2 October 2000
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 Window projection does have numerical components.
@@ -2023,75 +1751,30 @@ Window projection does have numerical components.
 #define Computed_field_magnitude_not_in_use \
 	(Computed_field_not_in_use_function)NULL
 /*******************************************************************************
-LAST MODIFIED : 21 January 2002
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 No special criteria.
 ==============================================================================*/
 
-static int Computed_field_magnitude_evaluate_cache_at_node(
-	struct Computed_field *field, struct FE_node *node, FE_value time)
+static int Computed_field_magnitude_evaluate_cache_at_location(
+   struct Computed_field *field, Field_location* location)
 /*******************************************************************************
-LAST MODIFIED : 2 October 2000
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
-Evaluate the fields cache at the node.
-==============================================================================*/
-{
-	FE_value *source_values, sum;
-	int i, return_code, source_number_of_components;
-
-	ENTER(Computed_field_magnitude_evaluate_cache_at_node);
-	if (field && node && (0 < field->number_of_source_fields))
-	{
-		/* 1. Precalculate any source fields that this field depends on */
-		if (return_code = 
-			Computed_field_evaluate_source_fields_cache_at_node(field, node, time))
-		{
-			/* 2. Calculate the field */
-			source_number_of_components =
-				field->source_fields[0]->number_of_components;
-			source_values = field->source_fields[0]->values;
-			sum = 0.0;
-			for (i=0;i<source_number_of_components;i++)
-			{
-				sum += source_values[i]*source_values[i];
-			}
-			field->values[0] = sqrt(sum);
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_magnitude_evaluate_cache_at_node.  "
-			"Invalid arguments.");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Computed_field_magnitude_evaluate_cache_at_node */
-
-static int Computed_field_magnitude_evaluate_cache_in_element(
-	struct Computed_field *field, struct FE_element *element, FE_value *xi,
-	FE_value time, struct FE_element *top_level_element,int calculate_derivatives)
-/*******************************************************************************
-LAST MODIFIED : 2 October 2000
-
-DESCRIPTION :
-Evaluate the fields cache at the node.
+Evaluate the fields cache at the location
 ==============================================================================*/
 {
 	FE_value *source_derivatives, *source_values, sum;
-	int element_dimension, i, j, return_code, source_number_of_components;
+	int number_of_derivatives, i, j, return_code, source_number_of_components;
 
-	ENTER(Computed_field_magnitude_evaluate_cache_in_element);
-	if (field && element && xi && (0 < field->number_of_source_fields))
+	ENTER(Computed_field_magnitude_evaluate_cache_at_location);
+	if (field && location && (0 < field->number_of_source_fields))
 	{
 		/* 1. Precalculate any source fields that this field depends on */
 		if (return_code = 
-			Computed_field_evaluate_source_fields_cache_in_element(field, element,
-				xi, time, top_level_element, calculate_derivatives))
+			Computed_field_evaluate_source_fields_cache_at_location(field, location))
 		{
 			/* 2. Calculate the field */
 			source_number_of_components =
@@ -2104,16 +1787,16 @@ Evaluate the fields cache at the node.
 			}
 			field->values[0] = sqrt(sum);
 
-			if (calculate_derivatives)
+			number_of_derivatives = location->get_number_of_derivatives();
+			if (0 < number_of_derivatives)
 			{
 				source_derivatives=field->source_fields[0]->derivatives;
-				element_dimension=get_FE_element_dimension(element);
-				for (j=0;j<element_dimension;j++)
+				for (j=0;j<number_of_derivatives;j++)
 				{
 					sum = 0.0;
 					for (i=0;i<source_number_of_components;i++)
 					{
-						sum += source_values[i]*source_derivatives[i*element_dimension+j];
+						sum += source_values[i]*source_derivatives[i*number_of_derivatives+j];
 					}
 					field->derivatives[j] = sum / field->values[0];
 				}
@@ -2124,114 +1807,20 @@ Evaluate the fields cache at the node.
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Computed_field_magnitude_evaluate_cache_in_element.  "
+			"Computed_field_magnitude_evaluate_cache_at_location.  "
 			"Invalid arguments.");
 		return_code = 0;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* Computed_field_magnitude_evaluate_cache_in_element */
+} /* Computed_field_magnitude_evaluate_cache_at_location */
 
-#define Computed_field_magnitude_evaluate_as_string_at_node \
-	Computed_field_default_evaluate_as_string_at_node
+static int Computed_field_magnitude_set_values_at_location(
+	Computed_field* field,
+   Field_location* location, FE_value *values)
 /*******************************************************************************
-LAST MODIFIED : 2 October 2000
-
-DESCRIPTION :
-Print the values calculated in the cache.
-==============================================================================*/
-
-#define Computed_field_magnitude_evaluate_as_string_in_element \
-	Computed_field_default_evaluate_as_string_in_element
-/*******************************************************************************
-LAST MODIFIED : 2 October 2000
-
-DESCRIPTION :
-Print the values calculated in the cache.
-==============================================================================*/
-
-static int Computed_field_magnitude_set_values_at_node(
-	struct Computed_field *field,struct FE_node *node,FE_value time,FE_value *values)
-/*******************************************************************************
-LAST MODIFIED : 28 October 2004
-
-DESCRIPTION :
-Sets the <values> of the computed <field> at <node>.
-==============================================================================*/
-{
-	FE_value magnitude,*source_values;
-	int i,return_code,source_number_of_components;
-
-	ENTER(Computed_field_magnitude_set_values_at_node);
-	if (field && node && values)
-	{
-		/* need current vector field values "magnify" */
-		source_number_of_components=field->source_fields[0]->number_of_components;
-		if (ALLOCATE(source_values,FE_value,source_number_of_components))
-		{
-			if (Computed_field_evaluate_at_node(field->source_fields[0],node,
-					 time,source_values))
-			{
-				return_code=1;
-				/* if the source field is not a zero vector, set its magnitude to
-					 the given value */
-				magnitude = 0.0;
-				for (i=0;i<source_number_of_components;i++)
-				{
-					magnitude += source_values[i]*source_values[i];
-				}
-				if (0.0 < magnitude)
-				{
-					magnitude = values[0] / sqrt(magnitude);
-					for (i=0;i<source_number_of_components;i++)
-					{
-						source_values[i] *= magnitude;
-					}
-					return_code=Computed_field_set_values_at_node(
-						field->source_fields[0],node,time,source_values);
-				}
-				else
-				{
-					/* not an error; just a warning */
-					display_message(WARNING_MESSAGE,
-						"Magnitude field %s cannot be inverted for zero vector",
-						field->name);
-				}
-			}
-			else
-			{
-				return_code=0;
-			}
-			DEALLOCATE(source_values);
-		}
-		else
-		{
-			return_code=0;
-		}
-		if (!return_code)
-		{
-			display_message(ERROR_MESSAGE,
-				"Computed_field_magnitude_set_values_at_node.  "
-				"Could not set magnitude field %s at node",field->name);
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_magnitude_set_values_at_node.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Computed_field_magnitude_set_values_at_node */
-
-static int Computed_field_magnitude_set_values_in_element(
-	struct Computed_field *field, struct FE_element *element,FE_value *xi,
-	FE_value time, FE_value *values)
-/*******************************************************************************
-LAST MODIFIED : 12 October 2005
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 Sets the <values> of the computed <field> over the <element>.
@@ -2240,17 +1829,16 @@ Sets the <values> of the computed <field> over the <element>.
 	FE_value magnitude,*source_values;
 	int k,return_code,source_number_of_components;
 
-	ENTER(Computed_field_magnitude_set_values_in_element);
-	if (field && element && xi && values)
+	ENTER(Computed_field_magnitude_set_values_at_location);
+	if (field && location && values)
 	{
 		return_code=1;
 		if (ALLOCATE(source_values, FE_value,
 			field->source_fields[0]->number_of_components))
 		{
 			/* need current field values to "magnify" */
-			if (Computed_field_evaluate_in_element(field->source_fields[0],
-					element, xi, time, /*top_level*/(struct FE_element *)NULL,
-					source_values, /*derivatives*/(FE_value *)NULL))
+			if (Computed_field_evaluate_cache_at_location(field->source_fields[0],
+					location))
 			{
 				source_number_of_components =
 					field->source_fields[0]->number_of_components;
@@ -2259,14 +1847,16 @@ Sets the <values> of the computed <field> over the <element>.
 				magnitude = 0.0;
 				for (k=0;k<source_number_of_components;k++)
 				{
-					magnitude += source_values[k] * source_values[k];
+					magnitude += field->source_fields[0]->source_values[k] *
+						field->source_fields[0]->source_values[k];
 				}
 				if (0.0 < magnitude)
 				{
 					magnitude = values[0] / sqrt(magnitude);
 					for (k=0;k<source_number_of_components;k++)
 					{
-						source_values[k] *= magnitude;
+						source_values[k] = field->source_fields[0]->source_values[k]
+							* magnitude;
 					}
 				}
 				else
@@ -2276,13 +1866,13 @@ Sets the <values> of the computed <field> over the <element>.
 						"Magnitude field %s cannot be inverted for zero vectors",
 						field->name);
 				}
-				return_code=Computed_field_set_values_in_element(
-					field->source_fields[0],element,xi,time,source_values);
+				return_code=Computed_field_set_values_at_location(
+					field->source_fields[0],location,source_values);
 			}
 			else
 			{
 				display_message(ERROR_MESSAGE,
-					"Computed_field_magnitude_set_values_in_element.  "
+					"Computed_field_magnitude_set_values_at_location.  "
 					"Could not evaluate source field for %s.",field->name);
 				return_code=0;
 			}
@@ -2292,19 +1882,19 @@ Sets the <values> of the computed <field> over the <element>.
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Computed_field_magnitude_set_values_in_element.  "
+			"Computed_field_magnitude_set_values_at_location.  "
 			"Invalid argument(s)");
 		return_code=0;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* Computed_field_magnitude_set_values_in_element */
+} /* Computed_field_magnitude_set_values_at_location */
 
 #define Computed_field_magnitude_get_native_discretization_in_element \
 	Computed_field_default_get_native_discretization_in_element
 /*******************************************************************************
-LAST MODIFIED : 2 October 2000
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 Inherit result from first source field.
@@ -2313,7 +1903,7 @@ Inherit result from first source field.
 #define Computed_field_magnitude_find_element_xi \
    (Computed_field_find_element_xi_function)NULL
 /*******************************************************************************
-LAST MODIFIED : 2 October 2000
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 Not implemented yet.
@@ -2325,7 +1915,7 @@ Not implemented yet.
 static int list_Computed_field_magnitude(
 	struct Computed_field *field)
 /*******************************************************************************
-LAST MODIFIED : 2 October 2000
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 ==============================================================================*/
@@ -2353,7 +1943,7 @@ DESCRIPTION :
 static char *Computed_field_magnitude_get_command_string(
 	struct Computed_field *field)
 /*******************************************************************************
-LAST MODIFIED : 15 January 2002
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 Returns allocated command string for reproducing field. Includes type.
@@ -2391,7 +1981,7 @@ Returns allocated command string for reproducing field. Includes type.
 #define Computed_field_magnitude_has_multiple_times \
 	Computed_field_default_has_multiple_times
 /*******************************************************************************
-LAST MODIFIED : 21 January 2002
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 Works out whether time influences the field.
@@ -2400,7 +1990,7 @@ Works out whether time influences the field.
 int Computed_field_set_type_magnitude(struct Computed_field *field,
 	struct Computed_field *source_field)
 /*******************************************************************************
-LAST MODIFIED : 21 January 2002
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 Converts <field> to type COMPUTED_FIELD_MAGNITUDE with the supplied
@@ -2453,7 +2043,7 @@ although its cache may be lost.
 int Computed_field_get_type_magnitude(struct Computed_field *field,
 	struct Computed_field **source_field)
 /*******************************************************************************
-LAST MODIFIED : 7 November 2000
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 If the field is of type COMPUTED_FIELD_MAGNITUDE, the 
@@ -2483,7 +2073,7 @@ If the field is of type COMPUTED_FIELD_MAGNITUDE, the
 static int define_Computed_field_type_magnitude(struct Parse_state *state,
 	void *field_void,void *computed_field_vector_operations_package_void)
 /*******************************************************************************
-LAST MODIFIED : 18 December 2001
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 Converts <field> into type COMPUTED_FIELD_MAGNITUDE (if it is not 
@@ -2567,7 +2157,7 @@ static char computed_field_cubic_texture_coordinates_type_string[]
 
 int Computed_field_is_type_cubic_texture_coordinates(struct Computed_field *field)
 /*******************************************************************************
-LAST MODIFIED : 18 July 2000
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 Compare the type specific data
@@ -2595,7 +2185,7 @@ Compare the type specific data
 #define Computed_field_cubic_texture_coordinates_clear_type_specific \
    Computed_field_default_clear_type_specific
 /*******************************************************************************
-LAST MODIFIED : 25 February 2002
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 No type specific data
@@ -2604,7 +2194,7 @@ No type specific data
 #define Computed_field_cubic_texture_coordinates_copy_type_specific \
    Computed_field_default_copy_type_specific
 /*******************************************************************************
-LAST MODIFIED : 25 February 2002
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 No type specific data
@@ -2613,7 +2203,7 @@ No type specific data
 #define Computed_field_cubic_texture_coordinates_clear_cache_type_specific \
    (Computed_field_clear_cache_type_specific_function)NULL
 /*******************************************************************************
-LAST MODIFIED : 13 July 2000
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 This function is not needed for this type.
@@ -2622,25 +2212,16 @@ This function is not needed for this type.
 #define Computed_field_cubic_texture_coordinates_type_specific_contents_match \
    Computed_field_default_type_specific_contents_match
 /*******************************************************************************
-LAST MODIFIED : 25 February 2002
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 No type specific data
 ==============================================================================*/
 
-#define Computed_field_cubic_texture_coordinates_is_defined_in_element \
-	Computed_field_default_is_defined_in_element
+#define Computed_field_cubic_texture_coordinates_is_defined_at_location \
+	Computed_field_default_is_defined_at_location
 /*******************************************************************************
-LAST MODIFIED : 11 July 2000
-
-DESCRIPTION :
-Check the source fields using the default.
-==============================================================================*/
-
-#define Computed_field_cubic_texture_coordinates_is_defined_at_node \
-	Computed_field_default_is_defined_at_node
-/*******************************************************************************
-LAST MODIFIED : 11 July 2000
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 Check the source fields using the default.
@@ -2649,7 +2230,7 @@ Check the source fields using the default.
 #define Computed_field_cubic_texture_coordinates_has_numerical_components \
 	Computed_field_default_has_numerical_components
 /*******************************************************************************
-LAST MODIFIED : 11 July 2000
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 Window projection does have numerical components.
@@ -2658,93 +2239,31 @@ Window projection does have numerical components.
 #define Computed_field_cubic_texture_coordinates_not_in_use \
 	(Computed_field_not_in_use_function)NULL
 /*******************************************************************************
-LAST MODIFIED : 21 January 2002
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 No special criteria.
 ==============================================================================*/
 
-static int Computed_field_cubic_texture_coordinates_evaluate_cache_at_node(
-	struct Computed_field *field, struct FE_node *node, FE_value time)
+static int Computed_field_cubic_texture_coordinates_evaluate_cache_at_location(
+   struct Computed_field *field, Field_location* location)
 /*******************************************************************************
-LAST MODIFIED : 21 November 2001
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
-Evaluate the fields cache at the node.
+Evaluate the fields cache at the location
 ==============================================================================*/
 {
 	FE_value *temp;
 	int i, j, number_of_components, return_code;
 
-	ENTER(Computed_field_cubic_texture_coordinates_evaluate_cache_at_node);
-	if (field && node && (field->number_of_source_fields > 0) && 
+	ENTER(Computed_field_cubic_texture_coordinates_evaluate_cache_at_location);
+	if (field && location && (field->number_of_source_fields > 0) && 
 		(field->number_of_components == field->source_fields[0]->number_of_components))
 	{
 		/* 1. Precalculate any source fields that this field depends on */
 		if (return_code = 
-			Computed_field_evaluate_source_fields_cache_at_node(field, node, time))
-		{
-			/* 2. Calculate the field */
-			number_of_components = field->number_of_components;
-			temp=field->source_fields[0]->values;
-			field->values[number_of_components - 1] = fabs(*temp);
-			temp++;
-			j = 0;
-			for (i=1;i <number_of_components;i++)
-			{
-				if (fabs(*temp) > field->values[number_of_components - 1])
-				{
-					field->values[number_of_components - 1] = fabs(*temp);
-					j = i;
-				}
-				temp++;
-			}
-			temp=field->source_fields[0]->values;
-			for (i=0;i < number_of_components - 1;i++)
-			{
-				if ( i == j )
-				{
-					/* Skip over the maximum coordinate */
-					temp++;
-				}
-				field->values[i] = *temp / field->values[number_of_components - 1];
-				temp++;
-			}
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_cubic_texture_coordinates_evaluate_cache_at_node.  "
-			"Invalid arguments.");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Computed_field_cubic_texture_coordinates_evaluate_cache_at_node */
-
-static int Computed_field_cubic_texture_coordinates_evaluate_cache_in_element(
-	struct Computed_field *field, struct FE_element *element, FE_value *xi,
-	FE_value time, struct FE_element *top_level_element,int calculate_derivatives)
-/*******************************************************************************
-LAST MODIFIED : 11 July 2000
-
-DESCRIPTION :
-Evaluate the fields cache at the node.
-==============================================================================*/
-{
-	FE_value *temp;
-	int i, j, number_of_components, return_code;
-
-	ENTER(Computed_field_cubic_texture_coordinates_evaluate_cache_in_element);
-	if (field && element && xi && (field->number_of_source_fields > 0) && 
-		(field->number_of_components == field->source_fields[0]->number_of_components))
-	{
-		/* 1. Precalculate any source fields that this field depends on */
-		if (return_code = 
-			Computed_field_evaluate_source_fields_cache_in_element(field, element,
-				xi, time, top_level_element, calculate_derivatives))
+			Computed_field_evaluate_source_fields_cache_at_location(field, location))
 		{
 			/* 2. Calculate the field */
 			number_of_components = field->number_of_components;
@@ -2778,46 +2297,19 @@ Evaluate the fields cache at the node.
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Computed_field_cubic_texture_coordinates_evaluate_cache_in_element.  "
+			"Computed_field_cubic_texture_coordinates_evaluate_cache_at_location.  "
 			"Invalid arguments.");
 		return_code = 0;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* Computed_field_cubic_texture_coordinates_evaluate_cache_in_element */
+} /* Computed_field_cubic_texture_coordinates_evaluate_cache_at_location */
 
-#define Computed_field_cubic_texture_coordinates_evaluate_as_string_at_node \
-	Computed_field_default_evaluate_as_string_at_node
+#define Computed_field_cubic_texture_coordinates_set_values_at_location \
+   (Computed_field_set_values_at_location_function)NULL
 /*******************************************************************************
-LAST MODIFIED : 11 July 2000
-
-DESCRIPTION :
-Print the values calculated in the cache.
-==============================================================================*/
-
-#define Computed_field_cubic_texture_coordinates_evaluate_as_string_in_element \
-	Computed_field_default_evaluate_as_string_in_element
-/*******************************************************************************
-LAST MODIFIED : 11 July 2000
-
-DESCRIPTION :
-Print the values calculated in the cache.
-==============================================================================*/
-
-#define Computed_field_cubic_texture_coordinates_set_values_at_node \
-   (Computed_field_set_values_at_node_function)NULL
-/*******************************************************************************
-LAST MODIFIED : 11 July 2000
-
-DESCRIPTION :
-Not implemented yet.
-==============================================================================*/
-
-#define Computed_field_cubic_texture_coordinates_set_values_in_element \
-   (Computed_field_set_values_in_element_function)NULL
-/*******************************************************************************
-LAST MODIFIED : 11 July 2000
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 Not implemented yet.
@@ -2826,7 +2318,7 @@ Not implemented yet.
 #define Computed_field_cubic_texture_coordinates_get_native_discretization_in_element \
 	Computed_field_default_get_native_discretization_in_element
 /*******************************************************************************
-LAST MODIFIED : 11 July 2000
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 Inherit result from first source field.
@@ -2835,7 +2327,7 @@ Inherit result from first source field.
 #define Computed_field_cubic_texture_coordinates_find_element_xi \
    (Computed_field_find_element_xi_function)NULL
 /*******************************************************************************
-LAST MODIFIED : 11 July 2000
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 Not implemented yet.
@@ -2847,7 +2339,7 @@ Not implemented yet.
 static int list_Computed_field_cubic_texture_coordinates(
 	struct Computed_field *field)
 /*******************************************************************************
-LAST MODIFIED : 11 July 2000
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 ==============================================================================*/
@@ -2875,7 +2367,7 @@ DESCRIPTION :
 static char *Computed_field_cubic_texture_coordinates_get_command_string(
 	struct Computed_field *field)
 /*******************************************************************************
-LAST MODIFIED : 15 January 2002
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 Returns allocated command string for reproducing field. Includes type.
@@ -2913,7 +2405,7 @@ Returns allocated command string for reproducing field. Includes type.
 #define Computed_field_cubic_texture_coordinates_has_multiple_times \
 	Computed_field_default_has_multiple_times
 /*******************************************************************************
-LAST MODIFIED : 21 January 2002
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 Works out whether time influences the field.
@@ -2922,7 +2414,7 @@ Works out whether time influences the field.
 int Computed_field_set_type_cubic_texture_coordinates(struct Computed_field *field,
 	struct Computed_field *source_field)
 /*******************************************************************************
-LAST MODIFIED : 24 January 2002
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 Converts <field> to type COMPUTED_FIELD_CUBIC_TEXTURE_COORDINATES with the supplied
@@ -2975,7 +2467,7 @@ although its cache may be lost.
 int Computed_field_get_type_cubic_texture_coordinates(struct Computed_field *field,
 	struct Computed_field **source_field)
 /*******************************************************************************
-LAST MODIFIED : 24 January 2002
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 If the field is of type CUBIC_TEXTURE_COORDINATES, the source field used
@@ -3005,7 +2497,7 @@ by it is returned - otherwise an error is reported.
 static int define_Computed_field_type_cubic_texture_coordinates(struct Parse_state *state,
 	void *field_void,void *computed_field_vector_operations_package_void)
 /*******************************************************************************
-LAST MODIFIED : 18 December 2001
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 Converts <field> into type COMPUTED_FIELD_CUBIC_TEXTURE_COORDINATES (if it is not 
@@ -3087,7 +2579,7 @@ already) and allows its contents to be modified.
 int Computed_field_register_types_vector_operations(
 	struct Computed_field_package *computed_field_package)
 /*******************************************************************************
-LAST MODIFIED : 2 October 2000
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 ==============================================================================*/

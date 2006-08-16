@@ -57,6 +57,10 @@ DESCRIPTION :
 struct Computed_field_find_element_xi_cache is private.
 ==============================================================================*/
 
+#ifdef __cplusplus
+extern "C" {
+#endif /* __cplusplus */
+
 int Computed_field_perform_find_element_xi(struct Computed_field *field,
 	FE_value *values, int number_of_values, struct FE_element **element, 
 	FE_value *xi, int element_dimension, struct Cmiss_region *search_region,
@@ -121,4 +125,8 @@ LAST MODIFIED : 20 June 2000
 DESCRIPTION :
 Frees memory/deaccess cache at <*cache_address>.
 ==============================================================================*/
+
+#ifdef __cplusplus
+}
+#endif /* __cplusplus */
 #endif /* !defined (COMPUTED_FIELD_FIND_XI_H) */

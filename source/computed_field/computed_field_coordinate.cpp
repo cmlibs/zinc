@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : computed_field_coordinate.c
 
-LAST MODIFIED : 28 October 2004
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 ==============================================================================*/
@@ -40,10 +40,13 @@ DESCRIPTION :
  * the terms of any one of the MPL, the GPL or the LGPL.
  *
  * ***** END LICENSE BLOCK ***** */
+extern "C" {
 #include <stdio.h>
 #include <math.h>
 #include "computed_field/computed_field.h"
-#include "computed_field/computed_field_private.h"
+}
+#include "computed_field/computed_field_private.hpp"
+extern "C" {
 #include "computed_field/computed_field_coordinate.h"
 #include "computed_field/computed_field_finite_element.h"
 #include "computed_field/computed_field_set.h"
@@ -51,11 +54,12 @@ DESCRIPTION :
 #include "general/debug.h"
 #include "general/mystring.h"
 #include "user_interface/message.h"
+}
 
 int Computed_field_extract_rc(struct Computed_field *field,
 	int element_dimension,FE_value *rc_coordinates,FE_value *rc_derivatives)
 /*******************************************************************************
-LAST MODIFIED : 9 February 1999
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 Takes the values in <field> and converts them from their current coordinate
@@ -213,7 +217,7 @@ static char computed_field_coordinate_transformation_type_string[] = "coordinate
 
 int Computed_field_is_type_coordinate_transformation(struct Computed_field *field)
 /*******************************************************************************
-LAST MODIFIED : 8 November 2001
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 Compare the type specific data
@@ -241,7 +245,7 @@ Compare the type specific data
 #define Computed_field_coordinate_transformation_clear_type_specific \
    Computed_field_default_clear_type_specific
 /*******************************************************************************
-LAST MODIFIED : 25 February 2002
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 No type specific data
@@ -250,7 +254,7 @@ No type specific data
 #define Computed_field_coordinate_transformation_copy_type_specific \
    Computed_field_default_copy_type_specific
 /*******************************************************************************
-LAST MODIFIED : 25 February 2002
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 No type specific data
@@ -259,7 +263,7 @@ No type specific data
 #define Computed_field_coordinate_transformation_clear_cache_type_specific \
    (Computed_field_clear_cache_type_specific_function)NULL
 /*******************************************************************************
-LAST MODIFIED : 25 February 2002
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 This function is not needed for this type.
@@ -268,25 +272,16 @@ This function is not needed for this type.
 #define Computed_field_coordinate_transformation_type_specific_contents_match \
    Computed_field_default_type_specific_contents_match
 /*******************************************************************************
-LAST MODIFIED : 25 February 2002
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 No type specific data
 ==============================================================================*/
 
-#define Computed_field_coordinate_transformation_is_defined_in_element \
-	Computed_field_default_is_defined_in_element
+#define Computed_field_coordinate_transformation_is_defined_at_location \
+	Computed_field_default_is_defined_at_location
 /*******************************************************************************
-LAST MODIFIED : 8 November 2001
-
-DESCRIPTION :
-Check the source fields using the default.
-==============================================================================*/
-
-#define Computed_field_coordinate_transformation_is_defined_at_node \
-	Computed_field_default_is_defined_at_node
-/*******************************************************************************
-LAST MODIFIED : 8 November 2001
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 Check the source fields using the default.
@@ -295,7 +290,7 @@ Check the source fields using the default.
 #define Computed_field_coordinate_transformation_has_numerical_components \
 	Computed_field_default_has_numerical_components
 /*******************************************************************************
-LAST MODIFIED : 8 November 2001
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 Window projection does have numerical components.
@@ -304,7 +299,7 @@ Window projection does have numerical components.
 #define Computed_field_coordinate_transformation_not_in_use \
 	(Computed_field_not_in_use_function)NULL
 /*******************************************************************************
-LAST MODIFIED : 8 November 2001
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 No special criteria.
@@ -313,7 +308,7 @@ No special criteria.
 static int Computed_field_evaluate_coordinate_transformation(
 	struct Computed_field *field, int element_dimension,int calculate_derivatives)
 /*******************************************************************************
-LAST MODIFIED : 8 November 2001
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 Function called by Computed_field_evaluate_cache_in_element/at_node to compute
@@ -384,146 +379,47 @@ calculate_derivatives set) for the same element, with the given
 	return (return_code);
 } /* Computed_field_evaluate_rc_coordinate */
 
-static int Computed_field_coordinate_transformation_evaluate_cache_at_node(
-	struct Computed_field *field, struct FE_node *node, FE_value time)
+static int Computed_field_coordinate_transformation_evaluate_cache_at_location(
+   struct Computed_field *field, Field_location* location)
 /*******************************************************************************
-LAST MODIFIED : 8 November 2001
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
-Evaluate the fields cache at the node.
+Evaluate the fields cache at the location
 ==============================================================================*/
 {
-	int return_code;
+	int number_of_derivatives, return_code;
 
-	ENTER(Computed_field_coordinate_transformation_evaluate_cache_at_node);
-	if (field && node && (0 < field->number_of_source_fields))
+	ENTER(Computed_field_coordinate_transformation_evaluate_cache_at_location);
+	if (field && location && (0 < field->number_of_source_fields))
 	{
+		number_of_derivatives = location->get_number_of_derivatives();
 		/* 1. Precalculate any source fields that this field depends on */
 		if (return_code = 
-			Computed_field_evaluate_source_fields_cache_at_node(field, node, time))
+			Computed_field_evaluate_source_fields_cache_at_location(field, location))
 		{
 			/* 2. Calculate the field */
 			return_code=Computed_field_evaluate_coordinate_transformation(field,
-				/*element_dimension*/0,/*calculate_derivatives*/0);
+				number_of_derivatives,(number_of_derivatives>0));
 		}
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Computed_field_coordinate_transformation_evaluate_cache_at_node.  "
+			"Computed_field_coordinate_transformation_evaluate_cache_at_location.  "
 			"Invalid arguments.");
 		return_code = 0;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* Computed_field_coordinate_transformation_evaluate_cache_at_node */
+} /* Computed_field_coordinate_transformation_evaluate_cache_at_location */
 
-static int Computed_field_coordinate_transformation_evaluate_cache_in_element(
-	struct Computed_field *field, struct FE_element *element, FE_value *xi,
-	FE_value time, struct FE_element *top_level_element,int calculate_derivatives)
+static int Computed_field_coordinate_transformation_set_values_at_location(
+	Computed_field* field,
+   Field_location* location, FE_value *values)
 /*******************************************************************************
-LAST MODIFIED : 8 November 2001
-
-DESCRIPTION :
-Evaluate the fields cache at the node.
-==============================================================================*/
-{
-	int element_dimension, return_code;
-
-	ENTER(Computed_field_coordinate_transformation_evaluate_cache_in_element);
-	if (field && element && xi && (0 < field->number_of_source_fields))
-	{
-		element_dimension=get_FE_element_dimension(element);
-		/* 1. Precalculate any source fields that this field depends on */
-		if (return_code = 
-			Computed_field_evaluate_source_fields_cache_in_element(field, element,
-				xi, time, top_level_element, calculate_derivatives))
-		{
-			/* 2. Calculate the field */
-			return_code=Computed_field_evaluate_coordinate_transformation(field,
-				element_dimension,calculate_derivatives);
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_coordinate_transformation_evaluate_cache_in_element.  "
-			"Invalid arguments.");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Computed_field_coordinate_transformation_evaluate_cache_in_element */
-
-#define Computed_field_coordinate_transformation_evaluate_as_string_at_node \
-	Computed_field_default_evaluate_as_string_at_node
-/*******************************************************************************
-LAST MODIFIED : 8 November 2001
-
-DESCRIPTION :
-Print the values calculated in the cache.
-==============================================================================*/
-
-#define Computed_field_coordinate_transformation_evaluate_as_string_in_element \
-	Computed_field_default_evaluate_as_string_in_element
-/*******************************************************************************
-LAST MODIFIED : 8 November 2001
-
-DESCRIPTION :
-Print the values calculated in the cache.
-==============================================================================*/
-
-static int Computed_field_coordinate_transformation_set_values_at_node(
-	struct Computed_field *field,struct FE_node *node,FE_value time,FE_value *values)
-/*******************************************************************************
-LAST MODIFIED : 28 October 2004
-
-DESCRIPTION :
-Sets the <values> of the computed <field> at <node>.
-==============================================================================*/
-{
-	int return_code;
-
-	ENTER(Computed_field_coordinate_transformation_set_values_at_node);
-	if (field && node && values)
-	{
-		FE_value source_field_coordinates[3];
-		
-		/* convert this fields values back into source coordinate system */
-		return_code=
-			convert_Coordinate_system(&(field->coordinate_system),
-			field->number_of_components,values,
-			&(field->source_fields[0]->coordinate_system),
-			field->source_fields[0]->number_of_components,
-			source_field_coordinates,
-			/*jacobian*/(float *)NULL)&&
-			Computed_field_set_values_at_node(field->source_fields[0],
-			node,time,source_field_coordinates);
-		if (!return_code)
-		{
-			display_message(ERROR_MESSAGE,
-				"Computed_field_coordinate_transformation_set_values_at_node.  "
-				"Could not set coordinate_transformation field %s at node",field->name);
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_coordinate_transformation_set_values_at_node.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Computed_field_coordinate_transformation_set_values_at_node */
-
-static int Computed_field_coordinate_transformation_set_values_in_element(
-	struct Computed_field *field, struct FE_element *element,FE_value *xi,
-	FE_value time, FE_value *values)
-/*******************************************************************************
-LAST MODIFIED : 12 October 2005
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 Sets the <values> of the computed <field> over the <element>.
@@ -532,8 +428,8 @@ Sets the <values> of the computed <field> over the <element>.
 	FE_value *source_values;
 	int return_code;
 
-	ENTER(Computed_field_coordinate_transformation_set_values_in_element);
-	if (field && element && xi && values)
+	ENTER(Computed_field_coordinate_transformation_set_values_at_location);
+	if (field && location && values)
 	{
 		return_code=1;
 		/* 3 values for non-rc coordinate system */
@@ -545,8 +441,8 @@ Sets the <values> of the computed <field> over the <element>.
 					field->source_fields[0]->number_of_components,
 					source_values,/*jacobian*/(float *)NULL))
 			{
-				return_code=Computed_field_set_values_in_element(
-					field->source_fields[0],element,xi,time,source_values);
+				return_code=Computed_field_set_values_at_location(
+					field->source_fields[0],location,source_values);
 			}
 			DEALLOCATE(source_values);
 		}
@@ -558,19 +454,19 @@ Sets the <values> of the computed <field> over the <element>.
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Computed_field_coordinate_transformation_set_values_in_element.  "
+			"Computed_field_coordinate_transformation_set_values_at_location.  "
 			"Invalid argument(s)");
 		return_code=0;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* Computed_field_coordinate_transformation_set_values_in_element */
+} /* Computed_field_coordinate_transformation_set_values_at_location */
 
 #define Computed_field_coordinate_transformation_get_native_discretization_in_element \
 	Computed_field_default_get_native_discretization_in_element
 /*******************************************************************************
-LAST MODIFIED : 8 November 2001
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 Inherit result from first source field.
@@ -584,7 +480,7 @@ static int Computed_field_coordinate_transformation_find_element_xi(
 	FE_value *values, int number_of_values, struct FE_element **element, 
 	FE_value *xi, int element_dimension, struct Cmiss_region *search_region) 
 /*******************************************************************************
-LAST MODIFIED : 13 March 2003
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 ==============================================================================*/
@@ -626,7 +522,7 @@ DESCRIPTION :
 static int list_Computed_field_coordinate_transformation(
 	struct Computed_field *field)
 /*******************************************************************************
-LAST MODIFIED : 8 November 2001
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 ==============================================================================*/
@@ -654,7 +550,7 @@ DESCRIPTION :
 static char *Computed_field_coordinate_transformation_get_command_string(
 	struct Computed_field *field)
 /*******************************************************************************
-LAST MODIFIED : 15 January 2002
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 Returns allocated command string for reproducing field. Includes type.
@@ -692,7 +588,7 @@ Returns allocated command string for reproducing field. Includes type.
 #define Computed_field_coordinate_transformation_has_multiple_times \
 	Computed_field_default_has_multiple_times
 /*******************************************************************************
-LAST MODIFIED : 21 January 2002
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 Works out whether time influences the field.
@@ -701,7 +597,7 @@ Works out whether time influences the field.
 int Computed_field_set_type_coordinate_transformation(
 	struct Computed_field *field, struct Computed_field *source_field)
 /*******************************************************************************
-LAST MODIFIED : 21 January 2002
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 Converts <field> to type COMPUTED_FIELD_COORDINATE_TRANSFORMATION with the supplied
@@ -754,7 +650,7 @@ although its cache may be lost.
 int Computed_field_get_type_coordinate_transformation(struct Computed_field *field,
 	struct Computed_field **source_field)
 /*******************************************************************************
-LAST MODIFIED : 8 November 2001
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 If the field is of type COMPUTED_FIELD_COORDINATE_TRANSFORMATION, the 
@@ -784,7 +680,7 @@ If the field is of type COMPUTED_FIELD_COORDINATE_TRANSFORMATION, the
 static int define_Computed_field_type_coordinate_transformation(struct Parse_state *state,
 	void *field_void,void *computed_field_coordinate_package_void)
 /*******************************************************************************
-LAST MODIFIED : 18 December 2001
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 Converts <field> into type COMPUTED_FIELD_COORDINATE_TRANSFORMATION (if it is not 
@@ -868,7 +764,7 @@ static char computed_field_vector_coordinate_transformation_type_string[] = "vec
 
 int Computed_field_is_type_vector_coordinate_transformation(struct Computed_field *field)
 /*******************************************************************************
-LAST MODIFIED : 8 November 2001
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 Compare the type specific data
@@ -896,7 +792,7 @@ Compare the type specific data
 #define Computed_field_vector_coordinate_transformation_clear_type_specific \
    Computed_field_default_clear_type_specific
 /*******************************************************************************
-LAST MODIFIED : 25 February 2002
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 No type specific data
@@ -905,7 +801,7 @@ No type specific data
 #define Computed_field_vector_coordinate_transformation_copy_type_specific \
    Computed_field_default_copy_type_specific
 /*******************************************************************************
-LAST MODIFIED : 25 February 2002
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 No type specific data
@@ -914,7 +810,7 @@ No type specific data
 #define Computed_field_vector_coordinate_transformation_clear_cache_type_specific \
    (Computed_field_clear_cache_type_specific_function)NULL
 /*******************************************************************************
-LAST MODIFIED : 25 February 2002
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 This function is not needed for this type.
@@ -923,25 +819,16 @@ This function is not needed for this type.
 #define Computed_field_vector_coordinate_transformation_type_specific_contents_match \
    Computed_field_default_type_specific_contents_match
 /*******************************************************************************
-LAST MODIFIED : 25 February 2002
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 No type specific data
 ==============================================================================*/
 
-#define Computed_field_vector_coordinate_transformation_is_defined_in_element \
-	Computed_field_default_is_defined_in_element
+#define Computed_field_vector_coordinate_transformation_is_defined_at_location \
+	Computed_field_default_is_defined_at_location
 /*******************************************************************************
-LAST MODIFIED : 8 November 2001
-
-DESCRIPTION :
-Check the source fields using the default.
-==============================================================================*/
-
-#define Computed_field_vector_coordinate_transformation_is_defined_at_node \
-	Computed_field_default_is_defined_at_node
-/*******************************************************************************
-LAST MODIFIED : 8 November 2001
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 Check the source fields using the default.
@@ -950,7 +837,7 @@ Check the source fields using the default.
 #define Computed_field_vector_coordinate_transformation_has_numerical_components \
 	Computed_field_default_has_numerical_components
 /*******************************************************************************
-LAST MODIFIED : 8 November 2001
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 Window projection does have numerical components.
@@ -959,7 +846,7 @@ Window projection does have numerical components.
 #define Computed_field_vector_coordinate_transformation_not_in_use \
 	(Computed_field_not_in_use_function)NULL
 /*******************************************************************************
-LAST MODIFIED : 8 November 2001
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 No special criteria.
@@ -967,7 +854,7 @@ No special criteria.
 
 int Computed_field_evaluate_vector_coordinate_transformation(struct Computed_field *field)
 /*******************************************************************************
-LAST MODIFIED : 8 November 2001
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 Function called by Computed_field_evaluate_cache_in_element/at_node to compute
@@ -1028,60 +915,23 @@ the converted vectors are not available.
 	return (return_code);
 } /* Computed_field_evaluate_vector_coordinate_transformation */
 
-static int Computed_field_vector_coordinate_transformation_evaluate_cache_at_node(
-	struct Computed_field *field, struct FE_node *node, FE_value time)
+static int Computed_field_vector_coordinate_transformation_evaluate_cache_at_location(
+   struct Computed_field *field, Field_location* location)
 /*******************************************************************************
-LAST MODIFIED : 8 November 2001
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
-Evaluate the fields cache at the node.
+Evaluate the fields cache at the location
 ==============================================================================*/
 {
 	int return_code;
 
-	ENTER(Computed_field_vector_coordinate_transformation_evaluate_cache_at_node);
-	if (field && node && (0 < field->number_of_source_fields))
+	ENTER(Computed_field_vector_coordinate_transformation_evaluate_cache_at_location);
+	if (field && location && (0 < field->number_of_source_fields))
 	{
 		/* 1. Precalculate any source fields that this field depends on */
 		if (return_code = 
-			Computed_field_evaluate_source_fields_cache_at_node(field, node, time))
-		{
-			/* 2. Calculate the field */
-			return_code=Computed_field_evaluate_vector_coordinate_transformation(
-				field);
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_vector_coordinate_transformation_evaluate_cache_at_node.  "
-			"Invalid arguments.");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Computed_field_vector_coordinate_transformation_evaluate_cache_at_node */
-
-static int Computed_field_vector_coordinate_transformation_evaluate_cache_in_element(
-	struct Computed_field *field, struct FE_element *element, FE_value *xi,
-	FE_value time, struct FE_element *top_level_element,int calculate_derivatives)
-/*******************************************************************************
-LAST MODIFIED : 8 November 2001
-
-DESCRIPTION :
-Evaluate the fields cache at the node.
-==============================================================================*/
-{
-	int return_code;
-
-	ENTER(Computed_field_vector_coordinate_transformation_evaluate_cache_in_element);
-	if (field && element && xi && (0 < field->number_of_source_fields))
-	{
-		/* 1. Precalculate any source fields that this field depends on */
-		if (return_code = 
-			Computed_field_evaluate_source_fields_cache_in_element(field, element,
-				xi, time, top_level_element, calculate_derivatives))
+			Computed_field_evaluate_source_fields_cache_at_location(field, location))
 		{
 			/* 2. Calculate the field */
 			return_code=Computed_field_evaluate_vector_coordinate_transformation(
@@ -1093,112 +943,20 @@ Evaluate the fields cache at the node.
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Computed_field_vector_coordinate_transformation_evaluate_cache_in_element.  "
+			"Computed_field_vector_coordinate_transformation_evaluate_cache_at_location.  "
 			"Invalid arguments.");
 		return_code = 0;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* Computed_field_vector_coordinate_transformation_evaluate_cache_in_element */
+} /* Computed_field_vector_coordinate_transformation_evaluate_cache_at_location */
 
-#define Computed_field_vector_coordinate_transformation_evaluate_as_string_at_node \
-	Computed_field_default_evaluate_as_string_at_node
+static int Computed_field_vector_coordinate_transformation_set_values_at_location(
+	Computed_field* field,
+   Field_location* location, FE_value *values)
 /*******************************************************************************
-LAST MODIFIED : 8 November 2001
-
-DESCRIPTION :
-Print the values calculated in the cache.
-==============================================================================*/
-
-#define Computed_field_vector_coordinate_transformation_evaluate_as_string_in_element \
-	Computed_field_default_evaluate_as_string_in_element
-/*******************************************************************************
-LAST MODIFIED : 8 November 2001
-
-DESCRIPTION :
-Print the values calculated in the cache.
-==============================================================================*/
-
-static int Computed_field_vector_coordinate_transformation_set_values_at_node(
-	struct Computed_field *field,struct FE_node *node,FE_value time,FE_value *values)
-/*******************************************************************************
-LAST MODIFIED : 28 October 2004
-
-DESCRIPTION :
-Sets the <values> of the computed <field> at <node>.
-==============================================================================*/
-{
-	FE_value jacobian[9],source_field_coordinates[3],*source_values,sum;
-	int coordinates_per_vector,i,j,k,number_of_vectors,return_code;
-
-	ENTER(Computed_field_vector_coordinate_transformation_set_values_at_node);
-	if (field && node && values)
-	{
-		/* need jacobian at current coordinate position for converting to
-			coordinate system of source vector field (=source_fields[0]) */
-		if (Computed_field_evaluate_cache_at_node(field->source_fields[1],node,time)
-			&&
-			convert_Coordinate_system(&(field->source_fields[1]->coordinate_system),
-				field->source_fields[1]->number_of_components,
-				field->source_fields[1]->values,
-				&(field->source_fields[0]->coordinate_system),
-				field->source_fields[0]->number_of_components,source_field_coordinates,
-				jacobian))
-		{
-			if (ALLOCATE(source_values,FE_value,field->number_of_components))
-			{
-				number_of_vectors=field->number_of_components/3;
-				coordinates_per_vector=
-					field->source_fields[0]->number_of_components/number_of_vectors;
-				for (i=0;i<number_of_vectors;i++)
-				{
-					for (j=0;j<coordinates_per_vector;j++)
-					{
-						sum=0.0;
-						for (k=0;k<3;k++)
-						{
-							sum += jacobian[j*3+k]*values[i*3+k];
-						}
-						source_values[i*coordinates_per_vector+j]=sum;
-					}
-				}
-				return_code=Computed_field_set_values_at_node(
-					field->source_fields[0],node,time,source_values);
-				DEALLOCATE(source_values);
-			}
-			else
-			{
-				return_code=0;
-			}
-		}
-		else
-		{
-			return_code=0;
-		}
-		if (!return_code)
-		{
-			display_message(ERROR_MESSAGE,
-				"Computed_field_vector_coordinate_transformation_set_values_at_node.  "
-				"Could not set vector_coordinate_transformation field %s at node",field->name);
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_vector_coordinate_transformation_set_values_at_node.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Computed_field_vector_coordinate_transformation_set_values_at_node */
-
-static int Computed_field_vector_coordinate_transformation_set_values_in_element(
-	struct Computed_field *field, struct FE_element *element,FE_value *xi,
-	FE_value time, FE_value *values)
-/*******************************************************************************
-LAST MODIFIED : 28 October 2004
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 Sets the <values> of the computed <field> over the <element>.
@@ -1211,24 +969,21 @@ Sets the <values> of the computed <field> over the <element>.
 	int coordinates_per_vector,m,number_of_vectors;
 	struct Computed_field *rc_coordinate_field;
 	
-	ENTER(Computed_field_vector_coordinate_transformation_set_values_in_element);
-	if (field && element && xi && values)
+	ENTER(Computed_field_vector_coordinate_transformation_set_values_at_location);
+	if (field && location && values)
 	{
 		return_code=1;
 		if (rc_coordinate_field=Computed_field_begin_wrap_coordinate_field(
 				 field->source_fields[1]))
 		{
-			if (ALLOCATE(rc_coordinate_values, FE_value, rc_coordinate_field->number_of_components)
-				&& ALLOCATE(source_values,FE_value,field->source_fields[0]->number_of_components))
+			if (ALLOCATE(source_values,FE_value,field->source_fields[0]->number_of_components))
 			{
-				if (Computed_field_evaluate_in_element(rc_coordinate_field,
-						element, xi, time, /*top_level*/(struct FE_element *)NULL,
-						rc_coordinate_values, /*derivatives*/(FE_value *)NULL))
+				if (Computed_field_evaluate_cache_at_location(rc_coordinate_field,
+						location))
 				{
 					for (k=0;k<3;k++)
 					{
-						rc_coordinates[k]=
-							rc_coordinate_values[k];
+						rc_coordinates[k] = rc_coordinate_field->values[k];
 					}
 					/* need jacobian at current coordinate position for
 						converting to coordinate system of source vector field
@@ -1262,8 +1017,8 @@ Sets the <values> of the computed <field> over the <element>.
 				}
 				if (return_code)
 				{
-					return_code=Computed_field_set_values_in_element(
-						field->source_fields[0],element,xi,time,source_values);
+					return_code=Computed_field_set_values_at_location(
+						field->source_fields[0],location,source_values);
 				}
 				DEALLOCATE(source_values);
 				DEALLOCATE(rc_coordinate_values);
@@ -1282,19 +1037,19 @@ Sets the <values> of the computed <field> over the <element>.
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Computed_field_vector_coordinate_transformation_set_values_in_element.  "
+			"Computed_field_vector_coordinate_transformation_set_values_at_location.  "
 			"Invalid argument(s)");
 		return_code=0;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* Computed_field_vector_coordinate_transformation_set_values_in_element */
+} /* Computed_field_vector_coordinate_transformation_set_values_at_location */
 
 #define Computed_field_vector_coordinate_transformation_get_native_discretization_in_element \
 	Computed_field_default_get_native_discretization_in_element
 /*******************************************************************************
-LAST MODIFIED : 8 November 2001
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 Inherit result from first source field.
@@ -1303,7 +1058,7 @@ Inherit result from first source field.
 #define Computed_field_vector_coordinate_transformation_find_element_xi \
    (Computed_field_find_element_xi_function)NULL
 /*******************************************************************************
-LAST MODIFIED : 8 November 2001
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 Not implemented yet.
@@ -1315,7 +1070,7 @@ Not implemented yet.
 static int list_Computed_field_vector_coordinate_transformation(
 	struct Computed_field *field)
 /*******************************************************************************
-LAST MODIFIED : 8 November 2001
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 ==============================================================================*/
@@ -1345,7 +1100,7 @@ DESCRIPTION :
 static char *Computed_field_vector_coordinate_transformation_get_command_string(
 	struct Computed_field *field)
 /*******************************************************************************
-LAST MODIFIED : 15 January 2002
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 Returns allocated command string for reproducing field. Includes type.
@@ -1390,7 +1145,7 @@ Returns allocated command string for reproducing field. Includes type.
 #define Computed_field_vector_coordinate_transformation_has_multiple_times \
 	Computed_field_default_has_multiple_times
 /*******************************************************************************
-LAST MODIFIED : 21 January 2002
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 Works out whether time influences the field.
@@ -1400,7 +1155,7 @@ int Computed_field_set_type_vector_coordinate_transformation(
 	struct Computed_field *field,
 	struct Computed_field *vector_field,struct Computed_field *coordinate_field)
 /*******************************************************************************
-LAST MODIFIED : 21 January 2002
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 Converts <field> to type COMPUTED_FIELD_RC_VECTOR, combining a vector field
@@ -1475,7 +1230,7 @@ int Computed_field_get_type_vector_coordinate_transformation(struct Computed_fie
 	struct Computed_field **vector_field,
 	struct Computed_field **coordinate_field)
 /*******************************************************************************
-LAST MODIFIED : 8 November 2001
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 If the field is of type COMPUTED_FIELD_VECTOR_COORDINATE_TRANSFORMATION, the 
@@ -1507,7 +1262,7 @@ If the field is of type COMPUTED_FIELD_VECTOR_COORDINATE_TRANSFORMATION, the
 static int define_Computed_field_type_vector_coordinate_transformation(struct Parse_state *state,
 	void *field_void,void *computed_field_coordinate_package_void)
 /*******************************************************************************
-LAST MODIFIED : 18 December 2001
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 Converts <field> into type COMPUTED_FIELD_VECTOR_COORDINATE_TRANSFORMATION (if it is not 
@@ -1608,7 +1363,7 @@ already) and allows its contents to be modified.
 int Computed_field_register_types_coordinate(
 	struct Computed_field_package *computed_field_package)
 /*******************************************************************************
-LAST MODIFIED : 8 November 2001
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 ==============================================================================*/

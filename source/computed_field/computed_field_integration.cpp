@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : computed_field_integration.c
 
-LAST MODIFIED : 13 March 2003
+LAST MODIFIED : 11 August 2006
 
 DESCRIPTION :
 Implements a computed field which integrates along elements, including
@@ -43,12 +43,15 @@ and the nodes for 1D elements.
  * the terms of any one of the MPL, the GPL or the LGPL.
  *
  * ***** END LICENSE BLOCK ***** */
+extern "C" {
 #include <math.h>
 #include <stdio.h>
 #include "computed_field/computed_field.h"
 #include "computed_field/computed_field_composite.h"
 #include "computed_field/computed_field_finite_element.h"
-#include "computed_field/computed_field_private.h"
+}
+#include "computed_field/computed_field_private.hpp"
+extern "C" {
 #include "computed_field/computed_field_set.h"
 #include "finite_element/finite_element.h"
 #include "finite_element/finite_element_region.h"
@@ -61,6 +64,7 @@ and the nodes for 1D elements.
 #include "general/list_private.h"
 #include "user_interface/message.h"
 #include "computed_field/computed_field_integration.h"
+}
 
 struct Computed_field_integration_package 
 {
@@ -70,7 +74,7 @@ struct Computed_field_integration_package
 
 struct Computed_field_element_integration_mapping
 /*******************************************************************************
-LAST MODIFIED : 15 March 1999
+LAST MODIFIED : 11 August 2006
 
 DESCRIPTION :
 ==============================================================================*/
@@ -86,7 +90,7 @@ DESCRIPTION :
 
 struct Computed_field_node_integration_mapping
 /*******************************************************************************
-LAST MODIFIED : 18 July 2006
+LAST MODIFIED : 11 August 2006
 
 DESCRIPTION :
 ==============================================================================*/
@@ -101,7 +105,7 @@ DESCRIPTION :
 
 struct Computed_field_element_integration_mapping_fifo
 /*******************************************************************************
-LAST MODIFIED : 6 July 1999
+LAST MODIFIED : 11 August 2006
 
 DESCRIPTION :
 Simple linked-list node structure for building a FIFO stack for the mapping
@@ -129,7 +133,7 @@ struct Computed_field_integration_type_specific_data
 
 struct Computed_field_integration_has_values_data
 /*******************************************************************************
-LAST MODIFIED : 25 July 2006
+LAST MODIFIED : 11 August 2006
 
 DESCRIPTION :
 ==============================================================================*/
@@ -141,7 +145,7 @@ DESCRIPTION :
 struct Computed_field_element_integration_mapping *CREATE(Computed_field_element_integration_mapping)
 	(struct FE_element *element, int number_of_components)
 /*******************************************************************************
-LAST MODIFIED : 18 July 2006
+LAST MODIFIED : 11 August 2006
 
 DESCRIPTION :
 Creates a basic Computed_field with the given <name>. Its type is initially
@@ -178,7 +182,7 @@ COMPUTED_FIELD_CONSTANT with 1 component, returning a value of zero.
 int DESTROY(Computed_field_element_integration_mapping)
 	  (struct Computed_field_element_integration_mapping **mapping_address)
 /*******************************************************************************
-LAST MODIFIED : 26 May 1999
+LAST MODIFIED : 11 August 2006
 
 DESCRIPTION :
 Frees memory/deaccess mapping at <*mapping_address>.
@@ -230,7 +234,7 @@ DECLARE_FIND_BY_IDENTIFIER_IN_INDEXED_LIST_FUNCTION(
 struct Computed_field_node_integration_mapping *CREATE(Computed_field_node_integration_mapping)
 	(struct FE_node *node, int number_of_components)
 /*******************************************************************************
-LAST MODIFIED : 19 July 2006
+LAST MODIFIED : 11 August 2006
 
 DESCRIPTION :
 Creates a basic Computed_field with the given <name>. Its type is initially
@@ -267,7 +271,7 @@ COMPUTED_FIELD_CONSTANT with 1 component, returning a value of zero.
 int DESTROY(Computed_field_node_integration_mapping)
 	  (struct Computed_field_node_integration_mapping **mapping_address)
 /*******************************************************************************
-LAST MODIFIED : 19 July 2006
+LAST MODIFIED : 11 August 2006
 
 DESCRIPTION :
 Frees memory/deaccess mapping at <*mapping_address>.
@@ -333,7 +337,7 @@ static int Computed_field_integration_integrate_path(struct FE_element *element,
 	int magnitude_coordinates, struct Computed_field *coordinate_field,
 	float time, FE_value *values)
 /*******************************************************************************
-LAST MODIFIED : 19 July 2006
+LAST MODIFIED : 11 August 2006
 
 DESCRIPTION :
 Calculates the <values> by adding to the initial values the integrals evaluated
@@ -363,6 +367,10 @@ specified.
 		(number_of_gauss_points > 0) &&
 		(number_of_gauss_points <= MAXIMUM_GAUSS_POINTS_DEFINED))
 	{
+		Field_element_xi_location location(element, xi, time, element);
+		Field_element_xi_location location_with_derivatives(element, xi, time, element,
+			get_FE_element_dimension(element));
+
 		return_code = 1;
 		element_dimension = get_FE_element_dimension(element);
 		coordinate_dimension = Computed_field_get_number_of_components(coordinate_field);
@@ -398,12 +406,10 @@ specified.
 					+ final_xi[k] * final_position;
 			}
 			/* Integrand elements should always be top level */
-			Computed_field_evaluate_cache_in_element(integrand,
-				element, xi, time, element,
-				/*calculate_derivatives*/0);
-			Computed_field_evaluate_cache_in_element(coordinate_field,
-				element, xi, time, element,
-				/*calculate_derivatives*/1);
+			Computed_field_evaluate_cache_at_location(integrand,
+				&location);
+			Computed_field_evaluate_cache_at_location(coordinate_field,
+				&location_with_derivatives);
 
 			if (magnitude_coordinates)
 			{
@@ -455,7 +461,7 @@ static int Computed_field_integration_calculate_mapping_update(
 	struct Computed_field_element_integration_mapping *seed_mapping_item,
 	float time_step, float time)
 /*******************************************************************************
-LAST MODIFIED : 7 November 2002
+LAST MODIFIED : 11 August 2006
 
 DESCRIPTION :
 Calculates the differentials and offsets across the element for a special 
@@ -496,10 +502,10 @@ upwind difference time integration.
 				xi[k] = gauss_positions[number_of_gauss_points - 1][m];
 				/* Integrand elements should always be top level */
 				Computed_field_evaluate_cache_in_element(integrand,
-					mapping_item->element, xi, time, mapping_item->element,
+					mapping_item->location, mapping_item->element,
 					/*calculate_derivatives*/0);
 				Computed_field_evaluate_cache_in_element(coordinate_field,
-					mapping_item->element, xi, time, mapping_item->element,
+					mapping_item->location, mapping_item->element,
 					/*calculate_derivatives*/1);
 #if defined (DEBUG)
 				printf("Coordinate %d:  %g %g %g    %g %g %g\n", m,
@@ -598,7 +604,7 @@ static int Computed_field_integration_add_neighbours(
 	float time_step, float time,
 	struct LIST(Computed_field_node_integration_mapping) *node_mapping)
 /*******************************************************************************
-LAST MODIFIED : 19 July 2006
+LAST MODIFIED : 11 August 2006
 
 DESCRIPTION :
 Add the neighbours that haven't already been put in the texture_mapping list and 
@@ -874,7 +880,7 @@ varying integration and the behaviour is significantly different.
 static int Computed_field_integration_calculate_mapping(
 	struct Computed_field *field, float time)
 /*******************************************************************************
-LAST MODIFIED : 7 November 2002
+LAST MODIFIED : 11 August 2006
 
 DESCRIPTION :
 Calculates the mapping for the specified time.
@@ -1010,7 +1016,7 @@ Calculates the mapping for the specified time.
 static int Computed_field_element_integration_mapping_has_values(
 	struct Computed_field_element_integration_mapping *mapping, void *user_data)
 /*******************************************************************************
-LAST MODIFIED : 26 May 1999
+LAST MODIFIED : 11 August 2006
 
 DESCRIPTION :
 Compares the user_data values with the offsets in the <mapping>
@@ -1050,7 +1056,7 @@ static char computed_field_xi_texture_coordinates_type_string[] =
 
 int Computed_field_is_type_integration(struct Computed_field *field)
 /*******************************************************************************
-LAST MODIFIED : 18 July 2000
+LAST MODIFIED : 11 August 2006
 
 DESCRIPTION :
 ==============================================================================*/
@@ -1075,7 +1081,7 @@ DESCRIPTION :
 static int Computed_field_integration_clear_type_specific(
 	struct Computed_field *field)
 /*******************************************************************************
-LAST MODIFIED : 6 July 2000
+LAST MODIFIED : 11 August 2006
 
 DESCRIPTION :
 Clear the type specific data used by this type.
@@ -1121,7 +1127,7 @@ Clear the type specific data used by this type.
 static void *Computed_field_integration_copy_type_specific(
 	struct Computed_field *source_field, struct Computed_field *destination_field)
 /*******************************************************************************
-LAST MODIFIED : 25 February 2002
+LAST MODIFIED : 11 August 2006
 
 DESCRIPTION :
 Copy the type specific data used by this type.
@@ -1168,10 +1174,10 @@ Copy the type specific data used by this type.
 	return (destination);
 } /* Computed_field_integration_copy_type_specific */
 
-int Computed_field_integration_clear_cache_type_specific
+static int Computed_field_integration_clear_cache_type_specific
    (struct Computed_field *field)
 /*******************************************************************************
-LAST MODIFIED : 26 October 2000
+LAST MODIFIED : 11 August 2006
 
 DESCRIPTION :
 ==============================================================================*/
@@ -1206,7 +1212,7 @@ DESCRIPTION :
 static int Computed_field_integration_type_specific_contents_match(
 	struct Computed_field *field, struct Computed_field *other_computed_field)
 /*******************************************************************************
-LAST MODIFIED : 26 October 2000
+LAST MODIFIED : 11 August 2006
 
 DESCRIPTION :
 Compare the type specific data
@@ -1241,10 +1247,10 @@ Compare the type specific data
 	return (return_code);
 } /* Computed_field_integration_type_specific_contents_match */
 
-int Computed_field_integration_is_defined_in_element(struct Computed_field *field,
-	struct FE_element *element)
+static int Computed_field_integration_is_defined_at_location(Computed_field* field,
+	Field_location *location)
 /*******************************************************************************
-LAST MODIFIED : 9 June 2006
+LAST MODIFIED : 11 August 2006
 
 DESCRIPTION :
 Returns 1 if the all the source fields are defined in the supplied <element> and
@@ -1257,71 +1263,119 @@ the mapping is defined for this element.
 	struct Computed_field_integration_type_specific_data *data;
 	struct FE_element *top_level_element;
 
-	ENTER(Computed_field_default_is_defined_in_element);
-	if (field && element && (data = (struct Computed_field_integration_type_specific_data *)
+	ENTER(Computed_field_default_is_defined_at_location);
+	if (field && location && (data = (struct Computed_field_integration_type_specific_data *)
 		field->type_specific_data))
 	{
-		if (return_code = Computed_field_default_is_defined_in_element(field,
-			element))
+		if (return_code = Computed_field_default_is_defined_at_location(field,
+			location))
 		{
-			if (!data->texture_mapping)
+			Field_element_xi_location *element_xi_location;
+			Field_node_location *node_location;
+			
+			if (element_xi_location = 
+				dynamic_cast<Field_element_xi_location*>(location))
 			{
-				/* Try time 0 */
-				Computed_field_integration_calculate_mapping(field, /*time*/0.0);
-			}
-			else
-			{
-				/* Use the mapping from whatever time */
-			}
-			/* 1. Get top_level_element for types that must be calculated on them */
-			get_FE_element_identifier(element, &cm);
-			if (CM_ELEMENT == cm.type)
-			{
-				top_level_element=element;
-			}
-			else
-			{
-				/* check or get top_level element, 
-					we don't have a top_level element to test with */
-				if (!(top_level_element=FE_element_get_top_level_element_conversion(
-						 element,(struct FE_element *)NULL,(struct LIST(FE_element) *)NULL,
-						 -1,element_to_top_level)))
+				FE_element* element = element_xi_location->get_element();
+				
+				if (!data->texture_mapping)
 				{
-					return_code=0;
+					/* Try time 0 */
+					Computed_field_integration_calculate_mapping(field, /*time*/0.0);
+				}
+				else
+				{
+					/* Use the mapping from whatever time */
+				}
+				/* 1. Get top_level_element for types that must be calculated on them */
+				get_FE_element_identifier(element, &cm);
+				if (CM_ELEMENT == cm.type)
+				{
+					top_level_element=element;
+				}
+				else
+				{
+					/* check or get top_level element, 
+						we don't have a top_level element to test with */
+					if (!(top_level_element=FE_element_get_top_level_element_conversion(
+						element,(struct FE_element *)NULL,(struct LIST(FE_element) *)NULL,
+						-1,element_to_top_level)))
+					{
+						return_code=0;
+					}
+				}
+				/* 2. Calculate the field */
+				if (return_code && data->texture_mapping)
+				{
+					if (FIND_BY_IDENTIFIER_IN_LIST
+						(Computed_field_element_integration_mapping,element)
+						(top_level_element, data->texture_mapping))
+					{
+						return_code = 1;
+					}
+					else
+					{
+						return_code = 0;
+					}
 				}
 			}
-			/* 2. Calculate the field */
-			if (return_code && data->texture_mapping)
+			else if (node_location = 
+				dynamic_cast<Field_node_location*>(location))
 			{
-				if (FIND_BY_IDENTIFIER_IN_LIST
-					(Computed_field_element_integration_mapping,element)
-					(top_level_element, data->texture_mapping))
+				FE_node *node = node_location->get_node();
+
+				if (!data->texture_mapping)
 				{
-					return_code = 1;
+					/* Try time 0 */
+					Computed_field_integration_calculate_mapping(field, /*time*/0.0);
+				}
+				else
+				{
+					/* Use the mapping from whatever time */
+				}
+				/* If we calculated the mapping but no node_mapping was created then
+					the field is not defined at nodes. */
+				if (data->node_mapping)
+				{
+					/* If we have a mapping look for the node */
+					if (FIND_BY_IDENTIFIER_IN_LIST
+						(Computed_field_node_integration_mapping,node_ptr)
+						(node, data->node_mapping))
+					{
+						return_code = 1;
+					}
+					else
+					{
+						return_code = 0;
+					}
 				}
 				else
 				{
 					return_code = 0;
 				}
 			}
+			else
+			{
+				return_code = 0;
+			}
 		}
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Computed_field_default_is_defined_in_element.  "
+			"Computed_field_default_is_defined_at_location.  "
 			"Invalid arguments.");
 		return_code = 0;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* Computed_field_default_is_defined_in_element */
+} /* Computed_field_default_is_defined_at_location */
 
 int Computed_field_integration_is_defined_at_node(struct Computed_field *field,
 	struct FE_node *node)
 /*******************************************************************************
-LAST MODIFIED : 19 July 2006
+LAST MODIFIED : 11 August 2006
 
 DESCRIPTION :
 Returns 1 if the mapping is defined for this node.
@@ -1379,7 +1433,7 @@ Returns 1 if the mapping is defined for this node.
 #define Computed_field_integration_has_numerical_components \
 	Computed_field_default_has_numerical_components
 /*******************************************************************************
-LAST MODIFIED : 26 October 2000
+LAST MODIFIED : 11 August 2006
 
 DESCRIPTION :
 Window projection does have numerical components.
@@ -1388,98 +1442,19 @@ Window projection does have numerical components.
 #define Computed_field_integration_not_in_use \
 	(Computed_field_not_in_use_function)NULL
 /*******************************************************************************
-LAST MODIFIED : 17 July 2000
+LAST MODIFIED : 11 August 2006
 
 DESCRIPTION :
 No special criteria.
 ==============================================================================*/
 
-static int Computed_field_integration_evaluate_cache_at_node(
-	struct Computed_field *field, struct FE_node *node,
-	FE_value time)
+static int Computed_field_integration_evaluate_cache_at_location(
+   struct Computed_field *field, Field_location* location)
 /*******************************************************************************
-LAST MODIFIED : 19 July 2006
+LAST MODIFIED : 11 August 2006
 
 DESCRIPTION :
-Evaluate the fields cache at the node.
-==============================================================================*/
-{
-	int i, return_code;
-	struct Computed_field_node_integration_mapping *mapping;
-	struct Computed_field_integration_type_specific_data *data;
-
-	ENTER(Computed_field_integration_evaluate_cache_at_node);
-	if (field && node 
-		&& (data = (struct Computed_field_integration_type_specific_data *)
-		field->type_specific_data))
-	{
-		return_code = 1;
-
-		if (!data->texture_mapping)
-		{
-			Computed_field_integration_calculate_mapping(field, time);
-		}
-		else
-		{
-			if ((time != data->cached_time)
-				&& (Computed_field_has_multiple_times(field->source_fields[0])
-				|| Computed_field_has_multiple_times(field->source_fields[1])))
-			{
-				DESTROY_LIST(Computed_field_element_integration_mapping)
-					(&data->texture_mapping);
-				Computed_field_integration_calculate_mapping(field, time);
-			}
-		}
-		/* 2. Calculate the field */
-		if (data->node_mapping)
-		{
-			if (mapping = FIND_BY_IDENTIFIER_IN_LIST
-				(Computed_field_node_integration_mapping,node_ptr)
-				(node, data->node_mapping))
-			{
-				for(i = 0 ; i < field->number_of_components ; i++)
-				{
-					field->values[i] = mapping->values[i];
-				}
-			}
-			else
-			{
-				display_message(ERROR_MESSAGE,
-					"Computed_field_integration_evaluate_cache_at_node."
-					"  Node %d not found in Xi texture coordinate mapping field %s",
-					get_FE_node_identifier(node));
-				return_code=0;
-			}
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"Computed_field_integration_evaluate_cache_at_node.  "
-				"Xi texture coordinate mapping not calculated");
-			return_code=0;
-		}
-
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_integration_evaluate_cache_at_node.  "
-			"Invalid arguments.");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Computed_field_integration_evaluate_cache_at_node */
-
-static int Computed_field_integration_evaluate_cache_in_element(
-	struct Computed_field *field, struct FE_element *element, FE_value *xi,
-	FE_value time,struct FE_element *top_level_element,int calculate_derivatives)
-/*******************************************************************************
-LAST MODIFIED : 13 March 2003
-
-DESCRIPTION :
-Evaluate the fields cache at the node.
+Evaluate the fields cache at the location
 ==============================================================================*/
 {
 	double dsdxi;
@@ -1489,200 +1464,253 @@ Evaluate the fields cache at the node.
 		top_level_element_dimension;
 	struct CM_element_information cm;
 	struct Computed_field *coordinate_field, *integrand;
-	struct Computed_field_element_integration_mapping *mapping;
 	struct Computed_field_integration_type_specific_data *data;
 
-	ENTER(Computed_field_integration_evaluate_cache_in_element);
-	if (field && element && xi 
+	ENTER(Computed_field_integration_evaluate_cache_at_location);
+	if (field && location 
 		&& (data = (struct Computed_field_integration_type_specific_data *)
 		field->type_specific_data))
 	{
 		return_code = 1;
 
-		if (!data->texture_mapping)
+		Field_element_xi_location *element_xi_location;
+		Field_node_location *node_location;
+
+		if (element_xi_location = 
+			dynamic_cast<Field_element_xi_location*>(location))
 		{
-			Computed_field_integration_calculate_mapping(field, time);
-		}
-		else
-		{
-			if ((time != data->cached_time)
-				&& (Computed_field_has_multiple_times(field->source_fields[0])
-				|| Computed_field_has_multiple_times(field->source_fields[1])))
+			FE_element* element = element_xi_location->get_element();
+ 			FE_element* top_level_element = element_xi_location->get_top_level_element();
+			FE_value time = element_xi_location->get_time();
+			FE_value* xi = element_xi_location->get_xi();
+			int number_of_derivatives = location->get_number_of_derivatives();
+
+			struct Computed_field_element_integration_mapping *mapping;
+
+			if (!data->texture_mapping)
 			{
-				DESTROY_LIST(Computed_field_element_integration_mapping)
-					(&data->texture_mapping);
 				Computed_field_integration_calculate_mapping(field, time);
 			}
-		}
-		/* 1. Get top_level_element for types that must be calculated on them */
-		element_dimension=get_FE_element_dimension(element);
-		get_FE_element_identifier(element, &cm);
-		if (CM_ELEMENT == cm.type)
-		{
-			top_level_element=element;
-			for (i=0;i<element_dimension;i++)
+			else
 			{
-				top_level_xi[i]=xi[i];
-			}
-			/* do not set element_to_top_level */
-			top_level_element_dimension=element_dimension;
-		}
-		else
-		{
-			/* check or get top_level element and xi coordinates for it */
-			if (top_level_element=FE_element_get_top_level_element_conversion(
-				element,top_level_element,(struct LIST(FE_element) *)NULL,
-				-1,element_to_top_level))
-			{
-				/* convert xi to top_level_xi */
-				top_level_element_dimension=get_FE_element_dimension(top_level_element);
-				for (j=0;j<top_level_element_dimension;j++)
+				if ((time != data->cached_time)
+					&& (Computed_field_has_multiple_times(field->source_fields[0])
+						|| Computed_field_has_multiple_times(field->source_fields[1])))
 				{
-					top_level_xi[j] = element_to_top_level[j*(element_dimension+1)];
-					for (k=0;k<element_dimension;k++)
+					DESTROY_LIST(Computed_field_element_integration_mapping)
+						(&data->texture_mapping);
+					Computed_field_integration_calculate_mapping(field, time);
+				}
+			}
+			/* 1. Get top_level_element for types that must be calculated on them */
+			element_dimension=get_FE_element_dimension(element);
+			get_FE_element_identifier(element, &cm);
+			if (CM_ELEMENT == cm.type)
+			{
+				top_level_element=element;
+				for (i=0;i<element_dimension;i++)
+				{
+					top_level_xi[i]=xi[i];
+				}
+				/* do not set element_to_top_level */
+				top_level_element_dimension=element_dimension;
+			}
+			else
+			{
+				/* check or get top_level element and xi coordinates for it */
+				if (top_level_element=FE_element_get_top_level_element_conversion(
+						 element,top_level_element,(struct LIST(FE_element) *)NULL,
+						 -1,element_to_top_level))
+				{
+					/* convert xi to top_level_xi */
+					top_level_element_dimension=get_FE_element_dimension(top_level_element);
+					for (j=0;j<top_level_element_dimension;j++)
 					{
-						top_level_xi[j] +=
-							element_to_top_level[j*(element_dimension+1)+k+1]*xi[k];
+						top_level_xi[j] = element_to_top_level[j*(element_dimension+1)];
+						for (k=0;k<element_dimension;k++)
+						{
+							top_level_xi[j] +=
+								element_to_top_level[j*(element_dimension+1)+k+1]*xi[k];
+						}
 					}
+				}
+				else
+				{
+					display_message(ERROR_MESSAGE,
+						"Computed_field_integration_evaluate_cache_at_location.  "
+						"No top-level element found to evaluate field %s on",
+						field->name);
+					return_code=0;
+				}
+			}
+			integrand = field->source_fields[0];
+			coordinate_field = field->source_fields[1];
+			coordinate_dimension = 
+				Computed_field_get_number_of_components(field->source_fields[1]);
+			if (Computed_field_is_type_xi_coordinates(field->source_fields[1], NULL))
+			{
+				/* Unlike the xi field we only deal with top level elements of a 
+					single dimension so we can match that dimension for our number
+					of coordinates */
+				coordinate_dimension = top_level_element_dimension;
+			}
+			/* 2. Calculate the field */
+			if (data->texture_mapping)
+			{
+				if (mapping = FIND_BY_IDENTIFIER_IN_LIST
+					(Computed_field_element_integration_mapping,element)
+					(top_level_element, data->texture_mapping))
+				{
+					/* Integrate to the specified top_level_xi location */
+					for (i = 0 ; i < top_level_element_dimension ; i++)
+					{
+						initial_xi[i] = 0.0;
+					}
+					Computed_field_integration_integrate_path(top_level_element,
+						mapping->values, initial_xi, top_level_xi,
+						/*number_of_gauss_points*/2, field->source_fields[0], 
+						data->magnitude_coordinates, field->source_fields[1],
+						time, field->values);
+					if (number_of_derivatives)
+					{
+						Field_element_xi_location top_level_location(
+							top_level_element, top_level_xi, time,
+							top_level_element);
+						Field_element_xi_location top_level_location_with_derivatives(
+							top_level_element, top_level_xi, time,
+							top_level_element, get_FE_element_dimension(element));
+
+						/* Evaluate the fields at this location */
+						Computed_field_evaluate_cache_at_location(integrand,
+							&top_level_location);
+						Computed_field_evaluate_cache_at_location(coordinate_field,
+							&top_level_location_with_derivatives);
+						if (data->magnitude_coordinates)
+						{
+							for (k = 0 ; k < element_dimension ; k++)
+							{
+								dsdxi = 0.0;
+								for (j = 0 ; j < coordinate_dimension ; j++)
+								{
+									dsdxi += 
+										coordinate_field->derivatives[j * element_dimension + k] *
+										coordinate_field->derivatives[j * element_dimension + k];
+								}
+								dsdxi = sqrt(dsdxi);
+								field->derivatives[k] = integrand->values[0] * dsdxi;
+							}
+						}
+						else
+						{
+							for (k = 0 ; k < element_dimension ; k++)
+							{
+								for (j = 0 ; j < coordinate_dimension ; j++)
+								{
+									field->derivatives[j * element_dimension + k] = 
+										integrand->values[0] *
+										coordinate_field->derivatives[j * element_dimension + k];
+								}
+							}
+						}
+						field->derivatives_valid = 1;
+					}
+				}
+				else
+				{
+					display_message(ERROR_MESSAGE,
+						"Computed_field_integration_evaluate_cache_at_location."
+						"  Element %d not found in Xi texture coordinate mapping field %s",
+						cm.number, field->name);
+					return_code=0;
 				}
 			}
 			else
 			{
 				display_message(ERROR_MESSAGE,
-					"Computed_field_integration_evaluate_cache_in_element.  "
-					"No top-level element found to evaluate field %s on",
-					field->name);
+					"Computed_field_integration_evaluate_cache_at_location.  "
+					"Xi texture coordinate mapping not calculated");
 				return_code=0;
 			}
 		}
-		integrand = field->source_fields[0];
-		coordinate_field = field->source_fields[1];
-		coordinate_dimension = 
-			Computed_field_get_number_of_components(field->source_fields[1]);
-		if (Computed_field_is_type_xi_coordinates(field->source_fields[1], NULL))
+		else if (node_location = 
+			dynamic_cast<Field_node_location*>(location))
 		{
-			/* Unlike the xi field we only deal with top level elements of a 
-				single dimension so we can match that dimension for our number
-				of coordinates */
-			coordinate_dimension = top_level_element_dimension;
-		}
-		/* 2. Calculate the field */
-		if (data->texture_mapping)
-		{
-			if (mapping = FIND_BY_IDENTIFIER_IN_LIST
-				(Computed_field_element_integration_mapping,element)
-				(top_level_element, data->texture_mapping))
+			FE_node *node = node_location->get_node();
+			FE_value time = node_location->get_time();
+
+			struct Computed_field_node_integration_mapping *mapping;
+
+			return_code = 1;
+
+			if (!data->texture_mapping)
 			{
-				/* Integrate to the specified top_level_xi location */
-				for (i = 0 ; i < top_level_element_dimension ; i++)
+				Computed_field_integration_calculate_mapping(field, time);
+			}
+			else
+			{
+				if ((time != data->cached_time)
+					&& (Computed_field_has_multiple_times(field->source_fields[0])
+						|| Computed_field_has_multiple_times(field->source_fields[1])))
 				{
-					initial_xi[i] = 0.0;
+					DESTROY_LIST(Computed_field_element_integration_mapping)
+						(&data->texture_mapping);
+					Computed_field_integration_calculate_mapping(field, time);
 				}
-				Computed_field_integration_integrate_path(top_level_element,
-					mapping->values, initial_xi, top_level_xi,
-					/*number_of_gauss_points*/2, field->source_fields[0], 
-					data->magnitude_coordinates, field->source_fields[1],
-					time, field->values);
-				if (calculate_derivatives)
+			}
+			/* 2. Calculate the field */
+			if (data->node_mapping)
+			{
+				if (mapping = FIND_BY_IDENTIFIER_IN_LIST
+					(Computed_field_node_integration_mapping,node_ptr)
+					(node, data->node_mapping))
 				{
-					/* Evaluate the fields at this location */
-					Computed_field_evaluate_cache_in_element(integrand,
-						element, xi, time, top_level_element,
-						/*calculate_derivatives*/0);
-					Computed_field_evaluate_cache_in_element(coordinate_field,
-						element, xi, time, top_level_element,
-						/*calculate_derivatives*/1);
-					if (data->magnitude_coordinates)
+					for(i = 0 ; i < field->number_of_components ; i++)
 					{
-						for (k = 0 ; k < element_dimension ; k++)
-						{
-							dsdxi = 0.0;
-							for (j = 0 ; j < coordinate_dimension ; j++)
-							{
-								dsdxi += 
-									coordinate_field->derivatives[j * element_dimension + k] *
-									coordinate_field->derivatives[j * element_dimension + k];
-							}
-							dsdxi = sqrt(dsdxi);
-							field->derivatives[k] = integrand->values[0] * dsdxi;
-						}
+						field->values[i] = mapping->values[i];
 					}
-					else
-					{
-						for (k = 0 ; k < element_dimension ; k++)
-						{
-							for (j = 0 ; j < coordinate_dimension ; j++)
-							{
-								field->derivatives[j * element_dimension + k] = 
-									integrand->values[0] *
-									coordinate_field->derivatives[j * element_dimension + k];
-							}
-						}
-					}
-					field->derivatives_valid = 1;
+				}
+				else
+				{
+					display_message(ERROR_MESSAGE,
+						"Computed_field_integration_evaluate_cache_at_node."
+						"  Node %d not found in Xi texture coordinate mapping field %s",
+						get_FE_node_identifier(node));
+					return_code=0;
 				}
 			}
 			else
 			{
 				display_message(ERROR_MESSAGE,
-					"Computed_field_integration_evaluate_cache_in_element."
-					"  Element %d not found in Xi texture coordinate mapping field %s",
-					cm.number, field->name);
+					"Computed_field_integration_evaluate_cache_at_node.  "
+					"Xi texture coordinate mapping not calculated");
 				return_code=0;
 			}
 		}
 		else
 		{
 			display_message(ERROR_MESSAGE,
-				"Computed_field_integration_evaluate_cache_in_element.  "
-				"Xi texture coordinate mapping not calculated");
-			return_code=0;
+				"Computed_field_integration_evaluate_cache_at_location.  "
+				"Location type unknown or not implemented.");
+			return_code = 0;
 		}
-
+		
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Computed_field_integration_evaluate_cache_in_element.  "
+			"Computed_field_integration_evaluate_cache_at_location.  "
 			"Invalid arguments.");
 		return_code = 0;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* Computed_field_integration_evaluate_cache_in_element */
+} /* Computed_field_integration_evaluate_cache_at_location */
 
-#define Computed_field_integration_evaluate_as_string_at_node \
-	Computed_field_default_evaluate_as_string_at_node
+#define Computed_field_integration_set_values_at_location \
+   (Computed_field_set_values_at_location_function)NULL
 /*******************************************************************************
-LAST MODIFIED : 26 October 2000
-
-DESCRIPTION :
-Print the values calculated in the cache.
-==============================================================================*/
-
-#define Computed_field_integration_evaluate_as_string_in_element \
-	Computed_field_default_evaluate_as_string_in_element
-/*******************************************************************************
-LAST MODIFIED : 26 October 2000
-
-DESCRIPTION :
-Print the values calculated in the cache.
-==============================================================================*/
-
-#define Computed_field_integration_set_values_at_node \
-   (Computed_field_set_values_at_node_function)NULL
-/*******************************************************************************
-LAST MODIFIED : 26 October 2000
-
-DESCRIPTION :
-Not implemented yet.
-==============================================================================*/
-
-#define Computed_field_integration_set_values_in_element \
-   (Computed_field_set_values_in_element_function)NULL
-/*******************************************************************************
-LAST MODIFIED : 26 October 2000
+LAST MODIFIED : 11 August 2006
 
 DESCRIPTION :
 Not implemented yet.
@@ -1691,7 +1719,7 @@ Not implemented yet.
 #define Computed_field_integration_get_native_discretization_in_element \
 	Computed_field_default_get_native_discretization_in_element
 /*******************************************************************************
-LAST MODIFIED : 26 October 2000
+LAST MODIFIED : 11 August 2006
 
 DESCRIPTION :
 Inherit result from first source field.
@@ -1705,7 +1733,7 @@ static int Computed_field_integration_find_element_xi(
 	FE_value *values, int number_of_values, struct FE_element **element, 
 	FE_value *xi, int element_dimension, struct Cmiss_region *search_region)
 /*******************************************************************************
-LAST MODIFIED : 26 October 2000
+LAST MODIFIED : 11 August 2006
 
 DESCRIPTION :
 ==============================================================================*/
@@ -1835,7 +1863,7 @@ DESCRIPTION :
 static int list_Computed_field_integration(
 	struct Computed_field *field)
 /*******************************************************************************
-LAST MODIFIED : 26 October 2000
+LAST MODIFIED : 11 August 2006
 
 DESCRIPTION :
 ==============================================================================*/
@@ -1879,7 +1907,7 @@ DESCRIPTION :
 static char *Computed_field_integration_get_command_string(
 	struct Computed_field *field)
 /*******************************************************************************
-LAST MODIFIED : 15 January 2002
+LAST MODIFIED : 11 August 2006
 
 DESCRIPTION :
 Returns allocated command string for reproducing field. Includes type.
@@ -1950,7 +1978,7 @@ static int Computed_field_update_integration_scheme(struct Computed_field *field
 	struct Computed_field *integrand, struct Computed_field *coordinate_field,
 	float time_step)
 /*******************************************************************************
-LAST MODIFIED : 7 November 2002
+LAST MODIFIED : 11 August 2006
 
 DESCRIPTION :
 This is a special method for updating with a time integration step for flow
@@ -2077,7 +2105,7 @@ timestep.
 #define Computed_field_integration_has_multiple_times \
 	Computed_field_default_has_multiple_times
 /*******************************************************************************
-LAST MODIFIED : 21 January 2002
+LAST MODIFIED : 11 August 2006
 
 DESCRIPTION :
 Works out whether time influences the field.
@@ -2088,7 +2116,7 @@ int Computed_field_set_type_integration(struct Computed_field *field,
 	struct FE_region *fe_region, struct Computed_field *integrand, 
 	int magnitude_coordinates, struct Computed_field *coordinate_field)
 /*******************************************************************************
-LAST MODIFIED : 19 July 2006
+LAST MODIFIED : 11 August 2006
 
 DESCRIPTION :
 Converts <field> to type COMPUTED_FIELD_INTEGRATION.
@@ -2197,7 +2225,7 @@ int Computed_field_get_type_integration(struct Computed_field *field,
 	struct FE_element **seed_element, struct Computed_field **integrand,
 	int *magnitude_coordinates, struct Computed_field **coordinate_field)
 /*******************************************************************************
-LAST MODIFIED : 19 July 2006
+LAST MODIFIED : 11 August 2006
 
 DESCRIPTION :
 If the field is of type COMPUTED_FIELD_INTEGRATION, 
@@ -2233,7 +2261,7 @@ the seed element used for the mapping is returned - otherwise an error is report
 static int define_Computed_field_type_integration(struct Parse_state *state,
 	void *field_void,void *computed_field_integration_package_void)
 /*******************************************************************************
-LAST MODIFIED : 19 July 2006
+LAST MODIFIED : 11 August 2006
 
 DESCRIPTION :
 Converts <field> into type COMPUTED_FIELD_INTEGRATION (if it is not already)
@@ -2396,7 +2424,7 @@ and allows its contents to be modified.
 static int define_Computed_field_type_xi_texture_coordinates(struct Parse_state *state,
 	void *field_void,void *computed_field_integration_package_void)
 /*******************************************************************************
-LAST MODIFIED : 15 January 2002
+LAST MODIFIED : 11 August 2006
 
 DESCRIPTION :
 Converts <field> into type COMPUTED_FIELD_XI_TEXTURE_COORDINATES (if it is not already)
@@ -2474,7 +2502,7 @@ int Computed_field_register_type_integration(
 	struct Computed_field_package *computed_field_package,
 	struct Cmiss_region *root_region)
 /*******************************************************************************
-LAST MODIFIED : 15 January 2002
+LAST MODIFIED : 11 August 2006
 
 DESCRIPTION :
 ==============================================================================*/

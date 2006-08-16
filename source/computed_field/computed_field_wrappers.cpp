@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : computed_field_wrappers.c
 
-LAST MODIFIED : 27 October 2000
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 Functions for converting fields in a not-so-usable state into more useful
@@ -44,17 +44,19 @@ fibre_axes out of a fibre field.
  * the terms of any one of the MPL, the GPL or the LGPL.
  *
  * ***** END LICENSE BLOCK ***** */
+extern "C" {
 #include "computed_field/computed_field.h"
 #include "computed_field/computed_field_coordinate.h"
 #include "computed_field/computed_field_fibres.h"
 #include "computed_field/computed_field_wrappers.h"
 #include "general/debug.h"
 #include "user_interface/message.h"
+}
 
 struct Computed_field *Computed_field_begin_wrap_coordinate_field(
 	struct Computed_field *coordinate_field)
 /*******************************************************************************
-LAST MODIFIED : 18 October 2000
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 Returns a RECTANGULAR_CARTESIAN coordinate field that may be the original
@@ -115,7 +117,7 @@ struct Computed_field *Computed_field_begin_wrap_orientation_scale_field(
 	struct Computed_field *orientation_scale_field,
 	struct Computed_field *coordinate_field)
 /*******************************************************************************
-LAST MODIFIED : 18 October 2000
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 Takes the <orientation_scale_field> and returns a field ready for use in the
@@ -197,7 +199,7 @@ Must call Computed_field_end_wrap to clean up the returned field after use.
 
 int Computed_field_end_wrap(struct Computed_field **wrapper_field_address)
 /*******************************************************************************
-LAST MODIFIED : 11 March 1999
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 Cleans up a field accessed/created by a Computed_field_begin_wrap*() function.

@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : computed_field_deformation.c
 
-LAST MODIFIED : 21 January 2002
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 Implements a number of basic continuum mechanics deformation operations on
@@ -42,14 +42,18 @@ computed fields.
  * the terms of any one of the MPL, the GPL or the LGPL.
  *
  * ***** END LICENSE BLOCK ***** */
+extern "C" {
 #include <math.h>
 #include "computed_field/computed_field.h"
 #include "computed_field/computed_field_deformation.h"
-#include "computed_field/computed_field_private.h"
+}
+#include "computed_field/computed_field_private.hpp"
+extern "C" {
 #include "computed_field/computed_field_set.h"
 #include "general/debug.h"
 #include "general/mystring.h"
 #include "user_interface/message.h"
+}
 
 struct Computed_field_deformation_package 
 {
@@ -60,7 +64,7 @@ static char computed_field_2d_strain_type_string[] = "2d_strain";
 
 int Computed_field_is_type_2d_strain(struct Computed_field *field)
 /*******************************************************************************
-LAST MODIFIED : 13 October 2000
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 Returns true if <field> has the appropriate static type string.
@@ -88,7 +92,7 @@ Returns true if <field> has the appropriate static type string.
 #define Computed_field_2d_strain_clear_type_specific \
    Computed_field_default_clear_type_specific
 /*******************************************************************************
-LAST MODIFIED : 25 February 2002
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 No type specific data
@@ -97,7 +101,7 @@ No type specific data
 #define Computed_field_2d_strain_copy_type_specific \
    Computed_field_default_copy_type_specific
 /*******************************************************************************
-LAST MODIFIED : 25 February 2002
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 No type specific data
@@ -106,7 +110,7 @@ No type specific data
 #define Computed_field_2d_strain_clear_cache_type_specific \
    (Computed_field_clear_cache_type_specific_function)NULL
 /*******************************************************************************
-LAST MODIFIED : 13 July 2000
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 This function is not needed for this type.
@@ -115,16 +119,16 @@ This function is not needed for this type.
 #define Computed_field_2d_strain_type_specific_contents_match \
    Computed_field_default_type_specific_contents_match
 /*******************************************************************************
-LAST MODIFIED : 25 February 2002
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 No type specific data
 ==============================================================================*/
 
-int Computed_field_2d_strain_is_defined_in_element(
-	struct Computed_field *field, struct FE_element *element)
+int Computed_field_2d_strain_is_defined_at_location(
+	struct Computed_field *field, Field_location* location)
 /*******************************************************************************
-LAST MODIFIED : 13 October 2000
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 Check the source fields using the default.
@@ -132,14 +136,18 @@ Check the source fields using the default.
 {
 	int return_code;
 
-	ENTER(Computed_field_2d_strain_is_defined_in_element);
-	if (field && element)
+	ENTER(Computed_field_2d_strain_is_defined_at_location);
+	if (field && location)
 	{
-		/* 2d_strain requires at least 2-D elements */
-		if (2 <= get_FE_element_dimension(element))
+		Field_element_xi_location* element_xi_location;
+		/* Only works for element_xi locations */
+		if ((element_xi_location  = 
+				dynamic_cast<Field_element_xi_location*>(location))
+			/* 2d_strain requires at least 2-D elements */
+  			&& (2 <= get_FE_element_dimension(element_xi_location->get_element())))
 		{
 			/* check the source fields */
-			return_code = Computed_field_default_is_defined_in_element(field,element);
+			return_code = Computed_field_default_is_defined_at_location(field,location);
 		}
 		else
 		{
@@ -149,39 +157,18 @@ Check the source fields using the default.
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Computed_field_2d_strain_is_defined_in_element.  Invalid argument(s)");
+			"Computed_field_2d_strain_is_defined_at_location.  Invalid argument(s)");
 		return_code = 0;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* Computed_field_2d_strain_is_defined_in_element */
-
-int Computed_field_2d_strain_is_defined_at_node(struct Computed_field *field,
-	struct FE_node *node)
-/*******************************************************************************
-LAST MODIFIED : 13 October 2000
-
-DESCRIPTION :
-Returns 0.
-==============================================================================*/
-{
-	int return_code;
-
-	ENTER(Computed_field_default_is_defined_at_node);
-	USE_PARAMETER(field);
-	USE_PARAMETER(node);
-	/* 2d_strain can only be calculated in elements */
-	return_code=0;
-	LEAVE;
-
-	return (return_code);
-} /* Computed_field_default_is_defined_at_node */
+} /* Computed_field_2d_strain_is_defined_at_location */
 
 #define Computed_field_2d_strain_has_numerical_components \
 	Computed_field_default_has_numerical_components
 /*******************************************************************************
-LAST MODIFIED : 13 October 2000
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 Window projection does have numerical components.
@@ -190,26 +177,16 @@ Window projection does have numerical components.
 #define Computed_field_2d_strain_not_in_use \
 	(Computed_field_not_in_use_function)NULL
 /*******************************************************************************
-LAST MODIFIED : 13 October 2000
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 No special criteria.
 ==============================================================================*/
 
-#define Computed_field_2d_strain_evaluate_cache_at_node \
-   (Computed_field_evaluate_cache_at_node_function)NULL
+static int Computed_field_2d_strain_evaluate_cache_at_location(
+   struct Computed_field *field, Field_location* location)
 /*******************************************************************************
-LAST MODIFIED : 13 October 2000
-
-DESCRIPTION :
-Evaluate the fields cache at the node.
-==============================================================================*/
-
-static int Computed_field_2d_strain_evaluate_cache_in_element(
-	struct Computed_field *field, struct FE_element *element, FE_value *xi,
-	FE_value time, struct FE_element *top_level_element,int calculate_derivatives)
-/*******************************************************************************
-LAST MODIFIED : 13 October 2000
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 Computes the wrinkle strain. Derivatives are not available.
@@ -219,194 +196,188 @@ Source fields are coordinates, undeformed_coordinates and fibre angle.
 	double A,A2,B,B2,cos_fibre_angle,C2,D,dxi_dnu[6],E[4],fibre_angle, 
 		F_x[6],F_X[6],sin_fibre_angle;
 	FE_value def_derivative_xi[9], undef_derivative_xi[9];
-	int element_dimension,return_code;
+	int return_code;
 
-	ENTER(Computed_field_2d_strain_evaluate_cache_in_element);
-	if (field && element && xi)
+	ENTER(Computed_field_2d_strain_evaluate_cache_at_location);
+	if (field && location)
 	{
-		if (0==calculate_derivatives)
+		Field_element_xi_location* element_xi_location;
+		/* Only works for element_xi locations */
+		if ((element_xi_location  = 
+				dynamic_cast<Field_element_xi_location*>(location)))
 		{
-			/* 1. Precalculate any source fields that this field depends on.
-				 Always need derivatives of deformed and undeformed coordinate fields */
-			if (return_code=
-				Computed_field_evaluate_cache_in_element(field->source_fields[0],
-					element,xi,time,top_level_element,1)&&
-				Computed_field_evaluate_cache_in_element(field->source_fields[1],
-					element,xi,time,top_level_element,1)&&
-				Computed_field_evaluate_cache_in_element(field->source_fields[2],
-					element,xi,time,top_level_element,0))
+			/* 2d_strain requires at least 2-D elements */
+			if (0==location->get_number_of_derivatives())
 			{
-				/* 2. Calculate the field */
-				element_dimension=get_FE_element_dimension(element);
-				field->derivatives_valid = 0;
-				switch(element_dimension)
-				{
-					case 2:
-					{
-						def_derivative_xi[0] = field->source_fields[0]->derivatives[0];
-						def_derivative_xi[1] = field->source_fields[0]->derivatives[1];
-						def_derivative_xi[3] = field->source_fields[0]->derivatives[2];
-						def_derivative_xi[4] = field->source_fields[0]->derivatives[3];
-						def_derivative_xi[6] = field->source_fields[0]->derivatives[4];
-						def_derivative_xi[7] = field->source_fields[0]->derivatives[5];
-						undef_derivative_xi[0] = field->source_fields[1]->derivatives[0];
-						undef_derivative_xi[1] = field->source_fields[1]->derivatives[1];
-						undef_derivative_xi[3] = field->source_fields[1]->derivatives[2];
-						undef_derivative_xi[4] = field->source_fields[1]->derivatives[3];
-						undef_derivative_xi[6] = field->source_fields[1]->derivatives[4];
-						undef_derivative_xi[7] = field->source_fields[1]->derivatives[5];
-					} break;
-					case 3:
-					{
-						/* Convert to 2D ignoring xi3, should be able to choose the
-							 direction that is ignored */
-						def_derivative_xi[0] = field->source_fields[0]->derivatives[0];
-						def_derivative_xi[1] = field->source_fields[0]->derivatives[1];
-						def_derivative_xi[3] = field->source_fields[0]->derivatives[3];
-						def_derivative_xi[4] = field->source_fields[0]->derivatives[4];
-						def_derivative_xi[6] = field->source_fields[0]->derivatives[6];
-						def_derivative_xi[7] = field->source_fields[0]->derivatives[7];
-						undef_derivative_xi[0] = field->source_fields[1]->derivatives[0];
-						undef_derivative_xi[1] = field->source_fields[1]->derivatives[1];
-						undef_derivative_xi[3] = field->source_fields[1]->derivatives[3];
-						undef_derivative_xi[4] = field->source_fields[1]->derivatives[4];
-						undef_derivative_xi[6] = field->source_fields[1]->derivatives[6];
-						undef_derivative_xi[7] = field->source_fields[1]->derivatives[7];
-					} break;
-					default:
-					{
-						display_message(ERROR_MESSAGE,
-							"Computed_field_evaluate_2d_strain.  Unknown element dimension");
-						return_code=0;
-					} break;
-				}
-				if (return_code)
-				{
-					/* do 2D_strain calculation */
-					fibre_angle=field->source_fields[2]->values[0];
+				FE_element* element = element_xi_location->get_element();
+				int element_dimension=get_FE_element_dimension(element);
+				Field_element_xi_location location_with_derivatives =
+					Field_element_xi_location(element,
+						element_xi_location->get_xi(), element_xi_location->get_time(), 
+						element_xi_location->get_top_level_element(),
+						element_dimension);
 
-					/* X is the undeformed coordinates
-						 x is the deformed coordinates
-						 nu is the fibre coordinate system (2-D,within sheet) */
-					/* calculate F_X=dX_dnu and dxi_dnu */
-					cos_fibre_angle=cos(fibre_angle);
-					sin_fibre_angle=sin(fibre_angle);
-					A2=undef_derivative_xi[0]*undef_derivative_xi[0]+
-						undef_derivative_xi[3]*undef_derivative_xi[3]+
-						undef_derivative_xi[6]*undef_derivative_xi[6];
-					A=sqrt(A2);
-					B2=undef_derivative_xi[1]*undef_derivative_xi[1]+
-						undef_derivative_xi[4]*undef_derivative_xi[4]+
-						undef_derivative_xi[7]*undef_derivative_xi[7];
-					B=sqrt(B2);
-					C2=undef_derivative_xi[0]*undef_derivative_xi[1]+
-						undef_derivative_xi[3]*undef_derivative_xi[4]+
-						undef_derivative_xi[6]*undef_derivative_xi[7];
-					D=sin_fibre_angle*B/(A2*B2-C2*C2);
-					dxi_dnu[0] = cos_fibre_angle/A-sin_fibre_angle*C2*D;
-					dxi_dnu[1]=D*A2;
-					F_X[0]=dxi_dnu[0]*undef_derivative_xi[0]+
-						dxi_dnu[1]*undef_derivative_xi[1];
-					F_X[2]=dxi_dnu[0]*undef_derivative_xi[3]+
-						dxi_dnu[1]*undef_derivative_xi[4];
-					F_X[4]=dxi_dnu[0]*undef_derivative_xi[6]+
-						dxi_dnu[1]*undef_derivative_xi[7];
-					D=cos_fibre_angle*B/(A2*B2-C2*C2);
-					dxi_dnu[2]=
-						-(sin_fibre_angle/A+cos_fibre_angle*C2*D);
-					dxi_dnu[3]=D*A2;
-					F_X[1]=dxi_dnu[2]*undef_derivative_xi[0]+
-						dxi_dnu[3]*undef_derivative_xi[1];
-					F_X[3]=dxi_dnu[2]*undef_derivative_xi[3]+
-						dxi_dnu[3]*undef_derivative_xi[4];
-					F_X[5]=dxi_dnu[2]*undef_derivative_xi[6]+
-						dxi_dnu[3]*undef_derivative_xi[7];
-					/* calculate F_x=dx_dnu=dx_dxi*dxi_dnu */
-					F_x[0]=dxi_dnu[0]*def_derivative_xi[0]+
-						dxi_dnu[1]*def_derivative_xi[1];
-					F_x[1]=dxi_dnu[2]*def_derivative_xi[0]+
-						dxi_dnu[3]*def_derivative_xi[1];
-					F_x[2]=dxi_dnu[0]*def_derivative_xi[3]+
-						dxi_dnu[1]*def_derivative_xi[4];
-					F_x[3]=dxi_dnu[2]*def_derivative_xi[3]+
-						dxi_dnu[3]*def_derivative_xi[4];
-					F_x[4]=dxi_dnu[0]*def_derivative_xi[6]+
-						dxi_dnu[1]*def_derivative_xi[7];
-					F_x[5]=dxi_dnu[2]*def_derivative_xi[6]+
-						dxi_dnu[3]*def_derivative_xi[7];
-					/* calculate the strain tensor
-						 E=0.5*(trans(F_x)*F_x-trans(F_X)*F_X) */
-					E[0]=0.5*((F_x[0]*F_x[0]+F_x[2]*F_x[2]+
-						F_x[4]*F_x[4])-
-						(F_X[0]*F_X[0]+F_X[2]*F_X[2]+
-							F_X[4]*F_X[4]));
-					E[1]=0.5*((F_x[0]*F_x[1]+F_x[2]*F_x[3]+
-						F_x[4]*F_x[5])-
-						(F_X[0]*F_X[1]+F_X[2]*F_X[3]+
-							F_X[4]*F_X[5]));
-					E[2]=E[1];
-					E[3]=0.5*((F_x[1]*F_x[1]+F_x[3]*F_x[3]+
-						F_x[5]*F_x[5])-
-						(F_X[1]*F_X[1]+F_X[3]*F_X[3]+
-							F_X[5]*F_X[5]));
-					field->values[0] = E[0];
-					field->values[1] = E[1];
-					field->values[2] = E[2];
-					field->values[3] = E[3];
+				/* 1. Precalculate any source fields that this field depends on.
+					Always need derivatives of deformed and undeformed coordinate fields */
+				if (return_code=
+					Computed_field_evaluate_cache_at_location(field->source_fields[0],
+						&location_with_derivatives)&&
+					Computed_field_evaluate_cache_at_location(field->source_fields[1],
+						&location_with_derivatives)&&
+					Computed_field_evaluate_cache_at_location(field->source_fields[2],
+						location))
+				{
+					/* 2. Calculate the field */
+					field->derivatives_valid = 0;
+					switch(element_dimension)
+					{
+						case 2:
+						{
+							def_derivative_xi[0] = field->source_fields[0]->derivatives[0];
+							def_derivative_xi[1] = field->source_fields[0]->derivatives[1];
+							def_derivative_xi[3] = field->source_fields[0]->derivatives[2];
+							def_derivative_xi[4] = field->source_fields[0]->derivatives[3];
+							def_derivative_xi[6] = field->source_fields[0]->derivatives[4];
+							def_derivative_xi[7] = field->source_fields[0]->derivatives[5];
+							undef_derivative_xi[0] = field->source_fields[1]->derivatives[0];
+							undef_derivative_xi[1] = field->source_fields[1]->derivatives[1];
+							undef_derivative_xi[3] = field->source_fields[1]->derivatives[2];
+							undef_derivative_xi[4] = field->source_fields[1]->derivatives[3];
+							undef_derivative_xi[6] = field->source_fields[1]->derivatives[4];
+							undef_derivative_xi[7] = field->source_fields[1]->derivatives[5];
+						} break;
+						case 3:
+						{
+							/* Convert to 2D ignoring xi3, should be able to choose the
+								direction that is ignored */
+							def_derivative_xi[0] = field->source_fields[0]->derivatives[0];
+							def_derivative_xi[1] = field->source_fields[0]->derivatives[1];
+							def_derivative_xi[3] = field->source_fields[0]->derivatives[3];
+							def_derivative_xi[4] = field->source_fields[0]->derivatives[4];
+							def_derivative_xi[6] = field->source_fields[0]->derivatives[6];
+							def_derivative_xi[7] = field->source_fields[0]->derivatives[7];
+							undef_derivative_xi[0] = field->source_fields[1]->derivatives[0];
+							undef_derivative_xi[1] = field->source_fields[1]->derivatives[1];
+							undef_derivative_xi[3] = field->source_fields[1]->derivatives[3];
+							undef_derivative_xi[4] = field->source_fields[1]->derivatives[4];
+							undef_derivative_xi[6] = field->source_fields[1]->derivatives[6];
+							undef_derivative_xi[7] = field->source_fields[1]->derivatives[7];
+						} break;
+						default:
+						{
+							display_message(ERROR_MESSAGE,
+								"Computed_field_evaluate_2d_strain.  Unknown element dimension");
+							return_code=0;
+						} break;
+					}
+					if (return_code)
+					{
+						/* do 2D_strain calculation */
+						fibre_angle=field->source_fields[2]->values[0];
+
+						/* X is the undeformed coordinates
+							x is the deformed coordinates
+							nu is the fibre coordinate system (2-D,within sheet) */
+						/* calculate F_X=dX_dnu and dxi_dnu */
+						cos_fibre_angle=cos(fibre_angle);
+						sin_fibre_angle=sin(fibre_angle);
+						A2=undef_derivative_xi[0]*undef_derivative_xi[0]+
+							undef_derivative_xi[3]*undef_derivative_xi[3]+
+							undef_derivative_xi[6]*undef_derivative_xi[6];
+						A=sqrt(A2);
+						B2=undef_derivative_xi[1]*undef_derivative_xi[1]+
+							undef_derivative_xi[4]*undef_derivative_xi[4]+
+							undef_derivative_xi[7]*undef_derivative_xi[7];
+						B=sqrt(B2);
+						C2=undef_derivative_xi[0]*undef_derivative_xi[1]+
+							undef_derivative_xi[3]*undef_derivative_xi[4]+
+							undef_derivative_xi[6]*undef_derivative_xi[7];
+						D=sin_fibre_angle*B/(A2*B2-C2*C2);
+						dxi_dnu[0] = cos_fibre_angle/A-sin_fibre_angle*C2*D;
+						dxi_dnu[1]=D*A2;
+						F_X[0]=dxi_dnu[0]*undef_derivative_xi[0]+
+							dxi_dnu[1]*undef_derivative_xi[1];
+						F_X[2]=dxi_dnu[0]*undef_derivative_xi[3]+
+							dxi_dnu[1]*undef_derivative_xi[4];
+						F_X[4]=dxi_dnu[0]*undef_derivative_xi[6]+
+							dxi_dnu[1]*undef_derivative_xi[7];
+						D=cos_fibre_angle*B/(A2*B2-C2*C2);
+						dxi_dnu[2]=
+							-(sin_fibre_angle/A+cos_fibre_angle*C2*D);
+						dxi_dnu[3]=D*A2;
+						F_X[1]=dxi_dnu[2]*undef_derivative_xi[0]+
+							dxi_dnu[3]*undef_derivative_xi[1];
+						F_X[3]=dxi_dnu[2]*undef_derivative_xi[3]+
+							dxi_dnu[3]*undef_derivative_xi[4];
+						F_X[5]=dxi_dnu[2]*undef_derivative_xi[6]+
+							dxi_dnu[3]*undef_derivative_xi[7];
+						/* calculate F_x=dx_dnu=dx_dxi*dxi_dnu */
+						F_x[0]=dxi_dnu[0]*def_derivative_xi[0]+
+							dxi_dnu[1]*def_derivative_xi[1];
+						F_x[1]=dxi_dnu[2]*def_derivative_xi[0]+
+							dxi_dnu[3]*def_derivative_xi[1];
+						F_x[2]=dxi_dnu[0]*def_derivative_xi[3]+
+							dxi_dnu[1]*def_derivative_xi[4];
+						F_x[3]=dxi_dnu[2]*def_derivative_xi[3]+
+							dxi_dnu[3]*def_derivative_xi[4];
+						F_x[4]=dxi_dnu[0]*def_derivative_xi[6]+
+							dxi_dnu[1]*def_derivative_xi[7];
+						F_x[5]=dxi_dnu[2]*def_derivative_xi[6]+
+							dxi_dnu[3]*def_derivative_xi[7];
+						/* calculate the strain tensor
+							E=0.5*(trans(F_x)*F_x-trans(F_X)*F_X) */
+						E[0]=0.5*((F_x[0]*F_x[0]+F_x[2]*F_x[2]+
+								F_x[4]*F_x[4])-
+							(F_X[0]*F_X[0]+F_X[2]*F_X[2]+
+								F_X[4]*F_X[4]));
+						E[1]=0.5*((F_x[0]*F_x[1]+F_x[2]*F_x[3]+
+								F_x[4]*F_x[5])-
+							(F_X[0]*F_X[1]+F_X[2]*F_X[3]+
+								F_X[4]*F_X[5]));
+						E[2]=E[1];
+						E[3]=0.5*((F_x[1]*F_x[1]+F_x[3]*F_x[3]+
+								F_x[5]*F_x[5])-
+							(F_X[1]*F_X[1]+F_X[3]*F_X[3]+
+								F_X[5]*F_X[5]));
+						field->values[0] = E[0];
+						field->values[1] = E[1];
+						field->values[2] = E[2];
+						field->values[3] = E[3];
+					}
 				}
 			}
+		else
+		{
+			display_message(ERROR_MESSAGE,
+				"Computed_field_2d_strain_evaluate_cache_at_location.  "
+				"Cannot calculate derivatives of strains");
+			return_code = 0;
+		}
 		}
 		else
 		{
 			display_message(ERROR_MESSAGE,
-				"Computed_field_2d_strain_evaluate_cache_in_element.  "
-				"Cannot calculate derivatives of strains");
+				"Computed_field_2d_strain_evaluate_cache_at_location.  "
+				"Only implemented in elements.");
 			return_code = 0;
 		}
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Computed_field_2d_strain_evaluate_cache_in_element.  "
+			"Computed_field_2d_strain_evaluate_cache_at_location.  "
 			"Invalid argument(s)");
 		return_code = 0;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* Computed_field_2d_strain_evaluate_cache_in_element */
+} /* Computed_field_2d_strain_evaluate_cache_at_location */
 
-#define Computed_field_2d_strain_evaluate_as_string_at_node \
-	Computed_field_default_evaluate_as_string_at_node
+#define Computed_field_2d_strain_set_values_at_location \
+   (Computed_field_set_values_at_location_function)NULL
 /*******************************************************************************
-LAST MODIFIED : 13 October 2000
-
-DESCRIPTION :
-Print the values calculated in the cache.
-==============================================================================*/
-
-#define Computed_field_2d_strain_evaluate_as_string_in_element \
-	Computed_field_default_evaluate_as_string_in_element
-/*******************************************************************************
-LAST MODIFIED : 13 October 2000
-
-DESCRIPTION :
-Print the values calculated in the cache.
-==============================================================================*/
-
-#define Computed_field_2d_strain_set_values_at_node \
-   (Computed_field_set_values_at_node_function)NULL
-/*******************************************************************************
-LAST MODIFIED : 13 October 2000
-
-DESCRIPTION :
-Not implemented yet.
-==============================================================================*/
-
-#define Computed_field_2d_strain_set_values_in_element \
-   (Computed_field_set_values_in_element_function)NULL
-/*******************************************************************************
-LAST MODIFIED : 13 October 2000
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 Not implemented yet.
@@ -415,7 +386,7 @@ Not implemented yet.
 #define Computed_field_2d_strain_get_native_discretization_in_element \
 	Computed_field_default_get_native_discretization_in_element
 /*******************************************************************************
-LAST MODIFIED : 13 October 2000
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 Inherit result from first source field.
@@ -424,7 +395,7 @@ Inherit result from first source field.
 #define Computed_field_2d_strain_find_element_xi \
    (Computed_field_find_element_xi_function)NULL
 /*******************************************************************************
-LAST MODIFIED : 13 October 2000
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 Not implemented yet.
@@ -435,7 +406,7 @@ Not implemented yet.
 
 static int list_Computed_field_2d_strain(struct Computed_field *field)
 /*******************************************************************************
-LAST MODIFIED : 13 October 2000
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 ==============================================================================*/
@@ -467,7 +438,7 @@ DESCRIPTION :
 static char *Computed_field_2d_strain_get_command_string(
 	struct Computed_field *field)
 /*******************************************************************************
-LAST MODIFIED : 15 January 2002
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 Returns allocated command string for reproducing field. Includes type.
@@ -518,7 +489,7 @@ Returns allocated command string for reproducing field. Includes type.
 #define Computed_field_2d_strain_has_multiple_times \
 	Computed_field_default_has_multiple_times
 /*******************************************************************************
-LAST MODIFIED : 21 January 2002
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 Works out whether time influences the field.
@@ -529,7 +500,7 @@ int Computed_field_set_type_2d_strain(struct Computed_field *field,
 	struct Computed_field *undeformed_coordinate_field,
 	struct Computed_field *fibre_angle_field)
 /*******************************************************************************
-LAST MODIFIED : 21 January 2002
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 Converts <field> to type COMPUTED_FIELD_2D_STRAIN, combining a 
@@ -596,7 +567,7 @@ int Computed_field_get_type_2d_strain(struct Computed_field *field,
 	struct Computed_field **undeformed_coordinate_field,
 	struct Computed_field **fibre_angle_field)
 /*******************************************************************************
-LAST MODIFIED : 13 October 2000
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 If the field is of type COMPUTED_FIELD_2D_STRAIN, the undeformed and deformed
@@ -634,7 +605,7 @@ Use function Computed_field_get_type to determine the field type.
 static int define_Computed_field_type_2d_strain(struct Parse_state *state,
 	void *field_void,void *computed_field_deformation_package_void)
 /*******************************************************************************
-LAST MODIFIED : 13 October 2000
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 Converts <field> into type COMPUTED_FIELD_2D_STRAIN (if it is not 
@@ -746,7 +717,7 @@ already) and allows its contents to be modified.
 int Computed_field_register_types_deformation(
 	struct Computed_field_package *computed_field_package)
 /*******************************************************************************
-LAST MODIFIED : 13 October 2000
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 ==============================================================================*/

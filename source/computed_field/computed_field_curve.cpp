@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : computed_field_control_curve.c
 
-LAST MODIFIED : 21 January 2002
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 Implements a computed_field which maintains a graphics transformation 
@@ -42,13 +42,17 @@ equivalent to the scene_viewer assigned to it.
  * the terms of any one of the MPL, the GPL or the LGPL.
  *
  * ***** END LICENSE BLOCK ***** */
+extern "C" {
 #include "computed_field/computed_field.h"
-#include "computed_field/computed_field_private.h"
+}
+#include "computed_field/computed_field_private.hpp"
+extern "C" {
 #include "computed_field/computed_field_set.h"
 #include "general/debug.h"
 #include "general/mystring.h"
 #include "user_interface/message.h"
 #include "computed_field/computed_field_control_curve.h"
+}
 
 struct Computed_field_control_curve_package 
 {
@@ -69,7 +73,7 @@ static char computed_field_curve_lookup_type_string[] = "curve_lookup";
 static void Computed_field_curve_lookup_Control_curve_change(
 	struct MANAGER_MESSAGE(Control_curve) *message, void *field_void)
 /*******************************************************************************
-LAST MODIFIED : 24 May 2001
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 Something has changed globally in the Control_curve manager. Passes on messages
@@ -123,7 +127,7 @@ COMPUTED_FIELD_CURVE_LOOKUP.
 
 int Computed_field_is_type_curve_lookup(struct Computed_field *field)
 /*******************************************************************************
-LAST MODIFIED : 21 May 2001
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 ==============================================================================*/
@@ -149,7 +153,7 @@ DESCRIPTION :
 static int Computed_field_curve_lookup_clear_type_specific(
 	struct Computed_field *field)
 /*******************************************************************************
-LAST MODIFIED : 21 May 2001
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 Clear the type specific data used by this type.
@@ -191,7 +195,7 @@ Clear the type specific data used by this type.
 static void *Computed_field_curve_lookup_copy_type_specific(
 	struct Computed_field *source_field, struct Computed_field *destination_field)
 /*******************************************************************************
-LAST MODIFIED : 25 February 2002
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 Copy the type specific data used by this type.
@@ -234,7 +238,7 @@ Copy the type specific data used by this type.
 #define Computed_field_curve_lookup_clear_cache_type_specific \
    (Computed_field_clear_cache_type_specific_function)NULL
 /*******************************************************************************
-LAST MODIFIED : 21 May 2001
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 This function is not needed for this type.
@@ -243,7 +247,7 @@ This function is not needed for this type.
 static int Computed_field_curve_lookup_type_specific_contents_match(
 	struct Computed_field *field, struct Computed_field *other_computed_field)
 /*******************************************************************************
-LAST MODIFIED : 21 May 2001
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 Compare the type specific data.
@@ -277,19 +281,10 @@ Compare the type specific data.
 	return (return_code);
 } /* Computed_field_curve_lookup_type_specific_contents_match */
 
-#define Computed_field_curve_lookup_is_defined_in_element \
-	Computed_field_default_is_defined_in_element
+#define Computed_field_curve_lookup_is_defined_at_location \
+	Computed_field_default_is_defined_at_location
 /*******************************************************************************
-LAST MODIFIED : 21 May 2001
-
-DESCRIPTION :
-Check the source fields using the default.
-==============================================================================*/
-
-#define Computed_field_curve_lookup_is_defined_at_node \
-	Computed_field_default_is_defined_at_node
-/*******************************************************************************
-LAST MODIFIED : 21 May 2001
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 Check the source fields using the default.
@@ -298,7 +293,7 @@ Check the source fields using the default.
 #define Computed_field_curve_lookup_has_numerical_components \
 	Computed_field_default_has_numerical_components
 /*******************************************************************************
-LAST MODIFIED : 21 May 2001
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 Window projection does have numerical components.
@@ -307,74 +302,33 @@ Window projection does have numerical components.
 #define Computed_field_curve_lookup_not_in_use \
 	(Computed_field_not_in_use_function)NULL
 /*******************************************************************************
-LAST MODIFIED : 21 May 2001
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 No special criteria.
 ==============================================================================*/
 
-static int Computed_field_curve_lookup_evaluate_cache_at_node(
-	struct Computed_field *field, struct FE_node *node, FE_value time)
+static int Computed_field_curve_lookup_evaluate_cache_at_location(
+   struct Computed_field *field, Field_location* location)
 /*******************************************************************************
-LAST MODIFIED : 21 May 2001
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
-Evaluate the fields cache at the node.
-==============================================================================*/
-{
-	int return_code;
-	struct Computed_field_curve_lookup_type_specific_data *data;
-
-	ENTER(Computed_field_curve_lookup_evaluate_cache_at_node);
-	if (field && node && (data = 
-		(struct Computed_field_curve_lookup_type_specific_data *)
-		field->type_specific_data))
-	{
-		/* 1. Precalculate any source fields that this field depends on */
-		if (return_code = 
-			Computed_field_evaluate_source_fields_cache_at_node(field, node, time))
-		{
-			/* 2. Calculate the field */
-			return_code = Control_curve_get_values_at_parameter(data->curve,
-				field->source_fields[0]->values[0], field->values,
-				/*derivatives*/(FE_value *)NULL);
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_curve_lookup_evaluate_cache_at_node.  "
-			"Invalid argument(s)");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Computed_field_curve_lookup_evaluate_cache_at_node */
-
-static int Computed_field_curve_lookup_evaluate_cache_in_element(
-	struct Computed_field *field, struct FE_element *element, FE_value *xi,
-	FE_value time, struct FE_element *top_level_element,int calculate_derivatives)
-/*******************************************************************************
-LAST MODIFIED : 21 May 2001
-
-DESCRIPTION :
-Evaluate the fields cache at the node.
+Evaluate the fields cache at the location
 ==============================================================================*/
 {
 	FE_value dx_dt, *jacobian, *temp;
 	int i, j, element_dimension, return_code;
 	struct Computed_field_curve_lookup_type_specific_data *data;
 
-	ENTER(Computed_field_curve_lookup_evaluate_cache_in_element);
-	if (field && element && xi && (data = 
+	ENTER(Computed_field_curve_lookup_evaluate_cache_at_location);
+	if (field && location && (data = 
 		(struct Computed_field_curve_lookup_type_specific_data *)
 		field->type_specific_data))
 	{
 		/* 1. Precalculate any source fields that this field depends on */
 		if (return_code = 
-			Computed_field_evaluate_source_fields_cache_in_element(field, element,
-				xi, time, top_level_element, calculate_derivatives))
+			Computed_field_evaluate_source_fields_cache_at_location(field, location))
 		{
 			/* 2. Calculate the field */
 			element_dimension = get_FE_element_dimension(element);
@@ -411,46 +365,19 @@ Evaluate the fields cache at the node.
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Computed_field_curve_lookup_evaluate_cache_in_element.  "
+			"Computed_field_curve_lookup_evaluate_cache_at_location.  "
 			"Invalid argument(s)");
 		return_code = 0;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* Computed_field_curve_lookup_evaluate_cache_in_element */
+} /* Computed_field_curve_lookup_evaluate_cache_at_location */
 
-#define Computed_field_curve_lookup_evaluate_as_string_at_node \
-	Computed_field_default_evaluate_as_string_at_node
+#define Computed_field_curve_lookup_set_values_at_location \
+   (Computed_field_set_values_at_location_function)NULL
 /*******************************************************************************
-LAST MODIFIED : 21 May 2001
-
-DESCRIPTION :
-Print the values calculated in the cache.
-==============================================================================*/
-
-#define Computed_field_curve_lookup_evaluate_as_string_in_element \
-	Computed_field_default_evaluate_as_string_in_element
-/*******************************************************************************
-LAST MODIFIED : 21 May 2001
-
-DESCRIPTION :
-Print the values calculated in the cache.
-==============================================================================*/
-
-#define Computed_field_curve_lookup_set_values_at_node \
-	(Computed_field_set_values_at_node_function)NULL
-/*******************************************************************************
-LAST MODIFIED : 21 May 2001
-
-DESCRIPTION :
-Unavailable for this field type.
-==============================================================================*/
-
-#define Computed_field_curve_lookup_set_values_in_element \
-   (Computed_field_set_values_in_element_function)NULL
-/*******************************************************************************
-LAST MODIFIED : 21 May 2001
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 Unavailable for this field type.
@@ -459,7 +386,7 @@ Unavailable for this field type.
 #define Computed_field_curve_lookup_get_native_discretization_in_element \
 	Computed_field_default_get_native_discretization_in_element
 /*******************************************************************************
-LAST MODIFIED : 21 May 2001
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 Inherit result from first source field.
@@ -468,7 +395,7 @@ Inherit result from first source field.
 #define Computed_field_curve_lookup_find_element_xi \
    (Computed_field_find_element_xi_function)NULL
 /*******************************************************************************
-LAST MODIFIED : 21 May 2001
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 Not implemented yet.
@@ -480,7 +407,7 @@ Not implemented yet.
 static int list_Computed_field_curve_lookup(
 	struct Computed_field *field)
 /*******************************************************************************
-LAST MODIFIED : 21 May 2001
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 ==============================================================================*/
@@ -516,7 +443,7 @@ DESCRIPTION :
 static char *Computed_field_curve_lookup_get_command_string(
 	struct Computed_field *field)
 /*******************************************************************************
-LAST MODIFIED : 15 January 2002
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 Returns allocated command string for reproducing field. Includes type.
@@ -563,7 +490,7 @@ Returns allocated command string for reproducing field. Includes type.
 #define Computed_field_curve_lookup_has_multiple_times \
 	Computed_field_default_has_multiple_times
 /*******************************************************************************
-LAST MODIFIED : 21 January 2002
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 Works out whether time influences the field.
@@ -574,7 +501,7 @@ int Computed_field_set_type_curve_lookup(struct Computed_field *field,
 	struct MANAGER(Computed_field) *computed_field_manager,
 	struct MANAGER(Control_curve) *control_curve_manager)
 /*******************************************************************************
-LAST MODIFIED : 21 January 2002
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 Converts <field> to type COMPUTED_FIELD_CURVE_LOOKUP, returning the value of
@@ -643,7 +570,7 @@ in response to changes in the curve from the control curve manager.
 int Computed_field_get_type_curve_lookup(struct Computed_field *field,
 	struct Computed_field **source_field, struct Control_curve **curve)
 /*******************************************************************************
-LAST MODIFIED : 21 May 2001
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 If the field is of type COMPUTED_FIELD_CURVE_LOOKUP, the source_field and curve
@@ -676,7 +603,7 @@ used by it are returned - otherwise an error is reported.
 static int define_Computed_field_type_curve_lookup(struct Parse_state *state,
 	void *field_void, void *computed_field_control_curve_package_void)
 /*******************************************************************************
-LAST MODIFIED : 21 May 2001
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 Converts <field> into type COMPUTED_FIELD_CURVE_LOOKUP (if it is not 
@@ -776,7 +703,7 @@ int Computed_field_register_types_control_curve(
 	struct Computed_field_package *computed_field_package, 
 	struct MANAGER(Control_curve) *control_curve_manager)
 /*******************************************************************************
-LAST MODIFIED : 21 May 2001
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 ==============================================================================*/

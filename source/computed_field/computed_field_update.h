@@ -56,6 +56,10 @@ Global types
 ------------
 */
 
+#ifdef __cplusplus
+extern "C" {
+#endif /* __cplusplus */
+
 int Computed_field_copy_values_at_node(struct FE_node *node,
 	struct Computed_field *destination_field,
 	struct Computed_field *source_field, FE_value time);
@@ -99,4 +103,7 @@ or whose elements are in <element_selection>, if either supplied.
 Note the union of these two selections is used if both supplied.
 ==============================================================================*/
 
+#ifdef __cplusplus
+}
+#endif /* __cplusplus */
 #endif /* !defined (COMPUTED_FIELD_UPDATE_H) */

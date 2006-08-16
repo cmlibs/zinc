@@ -121,6 +121,9 @@ struct Computed_field_conditional_data
 Global functions
 ----------------
 */
+#ifdef __cplusplus
+extern "C" {
+#endif /* __cplusplus */
 
 struct Computed_field *CREATE(Computed_field)(char *name);
 /*******************************************************************************
@@ -891,4 +894,7 @@ it is of type COMPUTED_FIELD_FINITE_ELEMENT further tests that its fe_field can
 be destroyed, assuming it is only accessed by this field and its manager.
 ==============================================================================*/
 
+#ifdef __cplusplus
+}
+#endif /* __cplusplus */
 #endif /* !defined (COMPUTED_FIELD_H) */

@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : computed_field_find_xi.c
 
-LAST MODIFIED : 9 January 2003
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 Implements a special version of find_xi that uses OpenGL to accelerate the
@@ -42,23 +42,31 @@ lookup of the element.
  * the terms of any one of the MPL, the GPL or the LGPL.
  *
  * ***** END LICENSE BLOCK ***** */
+extern "C" {
 #include <stdio.h>
 #include <math.h>
+}
 
+extern "C" {
 #include "general/debug.h"
 #include "general/image_utilities.h"
 #include "general/matrix_vector.h"
 #include "computed_field/computed_field.h"
-#include "computed_field/computed_field_private.h"
+}
+#include "computed_field/computed_field_private.hpp"
+extern "C" {
 #include "computed_field/computed_field_find_xi.h"
 #include "finite_element/finite_element_discretization.h"
 #include "finite_element/finite_element_region.h"
 #include "graphics/texture.h"
 #include "three_d_drawing/graphics_buffer.h"
 #include "user_interface/message.h"
+}
 
 #if defined (GRAPHICS_BUFFER_USE_OFFSCREEN_BUFFERS)
+extern "C" {
 #include <GL/gl.h>
+}
 #endif /* defined (GRAPHICS_BUFFER_USE_OFFSCREEN_BUFFERS) */
 
 struct Render_element_data
@@ -121,7 +129,7 @@ matches the <field> in this structure or one of its source fields.
 static int Computed_field_iterative_element_conditional(
 	struct FE_element *element, void *data_void)
 /*******************************************************************************
-LAST MODIFIED : 21 August 2002
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 Returns true if a valid element xi is found.
@@ -372,7 +380,7 @@ int Computed_field_perform_find_element_xi(struct Computed_field *field,
 	FE_value *xi, int element_dimension, struct Cmiss_region *search_region,
 	int find_nearest_location)
 /*******************************************************************************
-LAST MODIFIED : 18 April 2005
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 This function actually seacrches through the elements in the 
@@ -626,7 +634,7 @@ ultimate parent finite_element field.
 #if defined (GRAPHICS_BUFFER_USE_OFFSCREEN_BUFFERS)
 static int Expand_element_range(struct FE_element *element, void *data_void)
 /*******************************************************************************
-LAST MODIFIED : 26 June 2000
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 Stores cache data for the Computed_field_find_element_xi_special routine.
@@ -670,7 +678,7 @@ Stores cache data for the Computed_field_find_element_xi_special routine.
 #if defined (GRAPHICS_BUFFER_USE_OFFSCREEN_BUFFERS)
 static int Render_element_as_texture(struct FE_element *element, void *data_void)
 /*******************************************************************************
-LAST MODIFIED : 20 June 2000
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 Stores cache data for the Computed_field_find_element_xi_special routine.
@@ -693,7 +701,7 @@ Stores cache data for the Computed_field_find_element_xi_special routine.
 		if (get_FE_element_identifier(element, &cm_information) &&
 			(cm_information.type == CM_ELEMENT) && (2 == get_FE_element_dimension(element)))
 		{
-			scaled_number = ((double)cm_information.number - data->minimum_element_number + 1);
+			scaled_number = (unsigned int)((double)cm_information.number - data->minimum_element_number + 1);
 			blue = ((double)((scaled_number & ((1 << data->bit_shift) - 1)) << 
 				(8 - data->bit_shift)) + 0.5) / 255.0;
 			scaled_number = scaled_number >> data->bit_shift;
@@ -770,7 +778,7 @@ int Computed_field_find_element_xi_special(struct Computed_field *field,
 	struct Graphics_buffer_package *graphics_buffer_package,
 	float *hint_minimums, float *hint_maximums, float *hint_resolution)
 /*******************************************************************************
-LAST MODIFIED : 12 May 2004
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 This function implements the reverse of some certain computed_fields
@@ -873,7 +881,7 @@ sequential element_xi lookup should now be performed.
 					FE_region_for_each_FE_element(fe_region, Expand_element_range,
 						(void *)cache);
 
-					cache->bit_shift = ceil(log((double)(cache->maximum_element_number - 
+					cache->bit_shift = (int)ceil(log((double)(cache->maximum_element_number - 
 						cache->minimum_element_number + 2)) / log (2.0));
 					cache->bit_shift = (cache->bit_shift / 3) + 1;
 					/* 1024 is the limit on an Octane and the limit incorrectly reported by
@@ -889,7 +897,7 @@ sequential element_xi lookup should now be performed.
 						hint_resolution[1] = 1024;
 					}
 					if (cache->graphics_buffer = create_Graphics_buffer_offscreen(
-						graphics_buffer_package, hint_resolution[0], hint_resolution[1],
+							 graphics_buffer_package, (int)hint_resolution[0], (int)hint_resolution[1],
 						GRAPHICS_BUFFER_ANY_BUFFERING_MODE, GRAPHICS_BUFFER_ANY_STEREO_MODE,
 						/*minimum_colour_buffer_depth*/0, /*minimum_depth_buffer_depth*/0,
 						/*minimum_accumulation_buffer_depth*/0))
@@ -1037,7 +1045,7 @@ sequential element_xi lookup should now be performed.
 							}
 							else
 							{
-								nx = hint_resolution[0] - px;
+								nx = (int)(hint_resolution[0] - px);
 							}
 							if (py + BLOCK_SIZE < hint_resolution[1])
 							{
@@ -1045,7 +1053,7 @@ sequential element_xi lookup should now be performed.
 							}
 							else
 							{
-								ny = hint_resolution[1] - py;
+								ny = (int)(hint_resolution[1] - py);
 							}
 							glReadPixels(px, py, nx, ny, GL_RGBA, GL_UNSIGNED_BYTE, 
 								colour_block);
@@ -1168,7 +1176,7 @@ sequential element_xi lookup should now be performed.
 struct Computed_field_find_element_xi_cache 
 *CREATE(Computed_field_find_element_xi_cache)(void)
 /*******************************************************************************
-LAST MODIFIED : 17 December 2002
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 Stores cache data for the find_xi routines.
@@ -1204,7 +1212,7 @@ Stores cache data for the find_xi routines.
 int DESTROY(Computed_field_find_element_xi_cache)
 	(struct Computed_field_find_element_xi_cache **cache_address)
 /*******************************************************************************
-LAST MODIFIED : 20 June 2000
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 Frees memory/deaccess cache at <*cache_address>.

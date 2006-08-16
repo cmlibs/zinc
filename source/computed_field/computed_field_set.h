@@ -88,6 +88,10 @@ Global functions
 ----------------
 */
 
+#ifdef __cplusplus
+extern "C" {
+#endif /* __cplusplus */
+
 int set_Computed_field_conditional(struct Parse_state *state,
 	void *field_address_void, void *set_field_data_void);
 /*******************************************************************************
@@ -129,4 +133,7 @@ Works by repeatedly calling set_Computed_field_conditional.
 ???RC Make this globally available for calling any modifier function?
 ==============================================================================*/
 
+#ifdef __cplusplus
+}
+#endif /* __cplusplus */
 #endif /* !defined (COMPUTED_FIELD_SET_H) */

@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : computed_field_sample_texture.c
 
-LAST MODIFIED : 21 January 2002
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 Implements a computed_field which maintains a graphics transformation 
@@ -42,14 +42,18 @@ equivalent to the scene_viewer assigned to it.
  * the terms of any one of the MPL, the GPL or the LGPL.
  *
  * ***** END LICENSE BLOCK ***** */
+extern "C" {
 #include "computed_field/computed_field.h"
-#include "computed_field/computed_field_private.h"
+}
+#include "computed_field/computed_field_private.hpp"
+extern "C" {
 #include "computed_field/computed_field_set.h"
 #include "general/debug.h"
 #include "general/mystring.h"
 #include "graphics/texture.h"
 #include "user_interface/message.h"
 #include "computed_field/computed_field_sample_texture.h"
+}
 
 struct Computed_field_sample_texture_package 
 {
@@ -67,7 +71,7 @@ static char computed_field_sample_texture_type_string[] = "sample_texture";
 
 int Computed_field_is_type_sample_texture(struct Computed_field *field)
 /*******************************************************************************
-LAST MODIFIED : 18 July 2000
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 ==============================================================================*/
@@ -92,7 +96,7 @@ DESCRIPTION :
 static int Computed_field_sample_texture_clear_type_specific(
 	struct Computed_field *field)
 /*******************************************************************************
-LAST MODIFIED : 6 July 2000
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 Clear the type specific data used by this type.
@@ -128,7 +132,7 @@ Clear the type specific data used by this type.
 static void *Computed_field_sample_texture_copy_type_specific(
 	struct Computed_field *source_field, struct Computed_field *destination_field)
 /*******************************************************************************
-LAST MODIFIED : 25 February 2002
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 Copy the type specific data used by this type.
@@ -172,7 +176,7 @@ Copy the type specific data used by this type.
 #define Computed_field_sample_texture_clear_cache_type_specific \
    (Computed_field_clear_cache_type_specific_function)NULL
 /*******************************************************************************
-LAST MODIFIED : 4 July 2000
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 This function is not needed for this type.
@@ -181,7 +185,7 @@ This function is not needed for this type.
 static int Computed_field_sample_texture_type_specific_contents_match(
 	struct Computed_field *field, struct Computed_field *other_computed_field)
 /*******************************************************************************
-LAST MODIFIED : 4 July 2000
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 Compare the type specific data
@@ -218,19 +222,10 @@ Compare the type specific data
 	return (return_code);
 } /* Computed_field_sample_texture_type_specific_contents_match */
 
-#define Computed_field_sample_texture_is_defined_in_element \
-	Computed_field_default_is_defined_in_element
+#define Computed_field_sample_texture_is_defined_at_location \
+	Computed_field_default_is_defined_at_location
 /*******************************************************************************
-LAST MODIFIED : 4 July 2000
-
-DESCRIPTION :
-Check the source fields using the default.
-==============================================================================*/
-
-#define Computed_field_sample_texture_is_defined_at_node \
-	Computed_field_default_is_defined_at_node
-/*******************************************************************************
-LAST MODIFIED : 4 July 2000
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 Check the source fields using the default.
@@ -239,7 +234,7 @@ Check the source fields using the default.
 #define Computed_field_sample_texture_has_numerical_components \
 	Computed_field_default_has_numerical_components
 /*******************************************************************************
-LAST MODIFIED : 4 July 2000
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 Window projection does have numerical components.
@@ -248,19 +243,19 @@ Window projection does have numerical components.
 #define Computed_field_sample_texture_not_in_use \
 	(Computed_field_not_in_use_function)NULL
 /*******************************************************************************
-LAST MODIFIED : 17 July 2000
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 No special criteria.
 ==============================================================================*/
 
-static int Computed_field_sample_texture_evaluate_cache_at_node(
-	struct Computed_field *field, struct FE_node *node, FE_value time)
+static int Computed_field_sample_texture_evaluate_cache_at_location(
+   struct Computed_field *field, Field_location* location)
 /*******************************************************************************
-LAST MODIFIED : 21 March 2002
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
-Evaluate the fields cache at the node.
+Evaluate the fields cache at the location
 ==============================================================================*/
 {
 	double texture_values[4];
@@ -268,91 +263,14 @@ Evaluate the fields cache at the node.
 	int i, number_of_components, return_code;
 	struct Computed_field_sample_texture_type_specific_data *data;
 
-	ENTER(Computed_field_sample_texture_evaluate_cache_at_node);
-	if (field && node && 
-		(data = (struct Computed_field_sample_texture_type_specific_data *)
-		field->type_specific_data))
-	{
-		/* 1. Precalculate any source fields that this field depends on */
-		if (return_code = 
-			Computed_field_evaluate_source_fields_cache_at_node(field, node, time))
-		{
-			/* 2. Calculate the field */
-			texture_coordinate[0] = 0.0;
-			texture_coordinate[1] = 0.0;
-			texture_coordinate[2] = 0.0;
-			for (i = 0; i < field->source_fields[0]->number_of_components; i++)
-			{
-				texture_coordinate[i] = field->source_fields[0]->values[i];				
-			}
-			Texture_get_pixel_values(data->texture,
-				texture_coordinate[0], texture_coordinate[1], texture_coordinate[2],
-				texture_values);
-			number_of_components = field->number_of_components;
-			if (data->minimum == 0.0)
-			{
-				if (data->maximum == 1.0)
-				{
-					for (i = 0 ; i < number_of_components ; i++)
-					{
-						field->values[i] =  texture_values[i];
-					}
-				}
-				else
-				{
-					for (i = 0 ; i < number_of_components ; i++)
-					{
-						field->values[i] =  texture_values[i] * data->maximum;
-					}
-				}
-			}
-			else
-			{
-				for (i = 0 ; i < number_of_components ; i++)
-				{
-					field->values[i] = data->minimum +
-						texture_values[i] * (data->maximum - data->minimum);
-				}
-			}
-			field->derivatives_valid = 0;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_sample_texture_evaluate_cache_at_node.  "
-			"Invalid arguments.");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Computed_field_sample_texture_evaluate_cache_at_node */
-
-static int Computed_field_sample_texture_evaluate_cache_in_element(
-	struct Computed_field *field, struct FE_element *element, FE_value *xi,
-	FE_value time, struct FE_element *top_level_element,int calculate_derivatives)
-/*******************************************************************************
-LAST MODIFIED : 21 March 2002
-
-DESCRIPTION :
-Evaluate the fields cache at the node.
-==============================================================================*/
-{
-	double texture_values[4];
-	FE_value texture_coordinate[3];
-	int i, number_of_components, return_code;
-	struct Computed_field_sample_texture_type_specific_data *data;
-
-	ENTER(Computed_field_sample_texture_evaluate_cache_in_element);
-	if (field && element && xi 
+	ENTER(Computed_field_sample_texture_evaluate_cache_at_location);
+	if (field && location 
 		&& (data = (struct Computed_field_sample_texture_type_specific_data *)
 		field->type_specific_data))
 	{
 		/* 1. Precalculate any source fields that this field depends on */
 		if (return_code = 
-			Computed_field_evaluate_source_fields_cache_in_element(field, element,
-				xi, time, top_level_element, calculate_derivatives))
+			Computed_field_evaluate_source_fields_cache_at_location(field, location))
 		{
 			/* 2. Calculate the field */
 			texture_coordinate[0] = 0.0;
@@ -397,46 +315,19 @@ Evaluate the fields cache at the node.
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Computed_field_sample_texture_evaluate_cache_in_element.  "
+			"Computed_field_sample_texture_evaluate_cache_at_location.  "
 			"Invalid arguments.");
 		return_code = 0;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* Computed_field_sample_texture_evaluate_cache_in_element */
+} /* Computed_field_sample_texture_evaluate_cache_at_location */
 
-#define Computed_field_sample_texture_evaluate_as_string_at_node \
-	Computed_field_default_evaluate_as_string_at_node
+#define Computed_field_sample_texture_set_values_at_location \
+   (Computed_field_set_values_at_location_function)NULL
 /*******************************************************************************
-LAST MODIFIED : 4 July 2000
-
-DESCRIPTION :
-Print the values calculated in the cache.
-==============================================================================*/
-
-#define Computed_field_sample_texture_evaluate_as_string_in_element \
-	Computed_field_default_evaluate_as_string_in_element
-/*******************************************************************************
-LAST MODIFIED : 4 July 2000
-
-DESCRIPTION :
-Print the values calculated in the cache.
-==============================================================================*/
-
-#define Computed_field_sample_texture_set_values_at_node \
-   (Computed_field_set_values_at_node_function)NULL
-/*******************************************************************************
-LAST MODIFIED : 4 July 2000
-
-DESCRIPTION :
-Not implemented yet.
-==============================================================================*/
-
-#define Computed_field_sample_texture_set_values_in_element \
-   (Computed_field_set_values_in_element_function)NULL
-/*******************************************************************************
-LAST MODIFIED : 4 July 2000
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 Not implemented yet.
@@ -445,7 +336,7 @@ Not implemented yet.
 #define Computed_field_sample_texture_get_native_discretization_in_element \
 	Computed_field_default_get_native_discretization_in_element
 /*******************************************************************************
-LAST MODIFIED : 4 July 2000
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 Inherit result from first source field.
@@ -454,7 +345,7 @@ Inherit result from first source field.
 #define Computed_field_sample_texture_find_element_xi \
    (Computed_field_find_element_xi_function)NULL
 /*******************************************************************************
-LAST MODIFIED : 4 July 2000
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 Not implemented yet.
@@ -465,7 +356,7 @@ int Computed_field_sample_texture_get_native_resolution(struct Computed_field *f
         int *dimension, int **sizes,
 	struct Computed_field **texture_coordinate_field)
 /*******************************************************************************
-LAST MODIFIED : 4 February 2005
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 Gets the <dimension>, <sizes>, <minimums>, <maximums> and <texture_coordinate_field> from
@@ -539,7 +430,7 @@ the <field>. These parameters will be used in image processing.
 static int list_Computed_field_sample_texture(
 	struct Computed_field *field)
 /*******************************************************************************
-LAST MODIFIED : 4 July 2000
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 ==============================================================================*/
@@ -580,7 +471,7 @@ DESCRIPTION :
 static char *Computed_field_sample_texture_get_command_string(
 	struct Computed_field *field)
 /*******************************************************************************
-LAST MODIFIED : 15 January 2002
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 Returns allocated command string for reproducing field. Includes type.
@@ -632,7 +523,7 @@ Returns allocated command string for reproducing field. Includes type.
 #define Computed_field_sample_texture_has_multiple_times \
 	Computed_field_default_has_multiple_times
 /*******************************************************************************
-LAST MODIFIED : 21 January 2002
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 Works out whether time influences the field.
@@ -642,7 +533,7 @@ int Computed_field_set_type_sample_texture(struct Computed_field *field,
 	struct Computed_field *texture_coordinate_field, struct Texture *texture,
 	float minimum, float maximum)
 /*******************************************************************************
-LAST MODIFIED : 21 January 2002
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 Converts <field> to type COMPUTED_FIELD_SAMPLE_TEXTURE with the supplied
@@ -715,7 +606,7 @@ int Computed_field_get_type_sample_texture(struct Computed_field *field,
 	struct Computed_field **texture_coordinate_field, struct Texture **texture,
 	float *minimum, float *maximum)
 /*******************************************************************************
-LAST MODIFIED : 6 July 2000
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 If the field is of type COMPUTED_FIELD_SAMPLE_TEXTURE, the 
@@ -752,7 +643,7 @@ returned.
 static int define_Computed_field_type_sample_texture(struct Parse_state *state,
 	void *field_void,void *computed_field_sample_texture_package_void)
 /*******************************************************************************
-LAST MODIFIED : 18 December 2001
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 Converts <field> into type COMPUTED_FIELD_SAMPLE_TEXTURE (if it is not 
@@ -860,7 +751,7 @@ int Computed_field_register_type_sample_texture(
 	struct Computed_field_package *computed_field_package, 
 	struct MANAGER(Texture) *texture_manager)
 /*******************************************************************************
-LAST MODIFIED : 6 July 2000
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 ==============================================================================*/

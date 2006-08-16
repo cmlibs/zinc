@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : computed_field_lookup.c
 
-LAST MODIFIED : 27 January 2006
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 Defines fields for looking up values at given locations.
@@ -41,8 +41,11 @@ Defines fields for looking up values at given locations.
  * the terms of any one of the MPL, the GPL or the LGPL.
  *
  * ***** END LICENSE BLOCK ***** */
+extern "C" {
 #include "computed_field/computed_field.h"
-#include "computed_field/computed_field_private.h"
+}
+#include "computed_field/computed_field_private.hpp"
+extern "C" {
 #include "computed_field/computed_field_set.h"
 #include "finite_element/finite_element_region.h"
 #include "region/cmiss_region.h"
@@ -50,6 +53,7 @@ Defines fields for looking up values at given locations.
 #include "general/mystring.h"
 #include "user_interface/message.h"
 #include "computed_field/computed_field_lookup.h"
+}
 
 struct Computed_field_lookup_package 
 {
@@ -70,7 +74,7 @@ static char computed_field_nodal_lookup_type_string[] = "nodal_lookup";
 static void Computed_field_nodal_lookup_FE_region_change(struct FE_region *fe_region,
 	struct FE_region_changes *changes, void *computed_field_void)
 /*******************************************************************************
-LAST MODIFIED : 27 January 2006
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 If the node we are looking at changes generate a computed field change message.
@@ -108,7 +112,7 @@ If the node we are looking at changes generate a computed field change message.
 
 int Computed_field_is_type_nodal_lookup(struct Computed_field *field)
 /*******************************************************************************
-LAST MODIFIED : 29 September 2003
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 ==============================================================================*/
@@ -134,7 +138,7 @@ DESCRIPTION :
 static int Computed_field_nodal_lookup_clear_type_specific(
 	struct Computed_field *field)
 /*******************************************************************************
-LAST MODIFIED : 10 October 2003
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 Clear the type specific data used by this type.
@@ -177,7 +181,7 @@ Clear the type specific data used by this type.
 static void *Computed_field_nodal_lookup_copy_type_specific(
 	struct Computed_field *source_field, struct Computed_field *destination_field)
 /*******************************************************************************
-LAST MODIFIED : 10 October 2003
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 Copy the type specific data used by this type.
@@ -220,7 +224,7 @@ Copy the type specific data used by this type.
 #define Computed_field_nodal_lookup_clear_cache_type_specific \
    (Computed_field_clear_cache_type_specific_function)NULL
 /*******************************************************************************
-LAST MODIFIED : 29 September 2003
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 This function is not needed for this type.
@@ -229,7 +233,7 @@ This function is not needed for this type.
 static int Computed_field_nodal_lookup_type_specific_contents_match(
 	struct Computed_field *field, struct Computed_field *other_computed_field)
 /*******************************************************************************
-LAST MODIFIED : 10 October 2003
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 Compare the type specific data.
@@ -264,10 +268,10 @@ Compare the type specific data.
 	return (return_code);
 } /* Computed_field_nodal_lookup_type_specific_contents_match */
 
-int Computed_field_nodal_lookup_is_defined_in_element(struct Computed_field *field,
-	struct FE_element *element)
+int Computed_field_nodal_lookup_is_defined_at_location(
+	Computed_field* field, Field_location* location)
 /*******************************************************************************
-LAST MODIFIED : 10 March 2004
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 Returns true if <field> can be calculated in <element>, which is determined
@@ -277,61 +281,32 @@ by checking the source field on the lookup node.
 	int return_code;
 	struct Computed_field_nodal_lookup_type_specific_data *data;
 
-	ENTER(Computed_field_nodal_lookup_is_defined_in_element);
-	if (field && element && (data = 
+	ENTER(Computed_field_nodal_lookup_is_defined_at_location);
+	if (field && location && (data = 
 		(struct Computed_field_nodal_lookup_type_specific_data *)
 		field->type_specific_data))
 	{
-		return_code = Computed_field_is_defined_at_node(field->source_fields[0],
-			data->nodal_lookup_node);
+		Field_node_location nodal_location(data->nodal_lookup_node,
+			location->get_time());
+
+		return_code = Computed_field_is_defined_at_location(field->source_fields[0],
+			&nodal_location);
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Computed_field_nodal_lookup_is_defined_in_element.  Invalid argument(s)");
+			"Computed_field_nodal_lookup_is_defined_at_location.  Invalid argument(s)");
 		return_code=0;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* Computed_field_nodal_lookup_is_defined_in_element */
-
-int Computed_field_nodal_lookup_is_defined_at_node(struct Computed_field *field,
-	struct FE_node *node)
-/*******************************************************************************
-LAST MODIFIED : 10 March 2004
-
-DESCRIPTION :
-Checks whether the lookup source field is defined on the lookup node.
-==============================================================================*/
-{
-	int return_code;
-	struct Computed_field_nodal_lookup_type_specific_data *data;
-
-	ENTER(Computed_field_nodal_lookup_is_defined_at_node);
-	if (field && node && (data = 
-		(struct Computed_field_nodal_lookup_type_specific_data *)
-		field->type_specific_data))
-	{
-		return_code = Computed_field_is_defined_at_node(field->source_fields[0],
-			data->nodal_lookup_node);
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_nodal_lookup_is_defined_at_node.  "
-			"Invalid arguments.");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Computed_field_nodal_lookup_is_defined_at_node */
+} /* Computed_field_nodal_lookup_is_defined_at_location */
 
 #define Computed_field_nodal_lookup_has_numerical_components \
 	Computed_field_default_has_numerical_components
 /*******************************************************************************
-LAST MODIFIED : 29 September 2003
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 Window projection does have numerical components.
@@ -340,140 +315,68 @@ Window projection does have numerical components.
 #define Computed_field_nodal_lookup_not_in_use \
 	(Computed_field_not_in_use_function)NULL
 /*******************************************************************************
-LAST MODIFIED : 29 September 2003
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 No special criteria.
 ==============================================================================*/
 
-static int Computed_field_nodal_lookup_evaluate_cache_at_node(
-	struct Computed_field *field, struct FE_node *node, FE_value time)
+static int Computed_field_nodal_lookup_evaluate_cache_at_location(
+   struct Computed_field *field, Field_location* location)
 /*******************************************************************************
-LAST MODIFIED : 29 September 2003
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
-Evaluate the fields cache at the node.
+Evaluate the fields cache at the location
 ==============================================================================*/
 {
 	int return_code,i;
 	struct Computed_field_nodal_lookup_type_specific_data *data;
 
-	ENTER(Computed_field_nodal_lookup_evaluate_cache_at_node);
-	USE_PARAMETER(node);
+	ENTER(Computed_field_nodal_lookup_evaluate_cache_at_location);
 	if (field && (data = 
 		(struct Computed_field_nodal_lookup_type_specific_data *)
 		field->type_specific_data))
 	{
+		Field_node_location nodal_location(data->nodal_lookup_node,
+			location->get_time());
+
 		/* 1. Precalculate any source fields that this field depends on */
 		/* only calculate the time_field at this time and then use the
 		   results of that field for the time of the source_field */
-		if (return_code=Computed_field_evaluate_cache_at_node(
-          field->source_fields[0],data->nodal_lookup_node,time))
+		if (return_code=Computed_field_evaluate_cache_at_location(
+          field->source_fields[0], &nodal_location))
 		{
 			/* 2. Copy the results */
 			for (i=0;i<field->number_of_components;i++)
 			{
 				field->values[i] = field->source_fields[0]->values[i];
 			}
-		}
-    return_code = 1;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_nodal_lookup_evaluate_cache_at_node.  "
-			"Invalid argument(s)");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Computed_field_nodal_lookup_evaluate_cache_at_node */
-
-static int Computed_field_nodal_lookup_evaluate_cache_in_element(
-	struct Computed_field *field, struct FE_element *element, FE_value *xi,
-	FE_value time, struct FE_element *top_level_element,int calculate_derivatives)
-/*******************************************************************************
-LAST MODIFIED : 01 October 2003
-
-DESCRIPTION :
-Evaluate the fields cache at the node.
-==============================================================================*/
-{
-	int return_code,i,element_dimension;
-	struct Computed_field_nodal_lookup_type_specific_data *data;
-
-	ENTER(Computed_field_nodal_lookup_evaluate_cache_in_element);
-	USE_PARAMETER(xi);
-	USE_PARAMETER(top_level_element);
-	USE_PARAMETER(calculate_derivatives);
-	if (field && (data = 
-		(struct Computed_field_nodal_lookup_type_specific_data *)
-		field->type_specific_data))
-	{
-		/* 1. Precalculate any source fields that this field depends on */
-		/* only calculate the time_field at this time and then use the
-		   results of that field for the time of the source_field */
-		if (return_code=Computed_field_evaluate_cache_at_node(
-          field->source_fields[0],data->nodal_lookup_node,time))
-		{
-			/* 2. Copy the results */
-			for (i=0;i<field->number_of_components;i++)
+			/* 3. Set all derivatives to 0 */
+			for (i=0;i<(field->number_of_components * 
+					location->get_number_of_derivatives());i++)
 			{
-				field->values[i] = field->source_fields[0]->values[i];
+				field->derivatives[i] = (FE_value)0.0;
 			}
-      /* 3. Set all derivatives to 0 */
-      element_dimension = get_FE_element_dimension(element);
-      for (i=0;i<(field->number_of_components*element_dimension);i++)
-      {
-        field->derivatives[i] = (FE_value)0.0;
-      }
-      field->derivatives_valid = 1;
+			field->derivatives_valid = 1;
 		}
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Computed_field_time_value_evaluate_cache_in_element.  "
+			"Computed_field_time_value_evaluate_cache_at_location.  "
 			"Invalid argument(s)");
 		return_code = 0;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* Computed_field_time_value_evaluate_cache_in_element */
+} /* Computed_field_time_value_evaluate_cache_at_location */
 
-#define Computed_field_nodal_lookup_evaluate_as_string_at_node \
-	Computed_field_default_evaluate_as_string_at_node
+#define Computed_field_nodal_lookup_set_values_at_location \
+   (Computed_field_set_values_at_location_function)NULL
 /*******************************************************************************
-LAST MODIFIED : 29 September 2003
-
-DESCRIPTION :
-Print the values calculated in the cache.
-==============================================================================*/
-
-#define Computed_field_nodal_lookup_evaluate_as_string_in_element \
-	Computed_field_default_evaluate_as_string_in_element
-/*******************************************************************************
-LAST MODIFIED : 29 September 2003
-
-DESCRIPTION :
-Print the values calculated in the cache.
-==============================================================================*/
-
-#define Computed_field_nodal_lookup_set_values_at_node \
-   (Computed_field_set_values_at_node_function)NULL
-/*******************************************************************************
-LAST MODIFIED : 29 September 2003
-
-DESCRIPTION :
-Not implemented yet.
-==============================================================================*/
-
-#define Computed_field_nodal_lookup_set_values_in_element \
-   (Computed_field_set_values_in_element_function)NULL
-/*******************************************************************************
-LAST MODIFIED : 29 September 2003
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 Not implemented yet.
@@ -482,7 +385,7 @@ Not implemented yet.
 #define Computed_field_nodal_lookup_get_native_discretization_in_element \
 	Computed_field_default_get_native_discretization_in_element
 /*******************************************************************************
-LAST MODIFIED : 29 September 2003
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 Inherit result from first source field.
@@ -491,7 +394,7 @@ Inherit result from first source field.
 #define Computed_field_nodal_lookup_find_element_xi \
    (Computed_field_find_element_xi_function)NULL
 /*******************************************************************************
-LAST MODIFIED : 29 September 2003
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 Not implemented yet.
@@ -503,7 +406,7 @@ Not implemented yet.
 static int list_Computed_field_nodal_lookup(
 	struct Computed_field *field)
 /*******************************************************************************
-LAST MODIFIED : 29 September 2003
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 ==============================================================================*/
@@ -538,7 +441,7 @@ DESCRIPTION :
 static char *Computed_field_nodal_lookup_get_command_string(
   struct Computed_field *field)
 /*******************************************************************************
-LAST MODIFIED : 29 September 2003
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 Returns allocated command string for reproducing field.
@@ -582,7 +485,7 @@ Returns allocated command string for reproducing field.
 
 int Computed_field_nodal_lookup_has_multiple_times (struct Computed_field *field)
 /*******************************************************************************
-LAST MODIFIED : 29 September 2003
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 Always has multiple times.
@@ -612,7 +515,7 @@ int Computed_field_set_type_nodal_lookup(struct Computed_field *field,
 	int nodal_lookup_node_identifier, 
 	struct Computed_field_lookup_package *lookup_package)
 /*******************************************************************************
-LAST MODIFIED : 27 January 2006
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 Converts <field> to type COMPUTED_FIELD_NODAL_LOOKUP with the supplied
@@ -693,7 +596,7 @@ int Computed_field_get_type_nodal_lookup(struct Computed_field *field,
 	int *nodal_lookup_node_identifier,
 	struct Computed_field_lookup_package **lookup_package)
 /*******************************************************************************
-LAST MODIFIED : 27 January 2006
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 If the field is of type COMPUTED_FIELD_NODAL_LOOKUP, the function returns the source
@@ -729,7 +632,7 @@ Note that nothing returned has been ACCESSed.
 static int define_Computed_field_type_nodal_lookup(struct Parse_state *state,
 	void *field_void,void *computed_field_lookup_package_void)
 /*******************************************************************************
-LAST MODIFIED : 01 October 2003
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 Converts <field> into type COMPUTED_FIELD_NODAL_LOOKUP (if it is not 
@@ -836,7 +739,7 @@ int Computed_field_register_types_lookup(
 	struct Computed_field_package *computed_field_package,
 	struct Cmiss_region *root_region)
 /*******************************************************************************
-LAST MODIFIED : 01 October 2003
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 ==============================================================================*/

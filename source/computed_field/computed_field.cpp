@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : computed_field.c
 
-LAST MODIFIED : 27 January 2005
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 A Computed_field is an abstraction of an FE_field. For each FE_field there is
@@ -161,10 +161,13 @@ like the number of components.
  * the terms of any one of the MPL, the GPL or the LGPL.
  *
  * ***** END LICENSE BLOCK ***** */
+extern "C" {
 #include <math.h>
 #include "computed_field/computed_field.h"
 #include "computed_field/computed_field_find_xi.h"
-#include "computed_field/computed_field_private.h"
+}
+#include "computed_field/computed_field_private.hpp"
+extern "C" {
 #include "computed_field/computed_field_set.h"
 #include "finite_element/finite_element.h"
 #include "finite_element/finite_element_region.h"
@@ -179,6 +182,7 @@ like the number of components.
 #include "general/mystring.h"
 #include "general/value.h"
 #include "user_interface/message.h"
+}
 
 FULL_DECLARE_INDEXED_LIST_TYPE(Computed_field);
 
@@ -186,7 +190,7 @@ FULL_DECLARE_MANAGER_TYPE(Computed_field);
 
 struct Computed_field_type_data
 /*******************************************************************************
-LAST MODIFIED : 4 July 2000
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 Stores information defining a type of computed field so that it can be 
@@ -206,7 +210,7 @@ PROTOTYPE_LIST_FUNCTIONS(Computed_field_type_data);
 
 struct Computed_field_package
 /*******************************************************************************
-LAST MODIFIED : 21 May 2001
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 Contains all information for editing and maintaining Computed_fields, including
@@ -233,7 +237,7 @@ struct Computed_field_type_data *CREATE(Computed_field_type_data)
    (char *name, Define_Computed_field_type_function 
 		define_Computed_field_type_function, void *define_type_user_data)
 /*******************************************************************************
-LAST MODIFIED : 4 July 2000
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 Creates a structure representing a type of computed field.  The <name> should
@@ -277,7 +281,7 @@ the define_computed_field option table when needed.
 int DESTROY(Computed_field_type_data)
 	(struct Computed_field_type_data **data_address)
 /*******************************************************************************
-LAST MODIFIED : 4 July 2000
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 Frees memory/deaccess data at <*data_address>.
@@ -319,7 +323,7 @@ DECLARE_INDEXED_LIST_FUNCTIONS(Computed_field_type_data)
 
 int Computed_field_clear_type(struct Computed_field *field)
 /*******************************************************************************
-LAST MODIFIED : 27 January 2005
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 Used internally by DESTROY and Computed_field_set_type_*() functions to
@@ -394,16 +398,11 @@ Calls Computed_field_clear_cache before clearing the type.
 			(Computed_field_copy_type_specific_function)NULL,
 			(Computed_field_clear_cache_type_specific_function)NULL,
 			(Computed_field_type_specific_contents_match_function)NULL,
-			(Computed_field_is_defined_in_element_function)NULL,
-			(Computed_field_is_defined_at_node_function)NULL,
+			(Computed_field_is_defined_at_location_function)NULL,
 			(Computed_field_has_numerical_components_function)NULL,
 			(Computed_field_not_in_use_function)NULL,
-			(Computed_field_evaluate_cache_at_node_function)NULL, 
-			(Computed_field_evaluate_cache_in_element_function)NULL, 
-			(Computed_field_evaluate_as_string_at_node_function)NULL,
-			(Computed_field_evaluate_as_string_in_element_function)NULL,
-			(Computed_field_set_values_at_node_function)NULL,
-			(Computed_field_set_values_in_element_function)NULL,
+			(Computed_field_evaluate_cache_at_location_function)NULL, 
+			(Computed_field_set_values_at_location_function)NULL,
 			(Computed_field_get_native_discretization_in_element_function)NULL,
 			(Computed_field_find_element_xi_function)NULL,
 			(List_Computed_field_function)NULL,
@@ -425,7 +424,7 @@ Calls Computed_field_clear_cache before clearing the type.
 int Computed_field_set_coordinate_system_from_sources(
 	struct Computed_field *field)
 /*******************************************************************************
-LAST MODIFIED : 3 July 2000
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 Sets the coordinate system of the <field> to match that of it's sources.
@@ -479,7 +478,7 @@ Global functions
 
 struct Computed_field *CREATE(Computed_field)(char *name)
 /*******************************************************************************
-LAST MODIFIED : 27 January 2005
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 Creates a basic Computed_field with the given <name>. Its type is initially
@@ -507,6 +506,9 @@ COMPUTED_FIELD_INVALID with no components.
 			/* values/derivatives cache and working_values */
 			field->values = (FE_value *)NULL;
 			field->derivatives = (FE_value *)NULL;
+			field->string_cache = (char *)NULL;
+			field->string_component = -1;
+			field->values_valid = 0;
 			field->derivatives_valid = 0;
 			field->element = (struct FE_element *)NULL;
 			field->node = (struct FE_node *)NULL;
@@ -520,16 +522,11 @@ COMPUTED_FIELD_INVALID with no components.
 				(Computed_field_copy_type_specific_function)NULL,
 				(Computed_field_clear_cache_type_specific_function)NULL,
 				(Computed_field_type_specific_contents_match_function)NULL,
-				(Computed_field_is_defined_in_element_function)NULL,
-				(Computed_field_is_defined_at_node_function)NULL,
+				(Computed_field_is_defined_at_location_function)NULL,
 				(Computed_field_has_numerical_components_function)NULL,
 				(Computed_field_not_in_use_function)NULL,
-				(Computed_field_evaluate_cache_at_node_function)NULL, 
-				(Computed_field_evaluate_cache_in_element_function)NULL, 
-				(Computed_field_evaluate_as_string_at_node_function)NULL,
-				(Computed_field_evaluate_as_string_in_element_function)NULL,
-				(Computed_field_set_values_at_node_function)NULL,
-				(Computed_field_set_values_in_element_function)NULL,
+				(Computed_field_evaluate_cache_at_location_function)NULL, 
+				(Computed_field_set_values_at_location_function)NULL,
 				(Computed_field_get_native_discretization_in_element_function)NULL,
 				(Computed_field_find_element_xi_function)NULL,
 				(List_Computed_field_function)NULL,
@@ -565,7 +562,7 @@ COMPUTED_FIELD_INVALID with no components.
 
 int DESTROY(Computed_field)(struct Computed_field **field_address)
 /*******************************************************************************
-LAST MODIFIED : 29 December 1998
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 Frees memory/deaccess objects in computed_field at <*field_address>.
@@ -673,7 +670,7 @@ PROTOTYPE_MANAGER_COPY_WITH_IDENTIFIER_FUNCTION(Computed_field,name)
 
 PROTOTYPE_MANAGER_COPY_WITHOUT_IDENTIFIER_FUNCTION(Computed_field,name)
 /*******************************************************************************
-LAST MODIFIED : 27 January 2005
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 Do not allow copy if:
@@ -758,16 +755,11 @@ functions to check if read_only flag is set.
 						source->computed_field_copy_type_specific_function,
 						source->computed_field_clear_cache_type_specific_function,
 						source->computed_field_type_specific_contents_match_function,
-						source->computed_field_is_defined_in_element_function,
-						source->computed_field_is_defined_at_node_function,
+						source->computed_field_is_defined_at_location_function,
 						source->computed_field_has_numerical_components_function,
 						source->computed_field_not_in_use_function,
-						source->computed_field_evaluate_cache_at_node_function,
-						source->computed_field_evaluate_cache_in_element_function,
-						source->computed_field_evaluate_as_string_at_node_function,
-						source->computed_field_evaluate_as_string_in_element_function,
-						source->computed_field_set_values_at_node_function,
-						source->computed_field_set_values_in_element_function,
+						source->computed_field_evaluate_cache_at_location_function,
+						source->computed_field_set_values_at_location_function,
 						source->computed_field_get_native_discretization_in_element_function,
 						source->computed_field_find_element_xi_function,
 						source->list_Computed_field_function,
@@ -925,7 +917,7 @@ DECLARE_MANAGER_FUNCTIONS(Computed_field)
 
 PROTOTYPE_MANAGED_OBJECT_NOT_IN_USE_FUNCTION(Computed_field)
 /*******************************************************************************
-LAST MODIFIED : 21 January 2002
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 Computed_field requires a special version of this function mainly due to the
@@ -985,7 +977,7 @@ DECLARE_ADD_OBJECT_TO_MANAGER_FUNCTION(Computed_field,name)
 
 PROTOTYPE_MANAGER_MODIFY_FUNCTION(Computed_field, name)
 /*******************************************************************************
-LAST MODIFIED : 21 January 2002
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 Computed_field type needs a special versions of MANAGER_MODIFY
@@ -1095,7 +1087,7 @@ since changes to number_of_components are not permitted unless it is NOT_IN_USE.
 
 PROTOTYPE_MANAGER_MODIFY_NOT_IDENTIFIER_FUNCTION(Computed_field, name)
 /*******************************************************************************
-LAST MODIFIED : 21 January 2002
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 Computed_field type needs a special versions of MANAGER_MODIFY_NOT_IDENTIFIER
@@ -1173,7 +1165,7 @@ DECLARE_FIND_BY_IDENTIFIER_IN_MANAGER_FUNCTION(Computed_field, name, char *)
 int Computed_field_changed(struct Computed_field *field,
 	struct MANAGER(Computed_field) *computed_field_manager)
 /*******************************************************************************
-LAST MODIFIED : 21 May 2001
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 Notifies the <computed_field_manager> that the <field> has changed.
@@ -1203,12 +1195,12 @@ Notifies the <computed_field_manager> that the <field> has changed.
 
 int Computed_field_clear_cache(struct Computed_field *field)
 /*******************************************************************************
-LAST MODIFIED : 4 November 1999
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 Clears any caching of elements/values of <field> and any fields it refers to.
 Must call this function for each field after you have used functions
-Computed_field_evaluate_in_element or Computed_field_evaluate_at_node and they
+Computed_field_evaluate_in_element or Computed_field_evaluate_at_location and they
 are possibly not going to be called again for some time.
 ==============================================================================*/
 {
@@ -1235,7 +1227,13 @@ are possibly not going to be called again for some time.
 			field->computed_field_clear_cache_type_specific_function(
 				field);
 		}
+		if (field->string_cache)
+		{
+			DEALLOCATE(field->string_cache);
+		}
+		field->string_component = -1;
 		field->derivatives_valid=0;
+		field->values_valid=0;
 		for (i=0;i<field->number_of_source_fields;i++)
 		{
 			Computed_field_clear_cache(field->source_fields[i]);
@@ -1256,7 +1254,7 @@ are possibly not going to be called again for some time.
 int Computed_field_is_defined_in_element(struct Computed_field *field,
 	struct FE_element *element)
 /*******************************************************************************
-LAST MODIFIED : 29 October 1999
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 Returns true if <field> can be calculated in <element>. If the field depends on
@@ -1270,15 +1268,16 @@ any other fields, this function is recursively called for them.
 	return_code=0;
 	if (field&&element)
 	{
-		if (field->computed_field_is_defined_in_element_function)
+		if (field->computed_field_is_defined_at_location_function)
 		{
+			Field_element_xi_location location(element);
 			return_code = 
-				field->computed_field_is_defined_in_element_function(
-					field, element);
+				field->computed_field_is_defined_at_location_function(
+					field, &location);
 		}
 		else
 		{
-			if (!field->computed_field_evaluate_cache_in_element_function)
+			if (!field->computed_field_evaluate_cache_at_location_function)
 			{
 				return_code=0;
 			}
@@ -1286,7 +1285,7 @@ any other fields, this function is recursively called for them.
 			{
 				display_message(ERROR_MESSAGE,
 					"Computed_field_is_defined_in_element.  "
-					"Is_defined_in_element_function for field %s is not defined.",
+					"Is_defined_at_location_function for field %s is not defined.",
 					field->name);
 				return_code=0;
 			}
@@ -1303,53 +1302,10 @@ any other fields, this function is recursively called for them.
 	return (return_code);
 } /* Computed_field_is_defined_in_element */
 
-int Computed_field_default_is_defined_in_element(struct Computed_field *field,
-	struct FE_element *element)
-/*******************************************************************************
-LAST MODIFIED : 4 July 2000
-
-DESCRIPTION :
-Returns 1 if the all the source fields are defined in the supplied <element>.
-==============================================================================*/
-{
-	int i, return_code;
-
-	ENTER(Computed_field_default_is_defined_in_element);
-	if (field && element)
-	{
-		if (field->computed_field_is_defined_in_element_function)
-		{
-			return_code=1;
-			for (i=0;(i<field->number_of_source_fields)&&return_code;i++)
-			{
-				if (!Computed_field_is_defined_in_element(field->source_fields[i],
-						element))
-				{
-					return_code=0;
-				}
-			}
-		}
-		else
-		{
-			return_code=0;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_default_is_defined_in_element.  "
-			"Invalid arguments.");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Computed_field_default_is_defined_in_element */
-
 int Computed_field_is_defined_in_element_conditional(
 	struct Computed_field *field,void *element_void)
 /*******************************************************************************
-LAST MODIFIED : 23 May 2000
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 Manager conditional function version of Computed_field_is_defined_in_element.
@@ -1368,7 +1324,7 @@ Manager conditional function version of Computed_field_is_defined_in_element.
 int Computed_field_is_true_in_element(struct Computed_field *field,
 	struct FE_element *element,FE_value time)
 /*******************************************************************************
-LAST MODIFIED : 3 December 2002
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 Returns true if <field> is determined to be "true" at the centre of <element>.
@@ -1384,20 +1340,21 @@ This is currently that the field is defined and any of the components are non ze
 	return_code=0;
 	if (field&&element)
 	{	
-		if (field->computed_field_evaluate_cache_in_element_function)
+		if (field->computed_field_evaluate_cache_at_location_function)
 		{
-			if (field->computed_field_is_defined_in_element_function)
+			if (field->computed_field_is_defined_at_location_function)
 			{
-				if (field->computed_field_is_defined_in_element_function(field, element))
+				Field_element_xi_location location(element);
+				if (field->computed_field_is_defined_at_location_function(field, &location))
 				{
 					number_in_xi = 1;
 					get_FE_element_shape(element, &shape);
 					if (FE_element_shape_get_xi_points_cell_centres(shape, &number_in_xi,
 						&number_of_xi_points, &xi_points) && (number_of_xi_points > 0))
 					{
-						if (Computed_field_evaluate_cache_in_element(field, element, xi_points[0], 
-							time, /*top_level_element*/(struct FE_element *)NULL,
-							/*calculate_derivatives*/0))
+						Field_element_xi_location centre_location(element, xi_points[0], 
+							time, /*top_level_element*/(struct FE_element *)NULL);
+						if (Computed_field_evaluate_cache_at_location(field, &centre_location))
 						{
 							return_code = 0;
 							for (i = 0 ; (return_code == 0) && 
@@ -1425,8 +1382,8 @@ This is currently that the field is defined and any of the components are non ze
 			else
 			{
 				display_message(ERROR_MESSAGE,
-					"Computed_field_is_true_at_node.  "
-					"Is_defined_in_node_function for field %s is not defined.",
+					"Computed_field_is_true_at_location.  "
+					"Is_defined_at_location_function for field %s is not defined.",
 					field->name);
 				return_code=0;
 			}
@@ -1439,18 +1396,18 @@ This is currently that the field is defined and any of the components are non ze
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Computed_field_is_true_at_node.  Invalid argument(s)");
+			"Computed_field_is_true_at_location.  Invalid argument(s)");
 		return_code=0;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* Computed_field_is_true_at_node */
+} /* Computed_field_is_true_at_location */
 
 int FE_element_Computed_field_is_not_true_iterator(struct FE_element *element,
 	void *computed_field_conditional_data_void)
 /*******************************************************************************
-LAST MODIFIED : 5 December 2002
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 Iterator version of NOT Computed_field_is_true_in_element.
@@ -1480,7 +1437,7 @@ Iterator version of NOT Computed_field_is_true_in_element.
 int Computed_field_is_defined_at_node(struct Computed_field *field,
 	struct FE_node *node)
 /*******************************************************************************
-LAST MODIFIED : 29 October 1999
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 Returns true if <field> can be calculated at <node>. If the field depends on
@@ -1493,22 +1450,23 @@ any other fields, this function is recursively called for them.
 	return_code=0;
 	if (field&&node)
 	{	
-		if (field->computed_field_is_defined_at_node_function)
+		if (field->computed_field_is_defined_at_location_function)
 		{
-			return_code = field->computed_field_is_defined_at_node_function(
-				field, node);
+			Field_node_location location(node);
+			return_code = field->computed_field_is_defined_at_location_function(
+				field, &location);
 		}
 		else
 		{
-			if (!field->computed_field_evaluate_cache_at_node_function)
+			if (!field->computed_field_evaluate_cache_at_location_function)
 			{
 				return_code = 0;
 			}
 			else
 			{
 				display_message(ERROR_MESSAGE,
-					"Computed_field_is_defined_at_node.  "
-					"Is_defined_at_node_function for field %s is not defined.",
+					"Computed_field_is_defined_at_location.  "
+					"Is_defined_at_location_function for field %s is not defined.",
 					field->name);
 				return_code=0;
 			}
@@ -1517,7 +1475,7 @@ any other fields, this function is recursively called for them.
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Computed_field_is_defined_at_node.  Invalid argument(s)");
+			"Computed_field_is_defined_at_location.  Invalid argument(s)");
 		return_code=0;
 	}
 	LEAVE;
@@ -1528,7 +1486,7 @@ any other fields, this function is recursively called for them.
 int Computed_field_is_defined_at_node_conditional(struct Computed_field *field,
 	void *node_void)
 /*******************************************************************************
-LAST MODIFIED : 28 June 2000
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 Computed_field conditional function version of
@@ -1545,10 +1503,79 @@ Computed_field_is_defined_at_node.
 	return (return_code);
 } /* Computed_field_is_defined_at_node_conditional */
 
+int Computed_field_is_defined_at_location(struct Computed_field *field,
+	Field_location* location)
+/*******************************************************************************
+LAST MODIFIED : 14 August 2006
+
+DESCRIPTION :
+Returns 1 if the all the source fields are defined at the supplied <location>.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(Computed_field_is_defined_at_location);
+	if (field && location)
+	{
+		if (field->computed_field_is_defined_at_location_function)
+		{
+			return_code = field->computed_field_is_defined_at_location_function(
+				field, location);
+		}
+		else
+		{
+			return_code = 0;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Computed_field_is_defined_at_location.  "
+			"Invalid arguments.");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Computed_field_is_defined_at_location */
+
+int Computed_field_default_is_defined_at_location(struct Computed_field *field,
+	Field_location* location)
+/*******************************************************************************
+LAST MODIFIED : 14 August 2006
+
+DESCRIPTION :
+Returns 1 if the all the source fields are defined at the supplied <location>.
+==============================================================================*/
+{
+	int i, return_code;
+
+	ENTER(Computed_field_default_is_defined_at_location);
+	if (field && location)
+	{
+		return_code=1;
+		for (i=0;(i<field->number_of_source_fields)&&return_code;i++)
+		{
+			return_code = Computed_field_is_defined_at_location(
+				field->source_fields[i], location);
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Computed_field_default_is_defined_at_location.  "
+			"Invalid arguments.");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Computed_field_default_is_defined_at_location */
+
 int Computed_field_is_in_list(struct Computed_field *field,
 	void *field_list_void)
 /*******************************************************************************
-LAST MODIFIED : 5 February 2003
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 Computed_field conditional/iterator function returning true if <field> is in the
@@ -1568,7 +1595,7 @@ computed <field_list>.
 int Computed_field_is_true_at_node(struct Computed_field *field,
 	struct FE_node *node, FE_value time)
 /*******************************************************************************
-LAST MODIFIED : 3 December 2002
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 Returns true if <field> is determined to be "true" at <node>.  This is currently
@@ -1582,13 +1609,15 @@ that the field is defined and any of the components are non zero.
 	return_code=0;
 	if (field&&node)
 	{	
-		if (field->computed_field_evaluate_cache_at_node_function)
+		if (field->computed_field_evaluate_cache_at_location_function)
 		{
-			if (field->computed_field_is_defined_at_node_function)
+			if (field->computed_field_is_defined_at_location_function)
 			{
-				if (field->computed_field_is_defined_at_node_function(field, node))
+				Field_node_location location(node, time);
+				if (field->computed_field_is_defined_at_location_function(field,
+						&location))
 				{
-					if (Computed_field_evaluate_cache_at_node(field, node, time))
+					if (Computed_field_evaluate_cache_at_location(field, &location))
 					{
 						return_code = 0;
 						for (i = 0 ; (return_code == 0) && 
@@ -1610,8 +1639,8 @@ that the field is defined and any of the components are non zero.
 			else
 			{
 				display_message(ERROR_MESSAGE,
-					"Computed_field_is_true_at_node.  "
-					"Is_defined_in_node_function for field %s is not defined.",
+					"Computed_field_is_true_at_location.  "
+					"Is_defined_at_location_function for field %s is not defined.",
 					field->name);
 				return_code=0;
 			}
@@ -1635,10 +1664,10 @@ that the field is defined and any of the components are non zero.
 int FE_node_Computed_field_is_not_true_iterator(struct FE_node *node,
 	void *computed_field_conditional_data_void)
 /*******************************************************************************
-LAST MODIFIED : 5 December 2002
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
-Iterator version of NOT Computed_field_is_true_at_node.
+Iterator version of NOT Computed_field_is_true_at_location.
 ==============================================================================*/
 {
 	int return_code;
@@ -1662,52 +1691,9 @@ Iterator version of NOT Computed_field_is_true_at_node.
 	return (return_code);
 } /* FE_node_Computed_field_is_not_true_iterator */
 
-int Computed_field_default_is_defined_at_node(struct Computed_field *field,
-	struct FE_node *node)
-/*******************************************************************************
-LAST MODIFIED : 4 July 2000
-
-DESCRIPTION :
-Returns 1 if all the source fields are defined at the supplied <node>.
-==============================================================================*/
-{
-	int i, return_code;
-
-	ENTER(Computed_field_default_is_defined_at_node);
-	if (field && node)
-	{
-		if (field->computed_field_evaluate_cache_at_node_function)
-		{
-			return_code=1;
-			for (i=0;(i<field->number_of_source_fields)&&return_code;i++)
-			{
-				if (!Computed_field_is_defined_at_node(field->source_fields[i],
-						node))
-				{
-					return_code=0;
-				}
-			}
-		}
-		else
-		{
-			return_code=0;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_default_is_defined_at_node.  "
-			"Invalid arguments.");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Computed_field_default_is_defined_at_node */
-
 int Computed_field_default_has_multiple_times(struct Computed_field *field)
 /*******************************************************************************
-LAST MODIFIED : 4 July 2000
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 Returns 1 if any of the source fields have multiple times.
@@ -1741,10 +1727,10 @@ Returns 1 if any of the source fields have multiple times.
 
 int FE_node_has_Computed_field_defined(struct FE_node *node,void *field_void)
 /*******************************************************************************
-LAST MODIFIED : 28 June 2000
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
-FE_node conditional function version of Computed_field_is_defined_at_node.
+FE_node conditional function version of Computed_field_is_defined_at_location.
 ==============================================================================*/
 {
 	int return_code;
@@ -1760,7 +1746,7 @@ FE_node conditional function version of Computed_field_is_defined_at_node.
 int Computed_field_depends_on_Computed_field(struct Computed_field *field,
 	struct Computed_field *other_field)
 /*******************************************************************************
-LAST MODIFIED : 26 January 1999
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 Returns true if the two fields are identical or one of the source_fields of
@@ -1808,7 +1794,7 @@ determine if the field in use needs updating.
 int Computed_field_depends_on_Computed_field_in_list(
 	struct Computed_field *field, struct LIST(Computed_field) *field_list)
 /*******************************************************************************
-LAST MODIFIED : 22 January 2003
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 Returns true if <field> depends on any field in <field_list>.
@@ -1848,7 +1834,7 @@ int Computed_field_or_ancestor_satisfies_condition(struct Computed_field *field,
 	LIST_CONDITIONAL_FUNCTION(Computed_field) *conditional_function,
 	void *user_data)
 /*******************************************************************************
-LAST MODIFIED : 5 February 2003
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 Returns true if <field> satisfies <conditional_function> with <user_data>. If
@@ -1889,7 +1875,7 @@ satisfies the function for a true result, or all have failed for false.
 int Computed_field_for_each_ancestor(struct Computed_field *field,
 	LIST_ITERATOR_FUNCTION(Computed_field) *iterator_function, void *user_data)
 /*******************************************************************************
-LAST MODIFIED : 2 April 2003
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 For <field> and all of its source Computed_fields, calls <iterator_function>
@@ -1922,7 +1908,7 @@ with <user_data>. Iteration stops if a single iterator_function call returns 0.
 int Computed_field_add_to_list_if_depends_on_list(
 	struct Computed_field *field, void *field_list_void)
 /*******************************************************************************
-LAST MODIFIED : 23 January 2003
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 If <field> depends on a field in <field_list> it is added to the list.
@@ -1962,11 +1948,181 @@ Checks to see if it is already in the list.
 	return (return_code);
 } /* Computed_field_add_to_list_if_depends_on_list */
 
+int Computed_field_evaluate_cache_at_location(
+	Computed_field *field, Field_location* location)
+/*******************************************************************************
+LAST MODIFIED : 14 August 2006
+
+DESCRIPTION :
+Calculates the values of <field> at <location>.
+Upon successful return the node values of the <field> are stored in its cache.
+==============================================================================*/
+{
+	int cache_is_valid, i, return_code;
+
+	ENTER(Computed_field_evaluate_cache_at_location);
+	if (field && location)
+	{
+		return_code=1;
+		Field_element_xi_location *element_xi_location;
+		Field_node_location *node_location;
+		
+		cache_is_valid = 0;
+		if (element_xi_location = 
+			dynamic_cast<Field_element_xi_location*>(location))
+		{
+			FE_element* element = element_xi_location->get_element();
+			FE_value time = element_xi_location->get_time();
+			FE_value* xi = element_xi_location->get_xi();
+			int element_dimension = get_FE_element_dimension(element);
+
+			/* clear the cache if values already cached for a node */
+			if (field->node)
+			{
+				Computed_field_clear_cache(field);
+			}
+			/* Are the values and derivatives in the cache not already calculated? */
+			if ((element == field->element) && (time == field->time) &&
+				((0 == location->get_number_of_derivatives()) || (field->derivatives_valid)))
+			{
+				cache_is_valid = 1;
+				for (i = 0; cache_is_valid && (i < element_dimension); i++)
+				{
+					if (field->xi[i] != xi[i])
+					{
+						cache_is_valid = 0;
+					}
+				}
+			}
+		}
+		else if (node_location = 
+			dynamic_cast<Field_node_location*>(location))
+		{
+			FE_node *node = node_location->get_node();
+			FE_value time = node_location->get_time();
+
+			/* clear the cache if values already cached for an element */
+			if (field->element)
+			{
+				Computed_field_clear_cache(field);
+			}
+			/* allocate cache */
+			if ((node == field->node) && (time == field->time))
+			{
+				cache_is_valid = 1;
+			}
+		}
+
+		if (!cache_is_valid)
+		{
+			/* make sure we have allocated values AND derivatives, or nothing */
+			if (!field->values)
+			{
+				/* get enough space for derivatives in highest dimension element */
+				if (!(ALLOCATE(field->values,FE_value,field->number_of_components)&&
+						ALLOCATE(field->derivatives,FE_value,
+							MAXIMUM_ELEMENT_XI_DIMENSIONS*field->number_of_components)))
+				{
+					if (field->values)
+					{
+						DEALLOCATE(field->values);
+					}
+					return_code=0;
+				}
+			}
+			field->derivatives_valid=0;
+			if (field->string_cache)
+			{
+				DEALLOCATE(field->string_cache);
+			}
+			if (return_code)
+			{
+				if (field->computed_field_evaluate_cache_at_location_function)
+				{
+					/* Before we set up a better typed cache storage we are assuming 
+						the evaluate will generate valid values, for those which don't
+						this will be set to zero in the evaluate.  This allows the valid
+					   evaluation to a string, which potentially will expand to more types. */
+					field->values_valid = 1;
+					return_code = field->computed_field_evaluate_cache_at_location_function(
+						field, location);
+				}
+				else
+				{
+					display_message(ERROR_MESSAGE,
+						"Computed_field_evaluate_cache_at_location.  "
+						"No function defined.");
+					return_code = 0;
+				}
+
+				if (element_xi_location)
+				{
+					FE_element* element = element_xi_location->get_element();
+					FE_value time = element_xi_location->get_time();
+					FE_value* xi = element_xi_location->get_xi();
+					int element_dimension = get_FE_element_dimension(element);
+
+					if (return_code)
+					{
+						REACCESS(FE_element)(&field->element, element);
+						field->time = time;
+						for (i = 0; i < element_dimension; i++)
+						{
+							field->xi[i] = xi[i];
+						}
+						for (; i < MAXIMUM_ELEMENT_XI_DIMENSIONS; i++)
+						{
+							field->xi[i] = 0.0;
+						}
+					}
+					else
+					{
+						/* make sure value cache is marked as invalid */
+						if (field->element)
+						{
+							DEACCESS(FE_element)(&field->element);
+						}
+					}
+				}
+				else if (node_location)
+				{
+					FE_node *node = node_location->get_node();
+					FE_value time = node_location->get_time();
+
+					/* Store information about what is cached, or clear it if error */
+					if (return_code)
+					{
+						REACCESS(FE_node)(&field->node, node);
+						field->time = time;
+					}
+					else
+					{
+						/* make sure value cache is marked as invalid */
+						if (field->node)
+						{
+							DEACCESS(FE_node)(&field->node);
+						}
+					}
+				}
+			}
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Computed_field_evaluate_cache_at_location.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Computed_field_evaluate_cache_at_location */
+
 int Computed_field_evaluate_cache_in_element(
 	struct Computed_field *field,struct FE_element *element,FE_value *xi,
 	FE_value time, struct FE_element *top_level_element,int calculate_derivatives)
 /*******************************************************************************
-LAST MODIFIED : 8 October 2002
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 Calculates the values and derivatives (if <calculate_derivatives> set) of
@@ -1994,7 +2150,7 @@ function with <calculate_derivatives> set, a recalculation of the field values
 is avoided.
 ==============================================================================*/
 {
-	int cache_is_valid,element_dimension,i,
+	int cache_is_valid,element_dimension,i,number_of_derivatives,
 		return_code;
 
 	ENTER(Computed_field_evaluate_cache_in_element);
@@ -2044,16 +2200,34 @@ is avoided.
 						return_code=0;
 					}
 				}
-				field->derivatives_valid=0;
+			}
+			field->derivatives_valid=0;
+			if (field->string_cache)
+			{
+				DEALLOCATE(field->string_cache);
 			}
 			if (return_code)
 			{
-				if (field->computed_field_evaluate_cache_in_element_function)
+				/* Before we set up a better typed cache storage we are assuming 
+					the evaluate will generate valid values, for those which don't
+					this will be set to zero in the evaluate.  This allows the valid
+					evaluation to a string, which potentially will expand to more types. */
+				field->values_valid = 1;
+				if (field->computed_field_evaluate_cache_at_location_function)
 				{
-					return_code = 
-						field->computed_field_evaluate_cache_in_element_function(
-							field, element, xi, time, top_level_element,
-							calculate_derivatives);
+					if (calculate_derivatives)
+					{
+						number_of_derivatives = element_dimension;
+					}
+					else
+					{
+						number_of_derivatives = 0;
+					}
+					Field_element_xi_location location(element, xi, time,
+						top_level_element, number_of_derivatives);
+					return_code = field->computed_field_evaluate_cache_at_location_function(
+						field, &location);
+					/* How to specify derivatives or not */
 				}
 				else
 				{
@@ -2106,52 +2280,99 @@ is avoided.
 	return (return_code);
 } /* Computed_field_evaluate_cache_in_element */
 
-int Computed_field_evaluate_source_fields_cache_in_element(
-	struct Computed_field *field,struct FE_element *element,FE_value *xi,
-	FE_value time,struct FE_element *top_level_element,int calculate_derivatives)
+char *Computed_field_evaluate_as_string_at_location(
+	struct Computed_field *field,int component_number,
+	Field_location *location)
 /*******************************************************************************
-LAST MODIFIED : 30 November 2001
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
-Calculates the cache values of each source field in <field> in <element>, if it 
-is defined over the element.
-Upon successful return the element values of the source fields are stored in their
-cache.
+Returns a string representing the value of <field>.<component_number> at
+<element>:<xi>. Calls Computed_field_evaluate_cache_in_element and
+converts the value for <component_number> to a string (since result 
+may already be in cache).
+
+Use -1 as the <component_number> if you want all the components.
+
+The <top_level_element> parameter has the same use as in
+Computed_field_evaluate_cache_in_element.
+
+Some basic field types such as CMISS_NUMBER have special uses in this function.
+It is up to the calling function to DEALLOCATE the returned string.
+???RC.  Allow derivatives to be evaluated as string too?
 ==============================================================================*/
 {
-	int i,return_code;
+	char *return_string, tmp_string[100];
+	int error, i;
 
-	ENTER(Computed_field_evaluate_source_fields_cache_in_element);
-	if (field&&element&&xi)
+	ENTER(Computed_field_evaluate_as_string_in_element);
+	return_string=(char *)NULL;
+	if (field&&location&&(-1<=component_number)&&
+		(component_number < field->number_of_components))
 	{
-		return_code = 1;
-		/* calculate values of source_fields, derivatives only if requested */
-		for (i=0;(i<field->number_of_source_fields)&&return_code;i++)
+		if (Computed_field_evaluate_cache_at_location(field, location))
 		{
-			return_code=
-				Computed_field_evaluate_cache_in_element(
-					field->source_fields[i],element,xi,time,top_level_element,
-					calculate_derivatives);
+			if (field->string_cache)
+			{
+				return_string = duplicate_string(field->string_cache);
+			}
+			else if (field->values_valid)
+			{
+				error = 0;
+				if (-1 == component_number)
+				{
+					for (i=0;i<field->number_of_components;i++)
+					{
+						if (0<i)
+						{
+							sprintf(tmp_string,", %g",field->values[i]);
+						}
+						else
+						{
+							sprintf(tmp_string,"%g",field->values[i]);
+						}
+						append_string(&return_string,tmp_string,&error);
+					}
+				}
+				else
+				{
+					sprintf(tmp_string,"%g",field->values[component_number]);
+					return_string=duplicate_string(tmp_string);
+				}
+				field->string_component = component_number;
+				field->string_cache = duplicate_string(return_string);
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE,
+					"Computed_field_evaluate_as_string_at_location.  "
+					"Cache values invalid.");
+			}
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,
+				"Computed_field_evaluate_as_string_at_location.  "
+				"Unable to evaluate field at location.");
 		}
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Computed_field_evaluate_source_fields_cache_in_element.  "
+			"Computed_field_evaluate_as_string_at_location.  "
 			"Invalid argument(s)");
-		return_code=0;
 	}
 	LEAVE;
 
-	return (return_code);
-} /* Computed_field_evaluate_source_fields_cache_in_element */
+	return (return_string);
+} /* Computed_field_evaluate_as_string_at_location */
 
 char *Computed_field_evaluate_as_string_in_element(
 	struct Computed_field *field,int component_number,
 	struct FE_element *element,FE_value *xi,FE_value time,
 	struct FE_element *top_level_element)
 /*******************************************************************************
-LAST MODIFIED : 7 June 2001
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 Returns a string representing the value of <field>.<component_number> at
@@ -2173,21 +2394,11 @@ It is up to the calling function to DEALLOCATE the returned string.
 
 	ENTER(Computed_field_evaluate_as_string_in_element);
 	return_string=(char *)NULL;
-	if (field&&element&&xi&&(-1<=component_number)&&
-		(component_number < field->number_of_components))
+	if (field&&element&&xi)
 	{
-		if (field->computed_field_evaluate_as_string_in_element_function)
-		{
-			return_string = 
-				field->computed_field_evaluate_as_string_in_element_function(
-					field, component_number, element, xi, time, top_level_element);
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"Computed_field_evaluate_as_string_in_element.  "
-				"No function defined.");
-		}
+		Field_element_xi_location location(element, xi, time, top_level_element);
+		return_string = Computed_field_evaluate_as_string_at_location(
+			field, component_number, &location);
 	}
 	else
 	{
@@ -2200,76 +2411,11 @@ It is up to the calling function to DEALLOCATE the returned string.
 	return (return_string);
 } /* Computed_field_evaluate_as_string_in_element */
 
-char *Computed_field_default_evaluate_as_string_in_element(
-	struct Computed_field *field,int component_number,
-	struct FE_element *element,FE_value *xi,FE_value time,
-	struct FE_element *top_level_element)
-/*******************************************************************************
-LAST MODIFIED : 7 June 2001
-
-DESCRIPTION :
-Returns a string representing the value of <field>.<component_number> at
-<element>:<xi>. Calls Computed_field_evaluate_cache_in_element and converts 
-the value for <component_number> to a string (since result may already be in 
-cache).
-
-Use -1 as the <component_number> if you want all the components.
-
-The <top_level_element> parameter has the same use as in
-Computed_field_evaluate_cache_in_element.
-==============================================================================*/
-{
-	char *return_string,tmp_string[50];
-	int error,i;
-
-	ENTER(Computed_field_default_evaluate_as_string_in_element);
-	return_string=(char *)NULL;
-	if (field&&element&&xi&&(-1<=component_number)&&
-		(component_number < field->number_of_components))
-	{
-		error = 0;
-		/* write the component value in %g format */
-		if (Computed_field_evaluate_cache_in_element(field,element,xi,
-			time, top_level_element,/*calculate_derivatives*/0))
-		{
-			if (-1 == component_number)
-			{
-				for (i=0;i<field->number_of_components;i++)
-				{
-					if (0<i)
-					{
-						sprintf(tmp_string,", %g",field->values[i]);
-					}
-					else
-					{
-						sprintf(tmp_string,"%g",field->values[i]);
-					}
-					append_string(&return_string,tmp_string,&error);
-				}
-			}
-			else
-			{
-				sprintf(tmp_string,"%g",field->values[component_number]);
-				return_string=duplicate_string(tmp_string);
-			}
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_default_evaluate_as_string_in_element.  "
-			"Invalid argument(s)");
-	}
-	LEAVE;
-
-	return (return_string);
-} /* Computed_field_default_evaluate_as_string_in_element */
-
 int Computed_field_evaluate_in_element(struct Computed_field *field,
 	struct FE_element *element,FE_value *xi,FE_value time, 
 	struct FE_element *top_level_element,FE_value *values,FE_value *derivatives)
 /*******************************************************************************
-LAST MODIFIED : 22 July 1999
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 Returns the values and derivatives (if <derivatives> != NULL) of <field> at
@@ -2340,7 +2486,7 @@ number_of_components
 int Computed_field_evaluate_cache_at_node(
 	struct Computed_field *field,struct FE_node *node, FE_value time)
 /*******************************************************************************
-LAST MODIFIED : 8 October 2002
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 Calculates the values of <field> at <node>, if it is defined over the element.
@@ -2384,13 +2530,23 @@ fields with the name 'coordinates' are quite pervasive.
 					return_code=0;
 				}
 			}
+			field->derivatives_valid=0;
+			if (field->string_cache)
+			{
+				DEALLOCATE(field->string_cache);
+			}
 			if (return_code)
 			{
-				if (field->computed_field_evaluate_cache_at_node_function)
+				if (field->computed_field_evaluate_cache_at_location_function)
 				{
-					return_code = 
-						field->computed_field_evaluate_cache_at_node_function(
-							field, node, time);
+					/* Before we set up a better typed cache storage we are assuming 
+						the evaluate will generate valid values, for those which don't
+						this will be set to zero in the evaluate.  This allows the valid
+					   evaluation to a string, which potentially will expand to more types. */
+					field->values_valid = 1;
+					Field_node_location location(node, time);
+					return_code = field->computed_field_evaluate_cache_at_location_function(
+						field, &location);
 				}
 				else
 				{
@@ -2428,10 +2584,10 @@ fields with the name 'coordinates' are quite pervasive.
 	return (return_code);
 } /* Computed_field_evaluate_cache_at_node */
 
-int Computed_field_evaluate_source_fields_cache_at_node(
-	struct Computed_field *field,struct FE_node *node,FE_value time)
+int Computed_field_evaluate_source_fields_cache_at_location(
+	struct Computed_field *field, Field_location *location)
 /*******************************************************************************
-LAST MODIFIED : 4 July 2000
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 Calculates the cache values of each source field in <field> at <node>, if it 
@@ -2442,39 +2598,39 @@ cache.
 {
 	int i, return_code;
 
-	ENTER(Computed_field_evaluate_source_fields_cache_at_node);
-	if (field&&node)
+	ENTER(Computed_field_evaluate_source_fields_cache_at_location);
+	if (field && location)
 	{
 		return_code = 1;
 		/* calculate values of source_fields */
 		for (i=0;(i<field->number_of_source_fields)&&return_code;i++)
 		{
-			return_code=Computed_field_evaluate_cache_at_node(
-				field->source_fields[i],node,time);
+			return_code=Computed_field_evaluate_cache_at_location(
+				field->source_fields[i], location);
 		}
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Computed_field_evaluate_source_fields_cache_at_node.  "
+			"Computed_field_evaluate_source_fields_cache_at_location.  "
 			"Invalid argument(s)");
 		return_code=0;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* Computed_field_evaluate_source_fields_cache_at_node */
+} /* Computed_field_evaluate_source_fields_cache_at_location */
 
 char *Computed_field_evaluate_as_string_at_node(struct Computed_field *field,
 	int component_number, struct FE_node *node, FE_value time)
 /*******************************************************************************
-LAST MODIFIED : 21 November 2001
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 Returns a string describing the value/s of the <field> at the <node>. If the
 field is based on an FE_field but not returning FE_values, it is asked to supply
 the string. Otherwise, a string built up of comma separated values evaluated
-for the field in Computed_field_evaluate_cache_at_node. The FE_value exception
+for the field in Computed_field_evaluate_cache_at_location. The FE_value exception
 is used since it is likely the values are already in the cache in most cases,
 or can be used by other fields again if calculated now.
 The <component_number> indicates which component to calculate.  Use -1 to 
@@ -2485,37 +2641,28 @@ It is up to the calling function to DEALLOCATE the returned string.
 {
 	char *return_string;
 
-	ENTER(Computed_field_evaluate_as_string_at_node);
+	ENTER(Computed_field_evaluate_as_string_at_location);
 	return_string=(char *)NULL;
-	if (field&&node&&(component_number >= -1)&&
-		(component_number<field->number_of_components))
+	if (field&&node)
 	{
-		if (field->computed_field_evaluate_as_string_at_node_function)
-		{
-			return_string = 
-				field->computed_field_evaluate_as_string_at_node_function(
-					field, component_number, node, time);
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"Computed_field_evaluate_as_string_at_node.  "
-				"No function defined.");
-		}
+		Field_node_location location(node, time);
+		return_string = Computed_field_evaluate_as_string_at_location(
+			field, component_number, &location);
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Computed_field_evaluate_as_string_at_node.  Invalid argument(s)");
+			"Computed_field_evaluate_as_string_in_element.  "
+			"Invalid argument(s)");
 	}
 	LEAVE;
 
 	return (return_string);
-} /* Computed_field_evaluate_as_string_at_node */
+} /* Computed_field_evaluate_as_string_at_location */
 
 int Computed_field_default_clear_type_specific(struct Computed_field *field)
 /*******************************************************************************
-LAST MODIFIED : 25 February 2002
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 A default implementation of this function to use when there is no type
@@ -2544,7 +2691,7 @@ specific data.
 void *Computed_field_default_copy_type_specific(
 	struct Computed_field *source, struct Computed_field *destination)
 /*******************************************************************************
-LAST MODIFIED : 25 February 2002
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 A default implementation of this function to use when there is no type
@@ -2573,7 +2720,7 @@ specific data.
 int Computed_field_default_type_specific_contents_match(
 	struct Computed_field *field, struct Computed_field *other_computed_field)
 /*******************************************************************************
-LAST MODIFIED : 25 February 2002
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 A default implementation of this function to use when there is no type
@@ -2596,78 +2743,16 @@ specific data.
 	return (return_code);
 } /* Computed_field_default_type_specific_contents_match */
 
-char *Computed_field_default_evaluate_as_string_at_node(
-	struct Computed_field *field, int component_number, struct FE_node *node,
-	FE_value time)
-/*******************************************************************************
-LAST MODIFIED : 7 June 2001
-
-DESCRIPTION :
-Returns a string describing the value/s of the <field> at the <node>. A string 
-built up of comma separated values evaluated
-for the field in Computed_field_evaluate_cache_at_node. The FE_value exception
-is used since it is likely the values are already in the cache in most cases,
-or can be used by other fields again if calculated now.
-The <component_number> indicates which component to calculate.  Use -1 to 
-create a string which represents all the components.
-It is up to the calling function to DEALLOCATE the returned string.
-==============================================================================*/
-{
-	char *return_string,tmp_string[50];
-	int error,i;
-
-	ENTER(Computed_field_evaluate_as_string_at_node);
-	return_string=(char *)NULL;
-	if (field&&node&&(component_number >= -1)&&
-		(component_number<field->number_of_components))
-	{
-		error = 0;
-		/* write the component values in %g format, comma separated */
-		if (Computed_field_evaluate_cache_at_node(field,node,time))
-		{
-			if (-1 == component_number)
-			{
-				for (i=0;i<field->number_of_components;i++)
-				{
-					if (0<i)
-					{
-						sprintf(tmp_string,", %g",field->values[i]);
-					}
-					else
-					{
-						sprintf(tmp_string,"%g",field->values[i]);
-					}
-					append_string(&return_string,tmp_string,&error);
-				}
-			}
-			else
-			{
-				sprintf(tmp_string,"%g",field->values[component_number]);
-				return_string=duplicate_string(tmp_string);
-			}
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_default_evaluate_as_string_at_node.  "
-			"Invalid argument(s)");
-	}
-	LEAVE;
-
-	return (return_string);
-} /* Computed_field_default_evaluate_as_string_at_node */
-
 int Computed_field_evaluate_at_node(struct Computed_field *field,
 	struct FE_node *node, FE_value time, FE_value *values)
 /*******************************************************************************
-LAST MODIFIED : 21 November 2001
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 Returns the <values> of <field> at <node> if it is defined there. Can verify
-this in advance by calling function Computed_field_defined_at_node. Each <field>
+this in advance by calling function Computed_field_defined_at_location. Each <field>
 has a cache for storing its values and derivatives, which is allocated and the
-field->values array filled by a call to Computed_field_evaluate_cache_at_node,
+field->values array filled by a call to Computed_field_evaluate_cache_at_location,
 which is then copied to <values> by this function. Derivatives may only be
 calculated in elements, however, the field->derivatives array is allocated here
 with field->values since Computed_field_evaluate_cache_in_element expects both
@@ -2682,7 +2767,8 @@ number_of_components.
 	ENTER(Computed_field_evaluate_at_node);
 	if (field&&node&&values)
 	{
-		if (return_code=Computed_field_evaluate_cache_at_node(field,node,time))
+		Field_node_location location(node, time);
+		if (return_code=Computed_field_evaluate_cache_at_location(field, &location))
 		{
 			/* copy values from cache to <values> */
 			for (i=0;i<field->number_of_components;i++)
@@ -2702,10 +2788,64 @@ number_of_components.
 	return (return_code);
 } /* Computed_field_evaluate_at_node */
 
+int Computed_field_set_values_at_location(struct Computed_field *field,
+	Field_location* location, FE_value *values)
+/*******************************************************************************
+LAST MODIFIED : 14 August 2006
+
+DESCRIPTION :
+Sets the <values> of the computed <field> at <location>. Only certain computed field
+types allow their values to be set. Fields that deal directly with FE_fields eg.
+FINITE_ELEMENT and NODE_VALUE fall into this category, as do the various
+transformations, RC_COORDINATE, RC_VECTOR, OFFSET, SCALE, etc. which convert
+the values into what they expect from their source field, and then call the same
+function for it. If a field has more than one source field, eg. RC_VECTOR, it
+can in many cases still choose which one is actually being changed, for example,
+the 'vector' field in this case - coordinates should not change. This process
+continues until the actual FE_field values at the locationare changed or a field
+is reached for which its calculation is not reversible, or is not supported yet.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(Computed_field_set_values_at_location);
+	if (field && location && values)
+	{
+		if (field->computed_field_set_values_at_location_function)
+		{
+			if (!(return_code = 
+					 field->computed_field_set_values_at_location_function(
+						 field, location, values)))
+			{
+				display_message(ERROR_MESSAGE, "Computed_field_set_values_at_location.  "
+					"Failed for field %s of type %s", field->name, field->type_string);
+			}
+			Computed_field_clear_cache(field);
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,
+				"Computed_field_set_values_at_location.  "
+				"Cannot set values for field %s of type %s", field->name,
+				Computed_field_get_type_string(field));
+			return_code = 0;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Computed_field_set_values_at_location.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Computed_field_set_values_at_location */
+
 int Computed_field_set_values_at_node(struct Computed_field *field,
 	struct FE_node *node, FE_value time, FE_value *values)
 /*******************************************************************************
-LAST MODIFIED : 27 October 2004
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 Sets the <values> of the computed <field> at <node>. Only certain computed field
@@ -2716,7 +2856,7 @@ the values into what they expect from their source field, and then call the same
 function for it. If a field has more than one source field, eg. RC_VECTOR, it
 can in many cases still choose which one is actually being changed, for example,
 the 'vector' field in this case - coordinates should not change. This process
-continues until the actual FE_field values at the node are changed or a field
+continues until the actual FE_field values at the locationare changed or a field
 is reached for which its calculation is not reversible, or is not supported yet.
 ==============================================================================*/
 {
@@ -2725,11 +2865,12 @@ is reached for which its calculation is not reversible, or is not supported yet.
 	ENTER(Computed_field_set_values_at_node);
 	if (field && node && values)
 	{
-		if (field->computed_field_set_values_at_node_function)
+		if (field->computed_field_set_values_at_location_function)
 		{
+			Field_node_location location(node, time);
 			if (!(return_code = 
-					 field->computed_field_set_values_at_node_function(
-						 field, node, time, values)))
+					 field->computed_field_set_values_at_location_function(
+						 field, &location, values)))
 			{
 				display_message(ERROR_MESSAGE, "Computed_field_set_values_at_node.  "
 					"Failed for field %s of type %s", field->name, field->type_string);
@@ -2760,10 +2901,10 @@ int Computed_field_get_values_in_element(struct Computed_field *field,
 	struct FE_element *element, int *number_in_xi, FE_value time,
 	FE_value **values)
 /*******************************************************************************
-LAST MODIFIED : 27 October 2004
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
-Companion function to Computed_field_set_values_in_element.
+Companion function to Computed_field_set_values_at_location.
 Returns the <field> calculated at the corners of the <number_in_xi> cells,
 evenly spaced in xi, over the element. <values> should be allocated with enough
 space for number_of_components * product of number_in_xi+1 in each element
@@ -2850,7 +2991,7 @@ int Computed_field_set_values_in_element(struct Computed_field *field,
 	struct FE_element *element, FE_value *xi, FE_value time,
 	FE_value *values)
 /*******************************************************************************
-LAST MODIFIED : 14 October 2005
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 Sets the <values> of the computed <field> at <xi> in the <element>. Only certain
@@ -2871,11 +3012,12 @@ supported yet.
 	ENTER(Computed_field_set_values_in_element);
 	if (field && element && xi && values)
 	{
-		if (field->computed_field_set_values_in_element_function)
+		if (field->computed_field_set_values_at_location_function)
 		{
+			Field_element_xi_location location(element, xi, time);
 			if (!(return_code = 
-					 field->computed_field_set_values_in_element_function(
-						 field, element, xi, time, values)))
+					 field->computed_field_set_values_at_location_function(
+						 field, &location, values)))
 			{
 				display_message(ERROR_MESSAGE,
 					"Computed_field_set_values_in_element.  "
@@ -2906,7 +3048,7 @@ supported yet.
 int Computed_field_get_native_discretization_in_element(
 	struct Computed_field *field,struct FE_element *element,int *number_in_xi)
 /*******************************************************************************
-LAST MODIFIED : 20 April 2000
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 If the <field> or its source field is grid-based in <element>, returns in
@@ -2953,7 +3095,7 @@ Computed_field_set_values_in_[managed_]element.
 int Computed_field_default_get_native_discretization_in_element(
 	struct Computed_field *field,struct FE_element *element,int *number_in_xi)
 /*******************************************************************************
-LAST MODIFIED : 5 July 2002
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 Inherits its result from the first source field -- if any.
@@ -2989,7 +3131,7 @@ Inherits its result from the first source field -- if any.
 
 int Computed_field_get_number_of_components(struct Computed_field *field)
 /*******************************************************************************
-LAST MODIFIED : 23 December 1998
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 ==============================================================================*/
@@ -3015,7 +3157,7 @@ DESCRIPTION :
 char *Computed_field_get_component_name(struct Computed_field *field,
 	int component_no)
 /*******************************************************************************
-LAST MODIFIED : 20 July 2000
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 Returns an allocated string containing the name of <component_no> of <field>.
@@ -3064,7 +3206,7 @@ It is up to the calling function to deallocate the returned string.
 struct Coordinate_system *Computed_field_get_coordinate_system(
 	struct Computed_field *field)
 /*******************************************************************************
-LAST MODIFIED : 26 January 1999
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 Returns the coordinate system <field> is to be interpreted under. See function
@@ -3092,7 +3234,7 @@ Computed_field_set_coordinate_system for further details.
 int Computed_field_set_coordinate_system(struct Computed_field *field,
 	struct Coordinate_system *coordinate_system)
 /*******************************************************************************
-LAST MODIFIED : 26 January 1999
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 Sets the coordinate system <field> is to be interpreted under. Note the careful
@@ -3124,7 +3266,7 @@ can describe prolate spheroidal values as RC to "open out" the heart model.
 
 char *Computed_field_get_type_string(struct Computed_field *field)
 /*******************************************************************************
-LAST MODIFIED : 24 January 2002
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 Returns the string which identifies the type.
@@ -3152,7 +3294,7 @@ int Computed_field_get_native_resolution(struct Computed_field *field,
         int *dimension, int **sizes, 
 	struct Computed_field **texture_coordinate_field)
 /*******************************************************************************
-LAST MODIFIED : 20 January 2005
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 Gets the <dimension>, <sizes>, <minimums>, <maximums> and <texture_coordinate_field> from
@@ -3192,7 +3334,7 @@ int Computed_field_default_get_native_resolution(struct Computed_field *field,
         int *dimension, int **sizes, 
 	struct Computed_field **texture_coordinate_field)
 /*******************************************************************************
-LAST MODIFIED : 15 September 2005
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 Inherits its result from the first source field -- if any.
@@ -3229,7 +3371,7 @@ Inherits its result from the first source field -- if any.
 int Computed_field_has_numerical_components(struct Computed_field *field,
 	void *dummy_void)
 /*******************************************************************************
-LAST MODIFIED : 24 May 2000
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 Conditional function returning true if <field> returns numerical components.
@@ -3268,7 +3410,7 @@ returned as FE_value when evaluated.
 
 int Computed_field_default_has_numerical_components(struct Computed_field *field)
 /*******************************************************************************
-LAST MODIFIED : 4 July 2000
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 Most computed fields have numerical components so this function returns 1.
@@ -3293,7 +3435,7 @@ Most computed fields have numerical components so this function returns 1.
 
 int Computed_field_is_scalar(struct Computed_field *field,void *dummy_void)
 /*******************************************************************************
-LAST MODIFIED : 23 May 2000
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 Conditional function returning true if <field> has 1 component and it is
@@ -3321,7 +3463,7 @@ numerical.
 int Computed_field_has_up_to_3_numerical_components(
 	struct Computed_field *field,void *dummy_void)
 /*******************************************************************************
-LAST MODIFIED : 23 May 2000
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 Conditional function returning true if <field> has up to 3 components and they
@@ -3350,7 +3492,7 @@ are numerical - useful for selecting vector/coordinate fields.
 int Computed_field_has_up_to_4_numerical_components(
 	struct Computed_field *field,void *dummy_void)
 /*******************************************************************************
-LAST MODIFIED : 23 May 2000
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 Conditional function returning true if <field> has up to 4 components and they
@@ -3379,7 +3521,7 @@ are numerical - useful for selecting vector/coordinate fields.
 int Computed_field_has_at_least_2_components(struct Computed_field *field,
 	void *dummy_void)
 /*******************************************************************************
-LAST MODIFIED : 16 March 1999
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 Iterator/conditional function returning true if <field> has at least 2 components.
@@ -3406,7 +3548,7 @@ Iterator/conditional function returning true if <field> has at least 2 component
 int Computed_field_has_3_components(struct Computed_field *field,
 	void *dummy_void)
 /*******************************************************************************
-LAST MODIFIED : 8 May 2000
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 Iterator/conditional function returning true if <field> has exactly three
@@ -3434,7 +3576,7 @@ components - useful for selecting vector/coordinate fields.
 int Computed_field_has_4_components(struct Computed_field *field,
 	void *dummy_void)
 /*******************************************************************************
-LAST MODIFIED : 11 March 1999
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 Iterator/conditional function returning true if <field> has exactly four
@@ -3462,7 +3604,7 @@ components - useful for selecting vector/coordinate fields.
 int Computed_field_has_n_components(struct Computed_field *field,
 	void *components_ptr_void)
 /*******************************************************************************
-LAST MODIFIED : 11 July 2000
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 Iterator/conditional function returning true if <field> has the same number of
@@ -3488,7 +3630,7 @@ components as that specified by <components_ptr_void>.
 
 int Computed_field_has_multiple_times(struct Computed_field *field)
 /*******************************************************************************
-LAST MODIFIED : 22 November 2001
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 Conditional function returning true if <field> depends on time.
@@ -3528,7 +3670,7 @@ Conditional function returning true if <field> depends on time.
 int Computed_field_is_orientation_scale_capable(struct Computed_field *field,
 	void *dummy_void)
 /*******************************************************************************
-LAST MODIFIED : 12 February 1999
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 Conditional function returning true if the field can be used to orient or scale
@@ -3567,7 +3709,7 @@ glyphs. Generally, this means it has 1,2,3,4,6 or 9 components, where:
 int Computed_field_is_stream_vector_capable(struct Computed_field *field,
 	void *dummy_void)
 /*******************************************************************************
-LAST MODIFIED : 15 March 1999
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 Conditional function returning true if the field is suitable for 3-D streamline
@@ -3607,7 +3749,7 @@ The number of components controls how the field is interpreted:
 
 int Computed_field_is_read_only(struct Computed_field *field)
 /*******************************************************************************
-LAST MODIFIED : 26 January 1999
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 Returns true if the field is read_only - use this to check if you are allowed
@@ -3634,7 +3776,7 @@ to modify or remove it from the manager.
 
 int Computed_field_set_read_only(struct Computed_field *field)
 /*******************************************************************************
-LAST MODIFIED : 5 February 1999
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 Marks <field> as read-only, telling the program that the user is not permitted
@@ -3662,7 +3804,7 @@ to modify or destroy it.
 
 int Computed_field_set_read_write(struct Computed_field *field)
 /*******************************************************************************
-LAST MODIFIED : 5 February 1999
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 Clears read-only status of <field>, telling the program that the user is allowed
@@ -3693,7 +3835,7 @@ int Computed_field_find_element_xi(struct Computed_field *field,
 	FE_value *xi, int element_dimension, struct Cmiss_region *search_region,
 	int propagate_field, int find_nearest_location)
 /*******************************************************************************
-LAST MODIFIED : 18 April 2005
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 This function implements the reverse of some certain computed_fields
@@ -3753,7 +3895,7 @@ pass in pointers to field cache values.
 int Computed_field_is_find_element_xi_capable(struct Computed_field *field,
 	void *dummy_void)
 /*******************************************************************************
-LAST MODIFIED : 16 June 2000
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 This function returns true if the <field> can find element and xi given
@@ -3796,7 +3938,7 @@ struct Add_type_to_option_table_data
 static int Computed_field_add_type_to_option_table(struct Computed_field_type_data *type,
 	void *add_type_to_option_table_data_void)
 /*******************************************************************************
-LAST MODIFIED : 3 July 2000
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 Adds <type> to the <option_table> so it is available to the commands.
@@ -3828,7 +3970,7 @@ Adds <type> to the <option_table> so it is available to the commands.
 static int define_Computed_field_type(struct Parse_state *state,
 	void *field_void,void *computed_field_package_void)
 /*******************************************************************************
-LAST MODIFIED : 23 March 2000
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 Part of the group of define_Computed_field functions. Here, we already have the
@@ -3880,7 +4022,7 @@ int
 define_Computed_field_coordinate_system(struct Parse_state *state,
 	void *field_void,void *computed_field_package_void)
 /*******************************************************************************
-LAST MODIFIED : 4 November 1999
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 Modifier entry function acting as an optional prerequisite for settings the
@@ -3967,7 +4109,7 @@ to modify it if it was.
 int define_Computed_field(struct Parse_state *state,void *dummy_to_be_modified,
 	void *computed_field_package_void)
 /*******************************************************************************
-LAST MODIFIED : 18 June 1999
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 Modifier entry function for creating and modifying Computed_fields. Format for
@@ -4145,7 +4287,7 @@ and should not itself be managed.
 int equivalent_computed_fields_at_elements(struct FE_element *element_1,
 	struct FE_element *element_2)
 /*******************************************************************************
-LAST MODIFIED : 10 September 2001
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 Returns true if all fields are defined in the same way at the two elements.
@@ -4171,7 +4313,7 @@ Returns true if all fields are defined in the same way at the two elements.
 int equivalent_computed_fields_at_nodes(struct FE_node *node_1,
 	struct FE_node *node_2)
 /*******************************************************************************
-LAST MODIFIED : 23 May 2000
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 Returns true if all fields are defined in the same way at the two nodes.
@@ -4196,7 +4338,7 @@ Returns true if all fields are defined in the same way at the two nodes.
 
 int list_Computed_field(struct Computed_field *field,void *dummy_void)
 /*******************************************************************************
-LAST MODIFIED : 21 May 2001
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 Writes the properties of the <field> to the command window.
@@ -4273,7 +4415,7 @@ Writes the properties of the <field> to the command window.
 int list_Computed_field_commands(struct Computed_field *field,
 	void *command_prefix_void)
 /*******************************************************************************
-LAST MODIFIED : 16 January 2002
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 Writes the commands needed to reproduce <field> to the command window.
@@ -4328,7 +4470,7 @@ Writes the commands needed to reproduce <field> to the command window.
 int list_Computed_field_commands_if_managed_source_fields_in_list(
 	struct Computed_field *field, void *list_commands_data_void)
 /*******************************************************************************
-LAST MODIFIED : 14 December 2001
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 Calls list_Computed_field_commands if the field is not already in the list,
@@ -4389,7 +4531,7 @@ Second argument is a struct List_Computed_field_commands_data.
 
 int list_Computed_field_name(struct Computed_field *field,void *dummy_void)
 /*******************************************************************************
-LAST MODIFIED : 4 February 1999
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 Lists a single line about a computed field including just name, type, number of
@@ -4430,7 +4572,7 @@ components and coordinate system.
 int Computed_field_contents_match(struct Computed_field *field,
 	void *other_computed_field_void)
 /*******************************************************************************
-LAST MODIFIED : 22 January 1999
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 Iterator/conditional function returning true if contents of <field> other than
@@ -4501,7 +4643,7 @@ its name matches the contents of the <other_computed_field_void>.
 
 struct Computed_field_package *CREATE(Computed_field_package)(void)
 /*******************************************************************************
-LAST MODIFIED : 7 March 2003
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 Creates a Computed_field_package which is used by the rest of the program to
@@ -4533,7 +4675,7 @@ created as part of the package.
 int DESTROY(Computed_field_package)(
 	struct Computed_field_package **package_address)
 /*******************************************************************************
-LAST MODIFIED : 21 May 2001
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 Frees memory/deaccess objects in computed_field_package at <*package_address>.
@@ -4566,7 +4708,7 @@ struct MANAGER(Computed_field)
 	*Computed_field_package_get_computed_field_manager(
 		struct Computed_field_package *computed_field_package)
 /*******************************************************************************
-LAST MODIFIED : 3 February 1999
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 Extracts the computed_field_manager from the computed_field_package. Note that
@@ -4598,7 +4740,7 @@ int Computed_field_package_add_type(
 	Define_Computed_field_type_function define_Computed_field_type_function,
 	void *define_type_user_data)
 /*******************************************************************************
-LAST MODIFIED : 4 July 2000
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 Adds the type of Computed_field described by <name> and 

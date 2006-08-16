@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : computed_field_set.c
 
-LAST MODIFIED : 4 December 2003
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 ==============================================================================*/
@@ -40,16 +40,18 @@ DESCRIPTION :
  * the terms of any one of the MPL, the GPL or the LGPL.
  *
  * ***** END LICENSE BLOCK ***** */
+extern "C" {
 #include "computed_field/computed_field.h"
 #include "computed_field/computed_field_composite.h"
 #include "computed_field/computed_field_set.h"
 #include "general/debug.h"
 #include "user_interface/message.h"
+}
 
 int set_Computed_field_conditional(struct Parse_state *state,
 	void *field_address_void, void *set_field_data_void)
 /*******************************************************************************
-LAST MODIFIED : 17 December 2001
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 Modifier function to set the field from a command. <set_field_data_void> should
@@ -229,7 +231,7 @@ int Option_table_add_Computed_field_conditional_entry(
 	struct Computed_field **field_address, 
 	struct Set_Computed_field_conditional_data *set_field_data)
 /*******************************************************************************
-LAST MODIFIED : 4 December 2003
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 Adds the given <token> to the <option_table>.
@@ -257,7 +259,7 @@ Adds the given <token> to the <option_table>.
 int set_Computed_field_array(struct Parse_state *state,
 	void *field_array_void, void *set_field_array_data_void)
 /*******************************************************************************
-LAST MODIFIED : 17 December 2001
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 Modifier function to set an array of field from a command.
@@ -315,7 +317,7 @@ Works by repeatedly calling set_Computed_field_conditional.
 static int set_Computed_field_component(struct Parse_state *state,
 	void *field_component_void,void *computed_field_manager_void)
 /*******************************************************************************
-LAST MODIFIED : 25 January 1999
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 Used in command parsing to translate a FIELD_NAME.COMPONENT_NAME into a struct

@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : computed_field_window_projection.c
 
-LAST MODIFIED : 28 October 2004
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 Implements a computed_field which maintains a graphics transformation 
@@ -42,8 +42,11 @@ equivalent to the scene_viewer assigned to it.
  * the terms of any one of the MPL, the GPL or the LGPL.
  *
  * ***** END LICENSE BLOCK ***** */
+extern "C" {
 #include "computed_field/computed_field.h"
-#include "computed_field/computed_field_private.h"
+}
+#include "computed_field/computed_field_private.hpp"
+extern "C" {
 #include "computed_field/computed_field_set.h"
 #include "general/debug.h"
 #include "general/matrix_vector.h"
@@ -52,6 +55,7 @@ equivalent to the scene_viewer assigned to it.
 #include "graphics/scene_viewer.h"
 #include "user_interface/message.h"
 #include "computed_field/computed_field_window_projection.h"
+}
 
 struct Computed_field_window_projection_package 
 {
@@ -81,7 +85,7 @@ static char computed_field_window_projection_type_string[] = "window_projection"
 static char *Computed_field_window_projection_type_string(
 	enum Computed_field_window_projection_type projection_type)
 /*******************************************************************************
-LAST MODIFIED : 6 October 2000
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 Returns a string label for the <projection_type>, used in widgets and parsing.
@@ -132,7 +136,7 @@ NOTE: Calling function must not deallocate returned string.
 
 int Computed_field_is_type_window_projection(struct Computed_field *field)
 /*******************************************************************************
-LAST MODIFIED : 18 July 2000
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 ==============================================================================*/
@@ -157,7 +161,7 @@ DESCRIPTION :
 static void Computed_field_window_projection_scene_viewer_callback(
 	struct Scene_viewer *scene_viewer, void *dummy_void, void *field_void)
 /*******************************************************************************
-LAST MODIFIED : 5 July 2000
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 Clear the projection matrix as it is no longer valid and notify the manager
@@ -192,7 +196,7 @@ that the computed field has changed.
 static void Computed_field_window_projection_scene_viewer_destroy_callback(
 	struct Scene_viewer *scene_viewer, void *dummy_void, void *field_void)
 /*******************************************************************************
-LAST MODIFIED : 19 February 2002
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 Clear the scene viewer reference when it is no longer valid.
@@ -234,7 +238,7 @@ Clear the scene viewer reference when it is no longer valid.
 static int Computed_field_window_projection_calculate_matrix(
 	struct Computed_field *field)
 /*******************************************************************************
-LAST MODIFIED : 11 February 2002
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 ==============================================================================*/
@@ -605,7 +609,7 @@ DESCRIPTION :
 static int Computed_field_window_projection_clear_type_specific(
 	struct Computed_field *field)
 /*******************************************************************************
-LAST MODIFIED : 4 July 2000
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 Clear the type specific data used by this type.
@@ -658,7 +662,7 @@ Clear the type specific data used by this type.
 static void *Computed_field_window_projection_copy_type_specific(
 	struct Computed_field *source_field, struct Computed_field *destination_field)
 /*******************************************************************************
-LAST MODIFIED : 25 February 2002
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 Copy the type specific data used by this type.
@@ -712,7 +716,7 @@ Copy the type specific data used by this type.
 #define Computed_field_window_projection_clear_cache_type_specific \
    (Computed_field_clear_cache_type_specific_function)NULL
 /*******************************************************************************
-LAST MODIFIED : 4 July 2000
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 This function is not needed for this type.
@@ -721,7 +725,7 @@ This function is not needed for this type.
 static int Computed_field_window_projection_type_specific_contents_match(
 	struct Computed_field *field, struct Computed_field *other_computed_field)
 /*******************************************************************************
-LAST MODIFIED : 4 July 2000
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 Compare the type specific data
@@ -759,19 +763,10 @@ Compare the type specific data
 	return (return_code);
 } /* Computed_field_window_projection_type_specific_contents_match */
 
-#define Computed_field_window_projection_is_defined_in_element \
-	Computed_field_default_is_defined_in_element
+#define Computed_field_window_projection_is_defined_at_location \
+	Computed_field_default_is_defined_at_location
 /*******************************************************************************
-LAST MODIFIED : 4 July 2000
-
-DESCRIPTION :
-Check the source fields using the default.
-==============================================================================*/
-
-#define Computed_field_window_projection_is_defined_at_node \
-	Computed_field_default_is_defined_at_node
-/*******************************************************************************
-LAST MODIFIED : 4 July 2000
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 Check the source fields using the default.
@@ -780,7 +775,7 @@ Check the source fields using the default.
 #define Computed_field_window_projection_has_numerical_components \
 	Computed_field_default_has_numerical_components
 /*******************************************************************************
-LAST MODIFIED : 4 July 2000
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 Window projection does have numerical components.
@@ -789,7 +784,7 @@ Window projection does have numerical components.
 #define Computed_field_window_projection_not_in_use \
 	(Computed_field_not_in_use_function)NULL
 /*******************************************************************************
-LAST MODIFIED : 21 January 2002
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 No special criteria.
@@ -799,7 +794,7 @@ static int Computed_field_evaluate_projection_matrix(
 	struct Computed_field *field,
 	int element_dimension, int calculate_derivatives)
 /*******************************************************************************
-LAST MODIFIED : 19 February 2002
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 Function called by Computed_field_evaluate_in_element to compute a field
@@ -929,104 +924,50 @@ for the same element, with the given <element_dimension> = number of Xi coords.
 	return (return_code);
 } /* Computed_field_evaluate_projection_matrix */
 
-static int Computed_field_window_projection_evaluate_cache_at_node(
-	struct Computed_field *field, struct FE_node *node, FE_value time)
+static int Computed_field_window_projection_evaluate_cache_at_location(
+   struct Computed_field *field, Field_location* location)
 /*******************************************************************************
-LAST MODIFIED : 4 July 2000
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
-Evaluate the fields cache at the node.
+Evaluate the fields cache at the location
 ==============================================================================*/
 {
 	int return_code;
 
-	ENTER(Computed_field_window_projection_evaluate_cache_at_node);
-	if (field && node)
+	ENTER(Computed_field_window_projection_evaluate_cache_at_location);
+	if (field && location)
 	{
 		/* 1. Precalculate any source fields that this field depends on */
 		if (return_code = 
-			Computed_field_evaluate_source_fields_cache_at_node(field, node, time))
+			Computed_field_evaluate_source_fields_cache_at_location(field, location))
 		{
 			/* 2. Calculate the field */
 			return_code = Computed_field_evaluate_projection_matrix(
-				field, /*element_dimension*/0, /*calculate_derivatives*/0);
+				field, location->get_number_of_derivatives(),
+				(0 < location->get_number_of_derivatives()));
 		}
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Computed_field_window_projection_evaluate_cache_at_node.  "
+			"Computed_field_window_projection_evaluate_cache_at_location.  "
 			"Invalid arguments.");
 		return_code = 0;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* Computed_field_window_projection_evaluate_cache_at_node */
+} /* Computed_field_window_projection_evaluate_cache_at_location */
 
-static int Computed_field_window_projection_evaluate_cache_in_element(
-	struct Computed_field *field, struct FE_element *element, FE_value *xi,
-	FE_value time, struct FE_element *top_level_element,int calculate_derivatives)
+static int Computed_field_window_projection_set_values_at_location(
+	Computed_field* field,
+   Field_location* location, FE_value *values)
 /*******************************************************************************
-LAST MODIFIED : 3 December 2001
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
-Evaluate the fields cache at the node.
-==============================================================================*/
-{
-	int element_dimension, return_code;
-
-	ENTER(Computed_field_window_projection_evaluate_cache_in_element);
-	if (field && element && xi)
-	{
-		/* 1. Precalculate any source fields that this field depends on */
-		if (return_code = 
-			Computed_field_evaluate_source_fields_cache_in_element(field, element,
-				xi, time, top_level_element, calculate_derivatives))
-		{
-			/* 2. Calculate the field */
-			element_dimension=get_FE_element_dimension(element);
-			return_code = Computed_field_evaluate_projection_matrix(
-				field, element_dimension, calculate_derivatives);
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_window_projection_evaluate_cache_in_element.  "
-			"Invalid arguments.");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Computed_field_window_projection_evaluate_cache_in_element */
-
-#define Computed_field_window_projection_evaluate_as_string_at_node \
-	Computed_field_default_evaluate_as_string_at_node
-/*******************************************************************************
-LAST MODIFIED : 4 July 2000
-
-DESCRIPTION :
-Print the values calculated in the cache.
-==============================================================================*/
-
-#define Computed_field_window_projection_evaluate_as_string_in_element \
-	Computed_field_default_evaluate_as_string_in_element
-/*******************************************************************************
-LAST MODIFIED : 4 July 2000
-
-DESCRIPTION :
-Print the values calculated in the cache.
-==============================================================================*/
-
-static int Computed_field_window_projection_set_values_at_node(
-	struct Computed_field *field,struct FE_node *node,FE_value time,FE_value *values)
-/*******************************************************************************
-LAST MODIFIED : 28 October 2004
-
-DESCRIPTION :
-Sets the <values> of the computed <field> at <node>.
+Sets the <values> of the computed <field> at <location>.
 ==============================================================================*/
 {
 	double d,lu_matrix[16],result[4];
@@ -1034,12 +975,13 @@ Sets the <values> of the computed <field> at <node>.
 	FE_value source_values[3];
 	struct Computed_field_window_projection_type_specific_data *data;
 	
-	ENTER(Computed_field_window_projection_set_values_at_node);
-	if (field && node && values && 
+	ENTER(Computed_field_window_projection_set_values_at_location);
+	if (field && location && values && 
 		(computed_field_window_projection_type_string == field->type_string) &&
 		(data = (struct Computed_field_window_projection_type_specific_data *)
 			field->type_specific_data))
 	{
+		field->derivatives_valid = 0;
 		if (data->scene_viewer)
 		{
 			if (data->projection_matrix ||
@@ -1057,13 +999,13 @@ Sets the <values> of the computed <field> at <node>.
 					source_values[0] = (result[0] / result[3]);
 					source_values[1] = (result[1] / result[3]);
 					source_values[2] = (result[2] / result[3]);
-					return_code=Computed_field_set_values_at_node(
-						field->source_fields[0],node,time,source_values);
+					return_code=Computed_field_set_values_at_location(
+						field->source_fields[0],location,source_values);
 				}
 				else
 				{
 					display_message(ERROR_MESSAGE,
-						"Computed_field_window_projection_set_values_at_node.  "
+						"Computed_field_window_projection_set_values_at_location.  "
 						"Could not invert field %s",field->name);
 					return_code=0;
 				}
@@ -1071,7 +1013,7 @@ Sets the <values> of the computed <field> at <node>.
 			else
 			{
 				display_message(ERROR_MESSAGE,
-					"Computed_field_window_projection_set_values_at_node.  "
+					"Computed_field_window_projection_set_values_at_location.  "
 					"Missing projection matrix for field %s",field->name);
 				return_code=0;
 			}
@@ -1079,7 +1021,7 @@ Sets the <values> of the computed <field> at <node>.
 		else
 		{
 			display_message(ERROR_MESSAGE,
-				"Computed_field_window_projection_set_values_at_node.  "
+				"Computed_field_window_projection_set_values_at_location.  "
 				"Scene_viewer invalid.");
 			return_code = 0;
 		}
@@ -1087,27 +1029,18 @@ Sets the <values> of the computed <field> at <node>.
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Computed_field_window_projection_set_values_at_node.  Invalid argument(s)");
+			"Computed_field_window_projection_set_values_at_location.  Invalid argument(s)");
 		return_code=0;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* Computed_field_window_projection_set_values_at_node */
-
-#define Computed_field_window_projection_set_values_in_element \
-   (Computed_field_set_values_in_element_function)NULL
-/*******************************************************************************
-LAST MODIFIED : 4 July 2000
-
-DESCRIPTION :
-Not implemented yet.
-==============================================================================*/
+} /* Computed_field_window_projection_set_values_at_location */
 
 #define Computed_field_window_projection_get_native_discretization_in_element \
 	Computed_field_default_get_native_discretization_in_element
 /*******************************************************************************
-LAST MODIFIED : 4 July 2000
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 Inherit result from first source field.
@@ -1120,7 +1053,7 @@ static int Computed_field_window_projection_find_element_xi(struct Computed_fiel
 	FE_value *values, int number_of_values, struct FE_element **element,
 	FE_value *xi, int element_dimension, struct Cmiss_region *search_region)
 /*******************************************************************************
-LAST MODIFIED : 21 January 2002
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 ==============================================================================*/
@@ -1197,7 +1130,7 @@ DESCRIPTION :
 static int list_Computed_field_window_projection(
 	struct Computed_field *field)
 /*******************************************************************************
-LAST MODIFIED : 6 October 2000
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 ==============================================================================*/
@@ -1234,7 +1167,7 @@ DESCRIPTION :
 static char *Computed_field_window_projection_get_command_string(
 	struct Computed_field *field)
 /*******************************************************************************
-LAST MODIFIED : 15 January 2002
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 Returns allocated command string for reproducing field. Includes type.
@@ -1281,7 +1214,7 @@ Returns allocated command string for reproducing field. Includes type.
 #define Computed_field_window_projection_has_multiple_times \
 	Computed_field_default_has_multiple_times
 /*******************************************************************************
-LAST MODIFIED : 21 January 2002
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 Works out whether time influences the field.
@@ -1293,7 +1226,7 @@ int Computed_field_set_type_window_projection(struct Computed_field *field,
 	enum Computed_field_window_projection_type projection_type,
 	struct MANAGER(Computed_field) *computed_field_manager)
 /*******************************************************************************
-LAST MODIFIED : 29 September 2005
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 Converts <field> to type COMPUTED_FIELD_WINDOW_PROJECTION, returning the 
@@ -1365,7 +1298,7 @@ int Computed_field_get_type_window_projection(struct Computed_field *field,
 	char **graphics_window_name, int *pane_number, 
 	enum Computed_field_window_projection_type *projection_type)
 /*******************************************************************************
-LAST MODIFIED : 4 July 2000
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 If the field is of type COMPUTED_FIELD_WINDOW_PROJECTION, the <source_field>,
@@ -1404,7 +1337,7 @@ Use function Computed_field_get_type to determine the field type.
 static int define_Computed_field_type_window_projection(struct Parse_state *state,
 	void *field_void,void *computed_field_window_projection_package_void)
 /*******************************************************************************
-LAST MODIFIED : 18 December 2001
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 Converts <field> into type COMPUTED_FIELD_WINDOW_PROJECTION (if it is not 
@@ -1577,7 +1510,7 @@ int Computed_field_register_type_window_projection(
 	struct Computed_field_package *computed_field_package, 
 	struct MANAGER(Graphics_window) *graphics_window_manager)
 /*******************************************************************************
-LAST MODIFIED : 5 July 2000
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 ==============================================================================*/

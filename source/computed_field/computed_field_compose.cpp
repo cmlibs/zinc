@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : computed_field_compose.c
 
-LAST MODIFIED : 7 January 2003
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 Implements a computed_field that uses evaluates one field, does a
@@ -44,14 +44,18 @@ Essentially it is used to embed one mesh in the elements of another.
  * the terms of any one of the MPL, the GPL or the LGPL.
  *
  * ***** END LICENSE BLOCK ***** */
+extern "C" {
 #include "computed_field/computed_field.h"
-#include "computed_field/computed_field_private.h"
+}
+#include "computed_field/computed_field_private.hpp"
+extern "C" {
 #include "computed_field/computed_field_set.h"
 #include "region/cmiss_region.h"
 #include "general/debug.h"
 #include "general/mystring.h"
 #include "user_interface/message.h"
 #include "computed_field/computed_field_compose.h"
+}
 
 struct Computed_field_compose_package 
 {
@@ -72,7 +76,7 @@ static char computed_field_compose_type_string[] = "compose";
 
 int Computed_field_is_type_compose(struct Computed_field *field)
 /*******************************************************************************
-LAST MODIFIED : 23 January 2002
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 ==============================================================================*/
@@ -98,7 +102,7 @@ DESCRIPTION :
 static int Computed_field_compose_clear_type_specific(
 	struct Computed_field *field)
 /*******************************************************************************
-LAST MODIFIED : 23 January 2002
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 Clear the type specific data used by this type.
@@ -137,7 +141,7 @@ Clear the type specific data used by this type.
 static void *Computed_field_compose_copy_type_specific(
 	struct Computed_field *source_field, struct Computed_field *destination_field)
 /*******************************************************************************
-LAST MODIFIED : 23 January 2002
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 Copy the type specific data used by this type.
@@ -178,7 +182,7 @@ Copy the type specific data used by this type.
 #define Computed_field_compose_clear_cache_type_specific \
    (Computed_field_clear_cache_type_specific_function)NULL
 /*******************************************************************************
-LAST MODIFIED : 23 January 2002
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 This function is not needed for this type.
@@ -187,7 +191,7 @@ This function is not needed for this type.
 static int Computed_field_compose_type_specific_contents_match(
 	struct Computed_field *field, struct Computed_field *other_computed_field)
 /*******************************************************************************
-LAST MODIFIED : 23 January 2002
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 Compare the type specific data.
@@ -223,19 +227,10 @@ Compare the type specific data.
 	return (return_code);
 } /* Computed_field_compose_type_specific_contents_match */
 
-#define Computed_field_compose_is_defined_in_element \
-	Computed_field_default_is_defined_in_element
+static int Computed_field_compose_is_defined_at_location(
+	struct Computed_field *field, Field_location* location)
 /*******************************************************************************
-LAST MODIFIED : 23 January 2002
-
-DESCRIPTION :
-Check the source fields using the default.
-==============================================================================*/
-
-int Computed_field_compose_is_defined_at_node(struct Computed_field *field,
-	struct FE_node *node)
-/*******************************************************************************
-LAST MODIFIED : 23 January 2002
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 ==============================================================================*/
@@ -245,18 +240,18 @@ DESCRIPTION :
 	struct Computed_field_compose_type_specific_data *data;
 	struct FE_element *element;
 
-	ENTER(Computed_field_compose_is_defined_at_node);
-	if (field && node && (data = 
+	ENTER(Computed_field_compose_is_defined_at_location);
+	if (field && location && (data = 
 		(struct Computed_field_compose_type_specific_data *)
 		field->type_specific_data))
 	{
 		return_code=1;
-		if (return_code = Computed_field_is_defined_at_node(
-			field->source_fields[0],node))
+		if (return_code = Computed_field_is_defined_at_location(
+			field->source_fields[0],location))
 		{
 			if (return_code=
-				Computed_field_evaluate_cache_at_node(
-				field->source_fields[0],node,/*time*/0.0))
+				Computed_field_evaluate_cache_at_location(
+				field->source_fields[0],location))
 			{
 				if (Computed_field_find_element_xi(
 					field->source_fields[1], field->source_fields[0]->values,
@@ -282,12 +277,12 @@ DESCRIPTION :
 	LEAVE;
 
 	return (return_code);
-} /* Computed_field_compose_is_defined_at_node */
+} /* Computed_field_compose_is_defined_at_location */
 
 #define Computed_field_compose_has_numerical_components \
 	Computed_field_default_has_numerical_components
 /*******************************************************************************
-LAST MODIFIED : 23 January 2002
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 Window projection does have numerical components.
@@ -296,19 +291,19 @@ Window projection does have numerical components.
 #define Computed_field_compose_not_in_use \
 	(Computed_field_not_in_use_function)NULL
 /*******************************************************************************
-LAST MODIFIED : 23 January 2002
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 No special criteria.
 ==============================================================================*/
 
-static int Computed_field_compose_evaluate_cache_at_node(
-	struct Computed_field *field, struct FE_node *node, FE_value time)
+static int Computed_field_compose_evaluate_cache_at_location(
+   struct Computed_field *field, Field_location* location)
 /*******************************************************************************
-LAST MODIFIED : 23 January 2003
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
-Evaluate the fields cache at the node.
+Evaluate the fields cache at the location
 ==============================================================================*/
 {
 	FE_value compose_xi[MAXIMUM_ELEMENT_XI_DIMENSIONS];
@@ -316,15 +311,15 @@ Evaluate the fields cache at the node.
 	struct Computed_field_compose_type_specific_data *data;
 	struct FE_element *compose_element;
 
-	ENTER(Computed_field_compose_evaluate_cache_at_node);
-	if (field && node && (data = 
+	ENTER(Computed_field_compose_evaluate_cache_at_location);
+	if (field && location && (data = 
 		(struct Computed_field_compose_type_specific_data *)
 		field->type_specific_data))
 	{
 		/* 1. Precalculate any source fields that this field depends on */
 		/* only calculate the first source_field at this location */
-		if (return_code=Computed_field_evaluate_cache_at_node(
-			field->source_fields[0],node,time))
+		if (return_code=Computed_field_evaluate_cache_at_location(
+			field->source_fields[0],location))
 		{
 			/* 2. Calculate the field */
 			/* The values from the first source field are inverted in the
@@ -338,88 +333,10 @@ Evaluate the fields cache at the node.
 				&& compose_element)
 			{
 				/* calculate the third source_field at this new location */
-				return_code=Computed_field_evaluate_cache_in_element(
-					field->source_fields[2],compose_element,compose_xi,
-					time,/*top_level*/(struct FE_element *)NULL,
-					/*calculate_derivatives*/0);
-				for (i=0;i<field->number_of_components;i++)
-				{
-					field->values[i]=field->source_fields[2]->values[i];
-				}
-			}
-			else
-			{
-				if (data->use_point_five_when_out_of_bounds)
-				{
-					/* Actually don't fail here, just make the values constant so that
-						people can compose outside the valid range */
-					return_code = 1;
-					for (i=0;i<field->number_of_components;i++)
-					{
-						field->values[i]=0.5;
-					}
-				}
-				else
-				{
-					return_code = 0;
-				}
-			}
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_compose_evaluate_cache_at_node.  "
-			"Invalid argument(s)");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Computed_field_compose_evaluate_cache_at_node */
-
-static int Computed_field_compose_evaluate_cache_in_element(
-	struct Computed_field *field, struct FE_element *element, FE_value *xi,
-	FE_value time, struct FE_element *top_level_element,int calculate_derivatives)
-/*******************************************************************************
-LAST MODIFIED : 23 January 2002
-
-DESCRIPTION :
-Evaluate the fields cache at the node.
-==============================================================================*/
-{
-	FE_value compose_xi[MAXIMUM_ELEMENT_XI_DIMENSIONS];
-	int i, return_code;
-	struct Computed_field_compose_type_specific_data *data;
-	struct FE_element *compose_element;
-
-	ENTER(Computed_field_compose_evaluate_cache_in_element);
-	USE_PARAMETER(calculate_derivatives);
-	if (field && element && xi && (data = 
-		(struct Computed_field_compose_type_specific_data *)
-		field->type_specific_data))
-	{
-		/* 1. Precalculate any source fields that this field depends on */
-		/* only calculate the first source_field at this location */
-		if (return_code=Computed_field_evaluate_cache_in_element(
-			field->source_fields[0],element,xi,time,top_level_element,0))
-		{
-			/* 2. Calculate the field */
-			/* The values from the first source field are inverted in the
-				second source field to get element_xi which is evaluated with
-				the third source field */
-			if ((return_code = Computed_field_find_element_xi(field->source_fields[1],
-				field->source_fields[0]->values,
-				field->source_fields[0]->number_of_components,
-					  &compose_element, compose_xi, data->element_dimension,
-						data->region, /*propagate_field*/0, data->find_nearest))
-				&& compose_element)
-			{
-				/* calculate the third source_field at this new location */
-				return_code=Computed_field_evaluate_cache_in_element(
-					field->source_fields[2],compose_element,compose_xi,
-					time,/*top_level*/(struct FE_element *)NULL,
-					/*calculate_derivatives*/0);
+				Field_element_xi_location new_location(compose_element,compose_xi,
+					location->get_time());
+				return_code=Computed_field_evaluate_cache_at_location(
+					field->source_fields[2], &new_location);
 				for (i=0;i<field->number_of_components;i++)
 				{
 					field->values[i]=field->source_fields[2]->values[i];
@@ -449,46 +366,19 @@ Evaluate the fields cache at the node.
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Computed_field_compose_evaluate_cache_in_element.  "
+			"Computed_field_compose_evaluate_cache_at_location.  "
 			"Invalid argument(s)");
 		return_code = 0;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* Computed_field_compose_evaluate_cache_in_element */
+} /* Computed_field_compose_evaluate_cache_at_location */
 
-#define Computed_field_compose_evaluate_as_string_at_node \
-	Computed_field_default_evaluate_as_string_at_node
+#define Computed_field_compose_set_values_at_location \
+   (Computed_field_set_values_at_location_function)NULL
 /*******************************************************************************
-LAST MODIFIED : 23 January 2002
-
-DESCRIPTION :
-Print the values calculated in the cache.
-==============================================================================*/
-
-#define Computed_field_compose_evaluate_as_string_in_element \
-	Computed_field_default_evaluate_as_string_in_element
-/*******************************************************************************
-LAST MODIFIED : 23 January 2002
-
-DESCRIPTION :
-Print the values calculated in the cache.
-==============================================================================*/
-
-#define Computed_field_compose_set_values_at_node \
-	(Computed_field_set_values_at_node_function)NULL
-/*******************************************************************************
-LAST MODIFIED : 23 January 2002
-
-DESCRIPTION :
-Unavailable for this field type.
-==============================================================================*/
-
-#define Computed_field_compose_set_values_in_element \
-   (Computed_field_set_values_in_element_function)NULL
-/*******************************************************************************
-LAST MODIFIED : 23 January 2002
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 Unavailable for this field type.
@@ -497,7 +387,7 @@ Unavailable for this field type.
 #define Computed_field_compose_get_native_discretization_in_element \
 	Computed_field_default_get_native_discretization_in_element
 /*******************************************************************************
-LAST MODIFIED : 23 January 2002
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 Inherit result from first source field.
@@ -506,7 +396,7 @@ Inherit result from first source field.
 #define Computed_field_compose_find_element_xi \
    (Computed_field_find_element_xi_function)NULL
 /*******************************************************************************
-LAST MODIFIED : 23 January 2002
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 Not implemented yet.
@@ -518,7 +408,7 @@ Not implemented yet.
 static int list_Computed_field_compose(
 	struct Computed_field *field)
 /*******************************************************************************
-LAST MODIFIED : 23 January 2002
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 ==============================================================================*/
@@ -577,7 +467,7 @@ DESCRIPTION :
 static char *Computed_field_compose_get_command_string(
 	struct Computed_field *field)
 /*******************************************************************************
-LAST MODIFIED : 15 January 2002
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 Returns allocated command string for reproducing field. Includes type.
@@ -648,7 +538,7 @@ Returns allocated command string for reproducing field. Includes type.
 #define Computed_field_compose_has_multiple_times \
 	Computed_field_default_has_multiple_times
 /*******************************************************************************
-LAST MODIFIED : 21 January 2002
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 Works out whether time influences the field.
@@ -662,7 +552,7 @@ int Computed_field_set_type_compose(struct Computed_field *field,
 	int find_nearest, int use_point_five_when_out_of_bounds,
 	int element_dimension)
 /*******************************************************************************
-LAST MODIFIED : 9 May 2006
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 Converts <field> to type COMPUTED_FIELD_COMPOSE, this field allows you to
@@ -767,7 +657,7 @@ int Computed_field_get_type_compose(struct Computed_field *field,
 	int *find_nearest, int *use_point_five_when_out_of_bounds,
 	int *element_dimension)
 /*******************************************************************************
-LAST MODIFIED : 6 December 2005
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 If the field is of type COMPUTED_FIELD_COMPOSE, the function returns the three
@@ -809,7 +699,7 @@ internally used path.
 static int define_Computed_field_type_compose(struct Parse_state *state,
 	void *field_void, void *computed_field_compose_package_void)
 /*******************************************************************************
-LAST MODIFIED : 23 January 2002
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 Converts <field> into type COMPUTED_FIELD_COMPOSE (if it is not 
@@ -1055,7 +945,7 @@ int Computed_field_register_types_compose(
 	struct Computed_field_package *computed_field_package, 
 	struct Cmiss_region *root_region)
 /*******************************************************************************
-LAST MODIFIED : 7 January 2003
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 ==============================================================================*/

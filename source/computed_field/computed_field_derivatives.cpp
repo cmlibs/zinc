@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : computed_field_derivatives.c
 
-LAST MODIFIED : 21 January 2002
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 Implements computed_fields for calculating various derivative quantities such
@@ -42,8 +42,11 @@ as derivatives w.r.t. Xi, gradient, curl, divergence etc.
  * the terms of any one of the MPL, the GPL or the LGPL.
  *
  * ***** END LICENSE BLOCK ***** */
+extern "C" {
 #include "computed_field/computed_field.h"
-#include "computed_field/computed_field_private.h"
+}
+#include "computed_field/computed_field_private.hpp"
+extern "C" {
 #include "computed_field/computed_field_coordinate.h"
 #include "computed_field/computed_field_set.h"
 #include "general/debug.h"
@@ -51,6 +54,7 @@ as derivatives w.r.t. Xi, gradient, curl, divergence etc.
 #include "general/mystring.h"
 #include "user_interface/message.h"
 #include "computed_field/computed_field_derivatives.h"
+}
 
 struct Computed_field_derivatives_package 
 {
@@ -66,7 +70,7 @@ static char computed_field_derivative_type_string[] = "derivative";
 
 int Computed_field_is_type_derivative(struct Computed_field *field)
 /*******************************************************************************
-LAST MODIFIED : 18 July 2000
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 ==============================================================================*/
@@ -91,7 +95,7 @@ DESCRIPTION :
 static int Computed_field_derivative_clear_type_specific(
 	struct Computed_field *field)
 /*******************************************************************************
-LAST MODIFIED : 11 July 2000
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 Clear the type specific data used by this type.
@@ -120,7 +124,7 @@ Clear the type specific data used by this type.
 static void *Computed_field_derivative_copy_type_specific(
 	struct Computed_field *source_field, struct Computed_field *destination_field)
 /*******************************************************************************
-LAST MODIFIED : 25 February 2002
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 Copy the type specific data used by this type.
@@ -162,7 +166,7 @@ Copy the type specific data used by this type.
 #define Computed_field_derivative_clear_cache_type_specific \
    (Computed_field_clear_cache_type_specific_function)NULL
 /*******************************************************************************
-LAST MODIFIED : 11 July 2000
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 This function is not needed for this type.
@@ -171,7 +175,7 @@ This function is not needed for this type.
 static int Computed_field_derivative_type_specific_contents_match(
 	struct Computed_field *field, struct Computed_field *other_computed_field)
 /*******************************************************************************
-LAST MODIFIED : 11 July 2000
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 Compare the type specific data
@@ -206,10 +210,10 @@ Compare the type specific data
 	return (return_code);
 } /* Computed_field_derivative_type_specific_contents_match */
 
-int Computed_field_derivative_is_defined_in_element(
-	struct Computed_field *field, struct FE_element *element)
+int Computed_field_derivative_is_defined_at_location(
+	struct Computed_field *field, Field_location* location)
 /*******************************************************************************
-LAST MODIFIED : 11 July 2000
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 Check the source fields using the default.
@@ -218,17 +222,22 @@ Check the source fields using the default.
 	int return_code;
 	struct Computed_field_derivatives_type_specific_data *data;
 
-	ENTER(Computed_field_derivative_is_defined_in_element);
-	if (field && element && (data = 
+	ENTER(Computed_field_derivative_is_defined_at_location);
+	if (field && location && (data = 
 		(struct Computed_field_derivatives_type_specific_data *)
 		field->type_specific_data))
 	{
-		/* Derivatives can only be calculated up to element dimension */
-		if (data->xi_index < get_FE_element_dimension(element))
+		Field_element_xi_location* element_xi_location;
+		/* Only works for element_xi locations */
+		if ((element_xi_location  = 
+				dynamic_cast<Field_element_xi_location*>(location))
+			/* Derivatives can only be calculated up to element dimension */
+  			&& (data->xi_index < get_FE_element_dimension(
+				element_xi_location->get_element())))
 		{
 			/* Check the source field */
-			return_code = Computed_field_default_is_defined_in_element(field,
-				element);
+			return_code = Computed_field_default_is_defined_at_location(field,
+				location);
 		}
 		else
 		{
@@ -238,49 +247,19 @@ Check the source fields using the default.
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Computed_field_derivative_is_defined_in_element.  "
+			"Computed_field_derivative_is_defined_at_location.  "
 			"Invalid arguments.");
 		return_code = 0;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* Computed_field_derivative_is_defined_in_element */
-
-
-static int Computed_field_derivative_is_defined_at_node(
-	struct Computed_field *field, struct FE_node *node)
-/*******************************************************************************
-LAST MODIFIED : 11 July 2000
-
-DESCRIPTION :
-Check the source fields using the default.
-==============================================================================*/
-{
-	int return_code;
-
-	ENTER(Computed_field_derivative_evaluate_cache_at_node);
-	if (field && node)
-	{
-		/* Derivatives can only be calculated in elements */
-		return_code = 0;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_derivative_is_defined_at_node.  "
-			"Invalid arguments.");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Computed_field_derivative_is_defined_at_node */
+} /* Computed_field_derivative_is_defined_at_location */
 
 #define Computed_field_derivative_has_numerical_components \
 	Computed_field_default_has_numerical_components
 /*******************************************************************************
-LAST MODIFIED : 11 July 2000
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 Window projection does have numerical components.
@@ -289,110 +268,92 @@ Window projection does have numerical components.
 #define Computed_field_derivative_not_in_use \
 	(Computed_field_not_in_use_function)NULL
 /*******************************************************************************
-LAST MODIFIED : 17 July 2000
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 No special criteria.
 ==============================================================================*/
 
-#define Computed_field_derivative_evaluate_cache_at_node \
-   (Computed_field_evaluate_cache_at_node_function)NULL
+static int Computed_field_derivative_evaluate_cache_at_location(
+   struct Computed_field *field, Field_location* location)
 /*******************************************************************************
-LAST MODIFIED : 11 July 2000
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
-Evaluate the fields cache at the node.
-==============================================================================*/
-
-static int Computed_field_derivative_evaluate_cache_in_element(
-	struct Computed_field *field, struct FE_element *element, FE_value *xi,
-	FE_value time, struct FE_element *top_level_element, int calculate_derivatives)
-/*******************************************************************************
-LAST MODIFIED : 11 July 2000
-
-DESCRIPTION :
-Evaluate the fields cache at the node.
+Evaluate the fields cache at the location
 ==============================================================================*/
 {
 	int i, number_of_xi, return_code;
 	struct Computed_field_derivatives_type_specific_data *data;
 
-	ENTER(Computed_field_derivative_evaluate_cache_in_element);
-	USE_PARAMETER(calculate_derivatives);
+	ENTER(Computed_field_derivative_evaluate_cache_at_location);
 	if (field && Computed_field_has_numerical_components(field, NULL) && 
-		element && xi 
+		location 
 		&& (data = (struct Computed_field_derivatives_type_specific_data *)
 		field->type_specific_data))
 	{
-		number_of_xi = get_FE_element_dimension(element);
-		if (data->xi_index < number_of_xi)
+		Field_element_xi_location* element_xi_location;
+		/* Only works for element_xi locations */
+		if (element_xi_location  = 
+			dynamic_cast<Field_element_xi_location*>(location))
 		{
-			/* 1. Precalculate any source fields that this field depends on,
-		      we always want the derivatives */
-			if (return_code = 
-				Computed_field_evaluate_source_fields_cache_in_element(field, element,
-					xi, time, top_level_element, /*calculate_derivatives*/1))
+			FE_element* element = element_xi_location->get_element();
+			int element_dimension=get_FE_element_dimension(element);
+			if (data->xi_index < element_dimension)
 			{
-				/* 2. Calculate the field */
-				for (i = 0 ; i < field->number_of_components ; i++)
+				Field_element_xi_location location_with_derivatives =
+					Field_element_xi_location(element,
+						element_xi_location->get_xi(), element_xi_location->get_time(), 
+						element_xi_location->get_top_level_element(),
+						element_dimension);
+
+				/* 1. Precalculate any source fields that this field depends on,
+					we always want the derivatives */
+				if (return_code = 
+					Computed_field_evaluate_source_fields_cache_at_location(field, 
+						&location_with_derivatives))
 				{
-					field->values[i] = field->source_fields[0]->
-						derivatives[i * number_of_xi + data->xi_index];
+					/* 2. Calculate the field */
+					for (i = 0 ; i < field->number_of_components ; i++)
+					{
+						field->values[i] = field->source_fields[0]->
+							derivatives[i * number_of_xi + data->xi_index];
+					}
 				}
 			}
+			else
+			{
+				display_message(ERROR_MESSAGE,
+					"Computed_field_derivative_evaluate_cache_at_location.  "
+					"Derivative %d not defined on element.",
+					data->xi_index + 1);
+			}
+			field->derivatives_valid = 0;
 		}
 		else
 		{
 			display_message(ERROR_MESSAGE,
-				"Computed_field_derivative_evaluate_cache_in_element.  "
-				"Derivative %d not defined on element.",
-				data->xi_index + 1);
+				"Computed_field_derivative_evaluate_cache_at_location.  "
+				"Derivative field on valid in elements.");
+			return_code = 0;
 		}
-		field->derivatives_valid = 0;
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Computed_field_derivative_evaluate_cache_in_element.  "
+			"Computed_field_derivative_evaluate_cache_at_location.  "
 			"Invalid arguments.");
 		return_code = 0;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* Computed_field_derivative_evaluate_cache_in_element */
+} /* Computed_field_derivative_evaluate_cache_at_location */
 
-#define Computed_field_derivative_evaluate_as_string_at_node \
-	Computed_field_default_evaluate_as_string_at_node
+#define Computed_field_derivative_set_values_at_location \
+   (Computed_field_set_values_at_location_function)NULL
 /*******************************************************************************
-LAST MODIFIED : 11 July 2000
-
-DESCRIPTION :
-Print the values calculated in the cache.
-==============================================================================*/
-
-#define Computed_field_derivative_evaluate_as_string_in_element \
-	Computed_field_default_evaluate_as_string_in_element
-/*******************************************************************************
-LAST MODIFIED : 11 July 2000
-
-DESCRIPTION :
-Print the values calculated in the cache.
-==============================================================================*/
-
-#define Computed_field_derivative_set_values_at_node \
-   (Computed_field_set_values_at_node_function)NULL
-/*******************************************************************************
-LAST MODIFIED : 11 July 2000
-
-DESCRIPTION :
-Not implemented yet.
-==============================================================================*/
-
-#define Computed_field_derivative_set_values_in_element \
-   (Computed_field_set_values_in_element_function)NULL
-/*******************************************************************************
-LAST MODIFIED : 11 July 2000
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 Not implemented yet.
@@ -401,7 +362,7 @@ Not implemented yet.
 #define Computed_field_derivative_get_native_discretization_in_element \
 	Computed_field_default_get_native_discretization_in_element
 /*******************************************************************************
-LAST MODIFIED : 11 July 2000
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 Inherit result from first source field.
@@ -410,7 +371,7 @@ Inherit result from first source field.
 #define Computed_field_derivative_find_element_xi \
    (Computed_field_find_element_xi_function)NULL
 /*******************************************************************************
-LAST MODIFIED : 11 July 2000
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 Not implemented yet.
@@ -422,7 +383,7 @@ Not implemented yet.
 static int list_Computed_field_derivative(
 	struct Computed_field *field)
 /*******************************************************************************
-LAST MODIFIED : 11 July 2000
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 ==============================================================================*/
@@ -456,7 +417,7 @@ DESCRIPTION :
 static char *Computed_field_derivative_get_command_string(
 	struct Computed_field *field)
 /*******************************************************************************
-LAST MODIFIED : 15 January 2002
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 Returns allocated command string for reproducing field. Includes type.
@@ -498,7 +459,7 @@ Returns allocated command string for reproducing field. Includes type.
 #define Computed_field_derivative_has_multiple_times \
 	Computed_field_default_has_multiple_times
 /*******************************************************************************
-LAST MODIFIED : 21 January 2002
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 Works out whether time influences the field.
@@ -507,7 +468,7 @@ Works out whether time influences the field.
 int Computed_field_set_type_derivative(struct Computed_field *field,
 	struct Computed_field *source_field, int xi_index)
 /*******************************************************************************
-LAST MODIFIED : 21 January 2002
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 Converts <field> to type COMPUTED_FIELD_DERIVATIVE with the supplied
@@ -563,7 +524,7 @@ although its cache may be lost.
 int Computed_field_get_type_derivative(struct Computed_field *field,
 	struct Computed_field **source_field, int *xi_index)
 /*******************************************************************************
-LAST MODIFIED : 11 July 2000
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 If the field is of type COMPUTED_FIELD_DERIVATIVE, the 
@@ -597,7 +558,7 @@ If the field is of type COMPUTED_FIELD_DERIVATIVE, the
 static int define_Computed_field_type_derivative(struct Parse_state *state,
 	void *field_void,void *computed_field_derivatives_package_void)
 /*******************************************************************************
-LAST MODIFIED : 12 December 2000
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 Converts <field> into type COMPUTED_FIELD_DERIVATIVE (if it is not 
@@ -687,7 +648,7 @@ static char computed_field_curl_type_string[] = "curl";
 
 int Computed_field_is_type_curl(struct Computed_field *field)
 /*******************************************************************************
-LAST MODIFIED : 18 July 2000
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 ==============================================================================*/
@@ -712,7 +673,7 @@ DESCRIPTION :
 #define Computed_field_curl_clear_type_specific \
    Computed_field_default_clear_type_specific
 /*******************************************************************************
-LAST MODIFIED : 25 February 2002
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 No type specific data
@@ -721,7 +682,7 @@ No type specific data
 #define Computed_field_curl_copy_type_specific \
    Computed_field_default_copy_type_specific
 /*******************************************************************************
-LAST MODIFIED : 25 February 2002
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 No type specific data
@@ -730,7 +691,7 @@ No type specific data
 #define Computed_field_curl_clear_cache_type_specific \
    (Computed_field_clear_cache_type_specific_function)NULL
 /*******************************************************************************
-LAST MODIFIED : 13 July 2000
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 This function is not needed for this type.
@@ -739,54 +700,25 @@ This function is not needed for this type.
 #define Computed_field_curl_type_specific_contents_match \
    Computed_field_default_type_specific_contents_match
 /*******************************************************************************
-LAST MODIFIED : 25 February 2002
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 No type specific data
 ==============================================================================*/
 
-#define Computed_field_curl_is_defined_in_element \
-   Computed_field_default_is_defined_in_element
+#define Computed_field_curl_is_defined_at_location \
+   Computed_field_default_is_defined_at_location
 /*******************************************************************************
-LAST MODIFIED : 17 July 2000
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 Check the source fields using the default.
 ==============================================================================*/
 
-static int Computed_field_curl_is_defined_at_node(
-	struct Computed_field *field, struct FE_node *node)
-/*******************************************************************************
-LAST MODIFIED : 17 July 2000
-
-DESCRIPTION :
-Curl can only be calculated in elements
-==============================================================================*/
-{
-	int return_code;
-
-	ENTER(Computed_field_curl_evaluate_cache_at_node);
-	if (field && node)
-	{
-		/* Curl can only be calculated in elements */
-		return_code = 0;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_curl_is_defined_at_node.  "
-			"Invalid arguments.");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Computed_field_curl_evaluate_cache_at_node */
-
 #define Computed_field_curl_has_numerical_components \
 	Computed_field_default_has_numerical_components
 /*******************************************************************************
-LAST MODIFIED : 17 July 2000
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 Window projection does have numerical components.
@@ -795,7 +727,7 @@ Window projection does have numerical components.
 #define Computed_field_curl_not_in_use \
 	(Computed_field_not_in_use_function)NULL
 /*******************************************************************************
-LAST MODIFIED : 17 July 2000
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 No special criteria.
@@ -804,7 +736,7 @@ No special criteria.
 static int Computed_field_evaluate_curl(struct Computed_field *field,
 	int element_dimension)
 /*******************************************************************************
-LAST MODIFIED : 23 March 2000
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 Function called by Computed_field_evaluate_in_element to compute the curl.
@@ -900,89 +832,72 @@ Note currently requires vector_field to be RC.
 	return (return_code);
 } /* Computed_field_evaluate_curl */
 
-#define Computed_field_curl_evaluate_cache_at_node \
-   (Computed_field_evaluate_cache_at_node_function)NULL
+static int Computed_field_curl_evaluate_cache_at_location(
+   struct Computed_field *field, Field_location* location)
 /*******************************************************************************
-LAST MODIFIED : 17 July 2000
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
-Cannot evaluate at a node.
-==============================================================================*/
-
-static int Computed_field_curl_evaluate_cache_in_element(
-	struct Computed_field *field, struct FE_element *element, FE_value *xi,
-	FE_value time, struct FE_element *top_level_element, int calculate_derivatives)
-/*******************************************************************************
-LAST MODIFIED : 26 October 2000
-
-DESCRIPTION :
-Evaluate the fields cache at the node.
+Evaluate the fields cache at the location
 ==============================================================================*/
 {
+	FE_element *top_level_element;
 	FE_value top_level_xi[MAXIMUM_ELEMENT_XI_DIMENSIONS];
 	int element_dimension, return_code, top_level_element_dimension;
 
-	ENTER(Computed_field_curl_evaluate_cache_in_element);
-	USE_PARAMETER(calculate_derivatives);
-	if (field && element && xi)
+	ENTER(Computed_field_curl_evaluate_cache_at_location);
+	if (field && location)
 	{
-		element_dimension = get_FE_element_dimension(element);
-		/* 1. Precalculate any source fields that this field depends on,
-			we always want the derivatives and want to use the top_level element */
-		FE_element_get_top_level_element_and_xi(element, xi, element_dimension,
-			&top_level_element, top_level_xi, &top_level_element_dimension);
-		if (return_code = 
-			Computed_field_evaluate_source_fields_cache_in_element(field, top_level_element,
-				top_level_xi, time, top_level_element, /*calculate_derivatives*/1))
+		Field_element_xi_location* element_xi_location;
+		/* Only works for element_xi locations */
+		if ((element_xi_location  = 
+				dynamic_cast<Field_element_xi_location*>(location)))
 		{
-			/* 2. Calculate the field */
-			return_code=Computed_field_evaluate_curl(field, top_level_element_dimension);
+			element_dimension = get_FE_element_dimension(
+				element_xi_location->get_element());
+			/* 1. Precalculate any source fields that this field depends on,
+				we always want the derivatives and want to use the top_level element */
+			FE_element_get_top_level_element_and_xi(element_xi_location->get_element(),
+				element_xi_location->get_xi(), element_dimension,
+				&top_level_element, top_level_xi, &top_level_element_dimension);
+
+			Field_element_xi_location top_level_location(top_level_element,
+				top_level_xi, element_xi_location->get_time(), top_level_element,
+				get_FE_element_dimension(top_level_element));
+			if (return_code = 
+				Computed_field_evaluate_source_fields_cache_at_location(field,
+					&top_level_location))
+			{
+				/* 2. Calculate the field */
+				return_code=Computed_field_evaluate_curl(field,
+					top_level_element_dimension);
+			}
+			field->derivatives_valid = 0;
 		}
-		field->derivatives_valid = 0;
+		else
+		{
+			display_message(ERROR_MESSAGE,
+				"Computed_field_curl_evaluate_cache_at_location.  "
+				"Only calculable in elements.");
+			return_code = 0;
+		}
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Computed_field_curl_evaluate_cache_in_element.  "
+			"Computed_field_curl_evaluate_cache_at_location.  "
 			"Invalid arguments.");
 		return_code = 0;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* Computed_field_curl_evaluate_cache_in_element */
+} /* Computed_field_curl_evaluate_cache_at_location */
 
-#define Computed_field_curl_evaluate_as_string_at_node \
-	Computed_field_default_evaluate_as_string_at_node
+#define Computed_field_curl_set_values_at_location \
+   (Computed_field_set_values_at_location_function)NULL
 /*******************************************************************************
-LAST MODIFIED : 17 July 2000
-
-DESCRIPTION :
-Print the values calculated in the cache.
-==============================================================================*/
-
-#define Computed_field_curl_evaluate_as_string_in_element \
-	Computed_field_default_evaluate_as_string_in_element
-/*******************************************************************************
-LAST MODIFIED : 17 July 2000
-
-DESCRIPTION :
-Print the values calculated in the cache.
-==============================================================================*/
-
-#define Computed_field_curl_set_values_at_node \
-   (Computed_field_set_values_at_node_function)NULL
-/*******************************************************************************
-LAST MODIFIED : 17 July 2000
-
-DESCRIPTION :
-Not implemented yet.
-==============================================================================*/
-
-#define Computed_field_curl_set_values_in_element \
-   (Computed_field_set_values_in_element_function)NULL
-/*******************************************************************************
-LAST MODIFIED : 17 July 2000
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 Not implemented yet.
@@ -991,7 +906,7 @@ Not implemented yet.
 #define Computed_field_curl_get_native_discretization_in_element \
 	Computed_field_default_get_native_discretization_in_element
 /*******************************************************************************
-LAST MODIFIED : 17 July 2000
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 Inherit result from first source field.
@@ -1000,7 +915,7 @@ Inherit result from first source field.
 #define Computed_field_curl_find_element_xi \
    (Computed_field_find_element_xi_function)NULL
 /*******************************************************************************
-LAST MODIFIED : 17 July 2000
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 Not implemented yet.
@@ -1012,7 +927,7 @@ Not implemented yet.
 static int list_Computed_field_curl(
 	struct Computed_field *field)
 /*******************************************************************************
-LAST MODIFIED : 17 July 2000
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 ==============================================================================*/
@@ -1043,7 +958,7 @@ DESCRIPTION :
 static char *Computed_field_curl_get_command_string(
 	struct Computed_field *field)
 /*******************************************************************************
-LAST MODIFIED : 15 January 2002
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 Returns allocated command string for reproducing field. Includes type.
@@ -1087,7 +1002,7 @@ Returns allocated command string for reproducing field. Includes type.
 #define Computed_field_curl_has_multiple_times \
 	Computed_field_default_has_multiple_times
 /*******************************************************************************
-LAST MODIFIED : 21 January 2002
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 Works out whether time influences the field.
@@ -1096,7 +1011,7 @@ Works out whether time influences the field.
 int Computed_field_set_type_curl(struct Computed_field *field,
 	struct Computed_field *vector_field,struct Computed_field *coordinate_field)
 /*******************************************************************************
-LAST MODIFIED : 21 January 2002
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 Converts <field> to type COMPUTED_FIELD_CURL, combining a vector and
@@ -1166,7 +1081,7 @@ element and the number of components in coordinate_field & vector_field differ.
 int Computed_field_get_type_curl(struct Computed_field *field,
 	struct Computed_field **vector_field,struct Computed_field **coordinate_field)
 /*******************************************************************************
-LAST MODIFIED : 17 July 2000
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 If the field is of type COMPUTED_FIELD_CURL, the 
@@ -1198,7 +1113,7 @@ If the field is of type COMPUTED_FIELD_CURL, the
 static int define_Computed_field_type_curl(struct Parse_state *state,
 	void *field_void,void *computed_field_derivatives_package_void)
 /*******************************************************************************
-LAST MODIFIED : 18 December 2001
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 Converts <field> into type COMPUTED_FIELD_CURL (if it is not 
@@ -1302,7 +1217,7 @@ static char computed_field_divergence_type_string[] = "divergence";
 
 int Computed_field_is_type_divergence(struct Computed_field *field)
 /*******************************************************************************
-LAST MODIFIED : 18 July 2000
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 ==============================================================================*/
@@ -1327,7 +1242,7 @@ DESCRIPTION :
 #define Computed_field_divergence_clear_type_specific \
    Computed_field_default_clear_type_specific
 /*******************************************************************************
-LAST MODIFIED : 25 February 2002
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 No type specific data
@@ -1336,7 +1251,7 @@ No type specific data
 #define Computed_field_divergence_copy_type_specific \
    Computed_field_default_copy_type_specific
 /*******************************************************************************
-LAST MODIFIED : 25 February 2002
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 No type specific data
@@ -1345,7 +1260,7 @@ No type specific data
 #define Computed_field_divergence_clear_cache_type_specific \
    (Computed_field_clear_cache_type_specific_function)NULL
 /*******************************************************************************
-LAST MODIFIED : 13 July 2000
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 This function is not needed for this type.
@@ -1354,54 +1269,25 @@ This function is not needed for this type.
 #define Computed_field_divergence_type_specific_contents_match \
    Computed_field_default_type_specific_contents_match
 /*******************************************************************************
-LAST MODIFIED : 25 February 2002
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 No type specific data
 ==============================================================================*/
 
-#define Computed_field_divergence_is_defined_in_element \
-   Computed_field_default_is_defined_in_element
+#define Computed_field_divergence_is_defined_at_location \
+   Computed_field_default_is_defined_at_location
 /*******************************************************************************
-LAST MODIFIED : 17 July 2000
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 Check the source fields using the default.
 ==============================================================================*/
 
-static int Computed_field_divergence_is_defined_at_node(
-	struct Computed_field *field, struct FE_node *node)
-/*******************************************************************************
-LAST MODIFIED : 17 July 2000
-
-DESCRIPTION :
-Divergence can only be calculated in elements
-==============================================================================*/
-{
-	int return_code;
-
-	ENTER(Computed_field_divergence_evaluate_cache_at_node);
-	if (field && node)
-	{
-		/* Divergence can only be calculated in elements */
-		return_code = 0;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_divergence_is_defined_at_node.  "
-			"Invalid arguments.");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Computed_field_divergence_evaluate_cache_at_node */
-
 #define Computed_field_divergence_has_numerical_components \
 	Computed_field_default_has_numerical_components
 /*******************************************************************************
-LAST MODIFIED : 17 July 2000
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 Window projection does have numerical components.
@@ -1410,7 +1296,7 @@ Window projection does have numerical components.
 #define Computed_field_divergence_not_in_use \
 	(Computed_field_not_in_use_function)NULL
 /*******************************************************************************
-LAST MODIFIED : 17 July 2000
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 No special criteria.
@@ -1419,7 +1305,7 @@ No special criteria.
 static int Computed_field_evaluate_divergence(struct Computed_field *field,
 	int element_dimension)
 /*******************************************************************************
-LAST MODIFIED : 23 March 2000
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 Function called by Computed_field_evaluate_in_element to compute the divergence.
@@ -1516,89 +1402,72 @@ Note currently requires vector_field to be RC.
 	return (return_code);
 } /* Computed_field_evaluate_divergence */
 
-#define Computed_field_divergence_evaluate_cache_at_node \
-   (Computed_field_evaluate_cache_at_node_function)NULL
+static int Computed_field_divergence_evaluate_cache_at_location(
+   struct Computed_field *field, Field_location* location)
 /*******************************************************************************
-LAST MODIFIED : 17 July 2000
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
-Evaluate the fields cache at the node.
-==============================================================================*/
-
-static int Computed_field_divergence_evaluate_cache_in_element(
-	struct Computed_field *field, struct FE_element *element, FE_value *xi,
-	FE_value time, struct FE_element *top_level_element, int calculate_derivatives)
-/*******************************************************************************
-LAST MODIFIED : 26 October 2000
-
-DESCRIPTION :
-Evaluate the fields cache at the node.
+Evaluate the fields cache at the location
 ==============================================================================*/
 {
+	FE_element *top_level_element;
 	FE_value top_level_xi[MAXIMUM_ELEMENT_XI_DIMENSIONS];
 	int element_dimension, return_code, top_level_element_dimension;
 
-	ENTER(Computed_field_divergence_evaluate_cache_in_element);
-	USE_PARAMETER(calculate_derivatives);
-	if (field && element && xi)
+	ENTER(Computed_field_divergence_evaluate_cache_at_location);
+	if (field && location)
 	{
-		element_dimension = get_FE_element_dimension(element);
-		/* 1. Precalculate any source fields that this field depends on,
-			we always want the derivatives and want to use the top_level element */
-		FE_element_get_top_level_element_and_xi(element, xi, element_dimension,
-			&top_level_element, top_level_xi, &top_level_element_dimension);
-		if (return_code = 
-			Computed_field_evaluate_source_fields_cache_in_element(field, top_level_element,
-				top_level_xi, time, top_level_element, /*calculate_derivatives*/1))
+		Field_element_xi_location* element_xi_location;
+		/* Only works for element_xi locations */
+		if ((element_xi_location  = 
+				dynamic_cast<Field_element_xi_location*>(location)))
 		{
-			/* 2. Calculate the field */
-			return_code=Computed_field_evaluate_divergence(field, top_level_element_dimension);
+			element_dimension = get_FE_element_dimension(
+				element_xi_location->get_element());
+			/* 1. Precalculate any source fields that this field depends on,
+				we always want the derivatives and want to use the top_level element */
+			FE_element_get_top_level_element_and_xi(element_xi_location->get_element(),
+				element_xi_location->get_xi(), element_dimension,
+				&top_level_element, top_level_xi, &top_level_element_dimension);
+
+			Field_element_xi_location top_level_location(top_level_element,
+				top_level_xi, element_xi_location->get_time(), top_level_element,
+				get_FE_element_dimension(top_level_element));
+			if (return_code = 
+				Computed_field_evaluate_source_fields_cache_at_location(field,
+					&top_level_location))
+			{
+				/* 2. Calculate the field */
+				return_code=Computed_field_evaluate_divergence(field,
+					top_level_element_dimension);
+			}
+			field->derivatives_valid = 0;
 		}
-		field->derivatives_valid = 0;
+		else
+		{
+			display_message(ERROR_MESSAGE,
+				"Computed_field_divergence_evaluate_cache_at_location.  "
+				"Only calculable in elements.");
+			return_code = 0;
+		}
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Computed_field_divergence_evaluate_cache_in_element.  "
+			"Computed_field_divergence_evaluate_cache_at_location.  "
 			"Invalid arguments.");
 		return_code = 0;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* Computed_field_divergence_evaluate_cache_in_element */
+} /* Computed_field_divergence_evaluate_cache_at_location */
 
-#define Computed_field_divergence_evaluate_as_string_at_node \
-	Computed_field_default_evaluate_as_string_at_node
+#define Computed_field_divergence_set_values_at_location \
+   (Computed_field_set_values_at_location_function)NULL
 /*******************************************************************************
-LAST MODIFIED : 17 July 2000
-
-DESCRIPTION :
-Print the values calculated in the cache.
-==============================================================================*/
-
-#define Computed_field_divergence_evaluate_as_string_in_element \
-	Computed_field_default_evaluate_as_string_in_element
-/*******************************************************************************
-LAST MODIFIED : 17 July 2000
-
-DESCRIPTION :
-Print the values calculated in the cache.
-==============================================================================*/
-
-#define Computed_field_divergence_set_values_at_node \
-   (Computed_field_set_values_at_node_function)NULL
-/*******************************************************************************
-LAST MODIFIED : 17 July 2000
-
-DESCRIPTION :
-Not implemented yet.
-==============================================================================*/
-
-#define Computed_field_divergence_set_values_in_element \
-   (Computed_field_set_values_in_element_function)NULL
-/*******************************************************************************
-LAST MODIFIED : 17 July 2000
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 Not implemented yet.
@@ -1607,7 +1476,7 @@ Not implemented yet.
 #define Computed_field_divergence_get_native_discretization_in_element \
 	Computed_field_default_get_native_discretization_in_element
 /*******************************************************************************
-LAST MODIFIED : 17 July 2000
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 Inherit result from first source field.
@@ -1616,7 +1485,7 @@ Inherit result from first source field.
 #define Computed_field_divergence_find_element_xi \
    (Computed_field_find_element_xi_function)NULL
 /*******************************************************************************
-LAST MODIFIED : 17 July 2000
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 Not implemented yet.
@@ -1628,7 +1497,7 @@ Not implemented yet.
 static int list_Computed_field_divergence(
 	struct Computed_field *field)
 /*******************************************************************************
-LAST MODIFIED : 17 July 2000
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 ==============================================================================*/
@@ -1659,7 +1528,7 @@ DESCRIPTION :
 static char *Computed_field_divergence_get_command_string(
 	struct Computed_field *field)
 /*******************************************************************************
-LAST MODIFIED : 15 January 2002
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 Returns allocated command string for reproducing field. Includes type.
@@ -1703,7 +1572,7 @@ Returns allocated command string for reproducing field. Includes type.
 #define Computed_field_divergence_has_multiple_times \
 	Computed_field_default_has_multiple_times
 /*******************************************************************************
-LAST MODIFIED : 21 January 2002
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 Works out whether time influences the field.
@@ -1712,7 +1581,7 @@ Works out whether time influences the field.
 int Computed_field_set_type_divergence(struct Computed_field *field,
 	struct Computed_field *vector_field,struct Computed_field *coordinate_field)
 /*******************************************************************************
-LAST MODIFIED : 21 January 2002
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 Converts <field> to type COMPUTED_FIELD_DIVERGENCE, combining a vector and
@@ -1785,7 +1654,7 @@ element and the number of components in coordinate_field & vector_field differ.
 int Computed_field_get_type_divergence(struct Computed_field *field,
 	struct Computed_field **vector_field,struct Computed_field **coordinate_field)
 /*******************************************************************************
-LAST MODIFIED : 17 July 2000
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 If the field is of type COMPUTED_FIELD_DIVERGENCE, the 
@@ -1817,7 +1686,7 @@ If the field is of type COMPUTED_FIELD_DIVERGENCE, the
 static int define_Computed_field_type_divergence(struct Parse_state *state,
 	void *field_void,void *computed_field_derivatives_package_void)
 /*******************************************************************************
-LAST MODIFIED : 18 December 2001
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 Converts <field> into type COMPUTED_FIELD_DIVERGENCE (if it is not 
@@ -1921,7 +1790,7 @@ static char computed_field_gradient_type_string[] = "gradient";
 
 int Computed_field_is_type_gradient(struct Computed_field *field)
 /*******************************************************************************
-LAST MODIFIED : 18 July 2000
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 ==============================================================================*/
@@ -1946,7 +1815,7 @@ DESCRIPTION :
 #define Computed_field_gradient_clear_type_specific \
    Computed_field_default_clear_type_specific
 /*******************************************************************************
-LAST MODIFIED : 25 February 2002
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 No type specific data
@@ -1955,7 +1824,7 @@ No type specific data
 #define Computed_field_gradient_copy_type_specific \
    Computed_field_default_copy_type_specific
 /*******************************************************************************
-LAST MODIFIED : 25 February 2002
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 No type specific data
@@ -1964,7 +1833,7 @@ No type specific data
 #define Computed_field_gradient_clear_cache_type_specific \
    (Computed_field_clear_cache_type_specific_function)NULL
 /*******************************************************************************
-LAST MODIFIED : 13 July 2000
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 This function is not needed for this type.
@@ -1973,54 +1842,25 @@ This function is not needed for this type.
 #define Computed_field_gradient_type_specific_contents_match \
    Computed_field_default_type_specific_contents_match
 /*******************************************************************************
-LAST MODIFIED : 25 February 2002
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 No type specific data
 ==============================================================================*/
 
-#define Computed_field_gradient_is_defined_in_element \
-   Computed_field_default_is_defined_in_element
+#define Computed_field_gradient_is_defined_at_location \
+   Computed_field_default_is_defined_at_location
 /*******************************************************************************
-LAST MODIFIED : 17 July 2000
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 Check the source fields using the default.
 ==============================================================================*/
 
-static int Computed_field_gradient_is_defined_at_node(
-	struct Computed_field *field, struct FE_node *node)
-/*******************************************************************************
-LAST MODIFIED : 1 November 2000
-
-DESCRIPTION :
-Gradient can only be calculated in elements
-==============================================================================*/
-{
-	int return_code;
-
-	ENTER(Computed_field_gradient_is_defined_at_node);
-	if (field && node)
-	{
-		/* Gradient can only be calculated in elements */
-		return_code = 0;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_gradient_is_defined_at_node.  "
-			"Invalid argument(s)");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Computed_field_gradient_is_defined_at_node */
-
 #define Computed_field_gradient_has_numerical_components \
 	Computed_field_default_has_numerical_components
 /*******************************************************************************
-LAST MODIFIED : 17 July 2000
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 Window projection does have numerical components.
@@ -2029,57 +1869,58 @@ Window projection does have numerical components.
 #define Computed_field_gradient_not_in_use \
 	(Computed_field_not_in_use_function)NULL
 /*******************************************************************************
-LAST MODIFIED : 17 July 2000
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 No special criteria.
 ==============================================================================*/
 
-#define Computed_field_gradient_evaluate_cache_at_node \
-   (Computed_field_evaluate_cache_at_node_function)NULL
+static int Computed_field_gradient_evaluate_cache_at_location(
+   struct Computed_field *field, Field_location* location)
 /*******************************************************************************
-LAST MODIFIED : 17 July 2000
-
-DESCRIPTION :
-Evaluate the fields cache at the node.
-==============================================================================*/
-
-static int Computed_field_gradient_evaluate_cache_in_element(
-	struct Computed_field *field, struct FE_element *element, FE_value *xi,
-	FE_value time, struct FE_element *top_level_element, int calculate_derivatives)
-/*******************************************************************************
-LAST MODIFIED : 2 November 2000
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 Evaluate the fields cache in the element.
 ==============================================================================*/
 {
 	double a[9], b[3], d;
+	FE_element *top_level_element;
 	FE_value *destination, *source, top_level_xi[MAXIMUM_ELEMENT_XI_DIMENSIONS];
-	int coordinate_components, element_dimension, i, indx[3], j, return_code,
+	int coordinate_components, i, indx[3], j, return_code,
 		source_components, top_level_element_dimension;
 	struct Computed_field *coordinate_field, *source_field;
 
-	ENTER(Computed_field_gradient_evaluate_cache_in_element);
+	ENTER(Computed_field_gradient_evaluate_cache_at_location);
 	return_code = 0;
-	if (field && element && xi)
+
+	Field_element_xi_location* element_xi_location;
+	/* Only works for element_xi locations */
+	if (field && location && (element_xi_location  = 
+			dynamic_cast<Field_element_xi_location*>(location)))
 	{
 		/* cannot calculate derivatives for gradient yet */
 		field->derivatives_valid = 0;
-		if (!calculate_derivatives)
+		if (!location->get_number_of_derivatives())
 		{
-			element_dimension = get_FE_element_dimension(element);
+			FE_element* element = element_xi_location->get_element();
+			int element_dimension=get_FE_element_dimension(element);
+
+			FE_element_get_top_level_element_and_xi(element_xi_location->get_element(),
+				element_xi_location->get_xi(), element_dimension,
+				&top_level_element, top_level_xi, &top_level_element_dimension);
+
+			Field_element_xi_location top_level_location(top_level_element,
+				top_level_xi, element_xi_location->get_time(), top_level_element,
+				get_FE_element_dimension(top_level_element));
+
 			/* 1. Precalculate any source fields that this field depends on,
-				 we always want the derivatives and want to use the top_level element */
-			if (FE_element_get_top_level_element_and_xi(element, xi,
-				element_dimension, &top_level_element, top_level_xi,
-				&top_level_element_dimension) &&
-				Computed_field_evaluate_source_fields_cache_in_element(
-					field, top_level_element, top_level_xi, time, top_level_element,
-					/*calculate_derivatives*/1))
+				we always want the derivatives and want to use the top_level element */
+			if (Computed_field_evaluate_source_fields_cache_at_location(
+					 field, &top_level_location))
 			{
 				/* 2. Calculate the field. First verify we can invert the derivatives of
-					 the coordinate field, which we can if dx_dxi is square */
+					the coordinate field, which we can if dx_dxi is square */
 				source_field = field->source_fields[0];
 				source_components = source_field->number_of_components;
 				coordinate_field = field->source_fields[1];
@@ -2125,9 +1966,9 @@ Evaluate the fields cache in the element.
 					if (!return_code)
 					{
 						/* cannot invert at apex of heart, so set to zero to allow values
-							 to be viewed elsewhere in mesh */
+							to be viewed elsewhere in mesh */
 						display_message(WARNING_MESSAGE,
-							"Computed_field_gradient_evaluate_cache_in_element.  "
+							"Computed_field_gradient_evaluate_cache_at_location.  "
 							"Could not invert coordinate derivatives; setting gradient to 0");
 						for (i = 0; i < field->number_of_components; i++)
 						{
@@ -2139,66 +1980,39 @@ Evaluate the fields cache in the element.
 				else
 				{
 					display_message(ERROR_MESSAGE,
-						"Computed_field_gradient_evaluate_cache_in_element.  "
+						"Computed_field_gradient_evaluate_cache_at_location.  "
 						"Cannot invert coordinate derivatives");
 				}
 			}
 			else
 			{
 				display_message(ERROR_MESSAGE,
-					"Computed_field_gradient_evaluate_cache_in_element.  "
+					"Computed_field_gradient_evaluate_cache_at_location.  "
 					"Cannot evaluate source fields");
 			}
 		}
 		else
 		{
 			display_message(ERROR_MESSAGE,
-				"Computed_field_gradient_evaluate_cache_in_element.  "
+				"Computed_field_gradient_evaluate_cache_at_location.  "
 				"Derivatives not available for gradient field");
 		}
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Computed_field_gradient_evaluate_cache_in_element.  "
+			"Computed_field_gradient_evaluate_cache_at_location.  "
 			"Invalid argument(s)");
 	}
 	LEAVE;
 
 	return (return_code);
-} /* Computed_field_gradient_evaluate_cache_in_element */
+} /* Computed_field_gradient_evaluate_cache_at_location */
 
-#define Computed_field_gradient_evaluate_as_string_at_node \
-	Computed_field_default_evaluate_as_string_at_node
+#define Computed_field_gradient_set_values_at_location \
+   (Computed_field_set_values_at_location_function)NULL
 /*******************************************************************************
-LAST MODIFIED : 17 July 2000
-
-DESCRIPTION :
-Print the values calculated in the cache.
-==============================================================================*/
-
-#define Computed_field_gradient_evaluate_as_string_in_element \
-	Computed_field_default_evaluate_as_string_in_element
-/*******************************************************************************
-LAST MODIFIED : 17 July 2000
-
-DESCRIPTION :
-Print the values calculated in the cache.
-==============================================================================*/
-
-#define Computed_field_gradient_set_values_at_node \
-   (Computed_field_set_values_at_node_function)NULL
-/*******************************************************************************
-LAST MODIFIED : 17 July 2000
-
-DESCRIPTION :
-Not implemented yet.
-==============================================================================*/
-
-#define Computed_field_gradient_set_values_in_element \
-   (Computed_field_set_values_in_element_function)NULL
-/*******************************************************************************
-LAST MODIFIED : 17 July 2000
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 Not implemented yet.
@@ -2207,7 +2021,7 @@ Not implemented yet.
 #define Computed_field_gradient_get_native_discretization_in_element \
 	Computed_field_default_get_native_discretization_in_element
 /*******************************************************************************
-LAST MODIFIED : 17 July 2000
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 Inherit result from first source field.
@@ -2216,7 +2030,7 @@ Inherit result from first source field.
 #define Computed_field_gradient_find_element_xi \
    (Computed_field_find_element_xi_function)NULL
 /*******************************************************************************
-LAST MODIFIED : 17 July 2000
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 Not implemented yet.
@@ -2227,7 +2041,7 @@ Not implemented yet.
 
 static int list_Computed_field_gradient(struct Computed_field *field)
 /*******************************************************************************
-LAST MODIFIED : 1 November 2000
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 ==============================================================================*/
@@ -2257,7 +2071,7 @@ DESCRIPTION :
 static char *Computed_field_gradient_get_command_string(
 	struct Computed_field *field)
 /*******************************************************************************
-LAST MODIFIED : 15 January 2002
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 Returns allocated command string for reproducing field. Includes type.
@@ -2301,7 +2115,7 @@ Returns allocated command string for reproducing field. Includes type.
 #define Computed_field_gradient_has_multiple_times \
 	Computed_field_default_has_multiple_times
 /*******************************************************************************
-LAST MODIFIED : 21 January 2002
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 Works out whether time influences the field.
@@ -2310,7 +2124,7 @@ Works out whether time influences the field.
 int Computed_field_set_type_gradient(struct Computed_field *field,
 	struct Computed_field *source_field,struct Computed_field *coordinate_field)
 /*******************************************************************************
-LAST MODIFIED : 21 January 2002
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 Converts <field> to type 'gradient' which returns the gradient of <source_field>
@@ -2374,7 +2188,7 @@ although its cache may be lost.
 int Computed_field_get_type_gradient(struct Computed_field *field,
 	struct Computed_field **source_field,struct Computed_field **coordinate_field)
 /*******************************************************************************
-LAST MODIFIED : 1 November 2000
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 If the field is of type 'gradient', the <source_field> and <coordinate_field>
@@ -2406,7 +2220,7 @@ used by it are returned.
 static int define_Computed_field_type_gradient(struct Parse_state *state,
 	void *field_void,void *computed_field_derivatives_package_void)
 /*******************************************************************************
-LAST MODIFIED : 1 November 2000
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 Converts <field> into type 'gradient', if not already, and allows its contents
@@ -2508,7 +2322,7 @@ to be modified.
 int Computed_field_register_types_derivatives(
 	struct Computed_field_package *computed_field_package)
 /*******************************************************************************
-LAST MODIFIED : 17 July 2000
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 ==============================================================================*/

@@ -43,6 +43,8 @@ DESCRIPTION :
 #if !defined (COMPUTED_FIELD_PRIVATE_H)
 #define COMPUTED_FIELD_PRIVATE_H
 
+#include "field_location.hpp"
+
 typedef int (*Computed_field_clear_type_specific_function)(
 	struct Computed_field *field);
 typedef void* (*Computed_field_copy_type_specific_function)(
@@ -52,31 +54,16 @@ typedef int (*Computed_field_clear_cache_type_specific_function)(
 	struct Computed_field *field);
 typedef int (*Computed_field_type_specific_contents_match_function)(
 	struct Computed_field *field, struct Computed_field *other_computed_field);
-typedef int (*Computed_field_is_defined_in_element_function)(
-	struct Computed_field *field,struct FE_element *element);
-typedef int (*Computed_field_is_defined_at_node_function)(
-	struct Computed_field *field,struct FE_node *node);
+typedef int (*Computed_field_is_defined_at_location_function)(
+	struct Computed_field *field, Field_location* location);
 typedef int (*Computed_field_has_numerical_components_function)(
 	struct Computed_field *field);
 typedef int (*Computed_field_not_in_use_function)(
 	struct Computed_field *field);
-typedef int (*Computed_field_evaluate_cache_at_node_function)(
-	struct Computed_field *field,struct FE_node *node,FE_value time);
-typedef int (*Computed_field_evaluate_cache_in_element_function)(
-	struct Computed_field *field,struct FE_element *element,FE_value *xi,
-	FE_value time,struct FE_element *top_level_element,int calculate_derivatives);
-typedef char* (*Computed_field_evaluate_as_string_at_node_function)(
-	struct Computed_field *field,int component_number,struct FE_node *node,
-	FE_value time);
-typedef char* (*Computed_field_evaluate_as_string_in_element_function)(
-	struct Computed_field *field,int component_number,
-	struct FE_element *element,FE_value *xi,FE_value time,
-	struct FE_element *top_level_element);
-typedef int (*Computed_field_set_values_at_node_function)(
-	struct Computed_field *field,struct FE_node *node,FE_value time,FE_value *values);
-typedef int (*Computed_field_set_values_in_element_function)(
-	struct Computed_field *field,struct FE_element *element,
-	FE_value *xi,FE_value time,FE_value *values);
+typedef int (*Computed_field_evaluate_cache_at_location_function)(
+	struct Computed_field *field, Field_location* location);
+typedef int (*Computed_field_set_values_at_location_function)(
+	struct Computed_field *field, Field_location* location, FE_value *values);
 typedef int (*Computed_field_get_native_discretization_in_element_function)(
 	struct Computed_field *field,struct FE_element *element,int *number_in_xi);
 typedef int (*Computed_field_find_element_xi_function)(
@@ -133,8 +120,15 @@ DESCRIPTION :
 	/* ???RC note: separation of cache and field probably necessary if computed
 		 fields are to be efficient under multiprocessing */
 	FE_value *values,*derivatives,xi[MAXIMUM_ELEMENT_XI_DIMENSIONS];
+	/* flag to say whether the values are valid (normally this will be true,
+		but is the beginning of different types of values, 
+		where a field may return a string_cache but not valid values */
+	int values_valid;
 	/* flag saying whether derivatives were calculated */
 	int derivatives_valid;
+	/* A string cache value */
+	char *string_cache;
+
 	/* Only one of element/node should be accessed at a time - if there is an
 		 element accessed, then values are guaranteed to be valid and derivatives
 		 are valid if the derivatives_valid flag is set - both at the above xi only.
@@ -147,6 +141,9 @@ DESCRIPTION :
 	struct FE_node *node;
 	/* last time at which values were calculated */
 	FE_value time;
+	/* last time the string cache was evaluated this is the component that was 
+		requested (-1 for all components) */
+	int string_component;
 
 	/* cache used when doing find_xi calculations */
 	struct Computed_field_find_element_xi_cache *find_element_xi_cache;
@@ -159,26 +156,16 @@ DESCRIPTION :
 	   computed_field_clear_cache_type_specific_function;
 	Computed_field_type_specific_contents_match_function
 	   computed_field_type_specific_contents_match_function;
-	Computed_field_is_defined_in_element_function
-	   computed_field_is_defined_in_element_function;
-	Computed_field_is_defined_at_node_function
-	   computed_field_is_defined_at_node_function;
+	Computed_field_is_defined_at_location_function
+	   computed_field_is_defined_at_location_function;
 	Computed_field_has_numerical_components_function
 	   computed_field_has_numerical_components_function;
 	Computed_field_not_in_use_function
 	   computed_field_not_in_use_function;
-	Computed_field_evaluate_cache_at_node_function 
-	   computed_field_evaluate_cache_at_node_function;
-	Computed_field_evaluate_cache_in_element_function 
-	   computed_field_evaluate_cache_in_element_function;
-	Computed_field_evaluate_as_string_at_node_function
-	   computed_field_evaluate_as_string_at_node_function;
-	Computed_field_evaluate_as_string_in_element_function 
-	   computed_field_evaluate_as_string_in_element_function;
-	Computed_field_set_values_at_node_function
-	   computed_field_set_values_at_node_function;
-	Computed_field_set_values_in_element_function
-	   computed_field_set_values_in_element_function;
+	Computed_field_evaluate_cache_at_location_function 
+	   computed_field_evaluate_cache_at_location_function;
+	Computed_field_set_values_at_location_function
+	   computed_field_set_values_at_location_function;
 	Computed_field_get_native_discretization_in_element_function
 	   computed_field_get_native_discretization_in_element_function;	
 	Computed_field_find_element_xi_function
@@ -215,16 +202,11 @@ DESCRIPTION :
 	Computed_field_field_type_copy_type_specific, \
 	Computed_field_field_type_clear_cache_type_specific, \
 	Computed_field_field_type_type_specific_contents_match, \
-	Computed_field_field_type_is_defined_in_element, \
-	Computed_field_field_type_is_defined_at_node, \
+	Computed_field_field_type_is_defined_at_location, \
 	Computed_field_field_type_has_numerical_components, \
 	Computed_field_field_type_not_in_use, \
-	Computed_field_field_type_evaluate_cache_at_node, \
-	Computed_field_field_type_evaluate_cache_in_element, \
-	Computed_field_field_type_evaluate_as_string_at_node, \
-	Computed_field_field_type_evaluate_as_string_in_element, \
-	Computed_field_field_type_set_values_at_node, \
-	Computed_field_field_type_set_values_in_element, \
+	Computed_field_field_type_evaluate_cache_at_location, \
+	Computed_field_field_type_set_values_at_location, \
 	Computed_field_field_type_get_native_discretization_in_element, \
 	Computed_field_field_type_find_element_xi, \
 	list_Computed_field_field_type, \
@@ -246,26 +228,16 @@ field_variable->computed_field_clear_cache_type_specific_function = \
 	Computed_field_field_type_clear_cache_type_specific; \
 field_variable->computed_field_type_specific_contents_match_function = \
 	Computed_field_field_type_type_specific_contents_match; \
-field_variable->computed_field_is_defined_in_element_function = \
-	Computed_field_field_type_is_defined_in_element; \
-field_variable->computed_field_is_defined_at_node_function = \
-	Computed_field_field_type_is_defined_at_node; \
+field_variable->computed_field_is_defined_at_location_function = \
+	Computed_field_field_type_is_defined_at_location; \
 field_variable->computed_field_has_numerical_components_function = \
 	Computed_field_field_type_has_numerical_components; \
 field_variable->computed_field_not_in_use_function = \
 	Computed_field_field_type_not_in_use; \
-field_variable->computed_field_evaluate_cache_at_node_function = \
-	Computed_field_field_type_evaluate_cache_at_node; \
-field_variable->computed_field_evaluate_cache_in_element_function = \
-	Computed_field_field_type_evaluate_cache_in_element; \
-field_variable->computed_field_evaluate_as_string_at_node_function = \
-	Computed_field_field_type_evaluate_as_string_at_node; \
-field_variable->computed_field_evaluate_as_string_in_element_function = \
-	Computed_field_field_type_evaluate_as_string_in_element; \
-field_variable->computed_field_set_values_at_node_function = \
-	Computed_field_field_type_set_values_at_node; \
-field_variable->computed_field_set_values_in_element_function = \
-	Computed_field_field_type_set_values_in_element; \
+field_variable->computed_field_evaluate_cache_at_location_function = \
+	Computed_field_field_type_evaluate_cache_at_location; \
+field_variable->computed_field_set_values_at_location_function = \
+	Computed_field_field_type_set_values_at_location; \
 field_variable->computed_field_get_native_discretization_in_element_function = \
 	Computed_field_field_type_get_native_discretization_in_element; \
 field_variable->computed_field_find_element_xi_function = \
@@ -296,16 +268,11 @@ macro. \
 	Computed_field_ ## field_type ## _copy_type_specific, \
 	Computed_field_ ## field_type ## _clear_cache_type_specific, \
 	Computed_field_ ## field_type ## _type_specific_contents_match, \
-	Computed_field_ ## field_type ## _is_defined_in_element, \
-	Computed_field_ ## field_type ## _is_defined_at_node, \
+	Computed_field_ ## field_type ## _is_defined_at_location, \
 	Computed_field_ ## field_type ## _has_numerical_components, \
 	Computed_field_ ## field_type ## _not_in_use, \
-	Computed_field_ ## field_type ## _evaluate_cache_at_node, \
-	Computed_field_ ## field_type ## _evaluate_cache_in_element, \
-	Computed_field_ ## field_type ## _evaluate_as_string_at_node, \
-	Computed_field_ ## field_type ## _evaluate_as_string_in_element, \
-	Computed_field_ ## field_type ## _set_values_at_node, \
-	Computed_field_ ## field_type ## _set_values_in_element, \
+	Computed_field_ ## field_type ## _evaluate_cache_at_location, \
+	Computed_field_ ## field_type ## _set_values_at_location, \
 	Computed_field_ ## field_type ## _get_native_discretization_in_element, \
 	Computed_field_ ## field_type ## _find_element_xi, \
 	list_Computed_field_ ## field_type, \
@@ -412,17 +379,17 @@ A default implementation of this function to use when there is no type
 specific data.
 ==============================================================================*/
 
-int Computed_field_default_is_defined_in_element(struct Computed_field *field,
-	struct FE_element *element);
+int Computed_field_is_defined_at_location(struct Computed_field *field,
+	Field_location* location);
 /*******************************************************************************
-LAST MODIFIED : 4 July 2000
+LAST MODIFIED : 9 August 2006
 
 DESCRIPTION :
-Returns 1 if the all the source fields are defined in the supplied <element>.
+Returns 1 if the all the source fields are defined at the supplied <location>.
 ==============================================================================*/
 
-int Computed_field_default_is_defined_at_node(struct Computed_field *field,
-	struct FE_node *node);
+int Computed_field_default_is_defined_at_location(struct Computed_field *field,
+	Field_location* location);
 /*******************************************************************************
 LAST MODIFIED : 4 July 2000
 
@@ -455,10 +422,10 @@ DESCRIPTION :
 Most computed fields have numerical components so this function returns 1.
 ==============================================================================*/
 
-int Computed_field_evaluate_cache_at_node(
-	struct Computed_field *field,struct FE_node *node, FE_value time);
+int Computed_field_evaluate_cache_at_location(
+	struct Computed_field *field, Field_location* location);
 /*******************************************************************************
-LAST MODIFIED : 21 November 2001
+LAST MODIFIED : 9 August 2006
 
 DESCRIPTION :
 Calculates the values of <field> at <node>, if it is defined over the element.
@@ -473,91 +440,34 @@ Ideally, they should have distinct coordinate fields, but 3-component coordinate
 fields with the name 'coordinates' are quite pervasive.
 ==============================================================================*/
 
-int Computed_field_evaluate_cache_in_element(
-	struct Computed_field *field,struct FE_element *element,FE_value *xi,
-	FE_value time, struct FE_element *top_level_element,int calculate_derivatives);
+int Computed_field_set_values_at_location(struct Computed_field *field,
+	Field_location* location, FE_value *values);
 /*******************************************************************************
-LAST MODIFIED : 30 November 2001
+LAST MODIFIED : 10 August 2006
 
 DESCRIPTION :
-Calculates the values and derivatives (if <calculate_derivatives> set) of
-<field> at <element>:<xi>, if it is defined over the element. Upon successful
-return values and derivatives of the field are stored in the internal cache for
-the <field>. <xi> is assumed to contain the same number of values as the
-dimension of the element.
-
-The optional <top_level_element> may be supplied for the benefit of this or
-any source fields that may require calculation on it instead of a face or line.
-FIBRE_AXES and GRADIENT are examples of such fields, since they require
-top-level coordinate derivatives. The term "top_level" refers to an ultimate
-parent element for the face or line, eg. the 3-D element parent to 2-D faces.
-If no such top level element is supplied and one is required, then the first
-available parent element will be chosen - if the user requires a top-level
-element in the same group as the face or with the face on the correct side,
-then they should supply the top_level_element here. Once a field has switched
-to being calculated on the top_level_element, all its source fields will be
-too - this should be understood when supplying source fields to such functions.
+Sets the <values> of the computed <field> at <location>. Only certain computed field
+types allow their values to be set. Fields that deal directly with FE_fields eg.
+FINITE_ELEMENT and NODE_VALUE fall into this category, as do the various
+transformations, RC_COORDINATE, RC_VECTOR, OFFSET, SCALE, etc. which convert
+the values into what they expect from their source field, and then call the same
+function for it. If a field has more than one source field, eg. RC_VECTOR, it
+can in many cases still choose which one is actually being changed, for example,
+the 'vector' field in this case - coordinates should not change. This process
+continues until the actual FE_field values at the node are changed or a field
+is reached for which its calculation is not reversible, or is not supported yet.
 ==============================================================================*/
 
-int Computed_field_evaluate_source_fields_cache_at_node(
-	struct Computed_field *field,struct FE_node *node, FE_value time);
+int Computed_field_evaluate_source_fields_cache_at_location(
+	struct Computed_field *field, Field_location* location);
 /*******************************************************************************
-LAST MODIFIED : 21 November 2001
+LAST MODIFIED : 9 August 2006
 
 DESCRIPTION :
 Calculates the cache values of each source field in <field> at <node>, if it 
 is defined over the element.
 Upon successful return the node values of the source fields are stored in their
 cache.
-==============================================================================*/
-
-int Computed_field_evaluate_source_fields_cache_in_element(
-	struct Computed_field *field,struct FE_element *element,FE_value *xi,
-	FE_value time,struct FE_element *top_level_element,int calculate_derivatives);
-/*******************************************************************************
-LAST MODIFIED : 30 November 2001
-
-DESCRIPTION :
-Calculates the cache values of each source field in <field> in <element>, if it 
-is defined over the element.
-Upon successful return the element values of the source fields are stored in their
-cache.
-==============================================================================*/
-
-char *Computed_field_default_evaluate_as_string_at_node(
-	struct Computed_field *field, int component_number, struct FE_node *node,
-	FE_value time);
-/*******************************************************************************
-LAST MODIFIED : 21 November 2001
-
-DESCRIPTION :
-Returns a string describing the value/s of the <field> at the <node>. A string 
-built up of comma separated values evaluated
-for the field in Computed_field_evaluate_cache_at_node. The FE_value exception
-is used since it is likely the values are already in the cache in most cases,
-or can be used by other fields again if calculated now.
-The <component_number> indicates which component to calculate.  Use -1 to 
-create a string which represents all the components.
-It is up to the calling function to DEALLOCATE the returned string.
-==============================================================================*/
-
-char *Computed_field_default_evaluate_as_string_in_element(
-	struct Computed_field *field,int component_number,
-	struct FE_element *element,FE_value *xi,FE_value time,
-	struct FE_element *top_level_element);
-/*******************************************************************************
-LAST MODIFIED : 30 November 2001
-
-DESCRIPTION :
-Returns a string representing the value of <field>.<component_number> at
-<element>:<xi>. Calls Computed_field_evaluate_cache_in_element and converts 
-the value for <component_number> to a string (since result may already be in 
-cache).
-
-Use -1 as the <component_number> if you want all the components.
-
-The <top_level_element> parameter has the same use as in
-Computed_field_evaluate_cache_in_element.
 ==============================================================================*/
 
 int Computed_field_default_get_native_discretization_in_element(
@@ -577,31 +487,6 @@ LAST MODIFIED : 15 September 2005
 
 DESCRIPTION :
 Inherits its result from the first source field -- if any.
-==============================================================================*/
-
-int Computed_field_extract_rc(struct Computed_field *field,
-	int element_dimension,FE_value *rc_coordinates,FE_value *rc_derivatives);
-/*******************************************************************************
-LAST MODIFIED : 9 February 1999
-
-DESCRIPTION :
-Takes the values in <field> and converts them from their current coordinate
-system into rectangular cartesian, returning them in the 3 component
-<rc_coordinates> array. If <rc_derivatives> is not NULL, the derivatives are
-also converted to rc and returned in that 9-component FE_value array.
-Note that odd coordinate systems, such as FIBRE are treated as if they are
-RECTANGULAR_CARTESIAN, which just causes a copy of values.
-If <element_dimension> or the number of components in <field> are less than 3,
-the missing places in the <rc_coordinates> and <rc_derivatives> arrays are
-cleared to zero.
-???RC Uses type float for in-between values x,y,z and jacobian for future
-compatibility with coordinate system transformation functions in geometry.c.
-This causes a slight drop in performance.
-
-Note the order of derivatives:
-1. All the <element_dimension> derivatives of component 1.
-2. All the <element_dimension> derivatives of component 2.
-3. All the <element_dimension> derivatives of component 3.
 ==============================================================================*/
 
 #define Computed_field_is_type(filter) Computed_field_is_type_ ## filter

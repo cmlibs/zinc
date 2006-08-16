@@ -61,6 +61,9 @@ Private package
 Global functions
 ----------------
 */
+#ifdef __cplusplus
+extern "C" {
+#endif /* __cplusplus */
 
 struct Computed_field_finite_element_package *
 	Computed_field_register_types_finite_element(
@@ -327,4 +330,8 @@ LAST MODIFIED : 19 July 2000
 
 DESCRIPTION :
 ==============================================================================*/
+
+#ifdef __cplusplus
+}
+#endif /* __cplusplus */
 #endif /* !defined (COMPUTED_FIELD_FINITE_ELEMENT_H) */

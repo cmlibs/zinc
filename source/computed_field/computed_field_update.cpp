@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : computed_field_update.c
 
-LAST MODIFIED : 28 October 2004
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 Functions for updating values of one computed field from those of another.
@@ -41,26 +41,30 @@ Functions for updating values of one computed field from those of another.
  * the terms of any one of the MPL, the GPL or the LGPL.
  *
  * ***** END LICENSE BLOCK ***** */
+extern "C" {
 #include "computed_field/computed_field.h"
-#include "computed_field/computed_field_private.h"
+}
+#include "computed_field/computed_field_private.hpp"
+extern "C" {
 #include "computed_field/computed_field_update.h"
 #include "finite_element/finite_element.h"
 #include "finite_element/finite_element_region.h"
 #include "finite_element/finite_element_discretization.h"
 #include "general/debug.h"
 #include "user_interface/message.h"
+}
 
 int Computed_field_copy_values_at_node(struct FE_node *node,
 	struct Computed_field *destination_field,
 	struct Computed_field *source_field, FE_value time)
 /*******************************************************************************
-LAST MODIFIED : 4 February 2002
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 Evaluates <source_field> at node and sets <destination_field> to those values.
 <node> must not be managed -- ie. it should be a local copy.
 Both fields must have the same number of values.
-Assumes both fields are defined at the node.
+Assumes both fields are defined at the location
 Up to user to call Computed_field_clear_cache for each field after calls to
 this function are finished.
 ==============================================================================*/
@@ -72,10 +76,12 @@ this function are finished.
 		(Computed_field_get_number_of_components(destination_field) ==
 			Computed_field_get_number_of_components(source_field)))
 	{
-		if (Computed_field_evaluate_cache_at_node(source_field, node, time))
+		Field_node_location location(node, time);
+
+		if (Computed_field_evaluate_cache_at_location(source_field, &location))
 		{
-			if (Computed_field_set_values_at_node(destination_field,
-				node, time, source_field->values))
+			if (Computed_field_set_values_at_location(destination_field,
+				&location, source_field->values))
 			{
 				return_code = 1;
 			}
@@ -108,7 +114,7 @@ this function are finished.
 
 struct Computed_field_update_nodal_values_from_source_data
 /*******************************************************************************
-LAST MODIFIED : 11 October 2001
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 ==============================================================================*/
@@ -124,7 +130,7 @@ DESCRIPTION :
 static int Computed_field_update_nodal_values_from_source_sub(
 	struct FE_node *node, void *data_void)
 /*******************************************************************************
-LAST MODIFIED : 11 October 2001
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 ==============================================================================*/
@@ -173,7 +179,7 @@ int Computed_field_update_nodal_values_from_source(
 	struct Cmiss_region *region, struct FE_node_selection *node_selection,
 	FE_value time)
 /*******************************************************************************
-LAST MODIFIED : 14 March 2003
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 Set <destination_field> in all the nodes in <node_group> or <node_manager> if
@@ -252,7 +258,7 @@ Restricts update to nodes in <node_selection>, if supplied.
 
 struct Computed_field_update_element_values_from_source_data
 /*******************************************************************************
-LAST MODIFIED : 11 October 2001
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 ==============================================================================*/
@@ -268,7 +274,7 @@ DESCRIPTION :
 static int Computed_field_update_element_values_from_source_sub(
 	struct FE_element *element, void *data_void)
 /*******************************************************************************
-LAST MODIFIED : 15 October 2001
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 ==============================================================================*/
@@ -394,14 +400,15 @@ DESCRIPTION :
 											 /*density_field*/(struct Computed_field *)NULL,
 											 grid_point_number, xi, data->time))
 									{
-										if (Computed_field_evaluate_in_element(data->source_field, 
-												element,
-												xi, data->time, /*top_level*/(struct FE_element *)NULL,
-												values, /*derivative*/(FE_value *)NULL))
+										Field_element_xi_location location(element, xi,
+											data->time);
+
+										if (Computed_field_evaluate_cache_at_location(
+												data->source_field, &location))
 										{
-											Computed_field_set_values_in_element(data->destination_field, 
-												element,
-												xi, data->time, values);
+											Computed_field_set_values_at_location(
+												data->destination_field, 
+												&location, data->source_field->values);
 										}
 									}
 								}									
@@ -435,7 +442,7 @@ int Computed_field_update_element_values_from_source(
 	struct Cmiss_region *region, struct Element_point_ranges_selection *element_point_ranges_selection,
 	struct FE_element_selection *element_selection, FE_value time)
 /*******************************************************************************
-LAST MODIFIED : 14 March 2003
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 Set grid-based <destination_field> in all the elements in <element_group> or

@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : computed_field_string_constant.c
 
-LAST MODIFIED : 7 July 2006
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 Implements a constant string field.
@@ -41,13 +41,17 @@ Implements a constant string field.
  * the terms of any one of the MPL, the GPL or the LGPL.
  *
  * ***** END LICENSE BLOCK ***** */
+extern "C" {
 #include <math.h>
 #include "computed_field/computed_field.h"
-#include "computed_field/computed_field_private.h"
+}
+#include "computed_field/computed_field_private.hpp"
+extern "C" {
 #include "general/debug.h"
 #include "general/mystring.h"
 #include "user_interface/message.h"
 #include "computed_field/computed_field_string_constant.h"
+}
 
 struct Computed_field_string_constant_type_specific_data
 {
@@ -59,7 +63,7 @@ static char computed_field_string_constant_type_string[] = "string_constant";
 
 int Computed_field_is_type_string_constant(struct Computed_field *field)
 /*******************************************************************************
-LAST MODIFIED : 7 July 2006
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 ==============================================================================*/
@@ -85,7 +89,7 @@ DESCRIPTION :
 static int Computed_field_string_constant_clear_type_specific(
 	struct Computed_field *field)
 /*******************************************************************************
-LAST MODIFIED : 7 July 2006
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 Clear the type specific data used by this type.
@@ -121,7 +125,7 @@ Clear the type specific data used by this type.
 static void *Computed_field_string_constant_copy_type_specific(
 	struct Computed_field *source_field, struct Computed_field *destination_field)
 /*******************************************************************************
-LAST MODIFIED : 24 February 2002
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 Copy the type specific data used by this type.
@@ -168,7 +172,7 @@ Copy the type specific data used by this type.
 #define Computed_field_string_constant_clear_cache_type_specific \
    (Computed_field_clear_cache_type_specific_function)NULL
 /*******************************************************************************
-LAST MODIFIED : 7 July 2006
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 This function is not needed for this type.
@@ -177,16 +181,16 @@ This function is not needed for this type.
 #define Computed_field_string_constant_type_specific_contents_match \
    Computed_field_default_type_specific_contents_match
 /*******************************************************************************
-LAST MODIFIED : 7 July 2006
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 No type specific data
 ==============================================================================*/
 
-int Computed_field_string_constant_is_defined_in_element(
-	struct Computed_field *field, struct FE_element *element)
+static int Computed_field_string_constant_is_defined_at_location(
+	Computed_field* field, Field_location* location)
 /*******************************************************************************
-LAST MODIFIED : 7 July 2006
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 String constant does not have numerical components.
@@ -194,51 +198,25 @@ String constant does not have numerical components.
 {
 	int return_code;
 
-	ENTER(Computed_field_string_constant_is_defined_in_element);
-	if (field&&element)
+	ENTER(Computed_field_string_constant_is_defined_at_location);
+	if (field&&location)
 	{
 		return_code = 1;
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Computed_field_string_constant_is_defined_in_element. Missing field.");
+			"Computed_field_string_constant_is_defined_at_location. Missing field.");
 		return_code = 0;
 	}
 
 	return (return_code);
-} /* Computed_field_string_constant_is_defined_in_element */
+} /* Computed_field_string_constant_is_defined_at_location */
 
-int Computed_field_string_constant_is_defined_at_node(
-	struct Computed_field *field, struct FE_node *node)
-/*******************************************************************************
-LAST MODIFIED : 7 July 2006
-
-DESCRIPTION :
-String constant does not have numerical components.
-==============================================================================*/
-{
-	int return_code;
-
-	ENTER(Computed_field_string_constant_is_defined_at_node);
-	if (field&&node)
-	{
-		return_code = 1;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_string_constant_is_defined_at_node. Missing field.");
-		return_code = 0;
-	}
-
-	return (return_code);
-} /* Computed_field_string_constant_is_defined_at_node */
-
-int Computed_field_string_constant_has_numerical_components(
+static int Computed_field_string_constant_has_numerical_components(
 	struct Computed_field *field)
 /*******************************************************************************
-LAST MODIFIED : 7 July 2006
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 String constant does not have numerical components.
@@ -264,143 +242,57 @@ String constant does not have numerical components.
 #define Computed_field_string_constant_not_in_use \
 	(Computed_field_not_in_use_function)NULL
 /*******************************************************************************
-LAST MODIFIED : 7 July 2006
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 No special criteria.
 ==============================================================================*/
 
-#define Computed_field_string_constant_evaluate_cache_at_node \
-	(Computed_field_evaluate_cache_at_node_function)NULL
+static int Computed_field_string_constant_evaluate_cache_at_location(
+   struct Computed_field *field, Field_location* location)
 /*******************************************************************************
-LAST MODIFIED : 7 July 2006
-
-DESCRIPTION :
-==============================================================================*/
-
-#define Computed_field_string_constant_evaluate_cache_in_element \
-	(Computed_field_evaluate_cache_in_element_function)NULL
-/*******************************************************************************
-LAST MODIFIED : 7 July 2006
-
-DESCRIPTION :
-==============================================================================*/
-
-static char *Computed_field_string_constant_evaluate_as_string_at_node(
-	struct Computed_field *field, int component_number, 
-	struct FE_node *node, FE_value time)
-/*******************************************************************************
-LAST MODIFIED : 7 July 2006
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 Print the constant values.
 ==============================================================================*/
 {
-	char *return_string;
-	int error,i;
+	int error,i, return_code;
 	struct Computed_field_string_constant_type_specific_data *data;
 
-	ENTER(Computed_field_evaluate_as_string_at_node);
-	USE_PARAMETER(time);
-	return_string=(char *)NULL;
-	if (field&&node&&(component_number >= -1)&&
-		(component_number<field->number_of_components)
+	ENTER(Computed_field_evaluate_cache_at_location);
+	if (field && location
 		&& (data = 
 		(struct Computed_field_string_constant_type_specific_data *)
 		field->type_specific_data))
 	{
 		error = 0;
-		/* write the component values space separated */
-		if (-1 == component_number)
+		/* write the component values space separated,
+			the string cache should store the separate components. */
+		append_string(&field->string_cache,data->string_constant_array[0],&error);
+		for (i=1;i<field->number_of_components;i++)
 		{
-			append_string(&return_string,data->string_constant_array[0],&error);
-			for (i=1;i<field->number_of_components;i++)
-			{
-				append_string(&return_string," ",&error);
-				append_string(&return_string,data->string_constant_array[i],&error);
-			}
+			append_string(&field->string_cache," ",&error);
+			append_string(&field->string_cache,data->string_constant_array[i],&error);
 		}
-		else
-		{
-			return_string=duplicate_string(data->string_constant_array[component_number]);
-		}
+		return_code = 1;
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
 			"Computed_field_string_constant_evaluate_as_string_at_node.  "
 			"Invalid argument(s)");
+		return_code = 0;
 	}
 	LEAVE;
 
-	return (return_string);
+	return (return_code);
 } /* Computed_field_string_constant_evaluate_as_string_at_node */
 
-static char *Computed_field_string_constant_evaluate_as_string_in_element(
-	struct Computed_field *field,int component_number,
-	struct FE_element *element,FE_value *xi,FE_value time,
-	struct FE_element *top_level_element)
+#define Computed_field_string_constant_set_values_at_location \
+   (Computed_field_set_values_at_location_function)NULL
 /*******************************************************************************
-LAST MODIFIED : 7 July 2006
-
-DESCRIPTION :
-Print the constant values.
-==============================================================================*/
-{
-	char *return_string;
-	int error,i;
-	struct Computed_field_string_constant_type_specific_data *data;
-
-	ENTER(Computed_field_evaluate_as_string_in_element);
-	USE_PARAMETER(time);
-	USE_PARAMETER(top_level_element);
-	return_string=(char *)NULL;
-	if (field&&element&&xi&&(-1<=component_number)&&
-		(component_number < field->number_of_components)
-		&& (data = 
-		(struct Computed_field_string_constant_type_specific_data *)
-		field->type_specific_data))
-	{
-		error = 0;
-		/* write the component values space separated */
-		if (-1 == component_number)
-		{
-			append_string(&return_string,data->string_constant_array[0],&error);
-			for (i=1;i<field->number_of_components;i++)
-			{
-				append_string(&return_string," ",&error);
-				append_string(&return_string,data->string_constant_array[i],&error);
-			}
-		}
-		else
-		{
-			return_string=duplicate_string(data->string_constant_array[component_number]);
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_string_constant_evaluate_as_string_in_element.  "
-			"Invalid argument(s)");
-	}
-	LEAVE;
-
-	return (return_string);
-} /* Computed_field_string_constant_evaluate_as_string_in_element */
-
-#define Computed_field_string_constant_set_values_at_node \
-   (Computed_field_set_values_at_node_function)NULL
-/*******************************************************************************
-LAST MODIFIED : 7 July 2006
-
-DESCRIPTION :
-Not implemented yet.
-==============================================================================*/
-
-#define Computed_field_string_constant_set_values_in_element \
-   (Computed_field_set_values_in_element_function)NULL
-/*******************************************************************************
-LAST MODIFIED : 7 July 2006
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 Not implemented yet.
@@ -409,7 +301,7 @@ Not implemented yet.
 #define Computed_field_string_constant_get_native_discretization_in_element \
 	Computed_field_default_get_native_discretization_in_element
 /*******************************************************************************
-LAST MODIFIED : 7 July 2006
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 Inherit result from first source field.
@@ -418,7 +310,7 @@ Inherit result from first source field.
 #define Computed_field_string_constant_find_element_xi \
    (Computed_field_find_element_xi_function)NULL
 /*******************************************************************************
-LAST MODIFIED : 7 July 2006
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 Not implemented yet.
@@ -430,7 +322,7 @@ Not implemented yet.
 static int list_Computed_field_string_constant(
 	struct Computed_field *field)
 /*******************************************************************************
-LAST MODIFIED : 7 July 2006
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 ==============================================================================*/
@@ -478,7 +370,7 @@ DESCRIPTION :
 
 static char *Computed_field_string_constant_get_command_string(struct Computed_field *field)
 /*******************************************************************************
-LAST MODIFIED : 7 July 2006
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 Returns allocated command string for reproducing field. Includes type.
@@ -527,7 +419,7 @@ Returns allocated command string for reproducing field. Includes type.
 #define Computed_field_string_constant_has_multiple_times \
 	Computed_field_default_has_multiple_times
 /*******************************************************************************
-LAST MODIFIED : 7 July 2006
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 ==============================================================================*/
@@ -535,7 +427,7 @@ DESCRIPTION :
 int Computed_field_set_type_string_constant(struct Computed_field *field,
 	int number_of_components, char **string_constant_array)
 /*******************************************************************************
-LAST MODIFIED : 7 July 2006
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 Converts <field> to type COMPUTED_FIELD_STRING_CONSTANT with the supplied
@@ -599,7 +491,7 @@ Converts <field> to type COMPUTED_FIELD_STRING_CONSTANT with the supplied
 int Computed_field_get_type_string_constant(struct Computed_field *field,
 	int *number_of_components, char ***string_constant_array_address)
 /*******************************************************************************
-LAST MODIFIED : 7 July 2006
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 If the field is of type COMPUTED_FIELD_STRING_CONSTANT, the 
@@ -650,7 +542,7 @@ If the field is of type COMPUTED_FIELD_STRING_CONSTANT, the
 static int define_Computed_field_type_string_constant(struct Parse_state *state,
 	void *field_void, void *dummy_void)
 /*******************************************************************************
-LAST MODIFIED : 7 July 2006
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 Converts <field> into type COMPUTED_FIELD_STRING_CONSTANT (if it is not 
@@ -693,7 +585,7 @@ already) and allows its contents to be modified.
 int Computed_field_register_types_string_constant(
 	struct Computed_field_package *computed_field_package)
 /*******************************************************************************
-LAST MODIFIED : 7 July 2006
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 ==============================================================================*/
