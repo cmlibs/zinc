@@ -318,7 +318,7 @@ Evaluate the fields cache at the location
 ==============================================================================*/
 {
 	FE_value dx_dt, *jacobian, *temp;
-	int i, j, element_dimension, return_code;
+	int i, j, number_of_derivatives, return_code;
 	struct Computed_field_curve_lookup_type_specific_data *data;
 
 	ENTER(Computed_field_curve_lookup_evaluate_cache_at_location);
@@ -331,8 +331,8 @@ Evaluate the fields cache at the location
 			Computed_field_evaluate_source_fields_cache_at_location(field, location))
 		{
 			/* 2. Calculate the field */
-			element_dimension = get_FE_element_dimension(element);
-			if (calculate_derivatives)
+			number_of_derivatives = location->get_number_of_derivatives();
+			if (number_of_derivatives)
 			{
 				jacobian = field->derivatives;
 			}
@@ -353,9 +353,9 @@ Evaluate the fields cache at the location
 					for (j = field->number_of_components - 1; 0 <= j; j--)
 					{
 						dx_dt = jacobian[j];
-						for (i = 0; i < element_dimension; i++)
+						for (i = 0; i < number_of_derivatives ; i++)
 						{
-							jacobian[j*element_dimension + i] = dx_dt*temp[i];
+							jacobian[j*number_of_derivatives + i] = dx_dt*temp[i];
 						}
 					}
 				}
