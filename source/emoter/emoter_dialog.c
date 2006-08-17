@@ -47,10 +47,12 @@ group of nodes
 #include <string.h>
 #include <sys/types.h>
 #include <time.h>
+#if defined (MOTIF)
 #include <Xm/PushB.h>
 #include <Xm/ScrollBar.h>
 #include <Xm/Text.h>
 #include <Xm/ToggleB.h>
+#endif /* defined (MOTIF) */
 #include "command/command.h"
 	/*???DB.  For Execute_command */
 #include "command/parser.h"

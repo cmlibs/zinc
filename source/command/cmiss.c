@@ -8525,9 +8525,9 @@ Executes a GFX CREATE command.
 				{
 					create_emoter_slider_data.parent=(Widget)NULL;
 				}
-#endif /* defined (MOTIF) */
 				create_emoter_slider_data.curve_editor_dialog_address=
 					&(command_data->curve_editor_dialog);
+#endif /* defined (MOTIF) */
 				create_emoter_slider_data.user_interface=
 					command_data->user_interface;
 				Option_table_add_entry(option_table,"emoter",NULL,

@@ -81,7 +81,7 @@ DESCRIPTION :
 	struct Light *viewer_light;
 	struct Light_model *viewer_light_model;
 #if defined (MOTIF)
-	Widget parent;
+	Widget parent, *curve_editor_dialog_address;
 #endif /* defined (MOTIF) */
 	struct Emoter_dialog **emoter_dialog_address;
 	struct User_interface *user_interface;
