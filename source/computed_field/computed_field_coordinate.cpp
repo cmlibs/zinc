@@ -965,7 +965,7 @@ Sets the <values> of the computed <field> over the <element>.
 	FE_value *source_values;
 	int i,k,return_code;
 	FE_value jacobian[9],non_rc_coordinates[3],
-		rc_coordinates[3],*rc_coordinate_values,sum;
+		rc_coordinates[3],sum;
 	int coordinates_per_vector,m,number_of_vectors;
 	struct Computed_field *rc_coordinate_field;
 	
@@ -1021,7 +1021,6 @@ Sets the <values> of the computed <field> over the <element>.
 						field->source_fields[0],location,source_values);
 				}
 				DEALLOCATE(source_values);
-				DEALLOCATE(rc_coordinate_values);
 			}
 			else
 			{
