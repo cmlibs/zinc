@@ -72,7 +72,9 @@ group of nodes
 #include "user_interface/message.h"
 #include "user_interface/gui_dialog_macros.h"
 #include "curve/curve.h"
+#if defined (MOTIF)
 #include "curve/curve_editor_dialog.h"
+#endif /* defined (MOTIF) */
 #include "emoter/emoter_dialog.h"
 #if defined (MOTIF)
 static char emoter_dialog_uidh[] =
