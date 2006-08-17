@@ -821,7 +821,7 @@ varying integration and the behaviour is significantly different.
 				&element_field_nodes_array, mapping_item->element))
 		{
 			/* Make assumptions about the distribution of the nodes */
-			if (number_of_element_field_nodes == pow(2, element_dimension))
+			if (number_of_element_field_nodes == pow(2.0, element_dimension))
 			{
 				/* Add nodes not already included */
 				for (i = 0 ; i < number_of_element_field_nodes ; i++)
