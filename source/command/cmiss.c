@@ -75,7 +75,7 @@ Functions for executing cmiss commands.
 #include "computed_field/computed_field_compose.h"
 #include "computed_field/computed_field_composite.h"
 #include "computed_field/computed_field_coordinate.h"
-#include "computed_field/computed_field_control_curve.h"
+#include "computed_field/computed_field_curve.h"
 #include "computed_field/computed_field_deformation.h"
 #include "computed_field/computed_field_derivatives.h"
 #include "computed_field/computed_field_find_xi.h"
@@ -209,9 +209,9 @@ Functions for executing cmiss commands.
 #include "user_interface/confirmation.h"
 #include "user_interface/message.h"
 #include "user_interface/user_interface.h"
-#include "curve/control_curve.h"
+#include "curve/curve.h"
 #if defined (MOTIF)
-#include "curve/control_curve_editor_dialog.h"
+#include "curve/curve_editor_dialog.h"
 #include "view/coord_trans.h"
 #endif /* defined (MOTIF) */
 #if defined (PERL_INTERPRETER)
@@ -299,7 +299,7 @@ DESCRIPTION :
 	struct MANAGER(Movie_graphics) *movie_graphics_manager;
 #endif /* defined (SGI_MOVIE_FILE) && defined (MOTIF) */
 	struct MANAGER(Texture) *texture_manager;
-	struct MANAGER(Control_curve) *control_curve_manager;
+	struct MANAGER(Curve) *curve_manager;
 	struct MANAGER(Scene) *scene_manager;
 	struct Scene *default_scene;
 	struct MANAGER(Spectrum) *spectrum_manager;
@@ -322,7 +322,7 @@ DESCRIPTION :
 	struct Time_keeper *default_time_keeper;
 	struct User_interface *user_interface;
 #if defined (MOTIF)
-	Widget control_curve_editor_dialog,data_grabber_dialog,
+	Widget curve_editor_dialog,data_grabber_dialog,
 		grid_field_calculator_dialog,input_module_dialog,
 		sync_2d_3d_dialog;
 	struct Node_viewer *data_viewer,*node_viewer;
@@ -2764,9 +2764,9 @@ Invokes the grid field calculator dialog.
 					&(command_data->grid_field_calculator_dialog),
 					User_interface_get_application_shell(command_data->user_interface),
 					command_data->computed_field_package,
-					&(command_data->control_curve_editor_dialog),
+					&(command_data->curve_editor_dialog),
 					command_data->root_region,
-					command_data->control_curve_manager,
+					command_data->curve_manager,
 					command_data->user_interface);
 			}
 		}
@@ -7367,7 +7367,7 @@ editor at a time.  This implementation may be changed later.
 #endif /* defined (MOTIF) */
 
 #if defined (MOTIF)
-static int gfx_create_control_curve_editor(struct Parse_state *state,
+static int gfx_create_curve_editor(struct Parse_state *state,
 	void *dummy_to_be_modified,void *command_data_void)
 /*******************************************************************************
 LAST MODIFIED : 8 November 1999
@@ -7383,7 +7383,7 @@ editor at a time.  This implementation may be changed later.
 	int return_code;
 	struct Cmiss_command_data *command_data;
 
-	ENTER(gfx_create_control_curve_editor);
+	ENTER(gfx_create_curve_editor);
 	USE_PARAMETER(dummy_to_be_modified);
 	if (state)
 	{
@@ -7405,17 +7405,17 @@ editor at a time.  This implementation may be changed later.
 		{
 			if (command_data=(struct Cmiss_command_data *)command_data_void)
 			{
-				return_code=bring_up_control_curve_editor_dialog(
-					&(command_data->control_curve_editor_dialog),
+				return_code=bring_up_curve_editor_dialog(
+					&(command_data->curve_editor_dialog),
 					User_interface_get_application_shell(command_data->user_interface),
-					command_data->control_curve_manager,
-					(struct Control_curve *)NULL,
+					command_data->curve_manager,
+					(struct Curve *)NULL,
 					command_data->user_interface);
 			}
 			else
 			{
 				display_message(ERROR_MESSAGE,
-					"gfx_create_control_curve_editor.  Missing command_data");
+					"gfx_create_curve_editor.  Missing command_data");
 				return_code=0;
 			}
 		}
@@ -7423,13 +7423,13 @@ editor at a time.  This implementation may be changed later.
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"gfx_create_control_curve_editor.  Missing state");
+			"gfx_create_curve_editor.  Missing state");
 		return_code=0;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* gfx_create_control_curve_editor */
+} /* gfx_create_curve_editor */
 #endif /* defined (MOTIF) */
 
 #if defined (MOTIF) || defined (GTK_USER_INTERFACE) || defined (WIN32_USER_INTERFACE)
@@ -8464,7 +8464,7 @@ Executes a GFX CREATE command.
 					command_data_void,gfx_create_colour_bar);
 #if defined (MOTIF)
 				Option_table_add_entry(option_table,"curve_editor",NULL,
-					command_data_void,gfx_create_control_curve_editor);
+					command_data_void,gfx_create_curve_editor);
 #endif /* defined (MOTIF) */
 				Option_table_add_entry(option_table,"cylinders",NULL,
 					command_data_void,gfx_create_cylinders);
@@ -8498,8 +8498,8 @@ Executes a GFX CREATE command.
 					command_data->graphics_window_manager;
 				create_emoter_slider_data.graphics_buffer_package=
 					command_data->graphics_buffer_package;
-				create_emoter_slider_data.control_curve_manager=
-					command_data->control_curve_manager;
+				create_emoter_slider_data.curve_manager=
+					command_data->curve_manager;
 				create_emoter_slider_data.scene_manager=command_data->scene_manager;
 				create_emoter_slider_data.io_stream_package =
 					command_data->io_stream_package;
@@ -8520,8 +8520,8 @@ Executes a GFX CREATE command.
 				{
 					create_emoter_slider_data.parent=(Widget)NULL;
 				}
-				create_emoter_slider_data.control_curve_editor_dialog_address=
-					&(command_data->control_curve_editor_dialog);
+				create_emoter_slider_data.curve_editor_dialog_address=
+					&(command_data->curve_editor_dialog);
 				create_emoter_slider_data.user_interface=
 					command_data->user_interface;
 				Option_table_add_entry(option_table,"emoter",NULL,
@@ -8710,7 +8710,7 @@ Executes a GFX DEFINE command.
 {
 	int return_code;
 	struct Cmiss_command_data *command_data;
-	struct Control_curve_command_data control_curve_command_data;
+	struct Curve_command_data curve_command_data;
 	struct Option_table *option_table;
 
 	ENTER(execute_command_gfx_define);
@@ -8723,12 +8723,12 @@ Executes a GFX DEFINE command.
 			{
 				option_table = CREATE(Option_table)();
 				/* curve */
-				control_curve_command_data.control_curve_manager = 
-					command_data->control_curve_manager;
-				control_curve_command_data.io_stream_package = 
+				curve_command_data.curve_manager = 
+					command_data->curve_manager;
+				curve_command_data.io_stream_package = 
 					command_data->io_stream_package;
 				Option_table_add_entry(option_table, "curve", NULL,
-					&control_curve_command_data, gfx_define_Control_curve);
+					&curve_command_data, gfx_define_Curve);
 				/* faces */
 				Option_table_add_entry(option_table, "faces", NULL,
 					command_data_void, gfx_define_faces);
@@ -9781,7 +9781,7 @@ Executes a GFX DESTROY command.
 #endif /* defined (MOTIF) */
 				/* curve */
 				Option_table_add_entry(option_table, "curve", NULL,
-					command_data->control_curve_manager, gfx_destroy_Control_curve);
+					command_data->curve_manager, gfx_destroy_Curve);
 				/* data */
 				Option_table_add_entry(option_table, "data", /*use_data*/(void *)1,
 					command_data_void, gfx_destroy_nodes);
@@ -13367,7 +13367,7 @@ Executes a GFX LIST command.
 			option_table = CREATE(Option_table)();
 			/* curve */
 			Option_table_add_entry(option_table, "curve", NULL,
-				command_data->control_curve_manager, gfx_list_Control_curve);
+				command_data->curve_manager, gfx_list_Curve);
 			/* data */
 			Option_table_add_entry(option_table, "data", /*use_data*/(void *)1,
 				command_data_void, gfx_list_FE_node);
@@ -15819,7 +15819,7 @@ Executes a GFX PRINT command.
 } /* execute_command_gfx_print */
 #endif /* defined (MOTIF) */
 
-static int gfx_read_Control_curve(struct Parse_state *state,
+static int gfx_read_Curve(struct Parse_state *state,
 	void *dummy_to_be_modified,void *command_data_void)
 /*******************************************************************************
 LAST MODIFIED : 7 January 2002
@@ -15836,7 +15836,7 @@ instruction to read in the mesh.
 	struct Cmiss_command_data *command_data;
 	struct Option_table *option_table;
 
-	ENTER(gfx_read_Control_curve);
+	ENTER(gfx_read_Curve);
 	USE_PARAMETER(dummy_to_be_modified);
 	if (state)
 	{
@@ -15878,19 +15878,19 @@ instruction to read in the mesh.
 		else
 		{
 			display_message(ERROR_MESSAGE,
-				"gfx_read_Control_curve.  Missing command_data");
+				"gfx_read_Curve.  Missing command_data");
 			return_code=0;
 		}
 	}
 	else
 	{
-		display_message(ERROR_MESSAGE,"gfx_read_Control_curve.  Missing state");
+		display_message(ERROR_MESSAGE,"gfx_read_Curve.  Missing state");
 		return_code=0;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* gfx_read_Control_curve */
+} /* gfx_read_Curve */
 
 static int gfx_read_elements(struct Parse_state *state,
 	void *dummy_to_be_modified,void *command_data_void)
@@ -16738,7 +16738,7 @@ Executes a GFX READ command.
 			option_table = CREATE(Option_table)();
 			/* curve */
 			Option_table_add_entry(option_table, "curve",
-				NULL, command_data_void, gfx_read_Control_curve);
+				NULL, command_data_void, gfx_read_Curve);
 			/* data */
 			Option_table_add_entry(option_table, "data",
 				/*use_data*/(void *)1, command_data_void, gfx_read_nodes);
@@ -19537,7 +19537,7 @@ Executes a GFX UPDATE command.
 } /* execute_command_gfx_update */
 #endif /* defined (MOTIF) */
 
-static int gfx_write_Control_curve(struct Parse_state *state,
+static int gfx_write_Curve(struct Parse_state *state,
 	void *dummy_to_be_modified,void *command_data_void)
 /*******************************************************************************
 LAST MODIFIED : 25 November 1999
@@ -19553,9 +19553,9 @@ of the curve, eg. "name" -> name.curve.com name.curve.exnode name.curve.exelem
 	struct Modifier_entry option_table[]=
 	{
 		{"all",NULL,NULL,set_char_flag},
-		{NULL,NULL,NULL,set_Control_curve}
+		{NULL,NULL,NULL,set_Curve}
 	};
-	struct Control_curve *curve;
+	struct Curve *curve;
 
 	ENTER(gfx_write_Curve);
 	USE_PARAMETER(dummy_to_be_modified);
@@ -19563,44 +19563,44 @@ of the curve, eg. "name" -> name.curve.com name.curve.exnode name.curve.exelem
 	{
 		return_code=1;
 		write_all_curves_flag=0;
-		curve=(struct Control_curve *)NULL;
+		curve=(struct Curve *)NULL;
 		(option_table[0]).to_be_modified= &write_all_curves_flag;
 		(option_table[1]).to_be_modified= &curve;
-		(option_table[1]).user_data=command_data->control_curve_manager;
+		(option_table[1]).user_data=command_data->curve_manager;
 		if (return_code=process_multiple_options(state,option_table))
 		{
 			if (write_all_curves_flag&&!curve)
 			{
-				return_code=FOR_EACH_OBJECT_IN_MANAGER(Control_curve)(
-					write_Control_curve,(void *)NULL,
-					command_data->control_curve_manager);
+				return_code=FOR_EACH_OBJECT_IN_MANAGER(Curve)(
+					write_Curve,(void *)NULL,
+					command_data->curve_manager);
 			}
 			else if (curve&&!write_all_curves_flag)
 			{
-				return_code=write_Control_curve(curve,(void *)NULL);
+				return_code=write_Curve(curve,(void *)NULL);
 			}
 			else
 			{
 				display_message(ERROR_MESSAGE,
-					"gfx_write_Control_curve.  Specify either a curve name or 'all'");
+					"gfx_write_Curve.  Specify either a curve name or 'all'");
 				return_code=0;
 			}
 		}
 		if (curve)
 		{
-			DEACCESS(Control_curve)(&curve);
+			DEACCESS(Curve)(&curve);
 		}
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"gfx_write_Control_curve.  Invalid argument(s)");
+			"gfx_write_Curve.  Invalid argument(s)");
 		return_code=0;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* gfx_write_Control_curve */
+} /* gfx_write_Curve */
 
 static int gfx_write_elements(struct Parse_state *state,
 	void *dummy_to_be_modified,void *command_data_void)
@@ -20146,7 +20146,7 @@ Executes a GFX WRITE command.
 		{
 			option_table = CREATE(Option_table)();
 			Option_table_add_entry(option_table, "curve", NULL,
-				command_data_void, gfx_write_Control_curve);
+				command_data_void, gfx_write_Curve);
 			Option_table_add_entry(option_table, "data", /*use_data*/(void *)1,
 				command_data_void, gfx_write_nodes);
 			Option_table_add_entry(option_table, "elements", NULL,
@@ -23793,7 +23793,7 @@ Initialise all the subcomponents of cmgui and create the Cmiss_command_data
 		command_data->event_dispatcher = (struct Event_dispatcher *)NULL;
 		command_data->user_interface= (struct User_interface *)NULL;
 #if defined (MOTIF)
-		command_data->control_curve_editor_dialog=(Widget)NULL;
+		command_data->curve_editor_dialog=(Widget)NULL;
 		command_data->data_grabber_dialog=(Widget)NULL;
 		command_data->sync_2d_3d_dialog=(Widget)NULL;
 		command_data->emoter_slider_dialog=(struct Emoter_dialog *)NULL;
@@ -23838,7 +23838,7 @@ Initialise all the subcomponents of cmgui and create the Cmiss_command_data
 #endif /* defined (MOTIF) || defined (GTK_USER_INTERFACE) || defined (WIN32_USER_INTERFACE) */
 		command_data->root_region = (struct Cmiss_region *)NULL;
 		command_data->data_root_region = (struct Cmiss_region *)NULL;
-		command_data->control_curve_manager=(struct MANAGER(Control_curve) *)NULL;
+		command_data->curve_manager=(struct MANAGER(Curve) *)NULL;
 		command_data->basis_manager=(struct MANAGER(FE_basis) *)NULL;
 		command_data->streampoint_list=(struct Streampoint *)NULL;
 #if defined (SELECT_DESCRIPTORS)
@@ -24251,7 +24251,7 @@ Initialise all the subcomponents of cmgui and create the Cmiss_command_data
 
 		rect_coord_system.type = RECTANGULAR_CARTESIAN;
 
-		command_data->control_curve_manager=CREATE(MANAGER(Control_curve))();
+		command_data->curve_manager=CREATE(MANAGER(Curve))();
 
 		command_data->basis_manager=CREATE(MANAGER(FE_basis))();
 
@@ -24334,11 +24334,11 @@ Initialise all the subcomponents of cmgui and create the Cmiss_command_data
 			}
 			Computed_field_register_types_composite(
 				command_data->computed_field_package);		
-			if (command_data->control_curve_manager)
+			if (command_data->curve_manager)
 			{
-				Computed_field_register_types_control_curve(
+				Computed_field_register_types_curve(
 					command_data->computed_field_package, 
-					command_data->control_curve_manager);
+					command_data->curve_manager);
 			}
 			Computed_field_register_types_derivatives(
 				command_data->computed_field_package);
@@ -24982,7 +24982,7 @@ Clean up the command_data, deallocating all the associated memory and resources.
 		DESTROY(LIST(GT_object))(&command_data->graphics_object_list);
 		DESTROY(LIST(GT_object))(&command_data->glyph_list);
 
-		DESTROY(MANAGER(Control_curve))(&command_data->control_curve_manager);
+		DESTROY(MANAGER(Curve))(&command_data->curve_manager);
 
 		/* remove callbacks synchronising root_region and data_root_region since
 			 they were established by the Command_data -- this must be done before

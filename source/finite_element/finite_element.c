@@ -21544,7 +21544,7 @@ PROTOTYPE_MANAGER_COPY_IDENTIFIER_FUNCTION(FE_node,cm_node_identifier,int)
 	{
 		/*???RC renaming nodes in use by any list outside the manager will cause
 			list to be corrupted. Allow identifier change under protest here so that
-			control_curve / editor work, but disallow name change in select object for
+			curve / editor work, but disallow name change in select object for
 			any object in use outside the manager. */
 		destination->cm_node_identifier=cm_node_identifier;
 		return_code=1;

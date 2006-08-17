@@ -1,10 +1,10 @@
 /*******************************************************************************
-FILE : control_curve_editor.h
+FILE : curve_editor.h
 
 LAST MODIFIED : 8 November 1999
 
 DESCRIPTION :
-Provides the widgets to modify Control_curve structures.
+Provides the widgets to modify Curve structures.
 ==============================================================================*/
 /* ***** BEGIN LICENSE BLOCK *****
  * Version: MPL 1.1/GPL 2.0/LGPL 2.1
@@ -45,7 +45,7 @@ Provides the widgets to modify Control_curve structures.
 #define CONTROL_CURVE_EDITOR_H
 
 #include "general/callback_motif.h"
-#include "curve/control_curve.h"
+#include "curve/curve.h"
 #include "user_interface/user_interface.h"
 
 /*
@@ -57,56 +57,56 @@ Global Types
 Global Functions
 ----------------
 */
-Widget create_control_curve_editor_widget(Widget *gelem_editor_widget,
-	Widget parent,struct Control_curve *curve,
+Widget create_curve_editor_widget(Widget *gelem_editor_widget,
+	Widget parent,struct Curve *curve,
 	struct User_interface *user_interface);
 /*******************************************************************************
 LAST MODIFIED : 8 November 1999
 
 DESCRIPTION :
-Creates a control_curve_editor widget.
+Creates a curve_editor widget.
 ==============================================================================*/
 
-int control_curve_editor_set_callback(Widget control_curve_editor_widget,
+int curve_editor_set_callback(Widget curve_editor_widget,
 	struct Callback_data *new_callback);
 /*******************************************************************************
 LAST MODIFIED : 8 November 1999
 
 DESCRIPTION :
-Changes the callback function for the control_curve_editor_widget, which will be
+Changes the callback function for the curve_editor_widget, which will be
 called when the curve is modified in any way.
 ==============================================================================*/
 
-int control_curve_editor_set_curve(Widget control_curve_editor_widget,
-	struct Control_curve *curve);
+int curve_editor_set_curve(Widget curve_editor_widget,
+	struct Curve *curve);
 /*******************************************************************************
 LAST MODIFIED : 8 November 1999
 
 DESCRIPTION :
-Sets the Control_curve to be edited by the control_curve_editor widget.
+Sets the Curve to be edited by the curve_editor widget.
 ==============================================================================*/
 
-struct Callback_data *control_curve_editor_get_callback(
-	Widget control_curve_editor_widget);
+struct Callback_data *curve_editor_get_callback(
+	Widget curve_editor_widget);
 /*******************************************************************************
 LAST MODIFIED : 8 November 1999
 
 DESCRIPTION :
-Returns a pointer to the update_callback item of the control_curve_editor
+Returns a pointer to the update_callback item of the curve_editor
 widget.
 ==============================================================================*/
 
-struct Control_curve *control_curve_editor_get_curve(
-	Widget control_curve_editor_widget);
+struct Curve *curve_editor_get_curve(
+	Widget curve_editor_widget);
 /*******************************************************************************
 LAST MODIFIED : 8 November 1999
 
 DESCRIPTION :
-Returns the Control_curve currently being edited.
+Returns the Curve currently being edited.
 ==============================================================================*/
 
-int control_curve_editor_set_cursor_parameter(
-	Widget control_curve_editor_widget, float parameter);
+int curve_editor_set_cursor_parameter(
+	Widget curve_editor_widget, float parameter);
 /*******************************************************************************
 LAST MODIFIED : 8 November 1999
 
@@ -115,8 +115,8 @@ Sets the current position of the parameter cursor and displays it if it isn't
 already shown.
 ==============================================================================*/
 
-float control_curve_editor_get_cursor_parameter(
-	Widget control_curve_editor_widget);
+float curve_editor_get_cursor_parameter(
+	Widget curve_editor_widget);
 /*******************************************************************************
 LAST MODIFIED : 8 November 1999
 

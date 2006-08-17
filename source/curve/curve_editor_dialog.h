@@ -1,5 +1,5 @@
 /*******************************************************************************
-FILE : control_curve_editor_dialog.h
+FILE : curve_editor_dialog.h
 
 LAST MODIFIED : 8 Novemeber 1999
 
@@ -45,7 +45,7 @@ Form set aside for the actual variable editor.
 #if !defined (CONTROL_CURVE_EDITOR_DIALOG_H)
 #define CONTROL_CURVE_EDITOR_DIALOG_H
 
-#include "curve/control_curve.h"
+#include "curve/curve.h"
 #include "user_interface/user_interface.h"
 
 /*
@@ -57,9 +57,9 @@ Global Types
 Global Functions
 ----------------
 */
-int control_curve_editor_dialog_set_curve(
-	Widget control_curve_editor_dialog_widget,
-	struct Control_curve *curve);
+int curve_editor_dialog_set_curve(
+	Widget curve_editor_dialog_widget,
+	struct Curve *curve);
 /*******************************************************************************
 LAST MODIFIED : 8 November 1999
 
@@ -67,8 +67,8 @@ DESCRIPTION :
 Sets the curve being edited by the curve editor dialog.
 ==============================================================================*/
 
-int control_curve_editor_dialog_set_cursor_parameter(
-	Widget control_curve_editor_dialog_widget,float parameter);
+int curve_editor_dialog_set_cursor_parameter(
+	Widget curve_editor_dialog_widget,float parameter);
 /*******************************************************************************
 LAST MODIFIED : 8 November 1999
 
@@ -76,10 +76,10 @@ DESCRIPTION :
 Sets the parameter curve cursor position in the curve editor.
 ==============================================================================*/
 
-int bring_up_control_curve_editor_dialog(
-	Widget *control_curve_editor_dialog_address,Widget parent,
-	struct MANAGER(Control_curve) *control_curve_manager,
-	struct Control_curve *curve,struct User_interface *user_interface);
+int bring_up_curve_editor_dialog(
+	Widget *curve_editor_dialog_address,Widget parent,
+	struct MANAGER(Curve) *curve_manager,
+	struct Curve *curve,struct User_interface *user_interface);
 /*******************************************************************************
 LAST MODIFIED : 8 November 1999
 

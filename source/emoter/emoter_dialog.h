@@ -72,7 +72,7 @@ DESCRIPTION :
 	struct Cmiss_region *root_region;
 	struct MANAGER(FE_basis) *basis_manager;
 	struct MANAGER(Graphics_window) *graphics_window_manager;
-	struct MANAGER(Control_curve) *control_curve_manager;
+	struct MANAGER(Curve) *curve_manager;
 	struct MANAGER(Scene) *scene_manager;
 	struct IO_stream_package *io_stream_package;
 	struct Scene *viewer_scene;
@@ -80,7 +80,7 @@ DESCRIPTION :
 	struct Graphics_buffer_package *graphics_buffer_package;
 	struct Light *viewer_light;
 	struct Light_model *viewer_light_model;
-	Widget parent, *control_curve_editor_dialog_address;
+	Widget parent, *curve_editor_dialog_address;
 	struct Emoter_dialog **emoter_dialog_address;
 	struct User_interface *user_interface;
 }; /* struct Create_emoter_slider_data */

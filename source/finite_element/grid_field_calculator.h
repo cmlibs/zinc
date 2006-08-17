@@ -45,7 +45,7 @@ control curve variation over coordinates - usually xi_texture_coordinates.
 #if !defined (GRID_FIELD_CALCULATOR_H)
 #define GRID_FIELD_CALCULATOR_H
 
-#include "curve/control_curve.h"
+#include "curve/curve.h"
 #include "computed_field/computed_field.h"
 #include "finite_element/finite_element.h"
 #include "region/cmiss_region.h"
@@ -64,9 +64,9 @@ Global Functions
 int bring_up_grid_field_calculator(
 	Widget *grid_field_calculator_address,Widget parent,
 	struct Computed_field_package *computed_field_package,
-	Widget *control_curve_editor_dialog_address,
+	Widget *curve_editor_dialog_address,
 	struct Cmiss_region *region,
-	struct MANAGER(Control_curve) *control_curve_manager,
+	struct MANAGER(Curve) *curve_manager,
 	struct User_interface *user_interface);
 /*******************************************************************************
 LAST MODIFIED : 27 February 2003

@@ -1,5 +1,5 @@
 /*******************************************************************************
-FILE : computed_field_control_curve.h
+FILE : computed_field_curve.h
 
 LAST MODIFIED : 31 May 2001
 
@@ -43,11 +43,11 @@ DESCRIPTION :
 #if !defined (COMPUTED_FIELD_CONTROL_CURVE_H)
 #define COMPUTED_FIELD_CONTROL_CURVE_H
 
-#include "curve/control_curve.h"
+#include "curve/curve.h"
 
-int Computed_field_register_types_control_curve(
+int Computed_field_register_types_curve(
 	struct Computed_field_package *computed_field_package, 
-	struct MANAGER(Control_curve) *control_curve_manager);
+	struct MANAGER(Curve) *curve_manager);
 /*******************************************************************************
 LAST MODIFIED : 21 May 2001
 
@@ -55,9 +55,9 @@ DESCRIPTION :
 ==============================================================================*/
 
 int Computed_field_set_type_curve_lookup(struct Computed_field *field,
-	struct Computed_field *source_field, struct Control_curve *curve,
+	struct Computed_field *source_field, struct Curve *curve,
 	struct MANAGER(Computed_field) *computed_field_manager,
-	struct MANAGER(Control_curve) *control_curve_manager);
+	struct MANAGER(Curve) *curve_manager);
 /*******************************************************************************
 LAST MODIFIED : 24 May 2001
 
@@ -73,7 +73,7 @@ in response to changes in the curve from the control curve manager.
 ==============================================================================*/
 
 int Computed_field_get_type_curve_lookup(struct Computed_field *field,
-	struct Computed_field **source_field, struct Control_curve **curve);
+	struct Computed_field **source_field, struct Curve **curve);
 /*******************************************************************************
 LAST MODIFIED : 21 May 2001
 

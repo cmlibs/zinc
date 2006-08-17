@@ -1,10 +1,10 @@
 /*******************************************************************************
-FILE : select_control_curve.h
+FILE : select_curve.h
 
 LAST MODIFIED : 8 November 1999
 
 DESCRIPTION :
-Version of select widget using Control_curve objects.
+Version of select widget using Curve objects.
 ==============================================================================*/
 /* ***** BEGIN LICENSE BLOCK *****
  * Version: MPL 1.1/GPL 2.0/LGPL 2.1
@@ -45,8 +45,8 @@ Version of select widget using Control_curve objects.
 #define SELECT_CONTROL_CURVE_H
 
 #include "select/select.h"
-#include "curve/control_curve.h"
+#include "curve/curve.h"
 
-PROTOTYPE_SELECT_GLOBAL_FUNCTIONS(Control_curve);
+PROTOTYPE_SELECT_GLOBAL_FUNCTIONS(Curve);
 
 #endif /* !defined (SELECT_CONTROL_CURVE_H) */

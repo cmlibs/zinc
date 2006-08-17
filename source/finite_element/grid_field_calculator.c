@@ -44,15 +44,15 @@ control curve variation over coordinates - usually xi_texture_coordinates.
  * ***** END LICENSE BLOCK ***** */
 #include <stdio.h>
 #include "choose/choose_computed_field.h"
-#include "choose/choose_control_curve.h"
+#include "choose/choose_curve.h"
 #include "choose/text_choose_fe_element.h"
 #include "general/debug.h"
 #include "general/mystring.h"
-#include "curve/control_curve.h"
-#include "curve/control_curve_editor_dialog.h"
+#include "curve/curve.h"
+#include "curve/curve_editor_dialog.h"
 #include "computed_field/computed_field.h"
 #include "computed_field/computed_field_composite.h"
-#include "computed_field/computed_field_control_curve.h"
+#include "computed_field/computed_field_curve.h"
 #include "computed_field/computed_field_integration.h"
 #include "computed_field/computed_field_update.h"
 #include "computed_field/computed_field_vector_operations.h"
@@ -82,8 +82,8 @@ Contains all the information needed for the grid_field_calculator dialog.
 ==============================================================================*/
 {
 	struct Computed_field_package *computed_field_package;
-	Widget *control_curve_editor_dialog_address;
-	struct MANAGER(Control_curve) *control_curve_manager;
+	Widget *curve_editor_dialog_address;
+	struct MANAGER(Curve) *curve_manager;
 	struct Cmiss_region *region;
 	struct FE_region *fe_region;
 	struct User_interface *user_interface;
@@ -163,7 +163,7 @@ DESCRIPTION :
 	char *curve_name;
 	int error;
 	struct Computed_field *grid_field;
-	struct Control_curve *current_curve,*curve;
+	struct Curve *current_curve,*curve;
 	struct Grid_field_calculator *grid_calc;
 
 	ENTER(grid_field_calculator_axis1_curve_edit_CB);
@@ -172,13 +172,13 @@ DESCRIPTION :
 	if (grid_calc=(struct Grid_field_calculator *)client_data)
 	{
 		/* edit the curve in the chooser... */
-		if (curve=CHOOSE_OBJECT_GET_OBJECT(Control_curve)(
+		if (curve=CHOOSE_OBJECT_GET_OBJECT(Curve)(
 			grid_calc->axis1_curve_widget))
 		{
 			current_curve=curve;
 			/* ...but not if it is called "constant_1" */
-			if (curve==FIND_BY_IDENTIFIER_IN_MANAGER(Control_curve,name)(
-				"constant_1",grid_calc->control_curve_manager))
+			if (curve==FIND_BY_IDENTIFIER_IN_MANAGER(Curve,name)(
+				"constant_1",grid_calc->curve_manager))
 			{
 				if (grid_field=CHOOSE_OBJECT_GET_OBJECT(Computed_field)(
 					grid_calc->grid_field_widget))
@@ -188,31 +188,31 @@ DESCRIPTION :
 						append_string(&curve_name,"_axis1_curve",&error))
 					{
 						/* try to find curve called curve_name */
-						if (!(curve=FIND_BY_IDENTIFIER_IN_MANAGER(Control_curve,name)(
-							curve_name,grid_calc->control_curve_manager)))
+						if (!(curve=FIND_BY_IDENTIFIER_IN_MANAGER(Curve,name)(
+							curve_name,grid_calc->curve_manager)))
 						{
-							if (curve=CREATE(Control_curve)(curve_name,LINEAR_LAGRANGE,1))
+							if (curve=CREATE(Curve)(curve_name,LINEAR_LAGRANGE,1))
 							{
-								if (!(MANAGER_COPY_WITHOUT_IDENTIFIER(Control_curve,name)(curve,
+								if (!(MANAGER_COPY_WITHOUT_IDENTIFIER(Curve,name)(curve,
 									current_curve)&&
-									ADD_OBJECT_TO_MANAGER(Control_curve)(curve,
-										grid_calc->control_curve_manager)))
+									ADD_OBJECT_TO_MANAGER(Curve)(curve,
+										grid_calc->curve_manager)))
 								{
-									DESTROY(Control_curve)(&curve);
+									DESTROY(Curve)(&curve);
 								}
 							}
 						}
-						CHOOSE_OBJECT_SET_OBJECT(Control_curve)(
+						CHOOSE_OBJECT_SET_OBJECT(Curve)(
 							grid_calc->axis1_curve_widget,curve);
 						DEALLOCATE(curve_name);
 					}
 				}
 			}
 		}
-		bring_up_control_curve_editor_dialog(
-			grid_calc->control_curve_editor_dialog_address,
+		bring_up_curve_editor_dialog(
+			grid_calc->curve_editor_dialog_address,
 			User_interface_get_application_shell(grid_calc->user_interface),
-			grid_calc->control_curve_manager,curve,grid_calc->user_interface);
+			grid_calc->curve_manager,curve,grid_calc->user_interface);
 	}
 	else
 	{
@@ -233,7 +233,7 @@ DESCRIPTION :
 	char *curve_name;
 	int error;
 	struct Computed_field *grid_field;
-	struct Control_curve *current_curve,*curve;
+	struct Curve *current_curve,*curve;
 	struct Grid_field_calculator *grid_calc;
 
 	ENTER(grid_field_calculator_axis2_curve_edit_CB);
@@ -242,12 +242,12 @@ DESCRIPTION :
 	if (grid_calc=(struct Grid_field_calculator *)client_data)
 	{
 		/* edit the curve in the chooser... */
-		if (curve=current_curve=CHOOSE_OBJECT_GET_OBJECT(Control_curve)(
+		if (curve=current_curve=CHOOSE_OBJECT_GET_OBJECT(Curve)(
 			grid_calc->axis2_curve_widget))
 		{
 			/* ...but not if it is called "constant_1" */
-			if (curve==FIND_BY_IDENTIFIER_IN_MANAGER(Control_curve,name)(
-				"constant_1",grid_calc->control_curve_manager))
+			if (curve==FIND_BY_IDENTIFIER_IN_MANAGER(Curve,name)(
+				"constant_1",grid_calc->curve_manager))
 			{
 				if (grid_field=CHOOSE_OBJECT_GET_OBJECT(Computed_field)(
 					grid_calc->grid_field_widget))
@@ -257,31 +257,31 @@ DESCRIPTION :
 						append_string(&curve_name,"_axis2_curve",&error))
 					{
 						/* try to find curve called curve_name */
-						if (!(curve=FIND_BY_IDENTIFIER_IN_MANAGER(Control_curve,name)(
-							curve_name,grid_calc->control_curve_manager)))
+						if (!(curve=FIND_BY_IDENTIFIER_IN_MANAGER(Curve,name)(
+							curve_name,grid_calc->curve_manager)))
 						{
-							if (curve=CREATE(Control_curve)(curve_name,LINEAR_LAGRANGE,1))
+							if (curve=CREATE(Curve)(curve_name,LINEAR_LAGRANGE,1))
 							{
-								if (!(MANAGER_COPY_WITHOUT_IDENTIFIER(Control_curve,name)(curve,
+								if (!(MANAGER_COPY_WITHOUT_IDENTIFIER(Curve,name)(curve,
 									current_curve)&&
-									ADD_OBJECT_TO_MANAGER(Control_curve)(curve,
-										grid_calc->control_curve_manager)))
+									ADD_OBJECT_TO_MANAGER(Curve)(curve,
+										grid_calc->curve_manager)))
 								{
-									DESTROY(Control_curve)(&curve);
+									DESTROY(Curve)(&curve);
 								}
 							}
 						}
-						CHOOSE_OBJECT_SET_OBJECT(Control_curve)(
+						CHOOSE_OBJECT_SET_OBJECT(Curve)(
 							grid_calc->axis2_curve_widget,curve);
 						DEALLOCATE(curve_name);
 					}
 				}
 			}
 		}
-		bring_up_control_curve_editor_dialog(
-			grid_calc->control_curve_editor_dialog_address,
+		bring_up_curve_editor_dialog(
+			grid_calc->curve_editor_dialog_address,
 			User_interface_get_application_shell(grid_calc->user_interface),
-			grid_calc->control_curve_manager,curve,grid_calc->user_interface);
+			grid_calc->curve_manager,curve,grid_calc->user_interface);
 	}
 	else
 	{
@@ -302,7 +302,7 @@ DESCRIPTION :
 	char *curve_name;
 	int error;
 	struct Computed_field *grid_field;
-	struct Control_curve *current_curve,*curve;
+	struct Curve *current_curve,*curve;
 	struct Grid_field_calculator *grid_calc;
 
 	ENTER(grid_field_calculator_axis3_curve_edit_CB);
@@ -311,12 +311,12 @@ DESCRIPTION :
 	if (grid_calc=(struct Grid_field_calculator *)client_data)
 	{
 		/* edit the curve in the chooser... */
-		if (curve=current_curve=CHOOSE_OBJECT_GET_OBJECT(Control_curve)(
+		if (curve=current_curve=CHOOSE_OBJECT_GET_OBJECT(Curve)(
 			grid_calc->axis3_curve_widget))
 		{
 			/* ...but not if it is called "constant_1" */
-			if (curve==FIND_BY_IDENTIFIER_IN_MANAGER(Control_curve,name)(
-				"constant_1",grid_calc->control_curve_manager))
+			if (curve==FIND_BY_IDENTIFIER_IN_MANAGER(Curve,name)(
+				"constant_1",grid_calc->curve_manager))
 			{
 				if (grid_field=CHOOSE_OBJECT_GET_OBJECT(Computed_field)(
 					grid_calc->grid_field_widget))
@@ -326,31 +326,31 @@ DESCRIPTION :
 						append_string(&curve_name,"_axis3_curve",&error))
 					{
 						/* try to find curve called curve_name */
-						if (!(curve=FIND_BY_IDENTIFIER_IN_MANAGER(Control_curve,name)(
-							curve_name,grid_calc->control_curve_manager)))
+						if (!(curve=FIND_BY_IDENTIFIER_IN_MANAGER(Curve,name)(
+							curve_name,grid_calc->curve_manager)))
 						{
-							if (curve=CREATE(Control_curve)(curve_name,LINEAR_LAGRANGE,1))
+							if (curve=CREATE(Curve)(curve_name,LINEAR_LAGRANGE,1))
 							{
-								if (!(MANAGER_COPY_WITHOUT_IDENTIFIER(Control_curve,name)(curve,
+								if (!(MANAGER_COPY_WITHOUT_IDENTIFIER(Curve,name)(curve,
 									current_curve)&&
-									ADD_OBJECT_TO_MANAGER(Control_curve)(curve,
-										grid_calc->control_curve_manager)))
+									ADD_OBJECT_TO_MANAGER(Curve)(curve,
+										grid_calc->curve_manager)))
 								{
-									DESTROY(Control_curve)(&curve);
+									DESTROY(Curve)(&curve);
 								}
 							}
 						}
-						CHOOSE_OBJECT_SET_OBJECT(Control_curve)(
+						CHOOSE_OBJECT_SET_OBJECT(Curve)(
 							grid_calc->axis3_curve_widget,curve);
 						DEALLOCATE(curve_name);
 					}
 				}
 			}
 		}
-		bring_up_control_curve_editor_dialog(
-			grid_calc->control_curve_editor_dialog_address,
+		bring_up_curve_editor_dialog(
+			grid_calc->curve_editor_dialog_address,
 			User_interface_get_application_shell(grid_calc->user_interface),
-			grid_calc->control_curve_manager,curve,grid_calc->user_interface);
+			grid_calc->curve_manager,curve,grid_calc->user_interface);
 	}
 	else
 	{
@@ -417,10 +417,10 @@ Applies the computed field to the grid field.
 						ACCESS(Computed_field)(curve_lookup[i]);
 						if (!Computed_field_set_type_curve_lookup(curve_lookup[i],
 							coordinate_component[i],
-							CHOOSE_OBJECT_GET_OBJECT(Control_curve)(widget),
+							CHOOSE_OBJECT_GET_OBJECT(Curve)(widget),
 							Computed_field_package_get_computed_field_manager(
 								grid_calc->computed_field_package),
-							grid_calc->control_curve_manager))
+							grid_calc->curve_manager))
 						{
 							return_code = 0;
 						}
@@ -607,7 +607,7 @@ Sets the dialog to look at <grid_field>. Establishes coordinate_field
 	int axis, integration_magnitude_coordinates, return_code;
 	struct Computed_field *coordinate_field, *grid_field, *integration_integrand,
 		*integration_coordinate_field;
-	struct Control_curve *constant_1_curve,*curve;
+	struct Curve *constant_1_curve,*curve;
 	struct FE_element *seed_element;
 	struct MANAGER(Computed_field) *computed_field_manager;
 	Widget widget;
@@ -672,22 +672,22 @@ Sets the dialog to look at <grid_field>. Establishes coordinate_field
 			XtSetSensitive(grid_calc->seed_element_entry,
 				Computed_field_is_type_integration(coordinate_field));
 		}
-		if (!(constant_1_curve=FIND_BY_IDENTIFIER_IN_MANAGER(Control_curve,name)(
-			"constant_1",grid_calc->control_curve_manager)))
+		if (!(constant_1_curve=FIND_BY_IDENTIFIER_IN_MANAGER(Curve,name)(
+			"constant_1",grid_calc->curve_manager)))
 		{
-			if (constant_1_curve=CREATE(Control_curve)("constant_1",
+			if (constant_1_curve=CREATE(Curve)("constant_1",
 				LINEAR_LAGRANGE,1))
 			{
-				Control_curve_add_element(constant_1_curve,1);
-				Control_curve_set_parameter(constant_1_curve,1,0,0.0);
-				Control_curve_set_parameter(constant_1_curve,1,1,1.0);
+				Curve_add_element(constant_1_curve,1);
+				Curve_set_parameter(constant_1_curve,1,0,0.0);
+				Curve_set_parameter(constant_1_curve,1,1,1.0);
 				value=1.0;
-				Control_curve_set_node_values(constant_1_curve,1,0,&value);
-				Control_curve_set_node_values(constant_1_curve,1,1,&value);
-				if (!ADD_OBJECT_TO_MANAGER(Control_curve)(constant_1_curve,
-					grid_calc->control_curve_manager))
+				Curve_set_node_values(constant_1_curve,1,0,&value);
+				Curve_set_node_values(constant_1_curve,1,1,&value);
+				if (!ADD_OBJECT_TO_MANAGER(Curve)(constant_1_curve,
+					grid_calc->curve_manager))
 				{
-					DESTROY(Control_curve)(&constant_1_curve);
+					DESTROY(Curve)(&constant_1_curve);
 				}
 			}
 		}
@@ -715,12 +715,12 @@ Sets the dialog to look at <grid_field>. Establishes coordinate_field
 						} break;
 					}
 					sprintf(curve_name,"%s_axis%d_curve",field_name,axis);
-					if (!(curve=FIND_BY_IDENTIFIER_IN_MANAGER(Control_curve,name)(
-						curve_name,grid_calc->control_curve_manager)))
+					if (!(curve=FIND_BY_IDENTIFIER_IN_MANAGER(Curve,name)(
+						curve_name,grid_calc->curve_manager)))
 					{
 						curve=constant_1_curve;
 					}
-					CHOOSE_OBJECT_SET_OBJECT(Control_curve)(widget,curve);
+					CHOOSE_OBJECT_SET_OBJECT(Curve)(widget,curve);
 				}
 				DEALLOCATE(curve_name);
 			}
@@ -871,8 +871,8 @@ Callback for change of seed_element.
 static Widget create_grid_field_calculator(
 	Widget *grid_field_calculator_address,Widget parent,
 	struct Computed_field_package *computed_field_package,
-	Widget *control_curve_editor_dialog_address,
-	struct MANAGER(Control_curve) *control_curve_manager,
+	Widget *curve_editor_dialog_address,
+	struct MANAGER(Curve) *curve_manager,
 	struct Cmiss_region *region,
 	struct User_interface *user_interface)
 /*******************************************************************************
@@ -936,8 +936,8 @@ control curve variation over coordinates - usually integration.
 	if (grid_field_calculator_address&&parent&&computed_field_package&&
 		(computed_field_manager=Computed_field_package_get_computed_field_manager(
 			computed_field_package))&&
-		control_curve_manager&&region&&user_interface&&
-		control_curve_editor_dialog_address)
+		curve_manager&&region&&user_interface&&
+		curve_editor_dialog_address)
 	{
 		if (MrmOpenHierarchy_binary_string(grid_field_calculator_uidh, sizeof(grid_field_calculator_uidh),
 			&grid_field_calculator_hierarchy,
@@ -949,9 +949,9 @@ control curve variation over coordinates - usually integration.
 				grid_calc->dialog_parent = parent;
 				grid_calc->dialog_address = grid_field_calculator_address;
 				grid_calc->computed_field_package = computed_field_package;
-				grid_calc->control_curve_manager = control_curve_manager;
-				grid_calc->control_curve_editor_dialog_address =
-					control_curve_editor_dialog_address;
+				grid_calc->curve_manager = curve_manager;
+				grid_calc->curve_editor_dialog_address =
+					curve_editor_dialog_address;
 				grid_calc->region = region;
 				grid_calc->fe_region = Cmiss_region_get_FE_region(region);
 				grid_calc->user_interface = user_interface;
@@ -1025,25 +1025,25 @@ control curve variation over coordinates - usually integration.
 									init_widgets=0;
 								}
 								if (!(grid_calc->axis1_curve_widget=
-									CREATE_CHOOSE_OBJECT_WIDGET(Control_curve)(
-										grid_calc->axis1_curve_form,(struct Control_curve *)NULL,
-										control_curve_manager,Control_curve_has_1_component,
+									CREATE_CHOOSE_OBJECT_WIDGET(Curve)(
+										grid_calc->axis1_curve_form,(struct Curve *)NULL,
+										curve_manager,Curve_has_1_component,
 										(void *)NULL, user_interface)))
 								{
 									init_widgets=0;
 								}
 								if (!(grid_calc->axis2_curve_widget=
-									CREATE_CHOOSE_OBJECT_WIDGET(Control_curve)(
-										grid_calc->axis2_curve_form,(struct Control_curve *)NULL,
-										control_curve_manager,Control_curve_has_1_component,
+									CREATE_CHOOSE_OBJECT_WIDGET(Curve)(
+										grid_calc->axis2_curve_form,(struct Curve *)NULL,
+										curve_manager,Curve_has_1_component,
 										(void *)NULL, user_interface)))
 								{
 									init_widgets=0;
 								}
 								if (!(grid_calc->axis3_curve_widget=
-									CREATE_CHOOSE_OBJECT_WIDGET(Control_curve)(
-										grid_calc->axis3_curve_form,(struct Control_curve *)NULL,
-										control_curve_manager,Control_curve_has_1_component,
+									CREATE_CHOOSE_OBJECT_WIDGET(Curve)(
+										grid_calc->axis3_curve_form,(struct Curve *)NULL,
+										curve_manager,Curve_has_1_component,
 										(void *)NULL, user_interface)))
 								{
 									init_widgets=0;
@@ -1138,9 +1138,9 @@ Global functions
 int bring_up_grid_field_calculator(
 	Widget *grid_field_calculator_address,Widget parent,
 	struct Computed_field_package *computed_field_package,
-	Widget *control_curve_editor_dialog_address,
+	Widget *curve_editor_dialog_address,
 	struct Cmiss_region *region, 
-	struct MANAGER(Control_curve) *control_curve_manager,
+	struct MANAGER(Curve) *curve_manager,
 	struct User_interface *user_interface)
 /*******************************************************************************
 LAST MODIFIED : 19 March 2003
@@ -1164,7 +1164,7 @@ front, else create a new one.
 		{
 			if (create_grid_field_calculator(
 				grid_field_calculator_address,parent,computed_field_package,
-				control_curve_editor_dialog_address,control_curve_manager,
+				curve_editor_dialog_address,curve_manager,
 				region,user_interface))
 			{
 				return_code=1;

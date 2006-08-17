@@ -1,5 +1,5 @@
 /*******************************************************************************
-FILE : computed_field_control_curve.c
+FILE : computed_field_curve.c
 
 LAST MODIFIED : 14 August 2006
 
@@ -51,32 +51,32 @@ extern "C" {
 #include "general/debug.h"
 #include "general/mystring.h"
 #include "user_interface/message.h"
-#include "computed_field/computed_field_control_curve.h"
+#include "computed_field/computed_field_curve.h"
 }
 
-struct Computed_field_control_curve_package 
+struct Computed_field_curve_package 
 {
 	struct MANAGER(Computed_field) *computed_field_manager;
-	struct MANAGER(Control_curve) *control_curve_manager;
+	struct MANAGER(Curve) *curve_manager;
 };
 
 struct Computed_field_curve_lookup_type_specific_data
 {
-	struct Control_curve *curve;
+	struct Curve *curve;
 	struct MANAGER(Computed_field) *computed_field_manager;
-	struct MANAGER(Control_curve) *control_curve_manager;
-	void *control_curve_manager_callback_id;
+	struct MANAGER(Curve) *curve_manager;
+	void *curve_manager_callback_id;
 };
 
 static char computed_field_curve_lookup_type_string[] = "curve_lookup";
 
-static void Computed_field_curve_lookup_Control_curve_change(
-	struct MANAGER_MESSAGE(Control_curve) *message, void *field_void)
+static void Computed_field_curve_lookup_Curve_change(
+	struct MANAGER_MESSAGE(Curve) *message, void *field_void)
 /*******************************************************************************
 LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
-Something has changed globally in the Control_curve manager. Passes on messages
+Something has changed globally in the Curve manager. Passes on messages
 about changes as stemming from computed_field_manager for fields of type
 COMPUTED_FIELD_CURVE_LOOKUP.
 ???RC Review Manager Messages Here
@@ -85,7 +85,7 @@ COMPUTED_FIELD_CURVE_LOOKUP.
 	struct Computed_field *field;
 	struct Computed_field_curve_lookup_type_specific_data *data;
 
-	ENTER(Computed_field_curve_lookup_Control_curve_change);
+	ENTER(Computed_field_curve_lookup_Curve_change);
 	if (message && (field = (struct Computed_field *)field_void) &&
 		(field->type_string == computed_field_curve_lookup_type_string) &&
 		(data = (struct Computed_field_curve_lookup_type_specific_data *)
@@ -93,26 +93,26 @@ COMPUTED_FIELD_CURVE_LOOKUP.
 	{
 		switch (message->change)
 		{
-			case MANAGER_CHANGE_OBJECT_NOT_IDENTIFIER(Control_curve):
-			case MANAGER_CHANGE_OBJECT(Control_curve):
+			case MANAGER_CHANGE_OBJECT_NOT_IDENTIFIER(Curve):
+			case MANAGER_CHANGE_OBJECT(Curve):
 			{
 				/*???debug*/
-				if (IS_OBJECT_IN_LIST(Control_curve)(data->curve,
+				if (IS_OBJECT_IN_LIST(Curve)(data->curve,
 					message->changed_object_list))
 				{
 					Computed_field_changed(field, data->computed_field_manager);
 				}
 			} break;
-			case MANAGER_CHANGE_ADD(Control_curve):
-			case MANAGER_CHANGE_REMOVE(Control_curve):
-			case MANAGER_CHANGE_IDENTIFIER(Control_curve):
+			case MANAGER_CHANGE_ADD(Curve):
+			case MANAGER_CHANGE_REMOVE(Curve):
+			case MANAGER_CHANGE_IDENTIFIER(Curve):
 			{
 				/* do nothing */
 			} break;
 			default:
 			{
 				display_message(ERROR_MESSAGE,
-					"Computed_field_curve_lookup_Control_curve_change.  "
+					"Computed_field_curve_lookup_Curve_change.  "
 					"Unknown manager message");
 			} break;
 		}
@@ -120,10 +120,10 @@ COMPUTED_FIELD_CURVE_LOOKUP.
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Computed_field_curve_lookup_Control_curve_change.  Invalid argument(s)");
+			"Computed_field_curve_lookup_Curve_change.  Invalid argument(s)");
 	}
 	LEAVE;
-} /* Computed_field_curve_lookup_Control_curve_change */
+} /* Computed_field_curve_lookup_Curve_change */
 
 int Computed_field_is_type_curve_lookup(struct Computed_field *field)
 /*******************************************************************************
@@ -167,16 +167,16 @@ Clear the type specific data used by this type.
 		(struct Computed_field_curve_lookup_type_specific_data *)
 		field->type_specific_data))
 	{
-		if (data->control_curve_manager_callback_id)
+		if (data->curve_manager_callback_id)
 		{
-			MANAGER_DEREGISTER(Control_curve)(
-				data->control_curve_manager_callback_id,
-				data->control_curve_manager);
-			data->control_curve_manager_callback_id = (void *)NULL;
+			MANAGER_DEREGISTER(Curve)(
+				data->curve_manager_callback_id,
+				data->curve_manager);
+			data->curve_manager_callback_id = (void *)NULL;
 		}
 		if (data->curve)
 		{
-			DEACCESS(Control_curve)(&(data->curve));
+			DEACCESS(Curve)(&(data->curve));
 		}
 		DEALLOCATE(field->type_specific_data);
 		return_code = 1;
@@ -211,10 +211,10 @@ Copy the type specific data used by this type.
 		if (ALLOCATE(destination,
 			struct Computed_field_curve_lookup_type_specific_data, 1))
 		{
-			destination->curve = ACCESS(Control_curve)(source->curve);
-			destination->control_curve_manager_callback_id = (void *)NULL;
+			destination->curve = ACCESS(Curve)(source->curve);
+			destination->curve_manager_callback_id = (void *)NULL;
 			destination->computed_field_manager = source->computed_field_manager;
-			destination->control_curve_manager = source->control_curve_manager;
+			destination->curve_manager = source->curve_manager;
 		}
 		else
 		{
@@ -342,7 +342,7 @@ Evaluate the fields cache at the location
 			}
 			/* only slightly dodgy - stores derivatives of curve in start
 				 of derivatives space - must be at least big enough */
-			if (return_code = Control_curve_get_values_at_parameter(data->curve,
+			if (return_code = Curve_get_values_at_parameter(data->curve,
 				field->source_fields[0]->values[0], field->values, jacobian))
 			{
 				if (jacobian)
@@ -421,7 +421,7 @@ DESCRIPTION :
 		(struct Computed_field_curve_lookup_type_specific_data *)
 		field->type_specific_data))
 	{
-		if (return_code = GET_NAME(Control_curve)(data->curve, &curve_name))
+		if (return_code = GET_NAME(Curve)(data->curve, &curve_name))
 		{
 			display_message(INFORMATION_MESSAGE, "    curve : %s\n", curve_name);
 			display_message(INFORMATION_MESSAGE, "    source field : %s\n",
@@ -463,7 +463,7 @@ Returns allocated command string for reproducing field. Includes type.
 		append_string(&command_string,
 			computed_field_curve_lookup_type_string, &error);
 		append_string(&command_string, " curve ", &error);
-		if (GET_NAME(Control_curve)(data->curve, &curve_name))
+		if (GET_NAME(Curve)(data->curve, &curve_name))
 		{
 			make_valid_token(&curve_name);
 			append_string(&command_string, curve_name, &error);
@@ -497,9 +497,9 @@ Works out whether time influences the field.
 ==============================================================================*/
 
 int Computed_field_set_type_curve_lookup(struct Computed_field *field,
-	struct Computed_field *source_field, struct Control_curve *curve,
+	struct Computed_field *source_field, struct Curve *curve,
 	struct MANAGER(Computed_field) *computed_field_manager,
-	struct MANAGER(Control_curve) *control_curve_manager)
+	struct MANAGER(Curve) *curve_manager)
 /*******************************************************************************
 LAST MODIFIED : 14 August 2006
 
@@ -521,7 +521,7 @@ in response to changes in the curve from the control curve manager.
 	ENTER(Computed_field_set_type_curve_lookup);
 	if (field && source_field &&
 		Computed_field_is_scalar(source_field, (void *)NULL) &&
-		curve && computed_field_manager && control_curve_manager)
+		curve && computed_field_manager && curve_manager)
 	{
 		return_code = 1;
 		/* 1. make dynamic allocations for any new type-specific data */
@@ -535,17 +535,17 @@ in response to changes in the curve from the control curve manager.
 			/* 3. establish the new type */
 			field->type_string = computed_field_curve_lookup_type_string;
 			field->number_of_components =
-				Control_curve_get_number_of_components(curve);
+				Curve_get_number_of_components(curve);
 			source_fields[0] = ACCESS(Computed_field)(source_field);
 			field->source_fields = source_fields;
 			field->number_of_source_fields = number_of_source_fields;			
 			field->type_specific_data = (void *)data;
-			data->curve = ACCESS(Control_curve)(curve);
+			data->curve = ACCESS(Curve)(curve);
 			data->computed_field_manager = computed_field_manager;
-			data->control_curve_manager = control_curve_manager;
-			data->control_curve_manager_callback_id = MANAGER_REGISTER(Control_curve)(
-				Computed_field_curve_lookup_Control_curve_change, (void *)field,
-				control_curve_manager);
+			data->curve_manager = curve_manager;
+			data->curve_manager_callback_id = MANAGER_REGISTER(Curve)(
+				Computed_field_curve_lookup_Curve_change, (void *)field,
+				curve_manager);
 
 			/* Set all the methods */
 			COMPUTED_FIELD_ESTABLISH_METHODS(curve_lookup);
@@ -568,7 +568,7 @@ in response to changes in the curve from the control curve manager.
 } /* Computed_field_set_type_curve_lookup */
 
 int Computed_field_get_type_curve_lookup(struct Computed_field *field,
-	struct Computed_field **source_field, struct Control_curve **curve)
+	struct Computed_field **source_field, struct Curve **curve)
 /*******************************************************************************
 LAST MODIFIED : 14 August 2006
 
@@ -601,7 +601,7 @@ used by it are returned - otherwise an error is reported.
 } /* Computed_field_get_type_curve_lookup */
 
 static int define_Computed_field_type_curve_lookup(struct Parse_state *state,
-	void *field_void, void *computed_field_control_curve_package_void)
+	void *field_void, void *computed_field_curve_package_void)
 /*******************************************************************************
 LAST MODIFIED : 14 August 2006
 
@@ -612,22 +612,22 @@ already) and allows its contents to be modified.
 {
 	int return_code;
 	struct Computed_field *field, *source_field;
-	struct Computed_field_control_curve_package
-		*computed_field_control_curve_package;
-	struct Control_curve *curve;
+	struct Computed_field_curve_package
+		*computed_field_curve_package;
+	struct Curve *curve;
 	struct Option_table *option_table;
 	struct Set_Computed_field_conditional_data set_source_field_data;
 
 	ENTER(define_Computed_field_type_curve_lookup);
 	if (state && (field = (struct Computed_field *)field_void) &&
-		(computed_field_control_curve_package =
-			(struct Computed_field_control_curve_package *)
-			computed_field_control_curve_package_void))
+		(computed_field_curve_package =
+			(struct Computed_field_curve_package *)
+			computed_field_curve_package_void))
 	{
 		return_code = 1;
 		/* get valid parameters for projection field */
 		source_field = (struct Computed_field *)NULL;
-		curve = (struct Control_curve *)NULL;
+		curve = (struct Curve *)NULL;
 		if (computed_field_curve_lookup_type_string ==
 			Computed_field_get_type_string(field))
 		{
@@ -643,17 +643,17 @@ already) and allows its contents to be modified.
 			}
 			if (curve)
 			{
-				ACCESS(Control_curve)(curve);
+				ACCESS(Curve)(curve);
 			}
 
 			option_table = CREATE(Option_table)();
 			/* curve */
 			Option_table_add_entry(option_table, "curve", &curve,
-				computed_field_control_curve_package->control_curve_manager,
-				set_Control_curve);
+				computed_field_curve_package->curve_manager,
+				set_Curve);
 			/* source */
 			set_source_field_data.computed_field_manager =
-				computed_field_control_curve_package->computed_field_manager;
+				computed_field_curve_package->computed_field_manager;
 			set_source_field_data.conditional_function = Computed_field_is_scalar;
 			set_source_field_data.conditional_function_user_data = (void *)NULL;
 			Option_table_add_entry(option_table, "source", &source_field,
@@ -663,8 +663,8 @@ already) and allows its contents to be modified.
 			if (return_code)
 			{
 				return_code = Computed_field_set_type_curve_lookup(field, source_field,
-					curve, computed_field_control_curve_package->computed_field_manager,
-					computed_field_control_curve_package->control_curve_manager);
+					curve, computed_field_curve_package->computed_field_manager,
+					computed_field_curve_package->curve_manager);
 			}
 			if (!return_code)
 			{
@@ -683,7 +683,7 @@ already) and allows its contents to be modified.
 			}
 			if (curve)
 			{
-				DEACCESS(Control_curve)(&curve);
+				DEACCESS(Curve)(&curve);
 			}
 			DESTROY(Option_table)(&option_table);
 		}
@@ -699,9 +699,9 @@ already) and allows its contents to be modified.
 	return (return_code);
 } /* define_Computed_field_type_curve_lookup */
 
-int Computed_field_register_types_control_curve(
+int Computed_field_register_types_curve(
 	struct Computed_field_package *computed_field_package, 
-	struct MANAGER(Control_curve) *control_curve_manager)
+	struct MANAGER(Curve) *curve_manager)
 /*******************************************************************************
 LAST MODIFIED : 14 August 2006
 
@@ -709,29 +709,29 @@ DESCRIPTION :
 ==============================================================================*/
 {
 	int return_code;
-	static struct Computed_field_control_curve_package 
-		computed_field_control_curve_package;
+	static struct Computed_field_curve_package 
+		computed_field_curve_package;
 
-	ENTER(Computed_field_register_types_control_curve);
-	if (computed_field_package && control_curve_manager)
+	ENTER(Computed_field_register_types_curve);
+	if (computed_field_package && curve_manager)
 	{
-		computed_field_control_curve_package.computed_field_manager =
+		computed_field_curve_package.computed_field_manager =
 			Computed_field_package_get_computed_field_manager(
 				computed_field_package);
-		computed_field_control_curve_package.control_curve_manager =
-			control_curve_manager;
+		computed_field_curve_package.curve_manager =
+			curve_manager;
 		return_code = Computed_field_package_add_type(computed_field_package,
 			computed_field_curve_lookup_type_string, 
 			define_Computed_field_type_curve_lookup,
-			&computed_field_control_curve_package);
+			&computed_field_curve_package);
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Computed_field_register_types_control_curve.  Invalid argument(s)");
+			"Computed_field_register_types_curve.  Invalid argument(s)");
 		return_code = 0;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* Computed_field_register_types_control_curve */
+} /* Computed_field_register_types_curve */

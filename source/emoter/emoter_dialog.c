@@ -68,8 +68,8 @@ group of nodes
 #include "user_interface/confirmation.h"
 #include "user_interface/message.h"
 #include "user_interface/gui_dialog_macros.h"
-#include "curve/control_curve.h"
-#include "curve/control_curve_editor_dialog.h"
+#include "curve/curve.h"
+#include "curve/curve_editor_dialog.h"
 #include "emoter/emoter_dialog.h"
 static char emoter_dialog_uidh[] =
 #include "emoter/emoter_dialog.uidh"
@@ -117,12 +117,12 @@ DESCRIPTION :
 	struct Light_model *viewer_light_model;
 	struct MANAGER(FE_basis) *basis_manager;
 	struct MANAGER(Graphics_window) *graphics_window_manager;
-	struct MANAGER(Control_curve) *control_curve_manager;
+	struct MANAGER(Curve) *curve_manager;
 	struct EM_Object *em_object;
 	struct Scene *viewer_scene;
 	struct Scene_object *transformation_scene_object;
 	struct User_interface *user_interface;
-	Widget top_level, *control_curve_editor_dialog_address;
+	Widget top_level, *curve_editor_dialog_address;
 }; /* struct Shared_emoter_slider_data */
 
 struct Emoter_combine_slider
@@ -134,7 +134,7 @@ DESCRIPTION :
 {
 	float combine_time;
 	struct Emoter_slider *slider;
-	struct Control_curve *curve, *timebase_curve;
+	struct Curve *curve, *timebase_curve;
 }; /* struct Emoter_combine_slider */
 
 struct Emoter_marker
@@ -169,7 +169,7 @@ DESCRIPTION :
 	struct Emoter_marker **emoter_markers;
 	struct Shared_emoter_slider_data *shared;
 	struct Scene_viewer *scene_viewer;
-	struct Control_curve *mode_curve, **timebase_curves;
+	struct Curve *mode_curve, **timebase_curves;
 	Widget slider, widget, animated_pixmap,
 		toggle_button, marker_rowcol,
 		value_text, select_button;
@@ -185,7 +185,7 @@ DESCRIPTION :
 	int play_slider_position, movie_loop, movie_every_frame;
 	float time_minimum, time_maximum;
 	struct Shared_emoter_slider_data *shared;
-	void *control_curve_manager_callback_id;
+	void *curve_manager_callback_id;
 	Widget shell, widget,
 		play_slider, slider_form, play_value_text,
 		play_max_text, play_min_text, mode_subform,
@@ -206,7 +206,7 @@ Module functions
 struct Emoter_slider *create_emoter_slider(char *sequence_filename,
 	char *name, Widget parent, float value,
 	struct Shared_emoter_slider_data *shared_data,
-	int index, struct Control_curve *existing_mode_curve,
+	int index, struct Curve *existing_mode_curve,
 	struct Emoter_dialog *emoter_dialog, int no_confirm);
 /*******************************************************************************
 LAST MODIFIED : 9 September 1999
@@ -514,7 +514,7 @@ DESCRIPTION :
 		marker_start_time = slider->emoter_markers[0]->value;
 		marker_end_time = 
 			slider->emoter_markers[slider->number_of_emoter_markers-1]->value;
-		Control_curve_get_parameter_range( slider->mode_curve, &data_start_frame,
+		Curve_get_parameter_range( slider->mode_curve, &data_start_frame,
 			&data_end_frame );
 		if ( marker_end_time != marker_start_time )
 		{
@@ -526,9 +526,9 @@ DESCRIPTION :
 			slider_time = data_start_frame;
 		}
 		if (ALLOCATE(shape_vector,FE_value,
-			Control_curve_get_number_of_components(slider->mode_curve)))
+			Curve_get_number_of_components(slider->mode_curve)))
 		{
-			if (Control_curve_get_values_at_parameter( slider->mode_curve, 
+			if (Curve_get_values_at_parameter( slider->mode_curve, 
 				slider_time, shape_vector, (FE_value *)NULL))
 			{
 				if ( slider->solid_body_motion )
@@ -792,7 +792,7 @@ LAST MODIFIED : 9 April 1998
 DESCRIPTION :
 Sets the emoter slider according to the <new_value> given.
 Updates all the basis modes from the active
-emoter slider's Control_curve
+emoter slider's Curve
 ==============================================================================*/
 {
 	char value_text_string[30];
@@ -896,10 +896,10 @@ Sets the emoter marker according to the <new_value> given.
 					slider */
 				for ( i = 0 ; i < active->number_of_timebase_curves ; i++ )
 				{
-					if ( 1 == (Control_curve_get_number_of_components
+					if ( 1 == (Curve_get_number_of_components
 						(active->timebase_curves[i])) )
 					{
-						Control_curve_set_node_values(
+						Curve_set_node_values(
 							(active->timebase_curves[i]),
 							emoter_marker->element_index, emoter_marker->node_index,
 							&new_value );
@@ -918,7 +918,7 @@ Sets the emoter marker according to the <new_value> given.
 				{
 					if ( emoter_marker->slider_parent == (active->combine_sliders[i]->slider))
 					{
-						Control_curve_set_parameter(
+						Curve_set_parameter(
 							((active->combine_sliders[i])->timebase_curve),
 							emoter_marker->element_index, emoter_marker->node_index,
 							new_value );
@@ -1022,7 +1022,7 @@ slider
 {
 	int i, j, return_code;
 	struct Emoter_slider *emoter_slider, *combine_slider;
-	struct Control_curve *temp_var;
+	struct Curve *temp_var;
 
 	ENTER(DESTROY(Emoter_slider));
 	if (emoter_slider = *emoter_slider_address)
@@ -1036,18 +1036,18 @@ slider
 		if ( emoter_slider->mode_curve )
 		{
 			temp_var = emoter_slider->mode_curve;
-			DEACCESS(Control_curve)(&(emoter_slider->mode_curve));
-			REMOVE_OBJECT_FROM_MANAGER(Control_curve)
-				(temp_var, emoter_slider->shared->control_curve_manager);
+			DEACCESS(Curve)(&(emoter_slider->mode_curve));
+			REMOVE_OBJECT_FROM_MANAGER(Curve)
+				(temp_var, emoter_slider->shared->curve_manager);
 		}
 		for ( j = 0 ; j < emoter_slider->number_of_combine_sliders ; j++ )
 		{
 			temp_var = (emoter_slider->combine_sliders[j])->curve;
-			DEACCESS(Control_curve)( &((emoter_slider->combine_sliders[j])->curve) );
-			REMOVE_OBJECT_FROM_MANAGER(Control_curve)
-				(temp_var, emoter_slider->shared->control_curve_manager);
+			DEACCESS(Curve)( &((emoter_slider->combine_sliders[j])->curve) );
+			REMOVE_OBJECT_FROM_MANAGER(Curve)
+				(temp_var, emoter_slider->shared->curve_manager);
 
-			/* To complete this destruction the reference to the Control_curve
+			/* To complete this destruction the reference to the Curve
 				in the combine slider also needs to be removed */
 			combine_slider = (emoter_slider->combine_sliders[j])->slider;
 			if ( temp_var = (emoter_slider->combine_sliders[j])->timebase_curve)
@@ -1091,9 +1091,9 @@ slider
 				if ( (emoter_slider->combine_sliders[j])->timebase_curve )
 				{
 					temp_var = (emoter_slider->combine_sliders[j])->timebase_curve;
-					DEACCESS(Control_curve)( &((emoter_slider->combine_sliders[j])->timebase_curve) );
-					REMOVE_OBJECT_FROM_MANAGER(Control_curve)
-						(temp_var, emoter_slider->shared->control_curve_manager);
+					DEACCESS(Curve)( &((emoter_slider->combine_sliders[j])->timebase_curve) );
+					REMOVE_OBJECT_FROM_MANAGER(Curve)
+						(temp_var, emoter_slider->shared->curve_manager);
 				}
 			}
 
@@ -1149,12 +1149,12 @@ Callback for the emoter dialog - tidies up all details - mem etc
 			XtRemoveTimeOut(emoter_dialog->autoplay_timeout);
 		}
 
-		if ( emoter_dialog->control_curve_manager_callback_id )
+		if ( emoter_dialog->curve_manager_callback_id )
 		{
-			MANAGER_DEREGISTER(Control_curve)(
-				emoter_dialog->control_curve_manager_callback_id,
-				emoter_dialog->shared->control_curve_manager);
-			emoter_dialog->control_curve_manager_callback_id=(void *)NULL;
+			MANAGER_DEREGISTER(Curve)(
+				emoter_dialog->curve_manager_callback_id,
+				emoter_dialog->shared->curve_manager);
+			emoter_dialog->curve_manager_callback_id=(void *)NULL;
 		}
 
 		/* Destroy shared slider data */
@@ -1266,7 +1266,7 @@ Callback for the play slider which sets the min and max and stores the widget
 	int i;
 	float *combine_vector;
 	struct Emoter_slider *combine_slider;
-	struct Control_curve *timebase_curve,*curve;
+	struct Curve *timebase_curve,*curve;
 
 	ENTER(emoter_update_combine_sliders);
 
@@ -1280,9 +1280,9 @@ Callback for the play slider which sets the min and max and stores the widget
 					(combine_slider = (slider->combine_sliders[i])->slider))
 				{
 					if (ALLOCATE(combine_vector,FE_value,
-						Control_curve_get_number_of_components(curve)))
+						Curve_get_number_of_components(curve)))
 					{
-						if (Control_curve_get_values_at_parameter(curve,
+						if (Curve_get_values_at_parameter(curve,
 							slider->shared->time,	combine_vector, (FE_value *)NULL))
 						{
 							emoter_set_slider_value( combine_slider, combine_vector[0] );
@@ -1294,9 +1294,9 @@ Callback for the play slider which sets the min and max and stores the widget
 					if (timebase_curve=(slider->combine_sliders[i])->timebase_curve)
 					{
 						if (ALLOCATE(combine_vector,FE_value,
-							Control_curve_get_number_of_components(timebase_curve)))
+							Curve_get_number_of_components(timebase_curve)))
 						{
-							if (Control_curve_get_values_at_parameter(timebase_curve,
+							if (Curve_get_values_at_parameter(timebase_curve,
 								slider->shared->time,	combine_vector, (FE_value *)NULL))
 							{
 								(slider->combine_sliders[i])->combine_time = combine_vector[0];
@@ -1333,7 +1333,7 @@ Callback for the play slider which sets the min and max and stores the widget
 	int i, j;
 	float value;
 	struct Emoter_slider *combine_slider;
-	struct Control_curve *timebase_curve;
+	struct Curve *timebase_curve;
 
 	ENTER(emoter_update_markers);
 
@@ -1351,22 +1351,22 @@ Callback for the play slider which sets the min and max and stores the widget
 			combine_slider = (slider->combine_sliders[i])->slider;
 			timebase_curve = (slider->combine_sliders[i])->timebase_curve;
 			if ( timebase_curve &&
-				(1 == Control_curve_get_number_of_components(
+				(1 == Curve_get_number_of_components(
 					timebase_curve)) &&
 				(combine_slider->number_of_emoter_markers <=
-					Control_curve_get_number_of_elements(
+					Curve_get_number_of_elements(
 				timebase_curve) + 1))
 			{
 				for ( j = 0 ; j < combine_slider->number_of_emoter_markers - 1 ; j++)
 				{
-					if ( Control_curve_get_parameter(
+					if ( Curve_get_parameter(
 						timebase_curve, j+1, 0, &value ))
 					{
 						emoter_show_marker_value( combine_slider->emoter_markers[j],
 							value );
 					}
 				}
-				if ( Control_curve_get_parameter(
+				if ( Curve_get_parameter(
 					timebase_curve, j, 1, &value))
 				{
 					emoter_show_marker_value( combine_slider->emoter_markers[j],
@@ -1392,7 +1392,7 @@ LAST MODIFIED : 8 April 1998
 DESCRIPTION :
 Sets the play slider according to the <new_value> given.
 Updates all the basis modes from the active
-emoter slider's Control_curve
+emoter slider's Curve
 ==============================================================================*/
 {
 	char value_text_string[30];
@@ -1429,10 +1429,10 @@ emoter slider's Control_curve
 		}
 
 		/* Set the cursor bar in the curve editor if it exists */
-		if ( *(emoter_dialog->shared->control_curve_editor_dialog_address) )
+		if ( *(emoter_dialog->shared->curve_editor_dialog_address) )
 		{
-			control_curve_editor_dialog_set_cursor_parameter(
-				*(emoter_dialog->shared->control_curve_editor_dialog_address),
+			curve_editor_dialog_set_cursor_parameter(
+				*(emoter_dialog->shared->curve_editor_dialog_address),
 				new_value );
 		}
 
@@ -2095,8 +2095,8 @@ Reads a weight vector from the <file>.
 } /* read_weights */
 
 #ifdef OLD_CODE
-static int read_emoter_mode_Control_curve( struct Control_curve **emoter_curve_addr,
-	struct MANAGER(Control_curve) *control_curve_manager,
+static int read_emoter_mode_Curve( struct Curve **emoter_curve_addr,
+	struct MANAGER(Curve) *curve_manager,
 	char *filename, struct Shared_emoter_slider_data *shared,
 	float *number_of_frames)
 /*******************************************************************************
@@ -2111,11 +2111,11 @@ Creates a control curve which is read from file values.
 	float *shape_vector, weight;
 	int i, j, k, n_modes, return_code;
 	struct read_file_data *file_data;
-	struct Control_curve *emoter_curve;
+	struct Curve *emoter_curve;
 
-	ENTER(read_emoter_mode_Control_curve);
+	ENTER(read_emoter_mode_Curve);
 
-	if ( emoter_curve_addr && control_curve_manager && filename )
+	if ( emoter_curve_addr && curve_manager && filename )
 	{
 		if ( file_data = read_file_open( filename ))
 		{
@@ -2151,54 +2151,54 @@ Creates a control curve which is read from file values.
 					name = temp_filename;
 					if ( ALLOCATE( shape_vector, float, shared->number_of_modes ))
 					{
-						while (FIND_BY_IDENTIFIER_IN_MANAGER(Control_curve,name)(
-							name, control_curve_manager))
+						while (FIND_BY_IDENTIFIER_IN_MANAGER(Curve,name)(
+							name, curve_manager))
 						{
 							REALLOCATE(name, name, char, strlen(name)+2);
 							strcat(name,"+");
 						}
-						if (emoter_curve = CREATE(Control_curve)(name,
+						if (emoter_curve = CREATE(Curve)(name,
 							LINEAR_LAGRANGE, shared->number_of_modes ))
 						{
-							if (ADD_OBJECT_TO_MANAGER(Control_curve)(
-								emoter_curve, control_curve_manager))
+							if (ADD_OBJECT_TO_MANAGER(Curve)(
+								emoter_curve, curve_manager))
 							{
 								/* Set the type after the object is added to the
 									manager so that ADD message is ignored */
-								Control_curve_set_type(emoter_curve,
+								Curve_set_type(emoter_curve,
 									CONTROL_CURVE_TYPE_EMOTER_MODES );
-								ACCESS(Control_curve)(emoter_curve);
+								ACCESS(Curve)(emoter_curve);
 								/* SAB Do the first and second modes as special case
 									as we need to create the first element, position both
 									nodes and then from then on the current elements can
 									just be appended to */
-								Control_curve_add_element( emoter_curve, 1 );
+								Curve_add_element( emoter_curve, 1 );
 								time = 1.0;
-								Control_curve_set_parameter( emoter_curve,/*element_no*/1,
+								Curve_set_parameter( emoter_curve,/*element_no*/1,
 									/*local_node_no*/0,time);
 								time += 1.0;
-								Control_curve_set_parameter( emoter_curve,/*element_no*/1,
+								Curve_set_parameter( emoter_curve,/*element_no*/1,
 									/*local_node_no*/1,time);
 								read_weights( n_modes, file_data, shared->number_of_modes, shape_vector );
-								Control_curve_set_node_values( emoter_curve,
+								Curve_set_node_values( emoter_curve,
 									1, 0, shape_vector);
 								if ( !read_file_eof_marker(file_data, "END_MODE_DATA"))
 								{
 									read_weights( n_modes, file_data, shared->number_of_modes, shape_vector );
 								}
 								/* else do nothing and make a single constant element */
-								Control_curve_set_node_values( emoter_curve,
+								Curve_set_node_values( emoter_curve,
 									1, 1, shape_vector);
 
 								i = 2;
 								while (!read_file_eof_marker(file_data, "END_MODE_DATA"))
 								{
-									Control_curve_add_element( emoter_curve, i );
+									Curve_add_element( emoter_curve, i );
 									time += 1.0;
-									Control_curve_set_parameter(emoter_curve,/*element_no*/i,
+									Curve_set_parameter(emoter_curve,/*element_no*/i,
 										/*local_node_no*/1,time);
 									read_weights( n_modes, file_data, shared->number_of_modes, shape_vector );
-									Control_curve_set_node_values( emoter_curve,
+									Curve_set_node_values( emoter_curve,
 										i, 1, shape_vector);
 									i++;
 								}
@@ -2208,16 +2208,16 @@ Creates a control curve which is read from file values.
 							}
 							else
 							{
-								DESTROY(Control_curve)(&emoter_curve);
+								DESTROY(Curve)(&emoter_curve);
 								display_message(ERROR_MESSAGE,
-									"read_emoter_mode_Control_curve.  Unable to add control curve to manager");
+									"read_emoter_mode_Curve.  Unable to add control curve to manager");
 								return_code=0;
 							}
 						}
 						else
 						{
 							display_message(ERROR_MESSAGE,
-								"read_emoter_mode_Control_curve.  Unable to create control curve");
+								"read_emoter_mode_Curve.  Unable to create control curve");
 							return_code=0;
 						}
 						DEALLOCATE (shape_vector);
@@ -2225,14 +2225,14 @@ Creates a control curve which is read from file values.
 					else
 					{
 						display_message(ERROR_MESSAGE,
-							"read_emoter_mode_Control_curve.  Unable to allocate shape vector");
+							"read_emoter_mode_Curve.  Unable to allocate shape vector");
 						return_code=0;
 					}
 				}
 				else
 				{
 					display_message(ERROR_MESSAGE,
-						"read_emoter_mode_Control_curve.  Unable to allocate name string");
+						"read_emoter_mode_Curve.  Unable to allocate name string");
 					return_code=0;
 				}
 			}
@@ -2241,24 +2241,24 @@ Creates a control curve which is read from file values.
 		else
 		{
 			display_message(ERROR_MESSAGE,
-				"read_emoter_mode_Control_curve.  Unable to open file %s", filename);
+				"read_emoter_mode_Curve.  Unable to open file %s", filename);
 			return_code=0;
 		}
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"read_emoter_mode_Control_curve.  Invalid argument(s)");
+			"read_emoter_mode_Curve.  Invalid argument(s)");
 		return_code=0;
 	}
 
 	LEAVE;
 
 	return (return_code);
-} /* read_emoter_mode_Control_curve */
+} /* read_emoter_mode_Curve */
 #endif /* OLD_CODE */
 
-static struct Control_curve *read_emoter_control_curve( struct read_file_data *file_data,
+static struct Curve *read_emoter_curve( struct read_file_data *file_data,
 	char *base_name, struct Shared_emoter_slider_data *shared)
 /*******************************************************************************
 LAST MODIFIED : 17 November 1999
@@ -2272,11 +2272,11 @@ Reads a control curve from a file.
 	int j, local_node_no, nodes_per_element, elements, derivatives,
 		return_code;
 	float time, total_time, value;
-	struct Control_curve *curve;
+	struct Curve *curve;
 
-	ENTER(read_emoter_control_curve);
+	ENTER(read_emoter_curve);
 
-	curve = (struct Control_curve *)NULL;
+	curve = (struct Curve *)NULL;
 
 	read_file_int(file_data, &nodes_per_element);
 	read_file_int(file_data, &elements);
@@ -2335,33 +2335,33 @@ Reads a control curve from a file.
 		if ( ALLOCATE( name, char, strlen(base_name)+1))
 		{
 			strcpy( name, base_name );
-			while (FIND_BY_IDENTIFIER_IN_MANAGER(Control_curve,name)(
-				name, shared->control_curve_manager))
+			while (FIND_BY_IDENTIFIER_IN_MANAGER(Curve,name)(
+				name, shared->curve_manager))
 			{
 				REALLOCATE(name, name, char, strlen(name)+2);
 				strcat(name,"+");
 			}
-			if ( curve = CREATE(Control_curve)(
+			if ( curve = CREATE(Curve)(
 				name, fe_basis_type, 1 ))
 			{
-				Control_curve_set_type(curve,
+				Curve_set_type(curve,
 					CONTROL_CURVE_TYPE_EMOTER_COMBINE );
-				if (ADD_OBJECT_TO_MANAGER(Control_curve)(
-					curve, shared->control_curve_manager))
+				if (ADD_OBJECT_TO_MANAGER(Curve)(
+					curve, shared->curve_manager))
 				{
-					ACCESS(Control_curve)(curve);
+					ACCESS(Curve)(curve);
 					for ( j = 0 ; j < elements ; j ++ )
 					{
-						Control_curve_add_element( curve, j + 1 );
+						Curve_add_element( curve, j + 1 );
 						if (0==j)
 						{
 							read_file_float( file_data, &total_time );
-							Control_curve_set_parameter( curve,/*element_no*/1,
+							Curve_set_parameter( curve,/*element_no*/1,
 								/*local_node_no*/0,	total_time );
 						}
 						read_file_float( file_data, &time );
 						total_time += time;
-						Control_curve_set_parameter( curve,/*element_no*/j+1,
+						Curve_set_parameter( curve,/*element_no*/j+1,
 							/*local_node_no*/1,	total_time );
 						local_node_no = 0;
 						for (local_node_no = 0 ;
@@ -2369,24 +2369,24 @@ Reads a control curve from a file.
 									; local_node_no++ )
 						{
 							read_file_float( file_data, &value );
-							Control_curve_set_node_values ( curve,
+							Curve_set_node_values ( curve,
 								j + 1, local_node_no, &value );
 							if ( derivatives )
 							{
 								read_file_float( file_data, &value );
-								Control_curve_set_node_derivatives ( curve,
+								Curve_set_node_derivatives ( curve,
 									j + 1, local_node_no, &value );
 							}
 							return_code = 1;
 						}
 					}
 					read_file_float( file_data, &value );
-					Control_curve_set_node_values ( curve,
+					Curve_set_node_values ( curve,
 						elements, nodes_per_element - 1, &value );
 					if ( derivatives )
 					{
 						read_file_float( file_data, &value );
-						Control_curve_set_node_derivatives ( curve,
+						Curve_set_node_derivatives ( curve,
 							elements, local_node_no, &value );
 					}
 				}
@@ -2394,15 +2394,15 @@ Reads a control curve from a file.
 				{
 					display_message(ERROR_MESSAGE,
 						"emoter_keyframe_CB.  Unable to add combine curve to manager");
-					DESTROY(Control_curve)(&curve);
-					curve = (struct Control_curve *)NULL;
+					DESTROY(Curve)(&curve);
+					curve = (struct Curve *)NULL;
 				}
 			}
 			else
 			{
 				display_message(ERROR_MESSAGE,
 					"emoter_keyframe_CB.  Could not create combine slider curve");
-				curve = (struct Control_curve *)NULL;
+				curve = (struct Curve *)NULL;
 			}
 			DEALLOCATE( name );
 		}
@@ -2410,20 +2410,20 @@ Reads a control curve from a file.
 		{
 			display_message(ERROR_MESSAGE,
 				"emoter_keyframe_CB.  Could not allocate combine curve name");
-			curve = (struct Control_curve *)NULL;
+			curve = (struct Curve *)NULL;
 		}
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
 			"read_emoter_slider_file.  Unsupported combination of nodes per element and derivatives");
-		curve = (struct Control_curve *)NULL;
+		curve = (struct Curve *)NULL;
 	}
 
 	LEAVE;
 
 	return (curve);
-} /* read_emoter_control_curve */
+} /* read_emoter_curve */
 
 struct Emoter_marker *create_emoter_marker(char *name,
 	float value, Widget parent, int index,
@@ -2554,7 +2554,7 @@ Reads stuff from a file.
 	struct Emoter_marker **new_markers;
 	struct Emoter_slider *slider_to_combine;
 	struct Shared_emoter_slider_data *shared;
-	struct Control_curve *emoter_curve, *curve, **new_timebase_curves;
+	struct Curve *emoter_curve, *curve, **new_timebase_curves;
 
 	ENTER(read_emoter_slider_file);
 
@@ -2617,7 +2617,7 @@ Reads stuff from a file.
 								temp_filename, emoter_dialog->slider_form,
 								1, shared,
 								shared->number_of_sliders,
-								(struct Control_curve *)NULL,
+								(struct Curve *)NULL,
 								emoter_dialog, no_confirm );
 							return_code = 1;
 						}
@@ -2629,7 +2629,7 @@ Reads stuff from a file.
 							strlen( slider_to_combine->name ) + 20 /* Allocate enough for timebase name too */ ))
 						{
 							sprintf(name, "%s in %s", slider_to_combine->name, slider->name );
-							if ( curve = read_emoter_control_curve(file_data, name, shared) )
+							if ( curve = read_emoter_curve(file_data, name, shared) )
 							{
 								/* Need to add new combine slider */
 								if ( REALLOCATE( new_combine_sliders, slider->combine_sliders,
@@ -2648,10 +2648,10 @@ Reads stuff from a file.
 										{
 											strcat( name, " timebase" );
 											if ( combine_slider->timebase_curve =
-												read_emoter_control_curve(file_data, name, shared))
+												read_emoter_curve(file_data, name, shared))
 											{
 												if ( REALLOCATE( new_timebase_curves, slider_to_combine->timebase_curves,
-													struct Control_curve *, slider_to_combine->number_of_timebase_curves + 1))
+													struct Curve *, slider_to_combine->number_of_timebase_curves + 1))
 												{
 													new_timebase_curves[slider_to_combine->number_of_timebase_curves]
 														= combine_slider->timebase_curve;
@@ -2668,7 +2668,7 @@ Reads stuff from a file.
 										}
 										else
 										{
-											combine_slider->timebase_curve = (struct Control_curve *)NULL;
+											combine_slider->timebase_curve = (struct Curve *)NULL;
 										}
 									}
 									else
@@ -2852,28 +2852,28 @@ Reads stuff from a file.
 							name = temp_filename;
 							if ( ALLOCATE( shape_vector, float, shared->number_of_modes + slider->solid_body_motion ))
 							{
-								while (FIND_BY_IDENTIFIER_IN_MANAGER(Control_curve,name)(
-									name, shared->control_curve_manager))
+								while (FIND_BY_IDENTIFIER_IN_MANAGER(Curve,name)(
+									name, shared->curve_manager))
 								{
 									REALLOCATE(name, name, char, strlen(name)+2);
 									strcat(name,"+");
 								}
-								if (emoter_curve = CREATE(Control_curve)(name,
+								if (emoter_curve = CREATE(Curve)(name,
 									LINEAR_LAGRANGE, shared->number_of_modes + slider->solid_body_motion))
 								{
-									if (ADD_OBJECT_TO_MANAGER(Control_curve)(
-										emoter_curve, shared->control_curve_manager))
+									if (ADD_OBJECT_TO_MANAGER(Curve)(
+										emoter_curve, shared->curve_manager))
 									{
 										/* Set the type after the object is added to the
 											manager so that ADD message is ignored */
-										Control_curve_set_type(emoter_curve,
+										Curve_set_type(emoter_curve,
 											CONTROL_CURVE_TYPE_EMOTER_MODES );
-										ACCESS(Control_curve)(emoter_curve);
+										ACCESS(Curve)(emoter_curve);
 										/* SAB Do the first and second modes as special case
 											as we need to create the first element, position both
 											nodes and then from then on the current elements can
 											just be appended to */
-										Control_curve_add_element( emoter_curve, 1 );
+										Curve_add_element( emoter_curve, 1 );
 										*start_time = 1.0;
 										if ( read_file_marker(file_data, "MARKER"))
 										{
@@ -2883,12 +2883,12 @@ Reads stuff from a file.
 										}
 										total_time= *start_time;
 										*end_time = *start_time;
-										Control_curve_set_parameter( emoter_curve,
+										Curve_set_parameter( emoter_curve,
 											/*element_no*/1,/*local_node_no*/0,	*start_time);
 										read_weights( face_index, n_modes, solid_body_index, 
 											slider->solid_body_motion, file_data, 
 											shared->number_of_modes, values, shape_vector);
-										Control_curve_set_node_values( emoter_curve,
+										Curve_set_node_values( emoter_curve,
 											1, 0, shape_vector);
 										if ( !read_file_eof_marker(file_data, "END_MODE_DATA"))
 										{
@@ -2903,11 +2903,11 @@ Reads stuff from a file.
 												slider->solid_body_motion, file_data, 
 												shared->number_of_modes, values, shape_vector);
 										}
-										Control_curve_set_parameter( emoter_curve,
+										Curve_set_parameter( emoter_curve,
 											/*element_no*/1,/*local_node_no*/1,	total_time );
 
 										/* else do nothing and make a single constant element */
-										Control_curve_set_node_values( emoter_curve,
+										Curve_set_node_values( emoter_curve,
 											1, 1, shape_vector);
 
 										i = 2;
@@ -2940,14 +2940,14 @@ Reads stuff from a file.
 												read_file_string(file_data, temp_string);
 												read_file_float(file_data, end_time);
 											}
-											Control_curve_add_element( emoter_curve, i );
+											Curve_add_element( emoter_curve, i );
 											total_time += 1.0;
-											Control_curve_set_parameter( emoter_curve,
+											Curve_set_parameter( emoter_curve,
 												/*element_no*/i,/*local_node_no*/1,	total_time );
 											read_weights( face_index, n_modes, solid_body_index, 
 												slider->solid_body_motion, file_data, 
 												shared->number_of_modes, values, shape_vector);
-											Control_curve_set_node_values( emoter_curve,
+											Curve_set_node_values( emoter_curve,
 												i, 1, shape_vector);
 											i++;
 										}
@@ -2960,7 +2960,7 @@ Reads stuff from a file.
 									}
 									else
 									{
-										DESTROY(Control_curve)(&emoter_curve);
+										DESTROY(Curve)(&emoter_curve);
 										display_message(ERROR_MESSAGE,
 											"read_emoter_slider_file.  Unable to add control curve to manager");
 										return_code=0;
@@ -3015,7 +3015,7 @@ Reads stuff from a file.
 struct Emoter_slider *create_emoter_slider(char *sequence_filename,
 	char *name, Widget parent, float value,
 	struct Shared_emoter_slider_data *shared_data,
-	int index, struct Control_curve *existing_mode_curve,
+	int index, struct Curve *existing_mode_curve,
 	struct Emoter_dialog *emoter_dialog, int no_confirm)
 /*******************************************************************************
 LAST MODIFIED : 9 September 1999
@@ -3073,7 +3073,7 @@ Both or either of <sequence_filename> or <existing_mode_curve> can be NULL.
 				ALLOCATE(emoter_slider->name, char, strlen(name) + 1) &&
 				ALLOCATE(emoter_slider->combine_sliders, struct Emoter_combine_slider *, 1)&&
 				ALLOCATE(emoter_slider->emoter_markers, struct Emoter_marker *, 2) &&
-				ALLOCATE(emoter_slider->timebase_curves, struct Control_curve *, 1))
+				ALLOCATE(emoter_slider->timebase_curves, struct Curve *, 1))
 			{
 				emoter_slider->index = index;
 				strcpy(emoter_slider->name, name);
@@ -3082,7 +3082,7 @@ Both or either of <sequence_filename> or <existing_mode_curve> can be NULL.
 				emoter_slider->shared = shared_data;
 				emoter_slider->minimum = -2.5;
 				emoter_slider->maximum = 2.5;
-				emoter_slider->mode_curve = (struct Control_curve *)NULL;
+				emoter_slider->mode_curve = (struct Curve *)NULL;
 				emoter_slider->number_of_combine_sliders = 0;
 				emoter_slider->value = value;
 				emoter_slider->toggle_button = (Widget)NULL;
@@ -3145,7 +3145,7 @@ Both or either of <sequence_filename> or <existing_mode_curve> can be NULL.
 								if (existing_mode_curve)
 								{
 									emoter_slider->mode_curve =
-										ACCESS(Control_curve)(existing_mode_curve);
+										ACCESS(Curve)(existing_mode_curve);
 								}
 								return_code = 1;
 							}
@@ -3296,7 +3296,7 @@ DESCRIPTION :
 				filename, emoter_dialog->slider_form,
 				1, shared,
 				shared->number_of_sliders,
-				(struct Control_curve *)NULL,
+				(struct Curve *)NULL,
 				emoter_dialog, /*no_confirm*/0 );
 			DEALLOCATE( temp_filename );
 		}
@@ -3325,7 +3325,7 @@ DESCRIPTION :
 		derivative, *temp_data;
 	int i, j, k, frame, nodes_per_element, elements, derivatives,
 		number_of_frames, width, height, marker_no, number_of_components;
-	struct Control_curve *curve;
+	struct Curve *curve;
 	time_t current_time;
 	void *data;
 
@@ -3399,17 +3399,17 @@ DESCRIPTION :
 				if ( (slider->combine_sliders[i])->slider->sequence_filename )
 				{
 					curve = (slider->combine_sliders[i])->curve;
-					number_of_components=Control_curve_get_number_of_components(curve);
+					number_of_components=Curve_get_number_of_components(curve);
 					if ( 1 == number_of_components )
 					{
 						fprintf(file, "COMBINE\n");
 						fprintf(file, "%s\n", (slider->combine_sliders[i])->slider->sequence_filename );
-						nodes_per_element = Control_curve_get_nodes_per_element
+						nodes_per_element = Curve_get_nodes_per_element
 							(curve);
-						elements = Control_curve_get_number_of_elements
+						elements = Curve_get_number_of_elements
 							(curve);
-						derivatives = Control_curve_get_derivatives_per_node(curve);
-						Control_curve_get_parameter_range( curve, &start_time , &end_time);
+						derivatives = Curve_get_derivatives_per_node(curve);
+						Curve_get_parameter_range( curve, &start_time , &end_time);
 
 						fprintf(file, "%d #nodes per element\n", nodes_per_element);
 						fprintf(file, "%d #elements\n", elements);
@@ -3417,20 +3417,20 @@ DESCRIPTION :
 						fprintf(file, "%f #start time\n", start_time);
 						for ( j = 1 ; j <= elements ; j++ )
 						{
-							Control_curve_get_element_parameter_change(
+							Curve_get_element_parameter_change(
 								curve,
 								j, &delta_time);
 							fprintf(file, "%f",delta_time );
 							for ( k = 0 ; k < nodes_per_element - 1 ; k++ )
 							{
-								if (Control_curve_get_node_values(curve, j, k, &value))
+								if (Curve_get_node_values(curve, j, k, &value))
 								{
 									fprintf(file, " %f", value);
 									if ( derivatives )
 									{
-										if (Control_curve_get_node_derivatives(
+										if (Curve_get_node_derivatives(
 											curve, j, k, &derivative) &&
-											Control_curve_get_node_scale_factor_dparameter(
+											Curve_get_node_scale_factor_dparameter(
 												curve, j, k, &dS_dxi))
 										{
 											fprintf(file, " %f", derivative * dS_dxi );
@@ -3441,15 +3441,15 @@ DESCRIPTION :
 							fprintf(file, "\n");
 						}
 						/* Last node as a special case */
-						if (Control_curve_get_node_values(curve, elements,
+						if (Curve_get_node_values(curve, elements,
 							nodes_per_element-1, &value))
 						{
 							fprintf(file, " %f", value);
 							if ( derivatives )
 							{
-								if (Control_curve_get_node_derivatives(curve,
+								if (Curve_get_node_derivatives(curve,
 									elements, nodes_per_element-1, &derivative) &&
-									Control_curve_get_node_scale_factor_dparameter(
+									Curve_get_node_scale_factor_dparameter(
 										curve, elements, nodes_per_element-1, &dS_dxi))
 								{
 									fprintf(file, " %f", derivative * dS_dxi );
@@ -3460,12 +3460,12 @@ DESCRIPTION :
 						if ( curve = (slider->combine_sliders[i])->timebase_curve)
 						{
 							fprintf(file, "TIMEBASE\n");
-							nodes_per_element = Control_curve_get_nodes_per_element
+							nodes_per_element = Curve_get_nodes_per_element
 								(curve);
-							elements = Control_curve_get_number_of_elements
+							elements = Curve_get_number_of_elements
 								(curve);
-							derivatives = Control_curve_get_derivatives_per_node(curve);
-							Control_curve_get_parameter_range( curve,
+							derivatives = Curve_get_derivatives_per_node(curve);
+							Curve_get_parameter_range( curve,
 								&start_time , &end_time);
 
 							fprintf(file, "%d #nodes per element\n", nodes_per_element);
@@ -3474,20 +3474,20 @@ DESCRIPTION :
 							fprintf(file, "%f #start time\n", start_time);
 							for ( j = 1 ; j <= elements ; j++ )
 							{
-								Control_curve_get_element_parameter_change(
+								Curve_get_element_parameter_change(
 									curve,
 									j, &delta_time);
 								fprintf(file, "%f",delta_time );
 								for ( k = 0 ; k < nodes_per_element - 1 ; k++ )
 								{
-									if (Control_curve_get_node_values(curve, j, k, &value))
+									if (Curve_get_node_values(curve, j, k, &value))
 									{
 										fprintf(file, " %f", value);
 										if ( derivatives )
 										{
-											if (Control_curve_get_node_derivatives(
+											if (Curve_get_node_derivatives(
 												curve, j, k, &derivative) &&
-												Control_curve_get_node_scale_factor_dparameter(
+												Curve_get_node_scale_factor_dparameter(
 													curve, j, k, &dS_dxi))
 											{
 												fprintf(file, " %f", derivative * dS_dxi );
@@ -3498,15 +3498,15 @@ DESCRIPTION :
 								fprintf(file, "\n");
 							}
 							/* Last node as a special case */
-							if (Control_curve_get_node_values(curve, elements,
+							if (Curve_get_node_values(curve, elements,
 								nodes_per_element-1, &value))
 							{
 								fprintf(file, " %f", value);
 								if ( derivatives )
 								{
-									if (Control_curve_get_node_derivatives(
+									if (Curve_get_node_derivatives(
 										curve, elements, nodes_per_element-1, &derivative) &&
-										Control_curve_get_node_scale_factor_dparameter(
+										Curve_get_node_scale_factor_dparameter(
 											curve, elements, nodes_per_element-1, &dS_dxi))
 									{
 										fprintf(file, " %f", derivative * dS_dxi );
@@ -4507,7 +4507,7 @@ DESCRIPTION :
 	int i, j, frame, number_of_frames, solid_body_modes, mode_offset, return_code;
 	struct Emoter_slider *active, *combine_slider;
 	struct Shared_emoter_slider_data *shared;
-	struct Control_curve *temp_var;
+	struct Curve *temp_var;
 
 	ENTER(emoter_convert_active_slider);
 
@@ -4540,19 +4540,19 @@ DESCRIPTION :
 				/* Destroy the current mode curve or create a new name*/
 				if ( active->mode_curve )
 				{
-					GET_NAME(Control_curve)(active->mode_curve,&var_name );
+					GET_NAME(Curve)(active->mode_curve,&var_name );
 					temp_var = active->mode_curve;
-					DEACCESS(Control_curve)(&active->mode_curve);
-					REMOVE_OBJECT_FROM_MANAGER(Control_curve)
-						(temp_var, active->shared->control_curve_manager);
+					DEACCESS(Curve)(&active->mode_curve);
+					REMOVE_OBJECT_FROM_MANAGER(Curve)
+						(temp_var, active->shared->curve_manager);
 				}
 				else
 				{
 					ALLOCATE(var_name, char, strlen(active->name) + 1);
 					strcpy( var_name, active->name );
 				}
-				while (FIND_BY_IDENTIFIER_IN_MANAGER(Control_curve,name)(
-					var_name, shared->control_curve_manager))
+				while (FIND_BY_IDENTIFIER_IN_MANAGER(Curve,name)(
+					var_name, shared->curve_manager))
 				{
 					REALLOCATE(var_name, var_name, char, strlen(var_name)+2);
 					strcat(var_name,"+");
@@ -4573,30 +4573,30 @@ DESCRIPTION :
 					mode_offset = SOLID_BODY_MODES;
 				}
 
-				if (active->mode_curve = CREATE(Control_curve)(var_name,
+				if (active->mode_curve = CREATE(Curve)(var_name,
 						LINEAR_LAGRANGE, shared->number_of_modes + solid_body_modes ))
 				{
-					if (ADD_OBJECT_TO_MANAGER(Control_curve)(
-						active->mode_curve, shared->control_curve_manager))
+					if (ADD_OBJECT_TO_MANAGER(Curve)(
+						active->mode_curve, shared->curve_manager))
 					{
 						/* Set the type after the object is added to the
 							manager so that ADD message is ignored */
-						Control_curve_set_type(active->mode_curve,
+						Curve_set_type(active->mode_curve,
 							CONTROL_CURVE_TYPE_EMOTER_MODES );
-						ACCESS(Control_curve)(active->mode_curve);
+						ACCESS(Curve)(active->mode_curve);
 						/* SAB Do the first and second nodes as special case
 							as we need to create the first element, position both
 							nodes and then from then on the current elements can
 							just be appended to */
-						Control_curve_add_element( active->mode_curve, 1 );
-						Control_curve_set_parameter( active->mode_curve,
+						Curve_add_element( active->mode_curve, 1 );
+						Curve_set_parameter( active->mode_curve,
 							/*element_no*/1,/*local_node_no*/0,	time);
 						time += 1.0;
-						Control_curve_set_parameter( active->mode_curve,
+						Curve_set_parameter( active->mode_curve,
 							/*element_no*/1,/*local_node_no*/1,	time);
 						if ( temp_data[frame] )
 						{
-							Control_curve_set_node_values( active->mode_curve,
+							Curve_set_node_values( active->mode_curve,
 								1, 0, temp_data[frame] + mode_offset);
 						}
 						if ( number_of_frames > 1 )
@@ -4606,20 +4606,20 @@ DESCRIPTION :
 
 						if ( temp_data[frame] )
 						{
-							Control_curve_set_node_values( active->mode_curve,
+							Curve_set_node_values( active->mode_curve,
 								1, 1, temp_data[frame] + mode_offset);
 						}
 
 						frame = 2;
 						while (frame < number_of_frames)
 						{
-							Control_curve_add_element( active->mode_curve, frame );
+							Curve_add_element( active->mode_curve, frame );
 							time += 1.0;
-							Control_curve_set_parameter( active->mode_curve,
+							Curve_set_parameter( active->mode_curve,
 								/*element_no*/frame,/*local_node_no*/1,	time);
 							if ( temp_data[frame] )
 							{
-								Control_curve_set_node_values( active->mode_curve,
+								Curve_set_node_values( active->mode_curve,
 									frame, 1, temp_data[frame] + mode_offset);
 							}
 							frame++;
@@ -4627,9 +4627,9 @@ DESCRIPTION :
 					}
 					else
 					{
-						DESTROY(Control_curve)(&active->mode_curve);
+						DESTROY(Curve)(&active->mode_curve);
 						display_message(ERROR_MESSAGE,
-							"read_emoter_mode_Control_curve.  Unable to add control curve to manager");
+							"read_emoter_mode_Curve.  Unable to add control curve to manager");
 						return_code = 0;
 					}
 				}
@@ -4657,9 +4657,9 @@ DESCRIPTION :
 				{
 					emoter_slider_animated( (active->combine_sliders[i])->slider, 0 );
 					temp_var = (active->combine_sliders[i])->curve;
-					DEACCESS(Control_curve)( &((active->combine_sliders[i])->curve));
-					REMOVE_OBJECT_FROM_MANAGER(Control_curve)
-						(temp_var, shared->control_curve_manager);
+					DEACCESS(Curve)( &((active->combine_sliders[i])->curve));
+					REMOVE_OBJECT_FROM_MANAGER(Curve)
+						(temp_var, shared->curve_manager);
 
 					combine_slider = (active->combine_sliders[i])->slider;
 					if ( temp_var = (active->combine_sliders[i])->timebase_curve)
@@ -4686,9 +4686,9 @@ DESCRIPTION :
 						}
 					}
 					temp_var = (active->combine_sliders[i])->timebase_curve;
-					DEACCESS(Control_curve)( &((active->combine_sliders[i])->timebase_curve));
-					REMOVE_OBJECT_FROM_MANAGER(Control_curve)
-						(temp_var, shared->control_curve_manager);
+					DEACCESS(Curve)( &((active->combine_sliders[i])->timebase_curve));
+					REMOVE_OBJECT_FROM_MANAGER(Curve)
+						(temp_var, shared->curve_manager);
 					DEALLOCATE( active->combine_sliders[i] );
 				}
 				active->number_of_combine_sliders = 0;
@@ -4783,7 +4783,7 @@ DESCRIPTION :
 			"new", emoter_dialog->slider_form,
 			1, shared,
 			shared->number_of_sliders,
-			(struct Control_curve *)NULL,
+			(struct Curve *)NULL,
 			emoter_dialog, /*no_confirm*/0);
 	}
 	else
@@ -4849,7 +4849,7 @@ DESCRIPTION :
 			/* Add the node to any existing control curves */
 			for ( i = 0 ; i < slider->number_of_timebase_curves ; i++ )
 			{
-				Control_curve_subdivide_element(
+				Curve_subdivide_element(
 					(slider->timebase_curves[i]),
 					marker->element_index, 0);
 			}
@@ -4900,7 +4900,7 @@ DESCRIPTION :
 	struct Emoter_dialog *emoter_dialog;
 	struct Emoter_slider *active, *slider;
 	struct Shared_emoter_slider_data *shared;
-	struct Control_curve *curve, **new_timebase_curves;
+	struct Curve *curve, **new_timebase_curves;
 
 	ENTER(emoter_keyframe_CB);
 	USE_PARAMETER(call_data);
@@ -4942,10 +4942,10 @@ DESCRIPTION :
 						/* Slider is already in combine sliders so set or add keyframe */
 						if ( curve = active->combine_sliders[combine_index]->curve )
 						{
-							if ( 1 == Control_curve_get_number_of_components(curve))
+							if ( 1 == Curve_get_number_of_components(curve))
 							{
 								value = slider->value;
-								Control_curve_get_parameter_range(curve, &start_time ,
+								Curve_get_parameter_range(curve, &start_time ,
 									&end_time);
 								/* Assume first element was made when curve was created */
 								if ( time >= start_time)
@@ -4954,20 +4954,20 @@ DESCRIPTION :
 									{
 										/* If time is within already defined values adjust existing
 											node or subdivide a current element */
-										if ( Control_curve_find_node_at_parameter( curve, time,
+										if ( Curve_find_node_at_parameter( curve, time,
 											&element, &local_node_no ))
 										{
-											Control_curve_set_node_values( curve,
+											Curve_set_node_values( curve,
 												element, local_node_no, &value );
 										}
 										else
 										{
-											if ( Control_curve_find_element_at_parameter( curve, time,
+											if ( Curve_find_element_at_parameter( curve, time,
 												&element, &xi ))
 											{
-												Control_curve_subdivide_element( curve,
+												Curve_subdivide_element( curve,
 													element, xi );
-												Control_curve_set_node_values( curve,
+												Curve_set_node_values( curve,
 													element + 1, 0, &value );
 											}
 											else
@@ -4981,24 +4981,24 @@ DESCRIPTION :
 									{
 										/* If there is only one element at a single point shift
 											the second node, otherwise add an element at end */
-										number_of_elements = Control_curve_get_number_of_elements( curve );
-										Control_curve_get_element_parameter_change( curve,
+										number_of_elements = Curve_get_number_of_elements( curve );
+										Curve_get_element_parameter_change( curve,
 											1, &time_change );
 										if ( number_of_elements == 1 && time_change == 0.0 )
 										{
-											local_node_no = Control_curve_get_nodes_per_element (curve) - 1;
-											Control_curve_set_parameter( curve,
+											local_node_no = Curve_get_nodes_per_element (curve) - 1;
+											Curve_set_parameter( curve,
 												1, local_node_no, time );
-											Control_curve_set_node_values ( curve,
+											Curve_set_node_values ( curve,
 												1, local_node_no, &value );
 										}
 										else
 										{
-											Control_curve_add_element( curve, number_of_elements + 1 );
-											local_node_no = Control_curve_get_nodes_per_element (curve) - 1;
-											Control_curve_set_parameter( curve,
+											Curve_add_element( curve, number_of_elements + 1 );
+											local_node_no = Curve_get_nodes_per_element (curve) - 1;
+											Curve_set_parameter( curve,
 												number_of_elements + 1, local_node_no, time );
-											Control_curve_set_node_values ( curve,
+											Curve_set_node_values ( curve,
 												number_of_elements + 1, local_node_no, &value );
 										}
 									}
@@ -5007,24 +5007,24 @@ DESCRIPTION :
 								{
 									/* If there is only one element at a single point shift
 										the first node, otherwise add an element at start */
-									number_of_elements = Control_curve_get_number_of_elements( curve );
-									Control_curve_get_element_parameter_change( curve,
+									number_of_elements = Curve_get_number_of_elements( curve );
+									Curve_get_element_parameter_change( curve,
 										1, &time_change );
 									if ( number_of_elements == 1 && time_change == 0.0 )
 									{
 										local_node_no = 0;
-										Control_curve_set_parameter( curve,
+										Curve_set_parameter( curve,
 											1, local_node_no, time );
-										Control_curve_set_node_values ( curve,
+										Curve_set_node_values ( curve,
 											1, local_node_no, &value );
 									}
 									else
 									{
-										Control_curve_add_element( curve, 1 );
+										Curve_add_element( curve, 1 );
 										local_node_no = 0;
-										Control_curve_set_parameter( curve,
+										Curve_set_parameter( curve,
 											1, local_node_no, time );
-										Control_curve_set_node_values ( curve,
+										Curve_set_node_values ( curve,
 											1, local_node_no, &value );
 									}
 								}
@@ -5060,36 +5060,36 @@ DESCRIPTION :
 									strlen(slider->name) + 10))
 								{
 									sprintf(name, "%s in %s", slider->name, active->name );
-									while (FIND_BY_IDENTIFIER_IN_MANAGER(Control_curve,name)(
-										name, shared->control_curve_manager))
+									while (FIND_BY_IDENTIFIER_IN_MANAGER(Curve,name)(
+										name, shared->curve_manager))
 									{
 										REALLOCATE(name, name, char, strlen(name)+2);
 										strcat(name,"+");
 									}
-									if ( curve = CREATE(Control_curve)(
+									if ( curve = CREATE(Curve)(
 										name, CUBIC_HERMITE, 1 ))
 									{
-										Control_curve_set_type(curve,
+										Curve_set_type(curve,
 											CONTROL_CURVE_TYPE_EMOTER_COMBINE );
 										combine_slider->curve = curve;
-										if (ADD_OBJECT_TO_MANAGER(Control_curve)(
-											curve, shared->control_curve_manager))
+										if (ADD_OBJECT_TO_MANAGER(Curve)(
+											curve, shared->curve_manager))
 										{
-											ACCESS(Control_curve)(curve);
-											Control_curve_add_element( curve, 1 );
+											ACCESS(Curve)(curve);
+											Curve_add_element( curve, 1 );
 											local_node_no = 0;
-											Control_curve_set_parameter( curve,
+											Curve_set_parameter( curve,
 												/*element_no*/1,/*local_node_no*/0,	time);
-											Control_curve_set_parameter( curve,
+											Curve_set_parameter( curve,
 												/*element_no*/1,/*local_node_no*/
-												Control_curve_get_nodes_per_element(curve)-1,	time);
+												Curve_get_nodes_per_element(curve)-1,	time);
 
 											value = slider->value;
 											for (local_node_no = 0 ;
-													local_node_no < Control_curve_get_nodes_per_element (curve)
+													local_node_no < Curve_get_nodes_per_element (curve)
 													; local_node_no++ )
 											{
-												Control_curve_set_node_values ( curve,
+												Curve_set_node_values ( curve,
 													1, local_node_no, &value );
 												return_code = 1;
 											}
@@ -5098,7 +5098,7 @@ DESCRIPTION :
 										{
 											display_message(ERROR_MESSAGE,
 												"emoter_keyframe_CB.  Unable to add combine curve to manager");
-											DESTROY(Control_curve)(&curve);
+											DESTROY(Curve)(&curve);
 											active->number_of_combine_sliders--;
 											DEALLOCATE( combine_slider );
 										}
@@ -5123,7 +5123,7 @@ DESCRIPTION :
 								{
 									/* Create the timebase curve */
 									if ( REALLOCATE( new_timebase_curves, slider->timebase_curves,
-										struct Control_curve *, slider->number_of_timebase_curves + 1))
+										struct Curve *, slider->number_of_timebase_curves + 1))
 									{
 										slider->timebase_curves = new_timebase_curves;
 										slider->number_of_timebase_curves++;
@@ -5131,28 +5131,28 @@ DESCRIPTION :
 											strlen(active->name) + 15))
 										{
 											sprintf(name, "%s in %s timebase", slider->name, active->name );
-											while (FIND_BY_IDENTIFIER_IN_MANAGER(Control_curve,name)(
-												name, shared->control_curve_manager))
+											while (FIND_BY_IDENTIFIER_IN_MANAGER(Curve,name)(
+												name, shared->curve_manager))
 											{
 												REALLOCATE(name, name, char, strlen(name)+2);
 												strcat(name,"+");
 											}
-											if ( curve = CREATE(Control_curve)(
+											if ( curve = CREATE(Curve)(
 												name, LINEAR_LAGRANGE, 1 ))
 											{
-												Control_curve_set_type(curve,
+												Curve_set_type(curve,
 													CONTROL_CURVE_TYPE_EMOTER_TIMEBASE );
 												combine_slider->timebase_curve = curve;
 												slider->timebase_curves[slider->number_of_timebase_curves-1]
 													= curve;
-												if (ADD_OBJECT_TO_MANAGER(Control_curve)(
-													curve, shared->control_curve_manager))
+												if (ADD_OBJECT_TO_MANAGER(Curve)(
+													curve, shared->curve_manager))
 												{
-													ACCESS(Control_curve)(curve);
+													ACCESS(Curve)(curve);
 													if ( slider->number_of_emoter_markers > 1)
 													{
 #if defined (OLD_CODE)
-														Control_curve_set_start_time( curve,
+														Curve_set_start_time( curve,
 															(slider->emoter_markers[0])->value );
 #endif /* defined (OLD_CODE) */
 														for (element = 0 ;
@@ -5160,20 +5160,20 @@ DESCRIPTION :
 															; element++ )
 														{
 															value = (slider->emoter_markers[element])->value;
-															Control_curve_add_element( curve, element + 1 );
+															Curve_add_element( curve, element + 1 );
 
-															Control_curve_set_parameter( curve, element + 1,
+															Curve_set_parameter( curve, element + 1,
 																1, value );
-															Control_curve_set_parameter( curve, element + 1,
+															Curve_set_parameter( curve, element + 1,
 																0, value );
-															Control_curve_set_node_values ( curve,
+															Curve_set_node_values ( curve,
 																element + 1, 0, &value );
 															printf("  element %d, value %f\n", element, value);
 														}
 														value = (slider->emoter_markers[element])->value;
-														Control_curve_set_parameter( curve, element,
+														Curve_set_parameter( curve, element,
 															1, value );
-														Control_curve_set_node_values ( curve,
+														Curve_set_node_values ( curve,
 															element, 1, &value );
 														printf("  element %d, value %f\n", element, value);
 													}
@@ -5182,7 +5182,7 @@ DESCRIPTION :
 												{
 													display_message(ERROR_MESSAGE,
 														"emoter_keyframe_CB.  Unable to add timebase curve to manager");
-													DESTROY(Control_curve)(&curve);
+													DESTROY(Curve)(&curve);
 													slider->number_of_timebase_curves--;
 												}
 												DEALLOCATE( name );
@@ -5337,8 +5337,8 @@ Handles input from the text widget which displays the current frame timecode
 	LEAVE;
 } /* emoter_play_max_text_CB */
 
-static int Control_curve_update_emoter_sliders(
-	struct Control_curve *control_curve, void *emoter_dialog_void)
+static int Curve_update_emoter_sliders(
+	struct Curve *curve, void *emoter_dialog_void)
 /*******************************************************************************
 LAST MODIFIED : 30 May 2001
 
@@ -5346,15 +5346,15 @@ DESCRIPTION :
 Updates existing control curves combine sliders.
 ==============================================================================*/
 {
-	enum Control_curve_type type;
+	enum Curve_type type;
 	int return_code;
 	struct Emoter_dialog *emoter_dialog;
 
-	ENTER(Control_curve_update_emoter_sliders);
-	if (control_curve &&
+	ENTER(Curve_update_emoter_sliders);
+	if (curve &&
 		(emoter_dialog = (struct Emoter_dialog *)emoter_dialog_void))
 	{
-		Control_curve_get_type( control_curve, &type );
+		Curve_get_type( curve, &type );
 		if (type == CONTROL_CURVE_TYPE_EMOTER_COMBINE)
 		{
 			/* Setting the time slider to the time it already has
@@ -5370,16 +5370,16 @@ Updates existing control curves combine sliders.
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Control_curve_update_emoter_sliders.  Invalid argument(s)");
+			"Curve_update_emoter_sliders.  Invalid argument(s)");
 		return_code = 0;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* Control_curve_update_emoter_sliders */
+} /* Curve_update_emoter_sliders */
 
-static int Control_curve_add_emoter_sliders(
-	struct Control_curve *control_curve, void *emoter_dialog_void)
+static int Curve_add_emoter_sliders(
+	struct Curve *curve, void *emoter_dialog_void)
 /*******************************************************************************
 LAST MODIFIED : 30 May 2001
 
@@ -5388,27 +5388,27 @@ Adds new control curves combine sliders.
 ==============================================================================*/
 {
 	char *name;
-	enum Control_curve_type type;
+	enum Curve_type type;
 	int return_code;
 	struct Emoter_dialog *emoter_dialog;
 	struct Shared_emoter_slider_data *shared;
 
-	ENTER(Control_curve_add_emoter_sliders);
-	if (control_curve &&
+	ENTER(Curve_add_emoter_sliders);
+	if (curve &&
 		(emoter_dialog = (struct Emoter_dialog *)emoter_dialog_void))
 	{
 		shared = emoter_dialog->shared;
 
-		Control_curve_get_type( control_curve, &type );
+		Curve_get_type( curve, &type );
 		if ( type == CONTROL_CURVE_TYPE_EMOTER_MODES )
 		{
-			if (GET_NAME(Control_curve)( control_curve, &name ))
+			if (GET_NAME(Curve)( curve, &name ))
 			{
 				create_emoter_slider((char *)NULL,
 					name, emoter_dialog->slider_form,
 					1.0, shared,
 					shared->number_of_sliders,
-					control_curve, emoter_dialog, /*no_confirm*/0);
+					curve, emoter_dialog, /*no_confirm*/0);
 				DEALLOCATE( name );
 			}
 		}
@@ -5417,16 +5417,16 @@ Adds new control curves combine sliders.
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Control_curve_add_emoter_sliders.  Invalid argument(s)");
+			"Curve_add_emoter_sliders.  Invalid argument(s)");
 		return_code = 0;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* Control_curve_add_emoter_sliders */
+} /* Curve_add_emoter_sliders */
 
-static void emoter_control_curve_manager_message(
-	struct MANAGER_MESSAGE(Control_curve) *message, void *emoter_dialog_void)
+static void emoter_curve_manager_message(
+	struct MANAGER_MESSAGE(Curve) *message, void *emoter_dialog_void)
 /*******************************************************************************
 LAST MODIFIED : 30 May 2001
 
@@ -5434,26 +5434,26 @@ DESCRIPTION :
 Something has changed globally in the control curve manager.
 ==============================================================================*/
 {
-	ENTER(emoter_control_curve_manager_message);
+	ENTER(emoter_curve_manager_message);
 	if (message && emoter_dialog_void)
 	{
 		switch (message->change)
 		{
-			case MANAGER_CHANGE_OBJECT(Control_curve):
-			case MANAGER_CHANGE_OBJECT_NOT_IDENTIFIER(Control_curve):
+			case MANAGER_CHANGE_OBJECT(Curve):
+			case MANAGER_CHANGE_OBJECT_NOT_IDENTIFIER(Curve):
 			{
-				FOR_EACH_OBJECT_IN_LIST(Control_curve)(
-					Control_curve_update_emoter_sliders, emoter_dialog_void,
+				FOR_EACH_OBJECT_IN_LIST(Curve)(
+					Curve_update_emoter_sliders, emoter_dialog_void,
 					message->changed_object_list);
 			} break;
-			case MANAGER_CHANGE_ADD(Control_curve):
+			case MANAGER_CHANGE_ADD(Curve):
 			{
-				FOR_EACH_OBJECT_IN_LIST(Control_curve)(
-					Control_curve_add_emoter_sliders, emoter_dialog_void,
+				FOR_EACH_OBJECT_IN_LIST(Curve)(
+					Curve_add_emoter_sliders, emoter_dialog_void,
 					message->changed_object_list);
 			} break;
-			case MANAGER_CHANGE_REMOVE(Control_curve):
-			case MANAGER_CHANGE_IDENTIFIER(Control_curve):
+			case MANAGER_CHANGE_REMOVE(Curve):
+			case MANAGER_CHANGE_IDENTIFIER(Curve):
 			{
 				/* do nothing */
 			} break;
@@ -5462,10 +5462,10 @@ Something has changed globally in the control curve manager.
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"emoter_control_curve_manager_message.  Invalid argument(s)");
+			"emoter_curve_manager_message.  Invalid argument(s)");
 	}
 	LEAVE;
-} /* emoter_control_curve_manager_message */
+} /* emoter_curve_manager_message */
 
 static Widget create_emoter_dialog(struct Emoter_dialog **emoter_dialog_address,
 	Widget parent, struct Shared_emoter_slider_data *shared_data)
@@ -5559,7 +5559,7 @@ Create emoter controls.
 			emoter_dialog->play_button = (Widget)NULL;
 			emoter_dialog->input_sequence_button = (Widget)NULL;
 			emoter_dialog->play_slider_position = -1;
-			emoter_dialog->control_curve_manager_callback_id = (void *)NULL;
+			emoter_dialog->curve_manager_callback_id = (void *)NULL;
 			emoter_dialog->movie = (struct Movie_graphics *)NULL;
 			emoter_dialog->movie_control_form = (Widget)NULL;
 			emoter_dialog->movie_framerate_text = (Widget)NULL;
@@ -5595,11 +5595,11 @@ Create emoter controls.
 							&(emoter_dialog->widget),
 							&emoter_dialog_class))
 						{
-							emoter_dialog->control_curve_manager_callback_id=
-								MANAGER_REGISTER(Control_curve)(
-								emoter_control_curve_manager_message,
+							emoter_dialog->curve_manager_callback_id=
+								MANAGER_REGISTER(Curve)(
+								emoter_curve_manager_message,
 								(void *)emoter_dialog,
-								emoter_dialog->shared->control_curve_manager);
+								emoter_dialog->shared->curve_manager);
 
 							XtManageChild(emoter_dialog->widget);
 
@@ -5926,15 +5926,15 @@ in existence, then bring it to the front, otherwise create new one.
 								shared_emoter_slider_data->mode_limit = number_of_modes;
 								shared_emoter_slider_data->region = ACCESS(Cmiss_region)(region);
 								shared_emoter_slider_data->show_solid_body_motion = 1;
-								shared_emoter_slider_data->control_curve_manager
-									= create_emoter_slider_data->control_curve_manager;
+								shared_emoter_slider_data->curve_manager
+									= create_emoter_slider_data->curve_manager;
 								shared_emoter_slider_data->execute_command =
 									create_emoter_slider_data->execute_command;
 								shared_emoter_slider_data->em_object = em_object;
 								shared_emoter_slider_data->active_slider =
 									(struct Emoter_slider *)NULL;
-								shared_emoter_slider_data->control_curve_editor_dialog_address =
-									create_emoter_slider_data->control_curve_editor_dialog_address;
+								shared_emoter_slider_data->curve_editor_dialog_address =
+									create_emoter_slider_data->curve_editor_dialog_address;
 								shared_emoter_slider_data->top_level
 									= create_emoter_slider_data->parent;
 								shared_emoter_slider_data->time = 1;
@@ -6265,7 +6265,7 @@ Executes a GFX MODIFY EMOTER command.
 							"new", emoter_dialog->slider_form,
 							1, emoter_dialog->shared,
 							emoter_dialog->shared->number_of_sliders,
-							(struct Control_curve *)NULL,
+							(struct Curve *)NULL,
 							emoter_dialog, /*no_confirm*/1 ); 
 					}
 					if (filename)
@@ -6282,7 +6282,7 @@ Executes a GFX MODIFY EMOTER command.
 							temp_filename, emoter_dialog->slider_form,
 							1, emoter_dialog->shared,
 							emoter_dialog->shared->number_of_sliders,
-							(struct Control_curve *)NULL,
+							(struct Curve *)NULL,
 							emoter_dialog, /*no_confirm*/1 ); 
 						DEALLOCATE(filename);
 					}

@@ -1,10 +1,10 @@
 /*******************************************************************************
-FILE : choose_control_curve.c
+FILE : choose_curve.c
 
 LAST MODIFIED : 21 January 2000
 
 DESCRIPTION :
-Widget for choosing a Control_curve, based on choose_object macro.
+Widget for choosing a Curve, based on choose_object macro.
 ==============================================================================*/
 /* ***** BEGIN LICENSE BLOCK *****
  * Version: MPL 1.1/GPL 2.0/LGPL 2.1
@@ -42,7 +42,7 @@ Widget for choosing a Control_curve, based on choose_object macro.
  *
  * ***** END LICENSE BLOCK ***** */
 
-#include "choose/choose_control_curve.h"
+#include "choose/choose_curve.h"
 #include "choose/choose_object_private.h"
 #include "user_interface/message.h"
 
@@ -50,17 +50,17 @@ Widget for choosing a Control_curve, based on choose_object macro.
 Module types
 ------------
 */
-FULL_DECLARE_CHOOSE_OBJECT_TYPE(Control_curve);
+FULL_DECLARE_CHOOSE_OBJECT_TYPE(Curve);
 
 /*
 Module functions
 ----------------
 */
-DECLARE_CHOOSE_OBJECT_MODULE_FUNCTIONS(Control_curve)
+DECLARE_CHOOSE_OBJECT_MODULE_FUNCTIONS(Curve)
 
 /*
 Global functions
 ----------------
 */
-DECLARE_CHOOSE_OBJECT_GLOBAL_FUNCTIONS(Control_curve)
+DECLARE_CHOOSE_OBJECT_GLOBAL_FUNCTIONS(Curve)
 

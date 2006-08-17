@@ -1,12 +1,12 @@
 /*******************************************************************************
-FILE : control_curve.c
+FILE : curve.c
 
 LAST MODIFIED : 16 April 2003
 
 DESCRIPTION :
-Definition of struct Control_curve used to describe time-value or x-y functions.
+Definition of struct Curve used to describe time-value or x-y functions.
 Simulation/animation parameters are controlled over time by these curves.
-The Control_curve structure is private, and functions are defined to access its
+The Curve structure is private, and functions are defined to access its
 contents. Internally, all effort has been put into providing a level of
 abstraction between what the user sees and the finite element/node/field
 structures used internally. It is designed to be flexible rather than fast.
@@ -52,7 +52,7 @@ quadratic Lagrange, cubic Lagrange.
 #include <stdlib.h>
 #include <stdio.h>
 #include "command/parser.h"
-#include "curve/control_curve.h"
+#include "curve/curve.h"
 #include "general/object.h"
 #include "finite_element/export_finite_element.h"
 #include "finite_element/finite_element.h"
@@ -72,7 +72,7 @@ Module types
 ------------
 */
 
-struct Control_curve
+struct Curve
 /*******************************************************************************
 LAST MODIFIED : 22 November 1999
 
@@ -85,11 +85,11 @@ It is designed to be flexible rather than fast.
 	char *name;
 	enum FE_basis_type fe_basis_type;
 	int number_of_components;
-	enum Control_curve_extend_mode extend_mode;
-	enum Control_curve_type type;
+	enum Curve_extend_mode extend_mode;
+	enum Curve_type type;
 	int value_nodes_per_element,value_derivatives_per_node;
 
-	/* each Control_curve is like an FE_region with its own name space */
+	/* each Curve is like an FE_region with its own name space */
 	struct MANAGER(FE_basis) *basis_manager;
 	struct LIST(FE_element_shape) *element_shape_list;
 	struct FE_region *fe_region;
@@ -97,7 +97,7 @@ It is designed to be flexible rather than fast.
 	struct FE_node *template_node;
 	struct FE_element *template_element;
 
-	/* information useful for editing Control_curve */
+	/* information useful for editing Curve */
 	FE_value *max_value,*min_value;
 	FE_value parameter_grid,value_grid;
 
@@ -106,22 +106,22 @@ It is designed to be flexible rather than fast.
 	int parameter_table_size;
 
 	int access_count;
-}; /* struct Control_curve */
+}; /* struct Curve */
 
-FULL_DECLARE_INDEXED_LIST_TYPE(Control_curve);
+FULL_DECLARE_INDEXED_LIST_TYPE(Curve);
 
-FULL_DECLARE_MANAGER_TYPE(Control_curve);
+FULL_DECLARE_MANAGER_TYPE(Curve);
 
 /*
 Module functions
 ----------------
 */
 
-DECLARE_INDEXED_LIST_MODULE_FUNCTIONS(Control_curve,name,char *,strcmp)
+DECLARE_INDEXED_LIST_MODULE_FUNCTIONS(Curve,name,char *,strcmp)
 
-DECLARE_LOCAL_MANAGER_FUNCTIONS(Control_curve)
+DECLARE_LOCAL_MANAGER_FUNCTIONS(Curve)
 
-static struct FE_element *cc_get_element(struct Control_curve *curve,
+static struct FE_element *cc_get_element(struct Curve *curve,
 	int element_no)
 /*******************************************************************************
 LAST MODIFIED : 15 November 1999
@@ -158,7 +158,7 @@ LAST MODIFIED : 15 November 1999
 DESCRIPTION :
 Returns in [user pre-allocated] values array the field->number_of_components
 values of <nodal_value_type> of <field> stored at <node>.
-For Control_curves, <nodal_value_type> can be FE_NODAL_VALUE or FE_NODAL_D_DS1.
+For Curves, <nodal_value_type> can be FE_NODAL_VALUE or FE_NODAL_D_DS1.
 ==============================================================================*/
 {
 	FE_value *value;
@@ -200,7 +200,7 @@ LAST MODIFIED : 15 November 1999
 DESCRIPTION :
 Sets the field->number_of_components values of <nodal_value_type> of <field>
 stored at <node>.
-For Control_curves, <nodal_value_type> can be FE_NODAL_VALUE or FE_NODAL_D_DS1.
+For Curves, <nodal_value_type> can be FE_NODAL_VALUE or FE_NODAL_D_DS1.
 ==============================================================================*/
 {
 	FE_value *value;
@@ -281,13 +281,13 @@ If <derivatives> is NULL, they will not be calculated.
 	return (return_code);
 } /* cc_calculate_element_field_values */
 
-static int cc_clear_parameter_table(struct Control_curve *curve)
+static int cc_clear_parameter_table(struct Curve *curve)
 /*******************************************************************************
 LAST MODIFIED : 17 November 1999
 
 DESCRIPTION :
 Clears the quick reference table for the curve parameter values. Note that
-Control_curve functions that add or remove nodes or change parameters should
+Curve functions that add or remove nodes or change parameters should
 call this after they have made their changes.
 ==============================================================================*/
 {
@@ -313,13 +313,13 @@ call this after they have made their changes.
 	return (return_code);
 } /* cc_clear_parameter_table */
 
-static int cc_build_parameter_table(struct Control_curve *curve)
+static int cc_build_parameter_table(struct Curve *curve)
 /*******************************************************************************
 LAST MODIFIED : 17 November 1999
 
 DESCRIPTION :
 Builds a quick reference table for the curve parameter values. Note that
-Control_curve functions that add or remove nodes or change parameters should
+Curve functions that add or remove nodes or change parameters should
 call cc_clear_parameter_table. This function should be called as soon as the
 table needs to be used when curve->parameter_table is NULL.
 ==============================================================================*/
@@ -331,7 +331,7 @@ table needs to be used when curve->parameter_table is NULL.
 	ENTER(cc_build_parameter_table);
 	if (curve&&(!curve->parameter_table))
 	{
-		number_of_elements=Control_curve_get_number_of_elements(curve);
+		number_of_elements=Curve_get_number_of_elements(curve);
 		if (0<number_of_elements)
 		{
 			curve->parameter_table_size = number_of_elements+1;
@@ -384,7 +384,7 @@ table needs to be used when curve->parameter_table is NULL.
 	return (return_code);
 } /* cc_build_parameter_table */
 
-static int cc_clean_up(struct Control_curve *curve)
+static int cc_clean_up(struct Curve *curve)
 /*******************************************************************************
 LAST MODIFIED : 26 November 1999
 
@@ -423,22 +423,22 @@ Used for copy operations and as part of the DESTROY function.
 	return (return_code);
 } /* cc_clean_up */
 
-static struct Control_curve *cc_create_blank(char *name)
+static struct Curve *cc_create_blank(char *name)
 /*******************************************************************************
 LAST MODIFIED : 26 November 1999
 
 DESCRIPTION :
-Creates a blank Control_curve with the given <name>, but no fe_basis_type, no
+Creates a blank Curve with the given <name>, but no fe_basis_type, no
 components, but all managers created. The curve must be modified to be valid,
 but it is at least destroyable when returned from this function.
 ==============================================================================*/
 {
-	struct Control_curve *curve;
+	struct Curve *curve;
 
 	ENTER(cc_create_blank);
 	if (name)
 	{
-		if (ALLOCATE(curve,struct Control_curve,1))
+		if (ALLOCATE(curve,struct Curve,1))
 		{
 			if (ALLOCATE(curve->name,char,strlen(name)+1))
 			{
@@ -475,7 +475,7 @@ but it is at least destroyable when returned from this function.
 			{
 				display_message(ERROR_MESSAGE,
 					"cc_create_blank.  Could not create basis manager, element shape list and region");
-				DESTROY(Control_curve)(&curve);
+				DESTROY(Curve)(&curve);
 			}
 		}
 		else
@@ -486,14 +486,14 @@ but it is at least destroyable when returned from this function.
 	else
 	{
 		display_message(ERROR_MESSAGE,"cc_create_blank.  Invalid argument(s)");
-		curve=(struct Control_curve *)NULL;
+		curve=(struct Curve *)NULL;
 	}
 	LEAVE;
 
 	return (curve);
 } /* cc_create_blank */
 
-static int cc_establish(struct Control_curve *curve,
+static int cc_establish(struct Curve *curve,
 	enum FE_basis_type fe_basis_type,int number_of_components)
 /*******************************************************************************
 LAST MODIFIED : 26 November 1999
@@ -585,8 +585,8 @@ Does not establish fields and template elements and nodes.
 	return (return_code);
 } /* cc_establish */
 
-static int cc_add_duplicate_element(struct Control_curve *destination,
-	struct Control_curve *source,int element_no)
+static int cc_add_duplicate_element(struct Curve *destination,
+	struct Curve *source,int element_no)
 /*******************************************************************************
 LAST MODIFIED : 22 November 1999
 
@@ -620,7 +620,7 @@ Ensures slope continuity in destination curve when cubic hermite basis.
 		left_derivatives=(FE_value *)NULL;
 		temp_values=(FE_value *)NULL;
 		if (ALLOCATE(values,FE_value,max_number_of_components)&&
-			((0==Control_curve_get_derivatives_per_node(destination))||
+			((0==Curve_get_derivatives_per_node(destination))||
 				(ALLOCATE(derivatives,FE_value,max_number_of_components)&&
 					ALLOCATE(left_derivatives,FE_value,max_number_of_components)&&
 					ALLOCATE(temp_values,FE_value,max_number_of_components))))
@@ -635,7 +635,7 @@ Ensures slope continuity in destination curve when cubic hermite basis.
 					left_derivatives[i]=0.0;
 				}
 			}
-			if (Control_curve_add_element(destination,element_no)&&
+			if (Curve_add_element(destination,element_no)&&
 				(destination_element=cc_get_element(destination,element_no)))
 			{
 				return_code=1;
@@ -669,14 +669,14 @@ Ensures slope continuity in destination curve when cubic hermite basis.
 							/* get values from the element */
 							xi=(FE_value)node_no/
 								(FE_value)(destination->value_nodes_per_element-1.0);
-							if (Control_curve_get_parameter_in_element(source,element_no,xi,
+							if (Curve_get_parameter_in_element(source,element_no,xi,
 								&parameter)&&
 								cc_calculate_element_field_values(source_element,xi,
 									source->value_field,values,derivatives))
 							{
 								if (derivatives)
 								{
-									Control_curve_unitize_vector(derivatives,
+									Curve_unitize_vector(derivatives,
 										number_of_components,&sf);
 
 									if ((0==node_no)&&(1<element_no)&&
@@ -713,7 +713,7 @@ Ensures slope continuity in destination curve when cubic hermite basis.
 															left_parameter_change)/
 														(parameter_change+left_parameter_change);
 												}
-												Control_curve_unitize_vector(derivatives,
+												Curve_unitize_vector(derivatives,
 													number_of_components,&temp_sf);
 												if (0==temp_sf)
 												{
@@ -823,7 +823,7 @@ Ensures slope continuity in destination curve when cubic hermite basis.
 } /* cc_add_duplicate_element */
 
 #if defined (DEBUG)
-static int cc_list(struct Control_curve *curve)
+static int cc_list(struct Curve *curve)
 /*******************************************************************************
 LAST MODIFIED : 22 November 1999
 
@@ -842,7 +842,7 @@ Lists the contents of the curve.
 		return_code=1;
 		if (ALLOCATE(values,FE_value,curve->number_of_components))
 		{
-			number_of_elements=Control_curve_get_number_of_elements(curve);
+			number_of_elements=Curve_get_number_of_elements(curve);
 			for (element_no=1;(element_no<=number_of_elements)&&return_code;
 				element_no++)
 			{
@@ -896,9 +896,9 @@ Lists the contents of the curve.
 } /* cc_list */
 #endif /* defined (DEBUG) */
 
-static int cc_copy_convert_without_name(struct Control_curve *destination,
+static int cc_copy_convert_without_name(struct Curve *destination,
 	enum FE_basis_type fe_basis_type,int number_of_components,
-	struct Control_curve *source)
+	struct Curve *source)
 /*******************************************************************************
 LAST MODIFIED : 15 April 2003
 
@@ -912,7 +912,7 @@ Used for various copy operations.
 Works even when <destination> and <source> are the same.
 ==============================================================================*/
 {
-	struct Control_curve *temp_curve;
+	struct Curve *temp_curve;
 	int element_no,i,number_of_components_to_copy,number_of_elements,return_code;
 
 	ENTER(cc_copy_convert_without_name);
@@ -924,7 +924,7 @@ Works even when <destination> and <source> are the same.
 			number_of_components_to_copy=number_of_components;
 		}
 		/* create copy of source with all its nodes, elements and attributes */
-		if (temp_curve=CREATE(Control_curve)(source->name,fe_basis_type,
+		if (temp_curve=CREATE(Curve)(source->name,fe_basis_type,
 			number_of_components))
 		{
 			return_code=1;
@@ -937,7 +937,7 @@ Works even when <destination> and <source> are the same.
 			}
 			temp_curve->parameter_grid=source->parameter_grid;
 			temp_curve->value_grid=source->value_grid;
-			number_of_elements=Control_curve_get_number_of_elements(source);
+			number_of_elements=Curve_get_number_of_elements(source);
 			for (element_no=1;(element_no<=number_of_elements)&&return_code;
 				element_no++)
 			{
@@ -977,7 +977,7 @@ Works even when <destination> and <source> are the same.
 			{
 				display_message(ERROR_MESSAGE,
 					"cc_copy_convert_without_name.  Could not copy source elements");
-				DESTROY(Control_curve)(&temp_curve);
+				DESTROY(Curve)(&temp_curve);
 				return_code=0;
 			}
 			/* make sure parameter_table is cleared in destination */
@@ -1010,21 +1010,21 @@ Global functions
 ----------------
 */
 
-char **Control_curve_FE_basis_type_get_valid_strings(
+char **Curve_FE_basis_type_get_valid_strings(
 	int *number_of_valid_strings)
 /*******************************************************************************
 LAST MODIFIED : 9 February 2000
 
 DESCRIPTION :
 Returns and allocated array of pointers to all static strings for all
-Fe_basis_types valid with Control_curves - obtained from function
+Fe_basis_types valid with Curves - obtained from function
 FE_basis_type_string.
 Up to calling function to deallocate returned array - but not the strings in it!
 ==============================================================================*/
 {
 	char **valid_strings;
 
-	ENTER(Control_curve_FE_basis_type_get_valid_strings);
+	ENTER(Curve_FE_basis_type_get_valid_strings);
 	if (number_of_valid_strings)
 	{
 		*number_of_valid_strings=4;
@@ -1038,33 +1038,33 @@ Up to calling function to deallocate returned array - but not the strings in it!
 		else
 		{
 			display_message(ERROR_MESSAGE,
-				"Control_curve_FE_basis_type_get_valid_strings.  Not enough memory");
+				"Curve_FE_basis_type_get_valid_strings.  Not enough memory");
 		}
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Control_curve_FE_basis_type_get_valid_strings.  Invalid argument");
+			"Curve_FE_basis_type_get_valid_strings.  Invalid argument");
 		valid_strings=(char **)NULL;
 	}
 	LEAVE;
 
 	return (valid_strings);
-} /* Control_curve_FE_basis_type_get_valid_strings */
+} /* Curve_FE_basis_type_get_valid_strings */
 
-enum FE_basis_type Control_curve_FE_basis_type_from_string(
+enum FE_basis_type Curve_FE_basis_type_from_string(
 	char *fe_basis_type_string)
 /*******************************************************************************
 LAST MODIFIED : 9 February 2000
 
 DESCRIPTION :
 Returns the FE_basis_type described by <fe_basis_type_string>, if valid for
-use in Control_curves.
+use in Curves.
 ==============================================================================*/
 {
 	enum FE_basis_type fe_basis_type;
 
-	ENTER(Control_curve_FE_basis_type_from_string);
+	ENTER(Curve_FE_basis_type_from_string);
 	if (fe_basis_type_string)
 	{
 		if (fuzzy_string_compare_same_length(fe_basis_type_string,
@@ -1095,16 +1095,16 @@ use in Control_curves.
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Control_curve_FE_basis_type_from_string.  Invalid argument");
+			"Curve_FE_basis_type_from_string.  Invalid argument");
 		fe_basis_type=FE_BASIS_TYPE_INVALID;
 	}
 	LEAVE;
 
 	return (fe_basis_type);
-} /* Control_curve_FE_basis_type_from_string */
+} /* Curve_FE_basis_type_from_string */
 
-char *Control_curve_extend_mode_string(
-	enum Control_curve_extend_mode extend_mode)
+char *Curve_extend_mode_string(
+	enum Curve_extend_mode extend_mode)
 /*******************************************************************************
 LAST MODIFIED : 17 November 1999
 
@@ -1116,7 +1116,7 @@ The calling function must not deallocate the returned string.
 {
 	char *return_string;
 
-	ENTER(Control_curve_extend_mode_string);
+	ENTER(Curve_extend_mode_string);
 	switch (extend_mode)
 	{
 		case CONTROL_CURVE_EXTEND_CLAMP:
@@ -1134,32 +1134,32 @@ The calling function must not deallocate the returned string.
 		default:
 		{
 			display_message(ERROR_MESSAGE,
-				"Control_curve_extend_mode_string.  Invalid extend_mode");
+				"Curve_extend_mode_string.  Invalid extend_mode");
 			return_string=(char *)NULL;
 		} break;
 	}
 	LEAVE;
 
 	return (return_string);
-} /* Control_curve_extend_mode_string */
+} /* Curve_extend_mode_string */
 
-char **Control_curve_extend_mode_get_valid_strings(
+char **Curve_extend_mode_get_valid_strings(
 	int *number_of_valid_strings)
 /*******************************************************************************
 LAST MODIFIED : 10 November 1999
 
 DESCRIPTION :
 Returns and allocated array of pointers to all static strings for valid
-Control_curve_extend_modes - obtained from function
-Control_curve_extend_mode_string.
+Curve_extend_modes - obtained from function
+Curve_extend_mode_string.
 Up to calling function to deallocate returned array - but not the strings in it!
 ==============================================================================*/
 {
 	char **valid_strings;
-	enum Control_curve_extend_mode extend_mode;
+	enum Curve_extend_mode extend_mode;
 	int i;
 
-	ENTER(Control_curve_extend_mode_get_valid_strings);
+	ENTER(Curve_extend_mode_get_valid_strings);
 	if (number_of_valid_strings)
 	{
 		*number_of_valid_strings=0;
@@ -1177,7 +1177,7 @@ Up to calling function to deallocate returned array - but not the strings in it!
 			i=0;
 			while (extend_mode<CONTROL_CURVE_EXTEND_MODE_AFTER_LAST)
 			{
-				valid_strings[i]=Control_curve_extend_mode_string(extend_mode);
+				valid_strings[i]=Curve_extend_mode_string(extend_mode);
 				i++;
 				extend_mode++;
 			}
@@ -1185,39 +1185,39 @@ Up to calling function to deallocate returned array - but not the strings in it!
 		else
 		{
 			display_message(ERROR_MESSAGE,
-				"Control_curve_extend_mode_get_valid_strings.  Not enough memory");
+				"Curve_extend_mode_get_valid_strings.  Not enough memory");
 		}
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Control_curve_extend_mode_get_valid_strings.  Invalid argument");
+			"Curve_extend_mode_get_valid_strings.  Invalid argument");
 		valid_strings=(char **)NULL;
 	}
 	LEAVE;
 
 	return (valid_strings);
-} /* Control_curve_extend_mode_get_valid_strings */
+} /* Curve_extend_mode_get_valid_strings */
 
-enum Control_curve_extend_mode Control_curve_extend_mode_from_string(
+enum Curve_extend_mode Curve_extend_mode_from_string(
 	char *extend_mode_string)
 /*******************************************************************************
 LAST MODIFIED : 10 November 1999
 
 DESCRIPTION :
-Returns the <Control_curve_extend_mode> described by <extend_mode_string>.
+Returns the <Curve_extend_mode> described by <extend_mode_string>.
 ==============================================================================*/
 {
-	enum Control_curve_extend_mode extend_mode;
+	enum Curve_extend_mode extend_mode;
 
-	ENTER(Control_curve_extend_mode_from_string);
+	ENTER(Curve_extend_mode_from_string);
 	if (extend_mode_string)
 	{
 		extend_mode=CONTROL_CURVE_EXTEND_MODE_BEFORE_FIRST;
 		extend_mode++;
 		while ((extend_mode<CONTROL_CURVE_EXTEND_MODE_AFTER_LAST)&&
 			(!fuzzy_string_compare_same_length(extend_mode_string,
-				Control_curve_extend_mode_string(extend_mode))))
+				Curve_extend_mode_string(extend_mode))))
 		{
 			extend_mode++;
 		}
@@ -1229,21 +1229,21 @@ Returns the <Control_curve_extend_mode> described by <extend_mode_string>.
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Control_curve_extend_mode_from_string.  Invalid argument");
+			"Curve_extend_mode_from_string.  Invalid argument");
 		extend_mode=CONTROL_CURVE_EXTEND_MODE_INVALID;
 	}
 	LEAVE;
 
 	return (extend_mode);
-} /* Control_curve_extend_mode_from_string */
+} /* Curve_extend_mode_from_string */
 
-struct Control_curve *CREATE(Control_curve)(char *name,
+struct Curve *CREATE(Curve)(char *name,
 	enum FE_basis_type fe_basis_type,int number_of_components)
 /*******************************************************************************
 LAST MODIFIED : 27 March 2003
 
 DESCRIPTION :
-Allocates memory and assigns fields for a struct Control_curve using the given
+Allocates memory and assigns fields for a struct Curve using the given
 basis type - if supported - and number of components - if not to large).
 The curve starts off with no elements and no nodes defined, so its returned
 value will be zero in its initial state.
@@ -1259,10 +1259,10 @@ value will be zero in its initial state.
 	struct FE_element_field_component *parameter_component,**value_components;
 	struct FE_node_field_creator *node_field_creator;
 	struct Standard_node_to_element_map *standard_node_map;
-	struct Control_curve *curve;
+	struct Curve *curve;
 	void *scale_factor_set_identifiers[1];
 
-	ENTER(CREATE(Control_curve));
+	ENTER(CREATE(Curve));
 	if (name)
 	{
 		if (curve=cc_create_blank(name))
@@ -1550,7 +1550,7 @@ value will be zero in its initial state.
 								}
 								if (!return_code)
 								{
-									display_message(ERROR_MESSAGE,"CREATE(Control_curve).  "
+									display_message(ERROR_MESSAGE,"CREATE(Curve).  "
 										"Could not define fields in template_element");
 									return_code=0;
 								}
@@ -1558,7 +1558,7 @@ value will be zero in its initial state.
 							else
 							{
 								display_message(ERROR_MESSAGE,
-									"CREATE(Control_curve).  Could not create template_element");
+									"CREATE(Curve).  Could not create template_element");
 								return_code=0;
 							}
 							DEACCESS(FE_basis)(&parameter_basis);
@@ -1567,7 +1567,7 @@ value will be zero in its initial state.
 						}
 						else
 						{
-							display_message(ERROR_MESSAGE,"CREATE(Control_curve).  "
+							display_message(ERROR_MESSAGE,"CREATE(Curve).  "
 								"Could not define fields at template_node");
 							return_code=0;
 						}
@@ -1575,45 +1575,45 @@ value will be zero in its initial state.
 					else
 					{
 						display_message(ERROR_MESSAGE,
-							"CREATE(Control_curve).  Could not create template_node");
+							"CREATE(Curve).  Could not create template_node");
 						return_code=0;
 					}
 				}
 				else
 				{
 					display_message(ERROR_MESSAGE,
-						"CREATE(Control_curve).  Could not create fields");
+						"CREATE(Curve).  Could not create fields");
 				}
 			}
 			else
 			{
-				display_message(ERROR_MESSAGE,"CREATE(Control_curve).  "
+				display_message(ERROR_MESSAGE,"CREATE(Curve).  "
 					"Could not set basis type or number of components");
 				return_code=0;
 			}
 			if (!return_code)
 			{
-				DESTROY(Control_curve)(&curve);
+				DESTROY(Curve)(&curve);
 			}
 		}
 		else
 		{
 			display_message(ERROR_MESSAGE,
-				"CREATE(Control_curve).  Could not create curve");
+				"CREATE(Curve).  Could not create curve");
 		}
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"CREATE(Control_curve).  Invalid argument(s)");
-		curve=(struct Control_curve *)NULL;
+			"CREATE(Curve).  Invalid argument(s)");
+		curve=(struct Curve *)NULL;
 	}
 	LEAVE;
 
 	return (curve);
-} /* CREATE(Control_curve) */
+} /* CREATE(Curve) */
 
-int DESTROY(Control_curve)(struct Control_curve **curve_ptr)
+int DESTROY(Curve)(struct Curve **curve_ptr)
 /*******************************************************************************
 LAST MODIFIED : 15 November 1999
 
@@ -1622,10 +1622,10 @@ Frees the memory for the fields of <**curve_ptr>, frees the memory for
 <**curve_ptr> and sets <*curve_ptr> to NULL.
 ==============================================================================*/
 {
-	struct Control_curve *curve;
+	struct Curve *curve;
 	int return_code;
 
-	ENTER(DESTROY(Control_curve));
+	ENTER(DESTROY(Curve));
 	if (curve_ptr)
 	{
 		if (curve= *curve_ptr)
@@ -1636,7 +1636,7 @@ Frees the memory for the fields of <**curve_ptr>, frees the memory for
 			if (0!=curve->access_count)
 			{
 				display_message(ERROR_MESSAGE,
-					"DESTROY(Control_curve).  Non-zero access_count");
+					"DESTROY(Curve).  Non-zero access_count");
 			}
 			DEALLOCATE(*curve_ptr);
 		}
@@ -1645,78 +1645,78 @@ Frees the memory for the fields of <**curve_ptr>, frees the memory for
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"DESTROY(Control_curve).  Invalid argument(s)");
+			"DESTROY(Curve).  Invalid argument(s)");
 		return_code=0;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* DESTROY(Control_curve) */
+} /* DESTROY(Curve) */
 
-DECLARE_OBJECT_FUNCTIONS(Control_curve)
-DECLARE_INDEXED_LIST_FUNCTIONS(Control_curve)
-DECLARE_FIND_BY_IDENTIFIER_IN_INDEXED_LIST_FUNCTION(Control_curve,name,char *, \
+DECLARE_OBJECT_FUNCTIONS(Curve)
+DECLARE_INDEXED_LIST_FUNCTIONS(Curve)
+DECLARE_FIND_BY_IDENTIFIER_IN_INDEXED_LIST_FUNCTION(Curve,name,char *, \
 	strcmp)
-DECLARE_INDEXED_LIST_IDENTIFIER_CHANGE_FUNCTIONS(Control_curve,name)
+DECLARE_INDEXED_LIST_IDENTIFIER_CHANGE_FUNCTIONS(Curve,name)
 
-DECLARE_DEFAULT_GET_OBJECT_NAME_FUNCTION(Control_curve)
+DECLARE_DEFAULT_GET_OBJECT_NAME_FUNCTION(Curve)
 
-PROTOTYPE_COPY_OBJECT_FUNCTION(Control_curve)
+PROTOTYPE_COPY_OBJECT_FUNCTION(Curve)
 /*******************************************************************************
 LAST MODIFIED : 1 September 1997
 
 DESCRIPTION :
-syntax: COPY(Control_curve)(destination,source)
+syntax: COPY(Curve)(destination,source)
 Just calls manager copy function which does the same thing.
 ???RC I think copy with/without identifier should be object functions.
 ==============================================================================*/
 {
 	int return_code;
 
-	ENTER(COPY(Control_curve));
-	return_code=MANAGER_COPY_WITH_IDENTIFIER(Control_curve,name)(
+	ENTER(COPY(Curve));
+	return_code=MANAGER_COPY_WITH_IDENTIFIER(Curve,name)(
 		destination,source);
 	LEAVE;
 
 	return (return_code);
-} /* COPY(Control_curve) */
+} /* COPY(Curve) */
 
-PROTOTYPE_MANAGER_COPY_WITH_IDENTIFIER_FUNCTION(Control_curve,name)
+PROTOTYPE_MANAGER_COPY_WITH_IDENTIFIER_FUNCTION(Curve,name)
 {
 	int return_code;
 
-	ENTER(MANAGER_COPY_WITH_IDENTIFIER(Control_curve,name));
+	ENTER(MANAGER_COPY_WITH_IDENTIFIER(Curve,name));
 	if (source&&destination)
 	{
-		return_code=((MANAGER_COPY_WITHOUT_IDENTIFIER(Control_curve,name)
+		return_code=((MANAGER_COPY_WITHOUT_IDENTIFIER(Curve,name)
 			(destination,source))&&
-			(MANAGER_COPY_IDENTIFIER(Control_curve,name)(destination,source->name)));
+			(MANAGER_COPY_IDENTIFIER(Curve,name)(destination,source->name)));
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"MANAGER_COPY_WITH_IDENTIFIER(Control_curve,name).  Invalid argument(s)");
+			"MANAGER_COPY_WITH_IDENTIFIER(Curve,name).  Invalid argument(s)");
 		return_code=0;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* MANAGER_COPY_WITH_IDENTIFIER(Control_curve,name) */
+} /* MANAGER_COPY_WITH_IDENTIFIER(Curve,name) */
 
-PROTOTYPE_MANAGER_COPY_WITHOUT_IDENTIFIER_FUNCTION(Control_curve,name)
+PROTOTYPE_MANAGER_COPY_WITHOUT_IDENTIFIER_FUNCTION(Curve,name)
 {
 	int return_code;
 
-	ENTER(MANAGER_COPY_WITHOUT_IDENTIFIER(Control_curve,name));
+	ENTER(MANAGER_COPY_WITHOUT_IDENTIFIER(Curve,name));
 	return_code=0;		
 	if (destination&&source)
 	{
 		/* check not changing number of components while curve is in use */
 		if ((source->number_of_components!=destination->number_of_components)&&
-			Control_curve_is_in_use(destination))
+			Curve_is_in_use(destination))
 		{
 			display_message(ERROR_MESSAGE,
-				"MANAGER_COPY_WITHOUT_IDENTIFIER(Control_curve,name).  "
+				"MANAGER_COPY_WITHOUT_IDENTIFIER(Curve,name).  "
 				"Cannot change number of components while curve is in use");
 		}
 		else
@@ -1729,7 +1729,7 @@ PROTOTYPE_MANAGER_COPY_WITHOUT_IDENTIFIER_FUNCTION(Control_curve,name)
 			else
 			{
 				display_message(ERROR_MESSAGE,
-					"MANAGER_COPY_WITHOUT_IDENTIFIER(Control_curve,name).  "
+					"MANAGER_COPY_WITHOUT_IDENTIFIER(Curve,name).  "
 					"Could not copy source curve");
 			}
 		}
@@ -1737,20 +1737,20 @@ PROTOTYPE_MANAGER_COPY_WITHOUT_IDENTIFIER_FUNCTION(Control_curve,name)
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"MANAGER_COPY_WITHOUT_IDENTIFIER(Control_curve,name).  "
+			"MANAGER_COPY_WITHOUT_IDENTIFIER(Curve,name).  "
 			"Invalid argument(s)");
 	}
 	LEAVE;
 
 	return (return_code);
-} /* MANAGER_COPY_WITHOUT_IDENTIFIER(Control_curve,name) */
+} /* MANAGER_COPY_WITHOUT_IDENTIFIER(Curve,name) */
 
-PROTOTYPE_MANAGER_COPY_IDENTIFIER_FUNCTION(Control_curve,name,char *)
+PROTOTYPE_MANAGER_COPY_IDENTIFIER_FUNCTION(Curve,name,char *)
 {
 	char *destination_name;
 	int return_code;
 
-	ENTER(MANAGER_COPY_IDENTIFIER(Control_curve,name));
+	ENTER(MANAGER_COPY_IDENTIFIER(Curve,name));
 	if (name&&destination)
 	{
 		if (ALLOCATE(destination_name,char,strlen(name)+1))
@@ -1761,7 +1761,7 @@ PROTOTYPE_MANAGER_COPY_IDENTIFIER_FUNCTION(Control_curve,name,char *)
 		else
 		{
 			display_message(ERROR_MESSAGE,
-				"MANAGER_COPY_IDENTIFIER(Control_curve,name).  Insufficient memory");
+				"MANAGER_COPY_IDENTIFIER(Curve,name).  Insufficient memory");
 			return_code=0;
 		}
 		if (return_code)
@@ -1774,21 +1774,21 @@ PROTOTYPE_MANAGER_COPY_IDENTIFIER_FUNCTION(Control_curve,name,char *)
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"MANAGER_COPY_IDENTIFIER(Control_curve,name).  Invalid argument(s)");
+			"MANAGER_COPY_IDENTIFIER(Curve,name).  Invalid argument(s)");
 		return_code=0;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* MANAGER_COPY_IDENTIFIER(Control_curve,name) */
+} /* MANAGER_COPY_IDENTIFIER(Curve,name) */
 
-DECLARE_MANAGER_FUNCTIONS(Control_curve)
+DECLARE_MANAGER_FUNCTIONS(Curve)
 
-DECLARE_DEFAULT_MANAGED_OBJECT_NOT_IN_USE_FUNCTION(Control_curve)
+DECLARE_DEFAULT_MANAGED_OBJECT_NOT_IN_USE_FUNCTION(Curve)
 
-DECLARE_MANAGER_IDENTIFIER_FUNCTIONS(Control_curve,name,char *)
+DECLARE_MANAGER_IDENTIFIER_FUNCTIONS(Curve,name,char *)
 
-int Control_curve_unitize_vector(FE_value *vector,int number_of_components,
+int Curve_unitize_vector(FE_value *vector,int number_of_components,
 	FE_value *norm)
 /*******************************************************************************
 LAST MODIFIED : 14 October 1997
@@ -1801,7 +1801,7 @@ while norm is returned as zero.
 {
 	int return_code,i;
 
-	ENTER(Control_curve_unitize_vector);
+	ENTER(Curve_unitize_vector);
 	if (vector&&number_of_components&&norm)
 	{
 		/* get new norm or vector */
@@ -1831,15 +1831,15 @@ while norm is returned as zero.
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Control_curve_unitize_vector.  Invalid argument(s)");
+			"Curve_unitize_vector.  Invalid argument(s)");
 		return_code=0;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* Control_curve_unitize_vector */
+} /* Curve_unitize_vector */
 
-int Control_curve_get_node_scale_factor_dparameter(struct Control_curve *curve,
+int Curve_get_node_scale_factor_dparameter(struct Curve *curve,
 	int element_no,int local_node_no,FE_value *sf_dparam)
 /*******************************************************************************
 LAST MODIFIED : 17 November 1999
@@ -1854,13 +1854,13 @@ This value can be used to maintain continuity across element boundaries.
 	int return_code,number_of_nodes;
 	FE_value sf,dparam;
 
-	ENTER(Control_curve_get_node_scale_factor_dparameter);
+	ENTER(Curve_get_node_scale_factor_dparameter);
 	if (curve&&sf_dparam&&
-		Control_curve_get_scale_factor(curve,element_no,local_node_no,&sf)&&
-		Control_curve_get_element_parameter_change(curve,element_no,&dparam))
+		Curve_get_scale_factor(curve,element_no,local_node_no,&sf)&&
+		Curve_get_element_parameter_change(curve,element_no,&dparam))
 	{
 		return_code=1;
-		number_of_nodes=Control_curve_get_nodes_per_element(curve);
+		number_of_nodes=Curve_get_nodes_per_element(curve);
 		if (0<dparam)
 		{
 			*sf_dparam=sf/dparam;
@@ -1869,8 +1869,8 @@ This value can be used to maintain continuity across element boundaries.
 		{
 			if ((0==local_node_no)&&(1<element_no))
 			{
-				if (Control_curve_get_scale_factor(curve,element_no-1,
-					number_of_nodes-1,&sf)&&Control_curve_get_element_parameter_change(
+				if (Curve_get_scale_factor(curve,element_no-1,
+					number_of_nodes-1,&sf)&&Curve_get_element_parameter_change(
 					curve,element_no-1,&dparam)&&(0<dparam))
 				{
 					*sf_dparam=sf/dparam;
@@ -1883,10 +1883,10 @@ This value can be used to maintain continuity across element boundaries.
 			else
 			{
 				if (((number_of_nodes-1)==local_node_no)&&
-					(Control_curve_get_number_of_elements(curve)>element_no))
+					(Curve_get_number_of_elements(curve)>element_no))
 				{
-					if (Control_curve_get_scale_factor(curve,element_no+1,0,&sf)&&
-						Control_curve_get_element_parameter_change(curve,element_no+1,
+					if (Curve_get_scale_factor(curve,element_no+1,0,&sf)&&
+						Curve_get_element_parameter_change(curve,element_no+1,
 						&dparam)&&(0<dparam))
 					{
 						*sf_dparam=sf/dparam;
@@ -1906,17 +1906,17 @@ This value can be used to maintain continuity across element boundaries.
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Control_curve_get_node_scale_factor_dparameter.  Invalid argument(s)");
+			"Curve_get_node_scale_factor_dparameter.  Invalid argument(s)");
 		return_code=0;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* Control_curve_get_node_scale_factor_dparameter */
+} /* Curve_get_node_scale_factor_dparameter */
 
-int Control_curve_enforce_continuity(struct Control_curve *curve,
+int Curve_enforce_continuity(struct Curve *curve,
 	int element_no,int local_node_no,int equal_priority,
-	enum Control_curve_continuity_mode continuity_mode)
+	enum Curve_continuity_mode continuity_mode)
 /*******************************************************************************
 LAST MODIFIED : 17 November 1999
 
@@ -1932,7 +1932,7 @@ boundary node will be adjusted to enforce continuity. Otherwise, the specified
 	int return_code,first,last;
 	struct FE_element *element1,*element2;
 
-	ENTER(Control_curve_enforce_continuity);
+	ENTER(Curve_enforce_continuity);
 	if (curve)
 	{
 		if (curve->parameter_table||cc_build_parameter_table(curve))
@@ -2064,36 +2064,36 @@ boundary node will be adjusted to enforce continuity. Otherwise, the specified
 					default:
 					{
 						display_message(ERROR_MESSAGE,
-							"Control_curve_enforce_continuity.  Unknown continuity mode");
+							"Curve_enforce_continuity.  Unknown continuity mode");
 						return_code=0;
 					} break;
 				}
 				if (!return_code)
 				{
 					display_message(ERROR_MESSAGE,
-						"Control_curve_enforce_continuity.  Error encountered");
+						"Curve_enforce_continuity.  Error encountered");
 				}
 			}
 		}
 		else
 		{
 			display_message(ERROR_MESSAGE,
-				"Control_curve_enforce_continuity.  Could not build parameter table");
+				"Curve_enforce_continuity.  Could not build parameter table");
 			return_code=0;
 		}
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Control_curve_enforce_continuity.  Invalid argument(s)");
+			"Curve_enforce_continuity.  Invalid argument(s)");
 		return_code=0;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* Control_curve_enforce_continuity */
+} /* Curve_enforce_continuity */
 
-int Control_curve_has_1_component(struct Control_curve *curve,void *dummy_void)
+int Curve_has_1_component(struct Curve *curve,void *dummy_void)
 /*******************************************************************************
 LAST MODIFIED : 30 November 1999
 
@@ -2103,7 +2103,7 @@ Returns true if the curve has 1 component - used with choosers.
 {
 	int return_code;
 
-	ENTER(Control_curve_has_1_component);
+	ENTER(Curve_has_1_component);
 	USE_PARAMETER(dummy_void);
 	if (curve)
 	{
@@ -2112,15 +2112,15 @@ Returns true if the curve has 1 component - used with choosers.
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Control_curve_has_1_component.  Missing curve");
+			"Curve_has_1_component.  Missing curve");
 		return_code=0;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* Control_curve_has_1_component */
+} /* Curve_has_1_component */
 
-int Control_curve_is_in_use(struct Control_curve *curve)
+int Curve_is_in_use(struct Curve *curve)
 /*******************************************************************************
 LAST MODIFIED : 4 November 1999
 
@@ -2131,22 +2131,22 @@ somewhere else in the program - apart from being accessed by its manager.
 {
 	int return_code;
 
-	ENTER(Control_curve_is_in_use);
+	ENTER(Curve_is_in_use);
 	if (curve)
 	{
 		return_code=(1 < curve->access_count);
 	}
 	else
 	{
-		display_message(ERROR_MESSAGE,"Control_curve_is_in_use.  Missing curve");
+		display_message(ERROR_MESSAGE,"Curve_is_in_use.  Missing curve");
 		return_code=0;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* Control_curve_is_in_use */
+} /* Curve_is_in_use */
 
-int Control_curve_get_number_of_elements(struct Control_curve *curve)
+int Curve_get_number_of_elements(struct Curve *curve)
 /*******************************************************************************
 LAST MODIFIED : 12 November 1999
 
@@ -2156,7 +2156,7 @@ Returns the number of elements in the curve.
 {
 	int number_of_elements;
 
-	ENTER(Control_curve_get_number_of_elements);
+	ENTER(Curve_get_number_of_elements);
 	if (curve)
 	{
 		number_of_elements=FE_region_get_number_of_FE_elements(curve->fe_region);
@@ -2164,15 +2164,15 @@ Returns the number of elements in the curve.
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Control_curve_get_number_of_elements.  Invalid argument(s)");
+			"Curve_get_number_of_elements.  Invalid argument(s)");
 		number_of_elements=0;
 	}
 	LEAVE;
 
 	return (number_of_elements);
-} /* Control_curve_get_number_of_elements */
+} /* Curve_get_number_of_elements */
 
-int Control_curve_add_element(struct Control_curve *curve,int element_no)
+int Curve_add_element(struct Curve *curve,int element_no)
 /*******************************************************************************
 LAST MODIFIED : 27 March 2003
 
@@ -2198,7 +2198,7 @@ expected to make the element have a finite size.
 	struct FE_node *node,*node_to_copy;
 	struct FE_element *element,*existing_element,*last_element;
 
-	ENTER(Control_curve_add_element);
+	ENTER(Curve_add_element);
 	if (curve&&(0<=(number_of_elements=
 		FE_region_get_number_of_FE_elements(curve->fe_region)))&&
 		(0<element_no)&&((element_no <= number_of_elements+1)))
@@ -2365,7 +2365,7 @@ expected to make the element have a finite size.
 			if (!return_code)
 			{
 				display_message(ERROR_MESSAGE,
-					"Control_curve_add_element.  Could not put element in curve");
+					"Curve_add_element.  Could not put element in curve");
 				DESTROY(FE_element)(&element);
 			}
 			cc_clear_parameter_table(curve);
@@ -2373,22 +2373,22 @@ expected to make the element have a finite size.
 		else
 		{
 			display_message(ERROR_MESSAGE,
-				"Control_curve_add_element.  Could not create new element");
+				"Curve_add_element.  Could not create new element");
 			return_code=0;
 		}
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Control_curve_add_element.  Invalid argument(s)");
+			"Curve_add_element.  Invalid argument(s)");
 		return_code=0;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* Control_curve_add_element */
+} /* Curve_add_element */
 
-int Control_curve_delete_element(struct Control_curve *curve,int element_no,
+int Curve_delete_element(struct Curve *curve,int element_no,
 	int local_node_no)
 /*******************************************************************************
 LAST MODIFIED : 17 November 1999
@@ -2411,7 +2411,7 @@ at the other end of the element being deleted.
 		*right_element;
 	struct FE_node *left_node,*right_node;
 
-	ENTER(Control_curve_delete_element);
+	ENTER(Curve_delete_element);
 	if (curve&&
 		(number_of_elements=FE_region_get_number_of_FE_elements(curve->fe_region))&&
 		(number_of_nodes=FE_region_get_number_of_FE_nodes(curve->fe_region))&&
@@ -2560,7 +2560,7 @@ at the other end of the element being deleted.
 			if (!return_code)
 			{
 				display_message(ERROR_MESSAGE,
-					"Control_curve_delete_element.  Could not delete element from curve");
+					"Curve_delete_element.  Could not delete element from curve");
 				return_code=0;
 			}
 			cc_clear_parameter_table(curve);
@@ -2568,22 +2568,22 @@ at the other end of the element being deleted.
 		else
 		{
 			display_message(ERROR_MESSAGE,
-				"Control_curve_delete_element.  Missing element");
+				"Curve_delete_element.  Missing element");
 			return_code=0;
 		}
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Control_curve_delete_element.  Invalid argument(s)");
+			"Curve_delete_element.  Invalid argument(s)");
 		return_code=0;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* Control_curve_delete_element */
+} /* Curve_delete_element */
 
-int Control_curve_subdivide_element(struct Control_curve *curve,
+int Curve_subdivide_element(struct Curve *curve,
 	int element_no,FE_value split_xi)
 /*******************************************************************************
 LAST MODIFIED : 22 November 1999
@@ -2598,24 +2598,24 @@ of the original.
 	struct FE_node *destination,*source;
 	struct FE_element *element1,*element2,*original_element;
 
-	ENTER(Control_curve_subdivide_element);
+	ENTER(Curve_subdivide_element);
 	if (curve&&(original_element=cc_get_element(curve,element_no))&&
 		(0 <= split_xi)&&(1>=split_xi))
 	{
 		nodes_per_element=curve->value_nodes_per_element;
-		if (Control_curve_get_parameter(curve,element_no,0,&parameter1)&&
-			Control_curve_get_parameter(curve,element_no,nodes_per_element-1,
+		if (Curve_get_parameter(curve,element_no,0,&parameter1)&&
+			Curve_get_parameter(curve,element_no,nodes_per_element-1,
 				&parameter2))
 		{
 			/* add two new elements to the curve to replace the existing one */
-			if (Control_curve_add_element(curve,element_no)&&
-				Control_curve_add_element(curve,element_no))
+			if (Curve_add_element(curve,element_no)&&
+				Curve_add_element(curve,element_no))
 			{
 				number_of_components=curve->number_of_components;
 				/* copy values from original_element to the 2 elements replacing it */
-				Control_curve_set_parameter(curve,element_no+1,0,
+				Curve_set_parameter(curve,element_no+1,0,
 					parameter1+split_xi*(parameter2-parameter1));
-				Control_curve_set_parameter(curve,element_no+2,0,parameter2);
+				Curve_set_parameter(curve,element_no+2,0,parameter2);
 				if ((element1=cc_get_element(curve,element_no))&&
 					(element2=cc_get_element(curve,element_no+1))&&
 					ALLOCATE(values,FE_value,number_of_components)&&
@@ -2638,7 +2638,7 @@ of the original.
 								FE_NODAL_VALUE,values))
 						{
 							/* get magnitude of derivatives at split = sf */
-							Control_curve_unitize_vector(derivatives,number_of_components,
+							Curve_unitize_vector(derivatives,number_of_components,
 								&sf);
 							return_code=(cc_set_node_field_values(destination,
 								curve->value_field,FE_NODAL_D_DS1,derivatives)&&
@@ -2713,15 +2713,15 @@ of the original.
 				if (return_code)
 				{
 					/* remove the original element */
-					Control_curve_delete_element(curve,element_no+2,
+					Curve_delete_element(curve,element_no+2,
 						curve->value_nodes_per_element-1);
 				}
 				else
 				{
 					/* remove the new elements */
-					Control_curve_delete_element(curve,element_no,
+					Curve_delete_element(curve,element_no,
 						curve->value_nodes_per_element-1);
-					Control_curve_delete_element(curve,element_no,
+					Curve_delete_element(curve,element_no,
 						curve->value_nodes_per_element-1);
 				}
 			}
@@ -2738,21 +2738,21 @@ of the original.
 		if (!return_code)
 		{
 			display_message(ERROR_MESSAGE,
-				"Control_curve_subdivide_element.  Error subdividing element");
+				"Curve_subdivide_element.  Error subdividing element");
 		}
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Control_curve_subdivide_element.  Invalid argument(s)");
+			"Curve_subdivide_element.  Invalid argument(s)");
 		return_code=0;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* Control_curve_subdivide_element */
+} /* Curve_subdivide_element */
 
-int Control_curve_get_number_of_components(struct Control_curve *curve)
+int Curve_get_number_of_components(struct Curve *curve)
 /*******************************************************************************
 LAST MODIFIED : 15 November 1999
 
@@ -2762,7 +2762,7 @@ Returns the number of components in the curve field.
 {
 	int return_code;
 
-	ENTER(Control_curve_get_number_of_components);
+	ENTER(Curve_get_number_of_components);
 	if (curve)
 	{
 		return_code=curve->number_of_components;
@@ -2770,15 +2770,15 @@ Returns the number of components in the curve field.
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Control_curve_get_number_of_components.  Invalid argument(s)");
+			"Curve_get_number_of_components.  Invalid argument(s)");
 		return_code=0;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* Control_curve_get_number_of_components */
+} /* Curve_get_number_of_components */
 
-int Control_curve_set_number_of_components(struct Control_curve *curve,
+int Curve_set_number_of_components(struct Curve *curve,
 	int number_of_components)
 /*******************************************************************************
 LAST MODIFIED : 15 November 1999
@@ -2793,7 +2793,7 @@ Returns true if the conversion is successful.
 {
 	int return_code;
 
-	ENTER(Control_curve_set_number_of_components);
+	ENTER(Curve_set_number_of_components);
 	if (curve)
 	{
 		if (number_of_components != curve->number_of_components)
@@ -2806,7 +2806,7 @@ Returns true if the conversion is successful.
 			else
 			{
 				display_message(ERROR_MESSAGE,
-					"Control_curve_set_number_of_components.  Could not convert curve");
+					"Curve_set_number_of_components.  Could not convert curve");
 				return_code=0;
 			}
 		}
@@ -2818,15 +2818,15 @@ Returns true if the conversion is successful.
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Control_curve_set_number_of_components.  Invalid argument(s)");
+			"Curve_set_number_of_components.  Invalid argument(s)");
 		return_code=0;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* Control_curve_set_number_of_components */
+} /* Curve_set_number_of_components */
 
-int Control_curve_get_nodes_per_element(struct Control_curve *curve)
+int Curve_get_nodes_per_element(struct Curve *curve)
 /*******************************************************************************
 LAST MODIFIED : 16 November 1999
 
@@ -2836,7 +2836,7 @@ Returns the number of nodes in each element in the curve.
 {
 	int return_code;
 
-	ENTER(Control_curve_get_nodes_per_element);
+	ENTER(Curve_get_nodes_per_element);
 	if (curve)
 	{
 		return_code=curve->value_nodes_per_element;
@@ -2844,15 +2844,15 @@ Returns the number of nodes in each element in the curve.
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Control_curve_get_nodes_per_element.  Invalid argument(s)");
+			"Curve_get_nodes_per_element.  Invalid argument(s)");
 		return_code=0;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* Control_curve_get_nodes_per_element */
+} /* Curve_get_nodes_per_element */
 
-int Control_curve_get_derivatives_per_node(struct Control_curve *curve)
+int Curve_get_derivatives_per_node(struct Curve *curve)
 /*******************************************************************************
 LAST MODIFIED : 15 November 1999
 
@@ -2862,7 +2862,7 @@ Returns the number of derivatives the curve stores at each node.
 {
 	int return_code;
 
-	ENTER(Control_curve_get_derivatives_per_node);
+	ENTER(Curve_get_derivatives_per_node);
 	if (curve)
 	{
 		return_code=curve->value_derivatives_per_node;
@@ -2870,15 +2870,15 @@ Returns the number of derivatives the curve stores at each node.
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Control_curve_get_derivatives_per_node.  Invalid argument(s)");
+			"Curve_get_derivatives_per_node.  Invalid argument(s)");
 		return_code=0;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* Control_curve_get_derivatives_per_node */
+} /* Curve_get_derivatives_per_node */
 
-enum FE_basis_type Control_curve_get_fe_basis_type(struct Control_curve *curve)
+enum FE_basis_type Curve_get_fe_basis_type(struct Curve *curve)
 /*******************************************************************************
 LAST MODIFIED : 15 November 1999
 
@@ -2888,7 +2888,7 @@ Returns the FE_basis_type used by the curve.
 {
 	enum FE_basis_type fe_basis_type;
 
-	ENTER(Control_curve_get_fe_basis_type);
+	ENTER(Curve_get_fe_basis_type);
 	if (curve)
 	{
 		fe_basis_type=curve->fe_basis_type;
@@ -2896,15 +2896,15 @@ Returns the FE_basis_type used by the curve.
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Control_curve_get_fe_basis_type.  Invalid argument(s)");
+			"Curve_get_fe_basis_type.  Invalid argument(s)");
 		fe_basis_type=NO_RELATION;
 	}
 	LEAVE;
 
 	return (fe_basis_type);
-} /* Control_curve_get_fe_basis_type */
+} /* Curve_get_fe_basis_type */
 
-int Control_curve_set_fe_basis_type(struct Control_curve *curve,
+int Curve_set_fe_basis_type(struct Curve *curve,
 	enum FE_basis_type fe_basis_type)
 /*******************************************************************************
 LAST MODIFIED : 26 July 2002
@@ -2917,7 +2917,7 @@ of information, and when changing to cubic Hermite the slopes will be smoothed.
 {
 	int return_code;
 
-	ENTER(Control_curve_set_fe_basis_type);
+	ENTER(Curve_set_fe_basis_type);
 	if (curve)
 	{
 		if (fe_basis_type != curve->fe_basis_type)
@@ -2930,7 +2930,7 @@ of information, and when changing to cubic Hermite the slopes will be smoothed.
 			else
 			{
 				display_message(ERROR_MESSAGE,
-					"Control_curve_set_fe_basis_type.  Could not convert curve");
+					"Curve_set_fe_basis_type.  Could not convert curve");
 				return_code=0;
 			}
 		}
@@ -2942,15 +2942,15 @@ of information, and when changing to cubic Hermite the slopes will be smoothed.
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Control_curve_set_fe_basis_type.  Invalid argument(s)");
+			"Curve_set_fe_basis_type.  Invalid argument(s)");
 		return_code=0;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* Control_curve_set_fe_basis_type */
+} /* Curve_set_fe_basis_type */
 
-struct FE_field *Control_curve_get_value_field(struct Control_curve *curve)
+struct FE_field *Curve_get_value_field(struct Curve *curve)
 /*******************************************************************************
 LAST MODIFIED : 17 November 1999
 
@@ -2961,7 +2961,7 @@ Returns the value field used by the curve. Needed to access component names.
 {
 	struct FE_field *field;
 
-	ENTER(Control_curve_get_value_field);
+	ENTER(Curve_get_value_field);
 	if (curve)
 	{
 		field=curve->value_field;
@@ -2969,15 +2969,15 @@ Returns the value field used by the curve. Needed to access component names.
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Control_curve_get_value_field.  Invalid argument(s)");
+			"Curve_get_value_field.  Invalid argument(s)");
 		field=(struct FE_field *)NULL;
 	}
 	LEAVE;
 
 	return (field);
-} /* Control_curve_get_value_field */
+} /* Curve_get_value_field */
 
-int Control_curve_get_node_values(struct Control_curve *curve,
+int Curve_get_node_values(struct Curve *curve,
 	int element_no,int local_node_no,FE_value *values)
 /*******************************************************************************
 LAST MODIFIED : 17 November 1999
@@ -2992,7 +2992,7 @@ must ensure <values> array can contain number_of_components FE_values.
 	struct FE_element *element;
 	struct FE_node *node;
 
-	ENTER(Control_curve_get_node_values);
+	ENTER(Curve_get_node_values);
 	if (curve&&values)
 	{
 		if ((element=cc_get_element(curve,element_no))&&
@@ -3004,22 +3004,22 @@ must ensure <values> array can contain number_of_components FE_values.
 		else
 		{
 			display_message(ERROR_MESSAGE,
-				"Control_curve_get_node_values.  Error getting node values");
+				"Curve_get_node_values.  Error getting node values");
 			return_code=0;
 		}
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Control_curve_get_node_values.  Invalid argument(s)");
+			"Curve_get_node_values.  Invalid argument(s)");
 		return_code=0;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* Control_curve_get_node_values */
+} /* Curve_get_node_values */
 
-int Control_curve_set_node_values(struct Control_curve *curve,
+int Curve_set_node_values(struct Curve *curve,
 	int element_no,int local_node_no,FE_value *values)
 /*******************************************************************************
 LAST MODIFIED : 17 November 1999
@@ -3027,14 +3027,14 @@ LAST MODIFIED : 17 November 1999
 DESCRIPTION :
 Sets the value field of a node in the <curve>, identified by the <element>
 it is in and the <local_node_no>.
-Call Control_curve_number_of_components to get the number of components to pass.
+Call Curve_number_of_components to get the number of components to pass.
 ==============================================================================*/
 {
 	int i, return_code;
 	struct FE_element *element;
 	struct FE_node *node;
 
-	ENTER(Control_curve_set_node_values);
+	ENTER(Curve_set_node_values);
 	if (curve&&values)
 	{
 		if ((element=cc_get_element(curve,element_no))&&
@@ -3060,22 +3060,22 @@ Call Control_curve_number_of_components to get the number of components to pass.
 		else
 		{
 			display_message(ERROR_MESSAGE,
-				"Control_curve_set_node_values.  Error setting node values");
+				"Curve_set_node_values.  Error setting node values");
 			return_code=0;
 		}
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Control_curve_set_node_values.  Invalid argument(s)");
+			"Curve_set_node_values.  Invalid argument(s)");
 		return_code=0;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* Control_curve_set_node_values */
+} /* Curve_set_node_values */
 
-int Control_curve_get_node_derivatives(struct Control_curve *curve,
+int Curve_get_node_derivatives(struct Curve *curve,
 	int element_no,int local_node_no,FE_value *derivatives)
 /*******************************************************************************
 LAST MODIFIED : 17 November 1999
@@ -3090,7 +3090,7 @@ must ensure <derivatives> array can contain number_of_components FE_values.
 	struct FE_element *element;
 	struct FE_node *node;
 
-	ENTER(Control_curve_get_node_derivatives);
+	ENTER(Curve_get_node_derivatives);
 	if (curve&&derivatives)
 	{
 		if ((element=cc_get_element(curve,element_no))&&
@@ -3103,22 +3103,22 @@ must ensure <derivatives> array can contain number_of_components FE_values.
 		else
 		{
 			display_message(ERROR_MESSAGE,
-				"Control_curve_get_node_derivatives.  Error getting node derivatives");
+				"Curve_get_node_derivatives.  Error getting node derivatives");
 			return_code=0;
 		}
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Control_curve_get_node_derivatives.  Invalid argument(s)");
+			"Curve_get_node_derivatives.  Invalid argument(s)");
 		return_code=0;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* Control_curve_get_node_derivatives */
+} /* Curve_get_node_derivatives */
 
-int Control_curve_set_node_derivatives(struct Control_curve *curve,
+int Curve_set_node_derivatives(struct Curve *curve,
 	int element_no,int local_node_no,FE_value *derivatives)
 /*******************************************************************************
 LAST MODIFIED : 22 November 1999
@@ -3126,7 +3126,7 @@ LAST MODIFIED : 22 November 1999
 DESCRIPTION :
 Sets the derivatives of a node in the <curve>, identified by the <element>
 it is in and the <local_node_no>.
-Call Control_curve_number_of_components to get the number of components to pass.
+Call Curve_number_of_components to get the number of components to pass.
 Note no checks are made on the derivatives. A normal way to use the derivatives
 is for them to be a unit vector and scaling factors at each local node adjusting
 the length of the vector.
@@ -3136,7 +3136,7 @@ the length of the vector.
 	struct FE_element *element;
 	struct FE_node *node;
 
-	ENTER(Control_curve_set_node_derivatives);
+	ENTER(Curve_set_node_derivatives);
 	if (curve&&derivatives)
 	{
 		if ((element=cc_get_element(curve,element_no))&&
@@ -3149,22 +3149,22 @@ the length of the vector.
 		else
 		{
 			display_message(ERROR_MESSAGE,
-				"Control_curve_set_node_derivatives.  Error setting node derivatives");
+				"Curve_set_node_derivatives.  Error setting node derivatives");
 			return_code=0;
 		}
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Control_curve_set_node_derivatives.  Invalid argument(s)");
+			"Curve_set_node_derivatives.  Invalid argument(s)");
 		return_code=0;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* Control_curve_set_node_derivatives */
+} /* Curve_set_node_derivatives */
 
-int Control_curve_get_scale_factor(struct Control_curve *curve,
+int Curve_get_scale_factor(struct Curve *curve,
 	int element_no,int local_node_no,FE_value *scale_factor)
 /*******************************************************************************
 LAST MODIFIED : 17 November 1999
@@ -3176,7 +3176,7 @@ are multiplied by - cubic Hermite basis only.
 {
 	int return_code;
 
-	ENTER(Control_curve_get_scale_factor);
+	ENTER(Curve_get_scale_factor);
 	if (curve&&scale_factor)
 	{
 		if (CUBIC_HERMITE==curve->fe_basis_type)
@@ -3186,7 +3186,7 @@ are multiplied by - cubic Hermite basis only.
 		}
 		else
 		{
-			display_message(ERROR_MESSAGE,"Control_curve_get_scale_factor.  "
+			display_message(ERROR_MESSAGE,"Curve_get_scale_factor.  "
 				"Only cubic Hermite basis has scale factors");
 			return_code=0;
 		}
@@ -3194,15 +3194,15 @@ are multiplied by - cubic Hermite basis only.
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Control_curve_get_scale_factor.  Invalid argument(s)");
+			"Curve_get_scale_factor.  Invalid argument(s)");
 		return_code=0;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* Control_curve_get_scale_factor */
+} /* Curve_get_scale_factor */
 
-int Control_curve_set_scale_factor(struct Control_curve *curve,
+int Curve_set_scale_factor(struct Curve *curve,
 	int element_no,int local_node_no,FE_value scale_factor)
 /*******************************************************************************
 LAST MODIFIED : 17 November 1999
@@ -3211,12 +3211,12 @@ DESCRIPTION :
 Sets the scale factor that the derivatives at <local_node_no> in <element_no>
 are multiplied by - cubic Hermite basis only. Apply continuous velocities by
 adjusting these values for the parameter change over the element.
-See also Control_curve_set_node_derivatives.
+See also Curve_set_node_derivatives.
 ==============================================================================*/
 {
 	int return_code;
 
-	ENTER(Control_curve_set_scale_factor);
+	ENTER(Curve_set_scale_factor);
 	if (curve)
 	{
 		if (CUBIC_HERMITE==curve->fe_basis_type)
@@ -3226,7 +3226,7 @@ See also Control_curve_set_node_derivatives.
 		}
 		else
 		{
-			display_message(ERROR_MESSAGE,"Control_curve_set_scale_factor.  "
+			display_message(ERROR_MESSAGE,"Curve_set_scale_factor.  "
 				"Only cubic Hermite basis has scale factors");
 			return_code=0;
 		}
@@ -3234,15 +3234,15 @@ See also Control_curve_set_node_derivatives.
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Control_curve_set_scale_factor.  Invalid argument(s)");
+			"Curve_set_scale_factor.  Invalid argument(s)");
 		return_code=0;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* Control_curve_set_scale_factor */
+} /* Curve_set_scale_factor */
 
-int Control_curve_is_node_parameter_modifiable(struct Control_curve *curve,
+int Curve_is_node_parameter_modifiable(struct Curve *curve,
 	int local_node_no)
 /*******************************************************************************
 LAST MODIFIED : 17 November 1999
@@ -3255,7 +3255,7 @@ kept proportional to xi over each element.
 {
 	int return_code;
 
-	ENTER(Control_curve_is_node_parameter_modifiable);
+	ENTER(Curve_is_node_parameter_modifiable);
 	if (curve&&(0<=local_node_no)&&(local_node_no<curve->value_nodes_per_element))
 	{
 		return_code=((0 == local_node_no) ||
@@ -3264,15 +3264,15 @@ kept proportional to xi over each element.
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Control_curve_is_node_parameter_modifiable.  Invalid argument(s)");
+			"Curve_is_node_parameter_modifiable.  Invalid argument(s)");
 		return_code=0;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* Control_curve_is_node_parameter_modifiable */
+} /* Curve_is_node_parameter_modifiable */
 
-int Control_curve_get_parameter(struct Control_curve *curve,
+int Curve_get_parameter(struct Curve *curve,
 	int element_no,int local_node_no,FE_value *parameter)
 /*******************************************************************************
 LAST MODIFIED : 17 November 1999
@@ -3284,7 +3284,7 @@ Returns the parameter at the given <element_no> <local_node_no> in <curve>.
 	FE_value f;
 	int return_code;
 
-	ENTER(Control_curve_get_parameter);
+	ENTER(Curve_get_parameter);
 	if (curve&&(0<=local_node_no)&&
 		(local_node_no<curve->value_nodes_per_element)&&parameter)
 	{
@@ -3316,29 +3316,29 @@ Returns the parameter at the given <element_no> <local_node_no> in <curve>.
 			else
 			{
 				display_message(ERROR_MESSAGE,
-					"Control_curve_get_parameter.  Missing element");
+					"Curve_get_parameter.  Missing element");
 				return_code=0;
 			}
 		}
 		else
 		{
 			display_message(ERROR_MESSAGE,
-				"Control_curve_get_parameter.  Could not build parameter table");
+				"Curve_get_parameter.  Could not build parameter table");
 			return_code=0;
 		}
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Control_curve_get_parameter.  Invalid argument(s)");
+			"Curve_get_parameter.  Invalid argument(s)");
 		return_code=0;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* Control_curve_get_parameter */
+} /* Curve_get_parameter */
 
-int Control_curve_set_parameter(struct Control_curve *curve,
+int Curve_set_parameter(struct Curve *curve,
 	int element_no,int local_node_no,FE_value parameter)
 /*******************************************************************************
 LAST MODIFIED : 22 November 1999
@@ -3352,7 +3352,7 @@ Sets the parameter at the given <element_no> <local_node_no> in <curve>.
 	struct FE_element *element;
 	struct FE_node *node;
 
-	ENTER(Control_curve_get_parameter);
+	ENTER(Curve_get_parameter);
 	if (curve&&((0==local_node_no)||
 		((curve->value_nodes_per_element-1)==local_node_no)))
 	{
@@ -3374,29 +3374,29 @@ Sets the parameter at the given <element_no> <local_node_no> in <curve>.
 			else
 			{
 				display_message(ERROR_MESSAGE,
-					"Control_curve_set_parameter.  Missing node");
+					"Curve_set_parameter.  Missing node");
 				return_code=0;
 			}
 		}
 		else
 		{
 			display_message(ERROR_MESSAGE,
-				"Control_curve_set_parameter.  Missing element");
+				"Curve_set_parameter.  Missing element");
 			return_code=0;
 		}
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Control_curve_set_parameter.  Invalid argument(s)");
+			"Curve_set_parameter.  Invalid argument(s)");
 		return_code=0;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* Control_curve_set_parameter */
+} /* Curve_set_parameter */
 
-int Control_curve_get_edit_component_range(struct Control_curve *curve,
+int Curve_get_edit_component_range(struct Curve *curve,
 	int comp_no,FE_value *min_range,FE_value *max_range)
 /*******************************************************************************
 LAST MODIFIED : 17 November 1999
@@ -3408,7 +3408,7 @@ These values are used by the interactive curve editor.
 {
 	int return_code;
 
-	ENTER(Control_curve_get_edit_component_range);
+	ENTER(Curve_get_edit_component_range);
 	/* check arguments */
 	if (curve&&curve->min_value&&curve->max_value&&
 		min_range&&max_range&&(0 <= comp_no)&&
@@ -3421,15 +3421,15 @@ These values are used by the interactive curve editor.
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Control_curve_get_edit_component_range.  Invalid argument(s)");
+			"Curve_get_edit_component_range.  Invalid argument(s)");
 		return_code=0;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* Control_curve_get_edit_component_range */
+} /* Curve_get_edit_component_range */
 
-int Control_curve_set_edit_component_range(struct Control_curve *curve,
+int Curve_set_edit_component_range(struct Curve *curve,
 	int comp_no,FE_value min_range,FE_value max_range)
 /*******************************************************************************
 LAST MODIFIED : 17 November 1999
@@ -3441,7 +3441,7 @@ These values are used by the interactive curve editor.
 {
 	int return_code;
 
-	ENTER(Control_curve_set_edit_component_range);
+	ENTER(Curve_set_edit_component_range);
 	/* check arguments */
 	if (curve&&curve->max_value&&curve->min_value&&
 		(0 <= comp_no)&&(comp_no<curve->number_of_components))
@@ -3461,16 +3461,16 @@ These values are used by the interactive curve editor.
 	}
 	else
 	{
-		display_message(ERROR_MESSAGE,"Control_curve_set_edit_component_range.  "
+		display_message(ERROR_MESSAGE,"Curve_set_edit_component_range.  "
 			"Invalid argument(s)");
 		return_code=0;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* Control_curve_set_edit_component_range */
+} /* Curve_set_edit_component_range */
 
-int Control_curve_get_element_parameter_change(struct Control_curve *curve,
+int Curve_get_element_parameter_change(struct Curve *curve,
 	int element_no,FE_value *parameter_change)
 /*******************************************************************************
 LAST MODIFIED : 17 November 1999
@@ -3481,7 +3481,7 @@ Returns the change in parameter over <element_no> of <curve>.
 {
 	int return_code;
 
-	ENTER(Control_curve_get_element_parameter_change);
+	ENTER(Curve_get_element_parameter_change);
 	if (curve&&parameter_change)
 	{
 		if (curve->parameter_table||cc_build_parameter_table(curve))
@@ -3495,14 +3495,14 @@ Returns the change in parameter over <element_no> of <curve>.
 			else
 			{
 				display_message(ERROR_MESSAGE,
-					"Control_curve_get_element_parameter_change.  Invalid element");
+					"Curve_get_element_parameter_change.  Invalid element");
 				return_code=0;
 			}
 		}
 		else
 		{
 			display_message(ERROR_MESSAGE,
-				"Control_curve_get_element_parameter_change.  "
+				"Curve_get_element_parameter_change.  "
 				"Could not build parameter table");
 			return_code=0;
 		}
@@ -3510,15 +3510,15 @@ Returns the change in parameter over <element_no> of <curve>.
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Control_curve_get_element_parameter_change.  Invalid argument(s)");
+			"Curve_get_element_parameter_change.  Invalid argument(s)");
 		return_code=0;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* Control_curve_get_element_parameter_change */
+} /* Curve_get_element_parameter_change */
 
-int Control_curve_get_parameter_range(struct Control_curve *curve,
+int Curve_get_parameter_range(struct Curve *curve,
 	FE_value *min_parameter,FE_value *max_parameter)
 /*******************************************************************************
 LAST MODIFIED : 17 November 1999
@@ -3529,7 +3529,7 @@ Returns the minimum and maximum parameter values in <curve>.
 {
 	int return_code;
 
-	ENTER(Control_curve_get_parameter_range);
+	ENTER(Curve_get_parameter_range);
 	if (curve&&min_parameter&&max_parameter)
 	{
 		if (curve->parameter_table||cc_build_parameter_table(curve))
@@ -3543,14 +3543,14 @@ Returns the minimum and maximum parameter values in <curve>.
 			else
 			{
 				display_message(ERROR_MESSAGE,
-					"Control_curve_get_parameter_range.  Invalid element");
+					"Curve_get_parameter_range.  Invalid element");
 				return_code=0;
 			}
 		}
 		else
 		{
 			display_message(ERROR_MESSAGE,
-				"Control_curve_get_parameter_range.  "
+				"Curve_get_parameter_range.  "
 				"Could not build parameter table");
 			return_code=0;
 		}
@@ -3558,15 +3558,15 @@ Returns the minimum and maximum parameter values in <curve>.
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Control_curve_get_parameter_range.  Invalid argument(s)");
+			"Curve_get_parameter_range.  Invalid argument(s)");
 		return_code=0;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* Control_curve_get_parameter_range */
+} /* Curve_get_parameter_range */
 
-int Control_curve_get_parameter_grid(struct Control_curve *curve,
+int Curve_get_parameter_grid(struct Curve *curve,
 	FE_value *parameter_grid)
 /*******************************************************************************
 LAST MODIFIED : 10 November 1999
@@ -3578,7 +3578,7 @@ allowed by the curve editor. Also controls display of grids in the editor.
 {
 	int return_code;
 
-	ENTER(Control_curve_get_parameter_grid);
+	ENTER(Curve_get_parameter_grid);
 	if (curve&&parameter_grid)
 	{
 		*parameter_grid=curve->parameter_grid;
@@ -3587,15 +3587,15 @@ allowed by the curve editor. Also controls display of grids in the editor.
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Control_curve_get_parameter_grid.  Invalid argument(s)");
+			"Curve_get_parameter_grid.  Invalid argument(s)");
 		return_code=0;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* Control_curve_get_parameter_grid */
+} /* Curve_get_parameter_grid */
 
-int Control_curve_set_parameter_grid(struct Control_curve *curve,
+int Curve_set_parameter_grid(struct Curve *curve,
 	FE_value parameter_grid)
 /*******************************************************************************
 LAST MODIFIED : 10 November 1999
@@ -3607,7 +3607,7 @@ allowed by the curve editor. Also controls display of grids in the editor.
 {
 	int return_code;
 
-	ENTER(Control_curve_set_parameter_grid);
+	ENTER(Curve_set_parameter_grid);
 	if (curve&&(0.0 <= parameter_grid))
 	{
 		curve->parameter_grid=parameter_grid;
@@ -3616,15 +3616,15 @@ allowed by the curve editor. Also controls display of grids in the editor.
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Control_curve_set_parameter_grid.  Invalid argument(s)");
+			"Curve_set_parameter_grid.  Invalid argument(s)");
 		return_code=0;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* Control_curve_set_parameter_grid */
+} /* Curve_set_parameter_grid */
 
-int Control_curve_get_value_grid(struct Control_curve *curve,
+int Curve_get_value_grid(struct Curve *curve,
 	FE_value *value_grid)
 /*******************************************************************************
 LAST MODIFIED : 22 November 1999
@@ -3636,7 +3636,7 @@ allowed by the curve editor. Also controls display of grids in the editor.
 {
 	int return_code;
 
-	ENTER(Control_curve_get_value_grid);
+	ENTER(Curve_get_value_grid);
 	if (curve&&value_grid)
 	{
 		*value_grid=curve->value_grid;
@@ -3645,15 +3645,15 @@ allowed by the curve editor. Also controls display of grids in the editor.
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Control_curve_get_value_grid.  Invalid argument(s)");
+			"Curve_get_value_grid.  Invalid argument(s)");
 		return_code=0;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* Control_curve_get_value_grid */
+} /* Curve_get_value_grid */
 
-int Control_curve_set_value_grid(struct Control_curve *curve,
+int Curve_set_value_grid(struct Curve *curve,
 	FE_value value_grid)
 /*******************************************************************************
 LAST MODIFIED : 10 November 1999
@@ -3665,7 +3665,7 @@ allowed by the curve editor. Also controls display of grids in the editor.
 {
 	int return_code;
 
-	ENTER(Control_curve_set_value_grid);
+	ENTER(Curve_set_value_grid);
 	if (curve&&(0.0 <= value_grid))
 	{
 		curve->value_grid=value_grid;
@@ -3674,28 +3674,28 @@ allowed by the curve editor. Also controls display of grids in the editor.
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Control_curve_set_value_grid.  Invalid argument(s)");
+			"Curve_set_value_grid.  Invalid argument(s)");
 		return_code=0;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* Control_curve_set_value_grid */
+} /* Curve_set_value_grid */
 
-enum Control_curve_extend_mode Control_curve_get_extend_mode(
-	struct Control_curve *curve)
+enum Curve_extend_mode Curve_get_extend_mode(
+	struct Curve *curve)
 /*******************************************************************************
 LAST MODIFIED : 9 February 2000
 
 DESCRIPTION :
 Returns the mode used for evaluating the values returned for a parameter
 outside the range of parameters defined for a curve. The definition of
-enum Control_curve_extend_mode gives more information.
+enum Curve_extend_mode gives more information.
 ==============================================================================*/
 {
-	enum Control_curve_extend_mode extend_mode;
+	enum Curve_extend_mode extend_mode;
 
-	ENTER(Control_curve_get_extend_mode);
+	ENTER(Curve_get_extend_mode);
 	if (curve)
 	{
 		extend_mode = curve->extend_mode;
@@ -3703,28 +3703,28 @@ enum Control_curve_extend_mode gives more information.
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Control_curve_get_extend_mode.  Invalid argument(s)");
+			"Curve_get_extend_mode.  Invalid argument(s)");
 		extend_mode=CONTROL_CURVE_EXTEND_MODE_INVALID;
 	}
 	LEAVE;
 
 	return (extend_mode);
-} /* Control_curve_get_extend_mode */
+} /* Curve_get_extend_mode */
 
-int Control_curve_set_extend_mode(struct Control_curve *curve,
-	enum Control_curve_extend_mode extend_mode)
+int Curve_set_extend_mode(struct Curve *curve,
+	enum Curve_extend_mode extend_mode)
 /*******************************************************************************
 LAST MODIFIED : 8 November 1999
 
 DESCRIPTION :
 Sets the mode used for evaluating the values returned for a parameter outside the
 range of parameters defined for a curve.  The definition of
-enum Control_curve_extend_mode gives more information.
+enum Curve_extend_mode gives more information.
 ==============================================================================*/
 {
 	int return_code;
 
-	ENTER(Control_curve_set_extend_mode);
+	ENTER(Curve_set_extend_mode);
 	/* check arguments */
 	if (curve)
 	{
@@ -3740,7 +3740,7 @@ enum Control_curve_extend_mode gives more information.
 			default:
 			{
 				display_message(ERROR_MESSAGE,
-					"Control_curve_set_extend_mode.  Unknown play mode");
+					"Curve_set_extend_mode.  Unknown play mode");
 				return_code=0;
 			} break;
 		}
@@ -3748,16 +3748,16 @@ enum Control_curve_extend_mode gives more information.
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Control_curve_set_extend_mode.  Invalid argument(s)");
+			"Curve_set_extend_mode.  Invalid argument(s)");
 		return_code=0;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* Control_curve_set_extend_mode */
+} /* Curve_set_extend_mode */
 
-int Control_curve_get_type(struct Control_curve *curve,
-	enum Control_curve_type *type)
+int Curve_get_type(struct Curve *curve,
+	enum Curve_type *type)
 /*******************************************************************************
 LAST MODIFIED : 15 April 1998
 
@@ -3768,7 +3768,7 @@ for other purposes and the parameter curves applicable to them.
 {
 	int return_code;
 
-	ENTER(Control_curve_get_type);
+	ENTER(Curve_get_type);
 	/* check arguments */
 	if (curve&&type)
 	{
@@ -3778,28 +3778,28 @@ for other purposes and the parameter curves applicable to them.
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Control_curve_get_type.  Invalid argument(s)");
+			"Curve_get_type.  Invalid argument(s)");
 		return_code=0;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* Control_curve_get_type */
+} /* Curve_get_type */
 
-int Control_curve_set_type(struct Control_curve *curve,
-	enum Control_curve_type type)
+int Curve_set_type(struct Curve *curve,
+	enum Curve_type type)
 /*******************************************************************************
 LAST MODIFIED : 15 April 1998
 
 DESCRIPTION :
 Sets the type which applications can use to distinguish between parameter curves
 for other purposes and the parameter curves applicable to them.  Applications
-can define their own type in the enum Control_curve_type in curve/curve.h
+can define their own type in the enum Curve_type in curve/curve.h
 ==============================================================================*/
 {
 	int return_code;
 
-	ENTER(Control_curve_set_type);
+	ENTER(Curve_set_type);
 	/* check arguments */
 	if (curve)
 	{
@@ -3809,15 +3809,15 @@ can define their own type in the enum Control_curve_type in curve/curve.h
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Control_curve_set_type.  Invalid argument(s)");
+			"Curve_set_type.  Invalid argument(s)");
 		return_code=0;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* Control_curve_set_type */
+} /* Curve_set_type */
 
-int Control_curve_get_values_at_parameter(struct Control_curve *curve,
+int Curve_get_values_at_parameter(struct Curve *curve,
 	FE_value parameter,FE_value *values,FE_value *derivatives)
 /*******************************************************************************
 LAST MODIFIED : 16 November 1999
@@ -3826,7 +3826,7 @@ DESCRIPTION :
 Returns <values> and optional <derivatives> - w.r.t. the parameter - of the
 <curve> at <parameter>. Note that if the parameter change over an element is not
 positive, zero derivatives are returned instead with a warning.
-Call Control_curve_number_of_components to get number of components returned.
+Call Curve_number_of_components to get number of components returned.
 Calling function must ensure values and derivatives each allocated with enough
 space for number_of_components in the curve.
 ==============================================================================*/
@@ -3835,7 +3835,7 @@ space for number_of_components in the curve.
 	int comp_no,element_no,number_of_elements,return_code;
 	struct FE_element *element;
 
-	ENTER(Control_curve_get_values_at_parameter);
+	ENTER(Curve_get_values_at_parameter);
 	if (curve&&values)
 	{
 		if (curve->parameter_table||cc_build_parameter_table(curve))
@@ -3890,7 +3890,7 @@ space for number_of_components in the curve.
 						default:
 						{
 							display_message(ERROR_MESSAGE,
-								"Control_curve_get_values_at_parameter.  Invalid play mode");
+								"Curve_get_values_at_parameter.  Invalid play mode");
 							return_code=0;
 						} break;
 					}
@@ -3936,7 +3936,7 @@ space for number_of_components in the curve.
 						default:
 						{
 							display_message(ERROR_MESSAGE,
-								"Control_curve_get_values_at_parameter.  Invalid play mode");
+								"Curve_get_values_at_parameter.  Invalid play mode");
 							return_code=0;
 						} break;
 					}
@@ -3977,7 +3977,7 @@ space for number_of_components in the curve.
 								else
 								{
 									display_message(WARNING_MESSAGE,
-										"Control_curve_get_values_in_element.  "
+										"Curve_get_values_in_element.  "
 										"Parameter change not >0 in element; zero derivatives");
 									for (comp_no=0;comp_no<curve->number_of_components;comp_no++)
 									{
@@ -3990,7 +3990,7 @@ space for number_of_components in the curve.
 					else
 					{
 						display_message(ERROR_MESSAGE,
-							"Control_curve_get_values_at_parameter.  Missing element");
+							"Curve_get_values_at_parameter.  Missing element");
 						return_code=0;
 					}
 				}
@@ -3998,14 +3998,14 @@ space for number_of_components in the curve.
 			else
 			{
 				display_message(ERROR_MESSAGE,
-					"Control_curve_get_values_at_parameter.  Empty curve");
+					"Curve_get_values_at_parameter.  Empty curve");
 				return_code=0;
 			}
 		}
 		else
 		{
 			display_message(ERROR_MESSAGE,
-				"Control_curve_get_values_at_parameter.  "
+				"Curve_get_values_at_parameter.  "
 				"Could not build parameter table");
 			return_code=0;
 		}
@@ -4013,15 +4013,15 @@ space for number_of_components in the curve.
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Control_curve_get_values_at_parameter.  Invalid argument(s)");
+			"Curve_get_values_at_parameter.  Invalid argument(s)");
 		return_code=0;
 	}
 	LEAVE;
 
 	return return_code;
-} /* Control_curve_get_values_at_parameter */
+} /* Curve_get_values_at_parameter */
 
-int Control_curve_get_values_in_element(struct Control_curve *curve,
+int Curve_get_values_in_element(struct Curve *curve,
 	int element_no,FE_value xi,FE_value *values,FE_value *derivatives)
 /*******************************************************************************
 LAST MODIFIED : 17 November 1999
@@ -4029,7 +4029,7 @@ LAST MODIFIED : 17 November 1999
 DESCRIPTION :
 Returns <values> and optional <derivatives> - w.r.t. xi - of the <curve> in
 element <element_no> at <xi> (from 0.0 to 1.0).
-Call Control_curve_number_of_components to get number of components returned.
+Call Curve_number_of_components to get number of components returned.
 Calling function must ensure values and derivatives each allocated with enough
 space for number_of_components in the curve.
 ==============================================================================*/
@@ -4037,7 +4037,7 @@ space for number_of_components in the curve.
 	int return_code;
 	struct FE_element *element;
 
-	ENTER(Control_curve_get_values_in_element);
+	ENTER(Curve_get_values_in_element);
 	if (curve&&(0.0 <= xi)&&(1.0 >= xi)&&values)
 	{
 		if (element=cc_get_element(curve,element_no))
@@ -4050,30 +4050,30 @@ space for number_of_components in the curve.
 			else
 			{
 				display_message(ERROR_MESSAGE,
-					"Control_curve_get_values_in_element.  Unable to calculate values");
+					"Curve_get_values_in_element.  Unable to calculate values");
 				return_code=0;
 			}
 		}
 		else
 		{
 			display_message(ERROR_MESSAGE,
-				"Control_curve_get_values_in_element.  Missing element");
+				"Curve_get_values_in_element.  Missing element");
 			return_code=0;
 		}
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Control_curve_get_values_in_element.  Invalid argument(s)");
+			"Curve_get_values_in_element.  Invalid argument(s)");
 		return_code=0;
 	}
 	LEAVE;
 
 	return return_code;
-} /* Control_curve_get_values_in_element */
+} /* Curve_get_values_in_element */
 
-int Control_curve_calculate_component_over_element(
-	struct Control_curve *curve,int element_no,int component_no,
+int Curve_calculate_component_over_element(
+	struct Curve *curve,int element_no,int component_no,
 	int num_segments,FE_value *values)
 /*******************************************************************************
 LAST MODIFIED : 17 November 1999
@@ -4090,7 +4090,7 @@ Used for efficiently drawing the curve in the Curve editor.
 	struct FE_element *element;
 	struct FE_element_field_values *element_field_values;
 
-	ENTER(Control_curve_calculate_component_over_element);
+	ENTER(Curve_calculate_component_over_element);
 	if (curve&&values)
 	{
 		if (element=cc_get_element(curve,element_no))
@@ -4134,15 +4134,15 @@ Used for efficiently drawing the curve in the Curve editor.
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Control_curve_calculate_component_over_element.  Invalid argument(s)");
+			"Curve_calculate_component_over_element.  Invalid argument(s)");
 		return_code=0;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* Control_curve_calculate_component_over_element */
+} /* Curve_calculate_component_over_element */
 
-int Control_curve_get_parameter_in_element(struct Control_curve *curve,
+int Curve_get_parameter_in_element(struct Curve *curve,
 	int element_no,FE_value xi,FE_value *parameter)
 /*******************************************************************************
 LAST MODIFIED : 16 November 1999
@@ -4153,7 +4153,7 @@ Returns the <parameter> at <element_no> <xi> of <curve>.
 {
 	int return_code;
 
-	ENTER(Control_curve_get_parameter_in_element);
+	ENTER(Curve_get_parameter_in_element);
 	if (curve&&(0.0 <= xi)&&(1.0 >= xi)&&parameter)
 	{
 		if (curve->parameter_table||cc_build_parameter_table(curve))
@@ -4168,14 +4168,14 @@ Returns the <parameter> at <element_no> <xi> of <curve>.
 			else
 			{
 				display_message(ERROR_MESSAGE,
-					"Control_curve_get_parameter_in_element.  Missing element");
+					"Curve_get_parameter_in_element.  Missing element");
 				return_code=0;
 			}
 		}
 		else
 		{
 			display_message(ERROR_MESSAGE,
-				"Control_curve_get_parameter_in_element.  "
+				"Curve_get_parameter_in_element.  "
 				"Could not build parameter table");
 			return_code=0;
 		}
@@ -4183,15 +4183,15 @@ Returns the <parameter> at <element_no> <xi> of <curve>.
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Control_curve_get_parameter_in_element.  Invalid argument(s)");
+			"Curve_get_parameter_in_element.  Invalid argument(s)");
 		return_code=0;
 	}
 	LEAVE;
 
 	return return_code;
-} /* Control_curve_get_parameter_in_element */
+} /* Curve_get_parameter_in_element */
 
-int Control_curve_find_node_at_parameter(struct Control_curve *curve,
+int Curve_find_node_at_parameter(struct Curve *curve,
 	FE_value parameter, int *element_no, int *local_node_no )
 /*******************************************************************************
 LAST MODIFIED : 16 November 1999
@@ -4205,7 +4205,7 @@ If no such node exists the return code is zero.
 	int temp_element_no, temp_local_node_no, nodes_per_element, return_code;
 	FE_value *parameters, temp_parameter, temp_xi;
 
-	ENTER(Control_curve_find_node_at_parameter);
+	ENTER(Curve_find_node_at_parameter);
 	if ( curve && element_no && local_node_no )
 	{
 		if (curve->parameter_table||cc_build_parameter_table(curve))
@@ -4228,7 +4228,7 @@ If no such node exists the return code is zero.
 				}
 				else
 				{
-					nodes_per_element = Control_curve_get_nodes_per_element(curve);
+					nodes_per_element = Curve_get_nodes_per_element(curve);
 					if ( parameter == parameters[temp_element_no])
 					{
 						/* Special case of last node in parameter curve */
@@ -4269,7 +4269,7 @@ If no such node exists the return code is zero.
 		else
 		{
 			display_message(ERROR_MESSAGE,
-				"Control_curve_get_parameter_in_element.  "
+				"Curve_get_parameter_in_element.  "
 				"Could not build parameter table");
 			return_code=0;
 		}
@@ -4277,16 +4277,16 @@ If no such node exists the return code is zero.
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Control_curve_find_node_at_parameter.  Invalid argument(s)");
+			"Curve_find_node_at_parameter.  Invalid argument(s)");
 		return_code=0;
 	}
 
 	LEAVE;
 
 	return (return_code);
-} /* Control_curve_find_node_at_parameter */
+} /* Curve_find_node_at_parameter */
 
-int Control_curve_find_element_at_parameter(struct Control_curve *curve,
+int Curve_find_element_at_parameter(struct Curve *curve,
 	FE_value parameter, int *element_no, FE_value *xi )
 /*******************************************************************************
 LAST MODIFIED : 17 November 1999
@@ -4299,7 +4299,7 @@ If there is an element in <curve> defined at <parameter>, returns the
 	int temp_element_no,number_of_elements,return_code;
 	FE_value *parameters;
 
-	ENTER(Control_curve_find_element_at_parameter);
+	ENTER(Curve_find_element_at_parameter);
 	if ( curve && element_no && xi )
 	{
 		if (curve->parameter_table||cc_build_parameter_table(curve))
@@ -4337,7 +4337,7 @@ If there is an element in <curve> defined at <parameter>, returns the
 		else
 		{
 			display_message(ERROR_MESSAGE,
-				"Control_curve_find_element_at_parameter.  "
+				"Curve_find_element_at_parameter.  "
 				"Could not build parameter table");
 			return_code=0;
 		}
@@ -4345,16 +4345,16 @@ If there is an element in <curve> defined at <parameter>, returns the
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Control_curve_find_element_at_parameter.  Invalid argument(s)");
+			"Curve_find_element_at_parameter.  Invalid argument(s)");
 		return_code=0;
 	}
 
 	LEAVE;
 
 	return (return_code);
-} /* Control_curve_find_element_at_parameter */
+} /* Curve_find_element_at_parameter */
 
-struct Control_curve_definition
+struct Curve_definition
 /*******************************************************************************
 LAST MODIFIED : 29 November 1999
 
@@ -4366,11 +4366,11 @@ DESCRIPTION :
 	int fe_basis_type_set;
 	int number_of_components;
 	int number_of_components_set;
-	struct Control_curve *curve,*curve_to_be_modified;
+	struct Curve *curve,*curve_to_be_modified;
 	struct IO_stream_package *io_stream_package;
-}; /* struct Control_curve_definition */
+}; /* struct Curve_definition */
 
-int define_Control_curve_information(struct Parse_state *state,
+int define_Curve_information(struct Parse_state *state,
 	void *curve_definition_void,void *dummy_void)
 /*******************************************************************************
 LAST MODIFIED : 9 February 2000
@@ -4379,19 +4379,19 @@ DESCRIPTION :
 ==============================================================================*/
 {
 	char *extend_mode_string,*file_name,**valid_strings;
-	enum Control_curve_extend_mode extend_mode;
+	enum Curve_extend_mode extend_mode;
 	enum FE_basis_type new_fe_basis_type;
 	FE_value *max_value,*min_value,parameter_grid,value_grid;
 	int comp_no,existing_number_of_components,new_number_of_components,
 		number_of_components,number_of_valid_strings,return_code;
-	struct Control_curve *temp_curve;
-	struct Control_curve_definition *curve_definition;
+	struct Curve *temp_curve;
+	struct Curve_definition *curve_definition;
 	struct Option_table *option_table;
 
-	ENTER(define_Control_curve_information);
+	ENTER(define_Curve_information);
 	USE_PARAMETER(dummy_void);
 	if (state&&
-		(curve_definition=(struct Control_curve_definition *)curve_definition_void))
+		(curve_definition=(struct Curve_definition *)curve_definition_void))
 	{
 		file_name=(char *)NULL;
 		min_value=(FE_value *)NULL;
@@ -4400,52 +4400,52 @@ DESCRIPTION :
 		if (ALLOCATE(min_value,FE_value,number_of_components)&&
 			ALLOCATE(max_value,FE_value,number_of_components))
 		{
-			if (curve_definition->curve=CREATE(Control_curve)(curve_definition->name,
+			if (curve_definition->curve=CREATE(Curve)(curve_definition->name,
 				curve_definition->fe_basis_type,curve_definition->number_of_components))
 			{
-				ACCESS(Control_curve)(curve_definition->curve);
+				ACCESS(Curve)(curve_definition->curve);
 				if (curve_definition->curve_to_be_modified)
 				{
-					existing_number_of_components=Control_curve_get_number_of_components(
+					existing_number_of_components=Curve_get_number_of_components(
 						curve_definition->curve_to_be_modified);
 					for (comp_no=0;comp_no<number_of_components;comp_no++)
 					{
 						if (comp_no < existing_number_of_components)
 						{
-							Control_curve_get_edit_component_range(
+							Curve_get_edit_component_range(
 								curve_definition->curve_to_be_modified,comp_no,
 								&(min_value[comp_no]),&(max_value[comp_no]));
 						}
 						else
 						{
-							Control_curve_get_edit_component_range(curve_definition->curve,
+							Curve_get_edit_component_range(curve_definition->curve,
 								comp_no,&(min_value[comp_no]),&(max_value[comp_no]));
 						}
 					}
-					Control_curve_get_parameter_grid(
+					Curve_get_parameter_grid(
 						curve_definition->curve_to_be_modified,&parameter_grid);
-					Control_curve_get_value_grid(
+					Curve_get_value_grid(
 						curve_definition->curve_to_be_modified,&value_grid);
-					extend_mode=Control_curve_get_extend_mode(
+					extend_mode=Curve_get_extend_mode(
 						curve_definition->curve_to_be_modified);
 				}
 				else
 				{
 					for (comp_no=0;comp_no<number_of_components;comp_no++)
 					{
-						Control_curve_get_edit_component_range(curve_definition->curve,
+						Curve_get_edit_component_range(curve_definition->curve,
 							comp_no,&(min_value[comp_no]),&(max_value[comp_no]));
 					}
-					Control_curve_get_parameter_grid(curve_definition->curve,
+					Curve_get_parameter_grid(curve_definition->curve,
 						&parameter_grid);
-					Control_curve_get_value_grid(curve_definition->curve,&value_grid);
-					extend_mode=Control_curve_get_extend_mode(curve_definition->curve);
+					Curve_get_value_grid(curve_definition->curve,&value_grid);
+					extend_mode=Curve_get_extend_mode(curve_definition->curve);
 				}
 
 				option_table=CREATE(Option_table)();
 				/* extend mode */
-				extend_mode_string=Control_curve_extend_mode_string(extend_mode);
-				valid_strings=Control_curve_extend_mode_get_valid_strings(
+				extend_mode_string=Curve_extend_mode_string(extend_mode);
+				valid_strings=Curve_extend_mode_get_valid_strings(
 					&number_of_valid_strings);
 				Option_table_add_enumerator(option_table,number_of_valid_strings,
 					valid_strings,&extend_mode_string);
@@ -4469,7 +4469,7 @@ DESCRIPTION :
 				{
 					if (file_name)
 					{
-						if (temp_curve=create_Control_curve_from_file(
+						if (temp_curve=create_Curve_from_file(
 							curve_definition->curve->name,file_name,
 							curve_definition->io_stream_package))
 						{
@@ -4479,7 +4479,7 @@ DESCRIPTION :
 							}
 							else
 							{
-								new_fe_basis_type=Control_curve_get_fe_basis_type(temp_curve);
+								new_fe_basis_type=Curve_get_fe_basis_type(temp_curve);
 							}
 							if (curve_definition->number_of_components_set)
 							{
@@ -4488,14 +4488,14 @@ DESCRIPTION :
 							else
 							{
 								new_number_of_components=
-									Control_curve_get_number_of_components(temp_curve);
+									Curve_get_number_of_components(temp_curve);
 							}
-							if ((Control_curve_get_number_of_components(temp_curve)==
+							if ((Curve_get_number_of_components(temp_curve)==
 								new_number_of_components)&&(new_fe_basis_type ==
-								(Control_curve_get_fe_basis_type(temp_curve))))
+								(Curve_get_fe_basis_type(temp_curve))))
 							{
 								/* use this instead of curve created earlier */
-								REACCESS(Control_curve)(&(curve_definition->curve),temp_curve);
+								REACCESS(Curve)(&(curve_definition->curve),temp_curve);
 							}
 							else
 							{
@@ -4504,20 +4504,20 @@ DESCRIPTION :
 									new_number_of_components,temp_curve)))
 								{
 									display_message(ERROR_MESSAGE,
-										"define_Control_curve_information.  "
+										"define_Curve_information.  "
 										"Could not copy curve from file %s",file_name);
-									DEACCESS(Control_curve)(&(curve_definition->curve));
+									DEACCESS(Curve)(&(curve_definition->curve));
 									return_code=0;
 								}
-								DESTROY(Control_curve)(&temp_curve);
+								DESTROY(Curve)(&temp_curve);
 							}
 						}
 						else
 						{
 							display_message(ERROR_MESSAGE,
-								"define_Control_curve_information.  "
+								"define_Curve_information.  "
 								"Could not read curve from file %s",file_name);
-							DEACCESS(Control_curve)(&(curve_definition->curve));
+							DEACCESS(Curve)(&(curve_definition->curve));
 							return_code=0;
 						}
 					}
@@ -4528,7 +4528,7 @@ DESCRIPTION :
 							number_of_components,curve_definition->curve_to_be_modified)))
 						{
 							display_message(ERROR_MESSAGE,
-								"define_Control_curve_information.  Could not copy curve");
+								"define_Curve_information.  Could not copy curve");
 						}
 						new_number_of_components=number_of_components;
 					}
@@ -4538,16 +4538,16 @@ DESCRIPTION :
 						{
 							if (comp_no<new_number_of_components)
 							{
-								Control_curve_set_edit_component_range(curve_definition->curve,
+								Curve_set_edit_component_range(curve_definition->curve,
 									comp_no,min_value[comp_no],max_value[comp_no]);
 							}
 						}
-						Control_curve_set_parameter_grid(curve_definition->curve,
+						Curve_set_parameter_grid(curve_definition->curve,
 							parameter_grid);
-						Control_curve_set_value_grid(curve_definition->curve,
+						Curve_set_value_grid(curve_definition->curve,
 							value_grid);
-						Control_curve_set_extend_mode(curve_definition->curve,
-							Control_curve_extend_mode_from_string(extend_mode_string));
+						Curve_set_extend_mode(curve_definition->curve,
+							Curve_extend_mode_from_string(extend_mode_string));
 					}
 				}
 				DESTROY(Option_table)(&option_table);
@@ -4555,14 +4555,14 @@ DESCRIPTION :
 			else
 			{
 				display_message(ERROR_MESSAGE,
-					"define_Control_curve_information.  Could not create curve");
+					"define_Curve_information.  Could not create curve");
 				return_code=0;
 			}
 		}
 		else
 		{
 			display_message(ERROR_MESSAGE,
-				"define_Control_curve_information.  Not enough memory");
+				"define_Curve_information.  Not enough memory");
 			return_code=0;
 		}
 		if (min_value)
@@ -4581,15 +4581,15 @@ DESCRIPTION :
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"define_Control_curve_information.  Invalid argument(s)");
+			"define_Curve_information.  Invalid argument(s)");
 		return_code=0;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* define_Control_curve_information */
+} /* define_Curve_information */
 
-int define_Control_curve_number_of_components(struct Parse_state *state,
+int define_Curve_number_of_components(struct Parse_state *state,
 	void *curve_definition_void,void *dummy_void)
 /*******************************************************************************
 LAST MODIFIED : 29 November 1999
@@ -4599,18 +4599,18 @@ DESCRIPTION :
 {
 	char *current_token;
 	int return_code;
-	struct Control_curve_definition *curve_definition;
+	struct Curve_definition *curve_definition;
 	struct Modifier_entry
 		help_option_table[]=
 		{
-			{"<number_of_components #>",NULL,NULL,define_Control_curve_information},
+			{"<number_of_components #>",NULL,NULL,define_Curve_information},
 			{NULL,NULL,NULL,NULL}
 		};
 
-	ENTER(define_Control_curve_number_of_components);
+	ENTER(define_Curve_number_of_components);
 	USE_PARAMETER(dummy_void);
 	if (state&&
-		(curve_definition=(struct Control_curve_definition *)curve_definition_void))
+		(curve_definition=(struct Curve_definition *)curve_definition_void))
 	{
 		if (current_token=state->current_token)
 		{
@@ -4639,7 +4639,7 @@ DESCRIPTION :
 				}
 				if (return_code)
 				{
-					return_code=define_Control_curve_information(state,
+					return_code=define_Curve_information(state,
 						curve_definition_void,(void *)NULL);
 				}
 			}
@@ -4652,22 +4652,22 @@ DESCRIPTION :
 		}
 		else
 		{
-			return_code=define_Control_curve_information(state,
+			return_code=define_Curve_information(state,
 				curve_definition_void,(void *)NULL);
 		}
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"define_Control_curve_number_of_components.  Invalid argument(s)");
+			"define_Curve_number_of_components.  Invalid argument(s)");
 		return_code=0;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* define_Control_curve_number_of_components */
+} /* define_Curve_number_of_components */
 
-int define_Control_curve_fe_basis_type(struct Parse_state *state,
+int define_Curve_fe_basis_type(struct Parse_state *state,
 	void *curve_definition_void,void *dummy_void)
 /*******************************************************************************
 LAST MODIFIED : 29 November 1999
@@ -4677,19 +4677,19 @@ DESCRIPTION :
 {
 	char *current_token;
 	int return_code;
-	struct Control_curve_definition *curve_definition;
+	struct Curve_definition *curve_definition;
 	struct Modifier_entry
 		help_option_table[]=
 		{
 			{"<c.Hermite|c.Lagrange|l.Lagrange|q.Lagrange>",NULL,NULL,
-			 define_Control_curve_number_of_components},
+			 define_Curve_number_of_components},
 			{NULL,NULL,NULL,NULL}
 		};
 
-	ENTER(define_Control_curve_fe_basis_type);
+	ENTER(define_Curve_fe_basis_type);
 	USE_PARAMETER(dummy_void);
 	if (state&&
-		(curve_definition=(struct Control_curve_definition *)curve_definition_void))
+		(curve_definition=(struct Curve_definition *)curve_definition_void))
 	{
 		if (current_token=state->current_token)
 		{
@@ -4702,7 +4702,7 @@ DESCRIPTION :
 				/* basis type */
 				fe_basis_type_string=
 					FE_basis_type_string(curve_definition->fe_basis_type);
-				valid_strings=Control_curve_FE_basis_type_get_valid_strings(
+				valid_strings=Curve_FE_basis_type_get_valid_strings(
 					&number_of_valid_strings);
 				Option_table_add_enumerator(option_table,number_of_valid_strings,
 					valid_strings,&fe_basis_type_string);
@@ -4733,7 +4733,7 @@ DESCRIPTION :
 					curve_definition->fe_basis_type_set=1;
 					shift_Parse_state(state,1);
 				}
-				return_code=define_Control_curve_number_of_components(state,
+				return_code=define_Curve_number_of_components(state,
 					curve_definition_void,(void *)NULL);
 			}
 			else
@@ -4745,23 +4745,23 @@ DESCRIPTION :
 		}
 		else
 		{
-			return_code=define_Control_curve_information(state,
+			return_code=define_Curve_information(state,
 				curve_definition_void,(void *)NULL);
 		}
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"define_Control_curve_fe_basis_type.  Invalid argument(s)");
+			"define_Curve_fe_basis_type.  Invalid argument(s)");
 		return_code=0;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* define_Control_curve_fe_basis_type */
+} /* define_Curve_fe_basis_type */
 
-int gfx_define_Control_curve(struct Parse_state *state,
-	void *dummy_to_be_modified,void *control_curve_command_data_void)
+int gfx_define_Curve(struct Parse_state *state,
+	void *dummy_to_be_modified,void *curve_command_data_void)
 /*******************************************************************************
 LAST MODIFIED : 29 November 1999
 
@@ -4771,20 +4771,20 @@ DESCRIPTION :
 	auto struct Modifier_entry
 		help_option_table[]=
 		{
-			{"CURVE_NAME",NULL,NULL,define_Control_curve_fe_basis_type},
+			{"CURVE_NAME",NULL,NULL,define_Curve_fe_basis_type},
 			{NULL,NULL,NULL,NULL}
 		};
 	char *current_token;
 	int return_code;
-	struct Control_curve_definition curve_definition;
-	struct Control_curve_command_data *command_data;
+	struct Curve_definition curve_definition;
+	struct Curve_command_data *command_data;
 
-	ENTER(gfx_define_Control_curve);
+	ENTER(gfx_define_Curve);
 	USE_PARAMETER(dummy_to_be_modified);
 	return_code=0;
 	if (state)
 	{
-		if (command_data=(struct Control_curve_command_data *)control_curve_command_data_void)
+		if (command_data=(struct Curve_command_data *)curve_command_data_void)
 		{
 			if (current_token=state->current_token)
 			{
@@ -4794,38 +4794,38 @@ DESCRIPTION :
 				curve_definition.fe_basis_type_set=0;
 				curve_definition.number_of_components=1;
 				curve_definition.number_of_components_set=0;
-				curve_definition.curve=(struct Control_curve *)NULL;
-				curve_definition.curve_to_be_modified=(struct Control_curve *)NULL;
+				curve_definition.curve=(struct Curve *)NULL;
+				curve_definition.curve_to_be_modified=(struct Curve *)NULL;
 				curve_definition.io_stream_package=command_data->io_stream_package;
 				if (strcmp(PARSER_HELP_STRING,current_token)&&
 					strcmp(PARSER_RECURSIVE_HELP_STRING,current_token))
 				{
 					curve_definition.name=duplicate_string(current_token);
 					if (curve_definition.curve_to_be_modified=
-						FIND_BY_IDENTIFIER_IN_MANAGER(Control_curve,name)(
-							curve_definition.name,command_data->control_curve_manager))
+						FIND_BY_IDENTIFIER_IN_MANAGER(Curve,name)(
+							curve_definition.name,command_data->curve_manager))
 					{
 						curve_definition.fe_basis_type=
-							Control_curve_get_fe_basis_type(
+							Curve_get_fe_basis_type(
 								curve_definition.curve_to_be_modified);
 						curve_definition.number_of_components=
-							Control_curve_get_number_of_components(
+							Curve_get_number_of_components(
 								curve_definition.curve_to_be_modified);
 					}
 					shift_Parse_state(state,1);
-					if (define_Control_curve_fe_basis_type(state,
+					if (define_Curve_fe_basis_type(state,
 						(void *)&curve_definition,(void *)NULL))
 					{
 						if (curve_definition.curve_to_be_modified)
 						{
-							return_code=MANAGER_MODIFY_NOT_IDENTIFIER(Control_curve,name)(
+							return_code=MANAGER_MODIFY_NOT_IDENTIFIER(Curve,name)(
 								curve_definition.curve_to_be_modified,curve_definition.curve,
-								command_data->control_curve_manager);
+								command_data->curve_manager);
 						}
 						else
 						{
-							return_code=ADD_OBJECT_TO_MANAGER(Control_curve)(
-								curve_definition.curve,command_data->control_curve_manager);
+							return_code=ADD_OBJECT_TO_MANAGER(Curve)(
+								curve_definition.curve,command_data->curve_manager);
 						}
 					}
 					else
@@ -4845,7 +4845,7 @@ DESCRIPTION :
 				}
 				if (curve_definition.curve)
 				{
-					DEACCESS(Control_curve)(&(curve_definition.curve));
+					DEACCESS(Curve)(&(curve_definition.curve));
 				}
 			}
 			else
@@ -4858,23 +4858,23 @@ DESCRIPTION :
 		else
 		{
 			display_message(ERROR_MESSAGE,
-				"gfx_define_Control_curve.  Missing control_curve_command_data");
+				"gfx_define_Curve.  Missing curve_command_data");
 			return_code=0;
 		}
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"gfx_define_Control_curve.  Missing state");
+			"gfx_define_Curve.  Missing state");
 		return_code=0;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* gfx_define_Control_curve */
+} /* gfx_define_Curve */
 
-int gfx_destroy_Control_curve(struct Parse_state *state,
-	void *dummy_to_be_modified,void *control_curve_manager_void)
+int gfx_destroy_Curve(struct Parse_state *state,
+	void *dummy_to_be_modified,void *curve_manager_void)
 /*******************************************************************************
 LAST MODIFIED : 24 November 1999
 
@@ -4884,26 +4884,26 @@ Executes a GFX DESTROY CURVE command.
 {
 	char *current_token;
 	int return_code;
-	struct MANAGER(Control_curve) *control_curve_manager;
-	struct Control_curve *curve;
+	struct MANAGER(Curve) *curve_manager;
+	struct Curve *curve;
 
-	ENTER(gfx_destroy_Control_curve);
+	ENTER(gfx_destroy_Curve);
 	USE_PARAMETER(dummy_to_be_modified);
 	if (state)
 	{
-		if (control_curve_manager=
-			(struct MANAGER(Control_curve) *)control_curve_manager_void)
+		if (curve_manager=
+			(struct MANAGER(Curve) *)curve_manager_void)
 		{
 			if (current_token=state->current_token)
 			{
 				if (strcmp(PARSER_HELP_STRING,current_token)&&
 					strcmp(PARSER_RECURSIVE_HELP_STRING,current_token))
 				{
-					if (curve=FIND_BY_IDENTIFIER_IN_MANAGER(Control_curve,name)(
-						current_token,control_curve_manager))
+					if (curve=FIND_BY_IDENTIFIER_IN_MANAGER(Curve,name)(
+						current_token,curve_manager))
 					{
-						return_code=REMOVE_OBJECT_FROM_MANAGER(Control_curve)(curve,
-							control_curve_manager);
+						return_code=REMOVE_OBJECT_FROM_MANAGER(Curve)(curve,
+							curve_manager);
 					}
 					else
 					{
@@ -4928,22 +4928,22 @@ Executes a GFX DESTROY CURVE command.
 		else
 		{
 			display_message(ERROR_MESSAGE,
-				"gfx_destroy_Control_curve.  Missing control_curve_manager_void");
+				"gfx_destroy_Curve.  Missing curve_manager_void");
 			return_code=0;
 		}
 	}
 	else
 	{
-		display_message(ERROR_MESSAGE,"gfx_destroy_Control_curve.  Missing state");
+		display_message(ERROR_MESSAGE,"gfx_destroy_Curve.  Missing state");
 		return_code=0;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* gfx_destroy_Control_curve */
+} /* gfx_destroy_Curve */
 
-int gfx_list_Control_curve(struct Parse_state *state,
-	void *dummy_to_be_modified,void *control_curve_manager_void)
+int gfx_list_Curve(struct Parse_state *state,
+	void *dummy_to_be_modified,void *curve_manager_void)
 /*******************************************************************************
 LAST MODIFIED : 28 November 2000
 
@@ -4952,61 +4952,61 @@ Executes a GFX LIST CURVE.
 ==============================================================================*/
 {
 	int return_code;
-	struct MANAGER(Control_curve) *control_curve_manager;
-	struct Control_curve *curve;
+	struct MANAGER(Curve) *curve_manager;
+	struct Curve *curve;
 	struct Option_table *option_table;
 
-	ENTER(gfx_list_Control_curve);
+	ENTER(gfx_list_Curve);
 	USE_PARAMETER(dummy_to_be_modified);
-	if (state && (control_curve_manager=
-		(struct MANAGER(Control_curve) *)control_curve_manager_void))
+	if (state && (curve_manager=
+		(struct MANAGER(Curve) *)curve_manager_void))
 	{
-		curve = (struct Control_curve *)NULL;
+		curve = (struct Curve *)NULL;
 		option_table=CREATE(Option_table)();
 		/* default option: curve name */
 		Option_table_add_entry(option_table, (char *)NULL, &curve,
-			control_curve_manager_void, set_Control_curve);
+			curve_manager_void, set_Curve);
 		if (return_code = Option_table_multi_parse(option_table,state))
 		{
 			if (curve)
 			{
-				return_code = list_Control_curve(curve, (void *)NULL);
+				return_code = list_Curve(curve, (void *)NULL);
 			}
 			else
 			{
 				display_message(INFORMATION_MESSAGE,"Control curves:\n");
-				return_code = FOR_EACH_OBJECT_IN_MANAGER(Control_curve)(
-					list_Control_curve, (void *)NULL, control_curve_manager);
+				return_code = FOR_EACH_OBJECT_IN_MANAGER(Curve)(
+					list_Curve, (void *)NULL, curve_manager);
 			}
 		}
 		DESTROY(Option_table)(&option_table);
 		if (curve)
 		{
-			DEACCESS(Control_curve)(&curve);
+			DEACCESS(Curve)(&curve);
 		}
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"gfx_list_Control_curve.  Invalid argument(s)");
+			"gfx_list_Curve.  Invalid argument(s)");
 		return_code = 0;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* gfx_list_Control_curve */
+} /* gfx_list_Curve */
 
-int list_Control_curve(struct Control_curve *curve,void *dummy_void)
+int list_Curve(struct Curve *curve,void *dummy_void)
 /*******************************************************************************
 LAST MODIFIED : 9 November 1999
 
 DESCRIPTION :
-Control_curve iterator function for writing out the names of curves.
+Curve iterator function for writing out the names of curves.
 ==============================================================================*/
 {
 	int return_code;
 
-	ENTER(list_Control_curve);
+	ENTER(list_Curve);
 	USE_PARAMETER(dummy_void);
 	if (curve)
 	{
@@ -5017,16 +5017,16 @@ Control_curve iterator function for writing out the names of curves.
 	}
 	else
 	{
-		display_message(ERROR_MESSAGE,"list_Control_curve.  Invalid argument(s)");
+		display_message(ERROR_MESSAGE,"list_Curve.  Invalid argument(s)");
 		return_code=0;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* list_Control_curve */
+} /* list_Curve */
 
-int set_Control_curve(struct Parse_state *state,void *curve_address_void,
-	void *control_curve_manager_void)
+int set_Curve(struct Parse_state *state,void *curve_address_void,
+	void *curve_manager_void)
 /*******************************************************************************
 LAST MODIFIED : 5 November 1999
 
@@ -5036,10 +5036,10 @@ Modifier function to set the curve from a command.
 {
 	char *current_token;
 	int return_code;
-	struct MANAGER(Control_curve) *control_curve_manager;
-	struct Control_curve *temp_curve,**curve_address;
+	struct MANAGER(Curve) *curve_manager;
+	struct Curve *temp_curve,**curve_address;
 
-	ENTER(set_Control_curve);
+	ENTER(set_Curve);
 	if (state)
 	{
 		if (current_token=state->current_token)
@@ -5047,35 +5047,35 @@ Modifier function to set the curve from a command.
 			if (strcmp(PARSER_HELP_STRING,current_token)&&
 				strcmp(PARSER_RECURSIVE_HELP_STRING,current_token))
 			{
-				if ((curve_address=(struct Control_curve **)curve_address_void)&&
-					(control_curve_manager=
-						(struct MANAGER(Control_curve) *)control_curve_manager_void))
+				if ((curve_address=(struct Curve **)curve_address_void)&&
+					(curve_manager=
+						(struct MANAGER(Curve) *)curve_manager_void))
 				{
 					if (fuzzy_string_compare(current_token,"NONE"))
 					{
 						if (*curve_address)
 						{
-							DEACCESS(Control_curve)(curve_address);
-							*curve_address=(struct Control_curve *)NULL;
+							DEACCESS(Curve)(curve_address);
+							*curve_address=(struct Curve *)NULL;
 						}
 						return_code=1;
 					}
 					else
 					{
-						if (temp_curve=FIND_BY_IDENTIFIER_IN_MANAGER(Control_curve,name)(
-							current_token,control_curve_manager))
+						if (temp_curve=FIND_BY_IDENTIFIER_IN_MANAGER(Curve,name)(
+							current_token,curve_manager))
 						{
 							if (*curve_address!=temp_curve)
 							{
-								DEACCESS(Control_curve)(curve_address);
-								*curve_address=ACCESS(Control_curve)(temp_curve);
+								DEACCESS(Curve)(curve_address);
+								*curve_address=ACCESS(Curve)(temp_curve);
 							}
 							return_code=1;
 						}
 						else
 						{
 							display_message(ERROR_MESSAGE,
-								"set_Control_curve.  Curve '%s' does not exist",
+								"set_Curve.  Curve '%s' does not exist",
 								current_token);
 							return_code=0;
 						}
@@ -5085,14 +5085,14 @@ Modifier function to set the curve from a command.
 				else
 				{
 					display_message(ERROR_MESSAGE,
-						"set_Control_curve.  Invalid argument(s)");
+						"set_Curve.  Invalid argument(s)");
 					return_code=0;
 				}
 			}
 			else
 			{
 				display_message(INFORMATION_MESSAGE," CURVE_NAME|none");
-				if (curve_address=(struct Control_curve **)curve_address_void)
+				if (curve_address=(struct Curve **)curve_address_void)
 				{
 					if (temp_curve= *curve_address)
 					{
@@ -5115,15 +5115,15 @@ Modifier function to set the curve from a command.
 	}
 	else
 	{
-		display_message(ERROR_MESSAGE,"set_Control_curve.  Missing state");
+		display_message(ERROR_MESSAGE,"set_Curve.  Missing state");
 		return_code=0;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* set_Control_curve */
+} /* set_Curve */
 
-int write_Control_curve(struct Control_curve *curve,void *dummy_void)
+int write_Curve(struct Curve *curve,void *dummy_void)
 /*******************************************************************************
 LAST MODIFIED : 16 April 2003
 
@@ -5137,7 +5137,7 @@ eg. "name" -> name.curve.com name.curve.exnode name.curve.exelem
 	int comp_no,return_code;
 	struct Cmiss_region *child_cmiss_region, *root_cmiss_region;
 
-	ENTER(write_Control_curve);
+	ENTER(write_Curve);
 	USE_PARAMETER(dummy_void);
 	if (curve)
 	{
@@ -5151,7 +5151,7 @@ eg. "name" -> name.curve.com name.curve.exnode name.curve.exelem
 					curve->name,FE_basis_type_string(curve->fe_basis_type),
 					curve->number_of_components);
 				fprintf(out_file," %s",
-					Control_curve_extend_mode_string(curve->extend_mode));
+					Curve_extend_mode_string(curve->extend_mode));
 				fprintf(out_file," file %s",curve->name);
 				fprintf(out_file," max_value");
 				for (comp_no=0;comp_no<curve->number_of_components;comp_no++)
@@ -5208,20 +5208,20 @@ eg. "name" -> name.curve.com name.curve.exnode name.curve.exelem
 		}
 		if (!return_code)
 		{
-			display_message(ERROR_MESSAGE,"write_Control_curve.  Failed");
+			display_message(ERROR_MESSAGE,"write_Curve.  Failed");
 		}
 	}
 	else
 	{
-		display_message(ERROR_MESSAGE,"write_Control_curve.  Invalid argument(s)");
+		display_message(ERROR_MESSAGE,"write_Curve.  Invalid argument(s)");
 		return_code=0;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* write_Control_curve */
+} /* write_Curve */
 
-struct Control_curve *create_Control_curve_from_file(char *curve_name,
+struct Curve *create_Curve_from_file(char *curve_name,
 	char *file_name_stem, struct IO_stream_package *io_stream_package)
 /*******************************************************************************
 LAST MODIFIED : 3 September 2004
@@ -5238,15 +5238,15 @@ appropriateness to curve usage.
 	enum FE_basis_type fe_basis_type;
 	int number_of_components,return_code;
 	struct Cmiss_region *child_cmiss_region, *cmiss_region, *element_region;
-	struct Control_curve *curve;
+	struct Curve *curve;
 	struct FE_basis *fe_basis;
 	struct FE_region *fe_region;
 	struct IO_stream *element_file,*node_file, *region_file;
 	struct LIST(FE_element_shape) *element_shape_list;
 	struct MANAGER(FE_basis) *basis_manager;
 
-	ENTER(create_Control_curve_from_file);
-	curve=(struct Control_curve *)NULL;
+	ENTER(create_Curve_from_file);
+	curve=(struct Curve *)NULL;
 	if (curve_name&&file_name_stem)
 	{
 		if (curve=cc_create_blank(curve_name))
@@ -5319,7 +5319,7 @@ appropriateness to curve usage.
 					}
 					else
 					{
-						display_message(ERROR_MESSAGE,"create_Control_curve_from_file.  "
+						display_message(ERROR_MESSAGE,"create_Curve_from_file.  "
 							"Unable to read .exnode and .exelem or .exregion from template %s",
 							file_name_stem);
 						return_code = 0;
@@ -5328,7 +5328,7 @@ appropriateness to curve usage.
 				if (return_code)
 				{
 					REACCESS(FE_region)(&(curve->fe_region), fe_region);
-					/* now check mesh is appropriate for a Control_curve */
+					/* now check mesh is appropriate for a Curve */
 					if (curve->template_element=FE_region_get_first_FE_element_that(fe_region,
 						(LIST_CONDITIONAL_FUNCTION(FE_element) *)NULL,(void *)NULL))
 					{
@@ -5375,7 +5375,7 @@ appropriateness to curve usage.
 								cc_build_parameter_table(curve)))
 							{
 								display_message(ERROR_MESSAGE,
-									"create_Control_curve_from_file.  "
+									"create_Curve_from_file.  "
 									"Could not set basis type and number of components");
 								return_code=0;
 							}
@@ -5383,7 +5383,7 @@ appropriateness to curve usage.
 						else
 						{
 							display_message(ERROR_MESSAGE,
-								"create_Control_curve_from_file.  Invalid curve file(s)");
+								"create_Curve_from_file.  Invalid curve file(s)");
 						}
 					}
 					else
@@ -5400,27 +5400,27 @@ appropriateness to curve usage.
 			else
 			{
 				display_message(ERROR_MESSAGE,
-					"create_Control_curve_from_file.  Could not create managers");
+					"create_Curve_from_file.  Could not create managers");
 				return_code=0;
 			}
 			if (!return_code)
 			{
-				DESTROY(Control_curve)(&curve);
+				DESTROY(Curve)(&curve);
 			}
 			DEALLOCATE(file_name);
 		}
 		else
 		{
 			display_message(ERROR_MESSAGE,
-				"create_Control_curve_from_file.  Could not create curve");
+				"create_Curve_from_file.  Could not create curve");
 		}
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"create_Control_curve_from_file.  Invalid argument(s)");
+			"create_Curve_from_file.  Invalid argument(s)");
 	}
 	LEAVE;
 
 	return (curve);
-} /* create_Control_curve_from_file */
+} /* create_Curve_from_file */

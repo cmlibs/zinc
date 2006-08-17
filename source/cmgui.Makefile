@@ -721,7 +721,7 @@ API_INTERFACE_SRCS = \
 	api/cmiss_graphics_window.c
 CHOOSE_INTERFACE_SRCS = \
 	choose/choose_computed_field.c \
-	choose/choose_control_curve.c \
+	choose/choose_curve.c \
 	choose/choose_enumerator.c \
 	choose/choose_fe_field.c \
 	choose/choose_field_component.c \
@@ -760,7 +760,7 @@ COMPUTED_FIELD_SRCS = \
 	computed_field/computed_field_component_operations.cpp \
 	computed_field/computed_field_compose.cpp \
 	computed_field/computed_field_composite.cpp \
-	computed_field/computed_field_control_curve.cpp \
+	computed_field/computed_field_curve.cpp \
 	computed_field/computed_field_coordinate.cpp \
 	computed_field/computed_field_deformation.cpp \
 	computed_field/computed_field_derivatives.cpp \
@@ -850,10 +850,10 @@ COMPUTED_VARIABLE_SRCS = \
 	computed_variable/variable_vector.cpp
 endif # USE_COMPUTED_VARIABLES != true
 CURVE_SRCS = \
-	curve/control_curve.c
+	curve/curve.c
 CURVE_INTERFACE_SRCS = \
-	curve/control_curve_editor.c \
-	curve/control_curve_editor_dialog.c
+	curve/curve_editor.c \
+	curve/curve_editor_dialog.c
 DOF3_INTERFACE_SRCS = \
 	dof3/dof3.c \
 	dof3/dof3_control.c \
@@ -1017,7 +1017,7 @@ REGION_SRCS = \
 REGION_INTERFACE_SRCS = \
    region/cmiss_region_chooser.c
 SELECT_INTERFACE_SRCS = \
-	select/select_control_curve.c \
+	select/select_curve.c \
 	select/select_environment_map.c \
 	select/select_graphical_material.c \
 	select/select_private.c \
