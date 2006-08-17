@@ -756,33 +756,32 @@ endif
 COMMAND_INTERFACE_SRCS = \
 	command/command_window.c
 COMPUTED_FIELD_SRCS = \
-	computed_field/computed_field.c \
-	computed_field/computed_field_component_operations.c \
-	computed_field/computed_field_compose.c \
-	computed_field/computed_field_composite.c \
-	computed_field/computed_field_control_curve.c \
-	computed_field/computed_field_coordinate.c \
-	computed_field/computed_field_deformation.c \
-	computed_field/computed_field_derivatives.c \
-	computed_field/computed_field_external.c \
-	computed_field/computed_field_fibres.c \
-	computed_field/computed_field_find_xi.c \
-	computed_field/computed_field_finite_element.c \
-	computed_field/computed_field_integration.c \
-	computed_field/computed_field_logical_operators.c \
-	computed_field/computed_field_lookup.c \
-	computed_field/computed_field_matrix_operations.c \
-	computed_field/computed_field_sample_texture.c \
-	computed_field/computed_field_set.c \
-	computed_field/computed_field_string_constant.c \
-	computed_field/computed_field_time.c \
-	computed_field/computed_field_trigonometry.c \
-	computed_field/computed_field_update.c \
-	computed_field/computed_field_value_index_ranges.c \
-	computed_field/computed_field_vector_operations.c \
-	computed_field/computed_field_wrappers.c
+	computed_field/computed_field.cpp \
+	computed_field/computed_field_component_operations.cpp \
+	computed_field/computed_field_compose.cpp \
+	computed_field/computed_field_composite.cpp \
+	computed_field/computed_field_curve.cpp \
+	computed_field/computed_field_coordinate.cpp \
+	computed_field/computed_field_deformation.cpp \
+	computed_field/computed_field_derivatives.cpp \
+	computed_field/computed_field_fibres.cpp \
+	computed_field/computed_field_find_xi.cpp \
+	computed_field/computed_field_finite_element.cpp \
+	computed_field/computed_field_integration.cpp \
+	computed_field/computed_field_logical_operators.cpp \
+	computed_field/computed_field_lookup.cpp \
+	computed_field/computed_field_matrix_operations.cpp \
+	computed_field/computed_field_sample_texture.cpp \
+	computed_field/computed_field_set.cpp \
+	computed_field/computed_field_string_constant.cpp \
+	computed_field/computed_field_time.cpp \
+	computed_field/computed_field_trigonometry.cpp \
+	computed_field/computed_field_update.cpp \
+	computed_field/computed_field_value_index_ranges.cpp \
+	computed_field/computed_field_vector_operations.cpp \
+	computed_field/computed_field_wrappers.cpp
 COMPUTED_FIELD_INTERFACE_SRCS = \
-	computed_field/computed_field_window_projection.c
+	computed_field/computed_field_window_projection.cpp
 ifneq ($(USE_COMPUTED_VARIABLES), true)
 COMPUTED_VARIABLE_SRCS =
 else # USE_COMPUTED_VARIABLES != true
@@ -969,71 +968,7 @@ ifeq ($(GRAPHICS_API), OPENGL_GRAPHICS)
 		graphics/spectrum_editor_dialog.c \
 		graphics/spectrum_editor_settings.c
 endif
-IMAGE_PROCESSING_SRCS = \
-	image_processing/computed_field_adaptive_adjust_contrast.c \
-	image_processing/computed_field_adjust_contrast.c \
-	image_processing/computed_field_adjusted_gaussian.c \
-	image_processing/computed_field_binomial_filter.c \
-	image_processing/computed_field_bvc_decomp.c \
-	image_processing/computed_field_canny_filter.c \
-	image_processing/computed_field_chan_contour.c \
-	image_processing/computed_field_color_based_segment.c \
-	image_processing/computed_field_color_conversions.c \
-	image_processing/computed_field_convolution_filter.c \
-	image_processing/computed_field_cube_plugin_all.c \
-	image_processing/computed_field_dijkstra_path.c \
-	image_processing/computed_field_dilate_filter.c \
-	image_processing/computed_field_edge_detection.c \
-	image_processing/computed_field_edge_direction.c \
-	image_processing/computed_field_erode_filter.c \
-	image_processing/computed_field_first_order_statistics.c \
-	image_processing/computed_field_fuzzy_clustering.c \
-	image_processing/computed_field_gabor_filter.c \
-	image_processing/computed_field_gaussian_filter.c \
-	image_processing/computed_field_haar_wavelet_decomp.c \
-	image_processing/computed_field_haar_wavelet_reconstruct.c \
-	image_processing/computed_field_heat_equation.c \
-	image_processing/computed_field_histogram_based_threshold.c \
-	image_processing/computed_field_histogram_equalize.c \
-	image_processing/computed_field_histogram_normalize.c \
-	image_processing/computed_field_histogram_stretch.c \
-	image_processing/computed_field_image_approximation.c \
-	image_processing/computed_field_image_contour.c \
-	image_processing/computed_field_image_correlation.c \
-	image_processing/computed_field_image_enhancement.c \
-	image_processing/computed_field_image_mask.c \
-	image_processing/computed_field_image_mean_value.c \
-	image_processing/computed_field_image_resample.c \
-	image_processing/computed_field_image_threshold.c \
-	image_processing/computed_field_image_tv_restoration.c \
-	image_processing/computed_field_iteration_threshold.c \
-	image_processing/computed_field_k_nearest_mean.c \
-	image_processing/computed_field_kernel_matrix.c \
-	image_processing/computed_field_local_frequency.c \
-	image_processing/computed_field_local_histogram_features.c \
-	image_processing/computed_field_local_mean_smooth.c \
-	image_processing/computed_field_local_std.c \
-	image_processing/computed_field_local_thresholding.c \
-	image_processing/computed_field_median_filter.c \
-	image_processing/computed_field_minimal_path.c \
-	image_processing/computed_field_morphology_thinning.c \
-	image_processing/computed_field_outer_region_remove.c \
-	image_processing/computed_field_power_spectrum.c \
-	image_processing/computed_field_region_label.c \
-	image_processing/computed_field_region_maximum.c \
-	image_processing/computed_field_second_order_hermite.c \
-	image_processing/computed_field_shock_filter.c \
-	image_processing/computed_field_sobel_filter.c \
-	image_processing/computed_field_spatial_skeleton.c \
-	image_processing/computed_field_steerable_filter.c \
-	image_processing/computed_field_sterology_measures.c \
-	image_processing/computed_field_throw_away_weakest.c \
-	image_processing/computed_field_volterra_filter.c \
-	image_processing/computed_field_wavelet_decomp.c \
-	image_processing/computed_field_wavelet_reconstruct.c \
-	image_processing/computed_field_wiener_filter.c \
-	image_processing/morphology_functions.c \
-	image_processing/image_cache.c
+IMAGE_PROCESSING_SRCS =
 INTERACTION_SRCS = \
 	interaction/interaction_graphics.c \
 	interaction/interaction_volume.c \
@@ -1235,7 +1170,7 @@ $(OBJECT_PATH)/version.o.h : $(OBJS) $(UNEMAP_OBJS) cmgui.Makefile
 	fi	
 	echo '/* This is a generated file.  Do not edit.  Edit cmgui.c or cmgui.imake instead */' > $(OBJECT_PATH)/version.o.h;	  
 	date > date.h
-	sed 's/"//;s/./#define VERSION "CMISS(cmgui) version 2.2.2  &/;s/.$$/&\\nCopyright 1996-2006, Auckland UniServices Ltd."/' < date.h >> $(OBJECT_PATH)/version.o.h
+	sed 's/"//;s/./#define VERSION "CMISS(cmgui) version 2.2.3  &/;s/.$$/&\\nCopyright 1996-2006, Auckland UniServices Ltd."/' < date.h >> $(OBJECT_PATH)/version.o.h
 
 $(MAIN_OBJ) : $(MAIN_SRC) $(OBJECT_PATH)/version.o.h $(INTERPRETER_LIB)
 	@set -x; \
