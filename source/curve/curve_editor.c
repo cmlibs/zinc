@@ -2295,13 +2295,13 @@ be moved.
 									{
 										Curve_enforce_continuity(curve,
 											curve_editor->current_element_no-1,number_of_nodes-1,0,
-											CONTROL_CURVE_CONTINUITY_SLOPE);
+											CURVE_CONTINUITY_SLOPE);
 									}
 									if (curve_editor->current_element_no<number_of_elements)
 									{
 										Curve_enforce_continuity(curve,
 											curve_editor->current_element_no+1,0,0,
-											CONTROL_CURVE_CONTINUITY_SLOPE);
+											CURVE_CONTINUITY_SLOPE);
 									}
 								}
 								curve_editor_drawing_area_redraw(curve_editor,0);
@@ -2448,7 +2448,7 @@ be moved.
 																Curve_enforce_continuity(curve,
 																	curve_editor->current_element_no,
 																	curve_editor->current_node_no,0,
-																	CONTROL_CURVE_CONTINUITY_SLOPE);
+																	CURVE_CONTINUITY_SLOPE);
 															}
 														}
 													}
@@ -3020,7 +3020,7 @@ Callback for change of extend_mode.
 	if ((curve_editor=(struct Curve_editor *)curve_editor_void)&&
 		(curve=curve_editor->edit_curve))
 	{
-		if ((CONTROL_CURVE_EXTEND_MODE_INVALID != (extend_mode=
+		if ((CURVE_EXTEND_MODE_INVALID != (extend_mode=
 			Curve_extend_mode_from_string((char *)extend_mode_string_void)))&&
 			(Curve_get_extend_mode(curve) != extend_mode))
 		{
@@ -3827,7 +3827,7 @@ Creates a curve_editor widget.
 							if (!(curve_editor->extend_mode_widget=
 								create_choose_enumerator_widget(curve_editor->extend_mode_form,
 									number_of_valid_strings,valid_strings,
-									Curve_extend_mode_string(CONTROL_CURVE_EXTEND_CLAMP),
+									Curve_extend_mode_string(CURVE_EXTEND_CLAMP),
 									user_interface)))
 							{
 								init_widgets=0;

@@ -41,8 +41,8 @@ Provides the widgets to modify Curve structures.
  * the terms of any one of the MPL, the GPL or the LGPL.
  *
  * ***** END LICENSE BLOCK ***** */
-#if !defined (CONTROL_CURVE_EDITOR_H)
-#define CONTROL_CURVE_EDITOR_H
+#if !defined (CURVE_EDITOR_H)
+#define CURVE_EDITOR_H
 
 #include "general/callback_motif.h"
 #include "curve/curve.h"
@@ -123,4 +123,4 @@ LAST MODIFIED : 8 November 1999
 DESCRIPTION :
 Gets the current position of the parameter cursor.
 ==============================================================================*/
-#endif /* !defined (CONTROL_CURVE_EDITOR_H) */
+#endif /* !defined (CURVE_EDITOR_H) */

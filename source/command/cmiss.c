@@ -7373,7 +7373,7 @@ static int gfx_create_curve_editor(struct Parse_state *state,
 LAST MODIFIED : 8 November 1999
 
 DESCRIPTION :
-Executes a GFX CREATE CONTROL_CURVE_EDITOR command.
+Executes a GFX CREATE CURVE_EDITOR command.
 If there is a variable editor dialog in existence, then bring it to the front,
 otherwise it creates a new one.  Assumes we will only ever want one variable
 editor at a time.  This implementation may be changed later.

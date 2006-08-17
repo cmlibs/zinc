@@ -42,8 +42,8 @@ Simulation/animation parameters are controlled over time by these curves.
  * the terms of any one of the MPL, the GPL or the LGPL.
  *
  * ***** END LICENSE BLOCK ***** */
-#if !defined (CONTROL_CURVE_H)
-#define CONTROL_CURVE_H
+#if !defined (CURVE_H)
+#define CURVE_H
 #include "finite_element/finite_element.h"
 #include "general/io_stream.h"
 #include "general/list.h"
@@ -59,10 +59,10 @@ LAST MODIFIED : 10 November 1999
 DESCRIPTION :
 Switch determining what value the curve returns at a parameter outside the range
 the curve is defined over. These add extra animation flexibility.
-CONTROL_CURVE_EXTEND_CLAMP uses the nearest value in the range.
-CONTROL_CURVE_EXTEND_LOOP uses the curve data an integer number of ranges
+CURVE_EXTEND_CLAMP uses the nearest value in the range.
+CURVE_EXTEND_LOOP uses the curve data an integer number of ranges
 	away,causing the curve to repeat.
-CONTROL_CURVE_EXTEND_SWING is similar except alternate ranges are played in
+CURVE_EXTEND_SWING is similar except alternate ranges are played in
 	reverse.
 Make sure any new options supported by
 Curve_extend_mode_string
@@ -70,17 +70,17 @@ Have members BEFORE_FIRST and AFTER_LAST to enable iterating through the list
 for automatic creation of choose_enumerator widgets.
 
 ???RC Other options that could be added in future:
-CONTROL_CURVE_EXTEND_TANGENT keeps values outside the range along the last
+CURVE_EXTEND_TANGENT keeps values outside the range along the last
 tangent	at the edge of the range.
 Also could have different conditions before and after curve.
 ==============================================================================*/
 {
-	CONTROL_CURVE_EXTEND_MODE_INVALID,
-	CONTROL_CURVE_EXTEND_MODE_BEFORE_FIRST,
-	CONTROL_CURVE_EXTEND_CLAMP,
-	CONTROL_CURVE_EXTEND_CYCLE,
-	CONTROL_CURVE_EXTEND_SWING,
-	CONTROL_CURVE_EXTEND_MODE_AFTER_LAST
+	CURVE_EXTEND_MODE_INVALID,
+	CURVE_EXTEND_MODE_BEFORE_FIRST,
+	CURVE_EXTEND_CLAMP,
+	CURVE_EXTEND_CYCLE,
+	CURVE_EXTEND_SWING,
+	CURVE_EXTEND_MODE_AFTER_LAST
 }; /* enum Curve_extend_mode */
 
 enum Curve_type
@@ -96,10 +96,10 @@ for their application or not.  The default type is assigned on CREATE.
 The type is not intended to be seen by the editor at this point
 ==============================================================================*/
 {
-	CONTROL_CURVE_TYPE_DEFAULT,
-	CONTROL_CURVE_TYPE_EMOTER_MODES,
-	CONTROL_CURVE_TYPE_EMOTER_COMBINE,
-	CONTROL_CURVE_TYPE_EMOTER_TIMEBASE
+	CURVE_TYPE_DEFAULT,
+	CURVE_TYPE_EMOTER_MODES,
+	CURVE_TYPE_EMOTER_COMBINE,
+	CURVE_TYPE_EMOTER_TIMEBASE
 }; /* enum Curve_extend_mode */
 
 enum Curve_continuity_mode
@@ -113,9 +113,9 @@ degree of continuity. Note that Hermite elements have G1 continuity except when
 scale factors are zero.
 ==============================================================================*/
 {
-	CONTROL_CURVE_CONTINUITY_SLOPE, /* dvalue/dparameter continuous */
-	CONTROL_CURVE_CONTINUITY_C1,    /* C1 continuity */
-	CONTROL_CURVE_CONTINUITY_G1     /* G1 (slope) continuity */
+	CURVE_CONTINUITY_SLOPE, /* dvalue/dparameter continuous */
+	CURVE_CONTINUITY_C1,    /* C1 continuity */
+	CURVE_CONTINUITY_G1     /* G1 (slope) continuity */
 }; /* enum Curve_continuity_mode */
 
 struct Curve;
@@ -168,7 +168,7 @@ LAST MODIFIED : 17 November 1999
 
 DESCRIPTION :
 Returns a pointer to a static string describing the extend_mode, eg.
-CONTROL_CURVE_EXTEND_CLAMP == "extend_clamp".
+CURVE_EXTEND_CLAMP == "extend_clamp".
 The calling function must not deallocate the returned string.
 ==============================================================================*/
 
@@ -753,4 +753,4 @@ temporary managers to use import_finite_element functions. Mesh is checked for
 appropriateness to curve usage.
 ???RC Later autorange
 ==============================================================================*/
-#endif /* !defined (CONTROL_CURVE_H) */
+#endif /* !defined (CURVE_H) */

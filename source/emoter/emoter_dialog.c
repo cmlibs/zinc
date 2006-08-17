@@ -2166,7 +2166,7 @@ Creates a control curve which is read from file values.
 								/* Set the type after the object is added to the
 									manager so that ADD message is ignored */
 								Curve_set_type(emoter_curve,
-									CONTROL_CURVE_TYPE_EMOTER_MODES );
+									CURVE_TYPE_EMOTER_MODES );
 								ACCESS(Curve)(emoter_curve);
 								/* SAB Do the first and second modes as special case
 									as we need to create the first element, position both
@@ -2345,7 +2345,7 @@ Reads a control curve from a file.
 				name, fe_basis_type, 1 ))
 			{
 				Curve_set_type(curve,
-					CONTROL_CURVE_TYPE_EMOTER_COMBINE );
+					CURVE_TYPE_EMOTER_COMBINE );
 				if (ADD_OBJECT_TO_MANAGER(Curve)(
 					curve, shared->curve_manager))
 				{
@@ -2867,7 +2867,7 @@ Reads stuff from a file.
 										/* Set the type after the object is added to the
 											manager so that ADD message is ignored */
 										Curve_set_type(emoter_curve,
-											CONTROL_CURVE_TYPE_EMOTER_MODES );
+											CURVE_TYPE_EMOTER_MODES );
 										ACCESS(Curve)(emoter_curve);
 										/* SAB Do the first and second modes as special case
 											as we need to create the first element, position both
@@ -4582,7 +4582,7 @@ DESCRIPTION :
 						/* Set the type after the object is added to the
 							manager so that ADD message is ignored */
 						Curve_set_type(active->mode_curve,
-							CONTROL_CURVE_TYPE_EMOTER_MODES );
+							CURVE_TYPE_EMOTER_MODES );
 						ACCESS(Curve)(active->mode_curve);
 						/* SAB Do the first and second nodes as special case
 							as we need to create the first element, position both
@@ -5070,7 +5070,7 @@ DESCRIPTION :
 										name, CUBIC_HERMITE, 1 ))
 									{
 										Curve_set_type(curve,
-											CONTROL_CURVE_TYPE_EMOTER_COMBINE );
+											CURVE_TYPE_EMOTER_COMBINE );
 										combine_slider->curve = curve;
 										if (ADD_OBJECT_TO_MANAGER(Curve)(
 											curve, shared->curve_manager))
@@ -5141,7 +5141,7 @@ DESCRIPTION :
 												name, LINEAR_LAGRANGE, 1 ))
 											{
 												Curve_set_type(curve,
-													CONTROL_CURVE_TYPE_EMOTER_TIMEBASE );
+													CURVE_TYPE_EMOTER_TIMEBASE );
 												combine_slider->timebase_curve = curve;
 												slider->timebase_curves[slider->number_of_timebase_curves-1]
 													= curve;
@@ -5355,7 +5355,7 @@ Updates existing control curves combine sliders.
 		(emoter_dialog = (struct Emoter_dialog *)emoter_dialog_void))
 	{
 		Curve_get_type( curve, &type );
-		if (type == CONTROL_CURVE_TYPE_EMOTER_COMBINE)
+		if (type == CURVE_TYPE_EMOTER_COMBINE)
 		{
 			/* Setting the time slider to the time it already has
 				 updates all the combine sliders */
@@ -5400,7 +5400,7 @@ Adds new control curves combine sliders.
 		shared = emoter_dialog->shared;
 
 		Curve_get_type( curve, &type );
-		if ( type == CONTROL_CURVE_TYPE_EMOTER_MODES )
+		if ( type == CURVE_TYPE_EMOTER_MODES )
 		{
 			if (GET_NAME(Curve)( curve, &name ))
 			{

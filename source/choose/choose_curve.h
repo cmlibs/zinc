@@ -41,12 +41,12 @@ Widget for choosing a Curve, based on choose_object macro.
  * the terms of any one of the MPL, the GPL or the LGPL.
  *
  * ***** END LICENSE BLOCK ***** */
-#if !defined (CHOOSE_CONTROL_CURVE_H)
-#define CHOOSE_CONTROL_CURVE_H
+#if !defined (CHOOSE_CURVE_H)
+#define CHOOSE_CURVE_H
 
 #include "choose/choose_object.h"
 #include "curve/curve.h"
 
 PROTOTYPE_CHOOSE_OBJECT_GLOBAL_FUNCTIONS(Curve);
 
-#endif /* !defined (CHOOSE_CONTROL_CURVE_H) */
+#endif /* !defined (CHOOSE_CURVE_H) */

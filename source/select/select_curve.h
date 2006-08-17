@@ -41,12 +41,12 @@ Version of select widget using Curve objects.
  * the terms of any one of the MPL, the GPL or the LGPL.
  *
  * ***** END LICENSE BLOCK ***** */
-#if !defined (SELECT_CONTROL_CURVE_H)
-#define SELECT_CONTROL_CURVE_H
+#if !defined (SELECT_CURVE_H)
+#define SELECT_CURVE_H
 
 #include "select/select.h"
 #include "curve/curve.h"
 
 PROTOTYPE_SELECT_GLOBAL_FUNCTIONS(Curve);
 
-#endif /* !defined (SELECT_CONTROL_CURVE_H) */
+#endif /* !defined (SELECT_CURVE_H) */

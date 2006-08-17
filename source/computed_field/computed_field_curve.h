@@ -40,8 +40,8 @@ DESCRIPTION :
  * the terms of any one of the MPL, the GPL or the LGPL.
  *
  * ***** END LICENSE BLOCK ***** */
-#if !defined (COMPUTED_FIELD_CONTROL_CURVE_H)
-#define COMPUTED_FIELD_CONTROL_CURVE_H
+#if !defined (COMPUTED_FIELD_CURVE_H)
+#define COMPUTED_FIELD_CURVE_H
 
 #include "curve/curve.h"
 
@@ -82,4 +82,4 @@ If the field is of type COMPUTED_FIELD_CURVE_LOOKUP, the source_field and curve
 used by it are returned - otherwise an error is reported.
 ==============================================================================*/
 
-#endif /* !defined (COMPUTED_FIELD_CONTROL_CURVE_H) */
+#endif /* !defined (COMPUTED_FIELD_CURVE_H) */

@@ -42,8 +42,8 @@ Form set aside for the actual variable editor.
  * the terms of any one of the MPL, the GPL or the LGPL.
  *
  * ***** END LICENSE BLOCK ***** */
-#if !defined (CONTROL_CURVE_EDITOR_DIALOG_H)
-#define CONTROL_CURVE_EDITOR_DIALOG_H
+#if !defined (CURVE_EDITOR_DIALOG_H)
+#define CURVE_EDITOR_DIALOG_H
 
 #include "curve/curve.h"
 #include "user_interface/user_interface.h"
@@ -88,4 +88,4 @@ If there is a control curve editor dialog in existence, then bring it to the
 front, else create a new one. In either case start by editing the specified
 <curve>.
 ==============================================================================*/
-#endif /* !defined (CONTROL_CURVE_EDITOR_DIALOG_H) */
+#endif /* !defined (CURVE_EDITOR_DIALOG_H) */

@@ -446,8 +446,8 @@ but it is at least destroyable when returned from this function.
 			}
 			curve->fe_basis_type=NO_RELATION;
 			curve->number_of_components=0;
-			curve->extend_mode=CONTROL_CURVE_EXTEND_CLAMP;
-			curve->type=CONTROL_CURVE_TYPE_DEFAULT;
+			curve->extend_mode=CURVE_EXTEND_CLAMP;
+			curve->type=CURVE_TYPE_DEFAULT;
 			curve->value_nodes_per_element=0;
 			curve->value_derivatives_per_node=0;
 
@@ -1110,7 +1110,7 @@ LAST MODIFIED : 17 November 1999
 
 DESCRIPTION :
 Returns a pointer to a static string describing the extend_mode, eg.
-CONTROL_CURVE_EXTEND_CLAMP == "extend_clamp".
+CURVE_EXTEND_CLAMP == "extend_clamp".
 The calling function must not deallocate the returned string.
 ==============================================================================*/
 {
@@ -1119,15 +1119,15 @@ The calling function must not deallocate the returned string.
 	ENTER(Curve_extend_mode_string);
 	switch (extend_mode)
 	{
-		case CONTROL_CURVE_EXTEND_CLAMP:
+		case CURVE_EXTEND_CLAMP:
 		{
 			return_string="extend_clamp";
 		} break;
-		case CONTROL_CURVE_EXTEND_CYCLE:
+		case CURVE_EXTEND_CYCLE:
 		{
 			return_string="extend_cycle";
 		} break;
-		case CONTROL_CURVE_EXTEND_SWING:
+		case CURVE_EXTEND_SWING:
 		{
 			return_string="extend_swing";
 		} break;
@@ -1163,19 +1163,19 @@ Up to calling function to deallocate returned array - but not the strings in it!
 	if (number_of_valid_strings)
 	{
 		*number_of_valid_strings=0;
-		extend_mode=CONTROL_CURVE_EXTEND_MODE_BEFORE_FIRST;
+		extend_mode=CURVE_EXTEND_MODE_BEFORE_FIRST;
 		extend_mode++;
-		while (extend_mode<CONTROL_CURVE_EXTEND_MODE_AFTER_LAST)
+		while (extend_mode<CURVE_EXTEND_MODE_AFTER_LAST)
 		{
 			(*number_of_valid_strings)++;
 			extend_mode++;
 		}
 		if (ALLOCATE(valid_strings,char *,*number_of_valid_strings))
 		{
-			extend_mode=CONTROL_CURVE_EXTEND_MODE_BEFORE_FIRST;
+			extend_mode=CURVE_EXTEND_MODE_BEFORE_FIRST;
 			extend_mode++;
 			i=0;
-			while (extend_mode<CONTROL_CURVE_EXTEND_MODE_AFTER_LAST)
+			while (extend_mode<CURVE_EXTEND_MODE_AFTER_LAST)
 			{
 				valid_strings[i]=Curve_extend_mode_string(extend_mode);
 				i++;
@@ -1213,24 +1213,24 @@ Returns the <Curve_extend_mode> described by <extend_mode_string>.
 	ENTER(Curve_extend_mode_from_string);
 	if (extend_mode_string)
 	{
-		extend_mode=CONTROL_CURVE_EXTEND_MODE_BEFORE_FIRST;
+		extend_mode=CURVE_EXTEND_MODE_BEFORE_FIRST;
 		extend_mode++;
-		while ((extend_mode<CONTROL_CURVE_EXTEND_MODE_AFTER_LAST)&&
+		while ((extend_mode<CURVE_EXTEND_MODE_AFTER_LAST)&&
 			(!fuzzy_string_compare_same_length(extend_mode_string,
 				Curve_extend_mode_string(extend_mode))))
 		{
 			extend_mode++;
 		}
-		if (CONTROL_CURVE_EXTEND_MODE_AFTER_LAST==extend_mode)
+		if (CURVE_EXTEND_MODE_AFTER_LAST==extend_mode)
 		{
-			extend_mode=CONTROL_CURVE_EXTEND_MODE_INVALID;
+			extend_mode=CURVE_EXTEND_MODE_INVALID;
 		}
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
 			"Curve_extend_mode_from_string.  Invalid argument");
-		extend_mode=CONTROL_CURVE_EXTEND_MODE_INVALID;
+		extend_mode=CURVE_EXTEND_MODE_INVALID;
 	}
 	LEAVE;
 
@@ -1957,7 +1957,7 @@ boundary node will be adjusted to enforce continuity. Otherwise, the specified
 				}
 				switch (continuity_mode)
 				{
-					case CONTROL_CURVE_CONTINUITY_SLOPE:
+					case CURVE_CONTINUITY_SLOPE:
 					{
 						/* ensure sf/dparam is constant across node */
 						dparam1=parameters[first]-parameters[first-1];
@@ -2027,7 +2027,7 @@ boundary node will be adjusted to enforce continuity. Otherwise, the specified
 								set_FE_element_scale_factor(element2,0,slope*dparam2));
 						}
 					} break;
-					case CONTROL_CURVE_CONTINUITY_C1:
+					case CURVE_CONTINUITY_C1:
 					{
 						/* ensure sf is constant across node */
 						if (return_code=((element1=cc_get_element(curve,first))&&
@@ -2056,7 +2056,7 @@ boundary node will be adjusted to enforce continuity. Otherwise, the specified
 								set_FE_element_scale_factor(element2,0,sf));
 						}
 					} break;
-					case CONTROL_CURVE_CONTINUITY_G1:
+					case CURVE_CONTINUITY_G1:
 					{
 						/* Hermite elements are g1 continuous by default */
 						/* (unless scaling factors are zero) */
@@ -3704,7 +3704,7 @@ enum Curve_extend_mode gives more information.
 	{
 		display_message(ERROR_MESSAGE,
 			"Curve_get_extend_mode.  Invalid argument(s)");
-		extend_mode=CONTROL_CURVE_EXTEND_MODE_INVALID;
+		extend_mode=CURVE_EXTEND_MODE_INVALID;
 	}
 	LEAVE;
 
@@ -3730,9 +3730,9 @@ enum Curve_extend_mode gives more information.
 	{
 		switch( extend_mode )
 		{
-			case CONTROL_CURVE_EXTEND_CLAMP:
-			case CONTROL_CURVE_EXTEND_CYCLE:
-			case CONTROL_CURVE_EXTEND_SWING:
+			case CURVE_EXTEND_CLAMP:
+			case CURVE_EXTEND_CYCLE:
+			case CURVE_EXTEND_SWING:
 			{
 				curve->extend_mode = extend_mode;
 				return_code=1;
@@ -3853,11 +3853,11 @@ space for number_of_components in the curve.
 				{
 					switch (curve->extend_mode)
 					{
-						case CONTROL_CURVE_EXTEND_CLAMP:
+						case CURVE_EXTEND_CLAMP:
 						{
 							parameter=parameters[0];
 						} break;
-						case CONTROL_CURVE_EXTEND_CYCLE:
+						case CURVE_EXTEND_CYCLE:
 						{
 							if (0.0<parameter_range)
 							{
@@ -3869,7 +3869,7 @@ space for number_of_components in the curve.
 								parameter=parameters[0];
 							}
 						} break;
-						case CONTROL_CURVE_EXTEND_SWING:
+						case CURVE_EXTEND_SWING:
 						{
 							if (0.0<parameter_range)
 							{
@@ -3899,11 +3899,11 @@ space for number_of_components in the curve.
 				{
 					switch (curve->extend_mode)
 					{
-						case CONTROL_CURVE_EXTEND_CLAMP:
+						case CURVE_EXTEND_CLAMP:
 						{
 							parameter=parameters[number_of_elements];
 						} break;
-						case CONTROL_CURVE_EXTEND_CYCLE:
+						case CURVE_EXTEND_CYCLE:
 						{
 							if (0.0<parameter_range)
 							{
@@ -3915,7 +3915,7 @@ space for number_of_components in the curve.
 								parameter=parameters[number_of_elements];
 							}
 						} break;
-						case CONTROL_CURVE_EXTEND_SWING:
+						case CURVE_EXTEND_SWING:
 						{
 							if (0.0<parameter_range)
 							{
