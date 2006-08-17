@@ -104,8 +104,10 @@ Functions for executing cmiss commands.
 #include "element/element_point_tool.h"
 #include "element/element_point_viewer.h"
 #include "element/element_tool.h"
-#include "emoter/emoter_dialog.h"
 #endif /* defined (MOTIF) */
+#if defined (MOTIF) || defined (GTK_USER_INTERFACE) || defined (WIN32_USER_INTERFACE) 
+#include "emoter/emoter_dialog.h"
+#endif /* defined (MOTIF) || defined (GTK_USER_INTERFACE) || defined (WIN32_USER_INTERFACE) */
 #include "finite_element/export_cm_files.h"
 #include "finite_element/export_finite_element.h"
 #include "finite_element/finite_element.h"
@@ -321,6 +323,9 @@ DESCRIPTION :
 	struct Streampoint *streampoint_list;
 	struct Time_keeper *default_time_keeper;
 	struct User_interface *user_interface;
+#if defined (MOTIF) || defined (GTK_USER_INTERFACE) || defined (WIN32_USER_INTERFACE)
+	struct Emoter_dialog *emoter_slider_dialog;
+#endif /* defined (MOTIF) || defined (GTK_USER_INTERFACE) || defined (WIN32_USER_INTERFACE) */
 #if defined (MOTIF)
 	Widget curve_editor_dialog,data_grabber_dialog,
 		grid_field_calculator_dialog,input_module_dialog,
@@ -328,7 +333,6 @@ DESCRIPTION :
 	struct Node_viewer *data_viewer,*node_viewer;
 	struct Element_point_viewer *element_point_viewer;
 	struct Element_creator *element_creator;
-	struct Emoter_dialog *emoter_slider_dialog;
 	struct Material_editor_dialog *material_editor_dialog;
 	struct Scene_editor *scene_editor;
 	struct Spectrum_editor_dialog *spectrum_editor_dialog;
@@ -8438,9 +8442,9 @@ Executes a GFX CREATE command.
 {
 	int return_code;
 	struct Cmiss_command_data *command_data;
-#if defined (MOTIF)
+#if defined (MOTIF) || defined (GTK_USER_INTERFACE) || defined (WIN32_USER_INTERFACE) 
 	struct Create_emoter_slider_data create_emoter_slider_data;
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF) || defined (GTK_USER_INTERFACE) || defined (WIN32_USER_INTERFACE) */
 	struct Option_table *option_table;
 
 	ENTER(execute_command_gfx_create);
@@ -8488,7 +8492,7 @@ Executes a GFX CREATE command.
 					command_data_void,gfx_create_element_points);
 				Option_table_add_entry(option_table,"element_selection_callback",NULL,
 					command_data_void,gfx_create_element_selection_callback);
-#if defined (MOTIF)
+#if defined (MOTIF) || defined (GTK_USER_INTERFACE) || defined (WIN32_USER_INTERFACE) 
 				create_emoter_slider_data.execute_command=command_data->execute_command;
 				create_emoter_slider_data.root_region=
 					command_data->root_region;
@@ -8511,6 +8515,7 @@ Executes a GFX CREATE command.
 					command_data->default_light_model;
 				create_emoter_slider_data.emoter_dialog_address=
 					&(command_data->emoter_slider_dialog);
+#if defined (MOTIF)
 				if (command_data->user_interface)
 				{
 					create_emoter_slider_data.parent=
@@ -8520,13 +8525,14 @@ Executes a GFX CREATE command.
 				{
 					create_emoter_slider_data.parent=(Widget)NULL;
 				}
+#endif /* defined (MOTIF) */
 				create_emoter_slider_data.curve_editor_dialog_address=
 					&(command_data->curve_editor_dialog);
 				create_emoter_slider_data.user_interface=
 					command_data->user_interface;
 				Option_table_add_entry(option_table,"emoter",NULL,
 					(void *)&create_emoter_slider_data,gfx_create_emoter);
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF) || defined (GTK_USER_INTERFACE) || defined (WIN32_USER_INTERFACE)  */
 #if defined (MOTIF)
 				Option_table_add_entry(option_table,"environment_map",NULL,
 					command_data_void,gfx_create_environment_map);
@@ -23792,11 +23798,13 @@ Initialise all the subcomponents of cmgui and create the Cmiss_command_data
 		command_data->set_command = CREATE(Execute_command)();
 		command_data->event_dispatcher = (struct Event_dispatcher *)NULL;
 		command_data->user_interface= (struct User_interface *)NULL;
+#if defined (MOTIF) || defined (GTK_USER_INTERFACE) || defined (WIN32_USER_INTERFACE) 
+		command_data->emoter_slider_dialog=(struct Emoter_dialog *)NULL;
+#endif /* defined (MOTIF) || defined (GTK_USER_INTERFACE) || defined (WIN32_USER_INTERFACE)  */
 #if defined (MOTIF)
 		command_data->curve_editor_dialog=(Widget)NULL;
 		command_data->data_grabber_dialog=(Widget)NULL;
 		command_data->sync_2d_3d_dialog=(Widget)NULL;
-		command_data->emoter_slider_dialog=(struct Emoter_dialog *)NULL;
 		command_data->grid_field_calculator_dialog=(Widget)NULL;
 		command_data->input_module_dialog=(Widget)NULL;
 		command_data->data_viewer=(struct Node_viewer *)NULL;
@@ -24879,6 +24887,12 @@ Clean up the command_data, deallocating all the associated memory and resources.
 #if defined (UNEMAP)
 		DESTROY(Unemap_command_data)(&command_data->unemap_command_data);
 #endif /* defined (UNEMAP) */
+#if defined (MOTIF) || defined (GTK_USER_INTERFACE) || defined (WIN32_USER_INTERFACE) 
+		if (command_data->emoter_slider_dialog)
+		{
+			DESTROY(Emoter_dialog)(&command_data->emoter_slider_dialog);
+		}
+#endif /* defined (MOTIF) || defined (GTK_USER_INTERFACE) || defined (WIN32_USER_INTERFACE) */
 #if defined (MOTIF)
 		/* viewers */
 		if (command_data->data_viewer)
@@ -24888,10 +24902,6 @@ Clean up the command_data, deallocating all the associated memory and resources.
 		if (command_data->node_viewer)
 		{
 			DESTROY(Node_viewer)(&(command_data->node_viewer));
-		}
-		if (command_data->emoter_slider_dialog)
-		{
-			DESTROY(Emoter_dialog)(&command_data->emoter_slider_dialog);
 		}
 		if (command_data->element_point_viewer)
 		{

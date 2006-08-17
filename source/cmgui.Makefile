@@ -1125,6 +1125,7 @@ ifeq ($(USER_INTERFACE),GTK_USER_INTERFACE)
 	      $(API_INTERFACE_SRCS) \
 	      $(COMMAND_INTERFACE_SRCS) \
 	      $(COMPUTED_FIELD_INTERFACE_SRCS) \
+			$(EMOTER_SRCS) \
 	      graphics/graphics_window.c \
 	      gtk/gtk_cmiss_scene_viewer.c
 endif # $(USER_INTERFACE) == GTK_USER_INTERFACE
@@ -1133,6 +1134,7 @@ ifeq ($(USER_INTERFACE),WIN32_USER_INTERFACE)
 	      $(API_INTERFACE_SRCS) \
 	      $(COMMAND_INTERFACE_SRCS) \
 	      $(COMPUTED_FIELD_INTERFACE_SRCS) \
+			$(EMOTER_SRCS) \
 	      graphics/graphics_window.c
 endif # $(USER_INTERFACE) == WIN32_USER_INTERFACE
 
