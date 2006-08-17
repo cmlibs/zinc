@@ -80,7 +80,9 @@ DESCRIPTION :
 	struct Graphics_buffer_package *graphics_buffer_package;
 	struct Light *viewer_light;
 	struct Light_model *viewer_light_model;
-	Widget parent, *curve_editor_dialog_address;
+#if defined (MOTIF)
+	Widget parent;
+#endif /* defined (MOTIF) */
 	struct Emoter_dialog **emoter_dialog_address;
 	struct User_interface *user_interface;
 }; /* struct Create_emoter_slider_data */
@@ -105,15 +107,6 @@ int set_emoter_slider_value(struct Parse_state *state,
 LAST MODIFIED : 1 June 1997
 
 DESCRIPTION :
-==============================================================================*/
-
-int set_emoter_slider_function(Widget slider, float value);
-/*******************************************************************************
-LAST MODIFIED : 2 April 1998
-
-DESCRIPTION :
-Sets the value for the given slider where the slider is not in x units but
-in the range of the minimum and maximum specified by the slider.
 ==============================================================================*/
 
 int gfx_modify_emoter(struct Parse_state *state,
