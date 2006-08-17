@@ -1477,6 +1477,7 @@ emoter slider's Curve
 			emoter_update_combine_sliders(active);
 		}
 
+#if defined (MOTIF)
 		/* Set the cursor bar in the curve editor if it exists */
 		if ( *(emoter_dialog->shared->curve_editor_dialog_address) )
 		{
@@ -1484,6 +1485,7 @@ emoter slider's Curve
 				*(emoter_dialog->shared->curve_editor_dialog_address),
 				new_value );
 		}
+#endif /* defined (MOTIF) */
 	}
 	else
 	{
@@ -6169,9 +6171,9 @@ in existence, then bring it to the front, otherwise create new one.
 								shared_emoter_slider_data->em_object = em_object;
 								shared_emoter_slider_data->active_slider =
 									(struct Emoter_slider *)NULL;
+#if defined (MOTIF)
 								shared_emoter_slider_data->curve_editor_dialog_address =
 									create_emoter_slider_data->curve_editor_dialog_address;
-#if defined (MOTIF)
 								shared_emoter_slider_data->top_level
 									= create_emoter_slider_data->parent;
 #endif /* defined (MOTIF) */
