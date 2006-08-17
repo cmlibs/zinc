@@ -161,7 +161,7 @@ Evaluate the fields cache at the location
 ==============================================================================*/
 {
 	FE_value *temp, *temp1;
-	int element_dimension, i, return_code;
+	int i, number_of_derivatives, return_code;
 
 	ENTER(Computed_field_time_lookup_evaluate_cache_at_location);
 	if (field && location && (field->number_of_source_fields == 2) && 
@@ -221,11 +221,11 @@ Evaluate the fields cache at the location
 			{
 				field->values[i] = field->source_fields[0]->values[i];
 			}
-			if (field->source_fields[0]->derivatives_valid)
+			if (number_of_derivatives = location->get_number_of_derivatives())
 			{
 				temp=field->derivatives;
 				temp1=field->source_fields[0]->derivatives;
-				for (i=(field->number_of_components*element_dimension);
+				for (i=(field->number_of_components*number_of_derivatives);
 					  0<i;i--)
 				{
 					(*temp)=(*temp1);
