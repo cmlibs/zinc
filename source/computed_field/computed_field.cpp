@@ -4226,7 +4226,7 @@ Default listing of source fields and source values.
 {
 	int i, return_code;
 
-	ENTER(list_Computed_field_ ## filter);
+	ENTER(Computed_field_core::list);
 	if (field)
 	{
 		if (0 < field->number_of_source_fields)
