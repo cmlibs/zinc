@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : computed_field_trigonometry.c
 
-LAST MODIFIED : 14 August 2006
+LAST MODIFIED : 24 August 2006
 
 DESCRIPTION :
 Implements a number of basic component wise operations on computed fields.
@@ -59,100 +59,51 @@ struct Computed_field_component_operations_package
 	struct MANAGER(Computed_field) *computed_field_manager;
 };
 
-static char computed_field_sin_type_string[] = "sin";
+namespace {
 
-int Computed_field_is_type_sin(struct Computed_field *field)
-/*******************************************************************************
-LAST MODIFIED : 14 August 2006
+char computed_field_sin_type_string[] = "sin";
 
-DESCRIPTION :
-==============================================================================*/
+class Computed_field_sin : public Computed_field_core
 {
-	int return_code;
+public:
+	Computed_field_sin(Computed_field *field) : Computed_field_core(field)
+	{
+	};
 
-	ENTER(Computed_field_is_type_sin);
-	if (field)
+private:
+	Computed_field_core *copy(Computed_field* new_parent)
 	{
-		return_code = 
-		  (field->type_string == computed_field_sin_type_string);
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_is_type_sin.  Missing field");
-		return_code = 0;
+		return new Computed_field_sin(new_parent);
 	}
 
-	return (return_code);
-} /* Computed_field_is_type_sin */
+	char *get_type_string()
+	{
+		return(computed_field_sin_type_string);
+	}
 
-#define Computed_field_sin_clear_type_specific \
-   Computed_field_default_clear_type_specific
+	int compare(Computed_field_core* other_field)
+	{
+		if (dynamic_cast<Computed_field_sin*>(other_field))
+		{
+			return 1;
+		}
+		else
+		{
+			return 0;
+		}
+	}
+
+	int evaluate_cache_at_location(Field_location* location);
+
+	int list();
+
+	char* get_command_string();
+};
+
+int Computed_field_sin::evaluate_cache_at_location(
+    Field_location* location)
 /*******************************************************************************
-LAST MODIFIED : 14 August 2006
-
-DESCRIPTION :
-No type specific data
-==============================================================================*/
-
-#define Computed_field_sin_copy_type_specific \
-   Computed_field_default_copy_type_specific
-/*******************************************************************************
-LAST MODIFIED : 14 August 2006
-
-DESCRIPTION :
-No type specific data
-==============================================================================*/
-
-#define Computed_field_sin_clear_cache_type_specific \
-   (Computed_field_clear_cache_type_specific_function)NULL
-/*******************************************************************************
-LAST MODIFIED : 14 August 2006
-
-DESCRIPTION :
-This function is not needed for this type.
-==============================================================================*/
-
-#define Computed_field_sin_type_specific_contents_match \
-   Computed_field_default_type_specific_contents_match
-/*******************************************************************************
-LAST MODIFIED : 14 August 2006
-
-DESCRIPTION :
-No type specific data
-==============================================================================*/
-
-#define Computed_field_sin_is_defined_at_location \
-	Computed_field_default_is_defined_at_location
-/*******************************************************************************
-LAST MODIFIED : 14 August 2006
-
-DESCRIPTION :
-Check the source fields using the default.
-==============================================================================*/
-
-#define Computed_field_sin_has_numerical_components \
-	Computed_field_default_has_numerical_components
-/*******************************************************************************
-LAST MODIFIED : 14 August 2006
-
-DESCRIPTION :
-Window projection does have numerical components.
-==============================================================================*/
-
-#define Computed_field_sin_not_in_use \
-	(Computed_field_not_in_use_function)NULL
-/*******************************************************************************
-LAST MODIFIED : 14 August 2006
-
-DESCRIPTION :
-No special criteria.
-==============================================================================*/
-
-static int Computed_field_sin_evaluate_cache_at_location(
-   struct Computed_field *field, Field_location* location)
-/*******************************************************************************
-LAST MODIFIED : 14 August 2006
+LAST MODIFIED : 24 August 2006
 
 DESCRIPTION :
 Evaluate the fields cache at the element.
@@ -161,7 +112,7 @@ Evaluate the fields cache at the element.
 	FE_value *derivative;
 	int i, j, number_of_xi, return_code;
 
-	ENTER(Computed_field_sin_evaluate_cache_at_location);
+	ENTER(Computed_field_sin::evaluate_cache_at_location);
 	if (field && location && (field->number_of_source_fields == 1) && 
 		(field->number_of_components ==
       field->source_fields[0]->number_of_components))
@@ -202,49 +153,19 @@ Evaluate the fields cache at the element.
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Computed_field_sin_evaluate_cache_at_location.  "
+			"Computed_field_sin::evaluate_cache_at_location.  "
 			"Invalid argument(s)");
 		return_code = 0;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* Computed_field_sin_evaluate_cache_at_location */
+} /* Computed_field_sin::evaluate_cache_at_location */
 
-#define Computed_field_sin_set_values_at_location \
-   (Computed_field_set_values_at_location_function)NULL
+
+int Computed_field_sin::list()
 /*******************************************************************************
-LAST MODIFIED : 14 August 2006
-
-DESCRIPTION :
-Not implemented yet.
-==============================================================================*/
-
-#define Computed_field_sin_get_native_discretization_in_element \
-	Computed_field_default_get_native_discretization_in_element
-/*******************************************************************************
-LAST MODIFIED : 14 August 2006
-
-DESCRIPTION :
-Inherit result from first source field.
-==============================================================================*/
-
-#define Computed_field_sin_find_element_xi \
-   (Computed_field_find_element_xi_function)NULL
-/*******************************************************************************
-LAST MODIFIED : 14 August 2006
-
-DESCRIPTION :
-Not implemented yet.
-==============================================================================*/
-
-#define Computed_field_sin_get_native_resolution \
-	(Computed_field_get_native_resolution_function)NULL
-
-static int list_Computed_field_sin(
-	struct Computed_field *field)
-/*******************************************************************************
-LAST MODIFIED : 14 August 2006
+LAST MODIFIED : 24 August 2006
 
 DESCRIPTION :
 ==============================================================================*/
@@ -269,10 +190,9 @@ DESCRIPTION :
 	return (return_code);
 } /* list_Computed_field_sin */
 
-static char *Computed_field_sin_get_command_string(
-	struct Computed_field *field)
+char *Computed_field_sin::get_command_string()
 /*******************************************************************************
-LAST MODIFIED : 14 August 2006
+LAST MODIFIED : 24 August 2006
 
 DESCRIPTION :
 Returns allocated command string for reproducing field. Includes type.
@@ -281,7 +201,7 @@ Returns allocated command string for reproducing field. Includes type.
 	char *command_string, *field_name;
 	int error;
 
-	ENTER(Computed_field_sin_get_command_string);
+	ENTER(Computed_field_sin::get_command_string);
 	command_string = (char *)NULL;
 	if (field)
 	{
@@ -299,26 +219,19 @@ Returns allocated command string for reproducing field. Includes type.
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Computed_field_sin_get_command_string.  Invalid field");
+			"Computed_field_sin::get_command_string.  Invalid field");
 	}
 	LEAVE;
 
 	return (command_string);
-} /* Computed_field_sin_get_command_string */
+} /* Computed_field_sin::get_command_string */
 
-#define Computed_field_sin_has_multiple_times \
-	Computed_field_default_has_multiple_times
-/*******************************************************************************
-LAST MODIFIED : 14 August 2006
-
-DESCRIPTION :
-Works out whether time influences the field.
-==============================================================================*/
+} //namespace
 
 int Computed_field_set_type_sin(struct Computed_field *field,
 	struct Computed_field *source_field)
 /*******************************************************************************
-LAST MODIFIED : 14 August 2006
+LAST MODIFIED : 24 August 2006
 
 DESCRIPTION :
 Converts <field> to type COMPUTED_FIELD_SIN with the supplied
@@ -341,15 +254,11 @@ although its cache may be lost.
 			/* 2. free current type-specific data */
 			Computed_field_clear_type(field);
 			/* 3. establish the new type */
-			field->type_string = computed_field_sin_type_string;
 			field->number_of_components = source_field->number_of_components;
 			source_fields[0]=ACCESS(Computed_field)(source_field);
 			field->source_fields=source_fields;
 			field->number_of_source_fields=number_of_source_fields;			
-			field->type_specific_data = (void *)1;
-
-			/* Set all the methods */
-			COMPUTED_FIELD_ESTABLISH_METHODS(sin);
+			field->core = new Computed_field_sin(field);
 		}
 		else
 		{
@@ -371,7 +280,7 @@ although its cache may be lost.
 int Computed_field_get_type_sin(struct Computed_field *field,
 	struct Computed_field **source_field)
 /*******************************************************************************
-LAST MODIFIED : 14 August 2006
+LAST MODIFIED : 24 August 2006
 
 DESCRIPTION :
 If the field is of type COMPUTED_FIELD_SIN, the 
@@ -381,7 +290,7 @@ If the field is of type COMPUTED_FIELD_SIN, the
 	int return_code;
 
 	ENTER(Computed_field_get_type_sin);
-	if (field&&(field->type_string==computed_field_sin_type_string))
+	if (field&&(dynamic_cast<Computed_field_sin*>(field->core)))
 	{
 		*source_field = field->source_fields[0];
 		return_code=1;
@@ -397,10 +306,10 @@ If the field is of type COMPUTED_FIELD_SIN, the
 	return (return_code);
 } /* Computed_field_get_type_sin */
 
-static int define_Computed_field_type_sin(struct Parse_state *state,
+int define_Computed_field_type_sin(struct Parse_state *state,
 	void *field_void,void *computed_field_component_operations_package_void)
 /*******************************************************************************
-LAST MODIFIED : 14 August 2006
+LAST MODIFIED : 24 August 2006
 
 DESCRIPTION :
 Converts <field> into type COMPUTED_FIELD_SIN (if it is not 
@@ -496,100 +405,51 @@ already) and allows its contents to be modified.
 	return (return_code);
 } /* define_Computed_field_type_sin */
 
-static char computed_field_cos_type_string[] = "cos";
+namespace {
 
-int Computed_field_is_type_cos(struct Computed_field *field)
-/*******************************************************************************
-LAST MODIFIED : 14 August 2006
+char computed_field_cos_type_string[] = "cos";
 
-DESCRIPTION :
-==============================================================================*/
+class Computed_field_cos : public Computed_field_core
 {
-	int return_code;
+public:
+	Computed_field_cos(Computed_field *field) : Computed_field_core(field)
+	{
+	};
 
-	ENTER(Computed_field_is_type_cos);
-	if (field)
+private:
+	Computed_field_core *copy(Computed_field* new_parent)
 	{
-		return_code = 
-		  (field->type_string == computed_field_cos_type_string);
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_is_type_cos.  Missing field");
-		return_code = 0;
+		return new Computed_field_cos(new_parent);
 	}
 
-	return (return_code);
-} /* Computed_field_is_type_cos */
+	char *get_type_string()
+	{
+		return(computed_field_cos_type_string);
+	}
 
-#define Computed_field_cos_clear_type_specific \
-   Computed_field_default_clear_type_specific
+	int compare(Computed_field_core* other_field)
+	{
+		if (dynamic_cast<Computed_field_cos*>(other_field))
+		{
+			return 1;
+		}
+		else
+		{
+			return 0;
+		}
+	}
+
+	int evaluate_cache_at_location(Field_location* location);
+
+	int list();
+
+	char* get_command_string();
+};
+
+int Computed_field_cos::evaluate_cache_at_location(
+    Field_location* location)
 /*******************************************************************************
-LAST MODIFIED : 14 August 2006
-
-DESCRIPTION :
-No type specific data
-==============================================================================*/
-
-#define Computed_field_cos_copy_type_specific \
-   Computed_field_default_copy_type_specific
-/*******************************************************************************
-LAST MODIFIED : 14 August 2006
-
-DESCRIPTION :
-No type specific data
-==============================================================================*/
-
-#define Computed_field_cos_clear_cache_type_specific \
-   (Computed_field_clear_cache_type_specific_function)NULL
-/*******************************************************************************
-LAST MODIFIED : 14 August 2006
-
-DESCRIPTION :
-This function is not needed for this type.
-==============================================================================*/
-
-#define Computed_field_cos_type_specific_contents_match \
-   Computed_field_default_type_specific_contents_match
-/*******************************************************************************
-LAST MODIFIED : 14 August 2006
-
-DESCRIPTION :
-No type specific data
-==============================================================================*/
-
-#define Computed_field_cos_is_defined_at_location \
-	Computed_field_default_is_defined_at_location
-/*******************************************************************************
-LAST MODIFIED : 14 August 2006
-
-DESCRIPTION :
-Check the source fields using the default.
-==============================================================================*/
-
-#define Computed_field_cos_has_numerical_components \
-	Computed_field_default_has_numerical_components
-/*******************************************************************************
-LAST MODIFIED : 14 August 2006
-
-DESCRIPTION :
-Window projection does have numerical components.
-==============================================================================*/
-
-#define Computed_field_cos_not_in_use \
-	(Computed_field_not_in_use_function)NULL
-/*******************************************************************************
-LAST MODIFIED : 14 August 2006
-
-DESCRIPTION :
-No special criteria.
-==============================================================================*/
-
-static int Computed_field_cos_evaluate_cache_at_location(
-   struct Computed_field *field, Field_location* location)
-/*******************************************************************************
-LAST MODIFIED : 14 August 2006
+LAST MODIFIED : 24 August 2006
 
 DESCRIPTION :
 Evaluate the fields cache at the element.
@@ -598,7 +458,7 @@ Evaluate the fields cache at the element.
 	FE_value *derivative;
 	int i, j, number_of_xi, return_code;
 
-	ENTER(Computed_field_cos_evaluate_cache_at_location);
+	ENTER(Computed_field_cos::evaluate_cache_at_location);
 	if (field && location && (field->number_of_source_fields == 1) && 
 		(field->number_of_components ==
       field->source_fields[0]->number_of_components))
@@ -639,49 +499,19 @@ Evaluate the fields cache at the element.
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Computed_field_cos_evaluate_cache_at_location.  "
+			"Computed_field_cos::evaluate_cache_at_location.  "
 			"Invalid argument(s)");
 		return_code = 0;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* Computed_field_cos_evaluate_cache_at_location */
+} /* Computed_field_cos::evaluate_cache_at_location */
 
-#define Computed_field_cos_set_values_at_location \
-   (Computed_field_set_values_at_location_function)NULL
+
+int Computed_field_cos::list()
 /*******************************************************************************
-LAST MODIFIED : 14 August 2006
-
-DESCRIPTION :
-Not implemented yet.
-==============================================================================*/
-
-#define Computed_field_cos_get_native_discretization_in_element \
-	Computed_field_default_get_native_discretization_in_element
-/*******************************************************************************
-LAST MODIFIED : 14 August 2006
-
-DESCRIPTION :
-Inherit result from first source field.
-==============================================================================*/
-
-#define Computed_field_cos_find_element_xi \
-   (Computed_field_find_element_xi_function)NULL
-/*******************************************************************************
-LAST MODIFIED : 14 August 2006
-
-DESCRIPTION :
-Not implemented yet.
-==============================================================================*/
-
-#define Computed_field_cos_get_native_resolution \
-	(Computed_field_get_native_resolution_function)NULL
-
-static int list_Computed_field_cos(
-	struct Computed_field *field)
-/*******************************************************************************
-LAST MODIFIED : 14 August 2006
+LAST MODIFIED : 24 August 2006
 
 DESCRIPTION :
 ==============================================================================*/
@@ -706,10 +536,9 @@ DESCRIPTION :
 	return (return_code);
 } /* list_Computed_field_cos */
 
-static char *Computed_field_cos_get_command_string(
-	struct Computed_field *field)
+char *Computed_field_cos::get_command_string()
 /*******************************************************************************
-LAST MODIFIED : 14 August 2006
+LAST MODIFIED : 24 August 2006
 
 DESCRIPTION :
 Returns allocated command string for reproducing field. Includes type.
@@ -718,7 +547,7 @@ Returns allocated command string for reproducing field. Includes type.
 	char *command_string, *field_name;
 	int error;
 
-	ENTER(Computed_field_cos_get_command_string);
+	ENTER(Computed_field_cos::get_command_string);
 	command_string = (char *)NULL;
 	if (field)
 	{
@@ -736,26 +565,19 @@ Returns allocated command string for reproducing field. Includes type.
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Computed_field_cos_get_command_string.  Invalid field");
+			"Computed_field_cos::get_command_string.  Invalid field");
 	}
 	LEAVE;
 
 	return (command_string);
-} /* Computed_field_cos_get_command_string */
+} /* Computed_field_cos::get_command_string */
 
-#define Computed_field_cos_has_multiple_times \
-	Computed_field_default_has_multiple_times
-/*******************************************************************************
-LAST MODIFIED : 14 August 2006
-
-DESCRIPTION :
-Works out whether time influences the field.
-==============================================================================*/
+} //namespace
 
 int Computed_field_set_type_cos(struct Computed_field *field,
 	struct Computed_field *source_field)
 /*******************************************************************************
-LAST MODIFIED : 14 August 2006
+LAST MODIFIED : 24 August 2006
 
 DESCRIPTION :
 Converts <field> to type COMPUTED_FIELD_COS with the supplied
@@ -778,15 +600,11 @@ although its cache may be lost.
 			/* 2. free current type-specific data */
 			Computed_field_clear_type(field);
 			/* 3. establish the new type */
-			field->type_string = computed_field_cos_type_string;
 			field->number_of_components = source_field->number_of_components;
 			source_fields[0]=ACCESS(Computed_field)(source_field);
 			field->source_fields=source_fields;
 			field->number_of_source_fields=number_of_source_fields;			
-			field->type_specific_data = (void *)1;
-
-			/* Set all the methods */
-			COMPUTED_FIELD_ESTABLISH_METHODS(cos);
+			field->core = new Computed_field_cos(field);
 		}
 		else
 		{
@@ -808,7 +626,7 @@ although its cache may be lost.
 int Computed_field_get_type_cos(struct Computed_field *field,
 	struct Computed_field **source_field)
 /*******************************************************************************
-LAST MODIFIED : 14 August 2006
+LAST MODIFIED : 24 August 2006
 
 DESCRIPTION :
 If the field is of type COMPUTED_FIELD_COS, the 
@@ -818,7 +636,7 @@ If the field is of type COMPUTED_FIELD_COS, the
 	int return_code;
 
 	ENTER(Computed_field_get_type_cos);
-	if (field&&(field->type_string==computed_field_cos_type_string))
+	if (field&&(dynamic_cast<Computed_field_cos*>(field->core)))
 	{
 		*source_field = field->source_fields[0];
 		return_code=1;
@@ -834,10 +652,10 @@ If the field is of type COMPUTED_FIELD_COS, the
 	return (return_code);
 } /* Computed_field_get_type_cos */
 
-static int define_Computed_field_type_cos(struct Parse_state *state,
+int define_Computed_field_type_cos(struct Parse_state *state,
 	void *field_void,void *computed_field_component_operations_package_void)
 /*******************************************************************************
-LAST MODIFIED : 14 August 2006
+LAST MODIFIED : 24 August 2006
 
 DESCRIPTION :
 Converts <field> into type COMPUTED_FIELD_COS (if it is not 
@@ -933,100 +751,51 @@ already) and allows its contents to be modified.
 	return (return_code);
 } /* define_Computed_field_type_cos */
 
-static char computed_field_tan_type_string[] = "tan";
+namespace {
 
-int Computed_field_is_type_tan(struct Computed_field *field)
-/*******************************************************************************
-LAST MODIFIED : 14 August 2006
+char computed_field_tan_type_string[] = "tan";
 
-DESCRIPTION :
-==============================================================================*/
+class Computed_field_tan : public Computed_field_core
 {
-	int return_code;
+public:
+	Computed_field_tan(Computed_field *field) : Computed_field_core(field)
+	{
+	};
 
-	ENTER(Computed_field_is_type_tan);
-	if (field)
+private:
+	Computed_field_core *copy(Computed_field* new_parent)
 	{
-		return_code = 
-		  (field->type_string == computed_field_tan_type_string);
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_is_type_tan.  Missing field");
-		return_code = 0;
+		return new Computed_field_tan(new_parent);
 	}
 
-	return (return_code);
-} /* Computed_field_is_type_tan */
+	char *get_type_string()
+	{
+		return(computed_field_tan_type_string);
+	}
 
-#define Computed_field_tan_clear_type_specific \
-   Computed_field_default_clear_type_specific
+	int compare(Computed_field_core* other_field)
+	{
+		if (dynamic_cast<Computed_field_tan*>(other_field))
+		{
+			return 1;
+		}
+		else
+		{
+			return 0;
+		}
+	}
+
+	int evaluate_cache_at_location(Field_location* location);
+
+	int list();
+
+	char* get_command_string();
+};
+
+int Computed_field_tan::evaluate_cache_at_location(
+    Field_location* location)
 /*******************************************************************************
-LAST MODIFIED : 14 August 2006
-
-DESCRIPTION :
-No type specific data
-==============================================================================*/
-
-#define Computed_field_tan_copy_type_specific \
-   Computed_field_default_copy_type_specific
-/*******************************************************************************
-LAST MODIFIED : 14 August 2006
-
-DESCRIPTION :
-No type specific data
-==============================================================================*/
-
-#define Computed_field_tan_clear_cache_type_specific \
-   (Computed_field_clear_cache_type_specific_function)NULL
-/*******************************************************************************
-LAST MODIFIED : 14 August 2006
-
-DESCRIPTION :
-This function is not needed for this type.
-==============================================================================*/
-
-#define Computed_field_tan_type_specific_contents_match \
-   Computed_field_default_type_specific_contents_match
-/*******************************************************************************
-LAST MODIFIED : 14 August 2006
-
-DESCRIPTION :
-No type specific data
-==============================================================================*/
-
-#define Computed_field_tan_is_defined_at_location \
-	Computed_field_default_is_defined_at_location
-/*******************************************************************************
-LAST MODIFIED : 14 August 2006
-
-DESCRIPTION :
-Check the source fields using the default.
-==============================================================================*/
-
-#define Computed_field_tan_has_numerical_components \
-	Computed_field_default_has_numerical_components
-/*******************************************************************************
-LAST MODIFIED : 14 August 2006
-
-DESCRIPTION :
-Window projection does have numerical components.
-==============================================================================*/
-
-#define Computed_field_tan_not_in_use \
-	(Computed_field_not_in_use_function)NULL
-/*******************************************************************************
-LAST MODIFIED : 14 August 2006
-
-DESCRIPTION :
-No special criteria.
-==============================================================================*/
-
-static int Computed_field_tan_evaluate_cache_at_location(
-   struct Computed_field *field, Field_location* location)
-/*******************************************************************************
-LAST MODIFIED : 14 August 2006
+LAST MODIFIED : 24 August 2006
 
 DESCRIPTION :
 Evaluate the fields cache at the element.
@@ -1035,7 +804,7 @@ Evaluate the fields cache at the element.
 	FE_value *derivative;
 	int i, j, number_of_xi, return_code;
 
-	ENTER(Computed_field_tan_evaluate_cache_at_location);
+	ENTER(Computed_field_tan::evaluate_cache_at_location);
 	if (field && location && (field->number_of_source_fields == 1) && 
 		(field->number_of_components ==
       field->source_fields[0]->number_of_components))
@@ -1076,49 +845,19 @@ Evaluate the fields cache at the element.
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Computed_field_tan_evaluate_cache_at_location.  "
+			"Computed_field_tan::evaluate_cache_at_location.  "
 			"Invalid argument(s)");
 		return_code = 0;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* Computed_field_tan_evaluate_cache_at_location */
+} /* Computed_field_tan::evaluate_cache_at_location */
 
-#define Computed_field_tan_set_values_at_location \
-   (Computed_field_set_values_at_location_function)NULL
+
+int Computed_field_tan::list()
 /*******************************************************************************
-LAST MODIFIED : 14 August 2006
-
-DESCRIPTION :
-Not implemented yet.
-==============================================================================*/
-
-#define Computed_field_tan_get_native_discretization_in_element \
-	Computed_field_default_get_native_discretization_in_element
-/*******************************************************************************
-LAST MODIFIED : 14 August 2006
-
-DESCRIPTION :
-Inherit result from first source field.
-==============================================================================*/
-
-#define Computed_field_tan_find_element_xi \
-   (Computed_field_find_element_xi_function)NULL
-/*******************************************************************************
-LAST MODIFIED : 14 August 2006
-
-DESCRIPTION :
-Not implemented yet.
-==============================================================================*/
-
-#define Computed_field_tan_get_native_resolution \
-	(Computed_field_get_native_resolution_function)NULL
-
-static int list_Computed_field_tan(
-	struct Computed_field *field)
-/*******************************************************************************
-LAST MODIFIED : 14 August 2006
+LAST MODIFIED : 24 August 2006
 
 DESCRIPTION :
 ==============================================================================*/
@@ -1143,10 +882,9 @@ DESCRIPTION :
 	return (return_code);
 } /* list_Computed_field_tan */
 
-static char *Computed_field_tan_get_command_string(
-	struct Computed_field *field)
+char *Computed_field_tan::get_command_string()
 /*******************************************************************************
-LAST MODIFIED : 14 August 2006
+LAST MODIFIED : 24 August 2006
 
 DESCRIPTION :
 Returns allocated command string for reproducing field. Includes type.
@@ -1155,7 +893,7 @@ Returns allocated command string for reproducing field. Includes type.
 	char *command_string, *field_name;
 	int error;
 
-	ENTER(Computed_field_tan_get_command_string);
+	ENTER(Computed_field_tan::get_command_string);
 	command_string = (char *)NULL;
 	if (field)
 	{
@@ -1173,26 +911,19 @@ Returns allocated command string for reproducing field. Includes type.
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Computed_field_tan_get_command_string.  Invalid field");
+			"Computed_field_tan::get_command_string.  Invalid field");
 	}
 	LEAVE;
 
 	return (command_string);
-} /* Computed_field_tan_get_command_string */
+} /* Computed_field_tan::get_command_string */
 
-#define Computed_field_tan_has_multiple_times \
-	Computed_field_default_has_multiple_times
-/*******************************************************************************
-LAST MODIFIED : 14 August 2006
-
-DESCRIPTION :
-Works out whether time influences the field.
-==============================================================================*/
+} //namespace
 
 int Computed_field_set_type_tan(struct Computed_field *field,
 	struct Computed_field *source_field)
 /*******************************************************************************
-LAST MODIFIED : 14 August 2006
+LAST MODIFIED : 24 August 2006
 
 DESCRIPTION :
 Converts <field> to type COMPUTED_FIELD_TAN with the supplied
@@ -1215,15 +946,11 @@ although its cache may be lost.
 			/* 2. free current type-specific data */
 			Computed_field_clear_type(field);
 			/* 3. establish the new type */
-			field->type_string = computed_field_tan_type_string;
 			field->number_of_components = source_field->number_of_components;
 			source_fields[0]=ACCESS(Computed_field)(source_field);
 			field->source_fields=source_fields;
 			field->number_of_source_fields=number_of_source_fields;			
-			field->type_specific_data = (void *)1;
-
-			/* Set all the methods */
-			COMPUTED_FIELD_ESTABLISH_METHODS(tan);
+			field->core = new Computed_field_tan(field);
 		}
 		else
 		{
@@ -1245,7 +972,7 @@ although its cache may be lost.
 int Computed_field_get_type_tan(struct Computed_field *field,
 	struct Computed_field **source_field)
 /*******************************************************************************
-LAST MODIFIED : 14 August 2006
+LAST MODIFIED : 24 August 2006
 
 DESCRIPTION :
 If the field is of type COMPUTED_FIELD_TAN, the 
@@ -1255,7 +982,7 @@ If the field is of type COMPUTED_FIELD_TAN, the
 	int return_code;
 
 	ENTER(Computed_field_get_type_tan);
-	if (field&&(field->type_string==computed_field_tan_type_string))
+	if (field&&(dynamic_cast<Computed_field_tan*>(field->core)))
 	{
 		*source_field = field->source_fields[0];
 		return_code=1;
@@ -1271,10 +998,10 @@ If the field is of type COMPUTED_FIELD_TAN, the
 	return (return_code);
 } /* Computed_field_get_type_tan */
 
-static int define_Computed_field_type_tan(struct Parse_state *state,
+int define_Computed_field_type_tan(struct Parse_state *state,
 	void *field_void,void *computed_field_component_operations_package_void)
 /*******************************************************************************
-LAST MODIFIED : 14 August 2006
+LAST MODIFIED : 24 August 2006
 
 DESCRIPTION :
 Converts <field> into type COMPUTED_FIELD_TAN (if it is not 
@@ -1370,100 +1097,51 @@ already) and allows its contents to be modified.
 	return (return_code);
 } /* define_Computed_field_type_tan */
 
-static char computed_field_asin_type_string[] = "asin";
+namespace {
 
-int Computed_field_is_type_asin(struct Computed_field *field)
-/*******************************************************************************
-LAST MODIFIED : 14 August 2006
+char computed_field_asin_type_string[] = "asin";
 
-DESCRIPTION :
-==============================================================================*/
+class Computed_field_asin : public Computed_field_core
 {
-	int return_code;
+public:
+	Computed_field_asin(Computed_field *field) : Computed_field_core(field)
+	{
+	};
 
-	ENTER(Computed_field_is_type_asin);
-	if (field)
+private:
+	Computed_field_core *copy(Computed_field* new_parent)
 	{
-		return_code = 
-		  (field->type_string == computed_field_asin_type_string);
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_is_type_asin.  Missing field");
-		return_code = 0;
+		return new Computed_field_asin(new_parent);
 	}
 
-	return (return_code);
-} /* Computed_field_is_type_asin */
+	char *get_type_string()
+	{
+		return(computed_field_asin_type_string);
+	}
 
-#define Computed_field_asin_clear_type_specific \
-   Computed_field_default_clear_type_specific
+	int compare(Computed_field_core* other_field)
+	{
+		if (dynamic_cast<Computed_field_asin*>(other_field))
+		{
+			return 1;
+		}
+		else
+		{
+			return 0;
+		}
+	}
+
+	int evaluate_cache_at_location(Field_location* location);
+
+	int list();
+
+	char* get_command_string();
+};
+
+int Computed_field_asin::evaluate_cache_at_location(
+    Field_location* location)
 /*******************************************************************************
-LAST MODIFIED : 14 August 2006
-
-DESCRIPTION :
-No type specific data
-==============================================================================*/
-
-#define Computed_field_asin_copy_type_specific \
-   Computed_field_default_copy_type_specific
-/*******************************************************************************
-LAST MODIFIED : 14 August 2006
-
-DESCRIPTION :
-No type specific data
-==============================================================================*/
-
-#define Computed_field_asin_clear_cache_type_specific \
-   (Computed_field_clear_cache_type_specific_function)NULL
-/*******************************************************************************
-LAST MODIFIED : 14 August 2006
-
-DESCRIPTION :
-This function is not needed for this type.
-==============================================================================*/
-
-#define Computed_field_asin_type_specific_contents_match \
-   Computed_field_default_type_specific_contents_match
-/*******************************************************************************
-LAST MODIFIED : 14 August 2006
-
-DESCRIPTION :
-No type specific data
-==============================================================================*/
-
-#define Computed_field_asin_is_defined_at_location \
-	Computed_field_default_is_defined_at_location
-/*******************************************************************************
-LAST MODIFIED : 14 August 2006
-
-DESCRIPTION :
-Check the source fields using the default.
-==============================================================================*/
-
-#define Computed_field_asin_has_numerical_components \
-	Computed_field_default_has_numerical_components
-/*******************************************************************************
-LAST MODIFIED : 14 August 2006
-
-DESCRIPTION :
-Window projection does have numerical components.
-==============================================================================*/
-
-#define Computed_field_asin_not_in_use \
-	(Computed_field_not_in_use_function)NULL
-/*******************************************************************************
-LAST MODIFIED : 14 August 2006
-
-DESCRIPTION :
-No special criteria.
-==============================================================================*/
-
-static int Computed_field_asin_evaluate_cache_at_location(
-   struct Computed_field *field, Field_location* location)
-/*******************************************************************************
-LAST MODIFIED : 14 August 2006
+LAST MODIFIED : 24 August 2006
 
 DESCRIPTION :
 Evaluate the fields cache at the element.
@@ -1472,7 +1150,7 @@ Evaluate the fields cache at the element.
 	FE_value *derivative;
 	int i, j, number_of_xi, return_code;
 
-	ENTER(Computed_field_asin_evaluate_cache_at_location);
+	ENTER(Computed_field_asin::evaluate_cache_at_location);
 	if (field && location && (field->number_of_source_fields == 1) && 
 		(field->number_of_components ==
       field->source_fields[0]->number_of_components))
@@ -1521,49 +1199,19 @@ Evaluate the fields cache at the element.
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Computed_field_asin_evaluate_cache_at_location.  "
+			"Computed_field_asin::evaluate_cache_at_location.  "
 			"Invalid argument(s)");
 		return_code = 0;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* Computed_field_asin_evaluate_cache_at_location */
+} /* Computed_field_asin::evaluate_cache_at_location */
 
-#define Computed_field_asin_set_values_at_location \
-   (Computed_field_set_values_at_location_function)NULL
+
+int Computed_field_asin::list()
 /*******************************************************************************
-LAST MODIFIED : 14 August 2006
-
-DESCRIPTION :
-Not implemented yet.
-==============================================================================*/
-
-#define Computed_field_asin_get_native_discretization_in_element \
-	Computed_field_default_get_native_discretization_in_element
-/*******************************************************************************
-LAST MODIFIED : 14 August 2006
-
-DESCRIPTION :
-Inherit result from first source field.
-==============================================================================*/
-
-#define Computed_field_asin_find_element_xi \
-   (Computed_field_find_element_xi_function)NULL
-/*******************************************************************************
-LAST MODIFIED : 14 August 2006
-
-DESCRIPTION :
-Not implemented yet.
-==============================================================================*/
-
-#define Computed_field_asin_get_native_resolution \
-	(Computed_field_get_native_resolution_function)NULL
-
-static int list_Computed_field_asin(
-	struct Computed_field *field)
-/*******************************************************************************
-LAST MODIFIED : 14 August 2006
+LAST MODIFIED : 24 August 2006
 
 DESCRIPTION :
 ==============================================================================*/
@@ -1588,10 +1236,9 @@ DESCRIPTION :
 	return (return_code);
 } /* list_Computed_field_asin */
 
-static char *Computed_field_asin_get_command_string(
-	struct Computed_field *field)
+char *Computed_field_asin::get_command_string()
 /*******************************************************************************
-LAST MODIFIED : 14 August 2006
+LAST MODIFIED : 24 August 2006
 
 DESCRIPTION :
 Returns allocated command string for reproducing field. Includes type.
@@ -1600,7 +1247,7 @@ Returns allocated command string for reproducing field. Includes type.
 	char *command_string, *field_name;
 	int error;
 
-	ENTER(Computed_field_asin_get_command_string);
+	ENTER(Computed_field_asin::get_command_string);
 	command_string = (char *)NULL;
 	if (field)
 	{
@@ -1618,26 +1265,19 @@ Returns allocated command string for reproducing field. Includes type.
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Computed_field_asin_get_command_string.  Invalid field");
+			"Computed_field_asin::get_command_string.  Invalid field");
 	}
 	LEAVE;
 
 	return (command_string);
-} /* Computed_field_asin_get_command_string */
+} /* Computed_field_asin::get_command_string */
 
-#define Computed_field_asin_has_multiple_times \
-	Computed_field_default_has_multiple_times
-/*******************************************************************************
-LAST MODIFIED : 14 August 2006
-
-DESCRIPTION :
-Works out whether time influences the field.
-==============================================================================*/
+} //namespace
 
 int Computed_field_set_type_asin(struct Computed_field *field,
 	struct Computed_field *source_field)
 /*******************************************************************************
-LAST MODIFIED : 14 August 2006
+LAST MODIFIED : 24 August 2006
 
 DESCRIPTION :
 Converts <field> to type COMPUTED_FIELD_ASIN with the supplied
@@ -1660,15 +1300,11 @@ although its cache may be lost.
 			/* 2. free current type-specific data */
 			Computed_field_clear_type(field);
 			/* 3. establish the new type */
-			field->type_string = computed_field_asin_type_string;
 			field->number_of_components = source_field->number_of_components;
 			source_fields[0]=ACCESS(Computed_field)(source_field);
 			field->source_fields=source_fields;
 			field->number_of_source_fields=number_of_source_fields;			
-			field->type_specific_data = (void *)1;
-
-			/* Set all the methods */
-			COMPUTED_FIELD_ESTABLISH_METHODS(asin);
+			field->core = new Computed_field_asin(field);
 		}
 		else
 		{
@@ -1690,7 +1326,7 @@ although its cache may be lost.
 int Computed_field_get_type_asin(struct Computed_field *field,
 	struct Computed_field **source_field)
 /*******************************************************************************
-LAST MODIFIED : 14 August 2006
+LAST MODIFIED : 24 August 2006
 
 DESCRIPTION :
 If the field is of type COMPUTED_FIELD_ASIN, the 
@@ -1700,7 +1336,7 @@ If the field is of type COMPUTED_FIELD_ASIN, the
 	int return_code;
 
 	ENTER(Computed_field_get_type_asin);
-	if (field&&(field->type_string==computed_field_asin_type_string))
+	if (field&&(dynamic_cast<Computed_field_asin*>(field->core)))
 	{
 		*source_field = field->source_fields[0];
 		return_code=1;
@@ -1716,10 +1352,10 @@ If the field is of type COMPUTED_FIELD_ASIN, the
 	return (return_code);
 } /* Computed_field_get_type_asin */
 
-static int define_Computed_field_type_asin(struct Parse_state *state,
+int define_Computed_field_type_asin(struct Parse_state *state,
 	void *field_void,void *computed_field_component_operations_package_void)
 /*******************************************************************************
-LAST MODIFIED : 14 August 2006
+LAST MODIFIED : 24 August 2006
 
 DESCRIPTION :
 Converts <field> into type COMPUTED_FIELD_ASIN (if it is not 
@@ -1815,100 +1451,51 @@ already) and allows its contents to be modified.
 	return (return_code);
 } /* define_Computed_field_type_asin */
 
-static char computed_field_acos_type_string[] = "acos";
+namespace {
 
-int Computed_field_is_type_acos(struct Computed_field *field)
-/*******************************************************************************
-LAST MODIFIED : 14 August 2006
+char computed_field_acos_type_string[] = "acos";
 
-DESCRIPTION :
-==============================================================================*/
+class Computed_field_acos : public Computed_field_core
 {
-	int return_code;
+public:
+	Computed_field_acos(Computed_field *field) : Computed_field_core(field)
+	{
+	};
 
-	ENTER(Computed_field_is_type_acos);
-	if (field)
+private:
+	Computed_field_core *copy(Computed_field* new_parent)
 	{
-		return_code = 
-		  (field->type_string == computed_field_acos_type_string);
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_is_type_acos.  Missing field");
-		return_code = 0;
+		return new Computed_field_acos(new_parent);
 	}
 
-	return (return_code);
-} /* Computed_field_is_type_acos */
+	char *get_type_string()
+	{
+		return(computed_field_acos_type_string);
+	}
 
-#define Computed_field_acos_clear_type_specific \
-   Computed_field_default_clear_type_specific
+	int compare(Computed_field_core* other_field)
+	{
+		if (dynamic_cast<Computed_field_acos*>(other_field))
+		{
+			return 1;
+		}
+		else
+		{
+			return 0;
+		}
+	}
+
+	int evaluate_cache_at_location(Field_location* location);
+
+	int list();
+
+	char* get_command_string();
+};
+
+int Computed_field_acos::evaluate_cache_at_location(
+    Field_location* location)
 /*******************************************************************************
-LAST MODIFIED : 14 August 2006
-
-DESCRIPTION :
-No type specific data
-==============================================================================*/
-
-#define Computed_field_acos_copy_type_specific \
-   Computed_field_default_copy_type_specific
-/*******************************************************************************
-LAST MODIFIED : 14 August 2006
-
-DESCRIPTION :
-No type specific data
-==============================================================================*/
-
-#define Computed_field_acos_clear_cache_type_specific \
-   (Computed_field_clear_cache_type_specific_function)NULL
-/*******************************************************************************
-LAST MODIFIED : 14 August 2006
-
-DESCRIPTION :
-This function is not needed for this type.
-==============================================================================*/
-
-#define Computed_field_acos_type_specific_contents_match \
-   Computed_field_default_type_specific_contents_match
-/*******************************************************************************
-LAST MODIFIED : 14 August 2006
-
-DESCRIPTION :
-No type specific data
-==============================================================================*/
-
-#define Computed_field_acos_is_defined_at_location \
-	Computed_field_default_is_defined_at_location
-/*******************************************************************************
-LAST MODIFIED : 14 August 2006
-
-DESCRIPTION :
-Check the source fields using the default.
-==============================================================================*/
-
-#define Computed_field_acos_has_numerical_components \
-	Computed_field_default_has_numerical_components
-/*******************************************************************************
-LAST MODIFIED : 14 August 2006
-
-DESCRIPTION :
-Window projection does have numerical components.
-==============================================================================*/
-
-#define Computed_field_acos_not_in_use \
-	(Computed_field_not_in_use_function)NULL
-/*******************************************************************************
-LAST MODIFIED : 14 August 2006
-
-DESCRIPTION :
-No special criteria.
-==============================================================================*/
-
-static int Computed_field_acos_evaluate_cache_at_location(
-   struct Computed_field *field, Field_location* location)
-/*******************************************************************************
-LAST MODIFIED : 14 August 2006
+LAST MODIFIED : 24 August 2006
 
 DESCRIPTION :
 Evaluate the fields cache at the element.
@@ -1917,7 +1504,7 @@ Evaluate the fields cache at the element.
 	FE_value *derivative;
 	int i, j, number_of_xi, return_code;
 
-	ENTER(Computed_field_acos_evaluate_cache_at_location);
+	ENTER(Computed_field_acos::evaluate_cache_at_location);
 	if (field && location && (field->number_of_source_fields == 1) && 
 		(field->number_of_components ==
       field->source_fields[0]->number_of_components))
@@ -1966,49 +1553,19 @@ Evaluate the fields cache at the element.
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Computed_field_acos_evaluate_cache_at_location.  "
+			"Computed_field_acos::evaluate_cache_at_location.  "
 			"Invalid argument(s)");
 		return_code = 0;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* Computed_field_acos_evaluate_cache_at_location */
+} /* Computed_field_acos::evaluate_cache_at_location */
 
-#define Computed_field_acos_set_values_at_location \
-   (Computed_field_set_values_at_location_function)NULL
+
+int Computed_field_acos::list()
 /*******************************************************************************
-LAST MODIFIED : 14 August 2006
-
-DESCRIPTION :
-Not implemented yet.
-==============================================================================*/
-
-#define Computed_field_acos_get_native_discretization_in_element \
-	Computed_field_default_get_native_discretization_in_element
-/*******************************************************************************
-LAST MODIFIED : 14 August 2006
-
-DESCRIPTION :
-Inherit result from first source field.
-==============================================================================*/
-
-#define Computed_field_acos_find_element_xi \
-   (Computed_field_find_element_xi_function)NULL
-/*******************************************************************************
-LAST MODIFIED : 14 August 2006
-
-DESCRIPTION :
-Not implemented yet.
-==============================================================================*/
-
-#define Computed_field_acos_get_native_resolution \
-	(Computed_field_get_native_resolution_function)NULL
-
-static int list_Computed_field_acos(
-	struct Computed_field *field)
-/*******************************************************************************
-LAST MODIFIED : 14 August 2006
+LAST MODIFIED : 24 August 2006
 
 DESCRIPTION :
 ==============================================================================*/
@@ -2033,10 +1590,9 @@ DESCRIPTION :
 	return (return_code);
 } /* list_Computed_field_acos */
 
-static char *Computed_field_acos_get_command_string(
-	struct Computed_field *field)
+char *Computed_field_acos::get_command_string()
 /*******************************************************************************
-LAST MODIFIED : 14 August 2006
+LAST MODIFIED : 24 August 2006
 
 DESCRIPTION :
 Returns allocated command string for reproducing field. Includes type.
@@ -2045,7 +1601,7 @@ Returns allocated command string for reproducing field. Includes type.
 	char *command_string, *field_name;
 	int error;
 
-	ENTER(Computed_field_acos_get_command_string);
+	ENTER(Computed_field_acos::get_command_string);
 	command_string = (char *)NULL;
 	if (field)
 	{
@@ -2063,26 +1619,19 @@ Returns allocated command string for reproducing field. Includes type.
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Computed_field_acos_get_command_string.  Invalid field");
+			"Computed_field_acos::get_command_string.  Invalid field");
 	}
 	LEAVE;
 
 	return (command_string);
-} /* Computed_field_acos_get_command_string */
+} /* Computed_field_acos::get_command_string */
 
-#define Computed_field_acos_has_multiple_times \
-	Computed_field_default_has_multiple_times
-/*******************************************************************************
-LAST MODIFIED : 14 August 2006
-
-DESCRIPTION :
-Works out whether time influences the field.
-==============================================================================*/
+} //namespace
 
 int Computed_field_set_type_acos(struct Computed_field *field,
 	struct Computed_field *source_field)
 /*******************************************************************************
-LAST MODIFIED : 14 August 2006
+LAST MODIFIED : 24 August 2006
 
 DESCRIPTION :
 Converts <field> to type COMPUTED_FIELD_ACOS with the supplied
@@ -2105,15 +1654,11 @@ although its cache may be lost.
 			/* 2. free current type-specific data */
 			Computed_field_clear_type(field);
 			/* 3. establish the new type */
-			field->type_string = computed_field_acos_type_string;
 			field->number_of_components = source_field->number_of_components;
 			source_fields[0]=ACCESS(Computed_field)(source_field);
 			field->source_fields=source_fields;
 			field->number_of_source_fields=number_of_source_fields;			
-			field->type_specific_data = (void *)1;
-
-			/* Set all the methods */
-			COMPUTED_FIELD_ESTABLISH_METHODS(acos);
+			field->core = new Computed_field_acos(field);
 		}
 		else
 		{
@@ -2135,7 +1680,7 @@ although its cache may be lost.
 int Computed_field_get_type_acos(struct Computed_field *field,
 	struct Computed_field **source_field)
 /*******************************************************************************
-LAST MODIFIED : 14 August 2006
+LAST MODIFIED : 24 August 2006
 
 DESCRIPTION :
 If the field is of type COMPUTED_FIELD_ACOS, the 
@@ -2145,7 +1690,7 @@ If the field is of type COMPUTED_FIELD_ACOS, the
 	int return_code;
 
 	ENTER(Computed_field_get_type_acos);
-	if (field&&(field->type_string==computed_field_acos_type_string))
+	if (field&&(dynamic_cast<Computed_field_acos*>(field->core)))
 	{
 		*source_field = field->source_fields[0];
 		return_code=1;
@@ -2161,10 +1706,10 @@ If the field is of type COMPUTED_FIELD_ACOS, the
 	return (return_code);
 } /* Computed_field_get_type_acos */
 
-static int define_Computed_field_type_acos(struct Parse_state *state,
+int define_Computed_field_type_acos(struct Parse_state *state,
 	void *field_void,void *computed_field_component_operations_package_void)
 /*******************************************************************************
-LAST MODIFIED : 14 August 2006
+LAST MODIFIED : 24 August 2006
 
 DESCRIPTION :
 Converts <field> into type COMPUTED_FIELD_ACOS (if it is not 
@@ -2260,100 +1805,51 @@ already) and allows its contents to be modified.
 	return (return_code);
 } /* define_Computed_field_type_acos */
 
-static char computed_field_atan_type_string[] = "atan";
+namespace {
 
-int Computed_field_is_type_atan(struct Computed_field *field)
-/*******************************************************************************
-LAST MODIFIED : 14 August 2006
+char computed_field_atan_type_string[] = "atan";
 
-DESCRIPTION :
-==============================================================================*/
+class Computed_field_atan : public Computed_field_core
 {
-	int return_code;
+public:
+	Computed_field_atan(Computed_field *field) : Computed_field_core(field)
+	{
+	};
 
-	ENTER(Computed_field_is_type_atan);
-	if (field)
+private:
+	Computed_field_core *copy(Computed_field* new_parent)
 	{
-		return_code = 
-		  (field->type_string == computed_field_atan_type_string);
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_is_type_atan.  Missing field");
-		return_code = 0;
+		return new Computed_field_atan(new_parent);
 	}
 
-	return (return_code);
-} /* Computed_field_is_type_atan */
+	char *get_type_string()
+	{
+		return(computed_field_atan_type_string);
+	}
 
-#define Computed_field_atan_clear_type_specific \
-   Computed_field_default_clear_type_specific
+	int compare(Computed_field_core* other_field)
+	{
+		if (dynamic_cast<Computed_field_atan*>(other_field))
+		{
+			return 1;
+		}
+		else
+		{
+			return 0;
+		}
+	}
+
+	int evaluate_cache_at_location(Field_location* location);
+
+	int list();
+
+	char* get_command_string();
+};
+
+int Computed_field_atan::evaluate_cache_at_location(
+    Field_location* location)
 /*******************************************************************************
-LAST MODIFIED : 14 August 2006
-
-DESCRIPTION :
-No type specific data
-==============================================================================*/
-
-#define Computed_field_atan_copy_type_specific \
-   Computed_field_default_copy_type_specific
-/*******************************************************************************
-LAST MODIFIED : 14 August 2006
-
-DESCRIPTION :
-No type specific data
-==============================================================================*/
-
-#define Computed_field_atan_clear_cache_type_specific \
-   (Computed_field_clear_cache_type_specific_function)NULL
-/*******************************************************************************
-LAST MODIFIED : 14 August 2006
-
-DESCRIPTION :
-This function is not needed for this type.
-==============================================================================*/
-
-#define Computed_field_atan_type_specific_contents_match \
-   Computed_field_default_type_specific_contents_match
-/*******************************************************************************
-LAST MODIFIED : 14 August 2006
-
-DESCRIPTION :
-No type specific data
-==============================================================================*/
-
-#define Computed_field_atan_is_defined_at_location \
-	Computed_field_default_is_defined_at_location
-/*******************************************************************************
-LAST MODIFIED : 14 August 2006
-
-DESCRIPTION :
-Check the source fields using the default.
-==============================================================================*/
-
-#define Computed_field_atan_has_numerical_components \
-	Computed_field_default_has_numerical_components
-/*******************************************************************************
-LAST MODIFIED : 14 August 2006
-
-DESCRIPTION :
-Window projection does have numerical components.
-==============================================================================*/
-
-#define Computed_field_atan_not_in_use \
-	(Computed_field_not_in_use_function)NULL
-/*******************************************************************************
-LAST MODIFIED : 14 August 2006
-
-DESCRIPTION :
-No special criteria.
-==============================================================================*/
-
-static int Computed_field_atan_evaluate_cache_at_location(
-   struct Computed_field *field, Field_location* location)
-/*******************************************************************************
-LAST MODIFIED : 14 August 2006
+LAST MODIFIED : 24 August 2006
 
 DESCRIPTION :
 Evaluate the fields cache at the element.
@@ -2362,7 +1858,7 @@ Evaluate the fields cache at the element.
 	FE_value *derivative;
 	int i, j, number_of_xi, return_code;
 
-	ENTER(Computed_field_atan_evaluate_cache_at_location);
+	ENTER(Computed_field_atan::evaluate_cache_at_location);
 	if (field && location && (field->number_of_source_fields == 1) && 
 		(field->number_of_components ==
       field->source_fields[0]->number_of_components))
@@ -2404,49 +1900,19 @@ Evaluate the fields cache at the element.
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Computed_field_atan_evaluate_cache_at_location.  "
+			"Computed_field_atan::evaluate_cache_at_location.  "
 			"Invalid argument(s)");
 		return_code = 0;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* Computed_field_atan_evaluate_cache_at_location */
+} /* Computed_field_atan::evaluate_cache_at_location */
 
-#define Computed_field_atan_set_values_at_location \
-   (Computed_field_set_values_at_location_function)NULL
+
+int Computed_field_atan::list()
 /*******************************************************************************
-LAST MODIFIED : 14 August 2006
-
-DESCRIPTION :
-Not implemented yet.
-==============================================================================*/
-
-#define Computed_field_atan_get_native_discretization_in_element \
-	Computed_field_default_get_native_discretization_in_element
-/*******************************************************************************
-LAST MODIFIED : 14 August 2006
-
-DESCRIPTION :
-Inherit result from first source field.
-==============================================================================*/
-
-#define Computed_field_atan_find_element_xi \
-   (Computed_field_find_element_xi_function)NULL
-/*******************************************************************************
-LAST MODIFIED : 14 August 2006
-
-DESCRIPTION :
-Not implemented yet.
-==============================================================================*/
-
-#define Computed_field_atan_get_native_resolution \
-	(Computed_field_get_native_resolution_function)NULL
-
-static int list_Computed_field_atan(
-	struct Computed_field *field)
-/*******************************************************************************
-LAST MODIFIED : 14 August 2006
+LAST MODIFIED : 24 August 2006
 
 DESCRIPTION :
 ==============================================================================*/
@@ -2471,10 +1937,9 @@ DESCRIPTION :
 	return (return_code);
 } /* list_Computed_field_atan */
 
-static char *Computed_field_atan_get_command_string(
-	struct Computed_field *field)
+char *Computed_field_atan::get_command_string()
 /*******************************************************************************
-LAST MODIFIED : 14 August 2006
+LAST MODIFIED : 24 August 2006
 
 DESCRIPTION :
 Returns allocated command string for reproducing field. Includes type.
@@ -2483,7 +1948,7 @@ Returns allocated command string for reproducing field. Includes type.
 	char *command_string, *field_name;
 	int error;
 
-	ENTER(Computed_field_atan_get_command_string);
+	ENTER(Computed_field_atan::get_command_string);
 	command_string = (char *)NULL;
 	if (field)
 	{
@@ -2501,26 +1966,19 @@ Returns allocated command string for reproducing field. Includes type.
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Computed_field_atan_get_command_string.  Invalid field");
+			"Computed_field_atan::get_command_string.  Invalid field");
 	}
 	LEAVE;
 
 	return (command_string);
-} /* Computed_field_atan_get_command_string */
+} /* Computed_field_atan::get_command_string */
 
-#define Computed_field_atan_has_multiple_times \
-	Computed_field_default_has_multiple_times
-/*******************************************************************************
-LAST MODIFIED : 14 August 2006
-
-DESCRIPTION :
-Works out whether time influences the field.
-==============================================================================*/
+} //namespace
 
 int Computed_field_set_type_atan(struct Computed_field *field,
 	struct Computed_field *source_field)
 /*******************************************************************************
-LAST MODIFIED : 14 August 2006
+LAST MODIFIED : 24 August 2006
 
 DESCRIPTION :
 Converts <field> to type COMPUTED_FIELD_ATAN with the supplied
@@ -2543,15 +2001,11 @@ although its cache may be lost.
 			/* 2. free current type-specific data */
 			Computed_field_clear_type(field);
 			/* 3. establish the new type */
-			field->type_string = computed_field_atan_type_string;
 			field->number_of_components = source_field->number_of_components;
 			source_fields[0]=ACCESS(Computed_field)(source_field);
 			field->source_fields=source_fields;
 			field->number_of_source_fields=number_of_source_fields;			
-			field->type_specific_data = (void *)1;
-
-			/* Set all the methods */
-			COMPUTED_FIELD_ESTABLISH_METHODS(atan);
+			field->core = new Computed_field_atan(field);
 		}
 		else
 		{
@@ -2573,7 +2027,7 @@ although its cache may be lost.
 int Computed_field_get_type_atan(struct Computed_field *field,
 	struct Computed_field **source_field)
 /*******************************************************************************
-LAST MODIFIED : 14 August 2006
+LAST MODIFIED : 24 August 2006
 
 DESCRIPTION :
 If the field is of type COMPUTED_FIELD_ATAN, the 
@@ -2583,7 +2037,7 @@ If the field is of type COMPUTED_FIELD_ATAN, the
 	int return_code;
 
 	ENTER(Computed_field_get_type_atan);
-	if (field&&(field->type_string==computed_field_atan_type_string))
+	if (field&&(dynamic_cast<Computed_field_atan*>(field->core)))
 	{
 		*source_field = field->source_fields[0];
 		return_code=1;
@@ -2599,10 +2053,10 @@ If the field is of type COMPUTED_FIELD_ATAN, the
 	return (return_code);
 } /* Computed_field_get_type_atan */
 
-static int define_Computed_field_type_atan(struct Parse_state *state,
+int define_Computed_field_type_atan(struct Parse_state *state,
 	void *field_void,void *computed_field_component_operations_package_void)
 /*******************************************************************************
-LAST MODIFIED : 14 August 2006
+LAST MODIFIED : 24 August 2006
 
 DESCRIPTION :
 Converts <field> into type COMPUTED_FIELD_ATAN (if it is not 
@@ -2698,100 +2152,51 @@ already) and allows its contents to be modified.
 	return (return_code);
 } /* define_Computed_field_type_atan */
 
-static char computed_field_atan2_type_string[] = "atan2";
+namespace {
 
-int Computed_field_is_type_atan2(struct Computed_field *field)
-/*******************************************************************************
-LAST MODIFIED : 14 August 2006
+char computed_field_atan2_type_string[] = "atan2";
 
-DESCRIPTION :
-==============================================================================*/
+class Computed_field_atan2 : public Computed_field_core
 {
-	int return_code;
+public:
+	Computed_field_atan2(Computed_field *field) : Computed_field_core(field)
+	{
+	};
 
-	ENTER(Computed_field_is_type_atan2);
-	if (field)
+private:
+	Computed_field_core *copy(Computed_field* new_parent)
 	{
-		return_code = 
-		  (field->type_string == computed_field_atan2_type_string);
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_is_type_atan2.  Missing field");
-		return_code = 0;
+		return new Computed_field_atan2(new_parent);
 	}
 
-	return (return_code);
-} /* Computed_field_is_type_atan2 */
+	char *get_type_string()
+	{
+		return(computed_field_atan2_type_string);
+	}
 
-#define Computed_field_atan2_clear_type_specific \
-   Computed_field_default_clear_type_specific
+	int compare(Computed_field_core* other_field)
+	{
+		if (dynamic_cast<Computed_field_atan2*>(other_field))
+		{
+			return 1;
+		}
+		else
+		{
+			return 0;
+		}
+	}
+
+	int evaluate_cache_at_location(Field_location* location);
+
+	int list();
+
+	char* get_command_string();
+};
+
+int Computed_field_atan2::evaluate_cache_at_location(
+    Field_location* location)
 /*******************************************************************************
-LAST MODIFIED : 14 August 2006
-
-DESCRIPTION :
-No type specific data
-==============================================================================*/
-
-#define Computed_field_atan2_copy_type_specific \
-   Computed_field_default_copy_type_specific
-/*******************************************************************************
-LAST MODIFIED : 14 August 2006
-
-DESCRIPTION :
-No type specific data
-==============================================================================*/
-
-#define Computed_field_atan2_clear_cache_type_specific \
-   (Computed_field_clear_cache_type_specific_function)NULL
-/*******************************************************************************
-LAST MODIFIED : 14 August 2006
-
-DESCRIPTION :
-This function is not needed for this type.
-==============================================================================*/
-
-#define Computed_field_atan2_type_specific_contents_match \
-   Computed_field_default_type_specific_contents_match
-/*******************************************************************************
-LAST MODIFIED : 14 August 2006
-
-DESCRIPTION :
-No type specific data
-==============================================================================*/
-
-#define Computed_field_atan2_is_defined_at_location \
-	Computed_field_default_is_defined_at_location
-/*******************************************************************************
-LAST MODIFIED : 14 August 2006
-
-DESCRIPTION :
-Check the source fields using the default.
-==============================================================================*/
-
-#define Computed_field_atan2_has_numerical_components \
-	Computed_field_default_has_numerical_components
-/*******************************************************************************
-LAST MODIFIED : 14 August 2006
-
-DESCRIPTION :
-Window projection does have numerical components.
-==============================================================================*/
-
-#define Computed_field_atan2_not_in_use \
-	(Computed_field_not_in_use_function)NULL
-/*******************************************************************************
-LAST MODIFIED : 14 August 2006
-
-DESCRIPTION :
-No special criteria.
-==============================================================================*/
-
-static int Computed_field_atan2_evaluate_cache_at_location(
-   struct Computed_field *field, Field_location* location)
-/*******************************************************************************
-LAST MODIFIED : 14 August 2006
+LAST MODIFIED : 24 August 2006
 
 DESCRIPTION :
 Evaluate the fields cache at the element.
@@ -2801,7 +2206,7 @@ Evaluate the fields cache at the element.
 	FE_value *derivative;
 	int i, j, number_of_xi, return_code;
 
-	ENTER(Computed_field_atan2_evaluate_cache_at_location);
+	ENTER(Computed_field_atan2::evaluate_cache_at_location);
 	if (field && location && (field->number_of_source_fields > 0) && 
 		(field->number_of_components ==
       field->source_fields[0]->number_of_components))
@@ -2847,49 +2252,19 @@ Evaluate the fields cache at the element.
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Computed_field_atan2_evaluate_cache_at_location.  "
+			"Computed_field_atan2::evaluate_cache_at_location.  "
 			"Invalid argument(s)");
 		return_code = 0;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* Computed_field_atan2_evaluate_cache_at_location */
+} /* Computed_field_atan2::evaluate_cache_at_location */
 
-#define Computed_field_atan2_set_values_at_location \
-   (Computed_field_set_values_at_location_function)NULL
+
+int Computed_field_atan2::list()
 /*******************************************************************************
-LAST MODIFIED : 14 August 2006
-
-DESCRIPTION :
-Not implemented yet.
-==============================================================================*/
-
-#define Computed_field_atan2_get_native_discretization_in_element \
-	Computed_field_default_get_native_discretization_in_element
-/*******************************************************************************
-LAST MODIFIED : 14 August 2006
-
-DESCRIPTION :
-Inherit result from first source field.
-==============================================================================*/
-
-#define Computed_field_atan2_find_element_xi \
-   (Computed_field_find_element_xi_function)NULL
-/*******************************************************************************
-LAST MODIFIED : 14 August 2006
-
-DESCRIPTION :
-Not implemented yet.
-==============================================================================*/
-
-#define Computed_field_atan2_get_native_resolution \
-	(Computed_field_get_native_resolution_function)NULL
-
-static int list_Computed_field_atan2(
-	struct Computed_field *field)
-/*******************************************************************************
-LAST MODIFIED : 14 August 2006
+LAST MODIFIED : 24 August 2006
 
 DESCRIPTION :
 ==============================================================================*/
@@ -2915,10 +2290,9 @@ DESCRIPTION :
 	return (return_code);
 } /* list_Computed_field_atan2 */
 
-static char *Computed_field_atan2_get_command_string(
-	struct Computed_field *field)
+char *Computed_field_atan2::get_command_string()
 /*******************************************************************************
-LAST MODIFIED : 14 August 2006
+LAST MODIFIED : 24 August 2006
 
 DESCRIPTION :
 Returns allocated command string for reproducing field. Includes type.
@@ -2927,7 +2301,7 @@ Returns allocated command string for reproducing field. Includes type.
 	char *command_string, *field_name;
 	int error;
 
-	ENTER(Computed_field_atan2_get_command_string);
+	ENTER(Computed_field_atan2::get_command_string);
 	command_string = (char *)NULL;
 	if (field)
 	{
@@ -2952,27 +2326,20 @@ Returns allocated command string for reproducing field. Includes type.
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Computed_field_atan2_get_command_string.  Invalid field");
+			"Computed_field_atan2::get_command_string.  Invalid field");
 	}
 	LEAVE;
 
 	return (command_string);
-} /* Computed_field_atan2_get_command_string */
+} /* Computed_field_atan2::get_command_string */
 
-#define Computed_field_atan2_has_multiple_times \
-	Computed_field_default_has_multiple_times
-/*******************************************************************************
-LAST MODIFIED : 14 August 2006
-
-DESCRIPTION :
-Works out whether time influences the field.
-==============================================================================*/
+} //namespace
 
 int Computed_field_set_type_atan2(struct Computed_field *field,
 	struct Computed_field *source_field_one,
 	struct Computed_field *source_field_two)
 /*******************************************************************************
-LAST MODIFIED : 14 August 2006
+LAST MODIFIED : 24 August 2006
 
 DESCRIPTION :
 Converts <field> to type COMPUTED_FIELD_ATAN2 with the supplied
@@ -2998,16 +2365,12 @@ although its cache may be lost.
 			/* 2. free current type-specific data */
 			Computed_field_clear_type(field);
 			/* 3. establish the new type */
-			field->type_string = computed_field_atan2_type_string;
 			field->number_of_components = source_field_one->number_of_components;
 			source_fields[0]=ACCESS(Computed_field)(source_field_one);
 			source_fields[1]=ACCESS(Computed_field)(source_field_two);
 			field->source_fields=source_fields;
 			field->number_of_source_fields=number_of_source_fields;			
-			field->type_specific_data = (void *)1;
-
-			/* Set all the methods */
-			COMPUTED_FIELD_ESTABLISH_METHODS(atan2);
+			field->core = new Computed_field_atan2(field);
 		}
 		else
 		{
@@ -3030,7 +2393,7 @@ int Computed_field_get_type_atan2(struct Computed_field *field,
 	struct Computed_field **source_field_one,
 	struct Computed_field **source_field_two)
 /*******************************************************************************
-LAST MODIFIED : 14 August 2006
+LAST MODIFIED : 24 August 2006
 
 DESCRIPTION :
 If the field is of type COMPUTED_FIELD_ATAN2, the 
@@ -3040,7 +2403,7 @@ If the field is of type COMPUTED_FIELD_ATAN2, the
 	int return_code;
 
 	ENTER(Computed_field_get_type_atan2);
-	if (field&&(field->type_string==computed_field_atan2_type_string))
+	if (field&&(dynamic_cast<Computed_field_atan2*>(field->core)))
 	{
 		*source_field_one = field->source_fields[0];
 		*source_field_two = field->source_fields[1];
@@ -3057,10 +2420,10 @@ If the field is of type COMPUTED_FIELD_ATAN2, the
 	return (return_code);
 } /* Computed_field_get_type_atan2 */
 
-static int define_Computed_field_type_atan2(struct Parse_state *state,
+int define_Computed_field_type_atan2(struct Parse_state *state,
 	void *field_void,void *computed_field_component_operations_package_void)
 /*******************************************************************************
-LAST MODIFIED : 14 August 2006
+LAST MODIFIED : 24 August 2006
 
 DESCRIPTION :
 Converts <field> into type COMPUTED_FIELD_ATAN2 (if it is not 
@@ -3168,7 +2531,7 @@ already) and allows its contents to be modified.
 int Computed_field_register_types_trigonometry(
 	struct Computed_field_package *computed_field_package)
 /*******************************************************************************
-LAST MODIFIED : 14 August 2006
+LAST MODIFIED : 24 August 2006
 
 DESCRIPTION :
 ==============================================================================*/

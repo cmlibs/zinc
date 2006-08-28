@@ -1,7 +1,7 @@
 /*******************************************************************************
-FILE : computed_field_private.h
+FILE : computed_field_private.hpp
 
-LAST MODIFIED : 20 January 2005
+LAST MODIFIED : 23 August 2006
 
 DESCRIPTION :
 ==============================================================================*/
@@ -22,7 +22,7 @@ DESCRIPTION :
  *
  * The Initial Developer of the Original Code is
  * Auckland Uniservices Ltd, Auckland, New Zealand.
- * Portions created by the Initial Developer are Copyright (C) 2005
+ * Portions created by the Initial Developer are Copyright (C) 2006
  * the Initial Developer. All Rights Reserved.
  *
  * Contributor(s):
@@ -45,39 +45,6 @@ DESCRIPTION :
 
 #include "field_location.hpp"
 
-typedef int (*Computed_field_clear_type_specific_function)(
-	struct Computed_field *field);
-typedef void* (*Computed_field_copy_type_specific_function)(
-	struct Computed_field *source_field,
-	struct Computed_field *destination_field);
-typedef int (*Computed_field_clear_cache_type_specific_function)(
-	struct Computed_field *field);
-typedef int (*Computed_field_type_specific_contents_match_function)(
-	struct Computed_field *field, struct Computed_field *other_computed_field);
-typedef int (*Computed_field_is_defined_at_location_function)(
-	struct Computed_field *field, Field_location* location);
-typedef int (*Computed_field_has_numerical_components_function)(
-	struct Computed_field *field);
-typedef int (*Computed_field_not_in_use_function)(
-	struct Computed_field *field);
-typedef int (*Computed_field_evaluate_cache_at_location_function)(
-	struct Computed_field *field, Field_location* location);
-typedef int (*Computed_field_set_values_at_location_function)(
-	struct Computed_field *field, Field_location* location, FE_value *values);
-typedef int (*Computed_field_get_native_discretization_in_element_function)(
-	struct Computed_field *field,struct FE_element *element,int *number_in_xi);
-typedef int (*Computed_field_find_element_xi_function)(
-	struct Computed_field *field, FE_value *values, int number_of_values, 
-	struct FE_element **element, FE_value *xi,
-	int element_dimension, struct Cmiss_region *search_region);
-typedef int (*List_Computed_field_function)(struct Computed_field *field);
-typedef char* (*Computed_field_get_command_string_function)(
-	struct Computed_field *field);
-typedef int (*Computed_field_has_multiple_times_function)(struct Computed_field *field);
-typedef int (*Computed_field_get_native_resolution_function)(struct Computed_field *field,
-        int *dimension, int **sizes,
-	struct Computed_field **texture_coordinate_field);
-	
 /* Used by the register_type_function, Computed_field_type_data and 
 	Computed_field_add_type_to_option_table*/
 typedef int (*Define_Computed_field_type_function)(
@@ -89,9 +56,85 @@ Module types
 ------------
 */
 
+class Computed_field_core
+/*******************************************************************************
+LAST MODIFIED : 23 August 2006
+
+DESCRIPTION :
+This is the internal core which each type of Computed_field will implement.
+Separating the Computed_field_core and the public Computed_field enables the
+core object to be replaced while maintaining the same wrapper (enabling
+changes to an existing Computed_field heirarchy.  It also enables different
+interfaces on the internal core to the public interface (which I am maintaining
+in C).
+==============================================================================*/
+{
+protected:
+	struct Computed_field *field;
+
+public:
+	Computed_field_core(Computed_field *new_parent): field(new_parent)
+	{
+	};
+
+	virtual ~Computed_field_core()
+	{
+	};
+
+	virtual Computed_field_core *copy(Computed_field* new_parent) = 0;
+
+	virtual char *get_type_string() = 0;
+
+	virtual int clear_cache()
+	{
+		return 1;
+	};
+
+	virtual int compare(Computed_field_core* other) = 0;
+
+	virtual int is_defined_at_location(Field_location* location);
+
+	virtual int has_numerical_components()
+	{
+		return 1;
+	};
+
+	virtual int not_in_use()
+	{
+		return 1;
+	};
+
+	virtual int evaluate_cache_at_location(Field_location* location) = 0;
+
+	virtual int set_values_at_location(Field_location* location, FE_value *values)
+	{
+		return 0;
+	};
+
+	virtual int get_native_discretization_in_element(struct FE_element *element,
+		int *number_in_xi);
+
+	virtual int find_element_xi(FE_value *values, int number_of_values, 
+		struct FE_element **element, FE_value *xi,
+		int element_dimension, struct Cmiss_region *search_region)
+	{
+		return 0;
+	};
+
+	virtual int list();
+
+	virtual char* get_command_string();
+
+	virtual int has_multiple_times();
+
+	virtual int get_native_resolution(int *dimension, int **sizes,
+		struct Computed_field **texture_coordinate_field);
+
+}; /* class Computed_field_core */
+
 struct Computed_field
 /*******************************************************************************
-LAST MODIFIED : 8 October 2002
+LAST MODIFIED : 23 August 2006
 
 DESCRIPTION :
 ==============================================================================*/
@@ -108,7 +151,8 @@ DESCRIPTION :
 	int read_only;
 	struct Coordinate_system coordinate_system;
 
-	/* Value cache: */
+	/* Value cache: This should probably form another object kept here, rather
+	 than explicit storage. */
 	/* For all Computed_field_types: computed values/derivatives.
 		 When the field is computed its values and derivatives are first placed
 		 in these arrays. If the field is then recomputed at element:xi, the values
@@ -148,40 +192,7 @@ DESCRIPTION :
 	/* cache used when doing find_xi calculations */
 	struct Computed_field_find_element_xi_cache *find_element_xi_cache;
 
-	Computed_field_clear_type_specific_function
-	   computed_field_clear_type_specific_function;
-	Computed_field_copy_type_specific_function 
-	   computed_field_copy_type_specific_function;
-	Computed_field_clear_cache_type_specific_function
-	   computed_field_clear_cache_type_specific_function;
-	Computed_field_type_specific_contents_match_function
-	   computed_field_type_specific_contents_match_function;
-	Computed_field_is_defined_at_location_function
-	   computed_field_is_defined_at_location_function;
-	Computed_field_has_numerical_components_function
-	   computed_field_has_numerical_components_function;
-	Computed_field_not_in_use_function
-	   computed_field_not_in_use_function;
-	Computed_field_evaluate_cache_at_location_function 
-	   computed_field_evaluate_cache_at_location_function;
-	Computed_field_set_values_at_location_function
-	   computed_field_set_values_at_location_function;
-	Computed_field_get_native_discretization_in_element_function
-	   computed_field_get_native_discretization_in_element_function;	
-	Computed_field_find_element_xi_function
-	   computed_field_find_element_xi_function;	
-	List_Computed_field_function list_Computed_field_function;
-	Computed_field_get_command_string_function
-		computed_field_get_command_string_function;
-	Computed_field_has_multiple_times_function 
-	   computed_field_has_multiple_times_function;
-	Computed_field_get_native_resolution_function
-	   computed_field_get_native_resolution_function;
-
-	void *type_specific_data;
-	/* The type string identifies the type, it should not be copied but
-		point to the common type string for that type */
-	char *type_string;
+	Computed_field_core* core;
 
 	/* for all Computed_field_types calculated from others */
 
@@ -195,90 +206,6 @@ DESCRIPTION :
 	int access_count;
 	
 }; /* struct Computed_field */
-
-#define COMPUTED_FIELD_SET_METHODS( \
-	field_variable, \
-	Computed_field_field_type_clear_type_specific, \
-	Computed_field_field_type_copy_type_specific, \
-	Computed_field_field_type_clear_cache_type_specific, \
-	Computed_field_field_type_type_specific_contents_match, \
-	Computed_field_field_type_is_defined_at_location, \
-	Computed_field_field_type_has_numerical_components, \
-	Computed_field_field_type_not_in_use, \
-	Computed_field_field_type_evaluate_cache_at_location, \
-	Computed_field_field_type_set_values_at_location, \
-	Computed_field_field_type_get_native_discretization_in_element, \
-	Computed_field_field_type_find_element_xi, \
-	list_Computed_field_field_type, \
-	Computed_field_field_type_get_command_string, \
-	Computed_field_field_type_has_multiple_times, \
-	Computed_field_field_type_get_native_resolution \
-	) \
-/***************************************************************************** \
-LAST MODIFIED : 9 June 2006 \
-\
-DESCRIPTION : \
-Set these with a macro to ensure we always set them all. \
-============================================================================*/ \
-field_variable->computed_field_clear_type_specific_function = \
-	Computed_field_field_type_clear_type_specific; \
-field_variable->computed_field_copy_type_specific_function = \
-	Computed_field_field_type_copy_type_specific; \
-field_variable->computed_field_clear_cache_type_specific_function = \
-	Computed_field_field_type_clear_cache_type_specific; \
-field_variable->computed_field_type_specific_contents_match_function = \
-	Computed_field_field_type_type_specific_contents_match; \
-field_variable->computed_field_is_defined_at_location_function = \
-	Computed_field_field_type_is_defined_at_location; \
-field_variable->computed_field_has_numerical_components_function = \
-	Computed_field_field_type_has_numerical_components; \
-field_variable->computed_field_not_in_use_function = \
-	Computed_field_field_type_not_in_use; \
-field_variable->computed_field_evaluate_cache_at_location_function = \
-	Computed_field_field_type_evaluate_cache_at_location; \
-field_variable->computed_field_set_values_at_location_function = \
-	Computed_field_field_type_set_values_at_location; \
-field_variable->computed_field_get_native_discretization_in_element_function = \
-	Computed_field_field_type_get_native_discretization_in_element; \
-field_variable->computed_field_find_element_xi_function = \
-	Computed_field_field_type_find_element_xi; \
-field_variable->list_Computed_field_function = \
-	list_Computed_field_field_type; \
-field_variable->computed_field_get_command_string_function =  \
-	Computed_field_field_type_get_command_string; \
-field_variable->computed_field_has_multiple_times_function =  \
-	Computed_field_field_type_has_multiple_times; \
-field_variable->computed_field_get_native_resolution_function = \
-        Computed_field_field_type_get_native_resolution
-
-#define COMPUTED_FIELD_ESTABLISH_METHODS( field_type ) \
-/***************************************************************************** \
-LAST MODIFIED : 9 June 2006 \
-\
-DESCRIPTION : \
-Each Computed_field_set_type function should call this macro to establish the \
-virtual functions that give the field its particular behaviour; Each function \
-must therefore be defined for each field type, even if it is set to NULL or \
-some default function. The field_variable is hard coded to 'field' for this \
-macro. \
-============================================================================*/ \
-	COMPUTED_FIELD_SET_METHODS( \
-	field, \
-	Computed_field_ ## field_type ## _clear_type_specific, \
-	Computed_field_ ## field_type ## _copy_type_specific, \
-	Computed_field_ ## field_type ## _clear_cache_type_specific, \
-	Computed_field_ ## field_type ## _type_specific_contents_match, \
-	Computed_field_ ## field_type ## _is_defined_at_location, \
-	Computed_field_ ## field_type ## _has_numerical_components, \
-	Computed_field_ ## field_type ## _not_in_use, \
-	Computed_field_ ## field_type ## _evaluate_cache_at_location, \
-	Computed_field_ ## field_type ## _set_values_at_location, \
-	Computed_field_ ## field_type ## _get_native_discretization_in_element, \
-	Computed_field_ ## field_type ## _find_element_xi, \
-	list_Computed_field_ ## field_type, \
-	Computed_field_ ## field_type ## _get_command_string, \
-	Computed_field_ ## field_type ## _has_multiple_times, \
-   Computed_field_ ## field_type ## _get_native_resolution )
 
 int Computed_field_changed(struct Computed_field *field,
 	struct MANAGER(Computed_field) *computed_field_manager);
@@ -388,23 +315,6 @@ DESCRIPTION :
 Returns 1 if the all the source fields are defined at the supplied <location>.
 ==============================================================================*/
 
-int Computed_field_default_is_defined_at_location(struct Computed_field *field,
-	Field_location* location);
-/*******************************************************************************
-LAST MODIFIED : 4 July 2000
-
-DESCRIPTION :
-Returns 1 if all the source fields are defined at the supplied <node>.
-==============================================================================*/
-
-int Computed_field_default_has_multiple_times(struct Computed_field *field);
-/*******************************************************************************
-LAST MODIFIED : 22 November 2001
-
-DESCRIPTION :
-Returns 1 if any of the source fields have multiple times.
-==============================================================================*/
-
 int Computed_field_set_coordinate_system_from_sources(
 	struct Computed_field *field);
 /*******************************************************************************
@@ -412,14 +322,6 @@ LAST MODIFIED : 3 July 2000
 
 DESCRIPTION :
 Sets the coordinate system of the <field> to match that of it's sources.
-==============================================================================*/
-
-int Computed_field_default_has_numerical_components(struct Computed_field *field);
-/*******************************************************************************
-LAST MODIFIED : 4 July 2000
-
-DESCRIPTION :
-Most computed fields have numerical components so this function returns 1.
 ==============================================================================*/
 
 int Computed_field_evaluate_cache_at_location(
@@ -469,153 +371,5 @@ is defined over the element.
 Upon successful return the node values of the source fields are stored in their
 cache.
 ==============================================================================*/
-
-int Computed_field_default_get_native_discretization_in_element(
-	struct Computed_field *field,struct FE_element *element,int *number_in_xi);
-/*******************************************************************************
-LAST MODIFIED : 4 July 2000
-
-DESCRIPTION :
-Inherits its result from the first source field.
-==============================================================================*/
-
-int Computed_field_default_get_native_resolution(struct Computed_field *field,
-        int *dimension, int **sizes, 
-	struct Computed_field **texture_coordinate_field);
-/*******************************************************************************
-LAST MODIFIED : 15 September 2005
-
-DESCRIPTION :
-Inherits its result from the first source field -- if any.
-==============================================================================*/
-
-#define Computed_field_is_type(filter) Computed_field_is_type_ ## filter
-
-#define DEFINE_DEFAULT_COMPUTED_FIELD_IS_TYPE_FUNCTION(filter) \
-int Computed_field_is_type(filter)(struct Computed_field *field) \
-/******************************************************************************* \
-LAST MODIFIED : 7 November 2005 \
-\
-DESCRIPTION : \
-==============================================================================*/ \
-{ \
-	int return_code; \
-\
-	ENTER(Computed_field_is_type_ ## filter); \
-	if (field) \
-	{ \
-		return_code = \
-		  (field->type_string == computed_field_ ## filter ## _type_string); \
-	} \
-	else \
-	{ \
-		display_message(ERROR_MESSAGE, \
-			"Computed_field_is_type_" #filter ".  Missing field"); \
-		return_code = 0; \
-	} \
-\
-	return (return_code); \
-} /* Computed_field_is_type_ ## filter */
-
-#define DEFINE_DEFAULT_LIST_COMPUTED_FIELD_FUNCTION(filter,field_string,value_string) \
-int list_Computed_field_ ## filter(struct Computed_field *field) \
-/******************************************************************************* \
-LAST MODIFIED : 3 May 2006 \
-\
-DESCRIPTION : \
-==============================================================================*/ \
-{ \
-	int i, return_code;									\
-\
-	ENTER(list_Computed_field_ ## filter); \
-	if (field) \
-	{ \
-		if (0 < field->number_of_source_fields) \
-		{ \
-			display_message(INFORMATION_MESSAGE,	\
-				"    " #field_string " :");									 \
-			for (i = 0 ; i < field->number_of_source_fields ; i++)	 \
-			{																			 \
-				display_message(INFORMATION_MESSAGE,						 \
-					" %s", field->source_fields[i]->name);					 \
-			}																			 \
-			display_message(INFORMATION_MESSAGE, "\n");					 \
-		} \
-		if (0 < field->number_of_source_values) \
-		{ \
-			display_message(INFORMATION_MESSAGE,	\
-				"    " #value_string " :");									 \
-			for (i = 0 ; i < field->number_of_source_values ; i++)	 \
-			{																			 \
-				display_message(INFORMATION_MESSAGE,						 \
-					" %g", field->source_values[i]);							 \
-			}																			 \
-			display_message(INFORMATION_MESSAGE, "\n");					 \
-		} \
-		return_code = 1; \
-	} \
-	else \
-	{ \
-		display_message(ERROR_MESSAGE, \
-			"list_Computed_field_" #filter ".  Missing field"); \
-		return_code = 0; \
-	} \
-\
-	return (return_code); \
-} /* list_Computed_field_ ## filter */
-
-#define Computed_field_get_command_string(filter) \
-	Computed_field_ ## filter ## _get_command_string
-
-#define DEFINE_DEFAULT_COMPUTED_FIELD_GET_COMMAND_STRING_FUNCTION( \
-	filter,field_string,value_string) \
-static char *Computed_field_get_command_string(filter)(struct Computed_field *field) \
-/******************************************************************************* \
-LAST MODIFIED : 3 May 2006 \
-\
-DESCRIPTION : \
-==============================================================================*/ \
-{ \
-	char *command_string, *field_name, temp_string[40]; \
-	int error, i;								  \
-\
-	ENTER(Computed_field_get_command_string(filter));	\
-	command_string = (char *)NULL; \
-	if (field) \
-	{ \
-		error = 0; \
-		append_string(&command_string, \
-			computed_field_ ## filter ## _type_string, &error); \
-		if (0 < field->number_of_source_fields) \
-		{ \
-			append_string(&command_string, " " #field_string " ", &error); \
-			for (i = 0 ; i < field->number_of_source_fields ; i++) \
-			{ \
-				if (GET_NAME(Computed_field)(field->source_fields[i], &field_name)) \
-				{ \
-					make_valid_token(&field_name); \
-					append_string(&command_string, field_name, &error); \
-					DEALLOCATE(field_name); \
-				} \
-			} \
-		} \
-		if (0 < field->number_of_source_values) \
-		{ \
-			append_string(&command_string, " " #value_string, &error); \
-			for (i = 0 ; i < field->number_of_source_values ; i++) \
-			{ \
-				sprintf(temp_string, " %g", field->source_values[i]); \
-				append_string(&command_string, temp_string, &error); \
-			} \
-		} \
-	} \
-	else \
-	{ \
-		display_message(ERROR_MESSAGE, \
-			"Computed_field_" #filter "_get_command_string.  Missing field"); \
-	} \
-\
-	return (command_string); \
-} /* Computed_field_ ## filter ## get_command_string */
 
 #endif /* !defined (COMPUTED_FIELD_PRIVATE_H) */

@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : computed_field_set.c
 
-LAST MODIFIED : 14 August 2006
+LAST MODIFIED : 24 August 2006
 
 DESCRIPTION :
 ==============================================================================*/
@@ -51,7 +51,7 @@ extern "C" {
 int set_Computed_field_conditional(struct Parse_state *state,
 	void *field_address_void, void *set_field_data_void)
 /*******************************************************************************
-LAST MODIFIED : 14 August 2006
+LAST MODIFIED : 24 August 2006
 
 DESCRIPTION :
 Modifier function to set the field from a command. <set_field_data_void> should
@@ -231,7 +231,7 @@ int Option_table_add_Computed_field_conditional_entry(
 	struct Computed_field **field_address, 
 	struct Set_Computed_field_conditional_data *set_field_data)
 /*******************************************************************************
-LAST MODIFIED : 14 August 2006
+LAST MODIFIED : 24 August 2006
 
 DESCRIPTION :
 Adds the given <token> to the <option_table>.
@@ -259,7 +259,7 @@ Adds the given <token> to the <option_table>.
 int set_Computed_field_array(struct Parse_state *state,
 	void *field_array_void, void *set_field_array_data_void)
 /*******************************************************************************
-LAST MODIFIED : 14 August 2006
+LAST MODIFIED : 24 August 2006
 
 DESCRIPTION :
 Modifier function to set an array of field from a command.
@@ -314,10 +314,10 @@ Works by repeatedly calling set_Computed_field_conditional.
 } /* set_Computed_field_array */
 
 #if defined (OLD_CODE)
-static int set_Computed_field_component(struct Parse_state *state,
+int set_Computed_field_component(struct Parse_state *state,
 	void *field_component_void,void *computed_field_manager_void)
 /*******************************************************************************
-LAST MODIFIED : 14 August 2006
+LAST MODIFIED : 24 August 2006
 
 DESCRIPTION :
 Used in command parsing to translate a FIELD_NAME.COMPONENT_NAME into a struct

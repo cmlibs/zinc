@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : computed_field_find_xi.c
 
-LAST MODIFIED : 14 August 2006
+LAST MODIFIED : 24 August 2006
 
 DESCRIPTION :
 Implements a special version of find_xi that uses OpenGL to accelerate the
@@ -126,10 +126,10 @@ matches the <field> in this structure or one of its source fields.
 
 #define MAX_FIND_XI_ITERATIONS 50
 
-static int Computed_field_iterative_element_conditional(
+int Computed_field_iterative_element_conditional(
 	struct FE_element *element, void *data_void)
 /*******************************************************************************
-LAST MODIFIED : 14 August 2006
+LAST MODIFIED : 24 August 2006
 
 DESCRIPTION :
 Returns true if a valid element xi is found.
@@ -380,7 +380,7 @@ int Computed_field_perform_find_element_xi(struct Computed_field *field,
 	FE_value *xi, int element_dimension, struct Cmiss_region *search_region,
 	int find_nearest_location)
 /*******************************************************************************
-LAST MODIFIED : 14 August 2006
+LAST MODIFIED : 24 August 2006
 
 DESCRIPTION :
 This function actually seacrches through the elements in the 
@@ -632,9 +632,9 @@ ultimate parent finite_element field.
 } /* Computed_field_perform_find_element_xi */
 
 #if defined (GRAPHICS_BUFFER_USE_OFFSCREEN_BUFFERS)
-static int Expand_element_range(struct FE_element *element, void *data_void)
+int Expand_element_range(struct FE_element *element, void *data_void)
 /*******************************************************************************
-LAST MODIFIED : 14 August 2006
+LAST MODIFIED : 24 August 2006
 
 DESCRIPTION :
 Stores cache data for the Computed_field_find_element_xi_special routine.
@@ -676,9 +676,9 @@ Stores cache data for the Computed_field_find_element_xi_special routine.
 #endif /* defined (GRAPHICS_BUFFER_USE_OFFSCREEN_BUFFERS) */
 
 #if defined (GRAPHICS_BUFFER_USE_OFFSCREEN_BUFFERS)
-static int Render_element_as_texture(struct FE_element *element, void *data_void)
+int Render_element_as_texture(struct FE_element *element, void *data_void)
 /*******************************************************************************
-LAST MODIFIED : 14 August 2006
+LAST MODIFIED : 24 August 2006
 
 DESCRIPTION :
 Stores cache data for the Computed_field_find_element_xi_special routine.
@@ -778,7 +778,7 @@ int Computed_field_find_element_xi_special(struct Computed_field *field,
 	struct Graphics_buffer_package *graphics_buffer_package,
 	float *hint_minimums, float *hint_maximums, float *hint_resolution)
 /*******************************************************************************
-LAST MODIFIED : 14 August 2006
+LAST MODIFIED : 24 August 2006
 
 DESCRIPTION :
 This function implements the reverse of some certain computed_fields
@@ -1176,7 +1176,7 @@ sequential element_xi lookup should now be performed.
 struct Computed_field_find_element_xi_cache 
 *CREATE(Computed_field_find_element_xi_cache)(void)
 /*******************************************************************************
-LAST MODIFIED : 14 August 2006
+LAST MODIFIED : 24 August 2006
 
 DESCRIPTION :
 Stores cache data for the find_xi routines.
@@ -1212,7 +1212,7 @@ Stores cache data for the find_xi routines.
 int DESTROY(Computed_field_find_element_xi_cache)
 	(struct Computed_field_find_element_xi_cache **cache_address)
 /*******************************************************************************
-LAST MODIFIED : 14 August 2006
+LAST MODIFIED : 24 August 2006
 
 DESCRIPTION :
 Frees memory/deaccess cache at <*cache_address>.

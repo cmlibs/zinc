@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : computed_field_update.c
 
-LAST MODIFIED : 14 August 2006
+LAST MODIFIED : 24 August 2006
 
 DESCRIPTION :
 Functions for updating values of one computed field from those of another.
@@ -58,7 +58,7 @@ int Computed_field_copy_values_at_node(struct FE_node *node,
 	struct Computed_field *destination_field,
 	struct Computed_field *source_field, FE_value time)
 /*******************************************************************************
-LAST MODIFIED : 14 August 2006
+LAST MODIFIED : 24 August 2006
 
 DESCRIPTION :
 Evaluates <source_field> at node and sets <destination_field> to those values.
@@ -114,7 +114,7 @@ this function are finished.
 
 struct Computed_field_update_nodal_values_from_source_data
 /*******************************************************************************
-LAST MODIFIED : 14 August 2006
+LAST MODIFIED : 24 August 2006
 
 DESCRIPTION :
 ==============================================================================*/
@@ -127,10 +127,10 @@ DESCRIPTION :
 	struct FE_node_selection *node_selection;
 };
 
-static int Computed_field_update_nodal_values_from_source_sub(
+int Computed_field_update_nodal_values_from_source_sub(
 	struct FE_node *node, void *data_void)
 /*******************************************************************************
-LAST MODIFIED : 14 August 2006
+LAST MODIFIED : 24 August 2006
 
 DESCRIPTION :
 ==============================================================================*/
@@ -179,7 +179,7 @@ int Computed_field_update_nodal_values_from_source(
 	struct Cmiss_region *region, struct FE_node_selection *node_selection,
 	FE_value time)
 /*******************************************************************************
-LAST MODIFIED : 14 August 2006
+LAST MODIFIED : 24 August 2006
 
 DESCRIPTION :
 Set <destination_field> in all the nodes in <node_group> or <node_manager> if
@@ -258,7 +258,7 @@ Restricts update to nodes in <node_selection>, if supplied.
 
 struct Computed_field_update_element_values_from_source_data
 /*******************************************************************************
-LAST MODIFIED : 14 August 2006
+LAST MODIFIED : 24 August 2006
 
 DESCRIPTION :
 ==============================================================================*/
@@ -271,10 +271,10 @@ DESCRIPTION :
 	struct FE_element_selection *element_selection;
 };
 
-static int Computed_field_update_element_values_from_source_sub(
+int Computed_field_update_element_values_from_source_sub(
 	struct FE_element *element, void *data_void)
 /*******************************************************************************
-LAST MODIFIED : 14 August 2006
+LAST MODIFIED : 24 August 2006
 
 DESCRIPTION :
 ==============================================================================*/
@@ -442,7 +442,7 @@ int Computed_field_update_element_values_from_source(
 	struct Cmiss_region *region, struct Element_point_ranges_selection *element_point_ranges_selection,
 	struct FE_element_selection *element_selection, FE_value time)
 /*******************************************************************************
-LAST MODIFIED : 14 August 2006
+LAST MODIFIED : 24 August 2006
 
 DESCRIPTION :
 Set grid-based <destination_field> in all the elements in <element_group> or

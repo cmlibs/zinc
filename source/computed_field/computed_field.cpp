@@ -183,6 +183,7 @@ extern "C" {
 #include "general/value.h"
 #include "user_interface/message.h"
 }
+#include <typeinfo>
 
 FULL_DECLARE_INDEXED_LIST_TYPE(Computed_field);
 
@@ -357,24 +358,8 @@ Calls Computed_field_clear_cache before clearing the type.
 			}
 			DEALLOCATE(field->component_names);
 		}
-
-		if (field->type_specific_data)
-		{
-			if(field->computed_field_clear_type_specific_function)
-			{
-				field->computed_field_clear_type_specific_function(
-					field);
-			}
-			else
-			{
-				display_message(ERROR_MESSAGE,
-					"Computed_field_clear_type.  "
-					"Type specific data but no function to clear it.");
-				return_code=0;
-			}
-			field->type_specific_data = (void *)NULL;
-		}
-		field->type_string = (char *)NULL;
+		
+		delete field->core;
 
 		if (field->source_fields)
 		{
@@ -390,25 +375,6 @@ Calls Computed_field_clear_cache before clearing the type.
 			DEALLOCATE(field->source_values);
 		}
 		field->number_of_source_values=0;
-
-		/* Clear all methods */
-		COMPUTED_FIELD_SET_METHODS(
-			field,
-			(Computed_field_clear_type_specific_function)NULL,
-			(Computed_field_copy_type_specific_function)NULL,
-			(Computed_field_clear_cache_type_specific_function)NULL,
-			(Computed_field_type_specific_contents_match_function)NULL,
-			(Computed_field_is_defined_at_location_function)NULL,
-			(Computed_field_has_numerical_components_function)NULL,
-			(Computed_field_not_in_use_function)NULL,
-			(Computed_field_evaluate_cache_at_location_function)NULL, 
-			(Computed_field_set_values_at_location_function)NULL,
-			(Computed_field_get_native_discretization_in_element_function)NULL,
-			(Computed_field_find_element_xi_function)NULL,
-			(List_Computed_field_function)NULL,
-			(Computed_field_get_command_string_function)NULL,
-			(Computed_field_has_multiple_times_function)NULL,
-			(Computed_field_get_native_resolution_function)NULL);
 	}
 	else
 	{
@@ -494,8 +460,6 @@ COMPUTED_FIELD_INVALID with no components.
 			(field->name = duplicate_string(name)))
 		{
 			/* initialise all members of computed_field */	
-			field->type_specific_data = NULL;
-			field->type_string = (char *)NULL;
 			field->number_of_components = 0;
 			/* allowed to modify/remove from manager until disabled with
 				 Computed_field_set_read_only */
@@ -516,23 +480,7 @@ COMPUTED_FIELD_INVALID with no components.
 
 			field->find_element_xi_cache = (struct Computed_field_find_element_xi_cache *)NULL;
 
-			COMPUTED_FIELD_SET_METHODS(
-				field,
-				(Computed_field_clear_type_specific_function)NULL,
-				(Computed_field_copy_type_specific_function)NULL,
-				(Computed_field_clear_cache_type_specific_function)NULL,
-				(Computed_field_type_specific_contents_match_function)NULL,
-				(Computed_field_is_defined_at_location_function)NULL,
-				(Computed_field_has_numerical_components_function)NULL,
-				(Computed_field_not_in_use_function)NULL,
-				(Computed_field_evaluate_cache_at_location_function)NULL, 
-				(Computed_field_set_values_at_location_function)NULL,
-				(Computed_field_get_native_discretization_in_element_function)NULL,
-				(Computed_field_find_element_xi_function)NULL,
-				(List_Computed_field_function)NULL,
-				(Computed_field_get_command_string_function)NULL,
-				(Computed_field_has_multiple_times_function)NULL,
-				(Computed_field_get_native_resolution_function)NULL);
+			field->core = (Computed_field_core*)NULL;
 
 			/* for all types of Computed_field calculated from others */
 			field->source_fields = (struct Computed_field **)NULL;
@@ -684,10 +632,10 @@ functions to check if read_only flag is set.
 ==============================================================================*/
 {
 	char **component_names;
+	Computed_field_core *core;
 	FE_value *source_values;
 	int i,return_code;
 	struct Computed_field **source_fields;
-	void *type_specific_data;
 
 	ENTER(MANAGER_COPY_WITHOUT_IDENTIFIER(Computed_field,name));
 	if (source&&destination)
@@ -704,7 +652,7 @@ functions to check if read_only flag is set.
 		{
 			source_fields=(struct Computed_field **)NULL;
 			source_values=(FE_value *)NULL;
-			type_specific_data = NULL;
+			core = (Computed_field_core*)NULL;
 			component_names = (char **)NULL;
 			/* 1. make dynamic allocations for any new type-specific data */
 			return_code = 1;
@@ -733,11 +681,7 @@ functions to check if read_only flag is set.
 				((0==source->number_of_source_values)||ALLOCATE(source_values,
 					FE_value,source->number_of_source_values)))
 			{
-				if ((!source->type_specific_data)||
-					(!source->computed_field_copy_type_specific_function)||
-					(type_specific_data = 
-						source->computed_field_copy_type_specific_function(source,
-							destination)))
+				if (core = source->core->copy(destination))
 				{
 					/* 2. free current type-specific data */
 					Computed_field_clear_type(destination);
@@ -749,29 +693,7 @@ functions to check if read_only flag is set.
 
 					destination->component_names = component_names;
 					
-					COMPUTED_FIELD_SET_METHODS(
-						destination,
-						source->computed_field_clear_type_specific_function,
-						source->computed_field_copy_type_specific_function,
-						source->computed_field_clear_cache_type_specific_function,
-						source->computed_field_type_specific_contents_match_function,
-						source->computed_field_is_defined_at_location_function,
-						source->computed_field_has_numerical_components_function,
-						source->computed_field_not_in_use_function,
-						source->computed_field_evaluate_cache_at_location_function,
-						source->computed_field_set_values_at_location_function,
-						source->computed_field_get_native_discretization_in_element_function,
-						source->computed_field_find_element_xi_function,
-						source->list_Computed_field_function,
-						source->computed_field_get_command_string_function,
-						source->computed_field_has_multiple_times_function,
-						source->computed_field_get_native_resolution_function);
-
-					if (source->type_specific_data)
-					{
-						destination->type_specific_data = type_specific_data;
-					}
-					destination->type_string = source->type_string;
+					destination->core = core;
 
 					/* for all Computed_field_types calculated from others */
 					destination->number_of_source_fields=
@@ -793,20 +715,10 @@ functions to check if read_only flag is set.
 				}
 				else
 				{
-					if (source->computed_field_copy_type_specific_function)
-					{
-						display_message(ERROR_MESSAGE,
-							"MANAGER_COPY_WITHOUT_IDENTIFIER(Computed_field,name).  "
-							"Type specific copy function failed.");
-						return_code=0;
-					}
-					else
-					{
-						display_message(ERROR_MESSAGE,
-							"MANAGER_COPY_WITHOUT_IDENTIFIER(Computed_field,name).  "
-							"Type specific data but no copy function.");
-						return_code=0;
-					}
+					display_message(ERROR_MESSAGE,
+						"MANAGER_COPY_WITHOUT_IDENTIFIER(Computed_field,name).  "
+						"Unable to copy Computed_field_core.");
+					return_code=0;
 					if (source_fields)
 					{
 						DEALLOCATE(source_fields);
@@ -941,14 +853,7 @@ function and bases its result on that.
 						IS_OBJECT_IN_LIST(Computed_field)(object,
 							manager->message->changed_object_list)))
 				{
-					if (object->computed_field_not_in_use_function)
-					{
-						return_code = object->computed_field_not_in_use_function(object);
-					}
-					else
-					{
-						return_code = 1;
-					}
+					return_code = object->core->not_in_use();
 				}
 			}
 			else
@@ -1222,10 +1127,9 @@ are possibly not going to be called again for some time.
 		{
 			DEACCESS(FE_node)(&field->node);
 		}
-		if (field->computed_field_clear_cache_type_specific_function)
+		if (field->core)
 		{
-			field->computed_field_clear_cache_type_specific_function(
-				field);
+			field->core->clear_cache();
 		}
 		if (field->string_cache)
 		{
@@ -1268,28 +1172,8 @@ any other fields, this function is recursively called for them.
 	return_code=0;
 	if (field&&element)
 	{
-		if (field->computed_field_is_defined_at_location_function)
-		{
-			Field_element_xi_location location(element);
-			return_code = 
-				field->computed_field_is_defined_at_location_function(
-					field, &location);
-		}
-		else
-		{
-			if (!field->computed_field_evaluate_cache_at_location_function)
-			{
-				return_code=0;
-			}
-			else
-			{
-				display_message(ERROR_MESSAGE,
-					"Computed_field_is_defined_in_element.  "
-					"Is_defined_at_location_function for field %s is not defined.",
-					field->name);
-				return_code=0;
-			}
-		}
+		Field_element_xi_location location(element);
+		return_code = field->core->is_defined_at_location(&location);
 	}
 	else
 	{
@@ -1340,57 +1224,43 @@ This is currently that the field is defined and any of the components are non ze
 	return_code=0;
 	if (field&&element)
 	{	
-		if (field->computed_field_evaluate_cache_at_location_function)
+		Field_element_xi_location location(element);
+		if (field->core->is_defined_at_location(&location))
 		{
-			if (field->computed_field_is_defined_at_location_function)
+			number_in_xi = 1;
+			get_FE_element_shape(element, &shape);
+			if (FE_element_shape_get_xi_points_cell_centres(shape, &number_in_xi,
+					&number_of_xi_points, &xi_points) && (number_of_xi_points > 0))
 			{
-				Field_element_xi_location location(element);
-				if (field->computed_field_is_defined_at_location_function(field, &location))
+				Field_element_xi_location centre_location(element, xi_points[0], 
+					time, /*top_level_element*/(struct FE_element *)NULL);
+				if (Computed_field_evaluate_cache_at_location(field, &centre_location))
 				{
-					number_in_xi = 1;
-					get_FE_element_shape(element, &shape);
-					if (FE_element_shape_get_xi_points_cell_centres(shape, &number_in_xi,
-						&number_of_xi_points, &xi_points) && (number_of_xi_points > 0))
+					return_code = 0;
+					for (i = 0 ; (return_code == 0) && 
+							  (i < field->number_of_components) ; i++)
 					{
-						Field_element_xi_location centre_location(element, xi_points[0], 
-							time, /*top_level_element*/(struct FE_element *)NULL);
-						if (Computed_field_evaluate_cache_at_location(field, &centre_location))
+						if ((field->values[i] < -zero_tolerance) ||
+							(field->values[i] > zero_tolerance))
 						{
-							return_code = 0;
-							for (i = 0 ; (return_code == 0) && 
-								(i < field->number_of_components) ; i++)
-							{
-								if ((field->values[i] < -zero_tolerance) ||
-									(field->values[i] > zero_tolerance))
-								{
-									return_code = 1;
-								}
-							}
+							return_code = 1;
 						}
-						else
-						{
-							return_code = 0;
-						}
-						DEALLOCATE(xi_points);
-					}
-					else
-					{
-						return_code = 0;
 					}
 				}
+				else
+				{
+					return_code = 0;
+				}
+				DEALLOCATE(xi_points);
 			}
 			else
 			{
-				display_message(ERROR_MESSAGE,
-					"Computed_field_is_true_at_location.  "
-					"Is_defined_at_location_function for field %s is not defined.",
-					field->name);
-				return_code=0;
+				return_code = 0;
 			}
 		}
 		else
 		{
-			return_code=0;
+			return_code = 0;
 		}
 	}
 	else
@@ -1450,27 +1320,8 @@ any other fields, this function is recursively called for them.
 	return_code=0;
 	if (field&&node)
 	{	
-		if (field->computed_field_is_defined_at_location_function)
-		{
-			Field_node_location location(node);
-			return_code = field->computed_field_is_defined_at_location_function(
-				field, &location);
-		}
-		else
-		{
-			if (!field->computed_field_evaluate_cache_at_location_function)
-			{
-				return_code = 0;
-			}
-			else
-			{
-				display_message(ERROR_MESSAGE,
-					"Computed_field_is_defined_at_location.  "
-					"Is_defined_at_location_function for field %s is not defined.",
-					field->name);
-				return_code=0;
-			}
-		}
+		Field_node_location location(node);
+		return_code = field->core->is_defined_at_location(&location);
 	}
 	else
 	{
@@ -1517,15 +1368,7 @@ Returns 1 if the all the source fields are defined at the supplied <location>.
 	ENTER(Computed_field_is_defined_at_location);
 	if (field && location)
 	{
-		if (field->computed_field_is_defined_at_location_function)
-		{
-			return_code = field->computed_field_is_defined_at_location_function(
-				field, location);
-		}
-		else
-		{
-			return_code = 0;
-		}
+		return_code = field->core->is_defined_at_location(location);
 	}
 	else
 	{
@@ -1539,8 +1382,7 @@ Returns 1 if the all the source fields are defined at the supplied <location>.
 	return (return_code);
 } /* Computed_field_is_defined_at_location */
 
-int Computed_field_default_is_defined_at_location(struct Computed_field *field,
-	Field_location* location)
+int Computed_field_core::is_defined_at_location(Field_location* location)
 /*******************************************************************************
 LAST MODIFIED : 14 August 2006
 
@@ -1609,40 +1451,25 @@ that the field is defined and any of the components are non zero.
 	return_code=0;
 	if (field&&node)
 	{	
-		if (field->computed_field_evaluate_cache_at_location_function)
+		Field_node_location location(node, time);
+		if (field->core->is_defined_at_location(&location))
 		{
-			if (field->computed_field_is_defined_at_location_function)
+			if (Computed_field_evaluate_cache_at_location(field, &location))
 			{
-				Field_node_location location(node, time);
-				if (field->computed_field_is_defined_at_location_function(field,
-						&location))
+				return_code = 0;
+				for (i = 0 ; (return_code == 0) && 
+						  (i < field->number_of_components) ; i++)
 				{
-					if (Computed_field_evaluate_cache_at_location(field, &location))
+					if ((field->values[i] < -zero_tolerance) ||
+						(field->values[i] > zero_tolerance))
 					{
-						return_code = 0;
-						for (i = 0 ; (return_code == 0) && 
-							(i < field->number_of_components) ; i++)
-						{
-							if ((field->values[i] < -zero_tolerance) ||
-								(field->values[i] > zero_tolerance))
-							{
-								return_code = 1;
-							}
-						}
-					}
-					else
-					{
-						return_code = 0;
+						return_code = 1;
 					}
 				}
 			}
 			else
 			{
-				display_message(ERROR_MESSAGE,
-					"Computed_field_is_true_at_location.  "
-					"Is_defined_at_location_function for field %s is not defined.",
-					field->name);
-				return_code=0;
+				return_code = 0;
 			}
 		}
 		else
@@ -1691,7 +1518,7 @@ Iterator version of NOT Computed_field_is_true_at_location.
 	return (return_code);
 } /* FE_node_Computed_field_is_not_true_iterator */
 
-int Computed_field_default_has_multiple_times(struct Computed_field *field)
+int Computed_field_core::has_multiple_times()
 /*******************************************************************************
 LAST MODIFIED : 14 August 2006
 
@@ -2037,23 +1864,12 @@ Upon successful return the node values of the <field> are stored in its cache.
 			}
 			if (return_code)
 			{
-				if (field->computed_field_evaluate_cache_at_location_function)
-				{
-					/* Before we set up a better typed cache storage we are assuming 
-						the evaluate will generate valid values, for those which don't
-						this will be set to zero in the evaluate.  This allows the valid
-					   evaluation to a string, which potentially will expand to more types. */
-					field->values_valid = 1;
-					return_code = field->computed_field_evaluate_cache_at_location_function(
-						field, location);
-				}
-				else
-				{
-					display_message(ERROR_MESSAGE,
-						"Computed_field_evaluate_cache_at_location.  "
-						"No function defined.");
-					return_code = 0;
-				}
+				/* Before we set up a better typed cache storage we are assuming 
+					the evaluate will generate valid values, for those which don't
+					this will be set to zero in the evaluate.  This allows the valid
+					evaluation to a string, which potentially will expand to more types. */
+				field->values_valid = 1;
+				return_code = field->core->evaluate_cache_at_location(location);
 
 				if (element_xi_location)
 				{
@@ -2213,30 +2029,18 @@ is avoided.
 					this will be set to zero in the evaluate.  This allows the valid
 					evaluation to a string, which potentially will expand to more types. */
 				field->values_valid = 1;
-				if (field->computed_field_evaluate_cache_at_location_function)
+				if (calculate_derivatives)
 				{
-					if (calculate_derivatives)
-					{
-						number_of_derivatives = element_dimension;
-					}
-					else
-					{
-						number_of_derivatives = 0;
-					}
-					Field_element_xi_location location(element, xi, time,
-						top_level_element, number_of_derivatives);
-					return_code = field->computed_field_evaluate_cache_at_location_function(
-						field, &location);
-					/* How to specify derivatives or not */
+					number_of_derivatives = element_dimension;
 				}
 				else
 				{
-					display_message(ERROR_MESSAGE,
-						"Computed_field_evaluate_cache_in_element.  "
-						"Function for calculating field %s in element not defined.",
-						field->name);
-					return_code=0;
+					number_of_derivatives = 0;
 				}
+				Field_element_xi_location location(element, xi, time,
+					top_level_element, number_of_derivatives);
+				return_code = field->core->evaluate_cache_at_location(&location);
+					/* How to specify derivatives or not */
 				if (return_code&&calculate_derivatives&&!(field->derivatives_valid))
 				{
 					display_message(ERROR_MESSAGE,
@@ -2537,24 +2341,13 @@ fields with the name 'coordinates' are quite pervasive.
 			}
 			if (return_code)
 			{
-				if (field->computed_field_evaluate_cache_at_location_function)
-				{
-					/* Before we set up a better typed cache storage we are assuming 
-						the evaluate will generate valid values, for those which don't
-						this will be set to zero in the evaluate.  This allows the valid
-					   evaluation to a string, which potentially will expand to more types. */
-					field->values_valid = 1;
-					Field_node_location location(node, time);
-					return_code = field->computed_field_evaluate_cache_at_location_function(
-						field, &location);
-				}
-				else
-				{
-					display_message(ERROR_MESSAGE,
-						"Computed_field_evaluate_cache_at_node.  "
-						"No function defined.");
-					return_code = 0;
-				}
+				/* Before we set up a better typed cache storage we are assuming 
+					the evaluate will generate valid values, for those which don't
+					this will be set to zero in the evaluate.  This allows the valid
+					evaluation to a string, which potentially will expand to more types. */
+				field->values_valid = 1;
+				Field_node_location location(node, time);
+				return_code = field->core->evaluate_cache_at_location(&location);
 
 				/* Store information about what is cached, or clear it if error */
 				if (return_code)
@@ -2660,89 +2453,6 @@ It is up to the calling function to DEALLOCATE the returned string.
 	return (return_string);
 } /* Computed_field_evaluate_as_string_at_location */
 
-int Computed_field_default_clear_type_specific(struct Computed_field *field)
-/*******************************************************************************
-LAST MODIFIED : 14 August 2006
-
-DESCRIPTION :
-A default implementation of this function to use when there is no type
-specific data.
-==============================================================================*/
-{
-	int return_code;
-
-	ENTER(Computed_field_default_clear_type_specific);
-	if (field)
-	{
-		return_code = 1;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_default_clear_type_specific.  "
-			"Invalid field");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Computed_field_default_clear_type_specific */
-
-void *Computed_field_default_copy_type_specific(
-	struct Computed_field *source, struct Computed_field *destination)
-/*******************************************************************************
-LAST MODIFIED : 14 August 2006
-
-DESCRIPTION :
-A default implementation of this function to use when there is no type
-specific data.
-==============================================================================*/
-{
-	void *destination_data;
-
-	ENTER(Computed_field_default_copy_type_specific);
-	if (source && destination)
-	{
-		destination_data = (void *)1;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_default_copy_type_specific.  "
-			"Invalid source or destination field.");
-		destination_data = NULL;
-	}
-	LEAVE;
-
-	return (destination_data);
-} /* Computed_field_default_copy_type_specific */
-
-int Computed_field_default_type_specific_contents_match(
-	struct Computed_field *field, struct Computed_field *other_computed_field)
-/*******************************************************************************
-LAST MODIFIED : 14 August 2006
-
-DESCRIPTION :
-A default implementation of this function to use when there is no type
-specific data.
-==============================================================================*/
-{
-	int return_code;
-
-	ENTER(Computed_field_default_type_specific_contents_match);
-	if (field && other_computed_field)
-	{
-		return_code = 1;
-	}
-	else
-	{
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Computed_field_default_type_specific_contents_match */
-
 int Computed_field_evaluate_at_node(struct Computed_field *field,
 	struct FE_node *node, FE_value time, FE_value *values)
 /*******************************************************************************
@@ -2811,25 +2521,12 @@ is reached for which its calculation is not reversible, or is not supported yet.
 	ENTER(Computed_field_set_values_at_location);
 	if (field && location && values)
 	{
-		if (field->computed_field_set_values_at_location_function)
+		if (!(return_code = field->core->set_values_at_location(location, values)))
 		{
-			if (!(return_code = 
-					 field->computed_field_set_values_at_location_function(
-						 field, location, values)))
-			{
-				display_message(ERROR_MESSAGE, "Computed_field_set_values_at_location.  "
-					"Failed for field %s of type %s", field->name, field->type_string);
-			}
-			Computed_field_clear_cache(field);
+			display_message(ERROR_MESSAGE, "Computed_field_set_values_at_location.  "
+				"Failed for field %s of type %s", field->name, field->core->get_type_string());
 		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"Computed_field_set_values_at_location.  "
-				"Cannot set values for field %s of type %s", field->name,
-				Computed_field_get_type_string(field));
-			return_code = 0;
-		}
+		Computed_field_clear_cache(field);
 	}
 	else
 	{
@@ -2865,26 +2562,14 @@ is reached for which its calculation is not reversible, or is not supported yet.
 	ENTER(Computed_field_set_values_at_node);
 	if (field && node && values)
 	{
-		if (field->computed_field_set_values_at_location_function)
+		Field_node_location location(node, time);
+		if (!(return_code = 
+				field->core->set_values_at_location(&location, values)))
 		{
-			Field_node_location location(node, time);
-			if (!(return_code = 
-					 field->computed_field_set_values_at_location_function(
-						 field, &location, values)))
-			{
-				display_message(ERROR_MESSAGE, "Computed_field_set_values_at_node.  "
-					"Failed for field %s of type %s", field->name, field->type_string);
-			}
-			Computed_field_clear_cache(field);
+			display_message(ERROR_MESSAGE, "Computed_field_set_values_at_node.  "
+				"Failed for field %s of type %s", field->name, field->core->get_type_string());
 		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"Computed_field_set_values_at_node.  "
-				"Cannot set values for field %s of type %s", field->name,
-				Computed_field_get_type_string(field));
-			return_code = 0;
-		}
+		Computed_field_clear_cache(field);
 	}
 	else
 	{
@@ -3012,27 +2697,14 @@ supported yet.
 	ENTER(Computed_field_set_values_in_element);
 	if (field && element && xi && values)
 	{
-		if (field->computed_field_set_values_at_location_function)
-		{
-			Field_element_xi_location location(element, xi, time);
-			if (!(return_code = 
-					 field->computed_field_set_values_at_location_function(
-						 field, &location, values)))
-			{
-				display_message(ERROR_MESSAGE,
-					"Computed_field_set_values_in_element.  "
-					"Failed for field %s of type %s", field->name, field->type_string);
-			}
-			Computed_field_clear_cache(field);
-		}
-		else
+		Field_element_xi_location location(element, xi, time);
+		if (!(return_code = field->core->set_values_at_location(&location, values)))
 		{
 			display_message(ERROR_MESSAGE,
 				"Computed_field_set_values_in_element.  "
-				"Cannot set values for field %s of type %s", field->name,
-				Computed_field_get_type_string(field));
-			return_code = 0;
+				"Failed for field %s of type %s", field->name, field->core->get_type_string());
 		}
+		Computed_field_clear_cache(field);
 	}
 	else
 	{
@@ -3069,16 +2741,8 @@ Computed_field_set_values_in_[managed_]element.
 	if (field && element && number_in_xi &&
 		(MAXIMUM_ELEMENT_XI_DIMENSIONS >= get_FE_element_dimension(element)))
 	{
-		if (field->computed_field_get_native_discretization_in_element_function)
-		{
-			return_code = 
-				field->computed_field_get_native_discretization_in_element_function(
-					field, element, number_in_xi);
-		}
-		else
-		{
-			return_code = 0;
-		}
+		return_code = 
+			field->core->get_native_discretization_in_element(element, number_in_xi);
 	}
 	else
 	{
@@ -3092,8 +2756,8 @@ Computed_field_set_values_in_[managed_]element.
 	return (return_code);
 } /* Computed_field_get_native_discretization_in_element */
 
-int Computed_field_default_get_native_discretization_in_element(
-	struct Computed_field *field,struct FE_element *element,int *number_in_xi)
+int Computed_field_core::get_native_discretization_in_element(
+	struct FE_element *element,int *number_in_xi)
 /*******************************************************************************
 LAST MODIFIED : 14 August 2006
 
@@ -3278,11 +2942,18 @@ The calling function must not deallocate the returned string.
 	ENTER(Computed_field_get_type_string);
 	if (field)
 	{
-		return_string = field->type_string;
+		if (field->core)
+		{
+			return_string = field->core->get_type_string();
+		}
+		else
+		{
+			return_string = (char *)NULL;
+		}
 	}
 	else
 	{
-		display_message(ERROR_MESSAGE,"Computed_field_get_type.  Missing field");
+		display_message(ERROR_MESSAGE,"Computed_field_get_type_string.  Missing field");
 		return_string = (char *)NULL;
 	}
 	LEAVE;
@@ -3291,7 +2962,7 @@ The calling function must not deallocate the returned string.
 } /* Computed_field_get_type_string */
 
 int Computed_field_get_native_resolution(struct Computed_field *field,
-        int *dimension, int **sizes, 
+	int *dimension, int **sizes, 
 	struct Computed_field **texture_coordinate_field)
 /*******************************************************************************
 LAST MODIFIED : 14 August 2006
@@ -3302,23 +2973,13 @@ the <field>. These parameters will be used in image processing.
 
 ==============================================================================*/
 {       
-        int return_code;
+	int return_code;
 	
 	ENTER(Computed_field_get_native_resolution);
 	if (field)
 	{
-		
-		if (field->computed_field_get_native_resolution_function)
-		{
-			return_code = field->computed_field_get_native_resolution_function(
-				field, dimension, sizes, 
-				texture_coordinate_field);
-		}
-		else
-		{
-			return_code = 0;
-		}
-		
+		return_code = field->core->get_native_resolution(dimension, sizes, 
+			texture_coordinate_field);
 	}
 	else
 	{
@@ -3330,8 +2991,8 @@ the <field>. These parameters will be used in image processing.
 	return (return_code);
 } /* Computed_field_get_native_resolution */
 
-int Computed_field_default_get_native_resolution(struct Computed_field *field,
-        int *dimension, int **sizes, 
+int Computed_field_core::get_native_resolution(
+	int *dimension, int **sizes, 
 	struct Computed_field **texture_coordinate_field)
 /*******************************************************************************
 LAST MODIFIED : 14 August 2006
@@ -3385,18 +3046,7 @@ returned as FE_value when evaluated.
 	USE_PARAMETER(dummy_void);
 	if (field)
 	{
-		if (field->computed_field_has_numerical_components_function)
-		{
-			return_code = field->computed_field_has_numerical_components_function(
-				field);
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"Computed_field_has_numerical_components.  "
-				"No function defined.");
-			return_code = 0;
-		}
+		return_code = field->core->has_numerical_components();
 	}
 	else
 	{
@@ -3407,31 +3057,6 @@ returned as FE_value when evaluated.
 
 	return (return_code);
 } /* Computed_field_has_numerical_components */
-
-int Computed_field_default_has_numerical_components(struct Computed_field *field)
-/*******************************************************************************
-LAST MODIFIED : 14 August 2006
-
-DESCRIPTION :
-Most computed fields have numerical components so this function returns 1.
-==============================================================================*/
-{
-	int return_code;
-
-	ENTER(Computed_field_default_has_numerical_components);
-	if (field)
-	{
-		return_code = 1;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_has_numerical_components.  Missing field");
-		return_code = 0;
-	}
-
-	return (return_code);
-} /* Computed_field_default_has_numerical_components */
 
 int Computed_field_is_scalar(struct Computed_field *field,void *dummy_void)
 /*******************************************************************************
@@ -3642,19 +3267,7 @@ Conditional function returning true if <field> depends on time.
 	return_code=0;
 	if (field)
 	{	
-		if (field->computed_field_has_multiple_times_function)
-		{
-			return_code = field->computed_field_has_multiple_times_function(
-				field);
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"Computed_field_has_multiple_times.  "
-				"Computed_field_has_multiple_times_function for field %s is not defined.",
-				field->name);
-			return_code=0;
-		}
+		return_code = field->core->has_multiple_times();
 	}
 	else
 	{
@@ -3869,12 +3482,9 @@ pass in pointers to field cache values.
 	if (field && values && (number_of_values == field->number_of_components) &&
 		element && xi && (search_region || *element))
 	{
-		if (propagate_field && field->computed_field_find_element_xi_function)
-		{
-			return_code = field->computed_field_find_element_xi_function(
-				field, values, number_of_values, element, xi, element_dimension, search_region);
-		}
-		else
+		if ((!propagate_field) || 
+			(!field->core->find_element_xi(values, number_of_values,
+			element, xi, element_dimension, search_region)))
 		{
 			return_code = Computed_field_perform_find_element_xi(field,
 				values, number_of_values, element, xi, element_dimension, search_region,
@@ -3908,14 +3518,9 @@ a set of values.
 	USE_PARAMETER(dummy_void);
 	if (field)
 	{
-		if (field->computed_field_find_element_xi_function)
-		{
-			return_code=1;
-		}
-		else
-		{
-			return_code=0;
-		}
+		/* By doing the inversion iterations on the final computed field we
+			can do this on all computed fields. */
+		return_code=1;
 	}
 	else
 	{
@@ -4082,7 +3687,7 @@ to modify it if it was.
 				/* Write out the help */
 				option_table = CREATE(Option_table)();
 				Option_table_add_entry(option_table,"[coordinate_system NAME]",
-					&field_void, computed_field_package_void, 
+					field_void, computed_field_package_void, 
 					define_Computed_field_type);
 				return_code=Option_table_parse(option_table,state);
 				DESTROY(Option_table)(&option_table);
@@ -4211,7 +3816,7 @@ and should not itself be managed.
 						}
 						else
 						{
-							if (temp_field->type_string)
+							if (temp_field->core->get_type_string())
 							{
 								/* add the new field to the manager */
 								if (!ADD_OBJECT_TO_MANAGER(Computed_field)(temp_field,
@@ -4363,16 +3968,7 @@ Writes the properties of the <field> to the command window.
 		}
 		display_message(INFORMATION_MESSAGE,"  field type = %s\n",
 			Computed_field_get_type_string(field));
-		if (field->list_Computed_field_function)
-		{
-			field->list_Computed_field_function(field);
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,"list_Computed_field.  "
-				"Function not defined.");
-			return_code=0;
-		}
+		field->core->list();
 		/* write the names of the components */
 		if (1<field->number_of_components)
 		{
@@ -4439,19 +4035,10 @@ Writes the commands needed to reproduce <field> to the command window.
 				temp_string);
 			DEALLOCATE(temp_string);
 		}
-		if (field->computed_field_get_command_string_function)
+		if (command_string = field->core->get_command_string())
 		{
-			if (command_string =
-				field->computed_field_get_command_string_function(field))
-			{
-				display_message(INFORMATION_MESSAGE, " %s", command_string);
-				DEALLOCATE(command_string);
-			}
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE, "list_Computed_field_commands.  "
-				"Command string function not defined");
+			display_message(INFORMATION_MESSAGE, " %s", command_string);
+			DEALLOCATE(command_string);
 		}
 		display_message(INFORMATION_MESSAGE, ";\n");
 		return_code = 1;
@@ -4589,7 +4176,7 @@ its name matches the contents of the <other_computed_field_void>.
 			&&(field->read_only==other_computed_field->read_only)
 			&&(field->coordinate_system.type==other_computed_field->coordinate_system.type)
 			/* Ignoring other coordinate_system parameters */
-			&&(field->type_string==other_computed_field->type_string)
+			&&(typeid(field->core)==typeid(other_computed_field->core))
 			&&(field->number_of_source_fields==
 				other_computed_field->number_of_source_fields)
 			&&(field->number_of_source_values==
@@ -4611,19 +4198,7 @@ its name matches the contents of the <other_computed_field_void>.
 			}
 			if (return_code)
 			{
-				if (field->computed_field_type_specific_contents_match_function)
-				{
-					return_code = 
-						field->computed_field_type_specific_contents_match_function(
-							field, other_computed_field);
-				}
-				else
-				{
-					display_message(ERROR_MESSAGE,
-						"Computed_field_contents_match.  "
-						"Type specific contents match function undefined.");
-					return_code = 0;					
-				}
+				return_code = field->core->compare(other_computed_field->core);
 			}
 		}
 		else
@@ -4640,6 +4215,102 @@ its name matches the contents of the <other_computed_field_void>.
 
 	return (return_code);
 } /* Computed_field_contents_match */
+
+int Computed_field_core::list()
+/*******************************************************************************
+LAST MODIFIED : 25 August 2006
+
+DESCRIPTION :
+Default listing of source fields and source values.
+==============================================================================*/
+{
+	int i, return_code;
+
+	ENTER(list_Computed_field_ ## filter);
+	if (field)
+	{
+		if (0 < field->number_of_source_fields)
+		{
+			display_message(INFORMATION_MESSAGE,
+				"    source fields :");									
+			for (i = 0 ; i < field->number_of_source_fields ; i++)	
+			{																			
+				display_message(INFORMATION_MESSAGE,						
+					" %s", field->source_fields[i]->name);					
+			}																			
+			display_message(INFORMATION_MESSAGE, "\n");					
+		}
+		if (0 < field->number_of_source_values)
+		{
+			display_message(INFORMATION_MESSAGE,
+				"    values :");									
+			for (i = 0 ; i < field->number_of_source_values ; i++)	
+			{																			
+				display_message(INFORMATION_MESSAGE,						
+					" %g", field->source_values[i]);							
+			}																			
+			display_message(INFORMATION_MESSAGE, "\n");					
+		}
+		return_code = 1;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Computed_field_core::list.  Missing field");
+		return_code = 0;
+	}
+
+	return (return_code);
+} /* Computed_field_core::list */
+
+char *Computed_field_core::get_command_string()
+/*******************************************************************************
+LAST MODIFIED : 25 August 2006
+
+DESCRIPTION :
+Default listing of source fields and source values.
+==============================================================================*/
+{
+	char *command_string, *field_name, temp_string[40];
+	int error, i;
+
+	ENTER(Computed_field_get_command_string(filter));
+	command_string = (char *)NULL;
+	if (field)
+	{
+		error = 0;
+		append_string(&command_string, get_type_string(), &error);
+		if (0 < field->number_of_source_fields)
+		{
+			append_string(&command_string, " fields ", &error);
+			for (i = 0 ; i < field->number_of_source_fields ; i++)
+			{
+				if (GET_NAME(Computed_field)(field->source_fields[i], &field_name))
+				{
+					make_valid_token(&field_name);
+					append_string(&command_string, field_name, &error);
+					DEALLOCATE(field_name);
+				}
+			}
+		}
+		if (0 < field->number_of_source_values)
+		{
+			append_string(&command_string, " values", &error);
+			for (i = 0 ; i < field->number_of_source_values ; i++)
+			{
+				sprintf(temp_string, " %g", field->source_values[i]);
+				append_string(&command_string, temp_string, &error);
+			}
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Computed_field_core::get_command_string.  Missing field");
+	}
+
+	return (command_string);
+} /* Computed_field_core::get_command_string */
 
 struct Computed_field_package *CREATE(Computed_field_package)(void)
 /*******************************************************************************

@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : computed_field_fibres.c
 
-LAST MODIFIED : 14 August 2006
+LAST MODIFIED : 24 August 2006
 
 DESCRIPTION :
 Implements a number of basic continuum mechanics fibres operations on
@@ -61,75 +61,52 @@ struct Computed_field_fibres_package
 	struct MANAGER(Computed_field) *computed_field_manager;
 };
 
-static char computed_field_fibre_axes_type_string[] = "fibre_axes";
+namespace {
 
-int Computed_field_is_type_fibre_axes(struct Computed_field *field)
-/*******************************************************************************
-LAST MODIFIED : 14 August 2006
+char computed_field_fibre_axes_type_string[] = "fibre_axes";
 
-DESCRIPTION :
-Returns true if <field> has the appropriate static type string.
-==============================================================================*/
+class Computed_field_fibre_axes : public Computed_field_core
 {
-	int return_code;
-
-	ENTER(Computed_field_is_type_fibre_axes);
-	if (field)
+public:
+	Computed_field_fibre_axes(Computed_field *field) : Computed_field_core(field)
 	{
-		return_code =
-			(field->type_string == computed_field_fibre_axes_type_string);
-	}
-	else
+	};
+
+private:
+	Computed_field_core *copy(Computed_field* new_parent)
 	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_is_type_fibre_axes.  Missing field");
-		return_code = 0;
+		return new Computed_field_fibre_axes(new_parent);
 	}
-	LEAVE;
 
-	return (return_code);
-} /* Computed_field_is_type_fibre_axes */
+	char *get_type_string()
+	{
+		return(computed_field_fibre_axes_type_string);
+	}
 
-#define Computed_field_fibre_axes_clear_type_specific \
-   Computed_field_default_clear_type_specific
+	int compare(Computed_field_core* other_field)
+	{
+		if (dynamic_cast<Computed_field_fibre_axes*>(other_field))
+		{
+			return 1;
+		}
+		else
+		{
+			return 0;
+		}
+	}
+
+	int evaluate_cache_at_location(Field_location* location);
+
+	int list();
+
+	char* get_command_string();
+
+	int is_defined_at_location(Field_location* location);
+};
+
+int Computed_field_fibre_axes::is_defined_at_location(Field_location* location)
 /*******************************************************************************
-LAST MODIFIED : 14 August 2006
-
-DESCRIPTION :
-No type specific data
-==============================================================================*/
-
-#define Computed_field_fibre_axes_copy_type_specific \
-   Computed_field_default_copy_type_specific
-/*******************************************************************************
-LAST MODIFIED : 14 August 2006
-
-DESCRIPTION :
-No type specific data
-==============================================================================*/
-
-#define Computed_field_fibre_axes_clear_cache_type_specific \
-   (Computed_field_clear_cache_type_specific_function)NULL
-/*******************************************************************************
-LAST MODIFIED : 14 August 2006
-
-DESCRIPTION :
-This function is not needed for this type.
-==============================================================================*/
-
-#define Computed_field_fibre_axes_type_specific_contents_match \
-   Computed_field_default_type_specific_contents_match
-/*******************************************************************************
-LAST MODIFIED : 14 August 2006
-
-DESCRIPTION :
-No type specific data
-==============================================================================*/
-
-int Computed_field_fibre_axes_is_defined_at_location(
-	struct Computed_field *field, Field_location* location)
-/*******************************************************************************
-LAST MODIFIED : 14 August 2006
+LAST MODIFIED : 24 August 2006
 
 DESCRIPTION :
 Check the source fields using the default.
@@ -137,7 +114,7 @@ Check the source fields using the default.
 {
 	int return_code;
 
-	ENTER(Computed_field_fibre_axes_is_defined_at_location);
+	ENTER(Computed_field_fibre_axes::is_defined_at_location);
 	if (field && location)
 	{
 		Field_element_xi_location* element_xi_location;
@@ -148,7 +125,7 @@ Check the source fields using the default.
   			&& (2 <= get_FE_element_dimension(element_xi_location->get_element())))
 		{
 			/* check the source fields */
-			return_code = Computed_field_default_is_defined_at_location(field,location);
+			return_code = Computed_field_core::is_defined_at_location(location);
 		}
 		else
 		{
@@ -158,57 +135,18 @@ Check the source fields using the default.
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Computed_field_2d_strain_is_defined_at_location.  Invalid argument(s)");
+			"Computed_field_2d_strain::is_defined_at_location.  Invalid argument(s)");
 		return_code = 0;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* Computed_field_fibre_axes_is_defined_at_location */
+} /* Computed_field_fibre_axes::is_defined_at_location */
 
-int Computed_field_fibre_axes_is_defined_at_node(struct Computed_field *field,
-	struct FE_node *node)
+int Computed_field_fibre_axes::evaluate_cache_at_location(
+    Field_location* location)
 /*******************************************************************************
-LAST MODIFIED : 14 August 2006
-
-DESCRIPTION :
-Returns 0.
-==============================================================================*/
-{
-	int return_code;
-
-	ENTER(Computed_field_default_is_defined_at_node);
-	USE_PARAMETER(field);
-	USE_PARAMETER(node);
-	/* fibre_axes can only be calculated in elements */
-	return_code=0;
-	LEAVE;
-
-	return (return_code);
-} /* Computed_field_default_is_defined_at_node */
-
-#define Computed_field_fibre_axes_has_numerical_components \
-	Computed_field_default_has_numerical_components
-/*******************************************************************************
-LAST MODIFIED : 14 August 2006
-
-DESCRIPTION :
-Window projection does have numerical components.
-==============================================================================*/
-
-#define Computed_field_fibre_axes_not_in_use \
-	(Computed_field_not_in_use_function)NULL
-/*******************************************************************************
-LAST MODIFIED : 14 August 2006
-
-DESCRIPTION :
-No special criteria.
-==============================================================================*/
-
-static int Computed_field_fibre_axes_evaluate_cache_at_location(
-   struct Computed_field *field, Field_location* location)
-/*******************************************************************************
-LAST MODIFIED : 14 August 2006
+LAST MODIFIED : 24 August 2006
 
 DESCRIPTION :
 Compute the three 3-component fibre axes in the order fibre, sheet, normal from
@@ -231,7 +169,7 @@ Derivatives may not be computed for this type of Computed_field [yet].
 	int return_code,top_level_element_dimension;
 	struct Computed_field *coordinate_field, *fibre_field;
 
-	ENTER(Computed_field_fibre_axes_evaluate_cache_at_location);
+	ENTER(Computed_field_fibre_axes::evaluate_cache_at_location);
 
 	Field_element_xi_location* element_xi_location;
 	/* Only works for element_xi locations */
@@ -398,7 +336,7 @@ Derivatives may not be computed for this type of Computed_field [yet].
 			else
 			{
 				display_message(ERROR_MESSAGE,
-					"Computed_field_fibre_axes_evaluate_cache_at_location.  "
+					"Computed_field_fibre_axes::evaluate_cache_at_location.  "
 					"Could not evaluate source fields");
 				return_code = 0;
 			}
@@ -406,7 +344,7 @@ Derivatives may not be computed for this type of Computed_field [yet].
 		else
 		{
 			display_message(ERROR_MESSAGE,
-				"Computed_field_fibre_axes_evaluate_cache_at_location.  "
+				"Computed_field_fibre_axes::evaluate_cache_at_location.  "
 				"Cannot calculate derivatives of fibre axes");
 			return_code = 0;
 		}
@@ -414,48 +352,19 @@ Derivatives may not be computed for this type of Computed_field [yet].
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Computed_field_fibre_axes_evaluate_cache_at_location.  "
+			"Computed_field_fibre_axes::evaluate_cache_at_location.  "
 			"Invalid argument(s)");
 		return_code = 0;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* Computed_field_fibre_axes_evaluate_cache_at_location */
+} /* Computed_field_fibre_axes::evaluate_cache_at_location */
 
-#define Computed_field_fibre_axes_set_values_at_location \
-   (Computed_field_set_values_at_location_function)NULL
+
+int Computed_field_fibre_axes::list()
 /*******************************************************************************
-LAST MODIFIED : 14 August 2006
-
-DESCRIPTION :
-Not implemented yet.
-==============================================================================*/
-
-#define Computed_field_fibre_axes_get_native_discretization_in_element \
-	Computed_field_default_get_native_discretization_in_element
-/*******************************************************************************
-LAST MODIFIED : 14 August 2006
-
-DESCRIPTION :
-Inherit result from first source field.
-==============================================================================*/
-
-#define Computed_field_fibre_axes_find_element_xi \
-   (Computed_field_find_element_xi_function)NULL
-/*******************************************************************************
-LAST MODIFIED : 14 August 2006
-
-DESCRIPTION :
-Not implemented yet.
-==============================================================================*/
-
-#define Computed_field_fibre_axes_get_native_resolution \
-	(Computed_field_get_native_resolution_function)NULL
-
-static int list_Computed_field_fibre_axes(struct Computed_field *field)
-/*******************************************************************************
-LAST MODIFIED : 14 August 2006
+LAST MODIFIED : 24 August 2006
 
 DESCRIPTION :
 ==============================================================================*/
@@ -482,10 +391,10 @@ DESCRIPTION :
 	return (return_code);
 } /* list_Computed_field_fibre_axes */
 
-static char *Computed_field_fibre_axes_get_command_string(
-	struct Computed_field *field)
+char *Computed_field_fibre_axes::get_command_string(
+	)
 /*******************************************************************************
-LAST MODIFIED : 14 August 2006
+LAST MODIFIED : 24 August 2006
 
 DESCRIPTION :
 Returns allocated command string for reproducing field. Includes type.
@@ -494,7 +403,7 @@ Returns allocated command string for reproducing field. Includes type.
 	char *command_string, *field_name;
 	int error;
 
-	ENTER(Computed_field_fibre_axes_get_command_string);
+	ENTER(Computed_field_fibre_axes::get_command_string);
 	command_string = (char *)NULL;
 	if (field)
 	{
@@ -519,26 +428,19 @@ Returns allocated command string for reproducing field. Includes type.
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Computed_field_fibre_axes_get_command_string.  Invalid field");
+			"Computed_field_fibre_axes::get_command_string.  Invalid field");
 	}
 	LEAVE;
 
 	return (command_string);
-} /* Computed_field_fibre_axes_get_command_string */
+} /* Computed_field_fibre_axes::get_command_string */
 
-#define Computed_field_fibre_axes_has_multiple_times \
-	Computed_field_default_has_multiple_times
-/*******************************************************************************
-LAST MODIFIED : 14 August 2006
-
-DESCRIPTION :
-Works out whether time influences the field.
-==============================================================================*/
+} //namespace
 
 int Computed_field_set_type_fibre_axes(struct Computed_field *field,
 	struct Computed_field *fibre_field,struct Computed_field *coordinate_field)
 /*******************************************************************************
-LAST MODIFIED : 14 August 2006
+LAST MODIFIED : 24 August 2006
 
 DESCRIPTION :
 Converts <field> to type COMPUTED_FIELD_FIBRE_AXES, combining a fibre and
@@ -574,17 +476,13 @@ while the field is in use. Not sure if we want that restriction.
 			/* 2. free current type-specific data */
 			Computed_field_clear_type(field);
 			/* 3. establish the new type */
-			field->type_string = computed_field_fibre_axes_type_string;
 			field->number_of_components=9;
 			/* source_fields: 0=fibre, 1=coordinate */
 			temp_source_fields[0]=ACCESS(Computed_field)(fibre_field);
 			temp_source_fields[1]=ACCESS(Computed_field)(coordinate_field);
 			field->source_fields=temp_source_fields;
 			field->number_of_source_fields=number_of_source_fields;
-			field->type_specific_data = (void *)1;
-
-			/* Set all the methods */
-			COMPUTED_FIELD_ESTABLISH_METHODS(fibre_axes);
+			field->core = new Computed_field_fibre_axes(field);
 		}
 		else
 		{
@@ -607,7 +505,7 @@ while the field is in use. Not sure if we want that restriction.
 int Computed_field_get_type_fibre_axes(struct Computed_field *field,
 	struct Computed_field **fibre_field,struct Computed_field **coordinate_field)
 /*******************************************************************************
-LAST MODIFIED : 14 August 2006
+LAST MODIFIED : 24 August 2006
 
 DESCRIPTION :
 If the field is of type COMPUTED_FIELD_FIBRE_AXES, the fibre and coordinate
@@ -617,7 +515,7 @@ fields used by it are returned - otherwise an error is reported.
 	int return_code;
 
 	ENTER(Computed_field_get_type_fibre_axes);
-	if (field && (field->type_string == computed_field_fibre_axes_type_string) &&
+	if (field && (dynamic_cast<Computed_field_fibre_axes*>(field->core)) &&
 		fibre_field && coordinate_field)
 	{
 		/* source_fields: 0=fibre, 1=coordinate */
@@ -636,10 +534,10 @@ fields used by it are returned - otherwise an error is reported.
 	return (return_code);
 } /* Computed_field_get_type_fibre_axes */
 
-static int define_Computed_field_type_fibre_axes(struct Parse_state *state,
+int define_Computed_field_type_fibre_axes(struct Parse_state *state,
 	void *field_void,void *computed_field_fibres_package_void)
 /*******************************************************************************
-LAST MODIFIED : 14 August 2006
+LAST MODIFIED : 24 August 2006
 
 DESCRIPTION :
 Converts <field> into type COMPUTED_FIELD_FIBRE_AXES (if it is not already) and
@@ -727,7 +625,7 @@ allows its contents to be modified.
 int Computed_field_register_types_fibres(
 	struct Computed_field_package *computed_field_package)
 /*******************************************************************************
-LAST MODIFIED : 14 August 2006
+LAST MODIFIED : 24 August 2006
 
 DESCRIPTION :
 ==============================================================================*/

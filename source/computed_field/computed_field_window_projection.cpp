@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : computed_field_window_projection.c
 
-LAST MODIFIED : 14 August 2006
+LAST MODIFIED : 25 August 2006
 
 DESCRIPTION :
 Implements a computed_field which maintains a graphics transformation 
@@ -63,29 +63,97 @@ struct Computed_field_window_projection_package
 	struct MANAGER(Graphics_window) *graphics_window_manager;
 };
 
-struct Computed_field_window_projection_type_specific_data
+namespace {
+
+char computed_field_window_projection_type_string[] = "window_projection";
+
+void Computed_field_window_projection_scene_viewer_callback(
+	struct Scene_viewer *scene_viewer, void *dummy_void, void *field_void);
+
+void Computed_field_window_projection_scene_viewer_destroy_callback(
+	struct Scene_viewer *scene_viewer, void *dummy_void, void *field_void);
+
+class Computed_field_window_projection : public Computed_field_core
 {
+public:
 	/* Hold onto the graphics window name so we can write out the command. */
 	char *graphics_window_name;
-	double *projection_matrix;
-	enum Computed_field_window_projection_type projection_type;
 	int pane_number;
+
 	/* The scene_viewer is not accessed by the computed field so that we
 		can still destroy the window and so the computed field responds to
 		a destroy callback and then must evaluate correctly with a NULL scene_viewer */
 	struct Scene_viewer *scene_viewer;
+
+	enum Computed_field_window_projection_type projection_type;
+
+	struct MANAGER(Computed_field) *computed_field_manager;
+
 	/* This flag indicates if the field has registered for callbacks with the
 		scene_viewer */
 	int scene_viewer_callback_flag;
-	struct MANAGER(Computed_field) *computed_field_manager;
+
+	double *projection_matrix;
+
+	Computed_field_window_projection(Computed_field *field, 
+		char *graphics_window_name, int pane_number, 
+		Scene_viewer *scene_viewer, 
+		enum Computed_field_window_projection_type projection_type,
+		struct MANAGER(Computed_field) *computed_field_manager) : 
+		Computed_field_core(field), 
+		graphics_window_name(duplicate_string(graphics_window_name)),
+		pane_number(pane_number), scene_viewer(scene_viewer),
+		projection_type(projection_type), computed_field_manager(computed_field_manager)
+	{
+		scene_viewer_callback_flag = 0;
+		projection_matrix = (double*)NULL;
+		Scene_viewer_add_destroy_callback(scene_viewer, 
+			Computed_field_window_projection_scene_viewer_destroy_callback,
+			(void *)field);
+	};
+
+	~Computed_field_window_projection();
+
+private:
+	Computed_field_core *copy(Computed_field* new_parent)
+	{
+		return new Computed_field_window_projection(new_parent,
+			graphics_window_name, pane_number, scene_viewer, projection_type,
+			computed_field_manager);
+	}
+
+	char *get_type_string()
+	{
+		return(computed_field_window_projection_type_string);
+	}
+
+	int compare(Computed_field_core* other_field);
+
+	int evaluate_cache_at_location(Field_location* location);
+
+	int list();
+
+	char* get_command_string();
+
+	char *projection_type_string(
+		enum Computed_field_window_projection_type projection_type);
+
+	int calculate_matrix();
+
+	int evaluate_projection_matrix(
+		int element_dimension, int calculate_derivatives);
+
+	int set_values_at_location(Field_location* location, FE_value *values);
+
+	int find_element_xi( 
+		FE_value *values, int number_of_values, struct FE_element **element,
+		FE_value *xi, int element_dimension, struct Cmiss_region *search_region);
 };
 
-static char computed_field_window_projection_type_string[] = "window_projection";
-
-static char *Computed_field_window_projection_type_string(
+char *Computed_field_window_projection::projection_type_string(
 	enum Computed_field_window_projection_type projection_type)
 /*******************************************************************************
-LAST MODIFIED : 14 August 2006
+LAST MODIFIED : 25 August 2006
 
 DESCRIPTION :
 Returns a string label for the <projection_type>, used in widgets and parsing.
@@ -132,113 +200,11 @@ NOTE: Calling function must not deallocate returned string.
 	LEAVE;
 
 	return (return_string);
-} /* Computed_field_window_projection_type_string */
+} /* Computed_field_window_projection::projection_type_string */
 
-int Computed_field_is_type_window_projection(struct Computed_field *field)
+int Computed_field_window_projection::calculate_matrix()
 /*******************************************************************************
-LAST MODIFIED : 14 August 2006
-
-DESCRIPTION :
-==============================================================================*/
-{
-	int return_code;
-
-	ENTER(Computed_field_is_type_window_projection);
-	if (field)
-	{
-		return_code = (field->type_string == computed_field_window_projection_type_string);
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_is_type_window_projection.  Missing field");
-		return_code=0;
-	}
-
-	return (return_code);
-} /* Computed_field_is_type_window_projection */
-
-static void Computed_field_window_projection_scene_viewer_callback(
-	struct Scene_viewer *scene_viewer, void *dummy_void, void *field_void)
-/*******************************************************************************
-LAST MODIFIED : 14 August 2006
-
-DESCRIPTION :
-Clear the projection matrix as it is no longer valid and notify the manager
-that the computed field has changed.
-==============================================================================*/
-{
-	struct Computed_field *field;
-	struct Computed_field_window_projection_type_specific_data *data;
-
-	USE_PARAMETER(dummy_void);
-	ENTER(Computed_field_window_projection_scene_viewer_callback);
-	if (scene_viewer && (field = (struct Computed_field *)field_void) && 
-		(data = (struct Computed_field_window_projection_type_specific_data *)
-		field->type_specific_data))
-	{
-		if (data->projection_matrix)
-		{
-			DEALLOCATE(data->projection_matrix);
-			data->projection_matrix = (double *)NULL;
-		}
-		Computed_field_changed(field, data->computed_field_manager);
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_window_projection_scene_viewer_callback.  "
-			"Invalid arguments.");
-	}
-	LEAVE;
-} /* Computed_field_window_projection_scene_viewer_callback */
-
-static void Computed_field_window_projection_scene_viewer_destroy_callback(
-	struct Scene_viewer *scene_viewer, void *dummy_void, void *field_void)
-/*******************************************************************************
-LAST MODIFIED : 14 August 2006
-
-DESCRIPTION :
-Clear the scene viewer reference when it is no longer valid.
-==============================================================================*/
-{
-	struct Computed_field *field;
-	struct Computed_field_window_projection_type_specific_data *data;
-
-	USE_PARAMETER(dummy_void);
-	ENTER(Computed_field_window_projection_scene_viewer_destroy_callback);
-	if (scene_viewer && (field = (struct Computed_field *)field_void) && 
-		(data = (struct Computed_field_window_projection_type_specific_data *)
-		field->type_specific_data))
-	{
-		if (data->scene_viewer_callback_flag)
-		{
-			Scene_viewer_remove_transform_callback(data->scene_viewer, 
-			  Computed_field_window_projection_scene_viewer_callback,
-			  (void *)field);
-			data->scene_viewer_callback_flag = 0;
-		}
-		if (data->graphics_window_name)
-		{
-			DEALLOCATE(data->graphics_window_name);
-		}
-		data->pane_number = 0;
-		data->scene_viewer = (struct Scene_viewer *)NULL;
-		Computed_field_changed(field, data->computed_field_manager);
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_window_projection_scene_viewer_callback.  "
-			"Invalid arguments.");
-	}
-	LEAVE;
-} /* Computed_field_window_projection_scene_viewer_callback */
-
-static int Computed_field_window_projection_calculate_matrix(
-	struct Computed_field *field)
-/*******************************************************************************
-LAST MODIFIED : 14 August 2006
+LAST MODIFIED : 25 August 2006
 
 DESCRIPTION :
 ==============================================================================*/
@@ -253,25 +219,20 @@ DESCRIPTION :
 		texture_width, texture_height, texture_depth;
 	int bk_texture_undistort_on, i, j, k, lu_index[4], return_code,
 		viewport_width, viewport_height;
-	struct Computed_field_window_projection_type_specific_data *data;
-	struct Scene_viewer *scene_viewer;
 	struct Texture *texture;
 
 	ENTER(Computed_field_window_projection_calculate_matrix);
-	if (field && (data = 
-		(struct Computed_field_window_projection_type_specific_data *)
-		field->type_specific_data) && (scene_viewer = data->scene_viewer))
+	if (field)
 	{
-		if (data->projection_matrix ||
-			ALLOCATE(data->projection_matrix, double, 16))
+		if (projection_matrix || ALLOCATE(projection_matrix, double, 16))
 		{
 			return_code = 1;
 			/* make sure we are getting scene viewer callbacks once the
 				 projection matrix exists */
-			if (!data->scene_viewer_callback_flag)
+			if (!scene_viewer_callback_flag)
 			{
-				data->scene_viewer_callback_flag = 
-					Scene_viewer_add_transform_callback(data->scene_viewer, 
+				scene_viewer_callback_flag = 
+					Scene_viewer_add_transform_callback(scene_viewer, 
 						Computed_field_window_projection_scene_viewer_callback,
 						(void *)field);
 			}
@@ -293,15 +254,15 @@ DESCRIPTION :
 						}
 					}
 				}
-				if (data->projection_type == NDC_PROJECTION)
+				if (projection_type == NDC_PROJECTION)
 				{
 					/* ndc_projection */
 					for (i=0;i<16;i++)
 					{
-						data->projection_matrix[i] = total_projection_matrix[i];
+						projection_matrix[i] = total_projection_matrix[i];
 					}
 				}
-				else if (data->projection_type == INVERSE_NDC_PROJECTION)
+				else if (projection_type == INVERSE_NDC_PROJECTION)
 				{
 					if (LU_decompose(/* dimension */4, total_projection_matrix,
 						lu_index, &lu_d,/*singular_tolerance*/1.0e-12))
@@ -310,21 +271,21 @@ DESCRIPTION :
 						{
 							for (j = 0 ; j < 4 ; j++)
 							{
-								data->projection_matrix[i * 4 + j] = 0.0;
+								projection_matrix[i * 4 + j] = 0.0;
 							}
-							data->projection_matrix[i * 4 + i] = 1.0;
+							projection_matrix[i * 4 + i] = 1.0;
 							LU_backsubstitute(/* dimension */4, total_projection_matrix,
-								lu_index, data->projection_matrix + i * 4);
+								lu_index, projection_matrix + i * 4);
 						}
 						/* transpose */
 						for (i = 0 ; i < 4 ; i++)
 						{
 							for (j = i + 1 ; j < 4 ; j++)
 							{
-								lu_d = data->projection_matrix[i * 4 + j];
-								data->projection_matrix[i * 4 + j] =
-									data->projection_matrix[j * 4 + i];
-								data->projection_matrix[j * 4 + i] = lu_d;
+								lu_d = projection_matrix[i * 4 + j];
+								projection_matrix[i * 4 + j] =
+									projection_matrix[j * 4 + i];
+								projection_matrix[j * 4 + i] = lu_d;
 							}
 						}
 					}
@@ -388,15 +349,15 @@ DESCRIPTION :
 							}
 						}
 					}
-					if (data->projection_type == VIEWPORT_PROJECTION)
+					if (projection_type == VIEWPORT_PROJECTION)
 					{
 						/* viewport_projection */
 						for (i=0;i<16;i++)
 						{
-							data->projection_matrix[i] = viewport_matrix[i];
+							projection_matrix[i] = viewport_matrix[i];
 						}
 					}
-					else if (data->projection_type == INVERSE_VIEWPORT_PROJECTION)
+					else if (projection_type == INVERSE_VIEWPORT_PROJECTION)
 					{
 						if (LU_decompose(/* dimension */4, viewport_matrix,
 							lu_index, &lu_d,/*singular_tolerance*/1.0e-12))
@@ -405,21 +366,21 @@ DESCRIPTION :
 							{
 								for (j = 0 ; j < 4 ; j++)
 								{
-									data->projection_matrix[i * 4 + j] = 0.0;
+									projection_matrix[i * 4 + j] = 0.0;
 								}
-								data->projection_matrix[i * 4 + i] = 1.0;
+								projection_matrix[i * 4 + i] = 1.0;
 								LU_backsubstitute(/* dimension */4, viewport_matrix,
-									lu_index, data->projection_matrix + i * 4);
+									lu_index, projection_matrix + i * 4);
 							}
 							/* transpose */
 							for (i = 0 ; i < 4 ; i++)
 							{
 								for (j = i + 1 ; j < 4 ; j++)
 								{
-									lu_d = data->projection_matrix[i * 4 + j];
-									data->projection_matrix[i * 4 + j] =
-										data->projection_matrix[j * 4 + i];
-									data->projection_matrix[j * 4 + i] = lu_d;
+									lu_d = projection_matrix[i * 4 + j];
+									projection_matrix[i * 4 + j] =
+										projection_matrix[j * 4 + i];
+									projection_matrix[j * 4 + i] = lu_d;
 								}
 							}
 						}
@@ -447,11 +408,11 @@ DESCRIPTION :
 								{
 									if (i % 5)
 									{
-										data->projection_matrix[i] = 0;
+										projection_matrix[i] = 0;
 									}
 									else
 									{
-										data->projection_matrix[i] = 1;
+										projection_matrix[i] = 1;
 									}
 								}
 							}
@@ -509,14 +470,14 @@ DESCRIPTION :
 										}
 									}
 								}
-								if (data->projection_type == TEXTURE_PROJECTION)
+								if (projection_type == TEXTURE_PROJECTION)
 								{
 									for (i=0;i<16;i++)
 									{
-										data->projection_matrix[i] = texture_projection_matrix[i];
+										projection_matrix[i] = texture_projection_matrix[i];
 									}
 								}
-								else if (data->projection_type == INVERSE_TEXTURE_PROJECTION)
+								else if (projection_type == INVERSE_TEXTURE_PROJECTION)
 								{
 									if (LU_decompose(/* dimension */4, texture_projection_matrix,
 										lu_index, &lu_d,/*singular_tolerance*/1.0e-12))
@@ -525,22 +486,22 @@ DESCRIPTION :
 										{
 											for (j = 0 ; j < 4 ; j++)
 											{
-												data->projection_matrix[i * 4 + j] = 0.0;
+												projection_matrix[i * 4 + j] = 0.0;
 											}
-											data->projection_matrix[i * 4 + i] = 1.0;
+											projection_matrix[i * 4 + i] = 1.0;
 											LU_backsubstitute(/* dimension */4, 
 												texture_projection_matrix,
-												lu_index, data->projection_matrix + i * 4);
+												lu_index, projection_matrix + i * 4);
 										}
 										/* transpose */
 										for (i = 0 ; i < 4 ; i++)
 										{
 											for (j = i + 1 ; j < 4 ; j++)
 											{
-												lu_d = data->projection_matrix[i * 4 + j];
-												data->projection_matrix[i * 4 + j] =
-													data->projection_matrix[j * 4 + i];
-												data->projection_matrix[j * 4 + i] = lu_d;
+												lu_d = projection_matrix[i * 4 + j];
+												projection_matrix[i * 4 + j] =
+													projection_matrix[j * 4 + i];
+												projection_matrix[j * 4 + i] = lu_d;
 											}
 										}
 									}
@@ -565,11 +526,11 @@ DESCRIPTION :
 							{
 								if (i % 5)
 								{
-									data->projection_matrix[i] = 0;
+									projection_matrix[i] = 0;
 								}
 								else
 								{
-									data->projection_matrix[i] = 1;
+									projection_matrix[i] = 1;
 								}
 							}
 						}
@@ -587,10 +548,10 @@ DESCRIPTION :
 		if (!return_code)
 		{
 			/* Only keep projection_matrix if valid */
-			if (data->projection_matrix)
+			if (projection_matrix)
 			{
-				DEALLOCATE(data->projection_matrix);
-				data->projection_matrix = (double *)NULL;
+				DEALLOCATE(projection_matrix);
+				projection_matrix = (double *)NULL;
 			}
 		}
 	}
@@ -606,146 +567,68 @@ DESCRIPTION :
 	return (return_code);
 } /* Computed_field_window_projection_calculate_matrix */
 
-static int Computed_field_window_projection_clear_type_specific(
-	struct Computed_field *field)
+Computed_field_window_projection::~Computed_field_window_projection()
 /*******************************************************************************
-LAST MODIFIED : 14 August 2006
+LAST MODIFIED : 25 August 2006
 
 DESCRIPTION :
 Clear the type specific data used by this type.
 ==============================================================================*/
 {
-	int return_code;
-	struct Computed_field_window_projection_type_specific_data *data;
 
-	ENTER(Computed_field_window_projection_clear_type_specific);
-	if (field && (data = 
-		(struct Computed_field_window_projection_type_specific_data *)
-		field->type_specific_data))
+	ENTER(Computed_field_window_projection::~Computed_field_window_projection);
+	if (field)
 	{
-		if (data->scene_viewer_callback_flag)
+		if (scene_viewer_callback_flag)
 		{
-			Scene_viewer_remove_transform_callback(data->scene_viewer, 
+			Scene_viewer_remove_transform_callback(scene_viewer, 
 			  Computed_field_window_projection_scene_viewer_callback,
 			  (void *)field);
-			data->scene_viewer_callback_flag = 0;
+			scene_viewer_callback_flag = 0;
 		}
-		if (data->projection_matrix)
+		if (projection_matrix)
 		{
-			DEALLOCATE(data->projection_matrix);
+			DEALLOCATE(projection_matrix);
 		}
-		if (data->scene_viewer)
+		if (scene_viewer)
 		{
-			Scene_viewer_remove_destroy_callback(data->scene_viewer, 
+			Scene_viewer_remove_destroy_callback(scene_viewer, 
 				Computed_field_window_projection_scene_viewer_destroy_callback,
 				(void *)field);
 		}
-		if (data->graphics_window_name)
+		if (graphics_window_name)
 		{
-			DEALLOCATE(data->graphics_window_name);
-		}
-		DEALLOCATE(field->type_specific_data);
-		return_code = 1;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_window_projection_clear_type_specific.  "
-			"Invalid arguments.");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Computed_field_window_projection_clear_type_specific */
-
-static void *Computed_field_window_projection_copy_type_specific(
-	struct Computed_field *source_field, struct Computed_field *destination_field)
-/*******************************************************************************
-LAST MODIFIED : 14 August 2006
-
-DESCRIPTION :
-Copy the type specific data used by this type.
-==============================================================================*/
-{
-	struct Computed_field_window_projection_type_specific_data *destination,
-		*source;
-
-	ENTER(Computed_field_window_projection_copy_type_specific);
-	if (source_field && destination_field && (source = 
-		(struct Computed_field_window_projection_type_specific_data *)
-		source_field->type_specific_data))
-	{
-		if (ALLOCATE(destination,
-			struct Computed_field_window_projection_type_specific_data, 1))
-		{
-			destination->projection_matrix = (double *)NULL;
-			destination->scene_viewer = source->scene_viewer;
-			if (destination->scene_viewer)
-			{
-				Scene_viewer_add_destroy_callback(destination->scene_viewer, 
-					Computed_field_window_projection_scene_viewer_destroy_callback,
-					(void *)destination_field);
-			}
-			destination->graphics_window_name = duplicate_string(source->graphics_window_name);
-			destination->pane_number = source->pane_number;
-			destination->projection_type = source->projection_type;
-			destination->computed_field_manager = source->computed_field_manager;
-			destination->scene_viewer_callback_flag = 0;
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"Computed_field_window_projection_copy_type_specific.  "
-				"Unable to allocate memory.");
-			destination = NULL;
+			DEALLOCATE(graphics_window_name);
 		}
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Computed_field_window_projection_copy_type_specific.  "
+			"Computed_field_window_projection::~Computed_field_window_projection.  "
 			"Invalid arguments.");
-		destination = NULL;
 	}
 	LEAVE;
 
-	return (destination);
-} /* Computed_field_window_projection_copy_type_specific */
+} /* Computed_field_window_projection::~Computed_field_window_projection */
 
-#define Computed_field_window_projection_clear_cache_type_specific \
-   (Computed_field_clear_cache_type_specific_function)NULL
+int Computed_field_window_projection::compare(Computed_field_core *other_core)
 /*******************************************************************************
-LAST MODIFIED : 14 August 2006
-
-DESCRIPTION :
-This function is not needed for this type.
-==============================================================================*/
-
-static int Computed_field_window_projection_type_specific_contents_match(
-	struct Computed_field *field, struct Computed_field *other_computed_field)
-/*******************************************************************************
-LAST MODIFIED : 14 August 2006
+LAST MODIFIED : 25 August 2006
 
 DESCRIPTION :
 Compare the type specific data
 ==============================================================================*/
 {
+	Computed_field_window_projection *other;
 	int return_code;
-	struct Computed_field_window_projection_type_specific_data *data,
-		*other_data;
 
-	ENTER(Computed_field_window_projection_type_specific_contents_match);
-	if (field && other_computed_field && (data = 
-		(struct Computed_field_window_projection_type_specific_data *)
-		field->type_specific_data) && (other_data =
-		(struct Computed_field_window_projection_type_specific_data *)
-		other_computed_field->type_specific_data))
+	ENTER(Computed_field_window_projection::compare);
+	if (field && (other = dynamic_cast<Computed_field_window_projection*>(other_core)))
 	{
-		if ((!strcmp(data->graphics_window_name, other_data->graphics_window_name)) &&
-			(data->scene_viewer == other_data->scene_viewer) &&
-			(data->pane_number == other_data->pane_number) &&
-			(data->projection_type == other_data->projection_type))
+		if ((!strcmp(graphics_window_name, other->graphics_window_name)) &&
+			(scene_viewer == other->scene_viewer) &&
+			(pane_number == other->pane_number) &&
+			(projection_type == other->projection_type))
 		{
 			return_code = 1;
 		}
@@ -761,40 +644,12 @@ Compare the type specific data
 	LEAVE;
 
 	return (return_code);
-} /* Computed_field_window_projection_type_specific_contents_match */
+} /* Computed_field_window_projection::compare */
 
-#define Computed_field_window_projection_is_defined_at_location \
-	Computed_field_default_is_defined_at_location
-/*******************************************************************************
-LAST MODIFIED : 14 August 2006
-
-DESCRIPTION :
-Check the source fields using the default.
-==============================================================================*/
-
-#define Computed_field_window_projection_has_numerical_components \
-	Computed_field_default_has_numerical_components
-/*******************************************************************************
-LAST MODIFIED : 14 August 2006
-
-DESCRIPTION :
-Window projection does have numerical components.
-==============================================================================*/
-
-#define Computed_field_window_projection_not_in_use \
-	(Computed_field_not_in_use_function)NULL
-/*******************************************************************************
-LAST MODIFIED : 14 August 2006
-
-DESCRIPTION :
-No special criteria.
-==============================================================================*/
-
-static int Computed_field_evaluate_projection_matrix(
-	struct Computed_field *field,
+int Computed_field_window_projection::evaluate_projection_matrix(
 	int element_dimension, int calculate_derivatives)
 /*******************************************************************************
-LAST MODIFIED : 14 August 2006
+LAST MODIFIED : 25 August 2006
 
 DESCRIPTION :
 Function called by Computed_field_evaluate_in_element to compute a field
@@ -804,22 +659,17 @@ NOTE: Assumes that values and derivatives arrays are already allocated in
 for the same element, with the given <element_dimension> = number of Xi coords.
 ==============================================================================*/
 {
-	double dhdxi, dh1dxi, perspective, *projection_matrix;
+	double dhdxi, dh1dxi, perspective;
 	int coordinate_components, i, j, k,return_code;
-	struct Computed_field_window_projection_type_specific_data *data;
 	
 	ENTER(Computed_field_evaluate_projection_matrix);
-	if (field&&(computed_field_window_projection_type_string==field->type_string)&&
-		(data = (struct Computed_field_window_projection_type_specific_data *)
-		field->type_specific_data))
+	if (field)
 	{
-		if (data->scene_viewer)
+		if (scene_viewer)
 		{
-			if (data->projection_matrix ||
-				Computed_field_window_projection_calculate_matrix(field))
+			if (projection_matrix || calculate_matrix())
 			{
 				return_code = 1;
-				projection_matrix = data->projection_matrix;
 				if (calculate_derivatives)
 				{
 					field->derivatives_valid=1;
@@ -924,10 +774,10 @@ for the same element, with the given <element_dimension> = number of Xi coords.
 	return (return_code);
 } /* Computed_field_evaluate_projection_matrix */
 
-static int Computed_field_window_projection_evaluate_cache_at_location(
-   struct Computed_field *field, Field_location* location)
+int Computed_field_window_projection::evaluate_cache_at_location(
+    Field_location* location)
 /*******************************************************************************
-LAST MODIFIED : 14 August 2006
+LAST MODIFIED : 25 August 2006
 
 DESCRIPTION :
 Evaluate the fields cache at the location
@@ -935,7 +785,7 @@ Evaluate the fields cache at the location
 {
 	int return_code;
 
-	ENTER(Computed_field_window_projection_evaluate_cache_at_location);
+	ENTER(Computed_field_window_projection::evaluate_cache_at_location);
 	if (field && location)
 	{
 		/* 1. Precalculate any source fields that this field depends on */
@@ -943,28 +793,27 @@ Evaluate the fields cache at the location
 			Computed_field_evaluate_source_fields_cache_at_location(field, location))
 		{
 			/* 2. Calculate the field */
-			return_code = Computed_field_evaluate_projection_matrix(
-				field, location->get_number_of_derivatives(),
+			return_code = evaluate_projection_matrix(
+				location->get_number_of_derivatives(),
 				(0 < location->get_number_of_derivatives()));
 		}
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Computed_field_window_projection_evaluate_cache_at_location.  "
+			"Computed_field_window_projection::evaluate_cache_at_location.  "
 			"Invalid arguments.");
 		return_code = 0;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* Computed_field_window_projection_evaluate_cache_at_location */
+} /* Computed_field_window_projection::evaluate_cache_at_location */
 
-static int Computed_field_window_projection_set_values_at_location(
-	Computed_field* field,
+int Computed_field_window_projection::set_values_at_location(
    Field_location* location, FE_value *values)
 /*******************************************************************************
-LAST MODIFIED : 14 August 2006
+LAST MODIFIED : 25 August 2006
 
 DESCRIPTION :
 Sets the <values> of the computed <field> at <location>.
@@ -973,21 +822,16 @@ Sets the <values> of the computed <field> at <location>.
 	double d,lu_matrix[16],result[4];
 	int indx[4],return_code;
 	FE_value source_values[3];
-	struct Computed_field_window_projection_type_specific_data *data;
 	
-	ENTER(Computed_field_window_projection_set_values_at_location);
-	if (field && location && values && 
-		(computed_field_window_projection_type_string == field->type_string) &&
-		(data = (struct Computed_field_window_projection_type_specific_data *)
-			field->type_specific_data))
+	ENTER(Computed_field_window_projection::set_values_at_location);
+	if (field && location && values)
 	{
 		field->derivatives_valid = 0;
-		if (data->scene_viewer)
+		if (scene_viewer)
 		{
-			if (data->projection_matrix ||
-				Computed_field_window_projection_calculate_matrix(field))
+			if (projection_matrix || calculate_matrix())
 			{
-				copy_matrix(4,4,data->projection_matrix,lu_matrix);
+				copy_matrix(4,4,projection_matrix,lu_matrix);
 				result[0] = (double)values[0];
 				result[1] = (double)values[1];
 				result[2] = (double)values[2];
@@ -1005,7 +849,7 @@ Sets the <values> of the computed <field> at <location>.
 				else
 				{
 					display_message(ERROR_MESSAGE,
-						"Computed_field_window_projection_set_values_at_location.  "
+						"Computed_field_window_projection::set_values_at_location.  "
 						"Could not invert field %s",field->name);
 					return_code=0;
 				}
@@ -1013,7 +857,7 @@ Sets the <values> of the computed <field> at <location>.
 			else
 			{
 				display_message(ERROR_MESSAGE,
-					"Computed_field_window_projection_set_values_at_location.  "
+					"Computed_field_window_projection::set_values_at_location.  "
 					"Missing projection matrix for field %s",field->name);
 				return_code=0;
 			}
@@ -1021,7 +865,7 @@ Sets the <values> of the computed <field> at <location>.
 		else
 		{
 			display_message(ERROR_MESSAGE,
-				"Computed_field_window_projection_set_values_at_location.  "
+				"Computed_field_window_projection::set_values_at_location.  "
 				"Scene_viewer invalid.");
 			return_code = 0;
 		}
@@ -1029,31 +873,19 @@ Sets the <values> of the computed <field> at <location>.
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Computed_field_window_projection_set_values_at_location.  Invalid argument(s)");
+			"Computed_field_window_projection::set_values_at_location.  Invalid argument(s)");
 		return_code=0;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* Computed_field_window_projection_set_values_at_location */
+} /* Computed_field_window_projection::set_values_at_location */
 
-#define Computed_field_window_projection_get_native_discretization_in_element \
-	Computed_field_default_get_native_discretization_in_element
-/*******************************************************************************
-LAST MODIFIED : 14 August 2006
-
-DESCRIPTION :
-Inherit result from first source field.
-==============================================================================*/
-
-#define Computed_field_window_projection_get_native_resolution \
-	(Computed_field_get_native_resolution_function)NULL
-
-static int Computed_field_window_projection_find_element_xi(struct Computed_field *field, 
+int Computed_field_window_projection::find_element_xi( 
 	FE_value *values, int number_of_values, struct FE_element **element,
 	FE_value *xi, int element_dimension, struct Cmiss_region *search_region)
 /*******************************************************************************
-LAST MODIFIED : 14 August 2006
+LAST MODIFIED : 25 August 2006
 
 DESCRIPTION :
 ==============================================================================*/
@@ -1061,21 +893,17 @@ DESCRIPTION :
 	double d,lu_matrix[16],result[4];
 	int indx[4],return_code;
 	FE_value source_values[3];
-	struct Computed_field_window_projection_type_specific_data *data;
 
-	ENTER(Computed_field_window_projection_find_element_xi);
-	if (field && (data = 
-		(struct Computed_field_window_projection_type_specific_data *)
-		field->type_specific_data) && values
+	ENTER(Computed_field_window_projection::find_element_xi);
+	if (field && values
 		&&(number_of_values==field->number_of_components)&&element&&xi&&
 		search_region)
 	{
-		if (data->scene_viewer)
+		if (scene_viewer)
 		{
-			if (data->projection_matrix ||
-				Computed_field_window_projection_calculate_matrix(field))
+			if (projection_matrix || calculate_matrix())
 			{
-				copy_matrix(4,4,data->projection_matrix,lu_matrix);
+				copy_matrix(4,4,projection_matrix,lu_matrix);
 				result[0] = (double)values[0];
 				result[1] = (double)values[1];
 				result[2] = (double)values[2];
@@ -1095,7 +923,7 @@ DESCRIPTION :
 				else
 				{
 					display_message(ERROR_MESSAGE,
-						"Computed_field_window_projection_find_element_xi.  "
+						"Computed_field_window_projection::find_element_xi.  "
 						"Could not invert field %s",field->name);
 					return_code=0;
 				}
@@ -1103,7 +931,7 @@ DESCRIPTION :
 			else
 			{
 				display_message(ERROR_MESSAGE,
-					"Computed_field_window_projection_find_element_xi.  "
+					"Computed_field_window_projection::find_element_xi.  "
 					"Missing projection matrix for field %s",field->name);
 				return_code=0;
 			}
@@ -1111,7 +939,7 @@ DESCRIPTION :
 		else
 		{
 			display_message(ERROR_MESSAGE,
-				"Computed_field_window_projection_find_element_xi.  "
+				"Computed_field_window_projection::find_element_xi.  "
 				"Scene_viewer invalid.");
 			return_code=0;
 		}
@@ -1119,39 +947,35 @@ DESCRIPTION :
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Computed_field_window_projection_find_element_xi.  Invalid argument(s)");
+			"Computed_field_window_projection::find_element_xi.  Invalid argument(s)");
 		return_code=0;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* Computed_field_window_projection_find_element_xi */
+} /* Computed_field_window_projection::find_element_xi */
 
-static int list_Computed_field_window_projection(
-	struct Computed_field *field)
+int Computed_field_window_projection::list()
 /*******************************************************************************
-LAST MODIFIED : 14 August 2006
+LAST MODIFIED : 25 August 2006
 
 DESCRIPTION :
 ==============================================================================*/
 {
 	int return_code;
-	struct Computed_field_window_projection_type_specific_data *data;
 
 	ENTER(List_Computed_field_window_projection);
-	if (field && (data = 
-		(struct Computed_field_window_projection_type_specific_data *)
-		field->type_specific_data))
+	if (field)
 	{
 		return_code = 1;
 		display_message(INFORMATION_MESSAGE,"    source field : %s\n",
 			field->source_fields[0]->name);
 		display_message(INFORMATION_MESSAGE,"    window : %s\n",
-			data->graphics_window_name);
+			graphics_window_name);
 		display_message(INFORMATION_MESSAGE,"    pane number : %d\n",
-			data->pane_number + 1);
+			pane_number + 1);
 		display_message(INFORMATION_MESSAGE,"    projection type : %s\n",
-			Computed_field_window_projection_type_string(data->projection_type));
+			projection_type_string(projection_type));
 	}
 	else
 	{
@@ -1164,10 +988,9 @@ DESCRIPTION :
 	return (return_code);
 } /* list_Computed_field_window_projection */
 
-static char *Computed_field_window_projection_get_command_string(
-	struct Computed_field *field)
+char *Computed_field_window_projection::get_command_string()
 /*******************************************************************************
-LAST MODIFIED : 14 August 2006
+LAST MODIFIED : 25 August 2006
 
 DESCRIPTION :
 Returns allocated command string for reproducing field. Includes type.
@@ -1175,13 +998,10 @@ Returns allocated command string for reproducing field. Includes type.
 {
 	char *command_string, *field_name, temp_string[40];
 	int error;
-	struct Computed_field_window_projection_type_specific_data *data;
 
-	ENTER(Computed_field_window_projection_get_command_string);
+	ENTER(Computed_field_window_projection::get_command_string);
 	command_string = (char *)NULL;
-	if (field && (data = 
-		(struct Computed_field_window_projection_type_specific_data *)
-		field->type_specific_data))
+	if (field)
 	{
 		error = 0;
 		append_string(&command_string,
@@ -1194,31 +1014,99 @@ Returns allocated command string for reproducing field. Includes type.
 			DEALLOCATE(field_name);
 		}
 		append_string(&command_string, " window ", &error);
-		append_string(&command_string, data->graphics_window_name, &error);
-		sprintf(temp_string, " pane_number %d ", data->pane_number + 1);
+		append_string(&command_string, graphics_window_name, &error);
+		sprintf(temp_string, " pane_number %d ", pane_number + 1);
 		append_string(&command_string, temp_string, &error);
 		append_string(&command_string,
-			Computed_field_window_projection_type_string(data->projection_type),
+			projection_type_string(projection_type),
 			&error);
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Computed_field_window_projection_get_command_string.  Invalid field");
+			"Computed_field_window_projection::get_command_string.  Invalid field");
 	}
 	LEAVE;
 
 	return (command_string);
-} /* Computed_field_window_projection_get_command_string */
+} /* Computed_field_window_projection::get_command_string */
 
-#define Computed_field_window_projection_has_multiple_times \
-	Computed_field_default_has_multiple_times
+void Computed_field_window_projection_scene_viewer_callback(
+	struct Scene_viewer *scene_viewer, void *dummy_void, void *field_void)
 /*******************************************************************************
-LAST MODIFIED : 14 August 2006
+LAST MODIFIED : 25 August 2006
 
 DESCRIPTION :
-Works out whether time influences the field.
+Clear the projection matrix as it is no longer valid and notify the manager
+that the computed field has changed.
 ==============================================================================*/
+{
+	Computed_field* field;
+	Computed_field_window_projection* core;
+
+	USE_PARAMETER(dummy_void);
+	ENTER(Computed_field_window_projection_scene_viewer_callback);
+	if (scene_viewer && (field = (Computed_field *)field_void) && 
+		(core = dynamic_cast<Computed_field_window_projection*>(field->core)))
+	{
+		if (core->projection_matrix)
+		{
+			DEALLOCATE(core->projection_matrix);
+			core->projection_matrix = (double *)NULL;
+		}
+		Computed_field_changed(field, core->computed_field_manager);
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Computed_field_window_projection_scene_viewer_callback.  "
+			"Invalid arguments.");
+	}
+	LEAVE;
+} /* Computed_field_window_projection_scene_viewer_callback */
+
+void Computed_field_window_projection_scene_viewer_destroy_callback(
+	struct Scene_viewer *scene_viewer, void *dummy_void, void *field_void)
+/*******************************************************************************
+LAST MODIFIED : 25 August 2006
+
+DESCRIPTION :
+Clear the scene viewer reference when it is no longer valid.
+==============================================================================*/
+{
+	Computed_field* field;
+	Computed_field_window_projection* core;
+
+	USE_PARAMETER(dummy_void);
+	ENTER(Computed_field_window_projection_scene_viewer_destroy_callback);
+	if (scene_viewer && (field = (Computed_field *)field_void) && 
+		(core = dynamic_cast<Computed_field_window_projection*>(field->core)))
+	{
+		if (core->scene_viewer_callback_flag)
+		{
+			Scene_viewer_remove_transform_callback(scene_viewer, 
+			  Computed_field_window_projection_scene_viewer_callback,
+			  (void *)field);
+			core->scene_viewer_callback_flag = 0;
+		}
+		if (core->graphics_window_name)
+		{
+			DEALLOCATE(core->graphics_window_name);
+		}
+		core->pane_number = 0;
+		core->scene_viewer = (struct Scene_viewer *)NULL;
+		Computed_field_changed(field, core->computed_field_manager);
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Computed_field_window_projection_scene_viewer_callback.  "
+			"Invalid arguments.");
+	}
+	LEAVE;
+} /* Computed_field_window_projection_scene_viewer_callback */
+
+} //namespace
 
 int Computed_field_set_type_window_projection(struct Computed_field *field,
 	struct Computed_field *source_field, struct Scene_viewer *scene_viewer,
@@ -1226,7 +1114,7 @@ int Computed_field_set_type_window_projection(struct Computed_field *field,
 	enum Computed_field_window_projection_type projection_type,
 	struct MANAGER(Computed_field) *computed_field_manager)
 /*******************************************************************************
-LAST MODIFIED : 14 August 2006
+LAST MODIFIED : 25 August 2006
 
 DESCRIPTION :
 Converts <field> to type COMPUTED_FIELD_WINDOW_PROJECTION, returning the 
@@ -1240,7 +1128,6 @@ although its cache may be lost.
 {
 	int number_of_source_fields,return_code;
 	struct Computed_field **source_fields;
-	struct Computed_field_window_projection_type_specific_data *data;
 
 	ENTER(Computed_field_set_type_window_projection);
 	if (field && source_field && Computed_field_has_3_components(source_field, NULL)
@@ -1249,32 +1136,18 @@ although its cache may be lost.
 		return_code=1;
 		/* 1. make dynamic allocations for any new type-specific data */
 		number_of_source_fields=1;
-		if (ALLOCATE(source_fields,struct Computed_field *,number_of_source_fields)&&
-			ALLOCATE(data,struct Computed_field_window_projection_type_specific_data, 1))
+		if (ALLOCATE(source_fields,struct Computed_field *,number_of_source_fields))
 		{
 			/* 2. free current type-specific data */
 			Computed_field_clear_type(field);
 			/* 3. establish the new type */
-			field->type_string = computed_field_window_projection_type_string;
 			field->number_of_components = 3;
 			source_fields[0]=ACCESS(Computed_field)(source_field);
 			field->source_fields=source_fields;
 			field->number_of_source_fields=number_of_source_fields;			
-			field->type_specific_data = (void *)data;
-			data->projection_matrix = (double *)NULL;
-			/* Not accessed, responds to destroy callback instead */
-			data->graphics_window_name = duplicate_string(graphics_window_name);
-			data->pane_number = pane_number;
-			data->scene_viewer = scene_viewer;
-			Scene_viewer_add_destroy_callback(scene_viewer, 
-				Computed_field_window_projection_scene_viewer_destroy_callback,
-				(void *)field);
-			data->projection_type = projection_type;
-			data->scene_viewer_callback_flag = 0;
-			data->computed_field_manager = computed_field_manager;
-
-			/* Set all the methods */
-			COMPUTED_FIELD_ESTABLISH_METHODS(window_projection);
+			field->core = new Computed_field_window_projection(field,
+				graphics_window_name, pane_number, scene_viewer,
+				projection_type, computed_field_manager);
 		}
 		else
 		{
@@ -1298,7 +1171,7 @@ int Computed_field_get_type_window_projection(struct Computed_field *field,
 	char **graphics_window_name, int *pane_number, 
 	enum Computed_field_window_projection_type *projection_type)
 /*******************************************************************************
-LAST MODIFIED : 14 August 2006
+LAST MODIFIED : 25 August 2006
 
 DESCRIPTION :
 If the field is of type COMPUTED_FIELD_WINDOW_PROJECTION, the <source_field>,
@@ -1306,21 +1179,19 @@ If the field is of type COMPUTED_FIELD_WINDOW_PROJECTION, the <source_field>,
 Use function Computed_field_get_type to determine the field type.
 ==============================================================================*/
 {
+	Computed_field_window_projection* core;
 	int return_code;
-	struct Computed_field_window_projection_type_specific_data *data;
 
 	ENTER(Computed_field_get_type_window_projection);
-	if (field&&(field->type_string==computed_field_window_projection_type_string)
-		&&(data = 
-		(struct Computed_field_window_projection_type_specific_data *)
-		field->type_specific_data) && source_field && scene_viewer && 
+	if (field&&(core = dynamic_cast<Computed_field_window_projection*>(field->core))
+		&& source_field && scene_viewer && 
 		graphics_window_name && pane_number && projection_type)
 	{
 		*source_field = field->source_fields[0];
-		*scene_viewer = data->scene_viewer;
-		*graphics_window_name = duplicate_string(data->graphics_window_name);
-		*pane_number = data->pane_number;
-		*projection_type = data->projection_type;
+		*scene_viewer = core->scene_viewer;
+		*graphics_window_name = duplicate_string(core->graphics_window_name);
+		*pane_number = core->pane_number;
+		*projection_type = core->projection_type;
 		return_code=1;
 	}
 	else
@@ -1334,10 +1205,10 @@ Use function Computed_field_get_type to determine the field type.
 	return (return_code);
 } /* Computed_field_get_type_window_projection */
 
-static int define_Computed_field_type_window_projection(struct Parse_state *state,
+int define_Computed_field_type_window_projection(struct Parse_state *state,
 	void *field_void,void *computed_field_window_projection_package_void)
 /*******************************************************************************
-LAST MODIFIED : 14 August 2006
+LAST MODIFIED : 25 August 2006
 
 DESCRIPTION :
 Converts <field> into type COMPUTED_FIELD_WINDOW_PROJECTION (if it is not 
@@ -1376,8 +1247,7 @@ already) and allows its contents to be modified.
 		projection_type = TEXTURE_PROJECTION;
 		source_field = (struct Computed_field *)NULL;
 		graphics_window = (struct Graphics_window *)NULL;
-		if (computed_field_window_projection_type_string ==
-			Computed_field_get_type_string(field))
+		if (dynamic_cast<Computed_field_window_projection*>(field->core))
 		{
 			return_code=Computed_field_get_type_window_projection(field,
 				&source_field, &scene_viewer, &graphics_window_name, &pane_number, &projection_type);
@@ -1510,7 +1380,7 @@ int Computed_field_register_type_window_projection(
 	struct Computed_field_package *computed_field_package, 
 	struct MANAGER(Graphics_window) *graphics_window_manager)
 /*******************************************************************************
-LAST MODIFIED : 14 August 2006
+LAST MODIFIED : 25 August 2006
 
 DESCRIPTION :
 ==============================================================================*/

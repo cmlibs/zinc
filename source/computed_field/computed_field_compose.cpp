@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : computed_field_compose.c
 
-LAST MODIFIED : 14 August 2006
+LAST MODIFIED : 24 August 2006
 
 DESCRIPTION :
 Implements a computed_field that uses evaluates one field, does a
@@ -63,153 +63,124 @@ struct Computed_field_compose_package
 	struct Cmiss_region *root_region;
 };
 
-struct Computed_field_compose_type_specific_data
+namespace {
+
+char computed_field_compose_type_string[] = "compose";
+
+class Computed_field_compose : public Computed_field_core
 {
+//These parameters are protected to this file using a NULL namespace
+public:
 	char *region_path;
 	int find_nearest;
 	struct Cmiss_region *region;
-	int use_point_five_when_out_of_bounds;
 	int element_dimension;
+	int use_point_five_when_out_of_bounds;
+
+	Computed_field_compose(Computed_field* field, char *region_path,
+		int find_nearest, Cmiss_region* region, int element_dimension = 0,
+		int use_point_five_when_out_of_bounds = 0) : 
+		Computed_field_core(field), region_path(duplicate_string(region_path)),
+		find_nearest(find_nearest), region(ACCESS(Cmiss_region)(region)),
+		element_dimension(element_dimension),
+		use_point_five_when_out_of_bounds(use_point_five_when_out_of_bounds)
+	{		
+	};
+
+	~Computed_field_compose();
+
+private:
+	Computed_field_core *copy(Computed_field* new_parent);
+
+	char *get_type_string()
+	{
+		return(computed_field_compose_type_string);
+	}
+
+	int compare(Computed_field_core* other_field);
+
+	int is_defined_at_location(Field_location* location);
+
+	int evaluate_cache_at_location(Field_location* location);
+
+	int list();
+
+	char* get_command_string();
 };
 
-static char computed_field_compose_type_string[] = "compose";
-
-int Computed_field_is_type_compose(struct Computed_field *field)
+Computed_field_compose::~Computed_field_compose()
 /*******************************************************************************
-LAST MODIFIED : 14 August 2006
-
-DESCRIPTION :
-==============================================================================*/
-{
-	int return_code;
-
-	ENTER(Computed_field_is_type_compose);
-	if (field)
-	{
-		return_code =
-			(field->type_string == computed_field_compose_type_string);
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_is_type_compose.  Missing field");
-		return_code=0;
-	}
-
-	return (return_code);
-} /* Computed_field_is_type_compose */
-
-static int Computed_field_compose_clear_type_specific(
-	struct Computed_field *field)
-/*******************************************************************************
-LAST MODIFIED : 14 August 2006
+LAST MODIFIED : 24 August 2006
 
 DESCRIPTION :
 Clear the type specific data used by this type.
 ==============================================================================*/
 {
-	int return_code;
-	struct Computed_field_compose_type_specific_data *data;
-
-	ENTER(Computed_field_compose_clear_type_specific);
-	if (field && (data = 
-		(struct Computed_field_compose_type_specific_data *)
-		field->type_specific_data))
+	ENTER(Computed_field_compose::~Computed_field_compose);
+	if (field)
 	{
-		if (data->region)
+		if (region)
 		{
-			DEACCESS(Cmiss_region)(&(data->region));
+			DEACCESS(Cmiss_region)(&region);
 		}
-		if (data->region_path)
+		if (region_path)
 		{
-			DEALLOCATE(data->region_path);
+			DEALLOCATE(region_path);
 		}
-		DEALLOCATE(field->type_specific_data);
-		return_code = 1;
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Computed_field_compose_clear_type_specific.  Invalid argument(s)");
-		return_code = 0;
+			"Computed_field_compose::~Computed_field_compose.  Invalid argument(s)");
 	}
 	LEAVE;
+} /* Computed_field_compose::~Computed_field_compose */
 
-	return (return_code);
-} /* Computed_field_compose_clear_type_specific */
-
-static void *Computed_field_compose_copy_type_specific(
-	struct Computed_field *source_field, struct Computed_field *destination_field)
+Computed_field_core *Computed_field_compose::copy(Computed_field *new_parent)
 /*******************************************************************************
-LAST MODIFIED : 14 August 2006
+LAST MODIFIED : 24 August 2006
 
 DESCRIPTION :
 Copy the type specific data used by this type.
 ==============================================================================*/
 {
-	struct Computed_field_compose_type_specific_data *destination, *source;
-
-	ENTER(Computed_field_compose_copy_type_specific);
-	if (source_field && destination_field && (source = 
-		(struct Computed_field_compose_type_specific_data *)
-		source_field->type_specific_data))
+	Computed_field_compose* core;
+	ENTER(Computed_field_compose::copy_type_specific);
+	if (new_parent)
 	{
-		if (ALLOCATE(destination,
-			struct Computed_field_compose_type_specific_data, 1) &&
-			(destination->region_path = duplicate_string(source->region_path)))
-		{
-			destination->region = ACCESS(Cmiss_region)(source->region);
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"Computed_field_compose_copy_type_specific.  "
-				"Unable to allocate memory");
-			destination = NULL;
-		}
+		core = new Computed_field_compose(new_parent,
+			region_path, find_nearest, region, element_dimension,
+			use_point_five_when_out_of_bounds);
 	}
 	else
 	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_compose_copy_type_specific.  Invalid argument(s)");
-		destination = NULL;
+		core = (Computed_field_compose*)NULL;
 	}
 	LEAVE;
 
-	return (destination);
-} /* Computed_field_compose_copy_type_specific */
+	return (core);
+} /* Computed_field_compose::copy */
 
-#define Computed_field_compose_clear_cache_type_specific \
-   (Computed_field_clear_cache_type_specific_function)NULL
+int Computed_field_compose::compare(Computed_field_core *other_core)
 /*******************************************************************************
-LAST MODIFIED : 14 August 2006
-
-DESCRIPTION :
-This function is not needed for this type.
-==============================================================================*/
-
-static int Computed_field_compose_type_specific_contents_match(
-	struct Computed_field *field, struct Computed_field *other_computed_field)
-/*******************************************************************************
-LAST MODIFIED : 14 August 2006
+LAST MODIFIED : 24 August 2006
 
 DESCRIPTION :
 Compare the type specific data.
 ==============================================================================*/
 {
 	int return_code;
-	struct Computed_field_compose_type_specific_data *data, *other_data;
+	struct Computed_field_compose *other;
 
-	ENTER(Computed_field_compose_type_specific_contents_match);
-	if (field && other_computed_field && (data = 
-		(struct Computed_field_compose_type_specific_data *)
-		field->type_specific_data) && (other_data =
-		(struct Computed_field_compose_type_specific_data *)
-		other_computed_field->type_specific_data))
+	ENTER(Computed_field_compose::type_specific_contents_match);
+	if (field && (other = dynamic_cast<Computed_field_compose*>(other_core)))
 	{
-		if ((data->region == other_data->region) &&
-			(data->find_nearest == other_data->find_nearest) &&
-			(!strcmp(data->region_path, other_data->region_path)))
+		if ((region == other->region) &&
+			(find_nearest == other->find_nearest) &&
+			(!strcmp(region_path, other->region_path)) &&
+			(element_dimension == other->element_dimension) &&
+			(use_point_five_when_out_of_bounds == 
+				other->use_point_five_when_out_of_bounds))
 		{
 			return_code = 1;
 		}
@@ -225,25 +196,21 @@ Compare the type specific data.
 	LEAVE;
 
 	return (return_code);
-} /* Computed_field_compose_type_specific_contents_match */
+} /* Computed_field_compose::compare */
 
-static int Computed_field_compose_is_defined_at_location(
-	struct Computed_field *field, Field_location* location)
+int Computed_field_compose::is_defined_at_location(Field_location* location)
 /*******************************************************************************
-LAST MODIFIED : 14 August 2006
+LAST MODIFIED : 24 August 2006
 
 DESCRIPTION :
 ==============================================================================*/
 {
 	FE_value xi[3];
 	int return_code;
-	struct Computed_field_compose_type_specific_data *data;
 	struct FE_element *element;
 
-	ENTER(Computed_field_compose_is_defined_at_location);
-	if (field && location && (data = 
-		(struct Computed_field_compose_type_specific_data *)
-		field->type_specific_data))
+	ENTER(Computed_field_compose::is_defined_at_location);
+	if (field && location)
 	{
 		return_code=1;
 		if (return_code = Computed_field_is_defined_at_location(
@@ -256,8 +223,8 @@ DESCRIPTION :
 				if (Computed_field_find_element_xi(
 					field->source_fields[1], field->source_fields[0]->values,
 					field->source_fields[0]->number_of_components, &element, xi,
-					data->element_dimension, data->region,
-					/*propagate_field*/0, data->find_nearest) && element)
+					element_dimension, region,
+					/*propagate_field*/0, find_nearest) && element)
 				{
 					/* calculate the third source_field at this new location */
 					return_code = Computed_field_is_defined_in_element(
@@ -277,30 +244,12 @@ DESCRIPTION :
 	LEAVE;
 
 	return (return_code);
-} /* Computed_field_compose_is_defined_at_location */
+} /* Computed_field_compose::is_defined_at_location */
 
-#define Computed_field_compose_has_numerical_components \
-	Computed_field_default_has_numerical_components
+int Computed_field_compose::evaluate_cache_at_location(
+    Field_location* location)
 /*******************************************************************************
-LAST MODIFIED : 14 August 2006
-
-DESCRIPTION :
-Window projection does have numerical components.
-==============================================================================*/
-
-#define Computed_field_compose_not_in_use \
-	(Computed_field_not_in_use_function)NULL
-/*******************************************************************************
-LAST MODIFIED : 14 August 2006
-
-DESCRIPTION :
-No special criteria.
-==============================================================================*/
-
-static int Computed_field_compose_evaluate_cache_at_location(
-   struct Computed_field *field, Field_location* location)
-/*******************************************************************************
-LAST MODIFIED : 14 August 2006
+LAST MODIFIED : 24 August 2006
 
 DESCRIPTION :
 Evaluate the fields cache at the location
@@ -308,13 +257,10 @@ Evaluate the fields cache at the location
 {
 	FE_value compose_xi[MAXIMUM_ELEMENT_XI_DIMENSIONS];
 	int i, return_code;
-	struct Computed_field_compose_type_specific_data *data;
 	struct FE_element *compose_element;
 
-	ENTER(Computed_field_compose_evaluate_cache_at_location);
-	if (field && location && (data = 
-		(struct Computed_field_compose_type_specific_data *)
-		field->type_specific_data))
+	ENTER(Computed_field_compose::evaluate_cache_at_location);
+	if (field && location)
 	{
 		/* 1. Precalculate any source fields that this field depends on */
 		/* only calculate the first source_field at this location */
@@ -328,8 +274,8 @@ Evaluate the fields cache at the location
 			if ((return_code = Computed_field_find_element_xi(field->source_fields[1],
 				field->source_fields[0]->values,
 				field->source_fields[0]->number_of_components,
-					  &compose_element, compose_xi, data->element_dimension,
-						data->region, /*propagate_field*/0, data->find_nearest))
+					  &compose_element, compose_xi, element_dimension,
+						region, /*propagate_field*/0, find_nearest))
 				&& compose_element)
 			{
 				/* calculate the third source_field at this new location */
@@ -345,7 +291,7 @@ Evaluate the fields cache at the location
 			}
 			else
 			{
-				if (data->use_point_five_when_out_of_bounds)
+				if (use_point_five_when_out_of_bounds)
 				{
 					/* Actually don't fail here, just make the values constant so that
 						people can compose outside the valid range */
@@ -366,60 +312,27 @@ Evaluate the fields cache at the location
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Computed_field_compose_evaluate_cache_at_location.  "
+			"Computed_field_compose::evaluate_cache_at_location.  "
 			"Invalid argument(s)");
 		return_code = 0;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* Computed_field_compose_evaluate_cache_at_location */
+} /* Computed_field_compose::evaluate_cache_at_location */
 
-#define Computed_field_compose_set_values_at_location \
-   (Computed_field_set_values_at_location_function)NULL
+
+int Computed_field_compose::list()
 /*******************************************************************************
-LAST MODIFIED : 14 August 2006
-
-DESCRIPTION :
-Unavailable for this field type.
-==============================================================================*/
-
-#define Computed_field_compose_get_native_discretization_in_element \
-	Computed_field_default_get_native_discretization_in_element
-/*******************************************************************************
-LAST MODIFIED : 14 August 2006
-
-DESCRIPTION :
-Inherit result from first source field.
-==============================================================================*/
-
-#define Computed_field_compose_find_element_xi \
-   (Computed_field_find_element_xi_function)NULL
-/*******************************************************************************
-LAST MODIFIED : 14 August 2006
-
-DESCRIPTION :
-Not implemented yet.
-==============================================================================*/
-
-#define Computed_field_compose_get_native_resolution \
-	Computed_field_default_get_native_resolution
-
-static int list_Computed_field_compose(
-	struct Computed_field *field)
-/*******************************************************************************
-LAST MODIFIED : 14 August 2006
+LAST MODIFIED : 24 August 2006
 
 DESCRIPTION :
 ==============================================================================*/
 {
 	int return_code;
-	struct Computed_field_compose_type_specific_data *data;
 
 	ENTER(List_Computed_field_compose);
-	if (field && (data = 
-		(struct Computed_field_compose_type_specific_data *)
-		field->type_specific_data))
+	if (field)
 	{
 		display_message(INFORMATION_MESSAGE,"    texture coordinates field :");
 		display_message(INFORMATION_MESSAGE," %s\n",
@@ -428,11 +341,11 @@ DESCRIPTION :
 		display_message(INFORMATION_MESSAGE," %s\n",
 			field->source_fields[1]->name);
 		display_message(INFORMATION_MESSAGE,"    search element group :");
-		display_message(INFORMATION_MESSAGE," %s\n", data->region_path);
+		display_message(INFORMATION_MESSAGE," %s\n", region_path);
 		display_message(INFORMATION_MESSAGE,"    calculate values field :");
 		display_message(INFORMATION_MESSAGE," %s\n",
 			field->source_fields[2]->name);
-		if (data->find_nearest)
+		if (find_nearest)
 		{
 			display_message(INFORMATION_MESSAGE,"    find nearest match\n");
 		}
@@ -440,11 +353,11 @@ DESCRIPTION :
 		{
 			display_message(INFORMATION_MESSAGE,"    find exact match\n");
 		}
-		if (data->use_point_five_when_out_of_bounds)
+		if (use_point_five_when_out_of_bounds)
 		{
 			display_message(INFORMATION_MESSAGE,"    use point five when out of bounds\n");
 		}
-		if (data->element_dimension)
+		if (element_dimension)
 		{
 			display_message(INFORMATION_MESSAGE,"    only element dimension %d\n");
 		}
@@ -464,10 +377,9 @@ DESCRIPTION :
 	return (return_code);
 } /* list_Computed_field_compose */
 
-static char *Computed_field_compose_get_command_string(
-	struct Computed_field *field)
+char *Computed_field_compose::get_command_string()
 /*******************************************************************************
-LAST MODIFIED : 14 August 2006
+LAST MODIFIED : 24 August 2006
 
 DESCRIPTION :
 Returns allocated command string for reproducing field. Includes type.
@@ -475,13 +387,10 @@ Returns allocated command string for reproducing field. Includes type.
 {
 	char *command_string, *group_name, *field_name, temp_string[40];
 	int error;
-	struct Computed_field_compose_type_specific_data *data;
 
-	ENTER(Computed_field_compose_get_command_string);
+	ENTER(Computed_field_compose::get_command_string);
 	command_string = (char *)NULL;
-	if (field && (data = 
-		(struct Computed_field_compose_type_specific_data *)
-		field->type_specific_data))
+	if (field)
 	{
 		error = 0;
 		append_string(&command_string,
@@ -501,7 +410,7 @@ Returns allocated command string for reproducing field. Includes type.
 			DEALLOCATE(field_name);
 		}
 		append_string(&command_string, " group ", &error);
-		if (group_name = duplicate_string(data->region_path))
+		if (group_name = duplicate_string(region_path))
 		{
 			make_valid_token(&group_name);
 			append_string(&command_string, group_name, &error);
@@ -514,35 +423,28 @@ Returns allocated command string for reproducing field. Includes type.
 			append_string(&command_string, field_name, &error);
 			DEALLOCATE(field_name);
 		}
-		if (data->find_nearest)
+		if (find_nearest)
 		{
 			append_string(&command_string, " find_nearest", &error);
 		}
-		if (data->use_point_five_when_out_of_bounds)
+		if (use_point_five_when_out_of_bounds)
 		{
 			append_string(&command_string, " use_point_five_when_out_of_bounds", &error);
 		}
-		sprintf(temp_string, " element_dimension %d", data->element_dimension);
+		sprintf(temp_string, " element_dimension %d", element_dimension);
 		append_string(&command_string, temp_string, &error);
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Computed_field_compose_get_command_string.  Invalid field");
+			"Computed_field_compose::get_command_string.  Invalid field");
 	}
 	LEAVE;
 
 	return (command_string);
-} /* Computed_field_compose_get_command_string */
+} /* Computed_field_compose::get_command_string */
 
-#define Computed_field_compose_has_multiple_times \
-	Computed_field_default_has_multiple_times
-/*******************************************************************************
-LAST MODIFIED : 14 August 2006
-
-DESCRIPTION :
-Works out whether time influences the field.
-==============================================================================*/
+} //namespace
 
 int Computed_field_set_type_compose(struct Computed_field *field,
 	struct Computed_field *texture_coordinate_field,
@@ -552,7 +454,7 @@ int Computed_field_set_type_compose(struct Computed_field *field,
 	int find_nearest, int use_point_five_when_out_of_bounds,
 	int element_dimension)
 /*******************************************************************************
-LAST MODIFIED : 14 August 2006
+LAST MODIFIED : 24 August 2006
 
 DESCRIPTION :
 Converts <field> to type COMPUTED_FIELD_COMPOSE, this field allows you to
@@ -569,10 +471,8 @@ The <region_path> string is supplied so that the commands listed can correctly
 name the string used to select the <search_region>.
 ==============================================================================*/
 {
-	char *region_path_copy;
 	int number_of_source_fields, return_code;
 	struct Computed_field **source_fields;
-	struct Computed_field_compose_type_specific_data *data;
 
 	ENTER(Computed_field_set_type_compose);
 	if (field&&texture_coordinate_field&&find_element_xi_field&&
@@ -588,14 +488,11 @@ name the string used to select the <search_region>.
 				find_element_xi_field, /*dummy*/NULL))
 			{
 				if (ALLOCATE(source_fields, struct Computed_field *,
-					number_of_source_fields) &&
-					ALLOCATE(data, struct Computed_field_compose_type_specific_data, 1)
-					&& (region_path_copy = duplicate_string(region_path)))
+					number_of_source_fields))
 				{
 					/* 2. free current type-specific data */
 					Computed_field_clear_type(field);
 					/* 3. establish the new type */
-					field->type_string = computed_field_compose_type_string;
 					field->number_of_components=
 						calculate_values_field->number_of_components;
 					source_fields[0]=ACCESS(Computed_field)(texture_coordinate_field);
@@ -603,16 +500,10 @@ name the string used to select the <search_region>.
 					source_fields[2]=ACCESS(Computed_field)(calculate_values_field);
 					field->source_fields=source_fields;
 					field->number_of_source_fields=number_of_source_fields;
-					field->type_specific_data = (void *)data;
-					data->region = ACCESS(Cmiss_region)(search_region);
-					data->region_path = region_path_copy;
-					data->find_nearest = find_nearest;
-					data->use_point_five_when_out_of_bounds = 
-						use_point_five_when_out_of_bounds;
-					data->element_dimension = element_dimension;
 
-					/* Set all the methods */
-					COMPUTED_FIELD_ESTABLISH_METHODS(compose);
+					field->core = new Computed_field_compose(field,
+						region_path, find_nearest, search_region, element_dimension,
+						use_point_five_when_out_of_bounds);
 				}
 				else
 				{
@@ -657,7 +548,7 @@ int Computed_field_get_type_compose(struct Computed_field *field,
 	int *find_nearest, int *use_point_five_when_out_of_bounds,
 	int *element_dimension)
 /*******************************************************************************
-LAST MODIFIED : 14 August 2006
+LAST MODIFIED : 24 August 2006
 
 DESCRIPTION :
 If the field is of type COMPUTED_FIELD_COMPOSE, the function returns the three
@@ -667,22 +558,21 @@ internally used path.
 ==============================================================================*/
 {
 	int return_code;
-	struct Computed_field_compose_type_specific_data *data;
+	Computed_field_compose* compose_core;
 
 	ENTER(Computed_field_get_type_compose);
-	if (field && (field->type_string == computed_field_compose_type_string) &&
-		(data = (struct Computed_field_compose_type_specific_data *)
-		field->type_specific_data) && texture_coordinate_field &&
+	if (field && (compose_core = dynamic_cast<Computed_field_compose*>(field->core)) &&
+		texture_coordinate_field &&
 		find_element_xi_field && calculate_values_field && search_region)
 	{
 		*texture_coordinate_field = field->source_fields[0];
 		*find_element_xi_field = field->source_fields[1];
 		*calculate_values_field = field->source_fields[2];
-		*search_region = data->region;
-		*region_path = data->region_path;
-		*find_nearest = data->find_nearest;
-		*use_point_five_when_out_of_bounds = data->use_point_five_when_out_of_bounds;
-		*element_dimension = data->element_dimension;
+		*search_region = compose_core->region;
+		*region_path = compose_core->region_path;
+		*find_nearest = compose_core->find_nearest;
+		*use_point_five_when_out_of_bounds = compose_core->use_point_five_when_out_of_bounds;
+		*element_dimension = compose_core->element_dimension;
 		return_code = 1;
 	}
 	else
@@ -696,10 +586,10 @@ internally used path.
 	return (return_code);
 } /* Computed_field_get_type_compose */
 
-static int define_Computed_field_type_compose(struct Parse_state *state,
+int define_Computed_field_type_compose(struct Parse_state *state,
 	void *field_void, void *computed_field_compose_package_void)
 /*******************************************************************************
-LAST MODIFIED : 14 August 2006
+LAST MODIFIED : 24 August 2006
 
 DESCRIPTION :
 Converts <field> into type COMPUTED_FIELD_COMPOSE (if it is not 
@@ -945,7 +835,7 @@ int Computed_field_register_types_compose(
 	struct Computed_field_package *computed_field_package, 
 	struct Cmiss_region *root_region)
 /*******************************************************************************
-LAST MODIFIED : 14 August 2006
+LAST MODIFIED : 24 August 2006
 
 DESCRIPTION :
 ==============================================================================*/

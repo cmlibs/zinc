@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : computed_field_sample_texture.c
 
-LAST MODIFIED : 14 August 2006
+LAST MODIFIED : 25 August 2006
 
 DESCRIPTION :
 Implements a computed_field which maintains a graphics transformation 
@@ -61,150 +61,97 @@ struct Computed_field_sample_texture_package
 	struct MANAGER(Texture) *texture_manager;
 };
 
-struct Computed_field_sample_texture_type_specific_data
+namespace {
+
+char computed_field_sample_texture_type_string[] = "sample_texture";
+
+class Computed_field_sample_texture : public Computed_field_core
 {
-	float minimum, maximum;
-	struct Texture *texture;
+public:
+	Texture* texture;
+	float minimum;
+	float maximum;
+
+	Computed_field_sample_texture(Computed_field *field, Texture* texture,
+		float minimum, float maximum) :
+		Computed_field_core(field), texture(ACCESS(Texture)(texture)),
+		minimum(minimum), maximum(maximum)	  
+	{
+	};
+
+	~Computed_field_sample_texture()
+	{	
+		if (texture)
+		{
+			DEACCESS(Texture)(&(texture));
+		}
+	}
+
+private:
+	Computed_field_core *copy(Computed_field* new_parent);
+
+	char *get_type_string()
+	{
+		return(computed_field_sample_texture_type_string);
+	}
+
+	int compare(Computed_field_core* other_field);
+
+	int evaluate_cache_at_location(Field_location* location);
+
+	int list();
+
+	char* get_command_string();
+
+	int get_native_resolution(int *dimension,
+		int **sizes, Computed_field **texture_coordinate_field);
 };
 
-static char computed_field_sample_texture_type_string[] = "sample_texture";
-
-int Computed_field_is_type_sample_texture(struct Computed_field *field)
+Computed_field_core* Computed_field_sample_texture::copy(Computed_field* new_parent)
 /*******************************************************************************
-LAST MODIFIED : 14 August 2006
-
-DESCRIPTION :
-==============================================================================*/
-{
-	int return_code;
-
-	ENTER(Computed_field_is_type_sample_texture);
-	if (field)
-	{
-		return_code = (field->type_string == computed_field_sample_texture_type_string);
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_is_type_sample_texture.  Missing field");
-		return_code=0;
-	}
-
-	return (return_code);
-} /* Computed_field_is_type_sample_texture */
-
-static int Computed_field_sample_texture_clear_type_specific(
-	struct Computed_field *field)
-/*******************************************************************************
-LAST MODIFIED : 14 August 2006
-
-DESCRIPTION :
-Clear the type specific data used by this type.
-==============================================================================*/
-{
-	int return_code;
-	struct Computed_field_sample_texture_type_specific_data *data;
-
-	ENTER(Computed_field_sample_texture_clear_type_specific);
-	if (field && (data = 
-		(struct Computed_field_sample_texture_type_specific_data *)
-		field->type_specific_data))
-	{
-		if (data->texture)
-		{
-			DEACCESS(Texture)(&(data->texture));
-		}
-		DEALLOCATE(field->type_specific_data);
-		return_code = 1;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_sample_texture_clear_type_specific.  "
-			"Invalid arguments.");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Computed_field_sample_texture_clear_type_specific */
-
-static void *Computed_field_sample_texture_copy_type_specific(
-	struct Computed_field *source_field, struct Computed_field *destination_field)
-/*******************************************************************************
-LAST MODIFIED : 14 August 2006
+LAST MODIFIED : 25 August 2006
 
 DESCRIPTION :
 Copy the type specific data used by this type.
 ==============================================================================*/
 {
-	struct Computed_field_sample_texture_type_specific_data *destination,
-		*source;
+	Computed_field_sample_texture* core;
 
-	ENTER(Computed_field_sample_texture_copy_type_specific);
-	if (source_field && destination_field && (source = 
-		(struct Computed_field_sample_texture_type_specific_data *)
-		source_field->type_specific_data))
+	ENTER(Computed_field_sample_texture::copy);
+	if (new_parent)
 	{
-		if (ALLOCATE(destination,
-			struct Computed_field_sample_texture_type_specific_data, 1))
-		{
-			destination->texture = ACCESS(Texture)(source->texture);
-			destination->minimum = source->minimum;
-			destination->maximum = source->maximum;
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"Computed_field_sample_texture_copy_type_specific.  "
-				"Unable to allocate memory.");
-			destination = NULL;
-		}
+		core = new Computed_field_sample_texture(new_parent,
+			texture, minimum, maximum);
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Computed_field_sample_texture_copy_type_specific.  "
+			"Computed_field_sample_texture::copy.  "
 			"Invalid arguments.");
-		destination = NULL;
+		core = (Computed_field_sample_texture*)NULL;
 	}
 	LEAVE;
 
-	return (destination);
-} /* Computed_field_sample_texture_copy_type_specific */
+	return (core);
+} /* Computed_field_sample_texture::copy */
 
-#define Computed_field_sample_texture_clear_cache_type_specific \
-   (Computed_field_clear_cache_type_specific_function)NULL
+int Computed_field_sample_texture::compare(Computed_field_core *other_core)
 /*******************************************************************************
-LAST MODIFIED : 14 August 2006
-
-DESCRIPTION :
-This function is not needed for this type.
-==============================================================================*/
-
-static int Computed_field_sample_texture_type_specific_contents_match(
-	struct Computed_field *field, struct Computed_field *other_computed_field)
-/*******************************************************************************
-LAST MODIFIED : 14 August 2006
+LAST MODIFIED : 25 August 2006
 
 DESCRIPTION :
 Compare the type specific data
 ==============================================================================*/
 {
+	Computed_field_sample_texture* other;
 	int return_code;
-	struct Computed_field_sample_texture_type_specific_data *data,
-		*other_data;
 
-	ENTER(Computed_field_sample_texture_type_specific_contents_match);
-	if (field && other_computed_field && (data = 
-		(struct Computed_field_sample_texture_type_specific_data *)
-		field->type_specific_data) && (other_data =
-		(struct Computed_field_sample_texture_type_specific_data *)
-		other_computed_field->type_specific_data))
+	ENTER(Computed_field_sample_texture::compare);
+	if (field && (other = dynamic_cast<Computed_field_sample_texture*>(other_core)))
 	{
-		if ((data->texture == other_data->texture) &&
-			(data->minimum == other_data->minimum) &&
-			(data->maximum == other_data->maximum))
+		if ((texture == other->texture) &&
+			(minimum == other->minimum) &&
+			(maximum == other->maximum))
 		{
 			return_code = 1;
 		}
@@ -220,39 +167,11 @@ Compare the type specific data
 	LEAVE;
 
 	return (return_code);
-} /* Computed_field_sample_texture_type_specific_contents_match */
+} /* Computed_field_sample_texture::compare */
 
-#define Computed_field_sample_texture_is_defined_at_location \
-	Computed_field_default_is_defined_at_location
+int Computed_field_sample_texture::evaluate_cache_at_location(Field_location* location)
 /*******************************************************************************
-LAST MODIFIED : 14 August 2006
-
-DESCRIPTION :
-Check the source fields using the default.
-==============================================================================*/
-
-#define Computed_field_sample_texture_has_numerical_components \
-	Computed_field_default_has_numerical_components
-/*******************************************************************************
-LAST MODIFIED : 14 August 2006
-
-DESCRIPTION :
-Window projection does have numerical components.
-==============================================================================*/
-
-#define Computed_field_sample_texture_not_in_use \
-	(Computed_field_not_in_use_function)NULL
-/*******************************************************************************
-LAST MODIFIED : 14 August 2006
-
-DESCRIPTION :
-No special criteria.
-==============================================================================*/
-
-static int Computed_field_sample_texture_evaluate_cache_at_location(
-   struct Computed_field *field, Field_location* location)
-/*******************************************************************************
-LAST MODIFIED : 14 August 2006
+LAST MODIFIED : 25 August 2006
 
 DESCRIPTION :
 Evaluate the fields cache at the location
@@ -261,12 +180,9 @@ Evaluate the fields cache at the location
 	double texture_values[4];
 	FE_value texture_coordinate[3];
 	int i, number_of_components, return_code;
-	struct Computed_field_sample_texture_type_specific_data *data;
 
-	ENTER(Computed_field_sample_texture_evaluate_cache_at_location);
-	if (field && location 
-		&& (data = (struct Computed_field_sample_texture_type_specific_data *)
-		field->type_specific_data))
+	ENTER(Computed_field_sample_texture::evaluate_cache_at_location);
+	if (field && location)
 	{
 		/* 1. Precalculate any source fields that this field depends on */
 		if (return_code = 
@@ -280,13 +196,13 @@ Evaluate the fields cache at the location
 			{
 				texture_coordinate[i] = field->source_fields[0]->values[i];				
 			}
-			Texture_get_pixel_values(data->texture,
+			Texture_get_pixel_values(texture,
 				texture_coordinate[0], texture_coordinate[1], texture_coordinate[2],
 				texture_values);
 			number_of_components = field->number_of_components;
-			if (data->minimum == 0.0)
+			if (minimum == 0.0)
 			{
-				if (data->maximum == 1.0)
+				if (maximum == 1.0)
 				{
 					for (i = 0 ; i < number_of_components ; i++)
 					{
@@ -297,7 +213,7 @@ Evaluate the fields cache at the location
 				{
 					for (i = 0 ; i < number_of_components ; i++)
 					{
-						field->values[i] =  texture_values[i] * data->maximum;
+						field->values[i] =  texture_values[i] * maximum;
 					}
 				}
 			}
@@ -305,8 +221,8 @@ Evaluate the fields cache at the location
 			{
 				for (i = 0 ; i < number_of_components ; i++)
 				{
-					field->values[i] =  data->minimum +
-						texture_values[i] * (data->maximum - data->minimum);
+					field->values[i] =  minimum +
+						texture_values[i] * (maximum - minimum);
 				}
 			}
 			field->derivatives_valid = 0;
@@ -315,48 +231,20 @@ Evaluate the fields cache at the location
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Computed_field_sample_texture_evaluate_cache_at_location.  "
+			"Computed_field_sample_texture::evaluate_cache_at_location.  "
 			"Invalid arguments.");
 		return_code = 0;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* Computed_field_sample_texture_evaluate_cache_at_location */
+} /* Computed_field_sample_texture::evaluate_cache_at_location */
 
-#define Computed_field_sample_texture_set_values_at_location \
-   (Computed_field_set_values_at_location_function)NULL
+
+int Computed_field_sample_texture::get_native_resolution(int *dimension,
+	int **sizes, Computed_field **texture_coordinate_field)
 /*******************************************************************************
-LAST MODIFIED : 14 August 2006
-
-DESCRIPTION :
-Not implemented yet.
-==============================================================================*/
-
-#define Computed_field_sample_texture_get_native_discretization_in_element \
-	Computed_field_default_get_native_discretization_in_element
-/*******************************************************************************
-LAST MODIFIED : 14 August 2006
-
-DESCRIPTION :
-Inherit result from first source field.
-==============================================================================*/
-
-#define Computed_field_sample_texture_find_element_xi \
-   (Computed_field_find_element_xi_function)NULL
-/*******************************************************************************
-LAST MODIFIED : 14 August 2006
-
-DESCRIPTION :
-Not implemented yet.
-==============================================================================*/
-
-
-int Computed_field_sample_texture_get_native_resolution(struct Computed_field *field,
-        int *dimension, int **sizes,
-	struct Computed_field **texture_coordinate_field)
-/*******************************************************************************
-LAST MODIFIED : 14 August 2006
+LAST MODIFIED : 25 August 2006
 
 DESCRIPTION :
 Gets the <dimension>, <sizes>, <minimums>, <maximums> and <texture_coordinate_field> from
@@ -365,17 +253,14 @@ the <field>. These parameters will be used in image processing.
 ==============================================================================*/
 {       
         int return_code;
-	struct Computed_field_sample_texture_type_specific_data *data;
 	int w, h, d;
 	
-	ENTER(Computed_field_sample_texture_get_native_resolution);
-	if (field && (data =
-		(struct Computed_field_sample_texture_type_specific_data *)
-		field->type_specific_data) && data->texture)
+	ENTER(Computed_field_sample_texture::get_native_resolution);
+	if (field)
 	{
-	        return_code = 1;
-		Texture_get_size(data->texture, &w, &h, &d);
-		Texture_get_dimension(data->texture,dimension);
+		return_code = 1;
+		Texture_get_size(texture, &w, &h, &d);
+		Texture_get_dimension(texture,dimension);
 		if ((*sizes))
 		{
 		        if (!(REALLOCATE(*sizes, *sizes, int, *dimension) ))
@@ -418,42 +303,38 @@ the <field>. These parameters will be used in image processing.
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Computed_field_sample_texture_get_native_resolution.  Missing field");
+			"Computed_field_sample_texture::get_native_resolution.  Missing field");
 		return_code=0;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* Computed_field_sample_texture_get_native_resolution */
+} /* Computed_field_sample_texture::get_native_resolution */
 
 
-static int list_Computed_field_sample_texture(
-	struct Computed_field *field)
+int Computed_field_sample_texture::list()
 /*******************************************************************************
-LAST MODIFIED : 14 August 2006
+LAST MODIFIED : 25 August 2006
 
 DESCRIPTION :
 ==============================================================================*/
 {
 	char *texture_name;
 	int return_code;
-	struct Computed_field_sample_texture_type_specific_data *data;
 
 	ENTER(List_Computed_field_sample_texture);
-	if (field && (data = 
-		(struct Computed_field_sample_texture_type_specific_data *)
-		field->type_specific_data))
+	if (field)
 	{
 		display_message(INFORMATION_MESSAGE,
 			"    texture coordinate field : %s\n",field->source_fields[0]->name);
-		if (return_code=GET_NAME(Texture)(data->texture,&texture_name))
+		if (return_code=GET_NAME(Texture)(texture,&texture_name))
 		{
 			display_message(INFORMATION_MESSAGE,
 				"    texture : %s\n",texture_name);
 			DEALLOCATE(texture_name);
 		}
-		display_message(INFORMATION_MESSAGE,"    minimum : %f\n",data->minimum);
-		display_message(INFORMATION_MESSAGE,"    maximum : %f\n",data->maximum);
+		display_message(INFORMATION_MESSAGE,"    minimum : %f\n",minimum);
+		display_message(INFORMATION_MESSAGE,"    maximum : %f\n",maximum);
 		return_code = 1;
 	}
 	else
@@ -468,10 +349,9 @@ DESCRIPTION :
 	return (return_code);
 } /* list_Computed_field_sample_texture */
 
-static char *Computed_field_sample_texture_get_command_string(
-	struct Computed_field *field)
+char *Computed_field_sample_texture::get_command_string()
 /*******************************************************************************
-LAST MODIFIED : 14 August 2006
+LAST MODIFIED : 25 August 2006
 
 DESCRIPTION :
 Returns allocated command string for reproducing field. Includes type.
@@ -479,13 +359,10 @@ Returns allocated command string for reproducing field. Includes type.
 {
 	char *command_string, *field_name, temp_string[40], *texture_name;
 	int error;
-	struct Computed_field_sample_texture_type_specific_data *data;
 
-	ENTER(Computed_field_sample_texture_get_command_string);
+	ENTER(Computed_field_sample_texture::get_command_string);
 	command_string = (char *)NULL;
-	if (field && (data = 
-		(struct Computed_field_sample_texture_type_specific_data *)
-		field->type_specific_data))
+	if (field)
 	{
 		error = 0;
 		append_string(&command_string,
@@ -499,41 +376,34 @@ Returns allocated command string for reproducing field. Includes type.
 		}
 
 		append_string(&command_string, " texture ", &error);
-		if (GET_NAME(Texture)(data->texture, &texture_name))
+		if (GET_NAME(Texture)(texture, &texture_name))
 		{
 			make_valid_token(&texture_name);
 			append_string(&command_string, texture_name, &error);
 			DEALLOCATE(texture_name);
 		}
-		sprintf(temp_string, " minimum %f", data->minimum);
+		sprintf(temp_string, " minimum %f", minimum);
 		append_string(&command_string, temp_string, &error);
-		sprintf(temp_string, " maximum %f", data->maximum);
+		sprintf(temp_string, " maximum %f", maximum);
 		append_string(&command_string, temp_string, &error);
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Computed_field_sample_texture_get_command_string.  Invalid field");
+			"Computed_field_sample_texture::get_command_string.  Invalid field");
 	}
 	LEAVE;
 
 	return (command_string);
-} /* Computed_field_sample_texture_get_command_string */
+} /* Computed_field_sample_texture::get_command_string */
 
-#define Computed_field_sample_texture_has_multiple_times \
-	Computed_field_default_has_multiple_times
-/*******************************************************************************
-LAST MODIFIED : 14 August 2006
-
-DESCRIPTION :
-Works out whether time influences the field.
-==============================================================================*/
+} //namespace
 
 int Computed_field_set_type_sample_texture(struct Computed_field *field,
 	struct Computed_field *texture_coordinate_field, struct Texture *texture,
 	float minimum, float maximum)
 /*******************************************************************************
-LAST MODIFIED : 14 August 2006
+LAST MODIFIED : 25 August 2006
 
 DESCRIPTION :
 Converts <field> to type COMPUTED_FIELD_SAMPLE_TEXTURE with the supplied
@@ -546,7 +416,6 @@ although its cache may be lost.
 {
 	int number_of_components, number_of_source_fields,return_code;
 	struct Computed_field **source_fields;
-	struct Computed_field_sample_texture_type_specific_data *data;
 
 	ENTER(Computed_field_set_type_sample_texture);
 	if (field&&texture&&(3>=texture_coordinate_field->number_of_components))
@@ -558,24 +427,17 @@ although its cache may be lost.
 		if (number_of_components <= 4)
 		{
 			/* The Computed_field_sample_texture_evaluate_* code assumes 4 or less components */
-			if (ALLOCATE(source_fields,struct Computed_field *,number_of_source_fields)&&
-				ALLOCATE(data,struct Computed_field_sample_texture_type_specific_data, 1))
+			if (ALLOCATE(source_fields,struct Computed_field *,number_of_source_fields))
 			{
 				/* 2. free current type-specific data */
 				Computed_field_clear_type(field);
 				/* 3. establish the new type */
-				field->type_string = computed_field_sample_texture_type_string;
 				field->number_of_components = number_of_components;
 				source_fields[0]=ACCESS(Computed_field)(texture_coordinate_field);
 				field->source_fields=source_fields;
 				field->number_of_source_fields=number_of_source_fields;
-				field->type_specific_data = (void *)data;
-				data->texture = ACCESS(Texture)(texture);
-				data->minimum = minimum;
-				data->maximum = maximum;
-				
-				/* Set all the methods */
-				COMPUTED_FIELD_ESTABLISH_METHODS(sample_texture);
+				field->core = new Computed_field_sample_texture(field, 
+					texture, minimum, maximum);
 			}
 			else
 			{
@@ -606,7 +468,7 @@ int Computed_field_get_type_sample_texture(struct Computed_field *field,
 	struct Computed_field **texture_coordinate_field, struct Texture **texture,
 	float *minimum, float *maximum)
 /*******************************************************************************
-LAST MODIFIED : 14 August 2006
+LAST MODIFIED : 25 August 2006
 
 DESCRIPTION :
 If the field is of type COMPUTED_FIELD_SAMPLE_TEXTURE, the 
@@ -614,19 +476,17 @@ If the field is of type COMPUTED_FIELD_SAMPLE_TEXTURE, the
 returned.
 ==============================================================================*/
 {
+	Computed_field_sample_texture* core;
 	int return_code;
-	struct Computed_field_sample_texture_type_specific_data *data;
 
 	ENTER(Computed_field_get_type_sample_texture);
-	if (field&&(field->type_string==computed_field_sample_texture_type_string)
-		&&(data = 
-		(struct Computed_field_sample_texture_type_specific_data *)
-		field->type_specific_data)&&texture_coordinate_field&&texture)
+	if (field&&(core = dynamic_cast<Computed_field_sample_texture*>(field->core))
+		&& texture)
 	{
 		*texture_coordinate_field = field->source_fields[0];
-		*texture = data->texture;
-		*minimum = data->minimum;
-		*maximum = data->maximum;
+		*texture = core->texture;
+		*minimum = core->minimum;
+		*maximum = core->maximum;
 		return_code=1;
 	}
 	else
@@ -640,10 +500,10 @@ returned.
 	return (return_code);
 } /* Computed_field_get_type_sample_texture */
 
-static int define_Computed_field_type_sample_texture(struct Parse_state *state,
+int define_Computed_field_type_sample_texture(struct Parse_state *state,
 	void *field_void,void *computed_field_sample_texture_package_void)
 /*******************************************************************************
-LAST MODIFIED : 14 August 2006
+LAST MODIFIED : 25 August 2006
 
 DESCRIPTION :
 Converts <field> into type COMPUTED_FIELD_SAMPLE_TEXTURE (if it is not 
@@ -751,7 +611,7 @@ int Computed_field_register_type_sample_texture(
 	struct Computed_field_package *computed_field_package, 
 	struct MANAGER(Texture) *texture_manager)
 /*******************************************************************************
-LAST MODIFIED : 14 August 2006
+LAST MODIFIED : 25 August 2006
 
 DESCRIPTION :
 ==============================================================================*/

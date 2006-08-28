@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : computed_field_logical_operators.c
 
-LAST MODIFIED : 14 August 2006
+LAST MODIFIED : 25 August 2006
 
 DESCRIPTION :
 Implements a number of logical operations on computed fields.
@@ -60,77 +60,46 @@ struct Computed_field_logical_operators_package
 	struct MANAGER(Computed_field) *computed_field_manager;
 };
 
-static char computed_field_or_type_string[] = "or";
+namespace {
 
-DEFINE_DEFAULT_COMPUTED_FIELD_IS_TYPE_FUNCTION(or)
+char computed_field_or_type_string[] = "or";
 
-#define Computed_field_or_clear_type_specific \
-   Computed_field_default_clear_type_specific
+class Computed_field_or : public Computed_field_core
+{
+public:
+	Computed_field_or(Computed_field *field) : Computed_field_core(field)
+	{
+	};
+
+private:
+	Computed_field_core *copy(Computed_field* new_parent)
+	{
+		return new Computed_field_or(new_parent);
+	}
+
+	char *get_type_string()
+	{
+		return(computed_field_or_type_string);
+	}
+
+	int compare(Computed_field_core* other_field)
+	{
+		if (dynamic_cast<Computed_field_or*>(other_field))
+		{
+			return 1;
+		}
+		else
+		{
+			return 0;
+		}
+	}
+
+	int evaluate_cache_at_location(Field_location* location);
+};
+
+int Computed_field_or::evaluate_cache_at_location(Field_location* location)
 /*******************************************************************************
-LAST MODIFIED : 14 August 2006
-
-DESCRIPTION :
-No type specific data
-==============================================================================*/
-
-#define Computed_field_or_copy_type_specific \
-   Computed_field_default_copy_type_specific
-/*******************************************************************************
-LAST MODIFIED : 14 August 2006
-
-DESCRIPTION :
-No type specific data
-==============================================================================*/
-
-#define Computed_field_or_clear_cache_type_specific \
-   (Computed_field_clear_cache_type_specific_function)NULL
-/*******************************************************************************
-LAST MODIFIED : 14 August 2006
-
-DESCRIPTION :
-This function is not needed for this type.
-==============================================================================*/
-
-#define Computed_field_or_type_specific_contents_match \
-   Computed_field_default_type_specific_contents_match
-/*******************************************************************************
-LAST MODIFIED : 14 August 2006
-
-DESCRIPTION :
-No type specific data
-==============================================================================*/
-
-#define Computed_field_or_is_defined_at_location \
-	Computed_field_default_is_defined_at_location
-/*******************************************************************************
-LAST MODIFIED : 14 August 2006
-
-DESCRIPTION :
-Check the source fields using the default.
-==============================================================================*/
-
-#define Computed_field_or_has_numerical_components \
-	Computed_field_default_has_numerical_components
-/*******************************************************************************
-LAST MODIFIED : 14 August 2006
-
-DESCRIPTION :
-Window projection does have numerical components.
-==============================================================================*/
-
-#define Computed_field_or_not_in_use \
-	(Computed_field_not_in_use_function)NULL
-/*******************************************************************************
-LAST MODIFIED : 14 August 2006
-
-DESCRIPTION :
-No special criteria.
-==============================================================================*/
-
-static int Computed_field_or_evaluate_cache_at_location(
-   struct Computed_field *field, Field_location* location)
-/*******************************************************************************
-LAST MODIFIED : 14 August 2006
+LAST MODIFIED : 25 August 2006
 
 DESCRIPTION :
 Evaluate the fields cache at the element.
@@ -139,7 +108,7 @@ Evaluate the fields cache at the element.
 	
 	int i, return_code;
 
-	ENTER(Computed_field_or_evaluate_cache_at_location);
+	ENTER(Computed_field_or::evaluate_cache_at_location);
 	if (field && location && (field->number_of_source_fields == 2) && 
 		(field->number_of_components ==
                  field->source_fields[0]->number_of_components) &&
@@ -159,7 +128,7 @@ Evaluate the fields cache at the element.
 			if (0 < location->get_number_of_derivatives())
 			{
 				display_message(ERROR_MESSAGE,
-				"Computed_field_or_evaluate_cache_at_location.  "
+				"Computed_field_or::evaluate_cache_at_location.  "
 				"Cannot calculate derivatives of or");
 			        return_code = 0;
 			}
@@ -168,64 +137,22 @@ Evaluate the fields cache at the element.
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Computed_field_or_evaluate_cache_at_location.  "
+			"Computed_field_or::evaluate_cache_at_location.  "
 			"Invalid argument(s)");
 		return_code = 0;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* Computed_field_or_evaluate_cache_at_location */
+} /* Computed_field_or::evaluate_cache_at_location */
 
-#define Computed_field_or_set_values_at_location \
-   (Computed_field_set_values_at_location_function)NULL
-/*******************************************************************************
-LAST MODIFIED : 14 August 2006
-
-DESCRIPTION :
-Not implemented yet.
-==============================================================================*/
-
-#define Computed_field_or_get_native_discretization_in_element \
-	Computed_field_default_get_native_discretization_in_element
-/*******************************************************************************
-LAST MODIFIED : 14 August 2006
-
-DESCRIPTION :
-Inherit result from first source field.
-==============================================================================*/
-
-#define Computed_field_or_find_element_xi \
-   (Computed_field_find_element_xi_function)NULL
-/*******************************************************************************
-LAST MODIFIED : 14 August 2006
-
-DESCRIPTION :
-Not implemented yet.
-==============================================================================*/
-
-#define Computed_field_or_get_native_resolution \
-	(Computed_field_get_native_resolution_function)NULL
-
-DEFINE_DEFAULT_LIST_COMPUTED_FIELD_FUNCTION(or, "source fields", "values")
-
-DEFINE_DEFAULT_COMPUTED_FIELD_GET_COMMAND_STRING_FUNCTION(or, \
-	"fields", "values")
-
-#define Computed_field_or_has_multiple_times \
-	Computed_field_default_has_multiple_times
-/*******************************************************************************
-LAST MODIFIED : 14 August 2006
-
-DESCRIPTION :
-Works out whether time influences the field.
-==============================================================================*/
+} //namespace
 
 int Computed_field_set_type_or(struct Computed_field *field,
 	struct Computed_field *source_field_one,
 	struct Computed_field *source_field_two)
 /*******************************************************************************
-LAST MODIFIED : 14 August 2006
+LAST MODIFIED : 25 August 2006
 
 DESCRIPTION :
 Converts <field> to type COMPUTED_FIELD_XYZ with the supplied
@@ -251,16 +178,12 @@ although its cache may be lost.
 			/* 2. free current type-specific data */
 			Computed_field_clear_type(field);
 			/* 3. establish the new type */
-			field->type_string = computed_field_or_type_string;
 			field->number_of_components = source_field_one->number_of_components;
 			source_fields[0]=ACCESS(Computed_field)(source_field_one);
 			source_fields[1]=ACCESS(Computed_field)(source_field_two);
 			field->source_fields=source_fields;
 			field->number_of_source_fields=number_of_source_fields;			
-			field->type_specific_data = (void *)1;
-
-			/* Set all the methods */
-			COMPUTED_FIELD_ESTABLISH_METHODS(or);
+			field->core = new Computed_field_or(field);
 		}
 		else
 		{
@@ -283,7 +206,7 @@ int Computed_field_get_type_or(struct Computed_field *field,
 	struct Computed_field **source_field_one,
 	struct Computed_field **source_field_two)
 /*******************************************************************************
-LAST MODIFIED : 14 August 2006
+LAST MODIFIED : 25 August 2006
 
 DESCRIPTION :
 If the field is of type COMPUTED_FIELD_XYZ, the 
@@ -293,7 +216,7 @@ If the field is of type COMPUTED_FIELD_XYZ, the
 	int return_code;
 
 	ENTER(Computed_field_get_type_or);
-	if (field&&(field->type_string==computed_field_or_type_string))
+	if (field&&(dynamic_cast<Computed_field_or*>(field->core)))
 	{
 		*source_field_one = field->source_fields[0];
 		*source_field_two = field->source_fields[1];
@@ -310,10 +233,10 @@ If the field is of type COMPUTED_FIELD_XYZ, the
 	return (return_code);
 } /* Computed_field_get_type_or */
 
-static int define_Computed_field_type_or(struct Parse_state *state,
+int define_Computed_field_type_or(struct Parse_state *state,
 	void *field_void,void *computed_field_logical_operators_package_void)
 /*******************************************************************************
-LAST MODIFIED : 14 August 2006
+LAST MODIFIED : 25 August 2006
 
 DESCRIPTION :
 Converts <field> into type COMPUTED_FIELD_POWER (if it is not 
@@ -416,77 +339,48 @@ already) and allows its contents to be modified.
 	return (return_code);
 } /* define_Computed_field_type_or */
 
-static char computed_field_and_type_string[] = "and";
+namespace {
 
-DEFINE_DEFAULT_COMPUTED_FIELD_IS_TYPE_FUNCTION(and)
+char computed_field_and_type_string[] = "and";
 
-#define Computed_field_and_clear_type_specific \
-   Computed_field_default_clear_type_specific
+class Computed_field_and : public Computed_field_core
+{
+public:
+	Computed_field_and(Computed_field *field) : Computed_field_core(field)
+	{
+	};
+
+private:
+	Computed_field_core *copy(Computed_field* new_parent)
+	{
+		return new Computed_field_and(new_parent);
+	}
+
+	char *get_type_string()
+	{
+		return(computed_field_and_type_string);
+	}
+
+	int compare(Computed_field_core* other_field)
+	{
+		if (dynamic_cast<Computed_field_and*>(other_field))
+		{
+			return 1;
+		}
+		else
+		{
+			return 0;
+		}
+	}
+
+	int evaluate_cache_at_location(Field_location* location);
+
+};
+
+int Computed_field_and::evaluate_cache_at_location(
+    Field_location* location)
 /*******************************************************************************
-LAST MODIFIED : 14 August 2006
-
-DESCRIPTION :
-No type specific data
-==============================================================================*/
-
-#define Computed_field_and_copy_type_specific \
-   Computed_field_default_copy_type_specific
-/*******************************************************************************
-LAST MODIFIED : 14 August 2006
-
-DESCRIPTION :
-No type specific data
-==============================================================================*/
-
-#define Computed_field_and_clear_cache_type_specific \
-   (Computed_field_clear_cache_type_specific_function)NULL
-/*******************************************************************************
-LAST MODIFIED : 14 August 2006
-
-DESCRIPTION :
-This function is not needed for this type.
-==============================================================================*/
-
-#define Computed_field_and_type_specific_contents_match \
-   Computed_field_default_type_specific_contents_match
-/*******************************************************************************
-LAST MODIFIED : 14 August 2006
-
-DESCRIPTION :
-No type specific data
-==============================================================================*/
-
-#define Computed_field_and_is_defined_at_location \
-	Computed_field_default_is_defined_at_location
-/*******************************************************************************
-LAST MODIFIED : 14 August 2006
-
-DESCRIPTION :
-Check the source fields using the default.
-==============================================================================*/
-
-#define Computed_field_and_has_numerical_components \
-	Computed_field_default_has_numerical_components
-/*******************************************************************************
-LAST MODIFIED : 14 August 2006
-
-DESCRIPTION :
-Window projection does have numerical components.
-==============================================================================*/
-
-#define Computed_field_and_not_in_use \
-	(Computed_field_not_in_use_function)NULL
-/*******************************************************************************
-LAST MODIFIED : 14 August 2006
-
-DESCRIPTION :
-No special criteria.
-==============================================================================*/
-
-static int Computed_field_and_evaluate_cache_at_location(
-   struct Computed_field *field, Field_location* location)
-/*******************************************************************************
-LAST MODIFIED : 14 August 2006
+LAST MODIFIED : 25 August 2006
 
 DESCRIPTION :
 Evaluate the fields cache at the element.
@@ -495,7 +389,7 @@ Evaluate the fields cache at the element.
 
 	int i, return_code;
 
-	ENTER(Computed_field_and_evaluate_cache_at_location);
+	ENTER(Computed_field_and::evaluate_cache_at_location);
 	if (field && location && (field->number_of_source_fields == 2) && 
 		(field->number_of_components ==
                  field->source_fields[0]->number_of_components) &&
@@ -515,7 +409,7 @@ Evaluate the fields cache at the element.
 			if (0 < location->get_number_of_derivatives())
 			{
 				display_message(ERROR_MESSAGE,
-				"Computed_field_and_evaluate_cache_at_location.  "
+				"Computed_field_and::evaluate_cache_at_location.  "
 				"Cannot calculate derivatives of and");
 			        return_code = 0;
 			}
@@ -524,64 +418,22 @@ Evaluate the fields cache at the element.
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Computed_field_and_evaluate_cache_at_location.  "
+			"Computed_field_and::evaluate_cache_at_location.  "
 			"Invalid argument(s)");
 		return_code = 0;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* Computed_field_and_evaluate_cache_at_location */
+} /* Computed_field_and::evaluate_cache_at_location */
 
-#define Computed_field_and_set_values_at_location \
-   (Computed_field_set_values_at_location_function)NULL
-/*******************************************************************************
-LAST MODIFIED : 14 August 2006
-
-DESCRIPTION :
-Not implemented yet.
-==============================================================================*/
-
-#define Computed_field_and_get_native_discretization_in_element \
-	Computed_field_default_get_native_discretization_in_element
-/*******************************************************************************
-LAST MODIFIED : 14 August 2006
-
-DESCRIPTION :
-Inherit result from first source field.
-==============================================================================*/
-
-#define Computed_field_and_find_element_xi \
-   (Computed_field_find_element_xi_function)NULL
-/*******************************************************************************
-LAST MODIFIED : 14 August 2006
-
-DESCRIPTION :
-Not implemented yet.
-==============================================================================*/
-
-#define Computed_field_and_get_native_resolution \
-	(Computed_field_get_native_resolution_function)NULL
-
-DEFINE_DEFAULT_LIST_COMPUTED_FIELD_FUNCTION(and, "source fields", "values")
-
-DEFINE_DEFAULT_COMPUTED_FIELD_GET_COMMAND_STRING_FUNCTION(and, \
-	"fields", "values")
-
-#define Computed_field_and_has_multiple_times \
-	Computed_field_default_has_multiple_times
-/*******************************************************************************
-LAST MODIFIED : 14 August 2006
-
-DESCRIPTION :
-Wandks out whether time influences the field.
-==============================================================================*/
+} //namespace
 
 int Computed_field_set_type_and(struct Computed_field *field,
 	struct Computed_field *source_field_one,
 	struct Computed_field *source_field_two)
 /*******************************************************************************
-LAST MODIFIED : 14 August 2006
+LAST MODIFIED : 25 August 2006
 
 DESCRIPTION :
 Converts <field> to type COMPUTED_FIELD_AND with the supplied
@@ -607,16 +459,12 @@ although its cache may be lost.
 			/* 2. free current type-specific data */
 			Computed_field_clear_type(field);
 			/* 3. establish the new type */
-			field->type_string = computed_field_and_type_string;
 			field->number_of_components = source_field_one->number_of_components;
 			source_fields[0]=ACCESS(Computed_field)(source_field_one);
 			source_fields[1]=ACCESS(Computed_field)(source_field_two);
 			field->source_fields=source_fields;
 			field->number_of_source_fields=number_of_source_fields;			
-			field->type_specific_data = (void *)1;
-
-			/* Set all the methods */
-			COMPUTED_FIELD_ESTABLISH_METHODS(and);
+			field->core = new Computed_field_and(field);
 		}
 		else
 		{
@@ -639,7 +487,7 @@ int Computed_field_get_type_and(struct Computed_field *field,
 	struct Computed_field **source_field_one,
 	struct Computed_field **source_field_two)
 /*******************************************************************************
-LAST MODIFIED : 14 August 2006
+LAST MODIFIED : 25 August 2006
 
 DESCRIPTION :
 If the field is of type COMPUTED_FIELD_AND, the 
@@ -649,7 +497,7 @@ If the field is of type COMPUTED_FIELD_AND, the
 	int return_code;
 
 	ENTER(Computed_field_get_type_and);
-	if (field&&(field->type_string==computed_field_and_type_string))
+	if (field&&(dynamic_cast<Computed_field_and*>(field->core)))
 	{
 		*source_field_one = field->source_fields[0];
 		*source_field_two = field->source_fields[1];
@@ -666,10 +514,10 @@ If the field is of type COMPUTED_FIELD_AND, the
 	return (return_code);
 } /* Computed_field_get_type_and */
 
-static int define_Computed_field_type_and(struct Parse_state *state,
+int define_Computed_field_type_and(struct Parse_state *state,
 	void *field_void,void *computed_field_logical_operators_package_void)
 /*******************************************************************************
-LAST MODIFIED : 14 August 2006
+LAST MODIFIED : 25 August 2006
 
 DESCRIPTION :
 Converts <field> into type COMPUTED_FIELD_AND (if it is not 
@@ -772,77 +620,47 @@ already) and allows its contents to be modified.
 	return (return_code);
 } /* define_Computed_field_type_and */
 
-static char computed_field_xor_type_string[] = "xor";
+namespace {
 
-DEFINE_DEFAULT_COMPUTED_FIELD_IS_TYPE_FUNCTION(xor)
+char computed_field_xor_type_string[] = "xor";
 
-#define Computed_field_xor_clear_type_specific \
-   Computed_field_default_clear_type_specific
+class Computed_field_xor : public Computed_field_core
+{
+public:
+	Computed_field_xor(Computed_field *field) : Computed_field_core(field)
+	{
+	};
+
+private:
+	Computed_field_core *copy(Computed_field* new_parent)
+	{
+		return new Computed_field_xor(new_parent);
+	}
+
+	char *get_type_string()
+	{
+		return(computed_field_xor_type_string);
+	}
+
+	int compare(Computed_field_core* other_field)
+	{
+		if (dynamic_cast<Computed_field_xor*>(other_field))
+		{
+			return 1;
+		}
+		else
+		{
+			return 0;
+		}
+	}
+
+	int evaluate_cache_at_location(Field_location* location);
+};
+
+int Computed_field_xor::evaluate_cache_at_location(
+    Field_location* location)
 /*******************************************************************************
-LAST MODIFIED : 14 August 2006
-
-DESCRIPTION :
-No type specific data
-==============================================================================*/
-
-#define Computed_field_xor_copy_type_specific \
-   Computed_field_default_copy_type_specific
-/*******************************************************************************
-LAST MODIFIED : 14 August 2006
-
-DESCRIPTION :
-No type specific data
-==============================================================================*/
-
-#define Computed_field_xor_clear_cache_type_specific \
-   (Computed_field_clear_cache_type_specific_function)NULL
-/*******************************************************************************
-LAST MODIFIED : 14 August 2006
-
-DESCRIPTION :
-This function is not needed for this type.
-==============================================================================*/
-
-#define Computed_field_xor_type_specific_contents_match \
-   Computed_field_default_type_specific_contents_match
-/*******************************************************************************
-LAST MODIFIED : 14 August 2006
-
-DESCRIPTION :
-No type specific data
-==============================================================================*/
-
-#define Computed_field_xor_is_defined_at_location \
-	Computed_field_default_is_defined_at_location
-/*******************************************************************************
-LAST MODIFIED : 14 August 2006
-
-DESCRIPTION :
-Check the source fields using the default.
-==============================================================================*/
-
-#define Computed_field_xor_has_numerical_components \
-	Computed_field_default_has_numerical_components
-/*******************************************************************************
-LAST MODIFIED : 14 August 2006
-
-DESCRIPTION :
-Window projection does have numerical components.
-==============================================================================*/
-
-#define Computed_field_xor_not_in_use \
-	(Computed_field_not_in_use_function)NULL
-/*******************************************************************************
-LAST MODIFIED : 14 August 2006
-
-DESCRIPTION :
-No special criteria.
-==============================================================================*/
-
-static int Computed_field_xor_evaluate_cache_at_location(
-   struct Computed_field *field, Field_location* location)
-/*******************************************************************************
-LAST MODIFIED : 14 August 2006
+LAST MODIFIED : 25 August 2006
 
 DESCRIPTION :
 Evaluate the fields cache at the element.
@@ -850,7 +668,7 @@ Evaluate the fields cache at the element.
 {
 	int i, return_code;
 
-	ENTER(Computed_field_xor_evaluate_cache_at_location);
+	ENTER(Computed_field_xor::evaluate_cache_at_location);
 	if (field && location && (field->number_of_source_fields == 2) && 
 		(field->number_of_components ==
                  field->source_fields[0]->number_of_components) &&
@@ -875,7 +693,7 @@ Evaluate the fields cache at the element.
 			if (0 < location->get_number_of_derivatives())
 			{
 				display_message(ERROR_MESSAGE,
-				"Computed_field_xor_evaluate_cache_at_location.  "
+				"Computed_field_xor::evaluate_cache_at_location.  "
 				"Cannot calculate derivatives of xor");
 			        return_code = 0;
 			}
@@ -884,64 +702,24 @@ Evaluate the fields cache at the element.
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Computed_field_xor_evaluate_cache_at_location.  "
+			"Computed_field_xor::evaluate_cache_at_location.  "
 			"Invalid argument(s)");
 		return_code = 0;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* Computed_field_xor_evaluate_cache_at_location */
+} /* Computed_field_xor::evaluate_cache_at_location */
 
-#define Computed_field_xor_set_values_at_location \
-   (Computed_field_set_values_at_location_function)NULL
-/*******************************************************************************
-LAST MODIFIED : 14 August 2006
 
-DESCRIPTION :
-Not implemented yet.
-==============================================================================*/
 
-#define Computed_field_xor_get_native_discretization_in_element \
-	Computed_field_default_get_native_discretization_in_element
-/*******************************************************************************
-LAST MODIFIED : 14 August 2006
-
-DESCRIPTION :
-Inherit result from first source field.
-==============================================================================*/
-
-#define Computed_field_xor_find_element_xi \
-   (Computed_field_find_element_xi_function)NULL
-/*******************************************************************************
-LAST MODIFIED : 14 August 2006
-
-DESCRIPTION :
-Not implemented yet.
-==============================================================================*/
-
-#define Computed_field_xor_get_native_resolution \
-	(Computed_field_get_native_resolution_function)NULL
-
-DEFINE_DEFAULT_LIST_COMPUTED_FIELD_FUNCTION(xor, "source fields", "values")
-
-DEFINE_DEFAULT_COMPUTED_FIELD_GET_COMMAND_STRING_FUNCTION(xor, \
-	"fields", "values")
-
-#define Computed_field_xor_has_multiple_times \
-	Computed_field_default_has_multiple_times
-/*******************************************************************************
-LAST MODIFIED : 14 August 2006
-
-DESCRIPTION :
-Wxorks out whether time influences the field.
-==============================================================================*/
+} //namespace
 
 int Computed_field_set_type_xor(struct Computed_field *field,
 	struct Computed_field *source_field_one,
 	struct Computed_field *source_field_two)
 /*******************************************************************************
-LAST MODIFIED : 14 August 2006
+LAST MODIFIED : 25 August 2006
 
 DESCRIPTION :
 Converts <field> to type COMPUTED_FIELD_XOR with the supplied
@@ -967,16 +745,12 @@ although its cache may be lost.
 			/* 2. free current type-specific data */
 			Computed_field_clear_type(field);
 			/* 3. establish the new type */
-			field->type_string = computed_field_xor_type_string;
 			field->number_of_components = source_field_one->number_of_components;
 			source_fields[0]=ACCESS(Computed_field)(source_field_one);
 			source_fields[1]=ACCESS(Computed_field)(source_field_two);
 			field->source_fields=source_fields;
 			field->number_of_source_fields=number_of_source_fields;			
-			field->type_specific_data = (void *)1;
-
-			/* Set all the methods */
-			COMPUTED_FIELD_ESTABLISH_METHODS(xor);
+			field->core = new Computed_field_xor(field);
 		}
 		else
 		{
@@ -999,7 +773,7 @@ int Computed_field_get_type_xor(struct Computed_field *field,
 	struct Computed_field **source_field_one,
 	struct Computed_field **source_field_two)
 /*******************************************************************************
-LAST MODIFIED : 14 August 2006
+LAST MODIFIED : 25 August 2006
 
 DESCRIPTION :
 If the field is of type COMPUTED_FIELD_XOR, the 
@@ -1009,7 +783,7 @@ If the field is of type COMPUTED_FIELD_XOR, the
 	int return_code;
 
 	ENTER(Computed_field_get_type_xor);
-	if (field&&(field->type_string==computed_field_xor_type_string))
+	if (field&&(dynamic_cast<Computed_field_xor*>(field->core)))
 	{
 		*source_field_one = field->source_fields[0];
 		*source_field_two = field->source_fields[1];
@@ -1026,10 +800,10 @@ If the field is of type COMPUTED_FIELD_XOR, the
 	return (return_code);
 } /* Computed_field_get_type_xor */
 
-static int define_Computed_field_type_xor(struct Parse_state *state,
+int define_Computed_field_type_xor(struct Parse_state *state,
 	void *field_void,void *computed_field_logical_operators_package_void)
 /*******************************************************************************
-LAST MODIFIED : 14 August 2006
+LAST MODIFIED : 25 August 2006
 
 DESCRIPTION :
 Converts <field> into type COMPUTED_FIELD_XOR (if it is not 
@@ -1132,77 +906,47 @@ already) and allows its contents to be modified.
 	return (return_code);
 } /* define_Computed_field_type_xor */
 
-static char computed_field_equal_to_type_string[] = "equal_to";
+namespace {
 
-DEFINE_DEFAULT_COMPUTED_FIELD_IS_TYPE_FUNCTION(equal_to)
+char computed_field_equal_to_type_string[] = "equal_to";
 
-#define Computed_field_equal_to_clear_type_specific \
-   Computed_field_default_clear_type_specific
+class Computed_field_equal_to : public Computed_field_core
+{
+public:
+	Computed_field_equal_to(Computed_field *field) : Computed_field_core(field)
+	{
+	};
+
+private:
+	Computed_field_core *copy(Computed_field* new_parent)
+	{
+		return new Computed_field_equal_to(new_parent);
+	}
+
+	char *get_type_string()
+	{
+		return(computed_field_equal_to_type_string);
+	}
+
+	int compare(Computed_field_core* other_field)
+	{
+		if (dynamic_cast<Computed_field_equal_to*>(other_field))
+		{
+			return 1;
+		}
+		else
+		{
+			return 0;
+		}
+	}
+
+	int evaluate_cache_at_location(Field_location* location);
+};
+
+int Computed_field_equal_to::evaluate_cache_at_location(
+    Field_location* location)
 /*******************************************************************************
-LAST MODIFIED : 14 August 2006
-
-DESCRIPTION :
-No type specific data
-==============================================================================*/
-
-#define Computed_field_equal_to_copy_type_specific \
-   Computed_field_default_copy_type_specific
-/*******************************************************************************
-LAST MODIFIED : 14 August 2006
-
-DESCRIPTION :
-No type specific data
-==============================================================================*/
-
-#define Computed_field_equal_to_clear_cache_type_specific \
-   (Computed_field_clear_cache_type_specific_function)NULL
-/*******************************************************************************
-LAST MODIFIED : 14 August 2006
-
-DESCRIPTION :
-This function is not needed for this type.
-==============================================================================*/
-
-#define Computed_field_equal_to_type_specific_contents_match \
-   Computed_field_default_type_specific_contents_match
-/*******************************************************************************
-LAST MODIFIED : 14 August 2006
-
-DESCRIPTION :
-No type specific data
-==============================================================================*/
-
-#define Computed_field_equal_to_is_defined_at_location \
-	Computed_field_default_is_defined_at_location
-/*******************************************************************************
-LAST MODIFIED : 14 August 2006
-
-DESCRIPTION :
-Check the source fields using the default.
-==============================================================================*/
-
-#define Computed_field_equal_to_has_numerical_components \
-	Computed_field_default_has_numerical_components
-/*******************************************************************************
-LAST MODIFIED : 14 August 2006
-
-DESCRIPTION :
-Window projection does have numerical components.
-==============================================================================*/
-
-#define Computed_field_equal_to_not_in_use \
-	(Computed_field_not_in_use_function)NULL
-/*******************************************************************************
-LAST MODIFIED : 14 August 2006
-
-DESCRIPTION :
-No special criteria.
-==============================================================================*/
-
-static int Computed_field_equal_to_evaluate_cache_at_location(
-   struct Computed_field *field, Field_location* location)
-/*******************************************************************************
-LAST MODIFIED : 14 August 2006
+LAST MODIFIED : 25 August 2006
 
 DESCRIPTION :
 Evaluate the fields cache at the element.
@@ -1210,7 +954,7 @@ Evaluate the fields cache at the element.
 {
 	int i, return_code;
 
-	ENTER(Computed_field_equal_to_evaluate_cache_at_location);
+	ENTER(Computed_field_equal_to::evaluate_cache_at_location);
 	if (field && location && (field->number_of_source_fields == 2) && 
 		(field->number_of_components ==
 		field->source_fields[0]->number_of_components) &&
@@ -1260,7 +1004,7 @@ Evaluate the fields cache at the element.
 			if (0 < location->get_number_of_derivatives())
 			{
 				display_message(ERROR_MESSAGE,
-					"Computed_field_equal_to_evaluate_cache_at_location.  "
+					"Computed_field_equal_to::evaluate_cache_at_location.  "
 					"Cannot calculate derivatives of equal_to");
 				return_code = 0;
 			}
@@ -1269,64 +1013,24 @@ Evaluate the fields cache at the element.
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Computed_field_equal_to_evaluate_cache_at_location.  "
+			"Computed_field_equal_to::evaluate_cache_at_location.  "
 			"Invalid argument(s)");
 		return_code = 0;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* Computed_field_equal_to_evaluate_cache_at_location */
+} /* Computed_field_equal_to::evaluate_cache_at_location */
 
-#define Computed_field_equal_to_set_values_at_location \
-   (Computed_field_set_values_at_location_function)NULL
-/*******************************************************************************
-LAST MODIFIED : 14 August 2006
 
-DESCRIPTION :
-Not implemented yet.
-==============================================================================*/
 
-#define Computed_field_equal_to_get_native_discretization_in_element \
-	Computed_field_default_get_native_discretization_in_element
-/*******************************************************************************
-LAST MODIFIED : 14 August 2006
-
-DESCRIPTION :
-Inherit result from first source field.
-==============================================================================*/
-
-#define Computed_field_equal_to_find_element_xi \
-   (Computed_field_find_element_xi_function)NULL
-/*******************************************************************************
-LAST MODIFIED : 14 August 2006
-
-DESCRIPTION :
-Not implemented yet.
-==============================================================================*/
-
-#define Computed_field_equal_to_get_native_resolution \
-	(Computed_field_get_native_resolution_function)NULL
-
-DEFINE_DEFAULT_LIST_COMPUTED_FIELD_FUNCTION(equal_to, "source fields", "values")
-
-DEFINE_DEFAULT_COMPUTED_FIELD_GET_COMMAND_STRING_FUNCTION(equal_to, \
-	"fields", "values")
-
-#define Computed_field_equal_to_has_multiple_times \
-	Computed_field_default_has_multiple_times
-/*******************************************************************************
-LAST MODIFIED : 14 August 2006
-
-DESCRIPTION :
-Wequal_toks out whether time influences the field.
-==============================================================================*/
+} //namespace
 
 int Computed_field_set_type_equal_to(struct Computed_field *field,
 	struct Computed_field *source_field_one,
 	struct Computed_field *source_field_two)
 /*******************************************************************************
-LAST MODIFIED : 14 August 2006
+LAST MODIFIED : 25 August 2006
 
 DESCRIPTION :
 Converts <field> to type COMPUTED_FIELD_EQUAL_TO with the supplied
@@ -1352,16 +1056,12 @@ although its cache may be lost.
 			/* 2. free current type-specific data */
 			Computed_field_clear_type(field);
 			/* 3. establish the new type */
-			field->type_string = computed_field_equal_to_type_string;
 			field->number_of_components = source_field_one->number_of_components;
 			source_fields[0]=ACCESS(Computed_field)(source_field_one);
 			source_fields[1]=ACCESS(Computed_field)(source_field_two);
 			field->source_fields=source_fields;
 			field->number_of_source_fields=number_of_source_fields;			
-			field->type_specific_data = (void *)1;
-
-			/* Set all the methods */
-			COMPUTED_FIELD_ESTABLISH_METHODS(equal_to);
+			field->core = new Computed_field_equal_to(field);
 		}
 		else
 		{
@@ -1384,7 +1084,7 @@ int Computed_field_get_type_equal_to(struct Computed_field *field,
 	struct Computed_field **source_field_one,
 	struct Computed_field **source_field_two)
 /*******************************************************************************
-LAST MODIFIED : 14 August 2006
+LAST MODIFIED : 25 August 2006
 
 DESCRIPTION :
 If the field is of type COMPUTED_FIELD_EQUAL_TO, the 
@@ -1394,7 +1094,7 @@ If the field is of type COMPUTED_FIELD_EQUAL_TO, the
 	int return_code;
 
 	ENTER(Computed_field_get_type_equal_to);
-	if (field&&(field->type_string==computed_field_equal_to_type_string))
+	if (field&&(dynamic_cast<Computed_field_equal_to*>(field->core)))
 	{
 		*source_field_one = field->source_fields[0];
 		*source_field_two = field->source_fields[1];
@@ -1411,10 +1111,10 @@ If the field is of type COMPUTED_FIELD_EQUAL_TO, the
 	return (return_code);
 } /* Computed_field_get_type_equal_to */
 
-static int define_Computed_field_type_equal_to(struct Parse_state *state,
+int define_Computed_field_type_equal_to(struct Parse_state *state,
 	void *field_void,void *computed_field_logical_operators_package_void)
 /*******************************************************************************
-LAST MODIFIED : 14 August 2006
+LAST MODIFIED : 25 August 2006
 
 DESCRIPTION :
 Converts <field> into type COMPUTED_FIELD_EQUAL_TO (if it is not 
@@ -1518,77 +1218,47 @@ already) and allows its contents to be modified.
 	return (return_code);
 } /* define_Computed_field_type_equal_to */
 
-static char computed_field_less_than_type_string[] = "less_than";
+namespace {
 
-DEFINE_DEFAULT_COMPUTED_FIELD_IS_TYPE_FUNCTION(less_than)
+char computed_field_less_than_type_string[] = "less_than";
 
-#define Computed_field_less_than_clear_type_specific \
-   Computed_field_default_clear_type_specific
+class Computed_field_less_than : public Computed_field_core
+{
+public:
+	Computed_field_less_than(Computed_field *field) : Computed_field_core(field)
+	{
+	};
+
+private:
+	Computed_field_core *copy(Computed_field* new_parent)
+	{
+		return new Computed_field_less_than(new_parent);
+	}
+
+	char *get_type_string()
+	{
+		return(computed_field_less_than_type_string);
+	}
+
+	int compare(Computed_field_core* other_field)
+	{
+		if (dynamic_cast<Computed_field_less_than*>(other_field))
+		{
+			return 1;
+		}
+		else
+		{
+			return 0;
+		}
+	}
+
+	int evaluate_cache_at_location(Field_location* location);
+};
+
+int Computed_field_less_than::evaluate_cache_at_location(
+    Field_location* location)
 /*******************************************************************************
-LAST MODIFIED : 14 August 2006
-
-DESCRIPTION :
-No type specific data
-==============================================================================*/
-
-#define Computed_field_less_than_copy_type_specific \
-   Computed_field_default_copy_type_specific
-/*******************************************************************************
-LAST MODIFIED : 14 August 2006
-
-DESCRIPTION :
-No type specific data
-==============================================================================*/
-
-#define Computed_field_less_than_clear_cache_type_specific \
-   (Computed_field_clear_cache_type_specific_function)NULL
-/*******************************************************************************
-LAST MODIFIED : 14 August 2006
-
-DESCRIPTION :
-This function is not needed for this type.
-==============================================================================*/
-
-#define Computed_field_less_than_type_specific_contents_match \
-   Computed_field_default_type_specific_contents_match
-/*******************************************************************************
-LAST MODIFIED : 14 August 2006
-
-DESCRIPTION :
-No type specific data
-==============================================================================*/
-
-#define Computed_field_less_than_is_defined_at_location \
-	Computed_field_default_is_defined_at_location
-/*******************************************************************************
-LAST MODIFIED : 14 August 2006
-
-DESCRIPTION :
-Check the source fields using the default.
-==============================================================================*/
-
-#define Computed_field_less_than_has_numerical_components \
-	Computed_field_default_has_numerical_components
-/*******************************************************************************
-LAST MODIFIED : 14 August 2006
-
-DESCRIPTION :
-Window projection does have numerical components.
-==============================================================================*/
-
-#define Computed_field_less_than_not_in_use \
-	(Computed_field_not_in_use_function)NULL
-/*******************************************************************************
-LAST MODIFIED : 14 August 2006
-
-DESCRIPTION :
-No special criteria.
-==============================================================================*/
-
-static int Computed_field_less_than_evaluate_cache_at_location(
-   struct Computed_field *field, Field_location* location)
-/*******************************************************************************
-LAST MODIFIED : 14 August 2006
+LAST MODIFIED : 25 August 2006
 
 DESCRIPTION :
 Evaluate the fields cache at the element.
@@ -1596,7 +1266,7 @@ Evaluate the fields cache at the element.
 {
 	int i, return_code;
 
-	ENTER(Computed_field_less_than_evaluate_cache_at_location);
+	ENTER(Computed_field_less_than::evaluate_cache_at_location);
 	if (field && location && (field->number_of_source_fields == 2) && 
 		(field->number_of_components ==
                  field->source_fields[0]->number_of_components) &&
@@ -1616,7 +1286,7 @@ Evaluate the fields cache at the element.
 			if (0 < location->get_number_of_derivatives())
 			{
 				display_message(ERROR_MESSAGE,
-				"Computed_field_less_than_evaluate_cache_at_location.  "
+				"Computed_field_less_than::evaluate_cache_at_location.  "
 				"Cannot calculate derivatives of less_than");
 			        return_code = 0;
 			}
@@ -1625,64 +1295,24 @@ Evaluate the fields cache at the element.
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Computed_field_less_than_evaluate_cache_at_location.  "
+			"Computed_field_less_than::evaluate_cache_at_location.  "
 			"Invalid argument(s)");
 		return_code = 0;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* Computed_field_less_than_evaluate_cache_at_location */
+} /* Computed_field_less_than::evaluate_cache_at_location */
 
-#define Computed_field_less_than_set_values_at_location \
-   (Computed_field_set_values_at_location_function)NULL
-/*******************************************************************************
-LAST MODIFIED : 14 August 2006
 
-DESCRIPTION :
-Not implemented yet.
-==============================================================================*/
 
-#define Computed_field_less_than_get_native_discretization_in_element \
-	Computed_field_default_get_native_discretization_in_element
-/*******************************************************************************
-LAST MODIFIED : 14 August 2006
-
-DESCRIPTION :
-Inherit result from first source field.
-==============================================================================*/
-
-#define Computed_field_less_than_find_element_xi \
-   (Computed_field_find_element_xi_function)NULL
-/*******************************************************************************
-LAST MODIFIED : 14 August 2006
-
-DESCRIPTION :
-Not implemented yet.
-==============================================================================*/
-
-#define Computed_field_less_than_get_native_resolution \
-	(Computed_field_get_native_resolution_function)NULL
-
-DEFINE_DEFAULT_LIST_COMPUTED_FIELD_FUNCTION(less_than, "source fields", "values")
-
-DEFINE_DEFAULT_COMPUTED_FIELD_GET_COMMAND_STRING_FUNCTION(less_than, \
-	"fields", "values")
-
-#define Computed_field_less_than_has_multiple_times \
-	Computed_field_default_has_multiple_times
-/*******************************************************************************
-LAST MODIFIED : 14 August 2006
-
-DESCRIPTION :
-Wless_thanks out whether time influences the field.
-==============================================================================*/
+} //namespace
 
 int Computed_field_set_type_less_than(struct Computed_field *field,
 	struct Computed_field *source_field_one,
 	struct Computed_field *source_field_two)
 /*******************************************************************************
-LAST MODIFIED : 14 August 2006
+LAST MODIFIED : 25 August 2006
 
 DESCRIPTION :
 Converts <field> to type COMPUTED_FIELD_LESS_THAN with the supplied
@@ -1708,16 +1338,12 @@ although its cache may be lost.
 			/* 2. free current type-specific data */
 			Computed_field_clear_type(field);
 			/* 3. establish the new type */
-			field->type_string = computed_field_less_than_type_string;
 			field->number_of_components = source_field_one->number_of_components;
 			source_fields[0]=ACCESS(Computed_field)(source_field_one);
 			source_fields[1]=ACCESS(Computed_field)(source_field_two);
 			field->source_fields=source_fields;
 			field->number_of_source_fields=number_of_source_fields;			
-			field->type_specific_data = (void *)1;
-
-			/* Set all the methods */
-			COMPUTED_FIELD_ESTABLISH_METHODS(less_than);
+			field->core = new Computed_field_less_than(field);
 		}
 		else
 		{
@@ -1740,7 +1366,7 @@ int Computed_field_get_type_less_than(struct Computed_field *field,
 	struct Computed_field **source_field_one,
 	struct Computed_field **source_field_two)
 /*******************************************************************************
-LAST MODIFIED : 14 August 2006
+LAST MODIFIED : 25 August 2006
 
 DESCRIPTION :
 If the field is of type COMPUTED_FIELD_LESS_THAN, the 
@@ -1750,7 +1376,7 @@ If the field is of type COMPUTED_FIELD_LESS_THAN, the
 	int return_code;
 
 	ENTER(Computed_field_get_type_less_than);
-	if (field&&(field->type_string==computed_field_less_than_type_string))
+	if (field&&(dynamic_cast<Computed_field_less_than*>(field->core)))
 	{
 		*source_field_one = field->source_fields[0];
 		*source_field_two = field->source_fields[1];
@@ -1767,10 +1393,10 @@ If the field is of type COMPUTED_FIELD_LESS_THAN, the
 	return (return_code);
 } /* Computed_field_get_type_less_than */
 
-static int define_Computed_field_type_less_than(struct Parse_state *state,
+int define_Computed_field_type_less_than(struct Parse_state *state,
 	void *field_void,void *computed_field_logical_operators_package_void)
 /*******************************************************************************
-LAST MODIFIED : 14 August 2006
+LAST MODIFIED : 25 August 2006
 
 DESCRIPTION :
 Converts <field> into type COMPUTED_FIELD_LESS_THAN (if it is not 
@@ -1873,77 +1499,47 @@ already) and allows its contents to be modified.
 	return (return_code);
 } /* define_Computed_field_type_less_than */
 
-static char computed_field_greater_than_type_string[] = "greater_than";
+namespace {
 
-DEFINE_DEFAULT_COMPUTED_FIELD_IS_TYPE_FUNCTION(greater_than)
+char computed_field_greater_than_type_string[] = "greater_than";
 
-#define Computed_field_greater_than_clear_type_specific \
-   Computed_field_default_clear_type_specific
+class Computed_field_greater_than : public Computed_field_core
+{
+public:
+	Computed_field_greater_than(Computed_field *field) : Computed_field_core(field)
+	{
+	};
+
+private:
+	Computed_field_core *copy(Computed_field* new_parent)
+	{
+		return new Computed_field_greater_than(new_parent);
+	}
+
+	char *get_type_string()
+	{
+		return(computed_field_greater_than_type_string);
+	}
+
+	int compare(Computed_field_core* other_field)
+	{
+		if (dynamic_cast<Computed_field_greater_than*>(other_field))
+		{
+			return 1;
+		}
+		else
+		{
+			return 0;
+		}
+	}
+
+	int evaluate_cache_at_location(Field_location* location);
+};
+
+int Computed_field_greater_than::evaluate_cache_at_location(
+    Field_location* location)
 /*******************************************************************************
-LAST MODIFIED : 14 August 2006
-
-DESCRIPTION :
-No type specific data
-==============================================================================*/
-
-#define Computed_field_greater_than_copy_type_specific \
-   Computed_field_default_copy_type_specific
-/*******************************************************************************
-LAST MODIFIED : 14 August 2006
-
-DESCRIPTION :
-No type specific data
-==============================================================================*/
-
-#define Computed_field_greater_than_clear_cache_type_specific \
-   (Computed_field_clear_cache_type_specific_function)NULL
-/*******************************************************************************
-LAST MODIFIED : 14 August 2006
-
-DESCRIPTION :
-This function is not needed for this type.
-==============================================================================*/
-
-#define Computed_field_greater_than_type_specific_contents_match \
-   Computed_field_default_type_specific_contents_match
-/*******************************************************************************
-LAST MODIFIED : 14 August 2006
-
-DESCRIPTION :
-No type specific data
-==============================================================================*/
-
-#define Computed_field_greater_than_is_defined_at_location \
-	Computed_field_default_is_defined_at_location
-/*******************************************************************************
-LAST MODIFIED : 14 August 2006
-
-DESCRIPTION :
-Check the source fields using the default.
-==============================================================================*/
-
-#define Computed_field_greater_than_has_numerical_components \
-	Computed_field_default_has_numerical_components
-/*******************************************************************************
-LAST MODIFIED : 14 August 2006
-
-DESCRIPTION :
-Window projection does have numerical components.
-==============================================================================*/
-
-#define Computed_field_greater_than_not_in_use \
-	(Computed_field_not_in_use_function)NULL
-/*******************************************************************************
-LAST MODIFIED : 14 August 2006
-
-DESCRIPTION :
-No special criteria.
-==============================================================================*/
-
-static int Computed_field_greater_than_evaluate_cache_at_location(
-   struct Computed_field *field, Field_location* location)
-/*******************************************************************************
-LAST MODIFIED : 14 August 2006
+LAST MODIFIED : 25 August 2006
 
 DESCRIPTION :
 Evaluate the fields cache at the element.
@@ -1951,7 +1547,7 @@ Evaluate the fields cache at the element.
 {
 	int i, return_code;
 
-	ENTER(Computed_field_greater_than_evaluate_cache_at_location);
+	ENTER(Computed_field_greater_than::evaluate_cache_at_location);
 	if (field && location && (field->number_of_source_fields == 2) && 
 		(field->number_of_components ==
                  field->source_fields[0]->number_of_components) &&
@@ -1971,7 +1567,7 @@ Evaluate the fields cache at the element.
 			if (0 < location->get_number_of_derivatives())
 			{
 				display_message(ERROR_MESSAGE,
-				"Computed_field_greater_than_evaluate_cache_at_location.  "
+				"Computed_field_greater_than::evaluate_cache_at_location.  "
 				"Cannot calculate derivatives of greater_than");
 			        return_code = 0;
 			}
@@ -1980,64 +1576,24 @@ Evaluate the fields cache at the element.
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Computed_field_greater_than_evaluate_cache_at_location.  "
+			"Computed_field_greater_than::evaluate_cache_at_location.  "
 			"Invalid argument(s)");
 		return_code = 0;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* Computed_field_greater_than_evaluate_cache_at_location */
+} /* Computed_field_greater_than::evaluate_cache_at_location */
 
-#define Computed_field_greater_than_set_values_at_location \
-   (Computed_field_set_values_at_location_function)NULL
-/*******************************************************************************
-LAST MODIFIED : 14 August 2006
 
-DESCRIPTION :
-Not implemented yet.
-==============================================================================*/
 
-#define Computed_field_greater_than_get_native_discretization_in_element \
-	Computed_field_default_get_native_discretization_in_element
-/*******************************************************************************
-LAST MODIFIED : 14 August 2006
-
-DESCRIPTION :
-Inherit result from first source field.
-==============================================================================*/
-
-#define Computed_field_greater_than_find_element_xi \
-   (Computed_field_find_element_xi_function)NULL
-/*******************************************************************************
-LAST MODIFIED : 14 August 2006
-
-DESCRIPTION :
-Not implemented yet.
-==============================================================================*/
-
-#define Computed_field_greater_than_get_native_resolution \
-	(Computed_field_get_native_resolution_function)NULL
-
-DEFINE_DEFAULT_LIST_COMPUTED_FIELD_FUNCTION(greater_than, "source fields", "values")
-
-DEFINE_DEFAULT_COMPUTED_FIELD_GET_COMMAND_STRING_FUNCTION(greater_than, \
-	"fields", "values")
-
-#define Computed_field_greater_than_has_multiple_times \
-	Computed_field_default_has_multiple_times
-/*******************************************************************************
-LAST MODIFIED : 14 August 2006
-
-DESCRIPTION :
-Wgreater_thanks out whether time influences the field.
-==============================================================================*/
+} //namespace
 
 int Computed_field_set_type_greater_than(struct Computed_field *field,
 	struct Computed_field *source_field_one,
 	struct Computed_field *source_field_two)
 /*******************************************************************************
-LAST MODIFIED : 14 August 2006
+LAST MODIFIED : 25 August 2006
 
 DESCRIPTION :
 Converts <field> to type COMPUTED_FIELD_GREATER_THAN with the supplied
@@ -2063,16 +1619,12 @@ although its cache may be lost.
 			/* 2. free current type-specific data */
 			Computed_field_clear_type(field);
 			/* 3. establish the new type */
-			field->type_string = computed_field_greater_than_type_string;
 			field->number_of_components = source_field_one->number_of_components;
 			source_fields[0]=ACCESS(Computed_field)(source_field_one);
 			source_fields[1]=ACCESS(Computed_field)(source_field_two);
 			field->source_fields=source_fields;
 			field->number_of_source_fields=number_of_source_fields;			
-			field->type_specific_data = (void *)1;
-
-			/* Set all the methods */
-			COMPUTED_FIELD_ESTABLISH_METHODS(greater_than);
+			field->core = new Computed_field_greater_than(field);
 		}
 		else
 		{
@@ -2095,7 +1647,7 @@ int Computed_field_get_type_greater_than(struct Computed_field *field,
 	struct Computed_field **source_field_one,
 	struct Computed_field **source_field_two)
 /*******************************************************************************
-LAST MODIFIED : 14 August 2006
+LAST MODIFIED : 25 August 2006
 
 DESCRIPTION :
 If the field is of type COMPUTED_FIELD_GREATER_THAN, the 
@@ -2105,7 +1657,7 @@ If the field is of type COMPUTED_FIELD_GREATER_THAN, the
 	int return_code;
 
 	ENTER(Computed_field_get_type_greater_than);
-	if (field&&(field->type_string==computed_field_greater_than_type_string))
+	if (field&&(dynamic_cast<Computed_field_greater_than*>(field->core)))
 	{
 		*source_field_one = field->source_fields[0];
 		*source_field_two = field->source_fields[1];
@@ -2122,10 +1674,10 @@ If the field is of type COMPUTED_FIELD_GREATER_THAN, the
 	return (return_code);
 } /* Computed_field_get_type_greater_than */
 
-static int define_Computed_field_type_greater_than(struct Parse_state *state,
+int define_Computed_field_type_greater_than(struct Parse_state *state,
 	void *field_void,void *computed_field_logical_operators_package_void)
 /*******************************************************************************
-LAST MODIFIED : 14 August 2006
+LAST MODIFIED : 25 August 2006
 
 DESCRIPTION :
 Converts <field> into type COMPUTED_FIELD_GREATER_THAN (if it is not 
@@ -2228,50 +1780,48 @@ already) and allows its contents to be modified.
 	return (return_code);
 } /* define_Computed_field_type_greater_than */
 
-static char computed_field_is_defined_type_string[] = "is_defined";
+namespace {
 
-DEFINE_DEFAULT_COMPUTED_FIELD_IS_TYPE_FUNCTION(is_defined)
+char computed_field_is_defined_type_string[] = "is_defined";
 
-#define Computed_field_is_defined_clear_type_specific \
-   Computed_field_default_clear_type_specific
+class Computed_field_is_defined : public Computed_field_core
+{
+public:
+	Computed_field_is_defined(Computed_field *field) : Computed_field_core(field)
+	{
+	};
+
+private:
+	Computed_field_core *copy(Computed_field* new_parent)
+	{
+		return new Computed_field_is_defined(new_parent);
+	}
+
+	char *get_type_string()
+	{
+		return(computed_field_is_defined_type_string);
+	}
+
+	int compare(Computed_field_core* other_field)
+	{
+		if (dynamic_cast<Computed_field_is_defined*>(other_field))
+		{
+			return 1;
+		}
+		else
+		{
+			return 0;
+		}
+	}
+
+	int evaluate_cache_at_location(Field_location* location);
+
+	int is_defined_at_location(Field_location* location);
+};
+
+int Computed_field_is_defined::is_defined_at_location(Field_location* location)
 /*******************************************************************************
-LAST MODIFIED : 14 August 2006
-
-DESCRIPTION :
-No type specific data
-==============================================================================*/
-
-#define Computed_field_is_defined_copy_type_specific \
-   Computed_field_default_copy_type_specific
-/*******************************************************************************
-LAST MODIFIED : 14 August 2006
-
-DESCRIPTION :
-No type specific data
-==============================================================================*/
-
-#define Computed_field_is_defined_clear_cache_type_specific \
-   (Computed_field_clear_cache_type_specific_function)NULL
-/*******************************************************************************
-LAST MODIFIED : 14 August 2006
-
-DESCRIPTION :
-This function is not needed for this type.
-==============================================================================*/
-
-#define Computed_field_is_defined_type_specific_contents_match \
-   Computed_field_default_type_specific_contents_match
-/*******************************************************************************
-LAST MODIFIED : 14 August 2006
-
-DESCRIPTION :
-No type specific data
-==============================================================================*/
-
-static int Computed_field_is_defined_is_defined_at_location(
-	Computed_field *field, Field_location* location)
-/*******************************************************************************
-LAST MODIFIED : 14 August 2006
+LAST MODIFIED : 25 August 2006
 
 DESCRIPTION :
 Always returns 1 as the value is whether or not the source field is defined.
@@ -2279,7 +1829,7 @@ Always returns 1 as the value is whether or not the source field is defined.
 {
 	int return_code;
 
-	ENTER(Computed_field_is_defined_is_defined_at_location);
+	ENTER(Computed_field_is_defined::is_defined_at_location);
 	if (field && location)
 	{
 		return_code=1;
@@ -2287,36 +1837,19 @@ Always returns 1 as the value is whether or not the source field is defined.
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Computed_field_is_defined_is_defined_at_location.  "
+			"Computed_field_is_defined::is_defined_at_location.  "
 			"Invalid arguments.");
 		return_code = 0;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* Computed_field_is_defined_is_defined_at_location */
+} /* Computed_field_is_defined::is_defined_at_location */
 
-#define Computed_field_is_defined_has_numerical_components \
-	Computed_field_default_has_numerical_components
+int Computed_field_is_defined::evaluate_cache_at_location(
+    Field_location* location)
 /*******************************************************************************
-LAST MODIFIED : 14 August 2006
-
-DESCRIPTION :
-==============================================================================*/
-
-#define Computed_field_is_defined_not_in_use \
-	(Computed_field_not_in_use_function)NULL
-/*******************************************************************************
-LAST MODIFIED : 14 August 2006
-
-DESCRIPTION :
-No special criteria.
-==============================================================================*/
-
-static int Computed_field_is_defined_evaluate_cache_at_location(
-   struct Computed_field *field, Field_location* location)
-/*******************************************************************************
-LAST MODIFIED : 14 August 2006
+LAST MODIFIED : 25 August 2006
 
 DESCRIPTION :
 Evaluate the fields cache at the element.
@@ -2324,7 +1857,7 @@ Evaluate the fields cache at the element.
 {
 	int return_code;
 
-	ENTER(Computed_field_is_defined_evaluate_cache_at_location);
+	ENTER(Computed_field_is_defined::evaluate_cache_at_location);
 	if (field && location && (field->number_of_source_fields == 1))
 	{
 		/* Calculate the field */
@@ -2335,63 +1868,23 @@ Evaluate the fields cache at the element.
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Computed_field_is_defined_evaluate_cache_at_location.  "
+			"Computed_field_is_defined::evaluate_cache_at_location.  "
 			"Invalid argument(s)");
 		return_code = 0;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* Computed_field_is_defined_evaluate_cache_at_location */
+} /* Computed_field_is_defined::evaluate_cache_at_location */
 
-#define Computed_field_is_defined_set_values_at_location \
-   (Computed_field_set_values_at_location_function)NULL
-/*******************************************************************************
-LAST MODIFIED : 14 August 2006
 
-DESCRIPTION :
-Not implemented yet.
-==============================================================================*/
 
-#define Computed_field_is_defined_get_native_discretization_in_element \
-	Computed_field_default_get_native_discretization_in_element
-/*******************************************************************************
-LAST MODIFIED : 14 August 2006
-
-DESCRIPTION :
-Inherit result from first source field.
-==============================================================================*/
-
-#define Computed_field_is_defined_find_element_xi \
-   (Computed_field_find_element_xi_function)NULL
-/*******************************************************************************
-LAST MODIFIED : 14 August 2006
-
-DESCRIPTION :
-Not implemented yet.
-==============================================================================*/
-
-#define Computed_field_is_defined_get_native_resolution \
-	(Computed_field_get_native_resolution_function)NULL
-
-DEFINE_DEFAULT_LIST_COMPUTED_FIELD_FUNCTION(is_defined, "source fields", "values")
-
-DEFINE_DEFAULT_COMPUTED_FIELD_GET_COMMAND_STRING_FUNCTION(is_defined, \
-	"fields", "values")
-
-#define Computed_field_is_defined_has_multiple_times \
-	Computed_field_default_has_multiple_times
-/*******************************************************************************
-LAST MODIFIED : 14 August 2006
-
-DESCRIPTION :
-Wis_definedks out whether time influences the field.
-==============================================================================*/
+} //namespace
 
 int Computed_field_set_type_is_defined(struct Computed_field *field,
 	struct Computed_field *source_field)
 /*******************************************************************************
-LAST MODIFIED : 14 August 2006
+LAST MODIFIED : 25 August 2006
 
 DESCRIPTION :
 Converts <field> to type COMPUTED_FIELD_IS_DEFINED with the supplied
@@ -2412,15 +1905,11 @@ field, <source_field> .  Number of components is one.
 			/* 2. free current type-specific data */
 			Computed_field_clear_type(field);
 			/* 3. establish the new type */
-			field->type_string = computed_field_is_defined_type_string;
 			field->number_of_components = 1;
 			source_fields[0]=ACCESS(Computed_field)(source_field);
 			field->source_fields=source_fields;
 			field->number_of_source_fields=number_of_source_fields;			
-			field->type_specific_data = (void *)1;
-
-			/* Set all the methods */
-			COMPUTED_FIELD_ESTABLISH_METHODS(is_defined);
+			field->core = new Computed_field_is_defined(field);
 		}
 		else
 		{
@@ -2442,7 +1931,7 @@ field, <source_field> .  Number of components is one.
 int Computed_field_get_type_is_defined(struct Computed_field *field,
 	struct Computed_field **source_field)
 /*******************************************************************************
-LAST MODIFIED : 14 August 2006
+LAST MODIFIED : 25 August 2006
 
 DESCRIPTION :
 If the field is of type COMPUTED_FIELD_IS_DEFINED, the 
@@ -2452,7 +1941,7 @@ If the field is of type COMPUTED_FIELD_IS_DEFINED, the
 	int return_code;
 
 	ENTER(Computed_field_get_type_is_defined);
-	if (field&&(field->type_string==computed_field_is_defined_type_string))
+	if (field&&(dynamic_cast<Computed_field_is_defined*>(field->core)))
 	{
 		*source_field = field->source_fields[0];
 		return_code=1;
@@ -2468,10 +1957,10 @@ If the field is of type COMPUTED_FIELD_IS_DEFINED, the
 	return (return_code);
 } /* Computed_field_get_type_is_defined */
 
-static int define_Computed_field_type_is_defined(struct Parse_state *state,
+int define_Computed_field_type_is_defined(struct Parse_state *state,
 	void *field_void,void *computed_field_logical_operators_package_void)
 /*******************************************************************************
-LAST MODIFIED : 14 August 2006
+LAST MODIFIED : 25 August 2006
 
 DESCRIPTION :
 Converts <field> into type COMPUTED_FIELD_IS_DEFINED (if it is not 
@@ -2553,7 +2042,7 @@ already) and allows its contents to be modified.
 int Computed_field_register_types_logical_operators(
 	struct Computed_field_package *computed_field_package)
 /*******************************************************************************
-LAST MODIFIED : 14 August 2006
+LAST MODIFIED : 25 August 2006
 
 DESCRIPTION :
 ==============================================================================*/

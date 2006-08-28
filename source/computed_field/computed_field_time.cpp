@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : computed_field_time.c
 
-LAST MODIFIED : 14 August 2006
+LAST MODIFIED : 25 August 2006
 
 DESCRIPTION :
 Implements a number of basic component wise operations on computed fields.
@@ -61,100 +61,53 @@ struct Computed_field_time_package
 	struct Time_keeper *time_keeper;
 };
 
-static char computed_field_time_lookup_type_string[] = "time_lookup";
+namespace {
 
-int Computed_field_is_type_time_lookup(struct Computed_field *field)
-/*******************************************************************************
-LAST MODIFIED : 14 August 2006
+char computed_field_time_lookup_type_string[] = "time_lookup";
 
-DESCRIPTION :
-==============================================================================*/
+class Computed_field_time_lookup : public Computed_field_core
 {
-	int return_code;
+public:
+	Computed_field_time_lookup(Computed_field *field) : Computed_field_core(field)
+	{
+	};
 
-	ENTER(Computed_field_is_type_time_lookup);
-	if (field)
+private:
+	Computed_field_core *copy(Computed_field* new_parent)
 	{
-		return_code = 
-		  (field->type_string == computed_field_time_lookup_type_string);
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_is_type_time_lookup.  Missing field");
-		return_code = 0;
+		return new Computed_field_time_lookup(new_parent);
 	}
 
-	return (return_code);
-} /* Computed_field_is_type_time_lookup */
+	char *get_type_string()
+	{
+		return(computed_field_time_lookup_type_string);
+	}
 
-#define Computed_field_time_lookup_clear_type_specific \
-   Computed_field_default_clear_type_specific
+	int compare(Computed_field_core* other_field)
+	{
+		if (dynamic_cast<Computed_field_time_lookup*>(other_field))
+		{
+			return 1;
+		}
+		else
+		{
+			return 0;
+		}
+	}
+
+	int evaluate_cache_at_location(Field_location* location);
+
+	int list();
+
+	char* get_command_string();
+
+	int has_multiple_times();
+};
+
+int Computed_field_time_lookup::evaluate_cache_at_location(
+    Field_location* location)
 /*******************************************************************************
-LAST MODIFIED : 14 August 2006
-
-DESCRIPTION :
-No type specific data
-==============================================================================*/
-
-#define Computed_field_time_lookup_copy_type_specific \
-   Computed_field_default_copy_type_specific
-/*******************************************************************************
-LAST MODIFIED : 14 August 2006
-
-DESCRIPTION :
-No type specific data
-==============================================================================*/
-
-#define Computed_field_time_lookup_clear_cache_type_specific \
-   (Computed_field_clear_cache_type_specific_function)NULL
-/*******************************************************************************
-LAST MODIFIED : 14 August 2006
-
-DESCRIPTION :
-This function is not needed for this type.
-==============================================================================*/
-
-#define Computed_field_time_lookup_type_specific_contents_match \
-   Computed_field_default_type_specific_contents_match
-/*******************************************************************************
-LAST MODIFIED : 14 August 2006
-
-DESCRIPTION :
-No type specific data
-==============================================================================*/
-
-#define Computed_field_time_lookup_is_defined_at_location \
-	Computed_field_default_is_defined_at_location
-/*******************************************************************************
-LAST MODIFIED : 14 August 2006
-
-DESCRIPTION :
-Check the source fields using the default.
-==============================================================================*/
-
-#define Computed_field_time_lookup_has_numerical_components \
-	Computed_field_default_has_numerical_components
-/*******************************************************************************
-LAST MODIFIED : 14 August 2006
-
-DESCRIPTION :
-Window projection does have numerical components.
-==============================================================================*/
-
-#define Computed_field_time_lookup_not_in_use \
-	(Computed_field_not_in_use_function)NULL
-/*******************************************************************************
-LAST MODIFIED : 14 August 2006
-
-DESCRIPTION :
-No special criteria.
-==============================================================================*/
-
-static int Computed_field_time_lookup_evaluate_cache_at_location(
-   struct Computed_field *field, Field_location* location)
-/*******************************************************************************
-LAST MODIFIED : 14 August 2006
+LAST MODIFIED : 25 August 2006
 
 DESCRIPTION :
 Evaluate the fields cache at the location
@@ -163,7 +116,7 @@ Evaluate the fields cache at the location
 	FE_value *temp, *temp1;
 	int i, number_of_derivatives, return_code;
 
-	ENTER(Computed_field_time_lookup_evaluate_cache_at_location);
+	ENTER(Computed_field_time_lookup::evaluate_cache_at_location);
 	if (field && location && (field->number_of_source_fields == 2) && 
 		(field->number_of_components == field->source_fields[0]->number_of_components) && 
 		(1 == field->source_fields[1]->number_of_components))
@@ -243,49 +196,19 @@ Evaluate the fields cache at the location
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Computed_field_time_lookup_evaluate_cache_at_location.  "
+			"Computed_field_time_lookup::evaluate_cache_at_location.  "
 			"Invalid argument(s)");
 		return_code = 0;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* Computed_field_time_lookup_evaluate_cache_at_location */
+} /* Computed_field_time_lookup::evaluate_cache_at_location */
 
-#define Computed_field_time_lookup_set_values_at_location \
-   (Computed_field_set_values_at_location_function)NULL
+
+int Computed_field_time_lookup::list()
 /*******************************************************************************
-LAST MODIFIED : 14 August 2006
-
-DESCRIPTION :
-Not implemented yet.
-==============================================================================*/
-
-#define Computed_field_time_lookup_get_native_discretization_in_element \
-	Computed_field_default_get_native_discretization_in_element
-/*******************************************************************************
-LAST MODIFIED : 14 August 2006
-
-DESCRIPTION :
-Inherit result from first source field.
-==============================================================================*/
-
-#define Computed_field_time_lookup_find_element_xi \
-   (Computed_field_find_element_xi_function)NULL
-/*******************************************************************************
-LAST MODIFIED : 14 August 2006
-
-DESCRIPTION :
-Not implemented yet.
-==============================================================================*/
-
-#define Computed_field_time_lookup_get_native_resolution \
-	(Computed_field_get_native_resolution_function)NULL
-
-static int list_Computed_field_time_lookup(
-	struct Computed_field *field)
-/*******************************************************************************
-LAST MODIFIED : 14 August 2006
+LAST MODIFIED : 25 August 2006
 
 DESCRIPTION :
 ==============================================================================*/
@@ -314,9 +237,9 @@ DESCRIPTION :
 	return (return_code);
 } /* list_Computed_field_time_lookup */
 
-static char *Computed_field_time_lookup_get_command_string(struct Computed_field *field)
+char *Computed_field_time_lookup::get_command_string()
 /*******************************************************************************
-LAST MODIFIED : 14 August 2006
+LAST MODIFIED : 25 August 2006
 
 DESCRIPTION :
 Returns allocated command string for reproducing field. Includes type.
@@ -325,7 +248,7 @@ Returns allocated command string for reproducing field. Includes type.
 	char *command_string, *field_name;
 	int error;
 
-	ENTER(Computed_field_time_lookup_get_command_string);
+	ENTER(Computed_field_time_lookup::get_command_string);
 	command_string = (char *)NULL;
 	if (field)
 	{
@@ -351,16 +274,16 @@ Returns allocated command string for reproducing field. Includes type.
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Computed_field_time_lookup_get_command_string.  Invalid field");
+			"Computed_field_time_lookup::get_command_string.  Invalid field");
 	}
 	LEAVE;
 
 	return (command_string);
-} /* Computed_field_time_lookup_get_command_string */
+} /* Computed_field_time_lookup::get_command_string */
 
-int Computed_field_time_lookup_has_multiple_times (struct Computed_field *field)
+int Computed_field_time_lookup::has_multiple_times ()
 /*******************************************************************************
-LAST MODIFIED : 14 August 2006
+LAST MODIFIED : 25 August 2006
 
 DESCRIPTION :
 Returns 1 if the time_field source_field has multiple times.  The times of the
@@ -370,7 +293,7 @@ global time do not matter.
 {
 	int return_code;
 
-	ENTER(Computed_field_default_has_multiple_times);
+	ENTER(Computed_field_default::has_multiple_times);
 	if (field && (2 == field->number_of_source_fields))
 	{
 		return_code=0;
@@ -382,19 +305,21 @@ global time do not matter.
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Computed_field_time_lookup_has_multiple_times.  "
+			"Computed_field_time_lookup::has_multiple_times.  "
 			"Invalid arguments.");
 		return_code = 0;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* Computed_field_time_lookup_has_multiple_times */
+} /* Computed_field_time_lookup::has_multiple_times */
+
+} //namespace
 
 int Computed_field_set_type_time_lookup(struct Computed_field *field,
 	struct Computed_field *source_field, struct Computed_field *time_field)
 /*******************************************************************************
-LAST MODIFIED : 14 August 2006
+LAST MODIFIED : 25 August 2006
 
 DESCRIPTION :
 Converts <field> to type COMPUTED_FIELD_TIME_LOOKUP with the supplied
@@ -418,7 +343,6 @@ is used for the time.
 			/* 2. free current type-specific data */
 			Computed_field_clear_type(field);
 			/* 3. establish the new type */
-			field->type_string = computed_field_time_lookup_type_string;
 			field->number_of_components = source_field->number_of_components;
 			source_fields[0]=ACCESS(Computed_field)(source_field);
 			source_fields[1]=ACCESS(Computed_field)(time_field);
@@ -426,10 +350,7 @@ is used for the time.
 			field->number_of_source_fields=number_of_source_fields;			
 			field->source_values=(FE_value *)NULL;
 			field->number_of_source_values=number_of_source_values;
-			field->type_specific_data = (void *)1;
-
-			/* Set all the methods */
-			COMPUTED_FIELD_ESTABLISH_METHODS(time_lookup);
+			field->core = new Computed_field_time_lookup(field);
 		}
 		else
 		{
@@ -451,7 +372,7 @@ is used for the time.
 int Computed_field_get_type_time_lookup(struct Computed_field *field,
 	struct Computed_field **source_field, struct Computed_field **time_field)
 /*******************************************************************************
-LAST MODIFIED : 14 August 2006
+LAST MODIFIED : 25 August 2006
 
 DESCRIPTION :
 If the field is of type COMPUTED_FIELD_TIME_LOOKUP, the 
@@ -461,7 +382,7 @@ If the field is of type COMPUTED_FIELD_TIME_LOOKUP, the
 	int return_code;
 
 	ENTER(Computed_field_get_type_time_lookup);
-	if (field&&(field->type_string==computed_field_time_lookup_type_string))
+	if (field&&(dynamic_cast<Computed_field_time_lookup*>(field->core)))
 	{
 		*source_field = field->source_fields[0];
 		*time_field = field->source_fields[1];
@@ -478,10 +399,10 @@ If the field is of type COMPUTED_FIELD_TIME_LOOKUP, the
 	return (return_code);
 } /* Computed_field_get_type_time_lookup */
 
-static int define_Computed_field_type_time_lookup(struct Parse_state *state,
+int define_Computed_field_type_time_lookup(struct Parse_state *state,
 	void *field_void,void *computed_field_time_package_void)
 /*******************************************************************************
-LAST MODIFIED : 14 August 2006
+LAST MODIFIED : 25 August 2006
 
 DESCRIPTION :
 Converts <field> into type COMPUTED_FIELD_TIME_LOOKUP (if it is not 
@@ -589,136 +510,66 @@ already) and allows its contents to be modified.
 	return (return_code);
 } /* define_Computed_field_type_time_lookup */
 
-struct Computed_field_time_value_type_specific_data
+namespace {
+
+char computed_field_time_value_type_string[] = "time_value";
+
+class Computed_field_time_value : public Computed_field_core
 {
-	struct Time_object *time_object;
+public:
+	Time_object *time_object;
+
+	Computed_field_time_value(Computed_field *field,
+		Time_keeper* time_keeper) : 
+		Computed_field_core(field)
+	{
+		time_object = CREATE(Time_object)(field->name);
+		Time_object_set_time_keeper(time_object, time_keeper);
+	};
+
+	~Computed_field_time_value()
+	{
+		DESTROY(Time_object)(&time_object);
+	};
+
+private:
+	Computed_field_core *copy(Computed_field* new_parent)
+	{
+		return new Computed_field_time_value(new_parent, 
+			Time_object_get_time_keeper(time_object));
+	}
+
+	char *get_type_string()
+	{
+		return(computed_field_time_value_type_string);
+	}
+
+	int compare(Computed_field_core* other_field);
+
+	int evaluate_cache_at_location(Field_location* location);
+
+	int list();
+
+	char* get_command_string();
+
+	int has_multiple_times();
 };
 
-static char computed_field_time_value_type_string[] = "time_value";
-
-int Computed_field_is_type_time_value(struct Computed_field *field)
+int Computed_field_time_value::compare(Computed_field_core *other_core)
 /*******************************************************************************
-LAST MODIFIED : 14 August 2006
+LAST MODIFIED : 25 August 2006
 
 DESCRIPTION :
 ==============================================================================*/
 {
+	Computed_field_time_value* other;
 	int return_code;
 
-	ENTER(Computed_field_is_type_time_value);
-	if (field)
+	ENTER(Computed_field_time_value::compare);
+	if (field && (other = dynamic_cast<Computed_field_time_value*>(other_core)))
 	{
-		return_code = 
-		  (field->type_string == computed_field_time_value_type_string);
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_is_type_time_value.  Missing field");
-		return_code = 0;
-	}
-
-	return (return_code);
-} /* Computed_field_is_type_time_value */
-
-static int Computed_field_time_value_clear_type_specific(struct Computed_field *field)
-/*******************************************************************************
-LAST MODIFIED : 14 August 2006
-
-DESCRIPTION :
-==============================================================================*/
-{
-	int return_code;
-	struct Computed_field_time_value_type_specific_data *data;	
-
-	ENTER(Computed_field_time_value_clear_type_specific);
-	if (field && 
-		(data = (struct Computed_field_time_value_type_specific_data *)field->type_specific_data))
-	{
-		DESTROY(Time_object)(&data->time_object);
-		DEALLOCATE(data);
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_time_value_clear_type_specific.  "
-			"Invalid field");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Computed_field_time_value_clear_type_specific */
-
-static void *Computed_field_time_value_copy_type_specific(
-	struct Computed_field *source, struct Computed_field *destination)
-/*******************************************************************************
-LAST MODIFIED : 14 August 2006
-
-DESCRIPTION :
-==============================================================================*/
-{
-	struct Computed_field_time_value_type_specific_data *destination_data,
-		*source_data;
-	struct Time_object *time_object;
-
-	ENTER(Computed_field_time_value_copy_type_specific);
-	if (source && destination &&
-		(source_data = (struct Computed_field_time_value_type_specific_data *)source->type_specific_data))
-	{
-		if ((time_object = CREATE(Time_object)(destination->name)) &&
-			ALLOCATE(destination_data, struct Computed_field_time_value_type_specific_data, 1))
-		{
-			Time_object_set_time_keeper(time_object, Time_object_get_time_keeper(source_data->time_object));
-			destination_data->time_object = time_object;
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"Computed_field_time_value_copy_type_specific.  "
-				"Unable to create duplicate type specific data.");
-			destination_data = NULL;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_time_value_copy_type_specific.  "
-			"Invalid source or destination field.");
-		destination_data = NULL;
-	}
-	LEAVE;
-
-	return ((void *)destination_data);
-} /* Computed_field_time_value_copy_type_specific */
-
-#define Computed_field_time_value_clear_cache_type_specific \
-   (Computed_field_clear_cache_type_specific_function)NULL
-/*******************************************************************************
-LAST MODIFIED : 14 August 2006
-
-DESCRIPTION :
-This function is not needed for this type.
-==============================================================================*/
-
-static int Computed_field_time_value_type_specific_contents_match(
-	struct Computed_field *field, struct Computed_field *other_computed_field)
-/*******************************************************************************
-LAST MODIFIED : 14 August 2006
-
-DESCRIPTION :
-==============================================================================*/
-{
-	int return_code;
-	struct Computed_field_time_value_type_specific_data *data1, *data2;
-
-	ENTER(Computed_field_time_value_type_specific_contents_match);
-	if (field && other_computed_field &&
-		(data1 = (struct Computed_field_time_value_type_specific_data *)field->type_specific_data) &&
-		(data2 = (struct Computed_field_time_value_type_specific_data *)other_computed_field->type_specific_data))
-	{
-		if (data1->time_object && data2->time_object && 
-			(Time_object_get_time_keeper(data1->time_object) == Time_object_get_time_keeper(data2->time_object)))
+		if (Time_object_get_time_keeper(time_object) == 
+			Time_object_get_time_keeper(other->time_object))
 		{
 			return_code = 1;
 		}
@@ -734,103 +585,43 @@ DESCRIPTION :
 	LEAVE;
 
 	return (return_code);
-} /* Computed_field_time_value_type_specific_contents_match */
+} /* Computed_field_time_value::compare */
 
-#define Computed_field_time_value_is_defined_at_location \
-	Computed_field_default_is_defined_at_location
+int Computed_field_time_value::evaluate_cache_at_location(
+    Field_location* location)
 /*******************************************************************************
-LAST MODIFIED : 14 August 2006
-
-DESCRIPTION :
-Check the source fields using the default.
-==============================================================================*/
-
-#define Computed_field_time_value_has_numerical_components \
-	Computed_field_default_has_numerical_components
-/*******************************************************************************
-LAST MODIFIED : 14 August 2006
-
-DESCRIPTION :
-Window projection does have numerical components.
-==============================================================================*/
-
-#define Computed_field_time_value_not_in_use \
-	(Computed_field_not_in_use_function)NULL
-/*******************************************************************************
-LAST MODIFIED : 14 August 2006
-
-DESCRIPTION :
-No special criteria.
-==============================================================================*/
-
-static int Computed_field_time_value_evaluate_cache_at_location(
-   struct Computed_field *field, Field_location* location)
-/*******************************************************************************
-LAST MODIFIED : 14 August 2006
+LAST MODIFIED : 25 August 2006
 
 DESCRIPTION :
 Evaluate the fields cache at the location
 ==============================================================================*/
 {
 	int return_code;
-	struct Computed_field_time_value_type_specific_data *data;
 
-	ENTER(Computed_field_time_value_evaluate_cache_at_location);
+	ENTER(Computed_field_time_value::evaluate_cache_at_location);
 	USE_PARAMETER(location);
-	if (field && (data = 
-		(struct Computed_field_time_value_type_specific_data *)
-		field->type_specific_data))
+	if (field)
 	{
-		field->values[0] = Time_object_get_current_time(data->time_object);
+		field->values[0] = Time_object_get_current_time(time_object);
 		field->derivatives_valid = 0;
 		return_code = 1;
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Computed_field_time_value_evaluate_cache_at_location.  "
+			"Computed_field_time_value::evaluate_cache_at_location.  "
 			"Invalid argument(s)");
 		return_code = 0;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* Computed_field_time_value_evaluate_cache_at_location */
+} /* Computed_field_time_value::evaluate_cache_at_location */
 
-#define Computed_field_time_value_set_values_at_location \
-   (Computed_field_set_values_at_location_function)NULL
+
+int Computed_field_time_value::list()
 /*******************************************************************************
-LAST MODIFIED : 14 August 2006
-
-DESCRIPTION :
-Not implemented yet.
-==============================================================================*/
-
-#define Computed_field_time_value_get_native_discretization_in_element \
-	Computed_field_default_get_native_discretization_in_element
-/*******************************************************************************
-LAST MODIFIED : 14 August 2006
-
-DESCRIPTION :
-Inherit result from first source field.
-==============================================================================*/
-
-#define Computed_field_time_value_find_element_xi \
-   (Computed_field_find_element_xi_function)NULL
-/*******************************************************************************
-LAST MODIFIED : 14 August 2006
-
-DESCRIPTION :
-Not implemented yet.
-==============================================================================*/
-
-#define Computed_field_time_value_get_native_resolution \
-	(Computed_field_get_native_resolution_function)NULL
-
-static int list_Computed_field_time_value(
-	struct Computed_field *field)
-/*******************************************************************************
-LAST MODIFIED : 14 August 2006
+LAST MODIFIED : 25 August 2006
 
 DESCRIPTION :
 ==============================================================================*/
@@ -853,9 +644,9 @@ DESCRIPTION :
 	return (return_code);
 } /* list_Computed_field_time_value */
 
-static char *Computed_field_time_value_get_command_string(struct Computed_field *field)
+char *Computed_field_time_value::get_command_string()
 /*******************************************************************************
-LAST MODIFIED : 14 August 2006
+LAST MODIFIED : 25 August 2006
 
 DESCRIPTION :
 Returns allocated command string for reproducing field. Includes type.
@@ -864,7 +655,7 @@ Returns allocated command string for reproducing field. Includes type.
 	char *command_string;
 	int error;
 
-	ENTER(Computed_field_time_value_get_command_string);
+	ENTER(Computed_field_time_value::get_command_string);
 	command_string = (char *)NULL;
 	if (field)
 	{
@@ -875,16 +666,16 @@ Returns allocated command string for reproducing field. Includes type.
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Computed_field_time_value_get_command_string.  Invalid field");
+			"Computed_field_time_value::get_command_string.  Invalid field");
 	}
 	LEAVE;
 
 	return (command_string);
-} /* Computed_field_time_value_get_command_string */
+} /* Computed_field_time_value::get_command_string */
 
-int Computed_field_time_value_has_multiple_times (struct Computed_field *field)
+int Computed_field_time_value::has_multiple_times()
 /*******************************************************************************
-LAST MODIFIED : 14 August 2006
+LAST MODIFIED : 25 August 2006
 
 DESCRIPTION :
 Always has multiple times.
@@ -892,7 +683,7 @@ Always has multiple times.
 {
 	int return_code;
 
-	ENTER(Computed_field_time_value_has_multiple_times);
+	ENTER(Computed_field_time_value::has_multiple_times);
 	if (field)
 	{
 		return_code=1;
@@ -900,19 +691,21 @@ Always has multiple times.
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Computed_field_time_value_has_multiple_times.  "
+			"Computed_field_time_value::has_multiple_times.  "
 			"Invalid arguments.");
 		return_code = 0;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* Computed_field_time_value_has_multiple_times */
+} /* Computed_field_time_value::has_multiple_times */
+
+} //namespace
 
 int Computed_field_set_type_time_value(struct Computed_field *field,
 	struct Time_keeper *time_keeper)
 /*******************************************************************************
-LAST MODIFIED : 14 August 2006
+LAST MODIFIED : 25 August 2006
 
 DESCRIPTION :
 Converts <field> to type COMPUTED_FIELD_TIME_VALUE.  It always returns the time
@@ -920,34 +713,16 @@ from the default time keeper.
 ==============================================================================*/
 {
 	int return_code;
-	struct Computed_field_time_value_type_specific_data *data;
-	struct Time_object *time_object;
 
 	ENTER(Computed_field_set_type_time_value);
 	if (field)
 	{
 		return_code=1;
-		/* 1. make dynamic allocations for any new type-specific data */
-		if ((time_object = CREATE(Time_object)(field->name)) &&
-			ALLOCATE(data, struct Computed_field_time_value_type_specific_data, 1))
-		{
-			Time_object_set_time_keeper(time_object, time_keeper);
-			/* 2. free current type-specific data */
-			Computed_field_clear_type(field);
-			/* 3. establish the new type */
-			field->type_string = computed_field_time_value_type_string;
-			field->number_of_components = 1;
-			data->time_object = time_object;
-			field->type_specific_data = data;
-
-			/* Set all the methods */
-			COMPUTED_FIELD_ESTABLISH_METHODS(time_value);
-		}
-		else
-		{
-			DESTROY(Time_object)(&time_object);
-			return_code = 0;
-		}
+		/* 2. free current type-specific data */
+		Computed_field_clear_type(field);
+		/* 3. establish the new type */
+		field->number_of_components = 1;
+		field->core = new Computed_field_time_value(field, time_keeper);
 	}
 	else
 	{
@@ -962,16 +737,16 @@ from the default time keeper.
 
 /* Computed_field_get_type_time_value(struct Computed_field *field) */
 /*******************************************************************************
-LAST MODIFIED : 14 August 2006
+LAST MODIFIED : 25 August 2006
 
 DESCRIPTION :
 There are no fields to fetch from a time value field.
 ==============================================================================*/
 
-static int define_Computed_field_type_time_value(struct Parse_state *state,
+int define_Computed_field_type_time_value(struct Parse_state *state,
 	void *field_void,void *computed_field_time_package_void)
 /*******************************************************************************
-LAST MODIFIED : 14 August 2006
+LAST MODIFIED : 25 August 2006
 
 DESCRIPTION :
 Converts <field> into type COMPUTED_FIELD_TIME_VALUE (if it is not 
@@ -1010,7 +785,7 @@ int Computed_field_register_types_time(
 	struct Computed_field_package *computed_field_package,
 	struct Time_keeper *time_keeper)
 /*******************************************************************************
-LAST MODIFIED : 14 August 2006
+LAST MODIFIED : 25 August 2006
 
 DESCRIPTION :
 ==============================================================================*/

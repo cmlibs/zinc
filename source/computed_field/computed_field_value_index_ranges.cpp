@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : computed_field_value_index_ranges.c
 
-LAST MODIFIED : 14 August 2006
+LAST MODIFIED : 24 August 2006
 
 DESCRIPTION :
 Stores ranges of indices of field values in a multi-range for a Computed_field.
@@ -59,7 +59,7 @@ Module types
 
 struct Field_value_index_ranges
 /*******************************************************************************
-LAST MODIFIED : 14 August 2006
+LAST MODIFIED : 24 August 2006
 
 DESCRIPTION :
 Stores a multi_range indexed by field.
@@ -89,7 +89,7 @@ Global functions
 struct Field_value_index_ranges *CREATE(Field_value_index_ranges)(
 	struct Computed_field *field)
 /*******************************************************************************
-LAST MODIFIED : 14 August 2006
+LAST MODIFIED : 24 August 2006
 
 DESCRIPTION :
 Creates a Field_value_index_ranges object for storing ranges of value indices
@@ -128,7 +128,7 @@ stored in <field>.
 int DESTROY(Field_value_index_ranges)(
 	struct Field_value_index_ranges **field_value_index_ranges_address)
 /*******************************************************************************
-LAST MODIFIED : 14 August 2006
+LAST MODIFIED : 24 August 2006
 
 DESCRIPTION :
 Destroys the Field_value_index_ranges.
@@ -175,7 +175,7 @@ DECLARE_FIND_BY_IDENTIFIER_IN_INDEXED_LIST_FUNCTION(Field_value_index_ranges, \
 int Field_value_index_ranges_add_range(
 	struct Field_value_index_ranges *field_value_index_ranges,int start,int stop)
 /*******************************************************************************
-LAST MODIFIED : 14 August 2006
+LAST MODIFIED : 24 August 2006
 
 DESCRIPTION :
 Adds the range from <start> to <stop> to the ranges in
@@ -214,7 +214,7 @@ Adds the range from <start> to <stop> to the ranges in
 int Field_value_index_ranges_is_index_in_range(
 	struct Field_value_index_ranges *field_value_index_ranges,int index)
 /*******************************************************************************
-LAST MODIFIED : 14 August 2006
+LAST MODIFIED : 24 August 2006
 
 DESCRIPTION :
 Returns true if the <index> is in the ranges of <field_value_index_ranges>.
@@ -243,7 +243,7 @@ int Field_value_index_ranges_add_to_list(
 	struct Field_value_index_ranges *field_value_index_ranges,
 	void *field_value_index_ranges_list_void)
 /*******************************************************************************
-LAST MODIFIED : 14 August 2006
+LAST MODIFIED : 24 August 2006
 
 DESCRIPTION :
 Ensures the <field_value_index_ranges> are in <field_value_index_ranges_list>.
@@ -317,7 +317,7 @@ int Field_value_index_ranges_list_add_field_value_index(
 	struct LIST(Field_value_index_ranges) *field_value_index_ranges_list,
 	struct Computed_field *field,int index)
 /*******************************************************************************
-LAST MODIFIED : 14 August 2006
+LAST MODIFIED : 24 August 2006
 
 DESCRIPTION :
 Shortcut for ensuring <field><index> is in the <field_value_index_ranges_list>.
@@ -377,7 +377,7 @@ int Field_value_index_ranges_remove_from_list(
 	struct Field_value_index_ranges *field_value_index_ranges,
 	void *field_value_index_ranges_list_void)
 /*******************************************************************************
-LAST MODIFIED : 14 August 2006
+LAST MODIFIED : 24 August 2006
 
 DESCRIPTION :
 Ensures the <field_value_index_ranges> is not in
@@ -441,7 +441,7 @@ Ensures the <field_value_index_ranges> is not in
 struct Computed_field *Field_value_index_ranges_get_field(
 	struct Field_value_index_ranges *field_value_index_ranges)
 /*******************************************************************************
-LAST MODIFIED : 14 August 2006
+LAST MODIFIED : 24 August 2006
 
 DESCRIPTION :
 Returns the field from the <field_value_index_ranges.
@@ -468,7 +468,7 @@ Returns the field from the <field_value_index_ranges.
 struct Multi_range *Field_value_index_ranges_get_ranges(
 	struct Field_value_index_ranges *field_value_index_ranges)
 /*******************************************************************************
-LAST MODIFIED : 14 August 2006
+LAST MODIFIED : 24 August 2006
 
 DESCRIPTION :
 Returns the ranges from the <field_value_index_ranges.
