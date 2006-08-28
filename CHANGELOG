@@ -1,7 +1,7 @@
 # **************************************************************************
 # FILE : CHANGELOG
 #
-# LAST MODIFIED : 18 July 2006
+# LAST MODIFIED : 29 August 2006
 # ==========================================================================
 
 This software is the cmgui part of CMISS.
@@ -9,6 +9,19 @@ It is released under the Mozilla Public License v1.1
 
 Further information, help pages, a tracker and a wiki is available at 
 http://www.cmiss.org/cmgui/
+
+v2.3.0
+Changed internal structure of Computed_fields to use a C++ class rather than 
+imitating this in C with function pointers.  Reduced the number of virtual methods by
+consolidating the set/get functions with a generic location rather than separate
+functions for nodes and elements.
+Removed legacy image processing computed fields as we plan to replace them with ITK.
+Fix some typos where data groups propogated incorrectly to the node parent.
+
+v2.2.3
+Enabled emoter to work without motif gui and enabled command only version for all non
+motif builds.
+Internally renamed Control_curve to just Curve.
 
 v2.2.2
 Support the OpenGL extension GL_ARB_texture_non_power_of_two and delay the 
@@ -27,6 +40,7 @@ Change equal_to computed_field so that it can operate on string values if either
 field is defined but does not have numerical components.
 Use CMISS_EXAMPLES environment variable to determine where the example tree is
 rather than the Cmgui motif/X setting file.
+
 v2.2
 Removed computed variables by default.  To put it back in change USE_COMPUTED_VARIABLES to true in the makefile or by specifying it on the make command line.
 Added new texture wrap modes edge_clamp_wrap, border_clamp_wrap and
@@ -38,6 +52,7 @@ Added code so that triangles for isosurfaces are generated with a consistent win
 order even in meshes which have inconsistent lefthanded and righthanded coordinate systems.
 Fixed to grid point evaluation.
 Allowing streamlines to be seeded from the nodes in a region.
+
 v2.1.1
 Large speed improvements for "gfx select nodes" and "gfx select elements".
 Get regions to cache get_next_element_id so that it can be kept over multiple commands.
@@ -46,11 +61,13 @@ Started 'gfx export cm'
 Reenabled automatic monochrome storage of images.
 Added a weighting field to "gfx create snake".
 Added a few more logical operators for less_than, greater_than and equal_to in computed fields. 
+
 v2.1
 Fix comfile script: cmgui-2.1/fixcom.pl
 Added support for fitting multiple fields with "gfx create snake"
 Began "gfx export cm" to write files for the old cm.
 Added gfx convert elements (and changed the old gfx convert to be gfx convert graphics) which converts one form of elements to another. The only conversion I have implemented so far is the conversion of any 2D element surfaces to true toplevel 2D bicubic hermite elements. The cross-derivatives are not correct and need to think about how to fix this.
+
 v2.0.2
 Fixed gfx unselect data.
 Fixed contour bands on iso_surfaces.
@@ -58,10 +75,12 @@ Fixed code for allocation of large arrays to use long ints where necessary.
 Added code so that node changes propogate through a nodal_lookup computed field to a computed_field change.
 Fixed a couple of bugs in cmgui with the scene editor and an iso_values list.
 Many minor fixes of leaks or use of uninitialised values as detected by the new valgrind testing.
+
 v2.0.1
 Added glyph functionality to create graph axes
 Added first pass at iso_surface_decimation.
 Added a new coordinate system where objects are displayed relative to screen coordinates.
+
 v2.0.0
 First open source release.  License updated to Mozilla Public License.
 Lots of tidying up.
