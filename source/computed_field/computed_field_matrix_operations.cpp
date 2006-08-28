@@ -2323,7 +2323,7 @@ If function fails, field is guaranteed to be unchanged from its original state,
 although its cache may be lost.
 ==============================================================================*/
 {
-	int number_of_projection_values,number_of_source_fields,return_code;
+	int number_of_source_fields,return_code;
 	struct Computed_field **source_fields;
 
 	ENTER(Computed_field_set_type_projection);
@@ -2331,8 +2331,6 @@ although its cache may be lost.
 	{
 		return_code=1;
 		/* 1. make dynamic allocations for any new type-specific data */
-		number_of_projection_values = (source_field->number_of_components + 1)
-			* (number_of_components + 1);
 		number_of_source_fields=1;
 		if (ALLOCATE(source_fields,struct Computed_field *,number_of_source_fields))
 		{
