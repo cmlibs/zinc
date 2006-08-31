@@ -246,6 +246,7 @@ ifeq ($(GRAPHICS_API), OPENGL_GRAPHICS)
       GRAPHICS_LIBRARY_DEFINES += -DDM_BUFFERS
    endif # $(USER_INTERFACE) == MOTIF_USER_INTERFACE
 
+   ifneq ($(USER_INTERFACE), GTK_USER_INTERFACE)
    #For GTK_USER_INTERFACE the OpenGL comes from the GTK_LIBRARIES automatically
       ifneq ($(wildcard $(CMISS_ROOT)/mesa/include/$(LIB_ARCH_DIR)),)
          GRAPHICS_INC += -I$(CMISS_ROOT)/mesa/include/$(LIB_ARCH_DIR)
@@ -256,6 +257,7 @@ ifeq ($(GRAPHICS_API), OPENGL_GRAPHICS)
       else # $(OPERATING_SYSTEM) == win32
          GRAPHICS_LIB += -lGL -lGLU
       endif # $(OPERATING_SYSTEM) == win32 
+   endif # $(USER_INTERFACE) != GTK_USER_INTERFACE
 endif
 
 ifeq ($(LINK_CMISS),false)
@@ -719,6 +721,7 @@ API_INTERFACE_SRCS = \
 	api/cmiss_graphics_window.c
 CHOOSE_INTERFACE_SRCS = \
 	choose/choose_computed_field.c \
+	choose/choose_curve.c \
 	choose/choose_enumerator.c \
 	choose/choose_fe_field.c \
 	choose/choose_field_component.c \
@@ -848,7 +851,9 @@ COMPUTED_VARIABLE_SRCS = \
 endif # USE_COMPUTED_VARIABLES != true
 CURVE_SRCS = \
 	curve/curve.c
-CURVE_INTERFACE_SRCS = 
+CURVE_INTERFACE_SRCS = \
+	curve/curve_editor.c \
+	curve/curve_editor_dialog.c
 DOF3_INTERFACE_SRCS = \
 	dof3/dof3.c \
 	dof3/dof3_control.c \
@@ -882,6 +887,8 @@ FINITE_ELEMENT_SRCS = \
 	finite_element/read_fieldml.c \
 	finite_element/snake.c \
 	finite_element/write_fieldml.c
+FINITE_ELEMENT_INTERFACE_SRCS = \
+	finite_element/grid_field_calculator.c
 GENERAL_SRCS = \
 	general/any_object.c \
 	general/callback.c \
@@ -956,7 +963,10 @@ ifeq ($(GRAPHICS_API), OPENGL_GRAPHICS)
    GRAPHICS_INTERFACE_SRCS += \
 		graphics/graphics_window.c \
       graphics/scene_editor.c \
-	   graphics/settings_editor.c
+	   graphics/settings_editor.c \
+		graphics/spectrum_editor.c \
+		graphics/spectrum_editor_dialog.c \
+		graphics/spectrum_editor_settings.c
 endif
 IMAGE_PROCESSING_SRCS =
 INTERACTION_SRCS = \
@@ -1007,6 +1017,7 @@ REGION_SRCS = \
 REGION_INTERFACE_SRCS = \
    region/cmiss_region_chooser.c
 SELECT_INTERFACE_SRCS = \
+	select/select_curve.c \
 	select/select_environment_map.c \
 	select/select_graphical_material.c \
 	select/select_private.c \
@@ -1115,13 +1126,8 @@ ifeq ($(USER_INTERFACE),GTK_USER_INTERFACE)
 	      $(COMMAND_INTERFACE_SRCS) \
 	      $(COMPUTED_FIELD_INTERFACE_SRCS) \
 			$(EMOTER_SRCS) \
-         curve/curve_editor.c \
-         curve/curve_editor_dialog.c \
 	      graphics/graphics_window.c \
-	      gtk/gtk_cmiss_scene_viewer.c \
-         interaction/select_tool.c \
-         graphics/spectrum_editor.c \
-         graphics/spectrum_editor_dialog.c
+	      gtk/gtk_cmiss_scene_viewer.c
 endif # $(USER_INTERFACE) == GTK_USER_INTERFACE
 ifeq ($(USER_INTERFACE),WIN32_USER_INTERFACE)
       SRCS_2 = \
