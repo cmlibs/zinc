@@ -947,8 +947,7 @@ If <node_field_list> is omitted, an empty list is assumed.
 	{
 		/* get the ultimate master fe_region */
 		master_fe_region = fe_region;
-		while ((master_fe_region->master_fe_region) &&
-			(!master_fe_region->data_hack))
+		while (master_fe_region->master_fe_region)
 		{
 			master_fe_region = master_fe_region->master_fe_region;
 		}
@@ -1044,8 +1043,7 @@ as if it is just updating then there is nothing to do.
 	{
 		return_code = 1;
 		master_fe_region = fe_region;
-		while (master_fe_region->master_fe_region &&
-			(!master_fe_region->data_hack))
+		while (master_fe_region->master_fe_region)
 		{
 			master_fe_region = master_fe_region->master_fe_region;
 		}
@@ -3203,8 +3201,7 @@ Should place multiple calls to this function between begin_change/end_change.
 			{
 				/* get the ultimate master FE_region; only it has FE_time */
 				master_fe_region = fe_region;
-				while (master_fe_region->master_fe_region &&
-				(!master_fe_region->data_hack))
+				while (master_fe_region->master_fe_region)
 				{
 					master_fe_region = master_fe_region->master_fe_region;
 				}
@@ -3356,8 +3353,7 @@ used by element fields of <fe_field>.
 			return_code = 1;
 			/* get the ultimate master FE_region; it owns nodes/fields */
 			master_fe_region = fe_region;
-			while (master_fe_region->master_fe_region &&
-				(!master_fe_region->data_hack))
+			while (master_fe_region->master_fe_region)
 			{
 				master_fe_region = master_fe_region->master_fe_region;
 			}
