@@ -330,6 +330,8 @@ The values need to calculate a field on an element.  These structures are
 calculated from the element field as required and are then destroyed.
 ==============================================================================*/
 
+DECLARE_LIST_TYPES(FE_element_field_values);
+
 enum CM_element_type
 /*******************************************************************************
 LAST MODIFIED : 25 January 1999
@@ -2029,6 +2031,10 @@ DESCRIPTION :
 Destroys the element_field_values at *<element_field_info_address>. Frees the
 memory for the information and sets <*element_field_info_address> to NULL.
 ==============================================================================*/
+
+PROTOTYPE_LIST_FUNCTIONS(FE_element_field_values);
+
+PROTOTYPE_FIND_BY_IDENTIFIER_IN_LIST_FUNCTION(FE_element_field_values,element,struct FE_element *);
 
 int FE_element_field_values_set_no_modify(
 	struct FE_element_field_values *element_field_values);

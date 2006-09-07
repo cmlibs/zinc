@@ -586,7 +586,11 @@ calculated from the element field as required and are then destroyed.
 	void *component_standard_basis_function_arguments;
 	/* working space for evaluating basis */
 	FE_value *basis_function_values;
+
+	int access_count;
 }; /* struct FE_element_field_values */
+
+FULL_DECLARE_INDEXED_LIST_TYPE(FE_element_field_values);
 
 struct FE_element_field_info
 /*******************************************************************************
@@ -33250,6 +33254,7 @@ structure unused for some time so it is not accessing objects.
 		element_field_values->component_standard_basis_function_arguments =
 			(void *)NULL;
 		element_field_values->basis_function_values = (FE_value *)NULL;
+		element_field_values->access_count = 0;
 	}
 	else
 	{
@@ -34882,6 +34887,16 @@ memory for the information and sets <*element_field_info_address> to NULL.
 
 	return (return_code);
 } /* DESTROY(FE_element_field_values) */
+
+DECLARE_OBJECT_FUNCTIONS(FE_element_field_values)
+
+DECLARE_INDEXED_LIST_MODULE_FUNCTIONS(FE_element_field_values, element, \
+	struct FE_element *, compare_pointer)
+
+DECLARE_INDEXED_LIST_FUNCTIONS(FE_element_field_values)
+
+DECLARE_FIND_BY_IDENTIFIER_IN_INDEXED_LIST_FUNCTION(FE_element_field_values, element, \
+	struct FE_element *, compare_pointer)
 
 int FE_element_field_values_set_no_modify(
 	struct FE_element_field_values *element_field_values)

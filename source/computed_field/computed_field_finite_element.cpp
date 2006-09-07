@@ -97,11 +97,15 @@ public:
 	/* need pointer to fe_field_manager so can call MANAGED_OBJECT_NOT_IN_USE in
 		 Computed_field_finite_element::not_in_use */
 
+	/* Keep a cache of FE_element_field_values as calculation is expensive */
+	LIST(FE_element_field_values) *field_values_cache;
+
 	Computed_field_finite_element(Computed_field *field,
 		FE_field *fe_field) : Computed_field_core(field),
 		fe_field(ACCESS(FE_field)(fe_field))
 	{
 		fe_element_field_values = (FE_element_field_values*)NULL;
+		field_values_cache = (LIST(FE_element_field_values) *)NULL;
 	};
 
 	~Computed_field_finite_element();
@@ -162,11 +166,6 @@ Clear the type specific data used by this type.
 		{
 			DEACCESS(FE_field)(&(fe_field));
 		}
-		if (fe_element_field_values)
-		{
-			DEALLOCATE(fe_element_field_values);
-		}
-		
 	}
 	else
 	{
@@ -221,6 +220,12 @@ DESCRIPTION :
 		{
 			clear_FE_element_field_values(fe_element_field_values);
 		}
+		if (field_values_cache)
+		{
+			DESTROY(LIST(FE_element_field_values))(&field_values_cache);
+		}
+		/* These are owned by the list */
+		fe_element_field_values = (FE_element_field_values *)NULL;
 		return_code = 1;
 	}
 	else
@@ -412,7 +417,7 @@ controls whether basis functions for derivatives are also evaluated. If <field>
 is already set up in the correct way, does nothing.
 ==============================================================================*/
 {
-	int return_code;
+	int need_to_add_to_list, need_update, return_code;
 
 	ENTER(Computed_field_finite_element::calculate_FE_element_field_values_for_element);
 	if (field&&element)
@@ -431,28 +436,62 @@ is already set up in the correct way, does nothing.
 			(calculate_derivatives&&
 				(!FE_element_field_values_have_derivatives_calculated(fe_element_field_values))))
 		{
-			if (!fe_element_field_values)
+			need_update = 0;
+			need_to_add_to_list = 0;
+			if (!field_values_cache)
 			{
-				if (!(fe_element_field_values = CREATE(FE_element_field_values)()))
+				field_values_cache = CREATE(LIST(FE_element_field_values))();
+			}
+			if (!(fe_element_field_values = FIND_BY_IDENTIFIER_IN_LIST(
+						FE_element_field_values, element)(element, field_values_cache)))
+			{
+				need_update = 1;
+				if (fe_element_field_values = CREATE(FE_element_field_values)())
+				{
+					need_to_add_to_list = 1;
+				}
+				else
 				{
 					return_code=0;
 				}
 			}
 			else
 			{
-				/* following clears fe_element_field_values->element */
-				clear_FE_element_field_values(fe_element_field_values);
+				if ((!FE_element_field_values_are_for_element_and_time(
+						 fe_element_field_values,element,time,top_level_element))||
+					(calculate_derivatives&&
+						(!FE_element_field_values_have_derivatives_calculated(fe_element_field_values))))
+				{
+					need_update = 1;
+					clear_FE_element_field_values(fe_element_field_values);
+				}
 			}
-			if (return_code)
+			if (return_code && need_update)
 			{
 				/* note that FE_element_field_values accesses the element */
-				if (!calculate_FE_element_field_values(element,fe_field,
-					time,calculate_derivatives,fe_element_field_values,
-					top_level_element))
+				if (calculate_FE_element_field_values(element,fe_field,
+						time,calculate_derivatives,fe_element_field_values,
+						top_level_element))
+				{
+					if (need_to_add_to_list)
+					{
+						/* Set a cache size limit */
+						if (1000 < NUMBER_IN_LIST(FE_element_field_values)(field_values_cache))
+						{
+							REMOVE_ALL_OBJECTS_FROM_LIST(FE_element_field_values)
+								(field_values_cache);
+						}
+						return_code = ADD_OBJECT_TO_LIST(FE_element_field_values)(
+							fe_element_field_values, field_values_cache);
+					}
+				}
+				else
 				{
 					/* clear element to indicate that values are clear */
+					clear_FE_element_field_values(fe_element_field_values);
 					return_code=0;
 				}
+			 
 			}
 		}
 		if (!return_code)
