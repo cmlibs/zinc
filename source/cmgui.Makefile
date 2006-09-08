@@ -295,6 +295,11 @@ endif # USE_XML2
    endif # SYSNAME == AIX
 endif # ! IMAGEMAGICK
 
+ITK_SRCDIR = $(CMISS_ROOT)/itk/src
+ITK_BINDIR = $(CMISS_ROOT)/itk/lib/$(LIB_ARCH_DIR)
+ITK_INC = -I$(ITK_BINDIR) -I$(ITK_SRCDIR)/Code/Algorithms -I$(ITK_SRCDIR)/Code/BasicFilters -I$(ITK_SRCDIR)/Code/Common -I$(ITK_SRCDIR)/Utilities/vxl/vcl -I$(ITK_SRCDIR)/Utilities/vxl/core -I$(ITK_BINDIR)/Utilities/vxl/vcl -I$(ITK_BINDIR)/Utilities/vxl/core/
+ITK_LIB = -L$(ITK_BINDIR)/bin -lITKAlgorithms -lITKStatistics -lITKBasicFilters  -lITKCommon -litkvnl -litkvnl_algo -litknetlib -litksys -lITKDICOMParser -litkzlib -litkzlib -litktiff -litkjpeg12 -litkjpeg16 -lITKNrrdIO 
+
 ifndef PERL_INTERPRETER
    INTERPRETER_INC =
    INTERPRETER_DEFINES = 
@@ -644,14 +649,14 @@ ALL_DEFINES = $(COMPILE_DEFINES) $(TARGET_TYPE_DEFINES) \
 
 ALL_INCLUDES = $(SOURCE_DIRECTORY_INC) $(HAPTIC_INC) $(WORMHOLE_INC) \
 	$(XML_INC) $(UIDH_INC) $(GRAPHICS_INC) $(USER_INTERFACE_INC) \
-	$(INTERPRETER_INC) $(IMAGEMAGICK_INC) $(XML2_INC) $(BOOST_INC)
+	$(INTERPRETER_INC) $(IMAGEMAGICK_INC) $(ITK_INC) $(XML2_INC) $(BOOST_INC)
 
 ALL_FLAGS = $(OPTIMISATION_FLAGS) $(COMPILE_FLAGS) $(TARGET_TYPE_FLAGS) \
 	$(ALL_DEFINES) $(ALL_INCLUDES)
 
 ALL_LIB = $(GRAPHICS_LIB) $(USER_INTERFACE_LIB) $(HAPTIC_LIB) \
 	$(WORMHOLE_LIB) $(INTERPRETER_LIB) $(IMAGEMAGICK_LIB) \
-	$(EXTERNAL_INPUT_LIB) $(HELP_LIB) \
+	$(EXTERNAL_INPUT_LIB) $(HELP_LIB) $(ITK_LIB) \
 	$(MOVIE_FILE_LIB) $(XML_LIB) $(XML2_LIB) $(MEMORYCHECK_LIB) $(MATRIX_LIB) \
 	$(LIB)
 
@@ -968,7 +973,10 @@ ifeq ($(GRAPHICS_API), OPENGL_GRAPHICS)
 		graphics/spectrum_editor_dialog.c \
 		graphics/spectrum_editor_settings.c
 endif
-IMAGE_PROCESSING_SRCS =
+IMAGE_PROCESSING_SRCS = \
+	image_processing/computed_field_binaryThresholdFilter.cpp \
+	image_processing/computed_field_cannyEdgeDetectionFilter.cpp \
+	image_processing/computed_field_meanImageFilter.cpp
 INTERACTION_SRCS = \
 	interaction/interaction_graphics.c \
 	interaction/interaction_volume.c \
@@ -1172,7 +1180,7 @@ $(OBJECT_PATH)/version.o.h : $(OBJS) $(UNEMAP_OBJS) cmgui.Makefile
 	fi	
 	echo '/* This is a generated file.  Do not edit.  Edit cmgui.c or cmgui.imake instead */' > $(OBJECT_PATH)/version.o.h;	  
 	date > date.h
-	sed 's/"//;s/./#define VERSION "CMISS(cmgui) version 2.3.0  &/;s/.$$/&\\nCopyright 1996-2006, Auckland UniServices Ltd."/' < date.h >> $(OBJECT_PATH)/version.o.h
+	sed 's/"//;s/./#define VERSION "CMISS(cmgui) version 2.3.1  &/;s/.$$/&\\nCopyright 1996-2006, Auckland UniServices Ltd."/' < date.h >> $(OBJECT_PATH)/version.o.h
 
 $(MAIN_OBJ) : $(MAIN_SRC) $(OBJECT_PATH)/version.o.h $(INTERPRETER_LIB)
 	@set -x; \
