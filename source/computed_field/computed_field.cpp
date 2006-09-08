@@ -681,36 +681,36 @@ functions to check if read_only flag is set.
 				((0==source->number_of_source_values)||ALLOCATE(source_values,
 					FE_value,source->number_of_source_values)))
 			{
+				/* 2. free current type-specific data */
+				Computed_field_clear_type(destination);
+				/* 3. establish the new type */
+				destination->number_of_components=source->number_of_components;
+				destination->read_only=source->read_only;
+				COPY(Coordinate_system)(&destination->coordinate_system,
+					&source->coordinate_system);
+				
+				destination->component_names = component_names;
+				
+				/* for all Computed_field_types calculated from others */
+				destination->number_of_source_fields=
+					source->number_of_source_fields;
+				for (i=0;i<source->number_of_source_fields;i++)
+				{
+					source_fields[i]=ACCESS(Computed_field)(source->source_fields[i]);
+				}
+				destination->source_fields=source_fields;
+				
+				destination->number_of_source_values=
+					source->number_of_source_values;
+				for (i=0;i<source->number_of_source_values;i++)
+				{
+					source_values[i]=source->source_values[i];
+				}
+				destination->source_values=source_values;
+
 				if (core = source->core->copy(destination))
 				{
-					/* 2. free current type-specific data */
-					Computed_field_clear_type(destination);
-					/* 3. establish the new type */
-					destination->number_of_components=source->number_of_components;
-					destination->read_only=source->read_only;
-					COPY(Coordinate_system)(&destination->coordinate_system,
-						&source->coordinate_system);
-
-					destination->component_names = component_names;
-					
 					destination->core = core;
-
-					/* for all Computed_field_types calculated from others */
-					destination->number_of_source_fields=
-						source->number_of_source_fields;
-					for (i=0;i<source->number_of_source_fields;i++)
-					{
-						source_fields[i]=ACCESS(Computed_field)(source->source_fields[i]);
-					}
-					destination->source_fields=source_fields;
-
-					destination->number_of_source_values=
-						source->number_of_source_values;
-					for (i=0;i<source->number_of_source_values;i++)
-					{
-						source_values[i]=source->source_values[i];
-					}
-					destination->source_values=source_values;
 					return_code=1;
 				}
 				else
