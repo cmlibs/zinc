@@ -5033,10 +5033,9 @@ Always succeeds and does nothing to the parse <state>.
 	int return_code;
 
 	ENTER(set_nothing);
-	USE_PARAMETER(state);
 	USE_PARAMETER(dummy_to_be_modified);
 	USE_PARAMETER(dummy_user_data);
-	return_code=1;
+	return_code=shift_Parse_state(state,1);
 	LEAVE;
 
 	return (return_code);
