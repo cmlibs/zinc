@@ -51,12 +51,9 @@ extern "C" {
 #include "general/debug.h"
 #include "general/mystring.h"
 #include "user_interface/message.h"
-#include "computed_field/computed_field_meanImageFilter.h"
 }
 #include "itkImage.h"
 #include "itkVector.h"
-#include "itkMeanImageFilter.h"
-#include <itkDataObject.h>
 #include "itkImageRegionIteratorWithIndex.h"
 
 namespace CMISS {
