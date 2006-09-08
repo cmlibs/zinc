@@ -1,10 +1,9 @@
 /*******************************************************************************
-FILE : computed_field_adjust_contrast.h
+FILE : computed_field_cannyEdgeDetectionFilter.h
 
-LAST MODIFIED : 25 March 2004
+LAST MODIFIED : 9 September 2006
 
 DESCRIPTION :
-Implements image contrast adjusting on computed fields.
 ==============================================================================*/
 /* ***** BEGIN LICENSE BLOCK *****
  * Version: MPL 1.1/GPL 2.0/LGPL 2.1
@@ -41,16 +40,41 @@ Implements image contrast adjusting on computed fields.
  * the terms of any one of the MPL, the GPL or the LGPL.
  *
  * ***** END LICENSE BLOCK ***** */
-#if !defined (COMPUTED_FIELD_ADJUST_CONTRAST_H)
-#define COMPUTED_FIELD_ADJUST_CONTRAST_H
+#if !defined (COMPUTED_FIELD_CANNYEDGEDETECTIONFILTER_H)
+#define COMPUTED_FIELD_CANNYEDGEDETECTIONFILTER_H
 
-int Computed_field_register_types_adjust_contrast(
-	struct Computed_field_package *computed_field_package,
-	struct Cmiss_region *root_region, struct Graphics_buffer_package *graphics_buffer_package);
+int Computed_field_register_types_cannyEdgeDetectionFilter(
+	struct Computed_field_package *computed_field_package);
 /*******************************************************************************
-LAST MODIFIED : 25 March 2004
+LAST MODIFIED : 9 September 2006
 
 DESCRIPTION :
 ==============================================================================*/
 
-#endif /* !defined (COMPUTED_FIELD_ADJUST_CONTRAST_H) */
+int Computed_field_set_type_cannyEdgeDetectionFilter(struct Computed_field *field,
+	struct Computed_field *source_field);
+/*******************************************************************************
+LAST MODIFIED : 9 September 2006
+
+DESCRIPTION :
+Converts <field> to type COMPUTED_FIELD_CANNYEDGEDETECTIONFILTER, returning the value of
+<cannyEdgeDetectionFilter> at the time/parameter value given by scalar <source_field>.
+Sets number of components to same number as <cannyEdgeDetectionFilter>.
+If function fails, field is guaranteed to be unchanged from its original state,
+although its cache may be lost.
+???RC In future may not need to pass computed_field_manager it all fields
+maintain pointer to it. Only have it to invoke computed field manager messages
+in response to changes in the cannyEdgeDetectionFilter from the control cannyEdgeDetectionFilter manager.
+==============================================================================*/
+
+int Computed_field_get_type_cannyEdgeDetectionFilter(struct Computed_field *field,
+	struct Computed_field **source_field);
+/*******************************************************************************
+LAST MODIFIED : 9 September 2006
+
+DESCRIPTION :
+If the field is of type COMPUTED_FIELD_CANNYEDGEDETECTIONFILTER, the source_field and cannyEdgeDetectionFilter
+used by it are returned - otherwise an error is reported.
+==============================================================================*/
+
+#endif /* !defined (COMPUTED_FIELD_CANNYEDGEDETECTIONFILTER_H) */

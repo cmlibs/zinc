@@ -1,10 +1,9 @@
 /*******************************************************************************
-FILE : computed_field_local_frequency.h
+FILE : computed_field_meanImageFilter.h
 
-LAST MODIFIED : 2 March 2005
+LAST MODIFIED : 31 May 2001
 
 DESCRIPTION :
-Implements local frequency detection on computed fields.
 ==============================================================================*/
 /* ***** BEGIN LICENSE BLOCK *****
  * Version: MPL 1.1/GPL 2.0/LGPL 2.1
@@ -41,16 +40,41 @@ Implements local frequency detection on computed fields.
  * the terms of any one of the MPL, the GPL or the LGPL.
  *
  * ***** END LICENSE BLOCK ***** */
-#if !defined (COMPUTED_FIELD_LOCAL_FREQUENCY_H)
-#define COMPUTED_FIELD_LOCAL_FREQUENCY_H
+#if !defined (COMPUTED_FIELD_MEANIMAGEFILTER_H)
+#define COMPUTED_FIELD_MEANIMAGEFILTER_H
 
-int Computed_field_register_types_local_frequency(
-	struct Computed_field_package *computed_field_package,
-	struct Cmiss_region *root_region, struct Graphics_buffer_package *graphics_buffer_package);
+int Computed_field_register_types_meanImageFilter(
+	struct Computed_field_package *computed_field_package);
 /*******************************************************************************
-LAST MODIFIED : 2 March 2005
+LAST MODIFIED : 30 August 2006
 
 DESCRIPTION :
 ==============================================================================*/
 
-#endif /* !defined (COMPUTED_FIELD_LOCAL_FREQUENCY_H) */
+int Computed_field_set_type_meanImageFilter(struct Computed_field *field,
+	struct Computed_field *source_field, int *radius_sizes);
+/*******************************************************************************
+LAST MODIFIED : 30 August 2006
+
+DESCRIPTION :
+Converts <field> to type COMPUTED_FIELD_MEANIMAGEFILTER, returning the value of
+<meanImageFilter> at the time/parameter value given by scalar <source_field>.
+Sets number of components to same number as <meanImageFilter>.
+If function fails, field is guaranteed to be unchanged from its original state,
+although its cache may be lost.
+???RC In future may not need to pass computed_field_manager it all fields
+maintain pointer to it. Only have it to invoke computed field manager messages
+in response to changes in the meanImageFilter from the control meanImageFilter manager.
+==============================================================================*/
+
+int Computed_field_get_type_meanImageFilter(struct Computed_field *field,
+	struct Computed_field **source_field, int **radius_sizes);
+/*******************************************************************************
+LAST MODIFIED : 30 August 2006
+
+DESCRIPTION :
+If the field is of type COMPUTED_FIELD_MEANIMAGEFILTER, the source_field and meanImageFilter
+used by it are returned - otherwise an error is reported.
+==============================================================================*/
+
+#endif /* !defined (COMPUTED_FIELD_MEANIMAGEFILTER_H) */

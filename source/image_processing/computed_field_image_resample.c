@@ -56,8 +56,17 @@
 #include "user_interface/message.h"
 #include "image_processing/computed_field_image_resample.h"
 
-#define my_Min(x,y) ((x) <= (y) ? (x) : (y))
-#define my_Max(x,y) ((x) <= (y) ? (y) : (x))
+enum Computed_field_resample_mode
+/*******************************************************************************
+LAST MODIFIED : 17 February 2004
+
+DESCRIPTION :
+A container for objects required to define fields in this module.
+==============================================================================*/
+{
+	COMPUTED_FIELD_RESAMPLE_NEAREST,
+	COMPUTED_FIELD_RESAMPLE_BICUBIC
+};
 
 struct Computed_field_image_resample_package
 /*******************************************************************************
@@ -75,7 +84,7 @@ A container for objects required to define fields in this module.
 struct Computed_field_image_resample_type_specific_data
 {
 	int dimension;
-	char *mode; /* method <nearest> or <bicubic> */
+	enum Computed_field_resample_mode mode;
 	int *input_sizes;/* the sizes of the original image */
 	int *output_sizes;/* the sizes of desired output image */
 	float cached_time;
@@ -344,8 +353,8 @@ Compare the type specific data
 		(struct Computed_field_image_resample_type_specific_data *)
 		other_computed_field->type_specific_data))
 	{
-		if ((strcmp(data->mode, other_data->mode) == 0) &&
-		        data->image && other_data->image &&
+		if ((data->mode == other_data->mode) &&
+			data->image && other_data->image &&
 			(data->image->dimension == other_data->image->dimension) &&
 			(data->image->depth == other_data->image->depth))
 		{
@@ -401,6 +410,7 @@ LAST MODIFIED : 4 May 2005
 DESCRIPTION :
 No special criteria.
 ==============================================================================*/
+
 FE_value b3spline(FE_value x)
 /*******************************************************************************
 LAST MODIFIED : 4 May 2005
@@ -420,7 +430,7 @@ Spline function.
 }/* b3spline */
 
 void Bicubic_resample2d(FE_value *data_index, int depth,
-       int *sizes, int i_x, int i_y, FE_value a, FE_value b, FE_value *sum)
+	int *sizes, int i_x, int i_y, FE_value a, FE_value b, FE_value *sum)
 /*******************************************************************************
 LAST MODIFIED : 4 May 2005
 
@@ -428,11 +438,11 @@ DESCRIPTION :
 2D spline interpolating.
 ==============================================================================*/      
 {
-        int xx, yy;
+	int xx, yy;
 	int m, n, k;
 	FE_value r1, r2;
 	
-        for (k = 0; k < depth; k++)
+	for (k = 0; k < depth; k++)
 	{
 		sum[k] = 0.0;
 	}
@@ -441,7 +451,7 @@ DESCRIPTION :
 		r1 = b3spline((FE_value) m - a);
 		for(n=-1; n<3; n++) 
 		{
-		        r2 = b3spline(-1.0*((FE_value)n - b)); 
+			r2 = b3spline(-1.0*((FE_value)n - b)); 
 			xx = i_x+n+2;
 			yy = i_y+m+2;
 			if (xx < 0) xx=0;
@@ -463,7 +473,7 @@ DESCRIPTION :
 }/* Bicubic_resample2d */
 
 void Bicubic_resample3d(FE_value *data_index, int depth, int *sizes, 
-        int i_x, int i_y, int i_z, FE_value a, FE_value b, FE_value c, FE_value *sum)
+	int i_x, int i_y, int i_z, FE_value a, FE_value b, FE_value c, FE_value *sum)
 /*******************************************************************************
 LAST MODIFIED : 4 May 2005
 
@@ -471,11 +481,11 @@ DESCRIPTION :
 3D spline interpolating.
 ==============================================================================*/    
 {
-        int xx, yy, zz;
+	int xx, yy, zz;
 	int l, m, n, k;
 	FE_value r1, r2, r3;
 	
-        for (k = 0; k < depth; k++)
+	for (k = 0; k < depth; k++)
 	{
 		sum[k] = 0.0;
 	}
@@ -518,49 +528,52 @@ DESCRIPTION :
 }/* Bicubic_resample3d */
 
 static int Image_cache_image_resample(struct Image_cache *image, 
-         int dimension, int *output_sizes, char *mode)
+	int dimension, int *output_sizes, enum Computed_field_resample_mode mode)
 /*******************************************************************************
-LAST MODIFIED : 4 May 2005
+LAST MODIFIED : 31 October 2005
 
 DESCRIPTION :
 Perform image resample on the image cache. The <nearest> method sacles an image
 into the desired dimensions with pixel sampling.  Unlike other scaling methods, 
 this method does not introduce any additional color into the scaled image.
+SAB The nearest method probably does not need to do anything.  It just needs to 
+pass on the output resolution to the downstream operations which will then 
+sample at those places.
 The <bicubic> method using bicubic interpolating (spline filter) to generate a new image.
 ==============================================================================*/
 {
 	char *storage;
 	FE_value *data_index, *result_index;
 	int  return_code, out_storage_size;
-	int i, flag1, flag2, flag;
+	int i, flag1, flag2;
 	
 	ENTER(Image_cache_image_resample);
 	if (image && (dimension == image->dimension) && (image->depth > 0))
 	{
-	        return_code = 1;
+		return_code = 1;
 		flag1 = 0;
 		flag2 = 0;
 		for (i = 0; i < dimension; i++)
 		{
-		        flag1 += output_sizes[i];
+			flag1 += output_sizes[i];
 			if (image->sizes[i] == output_sizes[i])
 			{   
-			        /*do nothing */
+				/*do nothing */
 			}
 			else
 			{
-			        flag2++;
+				flag2++;
 			}
 		}
 		if (flag1 == 0)
 		{
-		        display_message(ERROR_MESSAGE, "Image_cache_image_resample.  "
-			"Invalid output sizes.");
-		        return_code = 0;
+			display_message(ERROR_MESSAGE, "Image_cache_image_resample.  "
+				"Invalid output sizes.");
+			return_code = 0;
 		}
 		else if (flag2 == 0)
 		{        
-		        /* do nothing */
+			/* do nothing */
 		}
 		else
 		{
@@ -573,102 +586,94 @@ The <bicubic> method using bicubic interpolating (spline filter) to generate a n
 			}
 			if (ALLOCATE(storage,char, out_storage_size * sizeof(FE_value)))
 			{
-                        	return_code = 1;
-				if (strcmp(mode,"nearest") == 0)
-				{
-			        	flag = 1;
-				}
-				else if (strcmp(mode,"bicubic") == 0)
-				{
-			        	flag = 2;
-				}
+				return_code = 1;
 				data_index = (FE_value *)image->data;
 				result_index = (FE_value *)storage;
 				for (i = 0; i < out_storage_size; i++)
 				{
-			        	*result_index = 0.0;
+					*result_index = 0.0;
 					result_index++;
 				}
 				result_index = (FE_value *)storage;
-				switch (flag)
+				switch (mode)
 				{
-				        case 1: 
+					case COMPUTED_FIELD_RESAMPLE_NEAREST:
+					{
+						if (image->dimension == 2)
 						{
-						        if (image->dimension == 2)
-							{
-							        int x, y, k, n, xctr, yctr;
+							int x, y, k, n, xctr, yctr;
 								
-								for (y = 0; y < output_sizes[1]; y++)
+							for (y = 0; y < output_sizes[1]; y++)
+							{
+								for (x = 0; x < output_sizes[0]; x++)
 								{
-								        for (x = 0; x < output_sizes[0]; x++)
-									{
-									        xctr = (int)(((FE_value)x * ((FE_value)image->sizes[0] - 1.0) / ((FE_value)output_sizes[0]-1.0)));
-						                                yctr = (int)(((FE_value)y * ((FE_value)image->sizes[1] - 1.0) / ((FE_value)output_sizes[1]-1.0)));
+									xctr = (int)(((FE_value)x * ((FE_value)image->sizes[0] - 1.0) / ((FE_value)output_sizes[0]-1.0)));
+									yctr = (int)(((FE_value)y * ((FE_value)image->sizes[1] - 1.0) / ((FE_value)output_sizes[1]-1.0)));
 
-										n = yctr * (FE_value)image->sizes[0];
-										n += xctr;
+									n = yctr * (FE_value)image->sizes[0];
+									n += xctr;
 										
+									for (k = 0; k< image->depth; k++)
+									{
+										result_index[k] = *(data_index + n * image->depth + k);
+									}
+									result_index += image->depth;
+								}
+							}
+						}
+						else if (image->dimension == 3)
+						{
+							int x, y, z, n, k, xctr, yctr, zctr;
+								
+							for (z = 0; z < output_sizes[2]; z++)
+							{
+								for (y = 0; y< output_sizes[1]; y++)
+								{
+									for (x =0; x < output_sizes[0]; x++)
+									{
+										xctr = (int)(((FE_value)x * ((FE_value)image->sizes[0] - 1.0) / ((FE_value)output_sizes[0]-1.0)));
+										yctr = (int)(((FE_value)y * ((FE_value)image->sizes[1] - 1.0) / ((FE_value)output_sizes[1]-1.0)));
+										zctr = (int)(((FE_value)z * ((FE_value)image->sizes[2] - 1.0) / ((FE_value)output_sizes[2]-1.0)));
+										n = yctr* (FE_value)image->sizes[0];
+										n += xctr;
+										n += zctr* (FE_value)image->sizes[0] * (FE_value)image->sizes[1];
+										         
 										for (k = 0; k< image->depth; k++)
 										{
-										        result_index[k] = *(data_index + n * image->depth + k);
+											result_index[k] = *(data_index + n * image->depth + k);
 										}
 										result_index += image->depth;
 									}
 								}
 							}
-							else if (image->dimension == 3)
-							{
-							        int x, y, z, n, k, xctr, yctr, zctr;
 								
-								for (z = 0; z < output_sizes[2]; z++)
-								{
-								        for (y = 0; y< output_sizes[1]; y++)
-									{
-									        for (x =0; x < output_sizes[0]; x++)
-										{
-			                                                                 xctr = (int)(((FE_value)x * ((FE_value)image->sizes[0] - 1.0) / ((FE_value)output_sizes[0]-1.0)));
-						                                         yctr = (int)(((FE_value)y * ((FE_value)image->sizes[1] - 1.0) / ((FE_value)output_sizes[1]-1.0)));
-						                                         zctr = (int)(((FE_value)z * ((FE_value)image->sizes[2] - 1.0) / ((FE_value)output_sizes[2]-1.0)));
-										         n = yctr* (FE_value)image->sizes[0];
-										         n += xctr;
-										         n += zctr* (FE_value)image->sizes[0] * (FE_value)image->sizes[1];
-										         
-										         for (k = 0; k< image->depth; k++)
-										         {
-										                  result_index[k] = *(data_index + n * image->depth + k);
-										         }
-										         result_index += image->depth;
-										}
-									}
-								}
-								
-							}
-							/*int j, k, d, org_step;
-							FE_value n;
-					        	for (i = 0; i < out_storage_size/image->depth; i++)
-					        	{
-						        	d = i;
-								org_step = 1;
-								n = 0.0;
-								for (j = 0; j < image->dimension; j++)
-								{
-							        	n += (FE_value)(d % output_sizes[j]) * 
-								      (FE_value)(image->sizes[j] * org_step) / (FE_value)output_sizes[j];
-									d /= image->sizes[j];
-									org_step *= image->sizes[j];
-								}
-								for (k = 0; k < image->depth; k++)
-								{
-							        	result_index[k] = *(data_index + ((int)n) * image->depth + k);
-								}
-								result_index += image->depth;	      
-					        	}*/
-					        	break;
 						}
-					case 2: 
-					        if (image->dimension == 2)
+						/*int j, k, d, org_step;
+						  FE_value n;
+						  for (i = 0; i < out_storage_size/image->depth; i++)
+						  {
+						  d = i;
+						  org_step = 1;
+						  n = 0.0;
+						  for (j = 0; j < image->dimension; j++)
+						  {
+						  n += (FE_value)(d % output_sizes[j]) * 
+						  (FE_value)(image->sizes[j] * org_step) / (FE_value)output_sizes[j];
+						  d /= image->sizes[j];
+						  org_step *= image->sizes[j];
+						  }
+						  for (k = 0; k < image->depth; k++)
+						  {
+						  result_index[k] = *(data_index + ((int)n) * image->depth + k);
+						  }
+						  result_index += image->depth;	      
+						  }*/
+						break;
+					}
+					case COMPUTED_FIELD_RESAMPLE_BICUBIC:
+						if (image->dimension == 2)
 						{
-						        FE_value f_x, f_y, a, b, yScale, xScale;
+							FE_value f_x, f_y, a, b, yScale, xScale;
 							int   i_x, i_y, k;
 							int   x, y, storage_size;
 							FE_value *sum;
@@ -676,15 +681,15 @@ The <bicubic> method using bicubic interpolating (spline filter) to generate a n
 							storage_size = image->depth;
 							for (i = 0 ; i < dimension ; i++)
 							{
-							        storage_size *= image->sizes[i];
+								storage_size *= image->sizes[i];
 							}
 							if (ALLOCATE(sum, FE_value, image->depth)&&
-							         ALLOCATE(data_index1, FE_value, storage_size))
+								ALLOCATE(data_index1, FE_value, storage_size))
 							{
-							         return_code = 1;
+								return_code = 1;
 								for (i = 0; i < storage_size; i++)
 								{
-							        	data_index1[i] = *data_index;
+									data_index1[i] = *data_index;
 									data_index++;
 								}
 								yScale = (FE_value)image->sizes[1]/(FE_value)output_sizes[1];
@@ -699,13 +704,13 @@ The <bicubic> method using bicubic interpolating (spline filter) to generate a n
 										f_x = (FE_value) x * xScale;
 										i_x = (int) floor(f_x);
 										b   = f_x - (FE_value)floor(f_x);
-                                                                        	Bicubic_resample2d(data_index1, 
-									        	image->depth, image->sizes, i_x, i_y, 
-									        	a, b, sum);
+										Bicubic_resample2d(data_index1, 
+											image->depth, image->sizes, i_x, i_y, 
+											a, b, sum);
 									
 										for (k = 0; k < image->depth; k++)
 										{
-									        	result_index[k] = sum[k];
+											result_index[k] = sum[k];
 										}
 										result_index += image->depth;
 									}
@@ -713,14 +718,14 @@ The <bicubic> method using bicubic interpolating (spline filter) to generate a n
 							}
 							else
 							{
-							        display_message(ERROR_MESSAGE,
-				                                 "Image_cache_image_resample.  Not enough memory");
-				                                return_code = 0;
+								display_message(ERROR_MESSAGE,
+									"Image_cache_image_resample.  Not enough memory");
+								return_code = 0;
 							}
 						}
 						else if (image->dimension == 3)
 						{
-						        FE_value f_x, f_y, f_z, a, b, c, yScale, xScale, zScale;
+							FE_value f_x, f_y, f_z, a, b, c, yScale, xScale, zScale;
 							int   i_x, i_y, i_z, k;
 							int   x, y, z, storage_size;
 							FE_value *sum;
@@ -728,16 +733,16 @@ The <bicubic> method using bicubic interpolating (spline filter) to generate a n
 							storage_size = image->depth;
 							for (i = 0 ; i < dimension ; i++)
 							{
-							        storage_size *= image->sizes[i];
+								storage_size *= image->sizes[i];
 							}
 							
 							if (ALLOCATE(sum, FE_value, image->depth) &&
-							         ALLOCATE(data_index1, FE_value, storage_size))
+								ALLOCATE(data_index1, FE_value, storage_size))
 							{
-							        return_code = 1;
+								return_code = 1;
 								for (i = 0; i < storage_size; i++)
 								{
-							        	data_index1[i] = *data_index;
+									data_index1[i] = *data_index;
 									data_index++;
 								}
 								zScale = (FE_value)image->sizes[2]/(FE_value)output_sizes[2];
@@ -749,40 +754,40 @@ The <bicubic> method using bicubic interpolating (spline filter) to generate a n
 									i_z = (int) floor(f_z);
 									a   = f_z - (FE_value)floor(f_z);
 									for(y = 0; y < output_sizes[1]; y++)
-							        	{
-								        	f_y = (FE_value) y * yScale;
-								        	i_y = (int) floor(f_y);
-								        	b   = f_y - (FE_value)floor(f_y);
-								        	for(x = 0; x < output_sizes[0]; x++)
-								        	{
-									        	f_x = (FE_value) x * xScale;
-									        	i_x = (int) floor(f_x);
-									        	c   = f_x - (FE_value)floor(f_x);
+									{
+										f_y = (FE_value) y * yScale;
+										i_y = (int) floor(f_y);
+										b   = f_y - (FE_value)floor(f_y);
+										for(x = 0; x < output_sizes[0]; x++)
+										{
+											f_x = (FE_value) x * xScale;
+											i_x = (int) floor(f_x);
+											c   = f_x - (FE_value)floor(f_x);
 
-									        	Bicubic_resample3d(data_index1, 
-										        	image->depth, image->sizes, 
-										        	i_x, i_y, i_z, a, b, c, sum);
-									        	for (k = 0; k < image->depth; k++)
-									        	{
-									                	result_index[k] = sum[k];
-									        	}
-									        	result_index += image->depth;
-								        	}
+											Bicubic_resample3d(data_index1, 
+												image->depth, image->sizes, 
+												i_x, i_y, i_z, a, b, c, sum);
+											for (k = 0; k < image->depth; k++)
+											{
+												result_index[k] = sum[k];
+											}
+											result_index += image->depth;
+										}
 									}
 								}
 							}
 							else
 							{
-							        display_message(ERROR_MESSAGE,
-				                                 "Image_cache_image_resample.  Not enough memory");
-				                                return_code = 0;
+								display_message(ERROR_MESSAGE,
+									"Image_cache_image_resample.  Not enough memory");
+								return_code = 0;
 							}
 						}
-					        break;
+						break;
 					default:
-					        display_message(ERROR_MESSAGE,
-				                                 "Image_cache_image_resample.  Invalide arguments.");
-				                return_code = 0;
+						display_message(ERROR_MESSAGE,
+							"Image_cache_image_resample.  Invalide arguments.");
+						return_code = 0;
 				}
 			        
 				if (return_code)
@@ -803,11 +808,11 @@ The <bicubic> method using bicubic interpolating (spline filter) to generate a n
 			else
 			{
 				display_message(ERROR_MESSAGE,
-				"Image_cache_image_resample.  Not enough memory");
+					"Image_cache_image_resample.  Not enough memory");
 				return_code = 0;
 			}
 		}
-       	}
+	}
 	else
 	{
 		display_message(ERROR_MESSAGE, "Image_cache_image_resample.  "
@@ -1086,8 +1091,19 @@ Returns allocated command string for reproducing field. Includes type.
 		sprintf(temp_string, " dimension %d ", data->dimension);
 		append_string(&command_string, temp_string, &error);
 
-		sprintf(temp_string, " mode %s ", data->mode);
-		append_string(&command_string, temp_string, &error);
+		switch (data->mode)
+		{
+			case COMPUTED_FIELD_RESAMPLE_NEAREST:
+			{
+				sprintf(temp_string, " mode nearest ");
+				append_string(&command_string, temp_string, &error);
+			} break;
+			case COMPUTED_FIELD_RESAMPLE_BICUBIC:
+			{
+				sprintf(temp_string, " mode bicubic ");	
+				append_string(&command_string, temp_string, &error);
+			} break;
+		}
 		
 		sprintf(temp_string, " input_sizes %d %d %d",
 		                    data->input_sizes[0],data->input_sizes[1],data->input_sizes[2]);
@@ -1120,8 +1136,7 @@ Works out whether time influences the field.
 int Computed_field_set_type_image_resample(struct Computed_field *field,
 	struct Computed_field *source_field,
 	struct Computed_field *texture_coordinate_field,
-	int dimension, 
-	int nearest_index, int bicubic_index, 
+	int dimension, enum Computed_field_resample_mode mode,
 	int *input_sizes, int *output_sizes,
 	struct MANAGER(Computed_field) *computed_field_manager,
 	struct Cmiss_region *region, struct Graphics_buffer_package *graphics_buffer_package)
@@ -1161,15 +1176,8 @@ size of the <sizes>.
 			Computed_field_clear_type(field);
 			/* 3. establish the new type */
 			field->type_string = computed_field_image_resample_type_string;
-			if (nearest_index > 0)
-			{
-			        data->mode = "nearest";
-			}
-			else if (bicubic_index > 0)
-			{
-			        data->mode = "bicubic";
-			}
-			
+			data->mode = mode;
+
 			field->number_of_components = source_field->number_of_components;
 			source_fields[0]=ACCESS(Computed_field)(source_field);
 			source_fields[1]=ACCESS(Computed_field)(texture_coordinate_field);
@@ -1223,8 +1231,7 @@ size of the <sizes>.
 int Computed_field_get_type_image_resample(struct Computed_field *field,
 	struct Computed_field **source_field,
 	struct Computed_field **texture_coordinate_field,
-	int *dimension, 
-	int *nearest_index, int *bicubic_index, 
+	int *dimension, enum Computed_field_resample_mode *mode, 
 	int **input_sizes, int **output_sizes)
 /*******************************************************************************
 LAST MODIFIED : 4 May 2005
@@ -1253,15 +1260,7 @@ parameters defining it are returned.
 				(*input_sizes)[i] = data->input_sizes[i];
 				(*output_sizes)[i] = data->output_sizes[i];
 			}
-			*nearest_index = *bicubic_index  = 0;
-			if (strcmp(data->mode, "nearest") == 0)
-			{
-				*nearest_index = 1;
-			}
-			else if (strcmp(data->mode, "bicubic") == 0)
-			{
-				*bicubic_index = 1;
-			}
+			*mode = data->mode;
 			return_code=1;
 		}
 		else
@@ -1292,8 +1291,9 @@ Converts <field> into type COMPUTED_FIELD_image_resample (if it is not
 already) and allows its contents to be modified.
 ==============================================================================*/
 {
-        char *current_token;
+	char *current_token;
 	char nearest_string[] = "nearest", bicubic_string[] = "bicubic";
+	enum Computed_field_resample_mode mode;
 	int dimension, return_code, *input_sizes, *output_sizes;
 	
 	struct Computed_field *field, *source_field, *texture_coordinate_field;
@@ -1302,13 +1302,13 @@ already) and allows its contents to be modified.
 	struct Option_table *option_table;
 	struct Set_Computed_field_conditional_data set_source_field_data,
 		set_texture_coordinate_field_data;
-	struct Set_names_from_list_data mode;
+	struct Set_names_from_list_data mode_data;
 
 	ENTER(define_Computed_field_type_image_resample);
 	if (state&&(field=(struct Computed_field *)field_void)&&
 		(computed_field_image_resample_package=
-		(struct Computed_field_image_resample_package *)
-		computed_field_image_resample_package_void))
+			(struct Computed_field_image_resample_package *)
+			computed_field_image_resample_package_void))
 	{
 		return_code=1;
 		source_field = (struct Computed_field *)NULL;
@@ -1316,6 +1316,7 @@ already) and allows its contents to be modified.
 		dimension = 0;
 		input_sizes = (int *)NULL;
 		output_sizes = (int *)NULL;
+		mode = COMPUTED_FIELD_RESAMPLE_NEAREST;
 		/* field */
 		set_source_field_data.computed_field_manager =
 			computed_field_image_resample_package->computed_field_manager;
@@ -1323,12 +1324,12 @@ already) and allows its contents to be modified.
 			Computed_field_has_numerical_components;
 		set_source_field_data.conditional_function_user_data = (void *)NULL;
 		/* modes */
-		mode.number_of_tokens = 2;
-		ALLOCATE(mode.tokens, struct Set_names_from_list_token, 2);
-		mode.tokens[0].string = nearest_string;
-		mode.tokens[0].index = 0;
-		mode.tokens[1].string = bicubic_string;
-		mode.tokens[1].index = 0;
+		mode_data.number_of_tokens = 2;
+		ALLOCATE(mode_data.tokens, struct Set_names_from_list_token, 2);
+		mode_data.tokens[0].string = nearest_string;
+		mode_data.tokens[0].index = 0;
+		mode_data.tokens[1].string = bicubic_string;
+		mode_data.tokens[1].index = 0;
 		
 		/* texture_coordinate_field */
 		set_texture_coordinate_field_data.computed_field_manager =
@@ -1342,8 +1343,7 @@ already) and allows its contents to be modified.
 		{
 			return_code = Computed_field_get_type_image_resample(field,
 				&source_field, &texture_coordinate_field, &dimension,  
-				&mode.tokens[0].index, &mode.tokens[1].index, 
-				&input_sizes, &output_sizes);
+				&mode, &input_sizes, &output_sizes);
 		}
 		if (return_code)
 		{
@@ -1370,7 +1370,7 @@ already) and allows its contents to be modified.
 					"field", &source_field, &set_source_field_data);
 				/* modes */
 				Option_table_add_set_names_from_list_entry(option_table,
-					"mode", &mode);
+					"mode", &mode_data);
 				/* input_sizes */
 				Option_table_add_int_vector_entry(option_table,
 					"input_sizes", input_sizes, &dimension);
@@ -1398,7 +1398,7 @@ already) and allows its contents to be modified.
 					if (return_code = Option_table_parse(option_table, state))
 					{
 						if (!(REALLOCATE(input_sizes, input_sizes, int, dimension) &&
-							REALLOCATE(output_sizes, output_sizes, int, dimension)))
+								REALLOCATE(output_sizes, output_sizes, int, dimension)))
 						{
 							return_code = 0;
 						}
@@ -1422,7 +1422,7 @@ already) and allows its contents to be modified.
 					"field", &source_field, &set_source_field_data);
 				/* modes */
 				Option_table_add_set_names_from_list_entry(option_table,
-					"mode", &mode);
+					"mode", &mode_data);
 				/* input_sizes */
 				Option_table_add_int_vector_entry(option_table,
 					"input_sizes", input_sizes, &dimension);
@@ -1438,15 +1438,27 @@ already) and allows its contents to be modified.
 			}
 			if (source_field && (!input_sizes ||!texture_coordinate_field))
 			{
-			        return_code = Computed_field_get_native_resolution(source_field,
-				     &dimension,&input_sizes,&texture_coordinate_field);
+				return_code = Computed_field_get_native_resolution(source_field,
+					&dimension,&input_sizes,&texture_coordinate_field);
 			}
 			
 			/* no errors,not asking for help */
 			if (return_code)
 			{
+				if (mode_data.tokens[0].index)
+				{
+					mode = COMPUTED_FIELD_RESAMPLE_NEAREST;
+				}
+				else if (mode_data.tokens[1].index)
+				{
+					mode = COMPUTED_FIELD_RESAMPLE_BICUBIC;
+				}
+			}
+			if (return_code)
+			{
+
 				return_code = Computed_field_set_type_image_resample(field,
-					source_field, texture_coordinate_field, dimension, mode.tokens[0].index, mode.tokens[1].index,
+					source_field, texture_coordinate_field, dimension, mode,
 					input_sizes, output_sizes, 
 					computed_field_image_resample_package->computed_field_manager,
 					computed_field_image_resample_package->root_region,
@@ -1480,7 +1492,7 @@ already) and allows its contents to be modified.
 				DEALLOCATE(output_sizes);
 			}
 		}
-		DEALLOCATE(mode.tokens);
+		DEALLOCATE(mode_data.tokens);
 	}
 	else
 	{
