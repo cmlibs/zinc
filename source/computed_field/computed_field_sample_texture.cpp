@@ -261,44 +261,36 @@ the <field>. These parameters will be used in image processing.
 		return_code = 1;
 		Texture_get_size(texture, &w, &h, &d);
 		Texture_get_dimension(texture,dimension);
-		if ((*sizes))
+		if (!(ALLOCATE(*sizes, int, *dimension)))
 		{
-		        if (!(REALLOCATE(*sizes, *sizes, int, *dimension) ))
-		        {
-				return_code = 0;
-			}
-		}
-		else
-		{
-			if (!(ALLOCATE(*sizes, int, *dimension)))
-			{
-				return_code = 0;
-			}
+			return_code = 0;
 		}
 		if (return_code)
 		{
-		        if (*dimension == 2)
+			switch (*dimension)
 			{
-			        (*sizes)[0] = w;
-				(*sizes)[1] = h;
-			}
-			else if (*dimension == 3)
-			{
-			        (*sizes)[0] = w;
-				(*sizes)[1] = h;
-				(*sizes)[2] = d;
+				default:
+				{
+					display_message(ERROR_MESSAGE,
+						"Computed_field_sample_texture::get_native_resolution.  "
+						"Texture dimension not implemented.");
+					return_code=0;
+				} break;
+				case 3:
+				{
+					(*sizes)[2] = d;
+				} /* no_break */
+				case 2:
+				{
+					(*sizes)[1] = h;
+				} /* no_break */
+				case 1:
+				{
+					(*sizes)[0] = w;
+				} /* no_break */
 			}
 		}
-		/* Texture_coordinate_field from source fields */
-		if (*texture_coordinate_field)
-		{
-			
-			REACCESS(Computed_field)(&(*texture_coordinate_field), field->source_fields[0]); 
-		}
-		else
-		{
-		        *texture_coordinate_field = ACCESS(Computed_field)(field->source_fields[0]);
-		}	 
+		*texture_coordinate_field = field->source_fields[0];
 	}
 	else
 	{
