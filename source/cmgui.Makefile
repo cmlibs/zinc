@@ -50,6 +50,11 @@ LINK_CMISS = false
 PERL_INTERPRETER = true
 IMAGEMAGICK = true
 USE_XML2 = true
+ifeq ($(OPERATING_SYSTEM),linux)
+  USE_ITK = true
+else
+  USE_ITK = false
+endif
 #Disable computed variables by default.  To enable override on the command line or change to true.
 USE_COMPUTED_VARIABLES = false
 
@@ -295,10 +300,20 @@ endif # USE_XML2
    endif # SYSNAME == AIX
 endif # ! IMAGEMAGICK
 
-ITK_SRCDIR = $(CMISS_ROOT)/itk/src
-ITK_BINDIR = $(CMISS_ROOT)/itk/lib/$(LIB_ARCH_DIR)
-ITK_INC = -I$(ITK_BINDIR) -I$(ITK_SRCDIR)/Code/Algorithms -I$(ITK_SRCDIR)/Code/BasicFilters -I$(ITK_SRCDIR)/Code/Common -I$(ITK_SRCDIR)/Utilities/vxl/vcl -I$(ITK_SRCDIR)/Utilities/vxl/core -I$(ITK_BINDIR)/Utilities/vxl/vcl -I$(ITK_BINDIR)/Utilities/vxl/core/
-ITK_LIB = -L$(ITK_BINDIR)/bin -lITKAlgorithms -lITKStatistics -lITKBasicFilters  -lITKCommon -litkvnl -litkvnl_algo -litknetlib -litksys -lITKDICOMParser -litkzlib -litkzlib -litktiff -litkjpeg12 -litkjpeg16 -lITKNrrdIO 
+ifeq ($(USE_ITK),true)
+   ITK_DEFINES = -DUSE_ITK
+   ITK_SRCDIR = $(CMISS_ROOT)/itk/src
+   ITK_BINDIR = $(CMISS_ROOT)/itk/lib/$(LIB_ARCH_DIR)
+   ITK_INC = -I$(ITK_BINDIR) -I$(ITK_SRCDIR)/Code/Algorithms -I$(ITK_SRCDIR)/Code/BasicFilters -I$(ITK_SRCDIR)/Code/Common -I$(ITK_SRCDIR)/Utilities/vxl/vcl -I$(ITK_SRCDIR)/Utilities/vxl/core -I$(ITK_BINDIR)/Utilities/vxl/vcl -I$(ITK_BINDIR)/Utilities/vxl/core/
+   ITK_LIB = -L$(ITK_BINDIR)/bin -lITKAlgorithms -lITKStatistics -lITKBasicFilters  -lITKCommon -litkvnl -litkvnl_algo -litknetlib -litksys -lITKDICOMParser -litkzlib -litkzlib -litktiff -litkjpeg12 -litkjpeg16 -lITKNrrdIO 
+else # $(USE_ITK) == true
+   ITK_DEFINES =
+   ITK_SRCDIR = 
+   ITK_BINDIR =
+   ITK_INC = 
+   ITK_LIB = 
+endif # $(USE_ITK) == true
+
 
 ifndef PERL_INTERPRETER
    INTERPRETER_INC =
@@ -643,7 +658,7 @@ ALL_DEFINES = $(COMPILE_DEFINES) $(TARGET_TYPE_DEFINES) \
 	$(EXTERNAL_INPUT_DEFINES) \
 	$(GRAPHICS_LIBRARY_DEFINES) $(HELP_DEFINES) \
 	$(POSTSCRIPT_DEFINES) $(NAME_DEFINES) $(TEMPORARY_DEVELOPMENT_FLAGS) \
-	$(UNEMAP_DEFINES) \
+	$(UNEMAP_DEFINES) $(ITK_DEFINES) \
 	$(CELL_DEFINES) $(MOVIE_FILE_DEFINES) $(INTERPRETER_DEFINES)\
 	$(IMAGEMAGICK_DEFINES) $(XML2_DEFINES)
 
@@ -973,11 +988,14 @@ ifeq ($(GRAPHICS_API), OPENGL_GRAPHICS)
 		graphics/spectrum_editor_dialog.c \
 		graphics/spectrum_editor_settings.c
 endif
-IMAGE_PROCESSING_SRCS = \
-	image_processing/computed_field_binaryThresholdFilter.cpp \
-	image_processing/computed_field_cannyEdgeDetectionFilter.cpp \
-	image_processing/computed_field_meanImageFilter.cpp \
-	image_processing/computed_field_ImageFilter.cpp
+IMAGE_PROCESSING_SRCS =
+ifeq ($(USE_ITK),true)
+   IMAGE_PROCESSING_SRCS += \
+	   image_processing/computed_field_binaryThresholdFilter.cpp \
+	   image_processing/computed_field_cannyEdgeDetectionFilter.cpp \
+	   image_processing/computed_field_meanImageFilter.cpp \
+	   image_processing/computed_field_ImageFilter.cpp
+endif # $(USE_ITK) == true
 INTERACTION_SRCS = \
 	interaction/interaction_graphics.c \
 	interaction/interaction_volume.c \
