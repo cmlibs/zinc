@@ -172,9 +172,11 @@ Functions for executing cmiss commands.
 #include "gtk/gtk_cmiss_scene_viewer.h"
 #endif /* defined (GTK_USER_INTERFACE) */
 #include "help/help_interface.h"
+#if defined (USE_ITK)
 #include "image_processing/computed_field_binaryThresholdFilter.h"
 #include "image_processing/computed_field_cannyEdgeDetectionFilter.h"
 #include "image_processing/computed_field_meanImageFilter.h"
+#endif /* defined (USE_ITK) */
 #if defined (MOTIF)
 #include "interaction/interactive_tool.h"
 #include "interaction/select_tool.h"
@@ -24418,12 +24420,14 @@ Initialise all the subcomponents of cmgui and create the Cmiss_command_data
 			Computed_field_register_types_string_constant(
 				command_data->computed_field_package);
 
+#if defined (USE_ITK)
 			Computed_field_register_types_binaryThresholdFilter(
 				command_data->computed_field_package);
 			Computed_field_register_types_cannyEdgeDetectionFilter(
 				command_data->computed_field_package);
 			Computed_field_register_types_meanImageFilter(
 				command_data->computed_field_package);
+#endif /* defined (USE_ITK) */
 		}
 
 #if defined (MOTIF)
