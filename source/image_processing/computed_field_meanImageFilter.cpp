@@ -70,16 +70,7 @@ public:
 	int *radius_sizes;
 
 	Computed_field_meanImageFilter(Computed_field *field,
-		int *radius_sizes_in) : Computed_field_ImageFilter(field)
-	{
-		int i;
-
-		radius_sizes = new int[dimension];
-		for (i = 0 ; i < dimension ; i++)
-		{
-			radius_sizes[i] = radius_sizes_in[i];
-		}
-	};
+		int *radius_sizes_in);
 
 	~Computed_field_meanImageFilter()
 	{
@@ -102,18 +93,9 @@ private:
 
 	int compare(Computed_field_core* other_field);
 
-	int evaluate_cache_at_location(Field_location* location);
-
 	int list();
 
 	char* get_command_string();
-
-	template < class ImageType >
-	int set_filter(Field_location* location);
-
-	template < class ComputedFieldFilter >
-	friend int Computed_field_ImageFilter::select_filter(
-		ComputedFieldFilter *filter_class, Field_location* location);
 };
 
 int Computed_field_meanImageFilter::compare(Computed_field_core *other_core)
@@ -154,63 +136,6 @@ Compare the type specific data.
 
 	return (return_code);
 } /* Computed_field_meanImageFilter::compare */
-
-template < class ImageType >
-int Computed_field_meanImageFilter::set_filter(Field_location* location)
-/*******************************************************************************
-LAST MODIFIED : 7 September 2006
-
-DESCRIPTION :
-Set the filter to type meanImageFilter and set the radius from the computed field
-values
-==============================================================================*/
-{
-	int i, return_code;
-	
-	typedef itk::MeanImageFilter< ImageType , ImageType > FilterType;
-
-	typename FilterType::Pointer filter = FilterType::New();
-	typename FilterType::InputSizeType radius;
-		
-	for (i = 0 ; i < dimension ; i++)
-	{
-		radius[i] = radius_sizes[i];
-	}
-	filter->SetRadius( radius );
-	
-	return_code = update_output< ImageType, FilterType >
-		(location, filter);
-
-	return (return_code);
-} /* set_filter */
-
-int Computed_field_meanImageFilter::evaluate_cache_at_location(
-    Field_location* location)
-/*******************************************************************************
-LAST MODIFIED : 7 September 2006
-
-DESCRIPTION :
-Evaluate the fields cache at the location
-==============================================================================*/
-{
-	int return_code;
-
-	ENTER(Computed_field_meanImageFilter::evaluate_cache_at_location);
-	if (field && location)
-	{
-		return_code = select_filter(this, location);
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_meanImageFilter::evaluate_cache_at_location.  "
-			"Invalid argument(s)");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Computed_field_meanImageFilter::evaluate_cache_at_location */
 
 int Computed_field_meanImageFilter::list()
 /*******************************************************************************
@@ -285,6 +210,82 @@ Returns allocated command string for reproducing field. Includes type.
 
 	return (command_string);
 } /* Computed_field_meanImageFilter::get_command_string */
+
+template < class ImageType >
+class Computed_field_meanImageFilter_Functor :
+	public Computed_field_ImageFilter_FunctorTmpl< ImageType >
+/*******************************************************************************
+LAST MODIFIED : 12 September 2006
+
+DESCRIPTION :
+This class actually does the work of processing images with the filter.
+It is instantiated for each of the chosen ImageTypes.
+==============================================================================*/
+{
+	Computed_field_meanImageFilter *meanImageFilter;
+
+public:
+
+	Computed_field_meanImageFilter_Functor(
+		Computed_field_meanImageFilter *meanImageFilter) :
+		Computed_field_ImageFilter_FunctorTmpl< ImageType >(meanImageFilter),
+		meanImageFilter(meanImageFilter)
+	{
+	}
+
+	int set_filter(Field_location* location)
+/*******************************************************************************
+LAST MODIFIED : 12 September 2006
+
+DESCRIPTION :
+Create a filter of the correct type, set the filter specific parameters
+and generate the outputImage.
+==============================================================================*/
+	{
+		int i, return_code;
+
+		typedef itk::MeanImageFilter< ImageType , ImageType > FilterType;
+		
+		typename FilterType::Pointer filter = FilterType::New();
+		typename FilterType::InputSizeType radius;
+		
+		for (i = 0 ; i < meanImageFilter->dimension ; i++)
+		{
+			radius[i] = meanImageFilter->radius_sizes[i];
+		}
+		filter->SetRadius( radius );
+		
+		return_code = meanImageFilter->update_output_image< ImageType, FilterType >
+			(location, filter, this->outputImage);
+		
+		return (return_code);
+	} /* set_filter */
+
+}; /* template < class ImageType > class Computed_field_meanImageFilter_Functor */
+
+Computed_field_meanImageFilter::Computed_field_meanImageFilter(
+	Computed_field *field, int *radius_sizes_in) : 
+	Computed_field_ImageFilter(field)
+/*******************************************************************************
+LAST MODIFIED : 12 September 2006
+
+DESCRIPTION :
+Create the computed_field representation of the MeanImageFilter.
+==============================================================================*/
+{
+	int i;
+	
+	radius_sizes = new int[dimension];
+	for (i = 0 ; i < dimension ; i++)
+	{
+		radius_sizes[i] = radius_sizes_in[i];
+	}
+
+	create_filters_multicomponent_multidimensions
+		< Computed_field_meanImageFilter_Functor, Computed_field_meanImageFilter >
+		(this);
+
+}
 
 } //namespace
 

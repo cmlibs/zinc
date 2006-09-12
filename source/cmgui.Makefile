@@ -976,7 +976,8 @@ endif
 IMAGE_PROCESSING_SRCS = \
 	image_processing/computed_field_binaryThresholdFilter.cpp \
 	image_processing/computed_field_cannyEdgeDetectionFilter.cpp \
-	image_processing/computed_field_meanImageFilter.cpp
+	image_processing/computed_field_meanImageFilter.cpp \
+	image_processing/computed_field_ImageFilter.cpp
 INTERACTION_SRCS = \
 	interaction/interaction_graphics.c \
 	interaction/interaction_volume.c \

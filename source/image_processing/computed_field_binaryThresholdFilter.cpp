@@ -71,21 +71,17 @@ public:
 	float upper_threshold;
 
 	Computed_field_binaryThresholdFilter(Computed_field *field,
-		float lower_threshold, float upper_threshold) :
-		Computed_field_ImageFilter(field),
-		lower_threshold(lower_threshold), upper_threshold(upper_threshold)
-	{
-	};
+		float lower_threshold, float upper_threshold);
 
 	~Computed_field_binaryThresholdFilter()
 	{
-	};
+	}
 
 private:
 	Computed_field_core *copy(Computed_field* new_parent)
 	{
-		return new Computed_field_binaryThresholdFilter(new_parent, lower_threshold,
-			upper_threshold);
+		return new Computed_field_binaryThresholdFilter(new_parent,
+			lower_threshold, upper_threshold);
 	}
 
 	char *get_type_string()
@@ -95,18 +91,9 @@ private:
 
 	int compare(Computed_field_core* other_field);
 
-	int evaluate_cache_at_location(Field_location* location);
-
 	int list();
 
 	char* get_command_string();
-
-	template < class ImageType >
-	int set_filter(Field_location* location);
-
-	template < class ComputedFieldFilter >
-	friend int Computed_field_ImageFilter::select_filter_single_component(
-		ComputedFieldFilter *filter_class, Field_location* location);
 };
 
 int Computed_field_binaryThresholdFilter::compare(Computed_field_core *other_core)
@@ -144,57 +131,72 @@ Compare the type specific data.
 } /* Computed_field_binaryThresholdFilter::compare */
 
 template < class ImageType >
-int Computed_field_binaryThresholdFilter::set_filter(Field_location* location)
+class Computed_field_binaryThresholdFilter_Functor :
+	public Computed_field_ImageFilter_FunctorTmpl< ImageType >
 /*******************************************************************************
-LAST MODIFIED : 7 September 2006
+LAST MODIFIED : 12 September 2006
 
 DESCRIPTION :
-Set the filter to type binaryThresholdFilter and set the radius from the computed field
-values
+This class actually does the work of processing images with the filter.
+It is instantiated for each of the chosen ImageTypes.
 ==============================================================================*/
 {
-	int return_code;
-	
-	typedef itk::BinaryThresholdImageFilter< ImageType , ImageType > FilterType;
+	Computed_field_binaryThresholdFilter *binaryThresholdFilter;
 
-	typename FilterType::Pointer filter = FilterType::New();
+public:
+
+	Computed_field_binaryThresholdFilter_Functor(
+		Computed_field_binaryThresholdFilter *binaryThresholdFilter) :
+		Computed_field_ImageFilter_FunctorTmpl< ImageType >(binaryThresholdFilter),
+		binaryThresholdFilter(binaryThresholdFilter)
+	{
+	}
+
+	int set_filter(Field_location* location)
+/*******************************************************************************
+LAST MODIFIED : 12 September 2006
+
+DESCRIPTION :
+Create a filter of the correct type, set the filter specific parameters
+and generate the outputImage.
+==============================================================================*/
+	{
+		int return_code;
 		
-	filter->SetLowerThreshold( lower_threshold );
-	filter->SetUpperThreshold( upper_threshold );
-	
-	return_code = update_output< ImageType, FilterType >
-		(location, filter);
+		typedef itk::BinaryThresholdImageFilter< ImageType , ImageType > FilterType;
+		
+		typename FilterType::Pointer filter = FilterType::New();
+		
+		filter->SetLowerThreshold( binaryThresholdFilter->lower_threshold );
+		filter->SetUpperThreshold( binaryThresholdFilter->upper_threshold );
+		
+		return_code = binaryThresholdFilter->update_output_image
+			< ImageType, FilterType >
+			(location, filter, this->outputImage);
+		
+		return (return_code);
+	} /* set_filter */
 
-	return (return_code);
-} /* set_filter */
+}; /* template < class ImageType > class Computed_field_binaryThresholdFilter_Functor */
 
-int Computed_field_binaryThresholdFilter::evaluate_cache_at_location(
-    Field_location* location)
+Computed_field_binaryThresholdFilter::Computed_field_binaryThresholdFilter(
+	Computed_field *field,
+	float lower_threshold, float upper_threshold) :
+	Computed_field_ImageFilter(field),
+	lower_threshold(lower_threshold), upper_threshold(upper_threshold)
 /*******************************************************************************
-LAST MODIFIED : 7 September 2006
+LAST MODIFIED : 12 September 2006
 
 DESCRIPTION :
-Evaluate the fields cache at the location
+Create the computed_field representation of the BinaryThresholdFilter.
 ==============================================================================*/
 {
-	int return_code;
+	create_filters_singlecomponent_multidimensions
+		< Computed_field_binaryThresholdFilter_Functor,
+		Computed_field_binaryThresholdFilter >
+		(this);
 
-	ENTER(Computed_field_binaryThresholdFilter::evaluate_cache_at_location);
-	if (field && location)
-	{
-		return_code = select_filter_single_component(this, location);
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_binaryThresholdFilter::evaluate_cache_at_location.  "
-			"Invalid argument(s)");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Computed_field_binaryThresholdFilter::evaluate_cache_at_location */
+};
 
 int Computed_field_binaryThresholdFilter::list()
 /*******************************************************************************
@@ -274,8 +276,9 @@ int Computed_field_set_type_binaryThresholdFilter(struct Computed_field *field,
 LAST MODIFIED : 9 September 2006
 
 DESCRIPTION :
-Converts <field> to type COMPUTED_FIELD_MEANIMAGEFILTER.  The <radius_sizes> is
-a vector of integers of dimension specified by the <source_field> dimension.
+Converts <field> to type COMPUTED_FIELD_BINARYTHRESHOLDFILTER.
+The <lower_threshold> and <upper_threshold> specify at what value thresholding
+occurs.
 ==============================================================================*/
 {
 	int number_of_source_fields, return_code;
@@ -325,8 +328,9 @@ int Computed_field_get_type_binaryThresholdFilter(struct Computed_field *field,
 LAST MODIFIED : 9 September 2006
 
 DESCRIPTION :
-If the field is of type COMPUTED_FIELD_MEANIMAGEFILTER, the source_field and binaryThresholdFilter
-used by it are returned - otherwise an error is reported.
+If the field is of type COMPUTED_FIELD_BINARYFILTER, 
+the source_field and thresholds used by it are returned - 
+otherwise an error is reported.
 ==============================================================================*/
 {
 	Computed_field_binaryThresholdFilter* core;
@@ -358,7 +362,7 @@ int define_Computed_field_type_binaryThresholdFilter(struct Parse_state *state,
 LAST MODIFIED : 30 August 2006
 
 DESCRIPTION :
-Converts <field> into type COMPUTED_FIELD_MEANIMAGEFILTER (if it is not 
+Converts <field> into type COMPUTED_FIELD_BINARYTHRESHOLDFILTER (if it is not 
 already) and allows its contents to be modified.
 ==============================================================================*/
 {

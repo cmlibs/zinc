@@ -1,7 +1,7 @@
 /*******************************************************************************
-FILE : computed_field_meanImageFilter.c
+FILE : computed_field_ImageFilter.hpp
 
-LAST MODIFIED : 30 August 2006
+LAST MODIFIED : 11 September 2006
 
 DESCRIPTION :
 Implements a computed_field which maintains a graphics transformation 
@@ -58,6 +58,20 @@ extern "C" {
 
 namespace CMISS {
 
+class Computed_field_ImageFilter_Functor
+{
+public:
+   virtual int set_filter(Field_location* location) = 0;
+
+	virtual int evaluate_filter(Field_location* location) = 0;
+
+	virtual int update_and_evaluate_filter(Field_location* location) = 0;
+
+	virtual ~Computed_field_ImageFilter_Functor()
+	{
+	}
+};
+
 class Computed_field_ImageFilter : public Computed_field_core
 {
 
@@ -67,14 +81,14 @@ public:
 
 	Computed_field *texture_coordinate_field;
 
-	itk::Object::Pointer outputImagePtr;
+	Computed_field_ImageFilter_Functor* functor;
 
 	Computed_field_ImageFilter(Computed_field *field) : Computed_field_core(field)
 	{
 		Computed_field_get_native_resolution(field->source_fields[0],
 			&dimension, &sizes, &texture_coordinate_field);
 		ACCESS(Computed_field)(texture_coordinate_field);
-		outputImagePtr = NULL;
+		functor = NULL;
 	};
 
 	~Computed_field_ImageFilter()
@@ -89,35 +103,44 @@ public:
 		}
 	};
 
-protected:
-	template < class ImageType, class FilterType >
-	int update_output(Field_location* location, typename FilterType::Pointer filter);
-
 	template < class PixelType >
 	inline void assign_field_values( PixelType pixel );
 
-	template < class ImageType >
-	int evaluate_filter(Field_location* location);
+protected:
 
-	template < class ComputedFieldFilter >
-	static int select_filter(
-		ComputedFieldFilter *filter_class, Field_location* location);
+	int evaluate_cache_at_location(Field_location* location);
 
-	template < class ComputedFieldFilter >
-	static int select_filter_single_component(
-		ComputedFieldFilter *filter_class, Field_location* location);
+	template < template <class> class ComputedFieldImageFunctor,
+				  class ComputedFieldFilter >
+	int create_filters_multicomponent_multidimensions(
+		ComputedFieldFilter* filter);
 
-	template < class ComputedFieldFilter >
-	static int select_filter_single_component_two_dimensions_plus(
-		ComputedFieldFilter *filter_class, Field_location* location);
+	template < template <class> class ComputedFieldImageFunctor,
+				  class ComputedFieldFilter >
+	int create_filters_singlecomponent_multidimensions(
+		ComputedFieldFilter* filter);
+
+	template < template <class> class ComputedFieldImageFunctor,
+				  class ComputedFieldFilter >
+	int create_filters_singlecomponent_twoormoredimensions(
+		ComputedFieldFilter* filter);
+
+public:
+	template <class ImageType, class FilterType >
+	int update_output_image(Field_location* location, 
+		typename FilterType::Pointer filter,
+		typename ImageType::Pointer &outputImage);
+
+	template <class ImageType >
+	int evaluate_output_image(Field_location* location,
+		typename ImageType::Pointer &outputImage);
+
 };
 
-template < class ImageType >
-int set_filter(Field_location* location);
-
-template < class ComputedFieldFilter >
-int Computed_field_ImageFilter::select_filter(
-	ComputedFieldFilter *filter_class, Field_location* location)
+template < template <class> class ComputedFieldImageFunctor,
+	class ComputedFieldFilter >
+int Computed_field_ImageFilter::create_filters_multicomponent_multidimensions(
+  ComputedFieldFilter* filter)
 /*******************************************************************************
 LAST MODIFIED : 7 September 2006
 
@@ -127,267 +150,142 @@ Evaluate the fields cache at the location
 {
 	int return_code;
 
-	ENTER(Computed_field_meanImageFilter::evaluate_cache_at_location);
+	ENTER(Computed_field_ImageFilter::select_filter_single_component);
 
-	if (filter_class->field && location)
+	switch (dimension)
 	{
-		switch (filter_class->dimension)
+		case 1:
 		{
-			case 1:
+			switch (field->number_of_components)
 			{
-				switch (filter_class->field->number_of_components)
+				case 1:
 				{
-					case 1:
-					{
-						typedef itk::Image< float, 1 > ImageType_1_1;
-						if (!filter_class->outputImagePtr)
-						{
-							if (return_code = filter_class->set_filter< ImageType_1_1 >
-								(location))
-							{
-								return_code = filter_class->evaluate_filter< ImageType_1_1 >(location);
-							}
-						}
-						else
-						{
-							return_code = filter_class->evaluate_filter< ImageType_1_1 >(location);
-						}
-					} break;
-					case 2:
-					{
-						typedef itk::Image< itk::Vector< float, 2 > , 1 > ImageType_1_2;
-						if (!filter_class->outputImagePtr)
-						{
-							if (return_code = filter_class->set_filter< ImageType_1_2 >
-								(location))
-							{
-								return_code = filter_class->evaluate_filter< ImageType_1_2 >(location);
-							}
-						}
-						else
-						{
-							return_code = filter_class->evaluate_filter< ImageType_1_2 >(location);
-						}
-					} break;
-					case 3:
-					{
-						typedef itk::Image< itk::Vector< float, 3 > , 1 > ImageType_1_3;
-						if (!filter_class->outputImagePtr)
-						{
-							if (return_code = filter_class->set_filter< ImageType_1_3 >
-								(location))
-							{
-								return_code = filter_class->evaluate_filter< ImageType_1_3 >(location);
-							}
-						}
-						else
-						{
-							return_code = filter_class->evaluate_filter< ImageType_1_3 >(location);
-						}
-					} break;
-					case 4:
-					{
-						typedef itk::Image< itk::Vector< float, 4 > , 1 > ImageType_1_4;
-						if (!filter_class->outputImagePtr)
-						{
-							if (return_code = filter_class->set_filter< ImageType_1_4 >
-								(location))
-							{
-								return_code = filter_class->evaluate_filter< ImageType_1_4 >(location);
-							}
-						}
-						else
-						{
-							return_code = filter_class->evaluate_filter< ImageType_1_4 >(location);
-						}
-					} break;
-					default:
-					{
-						display_message(ERROR_MESSAGE,
-							"Computed_field_meanImageFilter::Computed_field_meanImageFilter.  "
-							"Template invocation not declared for number of components %d.",
-							filter_class->field->number_of_components);
-					} break;
-				}
-			} break;
-			case 2:
-			{
-				switch (filter_class->field->number_of_components)
+					functor = new ComputedFieldImageFunctor
+						< itk::Image< float, 1 > >(filter);
+					return_code = 1;
+				} break;
+				case 2:
 				{
-					case 1:
-					{
-						typedef itk::Image< float, 2 > ImageType_2_1;
-						if (!filter_class->outputImagePtr)
-						{
-							if (return_code = filter_class->set_filter< ImageType_2_1 >
-								(location))
-							{
-								return_code = filter_class->evaluate_filter< ImageType_2_1 >(location);
-							}
-						}
-						else
-						{
-							return_code = filter_class->evaluate_filter< ImageType_2_1 >(location);
-						}
-					} break;
-					case 2:
-					{
-						typedef itk::Image< itk::Vector< float, 2 > , 2 > ImageType_2_2;
-						if (!filter_class->outputImagePtr)
-						{
-							if (return_code = filter_class->set_filter< ImageType_2_2 >
-								(location))
-							{
-								return_code = filter_class->evaluate_filter< ImageType_2_2 >(location);
-							}
-						}
-						else
-						{
-							return_code = filter_class->evaluate_filter< ImageType_2_2 >(location);
-						}
-					} break;
-					case 3:
-					{
-						typedef itk::Image< itk::Vector< float, 3 > , 2 > ImageType_2_3;
-						if (!filter_class->outputImagePtr)
-						{
-							if (return_code = filter_class->set_filter< ImageType_2_3 >
-								(location))
-							{
-								return_code = filter_class->evaluate_filter< ImageType_2_3 >(location);
-							}
-						}
-						else
-						{
-							return_code = filter_class->evaluate_filter< ImageType_2_3 >(location);
-						}
-					} break;
-					case 4:
-					{
-						typedef itk::Image< itk::Vector< float, 4 > , 2 > ImageType_2_4;
-						if (!filter_class->outputImagePtr)
-						{
-							if (return_code = filter_class->set_filter< ImageType_2_4 >
-								(location))
-							{
-								return_code = filter_class->evaluate_filter< ImageType_2_4 >(location);
-							}
-						}
-						else
-						{
-							return_code = filter_class->evaluate_filter< ImageType_2_4 >(location);
-						}
-					} break;
-					default:
-					{
-						display_message(ERROR_MESSAGE,
-							"Computed_field_meanImageFilter::Computed_field_meanImageFilter.  "
-							"Template invocation not declared for number of components %d.",
-							filter_class->field->number_of_components);
-					} break;
-				}
-			} break;
-			case 3:
-			{
-				switch (filter_class->field->number_of_components)
+					functor = new ComputedFieldImageFunctor
+						< itk::Image< itk::Vector<float, 2>, 1 > >(filter);
+					return_code = 1;
+				} break;
+				case 3:
 				{
-					case 1:
-					{
-						typedef itk::Image< float , 3 > ImageType_3_1;
-						if (!filter_class->outputImagePtr)
-						{
-							if (return_code = filter_class->set_filter< ImageType_3_1 >
-								(location))
-							{
-								return_code = filter_class->evaluate_filter< ImageType_3_1 >(location);
-							}
-						}
-						else
-						{
-							return_code = filter_class->evaluate_filter< ImageType_3_1 >(location);
-						}
-					} break;
-					case 2:
-					{
-						typedef itk::Image< itk::Vector< float, 2 > , 3 > ImageType_3_2;
-						if (!filter_class->outputImagePtr)
-						{
-							if (return_code = filter_class->set_filter< ImageType_3_2 >
-								(location))
-							{
-								return_code = filter_class->evaluate_filter< ImageType_3_2 >(location);
-							}
-						}
-						else
-						{
-							return_code = filter_class->evaluate_filter< ImageType_3_2 >(location);
-						}
-					} break;
-					case 3:
-					{
-						typedef itk::Image< itk::Vector< float, 3 > , 3 > ImageType_3_3;
-						if (!filter_class->outputImagePtr)
-						{
-							if (return_code = filter_class->set_filter< ImageType_3_3 >
-								(location))
-							{
-								return_code = filter_class->evaluate_filter< ImageType_3_3 >(location);
-							}
-						}
-						else
-						{
-							return_code = filter_class->evaluate_filter< ImageType_3_3 >(location);
-						}
-					} break;
-					case 4:
-					{
-						typedef itk::Image< itk::Vector< float, 4 > , 3 > ImageType_3_4;
-						if (!filter_class->outputImagePtr)
-						{
-							if (return_code = filter_class->set_filter< ImageType_3_4 >
-								(location))
-							{
-								return_code = filter_class->evaluate_filter< ImageType_3_4 >(location);
-							}
-						}
-						else
-						{
-							return_code = filter_class->evaluate_filter< ImageType_3_4 >(location);
-						}
-					} break;
-					default:
-					{
-						display_message(ERROR_MESSAGE,
-							"Computed_field_meanImageFilter::Computed_field_meanImageFilter.  "
-							"Template invocation not declared for number of components %d.",
-							filter_class->field->number_of_components);
-					} break;
-				}
-			} break;
-			default:
+					functor = new ComputedFieldImageFunctor
+						< itk::Image< itk::Vector<float, 3>, 1 > >(filter);
+					return_code = 1;
+				} break;
+				case 4:
+				{
+					functor = new ComputedFieldImageFunctor
+						< itk::Image< itk::Vector<float, 4>, 1 > >(filter);
+					return_code = 1;
+				} break;
+				default:
+				{
+					display_message(ERROR_MESSAGE,
+						"Computed_field_ImageFilter::create_filters_multicomponent_multidimensions.  "
+						"Template invocation not declared for number of components %d.",
+						field->number_of_components);
+					return_code = 0;
+				} break;
+			}
+		} break;
+		case 2:
+		{
+			switch (field->number_of_components)
 			{
-				display_message(ERROR_MESSAGE,
-					"Computed_field_meanImageFilter::Computed_field_meanImageFilter.  "
-					"Template invocation not declared for dimension %d.", 
-					filter_class->dimension);
-			} break;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_meanImageFilter::evaluate_cache_at_location.  "
-			"Invalid argument(s)");
-		return_code = 0;
+				case 1:
+				{
+					functor = new ComputedFieldImageFunctor
+						< itk::Image< float, 2 > >(filter);
+					return_code = 1;
+				} break;
+				case 2:
+				{
+					functor = new ComputedFieldImageFunctor
+						< itk::Image< itk::Vector<float, 2>, 2 > >(filter);
+					return_code = 1;
+				} break;
+				case 3:
+				{
+					functor = new ComputedFieldImageFunctor
+						< itk::Image< itk::Vector<float, 3>, 2 > >(filter);
+					return_code = 1;
+				} break;
+				case 4:
+				{
+					functor = new ComputedFieldImageFunctor
+						< itk::Image< itk::Vector<float, 4>, 2 > >(filter);
+					return_code = 1;
+				} break;
+				default:
+				{
+					display_message(ERROR_MESSAGE,
+						"Computed_field_ImageFilter::create_filters_multicomponent_multidimensions.  "
+						"Template invocation not declared for number of components %d.",
+						field->number_of_components);
+					return_code = 0;
+				} break;
+			}
+		} break;
+		case 3:
+		{
+			switch (field->number_of_components)
+			{
+				case 1:
+				{
+					functor = new ComputedFieldImageFunctor
+						< itk::Image< float, 3 > >(filter);
+					return_code = 1;
+				} break;
+				case 2:
+				{
+					functor = new ComputedFieldImageFunctor
+						< itk::Image< itk::Vector<float, 2>, 3 > >(filter);
+					return_code = 1;
+				} break;
+				case 3:
+				{
+					functor = new ComputedFieldImageFunctor
+						< itk::Image< itk::Vector<float, 3>, 3 > >(filter);
+					return_code = 1;
+				} break;
+				case 4:
+				{
+					functor = new ComputedFieldImageFunctor
+						< itk::Image< itk::Vector<float, 4>, 3 > >(filter);
+					return_code = 1;
+				} break;
+				default:
+				{
+					display_message(ERROR_MESSAGE,
+						"Computed_field_ImageFilter::create_filters_multicomponent_multidimensions.  "
+						"Template invocation not declared for number of components %d.",
+						field->number_of_components);
+					return_code = 0;
+				} break;
+			}
+		} break;
+		default:
+		{
+			display_message(ERROR_MESSAGE,
+				"Computed_field_ImageFilter::create_filters_multicomponent_multidimensions.  "
+				"Template invocation not declared for dimension %d.", 
+				dimension);
+			return_code = 0;
+		} break;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* Computed_field_meanImageFilter::evaluate_cache_at_location */
+} /* Computed_field_ImageFilter::create_filters_multicomponent_multidimensions */
 
-template < class ComputedFieldFilter >
-int Computed_field_ImageFilter::select_filter_single_component(
-	ComputedFieldFilter *filter_class, Field_location* location)
+template < template <class> class ComputedFieldImageFunctor,
+	class ComputedFieldFilter >
+int Computed_field_ImageFilter::create_filters_singlecomponent_multidimensions(
+  ComputedFieldFilter* filter)
 /*******************************************************************************
 LAST MODIFIED : 7 September 2006
 
@@ -397,123 +295,88 @@ Evaluate the fields cache at the location
 {
 	int return_code;
 
-	ENTER(Computed_field_meanImageFilter::evaluate_cache_at_location);
+	ENTER(Computed_field_ImageFilter::select_filter_single_component);
 
-	if (filter_class->field && location)
+	switch (dimension)
 	{
-		switch (filter_class->dimension)
+		case 1:
 		{
-			case 1:
+			switch (field->number_of_components)
 			{
-				switch (filter_class->field->number_of_components)
+				case 1:
 				{
-					case 1:
-					{
-						typedef itk::Image< float, 1 > ImageType_1_1;
-						if (!filter_class->outputImagePtr)
-						{
-							if (return_code = filter_class->set_filter< ImageType_1_1 >
-								(location))
-							{
-								return_code = filter_class->evaluate_filter< ImageType_1_1 >(location);
-							}
-						}
-						else
-						{
-							return_code = filter_class->evaluate_filter< ImageType_1_1 >(location);
-						}
-					} break;
-					default:
-					{
-						display_message(ERROR_MESSAGE,
-							"Computed_field_meanImageFilter::Computed_field_meanImageFilter.  "
-							"Template invocation not declared for number of components %d.",
-							filter_class->field->number_of_components);
-					} break;
-				}
-			} break;
-			case 2:
-			{
-				switch (filter_class->field->number_of_components)
+					functor = new ComputedFieldImageFunctor
+						< itk::Image< float, 1 > >(filter);
+					return_code = 1;
+				} break;
+				default:
 				{
-					case 1:
-					{
-						typedef itk::Image< float, 2 > ImageType_2_1;
-						if (!filter_class->outputImagePtr)
-						{
-							if (return_code = filter_class->set_filter< ImageType_2_1 >
-								(location))
-							{
-								return_code = filter_class->evaluate_filter< ImageType_2_1 >(location);
-							}
-						}
-						else
-						{
-							return_code = filter_class->evaluate_filter< ImageType_2_1 >(location);
-						}
-					} break;
-					default:
-					{
-						display_message(ERROR_MESSAGE,
-							"Computed_field_meanImageFilter::Computed_field_meanImageFilter.  "
-							"Template invocation not declared for number of components %d.",
-							filter_class->field->number_of_components);
-					} break;
-				}
-			} break;
-			case 3:
+					display_message(ERROR_MESSAGE,
+						"Computed_field_ImageFilter::create_filters_singlecomponent_multidimensions.  "
+						"Template invocation not declared for number of components %d.",
+						field->number_of_components);
+					return_code = 0;
+				} break;
+			}
+		} break;
+		case 2:
+		{
+			switch (field->number_of_components)
 			{
-				switch (filter_class->field->number_of_components)
+				case 1:
 				{
-					case 1:
-					{
-						typedef itk::Image< float , 3 > ImageType_3_1;
-						if (!filter_class->outputImagePtr)
-						{
-							if (return_code = filter_class->set_filter< ImageType_3_1 >
-								(location))
-							{
-								return_code = filter_class->evaluate_filter< ImageType_3_1 >(location);
-							}
-						}
-						else
-						{
-							return_code = filter_class->evaluate_filter< ImageType_3_1 >(location);
-						}
-					} break;
-					default:
-					{
-						display_message(ERROR_MESSAGE,
-							"Computed_field_meanImageFilter::Computed_field_meanImageFilter.  "
-							"Template invocation not declared for number of components %d.",
-							filter_class->field->number_of_components);
-					} break;
-				}
-			} break;
-			default:
+					functor = new ComputedFieldImageFunctor
+						< itk::Image< float, 2 > >(filter);
+					return_code = 1;
+				} break;
+				default:
+				{
+					display_message(ERROR_MESSAGE,
+						"Computed_field_ImageFilter::create_filters_singlecomponent_multidimensions.  "
+						"Template invocation not declared for number of components %d.",
+						field->number_of_components);
+					return_code = 0;
+				} break;
+			}
+		} break;
+		case 3:
+		{
+			switch (field->number_of_components)
 			{
-				display_message(ERROR_MESSAGE,
-					"Computed_field_meanImageFilter::Computed_field_meanImageFilter.  "
-					"Template invocation not declared for dimension %d.", 
-					filter_class->dimension);
-			} break;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_meanImageFilter::evaluate_cache_at_location.  "
-			"Invalid argument(s)");
-		return_code = 0;
+				case 1:
+				{
+					functor = new ComputedFieldImageFunctor
+						< itk::Image< float, 3 > >(filter);
+					return_code = 1;
+				} break;
+				default:
+				{
+					display_message(ERROR_MESSAGE,
+						"Computed_field_ImageFilter::create_filters_singlecomponent_multidimensions.  "
+						"Template invocation not declared for number of components %d.",
+						field->number_of_components);
+					return_code = 0;
+				} break;
+			}
+		} break;
+		default:
+		{
+			display_message(ERROR_MESSAGE,
+				"Computed_field_ImageFilter::create_filters_singlecomponent_multidimensions.  "
+				"Template invocation not declared for dimension %d.", 
+				dimension);
+			return_code = 0;
+		} break;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* Computed_field_meanImageFilter::evaluate_cache_at_location */
-
-template < class ComputedFieldFilter >
-int Computed_field_ImageFilter::select_filter_single_component_two_dimensions_plus(
-	ComputedFieldFilter *filter_class, Field_location* location)
+} /* Computed_field_ImageFilter::create_filters_singlecomponent_multidimensions */
+	
+template < template <class> class ComputedFieldImageFunctor,
+	class ComputedFieldFilter >
+int Computed_field_ImageFilter::create_filters_singlecomponent_twoormoredimensions(
+  ComputedFieldFilter* filter)
 /*******************************************************************************
 LAST MODIFIED : 7 September 2006
 
@@ -523,94 +386,67 @@ Evaluate the fields cache at the location
 {
 	int return_code;
 
-	ENTER(Computed_field_meanImageFilter::evaluate_cache_at_location);
+	ENTER(Computed_field_ImageFilter::select_filter_single_component);
 
-	if (filter_class->field && location)
+	switch (dimension)
 	{
-		switch (filter_class->dimension)
+		case 2:
 		{
-			case 2:
+			switch (field->number_of_components)
 			{
-				switch (filter_class->field->number_of_components)
+				case 1:
 				{
-					case 1:
-					{
-						typedef itk::Image< float, 2 > ImageType_2_1;
-						if (!filter_class->outputImagePtr)
-						{
-							if (return_code = filter_class->set_filter< ImageType_2_1 >
-								(location))
-							{
-								return_code = filter_class->evaluate_filter< ImageType_2_1 >(location);
-							}
-						}
-						else
-						{
-							return_code = filter_class->evaluate_filter< ImageType_2_1 >(location);
-						}
-					} break;
-					default:
-					{
-						display_message(ERROR_MESSAGE,
-							"Computed_field_meanImageFilter::Computed_field_meanImageFilter.  "
-							"Template invocation not declared for number of components %d.",
-							filter_class->field->number_of_components);
-					} break;
-				}
-			} break;
-			case 3:
-			{
-				switch (filter_class->field->number_of_components)
+					functor = new ComputedFieldImageFunctor
+						< itk::Image< float, 2 > >(filter);
+					return_code = 1;
+				} break;
+				default:
 				{
-					case 1:
-					{
-						typedef itk::Image< float , 3 > ImageType_3_1;
-						if (!filter_class->outputImagePtr)
-						{
-							if (return_code = filter_class->set_filter< ImageType_3_1 >
-								(location))
-							{
-								return_code = filter_class->evaluate_filter< ImageType_3_1 >(location);
-							}
-						}
-						else
-						{
-							return_code = filter_class->evaluate_filter< ImageType_3_1 >(location);
-						}
-					} break;
-					default:
-					{
-						display_message(ERROR_MESSAGE,
-							"Computed_field_meanImageFilter::Computed_field_meanImageFilter.  "
-							"Template invocation not declared for number of components %d.",
-							filter_class->field->number_of_components);
-					} break;
-				}
-			} break;
-			default:
+					display_message(ERROR_MESSAGE,
+						"Computed_field_ImageFilter::create_filters_singlecomponent_twoormoredimensions.  "
+						"Template invocation not declared for number of components %d.",
+						field->number_of_components);
+					return_code = 0;
+				} break;
+			}
+		} break;
+		case 3:
+		{
+			switch (field->number_of_components)
 			{
-				display_message(ERROR_MESSAGE,
-					"Computed_field_meanImageFilter::Computed_field_meanImageFilter.  "
-					"Template invocation not declared for dimension %d.", 
-					filter_class->dimension);
-			} break;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_meanImageFilter::evaluate_cache_at_location.  "
-			"Invalid argument(s)");
-		return_code = 0;
+				case 1:
+				{
+					functor = new ComputedFieldImageFunctor
+						< itk::Image< float, 3 > >(filter);
+					return_code = 1;
+				} break;
+				default:
+				{
+					display_message(ERROR_MESSAGE,
+						"Computed_field_ImageFilter::create_filters_singlecomponent_twoormoredimensions.  "
+						"Template invocation not declared for number of components %d.",
+						field->number_of_components);
+					return_code = 0;
+				} break;
+			}
+		} break;
+		default:
+		{
+			display_message(ERROR_MESSAGE,
+				"Computed_field_ImageFilter::create_filters_singlecomponent_twoormoredimensions.  "
+				"Template invocation not declared for dimension %d.", 
+				dimension);
+			return_code = 0;
+		} break;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* Computed_field_meanImageFilter::evaluate_cache_at_location */
+} /* Computed_field_ImageFilter::create_filters_singlecomponent_twoormoredimensions */
 
 template <class ImageType, class FilterType >
-int Computed_field_ImageFilter::update_output(Field_location* location, 
-	typename FilterType::Pointer filter)
+int Computed_field_ImageFilter::update_output_image(Field_location* location, 
+	typename FilterType::Pointer filter, typename ImageType::Pointer &outputImage)
 /*******************************************************************************
 LAST MODIFIED : 4 September 2006
 
@@ -627,7 +463,6 @@ Evaluate the templated version of this filter
 		Field_element_xi_location* element_xi_location;
 
 		typename ImageType::Pointer inputImage;
-		typename ImageType::Pointer outputImage;
 
 		if (element_xi_location = 
 			dynamic_cast<Field_element_xi_location*>(location))
@@ -697,7 +532,6 @@ Evaluate the templated version of this filter
 			
 			if (outputImage)
 			{
-				outputImagePtr = outputImage.GetPointer();
 				return_code = 1;
 			}
 			else
@@ -713,7 +547,7 @@ Evaluate the templated version of this filter
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Computed_field_ImageFilter::evaluate_filter.  "
+			"Computed_field_ImageFilter::update_output.  "
 			"Invalid argument(s)");
 		return_code = 0;
 	}
@@ -753,7 +587,8 @@ inline void Computed_field_ImageFilter::assign_field_values( itk::Vector< float,
 }
 
 template <class ImageType >
-int Computed_field_ImageFilter::evaluate_filter(Field_location* location)
+int Computed_field_ImageFilter::evaluate_output_image(Field_location* location,
+	typename ImageType::Pointer &outputImage)
 /*******************************************************************************
 LAST MODIFIED : 4 September 2006
 
@@ -767,15 +602,12 @@ Evaluate the templated version of this filter
 	if (field && location)
 	{
 		Field_element_xi_location* element_xi_location;
-		typename ImageType::Pointer outputImage;
 
 		if (element_xi_location = 
 			dynamic_cast<Field_element_xi_location*>(location))
 		{
 			FE_value* xi  = element_xi_location->get_xi();
 
-			outputImage = dynamic_cast<ImageType*>(outputImagePtr.GetPointer());
-			
 			if (outputImage)
 			{
 				typename ImageType::IndexType index;
@@ -807,6 +639,62 @@ Evaluate the templated version of this filter
 
 	return (return_code);
 } /* Computed_field_ImageFilter::evaluate_filter */
+
+template < class ImageType >
+class Computed_field_ImageFilter_FunctorTmpl :
+	public Computed_field_ImageFilter_Functor
+{
+protected:
+	typename ImageType::Pointer outputImage;
+
+	Computed_field_ImageFilter* image_filter;
+
+public:
+
+	Computed_field_ImageFilter_FunctorTmpl(
+		Computed_field_ImageFilter* image_filter) :
+		image_filter(image_filter)
+	{
+		outputImage = NULL;
+	};
+
+	inline int evaluate_filter(Field_location* location)
+/*******************************************************************************
+LAST MODIFIED : 12 September 2006
+
+DESCRIPTION :
+Evaluate a pixel from the outputImage.
+==============================================================================*/
+	{
+		return(image_filter->evaluate_output_image< ImageType >(location,
+		   outputImage));
+	} /* evaluate_filter */
+
+	int update_and_evaluate_filter(Field_location* location)
+/*******************************************************************************
+LAST MODIFIED : 12 September 2006
+
+DESCRIPTION :
+Updates the outputImage if required and then evaluates the outputImage at the 
+location.
+==============================================================================*/
+	{
+		int return_code;
+		if (!outputImage)
+		{
+			if (return_code = set_filter(location))
+			{
+				return_code = evaluate_filter(location);
+			}
+		}
+		else
+		{
+			return_code = evaluate_filter(location);
+		}
+		return(return_code);
+	}
+
+};
 
 } //CMISS namespace
 

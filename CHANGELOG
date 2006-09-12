@@ -1,7 +1,7 @@
 # **************************************************************************
 # FILE : CHANGELOG
 #
-# LAST MODIFIED : 29 August 2006
+# LAST MODIFIED : 12 September 2006
 # ==========================================================================
 
 This software is the cmgui part of CMISS.
@@ -10,7 +10,12 @@ It is released under the Mozilla Public License v1.1
 Further information, help pages, a tracker and a wiki is available at 
 http://www.cmiss.org/cmgui/
 
+v2.3.1
+30 August 2006
+Started adding in ITK.
+
 v2.3.0
+29 August 2006
 Changed internal structure of Computed_fields to use a C++ class rather than 
 imitating this in C with function pointers.  Reduced the number of virtual methods by
 consolidating the set/get functions with a generic location rather than separate
