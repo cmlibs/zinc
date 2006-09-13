@@ -626,7 +626,9 @@ ifeq ($(SYSNAME),win32)
    LIB = -lws2_32 -lg2c -lgdi32  -lwinspool -lcomdlg32 -ladvapi32 -lshell32 -lole32 -loleaut32 -lnetapi32 -luuid -lwsock32 -lmpr -lwinmm -lversion -lodbc32 -lstdc++
 endif # SYSNAME == win32
 ifeq ($(SYSNAME),Darwin)
-      LIB = /usr/local/g77/lib/libg2c.a -lm -ldl -lpthread -liconv -lstdc++
+      # The lib -lSystemStubs is used to resolve some linking differences between some code
+      # with gcc-3.3 and gcc-4
+      LIB = /usr/local/g77/lib/libg2c.a -lm -ldl -lpthread -liconv -lstdc++ -lSystemStubs
 endif # SYSNAME == Darwin
 
 ifneq ($(USE_COMPUTED_VARIABLES), true)
