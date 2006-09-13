@@ -3483,8 +3483,8 @@ pass in pointers to field cache values.
 		element && xi && (search_region || *element))
 	{
 		if ((!propagate_field) || 
-			(!field->core->find_element_xi(values, number_of_values,
-			element, xi, element_dimension, search_region)))
+			(!(return_code = field->core->find_element_xi(values, number_of_values,
+					element, xi, element_dimension, search_region))))
 		{
 			return_code = Computed_field_perform_find_element_xi(field,
 				values, number_of_values, element, xi, element_dimension, search_region,
