@@ -50,11 +50,11 @@ LINK_CMISS = false
 PERL_INTERPRETER = true
 IMAGEMAGICK = true
 USE_XML2 = true
-ifeq ($(OPERATING_SYSTEM),linux)
+ifneq ($(filter linux aix,$(OPERATING_SYSTEM)),)
   USE_ITK = true
-else
+else # $(OPERATING_SYSTEM) == linux || $(OPERATING_SYSTEM) == aix
   USE_ITK = false
-endif
+endif # $(OPERATING_SYSTEM) == linux || $(OPERATING_SYSTEM) == aix
 #Disable computed variables by default.  To enable override on the command line or change to true.
 USE_COMPUTED_VARIABLES = false
 
