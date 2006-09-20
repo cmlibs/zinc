@@ -5020,22 +5020,20 @@ memory for the file name string.
 	return (return_code);
 } /* set_file_name */
 
-int set_nothing(struct Parse_state *state,void *dummy_to_be_modified,
-	void *dummy_user_data)
+static int set_nothing(struct Parse_state *state,void *dummy_to_be_modified,
+	void *expected_parameters_void)
 /*******************************************************************************
-LAST MODIFIED : 21 June 1999
+LAST MODIFIED : 21 September 2006
 
 DESCRIPTION :
-Always succeeds and does nothing to the parse <state>.
-???DB.  Temporary ?
 ==============================================================================*/
 {
-	int return_code;
+	int expected_parameters, return_code;
 
 	ENTER(set_nothing);
 	USE_PARAMETER(dummy_to_be_modified);
-	USE_PARAMETER(dummy_user_data);
-	return_code=shift_Parse_state(state,1);
+	expected_parameters = (int)expected_parameters_void;
+	return_code=shift_Parse_state(state, expected_parameters);
 	LEAVE;
 
 	return (return_code);
@@ -5601,4 +5599,62 @@ are not repeated.
 
 	return (return_code);
 } /* Option_table_add_names_from_list_entry */
+
+int Option_table_add_ignore_token_entry(struct Option_table *option_table,
+	char *token, int expected_parameters)
+/*******************************************************************************
+LAST MODIFIED : 21 September 2006
+
+DESCRIPTION :
+Specifies that the given <token> will be ignored when parsing the option_table.
+The specified <expected_parameters> will also be ignored following the <token>.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(Option_table_add_ignore_token_entry);
+	if (option_table && token)
+	{
+		return_code = Option_table_add_entry(option_table, token, 
+			NULL, (void *)expected_parameters, set_nothing);
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Option_table_add_ignore_token_entry.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Option_table_add_ignore_token_entry */
+
+int Option_table_ignore_all_unmatched_entries(struct Option_table *option_table)
+/*******************************************************************************
+LAST MODIFIED : 21 September 2006
+
+DESCRIPTION :
+Adds a dummy option to the Option_table that will consume and ignore all tokens
+that do not match other options.  This option must be added last.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(Option_table_ignore_all_unmatched_entries);
+	if (option_table)
+	{
+		/* Advance past this NULL entry */
+		return_code = Option_table_add_entry(option_table, NULL,
+			NULL, (void *)1, set_nothing);
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Option_table_ignore_all_unmatched_entries.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Option_table_ignore_all_unmatched_entries */
 
