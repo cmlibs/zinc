@@ -434,7 +434,8 @@ already) and allows its contents to be modified.
 				set_source_field_data.conditional_function_user_data = (void *)NULL;
 				Option_table_add_entry(option_table, "field", &source_field,
 					&set_source_field_data, set_Computed_field_conditional);
-				Option_table_add_entry(option_table, (char*)NULL, NULL, NULL, set_nothing);
+				/* Ignore all the other entries */
+				Option_table_ignore_all_unmatched_entries(option_table);
 				return_code = Option_table_multi_parse(option_table, state);
 				DESTROY(Option_table)(&option_table);
 				/* Return back to where we were */
@@ -466,10 +467,12 @@ already) and allows its contents to be modified.
 					}
 					/* Read the radius sizes */
 					option_table = CREATE(Option_table)();
+					/* field */
+					Option_table_add_ignore_token_entry(option_table, "field", 
+						/*expected_parameters*/1);
 					/* radius_sizes */
 					Option_table_add_int_vector_entry(option_table,
 						"radius_sizes", radius_sizes, &dimension);
-					Option_table_add_entry(option_table, (char*)NULL, NULL, NULL, set_nothing);
 					return_code = Option_table_multi_parse(option_table, state);
 					DESTROY(Option_table)(&option_table);
 				}
@@ -477,7 +480,6 @@ already) and allows its contents to be modified.
 				{
 					return_code = Computed_field_set_type_meanImageFilter(
 						field, source_field, radius_sizes);
-
 				}
 
 				if (!return_code)
