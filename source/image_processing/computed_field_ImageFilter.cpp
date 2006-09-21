@@ -1,5 +1,5 @@
 /*******************************************************************************
-FILE : computed_field_binaryThresholdFilter.c
+FILE : computed_field_ImageFilter.cpp
 
 LAST MODIFIED : 9 September 2006
 
