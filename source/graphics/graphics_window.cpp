@@ -4087,6 +4087,7 @@ Sets the layout mode in effect on the <window>.
 			case GRAPHICS_WINDOW_LAYOUT_FRONT_BACK:
 			case GRAPHICS_WINDOW_LAYOUT_FRONT_SIDE:
 			case GRAPHICS_WINDOW_LAYOUT_PSEUDO_3D:
+			case GRAPHICS_WINDOW_LAYOUT_TWO_FREE:
 			{
 				if (new_layout)
 				{
@@ -4826,6 +4827,7 @@ graphics window on screen.
 				case GRAPHICS_WINDOW_LAYOUT_FRONT_BACK:
 				case GRAPHICS_WINDOW_LAYOUT_FRONT_SIDE:
 				case GRAPHICS_WINDOW_LAYOUT_PSEUDO_3D:
+				case GRAPHICS_WINDOW_LAYOUT_TWO_FREE:
 				{
 					number_of_panes = 2;
 					panes_across = 2;
@@ -5048,6 +5050,7 @@ graphics window on screen.
 					case GRAPHICS_WINDOW_LAYOUT_FRONT_BACK:
 					case GRAPHICS_WINDOW_LAYOUT_FRONT_SIDE:
 					case GRAPHICS_WINDOW_LAYOUT_PSEUDO_3D:
+					case GRAPHICS_WINDOW_LAYOUT_TWO_FREE:
 					{
 						/* Two panes, side by side */
 						display_message(ERROR_MESSAGE,"Graphics_window_get_frame_pixels.  "
@@ -5258,8 +5261,9 @@ current layout_mode, the function adjusts the view in all the panes tied to
 			{
 				case GRAPHICS_WINDOW_LAYOUT_SIMPLE:
 				case GRAPHICS_WINDOW_LAYOUT_2D:
+				case GRAPHICS_WINDOW_LAYOUT_TWO_FREE:
 				{
-					/* nothing to do: only one pane */
+					/* nothing to do: only one pane or not connected */
 				} break;
 				case GRAPHICS_WINDOW_LAYOUT_ORTHOGRAPHIC:
 				{
@@ -6383,6 +6387,10 @@ NOTE: Calling function must not deallocate returned string.
 		{
 			return_string="simple";
 		} break;
+		case GRAPHICS_WINDOW_LAYOUT_TWO_FREE:
+		{
+			return_string="two_free";
+		} break;
 		default:
 		{
 			display_message(ERROR_MESSAGE,
@@ -6522,6 +6530,7 @@ Returns the number of panes in a graphics window with the given <layout_mode>.
 		case GRAPHICS_WINDOW_LAYOUT_FRONT_BACK:
 		case GRAPHICS_WINDOW_LAYOUT_FRONT_SIDE:
 		case GRAPHICS_WINDOW_LAYOUT_PSEUDO_3D:
+		case GRAPHICS_WINDOW_LAYOUT_TWO_FREE:
 		{
 			number_of_panes=2;
 		} break;
@@ -6577,6 +6586,7 @@ graphics window with the given <layout_mode>.
 		case GRAPHICS_WINDOW_LAYOUT_FRONT_BACK:
 		case GRAPHICS_WINDOW_LAYOUT_FRONT_SIDE:
 		case GRAPHICS_WINDOW_LAYOUT_PSEUDO_3D:
+		case GRAPHICS_WINDOW_LAYOUT_TWO_FREE:
 		{
 			return_code=(0<=pane_no)&&(2>pane_no)&&(
 				(SCENE_VIEWER_PARALLEL==projection_mode)||
