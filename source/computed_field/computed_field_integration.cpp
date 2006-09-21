@@ -2208,12 +2208,14 @@ and allows its contents to be modified.
 ==============================================================================*/
 {
 	char magnitude_coordinates_flag;
-	float time_update;
-	int magnitude_coordinates, return_code;
-	FE_value value;
+	char* region_path;
+	Cmiss_region *region;
 	Computed_field *coordinate_field, *field, *integrand;
 	Computed_field_integration_package *computed_field_integration_package;
+	FE_value value;
 	FE_element *seed_element;	
+	float time_update;
+	int magnitude_coordinates, previous_state_index, return_code;
 	Option_table *option_table;
 	Set_Computed_field_conditional_data set_coordinate_field_data,
 		set_integrand_field_data;
@@ -2256,85 +2258,160 @@ and allows its contents to be modified.
 					return_code=0;
 				}
 			}
+			Cmiss_region_get_root_region_path(&region_path);
 			if (seed_element)
 			{
 				ACCESS(FE_element)(seed_element);
 			}
 			magnitude_coordinates_flag = 0;
-			option_table = CREATE(Option_table)();
-			/* coordinate */
-			set_coordinate_field_data.computed_field_manager=
-				computed_field_integration_package->computed_field_manager;
-			set_coordinate_field_data.conditional_function=
-				Computed_field_has_up_to_3_numerical_components;
-			set_coordinate_field_data.conditional_function_user_data=
-				(void *)NULL;
-			Option_table_add_entry(option_table,"coordinate",
-				&coordinate_field,&set_coordinate_field_data,
-				set_Computed_field_conditional);
-			/* integrand */
-			set_integrand_field_data.computed_field_manager=
-				computed_field_integration_package->computed_field_manager;
-			set_integrand_field_data.conditional_function=
-				Computed_field_is_scalar;
-			set_integrand_field_data.conditional_function_user_data=
-				(void *)NULL;
-			Option_table_add_entry(option_table,"integrand",
-				&integrand,&set_integrand_field_data,
-				set_Computed_field_conditional);
-			/* magnitude_coordinates */
-			Option_table_add_char_flag_entry(option_table, "magnitude_coordinates",
-				&magnitude_coordinates_flag);
-			/* seed_element */
-			Option_table_add_entry(option_table,"seed_element",
-				&seed_element,
-				Cmiss_region_get_FE_region(computed_field_integration_package->root_region),
-				set_FE_element_top_level_FE_region);
-			/* update_time_integration */
-			Option_table_add_entry(option_table,"update_time_integration",
-				&time_update, NULL, set_float);
-			if (return_code = Option_table_multi_parse(option_table,state))
+			if ((!state->current_token) ||
+				(strcmp(PARSER_HELP_STRING, state->current_token)&&
+					strcmp(PARSER_RECURSIVE_HELP_STRING, state->current_token)))
 			{
-				if (!coordinate_field)
+				if (return_code)
 				{
-					display_message(ERROR_MESSAGE,
-						"You must specify a coordinate field.");
-					return_code=0;
+					previous_state_index = state->current_index;
+
+					option_table = CREATE(Option_table)();
+					/* region */
+					Option_table_add_set_Cmiss_region_path(option_table, "region", 
+						computed_field_integration_package->root_region, &region_path);
+					/* Ignore everything else */
+					Option_table_ignore_all_unmatched_entries(option_table);
+					return_code = Option_table_multi_parse(option_table,state);
+					DESTROY(Option_table)(&option_table);
+
+					/* Return back to where we were */
+					shift_Parse_state(state, previous_state_index - state->current_index);
 				}
-				if (!integrand)
+				if (return_code)
 				{
-					display_message(ERROR_MESSAGE,
-						"You must specify an integrand field.");
-					return_code=0;
+					return_code = Cmiss_region_get_region_from_path(
+						computed_field_integration_package->root_region, 
+						region_path, &region);
+					ACCESS(Cmiss_region)(region);
 				}
-				if (magnitude_coordinates_flag)
+				if (return_code)
 				{
-					/* Currently no flag to turn this off again */
-					magnitude_coordinates = 1;
-				}
-			}
-			if (return_code)
-			{
-				if (time_update && Computed_field_is_type_integration(field))
-				{
-					display_message(ERROR_MESSAGE,
-						"The update_time_integration code has not been updated"
-						"with the latest changes.");
-					return_code=0;
+					option_table = CREATE(Option_table)();
+					/* coordinate */
+					set_coordinate_field_data.computed_field_manager=
+						computed_field_integration_package->computed_field_manager;
+					set_coordinate_field_data.conditional_function=
+						Computed_field_has_up_to_3_numerical_components;
+					set_coordinate_field_data.conditional_function_user_data=
+						(void *)NULL;
+					Option_table_add_entry(option_table,"coordinate",
+						&coordinate_field,&set_coordinate_field_data,
+						set_Computed_field_conditional);
+					/* integrand */
+					set_integrand_field_data.computed_field_manager=
+						computed_field_integration_package->computed_field_manager;
+					set_integrand_field_data.conditional_function=
+						Computed_field_is_scalar;
+					set_integrand_field_data.conditional_function_user_data=
+						(void *)NULL;
+					Option_table_add_entry(option_table,"integrand",
+						&integrand,&set_integrand_field_data,
+						set_Computed_field_conditional);
+					/* magnitude_coordinates */
+					Option_table_add_char_flag_entry(option_table, "magnitude_coordinates",
+						&magnitude_coordinates_flag);
+					/* region, ignore it this time */
+					Option_table_add_ignore_token_entry(option_table, "region",
+						/*expected_parameters*/1);
+					/* seed_element */
+					Option_table_add_entry(option_table,"seed_element",
+						&seed_element, Cmiss_region_get_FE_region(region),
+						set_FE_element_top_level_FE_region);
+					/* update_time_integration */
+					Option_table_add_entry(option_table,"update_time_integration",
+						&time_update, NULL, set_float);
+					if (return_code = Option_table_multi_parse(option_table,state))
+					{
+						if (!coordinate_field)
+						{
+							display_message(ERROR_MESSAGE,
+								"You must specify a coordinate field.");
+							return_code=0;
+						}
+						if (!integrand)
+						{
+							display_message(ERROR_MESSAGE,
+								"You must specify an integrand field.");
+							return_code=0;
+						}
+						if (magnitude_coordinates_flag)
+						{
+							/* Currently no flag to turn this off again */
+							magnitude_coordinates = 1;
+						}
+					}
+					if (return_code)
+					{
+						if (time_update && Computed_field_is_type_integration(field))
+						{
+							display_message(ERROR_MESSAGE,
+								"The update_time_integration code has not been updated"
+								"with the latest changes.");
+							return_code=0;
 #if defined (OLD_CODE)					
-					return_code=Computed_field_update_integration_scheme(field,
-						Cmiss_region_get_FE_region(computed_field_integration_package->root_region),
-						integrand, coordinate_field, time_update);
+							return_code=Computed_field_update_integration_scheme(field,
+								Cmiss_region_get_FE_region(region),
+								integrand, coordinate_field, time_update);
 #endif /* defined (OLD_CODE) */
-				}
-				else
-				{
-					return_code=Computed_field_set_type_integration(field,
-						seed_element, Cmiss_region_get_FE_region(computed_field_integration_package->root_region),
-						integrand, magnitude_coordinates, coordinate_field);
+						}
+						else
+						{
+							return_code=Computed_field_set_type_integration(field,
+								seed_element, Cmiss_region_get_FE_region(region),
+								integrand, magnitude_coordinates, coordinate_field);
+						}
+					}
+					DESTROY(Option_table)(&option_table);
 				}
 			}
-			DESTROY(Option_table)(&option_table);
+			else
+			{
+				option_table = CREATE(Option_table)();
+				/* coordinate */
+				set_coordinate_field_data.computed_field_manager=
+					computed_field_integration_package->computed_field_manager;
+				set_coordinate_field_data.conditional_function=
+					Computed_field_has_up_to_3_numerical_components;
+				set_coordinate_field_data.conditional_function_user_data=
+					(void *)NULL;
+				Option_table_add_entry(option_table,"coordinate",
+					&coordinate_field,&set_coordinate_field_data,
+					set_Computed_field_conditional);
+				/* integrand */
+				set_integrand_field_data.computed_field_manager=
+					computed_field_integration_package->computed_field_manager;
+				set_integrand_field_data.conditional_function=
+					Computed_field_is_scalar;
+				set_integrand_field_data.conditional_function_user_data=
+					(void *)NULL;
+				Option_table_add_entry(option_table,"integrand",
+					&integrand,&set_integrand_field_data,
+					set_Computed_field_conditional);
+				/* magnitude_coordinates */
+				Option_table_add_char_flag_entry(option_table, "magnitude_coordinates",
+					&magnitude_coordinates_flag);
+				/* region */
+				Option_table_add_set_Cmiss_region_path(option_table, "region", 
+					computed_field_integration_package->root_region, &region_path);
+				/* seed_element */
+				Option_table_add_entry(option_table,"seed_element",
+					&seed_element,
+					Cmiss_region_get_FE_region(computed_field_integration_package->root_region),
+					set_FE_element_top_level_FE_region);
+				/* update_time_integration */
+				Option_table_add_entry(option_table,"update_time_integration",
+					&time_update, NULL, set_float);
+				return_code = Option_table_multi_parse(option_table,state);
+				DESTROY(Option_table)(&option_table);
+					
+			}
 			if (coordinate_field)
 			{
 				DEACCESS(Computed_field)(&coordinate_field);
@@ -2370,8 +2447,10 @@ Converts <field> into type COMPUTED_FIELD_XI_TEXTURE_COORDINATES (if it is not a
 and allows its contents to be modified.
 ==============================================================================*/
 {
+	char* region_path;
+	Cmiss_region* region;
 	FE_value value;
-	int return_code;
+	int previous_state_index, return_code;
 	Computed_field *coordinate_field, *field, *integrand;
 	Computed_field_integration_package *computed_field_integration_package;
 	FE_element *seed_element;	
@@ -2382,10 +2461,15 @@ and allows its contents to be modified.
 		(computed_field_integration_package=
 			(Computed_field_integration_package *)computed_field_integration_package_void))
 	{
+		region = (struct Cmiss_region *)NULL;
+		region_path = (char *)NULL;
+		coordinate_field = (Computed_field *)NULL;
+		integrand = (Computed_field *)NULL;
 		return_code=1;
-		if (!(coordinate_field = FIRST_OBJECT_IN_MANAGER_THAT(Computed_field)(
+		if (!(coordinate_field = ACCESS(Computed_field)(
+			FIRST_OBJECT_IN_MANAGER_THAT(Computed_field)(
 			Computed_field_is_type_xi_coordinates, (void *)NULL,
-			computed_field_integration_package->computed_field_manager)))
+			computed_field_integration_package->computed_field_manager))))
 		{
 			display_message(ERROR_MESSAGE,
 				"define_Computed_field_type_xi_texture_coordinates.  xi field not found");
@@ -2399,31 +2483,88 @@ and allows its contents to be modified.
 				"define_Computed_field_type_xi_texture_coordinates.  Unable to create constant field");
 			return_code=0;
 		}
-		if (return_code)
+		Cmiss_region_get_root_region_path(&region_path);
+		seed_element = (FE_element *)NULL;
+		if ((!state->current_token) ||
+			(strcmp(PARSER_HELP_STRING, state->current_token)&&
+				strcmp(PARSER_RECURSIVE_HELP_STRING, state->current_token)))
 		{
-			seed_element = (FE_element *)NULL;
+			if (return_code)
+			{
+				previous_state_index = state->current_index;
+
+				option_table = CREATE(Option_table)();
+				/* region */
+				Option_table_add_set_Cmiss_region_path(option_table, "region", 
+					computed_field_integration_package->root_region, &region_path);
+				/* Ignore everything else */
+				Option_table_ignore_all_unmatched_entries(option_table);
+				return_code = Option_table_multi_parse(option_table,state);
+				DESTROY(Option_table)(&option_table);
+
+				/* Return back to where we were */
+				shift_Parse_state(state, previous_state_index - state->current_index);
+			}
+			if (return_code)
+			{
+				return_code = Cmiss_region_get_region_from_path(
+					computed_field_integration_package->root_region, 
+					region_path, &region);
+				ACCESS(Cmiss_region)(region);
+			}
+			if (return_code)
+			{
+				option_table = CREATE(Option_table)();
+				/* region, ignore it this time */
+				Option_table_add_ignore_token_entry(option_table, "region",
+					/*expected_parameters*/1);
+				/* seed_element */
+				Option_table_add_entry(option_table,"seed_element",
+					&seed_element, Cmiss_region_get_FE_region(region),
+					set_FE_element_top_level_FE_region);
+				if (return_code = Option_table_multi_parse(option_table,state))
+				{
+					return_code=Computed_field_set_type_integration(field,
+						seed_element, Cmiss_region_get_FE_region(region),
+						integrand, /*magnitude_coordinates*/0, coordinate_field);
+				}
+				DESTROY(Option_table)(&option_table);
+			}
+		}
+		else
+		{
+			/* Help */
 			option_table = CREATE(Option_table)();
+			/* region */
+			Option_table_add_set_Cmiss_region_path(option_table, "region", 
+				computed_field_integration_package->root_region, &region_path);
 			/* seed_element */
 			Option_table_add_entry(option_table,"seed_element",
-				&seed_element, 
+				&seed_element,
 				Cmiss_region_get_FE_region(computed_field_integration_package->root_region),
 				set_FE_element_top_level_FE_region);
-			if (return_code = Option_table_multi_parse(option_table,state))
-			{
-				return_code=Computed_field_set_type_integration(field,
-					seed_element, 
-					Cmiss_region_get_FE_region(computed_field_integration_package->root_region),
-					integrand, /*magnitude_coordinates*/0, coordinate_field);
-			}
+			return_code = Option_table_multi_parse(option_table,state);
 			DESTROY(Option_table)(&option_table);
-			if (seed_element)
-			{
-				DEACCESS(FE_element)(&seed_element);
-			}
+		}
+		if (coordinate_field)
+		{
+			DEACCESS(Computed_field)(&coordinate_field);
 		}
 		if (integrand)
 		{
 			DEACCESS(Computed_field)(&integrand);
+		}
+		if (region)
+		{
+			DEACCESS(Cmiss_region)(&region);
+		}
+		if (region_path)
+		{
+			DEALLOCATE(region_path);
+		}
+		if (seed_element)
+		{
+			DEACCESS(FE_element)(&seed_element);
 		}
 	}
 	else
