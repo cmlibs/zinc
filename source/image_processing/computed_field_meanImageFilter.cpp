@@ -384,8 +384,8 @@ Converts <field> into type COMPUTED_FIELD_MEANIMAGEFILTER (if it is not
 already) and allows its contents to be modified.
 ==============================================================================*/
 {
-	int dimension, i, old_dimension, previous_state_index, *radius_sizes,
-		return_code, *sizes;
+	int dimension, expected_parameters, i, old_dimension, previous_state_index,
+		*radius_sizes, return_code, *sizes;
 	struct Computed_field *field, *source_field, *texture_coordinate_field;
 	struct Computed_field_package *computed_field_package;
 	struct Option_table *option_table;
@@ -468,8 +468,9 @@ already) and allows its contents to be modified.
 					/* Read the radius sizes */
 					option_table = CREATE(Option_table)();
 					/* field */
+					expected_parameters = 1;
 					Option_table_add_ignore_token_entry(option_table, "field", 
-						/*expected_parameters*/1);
+						&expected_parameters);
 					/* radius_sizes */
 					Option_table_add_int_vector_entry(option_table,
 						"radius_sizes", radius_sizes, &dimension);

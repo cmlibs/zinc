@@ -5020,25 +5020,6 @@ memory for the file name string.
 	return (return_code);
 } /* set_file_name */
 
-static int set_nothing(struct Parse_state *state,void *dummy_to_be_modified,
-	void *expected_parameters_void)
-/*******************************************************************************
-LAST MODIFIED : 21 September 2006
-
-DESCRIPTION :
-==============================================================================*/
-{
-	int expected_parameters, return_code;
-
-	ENTER(set_nothing);
-	USE_PARAMETER(dummy_to_be_modified);
-	expected_parameters = (int)expected_parameters_void;
-	return_code=shift_Parse_state(state, expected_parameters);
-	LEAVE;
-
-	return (return_code);
-} /* set_nothing */
-
 int set_integer_range(struct Parse_state *state,
 	void *integer_range_address_void,void *dummy_user_data)
 /*******************************************************************************
@@ -5600,14 +5581,38 @@ are not repeated.
 	return (return_code);
 } /* Option_table_add_names_from_list_entry */
 
+static int set_nothing(struct Parse_state *state,void *dummy_to_be_modified,
+	void *expected_parameters_void)
+/*******************************************************************************
+LAST MODIFIED : 21 September 2006
+
+DESCRIPTION :
+==============================================================================*/
+{
+	int return_code;
+	int* expected_parameters;
+
+	ENTER(set_nothing);
+	USE_PARAMETER(dummy_to_be_modified);
+	expected_parameters = (int *)expected_parameters_void;
+	if (expected_parameters && *expected_parameters)
+	{
+		return_code=shift_Parse_state(state, *expected_parameters);
+	}
+	LEAVE;
+
+	return (return_code);
+} /* set_nothing */
+
 int Option_table_add_ignore_token_entry(struct Option_table *option_table,
-	char *token, int expected_parameters)
+	char *token, int *expected_parameters)
 /*******************************************************************************
 LAST MODIFIED : 21 September 2006
 
 DESCRIPTION :
 Specifies that the given <token> will be ignored when parsing the option_table.
-The specified <expected_parameters> will also be ignored following the <token>.
+The specified number of <expected_parameters> will also be ignored following 
+the <token>.
 ==============================================================================*/
 {
 	int return_code;
@@ -5629,6 +5634,25 @@ The specified <expected_parameters> will also be ignored following the <token>.
 	return (return_code);
 } /* Option_table_add_ignore_token_entry */
 
+static int set_nothing_and_shift(struct Parse_state *state,void *dummy_to_be_modified,
+	void *dummy_user_data_void)
+/*******************************************************************************
+LAST MODIFIED : 21 September 2006
+
+DESCRIPTION :
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(set_nothing);
+	USE_PARAMETER(dummy_to_be_modified);
+	USE_PARAMETER(dummy_user_data_void);
+	return_code=shift_Parse_state(state, 1);
+	LEAVE;
+
+	return (return_code);
+} /* set_nothing */
+
 int Option_table_ignore_all_unmatched_entries(struct Option_table *option_table)
 /*******************************************************************************
 LAST MODIFIED : 21 September 2006
@@ -5645,7 +5669,7 @@ that do not match other options.  This option must be added last.
 	{
 		/* Advance past this NULL entry */
 		return_code = Option_table_add_entry(option_table, NULL,
-			NULL, (void *)1, set_nothing);
+			NULL, NULL, set_nothing_and_shift);
 	}
 	else
 	{

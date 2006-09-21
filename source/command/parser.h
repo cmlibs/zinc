@@ -878,13 +878,14 @@ are not repeated.
 ==============================================================================*/
 
 int Option_table_add_ignore_token_entry(struct Option_table *option_table,
-	char *token, int expected_parameters);
+	char *token, int *expected_parameters);
 /*******************************************************************************
 LAST MODIFIED : 21 September 2006
 
 DESCRIPTION :
 Specifies that the given <token> will be ignored when parsing the option_table.
-The specified <expected_parameters> will also be ignored following the <token>.
+The specified number of <expected_parameters> will also be ignored following 
+the <token>.
 ==============================================================================*/
 
 int Option_table_ignore_all_unmatched_entries(struct Option_table *option_table);

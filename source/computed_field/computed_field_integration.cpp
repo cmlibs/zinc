@@ -2215,7 +2215,8 @@ and allows its contents to be modified.
 	FE_value value;
 	FE_element *seed_element;	
 	float time_update;
-	int magnitude_coordinates, previous_state_index, return_code;
+	int expected_parameters, magnitude_coordinates, previous_state_index, 
+		return_code;
 	Option_table *option_table;
 	Set_Computed_field_conditional_data set_coordinate_field_data,
 		set_integrand_field_data;
@@ -2318,8 +2319,9 @@ and allows its contents to be modified.
 					Option_table_add_char_flag_entry(option_table, "magnitude_coordinates",
 						&magnitude_coordinates_flag);
 					/* region, ignore it this time */
+					expected_parameters = 1;
 					Option_table_add_ignore_token_entry(option_table, "region",
-						/*expected_parameters*/1);
+						&expected_parameters);
 					/* seed_element */
 					Option_table_add_entry(option_table,"seed_element",
 						&seed_element, Cmiss_region_get_FE_region(region),
@@ -2450,7 +2452,7 @@ and allows its contents to be modified.
 	char* region_path;
 	Cmiss_region* region;
 	FE_value value;
-	int previous_state_index, return_code;
+	int expected_parameters, previous_state_index, return_code;
 	Computed_field *coordinate_field, *field, *integrand;
 	Computed_field_integration_package *computed_field_integration_package;
 	FE_element *seed_element;	
@@ -2516,8 +2518,9 @@ and allows its contents to be modified.
 			{
 				option_table = CREATE(Option_table)();
 				/* region, ignore it this time */
+				expected_parameters = 1;
 				Option_table_add_ignore_token_entry(option_table, "region",
-					/*expected_parameters*/1);
+					&expected_parameters);
 				/* seed_element */
 				Option_table_add_entry(option_table,"seed_element",
 					&seed_element, Cmiss_region_get_FE_region(region),
