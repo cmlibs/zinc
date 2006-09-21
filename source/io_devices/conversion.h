@@ -174,12 +174,4 @@ DESCRIPTION :
 Sets up the array of conversion routines.
 ============================================================================*/
 
-int set_Dof3_position(struct Parse_state *state,void *position_void,
-	void *dummy_user_data);
-/*******************************************************************************
-LAST MODIFIED : 19 June 1996
-
-DESCRIPTION :
-Modifier function to set the position from a command.
-==============================================================================*/
 #endif
