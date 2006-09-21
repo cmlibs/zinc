@@ -63,8 +63,6 @@ class Computed_field_ImageFilter_Functor
 public:
    virtual int set_filter(Field_location* location) = 0;
 
-	virtual int evaluate_filter(Field_location* location) = 0;
-
 	virtual int update_and_evaluate_filter(Field_location* location) = 0;
 
 	virtual ~Computed_field_ImageFilter_Functor()
@@ -656,19 +654,7 @@ public:
 		image_filter(image_filter)
 	{
 		outputImage = NULL;
-	};
-
-	inline int evaluate_filter(Field_location* location)
-/*******************************************************************************
-LAST MODIFIED : 12 September 2006
-
-DESCRIPTION :
-Evaluate a pixel from the outputImage.
-==============================================================================*/
-	{
-		return(image_filter->evaluate_output_image< ImageType >(location,
-		   outputImage));
-	} /* evaluate_filter */
+	}
 
 	int update_and_evaluate_filter(Field_location* location)
 /*******************************************************************************
@@ -684,12 +670,14 @@ location.
 		{
 			if (return_code = set_filter(location))
 			{
-				return_code = evaluate_filter(location);
+				return_code = image_filter->evaluate_output_image< ImageType >
+					(location, outputImage);
 			}
 		}
 		else
 		{
-			return_code = evaluate_filter(location);
+			return_code = image_filter->evaluate_output_image< ImageType >
+				(location, outputImage);
 		}
 		return(return_code);
 	}
