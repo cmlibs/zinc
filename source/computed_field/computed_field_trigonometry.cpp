@@ -127,9 +127,9 @@ Evaluate the fields cache at the element.
 				field->values[i] =
 					(FE_value)sin((double)(field->source_fields[0]->values[i]));
 			}
-			if (field->source_fields[0]->derivatives_valid)
+			if (field->source_fields[0]->derivatives_valid
+				&& (0 < (number_of_xi = location->get_number_of_derivatives())))
 			{
-				number_of_xi = get_FE_element_dimension(field->source_fields[0]->element);
 				derivative = field->derivatives;
 				for (i = 0 ; i < field->number_of_components ; i++)
 				{
@@ -473,9 +473,9 @@ Evaluate the fields cache at the element.
 				field->values[i] =
 					(FE_value)cos((double)(field->source_fields[0]->values[i]));
 			}
-			if (field->source_fields[0]->derivatives_valid)
+			if (field->source_fields[0]->derivatives_valid
+				&& (0 < (number_of_xi = location->get_number_of_derivatives())))
 			{
-				number_of_xi = get_FE_element_dimension(field->source_fields[0]->element);
 				derivative = field->derivatives;
 				for (i = 0 ; i < field->number_of_components ; i++)
 				{
@@ -819,9 +819,9 @@ Evaluate the fields cache at the element.
 				field->values[i] =
 					(FE_value)tan((double)(field->source_fields[0]->values[i]));
 			}
-			if (field->source_fields[0]->derivatives_valid)
+			if (field->source_fields[0]->derivatives_valid
+				&& (0 < (number_of_xi = location->get_number_of_derivatives())))
 			{
-				number_of_xi = get_FE_element_dimension(field->source_fields[0]->element);
 				derivative = field->derivatives;
 				for (i = 0 ; i < field->number_of_components ; i++)
 				{
@@ -1165,9 +1165,9 @@ Evaluate the fields cache at the element.
 				field->values[i] =
 					(FE_value)asin((double)(field->source_fields[0]->values[i]));
 			}
-			if (field->source_fields[0]->derivatives_valid)
+			if (field->source_fields[0]->derivatives_valid
+				&& (0 < (number_of_xi = location->get_number_of_derivatives())))
 			{
-				number_of_xi = get_FE_element_dimension(field->source_fields[0]->element);
 				derivative = field->derivatives;
 				for (i = 0 ; i < field->number_of_components ; i++)
 				{
@@ -1519,9 +1519,9 @@ Evaluate the fields cache at the element.
 				field->values[i] =
 					(FE_value)acos((double)(field->source_fields[0]->values[i]));
 			}
-			if (field->source_fields[0]->derivatives_valid)
+			if (field->source_fields[0]->derivatives_valid
+				&& (0 < (number_of_xi = location->get_number_of_derivatives())))
 			{
-				number_of_xi = get_FE_element_dimension(field->source_fields[0]->element);
 				derivative = field->derivatives;
 				for (i = 0 ; i < field->number_of_components ; i++)
 				{
@@ -1873,9 +1873,9 @@ Evaluate the fields cache at the element.
 				field->values[i] =
 					(FE_value)atan((double)(field->source_fields[0]->values[i]));
 			}
-			if (field->source_fields[0]->derivatives_valid)
+			if (field->source_fields[0]->derivatives_valid
+				&& (0 < (number_of_xi = location->get_number_of_derivatives())))
 			{
-				number_of_xi = get_FE_element_dimension(field->source_fields[0]->element);
 				derivative = field->derivatives;
 				for (i = 0 ; i < field->number_of_components ; i++)
 				{
@@ -2223,9 +2223,9 @@ Evaluate the fields cache at the element.
 					(double)(field->source_fields[1]->values[i]));
 			}
 			if (field->source_fields[0]->derivatives_valid
-				&& field->source_fields[1]->derivatives_valid)
+				&& field->source_fields[1]->derivatives_valid
+				&& (0 < (number_of_xi = location->get_number_of_derivatives())))
 			{
-				number_of_xi = get_FE_element_dimension(field->source_fields[0]->element);
 				derivative = field->derivatives;
 				for (i = 0 ; i < field->number_of_components ; i++)
 				{
