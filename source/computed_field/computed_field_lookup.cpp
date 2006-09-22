@@ -88,7 +88,7 @@ public:
 		struct Computed_field_lookup_package *lookup_package) : 
 		Computed_field_core(field), 
 		nodal_lookup_node(ACCESS(FE_node)(nodal_lookup_node)),
-		nodal_lookup_region(ACCESS(Cmiss_region)(nodal_lookup_region)),
+		nodal_lookup_region(ACCESS(Cmiss_region)(region)),
 		nodal_lookup_node_identifier(nodal_lookup_node_identifier),
 		lookup_package(lookup_package)
 	{
