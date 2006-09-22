@@ -2227,6 +2227,8 @@ and allows its contents to be modified.
 			(Computed_field_integration_package *)computed_field_integration_package_void))
 	{
 		return_code=1;
+		region = (struct Cmiss_region *)NULL;
+		region_path = (char *)NULL;
 		coordinate_field=(Computed_field *)NULL;
 		integrand=(Computed_field *)NULL;
 		magnitude_coordinates = 0;
@@ -2414,18 +2416,26 @@ and allows its contents to be modified.
 				DESTROY(Option_table)(&option_table);
 					
 			}
-			if (coordinate_field)
-			{
-				DEACCESS(Computed_field)(&coordinate_field);
-			}
-			if (integrand)
-			{
-				DEACCESS(Computed_field)(&integrand);
-			}
-			if (seed_element)
-			{
-				DEACCESS(FE_element)(&seed_element);
-			}
+		}
+		if (coordinate_field)
+		{
+			DEACCESS(Computed_field)(&coordinate_field);
+		}
+		if (integrand)
+		{
+			DEACCESS(Computed_field)(&integrand);
+		}	
+		if (region)
+		{
+			DEACCESS(Cmiss_region)(&region);
+		}
+		if (region_path)
+		{
+			DEALLOCATE(region_path);
+		}
+		if (seed_element)
+		{
+			DEACCESS(FE_element)(&seed_element);
 		}
 	}
 	else
