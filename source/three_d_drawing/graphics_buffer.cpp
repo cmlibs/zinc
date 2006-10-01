@@ -3249,7 +3249,7 @@ DESCRIPTION :
 	USE_PARAMETER(stereo_mode);
 	if (buffer = CREATE(Graphics_buffer)(graphics_buffer_package))
 	{
-                SetWindowLongPtr(hWnd, GWL_WNDPROC, (LONG)Graphics_buffer_callback_proc);
+        SetWindowLongPtr(hWnd, GWL_WNDPROC, (LONG)Graphics_buffer_callback_proc);
 		SetWindowLongPtr(hWnd, GWL_USERDATA, (LONG)buffer);
 
 		buffer->type = GRAPHICS_BUFFER_WIN32_TYPE;
@@ -3379,11 +3379,15 @@ DESCRIPTION:
 		{
 			return_code=TRUE;
 		}
+		/* CS I don't think handling this message is necessary,
+		   worse still sending a WM_QUIT kills the application */
+		/*
 		case WM_DESTROY:
 		{
 			PostQuitMessage(0);
 			return_code=TRUE;
 		} break;
+		*/
 		case WM_PAINT:
 		{
 			BeginPaint(window, &ps);
