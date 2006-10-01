@@ -47,6 +47,7 @@ Representing time in finite elements.
 #include "general/list.h"
 #include "general/manager.h"
 #include "general/object.h"
+#include "general/value.h"
 
 /*
 Global types
