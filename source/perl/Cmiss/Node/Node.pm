@@ -105,6 +105,13 @@ sub print_string
 	return ("node=$identifier");
 }
 
+sub get_identifier
+{
+  	my $self = shift;
+	my $identifier = get_identifier_xs($self);
+	return ($identifier);
+}
+
 require XSLoader;
 XSLoader::load('Cmiss::Node', $VERSION);
 
