@@ -365,7 +365,7 @@ be shared by multiple materials using the same program.
 #if defined (OPENGL_API)
 		return_code = 1;
 /* #define TESTING_PROGRAM_STRINGS */
-#define DEBUG
+/* #define DEBUG */
 #if defined (TESTING_PROGRAM_STRINGS)
 		/* If testing always recompile */
 		material_program->compiled = 0;
