@@ -1011,161 +1011,6 @@ PROTOTYPE_ENUMERATOR_STRING_FUNCTION(Raw_image_storage)
 
 DEFINE_DEFAULT_ENUMERATOR_FUNCTIONS(Raw_image_storage)
 
-#if defined (OLD_CODE)
-int write_image_file(char *file_name,
-	int number_of_components, int number_of_bytes_per_component,
-	int width, int height, int row_padding,
-	long unsigned *image)
-/*******************************************************************************
-LAST MODIFIED : 4 March 2002
-
-DESCRIPTION :
-<row_padding> indicates a number of bytes that is padding on each row of data 
-(textures are required to be in multiples of two).
-==============================================================================*/
-{
-	int return_code;
-
-	ENTER(write_image_file);
-
-	if (file_name&&(0<number_of_components)&&(0<width)&&
-		(0<height)&&image)
-	{
-#if defined (IMAGEMAGICK)
-		/* SAB.  Note that the data returned from this routine is
-			stored bottom to top and must be flipped to conform
-			with the top to bottom storage normally used by Cmgui */
-
-		char *magick_pixel_storage, RGBA[] = "RGBA", RGB[] = "RGB";
-		int i, row_size, source_size;
-		Image *magick_image;
-		ImageInfo *magick_image_info;
-		ExceptionInfo magick_exception;
-		StorageType magick_storage_type;
-		unsigned char *destination, *image_char, *image_data, *source;
-
-		return_code = 1;
-		GetExceptionInfo(&magick_exception);
-
-		/* We are double handling the data so that I can put it into
-			ImageMagick without modifying ImageMagick to understand our
-			row padding and I can reverse the top to bottom order */
-		if (ALLOCATE(image_data, unsigned char,
-			width * height * number_of_components *
-			number_of_bytes_per_component))
-		{
-			row_size = width * number_of_components *
-				number_of_bytes_per_component;
-			source_size = (width + row_padding) * number_of_components *
-				number_of_bytes_per_component;
-			source = (unsigned char *)image + (height - 1) * source_size;
-			destination = image_data;
-			for (i = 0 ; i < height ; i++)
-			{
-				memcpy((void *)destination,(void *)source,row_size);
-				destination += row_size;
-				source -= source_size;
-			}
-			switch (number_of_components)
-			{
-				case 3:
-				{
-					magick_pixel_storage = RGB;
-				} break;
-				case 4:
-				{
-					magick_pixel_storage = RGBA;
-					/* Invert the alpha channel */
-					image_char = (unsigned char *)image_data + 3;
-					for (i = 0 ; i < width * height ; i++)
-					{
-						*image_char = 0xff - *image_char;
-						image_char += 4;
-					}
-				} break;
-				default:
-				{
-					display_message(ERROR_MESSAGE,
-						"write_image_file.  Unknown/unimplemented pixel storage");
-					return_code = 0;
-				} break;
-			}
-			switch (number_of_bytes_per_component)
-			{
-				case 1:
-				{
-					magick_storage_type = CharPixel;
-				} break;
-				case 2:
-				{
-					magick_storage_type = ShortPixel;
-				} break;
-				default:
-				{
-					display_message(ERROR_MESSAGE,
-						"write_image_file.  Unknown/unimplemented bytes per pixel");
-					return_code = 0;
-				} break;
-			}
-			if (return_code)
-			{
-				if (magick_image_info=CloneImageInfo((ImageInfo *) NULL))
-				{
-					if(magick_image=ConstituteImage(width, height, magick_pixel_storage, 
-						magick_storage_type, image_data, &magick_exception))
-					{
-						strcpy(magick_image->filename,file_name);
-						if(WriteImage (magick_image_info, magick_image))
-						{
-							return_code = 1;
-						}
-						else
-						{
-							display_message(ERROR_MESSAGE,
-								"Could not write image \"%s\"\n", file_name);
-							return_code = 0;
-						}
-						DestroyImage(magick_image);					
-					}
-					else
-					{
-						display_message(ERROR_MESSAGE,
-							"write_image_file.  Unable to create magick image");
-						return_code = 0;
-					}
-					DestroyImageInfo(magick_image_info);
-				}
-				else
-				{
-					display_message(ERROR_MESSAGE,
-						"write_image_file.  Could not create image information");
-					return_code = 0;
-				}
-			}
-			DEALLOCATE(image_data);
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"write_image_file.  Could not allocate memory for image data");
-			return_code = 0;
-		}
-#else /* defined (IMAGEMAGICK) */
-		USE_PARAMETER(number_of_bytes_per_component);
-		USE_PARAMETER(row_padding);
-#endif /* defined (IMAGEMAGICK) */
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,"write_image_file.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* write_image_file */
-#endif /* defined (OLD_CODE) */
-
 static int get_yuv_resolution_from_file_size(int file_size,
 	int *width, int *height)
 /*******************************************************************************
@@ -2767,155 +2612,6 @@ Not working for 64 bit as assumes a long is 4 bytes!
 
 	return (return_code);
 } /* write_tiff_image_file */
-
-#if defined (OLD_CODE)
-int write_tiff_image_file(char *file_name, int number_of_components,
-	int number_of_columns, int number_of_rows, long unsigned *image)
-/*******************************************************************************
-LAST MODIFIED : 4 March 2002
-
-DESCRIPTION :
-Writes an image in TIFF file format.
-==============================================================================*/
-{
-	FILE *output_file;
-	int i,j,return_code;
-	struct Image_function_definitions
-	{
-		struct Tiff_image_function_definition_entry image_width;
-		struct Tiff_image_function_definition_entry image_length;
-		struct Tiff_image_function_definition_entry bits_per_sample;
-		struct Tiff_image_function_definition_entry photometric_int;
-		struct Tiff_image_function_definition_entry strip_offsets;
-		struct Tiff_image_function_definition_entry samples_per_pixel;
-		struct Tiff_image_function_definition_entry rows_per_strip;
-		struct Tiff_image_function_definition_entry strip_byte_counts;
-		unsigned long next_image_function_definition_offset;
-	} image_function_definitions;
-	unsigned char *pixel;
-	unsigned long image_function_definition_offset;
-	unsigned short byte_order,image_function_definition_entry_count,version;
-
-	ENTER(write_tiff_image_file);
-	return_code=0;
-	if (file_name && (0 < number_of_components) && (0 < number_of_columns) &&
-		(0 < number_of_rows) && image)
-	{
-		/* open the output file */
-		if (output_file=fopen(file_name,"wb"))
-		{
-			/* write the tiff file header */
-#if defined (BYTE_ORDER) && (1234==BYTE_ORDER)
-			byte_order=TIFF_LO_HI;
-#else /* defined (BYTE_ORDER) && (1234==BYTE_ORDER) */
-			byte_order=TIFF_HI_LO;
-#endif /* defined (BYTE_ORDER) && (1234==BYTE_ORDER) */
-			image_function_definition_offset=sizeof(unsigned short);
-			fwrite(&byte_order,sizeof(unsigned short),1,output_file);
-			version=42;
-			image_function_definition_offset += sizeof(unsigned short);
-			fwrite(&version,sizeof(unsigned short),1,output_file);
-			image_function_definition_offset += sizeof(unsigned long);
-			fwrite(&image_function_definition_offset,sizeof(unsigned long),1,
-				output_file);
-			image_function_definition_entry_count=8;
-			image_function_definition_offset += sizeof(unsigned short);
-			fwrite(&image_function_definition_entry_count,sizeof(unsigned short),1,
-				output_file);
-			/* write the image header */
-			/* fill image_function_definition entries and write to file */
-			image_function_definitions.image_width.tag=256;
-			image_function_definitions.image_width.type=TIFF_SHORT_FIELD;
-			image_function_definitions.image_width.length=1;
-#if defined (BYTE_ORDER) && (1234==BYTE_ORDER)
-			image_function_definitions.image_width.value_offset=number_of_columns;
-#else /* defined (BYTE_ORDER) && (1234==BYTE_ORDER) */
-			image_function_definitions.image_width.value_offset=number_of_columns<<16;
-#endif /* defined (BYTE_ORDER) && (1234==BYTE_ORDER) */
-			image_function_definitions.image_length.tag=257;
-			image_function_definitions.image_length.type=TIFF_SHORT_FIELD;
-			image_function_definitions.image_length.length=1;
-#if defined (BYTE_ORDER) && (1234==BYTE_ORDER)
-			image_function_definitions.image_length.value_offset=number_of_rows;
-#else /* defined (BYTE_ORDER) && (1234==BYTE_ORDER) */
-			image_function_definitions.image_length.value_offset=number_of_rows<<16;
-#endif /* defined (BYTE_ORDER) && (1234==BYTE_ORDER) */
-			image_function_definitions.bits_per_sample.tag=258;
-			image_function_definitions.bits_per_sample.type=TIFF_SHORT_FIELD;
-			image_function_definitions.bits_per_sample.length=1;
-#if defined (BYTE_ORDER) && (1234==BYTE_ORDER)
-			image_function_definitions.bits_per_sample.value_offset=8;
-#else /* defined (BYTE_ORDER) && (1234==BYTE_ORDER) */
-			image_function_definitions.bits_per_sample.value_offset=8<<16;
-#endif /* defined (BYTE_ORDER) && (1234==BYTE_ORDER) */
-			image_function_definitions.photometric_int.tag=262;
-			image_function_definitions.photometric_int.type=TIFF_SHORT_FIELD;
-			image_function_definitions.photometric_int.length=1;
-#if defined (BYTE_ORDER) && (1234==BYTE_ORDER)
-			image_function_definitions.photometric_int.value_offset=TIFF_RGB;
-#else /* defined (BYTE_ORDER) && (1234==BYTE_ORDER) */
-			image_function_definitions.photometric_int.value_offset=TIFF_RGB<<16;
-#endif /* defined (BYTE_ORDER) && (1234==BYTE_ORDER) */
-			image_function_definitions.strip_offsets.tag=273;
-			image_function_definitions.strip_offsets.type=TIFF_LONG_FIELD;
-			image_function_definitions.strip_offsets.length=1;
-			image_function_definitions.strip_offsets.value_offset=
-				(int)image_function_definition_offset+
-				sizeof(struct Image_function_definitions);
-			image_function_definitions.samples_per_pixel.tag=277;
-			image_function_definitions.samples_per_pixel.type=TIFF_SHORT_FIELD;
-			image_function_definitions.samples_per_pixel.length=1;
-#if defined (BYTE_ORDER) && (1234==BYTE_ORDER)
-			image_function_definitions.samples_per_pixel.value_offset=3;
-#else /* defined (BYTE_ORDER) && (1234==BYTE_ORDER) */
-			image_function_definitions.samples_per_pixel.value_offset=3<<16;
-#endif /* defined (BYTE_ORDER) && (1234==BYTE_ORDER) */
-			image_function_definitions.rows_per_strip.tag=278;
-			image_function_definitions.rows_per_strip.type=TIFF_LONG_FIELD;
-			image_function_definitions.rows_per_strip.length=1;
-			image_function_definitions.rows_per_strip.value_offset=number_of_rows;
-			image_function_definitions.strip_byte_counts.tag=279;
-			image_function_definitions.strip_byte_counts.type=TIFF_LONG_FIELD;
-			image_function_definitions.strip_byte_counts.length=1;
-			image_function_definitions.strip_byte_counts.value_offset=
-				3*number_of_rows*number_of_columns;
-			image_function_definitions.next_image_function_definition_offset=0;
-			/* write IFD blocks */
-			fwrite(&image_function_definitions,
-				sizeof(struct Image_function_definitions),1,output_file);
-			/* write the image to the file */
-			for (i=number_of_rows-1;i>=0;i--)
-			{
-				pixel=(unsigned char *)(image+(i*number_of_columns));
-				for (j=number_of_columns;j>0;j--)
-				{
-					fwrite(pixel,sizeof(char),1,output_file);
-					fwrite(pixel+1,sizeof(char),1,output_file);
-					fwrite(pixel+2,sizeof(char),1,output_file);
-					pixel += sizeof(long unsigned);
-				}
-			}
-			(void)fclose(output_file);
-			return_code=1;
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"write_tiff_image_file.  Could not open file");
-			return_code=0;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"write_tiff_image_file.  Missing argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* write_tiff_image_file */
-#endif /* defined (OLD_CODE) */
 
 int read_raw_image_file(char *file_name,
 	enum Raw_image_storage raw_image_storage,
@@ -5473,12 +5169,6 @@ Allows up to around 10% distortion to be corrected. (This is a large value!)
 		}
 		else
 		{
-#if defined (OLD_CODE)
-			/* now up to calling function to report error, if necessary */
-			display_message(ERROR_MESSAGE,
-				"get_radial_distortion_distorted_coordinates.  "
-				"Maximum shift of %.1f is too great",max_shift);
-#endif /* defined (OLD_CODE) */
 			return_code=0;
 		}
 	}
@@ -7397,6 +7087,7 @@ that the images be adjoined in the single file.
 						magick_image_info->interlace = PlaneInterlace;
 					} break;
 				}
+#if defined (OLD_CODE)
 				if (3 <= cmgui_image->number_of_components)
 				{
 					/* image magick will reduce RGB to monochrome if all R, G and B
@@ -7404,6 +7095,7 @@ that the images be adjoined in the single file.
 						 If the image info type is set to TrueColorType, this is avoided */
 					magick_image_info->type = TrueColorType;
 				}
+#endif /* defined (OLD_CODE) */
 #if defined (DEBUG)
 				magick_image_info->verbose = 1;
 #endif /* defined (DEBUG) */
