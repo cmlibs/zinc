@@ -241,7 +241,6 @@ object
 			XmForm spec_ed_set_colour_value_entry;
 			XmForm spec_ed_set_band_entry;
 			XmForm spec_ed_set_step_entry;
-			XmOptionMenu spec_ed_set_render_option;
 			};
 		};
 
@@ -1070,94 +1069,6 @@ object
       	};
     	};
 
-	spec_ed_set_render_option: XmOptionMenu
-		{
-		arguments
-			{
-			XmNlabelString = compound_string("Render on:");
-!			XmNleftAttachment = XmATTACH_FORM;
-!			XmNleftOffset = 0;
-!			XmNtopAttachment = XmATTACH_WIDGET;
-!			XmNtopOffset = 0;
-!			XmNtopWidget = spec_ed_set_colour_option;
-!			XmNbottomAttachment = XmATTACH_FORM;
-!			XmNbottomOffset = 0;
-			XmNuserData = spec_ed_set_structure;
-			};
-		controls
-			{
-			XmPulldownMenu spec_ed_set_render_menu;
-			};
-		callbacks
-			{
-			MrmNcreateCallback = procedure
-				spec_ed_set_id_render_opt(spec_ed_set_structure);
-			};
-		};
-
-	spec_ed_set_render_menu: XmPulldownMenu
-		{
-		arguments
-			{
-			XmNbuttonFontList = button_font;
-			XmNuserData = spec_ed_set_structure;
-			};
-		callbacks
-			{
-			MrmNcreateCallback = procedure
-				spec_ed_set_id_render_menu(spec_ed_set_structure);
-			XmNentryCallback = procedure
-				spec_ed_set_render_menu_CB(spec_ed_set_structure);
-			};
-		controls
-			{
-			XmPushButtonGadget
-				{
-				arguments
-					{
-					XmNlabelString = compound_string("Ambient and Diffuse");
-					XmNfontList = button_font;
-					XmNuserData = spec_ed_set_amb_diff;
-					};
-				};
-			XmPushButtonGadget
-				{
-				arguments
-					{
-					XmNlabelString = compound_string("Ambient");
-					XmNfontList = button_font;
-					XmNuserData = spec_ed_set_ambient;
-					};
-				};
-			XmPushButtonGadget
-				{
-				arguments
-					{
-					XmNlabelString = compound_string("Diffuse");
-					XmNfontList = button_font;
-					XmNuserData = spec_ed_set_diffuse;
-					};
-				};
-			XmPushButtonGadget
-				{
-				arguments
-					{
-					XmNlabelString = compound_string("Emission");
-					XmNfontList = button_font;
-					XmNuserData = spec_ed_set_emission;
-					};
-				};
-			XmPushButtonGadget
-				{
-				arguments
-					{
-					XmNlabelString = compound_string("Specular");
-					XmNfontList = button_font;
-					XmNuserData = spec_ed_set_specular;
-					};
-				};
-			};
-		};
 
 !*******************************************************************************
 end module;

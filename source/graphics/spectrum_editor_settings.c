@@ -150,10 +150,6 @@ DECLARE_DIALOG_IDENTIFY_FUNCTION(spectrum_editor_settings, \
 	Spectrum_editor_settings, colour_menu_widget)
 DECLARE_DIALOG_IDENTIFY_FUNCTION(spectrum_editor_settings, \
 	Spectrum_editor_settings, colour_option_widget)
-DECLARE_DIALOG_IDENTIFY_FUNCTION(spectrum_editor_settings, \
-	Spectrum_editor_settings, render_menu_widget)
-DECLARE_DIALOG_IDENTIFY_FUNCTION(spectrum_editor_settings, \
-	Spectrum_editor_settings, render_option_widget)
 
 static int spectrum_editor_settings_update(
 	struct Spectrum_editor_settings *spectrum_editor_settings)
@@ -787,54 +783,6 @@ Callback for the settings colour mapping type.
 	LEAVE;
 } /* spectrum_editor_settings_colour_menu_CB */
 
-static void spectrum_editor_settings_render_menu_CB(Widget widget,
-	XtPointer client_data,XtPointer call_data)
-/*******************************************************************************
-LAST MODIFIED : 13 July 1998
-
-DESCRIPTION :
-Callback for the settings render type.
-==============================================================================*/
-{
-	enum Spectrum_settings_render_type new_spectrum_render;
-	struct Spectrum_editor_settings *spectrum_editor_settings;
-	struct Spectrum_settings *settings;
-	Widget menu_item_widget;
-	
-	ENTER(spectrum_editor_settings_render_menu_CB);
-	if (widget &&
-		(spectrum_editor_settings = (struct Spectrum_editor_settings *)client_data)&&
-		(settings = spectrum_editor_settings->current_settings))
-	{
-		/* get the widget from the call data */
-		if (menu_item_widget=((XmRowColumnCallbackStruct *)call_data)->widget)
-		{
-			/* Get the render this menu item represents and make it current */
-			XtVaGetValues(menu_item_widget, XmNuserData, &new_spectrum_render, NULL);
-			if (Spectrum_settings_get_render_type(settings) != new_spectrum_render)
-			{
-				if (Spectrum_settings_set_render_type(settings, new_spectrum_render))
-				{
-					spectrum_editor_settings_update(spectrum_editor_settings);
-				}
-			}
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,"spectrum_editor_settings_render_menu_CB.  "
-				"Could not find the activated menu item");
-		}
-		/* make sure the correct render render is shown in case of error */
-		spectrum_editor_settings_set_settings(widget, settings);
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"spectrum_editor_settings_render_menu_CB.  Invalid argument(s)");
-	}
-	LEAVE;
-} /* spectrum_editor_settings_render_menu_CB */
-
 static void spectrum_editor_settings_destroy_CB(Widget widget,int *tag,
 	unsigned long *reason)
 /*******************************************************************************
@@ -986,27 +934,7 @@ Creates a spectrum_editor_settings widget.
 		{"spec_ed_set_white_to_red",(XtPointer)
 			SPECTRUM_WHITE_TO_RED},
 		{"spec_ed_set_alpha",(XtPointer)
-			SPECTRUM_ALPHA},
-		{"spec_ed_set_id_render_menu",(XtPointer)
-			DIALOG_IDENTIFY(spectrum_editor_settings, render_menu_widget)},
-		{"spec_ed_set_id_render_opt",(XtPointer)
-			DIALOG_IDENTIFY(spectrum_editor_settings, render_option_widget)},
-		{"spec_ed_set_render_menu_CB",(XtPointer)
-			spectrum_editor_settings_render_menu_CB},
-		{"spec_ed_set_amb_diff",(XtPointer)
-			SPECTRUM_AMBIENT_AND_DIFFUSE},
-		{"spec_ed_set_diffuse",(XtPointer)
-			SPECTRUM_DIFFUSE},
-		{"spec_ed_set_amb_diff",(XtPointer)
-			SPECTRUM_AMBIENT_AND_DIFFUSE},
-		{"spec_ed_set_ambient",(XtPointer)
-			SPECTRUM_AMBIENT},
-		{"spec_ed_set_diffuse",(XtPointer)
-			SPECTRUM_DIFFUSE},
-		{"spec_ed_set_emission",(XtPointer)
-			SPECTRUM_EMISSION},
-		{"spec_ed_set_specular",(XtPointer)
-			SPECTRUM_SPECULAR}
+			SPECTRUM_ALPHA}
 	};
 	static MrmRegisterArg identifier_list[]=
 	{
@@ -1182,7 +1110,6 @@ Changes the currently chosen settings.
 {
 	char temp_string[50];
 	enum Spectrum_settings_type type;
-	enum Spectrum_settings_render_type button_type, render_type;
 	enum Spectrum_settings_colour_mapping button_colour_mapping, colour_mapping;
 	float exaggeration, step_value, band_ratio;
 	int component,extend,fix,i, num_children, number_of_bands, black_band_proportion,
@@ -1255,40 +1182,6 @@ Changes the currently chosen settings.
 							{
 								display_message(ERROR_MESSAGE,
 									"spectrum_editor_settings_set_settings.  Colour menu widget not set");
-								return_code=0;
-							}
-							
-							
-							/* Set the render type widget */
-							if (spectrum_editor_settings->render_menu_widget)
-							{
-								render_type = Spectrum_settings_get_render_type(
-									spectrum_editor_settings->current_settings);
-								/* get children of the menu so that one may be selected */
-								XtVaGetValues(spectrum_editor_settings->render_menu_widget,XmNnumChildren,
-									&num_children,XmNchildren,&child_list,NULL);
-								return_code=0;
-								for (i=0;(!return_code)&&(i<num_children);i++)
-								{
-									XtVaGetValues(child_list[i],XmNuserData,&pointer_var,NULL);
-									button_type = (enum Spectrum_settings_render_type)pointer_var;
-									if (button_type==render_type)
-									{
-										XtVaSetValues(spectrum_editor_settings->render_option_widget,
-											XmNmenuHistory,child_list[i],NULL);
-										return_code=1;
-									}
-								}
-								if (!return_code)
-								{
-									display_message(ERROR_MESSAGE,
-										"spectrum_editor_settings_set_settings.  Invalid render type");
-								}
-							}
-							else
-							{
-								display_message(ERROR_MESSAGE,
-									"spectrum_editor_settings_set_settings.  Render menu widget not set");
 								return_code=0;
 							}
 							
