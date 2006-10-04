@@ -97,7 +97,6 @@ Stores one group of settings for a single part of a spectrum rendition.
 	float max_value, min_value;
 	int reverse;
 	enum Spectrum_settings_colour_mapping colour_mapping;
-	enum Spectrum_settings_render_type render_type;
 	float exaggeration, step_value;
 	/* The number of bands in a banded contour and the proportion (out of 1000)
 		of the black bands */
@@ -135,7 +134,6 @@ Sets settings->settings_changed to 1.
 
 	ENTER(Spectrum_settings_set_changed);
 	USE_PARAMETER(dummy_void);
-	/* check arguments */
 	if (settings)
 	{
 		settings->settings_changed=1;
@@ -164,7 +162,6 @@ Sets settings->settings_active to the <active> value;
 	int return_code;
 
 	ENTER(Spectrum_settings_set_active);
-	/* check arguments */
 	if (settings)
 	{
 		settings->active=active;
@@ -192,7 +189,6 @@ Gets the settings->active value;
 	int return_code;
 
 	ENTER(Spectrum_settings_get_active);
-	/* check arguments */
 	if (settings)
 	{
 		return_code = settings->active;
@@ -220,7 +216,6 @@ If the settings are of type settings_type, sets settings->settings_changed to 1.
 	int return_code;
 
 	ENTER(Spectrum_settings_changed_if_type);
-	/* check arguments */
 	if (settings)
 	{
 		if ((enum Spectrum_settings_type)settings_type_void ==
@@ -334,7 +329,6 @@ Allocates memory and assigns fields for a struct Spectrum_settings.
 		settings->min_value = 0;
 		settings->max_value = 1;
 		settings->colour_mapping = SPECTRUM_RAINBOW;
-		settings->render_type = SPECTRUM_AMBIENT_AND_DIFFUSE;
 		settings->reverse = 0;
 		settings->exaggeration = 1.0;
 		settings->step_value = 0.5;
@@ -427,7 +421,6 @@ Note: destination->access_count is not changed by COPY.
 	int return_code;
 
 	ENTER(COPY(Spectrum_settings));
-	/* check arguments */
 	if (source&&destination)
 	{
 		destination->settings_changed = 1;
@@ -445,7 +438,6 @@ Note: destination->access_count is not changed by COPY.
 		destination->extend_below = source->extend_below;
 		destination->min_value = source->min_value;
 		destination->max_value = source->max_value;
-		destination->render_type = source->render_type;
 		destination->colour_mapping = source->colour_mapping;
 		destination->exaggeration = source->exaggeration;
 		destination->number_of_bands = source->number_of_bands;
@@ -477,7 +469,6 @@ Sets settings->fix_minimum,settings->fix_maximum to 0.
 
 	ENTER(Spectrum_settings_clear_fixed);
 	USE_PARAMETER(dummy_void);
-	/* check arguments */
 	if (settings)
 	{
 		settings->fix_minimum=0;
@@ -558,7 +549,6 @@ Returns 1 if the settings are of the specified settings_type.
 	int return_code;
 
 	ENTER(Spectrum_settings_type_matches);
-	/* check arguments */
 	if (settings)
 	{
 		return_code=(settings->settings_type ==
@@ -589,7 +579,6 @@ Adds the new_settings in the list_of_settings at the given <priority>
 	struct Spectrum_settings *settings_in_way;
 
 	ENTER(Spectrum_settings_add);
-	/* check arguments */
 	if (settings&&list_of_settings&&
 		!IS_OBJECT_IN_LIST(Spectrum_settings)(settings,list_of_settings))
 	{
@@ -658,7 +647,6 @@ Also sets settings_changed for any other settings affected by its removal.
 	int return_code,next_position;
 
 	ENTER(Spectrum_settings_remove);
-	/* check arguments */
 	if (settings&&list_of_settings)
 	{
 		if (IS_OBJECT_IN_LIST(Spectrum_settings)(settings,list_of_settings))
@@ -719,7 +707,6 @@ priority. Sets settings->settings_changed to force graphics to be regenerated.
 	int return_code,old_position;
 
 	ENTER(Spectrum_settings_modify);
-	/* check arguments */
 	if (settings&&new_settings&&list_of_settings)
 	{
 		/* make sure graphics for these settings are regenerated */
@@ -788,7 +775,6 @@ For use after eg. discretization change.
 	int return_code;
 
 	ENTER(Spectrum_settings_all_changed);
-	/* check arguments */
 	if (list_of_settings)
 	{
 		if (!(return_code=FOR_EACH_OBJECT_IN_LIST(Spectrum_settings)(
@@ -823,7 +809,6 @@ For use after eg. discretization change.
 	int return_code;
 
 	ENTER(Spectrum_settings_type_changed);
-	/* check arguments */
 	if (list_of_settings)
 	{
 		if (!(return_code=FOR_EACH_OBJECT_IN_LIST(Spectrum_settings)(
@@ -859,7 +844,6 @@ Spectrum_settings describe the same space.
 	struct Spectrum_settings *second_settings;
 
 	ENTER(Spectrum_settings_same_space);
-	/* check arguments */
 	if (settings
 		&&(second_settings=(struct Spectrum_settings *)second_settings_void))
 	{
@@ -911,7 +895,6 @@ included in the string. User must remember to DEALLOCATE the name afterwards.
 	ENTER(Spectrum_settings_string);
 	settings_string=(char *)NULL;
 	error=0;
-	/* check arguments */
 	if (settings&&(
 		(SPECTRUM_SETTINGS_STRING_SPACE_ONLY==settings_detail)||
 		(SPECTRUM_SETTINGS_STRING_COMPLETE==settings_detail)||
@@ -1003,39 +986,6 @@ included in the string. User must remember to DEALLOCATE the name afterwards.
 				} break;	
 			}
 		}
-		if ((SPECTRUM_ALPHA!=settings->colour_mapping)&& 
-			(SPECTRUM_BANDED!=settings->colour_mapping)&&
-			(SPECTRUM_STEP!=settings->colour_mapping))
-		{
-			switch (settings->render_type)
-			{
-				case SPECTRUM_DIFFUSE:
-				{
-					append_string(&settings_string," diffuse",&error);
-				} break;
-				case SPECTRUM_AMBIENT:
-				{
-					append_string(&settings_string," ambient",&error);
-				} break;
-				case SPECTRUM_EMISSION:
-				{
-					append_string(&settings_string," emission",&error);
-				} break;
-				case SPECTRUM_SPECULAR:
-				{
-					append_string(&settings_string," specular",&error);
-				} break;
-				case SPECTRUM_AMBIENT_AND_DIFFUSE:
-				{
-					append_string(&settings_string," ambient diffuse",&error);
-				} break;
-				default:
-				{
-					display_message(ERROR_MESSAGE,
-						"Spectrum_settings_string.  Unknown data render type");
-				} break;
-			}
-		}
 		sprintf(temp_string," component %d",settings->component_number + 1);
 		append_string(&settings_string,temp_string,&error);	
 	}
@@ -1064,7 +1014,6 @@ Writes out the settings as a text string.
 
 	ENTER(Spectrum_settings_show);
 	settings_detail=(enum Spectrum_settings_string_details)settings_detail_void;
-	/* check arguments */
 	if (settings&&(
 		(SPECTRUM_SETTINGS_STRING_SPACE_ONLY==settings_detail)||
 		(SPECTRUM_SETTINGS_STRING_COMPLETE==settings_detail)||
@@ -2031,63 +1980,6 @@ DESCRIPTION :
 	return (return_code);
 } /* Spectrum_settings_set_colour_value_maximum */
 
-enum Spectrum_settings_render_type Spectrum_settings_get_render_type(struct Spectrum_settings *settings)
-/*******************************************************************************
-LAST MODIFIED : 13 July 1998
-
-DESCRIPTION :
-Returns the type of the Spectrum_settings <spectrum>.
-==============================================================================*/
-{
-	enum Spectrum_settings_render_type type;
-
-	ENTER(Spectrum_settings_get_render_type);
-
-	if (settings)
-	{
-		type = settings->render_type;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,"Spectrum_settings_get_render_type.  "
-			"Invalid argument(s)");
-		type = SPECTRUM_AMBIENT_AND_DIFFUSE;
-	}
-	LEAVE;
-
-	return (type);
-} /* Spectrum_settings_get_render_type */
-
-int Spectrum_settings_set_render_type(struct Spectrum_settings *settings,
-	enum Spectrum_settings_render_type type)
-/*******************************************************************************
-LAST MODIFIED : 13 July 1998
-
-DESCRIPTION :
-Sets the type of the Spectrum_settings <settings>.
-==============================================================================*/
-{
-	int return_code;
-
-	ENTER(Spectrum_settings_set_render_type);
-
-	if (settings)
-	{
-		settings->render_type = type;
-		settings->settings_changed = 1;
-		return_code = 1;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,"Spectrum_settings_set_render_type.  "
-			"Invalid argument(s)");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Spectrum_settings_set_render_type */
-
 int Spectrum_settings_clear_settings_changed(
 	struct Spectrum_settings *settings,void *dummy_void)
 /*******************************************************************************
@@ -2101,7 +1993,6 @@ Iterator function to set settings->settings_changed to 0 (unchanged).
 
 	ENTER(Spectrum_settings_clear_settings_changed);
 	USE_PARAMETER(dummy_void);
-	/* check arguments */
 	if (settings)
 	{
 		settings->settings_changed=0;
@@ -2117,6 +2008,109 @@ Iterator function to set settings->settings_changed to 0 (unchanged).
 
 	return (return_code);
 } /* Spectrum_settings_clear_settings_changed */
+
+int Spectrum_settings_expand_maximum_component_index(
+	struct Spectrum_settings *settings,void *component_index_void)
+/*******************************************************************************
+LAST MODIFIED : 27 September 2006
+
+DESCRIPTION :
+Iterator function to expand the integer stored at <component_index_void>
+by the component numbers of each settings so we can work out the maximum
+component number used.  The first component_index is 0, so this means 1 component.
+==============================================================================*/
+{
+	int *component_index, return_code;
+
+	ENTER(Spectrum_settings_expand_maximum_component_index);
+	if (settings && (component_index = (int *)component_index_void))
+	{
+		if (*component_index < settings->component_number)
+		{
+			*component_index = settings->component_number;
+		}
+		return_code=1;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Spectrum_settings_expand_maximum_component_index.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Spectrum_settings_expand_maximum_component_index */
+
+int Spectrum_settings_set_colour_components(
+	struct Spectrum_settings *settings, void *colour_components_void)
+/*******************************************************************************
+LAST MODIFIED : 4 October 2006
+
+DESCRIPTION :
+Iterator function to accumulate the colour_components by setting bits
+in the value pointed to by <colour_components_void>.
+==============================================================================*/
+{
+	enum Spectrum_colour_components *colour_components;
+	int return_code;
+
+	ENTER(Spectrum_settings_set_colour_components);
+	if (settings && (colour_components = 
+			(enum Spectrum_colour_components *)colour_components_void))
+	{
+		switch (settings->colour_mapping)
+		{
+			case SPECTRUM_RAINBOW:
+			case SPECTRUM_WHITE_TO_BLUE:
+			case SPECTRUM_WHITE_TO_RED:
+			{
+				*colour_components |= (SPECTRUM_COMPONENT_RED
+					| SPECTRUM_COMPONENT_GREEN | SPECTRUM_COMPONENT_BLUE);
+			} break;
+			case SPECTRUM_RED:
+			{
+				*colour_components |= SPECTRUM_COMPONENT_RED;
+			} break;
+			case SPECTRUM_GREEN:
+			{
+				*colour_components |= SPECTRUM_COMPONENT_GREEN;
+			} break;
+			case SPECTRUM_BLUE:
+			{
+				*colour_components |= SPECTRUM_COMPONENT_BLUE;
+			} break;
+			case SPECTRUM_ALPHA:
+			{
+				*colour_components |= SPECTRUM_COMPONENT_ALPHA;
+			} break;
+			case SPECTRUM_MONOCHROME:
+			{
+				*colour_components |= SPECTRUM_COMPONENT_MONOCHROME;
+			} break;
+			case SPECTRUM_BANDED:
+			{
+				*colour_components |= SPECTRUM_COMPONENT_RED
+					| SPECTRUM_COMPONENT_GREEN | SPECTRUM_COMPONENT_BLUE;
+			} break;
+			case SPECTRUM_STEP:
+			{
+				*colour_components |= SPECTRUM_COMPONENT_RED
+					| SPECTRUM_COMPONENT_GREEN | SPECTRUM_COMPONENT_BLUE;
+			} break;	
+		}
+		return_code=1;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Spectrum_settings_set_colour_components.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Spectrum_settings_set_colour_components */
 
 int Spectrum_settings_enable(struct Spectrum_settings *settings,
 	void *render_data_void)
@@ -2134,7 +2128,6 @@ DESCRIPTION :
 	struct Spectrum_render_data *render_data;
 
 	ENTER(Spectrum_settings_enable);
-	/* check arguments */
 	if (settings&&(render_data=(struct Spectrum_render_data *)render_data_void))
 	{
 		return_code=1;
@@ -2149,15 +2142,14 @@ DESCRIPTION :
 				case SPECTRUM_BLUE:	
 				case SPECTRUM_WHITE_TO_BLUE:
 				case SPECTRUM_WHITE_TO_RED:
-				{
-					render_data->rendering_flags |= settings->render_type;
-				} break;
 				case SPECTRUM_ALPHA:
 				{
-					render_data->rendering_flags |= SPECTRUM_DIFFUSE;
+					/* Do nothing but valid. */
 				} break;
 				case SPECTRUM_BANDED:
 				{
+				{
+				} break;
 #if defined (OPENGL_API)
 					if ((settings->black_band_proportion)&&(settings->number_of_bands))
 					{
@@ -2368,13 +2360,11 @@ Modifies the material in the render data to represent the data value
 passed in render data.
 ==============================================================================*/
 {
-	int i,number_of_colours,return_code,texels_per_band;
+	int return_code,texels_per_band;
 	float data_component,value,step_xi,total_texels;
-	struct Colour *colour,colours[2];
 	struct Spectrum_render_data *render_data;
 
 	ENTER(Spectrum_settings_activate);
-	/* check arguments */
 	if (settings&&(render_data=(struct Spectrum_render_data *)render_data_void))
 	{
 		return_code=1;
@@ -2494,144 +2484,75 @@ passed in render data.
 					} break;
 					case SPECTRUM_ALPHA:
 					{
-						Graphical_material_set_alpha(render_data->material,value);
+						render_data->rgba[3] = value;
 					} break;
 					case SPECTRUM_RAINBOW:
-					case SPECTRUM_RED:
-					case SPECTRUM_GREEN:
-					case SPECTRUM_MONOCHROME:
-					case SPECTRUM_BLUE:	
-					case SPECTRUM_WHITE_TO_BLUE:
-					case SPECTRUM_WHITE_TO_RED:
 					{
-						number_of_colours=1;
-						/* get current colour */
-						switch (settings->render_type)
+						if (value<1.0/3.0)
 						{
-							case SPECTRUM_DIFFUSE:
+							render_data->rgba[0]=1.0;
+							render_data->rgba[2]=0.0;
+							if (value<1.0/6.0)
 							{
-								Graphical_material_get_diffuse(render_data->material,colours);
-							} break;
-							case SPECTRUM_AMBIENT:
+								render_data->rgba[1]=value*4.5;
+							}
+							else
 							{
-								Graphical_material_get_ambient(render_data->material,colours);
-							} break;
-							case SPECTRUM_EMISSION:
-							{
-								Graphical_material_get_emission(render_data->material,colours);
-							} break;
-							case SPECTRUM_SPECULAR:
-							{
-								Graphical_material_get_specular(render_data->material,colours);
-							} break;
-							case SPECTRUM_AMBIENT_AND_DIFFUSE:
-							{
-								number_of_colours=2;
-								Graphical_material_get_ambient(render_data->material,colours);
-								Graphical_material_get_diffuse(render_data->material,colours+1);
-							} break;	
-						}
-						/* modify colours according to value */
-						for (i=0;i<number_of_colours;i++)
-						{
-							colour=colours+i;
-							switch (settings->colour_mapping)
-							{
-								case SPECTRUM_RAINBOW:
-								{
-									if (value<1.0/3.0)
-									{
-										colour->red=1.0;
-										colour->blue=0.0;
-										if (value<1.0/6.0)
-										{
-											colour->green=value*4.5;
-										}
-										else
-										{
-											colour->green=0.75+(value-1.0/6.0)*1.5;
-										}
-									}
-									else
-									{
-										if (value<2.0/3.0)
-										{
-											colour->red=(2.0/3.0-value)*3.0;
-											colour->green=1.0;
-											colour->blue=(value-1.0/3.0)*3.0;
-										}
-										else
-										{
-											colour->red=0.0;
-											colour->blue=1.0;
-											if (value<5.0/6.0)
-											{
-												colour->green=1.0-(value-2.0/3.0)*1.5;
-											}
-											else
-											{
-												colour->green=0.75-(value-5.0/6.0)*4.5;
-											}
-										}
-									}
-								} break;
-								case SPECTRUM_RED:
-								{
-									colour->red=value;
-								} break;
-								case SPECTRUM_GREEN:
-								{
-									colour->green=value;
-								} break;
-								case SPECTRUM_BLUE:
-								{
-									colour->blue=value;
-								} break;
-								case SPECTRUM_MONOCHROME:
-								{
-									colour->red=value;
-									colour->green=value;
-									colour->blue=value;
-								} break;							
-								case SPECTRUM_WHITE_TO_BLUE:
-								{
-									colour->blue=1.0;
-									colour->red=(1-value);
-									colour->green=(1-value);
-								} break;	
-								case SPECTRUM_WHITE_TO_RED:
-								{
-									colour->red=1;
-									colour->blue=(1-value);
-									colour->green=(1-value);
-								} break;
+								render_data->rgba[1]=0.75+(value-1.0/6.0)*1.5;
 							}
 						}
-						/* apply spectrum to material */
-						switch (settings->render_type)
+						else
 						{
-							case SPECTRUM_DIFFUSE:
+							if (value<2.0/3.0)
 							{
-								Graphical_material_set_diffuse(render_data->material,colours);
-							} break;
-							case SPECTRUM_AMBIENT:
+								render_data->rgba[0]=(2.0/3.0-value)*3.0;
+								render_data->rgba[1]=1.0;
+								render_data->rgba[2]=(value-1.0/3.0)*3.0;
+							}
+							else
 							{
-								Graphical_material_set_ambient(render_data->material,colours);
-							} break;
-							case SPECTRUM_EMISSION:
-							{
-								Graphical_material_set_emission(render_data->material,colours);
-							} break;
-							case SPECTRUM_SPECULAR:
-							{
-								Graphical_material_set_specular(render_data->material,colours);
-							} break;
-							case SPECTRUM_AMBIENT_AND_DIFFUSE:
-							{
-								Graphical_material_set_ambient(render_data->material,colours);
-								Graphical_material_set_diffuse(render_data->material,colours+1);
-							} break;
+								render_data->rgba[0]=0.0;
+								render_data->rgba[2]=1.0;
+								if (value<5.0/6.0)
+								{
+									render_data->rgba[1]=1.0-(value-2.0/3.0)*1.5;
+								}
+								else
+								{
+									render_data->rgba[1]=0.75-(value-5.0/6.0)*4.5;
+								}
+							}
 						}
+					} break;
+					case SPECTRUM_RED:
+					{
+						render_data->rgba[0]=value;
+					} break;
+					case SPECTRUM_GREEN:
+					{
+						render_data->rgba[1]=value;
+					} break;
+					case SPECTRUM_BLUE:
+					{
+						render_data->rgba[2]=value;
+					} break;
+					case SPECTRUM_MONOCHROME:
+					{
+						render_data->rgba[0]=value;
+						render_data->rgba[1]=value;
+						render_data->rgba[2]=value;
+					} break;							
+					case SPECTRUM_WHITE_TO_BLUE:
+					{
+						render_data->rgba[2]=1.0;
+						render_data->rgba[0]=(1-value);
+						render_data->rgba[1]=(1-value);
+					} break;	
+					case SPECTRUM_WHITE_TO_RED:
+					{
+						render_data->rgba[0]=1;
+						render_data->rgba[2]=(1-value);
+						render_data->rgba[1]=(1-value);
 					} break;
 				}
 			}
@@ -2683,7 +2604,6 @@ DESCRIPTION :
 	struct Spectrum_render_data *render_data;
 
 	ENTER(Spectrum_settings_disable);
-	/* check arguments */
 	if (settings&&(render_data=(struct Spectrum_render_data *)render_data_void))
 	{
 		USE_PARAMETER(render_data);
@@ -2921,37 +2841,12 @@ parsed settings. Note that the settings are ACCESSed once on valid return.
 				}
 				if ( return_code )
 				{
-					if ((ambient || diffuse || amb_diff) + specular + emission > 1)
+					if (specular + emission > 1)
 					{
 						display_message(ERROR_MESSAGE,"gfx_modify_spectrum_settings_linear.  "
-							"Specify only one of ambient, diffuse, amb_diff, specular, emission.\n  (Specifying ambient and diffuse is valid and equivalent to amb_diff");
-						return_code=0;							
+							"All spectrums are ambient diffuse.  The specular and emission flags are ignored.");
+						return_code=0;
 					}					
-					else if ((ambient && diffuse)|| amb_diff)
-					{
-						Spectrum_settings_set_render_type(settings,
-							SPECTRUM_AMBIENT_AND_DIFFUSE);
-					}
-					else if (ambient)
-					{
-						Spectrum_settings_set_render_type(settings,
-							SPECTRUM_AMBIENT);
-					}
-					else if (diffuse)
-					{
-						Spectrum_settings_set_render_type(settings,
-							SPECTRUM_DIFFUSE);
-					}
-					else if (emission)
-					{
-						Spectrum_settings_set_render_type(settings,
-							SPECTRUM_EMISSION);
-					}
-					else if (specular)
-					{
-						Spectrum_settings_set_render_type(settings,
-							SPECTRUM_SPECULAR);
-					}
 				}
 				if ( return_code )
 				{
@@ -3200,37 +3095,12 @@ parsed settings. Note that the settings are ACCESSed once on valid return.
 				}
 				if ( return_code )
 				{
-					if ((ambient || diffuse || amb_diff) + specular + emission > 1)
+					if (specular + emission > 1)
 					{
-						display_message(ERROR_MESSAGE,"gfx_modify_spectrum_settings_log.  "
-							"Specify only one of ambient, diffuse, amb_diff, specular, emission.\n  (Specifying ambient and diffuse is valid and equivalent to amb_diff");
-						return_code=0;							
+						display_message(ERROR_MESSAGE,"gfx_modify_spectrum_settings_linear.  "
+							"All spectrums are ambient diffuse.  The specular and emission flags are ignored.");
+						return_code=0;
 					}					
-					else if ((ambient && diffuse)|| amb_diff)
-					{
-						Spectrum_settings_set_render_type(settings,
-							SPECTRUM_AMBIENT_AND_DIFFUSE);
-					}
-					else if (ambient)
-					{
-						Spectrum_settings_set_render_type(settings,
-							SPECTRUM_AMBIENT);
-					}
-					else if (diffuse)
-					{
-						Spectrum_settings_set_render_type(settings,
-							SPECTRUM_DIFFUSE);
-					}
-					else if (emission)
-					{
-						Spectrum_settings_set_render_type(settings,
-							SPECTRUM_EMISSION);
-					}
-					else if (specular)
-					{
-						Spectrum_settings_set_render_type(settings,
-							SPECTRUM_SPECULAR);
-					}
 				}
 				if ( return_code )
 				{
