@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : spectrum_settings.h
 
-LAST MODIFIED : 28 June 2006
+LAST MODIFIED : 4 October 2006
 
 DESCRIPTION :
 Spectrum_settings structure and routines for describing and manipulating the
@@ -619,25 +619,6 @@ int Spectrum_settings_set_colour_value_maximum(struct Spectrum_settings *setting
 LAST MODIFIED : 30 July 1998
 
 DESCRIPTION :
-==============================================================================*/
-
-enum Spectrum_settings_render_type Spectrum_settings_get_render_type
-	(struct Spectrum_settings *settings);
-/*******************************************************************************
-LAST MODIFIED : 13 July 1998
-
-DESCRIPTION :
-Returns the render type of the Spectrum_settings <settings>.
-==============================================================================*/
-
-int Spectrum_settings_set_render_type
-	(struct Spectrum_settings *settings,
-	enum Spectrum_settings_render_type type);
-/*******************************************************************************
-LAST MODIFIED : 13 July 1998
-
-DESCRIPTION :
-Sets the render type of the Spectrum_settings <settings>.
 ==============================================================================*/
 
 int Spectrum_settings_copy_and_put_in_list(
