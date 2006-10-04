@@ -69,20 +69,20 @@ DECLARE_LIST_TYPES(Spectrum);
 
 DECLARE_MANAGER_TYPES(Spectrum);
 
-struct Spectrum_render_data
+enum Spectrum_colour_components
 /*******************************************************************************
-LAST MODIFIED : 15 October 1998
+LAST MODIFIED : 4 October 2006
 
 DESCRIPTION :
-Used to pass information through iterator function to each setting when
-rendering.
+Used to identify the colour components modified by a spectrum.
 ==============================================================================*/
 {
-	struct Graphical_material *material;
-	float *data;
-	int rendering_flags;
-	int number_of_data_components;
-}; /* struct Spectrum_render_data */
+	SPECTRUM_COMPONENT_RED = 1,
+	SPECTRUM_COMPONENT_GREEN = 2,
+	SPECTRUM_COMPONENT_BLUE = 4,
+	SPECTRUM_COMPONENT_MONOCHROME = 8,
+	SPECTRUM_COMPONENT_ALPHA = 16
+};
 
 enum Spectrum_simple_type
 {
@@ -257,6 +257,23 @@ DESCRIPTION :
 Returns the value of the spectrum maximum.
 ==============================================================================*/
 
+int Spectrum_get_number_of_components(struct Spectrum *spectrum);
+/*******************************************************************************
+LAST MODIFIED : 4 October 2006
+
+DESCRIPTION :
+Returns the number_of_components used by the spectrum.
+==============================================================================*/
+
+enum Spectrum_colour_components 
+Spectrum_get_colour_components(struct Spectrum *spectrum);
+/*******************************************************************************
+LAST MODIFIED : 4 October 2006
+
+DESCRIPTION :
+Returns a bit mask for the colour components modified by the spectrum.
+==============================================================================*/
+
 int Spectrum_calculate_range(struct Spectrum *spectrum);
 /*******************************************************************************
 LAST MODIFIED : 22 July 1998
@@ -334,29 +351,26 @@ Resets the graphics state after rendering values on current material.
 ==============================================================================*/
 #endif /* defined (OPENGL_API) */
 
-int spectrum_render_value_on_material(struct Spectrum *spectrum,
+int Spectrum_render_value_on_material(struct Spectrum *spectrum,
 	struct Graphical_material *material, int number_of_data_components,
 	float *data);
 /*******************************************************************************
-LAST MODIFIED : 15 June 1999
+LAST MODIFIED : 4 October 2006
 
 DESCRIPTION :
 Uses the <spectrum> to modify the <material> to represent the <number_of_data_components>
 <data> values given.
 ==============================================================================*/
 
-int spectrum_value_to_rgb(struct Spectrum *spectrum,int number_of_data_components,
-	float *data,float *red, float *green,float *blue);
+int Spectrum_value_to_rgba(struct Spectrum *spectrum,int number_of_data_components,
+	float *data, float *rgba);
 /*******************************************************************************
-LAST MODIFIED : 30 July 1998
+LAST MODIFIED : 4 October 2006
 
 DESCRIPTION :
-Uses the <spectrum> to calculate RGB components to represent the 
+Uses the <spectrum> to calculate RGBA components to represent the 
 <number_of_data_components> <data> values.
-The colour returned is diffuse colour value of a spectrum modified black material.
-This function is inefficient as a material is created and destroyed every time,
-preferable to make your own base material, use spectrum_render_value_on_material,
-and then interpret the resulting material how you want.
+<rgba> is assumed to be an array of four values for red, green, blue and alpha.
 ==============================================================================*/
 
 struct LIST(Spectrum_settings) *get_Spectrum_settings_list(
@@ -415,5 +429,23 @@ Frees the memory for the fields of <**spectrum>, frees the memory for
 ==============================================================================*/
 
 PROTOTYPE_GET_OBJECT_NAME_FUNCTION(Spectrum);
+
+int Spectrum_compile_colour_lookup(struct Spectrum *spectrum);
+/*******************************************************************************
+LAST MODIFIED : 10 May 2005
+
+DESCRIPTION :
+Rebuilds the display_list for <spectrum> if it is not current.
+==============================================================================*/
+
+int Spectrum_execute_colour_lookup(struct Spectrum *spectrum);
+/*******************************************************************************
+LAST MODIFIED : 10 May 2005
+
+DESCRIPTION :
+Activates <spectrum> by calling its display list. If the display list is not
+current, an error is reported.
+If a NULL <spectrum> is supplied, spectrums are disabled.
+==============================================================================*/
 
 #endif /* !defined(SPECTRUM_H) */

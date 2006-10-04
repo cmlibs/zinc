@@ -488,13 +488,13 @@ Writes VRML to represent the value 'data' in accordance with the spectrum.
 ==============================================================================*/
 {
 	int return_code;
-	float blue,green,red ;
+	float rgba[4];
 
 	ENTER(spectrum_rendervrml_value);
 	if (spectrum&&material)
 	{
-		spectrum_value_to_rgb(spectrum,number_of_data_components,data,&red,&green,&blue);
-		fprintf(vrml_file,"    %f %f %f,\n",red,green,blue);
+		Spectrum_value_to_rgba(spectrum,number_of_data_components,data,rgba);
+		fprintf(vrml_file,"    %f %f %f,\n",rgba[0],rgba[1],rgba[2]);
 		return_code=1;
 	}
 	else
@@ -1110,7 +1110,7 @@ points  given by the positions in <point_list> and oriented and scaled by
 							{
 								MANAGER_COPY_WITHOUT_IDENTIFIER(Graphical_material,name)
 									(material_copy, material);
-								spectrum_render_value_on_material(spectrum,material_copy,
+								Spectrum_render_value_on_material(spectrum,material_copy,
 									number_of_data_components,data+i*number_of_data_components);
 								/*???RC temporary until we have a struct Glyph - actual glyph to use
 									is at GT_object_get_next_object(glyph) when glyph is in mirror mode */
@@ -1207,7 +1207,7 @@ points  given by the positions in <point_list> and oriented and scaled by
 						{
 							MANAGER_COPY_WITHOUT_IDENTIFIER(Graphical_material,name)
 								(material_copy, material);
-							spectrum_render_value_on_material(spectrum,material_copy,
+							Spectrum_render_value_on_material(spectrum,material_copy,
 								number_of_data_components,data+i*number_of_data_components);
 							activate_material_vrml(vrml_file,material_copy,
 								(struct LIST(VRML_prototype) *)NULL,
@@ -1518,7 +1518,7 @@ Writes VRML code to the file handle which represents the given pointset.
 					{
 						MANAGER_COPY_WITHOUT_IDENTIFIER(Graphical_material,name)
 							(material_copy, material);
-						spectrum_render_value_on_material(spectrum,material_copy,
+						Spectrum_render_value_on_material(spectrum,material_copy,
 							number_of_data_components,data+i*number_of_data_components);
 						activate_material_vrml(vrml_file,material_copy,
 							(struct LIST(VRML_prototype) *)NULL,

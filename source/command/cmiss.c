@@ -5993,17 +5993,16 @@ value searches just elements of that dimension.
 	float hint_minimums[3] = {0.0, 0.0, 0.0};
 	float hint_maximums[3];
 	float hint_resolution[3];
-	float	red, green, blue, alpha, fail_alpha, texture_depth, texture_height,
+	float	rgba[4], fail_alpha, texture_depth, texture_height,
 		texture_width;
 	int bytes_per_pixel, i, image_width_bytes, j, k,
 		number_of_bytes_per_component, number_of_components,
 		number_of_data_components, return_code, tex_number_of_components;
 	unsigned long field_evaluate_error_count, find_element_xi_error_count,
 		spectrum_render_error_count, total_number_of_pixels;
-	struct Colour result, fail_colour;
+	struct Colour fail_colour;
 	struct Computed_field_find_element_xi_cache *cache;
 	struct FE_element *element;
-	struct Graphical_material *material;
 
 	ENTER(set_Texture_image_from_field);
 	if (texture && field && texture_coordinate_field && spectrum && region &&
@@ -6032,10 +6031,9 @@ value searches just elements of that dimension.
 			ALLOCATE(image_plane, unsigned char, image_height*image_width_bytes);
 			ALLOCATE(data_values, FE_value,
 				Computed_field_get_number_of_components(field));
-			material = CREATE(Graphical_material)("texture_tmp");
 			Graphical_material_get_diffuse(fail_material, &fail_colour);
 			Graphical_material_get_alpha(fail_material, &fail_alpha);
-			if (image_plane && data_values && material)
+			if (image_plane && data_values)
 			{
 				hint_resolution[0] = image_width;
 				hint_resolution[1] = image_height;
@@ -6096,101 +6094,94 @@ value searches just elements of that dimension.
 										element, xi,/*time*/0,(struct FE_element *)NULL,
 										data_values, (FE_value *)NULL))
 									{
-										if (spectrum_render_value_on_material(spectrum,
-											material, number_of_data_components, data_values))
+										if (!Spectrum_value_to_rgba(spectrum,
+												number_of_data_components, data_values,
+												rgba))
 										{
-											Graphical_material_get_diffuse(material, &result);
-											red = result.red;
-											green = result.green;
-											blue = result.blue;
-											Graphical_material_get_alpha(material, &alpha);
-										}
-										else
-										{
-											red = fail_colour.red;
-											green = fail_colour.green;
-											blue = fail_colour.blue;
-											alpha = fail_alpha;
+											rgba[0] = fail_colour.red;
+											rgba[1] = fail_colour.green;
+											rgba[2] = fail_colour.blue;
+											rgba[3] = fail_alpha;
 											spectrum_render_error_count++;
 										}
 									}
 									else
 									{
-										red = fail_colour.red;
-										green = fail_colour.green;
-										blue = fail_colour.blue;
-										alpha = fail_alpha;
+										rgba[0] = fail_colour.red;
+										rgba[1] = fail_colour.green;
+										rgba[2] = fail_colour.blue;
+										rgba[3] = fail_alpha;
 										field_evaluate_error_count++;
 									}
 								}
 								else
 								{
-									red = fail_colour.red;
-									green = fail_colour.green;
-									blue = fail_colour.blue;
+									rgba[0] = fail_colour.red;
+									rgba[1] = fail_colour.green;
+									rgba[2] = fail_colour.blue;
 									/* not in any element; set alpha to zero so invisible */
-									alpha = fail_alpha;
+									rgba[3] = fail_alpha;
 								}
 							}
 							else
 							{
-								red = fail_colour.red;
-								green = fail_colour.green;
-								blue = fail_colour.blue;
+								rgba[0] = fail_colour.red;
+								rgba[1] = fail_colour.green;
+								rgba[2] = fail_colour.blue;
 								/* error finding element:xi; set alpha to zero so invisible */
-								alpha = fail_alpha;
+								rgba[3] = fail_alpha;
 								find_element_xi_error_count++;
 							}
 #if defined (DEBUG)
 							/*???debug*/
 							if ((1 < image_depth) && ((0 == j) || (image_height - 1 == j)) && ((0 == k) || (image_width - 1 == k)))
 							{
-								printf("  RGBA = %10g %10g %10g %10g\n", red, green, blue, alpha);
+								printf("  RGBA = %10g %10g %10g %10g\n", rgba[0], rgba[1], rgba[2], rgba[3]);
 							}
 #endif /* defined (DEBUG) */
 							switch (storage)
 							{
 								case TEXTURE_LUMINANCE:
 								{
-									*ptr = (unsigned char)((red + green + blue) * 255.0 / 3.0);
+									*ptr = (unsigned char)((rgba[0] + rgba[1] + rgba[2]) * 255.0 / 3.0);
 									ptr++;
 								} break;
 								case TEXTURE_LUMINANCE_ALPHA:
 								{
-									*ptr = (unsigned char)((red + green + blue) * 255.0 / 3.0);
+									*ptr = (unsigned char)((rgba[0] + rgba[1] + rgba[2]) * 255.0 / 3.0);
 									ptr++;
-									*ptr = (unsigned char)(alpha * 255.0);
+									*ptr = (unsigned char)(rgba[3] * 255.0);
 									ptr++;
 								} break;
 								case TEXTURE_RGB:
 								{
-									*ptr = (unsigned char)(red * 255.0);
+									*ptr = (unsigned char)(rgba[0] * 255.0);
 									ptr++;
-									*ptr = (unsigned char)(green * 255.0);
+									*ptr = (unsigned char)(rgba[1] * 255.0);
 									ptr++;
-									*ptr = (unsigned char)(blue * 255.0);
+									*ptr = (unsigned char)(rgba[2] * 255.0);
 									ptr++;
 								} break;
 								case TEXTURE_RGBA:
 								{
-									*ptr = (unsigned char)(red * 255.0);
+									*ptr = (unsigned char)(rgba[0] * 255.0);
 									ptr++;
-									*ptr = (unsigned char)(green * 255.0);
+									*ptr = (unsigned char)(rgba[1] * 255.0);
 									ptr++;
-									*ptr = (unsigned char)(blue * 255.0);
+									*ptr = (unsigned char)(rgba[2] * 255.0);
 									ptr++;
-									*ptr = (unsigned char)(alpha * 255.0);
+									*ptr = (unsigned char)(rgba[3] * 255.0);
 									ptr++;
 								} break;
 								case TEXTURE_ABGR:
 								{
-									*ptr = (unsigned char)(alpha * 255.0);
+									*ptr = (unsigned char)(rgba[3] * 255.0);
 									ptr++;
-									*ptr = (unsigned char)(blue * 255.0);
+									*ptr = (unsigned char)(rgba[2] * 255.0);
 									ptr++;
-									*ptr = (unsigned char)(green * 255.0);
+									*ptr = (unsigned char)(rgba[1] * 255.0);
 									ptr++;
-									*ptr = (unsigned char)(red * 255.0);
+									*ptr = (unsigned char)(rgba[0] * 255.0);
 									ptr++;
 								} break;
 								default:
@@ -6238,7 +6229,6 @@ value searches just elements of that dimension.
 					"set_Texture_image_from_field.  Not enough memory");
 				return_code = 0;
 			}
-			DESTROY(Graphical_material)(&material);
 			DEALLOCATE(data_values);
 			DEALLOCATE(image_plane);
 			if (cache)
@@ -23253,7 +23243,7 @@ Initialise all the subcomponents of cmgui and create the Cmiss_command_data
 		}
 		/* create Material package and CMGUI default materials */
 		if (command_data->material_package = ACCESS(Material_package)(CREATE(Material_package)
-			(command_data->texture_manager)))
+				(command_data->texture_manager, command_data->spectrum_manager)))
 		{
 			if (material = Material_package_get_default_material(command_data->material_package))
 			{

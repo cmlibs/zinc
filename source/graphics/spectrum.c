@@ -1252,6 +1252,68 @@ Returns the value of the spectrum maximum.
 	return (maximum);
 } /* get_Spectrum_maximum */
 
+int Spectrum_get_number_of_components(struct Spectrum *spectrum)
+/*******************************************************************************
+LAST MODIFIED : 29 September 2006
+
+DESCRIPTION :
+Returns the number_of_components used by the spectrum.
+==============================================================================*/
+{
+	int number_of_components;
+
+	ENTER(Spectrum_get_number_of_components);
+	if (spectrum)
+	{
+		number_of_components = 0;
+		FOR_EACH_OBJECT_IN_LIST(Spectrum_settings)(
+			Spectrum_settings_expand_maximum_component_index,
+			(void *)&number_of_components, spectrum->list_of_settings);
+
+		/* indices start at 0, so add one for number */
+		number_of_components++;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Spectrum_get_number_of_components.  Invalid spectrum object.");
+		number_of_components = 0;
+	}
+	LEAVE;
+
+	return (number_of_components);
+} /* Spectrum_get_number_of_components */
+
+enum Spectrum_colour_components 
+Spectrum_get_colour_components(struct Spectrum *spectrum)
+/*******************************************************************************
+LAST MODIFIED : 4 October 2006
+
+DESCRIPTION :
+Returns a bit mask for the colour components modified by the spectrum.
+==============================================================================*/
+{
+	enum Spectrum_colour_components colour_components;
+
+	ENTER(Spectrum_get_colour_components);
+	if (spectrum)
+	{
+		colour_components = 0;
+		FOR_EACH_OBJECT_IN_LIST(Spectrum_settings)(
+			Spectrum_settings_set_colour_components,
+			(void *)&colour_components, spectrum->list_of_settings);
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Spectrum_get_colour_components.  Invalid spectrum object.");
+		colour_components = 0;
+	}
+	LEAVE;
+
+	return (colour_components);
+} /* Spectrum_get_colour_components */
+
 int Spectrum_get_opaque_colour_flag(struct Spectrum *spectrum)
 /*******************************************************************************
 LAST MODIFIED : 30 July 1998
@@ -1318,6 +1380,8 @@ DESCRIPTION :
 Initialises the graphics state for rendering values on the current material.
 ==============================================================================*/
 {
+	float alpha;
+	struct Colour value;
 	struct Spectrum_render_data *render_data;
 
 	ENTER(spectrum_start_renderGL);
@@ -1327,52 +1391,32 @@ Initialises the graphics state for rendering values on the current material.
 		{
 			if (ALLOCATE(render_data,struct Spectrum_render_data,1))
 			{
-				render_data->rendering_flags = 0;
 				render_data->number_of_data_components = number_of_data_components;
-				if ((render_data->material=
-					CREATE(Graphical_material)("spectrum_copy"))&&
-					MANAGER_COPY_WITHOUT_IDENTIFIER(Graphical_material,name)
-					(render_data->material,material))
+
+				if (spectrum->clear_colour_before_settings)
 				{
-					FOR_EACH_OBJECT_IN_LIST(Spectrum_settings)(
-						Spectrum_settings_enable,(void *)render_data,
-						spectrum->list_of_settings);
-					switch(render_data->rendering_flags)
-					{
-						case SPECTRUM_AMBIENT_AND_DIFFUSE:
-						{
-							glColorMaterial(GL_FRONT_AND_BACK, GL_AMBIENT_AND_DIFFUSE);
-							glEnable(GL_COLOR_MATERIAL);
-						} break;
-						case SPECTRUM_AMBIENT:
-						{
-							glColorMaterial(GL_FRONT_AND_BACK, GL_AMBIENT);
-							glEnable(GL_COLOR_MATERIAL);
-						} break;
-						case SPECTRUM_DIFFUSE:
-						{
-							glColorMaterial(GL_FRONT_AND_BACK, GL_DIFFUSE);
-							glEnable(GL_COLOR_MATERIAL);
-						} break;
-						case SPECTRUM_EMISSION:
-						{
-							glColorMaterial(GL_FRONT_AND_BACK, GL_EMISSION);
-							glEnable(GL_COLOR_MATERIAL);
-						} break;
-						case SPECTRUM_SPECULAR:
-						{
-							glColorMaterial(GL_FRONT_AND_BACK, GL_SPECULAR);
-							glEnable(GL_COLOR_MATERIAL);
-						} break;
-					}
+					render_data->material_rgba[0] = 0.0;
+					render_data->material_rgba[1] = 0.0;
+					render_data->material_rgba[2] = 0.0;
+					render_data->material_rgba[3] = 1.0;
 				}
 				else
 				{
-					display_message(ERROR_MESSAGE,
-						"spectrum_start_renderGL.  Unable to copy material.");
-					DEALLOCATE(render_data);
-					render_data=(struct Spectrum_render_data *)NULL;
+					Graphical_material_get_diffuse(material, &value);
+					Graphical_material_get_alpha(material, &alpha);
+					render_data->material_rgba[0] = value.red;
+					render_data->material_rgba[1] = value.green;
+					render_data->material_rgba[2] = value.blue;
+					render_data->material_rgba[3] = alpha;
 				}
+
+				FOR_EACH_OBJECT_IN_LIST(Spectrum_settings)(
+					Spectrum_settings_enable,(void *)render_data,
+					spectrum->list_of_settings);
+
+				/* Always ambient and diffuse */
+				glColorMaterial(GL_FRONT_AND_BACK, GL_AMBIENT_AND_DIFFUSE);
+				glEnable(GL_COLOR_MATERIAL);
 			}
 			else
 			{
@@ -1408,71 +1452,26 @@ Sets the graphics rendering state to represent the value 'data' in
 accordance with the spectrum.
 ==============================================================================*/
 {
-	GLfloat values[4];
-	float alpha;
-	struct Colour black = {0, 0, 0}, value;
+	float rgba[4];
 	int return_code;
 
 	ENTER(spectrum_renderGL_value);
-	if (spectrum&&material&&render_data&&(render_data->material))
+	USE_PARAMETER(material);
+	if (spectrum&&render_data)
 	{
-		render_data->data=data;
-		MANAGER_COPY_WITHOUT_IDENTIFIER(Graphical_material,name)
-			(render_data->material,material);
-		if (spectrum->clear_colour_before_settings)
-		{
-			Graphical_material_set_ambient(render_data->material, &black);
-			Graphical_material_set_diffuse(render_data->material, &black);			
-		}
+		rgba[0] = render_data->material_rgba[0];
+		rgba[1] = render_data->material_rgba[1];
+		rgba[2] = render_data->material_rgba[2];
+		rgba[3] = render_data->material_rgba[3];
+
+		render_data->rgba = rgba;
+		render_data->data = data;
+
 		FOR_EACH_OBJECT_IN_LIST(Spectrum_settings)(
 			Spectrum_settings_activate,(void *)render_data,
 			spectrum->list_of_settings);
-		switch(render_data->rendering_flags)
-		{
-			case SPECTRUM_AMBIENT_AND_DIFFUSE:
-			case SPECTRUM_DIFFUSE:
-			{
-				Graphical_material_get_diffuse(render_data->material, &value);
-				Graphical_material_get_alpha(render_data->material, &alpha);
-				values[0] = value.red;
-				values[1] = value.green;
-				values[2] = value.blue;
-				values[3] = alpha;
-				glColor4fv(values);				
-			} break;
-			case SPECTRUM_AMBIENT:
-			{
-				Graphical_material_get_ambient(render_data->material, &value);
-				values[0] = value.red;
-				values[1] = value.green;
-				values[2] = value.blue;
-				glColor3fv(values);				
-			} break;
-			case SPECTRUM_EMISSION:
-			{
-				Graphical_material_get_emission(render_data->material, &value);
-				values[0] = value.red;
-				values[1] = value.green;
-				values[2] = value.blue;
-				glColor3fv(values);				
-			} break;
-			case SPECTRUM_SPECULAR:
-			{
-				Graphical_material_get_specular(render_data->material, &value);
-				values[0] = value.red;
-				values[1] = value.green;
-				values[2] = value.blue;
-				glColor3fv(values);				
-			} break;
-			case 0:
-			{
-				/* do nothing, there still could be bands or a step though */
-			} break;
-			default:
-			{
-				direct_render_Graphical_material(render_data->material);
-			} break;
-		}
+
+		glColor4fv(rgba);
 	}
 	else
 	{
@@ -1499,22 +1498,11 @@ Resets the graphics state after rendering values on current material.
 	ENTER(spectrum_end_renderGL);
 	if (spectrum&&render_data)
 	{
-		switch(render_data->rendering_flags)
-		{
-			case SPECTRUM_AMBIENT_AND_DIFFUSE:
-			case SPECTRUM_AMBIENT:
-			case SPECTRUM_DIFFUSE:
-			case SPECTRUM_EMISSION:
-			case SPECTRUM_SPECULAR:
-			{
-				glDisable(GL_COLOR_MATERIAL);
-			} break;
-		}
+		glDisable(GL_COLOR_MATERIAL);
 
 		FOR_EACH_OBJECT_IN_LIST(Spectrum_settings)(
 			Spectrum_settings_disable,(void *)render_data,
 			spectrum->list_of_settings);
-		DESTROY(Graphical_material)(&(render_data->material));
 		DEALLOCATE(render_data);
 		return_code=1;
 	}
@@ -1781,37 +1769,55 @@ it contains.  The ratios of the different settings are preserved.
 	return (return_code);
 } /* Spectrum_set_minimum_and_maximum */
 
-int spectrum_render_value_on_material(struct Spectrum *spectrum,
+int Spectrum_render_value_on_material(struct Spectrum *spectrum,
 	struct Graphical_material *material, int number_of_data_components,
 	float *data)
 /*******************************************************************************
-LAST MODIFIED : 15 June 1999
+LAST MODIFIED : 4 October 2006
 
 DESCRIPTION :
 Uses the <spectrum> to modify the <material> to represent the <number_of_data_components>
 <data> values given.
 ==============================================================================*/
 {
+	float rgba[4];
 	int return_code;
-	struct Colour black = {0,0,0};
+	struct Colour diffuse;
 	struct Spectrum_render_data render_data;
 
-	ENTER(spectrum_render_value_on_material);
+	ENTER(Spectrum_render_value_on_material);
 	if (spectrum && material)
 	{
-		render_data.data = data;
-		render_data.material = material;
-		render_data.number_of_data_components = number_of_data_components;
-		
 		if (spectrum->clear_colour_before_settings)
 		{
-			Graphical_material_set_ambient(material, &black);
-			Graphical_material_set_diffuse(material, &black);
+			rgba[0] = 0.0;
+			rgba[1] = 0.0;
+			rgba[2] = 0.0;
+			rgba[3] = 1.0;
 		}
-
+		else
+		{
+			Graphical_material_get_diffuse(material, &diffuse);
+			rgba[0] = diffuse.red;
+			rgba[1] = diffuse.green;
+			rgba[2] = diffuse.blue;
+			Graphical_material_get_alpha(material, &rgba[3]);
+		}
+		render_data.rgba = rgba;
+		render_data.data = data;
+		render_data.number_of_data_components = number_of_data_components;
+		
 		return_code = FOR_EACH_OBJECT_IN_LIST(Spectrum_settings)(
 			Spectrum_settings_activate,(void *)&render_data,
 			spectrum->list_of_settings);
+		
+		diffuse.red = rgba[0];
+		diffuse.green = rgba[1];
+		diffuse.blue = rgba[2];
+
+		Graphical_material_set_ambient(material, &diffuse);
+		Graphical_material_set_diffuse(material, &diffuse);
+		Graphical_material_set_alpha(material, rgba[3]);
 	}
 	else
 	{
@@ -1822,50 +1828,33 @@ Uses the <spectrum> to modify the <material> to represent the <number_of_data_co
 	LEAVE;
 
 	return (return_code);
-} /* spectrum_render_value_on_material */
+} /* Spectrum_render_value_on_material */
 
-int spectrum_value_to_rgb(struct Spectrum *spectrum,int number_of_data_components,
-	float *data,float *red, float *green,float *blue)
+int Spectrum_value_to_rgba(struct Spectrum *spectrum,int number_of_data_components,
+	float *data, float *rgba)
 /*******************************************************************************
-LAST MODIFIED : 2 June 1999
+LAST MODIFIED : 4 October 2006
 
 DESCRIPTION :
-Uses the <spectrum> to calculate RGB components to represent the 
+Uses the <spectrum> to calculate RGBA components to represent the 
 <number_of_data_components> <data> values.
-The colour returned is diffuse colour value of a spectrum modified black material.
-This function is inefficient as a material is created and destroyed every time,
-preferable to make your own base material, use spectrum_render_value_on_material,
-and then interpret the resulting material how you want.
+<rgba> is assumed to be an array of four values for red, green, blue and alpha.
 ==============================================================================*/
 {
 	int return_code;
-	struct Graphical_material *material;
-	struct Colour black = {0,0,0}, result;
+	struct Spectrum_render_data render_data;
 
 	ENTER(spectrum_value_to_rgb);
 	if (spectrum)
 	{
-		if (material = CREATE(Graphical_material)("value_to_rgb_material"))
-		{
-			Graphical_material_set_diffuse(material, &black);
+		render_data.rgba = rgba;
+		render_data.data = data;
+		render_data.number_of_data_components = number_of_data_components;
+		
+		return_code = FOR_EACH_OBJECT_IN_LIST(Spectrum_settings)(
+			Spectrum_settings_activate,(void *)&render_data,
+			spectrum->list_of_settings);
 
-			if (return_code = spectrum_render_value_on_material(spectrum,
-				material, number_of_data_components, data))
-			{
-				Graphical_material_get_diffuse(material, &result);
-				
-				*red = result.red;
-				*green = result.green;
-				*blue = result.blue;
-			}
-			DESTROY(Graphical_material)(&material);
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"spectrum_value_to_rgb.  Unable to create temporary material");
-			return_code=0;
-		}
 	}
 	else
 	{
@@ -2229,82 +2218,174 @@ DESCRIPTION :
 Rebuilds the display_list for <spectrum> if it is not current.
 ==============================================================================*/
 {
-	int i, j, k, number_of_values, return_code;
-	FE_value alpha, data[3], range;
-	struct Colour black = {0,0,0};
-	struct Graphical_material *material;
+	enum Spectrum_colour_components colour_components;
+	int i, indices[3], number_of_data_components, number_of_texture_components,
+		number_of_values, return_code, table_size;
+	FE_value data[3];
+	float rgba[4];
 	unsigned char *colour_table, *colour_table_ptr;
-
+	enum Texture_storage_type storage;
+		
 	ENTER(Spectrum_render_colour_lookup);
 	if (spectrum)
 	{
-		number_of_values = 32;
-
-		if (ALLOCATE(colour_table, unsigned char, number_of_values * number_of_values * number_of_values))
+		colour_components = Spectrum_get_colour_components(spectrum);
+		/* The component layout here must match the understanding of
+			the texture components in the material programs */
+		/* Could save memory by having a special treatment for MONOCHROME
+			spectrums */
+		if (colour_components & SPECTRUM_COMPONENT_ALPHA) 
 		{
-			colour_table_ptr = colour_table;
-
-			if (material = CREATE(Graphical_material)("value_to_rgb_material"))
+			if (colour_components == SPECTRUM_COMPONENT_ALPHA)
 			{
-				range = spectrum->maximum - spectrum->minimum;
-				for (i = 0 ; i < number_of_values ; i++)
-				{
-					data[0] = spectrum->minimum + range * (FE_value)i / (FE_value)number_of_values;
-						
-					for (j = 0 ; j < number_of_values ; j++)
-					{
-						data[1] = spectrum->minimum + range * (FE_value)j / (FE_value)number_of_values;
-						for (k = 0 ; k < number_of_values ; k++)
-						{
-							data[2] = spectrum->minimum + range * (FE_value)k / (FE_value)number_of_values;
-								
-							Graphical_material_set_diffuse(material, &black);
-							Graphical_material_set_alpha(material, 1.0);
-
-							if (return_code = spectrum_render_value_on_material(spectrum,
-									material, /*number_of_data_components*/3, data))
-							{
-								Graphical_material_get_alpha(material, &alpha);
-								*colour_table_ptr = alpha * 255.0;
-								colour_table_ptr++;
-							}
-						}
-					}
-				}
-				DESTROY(Graphical_material)(&material);
-					
-				{
-					struct Texture *texture;
-
-					if (spectrum->colour_lookup_texture)
-					{
-						DEACCESS(Texture)(&spectrum->colour_lookup_texture);
-					}
-					texture = CREATE(Texture)("spectrum_texture");
-					Texture_allocate_image(texture, number_of_values, number_of_values,
-						number_of_values, TEXTURE_LUMINANCE, 
-						/*number_of_bytes_per_component*/1, "bob");
-
-					colour_table_ptr = colour_table;
-					for (i = 0 ; i < number_of_values ; i++)
-					{
-						Texture_set_image_block(texture,
-							/*left*/0, /*bottom*/0, number_of_values, number_of_values, 
-							/*depth_plane*/i, number_of_values, (void *)colour_table_ptr);
-						colour_table_ptr += number_of_values * number_of_values;
-					}
-
-					spectrum->colour_lookup_texture = ACCESS(Texture)(texture);
-				}
-
-				return_code = 1;
+				/* Alpha only */
+				number_of_texture_components = 1;
+				/* We don't have an ALPHA only format and the material program
+					now does the interpretation anyway */
+				storage = TEXTURE_LUMINANCE;
 			}
 			else
 			{
-				display_message(ERROR_MESSAGE,
-					"spectrum_value_to_rgb.  Unable to create temporary material");
-				return_code=0;
+				/* Colour and alpha */
+				number_of_texture_components = 4;
+				storage = TEXTURE_RGBA;
 			}
+		}
+		else
+		{
+			/* Colour only */
+			number_of_texture_components = 3;
+			storage = TEXTURE_RGB;
+		}
+
+		number_of_data_components = Spectrum_get_number_of_components(
+			spectrum);
+		switch (number_of_data_components)
+		{
+			case 1:
+			{
+				number_of_values = 1024;
+			} break;
+			case 2:
+			{
+				number_of_values = 256;
+			} break;
+			case 3:
+			{
+				number_of_values = 32;
+			} break;
+			default:
+			{
+				display_message(ERROR_MESSAGE,
+					"Spectrum_render_colour_lookup.  "
+					"The spectrum %d uses more than 3 components, only the first 3 will be used.",
+					spectrum->name);
+				number_of_data_components = 3;
+				number_of_values = 32;
+			}
+		}
+		table_size = number_of_texture_components *
+			pow(number_of_values, number_of_data_components);
+		if (ALLOCATE(colour_table, unsigned char, table_size))
+		{
+			colour_table_ptr = colour_table;
+
+			for (i = 0 ; i < number_of_data_components ; i++)
+			{
+				indices[i] = 0;
+				data[i] = 0.0;
+			}
+			colour_table_ptr = colour_table;
+			while (indices[number_of_data_components - 1] < number_of_values)
+			{
+
+				if (return_code = Spectrum_value_to_rgba(spectrum,
+						number_of_data_components, data, rgba))
+				{
+					if (colour_components != SPECTRUM_COMPONENT_ALPHA)
+					{
+						/* Not alpha only */
+						*colour_table_ptr = rgba[0] * 255.0;
+						colour_table_ptr++;
+						*colour_table_ptr = rgba[1] * 255.0;
+						colour_table_ptr++;
+ 						*colour_table_ptr = rgba[2] * 255.0;
+						colour_table_ptr++;
+					}
+					if (colour_components & SPECTRUM_COMPONENT_ALPHA) 
+					{
+						/* Alpha with or without colour */
+ 						*colour_table_ptr = rgba[3] * 255.0;
+						colour_table_ptr++;
+					}
+				}
+
+				indices[0]++;
+				i = 0;
+				data[0] = (FE_value)indices[0] / (FE_value)number_of_values;					
+				while ((i < number_of_data_components - 1) && 
+					(indices[i] == number_of_values))
+				{
+					indices[i] = 0;
+					data[i] = 0.0;
+					i++;
+					indices[i]++;
+					data[i] = (FE_value)indices[i] / (FE_value)number_of_values;
+				}
+			}
+					
+			{
+				struct Texture *texture;
+
+				if (spectrum->colour_lookup_texture)
+				{
+					DEACCESS(Texture)(&spectrum->colour_lookup_texture);
+				}
+				texture = CREATE(Texture)("spectrum_texture");
+				colour_table_ptr = colour_table;
+				switch (number_of_data_components)
+				{
+					case 1:
+					{
+						Texture_allocate_image(texture, number_of_values, 1,
+							1, storage,
+							/*number_of_bytes_per_component*/1, "bob");
+						Texture_set_image_block(texture,
+							/*left*/0, /*bottom*/0, number_of_values, 1, 
+							/*depth_plane*/0, number_of_values, (void *)colour_table_ptr);
+					} break;
+					case 2:
+					{
+						Texture_allocate_image(texture, number_of_values, number_of_values,
+							1, storage, 
+							/*number_of_bytes_per_component*/1, "bob");
+						Texture_set_image_block(texture,
+							/*left*/0, /*bottom*/0, number_of_values, number_of_values, 
+							/*depth_plane*/0, number_of_values, (void *)colour_table_ptr);
+					} break;
+					case 3:
+					{
+						Texture_allocate_image(texture, number_of_values, number_of_values,
+							number_of_values, storage, 
+							/*number_of_bytes_per_component*/1, "bob");
+						for (i = 0 ; i < number_of_values ; i++)
+						{
+							Texture_set_image_block(texture,
+								/*left*/0, /*bottom*/0, number_of_values, number_of_values, 
+								/*depth_plane*/i,
+								number_of_values * number_of_texture_components,
+								(void *)colour_table_ptr);
+							colour_table_ptr += number_of_values * number_of_values *
+								number_of_texture_components;
+						}
+					} break;
+				}
+
+
+				spectrum->colour_lookup_texture = ACCESS(Texture)(texture);
+			}
+
+			return_code = 1;
 			DEALLOCATE(colour_table);
 		}
 		else

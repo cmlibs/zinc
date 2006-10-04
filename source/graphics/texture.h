@@ -646,6 +646,15 @@ display lists. To switch to direct rendering this routine should just call
 direct_render_Texture.
 ==============================================================================*/
 
+int Texture_execute_vertex_program_environment(struct Texture *texture);
+/*******************************************************************************
+LAST MODIFIED : 14 September 2005
+
+DESCRIPTION :
+Sets the texture coordinate scaling into the vertex program environment for use
+by vertex programs.
+==============================================================================*/
+
 int set_Texture(struct Parse_state *state,void *texture_address_void,
 	void *texture_manager_void);
 /*******************************************************************************

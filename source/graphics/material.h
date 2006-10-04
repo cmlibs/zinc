@@ -49,6 +49,7 @@ The data structures used for representing graphical materials.
 #include "general/manager.h"
 #include "general/object.h"
 #include "graphics/colour.h"
+#include "graphics/spectrum.h"
 #include "graphics/texture.h"
 
 /*
@@ -113,9 +114,11 @@ Global functions
 ----------------
 */
 
-struct Material_package *CREATE(Material_package)(struct MANAGER(Texture) *texture_manager);
+struct Material_package *CREATE(Material_package)(
+	struct MANAGER(Texture) *texture_manager,
+	struct MANAGER(Spectrum) *spectrum_manager);
 /*******************************************************************************
-LAST MODIFIED : 20 November 2003
+LAST MODIFIED : 20 May 2005
 
 DESCRIPTION :
 Create a shared information container for Materials.
@@ -318,6 +321,24 @@ LAST MODIFIED : 28 November 1997
 
 DESCRIPTION :
 Sets the shininess value of the material.
+==============================================================================*/
+
+struct Spectrum *Graphical_material_get_spectrum(
+	struct Graphical_material *material);
+/*******************************************************************************
+LAST MODIFIED : 20 May 2005
+
+DESCRIPTION :
+Returns the spectrum member of the material.
+==============================================================================*/
+
+int Graphical_material_set_spectrum(struct Graphical_material *material,
+	struct Spectrum *spectrum);
+/*******************************************************************************
+LAST MODIFIED : 20 May 2005
+
+DESCRIPTION :
+Sets the spectrum member of the material.
 ==============================================================================*/
 
 struct Texture *Graphical_material_get_texture(

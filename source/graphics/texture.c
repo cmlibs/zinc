@@ -5175,6 +5175,77 @@ direct_render_Texture.
 	return (return_code);
 } /* execute_Texture */
 
+int Texture_execute_vertex_program_environment(struct Texture *texture)
+/*******************************************************************************
+LAST MODIFIED : 14 September 2005
+
+DESCRIPTION :
+Sets the texture coordinate scaling into the vertex program environment for use
+by vertex programs.
+==============================================================================*/
+{
+	int return_code;
+#if defined GL_ARB_vertex_program
+	GLfloat texture_scaling[4];
+#endif /* defined GL_ARB_vertex_program */
+
+	ENTER(Texture_execute_vertex_program_environment);
+	return_code=0;
+	if (texture)
+	{
+#if defined GL_ARB_vertex_program
+		if (Graphics_library_check_extension(GL_ARB_vertex_program))
+		{
+			if (texture->width)
+			{
+				texture_scaling[0] = texture->original_width_texels/
+					(texture->width_texels*texture->width);
+			}
+			else
+			{
+				texture_scaling[0] = 1.0;
+			}
+			if (texture->height)
+			{
+				texture_scaling[1] = texture->original_height_texels/
+					(texture->height_texels*texture->height);
+			}
+			else
+			{
+				texture_scaling[1] = 1.0;
+			}
+			if (texture->depth)
+			{
+				texture_scaling[2] = texture->original_depth_texels/
+					(texture->depth_texels*texture->depth);
+			}
+			else
+			{
+				texture_scaling[2] = 1.0;
+			}
+			texture_scaling[3] = 1.0;
+			glProgramEnvParameter4fvARB(GL_VERTEX_PROGRAM_ARB, 0,
+				texture_scaling);
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE, "Texture_execute_vertex_program_environment.  "
+				"GL_ARB_vertex_program extension unavailable.");
+			return_code=0;
+		}
+#endif /* defined GL_ARB_vertex_program */
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Texture_execute_vertex_program_environment.  Missing texture.");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Texture_execute_vertex_program_environment */
+
 int set_Texture(struct Parse_state *state,void *texture_address_void,
 	void *texture_manager_void)
 /*******************************************************************************
