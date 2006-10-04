@@ -81,7 +81,6 @@ November 1997. Created from Scene description part of Drawing.
 #include "graphics/graphics_object.h"
 #include "graphics/graphical_element.h"
 #include "graphics/light.h"
-#include "graphics/makegtobj.h"
 #include "graphics/scene.h"
 #include "graphics/texture.h"
 #include "time/time.h"
