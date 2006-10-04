@@ -1526,24 +1526,18 @@ array is enlarged if necessary and the new points added at random locations.
 				volume = (double)dxi1*(double)dxi2*(double)dxi3*
 					scalar_triple_product3(a, b, c);
 				expected_number = volume*(double)density;
-				if (0.0 <= expected_number)
+				if (0.0 > expected_number)
 				{
-					if (XI_DISCRETIZATION_CELL_DENSITY == xi_discretization_mode)
-					{
-						number_of_points_in_cube = (int)(expected_number + 0.5);
-					}
-					else
-					{
-						number_of_points_in_cube =
-							sample_Poisson_distribution(expected_number);
-					}
+					expected_number = -expected_number;
+				}
+				if (XI_DISCRETIZATION_CELL_DENSITY == xi_discretization_mode)
+				{
+					number_of_points_in_cube = (int)(expected_number + 0.5);
 				}
 				else
 				{
-					display_message(ERROR_MESSAGE,
-						"FE_element_add_xi_points_3d_cube_cell_random.  "
-						"Negative number of points expected in volume");
-					return_code = 0;
+					number_of_points_in_cube =
+						sample_Poisson_distribution(expected_number);
 				}
 			}
 			else
