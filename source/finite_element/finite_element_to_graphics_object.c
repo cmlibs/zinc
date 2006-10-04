@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : finite_element_to_graphics_object.c
 
-LAST MODIFIED : 28 October 2004
+LAST MODIFIED : 17 August 2006
 
 DESCRIPTION :
 The functions for creating graphical objects from finite elements.
@@ -1423,7 +1423,14 @@ Notes:
 						}
 						if (!return_code)
 						{
-							DESTROY(GT_glyph_set)(&glyph_set);
+							/* This glyph set is only partially complete, so
+								it is preferable to leak than to try and deallocate
+								invalid memory.  Instead the glyph_set should grow as
+								each point is added to it, rather than trying to precount
+								the number of items (which can be as expensive as calculating
+								them) as is done currently. */
+							glyph_set = (struct GT_glyph_set *)NULL;
+							/* DESTROY(GT_glyph_set)(&glyph_set); */
 						}
 					}
 					else
