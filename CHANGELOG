@@ -10,6 +10,11 @@ It is released under the Mozilla Public License v1.1
 Further information, help pages, a tracker and a wiki is available at 
 http://www.cmiss.org/cmgui/
 
+v2.3.2
+5 October 2006
+Added colour_lookup_spectrums to materials for doing colour space transformations
+in the graphics hardware.
+
 v2.3.1
 30 August 2006
 Started adding in ITK.
