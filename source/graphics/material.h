@@ -323,22 +323,22 @@ DESCRIPTION :
 Sets the shininess value of the material.
 ==============================================================================*/
 
-struct Spectrum *Graphical_material_get_spectrum(
-	struct Graphical_material *material);
-/*******************************************************************************
-LAST MODIFIED : 20 May 2005
-
-DESCRIPTION :
-Returns the spectrum member of the material.
-==============================================================================*/
-
-int Graphical_material_set_spectrum(struct Graphical_material *material,
+int Graphical_material_set_colour_lookup_spectrum(struct Graphical_material *material,
 	struct Spectrum *spectrum);
 /*******************************************************************************
-LAST MODIFIED : 20 May 2005
+LAST MODIFIED : 6 October 2006
 
 DESCRIPTION :
 Sets the spectrum member of the material.
+==============================================================================*/
+
+struct Spectrum *Graphical_material_get_colour_lookup_spectrum(
+	struct Graphical_material *material);
+/*******************************************************************************
+LAST MODIFIED : 6 October 2006
+
+DESCRIPTION :
+Returns the spectrum member of the material.
 ==============================================================================*/
 
 struct Texture *Graphical_material_get_texture(
@@ -379,15 +379,6 @@ material compile_status as CHILD_GRAPHICS_NOT_COMPILED and adds the material
 to the <changed_material_list>.
 ???RC Currently managed by Scene. This function should be replaced once messages
 go directly from texture to material.
-==============================================================================*/
-
-int Graphical_material_set_spectrum_flag(struct Graphical_material *material);
-/*******************************************************************************
-LAST MODIFIED : 15 October 1998
-
-DESCRIPTION :
-Sets the spectrum_flag of a material giving it the cue to intelligently issue
-commands from direct_render_Graphical_material.
 ==============================================================================*/
 
 int gfx_create_material(struct Parse_state *state,

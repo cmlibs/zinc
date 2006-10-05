@@ -6914,6 +6914,7 @@ Second argument is a struct GT_element_settings_Spectrum_change_data.
 {
 	int return_code;
 	struct GT_element_settings_Spectrum_change_data *spectrum_change_data;
+	struct Spectrum *colour_lookup;
 
 	ENTER(GT_element_settings_Spectrum_change);
 	if (settings && (spectrum_change_data =
@@ -6934,6 +6935,25 @@ Second argument is a struct GT_element_settings_Spectrum_change_data.
 				spectrum_change_data->changed = 1;
 			}
 		}
+		/* The material gets it's own notification of the change, 
+			it should propagate that to the GT_element_settings */
+		if (settings->material && (colour_lookup = 
+				Graphical_material_get_colour_lookup_spectrum(settings->material))
+			&& IS_OBJECT_IN_LIST(Spectrum)(colour_lookup,
+				spectrum_change_data->changed_spectrum_list))
+		{
+			if (settings->graphics_object)
+			{
+				GT_object_Graphical_material_change(settings->graphics_object,
+					(struct LIST(Graphical_material) *)NULL);
+			}
+			/* GT_element_group only changed if settings are visible */
+			if (settings->visibility)
+			{
+				spectrum_change_data->changed = 1;
+			}
+		}
+		
 		return_code = 1;
 	}
 	else

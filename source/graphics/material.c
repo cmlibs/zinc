@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : material.c
 
-LAST MODIFIED : 6 December 2004
+LAST MODIFIED : 6 October 2006
 
 DESCRIPTION :
 The functions for manipulating graphical materials.
@@ -74,18 +74,6 @@ return to direct rendering, as described with these routines.
 #include "graphics/spectrum.h"
 #include "graphics/texture.h"
 #include "user_interface/message.h"
-
-/*
-Module constants
-----------------
-*/
-#define MATERIAL_SPECTRUM_ENABLED  (1)
-#define MATERIAL_SPECTRUM_STARTED  (2)
-#define MATERIAL_SPECTRUM_DIFFUSE  (4)
-#define MATERIAL_SPECTRUM_AMBIENT  (8)
-#define MATERIAL_SPECTRUM_SPECULAR (16)
-#define MATERIAL_SPECTRUM_EMISSION (32)
-#define MATERIAL_SPECTRUM_ALPHA    (64)
 
 /*
 Module types
@@ -205,12 +193,6 @@ The properties of a material.
 #if defined (OPENGL_API)
 	GLuint display_list;
 #endif /* defined (OPENGL_API) */
-	/* the spectrum_flag indicates to the direct render routine that
-		the material is being used to represent a spectrum and so the
-		commands generated from direct_render_Material can be 
-		compacted, all the bits indicate what has been changed */
-	int spectrum_flag;
-	int spectrum_flag_previous;
 	/* enumeration indicates whether the graphics display list is up to date */
 	enum Graphics_compile_status compile_status;
 	/* the texture for this material */
@@ -219,6 +201,8 @@ The properties of a material.
 	struct Texture *secondary_texture;
 	/* spectrum used to render this material */
 	struct Spectrum *spectrum;	
+	/* callback if the spectrum changes */
+	void *spectrum_manager_callback_id;
 	/* the shared information for Graphical Materials, allowing them to share
 	   Material_programs */
 	struct Material_package *package;
@@ -1227,9 +1211,6 @@ material results.
 		}
 		return_code=1;
 
-		material->spectrum_flag = MATERIAL_SPECTRUM_STARTED |
-			(MATERIAL_SPECTRUM_ENABLED & material->spectrum_flag);
-		/* Indicates first render has been done */
 #else /* defined (OPENGL_API) */
 		display_message(ERROR_MESSAGE,
 			"direct_render_Graphical_material.  Not defined for this API");
@@ -1246,6 +1227,48 @@ material results.
 
 	return (return_code);
 } /* direct_render_Graphical_material */
+
+static void Graphical_material_Spectrum_change(
+	struct MANAGER_MESSAGE(Spectrum) *message, void *material_void)
+/*******************************************************************************
+LAST MODIFIED : 6 October 2006
+
+DESCRIPTION :
+==============================================================================*/
+{
+	struct Graphical_material *material;
+
+	ENTER(Graphical_material_Spectrum_change);
+	if ((material = (struct Graphical_material *)material_void)
+		&& message)
+	{
+		switch (message->change)
+		{
+			case MANAGER_CHANGE_OBJECT(Spectrum):
+			case MANAGER_CHANGE_OBJECT_NOT_IDENTIFIER(Spectrum):
+			{
+				if (IS_OBJECT_IN_LIST(Spectrum)(material->spectrum,
+						message->changed_object_list))
+				{
+					material->compile_status = GRAPHICS_NOT_COMPILED;
+				}
+			} break;
+			case MANAGER_CHANGE_ADD(Spectrum):
+			case MANAGER_CHANGE_REMOVE(Spectrum):
+			case MANAGER_CHANGE_IDENTIFIER(Spectrum):
+			{
+				/* do nothing */
+			} break;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Graphical_material_Spectrum_change.  Invalid argument(s)");
+	}
+	LEAVE;
+
+} /* Graphical_material_Spectrum_change */
 
 /*
 Global functions
@@ -1606,10 +1629,9 @@ Allocates memory and assigns fields for a material.
 			(material->specular).blue=0;
 			material->shininess=0;
 			material->spectrum=(struct Spectrum *)NULL;
+			material->spectrum_manager_callback_id=NULL;
 			material->texture=(struct Texture *)NULL;
 			material->secondary_texture=(struct Texture *)NULL;
-			material->spectrum_flag=0;
-			material->spectrum_flag_previous=0;
 			material->package = (struct Material_package *)NULL;
 			material->program = (struct Material_program *)NULL;
 #if defined (OPENGL_API)
@@ -1663,6 +1685,13 @@ Frees the memory for the material and sets <*material_address> to NULL.
 			if (material->spectrum)
 			{
 				DEACCESS(Spectrum)(&(material->spectrum));
+			}
+			if (material->package && 
+				material->spectrum_manager_callback_id)
+			{
+				MANAGER_DEREGISTER(Spectrum)(
+					material->spectrum_manager_callback_id,
+					material->package->spectrum_manager);
 			}
 			if (material->texture)
 			{
@@ -1794,6 +1823,26 @@ PROTOTYPE_MANAGER_COPY_WITHOUT_IDENTIFIER_FUNCTION(Graphical_material,name)
 		}
 		REACCESS(Material_program)(&destination->program, source->program);
 		REACCESS(Spectrum)(&(destination->spectrum), source->spectrum);
+		if (destination->spectrum)
+		{
+			if (destination->package && 
+				(!destination->spectrum_manager_callback_id))
+			{
+				destination->spectrum_manager_callback_id=
+					MANAGER_REGISTER(Spectrum)(Graphical_material_Spectrum_change,
+						(void *)destination, destination->package->spectrum_manager);
+			}
+		}
+		else
+		{
+			if (destination->package && 
+				destination->spectrum_manager_callback_id)
+			{
+				MANAGER_DEREGISTER(Spectrum)(
+					destination->spectrum_manager_callback_id,
+					destination->package->spectrum_manager);
+			}
+		}
 		REACCESS(Texture)(&(destination->texture), source->texture);
 		REACCESS(Texture)(&(destination->secondary_texture), source->secondary_texture);
 		/* flag destination display list as no longer current */
@@ -1948,7 +1997,6 @@ Sets the ambient colour of the material.
 		material->ambient.red=ambient->red;
 		material->ambient.green=ambient->green;
 		material->ambient.blue=ambient->blue;
-		material->spectrum_flag |= MATERIAL_SPECTRUM_AMBIENT;
 		/* display list needs to be compiled again */
 		material->compile_status = GRAPHICS_NOT_COMPILED;
 		return_code=1;
@@ -2011,7 +2059,6 @@ Sets the diffuse colour of the material.
 		material->diffuse.red=diffuse->red;
 		material->diffuse.green=diffuse->green;
 		material->diffuse.blue=diffuse->blue;
-		material->spectrum_flag |= MATERIAL_SPECTRUM_DIFFUSE;
 		/* display list needs to be compiled again */
 		material->compile_status = GRAPHICS_NOT_COMPILED;
 		return_code=1;
@@ -2074,7 +2121,6 @@ Sets the emission colour of the material.
 		material->emission.red=emission->red;
 		material->emission.green=emission->green;
 		material->emission.blue=emission->blue;
-		material->spectrum_flag |= MATERIAL_SPECTRUM_EMISSION;
 		/* display list needs to be compiled again */
 		material->compile_status = GRAPHICS_NOT_COMPILED;
 		return_code=1;
@@ -2137,7 +2183,6 @@ Sets the specular colour of the material.
 		material->specular.red=specular->red;
 		material->specular.green=specular->green;
 		material->specular.blue=specular->blue;
-		material->spectrum_flag |= MATERIAL_SPECTRUM_SPECULAR;
 		/* display list needs to be compiled again */
 		material->compile_status = GRAPHICS_NOT_COMPILED;
 		return_code=1;
@@ -2196,7 +2241,6 @@ Sets the alpha value of the material.
 	if (material&&(0.0 <= alpha)&&(1.0 >= alpha))
 	{
 		material->alpha=alpha;
-		material->spectrum_flag |= MATERIAL_SPECTRUM_ALPHA;
 		/* display list needs to be compiled again */
 		material->compile_status = GRAPHICS_NOT_COMPILED;
 		return_code=1;
@@ -2297,10 +2341,10 @@ Returns the texture member of the material.
 	return (texture);
 } /* Graphical_material_get_texture */
 
-int Graphical_material_set_spectrum(struct Graphical_material *material,
+int Graphical_material_set_colour_lookup_spectrum(struct Graphical_material *material,
 	struct Spectrum *spectrum)
 /*******************************************************************************
-LAST MODIFIED : 12 February 1998
+LAST MODIFIED : 6 October 2006
 
 DESCRIPTION :
 Sets the spectrum member of the material.
@@ -2308,7 +2352,7 @@ Sets the spectrum member of the material.
 {
 	int return_code;
 
-	ENTER(Graphical_material_set_spectrum);
+	ENTER(Graphical_material_set_colour_lookup_spectrum);
 	if (material)
 	{
 		if (spectrum)
@@ -2327,18 +2371,18 @@ Sets the spectrum member of the material.
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Graphical_material_set_spectrum.  Missing material");
+			"Graphical_material_set_colour_lookup_spectrum.  Missing material");
 		return_code=0;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* Graphical_material_set_spectrum */
+} /* Graphical_material_set_colour_lookup_spectrum */
 
-struct Spectrum *Graphical_material_get_spectrum(
+struct Spectrum *Graphical_material_get_colour_lookup_spectrum(
 	struct Graphical_material *material)
 /*******************************************************************************
-LAST MODIFIED : 12 February 1998
+LAST MODIFIED : 6 October 2006
 
 DESCRIPTION :
 Returns the spectrum member of the material.
@@ -2346,7 +2390,7 @@ Returns the spectrum member of the material.
 {
 	struct Spectrum *spectrum;
 
-	ENTER(Graphical_material_get_spectrum);
+	ENTER(Graphical_material_get_colour_lookup_spectrum);
 	if (material)
 	{
 		spectrum=material->spectrum;
@@ -2354,13 +2398,13 @@ Returns the spectrum member of the material.
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Graphical_material_get_spectrum.  Missing material");
+			"Graphical_material_get_colour_lookup_spectrum.  Missing material");
 		spectrum=(struct Spectrum *)NULL;
 	}
 	LEAVE;
 
 	return (spectrum);
-} /* Graphical_material_get_spectrum */
+} /* Graphical_material_get_colour_lookup_spectrum */
 
 int Graphical_material_set_texture(struct Graphical_material *material,
 	struct Texture *texture)
@@ -2471,34 +2515,6 @@ go directly from texture to material.
 
 	return (return_code);
 } /* Graphical_material_Texture_change */
-
-int Graphical_material_set_spectrum_flag(struct Graphical_material *material)
-/*******************************************************************************
-LAST MODIFIED : 15 October 1998
-
-DESCRIPTION :
-Sets the spectrum_flag of a material giving it the cue to intelligently issue
-commands from direct_render_Graphical_material.
-==============================================================================*/
-{
-	int return_code;
-
-	ENTER(Graphical_material_set_spectrum_flag);
-	if (material)
-	{
-		material->spectrum_flag |= MATERIAL_SPECTRUM_ENABLED;
-		return_code=1;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Graphical_material_set_spectrum_flag.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Graphical_material_set_spectrum_flag */
 
 int gfx_create_material(struct Parse_state *state,
 	void *dummy_to_be_modified, void *material_package_void)
