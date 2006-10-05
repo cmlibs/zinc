@@ -107,14 +107,10 @@ identifier
 	spec_ed_set_blue;
 	spec_ed_set_white_to_blue;
 	spec_ed_set_white_to_red;
+	spec_ed_set_monochrome;
 	spec_ed_set_alpha;
 	spec_ed_set_bands;
 	spec_ed_set_step;
-	spec_ed_set_amb_diff;
-	spec_ed_set_ambient;
-	spec_ed_set_diffuse;
-	spec_ed_set_emission;
-	spec_ed_set_specular;
 
 object
 /*
@@ -793,6 +789,15 @@ object
 					XmNlabelString = compound_string("White_to_red");
 					XmNfontList = button_font;
 					XmNuserData = spec_ed_set_white_to_red;
+					};
+				};
+			XmPushButtonGadget
+				{
+				arguments
+					{
+					XmNlabelString = compound_string("Monochrome");
+					XmNfontList = button_font;
+					XmNuserData = spec_ed_set_monochrome;
 					};
 				};
 			XmPushButtonGadget
