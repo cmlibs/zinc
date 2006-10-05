@@ -2125,10 +2125,9 @@ DESCRIPTION :
 	int high_flag,low_flag,texel,texels_in_band,texels_per_band,i;
 #endif /* defined (OPENGL_API) */
 	int return_code;
-	struct Spectrum_render_data *render_data;
 
 	ENTER(Spectrum_settings_enable);
-	if (settings&&(render_data=(struct Spectrum_render_data *)render_data_void))
+	if (settings&&render_data_void)
 	{
 		return_code=1;
 		if (settings->active)
@@ -2148,8 +2147,6 @@ DESCRIPTION :
 				} break;
 				case SPECTRUM_BANDED:
 				{
-				{
-				} break;
 #if defined (OPENGL_API)
 					if ((settings->black_band_proportion)&&(settings->number_of_bands))
 					{
