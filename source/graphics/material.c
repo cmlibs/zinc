@@ -906,8 +906,9 @@ be shared by multiple materials using the same program.
 						{
 							case MATERIAL_PROGRAM_CLASS_DEPENDENT_TEXTURE_COLOUR:
 							{
+								/* Don't touch alpha */
 								append_string(&fragment_program_string, 	
-									"MOV		finalCol.rgb, dependentlookup.rgb;\n"
+									"MOV		finalCol.rgb, dependentlookup;\n"
 									, &error);
 							} break;
 							case MATERIAL_PROGRAM_CLASS_DEPENDENT_TEXTURE_ALPHA:
