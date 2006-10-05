@@ -2322,7 +2322,7 @@ Rebuilds the display_list for <spectrum> if it is not current.
 
 				indices[0]++;
 				i = 0;
-				data[0] = (FE_value)indices[0] / (FE_value)number_of_values;					
+				data[0] = (FE_value)indices[0] / (FE_value)(number_of_values - 1);
 				while ((i < number_of_data_components - 1) && 
 					(indices[i] == number_of_values))
 				{
@@ -2330,7 +2330,7 @@ Rebuilds the display_list for <spectrum> if it is not current.
 					data[i] = 0.0;
 					i++;
 					indices[i]++;
-					data[i] = (FE_value)indices[i] / (FE_value)number_of_values;
+					data[i] = (FE_value)indices[i] / (FE_value)(number_of_values - 1);
 				}
 			}
 					
@@ -2342,6 +2342,7 @@ Rebuilds the display_list for <spectrum> if it is not current.
 					DEACCESS(Texture)(&spectrum->colour_lookup_texture);
 				}
 				texture = CREATE(Texture)("spectrum_texture");
+				Texture_set_wrap_mode(texture, TEXTURE_CLAMP_WRAP);
 				colour_table_ptr = colour_table;
 				switch (number_of_data_components)
 				{
@@ -2352,7 +2353,8 @@ Rebuilds the display_list for <spectrum> if it is not current.
 							/*number_of_bytes_per_component*/1, "bob");
 						Texture_set_image_block(texture,
 							/*left*/0, /*bottom*/0, number_of_values, 1, 
-							/*depth_plane*/0, number_of_values, (void *)colour_table_ptr);
+							/*depth_plane*/0, number_of_values * number_of_texture_components,
+							(void *)colour_table_ptr);
 					} break;
 					case 2:
 					{
@@ -2361,7 +2363,8 @@ Rebuilds the display_list for <spectrum> if it is not current.
 							/*number_of_bytes_per_component*/1, "bob");
 						Texture_set_image_block(texture,
 							/*left*/0, /*bottom*/0, number_of_values, number_of_values, 
-							/*depth_plane*/0, number_of_values, (void *)colour_table_ptr);
+							/*depth_plane*/0, number_of_values * number_of_texture_components,
+							(void *)colour_table_ptr);
 					} break;
 					case 3:
 					{
