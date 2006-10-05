@@ -1298,7 +1298,7 @@ Returns a bit mask for the colour components modified by the spectrum.
 	ENTER(Spectrum_get_colour_components);
 	if (spectrum)
 	{
-		colour_components = (enum Spectrum_colour_components)0;
+		colour_components = SPECTRUM_COMPONENT_NONE;
 		FOR_EACH_OBJECT_IN_LIST(Spectrum_settings)(
 			Spectrum_settings_set_colour_components,
 			(void *)&colour_components, spectrum->list_of_settings);
@@ -1307,7 +1307,7 @@ Returns a bit mask for the colour components modified by the spectrum.
 	{
 		display_message(ERROR_MESSAGE,
 			"Spectrum_get_colour_components.  Invalid spectrum object.");
-		colour_components = 0;
+		colour_components = SPECTRUM_COMPONENT_NONE;
 	}
 	LEAVE;
 

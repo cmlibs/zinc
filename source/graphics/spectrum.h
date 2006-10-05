@@ -77,6 +77,7 @@ DESCRIPTION :
 Used to identify the colour components modified by a spectrum.
 ==============================================================================*/
 {
+	SPECTRUM_COMPONENT_NONE = 0,
 	SPECTRUM_COMPONENT_RED = 1,
 	SPECTRUM_COMPONENT_GREEN = 2,
 	SPECTRUM_COMPONENT_BLUE = 4,
