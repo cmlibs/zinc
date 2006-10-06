@@ -2907,6 +2907,16 @@ DESCRIPTION :
 							}
 							if (material_to_be_modified_copy->spectrum)
 							{
+								/* Cannot just rely on the COPY functions as when 
+									first created this will be the actual object. */
+								if (material_to_be_modified_copy->package && 
+									(!material_to_be_modified_copy->spectrum_manager_callback_id))
+								{
+									material_to_be_modified_copy->spectrum_manager_callback_id=
+										MANAGER_REGISTER(Spectrum)(Graphical_material_Spectrum_change,
+										(void *)material_to_be_modified_copy, material_to_be_modified_copy->package->spectrum_manager);
+								}
+
 								switch (Spectrum_get_number_of_components(
 									material_to_be_modified_copy->spectrum))
 								{
@@ -2947,6 +2957,17 @@ DESCRIPTION :
 									type |= MATERIAL_PROGRAM_CLASS_DEPENDENT_TEXTURE_COLOUR;
 								}
 							}
+							else
+							{
+								if (material_to_be_modified_copy->package && 
+									material_to_be_modified_copy->spectrum_manager_callback_id)
+								{
+									MANAGER_DEREGISTER(Spectrum)(
+										material_to_be_modified_copy->spectrum_manager_callback_id,
+										material_to_be_modified_copy->package->spectrum_manager);
+								}
+							}
+
 							if (!material_to_be_modified_copy->program ||
 								(material_to_be_modified_copy->program->type != type))
 							{
