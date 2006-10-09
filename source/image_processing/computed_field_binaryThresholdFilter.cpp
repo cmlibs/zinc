@@ -191,12 +191,16 @@ DESCRIPTION :
 Create the computed_field representation of the BinaryThresholdFilter.
 ==============================================================================*/
 {
+#if defined DONOTUSE_TEMPLATETEMPLATES
+	create_filters_singlecomponent_multidimensions(
+		Computed_field_binaryThresholdFilter_Functor, this);
+#else
 	create_filters_singlecomponent_multidimensions
 		< Computed_field_binaryThresholdFilter_Functor,
 		Computed_field_binaryThresholdFilter >
 		(this);
-
-};
+#endif
+}
 
 int Computed_field_binaryThresholdFilter::list()
 /*******************************************************************************

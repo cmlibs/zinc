@@ -157,11 +157,16 @@ DESCRIPTION :
 Create the computed_field representation of the CannyEdgeDetectionFilter.
 ==============================================================================*/
 {
+#if defined DONOTUSE_TEMPLATETEMPLATES
+	create_filters_singlecomponent_twoormoredimensions(
+		Computed_field_cannyEdgeDetectionFilter_Functor, this);
+#else
 	create_filters_singlecomponent_twoormoredimensions
-		< Computed_field_cannyEdgeDetectionFilter_Functor, 
+		< Computed_field_cannyEdgeDetectionFilter_Functor,
 		Computed_field_cannyEdgeDetectionFilter >
 		(this);
-}; /* Computed_field_cannyEdgeDetectionFilter */
+#endif
+} /* Computed_field_cannyEdgeDetectionFilter */
 
 int Computed_field_cannyEdgeDetectionFilter::list()
 /*******************************************************************************
@@ -284,11 +289,10 @@ If the field is of type COMPUTED_FIELD_CANNYEDGEDETECTIONFILTER, the source_fiel
 used by it is returned - otherwise an error is reported.
 ==============================================================================*/
 {
-	Computed_field_cannyEdgeDetectionFilter* core;
 	int return_code;
 
 	ENTER(Computed_field_get_type_cannyEdgeDetectionFilter);
-	if (field && (core = dynamic_cast<Computed_field_cannyEdgeDetectionFilter*>(field->core))
+	if (field && (dynamic_cast<Computed_field_cannyEdgeDetectionFilter*>(field->core))
 		&& source_field)
 	{
 		*source_field = field->source_fields[0];

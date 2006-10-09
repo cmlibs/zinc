@@ -50,7 +50,7 @@ LINK_CMISS = false
 PERL_INTERPRETER = true
 IMAGEMAGICK = true
 USE_XML2 = true
-ifneq ($(filter linux aix win32,$(OPERATING_SYSTEM)),)
+ifneq ($(filter linux aix win32 irix,$(OPERATING_SYSTEM)),)
   USE_ITK = true
 else # $(OPERATING_SYSTEM) == linux || $(OPERATING_SYSTEM) == aix
   USE_ITK = false
@@ -305,7 +305,7 @@ ifeq ($(USE_ITK),true)
    ITK_SRCDIR = $(CMISS_ROOT)/itk/src
    ITK_BINDIR = $(CMISS_ROOT)/itk/lib/$(LIB_ARCH_DIR)
    ITK_INC = -I$(ITK_BINDIR) -I$(ITK_SRCDIR)/Code/Algorithms -I$(ITK_SRCDIR)/Code/BasicFilters -I$(ITK_SRCDIR)/Code/Common -I$(ITK_SRCDIR)/Utilities/vxl/vcl -I$(ITK_SRCDIR)/Utilities/vxl/core -I$(ITK_BINDIR)/Utilities/vxl/vcl -I$(ITK_BINDIR)/Utilities/vxl/core/
-   ITK_LIB = -L$(ITK_BINDIR)/bin -lITKAlgorithms -lITKStatistics -lITKBasicFilters  -lITKCommon -litkvnl -litkvnl_algo -litknetlib -litksys -lITKDICOMParser -litkzlib -litkzlib -litktiff -litkjpeg12 -litkjpeg16 -lITKNrrdIO 
+   ITK_LIB = -L$(ITK_BINDIR)/bin -lITKAlgorithms -lITKStatistics -lITKBasicFilters  -lITKCommon -litkvnl -litkvnl_algo -litkvnl -litknetlib -litksys -lITKDICOMParser -litkzlib -litkzlib -litktiff -litkjpeg12 -litkjpeg16 -lITKNrrdIO 
 else # $(USE_ITK) == true
    ITK_DEFINES =
    ITK_SRCDIR = 

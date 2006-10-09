@@ -166,7 +166,7 @@ ifeq ($(SYSNAME:IRIX%=),)
       # need to suppress for Boost mostly but also for STL
 			#   1682 is if you have virtual functions with the same name and different
 			#     arguments, all or none need to be over-ridden in a derived class
-      CPP_STRICT_FLAGS = -diag_error 1000-9999 -diag_suppress 1110,1174,1209,1234,1375,1424,1682,3201
+      CPP_STRICT_FLAGS = -diag_error 1000-9999 -diag_suppress 1110,1174,1209,1234,1375,1424,1682,3201,1506,3303,1182
       DIGITAL_MEDIA_NON_STRICT_FLAGS = -diag_warning 1429
       DIGITAL_MEDIA_NON_STRICT_FLAGS_PATTERN = three_d_drawing/graphics_buffer.c | three_d_drawing/movie_extensions.c
    endif # DEBUG != true

@@ -281,10 +281,14 @@ Create the computed_field representation of the MeanImageFilter.
 		radius_sizes[i] = radius_sizes_in[i];
 	}
 
+#if defined DONOTUSE_TEMPLATETEMPLATES
+	create_filters_multicomponent_multidimensions(
+		Computed_field_meanImageFilter_Functor, this);
+#else
 	create_filters_multicomponent_multidimensions
 		< Computed_field_meanImageFilter_Functor, Computed_field_meanImageFilter >
 		(this);
-
+#endif
 }
 
 } //namespace

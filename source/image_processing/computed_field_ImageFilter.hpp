@@ -56,6 +56,12 @@ extern "C" {
 #include "itkVector.h"
 #include "itkImageRegionIteratorWithIndex.h"
 
+#if defined (SGI)
+/* The IRIX compiler 7.3.1.3m does not seem to support templates of templates so
+   I have used a script to turn these into macros for this case automatically. */
+#  define DONOTUSE_TEMPLATETEMPLATES
+#endif /* defined (SGI) */
+
 namespace CMISS {
 
 class Computed_field_ImageFilter_Functor
@@ -108,6 +114,8 @@ protected:
 
 	int evaluate_cache_at_location(Field_location* location);
 
+#if !defined (DONOTUSE_TEMPLATETEMPLATES)
+	/* This is the normal implementation */
 	template < template <class> class ComputedFieldImageFunctor,
 				  class ComputedFieldFilter >
 	int create_filters_multicomponent_multidimensions(
@@ -122,6 +130,7 @@ protected:
 				  class ComputedFieldFilter >
 	int create_filters_singlecomponent_twoormoredimensions(
 		ComputedFieldFilter* filter);
+#endif /* !defined (DONOTUSE_TEMPLATETEMPLATES) */
 
 public:
 	template <class ImageType, class FilterType >
@@ -135,6 +144,8 @@ public:
 
 };
 
+#if !defined (DONOTUSE_TEMPLATETEMPLATES)
+	/* This is the normal implementation */
 template < template <class> class ComputedFieldImageFunctor,
 	class ComputedFieldFilter >
 int Computed_field_ImageFilter::create_filters_multicomponent_multidimensions(
@@ -441,6 +452,306 @@ Evaluate the fields cache at the location
 
 	return (return_code);
 } /* Computed_field_ImageFilter::create_filters_singlecomponent_twoormoredimensions */
+
+#else /* ! defined (DONOTUSE_TEMPLATETEMPLATES) */
+
+/* Use macros instead */
+#define create_filters_multicomponent_multidimensions( \
+	ComputedFieldImageFunctor, filter) \
+/******************************************************************************* \
+LAST MODIFIED : 9 October 2006 \
+ \
+DESCRIPTION : \
+Evaluate the fields cache at the location \
+==============================================================================*/ \
+{ \
+	int return_code; \
+ \
+	switch (dimension) \
+	{ \
+		case 1: \
+		{ \
+			switch (field->number_of_components) \
+			{ \
+				case 1: \
+				{ \
+					functor = new ComputedFieldImageFunctor \
+						< itk::Image< float, 1 > >(filter); \
+					return_code = 1; \
+				} break; \
+				case 2: \
+				{ \
+					functor = new ComputedFieldImageFunctor \
+						< itk::Image< itk::Vector<float, 2>, 1 > >(filter); \
+					return_code = 1; \
+				} break; \
+				case 3: \
+				{ \
+					functor = new ComputedFieldImageFunctor \
+						< itk::Image< itk::Vector<float, 3>, 1 > >(filter); \
+					return_code = 1; \
+				} break; \
+				case 4: \
+				{ \
+					functor = new ComputedFieldImageFunctor \
+						< itk::Image< itk::Vector<float, 4>, 1 > >(filter); \
+					return_code = 1; \
+				} break; \
+				default: \
+				{ \
+					display_message(ERROR_MESSAGE, \
+						"Computed_field_ImageFilter::create_filters_multicomponent_multidimensions.  " \
+						"Template invocation not declared for number of components %d.", \
+						field->number_of_components); \
+					return_code = 0; \
+				} break; \
+			} \
+		} break; \
+		case 2: \
+		{ \
+			switch (field->number_of_components) \
+			{ \
+				case 1: \
+				{ \
+					functor = new ComputedFieldImageFunctor \
+						< itk::Image< float, 2 > >(filter); \
+					return_code = 1; \
+				} break; \
+				case 2: \
+				{ \
+					functor = new ComputedFieldImageFunctor \
+						< itk::Image< itk::Vector<float, 2>, 2 > >(filter); \
+					return_code = 1; \
+				} break; \
+				case 3: \
+				{ \
+					functor = new ComputedFieldImageFunctor \
+						< itk::Image< itk::Vector<float, 3>, 2 > >(filter); \
+					return_code = 1; \
+				} break; \
+				case 4: \
+				{ \
+					functor = new ComputedFieldImageFunctor \
+						< itk::Image< itk::Vector<float, 4>, 2 > >(filter); \
+					return_code = 1; \
+				} break; \
+				default: \
+				{ \
+					display_message(ERROR_MESSAGE, \
+						"Computed_field_ImageFilter::create_filters_multicomponent_multidimensions.  " \
+						"Template invocation not declared for number of components %d.", \
+						field->number_of_components); \
+					return_code = 0; \
+				} break; \
+			} \
+		} break; \
+		case 3: \
+		{ \
+			switch (field->number_of_components) \
+			{ \
+				case 1: \
+				{ \
+					functor = new ComputedFieldImageFunctor \
+						< itk::Image< float, 3 > >(filter); \
+					return_code = 1; \
+				} break; \
+				case 2: \
+				{ \
+					functor = new ComputedFieldImageFunctor \
+						< itk::Image< itk::Vector<float, 2>, 3 > >(filter); \
+					return_code = 1; \
+				} break; \
+				case 3: \
+				{ \
+					functor = new ComputedFieldImageFunctor \
+						< itk::Image< itk::Vector<float, 3>, 3 > >(filter); \
+					return_code = 1; \
+				} break; \
+				case 4: \
+				{ \
+					functor = new ComputedFieldImageFunctor \
+						< itk::Image< itk::Vector<float, 4>, 3 > >(filter); \
+					return_code = 1; \
+				} break; \
+				default: \
+				{ \
+					display_message(ERROR_MESSAGE, \
+						"Computed_field_ImageFilter::create_filters_multicomponent_multidimensions.  " \
+						"Template invocation not declared for number of components %d.", \
+						field->number_of_components); \
+					return_code = 0; \
+				} break; \
+			} \
+		} break; \
+		default: \
+		{ \
+			display_message(ERROR_MESSAGE, \
+				"Computed_field_ImageFilter::create_filters_multicomponent_multidimensions.  " \
+				"Template invocation not declared for dimension %d.",  \
+				dimension); \
+			return_code = 0; \
+		} break; \
+	} \
+	USE_PARAMETER(return_code);							\
+ \
+} /* Computed_field_ImageFilter::create_filters_multicomponent_multidimensions */
+
+#define create_filters_singlecomponent_multidimensions( \
+	ComputedFieldImageFunctor, filter ) \
+/******************************************************************************* \
+LAST MODIFIED : 9 October 2006 \
+\
+DESCRIPTION : \
+Evaluate the fields cache at the location \
+==============================================================================*/ \
+{ \
+\
+	int return_code; \
+\
+	switch (dimension) \
+	{ \
+		case 1: \
+		{ \
+			switch (field->number_of_components) \
+			{ \
+				case 1: \
+				{ \
+					functor = new ComputedFieldImageFunctor \
+						< itk::Image< float, 1 > >(filter); \
+					return_code = 1; \
+				} break; \
+				default: \
+				{ \
+					display_message(ERROR_MESSAGE, \
+						"Computed_field_ImageFilter::create_filters_singlecomponent_multidimensions.  " \
+						"Template invocation not declared for number of components %d.", \
+						field->number_of_components); \
+					return_code = 0; \
+				} break; \
+			} \
+		} break; \
+		case 2: \
+		{ \
+			switch (field->number_of_components) \
+			{ \
+				case 1: \
+				{ \
+					functor = new ComputedFieldImageFunctor \
+						< itk::Image< float, 2 > >(filter); \
+					return_code = 1; \
+				} break; \
+				default: \
+				{ \
+					display_message(ERROR_MESSAGE, \
+						"Computed_field_ImageFilter::create_filters_singlecomponent_multidimensions.  " \
+						"Template invocation not declared for number of components %d.", \
+						field->number_of_components); \
+					return_code = 0; \
+				} break; \
+			} \
+		} break; \
+		case 3: \
+		{ \
+			switch (field->number_of_components) \
+			{ \
+				case 1: \
+				{ \
+					functor = new ComputedFieldImageFunctor \
+						< itk::Image< float, 3 > >(filter); \
+					return_code = 1; \
+				} break; \
+				default: \
+				{ \
+					display_message(ERROR_MESSAGE, \
+						"Computed_field_ImageFilter::create_filters_singlecomponent_multidimensions.  " \
+						"Template invocation not declared for number of components %d.", \
+						field->number_of_components); \
+					return_code = 0; \
+				} break; \
+			} \
+		} break; \
+		default: \
+		{ \
+			display_message(ERROR_MESSAGE, \
+				"Computed_field_ImageFilter::create_filters_singlecomponent_multidimensions.  " \
+				"Template invocation not declared for dimension %d.",  \
+				dimension); \
+			return_code = 0; \
+		} break; \
+	} \
+\
+	USE_PARAMETER(return_code); \
+\
+} /* Computed_field_ImageFilter::create_filters_singlecomponent_multidimensions */
+
+#define create_filters_singlecomponent_twoormoredimensions( \
+	ComputedFieldImageFunctor, filter) \
+/******************************************************************************* \
+LAST MODIFIED : 9 October 2006 \
+ \
+DESCRIPTION : \
+Evaluate the fields cache at the location \
+==============================================================================*/ \
+{ \
+	int return_code; \
+ \
+	ENTER(Computed_field_ImageFilter::select_filter_single_component); \
+ \
+	switch (dimension) \
+	{ \
+		case 2: \
+		{ \
+			switch (field->number_of_components) \
+			{ \
+				case 1: \
+				{ \
+					functor = new ComputedFieldImageFunctor \
+						< itk::Image< float, 2 > >(filter); \
+					return_code = 1; \
+				} break; \
+				default: \
+				{ \
+					display_message(ERROR_MESSAGE, \
+						"Computed_field_ImageFilter::create_filters_singlecomponent_twoormoredimensions.  " \
+						"Template invocation not declared for number of components %d.", \
+						field->number_of_components); \
+					return_code = 0; \
+				} break; \
+			} \
+		} break; \
+		case 3: \
+		{ \
+			switch (field->number_of_components) \
+			{ \
+				case 1: \
+				{ \
+					functor = new ComputedFieldImageFunctor \
+						< itk::Image< float, 3 > >(filter); \
+					return_code = 1; \
+				} break; \
+				default: \
+				{ \
+					display_message(ERROR_MESSAGE, \
+						"Computed_field_ImageFilter::create_filters_singlecomponent_twoormoredimensions.  " \
+						"Template invocation not declared for number of components %d.", \
+						field->number_of_components); \
+					return_code = 0; \
+				} break; \
+			} \
+		} break; \
+		default: \
+		{ \
+			display_message(ERROR_MESSAGE, \
+				"Computed_field_ImageFilter::create_filters_singlecomponent_twoormoredimensions.  " \
+				"Template invocation not declared for dimension %d.",  \
+				dimension); \
+			return_code = 0; \
+		} break; \
+	} \
+	USE_PARAMETER(return_code);						\
+ \
+} /* Computed_field_ImageFilter::create_filters_singlecomponent_twoormoredimensions */
+#endif /* ! defined (DONOTUSE_TEMPLATETEMPLATES) */
 
 template <class ImageType, class FilterType >
 int Computed_field_ImageFilter::update_output_image(Field_location* location, 
