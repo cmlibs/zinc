@@ -97,6 +97,10 @@ public:
 
 	~Computed_field_ImageFilter()
 	{
+		if (functor)
+		{
+			delete functor;
+		}
 		if (sizes)
 		{
 			DEALLOCATE(sizes);
