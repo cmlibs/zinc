@@ -2193,6 +2193,10 @@ Frees the memory for the fields of <**spectrum>, frees the memory for
 			{
 				DEALLOCATE((*spectrum_ptr)->name);
 			}
+			if ((*spectrum_ptr)->colour_lookup_texture)
+			{
+				DEACCESS(Texture)(&((*spectrum_ptr)->colour_lookup_texture));
+			}
 			DESTROY(LIST(Spectrum_settings))(&((*spectrum_ptr)->list_of_settings));
 			DEALLOCATE(*spectrum_ptr);
 		}
