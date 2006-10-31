@@ -272,10 +272,14 @@ DESCRIPTION :
 Create the computed_field representation of the SigmoidImageFilter.
 ==============================================================================*/
 {
+#if defined DONOTUSE_TEMPLATETEMPLATES
+	create_filters_singlecomponent_multidimensions(
+		Computed_field_sigmoidImageFilter_Functor, this);
+#else
 	create_filters_singlecomponent_multidimensions
 		< Computed_field_sigmoidImageFilter_Functor, Computed_field_sigmoidImageFilter >
 		(this);
-
+#endif
 }
 
 } //namespace
