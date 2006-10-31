@@ -6707,6 +6707,7 @@ and other parameters for formats that require them.
 
 	ENTER(Cmgui_image_read);
 	cmgui_image = (struct Cmgui_image *)NULL;
+	magick_image = (Image *)NULL;
 	if (cmgui_image_information && cmgui_image_information->valid &&
 		cmgui_image_information->file_names)
 	{
