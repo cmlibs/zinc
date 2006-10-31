@@ -50,6 +50,22 @@ Utilities for handling images.
 Global types
 ------------
 */
+enum Cmgui_image_format
+/*******************************************************************************
+LAST MODIFIED : 1 November 2006
+
+DESCRIPTION :
+Enumerator for specifying the image format.
+Note: the first value will be 0 by the ANSI standard, with each subsequent entry
+incremented by 1. This pattern is expected by the ENUMERATOR macros.
+Must ensure the ENUMERATOR_STRING function returns a string for each value here.
+==============================================================================*/
+{
+  CMGUI_IMAGE_I,
+  CMGUI_IMAGE_IA,
+  CMGUI_IMAGE_RGB,
+  CMGUI_IMAGE_RGBA
+}; /* enum Cmgui_image_format */
 
 enum Image_file_format
 /*******************************************************************************
@@ -443,6 +459,15 @@ LAST MODIFIED : 20 February 2002
 
 DESCRIPTION :
 Returns the <width> <cmgui_image>.
+==============================================================================*/
+
+int Cmgui_image_convert_format(struct Cmgui_image *cmgui_image, enum Cmgui_image_format format);
+/*******************************************************************************
+LAST MODIFIED : 31 October 2006
+
+DESCRIPTION :
+Sets the magick image type and updates the cmgui_image to the format specified by 
+the <format>
 ==============================================================================*/
 
 struct Cmgui_image *Cmgui_image_read(

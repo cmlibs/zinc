@@ -5771,7 +5771,7 @@ Clears 'valid' flag of cmgui_image_information if not correctly set.
 
 #if defined (IMAGEMAGICK)
 static int get_magick_image_parameters(Image *magick_image, int *width,
-	int *height, int *number_of_components, int *number_of_bytes_per_component)
+	int *height, int *number_of_components, int *number_of_bytes_per_component, int do_IsGrey_test)
 /*******************************************************************************
 LAST MODIFIED : 19 February 2002
 
@@ -5792,7 +5792,7 @@ Extracts parameters from <magick_image> that matter for a Cmgui_image
 		if (magick_image->matte)
 		{
 			if ((magick_image->colorspace == GRAYColorspace) ||
-				(IsGrayImage(magick_image, &magick_exception)))
+				(IsGrayImage(magick_image, &magick_exception)&&(do_IsGrey_test)))
 			{
 				/* monochrome intensity with alpha */
 				*number_of_components = 2;
@@ -5806,7 +5806,7 @@ Extracts parameters from <magick_image> that matter for a Cmgui_image
 		else
 		{
 			if ((magick_image->colorspace == GRAYColorspace) ||
-				(IsGrayImage(magick_image, &magick_exception)))
+				(IsGrayImage(magick_image, &magick_exception)&&(do_IsGrey_test)))
 			{
 				/* monochrome intensity only */
 				*number_of_components = 1;
@@ -6672,6 +6672,48 @@ Returns the <width> <cmgui_image>.
 	return (width);
 } /* Cmgui_image_get_width */
 
+
+int Cmgui_image_convert_format(struct Cmgui_image *cmgui_image, enum Cmgui_image_format format)
+/*******************************************************************************
+LAST MODIFIED : 31 October 2006
+
+DESCRIPTION :
+Sets the magick image type and updates the cmgui_image to the format specified by 
+the <format>
+==============================================================================*/
+{
+	int return_code = 1;
+	ENTER(Cmgui_image_convert_format);
+	if (cmgui_image)
+	{
+	  switch (format)
+	  {
+	    case CMGUI_IMAGE_RGB:
+	    {
+              TransformRGBImage(cmgui_image->magick_image, RGBColorspace);		
+	      get_magick_image_parameters(cmgui_image->magick_image,
+					  &cmgui_image->width, &cmgui_image->height,
+					  &cmgui_image->number_of_components,
+					  &cmgui_image->number_of_bytes_per_component, 0);
+	    } break;
+	    default:
+	    {
+	      display_message(ERROR_MESSAGE, "Cmgui_image_convert_format.  Format conversion not implemented");
+	      return_code = 0;
+	    }
+	  }
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Cmgui_image_convert_format.  Invalid argument(s)");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return return_code;
+} /* Cmgui_image_convert_format */
+
 struct Cmgui_image *Cmgui_image_read(
 	struct Cmgui_image_information *cmgui_image_information)
 /*******************************************************************************
@@ -6867,7 +6909,7 @@ and other parameters for formats that require them.
 						get_magick_image_parameters(cmgui_image->magick_image,
 							&cmgui_image->width, &cmgui_image->height,
 							&cmgui_image->number_of_components,
-							&cmgui_image->number_of_bytes_per_component);
+							&cmgui_image->number_of_bytes_per_component, 1);
 					}
 					else
 					{
