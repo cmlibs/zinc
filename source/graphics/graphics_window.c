@@ -2247,6 +2247,8 @@ view angle, interest point etc.
 			parallel_projection_flag=0;
 			perspective_projection_flag=0;
 			number_of_components=3;
+			clip_plane_add_data.set=0;
+			clip_plane_remove_data.set=0;
 			modelview_matrix_data.set=0;
 			ndc_placement_data.set=0;
 			photogrammetry_matrix_data.set=0;
