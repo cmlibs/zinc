@@ -244,6 +244,7 @@ DESCRIPTION :
 	/* Flag that indicates the update includes a change of the projection matrices */
 	int transform_flag;
 	/* Clip planes */
+	char clip_planes_enable[MAX_CLIP_PLANES];
 	double clip_planes[MAX_CLIP_PLANES * 4];
 	/* The distance between the two stereo views in world space */
 	double stereo_eye_spacing;
@@ -1253,9 +1254,7 @@ DESCRIPTION :
 		/* Clip planes */
 		for (i = 0 ; i < MAX_CLIP_PLANES ; i++)
 		{
-			if (scene_viewer->clip_planes[i * 4]||
-				scene_viewer->clip_planes[i * 4 + 1]||
-				scene_viewer->clip_planes[i * 4 + 2])
+			if (scene_viewer->clip_planes_enable[i])
 			{
 				switch(i)
 				{
@@ -4086,9 +4085,13 @@ performed in idle time so that multiple redraws are avoided.
 				scene_viewer->pixel_height=0;
 				scene_viewer->update_pixel_image=0;
 				scene_viewer->pixel_data = (char *)NULL;
-				for (i = 0 ; i < 4 * MAX_CLIP_PLANES ; i++)
+				for (i = 0 ; i < MAX_CLIP_PLANES ; i++)
 				{
-					scene_viewer->clip_planes[i] = 0.0;
+					scene_viewer->clip_planes_enable[i] = 0;
+					scene_viewer->clip_planes[i * 4] = 0.0;
+					scene_viewer->clip_planes[i * 4 + 1] = 0.0;
+					scene_viewer->clip_planes[i * 4 + 2] = 0.0;
+					scene_viewer->clip_planes[i * 4 + 3] = 0.0;
 				}
 				/* add callbacks to the graphics buffer */
 				Graphics_buffer_add_initialise_callback(graphics_buffer,
@@ -5016,37 +5019,43 @@ DESCRIPTION :
 Sets a clip plane that defines a plane in Modelview space, (Ax+By+Cz=D).
 ==============================================================================*/
 {
-	int empty, i, return_code;
+	int i, index, return_code;
 
 	ENTER(Scene_viewer_add_clip_plane);
 	if (scene_viewer)
 	{
 		return_code=1;
-		empty = -1;
-		for (i = 0 ; i < MAX_CLIP_PLANES ; i++)
+		index = -1;
+		for (i = 0 ; return_code && (i < MAX_CLIP_PLANES) ; i++)
 		{
-			if ((empty == -1) && !(scene_viewer->clip_planes[i * 4]
-				|| scene_viewer->clip_planes[i * 4 + 1] || 
-				scene_viewer->clip_planes[i * 4 + 2]))
+			if (!scene_viewer->clip_planes_enable[i])
 			{
-				empty = i;
+				if (index == -1)
+				{
+					index = i;
+				}
 			}
-			if ((A == scene_viewer->clip_planes[i * 4]) &&
-				(B == scene_viewer->clip_planes[i * 4 + 1])  &&
-				(C == scene_viewer->clip_planes[i * 4 + 2])  &&
-				(D == scene_viewer->clip_planes[i * 4 + 3]))
+			else
 			{
-				display_message(ERROR_MESSAGE, "Scene_viewer_add_clip_plane.  "
-					"Clip plane %fx+%fy+%fz=%f already exists", A, B, C, D);
-				return_code=0;
+				/* Check it doesn't already exist */
+				if ((A == scene_viewer->clip_planes[i * 4]) &&
+					(B == scene_viewer->clip_planes[i * 4 + 1])  &&
+					(C == scene_viewer->clip_planes[i * 4 + 2])  &&
+					(D == scene_viewer->clip_planes[i * 4 + 3]))
+				{
+					display_message(ERROR_MESSAGE, "Scene_viewer_add_clip_plane.  "
+						"Clip plane %fx+%fy+%fz=%f already exists", A, B, C, D);
+					return_code=0;
+				}
 			}
 		}
-		if (return_code)
+		if ((index != -1) && return_code)
 		{
-			scene_viewer->clip_planes[empty * 4] = A;
-			scene_viewer->clip_planes[empty * 4 + 1] = B;
-			scene_viewer->clip_planes[empty * 4 + 2] = C;
-			scene_viewer->clip_planes[empty * 4 + 3] = D;
+			scene_viewer->clip_planes_enable[index] = 1;
+			scene_viewer->clip_planes[index * 4] = A;
+			scene_viewer->clip_planes[index * 4 + 1] = B;
+			scene_viewer->clip_planes[index * 4 + 2] = C;
+			scene_viewer->clip_planes[index * 4 + 3] = D;
 		}
 	}
 	else
@@ -5075,18 +5084,23 @@ exact plane isn't defined as a clip plane.
 	ENTER(Scene_viewer_remove_clip_plane);
 	if (scene_viewer)
 	{
+		return_code = 0;
 		for (i = 0 ; i < MAX_CLIP_PLANES ; i++)
 		{
-			if ((A == scene_viewer->clip_planes[i * 4]) &&
-				(B == scene_viewer->clip_planes[i * 4 + 1])  &&
-				(C == scene_viewer->clip_planes[i * 4 + 2])  &&
-				(D == scene_viewer->clip_planes[i * 4 + 3]))
+			if (scene_viewer->clip_planes_enable[i])
 			{
-				scene_viewer->clip_planes[i * 4] = 0;
-				scene_viewer->clip_planes[i * 4 + 1] = 0;
-				scene_viewer->clip_planes[i * 4 + 2] = 0;
-				scene_viewer->clip_planes[i * 4 + 3] = 0;
-				return_code = 1;
+				if ((A == scene_viewer->clip_planes[i * 4]) &&
+					(B == scene_viewer->clip_planes[i * 4 + 1])  &&
+					(C == scene_viewer->clip_planes[i * 4 + 2])  &&
+					(D == scene_viewer->clip_planes[i * 4 + 3]))
+				{
+					scene_viewer->clip_planes_enable[i] = 0;
+					scene_viewer->clip_planes[i * 4] = 0.0;
+					scene_viewer->clip_planes[i * 4 + 1] = 0.0;
+					scene_viewer->clip_planes[i * 4 + 2] = 0.0;
+					scene_viewer->clip_planes[i * 4 + 3] = 0.0;
+					return_code = 1;
+				}
 			}
 		}
 		if (!return_code)
@@ -7252,9 +7266,9 @@ scene viewer on screen.
 #endif /* defined (MOTIF) || defined (GTK_USER_INTERFACE) */
 
 	ENTER(Scene_viewer_get_frame_pixels);
-#if defined (WIN32_USER_INTERFACE)
+#if ! defined (MOTIF) && ! defined (GTK_USER_INTERFACE)
 	USE_PARAMETER(force_onscreen);
-#endif /* defined (WIN32_USER_INTERFACE) */
+#endif /* ! defined (MOTIF) && ! defined (GTK_USER_INTERFACE) */
 	if (scene_viewer && width && height)
 	{
 #if defined (MOTIF) || defined (GTK_USER_INTERFACE)
