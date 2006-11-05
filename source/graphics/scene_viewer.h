@@ -76,6 +76,9 @@ and the functions given their public names.
 #define Scene_viewer Cmiss_scene_viewer
 
 /* Convert the enumerators */
+#define Scene_viewer_interact_mode Cmiss_scene_viewer_interact_mode
+#define SCENE_VIEWER_INTERACT_MODE_STANDARD CMISS_SCENE_VIEWER_INTERACT_MODE_STANDARD
+#define SCENE_VIEWER_INTERACT_MODE_2D CMISS_SCENE_VIEWER_INTERACT_MODE_2D
 #define Scene_viewer_transparency_mode Cmiss_scene_viewer_transparency_mode
 /* Be sure to implement any new modes in Scene_viewer_transparency_mode_string. */
 #define SCENE_VIEWER_FAST_TRANSPARENCY CMISS_SCENE_VIEWER_FAST_TRANSPARENCY
@@ -84,6 +87,8 @@ and the functions given their public names.
 #define SCENE_VIEWER_ORDER_INDEPENDENT_TRANSPARENCY CMISS_SCENE_VIEWER_ORDER_INDEPENDENT_TRANSPARENCY
 
 /* Convert the functions that have identical interfaces */
+#define Scene_viewer_get_interact_mode Cmiss_scene_viewer_get_interact_mode
+#define Scene_viewer_set_interact_mode Cmiss_scene_viewer_set_interact_mode
 #define Scene_viewer_set_lookat_parameters_non_skew \
    Cmiss_scene_viewer_set_lookat_parameters_non_skew
 #define Scene_viewer_get_lookat_parameters \

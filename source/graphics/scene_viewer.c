@@ -213,6 +213,7 @@ DESCRIPTION :
 	struct MANAGER(Texture) *texture_manager;
 	void *texture_manager_callback_id;
 	/* For interpreting mouse events */
+        enum Scene_viewer_interact_mode interact_mode;
 	enum Scene_viewer_drag_mode drag_mode;
 	int previous_pointer_x, previous_pointer_y;
 	/* interaction */
@@ -3183,14 +3184,34 @@ Converts mouse button-press and motion events into viewing transformations in
 							scene_viewer->tumble_active = 0;
 							if (0.0 != scene_viewer->tumble_rate)
 							{
-								scene_viewer->drag_mode=SV_DRAG_TUMBLE;
+							        switch (scene_viewer->interact_mode)
+								{
+								       case SCENE_VIEWER_INTERACT_MODE_STANDARD:
+								       {
+								               scene_viewer->drag_mode=SV_DRAG_TUMBLE;
+								       }break;
+								       case SCENE_VIEWER_INTERACT_MODE_2D:
+								       {
+								               scene_viewer->drag_mode=SV_DRAG_TRANSLATE;
+								       }break;
+								}
 							}
 						} break;
 						case 2:
 						{
 							if (0.0 != scene_viewer->translate_rate)
 							{
-								scene_viewer->drag_mode=SV_DRAG_TRANSLATE;
+							        switch (scene_viewer->interact_mode)
+								{
+								       case SCENE_VIEWER_INTERACT_MODE_STANDARD:
+								       {
+								               scene_viewer->drag_mode=SV_DRAG_TRANSLATE;
+								       }break;
+								       case SCENE_VIEWER_INTERACT_MODE_2D:
+								       {
+								               scene_viewer->drag_mode=SV_DRAG_TUMBLE;
+								       }break;
+								}
 							}
 						} break;
 						case 3:
@@ -3480,9 +3501,33 @@ transformations.
 				pointer_y=input->position_y;
 				switch (input->button_number)
 				{
+					case 1:
+					{
+						switch (scene_viewer->interact_mode)
+						{
+							case SCENE_VIEWER_INTERACT_MODE_STANDARD:
+							{
+							        scene_viewer->drag_mode=SV_DRAG_TUMBLE;
+							}break;
+						        case SCENE_VIEWER_INTERACT_MODE_2D:
+							{
+							  scene_viewer->drag_mode=SV_DRAG_TRANSLATE;
+							}break;
+						}
+					} break;
 					case 2:
 					{
-						scene_viewer->drag_mode=SV_DRAG_TRANSLATE;
+						switch (scene_viewer->interact_mode)
+						{
+							case SCENE_VIEWER_INTERACT_MODE_STANDARD:
+							{
+							        scene_viewer->drag_mode=SV_DRAG_TRANSLATE;
+							}break;
+						        case SCENE_VIEWER_INTERACT_MODE_2D:
+							{
+							  scene_viewer->drag_mode=SV_DRAG_TUMBLE;
+							}break;
+						}
 					} break;
 					case 3:
 					{
@@ -4059,6 +4104,7 @@ performed in idle time so that multiple redraws are avoided.
 				scene_viewer->bk_texture_left=0.0;
 				scene_viewer->bk_texture_width=0.0;
 				scene_viewer->bk_texture_height=0.0;
+				scene_viewer->interact_mode=SCENE_VIEWER_INTERACT_MODE_STANDARD;
 				scene_viewer->drag_mode=SV_DRAG_NOTHING;
 				scene_viewer->previous_pointer_x = 0;
 				scene_viewer->previous_pointer_y = 0;
@@ -4100,8 +4146,10 @@ performed in idle time so that multiple redraws are avoided.
 					Scene_viewer_resize_callback, scene_viewer);
 				Graphics_buffer_add_expose_callback(graphics_buffer,
 					Scene_viewer_expose_callback, scene_viewer);
+
 				Graphics_buffer_add_input_callback(graphics_buffer,
 					 Scene_viewer_input_callback, scene_viewer);
+
 				Scene_viewer_awaken(scene_viewer);
 				Graphics_buffer_awaken(scene_viewer->graphics_buffer);
 			}
@@ -5119,6 +5167,63 @@ exact plane isn't defined as a clip plane.
 
 	return (return_code);
 } /* Scene_viewer_remove_clip_plane */
+
+int Scene_viewer_get_interact_mode(struct Scene_viewer *scene_viewer,
+	enum Scene_viewer_interact_mode *interact_mode)
+/*******************************************************************************
+LAST MODIFIED : 2 November 2006
+
+DESCRIPTION :
+Get the mouse and keyboard interaction configuration 
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(Scene_viewer_get_interact_mode);
+	if (scene_viewer)
+	{
+		*interact_mode = scene_viewer->interact_mode;
+		return_code = 1;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Scene_viewer_get_interact_mode.  Invalid argument(s)");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Scene_viewer_get_interact_mode */
+
+int Scene_viewer_set_interact_mode(struct Scene_viewer *scene_viewer,
+	enum Scene_viewer_interact_mode interact_mode)
+/*******************************************************************************
+LAST MODIFIED : 2 November 2006
+
+DESCRIPTION :
+Set the mouse and keyboard interaction configuration 
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(Scene_viewer_set_interact_mode);
+	if (scene_viewer&&((SCENE_VIEWER_INTERACT_MODE_STANDARD==interact_mode)||
+		(SCENE_VIEWER_INTERACT_MODE_2D==interact_mode)))
+	{
+		return_code=1;
+		scene_viewer->interact_mode=interact_mode;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Scene_viewer_set_interact_mode.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Scene_viewer_set_interact_mode */
 
 struct Light_model *Scene_viewer_get_light_model(
 	struct Scene_viewer *scene_viewer)

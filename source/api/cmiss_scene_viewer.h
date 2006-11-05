@@ -76,6 +76,26 @@ be selected depending on the other requirements of the scene_viewer.
 	CMISS_SCENE_VIEWER_DOUBLE_BUFFERING
 };
 
+enum Cmiss_scene_viewer_interact_mode
+/*******************************************************************************
+LAST MODIFIED : 2 November 2006
+
+DESCRIPTION :
+Controls the way the mouse and keyboard are used to interact with the scene viewer.
+CMISS_SCENE_VIEWER_INTERACT_MODE_STANDARD is the traditional cmgui mode. 
+  Rotate: Left mouse button 
+  Translate: Middle mouse button
+  Zoom: Right mouse button
+CMISS_SCENE_VIEWER_INTERACT_MODE_2D is a mode more suitable for 2D use
+  Translate: Left mouse button
+  Rotate: Middle mouse button 
+  Zoom: Right mouse button
+==============================================================================*/
+{
+	CMISS_SCENE_VIEWER_INTERACT_MODE_STANDARD,
+	CMISS_SCENE_VIEWER_INTERACT_MODE_2D
+};
+
 enum Cmiss_scene_viewer_stereo_mode
 /*******************************************************************************
 LAST MODIFIED : 16 September 2002
@@ -212,6 +232,27 @@ LAST MODIFIED : 10 September 2002
 
 DESCRIPTION :
 Closes the scene_viewer.
+==============================================================================*/
+
+int Cmiss_scene_viewer_get_interact_mode(Cmiss_scene_viewer_id scene_viewer,
+ enum Cmiss_scene_viewer_interact_mode *interact_mode);
+/*******************************************************************************
+LAST MODIFIED : 2 November 2006
+
+DESCRIPTION :
+Returns the mouse and keyboard interaction mode of the Scene_viewer.  
+See the definition of the
+Cmiss_scene_viewer_interact_mode enumerator.
+==============================================================================*/
+
+int Cmiss_scene_viewer_set_interact_mode(Cmiss_scene_viewer_id scene_viewer,
+	enum Cmiss_scene_viewer_interact_mode interact_mode);
+/*******************************************************************************
+LAST MODIFIED : 2 November 2006
+
+DESCRIPTION :
+Sets the interaction mode of the Scene_viewer.  See the definition of the
+Cmiss_scene_viewer_interact_mode enumerator.
 ==============================================================================*/
 
 int Cmiss_scene_viewer_get_lookat_parameters(
