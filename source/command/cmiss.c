@@ -23956,6 +23956,7 @@ Clean up the command_data, deallocating all the associated memory and resources.
 		{
 			DESTROY(Node_viewer)(&(command_data->data_viewer));
 		}
+
 		if (command_data->node_viewer)
 		{
 			DESTROY(Node_viewer)(&(command_data->node_viewer));
@@ -24398,3 +24399,24 @@ Returns the selected_node object from the <command_data>.
 	return (node_selection);
 } /* Cmiss_command_data_get_node_selection */
 
+struct MANAGER(Texture) *Cmiss_command_data_get_texture_manager(
+	struct Cmiss_command_data *command_data)
+/*******************************************************************************
+LAST MODIFIED : 7 November 2006
+
+DESCRIPTION :
+Returns the texture manager from the <command_data>.
+==============================================================================*/
+{
+	struct MANAGER(Texture) *texture_manager;
+
+	ENTER(Cmiss_command_data_get_texture_manager);
+	texture_manager=(struct MANAGER(Texture) *)NULL;
+	if (command_data)
+	{
+		texture_manager = command_data->texture_manager;
+	}
+	LEAVE;
+
+	return (texture_manager);
+} /* Cmiss_command_data_get_texture_manager */

@@ -48,6 +48,7 @@ This should only be included in cmgui.c and command/cmiss.c
 
 #include "command/command.h"
 #include "general/io_stream.h"
+#include "general/manager.h"
 #include "region/cmiss_region.h"
 #if defined (WIN32_USER_INTERFACE)
 #include <windows.h>
@@ -208,6 +209,15 @@ LAST MODIFIED : 4 July 2005
 
 DESCRIPTION :
 Returns the selected_node object from the <command_data>.
+==============================================================================*/
+
+struct MANAGER(Texture) *Cmiss_command_data_get_texture_manager(
+	struct Cmiss_command_data *command_data);
+/*******************************************************************************
+LAST MODIFIED : 7 November 2006
+
+DESCRIPTION :
+Returns the texture manager from the <command_data>.
 ==============================================================================*/
 
 #endif /* !defined (COMMAND_CMISS_H) */
