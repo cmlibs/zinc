@@ -3182,36 +3182,42 @@ Converts mouse button-press and motion events into viewing transformations in
 						{
 							scene_viewer->tumble_angle = 0;
 							scene_viewer->tumble_active = 0;
-							if (0.0 != scene_viewer->tumble_rate)
+							switch (scene_viewer->interact_mode)
 							{
-							        switch (scene_viewer->interact_mode)
-								{
-								       case SCENE_VIEWER_INTERACT_MODE_STANDARD:
-								       {
+							       case SCENE_VIEWER_INTERACT_MODE_STANDARD:
+							       {
+							               if (0.0 != scene_viewer->tumble_rate)
+							               {
 								               scene_viewer->drag_mode=SV_DRAG_TUMBLE;
-								       }break;
-								       case SCENE_VIEWER_INTERACT_MODE_2D:
-								       {
+							               }
+							       }break;
+							       case SCENE_VIEWER_INTERACT_MODE_2D:
+							       {
+							               if (0.0 != scene_viewer->translate_rate)
+							               {
 								               scene_viewer->drag_mode=SV_DRAG_TRANSLATE;
-								       }break;
-								}
+                                                                       }
+							       }break;
 							}
 						} break;
 						case 2:
 						{
-							if (0.0 != scene_viewer->translate_rate)
+							switch (scene_viewer->interact_mode)
 							{
-							        switch (scene_viewer->interact_mode)
-								{
-								       case SCENE_VIEWER_INTERACT_MODE_STANDARD:
-								       {
-								               scene_viewer->drag_mode=SV_DRAG_TRANSLATE;
-								       }break;
-								       case SCENE_VIEWER_INTERACT_MODE_2D:
-								       {
-								               scene_viewer->drag_mode=SV_DRAG_TUMBLE;
-								       }break;
-								}
+							       case SCENE_VIEWER_INTERACT_MODE_STANDARD:
+							       {
+							               if (0.0 != scene_viewer->translate_rate)
+							               {
+							                       scene_viewer->drag_mode=SV_DRAG_TRANSLATE;
+								       }
+							       }break;
+							       case SCENE_VIEWER_INTERACT_MODE_2D:
+							       {
+							               if (0.0 != scene_viewer->tumble_rate)
+							               {
+							                       scene_viewer->drag_mode=SV_DRAG_TUMBLE;
+								       }
+							       }break;
 							}
 						} break;
 						case 3:
