@@ -214,6 +214,15 @@ LAST MODIFIED : 7 July 2000
 DESCRIPTION :
 ==============================================================================*/
 
+#if defined (WX_USER_INTERFACE)
+int User_interface_wx_main_loop(void);
+/*******************************************************************************
+LAST MODIFIED : 8 November 2006
+
+DESCRIPTION :
+==============================================================================*/
+#endif /* defined (WX_USER_INTERFACE) */
+
 #if defined (MOTIF)
 Widget User_interface_get_application_shell(struct User_interface *user_interface);
 /*******************************************************************************

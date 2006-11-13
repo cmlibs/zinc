@@ -1,7 +1,7 @@
 /*******************************************************************************
-FILE : user_interface.c
+FILE : user_interface.cpp
 
-LAST MODIFIED : 26 May 2005
+LAST MODIFIED : 8 November 2006
 
 DESCRIPTION :
 Functions for opening and closing the user interface.
@@ -41,6 +41,7 @@ Functions for opening and closing the user interface.
  * the terms of any one of the MPL, the GPL or the LGPL.
  *
  * ***** END LICENSE BLOCK ***** */
+extern "C" {
 #include <stddef.h>
 #include <stdlib.h>
 /*???debug */
@@ -73,22 +74,29 @@ Functions for opening and closing the user interface.
 #if defined (LINK_CMISS)
 #include "link/cmiss.h"
 #endif /* defined (LINK_CMISS) */
+}
 #if defined (MOTIF)
 #if !defined (USE_XTAPP_CONTEXT)
+extern "C" {
 #include "user_interface/call_work_procedures.h"
+}
 #endif /* !defined (USE_XTAPP_CONTEXT) */
 #endif /* defined (MOTIF) */
 #if defined (GTK_USER_INTERFACE)
+extern "C" {
 #include <gtk/gtk.h>
 #include <glib.h>
+}
 #endif /* defined (GTK_USER_INTERFACE) */
+#if defined (WX_USER_INTERFACE)
+#include <wx/wx.h>
+#include <wx/xrc/xmlres.h>
+#endif /* defined (GTK_USER_INTERFACE) */
+extern "C" {
 #include "user_interface/event_dispatcher.h"
 #include "user_interface/message.h"
 #include "user_interface/user_interface.h"
-
-/* These functions are not ANSI so don't get included in stdlib.h */
-extern long a64l(const char *);
-extern char *l64a(long);
+}
 
 /*
 Module types
@@ -221,6 +229,23 @@ extern struct CMISS_connection *CMISS;
 Module functions
 ----------------
 */
+
+#if defined (WX_USER_INTERFACE)
+class CmguiApp : public wxApp
+{
+public:
+    virtual bool OnInit()
+	{
+		return (true);
+	}
+
+	virtual ~CmguiApp()
+	{
+	}
+};	
+
+IMPLEMENT_APP_NO_MAIN(CmguiApp)
+#endif /* defined (WX_USER_INTERFACE) */
 
 #if defined (MOTIF)
 #if ! defined (USE_XTAPP_CONTEXT)
@@ -1896,6 +1921,11 @@ Open the <user_interface>.
 #if defined (WIN32_USER_INTERFACE)
 		user_interface->widget_spacing=5;
 #endif /* defined (WIN32_USER_INTERFACE) */
+#if defined (WX_USER_INTERFACE)
+		wxEntryStart(*argc_address, argv);
+
+		wxXmlResource::Get()->InitAllHandlers();
+#endif /* defined (WX_USER_INTERFACE) */
 #if defined (GTK_USER_INTERFACE)
 		/* Initialize i18n support */
 		gtk_set_locale ();
@@ -1939,6 +1969,7 @@ Open the <user_interface>.
 #endif /* GTK_MAJOR_VERSION >= 2 */
 #endif /* ! defined (USE_GTK_MAIN_STEP) */
 #endif /* defined (GTK_USER_INTERFACE) */
+
 
 	}
 	else
@@ -2013,6 +2044,9 @@ DESCRIPTION :
 		}
 #endif /* ! defined (USE_XTAPP_CONTEXT) */
 #endif /* defined (MOTIF) */
+#if defined (WX_USER_INTERFACE)
+		wxEntryCleanup();
+#endif /* defined (WX_USER_INTERFACE) */
 #if defined (GTK_USER_INTERFACE)
 		if (user_interface->main_window)
 		{
@@ -2073,6 +2107,30 @@ DESCRIPTION :
 
 	return (return_code);
 } /* User_interface_end_application_loop */
+
+#if defined (WX_USER_INTERFACE)
+int User_interface_wx_main_loop()
+/*******************************************************************************
+LAST MODIFIED : 8 November 2006
+
+DESCRIPTION :
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(User_interface_wx_main_loop);
+	
+	{
+		CmguiApp& app = wxGetApp();
+		app.OnRun();
+		return_code = 1;
+	}
+
+	LEAVE;
+
+	return (return_code);
+} /* User_interface_wx_main_loop */
+#endif /* defined (WX_USER_INTERFACE) */
 
 #if defined (MOTIF)
 Widget User_interface_get_application_shell(struct User_interface *user_interface)

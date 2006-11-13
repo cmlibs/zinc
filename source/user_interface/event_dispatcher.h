@@ -51,6 +51,7 @@ registered file descriptors to the correct callbacks.
 #include <Xm/Xm.h>
 #elif defined (WIN32_USER_INTERFACE) /* switch (USER_INTERFACE) */
 #include <windows.h>
+#elif defined (WX_USER_INTERFACE) /* switch (USER_INTERFACE) */
 #elif defined (USE_GTK_MAIN_STEP) /* switch (USER_INTERFACE) */
 #elif 1 /* switch (USER_INTERFACE) */
 /* This is the default code, it is an event dispatcher designed to run 

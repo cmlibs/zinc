@@ -41,6 +41,7 @@ This provides an object which interfaces between a event_dispatcher and Cmgui
  * the terms of any one of the MPL, the GPL or the LGPL.
  *
  * ***** END LICENSE BLOCK ***** */
+extern "C" {
 #include <math.h>
 #include <stdio.h>
 #include <general/time.h>
@@ -52,15 +53,27 @@ This provides an object which interfaces between a event_dispatcher and Cmgui
 #include "general/object.h"
 #include "user_interface/message.h"
 #include "user_interface/event_dispatcher.h"
+}
 
 /* After the event_dispatcher.h has set up these variables */
 #if defined (USE_XTAPP_CONTEXT) /* switch (USER_INTERFACE) */
+extern "C" {
 #include <Xm/Xm.h>
+}
 #elif defined (WIN32_USER_INTERFACE) /* switch (USER_INTERFACE) */
+extern "C" {
 #include <windows.h>
 #include "general/callback.h"
+}
+#elif defined (WX_USER_INTERFACE) /* switch (USER_INTERFACE) */
+#include <wx/wx.h>
+extern "C" {
+#include "user_interface/user_interface.h"
+}
 #elif defined (USE_GTK_MAIN_STEP) /* switch (USER_INTERFACE) */
+extern "C" {
 #include <gtk/gtk.h>
+}
 #endif /* switch (USER_INTERFACE) */
 
 /*
@@ -1913,10 +1926,14 @@ DESCRIPTION :
 	if (event_dispatcher)
 	{
 		return_code=1;
+#if ! defined (WX_USER_INTERFACE)
 		while(event_dispatcher->continue_flag)
 		{
 			Event_dispatcher_do_one_event(event_dispatcher);
 		}
+#else /* ! defined (WX_USER_INTERFACE) */
+		User_interface_wx_main_loop();
+#endif /* ! defined (WX_USER_INTERFACE) */
 	}
 	else
 	{
@@ -2467,6 +2484,162 @@ previously set will be cancelled.
 	return (1);
 } /* Fdio_set_write_callback (win32 version) */
 
+#elif defined(WX_USER_INTERFACE)
+
+Fdio_id Event_dispatcher_create_Fdio(struct Event_dispatcher *dispatcher,
+	Cmiss_native_socket_t descriptor)
+/*******************************************************************************
+LAST MODIFIED : 16 May 2005
+
+DESCRIPTION :
+Creates a new Fdio, given an event dispatcher and a descriptor.
+==============================================================================*/
+{
+	struct Fdio *io;
+
+	ENTER(Event_dispatcher_create_fdio);
+	ALLOCATE(io, struct Fdio, 1);
+	if (io)
+	{
+		memset(io, 0, sizeof(*io));
+		io->event_dispatcher = dispatcher;
+		io->descriptor = descriptor;
+		io->access_count = 0;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE, "Event_dispatcher_create_fdio.  "
+			"Unable to allocate structure");
+	}
+
+	//	io->iochannel = g_io_channel_unix_new(descriptor);
+	//	io->read_source_tag = 0;
+	// io->write_source_tag = 0;
+
+	LEAVE;
+
+	return (io);
+} /* Event_dispatcher_create_fdio (glib) */
+
+int DESTROY(Fdio)(Fdio_id *io)
+/*******************************************************************************
+LAST MODIFIED : 16 May 2005
+
+DESCRIPTION :
+Destroys the IO object. This causes cmgui to forget about the descriptor, but the
+descriptor itself must still be closed. This should be called as soon as the
+application is notified by the operating system of a closure event.
+==============================================================================*/
+{
+	if ((*io)->read_data.function)
+	{
+		Fdio_set_read_callback(*io, NULL, NULL);
+	}
+	else if ((*io)->write_data.function)
+	{
+		Fdio_set_write_callback(*io, NULL, NULL);
+	}
+
+	// g_io_channel_unref((*io)->iochannel);
+
+	// if ((*io)->read_source_tag != 0)
+	//	g_source_remove((*io)->read_source_tag);
+	//if ((*io)->write_source_tag != 0)
+	//	g_source_remove((*io)->write_source_tag);
+
+	DEALLOCATE((*io));
+	*io = NULL;
+	return (1);
+} /* DESTROY(Fdio) (glib) */
+
+int Fdio_set_read_callback(Fdio_id handle, Fdio_callback callback,
+	void *user_data)
+/*******************************************************************************
+LAST MODIFIED : 16 May 2005
+
+DESCRIPTION :
+Sets a read callback on the specified IO handle. This callback is called at
+least once after a read function indicates it would block. An application
+should not rely upon it being called more than once without attempting a
+read between the calls. This read should occur after fdio_set_read_callback
+is called. The callback will also be called if the underlying descriptor is
+closed by the peer. The callback is not one-shot, and the callback remains in
+effect until it is explicitly cancelled.
+
+There may be at most one read callback set per I/O handle at any one time. If
+this function is passed NULL as the callback parameter, the read callback
+previously set will be cancelled.
+==============================================================================*/
+{
+	ENTER(Fdio_set_read_callback);
+
+	if (callback == NULL)
+	{
+		handle->read_data.function = NULL;
+		//		if (handle->read_source_tag != 0)
+		//{
+		//	g_source_remove(handle->read_source_tag);
+		//	handle->read_source_tag = 0;
+		//}
+	}
+	else
+	{
+		handle->read_data.function = callback;
+		handle->read_data.app_user_data = user_data;
+		//if (handle->read_source_tag == 0)
+		//	handle->read_source_tag =
+		//		g_io_add_watch(handle->iochannel, G_IO_IN | G_IO_HUP,
+		//			Fdio_glib_io_callback, handle);
+	}
+
+	LEAVE;
+
+	return (1);
+} /* Fdio_set_read_callback (glib version) */
+
+int Fdio_set_write_callback(Fdio_id handle, Fdio_callback callback,
+	void *user_data)
+/*******************************************************************************
+LAST MODIFIED : 16 May 2005
+
+DESCRIPTION :
+Sets a write callback on the specified IO handle. This callback is called at
+least once after a write function indicates it would block. An application
+should not rely upon it being called more than once without attempting a
+write between the calls. This write should occur after Fdio_set_write_callback
+is called. The callback is not one-shot, and the callback remains in
+effect until it is explicitly cancelled.
+
+There may be at most one write callback set per I/O handle at any one time. If
+this function is passed NULL as the callback parameter, the write callback
+previously set will be cancelled.
+==============================================================================*/
+{
+	ENTER(Fdio_set_write_callback);
+
+	if (callback == NULL)
+	{
+		handle->write_data.function = NULL;
+		//if (handle->write_source_tag != 0)
+		//{
+		//	g_source_remove(handle->write_source_tag);
+		//	handle->write_source_tag = 0;
+		//}
+	}
+	else
+	{
+		handle->write_data.function = callback;
+		handle->write_data.app_user_data = user_data;
+		//if (handle->write_source_tag == 0)
+		//	handle->write_source_tag =
+		//		g_io_add_watch(handle->iochannel, G_IO_OUT,
+		//			Fdio_glib_io_callback, handle);
+	}
+
+	LEAVE;
+
+	return (1);
+} /* Fdio_set_write_callback (glib version) */
 #elif defined(USE_GTK_MAIN_STEP)
 
 Fdio_id Event_dispatcher_create_Fdio(struct Event_dispatcher *dispatcher,

@@ -1,0 +1,45 @@
+<?xml version="1.0"?>
+<resource>
+  <object class="wxFrame" subclass="wxCommandWindow" name="CmguiCommandWindow" title="Cmgui Command Window">
+    <object class="wxBoxSizer">
+      <orient>wxVERTICAL</orient>
+
+      <object class="sizeritem">
+        <object class="wxListBox" name="CommandHistory">
+          <size>400,100d</size>
+          <style>wxSUNKEN_BORDER</style>
+        </object>
+        <flag>wxEXPAND|wxALL</flag>
+        <border>10</border>
+      </object>
+
+      <object class="sizeritem">
+        <object class="wxTextCtrl" name="CommandLine">
+          <size>-1,-1d</size>
+          <style>wxTE_PROCESS_ENTER</style>
+          <value>gfx</value>
+        </object>
+        <flag>wxEXPAND|wxALL</flag>
+        <border>10</border>
+      </object>
+
+      <object class="sizeritem">
+        <object class="wxListBox" name="OutputWindow">
+          <size>400,100d</size>
+          <style>wxSUNKEN_BORDER</style>
+        </object>
+        <flag>wxEXPAND|wxALL</flag>
+        <border>10</border>
+      </object>
+
+	   <object class="sizeritem">
+        <object class="wxButton" name="Button">
+           <label>Ok</label>
+           <default>1</default>
+        </object>
+      </object>
+  
+
+    </object>
+  </object>
+</resource>

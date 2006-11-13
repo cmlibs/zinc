@@ -41,6 +41,7 @@ Management routines for the main command window.
  * the terms of any one of the MPL, the GPL or the LGPL.
  *
  * ***** END LICENSE BLOCK ***** */
+extern "C" {
 #include <stdio.h>
 #if defined (MOTIF)
 #include <X11/Xmu/Xmu.h>
@@ -69,8 +70,16 @@ static char command_window_uidh[] =
 #include "help/help_interface.h"
 #include "user_interface/filedir.h"
 #endif /* defined (MOTIF) */
+}
+#if defined (WX_USER_INTERFACE)
+#include "wx/wx.h"
+#include "wx/xrc/xmlres.h"
+#include "command/command_window.xrch"
+#endif /* defined (WX_USER_INTERFACE)*/
+extern "C" {
 #include "user_interface/message.h"
 #include "user_interface/user_interface.h"
+}
 
 /*
 Module types
@@ -1299,7 +1308,7 @@ Called when a command is entered in the command entry area.
 				/* Code from default triple click handler */
 				history_view = GTK_TEXT_VIEW(command_window->history_view);
 				gtk_text_view_window_to_buffer_coords(history_view,
-					GTK_TEXT_WINDOW_WIDGET, event->x, event->y, &buffer_x, &buffer_y);
+					GTK_TEXT_WINDOW_WIDGET, (gint)event->x, (gint)event->y, &buffer_x, &buffer_y);
 				gtk_text_view_get_iter_at_location (history_view,
 					&start, buffer_x, buffer_y);
 
@@ -1572,6 +1581,36 @@ DESCRIPTION :
 
 	return (return_code);
 } /* modify_Command_window_out_file */
+
+#if defined (WX_USER_INTERFACE)
+class wxCommandWindow : public wxFrame
+{
+public:
+
+	void CommandEntered(wxCommandEvent& event)
+	{
+		printf("Command\n");
+	}
+
+	void OnBPressed(wxCommandEvent& event)
+	{
+		printf("Button\n");
+	}
+
+	DECLARE_DYNAMIC_CLASS(wxCommandWindow);
+   DECLARE_EVENT_TABLE();
+};
+
+IMPLEMENT_DYNAMIC_CLASS(wxCommandWindow, wxFrame)
+
+BEGIN_EVENT_TABLE(wxCommandWindow, wxFrame)
+	EVT_TEXT(XRCID("CommandLine"), wxCommandWindow::CommandEntered)
+	EVT_TEXT_ENTER(XRCID("CommandLine"), wxCommandWindow::CommandEntered)
+
+   EVT_BUTTON(XRCID("Button"), wxCommandWindow::OnBPressed)
+END_EVENT_TABLE()
+
+#endif /* defined (WX_USER_INTERFACE) */
 
 /*
 Global functions
@@ -2064,6 +2103,12 @@ Create the structures and retrieve the command window from the uil file.
 				display_message(ERROR_MESSAGE,
 					"CREATE(Command_window).  Insufficient memory for command_window prompt");
 			}
+#elif defined (WX_USER_INTERFACE) /* switch (USER_INTERFACE) */
+			wxXmlInit_command_window();
+
+			wxFrame *frame = wxXmlResource::Get()->LoadFrame((wxWindow *)NULL,
+				_T("CmguiCommandWindow"));
+			frame->Show();
 #endif /* switch (USER_INTERFACE) */
 		}
 		else
