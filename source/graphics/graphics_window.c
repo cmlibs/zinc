@@ -3286,6 +3286,13 @@ it.
 				display_message(ERROR_MESSAGE,
 					"CREATE(Graphics_window).  Unable to register class information");
 			}
+#elif defined (WX_USER_INTERFACE) /* switch (USER_INTERFACE) */
+			USE_PARAMETER(graphics_buffer);
+			USE_PARAMETER(pane_no);
+			USE_PARAMETER(minimum_colour_buffer_depth);
+			USE_PARAMETER(minimum_depth_buffer_depth);
+ 			USE_PARAMETER(minimum_accumulation_buffer_depth);
+ 			USE_PARAMETER(Graphics_window_Scene_viewer_view_changed);
 #endif /* switch (USER_INTERFACE) */
 		}
 		else
