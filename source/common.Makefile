@@ -429,7 +429,13 @@ DSO_LINK = $(LINK) $(ALL_FLAGS) -shared
 .MAKEOPTS : -r
 
 .SUFFIXES :
-.SUFFIXES : .o .c .d .cpp .f .uil .uidh
+.SUFFIXES : .o .c .d .cpp .f
+ifeq ($(USER_INTERFACE), WX_USER_INTERFACE)
+.SUFFIXES : .xrc .xrch
+endif # USER_INTERFACE == WX_USER_INTERFACE
+ifeq ($(USER_INTERFACE), MOTIF_USER_INTERFACE)
+.SUFFIXES : .uil .uidh
+endif # USER_INTERFACE == MOTIF_USER_INTERFACE
 ifeq ($(SYSNAME),win32)
 .SUFFIXES : .res .rc
 endif # SYSNAME == win32
@@ -479,6 +485,12 @@ else # NO_MAKE_DEPEND
    source_name=$(firstword $(wildcard $(SOURCE_PATH)/$(subst $(OBJECT_PATH)/,,$*).c $(SOURCE_PATH)/$(subst $(OBJECT_PATH)/,,$*).cpp)) ; \
 	set -x ; $(MAKEDEPEND) $(ALL_FLAGS) $(STRICT_FLAGS) $${source_name} 2> /dev/null | \
 	sed -e "s%^.*\.o%$${stem_name}.o $(OBJECT_PATH)/$${stem_name}.d%;s%$(SOURCE_PATH)/%%g;s%\([^ 	]*\.[ch]p*\)%\$$(wildcard \1)%g;" > $(OBJECT_PATH)/$${stem_name}.d ;
+ifeq ($(USER_INTERFACE), WX_USER_INTERFACE)
+   # Fix up the uidh references
+	@stem_name=$(subst $(OBJECT_PATH)/,,$*); \
+	sed -e 's%$(XRCH_PATH)/%%g' $(OBJECT_PATH)/$${stem_name}.d > $(OBJECT_PATH)/$${stem_name}.d2 ; \
+	mv $(OBJECT_PATH)/$${stem_name}.d2 $(OBJECT_PATH)/$${stem_name}.d
+endif # $(USER_INTERFACE) == MOTIF_USER_INTERFACE
 ifeq ($(USER_INTERFACE), MOTIF_USER_INTERFACE)
    # Fix up the uidh references
 	@stem_name=$(subst $(OBJECT_PATH)/,,$*); \
@@ -502,11 +514,23 @@ ifeq ($(USER_INTERFACE),WIN32_USER_INTERFACE)
    windres -o $(OBJECT_PATH)/$*.res -O coff $*.rc
 endif # $(USER_INTERFACE) == WIN32_USER_INTERFACE
 
+ifeq ($(USER_INTERFACE),WX_USER_INTERFACE)
+
+WX_COMPILER =  wxrc
+
+%.xrch : %.xrc
+	@if [ ! -d $(XRCH_PATH)/$(*D) ]; then \
+		mkdir -p $(XRCH_PATH)/$(*D); \
+	fi
+	set -x ; \
+	$(WX_COMPILER) --cpp-code --verbose $*.xrc --function="wxXmlInit_$(*F)" --output=$(XRCH_PATH)/$*.xrch
+endif # $(USER_INTERFACE) == MOTIF_USER_INTERFACE
+
 ifeq ($(USER_INTERFACE),MOTIF_USER_INTERFACE)
 
 UID2UIDH = utilities/uid2uidh.pl
 
-%.uidh : %.uil $(UID2UIDH_BIN)
+%.uidh : %.uil
 	@if [ ! -d $(UIDH_PATH)/$(*D) ]; then \
 		mkdir -p $(UIDH_PATH)/$(*D); \
 	fi

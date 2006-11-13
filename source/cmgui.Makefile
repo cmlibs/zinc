@@ -79,6 +79,9 @@ endif # $(USER_INTERFACE) == CONSOLE_USER_INTERFACE
 ifeq ($(USER_INTERFACE), GTK_USER_INTERFACE)
    TARGET_USER_INTERFACE_SUFFIX := -gtk
 endif # $(USER_INTERFACE) == GTK_USER_INTERFACE
+ifeq ($(USER_INTERFACE), WX_USER_INTERFACE)
+   TARGET_USER_INTERFACE_SUFFIX := -wx
+endif # $(USER_INTERFACE) == WX_USER_INTERFACE
 
 ifeq ($(GRAPHICS_API), OPENGL_GRAPHICS)
    TARGET_GRAPHICS_API_SUFFIX =
@@ -142,6 +145,9 @@ endif # SYSNAME == CYGWIN%=
 TARGET_SUFFIX = $(TARGET_ABI_SUFFIX)$(TARGET_GRAPHICS_API_SUFFIX)$(TARGET_USER_INTERFACE_SUFFIX)$(UNEMAP_SUFFIX)$(MAINLOOP_SUFFIX)$(TARGET_STATIC_LINK_SUFFIX)$(TARGET_DEBUG_SUFFIX)$(TARGET_PROFILE_SUFFIX)$(TARGET_MEMORYCHECK_SUFFIX)
 BIN_TARGET = $(TARGET_EXECUTABLE_BASENAME)$(TARGET_SUFFIX)$(TARGET_FILETYPE_SUFFIX)
 OBJECT_PATH=$(CMGUI_DEV_ROOT)/object/$(LIB_ARCH_DIR)/$(TARGET_EXECUTABLE_BASENAME)$(TARGET_GRAPHICS_API_SUFFIX)$(TARGET_USER_INTERFACE_SUFFIX)$(UNEMAP_SUFFIX)$(MAINLOOP_SUFFIX)$(TARGET_DEBUG_SUFFIX)$(TARGET_PROFILE_SUFFIX)
+ifeq ($(USER_INTERFACE), WX_USER_INTERFACE)
+   XRCH_PATH=$(CMGUI_DEV_ROOT)/xrch/$(LIB_ARCH_DIR)/$(TARGET_EXECUTABLE_BASENAME)
+endif # $(USER_INTERFACE) == WX_USER_INTERFACE
 ifeq ($(USER_INTERFACE), MOTIF_USER_INTERFACE)
    UIDH_PATH=$(CMGUI_DEV_ROOT)/uidh/$(LIB_ARCH_DIR)/$(TARGET_EXECUTABLE_BASENAME)
 endif # $(USER_INTERFACE) == MOTIF_USER_INTERFACE
@@ -167,7 +173,7 @@ Building $(BIN_TARGET) for $(LIB_ARCH_DIR)
 endif
 $(warning $(BUILDING_MESSAGE))
 
-VPATH=$(BIN_PATH):$(UTILITIES_PATH):$(OBJECT_PATH):$(UIDH_PATH)
+VPATH=$(BIN_PATH):$(UTILITIES_PATH):$(OBJECT_PATH):$(UIDH_PATH):$(XRCH_PATH)
 
 SOURCE_DIRECTORY_INC = -I$(SOURCE_PATH)
 
@@ -214,6 +220,9 @@ ifeq ($(USER_INTERFACE), GTK_USER_INTERFACE)
       endif # $(USE_GTKMAIN) != true 
    endif # $(SYSNAME) == win32
 endif # $(USER_INTERFACE) == GTK_USER_INTERFACE
+ifeq ($(USER_INTERFACE), WX_USER_INTERFACE)
+	USER_INTERFACE_DEFINES = -DWX_USER_INTERFACE 
+endif # $(USER_INTERFACE) == WX_USER_INTERFACE
 ifeq ($(USER_INTERFACE), CONSOLE_USER_INTERFACE)
   USER_INTERFACE = -DCONSOLE_USER_INTERFACE
 endif # $(USER_INTERFACE) == CONSOLE_USER_INTERFACE
@@ -406,6 +415,9 @@ else # ! CELL
       cell/integrator_routines/runge_kutta.f
 endif # ! CELL 
 
+ifeq ($(USER_INTERFACE), WX_USER_INTERFACE)
+   UIDH_INC = -I$(XRCH_PATH)
+endif # $(USER_INTERFACE) == WX_USER_INTERFACE
 ifeq ($(USER_INTERFACE), MOTIF_USER_INTERFACE)
    UIDH_INC = -I$(UIDH_PATH)
 endif # $(USER_INTERFACE) == MOTIF_USER_INTERFACE
@@ -581,22 +593,30 @@ ifeq ($(USER_INTERFACE),GTK_USER_INTERFACE)
       # USER_INTERFACE_LIB += -L"c:\dev\gtk2\lib" -lgtkgl-2.0 -lgtk-win32-2.0 -lgdk-win32-2.0 -latk-1.0 -lgdk_pixbuf-2.0 -lm -lpangowin32-1.0 -lpango-1.0 -lgobject-2.0 -lgmodule-2.0 -lglib-2.0 */
    endif # $(SYSNAME) != win32
 endif # $(USER_INTERFACE) == GTK_USER_INTERFACE
+ifeq ($(USER_INTERFACE),WX_USER_INTERFACE)
+   WX_DIR = /usr/bin
+   USER_INTERFACE_INC += $(shell $(WX_DIR)/wx-config --cxxflags)
+	USER_INTERFACE_LIB += $(shell $(WX_DIR)/wx-config --libs)
+endif # $(USER_INTERFACE) == WX_USER_INTERFACE
 
-MATRIX_LIB = -L$(CMISS_ROOT)/linear_solvers/lib/$(LIB_ARCH_DIR) -llapack-debug
-ifneq ($(OPERATING_SYSTEM),aix)
-   MATRIX_LIB += -lblas-debug
-endif # $(OPERATING_SYSTEM) != aix
-ifeq ($(SYSNAME:IRIX%=),)
-   MATRIX_LIB = -lscs
-endif # SYSNAME == IRIX%
-ifeq ($(SYSNAME),Linux)
-  ifneq (,$(wildcard /usr/lib/libscs.*))# have IRIX libscs
+MATRIX_LIB =
+ifeq ($(USE_COMPUTED_VARIABLES),true)
+  MATRIX_LIB += -L$(CMISS_ROOT)/linear_solvers/lib/$(LIB_ARCH_DIR) -llapack-debug
+  ifneq ($(OPERATING_SYSTEM),aix)
+    MATRIX_LIB += -lblas-debug
+  endif # $(OPERATING_SYSTEM) != aix
+  ifeq ($(SYSNAME:IRIX%=),)
     MATRIX_LIB = -lscs
-  endif# libscs
-endif# Linux
-ifeq ($(SYSNAME),AIX)
-   MATRIX_LIB += -lxlf90
-endif # SYSNAME == AIX
+  endif # SYSNAME == IRIX%
+  ifeq ($(SYSNAME),Linux)
+    ifneq (,$(wildcard /usr/lib/libscs.*))# have IRIX libscs
+      MATRIX_LIB = -lscs
+    endif# libscs
+  endif# Linux
+  ifeq ($(SYSNAME),AIX)
+    MATRIX_LIB += -lxlf90
+  endif # SYSNAME == AIX
+endif # USE_COMPUTED_VARIABLES == true
 
 ifeq ($(SYSNAME:IRIX%=),)
    LIB = -lPW -lftn -lm -lC -lCio -lpthread 
@@ -606,8 +626,10 @@ ifeq ($(SYSNAME),Linux)
       #For the dynamic link we really need to statically link the c++ as this
       #seems to be particularly variable between distributions.
       LIBSTDC++ = $(shell g++ --print-file-name=libstdc++.a)
-      #Link g2c statically as this only comes with g77 which many people don't have
-      LIBG2C = $(shell g++ --print-file-name=libg2c.a)
+	   ifeq ($(USE_COMPUTED_VARIABLES),true)
+        #Link g2c statically as this only comes with g77 which many people don't have
+        LIBG2C = $(shell g++ --print-file-name=libg2c.a)
+	   endif
       LIB = $(LIBG2C) $(LIBSTDC++) -lcrypt -lm -ldl -lc -lpthread
       # For the shared object libraries the stdc++ is included several times, do thsi
       # dynamically.
@@ -1029,9 +1051,11 @@ ifeq ($(GRAPHICS_API), OPENGL_GRAPHICS)
 		material/material_editor_dialog.c
 endif
 MATRIX_SRCS =  \
-	matrix/factor.c \
 	matrix/matrix.c \
 	matrix/matrix_blas.c
+ifeq ($(USE_COMPUTED_VARIABLES), true)
+  MATRIX_SRCS += matrix/factor.c
+endif # USE_COMPUTED_VARIABLES == true
 MOTIF_INTERFACE_SRCS =  \
 	motif/image_utilities.c
 NODE_SRCS = \
@@ -1159,6 +1183,15 @@ ifeq ($(USER_INTERFACE),GTK_USER_INTERFACE)
 	      graphics/graphics_window.c \
 	      gtk/gtk_cmiss_scene_viewer.c
 endif # $(USER_INTERFACE) == GTK_USER_INTERFACE
+ifeq ($(USER_INTERFACE),WX_USER_INTERFACE)
+      SRCS_2 = \
+	      $(API_INTERFACE_SRCS) \
+	      $(COMMAND_INTERFACE_SRCS) \
+	      $(COMPUTED_FIELD_INTERFACE_SRCS) \
+			$(EMOTER_SRCS) \
+	      graphics/graphics_window.c \
+         interaction/select_tool.c
+endif # $(USER_INTERFACE) == WX_USER_INTERFACE
 ifeq ($(USER_INTERFACE),WIN32_USER_INTERFACE)
       SRCS_2 = \
 	      $(API_INTERFACE_SRCS) \
@@ -1314,12 +1347,10 @@ endif # SYSNAME == Linux
 
 RESOURCE_FILES = 
 COMPILED_RESOURCE_FILES = 
-ifeq ($(SYSNAME),win32)
-   ifneq ($(USER_INTERFACE),GTK_USER_INTERFACE)
-      RESOURCE_FILES += command/command_window.rc
-      COMPILED_RESOURCE_FILES += $(RESOURCE_FILES:.rc=.res)
-   endif # $(USER_INTERFACE) != GTK_USER_INTERFACE
-endif # $(SYSNAME) == win32
+ifeq ($(USER_INTERFACE),WIN32_USER_INTERFACE)
+   RESOURCE_FILES += command/command_window.rc
+   COMPILED_RESOURCE_FILES += $(RESOURCE_FILES:.rc=.res)
+endif # $(USER_INTERFACE) == WIN32_USER_INTERFACE
 
 $(BIN_TARGET) : $(OBJS) $(UNEMAP_OBJS) $(COMPILED_RESOURCE_FILES) $(MAIN_OBJ) $(EXPORTS_DEPEND)
 	$(call BuildNormalTarget,$(BIN_TARGET),$(BIN_PATH),$(OBJS) $(UNEMAP_OBJS) $(MAIN_OBJ),$(ALL_LIB) $(INTERPRETER_LINK_FLAGS) $(EXPORTS_LINK_FLAGS) $(COMPILED_RESOURCE_FILES))
@@ -1567,11 +1598,6 @@ ifeq ($(MEMORYCHECK),true)
 		fi
 		@set -x ; $(MAKEDEPEND) $(ALL_FLAGS) $(STRICT_FLAGS) $<  | \
 		sed -e 's%^.*\.o%$*.o $(OBJECT_PATH)/$*.d%;s%$(SOURCE_PATH)/%%g;s%$(PRODUCT_SOURCE_PATH)/%%g' > $(OBJECT_PATH)/$*.d ;
-   ifeq ($(USER_INTERFACE), MOTIF_USER_INTERFACE)
-      # Fix up the uidh references
-		sed -e 's%$(UIDH_PATH)/%%g' $(OBJECT_PATH)/$*.d > $(OBJECT_PATH)/$*.d2
-		mv $(OBJECT_PATH)/$*.d2 $(OBJECT_PATH)/$*.d
-   endif # $(USER_INTERFACE) == MOTIF_USER_INTERFACE
 endif # $(MEMORYCHECK) == true
 
 utilities : SpacesToTabs TabsToSpaces
