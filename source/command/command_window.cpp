@@ -1585,11 +1585,28 @@ DESCRIPTION :
 #if defined (WX_USER_INTERFACE)
 class wxCommandWindow : public wxFrame
 {
+  Command_window *command_window;
+
 public:
+
+  wxCommandWindow(Command_window *command_window): 
+    command_window(command_window)
+  {
+  };
+
+  wxCommandWindow()
+  {
+  };
 
 	void CommandEntered(wxCommandEvent& event)
 	{
-		printf("Command\n");
+	  wxTextCtrl *command_line;
+	  wxString command;
+
+	  command_line = XRCCTRL(*this, "CommandLine", wxTextCtrl);
+	  command = command_line->GetValue();
+	  Execute_command_execute_string(command_window->execute_command,
+	     const_cast<char *>(command.c_str()));
 	}
 
 	void OnBPressed(wxCommandEvent& event)
@@ -1604,7 +1621,7 @@ public:
 IMPLEMENT_DYNAMIC_CLASS(wxCommandWindow, wxFrame)
 
 BEGIN_EVENT_TABLE(wxCommandWindow, wxFrame)
-	EVT_TEXT(XRCID("CommandLine"), wxCommandWindow::CommandEntered)
+        //EVT_TEXT(XRCID("CommandLine"), wxCommandWindow::CommandEntered)
 	EVT_TEXT_ENTER(XRCID("CommandLine"), wxCommandWindow::CommandEntered)
 
    EVT_BUTTON(XRCID("Button"), wxCommandWindow::OnBPressed)
@@ -2106,9 +2123,12 @@ Create the structures and retrieve the command window from the uil file.
 #elif defined (WX_USER_INTERFACE) /* switch (USER_INTERFACE) */
 			wxXmlInit_command_window();
 
-			wxFrame *frame = wxXmlResource::Get()->LoadFrame((wxWindow *)NULL,
-				_T("CmguiCommandWindow"));
-			frame->Show();
+			wxCommandWindow *wx_command_window = new 
+			  wxCommandWindow(command_window);
+
+			wxXmlResource::Get()->LoadFrame(wx_command_window,
+			   (wxWindow *)NULL, _T("CmguiCommandWindow"));
+			wx_command_window->Show();
 #endif /* switch (USER_INTERFACE) */
 		}
 		else
