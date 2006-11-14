@@ -1050,11 +1050,12 @@ ifeq ($(GRAPHICS_API), OPENGL_GRAPHICS)
 		material/material_editor.c \
 		material/material_editor_dialog.c
 endif
-MATRIX_SRCS =  \
-	matrix/matrix.c \
-	matrix/matrix_blas.c
+MATRIX_SRCS =
 ifeq ($(USE_COMPUTED_VARIABLES), true)
-  MATRIX_SRCS += matrix/factor.c
+   MATRIX_SRCS += \
+      matrix/matrix.c \
+      matrix/matrix_blas.c \
+      matrix/factor.c
 endif # USE_COMPUTED_VARIABLES == true
 MOTIF_INTERFACE_SRCS =  \
 	motif/image_utilities.c
