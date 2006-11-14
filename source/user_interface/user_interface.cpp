@@ -544,7 +544,7 @@ This function is called to register and deregister X connections.
 					axc->fdio = fdio;
 					axc->user_interface = user_interface;
 					axc->fd = file_descriptor;
-					*watch_data = (void*)axc;
+					*watch_data = static_cast<char*>(static_cast<void*>(axc));
 					Fdio_set_read_callback(fdio,
 						User_interface_additional_X_callback,
 						user_interface_void);
@@ -1583,7 +1583,7 @@ Open the <user_interface>.
 			sizeof(XFontStruct *),
 			XtOffsetOf(User_settings,menu_font),
 			XmRString,
-			"*-Helvetica-medium-R-*--*-120-*"
+			const_cast<char*>("*-Helvetica-medium-R-*--*-120-*")
 		},
 		{
 			XmNheadingFont,
@@ -1592,7 +1592,7 @@ Open the <user_interface>.
 			sizeof(XFontStruct *),
 			XtOffsetOf(User_settings,heading_font),
 			XmRString,
-			"-*-HELVETICA-BOLD-R-*--*-120-*"
+			const_cast<char*>("-*-HELVETICA-BOLD-R-*--*-120-*")
 		},
 		{
 			XmNnormalFont,
@@ -1601,7 +1601,7 @@ Open the <user_interface>.
 			sizeof(XFontStruct *),
 			XtOffsetOf(User_settings,normal_font),
 			XmRString,
-			"*-helvetica-medium-r-normal--14-*-*"
+			const_cast<char*>("*-helvetica-medium-r-normal--14-*-*")
 		},
 		{
 			XmNnormalNonProportionalFont,
@@ -1610,7 +1610,7 @@ Open the <user_interface>.
 			sizeof(XFontStruct *),
 			XtOffsetOf(User_settings,normal_non_proportional_font),
 			XmRString,
-			"*-courier-medium-r-normal--12-*"
+			const_cast<char*>("*-courier-medium-r-normal--12-*")
 		},
 		{
 			XmNbuttonFont,
@@ -1619,7 +1619,7 @@ Open the <user_interface>.
 			sizeof(XFontStruct *),
 			XtOffsetOf(User_settings,button_font),
 			XmRString,
-			"*-Helvetica-medium-r-*--*-120-*"
+			const_cast<char*>("*-Helvetica-medium-r-*--*-120-*")
 		},
 		{
 			XmNlistFont,
@@ -1628,7 +1628,7 @@ Open the <user_interface>.
 			sizeof(XFontStruct *),
 			XtOffsetOf(User_settings,list_font),
 			XmRString,
-			"*-Helvetica-medium-R-*--*-120-*"
+			const_cast<char*>("*-Helvetica-medium-R-*--*-120-*")
 		},
 		{
 			XmNsmallFont,
@@ -1637,7 +1637,7 @@ Open the <user_interface>.
 			sizeof(XFontStruct *),
 			XtOffsetOf(User_settings,small_font),
 			XmRString,
-			"*-Helvetica-medium-R-*--*-120-*"
+			const_cast<char*>("*-Helvetica-medium-R-*--*-120-*")
 		},
 		{
 			XmNwidgetSpacing,
@@ -1646,7 +1646,7 @@ Open the <user_interface>.
 			sizeof(int),
 			XtOffsetOf(User_settings,widget_spacing),
 			XmRString,
-			"5"
+			const_cast<char*>("5")
 		}
 	};
 #endif /* defined (MOTIF) */
