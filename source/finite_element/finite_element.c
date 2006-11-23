@@ -11787,7 +11787,8 @@ function fails if two faces have the same shape and share the same nodes.
 				{
 					display_message(ERROR_MESSAGE,
 						"FE_element_face_line_to_element_type_node_sequence_list.  "
-						"Could not add FE_element_type_node_sequence to list");
+						"Could not add FE_element_type_node_sequence to list for element %s %d",
+						CM_element_type_string(element->cm.type), element->cm.number);
 					DESTROY(FE_element_type_node_sequence)(&element_type_node_sequence);
 					return_code=0;
 				}
