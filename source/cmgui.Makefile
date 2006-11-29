@@ -798,7 +798,7 @@ COMMAND_SRCS += \
 	command/cmiss.c
 endif
 COMMAND_INTERFACE_SRCS = \
-	command/command_window.c
+	command/command_window.cpp
 COMPUTED_FIELD_SRCS = \
 	computed_field/computed_field.cpp \
 	computed_field/computed_field_component_operations.cpp \
@@ -903,14 +903,14 @@ DOF3_INTERFACE_SRCS = \
 	dof3/dof3_control.c \
 	dof3/dof3_input.c
 ELEMENT_SRCS = \
-   element/element_operations.c
+   element/element_operations.c \
+	element/element_point_tool.c \
+	element/element_tool.c
 ELEMENT_INTERFACE_SRCS = \
 	element/element_creator.c \
 	element/element_point_field_viewer_widget.c \
-	element/element_point_tool.c \
 	element/element_point_viewer.c \
-	element/element_point_viewer_widget.c \
-	element/element_tool.c
+	element/element_point_viewer_widget.c
 EMOTER_SRCS = \
 	emoter/em_cmgui.c \
 	emoter/emoter_dialog.c

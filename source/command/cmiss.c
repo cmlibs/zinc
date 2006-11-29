@@ -65,9 +65,9 @@ Functions for executing cmiss commands.
 #include "comfile/comfile_window.h"
 #endif /* defined (MOTIF) */
 #include "command/console.h"
-#if defined (MOTIF) || defined (WIN32_USER_INTERFACE) || defined (GTK_USER_INTERFACE)
+#if defined (MOTIF) || defined (WIN32_USER_INTERFACE) || defined (GTK_USER_INTERFACE) || defined (WX_USER_INTERFACE)
 #include "command/command_window.h"
-#endif /* defined (MOTIF) || defined (WIN32_USER_INTERFACE) || defined (GTK_USER_INTERFACE) */
+#endif /* defined (MOTIF) || defined (WIN32_USER_INTERFACE) || defined (GTK_USER_INTERFACE) || defined (WX_USER_INTERFACE) */
 #include "command/example_path.h"
 #include "command/parser.h"
 #include "computed_field/computed_field.h"
@@ -100,14 +100,12 @@ Functions for executing cmiss commands.
 #include "element/element_creator.h"
 #endif /* defined (MOTIF) */
 #include "element/element_operations.h"
-#if defined (MOTIF)
 #include "element/element_point_tool.h"
+#if defined (MOTIF)
 #include "element/element_point_viewer.h"
-#include "element/element_tool.h"
 #endif /* defined (MOTIF) */
-#if defined (MOTIF) || defined (GTK_USER_INTERFACE) || defined (WIN32_USER_INTERFACE) 
+#include "element/element_tool.h"
 #include "emoter/emoter_dialog.h"
-#endif /* defined (MOTIF) || defined (GTK_USER_INTERFACE) || defined (WIN32_USER_INTERFACE) */
 #include "finite_element/export_cm_files.h"
 #include "finite_element/export_finite_element.h"
 #include "finite_element/finite_element.h"
@@ -252,15 +250,15 @@ DESCRIPTION :
 	struct Cell_interface *cell_interface;
 #endif /* defined (CELL) */
 	struct Console *command_console;
-#if defined (MOTIF) || defined (WIN32_USER_INTERFACE) || defined (GTK_USER_INTERFACE)
+#if defined (MOTIF) || defined (WIN32_USER_INTERFACE) || defined (GTK_USER_INTERFACE) || defined (WX_USER_INTERFACE)
 	struct Command_window *command_window;
-#endif /* defined (MOTIF) || defined (WIN32_USER_INTERFACE) || defined (GTK_USER_INTERFACE) */
+#endif /* defined (MOTIF) || defined (WIN32_USER_INTERFACE) || defined (GTK_USER_INTERFACE) || defined (WX_USER_INTERFACE) */
 	struct Colour background_colour,foreground_colour;
 	struct Execute_command *execute_command,*set_command;
-#if defined (MOTIF)
+#if defined (MOTIF) || defined (WIN32_USER_INTERFACE) || defined (GTK_USER_INTERFACE) || defined (WX_USER_INTERFACE)
 	struct Element_point_tool *element_point_tool;
 	struct Element_tool *element_tool;
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF) || defined (WIN32_USER_INTERFACE) || defined (GTK_USER_INTERFACE) || defined (WX_USER_INTERFACE) */
 	struct Event_dispatcher *event_dispatcher;
 	struct Node_tool *data_tool,*node_tool;
 #if defined (MOTIF)
@@ -10592,7 +10590,7 @@ Executes a GFX ELEMENT_CREATOR command.
 } /* execute_command_gfx_element_creator */
 #endif /* defined (MOTIF) */
 
-#if defined (MOTIF)
+#if defined (MOTIF) || (GTK_USER_INTERFACE) || defined (WIN32_USER_INTERFACE)
 static int execute_command_gfx_element_point_tool(struct Parse_state *state,
 	void *dummy_to_be_modified,void *command_data_void)
 /*******************************************************************************
@@ -10680,9 +10678,9 @@ Executes a GFX ELEMENT_POINT_TOOL command.
 
 	return (return_code);
 } /* execute_command_gfx_element_point_tool */
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF) || (GTK_USER_INTERFACE) || defined (WIN32_USER_INTERFACE) */
 
-#if defined (MOTIF)
+#if defined (MOTIF) || (GTK_USER_INTERFACE) || defined (WIN32_USER_INTERFACE)
 static int execute_command_gfx_element_tool(struct Parse_state *state,
 	void *dummy_to_be_modified,void *command_data_void)
 /*******************************************************************************
@@ -10792,7 +10790,7 @@ Executes a GFX ELEMENT_TOOL command.
 
 	return (return_code);
 } /* execute_command_gfx_element_tool */
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF) || (GTK_USER_INTERFACE) || defined (WIN32_USER_INTERFACE) */ 
 
 static int execute_command_gfx_erase(struct Parse_state *state,
 	void *dummy_to_be_modified, void *command_data_void)
@@ -19270,11 +19268,13 @@ Executes a GFX command.
 #if defined (MOTIF)
 			Option_table_add_entry(option_table, "element_creator", NULL,
 				command_data_void, execute_command_gfx_element_creator);
+#endif /* defined (MOTIF) */
+#if defined (MOTIF) || (GTK_USER_INTERFACE) || defined (WIN32_USER_INTERFACE)
 			Option_table_add_entry(option_table, "element_point_tool", NULL,
 				command_data_void, execute_command_gfx_element_point_tool);
 			Option_table_add_entry(option_table, "element_tool", NULL,
 				command_data_void, execute_command_gfx_element_tool);
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF) || (GTK_USER_INTERFACE) || defined (WIN32_USER_INTERFACE) */
 			Option_table_add_entry(option_table, "erase", NULL,
 				command_data_void, execute_command_gfx_erase);
 			Option_table_add_entry(option_table, "evaluate", NULL,
@@ -22309,7 +22309,7 @@ for editing and entering. If there is no command_window, does nothing.
 	return (return_code);
 } /* cmiss_set_command */
 
-#if defined (MOTIF) || defined (WIN32_USER_INTERFACE) || defined (GTK_USER_INTERFACE)
+#if defined (MOTIF) || defined (WIN32_USER_INTERFACE) || defined (GTK_USER_INTERFACE) || defined (WX_USER_INTERFACE)
 static int display_error_message(char *message,void *command_window_void)
 /*******************************************************************************
 LAST MODIFIED : 25 July 1999
@@ -22337,9 +22337,9 @@ Display a cmgui error message.
 
 	return (return_code);
 } /* display_error_message */
-#endif /* defined (MOTIF) || defined (WIN32_USER_INTERFACE) || defined (GTK_USER_INTERFACE) */
+#endif /* defined (MOTIF) || defined (WIN32_USER_INTERFACE) || defined (GTK_USER_INTERFACE) || defined (WX_USER_INTERFACE) */
 
-#if defined (MOTIF) || defined (WIN32_USER_INTERFACE) || defined (GTK_USER_INTERFACE)
+#if defined (MOTIF) || defined (WIN32_USER_INTERFACE) || defined (GTK_USER_INTERFACE) || defined (WX_USER_INTERFACE)
 static int display_information_message(char *message,void *command_window_void)
 /*******************************************************************************
 LAST MODIFIED : 25 July 1999
@@ -22364,9 +22364,9 @@ Display a cmgui information message.
 
 	return (return_code);
 } /* display_information_message */
-#endif /* defined (MOTIF) || defined (WIN32_USER_INTERFACE) || defined (GTK_USER_INTERFACE) */
+#endif /* defined (MOTIF) || defined (WIN32_USER_INTERFACE) || defined (GTK_USER_INTERFACE) || defined (WX_USER_INTERFACE) */
 
-#if defined (MOTIF) || defined (WIN32_USER_INTERFACE) || defined (GTK_USER_INTERFACE)
+#if defined (MOTIF) || defined (WIN32_USER_INTERFACE) || defined (GTK_USER_INTERFACE) || defined (WX_USER_INTERFACE)
 static int display_warning_message(char *message,void *command_window_void)
 /*******************************************************************************
 LAST MODIFIED : 25 July 1999
@@ -22395,7 +22395,7 @@ Display a cmgui warning message.
 
 	return (return_code);
 } /* display_warning_message */
-#endif /* defined (MOTIF) || defined (WIN32_USER_INTERFACE) || defined (GTK_USER_INTERFACE) */
+#endif /* defined (MOTIF) || defined (WIN32_USER_INTERFACE) || defined (GTK_USER_INTERFACE) || defined (WX_USER_INTERFACE) */
 
 static int cmgui_execute_comfile(char *comfile_name,char *example_id,
 	char *examples_directory,char *example_symbol,char **example_comfile_name,
@@ -22814,9 +22814,9 @@ Initialise all the subcomponents of cmgui and create the Cmiss_command_data
 	struct Cmiss_command_data *command_data;
 	struct Colour ambient_colour, colour, default_colour;
 	struct Computed_field *computed_field;
-#if defined (MOTIF) || defined (WIN32_USER_INTERFACE) || defined (GTK_USER_INTERFACE)
+#if defined (MOTIF) || defined (WIN32_USER_INTERFACE) || defined (GTK_USER_INTERFACE) || defined (WX_USER_INTERFACE)
 	struct Command_window *command_window;
-#endif /* defined (MOTIF) || defined (WIN32_USER_INTERFACE) || defined (GTK_USER_INTERFACE) */
+#endif /* defined (MOTIF) || defined (WIN32_USER_INTERFACE) || defined (GTK_USER_INTERFACE) || defined (WX_USER_INTERFACE) */
 	struct Coordinate_system rect_coord_system;
 	struct FE_region *data_root_fe_region, *root_fe_region;
 	struct Graphical_material *material;
@@ -22917,11 +22917,11 @@ Initialise all the subcomponents of cmgui and create the Cmiss_command_data
 		command_data->movie_graphics_manager=(struct MANAGER(Movie_graphics) *)NULL;
 #endif /* defined (SGI_MOVIE_FILE) && defined (MOTIF) */
 		command_data->transform_tool=(struct Interactive_tool *)NULL;
-#if defined (MOTIF)
 		command_data->node_tool=(struct Node_tool *)NULL;
 		command_data->element_tool=(struct Element_tool *)NULL;
 		command_data->data_tool=(struct Node_tool *)NULL;
 		command_data->element_point_tool=(struct Element_point_tool *)NULL;
+#if defined (MOTIF)
 		command_data->select_tool=(struct Select_tool *)NULL;
 
 		command_data->element_creator=(struct Element_creator *)NULL;
@@ -23568,7 +23568,6 @@ Initialise all the subcomponents of cmgui and create the Cmiss_command_data
 				command_data->user_interface,
 				command_data->default_time_keeper,
 				command_data->execute_command);
-#if defined (MOTIF)
 			command_data->element_tool=CREATE(Element_tool)(
 				command_data->interactive_tool_manager,
 				command_data->root_region,
@@ -23587,6 +23586,7 @@ Initialise all the subcomponents of cmgui and create the Cmiss_command_data
 				command_data->user_interface,
 				command_data->default_time_keeper,
 				command_data->execute_command);
+#if defined (MOTIF)
 			command_data->select_tool=CREATE(Select_tool)(
 				command_data->interactive_tool_manager,
 				command_data->any_object_selection,
@@ -23712,10 +23712,10 @@ Initialise all the subcomponents of cmgui and create the Cmiss_command_data
 
 					if (!server_mode)
 					{
-#if defined (MOTIF) || defined (WIN32_USER_INTERFACE) || defined (GTK_USER_INTERFACE)
+#if defined (MOTIF) || defined (WIN32_USER_INTERFACE) || defined (GTK_USER_INTERFACE) || defined (WX_USER_INTERFACE) 
 						if (console_mode)
 						{
-#endif /* defined (MOTIF) || defined (WIN32_USER_INTERFACE) || defined (GTK_USER_INTERFACE) */
+#endif /* defined (MOTIF) || defined (WIN32_USER_INTERFACE) || defined (GTK_USER_INTERFACE) || defined (WX_USER_INTERFACE) */
 							if (!(command_data->command_console = CREATE(Console)(
 										command_data->execute_command,
 										command_data->event_dispatcher, /*stdin*/0)))
@@ -23723,7 +23723,7 @@ Initialise all the subcomponents of cmgui and create the Cmiss_command_data
 								display_message(ERROR_MESSAGE,"main.  "
 									"Unable to create console.");
 							}
-#if defined (MOTIF) || defined (WIN32_USER_INTERFACE) || defined (GTK_USER_INTERFACE)
+#if defined (MOTIF) || defined (WIN32_USER_INTERFACE) || defined (GTK_USER_INTERFACE) || defined (WX_USER_INTERFACE)
 						}
 						else
 						{
@@ -23754,7 +23754,7 @@ Initialise all the subcomponents of cmgui and create the Cmiss_command_data
 								return_code=0;
 							}
 						}
-#endif /* defined (MOTIF) || defined (WIN32_USER_INTERFACE) || defined (GTK_USER_INTERFACE) */
+#endif /* defined (MOTIF) || defined (WIN32_USER_INTERFACE) || defined (GTK_USER_INTERFACE) || defined (WX_USER_INTERFACE) */
 					}
 #if defined (MOTIF)
 				}
@@ -24009,6 +24009,7 @@ Clean up the command_data, deallocating all the associated memory and resources.
 		{
 			DESTROY(Select_tool)(&command_data->select_tool);
 		}
+#endif /* defined (MOTIF) */
 		if (command_data->element_point_tool)
 		{
 			DESTROY(Element_point_tool)(&command_data->element_point_tool);
@@ -24017,7 +24018,6 @@ Clean up the command_data, deallocating all the associated memory and resources.
 		{
 			DESTROY(Element_tool)(&command_data->element_tool);
 		}
-#endif /* defined (MOTIF) */
 		if (command_data->data_tool)
 		{
 			DESTROY(Node_tool)(&command_data->data_tool);
