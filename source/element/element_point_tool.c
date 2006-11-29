@@ -41,18 +41,22 @@ Interactive tool for selecting element/grid points with mouse and other devices.
  * the terms of any one of the MPL, the GPL or the LGPL.
  *
  * ***** END LICENSE BLOCK ***** */
+#if defined (MOTIF)
 #include <Xm/Protocols.h>
 #include <Xm/MwmUtil.h>
 #include <Xm/Xm.h>
 #include <Xm/ToggleBG.h>
+#endif /* defined (MOTIF) */
 #include "choose/choose_computed_field.h"
 #include "command/command.h"
 #include "computed_field/computed_field.h"
 #include "computed_field/computed_field_finite_element.h"
 #include "element/element_point_tool.h"
+#if defined (MOTIF)
 static char element_point_tool_uidh[] =
 #include "element/element_point_tool.uidh"
 	;
+#endif /* defined (MOTIF) */
 #include "finite_element/finite_element_discretization.h"
 #include "general/debug.h"
 #include "graphics/scene.h"
@@ -60,7 +64,9 @@ static char element_point_tool_uidh[] =
 #include "interaction/interaction_graphics.h"
 #include "interaction/interaction_volume.h"
 #include "interaction/interactive_event.h"
+#if defined (MOTIF)
 #include "motif/image_utilities.h"
+#endif /* defined (MOTIF) */
 #include "user_interface/gui_dialog_macros.h"
 #include "user_interface/message.h"
 
@@ -106,10 +112,10 @@ Object storing all the parameters for interactively selecting element points.
 	struct GT_object *rubber_band;
 #if defined (MOTIF)
 	Display *display;
-#endif /* defined (MOTIF) */
 
 	Widget command_field_button, command_field_form, command_field_widget;
 	Widget widget, window_shell;
+#endif /* defined (MOTIF) */
 }; /* struct Element_point_tool */
 
 /*
@@ -117,6 +123,7 @@ Module functions
 ----------------
 */
 
+#if defined (MOTIF)
 DECLARE_DIALOG_IDENTIFY_FUNCTION(element_point_tool,Element_point_tool,command_field_button)
 DECLARE_DIALOG_IDENTIFY_FUNCTION(element_point_tool,Element_point_tool,command_field_form)
 
@@ -224,6 +231,7 @@ Callback for change of command_field.
 	}
 	LEAVE;
 } /* Element_point_tool_update_command_field */
+#endif /* defined (MOTIF) */
 
 static void Element_point_tool_interactive_event_handler(void *device_id,
 	struct Interactive_event *event,void *element_point_tool_void,
@@ -506,15 +514,18 @@ DESCRIPTION :
 Fetches an icon for the Element_point tool.
 ==============================================================================*/
 {
+#if defined (MOTIF)
 	Display *display;
 	Pixel background_pixel, foreground_pixel;
 	Pixmap pixmap;
+#endif /* defined (MOTIF) */
 	struct Cmgui_image *image;
 	struct Element_point_tool *element_point_tool;
 
 	ENTER(Element_point_tool_get_icon);
 	if ((element_point_tool=(struct Element_point_tool *)element_point_tool_void))
 	{
+#if defined (MOTIF)
 		if (MrmOpenHierarchy_binary_string(element_point_tool_uidh,sizeof(element_point_tool_uidh),
 			&element_point_tool_hierarchy,&element_point_tool_hierarchy_open))
 		{
@@ -540,6 +551,13 @@ Fetches an icon for the Element_point tool.
 				"Could not open heirarchy");
 			image = (struct Cmgui_image *)NULL;
 		}
+#else /* defined (MOTIF) */
+		USE_PARAMETER(foreground);
+		USE_PARAMETER(background);
+		USE_PARAMETER(element_point_tool);
+		display_message(WARNING_MESSAGE, "Element_point_tool_get_icon.  "
+			"Not implemented for this user interface.");
+#endif /* defined (MOTIF) */
 	}
 	else
 	{
@@ -574,6 +592,7 @@ Creates an Element_point_tool with Interactive_tool in
 <element_point_ranges_selection> in response to interactive_events.
 ==============================================================================*/
 {
+#if defined (MOTIF)
 	Atom WM_DELETE_WINDOW;
 	int init_widgets;
 	MrmType element_point_tool_dialog_class;
@@ -591,6 +610,7 @@ Creates an Element_point_tool with Interactive_tool in
 		{"elem_pnt_tool_structure",(XtPointer)NULL}
 	};
 	struct Callback_data callback;
+#endif /* defined (MOTIF) */
 	struct Element_point_tool *element_point_tool;
 	struct MANAGER(Computed_field) *computed_field_manager;
 
@@ -600,50 +620,54 @@ Creates an Element_point_tool with Interactive_tool in
 			Computed_field_package_get_computed_field_manager(computed_field_package))
 		&&rubber_band_material&&user_interface&&execute_command)
 	{
-		if (MrmOpenHierarchy_binary_string(element_point_tool_uidh,sizeof(element_point_tool_uidh),
-			&element_point_tool_hierarchy,&element_point_tool_hierarchy_open))
+		if (ALLOCATE(element_point_tool,struct Element_point_tool,1))
 		{
-			if (ALLOCATE(element_point_tool,struct Element_point_tool,1))
+			element_point_tool->execute_command=execute_command;
+			element_point_tool->interactive_tool_manager=interactive_tool_manager;
+			element_point_tool->element_point_ranges_selection=
+				element_point_ranges_selection;
+			element_point_tool->rubber_band_material=
+				ACCESS(Graphical_material)(rubber_band_material);
+			element_point_tool->user_interface=user_interface;
+			element_point_tool->time_keeper = (struct Time_keeper *)NULL;
+			if (time_keeper)
 			{
-				element_point_tool->execute_command=execute_command;
-				element_point_tool->display = User_interface_get_display
-				   (user_interface);
-				element_point_tool->interactive_tool_manager=interactive_tool_manager;
-				element_point_tool->element_point_ranges_selection=
-					element_point_ranges_selection;
-				element_point_tool->rubber_band_material=
-					ACCESS(Graphical_material)(rubber_band_material);
-				element_point_tool->user_interface=user_interface;
-				element_point_tool->time_keeper = (struct Time_keeper *)NULL;
-				if (time_keeper)
-				{
-					element_point_tool->time_keeper = ACCESS(Time_keeper)(time_keeper);
-				}
-				/* user settings */
-				element_point_tool->command_field = (struct Computed_field *)NULL;
-				/* interactive_tool */
-				element_point_tool->interactive_tool=CREATE(Interactive_tool)(
-					"element_point_tool","Element point tool",
-					Interactive_tool_element_point_type_string,
-					Element_point_tool_interactive_event_handler,
-					Element_point_tool_get_icon,
-					Element_point_tool_bring_up_interactive_tool_dialog,
-					(Interactive_tool_destroy_tool_data_function *)NULL,
-					(void *)element_point_tool);
-				ADD_OBJECT_TO_MANAGER(Interactive_tool)(
-					element_point_tool->interactive_tool,
-					element_point_tool->interactive_tool_manager);
-				element_point_tool->last_picked_element_point=
-					(struct Element_point_ranges *)NULL;
-				element_point_tool->last_interaction_volume=
-					(struct Interaction_volume *)NULL;
-				element_point_tool->rubber_band=(struct GT_object *)NULL;
-				/* initialise widgets */
-				element_point_tool->command_field_button=(Widget)NULL;
-				element_point_tool->command_field_form=(Widget)NULL;
-				element_point_tool->command_field_widget=(Widget)NULL;
-				element_point_tool->widget=(Widget)NULL;
-				element_point_tool->window_shell=(Widget)NULL;
+				element_point_tool->time_keeper = ACCESS(Time_keeper)(time_keeper);
+			}
+			/* user settings */
+			element_point_tool->command_field = (struct Computed_field *)NULL;
+			/* interactive_tool */
+			element_point_tool->interactive_tool=CREATE(Interactive_tool)(
+				"element_point_tool","Element point tool",
+				Interactive_tool_element_point_type_string,
+				Element_point_tool_interactive_event_handler,
+				Element_point_tool_get_icon,
+				Element_point_tool_bring_up_interactive_tool_dialog,
+				(Interactive_tool_destroy_tool_data_function *)NULL,
+				(void *)element_point_tool);
+			ADD_OBJECT_TO_MANAGER(Interactive_tool)(
+				element_point_tool->interactive_tool,
+				element_point_tool->interactive_tool_manager);
+			element_point_tool->last_picked_element_point=
+				(struct Element_point_ranges *)NULL;
+			element_point_tool->last_interaction_volume=
+				(struct Interaction_volume *)NULL;
+			element_point_tool->rubber_band=(struct GT_object *)NULL;
+
+#if defined (MOTIF)
+			element_point_tool->display = User_interface_get_display
+				(user_interface);
+
+			/* initialise widgets */
+			element_point_tool->command_field_button=(Widget)NULL;
+			element_point_tool->command_field_form=(Widget)NULL;
+			element_point_tool->command_field_widget=(Widget)NULL;
+			element_point_tool->widget=(Widget)NULL;
+			element_point_tool->window_shell=(Widget)NULL;
+
+			if (MrmOpenHierarchy_binary_string(element_point_tool_uidh,sizeof(element_point_tool_uidh),
+					&element_point_tool_hierarchy,&element_point_tool_hierarchy_open))
+			{
 
 				/* make the dialog shell */
 				if (element_point_tool->window_shell=
@@ -667,17 +691,17 @@ Creates an Element_point_tool with Interactive_tool in
 					create_Shell_list_item(&(element_point_tool->window_shell),user_interface);
 					/* register the callbacks */
 					if (MrmSUCCESS==MrmRegisterNamesInHierarchy(
-						element_point_tool_hierarchy,callback_list,XtNumber(callback_list)))
+							 element_point_tool_hierarchy,callback_list,XtNumber(callback_list)))
 					{
 						/* assign and register the identifiers */
 						identifier_list[0].value=(XtPointer)element_point_tool;
 						if (MrmSUCCESS==MrmRegisterNamesInHierarchy(
-							element_point_tool_hierarchy,identifier_list,XtNumber(identifier_list)))
+								 element_point_tool_hierarchy,identifier_list,XtNumber(identifier_list)))
 						{
 							/* fetch element tool widgets */
 							if (MrmSUCCESS==MrmFetchWidget(element_point_tool_hierarchy,
-								"element_point_tool",element_point_tool->window_shell,
-								&(element_point_tool->widget),&element_point_tool_dialog_class))
+									"element_point_tool",element_point_tool->window_shell,
+									&(element_point_tool->widget),&element_point_tool_dialog_class))
 							{
 								init_widgets=1;
 								if (element_point_tool->command_field_widget =
@@ -744,13 +768,14 @@ Creates an Element_point_tool with Interactive_tool in
 			else
 			{
 				display_message(ERROR_MESSAGE,
-					"CREATE(Element_point_tool).  Not enough memory");
+					"CREATE(Element_point_tool).  Could not open hierarchy");
 			}
+#endif /* defined (MOTIF) */
 		}
 		else
 		{
 			display_message(ERROR_MESSAGE,
-				"CREATE(Element_point_tool).  Could not open hierarchy");
+				"CREATE(Element_point_tool).  Not enough memory");
 		}
 	}
 	else
@@ -797,12 +822,14 @@ structure itself.
 		{
 			DEACCESS(Time_keeper)(&(element_point_tool->time_keeper));
 		}
+#if defined (MOTIF)
 		if (element_point_tool->window_shell)
 		{
 			destroy_Shell_list_item_from_shell(&(element_point_tool->window_shell),
 				element_point_tool->user_interface);
 			XtDestroyWidget(element_point_tool->window_shell);
 		}
+#endif /* defined (MOTIF) */
 		DEALLOCATE(*element_point_tool_address);
 		return_code=1;
 	}
@@ -830,9 +857,14 @@ Pops up a dialog for editing settings of the Element_point_tool.
 	ENTER(Element_point_tool_pop_up_dialog);
 	if (element_point_tool)
 	{
+#if defined (MOTIF)
 		XtPopup(element_point_tool->window_shell, XtGrabNone);
 		/* make sure in addition that it is not shown as an icon */
 		XtVaSetValues(element_point_tool->window_shell, XmNiconic, False, NULL);
+#else /* defined (MOTIF) */
+		display_message(ERROR_MESSAGE, "Element_point_tool_pop_up_dialog.  "
+			"No dialog implemented for this User Interface");
+#endif /* defined (MOTIF) */
 		return_code = 1;
 	}
 	else
@@ -860,7 +892,12 @@ Hides the dialog for editing settings of the Element_point_tool.
 	ENTER(Element_point_tool_pop_down_dialog);
 	if (element_point_tool)
 	{
+#if defined (MOTIF)
 		XtPopdown(element_point_tool->window_shell);
+#else /* defined (MOTIF) */
+		display_message(ERROR_MESSAGE, "Element_point_tool_pop_down_dialog.  "
+			"No dialog implemented for this User Interface");
+#endif /* defined (MOTIF) */
 		return_code = 1;
 	}
 	else
@@ -913,7 +950,10 @@ Sets the command_field to be executed when the element is clicked on in the
 <element_point_tool>.
 ==============================================================================*/
 {
-	int field_set, return_code;
+#if defined (MOTIF)
+	int field_set;
+#endif /* defined (MOTIF) */
+	int return_code;
 
 	ENTER(Element_point_tool_set_command_field);
 	if (element_point_tool && ((!command_field) ||
@@ -923,6 +963,7 @@ Sets the command_field to be executed when the element is clicked on in the
 		if (command_field != element_point_tool->command_field)
 		{
 			element_point_tool->command_field = command_field;
+#if defined (MOTIF)
 			if (command_field)
 			{
 				CHOOSE_OBJECT_SET_OBJECT(Computed_field)(
@@ -932,6 +973,7 @@ Sets the command_field to be executed when the element is clicked on in the
 			XtVaSetValues(element_point_tool->command_field_button,
 				XmNset, field_set, NULL);
 			XtSetSensitive(element_point_tool->command_field_widget, field_set);
+#endif /* defined (MOTIF) */
 		}
 	}
 	else
