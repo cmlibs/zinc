@@ -46,8 +46,8 @@ Interactive tool for selecting element/grid points with mouse and other devices.
 #include <Xm/MwmUtil.h>
 #include <Xm/Xm.h>
 #include <Xm/ToggleBG.h>
-#endif /* defined (MOTIF) */
 #include "choose/choose_computed_field.h"
+#endif /* defined (MOTIF) */
 #include "command/command.h"
 #include "computed_field/computed_field.h"
 #include "computed_field/computed_field_finite_element.h"
