@@ -255,10 +255,8 @@ DESCRIPTION :
 #endif /* defined (MOTIF) || defined (WIN32_USER_INTERFACE) || defined (GTK_USER_INTERFACE) || defined (WX_USER_INTERFACE) */
 	struct Colour background_colour,foreground_colour;
 	struct Execute_command *execute_command,*set_command;
-#if defined (MOTIF) || defined (WIN32_USER_INTERFACE) || defined (GTK_USER_INTERFACE) || defined (WX_USER_INTERFACE)
 	struct Element_point_tool *element_point_tool;
 	struct Element_tool *element_tool;
-#endif /* defined (MOTIF) || defined (WIN32_USER_INTERFACE) || defined (GTK_USER_INTERFACE) || defined (WX_USER_INTERFACE) */
 	struct Event_dispatcher *event_dispatcher;
 	struct Node_tool *data_tool,*node_tool;
 #if defined (MOTIF)
