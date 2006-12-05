@@ -163,6 +163,8 @@ Contains information for a graphics window.
 	int perturb_lines;
 	enum Scene_viewer_input_mode input_mode;
 	enum Scene_viewer_blending_mode blending_mode;
+	double depth_of_field;
+	double focal_depth;
 	/*???DB.  Do these belong here ? */
 	/* time parameters for animation */
 	/* current time for frame */
@@ -1851,6 +1853,43 @@ certain values are supported 0/1 = off, 2, 4 & 8 are on.
 	return (return_code);
 } /* Graphics_window_set_antialias_mode */
 
+int Graphics_window_set_depth_of_field(struct Graphics_window *graphics_window,
+	double depth_of_field, double focal_depth)
+/*******************************************************************************
+LAST MODIFIED : 5 December 2006
+
+DESCRIPTION :
+==============================================================================*/
+{
+	int pane_no,return_code;
+
+	ENTER(Graphics_window_set_antialias_mode);
+	if (graphics_window)
+	{
+		return_code=1;
+		for (pane_no=0;(pane_no<graphics_window->number_of_scene_viewers)&&return_code;
+			pane_no++)
+		{
+			return_code=Scene_viewer_set_depth_of_field(
+				graphics_window->scene_viewer_array[pane_no],
+				depth_of_field, focal_depth);
+		}
+		if (return_code)
+		{
+			graphics_window->depth_of_field=depth_of_field;
+			graphics_window->focal_depth=focal_depth;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Graphics_window_set_depth_of_field.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+	return (return_code);
+} /* Graphics_window_set_depth_of_field */
+
 int Graphics_window_set_perturb_lines(struct Graphics_window *graphics_window,
 	int perturb_lines)
 /*******************************************************************************
@@ -1935,7 +1974,7 @@ Parser commands for setting simple parameters applicable to the whole <window>.
 {
 	char *blending_mode_string,fast_transparency_flag,slow_transparency_flag,
 		*tool_name,**tool_names,**valid_strings;
-	double std_view_angle;
+	double depth_of_field, focal_depth, std_view_angle;
 	enum Scene_viewer_blending_mode blending_mode;
 	enum Scene_viewer_transparency_mode transparency_mode;
 	int antialias_mode,current_pane,i,layered_transparency,number_of_tools,
@@ -1961,6 +2000,8 @@ Parser commands for setting simple parameters applicable to the whole <window>.
 				if (graphics_window=(struct Graphics_window *)window_void)
 				{
 					current_pane=graphics_window->current_pane+1;
+					depth_of_field=graphics_window->depth_of_field;
+					focal_depth=graphics_window->focal_depth;
 					std_view_angle=graphics_window->std_view_angle;
 					interactive_tool=graphics_window->interactive_tool;
 					antialias_mode=graphics_window->antialias_mode;
@@ -2002,6 +2043,12 @@ Parser commands for setting simple parameters applicable to the whole <window>.
 				/* current_pane */
 				Option_table_add_entry(option_table,"current_pane",
 					&current_pane,(void *)NULL,set_int);
+				/* depth_of_field */
+				Option_table_add_entry(option_table,"depth_of_field",
+					&depth_of_field,(void *)NULL,set_double);
+				/* focal_depth */
+				Option_table_add_entry(option_table,"focal_depth",
+					&focal_depth,(void *)NULL,set_double);
 				/* transform|other tools. tool_names not deallocated until later */
 				tool_name=(char *)NULL;
 				if (tool_names=interactive_tool_manager_get_tool_names(
@@ -2076,6 +2123,13 @@ Parser commands for setting simple parameters applicable to the whole <window>.
 						{
 							Graphics_window_set_antialias_mode(graphics_window,
 								antialias_mode);
+							redraw=1;
+						}
+						if ((depth_of_field != graphics_window->depth_of_field)
+							|| (focal_depth != graphics_window->focal_depth))
+						{
+							Graphics_window_set_depth_of_field(graphics_window,
+								depth_of_field, focal_depth);
 							redraw=1;
 						}
 						if (perturb_lines != graphics_window->perturb_lines)
@@ -2685,6 +2739,8 @@ it.
 			window->antialias_mode=0;
 			window->perturb_lines=0;
 			window->blending_mode=SCENE_VIEWER_BLEND_NORMAL;
+			window->depth_of_field=0.0;
+			window->focal_depth=0.0;
 			/* the input_mode set here is changed below */
 			window->input_mode=SCENE_VIEWER_NO_INPUT;
 			/* read default settings from Cmgui defaults file */
@@ -5635,7 +5691,8 @@ Writes the properties of the <window> to the command window.
 ==============================================================================*/
 {
 	char line[80],*name, *opengl_version, *opengl_vendor, *opengl_extensions;
-	double bottom, eye[3], far_plane, horizontal_view_angle, left, lookat[3],
+	double bottom, depth_of_field, eye[3], far_plane, focal_depth, 
+		horizontal_view_angle, left, lookat[3],
 		max_pixels_per_polygon, modelview_matrix[16],
 		NDC_height, NDC_left, NDC_top, NDC_width,
 		near_plane, projection_matrix[16], right, rotations[3],
@@ -5883,6 +5940,17 @@ Writes the properties of the <window> to the command window.
 		{
 			display_message(INFORMATION_MESSAGE,"  no anti-aliasing\n");
 		}
+		Scene_viewer_get_depth_of_field(window->scene_viewer_array[0],
+			&depth_of_field, &focal_depth);
+		if (depth_of_field > 0.0)
+		{
+			display_message(INFORMATION_MESSAGE,"  depth of field %lf\n", depth_of_field);
+			display_message(INFORMATION_MESSAGE,"  focal depth %lf\n", focal_depth);
+		}
+		else
+		{
+			display_message(INFORMATION_MESSAGE,"  infinite depth of field\n");
+		}
 		Scene_viewer_get_blending_mode(window->scene_viewer_array[0],&blending_mode);
 		display_message(INFORMATION_MESSAGE,"  blending_mode: %s\n",
 			ENUMERATOR_STRING(Scene_viewer_blending_mode)(blending_mode));
@@ -5925,8 +5993,8 @@ to the command window.
 ==============================================================================*/
 {
 	char *name,*prefix;
-	double bottom,
-		eye[3],far_plane,left,lookat[3],max_pixels_per_polygon,modelview_matrix[16],
+	double bottom, depth_of_field, eye[3],far_plane,
+		focal_depth, left,lookat[3],max_pixels_per_polygon,modelview_matrix[16],
 		NDC_height,NDC_left,NDC_top,NDC_width,near_plane,projection_matrix[16],right,
 		texture_height,texture_width,top,up[3],view_angle,viewport_left,
 		viewport_top,viewport_pixels_per_unit_x,viewport_pixels_per_unit_y;
@@ -6145,6 +6213,17 @@ to the command window.
 		else
 		{
 			display_message(INFORMATION_MESSAGE," no_antialias");
+		}
+		Scene_viewer_get_depth_of_field(window->scene_viewer_array[0],
+			&depth_of_field, &focal_depth);
+		if (depth_of_field > 0.0)
+		{
+			display_message(INFORMATION_MESSAGE," depth_of_field %lf", depth_of_field);
+			display_message(INFORMATION_MESSAGE," focal_depth %lf", focal_depth);
+		}
+		else
+		{
+			display_message(INFORMATION_MESSAGE," depth_of_field 0.0");
 		}
 		Scene_viewer_get_transparency_mode(scene_viewer, &transparency_mode);
 		display_message(INFORMATION_MESSAGE," %s",

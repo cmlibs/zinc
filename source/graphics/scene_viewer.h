@@ -121,6 +121,7 @@ and the functions given their public names.
 #define Scene_viewer_set_zoom_rate Cmiss_scene_viewer_set_zoom_rate
 #define Scene_viewer_get_viewing_volume Cmiss_scene_viewer_get_viewing_volume
 #define Scene_viewer_set_viewing_volume Cmiss_scene_viewer_set_viewing_volume
+#define Scene_viewer_set_background_texture_info Cmiss_scene_viewer_set_background_texture_info
 
 /*
 Global types
@@ -341,6 +342,23 @@ LAST MODIFIED : 15 October 1998
 DESCRIPTION :
 Sets the number of jitter samples used to antialias the scene_viewer.
 Zero turns antialiasing off.
+==============================================================================*/
+
+int Scene_viewer_get_depth_of_field(struct Scene_viewer *scene_viewer,
+	double *depth_of_field, double *focal_depth);
+/*******************************************************************************
+LAST MODIFIED : 5 December 2006
+
+DESCRIPTION :
+==============================================================================*/
+
+int Scene_viewer_set_depth_of_field(struct Scene_viewer *scene_viewer,
+	double depth_of_field, double focal_depth);
+/*******************************************************************************
+LAST MODIFIED : 5 December 2006
+
+DESCRIPTION :
+depth of field 0 == infinite.
 ==============================================================================*/
 
 int Scene_viewer_get_blending_mode(struct Scene_viewer *scene_viewer,

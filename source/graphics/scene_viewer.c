@@ -233,6 +233,8 @@ DESCRIPTION :
 	int antialias;
 	int perturb_lines;
 	enum Scene_viewer_blending_mode blending_mode;
+	double depth_of_field;  /* depth_of_field, 0 == infinite */
+	double focal_depth;
 	/* set between fast changing operations since the first fast-change will
 		 copy from the front buffer to the back; subsequent changes will copy
 		 saved buffer from back to front. */
@@ -1728,6 +1730,114 @@ the entire scene.
 	return (return_code);	
 } /* Scene_viewer_antialias */
 
+static int Scene_viewer_depth_of_field(
+	struct Scene_viewer_rendering_data *rendering_data)
+/*******************************************************************************
+LAST MODIFIED : 5 December 2006
+
+DESCRIPTION :
+Render the scene multiple times perturbing the viewing frustrum to create a
+depth of field effect.
+==============================================================================*/
+{
+	double depth_of_field, dx, dy, focal_depth, pixel_offset_x, pixel_offset_y;
+	GLdouble temp_matrix[16];
+	int accumulation_count, return_code;
+	float j8[8][2]=
+		{
+			{0.5625,0.4375},
+			{0.0625,0.9375},
+			{0.3125,0.6875},
+			{0.6875,0.8125},
+			{0.8125,0.1875},
+			{0.9375,0.5625},
+			{0.4375,0.0625},
+			{0.1875,0.3125}
+		};
+
+	ENTER(Scene_viewer_antialias);
+	if (rendering_data)
+	{
+		return_code = 1;
+		for (accumulation_count = 0 ; accumulation_count < 8 ;
+			  accumulation_count++)
+		{
+			glMatrixMode(GL_PROJECTION);
+
+			/* SAB This should more robustly be a glPushMatrix and glPopMatrix
+				pair but the SGI implementations sometimes have only one
+				level on the Projection matrix stack and so knowing that this
+				matrix is the identity so far I can just reload that */
+			glLoadIdentity();
+
+			pixel_offset_x=j8[accumulation_count][0];
+			pixel_offset_y=j8[accumulation_count][1];
+
+			focal_depth = rendering_data->scene_viewer->focal_depth;
+			depth_of_field = rendering_data->scene_viewer->depth_of_field;
+
+			dx = pixel_offset_x/(depth_of_field*rendering_data->viewport_width);
+			dy = pixel_offset_y/(depth_of_field*rendering_data->viewport_height);
+
+			/* the projection matrix converts the viewing volume into the
+				Normalised Device Coordinates ranging from -1 to +1 in each
+				coordinate direction. Need to scale this range to fit the
+				viewport by premultiplying with a matrix. First start with
+				identity: Note that numbers go down columns first in OpenGL
+				matrices */
+			temp_matrix[0] = 1.0;
+			temp_matrix[1] = 0.0;
+			temp_matrix[2] = 0.0;
+			temp_matrix[3] = 0.0;
+		
+			temp_matrix[4] = 0.0;
+			temp_matrix[5] = 1.0;
+			temp_matrix[6] = 0.0;
+			temp_matrix[7] = 0.0;
+		
+			temp_matrix[8] = dx / (2.0 - focal_depth * 2.0);
+			temp_matrix[9] = dy / (2.0 - focal_depth * 2.0);
+			temp_matrix[10] = 1.0;
+			temp_matrix[11] = 0.0;
+			/* offsetting image by [sub]pixel distances for anti-aliasing.
+				offset_x is distance image is shifted to the right, offset_y is
+				distance image is shifted up. The actual offsets used are
+				fractions of half the viewport width or height,since normalized
+				device coordinates (NDCs) range from -1 to +1 */
+			temp_matrix[12] = -dx * (-1.0 + focal_depth * 2.0);
+			temp_matrix[13] = -dy * (-1.0 + focal_depth * 2.0);
+			temp_matrix[14] = 0.0;
+			temp_matrix[15] = 1.0;
+			
+			glMultMatrixd(temp_matrix);
+
+			Scene_viewer_call_next_renderer(rendering_data);
+			
+			if (0==accumulation_count)
+			{
+				glAccum(GL_LOAD,1.0f/(8.0f));
+			}
+			else
+			{
+				glAccum(GL_ACCUM,1.0f/(8.0f));
+			}
+			
+		} /* for (antialias_count) */
+
+		/* We want to ensure that we return white when we accumulate a white
+			background */
+		glAccum(GL_RETURN,1.001f);
+		glFlush();
+	}
+	else
+	{
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);	
+} /* Scene_viewer_depth_of_field */
+
 static int Scene_viewer_stereo(
 	struct Scene_viewer_rendering_data *rendering_data)
 /*******************************************************************************
@@ -2366,6 +2476,14 @@ access this function.
 				{
 					render_object = CREATE(Scene_viewer_render_object)(
 						Scene_viewer_antialias);
+					ADD_OBJECT_TO_LIST(Scene_viewer_render_object)(render_object,
+						rendering_data.render_callstack);
+				}
+
+				if (scene_viewer->depth_of_field > 0.0)
+				{
+					render_object = CREATE(Scene_viewer_render_object)(
+						Scene_viewer_depth_of_field);
 					ADD_OBJECT_TO_LIST(Scene_viewer_render_object)(render_object,
 						rendering_data.render_callstack);
 				}
@@ -4058,7 +4176,10 @@ performed in idle time so that multiple redraws are avoided.
 				scene_viewer->antialias=0;
 				scene_viewer->perturb_lines=0;
 				scene_viewer->blending_mode=SCENE_VIEWER_BLEND_NORMAL;
-				scene_viewer->transform_flag=0;
+				scene_viewer->depth_of_field=0.0;  /* default 0==infinite */
+				scene_viewer->focal_depth=0.0;
+				scene_viewer->blending_mode=SCENE_VIEWER_BLEND_NORMAL;
+ 				scene_viewer->transform_flag=0;
 				scene_viewer->first_fast_change=1;
 				scene_viewer->fast_changing=0;
 				scene_viewer->stereo_eye_spacing=0.25;
@@ -6724,6 +6845,63 @@ Zero turns antialiasing off.
 
 	return (return_code);
 } /* Scene_viewer_set_antialias_mode */
+
+int Scene_viewer_get_depth_of_field(struct Scene_viewer *scene_viewer,
+	double *depth_of_field, double *focal_depth)
+/*******************************************************************************
+LAST MODIFIED : 5 December 2006
+
+DESCRIPTION :
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(Scene_viewer_get_depth_of_field);
+	if (scene_viewer && depth_of_field && focal_depth)
+	{
+		*depth_of_field = scene_viewer->depth_of_field;
+		*focal_depth = scene_viewer->focal_depth;
+		return_code=1;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Scene_viewer_get_depth_of_field.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Scene_viewer_get_depth_of_field */
+
+int Scene_viewer_set_depth_of_field(struct Scene_viewer *scene_viewer,
+	double depth_of_field, double focal_depth)
+/*******************************************************************************
+LAST MODIFIED : 5 December 2006
+
+DESCRIPTION :
+depth of field 0 == infinite.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(Scene_viewer_set_depth_of_field);
+	if (scene_viewer)
+	{
+		scene_viewer->depth_of_field = depth_of_field;
+		scene_viewer->focal_depth = focal_depth;
+		return_code = Scene_viewer_redraw(scene_viewer);
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Scene_viewer_set_depth_of_field.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Scene_viewer_set_depth_of_field */
 
 int Scene_viewer_get_blending_mode(struct Scene_viewer *scene_viewer,
 	enum Scene_viewer_blending_mode *blending_mode)
