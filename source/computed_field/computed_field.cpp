@@ -3816,7 +3816,8 @@ and should not itself be managed.
 						}
 						else
 						{
-							if (temp_field->core->get_type_string())
+							if (temp_field->core && 
+								temp_field->core->get_type_string())
 							{
 								/* add the new field to the manager */
 								if (!ADD_OBJECT_TO_MANAGER(Computed_field)(temp_field,
