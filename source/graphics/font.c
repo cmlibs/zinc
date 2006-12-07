@@ -406,6 +406,14 @@ Compiles the specified <font> so it can be used by the graphics.  The
 					}
 				} break;
 #endif /* defined (WIN32_USER_INTERFACE) */
+#if defined (WX_USER_INTERFACE)
+				case GRAPHICS_BUFFER_WX_TYPE:
+				{
+					display_message(ERROR_MESSAGE,"Graphics_font.  "
+						"Text not implemented for WX yet.");				
+					return_code = 1;
+				} break;
+#endif /* defined (WX_USER_INTERFACE) */
 				default:
 				{
 					display_message(ERROR_MESSAGE,"Graphics_font.  "

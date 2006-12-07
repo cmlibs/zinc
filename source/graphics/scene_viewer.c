@@ -73,6 +73,7 @@ November 97 Created from rendering part of Drawing.
 #include "graphics/scene_viewer.h"
 #include "graphics/texture.h"
 #include "graphics/transform_tool.h"
+#include "three_d_drawing/graphics_buffer.h"
 #include "user_interface/event_dispatcher.h"
 #include "user_interface/message.h"
 #include "user_interface/user_interface.h"
@@ -5599,7 +5600,7 @@ Returns the Scene_viewer stereo_eye_spacing.
 } /* Scene_viewer_get_stereo_eye_spacing */
 
 int Scene_viewer_set_stereo_eye_spacing(struct Scene_viewer *scene_viewer,
-	int stereo_eye_spacing)
+	double stereo_eye_spacing)
 /*******************************************************************************
 LAST MODIFIED : 13 August 2002
 

@@ -41,6 +41,15 @@ Functions for executing cmiss commands.
  * the terms of any one of the MPL, the GPL or the LGPL.
  *
  * ***** END LICENSE BLOCK ***** */
+
+#if defined (MOTIF) || defined (WIN32_USER_INTERFACE) || defined (GTK_USER_INTERFACE) || defined (WX_USER_INTERFACE)
+#define USE_CMGUI_COMMAND_WINDOW
+#endif /* defined (MOTIF) || defined (WIN32_USER_INTERFACE) || defined (GTK_USER_INTERFACE) || defined (WX_USER_INTERFACE) */
+#if defined (MOTIF) || defined (WIN32_USER_INTERFACE) || defined (GTK_USER_INTERFACE) || defined (WX_USER_INTERFACE)
+#define USE_CMGUI_GRAPHICS_WINDOW
+#endif /* defined (MOTIF) || defined (WIN32_USER_INTERFACE) || defined (GTK_USER_INTERFACE) || defined (WX_USER_INTERFACE) */
+
+
 #include <stddef.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -51,9 +60,9 @@ Functions for executing cmiss commands.
 #if defined (MOTIF)
 #include <Xm/List.h>
 #endif /* defined (MOTIF) */
-#if defined (MOTIF) || defined (GTK_USER_INTERFACE) || defined (WIN32_USER_INTERFACE)
+#if defined (USE_CMGUI_GRAPHICS_WINDOW)
 #include "api/cmiss_graphics_window_private.h"
-#endif /* defined (MOTIF) || defined (GTK_USER_INTERFACE) || defined (WIN32_USER_INTERFACE) */
+#endif /* defined (USE_CMGUI_GRAPHICS_WINDOW) */
 #include "api/cmiss_scene_viewer.h"
 #include "api/cmiss_scene_viewer_private.h"
 #if defined (CELL)
@@ -65,9 +74,9 @@ Functions for executing cmiss commands.
 #include "comfile/comfile_window.h"
 #endif /* defined (MOTIF) */
 #include "command/console.h"
-#if defined (MOTIF) || defined (WIN32_USER_INTERFACE) || defined (GTK_USER_INTERFACE) || defined (WX_USER_INTERFACE)
+#if defined (USE_CMGUI_COMMAND_WINDOW)
 #include "command/command_window.h"
-#endif /* defined (MOTIF) || defined (WIN32_USER_INTERFACE) || defined (GTK_USER_INTERFACE) || defined (WX_USER_INTERFACE) */
+#endif /* defined (USE_CMGUI_COMMAND_WINDOW) */
 #include "command/example_path.h"
 #include "command/parser.h"
 #include "computed_field/computed_field.h"
@@ -92,9 +101,9 @@ Functions for executing cmiss commands.
 #include "computed_field/computed_field_trigonometry.h"
 #include "computed_field/computed_field_update.h"
 #include "computed_field/computed_field_vector_operations.h"
-#if defined (MOTIF) || defined (GTK_USER_INTERFACE) || defined (WIN32_USER_INTERFACE) 
+#if defined (USE_CMGUI_GRAPHICS_WINDOW)
 #include "computed_field/computed_field_window_projection.h"
-#endif /* defined (MOTIF) || defined (GTK_USER_INTERFACE) || defined (WIN32_USER_INTERFACE) */
+#endif /* defined (USE_CMGUI_GRAPHICS_WINDOW) */
 #include "computed_field/computed_field_wrappers.h"
 #if defined (MOTIF)
 #include "element/element_creator.h"
@@ -135,9 +144,9 @@ Functions for executing cmiss commands.
 #include "graphics/glyph.h"
 #include "graphics/graphical_element.h"
 #include "graphics/graphics_object.h"
-#if defined (MOTIF) || defined (GTK_USER_INTERFACE) || defined (WIN32_USER_INTERFACE)
+#if defined (MOTIF) || defined (GTK_USER_INTERFACE) || defined (WIN32_USER_INTERFACE) || defined (WX_USER_INTERFACE)
 #include "graphics/graphics_window.h"
-#endif /* defined (MOTIF) || defined (GTK_USER_INTERFACE) || defined (WIN32_USER_INTERFACE) */
+#endif /* defined (USE_CMGUI_GRAPHICS_WINDOW) */
 #include "graphics/import_graphics_object.h"
 #include "graphics/iso_field_calculation.h"
 #include "graphics/light.h"
@@ -250,9 +259,9 @@ DESCRIPTION :
 	struct Cell_interface *cell_interface;
 #endif /* defined (CELL) */
 	struct Console *command_console;
-#if defined (MOTIF) || defined (WIN32_USER_INTERFACE) || defined (GTK_USER_INTERFACE) || defined (WX_USER_INTERFACE)
+#if defined (USE_CMGUI_COMMAND_WINDOW)
 	struct Command_window *command_window;
-#endif /* defined (MOTIF) || defined (WIN32_USER_INTERFACE) || defined (GTK_USER_INTERFACE) || defined (WX_USER_INTERFACE) */
+#endif /* USE_CMGUI_COMMAND_WINDOW */
 	struct Colour background_colour,foreground_colour;
 	struct Execute_command *execute_command,*set_command;
 	struct Element_point_tool *element_point_tool;
@@ -288,9 +297,9 @@ DESCRIPTION :
 	/* Always want the entry for graphics_buffer_package even if it will
 		not be available on this implementation */
 	struct Graphics_buffer_package *graphics_buffer_package;
-#if defined (MOTIF) || defined (GTK_USER_INTERFACE) || defined (WIN32_USER_INTERFACE)
+#if defined (USE_CMGUI_GRAPHICS_WINDOW)
 	struct MANAGER(Graphics_window) *graphics_window_manager;
-#endif /* defined (MOTIF) || defined (GTK_USER_INTERFACE) || defined (WIN32_USER_INTERFACE) */
+#endif /* defined (USE_CMGUI_GRAPHICS_WINDOW) */
 	struct MANAGER(Interactive_tool) *interactive_tool_manager;
 	struct IO_stream_package *io_stream_package;
 	struct MANAGER(Light) *light_manager;
@@ -7422,7 +7431,7 @@ editor at a time.  This implementation may be changed later.
 } /* gfx_create_curve_editor */
 #endif /* defined (MOTIF) */
 
-#if defined (MOTIF) || defined (GTK_USER_INTERFACE) || defined (WIN32_USER_INTERFACE)
+#if defined (USE_CMGUI_GRAPHICS_WINDOW)
 static int gfx_create_window(struct Parse_state *state,
 	void *dummy_to_be_modified,void *command_data_void)
 /*******************************************************************************
@@ -7618,7 +7627,7 @@ Executes a GFX CREATE WINDOW command.
 
 	return (return_code);
 } /* gfx_create_window */
-#endif /* defined (MOTIF) || defined (GTK_USER_INTERFACE)  || defined (WIN32_USER_INTERFACE)*/
+#endif /* defined (MOTIF) || defined (GTK_USER_INTERFACE)  || defined (WIN32_USER_INTERFACE) || defined (WX_USER_INTERFACE) */
 
 #if defined (HAPTIC)
 static int gfx_create_haptic(struct Parse_state *state,
@@ -8573,10 +8582,10 @@ Executes a GFX CREATE command.
 				Option_table_add_entry(option_table,"time_editor",NULL,
 					command_data_void,gfx_create_time_editor);
 #endif /* defined (MOTIF) */
-#if defined (MOTIF) || defined (GTK_USER_INTERFACE) || defined (WIN32_USER_INTERFACE)
+#if defined (USE_CMGUI_GRAPHICS_WINDOW)
 				Option_table_add_entry(option_table,"window",NULL,
 					command_data_void,gfx_create_window);
-#endif /* defined (MOTIF) || defined (GTK_USER_INTERFACE) || defined (WIN32_USER_INTERFACE) */
+#endif /* defined (USE_CMGUI_GRAPHICS_WINDOW) */
 				return_code=Option_table_parse(option_table,state);
 				DESTROY(Option_table)(&option_table);
 			}
@@ -13241,7 +13250,7 @@ Executes a GFX LIST MOVIE.
 } /* gfx_list_movie_graphics */
 #endif /* defined (SGI_MOVIE_FILE) */
 
-#if defined (MOTIF) || defined (GTK_USER_INTERFACE) || defined (WIN32_USER_INTERFACE)
+#if defined (USE_CMGUI_GRAPHICS_WINDOW)
 static int gfx_list_graphics_window(struct Parse_state *state,
 	void *dummy_to_be_modified,void *graphics_window_manager_void)
 /*******************************************************************************
@@ -13329,7 +13338,7 @@ Executes a GFX LIST WINDOW.
 
 	return (return_code);
 } /* gfx_list_graphics_window */
-#endif /* defined (MOTIF) || defined (GTK_USER_INTERFACE) || defined (WIN32_USER_INTERFACE) */
+#endif /* defined (USE_CMGUI_GRAPHICS_WINDOW) */
 
 static int execute_command_gfx_list(struct Parse_state *state,
 	void *dummy_to_be_modified,void *command_data_void)
@@ -13422,11 +13431,11 @@ Executes a GFX LIST command.
 			/* transformation */
 			Option_table_add_entry(option_table, "transformation", NULL,
 				command_data_void, gfx_list_transformation);
-#if defined (MOTIF) || defined (GTK_USER_INTERFACE) || defined (WIN32_USER_INTERFACE)
+#if defined (USE_CMGUI_GRAPHICS_WINDOW)
 			/* graphics window */
 			Option_table_add_entry(option_table, "window", NULL,
 				command_data->graphics_window_manager, gfx_list_graphics_window);
-#endif /* defined (MOTIF) || defined (GTK_USER_INTERFACE) || defined (WIN32_USER_INTERFACE) */
+#endif /* defined (USE_CMGUI_GRAPHICS_WINDOW) */
 			return_code = Option_table_parse(option_table, state);
 			DESTROY(Option_table)(&option_table);
 		}
@@ -14952,9 +14961,9 @@ Executes a GFX MODIFY command.
 	int return_code;
 	struct Cmiss_command_data *command_data;
 	struct Modify_environment_map_data modify_environment_map_data;
-#if defined (MOTIF) || defined (GTK_USER_INTERFACE) || defined (WIN32_USER_INTERFACE)
+#if defined (USE_CMGUI_GRAPHICS_WINDOW)
 	struct Modify_graphics_window_data modify_graphics_window_data;
-#endif /* defined (MOTIF) || defined (GTK_USER_INTERFACE) || defined (WIN32_USER_INTERFACE) */
+#endif /* defined (USE_CMGUI_GRAPHICS_WINDOW) */
 	struct Modify_light_data modify_light_data;
 	struct Modify_light_model_data modify_light_model_data;
 	struct Modify_scene_data modify_scene_data;
@@ -15046,7 +15055,7 @@ Executes a GFX MODIFY command.
 				/* texture */
 				Option_table_add_entry(option_table,"texture",NULL, 
 					(void *)command_data, gfx_modify_Texture);
-#if defined (MOTIF) || defined (GTK_USER_INTERFACE) || defined (WIN32_USER_INTERFACE)
+#if defined (USE_CMGUI_GRAPHICS_WINDOW)
 				/* window */
 				modify_graphics_window_data.graphics_window_manager=
 					command_data->graphics_window_manager;
@@ -15060,7 +15069,7 @@ Executes a GFX MODIFY command.
 					command_data->texture_manager;
 				Option_table_add_entry(option_table,"window",NULL, 
 					(void *)(&modify_graphics_window_data), modify_Graphics_window);
-#endif /* defined (MOTIF) || defined (GTK_USER_INTERFACE) || defined (WIN32_USER_INTERFACE) */
+#endif /* defined (USE_CMGUI_GRAPHICS_WINDOW) */
 
 				return_code=Option_table_parse(option_table,state);
 				DESTROY(Option_table)(&option_table);
@@ -22307,7 +22316,7 @@ for editing and entering. If there is no command_window, does nothing.
 	return (return_code);
 } /* cmiss_set_command */
 
-#if defined (MOTIF) || defined (WIN32_USER_INTERFACE) || defined (GTK_USER_INTERFACE) || defined (WX_USER_INTERFACE)
+#if defined(USE_CMGUI_COMMAND_WINDOW)
 static int display_error_message(char *message,void *command_window_void)
 /*******************************************************************************
 LAST MODIFIED : 25 July 1999
@@ -22335,9 +22344,9 @@ Display a cmgui error message.
 
 	return (return_code);
 } /* display_error_message */
-#endif /* defined (MOTIF) || defined (WIN32_USER_INTERFACE) || defined (GTK_USER_INTERFACE) || defined (WX_USER_INTERFACE) */
+#endif /* defined(USE_CMGUI_COMMAND_WINDOW) */
 
-#if defined (MOTIF) || defined (WIN32_USER_INTERFACE) || defined (GTK_USER_INTERFACE) || defined (WX_USER_INTERFACE)
+#if defined(USE_CMGUI_COMMAND_WINDOW)
 static int display_information_message(char *message,void *command_window_void)
 /*******************************************************************************
 LAST MODIFIED : 25 July 1999
@@ -22362,9 +22371,9 @@ Display a cmgui information message.
 
 	return (return_code);
 } /* display_information_message */
-#endif /* defined (MOTIF) || defined (WIN32_USER_INTERFACE) || defined (GTK_USER_INTERFACE) || defined (WX_USER_INTERFACE) */
+#endif /* defined(USE_CMGUI_COMMAND_WINDOW) */
 
-#if defined (MOTIF) || defined (WIN32_USER_INTERFACE) || defined (GTK_USER_INTERFACE) || defined (WX_USER_INTERFACE)
+#if defined(USE_CMGUI_COMMAND_WINDOW)
 static int display_warning_message(char *message,void *command_window_void)
 /*******************************************************************************
 LAST MODIFIED : 25 July 1999
@@ -22393,7 +22402,7 @@ Display a cmgui warning message.
 
 	return (return_code);
 } /* display_warning_message */
-#endif /* defined (MOTIF) || defined (WIN32_USER_INTERFACE) || defined (GTK_USER_INTERFACE) || defined (WX_USER_INTERFACE) */
+#endif /* defined(USE_CMGUI_COMMAND_WINDOW) */
 
 static int cmgui_execute_comfile(char *comfile_name,char *example_id,
 	char *examples_directory,char *example_symbol,char **example_comfile_name,
@@ -22812,9 +22821,9 @@ Initialise all the subcomponents of cmgui and create the Cmiss_command_data
 	struct Cmiss_command_data *command_data;
 	struct Colour ambient_colour, colour, default_colour;
 	struct Computed_field *computed_field;
-#if defined (MOTIF) || defined (WIN32_USER_INTERFACE) || defined (GTK_USER_INTERFACE) || defined (WX_USER_INTERFACE)
+#if defined(USE_CMGUI_COMMAND_WINDOW)
 	struct Command_window *command_window;
-#endif /* defined (MOTIF) || defined (WIN32_USER_INTERFACE) || defined (GTK_USER_INTERFACE) || defined (WX_USER_INTERFACE) */
+#endif /* defined(USE_CMGUI_COMMAND_WINDOW) */
 	struct Coordinate_system rect_coord_system;
 	struct FE_region *data_root_fe_region, *root_fe_region;
 	struct Graphical_material *material;
@@ -22885,9 +22894,9 @@ Initialise all the subcomponents of cmgui and create the Cmiss_command_data
 		command_data->default_spectrum=(struct Spectrum *)NULL;
 		command_data->spectrum_manager=(struct MANAGER(Spectrum) *)NULL;
 		command_data->graphics_buffer_package=(struct Graphics_buffer_package *)NULL;
-#if defined (MOTIF) || defined (GTK_USER_INTERFACE) || defined (WIN32_USER_INTERFACE)
+#if defined (USE_CMGUI_GRAPHICS_WINDOW)
 		command_data->graphics_window_manager=(struct MANAGER(Graphics_window) *)NULL;
-#endif /* defined (MOTIF) || defined (GTK_USER_INTERFACE) || defined (WIN32_USER_INTERFACE) */
+#endif /* defined (USE_CMGUI_GRAPHICS_WINDOW) */
 		command_data->root_region = (struct Cmiss_region *)NULL;
 		command_data->data_root_region = (struct Cmiss_region *)NULL;
 		command_data->curve_manager=(struct MANAGER(Curve) *)NULL;
@@ -23286,7 +23295,7 @@ Initialise all the subcomponents of cmgui and create the Cmiss_command_data
 				}
 			}
 		}
-#if defined (MOTIF) || defined (GTK_USER_INTERFACE) || defined (WIN32_USER_INTERFACE)
+#if defined (USE_CMGUI_GRAPHICS_WINDOW)
 		if (command_data->user_interface)
 		{
 			command_data->graphics_buffer_package = CREATE(Graphics_buffer_package)(
@@ -23296,7 +23305,7 @@ Initialise all the subcomponents of cmgui and create the Cmiss_command_data
 		}
 		/* graphics window manager.  Note there is no default window. */
 		command_data->graphics_window_manager=CREATE(MANAGER(Graphics_window))();
-#endif /* defined (MOTIF) || defined (GTK_USER_INTERFACE) || defined (WIN32_USER_INTERFACE) */
+#endif /* defined (USE_CMGUI_GRAPHICS_WINDOW) */
 		/* FE_element_shape manager */
 		/*???DB.  To be done */
 		command_data->element_shape_list=CREATE(LIST(FE_element_shape))();
@@ -23408,14 +23417,14 @@ Initialise all the subcomponents of cmgui and create the Cmiss_command_data
 				command_data->computed_field_package);
 			Computed_field_register_types_vector_operations(
 				command_data->computed_field_package);
-#if defined (MOTIF) || defined (GTK_USER_INTERFACE) || defined (WIN32_USER_INTERFACE) 
+#if defined (USE_CMGUI_GRAPHICS_WINDOW)
 			if (command_data->graphics_window_manager)
 			{
 				Computed_field_register_type_window_projection(
 					command_data->computed_field_package,
 					command_data->graphics_window_manager);
 			}
-#endif /* defined (MOTIF) || defined (GTK_USER_INTERFACE) || defined (WIN32_USER_INTERFACE) */
+#endif /* defined (USE_CMGUI_GRAPHICS_WINDOW) */
 			if (command_data->texture_manager)
 			{
 				Computed_field_register_type_sample_texture(
@@ -23608,9 +23617,9 @@ Initialise all the subcomponents of cmgui and create the Cmiss_command_data
 				command_data->scene_manager, command_data->default_scene,
 				command_data->texture_manager, command_data->user_interface);
 		
-#if defined (MOTIF) || defined (GTK_USER_INTERFACE) || defined (WIN32_USER_INTERFACE)
+#if defined (USE_CMGUI_GRAPHICS_WINDOW)
 			Cmiss_graphics_window_set_data(command_data->graphics_window_manager);
-#endif /* defined (MOTIF) || defined (GTK_USER_INTERFACE) || defined (WIN32_USER_INTERFACE) */
+#endif /* defined (USE_CMGUI_GRAPHICS_WINDOW) */
 		}
 
 		/* properly set up the Execute_command objects */
@@ -23710,10 +23719,10 @@ Initialise all the subcomponents of cmgui and create the Cmiss_command_data
 
 					if (!server_mode)
 					{
-#if defined (MOTIF) || defined (WIN32_USER_INTERFACE) || defined (GTK_USER_INTERFACE) || defined (WX_USER_INTERFACE) 
+#if defined(USE_CMGUI_COMMAND_WINDOW) 
 						if (console_mode)
 						{
-#endif /* defined (MOTIF) || defined (WIN32_USER_INTERFACE) || defined (GTK_USER_INTERFACE) || defined (WX_USER_INTERFACE) */
+#endif /* defined(USE_CMGUI_COMMAND_WINDOW) */
 							if (!(command_data->command_console = CREATE(Console)(
 										command_data->execute_command,
 										command_data->event_dispatcher, /*stdin*/0)))
@@ -23721,7 +23730,7 @@ Initialise all the subcomponents of cmgui and create the Cmiss_command_data
 								display_message(ERROR_MESSAGE,"main.  "
 									"Unable to create console.");
 							}
-#if defined (MOTIF) || defined (WIN32_USER_INTERFACE) || defined (GTK_USER_INTERFACE) || defined (WX_USER_INTERFACE)
+#if defined(USE_CMGUI_COMMAND_WINDOW)
 						}
 						else
 						{
@@ -23752,7 +23761,7 @@ Initialise all the subcomponents of cmgui and create the Cmiss_command_data
 								return_code=0;
 							}
 						}
-#endif /* defined (MOTIF) || defined (WIN32_USER_INTERFACE) || defined (GTK_USER_INTERFACE) || defined (WX_USER_INTERFACE) */
+#endif /* defined(USE_CMGUI_COMMAND_WINDOW) */
 					}
 #if defined (MOTIF)
 				}
@@ -23981,7 +23990,7 @@ Clean up the command_data, deallocating all the associated memory and resources.
 		}
 #endif /* defined (MOTIF) */
 
-#if defined (MOTIF) || defined (GTK_USER_INTERFACE) || defined (WIN32_USER_INTERFACE)
+#if defined (USE_CMGUI_GRAPHICS_WINDOW)
 		DESTROY(MANAGER(Graphics_window))(
 			&command_data->graphics_window_manager);
 		/* Must destroy the graphics_buffer_package after the windows which use it */
@@ -23989,7 +23998,7 @@ Clean up the command_data, deallocating all the associated memory and resources.
 		{
 			DESTROY(Graphics_buffer_package)(&command_data->graphics_buffer_package);
 		}
-#endif /* defined (MOTIF)|| defined (GTK_USER_INTERFACE) || defined (WIN32_USER_INTERFACE) */
+#endif /* defined (USE_CMGUI_GRAPHICS_WINDOW) */
 
 		if (command_data->computed_field_finite_element_package)
 		{

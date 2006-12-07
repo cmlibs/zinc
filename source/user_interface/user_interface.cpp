@@ -230,23 +230,6 @@ Module functions
 ----------------
 */
 
-#if defined (WX_USER_INTERFACE)
-class CmguiApp : public wxApp
-{
-public:
-    virtual bool OnInit()
-	{
-		return (true);
-	}
-
-	virtual ~CmguiApp()
-	{
-	}
-};	
-
-IMPLEMENT_APP_NO_MAIN(CmguiApp)
-#endif /* defined (WX_USER_INTERFACE) */
-
 #if defined (MOTIF)
 #if ! defined (USE_XTAPP_CONTEXT)
 static int User_interface_X_query_callback(
@@ -2107,30 +2090,6 @@ DESCRIPTION :
 
 	return (return_code);
 } /* User_interface_end_application_loop */
-
-#if defined (WX_USER_INTERFACE)
-int User_interface_wx_main_loop()
-/*******************************************************************************
-LAST MODIFIED : 8 November 2006
-
-DESCRIPTION :
-==============================================================================*/
-{
-	int return_code;
-
-	ENTER(User_interface_wx_main_loop);
-	
-	{
-		CmguiApp& app = wxGetApp();
-		app.OnRun();
-		return_code = 1;
-	}
-
-	LEAVE;
-
-	return (return_code);
-} /* User_interface_wx_main_loop */
-#endif /* defined (WX_USER_INTERFACE) */
 
 #if defined (MOTIF)
 Widget User_interface_get_application_shell(struct User_interface *user_interface)

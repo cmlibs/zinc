@@ -42,6 +42,7 @@ This provides a Cmgui interface to the OpenGL contexts of many types.
  *
  * ***** END LICENSE BLOCK ***** */
 
+extern "C" {
 #if defined (MOTIF)
 #if defined (SGI)
 /* Not compiling in as not being actively used and only available on O2's and
@@ -71,6 +72,12 @@ This provides a Cmgui interface to the OpenGL contexts of many types.
 #include <GL/gl.h>
 #include <windows.h>
 #endif /* defined (WIN32_USER_INTERFACE) */
+}
+#if defined (WX_USER_INTERFACE)
+#include <wx/wx.h>
+#include <wx/glcanvas.h>
+#endif /* defined (WX_USER_INTERFACE) */
+extern "C" {
 #include "general/callback_private.h"
 #include "general/debug.h"
 #include "general/indexed_list_private.h"
@@ -83,6 +90,7 @@ This provides a Cmgui interface to the OpenGL contexts of many types.
 #if defined (DEBUG)
 #include <stdio.h>
 #endif /* defined (DEBUG) */
+}
 
 #if !defined (AIX)
 /* SAB 30 June 2004
@@ -231,6 +239,10 @@ DESCRIPTION :
 	HDC hDC;
 	HGLRC hRC;
 #endif /* defined (WIN32_USER_INTERFACE) */
+#if defined (WX_USER_INTERFACE)
+	wxPanel *parent;
+	wxGLCanvas *canvas;
+#endif /* defined (WX_USER_INTERFACE) */
 };
 
 /*
@@ -255,7 +267,7 @@ DEFINE_CMISS_CALLBACK_FUNCTIONS(Graphics_buffer_input_callback, \
 
 DECLARE_OBJECT_FUNCTIONS(Graphics_buffer)
 
-#if defined (MOTIF) || defined (GTK_USER_INTERFACE) || defined (WIN32_USER_INTERFACE)
+#if defined (MOTIF) || defined (GTK_USER_INTERFACE) || defined (WIN32_USER_INTERFACE) || defined (WX_USER_INTERFACE)
 static struct Graphics_buffer *CREATE(Graphics_buffer)(
 	struct Graphics_buffer_package *package)
 /*******************************************************************************
@@ -345,7 +357,7 @@ contained in the this module only.
 	LEAVE;
 	return (buffer);
 } /* CREATE(Graphics_buffer) */
-#endif /* defined (MOTIF) || defined (GTK_USER_INTERFACE) || defined (WIN32_USER_INTERFACE) */
+#endif /* defined (MOTIF) || defined (GTK_USER_INTERFACE) || defined (WIN32_USER_INTERFACE) || defined (WX_USER_INTERFACE) */
 
 #if defined (MOTIF)
 static void Graphics_buffer_X3d_initialize_callback(Widget graphics_buffer_widget,
@@ -2473,7 +2485,6 @@ Global functions
 ----------------
 */
 
-#if defined (MOTIF) || defined (GTK_USER_INTERFACE) || defined (WIN32_USER_INTERFACE)
 struct Graphics_buffer_package *CREATE(Graphics_buffer_package)(
 	struct User_interface *user_interface)
 /*******************************************************************************
@@ -2564,9 +2575,7 @@ Closes the Graphics buffer package
 
 	return (return_code);
 } /* DESTROY(Graphics_buffer_package) */
-#endif /* defined (MOTIF) || defined (GTK_USER_INTERFACE) || defined (WIN32_USER_INTERFACE) */
 
-#if defined (MOTIF) || defined (GTK_USER_INTERFACE) || defined (WIN32_USER_INTERFACE)
 int Graphics_buffer_package_set_override_visual_id(
 	struct Graphics_buffer_package *graphics_buffer_package,
 	int override_visual_id)
@@ -2595,9 +2604,7 @@ Sets a particular visual to be used by all graphics buffers.
 
 	return (return_code);
 } /* Graphics_buffer_package_set_override_visual_id */
-#endif /* defined (MOTIF) || defined (GTK_USER_INTERFACE) */
 
-#if defined (MOTIF) || defined (GTK_USER_INTERFACE) || defined (WIN32_USER_INTERFACE)
 struct Graphics_buffer *create_Graphics_buffer_offscreen(
 	struct Graphics_buffer_package *graphics_buffer_package,
 	int width, int height,
@@ -2652,9 +2659,7 @@ DESCRIPTION :
 
 	return (buffer);
 } /* create_Graphics_buffer_offscreen */
-#endif /* defined (MOTIF) || defined (GTK_USER_INTERFACE) || defined (WIN32_USER_INTERFACE) */
 
-#if defined (MOTIF) || defined (GTK_USER_INTERFACE) || defined (WIN32_USER_INTERFACE)
 struct Graphics_buffer *create_Graphics_buffer_shared_offscreen(
 	struct Graphics_buffer_package *graphics_buffer_package,
 	int width, int height,
@@ -2709,9 +2714,7 @@ DESCRIPTION :
 
 	return (buffer);
 } /* create_Graphics_buffer_offscreen */
-#endif /* defined (MOTIF) || defined (GTK_USER_INTERFACE) || defined (WIN32_USER_INTERFACE) */
 
-#if defined (MOTIF) || defined (GTK_USER_INTERFACE) || defined (WIN32_USER_INTERFACE)
 struct Graphics_buffer *create_Graphics_buffer_offscreen_from_buffer(
 	int width, int height, struct Graphics_buffer *buffer_to_match)
 /*******************************************************************************
@@ -2758,7 +2761,6 @@ DESCRIPTION :
 
 	return (buffer);
 } /* create_Graphics_buffer_offscreen_from_buffer */
-#endif /* defined (MOTIF) || defined (GTK_USER_INTERFACE) || defined (WIN32_USER_INTERFACE) */
 
 #if defined (MOTIF)
 struct Graphics_buffer *create_Graphics_buffer_X3d(
@@ -3508,6 +3510,117 @@ DESCRIPTION :
 } /* Graphics_buffer_win32_use_font_bitmaps */
 #endif /* defined (WIN32_USER_INTERFACE) */
 
+
+#if defined (WX_USER_INTERFACE)
+class wxGraphicsBuffer : public wxGLCanvas
+{
+	Graphics_buffer *graphics_buffer;
+	wxPanel *parent;
+
+public:
+
+	wxGraphicsBuffer(wxPanel *parent, Graphics_buffer *graphics_buffer): 
+		wxGLCanvas(parent, wxID_ANY, wxDefaultPosition, wxSize(200, 200),
+			wxFULL_REPAINT_ON_RESIZE),
+		graphics_buffer(graphics_buffer), parent(parent)
+	{
+	};
+	
+	wxGraphicsBuffer()
+	{
+	};
+
+	void OnPaint( wxPaintEvent& WXUNUSED(event) )
+	{
+		/* must always be here */
+		wxPaintDC dc(this);
+		
+		CMISS_CALLBACK_LIST_CALL(Graphics_buffer_callback)(
+			graphics_buffer->expose_callback_list, graphics_buffer, NULL);
+	}
+
+	void OnSize(wxSizeEvent& event)
+	{
+		// this is also necessary to update the context on some platforms
+		wxGLCanvas::OnSize(event);
+
+		CMISS_CALLBACK_LIST_CALL(Graphics_buffer_callback)(
+			graphics_buffer->resize_callback_list, graphics_buffer, NULL);
+	}
+
+	void OnEraseBackground(wxEraseEvent& WXUNUSED(event))
+	{
+		/* Do nothing, to avoid flashing on MSW */
+	}
+
+	void OnMouse( wxMouseEvent& event )
+	{
+
+	}
+
+	DECLARE_DYNAMIC_CLASS(wxGraphicsBuffer);
+   DECLARE_EVENT_TABLE();
+};
+
+IMPLEMENT_DYNAMIC_CLASS(wxGraphicsBuffer, wxGLCanvas)
+
+BEGIN_EVENT_TABLE(wxGraphicsBuffer, wxGLCanvas)
+    EVT_SIZE(wxGraphicsBuffer::OnSize)
+    EVT_PAINT(wxGraphicsBuffer::OnPaint)
+    EVT_ERASE_BACKGROUND(wxGraphicsBuffer::OnEraseBackground)
+    EVT_MOUSE_EVENTS(wxGraphicsBuffer::OnMouse)
+END_EVENT_TABLE()
+
+#endif /* defined (WX_USER_INTERFACE) */
+
+#if defined (WX_USER_INTERFACE)
+struct Graphics_buffer *create_Graphics_buffer_wx(
+	struct Graphics_buffer_package *graphics_buffer_package,
+	wxPanel *parent,
+	enum Graphics_buffer_buffering_mode buffering_mode,
+	enum Graphics_buffer_stereo_mode stereo_mode,
+	int minimum_colour_buffer_depth, int minimum_depth_buffer_depth, 
+	int minimum_accumulation_buffer_depth)
+/*******************************************************************************
+LAST MODIFIED : 7 December 2006
+
+DESCRIPTION :
+==============================================================================*/
+{
+	struct Graphics_buffer *buffer;
+
+	ENTER(create_Graphics_buffer_win32);
+	USE_PARAMETER(buffering_mode);
+	USE_PARAMETER(stereo_mode);
+	if (buffer = CREATE(Graphics_buffer)(graphics_buffer_package))
+	{
+
+		buffer->type = GRAPHICS_BUFFER_WX_TYPE;
+
+		buffer->parent = parent;
+
+		buffer->canvas = new wxGraphicsBuffer(parent, buffer);
+
+		wxBoxSizer *topsizer = new wxBoxSizer( wxVERTICAL );
+		
+		// create text ctrl with minimal size 100x60
+		topsizer->Add(buffer->canvas,
+			wxSizerFlags(1).Align(wxALIGN_CENTER).Expand().Border(wxALL, 10));
+
+		parent->SetSizer(topsizer);
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"create_Graphics_buffer_win32.  "
+			"Unable to create generic Graphics_buffer.");
+		buffer = (struct Graphics_buffer *)NULL;
+	}
+	LEAVE;
+
+	return (buffer);
+} /* create_Graphics_buffer_wx */
+#endif /* defined (WX_USER_INTERFACE) */
+
 int Graphics_buffer_make_current(struct Graphics_buffer *buffer)
 /*******************************************************************************
 LAST MODIFIED : 2 July 2002
@@ -3567,6 +3680,13 @@ DESCRIPTION :
 				return_code = 1;
 			} break;
 #endif /* defined (WIN32_USER_INTERFACE) */
+#if defined (WX_USER_INTERFACE)
+			case GRAPHICS_BUFFER_WX_TYPE:
+			{
+				buffer->canvas->SetCurrent();
+				return_code = 1;
+			} break;
+#endif /* defined (WX_USER_INTERFACE) */
 			default:
 			{
 				display_message(ERROR_MESSAGE,"Graphics_buffer_make_current.  "
@@ -3631,6 +3751,13 @@ Returns the visual id used by the graphics buffer.
 				return_code = 0;
 			} break;
 #endif /* defined (WIN32_USER_INTERFACE) */
+#if defined (WX_USER_INTERFACE)
+			case GRAPHICS_BUFFER_WX_TYPE:
+			{
+				*visual_id = 0;
+				return_code = 0;
+			} break;
+#endif /* defined (WX_USER_INTERFACE) */
 			default:
 			{
 				display_message(ERROR_MESSAGE,"Graphics_buffer_get_visual_id.  "
@@ -3927,6 +4054,13 @@ Returns the buffering mode used by the graphics buffer.
 				return_code = 1;
 			} break;
 #endif /* defined (WIN32_USER_INTERFACE) */
+#if defined (WX_USER_INTERFACE)
+			case GRAPHICS_BUFFER_WX_TYPE:
+			{
+				*buffering_mode = GRAPHICS_BUFFER_DOUBLE_BUFFERING;
+				return_code = 1;
+			} break;
+#endif /* defined (WX_USER_INTERFACE) */
 			default:
 			{
 				display_message(ERROR_MESSAGE,"Graphics_buffer_get_buffering_mode.  "
@@ -4012,6 +4146,13 @@ Returns the stereo mode used by the graphics buffer.
 				return_code = 1;
 			} break;
 #endif /* defined (WIN32_USER_INTERFACE) */
+#if defined (WX_USER_INTERFACE)
+			case GRAPHICS_BUFFER_WX_TYPE:
+			{
+				*stereo_mode = GRAPHICS_BUFFER_MONO;
+				return_code = 1;
+			} break;
+#endif /* defined (WX_USER_INTERFACE) */
 
 			default:
 			{
@@ -4088,6 +4229,13 @@ DESCRIPTION :
 				return_code = 1;
 			} break;
 #endif /* defined (WIN32_USER_INTERFACE) */
+#if defined (WX_USER_INTERFACE)
+			case GRAPHICS_BUFFER_WX_TYPE:
+			{
+				buffer->canvas->SwapBuffers();
+				return_code = 1;
+			} break;
+#endif /* defined (WX_USER_INTERFACE) */
 			default:
 			{
 				display_message(ERROR_MESSAGE,"Graphics_buffer_swap_buffers.  "
@@ -4208,6 +4356,13 @@ Returns the width of buffer represented by <buffer>.
 				}
 			} break;
 #endif /* defined (WIN32_USER_INTERFACE) */
+#if defined (WX_USER_INTERFACE)
+			case GRAPHICS_BUFFER_WX_TYPE:
+			{
+				int height;
+				buffer->canvas->GetClientSize(&width, &height);
+			} break;
+#endif /* defined (WX_USER_INTERFACE) */
 			default:
 			{
 				display_message(ERROR_MESSAGE,"Graphics_buffer_get_width.  "
@@ -4257,6 +4412,15 @@ Sets the width of buffer represented by <buffer>.
 				return_code = 1;
 			} break;
 #endif /* defined (MOTIF) */
+#if defined (WX_USER_INTERFACE)
+			case GRAPHICS_BUFFER_WX_TYPE:
+			{
+				int old_width, height;
+				buffer->canvas->GetClientSize(&old_width, &height);
+				buffer->canvas->SetClientSize(width, height);
+				return_code = 1;
+			} break;
+#endif /* defined (WX_USER_INTERFACE) */
 			default:
 			{
 				display_message(ERROR_MESSAGE,"Graphics_buffer_set_width.  "
@@ -4331,6 +4495,13 @@ Returns the height of buffer represented by <buffer>.
 				}
 			} break;
 #endif /* defined (WIN32_USER_INTERFACE) */
+#if defined (WX_USER_INTERFACE)
+			case GRAPHICS_BUFFER_WX_TYPE:
+			{
+				int width;
+				buffer->canvas->GetClientSize(&width, &height);
+			} break;
+#endif /* defined (WX_USER_INTERFACE) */
 			default:
 			{
 				display_message(ERROR_MESSAGE,"Graphics_buffer_get_height.  "
@@ -4380,6 +4551,15 @@ Sets the height of buffer represented by <buffer>.
 				return_code = 1;
 			} break;
 #endif /* defined (MOTIF) */
+#if defined (WX_USER_INTERFACE)
+			case GRAPHICS_BUFFER_WX_TYPE:
+			{
+				int width, old_height;
+				buffer->canvas->GetClientSize(&width, &old_height);
+				buffer->canvas->SetClientSize(width, height);
+				return_code = 1;
+			} break;
+#endif /* defined (WX_USER_INTERFACE) */
 			default:
 			{
 				display_message(ERROR_MESSAGE,"Graphics_buffer_set_height.  "
@@ -4542,6 +4722,12 @@ into unmanaged or invisible widgets.
 				return_code = 1;
 			} break;
 #endif /* defined (WIN32_USER_INTERFACE) */
+#if defined (WX_USER_INTERFACE)
+			case GRAPHICS_BUFFER_WX_TYPE:
+			{
+				return_code = 1;
+			} break;
+#endif /* defined (WX_USER_INTERFACE) */
 			default:
 			{
 				display_message(ERROR_MESSAGE,"Graphics_buffer_is_visible.  "
@@ -4600,11 +4786,15 @@ Activates the graphics <buffer>.
 #if defined (WIN32_USER_INTERFACE)
 			case GRAPHICS_BUFFER_WIN32_TYPE:
 			{
-
 				return_code = 1;
 			} break;
 #endif /* defined (WIN32_USER_INTERFACE) */
-
+#if defined (WX_USER_INTERFACE)
+			case GRAPHICS_BUFFER_WX_TYPE:
+			{
+				return_code = 1;
+			} break;
+#endif /* defined (WX_USER_INTERFACE) */
 			default:
 			{
 				display_message(ERROR_MESSAGE,"Graphics_buffer_awaken.  "

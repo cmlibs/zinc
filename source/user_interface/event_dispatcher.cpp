@@ -70,6 +70,8 @@ extern "C" {
 extern "C" {
 #include "user_interface/user_interface.h"
 }
+#elif defined (CARBON_USER_INTERFACE) /* switch (USER_INTERFACE) */
+#include "carbon/carbon.h"
 #elif defined (USE_GTK_MAIN_STEP) /* switch (USER_INTERFACE) */
 extern "C" {
 #include <gtk/gtk.h>
@@ -126,6 +128,9 @@ Contains all information necessary for a file descriptor callback.
 #if defined (USE_XTAPP_CONTEXT)
 	XtIntervalId xt_timeout_id;
 #endif /* defined (USE_XTAPP_CONTEXT) */
+#if defined (CARBON_USER_INTERFACE)
+	EventLoopTimerRef carbon_timer_ref;
+#endif /* defined (CARBON_USER_INTERFACE) */
 }; /* struct Event_dispatcher_timeout_callback */
 
 PROTOTYPE_OBJECT_FUNCTIONS(Event_dispatcher_timeout_callback);
@@ -156,6 +161,9 @@ Contains all information necessary for a file descriptor callback.
 #if defined (USE_GTK_MAIN_STEP)
 	guint gtk_idle_id;
 #endif /* defined (USE_GTK_MAIN_STEP) */
+#if defined (CARBON_USER_INTERFACE)
+	EventLoopTimerRef carbon_timer_ref;
+#endif /* defined (CARBON_USER_INTERFACE) */
 }; /* struct Event_dispatcher_idle_callback */
 
 PROTOTYPE_OBJECT_FUNCTIONS(Event_dispatcher_idle_callback);
@@ -578,6 +586,12 @@ Create a single object that belongs to a specific file descriptor.
 		timeout_callback->timeout_ns = timeout_ns;
 		timeout_callback->timeout_function = timeout_function;
 		timeout_callback->user_data = user_data;
+#if defined (USE_XTAPP_CONTEXT)
+		timeout_callback->xt_timeout_id = (XtIntervalId)NULL;
+#endif /* defined (USE_XTAPP_CONTEXT) */
+#if defined (CARBON_USER_INTERFACE)
+		timeout_callback->carbon_timer_ref = (EventLoopTimerRef)NULL;
+#endif /* defined (CARBON_USER_INTERFACE) */
 		timeout_callback->access_count = 0;
 	}
 	else
@@ -727,6 +741,10 @@ Create a single object that belongs to a specific file descriptor.
 #if defined (USE_GTK_MAIN_STEP)
 		idle_callback->gtk_idle_id = 0;
 #endif /* defined (USE_GTK_MAIN_STEP) */
+#if defined (CARBON_USER_INTERFACE)
+		idle_callback->carbon_timer_ref = (EventLoopTimerRef)NULL;
+#endif /* defined (CARBON_USER_INTERFACE) */
+
 	}
 	else
 	{
@@ -993,6 +1011,126 @@ DESCRIPTION :
 	return (return_code);
 } /* Event_dispatcher_win32_idle_callback */
 #endif /* defined (WIN32_USER_INTERFACE) */
+
+#if defined (CARBON_USER_INTERFACE)
+static void Event_dispatcher_Carbon_idle_callback(
+	EventLoopTimerRef timer, EventLoopIdleTimerMessage state,
+	void *idle_callback_void)
+/*******************************************************************************
+LAST MODIFIED : 24 November 2006
+
+DESCRIPTION :
+==============================================================================*/
+{
+	struct Event_dispatcher_idle_callback *idle_callback;
+
+	ENTER(Event_dispatcher_gtk_idle_callback);
+	if (idle_callback = (struct Event_dispatcher_idle_callback *)idle_callback_void)
+	{
+		if ((*idle_callback->idle_function)(idle_callback->user_data))
+		{
+			RemoveEventLoopTimer(idle_callback->carbon_timer_ref);
+			idle_callback->carbon_timer_ref = (EventLoopTimerRef)NULL;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Event_dispatcher_gtk_idle_callback.  Invalid arguments.");
+	}
+	LEAVE;
+} /* Event_dispatcher_Carbon_idle_callback */
+#endif /* defined (CARBON_USER_INTERFACE) */
+
+#if defined (WX_USER_INTERFACE)
+static int Event_dispatcher_do_idle_event(struct Event_dispatcher *event_dispatcher)
+/*******************************************************************************
+LAST MODIFIED : 8 December 2006
+
+DESCRIPTION :
+==============================================================================*/
+{
+	int return_code;
+	int callback_code;
+	struct Event_dispatcher_idle_callback *idle_callback;
+#if !defined (WIN32_SYSTEM)
+	struct tms times_buffer;
+#endif /* !defined (WIN32_SYSTEM) */
+
+	ENTER(Event_dispatcher_do_idle_event);
+
+	if (event_dispatcher)
+	{
+		if(idle_callback = FIRST_OBJECT_IN_LIST_THAT(Event_dispatcher_idle_callback)
+			((LIST_CONDITIONAL_FUNCTION(Event_dispatcher_idle_callback) *)NULL,
+				(void *)NULL, event_dispatcher->idle_list))
+		{
+			ACCESS(Event_dispatcher_idle_callback)(idle_callback);
+			callback_code = (*idle_callback->idle_function)(idle_callback->user_data);
+			if (IS_OBJECT_IN_LIST(Event_dispatcher_idle_callback)
+				(idle_callback, event_dispatcher->idle_list))
+			{
+				REMOVE_OBJECT_FROM_LIST(Event_dispatcher_idle_callback)
+					(idle_callback, event_dispatcher->idle_list);
+				if (callback_code != 0)
+				{
+#if defined (WIN32_SYSTEM)
+					GetSystemTimeAsFileTime(&(idle_callback->timestamp));
+#else /* defined (WIN32_SYSTEM) */
+					idle_callback->timestamp = (long)times(&times_buffer);
+#endif /* defined (WIN32_SYSTEM) */
+					ADD_OBJECT_TO_LIST(Event_dispatcher_idle_callback)
+						(idle_callback, event_dispatcher->idle_list);
+				}
+			}
+			DEACCESS(Event_dispatcher_idle_callback)(&idle_callback);
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Event_dispatcher_register_do_one_event.  Invalid arguments.");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Event_dispatcher_do_one_event */
+
+class wxCmguiApp : public wxApp
+{
+	Event_dispatcher *event_dispatcher;
+
+public:
+    virtual bool OnInit()
+	{
+		return (true);
+	}
+
+	virtual ~wxCmguiApp()
+	{
+	}
+	
+	void OnIdle(wxIdleEvent& event)
+	{
+		Event_dispatcher_do_idle_event(event_dispatcher);
+	}
+
+	void SetEventDispatcher(Event_dispatcher *event_dispatcher_in)
+	{
+		event_dispatcher = event_dispatcher_in;
+	}
+
+   DECLARE_EVENT_TABLE();
+};	
+
+IMPLEMENT_APP_NO_MAIN(wxCmguiApp)
+
+BEGIN_EVENT_TABLE(wxCmguiApp, wxApp)
+	EVT_IDLE(wxCmguiApp::OnIdle)
+END_EVENT_TABLE()
+
+#endif /* defined (WX_USER_INTERFACE) */
 
 /*
 Global functions
@@ -1377,7 +1515,154 @@ Set a timeout on Win32...
 	return timeout_callback;
 }
 
-#else /* defined (WIN32_USER_INTERFACE) */
+#elif defined (CARBON_USER_INTERFACE)
+
+static void Event_dispatcher_process_Carbon_timeout(
+	EventLoopTimerRef timer, void *user_data)
+/*******************************************************************************
+LAST MODIFIED : 1 December 2006
+
+DESCRIPTION :
+Processes a Carbon timer.
+==============================================================================*/
+{
+  struct Event_dispatcher_timeout_callback *timeout_callback;
+
+  ENTER(Event_dispatcher_process_win32_timeout);
+  USE_PARAMETER(timer);
+
+  timeout_callback = (struct Event_dispatcher_timeout_callback*)user_data;
+
+  /* Our timers are one-shot, Carbon timers recur... */
+  RemoveEventLoopTimer(timeout_callback->carbon_timer_ref);
+
+  (*timeout_callback->timeout_function)(
+	timeout_callback->user_data);
+  
+  DESTROY(Event_dispatcher_timeout_callback)(&timeout_callback);
+
+  LEAVE;
+}
+
+struct Event_dispatcher_timeout_callback *Event_dispatcher_add_timeout_callback_at_time(
+	struct Event_dispatcher *event_dispatcher, unsigned long timeout_s, unsigned long timeout_ns,
+	Event_dispatcher_timeout_function *timeout_function, void *user_data)
+/*******************************************************************************
+LAST MODIFIED : 1 December 2006
+
+DESCRIPTION :
+Set a timeout on Carbon...
+==============================================================================*/
+{
+	struct Event_dispatcher_timeout_callback *timeout_callback;
+  
+	ENTER(Event_dispatcher_register_descriptor_callback);
+
+	if (event_dispatcher && timeout_function)
+	{
+		if (timeout_callback = CREATE(Event_dispatcher_timeout_callback)(
+			timeout_s, timeout_ns, timeout_function, user_data))
+		{
+			EventLoopRef main_loop;
+			EventLoopTimerUPP timer_UPP;
+
+			main_loop = GetMainEventLoop();
+			timer_UPP = NewEventLoopTimerUPP(Event_dispatcher_process_Carbon_timeout);
+
+			InstallEventLoopTimer(main_loop,
+				timeout_s * kEventDurationSecond +
+				timeout_ns * kEventDurationNanosecond,
+				kEventDurationSecond, timer_UPP, timeout_callback,
+				&timeout_callback->carbon_timer_ref);
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,
+				"Event_dispatcher_add_timeout_callback_at_time.  "
+				"Could not create timeout_callback object.");
+			timeout_callback = (struct Event_dispatcher_timeout_callback *)NULL;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Event_dispatcher_add_timeout_callback_at_time.  Invalid arguments.");
+		timeout_callback = (struct Event_dispatcher_timeout_callback *)NULL;
+	}
+
+	LEAVE;
+
+	return timeout_callback;
+}
+
+#elif defined (WX_USER_INTERFACE)
+
+class wxEventTimer : public wxTimer
+{
+  struct Event_dispatcher_timeout_callback *timeout_callback;
+
+
+	~wxEventTimer()
+	{
+		DESTROY(Event_dispatcher_timeout_callback)(&timeout_callback);
+	}
+
+	void Notify()
+	{
+		(*timeout_callback->timeout_function)(
+			timeout_callback->user_data);
+	}
+	
+public:
+	wxEventTimer(struct Event_dispatcher_timeout_callback *timeout_callback):
+		timeout_callback(timeout_callback)
+	{
+	}
+}; // class wxEventTimer
+
+struct Event_dispatcher_timeout_callback *Event_dispatcher_add_timeout_callback_at_time(
+	struct Event_dispatcher *event_dispatcher, unsigned long timeout_s, unsigned long timeout_ns,
+	Event_dispatcher_timeout_function *timeout_function, void *user_data)
+/*******************************************************************************
+LAST MODIFIED : 1 December 2006
+
+DESCRIPTION :
+Set a timeout on Carbon...
+==============================================================================*/
+{
+	struct Event_dispatcher_timeout_callback *timeout_callback;
+  
+	ENTER(Event_dispatcher_register_descriptor_callback);
+
+	if (event_dispatcher && timeout_function)
+	{
+		if (timeout_callback = CREATE(Event_dispatcher_timeout_callback)(
+			timeout_s, timeout_ns, timeout_function, user_data))
+		{
+			wxEventTimer *timer = new wxEventTimer(timeout_callback);
+			timer->Start(timeout_s * 1000 + timeout_ns / 1000, /*OneShot*/true);
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,
+				"Event_dispatcher_add_timeout_callback_at_time.  "
+				"Could not create timeout_callback object.");
+			timeout_callback = (struct Event_dispatcher_timeout_callback *)NULL;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Event_dispatcher_add_timeout_callback_at_time.  Invalid arguments.");
+		timeout_callback = (struct Event_dispatcher_timeout_callback *)NULL;
+	}
+
+	LEAVE;
+
+	return timeout_callback;
+}
+
+#elif defined (GENERIC_USER_INTERFACE)
 
 struct Event_dispatcher_timeout_callback *Event_dispatcher_add_timeout_callback_at_time(
 	struct Event_dispatcher *event_dispatcher, unsigned long timeout_s, unsigned long timeout_ns,
@@ -1422,7 +1707,10 @@ DESCRIPTION :
 
 	return (timeout_callback);
 } /* Event_dispatcher_add_timeout_callback_at_time */
-#endif /* defined(WIN32_USER_INTERFACE) else */
+
+#else /* switch (USER_INTERFACE) */
+#error Timeout callbacks not defined on this platform
+#endif /* switch (USER_INTERFACE) */
 
 struct Event_dispatcher_timeout_callback *Event_dispatcher_add_timeout_callback(
 	struct Event_dispatcher *event_dispatcher, unsigned long timeout_s, unsigned long timeout_ns,
@@ -1436,6 +1724,7 @@ DESCRIPTION :
 	struct Event_dispatcher_timeout_callback *timeout_callback;
 #if defined (WIN32_SYSTEM)
 	ULONGLONG system_time;
+#elif defined (CARBON_USER_INTERFACE)
 #else /* defined (WIN32_SYSTEM) */
 	struct timeval timeofday;
 #endif /* defined (WIN32_SYSTEM) */
@@ -1451,6 +1740,11 @@ DESCRIPTION :
 			(unsigned long)(system_time/10000000L),
 			timeout_ns +
 			100*(unsigned long)(system_time%10000000L),
+			timeout_function, user_data);
+#elif defined (CARBON_USER_INTERFACE)
+		timeout_callback = Event_dispatcher_add_timeout_callback_at_time(
+			event_dispatcher, timeout_s, 
+			timeout_ns, 
 			timeout_function, user_data);
 #else /* defined (WIN32_SYSTEM) */
 		gettimeofday(&timeofday, NULL);
@@ -1555,6 +1849,18 @@ DESCRIPTION :
 			{
 				idle_callback->gtk_idle_id = gtk_idle_add(
 					Event_dispatcher_gtk_idle_callback, idle_callback);
+			}
+#elif defined (CARBON_USER_INTERFACE)
+			else
+			{
+				EventLoopRef main_loop = GetMainEventLoop();
+				EventLoopIdleTimerUPP idle_timer_function = 
+					NewEventLoopIdleTimerUPP(Event_dispatcher_Carbon_idle_callback);
+
+				InstallEventLoopIdleTimer(main_loop,
+					/*FireDelay*/0, /*Interval*/10,
+					idle_timer_function, idle_callback,
+					&idle_callback->carbon_timer_ref);
 			}
 #elif defined (WIN32_SYSTEM)
 			else
@@ -1663,6 +1969,9 @@ DESCRIPTION :
 		XtRemoveWorkProc(callback_id->xt_idle_id);
 #elif defined (USE_GTK_MAIN_STEP)
 		gtk_idle_remove(callback_id->gtk_idle_id);
+#elif defined (CARBON_USER_INTERFACE)
+		RemoveEventLoopTimer(callback_id->carbon_timer_ref);
+		callback_id->carbon_timer_ref = (EventLoopTimerRef)NULL;
 #endif /* defined (USE_XTAPP_CONTEXT) */
 		callback_id->idle_function = NULL;
 		return_code = REMOVE_OBJECT_FROM_LIST(Event_dispatcher_idle_callback)
@@ -1716,6 +2025,8 @@ DESCRIPTION :
 		return_code = 1;
 #elif defined (USE_XTAPP_CONTEXT) /* switch (USER_INTERFACE) */
 		XtAppProcessEvent(event_dispatcher->application_context, XtIMAll);
+		return_code = 1;
+#elif defined (CARBON_USER_INTERFACE) /* switch (USER_INTERFACE) */
 		return_code = 1;
 #elif defined (USE_GENERIC_EVENT_DISPATCHER) /* switch (USER_INTERFACE) */
 		return_code=1;
@@ -1927,12 +2238,21 @@ DESCRIPTION :
 	{
 		return_code=1;
 #if ! defined (WX_USER_INTERFACE)
+#  if ! defined (CARBON_USER_INTERFACE)
 		while(event_dispatcher->continue_flag)
 		{
 			Event_dispatcher_do_one_event(event_dispatcher);
 		}
+#  else /* ! defined (CARBON_USER_INTERFACE) */
+		RunApplicationEventLoop(); // Process events until time to quit
+#  endif /* ! defined (CARBON_USER_INTERFACE) */
 #else /* ! defined (WX_USER_INTERFACE) */
-		User_interface_wx_main_loop();
+
+		wxCmguiApp &app = wxGetApp();
+		app.SetEventDispatcher(event_dispatcher);
+		app.OnRun();
+		return_code = 1;
+
 #endif /* ! defined (WX_USER_INTERFACE) */
 	}
 	else
@@ -2485,6 +2805,361 @@ previously set will be cancelled.
 } /* Fdio_set_write_callback (win32 version) */
 
 #elif defined(WX_USER_INTERFACE)
+
+Fdio_id Event_dispatcher_create_Fdio(struct Event_dispatcher *dispatcher,
+	Cmiss_native_socket_t descriptor)
+/*******************************************************************************
+LAST MODIFIED : 16 May 2005
+
+DESCRIPTION :
+Creates a new Fdio, given an event dispatcher and a descriptor.
+==============================================================================*/
+{
+	struct Fdio *io;
+
+	ENTER(Event_dispatcher_create_fdio);
+	ALLOCATE(io, struct Fdio, 1);
+	if (io)
+	{
+		memset(io, 0, sizeof(*io));
+		io->event_dispatcher = dispatcher;
+		io->descriptor = descriptor;
+		io->access_count = 0;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE, "Event_dispatcher_create_fdio.  "
+			"Unable to allocate structure");
+	}
+
+	//	io->iochannel = g_io_channel_unix_new(descriptor);
+	//	io->read_source_tag = 0;
+	// io->write_source_tag = 0;
+
+	LEAVE;
+
+	return (io);
+} /* Event_dispatcher_create_fdio (glib) */
+
+int DESTROY(Fdio)(Fdio_id *io)
+/*******************************************************************************
+LAST MODIFIED : 16 May 2005
+
+DESCRIPTION :
+Destroys the IO object. This causes cmgui to forget about the descriptor, but the
+descriptor itself must still be closed. This should be called as soon as the
+application is notified by the operating system of a closure event.
+==============================================================================*/
+{
+	if ((*io)->read_data.function)
+	{
+		Fdio_set_read_callback(*io, NULL, NULL);
+	}
+	else if ((*io)->write_data.function)
+	{
+		Fdio_set_write_callback(*io, NULL, NULL);
+	}
+
+	// g_io_channel_unref((*io)->iochannel);
+
+	// if ((*io)->read_source_tag != 0)
+	//	g_source_remove((*io)->read_source_tag);
+	//if ((*io)->write_source_tag != 0)
+	//	g_source_remove((*io)->write_source_tag);
+
+	DEALLOCATE((*io));
+	*io = NULL;
+	return (1);
+} /* DESTROY(Fdio) (glib) */
+
+int Fdio_set_read_callback(Fdio_id handle, Fdio_callback callback,
+	void *user_data)
+/*******************************************************************************
+LAST MODIFIED : 16 May 2005
+
+DESCRIPTION :
+Sets a read callback on the specified IO handle. This callback is called at
+least once after a read function indicates it would block. An application
+should not rely upon it being called more than once without attempting a
+read between the calls. This read should occur after fdio_set_read_callback
+is called. The callback will also be called if the underlying descriptor is
+closed by the peer. The callback is not one-shot, and the callback remains in
+effect until it is explicitly cancelled.
+
+There may be at most one read callback set per I/O handle at any one time. If
+this function is passed NULL as the callback parameter, the read callback
+previously set will be cancelled.
+==============================================================================*/
+{
+	ENTER(Fdio_set_read_callback);
+
+	if (callback == NULL)
+	{
+		handle->read_data.function = NULL;
+		//		if (handle->read_source_tag != 0)
+		//{
+		//	g_source_remove(handle->read_source_tag);
+		//	handle->read_source_tag = 0;
+		//}
+	}
+	else
+	{
+		handle->read_data.function = callback;
+		handle->read_data.app_user_data = user_data;
+		//if (handle->read_source_tag == 0)
+		//	handle->read_source_tag =
+		//		g_io_add_watch(handle->iochannel, G_IO_IN | G_IO_HUP,
+		//			Fdio_glib_io_callback, handle);
+	}
+
+	LEAVE;
+
+	return (1);
+} /* Fdio_set_read_callback (glib version) */
+
+int Fdio_set_write_callback(Fdio_id handle, Fdio_callback callback,
+	void *user_data)
+/*******************************************************************************
+LAST MODIFIED : 16 May 2005
+
+DESCRIPTION :
+Sets a write callback on the specified IO handle. This callback is called at
+least once after a write function indicates it would block. An application
+should not rely upon it being called more than once without attempting a
+write between the calls. This write should occur after Fdio_set_write_callback
+is called. The callback is not one-shot, and the callback remains in
+effect until it is explicitly cancelled.
+
+There may be at most one write callback set per I/O handle at any one time. If
+this function is passed NULL as the callback parameter, the write callback
+previously set will be cancelled.
+==============================================================================*/
+{
+	ENTER(Fdio_set_write_callback);
+
+	if (callback == NULL)
+	{
+		handle->write_data.function = NULL;
+		//if (handle->write_source_tag != 0)
+		//{
+		//	g_source_remove(handle->write_source_tag);
+		//	handle->write_source_tag = 0;
+		//}
+	}
+	else
+	{
+		handle->write_data.function = callback;
+		handle->write_data.app_user_data = user_data;
+		//if (handle->write_source_tag == 0)
+		//	handle->write_source_tag =
+		//		g_io_add_watch(handle->iochannel, G_IO_OUT,
+		//			Fdio_glib_io_callback, handle);
+	}
+
+	LEAVE;
+
+	return (1);
+} /* Fdio_set_write_callback (glib version) */
+#elif defined(USE_GTK_MAIN_STEP)
+
+Fdio_id Event_dispatcher_create_Fdio(struct Event_dispatcher *dispatcher,
+	Cmiss_native_socket_t descriptor)
+/*******************************************************************************
+LAST MODIFIED : 16 May 2005
+
+DESCRIPTION :
+Creates a new Fdio, given an event dispatcher and a descriptor.
+==============================================================================*/
+{
+	struct Fdio *io;
+
+	ENTER(Event_dispatcher_create_fdio);
+	ALLOCATE(io, struct Fdio, 1);
+	if (io)
+	{
+		memset(io, 0, sizeof(*io));
+		io->event_dispatcher = dispatcher;
+		io->descriptor = descriptor;
+		io->access_count = 0;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE, "Event_dispatcher_create_fdio.  "
+			"Unable to allocate structure");
+	}
+
+	io->iochannel = g_io_channel_unix_new(descriptor);
+	io->read_source_tag = 0;
+	io->write_source_tag = 0;
+
+	LEAVE;
+
+	return (io);
+} /* Event_dispatcher_create_fdio (glib) */
+
+int DESTROY(Fdio)(Fdio_id *io)
+/*******************************************************************************
+LAST MODIFIED : 16 May 2005
+
+DESCRIPTION :
+Destroys the IO object. This causes cmgui to forget about the descriptor, but the
+descriptor itself must still be closed. This should be called as soon as the
+application is notified by the operating system of a closure event.
+==============================================================================*/
+{
+	if ((*io)->read_data.function)
+	{
+		Fdio_set_read_callback(*io, NULL, NULL);
+	}
+	else if ((*io)->write_data.function)
+	{
+		Fdio_set_write_callback(*io, NULL, NULL);
+	}
+
+	g_io_channel_unref((*io)->iochannel);
+
+	if ((*io)->read_source_tag != 0)
+		g_source_remove((*io)->read_source_tag);
+	if ((*io)->write_source_tag != 0)
+		g_source_remove((*io)->write_source_tag);
+
+	DEALLOCATE((*io));
+	*io = NULL;
+	return (1);
+} /* DESTROY(Fdio) (glib) */
+
+static gboolean Fdio_glib_io_callback(GIOChannel *source,
+	GIOCondition condition, gpointer data)
+/*******************************************************************************
+LAST MODIFIED : 16 May 2005
+
+DESCRIPTION :
+Called from glib whenever a socket is ready to read/write.
+==============================================================================*/
+{
+	Fdio_id fdio;
+	gboolean ret = FALSE;
+
+	ENTER(Fdio_glib_io_callback);
+	USE_PARAMETER(source);
+
+	fdio = (Fdio_id)data;
+	if ((condition & (G_IO_IN | G_IO_HUP)) &&
+		fdio->read_data.function)
+	{
+		fdio->read_data.function(fdio,
+			fdio->read_data.app_user_data);
+		ret = TRUE;
+	}
+	else if ((condition & G_IO_OUT) &&
+		fdio->write_data.function)
+	{
+		fdio->write_data.function(fdio,
+			fdio->write_data.app_user_data);
+		ret = TRUE;
+	}
+
+	if ((condition & (G_IO_IN | G_IO_HUP)) &&
+	    !fdio->read_data.function)
+		fdio->read_source_tag = 0;
+	else if ((condition & G_IO_OUT) &&
+		!fdio->write_data.function)
+		fdio->write_source_tag = 0;
+
+	LEAVE;
+
+	return (ret);
+} /* Fdio_glib_io_callback */
+
+int Fdio_set_read_callback(Fdio_id handle, Fdio_callback callback,
+	void *user_data)
+/*******************************************************************************
+LAST MODIFIED : 16 May 2005
+
+DESCRIPTION :
+Sets a read callback on the specified IO handle. This callback is called at
+least once after a read function indicates it would block. An application
+should not rely upon it being called more than once without attempting a
+read between the calls. This read should occur after fdio_set_read_callback
+is called. The callback will also be called if the underlying descriptor is
+closed by the peer. The callback is not one-shot, and the callback remains in
+effect until it is explicitly cancelled.
+
+There may be at most one read callback set per I/O handle at any one time. If
+this function is passed NULL as the callback parameter, the read callback
+previously set will be cancelled.
+==============================================================================*/
+{
+	ENTER(Fdio_set_read_callback);
+
+	if (callback == NULL)
+	{
+		handle->read_data.function = NULL;
+		if (handle->read_source_tag != 0)
+		{
+			g_source_remove(handle->read_source_tag);
+			handle->read_source_tag = 0;
+		}
+	}
+	else
+	{
+		handle->read_data.function = callback;
+		handle->read_data.app_user_data = user_data;
+		if (handle->read_source_tag == 0)
+			handle->read_source_tag =
+				g_io_add_watch(handle->iochannel, G_IO_IN | G_IO_HUP,
+					Fdio_glib_io_callback, handle);
+	}
+
+	LEAVE;
+
+	return (1);
+} /* Fdio_set_read_callback (glib version) */
+
+int Fdio_set_write_callback(Fdio_id handle, Fdio_callback callback,
+	void *user_data)
+/*******************************************************************************
+LAST MODIFIED : 16 May 2005
+
+DESCRIPTION :
+Sets a write callback on the specified IO handle. This callback is called at
+least once after a write function indicates it would block. An application
+should not rely upon it being called more than once without attempting a
+write between the calls. This write should occur after Fdio_set_write_callback
+is called. The callback is not one-shot, and the callback remains in
+effect until it is explicitly cancelled.
+
+There may be at most one write callback set per I/O handle at any one time. If
+this function is passed NULL as the callback parameter, the write callback
+previously set will be cancelled.
+==============================================================================*/
+{
+	ENTER(Fdio_set_write_callback);
+
+	if (callback == NULL)
+	{
+		handle->write_data.function = NULL;
+		if (handle->write_source_tag != 0)
+		{
+			g_source_remove(handle->write_source_tag);
+			handle->write_source_tag = 0;
+		}
+	}
+	else
+	{
+		handle->write_data.function = callback;
+		handle->write_data.app_user_data = user_data;
+		if (handle->write_source_tag == 0)
+			handle->write_source_tag =
+				g_io_add_watch(handle->iochannel, G_IO_OUT,
+					Fdio_glib_io_callback, handle);
+	}
+
+	LEAVE;
+
+	return (1);
+} /* Fdio_set_write_callback (glib version) */
+#elif defined(CARBON_USER_INTERFACE)
 
 Fdio_id Event_dispatcher_create_Fdio(struct Event_dispatcher *dispatcher,
 	Cmiss_native_socket_t descriptor)

@@ -46,6 +46,7 @@ interest and set scene_viewer values directly.
  * the terms of any one of the MPL, the GPL or the LGPL.
  *
  * ***** END LICENSE BLOCK ***** */
+extern "C" {
 #include <stdlib.h>
 #include <stdio.h>
 #include <math.h>
@@ -76,6 +77,13 @@ static char graphics_window_uidh[] =
 #include "graphics/graphics_window.uidh"
 	;
 #endif /* defined (MOTIF) */
+}
+#if defined (WX_USER_INTERFACE)
+#include "wx/wx.h"
+#include "wx/xrc/xmlres.h"
+#include "graphics/graphics_window.xrch"
+#endif /* defined (WX_USER_INTERFACE)*/
+extern "C" {
 #include "graphics/light.h"
 #include "graphics/light_model.h"
 #include "graphics/scene.h"
@@ -97,6 +105,22 @@ static char graphics_window_uidh[] =
 #if defined (WIN32_USER_INTERFACE)
 #include <windows.h>
 #endif /* defined (WIN32_USER_INTERFACE) */
+}
+
+#if defined (WX_USER_INTERFACE)
+struct Graphics_buffer *create_Graphics_buffer_wx(
+	struct Graphics_buffer_package *graphics_buffer_package,
+	wxPanel *parent,
+	enum Graphics_buffer_buffering_mode buffering_mode,
+	enum Graphics_buffer_stereo_mode stereo_mode,
+	int minimum_colour_buffer_depth, int minimum_depth_buffer_depth, 
+	int minimum_accumulation_buffer_depth);
+/*******************************************************************************
+LAST MODIFIED : 7 December 2006
+
+DESCRIPTION :
+==============================================================================*/
+#endif /* defined (WX_USER_INTERFACE) */
 
 /*
 Module constants
@@ -2586,6 +2610,33 @@ view angle, interest point etc.
 	return (return_code);
 } /* modify_Graphics_window_view */
 
+#if defined (WX_USER_INTERFACE)
+class wxGraphicsWindow : public wxFrame
+{
+  Graphics_window *graphics_window;
+
+public:
+
+  wxGraphicsWindow(Graphics_window *graphics_window): 
+    graphics_window(graphics_window)
+  {
+  };
+
+  wxGraphicsWindow()
+  {
+  };
+
+	DECLARE_DYNAMIC_CLASS(wxGraphicsWindow);
+   DECLARE_EVENT_TABLE();
+};
+
+IMPLEMENT_DYNAMIC_CLASS(wxGraphicsWindow, wxFrame)
+
+BEGIN_EVENT_TABLE(wxGraphicsWindow, wxFrame)
+END_EVENT_TABLE()
+
+#endif /* defined (WX_USER_INTERFACE) */
+
 /*
 Global functions
 ----------------
@@ -3249,6 +3300,7 @@ it.
 			if (win32_return_code!=FALSE)
 			{
 				if (window->hWnd=CreateWindow(class_name, window_title,
+
 					WS_CAPTION | WS_POPUPWINDOW | WS_VISIBLE | WS_SIZEBOX,
 					0, 0, window->default_viewing_width, window->default_viewing_height,
 					NULL, NULL, User_interface_get_instance(user_interface), NULL))
@@ -3349,6 +3401,104 @@ it.
 			USE_PARAMETER(minimum_depth_buffer_depth);
  			USE_PARAMETER(minimum_accumulation_buffer_depth);
  			USE_PARAMETER(Graphics_window_Scene_viewer_view_changed);
+
+			wxXmlInit_graphics_window();
+
+			wxGraphicsWindow *wx_graphics_window = new 
+			  wxGraphicsWindow(window);
+
+			wxXmlResource::Get()->LoadFrame(wx_graphics_window,
+			   (wxWindow *)NULL, _T("CmguiGraphicsWindow"));
+
+			if (wxPanel *panel = XRCCTRL(*wx_graphics_window, "Panel", wxPanel))
+			{
+
+				if (graphics_buffer = create_Graphics_buffer_wx(
+						 graphics_buffer_package,
+						 panel,
+						 graphics_buffer_buffering_mode, graphics_buffer_stereo_mode,
+						 minimum_colour_buffer_depth, minimum_depth_buffer_depth,
+						 minimum_accumulation_buffer_depth))
+				{
+					/* create one Scene_viewers */
+					window->number_of_scene_viewers = 1;
+					if (ALLOCATE(window->scene_viewer_array,
+							struct Scene_viewer *,
+							window->number_of_scene_viewers))
+					{
+						pane_no = 0;
+						if (window->scene_viewer_array[pane_no] = 
+							CREATE(Scene_viewer)(graphics_buffer,
+								background_colour, light_manager,default_light,
+								light_model_manager,default_light_model,
+								scene_manager, window->scene,
+								texture_manager, user_interface))
+						{
+							Scene_viewer_set_interactive_tool(
+								window->scene_viewer_array[pane_no],
+								window->interactive_tool);
+							/* get scene_viewer transform callbacks to allow
+								synchronising of views in multiple panes */
+							Scene_viewer_add_sync_callback(
+								window->scene_viewer_array[pane_no],
+								Graphics_window_Scene_viewer_view_changed,
+								window);
+							Scene_viewer_set_translation_rate(
+								window->scene_viewer_array[pane_no], 2.0);
+							Scene_viewer_set_tumble_rate(
+								window->scene_viewer_array[pane_no], 1.5);
+							Scene_viewer_set_zoom_rate(
+								window->scene_viewer_array[pane_no], 2.0);
+
+							/* set the initial layout */
+							Graphics_window_set_layout_mode(window,
+								GRAPHICS_WINDOW_LAYOUT_SIMPLE);
+							/* give the window its default size */
+							Graphics_window_set_viewing_area_size(window,
+								window->default_viewing_width,
+								window->default_viewing_height);
+							/* initial view is of all of the current scene */
+							Graphics_window_view_all(window);
+
+							wx_graphics_window->Show();
+			
+							return_code = 1;
+						}
+						else
+						{
+							display_message(ERROR_MESSAGE,
+								"CREATE(Graphics_window).  "
+								"Could not create scene_viewer.");
+							DESTROY(Graphics_window)(&window);
+							window = (struct Graphics_window *)NULL;
+						}
+					}
+					else
+					{
+						display_message(ERROR_MESSAGE,
+							"CREATE(Graphics_window).  "
+							"Could not allocate memory for scene viewer array.");
+						DESTROY(Graphics_window)(&window);
+						window = (struct Graphics_window *)NULL;
+					}
+				}
+				else
+				{
+					display_message(ERROR_MESSAGE,
+						"CREATE(Graphics_window).  "
+						"Could not create graphics buffer.");
+					DESTROY(Graphics_window)(&window);
+					window = (struct Graphics_window *)NULL;
+				}
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE,
+					"CREATE(Graphics_window).  "
+					"Unable to fetch panel widget.");
+				DESTROY(Graphics_window)(&window);
+				window = (struct Graphics_window *)NULL;
+			}
 #endif /* switch (USER_INTERFACE) */
 		}
 		else
@@ -6504,28 +6654,28 @@ Up to calling function to deallocate returned array - but not the strings in it!
 ==============================================================================*/
 {
 	char **valid_strings;
-	enum Graphics_window_layout_mode layout_mode;
-	int i;
+	int i, layout_mode;
 
 	ENTER(Graphics_window_layout_mode_get_valid_strings);
 	if (number_of_valid_strings)
 	{
 		*number_of_valid_strings=0;
-		layout_mode=GRAPHICS_WINDOW_LAYOUT_MODE_BEFORE_FIRST;
+		layout_mode=static_cast<int>(GRAPHICS_WINDOW_LAYOUT_MODE_BEFORE_FIRST);
 		layout_mode++;
-		while (layout_mode<GRAPHICS_WINDOW_LAYOUT_MODE_AFTER_LAST)
+		while (layout_mode < static_cast<int>(GRAPHICS_WINDOW_LAYOUT_MODE_AFTER_LAST))
 		{
 			(*number_of_valid_strings)++;
 			layout_mode++;
 		}
 		if (ALLOCATE(valid_strings,char *,*number_of_valid_strings))
 		{
-			layout_mode=GRAPHICS_WINDOW_LAYOUT_MODE_BEFORE_FIRST;
+			layout_mode=static_cast<int>(GRAPHICS_WINDOW_LAYOUT_MODE_BEFORE_FIRST);
 			layout_mode++;
 			i=0;
-			while (layout_mode<GRAPHICS_WINDOW_LAYOUT_MODE_AFTER_LAST)
+			while (layout_mode < static_cast<int>(GRAPHICS_WINDOW_LAYOUT_MODE_AFTER_LAST))
 			{
-				valid_strings[i]=Graphics_window_layout_mode_string(layout_mode);
+				valid_strings[i]=Graphics_window_layout_mode_string(
+					static_cast<enum Graphics_window_layout_mode>(layout_mode));
 				i++;
 				layout_mode++;
 			}
@@ -6557,22 +6707,23 @@ Returns the <Graphics_window_layout_mode> described by <layout_mode_string>,
 or GRAPHICS_WINDOW_LAYOUT_MODE_INVALID if not recognized.
 ==============================================================================*/
 {
-	enum Graphics_window_layout_mode layout_mode;
+	int layout_mode;
 
 	ENTER(Graphics_window_layout_mode_from_string);
 	if (layout_mode_string)
 	{
-		layout_mode=GRAPHICS_WINDOW_LAYOUT_MODE_BEFORE_FIRST;
+		layout_mode=static_cast<int>(GRAPHICS_WINDOW_LAYOUT_MODE_BEFORE_FIRST);
 		layout_mode++;
-		while ((layout_mode<GRAPHICS_WINDOW_LAYOUT_MODE_AFTER_LAST)&&
+		while ((layout_mode < static_cast<int>(GRAPHICS_WINDOW_LAYOUT_MODE_AFTER_LAST))&&
 			(!fuzzy_string_compare_same_length(layout_mode_string,
-				Graphics_window_layout_mode_string(layout_mode))))
+				Graphics_window_layout_mode_string(
+					static_cast<enum Graphics_window_layout_mode>(layout_mode)))))
 		{
 			layout_mode++;
 		}
-		if (GRAPHICS_WINDOW_LAYOUT_MODE_AFTER_LAST==layout_mode)
+		if (static_cast<int>(GRAPHICS_WINDOW_LAYOUT_MODE_AFTER_LAST)==layout_mode)
 		{
-			layout_mode=GRAPHICS_WINDOW_LAYOUT_MODE_INVALID;
+			layout_mode=static_cast<int>(GRAPHICS_WINDOW_LAYOUT_MODE_INVALID);
 		}
 	}
 	else
@@ -6583,13 +6734,8 @@ or GRAPHICS_WINDOW_LAYOUT_MODE_INVALID if not recognized.
 	}
 	LEAVE;
 
-	return (layout_mode);
+	return (static_cast<enum Graphics_window_layout_mode>(layout_mode));
 } /* Graphics_window_layout_mode_from_string */
-
-
-
-
-
 
 int Graphics_window_layout_mode_get_number_of_panes(
 	enum Graphics_window_layout_mode layout_mode)

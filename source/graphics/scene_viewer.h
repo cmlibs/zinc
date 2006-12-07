@@ -62,7 +62,9 @@ translating and zooming with mouse button press and motion events.
 #include "graphics/light.h"
 #include "graphics/light_model.h"
 #include "interaction/interactive_tool.h"
-#include "three_d_drawing/graphics_buffer.h"
+
+struct Graphics_buffer;
+struct Graphics_buffer_input;
 
 /* 
 The Cmiss_scene_viewer which is Public is currently the same object as the 
@@ -659,7 +661,7 @@ Returns the Scene_viewer stereo_eye_spacing.
 ==============================================================================*/
 
 int Scene_viewer_set_stereo_eye_spacing(struct Scene_viewer *scene_viewer,
-	int stereo_eye_spacing);
+	double stereo_eye_spacing);
 /*******************************************************************************
 LAST MODIFIED : 13 August 2002
 

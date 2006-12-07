@@ -594,9 +594,9 @@ ifeq ($(USER_INTERFACE),GTK_USER_INTERFACE)
    endif # $(SYSNAME) != win32
 endif # $(USER_INTERFACE) == GTK_USER_INTERFACE
 ifeq ($(USER_INTERFACE),WX_USER_INTERFACE)
-   WX_DIR = /usr/bin
-   USER_INTERFACE_INC += $(shell $(WX_DIR)/wx-config --cxxflags)
-	USER_INTERFACE_LIB += $(shell $(WX_DIR)/wx-config --libs)
+   WX_DIR = 
+   USER_INTERFACE_INC += $(shell $(WX_DIR)wx-config --cxxflags)
+	USER_INTERFACE_LIB += $(shell $(WX_DIR)wx-config --libs core,base,gl,xrc)
 endif # $(USER_INTERFACE) == WX_USER_INTERFACE
 
 MATRIX_LIB =
@@ -1190,8 +1190,7 @@ ifeq ($(USER_INTERFACE),WX_USER_INTERFACE)
 	      $(COMMAND_INTERFACE_SRCS) \
 	      $(COMPUTED_FIELD_INTERFACE_SRCS) \
 			$(EMOTER_SRCS) \
-	      graphics/graphics_window.c \
-         interaction/select_tool.c
+	      graphics/graphics_window.c
 endif # $(USER_INTERFACE) == WX_USER_INTERFACE
 ifeq ($(USER_INTERFACE),WIN32_USER_INTERFACE)
       SRCS_2 = \
