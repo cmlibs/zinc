@@ -1,0 +1,7 @@
+<?xml version="1.0"?>
+<resource>
+  <object class="wxFrame" subclass="wxGraphicsWindow" name="CmguiGraphicsWindow" title="Cmgui Graphics Window">
+        <object class="wxPanel" name="Panel">
+    	  </object>
+  </object>
+</resource>
