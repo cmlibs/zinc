@@ -74,6 +74,7 @@ group of nodes
 #include "curve/curve.h"
 #if defined (MOTIF)
 #include "curve/curve_editor_dialog.h"
+#include "three_d_drawing/graphics_buffer.h"
 #endif /* defined (MOTIF) */
 #include "emoter/emoter_dialog.h"
 #if defined (MOTIF)

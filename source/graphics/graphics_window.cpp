@@ -445,7 +445,7 @@ orthographic up and front directions from the Xdefaults file.
 			sizeof(char *),
 			XtOffsetOf(struct Graphics_window_defaults,up_axis_name),
 			XmRString,
-			"Z"
+			const_cast<char*>("Z")
 		},
 		{
 			XmNgraphicsWindowOrthoFrontAxis,
@@ -454,7 +454,7 @@ orthographic up and front directions from the Xdefaults file.
 			sizeof(char *),
 			XtOffsetOf(struct Graphics_window_defaults,front_axis_name),
 			XmRString,
-			"-Y"
+			const_cast<char*>("-Y")
 		},
 		{
 			XmNgraphicsWindowViewingHeight,
@@ -463,7 +463,7 @@ orthographic up and front directions from the Xdefaults file.
 			sizeof(int),
 			XtOffsetOf(struct Graphics_window_defaults,viewing_height),
 			XmRString,
-			"512"
+			const_cast<char*>("512")
 		},
 		{
 			XmNgraphicsWindowViewingWidth,
@@ -472,7 +472,7 @@ orthographic up and front directions from the Xdefaults file.
 			sizeof(int),
 			XtOffsetOf(struct Graphics_window_defaults,viewing_width),
 			XmRString,
-			"512"
+			const_cast<char*>("512")
 		},
 		{
 			XmNgraphicsWindowTranslateRate,
@@ -481,7 +481,7 @@ orthographic up and front directions from the Xdefaults file.
 			sizeof(float),
 			XtOffsetOf(struct Graphics_window_defaults,translate_rate),
 			XmRString,
-			"1.0"
+			const_cast<char*>("1.0")
 		},
 		{
 			XmNgraphicsWindowTumbleRate,
@@ -490,7 +490,7 @@ orthographic up and front directions from the Xdefaults file.
 			sizeof(float),
 			XtOffsetOf(struct Graphics_window_defaults,tumble_rate),
 			XmRString,
-			"1.5"
+			const_cast<char*>("1.5")
 		},
 		{
 			XmNgraphicsWindowZoomRate,
@@ -499,7 +499,7 @@ orthographic up and front directions from the Xdefaults file.
 			sizeof(float),
 			XtOffsetOf(struct Graphics_window_defaults,zoom_rate),
 			XmRString,
-			"1.0"
+			const_cast<char*>("1.0")
 		}
 	};
 #endif /* defined (MOTIF) */

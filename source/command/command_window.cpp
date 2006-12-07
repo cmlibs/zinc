@@ -2618,7 +2618,7 @@ Writes the <message> to the <command_window>.
 #endif /* GTK_MAJOR_VERSION >= 2 */
 #elif defined (WX_USER_INTERFACE)
 		command_window->wx_command_window->display_output(message);
-                return_code = 1;
+		return_code = 1;
 #endif /* switch (USER_INTERFACE) */
 		if (command_window->out_file &&
 			(command_window->out_file_mode & OUTFILE_OUTPUT))

@@ -477,7 +477,7 @@ picking is performed with picked objects and mouse click and drag information
 returned to the scene.
 ==============================================================================*/
 {
-	int return_code;
+	int input_modifier, return_code;
 	struct Graphics_buffer *graphics_buffer;
 	struct Graphics_buffer_input input;
 	XButtonEvent *button_event;
@@ -499,7 +499,7 @@ returned to the scene.
 		input.key_code = 0;
 		input.position_x = 0;
 		input.position_y = 0;
-		input.input_modifier = (enum Graphics_buffer_input_modifier)0;
+		input_modifier = 0;
 		switch(event->type)
 		{
 			case MotionNotify:
@@ -510,19 +510,19 @@ returned to the scene.
 				input.position_y = motion_event->y;
 				if (ShiftMask&(motion_event->state))
 				{
-					input.input_modifier |= GRAPHICS_BUFFER_INPUT_MODIFIER_SHIFT;
+					input_modifier |= GRAPHICS_BUFFER_INPUT_MODIFIER_SHIFT;
 				}
 				if (ControlMask&(motion_event->state))
 				{
-					input.input_modifier |= GRAPHICS_BUFFER_INPUT_MODIFIER_CONTROL;
+					input_modifier |= GRAPHICS_BUFFER_INPUT_MODIFIER_CONTROL;
 				}
 				if (Mod1Mask&(motion_event->state))
 				{
-					input.input_modifier |= GRAPHICS_BUFFER_INPUT_MODIFIER_ALT;
+					input_modifier |= GRAPHICS_BUFFER_INPUT_MODIFIER_ALT;
 				}
 				if (Button1Mask&(motion_event->state))
 				{
-					input.input_modifier |= GRAPHICS_BUFFER_INPUT_MODIFIER_BUTTON1;
+					input_modifier |= GRAPHICS_BUFFER_INPUT_MODIFIER_BUTTON1;
 				}
 			} break;
 			case ButtonPress:
@@ -532,22 +532,22 @@ returned to the scene.
 				input.button_number = button_event->button;
 				input.position_x = button_event->x;
 				input.position_y = button_event->y;
-				input.input_modifier = (enum Graphics_buffer_input_modifier)0;
+				input_modifier = (enum Graphics_buffer_input_modifier)0;
 				if (ShiftMask&(button_event->state))
 				{
-					input.input_modifier |= GRAPHICS_BUFFER_INPUT_MODIFIER_SHIFT;
+					input_modifier |= GRAPHICS_BUFFER_INPUT_MODIFIER_SHIFT;
 				}
 				if (ControlMask&(button_event->state))
 				{
-					input.input_modifier |= GRAPHICS_BUFFER_INPUT_MODIFIER_CONTROL;
+					input_modifier |= GRAPHICS_BUFFER_INPUT_MODIFIER_CONTROL;
 				}
 				if (Mod1Mask&(button_event->state))
 				{
-					input.input_modifier |= GRAPHICS_BUFFER_INPUT_MODIFIER_ALT;
+					input_modifier |= GRAPHICS_BUFFER_INPUT_MODIFIER_ALT;
 				}
 				if (Button1Mask&(button_event->state))
 				{
-					input.input_modifier |= GRAPHICS_BUFFER_INPUT_MODIFIER_BUTTON1;
+					input_modifier |= GRAPHICS_BUFFER_INPUT_MODIFIER_BUTTON1;
 				}
 			} break;
 			case ButtonRelease:
@@ -559,19 +559,19 @@ returned to the scene.
 				input.position_y = button_event->y;
 				if (ShiftMask&(button_event->state))
 				{
-					input.input_modifier |= GRAPHICS_BUFFER_INPUT_MODIFIER_SHIFT;
+					input_modifier |= GRAPHICS_BUFFER_INPUT_MODIFIER_SHIFT;
 				}
 				if (ControlMask&(button_event->state))
 				{
-					input.input_modifier |= GRAPHICS_BUFFER_INPUT_MODIFIER_CONTROL;
+					input_modifier |= GRAPHICS_BUFFER_INPUT_MODIFIER_CONTROL;
 				}
 				if (Mod1Mask&(button_event->state))
 				{
-					input.input_modifier |= GRAPHICS_BUFFER_INPUT_MODIFIER_ALT;
+					input_modifier |= GRAPHICS_BUFFER_INPUT_MODIFIER_ALT;
 				}
 				if (Button1Mask&(button_event->state))
 				{
-					input.input_modifier |= GRAPHICS_BUFFER_INPUT_MODIFIER_BUTTON1;
+					input_modifier |= GRAPHICS_BUFFER_INPUT_MODIFIER_BUTTON1;
 				}
 			} break;
 			case KeyPress:
@@ -581,19 +581,19 @@ returned to the scene.
 				input.key_code = key_event->keycode;
 				if (ShiftMask&(key_event->state))
 				{
-					input.input_modifier |= GRAPHICS_BUFFER_INPUT_MODIFIER_SHIFT;
+					input_modifier |= GRAPHICS_BUFFER_INPUT_MODIFIER_SHIFT;
 				}
 				if (ControlMask&(key_event->state))
 				{
-					input.input_modifier |= GRAPHICS_BUFFER_INPUT_MODIFIER_CONTROL;
+					input_modifier |= GRAPHICS_BUFFER_INPUT_MODIFIER_CONTROL;
 				}
 				if (Mod1Mask&(key_event->state))
 				{
-					input.input_modifier |= GRAPHICS_BUFFER_INPUT_MODIFIER_ALT;
+					input_modifier |= GRAPHICS_BUFFER_INPUT_MODIFIER_ALT;
 				}
 				if (Button1Mask&(key_event->state))
 				{
-					input.input_modifier |= GRAPHICS_BUFFER_INPUT_MODIFIER_BUTTON1;
+					input_modifier |= GRAPHICS_BUFFER_INPUT_MODIFIER_BUTTON1;
 				}
 			} break;
 			case KeyRelease:
@@ -603,19 +603,19 @@ returned to the scene.
 				input.key_code = key_event->keycode;
 				if (ShiftMask&(key_event->state))
 				{
-					input.input_modifier |= GRAPHICS_BUFFER_INPUT_MODIFIER_SHIFT;
+					input_modifier |= GRAPHICS_BUFFER_INPUT_MODIFIER_SHIFT;
 				}
 				if (ControlMask&(key_event->state))
 				{
-					input.input_modifier |= GRAPHICS_BUFFER_INPUT_MODIFIER_CONTROL;
+					input_modifier |= GRAPHICS_BUFFER_INPUT_MODIFIER_CONTROL;
 				}
 				if (Mod1Mask&(key_event->state))
 				{
-					input.input_modifier |= GRAPHICS_BUFFER_INPUT_MODIFIER_ALT;
+					input_modifier |= GRAPHICS_BUFFER_INPUT_MODIFIER_ALT;
 				}
 				if (Button1Mask&(key_event->state))
 				{
-					input.input_modifier |= GRAPHICS_BUFFER_INPUT_MODIFIER_BUTTON1;
+					input_modifier |= GRAPHICS_BUFFER_INPUT_MODIFIER_BUTTON1;
 				}
 			} break;
 			default:
@@ -626,6 +626,9 @@ returned to the scene.
 				/* This event type is not being passed on */
 			} break;
 		}
+		input.input_modifier = static_cast<enum Graphics_buffer_input_modifier>
+			(input_modifier);
+
 		if (return_code)
 		{
 			CMISS_CALLBACK_LIST_CALL(Graphics_buffer_input_callback)(
@@ -645,7 +648,7 @@ returned to the scene.
 #  if defined USE_GLX_FBCONFIG
 static int Graphics_buffer_create_from_fb_config(struct Graphics_buffer *buffer,
 	struct Graphics_buffer_package *graphics_buffer_package,
-	enum Graphics_buffer_class class,  Widget x3d_parent_widget, 
+	enum Graphics_buffer_class buffer_class,  Widget x3d_parent_widget, 
 	int width, int height, GLXFBConfig fb_config)
 /*******************************************************************************
 LAST MODIFIED : 6 May 2004
@@ -708,7 +711,7 @@ DESCRIPTION :
 	}
 #endif /* defined (DEBUG) */
 
-	switch (class)
+	switch (buffer_class)
 	{
 		case GRAPHICS_BUFFER_ONSCREEN_CLASS:
 		{										
@@ -818,7 +821,7 @@ DESCRIPTION :
 	}
 #if defined (DEBUG)
 	printf("Graphics_buffer_create_from_fb_config\n");
-	printf("   class : %d\n", class);
+	printf("   buffer_class : %d\n", buffer_class);
 	printf("   buffer->type : %d\n", buffer->type);
 	printf("   buffer->config : %p\n", buffer->config);
 	printf("   buffer->visual_info : %p\n", buffer->visual_info);
@@ -841,7 +844,7 @@ DESCRIPTION :
 #  if defined (GLX_SGIX_pbuffer)
 static int Graphics_buffer_create_from_fb_config_sgi(struct Graphics_buffer *buffer,
 	struct Graphics_buffer_package *graphics_buffer_package,
-	enum Graphics_buffer_class class,  Widget x3d_parent_widget, 
+	enum Graphics_buffer_class buffer_class,  Widget x3d_parent_widget, 
 	int width, int height, GLXFBConfig fb_config)
 /*******************************************************************************
 LAST MODIFIED : 28 May 2004
@@ -873,7 +876,7 @@ the equivalent GLX1.3 versions.
 
 	return_code = 0;
 	display = graphics_buffer_package->display;
-	switch (class)
+	switch (buffer_class)
 	{
 		case GRAPHICS_BUFFER_ONSCREEN_CLASS:
 		{										
@@ -982,7 +985,7 @@ the equivalent GLX1.3 versions.
 	}
 #if defined (DEBUG)
 	printf("Graphics_buffer_create_from_fb_config_sgi\n");
-	printf("   class : %d\n", class);
+	printf("   buffer_class : %d\n", buffer_class);
 	printf("   buffer->type : %d\n", buffer->type);
 	printf("   buffer->config : %p\n", buffer->config);
 	printf("   buffer->visual_info : %p\n", buffer->visual_info);
@@ -999,7 +1002,7 @@ the equivalent GLX1.3 versions.
 #if defined (MOTIF)
 static int Graphics_buffer_create_from_visual_info(struct Graphics_buffer *buffer,
 	struct Graphics_buffer_package *graphics_buffer_package,
-	enum Graphics_buffer_class class,  Widget x3d_parent_widget, 
+	enum Graphics_buffer_class buffer_class,  Widget x3d_parent_widget, 
 	int width, int height, XVisualInfo *visual_info)
 /*******************************************************************************
 LAST MODIFIED : 6 May 2004
@@ -1017,7 +1020,7 @@ DESCRIPTION :
 
 	return_code = 0;
 	display = graphics_buffer_package->display;	
-	switch (class)
+	switch (buffer_class)
 	{
 		case GRAPHICS_BUFFER_ONSCREEN_CLASS:
 		{
@@ -1113,7 +1116,7 @@ DESCRIPTION :
 	}
 #if defined (DEBUG)
 	printf("Graphics_buffer_create_from_visual_info\n");
-	printf("   class : %d\n", class);
+	printf("   buffer_class : %d\n", buffer_class);
 	printf("   buffer->type : %d\n", buffer->type);
 	printf("   buffer->visual_info : %p\n", buffer->visual_info);
 	printf("   buffer->context : %p\n\n", buffer->context);
@@ -1129,7 +1132,7 @@ DESCRIPTION :
 #if defined (OPENGL_API)
 static void Graphics_buffer_create_buffer_glx(struct Graphics_buffer *buffer,
 	struct Graphics_buffer_package *graphics_buffer_package,
-	enum Graphics_buffer_class class, 
+	enum Graphics_buffer_class buffer_class, 
 	Widget x3d_parent_widget, int width, int height,
 	enum Graphics_buffer_buffering_mode buffering_mode,
 	enum Graphics_buffer_stereo_mode stereo_mode,
@@ -1177,8 +1180,8 @@ that it is all in one place.
 	/* 1: SGIX digital media pbuffer is preferred for offscreen when available (O2's) */
 #if defined (GLX_SGIX_dmbuffer) && defined (GLX_SGIX_fbconfig)
 	if ((GRAPHICS_BUFFER_INVALID_TYPE == buffer->type) &&
-		((GRAPHICS_BUFFER_OFFSCREEN_SHARED_CLASS == class) ||
-		(GRAPHICS_BUFFER_OFFSCREEN_CLASS == class)) &&
+		((GRAPHICS_BUFFER_OFFSCREEN_SHARED_CLASS == buffer_class) ||
+		(GRAPHICS_BUFFER_OFFSCREEN_CLASS == buffer_class)) &&
 		query_glx_extension("GLX_SGIX_dmbuffer", display, DefaultScreen(display)))
 	{
 		/* This is similar to the selection in 4: as it uses glXChooseVisual */
@@ -1287,7 +1290,7 @@ that it is all in one place.
 			display_message(ERROR_MESSAGE,"CREATE(Dm_buffer). Cannot allocate image attributes");
 		}
 		printf("Graphics_buffer_create_buffer_glx dmbuffer\n");
-		printf("   class : %d\n", class);
+		printf("   buffer_class : %d\n", buffer_class);
 		printf("   buffer->type : %d\n", buffer->type);
 		printf("   buffer->visual_info : %p\n", buffer->visual_info);
 		printf("   buffer->context : %p\n\n", buffer->context);
@@ -1331,7 +1334,7 @@ that it is all in one place.
 						 if (visual_info->visualid == 
 							graphics_buffer_package->override_visual_id)
 						 {
-							if (class == GRAPHICS_BUFFER_OFFSCREEN_CLASS)
+							if (buffer_class == GRAPHICS_BUFFER_OFFSCREEN_CLASS)
 							{
 							  /* Try a shared buffer first */
 							  Graphics_buffer_create_from_fb_config_sgi(buffer,
@@ -1343,7 +1346,7 @@ that it is all in one place.
 							if (GRAPHICS_BUFFER_INVALID_TYPE == buffer->type)
 							{
 							  Graphics_buffer_create_from_fb_config_sgi(buffer,
-								 graphics_buffer_package, class, x3d_parent_widget,
+								 graphics_buffer_package, buffer_class, x3d_parent_widget,
 								 width, height, buffer->config_list[config_index]);
 							}
 						 }
@@ -1361,7 +1364,7 @@ that it is all in one place.
 				/* The SGI does not have enough graphics resources to provide
 					matching offscreen buffers, so we try for one that is OK instead. */
 				Graphics_buffer_create_buffer_glx(buffer, graphics_buffer_package,
-					class, x3d_parent_widget, width, height,
+					buffer_class, x3d_parent_widget, width, height,
 					GRAPHICS_BUFFER_ANY_BUFFERING_MODE,
 					GRAPHICS_BUFFER_ANY_STEREO_MODE,
 					/*minimum_colour_buffer_depth*/8, /*minimum_depth_buffer_depth*/8,
@@ -1389,7 +1392,7 @@ that it is all in one place.
 					attribute_ptr++;
 					*attribute_ptr = GLX_RGBA_BIT;
 					attribute_ptr++;
-					switch (class)
+					switch (buffer_class)
 					{
 						case GRAPHICS_BUFFER_ONSCREEN_CLASS:
 						{
@@ -1402,7 +1405,7 @@ that it is all in one place.
 						case GRAPHICS_BUFFER_OFFSCREEN_CLASS:
 						{
 							if ((selection_level > 1) ||
-								(GRAPHICS_BUFFER_OFFSCREEN_SHARED_CLASS == class))
+								(GRAPHICS_BUFFER_OFFSCREEN_SHARED_CLASS == buffer_class))
 							{
 								*attribute_ptr = GLX_DRAWABLE_TYPE;
 								attribute_ptr++;
@@ -1551,7 +1554,7 @@ that it is all in one place.
 						while ((GRAPHICS_BUFFER_INVALID_TYPE == buffer->type) &&
 							(config_index < nelements))
 						{
-							if ((selection_level > 1) && (GRAPHICS_BUFFER_OFFSCREEN_CLASS == class))
+							if ((selection_level > 1) && (GRAPHICS_BUFFER_OFFSCREEN_CLASS == buffer_class))
 							{
 								/* Try to get an offscreen shared buffer first if we can */
 								Graphics_buffer_create_from_fb_config_sgi(buffer,
@@ -1562,7 +1565,7 @@ that it is all in one place.
 							else
 							{
 								Graphics_buffer_create_from_fb_config_sgi(buffer,
-									graphics_buffer_package, class, x3d_parent_widget,
+									graphics_buffer_package, buffer_class, x3d_parent_widget,
 									width, height, buffer->config_list[config_index]);
 							}
 							config_index++;
@@ -1607,7 +1610,7 @@ that it is all in one place.
 						  if ((int)visual_info->visualid == 
 							 graphics_buffer_package->override_visual_id)
 						 {
-							if (class == GRAPHICS_BUFFER_OFFSCREEN_CLASS)
+							if (buffer_class == GRAPHICS_BUFFER_OFFSCREEN_CLASS)
 							{
 							  /* Try a shared buffer first */
 							  Graphics_buffer_create_from_fb_config(buffer,
@@ -1619,7 +1622,7 @@ that it is all in one place.
 							if (GRAPHICS_BUFFER_INVALID_TYPE == buffer->type)
 							{
 							  Graphics_buffer_create_from_fb_config(buffer,
-								 graphics_buffer_package, class, x3d_parent_widget,
+								 graphics_buffer_package, buffer_class, x3d_parent_widget,
 								 width, height, buffer->config_list[config_index]);
 							}
 						 }
@@ -1635,7 +1638,7 @@ that it is all in one place.
 			if (buffer_to_match->config)
 			{
 				Graphics_buffer_create_from_fb_config(buffer,
-					graphics_buffer_package, class, x3d_parent_widget,
+					graphics_buffer_package, buffer_class, x3d_parent_widget,
 					width, height, buffer_to_match->config);
 			}
 		}
@@ -1659,7 +1662,7 @@ that it is all in one place.
 					attribute_ptr++;
 					*attribute_ptr = GLX_RGBA_BIT;
 					attribute_ptr++;
-					switch (class)
+					switch (buffer_class)
 					{
 						case GRAPHICS_BUFFER_ONSCREEN_CLASS:
 						{
@@ -1672,7 +1675,7 @@ that it is all in one place.
 						case GRAPHICS_BUFFER_OFFSCREEN_CLASS:
 						{
 							if ((selection_level > 1) ||
-								(GRAPHICS_BUFFER_OFFSCREEN_SHARED_CLASS == class))
+								(GRAPHICS_BUFFER_OFFSCREEN_SHARED_CLASS == buffer_class))
 							{
 								*attribute_ptr = GLX_DRAWABLE_TYPE;
 								attribute_ptr++;
@@ -1821,7 +1824,7 @@ that it is all in one place.
 						while ((GRAPHICS_BUFFER_INVALID_TYPE == buffer->type) &&
 							(config_index < nelements))
 						{
-							if ((selection_level > 1) && (GRAPHICS_BUFFER_OFFSCREEN_CLASS == class))
+							if ((selection_level > 1) && (GRAPHICS_BUFFER_OFFSCREEN_CLASS == buffer_class))
 							{
 								/* Try to get an offscreen shared buffer first if we can */
 								Graphics_buffer_create_from_fb_config(buffer,
@@ -1832,7 +1835,7 @@ that it is all in one place.
 							else
 							{
 								Graphics_buffer_create_from_fb_config(buffer,
-									graphics_buffer_package, class, x3d_parent_widget,
+									graphics_buffer_package, buffer_class, x3d_parent_widget,
 									width, height, buffer->config_list[config_index]);
 							}
 							config_index++;
@@ -1850,16 +1853,16 @@ that it is all in one place.
 	{
 		if (graphics_buffer_package->override_visual_id)
 		{
-			XVisualInfo template, *visual_info_list;
+			XVisualInfo template_visual, *visual_info_list;
 
-			template.visualid = graphics_buffer_package->override_visual_id;
+			template_visual.visualid = graphics_buffer_package->override_visual_id;
 				
-			if (visual_info_list = XGetVisualInfo(display, VisualIDMask, &template,
+			if (visual_info_list = XGetVisualInfo(display, VisualIDMask, &template_visual,
 				&nelements))
 			{
 				config_index = 0;
 				Graphics_buffer_create_from_visual_info(buffer,
-					graphics_buffer_package, class, x3d_parent_widget,
+					graphics_buffer_package, buffer_class, x3d_parent_widget,
 					width, height, visual_info_list + config_index);
 				XFree(visual_info_list);
 			}
@@ -1869,7 +1872,7 @@ that it is all in one place.
 			if (buffer_to_match->visual_info)
 			{
 				Graphics_buffer_create_from_visual_info(buffer,
-					graphics_buffer_package, class, x3d_parent_widget, 
+					graphics_buffer_package, buffer_class, x3d_parent_widget, 
 					width, height, buffer_to_match->visual_info);
 			}
 		}
@@ -2017,7 +2020,7 @@ that it is all in one place.
 						DefaultScreen(display), visual_attributes))
 					{
 						Graphics_buffer_create_from_visual_info(buffer,
-							graphics_buffer_package, class, x3d_parent_widget,
+							graphics_buffer_package, buffer_class, x3d_parent_widget,
 							width, height, visual_info);
 					}
 					selection_level--;
@@ -2158,7 +2161,7 @@ picking is performed with picked objects and mouse click and drag information
 returned to the scene.
 ==============================================================================*/
 {
-	int return_code;
+	int input_modifier, return_code;
 	struct Graphics_buffer *graphics_buffer;
 	struct Graphics_buffer_input input;
 
@@ -2191,23 +2194,25 @@ returned to the scene.
 		input.button_number = button_event->button;
 		input.position_x = button_event->x;
 		input.position_y = button_event->y;
-		input.input_modifier = (enum Graphics_buffer_input_modifier)0;
+		input_modifier = 0;
 		if (GDK_SHIFT_MASK&(button_event->state))
 		{
-			input.input_modifier |= GRAPHICS_BUFFER_INPUT_MODIFIER_SHIFT;
+			input_modifier |= GRAPHICS_BUFFER_INPUT_MODIFIER_SHIFT;
 		}
 		if (GDK_CONTROL_MASK&(button_event->state))
 		{
-			input.input_modifier |= GRAPHICS_BUFFER_INPUT_MODIFIER_CONTROL;
+			input_modifier |= GRAPHICS_BUFFER_INPUT_MODIFIER_CONTROL;
 		}
 		if (GDK_MOD1_MASK&(button_event->state))
 		{
-			input.input_modifier |= GRAPHICS_BUFFER_INPUT_MODIFIER_ALT;
+			input_modifier |= GRAPHICS_BUFFER_INPUT_MODIFIER_ALT;
 		}
 		if (GDK_BUTTON1_MASK&(button_event->state))
 		{
-			input.input_modifier |= GRAPHICS_BUFFER_INPUT_MODIFIER_BUTTON1;
+			input_modifier |= GRAPHICS_BUFFER_INPUT_MODIFIER_BUTTON1;
 		}
+		input.input_modifier = static_cast<enum Graphics_buffer_input_modifier>
+			(input_modifier);
 		if (return_code)
 		{
 			CMISS_CALLBACK_LIST_CALL(Graphics_buffer_input_callback)(
@@ -2239,7 +2244,7 @@ picking is performed with picked objects and mouse click and drag information
 returned to the scene.
 ==============================================================================*/
 {
-	int return_code;
+	int input_modifier, return_code;
 	struct Graphics_buffer_input input;
 
 	ENTER(Graphics_buffer_win32_button_callback);
@@ -2294,25 +2299,27 @@ returned to the scene.
 	input.key_code = 0;
 	input.position_x = GET_X_LPARAM(lParam);
 	input.position_y = GET_Y_LPARAM(lParam);
-	input.input_modifier = (enum Graphics_buffer_input_modifier)0;
+	input_modifier = 0;
 	if (MK_SHIFT == wParam)
 	{
-		input.input_modifier |= GRAPHICS_BUFFER_INPUT_MODIFIER_SHIFT;
+		input_modifier |= GRAPHICS_BUFFER_INPUT_MODIFIER_SHIFT;
 	}
 	if (MK_CONTROL == wParam)
 	{
-		input.input_modifier |= GRAPHICS_BUFFER_INPUT_MODIFIER_CONTROL;
+		input_modifier |= GRAPHICS_BUFFER_INPUT_MODIFIER_CONTROL;
 	}
 	if (GetKeyState(VK_MENU) < 0)
 	{
-		input.input_modifier |= GRAPHICS_BUFFER_INPUT_MODIFIER_ALT;
+		input_modifier |= GRAPHICS_BUFFER_INPUT_MODIFIER_ALT;
 	}
 /*
 	if (MK_XBUTTON1 == wParam)
 	{
-		input.input_modifier |= GRAPHICS_BUFFER_INPUT_MODIFIER_BUTTON1;
+		input_modifier |= GRAPHICS_BUFFER_INPUT_MODIFIER_BUTTON1;
 	}
-*/
+*/	
+	input.input_modifier = static_cast<enum Graphics_buffer_input_modifier>
+		(input_modifier);
 	if (return_code)
 	{
 		CMISS_CALLBACK_LIST_CALL(Graphics_buffer_input_callback)(
@@ -2371,22 +2378,22 @@ returned to the scene.
 		input.key_code = 0;
 		input.position_x = 0;
 		input.position_y = 0;
-		input.input_modifier = (enum Graphics_buffer_input_modifier)0;
+		input_modifier = (enum Graphics_buffer_input_modifier)0;
 		if (GDK_SHIFT_MASK&(key_event->state))
 		{
-			input.input_modifier |= GRAPHICS_BUFFER_INPUT_MODIFIER_SHIFT;
+			input_modifier |= GRAPHICS_BUFFER_INPUT_MODIFIER_SHIFT;
 		}
 		if (GDK_CONTROL_MASK&(key_event->state))
 		{
-			input.input_modifier |= GRAPHICS_BUFFER_INPUT_MODIFIER_CONTROL;
+			input_modifier |= GRAPHICS_BUFFER_INPUT_MODIFIER_CONTROL;
 		}
 		if (GDK_MOD1_MASK&(key_event->state))
 		{
-			input.input_modifier |= GRAPHICS_BUFFER_INPUT_MODIFIER_ALT;
+			input_modifier |= GRAPHICS_BUFFER_INPUT_MODIFIER_ALT;
 		}
 		if (GDK_BUTTON1_MASK&(key_event->state))
 		{
-			input.input_modifier |= GRAPHICS_BUFFER_INPUT_MODIFIER_BUTTON1;
+			input_modifier |= GRAPHICS_BUFFER_INPUT_MODIFIER_BUTTON1;
 		}
 		if (return_code)
 		{
@@ -2445,23 +2452,25 @@ returned to the scene.
 			input.position_y = motion_event->y;
 			state = motion_event->state;
 		}
-		input.input_modifier = (enum Graphics_buffer_input_modifier)0;
+		input_modifier = 0;
 		if (GDK_SHIFT_MASK&(state))
 		{
-			input.input_modifier |= GRAPHICS_BUFFER_INPUT_MODIFIER_SHIFT;
+			input_modifier |= GRAPHICS_BUFFER_INPUT_MODIFIER_SHIFT;
 		}
 		if (GDK_CONTROL_MASK&(state))
 		{
-			input.input_modifier |= GRAPHICS_BUFFER_INPUT_MODIFIER_CONTROL;
+			input_modifier |= GRAPHICS_BUFFER_INPUT_MODIFIER_CONTROL;
 		}
 		if (GDK_MOD1_MASK&(state))
 		{
-			input.input_modifier |= GRAPHICS_BUFFER_INPUT_MODIFIER_ALT;
+			input_modifier |= GRAPHICS_BUFFER_INPUT_MODIFIER_ALT;
 		}
 		if (GDK_BUTTON1_MASK&(state))
 		{
-			input.input_modifier |= GRAPHICS_BUFFER_INPUT_MODIFIER_BUTTON1;
+			input_modifier |= GRAPHICS_BUFFER_INPUT_MODIFIER_BUTTON1;
 		}
+		input.input_modifier = static_cast<enum Graphics_buffer_input_modifier>
+			(input_modifier);
 		if (return_code)
 		{
 			CMISS_CALLBACK_LIST_CALL(Graphics_buffer_input_callback)(

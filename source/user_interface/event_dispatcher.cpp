@@ -1662,7 +1662,7 @@ Set a timeout on Carbon...
 	return timeout_callback;
 }
 
-#elif defined (GENERIC_USER_INTERFACE)
+#elif defined (USE_GENERIC_EVENT_DISPATCHER)
 
 struct Event_dispatcher_timeout_callback *Event_dispatcher_add_timeout_callback_at_time(
 	struct Event_dispatcher *event_dispatcher, unsigned long timeout_s, unsigned long timeout_ns,
