@@ -8,6 +8,7 @@
         <object class="wxListBox" name="CommandHistory">
           <size>400,100d</size>
           <style>wxSUNKEN_BORDER</style>
+	  <style>wxLB_SINGLE</style>
         </object>
         <flag>wxEXPAND|wxALL</flag>
         <border>10</border>
@@ -17,7 +18,7 @@
         <object class="wxTextCtrl" name="CommandLine">
           <size>-1,-1d</size>
           <style>wxTE_PROCESS_ENTER</style>
-          <value>gfx</value>
+          <value></value>
         </object>
         <flag>wxEXPAND|wxALL</flag>
         <border>10</border>

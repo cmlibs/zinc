@@ -147,6 +147,10 @@ so that the bits can operate as independent flags.
 	OUTFILE_INPUT = 2
 }; /* enum Command_window_outfile_mode */
 
+#if defined (WX_USER_INTERFACE)
+class wxCommandWindow;
+#endif
+
 struct Command_window
 /*******************************************************************************
 LAST MODIFIED : 9 November 1998
@@ -186,6 +190,9 @@ DESCRIPTION :
 #endif  /* switch (USER_INTERFACE) */
 	/* the information written to the command window can also be directed to a
 		file */
+#if defined (WX_USER_INTERFACE)
+	       wxCommandWindow *wx_command_window;
+#endif
 	FILE *out_file;
 	enum Command_window_outfile_mode out_file_mode;
 	struct User_interface *user_interface;
@@ -1600,19 +1607,80 @@ public:
 
 	void CommandEntered(wxCommandEvent& event)
 	{
+	  wxListBox *history_list;
 	  wxTextCtrl *command_line;
 	  wxString command;
-
+	  wxString blank;
+	  int number;
+	  
+	  history_list = XRCCTRL(*this, "CommandHistory", wxListBox);
 	  command_line = XRCCTRL(*this, "CommandLine", wxTextCtrl);
 	  command = command_line->GetValue();
+	  number = history_list->GetCount();
+          if (number == 0)
+	    history_list->InsertItems(1, &blank,number);
+	  number = history_list->GetCount();
+	  history_list->InsertItems(1,&command, number-1);
 	  Execute_command_execute_string(command_window->execute_command,
-	     const_cast<char *>(command.c_str()));
-	}
+	  const_cast<char *>(command.c_str()));
+	  command_line -> Clear();
+	  history_list->SetSelection(history_list->GetCount()-1);
+	  history_list->Thaw();
+	  }      
+       
+         
+         void display_output(wxString outmessage)
+         {
+         wxListBox *output_list;
+
+	 output_list = XRCCTRL(*this,"OutputWindow", wxListBox);
+	 output_list->Append(outmessage);
+	 output_list->Append ( "" );
+	 output_list->SetSelection(output_list->GetCount()-1);
+	 output_list->Delete(output_list->GetCount()-1);
+	 }
+    	 
 
 	void OnBPressed(wxCommandEvent& event)
 	{
 		printf("Button\n");
 	}
+        
+
+        void SingleClick(wxCommandEvent& event)
+        {
+	  wxListBox *history_list;
+	  wxTextCtrl *command_line;
+	  wxString SelectedCommand;
+
+
+	  history_list = XRCCTRL(*this, "CommandHistory", wxListBox);
+	  command_line = XRCCTRL(*this, "CommandLine", wxTextCtrl);
+	  SelectedCommand = history_list->GetStringSelection();
+	  command_line -> Clear();
+	  command_line -> WriteText(SelectedCommand);
+	}
+
+
+        void DoubleClick(wxCommandEvent& event)
+        {
+	  wxListBox *history_list;
+	  wxTextCtrl *command_line;
+	  wxString SelectedCommand;
+	  int number;
+
+	  history_list = XRCCTRL(*this, "CommandHistory", wxListBox);
+	  command_line = XRCCTRL(*this, "CommandLine", wxTextCtrl);
+	  SelectedCommand = history_list->GetStringSelection();  
+ 	  number = history_list->GetCount();
+	  history_list->InsertItems(1,&SelectedCommand, number-1);
+	  Execute_command_execute_string(command_window->execute_command,
+	  const_cast<char *>(SelectedCommand.c_str()));
+	  command_line->Clear();
+	  history_list->SetSelection ( history_list->GetCount() - 1 ); 	 
+	  history_list->Deselect( history_list->GetCount() - 1 );
+       	}
+
 
 	DECLARE_DYNAMIC_CLASS(wxCommandWindow);
    DECLARE_EVENT_TABLE();
@@ -1621,10 +1689,10 @@ public:
 IMPLEMENT_DYNAMIC_CLASS(wxCommandWindow, wxFrame)
 
 BEGIN_EVENT_TABLE(wxCommandWindow, wxFrame)
-        //EVT_TEXT(XRCID("CommandLine"), wxCommandWindow::CommandEntered)
 	EVT_TEXT_ENTER(XRCID("CommandLine"), wxCommandWindow::CommandEntered)
-
-   EVT_BUTTON(XRCID("Button"), wxCommandWindow::OnBPressed)
+        EVT_BUTTON(XRCID("Button"), wxCommandWindow::OnBPressed)
+        EVT_LISTBOX(XRCID("CommandHistory"),wxCommandWindow::SingleClick)
+        EVT_LISTBOX_DCLICK(XRCID("CommandHistory"),wxCommandWindow::DoubleClick)
 END_EVENT_TABLE()
 
 #endif /* defined (WX_USER_INTERFACE) */
@@ -2122,13 +2190,13 @@ Create the structures and retrieve the command window from the uil file.
 			}
 #elif defined (WX_USER_INTERFACE) /* switch (USER_INTERFACE) */
 			wxXmlInit_command_window();
-
-			wxCommandWindow *wx_command_window = new 
+			
+			command_window->wx_command_window = new 
 			  wxCommandWindow(command_window);
 
-			wxXmlResource::Get()->LoadFrame(wx_command_window,
+			wxXmlResource::Get()->LoadFrame(command_window->wx_command_window,
 			   (wxWindow *)NULL, _T("CmguiCommandWindow"));
-			wx_command_window->Show();
+			command_window->wx_command_window->Show();
 #endif /* switch (USER_INTERFACE) */
 		}
 		else
@@ -2471,8 +2539,8 @@ Returns the message pane widget.
 	return (return_widget);
 } /* Command_window_get_message_pane */
 #endif /* defined (MOTIF) */
-
-int write_command_window(char *message,struct Command_window *command_window)
+int write_command_window(char *message,struct Command_window
+*command_window)
 /*******************************************************************************
 LAST MODIFIED : 9 November 1998
 
@@ -2548,6 +2616,9 @@ Writes the <message> to the <command_window>.
 			message, -1);
 		return_code = 1;
 #endif /* GTK_MAJOR_VERSION >= 2 */
+#elif defined (WX_USER_INTERFACE)
+		command_window->wx_command_window->display_output(message);
+                return_code = 1;
 #endif /* switch (USER_INTERFACE) */
 		if (command_window->out_file &&
 			(command_window->out_file_mode & OUTFILE_OUTPUT))
