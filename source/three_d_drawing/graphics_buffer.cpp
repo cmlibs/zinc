@@ -267,7 +267,6 @@ DEFINE_CMISS_CALLBACK_FUNCTIONS(Graphics_buffer_input_callback, \
 
 DECLARE_OBJECT_FUNCTIONS(Graphics_buffer)
 
-#if defined (MOTIF) || defined (GTK_USER_INTERFACE) || defined (WIN32_USER_INTERFACE) || defined (WX_USER_INTERFACE)
 static struct Graphics_buffer *CREATE(Graphics_buffer)(
 	struct Graphics_buffer_package *package)
 /*******************************************************************************
@@ -357,7 +356,6 @@ contained in the this module only.
 	LEAVE;
 	return (buffer);
 } /* CREATE(Graphics_buffer) */
-#endif /* defined (MOTIF) || defined (GTK_USER_INTERFACE) || defined (WIN32_USER_INTERFACE) || defined (WX_USER_INTERFACE) */
 
 #if defined (MOTIF)
 static void Graphics_buffer_X3d_initialize_callback(Widget graphics_buffer_widget,
