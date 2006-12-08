@@ -213,8 +213,8 @@ Functions for executing cmiss commands.
 #include "selection/any_object_selection.h"
 #if defined (MOTIF)
 #include "three_d_drawing/movie_extensions.h"
-#include "three_d_drawing/graphics_buffer.h"
 #endif /* defined (MOTIF) */
+#include "three_d_drawing/graphics_buffer.h"
 #include "graphics/font.h"
 #if defined (MOTIF)
 #include "time/time_editor_dialog.h"
