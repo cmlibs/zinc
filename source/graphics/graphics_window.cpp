@@ -2035,6 +2035,8 @@ Parser commands for setting simple parameters applicable to the whole <window>.
 				else
 				{
 					current_pane=1;
+					depth_of_field = 0.0;
+					focal_depth = 0.0;
 					std_view_angle=40.0;
 					interactive_tool=(struct Interactive_tool *)NULL;
 					antialias_mode=0;
