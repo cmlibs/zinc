@@ -2230,7 +2230,8 @@ returned to the scene.
 
 #if defined (WIN32_USER_INTERFACE)
 static int Graphics_buffer_win32_button_callback(
-	int *button_event, struct Graphics_buffer *graphics_buffer, WPARAM wParam, LPARAM lParam)
+	unsigned int *button_event, struct Graphics_buffer *graphics_buffer, 
+	WPARAM wParam, LPARAM lParam)
 /*******************************************************************************
 LAST MODIFIED : 11 July 2002
 
