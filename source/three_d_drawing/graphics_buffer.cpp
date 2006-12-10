@@ -2190,8 +2190,10 @@ returned to the scene.
 		}
 		input.key_code = 0;
 		input.button_number = button_event->button;
-		input.position_x = button_event->x;
-		input.position_y = button_event->y;
+		/* Maybe I should change Graphics_buffer_input to have a higher
+			resolution for position */
+		input.position_x = static_cast<int>(button_event->x);
+		input.position_y = static_cast<int>(button_event->y);
 		input_modifier = 0;
 		if (GDK_SHIFT_MASK&(button_event->state))
 		{
@@ -2344,7 +2346,7 @@ picking is performed with picked objects and mouse click and drag information
 returned to the scene.
 ==============================================================================*/
 {
-	int return_code;
+	int input_modifier, return_code;
 	struct Graphics_buffer *graphics_buffer;
 	struct Graphics_buffer_input input;
 
@@ -2427,7 +2429,7 @@ returned to the scene.
 ==============================================================================*/
 {
 	GdkModifierType state;
-	int return_code;
+	int input_modifier, return_code;
 	struct Graphics_buffer *graphics_buffer;
 	struct Graphics_buffer_input input;
 
@@ -2447,9 +2449,9 @@ returned to the scene.
 		}
 		else
 		{
-			input.position_x = motion_event->x;
-			input.position_y = motion_event->y;
-			state = motion_event->state;
+			input.position_x = static_cast<int>(motion_event->x);
+			input.position_y = static_cast<int>(motion_event->y);
+			state = static_cast<GdkModifierType>(motion_event->state);
 		}
 		input_modifier = 0;
 		if (GDK_SHIFT_MASK&(state))
