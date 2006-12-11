@@ -180,6 +180,7 @@ Functions for executing cmiss commands.
 #endif /* defined (GTK_USER_INTERFACE) */
 #include "help/help_interface.h"
 #if defined (USE_ITK)
+#include "image_processing/computed_field_thresholdFilter.h"
 #include "image_processing/computed_field_binaryThresholdFilter.h"
 #include "image_processing/computed_field_cannyEdgeDetectionFilter.h"
 #include "image_processing/computed_field_meanImageFilter.h"
@@ -23469,6 +23470,8 @@ Initialise all the subcomponents of cmgui and create the Cmiss_command_data
 				command_data->computed_field_package);
 
 #if defined (USE_ITK)
+			Computed_field_register_types_thresholdFilter(
+				command_data->computed_field_package);
 			Computed_field_register_types_binaryThresholdFilter(
 				command_data->computed_field_package);
 			Computed_field_register_types_cannyEdgeDetectionFilter(
