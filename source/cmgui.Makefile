@@ -645,7 +645,10 @@ ifeq ($(SYSNAME),AIX)
    LIB = -lm -ldl -lSM -lICE -lpthread -lcrypt -lbsd -lld -lC128
 endif # SYSNAME == AIX
 ifeq ($(SYSNAME),win32)
-   LIB = -lws2_32 -lg2c -lgdi32  -lwinspool -lcomdlg32 -ladvapi32 -lshell32 -lole32 -loleaut32 -lnetapi32 -luuid -lwsock32 -lmpr -lwinmm -lversion -lodbc32 -lstdc++
+   LIB = -lws2_32 -lgdi32 -lwinspool -lcomdlg32 -ladvapi32 -lshell32 -lole32 -loleaut32 -lnetapi32 -luuid -lwsock32 -lmpr -lwinmm -lversion -lodbc32 -lstdc++
+	ifeq ($(USE_COMPUTED_VARIABLES),true)
+		LIB += -lg2c
+	endif # USE_COMPTED_VARAIABLES == true
 endif # SYSNAME == win32
 ifeq ($(SYSNAME),Darwin)
       # The lib -lSystemStubs is used to resolve some linking differences between some code
@@ -1015,6 +1018,7 @@ endif
 IMAGE_PROCESSING_SRCS =
 ifeq ($(USE_ITK),true)
    IMAGE_PROCESSING_SRCS += \
+	   image_processing/computed_field_thresholdFilter.cpp \
 	   image_processing/computed_field_binaryThresholdFilter.cpp \
 	   image_processing/computed_field_cannyEdgeDetectionFilter.cpp \
 	   image_processing/computed_field_meanImageFilter.cpp \
