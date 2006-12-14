@@ -123,7 +123,6 @@ Evaluate the fields cache at the location
 			Computed_field_evaluate_source_fields_cache_at_location(field, location))
 		{
 			/* 2. Calculate the field */
-			number_of_xi = get_FE_element_dimension(field->source_fields[0]->element);
 			size = 0.0;
 			for (i = 0 ; i < field->number_of_components ; i++)
 			{
@@ -135,7 +134,8 @@ Evaluate the fields cache at the location
 			{
 				field->values[i] = field->source_fields[0]->values[i] / size;
 			}
-			if (field->source_fields[0]->derivatives_valid)
+			if (field->source_fields[0]->derivatives_valid
+				&& (0 < (number_of_xi = location->get_number_of_derivatives())))
 			{
 				derivative = field->derivatives;
 				source_derivative = field->source_fields[0]->derivatives;
