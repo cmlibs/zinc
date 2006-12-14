@@ -204,7 +204,7 @@ DESCRIPTION :
 Evaluate the fields cache at the location
 ==============================================================================*/
 {
-	int i, number_of_xi, return_code;
+	int i, return_code;
 
 	ENTER(Computed_field_derivative::evaluate_cache_at_location);
 	if (field && Computed_field_has_numerical_components(field, NULL) && 
@@ -235,7 +235,7 @@ Evaluate the fields cache at the location
 					for (i = 0 ; i < field->number_of_components ; i++)
 					{
 						field->values[i] = field->source_fields[0]->
-							derivatives[i * number_of_xi + xi_index];
+							derivatives[i * element_dimension + xi_index];
 					}
 				}
 			}
@@ -355,7 +355,7 @@ although its cache may be lost.
 	struct Computed_field **source_fields;
 
 	ENTER(Computed_field_set_type_derivative);
-	if (field)
+	if (field && source_field)
 	{
 		return_code=1;
 		/* 1. make dynamic allocations for any new type-specific data */
