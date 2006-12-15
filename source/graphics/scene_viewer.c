@@ -1796,8 +1796,8 @@ depth of field effect.
 			temp_matrix[6] = 0.0;
 			temp_matrix[7] = 0.0;
 		
-			temp_matrix[8] = dx / (2.0 - focal_depth * 2.0);
-			temp_matrix[9] = dy / (2.0 - focal_depth * 2.0);
+			temp_matrix[8] = dx / (1.0 - focal_depth);
+			temp_matrix[9] = dy / (1.0 - focal_depth);
 			temp_matrix[10] = 1.0;
 			temp_matrix[11] = 0.0;
 			/* offsetting image by [sub]pixel distances for anti-aliasing.
@@ -1805,8 +1805,8 @@ depth of field effect.
 				distance image is shifted up. The actual offsets used are
 				fractions of half the viewport width or height,since normalized
 				device coordinates (NDCs) range from -1 to +1 */
-			temp_matrix[12] = -dx * (-1.0 + focal_depth * 2.0);
-			temp_matrix[13] = -dy * (-1.0 + focal_depth * 2.0);
+			temp_matrix[12] = -dx * focal_depth;
+			temp_matrix[13] = -dy * focal_depth;
 			temp_matrix[14] = 0.0;
 			temp_matrix[15] = 1.0;
 			

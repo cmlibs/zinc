@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : scene_viewer.h
 
-LAST MODIFIED : 17 February 2004
+LAST MODIFIED : 6 December 2006
 
 DESCRIPTION :
 Three_D_drawing derivative for viewing a Scene from an arbitrary position.
@@ -106,6 +106,8 @@ and the functions given their public names.
 #define Scene_viewer_set_view_angle Cmiss_scene_viewer_set_view_angle
 #define Scene_viewer_get_antialias_mode Cmiss_scene_viewer_get_antialias_mode
 #define Scene_viewer_set_antialias_mode Cmiss_scene_viewer_set_antialias_mode
+#define Scene_viewer_get_depth_of_field Cmiss_scene_viewer_get_depth_of_field
+#define Scene_viewer_set_depth_of_field Cmiss_scene_viewer_set_depth_of_field
 #define Scene_viewer_get_perturb_lines Cmiss_scene_viewer_get_perturb_lines
 #define Scene_viewer_set_perturb_lines Cmiss_scene_viewer_set_perturb_lines
 #define Scene_viewer_view_all Cmiss_scene_viewer_view_all
@@ -360,7 +362,13 @@ int Scene_viewer_set_depth_of_field(struct Scene_viewer *scene_viewer,
 LAST MODIFIED : 5 December 2006
 
 DESCRIPTION :
-depth of field 0 == infinite.
+Set a simulated <depth_of_field> for the scene_viewer.
+If <depth_of_field> is 0, then this is disabled, essentially an infinite depth.
+Otherwise, <depth_of_field> is a normalised length in z space, so 1 is a
+significant value, 0.1 is a small value causing significant distortion.
+The <focal_depth> is depth in normalised device coordinates, -1 at near plane
+and +1 at far plane.  At this <focal_depth> the image is in focus no matter
+how small the <depth_of_field>. 
 ==============================================================================*/
 
 int Scene_viewer_get_blending_mode(struct Scene_viewer *scene_viewer,
