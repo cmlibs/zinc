@@ -523,6 +523,22 @@ Sets the background texture rendered in the scene_viewer if one that
 matches the <scene_name> exists.
 ==============================================================================*/
 
+int Cmiss_scene_viewer_set_background_texture_info(Cmiss_scene_viewer_id scene_viewer,
+	double bk_texture_left,double bk_texture_top,
+	double bk_texture_width,double bk_texture_height,
+	int bk_texture_undistort_on,double bk_texture_max_pixels_per_polygon);
+/*******************************************************************************
+LAST MODIFIED : 28 September 1999
+
+DESCRIPTION :
+If there is a background_texture in the scene_viewer, these values specify the
+top,left corner, in user coordinates, where it will be displayed, while the
+next two parameters specify the size it will have in these coordinates.
+If the bk_texture_undistort_on flag is set, radial distortion parameters from the background texture are un-distorted when the
+texture is displayed. It does this by drawing it as a collection of polygons;
+the last parameter controls the size of polygons used to do this.
+==============================================================================*/
+
 int Cmiss_scene_viewer_view_all(Cmiss_scene_viewer_id scene_viewer);
 /*******************************************************************************
 LAST MODIFIED : 12 September 2002
