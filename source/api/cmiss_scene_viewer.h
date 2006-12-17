@@ -420,6 +420,29 @@ Sets the number of jitter samples used to antialias the scene_viewer.
 Zero turns antialiasing off.
 ==============================================================================*/
 
+int Cmiss_scene_viewer_get_depth_of_field(Cmiss_scene_viewer_id scene_viewer,
+	double *depth_of_field, double *focal_depth);
+/*******************************************************************************
+LAST MODIFIED : 18 December 2006
+
+DESCRIPTION :
+==============================================================================*/
+
+int Cmiss_scene_viewer_set_depth_of_field(Cmiss_scene_viewer_id scene_viewer,
+	double depth_of_field, double focal_depth);
+/*******************************************************************************
+LAST MODIFIED : 18 December 2006
+
+DESCRIPTION :
+Set a simulated <depth_of_field> for the scene_viewer.
+If <depth_of_field> is 0, then this is disabled, essentially an infinite depth.
+Otherwise, <depth_of_field> is a normalised length in z space, so 1 is a
+significant value, 0.1 is a small value causing significant distortion.
+The <focal_depth> is depth in normalised device coordinates, -1 at near plane
+and +1 at far plane.  At this <focal_depth> the image is in focus no matter
+how small the <depth_of_field>. 
+==============================================================================*/
+
 int Cmiss_scene_viewer_get_perturb_lines(Cmiss_scene_viewer_id scene_viewer,
 	int *perturb_lines);
 /*******************************************************************************
