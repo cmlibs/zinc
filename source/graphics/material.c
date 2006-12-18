@@ -1156,6 +1156,7 @@ material results.
 			execute_Texture(material->texture);
 		}
 
+#if defined (GL_VERSION_1_3)
 		if (material->spectrum)
 		{
 			glActiveTexture(GL_TEXTURE2_ARB);
@@ -1163,7 +1164,6 @@ material results.
 			glActiveTexture(GL_TEXTURE0_ARB);
 		}
 
-#if defined (GL_VERSION_1_3)
 		if (material->secondary_texture)
 		{
 			/* We don't have to check here as the flag can only be set if a
