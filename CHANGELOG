@@ -13,6 +13,15 @@ http://www.cmiss.org/cmgui/
 v2.3.3
 18 December 2006
 Shifted to externally visible subversion server.
+Added Cmiss_scene_viewer_set_depth_of_field and Cmiss_scene_viewer_get_depth_of_field.
+Add Cmiss_scene_viewer_set_background_texture_info.
+Fix bug calling get_FE_element_dimension when there is no element.
+Fix bug in derivative computed field.
+Stop segfault if source field not specified for derivative computed field.
+Add a natural logarithm computed field "log".
+Registered command for threshold filter computed field
+Changes for initial support for WX_USER_INTERFACE and conversion of files to C++.
+Enable element_tool and element_point_tool without dialog in all versions.
 
 v2.3.2
 5 October 2006
