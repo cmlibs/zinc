@@ -134,6 +134,10 @@ static char *axis_name[7]={"??","x","y","z","-x","-y","-z"};
 Module types
 ------------
 */
+#if defined (WX_USER_INTERFACE)
+class wxGraphicsWindow;
+#endif /* defined (WX_USER_INTERFACE) */
+
 struct Graphics_window
 /*******************************************************************************
 LAST MODIFIED : 8 September 2000
@@ -160,6 +164,12 @@ Contains information for a graphics window.
 	GtkWidget *shell_window;
 #elif defined (WIN32_USER_INTERFACE)
 	HWND hWnd;
+#elif defined (WX_USER_INTERFACE)
+        wxGraphicsWindow *wx_graphics_window;
+        wxPanel *panel;
+        wxPanel *panel2;
+        wxPanel *panel3;
+        wxPanel *panel4;
 #endif /* defined (GTK_USER_INTERFACE) */
 	/* scene_viewers and their parameters: */
 	enum Graphics_window_layout_mode layout_mode;
@@ -1034,9 +1044,9 @@ wholly from the file name extension
 			force_onscreen = 0;
 			width = 0;
 			height = 0;
-			if (cmgui_image = Graphics_window_get_image(graphics_window,
+			if(cmgui_image = Graphics_window_get_image(graphics_window,
 					 force_onscreen, width, height, /*preferred_antialias*/0,
-					 /*preferred_transparency_layers*/0, storage))
+								   /*preferred_transparency_layers*/0, storage))
 			{
 				cmgui_image_information = CREATE(Cmgui_image_information)();
 				Cmgui_image_information_add_file_name(cmgui_image_information,
@@ -2612,29 +2622,229 @@ view angle, interest point etc.
 	return (return_code);
 } /* modify_Graphics_window_view */
 
+
+
+
 #if defined (WX_USER_INTERFACE)
 class wxGraphicsWindow : public wxFrame
 {
   Graphics_window *graphics_window;
 
+ 
+
+
 public:
 
   wxGraphicsWindow(Graphics_window *graphics_window): 
     graphics_window(graphics_window)
-  {
+  {	 
   };
 
   wxGraphicsWindow()
   {
   };
 
-	DECLARE_DYNAMIC_CLASS(wxGraphicsWindow);
-   DECLARE_EVENT_TABLE();
+ 
+ 
+  
+
+  void OnViewallpressed(wxCommandEvent& event)
+  {    
+    if (Graphics_window_view_all(graphics_window))
+    {
+	Graphics_window_update(graphics_window);
+    }
+  }
+  
+  void OnSaveaspressed(wxCommandEvent& event)
+  {
+    enum Texture_storage_type storage;
+    int force_onscreen, height, width;
+    struct Cmgui_image *cmgui_image;
+    struct Cmgui_image_information *cmgui_image_information;
+     
+    wxString file_name;
+    wxString filepath;
+    char*  filename;
+    
+     wxFileDialog *saveImage = new wxFileDialog (this,"Save file","","",
+     "JPEG files (*.jpg)|*.jpg",wxSAVE,wxDefaultPosition);
+                    
+                        
+   if (saveImage->ShowModal() == wxID_OK)
+    { file_name=saveImage->GetFilename();
+      filepath=saveImage->GetPath();
+      filename=(char*) filepath.mb_str();
+      storage = TEXTURE_RGBA;
+      force_onscreen = 0;
+      width = 0;
+      height = 0;
+           if(cmgui_image = Graphics_window_get_image(graphics_window,
+	       force_onscreen, width, height, /*preferred_antialias*/0,
+						 /*preferred_transparency_layers*/0, storage))
+	{
+	  cmgui_image_information = CREATE(Cmgui_image_information)();
+	  Cmgui_image_information_add_file_name(cmgui_image_information,filename);
+	  Cmgui_image_write(cmgui_image, cmgui_image_information);
+	  DESTROY(Cmgui_image_information)(&cmgui_image_information);
+	  DESTROY(Cmgui_image)(&cmgui_image);
+	}
+      DEALLOCATE(filename);
+    }
+  }
+
+    void OnViewOptionspressed(wxCommandEvent& event)
+    {
+      wxString choices;
+      wxComboBox *view_options;     
+      wxComboBox *up_view_options;
+      wxComboBox *front_view_options;
+
+
+      view_options = XRCCTRL(*this,"View", wxComboBox);      
+      up_view_options = XRCCTRL(*this,"UpViewOptions", wxComboBox);
+      front_view_options = XRCCTRL(*this,"FrontViewOptions", wxComboBox);
+
+      choices = view_options->GetValue();
+      if (choices == "2d")
+	Graphics_window_set_layout_mode(graphics_window,GRAPHICS_WINDOW_LAYOUT_2D);
+      else if (choices == "free_ortho" )
+	Graphics_window_set_layout_mode(graphics_window,GRAPHICS_WINDOW_LAYOUT_FREE_ORTHO);
+      else if (choices == "front_back")
+	Graphics_window_set_layout_mode(graphics_window,GRAPHICS_WINDOW_LAYOUT_FRONT_BACK);
+      else if (choices == "front_side")
+	Graphics_window_set_layout_mode(graphics_window,GRAPHICS_WINDOW_LAYOUT_FRONT_SIDE);
+      else if (choices == "orthographic")  
+	Graphics_window_set_layout_mode(graphics_window,GRAPHICS_WINDOW_LAYOUT_ORTHOGRAPHIC);
+      else if (choices == "pseudo_3d")
+  	Graphics_window_set_layout_mode(graphics_window,GRAPHICS_WINDOW_LAYOUT_PSEUDO_3D);       
+      else if (choices == "simple")
+	Graphics_window_set_layout_mode(graphics_window,GRAPHICS_WINDOW_LAYOUT_SIMPLE);
+      else
+	printf("wrong\n");
+    }
+
+    void OnUpViewOptionspressed(wxCommandEvent& event)
+    {
+      
+      wxComboBox *up_view_options;
+      wxComboBox *front_view_options;
+      wxString up_choices;
+
+      up_view_options = XRCCTRL(*this,"UpViewOptions", wxComboBox);
+      front_view_options = XRCCTRL(*this,"FrontViewOptions", wxComboBox);
+      up_choices = up_view_options->GetValue();
+        
+      if (up_choices == "x")
+      {	
+	front_view_options->Delete(3);
+	front_view_options->Delete(2);
+	front_view_options->Delete(1);	
+        front_view_options->Delete(0);
+	front_view_options->Append("y");
+	front_view_options->Append("z");
+	front_view_options->Append("-y");
+	front_view_options->Append("-z");
+
+      }
+      else if (up_choices == "y" )
+      {	
+	front_view_options->Delete(3);
+	front_view_options->Delete(2);
+	front_view_options->Delete(1);
+	front_view_options->Delete(0);
+	front_view_options->Append("x");
+	front_view_options->Append("z");
+	front_view_options->Append("-x");
+	front_view_options->Append("-z");
+      }
+      else if (up_choices == "z")
+      {	 
+	front_view_options->Delete(3);
+	front_view_options->Delete(2);
+	front_view_options->Delete(1);
+	front_view_options->Delete(0);
+      	front_view_options->Append("x");
+	front_view_options->Append("y");
+	front_view_options->Append("-x");
+	front_view_options->Append("-y");
+      }
+      else if (up_choices == "-x")
+      {
+	front_view_options->Delete(3);
+	front_view_options->Delete(2);
+	front_view_options->Delete(1);
+	front_view_options->Delete(0);
+	front_view_options->Append("y");
+	front_view_options->Append("z");
+	front_view_options->Append("-y");
+	front_view_options->Append("-z");
+      }	
+      else if (up_choices == "-y") 
+      {	
+	front_view_options->Delete(3);
+	front_view_options->Delete(2);
+	front_view_options->Delete(1);
+	front_view_options->Delete(0);
+	front_view_options->Append("x");
+	front_view_options->Append("z");
+	front_view_options->Append("-x");
+	front_view_options->Append("-z");
+      }
+      else if (up_choices == "-z")
+      {
+	front_view_options->Delete(3);
+	front_view_options->Delete(2);
+	front_view_options->Delete(1);
+	front_view_options->Delete(0);
+	front_view_options->Append("x");
+	front_view_options->Append("y");
+	front_view_options->Append("-x");
+	front_view_options->Append("-y");
+      }
+      else
+	printf("wrong\n");
+     }
+
+    void OnFrontViewOptionspressed(wxCommandEvent& event)
+    {
+      wxString front_choices;
+      wxComboBox *front_view_options;
+
+      front_view_options = XRCCTRL(*this,"FrontViewOptions", wxComboBox);
+      front_choices = front_view_options->GetValue();
+      if (front_choices == "x")
+	printf("0\n");
+      else if (front_choices == "y")
+	printf("1\n");
+      else if (front_choices == "z")
+	printf("2\n");
+      else if (front_choices == "-x")
+	printf("3\n");
+      else if (front_choices == "-y")  
+ 	printf("4\n");
+      else if (front_choices == "-z")
+  	printf("5\n");   
+      else
+  	printf("6\n");      
+     }
+
+
+  
+
+  DECLARE_DYNAMIC_CLASS(wxGraphicsWindow);
+  DECLARE_EVENT_TABLE();
 };
 
 IMPLEMENT_DYNAMIC_CLASS(wxGraphicsWindow, wxFrame)
 
 BEGIN_EVENT_TABLE(wxGraphicsWindow, wxFrame)
+  EVT_BUTTON(XRCID("Button1"),wxGraphicsWindow::OnViewallpressed)
+  EVT_BUTTON(XRCID("Button2"),wxGraphicsWindow::OnSaveaspressed)
+  EVT_COMBOBOX(XRCID("View"),wxGraphicsWindow::OnViewOptionspressed)
+  EVT_COMBOBOX(XRCID("UpViewOptions"),wxGraphicsWindow::OnUpViewOptionspressed)
+  EVT_COMBOBOX(XRCID("FrontViewOptions"),wxGraphicsWindow::OnFrontViewOptionspressed)
+ 
 END_EVENT_TABLE()
 
 #endif /* defined (WX_USER_INTERFACE) */
@@ -3397,7 +3607,6 @@ it.
 					"CREATE(Graphics_window).  Unable to register class information");
 			}
 #elif defined (WX_USER_INTERFACE) /* switch (USER_INTERFACE) */
-			USE_PARAMETER(graphics_buffer);
 			USE_PARAMETER(pane_no);
 			USE_PARAMETER(minimum_colour_buffer_depth);
 			USE_PARAMETER(minimum_depth_buffer_depth);
@@ -3406,18 +3615,23 @@ it.
 
 			wxXmlInit_graphics_window();
 
-			wxGraphicsWindow *wx_graphics_window = new 
+			window->wx_graphics_window = new 
 			  wxGraphicsWindow(window);
 
-			wxXmlResource::Get()->LoadFrame(wx_graphics_window,
+			wxXmlResource::Get()->LoadFrame(window->wx_graphics_window,
 			   (wxWindow *)NULL, _T("CmguiGraphicsWindow"));
 
-			if (wxPanel *panel = XRCCTRL(*wx_graphics_window, "Panel", wxPanel))
+			window->panel = XRCCTRL(*window->wx_graphics_window, "Panel", wxPanel);
+			window->panel2 = XRCCTRL(*window->wx_graphics_window, "Panel2", wxPanel);
+			window->panel3 = XRCCTRL(*window->wx_graphics_window, "Panel3", wxPanel);
+			window->panel4 = XRCCTRL(*window->wx_graphics_window, "Panel4", wxPanel);
+
+			if (window->panel)
 			{
 
 				if (graphics_buffer = create_Graphics_buffer_wx(
 						 graphics_buffer_package,
-						 panel,
+						 window->panel,
 						 graphics_buffer_buffering_mode, graphics_buffer_stereo_mode,
 						 minimum_colour_buffer_depth, minimum_depth_buffer_depth,
 						 minimum_accumulation_buffer_depth))
@@ -3462,7 +3676,7 @@ it.
 							/* initial view is of all of the current scene */
 							Graphics_window_view_all(window);
 
-							wx_graphics_window->Show();
+							window->wx_graphics_window->Show();
 			
 							return_code = 1;
 						}
@@ -3984,21 +4198,27 @@ DESCRIPTION :
 Sets the layout mode in effect on the <window>.
 ==============================================================================*/
 {
-#if defined (MOTIF)
+#if defined (MOTIF) || defined (WX_USER_INTERFACE)
 	double bottom,clip_factor,far_plane,left,
 		near_plane,radius,right,top;
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF) || defined (WX_USER_INTERFACE) */
 	double eye[3],eye_distance,front[3],lookat[3],up[3],view[3];
 	enum Scene_viewer_projection_mode projection_mode;
 	int new_layout,new_number_of_panes,pane_no,return_code;
-#if defined (MOTIF)
+#if defined (MOTIF) || defined (WX_USER_INTERFACE)
 	enum Scene_viewer_transparency_mode transparency_mode;
 	int perturb_lines, transparency_layers;
 	struct Colour background_colour;
 	struct Graphics_buffer *graphics_buffer;
 	struct Scene_viewer *first_scene_viewer;
+#endif /* defined (MOTIF) || defined (WX_USER_INTERFACE) */
+#if defined (MOTIF)
 	Widget viewing_area;
 #endif /* defined (MOTIF) */
+#if defined (WX_USER_INTERFACE)
+	wxPanel* current_panel;
+#endif /* defined (WX_USER_INTERFACE) */
+
 
 	ENTER(Graphics_window_set_layout_mode);
 	if (window)
@@ -4008,7 +4228,7 @@ Sets the layout mode in effect on the <window>.
 			Graphics_window_layout_mode_get_number_of_panes(layout_mode);
 		if (new_number_of_panes > window->number_of_scene_viewers)
 		{
-#if defined (MOTIF)
+#if defined (MOTIF) || defined (WX_USER_INTERFACE)
 			first_scene_viewer = window->scene_viewer_array[0];
 			Scene_viewer_get_lookat_parameters(first_scene_viewer,
 				&(eye[0]),&(eye[1]),&(eye[2]),
@@ -4024,6 +4244,7 @@ Sets the layout mode in effect on the <window>.
 				for (pane_no = window->number_of_scene_viewers ;
 					  return_code && (pane_no < new_number_of_panes) ; pane_no++)
 				{
+#if defined (MOTIF)
 					switch (pane_no)
 					{
 						/* First viewing area is pane_no 0 */
@@ -4049,6 +4270,37 @@ Sets the layout mode in effect on the <window>.
 					if (graphics_buffer = create_Graphics_buffer_X3d_from_buffer(
 							 viewing_area, /*width*/100, /*height*/100,
 							 Scene_viewer_get_graphics_buffer(first_scene_viewer)))
+#elif defined (WX_USER_INTERFACE)
+					switch (pane_no)
+					{
+						/* First viewing area is pane_no 0 */
+						case 1:
+						{
+							current_panel = window->panel2;
+						} break;
+						case 2:
+						{
+							current_panel = window->panel3;
+						} break;
+						case 3:
+						{
+							current_panel = window->panel4;
+						} break;
+						default:
+						{
+							display_message(ERROR_MESSAGE, "Graphics_window_set_layout_mode.  "
+								"Invalid pane to create");
+							return_code = 0;
+						} break;
+					}
+					// Should be made to use a new function create_Graphics_buffer_wx_from_buffer
+					if (graphics_buffer = create_Graphics_buffer_wx(window->graphics_buffer_package,
+						current_panel,
+						GRAPHICS_BUFFER_DOUBLE_BUFFERING,
+						GRAPHICS_BUFFER_ANY_STEREO_MODE,
+						/*minimum_colour_buffer_depth*/24, /*minimum_depth_buffer_depth*/16, 
+						/*minimum_accumulation_buffer_depth*/0))
+#endif
 					{
 						Scene_viewer_get_background_colour(first_scene_viewer,&background_colour);
 						if (window->scene_viewer_array[pane_no]=
@@ -4120,12 +4372,12 @@ Sets the layout mode in effect on the <window>.
 			{
 				return_code = 0;
 			}
-#else /* defined (MOTIF) */
+#else /* defined (MOTIF) || defined (WX_USER_INTERFACE) */
 			display_message(ERROR_MESSAGE,
 				"Graphics_window_set_layout_mode.  "
 				"More than one scene viewer in the graphics window not implemented for this version.");
 			return_code=0;
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF) || defined (WX_USER_INTERFACE) */
 		}
 		if (return_code)
 		{
@@ -4139,6 +4391,7 @@ Sets the layout mode in effect on the <window>.
 				/* make sure the current layout mode is displayed on the chooser */
 				choose_enumerator_set_string(window->layout_mode_widget,
 					Graphics_window_layout_mode_string(layout_mode));
+				// WX version set the choice in the list box to be correct for "layout" mode
 #endif /* defined (MOTIF) */
 				/* awaken scene_viewers in panes to be used; put others to sleep */
 				for (pane_no=0;pane_no<window->number_of_scene_viewers;pane_no++)
@@ -4178,12 +4431,17 @@ Sets the layout mode in effect on the <window>.
 			{
 				if (new_layout)
 				{
-#if defined (MOTIF)
-					/* one single, fully customisable scene viewer */
-					XtUnmanageChild(window->viewing_area2);
-					XtUnmanageChild(window->viewing_area3);
-					XtUnmanageChild(window->viewing_area4);
-#endif /* defined (MOTIF) */
+#if defined (WX_USER_INTERFACE)
+					//XtVaSetValues(window->viewing_area1,
+					//	XmNrightPosition,1,XmNbottomPosition,2,NULL);
+					//XtVaSetValues(window->viewing_area2,
+					//	XmNbottomPosition,2,NULL);
+					window->panel2->Hide();
+					window->panel3->Hide();
+					window->panel4->Hide();
+					/* un-grey orthographic view controls */
+					//XtSetSensitive(window->orthographic_form,True);
+#endif /* defined (WX_USER_INTERFACE) */
 					/* re-enable tumbling in main scene viewer */
 					Scene_viewer_set_translation_rate(window->scene_viewer_array[0],
 						window->default_translate_rate);
@@ -4330,6 +4588,17 @@ Sets the layout mode in effect on the <window>.
 					/* un-grey orthographic view controls */
 					XtSetSensitive(window->orthographic_form,True);
 #endif /* defined (MOTIF) */
+#if defined (WX_USER_INTERFACE)
+					//XtVaSetValues(window->viewing_area1,
+					//	XmNrightPosition,1,XmNbottomPosition,2,NULL);
+					//XtVaSetValues(window->viewing_area2,
+					//	XmNbottomPosition,2,NULL);
+					window->panel2->Show();
+					window->panel3->Hide();
+					window->panel4->Hide();
+					/* un-grey orthographic view controls */
+					//XtSetSensitive(window->orthographic_form,True);
+#endif /* defined (WX_USER_INTERFACE) */
 				}
 				if ((GRAPHICS_WINDOW_LAYOUT_FRONT_BACK==layout_mode)||
 					(GRAPHICS_WINDOW_LAYOUT_FRONT_SIDE==layout_mode))
@@ -4746,7 +5015,9 @@ separated by 2 pixel borders within the viewing area.
 		*viewing_width = window->shell_window->allocation.width;
 		*viewing_height = window->shell_window->allocation.height;
 #endif /* GTK_MAJOR_VERSION >= 2 */
-#endif /* defined (GTK_USER_INTERFACE) */
+#elif defined (WX_USER_INTERFACE)
+		window->panel->GetClientSize(viewing_width, viewing_height);
+#endif /* defined (USER_INTERFACE) */
 		return_code=1;
 	}
 	else

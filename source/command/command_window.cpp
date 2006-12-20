@@ -1635,17 +1635,8 @@ public:
 
 	 output_list = XRCCTRL(*this,"OutputWindow", wxListBox);
 	 output_list->Append(outmessage);
-	 output_list->Append ( "" );
-	 output_list->SetSelection(output_list->GetCount()-1);
-	 output_list->Delete(output_list->GetCount()-1);
-	 }
+       	 }
     	 
-
-	void OnBPressed(wxCommandEvent& event)
-	{
-		printf("Button\n");
-	}
-        
 
         void SingleClick(wxCommandEvent& event)
         {
@@ -1681,8 +1672,19 @@ public:
 	  history_list->Deselect( history_list->GetCount() - 1 );
        	}
 
+        void threeDwindow(wxCommandEvent& event)
+        {
+	  Execute_command_execute_string(command_window->execute_command,
+	  "gfx cre win");
+        }
 
-	DECLARE_DYNAMIC_CLASS(wxCommandWindow);
+        void Exit(wxCommandEvent& event)
+
+        {
+	  Execute_command_execute_string(command_window->execute_command, "QUIT");
+        } 
+
+DECLARE_DYNAMIC_CLASS(wxCommandWindow);
    DECLARE_EVENT_TABLE();
 };
 
@@ -1690,9 +1692,11 @@ IMPLEMENT_DYNAMIC_CLASS(wxCommandWindow, wxFrame)
 
 BEGIN_EVENT_TABLE(wxCommandWindow, wxFrame)
 	EVT_TEXT_ENTER(XRCID("CommandLine"), wxCommandWindow::CommandEntered)
-        EVT_BUTTON(XRCID("Button"), wxCommandWindow::OnBPressed)
         EVT_LISTBOX(XRCID("CommandHistory"),wxCommandWindow::SingleClick)
         EVT_LISTBOX_DCLICK(XRCID("CommandHistory"),wxCommandWindow::DoubleClick)
+        EVT_MENU(XRCID("GraphicsthreeDWindow"),wxCommandWindow::threeDwindow)
+        EVT_MENU(XRCID("MenuExit"),wxCommandWindow::Exit)
+
 END_EVENT_TABLE()
 
 #endif /* defined (WX_USER_INTERFACE) */

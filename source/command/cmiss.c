@@ -144,7 +144,7 @@ Functions for executing cmiss commands.
 #include "graphics/glyph.h"
 #include "graphics/graphical_element.h"
 #include "graphics/graphics_object.h"
-#if defined (MOTIF) || defined (GTK_USER_INTERFACE) || defined (WIN32_USER_INTERFACE) || defined (WX_USER_INTERFACE)
+#if defined (USE_CMGUI_GRAPHICS_WINDOW)
 #include "graphics/graphics_window.h"
 #endif /* defined (USE_CMGUI_GRAPHICS_WINDOW) */
 #include "graphics/import_graphics_object.h"

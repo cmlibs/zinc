@@ -1,26 +1,140 @@
 <?xml version="1.0"?>
 <resource>
   <object class="wxFrame" subclass="wxCommandWindow" name="CmguiCommandWindow" title="Cmgui Command Window">
+   
+  <object class="wxMenuBar" name="commandmenubar">
+    <size>-1,8</size>	
+    <object class ="wxMenu" name="MenuFile">
+      <label>File</label>
+      <object class = "wxMenu" name="FileOpen">
+        <label>Open...</label>
+        <object class = "wxMenuItem" name="FileComFile">
+          <label>Com File</label>
+	</object>
+      </object>
+      <object class ="wxMenu" name="MenuRead">
+        <label>Read...</label>
+        <object class = "wxMenuItem" name="ReadCurve">
+          <label>Curve file</label>
+	</object>
+        <object class = "wxMenuItem" name="ReadData">
+          <label>Data file</label>
+	</object>
+        <object class = "wxMenuItem" name="ReadElements">
+          <label>Elements file</label>
+	</object>
+        <object class = "wxMenuItem" name="ReadNode">
+          <label>Node file</label>
+        </object>
+      </object>
+      <object class ="wxMenu" name="MenuWrite">
+        <label>Write...</label>
+        <object class = "wxMenuItem" name="WriteCurve">
+          <label>All Curve files</label>
+	</object>
+        <object class = "wxMenuItem" name="WriteData">
+          <label>Data file</label>
+	</object>
+        <object class = "wxMenuItem" name="WriteElements">
+          <label>Elements file</label>
+	</object>
+        <object class = "wxMenuItem" name="WriteNode">
+          <label>Node file</label>
+        </object>
+      </object>
+      <object class="separator"/>
+      <object class ="wxMenuItem" name="MenuExit">
+        <label>Exit</label>
+      </object>
+    </object>	
+    <object class ="wxMenu" name="MenuModel">
+      <label>Model</label>
+      <object class = "wxMenuItem" name="ModelCell">
+        <label>Cell</label>
+      </object>
+      <object class = "wxMenuItem" name="ModelCurveEdiotr">
+        <label>Curve editor</label>
+      </object>
+      <object class = "wxMenuItem" name="ModelDataViewer">
+        <label>Data viewer</label>
+      </object>
+      <object class = "wxMenuItem" name="ModelElementCreator">
+        <label>Element creator</label>
+      </object>
+      <object class = "wxMenuItem" name="ModelElementpointviewer">
+        <label>Element point viewer</label>
+      </object>
+      <object class = "wxMenuItem" name="ModelGridfieldpcalculator">
+        <label>Grid field calculator</label>
+      </object>
+      <object class = "wxMenuItem" name="ModelInputcontroller">
+        <label>Input controller</label>
+      </object>
+      <object class = "wxMenuItem" name="ModelNodeviewer">
+        <label>Node viewer</label>
+      </object>
+      <object class = "wxMenuItem" name="ModelTracking">
+        <label>Tracking</label>
+      </object>
+      <object class = "wxMenuItem" name="ModelUnemap">
+        <label>Unemap</label>
+      </object>
+    </object>
+
+    <object class ="wxMenu" name="MenuGraphics">
+      <label>Graphics</label>
+      <object class = "wxMenuItem" name="GraphicsthreeDWindow">
+        <label>3-D Window</label>
+      </object>
+      <object class = "wxMenuItem" name="GraphicsMaterialeditor">
+        <label>Material editor</label>
+      </object>
+      <object class = "wxMenuItem" name="GraphicsSceneeditor">
+        <label>Scene editor</label>
+      </object>
+      <object class = "wxMenuItem" name="GraphicsSpectrumeditor">
+        <label>Spectrum editor</label>
+      </object>
+      <object class = "wxMenuItem" name="GraphicsTimeeditor">
+        <label>Time editor</label>
+      </object>
+      <object class = "wxMenuItem" name="GraphicsVolumeeditor">
+        <label>Volume editor</label>
+      </object>
+      <object class="separator"/>
+      <object class = "wxMenu" name="Graphics2Dprojections">
+        <label>2-D projections</label>
+        <object class = "wxMenuItem" name="Projectionsxy">
+          <label>xy</label>
+        </object>          
+        <object class = "wxMenuItem" name="Projectionsxz">
+          <label>xz</label>
+        </object>     
+        <object class = "wxMenuItem" name="Projectionsyz">
+          <label>yz</label>
+        </object>
+      </object>
+    </object>
+  </object>
+
     <object class="wxBoxSizer">
       <orient>wxVERTICAL</orient>
-
       <object class="sizeritem">
         <object class="wxListBox" name="CommandHistory">
           <size>400,100d</size>
           <style>wxSUNKEN_BORDER</style>
-	  <style>wxLB_SINGLE</style>
         </object>
-        <flag>wxEXPAND|wxALL</flag>
+        <flag>wxEXPAND|wxALL</flag>     
         <border>10</border>
       </object>
 
       <object class="sizeritem">
         <object class="wxTextCtrl" name="CommandLine">
-          <size>-1,-1d</size>
+          <size>1,-1d</size>
           <style>wxTE_PROCESS_ENTER</style>
           <value></value>
         </object>
-        <flag>wxEXPAND|wxALL</flag>
+	<flag>wxEXPAND|wxALL</flag>
         <border>10</border>
       </object>
 
@@ -30,17 +144,10 @@
           <style>wxSUNKEN_BORDER</style>
         </object>
         <flag>wxEXPAND|wxALL</flag>
+	<option>1</option>
         <border>10</border>
       </object>
-
-	   <object class="sizeritem">
-        <object class="wxButton" name="Button">
-           <label>Ok</label>
-           <default>1</default>
-        </object>
-      </object>
-  
-
+      
     </object>
   </object>
 </resource>
