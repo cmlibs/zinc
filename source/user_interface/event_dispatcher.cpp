@@ -131,6 +131,9 @@ Contains all information necessary for a file descriptor callback.
 #if defined (CARBON_USER_INTERFACE)
 	EventLoopTimerRef carbon_timer_ref;
 #endif /* defined (CARBON_USER_INTERFACE) */
+#if defined (USE_GTK_MAIN_STEP)
+	guint gtk_timeout_id;
+#endif /* defined (USE_GTK_MAIN_STEP) */
 }; /* struct Event_dispatcher_timeout_callback */
 
 PROTOTYPE_OBJECT_FUNCTIONS(Event_dispatcher_timeout_callback);
@@ -1544,7 +1547,7 @@ Processes a Carbon timer.
   LEAVE;
 }
 
-struct Event_dispatcher_timeout_callback *Event_dispatcher_add_timeout_callback_at_time(
+static struct Event_dispatcher_timeout_callback *Event_dispatcher_add_Carbon_timeout_callback(
 	struct Event_dispatcher *event_dispatcher, unsigned long timeout_s, unsigned long timeout_ns,
 	Event_dispatcher_timeout_function *timeout_function, void *user_data)
 /*******************************************************************************
@@ -1620,14 +1623,15 @@ public:
 	}
 }; // class wxEventTimer
 
-struct Event_dispatcher_timeout_callback *Event_dispatcher_add_timeout_callback_at_time(
-	struct Event_dispatcher *event_dispatcher, unsigned long timeout_s, unsigned long timeout_ns,
+static struct Event_dispatcher_timeout_callback *Event_dispatcher_add_wx_timeout_callback(
+	struct Event_dispatcher *event_dispatcher, unsigned long timeout_s,
+	unsigned long timeout_ns,
 	Event_dispatcher_timeout_function *timeout_function, void *user_data)
 /*******************************************************************************
 LAST MODIFIED : 1 December 2006
 
 DESCRIPTION :
-Set a timeout on Carbon...
+Set a timeout on wx widgets
 ==============================================================================*/
 {
 	struct Event_dispatcher_timeout_callback *timeout_callback;
@@ -1640,7 +1644,53 @@ Set a timeout on Carbon...
 			timeout_s, timeout_ns, timeout_function, user_data))
 		{
 			wxEventTimer *timer = new wxEventTimer(timeout_callback);
-			timer->Start(timeout_s * 1000 + timeout_ns / 1000, /*OneShot*/true);
+			timer->Start(timeout_s * 1000 + timeout_ns / 1000000, /*OneShot*/true);
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,
+				"Event_dispatcher_add_timeout_callback_at_time.  "
+				"Could not create timeout_callback object.");
+			timeout_callback = (struct Event_dispatcher_timeout_callback *)NULL;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Event_dispatcher_add_timeout_callback_at_time.  Invalid arguments.");
+		timeout_callback = (struct Event_dispatcher_timeout_callback *)NULL;
+	}
+
+	LEAVE;
+
+	return timeout_callback;
+}
+
+#elif defined (USE_GTK_MAIN_STEP)
+
+static struct Event_dispatcher_timeout_callback *Event_dispatcher_add_gtk_timeout_callback(
+	struct Event_dispatcher *event_dispatcher, unsigned long timeout_s, unsigned long timeout_ns,
+	Event_dispatcher_timeout_function *timeout_function, void *user_data)
+/*******************************************************************************
+LAST MODIFIED : 22 December 2006
+
+DESCRIPTION :
+Set a timeout on Gtk main loop
+==============================================================================*/
+{
+	guint32 interval;
+	struct Event_dispatcher_timeout_callback *timeout_callback;
+  
+	ENTER(Event_dispatcher_add_timeout_callback_at_time);
+
+	if (event_dispatcher && timeout_function)
+	{
+		if (timeout_callback = CREATE(Event_dispatcher_timeout_callback)(
+			timeout_s, timeout_ns, timeout_function, user_data))
+		{
+			interval = timeout_s * 1000.0 + timeout_ns / 1000000;
+			timeout_callback->gtk_timeout_id = gtk_timeout_add(,
+				Event_dispatcher_gtk_timeout_callback, timeout_callback);
 		}
 		else
 		{
@@ -1708,8 +1758,6 @@ DESCRIPTION :
 	return (timeout_callback);
 } /* Event_dispatcher_add_timeout_callback_at_time */
 
-#else /* switch (USER_INTERFACE) */
-#error Timeout callbacks not defined on this platform
 #endif /* switch (USER_INTERFACE) */
 
 struct Event_dispatcher_timeout_callback *Event_dispatcher_add_timeout_callback(
@@ -1724,10 +1772,9 @@ DESCRIPTION :
 	struct Event_dispatcher_timeout_callback *timeout_callback;
 #if defined (WIN32_SYSTEM)
 	ULONGLONG system_time;
-#elif defined (CARBON_USER_INTERFACE)
-#else /* defined (WIN32_SYSTEM) */
+#elif defined (USE_GENERIC_EVENT_DISPATCHER)
 	struct timeval timeofday;
-#endif /* defined (WIN32_SYSTEM) */
+#endif /* switch (USER_INTERFACE) */
 
 	ENTER(Event_dispatcher_register_descriptor_callback);
 	if (event_dispatcher && timeout_function)
@@ -1742,16 +1789,28 @@ DESCRIPTION :
 			100*(unsigned long)(system_time%10000000L),
 			timeout_function, user_data);
 #elif defined (CARBON_USER_INTERFACE)
-		timeout_callback = Event_dispatcher_add_timeout_callback_at_time(
+		timeout_callback = Event_dispatcher_add_Carbon_timeout_callback(
 			event_dispatcher, timeout_s, 
 			timeout_ns, 
 			timeout_function, user_data);
-#else /* defined (WIN32_SYSTEM) */
+#elif defined (USE_GTK_MAIN_STEP)
+		timeout_callback = Event_dispatcher_add_gtk_timeout_callback(
+			event_dispatcher, timeout_s, 
+			timeout_ns, 
+			timeout_function, user_data);
+#elif defined (WX_USER_INTERFACE)
+		timeout_callback = Event_dispatcher_add_wx_timeout_callback(
+			event_dispatcher, timeout_s, 
+			timeout_ns, 
+			timeout_function, user_data);
+#elif defined (USE_GENERIC_EVENT_DISPATCHER)
 		gettimeofday(&timeofday, NULL);
 		timeout_callback = Event_dispatcher_add_timeout_callback_at_time(
 			event_dispatcher, timeout_s + (unsigned long)timeofday.tv_sec, 
 			timeout_ns + 1000*(unsigned long)timeofday.tv_usec, 
 			timeout_function, user_data);
+#else /* switch (USER_INTERFACE) */
+#error Timeout callbacks not defined on this platform
 #endif /* defined (WIN32_SYSTEM) */
 	}
 	else
@@ -3106,9 +3165,9 @@ previously set will be cancelled.
 		handle->read_data.function = callback;
 		handle->read_data.app_user_data = user_data;
 		if (handle->read_source_tag == 0)
-			handle->read_source_tag =
-				g_io_add_watch(handle->iochannel, G_IO_IN | G_IO_HUP,
-					Fdio_glib_io_callback, handle);
+			handle->read_source_tag = g_io_add_watch(handle->iochannel,
+				static_cast<GIOCondition>(G_IO_IN | G_IO_HUP),
+				Fdio_glib_io_callback, handle);
 	}
 
 	LEAVE;
