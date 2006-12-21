@@ -1415,7 +1415,7 @@ DESCRIPTION :
 			timeout_s--;
 			timeout_ns += 1000000000 - 1000*timeofday.tv_usec;
 		}
-		timeout_callback = Event_dispatcher_add_timeout_callback_at_time(
+		timeout_callback = Event_dispatcher_add_timeout_callback(
 			event_dispatcher, timeout_s - (unsigned long)timeofday.tv_sec, 
 			timeout_ns - 1000*(unsigned long)timeofday.tv_usec, 
 			timeout_function, user_data);
@@ -1802,22 +1802,14 @@ DESCRIPTION :
 	ENTER(Event_dispatcher_register_descriptor_callback);
 	if (event_dispatcher && timeout_function)
 	{
-#if defined (WIN32_SYSTEM)
-		GetSystemTimeAsFileTime((FILETIME *)&system_time);
- 		system_time -= 119603304000000000LL;
-		timeout_callback = Event_dispatcher_add_timeout_callback_at_time(
-			event_dispatcher, timeout_s +
-			(unsigned long)(system_time/10000000L),
-			timeout_ns +
-			100*(unsigned long)(system_time%10000000L),
-			timeout_function, user_data);
-#elif defined (CARBON_USER_INTERFACE)
-		timeout_callback = Event_dispatcher_add_Carbon_timeout_callback(
+#if defined (USE_GTK_MAIN_STEP)
+		/* This should preempt the WIN32_SYSTEM version */
+		timeout_callback = Event_dispatcher_add_gtk_timeout_callback(
 			event_dispatcher, timeout_s, 
 			timeout_ns, 
 			timeout_function, user_data);
-#elif defined (USE_GTK_MAIN_STEP)
-		timeout_callback = Event_dispatcher_add_gtk_timeout_callback(
+#elif defined (CARBON_USER_INTERFACE)
+		timeout_callback = Event_dispatcher_add_Carbon_timeout_callback(
 			event_dispatcher, timeout_s, 
 			timeout_ns, 
 			timeout_function, user_data);
@@ -1825,6 +1817,15 @@ DESCRIPTION :
 		timeout_callback = Event_dispatcher_add_wx_timeout_callback(
 			event_dispatcher, timeout_s, 
 			timeout_ns, 
+			timeout_function, user_data);
+#elif defined (WIN32_SYSTEM)
+		GetSystemTimeAsFileTime((FILETIME *)&system_time);
+ 		system_time -= 119603304000000000LL;
+		timeout_callback = Event_dispatcher_add_timeout_callback_at_time(
+			event_dispatcher, timeout_s +
+			(unsigned long)(system_time/10000000L),
+			timeout_ns +
+			100*(unsigned long)(system_time%10000000L),
 			timeout_function, user_data);
 #elif defined (USE_GENERIC_EVENT_DISPATCHER)
 		gettimeofday(&timeofday, NULL);
