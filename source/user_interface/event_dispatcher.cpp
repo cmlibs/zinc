@@ -1668,6 +1668,29 @@ Set a timeout on wx widgets
 
 #elif defined (USE_GTK_MAIN_STEP)
 
+static gboolean Event_dispatcher_process_gtk_timeout(gpointer user_data)
+/*******************************************************************************
+LAST MODIFIED : 22 December 2006
+
+DESCRIPTION :
+Processes a Gtk timer.
+==============================================================================*/
+{
+  struct Event_dispatcher_timeout_callback *timeout_callback;
+
+  ENTER(Event_dispatcher_process_gtk_timeout);
+
+  timeout_callback = (struct Event_dispatcher_timeout_callback*)user_data;
+
+  (*timeout_callback->timeout_function)(timeout_callback->user_data);
+  
+  DESTROY(Event_dispatcher_timeout_callback)(&timeout_callback);
+
+  LEAVE;
+
+  return(FALSE);  /* Don't recur */
+}
+
 static struct Event_dispatcher_timeout_callback *Event_dispatcher_add_gtk_timeout_callback(
 	struct Event_dispatcher *event_dispatcher, unsigned long timeout_s, unsigned long timeout_ns,
 	Event_dispatcher_timeout_function *timeout_function, void *user_data)
@@ -1688,9 +1711,9 @@ Set a timeout on Gtk main loop
 		if (timeout_callback = CREATE(Event_dispatcher_timeout_callback)(
 			timeout_s, timeout_ns, timeout_function, user_data))
 		{
-			interval = timeout_s * 1000.0 + timeout_ns / 1000000;
-			timeout_callback->gtk_timeout_id = gtk_timeout_add(,
-				Event_dispatcher_gtk_timeout_callback, timeout_callback);
+			interval = timeout_s * 1000 + timeout_ns / 1000000;
+			timeout_callback->gtk_timeout_id = gtk_timeout_add(interval,
+				Event_dispatcher_process_gtk_timeout, timeout_callback);
 		}
 		else
 		{
