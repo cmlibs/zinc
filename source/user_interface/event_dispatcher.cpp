@@ -2362,7 +2362,13 @@ DESCRIPTION :
 	if (event_dispatcher)
 	{
 		return_code=1;
+#if ! defined (WX_USER_INTERFACE)
 		event_dispatcher->continue_flag = 0;
+#else /* ! defined (WX_USER_INTERFACE) */
+		wxCmguiApp &app = wxGetApp();
+		app.ExitMainLoop();
+		return_code = 1;
+#endif /* ! defined (WX_USER_INTERFACE) */
 	}
 	else
 	{
