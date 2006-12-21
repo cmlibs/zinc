@@ -3565,7 +3565,84 @@ public:
 
 	void OnMouse( wxMouseEvent& event )
 	{
+		int input_modifier, return_code;
+		struct Graphics_buffer_input input;
 
+		return_code = 1;
+
+		input.type = GRAPHICS_BUFFER_INVALID_INPUT;
+		input.button_number = 0;
+		input.key_code = 0;
+		input.position_x = event.GetX();
+		input.position_y = event.GetY();
+		input_modifier = 0;
+
+		if (event.ShiftDown())
+		{
+			input_modifier |= GRAPHICS_BUFFER_INPUT_MODIFIER_SHIFT;
+		}
+		if (event.ControlDown())
+		{
+			input_modifier |= GRAPHICS_BUFFER_INPUT_MODIFIER_CONTROL;
+		}
+		if (event.AltDown())
+		{
+			input_modifier |= GRAPHICS_BUFFER_INPUT_MODIFIER_ALT;
+		}
+		
+		if (event.Dragging())
+		{
+			input.type = GRAPHICS_BUFFER_MOTION_NOTIFY;
+			if (event.LeftIsDown())
+			{
+				input_modifier |= GRAPHICS_BUFFER_INPUT_MODIFIER_BUTTON1;
+			}
+		}
+		else if (event.ButtonDown())
+		{
+			input.type = GRAPHICS_BUFFER_BUTTON_PRESS;
+			switch (event.GetButton())
+			{
+				case wxMOUSE_BTN_LEFT:
+				{
+					input.button_number = 1;
+				} break;
+				case wxMOUSE_BTN_MIDDLE:
+				{
+					input.button_number = 2;
+				} break;
+				case wxMOUSE_BTN_RIGHT:
+				{
+					input.button_number = 3;
+				} break;
+				case wxMOUSE_BTN_NONE:
+				default:
+				{
+					display_message(ERROR_MESSAGE,
+						"wxGraphicsBuffer_input_callback::OnMouse.  Invalid button");
+					return_code=0;
+				} break;
+			}
+		}
+		else if (event.ButtonUp())
+		{
+			input.type = GRAPHICS_BUFFER_BUTTON_RELEASE;
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,
+				"wxGraphicsBuffer_input_callback::OnMouse.  Unknown button event");
+			return_code=0;
+		}
+
+		input.input_modifier = static_cast<enum Graphics_buffer_input_modifier>
+			(input_modifier);
+
+		if (return_code)
+		{
+			CMISS_CALLBACK_LIST_CALL(Graphics_buffer_input_callback)(
+				graphics_buffer->input_callback_list, graphics_buffer, &input);
+		}
 	}
 
 	DECLARE_DYNAMIC_CLASS(wxGraphicsBuffer);
