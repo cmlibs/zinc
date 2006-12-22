@@ -51,7 +51,11 @@ PERL_INTERPRETER = true
 IMAGEMAGICK = true
 USE_XML2 = true
 ifneq ($(filter linux aix win32 irix,$(OPERATING_SYSTEM)),)
-  USE_ITK = true
+  ifneq ($(GRAPHICS_API),NO3D_GRAPHICS)
+    USE_ITK = true
+  else
+    USE_ITK = false
+  endif
 else # $(OPERATING_SYSTEM) == linux || $(OPERATING_SYSTEM) == aix
   USE_ITK = false
 endif # $(OPERATING_SYSTEM) == linux || $(OPERATING_SYSTEM) == aix
