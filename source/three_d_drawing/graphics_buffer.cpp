@@ -3097,7 +3097,8 @@ DESCRIPTION :
 #define MAX_GL_ATTRIBUTES (50)
 	GdkGLConfig *glconfig;
 	GtkWidget *glarea;
-	int accumulation_colour_size, attribute_list[MAX_GL_ATTRIBUTES], *attribute_ptr;
+	int accumulation_colour_size, attribute_list[MAX_GL_ATTRIBUTES], *attribute_ptr,
+		selection_level;
 	struct Graphics_buffer *buffer;
 
 	ENTER(create_Graphics_buffer_gtkglarea);
@@ -3108,63 +3109,74 @@ DESCRIPTION :
 		{
 			if (buffer = CREATE(Graphics_buffer)(graphics_buffer_package))
 			{
-				attribute_ptr = attribute_list;
+				glconfig = (GdkGLConfig *)NULL;
+				selection_level = 2;
+				while (!glconfig && (selection_level > 0))
+				{
+					attribute_ptr = attribute_list;
 
-				*attribute_ptr = GDK_GL_RGBA;
-				attribute_ptr++;
-				if (buffering_mode == GRAPHICS_BUFFER_DOUBLE_BUFFERING)
-				{
-					*attribute_ptr = GDK_GL_DOUBLEBUFFER;
+					*attribute_ptr = GDK_GL_RGBA;
 					attribute_ptr++;
+					if (buffering_mode == GRAPHICS_BUFFER_DOUBLE_BUFFERING)
+					{
+						*attribute_ptr = GDK_GL_DOUBLEBUFFER;
+						attribute_ptr++;
+					}
+					/* else GRAPHICS_BUFFER_ANY_BUFFERING_MODE so don't specify it */
+					if (stereo_mode == GRAPHICS_BUFFER_STEREO)
+					{
+						*attribute_ptr = GDK_GL_STEREO;
+						attribute_ptr++;
+					}
+					/* else GRAPHICS_BUFFER_ANY_STEREO_MODE so don't specify it */
+					if (minimum_colour_buffer_depth)
+					{
+						*attribute_ptr = GDK_GL_BUFFER_SIZE;
+						attribute_ptr++;
+						*attribute_ptr = minimum_colour_buffer_depth;
+						attribute_ptr++;
+					}
+					if (selection_level > 1)
+					{
+						*attribute_ptr = GDK_GL_ALPHA_SIZE;
+						attribute_ptr++;
+						*attribute_ptr = 1;
+						attribute_ptr++;
+					}
+					if (minimum_depth_buffer_depth)
+					{
+						*attribute_ptr = GDK_GL_DEPTH_SIZE;
+						attribute_ptr++;
+						*attribute_ptr = minimum_depth_buffer_depth;
+						attribute_ptr++;
+					}
+					if (minimum_accumulation_buffer_depth)
+					{
+						accumulation_colour_size = minimum_accumulation_buffer_depth / 4;
+						*attribute_ptr = GDK_GL_ACCUM_RED_SIZE;
+						attribute_ptr++;
+						*attribute_ptr = accumulation_colour_size;
+						attribute_ptr++;
+						*attribute_ptr = GDK_GL_ACCUM_GREEN_SIZE;
+						attribute_ptr++;
+						*attribute_ptr = accumulation_colour_size;
+						attribute_ptr++;
+						*attribute_ptr = GDK_GL_ACCUM_BLUE_SIZE;
+						attribute_ptr++;
+						*attribute_ptr = accumulation_colour_size;
+						attribute_ptr++;
+						*attribute_ptr = GDK_GL_ACCUM_ALPHA_SIZE;
+						attribute_ptr++;
+						*attribute_ptr = accumulation_colour_size;
+						attribute_ptr++;
+					}
+					*attribute_ptr = GDK_GL_ATTRIB_LIST_NONE;
+					attribute_ptr++;
+					glconfig = gdk_gl_config_new(attribute_list);
+
+					selection_level--;
 				}
-				/* else GRAPHICS_BUFFER_ANY_BUFFERING_MODE so don't specify it */
-				if (stereo_mode == GRAPHICS_BUFFER_STEREO)
-				{
-					*attribute_ptr = GDK_GL_STEREO;
-					attribute_ptr++;
-				}
-				/* else GRAPHICS_BUFFER_ANY_STEREO_MODE so don't specify it */
-				if (minimum_colour_buffer_depth)
-				{
-					*attribute_ptr = GDK_GL_BUFFER_SIZE;
-					attribute_ptr++;
-					*attribute_ptr = minimum_colour_buffer_depth;
-					attribute_ptr++;
-				}
-				*attribute_ptr = GDK_GL_ALPHA_SIZE;
-				attribute_ptr++;
-				*attribute_ptr = 8;
-				attribute_ptr++;
-				if (minimum_depth_buffer_depth)
-				{
-					*attribute_ptr = GDK_GL_DEPTH_SIZE;
-					attribute_ptr++;
-					*attribute_ptr = minimum_depth_buffer_depth;
-					attribute_ptr++;
-				}
-				if (minimum_accumulation_buffer_depth)
-				{
-					accumulation_colour_size = minimum_accumulation_buffer_depth / 4;
-					*attribute_ptr = GDK_GL_ACCUM_RED_SIZE;
-					attribute_ptr++;
-					*attribute_ptr = accumulation_colour_size;
-					attribute_ptr++;
-					*attribute_ptr = GDK_GL_ACCUM_GREEN_SIZE;
-					attribute_ptr++;
-					*attribute_ptr = accumulation_colour_size;
-					attribute_ptr++;
-					*attribute_ptr = GDK_GL_ACCUM_BLUE_SIZE;
-					attribute_ptr++;
-					*attribute_ptr = accumulation_colour_size;
-					attribute_ptr++;
-					*attribute_ptr = GDK_GL_ACCUM_ALPHA_SIZE;
-					attribute_ptr++;
-					*attribute_ptr = accumulation_colour_size;
-					attribute_ptr++;
-				}
-				*attribute_ptr = GDK_GL_ATTRIB_LIST_NONE;
-				attribute_ptr++;
-				if ((glconfig = gdk_gl_config_new(attribute_list)) &&
+				if (glconfig &&
 					gtk_widget_set_gl_capability(glarea, glconfig,
 						graphics_buffer_package->share_glcontext,
 						TRUE, GDK_GL_RGBA_TYPE))
