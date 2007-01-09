@@ -577,9 +577,9 @@ ifeq ($(USER_INTERFACE),GTK_USER_INTERFACE)
       ifeq ($(USE_GTK2),true)
          USER_INTERFACE_INC += $(shell pkg-config gtkglext-1.0 gtk+-2.0 --cflags)
          ifneq ($(STATIC_LINK),true)
-            USER_INTERFACE_LIB += $(shell pkg-config gtkglext-1.0 gtk+-2.0 --libs)
+            USER_INTERFACE_LIB += -Wl,-Bstatic -lgtkglext-x11-1.0 -lgdkglext-x11-1.0 -lGLU -Wl,-Bdynamic -lGL $(shell pkg-config gtk+-2.0 --libs) -lXmu
          else # $(STATIC_LINK) != true
-            USER_INTERFACE_LIB += -Wl,-Bstatic -lgtkglext-x11-1.0 -lgdkglext-x11-1.0 -Wl,-Bdynamic -lgtk-x11-2.0 -lgdk-x11-2.0 -latk-1.0 -lgdk_pixbuf-2.0 -lm -lpangox-1.0 -lpango-1.0 -lgobject-2.0 -lgmodule-2.0 -ldl -lglib-2.0 -L$(CMISS_ROOT)/mesa/lib/$(LIB_ARCH_DIR) -lGLU -lGL
+            USER_INTERFACE_LIB += -L/home/blackett/lib -lgtkglext-x11-1.0 -lgtk-x11-2.0 -lgdk-x11-2.0 -latk-1.0 -lgdk_pixbuf-2.0 -lm -lpangox-1.0 -lpango-1.0 -lgobject-2.0 -lgmodule-2.0 -ldl -lglib-2.0 -L$(CMISS_ROOT)/mesa/lib/$(LIB_ARCH_DIR) -lGLU -lGL
          endif # $(STATIC_LINK) != true
       else # $(USE_GTK2) == true
          USER_INTERFACE_INC +=  -I/usr/include/gtk-1.2 -I/usr/include/glib-1.2 -I/usr/lib/glib/include/
