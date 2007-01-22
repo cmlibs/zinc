@@ -4207,10 +4207,11 @@ Sets the layout mode in effect on the <window>.
 	int new_layout,new_number_of_panes,pane_no,return_code;
 #if defined (MOTIF) || defined (WX_USER_INTERFACE)
 	enum Scene_viewer_transparency_mode transparency_mode;
-	int perturb_lines, transparency_layers;
+	int perturb_lines;
 	struct Colour background_colour;
 	struct Graphics_buffer *graphics_buffer;
 	struct Scene_viewer *first_scene_viewer;
+	unsigned int transparency_layers;
 #endif /* defined (MOTIF) || defined (WX_USER_INTERFACE) */
 #if defined (MOTIF)
 	Widget viewing_area;
@@ -6127,9 +6128,10 @@ Writes the properties of the <window> to the command window.
 	enum Scene_viewer_projection_mode projection_mode;
 	enum Scene_viewer_transparency_mode transparency_mode;
 	enum Scene_viewer_viewport_mode viewport_mode;
-	int accumulation_buffer_depth,antialias,colour_buffer_depth,depth_buffer_depth,
-		height,pane_no,perturb_lines,return_code,transparency_layers,width,
+	int accumulation_buffer_depth,colour_buffer_depth,depth_buffer_depth,
+		height,pane_no,perturb_lines,return_code,width,
 		undistort_on,visual_id;
+	unsigned int antialias, transparency_layers;
 	struct Colour colour;
 	struct Scene *overlay_scene;
 	struct Scene_viewer *scene_viewer;
@@ -6426,8 +6428,8 @@ to the command window.
 	enum Scene_viewer_projection_mode projection_mode;
 	enum Scene_viewer_transparency_mode transparency_mode;
 	enum Scene_viewer_viewport_mode viewport_mode;
-	int antialias,height,i,pane_no,perturb_lines,return_code,transparency_layers,
-		width,undistort_on;
+	int height,i,pane_no,perturb_lines,return_code,width,undistort_on;
+	unsigned int antialias, transparency_layers;
 	struct Colour colour;
 	struct Scene *overlay_scene;
 	struct Scene_viewer *scene_viewer;

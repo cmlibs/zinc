@@ -109,6 +109,28 @@ enum Scene_viewer_drag_mode
 	SV_DRAG_ZOOM
 };
 
+struct Cmiss_scene_viewer_package
+/*******************************************************************************
+LAST MODIFIED : 19 January 2007
+
+DESCRIPTION:
+The default data used to create Cmiss_scene_viewers.
+==============================================================================*/
+{
+	struct Graphics_buffer_package *graphics_buffer_package;
+	struct Colour *background_colour;
+ 	struct MANAGER(Interactive_tool) *interactive_tool_manager;
+	struct Interactive_tool *default_interactive_tool;
+	struct MANAGER(Light) *light_manager;
+	struct Light *default_light;
+	struct MANAGER(Light_model) *light_model_manager;
+	struct Light_model *default_light_model;
+	struct MANAGER(Scene) *scene_manager;
+	struct Scene *scene;
+	struct MANAGER(Texture) *texture_manager;
+	struct User_interface *user_interface;
+};
+
 struct Scene_viewer
 /*******************************************************************************
 LAST MODIFIED : 12 July 2000
@@ -222,6 +244,7 @@ DESCRIPTION :
 		 owning it to clear it if it is destroyed. This is usually ensured by having
 		 a tool chooser in the parent dialog */
 	struct Interactive_tool *interactive_tool;
+ 	struct MANAGER(Interactive_tool) *interactive_tool_manager;
 	/* kept tumble axis and angle for spinning scene viewer */
 	double tumble_axis[3], tumble_angle;
 	int tumble_active;
@@ -4062,6 +4085,149 @@ Global functions
 ----------------
 */
 
+struct Cmiss_scene_viewer_package *CREATE(Cmiss_scene_viewer_package)(
+	struct Graphics_buffer_package *graphics_buffer_package,
+	struct Colour *background_colour,
+	struct MANAGER(Interactive_tool) *interactive_tool_manager,
+	struct Interactive_tool *default_interactive_tool, 
+	struct MANAGER(Light) *light_manager,struct Light *default_light,
+	struct MANAGER(Light_model) *light_model_manager,
+	struct Light_model *default_light_model,
+	struct MANAGER(Scene) *scene_manager,struct Scene *scene,
+	struct MANAGER(Texture) *texture_manager,
+	struct User_interface *user_interface)
+/*******************************************************************************
+LAST MODIFIED : 19 January 2007
+
+DESCRIPTION :
+Creates a Cmiss_scene_viewer_package.
+==============================================================================*/
+{
+	struct Cmiss_scene_viewer_package *scene_viewer_package;
+
+	ENTER(CREATE(Scene_viewer));
+	if (graphics_buffer_package&&background_colour&&default_light_model&&scene&&
+		user_interface&&graphics_buffer_package&&interactive_tool_manager)
+	{
+		/* allocate memory for the scene_viewer structure */
+		if (ALLOCATE(scene_viewer_package,struct Cmiss_scene_viewer_package,1))
+		{
+			scene_viewer_package->graphics_buffer_package = graphics_buffer_package;
+			scene_viewer_package->background_colour = background_colour;
+			scene_viewer_package->interactive_tool_manager = interactive_tool_manager;
+			scene_viewer_package->default_interactive_tool = ACCESS(Interactive_tool)
+				(default_interactive_tool);
+			scene_viewer_package->light_manager = light_manager;
+			scene_viewer_package->default_light = ACCESS(Light)(default_light);
+			scene_viewer_package->light_model_manager = light_model_manager;
+			scene_viewer_package->default_light_model = ACCESS(Light_model)(default_light_model);
+			scene_viewer_package->scene_manager = scene_manager;
+			scene_viewer_package->scene = ACCESS(Scene)(scene);
+			scene_viewer_package->texture_manager = texture_manager;
+			scene_viewer_package->user_interface = user_interface;
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,
+				"CREATE(Scene_viewer_package).  Not enough memory for scene_viewer");
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"CREATE(Scene_viewer_package).  Invalid argument(s)");
+		scene_viewer_package=(struct Cmiss_scene_viewer_package *)NULL;
+	}
+	LEAVE;
+
+	return (scene_viewer_package);
+} /* CREATE(Cmiss_scene_viewer_package) */
+
+int DESTROY(Cmiss_scene_viewer_package)(
+	struct Cmiss_scene_viewer_package **scene_viewer_package_address)
+/*******************************************************************************
+LAST MODIFIED : 19 January 2007
+
+DESCRIPTION :
+Destroys the scene_viewer_package.
+==============================================================================*/
+{
+	int return_code;
+	struct Cmiss_scene_viewer_package *scene_viewer_package;
+
+	ENTER(DESTROY(Cmiss_scene_viewer_package));
+	if (scene_viewer_package = *scene_viewer_package_address)
+	{
+		/* Free the previous copy */
+		DEACCESS(Interactive_tool)(&scene_viewer_package->default_interactive_tool);
+		DEACCESS(Light)(&scene_viewer_package->default_light);
+		DEACCESS(Light_model)(&scene_viewer_package->default_light_model);
+		DEACCESS(Scene)(&scene_viewer_package->scene);
+		DEALLOCATE(*scene_viewer_package_address);
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"DESTROY(Cmiss_scene_viewer_package).  "
+			"Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* DESTROY(Cmiss_scene_viewer_package) */
+
+struct Graphics_buffer_package *Cmiss_scene_viewer_package_get_graphics_buffer_package(
+	struct Cmiss_scene_viewer_package *cmiss_scene_viewer_package)
+/*******************************************************************************
+LAST MODIFIED : 19 January 2007
+
+DESCRIPTION :
+==============================================================================*/
+{
+	struct Graphics_buffer_package *graphics_buffer_package;
+
+	ENTER(Scene_viewer_get_graphics_buffer_package);
+	if (cmiss_scene_viewer_package)
+	{
+		graphics_buffer_package = 
+			cmiss_scene_viewer_package->graphics_buffer_package;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Scene_viewer_get_graphics_buffer_package.  Missing scene_viewer");
+		graphics_buffer_package=(struct Graphics_buffer_package *)NULL;
+	}
+	LEAVE;
+
+	return (graphics_buffer_package);
+} /* Scene_viewer_get_graphics_buffer_package */
+
+struct Scene *Cmiss_scene_viewer_package_get_default_scene(
+	struct Cmiss_scene_viewer_package *cmiss_scene_viewer_package)
+/*******************************************************************************
+LAST MODIFIED : 19 January 2007
+
+DESCRIPTION :
+==============================================================================*/
+{
+	struct Scene *default_scene;
+
+	ENTER(Scene_viewer_get_default_scene);
+	if (cmiss_scene_viewer_package)
+	{
+		default_scene = cmiss_scene_viewer_package->scene;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Scene_viewer_get_default_scene.  Missing scene_viewer");
+		default_scene=(struct Scene *)NULL;
+	}
+	LEAVE;
+
+	return (default_scene);
+} /* Scene_viewer_get_default_scene */
+
 struct Scene_viewer *CREATE(Scene_viewer)(struct Graphics_buffer *graphics_buffer,
 	struct Colour *background_colour,
 	struct MANAGER(Light) *light_manager,struct Light *default_light,
@@ -4201,6 +4367,10 @@ performed in idle time so that multiple redraws are avoided.
 				scene_viewer->texture_manager_callback_id=(void *)NULL;
 				/* no current interactive_tool */
 				scene_viewer->interactive_tool=(struct Interactive_tool *)NULL;
+				/* Currently only set when created from a Cmiss_scene_viewer_package
+					to avoid changing the interface */
+				scene_viewer->interactive_tool_manager=
+					(struct MANAGER(Interactive_tool) *)NULL;
 				scene_viewer->order_independent_transparency_data = 
 					(struct Scene_viewer_order_independent_transparency_data *)NULL;
 
@@ -4377,6 +4547,46 @@ Closes the scene_viewer and disposes of the scene_viewer data structure.
 
 	return (return_code);
 } /* DESTROY(Scene_viewer) */
+
+struct Scene_viewer *create_Scene_viewer_from_package(
+	struct Graphics_buffer *graphics_buffer,
+	struct Cmiss_scene_viewer_package *cmiss_scene_viewer_package,
+	struct Scene *scene)
+/*******************************************************************************
+LAST MODIFIED : 19 January 2007
+
+DESCRIPTION :
+==============================================================================*/
+{
+	struct Scene_viewer *scene_viewer;
+
+	ENTER(create_Scene_viewer_from_package);
+	if (graphics_buffer && cmiss_scene_viewer_package && scene)
+	{
+		scene_viewer = CREATE(Scene_viewer)(graphics_buffer,
+			cmiss_scene_viewer_package->background_colour,
+			cmiss_scene_viewer_package->light_manager,
+			cmiss_scene_viewer_package->default_light,
+			cmiss_scene_viewer_package->light_model_manager,
+			cmiss_scene_viewer_package->default_light_model,
+			cmiss_scene_viewer_package->scene_manager,
+			scene,
+			cmiss_scene_viewer_package->texture_manager,
+			cmiss_scene_viewer_package->user_interface);
+ 		Scene_viewer_set_interactive_tool(scene_viewer,
+			cmiss_scene_viewer_package->default_interactive_tool);
+		scene_viewer->interactive_tool_manager = 
+			cmiss_scene_viewer_package->interactive_tool_manager;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"create_Scene_viewer_from_package.  Invalid argument(s)");
+		scene_viewer = (struct Scene_viewer *)NULL;
+	}
+	LEAVE;
+
+	return (scene_viewer);
+} /* create_Scene_viewer_from_package */
 
 int Scene_viewer_awaken(struct Scene_viewer *scene_viewer)
 /*******************************************************************************
@@ -4784,6 +4994,45 @@ on how it will be displayed is set in Scene_viewer_set_background_texture_info.
 
 	return (return_code);
 } /* Scene_viewer_set_background_texture */
+
+int Scene_viewer_set_background_texture_by_name(struct Scene_viewer *scene_viewer,
+	const char *name)
+/*******************************************************************************
+LAST MODIFIED : 19 January 2007
+
+DESCRIPTION :
+Sets the Scene_viewer scene from names in the scene manager.
+==============================================================================*/
+{
+	int return_code;
+	struct Texture *texture;
+
+	ENTER(Scene_viewer_set_background_texture_by_name);
+	if (scene_viewer&&name)
+	{
+		if (texture=FIND_BY_IDENTIFIER_IN_MANAGER(Texture,name)(
+			(char *)name, scene_viewer->texture_manager))
+		{
+			return_code = Scene_viewer_set_background_texture(scene_viewer, texture);
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,"Scene_viewer_set_background_texture_by_name.  "
+				"Unable to find a texture named %s.", name);
+			return_code = 0;
+		}
+		return_code=1;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Scene_viewer_set_background_texture_by_name.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Scene_viewer_set_background_texture_by_name */
 
 int Scene_viewer_get_background_texture_info(struct Scene_viewer *scene_viewer,
 	double *bk_texture_left,double *bk_texture_top,
@@ -5861,6 +6110,45 @@ The overlay_scene may be NULL, indicating that no overlay is in use.
 	return (return_code);
 } /* Scene_viewer_set_overlay_scene */
 
+int Scene_viewer_set_overlay_scene_by_name(struct Scene_viewer *scene_viewer,
+	const char *name)
+/*******************************************************************************
+LAST MODIFIED : 19 January 2007
+
+DESCRIPTION :
+Sets the Scene_viewer overlay scene from names in the scene manager.
+==============================================================================*/
+{
+	int return_code;
+	struct Scene *scene;
+
+	ENTER(Scene_viewer_set_overlay_scene_by_name);
+	if (scene_viewer&&name)
+	{
+		if (scene=FIND_BY_IDENTIFIER_IN_MANAGER(Scene,name)(
+			(char *)name, scene_viewer->scene_manager))
+		{
+			return_code = Scene_viewer_set_overlay_scene(scene_viewer, scene);
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,"Scene_viewer_set_overlay_scene_by_name.  "
+				"Unable to find a scene named %s.", name);
+			return_code = 0;
+		}
+		return_code=1;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Scene_viewer_set_overlay_scene_by_name.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Scene_viewer_set_overlay_scene_by_name */
+
 int Scene_viewer_get_projection_mode(struct Scene_viewer *scene_viewer,
 	enum Scene_viewer_projection_mode *projection_mode)
 /*******************************************************************************
@@ -6067,6 +6355,45 @@ Sets the Scene_viewer scene.
 
 	return (return_code);
 } /* Scene_viewer_set_scene */
+
+int Scene_viewer_set_scene_by_name(struct Scene_viewer *scene_viewer,
+	const char *name)
+/*******************************************************************************
+LAST MODIFIED : 19 January 2007
+
+DESCRIPTION :
+Sets the Scene_viewer scene from names in the scene manager.
+==============================================================================*/
+{
+	int return_code;
+	struct Scene *scene;
+
+	ENTER(Scene_viewer_set_scene_by_name);
+	if (scene_viewer&&name)
+	{
+		if (scene=FIND_BY_IDENTIFIER_IN_MANAGER(Scene,name)(
+			(char *)name, scene_viewer->scene_manager))
+		{
+			return_code = Scene_viewer_set_scene(scene_viewer, scene);
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,"Scene_viewer_set_scene_by_name.  "
+				"Unable to find a scene named %s.", name);
+			return_code = 0;
+		}
+		return_code=1;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Scene_viewer_set_scene_by_name.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Scene_viewer_set_scene_by_name */
 
 int Scene_viewer_get_translation_rate(struct Scene_viewer *scene_viewer,
 	double *translation_rate)
@@ -6312,7 +6639,7 @@ you can even see through the first semi-transparent surface drawn.
 } /* Scene_viewer_set_transparency_mode */
 
 int Scene_viewer_get_transparency_layers(struct Scene_viewer *scene_viewer,
-	int *transparency_layers)
+	unsigned int *transparency_layers)
 /*******************************************************************************
 LAST MODIFIED : 17 September 2002
 
@@ -6340,7 +6667,7 @@ See Scene_viewer_set_transparency_layers for explanation.
 } /* Scene_viewer_get_transparency_layers */
 
 int Scene_viewer_set_transparency_layers(struct Scene_viewer *scene_viewer,
-	int transparency_layers)
+	unsigned int transparency_layers)
 /*******************************************************************************
 LAST MODIFIED : 17 September 2002
 
@@ -6769,7 +7096,7 @@ pixels per unit enables zooming to be achieved.
 } /* Scene_viewer_set_viewport_info */
 
 int Scene_viewer_get_antialias_mode(struct Scene_viewer *scene_viewer,
-	int *antialias)
+	unsigned int *antialias)
 /*******************************************************************************
 LAST MODIFIED : 15 October 1998
 
@@ -6796,7 +7123,7 @@ DESCRIPTION :
 } /* Scene_viewer_get_antialias_mode */
 
 int Scene_viewer_set_antialias_mode(struct Scene_viewer *scene_viewer,
-	int antialias_mode)
+	unsigned int antialias_mode)
 /*******************************************************************************
 LAST MODIFIED : 15 October 1998
 
@@ -7950,6 +8277,54 @@ SCENE_VIEWER_SELECT mode. A NULL value indicates no tool.
 
 	return (return_code);
 } /* Scene_viewer_set_interactive_tool */
+
+int Scene_viewer_set_interactive_tool_by_name(
+	struct Scene_viewer *scene_viewer, const char *tool_name)
+/*******************************************************************************
+LAST MODIFIED : 19 January 2007
+
+DESCRIPTION :
+==============================================================================*/
+{
+	struct Interactive_tool *interactive_tool;
+	int return_code;
+
+	ENTER(Cmiss_scene_viewer_set_interactive_tool_by_name);
+	if (scene_viewer && scene_viewer->interactive_tool_manager)
+	{
+		if (interactive_tool=
+			FIND_BY_IDENTIFIER_IN_MANAGER(Interactive_tool,name)(
+				(char *)tool_name,scene_viewer->interactive_tool_manager))
+		{
+			if (Interactive_tool_is_Transform_tool(interactive_tool))
+			{
+				Scene_viewer_set_input_mode(scene_viewer,SCENE_VIEWER_TRANSFORM);
+			}
+			else
+			{
+				Scene_viewer_set_input_mode(scene_viewer,SCENE_VIEWER_SELECT);
+			}
+			return_code = Scene_viewer_set_interactive_tool(scene_viewer,
+				interactive_tool);
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,"Cmiss_scene_viewer_set_interactive_tool_by_name.  "
+				"Unable to find an interactive tool named %s.", tool_name);
+			return_code = 0;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"Cmiss_scene_viewer_set_interactive_tool_by_name.  "
+			"The Cmiss_scene_viewer data must be initialised before using "
+			"the scene_viewer api.");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Cmiss_scene_viewer_set_interactive_tool_by_name */
 
 int Scene_viewer_add_input_callback(struct Scene_viewer *scene_viewer,
 	CMISS_CALLBACK_FUNCTION(Scene_viewer_input_callback) *function,

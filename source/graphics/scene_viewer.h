@@ -66,6 +66,8 @@ translating and zooming with mouse button press and motion events.
 struct Graphics_buffer;
 struct Graphics_buffer_input;
 
+struct Cmiss_scene_viewer_package;
+
 /* 
 The Cmiss_scene_viewer which is Public is currently the same object as the 
 cmgui internal Scene_viewer.  The Public interface is contained in 
@@ -83,10 +85,10 @@ and the functions given their public names.
 #define SCENE_VIEWER_INTERACT_MODE_2D CMISS_SCENE_VIEWER_INTERACT_MODE_2D
 #define Scene_viewer_transparency_mode Cmiss_scene_viewer_transparency_mode
 /* Be sure to implement any new modes in Scene_viewer_transparency_mode_string. */
-#define SCENE_VIEWER_FAST_TRANSPARENCY CMISS_SCENE_VIEWER_FAST_TRANSPARENCY
-#define SCENE_VIEWER_SLOW_TRANSPARENCY CMISS_SCENE_VIEWER_SLOW_TRANSPARENCY
-#define SCENE_VIEWER_LAYERED_TRANSPARENCY CMISS_SCENE_VIEWER_LAYERED_TRANSPARENCY
-#define SCENE_VIEWER_ORDER_INDEPENDENT_TRANSPARENCY CMISS_SCENE_VIEWER_ORDER_INDEPENDENT_TRANSPARENCY
+#define SCENE_VIEWER_FAST_TRANSPARENCY CMISS_SCENE_VIEWER_TRANSPARENCY_FAST
+#define SCENE_VIEWER_SLOW_TRANSPARENCY CMISS_SCENE_VIEWER_TRANSPARENCY_SLOW
+#define SCENE_VIEWER_LAYERED_TRANSPARENCY CMISS_SCENE_VIEWER_TRANSPARENCY_LAYERED
+#define SCENE_VIEWER_ORDER_INDEPENDENT_TRANSPARENCY CMISS_SCENE_VIEWER_TRANSPARENCY_ORDER_INDEPENDENT
 
 /* Convert the functions that have identical interfaces */
 #define Scene_viewer_get_interact_mode Cmiss_scene_viewer_get_interact_mode
@@ -126,6 +128,10 @@ and the functions given their public names.
 #define Scene_viewer_get_viewing_volume Cmiss_scene_viewer_get_viewing_volume
 #define Scene_viewer_set_viewing_volume Cmiss_scene_viewer_set_viewing_volume
 #define Scene_viewer_set_background_texture_info Cmiss_scene_viewer_set_background_texture_info
+#define Scene_viewer_set_scene_by_name Cmiss_scene_viewer_set_scene_by_name
+#define Scene_viewer_set_overlay_scene_by_name Cmiss_scene_viewer_set_overlay_scene_by_name
+#define Scene_viewer_set_background_texture_by_name Cmiss_scene_viewer_set_background_texture_by_name
+#define Scene_viewer_set_interactive_tool_by_name Cmiss_scene_viewer_set_interactive_tool_by_name
 
 /*
 Global types
@@ -234,7 +240,51 @@ DECLARE_CMISS_CALLBACK_TYPES(Scene_viewer_input_callback, \
 Global functions
 ----------------
 */
-struct Scene_viewer *CREATE(Scene_viewer)(struct Graphics_buffer *graphics_buffer,
+struct Cmiss_scene_viewer_package *CREATE(Cmiss_scene_viewer_package)(
+	struct Graphics_buffer_package *graphics_buffer_package,
+	struct Colour *background_colour,
+	struct MANAGER(Interactive_tool) *interactive_tool_manager,
+	struct Interactive_tool *default_interactive_tool, 
+	struct MANAGER(Light) *light_manager,struct Light *default_light,
+	struct MANAGER(Light_model) *light_model_manager,
+	struct Light_model *default_light_model,
+	struct MANAGER(Scene) *scene_manager,struct Scene *scene,
+	struct MANAGER(Texture) *texture_manager,
+	struct User_interface *user_interface);
+/*******************************************************************************
+LAST MODIFIED : 19 January 2007
+
+DESCRIPTION :
+Creates a Scene_viewer_package.
+==============================================================================*/
+
+int DESTROY(Cmiss_scene_viewer_package)(
+	struct Cmiss_scene_viewer_package **scene_viewer_package_address);
+/*******************************************************************************
+LAST MODIFIED : 19 January 2007
+
+DESCRIPTION :
+Destroys the scene_viewer_package.
+==============================================================================*/
+
+struct Graphics_buffer_package *Cmiss_scene_viewer_package_get_graphics_buffer_package(
+	struct Cmiss_scene_viewer_package *cmiss_scene_viewer_package);
+/*******************************************************************************
+LAST MODIFIED : 19 January 2007
+
+DESCRIPTION :
+==============================================================================*/
+
+struct Scene *Cmiss_scene_viewer_package_get_default_scene(
+	struct Cmiss_scene_viewer_package *cmiss_scene_viewer_package);
+/*******************************************************************************
+LAST MODIFIED : 19 January 2007
+
+DESCRIPTION :
+==============================================================================*/
+
+struct Scene_viewer *CREATE(Scene_viewer)(
+	struct Graphics_buffer *graphics_buffer,
 	struct Colour *background_colour,
 	struct MANAGER(Light) *light_manager,struct Light *default_light,
 	struct MANAGER(Light_model) *light_model_manager,
@@ -260,6 +310,16 @@ LAST MODIFIED : 18 November 1998
 
 DESCRIPTION :
 Closes the scene_viewer and disposes of the scene_viewer data structure.
+==============================================================================*/
+
+struct Scene_viewer *create_Scene_viewer_from_package(
+	struct Graphics_buffer *graphics_buffer,
+	struct Cmiss_scene_viewer_package *cmiss_scene_viewer_package,
+	struct Scene *scene);
+/*******************************************************************************
+LAST MODIFIED : 19 January 2007
+
+DESCRIPTION :
 ==============================================================================*/
 
 int Scene_viewer_awaken(struct Scene_viewer *scene_viewer);
@@ -331,7 +391,7 @@ Must call this in DESTROY function.
 ==============================================================================*/
 
 int Scene_viewer_get_antialias_mode(struct Scene_viewer *scene_viewer,
-	int *antialias);
+	unsigned int *antialias);
 /*******************************************************************************
 LAST MODIFIED : 15 October 1998
 
@@ -339,7 +399,7 @@ DESCRIPTION :
 ==============================================================================*/
 
 int Scene_viewer_set_antialias_mode(struct Scene_viewer *scene_viewer,
-	int antialias_mode);
+	unsigned int antialias_mode);
 /*******************************************************************************
 LAST MODIFIED : 15 October 1998
 
@@ -428,6 +488,15 @@ LAST MODIFIED : 21 January 1998
 DESCRIPTION :
 Sets the background_texture to be displayed in the Scene_viewer. Information
 on how it will be displayed is set in Scene_viewer_set_background_texture_info.
+==============================================================================*/
+
+int Scene_viewer_set_background_texture_by_name(struct Scene_viewer *scene_viewer,
+	const char *name);
+/*******************************************************************************
+LAST MODIFIED : 19 January 2007
+
+DESCRIPTION :
+Sets the Scene_viewer scene from names in the scene manager.
 ==============================================================================*/
 
 int Scene_viewer_get_background_texture_info(struct Scene_viewer *scene_viewer,
@@ -748,6 +817,15 @@ in the scene_viewer window, and -1 to +1 from far to near.
 The overlay_scene may be NULL, indicating that no overlay is in use.
 ==============================================================================*/
 
+int Scene_viewer_set_overlay_scene_by_name(struct Scene_viewer *scene_viewer,
+	const char *name);
+/*******************************************************************************
+LAST MODIFIED : 19 January 2007
+
+DESCRIPTION :
+Sets the Scene_viewer overlay scene from names in the scene manager.
+==============================================================================*/
+
 int Scene_viewer_get_projection_mode(struct Scene_viewer *scene_viewer,
 	enum Scene_viewer_projection_mode *projection_mode);
 /*******************************************************************************
@@ -806,6 +884,15 @@ LAST MODIFIED : 14 February 1998
 
 DESCRIPTION :
 Sets the Scene_viewer scene.
+==============================================================================*/
+
+int Scene_viewer_set_scene_by_name(struct Scene_viewer *scene_viewer,
+	const char *name);
+/*******************************************************************************
+LAST MODIFIED : 19 January 2007
+
+DESCRIPTION :
+Sets the Scene_viewer scene from names in the scene manager.
 ==============================================================================*/
 
 int Scene_viewer_get_translation_rate(struct Scene_viewer *scene_viewer,
@@ -941,7 +1028,7 @@ you can even see through the first semi-transparent surface drawn.
 ==============================================================================*/
 
 int Scene_viewer_get_transparency_layers(struct Scene_viewer *scene_viewer,
-	int *transparency_layers);
+	unsigned int *transparency_layers);
 /*******************************************************************************
 LAST MODIFIED : 17 September 2002
 
@@ -950,7 +1037,7 @@ See Scene_viewer_set_transparency_layers for explanation.
 ==============================================================================*/
 
 int Scene_viewer_set_transparency_layers(struct Scene_viewer *scene_viewer,
-	int transparency_layers);
+	unsigned int transparency_layers);
 /*******************************************************************************
 LAST MODIFIED : 9 October 1999
 
