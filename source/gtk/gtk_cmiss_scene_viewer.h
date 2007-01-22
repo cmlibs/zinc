@@ -140,7 +140,8 @@ DESCRIPTION :
 ==============================================================================*/
 #endif /* GTK_MAJOR_VERSION >= 2 */
 
-GtkWidget* gtk_cmiss_scene_viewer_new(void);
+GtkWidget* gtk_cmiss_scene_viewer_new(
+	struct Cmiss_scene_viewer_package *scene_viewer_package);
 /*******************************************************************************
 LAST MODIFIED : 9 September 2002
 
