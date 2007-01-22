@@ -196,7 +196,7 @@ DESCRIPTION :
 }
 
 struct Cmiss_region *Cmiss_region_get_sub_region(struct Cmiss_region *region,
-	char *path)
+	const char *path)
 /*******************************************************************************
 LAST MODIFIED : 13 August 2002
 
@@ -209,7 +209,7 @@ Returns the sub_region specified by the string <path> in <region>.
 	ENTER(Cmiss_region_get_sub_region);
 	if (region && path)
 	{
-		if (Cmiss_region_get_region_from_path(region, path, &return_region))
+		if (Cmiss_region_get_region_from_path(region, (char *)path, &return_region))
 		{
 			/* ACCESS(Cmiss_region)(RETVAL); */
 		}
@@ -224,7 +224,7 @@ Returns the sub_region specified by the string <path> in <region>.
 } /* Cmiss_region_get_sub_region */
 
 struct Cmiss_element *Cmiss_region_get_element(struct Cmiss_region *region,
-	char *name)
+	const char *name)
 /*******************************************************************************
 LAST MODIFIED : 4 November 2004
 
@@ -258,7 +258,7 @@ Returns element with <name> in <region> if it exists.
 } /* Cmiss_region_get_element */
 
 struct Cmiss_node *Cmiss_region_get_node(struct Cmiss_region *region,
-	char *name)
+	const char *name)
 /*******************************************************************************
 LAST MODIFIED : 4 November 2004
 
@@ -361,7 +361,7 @@ the existing FE_node and it is returned.
 	{
 		if (fe_region=Cmiss_region_get_FE_region(region))
 		{
-			returned_node = FE_region_merge_FE_node(fe_region, node);
+			returned_node = ACCESS(FE_node)(FE_region_merge_FE_node(fe_region, node));
 		}
 	}
 	LEAVE;
@@ -445,7 +445,8 @@ the existing Cmiss_element and it is returned.
 	{
 		if (fe_region=Cmiss_region_get_FE_region(region))
 		{
-			returned_element = FE_region_merge_FE_element(fe_region, element);
+			returned_element = ACCESS(FE_element)(
+				FE_region_merge_FE_element(fe_region, element));
 		}
 	}
 	LEAVE;

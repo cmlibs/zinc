@@ -92,7 +92,7 @@ objects created with respect to it to reduce storage by sharing identical lists.
 
 Cmiss_time_sequence_id Cmiss_time_sequence_package_get_matching_time_sequence(
 	Cmiss_time_sequence_package_id time_sequence_package,
-	int number_of_times, Scalar *times);
+	int number_of_times, double *times);
 /*******************************************************************************
 LAST MODIFIED : 11 November 2004
 
@@ -101,4 +101,18 @@ Searches <cmiss_time_sequence_package> for a cmiss_time_sequence which has the t
 sequence specified.  If no equivalent cmiss_time_sequence is found one is created 
 and returned.
 ==============================================================================*/
+
+int Cmiss_time_sequence_set_value(
+	struct Cmiss_time_sequence *time_sequence, int time_index, double time);
+/*******************************************************************************
+LAST MODIFIED : 18 November 2004
+
+DESCRIPTION :
+Sets the <time> for the given <time_index> in the <time_sequence>.  This 
+should only be done for unmanaged time sequences (as otherwise this sequence
+may be shared by many other objects which are not expecting changes).
+If the sequence does not have as many times as the <time_index> then it will
+be expanded and the unspecified times also set to <time>.
+==============================================================================*/
+
 #endif /* __CMISS_TIME_SEQUENCE_H__ */

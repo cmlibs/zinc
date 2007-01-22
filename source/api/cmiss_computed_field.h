@@ -60,6 +60,7 @@ Global types
 #define Cmiss_computed_field Computed_field
 
 struct Cmiss_computed_field;
+typedef struct Cmiss_computed_field *Cmiss_computed_field_id;
 /*******************************************************************************
 LAST MODIFIED : 31 March 2004
 
@@ -76,8 +77,24 @@ LAST MODIFIED : 31 March 2004
 DESCRIPTION :
 ==============================================================================*/
 
+/* Forward declared types */
+/* SAB Temporary until we decide how to fix things up internally instead of externally.*/
+#define Cmiss_time_sequence FE_time_sequence
+struct Cmiss_time_sequence;
+
+struct Cmiss_node_field_creator;
+
+/* Global Functions */
+
+int Cmiss_computed_field_get_number_of_components(struct Computed_field *field);
+/*******************************************************************************
+LAST MODIFIED : 23 December 1998
+
+DESCRIPTION :
+==============================================================================*/
+
 struct Cmiss_computed_field *Cmiss_computed_field_manager_get_field(
-	struct Cmiss_computed_field_manager *manager, char *field_name);
+	struct Cmiss_computed_field_manager *manager, const char *field_name);
 /*******************************************************************************
 LAST MODIFIED : 29 March 2004
 
@@ -99,7 +116,7 @@ greater than or equal to the number of components.
 ==============================================================================*/
 
 int Cmiss_computed_field_set_values_at_node(struct Cmiss_computed_field *field,
-	struct Cmiss_node *node, int number_of_values, float time, float *values);
+	struct Cmiss_node *node, float time, int number_of_values, float *values);
 /*******************************************************************************
 LAST MODIFIED : 21 April 2005
 
@@ -142,4 +159,66 @@ values and derivatives for this field in the given element, ie. values is
 number_of_components in size, derivatives has the element dimension times the
 number_of_components
 ==============================================================================*/
+
+char *Cmiss_computed_field_evaluate_as_string_at_node(
+	struct Cmiss_computed_field *field, struct Cmiss_node *node, float time);
+/*******************************************************************************
+LAST MODIFIED : 17 January 2007
+
+DESCRIPTION :
+Returns a string describing the value/s of the <field> at the <node>. If the
+field is based on an FE_field but not returning FE_values, it is asked to supply
+the string. Otherwise, a string built up of comma separated values evaluated
+for the field in Computed_field_evaluate_cache_at_node. The FE_value exception
+is used since it is likely the values are already in the cache in most cases,
+or can be used by other fields again if calculated now.
+Creates a string which represents all the components.
+Some basic field types such as CMISS_NUMBER have special uses in this function.
+It is up to the calling function to DEALLOCATE the returned string.
+==============================================================================*/
+
+int Cmiss_computed_field_is_defined_at_node(struct Computed_field *field,
+	struct Cmiss_node *node);
+/*******************************************************************************
+LAST MODIFIED : 17 January 2007
+
+DESCRIPTION :
+Returns true if <field> can be calculated at <node>. If the field depends on
+any other fields, this function is recursively called for them.
+==============================================================================*/
+
+int Cmiss_computed_field_is_type_finite_element(Cmiss_computed_field_id field);
+/*******************************************************************************
+LAST MODIFIED : 18 July 2000
+
+DESCRIPTION :
+==============================================================================*/
+
+int Cmiss_computed_field_finite_element_set_string_at_node(
+	Cmiss_computed_field_id field, int component_number, Cmiss_node_id node, 
+	float time, const char *string);
+/*******************************************************************************
+LAST MODIFIED : 24 May 2006
+
+DESCRIPTION :
+Special function for Computed_field_finite_element fields only.
+Allows the setting of a string if that is the type of field represented.
+==============================================================================*/
+
+int Cmiss_computed_field_finite_element_define_at_node(
+	Cmiss_computed_field_id field, Cmiss_node_id node,
+	struct Cmiss_time_sequence *time_sequence,
+	struct Cmiss_node_field_creator *node_field_creator);
+/*******************************************************************************
+LAST MODIFIED : 25 May 2006
+
+DESCRIPTION :
+Special function for Computed_field_finite_element fields only.
+Defines the field at the specified node.
+<fe_time_sequence> optionally defines multiple times for the <field>.  If it is
+NULL then the field will be defined as constant for all times.
+<node_field_creator> optionally defines different versions and/or derivative types.
+If it is NULL then a single nodal value for each component will be defined.
+==============================================================================*/
+
 #endif /* __CMISS_COMPUTED_FIELD_H__ */

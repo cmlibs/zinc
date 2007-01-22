@@ -54,7 +54,7 @@ Global functions
 */
 
 struct Cmiss_computed_field *Cmiss_computed_field_manager_get_field(
-	struct Cmiss_computed_field_manager *manager, char *field_name)
+	struct Cmiss_computed_field_manager *manager, const char *field_name)
 /*******************************************************************************
 LAST MODIFIED : 29 March 2004
 
@@ -68,7 +68,7 @@ Returns the computed_field of <field_name> from the <manager> if it is defined.
 	if (manager && field_name)
 	{
 		computed_field=FIND_BY_IDENTIFIER_IN_MANAGER(Computed_field,name)(
-			field_name, manager);
+			(char *)field_name, manager);
 	}
 	else
 	{
@@ -89,32 +89,32 @@ LAST MODIFIED : 29 March 2004
 DESCRIPTION :
 Returns the <values> of <field> at <node> and <time> if it is defined there.
 
-The <values> array must be large enough to store as many FE_values as there are
+The <values> array must be large enough to store as many floats as there are
 number_of_components, the function checks that <number_of_values> is 
 greater than or equal to the number of components.
 ==============================================================================*/
 {
 	int return_code;
 
-	ENTER(Cmiss_computed_field_evaluate_at_node);
+	ENTER(Cmiss_computed_field_set_values_at_node);
 	if (field && node && values &&
-		(number_of_values>=Computed_field_get_number_of_components(field)))
+		(number_of_values >= Computed_field_get_number_of_components(field)))
 	{
 		return_code = Computed_field_evaluate_at_node(field, node, time, values);
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Cmiss_computed_field_evaluate_at_node.  Invalid argument(s)");
+			"Cmiss_computed_field_set_values_at_node.  Invalid argument(s)");
 		return_code=0;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* Cmiss_computed_field_evaluate_at_node */
+} /* Cmiss_computed_field_set_values_at_node */
 
 int Cmiss_computed_field_set_values_at_node(struct Cmiss_computed_field *field,
-	struct Cmiss_node *node, int number_of_values, float time, float *values)
+	struct Cmiss_node *node, float time, int number_of_values, float *values)
 /*******************************************************************************
 LAST MODIFIED : 21 April 2005
 
@@ -199,3 +199,66 @@ number_of_components
 	return (return_code);
 } /* Cmiss_computed_field_evaluate_in_element */
 
+char *Cmiss_computed_field_evaluate_as_string_at_node(
+	struct Cmiss_computed_field *field, struct Cmiss_node *node, float time)
+/*******************************************************************************
+LAST MODIFIED : 17 January 2007
+
+DESCRIPTION :
+Returns a string describing the value/s of the <field> at the <node>. If the
+field is based on an FE_field but not returning FE_values, it is asked to supply
+the string. Otherwise, a string built up of comma separated values evaluated
+for the field in Computed_field_evaluate_cache_at_node. The FE_value exception
+is used since it is likely the values are already in the cache in most cases,
+or can be used by other fields again if calculated now.
+Creates a string which represents all the components.
+Some basic field types such as CMISS_NUMBER have special uses in this function.
+It is up to the calling function to DEALLOCATE the returned string.
+==============================================================================*/
+{
+	char *return_code;
+
+	ENTER(Cmiss_computed_field_evaluate_as_string_at_node);
+	if (field && node)
+	{
+		return_code = Computed_field_evaluate_as_string_at_node(field,
+			/*component_number*/-1, node, time);
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Cmiss_computed_field_evaluate_as_string_at_node.  Invalid argument(s)");
+		return_code=NULL;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Cmiss_computed_field_evaluate_as_string_at_node */
+
+int Cmiss_computed_field_is_defined_at_node(struct Computed_field *field,
+	struct Cmiss_node *node)
+/*******************************************************************************
+LAST MODIFIED : 17 January 2007
+
+DESCRIPTION :
+Returns true if <field> can be calculated at <node>. If the field depends on
+any other fields, this function is recursively called for them.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(Cmiss_computed_field_is_defined_at_node);
+	if (field && node)
+	{
+		return_code = Computed_field_is_defined_at_node(field, node);
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Cmiss_computed_field_is_defined_at_node.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Cmiss_computed_field_is_defined_at_node */

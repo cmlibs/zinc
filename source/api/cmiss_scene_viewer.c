@@ -55,150 +55,20 @@ scenes.
 #include "user_interface/message.h"
 
 /*
-Module types
-------------
-*/
-
-struct Cmiss_scene_viewer_data
-/*******************************************************************************
-LAST MODIFIED : 2 June 2004
-
-DESCRIPTION:
-The default data used to create Cmiss_scene_viewers.
-==============================================================================*/
-{
-	struct Graphics_buffer_package *graphics_buffer_package;
-	struct Colour *background_colour;
-	struct MANAGER(Interactive_tool) *interactive_tool_manager;
-	struct Interactive_tool *default_interactive_tool;
-	struct MANAGER(Light) *light_manager;
-	struct Light *default_light;
-	struct MANAGER(Light_model) *light_model_manager;
-	struct Light_model *default_light_model;
-	struct MANAGER(Scene) *scene_manager;
-	struct Scene *scene;
-	struct MANAGER(Texture) *texture_manager;
-	struct User_interface *user_interface;
-};
-
-/*
-Module variables
-----------------
-*/
-
-static struct Cmiss_scene_viewer_data *cmiss_scene_viewer_data = NULL;
-
-/*
 Global functions
 ----------------
 */
 
-int Cmiss_scene_viewer_free_data(void)
-/*******************************************************************************
-LAST MODIFIED : 6 September 2002
-
-DESCRIPTION:
-Frees all the data used to scene viewer objects.
-==============================================================================*/
-{
-	int return_code;
-
-	ENTER(Cmiss_scene_viewer_free_data);
-	if (cmiss_scene_viewer_data)
-	{
-		/* Free the previous copy */
-		DEACCESS(Interactive_tool)(&cmiss_scene_viewer_data->default_interactive_tool);
-		DEACCESS(Light)(&cmiss_scene_viewer_data->default_light);
-		DEACCESS(Light_model)(&cmiss_scene_viewer_data->default_light_model);
-		DEACCESS(Scene)(&cmiss_scene_viewer_data->scene);
-		DEALLOCATE(cmiss_scene_viewer_data);
-		cmiss_scene_viewer_data = (struct Cmiss_scene_viewer_data *)NULL;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,"Cmiss_scene_viewer_free_data.  "
-			"Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Cmiss_scene_viewer_free_data */
-
-int Cmiss_scene_viewer_set_data(
-	struct Graphics_buffer_package *graphics_buffer_package,
-	struct Colour *background_colour,
-	struct MANAGER(Interactive_tool) *interactive_tool_manager,
-	struct Interactive_tool *default_interactive_tool,
-	struct MANAGER(Light) *light_manager,struct Light *default_light,
-	struct MANAGER(Light_model) *light_model_manager,
-	struct Light_model *default_light_model,
-	struct MANAGER(Scene) *scene_manager,struct Scene *scene,
-	struct MANAGER(Texture) *texture_manager,
-	struct User_interface *user_interface)
-/*******************************************************************************
-LAST MODIFIED : 6 September 2002
-
-DESCRIPTION:
-Initialises all the data used to scene viewer objects.
-==============================================================================*/
-{
-	int return_code;
-
-	ENTER(Cmiss_scene_viewer_set_data);
-	if (graphics_buffer_package && background_colour && light_manager && default_light &&
-		light_model_manager && default_light_model && scene_manager
-		&& scene && texture_manager && user_interface)
-	{
-		if (cmiss_scene_viewer_data)
-		{
-			/* Free the previous copy */
-			Cmiss_scene_viewer_free_data();
-		}
-		if (ALLOCATE(cmiss_scene_viewer_data, struct Cmiss_scene_viewer_data, 1))
-		{
-			cmiss_scene_viewer_data->graphics_buffer_package = graphics_buffer_package;
-			cmiss_scene_viewer_data->background_colour = background_colour;
-			cmiss_scene_viewer_data->interactive_tool_manager = interactive_tool_manager;
-			cmiss_scene_viewer_data->default_interactive_tool = ACCESS(Interactive_tool)
-				(default_interactive_tool);
-			cmiss_scene_viewer_data->light_manager = light_manager;
-			cmiss_scene_viewer_data->default_light = ACCESS(Light)(default_light);
-			cmiss_scene_viewer_data->light_model_manager = light_model_manager;
-			cmiss_scene_viewer_data->default_light_model = ACCESS(Light_model)(default_light_model);
-			cmiss_scene_viewer_data->scene_manager = scene_manager;
-			cmiss_scene_viewer_data->scene = ACCESS(Scene)(scene);
-			cmiss_scene_viewer_data->texture_manager = texture_manager;
-			cmiss_scene_viewer_data->user_interface = user_interface;
-			return_code=1;
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,"Cmiss_scene_viewer_set_data.  "
-				"Unable to allocate data storage");
-			return_code=0;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,"Cmiss_scene_viewer_set_data.  "
-			"Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Cmiss_scene_viewer_set_data */
-
 #if defined (GTK_USER_INTERFACE)
 Cmiss_scene_viewer_id create_Cmiss_scene_viewer_gtk(
+	struct Cmiss_scene_viewer_package *cmiss_scene_viewer_package,
 	GtkContainer *scene_viewer_widget,
 	enum Cmiss_scene_viewer_buffering_mode buffer_mode,
 	enum Cmiss_scene_viewer_stereo_mode stereo_mode,
 	int minimum_colour_buffer_depth, int minimum_depth_buffer_depth,
 	int minimum_accumulation_buffer_depth)
 /*******************************************************************************
-LAST MODIFIED : 19 September 2002
+LAST MODIFIED : 19 January 2007
 
 DESCRIPTION :
 Creates a Cmiss_scene_viewer by creating a GtkGlArea inside the specified 
@@ -220,13 +90,13 @@ chosen.
 	USE_PARAMETER(minimum_colour_buffer_depth);
 	USE_PARAMETER(minimum_accumulation_buffer_depth);
 	USE_PARAMETER(minimum_depth_buffer_depth);
-	if (cmiss_scene_viewer_data)
+	if (cmiss_scene_viewer_package)
 	{
-		if (CMISS_SCENE_VIEWER_ANY_BUFFERING_MODE==buffer_mode)
+		if (CMISS_SCENE_VIEWER_BUFFERING_ANY_MODE==buffer_mode)
 		{
 			graphics_buffer_buffering_mode = GRAPHICS_BUFFER_ANY_BUFFERING_MODE;
 		}
-		else if (CMISS_SCENE_VIEWER_SINGLE_BUFFERING==buffer_mode)
+		else if (CMISS_SCENE_VIEWER_BUFFERING_SINGLE==buffer_mode)
 		{
 			graphics_buffer_buffering_mode = GRAPHICS_BUFFER_SINGLE_BUFFERING;
 		}
@@ -234,11 +104,11 @@ chosen.
 		{
 			graphics_buffer_buffering_mode = GRAPHICS_BUFFER_DOUBLE_BUFFERING;
 		}
-		if (CMISS_SCENE_VIEWER_ANY_STEREO_MODE==stereo_mode)
+		if (CMISS_SCENE_VIEWER_STEREO_ANY_MODE==stereo_mode)
 		{
 			graphics_buffer_stereo_mode = GRAPHICS_BUFFER_ANY_STEREO_MODE;
 		}
-		else if (CMISS_SCENE_VIEWER_STEREO==stereo_mode)
+		else if (CMISS_SCENE_VIEWER_STEREO_STEREO==stereo_mode)
 		{
 			graphics_buffer_stereo_mode = GRAPHICS_BUFFER_STEREO;
 		}
@@ -247,21 +117,14 @@ chosen.
 			graphics_buffer_stereo_mode = GRAPHICS_BUFFER_MONO;
 		}
 		graphics_buffer = create_Graphics_buffer_gtkgl(
-			cmiss_scene_viewer_data->graphics_buffer_package, scene_viewer_widget,
+			Cmiss_scene_viewer_package_get_graphics_buffer_package(cmiss_scene_viewer_package),
+			scene_viewer_widget,
 			graphics_buffer_buffering_mode, graphics_buffer_stereo_mode,
 			minimum_colour_buffer_depth, minimum_depth_buffer_depth,
 			minimum_accumulation_buffer_depth);
-		scene_viewer = CREATE(Scene_viewer)(graphics_buffer,
-			cmiss_scene_viewer_data->background_colour,
-			cmiss_scene_viewer_data->light_manager,
-			cmiss_scene_viewer_data->default_light,
-			cmiss_scene_viewer_data->light_model_manager,
-			cmiss_scene_viewer_data->default_light_model,
-			cmiss_scene_viewer_data->scene_manager, cmiss_scene_viewer_data->scene,
-			cmiss_scene_viewer_data->texture_manager,
-			cmiss_scene_viewer_data->user_interface);
-		Scene_viewer_set_interactive_tool(scene_viewer,
-			cmiss_scene_viewer_data->default_interactive_tool);
+		scene_viewer = create_Scene_viewer_from_package(graphics_buffer,
+			cmiss_scene_viewer_package,
+			Cmiss_scene_viewer_package_get_default_scene(cmiss_scene_viewer_package));
 	}
 	else
 	{
@@ -278,6 +141,7 @@ chosen.
 
 #if defined (WIN32_USER_INTERFACE)
 Cmiss_scene_viewer_id create_Cmiss_scene_viewer_win32(
+	struct Cmiss_scene_viewer_package *cmiss_scene_viewer_package,
 	HWND hWnd,
 	enum Cmiss_scene_viewer_buffering_mode buffer_mode,
 	enum Cmiss_scene_viewer_stereo_mode stereo_mode,
@@ -302,11 +166,7 @@ chosen.
 	struct Cmiss_scene_viewer *scene_viewer;
 
 	ENTER(create_Cmiss_scene_viewer_win32);
-	/* Not implemented yet */
-	USE_PARAMETER(minimum_colour_buffer_depth);
-	USE_PARAMETER(minimum_accumulation_buffer_depth);
-	USE_PARAMETER(minimum_depth_buffer_depth);
-	if (cmiss_scene_viewer_data)
+	if (cmiss_scene_viewer_package)
 	{
 		if (CMISS_SCENE_VIEWER_ANY_BUFFERING_MODE==buffer_mode)
 		{
@@ -333,21 +193,14 @@ chosen.
 			graphics_buffer_stereo_mode = GRAPHICS_BUFFER_MONO;
 		}
 		graphics_buffer = create_Graphics_buffer_win32(
-			cmiss_scene_viewer_data->graphics_buffer_package, hWnd,
+			Cmiss_scene_viewer_package_get_graphics_buffer_package(cmiss_scene_viewer_package),
+			hWnd,
 			graphics_buffer_buffering_mode, graphics_buffer_stereo_mode,
 			minimum_colour_buffer_depth, minimum_depth_buffer_depth,
 			minimum_accumulation_buffer_depth);
-		scene_viewer = CREATE(Scene_viewer)(graphics_buffer,
-			cmiss_scene_viewer_data->background_colour,
-			cmiss_scene_viewer_data->light_manager,
-			cmiss_scene_viewer_data->default_light,
-			cmiss_scene_viewer_data->light_model_manager,
-			cmiss_scene_viewer_data->default_light_model,
-			cmiss_scene_viewer_data->scene_manager, cmiss_scene_viewer_data->scene,
-			cmiss_scene_viewer_data->texture_manager,
-			cmiss_scene_viewer_data->user_interface);
-		Scene_viewer_set_interactive_tool(scene_viewer,
-			cmiss_scene_viewer_data->default_interactive_tool);
+		scene_viewer = create_Scene_viewer_from_package(graphics_buffer,
+			cmiss_scene_viewer_package,
+			Cmiss_scene_viewer_package_get_default_scene(cmiss_scene_viewer_package));
 	}
 	else
 	{
@@ -361,6 +214,84 @@ chosen.
 	return (scene_viewer);
 }
 #endif /* defined (WIN32_USER_INTERFACE) */
+
+#if defined (MOTIF)
+Cmiss_scene_viewer_id create_Cmiss_scene_viewer_motif(
+	struct Cmiss_scene_viewer_package *cmiss_scene_viewer_package,
+	Widget parent,
+	enum Cmiss_scene_viewer_buffering_mode buffer_mode,
+	enum Cmiss_scene_viewer_stereo_mode stereo_mode,
+	int minimum_colour_buffer_depth, int minimum_depth_buffer_depth,
+	int minimum_accumulation_buffer_depth)
+/*******************************************************************************
+LAST MODIFIED : 25 January 2006
+
+DESCRIPTION :
+Creates a Cmiss_scene_viewer by creating a graphics buffer on the specified 
+<parent> widget.
+If <minimum_colour_buffer_depth>, <minimum_depth_buffer_depth> or 
+<minimum_accumulation_buffer_depth> are not zero then they are used to filter
+out the possible visuals selected for graphics_buffers.  If they are zero then 
+the accumulation_buffer_depth are not tested and the maximum colour buffer depth is
+chosen.
+==============================================================================*/
+{
+	Dimension height,width;
+	enum Graphics_buffer_buffering_mode graphics_buffer_buffering_mode;
+	enum Graphics_buffer_stereo_mode graphics_buffer_stereo_mode;
+	struct Graphics_buffer *graphics_buffer;
+	struct Cmiss_scene_viewer *scene_viewer;
+
+	ENTER(create_Cmiss_scene_viewer_x11);
+	if (cmiss_scene_viewer_package)
+	{
+		if (CMISS_SCENE_VIEWER_BUFFERING_ANY_MODE==buffer_mode)
+		{
+			graphics_buffer_buffering_mode = GRAPHICS_BUFFER_ANY_BUFFERING_MODE;
+		}
+		else if (CMISS_SCENE_VIEWER_BUFFERING_SINGLE==buffer_mode)
+		{
+			graphics_buffer_buffering_mode = GRAPHICS_BUFFER_SINGLE_BUFFERING;
+		}
+		else
+		{
+			graphics_buffer_buffering_mode = GRAPHICS_BUFFER_DOUBLE_BUFFERING;
+		}
+		if (CMISS_SCENE_VIEWER_STEREO_ANY_MODE==stereo_mode)
+		{
+			graphics_buffer_stereo_mode = GRAPHICS_BUFFER_ANY_STEREO_MODE;
+		}
+		else if (CMISS_SCENE_VIEWER_STEREO_STEREO==stereo_mode)
+		{
+			graphics_buffer_stereo_mode = GRAPHICS_BUFFER_STEREO;
+		}
+		else
+		{
+			graphics_buffer_stereo_mode = GRAPHICS_BUFFER_MONO;
+		}
+		XtVaGetValues(parent, XmNwidth,&width, XmNheight,&height,NULL);
+		graphics_buffer = create_Graphics_buffer_X3d(
+			Cmiss_scene_viewer_package_get_graphics_buffer_package(cmiss_scene_viewer_package),
+			parent, width, height,
+			graphics_buffer_buffering_mode, graphics_buffer_stereo_mode,
+			minimum_colour_buffer_depth, minimum_depth_buffer_depth,
+			minimum_accumulation_buffer_depth);
+		scene_viewer = create_Scene_viewer_from_package(graphics_buffer,
+			cmiss_scene_viewer_package,
+			Cmiss_scene_viewer_package_get_default_scene(cmiss_scene_viewer_package));
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"create_Cmiss_scene_viewer_x11.  "
+			"The Cmiss_scene_viewer data must be initialised before any scene "
+			"viewers can be created.");
+		scene_viewer=(struct Cmiss_scene_viewer *)NULL;
+	}
+	LEAVE;
+
+	return (scene_viewer);
+}
+#endif /* defined (MOTIF) */
 
 int Cmiss_scene_viewer_get_near_and_far_plane(Cmiss_scene_viewer_id scene_viewer,
 	double *near_plane, double *far_plane)
@@ -447,17 +378,17 @@ Gets the viewport mode(absolute/relative/distorting relative) for the
 		{
 			case SCENE_VIEWER_ABSOLUTE_VIEWPORT:
 			{
-				*viewport_mode = CMISS_SCENE_VIEWER_ABSOLUTE_VIEWPORT;
+				*viewport_mode = CMISS_SCENE_VIEWER_VIEWPORT_ABSOLUTE;
 				return_code = 1;
 			} break;
 			case SCENE_VIEWER_RELATIVE_VIEWPORT:
 			{
-				*viewport_mode = CMISS_SCENE_VIEWER_RELATIVE_VIEWPORT;
+				*viewport_mode = CMISS_SCENE_VIEWER_VIEWPORT_RELATIVE;
 				return_code = 1;
 			} break;
 			case SCENE_VIEWER_DISTORTING_RELATIVE_VIEWPORT:
 			{
-				*viewport_mode = CMISS_SCENE_VIEWER_DISTORTING_RELATIVE_VIEWPORT;
+				*viewport_mode = CMISS_SCENE_VIEWER_VIEWPORT_DISTORTING_RELATIVE;
 				return_code = 1;
 			} break;
 			default:
@@ -497,17 +428,17 @@ Sets the viewport mode(absolute/relative/distorting relative) for the
 	{
 		switch(viewport_mode)
 		{
-			case CMISS_SCENE_VIEWER_ABSOLUTE_VIEWPORT:
+			case CMISS_SCENE_VIEWER_VIEWPORT_ABSOLUTE:
 			{
 				return_code = Scene_viewer_set_viewport_mode(scene_viewer, 
 					SCENE_VIEWER_ABSOLUTE_VIEWPORT);
 			} break;
-			case CMISS_SCENE_VIEWER_RELATIVE_VIEWPORT:
+			case CMISS_SCENE_VIEWER_VIEWPORT_RELATIVE:
 			{
 				return_code = Scene_viewer_set_viewport_mode(scene_viewer, 
 					SCENE_VIEWER_RELATIVE_VIEWPORT);
 			} break;
-			case CMISS_SCENE_VIEWER_DISTORTING_RELATIVE_VIEWPORT:
+			case CMISS_SCENE_VIEWER_VIEWPORT_DISTORTING_RELATIVE:
 			{
 				return_code = Scene_viewer_set_viewport_mode(scene_viewer, 
 					SCENE_VIEWER_DISTORTING_RELATIVE_VIEWPORT);
@@ -555,12 +486,12 @@ Returns the projection mode - parallel/perspective - of the Cmiss_scene_viewer.
 			{
 				case SCENE_VIEWER_PERSPECTIVE:
 				{
-					*projection_mode = CMISS_SCENE_VIEWER_PERSPECTIVE;
+					*projection_mode = CMISS_SCENE_VIEWER_PROJECTION_PERSPECTIVE;
 					return_code = 1;
 				} break;
 				case SCENE_VIEWER_PARALLEL:
 				{
-					*projection_mode = CMISS_SCENE_VIEWER_PARALLEL;
+					*projection_mode = CMISS_SCENE_VIEWER_PROJECTION_PARALLEL;
 					return_code = 1;
 				} break;
 				default:
@@ -600,12 +531,12 @@ Sets the projection mode - parallel/perspective/custom - of the Cmiss_scene_view
 	{
 		switch(projection_mode)
 		{
-			case CMISS_SCENE_VIEWER_PERSPECTIVE:
+			case CMISS_SCENE_VIEWER_PROJECTION_PERSPECTIVE:
 			{
 				return_code = Scene_viewer_set_projection_mode(scene_viewer, 
 					SCENE_VIEWER_PERSPECTIVE);
 			} break;
-			case CMISS_SCENE_VIEWER_PARALLEL:
+			case CMISS_SCENE_VIEWER_PROJECTION_PARALLEL:
 			{
 				return_code = Scene_viewer_set_projection_mode(scene_viewer, 
 					SCENE_VIEWER_PARALLEL);
@@ -630,10 +561,10 @@ Sets the projection mode - parallel/perspective/custom - of the Cmiss_scene_view
 	return (return_code);
 } /* Cmiss_scene_viewer_set_projection_mode */
 
-int Cmiss_scene_viewer_get_background_colour_rgb(
+int Cmiss_scene_viewer_get_background_colour_r_g_b(
 	Cmiss_scene_viewer_id scene_viewer, double *red, double *green, double *blue)
 /*******************************************************************************
-LAST MODIFIED : 11 September 2002
+LAST MODIFIED : 15 January 2007
 
 DESCRIPTION :
 Returns the background_colour of the scene_viewer.
@@ -663,10 +594,10 @@ Returns the background_colour of the scene_viewer.
 	return (return_code);
 } /* Cmiss_scene_viewer_get_background_colour_rgb */
 
-int Cmiss_scene_viewer_set_background_colour_rgb(
+int Cmiss_scene_viewer_set_background_colour_r_g_b(
 	Cmiss_scene_viewer_id scene_viewer, double red, double green, double blue)
 /*******************************************************************************
-LAST MODIFIED : 11 September 2002
+LAST MODIFIED : 15 January 2007
 
 DESCRIPTION :
 Sets the background_colour of the scene_viewer.
@@ -734,56 +665,6 @@ pointer when it is no longer required.
 	return (return_code);
 } /* Cmiss_scene_viewer_get_interactive_tool_name */
 
-int Cmiss_scene_viewer_set_interactive_tool_by_name(
-	Cmiss_scene_viewer_id scene_viewer, char *tool_name)
-/*******************************************************************************
-LAST MODIFIED : 11 September 2002
-
-DESCRIPTION :
-Sets the currently active interactive tool for the scene_viewer if one that
-matches the <tool_name> exists.
-==============================================================================*/
-{
-	struct Interactive_tool *interactive_tool;
-	int return_code;
-
-	ENTER(Cmiss_scene_viewer_set_interactive_tool_by_name);
-	if (cmiss_scene_viewer_data)
-	{
-		if (interactive_tool=
-			FIND_BY_IDENTIFIER_IN_MANAGER(Interactive_tool,name)(
-				tool_name,cmiss_scene_viewer_data->interactive_tool_manager))
-		{
-			if (Interactive_tool_is_Transform_tool(interactive_tool))
-			{
-				Scene_viewer_set_input_mode(scene_viewer,SCENE_VIEWER_TRANSFORM);
-			}
-			else
-			{
-				Scene_viewer_set_input_mode(scene_viewer,SCENE_VIEWER_SELECT);
-			}
-			return_code = Scene_viewer_set_interactive_tool(scene_viewer,
-				interactive_tool);
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,"Cmiss_scene_viewer_set_interactive_tool_by_name.  "
-				"Unable to find an interactive tool named %s.", tool_name);
-			return_code = 0;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,"Cmiss_scene_viewer_set_interactive_tool_by_name.  "
-			"The Cmiss_scene_viewer data must be initialised before using "
-			"the scene_viewer api.");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Cmiss_scene_viewer_set_interactive_tool_by_name */
-
 int Cmiss_scene_viewer_get_scene_name(
 	Cmiss_scene_viewer_id scene_viewer, char **scene_name)
 /*******************************************************************************
@@ -824,128 +705,8 @@ pointer when it is no longer required.
 	return (return_code);
 } /* Cmiss_scene_viewer_get_scene_name */
 
-int Cmiss_scene_viewer_set_scene_by_name(Cmiss_scene_viewer_id scene_viewer,
-	char *scene_name)
-/*******************************************************************************
-LAST MODIFIED : 13 September 2002
-
-DESCRIPTION :
-Sets the currently scene rendered in the scene_viewer if one that
-matches the <scene_name> exists.
-==============================================================================*/
-{
-	struct Scene *scene;
-	int return_code;
-
-	ENTER(Cmiss_scene_viewer_set_scene_by_name);
-	if (cmiss_scene_viewer_data)
-	{
-		if (scene=FIND_BY_IDENTIFIER_IN_MANAGER(Scene,name)(
-				scene_name,cmiss_scene_viewer_data->scene_manager))
-		{
-			return_code = Scene_viewer_set_scene(scene_viewer, scene);
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,"Cmiss_scene_viewer_set_scene_by_name.  "
-				"Unable to find a scene named %s.", scene_name);
-			return_code = 0;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,"Cmiss_scene_viewer_set_scene_by_name.  "
-			"The Cmiss_scene_viewer data must be initialised before using "
-			"the scene_viewer api.");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Cmiss_scene_viewer_set_scene_by_name */
-
-int Cmiss_scene_viewer_set_overlay_scene_by_name(Cmiss_scene_viewer_id scene_viewer,
-	char *scene_name)
-/*******************************************************************************
-LAST MODIFIED : 10 September 2003
-
-DESCRIPTION :
-Sets the overlay scene rendered in the scene_viewer if one that
-matches the <scene_name> exists.
-==============================================================================*/
-{
-	struct Scene *scene;
-	int return_code;
-
-	ENTER(Cmiss_scene_viewer_set_scene_by_name);
-	if (cmiss_scene_viewer_data)
-	{
-		if (scene=FIND_BY_IDENTIFIER_IN_MANAGER(Scene,name)(
-				scene_name,cmiss_scene_viewer_data->scene_manager))
-		{
-			return_code = Scene_viewer_set_overlay_scene(scene_viewer, scene);
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,"Cmiss_scene_viewer_set_scene_by_name.  "
-				"Unable to find a scene named %s.", scene_name);
-			return_code = 0;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,"Cmiss_scene_viewer_set_scene_by_name.  "
-			"The Cmiss_scene_viewer data must be initialised before using "
-			"the scene_viewer api.");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Cmiss_scene_viewer_set_scene_by_name */
-
-int Cmiss_scene_viewer_set_background_texture_by_name(Cmiss_scene_viewer_id scene_viewer,
-	char *texture_name)
-/*******************************************************************************
-LAST MODIFIED : 10 September 2003
-
-DESCRIPTION :
-Sets the background texture rendered in the scene_viewer if one that
-matches the <texture_name> exists.
-==============================================================================*/
-{
-	struct Texture *texture;
-	int return_code;
-
-	ENTER(Cmiss_scene_viewer_set_texture_by_name);
-	if (cmiss_scene_viewer_data)
-	{
-		if (texture=FIND_BY_IDENTIFIER_IN_MANAGER(Texture,name)(
-			texture_name,cmiss_scene_viewer_data->texture_manager))
-		{
-			return_code = Scene_viewer_set_background_texture(scene_viewer, texture);
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,"Cmiss_scene_viewer_set_texture_by_name.  "
-				"Unable to find a texture named %s.", texture_name);
-			return_code = 0;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,"Cmiss_scene_viewer_set_texture_by_name.  "
-			"The Cmiss_scene_viewer data must be initialised before using "
-			"the scene_viewer api.");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Cmiss_scene_viewer_set_texture_by_name */
-
 int Cmiss_scene_viewer_write_image_to_file(Cmiss_scene_viewer_id scene_viewer,
-	char *file_name, int force_onscreen, int preferred_width, int preferred_height,
+	const char *file_name, int force_onscreen, int preferred_width, int preferred_height,
 	int preferred_antialias, int preferred_transparency_layers)
 /*******************************************************************************
 LAST MODIFIED : 18 September 2002
@@ -969,7 +730,7 @@ Writes the view in the scene_viewer to the specified filename.
 		{
 			cmgui_image_information = CREATE(Cmgui_image_information)();
 			Cmgui_image_information_add_file_name(cmgui_image_information,
-				file_name);
+				(char *)file_name);
 			Cmgui_image_write(cmgui_image, cmgui_image_information);
 			DESTROY(Cmgui_image_information)(&cmgui_image_information);
 			DESTROY(Cmgui_image)(&cmgui_image);

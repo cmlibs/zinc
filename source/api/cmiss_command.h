@@ -56,6 +56,7 @@ Global types
 ------------
 */
 struct Cmiss_command_data;
+typedef struct Cmiss_command_data *Cmiss_command_data_id;
 /*******************************************************************************
 LAST MODIFIED : 13 August 2002
 

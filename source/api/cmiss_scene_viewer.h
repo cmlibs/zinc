@@ -57,6 +57,7 @@ scenes.
 Global types
 ------------
 */
+struct Cmiss_scene_viewer_package;
 
 enum Cmiss_scene_viewer_buffering_mode
 /*******************************************************************************
@@ -71,9 +72,9 @@ ANY_BUFFER_MODE will mean that with SINGLE_BUFFER or DOUBLE_BUFFER mode may
 be selected depending on the other requirements of the scene_viewer.
 ==============================================================================*/
 {
-	CMISS_SCENE_VIEWER_ANY_BUFFERING_MODE,
-	CMISS_SCENE_VIEWER_SINGLE_BUFFERING,
-	CMISS_SCENE_VIEWER_DOUBLE_BUFFERING
+	CMISS_SCENE_VIEWER_BUFFERING_ANY_MODE,
+	CMISS_SCENE_VIEWER_BUFFERING_SINGLE,
+	CMISS_SCENE_VIEWER_BUFFERING_DOUBLE
 };
 
 enum Cmiss_scene_viewer_interact_mode
@@ -107,9 +108,9 @@ ANY_STEREO_MODE means that either STEREO or MONO will may be chosen
 depending on the other requirements of the scene_viewer.
 ==============================================================================*/
 {
-	CMISS_SCENE_VIEWER_ANY_STEREO_MODE,
-	CMISS_SCENE_VIEWER_MONO,
-	CMISS_SCENE_VIEWER_STEREO
+	CMISS_SCENE_VIEWER_STEREO_ANY_MODE,
+	CMISS_SCENE_VIEWER_STEREO_MONO,
+	CMISS_SCENE_VIEWER_STEREO_STEREO
 };
 
 enum Cmiss_scene_viewer_viewport_mode
@@ -128,9 +129,9 @@ large as possible in the physical viewport, and the aspect ratio may be
 changed.
 ==============================================================================*/
 {
-	CMISS_SCENE_VIEWER_ABSOLUTE_VIEWPORT,
-	CMISS_SCENE_VIEWER_RELATIVE_VIEWPORT,
-	CMISS_SCENE_VIEWER_DISTORTING_RELATIVE_VIEWPORT
+	CMISS_SCENE_VIEWER_VIEWPORT_ABSOLUTE,
+	CMISS_SCENE_VIEWER_VIEWPORT_RELATIVE,
+	CMISS_SCENE_VIEWER_VIEWPORT_DISTORTING_RELATIVE
 };
 
 enum Cmiss_scene_viewer_projection_mode
@@ -141,8 +142,8 @@ DESCRIPTION :
 Specifies the sort of projection matrix used to render the 3D scene.
 ==============================================================================*/
 {
-	CMISS_SCENE_VIEWER_PARALLEL,
-	CMISS_SCENE_VIEWER_PERSPECTIVE
+	CMISS_SCENE_VIEWER_PROJECTION_PARALLEL,
+	CMISS_SCENE_VIEWER_PROJECTION_PERSPECTIVE
 };
 
 enum Cmiss_scene_viewer_transparency_mode
@@ -171,10 +172,10 @@ This uses all the texturing resources of the current Nvidia hardware and so
 no materials used in the scene can contain textures.
 ==============================================================================*/
 {
-	CMISS_SCENE_VIEWER_FAST_TRANSPARENCY,
-	CMISS_SCENE_VIEWER_SLOW_TRANSPARENCY,
-	CMISS_SCENE_VIEWER_LAYERED_TRANSPARENCY,
-	CMISS_SCENE_VIEWER_ORDER_INDEPENDENT_TRANSPARENCY
+	CMISS_SCENE_VIEWER_TRANSPARENCY_FAST,
+	CMISS_SCENE_VIEWER_TRANSPARENCY_SLOW,
+	CMISS_SCENE_VIEWER_TRANSPARENCY_LAYERED,
+	CMISS_SCENE_VIEWER_TRANSPARENCY_ORDER_INDEPENDENT
 };
 
 typedef struct Cmiss_scene_viewer *Cmiss_scene_viewer_id;
@@ -186,6 +187,7 @@ Global functions
 
 #if defined (GTK_USER_INTERFACE)
 Cmiss_scene_viewer_id create_Cmiss_scene_viewer_gtk(
+	struct Cmiss_scene_viewer_package *cmiss_scene_viewer_package,
 	GtkContainer *scene_viewer_widget,
 	enum Cmiss_scene_viewer_buffering_mode buffer_mode,
 	enum Cmiss_scene_viewer_stereo_mode stereo_mode,
@@ -207,6 +209,7 @@ chosen.
 
 #if defined (WIN32_USER_INTERFACE)
 Cmiss_scene_viewer_id create_Cmiss_scene_viewer_win32(
+	struct Cmiss_scene_viewer_package *cmiss_scene_viewer_package,
 	HWND hWnd,
 	enum Cmiss_scene_viewer_buffering_mode buffer_mode,
 	enum Cmiss_scene_viewer_stereo_mode stereo_mode,
@@ -225,6 +228,28 @@ the accumulation_buffer_depth are not tested and the maximum colour buffer depth
 chosen.
 ==============================================================================*/
 #endif /* defined (WIN32_USER_INTERFACE) */
+
+#if defined (MOTIF)
+Cmiss_scene_viewer_id create_Cmiss_scene_viewer_X11(
+	struct Cmiss_scene_viewer_package *cmiss_scene_viewer_package,
+	Window window,
+	enum Cmiss_scene_viewer_buffering_mode buffer_mode,
+	enum Cmiss_scene_viewer_stereo_mode stereo_mode,
+	int minimum_colour_buffer_depth, int minimum_depth_buffer_depth,
+	int minimum_accumulation_buffer_depth);
+/*******************************************************************************
+LAST MODIFIED : 25 January 2006
+
+DESCRIPTION :
+Creates a Cmiss_scene_viewer by creating a graphics buffer on the specified 
+<parent> window.
+If <minimum_colour_buffer_depth>, <minimum_depth_buffer_depth> or 
+<minimum_accumulation_buffer_depth> are not zero then they are used to filter
+out the possible visuals selected for graphics_buffers.  If they are zero then 
+the accumulation_buffer_depth are not tested and the maximum colour buffer depth is
+chosen.
+==============================================================================*/
+#endif /* defined (MOTIF) */
 
 int DESTROY(Cmiss_scene_viewer)(Cmiss_scene_viewer_id *scene_viewer_id_address);
 /*******************************************************************************
@@ -358,7 +383,7 @@ Cmiss_scene_viewer_transparency_mode enumerator.
 ==============================================================================*/
 
 int Cmiss_scene_viewer_get_transparency_layers(Cmiss_scene_viewer_id scene_viewer,
-	int *transparency_layers);
+	unsigned int *transparency_layers);
 /*******************************************************************************
 LAST MODIFIED : 17 September 2002
 
@@ -369,7 +394,7 @@ Cmiss_scene_viewer_transparency_mode enumerator.
 ==============================================================================*/
 
 int Cmiss_scene_viewer_set_transparency_layers(Cmiss_scene_viewer_id scene_viewer,
-	int layers);
+	unsigned int layers);
 /*******************************************************************************
 LAST MODIFIED : 13 September 2002
 
@@ -402,7 +427,7 @@ window.
 ==============================================================================*/
 
 int Cmiss_scene_viewer_get_antialias_mode(Cmiss_scene_viewer_id scene_viewer,
-	int *antialias);
+	unsigned int *antialias);
 /*******************************************************************************
 LAST MODIFIED : 11 September 2002
 
@@ -411,7 +436,7 @@ Gets the number of jitter samples used to antialias the scene_viewer.
 ==============================================================================*/
 
 int Cmiss_scene_viewer_set_antialias_mode(Cmiss_scene_viewer_id scene_viewer,
-	int antialias_mode);
+	unsigned int antialias_mode);
 /*******************************************************************************
 LAST MODIFIED : 11 September 2002
 
@@ -466,7 +491,7 @@ Server.  This means that the lines appear solid rather than interfering with a
 surface in the same space.
 ==============================================================================*/
 
-int Cmiss_scene_viewer_get_background_colour_rgb(
+int Cmiss_scene_viewer_get_background_colour_r_g_b(
 	Cmiss_scene_viewer_id scene_viewer, double *red, double *green, double *blue);
 /*******************************************************************************
 LAST MODIFIED : 11 September 2002
@@ -475,7 +500,7 @@ DESCRIPTION :
 Returns the background_colour of the scene_viewer.
 ==============================================================================*/
 
-int Cmiss_scene_viewer_set_background_colour_rgb(
+int Cmiss_scene_viewer_set_background_colour_r_g_b(
 	Cmiss_scene_viewer_id scene_viewer, double red, double green, double blue);
 /*******************************************************************************
 LAST MODIFIED : 11 September 2002
@@ -496,7 +521,7 @@ pointer when it is no longer required.
 ==============================================================================*/
 
 int Cmiss_scene_viewer_set_interactive_tool_by_name(
-	Cmiss_scene_viewer_id scene_viewer, char *tool_name);
+	Cmiss_scene_viewer_id scene_viewer, const char *tool_name);
 /*******************************************************************************
 LAST MODIFIED : 11 September 2002
 
@@ -517,7 +542,7 @@ pointer when it is no longer required.
 ==============================================================================*/
 
 int Cmiss_scene_viewer_set_scene_by_name(Cmiss_scene_viewer_id scene_viewer,
-	char *scene_name);
+	const char *scene_name);
 /*******************************************************************************
 LAST MODIFIED : 11 September 2002
 
@@ -527,7 +552,7 @@ matches the <scene_name> exists.
 ==============================================================================*/
 
 int Cmiss_scene_viewer_set_overlay_scene_by_name(Cmiss_scene_viewer_id scene_viewer,
-	char *scene_name);
+	const char *scene_name);
 /*******************************************************************************
 LAST MODIFIED : 10 September 2003
 
@@ -537,7 +562,7 @@ matches the <scene_name> exists.
 ==============================================================================*/
 
 int Cmiss_scene_viewer_set_background_texture_by_name(Cmiss_scene_viewer_id scene_viewer,
-	char *texture_name);
+	const char *texture_name);
 /*******************************************************************************
 LAST MODIFIED : 10 September 2003
 
@@ -684,7 +709,7 @@ eg. automatic tumble.
 ==============================================================================*/
 
 int Cmiss_scene_viewer_write_image_to_file(Cmiss_scene_viewer_id scene_viewer,
-	char *file_name, int force_onscreen, int preferred_width,
+	const char *file_name, int force_onscreen, int preferred_width,
 	int preferred_height, int preferred_antialias, int preferred_transparency_layers);
 /*******************************************************************************
 LAST MODIFIED : 18 September 2002

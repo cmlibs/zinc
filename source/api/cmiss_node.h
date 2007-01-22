@@ -44,104 +44,49 @@ The public interface to Cmiss_node.
 #ifndef __CMISS_NODE_H__
 #define __CMISS_NODE_H__
 
+#include "general/object.h"
+
 /*
 Global types
 ------------
 */
 
+struct Cmiss_region;
+/*******************************************************************************
+LAST MODIFIED : 14 August 2002
+
+DESCRIPTION :
+==============================================================================*/
+
+#ifndef CMISS_REGION_ID_DEFINED
+   typedef struct Cmiss_region * Cmiss_region_id;
+   #define CMISS_REGION_ID_DEFINED
+#endif /* CMISS_REGION_ID_DEFINED */
+
 /* SAB Temporary until we decide how to fix things up internally instead of externally.*/
 #define Cmiss_node FE_node
 
 struct Cmiss_node;
+typedef struct Cmiss_node *Cmiss_node_id;
 /*******************************************************************************
 LAST MODIFIED : 14 August 2002
 
 DESCRIPTION :
 ==============================================================================*/
 
-typedef struct Cmiss_node_field_creator * Cmiss_node_field_creator_id;
-
-/* Put temporarily into api/cmiss_region.h until we resolve the circularness,
-	maybe we need a types declaration file that we can include from everywhere
-	typedef int (*Cmiss_node_iterator_function)(struct Cmiss_node *node, void *user_data); */
-
-/* SAB Temporary until we decide how to fix things up internally instead of externally.*/
-#define Cmiss_node_field_creator FE_node_field_creator
-
-struct Cmiss_node_field_creator;
+typedef int (*Cmiss_node_iterator_function)(Cmiss_node_id node,
+  void *user_data);
 /*******************************************************************************
-LAST MODIFIED : 14 August 2002
+LAST MODIFIED : 03 March 2005
 
 DESCRIPTION :
-==============================================================================*/
-
-typedef struct Cmiss_node_field_creator * Cmiss_node_field_creator_id;
-
-/*
-Global functions
-----------------
-*/
-
-struct Cmiss_node_field_creator *CREATE(Cmiss_node_field_creator)(
-	int number_of_components);
-/*******************************************************************************
-LAST MODIFIED : 16 November 2001
-
-DESCRIPTION :
-An object for defining the components, number_of_versions,
-number_of_derivatives and their types at a node.
-By default each component has 1 version and no derivatives.
-==============================================================================*/
-
-struct Cmiss_node_field_creator *create_Cmiss_node_field_creator_from_node_field(
-	struct Cmiss_node *node, struct Cmiss_field *field);
-/*******************************************************************************
-LAST MODIFIED : 4 February 2001
-
-DESCRIPTION :
-Creates an Cmiss_node_field_creator from <node>,<field>
-==============================================================================*/
-
-int DESTROY(Cmiss_node_field_creator)(
-	struct Cmiss_node_field_creator **node_field_creator_address);
-/*******************************************************************************
-LAST MODIFIED : 16 November 2001
-
-DESCRIPTION :
-Frees the memory for the node field creator and sets 
-<*node_field_creator_address> to NULL.
-==============================================================================*/
-
-int Cmiss_node_field_creator_define_derivative(
-	struct Cmiss_node_field_creator *node_field_creator, int component_number,
-	enum Cmiss_nodal_value_type derivative_type);
-/*******************************************************************************
-LAST MODIFIED: 16 November 2001
-
-DESCRIPTION:
-Adds the derivative of specified <derivative_type> to the <component_number>
-specified.
-==============================================================================*/
-
-int Cmiss_node_field_creator_define_versions(
-	struct Cmiss_node_field_creator *node_field_creator, int component_number,
-	int number_of_versions);
-/*******************************************************************************
-LAST MODIFIED: 16 November 2001
-
-DESCRIPTION:
-Specifies the <number_of_versions> for <component_number> specified.
-==============================================================================*/
-
-int Cmiss_node_get_identifier(struct Cmiss_node *node);
-/*******************************************************************************
-LAST MODIFIED : 1 April 2004
-
-DESCRIPTION :
-Returns the integer identifier of the <node>.
+Declare a pointer to a function of type
+int function(struct Cmiss_node *node, void *user_data);
 ==============================================================================*/
 
 /* SAB Temporary until we decide how to fix things up internally instead of externally.*/
+#define Cmiss_nodal_value_type FE_nodal_value_type
+
 enum FE_nodal_value_type
 /*******************************************************************************
 LAST MODIFIED : 27 January 1998
@@ -166,10 +111,81 @@ starts at 0.
 	FE_NODAL_UNKNOWN
 }; /* enum FE_nodal_value_type */
 
-Cmiss_node_id create_Cmiss_node_in_region(int node_identifier,
-	struct Cmiss_region *region);
+/* SAB Temporary until we decide how to fix things up internally instead of externally.*/
+#define Cmiss_node_field_creator FE_node_field_creator
+
+struct Cmiss_node_field_creator;
 /*******************************************************************************
-LAST MODIFIED : 1 November 2004
+LAST MODIFIED : 14 August 2002
+
+DESCRIPTION :
+==============================================================================*/
+
+typedef struct Cmiss_node_field_creator * Cmiss_node_field_creator_id;
+
+/*
+Global functions
+----------------
+*/
+
+int Cmiss_node_get_identifier(Cmiss_node_id node);
+/*******************************************************************************
+LAST MODIFIED : 1 April 2004
+
+DESCRIPTION :
+Returns the integer identifier of the <node>.
+==============================================================================*/
+
+struct Cmiss_node_field_creator *CREATE(Cmiss_node_field_creator)(
+	int number_of_components);
+/*******************************************************************************
+LAST MODIFIED : 16 November 2001
+
+DESCRIPTION :
+An object for defining the components, number_of_versions,
+number_of_derivatives and their types at a node.
+By default each component has 1 version and no derivatives.
+==============================================================================*/
+
+int DESTROY(Cmiss_node_field_creator)(
+	struct Cmiss_node_field_creator **node_field_creator_address);
+/*******************************************************************************
+LAST MODIFIED : 16 November 2001
+
+DESCRIPTION :
+Frees the memory for the node field creator and sets 
+<*node_field_creator_address> to NULL.
+==============================================================================*/
+
+#define Cmiss_node_field_creator_define_derivative FE_node_field_creator_define_derivative
+
+int Cmiss_node_field_creator_define_derivative(
+	struct Cmiss_node_field_creator *node_field_creator, int component_number,
+	enum Cmiss_nodal_value_type derivative_type);
+/*******************************************************************************
+LAST MODIFIED: 16 November 2001
+
+DESCRIPTION:
+Adds the derivative of specified <derivative_type> to the <component_number>
+specified.impl, 
+==============================================================================*/
+
+#define Cmiss_node_field_creator_define_versions FE_node_field_creator_define_versions
+
+int Cmiss_node_field_creator_define_versions(
+	struct Cmiss_node_field_creator *node_field_creator, int component_number,
+	int number_of_versions);
+/*******************************************************************************
+LAST MODIFIED: 16 November 2001
+
+DESCRIPTION:
+Specifies the <number_of_versions> for <component_number> specified.
+==============================================================================*/
+
+Cmiss_node_id create_Cmiss_node(int node_identifier,
+	Cmiss_region_id region);
+/*******************************************************************************
+LAST MODIFIED : 8 November 2004
 
 DESCRIPTION :
 Creates and returns a node with the specified <cm_node_identifier>.
@@ -195,15 +211,7 @@ int destroy_Cmiss_node(Cmiss_node_id *node_id_address);
 LAST MODIFIED : 1 November 2004
 
 DESCRIPTION :
-Frees the memory for the node, sets <*node_address> to NULL.
-==============================================================================*/
-
-int Cmiss_node_define_Cmiss_field(Cmiss_node_id node, Cmiss_field_id field,
-	Cmiss_time_version_id time_version, Cmiss_node_field_creator_id field_creator);
-/*******************************************************************************
-LAST MODIFIED : 3 November 2004
-
-DESCRIPTION :
+Deaccesses the node.
 ==============================================================================*/
 
 #endif /* __CMISS_NODE_H__ */

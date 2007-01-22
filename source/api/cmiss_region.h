@@ -45,55 +45,13 @@ The public interface to the Cmiss_regions.
 #define __CMISS_REGION_H__
 
 #include "general/object.h"
+#include "api/cmiss_node.h"
+#include "api/cmiss_element.h"
 
 /*
 Global types
 ------------
 */
-
-/* SAB Temporary until we decide how to fix things up internally instead of externally.*/
-#define Cmiss_node FE_node
-
-struct Cmiss_node;
-/*******************************************************************************
-LAST MODIFIED : 14 August 2002
-
-DESCRIPTION :
-==============================================================================*/
-
-typedef struct Cmiss_node * Cmiss_node_id;
-
-typedef int (*Cmiss_node_iterator_function)(Cmiss_node_id node,
-  void *user_data);
-/*******************************************************************************
-LAST MODIFIED : 03 March 2005
-
-DESCRIPTION :
-Declare a pointer to a function of type
-int function(struct Cmiss_node *node, void *user_data);
-==============================================================================*/
-
-/* SAB Temporary until we decide how to fix things up internally instead of externally.*/
-#define Cmiss_element FE_element
-
-struct Cmiss_element;
-/*******************************************************************************
-LAST MODIFIED : 13 August 2002
-
-DESCRIPTION :
-==============================================================================*/
-
-typedef struct Cmiss_element * Cmiss_element_id;
-
-typedef int (*Cmiss_element_iterator_function)(Cmiss_element_id element,
-  void *user_data);
-/*******************************************************************************
-LAST MODIFIED : 03 March 2005
-
-DESCRIPTION :
-Declare a pointer to a function of type
-int function(struct Cmiss_element *element, void *user_data);
-==============================================================================*/
 
 struct Cmiss_region;
 /*******************************************************************************
@@ -102,7 +60,10 @@ LAST MODIFIED : 13 August 2002
 DESCRIPTION :
 ==============================================================================*/
 
-typedef struct Cmiss_region * Cmiss_region_id;
+#ifndef CMISS_REGION_ID_DEFINED
+   typedef struct Cmiss_region * Cmiss_region_id;
+   #define CMISS_REGION_ID_DEFINED
+#endif /* CMISS_REGION_ID_DEFINED */
 
 /*
 Global functions
@@ -148,7 +109,7 @@ DESCRIPTION :
 ==============================================================================*/
 
 struct Cmiss_region *Cmiss_region_get_sub_region(struct Cmiss_region *region,
-	char *path);
+	const char *path);
 /*******************************************************************************
 LAST MODIFIED : 13 August 2002
 
@@ -157,7 +118,7 @@ Returns the sub_region specified by the string <path> in <region>.
 ==============================================================================*/
 
 struct Cmiss_element *Cmiss_region_get_element(struct Cmiss_region *region,
-	char *name);
+	const char *name);
 /*******************************************************************************
 LAST MODIFIED : 4 November 2004
 
@@ -166,7 +127,7 @@ Returns element with <name> in <region> if it exists.
 ==============================================================================*/
 
 struct Cmiss_node *Cmiss_region_get_node(struct Cmiss_region *region,
-	char *name);
+	const char *name);
 /*******************************************************************************
 LAST MODIFIED : 4 November 2004
 
