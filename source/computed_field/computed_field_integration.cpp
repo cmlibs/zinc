@@ -1765,9 +1765,11 @@ DESCRIPTION :
 				}
 				else
 				{
+#if defined (OLD_CODE)
 					display_message(ERROR_MESSAGE,
 						"Computed_field_integration::find_element_xi.  "
 						"Unable to find mapping for given values");
+#endif /* defined (OLD_CODE) */
 					return_code=0;
 				}
 			}
@@ -2601,24 +2603,25 @@ DESCRIPTION :
 ==============================================================================*/
 {
 	int return_code;
-	static Computed_field_integration_package 
-		computed_field_integration_package;
+	Computed_field_integration_package
+		*computed_field_integration_package =
+		new Computed_field_integration_package;
 
 	ENTER(Computed_field_register_type_integration);
 	if (computed_field_package)
 	{
-		computed_field_integration_package.computed_field_manager =
+		computed_field_integration_package->computed_field_manager =
 			Computed_field_package_get_computed_field_manager(
 				computed_field_package);
-		computed_field_integration_package.root_region = root_region;
+		computed_field_integration_package->root_region = root_region;
 		return_code = Computed_field_package_add_type(computed_field_package,
 			computed_field_integration_type_string, 
 			define_Computed_field_type_integration,
-			&computed_field_integration_package);
+			computed_field_integration_package);
 		return_code = Computed_field_package_add_type(computed_field_package,
 			computed_field_xi_texture_coordinates_type_string, 
 			define_Computed_field_type_xi_texture_coordinates,
-			&computed_field_integration_package);
+			computed_field_integration_package);
 	}
 	else
 	{

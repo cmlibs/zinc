@@ -2048,43 +2048,44 @@ DESCRIPTION :
 ==============================================================================*/
 {
 	int return_code;
-	static struct Computed_field_logical_operators_package 
-		computed_field_logical_operators_package;
+	Computed_field_logical_operators_package
+		*computed_field_logical_operators_package =
+		new Computed_field_logical_operators_package;
 
 	ENTER(Computed_field_register_types_logical_operators);
 	if (computed_field_package)
 	{
-		computed_field_logical_operators_package.computed_field_manager =
+		computed_field_logical_operators_package->computed_field_manager =
 			Computed_field_package_get_computed_field_manager(
 				computed_field_package);
 		return_code = Computed_field_package_add_type(computed_field_package,
 			computed_field_or_type_string, 
 			define_Computed_field_type_or,
-			&computed_field_logical_operators_package);
+			computed_field_logical_operators_package);
 		return_code = Computed_field_package_add_type(computed_field_package,
 			computed_field_and_type_string, 
 			define_Computed_field_type_and,
-			&computed_field_logical_operators_package);
+			computed_field_logical_operators_package);
 		return_code = Computed_field_package_add_type(computed_field_package,
 			computed_field_xor_type_string, 
 			define_Computed_field_type_xor,
-			&computed_field_logical_operators_package);
+			computed_field_logical_operators_package);
 		return_code = Computed_field_package_add_type(computed_field_package,
 			computed_field_equal_to_type_string, 
 			define_Computed_field_type_equal_to,
-			&computed_field_logical_operators_package);
+			computed_field_logical_operators_package);
 		return_code = Computed_field_package_add_type(computed_field_package,
 			computed_field_less_than_type_string, 
 			define_Computed_field_type_less_than,
-			&computed_field_logical_operators_package);
+			computed_field_logical_operators_package);
 		return_code = Computed_field_package_add_type(computed_field_package,
 			computed_field_greater_than_type_string, 
 			define_Computed_field_type_greater_than,
-			&computed_field_logical_operators_package);
+			computed_field_logical_operators_package);
 		return_code = Computed_field_package_add_type(computed_field_package,
 			computed_field_is_defined_type_string, 
 			define_Computed_field_type_is_defined,
-			&computed_field_logical_operators_package);
+			computed_field_logical_operators_package);
 	}
 	else
 	{

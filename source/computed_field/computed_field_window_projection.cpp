@@ -1386,21 +1386,22 @@ DESCRIPTION :
 ==============================================================================*/
 {
 	int return_code;
-	static struct Computed_field_window_projection_package 
-		computed_field_window_projection_package;
+	Computed_field_window_projection_package
+		*computed_field_window_projection_package =
+		new Computed_field_window_projection_package;
 
 	ENTER(Computed_field_register_type_window_projection);
 	if (computed_field_package && graphics_window_manager)
 	{
-		computed_field_window_projection_package.computed_field_manager =
+		computed_field_window_projection_package->computed_field_manager =
 			Computed_field_package_get_computed_field_manager(
 				computed_field_package);
-		computed_field_window_projection_package.graphics_window_manager =
+		computed_field_window_projection_package->graphics_window_manager =
 			graphics_window_manager;
 		return_code = Computed_field_package_add_type(computed_field_package,
 			computed_field_window_projection_type_string, 
 			define_Computed_field_type_window_projection,
-			&computed_field_window_projection_package);
+			computed_field_window_projection_package);
 	}
 	else
 	{

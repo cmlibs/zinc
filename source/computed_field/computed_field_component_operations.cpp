@@ -5008,59 +5008,60 @@ DESCRIPTION :
 ==============================================================================*/
 {
 	int return_code;
-	static struct Computed_field_component_operations_package 
-		computed_field_component_operations_package;
+	Computed_field_component_operations_package
+		*computed_field_component_operations_package = 
+		new Computed_field_component_operations_package;
 
 	ENTER(Computed_field_register_types_component_operations);
 	if (computed_field_package)
 	{
-		computed_field_component_operations_package.computed_field_manager =
+		computed_field_component_operations_package->computed_field_manager =
 			Computed_field_package_get_computed_field_manager(
 				computed_field_package);
 		return_code = Computed_field_package_add_type(computed_field_package,
 			computed_field_power_type_string, 
 			define_Computed_field_type_power,
-			&computed_field_component_operations_package);
+			computed_field_component_operations_package);
 		return_code = Computed_field_package_add_type(computed_field_package,
 			computed_field_multiply_components_type_string, 
 			define_Computed_field_type_multiply_components,
-			&computed_field_component_operations_package);
+			computed_field_component_operations_package);
 		return_code = Computed_field_package_add_type(computed_field_package,
 			computed_field_divide_components_type_string, 
 			define_Computed_field_type_divide_components,
-			&computed_field_component_operations_package);
+			computed_field_component_operations_package);
 		return_code = Computed_field_package_add_type(computed_field_package,
 			computed_field_add_type_string,
 			define_Computed_field_type_add,
-			&computed_field_component_operations_package);
+			computed_field_component_operations_package);
 		return_code = Computed_field_package_add_type(computed_field_package,
 			computed_field_scale_type_string,
 			define_Computed_field_type_scale,
-			&computed_field_component_operations_package);
+			computed_field_component_operations_package);
 		return_code = Computed_field_package_add_type(computed_field_package,
 			computed_field_clamp_maximum_type_string, 
 			define_Computed_field_type_clamp_maximum,
-			&computed_field_component_operations_package);
+			computed_field_component_operations_package);
 		return_code = Computed_field_package_add_type(computed_field_package,
 			computed_field_clamp_minimum_type_string, 
 			define_Computed_field_type_clamp_minimum,
-			&computed_field_component_operations_package);
+			computed_field_component_operations_package);
 		return_code = Computed_field_package_add_type(computed_field_package,
 			computed_field_offset_type_string, 
 			define_Computed_field_type_offset,
-			&computed_field_component_operations_package);
+			computed_field_component_operations_package);
 		return_code = Computed_field_package_add_type(computed_field_package,
 			computed_field_sum_components_type_string, 
 			define_Computed_field_type_sum_components,
-			&computed_field_component_operations_package);
+			computed_field_component_operations_package);
 		return_code = Computed_field_package_add_type(computed_field_package,
 			computed_field_edit_mask_type_string, 
 			define_Computed_field_type_edit_mask,
-			&computed_field_component_operations_package);
+			computed_field_component_operations_package);
 		return_code = Computed_field_package_add_type(computed_field_package,
 			computed_field_log_type_string, 
 			define_Computed_field_type_log,
-			&computed_field_component_operations_package);
+			computed_field_component_operations_package);
 	}
 	else
 	{

@@ -609,21 +609,22 @@ DESCRIPTION :
 ==============================================================================*/
 {
 	int return_code;
-	static struct Computed_field_sample_texture_package 
-		computed_field_sample_texture_package;
+	Computed_field_sample_texture_package
+		*computed_field_sample_texture_package =
+		new Computed_field_sample_texture_package;
 
 	ENTER(Computed_field_register_type_sample_texture);
 	if (computed_field_package && texture_manager)
 	{
-		computed_field_sample_texture_package.computed_field_manager =
+		computed_field_sample_texture_package->computed_field_manager =
 			Computed_field_package_get_computed_field_manager(
 				computed_field_package);
-		computed_field_sample_texture_package.texture_manager =
+		computed_field_sample_texture_package->texture_manager =
 			texture_manager;
 		return_code = Computed_field_package_add_type(computed_field_package,
 			computed_field_sample_texture_type_string, 
 			define_Computed_field_type_sample_texture,
-			&computed_field_sample_texture_package);
+			computed_field_sample_texture_package);
 	}
 	else
 	{

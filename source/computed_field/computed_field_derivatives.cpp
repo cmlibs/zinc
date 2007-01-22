@@ -1925,31 +1925,32 @@ DESCRIPTION :
 ==============================================================================*/
 {
 	int return_code;
-	static struct Computed_field_derivatives_package 
-		computed_field_derivatives_package;
+	Computed_field_derivatives_package
+		*computed_field_derivatives_package =
+		new Computed_field_derivatives_package;
 
 	ENTER(Computed_field_register_type_derivative);
 	if (computed_field_package)
 	{
-		computed_field_derivatives_package.computed_field_manager =
+		computed_field_derivatives_package->computed_field_manager =
 			Computed_field_package_get_computed_field_manager(
 				computed_field_package);
 		return_code = Computed_field_package_add_type(computed_field_package,
 			computed_field_derivative_type_string, 
 			define_Computed_field_type_derivative,
-			&computed_field_derivatives_package);
+			computed_field_derivatives_package);
 		return_code = Computed_field_package_add_type(computed_field_package,
 			computed_field_curl_type_string, 
 			define_Computed_field_type_curl,
-			&computed_field_derivatives_package);
+			computed_field_derivatives_package);
 		return_code = Computed_field_package_add_type(computed_field_package,
 			computed_field_divergence_type_string, 
 			define_Computed_field_type_divergence,
-			&computed_field_derivatives_package);
+			computed_field_derivatives_package);
 		return_code = Computed_field_package_add_type(computed_field_package,
 			computed_field_gradient_type_string, 
 			define_Computed_field_type_gradient,
-			&computed_field_derivatives_package);
+			computed_field_derivatives_package);
 	}
 	else
 	{

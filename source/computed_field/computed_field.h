@@ -75,6 +75,18 @@ if a value is already known.
 #include "region/cmiss_region.h"
 #include "user_interface/message.h"
 
+/* 
+The Cmiss_computed_field which is Public is currently the same object as the 
+cmgui internal Computed_field.  The Public interface is contained in 
+api/cmiss_computed_field.h however most of the functions come directly from
+this module.  So that these functions match the public declarations the
+functions are given their public names.
+*/
+
+/* Convert the functions that have identical interfaces */
+#define Computed_field_get_number_of_components \
+	Cmiss_computed_field_get_number_of_components
+
 /*
 Global types
 ------------

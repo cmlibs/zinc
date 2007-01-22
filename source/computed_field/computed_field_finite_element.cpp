@@ -4794,49 +4794,50 @@ automatically wrapped in corresponding computed_fields.
 {
 	struct Computed_field_finite_element_package *return_ptr;
 	struct FE_region *fe_region;
-	static struct Computed_field_finite_element_package 
-		computed_field_finite_element_package;
+	Computed_field_finite_element_package 
+		*computed_field_finite_element_package = 
+		new Computed_field_finite_element_package;
 
 	ENTER(Computed_field_register_types_finite_element);
 	if (computed_field_package && cmiss_region &&
 		(fe_region = Cmiss_region_get_FE_region(cmiss_region)))
 	{
-		computed_field_finite_element_package.computed_field_manager =
+		computed_field_finite_element_package->computed_field_manager =
 			Computed_field_package_get_computed_field_manager(computed_field_package);
-		computed_field_finite_element_package.cmiss_region =
+		computed_field_finite_element_package->cmiss_region =
 			ACCESS(Cmiss_region)(cmiss_region);
-		computed_field_finite_element_package.fe_region =
+		computed_field_finite_element_package->fe_region =
 			ACCESS(FE_region)(fe_region);
 		Computed_field_package_add_type(computed_field_package,
 			computed_field_finite_element_type_string,
 			define_Computed_field_type_finite_element,
-			&computed_field_finite_element_package);
+			computed_field_finite_element_package);
 		Computed_field_package_add_type(computed_field_package,
 			computed_field_cmiss_number_type_string,
 			define_Computed_field_type_cmiss_number,
-			&computed_field_finite_element_package);
+			computed_field_finite_element_package);
 #if defined (COMPUTED_FIELD_ACCESS_COUNT)
 		Computed_field_package_add_type(computed_field_package,
 			computed_field_access_count_type_string,
 			define_Computed_field_type_access_count,
-			&computed_field_finite_element_package);
+			computed_field_finite_element_package);
 #endif /* defined (COMPUTED_FIELD_ACCESS_COUNT) */
 		Computed_field_package_add_type(computed_field_package,
 			computed_field_xi_coordinates_type_string,
 			define_Computed_field_type_xi_coordinates,
-			&computed_field_finite_element_package);
+			computed_field_finite_element_package);
 		Computed_field_package_add_type(computed_field_package,
 			computed_field_node_value_type_string,
 			define_Computed_field_type_node_value,
-			&computed_field_finite_element_package);
+			computed_field_finite_element_package);
 		Computed_field_package_add_type(computed_field_package,
 			computed_field_embedded_type_string,
 			define_Computed_field_type_embedded,
-			&computed_field_finite_element_package);
+			computed_field_finite_element_package);
 		if (FE_region_add_callback(fe_region, Computed_field_FE_region_change, 
-			(void *)&computed_field_finite_element_package))
+			(void *)computed_field_finite_element_package))
 		{
-			return_ptr = &computed_field_finite_element_package;
+			return_ptr = computed_field_finite_element_package;
 		}
 		else
 		{
@@ -4874,6 +4875,7 @@ DESCRIPTION :
 		DEACCESS(FE_region)(&(computed_field_finite_element_package->fe_region));
 		DEACCESS(Cmiss_region)(
 			&(computed_field_finite_element_package->cmiss_region));
+		delete computed_field_finite_element_package;
 		return_code=1;
 	}
 	else

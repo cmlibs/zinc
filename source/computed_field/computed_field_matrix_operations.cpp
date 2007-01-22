@@ -3023,13 +3023,14 @@ DESCRIPTION :
 ==============================================================================*/
 {
 	int return_code;
-	static struct Computed_field_matrix_operations_package 
-		computed_field_matrix_operations_package;
+	Computed_field_matrix_operations_package
+		*computed_field_matrix_operations_package =
+		new Computed_field_matrix_operations_package;
 
 	ENTER(Computed_field_register_types_matrix_operations);
 	if (computed_field_package)
 	{
-		computed_field_matrix_operations_package.computed_field_manager =
+		computed_field_matrix_operations_package->computed_field_manager =
 			Computed_field_package_get_computed_field_manager(
 				computed_field_package);
 
@@ -3057,7 +3058,7 @@ DESCRIPTION :
 			Computed_field_package_add_type(computed_field_package,
 				computed_field_transpose_type_string,
 				define_Computed_field_type_transpose,
-				&computed_field_matrix_operations_package);
+				computed_field_matrix_operations_package);
 	}
 	else
 	{

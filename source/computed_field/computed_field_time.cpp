@@ -791,25 +791,26 @@ DESCRIPTION :
 ==============================================================================*/
 {
 	int return_code;
-	static struct Computed_field_time_package 
-		computed_field_time_package;
+	Computed_field_time_package
+		*computed_field_time_package =
+		new Computed_field_time_package;
 
 	ENTER(Computed_field_register_types_time);
 	if (computed_field_package)
 	{
-		computed_field_time_package.computed_field_manager =
+		computed_field_time_package->computed_field_manager =
 			Computed_field_package_get_computed_field_manager(
 				computed_field_package);
-		computed_field_time_package.time_keeper =
+		computed_field_time_package->time_keeper =
 			time_keeper;
 		return_code = Computed_field_package_add_type(computed_field_package,
 			computed_field_time_lookup_type_string,
 			define_Computed_field_type_time_lookup,
-			&computed_field_time_package);
+			computed_field_time_package);
 		return_code = Computed_field_package_add_type(computed_field_package,
 			computed_field_time_value_type_string,
 			define_Computed_field_type_time_value,
-			&computed_field_time_package);
+			computed_field_time_package);
 	}
 	else
 	{

@@ -1219,23 +1219,24 @@ DESCRIPTION :
 ==============================================================================*/
 {
 	int return_code;
-	static struct Computed_field_coordinate_package 
-		computed_field_coordinate_package;
+	Computed_field_coordinate_package 
+		*computed_field_coordinate_package =
+		new Computed_field_coordinate_package;
 
 	ENTER(Computed_field_register_types_coordinate);
 	if (computed_field_package)
 	{
-		computed_field_coordinate_package.computed_field_manager =
+		computed_field_coordinate_package->computed_field_manager =
 			Computed_field_package_get_computed_field_manager(
 				computed_field_package);
 		return_code = Computed_field_package_add_type(computed_field_package,
 			computed_field_coordinate_transformation_type_string,
 			define_Computed_field_type_coordinate_transformation,
-			&computed_field_coordinate_package);
+			computed_field_coordinate_package);
 		return_code = Computed_field_package_add_type(computed_field_package,
 			computed_field_vector_coordinate_transformation_type_string,
 			define_Computed_field_type_vector_coordinate_transformation,
-			&computed_field_coordinate_package);
+			computed_field_coordinate_package);
 	}
 	else
 	{

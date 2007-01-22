@@ -2537,43 +2537,44 @@ DESCRIPTION :
 ==============================================================================*/
 {
 	int return_code;
-	static struct Computed_field_component_operations_package 
-		computed_field_component_operations_package;
+	Computed_field_component_operations_package
+		*computed_field_component_operations_package =
+		new Computed_field_component_operations_package;
 
 	ENTER(Computed_field_register_types_component_operations);
 	if (computed_field_package)
 	{
-		computed_field_component_operations_package.computed_field_manager =
+		computed_field_component_operations_package->computed_field_manager =
 			Computed_field_package_get_computed_field_manager(
 				computed_field_package);
 		return_code = Computed_field_package_add_type(computed_field_package,
 			computed_field_sin_type_string, 
 			define_Computed_field_type_sin,
-			&computed_field_component_operations_package);
+			computed_field_component_operations_package);
 		return_code = Computed_field_package_add_type(computed_field_package,
 			computed_field_cos_type_string, 
 			define_Computed_field_type_cos,
-			&computed_field_component_operations_package);
+			computed_field_component_operations_package);
 		return_code = Computed_field_package_add_type(computed_field_package,
 			computed_field_tan_type_string, 
 			define_Computed_field_type_tan,
-			&computed_field_component_operations_package);
+			computed_field_component_operations_package);
 		return_code = Computed_field_package_add_type(computed_field_package,
 			computed_field_asin_type_string, 
 			define_Computed_field_type_asin,
-			&computed_field_component_operations_package);
+			computed_field_component_operations_package);
 		return_code = Computed_field_package_add_type(computed_field_package,
 			computed_field_acos_type_string, 
 			define_Computed_field_type_acos,
-			&computed_field_component_operations_package);
+			computed_field_component_operations_package);
 		return_code = Computed_field_package_add_type(computed_field_package,
 			computed_field_atan_type_string, 
 			define_Computed_field_type_atan,
-			&computed_field_component_operations_package);
+			computed_field_component_operations_package);
 		return_code = Computed_field_package_add_type(computed_field_package,
 			computed_field_atan2_type_string, 
 			define_Computed_field_type_atan2,
-			&computed_field_component_operations_package);
+			computed_field_component_operations_package);
 	}
 	else
 	{

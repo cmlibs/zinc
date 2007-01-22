@@ -2136,35 +2136,36 @@ DESCRIPTION :
 ==============================================================================*/
 {
 	int return_code;
-	static struct Computed_field_vector_operations_package 
-		computed_field_vector_operations_package;
+	Computed_field_vector_operations_package
+		*computed_field_vector_operations_package =
+		new Computed_field_vector_operations_package;
 
 	ENTER(Computed_field_register_types_vector_operations);
 	if (computed_field_package)
 	{
-		computed_field_vector_operations_package.computed_field_manager =
+		computed_field_vector_operations_package->computed_field_manager =
 			Computed_field_package_get_computed_field_manager(
 				computed_field_package);
 		return_code = Computed_field_package_add_type(computed_field_package,
 			computed_field_magnitude_type_string,
 			define_Computed_field_type_magnitude,
-			&computed_field_vector_operations_package);
+			computed_field_vector_operations_package);
 		return_code = Computed_field_package_add_type(computed_field_package,
 			computed_field_normalise_type_string,
 			define_Computed_field_type_normalise,
-			&computed_field_vector_operations_package);
+			computed_field_vector_operations_package);
 		return_code = Computed_field_package_add_type(computed_field_package,
 			computed_field_cross_product_type_string,
 			define_Computed_field_type_cross_product,
-			&computed_field_vector_operations_package);
+			computed_field_vector_operations_package);
 		return_code = Computed_field_package_add_type(computed_field_package,
 			computed_field_dot_product_type_string,
 			define_Computed_field_type_dot_product,
-			&computed_field_vector_operations_package);
+			computed_field_vector_operations_package);
 		return_code = Computed_field_package_add_type(computed_field_package,
 			computed_field_cubic_texture_coordinates_type_string,
 			define_Computed_field_type_cubic_texture_coordinates,
-			&computed_field_vector_operations_package);
+			computed_field_vector_operations_package);
 	}
 	else
 	{

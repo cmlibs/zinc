@@ -57,6 +57,22 @@ DESCRIPTION :
 Private package
 ==============================================================================*/
 
+/* 
+The Cmiss_computed_field which is Public is currently the same object as the 
+cmgui internal Computed_field.  The Public interface is contained in 
+api/cmiss_computed_field.h however most of the functions come directly from
+this module.  So that these functions match the public declarations the
+functions are given their public names.
+*/
+
+/* Convert the functions that have identical interfaces */
+#define Computed_field_is_type_finite_element \
+	Cmiss_computed_field_is_type_finite_element
+#define Computed_field_finite_element_define_at_node \
+	Cmiss_computed_field_finite_element_define_at_node
+#define Computed_field_finite_element_set_string_at_node \
+	Cmiss_computed_field_finite_element_set_string_at_node
+
 /*
 Global functions
 ----------------

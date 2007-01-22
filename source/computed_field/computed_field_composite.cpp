@@ -1693,26 +1693,27 @@ DESCRIPTION :
 ==============================================================================*/
 {
 	int return_code;
-	static struct Computed_field_composite_package
-		computed_field_composite_package;
+	Computed_field_composite_package
+		*computed_field_composite_package = 
+		new Computed_field_composite_package;
 
 	ENTER(Computed_field_register_types_composite);
 	if (computed_field_package)
 	{
-		computed_field_composite_package.computed_field_manager =
+		computed_field_composite_package->computed_field_manager =
 			Computed_field_package_get_computed_field_manager(computed_field_package);
 		return_code = Computed_field_package_add_type(computed_field_package,
 			computed_field_composite_type_string,
 			define_Computed_field_type_composite,
-			&computed_field_composite_package);
+			computed_field_composite_package);
 		/* "constant" = alias for composite included for backward compatibility */
 		return_code = Computed_field_package_add_type(computed_field_package,
 			"constant", define_Computed_field_type_constant,
-			&computed_field_composite_package);
+			computed_field_composite_package);
 		/* "component" = alias for composite included for backward compatibility */
 		return_code = Computed_field_package_add_type(computed_field_package,
 			"component", define_Computed_field_type_composite,
-			&computed_field_composite_package);
+			computed_field_composite_package);
 		
 	}
 	else
