@@ -185,6 +185,7 @@ DESCRIPTION :
 	GtkTextBuffer *output_buffer;
 	GtkTextMark *history_end;
 	GtkTextMark *output_end;
+	gulong close_handler_id;
 #else /* GTK_MAJOR_VERSION >= 2 */
 #endif /* GTK_MAJOR_VERSION >= 2 */
 #endif  /* switch (USER_INTERFACE) */
@@ -2068,6 +2069,7 @@ Create the structures and retrieve the command window from the uil file.
 #if GTK_MAJOR_VERSION >= 2
 			command_window->history_buffer = (GtkTextBuffer *)NULL;
 			command_window->output_buffer = (GtkTextBuffer *)NULL;
+			command_window->close_handler_id = 0;
 #else /* GTK_MAJOR_VERSION >= 2 */
 #endif /* GTK_MAJOR_VERSION >= 2 */
 			command_window->shell = (GtkWidget *)NULL;
@@ -2168,7 +2170,8 @@ Create the structures and retrieve the command window from the uil file.
 					gtk_widget_show (vpaned);
 
 #if GTK_MAJOR_VERSION >= 2
-					g_signal_connect (G_OBJECT(command_window->shell), "destroy",
+					command_window->close_handler_id =
+						g_signal_connect (G_OBJECT(command_window->shell), "destroy",
 						G_CALLBACK(command_window_close_gtk), (gpointer)command_window);
 
 					gtk_window_resize(GTK_WINDOW(command_window->shell), 600, 500);
@@ -2236,12 +2239,19 @@ DESCRIPTION:
 		{
 			fclose(command_window->out_file);
 		}
-#if defined (MOTIF)
+#if defined (MOTIF) /* switch (USER_INTERFACE) */
 		set_property_notify_callback(command_window->user_interface,
 			(Property_notify_callback)NULL, (void *)NULL, (Widget)NULL);
 		destroy_Shell_list_item_from_shell(&(command_window->shell),
 			command_window->user_interface);
-#endif /* defined (MOTIF) */
+#elif defined (GTK_USER_INTERFACE) /* switch (USER_INTERFACE) */
+#if GTK_MAJOR_VERSION >= 2
+		g_signal_handler_disconnect (G_OBJECT(command_window->shell), 
+			command_window->close_handler_id);
+#endif /* GTK_MAJOR_VERSION >= 2 */
+		gtk_widget_destroy (command_window->shell);
+#endif /* switch (USER_INTERFACE) */
+
 		DEALLOCATE(*command_window_pointer);
 		return_code = 1;
 	}
