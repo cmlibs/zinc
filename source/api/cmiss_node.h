@@ -123,6 +123,13 @@ DESCRIPTION :
 
 typedef struct Cmiss_node_field_creator * Cmiss_node_field_creator_id;
 
+/* SAB Temporary until we decide how to fix things up internally instead of externally.*/
+#define Cmiss_time_version FE_time_version
+
+struct FE_time_version;
+
+typedef struct Cmiss_time_version * Cmiss_time_version_id;
+
 /*
 Global functions
 ----------------

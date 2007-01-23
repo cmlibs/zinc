@@ -41,7 +41,6 @@ The public interface to the Cmiss_value_FE_value object.
  * the terms of any one of the MPL, the GPL or the LGPL.
  *
  * ***** END LICENSE BLOCK ***** */
-#include "api/cmiss_finite_element.h"
 #include "api/cmiss_value_fe_value.h"
 #include "computed_variable/computed_value_fe_value.h"
 #include "general/debug.h"

@@ -84,6 +84,38 @@ Declare a pointer to a function of type
 int function(struct Cmiss_element *element, void *user_data);
 ==============================================================================*/
 
+/* SAB Temporary until we decide how to fix things up internally instead of externally.*/
+#define Cmiss_basis_type FE_basis_type
+
+enum FE_basis_type
+/*******************************************************************************
+LAST MODIFIED : 20 October 1997
+
+DESCRIPTION :
+The different basis types available.
+NOTE: Must keep this up to date with functions
+FE_basis_type_string
+==============================================================================*/
+{
+	FE_BASIS_TYPE_INVALID=-1,
+	NO_RELATION=0,
+		/*???DB.  Used on the off-diagonals of the type matrix */
+	BSPLINE,
+	CUBIC_HERMITE,
+	CUBIC_LAGRANGE,
+	FOURIER,
+	HERMITE_LAGRANGE,
+	LAGRANGE_HERMITE,
+	LINEAR_LAGRANGE,
+	LINEAR_SIMPLEX,
+	POLYGON,
+	QUADRATIC_LAGRANGE,
+	QUADRATIC_SIMPLEX,
+	SERENDIPITY,
+	SINGULAR,
+	TRANSITION
+}; /* enum FE_basis_type */
+
 /*
 Global functions
 ----------------

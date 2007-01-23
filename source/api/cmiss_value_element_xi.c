@@ -41,7 +41,8 @@ The public interface to the Cmiss_value_element_xi object.
  * the terms of any one of the MPL, the GPL or the LGPL.
  *
  * ***** END LICENSE BLOCK ***** */
-#include "api/cmiss_finite_element.h"
+#include "api/cmiss_node.h"
+#include "api/cmiss_element.h"
 #include "api/cmiss_value_element_xi.h"
 #include "computed_variable/computed_value_finite_element.h"
 #include "general/debug.h"

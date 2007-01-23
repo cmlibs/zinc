@@ -48,7 +48,8 @@ computed fields.
 #ifndef __CMISS_COMPUTED_FIELD_H__
 #define __CMISS_COMPUTED_FIELD_H__
 
-#include "api/cmiss_finite_element.h"
+#include "api/cmiss_node.h"
+#include "api/cmiss_element.h"
 #include "general/object.h"
 
 /*
