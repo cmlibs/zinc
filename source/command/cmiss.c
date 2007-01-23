@@ -23611,6 +23611,7 @@ Initialise all the subcomponents of cmgui and create the Cmiss_command_data
 		command_data->hInstance=current_instance;
 #endif /* defined (WIN32_USER_INTERFACE) */
 
+#if defined (USE_CMGUI_GRAPHICS_WINDOW)
 		if (command_data->user_interface)
 		{
 			command_data->scene_viewer_package = CREATE(Cmiss_scene_viewer_package)
@@ -23622,6 +23623,7 @@ Initialise all the subcomponents of cmgui and create the Cmiss_command_data
 				command_data->scene_manager, command_data->default_scene,
 				command_data->texture_manager, command_data->user_interface);
 		}
+#endif /* defined (USE_CMGUI_GRAPHICS_WINDOW) */
 
 		/* properly set up the Execute_command objects */
 		Execute_command_set_command_function(command_data->execute_command,
@@ -23929,10 +23931,12 @@ Clean up the command_data, deallocating all the associated memory and resources.
 	if (command_data_address && (command_data = *command_data_address))
 	{
 		/* clean-up memory */
+#if defined (USE_CMGUI_GRAPHICS_WINDOW)
 		if (command_data->scene_viewer_package)
 		{
 			DESTROY(Cmiss_scene_viewer_package)(&command_data->scene_viewer_package);		
 		}
+#endif /* defined (USE_CMGUI_GRAPHICS_WINDOW) */
 
 #if defined (SGI_MOVIE_FILE) && defined (MOTIF)
 		DESTROY(MANAGER(Movie_graphics))(&command_data->movie_graphics_manager);
