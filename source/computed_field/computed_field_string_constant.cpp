@@ -488,7 +488,7 @@ DESCRIPTION :
 		return_code = Computed_field_package_add_type(computed_field_package,
 			computed_field_string_constant_type_string,
 			define_Computed_field_type_string_constant,
-			NULL);
+			Computed_field_package_get_simple_package(computed_field_package));
 	}
 	else
 	{
