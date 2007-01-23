@@ -94,15 +94,6 @@ also registers with the fe_region in the <cmiss_region> so that any fe_fields ar
 automatically wrapped in corresponding computed_fields.
 ==============================================================================*/
 
-int Computed_field_deregister_types_finite_element(
-	struct Computed_field_finite_element_package
-	*computed_field_finite_element_package);
-/*******************************************************************************
-LAST MODIFIED : 18 July 2000
-
-DESCRIPTION :
-==============================================================================*/
-
 int Computed_field_is_type_finite_element(struct Computed_field *field);
 /*******************************************************************************
 LAST MODIFIED : 18 July 2000

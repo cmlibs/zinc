@@ -73,6 +73,10 @@ extern "C" {
 Module types
 ------------
 */
+static void Computed_field_FE_region_change(struct FE_region *fe_region,
+	struct FE_region_changes *changes,
+	void *computed_field_finite_element_package_void);
+
 class Computed_field_finite_element_package : public Computed_field_type_package
 /*******************************************************************************
 LAST MODIFIED : 24 August 2006
@@ -4198,7 +4202,7 @@ function.
 	return (return_code);
 } /* FE_field_to_Computed_field_change */
 
-void Computed_field_FE_region_change(struct FE_region *fe_region,
+static void Computed_field_FE_region_change(struct FE_region *fe_region,
 	struct FE_region_changes *changes,
 	void *computed_field_finite_element_package_void)
 /*******************************************************************************
@@ -4864,38 +4868,3 @@ automatically wrapped in corresponding computed_fields.
 
 	return (return_ptr);
 } /* Computed_field_register_types_finite_element */
-
-int Computed_field_deregister_types_finite_element(
-	Computed_field_finite_element_package
-	*computed_field_finite_element_package)
-/*******************************************************************************
-LAST MODIFIED : 24 August 2006
-
-DESCRIPTION :
-==============================================================================*/
-{
-	int return_code;
-
-	ENTER(Computed_field_deregister_types_finite_element);
-	if (computed_field_finite_element_package)
-	{
-		FE_region_remove_callback(computed_field_finite_element_package->fe_region, 
-			Computed_field_FE_region_change, 
-			(void *)computed_field_finite_element_package);
-		DEACCESS(FE_region)(&(computed_field_finite_element_package->fe_region));
-		DEACCESS(Cmiss_region)(
-			&(computed_field_finite_element_package->cmiss_region));
-		delete computed_field_finite_element_package;
-		return_code=1;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_deregister_types_finite_element.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Computed_field_deregister_types_finite_element */
-
