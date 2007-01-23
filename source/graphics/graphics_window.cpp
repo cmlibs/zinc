@@ -162,6 +162,9 @@ Contains information for a graphics window.
 	Widget window_shell,main_window;
 #elif defined (GTK_USER_INTERFACE)
 	GtkWidget *shell_window;
+#if GTK_MAJOR_VERSION >= 2
+	gulong close_handler_id;
+#endif /* GTK_MAJOR_VERSION >= 2 */
 #elif defined (WIN32_USER_INTERFACE)
 	HWND hWnd;
 #elif defined (WX_USER_INTERFACE)
@@ -566,6 +569,36 @@ orthographic up and front directions from the Xdefaults file.
 Widget Callback Module functions
 --------------------------------
 */
+
+#if defined (GTK_USER_INTERFACE)
+static void Graphics_window_gtk_close_CB(GtkObject *object, gpointer graphics_window_void)
+/*******************************************************************************
+LAST MODIFIED : 24 January 2007
+
+DESCRIPTION :
+Called when "close" is selected from the window menu, or it is double clicked.
+==============================================================================*/
+{
+	struct Graphics_window *graphics_window;
+
+	ENTER(Graphics_window_gtk_close_CB);
+	USE_PARAMETER(object);
+	if (graphics_window=(struct Graphics_window *)graphics_window_void)
+	{
+		if (graphics_window->graphics_window_manager)
+		{
+			REMOVE_OBJECT_FROM_MANAGER(Graphics_window)(graphics_window,
+				graphics_window->graphics_window_manager);
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Graphics_window_gtk_close_CB.  Missing Graphics_window");
+	}
+	LEAVE;
+} /* Graphics_window_gtk_close_CB */
+#endif /* defined (GTK_USER_INTERFACE) */
 
 #if defined (MOTIF)
 static void Graphics_window_close_CB(Widget caller,
@@ -3390,6 +3423,7 @@ it.
 				window=(struct Graphics_window *)NULL;
 			}
 #elif defined (GTK_USER_INTERFACE) /* switch (USER_INTERFACE) */
+			window->close_handler_id = 0;
 			if (window->shell_window = gtk_window_new(GTK_WINDOW_TOPLEVEL))
 			{
 				gtk_window_set_title(GTK_WINDOW(window->shell_window),
@@ -3440,6 +3474,15 @@ it.
 								window->default_viewing_height);
 							/* initial view is of all of the current scene */
 							Graphics_window_view_all(window);
+
+#if GTK_MAJOR_VERSION >= 2
+							window->close_handler_id =
+								g_signal_connect (G_OBJECT(window->shell_window), "destroy",
+									G_CALLBACK(Graphics_window_gtk_close_CB), (gpointer)window);
+#else /* GTK_MAJOR_VERSION >= 2 */
+							gtk_signal_connect(GTK_OBJECT(window->shell_window), "destroy",
+								GTK_SIGNAL_FUNC(Graphics_window_gtk_close_CB), (gpointer)window);
+#endif /* GTK_MAJOR_VERSION >= 2 */
 
 							gtk_widget_show_all(window->shell_window);
 							return_code = 1;
@@ -3769,6 +3812,10 @@ Graphics_window_destroy_CB.
 		{
 			DEACCESS(Light_model)(&window->default_light_model);
 		}
+#if GTK_MAJOR_VERSION >= 2
+		g_signal_handler_disconnect (G_OBJECT(window->shell_window), 
+			window->close_handler_id);
+#endif /* GTK_MAJOR_VERSION >= 2 */
 #if defined (MOTIF)
 		destroy_Shell_list_item_from_shell(&(window->window_shell),
 			window->user_interface);
