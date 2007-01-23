@@ -1069,7 +1069,7 @@ MOTIF_INTERFACE_SRCS =  \
 	motif/image_utilities.c
 NODE_SRCS = \
 	node/node_operations.c \
-	node/node_tool.c
+	node/node_tool.cpp
 NODE_INTERFACE_SRCS = \
 	node/node_field_viewer_widget.c \
 	node/node_viewer.c \
