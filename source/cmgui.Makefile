@@ -710,7 +710,8 @@ API_SRCS = \
 	api/cmiss_command_data.c \
 	api/cmiss_computed_field.c \
 	api/cmiss_core.c \
-	api/cmiss_finite_element.c \
+	api/cmiss_element.c \
+	api/cmiss_node.c \
 	api/cmiss_region.c \
 	api/cmiss_time_sequence.c
 ifeq ($(GRAPHICS_API), OPENGL_GRAPHICS)
