@@ -707,7 +707,7 @@ ALL_LIB = $(GRAPHICS_LIB) $(USER_INTERFACE_LIB) $(HAPTIC_LIB) \
 	$(LIB)
 
 API_SRCS = \
-	api/cmiss_command.c \
+	api/cmiss_command_data.c \
 	api/cmiss_computed_field.c \
 	api/cmiss_core.c \
 	api/cmiss_finite_element.c \
