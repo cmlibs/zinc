@@ -51,6 +51,9 @@ scenes.
 #if defined (WIN32_USER_INTERFACE)
 #include <windows.h>
 #endif /* defined (WIN32_USER_INTERFACE) */
+#if defined (MOTIF)
+#include <Xm/Xm.h>
+#endif /* defined (MOTIF) */
 #include "general/object.h"
 
 /*
@@ -230,9 +233,9 @@ chosen.
 #endif /* defined (WIN32_USER_INTERFACE) */
 
 #if defined (MOTIF)
-Cmiss_scene_viewer_id create_Cmiss_scene_viewer_X11(
+Cmiss_scene_viewer_id create_Cmiss_scene_viewer_motif(
 	struct Cmiss_scene_viewer_package *cmiss_scene_viewer_package,
-	Window window,
+	Widget parent,
 	enum Cmiss_scene_viewer_buffering_mode buffer_mode,
 	enum Cmiss_scene_viewer_stereo_mode stereo_mode,
 	int minimum_colour_buffer_depth, int minimum_depth_buffer_depth,
@@ -242,7 +245,7 @@ LAST MODIFIED : 25 January 2006
 
 DESCRIPTION :
 Creates a Cmiss_scene_viewer by creating a graphics buffer on the specified 
-<parent> window.
+<parent> widget.
 If <minimum_colour_buffer_depth>, <minimum_depth_buffer_depth> or 
 <minimum_accumulation_buffer_depth> are not zero then they are used to filter
 out the possible visuals selected for graphics_buffers.  If they are zero then 
