@@ -211,6 +211,15 @@ DESCRIPTION :
 Returns the selected_node object from the <command_data>.
 ==============================================================================*/
 
+struct User_interface *Cmiss_command_data_get_user_interface(
+	struct Cmiss_command_data *command_data);
+/*******************************************************************************
+LAST MODIFIED : 25 January 2006
+
+DESCRIPTION :
+Gets the user_interface for this <command_data>
+==============================================================================*/
+
 struct MANAGER(Texture) *Cmiss_command_data_get_texture_manager(
 	struct Cmiss_command_data *command_data);
 /*******************************************************************************
@@ -220,4 +229,12 @@ DESCRIPTION :
 Returns the texture manager from the <command_data>.
 ==============================================================================*/
 
+struct Cmiss_scene_viewer_package *Cmiss_command_data_get_scene_viewer_package(
+	struct Cmiss_command_data *command_data);
+/*******************************************************************************
+LAST MODIFIED : 7 November 2006
+
+DESCRIPTION :
+Returns the texture manager from the <command_data>.
+==============================================================================*/
 #endif /* !defined (COMMAND_CMISS_H) */
