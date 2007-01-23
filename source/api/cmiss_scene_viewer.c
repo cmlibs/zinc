@@ -293,6 +293,88 @@ chosen.
 }
 #endif /* defined (MOTIF) */
 
+#if defined (NEW_CODE)
+Cmiss_scene_viewer_id create_Cmiss_scene_viewer_X11(
+	struct Cmiss_scene_viewer_package *cmiss_scene_viewer_package,
+	Window window,
+	enum Cmiss_scene_viewer_buffering_mode buffer_mode,
+	enum Cmiss_scene_viewer_stereo_mode stereo_mode,
+	int minimum_colour_buffer_depth, int minimum_depth_buffer_depth,
+	int minimum_accumulation_buffer_depth)
+/*******************************************************************************
+LAST MODIFIED : 25 January 2006
+
+DESCRIPTION :
+Creates a Cmiss_scene_viewer by creating a graphics buffer on the specified 
+<window>.
+If <minimum_colour_buffer_depth>, <minimum_depth_buffer_depth> or 
+<minimum_accumulation_buffer_depth> are not zero then they are used to filter
+out the possible visuals selected for graphics_buffers.  If they are zero then 
+the accumulation_buffer_depth are not tested and the maximum colour buffer depth is
+chosen.
+==============================================================================*/
+{
+	enum Graphics_buffer_buffering_mode graphics_buffer_buffering_mode;
+	enum Graphics_buffer_stereo_mode graphics_buffer_stereo_mode;
+	struct Graphics_buffer *graphics_buffer;
+	struct Cmiss_scene_viewer *scene_viewer;
+	Window root;
+	int x, y;
+	unsigned int height, width, border_width, depth;
+
+	ENTER(create_Cmiss_scene_viewer_x11);
+	if (cmiss_scene_viewer_package)
+	{
+		if (CMISS_SCENE_VIEWER_BUFFERING_ANY_MODE==buffer_mode)
+		{
+			graphics_buffer_buffering_mode = GRAPHICS_BUFFER_ANY_BUFFERING_MODE;
+		}
+		else if (CMISS_SCENE_VIEWER_BUFFERING_SINGLE==buffer_mode)
+		{
+			graphics_buffer_buffering_mode = GRAPHICS_BUFFER_SINGLE_BUFFERING;
+		}
+		else
+		{
+			graphics_buffer_buffering_mode = GRAPHICS_BUFFER_DOUBLE_BUFFERING;
+		}
+		if (CMISS_SCENE_VIEWER_STEREO_ANY_MODE==stereo_mode)
+		{
+			graphics_buffer_stereo_mode = GRAPHICS_BUFFER_ANY_STEREO_MODE;
+		}
+		else if (CMISS_SCENE_VIEWER_STEREO_STEREO==stereo_mode)
+		{
+			graphics_buffer_stereo_mode = GRAPHICS_BUFFER_STEREO;
+		}
+		else
+		{
+			graphics_buffer_stereo_mode = GRAPHICS_BUFFER_MONO;
+		}
+		XGetGeometry(User_interface_get_display(cmiss_scene_viewer_package->user_interface),
+				window, &root, &x, &y, &width, &height, &border_width, &depth); 
+		graphics_buffer = create_Graphics_buffer_X11(
+			Cmiss_scene_viewer_package_get_graphics_buffer_package(cmiss_scene_viewer_package),
+			window,
+			width, height,
+			graphics_buffer_buffering_mode, graphics_buffer_stereo_mode,
+			minimum_colour_buffer_depth, minimum_depth_buffer_depth,
+			minimum_accumulation_buffer_depth);
+		scene_viewer = create_Scene_viewer_from_package(graphics_buffer,
+			cmiss_scene_viewer_package,
+			Cmiss_scene_viewer_package_get_default_scene(cmiss_scene_viewer_package));
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"create_Cmiss_scene_viewer_x11.  "
+			"The Cmiss_scene_viewer data must be initialised before any scene "
+			"viewers can be created.");
+		scene_viewer=(struct Cmiss_scene_viewer *)NULL;
+	}
+	LEAVE;
+
+	return (scene_viewer);
+}
+#endif /* defined (NEW_CODE) */
+
 int Cmiss_scene_viewer_get_near_and_far_plane(Cmiss_scene_viewer_id scene_viewer,
 	double *near_plane, double *far_plane)
 /*******************************************************************************
