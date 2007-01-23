@@ -298,6 +298,7 @@ DESCRIPTION :
 	/* Always want the entry for graphics_buffer_package even if it will
 		not be available on this implementation */
 	struct Graphics_buffer_package *graphics_buffer_package;
+	struct Cmiss_scene_viewer_package *scene_viewer_package;
 #if defined (USE_CMGUI_GRAPHICS_WINDOW)
 	struct MANAGER(Graphics_window) *graphics_window_manager;
 #endif /* defined (USE_CMGUI_GRAPHICS_WINDOW) */
@@ -22895,6 +22896,7 @@ Initialise all the subcomponents of cmgui and create the Cmiss_command_data
 		command_data->default_spectrum=(struct Spectrum *)NULL;
 		command_data->spectrum_manager=(struct MANAGER(Spectrum) *)NULL;
 		command_data->graphics_buffer_package=(struct Graphics_buffer_package *)NULL;
+		command_data->scene_viewer_package=(struct Cmiss_scene_viewer_package *)NULL;
 #if defined (USE_CMGUI_GRAPHICS_WINDOW)
 		command_data->graphics_window_manager=(struct MANAGER(Graphics_window) *)NULL;
 #endif /* defined (USE_CMGUI_GRAPHICS_WINDOW) */
@@ -23611,18 +23613,14 @@ Initialise all the subcomponents of cmgui and create the Cmiss_command_data
 
 		if (command_data->user_interface)
 		{
-			Cmiss_scene_viewer_set_data(
-				command_data->graphics_buffer_package,
+			command_data->scene_viewer_package = CREATE(Cmiss_scene_viewer_package)
+				(command_data->graphics_buffer_package,
 				&command_data->background_colour,
 				command_data->interactive_tool_manager, command_data->transform_tool,
 				command_data->light_manager, command_data->default_light,
 				command_data->light_model_manager, command_data->default_light_model,
 				command_data->scene_manager, command_data->default_scene,
 				command_data->texture_manager, command_data->user_interface);
-		
-#if defined (USE_CMGUI_GRAPHICS_WINDOW)
-			Cmiss_graphics_window_set_data(command_data->graphics_window_manager);
-#endif /* defined (USE_CMGUI_GRAPHICS_WINDOW) */
 		}
 
 		/* properly set up the Execute_command objects */
@@ -23931,13 +23929,9 @@ Clean up the command_data, deallocating all the associated memory and resources.
 	if (command_data_address && (command_data = *command_data_address))
 	{
 		/* clean-up memory */
-		if (command_data->user_interface)
+		if (command_data->scene_viewer_package)
 		{
-			Cmiss_scene_viewer_free_data();
-		
-#if defined (MOTIF) || defined (GTK_USER_INTERFACE) || defined (WIN32_USER_INTERFACE)
-			Cmiss_graphics_window_free_data();
-#endif /* defined (MOTIF) || defined (GTK_USER_INTERFACE) || defined (WIN32_USER_INTERFACE) */
+			DESTROY(Cmiss_scene_viewer_package)(&command_data->scene_viewer_package);		
 		}
 
 #if defined (SGI_MOVIE_FILE) && defined (MOTIF)
@@ -24409,6 +24403,28 @@ Returns the selected_node object from the <command_data>.
 	return (node_selection);
 } /* Cmiss_command_data_get_node_selection */
 
+struct User_interface *Cmiss_command_data_get_user_interface(
+	struct Cmiss_command_data *command_data)
+/*******************************************************************************
+LAST MODIFIED : 25 January 2006
+
+DESCRIPTION :
+Gets the user_interface for this <command_data>
+==============================================================================*/
+{
+	struct User_interface *user_interface;
+
+	ENTER(Cmiss_command_data_get_user_interface);
+	user_interface = (struct User_interface *)NULL;
+	if (command_data)
+	{
+		user_interface = command_data->user_interface;
+	}
+	LEAVE;
+
+	return (user_interface);
+} /* Cmiss_command_data_get_user_interface */
+
 struct MANAGER(Texture) *Cmiss_command_data_get_texture_manager(
 	struct Cmiss_command_data *command_data)
 /*******************************************************************************
@@ -24430,3 +24446,25 @@ Returns the texture manager from the <command_data>.
 
 	return (texture_manager);
 } /* Cmiss_command_data_get_texture_manager */
+
+struct Cmiss_scene_viewer_package *Cmiss_command_data_get_scene_viewer_package(
+	struct Cmiss_command_data *command_data)
+/*******************************************************************************
+LAST MODIFIED : 19 January 2007
+
+DESCRIPTION :
+Returns the scene viewer data from the <command_data>.
+==============================================================================*/
+{
+	struct Cmiss_scene_viewer_package *cmiss_scene_viewer_package;
+
+	ENTER(Cmiss_command_package_get_scene_viewer_package);
+	cmiss_scene_viewer_package=(struct Cmiss_scene_viewer_package *)NULL;
+	if (command_data)
+	{
+		cmiss_scene_viewer_package = command_data->scene_viewer_package;
+	}
+	LEAVE;
+
+	return (cmiss_scene_viewer_package);
+}
