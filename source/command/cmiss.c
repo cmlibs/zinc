@@ -290,8 +290,6 @@ DESCRIPTION :
 		/*???RC data_root_region is temporary until data is removed */
 	struct Cmiss_region *data_root_region;
 	struct Computed_field_package *computed_field_package;
-	struct Computed_field_finite_element_package
-	   *computed_field_finite_element_package;
 	struct MANAGER(Environment_map) *environment_map_manager;
 	struct MANAGER(FE_basis) *basis_manager;
 	struct LIST(FE_element_shape) *element_shape_list;
@@ -23380,8 +23378,6 @@ Initialise all the subcomponents of cmgui and create the Cmiss_command_data
 			command_data->computed_field_package);
 
 		/* Add Computed_fields to the Computed_field_package */
-		command_data->computed_field_finite_element_package = 
-			(struct Computed_field_finite_element_package *)NULL;
 		if (command_data->computed_field_package)
 		{
 			Computed_field_register_types_coordinate(
@@ -23442,8 +23438,7 @@ Initialise all the subcomponents of cmgui and create the Cmiss_command_data
 			}
 			if (command_data->root_region)
 			{
-				command_data->computed_field_finite_element_package =
-					Computed_field_register_types_finite_element(
+				Computed_field_register_types_finite_element(
 						command_data->computed_field_package, command_data->root_region);
 				if (!((computed_field=CREATE(Computed_field)("cmiss_number"))&&
 						 Computed_field_set_coordinate_system(computed_field,
@@ -24001,12 +23996,6 @@ Clean up the command_data, deallocating all the associated memory and resources.
 		}
 #endif /* defined (USE_CMGUI_GRAPHICS_WINDOW) */
 
-		if (command_data->computed_field_finite_element_package)
-		{
-			Computed_field_deregister_types_finite_element(
-				command_data->computed_field_finite_element_package);
-		}
-
 #if defined (MOTIF)
 		if (command_data->element_creator)
 		{
@@ -24042,7 +24031,11 @@ Clean up the command_data, deallocating all the associated memory and resources.
 
 		DEACCESS(Time_keeper)(&command_data->default_time_keeper);
 
-		DESTROY(Computed_field_package)(&command_data->computed_field_package);
+		if (command_data->computed_field_package)
+		{
+			Computed_field_package_remove_types(command_data->computed_field_package);
+			DESTROY(Computed_field_package)(&command_data->computed_field_package);
+		}
 
 		DESTROY(Any_object_selection)(&(command_data->any_object_selection));
 		DESTROY(FE_node_selection)(&(command_data->data_selection));
