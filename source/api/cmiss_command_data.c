@@ -42,7 +42,7 @@ The public interface to the some of the internal functions of cmiss.
  *
  * ***** END LICENSE BLOCK ***** */
 #include <stdlib.h>
-#include "api/cmiss_command.h"
+#include "api/cmiss_command_data.h"
 #include "command/cmiss.h"
 #include "general/debug.h"
 #include "user_interface/message.h"

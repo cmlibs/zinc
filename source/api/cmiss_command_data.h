@@ -1,5 +1,5 @@
 /*******************************************************************************
-FILE : cmiss_command.h
+FILE : cmiss_command_data.h
 
 LAST MODIFIED : 5 April 2004
 
