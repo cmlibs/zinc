@@ -57,8 +57,9 @@ extern "C" {
 #include "computed_field/computed_field_compose.h"
 }
 
-struct Computed_field_compose_package 
+class Computed_field_compose_package : public Computed_field_type_package
 {
+public:
 	struct MANAGER(Computed_field) *computed_field_manager;
 	struct Cmiss_region *root_region;
 };
@@ -602,7 +603,7 @@ already) and allows its contents to be modified.
 		use_point_five_when_out_of_bounds;
 	struct Computed_field *field, *calculate_values_field,*find_element_xi_field,
 		*texture_coordinates_field;
-	struct Computed_field_compose_package *computed_field_compose_package;
+	Computed_field_compose_package *computed_field_compose_package;
 	struct Coordinate_system *coordinate_system_ptr;
 	struct Cmiss_region *search_region;
 	struct Option_table *find_option_table, *option_table,
@@ -613,7 +614,7 @@ already) and allows its contents to be modified.
 	ENTER(define_Computed_field_type_compose);
 	if (state && (field = (struct Computed_field *)field_void) &&
 		(computed_field_compose_package =
-			(struct Computed_field_compose_package *)
+			(Computed_field_compose_package *)
 			computed_field_compose_package_void))
 	{
 		return_code = 1;

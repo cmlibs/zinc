@@ -54,8 +54,9 @@ extern "C" {
 #include "computed_field/computed_field_trigonometry.h"
 }
 
-struct Computed_field_component_operations_package 
+class Computed_field_component_operations_package : public Computed_field_type_package
 {
+public:
 	struct MANAGER(Computed_field) *computed_field_manager;
 };
 
@@ -318,7 +319,7 @@ already) and allows its contents to be modified.
 {
 	int return_code;
 	struct Computed_field *field,**source_fields;
-	struct Computed_field_component_operations_package 
+	Computed_field_component_operations_package 
 		*computed_field_component_operations_package;
 	struct Option_table *option_table;
 	struct Set_Computed_field_array_data set_source_field_array_data;
@@ -327,7 +328,7 @@ already) and allows its contents to be modified.
 	ENTER(define_Computed_field_type_sin);
 	if (state&&(field=(struct Computed_field *)field_void)&&
 		(computed_field_component_operations_package=
-		(struct Computed_field_component_operations_package *)
+		(Computed_field_component_operations_package *)
 		computed_field_component_operations_package_void))
 	{
 		return_code=1;
@@ -664,7 +665,7 @@ already) and allows its contents to be modified.
 {
 	int return_code;
 	struct Computed_field *field,**source_fields;
-	struct Computed_field_component_operations_package 
+	Computed_field_component_operations_package 
 		*computed_field_component_operations_package;
 	struct Option_table *option_table;
 	struct Set_Computed_field_array_data set_source_field_array_data;
@@ -673,7 +674,7 @@ already) and allows its contents to be modified.
 	ENTER(define_Computed_field_type_cos);
 	if (state&&(field=(struct Computed_field *)field_void)&&
 		(computed_field_component_operations_package=
-		(struct Computed_field_component_operations_package *)
+		(Computed_field_component_operations_package *)
 		computed_field_component_operations_package_void))
 	{
 		return_code=1;
@@ -1010,7 +1011,7 @@ already) and allows its contents to be modified.
 {
 	int return_code;
 	struct Computed_field *field,**source_fields;
-	struct Computed_field_component_operations_package 
+	Computed_field_component_operations_package 
 		*computed_field_component_operations_package;
 	struct Option_table *option_table;
 	struct Set_Computed_field_array_data set_source_field_array_data;
@@ -1019,7 +1020,7 @@ already) and allows its contents to be modified.
 	ENTER(define_Computed_field_type_tan);
 	if (state&&(field=(struct Computed_field *)field_void)&&
 		(computed_field_component_operations_package=
-		(struct Computed_field_component_operations_package *)
+		(Computed_field_component_operations_package *)
 		computed_field_component_operations_package_void))
 	{
 		return_code=1;
@@ -1364,7 +1365,7 @@ already) and allows its contents to be modified.
 {
 	int return_code;
 	struct Computed_field *field,**source_fields;
-	struct Computed_field_component_operations_package 
+	Computed_field_component_operations_package 
 		*computed_field_component_operations_package;
 	struct Option_table *option_table;
 	struct Set_Computed_field_array_data set_source_field_array_data;
@@ -1373,7 +1374,7 @@ already) and allows its contents to be modified.
 	ENTER(define_Computed_field_type_asin);
 	if (state&&(field=(struct Computed_field *)field_void)&&
 		(computed_field_component_operations_package=
-		(struct Computed_field_component_operations_package *)
+		(Computed_field_component_operations_package *)
 		computed_field_component_operations_package_void))
 	{
 		return_code=1;
@@ -1718,7 +1719,7 @@ already) and allows its contents to be modified.
 {
 	int return_code;
 	struct Computed_field *field,**source_fields;
-	struct Computed_field_component_operations_package 
+	Computed_field_component_operations_package 
 		*computed_field_component_operations_package;
 	struct Option_table *option_table;
 	struct Set_Computed_field_array_data set_source_field_array_data;
@@ -1727,7 +1728,7 @@ already) and allows its contents to be modified.
 	ENTER(define_Computed_field_type_acos);
 	if (state&&(field=(struct Computed_field *)field_void)&&
 		(computed_field_component_operations_package=
-		(struct Computed_field_component_operations_package *)
+		(Computed_field_component_operations_package *)
 		computed_field_component_operations_package_void))
 	{
 		return_code=1;
@@ -2065,7 +2066,7 @@ already) and allows its contents to be modified.
 {
 	int return_code;
 	struct Computed_field *field,**source_fields;
-	struct Computed_field_component_operations_package 
+	Computed_field_component_operations_package 
 		*computed_field_component_operations_package;
 	struct Option_table *option_table;
 	struct Set_Computed_field_array_data set_source_field_array_data;
@@ -2074,7 +2075,7 @@ already) and allows its contents to be modified.
 	ENTER(define_Computed_field_type_atan);
 	if (state&&(field=(struct Computed_field *)field_void)&&
 		(computed_field_component_operations_package=
-		(struct Computed_field_component_operations_package *)
+		(Computed_field_component_operations_package *)
 		computed_field_component_operations_package_void))
 	{
 		return_code=1;
@@ -2432,7 +2433,7 @@ already) and allows its contents to be modified.
 {
 	int return_code;
 	struct Computed_field *field,**source_fields;
-	struct Computed_field_component_operations_package 
+	Computed_field_component_operations_package 
 		*computed_field_component_operations_package;
 	struct Option_table *option_table;
 	struct Set_Computed_field_array_data set_source_field_array_data;
@@ -2441,7 +2442,7 @@ already) and allows its contents to be modified.
 	ENTER(define_Computed_field_type_atan2);
 	if (state&&(field=(struct Computed_field *)field_void)&&
 		(computed_field_component_operations_package=
-		(struct Computed_field_component_operations_package *)
+		(Computed_field_component_operations_package *)
 		computed_field_component_operations_package_void))
 	{
 		return_code=1;

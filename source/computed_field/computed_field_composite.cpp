@@ -74,8 +74,9 @@ this structure in set_Computed_field_component.
 	int component_no;
 }; /* struct Computed_field_component */
 
-struct Computed_field_composite_package 
+class Computed_field_composite_package : public Computed_field_type_package
 {
+public:
 	struct MANAGER(Computed_field) *computed_field_manager;
 };
 
@@ -1206,14 +1207,14 @@ already) and allows its contents to be modified.
 {
 	int return_code;
 	struct Computed_field *field;
-	struct Computed_field_composite_package *computed_field_composite_package;
+	Computed_field_composite_package *computed_field_composite_package;
 	struct Computed_field_composite_source_data source_data;
 	struct Option_table *option_table;
 
 	ENTER(define_Computed_field_type_composite);
 	if (state && (field = (struct Computed_field *)field_void) &&
 		(computed_field_composite_package=
-			(struct Computed_field_composite_package *)
+			(Computed_field_composite_package *)
 			computed_field_composite_package_void))
 	{
 		return_code=1;

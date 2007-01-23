@@ -55,8 +55,9 @@ extern "C" {
 #include "computed_field/computed_field_lookup.h"
 }
 
-struct Computed_field_lookup_package 
+class Computed_field_lookup_package : public Computed_field_type_package
 {
+public:
 	struct MANAGER(Computed_field) *computed_field_manager;
 	struct Cmiss_region *root_region;
 };
@@ -85,7 +86,7 @@ public:
 	Computed_field_nodal_lookup(Computed_field *field,
 		FE_node *nodal_lookup_node,
 		Cmiss_region *region, int nodal_lookup_node_identifier, 
-		struct Computed_field_lookup_package *lookup_package) : 
+		Computed_field_lookup_package *lookup_package) : 
 		Computed_field_core(field), 
 		nodal_lookup_node(ACCESS(FE_node)(nodal_lookup_node)),
 		nodal_lookup_region(ACCESS(Cmiss_region)(region)),
@@ -439,7 +440,7 @@ If the node we are looking at changes generate a computed field change message.
 int Computed_field_set_type_nodal_lookup(struct Computed_field *field,
 	struct Computed_field *source_field,struct Cmiss_region *region,
 	int nodal_lookup_node_identifier, 
-	struct Computed_field_lookup_package *lookup_package)
+	Computed_field_lookup_package *lookup_package)
 /*******************************************************************************
 LAST MODIFIED : 25 August 2006
 
@@ -501,7 +502,7 @@ than using the current node the <nodal_lookup_node_identifier> node is used.
 int Computed_field_get_type_nodal_lookup(struct Computed_field *field,
   struct Computed_field **nodal_lookup_field,struct Cmiss_region **nodal_lookup_region,
 	int *nodal_lookup_node_identifier,
-	struct Computed_field_lookup_package **lookup_package)
+	Computed_field_lookup_package **lookup_package)
 /*******************************************************************************
 LAST MODIFIED : 25 August 2006
 
@@ -546,7 +547,7 @@ already) and allows its contents to be modified.
 {
 	int return_code;
 	struct Computed_field *field,**source_fields;
-	struct Computed_field_lookup_package *computed_field_lookup_package,
+	Computed_field_lookup_package *computed_field_lookup_package,
 		*lookup_package_dummy;
 	struct Option_table *option_table;
 	struct Set_Computed_field_conditional_data set_source_field_data;
@@ -557,7 +558,7 @@ already) and allows its contents to be modified.
 	ENTER(define_Computed_field_type_nodal_lookup);
 	if (state&&(field=(struct Computed_field *)field_void)&&
 		(computed_field_lookup_package=
-		(struct Computed_field_lookup_package *)
+		(Computed_field_lookup_package *)
 		computed_field_lookup_package_void))
 	{
 		return_code=1;

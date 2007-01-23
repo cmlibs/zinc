@@ -55,8 +55,9 @@ extern "C" {
 #include "computed_field/computed_field_sample_texture.h"
 }
 
-struct Computed_field_sample_texture_package 
+class Computed_field_sample_texture_package : public Computed_field_type_package
 {
+public:
 	struct MANAGER(Computed_field) *computed_field_manager;
 	struct MANAGER(Texture) *texture_manager;
 };
@@ -505,7 +506,7 @@ already) and allows its contents to be modified.
 	float minimum, maximum;
 	int return_code;
 	struct Computed_field *field,*texture_coordinate_field;
-	struct Computed_field_sample_texture_package 
+	Computed_field_sample_texture_package 
 		*computed_field_sample_texture_package;
 	struct Texture *texture;
 	struct Option_table *option_table;
@@ -514,7 +515,7 @@ already) and allows its contents to be modified.
 	ENTER(define_Computed_field_type_sample_texture);
 	if (state&&(field=(struct Computed_field *)field_void)&&
 		(computed_field_sample_texture_package=
-		(struct Computed_field_sample_texture_package *)
+		(Computed_field_sample_texture_package *)
 		computed_field_sample_texture_package_void))
 	{
 		return_code=1;

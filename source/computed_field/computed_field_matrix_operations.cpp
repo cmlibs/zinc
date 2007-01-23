@@ -55,8 +55,9 @@ extern "C" {
 #include "user_interface/message.h"
 }
 
-struct Computed_field_matrix_operations_package 
+class Computed_field_matrix_operations_package : public Computed_field_type_package
 {
+public:
 	struct MANAGER(Computed_field) *computed_field_manager;
 };
 
@@ -586,7 +587,7 @@ contents to be modified.
 {
 	int return_code;
 	struct Computed_field *field, *source_field;
-	struct Computed_field_matrix_operations_package 
+	Computed_field_matrix_operations_package 
 		*computed_field_matrix_operations_package;
 	struct Option_table *option_table;
 	struct Set_Computed_field_conditional_data set_source_field_data;
@@ -594,7 +595,7 @@ contents to be modified.
 	ENTER(define_Computed_field_type_eigenvalues);
 	if (state && (field = (struct Computed_field *)field_void) &&
 		(computed_field_matrix_operations_package=
-			(struct Computed_field_matrix_operations_package *)
+			(Computed_field_matrix_operations_package *)
 			computed_field_matrix_operations_package_void))
 	{
 		return_code=1;
@@ -951,7 +952,7 @@ its contents to be modified.
 {
 	int return_code;
 	struct Computed_field *field, *source_field;
-	struct Computed_field_matrix_operations_package 
+	Computed_field_matrix_operations_package 
 		*computed_field_matrix_operations_package;
 	struct Option_table *option_table;
 	struct Set_Computed_field_conditional_data set_source_field_data;
@@ -959,7 +960,7 @@ its contents to be modified.
 	ENTER(define_Computed_field_type_eigenvectors);
 	if (state&&(field=(struct Computed_field *)field_void)&&
 		(computed_field_matrix_operations_package=
-		(struct Computed_field_matrix_operations_package *)
+		(Computed_field_matrix_operations_package *)
 		computed_field_matrix_operations_package_void))
 	{
 		return_code=1;
@@ -1427,7 +1428,7 @@ contents to be modified.
 {
 	int return_code;
 	struct Computed_field *field, *source_field;
-	struct Computed_field_matrix_operations_package 
+	Computed_field_matrix_operations_package 
 		*computed_field_matrix_operations_package;
 	struct Option_table *option_table;
 	struct Set_Computed_field_conditional_data set_source_field_data;
@@ -1435,7 +1436,7 @@ contents to be modified.
 	ENTER(define_Computed_field_type_matrix_invert);
 	if (state && (field = (struct Computed_field *)field_void) &&
 		(computed_field_matrix_operations_package=
-			(struct Computed_field_matrix_operations_package *)
+			(Computed_field_matrix_operations_package *)
 			computed_field_matrix_operations_package_void))
 	{
 		return_code = 1;
@@ -1830,7 +1831,7 @@ already) and allows its contents to be modified.
 	char *current_token;
 	int i, number_of_rows, return_code;
 	struct Computed_field *field,**source_fields;
-	struct Computed_field_matrix_operations_package 
+	Computed_field_matrix_operations_package 
 		*computed_field_matrix_operations_package;
 	struct Option_table *option_table;
 	struct Set_Computed_field_array_data set_field_array_data;
@@ -1839,7 +1840,7 @@ already) and allows its contents to be modified.
 	ENTER(define_Computed_field_type_matrix_multiply);
 	if (state&&(field=(struct Computed_field *)field_void)&&
 		(computed_field_matrix_operations_package=
-		(struct Computed_field_matrix_operations_package *)
+		(Computed_field_matrix_operations_package *)
 		computed_field_matrix_operations_package_void))
 	{
 		return_code=1;
@@ -2426,7 +2427,7 @@ and allows its contents to be modified.
 	int i, number_of_components, number_of_projection_values, return_code,
 		temp_number_of_projection_values;
 	struct Computed_field *field, *source_field;
-	struct Computed_field_matrix_operations_package 
+	Computed_field_matrix_operations_package 
 		*computed_field_matrix_operations_package;
 	struct Option_table *option_table;
 	struct Set_Computed_field_conditional_data set_source_field_data;
@@ -2434,7 +2435,7 @@ and allows its contents to be modified.
 	ENTER(define_Computed_field_type_projection);
 	if (state&&(field=(struct Computed_field *)field_void)&&
 		(computed_field_matrix_operations_package=
-			(struct Computed_field_matrix_operations_package *)
+			(Computed_field_matrix_operations_package *)
 			computed_field_matrix_operations_package_void))
 	{
 		return_code = 1;
@@ -2915,7 +2916,7 @@ already) and allows its contents to be modified.
 	char *current_token;
 	int source_number_of_rows, return_code;
 	struct Computed_field *field,*source_field;
-	struct Computed_field_matrix_operations_package 
+	Computed_field_matrix_operations_package 
 		*computed_field_matrix_operations_package;
 	struct Option_table *option_table;
 	struct Set_Computed_field_conditional_data set_source_field_data;
@@ -2923,7 +2924,7 @@ already) and allows its contents to be modified.
 	ENTER(define_Computed_field_type_transpose);
 	if (state&&(field=(struct Computed_field *)field_void)&&
 		(computed_field_matrix_operations_package=
-		(struct Computed_field_matrix_operations_package *)
+		(Computed_field_matrix_operations_package *)
 		computed_field_matrix_operations_package_void))
 	{
 		return_code=1;
@@ -3038,23 +3039,28 @@ DESCRIPTION :
 			Computed_field_package_add_type(computed_field_package,
 				computed_field_eigenvalues_type_string,
 				define_Computed_field_type_eigenvalues,
-				&computed_field_matrix_operations_package) &&
+				computed_field_matrix_operations_package);
+		return_code = 
 			Computed_field_package_add_type(computed_field_package,
 				computed_field_eigenvectors_type_string,
 				define_Computed_field_type_eigenvectors,
-				&computed_field_matrix_operations_package) &&
+				computed_field_matrix_operations_package);
+		return_code = 
 			Computed_field_package_add_type(computed_field_package,
 				computed_field_matrix_invert_type_string,
 				define_Computed_field_type_matrix_invert,
-				&computed_field_matrix_operations_package) &&
+				computed_field_matrix_operations_package);
+		return_code = 
 			Computed_field_package_add_type(computed_field_package,
 				computed_field_matrix_multiply_type_string,
 				define_Computed_field_type_matrix_multiply,
-				&computed_field_matrix_operations_package) &&
+				computed_field_matrix_operations_package);
+		return_code = 
 			Computed_field_package_add_type(computed_field_package,
 				computed_field_projection_type_string,
 				define_Computed_field_type_projection,
-				&computed_field_matrix_operations_package) &&
+				computed_field_matrix_operations_package);
+		return_code = 
 			Computed_field_package_add_type(computed_field_package,
 				computed_field_transpose_type_string,
 				define_Computed_field_type_transpose,

@@ -55,8 +55,9 @@ extern "C" {
 #include "computed_field/computed_field_logical_operators.h"
 }
 
-struct Computed_field_logical_operators_package 
+class Computed_field_logical_operators_package : public Computed_field_type_package
 {
+public:
 	struct MANAGER(Computed_field) *computed_field_manager;
 };
 
@@ -245,7 +246,7 @@ already) and allows its contents to be modified.
 {
 	int return_code;
 	struct Computed_field *field,**source_fields;
-	struct Computed_field_logical_operators_package 
+	Computed_field_logical_operators_package 
 		*computed_field_logical_operators_package;
 	struct Option_table *option_table;
 	struct Set_Computed_field_array_data set_source_field_array_data;
@@ -254,7 +255,7 @@ already) and allows its contents to be modified.
 	ENTER(define_Computed_field_type_or);
 	if (state&&(field=(struct Computed_field *)field_void)&&
 		(computed_field_logical_operators_package=
-		(struct Computed_field_logical_operators_package *)
+		(Computed_field_logical_operators_package *)
 		computed_field_logical_operators_package_void))
 	{
 		return_code=1;
@@ -526,7 +527,7 @@ already) and allows its contents to be modified.
 {
 	int return_code;
 	struct Computed_field *field,**source_fields;
-	struct Computed_field_logical_operators_package 
+	Computed_field_logical_operators_package 
 		*computed_field_logical_operators_package;
 	struct Option_table *option_table;
 	struct Set_Computed_field_array_data set_source_field_array_data;
@@ -535,7 +536,7 @@ already) and allows its contents to be modified.
 	ENTER(define_Computed_field_type_and);
 	if (state&&(field=(struct Computed_field *)field_void)&&
 		(computed_field_logical_operators_package=
-		(struct Computed_field_logical_operators_package *)
+		(Computed_field_logical_operators_package *)
 		computed_field_logical_operators_package_void))
 	{
 		return_code=1;
@@ -812,7 +813,7 @@ already) and allows its contents to be modified.
 {
 	int return_code;
 	struct Computed_field *field,**source_fields;
-	struct Computed_field_logical_operators_package 
+	Computed_field_logical_operators_package 
 		*computed_field_logical_operators_package;
 	struct Option_table *option_table;
 	struct Set_Computed_field_array_data set_source_field_array_data;
@@ -821,7 +822,7 @@ already) and allows its contents to be modified.
 	ENTER(define_Computed_field_type_xor);
 	if (state&&(field=(struct Computed_field *)field_void)&&
 		(computed_field_logical_operators_package=
-		(struct Computed_field_logical_operators_package *)
+		(Computed_field_logical_operators_package *)
 		computed_field_logical_operators_package_void))
 	{
 		return_code=1;
@@ -1123,7 +1124,7 @@ already) and allows its contents to be modified.
 {
 	int return_code;
 	struct Computed_field *field,**source_fields;
-	struct Computed_field_logical_operators_package 
+	Computed_field_logical_operators_package 
 		*computed_field_logical_operators_package;
 	struct Option_table *option_table;
 	struct Set_Computed_field_array_data set_source_field_array_data;
@@ -1132,7 +1133,7 @@ already) and allows its contents to be modified.
 	ENTER(define_Computed_field_type_equal_to);
 	if (state&&(field=(struct Computed_field *)field_void)&&
 		(computed_field_logical_operators_package=
-		(struct Computed_field_logical_operators_package *)
+		(Computed_field_logical_operators_package *)
 		computed_field_logical_operators_package_void))
 	{
 		return_code=1;
@@ -1405,7 +1406,7 @@ already) and allows its contents to be modified.
 {
 	int return_code;
 	struct Computed_field *field,**source_fields;
-	struct Computed_field_logical_operators_package 
+	Computed_field_logical_operators_package 
 		*computed_field_logical_operators_package;
 	struct Option_table *option_table;
 	struct Set_Computed_field_array_data set_source_field_array_data;
@@ -1414,7 +1415,7 @@ already) and allows its contents to be modified.
 	ENTER(define_Computed_field_type_less_than);
 	if (state&&(field=(struct Computed_field *)field_void)&&
 		(computed_field_logical_operators_package=
-		(struct Computed_field_logical_operators_package *)
+		(Computed_field_logical_operators_package *)
 		computed_field_logical_operators_package_void))
 	{
 		return_code=1;
@@ -1686,7 +1687,7 @@ already) and allows its contents to be modified.
 {
 	int return_code;
 	struct Computed_field *field,**source_fields;
-	struct Computed_field_logical_operators_package 
+	Computed_field_logical_operators_package 
 		*computed_field_logical_operators_package;
 	struct Option_table *option_table;
 	struct Set_Computed_field_array_data set_source_field_array_data;
@@ -1695,7 +1696,7 @@ already) and allows its contents to be modified.
 	ENTER(define_Computed_field_type_greater_than);
 	if (state&&(field=(struct Computed_field *)field_void)&&
 		(computed_field_logical_operators_package=
-		(struct Computed_field_logical_operators_package *)
+		(Computed_field_logical_operators_package *)
 		computed_field_logical_operators_package_void))
 	{
 		return_code=1;
@@ -1969,7 +1970,7 @@ already) and allows its contents to be modified.
 {
 	int return_code;
 	struct Computed_field *field,*source_field;
-	struct Computed_field_logical_operators_package 
+	Computed_field_logical_operators_package 
 		*computed_field_logical_operators_package;
 	struct Option_table *option_table;
 	struct Set_Computed_field_conditional_data set_source_field_data;
@@ -1977,7 +1978,7 @@ already) and allows its contents to be modified.
 	ENTER(define_Computed_field_type_is_defined);
 	if (state&&(field=(struct Computed_field *)field_void)&&
 		(computed_field_logical_operators_package=
-		(struct Computed_field_logical_operators_package *)
+		(Computed_field_logical_operators_package *)
 		computed_field_logical_operators_package_void))
 	{
 		return_code=1;

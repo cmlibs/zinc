@@ -68,8 +68,9 @@ extern "C" {
 
 namespace {
 
-struct Computed_field_integration_package 
+class Computed_field_integration_package : public Computed_field_type_package
 {
+public:
 	MANAGER(Computed_field) *computed_field_manager;
 	Cmiss_region *root_region;
 };

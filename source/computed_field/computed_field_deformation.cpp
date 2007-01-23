@@ -55,8 +55,9 @@ extern "C" {
 #include "user_interface/message.h"
 }
 
-struct Computed_field_deformation_package 
+class Computed_field_deformation_package : public Computed_field_type_package
 {
+public:
 	struct MANAGER(Computed_field) *computed_field_manager;
 };
 
@@ -534,7 +535,7 @@ already) and allows its contents to be modified.
 	int return_code;
 	struct Computed_field *deformed_coordinate_field, *fibre_angle_field, *field,
 		*undeformed_coordinate_field;
-	struct Computed_field_deformation_package *computed_field_deformation_package;
+	Computed_field_deformation_package *computed_field_deformation_package;
 	struct Option_table *option_table;
 	struct Set_Computed_field_conditional_data set_deformed_coordinate_field_data,
 		set_fibre_angle_field_data,set_undeformed_coordinate_field_data;
@@ -542,7 +543,7 @@ already) and allows its contents to be modified.
 	ENTER(define_Computed_field_type_2d_strain);
 	if (state&&(field=(struct Computed_field *)field_void)&&
 		(computed_field_deformation_package=
-		(struct Computed_field_deformation_package *)
+		(Computed_field_deformation_package *)
 		computed_field_deformation_package_void))
 	{
 		return_code=1;

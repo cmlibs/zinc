@@ -208,8 +208,9 @@ Note the order of derivatives:
 	return (return_code);
 } /* Computed_field_extract_rc */
 
-struct Computed_field_coordinate_package 
+class Computed_field_coordinate_package : public Computed_field_type_package
 {
+public:
 	struct MANAGER(Computed_field) *computed_field_manager;
 };
 
@@ -620,7 +621,7 @@ already) and allows its contents to be modified.
 {
 	int return_code;
 	struct Computed_field *field,*source_field;
-	struct Computed_field_coordinate_package 
+	Computed_field_coordinate_package 
 		*computed_field_coordinate_package;
 	struct Option_table *option_table;
 	struct Set_Computed_field_conditional_data set_source_field_data;
@@ -628,7 +629,7 @@ already) and allows its contents to be modified.
 	ENTER(define_Computed_field_type_coordinate_transformation);
 	if (state&&(field=(struct Computed_field *)field_void)&&
 		(computed_field_coordinate_package=
-		(struct Computed_field_coordinate_package *)
+		(Computed_field_coordinate_package *)
 		computed_field_coordinate_package_void))
 	{
 		return_code = 1;
@@ -1121,7 +1122,7 @@ already) and allows its contents to be modified.
 {
 	int return_code;
 	struct Computed_field *coordinate_field,*field,*vector_field;
-	struct Computed_field_coordinate_package 
+	Computed_field_coordinate_package 
 		*computed_field_coordinate_package;
 	struct Option_table *option_table;
 	struct Set_Computed_field_conditional_data set_coordinate_field_data,
@@ -1130,7 +1131,7 @@ already) and allows its contents to be modified.
 	ENTER(define_Computed_field_type_vector_coordinate_transformation);
 	if (state&&(field=(struct Computed_field *)field_void)&&
 		(computed_field_coordinate_package=
-		(struct Computed_field_coordinate_package *)
+		(Computed_field_coordinate_package *)
 		computed_field_coordinate_package_void))
 	{
 		return_code=1;

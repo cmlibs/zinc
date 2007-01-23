@@ -73,17 +73,27 @@ extern "C" {
 Module types
 ------------
 */
-struct Computed_field_finite_element_package
+class Computed_field_finite_element_package : public Computed_field_type_package
 /*******************************************************************************
 LAST MODIFIED : 24 August 2006
 
 DESCRIPTION :
 ==============================================================================*/
 {
+public:
 	struct MANAGER(Computed_field) *computed_field_manager;
 	struct Cmiss_region *cmiss_region;
 	struct FE_region *fe_region;
-}; /* struct Computed_field_finite_element_package */
+
+protected:
+	~Computed_field_finite_element_package()
+	{
+		FE_region_remove_callback(fe_region, Computed_field_FE_region_change, 
+			(void *)this);
+		DEACCESS(FE_region)(&fe_region);
+		DEACCESS(Cmiss_region)(&cmiss_region);
+	}
+}; /* Computed_field_finite_element_package */
 
 namespace {
 
@@ -1390,7 +1400,7 @@ FE_field being made and/or modified.
 	int i,number_of_components,number_of_valid_strings,
 		original_number_of_components,return_code;
 	struct Computed_field *field;
-	struct Computed_field_finite_element_package *computed_field_finite_element_package;
+	Computed_field_finite_element_package *computed_field_finite_element_package;
 	struct Coordinate_system *coordinate_system;
 	struct FE_field *existing_fe_field;
 	struct Option_table *option_table;
@@ -1398,7 +1408,7 @@ FE_field being made and/or modified.
 	ENTER(define_Computed_field_type_finite_element);
 	if (state&&(field=(struct Computed_field *)field_void)&&
 		(computed_field_finite_element_package=
-		(struct Computed_field_finite_element_package *)
+		(Computed_field_finite_element_package *)
 		computed_field_finite_element_package_void))
 	{
 		return_code = 1;
@@ -2810,7 +2820,7 @@ and allows its contents to be modified.
 	  "d3/ds1ds2ds3"
 	};
 	struct Computed_field *field;
-	struct Computed_field_finite_element_package 
+	Computed_field_finite_element_package 
 		*computed_field_finite_element_package;
 	struct FE_field *fe_field;
 	struct Option_table *option_table;
@@ -2818,7 +2828,7 @@ and allows its contents to be modified.
 	ENTER(define_Computed_field_type_node_value);
 	if (state&&(field=(struct Computed_field *)field_void)&&
 		(computed_field_finite_element_package=
-		(struct Computed_field_finite_element_package *)
+		(Computed_field_finite_element_package *)
 		computed_field_finite_element_package_void))
 	{
 		return_code=1;
@@ -3552,7 +3562,7 @@ and allows its contents to be modified.
 {
 	int return_code;
 	struct Computed_field *source_field, *field;
-	struct Computed_field_finite_element_package
+	Computed_field_finite_element_package
 		*computed_field_finite_element_package;
 	struct FE_field *element_xi_fe_field;
 	struct Option_table *option_table;
@@ -3561,7 +3571,7 @@ and allows its contents to be modified.
 	ENTER(define_Computed_field_type_embedded);
 	if (state && (field = (struct Computed_field *)field_void) &&
 		(computed_field_finite_element_package =
-			(struct Computed_field_finite_element_package *)
+			(Computed_field_finite_element_package *)
 			computed_field_finite_element_package_void))
 	{
 		return_code = 1;
@@ -4203,13 +4213,13 @@ that may result from this process.
 ==============================================================================*/
 {
 	enum CHANGE_LOG_CHANGE(FE_field) change_summary;
-	struct Computed_field_finite_element_package
+	Computed_field_finite_element_package
 		*computed_field_finite_element_package;
 	struct FE_field_to_Computed_field_change_data field_change_data;
 
 	ENTER(Computed_field_FE_region_change);
 	if (changes && (computed_field_finite_element_package=
-		(struct Computed_field_finite_element_package *)
+		(Computed_field_finite_element_package *)
 		computed_field_finite_element_package_void) &&
 		(fe_region == computed_field_finite_element_package->fe_region))
 	{
@@ -4779,7 +4789,7 @@ Cleans up <fe_field> and its Computed_field wrapper if each are not in use.
 	return(return_code);
 } /* Computed_field_manager_destroy_FE_field */
 
-struct Computed_field_finite_element_package *
+Computed_field_finite_element_package *
 Computed_field_register_types_finite_element(
 	struct Computed_field_package *computed_field_package,
 	struct Cmiss_region *cmiss_region)
@@ -4792,7 +4802,7 @@ also attached to the <cmiss_region> so that any fe_fields are
 automatically wrapped in corresponding computed_fields.
 ==============================================================================*/
 {
-	struct Computed_field_finite_element_package *return_ptr;
+	Computed_field_finite_element_package *return_ptr;
 	struct FE_region *fe_region;
 	Computed_field_finite_element_package 
 		*computed_field_finite_element_package = 
@@ -4841,14 +4851,14 @@ automatically wrapped in corresponding computed_fields.
 		}
 		else
 		{
-			return_ptr = (struct Computed_field_finite_element_package *)NULL;
+			return_ptr = (Computed_field_finite_element_package *)NULL;
 		}
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
 			"Computed_field_register_types_finite_element.  Invalid argument(s)");
-		return_ptr = (struct Computed_field_finite_element_package *)NULL;
+		return_ptr = (Computed_field_finite_element_package *)NULL;
 	}
 	LEAVE;
 
@@ -4856,7 +4866,7 @@ automatically wrapped in corresponding computed_fields.
 } /* Computed_field_register_types_finite_element */
 
 int Computed_field_deregister_types_finite_element(
-	struct Computed_field_finite_element_package
+	Computed_field_finite_element_package
 	*computed_field_finite_element_package)
 /*******************************************************************************
 LAST MODIFIED : 24 August 2006

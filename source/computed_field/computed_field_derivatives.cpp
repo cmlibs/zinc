@@ -56,8 +56,9 @@ extern "C" {
 #include "computed_field/computed_field_derivatives.h"
 }
 
-struct Computed_field_derivatives_package 
+class Computed_field_derivatives_package : public Computed_field_type_package
 {
+public:
 	struct MANAGER(Computed_field) *computed_field_manager;
 };
 
@@ -433,7 +434,7 @@ already) and allows its contents to be modified.
 {
 	int return_code, xi_index;
 	struct Computed_field *field,*source_field;
-	struct Computed_field_derivatives_package 
+	Computed_field_derivatives_package 
 		*computed_field_derivatives_package;
 	struct Option_table *option_table;
 	struct Set_Computed_field_conditional_data set_source_field_data;
@@ -441,7 +442,7 @@ already) and allows its contents to be modified.
 	ENTER(define_Computed_field_type_derivative);
 	if (state&&(field=(struct Computed_field *)field_void)&&
 		(computed_field_derivatives_package=
-		(struct Computed_field_derivatives_package *)
+		(Computed_field_derivatives_package *)
 		computed_field_derivatives_package_void))
 	{
 		return_code=1;
@@ -898,7 +899,7 @@ already) and allows its contents to be modified.
 {
 	int return_code;
 	struct Computed_field *coordinate_field,*field,*vector_field;
-	struct Computed_field_derivatives_package 
+	Computed_field_derivatives_package 
 		*computed_field_derivatives_package;
 	struct Option_table *option_table;
 	struct Set_Computed_field_conditional_data set_coordinate_field_data,
@@ -907,7 +908,7 @@ already) and allows its contents to be modified.
 	ENTER(define_Computed_field_type_curl);
 	if (state&&(field=(struct Computed_field *)field_void)&&
 		(computed_field_derivatives_package=
-		(struct Computed_field_derivatives_package *)
+		(Computed_field_derivatives_package *)
 		computed_field_derivatives_package_void))
 	{
 		return_code=1;
@@ -1381,7 +1382,7 @@ already) and allows its contents to be modified.
 {
 	int return_code;
 	struct Computed_field *coordinate_field,*field,*vector_field;
-	struct Computed_field_derivatives_package 
+	Computed_field_derivatives_package 
 		*computed_field_derivatives_package;
 	struct Option_table *option_table;
 	struct Set_Computed_field_conditional_data set_coordinate_field_data,
@@ -1390,7 +1391,7 @@ already) and allows its contents to be modified.
 	ENTER(define_Computed_field_type_divergence);
 	if (state&&(field=(struct Computed_field *)field_void)&&
 		(computed_field_derivatives_package=
-		(struct Computed_field_derivatives_package *)
+		(Computed_field_derivatives_package *)
 		computed_field_derivatives_package_void))
 	{
 		return_code=1;
@@ -1826,7 +1827,7 @@ to be modified.
 {
 	int return_code;
 	struct Computed_field *coordinate_field,*field,*source_field;
-	struct Computed_field_derivatives_package *computed_field_derivatives_package;
+	Computed_field_derivatives_package *computed_field_derivatives_package;
 	struct Option_table *option_table;
 	struct Set_Computed_field_conditional_data set_coordinate_field_data,
 		set_source_field_data;
@@ -1834,7 +1835,7 @@ to be modified.
 	ENTER(define_Computed_field_type_gradient);
 	if (state&&(field=(struct Computed_field *)field_void)&&
 		(computed_field_derivatives_package=
-		(struct Computed_field_derivatives_package *)
+		(Computed_field_derivatives_package *)
 		computed_field_derivatives_package_void))
 	{
 		return_code=1;

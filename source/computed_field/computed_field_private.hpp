@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : computed_field_private.hpp
 
-LAST MODIFIED : 23 August 2006
+LAST MODIFIED : 24 January 2007
 
 DESCRIPTION :
 ==============================================================================*/
@@ -52,9 +52,72 @@ typedef int (*Define_Computed_field_type_function)(
 
 
 /*
-Module types
-------------
+Computed field types
+--------------------
+Types used only internally to computed fields.
 */
+
+class Computed_field_type_package
+/*******************************************************************************
+LAST MODIFIED : 24 January 2007
+
+DESCRIPTION :
+The base class for each computed field classes own package.
+Provides reference counting.
+==============================================================================*/
+{
+private:
+	unsigned int access_count;
+
+public:
+	void addref()
+	{
+		access_count++;
+	}
+	void removeref()
+	{
+		if (access_count > 1)
+		{
+			access_count--;
+		}
+		else
+		{
+			delete this;
+		}
+	}
+   Computed_field_type_package()
+	{
+		access_count = 0;
+	}
+
+protected:
+	virtual ~Computed_field_type_package()
+	{
+	}
+};
+
+class Computed_field_simple_package : public Computed_field_type_package
+/*******************************************************************************
+LAST MODIFIED : 24 January 2007
+
+DESCRIPTION :
+A simple package which just gives access back to the Computed_field_manager
+==============================================================================*/
+{
+private:
+	MANAGER(Computed_field)* computed_field_manager;
+
+public:
+	Computed_field_simple_package(MANAGER(Computed_field) *computed_field_manager):
+		computed_field_manager(computed_field_manager)
+	{
+	}
+
+	MANAGER(Computed_field)* get_computed_field_manager()
+	{
+		return(computed_field_manager);
+	}
+};
 
 class Computed_field_core
 /*******************************************************************************
@@ -207,6 +270,12 @@ DESCRIPTION :
 	
 }; /* struct Computed_field */
 
+/*
+Computed field functions
+------------------------
+Functions used only internally to computed fields
+*/
+
 int Computed_field_changed(struct Computed_field *field,
 	struct MANAGER(Computed_field) *computed_field_manager);
 /*******************************************************************************
@@ -243,15 +312,25 @@ Frees memory/deaccess data at <*data_address>.
 int Computed_field_package_add_type(
 	struct Computed_field_package *computed_field_package, char *name,
 	Define_Computed_field_type_function define_Computed_field_type_function,
-	void *define_type_user_data);
+	Computed_field_type_package *define_type_user_data);
 /*******************************************************************************
-LAST MODIFIED : 4 July 2000
+LAST MODIFIED : 24 January 2007
 
 DESCRIPTION :
 Adds the type of Computed_field described by <name> and 
 <define_Computed_field_type_function> to those in the LIST held by the 
 <computed_field_package>.  This type is then added to the 
 define_Computed_field_type option table when parsing commands.
+==============================================================================*/
+
+Computed_field_simple_package *Computed_field_package_get_simple_package(
+	struct Computed_field_package *computed_field_package);
+/*******************************************************************************
+LAST MODIFIED : 24 January 2007
+
+DESCRIPTION :
+Returns a pointer to a sharable simple type package which just contains a
+function to access the Computed_field_package.
 ==============================================================================*/
 
 int Computed_field_clear_type(struct Computed_field *field);

@@ -56,8 +56,9 @@ extern "C" {
 #include "user_interface/message.h"
 }
 
-struct Computed_field_fibres_package 
+class Computed_field_fibres_package : public Computed_field_type_package
 {
+public:
 	struct MANAGER(Computed_field) *computed_field_manager;
 };
 
@@ -546,14 +547,14 @@ allows its contents to be modified.
 {
 	int return_code;
 	struct Computed_field *coordinate_field, *fibre_field, *field;
-	struct Computed_field_fibres_package *computed_field_fibres_package;
+	Computed_field_fibres_package *computed_field_fibres_package;
 	struct Option_table *option_table;
 	struct Set_Computed_field_conditional_data set_coordinate_field_data,
 		set_fibre_field_data;
 
 	ENTER(define_Computed_field_type_fibre_axes);
 	if (state&&(field=(struct Computed_field *)field_void)&&
-		(computed_field_fibres_package=(struct Computed_field_fibres_package *)
+		(computed_field_fibres_package=(Computed_field_fibres_package *)
 		computed_field_fibres_package_void))
 	{
 		return_code=1;

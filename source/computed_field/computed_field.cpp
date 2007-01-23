@@ -200,7 +200,7 @@ accessed by the rest of the program.
 {
 	char *name;
 	Define_Computed_field_type_function define_Computed_field_type_function;
-	void *define_type_user_data;
+	Computed_field_type_package *define_type_user_data;
 	int access_count;
 };
 
@@ -223,6 +223,7 @@ wrappers need to be automatically created for each FE_field.
 {
 	struct MANAGER(Computed_field) *computed_field_manager;
 	struct LIST(Computed_field_type_data) *computed_field_type_list;
+	Computed_field_simple_package *simple_package;
 }; /* struct Computed_field_package */
 
 /*
@@ -236,9 +237,10 @@ DECLARE_LOCAL_MANAGER_FUNCTIONS(Computed_field)
 
 struct Computed_field_type_data *CREATE(Computed_field_type_data)
    (char *name, Define_Computed_field_type_function 
-		define_Computed_field_type_function, void *define_type_user_data)
+	define_Computed_field_type_function, 
+	Computed_field_type_package *define_type_user_data)
 /*******************************************************************************
-LAST MODIFIED : 14 August 2006
+LAST MODIFIED : 24 January 2007
 
 DESCRIPTION :
 Creates a structure representing a type of computed field.  The <name> should
@@ -4332,6 +4334,10 @@ created as part of the package.
 	{
 		computed_field_package->computed_field_type_list =
 			CREATE(LIST(Computed_field_type_data))();
+		computed_field_package->simple_package =
+			new Computed_field_simple_package(
+				computed_field_package->computed_field_manager);
+		computed_field_package->simple_package->addref();
 	}
 	else
 	{
@@ -4363,6 +4369,7 @@ Cancels any further messages from managers.
 		DESTROY(MANAGER(Computed_field))(&computed_field_package->computed_field_manager);
 		DESTROY(LIST(Computed_field_type_data))(
 			&computed_field_package->computed_field_type_list);
+		computed_field_package->simple_package->removeref();
 		DEALLOCATE(*package_address);
 	}
 	else
@@ -4410,9 +4417,9 @@ allow interfacing to the choose_object widgets.
 int Computed_field_package_add_type(
 	struct Computed_field_package *computed_field_package, char *name,
 	Define_Computed_field_type_function define_Computed_field_type_function,
-	void *define_type_user_data)
+	Computed_field_type_package *define_type_user_data)
 /*******************************************************************************
-LAST MODIFIED : 14 August 2006
+LAST MODIFIED : 24 January 2007
 
 DESCRIPTION :
 Adds the type of Computed_field described by <name> and 
@@ -4430,6 +4437,7 @@ define_Computed_field_type option table when parsing commands.
 		if(data = CREATE(Computed_field_type_data)(name,
 			define_Computed_field_type_function, define_type_user_data))
 		{
+			data->define_type_user_data->addref();
 			return_code = ADD_OBJECT_TO_LIST(Computed_field_type_data)(data,
 				computed_field_package->computed_field_type_list);
 		}
@@ -4448,3 +4456,69 @@ define_Computed_field_type option table when parsing commands.
 
 	return (return_code);
 } /* Computed_field_package_add_type */
+
+int Computed_field_package_remove_types(
+	struct Computed_field_package *computed_field_package)
+/*******************************************************************************
+LAST MODIFIED : 24 January 2007
+
+DESCRIPTION :
+Unregisters each of the computed field types added.
+==============================================================================*/
+{
+	int return_code;
+	struct Computed_field_type_data *data;
+
+	ENTER(Computed_field_package_remove_types);
+	if (computed_field_package)
+	{
+		while(data = FIRST_OBJECT_IN_LIST_THAT(Computed_field_type_data)(
+			(LIST_CONDITIONAL_FUNCTION(Computed_field_type_data) *)NULL, (void *)NULL,
+			computed_field_package->computed_field_type_list))
+		{
+			data->define_type_user_data->removeref();
+
+			REMOVE_OBJECT_FROM_LIST(Computed_field_type_data)(data,
+				computed_field_package->computed_field_type_list);
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Computed_field_package_add_type.  Invalid arguments");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Computed_field_package_add_type */
+
+Computed_field_simple_package *Computed_field_package_get_simple_package(
+	struct Computed_field_package *computed_field_package)
+/*******************************************************************************
+LAST MODIFIED : 24 January 2007
+
+DESCRIPTION :
+Returns a pointer to a sharable simple type package which just contains a
+function to access the Computed_field_package.
+==============================================================================*/
+{
+	Computed_field_simple_package* return_package;
+
+	ENTER(Computed_field_package_get_simple_package);
+	if (computed_field_package)
+	{
+		return_package = computed_field_package->simple_package;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Computed_field_package_get_simple_package.  Invalid arguments");
+		return_package = (Computed_field_simple_package*)NULL;
+	}
+	LEAVE;
+
+	return (return_package);
+} /* Computed_field_package_get_simple_package */
+
+

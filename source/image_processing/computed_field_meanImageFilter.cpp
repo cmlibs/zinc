@@ -379,7 +379,7 @@ used by it are returned - otherwise an error is reported.
 } /* Computed_field_get_type_meanImageFilter */
 
 int define_Computed_field_type_meanImageFilter(struct Parse_state *state,
-	void *field_void, void *computed_field_package_void)
+	void *field_void, void *computed_field_simple_package_void)
 /*******************************************************************************
 LAST MODIFIED : 30 August 2006
 
@@ -391,13 +391,14 @@ already) and allows its contents to be modified.
 	int dimension, expected_parameters, i, old_dimension, previous_state_index,
 		*radius_sizes, return_code, *sizes;
 	struct Computed_field *field, *source_field, *texture_coordinate_field;
-	struct Computed_field_package *computed_field_package;
+	struct Computed_field_simple_package *computed_field_simple_package;
 	struct Option_table *option_table;
 	struct Set_Computed_field_conditional_data set_source_field_data;
 
 	ENTER(define_Computed_field_type_meanImageFilter);
 	if (state && (field = (struct Computed_field *)field_void) &&
-		(computed_field_package = (Computed_field_package*)computed_field_package_void))
+		(computed_field_simple_package =
+		(Computed_field_simple_package*)computed_field_simple_package_void))
 	{
 		return_code = 1;
 		/* get valid parameters for projection field */
@@ -433,7 +434,7 @@ already) and allows its contents to be modified.
 				option_table = CREATE(Option_table)();
 				/* field */
 				set_source_field_data.computed_field_manager =
-					Computed_field_package_get_computed_field_manager(computed_field_package);
+					computed_field_simple_package->get_computed_field_manager();
 				set_source_field_data.conditional_function = Computed_field_has_numerical_components;
 				set_source_field_data.conditional_function_user_data = (void *)NULL;
 				Option_table_add_entry(option_table, "field", &source_field,
@@ -500,7 +501,7 @@ already) and allows its contents to be modified.
 					option_table = CREATE(Option_table)();
 					/* field */
 					set_source_field_data.computed_field_manager =
-						Computed_field_package_get_computed_field_manager(computed_field_package);
+						computed_field_simple_package->get_computed_field_manager();
 					set_source_field_data.conditional_function = Computed_field_is_scalar;
 					set_source_field_data.conditional_function_user_data = (void *)NULL;
 					Option_table_add_entry(option_table, "field", &source_field,
@@ -548,7 +549,7 @@ DESCRIPTION :
 		return_code = Computed_field_package_add_type(computed_field_package,
 			computed_field_meanImageFilter_type_string, 
 			define_Computed_field_type_meanImageFilter,
-			computed_field_package);
+			Computed_field_package_get_simple_package(computed_field_package));
 	}
 	else
 	{

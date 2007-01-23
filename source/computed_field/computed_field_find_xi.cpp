@@ -844,7 +844,7 @@ sequential element_xi lookup should now be performed.
 		/* At some point we may want to search in any FE_regions below the search_region */
 		(fe_region = Cmiss_region_get_FE_region(search_region))
 		/* This special case actually only works for 2D elements */
-		&& ((element_dimension == 0) || (element_dimension == 2))
+		&& (element_dimension == 2)
 		&& (5 < FE_region_get_number_of_FE_elements(fe_region))
 		/*&& (Computed_field_is_find_element_xi_capable(field,NULL))*/)
 	{
