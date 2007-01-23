@@ -896,6 +896,15 @@ the rest of the program should use this sparingly - it is really only here to
 allow interfacing to the choose_object widgets.
 ==============================================================================*/
 
+int Computed_field_package_remove_types(
+	struct Computed_field_package *computed_field_package);
+/*******************************************************************************
+LAST MODIFIED : 24 January 2007
+
+DESCRIPTION :
+Unregisters each of the computed field types added.
+==============================================================================*/
+
 int Computed_field_can_be_destroyed(struct Computed_field *field);
 /*******************************************************************************
 LAST MODIFIED : 10 May 2000
