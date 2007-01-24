@@ -48,6 +48,7 @@ the scene viewer get the contained Cmiss_scene_viewer object and use its api.
 #include <gtk/gtk.h>
 #include "general/debug.h"
 #include "api/cmiss_scene_viewer.h"
+#include "graphics/scene_viewer.h"
 #include "user_interface/message.h"
 #include "gtk/gtk_cmiss_scene_viewer.h"
 
@@ -62,6 +63,37 @@ static GtkBinClass *parent_class = NULL;
 Module functions
 ----------------
 */
+
+void gtk_cmiss_scene_viewer_package_destroy_callback(
+	struct Cmiss_scene_viewer_package *scene_viewer_package, void *dummy_void,
+	void *gtk_cmiss_scene_viewer_void)
+/*******************************************************************************
+LAST MODIFIED : 25 August 2006
+
+DESCRIPTION :
+Clear the scene viewer reference when it is no longer valid.
+==============================================================================*/
+{
+	GtkCmissSceneViewer *gtk_cmiss_scene_viewer;
+
+	USE_PARAMETER(scene_viewer_package);
+	USE_PARAMETER(dummy_void);
+	ENTER(Computed_field_window_projection_scene_viewer_destroy_callback);
+	if (gtk_cmiss_scene_viewer = (GtkCmissSceneViewer *)gtk_cmiss_scene_viewer_void)
+	{
+	  if (gtk_cmiss_scene_viewer->cmiss_scene_viewer)
+	  {
+		  DESTROY(Cmiss_scene_viewer)(&gtk_cmiss_scene_viewer->cmiss_scene_viewer);
+	  }
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Computed_field_window_projection_scene_viewer_callback.  "
+			"Invalid arguments.");
+	}
+	LEAVE;
+} /* Computed_field_window_projection_scene_viewer_callback */
 
 static void gtk_cmiss_scene_viewer_resize(GtkWidget *widget,
 	GtkAllocation *allocation)
@@ -106,6 +138,11 @@ DESCRIPTION:
 	  if (gtk_cmiss_scene_viewer->cmiss_scene_viewer)
 	  {
 		  DESTROY(Cmiss_scene_viewer)(&gtk_cmiss_scene_viewer->cmiss_scene_viewer);
+	  
+		  Cmiss_scene_viewer_package_remove_destroy_callback(
+			  gtk_cmiss_scene_viewer->cmiss_scene_viewer_package,
+			  gtk_cmiss_scene_viewer_package_destroy_callback,
+			  gtk_cmiss_scene_viewer);
 	  }
 	  
 	  if (GTK_OBJECT_CLASS (parent_class)->destroy)
@@ -193,6 +230,10 @@ DESCRIPTION:
 		GTK_CONTAINER(gtk_cmiss_scene_viewer), CMISS_SCENE_VIEWER_BUFFERING_DOUBLE,
 		CMISS_SCENE_VIEWER_STEREO_MONO, /*minimum_colour_buffer_depth*/0, 
 		/*minimum_depth_buffer_depth*/8, /*minimum_accumulation_buffer_depth*/8);
+	gtk_cmiss_scene_viewer->cmiss_scene_viewer_package = scene_viewer_package;
+	Cmiss_scene_viewer_package_add_destroy_callback(scene_viewer_package,
+		gtk_cmiss_scene_viewer_package_destroy_callback,
+		gtk_cmiss_scene_viewer);
 
 	LEAVE;
 
