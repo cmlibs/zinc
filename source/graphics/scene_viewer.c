@@ -95,6 +95,9 @@ Module types
 ------------
 */
 
+FULL_DECLARE_CMISS_CALLBACK_TYPES(Cmiss_scene_viewer_package_callback, \
+	struct Cmiss_scene_viewer_package *, void *);
+
 FULL_DECLARE_CMISS_CALLBACK_TYPES(Scene_viewer_callback, \
 	struct Scene_viewer *, void *);
 
@@ -129,6 +132,8 @@ The default data used to create Cmiss_scene_viewers.
 	struct Scene *scene;
 	struct MANAGER(Texture) *texture_manager;
 	struct User_interface *user_interface;
+	struct LIST(CMISS_CALLBACK_ITEM(Cmiss_scene_viewer_package_callback))
+		*destroy_callback_list;
 };
 
 struct Scene_viewer
@@ -457,6 +462,11 @@ Frees the memory for the render_object and sets <*render_object_address> to NULL
 
 DECLARE_OBJECT_FUNCTIONS(Scene_viewer_render_object)
 DECLARE_LIST_FUNCTIONS(Scene_viewer_render_object)
+
+DEFINE_CMISS_CALLBACK_MODULE_FUNCTIONS(Cmiss_scene_viewer_package_callback)
+
+DEFINE_CMISS_CALLBACK_FUNCTIONS(Cmiss_scene_viewer_package_callback, \
+	struct Cmiss_scene_viewer_package *,void *)
 
 DEFINE_CMISS_CALLBACK_MODULE_FUNCTIONS(Scene_viewer_callback)
 
@@ -4125,6 +4135,8 @@ Creates a Cmiss_scene_viewer_package.
 			scene_viewer_package->scene = ACCESS(Scene)(scene);
 			scene_viewer_package->texture_manager = texture_manager;
 			scene_viewer_package->user_interface = user_interface;
+			scene_viewer_package->destroy_callback_list=
+					CREATE(LIST(CMISS_CALLBACK_ITEM(Cmiss_scene_viewer_package_callback)))();
 		}
 		else
 		{
@@ -4157,7 +4169,12 @@ Destroys the scene_viewer_package.
 	ENTER(DESTROY(Cmiss_scene_viewer_package));
 	if (scene_viewer_package = *scene_viewer_package_address)
 	{
-		/* Free the previous copy */
+		/* Call the destroy callbacks */
+		CMISS_CALLBACK_LIST_CALL(Cmiss_scene_viewer_package_callback)(
+			scene_viewer_package->destroy_callback_list,scene_viewer_package,NULL);
+		DESTROY(LIST(CMISS_CALLBACK_ITEM(Cmiss_scene_viewer_package_callback)))
+			(&scene_viewer_package->destroy_callback_list);
+		/* Free */
 		DEACCESS(Interactive_tool)(&scene_viewer_package->default_interactive_tool);
 		DEACCESS(Light)(&scene_viewer_package->default_light);
 		DEACCESS(Light_model)(&scene_viewer_package->default_light_model);
@@ -4174,6 +4191,86 @@ Destroys the scene_viewer_package.
 
 	return (return_code);
 } /* DESTROY(Cmiss_scene_viewer_package) */
+
+int Cmiss_scene_viewer_package_add_destroy_callback(
+	struct Cmiss_scene_viewer_package *scene_viewer_package,
+	CMISS_CALLBACK_FUNCTION(Cmiss_scene_viewer_package_callback) *function,
+	void *user_data)
+/*******************************************************************************
+LAST MODIFIED : 24 January 2007
+
+DESCRIPTION :
+Adds a callback to the <scene_viewer_package> that is called back before the scene
+viewer is destroyed.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(Cmiss_scene_viewer_package_add_destroy_callback);
+	if (scene_viewer_package&&function)
+	{
+		if (CMISS_CALLBACK_LIST_ADD_CALLBACK(Cmiss_scene_viewer_package_callback)(
+			scene_viewer_package->destroy_callback_list,function,user_data))
+		{
+			return_code=1;
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,
+				"Cmiss_scene_viewer_package_add_destroy_callback.  Could not add callback");
+			return_code=0;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Cmiss_scene_viewer_package_add_destroy_callback.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Cmiss_scene_viewer_package_add_destroy_callback */
+
+int Cmiss_scene_viewer_package_remove_destroy_callback(
+	struct Cmiss_scene_viewer_package *scene_viewer_package,
+	CMISS_CALLBACK_FUNCTION(Cmiss_scene_viewer_package_callback) *function,
+	void *user_data)
+/*******************************************************************************
+LAST MODIFIED : 24 January 2007
+
+DESCRIPTION :
+Removes the callback calling <function> with <user_data> from
+<scene_viewer_package>.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(Cmiss_scene_viewer_package_remove_destroy_callback);
+	if (scene_viewer_package&&function)
+	{
+		if (CMISS_CALLBACK_LIST_REMOVE_CALLBACK(Cmiss_scene_viewer_package_callback)(
+			scene_viewer_package->destroy_callback_list,function,user_data))
+		{
+			return_code=1;
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,
+				"Cmiss_scene_viewer_package_remove_destroy_callback.  Could not remove callback");
+			return_code=0;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Cmiss_scene_viewer_package_remove_destroy_callback.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Cmiss_scene_viewer_package_remove_destroy_callback */
 
 struct Graphics_buffer_package *Cmiss_scene_viewer_package_get_graphics_buffer_package(
 	struct Cmiss_scene_viewer_package *cmiss_scene_viewer_package)

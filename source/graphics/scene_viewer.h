@@ -230,6 +230,9 @@ Be sure to implement any new modes in Scene_viewer_viewport_mode_string.
 	SCENE_VIEWER_DISTORTING_RELATIVE_VIEWPORT
 };
 
+DECLARE_CMISS_CALLBACK_TYPES(Cmiss_scene_viewer_package_callback, \
+	struct Cmiss_scene_viewer_package *, void *);
+
 DECLARE_CMISS_CALLBACK_TYPES(Scene_viewer_callback, \
 	struct Scene_viewer *, void *);
 
@@ -265,6 +268,27 @@ LAST MODIFIED : 19 January 2007
 
 DESCRIPTION :
 Destroys the scene_viewer_package.
+==============================================================================*/
+
+
+int Cmiss_scene_viewer_package_add_destroy_callback(struct Cmiss_scene_viewer_package *scene_viewer_package,
+	CMISS_CALLBACK_FUNCTION(Cmiss_scene_viewer_package_callback) *function,void *user_data);
+/*******************************************************************************
+LAST MODIFIED : 24 January 2007
+
+DESCRIPTION :
+Adds a callback to the <scene_viewer_package> that is called back before the scene
+viewer is destroyed.
+==============================================================================*/
+
+int Cmiss_scene_viewer_package_remove_destroy_callback(struct Cmiss_scene_viewer_package *scene_viewer_package,
+	CMISS_CALLBACK_FUNCTION(Cmiss_scene_viewer_package_callback) *function,void *user_data);
+/*******************************************************************************
+LAST MODIFIED : 24 January 2007
+
+DESCRIPTION :
+Removes the callback calling <function> with <user_data> from
+<scene_viewer_package>.
 ==============================================================================*/
 
 struct Graphics_buffer_package *Cmiss_scene_viewer_package_get_graphics_buffer_package(
