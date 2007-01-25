@@ -80,6 +80,7 @@ static char graphics_window_uidh[] =
 }
 #if defined (WX_USER_INTERFACE)
 #include "wx/wx.h"
+#include <wx/tglbtn.h>
 #include "wx/xrc/xmlres.h"
 #include "graphics/graphics_window.xrch"
 #endif /* defined (WX_USER_INTERFACE)*/
@@ -106,7 +107,6 @@ extern "C" {
 #include <windows.h>
 #endif /* defined (WIN32_USER_INTERFACE) */
 }
-
 #if defined (WX_USER_INTERFACE)
 struct Graphics_buffer *create_Graphics_buffer_wx(
 	struct Graphics_buffer_package *graphics_buffer_package,
@@ -151,6 +151,7 @@ Contains information for a graphics window.
 	/* need to keep graphics window manager so window can be destroyed by self */
 	struct MANAGER(Graphics_window) *graphics_window_manager;
 	struct Graphics_buffer_package *graphics_buffer_package;
+
 #if defined (MOTIF)
 	/* widgets on the Graphics_window */
 	Widget control_panel,viewing_form,viewing_area1,viewing_area2,viewing_area3,viewing_area4,
@@ -173,6 +174,15 @@ Contains information for a graphics window.
         wxPanel *panel2;
         wxPanel *panel3;
         wxPanel *panel4;
+        wxComboBox *up_view_options;
+        wxButton *front_view_options;
+
+  //wxSizerItem *lowerpanel2;
+  //wxSizerItem *lowerpanels;
+  //wxButton *front_view_options;   
+
+        wxPanel *interactive_toolbar_panel;
+
 #endif /* defined (GTK_USER_INTERFACE) */
 	/* scene_viewers and their parameters: */
 	enum Graphics_window_layout_mode layout_mode;
@@ -245,6 +255,13 @@ struct Graphics_window_ortho_axes
 {
 	int up,front;
 }; /* struct Graphics_window_ortho_axes */
+
+
+
+
+		  
+
+
 
 /*
 Module variables
@@ -2333,6 +2350,7 @@ view angle, interest point etc.
 			{16," M11 M12 M13 M14 M21 M22 M23 M24 M31 M32 M33 M34 M41 M42 M43 M44",0},
 		viewport_coordinates_data=
 			{4," VIEWPORT_LEFT VIEWPORT_TOP PIXELS_PER_UNIT_X PIXELS_PER_UNIT_Y",0};
+	 		
 
 	ENTER(modify_Graphics_window_view);
 	USE_PARAMETER(modify_graphics_window_data_void);
@@ -2662,26 +2680,22 @@ view angle, interest point etc.
 class wxGraphicsWindow : public wxFrame
 {
   Graphics_window *graphics_window;
-
- 
-
+  wxToggleButton *last_button;
 
 public:
 
   wxGraphicsWindow(Graphics_window *graphics_window): 
     graphics_window(graphics_window)
-  {	 
+  {
+    last_button = (wxToggleButton*)NULL;
   };
 
   wxGraphicsWindow()
   {
   };
 
- 
- 
   
-
-  void OnViewallpressed(wxCommandEvent& event)
+   void OnViewallpressed(wxCommandEvent& event)
   {    
     if (Graphics_window_view_all(graphics_window))
     {
@@ -2731,139 +2745,159 @@ public:
       wxString choices;
       wxComboBox *view_options;     
       wxComboBox *up_view_options;
-      wxComboBox *front_view_options;
-
-
-      view_options = XRCCTRL(*this,"View", wxComboBox);      
+      wxButton *front_view_options;
+      wxFrame *Redrawwindow;
+          
+      view_options = XRCCTRL(*this,"View", wxComboBox);
       up_view_options = XRCCTRL(*this,"UpViewOptions", wxComboBox);
-      front_view_options = XRCCTRL(*this,"FrontViewOptions", wxComboBox);
-
+      front_view_options = XRCCTRL(*this,"FrontViewOptions", wxButton);
+      Redrawwindow = XRCCTRL(*this,"CmguiGraphicsWindow", wxFrame);     
+      
       choices = view_options->GetValue();
-      if (choices == "2d")
+      if (choices == "2d") 
+	{
+        front_view_options->Enable();
+	up_view_options->Enable();
 	Graphics_window_set_layout_mode(graphics_window,GRAPHICS_WINDOW_LAYOUT_2D);
+	}
       else if (choices == "free_ortho" )
+	{
+	front_view_options->Disable();
+	up_view_options->Disable();
 	Graphics_window_set_layout_mode(graphics_window,GRAPHICS_WINDOW_LAYOUT_FREE_ORTHO);
+	}
       else if (choices == "front_back")
-	Graphics_window_set_layout_mode(graphics_window,GRAPHICS_WINDOW_LAYOUT_FRONT_BACK);
+	{
+	front_view_options->Enable();
+	up_view_options->Enable();
+	Graphics_window_set_layout_mode(graphics_window,GRAPHICS_WINDOW_LAYOUT_FRONT_BACK);  
+	}
       else if (choices == "front_side")
+	{
+        front_view_options->Enable();
+	up_view_options->Enable();
 	Graphics_window_set_layout_mode(graphics_window,GRAPHICS_WINDOW_LAYOUT_FRONT_SIDE);
-      else if (choices == "orthographic")  
+	}
+      else if (choices == "orthographic")
+	{
+        front_view_options->Enable();
+	up_view_options->Enable();
 	Graphics_window_set_layout_mode(graphics_window,GRAPHICS_WINDOW_LAYOUT_ORTHOGRAPHIC);
+	}
       else if (choices == "pseudo_3d")
-  	Graphics_window_set_layout_mode(graphics_window,GRAPHICS_WINDOW_LAYOUT_PSEUDO_3D);       
+	{
+        front_view_options->Disable();
+	up_view_options->Disable();
+  	Graphics_window_set_layout_mode(graphics_window,GRAPHICS_WINDOW_LAYOUT_PSEUDO_3D);  
+	}
+      else if (choices == "two_free")
+	{
+        front_view_options->Disable();
+	up_view_options->Disable();
+  	Graphics_window_set_layout_mode(graphics_window,GRAPHICS_WINDOW_LAYOUT_TWO_FREE);  
+	}
       else if (choices == "simple")
+	{
+        front_view_options->Disable();
+	up_view_options->Disable();
 	Graphics_window_set_layout_mode(graphics_window,GRAPHICS_WINDOW_LAYOUT_SIMPLE);
+	}
       else
+	{
 	printf("wrong\n");
-    }
+	}
+                
+      Redrawwindow->Layout();
+        }
 
     void OnUpViewOptionspressed(wxCommandEvent& event)
     {
       
       wxComboBox *up_view_options;
-      wxComboBox *front_view_options;
+      wxButton *front_view_options;
       wxString up_choices;
+      wxString front_choices;
+      int wx_ortho_up_axis;
+      int wx_ortho_front_axis;
+      int location;
+      wxString option[6] = { "x", "y", "z","-x", "-y", "-z"};
 
       up_view_options = XRCCTRL(*this,"UpViewOptions", wxComboBox);
-      front_view_options = XRCCTRL(*this,"FrontViewOptions", wxComboBox);
+      front_view_options = XRCCTRL(*this,"FrontViewOptions", wxButton);
       up_choices = up_view_options->GetValue();
-        
-      if (up_choices == "x")
-      {	
-	front_view_options->Delete(3);
-	front_view_options->Delete(2);
-	front_view_options->Delete(1);	
-        front_view_options->Delete(0);
-	front_view_options->Append("y");
-	front_view_options->Append("z");
-	front_view_options->Append("-y");
-	front_view_options->Append("-z");
+      front_choices = front_view_options->GetLabel();
+       
+              
+      for (int n=0; n<6; n++) {
+	if (front_choices == option[n])
+	    location = n;
+      }
+      if ((up_choices == option[location]) || (up_choices == option[(location+3) % 6]))
+	{     
+	 front_view_options->SetLabel(option[(location+1) % 6]);
+	}
 
-      }
-      else if (up_choices == "y" )
-      {	
-	front_view_options->Delete(3);
-	front_view_options->Delete(2);
-	front_view_options->Delete(1);
-	front_view_options->Delete(0);
-	front_view_options->Append("x");
-	front_view_options->Append("z");
-	front_view_options->Append("-x");
-	front_view_options->Append("-z");
-      }
-      else if (up_choices == "z")
-      {	 
-	front_view_options->Delete(3);
-	front_view_options->Delete(2);
-	front_view_options->Delete(1);
-	front_view_options->Delete(0);
-      	front_view_options->Append("x");
-	front_view_options->Append("y");
-	front_view_options->Append("-x");
-	front_view_options->Append("-y");
-      }
-      else if (up_choices == "-x")
-      {
-	front_view_options->Delete(3);
-	front_view_options->Delete(2);
-	front_view_options->Delete(1);
-	front_view_options->Delete(0);
-	front_view_options->Append("y");
-	front_view_options->Append("z");
-	front_view_options->Append("-y");
-	front_view_options->Append("-z");
-      }	
-      else if (up_choices == "-y") 
-      {	
-	front_view_options->Delete(3);
-	front_view_options->Delete(2);
-	front_view_options->Delete(1);
-	front_view_options->Delete(0);
-	front_view_options->Append("x");
-	front_view_options->Append("z");
-	front_view_options->Append("-x");
-	front_view_options->Append("-z");
-      }
-      else if (up_choices == "-z")
-      {
-	front_view_options->Delete(3);
-	front_view_options->Delete(2);
-	front_view_options->Delete(1);
-	front_view_options->Delete(0);
-	front_view_options->Append("x");
-	front_view_options->Append("y");
-	front_view_options->Append("-x");
-	front_view_options->Append("-y");
-      }
-      else
-	printf("wrong\n");
+      front_choices = front_view_options->GetLabel();
+      wx_ortho_up_axis = axis_name_to_axis_number((char*) up_choices.mb_str());
+      wx_ortho_front_axis = axis_name_to_axis_number((char*) front_choices.mb_str());
+      Graphics_window_set_orthographic_axes(graphics_window,wx_ortho_up_axis, wx_ortho_front_axis);
+      Graphics_window_set_layout_mode(graphics_window,graphics_window->layout_mode);
+      Graphics_window_update(graphics_window);
      }
 
     void OnFrontViewOptionspressed(wxCommandEvent& event)
     {
+      wxComboBox *up_view_options;
+      wxButton *front_view_options;
+      wxString up_choices;
       wxString front_choices;
-      wxComboBox *front_view_options;
+      int wx_ortho_front_axis;
+      int wx_ortho_up_axis;
+      wxString option[6] = { "x", "y", "z","-x", "-y", "-z"};
+      int location;
 
-      front_view_options = XRCCTRL(*this,"FrontViewOptions", wxComboBox);
-      front_choices = front_view_options->GetValue();
-      if (front_choices == "x")
-	printf("0\n");
-      else if (front_choices == "y")
-	printf("1\n");
-      else if (front_choices == "z")
-	printf("2\n");
-      else if (front_choices == "-x")
-	printf("3\n");
-      else if (front_choices == "-y")  
- 	printf("4\n");
-      else if (front_choices == "-z")
-  	printf("5\n");   
+      up_view_options = XRCCTRL(*this,"UpViewOptions", wxComboBox);
+      front_view_options = XRCCTRL(*this,"FrontViewOptions", wxButton);
+      up_choices = up_view_options->GetValue();
+      front_choices = front_view_options->GetLabel();
+      
+      for (int n=0; n<6; n++) {
+	if (front_choices == option[n])
+	  location = n;
+      }
+      {
+      if ((option[(location+1) % 6] == up_choices) || (option[(location+4) % 6] == up_choices))
+         front_view_options->SetLabel(option[(location+2) % 6]);
       else
-  	printf("6\n");      
+         front_view_options->SetLabel(option[(location+1) % 6]);
+      }
+       
+      front_choices = front_view_options->GetLabel();
+      wx_ortho_up_axis = axis_name_to_axis_number((char*) up_choices.mb_str());
+      wx_ortho_front_axis = axis_name_to_axis_number((char*) front_choices.mb_str());
+      Graphics_window_set_orthographic_axes(graphics_window,wx_ortho_up_axis,wx_ortho_front_axis);
+      Graphics_window_set_layout_mode(graphics_window,graphics_window->layout_mode);
+      Graphics_window_update(graphics_window);
      }
 
-
-  
+      
+  void InteractiveButtonClicked(wxToggleButton *button, Interactive_tool *tool)
+  {
+    if (last_button == button)
+    {
+      Interactive_tool_bring_up_dialog(tool);
+      button->SetValue(true);
+    }
+    else
+    {
+      if (last_button)
+      {
+	last_button->SetValue(false);
+      }
+      last_button = button;
+      Graphics_window_set_interactive_tool(graphics_window, tool);    
+    }
+  }
 
   DECLARE_DYNAMIC_CLASS(wxGraphicsWindow);
   DECLARE_EVENT_TABLE();
@@ -2876,9 +2910,64 @@ BEGIN_EVENT_TABLE(wxGraphicsWindow, wxFrame)
   EVT_BUTTON(XRCID("Button2"),wxGraphicsWindow::OnSaveaspressed)
   EVT_COMBOBOX(XRCID("View"),wxGraphicsWindow::OnViewOptionspressed)
   EVT_COMBOBOX(XRCID("UpViewOptions"),wxGraphicsWindow::OnUpViewOptionspressed)
-  EVT_COMBOBOX(XRCID("FrontViewOptions"),wxGraphicsWindow::OnFrontViewOptionspressed)
+  EVT_BUTTON(XRCID("FrontViewOptions"),wxGraphicsWindow::OnFrontViewOptionspressed)
  
 END_EVENT_TABLE()
+
+class wxInteractiveToolButton : public wxToggleButton
+{
+  Interactive_tool *tool;
+  Graphics_window *graphics_window;
+  
+  
+public:
+
+  wxInteractiveToolButton(Interactive_tool *tool, Graphics_window *graphics_window) :
+    tool(tool), graphics_window(graphics_window)
+  {
+  }
+
+  ~wxInteractiveToolButton()
+  {
+  }
+
+
+  void OnInteractiveButtonPressed(wxCommandEvent& Event)
+  {
+    graphics_window->wx_graphics_window->InteractiveButtonClicked
+      (this, tool);
+   }
+
+  DECLARE_EVENT_TABLE();
+};
+
+BEGIN_EVENT_TABLE(wxInteractiveToolButton, wxToggleButton)
+END_EVENT_TABLE()
+
+static int add_interactive_tool_to_wx_toolbar(struct Interactive_tool *interactive_tool,
+					      void *graphics_window_void)
+{
+  Graphics_window *graphics_window = static_cast<Graphics_window*>(graphics_window_void);
+  wxPanel *panel = graphics_window->interactive_toolbar_panel;
+  wxSizer *sizer = panel->GetSizer();
+    
+  wxInteractiveToolButton *button = new wxInteractiveToolButton(interactive_tool, graphics_window);
+  
+  button->Create(panel, /*id*/-1,
+     Interactive_tool_get_display_name(interactive_tool));
+
+  if (Interactive_tool_is_Transform_tool(interactive_tool))
+    {
+      button->SetValue(true);
+      graphics_window->wx_graphics_window->InteractiveButtonClicked
+	(button, interactive_tool);
+    }
+
+  button->Connect(wxEVT_COMMAND_TOGGLEBUTTON_CLICKED, wxCommandEventHandler(wxInteractiveToolButton::OnInteractiveButtonPressed));
+
+  sizer->Add(button, wxSizerFlags(1).Align(0).Expand().Border(wxALL, 2));
+  return (1);
+}
 
 #endif /* defined (WX_USER_INTERFACE) */
 
@@ -3668,6 +3757,14 @@ it.
 			window->panel2 = XRCCTRL(*window->wx_graphics_window, "Panel2", wxPanel);
 			window->panel3 = XRCCTRL(*window->wx_graphics_window, "Panel3", wxPanel);
 			window->panel4 = XRCCTRL(*window->wx_graphics_window, "Panel4", wxPanel);
+			window->up_view_options = XRCCTRL(*window->wx_graphics_window, "UpViewOptions", wxComboBox);
+			window->front_view_options = XRCCTRL(*window->wx_graphics_window, "FrontViewOptions", wxButton);
+		        window->up_view_options->Disable();
+			window->front_view_options->Disable();
+	   
+		     
+			window->interactive_toolbar_panel = NULL;
+
 
 			if (window->panel)
 			{
@@ -3693,6 +3790,14 @@ it.
 								scene_manager, window->scene,
 								texture_manager, user_interface))
 						{
+						        window->interactive_toolbar_panel = 
+							  XRCCTRL(*window->wx_graphics_window, "ToolbarPanel", wxPanel);
+							wxBoxSizer *toolbar_sizer = new wxBoxSizer( wxVERTICAL );
+							window->interactive_toolbar_panel->SetSizer(toolbar_sizer);
+						        FOR_EACH_OBJECT_IN_MANAGER(Interactive_tool)(
+								add_interactive_tool_to_wx_toolbar,
+								(void *)window,
+								interactive_tool_manager);
 							Scene_viewer_set_interactive_tool(
 								window->scene_viewer_array[pane_no],
 								window->interactive_tool);
@@ -4484,9 +4589,15 @@ Sets the layout mode in effect on the <window>.
 					//	XmNrightPosition,1,XmNbottomPosition,2,NULL);
 					//XtVaSetValues(window->viewing_area2,
 					//	XmNbottomPosition,2,NULL);
-					window->panel2->Hide();
-					window->panel3->Hide();
-					window->panel4->Hide();
+				  //window->panel->SetSize(-1,-1,600,600);
+			 
+			       
+				      window->panel2->Hide();
+				      window->panel3->Hide();
+				      window->panel4->Hide();
+				      //window->wholeright->Hide();
+				      //window->GraphicSizer->Fit();
+				   			      		       
 					/* un-grey orthographic view controls */
 					//XtSetSensitive(window->orthographic_form,True);
 #endif /* defined (WX_USER_INTERFACE) */
@@ -4509,6 +4620,20 @@ Sets the layout mode in effect on the <window>.
 			{
 				if (new_layout)
 				{
+
+
+#if defined (WX_USER_INTERFACE)
+					window->panel2->Hide();
+					window->panel3->Hide();
+					window->panel4->Hide();	      
+					
+
+					/* un-grey orthographic view controls */
+					//XtSetSensitive(window->orthographic_form,True);
+#endif /* defined (WX_USER_INTERFACE) */
+
+
+
 					/* disable tumbling in main scene viewer */
 					Scene_viewer_set_translation_rate(window->scene_viewer_array[0],
 						window->default_translate_rate);
@@ -4551,6 +4676,22 @@ Sets the layout mode in effect on the <window>.
 			{
 				if (new_layout)
 				{
+#if defined (WX_USER_INTERFACE)
+					window->panel2->Show();
+					window->panel3->Show();
+					window->panel4->Show();
+				   			
+					
+
+					//window->lowerpanels->Show();				
+							                     
+					//	window->lowerpanels->SetFlag(1);
+					//	window->lowerpanels->Fit;
+
+					/* un-grey orthographic view controls */
+					//XtSetSensitive(window->orthographic_form,True);
+#endif /* defined (WX_USER_INTERFACE) */
+
 					/* make sure pane 0 is not using a custom projection */
 					Graphics_window_set_projection_mode(window,0,projection_mode);
 					/* re-enable tumbling in main scene viewer */
@@ -4614,6 +4755,16 @@ Sets the layout mode in effect on the <window>.
 			{
 				if (new_layout)
 				{
+
+#if defined (WX_USER_INTERFACE)
+					window->panel2->Show();
+					window->panel3->Hide();
+					window->panel4->Hide();					
+				    
+					
+					/* un-grey orthographic view controls */
+					//XtSetSensitive(window->orthographic_form,True);
+#endif /* defined (WX_USER_INTERFACE) */
 					/* make sure panes 0 and 1 use same projection, and enable tumble */
 					for (pane_no=0;pane_no<2;pane_no++)
 					{
@@ -4644,6 +4795,8 @@ Sets the layout mode in effect on the <window>.
 					window->panel2->Show();
 					window->panel3->Hide();
 					window->panel4->Hide();
+					//     window->lowerpanels->SetFlag(0);
+
 					/* un-grey orthographic view controls */
 					//XtSetSensitive(window->orthographic_form,True);
 #endif /* defined (WX_USER_INTERFACE) */

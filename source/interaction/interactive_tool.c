@@ -75,7 +75,7 @@ ACCESS this object for as long as you need to keep it; it is not modifiable.
 	Interactive_event_handler *interactive_event_handler;
 	Interactive_tool_get_icon_function *get_icon_function;
 	Interactive_tool_bring_up_dialog_function *bring_up_dialog_function;
-   Interactive_tool_destroy_tool_data_function *destroy_tool_data_function;
+        Interactive_tool_destroy_tool_data_function *destroy_tool_data_function;
 	/* data for the actual tool receiving the events */
 	void *tool_data;
 	int access_count;

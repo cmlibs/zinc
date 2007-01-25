@@ -3642,9 +3642,8 @@ public:
 		}
 		else
 		{
-			display_message(ERROR_MESSAGE,
-				"wxGraphicsBuffer_input_callback::OnMouse.  Unknown button event");
-			return_code=0;
+		  /* Ignore other events */
+		  return_code=0;
 		}
 
 		input.input_modifier = static_cast<enum Graphics_buffer_input_modifier>

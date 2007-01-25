@@ -4,13 +4,13 @@
 
   <object class="wxFrame" subclass="wxGraphicsWindow" name="CmguiGraphicsWindow" title="Cmgui Graphics Window">
     <object class = "wxBoxSizer">
-      <flag>wxTOP,wxLEFT</flag>	
+   	
       <orient>wxHORIZONTAL</orient>
 
       <object class="sizeritem">
-        <object class = "wxBoxSizer">
+	<object class = "wxBoxSizer">
 	  <orient>wxVERTICAL</orient>
-
+	  <min>0,0</min>
 	  <object class = "sizeritem">
    	    <object class="wxStaticBoxSizer">
               <label>Options</label>
@@ -36,14 +36,14 @@
 
          <object class="sizeritem">
    	   <object class="wxStaticBoxSizer">
-           <label>Layout Options</label>
-	   <orient>wxVERTICAL</orient>
+             <label>Layout Options</label>
+	     <orient>wxVERTICAL</orient>
 
              <object class="sizeritem">
 	       <object class="wxComboBox" name="View">
 	         <size>100,27</size>
 		 <style>wxCB_READONLY</style>
-		 <selection>6</selection>
+		 <selection>7</selection>
                  <content>
                    <item>2d</item>
                    <item>free_ortho</item>
@@ -51,17 +51,18 @@
                    <item>front_side</item>
                    <item>orthographic</item>
                    <item>pseudo_3d</item>
+		   <item>two_free</item>
                    <item>simple</item>
                  </content>
 	        </object>
 	      </object>
-              
+            
             <object class="sizeritem">
 	      <object class="wxStaticBoxSizer">              
                 <label>Up</label>
 	        <object class="sizeritem">
 	          <object class="wxComboBox" name="UpViewOptions">
-		  <style>wxCB_READONLY</style>
+	          <style>wxCB_READONLY</style>
 	            <size>50,27</size>
 		    <selection>2</selection>
                     <content>
@@ -76,69 +77,86 @@
 		</object>
 	      </object>
 	    </object>
-
+          
             <object class="sizeritem">
 	      <object class="wxStaticBoxSizer">              
                 <label>Front</label>
 	        <object class="sizeritem">
-	          <object class="wxComboBox" name="FrontViewOptions">
-		  <style>wxCB_READONLY</style>
-	            <size>50,27</size>
-		    <selection>3</selection>
-                    <content>
-                      <item>x</item>
-                      <item>y</item>
-                      <item>-x</item>
-                      <item>-y</item>
-                      </content>
-		    </object>
+	          <object class="wxButton" name="FrontViewOptions">
+		    <label>-y</label>
+	            <Enable>false</Enable>
+	            <size>27,27</size>
 		  </object>
-	        </object>
+		</object>
 	      </object>
-    
-            </object>
+	    </object>
+
           </object>
-	
         </object>
-      </object>    	
+	
+	<object class="sizeritem">
+	  <option>1</option>
+          <flag>wxEXPAND</flag>
+	  <object class= "wxPanel" name="ToolbarPanel">
+	    <size>100,150</size>
+	  </object>
+	</object>
+
+      </object>
+    </object>   	
       
       <object class="sizeritem">
 	<option>1</option>
 	<flag>wxEXPAND</flag>
-        <object class = "wxStaticBoxSizer">
-          <label>Graphics Window</label>
-          <object class = "sizeritem">
+	<object class = "wxStaticBoxSizer">
+	  <label>Graphics Window</label>
+	  <object class = "sizeritem">
 	    <option>1</option>
-            <flag>wxEXPAND</flag>
-            <object class="wxPanel" name="Panel">
-	      <size>100,100</size>
-            </object>
-          </object>
-          <object class = "sizeritem">
-	    <option>1</option>
-            <flag>wxEXPAND</flag>
-            <object class="wxPanel" name="Panel2">
-	      <size>100,100</size>
-            </object>
-          </object>
-          <object class = "sizeritem">
-	    <option>1</option>
-            <flag>wxEXPAND</flag>
-            <object class="wxPanel" name="Panel3">
-	      <size>100,100</size>
-            </object>
-          </object>
-          <object class = "sizeritem">
-	    <option>1</option>
-            <flag>wxEXPAND</flag>
-            <object class="wxPanel" name="Panel4">
-	      <size>100,100</size>
-            </object>
-          </object>
+	    <flag>wxEXPAND</flag>	  
+            <object class = "wxFlexGridSizer">
+	      <cols>2</cols>
+              <rows>2</rows>
+              <vgap>1</vgap>
+	      <hgap>1</hgap>
+              <growablecols>0,1</growablecols>
+              <growablerows>0,1</growablerows>
+              <object class = "sizeritem">
+	        <option>1</option>
+	        <flag>wxEXPAND</flag>
+	        <object class = "wxPanel" name="Panel">
+    	        </object>
+    	      </object>
+              <object class = "sizeritem">
+	        <option>1</option>
+	        <flag>wxEXPAND</flag>
+	        <object class = "wxPanel" name="Panel2">
+	        </object>
+    	      </object>
+              <object class = "sizeritem">
+	        <option>1</option>
+	        <flag>wxEXPAND</flag>
+	        <object class = "wxPanel" name="Panel3">
+	        </object>
+              </object>
+              <object class = "sizeritem">
+	        <option>1</option>
+	        <flag>wxEXPAND</flag>
+	        <object class= "wxPanel" name="Panel4">
+	        </object>
+	      </object>
+	    </object>
+	  </object>
         </object>
-      </object>	
+      </object>
+
 
     </object>
   </object>
 
 </resource>
+
+
+
+
+    
+
