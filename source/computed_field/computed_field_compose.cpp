@@ -679,12 +679,6 @@ already) and allows its contents to be modified.
 				set_Computed_field_conditional);
 			Option_table_add_int_non_negative_entry(option_table,"element_dimension",
 				&element_dimension);
-			find_option_table=CREATE(Option_table)();
-			Option_table_add_char_flag_entry(find_option_table,"find_nearest",
-				&find_nearest_flag);
-			Option_table_add_char_flag_entry(find_option_table,"find_exact",
-				&find_exact_flag);
-			Option_table_add_suboption_table(option_table, find_option_table);
 			/* find_element_xi_field */
 			set_find_element_xi_field_data.computed_field_manager =
 				computed_field_compose_package->computed_field_manager;
