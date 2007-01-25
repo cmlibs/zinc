@@ -120,6 +120,7 @@ matches the <field> in this structure or one of its source fields.
 	float tolerance;
 	int find_nearest_location;
 	struct FE_element *nearest_element;
+	FE_value nearest_xi[MAXIMUM_ELEMENT_XI_DIMENSIONS];
 	double nearest_element_distance_squared;
 	int start_with_data_xi;
 }; /* Computed_field_iterative_find_element_xi_data */
@@ -338,6 +339,10 @@ as the <data> field or any of its source fields.
 							(sum < data->nearest_element_distance_squared))
 						{
 							data->nearest_element = element;
+							for (i = 0; i < number_of_xi; i++)
+							{
+								data->nearest_xi[i] = data->xi[i];
+							}
 							data->nearest_element_distance_squared = sum;
 						}
 					}
@@ -576,8 +581,13 @@ ultimate parent finite_element field.
 				if (!*element && find_nearest_location)
 				{
 					*element = find_element_xi_data.nearest_element;
+					number_of_xi = get_FE_element_dimension(*element);
+					for (i = 0 ; i < number_of_xi ; i++)
+					{
+						xi[i] = find_element_xi_data.nearest_xi[i];
+					}
 				}
-				if (*element)
+				else if (*element)
 				{
 					number_of_xi = get_FE_element_dimension(*element);
 					for (i = 0 ; i < number_of_xi ; i++)
