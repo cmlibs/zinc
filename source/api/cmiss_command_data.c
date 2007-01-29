@@ -45,6 +45,7 @@ The public interface to the some of the internal functions of cmiss.
 #include "api/cmiss_command_data.h"
 #include "command/cmiss.h"
 #include "general/debug.h"
+#include "graphics/graphics_window.h"
 #include "user_interface/message.h"
 
 /*
@@ -77,3 +78,43 @@ Parses the supplied <command> using the command parser interpreter.
 	return (return_code);
 } /* Cmiss_command_data_execute */
 
+struct Cmiss_scene_viewer *Cmiss_command_data_get_graphics_window_pane_by_name(
+	struct Cmiss_command_data *command_data, const char *name, int pane_number)
+/*******************************************************************************
+LAST MODIFIED : 26 January 2007
+
+DESCRIPTION :
+Returns the a handle to the scene_viewer that inhabits the pane of a graphics_window.
+No longer a method in api/cmiss_graphics_window where it relied upon a global
+variable.
+==============================================================================*/
+{
+	struct Scene_viewer *scene_viewer;
+	struct Graphics_window *window;
+
+	ENTER(Cmiss_command_data_get_graphics_window_pane_by_name);
+	if (command_data && name)
+	{
+		if (window=FIND_BY_IDENTIFIER_IN_MANAGER(Graphics_window,name)(
+			(char *)name,
+			Cmiss_command_data_get_graphics_window_manager(command_data)))
+		{
+			scene_viewer = Graphics_window_get_Scene_viewer(window, pane_number);
+		}
+		else
+		{
+			display_message(WARNING_MESSAGE,"Could not find window named %s",
+				name);
+			scene_viewer = (struct Scene_viewer *)NULL;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"Cmiss_command_data_get_graphics_window_pane_by_name.  "
+			"Invalid arguments.");
+		scene_viewer = (struct Scene_viewer *)NULL;
+	}
+	LEAVE;
+
+	return (scene_viewer);
+} /* Cmiss_command_data_get_graphics_window_pane_by_name */

@@ -126,4 +126,14 @@ LAST MODIFIED : 19 December 2002
 DESCRIPTION :
 Process events until some events request the program to finish.
 ==============================================================================*/
+
+struct Cmiss_scene_viewer *Cmiss_command_data_get_graphics_window_pane_by_name(
+	struct Cmiss_command_data *command_data, const char *name, int pane_number);
+/*******************************************************************************
+LAST MODIFIED : 26 January 2007
+
+DESCRIPTION :
+Returns the a handle to the scene_viewer that inhabits the pane of a graphics_window.
+==============================================================================*/
+
 #endif /* __CMISS_COMMAND_H__ */
