@@ -168,11 +168,11 @@ chosen.
 	ENTER(create_Cmiss_scene_viewer_win32);
 	if (cmiss_scene_viewer_package)
 	{
-		if (CMISS_SCENE_VIEWER_ANY_BUFFERING_MODE==buffer_mode)
+		if (CMISS_SCENE_VIEWER_BUFFERING_ANY_MODE==buffer_mode)
 		{
 			graphics_buffer_buffering_mode = GRAPHICS_BUFFER_ANY_BUFFERING_MODE;
 		}
-		else if (CMISS_SCENE_VIEWER_SINGLE_BUFFERING==buffer_mode)
+		else if (CMISS_SCENE_VIEWER_BUFFERING_SINGLE==buffer_mode)
 		{
 			graphics_buffer_buffering_mode = GRAPHICS_BUFFER_SINGLE_BUFFERING;
 		}
@@ -180,11 +180,11 @@ chosen.
 		{
 			graphics_buffer_buffering_mode = GRAPHICS_BUFFER_DOUBLE_BUFFERING;
 		}
-		if (CMISS_SCENE_VIEWER_ANY_STEREO_MODE==stereo_mode)
+		if (CMISS_SCENE_VIEWER_STEREO_ANY_MODE==stereo_mode)
 		{
 			graphics_buffer_stereo_mode = GRAPHICS_BUFFER_ANY_STEREO_MODE;
 		}
-		else if (CMISS_SCENE_VIEWER_STEREO==stereo_mode)
+		else if (CMISS_SCENE_VIEWER_STEREO_STEREO==stereo_mode)
 		{
 			graphics_buffer_stereo_mode = GRAPHICS_BUFFER_STEREO;
 		}
