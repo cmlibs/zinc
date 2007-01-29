@@ -237,4 +237,13 @@ LAST MODIFIED : 7 November 2006
 DESCRIPTION :
 Returns the texture manager from the <command_data>.
 ==============================================================================*/
+
+struct MANAGER(Graphics_window) *Cmiss_command_data_get_graphics_window_manager(
+	struct Cmiss_command_data *command_data);
+/*******************************************************************************
+LAST MODIFIED : 26 January 2007
+
+DESCRIPTION :
+Returns the graphics_window manager from the <command_data>.
+==============================================================================*/
 #endif /* !defined (COMMAND_CMISS_H) */
