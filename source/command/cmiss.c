@@ -24465,3 +24465,25 @@ Returns the scene viewer data from the <command_data>.
 
 	return (cmiss_scene_viewer_package);
 }
+
+struct MANAGER(Graphics_window) *Cmiss_command_data_get_graphics_window_manager(
+	struct Cmiss_command_data *command_data)
+/*******************************************************************************
+LAST MODIFIED : 26 January 2007
+
+DESCRIPTION :
+Returns the graphics_window manager from the <command_data>.
+==============================================================================*/
+{
+	struct MANAGER(Graphics_window) *graphics_window_manager;
+
+	ENTER(Cmiss_command_data_get_graphics_window_manager);
+	graphics_window_manager=(struct MANAGER(Graphics_window) *)NULL;
+	if (command_data)
+	{
+		graphics_window_manager = command_data->graphics_window_manager;
+	}
+	LEAVE;
+
+	return (graphics_window_manager);
+} /* Cmiss_command_data_get_graphics_window_manager */
