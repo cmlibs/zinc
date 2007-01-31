@@ -74,6 +74,8 @@ public:
 	virtual ~Computed_field_ImageFilter_Functor()
 	{
 	}
+
+	virtual int clear_cache() = 0;
 };
 
 class Computed_field_ImageFilter : public Computed_field_core
@@ -115,6 +117,16 @@ public:
 	inline void assign_field_values( PixelType pixel );
 
 protected:
+
+	int clear_cache()
+	{
+		int return_code = 1;
+		if (functor)
+		{
+			return_code = functor->clear_cache();
+		}
+		return (return_code);
+	};
 
 	int evaluate_cache_at_location(Field_location* location);
 
@@ -995,6 +1007,12 @@ location.
 				(location, outputImage);
 		}
 		return(return_code);
+	}
+
+	int clear_cache()
+	{
+		outputImage = NULL;
+		return (1);
 	}
 
 };
