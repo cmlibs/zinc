@@ -1967,10 +1967,11 @@ Create the structures and retrieve the command window from the uil file.
 			if (ALLOCATE(command_window->command_prompt, char , 1))
 			{
 				*command_window->command_prompt = 0;
-				/* check if the class is registered */
-				if (TRUE!=(win32_return_code=GetClassInfoEx(
+				/* check if the class is registered, need to check against FALSE
+				 as the return value is successful while declared as BOOL is 'nonzero' */
+				if (FALSE==GetClassInfoEx(
 					User_interface_get_instance(user_interface),
-					class_name,&class_information)))
+					class_name,&class_information))
 				{
 					class_information.cbClsExtra=0;
 					class_information.cbWndExtra=
@@ -1996,15 +1997,13 @@ Create the structures and retrieve the command window from the uil file.
 						win32_return_code=TRUE;
 					}
 				}
+				else
+				{
+					win32_return_code = TRUE;
+				}
 				/* create the window */
 				if (TRUE==win32_return_code)
 				{
-#if defined (OLD_CODE)
-					if (command_window->dialog=CreateDialogParam(
-						User_interface_get_instance(user_interface),
-						"Command_window",(HWND)NULL,Command_window_dialog_proc,
-						(LPARAM)command_window))
-#endif /* defined (OLD_CODE) */
 					if (command_window->dialog=CreateDialogParam(
 						GetModuleHandle("libcmgui.dll"),
 						"Command_window",
