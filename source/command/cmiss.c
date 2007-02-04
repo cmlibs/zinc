@@ -42,14 +42,6 @@ Functions for executing cmiss commands.
  *
  * ***** END LICENSE BLOCK ***** */
 
-#if defined (MOTIF) || defined (WIN32_USER_INTERFACE) || defined (GTK_USER_INTERFACE) || defined (WX_USER_INTERFACE)
-#define USE_CMGUI_COMMAND_WINDOW
-#endif /* defined (MOTIF) || defined (WIN32_USER_INTERFACE) || defined (GTK_USER_INTERFACE) || defined (WX_USER_INTERFACE) */
-#if defined (MOTIF) || defined (WIN32_USER_INTERFACE) || defined (GTK_USER_INTERFACE) || defined (WX_USER_INTERFACE)
-#define USE_CMGUI_GRAPHICS_WINDOW
-#endif /* defined (MOTIF) || defined (WIN32_USER_INTERFACE) || defined (GTK_USER_INTERFACE) || defined (WX_USER_INTERFACE) */
-
-
 #include <stddef.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -60,9 +52,6 @@ Functions for executing cmiss commands.
 #if defined (MOTIF)
 #include <Xm/List.h>
 #endif /* defined (MOTIF) */
-#if defined (USE_CMGUI_GRAPHICS_WINDOW)
-#include "api/cmiss_graphics_window_private.h"
-#endif /* defined (USE_CMGUI_GRAPHICS_WINDOW) */
 #include "api/cmiss_scene_viewer.h"
 #include "api/cmiss_scene_viewer_private.h"
 #if defined (CELL)
@@ -74,9 +63,7 @@ Functions for executing cmiss commands.
 #include "comfile/comfile_window.h"
 #endif /* defined (MOTIF) */
 #include "command/console.h"
-#if defined (USE_CMGUI_COMMAND_WINDOW)
 #include "command/command_window.h"
-#endif /* defined (USE_CMGUI_COMMAND_WINDOW) */
 #include "command/example_path.h"
 #include "command/parser.h"
 #include "computed_field/computed_field.h"
@@ -101,9 +88,7 @@ Functions for executing cmiss commands.
 #include "computed_field/computed_field_trigonometry.h"
 #include "computed_field/computed_field_update.h"
 #include "computed_field/computed_field_vector_operations.h"
-#if defined (USE_CMGUI_GRAPHICS_WINDOW)
 #include "computed_field/computed_field_window_projection.h"
-#endif /* defined (USE_CMGUI_GRAPHICS_WINDOW) */
 #include "computed_field/computed_field_wrappers.h"
 #if defined (MOTIF)
 #include "element/element_creator.h"
