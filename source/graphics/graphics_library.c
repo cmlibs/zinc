@@ -55,6 +55,11 @@ Functions for interfacing with the graphics library.
 #    include <GL/glx.h>
 #  elif defined (GTK_USER_INTERFACE) /* switch (USER_INTERFACE) */
 #    include <gtk/gtk.h>
+#    if defined (UNIX)
+#      define GLX_GLXEXT_PROTOTYPES
+#      include <GL/glx.h>
+#      include <GL/glxext.h>
+#    endif
 #    if ( GTK_MAJOR_VERSION < 2 ) || defined (WIN32_SYSTEM)
 /* SAB When compiling GTK with WIN32 currently uses GTK GL AREA for open GL. */
 #      define GTK_USE_GTKGLAREA
@@ -63,6 +68,7 @@ Functions for interfacing with the graphics library.
 #      include <gtkgl/gtkglarea.h>
 #    else /* defined (GTK_USE_GTKGLAREA) */
 #      include <gtk/gtkgl.h>
+#      include <gdk/x11/gdkglx.h>
 #    endif /* defined (GTK_USE_GTKGLAREA) */
 #  endif /* switch (USER_INTERFACE) */
 #endif /* defined (OPENGL_API) */
@@ -87,7 +93,9 @@ Sets up the default light, material and light model for the graphics library.
 ==============================================================================*/
 {
 #if defined(GLX_ARB_get_proc_address)
+#if defined (MOTIF)
 	Display *display;
+#endif
 #endif /* defined(GLX_ARB_get_proc_address) */
 	int return_code;
 	static int initialized=0;
@@ -102,6 +110,7 @@ Sets up the default light, material and light model for the graphics library.
 		glMatrixMode(GL_MODELVIEW);
 
 #if defined(GLX_ARB_get_proc_address)
+#if defined (MOTIF)
 		/* Try and load this function while we have the user_interface connection */
 		display = User_interface_get_display(user_interface);
 		if (255 == GLEXTENSIONFLAG(GLX_ARB_get_proc_address))
@@ -116,6 +125,7 @@ Sets up the default light, material and light model for the graphics library.
 				GLEXTENSIONFLAG(GLX_ARB_get_proc_address) = 0;
 			}
 		}
+#endif /* defined (MOTIF) */
 #endif /* defined(GLX_ARB_get_proc_address) */
 #endif
 		initialized=1;
@@ -124,6 +134,41 @@ Sets up the default light, material and light model for the graphics library.
 
 	return (return_code);
 } /* initialize_graphics_library */
+
+#if defined (GTK_USER_INTERFACE)
+#if defined (UNIX)
+int Graphics_library_initialise_gtkglext_glx_extensions(GdkGLConfig *config)
+/*******************************************************************************
+LAST MODIFIED : 5 February 2007
+
+DESCRIPTION :
+To test GLX extensions requires a connection to the display.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(Graphics_library_initialise_gtkglext_glx_extensions);
+	return_code=1;
+#if defined(GLX_ARB_get_proc_address)
+	if (255 == GLEXTENSIONFLAG(GLX_ARB_get_proc_address))
+	{
+		if (gdk_x11_gl_query_glx_extension(config,
+				"GLX_ARB_get_proc_address"))
+		{
+			GLEXTENSIONFLAG(GLX_ARB_get_proc_address) = 1;
+		}
+		else
+		{
+			GLEXTENSIONFLAG(GLX_ARB_get_proc_address) = 0;
+		}
+	}
+#endif /* defined(GLX_ARB_get_proc_address) */
+	LEAVE;
+
+	return (return_code);
+} /* Graphics_library_initialise_gtkglext_glx_extensions */
+#endif /* defined (UNIX) */
+#endif /* defined (GTK_USER_INTERFACE) */
 
 int gtMatrix_is_identity(gtMatrix *matrix)
 /*******************************************************************************
@@ -436,13 +481,18 @@ memory.
 		p=(char *)glGetString(GL_EXTENSIONS);
 #if defined (DEBUG)
 		/* For debugging */
-		vendor=(char *)glGetString(GL_VENDOR);
-		version=(char *)glGetString(GL_VERSION);
-		glu=(char *)gluGetString(GLU_EXTENSIONS);
-		printf("Vendor %s\n", vendor);
-		printf("Version %s\n", version);
-		printf("OpenGL %s\n", p);
-		printf("GLU %s\n", glu);
+		{
+			char *vendor;
+			char *version;
+			char *glu;
+			vendor=(char *)glGetString(GL_VENDOR);
+			version=(char *)glGetString(GL_VERSION);
+			glu=(char *)gluGetString(GLU_EXTENSIONS);
+			printf("Vendor %s\n", vendor);
+			printf("Version %s\n", version);
+			printf("OpenGL %s\n", p);
+			printf("GLU %s\n", glu);
+		}
 #endif /* defined (DEBUG) */
 		if (NULL==p)
 		{

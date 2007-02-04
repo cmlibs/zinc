@@ -66,6 +66,11 @@ Functions and structures for interfacing with the graphics library.
 #endif /* defined (WIN32_SYSTEM) */
 #endif
 #include "graphics/texture.h"
+#if defined (GTK_USER_INTERFACE)
+#if defined (UNIX)
+#include <gdk/gdkgl.h>
+#endif /* defined (UNIX) */
+#endif /* defined (GTK_USER_INTERFACE) */
 
 struct User_interface;
 
@@ -226,6 +231,18 @@ DESCRIPTION :
 Attempts to load the space separated list of extensions.  Returns true if all
 the extensions succeed, false if not.
 ==============================================================================*/
+
+#if defined (GTK_USER_INTERFACE)
+#if defined (UNIX)
+int Graphics_library_initialise_gtkglext_glx_extensions(GdkGLConfig *config);
+/*******************************************************************************
+LAST MODIFIED : 5 February 2007
+
+DESCRIPTION :
+To test GLX extensions requires a connection to the display.
+==============================================================================*/
+#endif /* defined (UNIX) */
+#endif /* defined (GTK_USER_INTERFACE) */
 
 #if defined (OPENGL_API)
    /* On UNIX systems we just test if we can load the handles but call the functions
