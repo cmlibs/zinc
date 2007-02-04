@@ -59,6 +59,15 @@ interest and set scene_viewer values directly.
 #include "user_interface/user_interface.h"
 
 /*
+Global constants
+----------------
+*/
+
+#if defined (MOTIF) || defined (WIN32_USER_INTERFACE) || defined (GTK_USER_INTERFACE) || defined (WX_USER_INTERFACE)
+#define USE_CMGUI_GRAPHICS_WINDOW
+#endif /* defined (MOTIF) || defined (WIN32_USER_INTERFACE) || defined (GTK_USER_INTERFACE) || defined (WX_USER_INTERFACE) */
+
+/*
 Global/Public types
 -------------------
 */
