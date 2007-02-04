@@ -58,6 +58,10 @@ Global constants
 #define CMGUI_COMMAND_PROPERTY "_CMGUI_COMMAND"
 #define CMGUI_RESPONSE_PROPERTY "_CMGUI_RESPONSE"
 
+#if defined (MOTIF) || defined (WIN32_USER_INTERFACE) || defined (GTK_USER_INTERFACE) || defined (WX_USER_INTERFACE)
+#define USE_CMGUI_COMMAND_WINDOW
+#endif /* defined (MOTIF) || defined (WIN32_USER_INTERFACE) || defined (GTK_USER_INTERFACE) || defined (WX_USER_INTERFACE) */
+
 /*
 Global types
 ------------
