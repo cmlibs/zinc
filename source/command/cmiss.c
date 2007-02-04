@@ -24479,10 +24479,12 @@ Returns the graphics_window manager from the <command_data>.
 
 	ENTER(Cmiss_command_data_get_graphics_window_manager);
 	graphics_window_manager=(struct MANAGER(Graphics_window) *)NULL;
+#if defined (USE_CMGUI_GRAPHICS_WINDOW)
 	if (command_data)
 	{
 		graphics_window_manager = command_data->graphics_window_manager;
 	}
+#endif /* defined (USE_CMGUI_GRAPHICS_WINDOW) */
 	LEAVE;
 
 	return (graphics_window_manager);

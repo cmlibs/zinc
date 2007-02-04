@@ -245,5 +245,7 @@ LAST MODIFIED : 26 January 2007
 
 DESCRIPTION :
 Returns the graphics_window manager from the <command_data>.
+If this version of cmgui does not have graphics windows the returned pointer
+will be NULL.
 ==============================================================================*/
 #endif /* !defined (COMMAND_CMISS_H) */

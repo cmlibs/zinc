@@ -91,20 +91,29 @@ variable.
 {
 	struct Scene_viewer *scene_viewer;
 	struct Graphics_window *window;
+	struct MANAGER(Graphics_window) *graphics_window_manager;
 
 	ENTER(Cmiss_command_data_get_graphics_window_pane_by_name);
 	if (command_data && name)
 	{
-		if (window=FIND_BY_IDENTIFIER_IN_MANAGER(Graphics_window,name)(
-			(char *)name,
-			Cmiss_command_data_get_graphics_window_manager(command_data)))
+		if (graphics_window_manager = 
+			Cmiss_command_data_get_graphics_window_manager(command_data))
 		{
-			scene_viewer = Graphics_window_get_Scene_viewer(window, pane_number);
+			if (window=FIND_BY_IDENTIFIER_IN_MANAGER(Graphics_window,name)(
+				(char *)name, graphics_window_manager))
+			{
+				scene_viewer = Graphics_window_get_Scene_viewer(window, pane_number);
+			}
+			else
+			{
+				display_message(WARNING_MESSAGE,"Could not find window named %s",
+					name);
+				scene_viewer = (struct Scene_viewer *)NULL;
+			}
 		}
 		else
 		{
-			display_message(WARNING_MESSAGE,"Could not find window named %s",
-				name);
+			display_message(WARNING_MESSAGE,"No graphics windows in this cmgui");
 			scene_viewer = (struct Scene_viewer *)NULL;
 		}
 	}
