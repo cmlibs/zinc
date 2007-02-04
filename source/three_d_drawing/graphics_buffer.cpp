@@ -2065,6 +2065,11 @@ if there are no more initialise events pending.
 			graphics_buffer->package->share_glcontext =
 				gtk_widget_create_gl_context(graphics_buffer->glarea,
 				graphics_buffer->glcontext, TRUE, GDK_GL_RGBA_TYPE);
+
+#if defined (UNIX)
+			Graphics_library_initialise_gtkglext_glx_extensions(
+				gdk_gl_context_get_gl_config(graphics_buffer->package->share_glcontext));
+#endif /* defined (UNIX) */
 		}
 		graphics_buffer->gldrawable = gtk_widget_get_gl_drawable(graphics_buffer->glarea);
 #endif /* defined (GTK_USER_INTERFACE) */
