@@ -4432,7 +4432,8 @@ define_Computed_field_type option table when parsing commands.
 	struct Computed_field_type_data *data;
 
 	ENTER(Computed_field_package_add_type);
-	if (computed_field_package && name && define_Computed_field_type_function)
+	if (computed_field_package && name && define_Computed_field_type_function &&
+		 define_type_user_data)
 	{
 		if(data = CREATE(Computed_field_type_data)(name,
 			define_Computed_field_type_function, define_type_user_data))
