@@ -43,7 +43,6 @@ The public interface to the Cmiss_graphics_window object.
  * ***** END LICENSE BLOCK ***** */
 #include <stdarg.h>
 #include "api/cmiss_graphics_window.h"
-#include "api/cmiss_graphics_window_private.h"
 #include "general/debug.h"
 #include "general/manager.h"
 #include "general/object.h"
