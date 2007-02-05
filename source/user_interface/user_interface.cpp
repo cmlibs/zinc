@@ -86,8 +86,11 @@ extern "C" {
 extern "C" {
 #include <gtk/gtk.h>
 #include <glib.h>
-/* Could check for GTKGLAREA but we don't use that version any more */
+#if ( GTK_MAJOR_VERSION < 2 ) || defined (WIN32_SYSTEM)
+	/* GTKGLAREA */
+#else
 #include <gtk/gtkgl.h>
+#endif
 }
 #endif /* defined (GTK_USER_INTERFACE) */
 #if defined (WX_USER_INTERFACE)
@@ -1918,11 +1921,16 @@ Open the <user_interface>.
 		/* Initialize the widget set */
 		gtk_init (argc_address, &argv);
 
+#if ( GTK_MAJOR_VERSION < 2 ) || defined (WIN32_SYSTEM)
+	/* GTKGLAREA */
+#else
 		/* Initialise gtkglext, stop the gtkglext calling XmuLookupStandardColormap()
 			which appears to be buggy on NVIDIA and ATI OpenGL, you have to restart the
 			X server after getting BadColor (invalid Colormap parameter) */
 		putenv("GDK_GL_NO_STANDARD_COLORMAP=1");
 		gtk_gl_init(argc_address, &argv);
+#endif
+
 		/* Create the main window */
 		user_interface->main_window = gtk_window_new (GTK_WINDOW_TOPLEVEL);
 
