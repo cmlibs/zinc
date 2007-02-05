@@ -96,6 +96,7 @@ variable.
 	ENTER(Cmiss_command_data_get_graphics_window_pane_by_name);
 	if (command_data && name)
 	{
+#if defined (USE_CMGUI_GRAPHICS_WINDOW)
 		if (graphics_window_manager = 
 			Cmiss_command_data_get_graphics_window_manager(command_data))
 		{
@@ -113,9 +114,13 @@ variable.
 		}
 		else
 		{
-			display_message(WARNING_MESSAGE,"No graphics windows in this cmgui");
+			display_message(WARNING_MESSAGE,"No graphics window manager in this cmgui");
 			scene_viewer = (struct Scene_viewer *)NULL;
 		}
+#else /* defined (USE_CMGUI_GRAPHICS_WINDOW) */
+		display_message(WARNING_MESSAGE,"No graphics windows in this cmgui");
+		scene_viewer = (struct Scene_viewer *)NULL;
+#endif /* defined (USE_CMGUI_GRAPHICS_WINDOW) */
 	}
 	else
 	{
