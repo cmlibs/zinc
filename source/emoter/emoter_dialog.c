@@ -688,6 +688,7 @@ Sets the nodes according to all the values of the sliders
 			}
 
 			emoter_update_nodes( shared, shared->show_solid_body_motion );
+#if defined (USE_CMGUI_GRAPHICS_WINDOW)
 			/*			(*(emoter_dialog->shared->execute_command->function))(
 						"open comfile redraw execute",
 						emoter_dialog->shared->execute_command->data);*/
@@ -699,6 +700,7 @@ Sets the nodes according to all the values of the sliders
 			{
 				Graphics_window_update_now(graphics_window);
 			}
+#endif /* defined (USE_CMGUI_GRAPHICS_WINDOW) */
 
 			DEALLOCATE( total_shape_vector );
 		}
@@ -1582,6 +1584,7 @@ Callback for the play slider which sets the min and max and stores the widget
 				slider_position);
 			emoter_update_face( emoter_dialog->shared );
 		}
+#if defined (USE_CMGUI_GRAPHICS_WINDOW)
 		/* SAB This would be better implemented by adding a special
 			manager message to the Scene Manager and then calling that. */
 		if (graphics_window=FIRST_OBJECT_IN_MANAGER_THAT(Graphics_window)(
@@ -1590,6 +1593,7 @@ Callback for the play slider which sets the min and max and stores the widget
 		{
 			Graphics_window_update_now(graphics_window);
 		}
+#endif /* defined (USE_CMGUI_GRAPHICS_WINDOW) */
 	}
 	else
 	{
@@ -6559,6 +6563,7 @@ Executes a GFX MODIFY EMOTER command.
 					if (face_changed)
 					{
 						emoter_update_face (emoter_dialog->shared);
+#if defined (USE_CMGUI_GRAPHICS_WINDOW)
 						/* SAB This would be better implemented by adding a special
 							manager message to the Scene Manager and then calling that. */
 						if (graphics_window=FIRST_OBJECT_IN_MANAGER_THAT(Graphics_window)(
@@ -6567,6 +6572,7 @@ Executes a GFX MODIFY EMOTER command.
 						{
 							Graphics_window_update_now(graphics_window);
 						}
+#endif /* defined (USE_CMGUI_GRAPHICS_WINDOW) */
 					}
 #if defined (MOTIF)
 					if (keyframe)
