@@ -2938,11 +2938,7 @@ public:
       (this, tool);
    }
 
-  DECLARE_EVENT_TABLE();
 };
-
-BEGIN_EVENT_TABLE(wxInteractiveToolButton, wxToggleButton)
-END_EVENT_TABLE()
 
 static int add_interactive_tool_to_wx_toolbar(struct Interactive_tool *interactive_tool,
 					      void *graphics_window_void)
@@ -3917,16 +3913,18 @@ Graphics_window_destroy_CB.
 		{
 			DEACCESS(Light_model)(&window->default_light_model);
 		}
-#if GTK_MAJOR_VERSION >= 2
-		g_signal_handler_disconnect (G_OBJECT(window->shell_window), 
-			window->close_handler_id);
-#endif /* GTK_MAJOR_VERSION >= 2 */
-#if defined (MOTIF)
+#if defined (MOTIF) /* switch (USER_INTERFACE) */
 		destroy_Shell_list_item_from_shell(&(window->window_shell),
 			window->user_interface);
 		/* destroy the graphics window widget */
 		XtDestroyWidget(window->window_shell);
-#endif /* defined (MOTIF) */
+#elif defined (GTK_USER_INTERFACE) /* switch (USER_INTERFACE) */
+#if GTK_MAJOR_VERSION >= 2
+		g_signal_handler_disconnect (G_OBJECT(window->shell_window), 
+			window->close_handler_id);
+#endif /* GTK_MAJOR_VERSION >= 2 */
+		gtk_widget_destroy (window->shell_window);
+#endif /* switch (USER_INTERFACE) */
 		/* no longer accessing scene */
 		DEACCESS(Scene)(&(window->scene));
 		if(window->time_keeper)
