@@ -2415,6 +2415,11 @@ public:
   wxNodeTool(Node_tool *node_tool): 
     node_tool(node_tool)
   {
+	  { // Suppress the error message if we have already initialised this xrc
+		  wxLogNull logNo;
+		  wxXmlInit_node_tool();
+	  } // ~wxLogNull called, old log restored
+
 	  wxXmlResource::Get()->LoadFrame(this, (wxWindow *)NULL, _T("CmguiNodeTool"));
 
 	 wxPanel *coordinate_field_chooser_panel = 
@@ -2931,8 +2936,6 @@ used to represent them. <element_manager> should be NULL if <use_data> is true.
 
 
 #elif defined (WX_USER_INTERFACE) /* switch (USER_INTERFACE) */ 
-			wxXmlInit_node_tool();
-
 			node_tool->wx_node_tool = new 
 				wxNodeTool(node_tool);
 
