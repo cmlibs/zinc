@@ -3645,6 +3645,28 @@ public:
 		else if (event.ButtonUp())
 		{
 			input.type = GRAPHICS_BUFFER_BUTTON_RELEASE;
+			switch (event.GetButton())
+			{
+				case wxMOUSE_BTN_LEFT:
+				{
+					input.button_number = 1;
+				} break;
+				case wxMOUSE_BTN_MIDDLE:
+				{
+					input.button_number = 2;
+				} break;
+				case wxMOUSE_BTN_RIGHT:
+				{
+					input.button_number = 3;
+				} break;
+				case wxMOUSE_BTN_NONE:
+				default:
+				{
+					display_message(ERROR_MESSAGE,
+						"wxGraphicsBuffer_input_callback::OnMouse.  Invalid button");
+					return_code=0;
+				} break;
+			}
 		}
 		else
 		{
