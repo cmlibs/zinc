@@ -83,6 +83,7 @@ static char node_tool_uidh[] =
 #include "wx/wx.h"
 #include <wx/tglbtn.h>
 #include "wx/xrc/xmlres.h"
+#include "choose/choose_class.hpp"
 #include "node/node_tool.xrch"
 #endif /* defined (WX_USER_INTERFACE)*/
 
@@ -180,7 +181,7 @@ changes in node position and derivatives etc.
 
 
 #if defined (WX_USER_INTERFACE)
-  wxNodeTool *wx_node_tool;
+	wxNodeTool *wx_node_tool;
 #endif /* defined (WX_USER_INTERFACE) */
 }; /* struct Node_tool */
 
@@ -2399,22 +2400,64 @@ Fetches the appropriate icon for the interactive tool.
 
 
 #if defined (WX_USER_INTERFACE)
-class wxNodeTool : public wxFrame
+class wxNodeTool : public wxFrame, Chooser_callback_object<Computed_field>
 {
   Node_tool *node_tool;
   FE_region *master_fe_region;
   FE_field *fe_field;
 
+	DEFINE_MANAGER_CLASS(Computed_field);
+	Managed_object_chooser<Computed_field, MANAGER_CLASS(Computed_field)>
+	   *computed_field_chooser;
+
 public:
 
   wxNodeTool(Node_tool *node_tool): 
     node_tool(node_tool)
-  {	 
+  {
+	  wxXmlResource::Get()->LoadFrame(this, (wxWindow *)NULL, _T("CmguiNodeTool"));
+
+	 wxPanel *coordinate_field_chooser_panel = 
+		 XRCCTRL(*this, "CoordinateFieldChooserPanel", wxPanel);
+	  computed_field_chooser = 
+		  new Managed_object_chooser<Computed_field, MANAGER_CLASS(Computed_field)>
+		  (coordinate_field_chooser_panel, node_tool->coordinate_field,
+			  Computed_field_package_get_computed_field_manager(
+			  node_tool->computed_field_package), 
+			  Computed_field_has_up_to_3_numerical_components,
+			  (void *)NULL, node_tool->user_interface);
+
+	  computed_field_chooser->set_callback(this);
   };
 
   wxNodeTool()
   {
+	  delete computed_field_chooser;
   };
+
+	int chooser_callback(Computed_field *field)
+/*******************************************************************************
+LAST MODIFIED : 9 February 2007
+
+DESCRIPTION :
+Callback from wxChooser<Computed_field> when choice is made.
+==============================================================================*/
+	{
+		Node_tool_set_coordinate_field(node_tool, field);
+		return 1;
+	}
+
+	int setCoordinateField(Computed_field *field)
+/*******************************************************************************
+LAST MODIFIED : 9 February 2007
+
+DESCRIPTION :
+Set the selected option in the Coordinate Field chooser.
+==============================================================================*/
+	{
+		computed_field_chooser->set_object(field);
+		return 1;
+	}
 
        void OnButtonSelectpressed(wxCommandEvent& event)
        {    
@@ -2893,9 +2936,6 @@ used to represent them. <element_manager> should be NULL if <use_data> is true.
 			node_tool->wx_node_tool = new 
 				wxNodeTool(node_tool);
 
-			wxXmlResource::Get()->LoadFrame(node_tool->wx_node_tool,
-			  (wxWindow *)NULL, _T("CmguiNodeTool"));
-
 			/* Set defaults until we have some sort of region chooser */
 			Node_tool_set_Cmiss_region(node_tool, node_tool->root_region);
 			node_tool->current_region_path = (char *)NULL;
@@ -3112,6 +3152,10 @@ are on.
 			CHOOSE_OBJECT_SET_OBJECT(Computed_field)(
 				node_tool->coordinate_field_widget,node_tool->coordinate_field);
 #endif /* defined (MOTIF) */
+#if defined (WX_USER_INTERFACE)
+			node_tool->wx_node_tool->setCoordinateField(coordinate_field);
+#endif /* defined (WX_USER_INTERFACE) */
+
 		}
 	}
 	else

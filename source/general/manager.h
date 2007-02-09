@@ -676,6 +676,72 @@ DESCRIPTION : \
 Copies the <identifier_field_name> to <destination>.  Used by the manager. \
 ==============================================================================*/
 
+#define MANAGER_CLASS(object_type) manager_class_ ## object_type
+/***************************************************************************** \
+LAST MODIFIED : 9 February 2007 \
+\
+DESCRIPTION : \
+Wraps the existing Manager functionality and types into a class. \
+==============================================================================*/
+#define DEFINE_MANAGER_CLASS(object_type) \
+class MANAGER_CLASS(object_type) \
+{\
+public: \
+	typedef MANAGER(object_type) Manager_type; \
+	typedef MANAGER_MESSAGE(object_type) Manager_message_type; \
+	typedef MANAGER_CONDITIONAL_FUNCTION(object_type) Manager_conditional_function; \
+	typedef LIST_CONDITIONAL_FUNCTION(object_type) List_conditional_function; \
+	static const enum MANAGER_CHANGE(object_type) Manager_change_none = MANAGER_CHANGE_NONE(object_type); \
+	static const enum MANAGER_CHANGE(object_type) Manager_change_add = MANAGER_CHANGE_ADD(object_type); \
+	static const enum MANAGER_CHANGE(object_type) Manager_change_remove = MANAGER_CHANGE_REMOVE(object_type); \
+	static const enum MANAGER_CHANGE(object_type) Manager_change_identifier = MANAGER_CHANGE_IDENTIFIER(object_type); \
+	static const enum MANAGER_CHANGE(object_type) Manager_change_object = MANAGER_CHANGE_OBJECT(object_type); \
+	static const enum MANAGER_CHANGE(object_type) Manager_change_object_not_identifier = MANAGER_CHANGE_OBJECT_NOT_IDENTIFIER(object_type); \
+\
+	MANAGER(object_type) *manager; \
+\
+   MANAGER_CLASS(object_type)(MANAGER(object_type) *manager) : manager(manager) \
+	{ \
+	} \
+\
+	inline void *register_callback(MANAGER_CALLBACK_FUNCTION(object_type) *callback, \
+		void *user_data) \
+	{ \
+		return MANAGER_REGISTER(object_type)(callback, user_data, manager); \
+	} \
+\
+	inline int deregister_callback(void *callback_id) \
+	{ \
+		return MANAGER_DEREGISTER(object_type)(callback_id, manager); \
+	} \
+\
+	inline int number_in_manager() \
+	{ \
+		return NUMBER_IN_MANAGER(object_type)(manager); \
+	} \
+\
+	inline int for_each_object_in_manager(	\
+		MANAGER_ITERATOR_FUNCTION(object_type) *iterator, void *user_data) \
+	{ \
+		return FOR_EACH_OBJECT_IN_MANAGER(object_type)( \
+			iterator, user_data, manager); \
+	} \
+\
+	inline object_type *first_object_in_list_that(	\
+	  LIST_CONDITIONAL_FUNCTION(object_type) *conditional, void *user_data, \
+	  struct LIST(object_type) *list) \
+	{ \
+		return FIRST_OBJECT_IN_LIST_THAT(object_type)( \
+			conditional, user_data, list); \
+	} \
+\
+	inline int get_object_name(object_type *object, char **name) \
+	{ \
+		return GET_NAME(object_type)(object, name);		\
+	} \
+\
+}; /* MANAGER_CLASS(object_type) */
+
 #define DECLARE_MANAGER_TYPES( object_type ) \
 DECLARE_MANAGER_CHANGE_TYPE(object_type); \
 DECLARE_MANAGER_MESSAGE_TYPE(object_type); \

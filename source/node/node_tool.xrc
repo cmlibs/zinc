@@ -54,6 +54,26 @@
 	</object>
       </object>	
 	
+      <object class = "sizeritem">
+	   <flag>wxEXPAND</flag>
+	    <object class = "wxBoxSizer">
+   	   <orient>wxHORIZONTAL</orient>
+		   <object class = "sizeritem">
+ 	        	<flag>wxALIGN_CENTER</flag>
+				<object class = "wxStaticText" name="coordinate-field-text">
+	   			<label>Coordinate field:</label>
+				</object>
+			</object>
+		   <object class = "sizeritem">
+			  	<flag>wxEXPAND</flag>
+ 	        	<flag>wxALIGN_CENTER</flag>
+				<option>1</option>
+				<object class = "wxPanel" name="CoordinateFieldChooserPanel">
+				   <size>120,27</size>
+				</object>
+			</object>
+		 </object>
+      </object>	
    
 	<orient>wxVERTICAL</orient>
 	<object class = "sizeritem">
