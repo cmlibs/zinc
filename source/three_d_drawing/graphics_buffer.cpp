@@ -3744,7 +3744,7 @@ DESCRIPTION :
 		wxBoxSizer *topsizer = new wxBoxSizer( wxVERTICAL );
 		
 		topsizer->Add(buffer->canvas,
-			wxSizerFlags(1).Align(wxALIGN_CENTER).Expand().Border(wxALL, 10));
+			wxSizerFlags(1).Align(wxALIGN_CENTER).Expand());
 
 		parent->SetSizer(topsizer);
 	}
