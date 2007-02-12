@@ -176,6 +176,7 @@ Contains information for a graphics window.
         wxPanel *panel2;
         wxPanel *panel3;
         wxPanel *panel4;
+        wxPanel *allviewerspanel;
         wxComboBox *up_view_options;
         wxButton *front_view_options;
 	      wxWindow *graphicsname;
@@ -3760,6 +3761,7 @@ it.
 			window->panel2 = XRCCTRL(*window->wx_graphics_window, "Panel2", wxPanel);
 			window->panel3 = XRCCTRL(*window->wx_graphics_window, "Panel3", wxPanel);
 			window->panel4 = XRCCTRL(*window->wx_graphics_window, "Panel4", wxPanel);
+			window->allviewerspanel = XRCCTRL(*window->wx_graphics_window, "AllViewersPanel", wxPanel);
 			window->graphicsname =XRCCTRL(*window->wx_graphics_window, "wxGraphicsWindow", wxWindow);
 			window->up_view_options = XRCCTRL(*window->wx_graphics_window, "UpViewOptions", wxComboBox);
 			window->front_view_options = XRCCTRL(*window->wx_graphics_window, "FrontViewOptions", wxButton);
@@ -5272,9 +5274,18 @@ separated by 2 pixel borders within the viewing area.
 		gtk_window_resize(GTK_WINDOW(window->shell_window),
 			viewing_width, viewing_height);
 #else /* GTK_MAJOR_VERSION >= 2 */
-			gtk_widget_set_usize(window->shell_window, viewing_width, viewing_height);
+		gtk_widget_set_usize(window->shell_window, viewing_width, viewing_height);
 #endif /* GTK_MAJOR_VERSION >= 2 */
-#endif /* defined (GTK_USER_INTERFACE) */
+#elif defined (WX_USER_INTERFACE)
+		window->allviewerspanel->SetSizeHints(viewing_width, viewing_height,
+			viewing_width, viewing_height);
+		window->wx_graphics_window->GetSizer()->SetSizeHints(window->wx_graphics_window);
+		window->allviewerspanel->Fit();
+		window->wx_graphics_window->Fit();
+		window->allviewerspanel->SetSizeHints(10, 10);
+		window->wx_graphics_window->GetSizer()->SetSizeHints(window->wx_graphics_window);
+		Graphics_window_update(window);
+#endif /* switch (USER_INTERFACE) */
 
 		return_code=1;
 	}

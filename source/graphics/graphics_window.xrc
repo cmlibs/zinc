@@ -128,12 +128,8 @@
       	<object class="sizeritem">
 					<option>1</option>
 			    <flag>wxEXPAND</flag>
-					<object class = "wxStaticBoxSizer">
-	  				<label>Graphics Window</label>
-	  				<object class = "sizeritem">
-	    				<option>1</option>
-	    				<flag>wxEXPAND</flag>	  
-            	<object class = "wxFlexGridSizer">
+	        	<object class = "wxPanel" name="AllViewersPanel">
+            	<object class = "wxFlexGridSizer" name="AllViewersGrid">
 	      				<cols>2</cols>
               	<rows>2</rows>
               	<vgap>1</vgap>
@@ -165,7 +161,6 @@
 	        				</object>
 	      				</object>
 	    				</object>
-	  				</object>
         	</object>
       	</object>
 
