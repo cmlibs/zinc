@@ -92,6 +92,13 @@ class wxTransformTool;
 
 static char Interactive_tool_transform_type_string[] = "Transform_tool";
 
+#if defined (MOTIF)
+struct Transform_tool_defaults
+{
+	Boolean free_spin;
+};
+#endif /* defined (MOTIF) */
+
 struct Transform_tool
 /*******************************************************************************
 LAST MODIFIED : 12 June 2000
@@ -104,15 +111,6 @@ DESCRIPTION :
 	int free_spin_flag;
 #if defined (MOTIF)
 	Display *display;
-#endif /* defined (MOTIF) */
-
-
-#if defined (MOTIF)
-struct Transform_tool_defaults
-{
-	Boolean free_spin;
-};
-
 #endif /* defined (MOTIF) */
 
 #if defined (WX_USER_INTERFACE)
@@ -490,7 +488,7 @@ scene_viewers.
 			sizeof(Boolean),
 			XtOffsetOf(struct Transform_tool_defaults,free_spin),
 			XmRString,
-			"false"
+			const_cast<char*>("false")
 		}
 	};
 #endif /* defined (MOTIF) */
