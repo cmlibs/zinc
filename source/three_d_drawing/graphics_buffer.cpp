@@ -158,6 +158,9 @@ DESCRIPTION :
 	  GdkGLContext *share_glcontext;
 #  endif /* defined (GTK_USE_GTKGLAREA) */
 #endif /* defined (GTK_USER_INTERFACE) */
+#if defined (WX_USER_INTERFACE)
+	wxGLContext* wxSharedContext;
+#endif /* defined (WX_USER_INTERFACE) */
 };
 
 FULL_DECLARE_CMISS_CALLBACK_TYPES(Graphics_buffer_callback, \
@@ -2533,6 +2536,9 @@ it to share graphics contexts.
 		package->share_glcontext = (GdkGLContext *)NULL;
 #  endif /* defined (GTK_USE_GTKGLAREA) */
 #endif /* defined (GTK_USER_INTERFACE) */
+#if defined (WX_USER_INTERFACE)
+		package->wxSharedContext = (wxGLContext*)NULL;
+#endif /* defined (WX_USER_INTERFACE) */
 	}
 	else
 	{
@@ -3547,8 +3553,9 @@ class wxGraphicsBuffer : public wxGLCanvas
 
 public:
 
-	wxGraphicsBuffer(wxPanel *parent, Graphics_buffer *graphics_buffer): 
-		wxGLCanvas(parent, wxID_ANY, wxDefaultPosition, wxSize(200, 200),
+	wxGraphicsBuffer(wxPanel *parent, wxGLContext* sharedContext,
+		Graphics_buffer *graphics_buffer): 
+		wxGLCanvas(parent, sharedContext, wxID_ANY, wxDefaultPosition, wxSize(400, 400),
 			wxFULL_REPAINT_ON_RESIZE),
 		graphics_buffer(graphics_buffer), parent(parent)
 	{
@@ -3560,6 +3567,12 @@ public:
 
 	void OnPaint( wxPaintEvent& WXUNUSED(event) )
 	{
+		/* Unfortunately can't find a better place to copy the shareable context */
+		if (!graphics_buffer->package->wxSharedContext)
+		{
+			graphics_buffer->package->wxSharedContext = GetContext();
+		}
+
 		/* must always be here */
 		wxPaintDC dc(this);
 		
@@ -3715,7 +3728,7 @@ DESCRIPTION :
 {
 	struct Graphics_buffer *buffer;
 
-	ENTER(create_Graphics_buffer_win32);
+	ENTER(create_Graphics_buffer_wx);
 	USE_PARAMETER(buffering_mode);
 	USE_PARAMETER(stereo_mode);
 	if (buffer = CREATE(Graphics_buffer)(graphics_buffer_package))
@@ -3725,11 +3738,11 @@ DESCRIPTION :
 
 		buffer->parent = parent;
 
-		buffer->canvas = new wxGraphicsBuffer(parent, buffer);
+		buffer->canvas = new wxGraphicsBuffer(parent, 
+			graphics_buffer_package->wxSharedContext, buffer);
 
 		wxBoxSizer *topsizer = new wxBoxSizer( wxVERTICAL );
 		
-		// create text ctrl with minimal size 100x60
 		topsizer->Add(buffer->canvas,
 			wxSizerFlags(1).Align(wxALIGN_CENTER).Expand().Border(wxALL, 10));
 
