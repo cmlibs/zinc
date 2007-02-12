@@ -3777,6 +3777,7 @@ it.
 						 graphics_buffer_package,
 						 window->panel,
 						 graphics_buffer_buffering_mode, graphics_buffer_stereo_mode,
+
 						 minimum_colour_buffer_depth, minimum_depth_buffer_depth,
 						 minimum_accumulation_buffer_depth))
 				{
@@ -7310,6 +7311,7 @@ graphics window with the given <layout_mode>.
 	return (return_code);
 } /* Graphics_window_layout_mode_is_projection_mode_valid_for_pane */
 
+#if defined (WX_USER_INTERFACE)
 wxPanel *Graphics_window_get_interactive_tool_panel(struct Graphics_window *graphics_window)
 /*******************************************************************************
 LAST MODIFIED : 9 February 2007
@@ -7335,4 +7337,5 @@ Returns the panel to embed the interactive tool into.
 
 	return (panel);
 } /* Graphics_window_get_interactive_tool_panel */
+#endif /* defined (WX_USER_INTERFACE) */
  
