@@ -1,0 +1,16 @@
+<?xml version="1.0"?>
+<resource>
+
+  <object class="wxFrame" subclass="wxSceneEditor" name="CmguiSceneEditor" title="Scene Editor">
+		<title>Scene Editor</title>
+		<object class = "wxBoxSizer">
+			<object class ="sizeritem">
+				<object class="wxButton" name="Button1">
+	        <size>120,27</size>
+	        <label>Click</label>
+		    </object>
+	    </object>
+	  </object>		
+  </object>
+
+</resource>

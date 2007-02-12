@@ -1,0 +1,17 @@
+<?xml version="1.0"?>
+<resource>
+
+  <object class="wxPanel" subclass="wxTransformTool" name="CmguiTransformTool" title="Cmgui Transform Tool">
+
+    <object class = "wxStaticBoxSizer">
+		  <label>Transform Tool</label>
+	    <object class="sizeritem">
+				<object class ="wxCheckBox" name="ButtonFreeSpin">
+					<size>130,27</size>
+					<label>Free Spin</label>
+ 				</object>
+			</object>
+	  </object>
+
+	</object>
+</resource>
