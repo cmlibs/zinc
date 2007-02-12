@@ -128,7 +128,6 @@
       	<object class="sizeritem">
 					<option>1</option>
 			    <flag>wxEXPAND</flag>
-	        	<object class = "wxPanel" name="AllViewersPanel">
             	<object class = "wxFlexGridSizer" name="AllViewersGrid">
 	      				<cols>2</cols>
               	<rows>2</rows>
@@ -161,7 +160,6 @@
 	        				</object>
 	      				</object>
 	    				</object>
-        	</object>
       	</object>
 
 	    </object>
