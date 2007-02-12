@@ -227,7 +227,7 @@ Callback from interactive tool buttons - change of tool.
 					}
 					else
 					{
-						Interactive_tool_bring_up_dialog(interactive_tool);
+						Interactive_tool_bring_up_dialog(interactive_tool, (struct Graphics_window *)NULL);
 					}
 				}
 				else
