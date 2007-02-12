@@ -232,7 +232,7 @@ Pops up a dialog for editing settings of the Transform_tool.
 		transform_tool->wx_transform_tool->Show();
 		
 #else /* (WX_USER_INTERFACE) */
-		display_message(ERROR_MESSAGE, "Element_point_tool_pop_up_dialog.  "
+		display_message(ERROR_MESSAGE, "Transform_tool_pop_up_dialog.  "
 			"No dialog implemented for this User Interface");
 #endif /* defined (WX_USER_INTERFACE) */
 		return_code = 1;
