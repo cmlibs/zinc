@@ -3555,7 +3555,7 @@ public:
 
 	wxGraphicsBuffer(wxPanel *parent, wxGLContext* sharedContext,
 		Graphics_buffer *graphics_buffer): 
-		wxGLCanvas(parent, sharedContext, wxID_ANY, wxDefaultPosition, wxSize(400, 400),
+		wxGLCanvas(parent, sharedContext, wxID_ANY, wxDefaultPosition, wxSize(10, 10),
 			wxFULL_REPAINT_ON_RESIZE),
 		graphics_buffer(graphics_buffer), parent(parent)
 	{
