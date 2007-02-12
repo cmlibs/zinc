@@ -1,55 +1,57 @@
 <?xml version="1.0"?>
 <resource>
 
-  <object class="wxFrame" subclass="wxNodeTool" name="CmguiNodeTool" title="Cmgui Node Tool">
-    <object class = "wxBoxSizer">
+  <object class="wxPanel" subclass="wxNodeTool" name="CmguiNodeTool">
+		<flag>wxEXPAND</flag>
+    <object class = "wxStaticBoxSizer" name="NodeSizer">
       <orient>wxVERTICAL</orient>
+			<label>Tool</label>
 
       <object class = "sizeritem">
-	<object class = "wxCheckBox" name="ButtonSelect">
-	   <size>120,27</size>
-	   <label>Select</label>
-	</object>
+				<object class = "wxCheckBox" name="ButtonSelect">
+	   			<size>170,27</size>
+	   			<label>Select</label>
+				</object>
       </object>	
 
-       <object class = "sizeritem">
-	<object class = "wxCheckBox" name="ButtonEdit">
-	   <size>120,27</size>
-	   <label>Edit</label>
-	</object>
-      </object>	
+      <object class = "sizeritem">
+				<object class = "wxCheckBox" name="ButtonEdit">
+	   			<size>170,27</size>
+	   			<label>Edit</label>
+			</object>
+    </object>	
 
       <object class = "sizeritem">
 	<object class = "wxCheckBox" name="ButtonMotionUpdate">
-	   <size>120,27</size>
+	   <size>170,27</size>
 	   <label>Motion update during edit</label>
 	</object>
       </object>	
 
       <object class = "sizeritem">
 	<object class = "wxCheckBox" name="ButtonDefine">
-	   <size>120,27</size>
+	   <size>170,27</size>
 	   <label>Define</label>
 	</object>
       </object>	
 
       <object class = "sizeritem">
 	<object class = "wxCheckBox" name="ButtonCreate">
-	   <size>120,27</size>
+	   <size>170,27</size>
 	   <label>Create (with Define)</label>
 	</object>
       </object>	
 
       <object class = "sizeritem">
 	<object class = "wxCheckBox" name="ButtonStreaming">
-	   <size>120,27</size>
+	   <size>170,27</size>
 	   <label>Streaming create</label>
 	</object>
       </object>	
 
       <object class = "sizeritem">
 	<object class = "wxCheckBox" name="ButtonConstrain">
-	   <size>120,27</size>
+	   <size>170,27</size>
 	   <label>Constrain to surfaces</label>
 	</object>
       </object>	
@@ -75,22 +77,23 @@
 		 </object>
       </object>	
    
-	<orient>wxVERTICAL</orient>
-	<object class = "sizeritem">
-	  <object class = "wxButton" name="ButtonDestroy">
-	    <size>120,27</size>
-	    <label>Destroy selected nodes</label>
-	  </object>
-        </object>	
-
-        <object class = "sizeritem">
-	  <object class = "wxButton" name="ButtonUndefine">
-	     <size>120,27</size>
-	     <label>Undefine field in selected nodes</label>
-	  </object>
-        </object>
-
-      
+      <object class = "sizeritem">
+        <object class ="wxStaticBoxSizer">
+	  <orient>wxVERTICAL</orient>
+	  <object class = "sizeritem">
+            <object class = "wxButton" name="ButtonDestroy">
+	      <size>200,27</size>
+	      <label>Destroy selected nodes</label>
+	    </object>
+          </object>	
+          <object class = "sizeritem">
+	    <object class = "wxButton" name="ButtonUndefine">
+	      <size>200,27</size>
+	      <label>Undefine field in selected nodes</label>
+	    </object>
+          </object>
+	</object>
+      </object>
 
     </object>
 

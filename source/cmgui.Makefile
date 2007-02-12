@@ -524,7 +524,7 @@ USER_INTERFACE_LIB =
 ifeq ($(USER_INTERFACE),MOTIF_USER_INTERFACE)
    ifeq ($(SYSNAME),Linux)
       USER_INTERFACE_INC += $(X_INC)
-      USER_INTERFACE_LIB += -L$(X_LIB)
+      USER_INTERFACE_LIB += -L$(X_LIB) 
 
       ifneq ($(STATIC_LINK),true)
          #I am statically linking Motif so that it does not have to be installed at runtime.
@@ -598,9 +598,9 @@ ifeq ($(USER_INTERFACE),GTK_USER_INTERFACE)
    endif # $(SYSNAME) != win32
 endif # $(USER_INTERFACE) == GTK_USER_INTERFACE
 ifeq ($(USER_INTERFACE),WX_USER_INTERFACE)
-   WX_DIR = 
+   WX_DIR =
    USER_INTERFACE_INC += $(shell $(WX_DIR)wx-config --cxxflags)
-	USER_INTERFACE_LIB += $(shell $(WX_DIR)wx-config --libs core,base,gl,xrc)
+   USER_INTERFACE_LIB += $(shell $(WX_DIR)wx-config --libs core,base,gl,xrc)
 endif # $(USER_INTERFACE) == WX_USER_INTERFACE
 
 MATRIX_LIB =
@@ -911,9 +911,9 @@ DOF3_INTERFACE_SRCS = \
 	dof3/dof3_control.c \
 	dof3/dof3_input.c
 ELEMENT_SRCS = \
-   element/element_operations.c \
-	element/element_point_tool.c \
-	element/element_tool.c
+  element/element_operations.c \
+	element/element_point_tool.cpp \
+	element/element_tool.cpp
 ELEMENT_INTERFACE_SRCS = \
 	element/element_creator.c \
 	element/element_point_field_viewer_widget.c \
@@ -993,7 +993,7 @@ GRAPHICS_SRCS = \
 	graphics/spectrum_settings.c \
 	graphics/texture.c \
 	graphics/texture_line.c \
-	graphics/transform_tool.c \
+	graphics/transform_tool.cpp \
 	graphics/userdef_objects.c \
 	graphics/volume_texture.c
 ifeq ($(GRAPHICS_API), OPENGL_GRAPHICS)
@@ -1014,7 +1014,7 @@ GRAPHICS_INTERFACE_SRCS = \
 ifeq ($(GRAPHICS_API), OPENGL_GRAPHICS)
    GRAPHICS_INTERFACE_SRCS += \
 		graphics/graphics_window.c \
-      graphics/scene_editor.c \
+      graphics/scene_editor.cpp \
 	   graphics/settings_editor.c \
 		graphics/spectrum_editor.c \
 		graphics/spectrum_editor_dialog.c \

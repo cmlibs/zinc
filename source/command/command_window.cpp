@@ -1594,6 +1594,12 @@ DESCRIPTION :
 class wxCommandWindow : public wxFrame
 {
   Command_window *command_window;
+	wxListBox *history_list;
+	wxTextCtrl *command_line;
+	wxString SelectedCommand;
+	wxString command;
+	wxString blank;
+	wxListBox *output_list;
 
 public:
 
@@ -1608,17 +1614,13 @@ public:
 
 	void CommandEntered(wxCommandEvent& event)
 	{
-	  wxListBox *history_list;
-	  wxTextCtrl *command_line;
-	  wxString command;
-	  wxString blank;
 	  int number;
 	  
 	  history_list = XRCCTRL(*this, "CommandHistory", wxListBox);
 	  command_line = XRCCTRL(*this, "CommandLine", wxTextCtrl);
 	  command = command_line->GetValue();
 	  number = history_list->GetCount();
-          if (number == 0)
+		if (number == 0)
 	    history_list->InsertItems(1, &blank,number);
 	  number = history_list->GetCount();
 	  history_list->InsertItems(1,&command, number-1);
@@ -1632,18 +1634,13 @@ public:
          
          void display_output(wxString outmessage)
          {
-         wxListBox *output_list;
-
-	 output_list = XRCCTRL(*this,"OutputWindow", wxListBox);
-	 output_list->Append(outmessage);
+					 output_list = XRCCTRL(*this,"OutputWindow", wxListBox);
+					 output_list->Append(outmessage);
        	 }
     	 
 
         void SingleClick(wxCommandEvent& event)
         {
-	  wxListBox *history_list;
-	  wxTextCtrl *command_line;
-	  wxString SelectedCommand;
 
 
 	  history_list = XRCCTRL(*this, "CommandHistory", wxListBox);
@@ -1656,9 +1653,6 @@ public:
 
         void DoubleClick(wxCommandEvent& event)
         {
-	  wxListBox *history_list;
-	  wxTextCtrl *command_line;
-	  wxString SelectedCommand;
 	  int number;
 
 	  history_list = XRCCTRL(*this, "CommandHistory", wxListBox);
@@ -1679,8 +1673,13 @@ public:
 	  "gfx cre win");
         }
 
-        void Exit(wxCommandEvent& event)
+        void sceneeditorwindow(wxCommandEvent& event)
+        {
+	  Execute_command_execute_string(command_window->execute_command,
+	  "gfx edit scene");
+        }
 
+        void Exit(wxCommandEvent& event)
         {
 	  Execute_command_execute_string(command_window->execute_command, "QUIT");
         } 
@@ -1693,11 +1692,11 @@ IMPLEMENT_DYNAMIC_CLASS(wxCommandWindow, wxFrame)
 
 BEGIN_EVENT_TABLE(wxCommandWindow, wxFrame)
 	EVT_TEXT_ENTER(XRCID("CommandLine"), wxCommandWindow::CommandEntered)
-        EVT_LISTBOX(XRCID("CommandHistory"),wxCommandWindow::SingleClick)
-        EVT_LISTBOX_DCLICK(XRCID("CommandHistory"),wxCommandWindow::DoubleClick)
-        EVT_MENU(XRCID("GraphicsthreeDWindow"),wxCommandWindow::threeDwindow)
-        EVT_MENU(XRCID("MenuExit"),wxCommandWindow::Exit)
-
+	EVT_LISTBOX(XRCID("CommandHistory"),wxCommandWindow::SingleClick)
+	EVT_LISTBOX_DCLICK(XRCID("CommandHistory"),wxCommandWindow::DoubleClick)
+	EVT_MENU(XRCID("GraphicsthreeDWindow"),wxCommandWindow::threeDwindow)
+	EVT_MENU(XRCID("GraphicsSceneeditor"),wxCommandWindow::sceneeditorwindow)
+	EVT_MENU(XRCID("MenuExit"),wxCommandWindow::Exit)
 END_EVENT_TABLE()
 
 #endif /* defined (WX_USER_INTERFACE) */

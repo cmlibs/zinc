@@ -41,6 +41,7 @@ Interactive tool for selecting elements with mouse and other devices.
  * the terms of any one of the MPL, the GPL or the LGPL.
  *
  * ***** END LICENSE BLOCK ***** */
+extern "C" {
 #if defined (MOTIF)
 #include <Xm/Protocols.h>
 #include <Xm/MwmUtil.h>
@@ -72,6 +73,16 @@ static char element_tool_uidh[] =
 #include "region/cmiss_region.h"
 #include "user_interface/gui_dialog_macros.h"
 #include "user_interface/message.h"
+}
+
+#if defined (WX_USER_INTERFACE)
+#include "wx/wx.h"
+#include <wx/tglbtn.h>
+#include "wx/xrc/xmlres.h"
+#include "element/element_tool.xrch"
+#include "graphics/graphics_window_private.hpp"
+#endif /* defined (WX_USER_INTERFACE)*/
+
 
 /*
 Module variables
@@ -90,6 +101,10 @@ static char Interactive_tool_element_type_string[] = "element_tool";
 Module types
 ------------
 */
+#if defined (WX_USER_INTERFACE)
+class wxElementTool;
+#endif /* defined (WX_USER_INTERFACE) */
+
 
 struct Element_tool
 /*******************************************************************************
@@ -126,6 +141,10 @@ Object storing all the parameters for interactively selecting elements.
 		command_field_button,command_field_form,command_field_widget;
 	Widget widget,window_shell;
 #endif /* defined (MOTIF) */
+
+#if defined (WX_USER_INTERFACE)
+  wxElementTool *wx_element_tool;
+#endif /* defined (WX_USER_INTERFACE) */
 }; /* struct Element_tool */
 
 /*
@@ -624,7 +643,7 @@ release.
 } /* Element_tool_interactive_event_handler */
 
 static int Element_tool_bring_up_interactive_tool_dialog(
-	void *element_tool_void)
+	void *element_tool_void,struct Graphics_window *graphics_window)
 /*******************************************************************************
 LAST MODIFIED : 20 July 2000
 
@@ -637,7 +656,7 @@ format for passing to an Interactive_toolbar.
 
 	ENTER(Element_tool_bring_up_interactive_tool_dialog);
 	return_code =
-		Element_tool_pop_up_dialog((struct Element_tool *)element_tool_void);
+		Element_tool_pop_up_dialog((struct Element_tool *)element_tool_void,graphics_window);
 	LEAVE;
 
 	return (return_code);
@@ -708,6 +727,113 @@ and as a child of <parent>.
 
 	return (image);
 } /* Element_tool_get_icon */
+
+
+#if defined (WX_USER_INTERFACE)
+class wxElementTool : public wxPanel
+{
+  Element_tool *element_tool;
+	wxCheckBox *button_element;
+	wxCheckBox *button_face;
+	wxCheckBox *button_line;
+  wxButton *button_destroy;
+	struct FE_region *fe_region;
+
+public:
+
+  wxElementTool(Element_tool *element_tool, wxPanel *parent): 
+    element_tool(element_tool)
+  {	 
+		{
+			wxXmlInit_element_tool();
+		}	
+			element_tool->wx_element_tool=(wxElementTool *)NULL;
+
+			wxXmlResource::Get()->LoadPanel(this,parent,_T("CmguiElementTool"));
+
+			button_face = XRCCTRL(*this, "ButtonFace", wxCheckBox);
+			button_element = XRCCTRL(*this, "ButtonElement", wxCheckBox);
+			button_line = XRCCTRL(*this, "ButtonLine", wxCheckBox);
+		  button_face->SetValue(true);
+			button_element->SetValue(true);
+			button_line->SetValue(true);
+  };
+
+  wxElementTool()
+  {
+  };
+
+	void OnButtonElementpressed(wxCommandEvent& event)
+	{    
+	button_element = XRCCTRL(*this, "ButtonElement", wxCheckBox);
+	Element_tool_set_select_elements_enabled(element_tool,
+		button_element->IsChecked());
+	}
+
+	void OnButtonFacepressed(wxCommandEvent& event)
+	{ 
+		button_face = XRCCTRL(*this, "ButtonFace", wxCheckBox);
+		Element_tool_set_select_faces_enabled(element_tool,
+		  button_face->IsChecked());
+	}
+
+	void OnButtonLinepressed(wxCommandEvent& event)
+	{ 
+		button_line = XRCCTRL(*this, "ButtonLine", wxCheckBox);
+		Element_tool_set_select_lines_enabled(element_tool,
+		  button_line->IsChecked());
+	}
+
+
+	void OnButtonDestroypressed(wxCommandEvent& event)
+	{ 
+	int number_not_destroyed;
+	struct LIST(FE_element) *destroy_element_list;
+
+	if (destroy_element_list = CREATE(LIST(FE_element))())
+		{
+			COPY_LIST(FE_element)(destroy_element_list,
+				FE_element_selection_get_element_list(
+			 	element_tool->element_selection));
+			fe_region = Cmiss_region_get_FE_region(element_tool->region);
+			FE_region_begin_change(fe_region);
+			FE_region_remove_FE_element_list(fe_region, destroy_element_list);
+			if (0 < (number_not_destroyed =
+				NUMBER_IN_LIST(FE_element)(destroy_element_list)))
+			{
+				display_message(WARNING_MESSAGE,
+					"%d of the selected element(s) could not be destroyed",
+					number_not_destroyed);
+			}
+			FE_region_end_change(fe_region);
+			DESTROY(LIST(FE_element))(&destroy_element_list);
+		}
+	
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Element_tool_destroy_selected_CB.  Invalid argument(s)");
+	}
+
+
+	}
+
+
+  DECLARE_DYNAMIC_CLASS(wxElementTool);
+  DECLARE_EVENT_TABLE();
+};
+
+IMPLEMENT_DYNAMIC_CLASS(wxElementTool, wxPanel)
+
+BEGIN_EVENT_TABLE(wxElementTool, wxPanel)
+      EVT_CHECKBOX(XRCID("ButtonElement"),wxElementTool::OnButtonElementpressed)
+      EVT_CHECKBOX(XRCID("ButtonFace"),wxElementTool::OnButtonFacepressed)
+      EVT_CHECKBOX(XRCID("ButtonLine"),wxElementTool::OnButtonLinepressed)
+      EVT_BUTTON(XRCID("ButtonDestroy"),wxElementTool::OnButtonDestroypressed)
+END_EVENT_TABLE()
+
+
+#endif /* defined (WX_USER_INTERFACE) */
 
 /*
 Global functions
@@ -941,6 +1067,12 @@ Selects elements in <element_selection> in response to interactive_events.
 				display_message(ERROR_MESSAGE,
 					"CREATE(Element_tool).  Could not open hierarchy");
 			}
+
+#elif defined (WX_USER_INTERFACE) /* switch (USER_INTERFACE) */ 
+
+
+			element_tool->wx_element_tool=(wxElementTool *)NULL;
+
 #endif /* defined (MOTIF) */
 		}
 		else
@@ -1007,7 +1139,7 @@ structure itself.
 	return (return_code);
 } /* DESTROY(Element_tool) */
 
-int Element_tool_pop_up_dialog(struct Element_tool *element_tool)
+int Element_tool_pop_up_dialog(struct Element_tool *element_tool, struct Graphics_window *graphics_window)
 /*******************************************************************************
 LAST MODIFIED : 20 June 2001
 
@@ -1024,10 +1156,17 @@ Pops up a dialog for editing settings of the Element_tool.
 		XtPopup(element_tool->window_shell, XtGrabNone);
 		/* make sure in addition that it is not shown as an icon */
 		XtVaSetValues(element_tool->window_shell, XmNiconic, False, NULL);
-#else /* defined (MOTIF) */
+#elif defined (WX_USER_INTERFACE) /* switch (USER_INTERFACE) */
+		if (!element_tool->wx_element_tool)
+			{
+				element_tool->wx_element_tool = new wxElementTool(element_tool,
+					Graphics_window_get_interactive_tool_panel(graphics_window));
+			}
+		element_tool->wx_element_tool->Show();
+#else /* switch (USER_INTERFACE) */
 		display_message(ERROR_MESSAGE, "Element_tool_pop_up_dialog.  "
 			"No dialog implemented for this User Interface");
-#endif /* defined (MOTIF) */
+#endif /*  switch (USER_INTERFACE) */
 		return_code = 1;
 	}
 	else

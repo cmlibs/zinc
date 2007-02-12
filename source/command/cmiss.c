@@ -10641,7 +10641,7 @@ Executes a GFX ELEMENT_POINT_TOOL command.
 				Element_point_tool_set_command_field(element_point_tool,command_field);
 				if (dialog_string == dialog_strings[0])
 				{
-					Element_point_tool_pop_up_dialog(element_point_tool);
+					Element_point_tool_pop_up_dialog(element_point_tool, (struct Graphics_window *)NULL);
 				}
 			}
 			else
@@ -10754,7 +10754,7 @@ Executes a GFX ELEMENT_TOOL command.
 				Element_tool_set_command_field(element_tool,command_field);
 				if (dialog_string == dialog_strings[0])
 				{
-					Element_tool_pop_up_dialog(element_tool);
+					Element_tool_pop_up_dialog(element_tool, (struct Graphics_window *)NULL);
 				}
 			}
 			else
@@ -15601,7 +15601,7 @@ Which tool that is being modified is passed in <node_tool_void>.
 
 				if (dialog_string == dialog_strings[0])
 				{
-					Node_tool_pop_up_dialog(node_tool);
+					Node_tool_pop_up_dialog(node_tool, (struct Graphics_window *)NULL);
 				}
 			}
 			else

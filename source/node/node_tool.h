@@ -107,7 +107,7 @@ Frees and deaccesses objects in the <node_tool> and deallocates the
 structure itself.
 ==============================================================================*/
 
-int Node_tool_pop_up_dialog(struct Node_tool *node_tool);
+int Node_tool_pop_up_dialog(struct Node_tool *node_tool, struct Graphics_window *graphics_window);
 /*******************************************************************************
 LAST MODIFIED : 20 June 2001
 

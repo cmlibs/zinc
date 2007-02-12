@@ -78,6 +78,7 @@ static char graphics_window_uidh[] =
 	;
 #endif /* defined (MOTIF) */
 }
+#include "graphics/graphics_window_private.hpp"
 #if defined (WX_USER_INTERFACE)
 #include "wx/wx.h"
 #include <wx/tglbtn.h>
@@ -136,6 +137,7 @@ Module types
 */
 #if defined (WX_USER_INTERFACE)
 class wxGraphicsWindow;
+class wxTransformTool;
 #endif /* defined (WX_USER_INTERFACE) */
 
 struct Graphics_window
@@ -176,11 +178,11 @@ Contains information for a graphics window.
         wxPanel *panel4;
         wxComboBox *up_view_options;
         wxButton *front_view_options;
-
+	      wxWindow *graphicsname;
   //wxSizerItem *lowerpanel2;
   //wxSizerItem *lowerpanels;
   //wxButton *front_view_options;   
-
+	      wxPanel *ToolPanel;
         wxPanel *interactive_toolbar_panel;
 
 #endif /* defined (GTK_USER_INTERFACE) */
@@ -2681,6 +2683,16 @@ class wxGraphicsWindow : public wxFrame
 {
   Graphics_window *graphics_window;
   wxToggleButton *last_button;
+	wxString choices;
+	wxComboBox *view_options;     
+	wxFrame *Redrawwindow;
+	wxComboBox *up_view_options;
+	wxButton *front_view_options;
+	wxString up_choices;
+	wxString front_choices;
+	int wx_ortho_up_axis;
+	int wx_ortho_front_axis;
+	int location;
 
 public:
 
@@ -2742,11 +2754,6 @@ public:
 
     void OnViewOptionspressed(wxCommandEvent& event)
     {
-      wxString choices;
-      wxComboBox *view_options;     
-      wxComboBox *up_view_options;
-      wxButton *front_view_options;
-      wxFrame *Redrawwindow;
           
       view_options = XRCCTRL(*this,"View", wxComboBox);
       up_view_options = XRCCTRL(*this,"UpViewOptions", wxComboBox);
@@ -2812,14 +2819,6 @@ public:
 
     void OnUpViewOptionspressed(wxCommandEvent& event)
     {
-      
-      wxComboBox *up_view_options;
-      wxButton *front_view_options;
-      wxString up_choices;
-      wxString front_choices;
-      int wx_ortho_up_axis;
-      int wx_ortho_front_axis;
-      int location;
       wxString option[6] = { "x", "y", "z","-x", "-y", "-z"};
 
       up_view_options = XRCCTRL(*this,"UpViewOptions", wxComboBox);
@@ -2847,14 +2846,7 @@ public:
 
     void OnFrontViewOptionspressed(wxCommandEvent& event)
     {
-      wxComboBox *up_view_options;
-      wxButton *front_view_options;
-      wxString up_choices;
-      wxString front_choices;
-      int wx_ortho_front_axis;
-      int wx_ortho_up_axis;
       wxString option[6] = { "x", "y", "z","-x", "-y", "-z"};
-      int location;
 
       up_view_options = XRCCTRL(*this,"UpViewOptions", wxComboBox);
       front_view_options = XRCCTRL(*this,"FrontViewOptions", wxButton);
@@ -2881,20 +2873,27 @@ public:
      }
 
       
-  void InteractiveButtonClicked(wxToggleButton *button, Interactive_tool *tool)
+  void InteractiveButtonClicked(wxToggleButton *button, Interactive_tool *tool, Graphics_window *graphics_window)
   {
     if (last_button == button)
     {
-      Interactive_tool_bring_up_dialog(tool);
       button->SetValue(true);
     }
     else
     {
+			wxWindowList child_list = graphics_window->ToolPanel->GetChildren();
+			wxWindowListNode *child = child_list.GetFirst();
+			while (child)
+			{
+				child->GetData()->Hide();
+				child = child->GetNext();
+			}
       if (last_button)
       {
-	last_button->SetValue(false);
+				last_button->SetValue(false);
       }
       last_button = button;
+      Interactive_tool_bring_up_dialog(tool,graphics_window);
       Graphics_window_set_interactive_tool(graphics_window, tool);    
     }
   }
@@ -2902,6 +2901,8 @@ public:
   DECLARE_DYNAMIC_CLASS(wxGraphicsWindow);
   DECLARE_EVENT_TABLE();
 };
+
+
 
 IMPLEMENT_DYNAMIC_CLASS(wxGraphicsWindow, wxFrame)
 
@@ -2911,8 +2912,9 @@ BEGIN_EVENT_TABLE(wxGraphicsWindow, wxFrame)
   EVT_COMBOBOX(XRCID("View"),wxGraphicsWindow::OnViewOptionspressed)
   EVT_COMBOBOX(XRCID("UpViewOptions"),wxGraphicsWindow::OnUpViewOptionspressed)
   EVT_BUTTON(XRCID("FrontViewOptions"),wxGraphicsWindow::OnFrontViewOptionspressed)
- 
 END_EVENT_TABLE()
+
+
 
 class wxInteractiveToolButton : public wxToggleButton
 {
@@ -2935,7 +2937,7 @@ public:
   void OnInteractiveButtonPressed(wxCommandEvent& Event)
   {
     graphics_window->wx_graphics_window->InteractiveButtonClicked
-      (this, tool);
+      (this, tool,graphics_window);
    }
 
 };
@@ -2956,7 +2958,7 @@ static int add_interactive_tool_to_wx_toolbar(struct Interactive_tool *interacti
     {
       button->SetValue(true);
       graphics_window->wx_graphics_window->InteractiveButtonClicked
-	(button, interactive_tool);
+				(button, interactive_tool, graphics_window);
     }
 
   button->Connect(wxEVT_COMMAND_TOGGLEBUTTON_CLICKED, wxCommandEventHandler(wxInteractiveToolButton::OnInteractiveButtonPressed));
@@ -2964,6 +2966,8 @@ static int add_interactive_tool_to_wx_toolbar(struct Interactive_tool *interacti
   sizer->Add(button, wxSizerFlags(1).Align(0).Expand().Border(wxALL, 2));
   return (1);
 }
+
+
 
 #endif /* defined (WX_USER_INTERFACE) */
 
@@ -3741,6 +3745,7 @@ it.
  			USE_PARAMETER(minimum_accumulation_buffer_depth);
  			USE_PARAMETER(Graphics_window_Scene_viewer_view_changed);
 
+		  wxLogNull logNo;
 			wxXmlInit_graphics_window();
 
 			window->wx_graphics_window = new 
@@ -3748,19 +3753,22 @@ it.
 
 			wxXmlResource::Get()->LoadFrame(window->wx_graphics_window,
 			   (wxWindow *)NULL, _T("CmguiGraphicsWindow"));
+			
+
 
 			window->panel = XRCCTRL(*window->wx_graphics_window, "Panel", wxPanel);
 			window->panel2 = XRCCTRL(*window->wx_graphics_window, "Panel2", wxPanel);
 			window->panel3 = XRCCTRL(*window->wx_graphics_window, "Panel3", wxPanel);
 			window->panel4 = XRCCTRL(*window->wx_graphics_window, "Panel4", wxPanel);
+			window->graphicsname =XRCCTRL(*window->wx_graphics_window, "wxGraphicsWindow", wxWindow);
 			window->up_view_options = XRCCTRL(*window->wx_graphics_window, "UpViewOptions", wxComboBox);
 			window->front_view_options = XRCCTRL(*window->wx_graphics_window, "FrontViewOptions", wxButton);
-		        window->up_view_options->Disable();
+			window->up_view_options->Disable();
 			window->front_view_options->Disable();
-	   
-		     
-			window->interactive_toolbar_panel = NULL;
+     
+			window->ToolPanel = XRCCTRL(*window->wx_graphics_window, "ToolPanel", wxPanel);
 
+			window->interactive_toolbar_panel = NULL;
 
 			if (window->panel)
 			{
@@ -4583,21 +4591,11 @@ Sets the layout mode in effect on the <window>.
 				if (new_layout)
 				{
 #if defined (WX_USER_INTERFACE)
-					//XtVaSetValues(window->viewing_area1,
-					//	XmNrightPosition,1,XmNbottomPosition,2,NULL);
-					//XtVaSetValues(window->viewing_area2,
-					//	XmNbottomPosition,2,NULL);
-				  //window->panel->SetSize(-1,-1,600,600);
-			 
-			       
+
 				      window->panel2->Hide();
 				      window->panel3->Hide();
 				      window->panel4->Hide();
-				      //window->wholeright->Hide();
-				      //window->GraphicSizer->Fit();
-				   			      		       
-					/* un-grey orthographic view controls */
-					//XtSetSensitive(window->orthographic_form,True);
+
 #endif /* defined (WX_USER_INTERFACE) */
 					/* re-enable tumbling in main scene viewer */
 					Scene_viewer_set_translation_rate(window->scene_viewer_array[0],
@@ -7311,3 +7309,30 @@ graphics window with the given <layout_mode>.
 
 	return (return_code);
 } /* Graphics_window_layout_mode_is_projection_mode_valid_for_pane */
+
+wxPanel *Graphics_window_get_interactive_tool_panel(struct Graphics_window *graphics_window)
+/*******************************************************************************
+LAST MODIFIED : 9 February 2007
+
+DESCRIPTION :
+Returns the panel to embed the interactive tool into.
+==============================================================================*/
+{
+	wxPanel *panel;
+
+	ENTER(Graphics_window_get_interactive_tool_panel);
+	if (graphics_window)
+	{
+		panel = graphics_window->ToolPanel;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Graphics_window_layout_mode_from_string.  Invalid argument");
+		panel = (wxPanel *)NULL;
+	}
+	LEAVE;
+
+	return (panel);
+} /* Graphics_window_get_interactive_tool_panel */
+ 

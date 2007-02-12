@@ -2934,7 +2934,9 @@ Updates the scene_viewer.
 	{
 		/* set workproc no longer pending */
 		scene_viewer->idle_update_callback_id = (struct Event_dispatcher_idle_callback *)NULL;
-		if (scene_viewer->tumble_active)
+		if (scene_viewer->tumble_active &&
+				(!Interactive_tool_is_Transform_tool(scene_viewer->interactive_tool) ||
+				Interactive_tool_transform_get_free_spin(scene_viewer->interactive_tool)))
 		{
 			scene_viewer->fast_changing = 0;
 			Scene_viewer_automatic_tumble(scene_viewer);

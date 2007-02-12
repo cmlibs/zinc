@@ -1088,17 +1088,25 @@ DESCRIPTION :
 			}
 			DEACCESS(Event_dispatcher_idle_callback)(&idle_callback);
 		}
+		if (0<NUMBER_IN_LIST(Event_dispatcher_idle_callback)(event_dispatcher->idle_list))
+		{
+		  return_code = 1;
+		}
+		else
+		{
+			return_code = 0;
+		}
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Event_dispatcher_register_do_one_event.  Invalid arguments.");
+			"Event_dispatcher_register_do_idle_event.  Invalid arguments.");
 		return_code=0;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* Event_dispatcher_do_one_event */
+} /* Event_dispatcher_do_idle_event */
 
 class wxCmguiApp : public wxApp
 {
@@ -1116,7 +1124,10 @@ public:
 	
 	void OnIdle(wxIdleEvent& event)
 	{
-		Event_dispatcher_do_idle_event(event_dispatcher);
+		if (Event_dispatcher_do_idle_event(event_dispatcher))
+		{
+			event.RequestMore();
+		}
 	}
 
 	void SetEventDispatcher(Event_dispatcher *event_dispatcher_in)

@@ -84,6 +84,7 @@ static char node_tool_uidh[] =
 #include <wx/tglbtn.h>
 #include "wx/xrc/xmlres.h"
 #include "choose/choose_class.hpp"
+#include "graphics/graphics_window_private.hpp"
 #include "node/node_tool.xrch"
 #endif /* defined (WX_USER_INTERFACE)*/
 
@@ -2305,7 +2306,8 @@ release.
 	LEAVE;
 } /* Node_tool_interactive_event_handler */
 
-static int Node_tool_bring_up_interactive_tool_dialog(void *node_tool_void)
+static int Node_tool_bring_up_interactive_tool_dialog(void *node_tool_void,
+	 struct Graphics_window *graphics_window)
 /*******************************************************************************
 LAST MODIFIED : 20 June 2001
 
@@ -2317,7 +2319,8 @@ for passing to an Interactive_toolbar.
 	int return_code;
 
 	ENTER(Node_tool_bring_up_interactive_tool_dialog);
-	return_code = Node_tool_pop_up_dialog((struct Node_tool *)node_tool_void);
+	return_code = Node_tool_pop_up_dialog((struct Node_tool *)node_tool_void,
+		 graphics_window);
 	LEAVE;
 
 	return (return_code);
@@ -2400,11 +2403,21 @@ Fetches the appropriate icon for the interactive tool.
 
 
 #if defined (WX_USER_INTERFACE)
-class wxNodeTool : public wxFrame, Chooser_callback_object<Computed_field>
+class wxNodeTool : public wxPanel, Chooser_callback_object<Computed_field>
 {
   Node_tool *node_tool;
   FE_region *master_fe_region;
   FE_field *fe_field;
+	wxCheckBox *button_select;
+	wxCheckBox *button_edit;
+  wxCheckBox *button_motion_update;
+  wxCheckBox *button_define;
+	wxCheckBox *button_create;
+	wxCheckBox *button_streaming;
+	wxCheckBox *button_constrain;
+	wxButton *button_destroy;
+	wxButton *button_undefine;
+	wxWindow *Title;
 
 	DEFINE_MANAGER_CLASS(Computed_field);
 	Managed_object_chooser<Computed_field, MANAGER_CLASS(Computed_field)>
@@ -2412,7 +2425,7 @@ class wxNodeTool : public wxFrame, Chooser_callback_object<Computed_field>
 
 public:
 
-  wxNodeTool(Node_tool *node_tool): 
+  wxNodeTool(Node_tool *node_tool, wxPanel *parent): 
     node_tool(node_tool)
   {
 	  { // Suppress the error message if we have already initialised this xrc
@@ -2420,7 +2433,22 @@ public:
 		  wxXmlInit_node_tool();
 	  } // ~wxLogNull called, old log restored
 
-	  wxXmlResource::Get()->LoadFrame(this, (wxWindow *)NULL, _T("CmguiNodeTool"));
+	  wxXmlResource::Get()->LoadPanel(this, parent, _T("CmguiNodeTool"));
+		Title = XRCCTRL(*this,"NodeSizer",wxWindow);
+		button_select=XRCCTRL(*this, "ButtonSelect", wxCheckBox);
+		button_motion_update=XRCCTRL(*this, "ButtonMotionUpdate", wxCheckBox);
+		
+		button_select->SetValue(true);
+		button_motion_update->SetValue(true);
+		
+		if (node_tool->use_data)
+		{
+			Title->SetLabel("Data Tool");
+		}
+		else
+		{
+			Title->SetLabel("Node Tool");
+		}
 
 	 wxPanel *coordinate_field_chooser_panel = 
 		 XRCCTRL(*this, "CoordinateFieldChooserPanel", wxPanel);
@@ -2433,12 +2461,16 @@ public:
 			  (void *)NULL, node_tool->user_interface);
 
 	  computed_field_chooser->set_callback(this);
-  };
+	}
 
-  wxNodeTool()
+  wxNodeTool()  /* Void constructor required for IMPLEMENT_DYNAMIC_CLASS */
+  {
+  }
+
+  ~wxNodeTool()
   {
 	  delete computed_field_chooser;
-  };
+  }
 
 	int chooser_callback(Computed_field *field)
 /*******************************************************************************
@@ -2464,60 +2496,52 @@ Set the selected option in the Coordinate Field chooser.
 		return 1;
 	}
 
-       void OnButtonSelectpressed(wxCommandEvent& event)
-       {    
-	 wxCheckBox *button_select;
-	 button_select = XRCCTRL(*this, "ButtonSelect", wxCheckBox);
-	 Node_tool_set_select_enabled(node_tool,button_select->IsChecked());
-       }
+	void OnButtonSelectpressed(wxCommandEvent& event)
+	{    
+		button_select = XRCCTRL(*this, "ButtonSelect", wxCheckBox);
+		Node_tool_set_select_enabled(node_tool,button_select->IsChecked());
+	}
 
-       void OnButtonEditpressed(wxCommandEvent& event)
-       { 
-   	 wxCheckBox *button_edit;
-	 button_edit = XRCCTRL(*this, "ButtonEdit", wxCheckBox);
-	 Node_tool_set_edit_enabled(node_tool,button_edit->IsChecked());
-       }
+	void OnButtonEditpressed(wxCommandEvent& event)
+	{ 
+		button_edit = XRCCTRL(*this, "ButtonEdit", wxCheckBox);
+		Node_tool_set_edit_enabled(node_tool,button_edit->IsChecked());
+	}
 
-       void OnButtonMotionUpdatepressed(wxCommandEvent& event)
-       {    
-   	 wxCheckBox *button_motion_update;
-	 button_motion_update = XRCCTRL(*this, "ButtonMotionUpdate", wxCheckBox);
-	 Node_tool_set_motion_update_enabled(node_tool,button_motion_update->IsChecked());
-       }
+	void OnButtonMotionUpdatepressed(wxCommandEvent& event)
+	{    
+		 button_motion_update = XRCCTRL(*this, "ButtonMotionUpdate", wxCheckBox);
+		 Node_tool_set_motion_update_enabled(node_tool,button_motion_update->IsChecked());
+	}
 
-       void OnButtonDefinepressed(wxCommandEvent& event)
-       {    
-   	 wxCheckBox *button_define;
-	 button_define = XRCCTRL(*this, "ButtonDefine", wxCheckBox);
-	 Node_tool_set_define_enabled(node_tool,button_define->IsChecked());
-       }
+	void OnButtonDefinepressed(wxCommandEvent& event)
+	{    
+		button_define = XRCCTRL(*this, "ButtonDefine", wxCheckBox);
+		Node_tool_set_define_enabled(node_tool,button_define->IsChecked());
+	}
 
-       void OnButtonCreatepressed(wxCommandEvent& event)
-       {    	 
-	 wxCheckBox *button_create;
-	 button_create = XRCCTRL(*this, "ButtonCreate", wxCheckBox);
-	 Node_tool_set_create_enabled(node_tool,button_create->IsChecked());
-       }
+	void OnButtonCreatepressed(wxCommandEvent& event)
+	{    	 
+		button_create = XRCCTRL(*this, "ButtonCreate", wxCheckBox);
+		Node_tool_set_create_enabled(node_tool,button_create->IsChecked());
+	}
 
-       void OnButtonStreamingpressed(wxCommandEvent& event)
-       {    
-	 wxCheckBox *button_streaming;
-	 button_streaming = XRCCTRL(*this, "ButtonStreaming", wxCheckBox);  
-	 Node_tool_set_streaming_create_enabled(node_tool,button_streaming->IsChecked());
-       }
+	void OnButtonStreamingpressed(wxCommandEvent& event)
+	{    
+		button_streaming = XRCCTRL(*this, "ButtonStreaming", wxCheckBox);  
+		Node_tool_set_streaming_create_enabled(node_tool,button_streaming->IsChecked());
+	}
 
-       void OnButtonConstrainpressed(wxCommandEvent& event)
-       {    
-	 wxCheckBox *button_constrain;
-	 button_constrain = XRCCTRL(*this, "ButtonConstrain", wxCheckBox ); 	 
-	 Node_tool_set_constrain_to_surface(node_tool,button_constrain->IsChecked());
-       }
+	void OnButtonConstrainpressed(wxCommandEvent& event)
+	{    
+		button_constrain = XRCCTRL(*this, "ButtonConstrain", wxCheckBox ); 	 
+		Node_tool_set_constrain_to_surface(node_tool,button_constrain->IsChecked());
+	}
 
-       void OnButtonDestroypressed(wxCommandEvent& event)
-       {    
-	 wxButton *button_destroy;
-	 struct LIST(FE_node) *destroy_node_list;	 
-	 button_destroy = XRCCTRL(*this, "ButtonDestroy", wxButton);;
+	void OnButtonDestroypressed(wxCommandEvent& event)
+	{    
+		struct LIST(FE_node) *destroy_node_list;	 
+		button_destroy = XRCCTRL(*this, "ButtonDestroy", wxButton);;
 
 
 	 if (destroy_node_list=CREATE(LIST(FE_node))())
@@ -2534,18 +2558,17 @@ Set the selected option in the Coordinate Field chooser.
 	       }
 	     DESTROY(LIST(FE_node))(&destroy_node_list);
 	   }
-	 //	}
+	 	
 	 else
 	   {
 	     display_message(ERROR_MESSAGE,
                "Node_tool_destroy_selected_CB.  Invalid argument(s)");
 	   }
 	 LEAVE;
-       }
+	}
 
-       void OnButtonUndefinepressed(wxCommandEvent& event)
-       {    
-	wxButton *button_undefine;
+	void OnButtonUndefinepressed(wxCommandEvent& event)
+	{    
 	int number_in_elements;
 	struct LIST(FE_field) *fe_field_list;
 	struct LIST(FE_node) *node_list;
@@ -2586,9 +2609,9 @@ Set the selected option in the Coordinate Field chooser.
   DECLARE_EVENT_TABLE();
 };
 
-IMPLEMENT_DYNAMIC_CLASS(wxNodeTool, wxFrame)
+IMPLEMENT_DYNAMIC_CLASS(wxNodeTool, wxPanel)
 
-BEGIN_EVENT_TABLE(wxNodeTool, wxFrame)
+BEGIN_EVENT_TABLE(wxNodeTool, wxPanel)
       EVT_CHECKBOX(XRCID("ButtonSelect"),wxNodeTool::OnButtonSelectpressed)
       EVT_CHECKBOX(XRCID("ButtonEdit"),wxNodeTool::OnButtonEditpressed)
       EVT_CHECKBOX(XRCID("ButtonMotionUpdate"),wxNodeTool::OnButtonMotionUpdatepressed)
@@ -2936,8 +2959,7 @@ used to represent them. <element_manager> should be NULL if <use_data> is true.
 
 
 #elif defined (WX_USER_INTERFACE) /* switch (USER_INTERFACE) */ 
-			node_tool->wx_node_tool = new 
-				wxNodeTool(node_tool);
+			node_tool->wx_node_tool = (wxNodeTool *)NULL;
 
 			/* Set defaults until we have some sort of region chooser */
 			Node_tool_set_Cmiss_region(node_tool, node_tool->root_region);
@@ -3033,7 +3055,7 @@ structure itself.
 	return (return_code);
 } /* DESTROY(Node_tool) */
 
-int Node_tool_pop_up_dialog(struct Node_tool *node_tool)
+int Node_tool_pop_up_dialog(struct Node_tool *node_tool, struct Graphics_window *graphics_window)
 /*******************************************************************************
 LAST MODIFIED : 20 June 2001
 
@@ -3051,8 +3073,12 @@ Pops up a dialog for editing settings of the Node_tool.
 		/* make sure in addition that it is not shown as an icon */
 		XtVaSetValues(node_tool->window_shell, XmNiconic, False, NULL);
 #elif defined (WX_USER_INTERFACE) /* switch (USER_INTERFACE) */
+		if (!node_tool->wx_node_tool)
+			{
+				node_tool->wx_node_tool = new wxNodeTool(node_tool,
+					Graphics_window_get_interactive_tool_panel(graphics_window));
+			}
 		node_tool->wx_node_tool->Show();
-		node_tool->wx_node_tool->Raise();
 #else /* switch (USER_INTERFACE) */
 		display_message(ERROR_MESSAGE, "Node_tool_pop_up_dialog.  "
 			"No dialog implemented for this User Interface");
@@ -3156,7 +3182,10 @@ are on.
 				node_tool->coordinate_field_widget,node_tool->coordinate_field);
 #endif /* defined (MOTIF) */
 #if defined (WX_USER_INTERFACE)
-			node_tool->wx_node_tool->setCoordinateField(coordinate_field);
+			if (node_tool->wx_node_tool)
+			{
+				node_tool->wx_node_tool->setCoordinateField(coordinate_field);
+			}
 #endif /* defined (WX_USER_INTERFACE) */
 
 		}

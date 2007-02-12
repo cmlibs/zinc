@@ -41,6 +41,7 @@ Widgets for editing scene, esp. changing visibility of members.
  * the terms of any one of the MPL, the GPL or the LGPL.
  *
  * ***** END LICENSE BLOCK ***** */
+extern "C" {
 #include <stdio.h>
 #include <Xm/Xm.h>
 #include <Xm/XmP.h>
@@ -68,7 +69,14 @@ Widgets for editing scene, esp. changing visibility of members.
 #include "graphics/volume_texture.h"
 #include "transformation/transformation_editor.h"
 #include "user_interface/message.h"
-
+#if defined (WX_USER_INTERFACE)
+#include "wx/wx.h"
+#include <wx/tglbtn.h>
+#include "wx/xrc/xmlres.h"
+#include "graphics/scene_editor.xrch"
+#include "graphics/graphics_window.xrch"
+#endif /* defined (WX_USER_INTERFACE)*/
+}
 /*
 Module types
 ------------
@@ -139,6 +147,10 @@ DESCRIPTION :
 		graphical_element_editor, transformation_button, transformation_editor,
 		transformation_form;
 	Pixel select_background_color, select_foreground_color;
+#if defined (WX_USER_INTERFACE)
+	wxSceneEditor *wx_scene_editor;
+#endif /* defined (WX_USER_INTERFACE) */
+
 }; /* struct Scene_editor */
 
 struct Scene_editor_update_data
@@ -1879,6 +1891,37 @@ to the previous widget, but its widgets and child widgets are not updated.
 	return (return_code);
 } /* Scene_editor_object_update */
 
+
+#if defined (WX_USER_INTERFACE)
+class wxSceneEditor : public wxFrame
+{																								
+	Scene_editor *scene_editor;
+	wxCheckBox *button_free_spin;
+
+public:
+
+  wxSceneEditor(Scene_editor *scene_editor): 
+    scene_editor(scene_editor)
+  {	 
+  };
+
+  wxSceneEditor()
+  {
+  };
+
+
+  DECLARE_DYNAMIC_CLASS(wxSceneEditor);
+  DECLARE_EVENT_TABLE();
+};
+
+IMPLEMENT_DYNAMIC_CLASS(wxSceneEditor, wxFrame)
+
+BEGIN_EVENT_TABLE(wxSceneEditor, wxFrame)
+END_EVENT_TABLE()
+
+#endif /* defined (WX_USER_INTERFACE) */
+
+
 static int Scene_object_update_Scene_editor_object(
 	struct Scene_object *scene_object, void *update_data_void)
 /*******************************************************************************
@@ -1952,6 +1995,13 @@ Note on successful return the dialog is put at <*scene_editor_address>.
 	{
 		if (ALLOCATE(scene_editor, struct Scene_editor, 1))
 		{
+#if defined (WX_USER_INTERFACE)
+		wxXmlInit_scene_editor();
+		scene_editor->wx_scene_editor = new 
+			wxSceneEditor(scene_editor);
+		wxXmlResource::Get()->LoadFrame(scene_editor->wx_scene_editor,
+		  (wxWindow *)NULL, _T("CmguiSceneEditor"));
+#endif /* switch (USER_INTERFACE) */
 			scene_editor->auto_apply = 1;
 			scene_editor->child_edited = 0;
 			scene_editor->child_expanded = 1;

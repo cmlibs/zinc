@@ -61,11 +61,13 @@ Global types
 ------------
 */
 struct Graphics_buffer;
+struct Graphics_window;
 
 typedef void Interactive_event_handler(void *device_id,
 	struct Interactive_event *event,void *user_data,
 	struct Graphics_buffer *graphics_buffer);
-typedef int Interactive_tool_bring_up_dialog_function(void *user_data);
+typedef int Interactive_tool_bring_up_dialog_function(void *user_data,
+	struct Graphics_window *graphics_window);
 typedef struct Cmgui_image *Interactive_tool_get_icon_function(
 	struct Colour *foreground, struct Colour *background, void *user_data);
 typedef int Interactive_tool_destroy_tool_data_function(
@@ -167,7 +169,7 @@ DESCRIPTION :
 Returns the icon which a user_interface can use to represent the tool.
 ==============================================================================*/
 
-int Interactive_tool_bring_up_dialog(struct Interactive_tool *interactive_tool);
+int Interactive_tool_bring_up_dialog(struct Interactive_tool *interactive_tool, struct Graphics_window *graphics_window);
 /*******************************************************************************
 LAST MODIFIED : 18 July 2000
 

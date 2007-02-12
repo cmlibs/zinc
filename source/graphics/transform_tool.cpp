@@ -42,6 +42,8 @@ Eventually use to store parameters for the transform function.
  * the terms of any one of the MPL, the GPL or the LGPL.
  *
  * ***** END LICENSE BLOCK ***** */
+
+extern "C"{
 #include "general/debug.h"
 #if defined (MOTIF)
 #include "motif/image_utilities.h"
@@ -57,6 +59,16 @@ static char transform_tool_uidh[] =
 	;
 #endif /* defined (MOTIF) */
 #include "user_interface/message.h"
+}
+
+#if defined (WX_USER_INTERFACE)
+#include "wx/wx.h"
+#include <wx/tglbtn.h>
+#include "wx/xrc/xmlres.h"
+#include "graphics/graphics_window.h"
+#include "graphics/transform_tool.xrch"
+#include "graphics/graphics_window_private.hpp"
+#endif /* defined (WX_USER_INTERFACE)*/
 
 /*
 Module variables
@@ -73,6 +85,11 @@ Module types
 ------------
 */
 
+#if defined (WX_USER_INTERFACE)
+class wxTransformTool;
+
+#endif /* defined (WX_USER_INTERFACE) */
+
 static char Interactive_tool_transform_type_string[] = "Transform_tool";
 
 struct Transform_tool
@@ -82,24 +99,179 @@ LAST MODIFIED : 12 June 2000
 DESCRIPTION :
 ==============================================================================*/
 {
-	struct Interactive_tool *interactive_tool;
+  struct Interactive_tool *interactive_tool;
+
 	int free_spin_flag;
 #if defined (MOTIF)
 	Display *display;
 #endif /* defined (MOTIF) */
-}; /* struct Transform_tool */
+
 
 #if defined (MOTIF)
 struct Transform_tool_defaults
 {
 	Boolean free_spin;
 };
+
 #endif /* defined (MOTIF) */
 
+#if defined (WX_USER_INTERFACE)
+  wxTransformTool *wx_transform_tool;
+#endif /* defined (WX_USER_INTERFACE) */
+}; /* struct Transform_tool */
 /*
 Module functions
 ----------------
 */
+int Transform_tool_transform_set_free_spin(struct Transform_tool *transform_tool,
+	int free_spin)
+/*******************************************************************************
+LAST MODIFIED : 30 January 2007
+
+DESCRIPTION :
+If the interactive tool is of type Transform this function controls whether 
+the window will spin freely when tumbling.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(Transform_tool_transform_set_free_spin);
+	if (transform_tool)
+	{
+		return_code=1;
+		if (free_spin)
+		{
+			transform_tool->free_spin_flag = free_spin;
+		}
+		else
+		{
+			transform_tool->free_spin_flag = 0;
+    }
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Interactive_tool_transform_set_free_spin.  Invalid argument(s)");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Interactive_tool_transform_set_free_spin */
+
+#if defined (WX_USER_INTERFACE)
+class wxTransformTool : public wxPanel
+{																								
+	Transform_tool *transform_tool;
+ 	wxCheckBox *button_free_spin;
+
+public:
+
+  wxTransformTool(Transform_tool *transform_tool, wxPanel *parent): 
+    transform_tool(transform_tool)
+  {	 
+		{
+			wxXmlInit_transform_tool();
+		}
+ 		wxXmlResource::Get()->LoadPanel(this,parent,_T("CmguiTransformTool"));	
+
+		button_free_spin = XRCCTRL(*this, "ButtonFreeSpin", wxCheckBox);
+
+		if (button_free_spin->IsChecked())
+			{
+				transform_tool->free_spin_flag = 1;
+			}
+			else
+			{
+				transform_tool->free_spin_flag = 0;
+			}
+
+  };
+
+  wxTransformTool()
+  {
+  };
+
+ 	void OnButtonFreeSpin(wxCommandEvent& event)
+ 	{    
+		button_free_spin = XRCCTRL(*this, "ButtonFreeSpin", wxCheckBox);
+    Transform_tool_transform_set_free_spin(transform_tool,button_free_spin->IsChecked());
+ 	}
+
+  DECLARE_DYNAMIC_CLASS(wxTransformTool);
+  DECLARE_EVENT_TABLE();
+};
+
+IMPLEMENT_DYNAMIC_CLASS(wxTransformTool, wxPanel)
+
+BEGIN_EVENT_TABLE(wxTransformTool, wxPanel)
+ 	EVT_CHECKBOX(XRCID("ButtonFreeSpin"),wxTransformTool::OnButtonFreeSpin)
+END_EVENT_TABLE()
+
+#endif /* defined (WX_USER_INTERFACE) */
+
+
+	static int Transform_tool_pop_up_dialog(struct Transform_tool *transform_tool, struct Graphics_window *graphics_window)
+/*******************************************************************************
+LAST MODIFIED : 26 January 2007
+
+DESCRIPTION :
+Pops up a dialog for editing settings of the Transform_tool.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(Transform_tool_pop_up_dialog);
+	if (transform_tool)
+	{
+#if defined (WX_USER_INTERFACE) /* (WX_USER_INTERFACE) */
+
+		if (!transform_tool->wx_transform_tool)
+			{
+				transform_tool->wx_transform_tool = new wxTransformTool(transform_tool,
+					Graphics_window_get_interactive_tool_panel(graphics_window));
+			}
+		transform_tool->wx_transform_tool->Show();
+		
+#else /* (WX_USER_INTERFACE) */
+		display_message(ERROR_MESSAGE, "Element_point_tool_pop_up_dialog.  "
+			"No dialog implemented for this User Interface");
+#endif /* defined (WX_USER_INTERFACE) */
+		return_code = 1;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Element_point_tool_pop_up_dialog.  Invalid argument(s)");
+		return_code = 0;
+	}
+	LEAVE;
+	return (return_code);
+} /* Transform_tool_pop_up_dialog */
+
+
+
+
+static int Transform_tool_bring_up_interactive_tool_dialog(void *transform_tool_void,struct Graphics_window *graphics_window)
+/*******************************************************************************
+LAST MODIFIED : 26 January 2007
+
+DESCRIPTION :
+Brings up a dialog for editing settings of the Transform_tool - in a standard
+format for passing to an Interactive_toolbar.
+==============================================================================*/
+{
+	int return_code;
+	
+
+	ENTER(Transform_tool_bring_up_interactive_tool_dialog);
+	return_code = Transform_tool_pop_up_dialog((struct Transform_tool *)transform_tool_void, graphics_window);
+	LEAVE;
+
+ 	return (return_code);
+} /* Transform_tool_bring_up_interactive_tool_dialog */
+
+
 
 static struct Cmgui_image *Transform_tool_get_icon(struct Colour *foreground, 
 	struct Colour *background, void *transform_tool_void)
@@ -193,10 +365,15 @@ Destroys the tool_data associated with a transform tool.
 	return (return_code);
 } /* destroy_Interactive_tool_transform_tool_data */
 
+
+
 /*
 Global functions
 ----------------
 */
+
+
+
 
 int Interactive_tool_is_Transform_tool(struct Interactive_tool *interactive_tool)
 /*******************************************************************************
@@ -213,7 +390,7 @@ Identifies whether an Interactive_tool is a Transform_tool.
 	{
 		return_code = (Interactive_tool_transform_type_string == 
 			Interactive_tool_get_tool_type_name(interactive_tool));
-	}
+	}	
 	else
 	{
 		display_message(ERROR_MESSAGE,
@@ -224,6 +401,7 @@ Identifies whether an Interactive_tool is a Transform_tool.
 
 	return (return_code);
 } /* Interative_tool_is_Transform_tool */
+
 
 int Interactive_tool_transform_get_free_spin(
 	struct Interactive_tool *interactive_tool)
@@ -266,8 +444,9 @@ If the interactive tool is of type Transform this function controls whether
 the window will spin freely when tumbling.
 ==============================================================================*/
 {
+
 	int return_code;
-	struct Transform_tool *transform_tool;
+	struct  Transform_tool *transform_tool;;
 
 	ENTER(Interactive_tool_transform_set_free_spin);
 	if (interactive_tool && Interactive_tool_is_Transform_tool(interactive_tool)
@@ -284,11 +463,12 @@ the window will spin freely when tumbling.
 	}
 	LEAVE;
 
-	return (return_code);
+ 	return (return_code);
 } /* Interactive_tool_transform_set_free_spin */
 
-struct Interactive_tool *create_Interactive_tool_transform(
-	struct User_interface *user_interface)
+
+struct Interactive_tool *create_Interactive_tool_transform(	
+  struct User_interface *user_interface)
 /*******************************************************************************
 LAST MODIFIED : 9 October 2000
 
@@ -321,7 +501,7 @@ scene_viewers.
 	if (user_interface)
 	{
 		if (ALLOCATE(transform_tool,struct Transform_tool,1))
-		{
+		{			
 #if defined (MOTIF)
 			transform_tool_defaults.free_spin = False;
 			XtVaGetApplicationResources(User_interface_get_application_shell(user_interface),
@@ -335,19 +515,43 @@ scene_viewers.
 			{
 				transform_tool->free_spin_flag = 0;
 			}
-#else /* defined (MOTIF) */
+#elif defined (WX_USER_INTERFACE) /* (WX_USER_INTERFACE) */
+
+  transform_tool->wx_transform_tool = (wxTransformTool *)NULL; 
+		
+
+
+// 		wxXmlResource::Get()->LoadPanel
+// 			(transform_tool->wx_transform_tool,XRCCTRL(*window->wx_graphics_window,"ToolPanel",wxFrame),_T("CmguiTransformTool"));	
+
+// 				wxXmlResource::Get()->LoadPanel
+// 		  			(transform_tool->wx_transform_tool,XRCCTRL(graphics_window->wx_graphics_window,"ToolPanel",wxFrame),_T("CmguiTransformTool"));	
+
+
+// 		transform_tool->button_free_spin = XRCCTRL(*transform_tool->wx_transform_tool, "ButtonFreeSpin", wxCheckBox);
+
+// 		if (transform_tool->button_free_spin->IsChecked())
+// 			{
+// 				transform_tool->free_spin_flag = 1;
+// 			}
+// 			else
+// 			{
+// 				transform_tool->free_spin_flag = 0;
+// 			}
+#else /* switch (USER_INTERFACE) */
 			transform_tool->free_spin_flag = 0;
-#endif /* defined (MOTIF) */
+#endif /* switch (USER_INTERFACE) */
 			interactive_tool=CREATE(Interactive_tool)(
 				"transform_tool","Transform tool",
 				Interactive_tool_transform_type_string,
 				(Interactive_event_handler *)NULL,
 				Transform_tool_get_icon,
-				(Interactive_tool_bring_up_dialog_function *)NULL,
+				//(Interactive_tool_bring_up_dialog_function *)NULL,
+				Transform_tool_bring_up_interactive_tool_dialog,
 				destroy_Interactive_tool_transform_tool_data,
 				(void *)transform_tool);
 			transform_tool->interactive_tool = interactive_tool;
-		}
+		}       //Transform_tool_bring_up_interactive_tool_dialog,
 		else
 		{
 			display_message(ERROR_MESSAGE,
@@ -365,5 +569,4 @@ scene_viewers.
 
 	return (interactive_tool);
 } /* create_Interactive_tool_transform */
-
 

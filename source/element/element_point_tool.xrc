@@ -1,0 +1,18 @@
+<?xml version="1.0"?>
+<resource>
+
+  <object class="wxPanel" subclass="wxElementPointTool" name="CmguiElementPointTool">
+
+		<object class = "wxStaticBoxSizer">
+	  <label>Element Point Tool</label>
+      <orient>wxVERTICAL</orient>
+			<object class ="sizeritem">
+	  		<object class = "wxButton">
+	    		<label>click</label>
+	    		<size>130,27</size>
+		  	</object>
+			</object>
+	  </object>
+
+	</object>
+</resource>

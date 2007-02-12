@@ -41,6 +41,8 @@ Interactive tool for selecting element/grid points with mouse and other devices.
  * the terms of any one of the MPL, the GPL or the LGPL.
  *
  * ***** END LICENSE BLOCK ***** */
+
+extern "C"{
 #if defined (MOTIF)
 #include <Xm/Protocols.h>
 #include <Xm/MwmUtil.h>
@@ -69,6 +71,16 @@ static char element_point_tool_uidh[] =
 #endif /* defined (MOTIF) */
 #include "user_interface/gui_dialog_macros.h"
 #include "user_interface/message.h"
+}
+
+#if defined (WX_USER_INTERFACE)
+#include "wx/wx.h"
+#include <wx/tglbtn.h>
+#include "wx/xrc/xmlres.h"
+#include "element/element_point_tool.xrch"
+#include "graphics/graphics_window_private.hpp"
+#endif /* defined (WX_USER_INTERFACE)*/
+
 
 /*
 Module variables
@@ -86,6 +98,12 @@ static char Interactive_tool_element_point_type_string[] = "element_point_tool";
 Module types
 ------------
 */
+
+
+#if defined (WX_USER_INTERFACE)
+class wxElementPointTool;
+#endif /* defined (WX_USER_INTERFACE) */
+
 
 struct Element_point_tool
 /*******************************************************************************
@@ -110,12 +128,18 @@ Object storing all the parameters for interactively selecting element points.
 	struct Element_point_ranges *last_picked_element_point;
 	struct Interaction_volume *last_interaction_volume;
 	struct GT_object *rubber_band;
+	//struct Graphics_window *graphics_window;
 #if defined (MOTIF)
 	Display *display;
 
 	Widget command_field_button, command_field_form, command_field_widget;
 	Widget widget, window_shell;
 #endif /* defined (MOTIF) */
+
+#if defined (WX_USER_INTERFACE)
+  wxElementPointTool *wx_element_point_tool;
+#endif /* defined (WX_USER_INTERFACE) */
+
 }; /* struct Element_point_tool */
 
 /*
@@ -486,7 +510,7 @@ release.
 } /* Element_point_tool_interactive_event_handler */
 
 static int Element_point_tool_bring_up_interactive_tool_dialog(
-	void *element_point_tool_void)
+ void *element_point_tool_void, struct Graphics_window *graphics_window)
 /*******************************************************************************
 LAST MODIFIED : 20 July 2000
 
@@ -499,7 +523,7 @@ format for passing to an Interactive_toolbar.
 
 	ENTER(Element_point_tool_bring_up_interactive_tool_dialog);
 	return_code =
-		Element_point_tool_pop_up_dialog((struct Element_point_tool *)element_point_tool_void);
+		Element_point_tool_pop_up_dialog((struct Element_point_tool *)element_point_tool_void,graphics_window);
 	LEAVE;
 
 	return (return_code);
@@ -569,6 +593,40 @@ Fetches an icon for the Element_point tool.
 
 	return (image);
 } /* Element_point_tool_get_icon */
+
+
+#if defined (WX_USER_INTERFACE)
+class wxElementPointTool : public wxPanel
+{
+	Element_point_tool *element_point_tool;
+
+public:
+
+  wxElementPointTool(Element_point_tool *element_point_tool,wxPanel *parent ): 
+    element_point_tool(element_point_tool)
+  {	
+		{ 
+			wxXmlInit_element_point_tool();
+		}
+		wxXmlResource::Get()->LoadPanel(this,parent,_T("CmguiElementPointTool"));
+  };
+
+  wxElementPointTool()
+  {
+  };
+
+
+  DECLARE_DYNAMIC_CLASS(wxElementPointTool);
+  DECLARE_EVENT_TABLE();
+};
+
+IMPLEMENT_DYNAMIC_CLASS(wxElementPointTool, wxPanel)
+
+BEGIN_EVENT_TABLE(wxElementPointTool, wxPanel)
+END_EVENT_TABLE()
+
+#endif /* defined (WX_USER_INTERFACE) */
+
 
 /*
 Global functions
@@ -644,7 +702,7 @@ Creates an Element_point_tool with Interactive_tool in
 				Element_point_tool_get_icon,
 				Element_point_tool_bring_up_interactive_tool_dialog,
 				(Interactive_tool_destroy_tool_data_function *)NULL,
-				(void *)element_point_tool);
+				(void *)element_point_tool)                                           ;
 			ADD_OBJECT_TO_MANAGER(Interactive_tool)(
 				element_point_tool->interactive_tool,
 				element_point_tool->interactive_tool_manager);
@@ -770,7 +828,12 @@ Creates an Element_point_tool with Interactive_tool in
 				display_message(ERROR_MESSAGE,
 					"CREATE(Element_point_tool).  Could not open hierarchy");
 			}
-#endif /* defined (MOTIF) */
+
+#elif defined (WX_USER_INTERFACE) /* switch (USER_INTERFACE) */ 
+
+
+			element_point_tool->wx_element_point_tool = (wxElementPointTool *)NULL;
+#endif /* switch (USER_INTERFACE) */
 		}
 		else
 		{
@@ -844,7 +907,7 @@ structure itself.
 } /* DESTROY(Element_point_tool) */
 
 int Element_point_tool_pop_up_dialog(
-	struct Element_point_tool *element_point_tool)
+																		 struct Element_point_tool *element_point_tool, struct Graphics_window *graphics_window)
 /*******************************************************************************
 LAST MODIFIED : 5 July 2002
 
@@ -861,10 +924,17 @@ Pops up a dialog for editing settings of the Element_point_tool.
 		XtPopup(element_point_tool->window_shell, XtGrabNone);
 		/* make sure in addition that it is not shown as an icon */
 		XtVaSetValues(element_point_tool->window_shell, XmNiconic, False, NULL);
-#else /* defined (MOTIF) */
+#elif defined (WX_USER_INTERFACE) /* switch (USER_INTERFACE) */
+		if (!element_point_tool->wx_element_point_tool)
+			{
+				 element_point_tool->wx_element_point_tool= new wxElementPointTool(element_point_tool,
+           Graphics_window_get_interactive_tool_panel(graphics_window));
+			}
+		element_point_tool->wx_element_point_tool->Show();
+#else /* switch (USER_INTERFACE) */
 		display_message(ERROR_MESSAGE, "Element_point_tool_pop_up_dialog.  "
 			"No dialog implemented for this User Interface");
-#endif /* defined (MOTIF) */
+#endif /* defined (USER_INTERFACE) */
 		return_code = 1;
 	}
 	else

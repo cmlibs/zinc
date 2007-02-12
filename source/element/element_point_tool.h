@@ -94,7 +94,7 @@ structure itself.
 ==============================================================================*/
 
 int Element_point_tool_pop_up_dialog(
-	struct Element_point_tool *element_point_tool);
+																		 struct Element_point_tool *element_point_tool,struct Graphics_window *graphics_window);
 /*******************************************************************************
 LAST MODIFIED : 5 July 2002
 

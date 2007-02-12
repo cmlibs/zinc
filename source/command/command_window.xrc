@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <resource>
   <object class="wxFrame" subclass="wxCommandWindow" name="CmguiCommandWindow" title="Cmgui Command Window">
-   
+	<title>Cmgui Command Window</title>
   <object class="wxMenuBar" name="commandmenubar">
     <size>-1,8</size>	
     <object class ="wxMenu" name="MenuFile">
@@ -10,19 +10,19 @@
         <label>Open...</label>
         <object class = "wxMenuItem" name="FileComFile">
           <label>Com File</label>
-	</object>
+				</object>
       </object>
       <object class ="wxMenu" name="MenuRead">
         <label>Read...</label>
         <object class = "wxMenuItem" name="ReadCurve">
           <label>Curve file</label>
-	</object>
+			</object>
         <object class = "wxMenuItem" name="ReadData">
           <label>Data file</label>
-	</object>
+				</object>
         <object class = "wxMenuItem" name="ReadElements">
           <label>Elements file</label>
-	</object>
+				</object>
         <object class = "wxMenuItem" name="ReadNode">
           <label>Node file</label>
         </object>
@@ -31,7 +31,7 @@
         <label>Write...</label>
         <object class = "wxMenuItem" name="WriteCurve">
           <label>All Curve files</label>
-	</object>
+				</object>
         <object class = "wxMenuItem" name="WriteData">
           <label>Data file</label>
 	</object>
@@ -124,6 +124,7 @@
           <size>400,100d</size>
           <style>wxSUNKEN_BORDER</style>
         </object>
+	      <option>1</option>
         <flag>wxEXPAND|wxALL</flag>     
         <border>10</border>
       </object>
@@ -134,20 +135,20 @@
           <style>wxTE_PROCESS_ENTER</style>
           <value></value>
         </object>
-	<flag>wxEXPAND|wxALL</flag>
+				<flag>wxEXPAND|wxALL</flag>
         <border>10</border>
       </object>
 
-      <object class="sizeritem">
-        <object class="wxListBox" name="OutputWindow">
+      <object class="sizeritem"> 
+			  <object class="wxListBox" name="OutputWindow">
           <size>400,100d</size>
-          <style>wxSUNKEN_BORDER</style>
-        </object>
+         	<style>wxSUNKEN_BORDER</style>
+       	</object>
         <flag>wxEXPAND|wxALL</flag>
-	<option>1</option>
-        <border>10</border>
-      </object>
-      
-    </object>
+		  	<option>1</option>
+       	<border>10</border>
+			</object>	
+	  </object>	      
+
   </object>
 </resource>

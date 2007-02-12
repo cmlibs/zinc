@@ -59,6 +59,7 @@ Module types
 ------------
 */
 
+
 struct Interactive_tool
 /*******************************************************************************
 LAST MODIFIED : 11 May 2000
@@ -75,7 +76,7 @@ ACCESS this object for as long as you need to keep it; it is not modifiable.
 	Interactive_event_handler *interactive_event_handler;
 	Interactive_tool_get_icon_function *get_icon_function;
 	Interactive_tool_bring_up_dialog_function *bring_up_dialog_function;
-        Interactive_tool_destroy_tool_data_function *destroy_tool_data_function;
+	Interactive_tool_destroy_tool_data_function *destroy_tool_data_function;
 	/* data for the actual tool receiving the events */
 	void *tool_data;
 	int access_count;
@@ -495,7 +496,7 @@ Returns the icon which a user_interface can use to represent the tool.
 	return (image);
 } /* Interactive_tool_get_icon */
 
-int Interactive_tool_bring_up_dialog(struct Interactive_tool *interactive_tool)
+int Interactive_tool_bring_up_dialog(struct Interactive_tool *interactive_tool, struct Graphics_window *graphics_window)
 /*******************************************************************************
 LAST MODIFIED : 18 July 2000
 
@@ -511,8 +512,7 @@ bring up the dialog for changing its settings.
 	{
 		if (interactive_tool->bring_up_dialog_function)
 		{
-			return_code=(interactive_tool->bring_up_dialog_function)(
-				interactive_tool->tool_data);
+			return_code=(interactive_tool->bring_up_dialog_function)( 																					interactive_tool->tool_data, graphics_window);
 		}
 		else
 		{

@@ -92,7 +92,7 @@ Frees and deaccesses objects in the <element_tool> and deallocates the
 structure itself.
 ==============================================================================*/
 
-int Element_tool_pop_up_dialog(struct Element_tool *element_tool);
+int Element_tool_pop_up_dialog(struct Element_tool *element_tool, struct Graphics_window *graphics_window);
 /*******************************************************************************
 LAST MODIFIED : 20 June 2001
 
