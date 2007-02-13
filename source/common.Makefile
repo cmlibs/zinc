@@ -120,7 +120,15 @@ ifeq ($(SYSNAME:CYGWIN%=),)# CYGWIN
   OPERATING_SYSTEM = cygwin
 endif
 ifeq ($(SYSNAME),Darwin)
-  INSTRUCTION = ppc
+  ifeq ($(filter-out i%86,$(MACHNAME)),)
+    INSTRUCTION = i386
+  else
+    ifeq ($(MACHNAME),Power Macintosh)
+      INSTRUCTION = ppc
+    else
+      INSTRUCTION := $(MACHNAME)
+    endif
+  endif
   ifndef ABI
     ABI = 32
   endif
@@ -387,18 +395,18 @@ ifeq ($(SYSNAME),Darwin)
    ifneq ($(STATIC_LINK),true)
       # for profiling
       #LINK = gcc -pg
-      LINK = gcc -Wl,-Y,20 
+      LINK = g++ -Wl,-Y,20 
       # LINK = egcs -shared -L/usr/X11R6/lib -v */
       # LINK = gcc -L/usr/X11R6/lib -v */
    else # STATIC_LINK) != true
-      LINK = gcc -static
+      LINK = g++ -static
       # LINK = g++ --no-demangle -rdynamic -L/usr/X11R6/lib*/
    endif # STATIC_LINK) != true
    ifneq ($(DEBUG),true)
       OPTIMISATION_FLAGS = -O
       COMPILE_DEFINES = -DOPTIMISED
       COMPILE_FLAGS = -fPIC
-      STRICT_FLAGS = -Werror
+      STRICT_FLAGS = -Wno-long-double -Werror
       CPP_STRICT_FLAGS = -Werror
       DIGITAL_MEDIA_NON_STRICT_FLAGS = 
       DIGITAL_MEDIA_NON_STRICT_FLAGS_PATTERN = NONE # Must specify a pattern that doesn't match
@@ -406,7 +414,7 @@ ifeq ($(SYSNAME),Darwin)
       OPTIMISATION_FLAGS = -g
       COMPILE_DEFINES = -DREPORT_GL_ERRORS -DUSE_PARAMETER_ON
       COMPILE_FLAGS = -fPIC
-      STRICT_FLAGS = -W -Wall -Wno-parentheses -Wno-switch -Werror
+      STRICT_FLAGS = -W -Wall -Wno-parentheses -Wno-switch -Wno-long-double -Werror
       CPP_STRICT_FLAGS = -W -Wall -Wno-parentheses -Wno-switch -Wno-unused-parameter -Werror
       DIGITAL_MEDIA_NON_STRICT_FLAGS = 
       DIGITAL_MEDIA_NON_STRICT_FLAGS_PATTERN = NONE # Must specify a pattern that doesn't match */
