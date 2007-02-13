@@ -73,6 +73,10 @@ extern "C" {
 #include <GL/gl.h>
 #include <windows.h>
 #endif /* defined (WIN32_USER_INTERFACE) */
+#if defined (CARBON_USER_INTERFACE)
+#include <OpenGL/glu.h>
+#include <OpenGL/glext.h>
+#endif /* defined (CARBON_USER_INTERFACE) */
 }
 #if defined (WX_USER_INTERFACE)
 #include <wx/wx.h>
@@ -243,6 +247,13 @@ DESCRIPTION :
 	HDC hDC;
 	HGLRC hRC;
 #endif /* defined (WIN32_USER_INTERFACE) */
+#if defined (CARBON_USER_INTERFACE)
+	CGrafPtr port;
+	int32    portx;
+	int32    porty;
+	AGLPixelFormat aglPixFmt;
+	AGLContext aglContext;
+#endif /* defined (CARBON_USER_INTERFACE) */
 #if defined (WX_USER_INTERFACE)
 	wxPanel *parent;
 	wxGLCanvas *canvas;
@@ -3544,6 +3555,92 @@ DESCRIPTION :
 } /* Graphics_buffer_win32_use_font_bitmaps */
 #endif /* defined (WIN32_USER_INTERFACE) */
 
+#if defined (CARBON_USER_INTERFACE)
+struct Graphics_buffer *create_Graphics_buffer_Carbon(
+	struct Graphics_buffer_package *graphics_buffer_package,
+	CGrafPtr port,
+	int32    portx,
+	int32    porty,
+	enum Graphics_buffer_buffering_mode buffering_mode,
+	enum Graphics_buffer_stereo_mode stereo_mode,
+	int minimum_colour_buffer_depth, int minimum_depth_buffer_depth, 
+	int minimum_accumulation_buffer_depth)
+/*******************************************************************************
+LAST MODIFIED : 21 November 2006
+
+DESCRIPTION :
+==============================================================================*/
+{
+	GLint attributes[] = {AGL_RGBA,
+								 AGL_DOUBLEBUFFER,
+								 AGL_DEPTH_SIZE, 16,
+								 AGL_NONE};
+	/* int accumulation_colour_size; */
+	int format;
+	struct Graphics_buffer *buffer;
+
+	ENTER(create_Graphics_buffer_Carbon);
+	USE_PARAMETER(buffering_mode);
+	USE_PARAMETER(stereo_mode);
+	if (buffer = CREATE(Graphics_buffer)(graphics_buffer_package))
+	{
+		buffer->type = GRAPHICS_BUFFER_CARBON_TYPE;
+
+		buffer->port = port;
+		buffer->portx = portx;
+		buffer->porty = porty;
+
+		if (buffer->aglPixelFormat = aglChoosePixelFormat(NULL, 0, attributes))
+		{
+			if (buffer->aglContext = aglCreateContext(buffer->aglPixFmt, NULL))
+			{
+
+				if(aglSetDrawable(buffer->aglContext, port))
+				{
+					
+					if (!aglSetCurrentContext(buffer->aglContext))
+					{
+						display_message(ERROR_MESSAGE,"create_Graphics_buffer_win32.  "
+							"Unable enable the render context.");
+						DESTROY(Graphics_buffer)(&buffer);
+						buffer = (struct Graphics_buffer *)NULL;
+					}
+				}
+				else
+				{
+					display_message(ERROR_MESSAGE,"create_Graphics_buffer_win32.  "
+						"Unable associate port with context.");
+					DESTROY(Graphics_buffer)(&buffer);
+					buffer = (struct Graphics_buffer *)NULL;
+				}
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE,"create_Graphics_buffer_win32.  "
+					"Unable to create the render context.");
+				DESTROY(Graphics_buffer)(&buffer);
+				buffer = (struct Graphics_buffer *)NULL;
+			}
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,"create_Graphics_buffer_win32.  "
+				"Unable to set pixel format.");
+			DESTROY(Graphics_buffer)(&buffer);
+			buffer = (struct Graphics_buffer *)NULL;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"create_Graphics_buffer_win32.  "
+			"Unable to create generic Graphics_buffer.");
+		buffer = (struct Graphics_buffer *)NULL;
+	}
+	LEAVE;
+
+	return (buffer);
+} /* create_Graphics_buffer_Carbon */
+#endif /* defined (CARBON_USER_INTERFACE) */
 
 #if defined (WX_USER_INTERFACE)
 class wxGraphicsBuffer : public wxGLCanvas
@@ -3819,6 +3916,13 @@ DESCRIPTION :
 				return_code = 1;
 			} break;
 #endif /* defined (WIN32_USER_INTERFACE) */
+#if defined (CARBON_USER_INTERFACE)
+			case GRAPHICS_BUFFER_CARBON_TYPE:
+			{
+				aglSetCurrentContext(buffer->aglContext);
+				return_code = 1;
+			} break;
+#endif /* defined (CARBON_USER_INTERFACE) */
 #if defined (WX_USER_INTERFACE)
 			case GRAPHICS_BUFFER_WX_TYPE:
 			{
@@ -3890,6 +3994,13 @@ Returns the visual id used by the graphics buffer.
 				return_code = 0;
 			} break;
 #endif /* defined (WIN32_USER_INTERFACE) */
+#if defined (CARBON_USER_INTERFACE)
+			case GRAPHICS_BUFFER_CARBON_TYPE:
+			{
+				*visual_id = 0;
+				return_code = 0;
+			} break;
+#endif /* defined (CARBON_USER_INTERFACE) */
 #if defined (WX_USER_INTERFACE)
 			case GRAPHICS_BUFFER_WX_TYPE:
 			{
@@ -4193,6 +4304,9 @@ Returns the buffering mode used by the graphics buffer.
 				return_code = 1;
 			} break;
 #endif /* defined (WIN32_USER_INTERFACE) */
+#if defined (CARBON_USER_INTERFACE)
+			USE_PARAMETER(buffering_mode);
+#endif /* defined (CARBON_USER_INTERFACE) */
 #if defined (WX_USER_INTERFACE)
 			case GRAPHICS_BUFFER_WX_TYPE:
 			{
@@ -4285,6 +4399,9 @@ Returns the stereo mode used by the graphics buffer.
 				return_code = 1;
 			} break;
 #endif /* defined (WIN32_USER_INTERFACE) */
+#if defined (CARBON_USER_INTERFACE)
+			USE_PARAMETER(stereo_mode);
+#endif /* defined (CARBON_USER_INTERFACE) */
 #if defined (WX_USER_INTERFACE)
 			case GRAPHICS_BUFFER_WX_TYPE:
 			{

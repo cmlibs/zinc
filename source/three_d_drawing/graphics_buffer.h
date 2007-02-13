@@ -75,7 +75,8 @@ enum Graphics_buffer_type
 	GRAPHICS_BUFFER_GTKGLAREA_TYPE,
 	GRAPHICS_BUFFER_GTKGLEXT_TYPE,
 	GRAPHICS_BUFFER_WIN32_TYPE,
-	GRAPHICS_BUFFER_WX_TYPE
+	GRAPHICS_BUFFER_WX_TYPE,
+	GRAPHICS_BUFFER_CARBON_TYPE
 };
 
 enum Graphics_buffer_buffering_mode
@@ -257,6 +258,23 @@ LAST MODIFIED : 6 May 2004
 DESCRIPTION :
 ==============================================================================*/
 #endif /* defined (MOTIF) */
+
+#if defined (CARBON_USER_INTERFACE)
+struct Graphics_buffer *create_Graphics_buffer_Carbon(
+	struct Graphics_buffer_package *graphics_buffer_package,
+	CGrafPtr port,
+	int    portx,
+	int    porty,
+	enum Graphics_buffer_buffering_mode buffering_mode,
+	enum Graphics_buffer_stereo_mode stereo_mode,
+	int minimum_colour_buffer_depth, int minimum_depth_buffer_depth, 
+	int min imum_accumulation_buffer_depth);
+/*******************************************************************************
+LAST MODIFIED : 21 November 2006
+
+DESCRIPTION :
+==============================================================================*/
+#endif /* defined (CARBON_USER_INTERFACE) */
 
 int Graphics_buffer_make_current(struct Graphics_buffer *buffer);
 /*******************************************************************************
