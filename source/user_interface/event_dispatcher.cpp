@@ -60,15 +60,15 @@ extern "C" {
 extern "C" {
 #include <Xm/Xm.h>
 }
-#elif defined (WIN32_USER_INTERFACE) /* switch (USER_INTERFACE) */
-extern "C" {
-#include <windows.h>
-#include "general/callback.h"
-}
 #elif defined (WX_USER_INTERFACE) /* switch (USER_INTERFACE) */
 #include <wx/wx.h>
 extern "C" {
 #include "user_interface/user_interface.h"
+}
+#elif defined (WIN32_USER_INTERFACE) /* switch (USER_INTERFACE) */
+extern "C" {
+#include <windows.h>
+#include "general/callback.h"
 }
 #elif defined (CARBON_USER_INTERFACE) /* switch (USER_INTERFACE) */
 #include "carbon/carbon.h"
@@ -1804,7 +1804,8 @@ DESCRIPTION :
 ==============================================================================*/
 {
 	struct Event_dispatcher_timeout_callback *timeout_callback;
-#if defined (WIN32_SYSTEM)
+#if defined (WX_USER_INTERFACE)
+#elif defined (WIN32_SYSTEM)
 	ULONGLONG system_time;
 #elif defined (USE_GENERIC_EVENT_DISPATCHER)
 	struct timeval timeofday;
@@ -1956,6 +1957,7 @@ DESCRIPTION :
 					idle_timer_function, idle_callback,
 					&idle_callback->carbon_timer_ref);
 			}
+#elif defined (WX_USER_INTERFACE)
 #elif defined (WIN32_SYSTEM)
 			else
 			{

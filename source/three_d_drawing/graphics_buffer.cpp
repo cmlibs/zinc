@@ -3658,7 +3658,7 @@ public:
 	{
 	};
 	
-	wxGraphicsBuffer()
+	~wxGraphicsBuffer()
 	{
 	};
 
@@ -3794,11 +3794,11 @@ public:
 		}
 	}
 
-	DECLARE_DYNAMIC_CLASS(wxGraphicsBuffer);
+	//	DECLARE_DYNAMIC_CLASS(wxGraphicsBuffer);
    DECLARE_EVENT_TABLE();
 };
 
-IMPLEMENT_DYNAMIC_CLASS(wxGraphicsBuffer, wxGLCanvas)
+//IMPLEMENT_DYNAMIC_CLASS(wxGraphicsBuffer, wxGLCanvas)
 
 BEGIN_EVENT_TABLE(wxGraphicsBuffer, wxGLCanvas)
     EVT_SIZE(wxGraphicsBuffer::OnSize)
