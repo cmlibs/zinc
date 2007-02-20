@@ -5,10 +5,13 @@
 
     <object class = "wxStaticBoxSizer">
 		  <label>Transform Tool</label>
-	    <object class="sizeritem">
+	    <object class="sizeritem">					
+        <flag>wxEXPAND</flag>
+				<option>1</option>
+
 				<object class ="wxCheckBox" name="ButtonFreeSpin">
-					<size>130,27</size>
 					<label>Free Spin</label>
+					<size>170,27</size>
  				</object>
 			</object>
 	  </object>

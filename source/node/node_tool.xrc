@@ -9,49 +9,57 @@
 
       <object class = "sizeritem">
 				<object class = "wxCheckBox" name="ButtonSelect">
-	   			<size>170,27</size>
+	   		<flag>wxEXPAND</flag>
+				<option>1</option>
 	   			<label>Select</label>
 				</object>
       </object>	
 
       <object class = "sizeritem">
 				<object class = "wxCheckBox" name="ButtonEdit">
-	   			<size>170,27</size>
+	   	  <flag>wxEXPAND</flag>
+				<option>1</option>
 	   			<label>Edit</label>
-			</object>
-    </object>	
+			  </object>
+      </object>	
 
       <object class = "sizeritem">
+
 	<object class = "wxCheckBox" name="ButtonMotionUpdate">
-	   <size>170,27</size>
+					<flag>wxEXPAND</flag>
+				<option>1</option>  
 	   <label>Motion update during edit</label>
 	</object>
       </object>	
 
       <object class = "sizeritem">
-	<object class = "wxCheckBox" name="ButtonDefine">
-	   <size>170,27</size>
+				<object class = "wxCheckBox" name="ButtonDefine">
+	   				<flag>wxEXPAND</flag>
+				<option>1</option>	
 	   <label>Define</label>
 	</object>
       </object>	
 
       <object class = "sizeritem">
 	<object class = "wxCheckBox" name="ButtonCreate">
-	   <size>170,27</size>
+	   				<flag>wxEXPAND</flag>
+				<option>1</option>
 	   <label>Create (with Define)</label>
 	</object>
       </object>	
 
       <object class = "sizeritem">
 	<object class = "wxCheckBox" name="ButtonStreaming">
-	   <size>170,27</size>
+	   				<flag>wxEXPAND</flag>
+				<option>1</option>
 	   <label>Streaming create</label>
 	</object>
       </object>	
 
       <object class = "sizeritem">
 	<object class = "wxCheckBox" name="ButtonConstrain">
-	   <size>170,27</size>
+	   				<flag>wxEXPAND</flag>
+				<option>1</option>>
 	   <label>Constrain to surfaces</label>
 	</object>
       </object>	
@@ -71,7 +79,7 @@
  	        	<flag>wxALIGN_CENTER</flag>
 				<option>1</option>
 				<object class = "wxPanel" name="CoordinateFieldChooserPanel">
-				   <size>120,27</size>
+				  <size>-1,30</size>
 				</object>
 			</object>
 		 </object>
@@ -82,13 +90,15 @@
 	  <orient>wxVERTICAL</orient>
 	  <object class = "sizeritem">
             <object class = "wxButton" name="ButtonDestroy">
-	      <size>200,27</size>
+	      	   				<flag>wxEXPAND</flag>
+				<option>1</option>
 	      <label>Destroy selected nodes</label>
 	    </object>
           </object>	
           <object class = "sizeritem">
 	    <object class = "wxButton" name="ButtonUndefine">
-	      <size>200,27</size>
+	    	      	   				<flag>wxEXPAND</flag>
+				<option>1</option>
 	      <label>Undefine field in selected nodes</label>
 	    </object>
           </object>

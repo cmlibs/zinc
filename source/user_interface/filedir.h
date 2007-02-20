@@ -128,6 +128,9 @@ void open_file_and_read(
 #if defined (WIN32_USER_INTERFACE)
 	struct File_open_data *file_open_data
 #endif /* defined (WIN32_USER_INTERFACE) */
+#if defined (WX_USER_INTERFACE)
+	struct File_open_data *file_open_data
+#endif /* defined (WX_USER_INTERFACE) */
 	);
 /*******************************************************************************
 LAST MODIFIED : 20 April 1997
@@ -146,6 +149,9 @@ void open_file_and_write(
 #if defined (WIN32_USER_INTERFACE)
 	struct File_open_data *file_open_data
 #endif /* defined (WIN32_USER_INTERFACE) */
+#if defined (WX_USER_INTERFACE)
+	struct File_open_data *file_open_data
+#endif /* defined (WX_USER_INTERFACE) */
 	);
 /*******************************************************************************
 LAST MODIFIED : 21 April 1997

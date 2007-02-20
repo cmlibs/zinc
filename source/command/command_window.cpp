@@ -1599,7 +1599,8 @@ class wxCommandWindow : public wxFrame
 	wxString SelectedCommand;
 	wxString command;
 	wxString blank;
-	wxListBox *output_list;
+	wxTextCtrl *output_list;
+	int number;
 
 public:
 
@@ -1614,8 +1615,6 @@ public:
 
 	void CommandEntered(wxCommandEvent& event)
 	{
-	  int number;
-	  
 	  history_list = XRCCTRL(*this, "CommandHistory", wxListBox);
 	  command_line = XRCCTRL(*this, "CommandLine", wxTextCtrl);
 	  command = command_line->GetValue();
@@ -1630,19 +1629,16 @@ public:
 	  history_list->SetSelection(history_list->GetCount()-1);
 	  history_list->Thaw();
 	  }      
-       
-         
+                
          void display_output(wxString outmessage)
          {
-					 output_list = XRCCTRL(*this,"OutputWindow", wxListBox);
-					 output_list->Append(outmessage);
+					 output_list = XRCCTRL(*this,"OutputWindow", wxTextCtrl);
+					 output_list->AppendText(outmessage);
        	 }
     	 
 
         void SingleClick(wxCommandEvent& event)
         {
-
-
 	  history_list = XRCCTRL(*this, "CommandHistory", wxListBox);
 	  command_line = XRCCTRL(*this, "CommandLine", wxTextCtrl);
 	  SelectedCommand = history_list->GetStringSelection();
@@ -1653,8 +1649,6 @@ public:
 
         void DoubleClick(wxCommandEvent& event)
         {
-	  int number;
-
 	  history_list = XRCCTRL(*this, "CommandHistory", wxListBox);
 	  command_line = XRCCTRL(*this, "CommandLine", wxTextCtrl);
 	  SelectedCommand = history_list->GetStringSelection();  
@@ -1669,15 +1663,146 @@ public:
 
         void threeDwindow(wxCommandEvent& event)
         {
+	  history_list = XRCCTRL(*this, "CommandHistory", wxListBox);
+	  number = history_list->GetCount();
+		if (number == 0)
+	    history_list->InsertItems(1, &blank,number);
+	  number = history_list->GetCount();
+    SelectedCommand = "gfx cre win";
+	  history_list->InsertItems(1,&SelectedCommand, number-1);
 	  Execute_command_execute_string(command_window->execute_command,
 	  "gfx cre win");
         }
 
         void sceneeditorwindow(wxCommandEvent& event)
         {
+	  history_list = XRCCTRL(*this, "CommandHistory", wxListBox);
+	  number = history_list->GetCount();
+		if (number == 0)
+	    history_list->InsertItems(1, &blank,number);
+	  number = history_list->GetCount();
+    SelectedCommand = "gfx edit scene";
+	  history_list->InsertItems(1,&SelectedCommand, number-1);
 	  Execute_command_execute_string(command_window->execute_command,
 	  "gfx edit scene");
         }
+
+        void opencom(wxCommandEvent& event)
+        {
+	  history_list = XRCCTRL(*this, "CommandHistory", wxListBox);
+	  number = history_list->GetCount();
+		if (number == 0)
+	    history_list->InsertItems(1, &blank,number);
+	  number = history_list->GetCount();
+    SelectedCommand = "open comfile";
+	  history_list->InsertItems(1,&SelectedCommand, number-1);
+	  Execute_command_execute_string(command_window->execute_command,
+	  "open comfile");
+					}
+
+        void readcurve(wxCommandEvent& event)
+        {
+	  history_list = XRCCTRL(*this, "CommandHistory", wxListBox);
+	  number = history_list->GetCount();
+		if (number == 0)
+	    history_list->InsertItems(1, &blank,number);
+	  number = history_list->GetCount();
+    SelectedCommand = "gfx read curve";
+	  history_list->InsertItems(1,&SelectedCommand, number-1);
+	  Execute_command_execute_string(command_window->execute_command,
+	  "gfx read curve");
+					}
+
+        void readdata(wxCommandEvent& event)
+        {
+	  history_list = XRCCTRL(*this, "CommandHistory", wxListBox);
+	  number = history_list->GetCount();
+		if (number == 0)
+	    history_list->InsertItems(1, &blank,number);
+	  number = history_list->GetCount();
+    SelectedCommand = "gfx read data";
+	  history_list->InsertItems(1,&SelectedCommand, number-1);
+	  Execute_command_execute_string(command_window->execute_command,
+	  "gfx read data");
+					}
+
+        void readelements(wxCommandEvent& event)
+        {
+	  history_list = XRCCTRL(*this, "CommandHistory", wxListBox);
+	  number = history_list->GetCount();
+		if (number == 0)
+	    history_list->InsertItems(1, &blank,number);
+	  number = history_list->GetCount();
+    SelectedCommand = "gfx read elements";
+	  history_list->InsertItems(1,&SelectedCommand, number-1);
+	  Execute_command_execute_string(command_window->execute_command,
+	  "gfx read elements");
+					}
+
+        void readnodes(wxCommandEvent& event)
+        {
+	  history_list = XRCCTRL(*this, "CommandHistory", wxListBox);
+	  number = history_list->GetCount();
+		if (number == 0)
+	    history_list->InsertItems(1, &blank,number);
+	  number = history_list->GetCount();
+    SelectedCommand = "gfx read nodes";
+	  history_list->InsertItems(1,&SelectedCommand, number-1);
+	  Execute_command_execute_string(command_window->execute_command,
+	  "gfx read nodes");
+					}
+
+        void writecurve(wxCommandEvent& event)
+        {
+	  history_list = XRCCTRL(*this, "CommandHistory", wxListBox);
+	  number = history_list->GetCount();
+		if (number == 0)
+	    history_list->InsertItems(1, &blank,number);
+	  number = history_list->GetCount();
+    SelectedCommand = "gfx write curve all";
+	  history_list->InsertItems(1,&SelectedCommand, number-1);
+	  Execute_command_execute_string(command_window->execute_command,
+	  "gfx write curve all");
+					}
+
+        void writedata(wxCommandEvent& event)
+        {
+	  history_list = XRCCTRL(*this, "CommandHistory", wxListBox);
+	  number = history_list->GetCount();
+		if (number == 0)
+	    history_list->InsertItems(1, &blank,number);
+	  number = history_list->GetCount();
+    SelectedCommand = "gfx write data";
+	  history_list->InsertItems(1,&SelectedCommand, number-1);
+	  Execute_command_execute_string(command_window->execute_command,
+	  "gfx write data");
+					}
+
+        void writeelements(wxCommandEvent& event)
+        {
+	  history_list = XRCCTRL(*this, "CommandHistory", wxListBox);
+	  number = history_list->GetCount();
+		if (number == 0)
+	    history_list->InsertItems(1, &blank,number);
+	  number = history_list->GetCount();
+    SelectedCommand = "gfx write elements";
+	  history_list->InsertItems(1,&SelectedCommand, number-1);
+	  Execute_command_execute_string(command_window->execute_command,
+	  "gfx write elements");
+					}
+
+        void writenodes(wxCommandEvent& event)
+        {
+	  history_list = XRCCTRL(*this, "CommandHistory", wxListBox);
+	  number = history_list->GetCount();
+		if (number == 0)
+	    history_list->InsertItems(1, &blank,number);
+	  number = history_list->GetCount();
+    SelectedCommand = "gfx write nodes";
+	  history_list->InsertItems(1,&SelectedCommand, number-1);
+	  Execute_command_execute_string(command_window->execute_command,
+	  "gfx write nodes");
+					}
 
         void Exit(wxCommandEvent& event)
         {
@@ -1696,6 +1821,15 @@ BEGIN_EVENT_TABLE(wxCommandWindow, wxFrame)
 	EVT_LISTBOX_DCLICK(XRCID("CommandHistory"),wxCommandWindow::DoubleClick)
 	EVT_MENU(XRCID("GraphicsthreeDWindow"),wxCommandWindow::threeDwindow)
 	EVT_MENU(XRCID("GraphicsSceneeditor"),wxCommandWindow::sceneeditorwindow)
+	EVT_MENU(XRCID("FileComFile"),wxCommandWindow::opencom)
+	EVT_MENU(XRCID("ReadCurve"),wxCommandWindow::readcurve)
+	EVT_MENU(XRCID("ReadData"),wxCommandWindow::readdata)
+	EVT_MENU(XRCID("ReadElements"),wxCommandWindow::readelements)
+	EVT_MENU(XRCID("ReadNode"),wxCommandWindow::readnodes)
+	EVT_MENU(XRCID("WriteCurve"),wxCommandWindow::writecurve)
+	EVT_MENU(XRCID("WriteData"),wxCommandWindow::writedata)
+	EVT_MENU(XRCID("WriteElements"),wxCommandWindow::writeelements)
+	EVT_MENU(XRCID("WriteNode"),wxCommandWindow::writenodes)
 	EVT_MENU(XRCID("MenuExit"),wxCommandWindow::Exit)
 END_EVENT_TABLE()
 

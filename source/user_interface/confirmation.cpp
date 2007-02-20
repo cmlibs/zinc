@@ -41,6 +41,8 @@ Routines for waiting for user input.
  * the terms of any one of the MPL, the GPL or the LGPL.
  *
  * ***** END LICENSE BLOCK ***** */
+
+extern "C" {
 #if defined (UNIX)
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -62,6 +64,13 @@ Routines for waiting for user input.
 #include "user_interface/filedir.h"
 #include "user_interface/message.h"
 #include "user_interface/gui_dialog_macros.h"
+}
+#if defined (WX_USER_INTERFACE)
+#include "wx/wx.h"
+#include <wx/tglbtn.h>
+#include "wx/xrc/xmlres.h"
+#endif /* defined (WX_USER_INTERFACE)*/
+
 
 /*
 Module types
@@ -484,6 +493,9 @@ This routine supplies a file selection dialog window
 #if defined (WIN32_USER_INTERFACE)
 						file_open_data
 #endif /* defined (WIN32_USER_INTERFACE) */
+#if defined (WX_USER_INTERFACE)
+						file_open_data
+#endif /* defined (WX_USER_INTERFACE) */
 						);
 				} break;
 				case CONFIRM_CHANGE_DIRECTORY:
@@ -496,6 +508,9 @@ This routine supplies a file selection dialog window
 #if defined (WIN32_USER_INTERFACE)
 						file_open_data
 #endif /* defined (WIN32_USER_INTERFACE) */
+#if defined (WX_USER_INTERFACE)
+						file_open_data
+#endif /* defined (WX_USER_INTERFACE) */
 						);
 				} break;
 			}

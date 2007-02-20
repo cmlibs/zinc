@@ -8,32 +8,39 @@
 			<label>Element Tool</label>
 
       <object class = "sizeritem">
+	   		<flag>wxEXPAND</flag>
+				<option>1</option>
 				<object class = "wxCheckBox" name="ButtonElement">
-	   		  <size>170,27</size	>
+
 	   		  <label>Select elements</label>
 			  </object>
 	    </object>
     		
 
        <object class = "sizeritem">
+	   		 <flag>wxEXPAND</flag>
+				 <option>1</option>
 				 <object class = "wxCheckBox" name="ButtonFace">
-	         <size>170,27</size>
 	         <label>Select face elements</label>
 	       </object>
       </object>	
 
       <object class = "sizeritem">
+	   		 <flag>wxEXPAND</flag>
+				 <option>1</option>
 				<object class = "wxCheckBox" name="ButtonLine">
-	   		  <size>170,27</size>
 	   		  <label>Select line elements</label>
 			  </object>
 			</object>
 
-      <object class = "sizeritem">    
+      <object class = "sizeritem"> 
+   	   	<flag>wxEXPAND</flag>
+				<option>1</option>
 				<object class = "wxStaticBoxSizer">
-      		<object class = "sizeritem"> 
+      		<object class = "sizeritem">
+ 	   		  <flag>wxEXPAND</flag>
+				  <option>1</option>
 						<object class="wxButton" name="ButtonDestroy">
-	 	   				<size>170,27</size>
 	   					<label>Destroy selected</label>
 	        	</object>
 					</object>

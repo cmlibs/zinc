@@ -4,130 +4,182 @@
 
   <object class="wxFrame" subclass="wxGraphicsWindow" name="CmguiGraphicsWindow" title="Cmgui Graphics Window">
 		<title>Cmgui Graphics Window</title>
+
     <object class = "wxBoxSizer">
-   	
-      <orient>wxHORIZONTAL</orient>
-
-      <object class="sizeritem">
+      <object class ="sizeritem">
 	 			<flag>wxEXPAND</flag>
-				<object class = "wxBoxSizer">
-	  			<orient>wxVERTICAL</orient>
-	  			<object class = "sizeritem">
-	 					<flag>wxEXPAND</flag>
-   	    		<object class="wxStaticBoxSizer">
-              <label>Options</label>
-              <orient>wxVERTICAL</orient>
- 	      			<object class="sizeritem">
-	        			<flag>wxEXPAND</flag>
- 	        			<flag>wxALIGN_CENTER</flag>
-                	<object class="wxButton" name="Button1">
-										<size>125,30</size>
-	          				<label>View All</label>
-	          				<default>1</default>
-	        				</object>
-              	</object>             
-              	<object class="sizeritem">
-	        				<flag>wxEXPAND</flag>
-	 	        			<flag>wxALIGN_CENTER</flag>
-    	        		<object class="wxButton" name="Button2">
-									  <size>125,30</size>
-	          				<label>Save as...</label> 	
-	          				<default>1</default>		 
-  	        			</object>
-              	</object>
-           		</object>
-	 					</object>
+				<option>1</option>
+        <object class ="wxSplitterWindow" name="Splitter">
+					<style>wxSP_3D|wxSP_LIVE_UPDATE</style>
+				  <orientation>vertical</orientation>
+					<minsize>1</minsize>
+				
+				  <object class ="wxPanel">
+			 	    <object class = "wxBoxSizer">	
+							<object class="sizeritem">
+	 							<flag>wxEXPAND</flag>
+								<option>1</option>
+								<object class = "wxBoxSizer">
+	  							<orient>wxVERTICAL</orient>
+	  							<object class = "sizeritem">
+	 									<flag>wxEXPAND</flag>
+   	    						<object class="wxStaticBoxSizer">
+              				<label>Options</label>
+              				<orient>wxVERTICAL</orient>
+ 	      							<object class="sizeritem">
+	        							<flag>wxEXPAND</flag>
+ 	        							<flag>wxALIGN_CENTER</flag>
+                				<object class="wxButton" name="Button1">
+	          							<label>View All</label>
+	          							<default>1</default>
+	        							</object>
+              				</object>             
+              				<object class="sizeritem">
+	        							<flag>wxEXPAND</flag>
+	 	        						<flag>wxALIGN_CENTER</flag>
+    	        					<object class="wxButton" name="Button2">
+	          							<label>Save as...</label> 	
+	          							<default>1</default>		 
+  	        						</object>
+              				</object>
+           					</object>
+	 								</object>
 
-         		<object class="sizeritem">
-							<flag>wxEXPAND</flag>
-	 	        	<flag>wxALIGN_CENTER</flag>
-   	   				<object class="wxStaticBoxSizer">
-             		<label>Layout Options</label>
-	     					<orient>wxVERTICAL</orient>
-             		<object class="sizeritem">
-									<flag>wxEXPAND</flag>
-	 	        			<flag>wxALIGN_CENTER</flag>
-	       					<object class="wxComboBox" name="View">
-		 								<style>wxCB_READONLY</style>
-		 								<selection>7</selection>
-                 		<content>
-                   	<item>2d</item>
-                   	<item>free_ortho</item>
-                   	<item>front_back</item>
-                   	<item>front_side</item>
-                   	<item>orthographic</item>
-                   	<item>pseudo_3d</item>
-		   							<item>two_free</item>
-                   	<item>simple</item>
-                 		</content>
-	        				</object>
-	      				</object>
-            
-            		<object class="sizeritem">
-	 	        			<flag>wxEXPAND</flag>
-									<flag>wxALIGN_CENTER</flag>
-	      					<object class="wxStaticBoxSizer">              
-                		<label>Up</label>
-	        					<flag>wxEXPAND</flag>
-										<flag>wxALIGN_CENTER</flag>
-										<object class="sizeritem">
-          						<object class="wxComboBox" name="UpViewOptions">
-          							<style>wxCB_READONLY</style>
-	    									<selection>2</selection>
-                 				<content>
-                   			<item>x</item>
-                     		<item>y</item>
-                   	  	<item>z</item>
-                   	 	  <item>-x</item>
-                     		<item>-y</item>
-                     		<item>-z</item>
-             		     		</content>
-	 	 									</object>
-										</object>
-    	  					</object>
-    						</object>
+         					<object class="sizeritem">
+										<flag>wxEXPAND</flag>
+	 	        				<flag>wxALIGN_CENTER</flag>
+		   	   				  <object class="wxBoxSizer">	
+							        <orient>wxVERTICAL</orient>
+
+              	<object class="sizeritem">							
+				    	    <flag>wxEXPAND</flag>		
+    	      			<flag>wxALIGN_CENTER</flag>	
+									<object class="wxStaticBoxSizer">
+										<orient>wxVERTICAL</orient>
+
+		   								<object class = "sizeritem">
+	 	        						<flag>wxEXPAND</flag>
+												<flag>wxALIGN_CENTER</flag>
+   	   							    <object class="wxBoxSizer">
+          								<orient>wxHORIZONTAL</orient>
+		   										<object class = "sizeritem">
+ 	        									<flag>wxALIGN_CENTER</flag>
+														<object class = "wxStaticText" name="Layout">
+	   													<label>Layout:</label>
+														</object>
+													</object>
+             							<object class="sizeritem">
+														<flag>wxEXPAND</flag>
+														<option>1</option>
+	 	        								<flag>wxALIGN_CENTER</flag>
+	       										<object class="wxChoice" name="View">
+		 												<selection>7</selection>
+                 						<content>
+                   					<item>2d</item>
+                   					<item>free_ortho</item>
+                   					<item>front_back</item>
+                   					<item>front_side</item>
+                   					<item>orthographic</item>
+                   					<item>pseudo_3d</item>
+		   											<item>two_free</item>
+                   					<item>simple</item>
+                 						</content>
+	        								</object>
+	      								</object>
+         							</object> 
+          					</object>  
+
+
+           	 					<object class="sizeritem">
+	 	        						<flag>wxEXPAND</flag>
+												<flag>wxALIGN_CENTER</flag>
+	      								<object class="wxBoxSizer">
+													<orient>wxHORIZONTAL</orient>
+		   										<object class = "sizeritem">
+ 	        									<flag>wxALIGN_CENTER</flag>
+														<object class = "wxStaticText" name="Up">
+	   													<label>Up:</label>
+														</object>
+													</object>
+													<object class="sizeritem">
+								  					<flag>wxEXPAND</flag>
+														<option>1</option>
+          									<object class="wxChoice" name="UpViewOptions">
+          										<style>wxCB_READONLY</style>
+	    												<selection>2</selection>
+                 							<content>
+                   						<item>x</item>
+                     					<item>y</item>
+                   	  				<item>z</item>
+                   	 	  			<item>-x</item>
+                     					<item>-y</item>
+                     					<item>-z</item>
+             		     					</content>
+	 	 												</object>
+													</object>
+    	  								</object>
+    									</object>
           
-             		<object class="sizeritem">
-									<flag>wxEXPAND</flag>
-	      					<object class="wxStaticBoxSizer">              
-                		<label>Front</label>
-	        					<object class="sizeritem">
-								  		<flag>wxEXPAND</flag>
-	 	        					<flag>wxALIGN_CENTER</flag>
-	          					<object class="wxButton" name="FrontViewOptions">
-												<size>125,30</size>
-		    								<label>-y</label>
-	            					<Enable>false</Enable>
-		  								</object>
+         	    				<object class="sizeritem">
+												<flag>wxEXPAND</flag>
+	      								<object class="wxBoxSizer">  
+      										<orient>wxHORIZONTAL</orient>
+		   										<object class = "sizeritem">
+ 	        									<flag>wxALIGN_CENTER</flag>
+														<object class = "wxStaticText" name="Front">
+	   													<label>Front:</label>
+														</object>
+													</object>
+	        								<object class="sizeritem">
+								  					<flag>wxEXPAND</flag>
+														<option>1</option>
+	 	        								<flag>wxALIGN_CENTER</flag>
+	          								<object class="wxButton" name="FrontViewOptions">
+		    											<label>-y</label>
+	            								<Enable>false</Enable>
+		  											</object>
+													</object>
+	      								</object>
+	    							</object>
+
+         					</object>
+       					</object>
+			        </object>
+       			</object>						
+
+              	<object class="sizeritem">							
+				    	    <flag>wxEXPAND</flag>		
+    	      			<flag>wxALIGN_CENTER</flag>	
+									<object class="wxStaticBoxSizer">
+										<orient>wxVERTICAL</orient>
+										<object class="sizeritem">
+		            	    <flag>wxEXPAND</flag>	
+												
+    	      					<flag>wxALIGN_CENTER</flag>	
+	 										<object class= "wxPanel" name="ToolbarPanel">
+												<size>-1,150</size>
+	  									</object>
 										</object>
-	      					</object>
-	    					</object>
+	  							</object>
+								</object>
 
-         			</object>
-       			</object>
+					  	  <object class = "sizeritem" >
+          				<flag>wxEXPAND</flag>
+         					<option>1</option>
+				  				<object class= "wxPanel" name="ToolPanel"/>
+						  	</object>
 	
-						<object class="sizeritem">
-	        		<flag>wxEXPAND</flag>
-          		<flag>wxALIGN_CENTER</flag>	
-	 						<object class= "wxPanel" name="ToolbarPanel">
-							  <size>125,150</size>
-	  					</object>
-						</object>
+						  </object>
+  		 			</object>
+					</object>
+ 				</object>	
 
-					  <object class = "sizeritem" >
-          		<flag>wxEXPAND</flag>
-         			<option>1</option>
-				  		<object class= "wxPanel" name="ToolPanel">
-       					<size>200,-1</size>
-							</object>
-					  </object>
-
-				  </object>
-   			</object>   	
-     
-      	<object class="sizeritem">
-					<option>1</option>
-			    <flag>wxEXPAND</flag>
+	  		<object class ="wxPanel">
+					<object class = "wxBoxSizer">	   
+    	  		<object class="sizeritem">
+						<option>1</option>
+			    	<flag>wxEXPAND</flag>
+	        	<object class ="wxPanel" name="RigthPanel">
             	<object class = "wxFlexGridSizer" name="AllViewersGrid">
 	      				<cols>2</cols>
               	<rows>2</rows>
@@ -138,33 +190,32 @@
               	<object class = "sizeritem">
 	        				<option>1</option>
 	        				<flag>wxEXPAND</flag>
-	        				<object class = "wxPanel" name="Panel">
-    	        		</object>
+	        				<object class = "wxPanel" name="Panel"/>
     	      		</object>
-              	<object class = "sizeritem">
+             		<object class = "sizeritem">
 	        				<option>1</option>
 	        				<flag>wxEXPAND</flag>
-	        				<object class = "wxPanel" name="Panel2">
-	        				</object>
-    	      		</object>
-              	<object class = "sizeritem">
-	        				<option>1</option>
-	        				<flag>wxEXPAND</flag>
-	        				<object class = "wxPanel" name="Panel3">
-	        				</object>
-              	</object>
-              	<object class = "sizeritem">
-	        				<option>1</option>
-	        				<flag>wxEXPAND</flag>
-	        				<object class= "wxPanel" name="Panel4">
-	        				</object>
-	      				</object>
-	    				</object>
-      	</object>
-
-	    </object>
-  	</object>
-
+	       					<object class = "wxPanel" name="Panel2"/>
+    	     			</object>
+             		<object class = "sizeritem">
+	       					<option>1</option>
+	       					<flag>wxEXPAND</flag>
+	       					<object class = "wxPanel" name="Panel3"/>
+             		</object>
+             	<object class = "sizeritem">
+        				<option>1</option>
+	       				<flag>wxEXPAND</flag>
+	       				<object class= "wxPanel" name="Panel4"/>
+	     				</object>
+	   				</object>
+     			</object>
+			</object>
+    </object>
+  </object>
+</object>
+</object>
+</object>
+</object>
 </resource>
 
 

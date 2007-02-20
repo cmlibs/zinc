@@ -8,7 +8,7 @@ Routines for opening files using Motif widgets.
 ???DB.  Return sometimes doesn't work for writing ?  This is because Cancel is
 the default button.
 ==============================================================================*/
-/* ***** BEGIN LICENSE BLOCK *****
+/* ***** BEGIN LICENSE BLOCK *****S
  * Version: MPL 1.1/GPL 2.0/LGPL 2.1
  *
  * The contents of this file are subject to the Mozilla Public License Version
@@ -43,6 +43,7 @@ the default button.
  * the terms of any one of the MPL, the GPL or the LGPL.
  *
  * ***** END LICENSE BLOCK ***** */
+extern "C" {
 #include <stddef.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -80,6 +81,12 @@ static char filedir_uidh[] =
 #endif /* defined (MOTIF) */
 #include "user_interface/message.h"
 #include "user_interface/user_interface.h"
+}
+#if defined (WX_USER_INTERFACE)
+#include "wx/wx.h"
+#include <wx/tglbtn.h>
+#include "wx/xrc/xmlres.h"
+#endif /* defined (WX_USER_INTERFACE)*/
 
 /*
 Code switchs
@@ -711,8 +718,9 @@ successful and NULL if unsuccessful.
 	struct File_open_data *file_open_data;
 #if defined (WIN32_USER_INTERFACE)
 	char *temp_filter_extension;
-#endif /* defined (WIN32_USER_INTERFACE) */
-
+//#elif defined(WX_USER_INTERFACE)
+//	char *shell_title,*temp_string;
+#endif /* defined (SWITCH_USER_INTERFACE) */
 	ENTER(create_File_open_data);
 	/* check arguments */
 	if (user_interface)
@@ -872,6 +880,10 @@ void open_file_and_read(
 #if defined (WIN32_USER_INTERFACE)
 	struct File_open_data *file_open_data
 #endif /* defined (WIN32_USER_INTERFACE) */
+#if defined (WX_USER_INTERFACE)
+	struct File_open_data *file_open_data
+#endif /* defined (WX_USER_INTERFACE) */
+
 	)
 /*******************************************************************************
 LAST MODIFIED : 23 April 2004
@@ -882,13 +894,19 @@ a list of the file names matching the <filter>.  After the user selects a file
 name the <file_operation> is performed on the file with the <arguments>.
 ==============================================================================*/
 {
+#if defined (WX_USER_INTERFACE)
+//	char *temp_str;
+//	int length,retry;
+	char *shell_title,*temp_string;
+	int retry;
+#endif /* defined (WX_USER_INTERFACE) */
 #if defined (MOTIF)
 	Atom WM_DELETE_WINDOW;
 	char *shell_title,*temp_string;
 	MrmType selection_class;
 	struct File_open_data *file_open_data;
 	Widget file_selection_child,parent;
-#endif /* defined (MOTIF) */
+#endif /*defined (MOTIF) */
 #if defined (WIN32_USER_INTERFACE)
 	char *temp_str;
 	int length,retry;
@@ -1142,6 +1160,55 @@ name the <file_operation> is performed on the file with the <arguments>.
 		display_message(ERROR_MESSAGE,"open_file_and_read.  No file_open_data");
 	}
 #endif /* defined (WIN32_USER_INTERFACE) */
+#if defined (WX_USER_INTERFACE)
+				temp_string=(char *)NULL;
+				switch (file_open_data->type)
+				{
+					case REGULAR:
+					{
+						shell_title="Specify a file";
+						if (file_open_data->filter_extension)
+						{
+							if (ALLOCATE(temp_string,char,strlen(shell_title)+
+								strlen(file_open_data->filter_extension)+2))
+							{
+								strcpy(temp_string,"Specify a ");
+								strcat(temp_string,file_open_data->filter_extension);
+								strcat(temp_string," file");
+								shell_title=temp_string;
+							}
+						}
+					} break;
+					case DIRECTORY:
+					{
+						shell_title="Specify a directory";
+					} break;
+					default:
+					{
+						shell_title=(char *)NULL;
+					} break;
+	 			}
+wxFileDialog *ReadData = new wxFileDialog ((wxWindow *)NULL,shell_title,"","",
+ "*.*",wxOPEN|wxFILE_MUST_EXIST,wxDefaultPosition);
+ if (ReadData->ShowModal() == wxID_OK)
+	{
+    wxString file_name=ReadData->GetPath();
+		file_open_data->file_name=(char*)file_name.mb_str();
+
+			if (file_open_data->operation)
+				{
+					if ((file_open_data->operation)((file_open_data->file_name)
+						,file_open_data->arguments))
+					{
+						retry=0;
+					}
+					else
+					{
+						retry=1;
+					}
+				}
+	}
+#endif /* defined (WX_USER_INTERFACE) */
 	LEAVE;
 } /* open_file_and_read */
 
@@ -1152,6 +1219,9 @@ void open_file_and_write(
 #if defined (WIN32_USER_INTERFACE)
 	struct File_open_data *file_open_data
 #endif /* defined (WIN32_USER_INTERFACE) */
+#if defined (WX_USER_INTERFACE)
+	struct File_open_data *file_open_data
+#endif /* defined (WX_USER_INTERFACE) */
 	)
 /*******************************************************************************
 LAST MODIFIED : 9 June 2003
@@ -1163,6 +1233,11 @@ The <file_operation> with the <user_arguments> and the output directed to the
 specified file.
 ==============================================================================*/
 {
+#if defined (WX_USER_INTERFACE)
+//	char *temp_str;
+  int retry;
+	char *shell_title,*temp_string,*temp_extension,*extension;
+#endif /* defined (WX_USER_INTERFACE) */
 #if defined (MOTIF)
 	Atom WM_DELETE_WINDOW;
 #if defined (OLD_CODE)
@@ -1532,6 +1607,58 @@ specified file.
 		display_message(ERROR_MESSAGE,"open_file_and_write.  No file_open_data");
 	}
 #endif /* defined (WIN32_USER_INTERFACE) */
+#if defined (WX_USER_INTERFACE)
+				temp_string=(char *)NULL;
+				switch (file_open_data->type)
+				{
+					case REGULAR:
+					{
+						shell_title="Specify a file";
+						if (file_open_data->filter_extension)
+						{
+							if (ALLOCATE(temp_string,char,strlen(shell_title)+
+								strlen(file_open_data->filter_extension)+2))
+							{
+								strcpy(temp_string,"Specify a ");
+								strcat(temp_string,file_open_data->filter_extension);
+								strcat(temp_string," file");
+								shell_title=temp_string;
+								strcpy(temp_extension,"*");
+								strcat(temp_extension,file_open_data->filter_extension);
+								extension=temp_extension;								
+							}
+						}
+					} break;
+					case DIRECTORY:
+					{
+						shell_title="Specify a directory";
+					} break;
+					default:
+					{
+						shell_title=(char *)NULL;
+					} break;
+				}
+
+wxFileDialog *SaveData = new wxFileDialog ((wxWindow *)NULL,shell_title,"","",
+  extension,wxSAVE|wxOVERWRITE_PROMPT,wxDefaultPosition);
+ if (SaveData->ShowModal() == wxID_OK)
+	{
+	  wxString file_name=SaveData->GetPath();
+		file_open_data->file_name=(char*)file_name.mb_str();
+				if (file_open_data->operation)
+				{
+					if ((file_open_data->operation)((file_open_data->file_name)
+						,file_open_data->arguments))
+					{
+						retry=0;
+					}
+					else
+					{
+						retry=1;
+					}
+				}
+	}
+#endif /* defined (WX_USER_INTERFACE) */
 	LEAVE;
 } /* open_file_and_write */
 

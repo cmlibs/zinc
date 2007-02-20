@@ -118,37 +118,55 @@
   </object>
 
     <object class="wxBoxSizer">
-      <orient>wxVERTICAL</orient>
       <object class="sizeritem">
-        <object class="wxListBox" name="CommandHistory">
-          <size>400,100d</size>
-          <style>wxSUNKEN_BORDER</style>
-        </object>
-	      <option>1</option>
-        <flag>wxEXPAND|wxALL</flag>     
-        <border>10</border>
-      </object>
+	 			<flag>wxEXPAND</flag>
+				<option>1</option>
+				<object class ="wxSplitterWindow">
+					<style>wxSP_3D|wxSP_LIVE_UPDATE</style>
+				  <orientation>horizontal</orientation>
+					<minsize>1</minsize>
 
-      <object class="sizeritem">
-        <object class="wxTextCtrl" name="CommandLine">
-          <size>1,-1d</size>
-          <style>wxTE_PROCESS_ENTER</style>
-          <value></value>
-        </object>
-				<flag>wxEXPAND|wxALL</flag>
-        <border>10</border>
-      </object>
+					<object class ="wxPanel">
+			 	    <object class = "wxBoxSizer">	
+      				<orient>wxVERTICAL</orient>
 
-      <object class="sizeritem"> 
-			  <object class="wxListBox" name="OutputWindow">
-          <size>400,100d</size>
-         	<style>wxSUNKEN_BORDER</style>
-       	</object>
-        <flag>wxEXPAND|wxALL</flag>
-		  	<option>1</option>
-       	<border>10</border>
-			</object>	
-	  </object>	      
+							<object class="sizeritem">
+	 							<flag>wxEXPAND</flag>
+								<option>1</option>
+        				<object class="wxListBox" name="CommandHistory">
+          				<style>wxSUNKEN_BORDER</style>
+        				</object>  
+        				<border>10</border>
+      				</object>
+      				<object class="sizeritem">
+        				<object class="wxTextCtrl" name="CommandLine">
+          				<size>1,-1d</size>
+          				<style>wxTE_PROCESS_ENTER</style>
+          				<value></value>
+        				</object>
+								<flag>wxEXPAND|wxALL</flag>
+        				<border>10</border>
+      				</object>
+      			</object>
+      		</object>
 
+					<object class ="wxPanel">
+			 	    <object class = "wxBoxSizer">	
+      			  <orient>wxVERTICAL</orient>
+     				  <object class="sizeritem"> 
+								<flag>wxEXPAND</flag>
+								<option>1</option>
+			  				<object class="wxTextCtrl" name="OutputWindow">
+          				<style>wxTE_MULTILINE|wxTE_READONLY</style>
+       					</object>
+        				<flag>wxEXPAND|wxALL</flag>
+		  					<option>1</option>
+       					<border>10</border>
+							</object>	
+	  				</object>
+	        </object>
+       </object>
+     </object>
+   </object>
   </object>
 </resource>

@@ -7,9 +7,11 @@
 	  <label>Element Point Tool</label>
       <orient>wxVERTICAL</orient>
 			<object class ="sizeritem">
+	      <flag>wxEXPAND</flag>
+				<option>1</option>
 	  		<object class = "wxButton">
 	    		<label>click</label>
-	    		<size>130,27</size>
+					<size>170,27</size>
 		  	</object>
 			</object>
 	  </object>

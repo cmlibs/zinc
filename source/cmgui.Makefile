@@ -1122,9 +1122,9 @@ TIME_INTERFACE_SRCS = \
 TRANSFORMATION_INTERFACE_SRCS = \
 	transformation/transformation_editor.c
 USER_INTERFACE_SRCS = \
-	user_interface/confirmation.c \
+	user_interface/confirmation.cpp \
 	user_interface/event_dispatcher.c \
-	user_interface/filedir.c \
+	user_interface/filedir.cpp \
 	user_interface/message.c \
 	user_interface/user_interface.c \
 	user_interface/idle.c \
