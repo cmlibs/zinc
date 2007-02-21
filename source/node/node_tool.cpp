@@ -2403,7 +2403,7 @@ Fetches the appropriate icon for the interactive tool.
 
 
 #if defined (WX_USER_INTERFACE)
-class wxNodeTool : public wxPanel, Chooser_callback_object<Computed_field>
+class wxNodeTool : public wxPanel
 {
   Node_tool *node_tool;
   FE_region *master_fe_region;
@@ -2460,7 +2460,12 @@ public:
 			  Computed_field_has_up_to_3_numerical_components,
 			  (void *)NULL, node_tool->user_interface);
 
-	  computed_field_chooser->set_callback(this);
+	  Callback_base<Computed_field> *callback = 
+		  new Callback_member_callback< Computed_field, 
+		  wxNodeTool, int (wxNodeTool::*)(Computed_field *) >
+		  (this, &wxNodeTool::chooser_callback);
+
+	  computed_field_chooser->set_callback(callback);
 	}
 
   wxNodeTool()  /* Void constructor required for IMPLEMENT_DYNAMIC_CLASS */
