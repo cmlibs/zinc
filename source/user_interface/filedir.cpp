@@ -1276,7 +1276,7 @@ specified file.
 			sizeof(char *),
 			0,
 			XmRString,
-			"print to file"
+			const_cast<char *>("print to file")
 		}
 	};
 #endif /* defined (MOTIF) */
