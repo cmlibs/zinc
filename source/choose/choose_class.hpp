@@ -52,17 +52,53 @@ Calls the client-specified callback routine if a different object is chosen.
 #include "user_interface/message.h"
 #include "user_interface/user_interface.h"
 
-template < class Object > class Chooser_callback_object
+template < class Object > class Chooser_callback_base
 /*****************************************************************************
-LAST MODIFIED : 8 February 2007
+LAST MODIFIED : 21 February 2007
 
 DESCRIPTION :
 ============================================================================*/
 {
 public:
-	virtual int chooser_callback(Object *object) = 0;
+	void operator()(Object *object) const
+	{
+		callback_function(object);
+	}
+	virtual int callback_function(Object *) = 0;
 
-	virtual ~Chooser_callback_object()
+protected:
+
+	virtual ~Chooser_callback_base()
+	{
+	}
+};
+
+template < class Object, class Callee, class MemberFunction > class Chooser_callback_member_callback : public Chooser_callback_base< Object >
+/*****************************************************************************
+LAST MODIFIED : 21 February 2007
+
+DESCRIPTION :
+============================================================================*/
+{
+private:
+	Callee *callee;
+	MemberFunction member_function;
+
+public:
+	Chooser_callback_member_callback(
+		Callee *callee, MemberFunction member_function) :
+		callee(callee), member_function(member_function)
+	{
+	}
+
+	virtual int callback_function(Object *object)
+	{
+		return (callee->*member_function)(object);
+	}
+		
+private:
+
+	virtual ~Chooser_callback_member_callback()
 	{
 	}
 };
@@ -75,7 +111,7 @@ DESCRIPTION :
 ============================================================================*/
 {
 private:
-	Chooser_callback_object<Object> *callback;
+	Chooser_callback_base<Object> *callback;
 
 public:
 	wxChooser<Object>(wxPanel *parent, 
@@ -99,7 +135,7 @@ public:
 
 	void OnChoiceSelected(wxCommandEvent& Event)
 	{
-		callback->chooser_callback(get_item());
+		callback->callback_function(get_item());
    }
 	
 	Object *get_item()
@@ -107,7 +143,7 @@ public:
 		return (static_cast<Object*>(GetClientData(GetSelection())));
 	}
 
-	int set_callback(Chooser_callback_object<Object> *callback_object)
+	int set_callback(Chooser_callback_base<Object> *callback_object)
 	{
 		callback = callback_object;
 		return (1);
@@ -149,7 +185,6 @@ public:
 };
 
 template < class Managed_object, class Manager > class Managed_object_chooser
-   : public Chooser_callback_object<Managed_object>
 /*****************************************************************************
 LAST MODIFIED : 8 February 2007
 
@@ -163,7 +198,7 @@ private:
 	void *conditional_function_user_data;
 	void *manager_callback_id;
 	wxChooser<Managed_object> *chooser;
-	Chooser_callback_object<Managed_object> *update_callback;
+	Chooser_callback_base<Managed_object> *update_callback;
    int number_of_items;
    Managed_object **items;
    char **item_names;
@@ -189,7 +224,7 @@ DESCRIPTION :
 	{
 		manager_callback_id = (void *)NULL;
 		chooser = (wxChooser<Managed_object> *)NULL;
-		update_callback = (Chooser_callback_object<Managed_object> *)NULL;
+		update_callback = (Chooser_callback_base<Managed_object> *)NULL;
 		number_of_items = 0;
 		items = (Managed_object **)NULL;
 		item_names = (char **)NULL;
@@ -199,7 +234,13 @@ DESCRIPTION :
 				(parent, number_of_items,
 				items, item_names, current_object,
 				user_interface);
-			chooser->set_callback(this);
+			typedef int (Managed_object_chooser::*Member_function)(Managed_object *);
+			Chooser_callback_base<Managed_object> *callback = 
+			   new Chooser_callback_member_callback< Managed_object, 
+				Managed_object_chooser, Member_function>(
+				this, &Managed_object_chooser::chooser_callback);
+				
+			chooser->set_callback(callback);
 
 			manager_callback_id =
 					manager->register_callback(global_object_change, this);
@@ -258,14 +299,14 @@ Called by the
 		if (update_callback)
 		{
 			/* now call the procedure with the user data */
-			update_callback->chooser_callback(object);
+			update_callback->callback_function(object);
 		}
 		return_code=1;
 		
 		return (return_code);
 	} /* Managed_object_chooser::get_callback */
 
-	Chooser_callback_object<Managed_object> *get_callback()
+	Chooser_callback_base<Managed_object> *get_callback()
 /*****************************************************************************
 LAST MODIFIED : 8 February 2007
 
@@ -276,7 +317,7 @@ Returns a pointer to the callback item.
 		return update_callback;
 	} /* Managed_object_chooser::get_callback */
 
-	int set_callback(Chooser_callback_object<Managed_object> *new_callback)
+	int set_callback(Chooser_callback_base<Managed_object> *new_callback)
 /*****************************************************************************
 LAST MODIFIED : 8 February 2007
 
