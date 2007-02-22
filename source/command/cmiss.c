@@ -23460,7 +23460,7 @@ Initialise all the subcomponents of cmgui and create the Cmiss_command_data
 				command_data->computed_field_package);
 			Computed_field_register_types_binary_threshold_image_filter(
 				command_data->computed_field_package);
-			Computed_field_register_types_canny_edge_detection_filter(
+			Computed_field_register_types_canny_edge_detection_image_filter(
 				command_data->computed_field_package);
 			Computed_field_register_types_meanImageFilter(
 				command_data->computed_field_package);
