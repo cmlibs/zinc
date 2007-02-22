@@ -69,7 +69,7 @@ in response to changes in the rescaleIntensityImageFilter from the control resca
 ==============================================================================*/
 
 int Computed_field_get_type_rescaleIntensityImageFilter(struct Computed_field *field,
-	struct Computed_field **source_field, int outputMin, int outputMax);
+	struct Computed_field **source_field, int *outputMin, int *outputMax);
 /*******************************************************************************
 LAST MODIFIED : 18 Nov 2006
 
