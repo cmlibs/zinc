@@ -103,7 +103,7 @@ DESCRIPTION :
 
 int Computed_field_finite_element_set_string_at_node(
 	struct Computed_field *field, int component_number, struct FE_node *node, 
-	FE_value time, char *string);
+	FE_value time, const char *string);
 /*******************************************************************************
 LAST MODIFIED : 24 May 2006
 
