@@ -69,7 +69,7 @@ in response to changes in the curvatureAnisotropicDiffusionImageFilter from the 
 ==============================================================================*/
 
 int Computed_field_get_type_curvatureAnisotropicDiffusionImageFilter(struct Computed_field *field,
-	struct Computed_field **source_field, float timeStep, float conductance, int numIterations);
+	struct Computed_field **source_field, float *timeStep, float *conductance, int *numIterations);
 /*******************************************************************************
 LAST MODIFIED : 18 Nov 2006
 
