@@ -4522,8 +4522,9 @@ Executes a GFX CREATE REGION command.
 		name = (char *)NULL;
 		if (set_name(state, (void *)&name, (void *)1))
 		{
-			if (strcmp(PARSER_HELP_STRING,state->current_token)&&
-				strcmp(PARSER_RECURSIVE_HELP_STRING,state->current_token))
+			if ((!state->current_token) ||
+				(strcmp(PARSER_HELP_STRING,state->current_token)&&
+				strcmp(PARSER_RECURSIVE_HELP_STRING,state->current_token)))
 			{
 				return_code = 1;
 				if (name && Cmiss_region_get_region_from_path(root_region, name, &region) &&
