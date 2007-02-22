@@ -168,6 +168,11 @@ Functions for executing cmiss commands.
 #include "image_processing/computed_field_cannyEdgeDetectionFilter.h"
 #include "image_processing/computed_field_meanImageFilter.h"
 #include "image_processing/computed_field_sigmoidImageFilter.h"
+#include "image_processing/computed_field_discreteGaussianImageFilter.h"
+#include "image_processing/computed_field_curvatureAnisotropicDiffusionImageFilter.h"
+#include "image_processing/computed_field_derivativeImageFilter.h"
+#include "image_processing/computed_field_rescaleIntensityImageFilter.h"
+#include "image_processing/computed_field_connected_threshold_image_filter.h"
 #endif /* defined (USE_ITK) */
 #if defined (MOTIF)
 #include "interaction/interactive_tool.h"
@@ -23453,13 +23458,23 @@ Initialise all the subcomponents of cmgui and create the Cmiss_command_data
 #if defined (USE_ITK)
 			Computed_field_register_types_thresholdFilter(
 				command_data->computed_field_package);
-			Computed_field_register_types_binaryThresholdFilter(
+			Computed_field_register_types_binary_threshold_image_filter(
 				command_data->computed_field_package);
 			Computed_field_register_types_cannyEdgeDetectionFilter(
 				command_data->computed_field_package);
 			Computed_field_register_types_meanImageFilter(
 				command_data->computed_field_package);
 			Computed_field_register_types_sigmoidImageFilter(
+				command_data->computed_field_package);
+			Computed_field_register_types_discreteGaussianImageFilter(
+				command_data->computed_field_package);
+			Computed_field_register_types_curvatureAnisotropicDiffusionImageFilter(
+				command_data->computed_field_package);
+			Computed_field_register_types_derivativeImageFilter(
+				command_data->computed_field_package);
+			Computed_field_register_types_rescaleIntensityImageFilter(
+				command_data->computed_field_package);
+			Computed_field_register_types_connected_threshold_image_filter(
 				command_data->computed_field_package);
 #endif /* defined (USE_ITK) */
 		}
