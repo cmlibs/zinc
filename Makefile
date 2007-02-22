@@ -180,14 +180,14 @@ ifeq ($(SYSNAME),Linux)
    ifeq ($(MACHNAME),x86_64)
 all : cmgui cmgui-debug cmgui-debug-memorycheck cmgui-static-lib cmgui-debug-static-lib cmgui-no3dgraphics-static-lib cmgui-no3dgraphics-debug-static-lib cmgui-no3dgraphics-debug-memorycheck-static-lib
    else # MACHNAME == x86_64
-all : cmgui cmgui-debug cmgui-debug-memorycheck cmgui-static cmgui-static-debug cmgui-console cmgui-static-lib cmgui-debug-static-lib cmgui-gtk cmgui-gtk-debug cmgui-gtk-lib cmgui-gtk-debug-lib cmgui-gtk-static-lib cmgui-gtk-debug-static-lib cmgui-no3dgraphics-static-lib cmgui-no3dgraphics-debug-static-lib cmgui-no3dgraphics-debug-memorycheck-static-lib cmgui-unemap
+all : cmgui cmgui-debug cmgui-debug-memorycheck cmgui-static cmgui-static-debug cmgui-console cmgui-static-lib cmgui-debug-static-lib cmgui-gtk cmgui-gtk-debug cmgui-gtk-lib cmgui-gtk-debug-lib cmgui-gtk-static-lib cmgui-gtk-debug-static-lib cmgui-no3dgraphics-static-lib cmgui-no3dgraphics-debug-static-lib cmgui-no3dgraphics-debug-memorycheck-static-lib cmgui-unemap cmgui-wx cmgui-wx-debug
    endif # MACHNAME == x86_64
 endif # SYSNAME == Linux
 ifeq ($(SYSNAME),AIX)
 all : cmgui cmgui-debug cmgui64 cmgui64-debug cmgui-static-lib cmgui-no3dgraphics-static-lib cmgui-no3dgraphics-debug-static-lib cmgui64-no3dgraphics-static-lib cmgui64-no3dgraphics-debug-static-lib
 endif # SYSNAME == AIX
 ifeq ($(SYSNAME),win32)
-all : cmgui cmgui-debug cmgui-gtk
+all : cmgui cmgui-debug cmgui-gtk cmgui-wx cmgui-wx-debug
 endif # SYSNAME == win32
 ifeq ($(SYSNAME),CYGWIN%=)
 all :
