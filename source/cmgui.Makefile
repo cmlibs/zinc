@@ -270,12 +270,13 @@ ifeq ($(GRAPHICS_API), OPENGL_GRAPHICS)
       GRAPHICS_LIBRARY_DEFINES += -DDM_BUFFERS
    endif # $(USER_INTERFACE) == MOTIF_USER_INTERFACE
 
+   ifneq ($(wildcard $(CMISS_ROOT)/mesa/include/$(LIB_ARCH_DIR)),)
+      GRAPHICS_INC += -I$(CMISS_ROOT)/mesa/include/$(LIB_ARCH_DIR)
+   endif
+   GRAPHICS_LIB += $(patsubst %,-L%,$(firstword $(wildcard $(CMISS_ROOT)/mesa/lib/$(LIB_ARCH_DIR) $(X_LIB))))
    ifneq ($(USER_INTERFACE), GTK_USER_INTERFACE)
-   #For GTK_USER_INTERFACE the OpenGL comes from the GTK_LIBRARIES automatically
-      ifneq ($(wildcard $(CMISS_ROOT)/mesa/include/$(LIB_ARCH_DIR)),)
-         GRAPHICS_INC += -I$(CMISS_ROOT)/mesa/include/$(LIB_ARCH_DIR)
-      endif
-      GRAPHICS_LIB += $(patsubst %,-L%,$(firstword $(wildcard $(CMISS_ROOT)/mesa/lib/$(LIB_ARCH_DIR) $(X_LIB))))
+	   #For GTK_USER_INTERFACE the OpenGL comes from the GTK_LIBRARIES
+      #we want to use mesa if it is availiable
 	   ifeq ($(OPERATING_SYSTEM),darwin)
 			GRAPHICS_LIB += -framework Carbon -framework AGL -L/System/Library/Frameworks/OpenGL.framework/Libraries/
 		endif # $(OPERATING_SYSTEM) == darwin
