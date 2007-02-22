@@ -58,7 +58,7 @@ int Computed_field_set_type_discreteGaussianImageFilter(struct Computed_field *f
 LAST MODIFIED : 18 Nov 2006
 
 DESCRIPTION :
-Converts <field> to type COMPUTED_FIELD_SIGMOIDIMAGEFILTER, returning the value of
+Converts <field> to type COMPUTED_FIELD_DISCRETEGAUSSIANIMAGEFILTER, returning the value of
 <discreteGaussianImageFilter> at the time/parameter value given by scalar <source_field>.
 Sets number of components to same number as <discreteGaussianImageFilter>.
 If function fails, field is guaranteed to be unchanged from its original state,
@@ -69,13 +69,13 @@ in response to changes in the discreteGaussianImageFilter from the control discr
 ==============================================================================*/
 
 int Computed_field_get_type_discreteGaussianImageFilter(struct Computed_field *field,
-	struct Computed_field **source_field, float variance, int maxKernelWidth);
+	struct Computed_field **source_field, float *variance, int *maxKernelWidth);
 /*******************************************************************************
 LAST MODIFIED : 18 Nov 2006
 
 DESCRIPTION :
-If the field is of type COMPUTED_FIELD_SIGMOIDIMAGEFILTER, the source_field and discreteGaussianImageFilter
+If the field is of type COMPUTED_FIELD_DISCRETEGAUSSIANIMAGEFILTER_H, the source_field and discreteGaussianImageFilter
 used by it are returned - otherwise an error is reported.
 ==============================================================================*/
 
-#endif /* !defined (COMPUTED_FIELD_SIGMOIDIMAGEFILTER_H) */
+#endif /* !defined (COMPUTED_FIELD_DISCRETEGAUSSIANIMAGEFILTER_H) */
