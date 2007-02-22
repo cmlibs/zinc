@@ -1041,6 +1041,11 @@ ifeq ($(USE_ITK),true)
 	   image_processing/computed_field_cannyEdgeDetectionFilter.cpp \
 	   image_processing/computed_field_meanImageFilter.cpp \
 	   image_processing/computed_field_sigmoidImageFilter.cpp \
+	   image_processing/computed_field_discreteGaussianImageFilter.cpp \
+	   image_processing/computed_field_curvatureAnisotropicDiffusionImageFilter.cpp \
+	   image_processing/computed_field_derivativeImageFilter.cpp \
+	   image_processing/computed_field_rescaleIntensityImageFilter.cpp \
+	   image_processing/computed_field_connected_threshold_image_filter.cpp \
 	   image_processing/computed_field_ImageFilter.cpp
 endif # $(USE_ITK) == true
 INTERACTION_SRCS = \
