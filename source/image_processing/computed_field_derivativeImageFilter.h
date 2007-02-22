@@ -69,7 +69,7 @@ in response to changes in the derivativeImageFilter from the control derivativeI
 ==============================================================================*/
 
 int Computed_field_get_type_derivativeImageFilter(struct Computed_field *field,
-	struct Computed_field **source_field, int order, int direction);
+	struct Computed_field **source_field, int *order, int *direction);
 /*******************************************************************************
 LAST MODIFIED : 18 Nov 2006
 
