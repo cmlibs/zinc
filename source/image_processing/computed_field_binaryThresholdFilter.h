@@ -1,5 +1,5 @@
 /*******************************************************************************
-FILE : computed_field_binaryThresholdFilter.h
+FILE : computed_field_binary_threshold_image_filter.h
 
 LAST MODIFIED : 9 September 2006
 
@@ -43,7 +43,15 @@ DESCRIPTION :
 #if !defined (COMPUTED_FIELD_BINARYTHRESHOLDFILTER_H)
 #define COMPUTED_FIELD_BINARYTHRESHOLDFILTER_H
 
-int Computed_field_register_types_binaryThresholdFilter(
+#include "api/cmiss_computed_field.h"
+
+/* API functions are prefixed with Cmiss */
+#define Computed_field_set_type_binary_threshold_image_filter \
+	Cmiss_computed_field_set_type_binary_threshold_image_filter
+#define Computed_field_get_type_binary_threshold_image_filter \
+	Cmiss_computed_field_get_type_binary_threshold_image_filter
+
+int Computed_field_register_types_binary_threshold_image_filter(
 	struct Computed_field_package *computed_field_package);
 /*******************************************************************************
 LAST MODIFIED : 9 September 2006
@@ -51,31 +59,26 @@ LAST MODIFIED : 9 September 2006
 DESCRIPTION :
 ==============================================================================*/
 
-int Computed_field_set_type_binaryThresholdFilter(struct Computed_field *field,
+int Computed_field_set_type_binary_threshold_image_filter(struct Computed_field *field,
 	struct Computed_field *source_field,
-	float lower_threshold, float upper_threshold);
+	double lower_threshold, double upper_threshold);
 /*******************************************************************************
 LAST MODIFIED : 9 September 2006
 
 DESCRIPTION :
 Converts <field> to type COMPUTED_FIELD_BINARYTHRESHOLDFILTER, returning the value of
-<binaryThresholdFilter> at the time/parameter value given by scalar <source_field>.
-Sets number of components to same number as <binaryThresholdFilter>.
-If function fails, field is guaranteed to be unchanged from its original state,
-although its cache may be lost.
-???RC In future may not need to pass computed_field_manager it all fields
-maintain pointer to it. Only have it to invoke computed field manager messages
-in response to changes in the binaryThresholdFilter from the control binaryThresholdFilter manager.
+<binary_threshold_image_filter> at the time/parameter value given by scalar <source_field>.
+Sets number of components to same number as <binary_threshold_image_filter>.
 ==============================================================================*/
 
-int Computed_field_get_type_binaryThresholdFilter(struct Computed_field *field,
+int Computed_field_get_type_binary_threshold_image_filter(struct Computed_field *field,
 	struct Computed_field **source_field,
-	float *lower_threshold, float *upper_threshold);
+	double *lower_threshold, double *upper_threshold);
 /*******************************************************************************
 LAST MODIFIED : 9 September 2006
 
 DESCRIPTION :
-If the field is of type COMPUTED_FIELD_BINARYTHRESHOLDFILTER, the source_field and binaryThresholdFilter
+If the field is of type COMPUTED_FIELD_BINARYTHRESHOLDFILTER, the source_field and binary_threshold_image_filter
 used by it are returned - otherwise an error is reported.
 ==============================================================================*/
 
