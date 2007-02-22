@@ -213,7 +213,6 @@ DESCRIPTION :
 	{
 		int i;
 	
-		delete manager;
 		if (chooser)
 		{
 			delete chooser;
@@ -222,6 +221,7 @@ DESCRIPTION :
 		{
 			manager->deregister_callback(manager_callback_id);
 		}
+		delete manager;
 		if (items)
 		{
 			DEALLOCATE(items);

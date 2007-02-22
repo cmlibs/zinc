@@ -222,7 +222,7 @@ Returns true if <region> contains <other_region>, this is the case if
 ==============================================================================*/
 
 struct Cmiss_region *Cmiss_region_get_child_region_from_name(
-	struct Cmiss_region *region, char *child_name);
+	struct Cmiss_region *region, const char *child_name);
 /*******************************************************************************
 LAST MODIFIED : 23 September 2003
 
@@ -254,7 +254,7 @@ child at the bottom of the list.
 ==============================================================================*/
 
 int Cmiss_region_get_region_from_path(struct Cmiss_region *root_region,
-	char *path, struct Cmiss_region **region_address);
+	const char *path, struct Cmiss_region **region_address);
 /*******************************************************************************
 LAST MODIFIED : 8 November 2002
 

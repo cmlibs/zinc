@@ -864,7 +864,7 @@ Returns true if <region> contains <other_region>, this is the case if
 } /* Cmiss_region_contains_Cmiss_region */
 
 struct Cmiss_region *Cmiss_region_get_child_region_from_name(
-	struct Cmiss_region *region, char *child_name)
+	struct Cmiss_region *region, const char *child_name)
 /*******************************************************************************
 LAST MODIFIED : 29 October 2002
 
@@ -1004,7 +1004,7 @@ child at the bottom of the list.
 } /* Cmiss_region_set_child_region_number */
 
 int Cmiss_region_get_region_from_path(struct Cmiss_region *root_region,
-	char *path, struct Cmiss_region **region_address)
+	const char *path, struct Cmiss_region **region_address)
 /*******************************************************************************
 LAST MODIFIED : 11 November 2002
 
@@ -1017,11 +1017,10 @@ Single leading and trailing separator characters are ignored, hence:
 - both "/" and "" refer to the root_region itself.
 If no region can be identified from path, returns successfully but with NULL
 in <region_address> 
-Note <path> is modified within this function but returned in its original state.
 For safety, returns NULL in <region_address> on any error.
 ==============================================================================*/
 {
-	char *child_name, *child_name_end;
+	char *child_name, *child_name_allocate, *child_name_end;
 	int return_code;
 	struct Cmiss_region *region;
 
@@ -1029,7 +1028,8 @@ For safety, returns NULL in <region_address> on any error.
 	if (root_region && path && region_address)
 	{
 		region = root_region;
-		child_name = path;
+		child_name_allocate = duplicate_string(path);
+		child_name = child_name_allocate;
 		/* skip leading separator */
 		if (child_name[0] == CMISS_REGION_PATH_SEPARATOR_CHAR)
 		{
@@ -1049,6 +1049,7 @@ For safety, returns NULL in <region_address> on any error.
 			region = Cmiss_region_get_child_region_from_name(region, child_name);
 		}
 		*region_address = region;
+		DEALLOCATE(child_name_allocate);
 		return_code = 1;
 	}
 	else
