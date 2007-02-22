@@ -190,8 +190,8 @@ button is clicked.
 #if defined (MOTIF)
 	static Arg settings_list[]=
 		{
-			{XmNmessageString,(XtArgVal)NULL},
-			{XmNtitle,(XtArgVal)NULL},
+			{XmNmessageString,(XtArgVal)0},
+			{XmNtitle,(XtArgVal)0},
 			/*???DB.  Changed dialogStyle to deleteResponse because of something
 				hanging in unemap acquisition, but can't remember what.  So leaving as
 				is */
