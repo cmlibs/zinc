@@ -222,4 +222,29 @@ NULL then the field will be defined as constant for all times.
 If it is NULL then a single nodal value for each component will be defined.
 ==============================================================================*/
 
+int Cmiss_computed_field_set_type_binary_threshold_image_filter(struct Computed_field *field,
+	struct Computed_field *source_field,
+	double lower_threshold, double upper_threshold);
+/*******************************************************************************
+LAST MODIFIED : 9 September 2006
+
+DESCRIPTION :
+Converts <field> to type COMPUTED_FIELD_BINARYTHRESHOLDFILTER, returning the value of
+<binary_threshold_image_filter> at the time/parameter value given by scalar <source_field>.
+Sets number of components to same number as <source_field>.
+==============================================================================*/
+
+
+int Cmiss_computed_field_get_type_binary_threshold_image_filter(struct Computed_field *field,
+	struct Computed_field **source_field,
+	double *lower_threshold, double *upper_threshold);
+/*******************************************************************************
+LAST MODIFIED : 9 September 2006
+
+DESCRIPTION :
+If the field is of type COMPUTED_FIELD_BINARYTHRESHOLDFILTER, the source_field and binary_threshold_image_filter
+used by it are returned - otherwise an error is reported.
+==============================================================================*/
+
+
 #endif /* __CMISS_COMPUTED_FIELD_H__ */
