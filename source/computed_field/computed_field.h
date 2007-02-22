@@ -137,7 +137,7 @@ Global functions
 extern "C" {
 #endif /* __cplusplus */
 
-struct Computed_field *CREATE(Computed_field)(char *name);
+struct Computed_field *CREATE(Computed_field)(const char *name);
 /*******************************************************************************
 LAST MODIFIED : 13 December 2001
 
