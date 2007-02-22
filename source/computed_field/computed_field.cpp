@@ -444,7 +444,7 @@ Global functions
 ----------------
 */
 
-struct Computed_field *CREATE(Computed_field)(char *name)
+struct Computed_field *CREATE(Computed_field)(const char *name)
 /*******************************************************************************
 LAST MODIFIED : 14 August 2006
 
