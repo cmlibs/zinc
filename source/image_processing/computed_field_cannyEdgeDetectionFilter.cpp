@@ -1,5 +1,5 @@
 /*******************************************************************************
-FILE : computed_field_cannyEdgeDetectionFilter.c
+FILE : computed_field_canny_edge_detection_image_filter.c
 
 LAST MODIFIED : 9 September 2006
 
@@ -61,32 +61,32 @@ using namespace CMISS;
 
 namespace {
 
-char computed_field_cannyEdgeDetectionFilter_type_string[] = "canny_edge_detection_filter";
+char computed_field_canny_edge_detection_image_filter_type_string[] = "canny_edge_detection_filter";
 
-class Computed_field_cannyEdgeDetectionFilter : public Computed_field_ImageFilter
+class Computed_field_canny_edge_detection_image_filter : public Computed_field_ImageFilter
 {
 
 public:
-	Computed_field_cannyEdgeDetectionFilter(Computed_field *field);
+	Computed_field_canny_edge_detection_image_filter(Computed_field *field);
 
-	~Computed_field_cannyEdgeDetectionFilter()
+	~Computed_field_canny_edge_detection_image_filter()
 	{
 	}
 
 private:
 	Computed_field_core *copy(Computed_field* new_parent)
 	{
-		return new Computed_field_cannyEdgeDetectionFilter(new_parent);
+		return new Computed_field_canny_edge_detection_image_filter(new_parent);
 	}
 
 	char *get_type_string()
 	{
-		return(computed_field_cannyEdgeDetectionFilter_type_string);
+		return(computed_field_canny_edge_detection_image_filter_type_string);
 	}
 
 	int compare(Computed_field_core* other_field)
 	{
-		if (dynamic_cast<Computed_field_cannyEdgeDetectionFilter*>(other_field))
+		if (dynamic_cast<Computed_field_canny_edge_detection_image_filter*>(other_field))
 		{
 			return 1;
 		}
@@ -102,7 +102,7 @@ private:
 };
 
 template < class ImageType >
-class Computed_field_cannyEdgeDetectionFilter_Functor :
+class Computed_field_canny_edge_detection_image_filter_Functor :
 	public Computed_field_ImageFilter_FunctorTmpl< ImageType >
 /*******************************************************************************
 LAST MODIFIED : 12 September 2006
@@ -112,14 +112,14 @@ This class actually does the work of processing images with the filter.
 It is instantiated for each of the chosen ImageTypes.
 ==============================================================================*/
 {
-	Computed_field_cannyEdgeDetectionFilter *cannyEdgeDetectionFilter;
+	Computed_field_canny_edge_detection_image_filter *canny_edge_detection_image_filter;
 
 public:
 
-	Computed_field_cannyEdgeDetectionFilter_Functor(
-		Computed_field_cannyEdgeDetectionFilter *cannyEdgeDetectionFilter) :
-		Computed_field_ImageFilter_FunctorTmpl< ImageType >(cannyEdgeDetectionFilter),
-		cannyEdgeDetectionFilter(cannyEdgeDetectionFilter)
+	Computed_field_canny_edge_detection_image_filter_Functor(
+		Computed_field_canny_edge_detection_image_filter *canny_edge_detection_image_filter) :
+		Computed_field_ImageFilter_FunctorTmpl< ImageType >(canny_edge_detection_image_filter),
+		canny_edge_detection_image_filter(canny_edge_detection_image_filter)
 	{
 	}
 
@@ -138,16 +138,16 @@ and generate the outputImage.
 		
 		typename FilterType::Pointer filter = FilterType::New();
 		
-		return_code = cannyEdgeDetectionFilter->update_output_image
+		return_code = canny_edge_detection_image_filter->update_output_image
 			< ImageType, FilterType >
 			(location, filter, this->outputImage);
 		
 		return (return_code);
 	} /* set_filter */
 
-}; /* template < class ImageType > class Computed_field_cannyEdgeDetectionFilter_Functor */
+}; /* template < class ImageType > class Computed_field_canny_edge_detection_image_filter_Functor */
 	
-Computed_field_cannyEdgeDetectionFilter::Computed_field_cannyEdgeDetectionFilter(
+Computed_field_canny_edge_detection_image_filter::Computed_field_canny_edge_detection_image_filter(
 	Computed_field *field) :
 	Computed_field_ImageFilter(field)
 /*******************************************************************************
@@ -159,16 +159,16 @@ Create the computed_field representation of the CannyEdgeDetectionFilter.
 {
 #if defined DONOTUSE_TEMPLATETEMPLATES
 	create_filters_singlecomponent_twoormoredimensions(
-		Computed_field_cannyEdgeDetectionFilter_Functor, this);
+		Computed_field_canny_edge_detection_image_filter_Functor, this);
 #else
 	create_filters_singlecomponent_twoormoredimensions
-		< Computed_field_cannyEdgeDetectionFilter_Functor,
-		Computed_field_cannyEdgeDetectionFilter >
+		< Computed_field_canny_edge_detection_image_filter_Functor,
+		Computed_field_canny_edge_detection_image_filter >
 		(this);
 #endif
-} /* Computed_field_cannyEdgeDetectionFilter */
+} /* Computed_field_canny_edge_detection_image_filter */
 
-int Computed_field_cannyEdgeDetectionFilter::list()
+int Computed_field_canny_edge_detection_image_filter::list()
 /*******************************************************************************
 LAST MODIFIED : 30 August 2006
 
@@ -177,7 +177,7 @@ DESCRIPTION :
 {
 	int return_code;
 
-	ENTER(List_Computed_field_cannyEdgeDetectionFilter);
+	ENTER(List_Computed_field_canny_edge_detection_image_filter);
 	if (field)
 	{
 		display_message(INFORMATION_MESSAGE,
@@ -186,15 +186,15 @@ DESCRIPTION :
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"list_Computed_field_cannyEdgeDetectionFilter.  Invalid argument(s)");
+			"list_Computed_field_canny_edge_detection_image_filter.  Invalid argument(s)");
 		return_code = 0;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* list_Computed_field_cannyEdgeDetectionFilter */
+} /* list_Computed_field_canny_edge_detection_image_filter */
 
-char *Computed_field_cannyEdgeDetectionFilter::get_command_string()
+char *Computed_field_canny_edge_detection_image_filter::get_command_string()
 /*******************************************************************************
 LAST MODIFIED : 30 August 2006
 
@@ -205,7 +205,7 @@ Returns allocated command string for reproducing field. Includes type.
 	char *command_string, *field_name;
 	int error;
 
-	ENTER(Computed_field_cannyEdgeDetectionFilter::get_command_string);
+	ENTER(Computed_field_canny_edge_detection_image_filter::get_command_string);
 	command_string = (char *)NULL;
 	if (field)
 	{
@@ -222,16 +222,16 @@ Returns allocated command string for reproducing field. Includes type.
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Computed_field_cannyEdgeDetectionFilter::get_command_string.  Invalid field");
+			"Computed_field_canny_edge_detection_image_filter::get_command_string.  Invalid field");
 	}
 	LEAVE;
 
 	return (command_string);
-} /* Computed_field_cannyEdgeDetectionFilter::get_command_string */
+} /* Computed_field_canny_edge_detection_image_filter::get_command_string */
 
 } //namespace
 
-int Computed_field_set_type_cannyEdgeDetectionFilter(struct Computed_field *field,
+int Computed_field_set_type_canny_edge_detection_image_filter(struct Computed_field *field,
 	struct Computed_field *source_field)
 /*******************************************************************************
 LAST MODIFIED : 30 August 2006
@@ -243,7 +243,7 @@ Converts <field> to type COMPUTED_FIELD_CANNYEDGEDETECTIONFILTER.
 	int number_of_source_fields, return_code;
 	struct Computed_field **source_fields;
 
-	ENTER(Computed_field_set_type_cannyEdgeDetectionFilter);
+	ENTER(Computed_field_set_type_canny_edge_detection_image_filter);
 	if (field && source_field &&
 		Computed_field_is_scalar(source_field, (void *)NULL))
 	{
@@ -260,7 +260,7 @@ Converts <field> to type COMPUTED_FIELD_CANNYEDGEDETECTIONFILTER.
 			source_fields[0] = ACCESS(Computed_field)(source_field);
 			field->source_fields = source_fields;
 			field->number_of_source_fields = number_of_source_fields;			
-			field->core = new Computed_field_cannyEdgeDetectionFilter(field);
+			field->core = new Computed_field_canny_edge_detection_image_filter(field);
 		}
 		else
 		{
@@ -271,15 +271,15 @@ Converts <field> to type COMPUTED_FIELD_CANNYEDGEDETECTIONFILTER.
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Computed_field_set_type_cannyEdgeDetectionFilter.  Invalid argument(s)");
+			"Computed_field_set_type_canny_edge_detection_image_filter.  Invalid argument(s)");
 		return_code = 0;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* Computed_field_set_type_cannyEdgeDetectionFilter */
+} /* Computed_field_set_type_canny_edge_detection_image_filter */
 
-int Computed_field_get_type_cannyEdgeDetectionFilter(struct Computed_field *field,
+int Computed_field_get_type_canny_edge_detection_image_filter(struct Computed_field *field,
 	struct Computed_field **source_field)
 /*******************************************************************************
 LAST MODIFIED : 30 August 2006
@@ -291,8 +291,8 @@ used by it is returned - otherwise an error is reported.
 {
 	int return_code;
 
-	ENTER(Computed_field_get_type_cannyEdgeDetectionFilter);
-	if (field && (dynamic_cast<Computed_field_cannyEdgeDetectionFilter*>(field->core))
+	ENTER(Computed_field_get_type_canny_edge_detection_image_filter);
+	if (field && (dynamic_cast<Computed_field_canny_edge_detection_image_filter*>(field->core))
 		&& source_field)
 	{
 		*source_field = field->source_fields[0];
@@ -301,15 +301,15 @@ used by it is returned - otherwise an error is reported.
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Computed_field_get_type_cannyEdgeDetectionFilter.  Invalid argument(s)");
+			"Computed_field_get_type_canny_edge_detection_image_filter.  Invalid argument(s)");
 		return_code = 0;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* Computed_field_get_type_cannyEdgeDetectionFilter */
+} /* Computed_field_get_type_canny_edge_detection_image_filter */
 
-int define_Computed_field_type_cannyEdgeDetectionFilter(struct Parse_state *state,
+int define_Computed_field_type_canny_edge_detection_image_filter(struct Parse_state *state,
 	void *field_void, void *computed_field_simple_package_void)
 /*******************************************************************************
 LAST MODIFIED : 30 August 2006
@@ -325,18 +325,18 @@ already) and allows its contents to be modified.
 	struct Option_table *option_table;
 	struct Set_Computed_field_conditional_data set_source_field_data;
 
-	ENTER(define_Computed_field_type_cannyEdgeDetectionFilter);
+	ENTER(define_Computed_field_type_canny_edge_detection_image_filter);
 	if (state && (field = (struct Computed_field *)field_void) &&
 		(computed_field_simple_package = (Computed_field_simple_package*)computed_field_simple_package_void))
 	{
 		return_code = 1;
 		/* get valid parameters for projection field */
 		source_field = (struct Computed_field *)NULL;
-		if (computed_field_cannyEdgeDetectionFilter_type_string ==
+		if (computed_field_canny_edge_detection_image_filter_type_string ==
 			Computed_field_get_type_string(field))
 		{
 			return_code =
-				Computed_field_get_type_cannyEdgeDetectionFilter(field, &source_field);
+				Computed_field_get_type_canny_edge_detection_image_filter(field, &source_field);
 		}
 		if (return_code)
 		{
@@ -363,14 +363,14 @@ already) and allows its contents to be modified.
 				if (!source_field)
 				{
 					display_message(ERROR_MESSAGE,
-						"define_Computed_field_type_cannyEdgeDetectionFilter.  "
+						"define_Computed_field_type_canny_edge_detection_image_filter.  "
 						"Missing source field");
 					return_code = 0;
 				}
 			}
 			if (return_code)
 			{
-				return_code = Computed_field_set_type_cannyEdgeDetectionFilter(
+				return_code = Computed_field_set_type_canny_edge_detection_image_filter(
 					field, source_field);
 			}
 
@@ -383,7 +383,7 @@ already) and allows its contents to be modified.
 						
 					/* error */
 					display_message(ERROR_MESSAGE,
-						"define_Computed_field_type_cannyEdgeDetectionFilter.  Failed");
+						"define_Computed_field_type_canny_edge_detection_image_filter.  Failed");
 				}
 			}
 	
@@ -396,15 +396,15 @@ already) and allows its contents to be modified.
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"define_Computed_field_type_cannyEdgeDetectionFilter.  Invalid argument(s)");
+			"define_Computed_field_type_canny_edge_detection_image_filter.  Invalid argument(s)");
 		return_code = 0;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* define_Computed_field_type_cannyEdgeDetectionFilter */
+} /* define_Computed_field_type_canny_edge_detection_image_filter */
 
-int Computed_field_register_types_cannyEdgeDetectionFilter(
+int Computed_field_register_types_canny_edge_detection_image_filter(
 	struct Computed_field_package *computed_field_package)
 /*******************************************************************************
 LAST MODIFIED : 30 August 2006
@@ -414,21 +414,21 @@ DESCRIPTION :
 {
 	int return_code;
 
-	ENTER(Computed_field_register_types_cannyEdgeDetectionFilter);
+	ENTER(Computed_field_register_types_canny_edge_detection_image_filter);
 	if (computed_field_package)
 	{
 		return_code = Computed_field_package_add_type(computed_field_package,
-			computed_field_cannyEdgeDetectionFilter_type_string, 
-			define_Computed_field_type_cannyEdgeDetectionFilter,
+			computed_field_canny_edge_detection_image_filter_type_string, 
+			define_Computed_field_type_canny_edge_detection_image_filter,
 			Computed_field_package_get_simple_package(computed_field_package));
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Computed_field_register_types_cannyEdgeDetectionFilter.  Invalid argument(s)");
+			"Computed_field_register_types_canny_edge_detection_image_filter.  Invalid argument(s)");
 		return_code = 0;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* Computed_field_register_types_cannyEdgeDetectionFilter */
+} /* Computed_field_register_types_canny_edge_detection_image_filter */

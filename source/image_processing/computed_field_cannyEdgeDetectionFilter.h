@@ -43,7 +43,15 @@ DESCRIPTION :
 #if !defined (COMPUTED_FIELD_CANNYEDGEDETECTIONFILTER_H)
 #define COMPUTED_FIELD_CANNYEDGEDETECTIONFILTER_H
 
-int Computed_field_register_types_cannyEdgeDetectionFilter(
+#include "api/cmiss_computed_field.h"
+
+/* API functions are prefixed with Cmiss */
+#define Computed_field_set_type_canny_edge_detection_image_filter \
+	Cmiss_computed_field_set_type_canny_edge_detection_image_filter
+#define Computed_field_get_type_canny_edge_detection_image_filter \
+	Cmiss_computed_field_get_type_canny_edge_detection_image_filter
+
+int Computed_field_register_types_canny_edge_detection_image_filter(
 	struct Computed_field_package *computed_field_package);
 /*******************************************************************************
 LAST MODIFIED : 9 September 2006
@@ -51,29 +59,29 @@ LAST MODIFIED : 9 September 2006
 DESCRIPTION :
 ==============================================================================*/
 
-int Computed_field_set_type_cannyEdgeDetectionFilter(struct Computed_field *field,
+int Computed_field_set_type_canny_edge_detection_image_filter(struct Computed_field *field,
 	struct Computed_field *source_field);
 /*******************************************************************************
 LAST MODIFIED : 9 September 2006
 
 DESCRIPTION :
 Converts <field> to type COMPUTED_FIELD_CANNYEDGEDETECTIONFILTER, returning the value of
-<cannyEdgeDetectionFilter> at the time/parameter value given by scalar <source_field>.
-Sets number of components to same number as <cannyEdgeDetectionFilter>.
+<canny_edge_detection_image_filter> at the time/parameter value given by scalar <source_field>.
+Sets number of components to same number as <canny_edge_detection_image_filter>.
 If function fails, field is guaranteed to be unchanged from its original state,
 although its cache may be lost.
 ???RC In future may not need to pass computed_field_manager it all fields
 maintain pointer to it. Only have it to invoke computed field manager messages
-in response to changes in the cannyEdgeDetectionFilter from the control cannyEdgeDetectionFilter manager.
+in response to changes in the canny_edge_detection_image_filter from the control canny_edge_detection_image_filter manager.
 ==============================================================================*/
 
-int Computed_field_get_type_cannyEdgeDetectionFilter(struct Computed_field *field,
+int Computed_field_get_type_canny_edge_detection_image_filter(struct Computed_field *field,
 	struct Computed_field **source_field);
 /*******************************************************************************
 LAST MODIFIED : 9 September 2006
 
 DESCRIPTION :
-If the field is of type COMPUTED_FIELD_CANNYEDGEDETECTIONFILTER, the source_field and cannyEdgeDetectionFilter
+If the field is of type COMPUTED_FIELD_CANNYEDGEDETECTIONFILTER, the source_field and canny_edge_detection_image_filter
 used by it are returned - otherwise an error is reported.
 ==============================================================================*/
 
