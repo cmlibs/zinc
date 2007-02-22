@@ -1151,7 +1151,7 @@ Returns allocated command string for reproducing field. Includes type.
 
 int Computed_field_finite_element_set_string_at_node(
 	struct Computed_field *field, int component_number, struct FE_node *node, 
-	FE_value time, char *string)
+	FE_value time, const char *string)
 /*******************************************************************************
 LAST MODIFIED : 24 August 2006
 
@@ -1173,7 +1173,7 @@ Allows the setting of a string if that is the type of field represented.
 		{
 			return_code = set_FE_nodal_string_value(node,
 				core->fe_field, component_number,/*version*/0,
-				FE_NODAL_VALUE, string);
+				FE_NODAL_VALUE, const_cast<char *>(string));
 		}
 		else
 		{
