@@ -140,7 +140,7 @@ without changing anything.  Otherwise the string is REALLOCATED and the suffix
 added to the end of the string.
 ==============================================================================*/
 
-char *duplicate_string(char *source_string);
+char *duplicate_string(const char *source_string);
 /*******************************************************************************
 LAST MODIFIED : 2 December 1998
 

@@ -679,7 +679,7 @@ added to the end of the string.
 	return (return_code);
 } /* compare_suffix */
 
-char *duplicate_string(char *source_string)
+char *duplicate_string(const char *source_string)
 /*******************************************************************************
 LAST MODIFIED : 2 December 1998
 
