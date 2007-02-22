@@ -86,6 +86,27 @@
       </object>	
    
       <object class = "sizeritem">
+	   <flag>wxEXPAND</flag>
+	    <object class = "wxBoxSizer">
+   	   <orient>wxHORIZONTAL</orient>
+		   <object class = "sizeritem">
+ 	        	<flag>wxALIGN_CENTER</flag>
+				<object class = "wxStaticText" name="region-text">
+	   			<label>Put in region:</label>
+				</object>
+			</object>
+		   <object class = "sizeritem">
+			  	<flag>wxEXPAND</flag>
+ 	        	<flag>wxALIGN_CENTER</flag>
+				<option>1</option>
+				<object class = "wxPanel" name="RegionChooserPanel">
+				   <size>-1,30</size>
+				</object>
+			</object>
+		 </object>
+      </object>	
+
+      <object class = "sizeritem">
         <object class ="wxStaticBoxSizer">
 	  <orient>wxVERTICAL</orient>
 	  <object class = "sizeritem">

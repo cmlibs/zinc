@@ -86,6 +86,7 @@ static char node_tool_uidh[] =
 #include "choose/choose_class.hpp"
 #include "graphics/graphics_window_private.hpp"
 #include "node/node_tool.xrch"
+#include "region/cmiss_region_chooser_wx.hpp"
 #endif /* defined (WX_USER_INTERFACE)*/
 
 /*
@@ -2460,12 +2461,29 @@ public:
 			  Computed_field_has_up_to_3_numerical_components,
 			  (void *)NULL, node_tool->user_interface);
 
-	  Callback_base<Computed_field> *callback = 
+	  Callback_base<Computed_field> *coordinate_field_callback = 
 		  new Callback_member_callback< Computed_field, 
 		  wxNodeTool, int (wxNodeTool::*)(Computed_field *) >
-		  (this, &wxNodeTool::chooser_callback);
+		  (this, &wxNodeTool::coordinate_field_callback);
 
-	  computed_field_chooser->set_callback(callback);
+	  computed_field_chooser->set_callback(coordinate_field_callback);
+
+	  wxPanel *region_chooser_panel = 
+		 XRCCTRL(*this, "RegionChooserPanel", wxPanel);
+
+	  char *initial_path;
+	  Cmiss_region_get_root_region_path(&initial_path);
+	  wxRegionChooser *region_chooser = new wxRegionChooser(region_chooser_panel,
+		  node_tool->root_region, initial_path); 
+	  DEALLOCATE(initial_path);
+
+	  Callback_base<Cmiss_region> *region_callback = 
+		  new Callback_member_callback< Cmiss_region, 
+		  wxNodeTool, int (wxNodeTool::*)(Cmiss_region *) >
+		  (this, &wxNodeTool::region_callback);
+
+	  region_chooser->set_callback(region_callback);
+
 	}
 
   wxNodeTool()  /* Void constructor required for IMPLEMENT_DYNAMIC_CLASS */
@@ -2477,7 +2495,7 @@ public:
 	  delete computed_field_chooser;
   }
 
-	int chooser_callback(Computed_field *field)
+	int coordinate_field_callback(Computed_field *field)
 /*******************************************************************************
 LAST MODIFIED : 9 February 2007
 
@@ -2486,6 +2504,18 @@ Callback from wxChooser<Computed_field> when choice is made.
 ==============================================================================*/
 	{
 		Node_tool_set_coordinate_field(node_tool, field);
+		return 1;
+	}
+
+	int region_callback(Cmiss_region *region)
+/*******************************************************************************
+LAST MODIFIED : 9 February 2007
+
+DESCRIPTION :
+Callback from wxChooser<Computed_field> when choice is made.
+==============================================================================*/
+	{
+		Node_tool_set_Cmiss_region(node_tool, region);
 		return 1;
 	}
 
