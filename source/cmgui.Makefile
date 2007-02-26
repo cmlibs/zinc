@@ -610,7 +610,10 @@ endif # $(USER_INTERFACE) == GTK_USER_INTERFACE
 ifeq ($(USER_INTERFACE),WX_USER_INTERFACE)
    WX_DIR =
    USER_INTERFACE_INC += $(shell $(WX_DIR)wx-config --cxxflags)
-   USER_INTERFACE_LIB += $(shell $(WX_DIR)wx-config --libs core,base,gl,xrc)
+   #Default list does not include gl, so we list them here.
+   #Using xrc means that we require most things (and static builds don't automatically pull
+   #in the dependencies)
+   USER_INTERFACE_LIB += $(shell $(WX_DIR)wx-config --libs xrc,gl,xml,adv,html,core,base)
 endif # $(USER_INTERFACE) == WX_USER_INTERFACE
 ifeq ($(USER_INTERFACE),CARBON_USER_INTERFACE)
    USER_INTERFACE_INC += 
