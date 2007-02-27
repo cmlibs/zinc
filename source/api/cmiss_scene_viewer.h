@@ -745,8 +745,8 @@ Gets the NDC information.
 ==============================================================================*/
 
 int Cmiss_scene_viewer_get_viewing_volume(Cmiss_scene_viewer_id scene_viewer,
-	double *left,double *right,double *bottom,double *top,double *near,
-	double *far);
+	double *left,double *right,double *bottom,double *top,double *near_plane,
+	double *far_plane);
 /*******************************************************************************
 LAST MODIFIED : 18 November 1997
 
@@ -755,7 +755,7 @@ Gets the viewing volume of the Scene_viewer.
 ==============================================================================*/
 
 int Cmiss_scene_viewer_set_viewing_volume(Cmiss_scene_viewer_id scene_viewer,
-	double left,double right,double bottom,double top,double near,double far);
+	double left,double right,double bottom,double top,double near_plane,double far_plane);
 /*******************************************************************************
 LAST MODIFIED : 15 December 1997
 
