@@ -1566,9 +1566,14 @@ endif # USE_COMPUTED_VARIABLES == true
 
 SO_ALL_LIB = $(GRAPHICS_LIB) $(USER_INTERFACE_LIB) $(HAPTIC_LIB) \
 	$(WORMHOLE_LIB) $(IMAGEMAGICK_LIB) \
-	$(EXTERNAL_INPUT_LIB) $(HELP_LIB) \
+	$(EXTERNAL_INPUT_LIB) $(HELP_LIB) $(ITK_LIB) \
 	$(MOVIE_FILE_LIB) $(XML_LIB) $(MEMORYCHECK_LIB) \
-	$(SOLIB_LIB)
+	$(SOLIB_LIB) $(LIB)
+ifeq ($(SYSNAME),win32)
+# We cannot link with any unresolved components on win32.  The interpreter should
+# probably be in it's own library.
+SO_ALL_LIB += $(INTERPRETER_LIB)
+endif
 
 ifeq ($(SYSNAME),win32)
 SO_LIB_TARGET = lib$(TARGET_EXECUTABLE_BASENAME)
