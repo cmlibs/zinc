@@ -2798,6 +2798,23 @@ DESCRIPTION :
 							return_code = 0;
 #endif /* defined (GL_VERSION_1_3) */
 						}
+						if (material_to_be_modified_copy->spectrum)
+						{
+#if defined (GL_VERSION_1_3)
+							if (!Graphics_library_check_extension(GL_VERSION_1_3))
+							{
+								display_message(ERROR_MESSAGE,
+									"A colour lookup spectrum requires OpenGL version 1.3 or better which is "
+									"not available with this OpenGL implementation.");
+								return_code = 0;
+							}
+#else /* defined (GL_VERSION_1_3) */
+							display_message(ERROR_MESSAGE,
+								"A colour lookup spectrum requires OpenGL version 1.3 or better which was "
+								"not compiled into this executable.");
+							return_code = 0;
+#endif /* defined (GL_VERSION_1_3) */
+						}
 						if (normal_mode_flag)
 						{
 							if (material_to_be_modified_copy->program)
