@@ -2355,18 +2355,25 @@ Sets the spectrum member of the material.
 	ENTER(Graphical_material_set_colour_lookup_spectrum);
 	if (material)
 	{
-		if (spectrum)
+#if defined (GL_VERSION_1_3)
+		if (Graphics_library_check_extension(GL_VERSION_1_3))
 		{
-			ACCESS(Spectrum)(spectrum);
+			REACCESS(Spectrum)(&material->spectrum, spectrum);
+			material->compile_status = GRAPHICS_NOT_COMPILED;
+			return_code=1;
 		}
-		if (material->spectrum)
+		else
 		{
-			DEACCESS(Spectrum)(&material->spectrum);
+			display_message(ERROR_MESSAGE,
+				"Graphical_material_set_colour_lookup_spectrum.  "
+				"OpenGL version 1.3 required for colour lookup spectrums and not available on this display.");
+			return_code=0;
 		}
-		material->spectrum=spectrum;
-		/* display list needs to be compiled again */
-		material->compile_status = GRAPHICS_NOT_COMPILED;
-		return_code=1;
+#else /* defined (GL_VERSION_1_3) */
+		display_message(ERROR_MESSAGE,
+			"Graphical_material_set_colour_lookup_spectrum.  "
+			"OpenGL version 1.3 required for colour lookup spectrums and not compiled into this executable.");
+#endif /* defined (GL_VERSION_1_3) */
 	}
 	else
 	{
