@@ -187,7 +187,7 @@ ifeq ($(SYSNAME),AIX)
 all : cmgui cmgui-debug cmgui64 cmgui64-debug cmgui-static-lib cmgui-no3dgraphics-static-lib cmgui-no3dgraphics-debug-static-lib cmgui64-no3dgraphics-static-lib cmgui64-no3dgraphics-debug-static-lib
 endif # SYSNAME == AIX
 ifeq ($(SYSNAME),win32)
-all : cmgui cmgui-debug cmgui-gtk cmgui-wx cmgui-wx-debug
+all : cmgui cmgui-debug cmgui-gtk cmgui-wx cmgui-wx-debug cmgui-lib cmgui-static-lib cmgui-debug-lib cmgui-debug-static-lib
 endif # SYSNAME == win32
 ifeq ($(SYSNAME),CYGWIN%=)
 all :
