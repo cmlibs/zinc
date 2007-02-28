@@ -2367,9 +2367,11 @@ Sets the spectrum member of the material.
 		material->compile_status = GRAPHICS_NOT_COMPILED;
 		return_code=1;
 #else /* defined (GL_VERSION_1_3) */
+		USE_PARAMETER(spectrum);
 		display_message(ERROR_MESSAGE,
 			"Graphical_material_set_colour_lookup_spectrum.  "
 			"OpenGL version 1.3 required for colour lookup spectrums and not compiled into this executable.");
+		return_code=0;
 #endif /* defined (GL_VERSION_1_3) */
 	}
 	else
