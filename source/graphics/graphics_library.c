@@ -541,10 +541,19 @@ Returns true if the OpenGL version is at least <major_version>.<minor_version>
 	{
 		version=(char *)glGetString(GL_VERSION);
 
-		if (!(2 == sscanf(version, "%d.%d", &major, &minor)))
+		if (version)
 		{
-			major = -1;
-			minor = -1;
+			if (!(2 == sscanf(version, "%d.%d", &major, &minor)))
+			{
+				major = -1;
+				minor = -1;
+			}
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,
+				"query_gl_version.  OpenGL not initialised when checking version.");
+			return_code=0;
 		}
 	}
 
