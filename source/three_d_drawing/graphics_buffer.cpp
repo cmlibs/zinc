@@ -2321,11 +2321,11 @@ returned to the scene.
 	input.position_x = GET_X_LPARAM(lParam);
 	input.position_y = GET_Y_LPARAM(lParam);
 	input_modifier = 0;
-	if (MK_SHIFT == wParam)
+	if (MK_SHIFT & wParam)
 	{
 		input_modifier |= GRAPHICS_BUFFER_INPUT_MODIFIER_SHIFT;
 	}
-	if (MK_CONTROL == wParam)
+	if (MK_CONTROL & wParam)
 	{
 		input_modifier |= GRAPHICS_BUFFER_INPUT_MODIFIER_CONTROL;
 	}
