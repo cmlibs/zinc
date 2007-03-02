@@ -214,13 +214,19 @@ from the front buffer, otherwise they will be read from the back buffer in a
 double buffered context.
 ==============================================================================*/
 
-int Graphics_library_load_extension(char *extensions);
+int Graphics_library_load_extension(char *extension_name);
 /*******************************************************************************
-LAST MODIFIED : 20 February 2004
+LAST MODIFIED : 2 March 2007
 
 DESCRIPTION :
-Attempts to load the space separated list of extensions.  Returns true if all
-the extensions succeed, false if not.
+Attempts to load a single openGL extension.
+If the extension symbol and all the functions used in cmgui from that extension are
+found then returns GLEXTENSION_AVAILABLE.
+If the extension list is defined but this extension is not available then
+it returns GLEXTENSION_UNAVAILABLE.
+If the extension string is not yet defined then the test is not definitive and
+so it returns GLEXTENSION_UNSURE, allowing the calling procedure to react
+appropriately.
 ==============================================================================*/
 
 int Graphics_library_load_extensions(char *extensions);
@@ -251,9 +257,33 @@ To test GLX extensions requires a connection to the display.
 #    define GRAPHICS_LIBRARY_USE_EXTENSION_FUNCTION_HANDLES
 #  endif /* defined (WIN32_SYSTEM) || defined (AIX) */
 
+#define GLEXTENSION_UNSURE (255)
+#define GLEXTENSION_AVAILABLE (1)
+#define GLEXTENSION_UNAVAILABLE (0)
+
 #  define GLEXTENSIONFLAG( extension_name ) extension_name ## _glextension_flag
 #  define Graphics_library_check_extension(extension_name) \
-	(255 == extension_name ## _glextension_flag ? Graphics_library_load_extension( #extension_name) : extension_name ## _glextension_flag)
+	(GLEXTENSION_UNSURE == extension_name ## _glextension_flag ? (GLEXTENSION_AVAILABLE == Graphics_library_load_extension( #extension_name)) : extension_name ## _glextension_flag)
+/*******************************************************************************
+LAST MODIFIED : 2 March 2007
+
+DESCRIPTION :
+Ensure that the extension is available.
+Use before calling functions from that extension.
+==============================================================================*/
+
+#  define Graphics_library_tentative_check_extension(extension_name) \
+	(GLEXTENSION_UNAVAILABLE != extension_name ## _glextension_flag ? (GLEXTENSION_UNAVAILABLE != Graphics_library_load_extension( #extension_name)) : GLEXTENSION_UNAVAILABLE)
+/*******************************************************************************
+LAST MODIFIED : 2 March 2007
+
+DESCRIPTION :
+This is successful if the extension is available or if it is unsure.
+Use before allowing parameters to be set in commands.  It is useful to fail
+if we know the command won't work, but if we haven't opened any graphics context
+yet we just don't know.
+==============================================================================*/
+
 #if defined (GRAPHICS_LIBRARY_USE_EXTENSION_FUNCTION_HANDLES)
 #  define GLHANDLE( function_name ) function_name ## _handle
 #endif /* defined GRAPHICS_LIBRARY_USE_EXTENSION_FUNCTION_HANDLES */
@@ -261,7 +291,7 @@ To test GLX extensions requires a connection to the display.
 #if defined (GRAPHICS_LIBRARY_C)
 /* This is being included from the C file so do the initialisations */
 #  define GRAPHICS_LIBRARY_INITIALISE_GLEXTENSIONFLAG(extension_name) \
-	unsigned char extension_name ## _glextension_flag = 255
+	unsigned char extension_name ## _glextension_flag = GLEXTENSION_UNSURE
 #  define GRAPHICS_LIBRARY_EXTERN
 #else /* defined (GRAPHICS_LIBRARY_C) */
 #  define GRAPHICS_LIBRARY_INITIALISE_GLEXTENSIONFLAG(extension_name) \

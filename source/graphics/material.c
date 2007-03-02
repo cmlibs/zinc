@@ -2361,11 +2361,19 @@ Sets the spectrum member of the material.
 	if (material)
 	{
 #if defined (GL_VERSION_1_3)
-		/* Don't check run time availability yet as we may 
-			not have initialised any openGL display yet */
-		REACCESS(Spectrum)(&material->spectrum, spectrum);
-		material->compile_status = GRAPHICS_NOT_COMPILED;
-		return_code=1;
+		if (Graphics_library_tentative_check_extension(GL_VERSION_1_3))
+		{
+			REACCESS(Spectrum)(&material->spectrum, spectrum);
+			material->compile_status = GRAPHICS_NOT_COMPILED;
+			return_code=1;
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,
+				"A colour lookup spectrum requires OpenGL version 1.3 or better which is "
+				"not available on this display.");
+			return_code = 0;
+		}
 #else /* defined (GL_VERSION_1_3) */
 		USE_PARAMETER(spectrum);
 		display_message(ERROR_MESSAGE,
@@ -2780,40 +2788,43 @@ DESCRIPTION :
 								"Specify only one of normal_mode/per_pixel_mode.");
 							return_code = 0;
 						}
-#if !defined (GL_VERSION_1_3)
 						/* Don't check run time availability yet as we may 
 							not have initialised any openGL display yet */
 						if (material_to_be_modified_copy->secondary_texture)
 						{
+#if defined (GL_VERSION_1_3)
+							if (!Graphics_library_tentative_check_extension(GL_VERSION_1_3))
+							{
+								display_message(ERROR_MESSAGE,
+									"Bump mapping requires OpenGL version 1.3 or better which is "
+									"not available on this display.");
+								DEACCESS(Texture)(&material_to_be_modified_copy->secondary_texture);
+								return_code = 0;
+							}
+#else /* defined (GL_VERSION_1_3) */
 							display_message(ERROR_MESSAGE,
 								"Bump mapping requires OpenGL version 1.3 or better which was "
 								"not compiled into this executable.");
 							DEACCESS(Texture)(&material_to_be_modified_copy->secondary_texture);
 							return_code = 0;
-						}
-						if (material_to_be_modified_copy->spectrum)
-						{
-							display_message(ERROR_MESSAGE,
-								"A colour lookup spectrum requires OpenGL version 1.3 or better which was "
-								"not compiled into this executable.");
-							DEACCESS(Spectrum)(&material_to_be_modified_copy->spectrum);
-							return_code = 0;
-						}
 #endif /* defined (GL_VERSION_1_3) */
+						}
 						if (material_to_be_modified_copy->spectrum)
 						{
 #if defined (GL_VERSION_1_3)
-							if (!Graphics_library_check_extension(GL_VERSION_1_3))
+							if (!Graphics_library_tentative_check_extension(GL_VERSION_1_3))
 							{
 								display_message(ERROR_MESSAGE,
 									"A colour lookup spectrum requires OpenGL version 1.3 or better which is "
-									"not available with this OpenGL implementation.");
+									"not available on this display.");
+								DEACCESS(Texture)(&material_to_be_modified_copy->secondary_texture);
 								return_code = 0;
 							}
 #else /* defined (GL_VERSION_1_3) */
 							display_message(ERROR_MESSAGE,
 								"A colour lookup spectrum requires OpenGL version 1.3 or better which was "
 								"not compiled into this executable.");
+							DEACCESS(Spectrum)(&material_to_be_modified_copy->spectrum);
 							return_code = 0;
 #endif /* defined (GL_VERSION_1_3) */
 						}

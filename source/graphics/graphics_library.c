@@ -113,7 +113,7 @@ Sets up the default light, material and light model for the graphics library.
 #if defined (MOTIF)
 		/* Try and load this function while we have the user_interface connection */
 		display = User_interface_get_display(user_interface);
-		if (255 == GLEXTENSIONFLAG(GLX_ARB_get_proc_address))
+		if (GLEXTENSION_UNSURE == GLEXTENSIONFLAG(GLX_ARB_get_proc_address))
 		{
 			if (query_glx_extension("GLX_ARB_get_proc_address", display,
 				DefaultScreen(display)))
@@ -150,7 +150,7 @@ To test GLX extensions requires a connection to the display.
 	ENTER(Graphics_library_initialise_gtkglext_glx_extensions);
 	return_code=1;
 #if defined(GLX_ARB_get_proc_address)
-	if (255 == GLEXTENSIONFLAG(GLX_ARB_get_proc_address))
+	if (GLEXTENSION_UNSURE == GLEXTENSIONFLAG(GLX_ARB_get_proc_address))
 	{
 		if (gdk_x11_gl_query_glx_extension(config,
 				"GLX_ARB_get_proc_address"))
@@ -465,6 +465,9 @@ because extension names can be prefixes of other extension names. Could use
 strtok() but the constant string returned by glGetString might be in read-only
 memory.
 ???SAB.  Taken directly from the insight book on OpenGL Extensions
+Returns GLEXTENSION_UNSURE if openGL extension string is NULL and therefore
+we still are not sure if the extension will be available when the openGL is
+initialiased.
 ==============================================================================*/
 {
 	char *end, *p;
@@ -496,18 +499,20 @@ memory.
 #endif /* defined (DEBUG) */
 		if (NULL==p)
 		{
-			return_code=0;
+			/* We still don't know, so return this and allow the calling
+				routine to decide what to do */
+			return_code=GLEXTENSION_UNSURE;
 		}
 		else
 		{
 			end=p+strlen(p);
-			return_code = 0;
+			return_code=GLEXTENSION_UNAVAILABLE;
 			while (p<end)
 			{
 				n=strcspn(p," ");
 				if ((extNameLen==n)&&(strncmp(extName,p,n)==0)) 
 				{
-					return_code=1;
+					return_code=GLEXTENSION_AVAILABLE;
 				}
 				p += (n+1);
 			}
@@ -515,7 +520,7 @@ memory.
 	}
 	else
 	{
-		return_code=0;
+		return_code=GLEXTENSION_UNAVAILABLE;
 	}
 
 	return (return_code);
@@ -529,13 +534,16 @@ LAST MODIFIED : 16 April 2003
 
 DESCRIPTION :
 Returns true if the OpenGL version is at least <major_version>.<minor_version>
+Returns GLEXTENSION_UNSURE if openGL extension string is NULL and therefore
+we still are not sure if the extension will be available when the openGL is
+initialiased.
 ==============================================================================*/
 {
 	char *version;
 	static int major = 0, minor = 0;
 	int return_code;
 
-	return_code = 0;
+	return_code=GLEXTENSION_UNAVAILABLE;
 
 	if (!major)
 	{
@@ -551,21 +559,21 @@ Returns true if the OpenGL version is at least <major_version>.<minor_version>
 		}
 		else
 		{
-			display_message(ERROR_MESSAGE,
-				"query_gl_version.  OpenGL not initialised when checking version.");
-			return_code=0;
+			/* We still don't know, so return this and allow the calling
+				routine to decide what to do */
+			return_code=GLEXTENSION_UNSURE;
 		}
 	}
 
 	if (major > major_version)
 	{
-		return_code = 1;
+		return_code=GLEXTENSION_AVAILABLE;
 	}
 	else if (major == major_version)
 	{
 		if (minor >= minor_version)
 		{
-			return_code = 1;
+			return_code=GLEXTENSION_AVAILABLE;
 		}
 	}
 
@@ -720,11 +728,17 @@ Finds and loads gl function symbols at runtime.
 
 int Graphics_library_load_extension(char *extension_name)
 /*******************************************************************************
-LAST MODIFIED : 20 February 2004
+LAST MODIFIED : 2 March 2007
 
 DESCRIPTION :
-Attempts to load the particular extensions.  Returns true if all
-the extensions succeed, false if not.
+Attempts to load a single openGL extension.
+If the extension symbol and all the functions used in cmgui from that extension are
+found then returns GLEXTENSION_AVAILABLE.
+If the extension list is defined but this extension is not available then
+it returns GLEXTENSION_UNAVAILABLE.
+If the extension string is not yet defined then the test is not definitive and
+so it returns GLEXTENSION_UNSURE, allowing the calling procedure to react
+appropriately.
 ==============================================================================*/
 {
 	int return_code;
@@ -745,27 +759,20 @@ the extensions succeed, false if not.
 #if defined GL_VERSION_1_2
 		else if (!strcmp(extension_name, "GL_VERSION_1_2"))
 		{
-			if (255 != GLEXTENSIONFLAG(GL_VERSION_1_2))
+			if (GLEXTENSION_UNSURE != GLEXTENSIONFLAG(GL_VERSION_1_2))
 			{
 				return_code = GLEXTENSIONFLAG(GL_VERSION_1_2);
 			}
 			else
 			{
-				if (query_gl_version(1, 2))
+				return_code = query_gl_version(1, 2);
+				if (GLEXTENSION_AVAILABLE == return_code)
 				{
-					if (GRAPHICS_LIBRARY_ASSIGN_HANDLE(glTexImage3D, PFNGLTEXIMAGE3DPROC)
-						Graphics_library_get_function_ptr("glTexImage3D"))
+					if (!(GRAPHICS_LIBRARY_ASSIGN_HANDLE(glTexImage3D, PFNGLTEXIMAGE3DPROC)
+						Graphics_library_get_function_ptr("glTexImage3D")))
 					{
-						return_code = 1;
+						return_code = GLEXTENSION_UNAVAILABLE;
 					}
-					else
-					{
-						return_code = 0;
-					}
-				}
-				else
-				{
-					return_code = 0;
 				}
 				GLEXTENSIONFLAG(GL_VERSION_1_2) = return_code;
 			}			
@@ -774,29 +781,22 @@ the extensions succeed, false if not.
 #if defined GL_VERSION_1_3
 		else if (!strcmp(extension_name, "GL_VERSION_1_3"))
 		{
-			if (255 != GLEXTENSIONFLAG(GL_VERSION_1_3))
+			if (GLEXTENSION_UNSURE != GLEXTENSIONFLAG(GL_VERSION_1_3))
 			{
 				return_code = GLEXTENSIONFLAG(GL_VERSION_1_3);
 			}
 			else
 			{
-				if (query_gl_version(1, 3))
+				return_code = query_gl_version(1, 3);
+				if (GLEXTENSION_AVAILABLE == return_code)
 				{
-					if ((GRAPHICS_LIBRARY_ASSIGN_HANDLE(glActiveTexture, PFNGLACTIVETEXTUREPROC)
+					if (!((GRAPHICS_LIBRARY_ASSIGN_HANDLE(glActiveTexture, PFNGLACTIVETEXTUREPROC)
 						Graphics_library_get_function_ptr("glActiveTexture")) &&
 						(GRAPHICS_LIBRARY_ASSIGN_HANDLE(glMultiTexCoord3fv, PFNGLMULTITEXCOORD3FVPROC)
-						Graphics_library_get_function_ptr("glMultiTexCoord3fv")))
-					{
-						return_code = 1;
+							Graphics_library_get_function_ptr("glMultiTexCoord3fv"))))
+ 					{
+						return_code = GLEXTENSION_UNAVAILABLE;
 					}
-					else
-					{
-						return_code = 0;
-					}
-				}
-				else
-				{
-					return_code = 0;
 				}
 				GLEXTENSIONFLAG(GL_VERSION_1_3) = return_code;
 			}
@@ -805,27 +805,20 @@ the extensions succeed, false if not.
 #if defined GL_VERSION_1_4
 		else if (!strcmp(extension_name, "GL_VERSION_1_4"))
 		{
-			if (255 != GLEXTENSIONFLAG(GL_VERSION_1_4))
+			if (GLEXTENSION_UNSURE != GLEXTENSIONFLAG(GL_VERSION_1_4))
 			{
 				return_code = GLEXTENSIONFLAG(GL_VERSION_1_4);
 			}
 			else
 			{
-				if (query_gl_version(1, 4))
+				return_code = query_gl_version(1, 4);
+				if (GLEXTENSION_AVAILABLE == return_code)
 				{
-					if (GRAPHICS_LIBRARY_ASSIGN_HANDLE(glBlendFuncSeparate, PFNGLBLENDFUNCSEPARATEPROC)
-						Graphics_library_get_function_ptr("glBlendFuncSeparate"))
-					{
-						return_code = 1;
+					if (!(GRAPHICS_LIBRARY_ASSIGN_HANDLE(glBlendFuncSeparate, PFNGLBLENDFUNCSEPARATEPROC)
+							Graphics_library_get_function_ptr("glBlendFuncSeparate")))
+ 					{
+						return_code = GLEXTENSION_UNAVAILABLE;
 					}
-					else
-					{
-						return_code = 0;
-					}
-				}
-				else
-				{
-					return_code = 0;
 				}
 				GLEXTENSIONFLAG(GL_VERSION_1_4) = return_code;
 			}
@@ -834,20 +827,13 @@ the extensions succeed, false if not.
 #if defined GL_ARB_depth_texture
 		else if (!strcmp(extension_name, "GL_ARB_depth_texture"))
 		{
-			if (255 != GLEXTENSIONFLAG(GL_ARB_depth_texture))
+			if (GLEXTENSION_UNSURE != GLEXTENSIONFLAG(GL_ARB_depth_texture))
 			{
 				return_code = GLEXTENSIONFLAG(GL_ARB_depth_texture);
 			}
 			else
 			{
-				if (query_gl_extension(extension_name))
-				{
-					return_code = 1;
-				}
-				else
-				{
-					return_code = 0;
-				}
+				return_code = query_gl_extension(extension_name);
 				GLEXTENSIONFLAG(GL_ARB_depth_texture) = return_code;
 			}
 		}
@@ -855,15 +841,16 @@ the extensions succeed, false if not.
 #if defined GL_ARB_fragment_program
 		else if (!strcmp(extension_name, "GL_ARB_fragment_program"))
 		{
-			if (255 != GLEXTENSIONFLAG(GL_ARB_fragment_program))
+			if (GLEXTENSION_UNSURE != GLEXTENSIONFLAG(GL_ARB_fragment_program))
 			{
 				return_code = GLEXTENSIONFLAG(GL_ARB_fragment_program);
 			}
 			else
 			{
-				if (query_gl_extension(extension_name))
+				return_code = query_gl_extension(extension_name);
+				if (GLEXTENSION_AVAILABLE == return_code)
 				{
-					if ((GRAPHICS_LIBRARY_ASSIGN_HANDLE(glGenProgramsARB, PFNGLGENPROGRAMSARBPROC)
+					if (!((GRAPHICS_LIBRARY_ASSIGN_HANDLE(glGenProgramsARB, PFNGLGENPROGRAMSARBPROC)
 						Graphics_library_get_function_ptr("glGenProgramsARB")) &&
 						(GRAPHICS_LIBRARY_ASSIGN_HANDLE(glBindProgramARB, PFNGLBINDPROGRAMARBPROC)
 						Graphics_library_get_function_ptr("glBindProgramARB")) &&
@@ -874,18 +861,10 @@ the extensions succeed, false if not.
 						(GRAPHICS_LIBRARY_ASSIGN_HANDLE(glProgramEnvParameter4fARB, PFNGLPROGRAMENVPARAMETER4FARBPROC)
 						Graphics_library_get_function_ptr("glProgramEnvParameter4fARB")) &&
 						(GRAPHICS_LIBRARY_ASSIGN_HANDLE(glProgramEnvParameter4fvARB, PFNGLPROGRAMENVPARAMETER4FVARBPROC)
-						Graphics_library_get_function_ptr("glProgramEnvParameter4fvARB")))
-					{
-						return_code = 1;
+						Graphics_library_get_function_ptr("glProgramEnvParameter4fvARB"))))
+ 					{
+						return_code = GLEXTENSION_UNAVAILABLE;
 					}
-					else
-					{
-						return_code = 0;
-					}
-				}
-				else
-				{
-					return_code = 0;
 				}
 				GLEXTENSIONFLAG(GL_ARB_fragment_program) = return_code;
 			}
@@ -894,20 +873,13 @@ the extensions succeed, false if not.
 #if defined GL_ARB_fragment_program_shadow
 		else if (!strcmp(extension_name, "GL_ARB_fragment_program_shadow"))
 		{
-			if (255 != GLEXTENSIONFLAG(GL_ARB_fragment_program_shadow))
+			if (GLEXTENSION_UNSURE != GLEXTENSIONFLAG(GL_ARB_fragment_program_shadow))
 			{
 				return_code = GLEXTENSIONFLAG(GL_ARB_fragment_program_shadow);
 			}
 			else
 			{
-				if (query_gl_extension(extension_name))
-				{
-					return_code = 1;
-				}
-				else
-				{
-					return_code = 0;
-				}
+				return_code = query_gl_extension(extension_name);
 				GLEXTENSIONFLAG(GL_ARB_fragment_program_shadow) = return_code;
 			}
 		}
@@ -915,20 +887,13 @@ the extensions succeed, false if not.
 #if defined GL_ARB_texture_compression
 		else if (!strcmp(extension_name, "GL_ARB_texture_compression"))
 		{
-			if (255 != GLEXTENSIONFLAG(GL_ARB_texture_compression))
+			if (GLEXTENSION_UNSURE != GLEXTENSIONFLAG(GL_ARB_texture_compression))
 			{
 				return_code = GLEXTENSIONFLAG(GL_ARB_texture_compression);
 			}
 			else
 			{
-				if (query_gl_extension(extension_name))
-				{
-					return_code = 1;
-				}
-				else
-				{
-					return_code = 0;
-				}
+				return_code = query_gl_extension(extension_name);
 				GLEXTENSIONFLAG(GL_ARB_texture_compression) = return_code;
 			}
 		}
@@ -936,20 +901,13 @@ the extensions succeed, false if not.
 #if defined GL_ARB_texture_non_power_of_two
 		else if (!strcmp(extension_name, "GL_ARB_texture_non_power_of_two"))
 		{
-			if (255 != GLEXTENSIONFLAG(GL_ARB_texture_non_power_of_two))
+			if (GLEXTENSION_UNSURE != GLEXTENSIONFLAG(GL_ARB_texture_non_power_of_two))
 			{
 				return_code = GLEXTENSIONFLAG(GL_ARB_texture_non_power_of_two);
 			}
 			else
 			{
-				if (query_gl_extension(extension_name))
-				{
-					return_code = 1;
-				}
-				else
-				{
-					return_code = 0;
-				}
+				return_code = query_gl_extension(extension_name);
 				GLEXTENSIONFLAG(GL_ARB_texture_non_power_of_two) = return_code;
 			}
 		}
@@ -957,7 +915,7 @@ the extensions succeed, false if not.
 #if defined GL_ARB_texture_rectangle
 		else if (!strcmp(extension_name, "GL_ARB_texture_rectangle"))
 		{
-			if (255 != GLEXTENSIONFLAG(GL_ARB_texture_rectangle))
+			if (GLEXTENSION_UNSURE != GLEXTENSIONFLAG(GL_ARB_texture_rectangle))
 			{
 				return_code = GLEXTENSIONFLAG(GL_ARB_texture_rectangle);
 			}
@@ -965,14 +923,22 @@ the extensions succeed, false if not.
 			{
 				/* These extensions are equivalent so at runtime we will be 
 					happy to have the EXT version */
-				if (query_gl_extension(extension_name) || 
-					query_gl_extension("GL_EXT_texture_rectangle"))
+				if ((GLEXTENSION_AVAILABLE == query_gl_extension(extension_name)) || 
+					(GLEXTENSION_AVAILABLE == query_gl_extension("GL_EXT_texture_rectangle")))
 				{
-					return_code = 1;
+					return_code = GLEXTENSION_AVAILABLE;
 				}
 				else
 				{
-					return_code = 0;
+					if ((GLEXTENSION_UNSURE == query_gl_extension(extension_name)) || 
+						(GLEXTENSION_UNSURE == query_gl_extension("GL_EXT_texture_rectangle")))
+					{
+						return_code = GLEXTENSION_UNSURE;
+					}
+					else
+					{
+						return_code = GLEXTENSION_UNAVAILABLE;
+					}
 				}
 				GLEXTENSIONFLAG(GL_ARB_texture_rectangle) = return_code;
 			}
@@ -981,15 +947,16 @@ the extensions succeed, false if not.
 #if defined GL_ARB_vertex_program
 		else if (!strcmp(extension_name, "GL_ARB_vertex_program"))
 		{
-			if (255 != GLEXTENSIONFLAG(GL_ARB_vertex_program))
+			if (GLEXTENSION_UNSURE != GLEXTENSIONFLAG(GL_ARB_vertex_program))
 			{
 				return_code = GLEXTENSIONFLAG(GL_ARB_vertex_program);
 			}
 			else
 			{
-				if (query_gl_extension(extension_name))
+				return_code = query_gl_extension(extension_name);
+				if (GLEXTENSION_AVAILABLE == return_code)
 				{
-					if ((GRAPHICS_LIBRARY_ASSIGN_HANDLE(glGenProgramsARB, PFNGLGENPROGRAMSARBPROC)
+					if (!((GRAPHICS_LIBRARY_ASSIGN_HANDLE(glGenProgramsARB, PFNGLGENPROGRAMSARBPROC)
 						Graphics_library_get_function_ptr("glGenProgramsARB")) &&
 						(GRAPHICS_LIBRARY_ASSIGN_HANDLE(glBindProgramARB, PFNGLBINDPROGRAMARBPROC)
 						Graphics_library_get_function_ptr("glBindProgramARB")) &&
@@ -1000,18 +967,10 @@ the extensions succeed, false if not.
 						(GRAPHICS_LIBRARY_ASSIGN_HANDLE(glProgramEnvParameter4fARB, PFNGLPROGRAMENVPARAMETER4FARBPROC)
 						Graphics_library_get_function_ptr("glProgramEnvParameter4fARB")) &&
 						(GRAPHICS_LIBRARY_ASSIGN_HANDLE(glProgramEnvParameter4fvARB, PFNGLPROGRAMENVPARAMETER4FVARBPROC)
-						Graphics_library_get_function_ptr("glProgramEnvParameter4fvARB")))
-					{
-						return_code = 1;
+							Graphics_library_get_function_ptr("glProgramEnvParameter4fvARB"))))
+ 					{
+						return_code = GLEXTENSION_UNAVAILABLE;
 					}
-					else
-					{
-						return_code = 0;
-					}
-				}
-				else
-				{
-					return_code = 0;
 				}
 				GLEXTENSIONFLAG(GL_ARB_vertex_program) = return_code;
 			}
@@ -1020,20 +979,13 @@ the extensions succeed, false if not.
 #if defined GL_ARB_shadow
 		else if (!strcmp(extension_name, "GL_ARB_shadow"))
 		{
-			if (255 != GLEXTENSIONFLAG(GL_ARB_shadow))
+			if (GLEXTENSION_UNSURE != GLEXTENSIONFLAG(GL_ARB_shadow))
 			{
 				return_code = GLEXTENSIONFLAG(GL_ARB_shadow);
 			}
 			else
 			{
-				if (query_gl_extension(extension_name))
-				{
-					return_code = 1;
-				}
-				else
-				{
-					return_code = 0;
-				}
+				return_code = query_gl_extension(extension_name);
 				GLEXTENSIONFLAG(GL_ARB_shadow) = return_code;
 			}
 		}
@@ -1041,20 +993,13 @@ the extensions succeed, false if not.
 #if defined GL_EXT_abgr
 		else if (!strcmp(extension_name, "GL_EXT_abgr"))
 		{
-			if (255 != GLEXTENSIONFLAG(GL_EXT_abgr))
+			if (GLEXTENSION_UNSURE != GLEXTENSIONFLAG(GL_EXT_abgr))
 			{
 				return_code = GLEXTENSIONFLAG(GL_EXT_abgr);
 			}
 			else
 			{
-				if (query_gl_extension(extension_name))
-				{
-					return_code = 1;
-				}
-				else
-				{
-					return_code = 0;
-				}
+				return_code = query_gl_extension(extension_name);
 				GLEXTENSIONFLAG(GL_EXT_abgr) = return_code;
 			}
 		}
@@ -1062,30 +1007,23 @@ the extensions succeed, false if not.
 #if defined GL_EXT_texture3D
 		else if (!strcmp(extension_name, "GL_EXT_texture3D"))
 		{
-			if (255 != GLEXTENSIONFLAG(GL_EXT_texture3D))
+			if (GLEXTENSION_UNSURE != GLEXTENSIONFLAG(GL_EXT_texture3D))
 			{
 				return_code = GLEXTENSIONFLAG(GL_EXT_texture3D);
 			}
 			else
 			{
-				if (query_gl_extension(extension_name))
+				return_code = query_gl_extension(extension_name);
+				if (GLEXTENSION_AVAILABLE == return_code)
 				{
 					/* We are using the non EXT version of these functions as this simplifies
 						the code where they are used, and the SGI implementation while currently
 						only OpenGL 1.1 supplies both glTexImage3D and glTexImage3DEXT */
-					if (GRAPHICS_LIBRARY_ASSIGN_HANDLE(glTexImage3D, PFNGLTEXIMAGE3DPROC)
-						Graphics_library_get_function_ptr("glTexImage3D"))
+					if (!(GRAPHICS_LIBRARY_ASSIGN_HANDLE(glTexImage3D, PFNGLTEXIMAGE3DPROC)
+						Graphics_library_get_function_ptr("glTexImage3D")))
 					{
-						return_code = 1;
+						return_code = GLEXTENSION_UNAVAILABLE;
 					}
-					else
-					{
-						return_code = 0;
-					}
-				}
-				else
-				{
-					return_code = 0;
 				}
 				GLEXTENSIONFLAG(GL_EXT_texture3D) = return_code;
 			}
@@ -1133,12 +1071,14 @@ the extensions succeed, false if not.
 		while (return_code && (next_extension = strchr(extension, ' ')))
 		{
 			*next_extension = 0;
-			return_code = Graphics_library_load_extension(extension);
+			return_code = (GLEXTENSION_AVAILABLE == 
+				Graphics_library_load_extension(extension));
 			extension = next_extension + 1;
 		}
 		if (*extension)
 		{
-			return_code = Graphics_library_load_extension(extension);
+			return_code = (GLEXTENSION_AVAILABLE == 
+				Graphics_library_load_extension(extension));
 		}
 	}
 	else
