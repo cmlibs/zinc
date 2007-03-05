@@ -44,6 +44,15 @@ Implements a number of basic component wise operations on computed fields.
 #if !defined (COMPUTED_FIELD_COMPONENT_OPERATIONS_H)
 #define COMPUTED_FIELD_COMPONENT_OPERATIONS_H
 
+#include "general/value.h"
+#include "api/cmiss_computed_field.h"
+
+/* API functions are prefixed with Cmiss */
+#define Computed_field_set_type_sum_components \
+	Cmiss_computed_field_set_type_sum_components
+#define Computed_field_get_type_sum_components \
+	Cmiss_computed_field_get_type_sum_components
+
 int Computed_field_register_types_component_operations(
 	struct Computed_field_package *computed_field_package);
 /*******************************************************************************
@@ -90,6 +99,30 @@ Converts <field> to type COMPUTED_FIELD_OFFSET which returns the values of the
 <source_field> plus the <offsets>.
 The <offsets> array must therefore contain as many FE_values as there are
 components in <source_field>; this is the number of components in the field.
+If function fails, field is guaranteed to be unchanged from its original state,
+although its cache may be lost.
+==============================================================================*/
+
+int Computed_field_get_type_sum_components(struct Computed_field *field,
+	struct Computed_field **source_field, FE_value **weights);
+/*******************************************************************************
+LAST MODIFIED : 24 August 2006
+
+DESCRIPTION :
+If the field is of type COMPUTED_FIELD_SUM_COMPONENTS, the 
+<source_field> and <weights> used by it are returned.
+==============================================================================*/
+
+int Computed_field_set_type_sum_components(struct Computed_field *field,
+	struct Computed_field *source_field, FE_value *weights);
+/*******************************************************************************
+LAST MODIFIED : 24 August 2006
+
+DESCRIPTION :
+Converts <field> to type COMPUTED_FIELD_SUM_COMPONENTS with the supplied which
+returns a scalar weighted sum of the components of <source_field>.
+The <weights> array must therefore contain as many FE_values as there are
+components in <source_field>.
 If function fails, field is guaranteed to be unchanged from its original state,
 although its cache may be lost.
 ==============================================================================*/
