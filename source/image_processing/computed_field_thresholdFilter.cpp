@@ -107,9 +107,9 @@ DEFINE_DEFAULT_ENUMERATOR_FUNCTIONS(General_threshold_filter_mode)
 
 namespace {
 	
-	char computed_field_thresholdFilter_type_string[] = "threshold_filter";
+	char computed_field_threshold_image_filter_type_string[] = "threshold_image_filter";
 	
-	class Computed_field_thresholdFilter : public Computed_field_ImageFilter
+	class Computed_field_threshold_image_filter : public Computed_field_ImageFilter
 	{
 		
 	public:
@@ -117,28 +117,28 @@ namespace {
 			can take values ABOVE, BELOW or OUTSIDE */
 		enum General_threshold_filter_mode threshold_mode;  
 
-		float outside_value; // used by all modes
-		float below_value;   // needed for both below and outside mode
-		float above_value;   // neeeded for both above and outside mode
+		double outside_value; // used by all modes
+		double below_value;   // needed for both below and outside mode
+		double above_value;   // neeeded for both above and outside mode
 		
-		Computed_field_thresholdFilter(Computed_field *field,
+		Computed_field_threshold_image_filter(Computed_field *field,
 			enum General_threshold_filter_mode threshold_mode, 
-			float oustide_value, float below_value, float above_value);
+			double oustide_value, double below_value, double above_value);
 		
-		~Computed_field_thresholdFilter()
+		~Computed_field_threshold_image_filter()
 		{
 		}
 		
 	private:
 		Computed_field_core *copy(Computed_field* new_parent)
 		{
-			return new Computed_field_thresholdFilter(new_parent,
+			return new Computed_field_threshold_image_filter(new_parent,
 				threshold_mode, outside_value, below_value, above_value);
 		}
 		
 		char *get_type_string()
 		{
-			return(computed_field_thresholdFilter_type_string);
+			return(computed_field_threshold_image_filter_type_string);
 		}
 		
 		int compare(Computed_field_core* other_field);
@@ -148,7 +148,7 @@ namespace {
 		char* get_command_string();
 	};
 	
-	int Computed_field_thresholdFilter::compare(Computed_field_core *other_core)
+	int Computed_field_threshold_image_filter::compare(Computed_field_core *other_core)
 /*******************************************************************************
 LAST MODIFIED : 8 December 2006
 
@@ -156,11 +156,11 @@ DESCRIPTION :
 Compare the type specific data.
 ==============================================================================*/
 	{
-		Computed_field_thresholdFilter* other;
+		Computed_field_threshold_image_filter* other;
 		int return_code;
 
-		ENTER(Computed_field_thresholdFilter::compare);
-		if (field && (other = dynamic_cast<Computed_field_thresholdFilter*>(other_core)))
+		ENTER(Computed_field_threshold_image_filter::compare);
+		if (field && (other = dynamic_cast<Computed_field_threshold_image_filter*>(other_core)))
 		{
 
 			/* could get trickier here and check only the relevant above or below 
@@ -187,10 +187,10 @@ Compare the type specific data.
 		LEAVE;
 
 		return (return_code);
-	} /* Computed_field_thresholdFilter::compare */
+	} /* Computed_field_threshold_image_filter::compare */
 
 	template < class ImageType >
-	class Computed_field_thresholdFilter_Functor :
+	class Computed_field_threshold_image_filter_Functor :
 		public Computed_field_ImageFilter_FunctorTmpl< ImageType >
 /*******************************************************************************
 LAST MODIFIED : 12 September 2006
@@ -200,14 +200,14 @@ This class actually does the work of processing images with the filter.
 It is instantiated for each of the chosen ImageTypes.
 ==============================================================================*/
 	{
-		Computed_field_thresholdFilter *thresholdFilter;
+		Computed_field_threshold_image_filter *threshold_image_filter;
 
 	public:
 
-		Computed_field_thresholdFilter_Functor(
-			Computed_field_thresholdFilter *thresholdFilter) :
-			Computed_field_ImageFilter_FunctorTmpl< ImageType >(thresholdFilter),
-			thresholdFilter(thresholdFilter)
+		Computed_field_threshold_image_filter_Functor(
+			Computed_field_threshold_image_filter *threshold_image_filter) :
+			Computed_field_ImageFilter_FunctorTmpl< ImageType >(threshold_image_filter),
+			threshold_image_filter(threshold_image_filter)
 		{
 		}
 
@@ -226,23 +226,23 @@ and generate the outputImage.
 		
 			typename FilterType::Pointer filter = FilterType::New();
 
-			filter->SetOutsideValue( thresholdFilter->outside_value );
+			filter->SetOutsideValue( threshold_image_filter->outside_value );
 
 			// call appropriate threshold mode based on threshold_mode variable
 
-			switch (thresholdFilter->threshold_mode)
+			switch (threshold_image_filter->threshold_mode)
 			{
 				case BELOW:
 				{
-					filter->ThresholdBelow( thresholdFilter->below_value );
+					filter->ThresholdBelow( threshold_image_filter->below_value );
 				} break;
 				case ABOVE:
 				{
-					filter->ThresholdAbove( thresholdFilter->above_value );
+					filter->ThresholdAbove( threshold_image_filter->above_value );
 				} break;
 				case OUTSIDE:
 				{
-					filter->ThresholdOutside( thresholdFilter->below_value, thresholdFilter->above_value );
+					filter->ThresholdOutside( threshold_image_filter->below_value, threshold_image_filter->above_value );
 				} break; 
 				default:
 				{
@@ -251,18 +251,18 @@ and generate the outputImage.
 				} break;
 			}
 		
-			return_code = thresholdFilter->update_output_image
+			return_code = threshold_image_filter->update_output_image
 				< ImageType, FilterType >
 				(location, filter, this->outputImage);
 		
 			return (return_code);
 		} /* set_filter */
 		
-	}; /* template < class ImageType > class Computed_field_thresholdFilter_Functor */
+	}; /* template < class ImageType > class Computed_field_threshold_image_filter_Functor */
 
-	Computed_field_thresholdFilter::Computed_field_thresholdFilter(
+	Computed_field_threshold_image_filter::Computed_field_threshold_image_filter(
 		Computed_field *field, enum General_threshold_filter_mode threshold_mode,
-		float outside_value, float below_value, float above_value) :
+		double outside_value, double below_value, double above_value) :
 		Computed_field_ImageFilter(field),
 		threshold_mode(threshold_mode), outside_value(outside_value),  
 		below_value(below_value),above_value(above_value)
@@ -270,21 +270,21 @@ and generate the outputImage.
 LAST MODIFIED : 12 September 2006
 
 DESCRIPTION :
-Create the computed_field representation of the thresholdFilter.
+Create the computed_field representation of the threshold_image_filter.
 ==============================================================================*/
 	{
 #if defined DONOTUSE_TEMPLATETEMPLATES
 		create_filters_singlecomponent_multidimensions(
-			Computed_field_thresholdFilter_Functor, this);
+			Computed_field_threshold_image_filter_Functor, this);
 #else
 		create_filters_singlecomponent_multidimensions
-			< Computed_field_thresholdFilter_Functor,
-			Computed_field_thresholdFilter >
+			< Computed_field_threshold_image_filter_Functor,
+			Computed_field_threshold_image_filter >
 			(this);
 #endif
 	}
 
-	int Computed_field_thresholdFilter::list()
+	int Computed_field_threshold_image_filter::list()
 /*******************************************************************************
 LAST MODIFIED : 8 December 2006
 
@@ -293,7 +293,7 @@ DESCRIPTION : list out the threshold filter options
 	{
 		int return_code;
 
-		ENTER(List_Computed_field_thresholdFilter);
+		ENTER(List_Computed_field_threshold_image_filter);
 		if (field)
 		{
 			display_message(INFORMATION_MESSAGE,
@@ -328,15 +328,15 @@ DESCRIPTION : list out the threshold filter options
 		else
 		{
 			display_message(ERROR_MESSAGE,
-				"list_Computed_field_thresholdFilter.  Invalid argument(s)");
+				"list_Computed_field_threshold_image_filter.  Invalid argument(s)");
 			return_code = 0;
 		}
 		LEAVE;
 
 		return (return_code);
-	} /* list_Computed_field_thresholdFilter */
+	} /* list_Computed_field_threshold_image_filter */
 
-	char *Computed_field_thresholdFilter::get_command_string()
+	char *Computed_field_threshold_image_filter::get_command_string()
 /*******************************************************************************
 LAST MODIFIED : 30 August 2006
 
@@ -347,7 +347,7 @@ Returns allocated command string for reproducing field. Includes type.
 		char *command_string, *field_name, temp_string[40];
 		int error;
 
-		ENTER(Computed_field_thresholdFilter::get_command_string);
+		ENTER(Computed_field_threshold_image_filter::get_command_string);
 		command_string = (char *)NULL;
 		if (field)
 		{
@@ -386,19 +386,19 @@ Returns allocated command string for reproducing field. Includes type.
 		else
 		{
 			display_message(ERROR_MESSAGE,
-				"Computed_field_thresholdFilter::get_command_string.  Invalid field");
+				"Computed_field_threshold_image_filter::get_command_string.  Invalid field");
 		}
 		LEAVE;
 
 		return (command_string);
-	} /* Computed_field_thresholdFilter::get_command_string */
+	} /* Computed_field_threshold_image_filter::get_command_string */
 
 } //namespace
 
-int Computed_field_set_type_thresholdFilter(struct Computed_field *field,
+int Computed_field_set_type_threshold_image_filter(struct Computed_field *field,
 	struct Computed_field *source_field, 
-	enum General_threshold_filter_mode threshold_mode, float outside_value,
-	float below_value, float above_value)
+	enum General_threshold_filter_mode threshold_mode, double outside_value,
+	double below_value, double above_value)
 /*******************************************************************************
 LAST MODIFIED : 8 December 2006
 
@@ -415,7 +415,7 @@ The <above_value is used for above and outside thresholding.
 	int number_of_source_fields, return_code;
 	struct Computed_field **source_fields;
 
-	ENTER(Computed_field_set_type_thresholdFilter);
+	ENTER(Computed_field_set_type_threshold_image_filter);
 	if (field && source_field &&
 		Computed_field_is_scalar(source_field, (void *)NULL))
 	{
@@ -432,7 +432,7 @@ The <above_value is used for above and outside thresholding.
 			source_fields[0] = ACCESS(Computed_field)(source_field);
 			field->source_fields = source_fields;
 			field->number_of_source_fields = number_of_source_fields;			
-			field->core = new Computed_field_thresholdFilter(field,
+			field->core = new Computed_field_threshold_image_filter(field,
 				threshold_mode, outside_value,  
 				below_value, above_value);
 		}
@@ -445,18 +445,18 @@ The <above_value is used for above and outside thresholding.
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Computed_field_set_type_thresholdFilter.  Invalid argument(s)");
+			"Computed_field_set_type_threshold_image_filter.  Invalid argument(s)");
 		return_code = 0;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* Computed_field_set_type_thresholdFilter */
+} /* Computed_field_set_type_threshold_image_filter */
 
-int Computed_field_get_type_thresholdFilter(struct Computed_field *field,
+int Computed_field_get_type_threshold_image_filter(struct Computed_field *field,
 	struct Computed_field **source_field,  
 	enum General_threshold_filter_mode *threshold_mode, 
-	float *outside_value, float *below_value,	float *above_value)
+	double *outside_value, double *below_value,	double *above_value)
 /*******************************************************************************
 LAST MODIFIED : 8 December 2006
 
@@ -466,11 +466,11 @@ the source_field and thresholds used by it are returned -
 otherwise an error is reported.
 ==============================================================================*/
 {
-	Computed_field_thresholdFilter* core;
+	Computed_field_threshold_image_filter* core;
 	int return_code;
 
-	ENTER(Computed_field_get_type_thresholdFilter);
-	if (field && (core = dynamic_cast<Computed_field_thresholdFilter*>(field->core))
+	ENTER(Computed_field_get_type_threshold_image_filter);
+	if (field && (core = dynamic_cast<Computed_field_threshold_image_filter*>(field->core))
 		&& source_field)
 	{
 		*source_field = field->source_fields[0];
@@ -483,15 +483,15 @@ otherwise an error is reported.
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Computed_field_get_type_thresholdFilter.  Invalid argument(s)");
+			"Computed_field_get_type_threshold_image_filter.  Invalid argument(s)");
 		return_code = 0;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* Computed_field_get_type_thresholdFilter */
+} /* Computed_field_get_type_threshold_image_filter */
 
-int define_Computed_field_type_thresholdFilter(struct Parse_state *state,
+int define_Computed_field_type_threshold_image_filter(struct Parse_state *state,
 	void *field_void, void *computed_field_simple_package_void)
 /*******************************************************************************
 LAST MODIFIED : 8 December 2006
@@ -504,7 +504,7 @@ already) and allows its contents to be modified.
 
 	enum General_threshold_filter_mode threshold_mode;
 
-	float outside_value, below_value, above_value;
+	double outside_value, below_value, above_value;
 
 	int return_code;
 	struct Computed_field *field, *source_field;
@@ -512,7 +512,7 @@ already) and allows its contents to be modified.
 	struct Option_table *option_table;
 	struct Set_Computed_field_conditional_data set_source_field_data;
 
-	ENTER(define_Computed_field_type_thresholdFilter);
+	ENTER(define_Computed_field_type_threshold_image_filter);
 	if (state && (field = (struct Computed_field *)field_void) &&
 		(computed_field_simple_package =
 			(Computed_field_simple_package*)computed_field_simple_package_void))
@@ -527,11 +527,11 @@ already) and allows its contents to be modified.
 		below_value = 0.5;
 		above_value = 0.5;
 
-		if (computed_field_thresholdFilter_type_string ==
+		if (computed_field_threshold_image_filter_type_string ==
 			Computed_field_get_type_string(field))
 		{
 			return_code =
-				Computed_field_get_type_thresholdFilter(field, &source_field,
+				Computed_field_get_type_threshold_image_filter(field, &source_field,
 					&threshold_mode, &outside_value,  
 					&below_value, &above_value);
 		}
@@ -555,13 +555,13 @@ already) and allows its contents to be modified.
 			OPTION_TABLE_ADD_ENUMERATOR(General_threshold_filter_mode)(option_table, 
 				&threshold_mode);
 			/* outside_value */
-			Option_table_add_float_entry(option_table, "outside_value",
+			Option_table_add_double_entry(option_table, "outside_value",
 				&outside_value);
 			/* below_value */
-			Option_table_add_float_entry(option_table, "below_value",
+			Option_table_add_double_entry(option_table, "below_value",
 				&below_value);
 			/* above_value */
-			Option_table_add_float_entry(option_table, "above_value",
+			Option_table_add_double_entry(option_table, "above_value",
 				&above_value);
 
 			return_code = Option_table_multi_parse(option_table, state);
@@ -573,14 +573,14 @@ already) and allows its contents to be modified.
 				if (!source_field)
 				{
 					display_message(ERROR_MESSAGE,
-						"define_Computed_field_type_thresholdFilter.  "
+						"define_Computed_field_type_threshold_image_filter.  "
 						"Missing source field");
 					return_code = 0;
 				}
 			}
 			if (return_code)
 			{
-				return_code = Computed_field_set_type_thresholdFilter(field, 
+				return_code = Computed_field_set_type_threshold_image_filter(field, 
 					source_field, threshold_mode, outside_value, below_value, 
 					above_value);
 				
@@ -594,7 +594,7 @@ already) and allows its contents to be modified.
 				{
 					/* error */
 					display_message(ERROR_MESSAGE,
-						"define_Computed_field_type_thresholdFilter.  Failed");
+						"define_Computed_field_type_threshold_image_filter.  Failed");
 				}
 			}
 			if (source_field)
@@ -606,15 +606,15 @@ already) and allows its contents to be modified.
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"define_Computed_field_type_thresholdFilter.  Invalid argument(s)");
+			"define_Computed_field_type_threshold_image_filter.  Invalid argument(s)");
 		return_code = 0;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* define_Computed_field_type_thresholdFilter */
+} /* define_Computed_field_type_threshold_image_filter */
 
-int Computed_field_register_types_thresholdFilter(
+int Computed_field_register_types_threshold_image_filter(
 	struct Computed_field_package *computed_field_package)
 /*******************************************************************************
 LAST MODIFIED : 30 August 2006
@@ -624,21 +624,21 @@ DESCRIPTION :
 {
 	int return_code;
 
-	ENTER(Computed_field_register_types_thresholdFilter);
+	ENTER(Computed_field_register_types_threshold_image_filter);
 	if (computed_field_package)
 	{
 		return_code = Computed_field_package_add_type(computed_field_package,
-			computed_field_thresholdFilter_type_string, 
-			define_Computed_field_type_thresholdFilter,
+			computed_field_threshold_image_filter_type_string, 
+			define_Computed_field_type_threshold_image_filter,
 			Computed_field_package_get_simple_package(computed_field_package));
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Computed_field_register_types_thresholdFilter.  Invalid argument(s)");
+			"Computed_field_register_types_threshold_image_filter.  Invalid argument(s)");
 		return_code = 0;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* Computed_field_register_types_thresholdFilter */
+} /* Computed_field_register_types_threshold_image_filter */
