@@ -640,7 +640,7 @@ functions to check if read_only flag is set.
 	struct Computed_field **source_fields;
 
 	ENTER(MANAGER_COPY_WITHOUT_IDENTIFIER(Computed_field,name));
-	if (source&&destination)
+	if (source&&destination&&(source!=destination))
 	{
 		/* check <source> does not depend on <destination> else infinite loop */
 		if (Computed_field_depends_on_Computed_field(source,destination))
