@@ -23456,23 +23456,23 @@ Initialise all the subcomponents of cmgui and create the Cmiss_command_data
 				command_data->computed_field_package);
 
 #if defined (USE_ITK)
-			Computed_field_register_types_thresholdFilter(
+			Computed_field_register_types_threshold_image_filter(
 				command_data->computed_field_package);
 			Computed_field_register_types_binary_threshold_image_filter(
 				command_data->computed_field_package);
 			Computed_field_register_types_canny_edge_detection_image_filter(
 				command_data->computed_field_package);
-			Computed_field_register_types_meanImageFilter(
+			Computed_field_register_types_mean_image_filter(
 				command_data->computed_field_package);
-			Computed_field_register_types_sigmoidImageFilter(
+			Computed_field_register_types_sigmoid_image_filter(
 				command_data->computed_field_package);
-			Computed_field_register_types_discreteGaussianImageFilter(
+			Computed_field_register_types_discrete_gaussian_image_filter(
 				command_data->computed_field_package);
-			Computed_field_register_types_curvatureAnisotropicDiffusionImageFilter(
+			Computed_field_register_types_curvature_anisotropic_diffusion_image_filter(
 				command_data->computed_field_package);
-			Computed_field_register_types_derivativeImageFilter(
+			Computed_field_register_types_derivative_image_filter(
 				command_data->computed_field_package);
-			Computed_field_register_types_rescaleIntensityImageFilter(
+			Computed_field_register_types_rescale_intensity_image_filter(
 				command_data->computed_field_package);
 			Computed_field_register_types_connected_threshold_image_filter(
 				command_data->computed_field_package);
