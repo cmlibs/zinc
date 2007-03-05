@@ -45,6 +45,13 @@ Wraps itk::ThresholdImageFilter
 #define COMPUTED_FIELD_THRESHOLDFILTER_H
 
 #include "general/enumerator.h"
+//#include "api/cmiss_computed_field.h"
+
+/* API functions are prefixed with Cmiss */
+#define Computed_field_set_type_threshold_image_filter \
+	Cmiss_computed_field_set_type_threshold_image_filter
+#define Computed_field_get_type_threshold_image_filter \
+	Cmiss_computed_field_get_type_threshold_image_filter
 
 enum General_threshold_filter_mode
 /*******************************************************************************
@@ -60,7 +67,7 @@ DESCRIPTION :
 
 PROTOTYPE_ENUMERATOR_FUNCTIONS(General_threshold_filter_mode);
 
-int Computed_field_register_types_thresholdFilter(
+int Computed_field_register_types_threshold_image_filter(
 	struct Computed_field_package *computed_field_package);
 /*******************************************************************************
 LAST MODIFIED : 8 December 2006
@@ -68,34 +75,27 @@ LAST MODIFIED : 8 December 2006
 DESCRIPTION :
 ==============================================================================*/
 
-int Computed_field_set_type_thresholdFilter(struct Computed_field *field,
+int Computed_field_set_type_threshold_image_filter(struct Computed_field *field,
 	struct Computed_field *source_field, 
 	enum General_threshold_filter_mode threshold_mode, 
-	float outside_value, float below_value, float above_value);
+	double outside_value, double below_value, double above_value);
 /*******************************************************************************
 LAST MODIFIED : 8 December 2006
 
 DESCRIPTION :
 Converts <field> to type COMPUTED_FIELD_THRESHOLDFILTER, returning the value of
-<thresholdFilter> at the time/parameter value given by scalar <source_field>.
-
-Sets number of components to same number as <thresholdFilter>.
-If function fails, field is guaranteed to be unchanged from its original state,
-although its cache may be lost.
-???RC In future may not need to pass computed_field_manager if all fields
-maintain pointer to it. Only have it to invoke computed field manager messages
-in response to changes in the thresholdFilter from the control thresholdFilter manager.
+<threshold_image_filter> at the time/parameter value given by scalar <source_field>.
 ==============================================================================*/
 
-int Computed_field_get_type_thresholdFilter(struct Computed_field *field,
+int Computed_field_get_type_threshold_image_filter(struct Computed_field *field,
 	struct Computed_field **source_field, 
 	enum General_threshold_filter_mode *threshold_mode, 
-	float *outside_value, float *below_value,float *above_value);
+	double *outside_value, double *below_value,double *above_value);
 /*******************************************************************************
 LAST MODIFIED : 8 December 2006
 
 DESCRIPTION :
-If the field is of type COMPUTED_FIELD_THRESHOLDFILTER, the source_field and thresholdFilter
+If the field is of type COMPUTED_FIELD_THRESHOLDFILTER, the source_field and threshold_image_filter
 used by it are returned - otherwise an error is reported.
 ==============================================================================*/
 
