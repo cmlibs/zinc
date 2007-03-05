@@ -62,33 +62,33 @@ using namespace CMISS;
 
 namespace {
 
-char computed_field_curvatureAnisotropicDiffusionImageFilter_type_string[] = "curvature_anisotropic_diffusion_filter";
+char computed_field_curvature_anisotropic_diffusion_image_filter_type_string[] = "curvature_anisotropic_diffusion_image_filter";
 
-class Computed_field_curvatureAnisotropicDiffusionImageFilter : public Computed_field_ImageFilter
+class Computed_field_curvature_anisotropic_diffusion_image_filter : public Computed_field_ImageFilter
 {
 
 public:
-	float timeStep;
-	float conductance;
-        int numIterations;
+	double timeStep;
+	double conductance;
+	int numIterations;
        
 
-	Computed_field_curvatureAnisotropicDiffusionImageFilter(Computed_field *field,
-		float timeStep, float conductance, int numIterations);
+	Computed_field_curvature_anisotropic_diffusion_image_filter(Computed_field *field,
+		double timeStep, double conductance, int numIterations);
 
-	~Computed_field_curvatureAnisotropicDiffusionImageFilter()
+	~Computed_field_curvature_anisotropic_diffusion_image_filter()
 	{
 	};
 
 private:
 	Computed_field_core *copy(Computed_field* new_parent)
 	{
-		return new Computed_field_curvatureAnisotropicDiffusionImageFilter(new_parent, timeStep, conductance, numIterations);
+		return new Computed_field_curvature_anisotropic_diffusion_image_filter(new_parent, timeStep, conductance, numIterations);
 	}
 
 	char *get_type_string()
 	{
-		return(computed_field_curvatureAnisotropicDiffusionImageFilter_type_string);
+		return(computed_field_curvature_anisotropic_diffusion_image_filter_type_string);
 	}
 
 	int compare(Computed_field_core* other_field);
@@ -98,7 +98,7 @@ private:
 	char* get_command_string();
 };
 
-int Computed_field_curvatureAnisotropicDiffusionImageFilter::compare(Computed_field_core *other_core)
+int Computed_field_curvature_anisotropic_diffusion_image_filter::compare(Computed_field_core *other_core)
 /*******************************************************************************
 LAST MODIFIED : 18 October 2006
 
@@ -106,11 +106,11 @@ DESCRIPTION :
 Compare the type specific data.
 ==============================================================================*/
 {
-	Computed_field_curvatureAnisotropicDiffusionImageFilter* other;
+	Computed_field_curvature_anisotropic_diffusion_image_filter* other;
 	int return_code;
 
-	ENTER(Computed_field_curvatureAnisotropicDiffusionImageFilter::compare);
-	if (field && (other = dynamic_cast<Computed_field_curvatureAnisotropicDiffusionImageFilter*>(other_core)))
+	ENTER(Computed_field_curvature_anisotropic_diffusion_image_filter::compare);
+	if (field && (other = dynamic_cast<Computed_field_curvature_anisotropic_diffusion_image_filter*>(other_core)))
 	{
 		if ((dimension == other->dimension)
 		        && (timeStep == other->timeStep)
@@ -131,9 +131,9 @@ Compare the type specific data.
 	LEAVE;
 
 	return (return_code);
-} /* Computed_field_curvatureAnisotropicDiffusionImageFilter::compare */
+} /* Computed_field_curvature_anisotropic_diffusion_image_filter::compare */
 
-int Computed_field_curvatureAnisotropicDiffusionImageFilter::list()
+int Computed_field_curvature_anisotropic_diffusion_image_filter::list()
 /*******************************************************************************
 LAST MODIFIED : 18 October 2006
 
@@ -142,7 +142,7 @@ DESCRIPTION :
 {
 	int return_code;
 
-	ENTER(List_Computed_field_curvatureAnisotropicDiffusionImageFilter);
+	ENTER(List_Computed_field_curvature_anisotropic_diffusion_image_filter);
 	if (field)
 	{
 		display_message(INFORMATION_MESSAGE,
@@ -157,15 +157,15 @@ DESCRIPTION :
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"list_Computed_field_curvatureAnisotropicDiffusionImageFilter.  Invalid argument(s)");
+			"list_Computed_field_curvature_anisotropic_diffusion_image_filter.  Invalid argument(s)");
 		return_code = 0;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* list_Computed_field_curvatureAnisotropicDiffusionImageFilter */
+} /* list_Computed_field_curvature_anisotropic_diffusion_image_filter */
 
-char *Computed_field_curvatureAnisotropicDiffusionImageFilter::get_command_string()
+char *Computed_field_curvature_anisotropic_diffusion_image_filter::get_command_string()
 /*******************************************************************************
 LAST MODIFIED : 18 October 2006
 
@@ -176,7 +176,7 @@ Returns allocated command string for reproducing field. Includes type.
 	char *command_string, *field_name, temp_string[40];
 	int error;
 
-	ENTER(Computed_field_curvatureAnisotropicDiffusionImageFilter::get_command_string);
+	ENTER(Computed_field_curvature_anisotropic_diffusion_image_filter::get_command_string);
 	command_string = (char *)NULL;
 	if (field)
 	{
@@ -200,15 +200,15 @@ Returns allocated command string for reproducing field. Includes type.
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Computed_field_curvatureAnisotropicDiffusionImageFilter::get_command_string.  Invalid field");
+			"Computed_field_curvature_anisotropic_diffusion_image_filter::get_command_string.  Invalid field");
 	}
 	LEAVE;
 
 	return (command_string);
-} /* Computed_field_curvatureAnisotropicDiffusionImageFilter::get_command_string */
+} /* Computed_field_curvature_anisotropic_diffusion_image_filter::get_command_string */
 
 template < class ImageType >
-class Computed_field_curvatureAnisotropicDiffusionImageFilter_Functor :
+class Computed_field_curvature_anisotropic_diffusion_image_filter_Functor :
 	public Computed_field_ImageFilter_FunctorTmpl< ImageType >
 /*******************************************************************************
 LAST MODIFIED : 12 September 2006
@@ -218,14 +218,14 @@ This class actually does the work of processing images with the filter.
 It is instantiated for each of the chosen ImageTypes.
 ==============================================================================*/
 {
-	Computed_field_curvatureAnisotropicDiffusionImageFilter *curvatureAnisotropicDiffusionImageFilter;
+	Computed_field_curvature_anisotropic_diffusion_image_filter *curvature_anisotropic_diffusion_image_filter;
 
 public:
 
-	Computed_field_curvatureAnisotropicDiffusionImageFilter_Functor(
-		Computed_field_curvatureAnisotropicDiffusionImageFilter *curvatureAnisotropicDiffusionImageFilter) :
-		Computed_field_ImageFilter_FunctorTmpl< ImageType >(curvatureAnisotropicDiffusionImageFilter),
-		curvatureAnisotropicDiffusionImageFilter(curvatureAnisotropicDiffusionImageFilter)
+	Computed_field_curvature_anisotropic_diffusion_image_filter_Functor(
+		Computed_field_curvature_anisotropic_diffusion_image_filter *curvature_anisotropic_diffusion_image_filter) :
+		Computed_field_ImageFilter_FunctorTmpl< ImageType >(curvature_anisotropic_diffusion_image_filter),
+		curvature_anisotropic_diffusion_image_filter(curvature_anisotropic_diffusion_image_filter)
 	{
 	}
 
@@ -244,20 +244,20 @@ and generate the outputImage.
 		
 		typename FilterType::Pointer filter = FilterType::New();
 
-		filter->SetTimeStep( curvatureAnisotropicDiffusionImageFilter->timeStep );
-		filter->SetConductanceParameter( curvatureAnisotropicDiffusionImageFilter->conductance );
-		filter->SetNumberOfIterations( curvatureAnisotropicDiffusionImageFilter->numIterations);
+		filter->SetTimeStep( curvature_anisotropic_diffusion_image_filter->timeStep );
+		filter->SetConductanceParameter( curvature_anisotropic_diffusion_image_filter->conductance );
+		filter->SetNumberOfIterations( curvature_anisotropic_diffusion_image_filter->numIterations);
 		
-		return_code = curvatureAnisotropicDiffusionImageFilter->update_output_image< ImageType, FilterType >
+		return_code = curvature_anisotropic_diffusion_image_filter->update_output_image< ImageType, FilterType >
 			(location, filter, this->outputImage);
 		
 		return (return_code);
 	} /* set_filter */
 
-}; /* template < class ImageType > class Computed_field_curvatureAnisotropicDiffusionImageFilter_Functor */
+}; /* template < class ImageType > class Computed_field_curvature_anisotropic_diffusion_image_filter_Functor */
 
-Computed_field_curvatureAnisotropicDiffusionImageFilter::Computed_field_curvatureAnisotropicDiffusionImageFilter(
-	Computed_field *field, float timeStep, float conductance, int numIterations) : 
+Computed_field_curvature_anisotropic_diffusion_image_filter::Computed_field_curvature_anisotropic_diffusion_image_filter(
+	Computed_field *field, double timeStep, double conductance, int numIterations) : 
         Computed_field_ImageFilter(field), 
         timeStep(timeStep), conductance(conductance), numIterations(numIterations)
 /*******************************************************************************
@@ -269,18 +269,18 @@ Create the computed_field representation of the CurvatureAnisotropicDiffusionIma
 {
 #if defined DONOTUSE_TEMPLATETEMPLATES
 	create_filters_singlecomponent_multidimensions(
-		Computed_field_curvatureAnisotropicDiffusionImageFilter_Functor, this);
+		Computed_field_curvature_anisotropic_diffusion_image_filter_Functor, this);
 #else
 	create_filters_singlecomponent_multidimensions
-		< Computed_field_curvatureAnisotropicDiffusionImageFilter_Functor, Computed_field_curvatureAnisotropicDiffusionImageFilter >
+		< Computed_field_curvature_anisotropic_diffusion_image_filter_Functor, Computed_field_curvature_anisotropic_diffusion_image_filter >
 		(this);
 #endif
 }
 
 } //namespace
 
-int Computed_field_set_type_curvatureAnisotropicDiffusionImageFilter(struct Computed_field *field,
-	struct Computed_field *source_field, float timeStep, float conductance, int numIterations)
+int Computed_field_set_type_curvature_anisotropic_diffusion_image_filter(struct Computed_field *field,
+	struct Computed_field *source_field, double timeStep, double conductance, int numIterations)
 /*******************************************************************************
 LAST MODIFIED : 18 October 2006
 
@@ -292,7 +292,7 @@ Converts <field> to type DISCRETEGAUSSIAN.  The <min> <max>
 	int number_of_source_fields, return_code;
 	struct Computed_field **source_fields;
 
-	ENTER(Computed_field_set_type_curvatureAnisotropicDiffusionImageFilter);
+	ENTER(Computed_field_set_type_curvature_anisotropic_diffusion_image_filter);
 	if (field && source_field &&
 		Computed_field_is_scalar(source_field, (void *)NULL))
 	{
@@ -309,7 +309,7 @@ Converts <field> to type DISCRETEGAUSSIAN.  The <min> <max>
 			source_fields[0] = ACCESS(Computed_field)(source_field);
 			field->source_fields = source_fields;
 			field->number_of_source_fields = number_of_source_fields;			
-			field->core = new Computed_field_curvatureAnisotropicDiffusionImageFilter(field, timeStep, conductance, numIterations);
+			field->core = new Computed_field_curvature_anisotropic_diffusion_image_filter(field, timeStep, conductance, numIterations);
 		}
 		else
 		{
@@ -320,29 +320,29 @@ Converts <field> to type DISCRETEGAUSSIAN.  The <min> <max>
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Computed_field_set_type_curvatureAnisotropicDiffusionImageFilter.  Invalid argument(s)");
+			"Computed_field_set_type_curvature_anisotropic_diffusion_image_filter.  Invalid argument(s)");
 		return_code = 0;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* Computed_field_set_type_curvatureAnisotropicDiffusionImageFilter */
+} /* Computed_field_set_type_curvature_anisotropic_diffusion_image_filter */
 
-int Computed_field_get_type_curvatureAnisotropicDiffusionImageFilter(struct Computed_field *field,
-	struct Computed_field **source_field, float *timeStep, float *conductance, int *numIterations)
+int Computed_field_get_type_curvature_anisotropic_diffusion_image_filter(struct Computed_field *field,
+	struct Computed_field **source_field, double *timeStep, double *conductance, int *numIterations)
 /*******************************************************************************
 LAST MODIFIED : 18 October 2006
 
 DESCRIPTION :
-If the field is of type DISCRETEGAUSSIAN, the source_field and curvatureAnisotropicDiffusionImageFilter
+If the field is of type DISCRETEGAUSSIAN, the source_field and curvature_anisotropic_diffusion_image_filter
 used by it are returned - otherwise an error is reported.
 ==============================================================================*/
 {
-	Computed_field_curvatureAnisotropicDiffusionImageFilter* core;
+	Computed_field_curvature_anisotropic_diffusion_image_filter* core;
 	int return_code;
 
-	ENTER(Computed_field_get_type_curvatureAnisotropicDiffusionImageFilter);
-	if (field && (core = dynamic_cast<Computed_field_curvatureAnisotropicDiffusionImageFilter*>(field->core))
+	ENTER(Computed_field_get_type_curvature_anisotropic_diffusion_image_filter);
+	if (field && (core = dynamic_cast<Computed_field_curvature_anisotropic_diffusion_image_filter*>(field->core))
 		&& source_field)
 	{
 		*source_field = field->source_fields[0];
@@ -354,15 +354,15 @@ used by it are returned - otherwise an error is reported.
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Computed_field_get_type_curvatureAnisotropicDiffusionImageFilter.  Invalid argument(s)");
+			"Computed_field_get_type_curvature_anisotropic_diffusion_image_filter.  Invalid argument(s)");
 		return_code = 0;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* Computed_field_get_type_curvatureAnisotropicDiffusionImageFilter */
+} /* Computed_field_get_type_curvature_anisotropic_diffusion_image_filter */
 
-int define_Computed_field_type_curvatureAnisotropicDiffusionImageFilter(struct Parse_state *state,
+int define_Computed_field_type_curvature_anisotropic_diffusion_image_filter(struct Parse_state *state,
 	void *field_void, void *computed_field_simple_package_void)
 /*******************************************************************************
 LAST MODIFIED : 18 October 2006
@@ -373,15 +373,15 @@ already) and allows its contents to be modified.
 ==============================================================================*/
 {
 	int return_code;
-        float timeStep;
-	float conductance;
+        double timeStep;
+	double conductance;
 	int numIterations;
 	struct Computed_field *field, *source_field;
 	struct Computed_field_simple_package *computed_field_simple_package;
 	struct Option_table *option_table;
 	struct Set_Computed_field_conditional_data set_source_field_data;
 
-	ENTER(define_Computed_field_type_curvatureAnisotropicDiffusionImageFilter);
+	ENTER(define_Computed_field_type_curvature_anisotropic_diffusion_image_filter);
 	if (state && (field = (struct Computed_field *)field_void) &&
 		(computed_field_simple_package = (Computed_field_simple_package*)computed_field_simple_package_void))
 	{
@@ -391,11 +391,11 @@ already) and allows its contents to be modified.
 		timeStep = 0.125;
 		conductance=3.0;
 		numIterations = 5;
-		if (computed_field_curvatureAnisotropicDiffusionImageFilter_type_string ==
+		if (computed_field_curvature_anisotropic_diffusion_image_filter_type_string ==
 			Computed_field_get_type_string(field))
 		{
 			return_code =
-				Computed_field_get_type_curvatureAnisotropicDiffusionImageFilter(field, &source_field,
+				Computed_field_get_type_curvature_anisotropic_diffusion_image_filter(field, &source_field,
 					&timeStep, &conductance, &numIterations);
 		}
 		if (return_code)
@@ -415,14 +415,14 @@ already) and allows its contents to be modified.
 			Option_table_add_entry(option_table, "field", &source_field,
 				&set_source_field_data, set_Computed_field_conditional);
 			/* timeStep */
-			Option_table_add_float_entry(option_table, "time_step",
+			Option_table_add_double_entry(option_table, "time_step",
 				&timeStep);
 			/* conductance */
-			Option_table_add_float_entry(option_table, "conductance",
+			Option_table_add_double_entry(option_table, "conductance",
 				&conductance);
 			/* numIterations */
 			Option_table_add_int_non_negative_entry(option_table, "num_iterations",
-				&numIterations);
+																							(int*) &numIterations);
 
 			return_code = Option_table_multi_parse(option_table, state);
 			DESTROY(Option_table)(&option_table);
@@ -433,14 +433,14 @@ already) and allows its contents to be modified.
 				if (!source_field)
 				{
 					display_message(ERROR_MESSAGE,
-						"define_Computed_field_type_curvatureAnisotropicDiffusionImageFilter.  "
+						"define_Computed_field_type_curvature_anisotropic_diffusion_image_filter.  "
 						"Missing source field");
 					return_code = 0;
 				}
 			}
 			if (return_code)
 			{
-				return_code = Computed_field_set_type_curvatureAnisotropicDiffusionImageFilter(
+				return_code = Computed_field_set_type_curvature_anisotropic_diffusion_image_filter(
 					field, source_field, timeStep, conductance, numIterations);				
 			}
 			
@@ -452,7 +452,7 @@ already) and allows its contents to be modified.
 				{
 					/* error */
 					display_message(ERROR_MESSAGE,
-						"define_Computed_field_type_curvatureAnisotropicDiffusionImageFilter.  Failed");
+						"define_Computed_field_type_curvature_anisotropic_diffusion_image_filter.  Failed");
 				}
 			}
 			if (source_field)
@@ -464,15 +464,15 @@ already) and allows its contents to be modified.
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"define_Computed_field_type_curvatureAnisotropicDiffusionImageFilter.  Invalid argument(s)");
+			"define_Computed_field_type_curvature_anisotropic_diffusion_image_filter.  Invalid argument(s)");
 		return_code = 0;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* define_Computed_field_type_curvatureAnisotropicDiffusionImageFilter */
+} /* define_Computed_field_type_curvature_anisotropic_diffusion_image_filter */
 
-int Computed_field_register_types_curvatureAnisotropicDiffusionImageFilter(
+int Computed_field_register_types_curvature_anisotropic_diffusion_image_filter(
 	struct Computed_field_package *computed_field_package)
 /*******************************************************************************
 LAST MODIFIED : 18 October 2006
@@ -482,21 +482,21 @@ DESCRIPTION :
 {
 	int return_code;
 
-	ENTER(Computed_field_register_types_curvatureAnisotropicDiffusionImageFilter);
+	ENTER(Computed_field_register_types_curvature_anisotropic_diffusion_image_filter);
 	if (computed_field_package)
 	{
 		return_code = Computed_field_package_add_type(computed_field_package,
-			computed_field_curvatureAnisotropicDiffusionImageFilter_type_string, 
-			define_Computed_field_type_curvatureAnisotropicDiffusionImageFilter,
+			computed_field_curvature_anisotropic_diffusion_image_filter_type_string, 
+			define_Computed_field_type_curvature_anisotropic_diffusion_image_filter,
 			Computed_field_package_get_simple_package(computed_field_package));
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Computed_field_register_types_curvatureAnisotropicDiffusionImageFilter.  Invalid argument(s)");
+			"Computed_field_register_types_curvature_anisotropic_diffusion_image_filter.  Invalid argument(s)");
 		return_code = 0;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* Computed_field_register_types_curvatureAnisotropicDiffusionImageFilter */
+} /* Computed_field_register_types_curvature_anisotropic_diffusion_image_filter */

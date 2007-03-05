@@ -62,9 +62,9 @@ using namespace CMISS;
 
 namespace {
 
-char computed_field_rescaleIntensityImageFilter_type_string[] = "rescale_intensity_filter";
+char computed_field_rescale_intensity_image_filter_type_string[] = "rescale_intensity_image_filter";
 
-class Computed_field_rescaleIntensityImageFilter : public Computed_field_ImageFilter
+class Computed_field_rescale_intensity_image_filter : public Computed_field_ImageFilter
 {
 
 public:
@@ -72,22 +72,22 @@ public:
         int outputMax;
        
 
-	Computed_field_rescaleIntensityImageFilter(Computed_field *field,
+	Computed_field_rescale_intensity_image_filter(Computed_field *field,
 		int outputMin, int outputMax);
 
-	~Computed_field_rescaleIntensityImageFilter()
+	~Computed_field_rescale_intensity_image_filter()
 	{
 	};
 
 private:
 	Computed_field_core *copy(Computed_field* new_parent)
 	{
-		return new Computed_field_rescaleIntensityImageFilter(new_parent, outputMin,outputMax);
+		return new Computed_field_rescale_intensity_image_filter(new_parent, outputMin,outputMax);
 	}
 
 	char *get_type_string()
 	{
-		return(computed_field_rescaleIntensityImageFilter_type_string);
+		return(computed_field_rescale_intensity_image_filter_type_string);
 	}
 
 	int compare(Computed_field_core* other_field);
@@ -97,7 +97,7 @@ private:
 	char* get_command_string();
 };
 
-int Computed_field_rescaleIntensityImageFilter::compare(Computed_field_core *other_core)
+int Computed_field_rescale_intensity_image_filter::compare(Computed_field_core *other_core)
 /*******************************************************************************
 LAST MODIFIED : 18 October 2006
 
@@ -105,11 +105,11 @@ DESCRIPTION :
 Compare the type specific data.
 ==============================================================================*/
 {
-	Computed_field_rescaleIntensityImageFilter* other;
+	Computed_field_rescale_intensity_image_filter* other;
 	int return_code;
 
-	ENTER(Computed_field_rescaleIntensityImageFilter::compare);
-	if (field && (other = dynamic_cast<Computed_field_rescaleIntensityImageFilter*>(other_core)))
+	ENTER(Computed_field_rescale_intensity_image_filter::compare);
+	if (field && (other = dynamic_cast<Computed_field_rescale_intensity_image_filter*>(other_core)))
 	{
 		if ((dimension == other->dimension)
 		        && (outputMin == other->outputMin)
@@ -129,9 +129,9 @@ Compare the type specific data.
 	LEAVE;
 
 	return (return_code);
-} /* Computed_field_rescaleIntensityImageFilter::compare */
+} /* Computed_field_rescale_intensity_image_filter::compare */
 
-int Computed_field_rescaleIntensityImageFilter::list()
+int Computed_field_rescale_intensity_image_filter::list()
 /*******************************************************************************
 LAST MODIFIED : 18 October 2006
 
@@ -140,7 +140,7 @@ DESCRIPTION :
 {
 	int return_code;
 
-	ENTER(List_Computed_field_rescaleIntensityImageFilter);
+	ENTER(List_Computed_field_rescale_intensity_image_filter);
 	if (field)
 	{
 		display_message(INFORMATION_MESSAGE,
@@ -153,15 +153,15 @@ DESCRIPTION :
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"list_Computed_field_rescaleIntensityImageFilter.  Invalid argument(s)");
+			"list_Computed_field_rescale_intensity_image_filter.  Invalid argument(s)");
 		return_code = 0;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* list_Computed_field_rescaleIntensityImageFilter */
+} /* list_Computed_field_rescale_intensity_image_filter */
 
-char *Computed_field_rescaleIntensityImageFilter::get_command_string()
+char *Computed_field_rescale_intensity_image_filter::get_command_string()
 /*******************************************************************************
 LAST MODIFIED : 18 October 2006
 
@@ -172,7 +172,7 @@ Returns allocated command string for reproducing field. Includes type.
 	char *command_string, *field_name, temp_string[40];
 	int error;
 
-	ENTER(Computed_field_rescaleIntensityImageFilter::get_command_string);
+	ENTER(Computed_field_rescale_intensity_image_filter::get_command_string);
 	command_string = (char *)NULL;
 	if (field)
 	{
@@ -193,15 +193,15 @@ Returns allocated command string for reproducing field. Includes type.
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Computed_field_rescaleIntensityImageFilter::get_command_string.  Invalid field");
+			"Computed_field_rescale_intensity_image_filter::get_command_string.  Invalid field");
 	}
 	LEAVE;
 
 	return (command_string);
-} /* Computed_field_rescaleIntensityImageFilter::get_command_string */
+} /* Computed_field_rescale_intensity_image_filter::get_command_string */
 
 template < class ImageType >
-class Computed_field_rescaleIntensityImageFilter_Functor :
+class Computed_field_rescale_intensity_image_filter_Functor :
 	public Computed_field_ImageFilter_FunctorTmpl< ImageType >
 /*******************************************************************************
 LAST MODIFIED : 12 September 2006
@@ -211,14 +211,14 @@ This class actually does the work of processing images with the filter.
 It is instantiated for each of the chosen ImageTypes.
 ==============================================================================*/
 {
-	Computed_field_rescaleIntensityImageFilter *rescaleIntensityImageFilter;
+	Computed_field_rescale_intensity_image_filter *rescale_intensity_image_filter;
 
 public:
 
-	Computed_field_rescaleIntensityImageFilter_Functor(
-		Computed_field_rescaleIntensityImageFilter *rescaleIntensityImageFilter) :
-		Computed_field_ImageFilter_FunctorTmpl< ImageType >(rescaleIntensityImageFilter),
-		rescaleIntensityImageFilter(rescaleIntensityImageFilter)
+	Computed_field_rescale_intensity_image_filter_Functor(
+		Computed_field_rescale_intensity_image_filter *rescale_intensity_image_filter) :
+		Computed_field_ImageFilter_FunctorTmpl< ImageType >(rescale_intensity_image_filter),
+		rescale_intensity_image_filter(rescale_intensity_image_filter)
 	{
 	}
 
@@ -237,18 +237,18 @@ and generate the outputImage.
 		
 		typename FilterType::Pointer filter = FilterType::New();
 
-		filter->SetOutputMinimum( rescaleIntensityImageFilter->outputMin );
-		filter->SetOutputMaximum( rescaleIntensityImageFilter->outputMax );
+		filter->SetOutputMinimum( rescale_intensity_image_filter->outputMin );
+		filter->SetOutputMaximum( rescale_intensity_image_filter->outputMax );
 		
-		return_code = rescaleIntensityImageFilter->update_output_image< ImageType, FilterType >
+		return_code = rescale_intensity_image_filter->update_output_image< ImageType, FilterType >
 			(location, filter, this->outputImage);
 		
 		return (return_code);
 	} /* set_filter */
 
-}; /* template < class ImageType > class Computed_field_rescaleIntensityImageFilter_Functor */
+}; /* template < class ImageType > class Computed_field_rescale_intensity_image_filter_Functor */
 
-Computed_field_rescaleIntensityImageFilter::Computed_field_rescaleIntensityImageFilter(
+Computed_field_rescale_intensity_image_filter::Computed_field_rescale_intensity_image_filter(
 	Computed_field *field, int outputMin, int outputMax) : 
         Computed_field_ImageFilter(field), 
         outputMin(outputMin), outputMax(outputMax)
@@ -261,17 +261,17 @@ Create the computed_field representation of the RescaleIntensityImageFilter.
 {
 #if defined DONOTUSE_TEMPLATETEMPLATES
 	create_filters_singlecomponent_multidimensions(
-		Computed_field_rescaleIntensityImageFilter_Functor, this);
+		Computed_field_rescale_intensity_image_filter_Functor, this);
 #else
 	create_filters_singlecomponent_multidimensions
-		< Computed_field_rescaleIntensityImageFilter_Functor, Computed_field_rescaleIntensityImageFilter >
+		< Computed_field_rescale_intensity_image_filter_Functor, Computed_field_rescale_intensity_image_filter >
 		(this);
 #endif
 }
 
 } //namespace
 
-int Computed_field_set_type_rescaleIntensityImageFilter(struct Computed_field *field,
+int Computed_field_set_type_rescale_intensity_image_filter(struct Computed_field *field,
 	struct Computed_field *source_field, int outputMin, int outputMax)
 /*******************************************************************************
 LAST MODIFIED : 18 October 2006
@@ -284,7 +284,7 @@ Converts <field> to type DISCRETEGAUSSIAN.  The <min> <max>
 	int number_of_source_fields, return_code;
 	struct Computed_field **source_fields;
 
-	ENTER(Computed_field_set_type_rescaleIntensityImageFilter);
+	ENTER(Computed_field_set_type_rescale_intensity_image_filter);
 	if (field && source_field &&
 		Computed_field_is_scalar(source_field, (void *)NULL))
 	{
@@ -301,7 +301,7 @@ Converts <field> to type DISCRETEGAUSSIAN.  The <min> <max>
 			source_fields[0] = ACCESS(Computed_field)(source_field);
 			field->source_fields = source_fields;
 			field->number_of_source_fields = number_of_source_fields;			
-			field->core = new Computed_field_rescaleIntensityImageFilter(field, outputMin,outputMax);
+			field->core = new Computed_field_rescale_intensity_image_filter(field, outputMin,outputMax);
 		}
 		else
 		{
@@ -312,29 +312,29 @@ Converts <field> to type DISCRETEGAUSSIAN.  The <min> <max>
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Computed_field_set_type_rescaleIntensityImageFilter.  Invalid argument(s)");
+			"Computed_field_set_type_rescale_intensity_image_filter.  Invalid argument(s)");
 		return_code = 0;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* Computed_field_set_type_rescaleIntensityImageFilter */
+} /* Computed_field_set_type_rescale_intensity_image_filter */
 
-int Computed_field_get_type_rescaleIntensityImageFilter(struct Computed_field *field,
+int Computed_field_get_type_rescale_intensity_image_filter(struct Computed_field *field,
 	struct Computed_field **source_field, int *outputMin, int *outputMax)
 /*******************************************************************************
 LAST MODIFIED : 18 October 2006
 
 DESCRIPTION :
-If the field is of type DISCRETEGAUSSIAN, the source_field and rescaleIntensityImageFilter
+If the field is of type DISCRETEGAUSSIAN, the source_field and rescale_intensity_image_filter
 used by it are returned - otherwise an error is reported.
 ==============================================================================*/
 {
-	Computed_field_rescaleIntensityImageFilter* core;
+	Computed_field_rescale_intensity_image_filter* core;
 	int return_code;
 
-	ENTER(Computed_field_get_type_rescaleIntensityImageFilter);
-	if (field && (core = dynamic_cast<Computed_field_rescaleIntensityImageFilter*>(field->core))
+	ENTER(Computed_field_get_type_rescale_intensity_image_filter);
+	if (field && (core = dynamic_cast<Computed_field_rescale_intensity_image_filter*>(field->core))
 		&& source_field)
 	{
 		*source_field = field->source_fields[0];
@@ -345,15 +345,15 @@ used by it are returned - otherwise an error is reported.
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Computed_field_get_type_rescaleIntensityImageFilter.  Invalid argument(s)");
+			"Computed_field_get_type_rescale_intensity_image_filter.  Invalid argument(s)");
 		return_code = 0;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* Computed_field_get_type_rescaleIntensityImageFilter */
+} /* Computed_field_get_type_rescale_intensity_image_filter */
 
-int define_Computed_field_type_rescaleIntensityImageFilter(struct Parse_state *state,
+int define_Computed_field_type_rescale_intensity_image_filter(struct Parse_state *state,
 	void *field_void, void *computed_field_simple_package_void)
 /*******************************************************************************
 LAST MODIFIED : 18 October 2006
@@ -371,7 +371,7 @@ already) and allows its contents to be modified.
 	struct Option_table *option_table;
 	struct Set_Computed_field_conditional_data set_source_field_data;
 
-	ENTER(define_Computed_field_type_rescaleIntensityImageFilter);
+	ENTER(define_Computed_field_type_rescale_intensity_image_filter);
 	if (state && (field = (struct Computed_field *)field_void) &&
 		(computed_field_simple_package = (Computed_field_simple_package*)computed_field_simple_package_void))
 	{
@@ -380,11 +380,11 @@ already) and allows its contents to be modified.
 		source_field = (struct Computed_field *)NULL;
 		outputMin = 0;
 		outputMax=255;
-		if (computed_field_rescaleIntensityImageFilter_type_string ==
+		if (computed_field_rescale_intensity_image_filter_type_string ==
 			Computed_field_get_type_string(field))
 		{
 			return_code =
-				Computed_field_get_type_rescaleIntensityImageFilter(field, &source_field,
+				Computed_field_get_type_rescale_intensity_image_filter(field, &source_field,
 					&outputMin, &outputMax);
 		}
 		if (return_code)
@@ -420,14 +420,14 @@ already) and allows its contents to be modified.
 				if (!source_field)
 				{
 					display_message(ERROR_MESSAGE,
-						"define_Computed_field_type_rescaleIntensityImageFilter.  "
+						"define_Computed_field_type_rescale_intensity_image_filter.  "
 						"Missing source field");
 					return_code = 0;
 				}
 			}
 			if (return_code)
 			{
-				return_code = Computed_field_set_type_rescaleIntensityImageFilter(
+				return_code = Computed_field_set_type_rescale_intensity_image_filter(
 					field, source_field, outputMin, outputMax);				
 			}
 			
@@ -439,7 +439,7 @@ already) and allows its contents to be modified.
 				{
 					/* error */
 					display_message(ERROR_MESSAGE,
-						"define_Computed_field_type_rescaleIntensityImageFilter.  Failed");
+						"define_Computed_field_type_rescale_intensity_image_filter.  Failed");
 				}
 			}
 			if (source_field)
@@ -451,15 +451,15 @@ already) and allows its contents to be modified.
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"define_Computed_field_type_rescaleIntensityImageFilter.  Invalid argument(s)");
+			"define_Computed_field_type_rescale_intensity_image_filter.  Invalid argument(s)");
 		return_code = 0;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* define_Computed_field_type_rescaleIntensityImageFilter */
+} /* define_Computed_field_type_rescale_intensity_image_filter */
 
-int Computed_field_register_types_rescaleIntensityImageFilter(
+int Computed_field_register_types_rescale_intensity_image_filter(
 	struct Computed_field_package *computed_field_package)
 /*******************************************************************************
 LAST MODIFIED : 18 October 2006
@@ -469,21 +469,21 @@ DESCRIPTION :
 {
 	int return_code;
 
-	ENTER(Computed_field_register_types_rescaleIntensityImageFilter);
+	ENTER(Computed_field_register_types_rescale_intensity_image_filter);
 	if (computed_field_package)
 	{
 		return_code = Computed_field_package_add_type(computed_field_package,
-			computed_field_rescaleIntensityImageFilter_type_string, 
-			define_Computed_field_type_rescaleIntensityImageFilter,
+			computed_field_rescale_intensity_image_filter_type_string, 
+			define_Computed_field_type_rescale_intensity_image_filter,
 			Computed_field_package_get_simple_package(computed_field_package));
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Computed_field_register_types_rescaleIntensityImageFilter.  Invalid argument(s)");
+			"Computed_field_register_types_rescale_intensity_image_filter.  Invalid argument(s)");
 		return_code = 0;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* Computed_field_register_types_rescaleIntensityImageFilter */
+} /* Computed_field_register_types_rescale_intensity_image_filter */
