@@ -51,6 +51,7 @@ computed fields.
 #include "api/cmiss_node.h"
 #include "api/cmiss_element.h"
 #include "general/object.h"
+#include "general/value.h"
 
 /*
 Global types
@@ -246,5 +247,203 @@ If the field is of type COMPUTED_FIELD_BINARYTHRESHOLDFILTER, the source_field a
 used by it are returned - otherwise an error is reported.
 ==============================================================================*/
 
+int Cmiss_computed_field_set_type_canny_edge_detection_image_filter(struct Computed_field *field,
+	struct Computed_field *source_field);
+/*******************************************************************************
+LAST MODIFIED : 9 September 2006
+
+DESCRIPTION :
+Converts <field> to type COMPUTED_FIELD_CANNYEDGEDETECTIONFILTER, returning the value of
+<canny_edge_detection_image_filter> at the time/parameter value given by scalar <source_field>.
+Sets number of components to same number as <source_field>.
+==============================================================================*/
+
+int Cmiss_computed_field_get_type_canny_edge_detection_image_filter(struct Computed_field *field,
+	struct Computed_field **source_field);
+/*******************************************************************************
+LAST MODIFIED : 9 September 2006
+
+DESCRIPTION :
+If the field is of type COMPUTED_FIELD_CANNYEDGEDETECTIONFILTER, the source_field and canny_edge_detection_image_filter
+used by it are returned - otherwise an error is reported.
+==============================================================================*/
+
+int Cmiss_computed_field_set_type_curvature_anisotropic_diffusion_image_filter(struct Computed_field *field,
+	struct Computed_field *source_field, double timeStep, double conductance, int numIterations);
+/*******************************************************************************
+LAST MODIFIED : 18 Nov 2006
+
+DESCRIPTION :
+Converts <field> to type COMPUTED_FIELD_CURVATUREANISOTROPICDIFFUSIONIMAGEFILTER, returning the value of
+<curvature_anisotropic_diffusion_image_filter> at the time/parameter value given by scalar <source_field>.
+Sets number of components to same number as <source_field>.
+==============================================================================*/
+
+int Cmiss_computed_field_get_type_curvature_anisotropic_diffusion_image_filter(struct Computed_field *field,
+	struct Computed_field **source_field, double *timeStep, double *conductance, int *numIterations);
+/*******************************************************************************
+LAST MODIFIED : 18 Nov 2006
+
+DESCRIPTION :
+If the field is of type COMPUTED_FIELD_CURVATUREANISOTROPICDIFFUSIONIMAGEFILTER, the source_field and curvature_anisotropic_diffusion_image_filter
+used by it are returned - otherwise an error is reported.
+==============================================================================*/
+
+int Cmiss_computed_field_set_type_derivative_image_filter(struct Computed_field *field,
+	struct Computed_field *source_field, int order, int direction);
+/*******************************************************************************
+LAST MODIFIED : 18 Nov 2006
+
+DESCRIPTION :
+Converts <field> to type COMPUTED_FIELD_DERIVATIVEIMAGEFILTER, returning the value of
+<derivative_image_filter> at the time/parameter value given by scalar <source_field>.
+Sets number of components to same number as <source_field>.
+=============================================================================*/
+
+int Cmiss_computed_field_get_type_derivative_image_filter(struct Computed_field *field,
+	struct Computed_field **source_field, int *order, int *direction);
+/*******************************************************************************
+LAST MODIFIED : 18 Nov 2006
+
+DESCRIPTION :
+If the field is of type COMPUTED_FIELD_DERIVATIVEIMAGEFILTER, the source_field and derivative_image_filter
+used by it are returned - otherwise an error is reported.
+==============================================================================*/
+
+
+int Cmiss_computed_field_set_type_discrete_gaussian_image_filter(struct Computed_field *field,
+	struct Computed_field *source_field, double variance, int maxKernelWidth);
+/*******************************************************************************
+LAST MODIFIED : 18 Nov 2006
+
+DESCRIPTION :
+Converts <field> to type COMPUTED_FIELD_DISCRETEGAUSSIANIMAGEFILTER, returning the value of
+<discrete_gaussian_image_filter> at the time/parameter value given by scalar <source_field>.
+Sets number of components to same number as <source_field>.
+==============================================================================*/
+
+int Cmiss_computed_field_get_type_discrete_gaussian_image_filter(struct Computed_field *field,
+	struct Computed_field **source_field, double *variance, int *maxKernelWidth);
+/*******************************************************************************
+LAST MODIFIED : 18 Nov 2006
+
+DESCRIPTION :
+If the field is of type COMPUTED_FIELD_DISCRETEGAUSSIANIMAGEFILTER_H, the source_field and discrete_gaussian_image_filter
+used by it are returned - otherwise an error is reported.
+==============================================================================*/
+
+
+int Cmiss_computed_field_set_type_mean_image_filter(struct Computed_field *field,
+	struct Computed_field *source_field, int *radius_sizes);
+/*******************************************************************************
+LAST MODIFIED : 30 August 2006
+
+DESCRIPTION :
+Converts <field> to type COMPUTED_FIELD_MEANIMAGEFILTER, returning the value of
+<mean_image_filter> at the time/parameter value given by scalar <source_field>.
+Sets number of components to same number as <source_field>.
+==============================================================================*/
+
+int Cmiss_computed_field_get_type_mean_image_filter(struct Computed_field *field,
+	struct Computed_field **source_field, int **radius_sizes);
+/*******************************************************************************
+LAST MODIFIED : 30 August 2006
+
+DESCRIPTION :
+If the field is of type COMPUTED_FIELD_MEANIMAGEFILTER, the source_field and mean_image_filter
+used by it are returned - otherwise an error is reported.
+==============================================================================*/
+
+int Cmiss_computed_field_set_type_rescale_intensity_image_filter(struct Computed_field *field,
+	struct Computed_field *source_field, int outputMin, int outputMax);
+/*******************************************************************************
+LAST MODIFIED : 18 Nov 2006
+
+DESCRIPTION :
+Converts <field> to type COMPUTED_FIELD_RESCALEINTENSITYIMAGEFILTER, returning the value of
+<rescale_intensity_image_filter> at the time/parameter value given by scalar <source_field>.
+Sets number of components to same number as <source_field>.
+==============================================================================*/
+
+int Cmiss_computed_field_get_type_rescale_intensity_image_filter(struct Computed_field *field,
+	struct Computed_field **source_field, int *outputMin, int *outputMax);
+/*******************************************************************************
+LAST MODIFIED : 18 Nov 2006
+
+DESCRIPTION :
+If the field is of type COMPUTED_FIELD_RESCALEINTENSITYIMAGEFILTER, the source_field and rescale_intensity_image_filter
+used by it are returned - otherwise an error is reported.
+==============================================================================*/
+
+
+int Cmiss_computed_field_set_type_sigmoid_image_filter(struct Computed_field *field,
+	struct Computed_field *source_field, double min, double max, double alpha, double beta);
+/*******************************************************************************
+LAST MODIFIED : 18 October 2006
+
+DESCRIPTION :
+Converts <field> to type COMPUTED_FIELD_SIGMOIDIMAGEFILTER, returning the value of
+<sigmoid_image_filter> at the time/parameter value given by scalar <source_field>.
+Sets number of components to same number as <source_field>.
+==============================================================================*/
+
+int Cmiss_computed_field_get_type_sigmoid_image_filter(struct Computed_field *field,
+	struct Computed_field **source_field, double *min, double *max, double *alpha, double *beta);
+/*******************************************************************************
+LAST MODIFIED : 18 October 2006
+
+DESCRIPTION :
+If the field is of type COMPUTED_FIELD_SIGMOIDIMAGEFILTER, the source_field and sigmoid_image_filter
+used by it are returned - otherwise an error is reported.
+==============================================================================*/
+
+int Cmiss_computed_field_get_type_sum_components(struct Computed_field *field,
+	struct Computed_field **source_field, FE_value **weights);
+/*******************************************************************************
+LAST MODIFIED : 24 August 2006
+
+DESCRIPTION :
+If the field is of type COMPUTED_FIELD_SUM_COMPONENTS, the 
+<source_field> and <weights> used by it are returned.
+==============================================================================*/
+
+int Cmiss_computed_field_set_type_sum_components(struct Computed_field *field,
+	struct Computed_field *source_field, FE_value *weights);
+/*******************************************************************************
+LAST MODIFIED : 24 August 2006
+
+DESCRIPTION :
+Converts <field> to type COMPUTED_FIELD_SUM_COMPONENTS with the supplied which
+returns a scalar weighted sum of the components of <source_field>.
+The <weights> array must therefore contain as many FE_values as there are
+components in <source_field>.
+If function fails, field is guaranteed to be unchanged from its original state,
+although its cache may be lost.
+==============================================================================*/
+
+/**
+int Cmiss_computed_field_set_type_threshold_image_filter(struct Computed_field *field,
+	struct Computed_field *source_field, 
+	enum General_threshold_filter_mode threshold_mode, 
+	double outside_value, double below_value, double above_value); **/
+/*******************************************************************************
+LAST MODIFIED : 8 December 2006
+
+DESCRIPTION :
+Converts <field> to type COMPUTED_FIELD_THRESHOLDFILTER, returning the value of
+<threshold_image_filter> at the time/parameter value given by scalar <source_field>.
+==============================================================================*/
+
+/**int Cmiss_computed_field_get_type_threshold_image_filter(struct Computed_field *field,
+	struct Computed_field **source_field, 
+	enum General_threshold_filter_mode *threshold_mode, 
+	double *outside_value, double *below_value,double *above_value); **/
+/*******************************************************************************
+LAST MODIFIED : 8 December 2006
+
+DESCRIPTION :
+If the field is of type COMPUTED_FIELD_THRESHOLDFILTER, the source_field and threshold_image_filter
+used by it are returned - otherwise an error is reported.
+==============================================================================*/
 
 #endif /* __CMISS_COMPUTED_FIELD_H__ */
