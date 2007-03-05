@@ -44,7 +44,15 @@ DESCRIPTION :
 #if !defined (COMPUTED_FIELD_CURVATUREANISOTROPICDIFFUSIONIMAGEFILTER_H)
 #define COMPUTED_FIELD_CURVATUREANISOTROPICDIFFUSIONIMAGEFILTER_H
 
-int Computed_field_register_types_curvatureAnisotropicDiffusionImageFilter(
+#include "api/cmiss_computed_field.h"
+
+/* API functions are prefixed with Cmiss */
+#define Computed_field_set_type_curvature_anisotropic_diffusion_image_filter \
+	Cmiss_computed_field_set_type_curvature_anisotropic_diffusion_image_filter
+#define Computed_field_get_type_curvature_anisotropic_diffusion_image_filter \
+	Cmiss_computed_field_get_type_curvature_anisotropic_diffusion_image_filter
+
+int Computed_field_register_types_curvature_anisotropic_diffusion_image_filter(
 	struct Computed_field_package *computed_field_package);
 /*******************************************************************************
 LAST MODIFIED : 18 Nov 2006
@@ -52,29 +60,29 @@ LAST MODIFIED : 18 Nov 2006
 DESCRIPTION :
 ==============================================================================*/
 
-int Computed_field_set_type_curvatureAnisotropicDiffusionImageFilter(struct Computed_field *field,
-	struct Computed_field *source_field, float timeStep, float conductance, int numIterations);
+int Computed_field_set_type_curvature_anisotropic_diffusion_image_filter(struct Computed_field *field,
+	struct Computed_field *source_field, double timeStep, double conductance, int numIterations);
 /*******************************************************************************
 LAST MODIFIED : 18 Nov 2006
 
 DESCRIPTION :
 Converts <field> to type COMPUTED_FIELD_CURVATUREANISOTROPICDIFFUSIONIMAGEFILTER, returning the value of
-<curvatureAnisotropicDiffusionImageFilter> at the time/parameter value given by scalar <source_field>.
-Sets number of components to same number as <curvatureAnisotropicDiffusionImageFilter>.
+<curvature_anisotropic_diffusion_image_filter> at the time/parameter value given by scalar <source_field>.
+Sets number of components to same number as <curvature_anisotropic_diffusion_image_filter>.
 If function fails, field is guaranteed to be unchanged from its original state,
 although its cache may be lost.
 ???RC In future may not need to pass computed_field_manager it all fields
 maintain pointer to it. Only have it to invoke computed field manager messages
-in response to changes in the curvatureAnisotropicDiffusionImageFilter from the control curvatureAnisotropicDiffusionImageFilter manager.
+in response to changes in the curvature_anisotropic_diffusion_image_filter from the control curvature_anisotropic_diffusion_image_filter manager.
 ==============================================================================*/
 
-int Computed_field_get_type_curvatureAnisotropicDiffusionImageFilter(struct Computed_field *field,
-	struct Computed_field **source_field, float *timeStep, float *conductance, int *numIterations);
+int Computed_field_get_type_curvature_anisotropic_diffusion_image_filter(struct Computed_field *field,
+	struct Computed_field **source_field, double *timeStep, double *conductance, int *numIterations);
 /*******************************************************************************
 LAST MODIFIED : 18 Nov 2006
 
 DESCRIPTION :
-If the field is of type COMPUTED_FIELD_CURVATUREANISOTROPICDIFFUSIONIMAGEFILTER, the source_field and curvatureAnisotropicDiffusionImageFilter
+If the field is of type COMPUTED_FIELD_CURVATUREANISOTROPICDIFFUSIONIMAGEFILTER, the source_field and curvature_anisotropic_diffusion_image_filter
 used by it are returned - otherwise an error is reported.
 ==============================================================================*/
 

@@ -44,7 +44,15 @@ DESCRIPTION :
 #if !defined (COMPUTED_FIELD_DERIVATIVEIMAGEFILTER_H)
 #define COMPUTED_FIELD_DERIVATIVEIMAGEFILTER_H
 
-int Computed_field_register_types_derivativeImageFilter(
+#include "api/cmiss_computed_field.h"
+
+/* API functions are prefixed with Cmiss */
+#define Computed_field_set_type_derivative_image_filter \
+	Cmiss_computed_field_set_type_derivative_image_filter
+#define Computed_field_get_type_derivative_image_filter \
+	Cmiss_computed_field_get_type_derivative_image_filter
+
+int Computed_field_register_types_derivative_image_filter(
 	struct Computed_field_package *computed_field_package);
 /*******************************************************************************
 LAST MODIFIED : 18 Nov 2006
@@ -52,29 +60,24 @@ LAST MODIFIED : 18 Nov 2006
 DESCRIPTION :
 ==============================================================================*/
 
-int Computed_field_set_type_derivativeImageFilter(struct Computed_field *field,
+int Computed_field_set_type_derivative_image_filter(struct Computed_field *field,
 	struct Computed_field *source_field, int order, int direction);
 /*******************************************************************************
 LAST MODIFIED : 18 Nov 2006
 
 DESCRIPTION :
 Converts <field> to type COMPUTED_FIELD_DERIVATIVEIMAGEFILTER, returning the value of
-<derivativeImageFilter> at the time/parameter value given by scalar <source_field>.
-Sets number of components to same number as <derivativeImageFilter>.
-If function fails, field is guaranteed to be unchanged from its original state,
-although its cache may be lost.
-???RC In future may not need to pass computed_field_manager it all fields
-maintain pointer to it. Only have it to invoke computed field manager messages
-in response to changes in the derivativeImageFilter from the control derivativeImageFilter manager.
+<derivative_image_filter> at the time/parameter value given by scalar <source_field>.
+Sets number of components to same number as <source_field>.
 ==============================================================================*/
 
-int Computed_field_get_type_derivativeImageFilter(struct Computed_field *field,
+int Computed_field_get_type_derivative_image_filter(struct Computed_field *field,
 	struct Computed_field **source_field, int *order, int *direction);
 /*******************************************************************************
 LAST MODIFIED : 18 Nov 2006
 
 DESCRIPTION :
-If the field is of type COMPUTED_FIELD_DERIVATIVEIMAGEFILTER, the source_field and derivativeImageFilter
+If the field is of type COMPUTED_FIELD_DERIVATIVEIMAGEFILTER, the source_field and derivative_image_filter
 used by it are returned - otherwise an error is reported.
 ==============================================================================*/
 

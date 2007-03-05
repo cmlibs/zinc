@@ -44,7 +44,15 @@ DESCRIPTION :
 #if !defined (COMPUTED_FIELD_RESCALEINTENSITYIMAGEFILTER_H)
 #define COMPUTED_FIELD_RESCALEINTENSITYIMAGEFILTER_H
 
-int Computed_field_register_types_rescaleIntensityImageFilter(
+#include "api/cmiss_computed_field.h"
+
+/* API functions are prefixed with Cmiss */
+#define Computed_field_set_type_rescale_intensity_image_filter \
+	Cmiss_computed_field_set_type_rescale_intensity_image_filter
+#define Computed_field_get_type_rescale_intensity_image_filter \
+	Cmiss_computed_field_get_type_rescale_intensity_image_filter
+
+int Computed_field_register_types_rescale_intensity_image_filter(
 	struct Computed_field_package *computed_field_package);
 /*******************************************************************************
 LAST MODIFIED : 18 Nov 2006
@@ -52,29 +60,24 @@ LAST MODIFIED : 18 Nov 2006
 DESCRIPTION :
 ==============================================================================*/
 
-int Computed_field_set_type_rescaleIntensityImageFilter(struct Computed_field *field,
+int Computed_field_set_type_rescale_intensity_image_filter(struct Computed_field *field,
 	struct Computed_field *source_field, int outputMin, int outputMax);
 /*******************************************************************************
 LAST MODIFIED : 18 Nov 2006
 
 DESCRIPTION :
 Converts <field> to type COMPUTED_FIELD_RESCALEINTENSITYIMAGEFILTER, returning the value of
-<rescaleIntensityImageFilter> at the time/parameter value given by scalar <source_field>.
-Sets number of components to same number as <rescaleIntensityImageFilter>.
-If function fails, field is guaranteed to be unchanged from its original state,
-although its cache may be lost.
-???RC In future may not need to pass computed_field_manager it all fields
-maintain pointer to it. Only have it to invoke computed field manager messages
-in response to changes in the rescaleIntensityImageFilter from the control rescaleIntensityImageFilter manager.
+<rescale_intensity_image_filter> at the time/parameter value given by scalar <source_field>.
+Sets number of components to same number as <source_field>.
 ==============================================================================*/
 
-int Computed_field_get_type_rescaleIntensityImageFilter(struct Computed_field *field,
+int Computed_field_get_type_rescale_intensity_image_filter(struct Computed_field *field,
 	struct Computed_field **source_field, int *outputMin, int *outputMax);
 /*******************************************************************************
 LAST MODIFIED : 18 Nov 2006
 
 DESCRIPTION :
-If the field is of type COMPUTED_FIELD_RESCALEINTENSITYIMAGEFILTER, the source_field and rescaleIntensityImageFilter
+If the field is of type COMPUTED_FIELD_RESCALEINTENSITYIMAGEFILTER, the source_field and rescale_intensity_image_filter
 used by it are returned - otherwise an error is reported.
 ==============================================================================*/
 

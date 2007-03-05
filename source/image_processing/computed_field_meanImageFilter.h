@@ -43,7 +43,15 @@ DESCRIPTION :
 #if !defined (COMPUTED_FIELD_MEANIMAGEFILTER_H)
 #define COMPUTED_FIELD_MEANIMAGEFILTER_H
 
-int Computed_field_register_types_meanImageFilter(
+#include "api/cmiss_computed_field.h"
+
+/* API functions are prefixed with Cmiss */
+#define Computed_field_set_type_mean_image_filter \
+	Cmiss_computed_field_set_type_mean_image_filter
+#define Computed_field_get_type_mean_image_filter \
+	Cmiss_computed_field_get_type_mean_image_filter
+
+int Computed_field_register_types_mean_image_filter(
 	struct Computed_field_package *computed_field_package);
 /*******************************************************************************
 LAST MODIFIED : 30 August 2006
@@ -51,29 +59,24 @@ LAST MODIFIED : 30 August 2006
 DESCRIPTION :
 ==============================================================================*/
 
-int Computed_field_set_type_meanImageFilter(struct Computed_field *field,
+int Computed_field_set_type_mean_image_filter(struct Computed_field *field,
 	struct Computed_field *source_field, int *radius_sizes);
 /*******************************************************************************
 LAST MODIFIED : 30 August 2006
 
 DESCRIPTION :
 Converts <field> to type COMPUTED_FIELD_MEANIMAGEFILTER, returning the value of
-<meanImageFilter> at the time/parameter value given by scalar <source_field>.
-Sets number of components to same number as <meanImageFilter>.
-If function fails, field is guaranteed to be unchanged from its original state,
-although its cache may be lost.
-???RC In future may not need to pass computed_field_manager it all fields
-maintain pointer to it. Only have it to invoke computed field manager messages
-in response to changes in the meanImageFilter from the control meanImageFilter manager.
+<mean_image_filter> at the time/parameter value given by scalar <source_field>.
+Sets number of components to same number as <source_field>.
 ==============================================================================*/
 
-int Computed_field_get_type_meanImageFilter(struct Computed_field *field,
+int Computed_field_get_type_mean_image_filter(struct Computed_field *field,
 	struct Computed_field **source_field, int **radius_sizes);
 /*******************************************************************************
 LAST MODIFIED : 30 August 2006
 
 DESCRIPTION :
-If the field is of type COMPUTED_FIELD_MEANIMAGEFILTER, the source_field and meanImageFilter
+If the field is of type COMPUTED_FIELD_MEANIMAGEFILTER, the source_field and mean_image_filter
 used by it are returned - otherwise an error is reported.
 ==============================================================================*/
 
