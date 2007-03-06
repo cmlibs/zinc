@@ -2575,8 +2575,9 @@ normals are used.
 	GTDATA *data;
 	gtPolygonType polygon_type;
 	struct GT_surface *surface;
-	int i,j,n_data_components,number_of_points,number_of_points_in_xi1,
-		number_of_points_in_xi2,number_of_polygon_vertices;
+	int calculate_tangent_points, i,j,n_data_components,number_of_points,
+		number_of_points_in_xi1,number_of_points_in_xi2,number_of_polygon_vertices,
+		return_code;
 	struct CM_element_information cm;
 	Triple *normal,*normalpoints,*point,*point_a,*point_b,*points,
 		*tangent,*tangentpoints,*texturepoints,*texture_coordinate;
@@ -2710,8 +2711,10 @@ normals are used.
 			/* calculate the points, normals and data */
 			point=points;
 			normal=normalpoints;
+			calculate_tangent_points = 0;
 			if (texture_coordinate_field)
 			{
+				calculate_tangent_points = 1;
 				tangent=tangentpoints;
 				texture_coordinate=texturepoints;
 			}
@@ -2728,20 +2731,43 @@ normals are used.
 				special_normals=0;
 			}
 			i=0;
+			return_code = 1;
 			while ((i<number_of_points)&&surface)
 			{
 				/* extract xi from the normals */
 				xi[0]=(*normal)[0];
 				xi[1]=(*normal)[1];
 				/* evaluate the fields */
-				if (Computed_field_evaluate_in_element(coordinate_field,element,xi,
+				if (!(Computed_field_evaluate_in_element(coordinate_field,element,xi,
 					time,top_level_element,coordinates,derivative_xi)&&
 					((!data_field)||Computed_field_evaluate_in_element(
 					data_field,element,xi,time,top_level_element,data,
-					(FE_value *)NULL))&&((!texture_coordinate_field)||
-					Computed_field_evaluate_in_element(texture_coordinate_field,
-					element,xi,time,top_level_element,texture_values,
-					texture_derivative)))
+					(FE_value *)NULL))))
+				{
+					return_code = 0;
+				}
+				if (texture_coordinate_field)
+				{
+					if (calculate_tangent_points)
+					{
+						if (!Computed_field_evaluate_in_element(texture_coordinate_field,
+							element,xi,time,top_level_element,texture_values,
+								texture_derivative))
+						{
+							calculate_tangent_points = 0;
+							display_message(WARNING_MESSAGE,
+								"Texture coordinate field derivatives are unavailable, "
+								"continuing but not calculating tangent coordinates for displacement mapping.");
+						}
+					}
+					if (!calculate_tangent_points)  /* Do this if just unset above as well as else */
+					{
+						return_code = Computed_field_evaluate_in_element(texture_coordinate_field,
+							element,xi,time,top_level_element,texture_values,
+							(FE_value *)NULL);
+					}
+				}
+				if (return_code)
 				{
 					(*point)[0]=coordinates[0];
 					(*point)[1]=coordinates[1];
@@ -2757,25 +2783,34 @@ normals are used.
 						derivative_xi[1]*derivative_xi[2];
 					if (texture_coordinate_field)
 					{
-						/* tangent is dX/d_xi * inv(dT/dxi) */
-						texture_determinant = texture_derivative[0] * texture_derivative[3]
-							- texture_derivative[1] * texture_derivative[2];
-						if ((texture_determinant < FE_VALUE_ZERO_TOLERANCE) && 
-							(texture_determinant > -FE_VALUE_ZERO_TOLERANCE))
+						if (calculate_tangent_points)
 						{
-							/* Cannot invert the texture derivative so just use the first xi derivative */
-							(*tangent)[0] = derivative_xi[0];
-							(*tangent)[1] = derivative_xi[2];
-							(*tangent)[2] = derivative_xi[4];
+							/* tangent is dX/d_xi * inv(dT/dxi) */
+							texture_determinant = texture_derivative[0] * texture_derivative[3]
+								- texture_derivative[1] * texture_derivative[2];
+							if ((texture_determinant < FE_VALUE_ZERO_TOLERANCE) && 
+								(texture_determinant > -FE_VALUE_ZERO_TOLERANCE))
+							{
+								/* Cannot invert the texture derivative so just use the first xi derivative */
+								(*tangent)[0] = derivative_xi[0];
+								(*tangent)[1] = derivative_xi[2];
+								(*tangent)[2] = derivative_xi[4];
+							}
+							else
+							{
+								(*tangent)[0] = (derivative_xi[0] * texture_derivative[0]
+									- derivative_xi[1] * texture_derivative[2]) / texture_determinant;
+								(*tangent)[1] = (derivative_xi[2] * texture_derivative[0]
+									- derivative_xi[3] * texture_derivative[2]) / texture_determinant;
+								(*tangent)[2] = (derivative_xi[4] * texture_derivative[0]
+									- derivative_xi[5] * texture_derivative[2]) / texture_determinant;
+							}
 						}
 						else
 						{
-							(*tangent)[0] = (derivative_xi[0] * texture_derivative[0]
-								- derivative_xi[1] * texture_derivative[2]) / texture_determinant;
-							(*tangent)[1] = (derivative_xi[2] * texture_derivative[0]
-								- derivative_xi[3] * texture_derivative[2]) / texture_determinant;
-							(*tangent)[2] = (derivative_xi[4] * texture_derivative[0]
-								- derivative_xi[5] * texture_derivative[2]) / texture_determinant;
+							(*tangent)[0] = 0.0;
+							(*tangent)[1] = 0.0;
+							(*tangent)[2] = 0.0;
 						}
 						tangent++;
 					}
@@ -3027,7 +3062,7 @@ normals are used.
 						normal++;
 					}
 				}
-				if (texture_coordinate_field)
+				if (calculate_tangent_points)
 				{
 					/* normalize the tangents */
 					tangent=tangentpoints;
