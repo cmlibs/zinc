@@ -425,6 +425,16 @@ DESCRIPTION :
 Returns information about the type of buffer that was created.
 ==============================================================================*/
 
+#if defined (MOTIF)
+Display *Graphics_buffer_X11_get_display(struct Graphics_buffer *buffer);
+/*******************************************************************************
+LAST MODIFIED : 27 May 2004
+
+DESCRIPTION :
+Returns information about the type of buffer that was created.
+==============================================================================*/
+#endif /* defined (MOTIF) */
+
 int Graphics_buffer_add_initialise_callback(struct Graphics_buffer *buffer,
 	CMISS_CALLBACK_FUNCTION(Graphics_buffer_callback) initialise_callback, void *user_data);
 /*******************************************************************************
