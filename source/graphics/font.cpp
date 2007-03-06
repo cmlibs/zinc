@@ -42,6 +42,7 @@ This provides a Cmgui interface to the font contexts of many types.
  *
  * ***** END LICENSE BLOCK ***** */
 
+extern "C" {
 #if defined (OPENGL_API)
 #define GL_GLEXT_PROTOTYPES
 #include <GL/gl.h>
@@ -87,6 +88,12 @@ This provides a Cmgui interface to the font contexts of many types.
 #include "graphics/font.h"
 #include "three_d_drawing/graphics_buffer.h"
 #include "user_interface/message.h"
+}
+#if defined (WX_USER_INTERFACE)
+#include <wx/bitmap.h>
+#include <wx/image.h>
+#include <wx/dcmemory.h>
+#endif /* defined (WX_USER_INTERFACE) */
 
 /*
 Module types
@@ -210,44 +217,6 @@ Compiles the specified <font> so it can be used by the graphics.  The
 #define XmCGraphicsTextOffsetX "GraphicsTextOffsetX"
 #define XmNgraphicsTextOffsetY "graphicsTextOffsetY"
 #define XmCGraphicsTextOffsetY "GraphicsTextOffsetY"
-	struct Text_defaults
-	{
-#if defined (MOTIF)
-		XFontStruct *graphics_font;
-#endif /* defined (MOTIF) */
-		int offsetX, offsetY;
-	} text_defaults;
-	XtResource resources[]=
-	{
-		{
-			XmNgraphicsFont,
-			XmCGraphicsFont,
-			XmRFontStruct,
-			sizeof(XFontStruct *),
-			XtOffsetOf(struct Text_defaults,graphics_font),
-			XmRString,
-			"-adobe-helvetica-medium-r-normal-*-12-*-*-*-*-*-*-*"
-		},
-		{
-			XmNgraphicsTextOffsetX,
-			XmCGraphicsTextOffsetX,
-			XmRInt,
-			sizeof(int),
-			XtOffsetOf(struct Text_defaults,offsetX),
-			XmRString,
-			"0"
-		},
-		{
-			XmNgraphicsTextOffsetY,
-			XmCGraphicsTextOffsetY,
-			XmRInt,
-			sizeof(int),
-			XtOffsetOf(struct Text_defaults,offsetY),
-			XmRString,
-			"0"
-		}
-	};
-	Widget widget, application_shell;
 	XFontStruct *x_font;
 #endif /* defined (MOTIF) */
 #if defined (WIN32_USER_INTERFACE)
@@ -283,26 +252,21 @@ Compiles the specified <font> so it can be used by the graphics.  The
 #  endif /* defined (USE_GLX_PBUFFER) || defined (GLX_SGIX_dmbuffer) || defined (GLX_SGIX_pbuffer) */
 				case GRAPHICS_BUFFER_GLX_PIXMAP_TYPE:
 				{
-					widget = Graphics_buffer_X3d_get_widget(buffer);
-					application_shell = widget;
-					while (widget = XtParent(widget))
-					{
-						application_shell = widget;
-					}
-					XtVaGetApplicationResources(application_shell,
-						&text_defaults, resources, XtNumber(resources), NULL);
 					if (!strcmp(font->name,"default"))
 					{
-						x_font = text_defaults.graphics_font;
+						x_font = XLoadQueryFont(Graphics_buffer_X11_get_display(buffer), 
+							"-adobe-helvetica-medium-r-normal-*-12-*-*-*-*-*-*-*");
 					}
 					else
 					{
-						if (!(x_font = XLoadQueryFont(XtDisplay(application_shell), font->name)))
+						if (!(x_font = XLoadQueryFont(Graphics_buffer_X11_get_display(buffer),
+							font->name)))
 						{
 							display_message(WARNING_MESSAGE,
 								"Unable to get specified font \"%s\", falling back to system font.",
 								font->name);
-							x_font = text_defaults.graphics_font;
+							x_font = XLoadQueryFont(Graphics_buffer_X11_get_display(buffer), 
+								"-adobe-helvetica-medium-r-normal-*-12-*-*-*-*-*-*-*");
 						}
 					}
 					if (x_font)
@@ -409,9 +373,131 @@ Compiles the specified <font> so it can be used by the graphics.  The
 #if defined (WX_USER_INTERFACE)
 				case GRAPHICS_BUFFER_WX_TYPE:
 				{
-					display_message(ERROR_MESSAGE,"Graphics_font.  "
-						"Text not implemented for WX yet.");				
-					return_code = 1;
+					int i;
+					int bitmap_size = 2;
+
+					glPushClientAttrib(GL_CLIENT_PIXEL_STORE_BIT);
+
+					glPixelStorei (GL_UNPACK_SWAP_BYTES, GL_FALSE);
+					glPixelStorei (GL_UNPACK_LSB_FIRST, GL_FALSE);
+					glPixelStorei (GL_UNPACK_ROW_LENGTH, 0);
+					glPixelStorei (GL_UNPACK_SKIP_ROWS, 0);
+					glPixelStorei (GL_UNPACK_SKIP_PIXELS, 0);
+					glPixelStorei (GL_UNPACK_ALIGNMENT, 1);
+
+					wxBitmap *bitmap = new wxBitmap(bitmap_size, bitmap_size, /*depth*/-1);
+					if (!bitmap->Ok())
+					{
+						display_message(WARNING_MESSAGE,
+							"Graphics_font_compile.  "
+							"Error making bitmap for wx font.");
+						return_code = 0;
+					}
+
+					wxMemoryDC dc;
+					dc.SelectObject(*bitmap);
+					if (!dc.Ok())
+					{
+						display_message(WARNING_MESSAGE,
+							"Graphics_font_compile.  "
+							"Error making memoryDC for wx font.");
+						return_code = 0;
+					}
+					dc.SetBackground(*wxBLACK_BRUSH);
+					dc.SetTextForeground(*wxWHITE);
+					dc.SetBrush(*wxWHITE_BRUSH);
+					dc.SetPen(*wxWHITE_PEN);
+
+					for (i = 0 ; return_code && (i < font->number_of_bitmaps) ; i++)
+					{
+						wxChar string[2];
+
+						dc.Clear();
+
+						string[0] = i;
+						string[1] = 0;
+						wxString wxstring(string);
+
+						wxCoord char_width, char_height, char_descent, char_leading;
+						dc.GetTextExtent(wxstring, &char_width, &char_height,
+							&char_descent, &char_leading);
+
+						if ((char_width > bitmap_size) || (char_height > bitmap_size))
+						{
+							while ((char_width > bitmap_size) || (char_height > bitmap_size))
+							{
+								bitmap_size *= 2;
+							}
+							dc.SelectObject(wxNullBitmap);
+							delete bitmap;
+							wxBitmap *bitmap = new wxBitmap(bitmap_size, bitmap_size, 
+								/*depth*/-1);
+							if (!bitmap->Ok())
+							{
+								display_message(WARNING_MESSAGE,
+									"Graphics_font_compile.  "
+									"Error making bitmap for wx font.");
+								return_code = 0;
+							}
+							dc.SelectObject(*bitmap);
+							if (!dc.Ok())
+							{
+								display_message(WARNING_MESSAGE,
+									"Graphics_font_compile.  "
+									"Error making memoryDC for wx font.");
+								return_code = 0;
+							}							
+							dc.SetBackground(*wxBLACK_BRUSH);
+							dc.SetTextForeground(*wxWHITE);
+							dc.SetBrush(*wxWHITE_BRUSH);
+							dc.SetPen(*wxWHITE_PEN);
+						}
+
+						dc.DrawText(wxstring, 0, 0);
+
+						wxImage image = bitmap->ConvertToImage();
+
+						glNewList (font->display_list_offset + i, GL_COMPILE);
+
+						unsigned char *image_data = image.GetData();
+						int xbitmap_width = (char_width + 7) / 8;
+						unsigned char *xbitmap_data = new unsigned char[
+							char_height*xbitmap_width];
+						unsigned char *data_ptr = image_data;
+						unsigned char *xbm_ptr = xbitmap_data;
+						int j, k;
+
+						for (j = 0 ; j < char_height ; j++)
+						{
+							xbm_ptr = xbitmap_data + xbitmap_width * j;
+							data_ptr = image_data + (char_height - 1 - j) * bitmap_size * 3;
+							for (k = 0 ; k < xbitmap_width ; k++)
+							{
+								*xbm_ptr = 
+									((data_ptr[0] & 0x80) ? 0x80 : 0) + 
+									((data_ptr[3] & 0x80) ? 0x40 : 0) + 
+									((data_ptr[6] & 0x80) ? 0x20 : 0) + 
+									((data_ptr[9] & 0x80) ? 0x10 : 0) + 
+									((data_ptr[12] & 0x80) ? 0x08 : 0) + 
+									((data_ptr[15] & 0x80) ? 0x04 : 0) + 
+									((data_ptr[18] & 0x80) ? 0x02 : 0) + 
+									((data_ptr[21] & 0x80) ? 0x01 : 0);
+								xbm_ptr++;
+								data_ptr+=8*3;
+							}
+						}
+						glBitmap (char_width, char_height, 0, 0,
+							char_leading + char_width, 0, xbitmap_data);
+
+						delete xbitmap_data;
+
+						glEndList ();
+					}
+
+					delete bitmap;
+
+					glPopClientAttrib();
+
 				} break;
 #endif /* defined (WX_USER_INTERFACE) */
 				default:
