@@ -328,7 +328,7 @@ Compiles the specified <font> so it can be used by the graphics.  The
 				{
 					if (!strcmp(font->name,"default"))
 					{
-						win32_font = GetStockObject(DEFAULT_GUI_FONT);
+						win32_font = static_cast<HFONT__*>(GetStockObject(DEFAULT_GUI_FONT));
 					}
 					else
 					{
@@ -352,7 +352,7 @@ Compiles the specified <font> so it can be used by the graphics.  The
 							display_message(WARNING_MESSAGE,
 								"Unable to get specified font \"%s\", falling back to system font.",
 								font->name);
-							win32_font = GetStockObject(DEFAULT_GUI_FONT);
+							win32_font = static_cast<HFONT__*>(GetStockObject(DEFAULT_GUI_FONT));
 						}
 					}
 					if (win32_font)
