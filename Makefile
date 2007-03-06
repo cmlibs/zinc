@@ -184,7 +184,7 @@ all : svn_update cmgui cmgui-debug cmgui-debug-memorycheck cmgui-static cmgui-st
    endif # MACHNAME == x86_64
 endif # SYSNAME == Linux
 ifeq ($(SYSNAME),AIX)
-all : svn_update cmgui cmgui-debug cmgui64 cmgui64-debug cmgui-static-lib cmgui-no3dgraphics-static-lib cmgui-no3dgraphics-debug-static-lib cmgui64-no3dgraphics-static-lib cmgui64-no3dgraphics-debug-static-lib
+all : cmgui cmgui-debug cmgui64 cmgui64-debug cmgui-static-lib cmgui-no3dgraphics-static-lib cmgui-no3dgraphics-debug-static-lib cmgui64-no3dgraphics-static-lib cmgui64-no3dgraphics-debug-static-lib
 endif # SYSNAME == AIX
 ifeq ($(SYSNAME),win32)
 all : svn_update cmgui cmgui-debug cmgui-gtk cmgui-wx cmgui-wx-debug cmgui-lib cmgui-static-lib cmgui-debug-lib cmgui-debug-static-lib
@@ -196,7 +196,8 @@ ifeq ($(SYSNAME),Darwin)
 all : cmgui cmgui-debug cmgui-static-lib cmgui-no3dgraphics-static-lib cmgui-no3dgraphics-debug-static-lib
 endif # SYSNAME == Darwin
 
-#Update whereever possible first (svn not available on our IRIX)
+#Update whereever possible first (svn not available on our IRIX,
+#	isn't installed on bioeng21 and doesn't support ssl on hpc!)
 svn_update :
 	svn update;
 
