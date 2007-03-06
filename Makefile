@@ -178,16 +178,16 @@ all : cmgui cmgui-debug cmgui64 cmgui-console cmgui-debug-memorycheck cmgui-stat
 endif # SYSNAME == IRIX%=
 ifeq ($(SYSNAME),Linux)
    ifeq ($(MACHNAME),x86_64)
-all : cmgui cmgui-debug cmgui-debug-memorycheck cmgui-static-lib cmgui-debug-static-lib cmgui-no3dgraphics-static-lib cmgui-no3dgraphics-debug-static-lib cmgui-no3dgraphics-debug-memorycheck-static-lib
+all : svn_update cmgui cmgui-debug cmgui-debug-memorycheck cmgui-static-lib cmgui-debug-static-lib cmgui-no3dgraphics-static-lib cmgui-no3dgraphics-debug-static-lib cmgui-no3dgraphics-debug-memorycheck-static-lib
    else # MACHNAME == x86_64
-all : cmgui cmgui-debug cmgui-debug-memorycheck cmgui-static cmgui-static-debug cmgui-console cmgui-static-lib cmgui-debug-static-lib cmgui-gtk cmgui-gtk-debug cmgui-gtk-lib cmgui-gtk-debug-lib cmgui-gtk-static-lib cmgui-gtk-debug-static-lib cmgui-no3dgraphics-static-lib cmgui-no3dgraphics-debug-static-lib cmgui-no3dgraphics-debug-memorycheck-static-lib cmgui-unemap cmgui-wx cmgui-wx-debug
+all : svn_update cmgui cmgui-debug cmgui-debug-memorycheck cmgui-static cmgui-static-debug cmgui-console cmgui-static-lib cmgui-debug-static-lib cmgui-gtk cmgui-gtk-debug cmgui-gtk-lib cmgui-gtk-debug-lib cmgui-gtk-static-lib cmgui-gtk-debug-static-lib cmgui-no3dgraphics-static-lib cmgui-no3dgraphics-debug-static-lib cmgui-no3dgraphics-debug-memorycheck-static-lib cmgui-unemap cmgui-wx cmgui-wx-debug
    endif # MACHNAME == x86_64
 endif # SYSNAME == Linux
 ifeq ($(SYSNAME),AIX)
-all : cmgui cmgui-debug cmgui64 cmgui64-debug cmgui-static-lib cmgui-no3dgraphics-static-lib cmgui-no3dgraphics-debug-static-lib cmgui64-no3dgraphics-static-lib cmgui64-no3dgraphics-debug-static-lib
+all : svn_update cmgui cmgui-debug cmgui64 cmgui64-debug cmgui-static-lib cmgui-no3dgraphics-static-lib cmgui-no3dgraphics-debug-static-lib cmgui64-no3dgraphics-static-lib cmgui64-no3dgraphics-debug-static-lib
 endif # SYSNAME == AIX
 ifeq ($(SYSNAME),win32)
-all : cmgui cmgui-debug cmgui-gtk cmgui-wx cmgui-wx-debug cmgui-lib cmgui-static-lib cmgui-debug-lib cmgui-debug-static-lib
+all : svn_update cmgui cmgui-debug cmgui-gtk cmgui-wx cmgui-wx-debug cmgui-lib cmgui-static-lib cmgui-debug-lib cmgui-debug-static-lib
 endif # SYSNAME == win32
 ifeq ($(SYSNAME),CYGWIN%=)
 all :
@@ -195,6 +195,10 @@ endif # SYSNAME == CYGWIN%=
 ifeq ($(SYSNAME),Darwin)
 all : cmgui cmgui-debug cmgui-static-lib cmgui-no3dgraphics-static-lib cmgui-no3dgraphics-debug-static-lib
 endif # SYSNAME == Darwin
+
+#Update whereever possible first (svn not available on our IRIX)
+svn_update :
+	svn update;
 
 update :
 	$(CMISS_ROOT)/bin/cmissmake cmgui;
