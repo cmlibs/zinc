@@ -1,10 +1,11 @@
 /*******************************************************************************
 FILE : computed_field_image_resample.h
 
-LAST MODIFIED : 5 May 2005
+LAST MODIFIED : 7 March 2007
 
 DESCRIPTION :
-Implements image resampling on computed fields.
+Field that changes the native resolution of a computed field.
+Image processing fields use the native resolution to determine their image size.
 ==============================================================================*/
 /* ***** BEGIN LICENSE BLOCK *****
  * Version: MPL 1.1/GPL 2.0/LGPL 2.1
@@ -45,10 +46,9 @@ Implements image resampling on computed fields.
 #define COMPUTED_FIELD_IMAGE_RESAMPLE_H
 
 int Computed_field_register_types_image_resample(
-	struct Computed_field_package *computed_field_package,
-	struct Cmiss_region *root_region, struct Graphics_buffer_package *graphics_buffer_package);
+	struct Computed_field_package *computed_field_package);
 /*******************************************************************************
-LAST MODIFIED : 5 May 2005
+LAST MODIFIED : 7 March 2007
 
 DESCRIPTION :
 ==============================================================================*/
