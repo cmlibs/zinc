@@ -62,7 +62,7 @@ using namespace CMISS;
 
 namespace {
 
-char computed_field_rescale_intensity_image_filter_type_string[] = "rescale_intensity_image_filter";
+char computed_field_rescale_intensity_image_filter_type_string[] = "rescale_intensity_filter";
 
 class Computed_field_rescale_intensity_image_filter : public Computed_field_ImageFilter
 {
