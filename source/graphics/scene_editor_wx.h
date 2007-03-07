@@ -28,7 +28,6 @@ Global functions
 struct Scene_editor *CREATE(Scene_editor)(
 	struct Scene_editor **scene_editor_address,
 	struct MANAGER(Scene) *scene_manager, struct Scene *scene,
-  struct Scene_object *scene_objects,
 	struct Computed_field_package *computed_field_package,
 	struct Cmiss_region *root_region,
 	struct MANAGER(Graphical_material) *graphical_material_manager,

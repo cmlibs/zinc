@@ -10289,7 +10289,6 @@ Executes a GFX EDIT_SCENE command.  Brings up the Scene_editor.
 	struct Cmiss_command_data *command_data;
 	struct Option_table *option_table;
 	struct Scene *scene;
-	struct Scene_object *scene_object;
 	ENTER(gfx_edit_scene);
 	USE_PARAMETER(dummy_to_be_modified);
 	if (state && (command_data = (struct Cmiss_command_data *)command_data_void))
@@ -10360,7 +10359,6 @@ Executes a GFX EDIT_SCENE command.  Brings up the Scene_editor.
 					(!CREATE(Scene_editor)(	&(command_data->scene_editor),
 						command_data->scene_manager,
 						scene,
-						scene_object,
 						command_data->computed_field_package,
 						command_data->root_region,
 						Material_package_get_material_manager(command_data->material_package),

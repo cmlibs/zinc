@@ -472,7 +472,7 @@ public:
 
   void OnInteractiveCheckBoxPressed(wxCommandEvent& Event)
  {
-		if (this->GetValue())
+	 if (this->GetValue())
 			{
 				Scene_object_set_visibility(object, g_VISIBLE);
 			}
@@ -491,7 +491,7 @@ static int add_scene_object_to_scene_check_box(struct Scene_object *scene_object
 LAST MODIFIED : 2 Match 2007
 
 DESCRIPTION :
-Add scene_object as checkbox item into the box
+Add scene_object as checklistbox item into the box
 ==============================================================================*/
 {
 	Scene_editor *scene_editor = static_cast<Scene_editor*>(scene_editor_void);
@@ -525,7 +525,6 @@ Global functions
 struct Scene_editor *CREATE(Scene_editor)(	
 	struct Scene_editor **scene_editor_address,
 	struct MANAGER(Scene) *scene_manager, struct Scene *scene,
-   	struct Scene_object *scene_object,
 	struct Computed_field_package *computed_field_package,
 	struct Cmiss_region *root_region,
 	struct MANAGER(Graphical_material) *graphical_material_manager,
@@ -560,7 +559,7 @@ DESCRIPTION :
 			scene_editor->transformation_expanded=1;		
 			scene_editor->gt_element_group = (struct GT_element_group *)NULL;
 			scene_editor->scene = scene;
-    		scene_editor->scene_object = scene_object,
+			scene_editor->scene_object = (struct Scene_object *)NULL;
 			scene_editor->scene_editor_address = (struct Scene_editor **)NULL;
 			scene_editor->scene_manager_callback_id = (void *)NULL;
 			scene_editor->scene_manager = scene_manager;
@@ -585,6 +584,9 @@ DESCRIPTION :
 	scene_editor->scene_check_box->SetScrollbars(10,10,100,100);
 	for_each_Scene_object_in_Scene(scene,
 		add_scene_object_to_scene_check_box, (void *)scene_editor);
+
+
+
  	scene_editor->frame = 
  	  XRCCTRL(*scene_editor->wx_scene_editor, "CmguiSceneEditor", wxFrame);
 	scene_editor->frame->Fit();
