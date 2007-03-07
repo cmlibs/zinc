@@ -3,9 +3,6 @@ euler_
 improved_euler_
 runge_kutta_
 #endif /* defined (CELL) */
-#if defined (GTK_USER_INTERFACE) || defined (MOTIF)
-Cmiss_graphics_window_get_scene_viewer_by_name
-#endif /* defined (GTK_USER_INTERFACE) || defined (MOTIF) */
 Cmiss_scene_viewer_get_interact_mode
 Cmiss_scene_viewer_set_interact_mode
 Cmiss_scene_viewer_get_lookat_parameters
@@ -47,6 +44,7 @@ deaccess_Cmiss_value
 Cmiss_command_data_get_root_region
 Cmiss_command_data_get_node_selection
 Cmiss_command_data_get_element_selection
+Cmiss_command_data_get_graphics_window_pane_by_name
 Cmiss_command_data_main_loop
 Cmiss_value_get_type_id_string
 Cmiss_value_get_string
@@ -296,3 +294,7 @@ Cmiss_function_variable_prolate_spheroidal_to_rectangular_cartesian_prolate
 Cmiss_function_variable_prolate_spheroidal_to_rectangular_cartesian_theta
 Cmiss_function_variable_set_value
 Cmiss_function_variable_union_create
+Cmiss_computed_field_get_number_of_components
+Cmiss_computed_field_evaluate_at_node
+Cmiss_command_data_get_computed_field_manager
+Cmiss_computed_field_manager_get_field
