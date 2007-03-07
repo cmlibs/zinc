@@ -608,7 +608,7 @@ ifeq ($(USER_INTERFACE),GTK_USER_INTERFACE)
    endif # $(SYSNAME) != win32
 endif # $(USER_INTERFACE) == GTK_USER_INTERFACE
 ifeq ($(USER_INTERFACE),WX_USER_INTERFACE)
-   WX_DIR =
+	WX_DIR = 
    USER_INTERFACE_INC += $(shell $(WX_DIR)wx-config --cxxflags)
    #Default list does not include gl, so we list them here.
    #Using xrc means that we require most things (and static builds don't automatically pull
@@ -1028,11 +1028,15 @@ endif
 GRAPHICS_INTERFACE_SRCS = \
 	graphics/graphical_element_editor.c \
 	graphics/movie_graphics.c
+ifeq ($(USER_INTERFACE),WX_USER_INTERFACE)
+GRAPHICS_SRCS += \
+    graphics/scene_editor_wx.cpp
+endif #$(USER_INTERFACE) == WX_USER_INTERFACE
 ifeq ($(GRAPHICS_API), OPENGL_GRAPHICS)
    GRAPHICS_INTERFACE_SRCS += \
 		graphics/graphics_window.c \
-      graphics/scene_editor.cpp \
-	   graphics/settings_editor.c \
+		graphics/scene_editor.cpp \
+		graphics/settings_editor.c \
 		graphics/spectrum_editor.c \
 		graphics/spectrum_editor_dialog.c \
 		graphics/spectrum_editor_settings.c
