@@ -397,6 +397,7 @@ need other safeguard controls before allowing this.
 } /* Element_tool_destroy_selected_CB */
 #endif /* defined (MOTIF) */
 
+#if defined (OPENGL_API)
 static void Element_tool_interactive_event_handler(void *device_id,
 	struct Interactive_event *event,void *element_tool_void,
 	struct Graphics_buffer *graphics_buffer)
@@ -641,7 +642,9 @@ release.
 	}
 	LEAVE;
 } /* Element_tool_interactive_event_handler */
+#endif /* defined (OPENGL_API) */
 
+#if defined (OPENGL_API)
 static int Element_tool_bring_up_interactive_tool_dialog(
 	void *element_tool_void,struct Graphics_window *graphics_window)
 /*******************************************************************************
@@ -661,6 +664,7 @@ format for passing to an Interactive_toolbar.
 
 	return (return_code);
 } /* Element_tool_bring_up_interactive_tool_dialog */
+#endif /* defined (OPENGL_API) */
 
 static struct Cmgui_image *Element_tool_get_icon(struct Colour *foreground, 
 	struct Colour *background, void *element_tool_void)
@@ -924,6 +928,7 @@ Selects elements in <element_selection> in response to interactive_events.
 			element_tool->select_lines_enabled=1;
 			element_tool->command_field = (struct Computed_field *)NULL;
 			/* interactive_tool */
+#if defined (OPENGL_API)
 			element_tool->interactive_tool=CREATE(Interactive_tool)(
 				"element_tool","Element tool",
 				Interactive_tool_element_type_string,
@@ -932,6 +937,16 @@ Selects elements in <element_selection> in response to interactive_events.
 				Element_tool_bring_up_interactive_tool_dialog,
 				(Interactive_tool_destroy_tool_data_function *)NULL,
 				(void *)element_tool);
+#else /* defined (OPENGL_API) */
+			element_tool->interactive_tool=CREATE(Interactive_tool)(
+				"element_tool","Element tool",
+				Interactive_tool_element_type_string,
+				(Interactive_event_handler*)NULL,
+				Element_tool_get_icon,
+				(Interactive_tool_bring_up_dialog_function*)NULL,
+				(Interactive_tool_destroy_tool_data_function *)NULL,
+				(void *)element_tool);
+#endif /* defined (OPENGL_API) */
 			ADD_OBJECT_TO_MANAGER(Interactive_tool)(
 				element_tool->interactive_tool,
 				element_tool->interactive_tool_manager);
