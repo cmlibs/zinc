@@ -107,7 +107,7 @@ DEFINE_DEFAULT_ENUMERATOR_FUNCTIONS(General_threshold_filter_mode)
 
 namespace {
 	
-	char computed_field_threshold_image_filter_type_string[] = "threshold_image_filter";
+	char computed_field_threshold_image_filter_type_string[] = "threshold_filter";
 	
 	class Computed_field_threshold_image_filter : public Computed_field_ImageFilter
 	{
