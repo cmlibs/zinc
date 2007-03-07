@@ -61,7 +61,7 @@ using namespace CMISS;
 
 namespace {
 
-char computed_field_mean_image_filter_type_string[] = "mean_image_filter";
+char computed_field_mean_image_filter_type_string[] = "mean_filter";
 
 class Computed_field_mean_image_filter : public Computed_field_ImageFilter
 {
