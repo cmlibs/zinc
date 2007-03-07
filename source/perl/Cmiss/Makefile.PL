@@ -40,7 +40,7 @@ WriteMakefile(
   #          
   #Only install a subset of "released modules" at the moment
 	 'DIR'   =>  [ 'Graphics_window', 'Scene_viewer', 'Perl_cmiss', 'Cmgui_command_data',
-						'Example_path', 'Element', 'Node', 'Region'  ],
+						'Example_path', 'Element', 'Node', 'Region', 'Computed_field'  ],
 
   #Add the perl version into the site library
     'INSTALLSITELIB'   =>  "\$(PREFIX)/lib/$Config{version}",

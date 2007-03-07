@@ -2,6 +2,7 @@
 #include "perl.h"
 #include "XSUB.h"
 
+#include "api/cmiss_command_data.h"
 #include "command/cmiss.h"
 #include "finite_element/finite_element.h"
 #include "general/debug.h"
@@ -28,6 +29,7 @@ static int XS_Cmiss_Cmgui_command_data_add_element_to_list(struct FE_element *el
 		data->list[data->count] = element;
 		data->count++;
 	}
+	return(1);
 }
 
 /* I have had to expand this out to a plain list and then extend the stack 
@@ -49,6 +51,7 @@ static int XS_Cmiss_Cmgui_command_data_add_node_to_list(struct FE_node *node,
 		data->list[data->count] = node;
 		data->count++;
 	}
+	return(1);
 }
 
 MODULE = Cmiss::Cmgui_command_data		PACKAGE = Cmiss::Cmgui_command_data		PREFIX = Cmiss_cmgui_command_data_
@@ -66,7 +69,7 @@ create(argv)
 			called when the stash reference count gets to zero) */
 	   {
 	      char **c_argv;
-	      int argc, i;
+	      unsigned int argc, i;
 			SV **elem;
 
 			argc = av_len(argv) + 1;
@@ -111,6 +114,15 @@ command_data_get_root_region(Cmiss::Cmgui_command_data cmgui_command_data)
 		{
 			ACCESS(Cmiss_region)(RETVAL);
 		}
+	OUTPUT:
+		RETVAL
+
+Cmiss::Computed_field
+get_computed_field_by_name(Cmiss::Cmgui_command_data cmgui_command_data, char *name)
+	CODE:
+		struct MANAGER(Computed_field)* computed_field_manager = 
+			Cmiss_command_data_get_computed_field_manager(cmgui_command_data);
+		RETVAL=Cmiss_computed_field_manager_get_field(computed_field_manager, name);
 	OUTPUT:
 		RETVAL
 

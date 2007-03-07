@@ -19,25 +19,25 @@ constant(char *name, int len, int arg)
 	int return_code;
 
 	errno = 0;
-	if (strEQ(name, "CMISS_SCENE_VIEWER_PERSPECTIVE"))
+	if (strEQ(name, "CMISS_SCENE_VIEWER_PROJECTION_PERSPECTIVE"))
 	{
-		return_code = CMISS_SCENE_VIEWER_PERSPECTIVE;
+		return_code = CMISS_SCENE_VIEWER_PROJECTION_PERSPECTIVE;
 	}
-	else if (strEQ(name, "CMISS_SCENE_VIEWER_PARALLEL"))
+	else if (strEQ(name, "CMISS_SCENE_VIEWER_PROJECTION_PARALLEL"))
 	{
-		return_code = CMISS_SCENE_VIEWER_PARALLEL;
+		return_code = CMISS_SCENE_VIEWER_PROJECTION_PARALLEL;
 	}
-	else if (strEQ(name, "CMISS_SCENE_VIEWER_FAST_TRANSPARENCY"))
+	else if (strEQ(name, "CMISS_SCENE_VIEWER_TRANSPARENCY_FAST"))
 	{
-		return_code = CMISS_SCENE_VIEWER_FAST_TRANSPARENCY;
+		return_code = CMISS_SCENE_VIEWER_TRANSPARENCY_FAST;
 	}
-	else if (strEQ(name, "CMISS_SCENE_VIEWER_SLOW_TRANSPARENCY"))
+	else if (strEQ(name, "CMISS_SCENE_VIEWER_TRANSPARENCY_SLOW"))
 	{
-		return_code = CMISS_SCENE_VIEWER_SLOW_TRANSPARENCY;
+		return_code = CMISS_SCENE_VIEWER_TRANSPARENCY_SLOW;
 	}
-	else if (strEQ(name, "CMISS_SCENE_VIEWER_LAYERED_TRANSPARENCY"))
+	else if (strEQ(name, "CMISS_SCENE_VIEWER_TRANSPARENCY_LAYERED"))
 	{
-		return_code = CMISS_SCENE_VIEWER_LAYERED_TRANSPARENCY;
+		return_code = CMISS_SCENE_VIEWER_TRANSPARENCY_LAYERED;
 	}	
 	else
 	{
@@ -105,14 +105,14 @@ Cmiss_scene_viewer_set_transparency_mode(Cmiss::Scene_viewer scene_viewer, \
 
 NO_OUTPUT int
 Cmiss_scene_viewer_get_transparency_layers( \
-	IN Cmiss::Scene_viewer scene_viewer, OUTLIST int transparency_layers)
+	IN Cmiss::Scene_viewer scene_viewer, OUTLIST unsigned int transparency_layers)
    POSTCALL:
 	if (RETVAL == 0)
 			XSRETURN_UNDEF;
 
 int
 Cmiss_scene_viewer_set_transparency_layers(Cmiss::Scene_viewer scene_viewer, \
-	int transparency_layers)
+	unsigned int transparency_layers)
 
 NO_OUTPUT int
 Cmiss_scene_viewer_get_view_angle(IN Cmiss::Scene_viewer scene_viewer, \
@@ -138,7 +138,7 @@ Cmiss_scene_viewer_set_near_and_far_plane(Cmiss::Scene_viewer scene_viewer, \
 
 NO_OUTPUT int
 Cmiss_scene_viewer_get_antialias_mode(IN Cmiss::Scene_viewer scene_viewer, \
-	OUTLIST int antialias_mode)
+	OUTLIST unsigned int antialias_mode)
    POSTCALL:
 	if (RETVAL == 0)
 			XSRETURN_UNDEF;
@@ -159,7 +159,7 @@ Cmiss_scene_viewer_set_perturb_lines(Cmiss::Scene_viewer scene_viewer, \
 	int perturb_lines)
 
 NO_OUTPUT int
-Cmiss_scene_viewer_get_background_colour_rgb( \
+Cmiss_scene_viewer_get_background_colour_r_g_b( \
 	IN Cmiss::Scene_viewer scene_viewer, OUTLIST double red, \
 	OUTLIST double green, OUTLIST double blue)
    POSTCALL:
@@ -167,7 +167,7 @@ Cmiss_scene_viewer_get_background_colour_rgb( \
 			XSRETURN_UNDEF;
 
 int
-Cmiss_scene_viewer_set_background_colour_rgb(Cmiss::Scene_viewer scene_viewer, \
+Cmiss_scene_viewer_set_background_colour_r_g_b(Cmiss::Scene_viewer scene_viewer, \
 	double red, double green, double blue)
 
 char *

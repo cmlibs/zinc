@@ -69,6 +69,20 @@ XSLoader::load('Cmiss::Graphics_window', $VERSION);
 
 # Preloaded methods go here.
 
+sub get_scene_viewer_by_name
+  {
+	 my $name = shift;
+	 my $pane_number = shift;
+	 my $cmgui_command_data = new Cmiss::Cmgui_command_data();
+
+	 if (!defined $cmgui_command_data)
+		{
+		  die "Cmgui must be initialised correctly";
+		}
+	 get_scene_viewer_by_name_xs($cmgui_command_data, $name, $pane_number);
+  }
+
+
 # Autoload methods go after =cut, and are processed by the autosplit program.
 
 1;

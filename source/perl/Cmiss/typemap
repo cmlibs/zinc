@@ -1,8 +1,12 @@
+
+Cmiss::Cmgui_command_data T_PTROBJ
+Cmiss::Computed_field T_PTROBJ
 Cmiss::Element T_PTROBJ
 Cmiss::Node T_PTROBJ
 Cmiss::Node_field_creator T_PTROBJ
 Cmiss::Region T_PTROBJ
 Cmiss::Time_sequence T_PTROBJ
+Scalar T_DOUBLE
 
 # SAB These typemaps are wrong in perl versions before 5.8.0 so I have defined
 # the correct typemaps here so that they override.
