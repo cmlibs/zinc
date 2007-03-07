@@ -62,7 +62,7 @@ using namespace CMISS;
 
 namespace {
 
-char computed_field_discrete_gaussian_image_filter_type_string[] = "discrete_gaussian__image_filter";
+char computed_field_discrete_gaussian_image_filter_type_string[] = "discrete_gaussian_filter";
 
 class Computed_field_discrete_gaussian_image_filter : public Computed_field_ImageFilter
 {
